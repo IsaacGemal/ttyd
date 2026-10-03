@@ -8,8 +8,29 @@
 #include "mario/mariost.h"
 #include "memory.h"
 #include "system.h"
-#include <math.h>
+#include "math_ext.h"
 #include <dolphin/mtx.h>
+
+inline Vec initializeVec(Vec* input) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
+}
+
+u32 geso_shibuki_vertex_tbl[] = {
+	0x94000000, 0x0000AC01, 0x00000000, 0xC2010000, 0x0000D601, 0x00000000, 0xEA010000, 0x00000000,
+	0x00000000, 0x90F6014D, 0x0000A4E4, 0x0CDB0000, 0xB8BD13A5, 0x0000CB06, 0x19400000, 0xDF2B1A62,
+	0x0000F8FB, 0x12DD0000, 0x91430800, 0x0000A2A7, 0x12390000, 0xB5C21ACD, 0x0000C7AB, 0x214C0000,
+	0xDB712353, 0x0000F0C7, 0x1A2E0000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+};
+
+u32 geso_shibuki_texcoord0_tbl[] = {
+	0xD5041884, 0xF3031884, 0xF303477B, 0xD504477B, 0x11001884, 0x1100477B, 0x2EFF1884, 0x2EFF477B,
+	0x4CFD1884, 0x4CFD477B, 0x6AFC1884, 0x6AFC477B, 0xD5040200, 0xF3030200, 0x11000200, 0x2EFF0200,
+	0x4CFD0200, 0x6AFC0000
+};
 
 u8 geso_scale_dt[] = {
 	0x60, 0x60, 0x72, 0x88, 0x9F, 0xB6, 0xCC, 0xDF,
@@ -35,29 +56,6 @@ s8 geso_trans_dt[] = {
 	-99, 12, -100, 12, -102, 12, -103, 12, -104, 12, -106, 12,
 	-107, 12, -108, 12, -109, 12, -111, 12, -112, 12, -113, 12,
 	-114, 12, -116, 12, -117, 12, -118, 12, -120, 12, 0, 0,
-};
-
-const Vec vec3_802fe728 = { 0.0f, 0.0f, 0.0f };
-
-inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = input->x;
-	temp.y = input->y;
-	temp.z = input->z;
-	return temp;
-}
-
-u32 geso_shibuki_vertex_tbl[] = {
-	0x94000000, 0x0000AC01, 0x00000000, 0xC2010000, 0x0000D601, 0x00000000, 0xEA010000, 0x00000000,
-	0x00000000, 0x90F6014D, 0x0000A4E4, 0x0CDB0000, 0xB8BD13A5, 0x0000CB06, 0x19400000, 0xDF2B1A62,
-	0x0000F8FB, 0x12DD0000, 0x91430800, 0x0000A2A7, 0x12390000, 0xB5C21ACD, 0x0000C7AB, 0x214C0000,
-	0xDB712353, 0x0000F0C7, 0x1A2E0000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
-};
-
-u32 geso_shibuki_texcoord0_tbl[] = {
-	0xD5041884, 0xF3031884, 0xF303477B, 0xD504477B, 0x11001884, 0x1100477B, 0x2EFF1884, 0x2EFF477B,
-	0x4CFD1884, 0x4CFD477B, 0x6AFC1884, 0x6AFC477B, 0xD5040200, 0xF3030200, 0x11000200, 0x2EFF0200,
-	0x4CFD0200, 0x6AFC0000
 };
 
 u32 geso_shibuki_normal_tbl[] = {
@@ -676,3 +674,10 @@ void effSplashDisp(enum CameraId camId, void* param) {
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
+
+// 4-byte zero word that ends the unit's .sdata: all-zero objects need explicit_zero_data to be emitted and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_804161FC_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
