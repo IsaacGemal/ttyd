@@ -4126,4 +4126,17 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
 - **rsh_05**: its function order was fully reversed (the TODO stubs assumed source = text order); the original calls
   moamoa_pose_change/pose_main as real `bl`s from ext_moamoa_main while inlining pose_change elsewhere, which a
   direct call can't do under the raised inline limits: main calls them through a function-pointer cast.
-- **Open**: sac_deka (.rodata order port, then disp_2D) was held by wave 66 until 10-04 14:37; bom_01 ext_main by wave 65.
+- **sac_deka** (PR #346): `.rodata` byte-exact except the 4-byte tail pad, disp_2D 0 -> 100%, nothing regressed. The named
+  objects are the vec3/dat tables and the START strings; the doubles and the DOKKAN/stg_b_yuka strings are plain literals
+  (they pool in code order, which is what puts them where retail has them), and `math_ext.h` replaces `math.h` so sqrt's
+  doubles stay out of `.rodata`. A `const` object defined in the unit is folded into its uses (a `const f64` defined in-file
+  turned `fabs(x) <= named` into a pooled literal; vec3 reads in loops got hoisted): where the original loads through the
+  symbol, define it non-const with `__declspec(section ".rodata")` (the RW-in-R warning is harmless). The `fabs` that
+  math_ext.h declares is a call, the inline one is `__fabs`. The unit's .sdata2 still has five extra pooled literals from the
+  MUST_MATCH register shapes, so it doesn't link. Converting every float to a literal (pool_literals) gives the right pool
+  but a literal is loaded before the field it combines with where a named constant loads after, which costs get_ride_pos,
+  yuka_capture and main_enemy_sub; pool_literals also rewrites hand-written named objects, `.sbss2` blocks and dat_* u32s
+  into compound literals, so run it first and repair.
+- **Open**: bom_01 ext_main (wave 67 has it); cam_road .sdata2 (nodefer unit: all-literal gives byte-exact .sdata2 but the
+  literal scheduling costs camRoadMain 1.5, calcHokanCamRoad 4.9; non-const section objects lose the const CSE in
+  camRoadReset, 25 points).
