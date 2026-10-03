@@ -51,12 +51,6 @@ extern s32 weaponGetPowerOverlapJump1[];
 extern s32 weaponGetPower_Deka[];
 extern s32 weaponGetPower_Scissor[];
 extern s32 weaponGetPower_ZubaStar[];
-extern const f32 float_210_8041c0d4;
-extern const f32 float_420_8041c0d8;
-extern const f32 float_neg10_8041c0dc;
-extern const f32 float_150_8041c0e0;
-extern const f32 float_neg60_8041c0e4;
-extern const f32 float_10_8041c0e8;
 static s32 marioAttackEvent_NormalJump[889];
 static s32 marioAttackEvent_KururinJump[1210];
 s32 marioAttackEvent_JyabaraJump[1675];
@@ -401,6 +395,8 @@ USER_FUNC(_kaiten_hammer_acrobat_rotate) {
 }
 
 
+extern const f32 float_1_8041c0c4;
+
 USER_FUNC(_mario_fire_ball_controll) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
@@ -415,7 +411,7 @@ USER_FUNC(_mario_fire_ball_controll) {
     part = BtlUnit_GetPartsPtr(unit, value1);
     if (isFirstCall) {
         event->userdata[0] = 0;
-        event->userdata[1] = (s32)effFireEntry(5, 1000, 0.0f, 0.0f, 0.0f, 1.0f);
+        event->userdata[1] = (s32)effFireEntry(5, 1000, 0.0f, 0.0f, 0.0f, float_1_8041c0c4);
     }
     effect = (EffectEntry*)event->userdata[1];
     if (part->work[0] == 0) {
@@ -8270,3 +8266,5 @@ EVT_BEGIN(marioAttackEvent_SuperChargeP)
     RETURN
 EVT_END()
 // clang-format on
+
+const f32 float_1_8041c0c4 = 1.0f;
