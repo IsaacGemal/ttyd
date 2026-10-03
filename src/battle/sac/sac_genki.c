@@ -72,11 +72,13 @@ const char str_8030041C[] = "SFX_BTL_SAC_HEART_SHOOT1";
 const char str_80300438[] = "SFX_HP_RECOVER_SHINE2";
 const char str_80300450[] = "stardust";
 const char str_8030045C[] = "M_C_2C";
+// The int->float magic (0x4330000080000000) sits between the strings as in retail, so str_80300470 lands at
+// +0x1C0 where main_weapon reads it; the compiler still pools its own copy at the end of .rodata.
+const f64 double_to_int_80300468 = 4503601774854144.0;
 const char str_80300470[] = "SFX_BTL_SAC_HEART_SHOOT2";
 
 const f32 float_30_80421d80 = 30.0f;
 const f32 float_1p25_80421d6c = 1.25f;
-extern f64 double_to_int_80300468;
 const f32 float_360_80421de8 = 360.0f;
 const f32 float_60_80421d50 = 60.0f;
 const f32 float_neg1p25_80421e0c = -1.25f;

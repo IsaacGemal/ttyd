@@ -2059,7 +2059,7 @@ void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
 
 #pragma push
 #pragma opt_propagation off // the target keeps xh/yh in registers instead of rematerializing them
-// NONMATCHING (96.11%): register allocation now matches; only the FP scheduling of the three
+// NONMATCHING (99.81%): register allocation now matches; only the FP scheduling of the three
 // pos->x/y/z loads+conversions differs (target loads z between the x and y conversions).
 void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
     s32 xh;

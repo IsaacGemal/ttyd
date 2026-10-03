@@ -507,23 +507,25 @@ void btlDispMain(void) {
 				statusPose = _GetStatusPoseType(unit);
 				if (unit->currentKind >= 1 && unit->currentKind < 0xD8) {
 					animName = searchPoseTbl((BattleDispPose*)part->poseTable, statusPose);
-				} else if (statusPose == 0x1C && !BtlUnit_CheckStatus(unit, 0x16) &&
-				           (unit->mStatusFlags & 0x20000000)) {
-					animName = BtlUnit_GetPoseNameFromType(part, 0x39);
-					if (animName == NULL) {
-						animName = searchPoseTbl((BattleDispPose*)part->poseTable, 0x1C);
-					}
-				} else if (statusPose == 0x1C && !BtlUnit_CheckStatus(unit, 0x16) &&
-				           (unit->mStatusFlags & 0x10000000)) {
-					animName = BtlUnit_GetPoseNameFromType(part, 0x38);
-					if (animName == NULL) {
-						animName = searchPoseTbl((BattleDispPose*)part->poseTable, 0x1C);
-					}
 				} else {
-					animName = searchPoseTbl((BattleDispPose*)part->poseTable, statusPose);
-				}
-				if (BtlUnit_CheckStatusFlag(unit, 0x1000000) && BtlUnit_CanActStatus(unit)) {
-					animName = BtlUnit_GetPoseNameFromType(part, 0x2D);
+					if (statusPose == 0x1C && !BtlUnit_CheckStatus(unit, 0x16) &&
+					    (unit->mStatusFlags & 0x20000000)) {
+						animName = BtlUnit_GetPoseNameFromType(part, 0x39);
+						if (animName == NULL) {
+							animName = searchPoseTbl((BattleDispPose*)part->poseTable, 0x1C);
+						}
+					} else if (statusPose == 0x1C && !BtlUnit_CheckStatus(unit, 0x16) &&
+					           (unit->mStatusFlags & 0x10000000)) {
+						animName = BtlUnit_GetPoseNameFromType(part, 0x38);
+						if (animName == NULL) {
+							animName = searchPoseTbl((BattleDispPose*)part->poseTable, 0x1C);
+						}
+					} else {
+						animName = searchPoseTbl((BattleDispPose*)part->poseTable, statusPose);
+					}
+					if (BtlUnit_CheckStatusFlag(unit, 0x1000000) && BtlUnit_CanActStatus(unit)) {
+						animName = BtlUnit_GetPoseNameFromType(part, 0x2D);
+					}
 				}
 				if (BtlUnit_CheckStatus(unit, 0x13)) {
 					btlDispAnimeSpeed((BattleUnit*)part, float_2_8041bf68);
