@@ -20,18 +20,10 @@ extern const f32 float_neg1_8041f588;
 extern const f32 float_0p4_8041f58c;
 extern const f32 float_0p1_8041f590;
 extern const f32 float_0_8041f594;
+#define ZERO0 (*(volatile const f32*)&float_0_8041f594)
 extern const f32 float_360_8041f598;
 extern const f32 float_1_8041f5a0;
 extern const f32 float_2_8041f5a4;
-extern const f32 float_3_8041f5ac;
-extern const f32 float_8_8041f5b0;
-extern const f32 float_1p5_8041f5b4;
-extern const f32 float_30_8041f5b8;
-extern const f32 float_6p2832_8041f5bc;
-extern const f32 float_0p03125_8041f5c0;
-extern const f32 float_200_8041f5c4;
-extern const f32 float_0p018182_8041f5c8;
-extern const f32 float_0p04_8041f5cc;
 extern const f32 float_5_8041f59c;
 extern const f32 float_0p5_8041f5a8;
 // the default .sbss2 is only used for compiler-generated pool templates, so pair it with a small-data section
@@ -153,9 +145,9 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 	data->texX2 = float_0_8041f594;
 	data->texY2 = float_0_8041f594;
 	data->texXVel = float_0_8041f594;
-	data->texYVel = float_0p018182_8041f5c8;
+	data->texYVel = 0.018181818f;
 	data->texX2Vel = float_0_8041f594;
-	data->texY2Vel = float_0p04_8041f5cc;
+	data->texY2Vel = 0.04f;
 	if (type == 1 || type == 3) {
 		data->texXVel *= float_neg1_8041f588;
 		data->texYVel *= float_neg1_8041f588;
@@ -204,13 +196,13 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 			case 0:
 			case 1:
 				data->x = float_0_8041f594;
-				data->y = float_3_8041f5ac;
+				data->y = 3.0f;
 				data->z = float_0_8041f594;
 				data->scale = float_0_8041f594;
 				data->color1A = 0xcc;
 				data->lifetime = i * 30;
 				data->rotation = (f32)(-irand(20));
-				data->texX = float_8_8041f5b0;
+				data->texX = 8.0f;
 				break;
 			case 2:
 				data->x = (f32)(200 - irand(400));
@@ -223,8 +215,8 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 				break;
 			case 3:
 				angle = (f32)irand(360);
-				radius = float_200_8041f5c4 + (f32)irand(200);
-				angle = (float_6p2832_8041f5bc * angle) / float_360_8041f598;
+				radius = 200.0f + (f32)irand(200);
+				angle = (6.2831855f * angle) / float_360_8041f598;
 				data->x = radius * (f32)sin((f64)angle);
 				data->y = radius * (f32)cos((f64)angle);
 				data->z = float_0_8041f594;
@@ -236,13 +228,13 @@ EffectEntry* effKumokumoN64Entry(s32 type, s32 param, f32 x, f32 y, f32 z, f32 s
 			case 4:
 			default:
 				data->x = float_0_8041f594;
-				data->y = float_3_8041f5ac;
+				data->y = 3.0f;
 				data->z = float_0_8041f594;
 				data->scale = float_0_8041f594;
 				data->color1A = 0xcc;
 				data->lifetime = i * 30;
 				data->rotation = (f32)(-irand(20));
-				data->texX = float_8_8041f5b0;
+				data->texX = 8.0f;
 				break;
 		}
 	}
@@ -313,36 +305,36 @@ void effKumokumoMain(EffectEntry* effect) {
 					data->color1A -= 2;
 					if (data->color1A < 0) {
 						data->x = float_0_8041f594;
-						data->y = float_3_8041f5ac;
+						data->y = 3.0f;
 						data->z = float_0_8041f594;
 						data->scale = float_0_8041f594;
 						data->color1A = 0xcc;
 						data->lifetime = i * 30;
 						data->rotation = (f32)(-irand(20));
-						data->texX = float_8_8041f5b0;
+						data->texX = 8.0f;
 					}
 					else {
-						f4 = float_30_8041f5b8;
+						f4 = 30.0f;
 						f3 = data->scale;
-						data->scale = f3 + (float_1p5_8041f5b4 - f3) / f4;
+						data->scale = f3 + (1.5f - f3) / f4;
 						f3 = data->rotation;
-						data->rotation = f3 + (float_30_8041f5b8 - f3) / f4;
-						f1 = (float_6p2832_8041f5bc * data->rotation) / float_360_8041f598;
+						data->rotation = f3 + (30.0f - f3) / f4;
+						f1 = (6.2831855f * data->rotation) / float_360_8041f598;
 						f3 = (f32)cos((f64)f1);
 						data->x += data->texX * f3;
-						f1 = (float_6p2832_8041f5bc * data->rotation) / float_360_8041f598;
+						f1 = (6.2831855f * data->rotation) / float_360_8041f598;
 						f3 = (f32)sin((f64)f1);
 						data->y += data->texX * (float_2_8041f5a4 * f3);
 						f2 = data->texX;
-						data->texX += (float_2_8041f5a4 - f2) / float_30_8041f5b8;
+						data->texX += (float_2_8041f5a4 - f2) / 30.0f;
 					}
 					break;
 				case 2:
 					data->color1A += (0xff - data->color1A) / 4;
-					data->scale += -data->scale * float_0p03125_8041f5c0;
-					data->x += -data->x * float_0p03125_8041f5c0;
-					data->y += -data->y * float_0p03125_8041f5c0;
-					data->z += -data->z * float_0p03125_8041f5c0;
+					data->scale += -data->scale * 0.03125f;
+					data->x += -data->x * 0.03125f;
+					data->y += -data->y * 0.03125f;
+					data->z += -data->z * 0.03125f;
 					if (data->scale < float_0p1_8041f590) {
 						data->x = (f32)(200 - irand(400));
 						data->y = -(f32)(irand(50) + 200);
@@ -357,19 +349,19 @@ void effKumokumoMain(EffectEntry* effect) {
 					break;
 				case 3:
 					data->color1A += (0xc0 - data->color1A) / 4;
-					data->scale += -data->scale * float_0p03125_8041f5c0;
-					data->x += -data->x * float_0p03125_8041f5c0;
-					data->y += -data->y * float_0p03125_8041f5c0;
-					data->z += -data->z * float_0p03125_8041f5c0;
+					data->scale += -data->scale * 0.03125f;
+					data->x += -data->x * 0.03125f;
+					data->y += -data->y * 0.03125f;
+					data->z += -data->z * 0.03125f;
 					if (data->scale < float_0p1_8041f590) {
 						f1 = (f32)irand(360);
 						radius = (f32)irand(200);
-						f1 = (float_6p2832_8041f5bc * f1) / float_360_8041f598;
-						radius = float_200_8041f5c4 + radius;
+						f1 = (6.2831855f * f1) / float_360_8041f598;
+						radius = 200.0f + radius;
 						data->x = radius * (f32)sin((f64)f1);
 						data->y = radius * (f32)cos((f64)f1);
 						data->z = float_0_8041f594;
-						data->scale = float_3_8041f5ac;
+						data->scale = 3.0f;
 						data->color1A = 0;
 						data->lifetime = i * 15;
 						data->rotation = float_0_8041f594;
@@ -379,25 +371,25 @@ void effKumokumoMain(EffectEntry* effect) {
 					data->color1A -= 2;
 					if (data->color1A < 0) {
 						data->x = float_0_8041f594;
-						data->y = float_3_8041f5ac;
+						data->y = 3.0f;
 						data->z = float_0_8041f594;
 						data->scale = float_0_8041f594;
 						data->color1A = 0xcc;
 						data->lifetime = i * 30;
 						data->rotation = (f32)(-irand(20));
-						data->texX = float_8_8041f5b0;
+						data->texX = 8.0f;
 					}
 					else {
-						data->scale += (float_1_8041f5a0 - data->scale) / float_30_8041f5b8;
-						data->rotation += (float_30_8041f5b8 - data->rotation) / float_30_8041f5b8;
-						f1 = (float_6p2832_8041f5bc * data->rotation) / float_360_8041f598;
+						data->scale += (float_1_8041f5a0 - data->scale) / 30.0f;
+						data->rotation += (30.0f - data->rotation) / 30.0f;
+						f1 = (6.2831855f * data->rotation) / float_360_8041f598;
 						f3 = (f32)cos((f64)f1);
 						data->x += data->texX * f3;
-						f1 = (float_6p2832_8041f5bc * data->rotation) / float_360_8041f598;
+						f1 = (6.2831855f * data->rotation) / float_360_8041f598;
 						f3 = (f32)sin((f64)f1);
 						data->y += data->texX * (float_2_8041f5a4 * f3);
 						f2 = data->texX;
-						data->texX += (float_2_8041f5a4 - f2) / float_30_8041f5b8;
+						data->texX += (float_2_8041f5a4 - f2) / 30.0f;
 					}
 					break;
 				default:
@@ -677,14 +669,14 @@ void effKumokumoDisp(CameraId camId, void* param) {
 		if (type == 3 || type == 4) {
 			f5 = float_2_8041f5a4;
 		}
-		GXPosition3f32(-halfW * half, halfH * half, 0.0f);
-		GXTexCoord2f32(0.0f, 0.0f);
-		GXPosition3f32(halfW * half, halfH * half, 0.0f);
-		GXTexCoord2f32(f5, 0.0f);
-		GXPosition3f32(halfW * half, -halfH * half, 0.0f);
+		GXPosition3f32(-halfW * half, halfH * half, ZERO0);
+		GXTexCoord2f32(ZERO0, ZERO0);
+		GXPosition3f32(halfW * half, halfH * half, ZERO0);
+		GXTexCoord2f32(f5, ZERO0);
+		GXPosition3f32(halfW * half, -halfH * half, ZERO0);
 		GXTexCoord2f32(f5, f5);
-		GXPosition3f32(-halfW * half, -halfH * half, 0.0f);
-		GXTexCoord2f32(0.0f, f5);
+		GXPosition3f32(-halfW * half, -halfH * half, ZERO0);
+		GXTexCoord2f32(ZERO0, f5);
 		GXEnd();
 	}
 }
@@ -959,12 +951,3 @@ const f32 float_360_8041f598 = 360.0f;
 const f32 float_5_8041f59c = 5.0f;
 const f32 float_1_8041f5a0 = 1.0f;
 const f32 float_2_8041f5a4 = 2.0f;
-const f32 float_3_8041f5ac = 3.0f;
-const f32 float_8_8041f5b0 = 8.0f;
-const f32 float_1p5_8041f5b4 = 1.5f;
-const f32 float_30_8041f5b8 = 30.0f;
-const f32 float_6p2832_8041f5bc = 6.2831855f;
-const f32 float_0p03125_8041f5c0 = 0.03125f;
-const f32 float_200_8041f5c4 = 200.0f;
-const f32 float_0p018182_8041f5c8 = 0.018181818f;
-const f32 float_0p04_8041f5cc = 0.04f;

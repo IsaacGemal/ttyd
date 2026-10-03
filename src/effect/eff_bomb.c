@@ -4,7 +4,8 @@
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
+#define fabs(x) __fabs(x)
 
 // .data tables. Each record is 3 bytes: texcoord offset, scaleX, scaleY (scaled by 100).
 static u8 scale_dt[] = {
@@ -31,9 +32,9 @@ static u8 scale_dt2[] = {
 };
 
 // The original has these constants in .sdata2. Declared const, MWCC folds their values into its own pool;
-// the matching build keeps them writable so the loads reference the original symbols.
+// the matching build keeps them writable (in .sdata2 by section) so the loads reference the original symbols.
 #ifdef MUST_MATCH
-#define SDATA2_CONST
+#define SDATA2_CONST __declspec(section ".sdata2")
 #else
 #define SDATA2_CONST const
 #endif
@@ -236,3 +237,5 @@ static void effBombDisp(CameraId camId, void* param) {
 	}
 }
 
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_0p5_8041e470 = 0.5f;
