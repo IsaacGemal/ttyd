@@ -23,3 +23,11 @@ s32 winLogMain(WindowWork* work);
 void winLogExit(WindowWork* work);
 void winLogInit2(WindowWork* work);
 void winLogInit(WindowWork* work);
+
+// The win_log unit's read-only rodata base. Match-only non-const declaration: it stops MWCC hoisting the
+// vec3 loads out of monoshiriGX's and winLogDisp's loops (the data is in fact read-only).
+#ifdef MUST_MATCH
+extern char str_802F5EB8[];
+#else
+extern const char str_802F5EB8[];
+#endif

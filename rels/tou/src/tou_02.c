@@ -43,10 +43,6 @@
 #pragma force_active on
 extern s32 evt_tou_get_ranking_27_text_1ED4[];
 // volatile: keeps MWCC from hoisting these zero-vec loads out of ext_fan_init's loop
-extern const volatile Vec vec3_tou_0000d028;
-extern const volatile Vec vec3_tou_0000d034;
-extern const volatile Vec vec3_tou_0000d040;
-extern const Vec vec3_tou_0000d064;
 u8 psndSFX_get_vol(s32 id);
 void psndSFX_vol(s32 id, u8 vol);
 
@@ -1099,6 +1095,13 @@ ExtFanData ext_fan_data[28] = {
     { 0x00000000, 0x00000000, 0.0f },
 };
 
+const volatile Vec vec3_tou_0000d028 = { 0.0f, 0.0f, 0.0f };
+const volatile Vec vec3_tou_0000d034 = { 0.0f, 0.0f, 0.0f };
+const volatile Vec vec3_tou_0000d040 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_tou_0000d04c = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_tou_0000d058 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_tou_0000d064 = { 0.0f, 0.0f, 0.0f };
+
 EVT_BEGIN(mario_momikucha_msg)
     SET_VALUE(LW(10), 0)
     LOOP(0)
@@ -1694,7 +1697,7 @@ void ext_fan_main(void) {
     ExtPose* pose;
     FanPose* fan;
     Vec d;
-    Vec vec = { 0.0f, 0.0f, 0.0f };
+    Vec vec = vec3_tou_0000d04c;
     s32 i;
     s32 j;
 
@@ -1814,7 +1817,7 @@ void ext_fan_main(void) {
                 c = fanCosf(a);
                 vz = fan->position.z - dist * c;
                 {
-                    Vec v = { 0.0f, 0.0f, 0.0f };
+                    Vec v = vec3_tou_0000d058;
                     v.x = vx;
                     v.y = -100.0f;
                     v.z = vz;

@@ -17,12 +17,44 @@ __declspec(section ".data") f32 lbl_8039CDA8[2] = { -1.0f, 1.0f };
 GXColor unk_80423110;
 GXColor unk_80423114;
 
+#ifdef MUST_MATCH
+/* Void helpers that build the colour and call GXSetTevColor inside: this is the shape that makes MWCC
+   give the two by-value GXColor temporaries the original's interleaved slots (colour1 temp/arg, then
+   colour2 temp/arg); building them in place leaves the temps grouped and the args below them. */
+static inline void effFlameSetColor1(effFlameData* data, s32 alpha) {
+	GXColor color = unk_80423110;
+	color.r = data->color0[0];
+	color.g = data->color0[1];
+	color.b = data->color0[2];
+	color.a = alpha;
+	GXSetTevColor(GX_TEVREG0, color);
+}
+
+static inline void effFlameSetColor2(effFlameData* data) {
+	GXColor color = unk_80423114;
+	color.r = data->color1[0];
+	color.g = data->color1[1];
+	color.b = data->color1[2];
+	color.a = data->color1[3];
+	GXSetTevColor(GX_TEVREG1, color);
+}
+#endif
+
 /* MUST_MATCH: retail inlines a per-vertex helper; each inlining gets its own Vec slot. Passing
    the destination as a pointer (not `data` + `idx`) is what keeps MWCC from holding the
-   address in a sixth callee-saved register; the table base is passed as `flameTbl + offset`. */
+   address in a sixth callee-saved register; the table base is passed as `flameTbl + offset`.
+   Naming the `&tbl[idx]` source in a local makes MWCC emit the source add before the
+   destination add, as retail does (without it the destination add comes first). The `idx == 0`
+   branch keeps the index-0 calls destination-first, as retail does when there is no index add. */
 static inline void effFlameSetVtx(effFlameVtx* dst, Mtx mtx, effFlameVtx* tbl, s32 idx) {
 	Vec v;
-	memcpy(dst, &tbl[idx], sizeof(effFlameVtx));
+	if (idx == 0) {
+		memcpy(dst, tbl, sizeof(effFlameVtx));
+	}
+	else {
+		effFlameVtx* src = &tbl[idx];
+		memcpy(dst, src, sizeof(effFlameVtx));
+	}
 #ifdef MUST_MATCH
 	OSInitFastCast();
 	OSs16tof32(&dst->pos[0], &v.x);
@@ -268,29 +300,33 @@ void effFlameMain(EffectEntry* effect) {
 // The 24 inlined vertex transforms convert the s16 positions with the SDK's paired-single inlines
 // (`OSs16tof32`/`OSf32tos16` in OSFastCast.h, GQR5 type 7) after `OSInitFastCast()`, as the original does.
 // What differs: the original keeps the table-offset add (`addi r4, r27, 0x40`) separate from the per-vertex
-// `+ idx * 14` (`addi r4, r4, 0x1c`), where this build folds the two in the first half and strength-reduces the
-// base (`addi r27, r27, 0x40`) in the second; the original loads `type` before `alpha` (same registers, opposite
-// instruction order); the two by-value GXColor temps/arg slots sit 8 bytes apart in the opposite order. The
-// register colouring and every branch target match; the `case 3: break;` and the final `switch` are what the
-// original's dispatch came out of.
+// `+ idx * 14` (`addi r4, r4, 0x1c`); this build folds the two in the first half (and, without
+// `opt_common_subs off`, strength-reduces the base into `addi r27, r27, 0x40` in the second). The helper's
+// named source local fixes the add order, at the cost of the table base landing in r30 instead of retail's
+// r27 and `alpha` in r27 instead of r30 (type is r29 in both); every other register matches. The original
+// also loads `type` before `alpha`, so `type` is declared first. Every branch target matches; the
+// `case 3: break;` and the final `switch` are what the original's dispatch came out of.
 // `opt_propagation off`: without it MWCC colours the table base/`data`/`cam` differently (r30/r29/r31 instead of
 // retail's r27/r31/r28).
+// `opt_common_subs off`: without it MWCC strength-reduces the second-half table base into `addi r27, r27, 0x40`.
+// The two `GXColor` values are built inside the `effFlameSetColor1/2` void inlines above; that is the shape that
+// gives MWCC the original's interleaved temp/arg slots (see those helpers).
 #pragma opt_propagation off
-// NONMATCHING (98.38%): the table-offset/vertex-index add split and the type/alpha load order still differ.
+// NONMATCHING (98.49%): the table-offset/vertex-index add split, the base/alpha register pick and the
+// three branch offsets still differ.
 void effFlameDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effFlameVtx* flameTbl = (effFlameVtx*)lbl_8039CDA8;
 	CameraEntry* cam = camGetPtr(camId);
 	effFlameData* data = effect->userdata;
-	s32 alpha = data->alpha;
 	s32 type = data->type;
+	s32 alpha = data->alpha;
 	Mtx mtxRot;
 	Mtx mtx2;
 	Mtx mtx1;
 	Mtx mtx3;
 	GXTexObj texObj;
 	GXColor color;
-	GXColor color2;
 
 	GXSetNumChans(0);
 	GXSetNumTexGens(2);
@@ -374,7 +410,8 @@ void effFlameDisp(CameraId camId, void* param) {
 	PSMTXScale(mtx2, data->field_0x1C, data->field_0x20, 1.0f);
 	PSMTXConcat(mtx3, mtx2, mtx3);
 	if (type == 0) {
-		PSMTXTrans(mtx1, 10.0f * (-(data->field_0x1C - data->field_0x24) / data->field_0x24), 0.0f, 0.0f);
+		f32 d = data->field_0x24;
+		PSMTXTrans(mtx1, 10.0f * (-(data->field_0x1C - d) / d), 0.0f, 0.0f);
 		PSMTXConcat(mtx3, mtx1, mtx3);
 	}
 	switch (type) {
@@ -410,7 +447,8 @@ void effFlameDisp(CameraId camId, void* param) {
 	PSMTXScale(mtx2, data->field_0x1C, data->field_0x20, 1.0f);
 	PSMTXConcat(mtx3, mtx2, mtx3);
 	if (type == 0) {
-		PSMTXTrans(mtx1, 10.0f * (-(data->field_0x1C - data->field_0x24) / data->field_0x24), 0.0f, 0.0f);
+		f32 d = data->field_0x24;
+		PSMTXTrans(mtx1, 10.0f * (-(data->field_0x1C - d) / d), 0.0f, 0.0f);
 		PSMTXConcat(mtx3, mtx1, mtx3);
 	}
 	switch (type) {
@@ -441,6 +479,10 @@ void effFlameDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(cam->view, 0);
 	GXSetCurrentMtx(0);
 
+#ifdef MUST_MATCH
+	effFlameSetColor1(data, alpha);
+	effFlameSetColor2(data);
+#else
 	color = unk_80423110;
 	color.r = data->color0[0];
 	color.g = data->color0[1];
@@ -448,12 +490,13 @@ void effFlameDisp(CameraId camId, void* param) {
 	color.a = alpha;
 	GXSetTevColor(GX_TEVREG0, color);
 
-	color2 = unk_80423114;
-	color2.r = data->color1[0];
-	color2.g = data->color1[1];
-	color2.b = data->color1[2];
-	color2.a = data->color1[3];
-	GXSetTevColor(GX_TEVREG1, color2);
+	color = unk_80423114;
+	color.r = data->color1[0];
+	color.g = data->color1[1];
+	color.b = data->color1[2];
+	color.a = data->color1[3];
+	GXSetTevColor(GX_TEVREG1, color);
+#endif
 
 	PSMTXScale(mtx2, 0.03125f, 0.03125f, 0.0f);
 	GXLoadTexMtxImm(mtx2, 0x1E, 1);

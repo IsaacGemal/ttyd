@@ -425,16 +425,22 @@ s32 getLightColor(f32 angle) {
     return 0xFF - result * 2;
 }
 
-// What is still off is integer register allocation: the original keeps the string-loop `msg` in r20 and its
-// loop counter in r17, while ours lands `msg` in r17 and the counter in r21, which cascades through the entry
-// loop (the original keeps &float_25 in r14 and spills &float_640 from the loop preheader; ours spills both,
-// adding one 4-byte slot and shifting every local -0x10). The first-vertex-region scheduling (the order/operand
-// of the four halfW/halfH `fmuls`) and the entry-loop camPos/camUp/target vec copies also differ. The
-// 0.5f/0.0f literals in the entry loop and 0.6f in the string loop are deliberate: they make MWCC reload those
-// constants each use like the target instead of hoisting them into extra callee-saved FPRs (the target loads
-// them from the named symbols).
-// NONMATCHING (90.17%): text differs only in register allocation and instruction scheduling; frame and FPR
-// saves match.
+#ifdef MUST_MATCH
+#define sys_str_i s
+#else
+#define sys_str_i i
+#endif
+
+// `sys_str_i` (a separate counter for the string loop) recovers the target's r17 counter / r20 `msg`. The
+// literals that replace named constants (entry-loop `1.0f`/`0.0f`, first-quad `0.0f`/`1.0f`, the `PSMTXTrans`
+// zeroes, `1.0f` in the entry-loop `tan` divide) and the `-44.0f / 2.0f` halvings are deliberate: they make
+// MWCC reload/fold/colour the value where the target does instead of hoisting an extra FPR. Two `MUST_MATCH`
+// volatile reads (the entry-loop `camPos`/`camUp`/`target` Vec copies and the entry-loop colour base) stop
+// MWCC's loop-invariant code motion from pulling per-iteration loads into the preheader. The local declaration
+// order is tuned so MWCC colours the integer registers like the target (`frame` in r19 etc.). The string-loop
+// `PSMTXConcat` output matrices are the target's (write mtx3 then mtx), not the earlier guess.
+// NONMATCHING (99.58%): text differs only in integer/FPR register allocation and stack-slot assignment; the
+// instruction sequence, frame size, FPR saves and call structure all match.
 void display_func(CameraId cameraId, void* param) {
     SysWork* work = param;
     CameraEntry* cam = camGetPtr(cameraId);
@@ -447,21 +453,26 @@ void display_func(CameraId cameraId, void* param) {
     Mtx mtx4;
     Mtx mtx5;
     Vec pos;
-    Vec camPos;
     Vec camUp;
     Vec target;
-    const char* msg;
-    const u16* msg16;
-    u16 cbuf[2];
+#ifdef MUST_MATCH
+    s32 s;
+#endif
     s32 frame;
+    const char* msg;
+    s32 revealed;
+    u16 cbuf[4];
     s32 i;
     s32 lightColor;
-    s32 revealed;
     s32 alpha;
     f32 halfW;
     f32 halfH;
+    const u16* msg16;
     f32 w;
-
+#ifdef MUST_MATCH
+    Vec camPosTmp;
+#endif
+    Vec camPos;
     frame = work->field_0x10;
     work->field_0x10 = frame + 1;
     if (frame > 0x500) {
@@ -474,8 +485,7 @@ void display_func(CameraId cameraId, void* param) {
     PSMTXMultVec((MtxPtr)&cam->view, &pos, &pos);
     GXInitLightPos(&light, pos.x, pos.y, pos.z);
     GXInitLightColor(&light, *(GXColor*)&dat_sys_000019c8);
-    GXInitLightAttn(&light, float_1_sys_00001b18, zero_sys_00001ad8, zero_sys_00001ad8, float_1_sys_00001b18,
-                    zero_sys_00001ad8, zero_sys_00001ad8);
+    GXInitLightAttn(&light, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     GXLoadLightObjImm(&light, GX_LIGHT0);
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     GXSetZCompLoc(GX_TRUE);
@@ -508,7 +518,9 @@ void display_func(CameraId cameraId, void* param) {
 
     lightColor = getLightColor(float_90_sys_00001ae8 + work->field_0x8);
     color = *(GXColor*)&dat_sys_000019cc;
-    color.b = color.g = color.r = lightColor;
+    color.r = lightColor;
+    color.g = lightColor;
+    color.b = lightColor;
     GXSetChanMatColor(GX_COLOR0A0, color);
 
     PSMTXTrans(mtx, zero_sys_00001ad8, float_neg40_sys_00001b34, zero_sys_00001ad8);
@@ -523,19 +535,19 @@ void display_func(CameraId cameraId, void* param) {
     TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)work->field_0xC);
     GXLoadTexObj(&tex, GX_TEXMAP0);
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-    halfW = (f32)(u16)GXGetTexObjWidth(&tex) * float_0p5_sys_00001ae0;
+    halfW = (f32)(u16)GXGetTexObjWidth(&tex) / 2.0f;
     halfH = (f32)(u16)GXGetTexObjHeight(&tex) * float_0p5_sys_00001ae0;
     GXPosition3f32(-halfW * float_0p5_sys_00001ae0, halfH * float_0p5_sys_00001ae0, 0.0f);
-    GXNormal3f32(zero_sys_00001ad8, zero_sys_00001ad8, float_1_sys_00001b18);
+    GXNormal3f32(0.0f, 0.0f, 1.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXPosition3f32(halfW * float_0p5_sys_00001ae0, halfH * float_0p5_sys_00001ae0, 0.0f);
-    GXNormal3f32(zero_sys_00001ad8, zero_sys_00001ad8, float_1_sys_00001b18);
+    GXNormal3f32(0.0f, 0.0f, 1.0f);
     GXTexCoord2f32(1.0f, 0.0f);
     GXPosition3f32(halfW * float_0p5_sys_00001ae0, -halfH * float_0p5_sys_00001ae0, 0.0f);
-    GXNormal3f32(zero_sys_00001ad8, zero_sys_00001ad8, float_1_sys_00001b18);
+    GXNormal3f32(0.0f, 0.0f, 1.0f);
     GXTexCoord2f32(1.0f, 1.0f);
     GXPosition3f32(-halfW * float_0p5_sys_00001ae0, -halfH * float_0p5_sys_00001ae0, 0.0f);
-    GXNormal3f32(zero_sys_00001ad8, zero_sys_00001ad8, float_1_sys_00001b18);
+    GXNormal3f32(0.0f, 0.0f, 1.0f);
     GXTexCoord2f32(0.0f, 1.0f);
 
     msg = msgSearch((const char*)msg_tbl[work->field_0x14]);
@@ -544,8 +556,8 @@ void display_func(CameraId cameraId, void* param) {
     revealed = work->field_0x18 / 256;
     alpha = work->field_0x18 % 256;
     msg16 = (const u16*)msg;
-    for (i = 0; i < 0x2C; i += 2, msg16++) {
-        if (i >= strlen(msg)) {
+    for (sys_str_i = 0; sys_str_i < 0x2C; sys_str_i += 2, msg16++) {
+        if (sys_str_i >= strlen(msg)) {
             break;
         }
 
@@ -559,17 +571,17 @@ void display_func(CameraId cameraId, void* param) {
 #endif
         PSMTXRotRad(mtx3, 'z',
                     float_deg2rad_sys_00001b38 *
-                        (float_neg8p1818_sys_00001b3c * (f32)i + work->field_0x1C));
-        PSMTXConcat(mtx, mtx3, mtx);
+                        (float_neg8p1818_sys_00001b3c * (f32)sys_str_i + work->field_0x1C));
+        PSMTXConcat(mtx, mtx3, mtx3);
 #ifdef MUST_MATCH
         PSMTXTrans(mtx, 0.0f, float_57p5_sys_00001b40, 0.0f);
 #else
         PSMTXTrans(mtx, zero_sys_00001ad8, float_57p5_sys_00001b40, zero_sys_00001ad8);
 #endif
-        PSMTXConcat(mtx3, mtx, mtx3);
+        PSMTXConcat(mtx3, mtx, mtx);
         PSMTXScale(mtx2, 0.6f, 0.6f, 0.6f);
         PSMTXConcat(mtx, mtx2, mtx);
-        if (i / 2 < revealed) {
+        if (sys_str_i / 2 < revealed) {
             FontDrawStart_alpha(0xFF);
             FontDrawStringMtx(mtx, (const char*)cbuf);
         } else {
@@ -636,7 +648,13 @@ void display_func(CameraId cameraId, void* param) {
         TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)niji_tbl[gp->language]);
         GXLoadTexObj(&tex, GX_TEXMAP1);
         lightColor = getLightColor(entry->angle);
+#ifdef MUST_MATCH
+        // Volatile read keeps the loop-invariant colour base from being hoisted into the preheader (the
+        // target reloads it from its own address each iteration).
+        color = *(volatile GXColor*)&dat_sys_000019d4;
+#else
         color = *(GXColor*)&dat_sys_000019d4;
+#endif
         color.b = color.g = color.r = lightColor;
         GXSetChanMatColor(GX_COLOR0A0, color);
         if ((u32)gp->language != 0) {
@@ -653,6 +671,21 @@ void display_func(CameraId cameraId, void* param) {
         PSMTXInvXpose(mtx, mtx);
         GXLoadNrmMtxImm(mtx, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
+        // Volatile reads keep MWCC from hoisting these Vec copies into the loop preheader; the target reloads
+        // them from their own storage each iteration. The local copy of camPos reproduces the target's staged
+        // 12-byte copy that C_MTXLookAt receives.
+        camPos = *(volatile Vec*)&vec3_sys_000019d8;
+        camPos.z = 1.0f / (f32)tan(double_0p21817_sys_00001b50);
+        camUp = *(volatile Vec*)&vec3_sys_000019e4;
+        target = *(volatile Vec*)&vec3_sys_000019f0;
+        {
+            camPosTmp = camPos;
+            C_MTXLightPerspective(mtx4, float_25_sys_00001b58, float_640_sys_00001b5c, 0.5f,
+                                  0.5f, 0.5f, 0.5f);
+            C_MTXLookAt(mtx5, &camPosTmp, &camUp, &target);
+        }
+#else
         camPos = vec3_sys_000019d8;
         camPos.z = float_1_sys_00001b18 / (f32)tan(double_0p21817_sys_00001b50);
         camUp = vec3_sys_000019e4;
@@ -660,6 +693,7 @@ void display_func(CameraId cameraId, void* param) {
         C_MTXLightPerspective(mtx4, float_25_sys_00001b58, float_640_sys_00001b5c, 0.5f,
                               0.5f, 0.5f, 0.5f);
         C_MTXLookAt(mtx5, &camPos, &camUp, &target);
+#endif
         PSMTXConcat(mtx4, mtx5, mtx4);
         if ((u32)gp->language != 0) {
             PSMTXScale(mtx2, 0.5f, 0.5f, 0.5f);
@@ -673,23 +707,26 @@ void display_func(CameraId cameraId, void* param) {
         PSMTXConcat(mtx, mtx2, mtx);
         GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-        w = float_44_sys_00001b48 * 0.5f;
-        GXPosition3f32(-w, float_22_sys_00001b60, 0.0f);
-        GXNormal3f32(0.0f, 0.0f, float_1_sys_00001b18);
+        // The target folds the sign of the half-width into `w` (negate 44.0 then halve it).
+        w = -float_44_sys_00001b48 / 2.0f;
+        GXPosition3f32(w, float_22_sys_00001b60, 0.0f);
+        GXNormal3f32(0.0f, 0.0f, 1.0f);
         GXTexCoord2f32(0.0f, 0.0f);
         GXPosition3f32(float_22_sys_00001b60, float_22_sys_00001b60, 0.0f);
-        GXNormal3f32(0.0f, 0.0f, float_1_sys_00001b18);
+        GXNormal3f32(0.0f, 0.0f, 1.0f);
         GXTexCoord2f32(1.0f, 0.0f);
-        GXPosition3f32(float_22_sys_00001b60, -w, 0.0f);
-        GXNormal3f32(0.0f, 0.0f, float_1_sys_00001b18);
+        GXPosition3f32(float_22_sys_00001b60, w, 0.0f);
+        GXNormal3f32(0.0f, 0.0f, 1.0f);
         GXTexCoord2f32(1.0f, 1.0f);
-        GXPosition3f32(-w, -w, 0.0f);
-        GXNormal3f32(0.0f, 0.0f, float_1_sys_00001b18);
+        GXPosition3f32(w, w, 0.0f);
+        GXNormal3f32(0.0f, 0.0f, 1.0f);
         GXTexCoord2f32(0.0f, 1.0f);
     }
 
     GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
 }
+
+#undef sys_str_i
 
 // The outer switch on work->state is a switch over {0, 2, 3} (state 3 increments on past 2 in start());
 // MWCC 2.6 then emits the target's 2-first tree and the dead `b default` leaf at 0x278. Writing it as

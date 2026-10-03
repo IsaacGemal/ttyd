@@ -313,17 +313,16 @@ static int compare(void* a, void* b) {
 	return 0;
 }
 
-// NONMATCHING (80.88%): 10 instructions differ, 12 missing, 22 extra, plus register differences.
 void extMain(void) {
 	ExtWork* wp = extGetWork();
+	s32 i;
+	CameraEntry* cam;
 	ExtPose* pose;
 	ExtSortEntry* sort;
-	CameraEntry* cam;
 	f32 angle;
 	f32 target;
-	s32 i;
 
-	if (marioStGetSystemLevel() == 0 && wp->cb0 != NULL) {
+	if ((u32)marioStGetSystemLevel() == 0 && wp->cb0 != NULL) {
 		wp->cb0();
 	}
 	if (wp->cb1 != NULL) {
@@ -344,7 +343,8 @@ void extMain(void) {
 	camGetPtr(CAMERA_3D);
 	target = 180.0f + angle;
 
-	for (i = wp->poseNum - 1; i >= 0; i--) {
+	i = wp->poseNum - 1;
+	while (i >= 0) {
 		u32 flags = pose->flags;
 
 		sort->field_0x0 = i;
@@ -380,7 +380,6 @@ void extMain(void) {
 				}
 				pose->field_0x1C = diff;
 			}
-		}
 		while ((pose->field_0x1C - pose->field_0x14) > 180.0f) {
 			pose->field_0x14 += 360.0f;
 		}
@@ -389,13 +388,14 @@ void extMain(void) {
 		}
 		{
 			f32 d = pose->field_0x1C - pose->field_0x14;
+			f32* p = &pose->field_0x14;
 
-			pose->field_0x14 = 0.1f * d + pose->field_0x14;
+			*p = 0.1f * d + *p;
 		}
 		{
 			f32 a = pose->field_0x14;
-			f32 s;
 			f32 c;
+			f32 s;
 			s32 idx;
 
 			while (a < 0.0f) {
@@ -412,6 +412,8 @@ void extMain(void) {
 			(*pose->matrix)[0][2] = s;
 			(*pose->matrix)[2][0] = -s;
 		}
+		}
+		i--;
 		pose++;
 		sort++;
 	}
@@ -422,6 +424,8 @@ void extMain(void) {
 	wp->lastTex = -1;
 	wp->texSize = 0;
 }
+
+
 
 void extReset(void) {
 	ExtWork* wp = extGetWork();

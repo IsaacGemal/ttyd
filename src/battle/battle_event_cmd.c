@@ -3873,12 +3873,15 @@ void _UnitMoveSoundControl(BattleUnit* unit) {
 #pragma pop
 
 // the original calls _PartsMoveSoundControl with `bl`, not inlined
+#pragma push
+#pragma dont_inline on
 void _PartsMoveSoundControl(BattleUnitPart* part) {
     f32 x, y, z;
 
     BtlUnit_GetPartsPos(part, &x, &y, &z);
     _MoveSoundControlCore(*(BattleUnit**)((u8*)part + 0x4EC), (u8*)part + 0xC0, part, x, y, z);
 }
+#pragma pop
 
 #pragma opt_dead_assignments off
 USER_FUNC(btlevtcmd_GetConsumeItem) {
@@ -4107,7 +4110,7 @@ static inline f32 sqrtf(f32 x) {
 // The pool offsets, the arg/e schedule and the dist/ellipse temps match: `frame, mode` before `args`, `e`
 // last with its i2f deferred to `eRaw`, both mMoveSpeedXZ divisions reread 0x17C, and the cx/dz/cz/dx/radius
 // source order is chosen to colour the FPRs like the original.
-// NONMATCHING (99.52%): 11 instructions differ only in the f3/f4/f5 colouring of the cx/dx x temps.
+// NONMATCHING (99.88%): 11 instructions differ only in the f3/f4/f5 colouring of the cx/dx x temps.
 USER_FUNC(btlevtcmd_EllipseMovePosition) {
     s32 btlId, id;
     s32 frame, mode;
@@ -4758,12 +4761,12 @@ USER_FUNC(btlevtcmd_FallPartsPosition) {
 }
 
 //s32* battleId, s32* partId, s32* tx, s32* ty, s32* tz, s32* frame, s32* a
-// NONMATCHING (96.27%): with opt_common_subs off the 0.5/3.0 loads keep f4/f2; only args/args[1] r5/r6 remain swapped.
+#pragma opt_common_subs off // keep the target's 0.5/3.0 literal load colouring (f4/f2) in both bodies
 USER_FUNC(btlevtcmd_JumpPartsPosition) {
     s32 btlId, id;
     s32* args = event->args;
-    BattleUnitPart* part;
     s32 partId, frame, a;
+    BattleUnitPart* part;
     f32 tx, ty, tz;
     f32 x, y, z;
     Vec posb;
@@ -4810,9 +4813,11 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
         if (*(s32*)((u8*)part + 0xA0) == 0) {
             return 2;
         }
-        *(f32*)((u8*)part + 0xAC) = y / (f32)*(s32*)((u8*)part + 0xA0) +
-                                    part->mFallAccel * (f32)*(s32*)((u8*)part + 0xA0) *
-                                        float_0p5_8041bfc8;
+        {
+            f32 t = part->mFallAccel * (f32)*(s32*)&part->field_0xA0[0];
+            *(f32*)&part->field_0xAC[0] = y / (f32)*(s32*)&part->field_0xA0[0] +
+                                          t * float_0p5_8041bfc8;
+        }
         part->mMoveSpeedXZ =
             part->mMoveSpeedXZ +
             *(f32*)((u8*)part + 0xB4) / (f32)*(s32*)((u8*)part + 0xA0);
@@ -4828,9 +4833,18 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
     }
     part->mMoveCurrentPos.y += *(f32*)((u8*)part + 0xAC);
     *(f32*)((u8*)part + 0xAC) -= part->mFallAccel;
-    if (*(f32*)((u8*)part + 0xAC) < float_0_8041bf98 &&
-        part->mMoveCurrentPos.y < part->mMoveTargetPos.y) {
-        part->mMoveCurrentPos.y = part->mMoveTargetPos.y;
+    if (*(f32*)&part->field_0xAC[0] < float_0_8041bf98) {
+#ifdef MUST_MATCH
+        // The volatile pins the current.y load before the target.y load; a plain read lets the
+        // scheduler emit target.y first, which is the only remaining difference.
+        f32 cur = *(volatile f32*)&part->mMoveCurrentPos.y;
+#else
+        f32 cur = part->mMoveCurrentPos.y;
+#endif
+        f32 tgt = part->mMoveTargetPos.y;
+        if (cur < tgt) {
+            part->mMoveCurrentPos.y = tgt;
+        }
     }
     btlMovePos(&part->mMoveCurrentPos.x, &part->mMoveCurrentPos.z, part->mMoveSpeedXZ,
                *(f32*)((u8*)part + 0xB0));
@@ -4853,6 +4867,7 @@ USER_FUNC(btlevtcmd_JumpPartsPosition) {
     return 0;
 }
 
+#pragma opt_common_subs reset
 //s32* battleId, s32* partId, s32 a, f32 b, f32 c
 USER_FUNC(btlevtcmd_JumpPartsSetting) {
     s32* args = event->args;
@@ -5086,12 +5101,11 @@ USER_FUNC(btlevtcmd_JumpContinue) {
 }
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* a
-// NONMATCHING (97.51%): with opt_common_subs off the mFallAccel*count*0.5 temp colours f4/f2 and the
-// mFallAccel/0.5 loads keep the original order; only that FPR pair and the mMoveSpeedY/float_0 compare
-// operands still differ. The two psndSFXOn_3D calls each need two Vecs
-// (source + argument copy) and distinct globals vec3_802ede88 / vec3_802ede94, which is what fixes the
-// frame; the declaration order `s32 btlId, id; s32* args; BattleUnit* unit; s32 frame, a;` fixes the
-// args/id allocation. The tail is written `if (frame <= 0) { SetPos(target); ...; return 1; } return 0;`.
+// The two psndSFXOn_3D calls each need two Vecs (source + argument copy) and distinct globals
+// vec3_802ede88 / vec3_802ede94, which is what fixes the frame; the declaration order
+// `s32 btlId, id; s32* args; BattleUnit* unit; s32 frame, a;` fixes the args/id allocation. The tail is
+// written `if (frame <= 0) { SetPos(target); ...; return 1; } return 0;`.
+#pragma opt_common_subs off // keep the target's 0.5/3.0 literal load colouring (f4/f2) in both bodies
 USER_FUNC(btlevtcmd_JumpPosition) {
     s32 btlId, id;
     s32* args = event->args;
@@ -5142,9 +5156,10 @@ USER_FUNC(btlevtcmd_JumpPosition) {
         if (*(s32*)((u8*)unit + 0x168) == 0) {
             return 2;
         }
-        unit->mMoveSpeedY = y / (f32)*(s32*)((u8*)unit + 0x168) +
-                            unit->mFallAccel * (f32)*(s32*)((u8*)unit + 0x168) *
-                                float_0p5_8041bfc8;
+        {
+            f32 t = unit->mFallAccel * (f32)*(s32*)&unit->field_0x168[0];
+            unit->mMoveSpeedY = y / (f32)*(s32*)&unit->field_0x168[0] + t * float_0p5_8041bfc8;
+        }
         unit->mMoveSpeedXZ = unit->mMoveSpeedXZ +
                              *(f32*)((u8*)unit + 0x17C) / (f32)*(s32*)((u8*)unit + 0x168);
         BtlUnit_LoadSeMode(2, a, (u8*)unit + 0x1C0, (u8*)unit + 0x188);
@@ -5159,9 +5174,18 @@ USER_FUNC(btlevtcmd_JumpPosition) {
     }
     unit->mMoveCurrentPos.y += unit->mMoveSpeedY;
     unit->mMoveSpeedY -= unit->mFallAccel;
-    if (unit->mMoveSpeedY < float_0_8041bf98 &&
-        unit->mMoveCurrentPos.y < unit->mMoveTargetPos.y) {
-        unit->mMoveCurrentPos.y = unit->mMoveTargetPos.y;
+    if (unit->mMoveSpeedY < float_0_8041bf98) {
+#ifdef MUST_MATCH
+        // The volatile pins the current.y load before the target.y load; a plain read lets the
+        // scheduler emit target.y first, which is the only remaining difference.
+        f32 cur = *(volatile f32*)&unit->mMoveCurrentPos.y;
+#else
+        f32 cur = unit->mMoveCurrentPos.y;
+#endif
+        f32 tgt = unit->mMoveTargetPos.y;
+        if (cur < tgt) {
+            unit->mMoveCurrentPos.y = tgt;
+        }
     }
     btlMovePos(&unit->mMoveCurrentPos.x, &unit->mMoveCurrentPos.z, unit->mMoveSpeedXZ,
                *(f32*)((u8*)unit + 0x178));
@@ -5182,10 +5206,12 @@ USER_FUNC(btlevtcmd_JumpPosition) {
     return 0;
 }
 
+#pragma opt_common_subs reset
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* type, s32* a
-// NONMATCHING (98.35%): with opt_common_subs off the double constants (20, 6, 47, 1.12, 0.53, ...) load
-// from the vec3_802ede88 base at their retail offsets and the fmadd operands keep their FPRs; only the
-// `tx - x > 0` FPR order (as btlevtcmd_JumpPosition) still differs. Type 1 skips the setup, 2 and 4 stretch the arc.
+// Type 1 skips the setup; 2 and 4 stretch the arc. The `h` temp holding each sin result and the two
+// `*=` forms pin the target's FPRs and load order; `pos` is the vec3_802edea0 object the target reads
+// at vec3_802ede88+0x18 (0x18 is declared only as an unnamed gap in this unit's symbols).
+#pragma opt_common_subs off // without it the arc constants' FPRs and the 0x188 address colouring differ
 USER_FUNC(btlevtcmd_MarioJumpPosition) {
     s32* args = event->args;
     BattleWork* wp;
@@ -5253,13 +5279,12 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
                 h += 47.0;
                 *(f32*)((u8*)unit + 0x180) = h;
                 if (type == 2) {
-                    *(f32*)((u8*)unit + 0x180) = *(f32*)((u8*)unit + 0x180) * 1.12;
+                    *(f32*)((u8*)unit + 0x180) *= 1.12;
                 }
                 *(f32*)((u8*)unit + 0x1B8) = float_0_8041bf98;
                 *(f32*)((u8*)unit + 0x1B8) = float_0_8041bf98;
-                unit->mMoveSpeedY = unit->mFallAccel *
-                                        (0.53 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + 1.0) +
-                                    unit->mMoveSpeedY;
+                h = (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8);
+                unit->mMoveSpeedY = unit->mFallAccel * (0.53 * h + 1.0) + unit->mMoveSpeedY;
             } else {
                 *(f32*)((u8*)unit + 0x1B0) = float_90_8041bfb0;
                 *(f32*)((u8*)unit + 0x1B4) = (f32)(360 / *(s32*)((u8*)unit + 0x168));
@@ -5269,17 +5294,16 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
                 h += 47.0;
                 *(f32*)((u8*)unit + 0x180) = h;
                 if (type == 4) {
-                    *(f32*)((u8*)unit + 0x180) = *(f32*)((u8*)unit + 0x180) * 1.25;
+                    *(f32*)((u8*)unit + 0x180) *= 1.25;
                 }
                 *(f32*)((u8*)unit + 0x1B8) = float_0_8041bf98;
                 *(f32*)((u8*)unit + 0x1B8) = float_0_8041bf98;
-                unit->mMoveSpeedY = unit->mFallAccel *
-                                        (0.8 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + 1.0) +
-                                    unit->mMoveSpeedY;
+                h = (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8);
+                unit->mMoveSpeedY = unit->mFallAccel * (0.8 * h + 1.0) + unit->mMoveSpeedY;
             }
             BtlUnit_LoadSeMode(2, a, (u8*)unit + 0x1C0, (u8*)unit + 0x188);
             if (*(s32*)((u8*)unit + 0x188) != 0) {
-                pos = vec3_802ede88;
+                pos = vec3_802edea0;
                 pos.x = unit->mMoveCurrentPos.x;
                 pos.y = unit->mMoveCurrentPos.y;
                 pos.z = unit->mMoveCurrentPos.z;
@@ -5305,13 +5329,11 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
         }
         *(f32*)((u8*)unit + 0x1B8) = y;
         if (type < 3) {
-            unit->mMoveSpeedY = unit->mFallAccel *
-                                    (0.53 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + 1.0) +
-                                unit->mMoveSpeedY;
+            h = (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8);
+            unit->mMoveSpeedY = unit->mFallAccel * (0.53 * h + 1.0) + unit->mMoveSpeedY;
         } else {
-            unit->mMoveSpeedY = unit->mFallAccel *
-                                    (0.8 * (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8) + 1.0) +
-                                unit->mMoveSpeedY;
+            h = (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8);
+            unit->mMoveSpeedY = unit->mFallAccel * (0.8 * h + 1.0) + unit->mMoveSpeedY;
         }
         *(f32*)((u8*)unit + 0x1B0) += *(f32*)((u8*)unit + 0x1B4);
         *(f32*)((u8*)unit + 0x1B0) = reviseAngle(*(f32*)((u8*)unit + 0x1B0));
@@ -5338,9 +5360,9 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
         event->blocked = 3;
         break;
     case 3:
+        h = (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8);
         unit->mMoveCurrentPos.x = (f32)(unit->mMoveCurrentPos.x +
-                                        (*(f32*)((u8*)unit + 0x180) *
-                                         (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8)) / 33.0);
+                                        (*(f32*)((u8*)unit + 0x180) * h) / 33.0);
         unit->mMoveCurrentPos.y -= *(f32*)((u8*)unit + 0x180) *
                                    (f32)sin(float_6p2832_8041bfdc * *(f32*)((u8*)unit + 0x1B0) / float_360_8041bfd8);
         *(f32*)((u8*)unit + 0x1B0) += *(f32*)((u8*)unit + 0x1B4);
@@ -5354,18 +5376,21 @@ USER_FUNC(btlevtcmd_MarioJumpPosition) {
     }
     return 0;
 }
-
+#pragma opt_common_subs reset
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* height, s32* interp, s32* curve, s32* a
-// NONMATCHING (97.70%): same instruction count and control flow; the frame is 0x10 larger (three extra float slots) and
-// the tx/ty/tz FPRs are assigned in another order. A dive from the start position to the target through intpl_sub
-// (interp >= 100 keeps the unit above the floor); curve 0 offsets the height by a sine, otherwise the offset follows the
-// direction of travel.
+// MATCHING. A dive from the start position to the target through intpl_sub (interp >= 100 keeps the unit
+// above the floor); curve 0 offsets the height by a sine, otherwise the offset follows the direction of
+// travel. The non-obvious bits: the sqrt inputs are assigned dx-first (MWCC's deferred inliner emits the
+// second variable's subtraction/square first); the two `float_0 == x` compares use the literal 0.0f, which
+// lands the constant in f0 and reloads f1 like the target (the named float_0 takes f1 for both); the
+// intpl_sub calls are made through a floats-first prototype (see the MUST_MATCH block) so mwcc evaluates
+// start/end before the `steps` argument.
 USER_FUNC(btlevtcmd_DivePosition) {
     s32* args = event->args;
     BattleUnit* unit;
-    s32 btlId, id, frame, height, interp, curve, a;
-    s32 aboveFloor;
+    s32 btlId, id, frame, height, interp, curve;
+    s32 aboveFloor, a;
     s32 left;
     f32 tx, ty, tz;
     f32 x, y, z;
@@ -5383,8 +5408,8 @@ USER_FUNC(btlevtcmd_DivePosition) {
     interp = evtGetValue(event, args[6]);
     curve = evtGetValue(event, args[7]);
     a = evtGetValue(event, args[8]);
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
     aboveFloor = 0;
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
     if (interp >= 100) {
         aboveFloor = 1;
         interp -= 100;
@@ -5396,10 +5421,10 @@ USER_FUNC(btlevtcmd_DivePosition) {
         BtlUnit_SetMoveStartPos(unit, x, y, z);
         BtlUnit_SetMoveCurrentPos(unit, x, y, z);
         BtlUnit_SetMoveTargetPos(unit, tx, ty, tz);
-        dy = y - ty;
         dx = x - tx;
+        dy = y - ty;
         dz = z - tz;
-        dist = sqrtf((dy * dy) + (dx * dx) + (dz * dz));
+        dist = sqrtf((dx * dx) + (dy * dy) + (dz * dz));
         *(f32*)((u8*)unit + 0x17C) = dist;
         if (*(s32*)((u8*)unit + 0x168) == 0) {
             *(s32*)((u8*)unit + 0x168) = (s32)(*(f32*)((u8*)unit + 0x17C) / unit->mMoveSpeedXZ);
@@ -5418,12 +5443,26 @@ USER_FUNC(btlevtcmd_DivePosition) {
         }
         BtlUnit_LoadSeMode(3, a, (u8*)unit + 0x1C0, (u8*)unit + 0x188);
     }
+#ifdef MUST_MATCH
+    // intpl_sub is ABI-identical declared floats-first; this order makes mwcc evaluate the floats before
+    // `steps`, matching the target (see src/battle/battle_stage_object.c _fall_frame).
+    unit->mMoveCurrentPos.x = ((f32 (*)(s32, s32, f32, f32, s32))intpl_sub)(
+        interp, (s32)*(f32*)&unit->field_0x178[8], unit->mMoveStartPos.x, unit->mMoveTargetPos.x,
+        *(s32*)&unit->field_0x168[0]);
+    unit->mMoveCurrentPos.y = ((f32 (*)(s32, s32, f32, f32, s32))intpl_sub)(
+        interp, (s32)*(f32*)&unit->field_0x178[8], unit->mMoveStartPos.y, unit->mMoveTargetPos.y,
+        *(s32*)&unit->field_0x168[0]);
+    unit->mMoveCurrentPos.z = ((f32 (*)(s32, s32, f32, f32, s32))intpl_sub)(
+        interp, (s32)*(f32*)&unit->field_0x178[8], unit->mMoveStartPos.z, unit->mMoveTargetPos.z,
+        *(s32*)&unit->field_0x168[0]);
+#else
     unit->mMoveCurrentPos.x = intpl_sub(interp, (s32)*(f32*)((u8*)unit + 0x180), *(s32*)((u8*)unit + 0x168),
                                         unit->mMoveStartPos.x, unit->mMoveTargetPos.x);
     unit->mMoveCurrentPos.y = intpl_sub(interp, (s32)*(f32*)((u8*)unit + 0x180), *(s32*)((u8*)unit + 0x168),
                                         unit->mMoveStartPos.y, unit->mMoveTargetPos.y);
     unit->mMoveCurrentPos.z = intpl_sub(interp, (s32)*(f32*)((u8*)unit + 0x180), *(s32*)((u8*)unit + 0x168),
                                         unit->mMoveStartPos.z, unit->mMoveTargetPos.z);
+#endif
     if (aboveFloor) {
         floor = BattleGetFloorHeight(_battleWorkPointer, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y,
                                      unit->mMoveCurrentPos.z);
@@ -5439,17 +5478,17 @@ USER_FUNC(btlevtcmd_DivePosition) {
         return 2;
     }
     if (curve == 0) {
-        dy = unit->mMoveTargetPos.y - unit->mMoveCurrentPos.y;
         dx = unit->mMoveTargetPos.x - unit->mMoveCurrentPos.x;
+        dy = unit->mMoveTargetPos.y - unit->mMoveCurrentPos.y;
         dz = unit->mMoveTargetPos.z - unit->mMoveCurrentPos.z;
-        dist2 = sqrtf((dy * dy) + (dx * dx) + (dz * dz));
-        if (dist2 == float_0_8041bf98) {
+        dist2 = sqrtf((dx * dx) + (dy * dy) + (dz * dz));
+        if (0.0f == dist2) {
             dist2 = float_1_8041bfa4;
         }
-        if (*(f32*)((u8*)unit + 0x17C) == float_0_8041bf98) {
-            *(f32*)((u8*)unit + 0x17C) = float_1_8041bfa4;
+        if (0.0f == *(f32*)&unit->field_0x178[4]) {
+            *(f32*)&unit->field_0x178[4] = float_1_8041bfa4;
         }
-        h = sinfd(float_180_8041bfc4 * (float_1_8041bfa4 - dist2 / *(f32*)((u8*)unit + 0x17C)));
+        h = sinfd(float_180_8041bfc4 * (float_1_8041bfa4 - dist2 / *(f32*)&unit->field_0x178[4]));
         if (height == 0) {
             h = float_0_8041bf98;
         }
@@ -5461,10 +5500,12 @@ USER_FUNC(btlevtcmd_DivePosition) {
         }
         BtlUnit_SetPos(unit, unit->mMoveCurrentPos.x, unit->mMoveCurrentPos.y + h, unit->mMoveCurrentPos.z);
     } else {
-        dy = unit->mMoveTargetPos.y - unit->mMoveCurrentPos.y;
+        f32 distc;
         dx = unit->mMoveTargetPos.x - unit->mMoveCurrentPos.x;
+        dy = unit->mMoveTargetPos.y - unit->mMoveCurrentPos.y;
         dz = unit->mMoveTargetPos.z - unit->mMoveCurrentPos.z;
-        dist2 = sqrtf((dy * dy) + (dx * dx) + (dz * dz));
+        dist2 = sqrtf((dx * dx) + (dy * dy) + (dz * dz));
+        distc = dist2;
         if (unit->mMoveTargetPos.x - unit->mMoveStartPos.x > float_0_8041bf98) {
             left = 1;
         } else if (unit->mMoveTargetPos.x - unit->mMoveStartPos.x < float_0_8041bf98) {
@@ -5474,13 +5515,13 @@ USER_FUNC(btlevtcmd_DivePosition) {
         } else {
             left = 1;
         }
-        if (dist2 == float_0_8041bf98) {
-            dist2 = float_1_8041bfa4;
+        if (0.0f == dist2) {
+            distc = float_1_8041bfa4;
         }
-        if (*(f32*)((u8*)unit + 0x17C) == float_0_8041bf98) {
-            *(f32*)((u8*)unit + 0x17C) = float_1_8041bfa4;
+        if (0.0f == *(f32*)&unit->field_0x178[4]) {
+            *(f32*)&unit->field_0x178[4] = float_1_8041bfa4;
         }
-        h = sinfd(float_180_8041bfc4 * (float_1_8041bfa4 - dist2 / *(f32*)((u8*)unit + 0x17C)));
+        h = sinfd(float_180_8041bfc4 * (float_1_8041bfa4 - distc / *(f32*)&unit->field_0x178[4]));
         if (left) {
             ang = float_360_8041bfd8 * atan2f_safety(unit->mMoveTargetPos.x - unit->mMoveStartPos.x,
                                                      unit->mMoveTargetPos.y - unit->mMoveStartPos.y) /
@@ -5506,12 +5547,12 @@ USER_FUNC(btlevtcmd_DivePosition) {
 }
 
 //s32* battleId, s32* partNo, s32* tx, s32* ty, s32* tz, s32* frame, s32* height, s32* interp, s32* curve, s32* a
-// All callee-saved GPRs now match the target (id r28, partNo r27, part r27, aboveFloor r28) once the declaration
-// order below is used: the within-statement declarator order drives MWCC's pseudo numbering / colouring. What is
-// left: aboveFloor's `li r28, 0x0` is scheduled before BtlUnit_GetPartsPtr where the target has it before
-// BattleGetUnitPtr, ~10 diffs of intpl_sub argument-load order (same wall as btlevtcmd_DivePosition), and ~6 FPR
-// picks; 18 of the 41 diffs are local .rodata addressing that resolves when the unit links.
-// NONMATCHING (95.94%): aboveFloor init scheduling + intpl_sub/FPR order
+// MATCHING. All callee-saved GPRs land where the target has them (id r28, partNo r27, part r27, aboveFloor
+// r28) because of the within-statement declarator order below; the dead btlId is reused so the scheduler puts
+// aboveFloor's `li r28, 0x0` before BattleGetUnitPtr. The intpl_sub calls go through an ABI-identical reordered
+// prototype (the original source declared the floats before the ints), the 0.0f literals give the compares the
+// constant FPRs the target uses, and the block-scoped `dist2` in the curve != 0 branch keeps the sqrt result in
+// f4 for the zero test with a copy in f3 for the division (`fmr f3, f4`).
 USER_FUNC(btlevtcmd_DivePartsPosition) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -5535,8 +5576,15 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
     interp = evtGetValue(event, args[7]);
     curve = evtGetValue(event, args[8]);
     a = evtGetValue(event, args[9]);
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    btlId = id;
     aboveFloor = 0;
+#ifdef MUST_MATCH
+    // Passing the dead btlId makes the scheduler put aboveFloor's `li r28, 0x0` before BattleGetUnitPtr, as the
+    // target does, instead of between the two calls.
+    unit = BattleGetUnitPtr(_battleWorkPointer, btlId);
+#else
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+#endif
     part = BtlUnit_GetPartsPtr(unit, partNo);
     if (interp >= 100) {
         aboveFloor = 1;
@@ -5571,12 +5619,27 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
         }
         BtlUnit_LoadSeMode(3, a, (u8*)part + 0xF8, (u8*)part + 0xC0);
     }
+#ifdef MUST_MATCH
+    // ABI-identical cast: the original declaration ordered the parameters (mode, start, currStep, end, steps),
+    // so mwcc evaluates start before the currStep fctiwz and end before steps, as the target does. The header
+    // keeps the natural (mode, currStep, steps, start, end).
+    part->mMoveCurrentPos.x = ((f32 (*)(s32, f32, s32, f32, s32))intpl_sub)(
+        interp, part->mMoveStartPos.x, (s32)*(f32*)(part->field_0xAC + 0x0C), part->mMoveTargetPos.x,
+        *(s32*)part->field_0xA0);
+    part->mMoveCurrentPos.y = ((f32 (*)(s32, f32, s32, f32, s32))intpl_sub)(
+        interp, part->mMoveStartPos.y, (s32)*(f32*)(part->field_0xAC + 0x0C), part->mMoveTargetPos.y,
+        *(s32*)part->field_0xA0);
+    part->mMoveCurrentPos.z = ((f32 (*)(s32, f32, s32, f32, s32))intpl_sub)(
+        interp, part->mMoveStartPos.z, (s32)*(f32*)(part->field_0xAC + 0x0C), part->mMoveTargetPos.z,
+        *(s32*)part->field_0xA0);
+#else
     part->mMoveCurrentPos.x = intpl_sub(interp, (s32)*(f32*)((u8*)part + 0xB8), *(s32*)((u8*)part + 0xA0),
                                         part->mMoveStartPos.x, part->mMoveTargetPos.x);
     part->mMoveCurrentPos.y = intpl_sub(interp, (s32)*(f32*)((u8*)part + 0xB8), *(s32*)((u8*)part + 0xA0),
                                         part->mMoveStartPos.y, part->mMoveTargetPos.y);
     part->mMoveCurrentPos.z = intpl_sub(interp, (s32)*(f32*)((u8*)part + 0xB8), *(s32*)((u8*)part + 0xA0),
                                         part->mMoveStartPos.z, part->mMoveTargetPos.z);
+#endif
     if (aboveFloor) {
         floor = BattleGetFloorHeight(_battleWorkPointer, part->mMoveCurrentPos.x, part->mMoveCurrentPos.y,
                                      part->mMoveCurrentPos.z);
@@ -5596,7 +5659,7 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
         dy = part->mMoveTargetPos.y - part->mMoveCurrentPos.y;
         dz = part->mMoveTargetPos.z - part->mMoveCurrentPos.z;
         dist2 = sqrtf((dx * dx) + (dy * dy) + (dz * dz));
-        if (float_0_8041bf98 == dist2) {
+        if (0.0f == dist2) {
             dist2 = float_1_8041bfa4;
         }
         if (float_0_8041bf98 == *(f32*)((u8*)part + 0xB4)) {
@@ -5614,6 +5677,9 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
         }
         BtlUnit_SetPartsPos(part, part->mMoveCurrentPos.x, part->mMoveCurrentPos.y + h, part->mMoveCurrentPos.z);
     } else {
+        // Block-scoped dist2 (shadows the function-scope one) is what makes mwcc keep the sqrt result in f4 for
+        // the zero test and a copy in f3 for the division, as the target does.
+        f32 dist2;
         dx = part->mMoveTargetPos.x - part->mMoveCurrentPos.x;
         dy = part->mMoveTargetPos.y - part->mMoveCurrentPos.y;
         dz = part->mMoveTargetPos.z - part->mMoveCurrentPos.z;
@@ -5627,10 +5693,10 @@ USER_FUNC(btlevtcmd_DivePartsPosition) {
         } else {
             left = 1;
         }
-        if (float_0_8041bf98 == dist2) {
+        if (0.0f == dist2) {
             dist2 = float_1_8041bfa4;
         }
-        if (float_0_8041bf98 == *(f32*)((u8*)part + 0xB4)) {
+        if (0.0f == *(f32*)(part->field_0xAC + 0x08)) {
             *(f32*)((u8*)part + 0xB4) = float_1_8041bfa4;
         }
         h = sinfd(float_180_8041bfc4 * (float_1_8041bfa4 - dist2 / *(f32*)((u8*)part + 0xB4)));

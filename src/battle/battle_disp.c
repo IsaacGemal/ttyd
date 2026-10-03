@@ -1181,10 +1181,15 @@ void btlUnitItemDisp2(CameraId cameraId, BattleUnit* unit) {
 
 // The original's dead int->double conversion of BtlUnit_GetHeight survives as the two `stw`s of a
 // constant double pair (frame 0x30). A bare `(f32)`/`(f64)` statement is DCE'd away; assigning
-// the height to an otherwise-unused double local keeps the conversion stores.
+// The original's dead int->double conversion of BtlUnit_GetHeight survives as the two `stw`s of a
+// constant double pair (frame 0x30). A bare `(f32)`/`(f64)` statement is DCE'd away; assigning
+// the height to an otherwise-unused double local keeps the conversion stores, but only with
 #pragma dont_inline on
-// NONMATCHING (91.57%): only the iconDispGx arg setup differs -- target computes &itemDataTable[item] in
-// r4 and reads icon_id `lhz` late; we use r3 / `lha` early.
+// NONMATCHING (91.57%): the three remaining diffs are the iconDispGx argument setup only -- the target
+// computes &itemDataTable[item] into r4 (`add r4, r3, r0`), loads float_1 before the position store and
+// reads icon_id with `lhz` late, while we compute it into r3, read it with `lha` early and load float_1
+// after.  Fixing ItemData.icon_id to u16 and iconDispGx's iconId to match would let this function
+// match; the ItemIconView/function-pointer workaround scores lower because it changes the schedule.
 void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 	BattleWork* wp = _battleWorkPointer;
 	Vec v;

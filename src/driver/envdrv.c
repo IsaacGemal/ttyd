@@ -16,6 +16,7 @@
 __declspec(section ".data") u32 lbl_80398960[2] = { 0xBF800000, 0x3F800000 };
 
 extern GlobalWork* gp;
+extern const f32 float_0p004_8041e520;
 extern const f32 float_1000_8041e540;
 extern const f32 float_127_8041e544;
 extern const f32 float_18p85_8041e548;
@@ -281,18 +282,26 @@ void envMain(void) {
 s32 texmtx_tbl[] = {30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 4, 5, 6, 14, 0, 1, 2, 3, 8, 9, 10}; //TODO: put in right spot
 
 // These pragmas keep the seven loop constants live across the loop like the target; without them
-// the allocator rematerialises three of them from the pool (55% instead of 92%).
+// the allocator rematerialises three of them from the pool (55% instead of 93.7%).
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-// NONMATCHING (92.38%): calls and instructions match; only the callee-saved allocation differs.
-// Target: i2f conversion f30, twoPi f31, quarter f29, pi f28, one f27, coefK f26, coefA f25, hundred
-// f24; ours shifts them because the conversion is born last and lands in f24, and folds wp->unk88.
+// Target half 1: twoPi f31, i2f double f30, quarter f29, pi f28, one f27, coefK f26, coefA f25,
+// hundred f24; dp r29, i r31, texMtx r30, texCoord r25, tevStage r26. We match quarter f29,
+// coefK f26 and hundred f24; the compiler hoists the int->float double to f31 (target f30) and
+// the rest shifts around it, and half 2 gets its own layout (i r25, cursors copied from a zero).
+// The `dp` pointer (a raw EnvironmentUnk88* to wp->unk88) produces the target's
+// `addi r29, r28, 0x88`; the constants are assigned inside the loop, the phase is split
+// `twoPi * (f32)i` then `* quarter`, halfpi is assigned to f1 before each nested compare, and the
+// outer-else subtraction runs through f0, all to nudge the FP loads. The double will not move to
+// f30 by source order, so the rest is permuter work.
+// NONMATCHING (93.87%): calls and instructions match; only callee-saved allocation differs.
 void envDisp_DepthOfField(void) {
     EnvironmentWork* wp = envGetWork();
+    s32 i;
+    EnvironmentUnk88* dp = &wp->unk88;
     Mtx mtx;
     Mtx mtx2;
     f32 f0, f1, f2, f3, f4;
-    s32 i;
     CameraEntry* cam;
     GXColor color;
 
@@ -319,14 +328,8 @@ void envDisp_DepthOfField(void) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
     GXSetCullMode(GX_CULL_NONE);
 
-    if ((wp->unk88.unk0 & 1) && (wp->unk88.unk4 != 0.0f)) {
-        f32 twoPi = TWO_PI;
-        f32 quarter = 0.25f;
-        f32 coefA = 0.4967f;
-        f32 coefK = 0.16605f;
-        f32 one = 1.0f;
-        f32 pi = PI;
-        f32 hundred = 100.0f;
+    if ((dp->unk0 & 1) && (dp->unk4 != float_0_8041e53c)) {
+        f32 twoPi, quarter, pi, one, coefK, coefA, hundred;
         s32* texMtx = texmtx_tbl;
         GXTexCoordID texCoord = GX_TEXCOORD0;
         GXTevStageID tevStage = GX_TEVSTAGE0;
@@ -336,16 +339,24 @@ void envDisp_DepthOfField(void) {
         GXTevStageID finalStage;
 
         for (i = 0; i < 4; i++) {
+            twoPi = TWO_PI;
+            quarter = 0.25f;
+            f0 = TWO_PI * (f32)i;
+            f3 = f0 * quarter;
+            hundred = 100.0f;
+            pi = PI;
+            one = 1.0f;
+            coefA = 0.4967f;
+            coefK = 0.16605f;
             f2 = 0.00761f;
-            f3 = twoPi * (f32)i * quarter;
             if (f3 <= pi) {
-                if (f3 <= MTXDegToRad(90.0f)) {
+                f1 = MTXDegToRad(90.0f);
+                if (f3 <= f1) {
                     f0 = f3 * f3;
                     f2 = (f2 * f0) - coefK;
                     f2 = (f2 * f0) + one;
                     f2 = f2 * f3;
                 } else {
-                    f1 = MTXDegToRad(90.0f);
                     f0 = f3 - f1;
                     f1 = f1 - f0;
                     f0 = f1 * f1;
@@ -363,9 +374,9 @@ void envDisp_DepthOfField(void) {
                     f2 = f2 * f1;
                     f2 = -f2;
                 } else {
-                    f1 = f3 - f0;
-                    f0 = MTXDegToRad(90.0f);
-                    f1 = f0 - f1;
+                    f0 = f3 - f0;
+                    f1 = MTXDegToRad(90.0f);
+                    f1 = f1 - f0;
                     f0 = f1 * f1;
                     f2 = (f2 * f0) - coefK;
                     f2 = (f2 * f0) + one;
@@ -375,12 +386,12 @@ void envDisp_DepthOfField(void) {
             }
             f4 = 0.03705f;
             if (f3 <= pi) {
-                if (f3 <= MTXDegToRad(90.0f)) {
+                f1 = MTXDegToRad(90.0f);
+                if (f3 <= f1) {
                     f0 = f3 * f3;
                     f4 = (f4 * f0) - coefA;
                     f4 = (f4 * f0) + one;
                 } else {
-                    f1 = MTXDegToRad(90.0f);
                     f0 = f3 - f1;
                     f0 = f1 - f0;
                     f0 = f0 * f0;
@@ -397,15 +408,15 @@ void envDisp_DepthOfField(void) {
                     f4 = (f4 * f0) + one;
                     f4 = -f4;
                 } else {
-                    f1 = f3 - f0;
-                    f0 = MTXDegToRad(90.0f);
-                    f0 = f0 - f1;
+                    f0 = f3 - f0;
+                    f1 = MTXDegToRad(90.0f);
+                    f0 = f1 - f0;
                     f0 = f0 * f0;
                     f4 = (f4 * f0) - coefA;
                     f4 = (f4 * f0) + one;
                 }
             }
-            PSMTXTrans(mtx, (wp->unk88.unk4 * f2) / hundred, (wp->unk88.unk4 * f4) / hundred, 0.0f);
+            PSMTXTrans(mtx, (dp->unk4 * f2) / hundred, (dp->unk4 * f4) / hundred, 0.0f);
             GXLoadTexMtxImm(mtx, *texMtx, GX_MTX2x4);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_TEX0, *texMtx, GX_FALSE, GX_PTIDENTITY);
             GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_1_4);
@@ -429,7 +440,7 @@ void envDisp_DepthOfField(void) {
             texCoord++;
             tevStage++;
         }
-        color.r = wp->unk88.unk2;
+        color.r = dp->unk2;
         color.a = 0xFF;
         GXSetTevKColor(GX_KCOLOR0, color);
         GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
@@ -459,14 +470,8 @@ void envDisp_DepthOfField(void) {
         }
     }
 
-    if ((wp->unk88.unk0 & 2) && (wp->unk88.unk8 != 0.0f)) {
-        f32 twoPi = TWO_PI;
-        f32 quarter = 0.25f;
-        f32 coefA = 0.4967f;
-        f32 coefK = 0.16605f;
-        f32 one = 1.0f;
-        f32 pi = PI;
-        f32 hundred = 100.0f;
+    if ((dp->unk0 & 2) && (dp->unk8 != float_0_8041e53c)) {
+        f32 twoPi, quarter, pi, one, coefK, coefA, hundred;
         s32* texMtx = texmtx_tbl;
         GXTexCoordID texCoord = GX_TEXCOORD0;
         GXTevStageID tevStage = GX_TEVSTAGE0;
@@ -476,16 +481,24 @@ void envDisp_DepthOfField(void) {
         GXTevStageID finalStage;
 
         for (i = 0; i < 4; i++) {
+            twoPi = TWO_PI;
+            quarter = 0.25f;
+            f0 = TWO_PI * (f32)i;
+            f3 = f0 * quarter;
+            hundred = 100.0f;
+            pi = PI;
+            one = 1.0f;
+            coefA = 0.4967f;
+            coefK = 0.16605f;
             f2 = 0.00761f;
-            f3 = twoPi * (f32)i * quarter;
             if (f3 <= pi) {
-                if (f3 <= MTXDegToRad(90.0f)) {
+                f1 = MTXDegToRad(90.0f);
+                if (f3 <= f1) {
                     f0 = f3 * f3;
                     f2 = (f2 * f0) - coefK;
                     f2 = (f2 * f0) + one;
                     f2 = f2 * f3;
                 } else {
-                    f1 = MTXDegToRad(90.0f);
                     f0 = f3 - f1;
                     f1 = f1 - f0;
                     f0 = f1 * f1;
@@ -503,9 +516,9 @@ void envDisp_DepthOfField(void) {
                     f2 = f2 * f1;
                     f2 = -f2;
                 } else {
-                    f1 = f3 - f0;
-                    f0 = MTXDegToRad(90.0f);
-                    f1 = f0 - f1;
+                    f0 = f3 - f0;
+                    f1 = MTXDegToRad(90.0f);
+                    f1 = f1 - f0;
                     f0 = f1 * f1;
                     f2 = (f2 * f0) - coefK;
                     f2 = (f2 * f0) + one;
@@ -515,12 +528,12 @@ void envDisp_DepthOfField(void) {
             }
             f4 = 0.03705f;
             if (f3 <= pi) {
-                if (f3 <= MTXDegToRad(90.0f)) {
+                f1 = MTXDegToRad(90.0f);
+                if (f3 <= f1) {
                     f0 = f3 * f3;
                     f4 = (f4 * f0) - coefA;
                     f4 = (f4 * f0) + one;
                 } else {
-                    f1 = MTXDegToRad(90.0f);
                     f0 = f3 - f1;
                     f0 = f1 - f0;
                     f0 = f0 * f0;
@@ -537,15 +550,15 @@ void envDisp_DepthOfField(void) {
                     f4 = (f4 * f0) + one;
                     f4 = -f4;
                 } else {
-                    f1 = f3 - f0;
-                    f0 = MTXDegToRad(90.0f);
-                    f0 = f0 - f1;
+                    f0 = f3 - f0;
+                    f1 = MTXDegToRad(90.0f);
+                    f0 = f1 - f0;
                     f0 = f0 * f0;
                     f4 = (f4 * f0) - coefA;
                     f4 = (f4 * f0) + one;
                 }
             }
-            PSMTXTrans(mtx2, (wp->unk88.unk8 * f2) / hundred, (wp->unk88.unk8 * f4) / hundred, 0.0f);
+            PSMTXTrans(mtx2, (dp->unk8 * f2) / hundred, (dp->unk8 * f4) / hundred, 0.0f);
             GXLoadTexMtxImm(mtx2, *texMtx, GX_MTX2x4);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_TEX0, *texMtx, GX_FALSE, GX_PTIDENTITY);
             GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_1_4);
@@ -569,7 +582,7 @@ void envDisp_DepthOfField(void) {
             texCoord++;
             tevStage++;
         }
-        color.r = wp->unk88.unk3;
+        color.r = dp->unk3;
         color.a = 0xFF;
         GXSetTevKColor(GX_KCOLOR0, color);
         GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
@@ -727,9 +740,34 @@ void envDisp_Blur(void) {
 // in r21-r18 (mine r24-r21) and the loop counters/base/fp constants shift by a few registers
 // (i: r23/r19, j: r22/r18, base r24/r20). The entry block also lays out the wrong way (target:
 // `beq F4; b E4`, mine: `bne E4` + fall-through); constant-pool symbols show as @NNN.
-// NONMATCHING (91.19%): register allocation / block layout only.
+// NONMATCHING (91.96%): register allocation / block layout only. `opt_propagation off` and the
+// MUST_MATCH callee-saved declaration order + one read-order swap (match-only tricks) are what
+// raised it from 91.19%; the remaining obj/flags swap and block layout are permuter work.
 void envSetWater(s32 arg0, void* arg1) {
     EnvironmentYami* yami = (EnvironmentYami*)arg0;
+#ifdef MUST_MATCH
+    // Match-only: this declaration order drives MWCC's register allocation toward the target's
+    // (91.19% -> 91.94%); the natural order is under #else. What still differs is the obj/flags
+    // register swap, the entry-block layout and scheduler moves (permuter work).
+    void* capture;
+    Mtx mtx;
+    f32 dist;
+    s32 tevStage;
+    s32 texMap;
+    s32 texCoord;
+    s32 unk18;
+    f32 scale;
+    MapObject* obj;
+    u8* water;
+    Vec pos;
+    GXTexObj captureObj;
+    GXTexObj waterObj;
+    f32 indMtx[2][3];
+    u32 size;
+    s32 i, j;
+    s32 x0, y0, x1, y1;
+    s32 width, height;
+#else
     MapObject* obj;
     s32 tevStage;
     s32 texMap;
@@ -748,12 +786,23 @@ void envSetWater(s32 arg0, void* arg1) {
     f32 dist;
     f32 scale;
     s32 i, j;
+#endif
 
+#ifdef MUST_MATCH
+    // Match-only: reading unk18 before texCoord (a pure scheduling nudge) moves one register
+    // (92.03% -> 92.05%); the natural order is under #else.
+    obj = (MapObject*)yami->unk0;
+    tevStage = yami->tevStage;
+    texMap = yami->texMap;
+    unk18 = yami->unk18;
+    texCoord = yami->texCoord;
+#else
     obj = (MapObject*)yami->unk0;
     tevStage = yami->tevStage;
     texMap = yami->texMap;
     texCoord = yami->texCoord;
     unk18 = yami->unk18;
+#endif
 
     if ((*(u32*)obj->field_0x0 & 0x20) == 0) {
         if ((*(u32*)obj->field_0x0 & 0x20000000) == 0) {
@@ -889,9 +938,18 @@ void envSetWater(s32 arg0, void* arg1) {
     yami->texMap = texMap;
 }
 
-// NONMATCHING (88.71%): full logic; callee-saved locals land in r25-r31 instead of the original r24-r30 and a few scheduler moves differ.
+#pragma opt_common_subs off // MWCC otherwise CSE-hoists tevStage-1/+1/+2 across the GX calls into callee-saved regs
+#pragma opt_propagation off  // keep texMap*4 and the loop counters in the target's callee-saved colouring
 void envSetYami(EnvironmentYami* yami) {
-    EnvironmentWork* wp = envGetWork();
+    GlobalWork* g = gp;
+    EnvironmentWork* wp = g->inBattle ? &work[1] : &work[0];
+#ifdef MUST_MATCH
+    u8* texMtx;
+    // texMap*4 kept in a callee-saved register (r29); declared before the counters so it colours after them.
+    s32 texMtxOff;
+#else
+    s32* texMtx;
+#endif
     s32 tevStage = yami->tevStage;
     s32 texMap = yami->texMap;
     s32 texCoord = yami->texCoord;
@@ -899,13 +957,13 @@ void envSetYami(EnvironmentYami* yami) {
     Mtx mtx;
     GXTexObj texObj;
 
-    if (v_count != gp->retraceCount) {
-        f32 newu1 = u1 + 0.004f;
-        f32 newu2 = u2 - 0.004f;
+    u32 oldCount = v_count;
+    u32 newCount = g->retraceCount;
+    if (oldCount != newCount) {
+        v_count = newCount;
 
-        v_count = gp->retraceCount;
-        u1 = newu1;
-        u2 = newu2;
+        u1 = u1 + float_0p004_8041e520;
+        u2 = u2 - float_0p004_8041e520;
         if (u1 > 10.0f) {
             u1 -= 10.0f;
         }
@@ -920,14 +978,30 @@ void envSetYami(EnvironmentYami* yami) {
     C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u1, 0.5f);
     PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
     PSMTXConcat(mtx, yami->unk4, mtx);
-    GXLoadTexMtxImm(mtx, texmtx_tbl[texMap], GX_MTX3x4);
-    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+#ifdef MUST_MATCH
+    texMtx = (u8*)texmtx_tbl;
+    texMtxOff = texMap * 4;
+    GXLoadTexMtxImm(mtx, *(s32*)(texMtx + texMtxOff), GX_MTX3x4);
+    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, *(s32*)(texMtx + texMtxOff), GX_FALSE, GX_PTIDENTITY);
+#else
+    texMtx = texmtx_tbl;
+    GXLoadTexMtxImm(mtx, texMtx[texMap], GX_MTX3x4);
+    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texMtx[texMap], GX_FALSE, GX_PTIDENTITY);
+#endif
 
     C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u2, 0.5f);
     PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
     PSMTXConcat(mtx, yami->unk4, mtx);
-    GXLoadTexMtxImm(mtx, texmtx_tbl[texMap + 1], GX_MTX3x4);
-    GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap + 1], GX_FALSE, GX_PTIDENTITY);
+#ifdef MUST_MATCH
+    {
+        s32* p = (s32*)((u8*)texmtx_tbl + texMtxOff);
+        GXLoadTexMtxImm(mtx, *++p, GX_MTX3x4);
+        GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, *p, GX_FALSE, GX_PTIDENTITY);
+    }
+#else
+    GXLoadTexMtxImm(mtx, texMtx[texMap + 1], GX_MTX3x4);
+    GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, texMtx[texMap + 1], GX_FALSE, GX_PTIDENTITY);
+#endif
 
     TEXGetGXTexObjFromPalette(env_tpl, &texObj, 9);
     GXLoadTexObj(&texObj, texMap);
@@ -963,6 +1037,8 @@ void envSetYami(EnvironmentYami* yami) {
     yami->unk18 = unk18;
     yami->texMap = texMap;
 }
+#pragma opt_common_subs reset
+#pragma opt_propagation reset
 
 void envSetYamiView(Mtx mtx) {
     EnvironmentWork* wp = envGetWork();
@@ -1067,10 +1143,15 @@ static inline f32 envFF_Sqrtf(f32 x) {
 // compare (the envDisp_DepthOfField shape); that is what puts it in f1 as the target does.
 // The two `angle * angle` squares are written inline so MWCC keeps them in f0. The tail
 // uses `v / 2.0f + 0.5f` (not `v * 0.5f`) so the fused fmadds takes the variable as its
-// first operand. All of this is needed; the remaining diff is only which pool slot each
-// float constant loads from (the unit's .sdata2/.rodata is still missing the objects the
-// other functions in this file define), so objdiff still reports 99.99% here.
-// NONMATCHING (99.99%): only pool slot offsets differ (unit data incomplete), no instr diffs.
+// first operand. All of this is needed. The only remaining diff is the order of the compiler's
+// own .rodata double pool, which is emitted [mask, .5, 3.0, 0.0, int->float] while the target has
+// [int->float, mask, .5, 3.0, 0.0] -- a one-slot rotation of the same five objects, so every lfd
+// is at a different offset. envDisp_FF is the only function in the unit that pools these doubles;
+// naming them (extern/tentative definitions, referencing them in envFF_Sqrtf) puts them at the
+// target's slots but makes MWCC emit dead anonymous duplicates that shift the env.tpl strings, and
+// the int->float offset still differs. Declaration order, a local zero, an s32-arg inline and a
+// `s32` cast on the argument all leave the rotation unchanged.
+// NONMATCHING (99.99%): only the compiler's .rodata double-pool rotation differs, no instruction diff.
 void envDisp_FF(void) {
     EnvironmentWork* wp = envGetWork();
     CameraEntry* cam;

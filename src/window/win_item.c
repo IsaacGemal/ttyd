@@ -1075,13 +1075,22 @@ void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
 // in the for-increment. The frame is now the original's 0x250. Still differs in the integer
 // colours (ours keeps `work` in r23, the original r31, and the rest rotate) and the loop
 // block's stack-slot order (the winIconSet/winFontSetPitch argument copies and the `scale`
-// source land at different offsets: the original homes `white` at r1+0x8 and copies it to
-// 0x2c/0x38, ours keeps it at 0x2c).
-// NONMATCHING (94.75%): integer register colours and loop stack-slot order, see above.
+// source land at different offsets. 94.75% -> 95.27%: a second `white` local
+// (whiteOverflow, MUST_MATCH) reproduces the original's third spill and gets the frame to
+// the original's 0x250; `white` now homes at r1+0x8 with copies at 0x2c (overflow) and
+// 0x38 (loop), as the original does).
+// NONMATCHING (95.27%): integer register colours and loop stack-slot order, see above.
 void item_disp(WindowWork* work, f32 x, f32 y) {
     GXColor white = dat_8041d474;
     GXColor dark = dat_8041d478;
     GXColor gray = dat_8041d47c;
+#ifdef MUST_MATCH
+    // Match shape: the original spills `white` three times (home, one copy for the two
+    // overflow winTexSet colour arguments and one for the loop's icon colour). A second
+    // local initialised straight from the palette object reproduces that spill and the
+    // original's -0x250 frame; without it the frame is -0x240 and the score is 94.75%.
+    GXColor whiteOverflow = dat_8041d474;
+#endif
     f32 twenty;
     f32 base;
     f32 f22;
@@ -1188,7 +1197,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
 #ifdef MUST_MATCH
                 Vec scale = vec3_802f5318;
 
-                winTexSet(0x17, winItemMkVec(vec3_802f530c, f22, float_20_8041d4e8 + (float_18_8041d504 + (float_110_8041d508 + y))), scale, white);
+                winTexSet(0x17, winItemMkVec(vec3_802f530c, f22, float_20_8041d4e8 + (float_18_8041d504 + (float_110_8041d508 + y))), scale, whiteOverflow);
 #else
                 Vec translate = vec3_802f530c;
                 Vec scale = vec3_802f5318;
@@ -1225,7 +1234,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
 #ifdef MUST_MATCH
                 Vec scale = vec3_802f5348;
 
-                winTexSet(0x17, winItemMkVec(vec3_802f533c, f22, float_20_8041d4e8 + ((y - float_90_8041d510) - float_15_8041d514)), scale, white);
+                winTexSet(0x17, winItemMkVec(vec3_802f533c, f22, float_20_8041d4e8 + ((y - float_90_8041d510) - float_15_8041d514)), scale, whiteOverflow);
 #else
                 Vec translate = vec3_802f533c;
                 Vec scale = vec3_802f5348;

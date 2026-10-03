@@ -174,12 +174,23 @@ static inline void effHoraoSpellSetVtx(effHoraoSpellVtx* vtx, effHoraoSpellVtx* 
 
 // A GXColor built field-by-field and passed by value lands in the temporary's stack slot; the original
 // builds it in an inline that takes the base colour as a parameter (as makeHoraoColor does in
-// eff_magic_horao_n64), which moves the local above the by-value copy.
+// eff_magic_horao_n64), which moves the local above the by-value copy. The loop's colour (built from
+// the three colX tables and the alpha) gets the same treatment through makeHoraoSpellColor2, which
+// moved its by-value temporary from 0x38 to the original's slot.
 #ifdef MUST_MATCH
 static inline GXColor makeHoraoSpellColor(GXColor c, s32 r, s32 g, s32 b, s32 a) {
 	c.r = r;
 	c.g = g;
 	c.b = b;
+	c.a = a;
+	return c;
+}
+
+static inline GXColor makeHoraoSpellColor2(s32 colorIdx, u8 a) {
+	GXColor c = unk_80423158;
+	c.r = colr[colorIdx];
+	c.g = colg[colorIdx];
+	c.b = colb[colorIdx];
 	c.a = a;
 	return c;
 }
@@ -191,17 +202,29 @@ static inline GXColor makeHoraoSpellColor(GXColor c, s32 r, s32 g, s32 b, s32 a)
 // constant registers (f26=2pi, f29=360, f30=deg2rad, f31=30, f17=0.01, f18=1.0, f28=-30, f27=magic)
 // all match retail. Declaring the five Mtx objects in retail's slot order (transMtx, scaleMtx,
 // rotMtx, resultMtx, baseMtx across the high-to-low slots), the largely reverse-engineered order of
-// the remaining locals, and an explicit `k = 2*j` induction variable for both vertex loops are what
-// recovered the low-scratch layout and the loop shapes. What still differs: the integer register
-// allocation (retail keeps effect/counter in r15, cam/vtx in r16, alpha/j in r17; we start at r16);
-// the -2*counter conversion (retail precomputes the encoded bits in r15 in the preheader and
-// reloads them in-loop, while reading data->field_0x14 makes MWCC recompute them each iteration);
-// the int->float magic (retail folds `lfd f27, double_to_int_802fa808@l(r4)` from the named .rodata
-// global, our anonymous @-pool copy needs `addi` + `lfd 0x0`); and vtx[k]/src[k] addressing, where we
-// keep running pointers (r27/r28) instead of retail's offset register (r31).
-// NONMATCHING (95.86%): integer register allocation, the -2*counter precompute/reload, the anonymous i2f-magic address, and the vtx/src induction variables.
+// the remaining locals, an explicit `k = 2*j` induction variable for both vertex loops, and the
+// makeHoraoSpellColor2 inline (which put the loop GXColor temporary back in retail's 0x24 slot) are
+// what recovered the low-scratch layout, the loop shapes and the early colour temporaries. The
+// -2*counter value must be computed into a local `s32 negCounter` declared *before* `counter` and
+// assigned right after `alpha = data->field_0x24;`; that placement is what makes MWCC keep the
+// callee-saved set starting at r15 as retail does. Declaring or assigning it anywhere else reorders
+// the preheader and drops the score to 93.3% (109 diffs), and an explicit counter8 local does not
+// help. Even with it, retail computes the encoded bits in the preheader from `counter` and reuses r15,
+// while ours computes `-(counter*2)` once at the top into r15 and keeps `counter` in r17. Folding the
+// outer loop's initialiser into one `for (i = 0, angle = -0x11A; ...)` (rather than a separate
+// `angle = -0x11A;` line) puts `li r18,0` before `li r23,-0x11a` as retail does and recovers two more
+// instructions (96.29 -> 96.31%).
+// What still differs: the integer register allocation (counter r17 vs retail r15, alpha r18 vs r17,
+// counter8 r25 vs r22, the 0x4330 magic r30 vs r27, and vtx/src running pointers); the preheader
+// schedule; the int->float magic (retail folds `lfd f27, double_to_int_802fa808@l(r4)` from the named
+// .rodata global, our anonymous @-pool copy needs `addi` + `lfd 0x0`, a project-wide MWCC limitation);
+// and vtx[k]/src[k] addressing, where we keep running pointers (r27/r28) instead of retail's single
+// offset register (r31).
+// NONMATCHING (96.31%): integer register allocation (counter r17 vs r15, counter8 r25 vs r22, ...),
+// the preheader schedule, the anonymous i2f-magic address, and the vtx/src induction variables.
 void effHoraoSpellDisp(CameraId camId, void* param) {
 	Mtx transMtx;
+	s32 negCounter;
 	s32 counter;
 	s32 angle;
 	s32 colorIdx;
@@ -225,6 +248,7 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 
 	counter = data->field_0x14;
 	alpha = data->field_0x24;
+	negCounter = counter * -2;
 	PSMTXTrans(transMtx, data->x, data->y, data->z);
 	PSMTXRotRad(rotMtx, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(transMtx, rotMtx, transMtx);
@@ -271,23 +295,26 @@ void effHoraoSpellDisp(CameraId camId, void* param) {
 	GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetCullMode(GX_CULL_NONE);
 
-	angle = -0x11A;
-	for (i = 0; i < 2; i++, angle += 0x24) {
+	for (i = 0, angle = -0x11A; i < 2; i++, angle += 0x24) {
 		colorIdx = (counter + 4 * i) % 17;
 		PSMTXRotRad(rotMtx, 'z', 0.017453292f * (f32)angle);
 		PSMTXConcat(resultMtx, rotMtx, transMtx);
 		GXLoadPosMtxImm(transMtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
+#ifdef MUST_MATCH
+		GXSetTevColor(GX_TEVREG0, makeHoraoSpellColor2(colorIdx, data->field_0x24));
+#else
 		color = unk_80423158;
 		color.r = colr[colorIdx];
 		color.g = colg[colorIdx];
 		color.b = colb[colorIdx];
 		color.a = data->field_0x24;
 		GXSetTevColor(GX_TEVREG0, color);
+#endif
 		color = *(GXColor*)&dat_8041f158;
 		GXSetTevColor(GX_TEVREG1, color);
 		PSMTXScale(scaleMtx, 0.0078125f, 0.03125f, 0.0f);
-		PSMTXTrans(transMtx, (f32)(-2 * data->field_0x14), 0.0f, 0.0f);
+		PSMTXTrans(transMtx, (f32)negCounter, 0.0f, 0.0f);
 		PSMTXConcat(scaleMtx, transMtx, scaleMtx);
 		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
 		PSMTXRotRad(rotMtx, 'x', 0.34906584f);

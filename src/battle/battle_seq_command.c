@@ -161,9 +161,9 @@ void BattleDrawEnemyHP(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (86.95%): the `switch` reproduces the target's `beq then; b else`; the default arm's
-// call matches after spilling its args to locals (`w`/`tx`/`ty`). Only the 0xA call's schedule differs
-// (target keeps the `pos->x` store and colour copy late; our scheduler hoists them).
+// NONMATCHING (93.62%): `switch`/`case 1` match. The 0xA block copies `*color` into a `GXColor c`
+// local, assigns `tx`/`ty`/`one`, stores `pos->x`, then `tz`, and passes `c`; the 0xB default inlines
+// `gauge->field_0x14` into the `tx` expression and the call. Left: one default-arm duplicate `w` load.
 void BattleDrawEnemyHPBar(Vec* pos, BattleUnit* unit, GXColor* color) {
 	CameraEntry* camera = camGetPtr(CAMERA_2D);
 	BattleWorkHpGauge* gauge = &unit->hpGauge;
@@ -172,12 +172,15 @@ void BattleDrawEnemyHPBar(Vec* pos, BattleUnit* unit, GXColor* color) {
 	GXLoadPosMtxImm(camera->view, 0);
 	{
 		f32 x = pos->x - float_10_8041c2e4;
+		f32 tx, ty, tz, one;
+		GXColor c = *color;
+		tx = float_19_8041c2e8 + x;
+		ty = pos->y - float_3_8041c2ec;
+		one = float_1_8041c2f4;
 		pos->x = x;
-		// MUST_MATCH: btlDispTexPlane's original signature has an unused s32 3rd parameter (target passes r5=0);
-		// the header omits it. Cast calls it with it.
+		tz = float_0_8041c2f0;
 		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-		    0xA, *color, 0, float_19_8041c2e8 + x, pos->y - float_3_8041c2ec, float_0_8041c2f0,
-		    float_1_8041c2f4, float_1_8041c2f4);
+		    0xA, c, 0, tx, ty, tz, one, one);
 	}
 	switch ((s32)*(u16*)gauge->field_0x0) {
 	case 1:
@@ -197,13 +200,14 @@ void BattleDrawEnemyHPBar(Vec* pos, BattleUnit* unit, GXColor* color) {
 		break;
 	default:
 		{
-		f32 w = gauge->field_0x14;
-		f32 tx = float_19_8041c2e8 + pos->x - float_20_8041c304 * (float_1_8041c2f4 - w);
-		f32 ty = pos->y - float_3_8041c2ec;
+		f32 ty, tx;
+		GXColor c = *color;
+		tx = float_19_8041c2e8 + pos->x;
+	tx -= float_20_8041c304 * (float_1_8041c2f4 - gauge->field_0x14);
+		ty = pos->y - float_3_8041c2ec;
 		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-		    0xB, *color, 0, tx, ty, float_0_8041c2f0, w, float_1_8041c2f4);
+		    0xB, c, 0, tx, ty, float_0_8041c2f0, gauge->field_0x14, float_1_8041c2f4);
 		}
-		break;
 	}}
 
 void BattleCommandInit(BattleWork* wp) {
@@ -459,7 +463,9 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckSetup(BattleWork* wp) {
 	wp->commandMenu.cursor[13].unk8 = 2;
 }
 
-// NONMATCHING (85.10%): pooled string base and fp register allocation of two (f32)len conversions.
+// NONMATCHING (85.10%): `#pragma opt_propagation off` stops the compiler hoisting the two (f32)len
+// magic-double and 6.25/12.5/65 loads, restoring retail's order; the `f30` local then places 30 on f2.
+// Remaining: conversion magic doubles (retail f2/f0, ours f1/f5) and the pooled string base.
 void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleWork* wp) {
 	char buf[0x20];
 	Vec pos;
@@ -471,10 +477,9 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	len = strlen(buf);
 	xoff = float_6p25_8041c318 * (f32)len;
 	{
+	f32 f30 = float_30_8041c348;
 	f32 yoff = float_12p5_8041c320 * (f32)len + float_65_8041c34c;
-	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c0, float_neg30_8041c344 - xoff,
-	                      float_30_8041c348, yoff,
-	                      float_32_8041c30c, float_10_8041c2e4);
+	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c0, float_neg30_8041c344 - xoff, f30, yoff, float_32_8041c30c, float_10_8041c2e4);
 	}
 	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c4, float_neg70_8041c350, float_neg10_8041c354,
 	                      float_130_8041c358, float_60_8041c314, float_10_8041c2e4);
@@ -488,9 +493,13 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	iconDispGx(&pos, 0x14, 0x1F0, float_1_8041c2f4);
 }
 
-// NONMATCHING (97.59%): register allocation (cursor folded into 0x1c50(wp)) and cmplwi vs cmpwi.
+// opt_propagation off: with propagation on MWCC folds the `cursor` base into `wp`; the original keeps it
+// in r31 (`addi r31, r28, 0x1c50`). The `cmd` intermediate is needed so the cursor is derived from a local
+// rather than straight from the parameter.
+#pragma opt_propagation off
 s32 BattleCommandDisplay_WeaponMultiItemCancelCheckMain(BattleWork* wp) {
-	BattleCursor* cursor = &wp->commandMenu.cursor[13];
+	BattleCommand* cmd = &wp->commandMenu;
+	BattleCursor* cursor = &cmd->cursor[13];
 	s32 done = 0;
 	s32 cancel = 0;
 
@@ -544,6 +553,7 @@ after:
 	dispEntry(CAMERA_2D, float_900_8041c370, 0, (DispCallback)BattleCommandDisplay_WeaponMultiItemCancelCheckDisp, wp);
 	return done;
 }
+#pragma opt_propagation reset
 
 #pragma dont_inline on
 void BattleCommandDisplay_ActMenuEnd(BattleWork* wp) {
@@ -818,7 +828,8 @@ void BattleCommandDisplay_OperationMenuEnd(BattleWork* wp) {
 	wp->commandMenu.field_4 &= ~0x100;
 }
 
-// NONMATCHING (96.10%): switch body layout, cmplwi vs cmpwi, pooled labels.
+// Matches. The target tests field_0x8 signed and passes wp to the *void header declaration; see the
+// (s32) cast and the MUST_MATCH call below.
 s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -836,12 +847,6 @@ s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 				psndSFXOn((char*)0x9D8);
 				*(s32*)&cmd->unk540[8] = wcmd->mOperationTable[cursor->field_0].mType;
 				switch (*(s32*)&cmd->unk540[8]) {
-				case 0:
-					cmd->unk0 = 0x18;
-					break;
-				case 4:
-					cmd->unk0 = 0x1B;
-					break;
 				case 1:
 				case 2:
 				case 3:
@@ -852,6 +857,12 @@ s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 					BattleStageOffLightInCommand(0, 1);
 					cmd->unk0 = 0x1D;
 					break;
+				case 0:
+					cmd->unk0 = 0x18;
+					break;
+				case 4:
+					cmd->unk0 = 0x1B;
+					break;
 				}
 				BattleCommandDisplay_OperationMenuEnd(wp);
 				result = 1;
@@ -861,7 +872,7 @@ s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 				psndSFXOn("SFX_NOT_CHOICE1");
 			}
 			wp->commandMenu.unk540[0x18] = 0;
-			if (wcmd->mOperationTable[cursor->field_0].field_0x8 != 0) {
+			if ((s32)wcmd->mOperationTable[cursor->field_0].field_0x8 != 0) {
 				BattleCommandDisplay_OperationMenuEnd(wp);
 				cmd->unk0 = 0x16;
 				result = 1;
@@ -908,7 +919,12 @@ s32 BattleCommandDisplay_OperationMenuMain(BattleWork* wp) {
 		}
 	}
 end:
+#ifdef MUST_MATCH
+	// MUST_MATCH: header declares BattleMenuDisp_Operation_Main(void), but the original passes wp in r3.
+	((void (*)(BattleWork*))BattleMenuDisp_Operation_Main)(wp);
+#else
 	BattleMenuDisp_Operation_Main();
+#endif
 	return result;
 }
 
@@ -918,7 +934,8 @@ void BattleCommandDisplay_MultiItemMenuEnd(BattleWork* wp) {
 	wp->commandMenu.field_4 &= ~0x20;
 }
 
-// NONMATCHING (98.95%): cmplwi vs cmpwi, pooled labels, missing mr r3 before MultiItem_Main.
+// Matches. The target tests field_0x14 signed and passes wp to the *void header declaration; see the
+// (s32) cast and the MUST_MATCH call below.
 s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -940,7 +957,7 @@ s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 				psndSFXOn("SFX_NOT_CHOICE1");
 			}
 			wp->commandMenu.unk540[0x18] = 0;
-			if (wcmd->mMultiItemTable[cursor->field_0].field_0x14 != 0) {
+			if ((s32)wcmd->mMultiItemTable[cursor->field_0].field_0x14 != 0) {
 				BattleCommandDisplay_MultiItemMenuEnd(wp);
 				cmd->unk0 = 0x11;
 				result = 1;
@@ -987,7 +1004,12 @@ s32 BattleCommandDisplay_MultiItemMenuMain(BattleWork* wp) {
 		}
 	}
 end:
+#ifdef MUST_MATCH
+	// MUST_MATCH: header declares BattleMenuDisp_MultiItem_Main(void), but the original passes wp in r3.
+	((void (*)(BattleWork*))BattleMenuDisp_MultiItem_Main)(wp);
+#else
 	BattleMenuDisp_MultiItem_Main();
+#endif
 	return result;
 }
 
@@ -1087,7 +1109,7 @@ void BattleCommandDisplay_ChangePartySelectMenuDisp(CameraId camId, BattleWork* 
 
 __declspec(section ".sdata") s32 _jump_badge_table[8] = {0xF0, 0xF1, 0xF4, 0xF5, 0xF6, 0xF3, 0xF2, 0x14C};
 __declspec(section ".sdata") s32 _hammer_badge_table[9] = {0xF7, 0xFA, 0xF9, 0xFB, 0xFD, 0xFC, 0xF8, 0x14D, 0x14E};
-// NONMATCHING (99.52%): the byte stream matches except for the prologue's `arg`/`wp`
+// NONMATCHING (99.04%): the byte stream matches except for the prologue's `arg`/`wp`
 // save pair (retail arg=r31/wp=r30; ours wp=r31/arg=r30 plus one extra `mr r0,r4`).
 // Typing the parameter `s32` to try to fix the colouring hangs MWCC on the whole file.
 s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
@@ -2051,14 +2073,14 @@ s32 _check_weapon_type_attack(BattleWeapon* weapon) {
 	return 0;
 }
 
-// NONMATCHING (96.54%): 2 schedule instructions (BtlUnit_GetPos arg setup) and the pooled
-// `double_to_int_802ef890` reloc name (`@667`, resolves once the pool is complete) differ.
+// Matches. A single `Vec pos` (not three separate f32 locals) makes MWCC emit the BtlUnit_GetPos
+// argument setup in the target's order (&pos.y, &pos.z, unit, &pos.x).
 s32 _check_present_item(void) {
 	BattleWork* wp = _battleWorkPointer;
 	s32 item = BattleAudience_GetPresentItemNo();
 	s32 unitId;
 	BattleUnit* unit;
-	f32 z, y, x;
+	Vec pos;
 
 	if (item >= 0x153) {
 		return 0;
@@ -2073,16 +2095,16 @@ s32 _check_present_item(void) {
 		return 0;
 	case 0x7B:
 		BtlUnit_RecoverHp(unit, 1);
-		BtlUnit_GetPos(unit, &x, &y, &z);
-		y = (f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier + float_5_8041c310 + y;
-		effRecoveryEntry(0, 1, x, y, z);
+		BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+		pos.y = (f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier + float_5_8041c310 + pos.y;
+		effRecoveryEntry(0, 1, pos.x, pos.y, pos.z);
 		BattleAudience_SetPresentItemNo(0);
 		return 0;
 	case 0x7C:
 		BtlUnit_RecoverFp(unit, 1);
-		BtlUnit_GetPos(unit, &x, &y, &z);
-		y = (f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier + float_5_8041c310 + y;
-		effRecoveryEntry(1, 1, x, y, z);
+		BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+		pos.y = (f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier + float_5_8041c310 + pos.y;
+		effRecoveryEntry(1, 1, pos.x, pos.y, pos.z);
 		BattleAudience_SetPresentItemNo(0);
 		return 0;
 	default:
@@ -2938,9 +2960,12 @@ void _btlcmd_MakeOperationTable(BattleWork* wp) {
 	}
 }
 
-// NONMATCHING (99.98%): the instruction stream matches; only the pooled string base differs:
-// "btl_cmd_act_item"/"in_3kai_item_p"/"msg_3kai_item_p" are +0x228/+0x23c/+0x24c here vs +0x2d0/+0x2e4/+0x2f4
-// in the target (0xa8 short), which lands when the unit links. `count = 0; ...; count++` keeps the `mulli` alive.
+// NONMATCHING (99.98%): the instruction stream matches; only the pooled string base differs. The 0x80-byte
+// `SFX_NOT_CHOICE1`/`SFX_BTL_CURSOR_MOVE1/2`/`btl_msg_multi_item_cancel_check` block from
+// BattleCommandDisplay_WeaponMultiItemCancelCheckDisp lands before "btl_cmd_act_item" in the original pool
+// but after it here, so "btl_cmd_act_item"/"in_3kai_item_p"/"msg_3kai_item_p" are +0x250/+0x264/+0x274 here
+// vs +0x2d0/+0x2e4/+0x2f4 in the target. The pool order follows the TU's function-emission order, so this
+// resolves once the unit links. `count = 0; ...; count++` keeps the `mulli` alive.
 void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleCommand* cmd;
@@ -3075,10 +3100,9 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 	return count;
 }
 
-// NONMATCHING (98.59%): instruction sequence now matches; only the pooled string base
-// (`str_802EF640` vs local `...rodata.0`, offsets shifted 0x28) and the msg-base/args
-// register swap (target r5/r6, ours r6/r5) differ, both expected to resolve once the
-// file's rodata pool is complete.
+// NONMATCHING (98.59%): only wp and the `event->args` temp are swapped (target wp=r4,
+// args temp=r6; ours wp=r6, args temp=r4). The data symbol (`str_802EF640` vs `...rodata.0`) is symbol-only
+// and disappears at link; the register swap does not.
 s32 _get_msg(EventEntry* event) {
 	char* msg = "btl_wn_dummy_noitem";
 	BattleWork* wp = _battleWorkPointer;

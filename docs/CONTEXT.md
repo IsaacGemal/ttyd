@@ -3897,3 +3897,23 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   fadedrv (pool word order), eff_break/mist2/bomb (named vs literal GX quad constants: pool order vs text),
   break_slot, sac_suki (3.7 KB event data), frankli_sac (REL data order). Register-allocation-only leftovers queued
   for the permuter (queue 19).
+
+## Wave 61, batch 1 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Wave 61** (00:48 on main 7c622bb, queued by `scratch/wave61/chain.sh` after wave 59 plus 30 minutes for the
+  permuter; wave 60 was Claude #1's DeepSeek-API experiment): the 50-90% band first (40 agents), then 90-99% by
+  unmatched-byte gap (234), skipping the permuter's queue17 and claimed units; 274 agents over two launchers.
+- Batch 1 (113 agents, onto main d8b88330): 9,132 -> 9,170 (npcdrv +4, battle_event_cmd +5). psndBGMMain reaches
+  100% with the tower permuter's form: a `PaperSoundBGM* cur` declared with the other locals and assigned
+  `&psbgm[i & 0xF]` inside the `!= -1` test for the list lookup and both SetVolCh calls (a block-local pointer
+  scored lower). The pragma audit must also not lower non-100% functions: removing pragmas cost bom_01, eki_00 and
+  yuu_02/03 a function each, so those files are as on main.
+- Review (`scratch/wave61/review1.md`, about a third of the files): no behaviour defects; the batch fixes three older
+  bugs: win_badge's BP pips (x from `i % 10`, y from `i / 10`), btlseqEnd (`SEQ_TURN`, and a `break` before case
+  0x07000006), extMain (its angle/matrix block only when `flags & 2`).
+- Claude #1's second review of #304: marioChkFrontStep wrote field_0x1F0[0x2C]/[0x30] through `wp2` before it was
+  assigned (retail stores all four through the marioGetPtr result, now `wp`); evt_unitwin_disp_func's case 4 zeroes
+  `selDesc` in every build as retail (`li r19,0`; the match-only uninitialised form is gone, 96.07%); sac_deka as on
+  main (its new .rodata definitions shifted the layout under the existing MUST_MATCH base reads, so yuka_init and
+  main_base read the wrong bytes); include/rel/yuu/event/evt_yuuranking.h (unused, conflicting prototypes) out.
+  Confirmed fixes in the batch: sys's PSMTXConcat order, tou's scissor clrlwi.

@@ -5001,12 +5001,22 @@ EVT_END()
 // Case 3 is the original's `if (i==sel) { switch(i){...} } else { stop = 0; } if (stop && ...) {...}` (its
 // `bne` after `cmpw i, sel` targets the `li r25,0` the `else` emits). Writing it that way is required for the
 // case-2 `else` to exist, and it changes which registers MWCC hands out; the declaration order
-// `j, k, stop, work, data, i, changed` is what makes that structure score 97.06%. Still differs (all register
-// allocation / scheduling): `stop` lands in r30 vs the original's r25, event in r25 vs r26, pb in r31 vs r30;
-// the string address is materialised into r0 then `mr`'d instead of directly into its register; MWCC also
-// hoists the `else`'s `stop = 0` to the function entry (an extra `li` the original lacks); and the tp walk /
-// case-11 indices and the sel conditions keep a different register set.
-// NONMATCHING (97.06%): see above.
+// `j, k, stop, work, data, i, changed` is what makes that structure score 98.06%.
+//
+// The trailing `return 0;` is not the original source. The original never writes r3 before `blr`, so it is
+// really a `void` function: with the `USER_FUNC` (s32) prototype MWCC treats r3 as the live return register
+// and uses r4 for the switch jump-table base, shifting the whole scratch register set (that version scores
+// 97.25%). Any non-`void` return makes r3 free again and the dispatch matches; compiling the same body as
+// `void` scores 98.18% and removes the extra `li r3,0` that `return 0` emits. The prototype is in the
+// existing header line `USER_FUNC(goryuugijo_main_slot);`, which must not be changed here; if it is changed to
+// `void`, drop this `return 0;`.
+//
+// Still differs (all register allocation / scheduling): event stays in r25 vs the original's r26 (the entry
+// `mr r25, r3` vs `mr r26, r3`) even when the two later `event` uses are replaced by `work`/`work->entry`;
+// `stop` lands in r30 vs the original's r25, pb in r31 vs r30; the case-5 string address is materialised into
+// r0 and then `mr`'d instead of loaded directly into its register; and the case-5 pointer / case-11 index /
+// `cnt` loop init / sel conditions keep a different register set.
+// NONMATCHING (98.06%): see above.
 USER_FUNC(goryuugijo_main_slot) {
     s32 j;
     s32 k;
@@ -5014,7 +5024,6 @@ USER_FUNC(goryuugijo_main_slot) {
     GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
     u8* data = (u8*)work->data;
     s32 i;
-    s32 changed;
 
     switch (*(s32*)(data + 0x04)) {
     case 1:
@@ -5050,6 +5059,8 @@ USER_FUNC(goryuugijo_main_slot) {
         }
         break;
     case 3:
+    {
+        s32 changed;
         slot_neon_sub(work, data);
         if (*(s32*)(data + 0x54) <= 6) {
             if (*(s32*)(data + 0x54) >= 6) {
@@ -5137,6 +5148,7 @@ USER_FUNC(goryuugijo_main_slot) {
             *(s32*)(data + 0x04) += 1;
         }
         break;
+    }
     case 4:
     {
         s32 phase = *(s32*)(data + 0x54);
@@ -5155,10 +5167,13 @@ USER_FUNC(goryuugijo_main_slot) {
                 break;
             }
             cnt = 0;
-            for (j = 0; j < 3; j++) {
-                if (tmp1[j] == *(s8*)(data + *(s32*)(data + 0x60) * 3 + j + 0x33)) {
+            {
+            s32 j2;
+            for (j2 = 0; j2 < 3; j2++) {
+                if (tmp1[j2] == *(s8*)(data + *(s32*)(data + 0x60) * 3 + j2 + 0x33)) {
                     cnt += 1;
                 }
+            }
             }
             if (cnt < 2) {
                 *(s32*)(data + 0x04) = 6;
@@ -5260,11 +5275,12 @@ USER_FUNC(goryuugijo_main_slot) {
     case 5:
     {
         s32 n = 0;
-        for (i = 0; i < 3; i++) {
-            if (*(s8*)(data + i + 0x30) == 0) {
+        s32 m5;
+        for (m5 = 0; m5 < 3; m5++) {
+            if (*(s8*)(data + m5 + 0x30) == 0) {
                 n += 1;
             } else {
-                n += slot_rotate_sub(work, data, i);
+                n += slot_rotate_sub(work, data, m5);
             }
         }
         if (n == 3) {
@@ -5365,18 +5381,19 @@ USER_FUNC(goryuugijo_main_slot) {
         *(s32*)(data + 0x4c) = 0;
         *(s32*)(data + 0x48) = 0;
         if (*(u32*)data & 1) {
+            s32 m;
             CaseSetup setup;
             CaseSetup* sp = &setup;
             *(u32*)data &= ~1;
-            for (i = 0; i < 2; i++) {
+            for (m = 0; m < 2; m++) {
                 sp->activeConditionId = 0x8009;
-                sp->hitObjName = drumname[i][4];
+                sp->hitObjName = drumname[m][4];
                 sp->swFlag = 0;
                 sp->activeFunc = 0;
-                sp->evtCode = (void*)slotevttbl[i];
+                sp->evtCode = (void*)slotevttbl[m];
                 sp->priority = 0;
                 memcpy(sp->lwData, event->lwData, 0x40);
-                *(s32*)(data + i * 4 + 0x64) = caseEntry(sp);
+                *(s32*)(data + m * 4 + 0x64) = caseEntry(sp);
             }
         }
         if (*(u32*)data & 8) {
@@ -5387,6 +5404,7 @@ USER_FUNC(goryuugijo_main_slot) {
         break;
     }
     }
+    return 0;
 }
 
 void goryuugijo_disp_slot(CameraId cameraId, void* param) {

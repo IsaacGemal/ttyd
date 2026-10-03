@@ -195,8 +195,11 @@ typedef struct GenkiWork {
 // The whole file was compiled with -O4,s (optimize for size); without this every constant-trip
 // loop is unrolled and nothing matches. configure.py should carry extra_cflags=["-O4,s"] for it.
 #pragma optimize_for_size on
-// The original file never inlines its own helpers: every call is a real `bl`.
-#pragma dont_inline on
+// `auto_inline off` (not `dont_inline`) is what the original needs: MWCC must not auto-inline
+// plain helpers such as get_ptr (every call is a real `bl`, and inlining get_ptr wrecks the
+// callers), but `_drawGenkiTex`/`_drawGenkiTex2` are declared `inline` and DO inline at their
+// two call sites in disp_3D, exactly as the original does.
+#pragma auto_inline off
 
 static GenkiWork* get_ptr(void);
 
@@ -320,25 +323,48 @@ void weapon_entry(void) {
     }
 }
 
-#pragma dont_inline on
 static GenkiWork* get_ptr(void) {
     return (GenkiWork*)((u8*)_battleWorkPointer + 0x1F4C);
 }
-#pragma dont_inline reset
 
 static void disp_3D_alpha(CameraId camera, void* param) {
 }
 
-static inline void _drawGenkiTex(s32 id, Vec rot, GXColor color, Vec trans, Vec scale) {
+static inline void _drawGenkiTex(s32 id, GXColor color, Vec trans, Vec rot, Vec scale) {
     btlDispTex4(id, &trans, &scale, &rot, &color);
 }
-static inline void _drawGenkiTex2(s32 id, Vec scale, Vec trans, Vec rot, GXColor color) {
+static inline void _drawGenkiTex2(s32 id, Vec scale, Vec rot, Vec trans, GXColor color) {
     btlDispTex4(id, &trans, &scale, &rot, &color);
 }
 
-// NONMATCHING (94.75%): the loop's `i`/`flags` are r26/r25 (original r25/r26); the by-value
-// `_drawGenkiTex` temporaries sit in the outgoing-argument area instead of the original's local
-// slots, and the int->float magic double is a fresh `@826` (the unit's .rodata pool is incomplete).
+static inline Vec _makeRot2(const f32* vec, f32 z) {
+    Vec v = *(const Vec*)&vec[0x138 / 4];
+    v.z = z;
+    return v;
+}
+static inline Vec _makeTrans2(const f32* vec, f32 x, f32 y, f32 z) {
+    Vec v = *(const Vec*)&vec[0x120 / 4];
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+static inline Vec _makeRot1(const f32* vec, f32 z) {
+    Vec v = *(const Vec*)&vec[0x114 / 4];
+    v.z = z;
+    return v;
+}
+static inline Vec _makeTrans1(const f32* vec, f32 x, f32 y, f32 z) {
+    Vec v = *(const Vec*)&vec[0xFC / 4];
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+
+// NONMATCHING (94.95%): the trans `makeVec`-style inline matches the caller trans/scale slots, but
+// the inlined wrapper params still land a few Vec slots low, and the magic double is a fresh `@NNN`
+// not `lfd 0x1b8(r30)` (unit .rodata pool incomplete, as in main_star0/1/main_weapon). Loop regs match.
 static void disp_3D(CameraId cameraId, void* param) {
     GenkiObject* obj;
     const f32* vec = vec3_803002b0;
@@ -351,6 +377,7 @@ static void disp_3D(CameraId cameraId, void* param) {
     Vec pos2;
     f32 x, y, z;
     f32 px, py, pz;
+    u16 flags;
     s32 i;
 
     if (genki->field_4 != 0) {
@@ -483,8 +510,8 @@ static void disp_3D(CameraId cameraId, void* param) {
         if (obj->field_0 != 2) {
             continue;
         }
+        flags = 0;
         {
-            u16 flags = 0;
             f32 scale = float_1p25_80421d6c;
             s32 icon;
             s32 frame;
@@ -602,24 +629,18 @@ static void disp_3D(CameraId cameraId, void* param) {
             y += float_30_80421d80;
             z += float_10_80421d54;
             rot = *(const Vec*)&vec[0x114 / 4];
-            trans = *(const Vec*)&vec[0xFC / 4];
-            trans.x = x;
-            trans.y = y;
-            trans.z = z;
             rot.z = float_6_80421d5c * (f32)genki->field_68;
-            _drawGenkiTex(0x41, rot, *(GXColor*)&dat_80421d34, trans, *(const Vec*)&vec[0x108 / 4]);
+            trans = _makeTrans1(vec, x, y, z);
+            _drawGenkiTex(0x41, *(GXColor*)&dat_80421d34, trans, rot, *(const Vec*)&vec[0x108 / 4]);
         }
         {
             Vec trans;
             Vec rot;
 
             rot = *(const Vec*)&vec[0x138 / 4];
-            trans = *(const Vec*)&vec[0x120 / 4];
-            trans.x = x;
-            trans.y = y;
-            trans.z = z;
             rot.z = float_6_80421d5c * -(f32)genki->field_68;
-            _drawGenkiTex2(0x42, *(const Vec*)&vec[0x12C / 4], trans, rot, *(GXColor*)&dat_80421d38);
+            trans = _makeTrans2(vec, x, y, z);
+            _drawGenkiTex2(0x42, *(const Vec*)&vec[0x12C / 4], rot, trans, *(GXColor*)&dat_80421d38);
         }
     }
 }

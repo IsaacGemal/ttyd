@@ -7918,23 +7918,21 @@ void puniHagurePos(PuniData* punidat) {
     }
 }
 
-// The inlined nearest-of-four helper still colours its result differently in the two branches
-// and the prologue colouring (event/args/mode) is 1-2 registers off. The anonymous `@NNN` names
-// the pool gives float_60/float_100/vec3_mri_00025b2c are symbol-only (`~~`) and go away when the
-// unit links. The main scan loop is a pointer walk so its `addi 0x5a8` matches.
+// The `&0x8000`/else branches load field_0x12C through the float stack slots like the target; the
+// inlined nearest-of-four helper still colours its result differently in the two branches. The
+// anonymous `@NNN` pool names for float_60/float_100/vec3_mri_00025b2c are symbol-only (`~~`) and
+// go away when the unit links. The main scan loop is a pointer walk so its `addi 0x5a8` matches.
 // Matched scheduling details: the field stores after the FP setup are ordered 0x480.z, 0x4B0,
-// 0x48C.xyz, 0x4B4; in the `!&0x8` branch BeroEX is fetched before BeroSZ; in the `&0x8`
-// branch the copies are ordered `f27 = f30; f28 = f31;`. The declaration order
-// (`args, punidat, mode, floats, name, i, arg2, cmp`) is what steers mwcc's callee-saved
-// colouring to the best score; several other orders tie it.
-// The `&0x8000`/else branches still load field_0x12C directly instead of through a stack `Vec`
-// temp and fold the high bytes into the call arguments; the target materialises xh/yh in r23/r22,
-// which is what makes its prologue stmw r22 (ours stmw r24) and shifts every callee-saved
-// register. That copy variant is reachable (`Vec pos = punidat->field_0x12C;` + `s32 xh/yh`),
-// but it reallocates the loops' registers and scores worse overall (~84.2-84.8%), so the direct
-// form stays.
-// NONMATCHING (89.03%): control flow, calls and field writes match; the `xh = (u8)(x >> 8)` two-statement
-// idiom keeps the high bytes live in the target's colours. Rest is tail register colouring and schedule.
+// 0x48C.xyz, 0x4B4; in the `!&0x8` branch BeroSZ is fetched before BeroEX; in the `&0x8`
+// branch the copies are ordered `f27 = f30; f28 = f31;`. The declaration order below
+// (`args, punidat, mode, floats, then yh, xh, arg2, x, name, y, cmp, i, z, pos, base`) is tuned to
+// mwcc's callee-saved colouring; a random declaration-order search tops out at this score.
+// xh/yh are u8, which lets the loop's callee-saved colours match the target; the target extracts each
+// high byte with a single hoisted `extrwi`, while we emit `srawi`+`clrlwi` (the `(x >> 8) & 0xFF`
+// form restores `extrwi` but reallocates the loops and scores lower, so the direct-cast form stays).
+// `cmp` still lands in r31 where the target uses r28, and we `stw` z one slot before the target.
+// NONMATCHING (89.29%): call sequence and every immediate now match; only the xh/yh extraction
+// instruction (5 extra `clrlwi`) and the cmp/callee-saved colouring differ.
 USER_FUNC(evt_puni_exit) {
     s32* args = event->args;
     PuniData* punidat;
@@ -7945,17 +7943,17 @@ USER_FUNC(evt_puni_exit) {
     f32 f28;
     f32 f27;
     f32 f1;
-    const char* name;
-    s32 i;
+    u8 yh;
+    u8 xh;
     s32 arg2;
-    s32 cmp;
     s32 x;
+    const char* name;
     s32 y;
+    s32 cmp;
+    s32 i;
     s32 z;
-    s32 xh;
-    s32 yh;
-    s32 base;
     Vec pos;
+    s32 base;
     evtGetValue(event, args[1]);
     arg2 = evtGetValue(event, args[2]);
     name = (const char*)evtGetValue(event, args[3]);
@@ -7986,8 +7984,8 @@ USER_FUNC(evt_puni_exit) {
     if (!(Punigp->field_0x324 & 0x8)) {
         f31 = bero_get_BeroSX();
         f30 = puniExitNearest(bero_get_BeroSY());
-        f28 = bero_get_BeroEX();
         f29 = bero_get_BeroSZ();
+        f28 = bero_get_BeroEX();
         f27 = puniExitNearest(bero_get_BeroEY());
         f1 = bero_get_BeroEZ();
     } else {
@@ -8036,10 +8034,16 @@ USER_FUNC(evt_puni_exit) {
                 x = (s32)pos.x;
                 y = (s32)pos.y;
                 z = (s32)pos.z;
+#ifdef MUST_MATCH
+                // the second assignments are no-ops (xh/yh are u8) needed for the target's extrwi
                 xh = x >> 8;
                 xh = (u8)xh;
                 yh = y >> 8;
                 yh = (u8)yh;
+#else
+                xh = x >> 8;
+                yh = y >> 8;
+#endif
 
                 _swByteSet(base + 0, (u8)Punigp->unk328);
                 _swByteSet(base + 1, (u8)x);
@@ -8055,10 +8059,16 @@ USER_FUNC(evt_puni_exit) {
             x = (s32)pos.x;
             y = (s32)pos.y;
             z = (s32)pos.z;
+#ifdef MUST_MATCH
+            // the second assignments are no-ops (xh/yh are u8) needed for the target's extrwi
             xh = x >> 8;
             xh = (u8)xh;
             yh = y >> 8;
             yh = (u8)yh;
+#else
+            xh = x >> 8;
+            yh = y >> 8;
+#endif
 
             _swByteSet(base + 0, 0);
             _swByteSet(base + 1, (u8)x);
@@ -8087,8 +8097,13 @@ USER_FUNC(evt_puni_exit) {
             s32 x = (s32)v.x;
             s32 y = (s32)v.y;
             s32 z = (s32)v.z;
+#ifdef MUST_MATCH
+            // the second assignment is a no-op (xh is u8) needed for the target's extrwi
             xh = x >> 8;
             xh = (u8)xh;
+#else
+            xh = x >> 8;
+#endif
 
             _swByteSet(base + 0, 0);
             _swByteSet(base + 1, (u8)x);
@@ -8296,8 +8311,9 @@ USER_FUNC(evt_puni_korokoro) {
     }
 }
 
-// NONMATCHING (99.84%): `elapsed` is kept in r29; the original computes the division in r4
-// and copies it to r29 across the intplGetValue calls (all other instructions identical).
+// Matching: assigning the unsigned division to `cond` inside the condition (then casting to s32)
+// makes MWCC CSE it into a temp that feeds a signed `cmpw`, then copy it into the callee-saved
+// `elapsed` across the intplGetValue calls -- exactly the original's r4 -> r29 sequence.
 USER_FUNC(evt_puni_move_position) {
     s32* args = event->args;
     PuniData* punidat = &Punidat[evtGetValue(event, args[0])];
@@ -8313,9 +8329,11 @@ USER_FUNC(evt_puni_move_position) {
         punidat->field_0x204.z = z;
     }
     {
-        s32 elapsed = ((u32)gp->renderTime - (u32)event->savedTime) / ((__OSBusClock / 4) / 1000);
+        u32 cond;
+        s32 elapsed;
 
-        if (elapsed < duration) {
+        if ((s32)(cond = ((u32)gp->renderTime - (u32)event->savedTime) / ((__OSBusClock / 4) / 1000)) < duration) {
+            elapsed = cond;
             punidat->field_0x12C.x =
                 intplGetValue(0, elapsed, duration, punidat->field_0x1F8.x, punidat->field_0x204.x);
             punidat->field_0x12C.z =
@@ -8363,8 +8381,14 @@ USER_FUNC(evt_puni_move_position2) {
     }
 }
 
-// NONMATCHING (99.72%): same elapsed-division register difference as evt_puni_move_position
-// (`divwu` targets r28 instead of r4, which also shifts the double_to_int base register).
+// Match-only shaping: retail computes the unsigned divide into r4, compares it signed and copies it to r28
+// before the intplGetValue calls. With the natural `s32 elapsed = ...; if (elapsed < duration)` MWCC folds
+// the comparison into the same callee-saved register (r28), so the `mr r28, r4` never appears. Writing the
+// divide in the condition and again in the branch, with `opt_common_subs off`, reproduces retail's r4 + copy.
+// The duplicate divide is value-numbered away, so the object still emits exactly one elapsed `divwu`.
+#ifdef MUST_MATCH
+#pragma opt_common_subs off // keep the elapsed divide out of the common-subexpression pass (see above)
+#endif
 USER_FUNC(evt_puni_jump_position) {
     s32* args = event->args;
     PuniData* punidat = &Punidat[evtGetValue(event, args[0])];
@@ -8373,7 +8397,9 @@ USER_FUNC(evt_puni_jump_position) {
     f32 tz = evtGetValue(event, args[3]);
     s32 duration = evtGetValue(event, args[4]);
     f32 g = evtGetValue(event, args[5]);
+#ifndef MUST_MATCH
     s32 elapsed;
+#endif
 
     if (isFirstCall) {
         f32 a = -4.0f * g;
@@ -8384,6 +8410,20 @@ USER_FUNC(evt_puni_jump_position) {
         punidat->field_0x1F0 = (ty - punidat->field_0x1F8.y) - punidat->field_0x1EC;
         psndSFXOn_3D("SFX_STG2_PUNI_JUMP1", &punidat->field_0x12C);
     }
+#ifdef MUST_MATCH
+    if ((s32)(((u32)gp->renderTime - (u32)punidat->modeStartTime) / ((__OSBusClock / 4) / 1000)) < duration) {
+        s32 elapsed = (s32)(((u32)gp->renderTime - (u32)punidat->modeStartTime) / ((__OSBusClock / 4) / 1000));
+        f32 ratio = (f32)elapsed / (f32)duration;
+
+        punidat->field_0x12C.x =
+            intplGetValue(0, elapsed, duration, punidat->field_0x1F8.x, tx);
+        punidat->field_0x12C.z =
+            intplGetValue(0, elapsed, duration, punidat->field_0x1F8.z, tz);
+        punidat->field_0x12C.y =
+            ratio * (punidat->field_0x1EC * ratio + punidat->field_0x1F0) + punidat->field_0x1F8.y;
+        return EVT_RETURN_BLOCK;
+    }
+#else
     elapsed = ((u32)gp->renderTime - (u32)punidat->modeStartTime) / ((__OSBusClock / 4) / 1000);
     if (elapsed < duration) {
         f32 ratio = (f32)elapsed / (f32)duration;
@@ -8396,11 +8436,16 @@ USER_FUNC(evt_puni_jump_position) {
             ratio * (punidat->field_0x1EC * ratio + punidat->field_0x1F0) + punidat->field_0x1F8.y;
         return EVT_RETURN_BLOCK;
     }
+#endif
     punidat->field_0x12C.x = tx;
     punidat->field_0x12C.y = ty;
     punidat->field_0x12C.z = tz;
     return EVT_RETURN_DONE;
 }
+
+#ifdef MUST_MATCH
+#pragma opt_common_subs reset
+#endif
 
 USER_FUNC(evt_puni_get_mode) {
     s32* args = event->args;
@@ -8478,22 +8523,22 @@ USER_FUNC(evt_puni_dokan_onoff) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.42%): declaring b2/b1/b0 puts b0 back in r27; the original then emits
-// `mr r5,r27` between the (b2<<8) shift and the t1 add and reuses r27 for t1, where ours
-// schedules the mr after t1's sign extension and computes t1 in r23.
 USER_FUNC(evt_puni_get_lsw_index) {
     s32* args = event->args;
     u8 b2;
     u8 b1;
     u8 b0;
+    s32 t1;
+    s32 t2;
+    s32 t3;
     u8 b3;
     u8 b4;
     u8 b5;
     u8 b6;
+#ifdef MUST_MATCH
+    s32 out0;
+#endif
     s32 index = args[0];
-    s32 t1;
-    s32 t2;
-    s32 t3;
     f32 v1;
     f32 v2;
     f32 v3;
@@ -8506,6 +8551,9 @@ USER_FUNC(evt_puni_get_lsw_index) {
     b4 = _swByteGet(index + EVTDAT_LSW_BASE + 4);
     b5 = _swByteGet(index + EVTDAT_LSW_BASE + 5);
     b6 = _swByteGet(index + EVTDAT_LSW_BASE + 6);
+#ifdef MUST_MATCH
+    out0 = b0;
+#endif
     t1 = b1 + (b2 << 8);
     if (t1 & 0x8000) {
         t1 |= 0xFFFF0000;
@@ -8518,7 +8566,11 @@ USER_FUNC(evt_puni_get_lsw_index) {
     if (t3 & 0x8000) {
         t3 |= 0xFFFF0000;
     }
+#ifdef MUST_MATCH
+    evtSetValue(event, args[2], out0);
+#else
     evtSetValue(event, args[2], b0);
+#endif
     v1 = (f32)t1;
     v2 = (f32)t2;
     v3 = (f32)t3;
@@ -8827,18 +8879,22 @@ USER_FUNC(evt_puni_force_se_off) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (73.67%): the `xh = (u8)(x >> 8)` two-statement idiom in both branches (natural x,y,z order,
-// xh/yh after) keeps them live and gets the target's prologue. Rest is tail register colouring/schedule.
+// x,y,z are read first, then the high bytes are extracted as (x >> 8) & 0xFF and re-cast to the u8 that
+// holds them; that keeps the target's single hoisted extrwi per byte and its prologue. puni still colours
+// r31 (target r29) while z takes r29 (target r31); the remaining diffs are that swap plus small call-setup
+// scheduling.
+// NONMATCHING (89.23%): control flow, calls and field writes match; only the puni/z register swap and a
+// couple of call-setup scheduling slots differ.
 USER_FUNC(evt_puni_all_save) {
-    Vec pos;
-    s32 xh;
-    s32 x;
-    s32 base;
-    s32 yh;
-    s32 i;
     PuniData* puni = &Punidat[1];
-    s32 z;
+    s32 i;
+    s32 base;
+    s32 x;
     s32 y;
+    s32 z;
+    u8 xh;
+    u8 yh;
+    Vec pos;
 
     for (i = 1; i <= 0x66; i++, puni++) {
         if ((puni->unk4 & 0x400) == 0) {
@@ -8853,10 +8909,17 @@ USER_FUNC(evt_puni_all_save) {
             x = (s32)pos.x;
             y = (s32)pos.y;
             z = (s32)pos.z;
-            xh = x >> 8;
+#ifdef MUST_MATCH
+            // the second assignment is a no-op (xh/yh are u8); it stops MWCC folding the high-byte
+            // extraction into each _swByteSet argument, matching the target's hoisted extrwi
+            xh = (x >> 8) & 0xFF;
             xh = (u8)xh;
-            yh = y >> 8;
+            yh = (y >> 8) & 0xFF;
             yh = (u8)yh;
+#else
+            xh = (x >> 8) & 0xFF;
+            yh = (y >> 8) & 0xFF;
+#endif
             base = (puni->field_0x116 - 1) * 7;
             _swByteSet(base + 0, (u8)Punigp->unk328);
             _swByteSet(base + 1, x);
@@ -8870,10 +8933,17 @@ USER_FUNC(evt_puni_all_save) {
             x = (s32)pos.x;
             y = (s32)pos.y;
             z = (s32)pos.z;
-            xh = x >> 8;
+#ifdef MUST_MATCH
+            // the second assignment is a no-op (xh/yh are u8); it stops MWCC folding the high-byte
+            // extraction into each _swByteSet argument, matching the target's hoisted extrwi
+            xh = (x >> 8) & 0xFF;
             xh = (u8)xh;
-            yh = y >> 8;
+            yh = (y >> 8) & 0xFF;
             yh = (u8)yh;
+#else
+            xh = (x >> 8) & 0xFF;
+            yh = (y >> 8) & 0xFF;
+#endif
             base = (puni->field_0x116 - 1) * 7;
             _swByteSet(base + 0, 0);
             _swByteSet(base + 1, x);

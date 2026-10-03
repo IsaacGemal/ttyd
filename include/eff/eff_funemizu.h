@@ -3,6 +3,19 @@
 typedef struct EffectEntry EffectEntry;
 
 #include <dolphin/types.h>
+// The unit's .sdata tables: the section attribute makes MWCC emit the original's r13 (@sda21) addressing.
+extern __declspec(section ".sdata") u8 funemizu_normal_tbl[32];
+extern __declspec(section ".sdata") u8 funemizu_color0_tbl[32];
+extern __declspec(section ".sdata") u8* funemizu_dl_0_tbl[3];
+extern __declspec(section ".sdata") u8 funemizu_dl_0_size_tbl[4];
+extern __declspec(section ".sdata") u8* funemizu_dl_1_tbl[4];
+extern __declspec(section ".sdata") u8 funemizu_dl_1_size_tbl[4];
+extern __declspec(section ".sdata") u8 gor_fune_normal_tbl[32];
+extern __declspec(section ".sdata") u8 gor_fune_color0_tbl[8];
+extern __declspec(section ".sdata") u8* gor_fune_dl_0_tbl[2];
+extern __declspec(section ".sdata") u8 gor_fune_dl_0_size_tbl[4];
+extern __declspec(section ".sdata") u8* gor_fune_dl_1_tbl[2];
+extern __declspec(section ".sdata") u8 gor_fune_dl_1_size_tbl[4];
 EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e);
 u32 unk_80224298(void);
 #include "driver/camdrv.h"

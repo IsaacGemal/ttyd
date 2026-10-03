@@ -737,9 +737,12 @@ static inline f32 sqrtf_base(f32 x, const char* base) {
 // above) to fold into r30. The int->float magic double still loads absolute (`@985@`) where
 // the original reads `0x1f0(r30)` -- the known file-wide blocker (vec3_802c5730 is extern),
 // see marioChkOverhead/marioChkFrontStep.
-// NONMATCHING (88.95%): only FPR colouring remains -- the original keeps a=f22/rad-y0=f23,
-// temps f24-f28, nz/ny/nx=f29-f31, ox/oz=f21/f20; ours shares a's f19 with ny100, so the
-// temps land in f26-f31 and the normals in f20-f22.
+// Only FPR colouring remains -- the original keeps a=f22/rad-y0=f23, temps f24-f28,
+// nz/ny/nx=f29-f31, ox/oz=f21/f20; ours shares a's f19 with ny100, so the temps land in
+// f26-f31 and the normals in f20-f22. The int->float magic double still loads absolute.
+// NONMATCHING (89.91%): only FPR colouring remains (the loop-body ox/oz take f31/f30 and rotate
+// the whole long-lived set). Reordering declarations and extending `a`'s live range were tried;
+// only the magic double from the file-wide rodata anchor would otherwise differ.
 void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
     const char* base = (const char*)vec3_802c5730;
     MarioWork* wp = marioGetPtr();
@@ -749,6 +752,9 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
     Vec normal;
     Vec t;
     HitEntry* hit;
+    f32 nx;
+    f32 ny;
+    f32 nz;
     f32 y0;
     f32 f25;
     f32 f24;
@@ -801,19 +807,22 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
         }
         dist = f22;
         t = *(const volatile Vec*)(RO(base, 0xC0, vec3_802c57f0));
-        up = *(const volatile Vec*)(RO(base, 0xCC, vec3_802c57fc));
         t.x = pos->x + ox;
         t.y = pos->y + f26;
         t.z = pos->z + oz;
         p = t;
+        up = *(const volatile Vec*)(RO(base, 0xCC, vec3_802c57fc));
         hit = marioHitCheck2(&p, &up, &hitPos, &normal, &dist);
         if (hit != NULL) {
-            f32 nz = normal.z;
-            f32 ny = normal.y;
-            f32 nx = normal.x;
-            MarioWork* wp2 = marioGetPtr();
-            f32 ny100 = 100.0f * ny;
+            MarioWork* wp2;
+            f32 ny100;
             f32 ang;
+
+            nz = normal.z;
+            ny = normal.y;
+            nx = normal.x;
+            wp2 = marioGetPtr();
+            ny100 = 100.0f * ny;
 
             *(f32*)&wp2->field_0x1F0[0x28] =
                 (f32)(s32)(100.0f * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
@@ -1427,6 +1436,11 @@ extern const Vec vec3_802c5838;
                 ((v) >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /      \
      float_1000_8041a7a0)
 
+// The angle fields are rounded to 0.01 with an unconditional +0.5 (different from
+// ROUND_MILLI's 1000 and sign-dependent bias).
+#define ROUND_CENTI(v)                                                                        \
+    ((f32)(s32)(float_100_8041a7f8 * (v) + float_0p5_8041a7c4) / float_100_8041a7f8)
+
 
 
 // NONMATCHING (98.27%): the caller builds `query` (via marioHitCheckVecRound) so
@@ -1465,34 +1479,41 @@ void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist) {
 // the int->float magic double: the original reads it as `lfd f1, 0x1f0(r30)` (folded
 // into the vec3_802c5730 pool, where double_to_int_802c5920 lives) while MWCC here
 // emits an anonymous local `lis r3,@862@ha; lfd f1,@862@l(r3)`. That pool folding is a
-// file-wide rodata issue (same blocker as marioSlitChkWallAround/marioChkOverhead): the
-// base is declared `extern`, so the compiler will not make it the pool anchor. Other
-// diffs: the original keeps 7 callee-saved GPRs (r25=second marioGetPtr result,
-// r26-r28=out args, r29=hit, r30=base, r31=wp) vs 5 here (r27-r31), and it emits a
-// second `if (hit != NULL)` after the rounding block instead of CSE-ing it with the first.
-// NONMATCHING (73.93%): int->float magic double not folded into the rodata base pool;
-// callee-saved GPR set/assignment differs; redundant second hit test CSEd away.
+// file-wide rodata issue (same blocker as marioChkOverhead): declaring the unit's .rodata
+// prefix locally does not anchor the compiler's own pool entries.
+// The 0.01-rounded angle fields use 100.0 with an unconditional +0.5 (ROUND_CENTI); using
+// ROUND_MILLI (1000, sign-dependent) there was the main miss (73.93%). A top-declared
+// `wp2 = marioGetPtr()` for the field writes (the inline-declaration form makes MWCC loop
+// forever) plus non-volatile hitPos/n locals (the volatile forced a different copy/round
+// schedule) brought it to 86.93%. Using the literal `100.0f` in the two `angleABf` arguments
+// and a searched FPR declaration order (`py, px, off, s, rad, pz, h, angle, c`) reached 87.14%.
+// Still differs: the int->float magic double and the five sqrtf coefficient doubles are not
+// folded into the rodata base pool (routing sqrtf through base hangs MWCC here); the
+// callee-saved GPR set differs as a consequence (ours keeps hit in r30 and reuses r30 for
+// the base, so the hit test is `cmplwi r30` instead of the original's `mr r29,r3`); and the
+// ROUND_CENTI float_100 loads are hoisted into f31/f30 (callee-saved) instead of the
+// original's volatile f7/f5 reloads, which costs `h` its f31.
+// NONMATCHING (87.14%): only the rodata-pool folding and the GPR/FPR colouring above remain.
 HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
 #ifdef MUST_MATCH
     const u8* base = vec3_802c5730;
 #endif
     MarioWork* wp = marioGetPtr();
+    MarioWork* wp2;
     HitCheckQuery query;
     HitEntry* hit;
-#ifdef MUST_MATCH
-    volatile Vec hitPos;
-    volatile Vec n;
-#else
     Vec hitPos;
     Vec n;
-#endif
     Vec v;
-    f32 h;
-    f32 px, py, pz;
-    f32 angle;
-    f32 s, c;
+    f32 py;
+    f32 px;
     f32 off;
+    f32 s;
     f32 rad;
+    f32 pz;
+    f32 h;
+    f32 angle;
+    f32 c;
 
     *(f32*)&wp->field_0x1F0[0x28] = float_0_8041a7a4;
     *(f32*)&wp->field_0x1F0[0x2C] = float_0_8041a7a4;
@@ -1550,18 +1571,26 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
         hit = hitCheckVecFilter(&query, chkfilterVec);
     }
     if (hit != NULL) {
-        hitPos.x = ROUND_MILLI(query.hitPos.x);
-        hitPos.y = ROUND_MILLI(query.hitPos.y);
-        hitPos.z = ROUND_MILLI(query.hitPos.z);
+        hitPos = query.hitPos;
+        hitPos.x = ROUND_MILLI(hitPos.x);
+        hitPos.y = ROUND_MILLI(hitPos.y);
+        hitPos.z = ROUND_MILLI(hitPos.z);
+#ifdef MUST_MATCH
+        if (&n != NULL) {
+            n = query.hitNormal;
+        }
+#else
+        n = query.hitNormal;
+#endif
     }
-    n = query.hitNormal;
     if (hit != NULL) {
-        *(f32*)&wp->field_0x1F0[0x28] = ROUND_MILLI(
-            angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * n.z, float_100_8041a7f8 * n.y) -
+        wp2 = marioGetPtr();
+        *(f32*)&wp2->field_0x1F0[0x28] = ROUND_CENTI(
+            angleABf(float_0_8041a7a4, float_0_8041a7a4, 100.0f * n.z, 100.0f * n.y) -
             float_180_8041a7cc);
-        *(f32*)&wp->field_0x1F0[0x2C] = float_0_8041a7a4;
-        *(f32*)&wp->field_0x1F0[0x30] = ROUND_MILLI(
-            angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * n.x, float_100_8041a7f8 * n.y) -
+        *(f32*)&wp2->field_0x1F0[0x2C] = float_0_8041a7a4;
+        *(f32*)&wp2->field_0x1F0[0x30] = ROUND_CENTI(
+            angleABf(float_0_8041a7a4, float_0_8041a7a4, 100.0f * n.x, 100.0f * n.y) -
             float_180_8041a7cc);
         *(f32*)&wp->field_0x1F0[0x24] =
             angleABf(float_0_8041a7a4, float_0_8041a7a4, sqrtf(n.x * n.x + n.z * n.z), -n.y);

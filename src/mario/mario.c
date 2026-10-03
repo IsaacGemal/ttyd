@@ -44,8 +44,8 @@ const Vec vec3_802c3698 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802c36a4 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802c36b0 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802c36bc = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802c36c8 = {1.0f, 1.0f, 1.0f};
-const Vec vec3_802c36d4 = {0.0f, 74.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_802c36c8 = {1.0f, 1.0f, 1.0f};
+__declspec(section ".rodata") Vec vec3_802c36d4 = {0.0f, 74.0f, 0.0f};
 const Vec vec3_802c36e0 = {1.0f, 1.0f, 1.0f};
 const Vec vec3_802c36ec = {0.0f, 74.0f, 0.0f};
 const Vec vec3_802c36f8 = {0.0f, -10000.0f, 0.0f};
@@ -433,10 +433,11 @@ static inline BOOL marioChkMenuYoshi(void) {
 }
 
 // The two ctrl guards and the yoshi/seq/key block match (BOOL notCtrl = !ctrl; plus opt_dead_assignments
-// off keeps their cntlzw/srwi materialisation). Remaining: the final !marioChkKey() at both sites (a
-// cntlzw/srwi. + branch our compile folds into srwi r3) and the second ctrl check's shared return TRUE;
-// every source form that forces that materialisation hangs mwcceppc.
-// NONMATCHING (93.38%): the final !marioChkKey() materialisation and one shared return TRUE differ.
+// off keeps their cntlzw/srwi materialisation). The second ctrl guard's `return TRUE` has to be nested as
+// `if (!notCtrl2) { ...key check... } return TRUE;` so the compiler shares the TRUE block; the flat form
+// is one instruction off. Remaining: the final !marioChkKey() at both sites (a cntlzw/srwi. + branch our
+// compile folds into srwi r3); every source form that forces that materialisation hangs mwcceppc.
+// NONMATCHING (94.85%): the final !marioChkKey() materialisation at both key-check sites differs.
 BOOL marioCheckMenuDisable(void) {
 	MarioWork* wp = mp;
 
@@ -450,11 +451,11 @@ BOOL marioCheckMenuDisable(void) {
 		BOOL ctrl2 = marioChkCtrl();
 		BOOL notCtrl2 = !ctrl2;
 
-		if (notCtrl2) {
+		if (!notCtrl2) {
+			if (marioChkKey()) {
+				return FALSE;
+			}
 			return TRUE;
-		}
-		if (marioChkKey()) {
-			return FALSE;
 		}
 		return TRUE;
 	}
@@ -496,7 +497,6 @@ BOOL marioCheckMenuDisable(void) {
 	}
 	return TRUE;
 }
-
 
 BOOL marioChkKey(void) {
 	PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -850,9 +850,9 @@ void marioPoseInit(void) {
 	wp->paperAnimGroupId[2] = animPoseEntry(marioAnimeGroupData[mp->colorId][2], 2);
 }
 
-// NONMATCHING (96.16%): complete; the only diffs are the scheduler evaluating the two named rodata
-// Vec copies (mp->scale, mp->bottomlessResetPosition) source-first instead of destination-first.
-// Anonymous (Vec){...} literals match, but would move .rodata shared with other functions.
+// The two referenced vec3 constants live in .rodata and are never written; declaring them with
+// `__declspec(section ".rodata")` (not `const`) makes MWCC keep the source loads after the
+// preceding stores, as the target does (a `const` object lets the optimizer hoist the loads).
 void marioInit(void) {
 	MarioWork* wp;
 	s32 i;
@@ -1070,20 +1070,16 @@ static inline Vec marioCoinPos(f32 x, f32 y, f32 z) {
 // MUST_MATCH: the blur history update is inlined in the original, and every copy re-reads mp.
 static inline void marioUpdateBlurPos(void) {
 	if ((*(u32*)(mp->field_0x32 + 2) & 1) && (mp->dispFlags & 0x08000000)) {
-		s32 id = blurPosId;
-		s32 next = id + 1;
-		Vec* p = &blurPos[id];
+		Vec* p = &blurPos[blurPosId];
 
 		*p = mp->position;
-		blurPosId = next;
-		if (next >= 8) {
-			blurPosId = next - 8;
+		blurPosId = blurPosId + 1;
+		if (blurPosId >= 8) {
+			blurPosId = blurPosId - 8;
 		}
 	}
 }
 
-// NONMATCHING (97.97%): scratch-register allocation in the blur-history copies (blurPosId in r6 here, r7 in
-// the original) and the unit's mp reload placement; the rest are .sdata2 symbol names.
 void marioMain(void) {
 	MarioWork* wp = mp;
 	f32 groundZ;
@@ -1328,7 +1324,15 @@ void marioMain(void) {
 			mario_kemuri_80130474();
 			partyMain();
 			marioCamMain();
-			marioUpdateBlurPos();
+			if ((*(u32*)(wp->field_0x32 + 2) & 1) && (mp->dispFlags & 0x08000000)) {
+				Vec* p = &blurPos[blurPosId];
+
+				*p = mp->position;
+				blurPosId = blurPosId + 1;
+				if (blurPosId >= 8) {
+					blurPosId = blurPosId - 8;
+				}
+			}
 			{
 				MarioWork* p = mp;
 				*(s16*)(p->field_0x52 + 2) = p->airTimer;
@@ -1414,16 +1418,13 @@ void marioMain(void) {
 	mario_kemuri_80130474();
 	partyMain();
 	marioCamMain();
-	if ((*(u32*)(wp->field_0x32 + 2) & 1) && (wp->dispFlags & 0x08000000)) {
-		s32 id = blurPosId;
-		Vec* p = &blurPos[id];
+	if ((*(u32*)(wp->field_0x32 + 2) & 1) && (mp->dispFlags & 0x08000000)) {
+		Vec* p = &blurPos[blurPosId];
 
-		p->x = wp->position.x;
-		p->y = wp->position.y;
-		p->z = wp->position.z;
-		blurPosId = id + 1;
+		*p = mp->position;
+		blurPosId = blurPosId + 1;
 		if (blurPosId >= 8) {
-			blurPosId = id + 1 - 8;
+			blurPosId = blurPosId - 8;
 		}
 	}
 	{
@@ -1441,68 +1442,78 @@ void marioMain(void) {
 	}
 }
 
-// NONMATCHING (89.49%): 15 instructions differ, plus register differences.
 void marioCtrlOff2Main(void) {
 	MarioWork* wp = mp;
 	s32 flags;
 
-	if (wp->currMotionId != MARIO_MOTION_PLANE && wp->currMotionId != MARIO_MOTION_SHIP
-	    && (u16)(wp->currMotionId - MARIO_MOTION_DAMAGE) > 2 && wp->currMotionId != MARIO_MOTION_JABARA
-	    && wp->currMotionId != MARIO_MOTION_YOSHI && wp->currMotionId != MARIO_MOTION_JUMP_3
-	    && wp->currMotionId != MARIO_MOTION_JUMP_STAND) {
-		if (vivianGetStatus() != 0) {
+	if (wp->currMotionId == MARIO_MOTION_PLANE || wp->currMotionId == MARIO_MOTION_SHIP
+	    || (u16)(wp->currMotionId - MARIO_MOTION_DAMAGE) <= 2 || wp->currMotionId == MARIO_MOTION_JABARA
+	    || wp->currMotionId == MARIO_MOTION_YOSHI || wp->currMotionId == MARIO_MOTION_JUMP_3
+	    || wp->currMotionId == MARIO_MOTION_JUMP_STAND) {
+		return;
+	}
+	if (vivianGetStatus() != 0) {
+		return;
+	}
+	marioMotion();
+	flags = wp->flags;
+	if (flags & 0x40000) {
+		marioMove();
+		marioChkOverhead();
+		if (wp->airTimer > 100) {
+			marioChgMot(MARIO_MOTION_FALL);
+			marioSetFallPara();
+		}
+		return;
+	}
+	if (flags & 0x10000) {
+		marioJump();
+		marioChkOverhead();
+		marioMove();
+		if (marioChkSts(0x10)) {
 			return;
 		}
-		marioMotion();
-		flags = wp->flags;
-		if (flags & 0x40000) {
-			marioMove();
-			marioChkOverhead();
-			if (wp->airTimer > 100) {
-				marioChgMot(MARIO_MOTION_FALL);
-				marioSetFallPara();
-			}
+		if (wp->airTimer <= 5) {
 			return;
 		}
-		if (flags & 0x10000) {
-			marioJump();
-			marioChkOverhead();
-			marioMove();
-			if (mp->currMotionId == MARIO_MOTION_ROLL) {
-				return;
-			}
-			if (wp->airTimer <= 5) {
-				return;
-			}
-			marioChkGnd2();
+		marioChkGnd2();
+		return;
+	}
+	if (flags & 0x20000) {
+		if (wp->currMotionId == MARIO_MOTION_SHIP) {
 			return;
 		}
-		if (flags & 0x20000) {
-			if (wp->currMotionId == MARIO_MOTION_SHIP) {
-				return;
+		marioMove();
+		if (wp->currMotionId == MARIO_MOTION_HIP) {
+			f32 overheadY = marioChkOverhead();
+			if (*(void**)((u8*)wp + 0x1f4) != NULL) {
+				wp->position.y = overheadY;
 			}
-			marioMove();
-			if (wp->currMotionId == MARIO_MOTION_HIP) {
-				f32 overheadY = marioChkOverhead();
-				if (*(void**)((u8*)wp + 0x1f4) != NULL) {
-					wp->position.y = overheadY;
-				}
-			}
-			else {
-				marioChkOverhead();
-			}
-			marioFall();
-			if (wp->currMotionId == MARIO_MOTION_HIP || wp->currMotionId == MARIO_MOTION_HIP_2
-			    || (mp->currMotionId != MARIO_MOTION_ROLL && wp->airTimer > 5)) {
-				marioChkGnd2();
-			}
-			marioChkWallAround(&wp->position, 0, 0.0f, 0.0f, wp->wPlayerCollisionBox.z, wp->wPlayerCollisionBox.y);
 		}
 		else {
-			marioChkGnd();
+			marioChkOverhead();
 		}
+		marioFall();
+		if (wp->currMotionId != MARIO_MOTION_HIP && wp->currMotionId != MARIO_MOTION_HIP_2) {
+			BOOL isRoll = FALSE;
+
+			if (mp->currMotionId == MARIO_MOTION_ROLL) {
+				isRoll = TRUE;
+			}
+			if (!isRoll && wp->airTimer > 5) {
+				marioChkGnd2();
+			}
+		}
+		else {
+			marioChkGnd2();
+		}
+		marioChkWallAround(&wp->position, 0, 0.0f, 0.0f, wp->wPlayerCollisionBox.z, wp->wPlayerCollisionBox.y);
+	}
+	else {
+		marioChkGnd();
 	}
 }
+
 
 #ifdef MUST_MATCH
 // The original expands the first marioGetScreenPos call in an earlier inlining phase, so its frame sits at the
@@ -1636,12 +1647,14 @@ static inline f32 marioMoveMain_sqrtf(f32 x) {
 	return x;
 }
 
-// MWCC allocates f29 to the x-accumulator and f30 to the speed (the original is the reverse), so ~28
-// instructions differ only in those two registers; the three inline-sqrtf double offsets (0x330 vs the
-// original 0x340) are a unit-wide .rodata layout difference that resolves once the rest of the unit is
-// written; and N_dou10_yoko_yari3 is missing one `addi r3, wp+0x210` because its header prototype is
-// declared (void).
-// NONMATCHING (98.99%): register allocation of the x-accumulator/speed floats and the missing addi noted above.
+// MWCC allocates f29 to the x-accumulator and f30 to the speed/baseSpeed/z chain (the original is the
+// reverse), so ~22 instructions differ only in those two registers (and the FP temporaries that feed
+// them). Two expression-order fixes matched the target's schedule: the magnitude as f29*f29 + f30*f30
+// (f29 squared first) reproduces `fmuls f0, f29, f29; fmadds f31, f30, f30, f0`, and computing
+// wp->position.y before the magnitude makes the scheduler interleave `fadds f1, f2, f1` the way the
+// original does. N_dou10_yoko_yari3 is missing one `addi r3, wp+0x210` because its definition and
+// header prototype are declared (void), so the argument cannot be passed without changing another file.
+// NONMATCHING (99.27%): register allocation of the x-accumulator/speed floats and the missing addi noted above.
 void marioMoveMain(void) {
 	MarioWork* wp = mp;
 	PartyEntry* party;
@@ -1771,8 +1784,8 @@ void marioMoveMain(void) {
 	zero = 0.0f;
 	f29 = f29 + wp->riderDelta.z;
 	f30 = f30 + wp->riderDelta.x;
-	f31 = f30 * f30 + f29 * f29;
 	wp->position.y = wp->position.y + (zero + wp->riderDelta.y);
+	f31 = f29 * f29 + f30 * f30;
 	f31 = marioMoveMain_sqrtf(f31);
 
 	if (f31) {
@@ -1969,8 +1982,7 @@ void marioChgPaper(const char* name) {
 	}
 }
 
-// NONMATCHING (78.52%): 4 missing, 6 extra, plus register differences.
-void marioSetPaperAnimeLocalTime(s16 frames) { //f32 cast reuse, flags check
+void marioSetPaperAnimeLocalTime(s32 frames) { //f32 cast reuse, flags check
 	MarioWork* wp = mp;
 	s32 group;
 

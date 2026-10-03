@@ -486,7 +486,9 @@ f32 unk_800c92c4(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (97.46%): same instructions; only register numbers or operands differ.
+// NONMATCHING (97.81%): only FP register colouring differs: the target keeps `speed` in f5, the
+// 0.0f constant in f3 and the rate constants in f2; ours gets f3/f2/f0. A named `zero` and explicit
+// `f2 = 0.05f;`/`f2 = 0.1f;` rate variables fixed everything else.
 void unk_800c93d0(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
     MarioWork* mario;
@@ -494,8 +496,9 @@ void unk_800c93d0(PartyEntry* party, f32 value) {
     f32 f4;
     f32 f2;
     f32 f0;
+    f32 zero = 0.0f;
 
-    if (value != 0.0f) {
+    if (value != zero) {
         work->speed2 = value;
         if (work->field_28 != 0) {
             return;
@@ -523,16 +526,18 @@ void unk_800c93d0(PartyEntry* party, f32 value) {
             f4 = f2 * f0;
         }
         if (f4 > 0.0f) {
+            f2 = 0.05f;
             f0 = 0.5f + f4 - f5;
-            f0 = f0 * 0.05f + f5;
+            f0 = f0 * f2 + f5;
             if (f0 >= f4) {
                 f0 = f4;
             }
             work->speed = f0;
             return;
         } else {
+            f2 = 0.1f;
             f0 = -1.0f - f5;
-            f0 = f0 * 0.1f + f5;
+            f0 = f0 * f2 + f5;
             if (f0 <= 0.0f) {
                 f0 = 0.0f;
             }
@@ -914,9 +919,8 @@ s32 partyMarioHosei(PartyEntry* party) {
     return *(s16*)((u8*)work + 0x52);
 }
 
-// NONMATCHING (95.62%): compiler CSEs `id != 0` into r29 across the marioGetPtr calls, so `id`
-// lands in r30 instead of r29 and the second anotherPartyGetPtr reuses the value instead of
-// recomputing it (`srwi r3` vs `mr r3,r29`).
+#pragma opt_common_subs off // keeps MWCC from CSE-hoisting id != 0 across the two anotherPartyGetPtr calls
+#pragma opt_lifetimes off // needed with opt_common_subs off so id (r29) and flag (r28) keep the target's registers
 f32 unk_800c9f48(s32 id, f32 y) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -957,6 +961,8 @@ f32 unk_800c9f48(s32 id, f32 y) {
     return fabsf(mario->position.y - y);
 }
 
+#pragma opt_common_subs reset
+#pragma opt_lifetimes reset
 f32 partyGetTargetDistY(s32 id) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* target;
@@ -1020,7 +1026,8 @@ f32 partyGetTargetMovespd2(PartyEntry* party) {
         return mario->mBaseDashSpeed;
 }
 
-// NONMATCHING (95.77%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
+#pragma opt_common_subs off // keeps MWCC from CSE-hoisting id != 0 across the two anotherPartyGetPtr calls
+#pragma opt_lifetimes off // needed with opt_common_subs off to keep the target's register choice
 f32 partyGetTargetDist3D(s32 id, Vec* pos) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -1065,7 +1072,10 @@ f32 partyGetTargetDist3D(s32 id, Vec* pos) {
     return PSVECDistance(&marioGetPtr()->position, pos);
 }
 
-// NONMATCHING (96.15%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
+#pragma opt_common_subs reset
+#pragma opt_lifetimes reset
+#pragma opt_common_subs off // keeps MWCC from CSE-hoisting id != 0 across the two anotherPartyGetPtr calls
+#pragma opt_lifetimes off // needed with opt_common_subs off to keep the target's register choice
 f32 partyGetTargetDist(s32 id, f32 x, f32 z) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -1109,7 +1119,10 @@ f32 partyGetTargetDist(s32 id, f32 x, f32 z) {
     return distABf(x, z, mario->position.x, mario->position.z);
 }
 
-// NONMATCHING (95.82%): same `id != 0` CSE/register allocation diff as unk_800c9f48.
+#pragma opt_common_subs reset
+#pragma opt_lifetimes reset
+#pragma opt_common_subs off // keeps MWCC from CSE-hoisting id != 0 across the two anotherPartyGetPtr calls
+#pragma opt_lifetimes off // needed with opt_common_subs off to keep the target's register choice
 f32 partyGetTargetDir(s32 id, f32 x, f32 z) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -1150,6 +1163,8 @@ f32 partyGetTargetDir(s32 id, f32 x, f32 z) {
     return angleABf(x, z, mario->position.x, mario->position.z);
 }
 
+#pragma opt_common_subs reset
+#pragma opt_lifetimes reset
 void L_getTargetPos(s32 id, Vec* out) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -1646,25 +1661,29 @@ void partyGetAppearPos2(PartyEntry* party, Vec* position) {
 // still lands at 0x29c.. instead of 0x41c.. (0x180 of other functions' .rodata is missing until the
 // whole unit is finished), plus a few fpr/stack slots follow the same shift. Declaring `u32 i` first
 // and the `targetDist` initializer before `unk1AC` fixed the r26/r27 and f25/f26 swaps.
-// NONMATCHING (99.74%)
+// NONMATCHING (99.91%): only the four scratch Vecs in the hit-check loop sit in rotated stack
+// slots (targetPos/Dir and hitNormal are 0xc lower than retail). bestX/Y/Z above targetDist and
+// declaring unk1AC before targetDist (assigned after) fixed all FP colouring (f25-f29).
 BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
     u32 i;
     MarioWork* player = party->playerPtr;
-    f32 targetDist = 30.0f + *(f32*)((u8*)party + 0xF4);
-    f32 unk1AC = *(f32*)player->unk1AC;
+    f32 bestX;
+    f32 bestY;
+    f32 bestZ;
+    f32 unk1AC;
+    f32 targetDist;
     HitCheckQuery query;
     s32 angles[9] = {45, 135, -135, 315, -315, 180, -180, 90, -90};
     HitEntry* hit;
     NpcEntry* npc;
-    f32 bestX;
-    f32 bestY;
-    f32 bestZ;
     f32 bestDist = -1.0f;
     f32 sinv;
     f32 cosv;
     Vec hitNormal;
     f32 angle;
 
+    targetDist = 30.0f + party->field_F4;
+    unk1AC = *(f32*)player->unk1AC;
     position->x = player->position.x;
     position->y = player->position.y;
     position->z = player->position.z;
@@ -1901,12 +1920,9 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
     return FALSE;
 }
 
-// NONMATCHING (96.88%): retail reaches every constant through one base register (r30 =
-// str_802CDB20) and offsets (angles at +0x5a4, the dir/hitPos Vecs at +0x5d4/+0x5e0, the int->float
-// double at +0x5f0), i.e. all of this function's rodata is pooled relative to one base. Our object
-// gives each constant its own symbol/base (angles @930, the Vecs @940/@944, the double elsewhere),
-// so the whole register set shifts by one and the offsets differ. Needs the unit's full rodata
-// layout/fn order to resolve.
+// NONMATCHING (99.88%): only the unit-wide pooled-rodata base offset differs (angles reached at
+// +0x58c here vs +0x5a4 in retail, 0x18 short); the 18 `!!` loads are all r30-relative and resolve
+// once the rest of the unit's rodata is written. Named `a`/`fifty` locals fixed the scheduling.
 BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     s32 angles[12] = {0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180};
     MapObjectEntry* obj;
@@ -1915,6 +1931,7 @@ BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     Vec hitPos;
     Vec hitNormal;
     f32 dist;
+    f32 fifty = 50.0f;
     f32 sinv;
     f32 cosv;
     HitEntry* h;
@@ -1931,14 +1948,15 @@ BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     pos.z = obj->position.z;
     pos.y = 50.0f + obj->position.y;
     for (i = 0; i < 12; i++) {
-        sincosf(&sinv, &cosv, party->dir + (f32)angles[i]);
-        dir = (Vec){sinv, 0.0f, cosv};
+        f32 a = party->dir + (f32)angles[i];
         dist = 50.0f;
+        sincosf(&sinv, &cosv, a);
+        dir = (Vec){sinv, 0.0f, cosv};
         h = partyHitCheck(party, &pos, &dir, &hitPos, &hitNormal, &dist);
         if (h == NULL) {
             dist = 150.0f;
-            pos.x = obj->position.x + sinv * 50.0f;
-            pos.z = obj->position.z + cosv * 50.0f;
+            pos.x = obj->position.x + sinv * fifty;
+            pos.z = obj->position.z + cosv * fifty;
             dir = (Vec){0.0f, -1.0f, 0.0f};
             h = partyHitCheck(party, &pos, &dir, &hitPos, &hitNormal, &dist);
             if (h == NULL || !(hitGetAttr(h) & 0x200)) {
