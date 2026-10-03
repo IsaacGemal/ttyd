@@ -521,6 +521,8 @@ void* gcDvdCheckThread(void* param) {
 // emits subf/srawi + __div2i rather than a full 64-bit subfc/subfe subtraction.
 #define RUMBLE_MS(now, then) OSTicksToMilliseconds((OSTime)((s32)(now) - (s32)(then)))
 #else
+// The natural form subtracts the full 64-bit tick values; retail's 32-bit difference wraps after about 53 s
+// (2^31 ticks at the 40.5 MHz timebase), so the two differ for intervals that long.
 #define RUMBLE_MS(now, then) OSTicksToMilliseconds((now) - (then))
 #endif
 

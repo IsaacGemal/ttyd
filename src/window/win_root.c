@@ -1175,7 +1175,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     s32 pageCount;
     s32 texBase;
     s32 page;
-    s32 row = 0;
+    s32 row = 0; // retail reads r25 (row) without setting it first at 0x80152E00, not only on page 0; 0 keeps it defined
     s32 col;
     s32 i;
     s32 ofs;
@@ -1242,6 +1242,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                 hakoQuad(work, t85, x + 56.0f, (y + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
                 hakoQuad(work, t84, x + 56.0f, ((y - 8.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 48.0f);
                 hakoQuad(work, t81, x + 56.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                break; // retail leaves the page loop once the special page is drawn (b .L_80154348 at 0x8015386C)
             } else {
                 f32 f23;
                 f32 f22;
@@ -1271,7 +1272,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                     hakoQuad(work, t1, f24, qy, 8.0f, 8.0f);
                     {
                         s32 t2 = (i & 1) ? t82 : t84;
-                        hakoQuad(work, t2, f24, qy - 8.0f, 8.0f, 48.0f);
+                        hakoQuad(work, t2, f24, (scroll + ((y - (f32)(i * 0x38)) - 8.0f)) - (f32)ofs, 8.0f, 48.0f);
                     }
                 }
                 hakoQuad(work, t81, f24, f23, 8.0f, 8.0f);
