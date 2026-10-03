@@ -4045,8 +4045,7 @@ typedef struct MapVtxFmt {
 } MapVtxFmt;
 
 // NONMATCHING (94.99%): the address computations and immediates match; only the wp/pos/nrm callee-saved
-// rotation and the vertex-loop pointers/indices differ. `opt_common_subs off` is needed: with CSE on MWCC
-// hoists GX_VA_TEX0+i into a register across the GX calls, which the target recomputes at each use.
+// rotation and the vertex-loop pointers/indices differ.
 void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 	MapWork* wp = &mapWork[activeGroup];
 	void* nrm = (void*)(((u32*)mesh->vcdTableOffset)[1] + 4);
