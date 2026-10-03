@@ -281,346 +281,366 @@ void envMain(void) {
 #define TWO_PI 6.283185307179586f
 s32 texmtx_tbl[] = {30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 4, 5, 6, 14, 0, 1, 2, 3, 8, 9, 10}; //TODO: put in right spot
 
-// These pragmas keep the seven loop constants live across the loop like the target; without them
-// the allocator rematerialises three of them from the pool (55% instead of 94.1%).
+// `opt_propagation off` stops MWCC rematerialising the polynomial coefficients into every branch
+// (same as envDisp_FF/evt_sub); `opt_lifetimes off` keeps the 0.00761/0.03705 seed loads inside the loop.
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-// Half 1's FP allocation matches the target exactly (twoPi f31, i2f double f30, quarter f29,
-// pi f28, one f27, coefK f26, coefA f25, hundred f24). Half 2's bottom four match (hundred f24,
-// one f25, coefK f26, coefA f27); its top four are reversed vs the target (ours double f31,
-// twoPi f30, pi f29, quarter f28; target pi f31, quarter f30, double f29, twoPi f28) and will
-// not move by declaration/assignment order. The integer callee-saved web is still shifted:
-// target half 1 texCoord r25, tevStage r26, first r27, dp r29, texMtx r30, i r31; ours texMtx
-// r25, tevStage r28, texCoord r29, dp r30, i r31. The four `// NONMATCHING`-tuning knobs found
-// by search are the two blocks' locals declaration orders and constant-assignment orders (the
-// text is otherwise the natural one); the `dp` pointer (a raw EnvironmentUnk88* to wp->unk88)
-// produces the target's `addi r29, r28, 0x88`, the phase is split `twoPi * (f32)i` then
-// `* quarter`, halfpi is assigned to f1 before each nested compare, and the outer-else
-// subtraction runs through f0. The rest is permuter work.
-// NONMATCHING (94.08%): calls and instructions match; only callee-saved allocation differs.
+// The code is complete and logically matches. Block 1's polynomial coefficients are assigned inside the loop
+// (with `v31 = TWO_PI` also inside the loop, before the angle), so LICM hoists them in the value order MWCC
+// wants and every block-1 FPR now matches (TWO_PI=f31, magic=f30, 0.25=f29, PI=f28, 1.0=f27, 0.16605=f26,
+// 0.4967=f25, 100=f24). The GXColor temporaries go through a named `color` local (only the r/a fields
+// written), which puts the two GXSetTevKColor argument copies on sp+0x10/sp+0xC and keeps sp48 at 0x48 /
+// sp18 at 0x18. What remains is integer register colouring (block 2's loop vars land in different
+// callee-saved regs, GX-call argument scheduling differs in a few places) and block 2's magic/0.25 FPR swap.
+// NONMATCHING (94.51%): register colouring only; no instruction differs for a logic reason.
 void envDisp_DepthOfField(void) {
     EnvironmentWork* wp = envGetWork();
-    s32 i;
-    EnvironmentUnk88* dp = &wp->unk88;
-    Mtx mtx;
-    Mtx mtx2;
-    f32 f0, f1, f2, f3, f4;
-    CameraEntry* cam;
+    EnvironmentUnk88* u = &wp->unk88;
+    Mtx sp48;
     GXColor color;
+    Mtx sp18;
+    s32 tevStage;
+    CameraEntry* temp_r27;
+    s32* mtx;
+    s32 i;
+    s32 texCoord;
+    GXTexObj* texobj;
+    f32 v30;
+    f32 v29;
+    f32 v28;
+    f32 v27;
+    f32 v26;
+    f32 v25;
+    f32 v24;
+    f32 f0, f1, f2, f3, f4;
+    f32 v31;
+    GXTevColorArg v33;
+    GXTevAlphaArg v34;
+    s32 vcond;
 
     if (!(wp->flags & 0x80000000)) {
         return;
     }
 
-    cam = camGetPtr(CAMERA_2D);
-    GXSetProjection(camGetPtr(CAMERA_2D)->projection, cam->projType);
+    temp_r27 = camGetPtr(CAMERA_2D);
+    GXSetProjection(camGetPtr(CAMERA_2D)->projection, temp_r27->projType);
     GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
     GXSetCurrentMtx(0);
-    GXLoadTexObj(smartTexObj(&wp->captureObj, (void**)wp->capture), GX_TEXMAP0);
-    GXLoadTexObj(smartTexObj(&wp->captureObj2, (void**)wp->capture2), GX_TEXMAP1);
+    texobj = smartTexObj(&wp->captureObj, (void**)wp->capture);
+    GXLoadTexObj(texobj, 0);
+    texobj = smartTexObj(&wp->captureObj2, (void**)wp->capture2);
+    GXLoadTexObj(texobj, 1);
     GXSetNumChans(0);
-    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-    GXSetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_OR);
-    GXSetZCompLoc(GX_FALSE);
-    GXSetAlphaCompare(GX_GEQUAL, 0x80, GX_AOP_OR, GX_NEVER, 0);
-    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetBlendMode(0, 1, 0, 7);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(0, 3, 0);
     GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-    GXSetCullMode(GX_CULL_NONE);
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXSetCullMode(0);
 
-    if ((dp->unk0 & 1) && (dp->unk4 != float_0_8041e53c)) {
-        f32 twoPi, quarter, pi, one, coefK, coefA, hundred;
-        s32 first;
-        GXTevStageID finalStage;
-        GXTevAlphaArg v34;
-        s32* texMtx = texmtx_tbl;
-        GXTevColorArg v33;
-        GXTexCoordID texCoord = GX_TEXCOORD0;
-        GXTevStageID tevStage = GX_TEVSTAGE0;
-
-        for (i = 0; i < 4; i++) {
-            twoPi = TWO_PI;
-            quarter = 0.25f;
-            f0 = TWO_PI * (f32)i;
-            f3 = f0 * quarter;
-            pi = PI;
-            coefK = 0.16605f;
-            one = 1.0f;
-            coefA = 0.4967f;
-            hundred = 100.0f;
+    if ((u->unk0 & 1) && (u->unk4)) {
+        mtx = texmtx_tbl;
+        texCoord = 0;
+        tevStage = 0;
+        i = 0;
+        for (; i < 4; i++) {
+            v31 = TWO_PI;
             f2 = 0.00761f;
-            if (f3 <= pi) {
+            f3 = v31 * (f32)i * 0.25f;
+            v28 = PI;
+            v26 = 0.16605f;
+            v27 = 1.0f;
+            v25 = 0.4967f;
+            v24 = 100.0f;
+            if (f3 <= v28) {
                 f1 = MTXDegToRad(90.0f);
                 if (f3 <= f1) {
                     f0 = f3 * f3;
-                    f2 = (f2 * f0) - coefK;
-                    f2 = (f2 * f0) + one;
+                    f2 = f2 * f0 - v26;
+                    f2 = f2 * f0 + v27;
                     f2 = f2 * f3;
-                } else {
+                }
+                else {
                     f0 = f3 - f1;
                     f1 = f1 - f0;
                     f0 = f1 * f1;
-                    f2 = (f2 * f0) - coefK;
-                    f2 = (f2 * f0) + one;
+                    f2 = f2 * f0 - v26;
+                    f2 = f2 * f0 + v27;
                     f2 = f2 * f1;
                 }
-            } else {
+            }
+            else {
                 f0 = MTXDegToRad(270.0f);
                 if (f3 < f0) {
-                    f1 = f3 - pi;
+                    f1 = f3 - v28;
                     f0 = f1 * f1;
-                    f2 = (f2 * f0) - coefK;
-                    f2 = (f2 * f0) + one;
+                    f2 = f2 * f0 - v26;
+                    f2 = f2 * f0 + v27;
                     f2 = f2 * f1;
                     f2 = -f2;
-                } else {
+                }
+                else {
                     f0 = f3 - f0;
                     f1 = MTXDegToRad(90.0f);
                     f1 = f1 - f0;
                     f0 = f1 * f1;
-                    f2 = (f2 * f0) - coefK;
-                    f2 = (f2 * f0) + one;
+                    f2 = f2 * f0 - v26;
+                    f2 = f2 * f0 + v27;
                     f2 = f2 * f1;
                     f2 = -f2;
                 }
             }
             f4 = 0.03705f;
-            if (f3 <= pi) {
+            if (f3 <= v28) {
                 f1 = MTXDegToRad(90.0f);
                 if (f3 <= f1) {
                     f0 = f3 * f3;
-                    f4 = (f4 * f0) - coefA;
-                    f4 = (f4 * f0) + one;
-                } else {
+                    f4 = f4 * f0 - v25;
+                    f4 = f4 * f0 + v27;
+                }
+                else {
                     f0 = f3 - f1;
                     f0 = f1 - f0;
                     f0 = f0 * f0;
-                    f4 = (f4 * f0) - coefA;
-                    f4 = (f4 * f0) + one;
+                    f4 = f4 * f0 - v25;
+                    f4 = f4 * f0 + v27;
                     f4 = -f4;
                 }
-            } else {
+            }
+            else {
                 f0 = MTXDegToRad(270.0f);
                 if (f3 < f0) {
-                    f0 = f3 - pi;
+                    f0 = f3 - v28;
                     f0 = f0 * f0;
-                    f4 = (f4 * f0) - coefA;
-                    f4 = (f4 * f0) + one;
+                    f4 = f4 * f0 - v25;
+                    f4 = f4 * f0 + v27;
                     f4 = -f4;
-                } else {
+                }
+                else {
                     f0 = f3 - f0;
                     f1 = MTXDegToRad(90.0f);
                     f0 = f1 - f0;
                     f0 = f0 * f0;
-                    f4 = (f4 * f0) - coefA;
-                    f4 = (f4 * f0) + one;
+                    f4 = f4 * f0 - v25;
+                    f4 = f4 * f0 + v27;
                 }
             }
-            PSMTXTrans(mtx, (dp->unk4 * f2) / hundred, (dp->unk4 * f4) / hundred, 0.0f);
-            GXLoadTexMtxImm(mtx, *texMtx, GX_MTX2x4);
-            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_TEX0, *texMtx, GX_FALSE, GX_PTIDENTITY);
-            GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_1_4);
-            GXSetTevKAlphaSel(tevStage, GX_TEV_KASEL_1_4);
-            GXSetTevOrder(tevStage, texCoord, GX_TEXMAP0, GX_COLOR_NULL);
-            GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, i == 3);
-            GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, i == 3);
-            first = (i == 0);
-            v33 = GX_CC_CPREV;
-            if (first) {
-                v33 = GX_CC_ZERO;
+            f0 = u->unk4;
+            MTXTrans(sp48, f0 * f2 / v24, f0 * f4 / v24, 0.0f);
+            GXLoadTexMtxImm(sp48, *mtx, 1);
+            GXSetTexCoordGen2(texCoord, 1, 4, *mtx, 0, 0x7D);
+            GXSetTevKColorSel(tevStage, 6);
+            GXSetTevKAlphaSel(tevStage, 6);
+            GXSetTevOrder(tevStage, texCoord, 0, 0xFF);
+            GXSetTevColorOp(tevStage, 0, 0, 0, 1, i == 3);
+            GXSetTevAlphaOp(tevStage, 0, 0, 0, 1, i == 3);
+            vcond = (i == 0);
+            v33 = 0;
+            if (vcond) {
+                v33 = 0xF;
             }
-            GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, v33);
-            v34 = GX_CA_APREV;
-            if (first) {
-                v34 = GX_CA_ZERO;
+            GXSetTevColorIn(tevStage, 0xF, 8, 0xE, v33);
+            v34 = 0;
+            if (vcond) {
+                v34 = 7;
             }
-            GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, v34);
-            GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-            texMtx++;
+            GXSetTevAlphaIn(tevStage, 7, 4, 6, v34);
+            GXSetTevSwapMode(tevStage, 0, 0);
             texCoord++;
+            mtx++;
             tevStage++;
         }
-        color.r = dp->unk2;
+        color.r = u->unk2;
         color.a = 0xFF;
-        GXSetTevKColor(GX_KCOLOR0, color);
-        GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-        GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K0);
-        GXSetTevKAlphaSel(tevStage, GX_TEV_KASEL_K0_A);
-        GXSetTevOrder(tevStage, texCoord, GX_TEXMAP1, GX_COLOR_NULL);
-        GXSetTevColorOp(tevStage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-        GXSetTevAlphaOp(tevStage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-        GXSetTevColorIn(tevStage, GX_CC_TEXC, GX_CC_KONST, GX_CC_C0, GX_CC_ZERO);
-        GXSetTevAlphaIn(tevStage, GX_CA_TEXA, GX_CA_KONST, GX_CA_A0, GX_CA_ZERO);
-        GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+        GXSetTevKColor(0, color);
+        GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
+        GXSetTevKColorSel(tevStage, 0xC);
+        GXSetTevKAlphaSel(tevStage, 0x1C);
+        GXSetTevOrder(tevStage, texCoord, 1, 0xFF);
+        GXSetTevColorOp(tevStage, 8, 0, 0, 1, 0);
+        GXSetTevAlphaOp(tevStage, 8, 0, 0, 1, 0);
+        GXSetTevColorIn(tevStage, 8, 0xE, 2, 0xF);
+        GXSetTevAlphaIn(tevStage, 4, 6, 1, 7);
+        GXSetTevSwapMode(tevStage, 0, 0);
         texCoord++;
-        tevStage++;
         GXSetNumTexGens(texCoord);
+        tevStage++;
         GXSetNumTevStages(tevStage);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         {
             f32 half = 0.5f;
-            GXPosition3f32((f32)-(s32)gp->fbWidth * half, (f32)gp->efbHeight * half, 0.0f);
+
+            GXPosition3f32(half * -gp->fbWidth, gp->efbHeight * half, 0.0f);
             GXTexCoord2f32(0.0f, 0.0f);
-            GXPosition3f32((f32)gp->fbWidth * half, (f32)gp->efbHeight * half, 0.0f);
+            GXPosition3f32(half * gp->fbWidth, gp->efbHeight * half, 0.0f);
             GXTexCoord2f32(1.0f, 0.0f);
-            GXPosition3f32((f32)gp->fbWidth * half, (f32)-(s32)gp->efbHeight * half, 0.0f);
+            GXPosition3f32(half * gp->fbWidth, half * -gp->efbHeight, 0.0f);
             GXTexCoord2f32(1.0f, 1.0f);
-            GXPosition3f32((f32)-(s32)gp->fbWidth * half, (f32)-(s32)gp->efbHeight * half, 0.0f);
+            GXPosition3f32(half * -gp->fbWidth, half * -gp->efbHeight, 0.0f);
             GXTexCoord2f32(0.0f, 1.0f);
         }
     }
 
-    if ((dp->unk0 & 2) && (dp->unk8 != float_0_8041e53c)) {
-        f32 hundred, one, coefK, twoPi, coefA, quarter, pi;
-        s32 first;
-        s32* texMtx = texmtx_tbl;
-        GXTexCoordID texCoord = GX_TEXCOORD0;
-        GXTevColorArg v33;
-        GXTevAlphaArg v34;
-        GXTevStageID finalStage;
-        GXTevStageID tevStage = GX_TEVSTAGE0;
-
-        for (i = 0; i < 4; i++) {
-            twoPi = TWO_PI;
-            quarter = 0.25f;
-            f0 = TWO_PI * (f32)i;
-            f3 = f0 * quarter;
-            pi = PI;
-            coefK = 0.16605f;
-            one = 1.0f;
-            coefA = 0.4967f;
-            hundred = 100.0f;
+    if ((u->unk0 & 2) && (u->unk8)) {
+        v28 = TWO_PI;
+        mtx = texmtx_tbl;
+        v31 = PI;
+        i = 0;
+        texCoord = 0;
+        v26 = 0.16605f;
+        v25 = 1.0f;
+        v30 = 0.25f;
+        v27 = 0.4967f;
+        v24 = 100.0f;
+        tevStage = 0;
+        for (; i < 4; i++) {
             f2 = 0.00761f;
-            if (f3 <= pi) {
+            f0 = (f32)i;
+            f0 = v28 * f0;
+            f3 = f0 * v30;
+            if (f3 <= v31) {
                 f1 = MTXDegToRad(90.0f);
                 if (f3 <= f1) {
                     f0 = f3 * f3;
-                    f2 = (f2 * f0) - coefK;
-                    f2 = (f2 * f0) + one;
+                    f2 = f2 * f0 - v26;
+                    f2 = f2 * f0 + v25;
                     f2 = f2 * f3;
-                } else {
+                }
+                else {
                     f0 = f3 - f1;
                     f1 = f1 - f0;
                     f0 = f1 * f1;
-                    f2 = (f2 * f0) - coefK;
-                    f2 = (f2 * f0) + one;
+                    f2 = f2 * f0 - v26;
+                    f2 = f2 * f0 + v25;
                     f2 = f2 * f1;
                 }
-            } else {
+            }
+            else {
                 f0 = MTXDegToRad(270.0f);
                 if (f3 < f0) {
-                    f1 = f3 - pi;
+                    f1 = f3 - v31;
                     f0 = f1 * f1;
-                    f2 = (f2 * f0) - coefK;
-                    f2 = (f2 * f0) + one;
+                    f2 = f2 * f0 - v26;
+                    f2 = f2 * f0 + v25;
                     f2 = f2 * f1;
                     f2 = -f2;
-                } else {
+                }
+                else {
                     f0 = f3 - f0;
                     f1 = MTXDegToRad(90.0f);
                     f1 = f1 - f0;
                     f0 = f1 * f1;
-                    f2 = (f2 * f0) - coefK;
-                    f2 = (f2 * f0) + one;
+                    f2 = f2 * f0 - v26;
+                    f2 = f2 * f0 + v25;
                     f2 = f2 * f1;
                     f2 = -f2;
                 }
             }
             f4 = 0.03705f;
-            if (f3 <= pi) {
+            if (f3 <= v31) {
                 f1 = MTXDegToRad(90.0f);
                 if (f3 <= f1) {
                     f0 = f3 * f3;
-                    f4 = (f4 * f0) - coefA;
-                    f4 = (f4 * f0) + one;
-                } else {
+                    f4 = f4 * f0 - v27;
+                    f4 = f4 * f0 + v25;
+                }
+                else {
                     f0 = f3 - f1;
                     f0 = f1 - f0;
                     f0 = f0 * f0;
-                    f4 = (f4 * f0) - coefA;
-                    f4 = (f4 * f0) + one;
+                    f4 = f4 * f0 - v27;
+                    f4 = f4 * f0 + v25;
                     f4 = -f4;
                 }
-            } else {
+            }
+            else {
                 f0 = MTXDegToRad(270.0f);
                 if (f3 < f0) {
-                    f0 = f3 - pi;
+                    f0 = f3 - v31;
                     f0 = f0 * f0;
-                    f4 = (f4 * f0) - coefA;
-                    f4 = (f4 * f0) + one;
+                    f4 = f4 * f0 - v27;
+                    f4 = f4 * f0 + v25;
                     f4 = -f4;
-                } else {
+                }
+                else {
                     f0 = f3 - f0;
                     f1 = MTXDegToRad(90.0f);
                     f0 = f1 - f0;
                     f0 = f0 * f0;
-                    f4 = (f4 * f0) - coefA;
-                    f4 = (f4 * f0) + one;
+                    f4 = f4 * f0 - v27;
+                    f4 = f4 * f0 + v25;
                 }
             }
-            PSMTXTrans(mtx2, (dp->unk8 * f2) / hundred, (dp->unk8 * f4) / hundred, 0.0f);
-            GXLoadTexMtxImm(mtx2, *texMtx, GX_MTX2x4);
-            GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_TEX0, *texMtx, GX_FALSE, GX_PTIDENTITY);
-            GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_1_4);
-            GXSetTevKAlphaSel(tevStage, GX_TEV_KASEL_1_4);
-            GXSetTevOrder(tevStage, texCoord, GX_TEXMAP0, GX_COLOR_NULL);
-            GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, i == 3);
-            GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, i == 3);
-            first = (i == 0);
-            v33 = GX_CC_CPREV;
-            if (first) {
-                v33 = GX_CC_ZERO;
+            f0 = u->unk8;
+            MTXTrans(sp18, f0 * f2 / v24, f0 * f4 / v24, 0.0f);
+            GXLoadTexMtxImm(sp18, *mtx, 1);
+            GXSetTexCoordGen2(texCoord, 1, 4, *mtx, 0, 0x7D);
+            GXSetTevKColorSel(tevStage, 6);
+            GXSetTevKAlphaSel(tevStage, 6);
+            GXSetTevOrder(tevStage, texCoord, 0, 0xFF);
+            GXSetTevColorOp(tevStage, 0, 0, 0, 1, i == 3);
+            GXSetTevAlphaOp(tevStage, 0, 0, 0, 1, i == 3);
+            vcond = (i == 0);
+            v33 = 0;
+            if (vcond) {
+                v33 = 0xF;
             }
-            GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, v33);
-            v34 = GX_CA_APREV;
-            if (first) {
-                v34 = GX_CA_ZERO;
+            GXSetTevColorIn(tevStage, 0xF, 8, 0xE, v33);
+            v34 = 0;
+            if (vcond) {
+                v34 = 7;
             }
-            GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, v34);
-            GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-            texMtx++;
+            GXSetTevAlphaIn(tevStage, 7, 4, 6, v34);
+            GXSetTevSwapMode(tevStage, 0, 0);
             texCoord++;
+            mtx++;
             tevStage++;
         }
-        color.r = dp->unk3;
+        color.r = u->unk3;
         color.a = 0xFF;
-        GXSetTevKColor(GX_KCOLOR0, color);
-        GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-        GXSetTevColor(GX_TEVREG1, dat_8041e510);
-        GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K0);
-        GXSetTevKAlphaSel(tevStage, GX_TEV_KASEL_K0_A);
-        GXSetTevOrder(tevStage, texCoord, GX_TEXMAP1, GX_COLOR_NULL);
-        GXSetTevColorOp(tevStage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-        GXSetTevAlphaOp(tevStage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-        GXSetTevColorIn(tevStage, GX_CC_TEXC, GX_CC_KONST, GX_CC_ONE, GX_CC_ZERO);
-        GXSetTevAlphaIn(tevStage, GX_CA_TEXA, GX_CA_KONST, GX_CA_A1, GX_CA_ZERO);
-        finalStage = tevStage + 1;
-        GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-        GXSetTevOrder(finalStage, GX_COLOR_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
-        GXSetTevColorOp(finalStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-        GXSetTevAlphaOp(finalStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-        GXSetTevColorIn(finalStage, GX_CC_C0, GX_CC_ZERO, GX_CC_APREV, GX_CC_ZERO);
-        GXSetTevAlphaIn(finalStage, GX_CA_A0, GX_CA_ZERO, GX_CA_APREV, GX_CA_ZERO);
-        GXSetTevSwapMode(finalStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-        GXSetNumTexGens(texCoord + 1);
-        GXSetNumTevStages(tevStage + 2);
+        GXSetTevKColor(0, color);
+        GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
+        GXSetTevColor(2, dat_8041e510);
+        GXSetTevKColorSel(tevStage, 0xC);
+        GXSetTevKAlphaSel(tevStage, 0x1C);
+        GXSetTevOrder(tevStage, texCoord, 1, 0xFF);
+        GXSetTevColorOp(tevStage, 8, 0, 0, 1, 0);
+        GXSetTevAlphaOp(tevStage, 8, 0, 0, 1, 0);
+        GXSetTevColorIn(tevStage, 8, 0xE, 0xC, 0xF);
+        GXSetTevAlphaIn(tevStage, 4, 6, 2, 7);
+        GXSetTevSwapMode(tevStage, 0, 0);
+        GXSetTevOrder(tevStage + 1, 0xFF, 0xFF, 0xFF);
+        GXSetTevColorOp(tevStage + 1, 0, 0, 0, 1, 0);
+        GXSetTevAlphaOp(tevStage + 1, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(tevStage + 1, 2, 0xF, 1, 0xF);
+        GXSetTevAlphaIn(tevStage + 1, 1, 7, 0, 7);
+        GXSetTevSwapMode(tevStage + 1, 0, 0);
+        texCoord++;
+        GXSetNumTexGens(texCoord);
+        tevStage += 2;
+        GXSetNumTevStages(tevStage);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         {
             f32 half = 0.5f;
-            GXPosition3f32((f32)-(s32)gp->fbWidth * half, (f32)gp->efbHeight * half, 0.0f);
+
+            GXPosition3f32(half * -gp->fbWidth, gp->efbHeight * half, 0.0f);
             GXTexCoord2f32(0.0f, 0.0f);
-            GXPosition3f32((f32)gp->fbWidth * half, (f32)gp->efbHeight * half, 0.0f);
+            GXPosition3f32(half * gp->fbWidth, gp->efbHeight * half, 0.0f);
             GXTexCoord2f32(1.0f, 0.0f);
-            GXPosition3f32((f32)gp->fbWidth * half, (f32)-(s32)gp->efbHeight * half, 0.0f);
+            GXPosition3f32(half * gp->fbWidth, half * -gp->efbHeight, 0.0f);
             GXTexCoord2f32(1.0f, 1.0f);
-            GXPosition3f32((f32)-(s32)gp->fbWidth * half, (f32)-(s32)gp->efbHeight * half, 0.0f);
+            GXPosition3f32(half * -gp->fbWidth, half * -gp->efbHeight, 0.0f);
             GXTexCoord2f32(0.0f, 1.0f);
         }
     }
 }
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
 
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
@@ -738,41 +758,21 @@ void envDisp_Blur(void) {
 }
 
 
-// The map-object flag tests and the texture loop match; what still differs is global register allocation.
-// The target keeps the map object in r3 and its flags in r4 (mine swaps them), so the bbox lands
-// in r21-r18 (mine r24-r21) and the loop counters/base/fp constants shift by a few registers
-// (i: r23/r19, j: r22/r18, base r24/r20). The entry block also lays out the wrong way (target:
-// `beq F4; b E4`, mine: `bne E4` + fall-through); constant-pool symbols show as @NNN.
-// NONMATCHING (91.96%): register allocation / block layout only. `opt_propagation off` and the
-// MUST_MATCH callee-saved declaration order + one read-order swap (match-only tricks) are what
-// raised it from 91.19%; the remaining obj/flags swap and block layout are permuter work.
+// The map-object flag logic now matches the target's block layout: `flags` is a local and the entry
+// tests `flags & 0x20`, branching into the loop (`while ((obj = obj->parent) != NULL)`), with the
+// set-flag path in the else arm. The initial `flags` load must be written through
+// `((MapObject*)yami->unk0)` rather than `obj`, or MWCC does not spill `yami` first (the spill order
+// and the `lwz r3, 0x0(r3)` obj load then match the target). What still differs is global register
+// allocation: the target keeps the map object in r3 and its flags in r4, mine keeps obj in r4 and
+// copies from r3 (`mr r4, r3`) with flags in r5, so the bbox lands in r21-r18 (mine r24-r21) and the
+// loop counters/base/fp constants shift by a few registers (i: r23/r19, j: r22/r18, base r24/r20).
+// Constant-pool symbols show as @NNN.
+// NONMATCHING (92.99%): mostly the obj/flags register swap and its cascade.
 void envSetWater(s32 arg0, void* arg1) {
     EnvironmentYami* yami = (EnvironmentYami*)arg0;
-#ifdef MUST_MATCH
-    // Match-only: this declaration order drives MWCC's register allocation toward the target's
-    // (91.19% -> 91.94%); the natural order is under #else. What still differs is the obj/flags
-    // register swap, the entry-block layout and scheduler moves (permuter work).
-    void* capture;
-    Mtx mtx;
-    f32 dist;
-    s32 tevStage;
-    s32 texMap;
-    s32 texCoord;
-    s32 unk18;
-    f32 scale;
-    MapObject* obj;
-    u8* water;
-    Vec pos;
-    GXTexObj captureObj;
-    GXTexObj waterObj;
-    f32 indMtx[2][3];
-    u32 size;
-    s32 i, j;
-    s32 x0, y0, x1, y1;
-    s32 width, height;
-#else
     MapObject* obj;
     s32 tevStage;
+    u32 flags;
     s32 texMap;
     s32 texCoord;
     s32 unk18;
@@ -789,44 +789,31 @@ void envSetWater(s32 arg0, void* arg1) {
     f32 dist;
     f32 scale;
     s32 i, j;
-#endif
 
-#ifdef MUST_MATCH
-    // Match-only: reading unk18 before texCoord (a pure scheduling nudge) moves one register
-    // (92.03% -> 92.05%); the natural order is under #else.
     obj = (MapObject*)yami->unk0;
-    tevStage = yami->tevStage;
-    texMap = yami->texMap;
-    unk18 = yami->unk18;
-    texCoord = yami->texCoord;
-#else
-    obj = (MapObject*)yami->unk0;
+    flags = *(u32*)((MapObject*)yami->unk0)->field_0x0;
     tevStage = yami->tevStage;
     texMap = yami->texMap;
     texCoord = yami->texCoord;
     unk18 = yami->unk18;
-#endif
 
-    if ((*(u32*)obj->field_0x0 & 0x20) == 0) {
-        if ((*(u32*)obj->field_0x0 & 0x20000000) == 0) {
-            *(u32*)obj->field_0x0 |= 0x20000000;
-            return;
-        }
-    }
-    else {
-        while (TRUE) {
-            obj = obj->parent;
-            if (obj == NULL) {
-                break;
-            }
-            if ((*(u32*)obj->field_0x0 & 0x10) == 0) {
+    if (flags & 0x20) {
+        while ((obj = obj->parent) != NULL) {
+            flags = *(u32*)obj->field_0x0;
+            if ((flags & 0x10) == 0) {
                 continue;
             }
-            if ((*(u32*)obj->field_0x0 & 0x20000000) == 0) {
-                *(u32*)obj->field_0x0 |= 0x20000000;
+            if ((flags & 0x20000000) == 0) {
+                *(u32*)obj->field_0x0 = flags | 0x20000000;
                 return;
             }
             break;
+        }
+    }
+    else {
+        if ((flags & 0x20000000) == 0) {
+            *(u32*)obj->field_0x0 = flags | 0x20000000;
+            return;
         }
     }
 

@@ -21,6 +21,14 @@
 
 #include <string.h>
 #include "matching.h"
+#include "battle/battle_actrecord.h"
+#include "eff/eff_damage_star.h"
+#include "eff/eff_fukidashi.h"
+#include "eff/eff_hit.h"
+#include "eff/eff_miss_star.h"
+#include "eff/eff_recovery.h"
+#include "eff/n64/eff_ice_n64.h"
+#include "eff/n64/eff_kemuri12_n64.h"
 
 // These five symbols are declared as byte arrays in battle.c (see the switch-table comment there), so a
 // prototype in battle_damage.h would clash when battle.c is compiled. Keep the prototypes local to this
@@ -32,6 +40,290 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
                           s32 rate, s32 levelDiff, s8 turns, s8 strength);
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags);
+
+#define PART ((BattleUnitPart*)partArg)
+// NONMATCHING (99.99%): all 713 instructions match; only the .rodata base symbol (retail zero_802eda80 vs our
+// anonymous section symbol) and the .rodata string/double displacements (0x290 vs 0x20, 0x58 vs 0x18) differ,
+// which settle once this file's other functions (still stubs) emit their literals.
+void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damage, s32 arg4, s32 flags,
+                        s32 arg6, s32 arg7) {
+    BattleUnit* attacker;
+    BattleWork* wp = _battleWorkPointer;
+    Vec sfxPos;
+    f32 effectX, effectY, effectZ;
+    f32 fukidashiHitX, fukidashiHitY, fukidashiHitZ;
+    f32 missHitX, missHitY, missHitZ;
+    f32 recoverHitX, recoverHitY, recoverHitZ;
+    f32 recoverX, recoverY, recoverZ;
+    f32 fukidashiX, fukidashiY, fukidashiZ;
+    s32 recovered;
+    s32 count;
+    s32 dir;
+    u32 t;
+
+    if (damageCode != -5) {
+        attacker = BattleGetUnitPtr(wp, damageCode);
+    } else {
+        attacker = NULL;
+    }
+    if (damage > 99) {
+        damage = 99;
+    } else if (damage < -99) {
+        damage = -99;
+    }
+    if (attacker != NULL) {
+        *(s32*)(attacker->field_0x27C + 4) += damage;
+    }
+    if (PART != NULL) {
+        unit->currentTarget = PART;
+    } else {
+        BattleUnitPart* tmp = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
+        unit->currentTarget = tmp;
+        partArg = (s32)tmp;
+    }
+    unit->damagePattern = arg6;
+    if (unit->mAttributeFlags & 0x200000) {
+        t = unit->damagePattern;
+        if (t == 0x15 || (u32)(t - 0x16) <= 1 || t == 0x18) {
+            unit->damagePattern = 0;
+        }
+    }
+    BtlUnit_GetHitPos(unit, PART, &sfxPos.x, &sfxPos.y, &sfxPos.z);
+
+    if (!(flags & 0x2000)) {
+        if (damage != 0 || arg4 != 0) {
+            BtlUnit_GetHitPos(unit, PART, &effectX, &effectY, &effectZ);
+            switch ((u8)flags) {
+            case 0x18:
+            case 0x19:
+                effKemuri12N64Entry(0, 30, effectX, effectY, effectZ, float_1_8041bed8);
+                effHitEntry(1, 3, effectX, effectY, effectZ, float_1_8041bed8);
+                break;
+            case 0x1b:
+                effHitEntry(2, 3, effectX, effectY, effectZ, float_1_8041bed8);
+                break;
+            case 0x1a:
+                effIceN64Entry(0, effectX, effectY, effectZ);
+                effHitEntry(3, 3, effectX, effectY, effectZ, float_1_8041bed8);
+                break;
+            default:
+                effHitEntry(0, 3, effectX, effectY, effectZ, float_1_8041bed8);
+                break;
+            }
+            if (BtlUnit_GetBelong(unit) == 0) {
+                if (damage != 0 && !(unit->mAttributeFlags & 0x400000)) {
+                    effDamageStarEntry(0, damage, effectX - float_8_8041bef0, float_5_8041bef4 + effectY, effectZ, float_10_8041bed0, float_30_8041bee4);
+                }
+                if (arg4 != 0) {
+                    if (damage != 0) {
+                        effDamageStarEntry(1, arg4, effectX - float_8_8041bef0, float_5_8041bef4 + effectY, effectZ, float_10_8041bed0, float_60_8041bec8);
+                    } else {
+                        effDamageStarEntry(1, arg4, effectX - float_8_8041bef0, float_5_8041bef4 + effectY, effectZ, float_10_8041bed0, float_30_8041bee4);
+                    }
+                }
+            } else {
+                if (damage != 0 && !(unit->mAttributeFlags & 0x400000)) {
+                    effDamageStarEntry(0, damage, effectX, float_10_8041bed0 + effectY, effectZ, float_10_8041bed0, float_neg30_8041bef8);
+                }
+                if (arg4 != 0) {
+                    if (damage != 0) {
+                        effDamageStarEntry(1, arg4, effectX, float_10_8041bed0 + effectY, effectZ, float_10_8041bed0, float_neg60_8041befc);
+                    } else {
+                        effDamageStarEntry(1, arg4, effectX, float_10_8041bed0 + effectY, effectZ, float_10_8041bed0, float_neg30_8041bef8);
+                    }
+                }
+            }
+            if (damageCode != -5 && attacker != NULL && attacker->badgesEquipped.MegaRush != 0 &&
+                attacker->currentHp <= attacker->mKindParams->mPerilHP) {
+                BtlUnit_GetHitPos(unit, PART, &fukidashiHitX, &fukidashiHitY, &fukidashiHitZ);
+                effFukidashiEntry(0, 0, 0, 60, fukidashiHitX, fukidashiHitY, fukidashiHitZ, float_10_8041bed0, float_0_8041bf00);
+            }
+        } else {
+            BtlUnit_GetHitPos(unit, PART, &missHitX, &missHitY, &missHitZ);
+            if ((u32)arg6 != 2 && (u32)arg6 != 3 && (u32)arg6 != 0x15 && (u32)arg6 != 0x16 &&
+                (u32)arg6 != 0x14 && (u32)arg6 != 0x13 && (u32)arg6 != 0x1b && (u32)arg6 != 7 &&
+                (u8)flags != 0x16) {
+                dir = BtlUnit_GetBelong(unit) == 0 ? -1 : 1;
+                if (flags & 0x20000) {
+                    effMissStarEntry(1, missHitX, missHitY, missHitZ, 1, dir);
+                } else {
+                    effMissStarEntry(0, missHitX, missHitY, missHitZ, 1, dir);
+                }
+            }
+        }
+    } else {
+        BtlUnit_GetHitPos(unit, PART, &recoverHitX, &recoverHitY, &recoverHitZ);
+        effRecoveryEntry(0, (s32)__fabs(damage), recoverHitX, recoverHitY, recoverHitZ);
+    }
+
+    if (!(flags & 0x2000) && damage > 0) {
+        count = unit->badgesEquipped.PityFlower;
+        recovered = 0;
+        while (count > 0) {
+            if (irand(100) < 30) {
+                recovered++;
+            }
+            count--;
+        }
+        if (recovered > 0) {
+            BtlUnit_RecoverFp(unit, recovered);
+            BtlUnit_GetPos(unit, &recoverX, &recoverY, &recoverZ);
+            recoverY = recoverY + (unit->mSizeMultiplier * BtlUnit_GetHeight(unit) + float_5_8041bef4);
+            effRecoveryEntry(1, recovered, recoverX, recoverY, recoverZ);
+        }
+    }
+
+    if ((u32)arg6 != 0x13 && (u32)arg6 != 0x1b) {
+        if (flags & 0x1000000) {
+            psndSFXOn_3D("SFX_MARIO_HAMMER_PIKKYO_R1", &sfxPos);
+        } else if (flags & 0x2000000) {
+            psndSFXOn_3D("SFX_MARIO_HAMMER_PIKKYO_Y1", &sfxPos);
+        } else if (flags & 0x4000000) {
+            psndSFXOn_3D("SFX_MARIO_HAMMER_PIKKYO_B1", &sfxPos);
+        } else if (flags & 0x8000000) {
+            psndSFXOn_3D("SFX_MARIO_HAMMER_PIKKYO_G1", &sfxPos);
+        } else if (flags & 0x10000000) {
+            psndSFXOn_3D("SFX_MARIO_HAMMER_PIKKYO_P1", &sfxPos);
+        } else if (BtlUnit_GetBelong(unit) == 0 && (flags & 0x40000)) {
+            psndSFXOn_3D("SFX_MARIO_GUARD1", &sfxPos);
+        } else {
+            if (damage > 0) {
+                switch ((u8)flags) {
+                case 0x18:
+                    psndSFXOn_3D(unit->mKindParams->fireDamageSfxName, &sfxPos);
+                    psndSFXOn_3D(unit->mKindParams->damageSfxName, &sfxPos);
+                    break;
+                case 0x1a:
+                    psndSFXOn_3D(unit->mKindParams->iceDamageSfxName, &sfxPos);
+                    psndSFXOn_3D(unit->mKindParams->damageSfxName, &sfxPos);
+                    break;
+                case 0x1b:
+                    psndSFXOn_3D(unit->mKindParams->electricDamageSfxName, &sfxPos);
+                    psndSFXOn_3D(unit->mKindParams->damageSfxName, &sfxPos);
+                    break;
+                default:
+                    psndSFXOn_3D(unit->mKindParams->damageSfxName, &sfxPos);
+                    break;
+                }
+            }
+            if (arg4 > 0 && BtlUnit_GetBelong(unit) == 0) {
+                psndSFXOn_3D("SFX_MARIO_DAMAGE_FP1", &sfxPos);
+            }
+        }
+    }
+
+    unit->hpDamageTaken = damage;
+    unit->totalHpDamageTaken += unit->hpDamageTaken;
+    unit->fpDamageTaken = arg4;
+    unit->field_0x26E[0] = arg4;
+    *(s32*)unit->field_0x264 += unit->fpDamageTaken;
+
+    if (!(unit->mAttributeFlags & 0x40000000) && !(PART->attributes & 0x800000)) {
+        unit->hpGauge.field_0xC = unit->currentHp;
+        unit->currentHp = unit->currentHp - unit->hpDamageTaken;
+        if (unit->currentHp > unit->maxHp) {
+            unit->currentHp = unit->maxHp;
+        }
+        if (unit->currentHp < 0) {
+            unit->currentHp = 0;
+        }
+        unit->hpGauge.field_0x10 = unit->currentHp;
+        if (unit->hpDamageTaken != 0) {
+            unit->hpGauge.field_0x4 = unit->hpGauge.field_0x6;
+            unit->hpGauge.field_0x8 = unit->hpGauge.field_0xA;
+        }
+        if (flags & 0x100) {
+            unit->hpGauge.field_0x2 |= 1;
+        } else {
+            unit->hpGauge.field_0x2 &= ~1;
+        }
+    }
+    if (unit->fpDamageTaken != 0) {
+        s32 fp = BtlUnit_GetFp(unit);
+
+        if (fp < arg4) {
+            unit->field_0x26E[0] = fp;
+        } else {
+            unit->field_0x26E[0] = arg4;
+        }
+        fp = fp - arg4;
+        if (fp < 0) {
+            fp = 0;
+        }
+        BtlUnit_SetFp(unit, fp);
+        *(s32*)(unit->field_0x264 + 4) += (s8)unit->field_0x26E[0];
+    }
+    if (damage > 0) {
+        if (unit->currentKind == 0xde) {
+            BtlActRec_AddCount(wp->field_16F1C + 6);
+            BtlActRec_AddPoint(wp->field_16F1C + 4, (u8)damage);
+        } else if (unit->currentKind >= 0xe0 && unit->currentKind < 0xe7) {
+            BtlActRec_AddCount(wp->field_16F1C + 7);
+            BtlActRec_AddPoint(wp->field_16F1C + 5, (u8)damage);
+        }
+    }
+    if (arg7 != 0 && (damage > 0 || arg4 > 0)) {
+        if (BtlUnit_CheckStatus(unit, STATUS_SLEEP) != 0 && irand(100) < 50) {
+            unit->mSleepTurns = 1;
+            unit->mSleepStrength = 100;
+            BtlUnit_CheckRecoveryStatus(unit, STATUS_SLEEP);
+            BtlUnit_GetPos(unit, &fukidashiX, &fukidashiY, &fukidashiZ);
+            fukidashiY = fukidashiY + BtlUnit_GetHeight(unit) / 2;
+            effFukidashiEntry(0, 0, 0, 60, fukidashiX, fukidashiY, fukidashiZ, float_10_8041bed0, float_0_8041bf00);
+        }
+    }
+    if (unit->currentKind == 0xde) {
+        BattleAudience_Case_MarioBigDamage(unit->hpDamageTaken);
+    }
+    if (unit->currentHp <= 0) {
+        unit->currentHp = 0;
+        if (flags & 0x100) {
+            flags |= 0x200;
+            if (unit->mAttributeFlags & 0x10000) {
+                switch ((u8)flags) {
+                case 0x18:
+                case 0x19:
+                case 0x2e:
+                case 0x31:
+                case 0x32:
+                case 0x36:
+                    flags |= 0x400;
+                    break;
+                }
+            } else {
+                flags |= 0x400;
+                _checkDamageCode_EmergencyRevival(unit, &flags);
+            }
+            if ((u32)unit->damagePattern == 0x19) {
+                s32 clear = 1;
+
+                if ((flags & 0x400) && !(flags & 0x800) && (flags & 0x100)) {
+                    if (((u8*)unit->vulnStatus)[0x10] != 0) {
+                        clear = 0;
+                    }
+                }
+                if (clear) {
+                    unit->damagePattern = 0;
+                }
+            }
+            if (flags & 0x400) {
+                if (unit->currentKind >= 0xe0 && unit->currentKind < 0xe7) {
+                    BattleAudience_Case_PartyDown();
+                }
+                if (unit->currentKind >= 1 && unit->currentKind < 0xd8) {
+                    BattleAudience_Case_KillEnemy(unit->mLevel);
+                    BattleAudience_Case_FinalAttack();
+                }
+            }
+        }
+    } else {
+        if ((u32)unit->damagePattern == 0x19) {
+            unit->damagePattern = 0;
+        }
+    }
+    unit->mTokenFlags |= 1;
+    BattleRunHitEvent(unit, flags);
+}
 
 // dont_inline: the original calls this out of line from BattleCheckDamage.
 #pragma dont_inline on
@@ -650,25 +942,22 @@ s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
 // Applies one status (sleep, stop, poison, ...) to `unit` from an attack of `part`'s side: the immunity and
 // resist checks, the roll against `rate`, the status itself, the hit effect and the announcement. `*work` collects
 // what happened (1/2 got/lost a status, 4/8 fright/gale force, 0x10 instant kill, 0x20 sleep).
-// NONMATCHING (98.63%): register allocation differences only.
+#pragma opt_common_subs off // without it the callee-saved registers come out in the wrong order (unit/part in r30/r31)
+// NONMATCHING (99.59%): .rodata layout (the i2f double at 0x58 and the SFX_CONDITION strings at 0x60+ in the
+// original) makes 24 string `addi` loads and 3 `lfd` loads differ by a constant, and the two `(s8)type` casts
+// at the BtlUnit_SetStatus/BtlUnit_GetStatus calls schedule one slot earlier than the original.
 s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32 weaponSpecial, u32 type,
                           s32 rate, s32 levelDiff, s8 turns, s8 strength) {
     u8 chargeStrength;
     u8 sp9;
-#ifdef MUST_MATCH
-    int new_var2;
-#endif
     u8 sp8;
     f32 x, y, z;
     Vec hit;
     s32 isRemoving;
     s32 applied;
     s32 announced;
-    s32 resist;
     u32 resistFlag;
-#ifdef MUST_MATCH
-    f32 new_var;
-#endif
+    s32 resist;
     EffectEntry* eff;
 
     isRemoving = 0;
@@ -935,21 +1224,16 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
             break;
         }
         switch ((s32)type) {
+        case STATUS_DEFENSE_UP:
+        case STATUS_DEFENSE_DOWN:
+            effUpdownEntry(1, x, y, 20.0f + z, strength, 60);
+            break;
         case STATUS_HUGE:
         case STATUS_TINY:
         case STATUS_ATTACK_UP:
         case STATUS_ATTACK_DOWN:
         case STATUS_CHARGE:
-#ifdef MUST_MATCH
-            new_var = y;
-            effUpdownEntry(0, x, new_var, 15.0f + z, strength, 60);
-#else
             effUpdownEntry(0, x, y, 15.0f + z, strength, 60);
-#endif
-            break;
-        case STATUS_DEFENSE_UP:
-        case STATUS_DEFENSE_DOWN:
-            effUpdownEntry(1, x, y, 20.0f + z, strength, 60);
             break;
         }
     } else {
@@ -1019,11 +1303,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
         case STATUS_HP_REGEN:
         case STATUS_FP_REGEN:
             if ((s8)sp9 > 0) {
-#ifdef MUST_MATCH
-                BattleStatusChangeInfoSetAnnouce(unit, type, (s8)(new_var2 = sp9), 1);
-#else
                 BattleStatusChangeInfoSetAnnouce(unit, type, (s8)sp9, 1);
-#endif
                 BattleStatusChangeMsgSetAnnouce(unit, type, 1);
                 announced = 1;
             }
@@ -1109,6 +1389,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
     }
     return 1;
 }
+#pragma opt_common_subs reset
 
 // The `s32 rate` plus `(s8)` casts reproduce the original `extsb r8,r3` / `cmpwi r8,0` (a plain s8
 // rate makes the GALE_FORCE test `extsb. r0,r8`). The call casts BattleSetStatusDamage to a prototype
@@ -1181,253 +1462,278 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
 #define BU_S32(u, off) (*(s32*)((u8*)(u) + (off)))
 #define BU_U32(u, off) (*(u32*)((u8*)(u) + (off)))
 
-// NONMATCHING (98.05%): behaviour complete, checked against the asm. The counter-check work, the three hit-position Vecs
-// and the register colouring differ (the original keeps &counter in r21).
+// The shapes here that reproduce the original's scheduling and block layout:
+//  - `damage = 0;` is a plain assignment placed after the `part` block (not an initializer); the original
+//    hoists it to between the `weapon->special` load and its test, which is also where `damage` (r22) first
+//    goes live.
+//  - the weapon's `s8 field_0x6D` is read as `*(u8*)&weapon->field_0x6D`, i.e. an `lbz` with no `extsb`
+//    or `mr`; a `(u8)` cast leaves an extra move and a plain s8 load sign-extends.
+//  - the counter body is a `while (work.field_0x0) { ... break; }` so the compiler emits the original's
+//    bottom-tested block (test after the body, `bne` back into it).
+//  - the tail is `if (work.field_0x24 != 0) { ... return -1; } return ret;` so the shared `return ret`
+//    lands out of line at the end like the original.
+//  - the three weaponField6D==0xe/0x10 tests are independent `if`s: `irand(100)` runs unconditionally.
+//  - the second emergency-revival block does NOT clear `unit2->damagePattern`; only the first one does.
+//  - `((u32)flags & 0x100)` and the `(u32)work.field_0x24/0x2C` casts give the original's `cmplwi`s.
+//  - the status-damage flag test is `flags & 0x40000000` (IBM bit 1), not `flags & 2`.
+//
+// The four helpers it calls (`BattleInitCounterPreCheckWork`, `_checkDamageCode_EmergencyRevival`,
+// `BattleCalculateFpDamage`, `BattleSetStatusDamageFromWeapon`) are defined earlier in this file and each
+// needs its `dont_inline` pragma so the original's real `bl`s survive.
+//
+// The three string loads below read `addi r3, r26, 0x20/0x34/0x48` where the original has 0x14/0x28/0x3c,
+// because this file's functions are not yet in the original source order and the .rodata before
+// "SFX_SYSTEM_GREAT1" is 0xC too long. `check.py battle/battle_damage BattleCheckDamage` is 100%, but the
+// merge report counts those three immediates; `tools/fn_order.py` fails on the unlinked unit, so the order
+// (and these offsets) can't be fixed from this function. Everything else matches.
+// NONMATCHING (100.00%): only the three .rodata string offsets above differ (file function order, not this code).
 s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32 flags) {
-    BattleWork* wp;
-    CounterPreCheckWork counter;
-    s32 result = -1;
-    u32 statusResult = 0;
-    s32 guarded = 0;
+    BattleWork* wp = _battleWorkPointer;
+    CounterPreCheckWork work;
+    s32 damageCode;
+    s32 ret = -1;
+    u32 statusDamage = 0;
     s32 damage;
     s32 fpDamage;
-    s32 damageCode;
-    u32 hitFlag;
-    s32 dc1;
-    s32 dc2;
-    Vec posA;
-    Vec posC;
+    s32 isCounter = 0;
 
-    wp = _battleWorkPointer;
-    BattleInitCounterPreCheckWork(&counter);
+    CounterPreCheckWork* workp = &work;
+    BattleInitCounterPreCheckWork(workp);
     if (unit2 == NULL) {
-        return 18;
+        return 0x12;
     }
-    if (part != NULL) {
+    if (part) {
         unit2->currentTarget = part;
     }
     damage = 0;
-    if (!(weapon->special & 0x20000) && BtlUnit_GetACPossibility(unit2) != 0 && BattleActionCommandGetDefenceResult() == 5) {
-        EffectEntry* eff;
 
-        BtlUnit_GetHitPos(unit2, part, &posA.x, &posA.y, &posA.z);
-        eff = effNiceEntry(2, posA.x - 60.0f, 45.0f + posA.y, posA.z - 10.0f);
-        ((f32*)eff->userdata)[7] = 0.75f;
+    if (!(weapon->special & 0x20000) && BtlUnit_GetACPossibility(unit2) != 0 &&
+        BattleActionCommandGetDefenceResult() == 5) {
+        Vec pos;
+        EffectEntry* eff;
+        BtlUnit_GetHitPos(unit2, part, &pos.x, &pos.y, &pos.z);
+        eff = effNiceEntry(2, pos.x - 60.0f, 45.0f + pos.y, pos.z - 10.0f);
+        ((NiceEffectWork*)eff->userdata)->field_0x1C = 0.75f;
         flags |= 0x80000;
         psndSFXOn("SFX_SYSTEM_GREAT1");
         BattleAudience_Case_GuardGood();
-        BU_S32(unit1, 0x27C)++;
-        BU_S8(unit2, 0x26F) = BU_S32(unit1, 0x27C);
+        *(s32*)unit1->field_0x27C += 1;
+        unit2->field_0x26E[1] = *(s32*)unit1->field_0x27C;
         switch (weapon->superguardType) {
         case 2:
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (*(u8*)&weapon->field_0x6D), 0);
-            return 21;
+            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, *(u8*)&weapon->field_0x6D, 0);
+            return 0x15;
         case 3:
             flags |= 0x100;
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (*(u8*)&weapon->field_0x6D), 0);
-            return 21;
+            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, *(u8*)&weapon->field_0x6D, 0);
+            return 0x15;
         case 4:
             flags |= 0x100;
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (*(u8*)&weapon->field_0x6D), 0);
-            if (BU_U32(unit1, 0x2CC) != 0) {
-                BattleRunHitEventDirect(unit1, 0x137, (void*)BU_U32(unit1, 0x2CC));
+            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, *(u8*)&weapon->field_0x6D, 0);
+            if (*(void**)((u8*)unit1 + 0x2CC) != NULL) {
+                BattleRunHitEventDirect(unit1, 0x137, *(void**)((u8*)unit1 + 0x2CC));
             } else {
                 BattleDamageDirect(-5, unit1, 0, 1, 0, 0x137, 0, 1);
             }
             return -1;
-        default:
         case 1:
+        default:
             flags |= 0x100;
             damageCode = flags | 0x2A;
-            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, (*(u8*)&weapon->field_0x6D), 0);
+            BattleDamageDirect(unit1->unitId, unit2, (s32)part, 0, 0, damageCode, *(u8*)&weapon->field_0x6D, 0);
             BattleDamageDirect(-5, unit1, 0, 1, 0, 0x137, 0, 1);
             return -1;
         }
-    } else {
-        BattleCheckCounter(&counter, unit1, unit2, part, weapon, &flags);
-        while (counter.field_0x0 != 0) {
-            if (flags & 0x100) {
-                if (part->counterAttributes & 0x2000) {
-                    BattleRunHitEvent(unit2, 0x719);
-                    result = 18;
-                    break;
-                }
-                if ((part->counterAttributes & 0x1000) &&
-                    (weapon->element == 3 || weapon->element == 4 || weapon->element == 1 ||
-                     ((weapon->special & 0x400) && BtlUnit_CheckStatus(unit1, 8) != 0))) {
-                    BattleRunHitEvent(unit2, 0x719);
-                    result = 18;
-                    break;
-                }
-            }
-            if (!(weapon->special & 0x20000) && BtlUnit_GetACPossibility(unit2) != 0) {
-                if (BattleActionCommandGetDefenceResult() > 3) {
-                    EffectEntry* eff;
-                    Vec pos;
-
-                    BtlUnit_GetHitPos(unit2, part, &pos.x, &pos.y, &pos.z);
-                    eff = effNiceEntry(0, pos.x - 60.0f, 45.0f + pos.y, pos.z - 10.0f);
-                    ((f32*)eff->userdata)[7] = 0.75f;
-                    flags |= 0x40000;
-                    psndSFXOn("SFX_SYSTEM_NICE1");
-                    BattleAudience_Case_GuardGood();
-                } else {
-                    BattleAudience_Case_GuardBad();
-                }
-            }
-            if ((weapon->special & 0x1000) && (part->attributes & 0x1000)) {
-                guarded = 1;
-                flags |= 0x200000;
-            }
-            if ((weapon->special & 0x2000) && (part->attributes & 0x2000)) {
-                guarded = 1;
-                flags |= 0x200000;
-            }
-            if ((weapon->special & 0x4000) && (part->attributes & 0x800)) {
-                guarded = 1;
-                if (flags & 0x100) {
-                    flags |= 0x400000;
-                }
-            }
-            BattleCheckPikkyoro(weapon, &flags);
-            damage = BattleCalculateDamage(unit1, unit2, part, weapon, &damageCode, flags);
-            fpDamage = BattleCalculateFpDamage(unit1, unit2, part, weapon, &damageCode, flags);
-            unit2->hpDamageCount++;
-            if (!(flags & 0x40000)) {
-                if (flags & 0x40000000) {
-                    statusResult = BattleSetStatusDamageFromWeapon(unit1, unit2, part, weapon, flags);
-                } else if (flags & 0x100) {
-                    statusResult = BattleSetStatusDamageFromWeapon(unit1, unit2, part, weapon, flags);
-                }
-            }
-            if ((u8)damageCode == 0x1E && guarded != 0) {
-                damageCode = flags | 0x17;
-            }
-            if ((u8)damageCode == 0x1E && ((*(u8*)&weapon->field_0x6D) == 0x13 || (*(u8*)&weapon->field_0x6D) == 0x1B)) {
-                damageCode = flags | 0x17;
-            }
-            if ((u8)damageCode == 0x1E && statusResult != 0) {
-                if (statusResult & 1) {
-                    damageCode = flags | 0x17;
-                } else {
-                    damageCode = flags | 0x16;
-                }
-            }
-            if (statusResult & 4) {
-                damageCode = flags | 0x1C;
-            }
-            if (statusResult & 8) {
-                damageCode = flags | 0x1D;
-            }
-            hitFlag = flags & 0x100;
-                if (hitFlag != 0 && (statusResult & 0x10)) {
-                dc1 = 0x717;
-                unit2->damagePattern = 0;
-                _checkDamageCode_EmergencyRevival(unit2, &dc1);
-                BattleRunHitEvent(unit2, dc1);
-                result = 18;
-            } else if (hitFlag != 0 && (weapon->special & 0x80) && BtlUnit_CheckStatus(unit2, 9) != 0
-                       && irand(100) < 0) {
-                dc2 = 0x8717;
-                _checkDamageCode_EmergencyRevival(unit2, &dc2);
-                BattleRunHitEvent(unit2, dc2);
-                result = 18;
-            } else {
-                u32 var;
-
-                if (statusResult == 0 && damage == 0 && fpDamage == 0 && guarded == 0) {
-                    result = 19;
-                    if (unit2->currentKind >= 1 && unit2->currentKind < 0xD8 && (*(u8*)&weapon->field_0x6D) != 0x1B) {
-                        BattleAudience_Case_EnemyNoDamage();
-                    }
-                } else {
-                    result = 18;
-                    if (unit2->currentKind >= 1 && unit2->currentKind < 0xD8 && (damage > 0 || statusResult != 0)) {
-                        ((void (*)(s32))BattleAudience_Case_EnemyDamage)(damage);
-                    }
-                }
-                var = (*(u8*)&weapon->field_0x6D);
-                if (var == 0x14 && (u32)counter.field_0x24 != 0) {
-                    var = 0;
-                }
-                if (var == 0xE || var == 0x10) {
-                    if (unit2->mAttributeFlags & 0x4000) {
-                        var = 0;
-                    }
-                    if (irand(100) >= unit2->mKindParams->field_0x8C) {
-                        var = 0;
-                    }
-                    if (!(flags & 0x20000)) {
-                        var = 0;
-                    }
-                }
-                if (statusResult & 0x20) {
-                    BattleDamageDirect(unit1->unitId, unit2, (s32)part, damage, fpDamage, damageCode, var, 0);
-                } else {
-                    BattleDamageDirect(unit1->unitId, unit2, (s32)part, damage, fpDamage, damageCode, var, 1);
-                }
-            }
-            break;
-        }
-        BU_S32(unit1, 0x27C)++;
-        BU_S8(unit2, 0x26F) = BU_S32(unit1, 0x27C);
-        if ((u32)counter.field_0x24 != 0) {
-            s32 w1;
-            s32 w2;
-            s32 w3;
-            s32 w4;
-
-            if (counter.field_0x4 != 0) {
-                counter.field_0x28 += (damage * 50) / 100;
-            }
-            if (counter.field_0x18 != 0) {
-                counter.field_0x28 += (damage * 50) / 100;
-            }
-            if (counter.field_0x1C != 0) {
-                counter.field_0x28 += (damage * 50) / 100;
-            }
-            if (counter.field_0xC != 0) {
-                w1 = 0;
-                BattleSetStatusDamage(&w1, unit1, part, 0, 4, 100, 0, 3, 1);
-            }
-            if (counter.field_0x14 != 0) {
-                w2 = 0;
-                BattleSetStatusDamage(&w2, unit1, part, 0, 9, 100, 0, 3, 1);
-            }
-            if (counter.field_0x8 != 0) {
-                w3 = 0;
-                BattleSetStatusDamage(&w3, unit1, part, 0, 8, 100, 0, 3, 1);
-            }
-            if (counter.field_0x10 != 0) {
-                w4 = 0;
-                BattleSetStatusDamage(&w4, unit1, part, 0, 6, 100, 0, 3, 1);
-            }
-            if (counter.field_0x28 == 0) {
-                counter.field_0x28 = 1;
-            }
-            if (unit1->mAlliance == 0) {
-                BattleAudience_Case_Countered();
-            }
-            if (counter.field_0x18 != 0) {
-                BtlUnit_GetHitPos(unit2, part, &posC.x, &posC.y, &posC.z);
-                effBombEntry(0, posC.x, posC.y, posC.z, 1.0f);
-                psndSFXOn_3D("SFX_BTL_THUNDERS_ATTACK4", &posC);
-                BattleFogForceStop();
-            }
-            BattleActionCommandStop(wp);
-            BattleAcHelpSetDispType(0);
-            BattleDamageDirect(-5, unit1, 0, counter.field_0x28, 0, counter.field_0x24, 0, 1);
-            if ((u32)counter.field_0x2C != 0) {
-                unit2->damagePattern = 0;
-                BattleRunHitEvent(unit2, counter.field_0x2C);
-            }
-            return -1;
-        }
-        return result;
     }
+
+    BattleCheckCounter(workp, unit1, unit2, part, weapon, &flags);
+    while (work.field_0x0) {
+        if (flags & 0x100) {
+            if (part->counterAttributes & kCounterVolatileExplosive) {
+                BattleRunHitEvent(unit2, 0x719);
+                ret = 0x12;
+                goto counter_done;
+            }
+            if (part->counterAttributes & kCounterExplosive) {
+                if (weapon->element == 3 || weapon->element == 4 || weapon->element == 1 ||
+                    ((weapon->special & 0x400) && BtlUnit_CheckStatus(unit1, STATUS_BURN))) {
+                    BattleRunHitEvent(unit2, 0x719);
+                    ret = 0x12;
+                    goto counter_done;
+                }
+            }
+        }
+        if (!(weapon->special & 0x20000) && BtlUnit_GetACPossibility(unit2) != 0) {
+            if (BattleActionCommandGetDefenceResult() > 3) {
+                Vec pos;
+                EffectEntry* eff;
+                BtlUnit_GetHitPos(unit2, part, &pos.x, &pos.y, &pos.z);
+                eff = effNiceEntry(0, pos.x - 60.0f, 45.0f + pos.y, pos.z - 10.0f);
+                ((NiceEffectWork*)eff->userdata)->field_0x1C = 0.75f;
+                flags |= 0x40000;
+                psndSFXOn("SFX_SYSTEM_NICE1");
+                BattleAudience_Case_GuardGood();
+            } else {
+                BattleAudience_Case_GuardBad();
+            }
+        }
+        if ((weapon->special & 0x1000) && (part->attributes & 0x1000)) {
+            isCounter = 1;
+            flags |= 0x200000;
+        }
+        if ((weapon->special & 0x2000) && (part->attributes & 0x2000)) {
+            isCounter = 1;
+            flags |= 0x200000;
+        }
+        if ((weapon->special & 0x4000) && (part->attributes & 0x800)) {
+            isCounter = 1;
+            if (flags & 0x100) {
+                flags |= 0x400000;
+            }
+        }
+        BattleCheckPikkyoro(weapon, &flags);
+        damage = BattleCalculateDamage(unit1, unit2, part, weapon, &damageCode, flags);
+        fpDamage = BattleCalculateFpDamage(unit1, unit2, part, weapon, &damageCode, flags);
+        unit2->hpDamageCount++;
+        if (!(flags & 0x40000)) {
+            if (flags & 0x40000000) {
+                statusDamage = BattleSetStatusDamageFromWeapon(unit1, unit2, part, weapon, flags);
+            } else if (flags & 0x100) {
+                statusDamage = BattleSetStatusDamageFromWeapon(unit1, unit2, part, weapon, flags);
+            }
+        }
+        if ((u8)damageCode == 0x1e && isCounter) {
+            damageCode = flags | 0x17;
+        }
+        if ((u8)damageCode == 0x1e && (*(u8*)&weapon->field_0x6D == 0x13 || *(u8*)&weapon->field_0x6D == 0x1b)) {
+            damageCode = flags | 0x17;
+        }
+        if ((u8)damageCode == 0x1e && statusDamage != 0) {
+            if (statusDamage & 1) {
+                damageCode = flags | 0x17;
+            } else {
+                damageCode = flags | 0x16;
+            }
+        }
+        if (statusDamage & 4) {
+            damageCode = flags | 0x1c;
+        }
+        if (statusDamage & 8) {
+            damageCode = flags | 0x1d;
+        }
+        if (((u32)flags & 0x100) && (statusDamage & 0x10)) {
+            s32 revCode = 0x717;
+            unit2->damagePattern = 0;
+            _checkDamageCode_EmergencyRevival(unit2, &revCode);
+            BattleRunHitEvent(unit2, revCode);
+            ret = 0x12;
+            goto counter_done;
+        }
+        if (((u32)flags & 0x100) && (weapon->special & 0x80) && BtlUnit_CheckStatus(unit2, STATUS_FREEZE)) {
+            if (irand(100) < 0) {
+                s32 revCode = 0x8717;
+                _checkDamageCode_EmergencyRevival(unit2, &revCode);
+                BattleRunHitEvent(unit2, revCode);
+                ret = 0x12;
+                goto counter_done;
+            }
+        }
+        if (statusDamage == 0 && damage == 0 && fpDamage == 0 && !isCounter) {
+            ret = 0x13;
+            if (unit2->currentKind >= 1 && unit2->currentKind < 0xd8 && *(u8*)&weapon->field_0x6D != 0x1b) {
+                BattleAudience_Case_EnemyNoDamage();
+            }
+        } else {
+            ret = 0x12;
+            if (unit2->currentKind >= 1 && unit2->currentKind < 0xd8) {
+                if (damage > 0 || statusDamage != 0) {
+#ifdef MUST_MATCH
+                    ((void (*)(s32))BattleAudience_Case_EnemyDamage)(damage);
+#else
+                    BattleAudience_Case_EnemyDamage();
+#endif
+                }
+            }
+        }
+        {
+            u32 weaponField6D = *(u8*)&weapon->field_0x6D;
+            if (weaponField6D == 0x14 && (u32)work.field_0x24 != 0) {
+                weaponField6D = 0;
+            }
+            if (weaponField6D == 0xe || weaponField6D == 0x10) {
+                if (unit2->mAttributeFlags & 0x4000) {
+                    weaponField6D = 0;
+                }
+                if (irand(100) >= unit2->mKindParams->field_0x8C) {
+                    weaponField6D = 0;
+                }
+                if (!(flags & 0x20000)) {
+                    weaponField6D = 0;
+                }
+            }
+            if (statusDamage & 0x20) {
+                BattleDamageDirect(unit1->unitId, unit2, (s32)part, damage, fpDamage, damageCode, weaponField6D, 0);
+            } else {
+                BattleDamageDirect(unit1->unitId, unit2, (s32)part, damage, fpDamage, damageCode, weaponField6D, 1);
+            }
+        }
+        break;
+    }
+counter_done:
+    *(s32*)unit1->field_0x27C += 1;
+    unit2->field_0x26E[1] = *(s32*)unit1->field_0x27C;
+    if ((u32)work.field_0x24 != 0) {
+    if (work.field_0x4) {
+        work.field_0x28 += damage * 50 / 100;
+    }
+    if (work.field_0x18) {
+        work.field_0x28 += damage * 50 / 100;
+    }
+    if (work.field_0x1C) {
+        work.field_0x28 += damage * 50 / 100;
+    }
+    if (work.field_0xC) {
+        s32 statusWork = 0;
+        BattleSetStatusDamage(&statusWork, unit1, part, 0, STATUS_POISON, 100, 0, 3, 1);
+    }
+    if (work.field_0x14) {
+        s32 statusWork = 0;
+        BattleSetStatusDamage(&statusWork, unit1, part, 0, STATUS_FREEZE, 100, 0, 3, 1);
+    }
+    if (work.field_0x8) {
+        s32 statusWork = 0;
+        BattleSetStatusDamage(&statusWork, unit1, part, 0, STATUS_BURN, 100, 0, 3, 1);
+    }
+    if (work.field_0x10) {
+        s32 statusWork = 0;
+        BattleSetStatusDamage(&statusWork, unit1, part, 0, STATUS_ELECTRIC, 100, 0, 3, 1);
+    }
+    if (work.field_0x28 == 0) {
+        work.field_0x28 = 1;
+    }
+    if (unit1->mAlliance == 0) {
+        BattleAudience_Case_Countered();
+    }
+    if (work.field_0x18) {
+        Vec pos;
+        BtlUnit_GetHitPos(unit2, part, &pos.x, &pos.y, &pos.z);
+        effBombEntry(0, pos.x, pos.y, pos.z, 1.0f);
+        psndSFXOn_3D("SFX_BTL_THUNDERS_ATTACK4", &pos);
+        BattleFogForceStop();
+    }
+    BattleActionCommandStop(wp);
+    BattleAcHelpSetDispType(0);
+    BattleDamageDirect(-5, unit1, 0, work.field_0x28, 0, work.field_0x24, 0, 1);
+    if ((u32)work.field_0x2C != 0) {
+        unit2->damagePattern = 0;
+        BattleRunHitEvent(unit2, work.field_0x2C);
+    }
+    return -1;
+    }
+    return ret;
 }
 
 void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* out1, s8* out2) {

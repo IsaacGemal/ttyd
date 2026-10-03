@@ -572,9 +572,13 @@ typedef struct ScreenTevParam {
 // declaration order, opt_lifetimes off, pragma sweeps, reordering the local
 // declarations) and none beat this: the allocator's colouring of the {param, sgrow,
 // sgcol} clique could not be steered from C.
-// NONMATCHING (99.36%): integer and float register allocation only.
+// MATCH-ONLY TRICK: moving the `buf[idx]` ternary into a function-scope `mask` temp
+// assigned between the `(j/8)*0x20` and `(j%8)` additions nudged the first loop's
+// colouring (99.36% -> 99.39%; found by the decomp-permuter).
+// NONMATCHING (99.39%): integer and float register allocation only.
 #pragma opt_propagation off // needed: with propagation on the second loop folds col into a buf+col pointer (see above)
 void tou_gamen_screen_tev(void* param) {
+	int mask;
 	GXTexObj texObj;
 	Mtx mtx;
 	Mtx mtxScale;
@@ -595,9 +599,10 @@ void tou_gamen_screen_tev(void* param) {
 			for (j = 0; j < 0x40; j++) {
 				int idx = (i / 4) * 0x100;
 				idx += (j / 8) * 0x20;
+				mask = (i & 1) ? 0xFF : 0;
 				idx += (j % 8);
 				idx += (i % 4) * 8;
-				buf[idx] = (i & 1) ? 0xFF : 0;
+				buf[idx] = mask;
 			}
 			{
 				s32 count = 100 + rand() % 100;
