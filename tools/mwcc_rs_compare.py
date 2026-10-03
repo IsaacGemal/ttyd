@@ -27,7 +27,7 @@ def compile_commands():
     for line in subprocess.run(["ninja", "-t", "commands"], capture_output=True, text=True).stdout.splitlines():
         if "mwcceppc.exe" not in line or " -c src/" not in line:
             continue
-        cmd = line.split(" && ")[0]
+        cmd = line.split(" && ")[0].split(" || ")[0]  # drop the compile-timeout tail (tools/project.py)
         argv = shlex.split(cmd)
         src = argv[argv.index("-c") + 1]
         out[src] = argv
