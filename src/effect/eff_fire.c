@@ -78,7 +78,7 @@ extern const f32 float_0p6_8041e120;
 extern const f32 float_13p333_8041e124;
 extern const f32 float_0p33333_8041e128;
 extern const u32 dat_8041e0b8;
-const char str_8041E168[] = "Fire";
+const char str_8041E168[]; // tentative definition, completed after the code so it emits last in .sdata2
 const char str_802F8C60[] = "FireSmoke";
 
 
@@ -724,14 +724,12 @@ void effFireDisp2(CameraId camId, void* param) {
 }
 #pragma opt_common_subs reset
 
-// Several source choices are deliberate match-only shape fixes, each found by search against objdiff:
+// effFireDisp3 source-shape notes (all needed for the byte match):
 //  - `data` is declared after `type` and assigned just before `camGetPtr`, with `type = data->type` after
-//    the call; that gives the target's data r26 / type r27 instead of r26/r27 swapped (worth ~1.4%).
-//  - the inner loop writes yA/yB inline in the GXPosition3f32 calls (`f27 * (f32)(j + 1)` / `* (f32)j`)
-//    rather than hoisting them into f32 locals; c0/c1 stay `const u8*`.
-//  - `third` (0.33333f) and `sixteen` (16.0f) are f32 locals: MWCC then caches them in f29/f30 and the
-//    int->float double in f28, the target's colouring. The inner-loop 0/1 arguments are literals so the
-//    scheduler produces the target's loads.
+//    the call; that gives the target's data r26 / type r27.
+//  - `third` (0.33333f) and `sixteen` (16.0f) are f32 locals so MWCC caches them in f29/f30, and the
+//    inner-loop GXPosition3f32/GXTexCoord2f32 y and texcoord values are inline expressions rather than
+//    hoisted locals; c0/c1 stay `const u8*`.
 //  - the four zero-vector copies below are MUST_MATCH: without the volatile read MWCC hoists all twelve
 //    loads out of the outer loop, and without the explicit temp the frame loses 0x30.
 //  - the TevReg0 colour is built by the MUST_MATCH inline effFireDisp3KColor so GXSetTevColor gets the
@@ -747,24 +745,6 @@ static inline GXColor effFireDisp3KColor(u8 a) {
 	return c;
 }
 #endif
-// The remaining differences are register colouring plus the pool/scheduling tail. Several source choices
-// are deliberate match-only colouring fixes; each was found by search against the objdiff score:
-//  - `data` is declared after `type` and assigned just before `camGetPtr`, with `type = data->type` after
-//    the call. That is the only arrangement found (out of thousands) that gives the target's data r26 /
-//    type r27 instead of r26/r27 swapped, worth ~1.4% on its own.
-//  - in the inner loop the texcoord values are written as inline expressions in the GXTexCoord2f32 calls
-//    (`0.333f * (2 - j)` / `* (3 - j)`) rather than hoisted into `f32 tA/tB` locals, and `c0`/`c1` are
-//    `const u8*`. Together with leaving the loop constants as the externs (not cached in f32 locals, so
-//    MWCC colours the int->float double f30 rather than f31) these reproduce most of the inner-loop
-//    schedule and colouring; hoisting tA/tB costs ~0.6%.
-// The loop floats still live f26=-16, f27=13.333, f28=16, f29=0.333, f30=double, f31=40; the target swaps
-// f28/f30 (f28=double, f30=16). The 0xCC008000 FIFO base is still r31 (target r30) and the 0x4330 int->float
-// base r30 (target r31). The four zero-vector copies below are MUST_MATCH: without the volatile read MWCC
-// hoists all twelve loads out of the outer loop; without the explicit temp the frame loses 0x30. The
-// PSMTXScale/PSMTXTrans 1.0f/0.0f arguments are the named float_1_8041e100/float_0_8041e108 objects the
-// target loads by name (a literal would pool its own copy elsewhere).
-// NONMATCHING (96.54%): float f28/f30 (16 vs the int->float double) and FIFO/base r30/r31 colouring, the
-// int->float pool offset and stack-slot layout, and the remaining inner-loop schedule differ.
 void effFireDisp3(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* camera;
@@ -786,6 +766,8 @@ void effFireDisp3(CameraId camId, void* param) {
 	s32 j;
 	f32 f27;
 	f32 f26;
+	f32 third = 0.33333334f;
+	f32 sixteen = 16.0f;
 
 	data = effect->userdata;
 	camera = camGetPtr(camId);
@@ -845,8 +827,12 @@ void effFireDisp3(CameraId camId, void* param) {
 			GXSetTevColor(GX_TEVREG1, blend);
 		}
 	}
+#ifdef MUST_MATCH
+	k = effFireDisp3KColor(data->alpha);
+#else
 	k = *(GXColor*)&unk_80423060;
 	k.a = data->alpha;
+#endif
 	GXSetTevColor(GX_TEVREG0, k);
 	GXSetCullMode(GX_CULL_NONE);
 	GXClearVtxDesc();
@@ -883,22 +869,20 @@ void effFireDisp3(CameraId camId, void* param) {
 		GXSetCurrentMtx(0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 0xC);
 		for (j = 0; j < 3; j++) {
-			f32 yA = f27 * (f32)(j + 1);
-			f32 yB = f27 * (f32)j;
 			const u8* c0 = colEntry + j * 4;
 			const u8* c1 = colEntry + (j + 1) * 4;
-			GXPosition3f32(f26, yA, MATCH_F32(float_0_8041e108));
+			GXPosition3f32(f26, (f27 * (f32)(j + 1)), 0.0f);
 			GXColor4u8(c1[0], c1[1], c1[2], c1[3]);
-			GXTexCoord2f32(MATCH_F32(float_0_8041e108), float_0p33333_8041e128 * (f32)(2 - j));
-			GXPosition3f32(float_16_8041e12c, yA, MATCH_F32(float_0_8041e108));
+			GXTexCoord2f32(0.0f, third * (f32)(2 - j));
+			GXPosition3f32(sixteen, (f27 * (f32)(j + 1)), 0.0f);
 			GXColor4u8(c1[0], c1[1], c1[2], c1[3]);
-			GXTexCoord2f32(MATCH_F32(float_1_8041e100), float_0p33333_8041e128 * (f32)(2 - j));
-			GXPosition3f32(float_16_8041e12c, yB, MATCH_F32(float_0_8041e108));
+			GXTexCoord2f32(1.0f, third * (f32)(2 - j));
+			GXPosition3f32(sixteen, (f27 * (f32)j), 0.0f);
 			GXColor4u8(c0[0], c0[1], c0[2], c0[3]);
-			GXTexCoord2f32(MATCH_F32(float_1_8041e100), float_0p33333_8041e128 * (f32)(3 - j));
-			GXPosition3f32(f26, yB, MATCH_F32(float_0_8041e108));
+			GXTexCoord2f32(1.0f, third * (f32)(3 - j));
+			GXPosition3f32(f26, (f27 * (f32)j), 0.0f);
 			GXColor4u8(c0[0], c0[1], c0[2], c0[3]);
-			GXTexCoord2f32(MATCH_F32(float_0_8041e108), float_0p33333_8041e128 * (f32)(3 - j));
+			GXTexCoord2f32(0.0f, third * (f32)(3 - j));
 		}
 
 		{
@@ -930,7 +914,7 @@ void effFireDisp3(CameraId camId, void* param) {
 #else
 			tmp = vec3_802f8c28;
 #endif
-			tmp.x = float_16_8041e12c;
+			tmp.x = sixteen;
 			tmp.y = float_40_8041e130;
 			v = tmp;
 		}
@@ -950,7 +934,7 @@ void effFireDisp3(CameraId camId, void* param) {
 #else
 			tmp = vec3_802f8c34;
 #endif
-			tmp.x = float_16_8041e12c;
+			tmp.x = sixteen;
 			v = tmp;
 		}
 		PSMTXMultVec(mtx80, &v, &v);
@@ -1114,3 +1098,52 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	GXPosition3f32(negHalf, negHalf, 0.0f);
 	GXTexCoord2f32(0.0f, 1.0f);
 }
+
+// Original .sdata2 data pool, defined after the code (so MWCC keeps them as real objects instead of
+// folding their values into the functions). Values taken word-for-word from the original object; they are
+// the named constants every function in the unit loads.
+const u32 dat_8041e0b8 = 0x050A0A0A;
+const u32 dat_8041e0bc = 0xFF0000FF;
+const u32 dat_8041e0c0 = 0x00000064;
+const u32 dat_8041e0c4 = 0xF89928FF;
+const u32 dat_8041e0c8 = 0xF19E8FFF;
+const u32 dat_8041e0cc = 0x00000064;
+const u32 dat_8041e0d0 = 0xFFCD15FF;
+const u32 dat_8041e0d4 = 0xFF5100FF;
+const u32 dat_8041e0d8 = 0x593359FF;
+const u32 dat_8041e0dc = 0x000000FF;
+const u32 dat_8041e0e0 = 0xFFEA5D4C;
+const u32 dat_8041e0e4 = 0xFFEA5D26;
+const u32 dat_8041e0e8 = 0x0000004C;
+const f32 float_0p0078125_8041e0ec = 0.0078125f;
+const f32 float_1p5_8041e0f0 = 1.5f;
+const f32 float_0p8_8041e0f4 = 0.8f;
+const f32 float_deg2rad_8041e0f8 = 0.017453292f;
+const f32 float_8_8041e0fc = 8.0f;
+const f32 float_1_8041e100 = 1.0f;
+const f32 float_0p5_8041e104 = 0.5f;
+const f32 float_0_8041e108 = 0.0f;
+const f32 float_0p95_8041e10c = 0.95f;
+const f32 float_0p99_8041e110 = 0.99f;
+const f32 float_neg8_8041e114 = -8.0f;
+const f32 float_32_8041e118 = 32.0f;
+const f32 float_5_8041e11c = 5.0f;
+const f32 float_0p6_8041e120 = 0.6f;
+const f32 float_13p333_8041e124 = 13.333333f;
+const f32 float_0p33333_8041e128 = 0.33333334f;
+const f32 float_16_8041e12c = 16.0f;
+const f32 float_40_8041e130 = 40.0f;
+const f32 float_24_8041e134 = 24.0f;
+const f32 float_12_8041e138 = 12.0f;
+const f32 float_20_8041e13c = 20.0f;
+const f32 float_25_8041e140 = 25.0f;
+const f32 float_0p7854_8041e144 = 0.7853982f;
+const f32 float_2_8041e148 = 2.0f;
+const f32 float_0p03125_8041e14c = 0.03125f;
+const f32 float_0p01_8041e150 = 0.01f;
+const f32 float_neg0p01_8041e154 = -0.01f;
+const f32 float_1p4_8041e158 = 1.4f;
+const f32 float_1p2_8041e15c = 1.2f;
+const f32 float_10_8041e160 = 10.0f;
+const f32 float_30_8041e164 = 30.0f;
+const char str_8041E168[] = "Fire";

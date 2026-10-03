@@ -1,6 +1,7 @@
 #pragma once
 
 #include "driver/seqdrv.h"
+#include "driver/camdrv.h"
 #include "manager/filemgr.h"
 #include <dolphin/types.h>
 
@@ -22,6 +23,10 @@ typedef struct TitleWork {
 
 const char* DbgBtlSel_GetMsgDataPtr(void);
 s32 getDebugMode(void);
+void L_titleInit(SequenceWork* work);
+void titleMain(SequenceWork* work);
+void disp1(CameraId cameraId, void* param);
+void disp2(CameraId cameraId, void* param);
 void seq_titleInit(SequenceWork* work);
 void seq_titleMain(SequenceWork* work);
 void seq_titleExit(SequenceWork* work);

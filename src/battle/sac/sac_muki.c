@@ -421,6 +421,17 @@ static inline Vec mukiScreenVec1(f32 x, f32 y) {
     return v;
 }
 
+#ifdef MUST_MATCH
+// MUST_MATCH: passing the block-2 colours by value through a no-op inline (the parameter and the
+// return each get a hidden stack copy) reproduces the original's block-2 scratch layout: the
+// colour lands at 0x28 with the three argument copies descending below it. The plain assignment
+// under #else puts it at 0x8 and shifts every later block-2 temporary by 4 bytes. The inline
+// folds away, so the generated call sequence is unchanged.
+static inline GXColor mukiColor(GXColor c) {
+    return c;
+}
+#endif
+
 // .text:0x908 | 0x802475F4 | size: 0x6EC
 // The body, control flow and calls match (`tools/diff_shape.py`: same 45 calls, no missing
 // immediates). The by-value colour pair goes through a `GXColor argv[4]` (the target's 8
@@ -435,21 +446,19 @@ static inline Vec mukiScreenVec1(f32 x, f32 y) {
 // point is read as `MATCH_F32(work->field_30) - float_30_80421fd4`; the volatile read makes
 // the compiler load that field last (into f1) and leaves `field_2C` in f1/f2 the way the
 // original does, so the whole block-2 inline Vec and its `fsubs` match (four fewer diffs).
-// What is left is register/stack allocation: block 1's inline Vec return loads `field_2C` into
-// f2 and `field_30` into f1 (the target uses f1/f2, 4 diffs); and block 2's plane colour lands
-// at 0x8 instead of 0x28, which shifts its three argument copies and the block-2 plane3/icon
-// slots (20 diffs). The target lays block 2's address-taken temporaries out monotonically
-// descending in source order (c 0x28, args 0x24/0x20/0x1c, plane3 0x18..0xc, icon 0x8) with
-// block 1's region (0x2c..0x4c) above it; ours defers the reused `c` to the bottom (0x8).
-// Splitting block 2's colour into its own variable makes the allocator reuse a block-1 slot
-// (0x48) and shifts block 1; every declaration-order, variable-splitting and block-local
-// variant tried scores the same or worse and is reverted.
+// What is left is block 1's inline Vec return: its two field loads land in f2 (`field_2C`) and
+// f1 (`field_30`), where the target uses f1/f2 (4 diffs). Reordering the arguments or the helper's
+// field assignments, volatile reads, temporaries and pointer/aggregate-parameter shapes all leave
+// the same two `lfs`/`stfs` register choices, so this is a register-allocator tie-break.
+// Block 2's plane colour is passed through the no-op `mukiColor` inline (above) to reproduce the
+// original's scratch-block layout (c at 0x28, argument copies descending to the icon at 0x8); the
+// plain assignment lands it at 0x8 and shifts every later block-2 temporary by 4 bytes (20 diffs).
 // The anonymous @618/@620/@627/@877/@927/@928 pool entries are symbol-only (they resolve on
 // link). The colours are plain `GXColor` (the target reloads nothing, so they are not
 // volatile), and `btlDispTexPlane3` is called through the original's 7-argument signature:
 // the target sets `r9 = 0` before the call, which the 6-parameter header prototype cannot
 // express.
-// NONMATCHING (99.91%): register/stack allocation and the constant pool, as above.
+// NONMATCHING (99.95%): block 1's two float loads use f2/f1 instead of the target's f1/f2, as above.
 static void disp_2D(CameraId cameraId, void* param) {
     MukiWork* work = get_ptr();
     Mtx mtx;
@@ -527,7 +536,11 @@ static void disp_2D(CameraId cameraId, void* param) {
         btlGetScreenPoint(&sp, &sp);
         sx = sp.x;
         sy = sp.y;
+#ifdef MUST_MATCH
+        c = mukiColor(*(GXColor*)&dat_80421f70);
+#else
         c = *(GXColor*)&dat_80421f70;
+#endif
         PSMTXTrans(mtx, sx - float_32_80421fb8 - float_8_80421fbc, sy, float_0_80421fb4);
         btlDispTexPlane2(mtx, 0x43, c, 0);
         PSMTXScale(mtx, float_16_80421fc0, float_1_80421fc4, float_1_80421fc4);
@@ -570,7 +583,11 @@ static void disp_2D(CameraId cameraId, void* param) {
             iconDispGx2(mtx, 0x10, 0x1ED);
             PSMTXScale(mtx, float_0p7_80421fd8, float_0p7_80421fd8, float_0p7_80421fd8);
             PSMTXTransApply(mtx, mtx, left - float_25_80421fe4, sy - float_14_80421fe0, float_0_80421fb4);
+#ifdef MUST_MATCH
+            c = mukiColor(*(GXColor*)&dat_80421f7c);
+#else
             c = *(GXColor*)&dat_80421f7c;
+#endif
             iconNumberDispGx(mtx, (s32)work->field_20, 0, c);
         }
     }

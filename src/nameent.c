@@ -1,34 +1,15 @@
 #include "nameent.h"
 #include "driver/dispdrv.h"
 #include "driver/fadedrv.h"
+#include "driver/windowdrv.h"
+#include "driver/msgdrv.h"
+#include "win/win_main.h"
+#include "manager/fontmgr.h"
 #include "system.h"
 #include <string.h>
 #include "math_ext.h"
 
 //.data
-const char* katakana_tbl[] = {
-	"\x83\x41", "\x83\x43", "\x83\x45", "\x83\x47", "\x83\x49", "\x83\x8F",
-	"\x81\x40", "\x83\x92", "\x81\x40", "\x83\x93", "\x82\x4F", "\x82\x50",
-	"\x82\x51", "\x82\x52", "\x83\x4A", "\x83\x4C", "\x83\x4E", "\x83\x50",
-	"\x83\x52", "\x83\x4B", "\x83\x4D", "\x83\x4F", "\x83\x51", "\x83\x53",
-	"\x82\x53", "\x82\x54", "\x82\x55", "\x82\x56", "\x83\x54", "\x83\x56",
-	"\x83\x58", "\x83\x5A", "\x83\x5C", "\x83\x55", "\x83\x57", "\x83\x59",
-	"\x83\x5B", "\x83\x5D", "\x82\x57", "\x82\x58", "\x81\x49", "\x81\x48",
-	"\x83\x5E", "\x83\x60", "\x83\x63", "\x83\x65", "\x83\x67", "\x83\x5F",
-	"\x83\x61", "\x83\x64", "\x83\x66", "\x83\x68", "\x81\x40", "\x94\xB5",
-	"\x81\x99", "\x81\xF4", "\x83\x69", "\x83\x6A", "\x83\x6B", "\x83\x6C",
-	"\x83\x6D", "\x83\x6F", "\x83\x72", "\x83\x75", "\x83\x78", "\x83\x7B",
-	NULL,       NULL,       NULL,       NULL,       "\x83\x6E", "\x83\x71",
-	"\x83\x74", "\x83\x77", "\x83\x7A", "\x83\x70", "\x83\x73", "\x83\x76",
-	"\x83\x79", "\x83\x7C", NULL,       NULL,       NULL,       NULL,
-	"\x83\x7D", "\x83\x7E", "\x83\x80", "\x83\x81", "\x83\x82", "\x83\x40",
-	"\x83\x42", "\x83\x44", "\x83\x46", "\x83\x48", NULL,       NULL,
-	NULL,       NULL,       "\x83\x84", "\x81\x40", "\x83\x86", "\x81\x40",
-	"\x83\x88", "\x83\x83", "\x83\x85", "\x83\x87", "\x83\x62", "\x83\x94",
-	NULL,       NULL,       NULL,       NULL,       "\x83\x89", "\x83\x8A",
-	"\x83\x8B", "\x83\x8C", "\x83\x8D", "\x81\x7C", "\x81\x60", "\x81\x45",
-	"\x81\x44", "\x81\x40", NULL,       NULL,       NULL,       NULL
-};
 const char* hiragana_tbl[] = {
 	"\x82\xA0", "\x82\xA2", "\x82\xA4", "\x82\xA6", "\x82\xA8", "\x82\xED",
 	"\x81\x40", "\x82\xF0", "\x81\x40", "\x82\xF1", "\x82\x4F", "\x82\x50",
@@ -53,6 +34,30 @@ const char* hiragana_tbl[] = {
 	"\x81\x44", "\x81\x40", NULL,       NULL,       NULL,       NULL
 };
 
+const char* katakana_tbl[] = {
+	"\x83\x41", "\x83\x43", "\x83\x45", "\x83\x47", "\x83\x49", "\x83\x8F",
+	"\x81\x40", "\x83\x92", "\x81\x40", "\x83\x93", "\x82\x4F", "\x82\x50",
+	"\x82\x51", "\x82\x52", "\x83\x4A", "\x83\x4C", "\x83\x4E", "\x83\x50",
+	"\x83\x52", "\x83\x4B", "\x83\x4D", "\x83\x4F", "\x83\x51", "\x83\x53",
+	"\x82\x53", "\x82\x54", "\x82\x55", "\x82\x56", "\x83\x54", "\x83\x56",
+	"\x83\x58", "\x83\x5A", "\x83\x5C", "\x83\x55", "\x83\x57", "\x83\x59",
+	"\x83\x5B", "\x83\x5D", "\x82\x57", "\x82\x58", "\x81\x49", "\x81\x48",
+	"\x83\x5E", "\x83\x60", "\x83\x63", "\x83\x65", "\x83\x67", "\x83\x5F",
+	"\x83\x61", "\x83\x64", "\x83\x66", "\x83\x68", "\x81\x40", "\x94\xB5",
+	"\x81\x99", "\x81\xF4", "\x83\x69", "\x83\x6A", "\x83\x6B", "\x83\x6C",
+	"\x83\x6D", "\x83\x6F", "\x83\x72", "\x83\x75", "\x83\x78", "\x83\x7B",
+	NULL,       NULL,       NULL,       NULL,       "\x83\x6E", "\x83\x71",
+	"\x83\x74", "\x83\x77", "\x83\x7A", "\x83\x70", "\x83\x73", "\x83\x76",
+	"\x83\x79", "\x83\x7C", NULL,       NULL,       NULL,       NULL,
+	"\x83\x7D", "\x83\x7E", "\x83\x80", "\x83\x81", "\x83\x82", "\x83\x40",
+	"\x83\x42", "\x83\x44", "\x83\x46", "\x83\x48", NULL,       NULL,
+	NULL,       NULL,       "\x83\x84", "\x81\x40", "\x83\x86", "\x81\x40",
+	"\x83\x88", "\x83\x83", "\x83\x85", "\x83\x87", "\x83\x62", "\x83\x94",
+	NULL,       NULL,       NULL,       NULL,       "\x83\x89", "\x83\x8A",
+	"\x83\x8B", "\x83\x8C", "\x83\x8D", "\x81\x7C", "\x81\x60", "\x81\x45",
+	"\x81\x44", "\x81\x40", NULL,       NULL,       NULL,       NULL
+};
+
 //.bss
 static NameEntryWork work;
 
@@ -66,29 +71,8 @@ static const char* msg_tbl[] = {
 };
 static NameEntryWork* wp = &work;
 
-// .rodata unit data: nameEntDisp reads these through the str_802FD9A8 base as
-// base+disp (the win_badge VECREL shape). They sit right after the msg strings and
-// before the compiler's literal pool, so they also fix nameBG's pool offsets.
-const Vec vec3_802fd9e8 = { -130.0f, 160.0f, 0.0f };
-const Vec vec3_802fd9f4 = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802fda00 = { 0.0f, 160.0f, 0.0f };
-const Vec vec3_802fda0c = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802fda18 = { 142.0f, 160.0f, 0.0f };
-const Vec vec3_802fda24 = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802fda30 = { 160.0f, 0.0f, 0.0f };
-const Vec vec3_802fda3c = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802fda48 = { 154.0f, 0.0f, 0.0f };
-const Vec vec3_802fda54 = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802fda60 = { 160.0f, 0.0f, 0.0f };
-const Vec vec3_802fda6c = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802fda78 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fda84 = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802fda90 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fda9c = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802fdaa8 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fdab4 = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802fdac0 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fdacc = { 1.0f, 1.0f, 1.0f };
+// The white GXColor the target keeps in .sdata2 and loads once via the sda21 base.
+const GXColor nameent_white = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 void nameEntInit(void) {
 	memset(wp, 0, sizeof(NameEntryWork));
@@ -204,6 +188,128 @@ void nameEntMain(void) {
 	if (wp->field_0x4 > 1) {
 		dispEntry(4, 0.0f, 7, nameEntDisp, NULL);
 	}
+}
+
+// The translate/scale Vecs are written as compound literals, not named objects: MWCC then reloads them
+// from the .rodata base (r31+0x58/...) inside each loop exactly as retail does, whereas a named object is
+// hoisted into a callee-saved register. The anonymous Vecs pool at the target's .rodata offsets, so nameBG
+// keeps its doubles in place. The 0x29 loop's varying-x translate is the exception: it goes through
+// nameEntMkVec (same shape as winBadgeMkVec), which is what keeps that loop's copy in the target's slot.
+static inline Vec nameEntMkVec(Vec base, f32 x) {
+	base.x = x;
+	return base;
+}
+
+// nameWinGX is declared (void* tex, s32 arg1, f32 x, f32 y, f32 z, f32 w) in include/nameent.h, so MWCC
+// evaluates the palette pointer first and schedules its final data[0] load one slot before the last lfs.
+// Retail evaluates the four floats first (its declaration had the pointer last). The MUST_MATCH cast
+// below calls through that order; the natural pointer-first call is under #else.
+void nameEntDisp(CameraId cameraId, void* param) {
+	CameraEntry saved;
+	f32 projv[7];
+	f32 viewport[6];
+	char buf[16];
+	s32 i;
+	s32 j;
+	s32 row;
+	const char* msg;
+	const char* okMsg;
+	const char* yesMsg;
+	const char* noMsg;
+	const char* name;
+	f32 width;
+	GXColor white;
+	GXColor white2;
+	GXColor white3;
+
+	white3 = nameent_white;
+	white2 = nameent_white;
+	white = nameent_white;
+
+	saved = *camGetCurPtr();
+	GXGetProjectionv(projv);
+	GXGetViewportv(viewport);
+	*camGetCurPtr() = *camGetPtr(CAMERA_2D);
+	GXSetProjection(camGetPtr(CAMERA_2D)->projection, camGetPtr(CAMERA_2D)->projType);
+	nameBG();
+	winTexInit((TEXPalette*)wp->field_0x60->data[0]);
+	winTexSet(0x2A, (Vec){ -130.0f, 160.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white2);
+	for (i = 0; i < 8; i++) {
+		winTexSet(0x29, nameEntMkVec((Vec){ 0.0f, 160.0f, 0.0f }, (f32)(-106 + i * 32)), (Vec){ 1.0f, 1.0f, 1.0f }, white);
+	}
+	winTexSet(0x2B, (Vec){ 142.0f, 160.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white2);
+	nameKirinukiGX(-240.0f, 120.0f, 480.0f, 270.0f);
+	FontDrawStart();
+	for (row = 0; row < 9; row++) {
+		for (j = 0; j < 14; j++) {
+			if (wp->field_0x50[row * 14 + j] != NULL) {
+				const char* s = wp->field_0x50[row * 14 + j];
+				f32 x = (f32)(-190 + j * 24 + j / 5 * 30 + (24 - (s32)FontGetMessageWidth(s)) / 2);
+				f32 y = (f32)(112 - row * 28);
+
+				FontDrawString(s, x, y);
+			}
+		}
+	}
+	for (i = 0; i < 4; i++) {
+		if (wp->field_0x10 >= 10 && wp->field_0x14 - 4 == i) {
+			winTexInit((TEXPalette*)wp->field_0x60->data[0]);
+			winTexSet(0x33, (Vec){ 160.0f, (f32)(-20 - i * 34), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0, 0, 0, 0x40 });
+			winTexInit_x2((TEXPalette*)wp->field_0x60->data[0]);
+			winTexSet_x2(i + 0x25, 0x33, (Vec){ 154.0f, (f32)(-14 - i * 34), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white);
+		} else {
+			winTexInit_x2((TEXPalette*)wp->field_0x60->data[0]);
+			winTexSet_x2(i + 0x25, 0x33, (Vec){ 160.0f, (f32)(-20 - i * 34), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white);
+		}
+	}
+	winTexInit((TEXPalette*)wp->field_0x60->data[0]);
+	winTexSet(0x24, (Vec){ wp->field_0x2C + 2.0f, wp->field_0x30 - 2.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0, 0, 0, 0x80 });
+	winTexSet(0x24, (Vec){ wp->field_0x2C, wp->field_0x30, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white2);
+	FontDrawStart();
+	for (i = 0; i < 8; i++) {
+		memset(buf, 0, 16);
+		strncpy(buf, &wp->field_0x3C[i * 2], 2);
+		if (strlen(buf) != 0) {
+			{ f32 t = 28.0f - (f32)FontGetMessageWidth(buf); f32 h = 0.5f; FontDrawString(buf, t * h + (f32)(-120 + i * 32), 171.0f); }
+		}
+	}
+	msg = msg_tbl[wp->field_0xC];
+	width = (f32)FontGetMessageWidth(msgSearch(msg));
+	windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, -250.0f, -160.0f, 500.0f, 40.0f, 20.0f);
+	FontDrawStart();
+	{ f32 h = 0.5f; FontDrawString(msgSearch(msg), (240.0f - width) * h + -120.0f, -168.0f); }
+	nameMaskGX(wp->field_0x54);
+	if (wp->field_0x8 == 0x64) {
+		okMsg = msgSearch("msg_nameent_ok");
+		yesMsg = msgSearch("msg_nameent_yes");
+		noMsg = msgSearch("msg_nameent_no");
+		if (wp->field_0xC == 4) {
+			okMsg = msgSearch("msg_nameent_ok_01");
+		}
+#ifdef MUST_MATCH
+		// MUST_MATCH: floats before pointer, so the data[0] load sinks past the last lfs (see note above).
+		((void (*)(f32, f32, f32, f32, void*, s32))nameWinGX)(-180.0f, 130.0f, 360.0f, 100.0f, (TEXPalette*)wp->field_0x60->data[0], 1);
+		((void (*)(f32, f32, f32, f32, void*, s32))nameWinGX)(-80.0f, 10.0f, 160.0f, 120.0f, (TEXPalette*)wp->field_0x60->data[0], 1);
+#else
+		nameWinGX((TEXPalette*)wp->field_0x60->data[0], 1, -180.0f, 130.0f, 360.0f, 100.0f);
+		nameWinGX((TEXPalette*)wp->field_0x60->data[0], 1, -80.0f, 10.0f, 160.0f, 120.0f);
+#endif
+		FontDrawStart();
+		FontDrawColor(&(GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+		FontDrawEdge();
+		{ f32 wf = -(f32)FontGetMessageWidth(okMsg); f32 h = 0.5f; FontDrawString(okMsg, wf * h, 110.0f); }
+		name = wp->field_0x3C;
+		{ f32 wf = -(f32)FontGetMessageWidth(name); f32 h = 0.5f; FontDrawString(name, wf * h, 70.0f); }
+		{ f32 wf = -(f32)FontGetMessageWidth(noMsg); f32 h = 0.5f; FontDrawString(yesMsg, wf * h, -20.0f); }
+		{ f32 wf = -(f32)FontGetMessageWidth(noMsg); f32 h = 0.5f; FontDrawString(noMsg, wf * h, -60.0f); }
+		FontDrawEdgeOff();
+	}
+	winTexInit((TEXPalette*)wp->field_0x60->data[0]);
+	winTexSet(0, (Vec){ wp->x1 + 2.0f, wp->y1 - 2.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0, 0, 0, 0x80 });
+	winTexSet(0, (Vec){ wp->x1, wp->y1, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, white2);
+	*camGetCurPtr() = saved;
+	GXSetProjectionv(projv);
+	GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
 }
 
 // The scale is the original's (f32)__fabs(<double literal>) / GXGetTexObj*; the separate f64

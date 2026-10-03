@@ -1974,15 +1974,16 @@ static inline BOOL renderProc_ChangeTexture(AnimationPoseData* data, AnimPoseSha
 
 // I'm so sorry, whoever gets tasked with matching this function
 // note: I detect at least 8 inlined functions here.
-// All calls (64), constants and byte offsets match; the inner vertex loops' `!=` trip-count spelling makes the
-// `.p` unroller emit retail's split `srwi`/`andi` remainder guard. The ChangeTexture body is inlined through
+// All calls (64), constants and byte offsets match; the inner `l` vertex loop's `<` trip-count spelling makes the
+// `.p` unroller emit retail's split `srwi`/`andi` remainder guard and its `ble` entry guard, and the `k1`
+// `!=` loop keeps the split guard too. The ChangeTexture body is inlined through
 // the renderProc_ChangeTexture helper above (group declared (texObj, texData, mtx) so MWCC's right-to-left
 // argument evaluation loads mtx first, and an explicit `idx = texCount - i - 1` keeps retail's `subi ..., 1`
 // instead of folding it into the array base).
 // The remaining diffs are callee-saved register colouring: retail keeps the outer-loop `draw`/`i` in r28/r29
 // and the draw-call scratch in r20..r27; this build lands them in r23/r22 and r15..r21. The non-register
 // remainder is retail's folded `lbz -0x1(base)` for texIds[texCount-l-1] (this build emits `subi` + a
-// byte-indexed `lbzx`) and two `ble`/`beq` unroll guards.
+// byte-indexed `lbzx`) and one `ble`/`beq` unroll guard (the `k1` loop emits `beq` where retail has `ble`).
 // NONMATCHING (96.55%): all calls, constants and offsets match; only callee-saved register colouring differs.
 void renderProc(s32 shapeId, s32 field_0x28) {
     s32 dispMode, drawId;
@@ -2207,7 +2208,7 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                             GXPosition1x16(*posIndexPtr);
                             GXNormal1x16(*nrmIndexPtr);
                             GXColor1x16(*clr0IndexPtr);
-                            for (l = 0; l != texCount; l++) {
+                            for (l = 0; l < texCount; l++) {
                                 index = texIds[texCount - l - 1];
                                 // The header types texIndex as u16*, but retail loads a full word (lwzx) and
                                 // stores its low half; the pointer is a byte base and texIndex is the byte offset

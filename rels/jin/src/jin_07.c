@@ -209,16 +209,19 @@ static f32 computePos(f32 a, f32 b, f32 t) {
     return (1.0f - t) * a + t * b;
 }
 
-// NONMATCHING (74.17%): building va as vec3_jin_00007f9c with va.x = p[9]
-// and va.y = 3.4f*p[4] reproduces the original's va.x/va.y stores; MWCC still
-// schedules t*t and the h10/h00 sub-products in a different order.
+// Building va as vec3_jin_00007f9c with va.x = p[9] and va.y = 3.4f*p[4]
+// reproduces the original's va.x/va.y stores. The declaration order below (omt
+// before two_t, h01/h00 before h10/h11) is the best of a brute-force sweep; the
+// target still emits two_t before omt, t-1 before h10 and h00 before h11, so the
+// FP schedule is not reproduced.
+// NONMATCHING (74.31%): FP scheduling differs.
 void computePosHermite(ExtPose* pose, f32* p) {
     f32 t = p[6];
-    f32 two_t = 2.0f * t;
     f32 omt = 1.0f - t;
+    f32 two_t = 2.0f * t;
     f32 t2 = t * t;
-    f32 h00 = (1.0f + two_t) * omt * omt;
     f32 h01 = (3.0f - two_t) * t2;
+    f32 h00 = (1.0f + two_t) * omt * omt;
     f32 h10 = t * omt * omt;
     f32 h11 = (t - 1.0f) * t2;
     Vec va = vec3_jin_00007f9c;
@@ -232,28 +235,33 @@ void computePosHermite(ExtPose* pose, f32* p) {
 }
 
 // Local copy of computePosHermite so senteresa_ext_main is not affected by other
-// agents editing that global function. Same body; MWCC inlines it identically.
+// agents editing that global function. The declaration order is tuned for the
+// inlined copy's schedule and differs from the out-of-line function above.
 static inline void senteresa_ext_main_computePosHermite(ExtPose* pose, f32* p) {
     f32 t = p[6];
     f32 two_t = 2.0f * t;
     f32 omt = 1.0f - t;
-    f32 t2 = t * t;
-    f32 h10 = t * omt * omt;
+    f32 h11 = (t - 1.0f) * (t * t);
+    f32 h01 = (3.0f - two_t) * (t * t);
     f32 h00 = (1.0f + two_t) * omt * omt;
-    f32 h11 = (t - 1.0f) * t2;
-    f32 h01 = (3.0f - two_t) * t2;
-    Vec va = vec3_jin_00007f9c;
-    Vec vb = vec3_jin_00007fa8;
+    f32 h10 = t * omt * omt;
+    Vec va;
+    Vec vb;
 
-    f32 p1h00 = p[1] * h00;
+    va = vec3_jin_00007f9c;
+    vb = vec3_jin_00007fa8;
+    va.x = p[9];
+    va.y = 3.4f * p[4];
 
-    (*pose->matrix)[0][3] = p[0] * h00 + p[9] * h10 + vb.x * h11 + p[3] * h01;
-    (*pose->matrix)[1][3] = p1h00 + 3.4f * p[4] * h10 + vb.y * h11 + p[4] * h01;
+    (*pose->matrix)[0][3] = p[0] * h00 + va.x * h10 + vb.x * h11 + p[3] * h01;
+    (*pose->matrix)[1][3] = p[1] * h00 + va.y * h10 + vb.y * h11 + p[4] * h01;
     (*pose->matrix)[2][3] = p[2] * h00 + va.z * h10 + vb.z * h11 + p[5] * h01;
 }
 
-// NONMATCHING (80.42%): the inlined Hermite body's FP register colouring differs
-// (target keeps 1.0/2.0/3.0 in f0/f2/f1 and t in f7; ours picks f1/f0/f3 and t in f4).
+// NONMATCHING (83.76%): everything outside the inlined Hermite body matches;
+// the helper's declaration order is the best of a brute-force sweep. The target
+// keeps 1.0/2.0/3.0 in f0/f2/f1 and t in f4/f7, ours reuses those registers for
+// a few different intermediates, so the FP schedule still differs.
 static void senteresa_ext_main(void) {
     ExtPose* pose = extGetPosePtr();
     s32 count;

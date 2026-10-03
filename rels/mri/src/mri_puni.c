@@ -7971,7 +7971,11 @@ void puniHagurePos(PuniData* punidat) {
 // takes r31 while `i` reuses arg2's r28; target keeps name r29, mode/cmp r28, i r31), the `&0x8`
 // branch's f27/f28 copy order and `fadds` operand, and the byte-store `addi r3`/`clrlwi r4`
 // scheduling. `tools/diff_shape.py` reports the same 38 calls and all immediates.
-// NONMATCHING (93.40%): call sequence and every immediate match; only callee-saved/FPR colouring
+// The `&0x8000` branch colours yh before xh (`yh = y >> 8; yh = (u8)yh; xh = ...`) rather than the
+// xh-first order the other two blocks use: that one web-order difference fixes two byte-store
+// instructions (93.40 -> 93.42). Changing it in the other blocks does not help. This is a
+// permuter candidate: the remaining diffs are all web colouring/scheduling.
+// NONMATCHING (93.42%): call sequence and every immediate match; only callee-saved/FPR colouring
 // and scheduling differ.
 USER_FUNC(evt_puni_exit) {
     s32* args = event->args;
@@ -8075,14 +8079,13 @@ USER_FUNC(evt_puni_exit) {
                 y = (s32)pos.y;
                 z = (s32)pos.z;
 #ifdef MUST_MATCH
-                // the second assignments are no-ops (xh/yh are u8) needed for the target's extrwi
-                xh = x >> 8;
-                xh = (u8)xh;
                 yh = y >> 8;
                 yh = (u8)yh;
-#else
                 xh = x >> 8;
+                xh = (u8)xh;
+#else
                 yh = y >> 8;
+                xh = x >> 8;
 #endif
 
                 _swByteSet(base + 0, (u8)Punigp->unk328);

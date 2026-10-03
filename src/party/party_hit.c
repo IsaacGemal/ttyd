@@ -259,14 +259,15 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
     return hit;
 }
 
-// NONMATCHING (97.08%): GPR rotation (orig party=r30/pos=r31/vec3=r29, ours party=r29/pos=r30/vec3=r31),
-// f4/f6 nor.z-vs-dot swap in the push-outs, pooled i2f double (0xc0(r29) vs 0x128(r31)), first-if branch
-// layout and the deferred `mr r28, r3`. Declaration-order permutations and pragma sweeps do not move it.
+// NONMATCHING (99.82%): the `h2` intermediate for the second filter and flipping the two
+// `!= NULL` tests to `== NULL` reproduced retail's phi and branch layout (and with them the GPR
+// rotation). Only the f4/f6 nor.z-vs-dot FP colouring and the pooled i2f magic (0x128 vs 0xc0) remain.
 HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     HitCheckQuery query1;
     HitCheckQuery query2;
     HitEntry* hit;
     HitEntry* hit2;
+    HitEntry* h2;
     HitEntry* h1;
     Vec p;
     Vec n;
@@ -298,15 +299,15 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
         h1 = hitCheckVecFilter(&query1, chkfilter);
     }
 
-    if (h1 != NULL) {
+    if (h1 == NULL) {
+        hit = h1;
+    } else {
         f31 = (f32)(s32)(1000.0f * query1.targetDistance +
                          (query1.targetDistance >= 0.0f ? 0.5f : -0.5f)) /
               1000.0f;
         n.x = query1.hitNormal.x;
         n.y = query1.hitNormal.y;
         n.z = query1.hitNormal.z;
-        hit = h1;
-    } else {
         hit = h1;
     }
     if (hit != NULL) {
@@ -332,20 +333,23 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     query2.targetDistance = f31;
 
     if (yoshiGetStatus() != 0) {
-        hit2 = hitCheckVecFilter(&query2, chkfilterYoshi);
+        h2 = hitCheckVecFilter(&query2, chkfilterYoshi);
     } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
-        hit2 = hitCheckVecFilter(&query2, chkfilterNokotaro);
+        h2 = hitCheckVecFilter(&query2, chkfilterNokotaro);
     } else {
-        hit2 = hitCheckVecFilter(&query2, chkfilter);
+        h2 = hitCheckVecFilter(&query2, chkfilter);
     }
 
-    if (hit2 != NULL) {
+    if (h2 == NULL) {
+        hit2 = h2;
+    } else {
         f31 = (f32)(s32)(1000.0f * query2.targetDistance +
                          (query2.targetDistance >= 0.0f ? 0.5f : -0.5f)) /
               1000.0f;
         n.x = query2.hitNormal.x;
         n.y = query2.hitNormal.y;
         n.z = query2.hitNormal.z;
+        hit2 = h2;
     }
     if (hit2 != NULL) {
         if (partyNrmToAngle(&n) >= 45.0f) {
@@ -365,9 +369,9 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     return NULL;
 }
 
-// NONMATCHING (80.57%): register set matches (r26-r31, no extra GPR); the frame is 0x10 smaller
-// because the natural direction build leaves out the original's phase-1 temp, so the Vec slots
-// sit below the original's.
+// NONMATCHING (80.69%): register set matches (r26-r31); the frame is 0x10 smaller because the natural
+// direction build leaves out the original's phase-1 temp, so the Vec slots sit below the original's.
+// Using the best-normal copy (`nv.x/nv.z`) directly in the push-out dot/fma gained the last 0.12%.
 HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
     Vec dir;
     Vec p;
@@ -434,13 +438,11 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
     }
     if (best != NULL) {
         Vec nv = bestNorm;
-        f32 nx = nv.x;
-        f32 nz = nv.z;
-        f32 dz = cos * a;
         f32 dx = sin * a;
-        f32 dot = dx * nx + dz * nz;
-        delta.x += 0.5f * (dx - dot * nx);
-        delta.z += 0.5f * (dz - dot * nz);
+        f32 dz = cos * a;
+        f32 dot = dx * nv.x + dz * nv.z;
+        delta.x += 0.5f * (dx - dot * nv.x);
+        delta.z += 0.5f * (dz - dot * nv.z);
     }
 
     sincosf(&sin2, &cos2, 45.0f + b);
@@ -596,9 +598,10 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
 // first hitCheckVecFilter result its own variable (h2) and copying it into `hit` after the test removes the
 // r27/r3 live-range split. Loading px before the offCos/targetDist statements fixes the px/pz load order.
 // Splitting the f32 declarations and reordering them (hitY early, bestY/targetDist/offSin moved) cut the
-// diffs to 45. The rest is FP register colouring: original has py=f21, targetDist=f26, offCos=f23,
-// noCos=f28, off=f22 while ours has py=f28, targetDist=f21, offCos=f26, noCos=f23, off=f21.
-// NONMATCHING (98.79%): FP register colouring
+// diffs to 44. The rest is FP register colouring: original has py=f21, targetDist=f26, offCos=f23,
+// noCos=f28, off=f22 while ours has py=f28 (f30 with some declaration orders), targetDist=f21,
+// offCos=f26, noCos=f23, off=f21.
+// NONMATCHING (98.80%): FP register colouring
 HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     HitCheckQuery query;
     Vec targetPos;
@@ -632,7 +635,14 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     if (party->flags & 0x02000000) {
         return NULL;
     }
+#ifdef MUST_MATCH
+    // Match-only: the two-statement form makes MWCC issue the abs into off's own register
+    // (`fabs f21,f1; fadds f21,f21,f0`) like the original, instead of a throwaway `fabs f0,f1`.
+    off = __fabsf(up);
+    off = off + float_0p1_8041b42c;
+#else
     off = __fabsf(up) + float_0p1_8041b42c;
+#endif
     *(Vec*)party->field_C4 = vec3_802cd320;
     *(f32*)(party->field_C4 + (0xE0 - 0xC4)) = float_0_8041b3ec;
     if (marioGetPtr()->currMotionId == MARIO_MOTION_YOSHI) {
@@ -791,13 +801,16 @@ void partyChkGnd(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (83.56%): the inlined sqrtf doubles are pooled in a separate
-// .rodata subsection rather than following vec3_802cd320 at 0xc8/0xd0/0xd8.
+#pragma opt_common_subs off // stops the x*x/z*z multiply contracting to fmadds and defers the rodata base
+// NONMATCHING (84.11%): the inline-sqrtf body matches; the scheduler run-up (lis/addi/stw
+// placement around the two loads) differs, and opt_common_subs off keeps the two fmuls and
+// defers the pooled-constant base.
 f32 partyNrmToAngle(Vec* v) {
     f32 len = sqrtf(v->x * v->x + v->z * v->z);
 
     return angleABf(float_0_8041b3ec, float_0_8041b3ec, len, -v->y);
 }
+#pragma opt_common_subs reset
 
 HitEntry* partyHitCheck(PartyEntry* party, Vec* pos, Vec* dir, Vec* hitPos, Vec* hitNormal, f32* dist) {
     Vec dirCopy = *dir;

@@ -1780,9 +1780,9 @@ static inline f32 ekiSinf2(f32 rad) {
     return sinv;
 }
 
-// NONMATCHING (95.77%): FPR colouring inside the inlined trig bodies (retail keeps the
-// accumulator in place, ours chains the fmsubs/fmadds results) and the base-vector load
-// hoisted early in the second vc build. Frame (0xf0), branch shape and all opcodes match.
+// NONMATCHING (97.25%): FPR colouring in the inlined trig bodies (retail keeps the sin/cos
+// accumulator in place across fmsubs/fmadds, ours chains it through fresh registers) and the
+// second vc build's base-vector load, which the scheduler hoists above the two matrix stores.
 static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
     MarioWork* mario = marioGetPtr();
     Vec vh;   // hammer_2 case
@@ -1819,11 +1819,14 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
         wp->field_0x558 = 0;
     }
     if (mario->currMotionId == MARIO_MOTION_HAMMER && wp->field_0x40 > 10) {
-        CameraEntry* cam = camGetPtr(CAMERA_3D);
-        angle = reviseAngle(cam->viewYaw + (mario->unk1A8 - 90.0f));
+        f32 s;
+        f32 c;
+        angle = reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(CAMERA_3D)->viewYaw);
         rad = angle * 6.2831855f / 360.0f;
-        t = 35.0f * ekiSinf2(rad) + mario->position.x;
-        diff = mario->position.z - 35.0f * ekiCosf2(rad);
+        s = ekiSinf2(rad);
+        t = 35.0f * s + mario->position.x;
+        c = ekiCosf2(rad);
+        diff = mario->position.z - 35.0f * c;
         if (distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], t, diff) < 35.0f) {
             return 2;
         }
@@ -1865,15 +1868,20 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
             diff = compAngle(angle, mario->directionView);
             if (__fabsf(diff) < 40.0f) {
                 f32 s;
-                rad = mario->directionView * 6.2831855f / 360.0f;
-                s = ekiSinf2(rad);
+                f32 c;
+                s = ekiSinf2(mario->directionView * 6.2831855f / 360.0f);
                 t = thresh - dist;
-                mario->riderDelta.x = -t * s;
-                mario->riderDelta.z = t * ekiCosf2(rad);
+                mario->riderDelta.x = -(t * s);
+                c = ekiCosf2(mario->directionView * 6.2831855f / 360.0f);
+                mario->riderDelta.z = t * c;
             } else {
+                f32 s;
+                f32 c;
                 rad = angle * 6.2831855f / 360.0f;
-                mario->riderDelta.x = (ep->matrix[0][0][3] - thresh * ekiSinf2(rad)) - mario->position.x;
-                mario->riderDelta.z = (thresh * ekiCosf2(rad) + ep->matrix[0][2][3]) - mario->position.z;
+                s = ekiSinf2(rad);
+                mario->riderDelta.x = (ep->matrix[0][0][3] - thresh * s) - mario->position.x;
+                c = ekiCosf2(rad);
+                mario->riderDelta.z = (thresh * c + ep->matrix[0][2][3]) - mario->position.z;
             }
         }
     }
