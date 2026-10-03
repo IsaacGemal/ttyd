@@ -2316,16 +2316,6 @@ void partyForceWalk(PartyEntry* party) {
 #pragma opt_propagation reset
 
 
-// Every instruction matches; the only diffs are the three `lfd` offsets into the pool. These are
-// partySqrtf's own `const f64 _half`/`_three` locals; their position depends on the rest of the
-// unit's .rodata, so the offsets land on retail's str_802CDB20+0x600 once the unit links.
-// Match devices in the body: the first footmark clear is hand-inlined with its own `Vec pos1`
-// (a call to partyClearFootmark() compiles to the same code but puts its temp at 0x14; the two
-// address-taken Vecs only take retail's slots -- pos1 at 0x20, pos at 0x14 -- when pos1 is
-// declared first, since MWCC assigns address-taken locals in reverse declaration order), and the
-// scale select is a ternary, which is what keeps scale in f4 and the sqrt argument/result in f5.
-// NONMATCHING (99.99%): only the three inline-sqrt `lfd` pool offsets differ (see above).
-
 // partyMoveMain returns a state code in r3.
 #ifdef MUST_MATCH
 // Match shape: for these zero compares the original loads the field into f1 and 0.0f into f0;

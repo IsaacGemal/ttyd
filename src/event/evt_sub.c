@@ -710,86 +710,11 @@ void coingetDisp(WinMgrEntry* entry) {
 
 extern WinMgrDesc coinget_window_desc;
 
-static inline f32 evt_sub_sin_approx(f32 angle) {
-	f32 v = 0.00761f;
-	f32 b = 0.16605f;
-	f32 one = 1.0f;
-	f32 t, u;
-
-	if (angle <= 3.1415927f) {
-		if (angle <= 1.5707964f) {
-			t = angle * angle;
-			v = v * t - b;
-			v = v * t + one;
-			v = v * angle;
-		} else {
-			t = angle - 1.5707964f;
-			u = 1.5707964f - t;
-			t = u * u;
-			v = v * t - b;
-			v = v * t + one;
-			v = v * u;
-		}
-	} else if (angle < 4.712389f) {
-		t = angle - 3.1415927f;
-		u = t * t;
-		v = v * u - b;
-		v = v * u + one;
-		v = v * t;
-		v = -v;
-	} else {
-		t = angle - 4.712389f;
-		u = 1.5707964f - t;
-		t = u * u;
-		v = v * t - b;
-		v = v * t + one;
-		v = v * u;
-		v = -v;
-	}
-	return v;
-}
-
-static inline f32 evt_sub_cos_approx(f32 angle) {
-	f32 v = 0.03705f;
-	f32 b = 0.4967f;
-	f32 one = 1.0f;
-	f32 t, u;
-
-	if (angle <= 3.1415927f) {
-		if (angle <= 1.5707964f) {
-			t = angle * angle;
-			v = v * t - b;
-			v = v * t + one;
-		} else {
-			t = angle - 1.5707964f;
-			u = 1.5707964f - t;
-			t = u * u;
-			v = v * t - b;
-			v = v * t + one;
-			v = -v;
-		}
-	} else if (angle < 4.712389f) {
-		t = angle - 3.1415927f;
-		t = t * t;
-		v = v * t - b;
-		v = v * t + one;
-		v = -v;
-	} else {
-		t = angle - 4.712389f;
-		u = 1.5707964f - t;
-		t = u * u;
-		v = v * t - b;
-		v = v * t + one;
-	}
-	return v;
-}
-
 #pragma opt_propagation off
 #pragma opt_lifetimes off
 // The polynomial is written inline in evt_sub_get_coin with explicit f0-f5 locals (the
 // evt_item_get_important_item technique) so MWCC colours the scratch in f0 and the 1.5708
-// pivot/wrapped angle in f1, as the target does. The two static inline helpers above are no
-// longer called; they are kept for reference. opt_propagation off stops MWCC rematerialising the
+// pivot/wrapped angle in f1, as the target does. opt_propagation off stops MWCC rematerialising the
 // coefficients into every branch; opt_lifetimes off stops the default lifetime pass from shifting
 // the seed/coefficient FPRs.
 USER_FUNC(evt_sub_get_coin) {
