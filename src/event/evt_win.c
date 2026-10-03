@@ -587,22 +587,17 @@ USER_FUNC(set_new_goods_list) {
 
 
 
-// NONMATCHING (96.07%): complete reconstruction; the bl sequence (338 calls), case layout
-// and .rodata order all match. Fixed here: the status-macro flag is passed as `flag | 0x10` (the
-// target does `ori` + `clrlwi`, not `extsh`); the badge/icon `iconId` is `s32` (the target
-// truncates it with `clrlwi` at the iconDispGx call); the common-tail buffer check keeps the
-// base pointer in a `char*` variable used by the loop, so `p != NULL` compiles to `cmplwi` on a
-// register instead of the folded `addic. r0, r1, 0x660`; and five declaration runs are ordered to
-// reproduce MWCC's callee-saved colouring (match-only, see REPORT). What remains is MWCC's
-// callee-saved colouring: our first-block sellName/sellDesc get r16/r17 where the target uses
-// r17/r18, and the same one-register shift runs through the function, which also makes the frame
-// 0x20 larger (0x7a0 vs 0x780). The int->float magic is the compiler's own pool entry, so the named
-// double_to_int_802f68a8 / double_to_int_mask_802f68b8 definitions in this file are duplicates:
-// every i2f conversion loads 0x408(r30) instead of the target's 0x3f0(r30) (removing those two
-// data definitions moves the loads to 0x3f0 but does not change the score). Display callback
-// for the shop window.
-// NONMATCHING (96.07%): MWCC callee-saved register colouring is shifted one register (r16/r17 vs
-// the target's r17/r18) and the frame is 0x20 larger; see the note above.
+// Display callback for the shop window. The bl sequence (338 calls), case layout and .rodata order all
+// match. The status-macro flag is passed as `flag | 0x10` (the target does `ori` + `clrlwi`, not
+// `extsh`); the badge/icon `iconId` is `s32` (the target truncates it with `clrlwi` at the iconDispGx
+// call); the common-tail buffer check keeps the base pointer in a `char*` variable used by the loop, so
+// `p != NULL` compiles to `cmplwi` on a register; the first block's price reads `wp->field_0x8[i]`
+// through one `s32 item` local (the target loads it once); several declaration runs are ordered to
+// reproduce MWCC's callee-saved colouring (match-only). The int->float magic is the compiler's own pool
+// entry, so the named double_to_int_802f68a8 / double_to_int_mask_802f68b8 definitions in this file are
+// duplicates: every i2f conversion loads 0x408(r30) instead of the target's 0x3f0(r30).
+// NONMATCHING (96.12%): MWCC callee-saved register colouring is shifted one register (r16/r17 vs
+// the target's r17/r18) through the function, which also makes the frame larger.
 void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	UnitWinWork* wp = (UnitWinWork*)param;
 	PouchData* pouch = pouchGetPtr();
@@ -650,10 +645,13 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				GXProject(pos.x, pos.y, pos.z, cam->view, projv, vp, &sx, &sy, &sz);
 				cam = camGetPtr(cameraId);
 				GXSetProjection(cam->projection, cam->projType);
-				if (wp->field_0x8[i] >= 0xF0 && wp->field_0x8[i] < 0x153) {
-					price = (u16)itemDataTable[wp->field_0x8[i]].discount_price;
-				} else {
-					price = ((ItemDataView*)&itemDataTable[wp->field_0x8[i]])->buy_price;
+				{
+					s32 item = wp->field_0x8[i];
+					if (item >= 0xF0 && item < 0x153) {
+						price = (u16)itemDataTable[item].discount_price;
+					} else {
+						price = ((ItemDataView*)&itemDataTable[item])->buy_price;
+					}
 				}
 				PSMTXTrans(mtx, float_8_8041daf0 + (float_neg304_8041daf4 + sx),
 				           float_240_8041daf8 - (sy - float_60_8041dafc), float_0_8041db00);
@@ -747,9 +745,9 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		if (lotteryGetPtr()->mFlags & 2) {
 			char buf[8];
 			GXColor color;
-			const char* p;
 			Mtx mtx;
 			s32 k;
+			const char* p;
 
 			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9e0, float_neg250_8041db04, float_neg130_8041dae4, float_150_8041db0c, float_45_8041db10,
 			                      float_20_8041dad8);
@@ -769,12 +767,12 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	case 4: {
 		// Stored-item (keep) list.
 		const char* selDesc = 0;
-		s32 dispOff = 0;
+		s32 k;
 		s32 dispCnt = 0;
 		s32 cnt = pouchGetKeepItemCnt();
 		GXColor color;
 		u32 sc[4];
-		s32 k;
+		s32 dispOff = 0;
 
 		cnt = (8 - cnt > 0) ? (8 - pouchGetKeepItemCnt()) : 0;
 		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9e8, float_neg24_8041db44, float_100_8041db48, float_300_8041dad0, (f32)(0xdc - cnt * 0x18),
@@ -1065,8 +1063,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	case 18: {
 		InformantWork* jdt = &_jdt;
 		InformantInfo* info = jdt->info;
-		s32 entry;
 		s32 dispOff;
+		s32 entry;
 		s32 listOff;
 		GXColor color;
 		const u8* prefix;
@@ -1152,6 +1150,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		s32 dispOff;
 		u32 sc[4];
 		s32 entry;
+		s32 dispCnt;
 		char help[0x40];
 		s32 listOff;
 		s32 m8;
@@ -1180,6 +1179,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXGetScissor(&sc[0], &sc[1], &sc[2], &sc[3]);
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
 
+		dispCnt = 0;
 		for (entry = 0, dispOff = 0; party_id_table[entry] != 0; entry++) {
 			s32 iconId;
 			GXColor nameColor;
@@ -1262,7 +1262,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			sprintf(buf, "%d", pouch->partyData[party_id_table[entry]].techLevel);
 			FontDrawStart();
 			FontDrawString(buf, float_236_8041dbb0, wp->field_0x44 + (f32)(0x50 - dispOff));
-			if ((f32)entry == wp->field_0x34) {
+			if ((f32)dispCnt == wp->field_0x34) {
 				char help2[0x10];
 				char lank[0x10];
 
@@ -1279,6 +1279,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				sprintf(help, str_802F6750, help2, lank, pouch->partyData[party_id_table[entry]].techLevel + 1, party_labelname_table[entry]);
 			}
 			dispOff += 0x18;
+			dispCnt++;
 		}
 		GXSetScissor(sc[0], sc[1], sc[2], sc[3]);
 		if ((s8)help[0] != 0) {

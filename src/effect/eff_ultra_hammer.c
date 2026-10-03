@@ -47,20 +47,23 @@ void N_setupErrorHandler(void) {
 	OSSetErrorHandler(OS_ERROR_PROGRAM, (OSErrorHandler)N_systemErrorHandler);
 }
 
-// NONMATCHING (93.72%): the remaining diffs are register allocation plus two things the original did while
-// the error strings and this function shared one translation unit. (1) The interrupt restore after
-// OSFillFPUContext: the original is inline mfmsr/ori 0x8000/ori 2/mtmsr/isync (inline asm is not allowed here),
-// written as PPCMtmsr(PPCMfmsr() | 0x8002), which calls the two SDK functions. (2) The font MTXScale
-// conversion: the original is unsigned and loads its 2^52 mask at str_803019E0+0x190
-// (double_to_int_mask_80301b70 in unk_0x8025de70.o's .rodata); under MUST_MATCH it converts as signed and
-// shares this unit's .rodata double_to_int_803019d8, because an unsigned conversion would emit an extra
-// 8-byte .rodata object here and shift the unit's data (matched_data drops 80 -> 32). The error strings are
-// read as offsets from str_803019E0, the single .rodata base register the original compiler used (its `addi
-// rN, r29, off`); the offsets are the original's. The original also keeps context/error/dsisr/dar in
-// r26/r23/r25/r24, the string base in r29 and an indexed gpr loop (offset in r23), while this compiler picks
-// different callee-saved registers and a running pointer, so it saves two fewer registers and the frame is
-// 0x10 smaller.
-// NONMATCHING (93.72%): register allocation, the inline-msr restore and the unsigned font-conversion mask.
+// NONMATCHING (95.39%): the gpr dump loop now has the original's indexed form (`add r3,base,off; lwzx`),
+// the font MTXScale conversion keeps the compiler's native i2f shape (temps at 0x14e0/0x14e8, where the
+// original's are, and fused `fsubs`) by casting the u16 to s32, which reuses this unit's existing signed 2^52
+// double at .rodata+0x28 so the unit's .rodata stays 48 bytes; the original instead used the unsigned mask
+// at str_803019E0+0x190 (unk_0x8025de70.c), so ours emits two extra `xoris` and a `lis`-based mask load.
+//  - the interrupt restore after OSFillFPUContext: the original is inline mfmsr/ori 0x8000/ori 2/mtmsr/isync,
+//    but inline asm is not allowed, so this calls PPCMtmsr(PPCMfmsr() | 0x8002);
+//  - register colouring: the original keeps error/context/dsisr/dar in r23/r26/r25/r24, the string base in
+//    r29 and a separate hoisted &print_buffer in r31, saving r23..r31; ours lands the three later args in
+//    r29/r28/r27/r26 and saves r24..r31. `base` (a hoisted &print_buffer) is what gets the score here.
+// opt_common_subs off: needed for the target's register colouring (93.99% without it).
+// opt_strength_reduction off: keeps the gpr dump loop's separate offset counter instead of a pointer walk.
+// opt_loop_invariants off: needed with the other two for the gpr loop's indexed form (94.29% without it).
+#pragma opt_common_subs off
+#pragma opt_strength_reduction off
+#pragma opt_loop_invariants off
+// NONMATCHING (95.39%): the conversion pool, the inline-msr restore and register colouring (see above).
 void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 	//registers
 	OSFontHeader* fontHeader;
@@ -70,9 +73,10 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	int i;
 	u32 count, stack;
 #ifdef MUST_MATCH
-	const char* strings;
+	const char* strings = (const char*)str_803019E0;
 #endif
 	u16 w1, w2, h1, h2, x1, x2, y1, y2;
+	s8* base;
 	//stack vars
 	char print_buffer2[0x400]; // 0x10E0
 	char print_buffer[0x1000]; // 0xE0
@@ -88,9 +92,6 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	u32 clearColor;
 #endif
 
-#ifdef MUST_MATCH
-	strings = (const char*)str_803019E0;
-#endif
 	if (N_getDebugMode() >= 0) {
 		psndExit();
 		while (1) {} //softlock
@@ -175,6 +176,7 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, 1, 3, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, 1, 3, 0);
+	base = (s8*)&print_buffer; // the original hoists &print_buffer into r31 here
 	while (1) {
 		count = VIGetRetraceCount();
 		loop_newline = (s8*)&print_buffer;
@@ -191,11 +193,15 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 				loop_newline++;
 			}
 			else {
-				OSGetFontTexture((const char*)&print_buffer[i], &image, &x, &y, &width);
+				OSGetFontTexture((const char*)&base[i], &image, &x, &y, &width);
 				GXInitTexObj(&texObj, image, fontHeader->sheetWidth, fontHeader->sheetHeight,
 					(GXTexFmt)fontHeader->sheetFormat, GX_CLAMP, GX_CLAMP, GX_FALSE);
 				GXLoadTexObj(&texObj, GX_TEXMAP0);
 #ifdef MUST_MATCH
+				// The original uses the unsigned conversion (no xoris, mask at str_803019E0+0x190, which
+				// lives in unk_0x8025de70.c); our unsigned pool would add an 8-byte double to this unit's
+				// .rodata (48 -> 56), so cast to s32, which reuses this unit's existing signed 2^52 double
+				// at .rodata+0x28 and costs two xoris. Both give the same value for a u16.
 				MTXScale(matrix2, float_1_80422614 / (s32)fontHeader->sheetWidth, float_1_80422614 / (s32)fontHeader->sheetHeight, float_1_80422614);
 #else
 				MTXScale(matrix2, float_1_80422614 / fontHeader->sheetWidth, float_1_80422614 / fontHeader->sheetHeight, float_1_80422614);
@@ -256,6 +262,9 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 			DemoCurrentBuffer = DemoFrameBuffer1;
 	}
 }
+#pragma opt_loop_invariants reset
+#pragma opt_strength_reduction reset
+#pragma opt_common_subs reset
 
 #ifdef __MWERKS__
 u8 wakka_dl_0_0[] ATTRIBUTE_ALIGN(32) = {

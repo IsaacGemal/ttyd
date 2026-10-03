@@ -7,7 +7,7 @@
 #include "eff/eff_n64.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 #include "driver/animdrv.h"
 #include "math_trig.h"
@@ -19,6 +19,8 @@ extern u32 anim_ext_tex_size; //animdrv.c
 static ExtWork work[2];
 
 #define extGetWork() (gp->inBattle ? &work[1] : &work[0])
+
+static int compare(void* a, void* b);
 
 // Extended work layout (header only declares the first fields)
 // .data
@@ -108,209 +110,147 @@ static Vec Normals[2] = {
 static GXColor Colors = {0xFF, 0xFF, 0xFF, 0xFF};
 static f32 UVs[8] = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f};
 static u64 shadow_dl[4] = {0x8000040000010102ULL, 0x0203030000000000ULL, 0, 0};
-static f32 shadow_vtx[12] = {-1.2f, 0.0f, -1.2f, -1.2f, 0.0f, 1.2f, 1.2f, 0.0f, 1.2f, 1.2f, 0.0f, -1.2f};
-static f32 shadow_vtx_pad[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+static __declspec(section ".sdata") f32 shadow_vtx[16] = {-1.2f, 0.0f, -1.2f, -1.2f, 0.0f, 1.2f, 1.2f, 0.0f, 1.2f, 1.2f, 0.0f, -1.2f, 0.0f, 0.0f, 0.0f, 0.0f};
 static f32 shadow_coord[8] = {0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f};
 
-void extDrawShadow(void) {
+void extInit(void) {
 	ExtWork* wp = extGetWork();
+	wp->poseNum = 0;
+	wp->poses = NULL;
+}
+
+void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void), void (*cb1)(void)) {
+	ExtWork* wp = extGetWork();
+	s32 texCount = 0;
+	void* p = param;
 	s32 i;
-	ExtSortEntry* sort = &wp->sortList[wp->poseNum - 1];
 
-	for (i = wp->poseNum - 1; i >= 0; i--, sort--) {
-		ExtPose* pose = &wp->poses[sort->field_0x0];
+	while (*(u32*)p != 0) {
+		p = (u8*)p + 0xC;
+		texCount++;
+	}
 
-		if (!(pose->flags & 4)) {
-			Mtx m;
-			PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
-			PSMTXConcat(m, wp->field_0x3C, m);
-			if (pose->flags & 0x10) {
-				PSMTXTransApply(m, m, 0.0f, -(*pose->matrix)[1][3] + pose->field_0x8, 0.0f);
-			}
-			GXLoadPosMtxImm(m, 0);
-			GXSetCurrentMtx(0);
-			GXCallDisplayList(shadow_dl, 0x20);
-		}
+	wp->poses = __memAlloc(2, count << 5);
+	wp->poseNum = count;
+	wp->cb0 = cb0;
+	wp->cb1 = cb1;
+	wp->textures = __memAlloc(2, texCount * 0x34);
+	wp->texCount = texCount;
+	wp->mtx = __memAlloc(2, count * 0x30);
+	wp->vertices = __memAlloc(2, texCount * 0xC * sizeof(f32));
+	wp->normals = Normals;
+	wp->colors = &Colors;
+	wp->uvs = UVs;
+	wp->sortList = __memAlloc(2, count * 8);
+	wp->dlBuffer = __memAlloc(2, texCount * 0x80);
+	DCInvalidateRange(wp->dlBuffer, texCount * 0x80);
+	wp->dlSizes = __memAlloc(2, texCount * 4);
+	memset(wp->poses, 0, wp->poseNum << 5);
+
+	for (i = 0; i < count; i++) {
+		wp->sortList[i].field_0x0 = i;
+		wp->poses[i].matrix = &wp->mtx[i];
+	}
+
+	PSMTXIdentity(wp->field_0x3C);
+	dispEntry(0, 0.0f, 1, extMakeTexture, param);
+	if (callback != NULL) {
+		callback();
 	}
 }
 
-void extLoadShadowMtx(Mtx mtx) {
+// The header's animPoseDisp_MakeExtTexture prototype puts f1 (the float) second, before field_0x4/texObj/base;
+// the original call site loads it last, so its declaration is (name, field_0x4, texObj, base, f1, f2, ...) -- the
+// integer registers are identical either way. The cast reproduces that evaluation order (MUST_MATCH); the natural
+// call with the header's order sits in the #else.
+void extMakeTexture(CameraId camId, void* param) {
 	ExtWork* wp = extGetWork();
-	PSMTXCopy(mtx, wp->field_0x3C);
-}
-
-void extLoadShadowRenderMode(void) {
-	GXSetBlendMode(1, 4, 5, 0);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetZMode(1, 3, 0);
-}
-
-void extLoadShadowTev(void) {
-	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
-	{
-		GXColor color = {0xA0, 0, 0, 0};
-
-		GXSetChanMatColor(4, color);
-	}
-	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-	GXSetNumTevStages(1);
-	GXSetTevOrder(0, 0, 0, 4);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-	GXSetTevAlphaIn(0, 7, 4, 5, 7);
-	{
-		GXTexObj texObj;
-
-		effGetTexObjN64(0x2C, &texObj);
-		GXLoadTexObj(&texObj, 0);
-	}
-}
-
-void extLoadShadowVertex(void) {
-	GXClearVtxDesc();
-	GXSetVtxDesc(9, 2);
-	GXSetVtxDesc(0xD, 2);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-	GXSetArray(9, shadow_vtx, 0xC);
-	GXSetArray(0xD, shadow_coord, 8);
-	GXSetCullMode(0);
-}
-
-void extLoadTev(void) {
-	GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
-
-	GXSetTevOrder(0, 0, 0, 0xFF);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
-	GXSetTevAlphaIn(0, 7, 7, 7, 4);
-	GXSetNumChans(0);
-	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
-	GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, color);
-	GXSetNumTexGens(1);
-	GXSetNumTevStages(1);
-}
-
-void extLoadTextureExit(void) {
-	GXTexModeSync();
-}
-
-void extLoadTexture(void) {
-	ExtWork* wp = extGetWork();
+	void* p = param;
 	ExtTexture* tex = wp->textures;
+	f32 backup[4];
+	f32 half = 0.5f;
 	s32 i;
-	u32 total = 0;
 
-	GXInvalidateTexAll();
-	for (i = 0; i < wp->texCount; i++, tex++) {
-		u32 size = GXGetTexBufferSize(GXGetTexObjWidth(&tex->texObj), GXGetTexObjHeight(&tex->texObj), GXGetTexObjFmt(&tex->texObj), 0, 0);
+	anim_ext_tex_size = 0;
+	memcpy(backup, queen_uv, 0x10);
+	queen_uv[0] = 0.0f;
+	queen_uv[2] = 0.0f;
+	queen_uv[1] = -2.0f / (f32)wp->texCount;
+	queen_uv[3] = -1.0f / (f32)wp->texCount;
 
-		if (total < 0x80000 && total + size >= 0x80000) {
-			total = 0x80000;
-		}
-		GXInitTexPreLoadRegion(&tex->region, total, size, 0, 0);
-		GXPreLoadEntireTexture(smartTexObj(&tex->texObj, tex->image), &tex->region);
-		total += size;
+	for (i = 0; i < wp->texCount; i++, p = (u8*)p + 0xC, tex++) {
+		s32 out0;
+		s32 out1;
+		s32 out2;
+		s32 out3;
+		s32 j;
+		s32 k;
+		const ExtMakeTextureEntry* q;
+
+#ifdef MUST_MATCH
+		q = (const ExtMakeTextureEntry*)p;
+		((void (*)(const char*, void*, void*, void*, f32, f32, s32*, s32*, s32*, s32*))animPoseDisp_MakeExtTexture)(
+		    q->name, q->field_0x4, &tex->texObj, tex, q->field_0x8, 4.0f, &out0, &out1, &out2, &out3);
+#else
+		q = (const ExtMakeTextureEntry*)p;
+		animPoseDisp_MakeExtTexture(q->name, q->field_0x8, q->field_0x4, &tex->texObj, tex,
+		                            4.0f, &out0, &out1, &out2, &out3);
+#endif
+		j = i * 12;
+		wp->vertices[j++] = (f32)out0 * half;
+		wp->vertices[j++] = (f32)(-out1) * half;
+		wp->vertices[j++] = 0.0f;
+		wp->vertices[j++] = (f32)out2 * half;
+		wp->vertices[j++] = (f32)(-out1) * half;
+		wp->vertices[j++] = 0.0f;
+		wp->vertices[j++] = (f32)out2 * half;
+		wp->vertices[j++] = (f32)(-out3) * half;
+		wp->vertices[j++] = 0.0f;
+		wp->vertices[j++] = (f32)out0 * half;
+		wp->vertices[j++] = (f32)(-out3) * half;
+		wp->vertices[j++] = 0.0f;
+
+		GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
+		GXBegin(0x80, 0, 4);
+		k = i * 4;
+		GXPosition1x16(k++);
+		GXTexCoord1x16(0);
+		GXPosition1x16(k++);
+		GXTexCoord1x16(1);
+		GXPosition1x16(k++);
+		GXTexCoord1x16(2);
+		GXPosition1x16(k++);
+		GXTexCoord1x16(3);
+		wp->dlSizes[i] = GXEndDisplayList();
 	}
-	wp->texSize = total;
-	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+	memcpy(queen_uv, backup, 0x10);
 }
 
-void extLoadVertex(void) {
+void extReset(void) {
 	ExtWork* wp = extGetWork();
 
-	GXClearVtxDesc();
-	GXSetVtxDesc(9, 3);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetArray(9, wp->vertices, 0xC);
-	GXSetVtxDesc(0xD, 3);
-	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-	GXSetArray(0xD, wp->uvs, 8);
-	GXSetCullMode(0);
-}
-
-void extLoadRenderMode(void) {
-	GXSetBlendMode(0, 1, 0, 0);
-	GXSetZCompLoc(0);
-	GXSetAlphaCompare(6, 0x80, 1, 0, 0);
-	GXSetZMode(1, 3, 1);
-}
-
-void extDraw(void) {
-	ExtWork* wp = extGetWork();
-	s32 i;
-	ExtSortEntry* sort = wp->sortList;
-
-	for (i = wp->poseNum - 1; i >= 0; i--, sort++) {
-		ExtPose* pose = &wp->poses[sort->field_0x0];
-
-		if (pose->flags & 1) {
-			s32 texId = pose->field_0x10;
-
-			if (texId != wp->lastTex) {
-				ExtTexture* tex = &wp->textures[texId];
-				GXLoadTexObjPreLoaded(smartTexObj(&tex->texObj, tex->image), &tex->region, 0);
-				wp->lastTex = texId;
-			}
-			{
-				Mtx m;
-				PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
-				GXLoadPosMtxImm(m, 0);
-				GXSetCurrentMtx(0);
-				GXCallDisplayList((u8*)wp->dlBuffer + texId * 0x80, wp->dlSizes[texId]);
-			}
-		}
+	if (wp->poses != NULL) {
+		__memFree(2, wp->poses);
 	}
-}
-
-void extPoseDraw(s32 poseId) {
-	ExtWork* wp = extGetWork();
-	ExtPose* pose = &wp->poses[poseId];
-
-	if (pose->flags & 1) {
-		s32 texId = pose->field_0x10;
-
-		if (wp->lastTex != texId) {
-			ExtTexture* tex = &wp->textures[texId];
-			GXLoadTexObjPreLoaded(smartTexObj(&tex->texObj, tex->image), &tex->region, 0);
-			wp->lastTex = texId;
-		}
-		{
-			Mtx m;
-			Mtx n;
-			PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
-			GXLoadPosMtxImm(m, 0);
-			PSMTXInvXpose(m, n);
-			GXLoadNrmMtxImm(n, 0);
-			GXSetCurrentMtx(0);
-			GXCallDisplayList((u8*)wp->dlBuffer + pose->field_0x10 * 0x80, wp->dlSizes[pose->field_0x10]);
-		}
+	if (wp->textures != NULL) {
+		__memFree(2, wp->textures);
 	}
-}
-
-s32 extGetPoseNum(void) {
-	ExtWork* wp = extGetWork();
-	return wp->poseNum;
-}
-
-ExtPose* extGetPosePtr(void) {
-	ExtWork* wp = extGetWork();
-	return wp->poses;
-}
-
-static int compare(void* a, void* b) {
-	if (((ExtSortEntry*)a)->field_0x4 > ((ExtSortEntry*)b)->field_0x4) {
-		return 1;
+	if (wp->mtx != NULL) {
+		__memFree(2, wp->mtx);
 	}
-	if (((ExtSortEntry*)a)->field_0x4 < ((ExtSortEntry*)b)->field_0x4) {
-		return -1;
+	if (wp->vertices != NULL) {
+		__memFree(2, wp->vertices);
 	}
-	return 0;
+	if (wp->sortList != NULL) {
+		__memFree(2, wp->sortList);
+	}
+	if (wp->dlBuffer != NULL) {
+		__memFree(2, wp->dlBuffer);
+	}
+	if (wp->dlSizes != NULL) {
+		__memFree(2, wp->dlSizes);
+	}
+	memset(wp, 0, 0x70);
 }
 
 void extMain(void) {
@@ -425,188 +365,205 @@ void extMain(void) {
 	wp->texSize = 0;
 }
 
-
-
-void extReset(void) {
-	ExtWork* wp = extGetWork();
-
-	if (wp->poses != NULL) {
-		__memFree(2, wp->poses);
+static int compare(void* a, void* b) {
+	if (((ExtSortEntry*)a)->field_0x4 > ((ExtSortEntry*)b)->field_0x4) {
+		return 1;
 	}
-	if (wp->textures != NULL) {
-		__memFree(2, wp->textures);
+	if (((ExtSortEntry*)a)->field_0x4 < ((ExtSortEntry*)b)->field_0x4) {
+		return -1;
 	}
-	if (wp->mtx != NULL) {
-		__memFree(2, wp->mtx);
-	}
-	if (wp->vertices != NULL) {
-		__memFree(2, wp->vertices);
-	}
-	if (wp->sortList != NULL) {
-		__memFree(2, wp->sortList);
-	}
-	if (wp->dlBuffer != NULL) {
-		__memFree(2, wp->dlBuffer);
-	}
-	if (wp->dlSizes != NULL) {
-		__memFree(2, wp->dlSizes);
-	}
-	memset(wp, 0, 0x70);
+	return 0;
 }
 
-// 0xC-byte entry `param` points at in extMakeTexture/extEntry (name, argument, scale).
-typedef struct ExtMakeTextureEntry {
-	const char* name; //0x0
-	void* field_0x4;  //0x4
-	f32 field_0x8;    //0x8
-} ExtMakeTextureEntry;
-
-// NONMATCHING (99.82%): the only difference is the compiler's colour for the two induction variables
-// i*4 (texIdx, used by GXPosition1x16 and dlSizes) and i*0x80 (dlBuffer offset): the target has them
-// in r27/r28, ours in r28/r27 (all six differing instructions are that swap).
-void extMakeTexture(CameraId camId, void* param) {
+ExtPose* extGetPosePtr(void) {
 	ExtWork* wp = extGetWork();
-	ExtMakeTextureEntry* p = param;
+	return wp->poses;
+}
+
+s32 extGetPoseNum(void) {
+	ExtWork* wp = extGetWork();
+	return wp->poseNum;
+}
+
+void extPoseDraw(s32 poseId) {
+	ExtWork* wp = extGetWork();
+	ExtPose* pose = &wp->poses[poseId];
+
+	if (pose->flags & 1) {
+		s32 texId = pose->field_0x10;
+
+		if (wp->lastTex != texId) {
+			ExtTexture* tex = &wp->textures[texId];
+			GXLoadTexObjPreLoaded(smartTexObj(&tex->texObj, tex->image), &tex->region, 0);
+			wp->lastTex = texId;
+		}
+		{
+			Mtx m;
+			Mtx n;
+			PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
+			GXLoadPosMtxImm(m, 0);
+			PSMTXInvXpose(m, n);
+			GXLoadNrmMtxImm(n, 0);
+			GXSetCurrentMtx(0);
+			GXCallDisplayList((u8*)wp->dlBuffer + pose->field_0x10 * 0x80, wp->dlSizes[pose->field_0x10]);
+		}
+	}
+}
+
+void extDraw(void) {
+	ExtWork* wp = extGetWork();
+	s32 i;
+	ExtSortEntry* sort = wp->sortList;
+
+	for (i = wp->poseNum - 1; i >= 0; i--, sort++) {
+		ExtPose* pose = &wp->poses[sort->field_0x0];
+
+		if (pose->flags & 1) {
+			s32 texId = pose->field_0x10;
+
+			if (texId != wp->lastTex) {
+				ExtTexture* tex = &wp->textures[texId];
+				GXLoadTexObjPreLoaded(smartTexObj(&tex->texObj, tex->image), &tex->region, 0);
+				wp->lastTex = texId;
+			}
+			{
+				Mtx m;
+				PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
+				GXLoadPosMtxImm(m, 0);
+				GXSetCurrentMtx(0);
+				GXCallDisplayList((u8*)wp->dlBuffer + texId * 0x80, wp->dlSizes[texId]);
+			}
+		}
+	}
+}
+
+void extLoadRenderMode(void) {
+	GXSetBlendMode(0, 1, 0, 0);
+	GXSetZCompLoc(0);
+	GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+	GXSetZMode(1, 3, 1);
+}
+
+void extLoadVertex(void) {
+	ExtWork* wp = extGetWork();
+
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 3);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetArray(9, wp->vertices, 0xC);
+	GXSetVtxDesc(0xD, 3);
+	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	GXSetArray(0xD, wp->uvs, 8);
+	GXSetCullMode(0);
+}
+
+void extLoadTexture(void) {
+	ExtWork* wp = extGetWork();
 	ExtTexture* tex = wp->textures;
-	f32 backup[4];
 	s32 i;
+	u32 total = 0;
 
-	anim_ext_tex_size = 0;
-	memcpy(backup, queen_uv, 0x10);
-	queen_uv[0] = 0.0f;
-	queen_uv[2] = 0.0f;
-	queen_uv[1] = -2.0f / (f32)wp->texCount;
-	queen_uv[3] = -1.0f / (f32)wp->texCount;
+	GXInvalidateTexAll();
+	for (i = 0; i < wp->texCount; i++, tex++) {
+		u32 size = GXGetTexBufferSize(GXGetTexObjWidth(&tex->texObj), GXGetTexObjHeight(&tex->texObj), GXGetTexObjFmt(&tex->texObj), 0, 0);
 
-#ifdef MUST_MATCH
-	// Match-only shapes: the post-incremented vtxIdx/texIdx force MWCC's index-strength-reduction
-	// chains, the loop-local `half` forces the fmuls operand order, the empty for-increment fixes
-	// the induction-variable update order, and the cast evaluates the pointer arguments before the
-	// float ones (the header declares f1 second).
-	for (i = 0; i < wp->texCount; ) {
-		s32 vtxIdx = i * 12;
-		s32 texIdx = i * 4;
-		f32 half = 0.5f;
-		s32 out0;
-		s32 out1;
-		s32 out2;
-		s32 out3;
-
-		((void (*)(const char*, void*, void*, void*, f32, f32, s32*, s32*, s32*, s32*))animPoseDisp_MakeExtTexture)(
-		    p->name, p->field_0x4, &tex->texObj, tex, p->field_0x8, 4.0f,
-		    &out0, &out1, &out2, &out3);
-		wp->vertices[vtxIdx++] = (f32)out0 * half;
-		wp->vertices[vtxIdx++] = (f32)(-out1) * half;
-		wp->vertices[vtxIdx++] = 0.0f;
-		wp->vertices[vtxIdx++] = (f32)out2 * half;
-		wp->vertices[vtxIdx++] = (f32)(-out1) * half;
-		wp->vertices[vtxIdx++] = 0.0f;
-		wp->vertices[vtxIdx++] = (f32)out2 * half;
-		wp->vertices[vtxIdx++] = (f32)(-out3) * half;
-		wp->vertices[vtxIdx++] = 0.0f;
-		wp->vertices[vtxIdx++] = (f32)out0 * half;
-		wp->vertices[vtxIdx++] = (f32)(-out3) * half;
-		wp->vertices[vtxIdx++] = 0.0f;
-
-		GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
-		GXBegin(0x80, 0, 4);
-		GXPosition1x16(texIdx++);
-		GXTexCoord1x16(0);
-		GXPosition1x16(texIdx++);
-		GXTexCoord1x16(1);
-		GXPosition1x16(texIdx++);
-		GXTexCoord1x16(2);
-		GXPosition1x16(texIdx++);
-		GXTexCoord1x16(3);
-		wp->dlSizes[i] = GXEndDisplayList();
-
-		i++;
-		p++;
-		tex++;
+		if (total < 0x80000 && total + size >= 0x80000) {
+			total = 0x80000;
+		}
+		GXInitTexPreLoadRegion(&tex->region, total, size, 0, 0);
+		GXPreLoadEntireTexture(smartTexObj(&tex->texObj, tex->image), &tex->region);
+		total += size;
 	}
-#else
-	for (i = 0; i < wp->texCount; i++) {
-		s32 out0;
-		s32 out1;
-		s32 out2;
-		s32 out3;
-
-		animPoseDisp_MakeExtTexture(p->name, p->field_0x8, p->field_0x4, &tex->texObj, tex,
-		                            4.0f, &out0, &out1, &out2, &out3);
-		wp->vertices[i * 12 + 0] = (f32)out0 * 0.5f;
-		wp->vertices[i * 12 + 1] = (f32)(-out1) * 0.5f;
-		wp->vertices[i * 12 + 2] = 0.0f;
-		wp->vertices[i * 12 + 3] = (f32)out2 * 0.5f;
-		wp->vertices[i * 12 + 4] = (f32)(-out1) * 0.5f;
-		wp->vertices[i * 12 + 5] = 0.0f;
-		wp->vertices[i * 12 + 6] = (f32)out2 * 0.5f;
-		wp->vertices[i * 12 + 7] = (f32)(-out3) * 0.5f;
-		wp->vertices[i * 12 + 8] = 0.0f;
-		wp->vertices[i * 12 + 9] = (f32)out0 * 0.5f;
-		wp->vertices[i * 12 + 10] = (f32)(-out3) * 0.5f;
-		wp->vertices[i * 12 + 11] = 0.0f;
-
-		GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
-		GXBegin(0x80, 0, 4);
-		GXPosition1x16(i * 4 + 0);
-		GXTexCoord1x16(0);
-		GXPosition1x16(i * 4 + 1);
-		GXTexCoord1x16(1);
-		GXPosition1x16(i * 4 + 2);
-		GXTexCoord1x16(2);
-		GXPosition1x16(i * 4 + 3);
-		GXTexCoord1x16(3);
-		wp->dlSizes[i] = GXEndDisplayList();
-
-		p++;
-		tex++;
-	}
-#endif
-	memcpy(queen_uv, backup, 0x10);
+	wp->texSize = total;
+	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
 }
 
-void extEntry(s32 count, void* param, void (*callback)(void), void (*cb0)(void), void (*cb1)(void)) {
-	ExtWork* wp = extGetWork();
-	s32 texCount = 0;
-	void* p = param;
-	s32 i;
+void extLoadTextureExit(void) {
+	GXTexModeSync();
+}
 
-	while (*(u32*)p != 0) {
-		p = (u8*)p + 0xC;
-		texCount++;
+void extLoadTev(void) {
+	GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
+
+	GXSetTevOrder(0, 0, 0, 0xFF);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 8);
+	GXSetTevAlphaIn(0, 7, 7, 7, 4);
+	GXSetNumChans(0);
+	GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+	GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, color);
+	GXSetNumTexGens(1);
+	GXSetNumTevStages(1);
+}
+
+void extLoadShadowVertex(void) {
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 2);
+	GXSetVtxDesc(0xD, 2);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+	GXSetArray(9, shadow_vtx, 0xC);
+	GXSetArray(0xD, shadow_coord, 8);
+	GXSetCullMode(0);
+}
+
+
+
+void extLoadShadowTev(void) {
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+	{
+		GXColor color = {0, 0, 0, 0xA0};
+
+		GXSetChanMatColor(4, color);
 	}
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(0, 0, 0, 4);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+	GXSetTevAlphaIn(0, 7, 4, 5, 7);
+	{
+		GXTexObj texObj;
 
-	wp->poses = __memAlloc(2, count << 5);
-	wp->poseNum = count;
-	wp->cb0 = cb0;
-	wp->cb1 = cb1;
-	wp->textures = __memAlloc(2, texCount * 0x34);
-	wp->texCount = texCount;
-	wp->mtx = __memAlloc(2, count * 0x30);
-	wp->vertices = __memAlloc(2, texCount * 0xC * sizeof(f32));
-	wp->normals = Normals;
-	wp->colors = &Colors;
-	wp->uvs = UVs;
-	wp->sortList = __memAlloc(2, count * 8);
-	wp->dlBuffer = __memAlloc(2, texCount * 0x80);
-	DCInvalidateRange(wp->dlBuffer, texCount * 0x80);
-	wp->dlSizes = __memAlloc(2, texCount * 4);
-	memset(wp->poses, 0, wp->poseNum << 5);
-
-	for (i = 0; i < count; i++) {
-		wp->sortList[i].field_0x0 = i;
-		wp->poses[i].matrix = &wp->mtx[i];
-	}
-
-	PSMTXIdentity(wp->field_0x3C);
-	dispEntry(0, 0.0f, 1, extMakeTexture, param);
-	if (callback != NULL) {
-		callback();
+		effGetTexObjN64(0x2C, &texObj);
+		GXLoadTexObj(&texObj, 0);
 	}
 }
 
-void extInit(void) {
+void extLoadShadowRenderMode(void) {
+	GXSetBlendMode(1, 4, 5, 0);
+	GXSetZCompLoc(1);
+	GXSetAlphaCompare(7, 0, 0, 7, 0);
+	GXSetZMode(1, 3, 0);
+}
+
+void extLoadShadowMtx(Mtx mtx) {
 	ExtWork* wp = extGetWork();
-	wp->poseNum = 0;
-	wp->poses = NULL;
+	PSMTXCopy(mtx, wp->field_0x3C);
+}
+
+void extDrawShadow(void) {
+	ExtWork* wp = extGetWork();
+	s32 i;
+	ExtSortEntry* sort = &wp->sortList[wp->poseNum - 1];
+
+	for (i = wp->poseNum - 1; i >= 0; i--, sort--) {
+		ExtPose* pose = &wp->poses[sort->field_0x0];
+
+		if (!(pose->flags & 4)) {
+			Mtx m;
+			PSMTXConcat(camGetCurPtr()->view, *pose->matrix, m);
+			PSMTXConcat(m, wp->field_0x3C, m);
+			if (pose->flags & 0x10) {
+				PSMTXTransApply(m, m, 0.0f, -(*pose->matrix)[1][3] + pose->field_0x8, 0.0f);
+			}
+			GXLoadPosMtxImm(m, 0);
+			GXSetCurrentMtx(0);
+			GXCallDisplayList(shadow_dl, 0x20);
+		}
+	}
 }

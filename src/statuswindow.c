@@ -8,11 +8,17 @@
 #include "mario/mario_pouch.h"
 #include "mario/mariost.h"
 #include "memory.h"
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 #include "mario/mario_party.h"
 
 extern GlobalWork* gp;
+
+// Named .sdata2 constants the original keeps as objects (they land before the unit's literal pool).
+extern const f32 float_0_8041c900;
+extern const f32 float_1_8041c904;
+extern const f32 float_3p1416_8041c908;
+extern const f32 float_0p5_8041c90c;
 
 // .sdata2 colour constants of this unit (white with alpha), passed to the icon draw functions.
 __declspec(section ".sdata2") u32 dat_8041c8e0 = 0xFFFFFFFF;
@@ -87,12 +93,33 @@ typedef struct StatusWindowValue {
 } StatusWindowValue;
 
 // local prototypes
+static inline s32 valueMoveAmount(s16 cur, s16 target);
+static inline void valueMoveUpdate(s16* cur, s16 target);
+static inline void valueMoveParty(s16* cur, s16* target);
 
+// Matching notes (all codegen-only; each call is ABI-identical to the header's by-value form):
+// * Every GXColor argument is staged in a function-scope local declared colours-first
+//   (colAlways..colB216 then numHp..numPartyMaxHp) and passed through a GXColor*-taking
+//   function-pointer cast (SW_ICON_COL/SW_NUM_GX, MUST_MATCH only). MWCC passes a by-value GXColor as a pointer in r6 either way, so this
+//   is safe, but it makes the compiler pass each local's home directly instead of building the
+//   fresh outgoing-copy pool that GC/2.6 allocates in program order. The local homes reproduce
+//   the original's slot grouping (iconDispGxCol at 0x28..0x40 above iconNumberDispGx at 0x08..0x24).
+// * `ty2` gives the badge block its own FPR (the original reuses f28 there); folding it into `ty`
+//   makes MWCC split `ty` and use f29 instead.
+// * The star `ty` is assigned inside the PSMTXTrans argument so its constants colour f0/f1 like
+//   the original; the plain `ty = ...;` form swaps them.
+#ifdef MUST_MATCH
+#define SW_ICON_COL(m, s, id, var, col) var = (col); ((void(*)(Mtx,s16,s32,GXColor*))iconDispGxCol)(m, s, id, &var)
+#define SW_NUM_GX(m, n, f, var, col) var = (col); ((s32(*)(Mtx,s32,BOOL,GXColor*))iconNumberDispGx)(m, n, f, &var)
+#else
+#define SW_ICON_COL(m, s, id, var, col) iconDispGxCol(m, s, id, col)
+#define SW_NUM_GX(m, n, f, var, col) iconNumberDispGx(m, n, f, col)
+#endif
 
 void statusWinInit(void) {
     wp = __memAlloc(HEAP_DEFAULT, sizeof(StatusWindowWork));
     memset(wp, 0, sizeof(StatusWindowWork));
-    wp->field_0x1C = 1.0f;
+    wp->field_0x1C = float_1_8041c904;
     wp->field_0x30 = -304.0f;
     wp->field_0x34 = 208.0f;
     wp->field_0x40 = -304.0f;
@@ -136,10 +163,10 @@ void statusWinMain(void) {
     mario = marioGetPtr();
     if (mario->characterId != 0) {
         wp->field_0x4 = 2;
-        wp->field_0xC = 1.0f;
-        wp->field_0x8 = 1.0f;
-        wp->field_0x18 = 0.0f;
-        wp->field_0x10 = 0.0f;
+        wp->field_0xC = float_1_8041c904;
+        wp->field_0x8 = float_1_8041c904;
+        wp->field_0x18 = float_0_8041c900;
+        wp->field_0x10 = float_0_8041c900;
     } else if (strcmp(gp->currentAreaName, "yuu") != 0) {
         switch (seqGetSeq()) {
             case SEQ_GAME:
@@ -169,7 +196,7 @@ void statusWinMain(void) {
                         wp->field_0x74 = 0;
                         wp->field_0x78 = 0;
                     } else {
-                        if (PSVECDistance(&wp->field_0x68, &mario->position) < 1.0f) {
+                        if (PSVECDistance(&wp->field_0x68, &mario->position) < float_1_8041c904) {
                             wp->field_0x74++;
                             if (wp->field_0x74 > gp->framerate * 10) {
                                 wp->field_0x74 = gp->framerate * 10;
@@ -270,8 +297,8 @@ void statusWinMain(void) {
 
         if ((wp->field_0x4 & 0x4) || (wp->field_0x4 & 0x8) || (wp->field_0x4 & 0x40) || (wp->field_0x4 & 0x80)) {
             *(f32*)((u8*)wp + 0x14) = wp->field_0x10;
-            wp->field_0x18 = (wp->field_0x4 & 0x44) ? 1.0f : 0.0f;
-            wp->field_0x8 = 0.0f;
+            wp->field_0x18 = (wp->field_0x4 & 0x44) ? float_1_8041c904 : float_0_8041c900;
+            wp->field_0x8 = float_0_8041c900;
             wp->field_0xC = (wp->field_0x4 & 0x44) ? 16.0f / wp->field_0x1C : 28.0f / wp->field_0x1C;
             wp->field_0x4 &= ~4;
             wp->field_0x4 &= ~8;
@@ -279,13 +306,22 @@ void statusWinMain(void) {
             wp->field_0x4 &= ~0x80;
         }
 
-        wp->field_0x8 += 1.0f;
+        wp->field_0x8 += float_1_8041c904;
         if (wp->field_0x8 >= wp->field_0xC) {
             wp->field_0x8 = wp->field_0xC;
             wp->field_0x10 = wp->field_0x18;
-            if (wp->field_0x10 == 0.0f) {
+#ifdef MUST_MATCH
+            // Codegen-only: naming the zero object makes MWCC evaluate the field first and load
+            // the constant into f0; writing the constant on the left restores the original's
+            // 0.0-first fcmpu.
+            if (float_0_8041c900 == wp->field_0x10) {
                 wp->field_0x4 &= ~0x100;
             }
+#else
+            if (wp->field_0x10 == float_0_8041c900) {
+                wp->field_0x4 &= ~0x100;
+            }
+#endif
         } else {
 #ifdef MUST_MATCH
             // Codegen-only: the f64 temp gives the in-place `frsp f1,f1`, `x = x;` and the
@@ -299,21 +335,21 @@ void statusWinMain(void) {
             f32 a;
             f32 half;
 
-            c = cos(3.1415927f * wp->field_0x8 / wp->field_0xC);
+            c = cos(float_3p1416_8041c908 * wp->field_0x8 / wp->field_0xC);
             x = (f32)c;
             x = x;
-            cc = 1.0f - x;
+            cc = float_1_8041c904 - x;
             a = *(f32*)wp->field_0x14;
             q = wp->field_0x18 - a;
             a = q * cc;
             q = a;
-            half = 0.5f;
+            half = float_0p5_8041c90c;
             wp->field_0x10 = q * half + *(f32*)wp->field_0x14;
 #else
             f32 c;
 
-            c = (f32)cos(3.1415927f * wp->field_0x8 / wp->field_0xC);
-            wp->field_0x10 = (wp->field_0x18 - *(f32*)wp->field_0x14) * (1.0f - c) * 0.5f + *(f32*)wp->field_0x14;
+            c = (f32)cos(float_3p1416_8041c908 * wp->field_0x8 / wp->field_0xC);
+            wp->field_0x10 = (wp->field_0x18 - *(f32*)wp->field_0x14) * (float_1_8041c904 - c) * float_0p5_8041c90c + *(f32*)wp->field_0x14;
 #endif
         }
 
@@ -321,12 +357,12 @@ void statusWinMain(void) {
 #ifdef MUST_MATCH
             // The original materialises `t = 1.0f` (f1) and then `t = 1.0f - x` (result f2); with a
             // plain `t -= x` MWCC reuses one register and the 1.0 load lands in f2. Codegen-only.
-            f32 t = 1.0f;
+            f32 t = float_1_8041c904;
             f32 x = wp->field_0x10;
-            t = 1.0f - x;
+            t = float_1_8041c904 - x;
 #else
             f32 x = wp->field_0x10;
-            f32 t = 1.0f - x;
+            f32 t = float_1_8041c904 - x;
 #endif
             wp->field_0x20 = wp->field_0x30 * x + wp->field_0x40 * t;
             wp->field_0x24 = wp->field_0x34 * x + wp->field_0x44 * t;
@@ -336,127 +372,6 @@ void statusWinMain(void) {
             dispEntry(8, 500.0f, 0, statusWinDisp, NULL);
         }
     }
-}
-
-void statusPartyHPBlink(s32 value) {
-    wp->field_0x80 |= 8;
-    wp->field_0x88 = value;
-}
-
-void statusMarioHPBlink(s32 value) {
-    wp->field_0x80 |= 1;
-    wp->field_0x88 = value;
-}
-
-void statusFPBlink(s32 value) {
-    wp->field_0x80 |= 2;
-    wp->field_0x88 = value;
-}
-
-void N_statusClearBlink(void) {
-    wp->field_0x80 = 0;
-}
-
-void statusAPBlink(s32 value) {
-    wp->field_0x80 = 0;
-    wp->field_0x80 |= 4;
-    wp->field_0x88 = value;
-}
-
-Vec statusGetApPos(void) {
-    Vec pos;
-
-    pos.x = wp->field_0x20 + alwaysDt[12].xpos;
-    pos.y = wp->field_0x24 - alwaysDt[12].ypos;
-    pos.z = 0.0f;
-    return pos;
-}
-
-void statusWinForceUpdateCoin(void) {
-    StatusWindowValue values;
-
-    statusGetValue(&values);
-    *(s16*)((u8*)wp + 0x60) = values.coin;
-}
-
-void statusWinForceUpdate(void) {
-    StatusWindowValue values;
-
-    statusGetValue(&values);
-    *(s16*)((u8*)wp + 0x50) = values.hp;
-    *(s16*)((u8*)wp + 0x52) = values.maxHp;
-    *(s16*)((u8*)wp + 0x54) = values.fp;
-    *(s16*)((u8*)wp + 0x56) = values.maxFp;
-    wp->field_0x62 = values.ap;
-    *(s16*)((u8*)wp + 0x64) = values.maxAp;
-    *(s16*)((u8*)wp + 0x5E) = values.starPoint;
-    *(s16*)((u8*)wp + 0x60) = values.coin;
-    *(s16*)((u8*)wp + 0x58) = values.partyId;
-    if (*(s16*)((u8*)wp + 0x58) != 0) {
-        *(s16*)((u8*)wp + 0x5A) = values.partyHp;
-        *(s16*)((u8*)wp + 0x5C) = values.partyMaxHp;
-    }
-}
-
-BOOL statusWinCheckUpdate(void) {
-    return valueCheck() != 0;
-}
-
-BOOL statusWinCheck(void) {
-    return (wp->field_0x4 & 0x11) != 0;
-}
-
-void statusWinDispOff(void) {
-    wp->field_0x4 |= 0x1000;
-}
-
-void statusWinDispOn(void) {
-    wp->field_0x4 &= ~0x1000;
-}
-
-void statusWinForceOff(void) {
-    if (wp->field_0x4 & 0x10) {
-        wp->field_0x4 &= ~0x10;
-        wp->field_0x4 &= ~0xA;
-        wp->field_0x4 |= 5;
-    } else if (wp->field_0x4 & 1) {
-        wp->field_0x4 &= ~0xA;
-        wp->field_0x4 |= 5;
-    }
-    if (wp->field_0x4 & 0x20) {
-        wp->field_0x4 &= ~0x20;
-        wp->field_0x4 |= 0xA;
-        wp->field_0x4 &= ~5;
-    } else if (wp->field_0x4 & 2) {
-        wp->field_0x4 |= 0xA;
-        wp->field_0x4 &= ~5;
-    }
-}
-
-void statusWinForceCloseClear(void) {
-    wp->field_0x4 &= ~0xA0;
-}
-
-void statusWinForceClose(void) {
-    wp->field_0x4 &= ~5;
-    wp->field_0x4 &= ~0x50;
-    wp->field_0x4 |= 0xA0;
-}
-
-void statusWinForceOpen(void) {
-    wp->field_0x4 &= ~0xA;
-    wp->field_0x4 &= ~0xA0;
-    wp->field_0x4 |= 0x50;
-}
-
-void statusWinClose(void) {
-    wp->field_0x4 |= 0xA;
-    wp->field_0x4 &= ~5;
-}
-
-void statusWinOpen(void) {
-    wp->field_0x4 &= ~0xA;
-    wp->field_0x4 |= 5;
 }
 
 // Draws Mario's star-power gauge: a wakka (fifteenths) icon for the partial hundreds, then the
@@ -492,12 +407,12 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
 
         pos.x = x + hundreds * 32;
         pos.y = y;
-        pos.z = 0.0f;
+        pos.z = float_0_8041c900;
 #ifdef MUST_MATCH
         // Match-only: original passes a u16 id (no extsh) and evaluates the scale before the id.
-        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, gauge_wakka[fifteenths]);
+        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, float_1_8041c904, gauge_wakka[fifteenths]);
 #else
-        iconDispGx(&pos, 0x10, gauge_wakka[fifteenths], 1.0f);
+        iconDispGx(&pos, 0x10, gauge_wakka[fifteenths], float_1_8041c904);
 #endif
     }
     y = 12.0f + y;
@@ -509,13 +424,225 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
         }
         pos.x = x + i * 32;
         pos.y = y;
-        pos.z = 0.0f;
+        pos.z = float_0_8041c900;
 #ifdef MUST_MATCH
         // Match-only: original passes a u16 id (no extsh) and evaluates the scale before the id.
-        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, (i < hundreds) ? gauge_back[i] : 0x1BF);
+        ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, float_1_8041c904, (i < hundreds) ? gauge_back[i] : 0x1BF);
 #else
-        iconDispGx(&pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF, 1.0f);
+        iconDispGx(&pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF, float_1_8041c904);
 #endif
+    }
+}
+
+void statusWinDisp(CameraId camId, void* param) {
+    alwaysDtEntry* dtEntry;
+    s32 i;
+    s32 v6;
+    s32 number;
+    f32 tx, ty;
+    f32 baseX, baseY;
+    f32 ty2;
+    Mtx mtx;
+    Mtx scale;
+    Mtx badgeMtx;
+    Mtx badgeScale;
+    Mtx hpMtx;
+    Mtx maxHpMtx;
+    Mtx fpMtx;
+    Mtx maxFpMtx;
+    Mtx starMtx;
+    Mtx coinMtx;
+    Mtx partyHpMtx;
+    Mtx partyMaxHpMtx;
+#ifdef MUST_MATCH
+    GXColor colAlways, colParty, colB212, colB213, colB214, colB215, colB216;
+    GXColor numHp, numMaxHp, numFp, numMaxFp, numStar, numCoin, numPartyHp, numPartyMaxHp;
+#endif
+
+    baseX = wp->field_0x20;
+    baseY = wp->field_0x24;
+    v6 = 1;
+    if (wp->field_0x88 > 0) {
+        wp->field_0x88--;
+        v6 = (wp->field_0x88 % 16) >= 6;
+    }
+
+    dtEntry = alwaysDt;
+    for (i = 0; i < 13u; i++, dtEntry++) {
+        if (dtEntry->iconId == 466 && !pouchGetPtr()->mStarPowersObtained) {
+            break; // don't draw star power bar
+        }
+        if (!v6) {
+            if ((wp->field_0x80 & 1) && i == 1) {
+                continue;
+            }
+            if (((wp->field_0x80 & 2) && i == 4) || ((wp->field_0x80 & 0x10) && i == 8) || ((wp->field_0x80 & 4) && i == 12)) {
+                continue;
+            }
+        }
+        PSMTXTrans(mtx, baseX + (f32)dtEntry->xpos, baseY - (f32)dtEntry->ypos, float_0_8041c900);
+        PSMTXScale(scale, dtEntry->scale, dtEntry->scale, dtEntry->scale);
+        PSMTXConcat(mtx, scale, mtx);
+        SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colAlways, *(GXColor*)&dat_8041c8e4);
+    }
+
+    if (!(wp->field_0x80 & 1) || v6 != 0) {
+        number = *(s16*)((u8*)wp + 0x50);
+        PSMTXTrans(hpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 38.0f + 2.0f, float_0_8041c900);
+        SW_NUM_GX(hpMtx, number, 0, numHp, *(GXColor*)&dat_8041c8e0);
+    }
+    number = *(s16*)((u8*)wp + 0x52);
+    tx = baseX + 186.0f - 6.0f - 10.0f;
+    ty = baseY - 38.0f + 3.0f;
+    PSMTXTrans(maxHpMtx, tx, ty, float_0_8041c900);
+    SW_NUM_GX(maxHpMtx, number, 1, numMaxHp, *(GXColor*)&dat_8041c8e0);
+
+    if (!(wp->field_0x80 & 2) || v6 != 0) {
+        number = *(s16*)((u8*)wp + 0x54);
+        PSMTXTrans(fpMtx, baseX + 292.0f - 6.0f, baseY - 38.0f + 2.0f, float_0_8041c900);
+        SW_NUM_GX(fpMtx, number, 0, numFp, *(GXColor*)&dat_8041c8e0);
+    }
+    number = *(s16*)((u8*)wp + 0x56);
+    PSMTXTrans(maxFpMtx, baseX + 358.0f - 6.0f, ty, float_0_8041c900);
+    SW_NUM_GX(maxFpMtx, number, 1, numMaxFp, *(GXColor*)&dat_8041c8e0);
+
+    number = *(s16*)((u8*)wp + 0x5E);
+    PSMTXTrans(starMtx, baseX + 462.0f, ty = baseY - 38.0f + 2.0f, float_0_8041c900);
+    SW_NUM_GX(starMtx, number, 0, numStar, *(GXColor*)&dat_8041c8e0);
+
+    if (!(wp->field_0x80 & 0x10) || v6 != 0) {
+        number = *(s16*)((u8*)wp + 0x60);
+        PSMTXTrans(coinMtx, baseX + 572.0f, ty, float_0_8041c900);
+        SW_NUM_GX(coinMtx, number, 0, numCoin, *(GXColor*)&dat_8041c8e0);
+    }
+
+    if (!(wp->field_0x80 & 4) || v6 != 0) {
+        gaugeDisp(*(s16*)((u8*)wp + 0x62), baseX + 260.0f, baseY - 87.0f + 4.0f);
+    }
+
+    if (*(s16*)((u8*)wp + 0x58) != 0) {
+        s32 partyId = *(s16*)((u8*)wp + 0x58);
+
+        partysDt[1].iconId = party_icon[partyId];
+        if (partyId == 4) {
+            switch (pouchGetPartyColor(4)) {
+            case 0:
+                partysDt[1].iconId = 0x1A7;
+                break;
+            case 1:
+                partysDt[1].iconId = 0x1A8;
+                break;
+            case 2:
+                partysDt[1].iconId = 0x1A9;
+                break;
+            case 3:
+                partysDt[1].iconId = 0x1AA;
+                break;
+            case 4:
+                partysDt[1].iconId = 0x1AB;
+                break;
+            case 5:
+                partysDt[1].iconId = 0x1AC;
+                break;
+            case 6:
+            default:
+                partysDt[1].iconId = 0x1AD;
+                break;
+            }
+        }
+        dtEntry = partysDt;
+        for (i = 0; i < 3u; i++, dtEntry++) {
+            if ((wp->field_0x80 & 8) && v6 == 0 && i == 1) {
+                continue;
+            }
+            PSMTXTrans(mtx, baseX + (f32)dtEntry->xpos, baseY - (f32)dtEntry->ypos, float_0_8041c900);
+            PSMTXScale(scale, dtEntry->scale, dtEntry->scale, dtEntry->scale);
+            PSMTXConcat(mtx, scale, mtx);
+            SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colParty, *(GXColor*)&dat_8041c8e8);
+        }
+        if (!(wp->field_0x80 & 8) || v6 != 0) {
+            number = *(s16*)((u8*)wp + 0x5A);
+            PSMTXTrans(partyHpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 78.0f + 2.0f + 4.0f, float_0_8041c900);
+            SW_NUM_GX(partyHpMtx, number, 0, numPartyHp, *(GXColor*)&dat_8041c8e0);
+        }
+        number = *(s16*)((u8*)wp + 0x5C);
+        PSMTXTrans(partyMaxHpMtx, tx, baseY - 78.0f + 2.0f + 4.0f, float_0_8041c900);
+        SW_NUM_GX(partyMaxHpMtx, number, 1, numPartyMaxHp, *(GXColor*)&dat_8041c8e0);
+    }
+
+    if ((wp->field_0x4 & 0x100) && gp->inBattle == 0) {
+        ty2 = -180.0f + (wp->field_0x34 - wp->field_0x24);
+        PSMTXTrans(badgeMtx, -190.0f, ty2, float_0_8041c900);
+        PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
+        PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
+        SW_ICON_COL(badgeMtx, 0x10, 0x212, colB212, *(GXColor*)&dat_8041c8ec);
+        if (swByteGet(0) >= 7 || partyChkJoin(1) != 0) {
+            PSMTXTrans(badgeMtx, -250.0f, 16.0f + ty2, float_0_8041c900);
+            PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
+            PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
+            SW_ICON_COL(badgeMtx, 0x10, 0x213, colB213, *(GXColor*)&dat_8041c8f0);
+        }
+        PSMTXTrans(badgeMtx, -190.0f, 50.0f + ty2, float_0_8041c900);
+        PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
+        PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
+        SW_ICON_COL(badgeMtx, 0x10, 0x214, colB214, *(GXColor*)&dat_8041c8f4);
+        if (swByteGet(0) >= 0x14 || pouchGetHaveBadgeCnt() != 0) {
+            PSMTXTrans(badgeMtx, -130.0f, 16.0f + ty2, float_0_8041c900);
+            PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
+            PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
+            SW_ICON_COL(badgeMtx, 0x10, 0x215, colB215, *(GXColor*)&dat_8041c8f8);
+        }
+        PSMTXTrans(badgeMtx, -190.0f, ty2 - 25.0f, float_0_8041c900);
+        PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
+        PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
+        SW_ICON_COL(badgeMtx, 0x10, 0x216, colB216, *(GXColor*)&dat_8041c8fc);
+    }
+}
+
+void statusGetValue(StatusWindowValue* values) {
+    BattleWork* bw;
+    BattleUnit* mario;
+    BattleUnit* party;
+    s16 partyId;
+
+    if (!gp->inBattle) {
+        values->hp = pouchGetHP();
+        values->maxHp = pouchGetMaxHP();
+        values->fp = pouchGetFP();
+        values->maxFp = pouchGetMaxFP();
+        values->ap = pouchGetAP();
+        values->maxAp = pouchGetMaxAP();
+        values->starPoint = pouchGetStarPoint();
+        values->coin = pouchGetCoin();
+        if (marioBgmodeChk() == 0) {
+            partyId = marioGetParty();
+        } else {
+            partyId = marioGetPtr()->prevPartyMemberId[0];
+        }
+        values->partyId = partyId;
+        values->partyHp = pouchGetPtr()->partyData[values->partyId].currentHP;
+        values->partyMaxHp = pouchGetPtr()->partyData[values->partyId].maximumHP;
+    } else {
+        bw = _battleWorkPointer;
+        mario = BattleGetMarioPtr(bw);
+        party = BattleGetPartyPtr(bw);
+        values->hp = mario->currentHp;
+        values->maxHp = mario->maxHp;
+        values->fp = mario->currentFp;
+        values->maxFp = mario->maxFp;
+        values->ap = pouchGetAP();
+        values->maxAp = pouchGetMaxAP();
+        values->starPoint = pouchGetStarPoint();
+        values->coin = pouchGetCoin();
+        if (party != NULL) {
+            values->partyId = BattleTransPartyId(party->currentKind);
+            values->partyHp = party->currentHp;
+            values->partyMaxHp = party->maxHp;
+        } else {
+            values->partyId = 0;
+            values->partyHp = 0;
+            values->partyMaxHp = 0;
+        }
     }
 }
 
@@ -576,53 +703,6 @@ s32 valueCheck(void) {
     }
     return changed;
 }
-
-static s32 valueMoveAmount(s16 cur, s16 target) {
-    s32 diff = target - cur;
-    s32 step = diff;
-
-    if (step != 0) {
-        step = diff / 10;
-        if (step == 0) {
-            step = (target > cur) ? 1 : -1;
-        }
-    }
-    return step;
-}
-
-// Single-variable form: keeps diff and step in the same register, as the
-// original's inlined valueMove does.
-static inline void valueMoveUpdate(s16* cur, s16 target) {
-    s32 step = target - *cur;
-
-    if (step != 0) {
-        step /= 10;
-        if (step == 0) {
-            step = (target > *cur) ? 1 : -1;
-        }
-    }
-    *cur += step;
-}
-
-// The original inlines valueMove for the first party bar with *cur in r6 and
-// target in r5 (wp is still live in r7). Taking target by pointer makes both
-// operands memory loads, so *cur is loaded first and lands in r6; taking it by
-// value schedules the target load first and swaps the two registers.
-#ifdef MUST_MATCH
-static inline void valueMoveParty(s16* cur, s16* target) {
-    s16 c = *cur;
-    s16 t = *target;
-    s32 step = t - c;
-
-    if (step != 0) {
-        step /= 10;
-        if (step == 0) {
-            step = (t > c) ? 1 : -1;
-        }
-    }
-    *cur += step;
-}
-#endif
 
 void valueUpdate(void) {
     static s32 count;
@@ -690,232 +770,182 @@ void valueUpdate(void) {
 #endif
 }
 
-// Matching notes (all codegen-only; each call is ABI-identical to the header's by-value form):
-// * Every GXColor argument is staged in a function-scope local declared colours-first
-//   (colAlways..colB216 then numHp..numPartyMaxHp) and passed through a GXColor*-taking
-//   function-pointer cast (SW_ICON_COL/SW_NUM_GX, MUST_MATCH only). MWCC passes a by-value GXColor as a pointer in r6 either way, so this
-//   is safe, but it makes the compiler pass each local's home directly instead of building the
-//   fresh outgoing-copy pool that GC/2.6 allocates in program order. The local homes reproduce
-//   the original's slot grouping (iconDispGxCol at 0x28..0x40 above iconNumberDispGx at 0x08..0x24).
-// * `ty2` gives the badge block its own FPR (the original reuses f28 there); folding it into `ty`
-//   makes MWCC split `ty` and use f29 instead.
-// * The star `ty` is assigned inside the PSMTXTrans argument so its constants colour f0/f1 like
-//   the original; the plain `ty = ...;` form swaps them.
-#ifdef MUST_MATCH
-#define SW_ICON_COL(m, s, id, var, col) var = (col); ((void(*)(Mtx,s16,s32,GXColor*))iconDispGxCol)(m, s, id, &var)
-#define SW_NUM_GX(m, n, f, var, col) var = (col); ((s32(*)(Mtx,s32,BOOL,GXColor*))iconNumberDispGx)(m, n, f, &var)
-#else
-#define SW_ICON_COL(m, s, id, var, col) iconDispGxCol(m, s, id, col)
-#define SW_NUM_GX(m, n, f, var, col) iconNumberDispGx(m, n, f, col)
-#endif
-void statusWinDisp(CameraId camId, void* param) {
-    alwaysDtEntry* dtEntry;
-    s32 i;
-    s32 v6;
-    s32 number;
-    f32 tx, ty;
-    f32 baseX, baseY;
-    f32 ty2;
-    Mtx mtx;
-    Mtx scale;
-    Mtx badgeMtx;
-    Mtx badgeScale;
-    Mtx hpMtx;
-    Mtx maxHpMtx;
-    Mtx fpMtx;
-    Mtx maxFpMtx;
-    Mtx starMtx;
-    Mtx coinMtx;
-    Mtx partyHpMtx;
-    Mtx partyMaxHpMtx;
-#ifdef MUST_MATCH
-    GXColor colAlways, colParty, colB212, colB213, colB214, colB215, colB216;
-    GXColor numHp, numMaxHp, numFp, numMaxFp, numStar, numCoin, numPartyHp, numPartyMaxHp;
-#endif
+void statusWinOpen(void) {
+    wp->field_0x4 &= ~0xA;
+    wp->field_0x4 |= 5;
+}
 
-    baseX = wp->field_0x20;
-    baseY = wp->field_0x24;
-    v6 = 1;
-    if (wp->field_0x88 > 0) {
-        wp->field_0x88--;
-        v6 = (wp->field_0x88 % 16) >= 6;
+void statusWinClose(void) {
+    wp->field_0x4 |= 0xA;
+    wp->field_0x4 &= ~5;
+}
+
+void statusWinForceOpen(void) {
+    wp->field_0x4 &= ~0xA;
+    wp->field_0x4 &= ~0xA0;
+    wp->field_0x4 |= 0x50;
+}
+
+void statusWinForceClose(void) {
+    wp->field_0x4 &= ~5;
+    wp->field_0x4 &= ~0x50;
+    wp->field_0x4 |= 0xA0;
+}
+
+void statusWinForceCloseClear(void) {
+    wp->field_0x4 &= ~0xA0;
+}
+
+void statusWinForceOff(void) {
+    if (wp->field_0x4 & 0x10) {
+        wp->field_0x4 &= ~0x10;
+        wp->field_0x4 &= ~0xA;
+        wp->field_0x4 |= 5;
+    } else if (wp->field_0x4 & 1) {
+        wp->field_0x4 &= ~0xA;
+        wp->field_0x4 |= 5;
     }
-
-    dtEntry = alwaysDt;
-    for (i = 0; i < 13u; i++, dtEntry++) {
-        if (dtEntry->iconId == 466 && !pouchGetPtr()->mStarPowersObtained) {
-            break; // don't draw star power bar
-        }
-        if (!v6) {
-            if ((wp->field_0x80 & 1) && i == 1) {
-                continue;
-            }
-            if (((wp->field_0x80 & 2) && i == 4) || ((wp->field_0x80 & 0x10) && i == 8) || ((wp->field_0x80 & 4) && i == 12)) {
-                continue;
-            }
-        }
-        PSMTXTrans(mtx, baseX + (f32)dtEntry->xpos, baseY - (f32)dtEntry->ypos, 0.0f);
-        PSMTXScale(scale, dtEntry->scale, dtEntry->scale, dtEntry->scale);
-        PSMTXConcat(mtx, scale, mtx);
-        SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colAlways, *(GXColor*)&dat_8041c8e4);
+    if (wp->field_0x4 & 0x20) {
+        wp->field_0x4 &= ~0x20;
+        wp->field_0x4 |= 0xA;
+        wp->field_0x4 &= ~5;
+    } else if (wp->field_0x4 & 2) {
+        wp->field_0x4 |= 0xA;
+        wp->field_0x4 &= ~5;
     }
+}
 
-    if (!(wp->field_0x80 & 1) || v6 != 0) {
-        number = *(s16*)((u8*)wp + 0x50);
-        PSMTXTrans(hpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 38.0f + 2.0f, 0.0f);
-        SW_NUM_GX(hpMtx, number, 0, numHp, *(GXColor*)&dat_8041c8e0);
-    }
-    number = *(s16*)((u8*)wp + 0x52);
-    tx = baseX + 186.0f - 6.0f - 10.0f;
-    ty = baseY - 38.0f + 3.0f;
-    PSMTXTrans(maxHpMtx, tx, ty, 0.0f);
-    SW_NUM_GX(maxHpMtx, number, 1, numMaxHp, *(GXColor*)&dat_8041c8e0);
+void statusWinDispOn(void) {
+    wp->field_0x4 &= ~0x1000;
+}
 
-    if (!(wp->field_0x80 & 2) || v6 != 0) {
-        number = *(s16*)((u8*)wp + 0x54);
-        PSMTXTrans(fpMtx, baseX + 292.0f - 6.0f, baseY - 38.0f + 2.0f, 0.0f);
-        SW_NUM_GX(fpMtx, number, 0, numFp, *(GXColor*)&dat_8041c8e0);
-    }
-    number = *(s16*)((u8*)wp + 0x56);
-    PSMTXTrans(maxFpMtx, baseX + 358.0f - 6.0f, ty, 0.0f);
-    SW_NUM_GX(maxFpMtx, number, 1, numMaxFp, *(GXColor*)&dat_8041c8e0);
+void statusWinDispOff(void) {
+    wp->field_0x4 |= 0x1000;
+}
 
-    number = *(s16*)((u8*)wp + 0x5E);
-    PSMTXTrans(starMtx, baseX + 462.0f, ty = baseY - 38.0f + 2.0f, 0.0f);
-    SW_NUM_GX(starMtx, number, 0, numStar, *(GXColor*)&dat_8041c8e0);
+BOOL statusWinCheck(void) {
+    return (wp->field_0x4 & 0x11) != 0;
+}
 
-    if (!(wp->field_0x80 & 0x10) || v6 != 0) {
-        number = *(s16*)((u8*)wp + 0x60);
-        PSMTXTrans(coinMtx, baseX + 572.0f, ty, 0.0f);
-        SW_NUM_GX(coinMtx, number, 0, numCoin, *(GXColor*)&dat_8041c8e0);
-    }
+BOOL statusWinCheckUpdate(void) {
+    return valueCheck() != 0;
+}
 
-    if (!(wp->field_0x80 & 4) || v6 != 0) {
-        gaugeDisp(*(s16*)((u8*)wp + 0x62), baseX + 260.0f, baseY - 87.0f + 4.0f);
-    }
+void statusWinForceUpdate(void) {
+    StatusWindowValue values;
 
+    statusGetValue(&values);
+    *(s16*)((u8*)wp + 0x50) = values.hp;
+    *(s16*)((u8*)wp + 0x52) = values.maxHp;
+    *(s16*)((u8*)wp + 0x54) = values.fp;
+    *(s16*)((u8*)wp + 0x56) = values.maxFp;
+    wp->field_0x62 = values.ap;
+    *(s16*)((u8*)wp + 0x64) = values.maxAp;
+    *(s16*)((u8*)wp + 0x5E) = values.starPoint;
+    *(s16*)((u8*)wp + 0x60) = values.coin;
+    *(s16*)((u8*)wp + 0x58) = values.partyId;
     if (*(s16*)((u8*)wp + 0x58) != 0) {
-        s32 partyId = *(s16*)((u8*)wp + 0x58);
-
-        partysDt[1].iconId = party_icon[partyId];
-        if (partyId == 4) {
-            switch (pouchGetPartyColor(4)) {
-            case 0:
-                partysDt[1].iconId = 0x1A7;
-                break;
-            case 1:
-                partysDt[1].iconId = 0x1A8;
-                break;
-            case 2:
-                partysDt[1].iconId = 0x1A9;
-                break;
-            case 3:
-                partysDt[1].iconId = 0x1AA;
-                break;
-            case 4:
-                partysDt[1].iconId = 0x1AB;
-                break;
-            case 5:
-                partysDt[1].iconId = 0x1AC;
-                break;
-            case 6:
-            default:
-                partysDt[1].iconId = 0x1AD;
-                break;
-            }
-        }
-        dtEntry = partysDt;
-        for (i = 0; i < 3u; i++, dtEntry++) {
-            if ((wp->field_0x80 & 8) && v6 == 0 && i == 1) {
-                continue;
-            }
-            PSMTXTrans(mtx, baseX + (f32)dtEntry->xpos, baseY - (f32)dtEntry->ypos, 0.0f);
-            PSMTXScale(scale, dtEntry->scale, dtEntry->scale, dtEntry->scale);
-            PSMTXConcat(mtx, scale, mtx);
-            SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colParty, *(GXColor*)&dat_8041c8e8);
-        }
-        if (!(wp->field_0x80 & 8) || v6 != 0) {
-            number = *(s16*)((u8*)wp + 0x5A);
-            PSMTXTrans(partyHpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 78.0f + 2.0f + 4.0f, 0.0f);
-            SW_NUM_GX(partyHpMtx, number, 0, numPartyHp, *(GXColor*)&dat_8041c8e0);
-        }
-        number = *(s16*)((u8*)wp + 0x5C);
-        PSMTXTrans(partyMaxHpMtx, tx, baseY - 78.0f + 2.0f + 4.0f, 0.0f);
-        SW_NUM_GX(partyMaxHpMtx, number, 1, numPartyMaxHp, *(GXColor*)&dat_8041c8e0);
-    }
-
-    if ((wp->field_0x4 & 0x100) && gp->inBattle == 0) {
-        ty2 = -180.0f + (wp->field_0x34 - wp->field_0x24);
-        PSMTXTrans(badgeMtx, -190.0f, ty2, 0.0f);
-        PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
-        PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-        SW_ICON_COL(badgeMtx, 0x10, 0x212, colB212, *(GXColor*)&dat_8041c8ec);
-        if (swByteGet(0) >= 7 || partyChkJoin(1) != 0) {
-            PSMTXTrans(badgeMtx, -250.0f, 16.0f + ty2, 0.0f);
-            PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
-            PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-            SW_ICON_COL(badgeMtx, 0x10, 0x213, colB213, *(GXColor*)&dat_8041c8f0);
-        }
-        PSMTXTrans(badgeMtx, -190.0f, 50.0f + ty2, 0.0f);
-        PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
-        PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-        SW_ICON_COL(badgeMtx, 0x10, 0x214, colB214, *(GXColor*)&dat_8041c8f4);
-        if (swByteGet(0) >= 0x14 || pouchGetHaveBadgeCnt() != 0) {
-            PSMTXTrans(badgeMtx, -130.0f, 16.0f + ty2, 0.0f);
-            PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
-            PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-            SW_ICON_COL(badgeMtx, 0x10, 0x215, colB215, *(GXColor*)&dat_8041c8f8);
-        }
-        PSMTXTrans(badgeMtx, -190.0f, ty2 - 25.0f, 0.0f);
-        PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
-        PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-        SW_ICON_COL(badgeMtx, 0x10, 0x216, colB216, *(GXColor*)&dat_8041c8fc);
+        *(s16*)((u8*)wp + 0x5A) = values.partyHp;
+        *(s16*)((u8*)wp + 0x5C) = values.partyMaxHp;
     }
 }
 
-void statusGetValue(StatusWindowValue* values) {
-    BattleWork* bw;
-    BattleUnit* mario;
-    BattleUnit* party;
-    s16 partyId;
+void statusWinForceUpdateCoin(void) {
+    StatusWindowValue values;
 
-    if (!gp->inBattle) {
-        values->hp = pouchGetHP();
-        values->maxHp = pouchGetMaxHP();
-        values->fp = pouchGetFP();
-        values->maxFp = pouchGetMaxFP();
-        values->ap = pouchGetAP();
-        values->maxAp = pouchGetMaxAP();
-        values->starPoint = pouchGetStarPoint();
-        values->coin = pouchGetCoin();
-        if (marioBgmodeChk() == 0) {
-            partyId = marioGetParty();
-        } else {
-            partyId = marioGetPtr()->prevPartyMemberId[0];
-        }
-        values->partyId = partyId;
-        values->partyHp = pouchGetPtr()->partyData[values->partyId].currentHP;
-        values->partyMaxHp = pouchGetPtr()->partyData[values->partyId].maximumHP;
-    } else {
-        bw = _battleWorkPointer;
-        mario = BattleGetMarioPtr(bw);
-        party = BattleGetPartyPtr(bw);
-        values->hp = mario->currentHp;
-        values->maxHp = mario->maxHp;
-        values->fp = mario->currentFp;
-        values->maxFp = mario->maxFp;
-        values->ap = pouchGetAP();
-        values->maxAp = pouchGetMaxAP();
-        values->starPoint = pouchGetStarPoint();
-        values->coin = pouchGetCoin();
-        if (party != NULL) {
-            values->partyId = BattleTransPartyId(party->currentKind);
-            values->partyHp = party->currentHp;
-            values->partyMaxHp = party->maxHp;
-        } else {
-            values->partyId = 0;
-            values->partyHp = 0;
-            values->partyMaxHp = 0;
+    statusGetValue(&values);
+    *(s16*)((u8*)wp + 0x60) = values.coin;
+}
+
+Vec statusGetApPos(void) {
+    Vec pos;
+
+    pos.x = wp->field_0x20 + alwaysDt[12].xpos;
+    pos.y = wp->field_0x24 - alwaysDt[12].ypos;
+    pos.z = float_0_8041c900;
+    return pos;
+}
+
+void statusAPBlink(s32 value) {
+    wp->field_0x80 = 0;
+    wp->field_0x80 |= 4;
+    wp->field_0x88 = value;
+}
+
+void N_statusClearBlink(void) {
+    wp->field_0x80 = 0;
+}
+
+static inline s32 valueMoveAmount(s16 cur, s16 target) {
+    s32 diff = target - cur;
+    s32 step = diff;
+
+    if (step != 0) {
+        step = diff / 10;
+        if (step == 0) {
+            step = (target > cur) ? 1 : -1;
         }
     }
+    return step;
 }
+
+// Single-variable form: keeps diff and step in the same register, as the
+// original's inlined valueMove does.
+static inline void valueMoveUpdate(s16* cur, s16 target) {
+    s32 step = target - *cur;
+
+    if (step != 0) {
+        step /= 10;
+        if (step == 0) {
+            step = (target > *cur) ? 1 : -1;
+        }
+    }
+    *cur += step;
+}
+
+// The original inlines valueMove for the first party bar with *cur in r6 and
+// target in r5 (wp is still live in r7). Taking target by pointer makes both
+// operands memory loads, so *cur is loaded first and lands in r6; taking it by
+// value schedules the target load first and swaps the two registers.
+#ifdef MUST_MATCH
+static inline void valueMoveParty(s16* cur, s16* target) {
+    s16 c = *cur;
+    s16 t = *target;
+    s32 step = t - c;
+
+    if (step != 0) {
+        step /= 10;
+        if (step == 0) {
+            step = (t > c) ? 1 : -1;
+        }
+    }
+    *cur += step;
+}
+#endif
+
+void statusFPBlink(s32 value) {
+    wp->field_0x80 |= 2;
+    wp->field_0x88 = value;
+}
+
+void statusMarioHPBlink(s32 value) {
+    wp->field_0x80 |= 1;
+    wp->field_0x88 = value;
+}
+
+void statusPartyHPBlink(s32 value) {
+    wp->field_0x80 |= 8;
+    wp->field_0x88 = value;
+}
+
+const f32 float_0_8041c900 = 0.0f;
+const f32 float_1_8041c904 = 1.0f;
+const f32 float_3p1416_8041c908 = 3.1415927f;
+const f32 float_0p5_8041c90c = 0.5f;
+
+// 4-byte zero word that ends the unit's .sdata: an all-zero object needs explicit_zero_data to stay in .sdata and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_804118FC_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset

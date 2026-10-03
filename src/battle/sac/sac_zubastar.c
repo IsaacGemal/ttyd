@@ -160,9 +160,7 @@ struct ZubaStarWork {
 // accesses are under #else. All of disp2D's named float constants are now literals (200.0f, 60.0f, ...),
 // which gives MWCC their known values and recovers the original's scheduling; the original TU defined
 // them, so its loads use their names and ours use anonymous pooled entries (arg_mismatch only). Same for
-// the `pos`/vertex zeros. Still differing: the pos word-copy register allocation (r3/r4 swapped) and the
-// two by-value GXColor outgoing stack slots (0x14/0x0c in the original, 0x0c/0x08 here).
-// NONMATCHING (97.99%)
+// the `pos`/vertex zeros.
 void zubastar_disp2D(CameraId cameraId, void* param) {
     ZubaStarWork* work = GetZubaStarPtr();
 #ifdef MUST_MATCH
@@ -178,7 +176,6 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
     ZubaStarStar* star;
     s32 i;
     s32 alpha;
-    GXColor color;
     Vec pos;
 
     if (work->field_0x07C >= 5) {
@@ -188,7 +185,13 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
         pos = (Vec){ 0.0f, 0.0f, 0.0f };
         pos.x = work->field_0x094.x - 200.0f;
         pos.y = 60.0f + work->field_0x094.y;
+#ifdef MUST_MATCH
+        // Cast only to drop the s32->s16 `extsh` the original does not emit: the id is 0x64/0x65,
+        // so the upper bits are already clear. The natural declared call is under #else.
+        ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&pos, 0x10, icon, 1.0f);
+#else
         iconDispGx(&pos, 0x10, icon, 1.0f);
+#endif
         BattleAcDrawGauge((s32)work->field_0x094.x, (s32)work->field_0x094.y, 0xB1, 4, 0x1A, 0x34, 0x4E,
                           0, 0.01f * work->field_0x084);
     }
@@ -218,12 +221,16 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
         }
         if (star->state == 5) {
             {
+#ifdef MUST_MATCH
+                GXSetChanMatColor(GX_COLOR0A0, (GXColor){ alpha, alpha, alpha, 0xFF });
+#else
                 GXColor c = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
 
                 c.r = alpha;
                 c.g = alpha;
                 c.b = alpha;
                 GXSetChanMatColor(GX_COLOR0A0, c);
+#endif
             }
             GXBegin(0xA8, 0, 2);
 #ifdef MUST_MATCH
@@ -246,9 +253,16 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
             Mtx mtx;
 
             PSMTXTrans(mtx, Z2C(i)->x, Z2C(i)->y - yoffset, 0.0f);
-            color = (GXColor){ 0xFF, 0xFF, 0xFF, 0x00 };
-            color.a = 0xFF - (i + 1) * 0x32;
-            iconDispGxCol(mtx, 0x10, 0x19D, color);
+#ifdef MUST_MATCH
+            iconDispGxCol(mtx, 0x10, 0x19D, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF - (i + 1) * 0x32 });
+#else
+            {
+                GXColor color = { 0xFF, 0xFF, 0xFF, 0x00 };
+
+                color.a = 0xFF - (i + 1) * 0x32;
+                iconDispGxCol(mtx, 0x10, 0x19D, color);
+            }
+#endif
         }
     }
 }
@@ -259,9 +273,9 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
 // .text:0x368 | 0x8022E8F8 | size: 0x35C
 // Constant-register mapping, Mtx slots and both loops match; loading p->x/p->y into locals fixes the inner
 // vertex reloads, and indexing bomb->points[j] directly (no local Vec*) gives the original's r5 inner
-// counter. Still differs (98.88%): the s/t numerators are both computed before the first GXPosition store
-// instead of interleaved (fadds, stfs x, fsubs), and the s/t temporaries use f1/f0 rather than f0/f1.
-// NONMATCHING (98.88%)
+// counter. The inner loop computes both full texcoords before the position call (that is what gives the
+// target's f0/f3 colouring and the interleaved stores).
+#pragma opt_propagation off // needed: without it MWCC hoists the t numerator and colours the s/t chain f1/f0 (98.88%)
 void zubastar_disp_bomb(CameraId cameraId, void* param) {
     ZubaStarWork* work = GetZubaStarPtr();
     CameraEntry* cam = camGetPtr(8);
@@ -322,12 +336,15 @@ void zubastar_disp_bomb(CameraId cameraId, void* param) {
         for (j = 0; j < bomb->count; j++) {
             f32 y = bomb->points[j].y;
             f32 x = bomb->points[j].x;
+            f32 s = (c96 + x) / c400;
+            f32 t = (c240 - y) / c480;
 
             GXPosition3f32(x, y, 0.0f);
-            GXTexCoord2f32((c96 + x) / c400, (c240 - y) / c480);
+            GXTexCoord2f32(s, t);
         }
     }
 }
+#pragma opt_propagation reset
 
 // .text:0x6C4 | 0x8022EC54 | size: 0x68
 void zubastar_capture(CameraId cameraId, void* param) {
@@ -375,22 +392,13 @@ s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
 // MUST_MATCH: a struct-copy initializer from dat_802ff6d4 makes MWCC emit the original's inline
 // 6-iteration copy loop; a plain Vec[4] initializer gets its own anonymous rodata table.
 #endif
-// NONMATCHING (97.14%): the i2f magic double and a handful of scheduler/register differences (the
-// unit's pool base is not emitted here, so the original's `lfd .., 0x1c0(r29)` becomes an anonymous
-// pool load; the sort/max loops and the star gather are otherwise byte-identical).
+// NONMATCHING (99.64%): the str_802FF830/848 reads are +0x18 (unit pool order puts
+// zubastar_bomb's str_802FF80C after the i2f double; the 0x18 gap is main_star's two (Vec){0,0,0} pools,
+// which must stay literals or main_star drops to 88.79%).
 s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
-    const u8* p = (const u8*)str_802FF668;
-#ifdef MUST_MATCH
-// MUST_MATCH: the original reads these .rodata objects as offsets from the unit's first one.
-#define ZS_ROV(off, sym) (*(const Vec*)(p + (off)))
-#define ZS_RD(off, sym) ((const char*)(p + (off)))
-#else
-#define ZS_ROV(off, sym) (sym)
-#define ZS_RD(off, sym) (sym)
-#endif
     ZubaStarWork* work = GetZubaStarPtr();
 #ifdef MUST_MATCH
-    ZubaStarPoints4 points = *(ZubaStarPoints4*)(p + 0x6c);
+    ZubaStarPoints4 points = *(const ZubaStarPoints4*)dat_802ff6d4;
 #else
     Vec points[4] = {
         { 0.0f, 240.0f, 0.0f },
@@ -407,10 +415,10 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     if (isFirstCall) {
         work->tex = smartAlloc(GXGetTexBufferSize(0x190, 0x1E0, 4, 0, 0), 1);
 #ifdef MUST_MATCH
-        points.v[0] = ZS_ROV(0x9c, vec3_802ff704);
-        points.v[1] = ZS_ROV(0xa8, vec3_802ff710);
-        points.v[2] = ZS_ROV(0xb4, vec3_802ff71c);
-        points.v[3] = ZS_ROV(0xc0, vec3_802ff728);
+        points.v[0] = (Vec){ -96.0f, 240.0f, 0.0f };
+        points.v[1] = (Vec){ 304.0f, 240.0f, 0.0f };
+        points.v[2] = (Vec){ 304.0f, -240.0f, 0.0f };
+        points.v[3] = (Vec){ -96.0f, -240.0f, 0.0f };
         zubastar_create_takaku(4, points.v);
 #else
         points[0] = vec3_802ff704;
@@ -419,7 +427,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         points[3] = vec3_802ff728;
         zubastar_create_takaku(4, points);
 #endif
-        work->field_0x020 = ZS_ROV(0xcc, vec3_802ff734);
+        work->field_0x020 = (Vec){ 0.0f, -1000.0f, 0.0f };
     }
 
     switch (work->field_0x004) {
@@ -512,11 +520,11 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         work->field_0x004 = 0x1A;
         work->field_0x018 = 0x19;
         if (irand(2) == 0) {
-            work->field_0x05C = ZS_ROV(0xd8, vec3_802ff740);
-            work->field_0x068 = ZS_ROV(0xe4, vec3_802ff74c);
+            work->field_0x05C = (Vec){ 0.0f, 240.0f, 0.0f };
+            work->field_0x068 = (Vec){ 0.0f, -240.0f, 0.0f };
         } else {
-            work->field_0x05C = ZS_ROV(0xf0, vec3_802ff758);
-            work->field_0x068 = ZS_ROV(0xfc, vec3_802ff764);
+            work->field_0x05C = (Vec){ 0.0f, -240.0f, 0.0f };
+            work->field_0x068 = (Vec){ 0.0f, 240.0f, 0.0f };
         }
         y[0] = -96.0f;
         x[0] = -96.0f;
@@ -632,8 +640,8 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     case 0x23:
         work->field_0x004 = 0x24;
         work->field_0x018 = 0x19;
-        work->field_0x05C = ZS_ROV(0x108, vec3_802ff770);
-        work->field_0x068 = ZS_ROV(0x114, vec3_802ff77c);
+        work->field_0x05C = (Vec){ -96.0f, 240.0f, 0.0f };
+        work->field_0x068 = (Vec){ -96.0f, -240.0f, 0.0f };
         break;
     case 0x24:
         if (work->field_0x018 == 0x1E) {
@@ -677,7 +685,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         }
         break;
     case 0xA:
-        work->field_0x020 = ZS_ROV(0x120, vec3_802ff788);
+        work->field_0x020 = (Vec){ 0.0f, 300.0f, 0.0f };
         break;
     case 0xF:
         work->field_0x018 = 0x10;
@@ -718,7 +726,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
                 break;
             }
         }
-        psndSFXOn(ZS_RD(0x1c8, str_802FF830));
+        psndSFXOn("SFX_BTL_SAC_ZUBA_STAR2");
         // fallthrough
     case 0x1A:
         work->field_0x074++;
@@ -748,7 +756,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         work->field_0x018 = 0x1E;
         // fallthrough
     case 0x1E:
-        work->field_0x020 = ZS_ROV(0x12c, vec3_802ff794);
+        work->field_0x020 = (Vec){ 0.0f, -1000.0f, 0.0f };
         break;
     default:
         break;
@@ -765,7 +773,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     case 5:
         work->field_0x07C = 6;
         work->field_0x080 = 0;
-        work->field_0x094 = ZS_ROV(0x138, vec3_802ff7a0);
+        work->field_0x094 = (Vec){ -1000.0f, 0.0f, 0.0f };
         work->field_0x090 = 200.0f;
         work->field_0x084 = 0.0f;
         work->field_0x088 = 0.0f;
@@ -805,7 +813,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         }
         if (work->field_0x084 > 0.0f) {
             if (psndSFXChk(work->field_0x0A4) == -1) {
-                work->field_0x0A4 = psndSFXOn(ZS_RD(0x1e0, str_802FF848));
+                work->field_0x0A4 = psndSFXOn("SFX_BTL_SAC_ZUBA_STAR1");
             }
         }
         if (psndSFXChk(work->field_0x0A4) == 0) {
@@ -1159,58 +1167,72 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
 // .text:0x1990 | 0x8022FF20 | size: 0x100
 // Kept out of line: the original's zubastar_bunkatu calls it (bl) instead of inlining it.
 // `opt_lifetimes off` + `opt_propagation off` (reset after the function) give the original's float
-// colouring: the first value (`a`) in f9, the first select result (`b`) in f10, and the reused
-// `ct` temp in f3. Writing the early-exit test and the `d == 0` test with `0.0f` literals, but the
-// two select comparisons with the named `float_0_804217e0` object, forces the original's redundant
-// zero reloads (at the first select and before the second temp); the named object pools a different
-// word than the literals, so MWCC cannot CSE the loads. The second temp reuses `ct` (rather than a
-// separate `dt`) so it lands in f3 like the original.
+// colouring: the first value (`a`) in f9, the first select result (`b`) in f10, the second select
+// result (`c`) in f11, and the `ct` temp in f3. The zero compares must stay `0.0f` literals, not the
+// named `float_0_804217e0` object: with the named object MWCC CSEs the zero reloads away, while the
+// literal (whose pooled word the file already has) forces the original's reloads. The 1e-05 fallback
+// is the named `float_1Eneg05_80421860` because a literal would add a new `.sdata2` word and shift the
+// section. The reused `ct`/`dt` temps and the separate `e`/`f` locals land in the original's registers.
 #pragma dont_inline on
-// `opt_lifetimes off` keeps the select results and the reused ct temp in f9/f10/f3.
-// NONMATCHING (97.34%): `c` lands in f7 instead of f11 and the values that depend on it rotate
-// with it (d f8 vs f0, s1 f11 vs f8, the difference f8 vs f7); all remaining instruction diffs are
-// that one register rotation, otherwise the stream is byte-identical.
+#pragma opt_lifetimes off // keep the select results and the ct temp in f9/f10/f11/f3
+#pragma opt_propagation off // ditto for the rest of the float web
 s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, f32 f8, f32* out1,
                         f32* out2) {
     f32 a = f3 - f1;
     f32 b;
     f32 c;
     f32 d;
-    f32 ct;
-    f32 sl;
+    f32 e;
+    f32 f;
 
     if (a == 0.0f && f7 - f5 == 0.0f) {
         return 0;
     }
-    b = (float_0_804217e0 != a) ? a : float_1Eneg05_80421860;
-    ct = f7 - f5;
-    c = (0.0f != ct) ? ct : float_1Eneg05_80421860;
-    d = f8 - f6;
-    ct = f4 - f2;
-    f8 = ct / b;
-    b = d / c;
-    d = f8 - b;
+    b = (a != 0.0f) ? a : float_1Eneg05_80421860;
+    {
+        // Named temps: MWCC keeps the differences in f3 and the selected results in their own
+        // registers with a copy, like the original (see the comment above the function).
+        f32 ct = f7 - f5;
+        f32 c2 = (ct != 0.0f) ? ct : float_1Eneg05_80421860;
+
+        c = c2;
+    }
+    {
+        f32 dt = f4 - f2;
+
+        d = dt;
+    }
+    e = f8 - f6;
+    f = d / b;
+    b = e / c;
+    d = f - b;
     if (d == 0.0f) {
         return 0;
     }
-    *out1 = ((f6 - f2) + (f8 * f1 - b * f5)) / d;
+    *out1 = ((f6 - f2) + (f * f1 - b * f5)) / d;
     if (a != 0.0f) {
-        *out2 = f8 * (*out1 - f1) + f2;
+        *out2 = f * (*out1 - f1) + f2;
     } else {
         *out2 = b * (*out1 - f5) + f6;
     }
-    sl = (*out1 - f5) / c;
-    if (sl >= float_0_804217e0 && sl <= float_1_804217d0) {
-        return 1;
+    {
+        f32 sl = (*out1 - f5) / c;
+
+        if (sl >= 0.0f && sl <= 1.0f) {
+            return 1;
+        }
     }
     return 0;
 }
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
 #pragma dont_inline reset
 
 
 // .text:0x1F58 | 0x802304E8 | size: 0xE4
-// NONMATCHING (96.49%): a volatile struct copy reproduces the original's load/store interleave for
-// vec3_802ff6b0; the only remaining difference is the loop's branch targets.
+// A volatile struct copy reproduces the original's load/store interleave for vec3_802ff6b0. A volatile
+// store to bomb->count is needed too: it stops the scheduler hoisting the copy's first load above the
+// count store (the natural form is under #else).
 // dont_inline: the original calls zubastar_create_takaku from zubastar_main with `bl`.
 #pragma dont_inline on
 void zubastar_create_takaku(s32 count, Vec* points) {
@@ -1222,12 +1244,13 @@ void zubastar_create_takaku(s32 count, Vec* points) {
     bomb = work->bombs[work->bombCount];
     bomb->points = BattleAlloc(count * 0xC);
     bomb->state = 0;
-    bomb->count = count;
 #ifdef MUST_MATCH
-    // Volatile struct copy: pins the original's load order (x->r4, count store, y->r3,
-    // store x, store y, z->r3, store z) instead of letting MWCC batch both loads first.
+    // Volatile count store: a volatile access cannot move across the volatile struct copy below,
+    // which keeps the count store before the copy's first load as the original schedules it.
+    *(volatile s32*)&bomb->count = count;
     *(volatile Vec*)&bomb->field_0x0C = *(const volatile Vec*)&vec3_802ff6b0;
 #else
+    bomb->count = count;
     bomb->field_0x0C = vec3_802ff6b0;
 #endif
     bomb->timer = 0;

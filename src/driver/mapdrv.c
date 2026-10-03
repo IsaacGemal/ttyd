@@ -1791,9 +1791,9 @@ typedef struct MapAnimData {
 	MapAnimKey key[]; // 0x5C
 } MapAnimData;
 
-// NONMATCHING (98.70%): spline math, constants and compare directions match. What differs is MWCC
-// register colouring of the inner loop's pointers (out/chan base swapped r4/r5), the key-select value
-// (target f13, ours f6) and the polynomial temps; the d==0 boolean is `clrlwi.` vs `cntlzw/srwi.`.
+// NONMATCHING (99.29%): spline math, constants, the d==0 boolean (cntlzw/srwi) and the inner-loop
+// GPRs (ch=r3, out=r4, chn=r5) now match. What differs is FPR colouring: the key-select time t is f13
+// in retail but f6 here, which cascades k0/dt and the polynomial temps (u, u2, neg2). Permuter.
 void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* jointPtr) {
 	MapAnimData* joint = (MapAnimData*)jointPtr;
 	MapAnimKey* key;
@@ -1830,10 +1830,17 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 
 		for (k = 0; k < 9; k++) {
 			MapAnimChannel* ch = &key->chan[k];
+#ifdef MUST_MATCH
+			f32* outp = &out[k]; // MUST_MATCH: declared before chn so MWCC colours out=r4, chn=r5 like retail
+#endif
 			MapAnimChannel* chn = &next->chan[k];
 
 			if (ch->flag != 0) {
+#ifdef MUST_MATCH
+				*outp = ch->value;
+#else
 				out[k] = ch->value;
+#endif
 			}
 			else {
 				f32 k0 = key->time;
@@ -1850,7 +1857,7 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 				f32 two, neg2;
 
 				flag = (d != MATCH_F32(float_0_80419850));
-				if ((flag & 1) == 0) {
+				if (((u32)__cntlzw(flag) >> 5) != 0) {
 					den = MATCH_F32(float_1Eneg08_804198b8);
 				}
 				else {
@@ -1870,7 +1877,11 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 
 
 				h11 = u3 - u2;
+#ifdef MUST_MATCH
+				*outp = tan0 * (d * h10)
+#else
 				out[k] = tan0 * (d * h10)
+#endif
 				       + value0 * h00
 				       + value1 * h01
 				       + tan1 * (d * h11);
@@ -2970,26 +2981,24 @@ void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
 	}
 }
 
-// Inline copy of mapSearchAnmObj for mapMain. `pair = table + 4; pair += j * 8;` is what
-// reproduces retail's `addi rX,r28,0x4; add rX,r3,rX` address form in the inlined search (a
-// single `table + 4 + j*8` expression folds the +4 into the load instead).
+// Inline copy of mapSearchAnmObj for mapMain. The inner-loop bound reads the table with the
+// expression `*(u8**)((u8*)entry + 0xA0)` (not a cached `table` variable) so the compiler emits
+// retail's second `0xa0(entry)` load, and the pair address is built `+4` then `+= j * 8`.
 static inline u8* mapSearchAnimObj(const char* name) {
 	s32 i;
-	s32 j;
 	MapEntry* entry;
+	s32 j;
 	MapWork* wp;
-	u8* p;
 	u8* table;
-
+	u8* p;
 	wp = &mapWork[activeGroup];
 	entry = &wp->entries[0];
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		table = *(u8**)((u8*)entry + 0xA0);
-		if (table == NULL) {
+		if (*(u8**)((u8*)entry + 0xA0) == NULL) {
 			return NULL;
 		}
-		for (j = 0; j < *(s32*)table; j++) {
-			u8* pair = table + 4;
+		for (j = 0; j < *(s32*)*(u8**)((u8*)entry + 0xA0); j++) {
+			u8* pair = *(u8**)((u8*)entry + 0xA0) + 4;
 			pair += j * 8;
 			if (!strcmp(*(char**)pair, name)) {
 				return *(u8**)(pair + 4);
@@ -3000,57 +3009,73 @@ static inline u8* mapSearchAnimObj(const char* name) {
 }
 
 // Complete and logically correct; the instruction shape matches retail exactly (verified with
-// tools/diff_shape.py: no shape-only diffs). The rest is callee-saved register colouring: the
-// outer entry loop spills i, the five animation-list pointers and the OSTime land in different
-// registers, and the inlined Hermite blocks colour t/u3 differently (f5/f31 vs f12/f5).
+// tools/diff_shape.py: no shape-only diffs). 95.43%.
+// Source shapes that mattered: (1) the animation `item` pointer must be re-loaded from the list
+// inside each `if (obj != NULL)` / `if (light != NULL)` block instead of cached across the block's
+// mapSearchAnimObj / lightNameToPtr calls (and each light block re-loads it after the lookup);
+// (2) the flags word `*(u16*)anim` is read once into `animFlags` at the top of the j-body -- that
+// keeps it in r4 across the branches instead of letting the gp-pointer loads clobber r3 and force
+// a reload; (3) in the mapSearchAnimObj helper the table is read with the expression (no cached
+// `table` variable) inside the inner-loop bound, so retail's second `0xa0(entry)` load appears;
+// (4) both the main and helper declaration orders move the callee-saved allocation a lot (a random
+// hill-climb over the main declaration order was worth ~0.5 points). The declaration lists below
+// and in the helper are the orders that land the most registers on retail's.
+// What still differs (all arg_mismatch): retail keeps i r14, entry r24, anim r21, updated r20,
+// j r23, list19 r19, list18 r18 and list17 r17 (all matched now); ours still has list16 r25,
+// list15 r22 and the OSTime in r15/r16 where retail has list16 r16, list15 r15 and the OSTime in
+// r22/r25. The inlined Hermite blocks colour t in f5 vs retail's f12 (the polynomial FPRs
+// rotate), and the `if (!(t <= next))` diamond lays out as `beq after` vs retail's `bne body; b
+// after` (8 op_mismatch). No C shape found that reproduces retail's branch layout.
 // The d==0 boolean uses the __cntlzw intrinsic to reproduce retail's cntlzw/srwi normalisation.
 // The colour/light Hermite loops have no `if (cnt > 1)` wrapper: the bare `for (ki = 1; ...)`
 // guard reproduces retail's `subi cnt-1; mtctr` scheduled before the `cmpwi`.
-// NONMATCHING (91.67%):
+#pragma opt_loop_invariants off // pins the colour/light channel loads and fixes allocator colouring
+#pragma opt_common_subs off // same: required for retail's register colouring here
+// NONMATCHING (95.43%):
 void mapMain(void) {
-	MapWork* wp0;
+	u8* list16;
+	OSTime time;
 	MapEntry* entry;
+	s32 i = 0;
+	s32 j = 0;
+	u8* list15;
+	u8* p;
 	u8* anim;
+	BOOL updated;
 	u8* list19;
 	u8* list18;
 	u8* list17;
-	u8* list16;
-	u8* list15;
-	OSTime time;
-	BOOL updated;
-	s32 i = 0;
-	s32 j = 0;
-	u8* p;
+	MapWork* wp0;
 	char namebuf[0x100];
 	char namebuf2[0x100];
 
 	wp0 = &mapWork[activeGroup];
-	entry = &wp0->entries[0];
-	for (; i < wp0->entries[0].count; entry++, i++) {
+	for (entry = &wp0->entries[0]; i < wp0->entries[0].count; entry++, i++) {
 		anim = (u8*)entry->animData;
 		updated = FALSE;
 		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim += 0x20) {
+			u16 animFlags = *(u16*)anim;
 			list19 = *(u8**)((*(u8**)(anim + 0x18)) + 0xC);
 			list18 = *(u8**)((*(u8**)(anim + 0x18)) + 0x10);
 			list17 = *(u8**)((*(u8**)(anim + 0x18)) + 0x14);
 			list16 = *(u8**)((*(u8**)(anim + 0x18)) + 0x18);
 			list15 = *(u8**)((*(u8**)(anim + 0x18)) + 0x1C);
-			if (!((*(u16*)anim) & 0x1)) {
+			if (!(animFlags & 0x1)) {
 				continue;
 			}
-			if ((*(u16*)anim) & 0x2) {
+			if (animFlags & 0x2) {
 				continue;
 			}
-			if ((*(u16*)anim) & 0x100) {
+			if (animFlags & 0x100) {
 				time = gp->systemLv0Time;
 			}
-			else if ((*(u16*)anim) & 0x200) {
+			else if (animFlags & 0x200) {
 				time = gp->systemLv1Time;
 			}
-			else if ((*(u16*)anim) & 0x400) {
+			else if (animFlags & 0x400) {
 				time = gp->systemLv2Time;
 			}
-			else if ((*(u16*)anim) & 0x800) {
+			else if (animFlags & 0x800) {
 				time = gp->systemLv3Time;
 			}
 			else if (gp->inBattle) {
@@ -3059,7 +3084,7 @@ void mapMain(void) {
 			else {
 				time = gp->renderFieldTime;
 			}
-			if (!((*(u16*)anim) & 0x10)) {
+			if (!(animFlags & 0x10)) {
 				f32 f = (f32)(u64)(OSTicksToMilliseconds(time) - *(OSTime*)(anim + 0x8)) * gp->framerate / 1000.0f;
 				f32 frame = *(f32*)(anim + 0x10);
 				if (f < frame) {
@@ -3071,7 +3096,7 @@ void mapMain(void) {
 				*(OSTime*)(anim + 0x8) = OSTicksToMilliseconds(time);
 				*(OSTime*)(anim + 0x8) -= (u64)(1000.0f * *(f32*)(anim + 0x10) / (f32)gp->framerate);
 			}
-			else if ((*(u16*)anim) & 0x20) {
+			else if (animFlags & 0x20) {
 				*(OSTime*)(anim + 0x8) = OSTicksToMilliseconds(time);
 				*(OSTime*)(anim + 0x8) -= (u64)(1000.0f * *(f32*)(anim + 0x10) / (f32)gp->framerate);
 				*(u16*)anim &= ~0x20;
@@ -3114,11 +3139,11 @@ void mapMain(void) {
 				u8* lp = list18;
 				s32 li;
 				for (li = 0; li < *(s32*)list18; lp += 4, li++) {
-					u8* item = *(u8**)(lp + 4);
 					u8* obj;
-					strcpy(namebuf, *(char**)item);
+					strcpy(namebuf, *(char**)*(u8**)(lp + 4));
 					obj = mapSearchAnimObj(namebuf);
 					if (obj != NULL) {
+						u8* item = *(u8**)(lp + 4);
 						s32 cnt = *(s32*)(item + 0x10);
 						s32 ki;
 						for (ki = 1; ki < cnt; ki++) {
@@ -3152,7 +3177,7 @@ void mapMain(void) {
 									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value0 = *(f32*)(ch + 4);
 									f32 den;
-									f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+									f32 h11, h00, u2, h01, c, u3, b, u, a, h10;
 									s32 flag;
 									flag = (d != MATCH_F32(float_0_80419850));
 									if (((u32)__cntlzw(flag) >> 5) != 0) {
@@ -3179,10 +3204,11 @@ void mapMain(void) {
 							break;
 						}
 					}
-					strcpy(namebuf, *(char**)item);
+					strcpy(namebuf, *(char**)*(u8**)(lp + 4));
 					strcat(namebuf, "_v");
 					obj = mapSearchAnimObj(namebuf);
 					if (obj != NULL) {
+						u8* item = *(u8**)(lp + 4);
 						s32 cnt = *(s32*)(item + 0x10);
 						s32 ki;
 						for (ki = 1; ki < cnt; ki++) {
@@ -3216,7 +3242,7 @@ void mapMain(void) {
 									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value0 = *(f32*)(ch + 4);
 									f32 den;
-									f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+									f32 h11, h00, u2, h01, c, u3, b, u, a, h10;
 									s32 flag;
 									flag = (d != MATCH_F32(float_0_80419850));
 									if (((u32)__cntlzw(flag) >> 5) != 0) {
@@ -3243,10 +3269,11 @@ void mapMain(void) {
 							break;
 						}
 					}
-					strcpy(namebuf, *(char**)item);
+					strcpy(namebuf, *(char**)*(u8**)(lp + 4));
 					strcat(namebuf, "_v_x");
 					obj = mapSearchAnimObj(namebuf);
 					if (obj != NULL) {
+						u8* item = *(u8**)(lp + 4);
 						s32 cnt = *(s32*)(item + 0x10);
 						s32 ki;
 						for (ki = 1; ki < cnt; ki++) {
@@ -3280,7 +3307,7 @@ void mapMain(void) {
 									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value0 = *(f32*)(ch + 4);
 									f32 den;
-									f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+									f32 h11, h00, u2, h01, c, u3, b, u, a, h10;
 									s32 flag;
 									flag = (d != MATCH_F32(float_0_80419850));
 									if (((u32)__cntlzw(flag) >> 5) != 0) {
@@ -3314,11 +3341,11 @@ void mapMain(void) {
 				u8* lp = list17;
 				s32 li;
 				for (li = 0; li < *(s32*)list17; lp += 4, li++) {
-					u8* item = *(u8**)(lp + 4);
 					u8* obj;
-					strcpy(namebuf2, *(char**)item);
+					strcpy(namebuf2, *(char**)*(u8**)(lp + 4));
 					obj = mapSearchAnimObj(namebuf2);
 					if (obj != NULL) {
+						u8* item = *(u8**)(lp + 4);
 						s32 cnt = *(s32*)(item + 4);
 						s32 ki;
 						for (ki = 1; ki < cnt; ki++) {
@@ -3373,10 +3400,11 @@ void mapMain(void) {
 							}
 						}
 					}
-					strcpy(namebuf2, *(char**)item);
+					strcpy(namebuf2, *(char**)*(u8**)(lp + 4));
 					strcat(namebuf2, "_v");
 					obj = mapSearchAnimObj(namebuf2);
 					if (obj != NULL) {
+						u8* item = *(u8**)(lp + 4);
 						s32 cnt = *(s32*)(item + 4);
 						s32 ki;
 						for (ki = 1; ki < cnt; ki++) {
@@ -3431,10 +3459,11 @@ void mapMain(void) {
 							}
 						}
 					}
-					strcpy(namebuf2, *(char**)item);
+					strcpy(namebuf2, *(char**)*(u8**)(lp + 4));
 					strcat(namebuf2, "_v_x");
 					obj = mapSearchAnimObj(namebuf2);
 					if (obj != NULL) {
+						u8* item = *(u8**)(lp + 4);
 						s32 cnt = *(s32*)(item + 4);
 						s32 ki;
 						for (ki = 1; ki < cnt; ki++) {
@@ -3496,9 +3525,9 @@ void mapMain(void) {
 				u8* lp = list16;
 				s32 li;
 				for (li = 0; li < *(s32*)list16; lp += 4, li++) {
-					u8* item = *(u8**)(lp + 4);
-					LightEntry* light = lightNameToPtr(*(char**)item);
+					LightEntry* light = lightNameToPtr(*(char**)*(u8**)(lp + 4));
 					if (light != NULL) {
+					u8* item = *(u8**)(lp + 4);
 					s32 cnt = *(s32*)(item + 4);
 					s32 ki;
 					f32 out[9];
@@ -3528,12 +3557,12 @@ void mapMain(void) {
 								f32 k1 = *(f32*)next;
 								f32 dt = t - k0;
 								f32 d = k1 - k0;
-								f32 tan1 = *(f32*)(chn + 8);
-								f32 value1 = *(f32*)(chn + 4);
+f32 value0 = *(f32*)(ch + 4);
 								f32 tan0 = *(f32*)(ch + 0xC);
-								f32 value0 = *(f32*)(ch + 4);
+								f32 value1 = *(f32*)(chn + 4);
+								f32 tan1 = *(f32*)(chn + 8);
 								f32 den;
-								f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+								f32 h11, h00, u2, h01, c, u3, b, u, a, h10;
 								s32 flag;
 								flag = (d != MATCH_F32(float_0_80419850));
 								if (((u32)__cntlzw(flag) >> 5) != 0) {
@@ -3574,9 +3603,9 @@ void mapMain(void) {
 				u8* lp = list15;
 				s32 li;
 				for (li = 0; li < *(s32*)list15; lp += 4, li++) {
-					u8* item = *(u8**)(lp + 4);
-					LightEntry* light = lightNameToPtr(*(char**)item);
+					LightEntry* light = lightNameToPtr(*(char**)*(u8**)(lp + 4));
 					if (light != NULL) {
+					u8* item = *(u8**)(lp + 4);
 					s32 cnt = *(s32*)(item + 4);
 					s32 ki;
 					f32 out[5];
@@ -3606,12 +3635,12 @@ void mapMain(void) {
 								f32 k1 = *(f32*)next;
 								f32 dt = t - k0;
 								f32 d = k1 - k0;
-								f32 tan1 = *(f32*)(chn + 8);
-								f32 value1 = *(f32*)(chn + 4);
+f32 value0 = *(f32*)(ch + 4);
 								f32 tan0 = *(f32*)(ch + 0xC);
-								f32 value0 = *(f32*)(ch + 4);
+								f32 value1 = *(f32*)(chn + 4);
+								f32 tan1 = *(f32*)(chn + 8);
 								f32 den;
-								f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+								f32 h11, h00, u2, h01, c, u3, b, u, a, h10;
 								s32 flag;
 								flag = (d != MATCH_F32(float_0_80419850));
 								if (((u32)__cntlzw(flag) >> 5) != 0) {
@@ -3652,6 +3681,8 @@ void mapMain(void) {
 		}
 	}
 }
+#pragma opt_common_subs reset
+#pragma opt_loop_invariants reset
 
 // 1:1
 void mapDisp(void) {
@@ -4101,13 +4132,16 @@ typedef struct MapVtxFmt {
 	u32 field_0x48[8];  // 0x48
 } MapVtxFmt;
 
-// NONMATCHING (94.99%): the address computations and immediates match; only the wp/pos/nrm callee-saved
-// rotation and the vertex-loop pointers/indices differ.
+#pragma opt_common_subs off // MUST_MATCH: stop MWCC CSEing a shared base into the wp/nrm/pos slots
+// NONMATCHING (99.93%): 3 insns differ, all one register: the final GXCallDisplayList loop counter lands in
+// r25 (the freed colour-loop `i`) instead of the target's r28 (the freed `mask`); only the `li`/`addi`/`cmpw`
+// names differ. The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
 void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
-	MapWork* wp = &mapWork[activeGroup];
-	void* nrm = (void*)(((u32*)mesh->vcdTableOffset)[1] + 4);
-	void* pos = (void*)(((u32*)mesh->vcdTableOffset)[0] + 4);
-	s32 texCount = ((u32*)mesh->vcdTableOffset)[5];
+	MapWork* wp = mapGetWork();
+	u32* vcd = (u32*)mesh->vcdTableOffset;
+	void* pos = (void*)(vcd[0] + 4);
+	void* nrm = (void*)(vcd[1] + 4);
+	s32 texCount = vcd[5];
 	s32 i;
 	s32 j;
 	u8* p;
@@ -4130,22 +4164,26 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 		}
 
 		{
+			MapVtx* v;
+			MapVtx* vp;
+			s16 t;
+			s32 n;
 			u8* dp = (u8*)mesh;
 
 			for (i = 0; i < mesh->displayListCount; i++) {
-				MapVtx* v = (MapVtx*)*(u32*)(dp + 0x10);
-				MapVtx* vp;
+				v = (MapVtx*)*(u32*)(dp + 0x10);
 
 				GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, (u16)v->field_0x0);
 				vp = v;
-				for (j = 0; j < (s32)v->field_0x0; j++) {
+				for (n = 0; n < (s32)v->field_0x0; n++) {
 					s32 k;
+					s16* p = &vp->x;
 
 					GXWGFifo.s16 = vp->x;
 					GXWGFifo.s16 = vp->y;
-					GXWGFifo.s16 = vp->z;
+					GXWGFifo.s16 = p[2];
 					for (k = 0; k < texCount; k++) {
-						s16 t = vp->tex[k];
+						t = p[k + 4];
 						GXWGFifo.u16 = (t != -1) ? (u16)t : 0;
 					}
 					vp = (MapVtx*)((u8*)vp + 0x18);
@@ -4160,7 +4198,10 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 
 		GXClearVtxDesc();
 		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
-		fmt = (MapVtxFmt*)*(void**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
+		{
+			u8* base = (u8*)wp + 0xA4;
+			fmt = (MapVtxFmt*)*(void**)(base + *(s16*)(obj->field_0xDC + 2) * 0x178);
+		}
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)fmt->field_0x44);
 		GXSetArray(GX_VA_POS, pos, 6);
 		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
@@ -4185,13 +4226,14 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 		{
 			u8* dp = (u8*)mesh;
 
-			for (i = 0; i < mesh->displayListCount; i++) {
+			for (j = 0; j < mesh->displayListCount; j++) {
 				GXCallDisplayList((void*)*(u32*)(dp + 0x10), *(u32*)(dp + 0x14));
 				dp += 8;
 			}
 		}
 	}
 }
+#pragma opt_common_subs reset
 
 
 #pragma opt_common_subs off // MUST_MATCH: keep GX_VA_TEX0+i from being CSE-hoisted

@@ -25,6 +25,9 @@
 #include "driver/windowdrv.h"
 #include "evt/evt_badgeshop.h"
 #include "evt/evt_nannpc.h"
+#include "evt/evt_seq.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_mario.h"
 #include "manager/evtmgr.h"
 #include "manager/winmgr.h"
 #include "mario/mario.h"
@@ -47,22 +50,31 @@
 
 extern BadgeShopWork* bdsw;
 extern BOOL dbg_lotteryinfo; // evt_lottery
-#ifdef MUST_MATCH
-extern f32 float_0p125_80419444; // original _load reads this named .sdata2 constant
+
 // .rodata pool prefix: the original's table_802C1028 is an 8-byte { "jp", "us" } pair at .rodata+0.
-// Emitting it first shifts _load's pooled zero-vecs to +0x8, matching the original pool offsets.
-const char* const rodata_head_802C1028[2] = { "jp", "us" };
-#endif
+// It is also the base MWCC uses for every pooled .rodata string reference in this unit.
+static const char* const table_802C1028[2] = { "jp", "us" };
 
-//.sbss
-char _next_bero[0x20];
-char _next_map[0x20];
+// .sdata2 fade colours, emitted right after the "jp"/"us" pool entries of table_802C1028.
+const GXColor dat_804193f0 = { 0, 0, 0, 0xFF };
+const GXColor dat_804193f4 = { 0, 0, 0, 0xFF };
+const GXColor dat_804193f8 = { 0, 0, 0, 0xFF };
+const GXColor dat_804193fc = { 0, 0, 0, 0xFF };
+
+// .sbss, declared lowest address last (MWCC lays uninitialised globals out last-declared-first).
 char _next_area[0x20];
+char _next_map[0x20];
+char _next_bero[0x20];
 
-void seq_mapChangeExit(SequenceWork* work) {
-    GXResetOverflowCount();
-    dbg_lotteryinfo = FALSE;
-}
+// .sbss2 scratch colour and its trailing gap, also reverse-declared.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_80422F64_sbss2[4];
+__declspec(section ".sdata") GXColor unk_80422f60;
+#pragma section ".sdata" ".sbss"
+
+// .bss
+#define REL_BSS_SIZE 0xF10
+u8 rel_bss[REL_BSS_SIZE];
 
 void seq_mapChangeInit(SequenceWork* work) {
     s32 notEmpty;
@@ -93,219 +105,27 @@ void seq_mapChangeInit(SequenceWork* work) {
     }
 }
 
-// table_802C1028 is the original file's .rodata string-pool base. Its first 8 bytes ({ "jp", "us" }) are
-// reconstructed as rodata_head_802C1028 above; the map-name strings sit at +0x80/+0x88/+0x90, so naming the
-// base and using pool-relative addends makes the reference shape (one `lis`/`addi` into r31, then
-// `addi r4, r31, 0x80/0x88/0x90`) match. Without it the compiler anchors on our own pool and emits
-// 0x24/0x2c/0x34.
-extern const char table_802C1028[]; // this file's rodata pool base; original strings are pool-relative
-#ifdef MUST_MATCH
-#define STR_SYS_00 (base + 0x80)
-#define STR_SYS_01 (base + 0x88)
-#define STR_DIG_00 (base + 0x90)
-#else
+void seq_mapChangeExit(SequenceWork* work) {
+    GXResetOverflowCount();
+    dbg_lotteryinfo = FALSE;
+}
+
 #define STR_SYS_00 "sys_00"
 #define STR_SYS_01 "sys_01"
 #define STR_DIG_00 "dig_00"
-#endif
-
-void _unload(const char* prevMapName, const char* newMapName, const char* arg2) {
-    BOOL unload;
-    s32 i;
-#ifdef MUST_MATCH
-    const char* const base = table_802C1028;
-#endif
-
-    unload = FALSE;
-    if (prevMapName != NULL && newMapName != NULL && strncmp(prevMapName, newMapName, 3) != 0) {
-        unload = TRUE;
-    }
-    marioReInit();
-    marioInitCamId();
-    mapUnLoad();
-    npcReset(FALSE);
-    extReset();
-    mobjReset(FALSE);
-    offscreenReset(FALSE);
-    imgAutoRelease(0);
-    effAutoRelease(FALSE);
-    animPoseAutoRelease(0);
-    evtmgrReInit();
-    caseReInit();
-    itemReInit();
-    iconReInit();
-    windowReInit();
-    winReInit();
-    statusWinReInit();
-    bgReInit();
-    winMgrReInit();
-    if (seqGetPrevSeq() != SEQ_LOAD && seqGetPrevSeq() != SEQ_TITLE &&
-        strcmp(prevMapName, STR_SYS_00) != 0 &&
-        strcmp(prevMapName, STR_SYS_01) != 0 &&
-        strcmp(prevMapName, STR_DIG_00) != 0) {
-        fadeReset(1);
-        gp->flags &= ~0x10;
-    }
-    for (i = 0; i < 4; i++) {
-        padRumbleHardOff(i);
-    }
-    if (unload) {
-        swReInit();
-    }
-    memClear(HEAP_MALLOC);
-    memClear(HEAP_EXT);
-    smartAutoFree(1);
-    nanNPCWork = NULL;
-}
-
-static const char* dir_str[8] = { "e", "ne", "n", "nw", "w", "sw", "s", "se" };
-
-void _load(const char* prevMapName, const char* newMapName, const char* beroName) {
-    MapData* map;
-    char mapFile[64];
-    MarioWork* mario;
-    CameraEntry* camera;
-    f32 road[9];
-    Vec pos;
-    Vec entryPos;
-    s32 i;
-
-    map = mapDataPtr(newMapName);
-    strcpy(gp->beroEnterName, beroName ? beroName : "");
-    strcpy(gp->currentMapName, map->mapName);
-    strncpy(gp->currentAreaName, map->mapName, 3);
-    if (!strcmp(newMapName, "dmo_00")) {
-        mapLoad("gor_01");
-    } else {
-        mapLoad(map->mapName);
-    }
-    camCtrlOff(4);
-    if (gp->field_C) {
-        msgLoad("gon_11", 0);
-    } else {
-        memset(mapFile, 0, sizeof(mapFile));
-        strncpy(mapFile, map->mapName, 6);
-        msgLoad(mapFile, 0);
-    }
-    setupDataLoad(map->mapName);
-    sprintf(mapFile, "./b/%s.tpl", newMapName);
-    bgEntry(mapFile);
-    if (gp->flags & 1) {
-        PartyEntry* party;
-        PartyEntry* extraParty;
-
-        mario = marioGetPtr();
-        party = partyGetPtr(marioGetPartyId());
-        extraParty = partyGetPtr(marioGetExtraPartyId());
-        mario->position = gp->savePlayerPos;
-        mario->field_EC = mario->position;
-        camRoadReset();
-        camShiftReset();
-        if (party != NULL) {
-            party->position = gp->savePlayerPos;
-        }
-        if (extraParty != NULL) {
-            extraParty->position = gp->savePlayerPos;
-        }
-    } else if (beroName != NULL) {
-        f32 hx;
-        f32 hy;
-        f32 hz;
-        f32 dist;
-        f32 nx;
-        f32 ny;
-        f32 nz;
-
-        dist = 100000.0f;
-        hitObjGetPos(beroName, &pos);
-        for (i = 0; i < 8; i++) {
-            if (strncmp(dir_str[i], beroName, strlen(dir_str[i])) == 0) {
-                f32 c;
-                f32 s;
-#ifdef MUST_MATCH
-                f32 base = 2.0f * (f32)i * 3.141592f;
-                f32 angle = base * MATCH_F32(float_0p125_80419444);
-#else
-                f32 angle = 2.0f * (f32)i * 3.141592f * 0.125f;
-#endif
-
-                c = cos(angle);
-                pos.x += -30.0f * c;
-                s = sin(angle);
-                pos.z += 30.0f * s;
-                break;
-            }
-        }
-        if (i < 8) {
-            hz = 0.0f;
-            hy = 0.0f;
-            hx = 0.0f;
-            if (hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, pos.x, pos.y + 10.0f, pos.z, 0.0f,
-                               -1.0f, 0.0f)) {
-                entryPos = (Vec){ 0.0f, 0.0f, 0.0f };
-                entryPos.x = hx;
-                entryPos.y = hy;
-                entryPos.z = hz;
-                marioGetPtr()->position = entryPos;
-            } else {
-                marioGetPtr()->position = (Vec){ 0.0f, 0.0f, 0.0f };
-            }
-        } else {
-            marioGetPtr()->position = (Vec){ 0.0f, 0.0f, 0.0f };
-        }
-    } else {
-        marioGetPtr()->position = (Vec){ 0.0f, 0.0f, 0.0f };
-    }
-    mario = marioGetPtr();
-    camera = camGetPtr(4);
-    camera->marioPos.x = mario->position.x;
-    camera->marioPos.y = mario->position.y + 0.01f;
-    camera->marioPos.z = mario->position.z;
-    camera->marioAt.x = camera->marioPos.x;
-    camera->marioAt.y = camera->marioPos.y;
-    camera->marioAt.z = camera->marioPos.z;
-    mario->field_EC = mario->position;
-    camRoadReset();
-    camShiftReset();
-    if (camera->flags & 4) {
-        camRoadMain(road, camera->marioPos.x + 1.0f, camera->marioPos.y + 1.0f, camera->marioPos.z + 1.0f,
-                    camera->marioAt.x + 1.0f, camera->marioAt.y + 1.0f, camera->marioAt.z + 1.0f, 0.0f);
-    }
-}
-
-void _relUnLoad(void) {
-    if (gp->relocationBase) {
-        ((void (*)(void))((OSModuleHeader*)gp->relocationBase)->epilog)();
-        OSUnlink(gp->relocationBase);
-        if (gp->relocationBase != gp->mapAlloc) {
-            _mapFree(gp->relocationBase);
-        }
-        gp->relocationBase = NULL;
-    }
-}
 
 // The original .rodata string-pool base for this function's strings (see _unload).
-#ifdef MUST_MATCH
-#define SMC_STR(off, lit) (base + (off))
-#else
+// tou_03 and %s/rel/%s.rel are explicit objects in the parse-time part of the pool (str_802C1060/
+// str_802C1068), so they must stay pool-relative; every other string here is a normal generated pool
+// entry and is emitted by using the literal.
 #define SMC_STR(off, lit) (lit)
-#endif
+#define SMC_STR_OFF(off, lit) (lit)
 
-extern u8 rel_bss[];
 extern void SoundSetOutputMode(s32 mode);
-extern const GXColor dat_804193f0;
-extern const GXColor dat_804193f4;
-extern const GXColor dat_804193f8;
-extern const GXColor dat_804193fc;
-extern const GXColor unk_80422f60;
-extern const f32 float_30_8041944c;
-extern const f32 float_neg30_80419448;
-extern const f32 float_5_8041947c;
-extern const f32 float_10_80419454;
 extern s32 key_off[10];
 
+// Two-pointer view of table_802C1028; the original copies both words in one 64-bit move.
 void seq_mapChangeMain(SequenceWork* work) {
-    const char* const base = table_802C1028;
     BOOL newarea;
     const char* area;
     const char* lang[2];
@@ -334,16 +154,16 @@ void seq_mapChangeMain(SequenceWork* work) {
         } else {
             gp->didAreaChange = 1;
         }
-        if (strcmp(_next_map, SMC_STR(0x38, "tou_03")) != 0) {
+        if (strcmp(_next_map, str_802C1060) != 0) {
             area = _next_area;
-            if (strcmp(_next_area, "tou") == 0) {
+            if (strcmp(_next_area, str_80419420) == 0) {
                 if (seqGetSeq() == 1) {
-                    area = "tou2";
-                } else if (strcmp(_next_map, SMC_STR(0x38, "tou_03")) == 0) {
-                    area = "tou2";
+                    area = str_80419424;
+                } else if (strcmp(_next_map, str_802C1060) == 0) {
+                    area = str_80419424;
                 }
             }
-            fileAsyncf(0, 0, SMC_STR(0x40, "%s/rel/%s.rel"), getMarioStDvdRoot(), area);
+            fileAsyncf(0, 0, str_802C1068, getMarioStDvdRoot(), area);
         }
         work->state++;
         return;
@@ -374,15 +194,15 @@ void seq_mapChangeMain(SequenceWork* work) {
             return;
         }
         area = _next_area;
-        if (strcmp(_next_area, "tou") == 0) {
+        if (strcmp(_next_area, str_80419420) == 0) {
             if (seqGetSeq() == 1) {
-                area = "tou2";
-            } else if (strcmp(_next_map, SMC_STR(0x38, "tou_03")) == 0) {
-                area = "tou2";
+                area = str_80419424;
+            } else if (strcmp(_next_map, str_802C1060) == 0) {
+                area = str_80419424;
             }
         }
         {
-            u32 r = (u32)fileAsyncf(0, 0, SMC_STR(0x40, "%s/rel/%s.rel"), getMarioStDvdRoot(), area);
+            u32 r = (u32)fileAsyncf(0, 0, str_802C1068, getMarioStDvdRoot(), area);
             s32 ready;
 
             if (r == 0) {
@@ -396,18 +216,18 @@ void seq_mapChangeMain(SequenceWork* work) {
                 FileEntry* file;
 
                 area = _next_area;
-                if (strcmp(_next_area, "tou") == 0) {
+                if (strcmp(_next_area, str_80419420) == 0) {
                     if (seqGetSeq() == 1) {
-                        area = "tou2";
-                    } else if (strcmp(_next_map, SMC_STR(0x38, "tou_03")) == 0) {
-                        area = "tou2";
+                        area = str_80419424;
+                    } else if (strcmp(_next_map, str_802C1060) == 0) {
+                        area = str_80419424;
                     }
                 }
-                file = (FileEntry*)fileAllocf(0, SMC_STR(0x40, "%s/rel/%s.rel"), getMarioStDvdRoot(), area);
+                file = (FileEntry*)fileAllocf(0, str_802C1068, getMarioStDvdRoot(), area);
                 if (file != NULL) {
-                    if (strncmp(area, "tst", 3) == 0) {
+                    if (strncmp(area, str_8041942C, 3) == 0) {
                         gp->relocationBase = _mapAlloc((u32)file->data[1]);
-                    } else if (strncmp(area, "jon", 3) == 0) {
+                    } else if (strncmp(area, str_80419430, 3) == 0) {
                         gp->relocationBase = _mapAlloc((u32)file->data[1]);
                     } else {
                         gp->relocationBase = gp->mapAlloc;
@@ -483,8 +303,7 @@ void seq_mapChangeMain(SequenceWork* work) {
         if (strncmp(_next_map, "dmo", 3) != 0 && strncmp(_next_map, "dig", 3) != 0 && strncmp(_next_map, "end", 3) != 0
             && strncmp(_next_map, "sys", 3) != 0 && strncmp(_next_map, SMC_STR(0x98, "gor_10"), 6) != 0) {
 #ifdef MUST_MATCH
-            lang[0] = ((const char* const*)base)[0];
-            lang[1] = ((const char* const*)base)[1];
+            *(MapLangPair*)lang = *(const MapLangPair*)table_802C1028;
 #else
             lang[0] = "jp";
             lang[1] = "us";
@@ -515,31 +334,31 @@ void seq_mapChangeMain(SequenceWork* work) {
                 evt_cam_road_reset(NULL, FALSE);
                 if (party != NULL) {
                     party->position = gp->savePlayerPos;
-                    party->position.x = float_30_8041944c * (f32)cos(camGetPtr(4)->viewYaw) + party->position.x;
-                    party->position.z = float_30_8041944c * (f32)sin(camGetPtr(4)->viewYaw) + party->position.z;
+                    party->position.x = 30.0f * (f32)cos(camGetPtr(4)->viewYaw) + party->position.x;
+                    party->position.z = 30.0f * (f32)sin(camGetPtr(4)->viewYaw) + party->position.z;
                 }
                 if (extraParty != NULL) {
                     extraParty->position = gp->savePlayerPos;
                     extraParty->position.x =
-                        float_neg30_80419448 * (f32)cos(camGetPtr(4)->viewYaw) + extraParty->position.x;
+                        -30.0f * (f32)cos(camGetPtr(4)->viewYaw) + extraParty->position.x;
                     extraParty->position.z =
-                        float_30_8041944c * (f32)sin(camGetPtr(4)->viewYaw) + extraParty->position.z;
+                        30.0f * (f32)sin(camGetPtr(4)->viewYaw) + extraParty->position.z;
                 }
                 if (strcmp(gp->currentMapName, SMC_STR(0x160, "dou_05")) == 0
                     || strcmp(gp->currentMapName, SMC_STR(0x58, "gor_01")) == 0
                     || strcmp(gp->currentMapName, SMC_STR(0x168, "muj_10")) == 0
                     || strcmp(gp->currentMapName, SMC_STR(0x170, "tik_07")) == 0) {
-                    mario->position.x -= float_5_8041947c;
+                    mario->position.x -= 5.0f;
                     if (party != NULL) {
                         party->position = mario->position;
-                        party->position.x -= float_30_8041944c;
+                        party->position.x -= 30.0f;
                         if (extraParty != NULL) {
                             extraParty->position = party->position;
-                            extraParty->position.x -= float_30_8041944c;
+                            extraParty->position.x -= 30.0f;
                         }
                     }
                 }
-                N_marioSetBottomlessRespawnPos(mario->position.x, float_10_80419454 + mario->position.y,
+                N_marioSetBottomlessRespawnPos(mario->position.x, 10.0f + mario->position.y,
                                                mario->position.z);
                 marioKeyOff();
                 evtEntryType(key_off, 0, 0, 0);
@@ -558,9 +377,190 @@ void seq_mapChangeMain(SequenceWork* work) {
     }
 }
 
-#ifdef MUST_MATCH
+// .sdata evt command table; the original keeps this before dir_str in the section.
+s32 key_off[10] = {
+    0x0002005B, (s32)evt_seq_wait,     0x00000002, 0x0001005B, (s32)evt_fade_end_wait,
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000001, 0x00000002, 0x00000001,
+};
+
+static const char* dir_str[8] = { "e", "ne", "n", "nw", "w", "sw", "s", "se" };
+
+// Short map-name strings that the original keeps ahead of _load's pooled zero and floats. Naming them places
+// them in the parse-time part of .sdata2 and keeps seq_mapChangeMain from pooling its own copies.
+const char str_80419420[] = "tou";
+const char str_80419424[] = "tou2";
+const char str_8041942C[] = "tst";
+const char str_80419430[] = "jon";
+
+void _unload(const char* prevMapName, const char* newMapName, const char* arg2) {
+    BOOL unload;
+    s32 i;
+
+
+    unload = FALSE;
+    if (prevMapName != NULL && newMapName != NULL && strncmp(prevMapName, newMapName, 3) != 0) {
+        unload = TRUE;
+    }
+    marioReInit();
+    marioInitCamId();
+    mapUnLoad();
+    npcReset(FALSE);
+    extReset();
+    mobjReset(FALSE);
+    offscreenReset(FALSE);
+    imgAutoRelease(0);
+    effAutoRelease(FALSE);
+    animPoseAutoRelease(0);
+    evtmgrReInit();
+    caseReInit();
+    itemReInit();
+    iconReInit();
+    windowReInit();
+    winReInit();
+    statusWinReInit();
+    bgReInit();
+    winMgrReInit();
+    if (seqGetPrevSeq() != SEQ_LOAD && seqGetPrevSeq() != SEQ_TITLE &&
+        strcmp(prevMapName, STR_SYS_00) != 0 &&
+        strcmp(prevMapName, STR_SYS_01) != 0 &&
+        strcmp(prevMapName, STR_DIG_00) != 0) {
+        fadeReset(1);
+        gp->flags &= ~0x10;
+    }
+    for (i = 0; i < 4; i++) {
+        padRumbleHardOff(i);
+    }
+    if (unload) {
+        swReInit();
+    }
+    memClear(HEAP_MALLOC);
+    memClear(HEAP_EXT);
+    smartAutoFree(1);
+    nanNPCWork = NULL;
+}
+
+void _load(const char* prevMapName, const char* newMapName, const char* beroName) {
+    MapData* map;
+    char mapFile[64];
+    MarioWork* mario;
+    CameraEntry* camera;
+    f32 road[9];
+    Vec pos;
+    Vec entryPos;
+    s32 i;
+
+    map = mapDataPtr(newMapName);
+    strcpy(gp->beroEnterName, beroName ? beroName : "");
+    strcpy(gp->currentMapName, map->mapName);
+    strncpy(gp->currentAreaName, map->mapName, 3);
+    if (!strcmp(newMapName, "dmo_00")) {
+        mapLoad("gor_01");
+    } else {
+        mapLoad(map->mapName);
+    }
+    camCtrlOff(4);
+    if (gp->field_C) {
+        msgLoad("gon_11", 0);
+    } else {
+        memset(mapFile, 0, sizeof(mapFile));
+        strncpy(mapFile, map->mapName, 6);
+        msgLoad(mapFile, 0);
+    }
+    setupDataLoad(map->mapName);
+    sprintf(mapFile, "./b/%s.tpl", newMapName);
+    bgEntry(mapFile);
+    if (gp->flags & 1) {
+        PartyEntry* party;
+        PartyEntry* extraParty;
+
+        mario = marioGetPtr();
+        party = partyGetPtr(marioGetPartyId());
+        extraParty = partyGetPtr(marioGetExtraPartyId());
+        mario->position = gp->savePlayerPos;
+        mario->field_EC = mario->position;
+        camRoadReset();
+        camShiftReset();
+        if (party != NULL) {
+            party->position = gp->savePlayerPos;
+        }
+        if (extraParty != NULL) {
+            extraParty->position = gp->savePlayerPos;
+        }
+    } else if (beroName != NULL) {
+        f32 hx;
+        f32 hy;
+        f32 hz;
+        f32 dist;
+        f32 nx;
+        f32 ny;
+        f32 nz;
+
+        dist = 100000.0f;
+        hitObjGetPos(beroName, &pos);
+        for (i = 0; i < 8; i++) {
+            if (strncmp(dir_str[i], beroName, strlen(dir_str[i])) == 0) {
+                f32 c;
+                f32 s;
+                f32 one = 0.125f;
+                f32 base = 2.0f * (f32)i * 3.141592f;
+                f32 angle = base * one;
+
+                c = cos(angle);
+                pos.x += -30.0f * c;
+                s = sin(angle);
+                pos.z += 30.0f * s;
+                break;
+            }
+        }
+        if (i < 8) {
+            hz = 0.0f;
+            hy = 0.0f;
+            hx = 0.0f;
+            if (hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, pos.x, pos.y + 10.0f, pos.z, 0.0f,
+                               -1.0f, 0.0f)) {
+                entryPos = (Vec){ 0.0f, 0.0f, 0.0f };
+                entryPos.x = hx;
+                entryPos.y = hy;
+                entryPos.z = hz;
+                marioGetPtr()->position = entryPos;
+            } else {
+                marioGetPtr()->position = (Vec){ 0.0f, 0.0f, 0.0f };
+            }
+        } else {
+            marioGetPtr()->position = (Vec){ 0.0f, 0.0f, 0.0f };
+        }
+    } else {
+        marioGetPtr()->position = (Vec){ 0.0f, 0.0f, 0.0f };
+    }
+    mario = marioGetPtr();
+    camera = camGetPtr(4);
+    camera->marioPos.x = mario->position.x;
+    camera->marioPos.y = mario->position.y + 0.01f;
+    camera->marioPos.z = mario->position.z;
+    camera->marioAt.x = camera->marioPos.x;
+    camera->marioAt.y = camera->marioPos.y;
+    camera->marioAt.z = camera->marioPos.z;
+    mario->field_EC = mario->position;
+    camRoadReset();
+    camShiftReset();
+    if (camera->flags & 4) {
+        camRoadMain(road, camera->marioPos.x + 1.0f, camera->marioPos.y + 1.0f, camera->marioPos.z + 1.0f,
+                    camera->marioAt.x + 1.0f, camera->marioAt.y + 1.0f, camera->marioAt.z + 1.0f, 0.0f);
+    }
+}
+
+void _relUnLoad(void) {
+    if (gp->relocationBase) {
+        ((void (*)(void))((OSModuleHeader*)gp->relocationBase)->epilog)();
+        OSUnlink(gp->relocationBase);
+        if (gp->relocationBase != gp->mapAlloc) {
+            _mapFree(gp->relocationBase);
+        }
+        gp->relocationBase = NULL;
+    }
+}
+
 // The original .rodata's seq_mapChangeMain strings; emitted here (after the code) so MWCC keeps the pool's
 // original slots: they land between _load's pooled zero-vecs and its pooled map-name strings.
 const char str_802C1060[8] = "tou_03";
 const char str_802C1068[16] = "%s/rel/%s.rel";
-#endif

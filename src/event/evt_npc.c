@@ -860,14 +860,18 @@ USER_FUNC(evt_npc_jump_position_nohit) {
     return EVT_RETURN_DONE;
 }
 
-// The per-frame block now matches except for one register: the temp for
-// `dx = npc->jumpTargetPos.x - npc->jumpStartPos.x` must be f3 in the original (load f3,
-// subtract to f27); MWCC here loads it into f2. The key shapes: declare t/dy/delta in that
-// order, and compute the second intpl quotient as one statement `delta = (dy - delta) / t;`
-// before the calls, so both divisions hoist ahead of the first `_intplGetFloat` and `t` stays
-// volatile (giving dy/t/delta = f3/f2/f4 and speed/arcHeight = f31/f30).
-// NONMATCHING (99.97%): only the dx temp register differs (f2 vs original f3); logic and the
-// intpl call order, dy/t/delta colouring and sin/cos blocks all match.
+// The per-frame block matches with two shapes. (1) declare t/dy/delta in that order and compute
+// the second intpl quotient as one statement `delta = (dy - delta) / t;` before the calls, so both
+// divisions hoist ahead of the first `_intplGetFloat` (giving dy/t/delta = f3/f2/f4 and
+// speed/arcHeight = f31/f30). (2) MUST_MATCH: `delta = subf32(a, b);` (an inlined trivially-small
+// helper) must come before the two `dx`/`dz` subtractions; the inlined call makes MWCC keep f2
+// busy for it, so the `dx` load temp is coloured f3 as in the original (`lfs f3, 0x164` /
+// `fsubs f27, f3, f1`) while delta/dx keep f26/f27. The natural form (plain `delta = a - b;`
+// after dx/dz) compiles to the same logic but leaves the dx temp on f2 (99.97%).
+#ifdef MUST_MATCH
+static inline f32 subf32(f32 x, f32 y) { return x - y; }
+#endif
+
 USER_FUNC(evt_npc_glide_position) {
     s32* args = event->args;
     const char* npcName = (const char*)evtGetValue(event, args[0]);
@@ -946,9 +950,15 @@ USER_FUNC(evt_npc_glide_position) {
     delta = (dy - delta) / t;
     a = _intplGetFloat(intplType, dy / t);
     b = _intplGetFloat(intplType, delta);
+#ifdef MUST_MATCH
+    delta = subf32(a, b);
+    dx = npc->jumpTargetPos.x - npc->jumpStartPos.x;
+    dz = npc->jumpTargetPos.z - npc->jumpStartPos.z;
+#else
     dx = npc->jumpTargetPos.x - npc->jumpStartPos.x;
     dz = npc->jumpTargetPos.z - npc->jumpStartPos.z;
     delta = a - b;
+#endif
     npc->moveOffset.x += dx * delta;
     npc->moveOffset.z += dz * delta;
 
@@ -2601,47 +2611,59 @@ USER_FUNC(evt_npc_set_ry_lr) {
 // `fmuls f1, f1, f0`, while `* 0.5f` makes MWCC emit the operands the other way round.
 // dont_inline keeps this out of the other functions in the file; the original calls it with a
 // real `bl` (glide_position relies on that).
+// The original writes every case as an assignment to one function-scope `f32 result` with a
+// single `return result` after the switch (not a direct return per case): that is what makes
+// case 12 emit `frsp f0, f1; fmr f1, f0` (the cast temp lands in f0 and the long-lived result
+// in f1) instead of the coalesced `frsp f1, f1`. The per-case `break` + shared return still
+// compiles to the same per-case `b epilogue` and default `lfs f1, 0.0` as the original.
 #pragma opt_propagation off // keep tt in f31 for the clamp compare
-// NONMATCHING (99.12%): case 12's `(f32)sin` conversion (ours `frsp f1,f1`; original `frsp f0,f1`
-// then `fmr f1,f0`); every other instruction, including the clamp and case 11, matches (the sda21
-// `@N` names go away when the unit links).
 f32 _intplGetFloat(s32 type, f32 t) {
     f32 tt = t;
+    f32 result;
     if (tt > 1.0f) {
         tt = 1.0f;
     }
     switch (type) {
         case 0:
-            return tt;
+            result = tt;
+            break;
         case 1:
-            return tt * tt;
+            result = tt * tt;
+            break;
         case 2:
-            return tt * tt * tt;
+            result = tt * tt * tt;
+            break;
         case 3:
-            return tt * tt * tt * tt;
+            result = tt * tt * tt * tt;
+            break;
         case 7: {
             f32 c = (f32)cos(4.0f * (tt / 3.1415927f));
             f32 a = 1.0f - tt;
             f32 v = a * (a * c);
-            return 1.0f - v;
+            result = 1.0f - v;
+            break;
         }
         case 8: {
             f32 c = (f32)cos(4.0f * (tt * tt / 3.1415927f) / 15.0f);
             f32 a = 1.0f - tt;
             f32 v = a * (a * c);
-            return 1.0f - v;
+            result = 1.0f - v;
+            break;
         }
         case 4: {
             f32 a = 1.0f - tt;
-            return 1.0f - a * a;
+            result = 1.0f - a * a;
+            break;
         }
         case 5: {
             f32 a = 1.0f - tt;
-            return 1.0f - a * (a * a);
+            result = 1.0f - a * (a * a);
+            break;
         }
         case 6: {
             f32 a = 1.0f - tt;
-            return 1.0f - a * (a * (a * a));
+            result = 1.0f - a * (a * (a * a));
+            break;
         }
         case 10: {
             f32 c = (f32)cos(4.0f * (tt * tt / 3.1415927f) / 40.0f);
@@ -2650,15 +2672,24 @@ f32 _intplGetFloat(s32 type, f32 t) {
             if (v < 0.0f) {
                 v = -v;
             }
-            return 1.0f - v;
+            result = 1.0f - v;
+            break;
         }
         case 11:
-            return (1.0f - (f32)cos(3.1415927f * tt)) / 2.0f;
-        case 12:
-            return (f32)sin(1.5707964f * tt);
+            result = (1.0f - (f32)cos(3.1415927f * tt)) / 2.0f;
+            break;
+        case 12: {
+            f32 temp = (f32)sin(1.5707964f * tt);
+            result = temp;
+            break;
+        }
         case 13:
-            return 1.0f - (f32)cos(1.5707964f * tt);
+            result = 1.0f - (f32)cos(1.5707964f * tt);
+            break;
+        default:
+            result = 0.0f;
+            break;
     }
-    return 0.0f;
+    return result;
 }
 #pragma opt_propagation reset

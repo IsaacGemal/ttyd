@@ -439,7 +439,7 @@ s32 getLightColor(f32 angle) {
 // MWCC's loop-invariant code motion from pulling per-iteration loads into the preheader. The local declaration
 // order is tuned so MWCC colours the integer registers like the target (`frame` in r19 etc.). The string-loop
 // `PSMTXConcat` output matrices are the target's (write mtx3 then mtx), not the earlier guess.
-// NONMATCHING (99.58%): text differs only in integer/FPR register allocation and stack-slot assignment; the
+// NONMATCHING (99.69%): text differs only in integer/FPR register allocation and stack-slot assignment; the
 // instruction sequence, frame size, FPR saves and call structure all match.
 void display_func(CameraId cameraId, void* param) {
     SysWork* work = param;
@@ -469,6 +469,8 @@ void display_func(CameraId cameraId, void* param) {
     f32 halfH;
     const u16* msg16;
     f32 w;
+    s32 glresult;
+    f32 gla;
 #ifdef MUST_MATCH
     Vec camPosTmp;
 #endif
@@ -516,7 +518,20 @@ void display_func(CameraId cameraId, void* param) {
         work->field_0xC %= 4;
     }
 
-    lightColor = getLightColor(float_90_sys_00001ae8 + work->field_0x8);
+    // getLightColor is expanded by hand here (and in the entry loop below). MWCC's inliner hands the
+    // fmod result to `frsp` via the caller's f1, while the target keeps the standalone body's f2; the
+    // manual expansion reproduces the standalone allocation and matches those instructions.
+    gla = (f32)fmod(float_90_sys_00001ae8 + work->field_0x8, double_360_sys_00001b28);
+    if (gla >= float_270_sys_00001b30) {
+        glresult = float_360_sys_00001b0c - gla;
+    } else if (gla >= float_180_sys_00001b20) {
+        glresult = gla - float_180_sys_00001b20;
+    } else if (gla >= float_90_sys_00001ae8) {
+        glresult = float_180_sys_00001b20 - gla;
+    } else {
+        glresult = gla;
+    }
+    lightColor = 0xFF - glresult * 2;
     color = *(GXColor*)&dat_sys_000019cc;
     color.r = lightColor;
     color.g = lightColor;
@@ -647,7 +662,18 @@ void display_func(CameraId cameraId, void* param) {
         GXLoadTexObj(&tex, GX_TEXMAP0);
         TEXGetGXTexObjFromPalette((TEXPalette*)work->handle->data[0], &tex, (u16)niji_tbl[gp->language]);
         GXLoadTexObj(&tex, GX_TEXMAP1);
-        lightColor = getLightColor(entry->angle);
+        // Same hand expansion as above (see that comment).
+        gla = (f32)fmod(entry->angle, double_360_sys_00001b28);
+        if (gla >= float_270_sys_00001b30) {
+            glresult = float_360_sys_00001b0c - gla;
+        } else if (gla >= float_180_sys_00001b20) {
+            glresult = gla - float_180_sys_00001b20;
+        } else if (gla >= float_90_sys_00001ae8) {
+            glresult = float_180_sys_00001b20 - gla;
+        } else {
+            glresult = gla;
+        }
+        lightColor = 0xFF - glresult * 2;
 #ifdef MUST_MATCH
         // Volatile read keeps the loop-invariant colour base from being hoisted into the preheader (the
         // target reloads it from its own address each iteration).

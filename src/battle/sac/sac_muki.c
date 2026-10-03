@@ -269,8 +269,16 @@ static MukiWork* get_ptr(void) {
     return (MukiWork*)((u8*)_battleWorkPointer + 0x1F4C);
 }
 
-// NONMATCHING (97.50%): frame and Mtx base now match; the colour scratch block still sits 0x8 low,
-// there is one extra store, and float_2 pools as @915 here and there instead of its named symbol.
+#ifdef MUST_MATCH
+// MUST_MATCH: building each colour through an inline that returns it makes MWCC keep the source
+// colour in the original's stack slot (the plain assignment below lands it 8 bytes low); pairing it
+// with an interleaved cA/cB/cA/cB argument-array fill lifts the block to 98.39%. The inline folds
+// away; the call sequence is unchanged.
+static inline GXColor mukiAlphaColor(GXColor c, u8 a) { c.a = a; return c; }
+#endif
+// The interleaved argv fill removed the extra temp store; adding any mid-block temp makes the compiler hang.
+// NONMATCHING (98.39%): frame and Mtx base match; the scratch block is still 0x8 low and float_2
+// pools as @939 (also swapping f30/f31 and f1/f2).
 // .text:0x1A4 | 0x80246F70 | size: 0x38C
 static void disp_3D_alpha(CameraId cameraId, void* param) {
     MukiWork* work = get_ptr();
@@ -278,7 +286,7 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
     Mtx mtx;
     GXColor cA;
     GXColor cB;
-    GXColor argv[6];
+    GXColor argv[5];
     f32 f;
     f32 fc;
     f32 fs;
@@ -298,13 +306,18 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 fs = (f32)sin(f);
                 PSMTXTransApply(mtx, mtx, float_15_80421fb0 * fs,
                                 MATCH_F32(float_0_80421fb4), float_15_80421fb0 * fc);
+#ifdef MUST_MATCH
+                cA = mukiAlphaColor(*(GXColor*)&str_80421F84, entry->alpha);
+                cB = mukiAlphaColor(*(GXColor*)&dat_80421f88, entry->alpha);
+#else
                 cA = *(GXColor*)&str_80421F84;
                 cA.a = entry->alpha;
                 cB = *(GXColor*)&dat_80421f88;
                 cB.a = entry->alpha;
-                argv[0] = cA; argv[1] = cA; argv[2] = cB; argv[3] = cB;
+#endif
+                argv[0] = cA; argv[1] = cB; argv[2] = cA; argv[3] = cB;
                 ((void (*)(Mtx, u32, GXColor, GXColor, GXColor, GXColor, s32))btlDispTexPlane3)(
-                    mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
+                    mtx, 0x45, argv[0], argv[2], argv[1], argv[3], 0);
                 break;
             case 1:
                 PSMTXRotRad(mtx, 'y', float_deg2rad_80421fa0 * entry->rot);
@@ -316,13 +329,18 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 fs = (f32)sin(f);
                 PSMTXTransApply(mtx, mtx, float_15_80421fb0 * fs,
                                 MATCH_F32(float_0_80421fb4), float_15_80421fb0 * fc);
+#ifdef MUST_MATCH
+                cA = mukiAlphaColor(*(GXColor*)&float_0p74965_80421f8c, entry->alpha);
+                cB = mukiAlphaColor(*(GXColor*)&dat_80421f90, entry->alpha);
+#else
                 cA = *(GXColor*)&float_0p74965_80421f8c;
                 cA.a = entry->alpha;
                 cB = *(GXColor*)&dat_80421f90;
                 cB.a = entry->alpha;
-                argv[0] = cA; argv[1] = cA; argv[2] = cB; argv[3] = cB;
+#endif
+                argv[0] = cA; argv[1] = cB; argv[2] = cA; argv[3] = cB;
                 ((void (*)(Mtx, u32, GXColor, GXColor, GXColor, GXColor, s32))btlDispTexPlane3)(
-                    mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
+                    mtx, 0x45, argv[0], argv[2], argv[1], argv[3], 0);
                 break;
             case 2:
                 PSMTXRotRad(mtx, 'y', float_deg2rad_80421fa0 * entry->rot);
@@ -411,16 +429,27 @@ static inline Vec mukiScreenVec1(f32 x, f32 y) {
 // (`argv[1] = ...; argv[0] = argv[1]; argv[3] = ...; argv[2] = argv[3];`) so the compiler
 // emits the target's 0x6c,0x68,0x74,0x70 stores. `sx` is read through `MATCH_F32` so the
 // load goes straight to a callee-saved FPR instead of f1 + `fmr`.
-// What is left is register/stack allocation: the inline Vec return loads `field_2C` into f2
-// and `field_30` into f1 (the target uses f1/f2); `sx` lands in f28 where the target keeps it
-// in f29; and block 2's plane colour lands at 0x8 instead of 0x28, which shifts its three
-// argument copies (0x20..0x28 vs 0x1c..0x24) and the block-2 icon colour (0xc vs 0x8) by 4.
+// `frac` is declared inside each `if` block rather than at function scope: as a function-scope
+// local it shared `sx`'s FPR (f28) and pushed `left` into f29; block-local it lets `left`
+// coalesce into `sx`'s f29 exactly as the target does (five fewer diffs). Block 2's screen
+// point is read as `MATCH_F32(work->field_30) - float_30_80421fd4`; the volatile read makes
+// the compiler load that field last (into f1) and leaves `field_2C` in f1/f2 the way the
+// original does, so the whole block-2 inline Vec and its `fsubs` match (four fewer diffs).
+// What is left is register/stack allocation: block 1's inline Vec return loads `field_2C` into
+// f2 and `field_30` into f1 (the target uses f1/f2, 4 diffs); and block 2's plane colour lands
+// at 0x8 instead of 0x28, which shifts its three argument copies and the block-2 plane3/icon
+// slots (20 diffs). The target lays block 2's address-taken temporaries out monotonically
+// descending in source order (c 0x28, args 0x24/0x20/0x1c, plane3 0x18..0xc, icon 0x8) with
+// block 1's region (0x2c..0x4c) above it; ours defers the reused `c` to the bottom (0x8).
+// Splitting block 2's colour into its own variable makes the allocator reuse a block-1 slot
+// (0x48) and shifts block 1; every declaration-order, variable-splitting and block-local
+// variant tried scores the same or worse and is reverted.
 // The anonymous @618/@620/@627/@877/@927/@928 pool entries are symbol-only (they resolve on
 // link). The colours are plain `GXColor` (the target reloads nothing, so they are not
 // volatile), and `btlDispTexPlane3` is called through the original's 7-argument signature:
 // the target sets `r9 = 0` before the call, which the 6-parameter header prototype cannot
 // express.
-// NONMATCHING (99.81%): register/stack allocation and the constant pool, as above.
+// NONMATCHING (99.91%): register/stack allocation and the constant pool, as above.
 static void disp_2D(CameraId cameraId, void* param) {
     MukiWork* work = get_ptr();
     Mtx mtx;
@@ -430,7 +459,6 @@ static void disp_2D(CameraId cameraId, void* param) {
     f32 sy;
     f32 d;
     f32 sx;
-    f32 frac;
     f32 left;
     u8 cr;
     u8 cg;
@@ -439,6 +467,7 @@ static void disp_2D(CameraId cameraId, void* param) {
     s32 n;
 
     if (work->state >= 2 && work->state <= 7) {
+        f32 frac;
         sp = mukiScreenVec0(work->field_2C, work->field_30);
         btlGetScreenPoint(&sp, &sp);
         sx = MATCH_F32(sp.x);
@@ -493,7 +522,8 @@ static void disp_2D(CameraId cameraId, void* param) {
     }
 
     if (work->state >= 2 && work->state <= 7) {
-        sp = mukiScreenVec1(work->field_2C, work->field_30 - float_30_80421fd4);
+        f32 frac;
+        sp = mukiScreenVec1(work->field_2C, MATCH_F32(work->field_30) - float_30_80421fd4);
         btlGetScreenPoint(&sp, &sp);
         sx = sp.x;
         sy = sp.y;
@@ -664,8 +694,10 @@ static void main_star(void) {
     }
 }
 
-// NONMATCHING (97.47%): the two constant-Vec copies now match (non-const .rodata sources); the
-// residual diff is the load-order of the intplGetValue float arguments around the field_04 store.
+// The two constant-Vec copies match (non-const .rodata sources). The intplGetValue float literals below
+// are MUST_MATCH: writing the constants as numeric literals (rather than the named .sdata2 objects) gives
+// MWCC the original's FP load order; the named form schedules one of the two loads a slot early/late. The
+// pooled literals show as symbol-only diffs (`~~`) in check.py and resolve when the unit links.
 // .text:0x12A0 | 0x8024806C | size: 0x288
 void main_icon(s32 index) {
     MukiWork* work = get_ptr();
@@ -685,23 +717,18 @@ void main_icon(s32 index) {
         entry->scale = vec3_80300750;
         /* fallthrough */
     case 2:
-        {
+        entry->field_04++;
 #ifdef MUST_MATCH
-            // MUST_MATCH: holding the first constant in a local makes MWCC hoist its load before the
-            // `field_04` store, as the original orders it (AGENT_BRIEF "a constant assigned to a local").
-            f32 a180 = float_180_80422000;
-#endif
-
-            entry->field_04++;
-#ifdef MUST_MATCH
-            entry->rot = intplGetValue(4, entry->field_04, 0x1E, a180, float_1080_80422004);
+        // MUST_MATCH: the numeric literals give MWCC the original's FP load order around the store
+        // (the named constants schedule the second load one slot late); the resulting pool symbols
+        // are symbol-only diffs that resolve when the unit links.
+        entry->rot = intplGetValue(4, entry->field_04, 0x1E, 180.0f, 1080.0f);
 #else
-            entry->rot = intplGetValue(4, entry->field_04, 0x1E, float_180_80422000, float_1080_80422004);
+        entry->rot = intplGetValue(4, entry->field_04, 0x1E, float_180_80422000, float_1080_80422004);
 #endif
-            entry->alpha = (u8)intplGetValue(0, entry->field_04, 0x1E, MATCH_F32(float_0_80421fb4), float_255_80422008);
-            if (entry->field_04 >= 0x1E) {
-                entry->type = 7;
-            }
+        entry->alpha = (u8)intplGetValue(0, entry->field_04, 0x1E, MATCH_F32(float_0_80421fb4), float_255_80422008);
+        if (entry->field_04 >= 0x1E) {
+            entry->type = 7;
         }
         break;
     case 3:
@@ -711,8 +738,17 @@ void main_icon(s32 index) {
         /* fallthrough */
     case 4:
         entry->field_04++;
+#ifdef MUST_MATCH
+        // MUST_MATCH: as in case 2, the literals reproduce the original's FP load order.
+        entry->rot = intplGetValue(1, entry->field_04, 0x1E, 0.0f, 900.0f);
+#else
         entry->rot = intplGetValue(1, entry->field_04, 0x1E, MATCH_F32(float_0_80421fb4), float_900_8042200c);
+#endif
+#ifdef MUST_MATCH
+        entry->alpha = (u8)intplGetValue(0, entry->field_04, 0x1E, 255.0f, 0.0f);
+#else
         entry->alpha = (u8)intplGetValue(0, entry->field_04, 0x1E, float_255_80422008, MATCH_F32(float_0_80421fb4));
+#endif
         if (entry->field_04 >= 0x1E) {
             entry->type = 0;
         }

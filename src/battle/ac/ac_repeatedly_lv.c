@@ -3,14 +3,9 @@
 #include "driver/icondrv.h"
 #include "system.h"
 
-extern const f32 float_neg300_8041e82c;
-extern const f32 float_30_8041e830;
 
 extern const f32 float_0p01_8041e814;
-extern const f32 float_0_8041e828;
 extern const f32 float_100_8041e80c;
-extern const f32 float_0p4_8041e834;
-extern const f32 float_1p5_8041e838;
 extern const f32 float_neg200_8041e7f8;
 extern const f32 float_70_8041e7fc;
 extern const f32 float_1_8041e800;
@@ -144,7 +139,7 @@ static void _init_param(BattleWork* work) {
         dec->field_0x1E = limit;
     }
     dec->field_0x18 = 0;
-    dec->field_0x14 = float_0_8041e828;
+    dec->field_0x14 = 0.0f;
     dec->field_0x1C = 0;
     dec->field_0x24 = *(s32*)&ac->field_34[0x0C];
     dec->field_0x1A = *(s32*)&ac->field_34[0x10];
@@ -161,10 +156,14 @@ static void _init_param(BattleWork* work) {
     ac->outputParams[1] = 0;
 }
 
-// float_0_8041e828 must be defined (value visible to the compiler) immediately before battleAcMain:
-// the gauge-clamp branches then put the zero constant in f0 and the running value in f1, matching the
-// original. As an extern (or defined earlier/later in the file) the allocator rotates f0/f1.
-const f32 float_0_8041e828 = 0.0f;
+// 0.0f and the four constants after it (float_neg300, float_30, float_0p4, float_1p5) are written
+// as literals throughout the file, so MWCC pools them into .sdata2 in codegen order and lands them
+// at 0x38..0x4B, exactly where the original puts them. The first twelve floats stay named objects
+// so their 0x00..0x37 block is emitted first (in source order). The literal 0.0f is what the target's
+// five lfs sites name, and folding it (rather than an extern) is also what makes battleAcMain's
+// clamp register allocation match: the constant lands in f0 and the temp in f1. The missing trailing
+// four zero bytes are produced by the linker padding this 0x4C-byte .sdata2 up to its 8-byte
+// alignment (the target's 0x4C gap).
 
 s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
@@ -180,15 +179,15 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
     switch (ac->mAcState) {
     case 0:
         memset(disp, 0, 0x2C);
-        disp->iconX = float_neg300_8041e82c;
-        disp->iconY = float_0_8041e828;
+        disp->iconX = -300.0f;
+        disp->iconY = 0.0f;
         disp->counter = 0x14;
         disp->field_0xC = dat_8041e7f0;
         disp->field_0x10[0] = 0;
         *(s8*)&disp->field_0x10[1] = -0x10;
         *(s8*)&disp->field_0x10[2] = -0x10;
         disp->field_0x10[3] = 0;
-        disp->value = float_0_8041e828;
+        disp->value = 0.0f;
         ac->result = 1;
         _init_param(work);
         ac->mAcState = 0x63;
@@ -273,7 +272,7 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
         }
         if (dec->field_0x25 == 0) {
             if (stateChanged) {
-                dec->field_0x14 += float_0p4_8041e834 * (f32)dec->field_0x1A;
+                dec->field_0x14 += 0.4f * (f32)dec->field_0x1A;
             }
             {
                 f32 v = dec->field_0x14;
@@ -285,15 +284,15 @@ s32 battleAcMain_RepeatedlyLv(BattleWork* work) {
                     }
                 } else {
                     dec->field_0x14 = v - dec->field_0x10;
-                    if (dec->field_0x14 <= float_0_8041e828) {
-                        dec->field_0x14 = float_0_8041e828;
+                    if (dec->field_0x14 <= 0.0f) {
+                        dec->field_0x14 = 0.0f;
                     }
                 }
             }
         } else if (dec->field_0x25 == -1) {
-            dec->field_0x14 = dec->field_0x14 - float_1p5_8041e838 * dec->field_0x10;
-            if (dec->field_0x14 <= float_0_8041e828) {
-                dec->field_0x14 = float_0_8041e828;
+            dec->field_0x14 = dec->field_0x14 - 1.5f * dec->field_0x10;
+            if (dec->field_0x14 <= 0.0f) {
+                dec->field_0x14 = 0.0f;
                 dec->field_0x25 = 0;
             }
         }
@@ -370,7 +369,7 @@ void battleAcDisp_RepeatedlyLv(CameraId camId, void* param) {
     case 0x64:
     case 0x3E8:
     case 0x3E9:
-        ag->iconX = intplGetValue(4, 0x14 - ag->counter, 0x14, float_neg300_8041e82c, float_30_8041e830);
+        ag->iconX = intplGetValue(4, 0x14 - ag->counter, 0x14, -300.0f, 30.0f);
         actionCommandDisp(ag->iconX, ag->iconY);
         if (ag->counter > 0) {
             ag->counter--;
@@ -379,9 +378,9 @@ void battleAcDisp_RepeatedlyLv(CameraId camId, void* param) {
     case 0x3EA:
     case 0x3EB:
         if (ag->counter >= 0x28) {
-            ag->iconX = intplGetValue(4, ag->counter - 0x28, 0x14, float_30_8041e830, float_neg300_8041e82c);
+            ag->iconX = intplGetValue(4, ag->counter - 0x28, 0x14, 30.0f, -300.0f);
         } else {
-            ag->iconX = float_30_8041e830;
+            ag->iconX = 30.0f;
         }
         actionCommandDisp(ag->iconX, ag->iconY);
         if (ag->counter < 0x3C) {
@@ -610,7 +609,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         f32 tx = float_neg200_8041e7f8 + x;
 
         PSMTXTrans(trans, tx + float_108_8041e820, float_25_8041e824 + y,
-                   float_0_8041e828);
+                   0.0f);
         PSMTXScale(scale, float_1_8041e800, float_1_8041e800, float_1_8041e800);
         PSMTXConcat(trans, scale, mtx);
         iconNumberDispGx(mtx, num, 0, *(GXColor*)&dat_8041e7f4);
@@ -619,6 +618,8 @@ static void actionCommandDisp(f32 x, f32 y) {
 #pragma optimize_for_size reset
 
 // Defined after the code that uses them, so the references stay bound to these names.
+__declspec(section ".sdata2") s32 dat_8041e7f0 = -1;
+__declspec(section ".sdata2") u32 dat_8041e7f4 = 0xFFFFFFFF;
 const f32 float_neg200_8041e7f8 = -200.0f;
 const f32 float_70_8041e7fc = 70.0f;
 const f32 float_1_8041e800 = 1.0f;
@@ -631,16 +632,4 @@ const f32 float_neg288_8041e818 = -288.0f;
 const f32 float_45_8041e81c = 45.0f;
 const f32 float_108_8041e820 = 108.0f;
 const f32 float_25_8041e824 = 25.0f;
-const f32 float_neg300_8041e82c = -300.0f;
-const f32 float_30_8041e830 = 30.0f;
-const f32 float_0p4_8041e834 = 0.4f;
-const f32 float_1p5_8041e838 = 1.5f;
-s32 dat_8041e7f0 = -1;
-u32 dat_8041e7f4 = 0xFFFFFFFF;
 
-// 4 zero bytes that end the unit's .sdata2 (see the original .sdata2:0x4C gap).
-#pragma explicit_zero_data on
-#pragma force_active on
-__declspec(section ".sdata2") u32 gap_09_8041E83C_sdata2[1] = { 0 };
-#pragma force_active reset
-#pragma explicit_zero_data reset

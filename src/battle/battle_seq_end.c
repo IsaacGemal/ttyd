@@ -980,7 +980,6 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
     return (event->userdata[1] > 0) ? 0 : 2;
 }
 
-// NONMATCHING (98.35%): rebuilt from the asm. Body matches; only the .rodata constant base/offsets differ.
 s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
     BattleSpotWork* spot = BatSpotGetPtr();
     BattleSpotEntry* entry;
@@ -1008,9 +1007,17 @@ s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
         entry->field_4 = (Vec){25.0f * (f32)code + -50.0f, 25.0f, -50.0f};
         break;
     }
+#ifdef MUST_MATCH
+    // MUST_MATCH: the volatile Vec stores stop MWCC hoisting the dat_80420c28 load across them, and the
+    // volatile read pins it to the end in r0; the non-volatile form schedules it one slot early (98.39).
+    *(volatile Vec*)&entry->field_10 = (Vec){0.0f, 0.0f, 0.0f};
+    *(volatile Vec*)&entry->field_1C = (Vec){15.0f, 15.0f, 150.0f};
+    entry->field_28 = *(volatile const u32*)&dat_80420c28;
+#else
     entry->field_10 = (Vec){0.0f, 0.0f, 0.0f};
     entry->field_1C = (Vec){15.0f, 15.0f, 150.0f};
     entry->field_28 = dat_80420c28;
+#endif
     entry->flags |= 2;
     return 2;
 }
@@ -1495,7 +1502,7 @@ void _GetExpIcon_Disp(CameraId camId, void* param) {
     windowDispGX_Waku_col(0, color, -76.899994f, 21.0f, 165.79999f, 24.199999f, 10.0f);
 }
 
-// NONMATCHING (99.53%): `lines++` before the window call with window y `((u16)lines - 1) * 29` and
+// NONMATCHING (99.54%): `lines++` before the window call with window y `((u16)lines - 1) * 29` and
 // height `lines * 29 + 1` reuses the truncated `lines+1`; `s32 width` keeps clrlwi + srawi/addze, and
 // `(s32)float_neg148_80420cfc` keeps the fctiwz. 17 left: .rodata string/mask offsets + their registers.
 void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
@@ -1538,7 +1545,7 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     FontDrawMessage((s32)x, (s32)float_neg148_80420cfc + (lines - 1) * 29, msg);
 }
 
-// NONMATCHING (85.41%): every call and non-data immediate matches (tools/diff_shape.py); the score is
+// NONMATCHING (85.42%): every call and non-data immediate matches (tools/diff_shape.py); the score is
 // dominated by (a) register allocation: the string-base and `work` base are swapped (orig r30=base, r31=work;
 // ours r31=base, r30=work) and `-30.0f`/`12.5f` land in the other of f4/f5; and (b) the len int->float
 // schedule, which inserts one extra `mr r6, r3` -- the original stores the strlen result from r3 twice
@@ -1613,7 +1620,7 @@ void btlseqEnd_DispMain(CameraId camId, BattleWork* param) {
         dispEntry(camId, 900.0f, 1, _MarioExpDisp, param);
     }
     if (*(u32*)((u8*)work + 0x30) & 8) {
-        Vec pos = {0.0f, 0.0f, 0.0f};
+        Vec pos = vec3_802fde84;
         dispEntry(4, dispCalcZ(&pos), 2, _lvup_select_object_disp, param);
     }
     if (*(u32*)((u8*)work + 0x30) & 0x10) {

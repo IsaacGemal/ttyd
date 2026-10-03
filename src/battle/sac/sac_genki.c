@@ -12,7 +12,10 @@
 #include "mario/mario_pouch.h"
 #include "system.h"
 #include <string.h>
-#include <math.h>
+// math_ext.h instead of <math.h>: the SDK's math.h inlines would place extra
+// float constants ahead of .rodata and shift main_star1's int->float pool double
+// off its 0x1B8 offset.
+#include "math_ext.h"
 #include <dolphin/mtx.h>
 #include "eff/eff_recovery.h"
 #include "eff/eff_starstone.h"
@@ -26,11 +29,56 @@
 #include "pmario_sound.h"
 static void main_base(void);  // local to this file in the original
 static void disp_3D(CameraId cameraId, void* param);  // local to this file in the original
+// This unit's .rodata, in retail order: the vec3_803002b0...vec3_803003e8
+// f32[3] table (vec3_803002bc covers 0xc..0x17), then dat_803002c8 and the
+// strings. The layout only matters because MWCC folds its anonymous int->float
+// pool double into the section base when a function names several of these
+// objects, so the double must land at vec3_803002b0+0x1B8 (see main_star1).
+const f32 vec3_803002b0[3] = {0.0f, -1000.0f, 0.0f};
+const f32 vec3_803002bc[3] = {0.0f, 0.0f, 0.0f};
+const s32 dat_803002c8[3] = {0, 4, 2};
+const f32 vec3_803002d4[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803002e0[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803002ec[3] = {0.0f, 180.0f, 0.0f};
+const f32 vec3_803002f8[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_80300304[3] = {0.0f, -1000.0f, 0.0f};
+// Match-only: retail defines these five as const. A non-const object defeats
+// MWCC's load hoisting in main_star1 (a const object is provably stable, so the
+// -O4 scheduler lifts the named loads above the star stores, dropping the
+// function to 88.87%); the section attribute keeps the bytes at their retail
+// .rodata offsets.
+__declspec(section ".rodata") f32 vec3_80300310[3] = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") f32 vec3_8030031c[3] = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") f32 vec3_80300328[3] = {0.0f, 180.0f, 0.0f};
+__declspec(section ".rodata") f32 vec3_80300334[3] = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") f32 vec3_80300340[3] = {0.0f, -1000.0f, 0.0f};
+const f32 vec3_8030034c[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_80300358[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_80300364[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_80300370[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_8030037c[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_80300388[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_80300394[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803003a0[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803003ac[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803003b8[3] = {0.5f, 0.5f, 1.0f};
+const f32 vec3_803003c4[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803003d0[3] = {0.0f, 0.0f, 0.0f};
+const f32 vec3_803003dc[3] = {0.5f, 0.5f, 1.0f};
+const f32 vec3_803003e8[3] = {0.0f, 0.0f, 0.0f};
+const char str_803003F4[] = "SFX_BTL_SAC_START1";
+const char str_80300408[] = "SFX_BTL_SAC_START2";
+const char str_8030041C[] = "SFX_BTL_SAC_HEART_SHOOT1";
+const char str_80300438[] = "SFX_HP_RECOVER_SHINE2";
+const char str_80300450[] = "stardust";
+const char str_8030045C[] = "M_C_2C";
+// The int->float magic (0x4330000080000000) sits between the strings as in retail, so str_80300470 lands at
+// +0x1C0 where main_weapon reads it; the compiler still pools its own copy at the end of .rodata.
+const f64 double_to_int_80300468 = 4503601774854144.0;
+const char str_80300470[] = "SFX_BTL_SAC_HEART_SHOOT2";
 
-extern char str_8030045C[];
 const f32 float_30_80421d80 = 30.0f;
 const f32 float_1p25_80421d6c = 1.25f;
-extern f64 double_to_int_80300468;
 const f32 float_360_80421de8 = 360.0f;
 const f32 float_60_80421d50 = 60.0f;
 const f32 float_neg1p25_80421e0c = -1.25f;
@@ -56,16 +104,12 @@ const GXColor dat_80421d2c = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_80421d30 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_80421d34 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_80421d38 = {0xFF, 0xFF, 0xFF, 0xFF};
-const s32 dat_803002c8[3] = {0, 4, 2};
 const f32 float_1p32_80421ddc = 1.32f;
 const f32 float_1p98_80421de0 = 1.98f;
 const f32 float_15_80421de4 = 15.0f;
 const f32 float_neg1000_80421d88 = -1000.0f;
 const f32 float_1_80421d74 = 1.0f;
 const f32 float_901_80421e28 = 901.0f;
-// First .rodata symbol of this unit; its presence anchors MWCC's literal pool.
-const f32 vec3_803002b0[3] = {0.0f, -1000.0f, 0.0f};
-extern const Vec vec3_803002bc;
 const f32 float_37_80421d8c = 37.0f;
 const f32 float_50_80421d90 = 50.0f;
 const f32 float_neg1_80421d94 = -1.0f;
@@ -97,7 +141,7 @@ const f32 float_344_80421dfc = 344.0f;
 const f32 float_576_80421e00 = 576.0f;
 const f32 float_1296_80421e04 = 1296.0f;
 const f32 float_1p125_80421e08 = 1.125f;
-extern char str_80300470[];
+
 
 
 typedef struct GenkiStar {
@@ -362,12 +406,14 @@ static inline Vec _makeTrans1(const f32* vec, f32 x, f32 y, f32 z) {
     return v;
 }
 
-// NONMATCHING (94.95%): the trans `makeVec`-style inline matches the caller trans/scale slots, but
-// the inlined wrapper params still land a few Vec slots low, and the magic double is a fresh `@NNN`
-// not `lfd 0x1b8(r30)` (unit .rodata pool incomplete, as in main_star0/1/main_weapon). Loop regs match.
+// Reading each vector by name (`*(const Vec*)vec3_8030034c`) rather than through a
+// `vec3_803002b0` pointer makes MWCC anchor the whole .rodata section in r30 and copies the
+// trans/scale/rot/tmp locals into the original's slots. The two final quads call btlDispTex4
+// directly. The int->float loads still read the compiler's own pooled copy (+0x1f0) where retail
+// reads double_to_int_80300468 (+0x1b8); objdiff doesn't score that displacement. Under MUST_MATCH the five icon colours are named
+// locals passed by address, so MWCC allocates them 0x20..0x10 and the final colours 0xc/0x8.
 static void disp_3D(CameraId cameraId, void* param) {
     GenkiObject* obj;
-    const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     BattleUnit* party = BattleGetPartyPtr(_battleWorkPointer);
@@ -379,6 +425,17 @@ static void disp_3D(CameraId cameraId, void* param) {
     f32 px, py, pz;
     u16 flags;
     s32 i;
+#ifdef MUST_MATCH
+    // Match-only: the original allocates the five icon colours 0x20..0x10 in declaration
+    // order, then the two final colours at 0xc/0x8. That needs each colour to be a named
+    // local whose address is passed, instead of the anonymous by-value temp MWCC makes for
+    // the natural call. The #else forms below use the natural by-value calls.
+    GXColor iconC1;
+    GXColor iconC2;
+    GXColor iconC3;
+    GXColor iconC4;
+    GXColor iconC5;
+#endif
 
     if (genki->field_4 != 0) {
         BtlUnit_GetHomePos(mario, &x, &y, &z);
@@ -392,13 +449,13 @@ static void disp_3D(CameraId cameraId, void* param) {
         {
             s32 frame;
             if (genki->field_1C >= float_10_80421d54) {
-                Vec v = *(const Vec*)&vec[0x9C / 4];
+                Vec v = *(const Vec*)vec3_8030034c;
                 v.x = x + float_6_80421d5c;
                 v.y = y;
                 v.z = z + float_8_80421d60;
                 pos = v;
             } else {
-                Vec v = *(const Vec*)&vec[0xA8 / 4];
+                Vec v = *(const Vec*)vec3_80300358;
                 v.x = x;
                 v.y = y;
                 v.z = z + float_8_80421d60;
@@ -407,7 +464,13 @@ static void disp_3D(CameraId cameraId, void* param) {
             PSMTXTrans(mtx, pos.x, pos.y, pos.z);
             frame = genki->field_28 % 12;
             if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                iconC1 = *(GXColor*)&dat_80421d20;
+                ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_1C, 0, &iconC1);
+#else
                 iconNumberDispGx3D(mtx, (s32)genki->field_1C, 0, *(GXColor*)&dat_80421d20);
+#endif
+
             }
         }
         if (genki->field_50 != -1) {
@@ -422,13 +485,13 @@ static void disp_3D(CameraId cameraId, void* param) {
             {
                 s32 frame;
                 if (genki->field_20 >= float_10_80421d54) {
-                    Vec v = *(const Vec*)&vec[0xB4 / 4];
+                    Vec v = *(const Vec*)vec3_80300364;
                     v.x = px + float_6_80421d5c;
                     v.y = py;
                     v.z = pz + float_8_80421d60;
                     pos2 = v;
                 } else {
-                    Vec v = *(const Vec*)&vec[0xC0 / 4];
+                    Vec v = *(const Vec*)vec3_80300370;
                     v.x = px;
                     v.y = py;
                     v.z = pz + float_8_80421d60;
@@ -437,7 +500,13 @@ static void disp_3D(CameraId cameraId, void* param) {
                 PSMTXTrans(mtx, pos2.x, pos2.y, pos2.z);
                 frame = genki->field_2C % 12;
                 if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                    iconC2 = *(GXColor*)&dat_80421d24;
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_20, 0, &iconC2);
+#else
                     iconNumberDispGx3D(mtx, (s32)genki->field_20, 0, *(GXColor*)&dat_80421d24);
+#endif
+
                 }
             }
             BtlUnit_GetHomePos(mario, &x, &y, &z);
@@ -453,13 +522,13 @@ static void disp_3D(CameraId cameraId, void* param) {
             {
                 s32 frame;
                 if (genki->field_24 >= float_10_80421d54) {
-                    Vec v = *(const Vec*)&vec[0xCC / 4];
+                    Vec v = *(const Vec*)vec3_8030037c;
                     v.x = x + float_6_80421d5c;
                     v.y = y;
                     v.z = z + float_8_80421d60;
                     pos = v;
                 } else {
-                    Vec v = *(const Vec*)&vec[0xD8 / 4];
+                    Vec v = *(const Vec*)vec3_80300388;
                     v.x = x;
                     v.y = y;
                     v.z = z + float_8_80421d60;
@@ -468,7 +537,13 @@ static void disp_3D(CameraId cameraId, void* param) {
                 PSMTXTrans(mtx, pos.x, pos.y, pos.z);
                 frame = genki->field_30 % 12;
                 if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                    iconC3 = *(GXColor*)&dat_80421d28;
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC3);
+#else
                     iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d28);
+#endif
+
                 }
             }
         } else {
@@ -483,13 +558,13 @@ static void disp_3D(CameraId cameraId, void* param) {
             {
                 s32 frame;
                 if (genki->field_24 >= float_10_80421d54) {
-                    Vec v = *(const Vec*)&vec[0xE4 / 4];
+                    Vec v = *(const Vec*)vec3_80300394;
                     v.x = x + float_6_80421d5c;
                     v.y = y;
                     v.z = z + float_8_80421d60;
                     pos = v;
                 } else {
-                    Vec v = *(const Vec*)&vec[0xF0 / 4];
+                    Vec v = *(const Vec*)vec3_803003a0;
                     v.x = x;
                     v.y = y;
                     v.z = z + float_8_80421d60;
@@ -498,7 +573,13 @@ static void disp_3D(CameraId cameraId, void* param) {
                 PSMTXTrans(mtx, pos.x, pos.y, pos.z);
                 frame = genki->field_30 % 12;
                 if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                    iconC4 = *(GXColor*)&dat_80421d2c;
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC4);
+#else
                     iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d2c);
+#endif
+
                 }
             }
         }
@@ -606,8 +687,10 @@ static void disp_3D(CameraId cameraId, void* param) {
                             obj->field_10 - float_20_80421d78 * scale, obj->field_14);
 #ifdef MUST_MATCH
             // The original passes `flags` without a sign extension; with the header's s16
-            // parameter MWCC emits `extsh`, so call it through a u16 prototype.
-            ((void (*)(Mtx, u16, s32, GXColor))iconDispGxCol)(mtx, flags, icon, *(GXColor*)&dat_80421d30);
+            // parameter MWCC emits `extsh`, so call it through a u16 prototype. The named
+            // `iconC5` address (not a by-value temp) gives it the original's 0x10 slot.
+            iconC5 = *(GXColor*)&dat_80421d30;
+            ((void (*)(Mtx, u16, s32, GXColor*))iconDispGxCol)(mtx, flags, icon, &iconC5);
 #else
             iconDispGxCol(mtx, flags, icon, *(GXColor*)&dat_80421d30);
 #endif
@@ -623,24 +706,46 @@ static void disp_3D(CameraId cameraId, void* param) {
         y += float_85_80421d7c * (f32)sin(angle);
         {
             Vec trans;
+            Vec pos;
+            Vec scale;
             Vec rot;
+            Vec tmp;
+            GXColor color;
 
             x += float_10_80421d54;
             y += float_30_80421d80;
             z += float_10_80421d54;
-            rot = *(const Vec*)&vec[0x114 / 4];
-            rot.z = float_6_80421d5c * (f32)genki->field_68;
-            trans = _makeTrans1(vec, x, y, z);
-            _drawGenkiTex(0x41, *(GXColor*)&dat_80421d34, trans, rot, *(const Vec*)&vec[0x108 / 4]);
+            color = *(GXColor*)&dat_80421d34;
+            tmp = *(const Vec*)vec3_803003c4;
+            tmp.z = float_6_80421d5c * (f32)genki->field_68;
+            rot = tmp;
+            scale = *(const Vec*)vec3_803003b8;
+            pos = *(const Vec*)vec3_803003ac;
+            pos.x = x;
+            pos.y = y;
+            pos.z = z;
+            trans = pos;
+            btlDispTex4(0x41, &trans, &scale, &rot, &color);
         }
         {
             Vec trans;
+            Vec pos;
+            Vec scale;
             Vec rot;
+            Vec tmp;
+            GXColor color;
 
-            rot = *(const Vec*)&vec[0x138 / 4];
-            rot.z = float_6_80421d5c * -(f32)genki->field_68;
-            trans = _makeTrans2(vec, x, y, z);
-            _drawGenkiTex2(0x42, *(const Vec*)&vec[0x12C / 4], rot, trans, *(GXColor*)&dat_80421d38);
+            color = *(GXColor*)&dat_80421d38;
+            tmp = *(const Vec*)vec3_803003e8;
+            tmp.z = float_6_80421d5c * -(f32)genki->field_68;
+            rot = tmp;
+            scale = *(const Vec*)vec3_803003dc;
+            pos = *(const Vec*)vec3_803003d0;
+            pos.x = x;
+            pos.y = y;
+            pos.z = z;
+            trans = pos;
+            btlDispTex4(0x42, &trans, &scale, &rot, &color);
         }
     }
 }
@@ -845,7 +950,7 @@ void main_weapon(s32 idx) {
             // Match-only: retail reads this Vec through the vec3_803002b0 base register.
             Vec vel = *(const Vec*)&vec[0xC / 4];
 #else
-            Vec vel = vec3_803002bc;
+            Vec vel = *(const Vec*)vec3_803002bc;
 #endif
 
             vel.x = float_10_80421d54 * (f32)cos(angle);
@@ -1511,17 +1616,12 @@ void main_star0(s32 idx) {
     }
 }
 
-// The only remaining difference is the int->float magic double. MWCC pools it as an
-// anonymous local (`@712`) and loads it with a fresh `lis rX, @712@ha; lfd fY,
-// @712@l(rX)`; the original loads it as `lfd fY, 0x1b8(r30)` where r30 is the
-// vec3_803002b0 base. The original folded the pool double into that base because this
-// unit's .rodata begins with vec3_803002b0 and the five vectors main_star1 reads
-// (vec3_80300310/31c/328/334/340) are named globals; this file defines only
-// vec3_803002b0 and reaches the rest through a pointer, so MWCC never establishes the
-// section base. Logic, schedule and every constant match the assembly.
-// NONMATCHING (99.29%): the int->float magic double's address (`lis @712` vs `0x1b8(r30)`).
+// 100%: naming the five vectors (rather than reaching them through a
+// vec3_803002b0 pointer) makes MWCC anchor the .rodata section base in r30, so its
+// anonymous int->float pool double folds into `lfd fY, 0x1b8(r30)` exactly as in
+// the original (the double lives at vec3_803002b0+0x1B8 thanks to the data block
+// at the top of this file). Logic, schedule and every constant match the assembly.
 void main_star1(void) {
-    const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
     GenkiStar* star = &genki->stars[0];
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -1541,8 +1641,8 @@ void main_star1(void) {
         *(Vec*)&star->field_24 = *(Vec*)&star->field_C;
         star->field_28 += float_50_80421d90;
         star->field_2C += float_neg1_80421d94;
-        *(Vec*)&star->field_3C = *(const Vec*)&vec[0x60 / 4];
-        *(Vec*)&star->field_48 = *(const Vec*)&vec[0x6C / 4];
+        *(Vec*)&star->field_3C = *(const Vec*)&vec3_80300310[0];
+        *(Vec*)&star->field_48 = *(const Vec*)&vec3_8030031c[0];
         /* fallthrough */
     case 2:
         star->field_4++;
@@ -1570,11 +1670,11 @@ void main_star1(void) {
             star->field_0 = 3;
             star->field_4 = 0;
             *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
-            v = *(const Vec*)&vec[0x78 / 4];
+            v = *(const Vec*)&vec3_80300328[0];
             v.x = float_200_80421d9c * (f32)rand() / float_32767_80421da0;
             v.z = star->field_20;
             *(Vec*)&star->field_24 = v;
-            *(Vec*)&star->field_30 = *(const Vec*)&vec[0x84 / 4];
+            *(Vec*)&star->field_30 = *(const Vec*)&vec3_80300334[0];
             star->field_34 = (float_2_80421d70 * (star->field_28 - star->field_1C) -
                               float_720_80421da4) / float_120_80421da8;
         }
@@ -1614,7 +1714,7 @@ void main_star1(void) {
         if (genki->field_40 <= 0) {
             star->field_0 = 5;
             star->field_4 = 0;
-            *(Vec*)&star->field_C = *(const Vec*)&vec[0x90 / 4];
+            *(Vec*)&star->field_C = *(const Vec*)&vec3_80300340[0];
         }
         break;
     case 5:

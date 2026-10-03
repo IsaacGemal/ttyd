@@ -3992,3 +3992,85 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   regrouped `(-230 + scrollX) + cx`. All fixed; effFallMain (94.67 -> 94.29%) and winLogMain pay for the right
   behaviour (`--allow-regress`). The batch also fixed older bugs: animdrv's PSMTXConcat order, mapdrv
   makeDisplayList's material, mot_ship's case 32 break, eki_00 moamoa_hit_check and yuunpc's signed conversion.
+
+## Salvage 1: agent work collection dropped (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- `scratch/salvage/audit.py` compiled all 797 archived final.c files (waves 50-63) whose functions are still open,
+  in place on main + #321 on the tower: 158 functions where an agent version beats main (`scratch/lost_work.tsv`;
+  115 outputs no longer compile against today's headers). Collection had dropped them whole-file: one data section
+  lower, a natural-build failure or a conflict with another group anywhere in the file reverted every function in
+  it. Excluded: removed.json's functions, a version its own wave's review found a bug in (wave 59's loadDraw passes
+  "WW" where retail passes str_8041BE34), and units with running agents or held by Claude #3.
+- `scratch/salvage/insert.py` moves one function at a time: the best version's definition (with its comment, a
+  MUST_MATCH/#else pair and its pragmas) replaces or joins the tree's, the agent's #includes, helpers or
+  prototypes come along on undefined identifiers, and it stays only if its score rises and no function or data
+  section of its unit drops (agent_check's one-unit report; DOL units cache as MarioSt_*). 42 of 105 kept, split
+  into two PRs by unit (salvage1a, salvage1b) with three review chunks each.
+- Reviews (`scratch/salvage/review1a.md`, `review1b.md`, compare direction, order around calls, dead paths):
+  winMarioDisp's level-text y store sat after the vector copy (dead; retail stores first); battleCameraMain's zc
+  starts at 0.0 (retail's prologue `lfs f30` is zc's default, not a dead load) and case 9 writes yc only in the
+  clamp arms as retail. Pragma resets, stale notes and comments pointing at agent reports fixed. Left open (LOW):
+  raw offsets where named fields exist (battleCameraMain's camera work, __psndSFXOn, mobj_switch_float_blk,
+  extMakeTexture), unguarded match-only shapes in bom1000_msg and psndENV_LPF, envDisp_DepthOfField's bare GX enums.
+
+## Waves 62 and 63, batch 2; wave 64 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- Batch 2 (the wave 62/63 agents that finished after batch 1, onto main 7839c2bb with both salvage PRs): 9,298 ->
+  9,312. win_mario, evt_win and sac_bakugame merged with conflicts resolved to the agent's whole file, which would
+  have dropped the salvage reviews' fixes (winMarioDisp's level y, the party list's help row, neg2), so they are as
+  on main; so are npcdrv and battle_seq_command (a function lower), bom_01 and gor's evt_yuuranking (.rodata lower).
+- Review (`scratch/wave63/review2.md`): an agent deleted sac_genki's str_8030048C/str_80300494 definitions while
+  the code still names them. **Neither objdiff nor tools/data_check.py notices a deleted data object** (the symbol
+  just goes undefined in an unlinked unit); restored. effRippleMain's new `(u8)` increment changed behaviour for
+  +0.05% (as on main).
+- **Wave 64** (11:20, base 7839c2bb, `scratch/wave64/`): the unwritten arm, one agent per function with no
+  definition. Where an archived agent version exists it starts from that (`seeds/`, with why salvage didn't keep
+  it: a data section lower, or it doesn't compile against today's headers), otherwise from an m2c draft
+  (`drafts/`, no type context). The prompt carries Claude #1's compare rule (`cror eq,gt,eq` is >=, `cror
+  eq,lt,eq` is <=; check every compare and every read against the store that sets it). A function reviews took out
+  is given to its agent with the review's reason instead of "don't write". 12 functions now; win_root's GX
+  functions, nameent, winmgr, mapdrv and evt_mobj follow once batch 2 merges (salvage 2 first).
+
+## Salvage 2 and wave 65 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- Salvage 2 (units wave 63 had held): 7 of 78 kept by `scratch/salvage/insert.py` (winHalfBookGX 0 -> 95.25%,
+  btlDispMain 1.93 -> 94.37%, five near-misses). The review (`scratch/salvage/review2.md`) caught a salvaged
+  marioCheckMenuDisable that carried a static copy of marioChkKey, which MWCC also emits as a function retail
+  doesn't have (mario.c as on main), and winHalfBookGX's double reads through str_802F3FE8 + offset, now MUST_MATCH
+  only. sac_genki's main_weapon sound string str_80300470 was defined nowhere (Claude #1's review of #329); it is
+  now (.rodata 93.72 -> 96.61%). insert.py looks objects up in build.ninja (two RELs share evt_yuuranking.c).
+- **Wave 65** (base 0fb74851, `scratch/wave65/`): 11 link agents for units at 100% code that don't link (Claude
+  #3's `link_candidates_1140.txt`; `tools/fn_order_check.py --write` alone broke the build on four of the six
+  whose order differs, since reordered code needs forward declarations, so the prompt makes it step 3 of the link
+  recipe), and 57 agents seeded with a salvage candidate insert.py couldn't keep, each told why (a data section or
+  another function lower, or it doesn't compile against today's file), plus the unwritten win_root GX functions
+  from m2c drafts. Collected per function through insert.py.
+
+## Waves 64 and 65, batch 1 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- Onto main 712a9122 (with salvage 2): 9,312 -> 9,317, **code linked 41.75 -> 43.13%**, data linked 79.41 ->
+  79.61%. Eight of wave 65's eleven link agents' units link: ac_repeatedly_lv, extdrv, mobjdrv, eff_itemget,
+  eff_flame_n64, eff_opuku_wgun_n64, mot_hammer, statuswindow (each flip tested alone against the checksums;
+  party_bomhei's agent believed it linked and it doesn't). eff_flame_n64's objdiff data score drops as it links
+  (`--allow-regress`; linked units' data scores are imperfect, the checksum is the check). mot_hammer.h now
+  declares mot_hammer/mot_hammer2/mot_ham2_post, which replaced mario_motion.c's array externs for them.
+- Function agents (wave 64's unwritten arm and wave 65's seeded salvage) collected per function through
+  insert.py: 20 kept of 51 (party_motion_homing_fly 0 -> 97.8%, partyRideMain 0 -> 97.1%, winNameGX 0 -> 99.3%,
+  mobj_itembox 0 -> 100%, effKamekiTornadeDisp 0 -> 99.1%, animPoseDisp_MakeExtTexture 0 -> 98.4%, and near-misses).
+  Most of the rest still lower a data section, which is the remaining salvage problem.
+- Reviews (`scratch/wave65/review1.md`, `review1b.md`): rule 13 came back behind macros whose `sym` argument is
+  ignored (homing_fly's FB/FV, partyRideMain's PR_FV) and through a string literal ("a_mario" + 0x88 in
+  marioOfsRotReset); all now MUST_MATCH only with literal natural forms. Two hacks dropped: a second copy of
+  btlataudevtDummy's script returned under MUST_MATCH, and gor evt_yuuranking_disp_func's unguarded by-pointer
+  colour casts. mobj_lv_blk_evt left out again (unguarded base reads). Open LOWs: sac_genki's now-unused
+  _drawGenkiTex/_makeRot/_makeTrans inlines, itemMain's dead `hit = NULL`, eff_opuku_wgun_n64's `.sbss2` section
+  pragma not switched back (linked unit), partyRideMain's explicit `case 99` (same as the default exit).
+- **Batch 2** (onto main after #331): seq_mapchange links (evt_npc's agent's version doesn't; as on main); code
+  linked 43.13 -> 43.25%. Functions: hei_10 ext_main, materialProc, mapSetPolygon through insert.py, and
+  winKirinukiGX (0 -> 95.8%), winMsgDisp (0 -> 74.0%) and bom_01 pose_main (0 -> 100%) through
+  `scratch/salvage/merge3.py` (a three-way merge of the agent's whole file against its wave's base, kept only if
+  the unit builds and nothing in it drops) where insert.py couldn't find a helper the agent had added. Review
+  (`scratch/wave65/review2.md`): winPartyDisp scored 80.4% and drew wrong: its GXColor data was byte-reversed
+  (objdiff ignores data values), x/y were swapped in two places and template Vecs shifted by one; it and
+  marioReInit (unguarded "a_mario" + offset reads) are as on main. seq_mapchange's two pool strings existed only
+  under MUST_MATCH, so the natural build couldn't link.

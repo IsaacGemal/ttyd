@@ -9,6 +9,12 @@
 #include "driver/animdrv.h"
 #include "system.h"
 #include "battle/battle_sub.h"
+#include "math_ext.h"
+#include "driver/shadowdrv.h"
+#include "battle/battle_break_slot.h"
+#include "battle/battle_audience.h"
+#include "battle/battle_stage.h"
+#include "battle/battle_seq_command.h"
 
 
 extern BattleWork* _battleWorkPointer;
@@ -377,18 +383,332 @@ StatusEffectType _GetStatusPoseType(BattleUnit* unit) {
 	return STATUS_INVALID;
 }
 
-// NONMATCHING (1.93%): 3 instructions differ, 725 missing, plus register differences.
+extern f32 float_7_8041bf84;
+extern f32 float_10_8041bf40;
+// Call sequence, stack layout and the shadow `frsp` all match; what is left is floating-point
+// register allocation in a few straight-line blocks.
+// NONMATCHING (94.37%): see above.
 void btlDispMain(void) {
+	BattleWork* wp = _battleWorkPointer;
 	BattleUnit* unit;
-	int i;
+	BattleUnit* other;
+	BattleUnitPart* part;
+	const char* animName;
+	s8 turns;
+	s8 strength;
+	s32 i;
+	s32 statusPose;
+	s32 unk;
+	Vec pos2;
+	Vec pos1;
+	Vec v2;
+	Vec sp;
+	Vec sp2;
+	Vec partnerPos;
+	Vec vivian;
+	Vec v;
+	f32 wx, wy, wz;
+	f32 floor;
 
 	for (i = 0; i < 0x40; i++) {
 		unit = BattleGetUnitPtr(_battleWorkPointer, i);
-		if (unit) {
-			if (unit->currentKind == UNIT_SHELL_SHIELD) {
+		if (unit == NULL) {
+			continue;
+		}
 
+		if (unit->currentKind == UNIT_SHELL_SHIELD && unit->work[2] != 0) {
+			other = BattleGetUnitPtr(wp, unit->work[0]);
+			if (other != NULL) {
+				if (!((other->attackEventId != 0 && evtCheckID(other->attackEventId) != 0 &&
+				       !(*(s32*)other->field_0x2A8 & 4)) ||
+				      (other->damageEventId != 0 && evtCheckID(other->damageEventId) != 0))) {
+					BtlUnit_GetPos(unit, &pos1.x, &pos1.y, &pos1.z);
+					BtlUnit_GetPos(other, &pos2.x, &pos2.y, &pos2.z);
+					pos2.z += float_7_8041bf84;
+					floor = BattleGetFloorHeight(wp, pos2.x, pos2.y, pos2.z);
+					switch (unit->work[2]) {
+					case 2:
+						if (10.0 < __fabs(pos1.x - pos2.x)) {
+							if (pos2.x > pos1.x) {
+								pos1.x = pos1.x + ((pos2.x - pos1.x) - float_10_8041bf40);
+							} else {
+								pos1.x = pos1.x - ((pos1.x - pos2.x) - float_10_8041bf40);
+							}
+						}
+						BtlUnit_SetPos(unit, pos1.x, pos2.y, pos2.z);
+						break;
+					case 3:
+						if (__fabs(pos1.x - pos2.x) < 1.0) {
+							BtlUnit_SetPos(unit, pos2.x, floor, pos2.z);
+							unit->work[2] = 1;
+						} else {
+							if (pos2.x > pos1.x) {
+								pos1.x = pos1.x + float_1_8041bf64;
+								BtlUnit_SetPos(unit, pos1.x, floor, pos2.z);
+							} else {
+								pos1.x = pos1.x - float_1_8041bf64;
+								BtlUnit_SetPos(unit, pos1.x, floor, pos2.z);
+							}
+						}
+						break;
+					default:
+						BtlUnit_SetPos(unit, pos2.x, floor, pos2.z);
+						break;
+					}
+				}
 			}
 		}
+
+		unk = unit->field_0x30E[0];
+		BtlUnit_OffUnitFlag(unit, 2);
+		if (unk != unit->mMoveColorLv) {
+			BtlUnit_OnUnitFlag(unit, 2);
+			if (unit->mMoveColorLv > unk) {
+				unk += 0xC;
+				if (unk > unit->mMoveColorLv) {
+					unk = unit->mMoveColorLv;
+				}
+			} else {
+				unk -= 2;
+				if (unk < unit->mMoveColorLv) {
+					unk = unit->mMoveColorLv;
+				}
+			}
+		}
+		unit->field_0x30E[0] = unk;
+
+		BtlUnit_HpGaugeMain(unit);
+		unit->mSizeMultiplier = float_1_8041bf64;
+		BtlUnit_GetStatus(unit, 0xB, &turns, &strength);
+		if (turns > 0 && strength < 0) {
+			f32 f = 0.5f * (f32)strength + 1.0f;
+			if (f < 0.5f) {
+				f = 0.5f;
+			}
+			unit->mSizeMultiplier = unit->mSizeMultiplier * f;
+		}
+		BtlUnit_GetStatus(unit, 0xA, &turns, &strength);
+		if (turns > 0 && strength > 0) {
+			f32 f = (f32)strength;
+			f = 1.0f + f;
+			if (f > float_2_8041bf68) {
+				f = float_2_8041bf68;
+			}
+			unit->mSizeMultiplier = unit->mSizeMultiplier * f;
+		}
+		BattleStatusEffectMain(unit);
+		BattleStatusIconMain(unit);
+
+		part = unit->mParts;
+		while (part != NULL) {
+			if (*(s32*)part->field_0x1C0 != -1) {
+			animName = (char*)part + 0x1C4;
+			if (!(*(s32*)(part->field_0x1C0 + 0x44) & 2)) {
+				statusPose = _GetStatusPoseType(unit);
+				if (unit->currentKind >= 1 && unit->currentKind < 0xD8) {
+					animName = searchPoseTbl((BattleDispPose*)part->poseTable, statusPose);
+				} else {
+					if (statusPose == 0x1C && !BtlUnit_CheckStatus(unit, 0x16) &&
+					    (unit->mStatusFlags & 0x20000000)) {
+						animName = BtlUnit_GetPoseNameFromType(part, 0x39);
+						if (animName == NULL) {
+							animName = searchPoseTbl((BattleDispPose*)part->poseTable, 0x1C);
+						}
+					} else if (statusPose == 0x1C && !BtlUnit_CheckStatus(unit, 0x16) &&
+					           (unit->mStatusFlags & 0x10000000)) {
+						animName = BtlUnit_GetPoseNameFromType(part, 0x38);
+						if (animName == NULL) {
+							animName = searchPoseTbl((BattleDispPose*)part->poseTable, 0x1C);
+						}
+					} else {
+						animName = searchPoseTbl((BattleDispPose*)part->poseTable, statusPose);
+					}
+					if (BtlUnit_CheckStatusFlag(unit, 0x1000000) && BtlUnit_CanActStatus(unit)) {
+						animName = BtlUnit_GetPoseNameFromType(part, 0x2D);
+					}
+				}
+				if (BtlUnit_CheckStatus(unit, 0x13)) {
+					btlDispAnimeSpeed((BattleUnit*)part, float_2_8041bf68);
+				} else if (BtlUnit_CheckStatus(unit, 0x14)) {
+					btlDispAnimeSpeed((BattleUnit*)part, float_0p5_8041bf4c);
+				} else {
+					btlDispAnimeSpeed((BattleUnit*)part, float_1_8041bf64);
+				}
+			} else {
+				btlDispAnimeSpeed((BattleUnit*)part, float_1_8041bf64);
+			}
+
+			if (*(s32*)(part->field_0x1C0 + 0x44) & 1) {
+				s32 changed = 0;
+
+				*(s32*)(part->field_0x1C0 + 0x44) &= ~1;
+				if ((*(s32*)(part->field_0x1C0 + 0x44) &= ~0x200) != 0) {
+					animPoseSetAnim(*(s32*)part->field_0x1C0, animName, 1);
+				} else {
+					animPoseSetAnim(*(s32*)part->field_0x1C0, animName, 0);
+				}
+				part->field_0x1C0[0x54] = 0;
+				if (*(s32*)(part->field_0x1C0 + 0x44) & 4) {
+					part->field_0x1C0[0x55] = 0;
+				} else {
+					part->field_0x1C0[0x55] = 1;
+					if (BtlUnit_CheckStatus(unit, 0x12) ||
+					    part->color.a != 0xFF) {
+						changed = 1;
+						part->field_0x1C0[0x55] = 7;
+					}
+				}
+				if (!((*(s32*)(part->field_0x1C0 + 0x44) & 2) && !(*(s32*)(part->field_0x1C0 + 0x44) & 8) &&
+				      !(*(s32*)(part->field_0x1C0 + 0x44) & 0x80))) {
+					part->field_0x1C0[0x55] = 1;
+					if (BtlUnit_CheckStatus(unit, 0x12) ||
+					    part->color.a != 0xFF) {
+						changed = 1;
+						part->field_0x1C0[0x55] = 7;
+					}
+					if (BtlUnit_CheckStatus(unit, 7)) {
+						changed = 1;
+						part->field_0x1C0[0x55] = 4;
+					}
+				}
+				if (changed && (part->attributes & 0x8000)) {
+					changed = 0;
+					part->field_0x1C0[0x55] = 0;
+				}
+				if (!(*(s32*)(part->field_0x1C0 + 0x44) & 4)) {
+					if (changed && !(*(s32*)(part->field_0x1C0 + 0x44) & 0x40)) {
+						*(s32*)(part->field_0x1C0 + 0x44) |= 0x40;
+					} else if (!changed && (*(s32*)(part->field_0x1C0 + 0x44) & 0x40)) {
+						*(s32*)(part->field_0x1C0 + 0x44) &= ~0x40;
+					}
+				}
+			}
+
+			gravityOffsetControl(part);
+			floatOffsetControl(part);
+			statusPoseControl(part);
+			BtlUnit_GetPartsWorldPos(part, &wx, &wy, &wz);
+			animPoseMain(*(s32*)part->field_0x1C0);
+			v = vec3_802eddd0;
+			v.x = wx;
+			v.y = wy;
+			v.z = wz + *(f32*)(part->field_0x4F4 + 4);
+			v2 = v;
+
+			part->field_0x4F4[3] = (u8)part->mKindPartParams->baseAlpha;
+			if (BtlUnit_CheckStatus(unit, 0x12) || (unit->mAttributeFlags & 0x8)) {
+				part->field_0x4F4[3] =
+					(u8)(part->field_0x4F4[3] * 0x80 / 0xFF);
+			}
+			part->field_0x4F4[3] =
+				(u8)(part->field_0x4F4[3] * part->color.a / 0xFF);
+			part->field_0x4F4[0] = part->color.r;
+			part->field_0x4F4[1] = part->color.g;
+			part->field_0x4F4[2] = part->color.b;
+
+			if (!(unit->mAttributeFlags & 0x1000000) && !(part->attributes & 0x1000000)) {
+				if (!(part->attributes & 1) || !(unit->mAttributeFlags & 0x10)) {
+					if (part->field_0x4F4[3] < 0xFF ||
+					    animPoseTestXLU(*(s32*)part->field_0x1C0)) {
+						if (!(*(s32*)(part->field_0x1C0 + 0x44) & 0x100)) {
+							dispEntry(4, dispCalcZ(&v2), 2, (DispCallback)btlUnitPartsDisp, part);
+						}
+					} else {
+						if (!(*(s32*)(part->field_0x1C0 + 0x44) & 0x100)) {
+							dispEntry(4, dispCalcZ(&v2), 1, (DispCallback)btlUnitPartsDisp, part);
+						}
+					}
+				}
+				if (part->attributes & 0x4000000) {
+					dispEntry(4, wz, 2, (DispCallback)btlUnitPartsBlurDisp, part);
+				}
+			}
+
+			if (!(unit->mAttributeFlags & 0x20000000) && !(part->attributes & 0x2000000)) {
+				BtlUnit_GetPartsWorldPos(part, &sp.x, &sp.y, &sp.z);
+				sp2 = sp;
+				if (unit->flags & 0x10000) {
+					other = BattleGetPartnerPtr(wp, unit);
+					if (other != NULL) {
+						BtlUnit_GetPos(other, &partnerPos.x, &partnerPos.y, &partnerPos.z);
+						sp2.x += partnerPos.x;
+						sp2.x *= 0.5f;
+						sp2.y += partnerPos.y;
+						sp2.y *= 0.5f;
+						sp2.z += partnerPos.z;
+						sp2.z *= 0.5f;
+					}
+				}
+				{
+					f32 f;
+					f32 floorY;
+
+					sp2.y = BattleGetFloorHeight(wp, sp2.x, sp2.y, sp2.z);
+					floorY = sp2.y;
+					if (sp.y <= floorY) {
+						f = 1.0f;
+					} else {
+						f = (100.0f - (sp.y - floorY)) / 100.0f;
+					}
+					if (f > 1.0) {
+						f = 1.0f;
+					}
+					if (f < 0.1f) {
+						f = 0.1f;
+					}
+					f *= (f32)*(s16*)part->field_0x1A2 * unit->mScale.x *
+					     part->mScale.x * unit->mSizeMultiplier;
+					f *= part->field_0x78;
+					if (unit->flags & 0x10000) {
+						if (f < 16.0f) {
+							f = 16.0f;
+						}
+					}
+					if (f < 10.0f) {
+						f = 8.0f;
+					}
+					shadowEntry(sp2.x, floorY + 10.0f, sp2.z, f);
+				}
+			}
+
+			if (unit->currentKind == 0xE4 || unit->currentKind == 0x8D ||
+			    unit->currentKind == 0x86 || (u32)(unit->currentKind - 0x1F) <= 2 ||
+			    (u32)(unit->currentKind - 0xBD) <= 4 || unit->currentKind == 0x85) {
+				vivian.x = (f32)unit->work[0];
+				vivian.y = (f32)unit->work[1];
+				vivian.z = (f32)unit->work[2];
+				animPoseVivianMain(*(s32*)part->field_0x1C0, &vivian);
+			}
+			BtlUnit_ControlPoseSoundMain(part);
+			}
+			part = part->mNextPart;
+		}
+
+		if (unit->heldItem != 0) {
+			if ((unit->flags & 0x40000000) && !(unit->flags & 0x08000000)) {
+				dispEntry(4, float_0_8041bf58, 2, btlUnitStolenItemDisp, unit);
+			} else if (!(unit->flags & 0x04000000) || (unit->flags & 0x02000000)) {
+				if (!(unit->flags & 0x08000000)) {
+					dispEntry(4, float_0_8041bf58, 2, (DispCallback)btlUnitItemDisp, unit);
+				}
+			}
+		} else {
+			if (wp->flags & 0x20000) {
+				dispEntry(4, float_0_8041bf58, 2, (DispCallback)btlUnitItemDisp2, unit);
+			}
+		}
+	}
+
+	BattleStockExpDisp();
+	BattleStageDisp();
+	BattleCommandDisplay(wp);
+	BattleAudience_Disp();
+	BattleBreakSlot_Disp();
+	if (wp->flags & 0x10000) {
+		wp->flags &= ~0x10000;
+	}
+	if (wp->flags & 0x20000) {
+		wp->flags &= ~0x20000;
 	}
 }
 
@@ -1204,16 +1524,12 @@ void btlUnitItemDisp2(CameraId cameraId, BattleUnit* unit) {
 }
 
 // The original's dead int->double conversion of BtlUnit_GetHeight survives as the two `stw`s of a
-// constant double pair (frame 0x30). A bare `(f32)`/`(f64)` statement is DCE'd away; assigning
-// The original's dead int->double conversion of BtlUnit_GetHeight survives as the two `stw`s of a
-// constant double pair (frame 0x30). A bare `(f32)`/`(f64)` statement is DCE'd away; assigning
-// the height to an otherwise-unused double local keeps the conversion stores, but only with
+// constant double pair (frame 0x30). A bare `(f32)`/`(f64)` statement is DCE'd away; `opt_dead_assignments
+// off` plus assigning the height to an otherwise-unused double local keeps the conversion stores.
+#pragma opt_dead_assignments off
 #pragma dont_inline on
-// NONMATCHING (91.57%): the three remaining diffs are the iconDispGx argument setup only -- the target
-// computes &itemDataTable[item] into r4 (`add r4, r3, r0`), loads float_1 before the position store and
-// reads icon_id with `lhz` late, while we compute it into r3, read it with `lha` early and load float_1
-// after.  Fixing ItemData.icon_id to u16 and iconDispGx's iconId to match would let this function
-// match; the ItemIconView/function-pointer workaround scores lower because it changes the schedule.
+// NONMATCHING (98.02%): only the iconDispGx arg setup differs -- target computes &itemDataTable[item] in
+// r4 and reads icon_id `lhz` late; we use r3 / `lha` early.
 void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 	BattleWork* wp = _battleWorkPointer;
 	Vec v;
@@ -1237,6 +1553,7 @@ void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 	}
 }
 #pragma dont_inline reset
+#pragma opt_dead_assignments reset
 
 // See the note on double_to_int_802ede28 above.
 #if 0

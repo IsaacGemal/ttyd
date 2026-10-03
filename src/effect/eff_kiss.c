@@ -192,13 +192,11 @@ EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	return entry;
 }
 
-// The scaleX/scaleY reader writes the *0.03125f as a /32.0f division (under MUST_MATCH): the constant
-// folds to the same float and the instruction stream is identical, but the division makes the allocator
-// keep the 2^52 mask and 0.03125 reloads in retail's f3/f2 instead of f2/f3, and the conversion temp in
-// f3 instead of f29. `base`/`t` are function-scope so the two spiral cases share retail's f31 base /
-// f30 t; the radius-product split keeps retail's two multiplies.
-// NONMATCHING (99.95%): the u8->f32 conversion still coalesces into radius (retail `fsubs f3,f3,f4`,
-// ours `fsubs f29,f3,f4`) in both spiral cases; every other instruction, call and immediate matches.
+// 100% matched. The u8 table readers write the *0.03125f as a /32.0f division (under MUST_MATCH): the
+// constant folds to the same float and the instruction stream is identical, but the division makes the
+// allocator keep the 2^52 mask, the 0.03125 reload and the u8->f32 conversion temp in retail's f4/f2/f3
+// (rather than the *0.03125f form's f3/f4/f2, which coalesces the conversion into the result).
+// `base`/`t` are function-scope so the two spiral cases share retail's f31 base / f30 t.
 void effKissMain(EffectEntry* effect) {
 	KissEffectWork* data = effect->userdata;
 #ifdef MUST_MATCH
@@ -258,15 +256,13 @@ void effKissMain(EffectEntry* effect) {
 		base = 6.2831855f * angle;
 		for (i = 1; i < effect->count; i++, data++) {
 			if ((u32)data->frame < 24) {
-				f32 radius = (f32)kuri_kiss[data->frame * 3];
 #ifdef MUST_MATCH
-				/* MUST_MATCH: the split product is the FPR nudge (see the function comment); the
-				   natural single expression is in #else. */
-				radius *= 0.03125f;
-				radius *= 1.2f;
+				/* MUST_MATCH: the /32.0f nudge (the natural * 0.03125f is in #else). */
+				f32 radius = (f32)kuri_kiss[data->frame * 3] / 32.0f;
 #else
-				radius = radius * 0.03125f * 1.2f;
+				f32 radius = (f32)kuri_kiss[data->frame * 3] * 0.03125f;
 #endif
+				radius *= 1.2f;
 				t = base / 360.0f;
 				data->x = radius * (f32)sin(t);
 				data->y = radius * (f32)cos(t);
@@ -289,14 +285,13 @@ void effKissMain(EffectEntry* effect) {
 		base = 6.2831855f * angle;
 		for (i = 1; i < effect->count; i++, data++) {
 			if ((u32)data->frame < 39) {
-				f32 radius = (f32)kura_kiss[data->frame * 3];
 #ifdef MUST_MATCH
-				/* MUST_MATCH: same split as case 1. */
-				radius *= 0.03125f;
-				radius *= 1.2f;
+				/* MUST_MATCH: the /32.0f nudge (the natural * 0.03125f is in #else). */
+				f32 radius = (f32)kura_kiss[data->frame * 3] / 32.0f;
 #else
-				radius = radius * 0.03125f * 1.2f;
+				f32 radius = (f32)kura_kiss[data->frame * 3] * 0.03125f;
 #endif
+				radius *= 1.2f;
 				t = base / 360.0f;
 				data->x = radius * (f32)sin(t);
 				data->y = radius * (f32)cos(t);

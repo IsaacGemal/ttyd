@@ -9,13 +9,50 @@
 #endif
 #include <string.h>
 
-// First object of this unit's .data (the float pair that used to end the previous unit's .data).
-__declspec(section ".data") f32 lbl_8039CDA8[2] = { -1.0f, 1.0f };
+// The unit's .data in address order. `lbl_8039CDA8` is the section's first object and the compiler's
+// `.data` base; the eight float pairs keep the three vertex tables at 0x40/0xB0/0x120. The four pairs the
+// original names with a `$NNN` local (`negone_one$374`, ...) are declared here with plain names (cf.
+// eff_booboo_n64); the `lbl_8039CDxx` globals keep the disassembly's names. Porting the tables (instead of
+// addressing them as raw offsets) is what fixes the two-add vertex copy in effFlameDisp below.
+#pragma force_active on
+__declspec(section ".data") u32 lbl_8039CDA8[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_8039CDB8[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 lbl_8039CDC8[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_8039CDD8[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+
+__declspec(section ".data") u32 stg_flame_v[28] = {
+	0xFFCEFFEC, 0x00020000, 0x0000FFFF, 0xFFFF0032, 0xFFEC0002, 0x04000000, 0xFFFFFFFF,
+	0x00320064, 0x00020400, 0x0400FFFF, 0xFFFFFFCE, 0x00640002, 0x00000400, 0xFFFFFFFF,
+	0xFFCEFFEC, 0xFFFE0000, 0x0000FFFF, 0xFFFF0032, 0xFFECFFFE, 0x04000000, 0xFFFFFFFF,
+	0x00320064, 0xFFFE0400, 0x0400FFFF, 0xFFFFFFCE, 0x0064FFFE, 0x00000400, 0xFFFFFFFF,
+};
+
+__declspec(section ".data") u32 stg_flame_2_v[28] = {
+	0xFFC40000, 0x00120000, 0x0000FFFF, 0xFFFF003C, 0x00000012, 0x08000000, 0xFFFFFFFF,
+	0x003C0078, 0x00120800, 0x0800FFFF, 0xFFFFFFC4, 0x00780012, 0x00000800, 0xFFFFFFFF,
+	0xFFC40000, 0xFFEE0000, 0x0000FFFF, 0xFFFF003C, 0x0000FFEE, 0x08000000, 0xFFFFFFFF,
+	0x003C0078, 0xFFEE0800, 0x0800FFFF, 0xFFFFFFC4, 0x0078FFEE, 0x00000800, 0xFFFFFFFF,
+};
+
+__declspec(section ".data") u32 stg_flame_3_v[28] = {
+	0xFFCEFFCE, 0x00020000, 0x0000FFFF, 0xFFFF0032, 0xFFCE0002, 0x04000000, 0xFFFFFFFF,
+	0x00320032, 0x00020400, 0x0400FFFF, 0xFFFFFFCE, 0x00320002, 0x00000400, 0xFFFFFFFF,
+	0xFFCEFFCE, 0xFFFE0000, 0x0000FFFF, 0xFFFF0032, 0xFFCEFFFE, 0x04000000, 0xFFFFFFFF,
+	0x00320032, 0xFFFE0400, 0x0400FFFF, 0xFFFFFFCE, 0x0032FFFE, 0x00000400, 0xFFFFFFFF,
+};
 
 
-// .sbss2 scratch colors referenced by the original display code.
-GXColor unk_80423110;
-GXColor unk_80423114;
+// .sbss2 scratch colors referenced by the original display code (declared in reverse of the
+// original's address order: MWCC lays out nobits objects last-declared-first).
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423114;
+__declspec(section ".sdata") GXColor unk_80423110;
+#pragma section ".sdata" ".sbss"
+#pragma force_active reset
 
 #ifdef MUST_MATCH
 /* Void helpers that build the colour and call GXSetTevColor inside: this is the shape that makes MWCC
@@ -41,20 +78,15 @@ static inline void effFlameSetColor2(effFlameData* data) {
 #endif
 
 /* MUST_MATCH: retail inlines a per-vertex helper; each inlining gets its own Vec slot. Passing
-   the destination as a pointer (not `data` + `idx`) is what keeps MWCC from holding the
-   address in a sixth callee-saved register; the table base is passed as `flameTbl + offset`.
-   Naming the `&tbl[idx]` source in a local makes MWCC emit the source add before the
-   destination add, as retail does (without it the destination add comes first). The `idx == 0`
-   branch keeps the index-0 calls destination-first, as retail does when there is no index add. */
+   the destination as a pointer (not `data` + `idx`) keeps the address out of a sixth callee-saved
+   register; the table base is passed as a named table symbol. Addressing the source as `&tbl[idx]`
+   directly (NOT through a named `src` local) is part of what lets `effFlameDisp` put the unit's
+   `.data` base in r27, retail's register — a named `src` local shifts it to r30. */
 static inline void effFlameSetVtx(effFlameVtx* dst, Mtx mtx, effFlameVtx* tbl, s32 idx) {
 	Vec v;
-	if (idx == 0) {
-		memcpy(dst, tbl, sizeof(effFlameVtx));
-	}
-	else {
-		effFlameVtx* src = &tbl[idx];
-		memcpy(dst, src, sizeof(effFlameVtx));
-	}
+	memcpy(dst, &tbl[idx], sizeof(effFlameVtx));
+
+
 #ifdef MUST_MATCH
 	OSInitFastCast();
 	OSs16tof32(&dst->pos[0], &v.x);
@@ -80,7 +112,13 @@ EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	effFlameData* data;
 
 	entry = effEntry();
+#ifdef MUST_MATCH
+	// the original's .rodata is a 12-byte "FlameN64" string plus a 4-byte zero gap_04 object;
+	// a 16-byte literal leaves the same 4 trailing zero bytes at the section end
+	entry->type = "FlameN64\0\0\0\0\0\0\0";
+#else
 	entry->type = "FlameN64";
+#endif
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effFlameData));
 	entry->userdata = data;
@@ -299,28 +337,25 @@ void effFlameMain(EffectEntry* effect) {
 
 // The 24 inlined vertex transforms convert the s16 positions with the SDK's paired-single inlines
 // (`OSs16tof32`/`OSf32tos16` in OSFastCast.h, GQR5 type 7) after `OSInitFastCast()`, as the original does.
-// What differs: the original keeps the table-offset add (`addi r4, r27, 0x40`) separate from the per-vertex
-// `+ idx * 14` (`addi r4, r4, 0x1c`); this build folds the two in the first half (and, without
-// `opt_common_subs off`, strength-reduces the base into `addi r27, r27, 0x40` in the second). The helper's
-// named source local fixes the add order, at the cost of the table base landing in r30 instead of retail's
-// r27 and `alpha` in r27 instead of r30 (type is r29 in both); every other register matches. The original
-// also loads `type` before `alpha`, so `type` is declared first. Every branch target matches; the
-// `case 3: break;` and the final `switch` are what the original's dispatch came out of.
-// `opt_propagation off`: without it MWCC colours the table base/`data`/`cam` differently (r30/r29/r31 instead of
-// retail's r27/r31/r28).
-// `opt_common_subs off`: without it MWCC strength-reduces the second-half table base into `addi r27, r27, 0x40`.
+// The three vertex tables are defined in this unit as the named globals `stg_flame_v`/`stg_flame_2_v`/
+// `stg_flame_3_v` (`.data` 0x40/0xB0/0x120). Referencing them by name (not through a local pointer) is what
+// makes MWCC keep the unit's `.data` base in one register and emit the original's two adds per vertex:
+// `addi r4, rBase, 0x40` for the table, then `addi r4, r4, idx*14` for the vertex. A local
+// `table + 0x40` folds the two into one add; three local table pointers make MWCC emit a `lis` per table.
+// `alpha` is declared (uninitialised) before `type` and assigned as a statement after the other
+// declarations: that gives MWCC retail's `type`/`alpha` colouring (r29/r30) while the loads stay `type`
+// (`0x0`) first, `alpha` (`0x28`) second. Together with the `effFlameSetVtx` memcpy shape above (no named
+// `src` local) the `.data` base lands in r27 and `effect`/`cam` share r28, exactly as retail.
+// `opt_propagation off`: without it MWCC colours the table base/`data`/`cam` differently.
 // The two `GXColor` values are built inside the `effFlameSetColor1/2` void inlines above; that is the shape that
 // gives MWCC the original's interleaved temp/arg slots (see those helpers).
 #pragma opt_propagation off
-// NONMATCHING (98.49%): the table-offset/vertex-index add split, the base/alpha register pick and the
-// three branch offsets still differ.
 void effFlameDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
-	effFlameVtx* flameTbl = (effFlameVtx*)lbl_8039CDA8;
 	CameraEntry* cam = camGetPtr(camId);
 	effFlameData* data = effect->userdata;
+	s32 alpha;
 	s32 type = data->type;
-	s32 alpha = data->alpha;
 	Mtx mtxRot;
 	Mtx mtx2;
 	Mtx mtx1;
@@ -328,6 +363,7 @@ void effFlameDisp(CameraId camId, void* param) {
 	GXTexObj texObj;
 	GXColor color;
 
+	alpha = data->alpha;
 	GXSetNumChans(0);
 	GXSetNumTexGens(2);
 	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
@@ -416,22 +452,22 @@ void effFlameDisp(CameraId camId, void* param) {
 	}
 	switch (type) {
 	case 0:
-		effFlameSetVtx(&data->vtx[2], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x40), 2);
-		effFlameSetVtx(&data->vtx[3], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x40), 3);
-		effFlameSetVtx(&data->vtx[6], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x40), 6);
-		effFlameSetVtx(&data->vtx[7], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x40), 7);
+		effFlameSetVtx(&data->vtx[2], mtx3, (effFlameVtx*)stg_flame_v, 2);
+		effFlameSetVtx(&data->vtx[3], mtx3, (effFlameVtx*)stg_flame_v, 3);
+		effFlameSetVtx(&data->vtx[6], mtx3, (effFlameVtx*)stg_flame_v, 6);
+		effFlameSetVtx(&data->vtx[7], mtx3, (effFlameVtx*)stg_flame_v, 7);
 		break;
 	case 1:
-		effFlameSetVtx(&data->vtx[2], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x120), 2);
-		effFlameSetVtx(&data->vtx[3], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x120), 3);
-		effFlameSetVtx(&data->vtx[6], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x120), 6);
-		effFlameSetVtx(&data->vtx[7], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x120), 7);
+		effFlameSetVtx(&data->vtx[2], mtx3, (effFlameVtx*)stg_flame_3_v, 2);
+		effFlameSetVtx(&data->vtx[3], mtx3, (effFlameVtx*)stg_flame_3_v, 3);
+		effFlameSetVtx(&data->vtx[6], mtx3, (effFlameVtx*)stg_flame_3_v, 6);
+		effFlameSetVtx(&data->vtx[7], mtx3, (effFlameVtx*)stg_flame_3_v, 7);
 		break;
 	default:
-		effFlameSetVtx(&data->vtx[2], mtx3, (effFlameVtx*)((u8*)flameTbl + 0xB0), 2);
-		effFlameSetVtx(&data->vtx[3], mtx3, (effFlameVtx*)((u8*)flameTbl + 0xB0), 3);
-		effFlameSetVtx(&data->vtx[6], mtx3, (effFlameVtx*)((u8*)flameTbl + 0xB0), 6);
-		effFlameSetVtx(&data->vtx[7], mtx3, (effFlameVtx*)((u8*)flameTbl + 0xB0), 7);
+		effFlameSetVtx(&data->vtx[2], mtx3, (effFlameVtx*)stg_flame_2_v, 2);
+		effFlameSetVtx(&data->vtx[3], mtx3, (effFlameVtx*)stg_flame_2_v, 3);
+		effFlameSetVtx(&data->vtx[6], mtx3, (effFlameVtx*)stg_flame_2_v, 6);
+		effFlameSetVtx(&data->vtx[7], mtx3, (effFlameVtx*)stg_flame_2_v, 7);
 		break;
 	}
 
@@ -453,22 +489,22 @@ void effFlameDisp(CameraId camId, void* param) {
 	}
 	switch (type) {
 	case 0:
-		effFlameSetVtx(&data->vtx[0], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x40), 0);
-		effFlameSetVtx(&data->vtx[1], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x40), 1);
-		effFlameSetVtx(&data->vtx[4], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x40), 4);
-		effFlameSetVtx(&data->vtx[5], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x40), 5);
+		effFlameSetVtx(&data->vtx[0], mtx3, (effFlameVtx*)stg_flame_v, 0);
+		effFlameSetVtx(&data->vtx[1], mtx3, (effFlameVtx*)stg_flame_v, 1);
+		effFlameSetVtx(&data->vtx[4], mtx3, (effFlameVtx*)stg_flame_v, 4);
+		effFlameSetVtx(&data->vtx[5], mtx3, (effFlameVtx*)stg_flame_v, 5);
 		break;
 	case 1:
-		effFlameSetVtx(&data->vtx[0], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x120), 0);
-		effFlameSetVtx(&data->vtx[1], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x120), 1);
-		effFlameSetVtx(&data->vtx[4], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x120), 4);
-		effFlameSetVtx(&data->vtx[5], mtx3, (effFlameVtx*)((u8*)flameTbl + 0x120), 5);
+		effFlameSetVtx(&data->vtx[0], mtx3, (effFlameVtx*)stg_flame_3_v, 0);
+		effFlameSetVtx(&data->vtx[1], mtx3, (effFlameVtx*)stg_flame_3_v, 1);
+		effFlameSetVtx(&data->vtx[4], mtx3, (effFlameVtx*)stg_flame_3_v, 4);
+		effFlameSetVtx(&data->vtx[5], mtx3, (effFlameVtx*)stg_flame_3_v, 5);
 		break;
 	default:
-		effFlameSetVtx(&data->vtx[0], mtx3, (effFlameVtx*)((u8*)flameTbl + 0xB0), 0);
-		effFlameSetVtx(&data->vtx[1], mtx3, (effFlameVtx*)((u8*)flameTbl + 0xB0), 1);
-		effFlameSetVtx(&data->vtx[4], mtx3, (effFlameVtx*)((u8*)flameTbl + 0xB0), 4);
-		effFlameSetVtx(&data->vtx[5], mtx3, (effFlameVtx*)((u8*)flameTbl + 0xB0), 5);
+		effFlameSetVtx(&data->vtx[0], mtx3, (effFlameVtx*)stg_flame_2_v, 0);
+		effFlameSetVtx(&data->vtx[1], mtx3, (effFlameVtx*)stg_flame_2_v, 1);
+		effFlameSetVtx(&data->vtx[4], mtx3, (effFlameVtx*)stg_flame_2_v, 4);
+		effFlameSetVtx(&data->vtx[5], mtx3, (effFlameVtx*)stg_flame_2_v, 5);
 		break;
 	}
 
@@ -523,4 +559,5 @@ void effFlameDisp(CameraId camId, void* param) {
 		break;
 	}
 }
+#pragma opt_common_subs reset
 #pragma opt_propagation reset

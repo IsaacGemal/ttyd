@@ -246,31 +246,35 @@ extern u32 lp[1];
 
 // The instruction sequence and frame layout (0x120) match. Declaring `i`/`j` first
 // reproduces the outer-loop integer colouring and re-deriving `pd` inside the entry-match
-// block reproduces the retail r20 reload. Removing the `pi` local (comparing
-// float_3p1416_bom_00007070 directly) puts pi in f31 and the constants on f22..f30 as
-// retail has them; the local PoseState* `st`/`st2` fixed most of the integer colouring.
-// The callee-saved FPR values now match (c1=f23, c2=f24, ccos=f22, zero=f25, double=f26,
-// 6.2832=f27, 32767=f28, 400=f29, 500=f30, pi=f31, angle=f21). Assigning c1/ccos/c2
-// inside the loop (right after the sinv seed) rather than in the preheader is what makes
-// MWCC schedule the retail constant-load order. Casting the state address to bytes
+// block reproduces the retail r20 reload. Comparing float_3p1416_bom_00007070 directly (no
+// `pi` local) puts pi in f31 and the constants on f22..f30 as retail has them; the local
+// PoseState* `st`/`st2` fixed most of the integer colouring. The callee-saved FPR values
+// match (c1=f23, c2=f24, ccos=f22, zero=f25, double=f26, 6.2832=f27, 32767=f28, 400=f29,
+// 500=f30, pi=f31, angle=f21). Assigning c1/c2 right after the sinv seed and ccos just
+// before the second block is what makes MWCC hoist the constant loads in retail's order
+// (0.16605, 1.0, pi, 0.4967). Casting the state address to bytes
 // (`(PoseState*)((u8*)pd->states + i * sizeof(PoseState))`) folds the array base 0xB0 into
-// the store displacement (0xcc/0xc4/0xb0 off pd+i*0x30) as retail does, and swapping the
-// two sin-block scratch temps is what puts the polynomial working reg where retail wants
-// it. Still differs: (a) the preheader GPR base register allocation and load order, and
-// (b) the loop scratch f0/f1 colouring.
-// NONMATCHING (88.62%): a permuter candidate - only register colouring differs.
+// the store displacement (0xcc/0xc4/0xb0 off pd+i*0x30) as retail does.
+// Still differs: only the loop scratch/FPR pairs are swapped. Retail keeps `range` in f0
+// and the second sine scratch in f2; ours puts range in f2 and the second scratch in f0
+// (the primary scratch f1 and every callee-saved FPR match). The preheader GPR base
+// registers, the pose/e r23/r26 pair and the i2f stack slot (retail 0x28, ours 0x30) follow
+// from that one swap. Every compare and constant is checked against the asm.
+#pragma opt_lifetimes off   // stop MWCC keeping every loop-invariant constant live (f19..f31)
+#pragma opt_common_subs off // same: reuse retail's f22..f31 set instead of a wider one
+// NONMATCHING (98.99%): only the loop scratch/FPR pairs are swapped; see above.
 static void ext_init(void) {
+    f32 f0;
+    ExtPose* pose;
     s32 i;
     s32 j;
-    PoseData* pd;
-    ExtPose* pose;
     PoseEntry* e;
     f32 c2;
     f32 c1;
     f32 ccos;
     f32 angle;
     f32 range;
-    f32 f0;
+    PoseData* pd;
     f32 sinv;
     f32 f1;
 
@@ -292,41 +296,41 @@ static void ext_init(void) {
         range = (f32)rand() * float_400_bom_000070bc / float_32767_bom_000070ac + float_500_bom_000070e8;
         sinv = float_0p00761_bom_00007068;
         c1 = float_0p16605_bom_0000706c;
-        ccos = float_0p4967_bom_00007080;
         c2 = float_1_bom_00006ffc;
         if (angle <= float_3p1416_bom_00007070) {
             if (angle <= float_1p5708_bom_00007074) {
-                f1 = angle * angle;
-                sinv = sinv * f1 - c1;
-                sinv = sinv * f1 + c2;
+                f0 = angle * angle;
+                sinv = sinv * f0 - c1;
+                sinv = sinv * f0 + c2;
                 sinv = sinv * angle;
             } else {
-                f1 = angle - float_1p5708_bom_00007074;
-                f0 = float_1p5708_bom_00007074 - f1;
-                f1 = f0 * f0;
-                sinv = sinv * f1 - c1;
-                sinv = sinv * f1 + c2;
-                sinv = sinv * f0;
+                f0 = angle - float_1p5708_bom_00007074;
+                f1 = float_1p5708_bom_00007074 - f0;
+                f0 = f1 * f1;
+                sinv = sinv * f0 - c1;
+                sinv = sinv * f0 + c2;
+                sinv = sinv * f1;
             }
         } else if (angle < float_4p7124_bom_00007078) {
-            f0 = angle - float_3p1416_bom_00007070;
-            f1 = f0 * f0;
-            sinv = sinv * f1 - c1;
-            sinv = sinv * f1 + c2;
-            sinv = sinv * f0;
+            f1 = angle - float_3p1416_bom_00007070;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
             sinv = -sinv;
         } else {
-            f1 = angle - float_4p7124_bom_00007078;
-            f0 = float_1p5708_bom_00007074 - f1;
-            f1 = f0 * f0;
-            sinv = sinv * f1 - c1;
-            sinv = sinv * f1 + c2;
-            sinv = sinv * f0;
+            f0 = angle - float_4p7124_bom_00007078;
+            f1 = float_1p5708_bom_00007074 - f0;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
             sinv = -sinv;
         }
         (*pose->matrix)[0][3] = range * sinv;
         (*pose->matrix)[1][3] = zero_bom_00007004;
         sinv = float_0p03705_bom_0000707c;
+        ccos = float_0p4967_bom_00007080;
         if (angle <= float_3p1416_bom_00007070) {
             if (angle <= float_1p5708_bom_00007074) {
                 f0 = angle * angle;
@@ -374,6 +378,8 @@ static void ext_init(void) {
         }
     }
 }
+#pragma opt_lifetimes reset   // end of ext_init scope
+#pragma opt_common_subs reset // end of ext_init scope
 
 
 EVT_BEGIN(evt_bom1000)
@@ -1977,31 +1983,102 @@ extern const f32 float_0p4967_bom_00007080;
 extern const f32 float_100_bom_00007000;
 extern const f32 float_1_bom_00006ffc;
 
-// The instruction sequence, frame (0x110) and the whole preheader FPR block match: retail keeps
-// 100=f23, scale=f24, c4967=f25, c16605=f26, one=f27, twoPi=f28, double=f29, quarter=f30, pi=f31
-// and the angle in f3, and so does this version. The sin/cos seed loads must stay inside the loop
-// (the constants are read through a MUST_MATCH volatile cast; a plain read is hoisted to a
-// callee-saved register), and opt_common_subs off is needed or MWCC merges the loop-invariant
-// pool loads and shifts the whole f23..f31 block. opt_lifetimes off is what makes the seed
-// accumulate in place (seed f2/f4, `fmsubs f2, f2, f0, ...`) instead of through an extra temp.
-// Remaining diff: the per-branch angle-square / half-pi scratch works in f1 where retail uses f0
-// (one FPR off for the whole sin/cos scratch block). Two separate temps come out f0/f1 swapped
-// and score lower; every scratch declaration/assignment order and angle form tried leaves this.
-#pragma opt_common_subs off // CSE on merges the loop-invariant float pool loads, shifting the f23..f31 block
-#pragma opt_lifetimes off // default lifetime analysis splits the seed load from its accumulator (f4/f0/f1 instead of f2)
-// NONMATCHING (96.91%): constant block and seed accumulators match; only the sin/cos per-branch
-// scratch temp is f1 where retail uses f0.
+// Sin/cos polynomials live in one inline helper each: keeping each polynomial in a single helper
+// (rather than inlining the branches twice) is what puts the angle^2 scratch in f0 and the
+// wrapped-angle pivot in f1, exactly as retail. The coefficients as helper locals keep the seed
+// in f2 and the coefficient group on f23..f27.
+static inline f32 bomSinApprox(f32 angle) {
+    f32 v = float_0p00761_bom_00007068;
+    f32 b = float_0p16605_bom_0000706c;
+    f32 one = float_1_bom_00006ffc;
+    f32 t, u;
+
+    if (angle <= float_3p1416_bom_00007070) {
+        if (angle <= float_1p5708_bom_00007074) {
+            u = angle * angle;
+            v = v * u - b;
+            v = v * u + one;
+            v = v * angle;
+        } else {
+            t = float_1p5708_bom_00007074 - (angle - float_1p5708_bom_00007074);
+            u = t * t;
+            v = v * u - b;
+            v = v * u + one;
+            v = v * t;
+        }
+    } else if (angle < float_4p7124_bom_00007078) {
+        t = angle - float_3p1416_bom_00007070;
+        u = t * t;
+        v = v * u - b;
+        v = v * u + one;
+        v = v * t;
+        v = -v;
+    } else {
+        t = float_1p5708_bom_00007074 - (angle - float_4p7124_bom_00007078);
+        u = t * t;
+        v = v * u - b;
+        v = v * u + one;
+        v = v * t;
+        v = -v;
+    }
+    return v;
+}
+static inline f32 bomCosApprox(f32 angle) {
+    f32 v = float_0p03705_bom_0000707c;
+    f32 b = float_0p4967_bom_00007080;
+    f32 one = float_1_bom_00006ffc;
+    f32 u;
+
+    if (angle <= float_3p1416_bom_00007070) {
+        if (angle <= float_1p5708_bom_00007074) {
+            u = angle * angle;
+            v = v * u - b;
+            v = v * u + one;
+        } else {
+            u = float_1p5708_bom_00007074 - (angle - float_1p5708_bom_00007074);
+            u = u * u;
+            v = v * u - b;
+            v = v * u + one;
+            v = -v;
+        }
+    } else if (angle < float_4p7124_bom_00007078) {
+        u = angle - float_3p1416_bom_00007070;
+        u = u * u;
+        v = v * u - b;
+        v = v * u + one;
+        v = -v;
+    } else {
+        u = float_1p5708_bom_00007074 - (angle - float_4p7124_bom_00007078);
+        u = u * u;
+        v = v * u - b;
+        v = v * u + one;
+    }
+    return v;
+}
+// The sin/cos polynomials live in one `static inline` helper each
+// (see pik_02.c's hoshi_sin_approx) so the angle^2 scratch / wrapped-angle pivot colour as
+// f0/f1; the angle is built in two statements (angle = 6p2832 * i; angle = angle * 0p125;)
+// for the target's f28/f29/f30 load order; mtxId is computed after PSMTXTrans; GXSetTevAlphaIn
+// takes its operand inline while GXSetTevColorIn keeps a `colorIn` temp; and the tev boolean
+// is written `!i` rather than `(i == 0)`. Both spell the same cntlzw/srwi, but `!i` gives the
+// loop web {mtxId, flag} the higher vreg number, which is what lands it in r25 and the
+// {texBuf, &6p2832, &zero} chain in r24 exactly as retail has them (the `==` form swaps the two).
+// opt_common_subs off: with CSE on MWCC hoists the two loop-invariant seed loads
+// (float_0p00761/float_0p03705) into extra FPRs, which pushes the whole coefficient group
+// into f21/f22 and grows the frame; the target rematerialises them.
+#pragma opt_common_subs off // needed: CSE otherwise hoists the loop-invariant seed loads
+// opt_lifetimes off: the default lifetime pass assigns the loop scratch/temp FPRs differently.
+#pragma opt_lifetimes off // needed: default lifetime analysis colours the loop scratch FPRs differently
+// opt_propagation off: with propagation on MWCC folds the loop-invariant seed loads again.
+#pragma opt_propagation off // needed: propagation otherwise folds the loop-invariant seed loads
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
     smartEntry* texBuf;
     CameraEntry* cam;
-    f32 quarter, twoPi, one, c16605, c4967;
     f32 scale;
     s32 i;
     s32 mtxId;
-    f32 f1, f2, f3, f4;
-    f32 sq;
 
     scale = (f32)evtGetValue(NULL, GW(5)) / float_100_bom_00007000;
     cam = camGetPtr(cameraId);
@@ -2011,7 +2088,7 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXCopyTex(texBuf->address, GX_FALSE);
     GXPixModeSync();
     GXInitTexObj(&texObj, texBuf->address, 0x260, 0x1E0, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, zero_bom_00007004, zero_bom_00007004, zero_bom_00007004, GX_FALSE, GX_FALSE, GX_ANISO_1);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
     GXSetZCompLoc(GX_TRUE);
@@ -2022,85 +2099,14 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXSetNumTexGens(8);
     GXSetNumTevStages(8);
     for (i = 0; i < 8; i++) {
-        twoPi = float_6p2832_bom_00007060;
-        quarter = float_0p125_bom_00007064;
-        f1 = twoPi * (f32)i;
-        f3 = f1 * quarter;
-#ifdef MUST_MATCH
-        f2 = *(volatile const f32*)&float_0p00761_bom_00007068;
-#else
-        f2 = float_0p00761_bom_00007068;
-#endif
-        c16605 = float_0p16605_bom_0000706c;
-        one = float_1_bom_00006ffc;
-        if (f3 <= float_3p1416_bom_00007070) {
-            if (f3 <= float_1p5708_bom_00007074) {
-                f1 = f3 * f3;
-                f2 = (f2 * f1) - c16605;
-                f2 = (f2 * f1) + one;
-                f2 = f2 * f3;
-            } else {
-                f1 = f3 - float_1p5708_bom_00007074;
-                f1 = float_1p5708_bom_00007074 - f1;
-                sq = f1 * f1;
-                f2 = (f2 * sq) - c16605;
-                f2 = (f2 * sq) + one;
-                f2 = f2 * f1;
-            }
-        } else {
-            if (f3 < float_4p7124_bom_00007078) {
-                f1 = f3 - float_3p1416_bom_00007070;
-                sq = f1 * f1;
-                f2 = (f2 * sq) - c16605;
-                f2 = (f2 * sq) + one;
-                f2 = f2 * f1;
-                f2 = -f2;
-            } else {
-                f1 = f3 - float_4p7124_bom_00007078;
-                f1 = float_1p5708_bom_00007074 - f1;
-                sq = f1 * f1;
-                f2 = (f2 * sq) - c16605;
-                f2 = (f2 * sq) + one;
-                f2 = f2 * f1;
-                f2 = -f2;
-            }
-        }
-#ifdef MUST_MATCH
-        f4 = *(volatile const f32*)&float_0p03705_bom_0000707c;
-#else
-        f4 = float_0p03705_bom_0000707c;
-#endif
-        c4967 = float_0p4967_bom_00007080;
-        if (f3 <= float_3p1416_bom_00007070) {
-            if (f3 <= float_1p5708_bom_00007074) {
-                f1 = f3 * f3;
-                f4 = (f4 * f1) - c4967;
-                f4 = (f4 * f1) + one;
-            } else {
-                f1 = f3 - float_1p5708_bom_00007074;
-                f1 = float_1p5708_bom_00007074 - f1;
-                f1 = f1 * f1;
-                f4 = (f4 * f1) - c4967;
-                f4 = (f4 * f1) + one;
-                f4 = -f4;
-            }
-        } else {
-            if (f3 < float_4p7124_bom_00007078) {
-                f1 = f3 - float_3p1416_bom_00007070;
-                f1 = f1 * f1;
-                f4 = (f4 * f1) - c4967;
-                f4 = (f4 * f1) + one;
-                f4 = -f4;
-            } else {
-                f1 = f3 - float_4p7124_bom_00007078;
-                f1 = float_1p5708_bom_00007074 - f1;
-                f1 = f1 * f1;
-                f4 = (f4 * f1) - c4967;
-                f4 = (f4 * f1) + one;
-            }
-        }
+        f32 angle = float_6p2832_bom_00007060 * (f32)i;
+        f32 s, c, tmp;
+        tmp = angle * float_0p125_bom_00007064;
+        s = bomSinApprox(tmp);
+        c = bomCosApprox(tmp);
+
+        PSMTXTrans(mtx, (scale * s) / float_100_bom_00007000, (scale * c) / float_100_bom_00007000, zero_bom_00007004);
         mtxId = 30 + i * 3;
-        PSMTXTrans(mtx, (scale * f2) / float_100_bom_00007000, (scale * f4) / float_100_bom_00007000, 0.0f);
         GXLoadTexMtxImm(mtx, mtxId, GX_MTX2x4);
         GXSetTexCoordGen2(i, GX_TG_MTX2x4, GX_TG_TEX0, mtxId, GX_FALSE, GX_PTIDENTITY);
         GXSetTevKColorSel(i, GX_TEV_KCSEL_1_8);
@@ -2109,15 +2115,11 @@ static void depthDisp(CameraId cameraId, void* param) {
         GXSetTevColorOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevAlphaOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         {
-            s32 flag = (i == 0);
+            s32 flag = !i; // `!i` over `(i == 0)`: same cntlzw/srwi, right r24/r25 colouring
             s32 colorIn = flag ? GX_CC_ZERO : GX_CC_CPREV;
 
             GXSetTevColorIn(i, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, colorIn);
-            {
-                s32 alphaIn = flag ? GX_CA_ZERO : GX_CA_APREV;
-
-                GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, alphaIn);
-            }
+            GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, flag ? GX_CA_ZERO : GX_CA_APREV);
         }
         GXSetTevSwapMode(i, GX_TEV_SWAP0, GX_TEV_SWAP0);
     }
@@ -2140,6 +2142,7 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXTexCoord2s16(0, 1);
     sysWaitDrawSync();
 }
+#pragma opt_propagation reset
 #pragma opt_lifetimes reset
 #pragma opt_common_subs reset
 
@@ -2180,8 +2183,27 @@ void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
     }
 }
 
-// TODO: write pose_main (static, 0x180 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+extern const f32 float_1000_bom_0000705c;
+extern const f32 float_60_bom_000070dc;
+
+static void pose_main(void) {
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    s32 i;
+    ExtPose* pose;
+
+    pose = extGetPosePtr();
+    for (i = 0; i < *(s32*)((u8*)pd + 0x4); i++) { // 0x4 of PoseData is the pose count (the header keeps it as padding)
+        PoseEntry* entry = &pd->entries[pd->states[i].field_20];
+        f32 t = float_60_bom_000070dc * (f32)OSTicksToMilliseconds(gp->renderTime - pd->states[i].time) / float_1000_bom_0000705c / entry->field_8;
+
+        if (t >= float_1_bom_00006ffc) {
+            pd->states[i].time = gp->renderTime;
+            t = zero_bom_00007004;
+        }
+        pose->field_0x10 = entry->field_C + (s32)((f32)(entry->field_10 - 1) * t);
+        pose++;
+    }
+}
 
 // TODO: write disp_sight (global, 0x16fc bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
@@ -2528,16 +2550,24 @@ static void pose_init(void) {
     pd->count++;
 }
 
-// NONMATCHING (75.89%): rand() scheduling differs (compiler hoists the call before idx computation)
+// NONMATCHING (90.63%): retail materialises event->args in r27 and a separate args+2 in r31 (seven
+// callee-saved registers); here the args pointer lands in r31 and args+2 folds into displacements,
+// so the remaining callee-saved colours are shifted by one. The a2 aliases below are codegen-only.
+#ifdef MUST_MATCH
+#define BOM_ARG(n) a2[(n) - 2]
+#else
+#define BOM_ARG(n) event->args[n]
+#endif
 USER_FUNC(bom1000_msg) {
-    s32* args = event->args;
-    s32 a = evtGetValue(event, args[0]);
-    s32 b = evtGetValue(event, args[1]);
+#ifdef MUST_MATCH
+    s32* a2 = event->args + 2;
+#endif
+    s32 a = evtGetValue(event, BOM_ARG(0));
+    s32 b = evtGetValue(event, event->args[1]);
     ExtPose* pose = extGetPosePtr();
     s32 base;
     s32 flag;
     s32 idx;
-    s32 mod;
 
     if (a == 0) {
         base = 3;
@@ -2547,16 +2577,16 @@ USER_FUNC(bom1000_msg) {
         flag = 0;
     }
     idx = b + base * 14;
-    mod = (b + (rand() % 2 + 1) * 4) % 14;
-    evtSetValue(event, args[0], flag);
-    evtSetValue(event, args[1], mod);
-    evtSetFloat(event, args[2], pose[idx].matrix[0][0][3]);
-    evtSetFloat(event, args[3], pose[idx].matrix[0][2][3]);
+    b = (b + (rand() % 2 + 1) * 4) % 14;
+    evtSetValue(event, event->args[0], flag);
+    evtSetValue(event, BOM_ARG(1), b);
+    evtSetFloat(event, BOM_ARG(2), pose[idx].matrix[0][0][3]);
+    evtSetFloat(event, BOM_ARG(3), pose[idx].matrix[0][2][3]);
     return EVT_RETURN_DONE;
 }
+#undef BOM_ARG
 
-// keeps the three float temps and the schedule the target has (see the NONMATCHING note)
-#pragma opt_common_subs off
+#pragma opt_common_subs off // keeps the three float temps and the schedule the target has (see the NONMATCHING note)
 // NONMATCHING (99.66%): the first block loads float_100 into r4 and zero into r3;
 // the target has float_100 in r3 and zero in r4 (f29/f30/f31 and the second block match).
 USER_FUNC(taihou_r) {
