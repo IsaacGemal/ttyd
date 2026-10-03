@@ -9,6 +9,7 @@
 #include "mario/mariost.h"
 #include "memory.h"
 #include "system.h"
+#include "math_trig.h"
 #include <math.h>
 
 #include <stdio.h>
@@ -73,6 +74,16 @@ extern const f32 float_deg2rad_80419a4c;
 extern const f32 float_neg0p5_80419a88;
 extern const f32 float_neg2_80419ab8;
 extern const f32 float_neg3_80419abc;
+extern const f32 float_neg90_80419a90;
+extern const f32 float_rad2deg_80419a94;
+extern const f32 float_360_80419a98;
+extern const f32 float_neg360_80419a9c;
+extern const f32 float_90_80419aa0;
+extern const f32 float_270_80419aa4;
+extern const f32 float_neg270_80419aa8;
+extern const f32 float_180_80419aac;
+extern const f32 float_neg180_80419ab0;
+extern const f32 float_0p1_80419ab4;
 u32 zero_80419a50 = 0;
 
 
@@ -1226,7 +1237,7 @@ inline BOOL animSetMaterial_ChangeTexture(AnimationPoseData* data, AnimPoseShape
 }
 
 // materialProc
-// NONMATCHING (92.79%): the animSetMaterial_Texture call is inlined away (its body is still an empty stub); register allocation also differs (draw/i in r29/r31 are swapped, and the inlined
+// NONMATCHING (96.84%): the animSetMaterial_Texture call is inlined away (its body is still an empty stub); register allocation also differs (draw/i in r29/r31 are swapped, and the inlined
 // ChangeTexture's pointer arguments evaluate right-to-left instead of the original's left-to-right; calls,
 // constants and instruction stream are otherwise identical).
 void materialProc(s32 shapeId, s32 field_0x28) {
@@ -1690,7 +1701,221 @@ void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluM
     animPoseDrawMtx(poseId, matrix, xluMode, rotY, scale);
 }
 
+
+// The original inlines one camera-angle helper at all three sites; the macro keeps the
+// target's frsp/lfs ordering.
+#define ANIM_GET_ANGLE(angle)                                                                       \
+    do {                                                                                              \
+        CameraEntry* cam = camGetPtr(CAMERA_3D);                                                      \
+        f32 raw = (f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z)); \
+        angle = float_rad2deg_80419a94;                                                               \
+        angle *= raw;                                                                                 \
+        while (angle < float_neg360_80419a9c) {                                                       \
+            angle += float_360_80419a98;                                                              \
+        }                                                                                             \
+        while (angle >= float_360_80419a98) {                                                         \
+            angle -= float_360_80419a98;                                                              \
+        }                                                                                             \
+        if (angle < float_0_80419a48) {                                                               \
+            angle += float_360_80419a98;                                                              \
+        }                                                                                             \
+    } while (0)
+
 // _animPoseDrawMtx
+// The three inlined copies of the camera-angle helper keep the ±360 angle constants in
+// f1/f0 and reload them at each loop, so the compiler must not merge the loads.
+// Declaration/use order, locals and the other -O pragmas were tried and only
+// opt_common_subs changes the colouring.
+// NONMATCHING (96.82%): the inlined camera-angle helper's 360/-360 constants are still
+// swapped (f0/f1) and the lastFrameZero block's GPRs differ.
+void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
+    AnimationPoseData* poseData;
+    AnimData* animData;
+    Mtx dstMtx;
+    Mtx rotMtx;
+    Mtx rotMtx2;
+    Mtx scaleMtx;
+    GXColor color0;
+    GXColor color1;
+    s32 field_0x28;
+    s32 field_0x2c;
+    f32 field_0x30;
+    s32 stage;
+    f32 neg1;
+    s32 useScratch;
+
+    poseData = animPoseGetBaseData(pose);
+    animData = ANIM_POSE_DATA_ANIMS(poseData)[pose->animId].data;
+    field_0x28 = *(s32*)((u8*)pose + 0x28);
+    field_0x2c = *(s32*)((u8*)pose + 0x2C);
+    field_0x30 = *(f32*)((u8*)pose + 0x30);
+    if (animData == NULL) {
+        return;
+    }
+
+    {
+        s32 inBattle = wp->inBattle;
+
+        if (inBattle) {
+            if (pose->type == 0) {
+                return;
+            }
+        }
+        if (!inBattle) {
+            if (pose->type == 1) {
+                return;
+            }
+        }
+    }
+
+    if (!(xluMode == 2 && (*(u32*)poseData->field_0xC4 & 1)) &&
+        !(*(u32*)poseData->field_0xC4 & (1 << xluMode))) {
+        return;
+    }
+
+    stage = xluMode;
+    color1 = pose->materialColor2;
+    color0 = pose->materialColor;
+    if (mapTestXLU(pose->materialFlag, &color0, &color1)) {
+        stage = 3;
+    }
+    if (pose->gxCallback != NULL) {
+        pose->gxCallback(stage);
+    } else {
+        switch (stage) {
+            case 1:
+                GXSetZMode(1, 3, 1);
+                GXSetBlendMode(0, 4, 5, 0);
+                GXSetZCompLoc(1);
+                GXSetAlphaCompare(7, 0, 0, 7, 0);
+                break;
+            case 0:
+            case 2:
+                GXSetZMode(1, 3, 1);
+                GXSetBlendMode(0, 4, 5, 0);
+                GXSetZCompLoc(0);
+                GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+                break;
+            case 3:
+                GXSetZMode(1, 3, 0);
+                GXSetBlendMode(1, 4, 5, 0);
+                GXSetZCompLoc(1);
+                GXSetAlphaCompare(7, 0, 0, 7, 0);
+                break;
+        }
+        wp->currDispMode = stage;
+    }
+
+    if (pose->flags & 0x8) {
+        f32 angle;
+        f32 diff;
+
+        rotY += float_neg90_80419a90;
+        pose->field_0x70 = rotY;
+        ANIM_GET_ANGLE(diff);
+        diff = diff - pose->field_0x70;
+        while (diff < float_neg360_80419a9c) {
+            diff += float_360_80419a98;
+        }
+        while (diff >= float_360_80419a98) {
+            diff -= float_360_80419a98;
+        }
+        if ((diff > float_90_80419aa0 && diff <= float_270_80419aa4) ||
+            (diff < float_neg90_80419a90 && diff >= float_neg270_80419aa8)) {
+            ANIM_GET_ANGLE(angle);
+            angle = float_180_80419aac + angle;
+            while (angle < float_neg360_80419a9c) {
+                angle += float_360_80419a98;
+            }
+            while (angle >= float_360_80419a98) {
+                angle -= float_360_80419a98;
+            }
+            pose->field_0x7C = angle;
+        } else {
+            ANIM_GET_ANGLE(angle);
+            pose->field_0x7C = angle;
+        }
+        while (pose->field_0x7C - pose->rotationY > float_180_80419aac) {
+            pose->rotationY += float_360_80419a98;
+        }
+        while (pose->field_0x7C - pose->rotationY < float_neg180_80419ab0) {
+            pose->rotationY -= float_360_80419a98;
+        }
+        if (pose->flags & 0x100) {
+            pose->rotationY = pose->field_0x7C;
+        } else {
+            pose->rotationY = float_0p1_80419ab4 * (pose->field_0x7C - pose->rotationY) + pose->rotationY;
+        }
+        if (pose->rotationY != float_0_80419a48) {
+            PSMTXRotRad(rotMtx, 'y', float_deg2rad_80419a4c * pose->rotationY);
+            PSMTXConcat(matrix, rotMtx, dstMtx);
+            matrix = dstMtx;
+        }
+        neg1 = float_neg1_80419a8c;
+        if (neg1 == pose->field_0x78) {
+            PSMTXScale(rotMtx, float_1_80419a44, float_1_80419a44, neg1);
+            PSMTXConcat(matrix, rotMtx, dstMtx);
+            matrix = dstMtx;
+        }
+    } else {
+        if (rotY != float_0_80419a48) {
+            PSMTXRotRad(rotMtx2, 'y', float_deg2rad_80419a4c * rotY);
+            PSMTXConcat(matrix, rotMtx2, dstMtx);
+            matrix = dstMtx;
+        }
+    }
+
+    if (float_1_80419a44 != scale) {
+        PSMTXScale(scaleMtx, scale, scale, scale);
+        PSMTXConcat(matrix, scaleMtx, dstMtx);
+        matrix = dstMtx;
+    }
+
+    if (pose->lastFrameZero == -1) {
+        s32 poseIndex = ((u32)pose - (u32)wp->poses) / sizeof(AnimationPose);
+
+        if (pose->typeFlags & 2) {
+            AnimationPoseData* data;
+            s32 posNum;
+            s32 nrmNum;
+
+            data = animPoseGetBaseData(pose);
+            posNum = data->mBufferPosNum;
+            nrmNum = data->mBufferNrmNum;
+            if (posNum + nrmNum <= (s32)wp->mFloatScratchRP) {
+                if ((s32)wp->mFloatScratchWP + posNum + nrmNum > (s32)wp->mFloatScratchRP) {
+                    wp->mFloatScratchWP = 0;
+                }
+                wp->mbUseFloatScratch = 1;
+                wp->vtxArrayPos = (Vec*)((u8*)wp->mpFloatScratch + wp->mFloatScratchWP * 12);
+                wp->mFloatScratchWP += posNum;
+                wp->vtxArrayNrm = (Vec*)((u8*)wp->mpFloatScratch + wp->mFloatScratchWP * 12);
+                wp->mFloatScratchWP += nrmNum;
+            }
+            animPoseMain(poseIndex);
+            wp->mbUseFloatScratch = 0;
+        } else {
+            animPoseMain(poseIndex);
+        }
+    }
+
+    g_modeling_mtx_lv = 0;
+    g_modeling_mtx = g_modeling_mtx_stack;
+    PSMTXCopy(matrix, *g_modeling_mtx);
+    wp->mpCurPose = pose;
+    wp->mpCurAnimData = animData;
+    wp->mpCurPoseData = poseData;
+    useScratch = (s32)wp->mbUseFloatScratch;
+    if (useScratch) {
+        DCFlushRange(wp->vtxArrayPos, animPoseGetBaseData(pose)->mBufferPosNum * 12);
+        DCFlushRange(wp->vtxArrayNrm, animPoseGetBaseData(pose)->mBufferNrmNum * 12);
+    } else {
+        DCFlushRange(pose->mpVtxArrayPos, animPoseGetBaseData(pose)->mBufferPosNum * 12);
+        DCFlushRange(pose->mpVtxArrayNrm, animPoseGetBaseData(pose)->mBufferNrmNum * 12);
+    }
+    GXInvalidateVtxCache();
+    dispProc(-1, poseData->groupCount - 1, field_0x28, field_0x2c, field_0x30);
+}
 
 // NONMATCHING (0.21%): empty placeholder, not decompiled yet.
 // dont_inline keeps animPoseDrawMtx a real bl from animPoseDraw (retail emits one).

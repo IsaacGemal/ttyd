@@ -3832,3 +3832,23 @@ without one, and the reaper (`~/snood/tools/reaper.py`) had no rule for wibo.
 **Lessons.** A wave that "finished" can still leave processes: check the tower for long-lived compiles at
 heartbeats (`ps -eo etimes,args | grep wibo`), not just load and temperature. A launcher thread with no deadline
 looks the same as a slow agent from the log until the end.
+
+## Wave 59, batch 1 (2026-10-02, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Wave 59** (21:06 on main e356587; base and report on the tower): every unclaimed function at 0% or below 50%,
+  any size (only 92 were left, 14 over 6 KB, each its own agent with up to 3 h), 58 agents split across two
+  launchers (`PFX=w59a_`/`w59b_`, `PART=0/2`/`1/2`), each capped at 24; up to three
+  continuation passes; animPoseMain's prompt carries the `__OSs8tof32` hint (#269). The launcher's own check.py and
+  rel_link calls run under `timeout -k 10 600` and every process left in an agent's workspace is killed afterwards
+  (the 16-hour funemizu hang); collection reverts any file with `#pragma scheduling <cpu>`.
+- Batch 1 (26 agents, onto main ef155f6): 9,118 -> 9,124, code fuzzy +1.1 (many 0% functions came up most of the
+  way). party.c keeps failing the natural build (its #else forms) and stays as on main again.
+- Review (`scratch/wave59/review1.md`): no behaviour defects; unused externs (msgdrv 16, party_bomhei 14, win_root
+  3), an unused poseSoundVolume helper and an unused include removed.
+- **Wave 60** queued by `scratch/wave60/chain.sh`: after wave 59 ends and 30 minutes for the permuter, a base from
+  current main and the 50-90% band, then 90-99% by unmatched-byte gap, skipping the permuter's queue17
+  (`scratch/wave5x/queue17.txt`) and claimed units (`scratch/wave5x/mkspec_band.py`).
+- Claude #1's second review of #273 (2 Claude + Codex): zubastar_main had no `case 6`; retail's jump table sends
+  state 6 to the `field_0x018 == 0xA && field_0x07C == 0xA` check at the end of case 5, so case 5 now falls through
+  into it (state 6 used to stall in default). The unit's .rodata reads through str_802FF668 + offset are under
+  MUST_MATCH with the named vec3/str objects in #else, scoped to zubastar_main.

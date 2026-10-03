@@ -1,6 +1,8 @@
 #include "battle/battle.h"
 #include "battle/battle_ac.h"
+#include "battle/battle_audience.h"
 #include "battle/battle_database_common.h"
+#include "battle/battle_event_cmd.h"
 #include "battle/battle_unit.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
@@ -75,6 +77,16 @@ extern const Vec vec3_802ff7b8;
 extern const Vec vec3_802ff7c4;
 extern const char str_802FF80C[];
 
+// LOCAL_PROTO(psndSFX_pit): the retail callers disagree on the pitch width and
+// signedness; this file passes a full 32-bit signed pitch.
+s32 psndSFX_pit(s32 id, s32 pit);
+
+// The original emits this as a local .sdata table (nice_event, local).
+static u32 nice_event[8] = {
+    0x0005005B, (u32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0xFFFFFF88,
+    0x0000008C, 0,                              2,          1,
+};
+
 typedef struct ZubaStarBomb {
     s32 state;       // 0x00
     s32 count;       // 0x04
@@ -103,23 +115,30 @@ typedef struct ZubaStarStar {
 struct ZubaStarWork {
     u8 field_0x000[0x04];          // 0x000
     s32 field_0x004;               // 0x004
-    u8 field_0x008[0x08];          // 0x008
+    s32 field_0x008;               // 0x008
+    s32 field_0x00C;               // 0x00C
     s32 field_0x010;               // 0x010
     s32 bombCount;                 // 0x014
     s32 field_0x018;               // 0x018
-    u8 field_0x01C[0x04];          // 0x01C
+    s32 field_0x01C;               // 0x01C
     Vec field_0x020;               // 0x020
     Vec field_0x02C[4];            // 0x02C
-    u8 field_0x05C[0x20];          // 0x05C
+    Vec field_0x05C;               // 0x05C
+    Vec field_0x068;               // 0x068
+    s32 field_0x074;               // 0x074
+    s16 field_0x078;               // 0x078
+    u8 field_0x07A[0x02];          // 0x07A
     s32 field_0x07C;               // 0x07C
-    u8 field_0x080[0x04];          // 0x080
+    s32 field_0x080;               // 0x080
     f32 field_0x084;               // 0x084
-    u8 field_0x088[0x0C];          // 0x088
-    f32 field_0x094;               // 0x094
-    f32 field_0x098;               // 0x098
-    u8 field_0x09C[0x05];          // 0x09C
+    f32 field_0x088;               // 0x088
+    f32 field_0x08C;               // 0x08C
+    f32 field_0x090;               // 0x090
+    Vec field_0x094;               // 0x094
+    u8 field_0x0A0;                // 0x0A0
     u8 field_0x0A1;                // 0x0A1
-    u8 field_0x0A2[0x06];          // 0x0A2
+    u8 field_0x0A2[0x02];          // 0x0A2
+    s32 field_0x0A4;               // 0x0A4
     ZubaStarBomb* bombs[0xC8];     // 0x0A8
     ZubaStarStar stars[0x10];      // 0x3C8
     smartEntry* tex;               // 0x588
@@ -167,10 +186,10 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
 
         icon = (work->field_0x0A1 <= 3) ? 0x64 : 0x65;
         pos = (Vec){ 0.0f, 0.0f, 0.0f };
-        pos.x = work->field_0x094 - 200.0f;
-        pos.y = 60.0f + work->field_0x098;
+        pos.x = work->field_0x094.x - 200.0f;
+        pos.y = 60.0f + work->field_0x094.y;
         iconDispGx(&pos, 0x10, icon, 1.0f);
-        BattleAcDrawGauge((s32)work->field_0x094, (s32)work->field_0x098, 0xB1, 4, 0x1A, 0x34, 0x4E,
+        BattleAcDrawGauge((s32)work->field_0x094.x, (s32)work->field_0x094.y, 0xB1, 4, 0x1A, 0x34, 0x4E,
                           0, 0.01f * work->field_0x084);
     }
     GXSetCullMode(GX_CULL_NONE);
@@ -346,6 +365,513 @@ s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
     memset(GetZubaStarPtr(), 0, 0x5E0);
     return 2;
 }
+
+// .text:0x85C | 0x8022F128 | size: 0xDF8
+// Reconstruction of the SAC mini-game's main event callback. There are three state machines, each a
+// switch on work->field_0x004, work->field_0x018 and work->field_0x07C. Case 0x19 of the first
+// gathers the star endpoints, sorts them, finds the widest gap on each edge and randomly places a
+// split point in it before calling zubastar_bunkatu.
+#ifdef MUST_MATCH
+// MUST_MATCH: a struct-copy initializer from dat_802ff6d4 makes MWCC emit the original's inline
+// 6-iteration copy loop; a plain Vec[4] initializer gets its own anonymous rodata table.
+#endif
+// NONMATCHING (97.14%): the i2f magic double and a handful of scheduler/register differences (the
+// unit's pool base is not emitted here, so the original's `lfd .., 0x1c0(r29)` becomes an anonymous
+// pool load; the sort/max loops and the star gather are otherwise byte-identical).
+s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
+    const u8* p = (const u8*)str_802FF668;
+#ifdef MUST_MATCH
+// MUST_MATCH: the original reads these .rodata objects as offsets from the unit's first one.
+#define ZS_ROV(off, sym) (*(const Vec*)(p + (off)))
+#define ZS_RD(off, sym) ((const char*)(p + (off)))
+#else
+#define ZS_ROV(off, sym) (sym)
+#define ZS_RD(off, sym) (sym)
+#endif
+    ZubaStarWork* work = GetZubaStarPtr();
+#ifdef MUST_MATCH
+    ZubaStarPoints4 points = *(ZubaStarPoints4*)(p + 0x6c);
+#else
+    Vec points[4] = {
+        { 0.0f, 240.0f, 0.0f },
+        { 304.0f, 240.0f, 0.0f },
+        { 304.0f, -240.0f, 0.0f },
+        { 0.0f, -240.0f, 0.0f },
+    };
+#endif
+    s32 audienceNum = BattleAudience_GetAudienceNum();
+    s32 i;
+    s32 j;
+
+    (void)event;
+    if (isFirstCall) {
+        work->tex = smartAlloc(GXGetTexBufferSize(0x190, 0x1E0, 4, 0, 0), 1);
+#ifdef MUST_MATCH
+        points.v[0] = ZS_ROV(0x9c, vec3_802ff704);
+        points.v[1] = ZS_ROV(0xa8, vec3_802ff710);
+        points.v[2] = ZS_ROV(0xb4, vec3_802ff71c);
+        points.v[3] = ZS_ROV(0xc0, vec3_802ff728);
+        zubastar_create_takaku(4, points.v);
+#else
+        points[0] = vec3_802ff704;
+        points[1] = vec3_802ff710;
+        points[2] = vec3_802ff71c;
+        points[3] = vec3_802ff728;
+        zubastar_create_takaku(4, points);
+#endif
+        work->field_0x020 = ZS_ROV(0xcc, vec3_802ff734);
+    }
+
+    switch (work->field_0x004) {
+    case 0:
+        work->field_0x004 = 5;
+        work->field_0x018 = 5;
+        break;
+    case 5:
+        work->field_0x004 = 6;
+        work->field_0x008 = 0;
+        if (work->field_0x07C == 0) {
+            work->field_0x07C = 5;
+        }
+        if (work->field_0x07C == 0xF) {
+            work->field_0x07C = 0x10;
+        }
+        // fallthrough
+    case 6:
+        if (work->field_0x018 == 0xA && work->field_0x07C == 0xA) {
+            work->field_0x004 = 0xA;
+        }
+        break;
+    case 0xA:
+        work->field_0x004 = 0xB;
+        work->field_0x00C = 0x12C;
+        // fallthrough
+    case 0xB:
+        if (work->field_0x084 >= 100.0f) {
+            EventEntry* entry;
+
+            work->field_0x004 = 0x14;
+            work->field_0x010++;
+            entry = evtEntry(nice_event, 0, 0x20);
+            {
+                s32 n = work->field_0x010 + 1;
+
+                entry->lwData[0] = n < 6 ? n : 6;
+            }
+            psndSFXOff(work->field_0x0A4);
+        } else {
+            work->field_0x00C--;
+            if (work->field_0x00C <= 0) {
+                work->field_0x004 = 0xF;
+                psndSFXOff(work->field_0x0A4);
+            } else if (keyGetButtonTrg(0) & 0x100) {
+                work->field_0x088 = 2.8f;
+            }
+        }
+        break;
+    case 0xF:
+        work->field_0x07C = 0x14;
+        psndSFXOff(work->field_0x0A4);
+        work->field_0x004 = 0x1E;
+        break;
+    case 0x14:
+        work->field_0x07C = 0xF;
+        work->field_0x080 = 0;
+        psndSFXOff(work->field_0x0A4);
+        if (audienceNum >= 1 && audienceNum <= 0x31) {
+            BattleAudienceSoundCallKind(1);
+        }
+        if (audienceNum >= 0x32 && audienceNum <= 0x63) {
+            BattleAudienceSoundCallKind(1);
+            BattleAudienceSoundWhistleKind(1);
+        }
+        if (audienceNum >= 0x64 && audienceNum <= 0x95) {
+            BattleAudienceSoundCallKind(2);
+            BattleAudienceSoundWhistleKind(2);
+        }
+        if (audienceNum >= 0x96) {
+            BattleAudienceSoundCallKind(2);
+            BattleAudienceSoundWhistleKind(3);
+        }
+        work->field_0x004 = 0x15;
+        work->field_0x018 = 0xF;
+        // fallthrough
+    case 0x15:
+        if (work->field_0x018 == 0x14) {
+            work->field_0x004 = 0x19;
+            work->field_0x008 = 0;
+        }
+        break;
+    case 0x19: {
+        f32 x[18];
+        f32 y[18];
+        f32 dx[17];
+        f32 dy[17];
+        s32 n;
+
+        work->field_0x004 = 0x1A;
+        work->field_0x018 = 0x19;
+        if (irand(2) == 0) {
+            work->field_0x05C = ZS_ROV(0xd8, vec3_802ff740);
+            work->field_0x068 = ZS_ROV(0xe4, vec3_802ff74c);
+        } else {
+            work->field_0x05C = ZS_ROV(0xf0, vec3_802ff758);
+            work->field_0x068 = ZS_ROV(0xfc, vec3_802ff764);
+        }
+        y[0] = -96.0f;
+        x[0] = -96.0f;
+        i = 0;
+        n = 1;
+        for (; i < 0x11; i++) {
+            ZubaStarStar* star = &work->stars[i];
+
+            if (star->state == 5) {
+                if (star->y0 == 240.0f) {
+                    x[n] = star->x0;
+                    y[n] = star->x1;
+                } else {
+                    x[n] = star->x1;
+                    y[n] = star->x0;
+                }
+                n++;
+            }
+        }
+        x[n] = 344.0f;
+        y[n] = 264.0f;
+        for (i = 0; i < n; i++) {
+            for (j = i + 1; j < n + 1; j++) {
+                if (x[i] > x[j]) {
+                    f32 t = x[i];
+                    x[i] = x[j];
+                    x[j] = t;
+                }
+                if (y[i] > y[j]) {
+                    f32 t = y[i];
+                    y[i] = y[j];
+                    y[j] = t;
+                }
+            }
+        }
+        for (i = 0; i < n; i++) {
+            dx[i] = x[i + 1] - x[i];
+            dy[i] = y[i + 1] - y[i];
+        }
+        {
+            s32 ix = 0;
+            s32 iy = 0;
+            f32 mx;
+            f32 my;
+
+            my = 0.0f;
+            mx = my;
+            for (i = 0, iy = 0, ix = 0; i < n; i++) {
+                if (dx[i] > mx) {
+                    mx = dx[i];
+                    ix = i;
+                }
+                if (dy[i] > my) {
+                    my = dy[i];
+                    iy = i;
+                }
+            }
+            {
+                f32 v = x[ix] + dx[ix] * (f32)rand() / 32767.0f;
+
+                if (work->field_0x05C.y == 240.0f) {
+                    work->field_0x05C.x = v;
+                } else {
+                    work->field_0x068.x = v;
+                }
+            }
+            {
+                f32 v = x[iy] + dx[iy] * (f32)rand() / 32767.0f;
+
+                if (work->field_0x05C.y == -240.0f) {
+                    work->field_0x05C.x = v;
+                } else {
+                    work->field_0x068.x = v;
+                }
+            }
+        }
+        {
+            Vec a;
+            Vec b;
+
+            b = work->field_0x068;
+            a = work->field_0x05C;
+            zubastar_bunkatu(&a, &b);
+        }
+        // fallthrough
+    }
+    case 0x1A:
+        if (work->field_0x018 == 0x1E) {
+            work->field_0x008++;
+            if (work->field_0x008 >= 3) {
+                work->field_0x004 = 0x21;
+            } else {
+                work->field_0x004 = 0x19;
+            }
+        }
+        break;
+    case 0x1E:
+        work->field_0x004 = 0x1F;
+        work->field_0x018 = 0xF;
+        // fallthrough
+    case 0x1F:
+        if (work->field_0x018 == 0x14) {
+            work->field_0x004 = 0x23;
+        }
+        break;
+    case 0x21:
+        if (work->field_0x010 >= 5) {
+            work->field_0x004 = 0x23;
+        } else {
+            work->field_0x004 = 0;
+        }
+        break;
+    case 0x23:
+        work->field_0x004 = 0x24;
+        work->field_0x018 = 0x19;
+        work->field_0x05C = ZS_ROV(0x108, vec3_802ff770);
+        work->field_0x068 = ZS_ROV(0x114, vec3_802ff77c);
+        break;
+    case 0x24:
+        if (work->field_0x018 == 0x1E) {
+            work->field_0x004 = 0x26;
+            work->field_0x008 = 0x3C;
+            btl_camera_shake_h(0, 0x3C, 0, 5.0f, 5.0f);
+        }
+        break;
+    case 0x26:
+        work->field_0x008--;
+        if (work->field_0x008 <= 0) {
+            work->field_0x004 = 0x28;
+        }
+        break;
+    case 0x28: {
+        s32 j;
+
+        for (j = 0; j < 0x10; j++) {
+            work->stars[j].state = 0;
+        }
+        return 2;
+    }
+    default:
+        break;
+    }
+
+    switch (work->field_0x018) {
+    case 0:
+        break;
+    case 5:
+        work->field_0x018 = 6;
+        work->field_0x01C = 0;
+        // fallthrough
+    case 6:
+        work->field_0x01C++;
+        work->field_0x020.x = 0.0f;
+        work->field_0x020.y = intplGetValue(4, work->field_0x01C, 0xF, 300.0f, 300.0f);
+        work->field_0x020.z = 0.0f;
+        if (work->field_0x01C >= 0xF) {
+            work->field_0x018 = 0xA;
+        }
+        break;
+    case 0xA:
+        work->field_0x020 = ZS_ROV(0x120, vec3_802ff788);
+        break;
+    case 0xF:
+        work->field_0x018 = 0x10;
+        work->field_0x01C = 0;
+        // fallthrough
+    case 0x10:
+        work->field_0x01C++;
+        work->field_0x020.x = 0.0f;
+        work->field_0x020.y = intplGetValue(4, work->field_0x01C, 0xF, 300.0f, 300.0f);
+        work->field_0x020.z = 0.0f;
+        if (work->field_0x01C >= 0xF) {
+            work->field_0x018 = 0x14;
+        }
+        break;
+    case 0x19:
+        work->field_0x018 = 0x1A;
+        work->field_0x074 = 0;
+        for (i = 0; i < 0x10; i++) {
+            ZubaStarStar* star = &work->stars[i];
+
+            if (star->state == 0) {
+                work->field_0x078 = i;
+                star->state = 5;
+                star->field_0x04 = 0;
+                {
+                    f32 px = work->field_0x05C.x;
+
+                    star->x1 = px;
+                    star->x0 = px;
+                }
+                {
+                    f32 py = work->field_0x05C.y;
+
+                    star->y1 = py;
+                    star->y0 = py;
+                }
+                star->timer = 0;
+                break;
+            }
+        }
+        psndSFXOn(ZS_RD(0x1c8, str_802FF830));
+        // fallthrough
+    case 0x1A:
+        work->field_0x074++;
+        work->field_0x020.x =
+            intplGetValue(0, work->field_0x074, 0xF, work->field_0x05C.x, work->field_0x068.x);
+        work->field_0x020.y =
+            intplGetValue(0, work->field_0x074, 0xF, work->field_0x05C.y, work->field_0x068.y);
+        {
+            ZubaStarStar* star = &work->stars[work->field_0x078];
+
+            star->x1 = work->field_0x020.x;
+            star->y1 = work->field_0x020.y;
+        }
+        if (work->field_0x074 >= 0xF) {
+            work->field_0x018 = 0x1B;
+            work->field_0x01C = 0;
+            btl_camera_shake_h(0, 0x1E, 0, 8.0f, 0.0f);
+        }
+        break;
+    case 0x1B:
+        work->field_0x01C++;
+        if (work->field_0x01C >= 5) {
+            work->field_0x018 = 0x1C;
+        }
+        break;
+    case 0x1C:
+        work->field_0x018 = 0x1E;
+        // fallthrough
+    case 0x1E:
+        work->field_0x020 = ZS_ROV(0x12c, vec3_802ff794);
+        break;
+    default:
+        break;
+    }
+
+    work->field_0x02C[3] = work->field_0x02C[2];
+    work->field_0x02C[2] = work->field_0x02C[1];
+    work->field_0x02C[1] = work->field_0x02C[0];
+    work->field_0x02C[0] = work->field_0x020;
+
+    switch (work->field_0x07C) {
+    case 0:
+        break;
+    case 5:
+        work->field_0x07C = 6;
+        work->field_0x080 = 0;
+        work->field_0x094 = ZS_ROV(0x138, vec3_802ff7a0);
+        work->field_0x090 = 200.0f;
+        work->field_0x084 = 0.0f;
+        work->field_0x088 = 0.0f;
+        work->field_0x08C = -1.0f;
+        work->field_0x0A0 = 0xFF;
+        work->field_0x0A1 = 0;
+        break;
+    case 6:
+        work->field_0x080++;
+        work->field_0x094.x = intplGetValue(4, work->field_0x080, 0x1E, -1000.0f, 50.0f);
+        if (work->field_0x080 >= 0x1E) {
+            work->field_0x07C = 0xA;
+        }
+        break;
+    case 0xA:
+        work->field_0x084 += work->field_0x088;
+        work->field_0x084 += work->field_0x08C;
+        if (work->field_0x084 > 100.0f) {
+            work->field_0x084 = 100.0f;
+        }
+        if (work->field_0x084 < 0.0f) {
+            work->field_0x084 = 0.0f;
+        }
+        work->field_0x088 -= 0.25f;
+        if (work->field_0x088 < 0.0f) {
+            work->field_0x088 = 0.0f;
+        }
+        work->field_0x0A1++;
+        if (work->field_0x0A1 >= 8) {
+            work->field_0x0A1 = 0;
+        }
+        if (work->field_0x084 <= 0.0f) {
+            work->field_0x084 = 0.0f;
+            if (psndSFXChk(work->field_0x0A4) == 0) {
+                psndSFXOff(work->field_0x0A4);
+            }
+        }
+        if (work->field_0x084 > 0.0f) {
+            if (psndSFXChk(work->field_0x0A4) == -1) {
+                work->field_0x0A4 = psndSFXOn(ZS_RD(0x1e0, str_802FF848));
+            }
+        }
+        if (psndSFXChk(work->field_0x0A4) == 0) {
+            psndSFX_pit(work->field_0x0A4,
+                        (s32)(683.0f * (f32)work->field_0x010 +
+                              4096.0f * work->field_0x084 / 100.0f));
+        }
+        break;
+    case 0xF:
+        work->field_0x084 = 100.0f;
+        work->field_0x088 = 0.0f;
+        work->field_0x08C = 0.0f;
+        work->field_0x0A1 = 0;
+        work->field_0x080++;
+        work->field_0x094.x = intplGetValue(4, work->field_0x080, 0x1E, 50.0f, -1000.0f);
+        if (work->field_0x080 >= 0x1E) {
+            work->field_0x080 = 0x1E;
+        }
+        break;
+    case 0x10:
+        work->field_0x07C = 6;
+        work->field_0x080 = 0;
+        work->field_0x084 = 0.0f;
+        work->field_0x088 = 0.0f;
+        work->field_0x08C = -0.9f - 0.1f * (f32)work->field_0x010;
+        break;
+    case 0x14:
+        work->field_0x07C = 0x15;
+        work->field_0x080 = 0;
+        break;
+    case 0x15:
+        work->field_0x080++;
+        work->field_0x094.x = intplGetValue(4, work->field_0x080, 0x1E, 50.0f, -1000.0f);
+        if (work->field_0x080 >= 0x1E) {
+            work->field_0x080 = 0x1E;
+        }
+        break;
+    default:
+        break;
+    }
+
+    {
+        s32 k;
+
+        for (k = 0; k < 0x10; k++) {
+            ZubaStarStar* star = &work->stars[k];
+
+            switch (star->state) {
+            case 0:
+                break;
+            case 5:
+                star->timer++;
+                if (star->timer > 0x3C) {
+                    star->timer = 0;
+                }
+                break;
+            default:
+                break;
+            }
+        }
+    }
+    dispEntry(8, 900.0f, 1, zubastar_disp2D, NULL);
+    return 0;
+}
+#undef ZS_ROV
+#undef ZS_RD
 
 // .text:0x800 | 0x8022ED90 | size: 0x398
 // The state machine matches. Every named float constant is a literal (0.0f, 104.0f, 600.0f, 200.0f,
@@ -678,6 +1204,8 @@ s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, 
 // .text:0x1F58 | 0x802304E8 | size: 0xE4
 // NONMATCHING (96.49%): a volatile struct copy reproduces the original's load/store interleave for
 // vec3_802ff6b0; the only remaining difference is the loop's branch targets.
+// dont_inline: the original calls zubastar_create_takaku from zubastar_main with `bl`.
+#pragma dont_inline on
 void zubastar_create_takaku(s32 count, Vec* points) {
     ZubaStarWork* work = GetZubaStarPtr();
     ZubaStarBomb* bomb;
@@ -702,6 +1230,7 @@ void zubastar_create_takaku(s32 count, Vec* points) {
     }
     work->bombCount++;
 }
+#pragma dont_inline reset
 
 // .text:0x203C | 0x802305CC | size: 0x3C
 s32 weaponGetPower_ZubaStar(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2,

@@ -3450,9 +3450,81 @@ s32 BattleAudience_NoUsedHaitiRand(void) {
 	}
 	return -1;
 }
-// NONMATCHING (1.09%): 1 instruction differs, 126 missing.
+
 s32 BattleAudience_NoUsedFCHaitiRand(void) {
-	return 0;
+	s32 rate[10];
+	s32 offset[20];
+	s32 ids[200];
+	s32 sums[200];
+	PouchData* pouch;
+	s32* haiti;
+	s32 count;
+	s32 total;
+	s32 i, j;
+	s32 start;
+	s32 memberId;
+	s32 pouchRank;
+
+	BattleAudienceBaseGetPtr();
+	pouch = pouchGetPtr();
+#ifdef MUST_MATCH
+	// A named rank (read before the const-table copies) reproduces the original's
+	// `lha` placement and frees r3 for the copy loops; `pouch->rank` inline sinks.
+	pouchRank = pouch->rank;
+	count = 0;
+	total = 0;
+#else
+	count = 0;
+	total = 0;
+#endif
+#ifdef MUST_MATCH
+	{
+		*(BattleAudienceHaitiRateTable*)rate = *(const BattleAudienceHaitiRateTable*)dat_802f9884;
+	}
+	{
+		*(BattleAudienceHaitiOffsetTable*)offset = *(const BattleAudienceHaitiOffsetTable*)dat_802f98ac;
+	}
+#else
+	memcpy(rate, dat_802f9884, sizeof(rate));
+	memcpy(offset, dat_802f98ac, sizeof(offset));
+#endif
+#ifdef MUST_MATCH
+	haiti = haiti_data[pouchRank];
+#else
+	haiti = haiti_data[pouch->rank];
+#endif
+	for (i = 0; i < 10; i++) {
+		start = (20 - haiti[i]) / 2;
+		j = 0;
+		while (j < haiti[i]) {
+			memberId = start + i * 20;
+			if (!(BattleAudienceGetPtr(memberId)->flags & 1) &&
+			    !(BattleAudienceGetPtr(memberId)->flags & 0x100)) {
+				s32 w;
+				w = rate[i] * offset[start] + 1;
+				ids[count] = memberId;
+				if (count != 0) {
+					sums[count] = sums[count - 1] + w;
+				} else {
+					sums[count] = w;
+				}
+				total += w;
+				count++;
+			}
+			j++;
+			start++;
+		}
+	}
+	{
+		s32 pick = (s32)((f32)total * (f32)rand() / float_32767_8041e674);
+
+		for (i = 0; i < count; i++) {
+			if (pick < sums[i]) {
+				return ids[i];
+			}
+		}
+	}
+	return -1;
 }
 #pragma dont_inline reset
 

@@ -15,6 +15,7 @@
 #include "driver/mobjdrv.h"
 #include "driver/npcdrv.h"
 #include "party/party_motion.h"
+#include "motion/mot_plane.h"
 #include "party/party_cloud.h"
 #include "party/party_vivian.h"
 #include "party/party_nokonoko.h"
@@ -574,8 +575,9 @@ static const char* boxNames[] = {
     NULL,
 };
 
-#include <math.h>  // deliberately after boxNames[]: its inline sqrtf/sqrt emit static doubles
-               // at .rodata offset 0, which would break constant pooling. See partyGetAppearPos4.
+#include "math_ext.h"  // external MSL math ABI. Using <math.h> instead emits the inline sqrtf/sqrt
+                     // weak-local `_half`/`_three` doubles at str_802CDB20+0x210, which shifts every
+                     // function's pooled Vec/angle constants up by 0x24 and costs the whole unit
 
 s32 unk_800c8dd0(HitEntry* hit) {
     s32 found;
@@ -1194,6 +1196,329 @@ Footmark* partyGetFootmarkPtr(u32 index) {
     return (Footmark*)(footmarkBuf + index * 0x500) + id;
 }
 
+// The target returns BOOL: `li r3,0x1` (the success and currMotionId==0x18 exits) and `li r3,0x0`
+// (the two currPartySlotId[0]<0 exits and the final exit). include/party/party_move.h declared it
+// `void`, so that single header line was changed to `BOOL` (brief rule 2; both callers, party.c:969
+// and party_bomhei.c:590, ignore the result). The body is natural C: eight attempts built from
+// toMovedir/toMovedir2 + sincosf + hitCheckVecFilter. The only non-obvious details are
+// `moveDist = 30.0f` with `-moveDist` (so the compiler emits `lfs float_30; fneg`, and A5's second
+// movePos uses the positive `moveDist`), the first checklist of A3-A8 reading player->position
+// rather than the position output, and the two `>= 0` guards that make MWCC emit the target's
+// `blt` skip-to-fallthrough branches.
+// Matching depends on math_ext.h above: with <math.h> the compiler moves the inline sqrtf doubles
+// to str_802CDB20+0x210 and all 32 pooled Vec templates shift by 0x24.
+BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
+    MarioWork* player = party->playerPtr;
+    HitCheckQuery query;
+    f32 baseAngle;
+    f32 moveAngle;
+    f32 sinv;
+    f32 cosv;
+    f32 angle;
+    f32 targetDist;
+    f32 moveDist;
+    HitEntry* hit;
+
+    moveDist = 30.0f;
+    targetDist = 30.0f + party->field_F4;
+    if (player->currMotionId == 0x18) {
+        if (marioPlaneGetFlyingDir() == 1) {
+            moveAngle = 0.0f;
+            baseAngle = 180.0f;
+        } else {
+            moveAngle = 180.0f;
+            baseAngle = 0.0f;
+        }
+    } else {
+        moveAngle = revise360(180.0f + player->unk1A8);
+        baseAngle = player->unk1A8;
+    }
+
+    position->x = player->position.x;
+    position->y = player->position.y;
+    position->z = player->position.z;
+
+    if (player->currPartySlotId[0] >= 0) {
+    if (player->currPartySlotId[1] < 0) {
+        angle = toMovedir(moveAngle);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (player->currMotionId == 0x18) {
+            return TRUE;
+        }
+        if (hit == NULL) {
+            angle = toMovedir(baseAngle);
+            movePos(&position->x, &position->z, -moveDist, angle);
+            query.targetDistance = 150.0f;
+            query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+            query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+            hit = hitCheckVecFilter(&query, NULL);
+                {
+                    BOOL proceed;
+                    if (hit == NULL) {
+                        proceed = FALSE;
+                } else if ((hitGetAttr(hit) & 0xA00) != 0) {
+                        proceed = FALSE;
+                } else if (unk_800c8dd0(hit) != 0) {
+                        proceed = FALSE;
+                } else {
+                        proceed = TRUE;
+                    }
+                    if (proceed && query.targetDistance <= 100.0f) {
+                        position->y = query.hitPos.y;
+                        return TRUE;
+                    }
+                }
+        }
+    } else {
+        angle = toMovedir(moveAngle);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (player->currMotionId == 0x18) {
+            return TRUE;
+        }
+        if (hit == NULL) {
+            angle = toMovedir2(baseAngle, party->currentSlotId == 0 ? -30.0f : 30.0f);
+            movePos(&position->x, &position->z, -moveDist, angle);
+            query.targetDistance = 150.0f;
+            query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+            query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+            hit = hitCheckVecFilter(&query, NULL);
+                {
+                    BOOL proceed;
+                    if (hit == NULL) {
+                        proceed = FALSE;
+                } else if ((hitGetAttr(hit) & 0xA00) != 0) {
+                        proceed = FALSE;
+                } else if (unk_800c8dd0(hit) != 0) {
+                        proceed = FALSE;
+                } else {
+                        proceed = TRUE;
+                    }
+                    if (proceed && query.targetDistance <= 100.0f) {
+                        position->y = query.hitPos.y;
+                        return TRUE;
+                    }
+                }
+        }
+    }
+    }
+
+    if (player->currPartySlotId[0] >= 0) {
+    if (player->currPartySlotId[1] < 0) {
+        angle = toMovedir2(baseAngle, -90.0f);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit == NULL) {
+            position->x = player->position.x;
+            position->y = player->position.y;
+            position->z = player->position.z;
+            angle = toMovedir2(baseAngle, 90.0f);
+            movePos(&position->x, &position->z, -moveDist, angle);
+            query.targetDistance = 150.0f;
+            query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+            query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+            hit = hitCheckVecFilter(&query, NULL);
+                {
+                    BOOL proceed;
+                    if (hit == NULL) {
+                        proceed = FALSE;
+                } else if ((hitGetAttr(hit) & 0xA00) != 0) {
+                        proceed = FALSE;
+                } else if (unk_800c8dd0(hit) != 0) {
+                        proceed = FALSE;
+                } else {
+                        proceed = TRUE;
+                    }
+                    if (proceed && query.targetDistance <= 100.0f) {
+                        position->y = query.hitPos.y;
+                        return TRUE;
+                    }
+                }
+        }
+        angle = toMovedir2(baseAngle, 90.0f);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit == NULL) {
+            position->x = player->position.x;
+            position->y = player->position.y;
+            position->z = player->position.z;
+            angle = toMovedir2(baseAngle, -90.0f);
+            movePos(&position->x, &position->z, -moveDist, angle);
+            query.targetDistance = 150.0f;
+            query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+            query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+            hit = hitCheckVecFilter(&query, NULL);
+                {
+                    BOOL proceed;
+                    if (hit == NULL) {
+                        proceed = FALSE;
+                } else if ((hitGetAttr(hit) & 0xA00) != 0) {
+                        proceed = FALSE;
+                } else if (unk_800c8dd0(hit) != 0) {
+                        proceed = FALSE;
+                } else {
+                        proceed = TRUE;
+                    }
+                    if (proceed && query.targetDistance <= 100.0f) {
+                        position->y = query.hitPos.y;
+                        return TRUE;
+                    }
+                }
+        }
+        angle = toMovedir2(baseAngle, 0.0f);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit == NULL) {
+            position->x = player->position.x;
+            position->y = player->position.y;
+            position->z = player->position.z;
+            angle = toMovedir2(baseAngle, 0.0f);
+            movePos(&position->x, &position->z, moveDist, angle);
+            query.targetDistance = 150.0f;
+            query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+            query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+            hit = hitCheckVecFilter(&query, NULL);
+                {
+                    BOOL proceed;
+                    if (hit == NULL) {
+                        proceed = FALSE;
+                } else if ((hitGetAttr(hit) & 0xA00) != 0) {
+                        proceed = FALSE;
+                } else if (unk_800c8dd0(hit) != 0) {
+                        proceed = FALSE;
+                } else {
+                        proceed = TRUE;
+                    }
+                    if (proceed && query.targetDistance <= 100.0f) {
+                        position->y = query.hitPos.y;
+                        return TRUE;
+                    }
+                }
+        }
+    } else {
+        position->x = player->position.x;
+        position->y = player->position.y;
+        position->z = player->position.z;
+        angle = toMovedir2(baseAngle, -90.0f);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit == NULL) {
+            position->x = player->position.x;
+            position->y = player->position.y;
+            position->z = player->position.z;
+            angle = toMovedir2(baseAngle, party->currentSlotId == 0 ? 70.0f : 110.0f);
+            movePos(&position->x, &position->z, -moveDist, angle);
+            query.targetDistance = 150.0f;
+            query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+            query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+            hit = hitCheckVecFilter(&query, NULL);
+                {
+                    BOOL proceed;
+                    if (hit == NULL) {
+                        proceed = FALSE;
+                } else if ((hitGetAttr(hit) & 0xA00) != 0) {
+                        proceed = FALSE;
+                } else if (unk_800c8dd0(hit) != 0) {
+                        proceed = FALSE;
+                } else {
+                        proceed = TRUE;
+                    }
+                    if (proceed && query.targetDistance <= 100.0f) {
+                        position->y = query.hitPos.y;
+                        return TRUE;
+                    }
+                }
+        }
+        angle = toMovedir2(baseAngle, 90.0f);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit == NULL) {
+            position->x = player->position.x;
+            position->y = player->position.y;
+            position->z = player->position.z;
+            angle = toMovedir2(baseAngle, party->currentSlotId == 0 ? -110.0f : -70.0f);
+            movePos(&position->x, &position->z, -moveDist, angle);
+            query.targetDistance = 150.0f;
+            query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+            query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+            hit = hitCheckVecFilter(&query, NULL);
+                {
+                    BOOL proceed;
+                    if (hit == NULL) {
+                        proceed = FALSE;
+                } else if ((hitGetAttr(hit) & 0xA00) != 0) {
+                        proceed = FALSE;
+                } else if (unk_800c8dd0(hit) != 0) {
+                        proceed = FALSE;
+                } else {
+                        proceed = TRUE;
+                    }
+                    if (proceed && query.targetDistance <= 100.0f) {
+                        position->y = query.hitPos.y;
+                        return TRUE;
+                    }
+                }
+        }
+        angle = toMovedir2(baseAngle, 0.0f);
+        sincosf(&sinv, &cosv, angle);
+        query.targetDistance = targetDist;
+        query.targetPos = (Vec){player->position.x, player->position.y + 37.0f, player->position.z};
+        query.targetDir = (Vec){sinv, 0.0f, cosv};
+        hit = hitCheckVecFilter(&query, NULL);
+        if (hit == NULL) {
+            position->x = player->position.x;
+            position->y = player->position.y;
+            position->z = player->position.z;
+            angle = toMovedir2(baseAngle, party->currentSlotId == 0 ? 70.0f : -70.0f);
+            movePos(&position->x, &position->z, -moveDist, angle);
+            query.targetDistance = 150.0f;
+            query.targetPos = (Vec){position->x, position->y + 37.0f, position->z};
+            query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
+            hit = hitCheckVecFilter(&query, NULL);
+                {
+                    BOOL proceed;
+                    if (hit == NULL) {
+                        proceed = FALSE;
+                } else if ((hitGetAttr(hit) & 0xA00) != 0) {
+                        proceed = FALSE;
+                } else if (unk_800c8dd0(hit) != 0) {
+                        proceed = FALSE;
+                } else {
+                        proceed = TRUE;
+                    }
+                    if (proceed && query.targetDistance <= 100.0f) {
+                        position->y = query.hitPos.y;
+                        return TRUE;
+                    }
+                }
+        }
+    }
+    }
+    return FALSE;
+}
+
 // HEADER PROBLEM: the asm returns BOOL (`li r3,0x1` at 800C3D18/800C3ED0/800C4070 and
 // `li r3,0x0` at 800C407C), but include/party/party_move.h declares this function `void`.
 // Existing header lines may not be changed, so the definition stays `void` and the four `li r3`
@@ -1210,23 +1535,21 @@ Footmark* partyGetFootmarkPtr(u32 index) {
 // after the vec3 pool. This compiler emits them as WEAK LOCAL `_half$localstatic`/`
 // `_three$localstatic` at .rodata offset 0, so the compiler's pool base becomes those doubles
 // (and it does not pool our constants at all) instead of str_802CDB20. The 32 vec3s before
-// these (str+0x20c..0x38c) belong to partyGetAppearPos (still unwritten).
-// DIAGNOSTIC: swapping `#include <math.h>` for `#include "math_ext.h"` (which declares sqrt as
-// an external and drops the inline doubles) makes the compiler pool: partyGetAppearPos2 rises
-// to 98.42% with base `...rodata.0` and offsets 0x20c.. (matching the target's 0x38c.. once the
-// 32 preceding vec3s exist), the only remaining diffs being those offsets and the missing
-// `li r3` returns (header). But that whole-file swap also drops partyMarioHosei 100->83.72,
-// partyMoveMain 100->98.82 and unk_800c9f48 95.62->90.11 (they need the inline doubles), so it
-// cannot be applied here. The correct fix is a unit-finish step that emits those sqrtf doubles
-// at the end of .rodata (see the partyGetMoveDirSpd comment: `the inline sqrt double pool lands
-// in a fresh @991 instead of str_802CDB20+0x600`).
+// these (str+0x20c..0x38c) belong to partyGetAppearPos (now written; see its comment above).
+// RESOLVED: `#include <math.h>` used to emit the inline sqrtf/sqrt weak-local `_half`/`_three`
+// doubles at str_802CDB20+0x210, which gave every function a per-object constant base instead of
+// the single pooled str_802CDB20 base. Swapping it for `#include "math_ext.h"` (external MSL math
+// ABI, no inline bodies) restores the pooled base: partyGetAppearPos and partyGetAppearPos4 jumped
+// to 100% and no other function regressed. The offset diffs left in this function are only the
+// 0x180 of other functions' .rodata that is missing until the whole unit is finished.
 // Tried and reverted (none beat 74.24%): `#pragma pool_data on`; named `const Vec` globals
 // (static and global, at the top, next to the function and at the end of the file) + the pragma
 // (57.03%); one `const Vec vec3_pool[44]` array indexed as vec3_pool[32..43], with and without a
 // local pointer (58.90%/65.01%). build.ninja experiments with `-pooldata on -pool on` and with
 // `-str reuse,pool,readonly` changed nothing either.
 // All other opcodes, stack offsets and control flow match.
-// NONMATCHING (98.42%): wrong header return type + unit-level .rodata double-placement blocker.
+// NONMATCHING (98.53%): wrong header return type + the 0x180 of pooled .rodata that other
+// functions contribute once the whole unit is finished.
 void partyGetAppearPos2(PartyEntry* party, Vec* position) {
     MarioWork* player = party->playerPtr;
     HitCheckQuery query;
@@ -1323,7 +1646,7 @@ void partyGetAppearPos2(PartyEntry* party, Vec* position) {
 // still lands at 0x29c.. instead of 0x41c.. (0x180 of other functions' .rodata is missing until the
 // whole unit is finished), plus a few fpr/stack slots follow the same shift. Declaring `u32 i` first
 // and the `targetDist` initializer before `unk1AC` fixed the r26/r27 and f25/f26 swaps.
-// NONMATCHING (99.67%)
+// NONMATCHING (99.74%)
 BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
     u32 i;
     MarioWork* player = party->playerPtr;
@@ -1427,9 +1750,10 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
 // with `static const double` `_half`/`_three` locals, so including it emits those four
 // doubles at offset 0 of .rodata; MWCC then gives every function a per-object constant
 // base instead of the single pooled r31 base, which cost this function (and Pos2/3/5 and
-// partyGetMoveDirSpd) ~20 points each. The `#include <math.h>` below is deliberately placed
-// after `boxNames[]` (see the note there) so the first .rodata object is a string, matching
-// retail (whose sqrtf statics sit at .rodata+0x600).
+// partyGetMoveDirSpd) ~20 points each. With `#include "math_ext.h"` above, no inline sqrtf/sqrt
+// bodies are emitted at all, so the first .rodata object stays boxNames[] and the pooled
+// str_802CDB20 base forms; the retail sqrtf statics at .rodata+0x600 come from the functions' own
+// `const f64 _half`/`_three` locals instead.
 //
 // Keeping the Vec locals uninitialized and assigning `pos1 = (Vec){0,0,0}` etc. inside the
 // loop reproduces the original's per-iteration template reloads; a declaration initializer
@@ -1440,9 +1764,8 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
 // byte-blob `field_4D`), so it is read as `*(f32*)(party->field_4D + 7)`, the same style the
 // file already uses for that array. Like the original the fallback loop reads one entry past
 // the end of each angle table on its last pass.
-// NONMATCHING (99.86%): 77 diffs, all just the .rodata base offset (str_802CDB20 is 0x15c
-// lower in this build because the rest of the unit is not yet byte-exact); the code is
-// otherwise identical to retail.
+// Matching depends on both the <math.h>->math_ext.h swap at the top of the file and the pooled
+// str_802CDB20 base.
 BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
     PartyEntry* other = NULL;
     MarioWork* player = party->playerPtr;
@@ -1578,7 +1901,7 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
     return FALSE;
 }
 
-// NONMATCHING (96.87%): retail reaches every constant through one base register (r30 =
+// NONMATCHING (96.88%): retail reaches every constant through one base register (r30 =
 // str_802CDB20) and offsets (angles at +0x5a4, the dir/hitPos Vecs at +0x5d4/+0x5e0, the int->float
 // double at +0x5f0), i.e. all of this function's rodata is pooled relative to one base. Our object
 // gives each constant its own symbol/base (angles @930, the Vecs @940/@944, the double elsewhere),
@@ -1868,11 +2191,9 @@ static inline f32 partySqrtf(f32 x) {
     return x;
 }
 
-// Every instruction matches; the only diffs are the three `lfd` offsets into the pool (retail
-// 0x600/0x608/0x610 from str_802CDB20, ours ...rodata.0+0x478..0x488). The inlined sqrt double
-// pool sits 0x188 lower because the rest of the unit's .rodata (the 32 vec3s and tables emitted by
-// the unwritten partyGetAppearPos) is not in the object yet; the offsets land on
-// str_802CDB20+0x600 once the unit links.
+// Every instruction matches; the only diffs are the three `lfd` offsets into the pool. These are
+// partySqrtf's own `const f64 _half`/`_three` locals; their position depends on the rest of the
+// unit's .rodata, so the offsets land on retail's str_802CDB20+0x600 once the unit links.
 // Match devices in the body: the first footmark clear is hand-inlined with its own `Vec pos1`
 // (a call to partyClearFootmark() compiles to the same code but puts its temp at 0x14; the two
 // address-taken Vecs only take retail's slots -- pos1 at 0x20, pos at 0x14 -- when pos1 is

@@ -285,3 +285,36 @@ typedef struct MapTevCallback {
     s32 texCoord;    // 0x14
     s32 numIndStage; // 0x18
 } MapTevCallback;
+typedef struct MapFileLight {
+    const char* name; // 0x0
+    const char* type; // 0x4
+    Vec position;     // 0x8
+    Vec rotation;     // 0x14
+    Vec field_0x20;   // 0x20
+    GXColor color;    // 0x2C
+    f32 spotAngle;    // 0x30
+    f32 attenAngle;   // 0x34
+    s32 attenType;    // 0x38
+    s32 field_0x3C;   // 0x3C
+    u32 field_0x40;   // 0x40
+} MapFileLight;
+typedef struct MapFileLightTable {
+    s32 count;              // 0x0
+    MapFileLight* lights[]; // 0x4
+} MapFileLightTable;
+typedef struct MapFileFog {
+    s32 field_0x0;  // 0x0
+    s32 field_0x4;  // 0x4
+    f32 field_0x8;  // 0x8
+    f32 field_0xC;  // 0xC
+    s32 field_0x10; // 0x10
+} MapFileFog;
+typedef struct MapFileAnimEntry {
+    u16 field_0x0;              // 0x0
+    u8 field_0x2[0x18 - 0x2];   // 0x2
+    u32 field_0x18;             // 0x18
+    u8 field_0x1C[0x20 - 0x1C]; // 0x1C
+} MapFileAnimEntry;
+extern GXColor unk_80422f80;
+extern const char str_80419848[];
+extern const char str_804198D0[];

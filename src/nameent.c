@@ -414,3 +414,120 @@ void nameEntReInit(void) {
 void nameEntInit(void) {
 	memset(wp, 0, sizeof(NameEntryWork));
 }
+static inline void nameWinQuad(f32 x, f32 y, f32 w, f32 h) {
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	GXPosition3f32(x, y, 0.0f);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32(x, y - h, 0.0f);
+	GXTexCoord2f32(0.0f, 1.0f);
+	GXPosition3f32(x + w, y - h, 0.0f);
+	GXTexCoord2f32(1.0f, 1.0f);
+	GXPosition3f32(x + w, y, 0.0f);
+	GXTexCoord2f32(1.0f, 0.0f);
+}
+
+// The second coord's scale. Separate f64 temps (hh2/ww2) reproduce the target's
+// callee-saved FP assignment; a shared hh/ww pair reassigns the register the first
+// coord just freed, so f23/f24 come out swapped.
+#ifdef MUST_MATCH
+#define NAME_WIN_SCALE2(H, W) \
+		hh2 = __fabs(H); \
+		ww2 = __fabs(W); \
+		yscale = (f32)hh2 / (f32)GXGetTexObjHeight(&texObj); \
+		xs = (f32)ww2 / (f32)GXGetTexObjWidth(&texObj);
+#else
+#define NAME_WIN_SCALE2(H, W) \
+		hh = __fabs(H); \
+		ww = __fabs(W); \
+		yscale = (f32)hh / (f32)GXGetTexObjHeight(&texObj); \
+		xs = (f32)ww / (f32)GXGetTexObjWidth(&texObj);
+#endif
+
+#define NAME_WIN_QUAD(tex, id0, id1, id2, vx, vy, W, H) \
+	{ \
+		GXTexObj texObj; \
+		Mtx mtx; \
+		f32 xs; \
+		f64 hh; \
+		f64 ww; \
+		f64 hh2; \
+		f64 ww2; \
+		GXSetNumTexGens(2); \
+		TEXGetGXTexObjFromPalette((TEXPalette*)(tex), &texObj, (id0)); \
+		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1); \
+		GXLoadTexObj(&texObj, GX_TEXMAP0); \
+		GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY); \
+		hh = __fabs(H); \
+		ww = __fabs(W); \
+		yscale = (f32)hh / (f32)GXGetTexObjHeight(&texObj); \
+		xs = (f32)ww / (f32)GXGetTexObjWidth(&texObj); \
+		PSMTXScale(mtx, xs, yscale, 1.0f); \
+		GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4); \
+		TEXGetGXTexObjFromPalette((TEXPalette*)(tex), &texObj, (id1)); \
+		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1); \
+		GXLoadTexObj(&texObj, GX_TEXMAP1); \
+		TEXGetGXTexObjFromPalette((TEXPalette*)(tex), &texObj, (id2)); \
+		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1); \
+		GXLoadTexObj(&texObj, GX_TEXMAP2); \
+		GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY); \
+		NAME_WIN_SCALE2(H, W) \
+		PSMTXScale(mtx, xs, yscale, 1.0f); \
+		GXLoadTexMtxImm(mtx, GX_TEXMTX1, GX_MTX2x4); \
+		nameWinQuad(vx, vy, W, H); \
+	}
+
+void nameWinGX(void* tex, s32 arg1, f32 x, f32 y, f32 z, f32 w) {
+	GXColor color;
+	f32 yscale; // shared across the four quads like nameKirinukiGX's
+
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
+	GXSetZMode(GX_DISABLE, GX_ALWAYS, GX_DISABLE);
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+	GXSetNumChans(0);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTevStages(3);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+	GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+	GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXA, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	color = (GXColor){ 0, 0, 0, 0x80 };
+	GXSetTevColor(GX_TEVREG0, color);
+	GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+	GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD1, GX_TEXMAP2, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXA, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_APREV, GX_CA_KONST, GX_CA_TEXA, GX_CA_ZERO);
+	GXSetTevKAlphaSel(GX_TEVSTAGE2, GX_TEV_KASEL_1);
+	GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+	GXSetCullMode(GX_CULL_NONE);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+	GXSetCurrentMtx(0);
+
+	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 5, arg1, x, y, z - 16.0f, w - 16.0f);
+	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 7, arg1 + 2, x + z - 16.0f, y, 16.0f, w - 16.0f);
+#ifdef MUST_MATCH
+	// bottom row: the top edge is written as bottom+16 so it is recomputed from the
+	// y-w the compiler already has; the natural `y - (w - 16.0f)` gets CSE'd with the
+	// upper rows and throws off the callee-saved FP assignment.
+	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 6, arg1 + 1, x, y - w + 16.0f, z - 16.0f, 16.0f);
+	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 8, arg1 + 3, x + z - 16.0f, y - w + 16.0f, 16.0f, 16.0f);
+#else
+	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 6, arg1 + 1, x, y - (w - 16.0f), z - 16.0f, 16.0f);
+	NAME_WIN_QUAD(tex, arg1 + 4, arg1 + 8, arg1 + 3, x + z - 16.0f, y - (w - 16.0f), 16.0f, 16.0f);
+#endif
+}

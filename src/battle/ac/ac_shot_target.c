@@ -241,7 +241,8 @@ s32 battleAcResult_ShotTarget(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// dont_inline: the original keeps _ac_rumble_param_set as a real call (`bl _ac_rumble_param_set`).
+// dont_inline: the original keeps _ac_rumble_param_set as a real call (`bl _ac_rumble_param_set`);
+// without it MWCC inlines the body at both call sites.
 void _ac_rumble_param_set(u32 type, s16* period, s16* timer, f32* amplitude) {
     *period = irand(0x78) + 0x78;
     *timer = *period - 1;
@@ -279,11 +280,13 @@ void _ac_rumble_param_set(u32 type, s16* period, s16* timer, f32* amplitude) {
 // Every instruction, constant and memory access matches except the colouring of two callee-saved
 // registers: the original keeps rumbleType in r24 and sfx in r28, MWCC here gives rumbleType r28
 // and sfx r24 (7 objdiff `!!` lines: the two preheader loads and five `mr r3` argument setups).
-// Assignment order, declaration order (all 24 permutations of the scalars, plus hit/unit/part
-// placements), types, `register`/`volatile`, scoped copies, the ac_shot comma hack, a per-block
-// split and the opt_lifetimes/opt_propagation/opt_common_subs/opt_dead_assignments/opt_dead_code/
-// opt_pointer_analysis/opt_strength_reduction/opt_loop_invariants/peephole/scheduling/
-// global_optimizer/optimize_for_size/optimization_level pragmas were all tried; none moves it.
+// Tried with the dont_inline fix in place: declaration order (all permutations of the scalars, plus
+// hit/unit/part/ac/st placements), assignment order and position, types (s32/u32/int/long for
+// rumbleType; const char*/char*/u8*/s8*/const void*/int*/u32/s32/ulong for sfx), `register`/
+// `volatile`, per-block copies, the ac_shot comma hack, extra no-op uses, every relevant opt_*/
+// peephole/scheduling/global_optimizer/optimize_for_size/optimization_level pragma (single, pairs
+// and triples, on and off), MWCC versions 1.0-3.0, case-0 statement order, and 4000+ random source
+// mutations; none moves the swap.
 // The `ac->`-qualified work-area access is required: without it st folds into work (18%).
 // NONMATCHING (19.82%): rumbleType/sfx are coloured swapped (target r24/r28, ours r28/r24).
 // The `#pragma dont_inline on` above `_ac_rumble_param_set` is required: without it MWCC inlines

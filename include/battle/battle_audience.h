@@ -181,6 +181,15 @@ typedef struct BattleAudienceTypeWeights {
     s32 v[11];
 } BattleAudienceTypeWeights;
 
+// Struct views for the haiti rate tables copied by BattleAudience_NoUsedFCHaitiRand.
+typedef struct BattleAudienceHaitiRateTable {
+    s32 v[10];
+} BattleAudienceHaitiRateTable;
+
+typedef struct BattleAudienceHaitiOffsetTable {
+    s32 v[20];
+} BattleAudienceHaitiOffsetTable;
+
 extern f32 float_0p5_8041e708;
 // .sdata2 constants and the haiti table used by battle_audience.c (data objects of this unit).
 extern f32 float_12p5_8041e688;

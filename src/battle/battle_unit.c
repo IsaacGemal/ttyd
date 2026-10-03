@@ -104,6 +104,8 @@ void BtlUnit_PoseSoundInit(BattleUnitPart* part) {
     fields->mPoseSoundCur = 0.0f;
 }
 
+
+
 BOOL BtlUnit_CheckShadowGuard(BattleUnit* unit) {
     if (unit->mAttributeFlags & kVeiled) {
         return TRUE;

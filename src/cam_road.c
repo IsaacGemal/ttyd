@@ -572,6 +572,638 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
     out->unk_5C = a->unk_5C + f31 * (b->unk_5C - a->unk_5C);
 }
 
+
+// The `if (x != 0.0) x = sqrtf(x);` guards are intentional: removing them drops the pool's
+// `fcmpu 0.0,x; beq` skip that the target has. The callee-saved float locals must be declared in
+// DESCENDING order (f31..f14): MWCC hands the declaration order back to the FPR allocator, and
+// reversing it recovers ~100 FPR operand matches (91.7 -> 92.9).
+// NONMATCHING (93.47%): register/encoding only. The frame matches (0x1A0) but `sf28`/`sf24` and
+// `sf18`/`sf1C` swap stack slots; the volatile f0-f5 assignment still differs; ~21 float compares
+// compile to `cror;beq` vs `bge`/`ble`; the dead `if (f28 < -1e-7)` compare is folded away.
+BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec* p, CollisionCurveHit* out) {
+    f32 f0, f1, f2, f3, f4, f5, f6, f7, f8, f10, f9;
+    f32 f31, f30, f29, f28, f27, f26, f25, f24, f23, f22, f21, f20, f19, f18, f17, f16, f15, f14;
+    f32 sf18, sf1c, sf20, sf24, sf28, sf2c;
+    f64 d0;
+    s32 i18, i19, i20, i21, i22, i23, i24, i15, i0, half;
+    Vec *r6, *r7, *r25, *r26, *r29, *r28, *r27, *r30;
+    Vec* base;
+
+    sf20 = dat_804195a8;
+    i24 = 0;
+    d0 = 0.0;
+
+    if (mode == 0) {
+        i19 = 0;
+        half = data->unk_A4 / 2;
+        f27 = data->unk_48;
+        f26 = data->unk_4C;
+        base = (Vec*)wp->map->unk_F8;
+        i22 = data->unk_40;
+        i21 = data->unk_44;
+        i20 = data->unk_84;
+        r6 = &base[data->unk_A0];
+        r7 = &base[data->unk_A0 + half];
+    } else {
+        i22 = 0;
+        i21 = 1;
+        half = data->unk_64 / 2;
+        f27 = 0.0f;
+        f26 = 0.0f;
+        i20 = 0;
+        i19 = 1;
+        base = (Vec*)wp->map->unk_F8;
+        r6 = &base[data->unk_60];
+        r7 = &base[data->unk_60 + half];
+    }
+
+    sf28 = r7[i22].y;
+    sf24 = r7[i21].y;
+    if (__fabsf(sf24 - sf28) < double_0p0001_802c1328) {
+        sf28 = sf24;
+    }
+    if (i19 != 0) {
+        i20 = 0;
+    }
+
+    r30 = r6;
+    r29 = r7;
+    r28 = &r7[i22];
+    r27 = &r6[i22];
+    r26 = &r7[i21];
+    r25 = &r6[i21];
+    i15 = half - 1;
+    i23 = 0;
+    goto L_D160;
+
+L_C4BC:
+    f23 = r30[0].z;
+    i18 = 0;
+    f3 = p->z;
+    f1 = r29[1].x;
+    f0 = f3 - f23;
+    f5 = r29[0].z;
+    f25 = r30[0].x;
+    f7 = -f1;
+    f4 = p->x;
+    f0 = f5 * f0;
+    f1 = f4 - f25;
+    f6 = r29[0].x;
+    f2 = r29[1].z;
+    f24 = r30[0].y;
+    f1 = f6 * f1 + f0;
+    f8 = -f2;
+    f22 = r30[1].x;
+    f21 = r30[1].z;
+    if (f1 < d0) goto L_D154;
+    f0 = f3 - f21;
+    f1 = f4 - f22;
+    f0 = f8 * f0;
+    f1 = f7 * f1 + f0;
+    if (f1 < d0) goto L_D154;
+
+    f2 = -f5;
+    f3 = f6;
+    f4 = f8;
+    f0 = f2 - f8;
+    f5 = -f7;
+    f0 = __fabsf(f0);
+    if (!(f0 < double_0p01_802c1330)) goto L_C57C;
+    f0 = f6 - f5;
+    f0 = __fabsf(f0);
+    if (!(f0 < double_0p01_802c1330)) goto L_C57C;
+    f1 = f2 + f8;
+    f2 = float_0p5_8041956c;
+    f0 = f6 + f5;
+    f4 = f2 * f1;
+    f5 = f2 * f0;
+    f2 = f4;
+    f3 = f5;
+L_C57C:
+    if (f2 == f4 && f3 == f5) {
+        goto L_CD80;
+    }
+
+L_C58C:
+    f29 = float_1_80419558;
+    sf18 = f29;
+    if (double_0_802c1318 == f4) goto L_C5C0;
+    f1 = f25 - f22;
+    f0 = f2 / f4;
+    f1 = f1 / f4;
+    f1 = f5 * f1 + f21;
+    f0 = f3 - f5 * f0;
+    f1 = f1 - f23;
+    f0 = f1 / f0;
+    goto L_C5EC;
+L_C5C0:
+    if (double_0_802c1318 == f5) goto L_C5E8;
+    f1 = f23 - f21;
+    f0 = f3 / f5;
+    f1 = f1 / f5;
+    f1 = f4 * f1 + f22;
+    f0 = f2 - f4 * f0;
+    f1 = f1 - f25;
+    f0 = f1 / f0;
+    goto L_C5EC;
+L_C5E8:
+    f0 = 0.0f;
+L_C5EC:
+    f20 = f0 * f3 + f23;
+    f0 = f0 * f2 + f25;
+    f15 = f23 - f20;
+    sf1c = f0;
+    f0 = (f32)f0;
+    f16 = f25 - f0;
+    f0 = f15 * f15;
+    f19 = f16 * f16 + f0;
+    if (f19 != 0.0) f19 = sqrtf(f19);
+L_C6F8:
+    f0 = p->z;
+    f2 = p->x;
+    f30 = f0 - f20;
+    f0 = sf1c;
+    f31 = f2 - f0;
+    f0 = f30 * f30;
+    f17 = f31 * f31 + f0;
+    if (f17 != 0.0) f17 = sqrtf(f17);
+L_C800:
+    f1 = f21 - f20;
+    f0 = sf1c;
+    f0 = f22 - f0;
+    f2 = f1 * f1;
+    f18 = f0 * f0 + f2;
+    if (f18 != 0.0) f18 = sqrtf(f18);
+L_C900:
+    f3 = f15 * f30;
+    f2 = float_neg1_804195a4;
+    f1 = f1 * f30;
+    f4 = f19 * f17;
+    f5 = f16 * f31 + f3;
+    f3 = f0 * f31 + f1;
+    f0 = f18 * f17;
+    f1 = f5 / f4;
+    f14 = f3 / f0;
+    if (f1 < f2) {
+        f1 = f2;
+    } else if (f1 > float_1_80419558) {
+        f1 = float_1_80419558;
+    }
+    if (f14 < f2) {
+        f14 = f2;
+    } else if (f14 > float_1_80419558) {
+        f14 = float_1_80419558;
+    }
+    f0 = (f32)acos(f1);
+    f1 = f14;
+    sf2c = f0;
+    f3 = (f32)acos(f14);
+    f0 = sf2c;
+    f4 = f17 - f19;
+    f1 = 0.0f;
+    f2 = f17 - f18;
+    f3 = f0 + f3;
+    f2 = f2 - f4;
+    f5 = f0 / f3;
+    f0 = f5 * f2 + f4;
+    if (f0 < f1) {
+        f29 = float_neg1_804195a4;
+        f0 = -f0;
+    }
+L_C9B0:
+    if (f0 >= sf20) goto L_D154;
+    f3 = f21 - f23;
+    f4 = r29[0].y;
+    f2 = f22 - f25;
+    f1 = r29[1].y;
+    sf20 = f0;
+    f1 = f1 - f4;
+    f3 = -f3;
+    f2 = f15 * f2;
+    f1 = f5 * f1 + f4;
+    f3 = f16 * f3 + f2;
+    if (i20 == 0) goto L_CC7C;
+
+    if (f1 < sf28) {
+        if (f3 > double_0_802c1318) {
+            f1 = 0.0f;
+            if (f29 < f1) {
+                if (f0 > f27) {
+                    f0 = f27;
+                    i18 |= 2;
+                }
+            } else {
+                if (f0 > f26) {
+                    f0 = f26;
+                    i18 |= 2;
+                }
+                f0 = -f0;
+            }
+        } else {
+            f1 = 0.0f;
+            if (f29 < f1) {
+                if (f0 > f26) {
+                    f0 = f26;
+                    i18 |= 2;
+                }
+                f0 = -f0;
+            } else {
+                if (f0 > f27) {
+                    f0 = f27;
+                    i18 |= 2;
+                }
+            }
+        }
+    } else {
+        goto L_CAD0;
+    }
+L_CA74:
+    f1 = sf28;
+    i0 = i18 | 1;
+    f3 = 0.0f;
+    i24 = 1;
+    out->unk_00 = f1;
+    f2 = r28[0].z;
+    f1 = r27[0].x;
+    out->unk_0C = f0 * f2 + f1;
+    out->unk_10 = f3;
+    f2 = r28[0].x;
+    f1 = r27[0].z;
+    out->unk_14 = f1 - f0 * f2;
+    f0 = r28[0].x;
+    out->unk_18 = f0;
+    out->unk_1C = f3;
+    f0 = r28[0].z;
+    out->unk_20 = f0;
+    out->unk_08 = f24;
+    out->unk_24 = i22;
+    out->unk_28 = i0;
+    goto L_D154;
+
+L_CAD0:
+    if (f1 > sf24) {
+    if (f3 > double_0_802c1318) {
+        f1 = 0.0f;
+        if (f29 < f1) {
+            if (f0 > f27) {
+                f0 = f27;
+                i18 |= 2;
+            }
+        } else {
+            if (f0 > f26) {
+                f0 = f26;
+                i18 |= 2;
+            }
+            f0 = -f0;
+        }
+    } else {
+        f1 = 0.0f;
+        if (f29 < f1) {
+            if (f0 > f26) {
+                f0 = f26;
+                i18 |= 2;
+            }
+            f0 = -f0;
+        } else {
+            if (f0 > f27) {
+                f0 = f27;
+                i18 |= 2;
+            }
+        }
+    }
+L_CB54:
+    f1 = sf24;
+    i0 = i18 | 1;
+    f3 = 0.0f;
+    i24 = 1;
+    out->unk_00 = f1;
+    f2 = r26[0].z;
+    f1 = r25[0].x;
+    out->unk_0C = f0 * f2 + f1;
+    out->unk_10 = f3;
+    f2 = r26[0].x;
+    f1 = r25[0].z;
+    out->unk_14 = f1 - f0 * f2;
+    f0 = r26[0].x;
+    out->unk_18 = f0;
+    out->unk_1C = f3;
+    f0 = r26[0].z;
+    out->unk_20 = f0;
+    out->unk_08 = f24;
+    out->unk_24 = i21;
+    out->unk_28 = i0;
+    goto L_D154;
+    }
+
+L_CBB0:
+    if (f3 > double_0_802c1318) {
+    f2 = 0.0f;
+    if (f29 < 0.0f) {
+    if (f0 <= f27) goto L_CD0C;
+    f31 = f31 / f17;
+    i18 |= 2;
+    f30 = f30 / f17;
+    f0 = f0 - f27;
+    f17 = f17 + f0;
+    f31 = f31 * f17;
+    f30 = f30 * f17;
+    goto L_CD0C;
+    }
+L_CBF0:
+    if (f0 <= f26) goto L_CD0C;
+    f31 = f31 / f17;
+    i18 |= 2;
+    f30 = f30 / f17;
+    f0 = f0 - f26;
+    f17 = f17 - f0;
+    f31 = f31 * f17;
+    f30 = f30 * f17;
+    goto L_CD0C;
+    }
+L_CC18:
+    f2 = 0.0f;
+    if (f29 >= 0.0f) goto L_CC4C;
+    if (f0 <= f26) goto L_CC70;
+    f31 = f31 / f17;
+    i18 |= 2;
+    f30 = f30 / f17;
+    f0 = f0 - f26;
+    f17 = f17 + f0;
+    f31 = f31 * f17;
+    f30 = f30 * f17;
+    goto L_CC70;
+L_CC4C:
+    if (f0 <= f27) goto L_CC70;
+    f31 = f31 / f17;
+    i18 |= 2;
+    f30 = f30 / f17;
+    f0 = f0 - f27;
+    f17 = f17 - f0;
+    f31 = f31 * f17;
+    f30 = f30 * f17;
+L_CC70:
+    f0 = float_neg1_804195a4;
+    sf18 = f0;
+    goto L_CD0C;
+
+L_CC7C:
+    if (i19 == 0) goto L_CCF8;
+    if (f3 <= double_0_802c1318) goto L_CCC0;
+    f2 = 0.0f;
+    if (f29 < 0.0f) goto L_CD0C;
+    if (f0 <= 0.0f) goto L_CD0C;
+    f31 = f31 / f17;
+    i18 = 3;
+    f30 = f30 / f17;
+    f17 = f17 - f0;
+    f31 = f31 * f17;
+    f30 = f30 * f17;
+    goto L_CD0C;
+L_CCC0:
+    f2 = 0.0f;
+    if (f29 >= 0.0f) goto L_CCEC;
+    if (f0 <= 0.0f) goto L_CCEC;
+    f31 = f31 / f17;
+    i18 = 3;
+    f30 = f30 / f17;
+    f17 = f17 + f0;
+    f31 = f31 * f17;
+    f30 = f30 * f17;
+L_CCEC:
+    f0 = float_neg1_804195a4;
+    sf18 = f0;
+    goto L_CD0C;
+L_CCF8:
+    if (f3 > double_0_802c1318) goto L_CD0C;
+    f0 = float_neg1_804195a4;
+    sf18 = f0;
+
+L_CD0C:
+    f0 = sf1c;
+    f2 = f20 + f30;
+    f3 = 0.0f;
+    f4 = f0 + f31;
+    f0 = sf18;
+    out->unk_0C = f4;
+    out->unk_10 = f3;
+    out->unk_14 = f2;
+    if (f0 < f3) {
+        f2 = -f30;
+        f0 = f31 / f17;
+        f2 = f2 / f17;
+        out->unk_18 = f2;
+        out->unk_1C = f3;
+        out->unk_20 = f0;
+    } else {
+        f2 = f30 / f17;
+        f0 = -f31;
+        out->unk_18 = f2;
+        out->unk_1C = f3;
+        f0 = f0 / f17;
+        out->unk_20 = f0;
+    }
+L_CD68:
+    out->unk_00 = f1;
+    i24 = 1;
+    out->unk_08 = f24;
+    out->unk_24 = i23;
+    out->unk_28 = i18;
+    goto L_D154;
+
+L_CD80:
+    f0 = r30[0].z;
+    f1 = r30[1].z;
+    f10 = r30[0].x;
+    f6 = f1 - f0;
+    f2 = r30[1].x;
+    f1 = p->x;
+    f5 = f2 - f10;
+    f2 = p->z;
+    f7 = -f6;
+    f3 = __fabsf(f5);
+    f4 = __fabsf(f7);
+    if (f4 <= f3) goto L_CDD4;
+    f4 = f10 - f1;
+    f3 = f5 / f7;
+    f4 = f4 / f7;
+    f4 = f5 * f4 + f2;
+    f3 = f6 - f5 * f3;
+    f4 = f4 - f0;
+    f4 = f4 / f3;
+    goto L_CE04;
+L_CDD4:
+    if (double_0_802c1318 == f5) goto L_CE00;
+    f4 = f0 - f2;
+    f3 = f6 / f5;
+    f4 = f4 / f5;
+    f4 = f7 * f4 + f1;
+    f3 = f5 - f7 * f3;
+    f4 = f4 - f10;
+    f4 = f4 / f3;
+    goto L_CE04;
+L_CE00:
+    f4 = 0.0f;
+L_CE04:
+    f9 = __fabsf(f5);
+    f8 = __fabsf(f6);
+    f3 = f4 * f5 + f10;
+    f4 = f4 * f6 + f0;
+    if (f9 > f8) {
+        f6 = f3 - f10;
+        f28 = f6 / f5;
+        if (f28 < double_neg1Eneg07_802c1338) {
+            goto L_CE48;
+        }
+        goto L_CE48;
+    } else {
+        if (double_0_802c1318 == f6) goto L_CE48;
+        f0 = f4 - f0;
+        f28 = f0 / f6;
+    }
+L_CE48:
+    f6 = f2 - f4;
+    f10 = r29[0].y;
+    f8 = r29[1].y;
+    f2 = f1 - f3;
+    f0 = f6 * f6;
+    f8 = f8 - f10;
+    f1 = f2 * f2 + f0;
+    f0 = f28 * f8 + f10;
+    if (f1 > 0.0) f1 = sqrtf(f1);
+L_CF48:
+    f8 = sf20;
+    if (f1 >= f8) goto L_D154;
+    sf20 = f1;
+    if (i20 == 0) goto L_D0FC;
+    if (f0 >= sf28) goto L_D008;
+    f3 = f6 * f5;
+    f0 = 0.0f;
+    f2 = f2 * f7 + f3;
+    if (f2 >= 0.0f) goto L_CF98;
+    if (f1 <= f27) goto L_CFAC;
+    f1 = f27;
+    i18 |= 2;
+    goto L_CFAC;
+L_CF98:
+    if (f1 <= f26) goto L_CFA8;
+    f1 = f26;
+    i18 |= 2;
+L_CFA8:
+    f1 = -f1;
+L_CFAC:
+    f0 = sf28;
+    i0 = i18 | 1;
+    f3 = 0.0f;
+    i24 = 1;
+    out->unk_00 = f0;
+    f2 = r28[0].z;
+    f0 = r27[0].x;
+    out->unk_0C = f1 * f2 + f0;
+    out->unk_10 = f3;
+    f2 = r28[0].x;
+    f0 = r27[0].z;
+    out->unk_14 = f0 - f1 * f2;
+    f0 = r28[0].x;
+    out->unk_18 = f0;
+    out->unk_1C = f3;
+    f0 = r28[0].z;
+    out->unk_20 = f0;
+    out->unk_08 = f24;
+    out->unk_24 = i22;
+    out->unk_28 = i0;
+    goto L_D154;
+
+L_D008:
+    if (f0 <= sf24) goto L_D0AC;
+    f3 = f6 * f5;
+    f0 = 0.0f;
+    f2 = f2 * f7 + f3;
+    if (f2 >= 0.0f) goto L_D03C;
+    if (f1 <= f27) goto L_D050;
+    f1 = f27;
+    i18 |= 2;
+    goto L_D050;
+L_D03C:
+    if (f1 <= f26) goto L_D04C;
+    f1 = f26;
+    i18 |= 2;
+L_D04C:
+    f1 = -f1;
+L_D050:
+    f0 = sf24;
+    i0 = i18 | 1;
+    f3 = 0.0f;
+    i24 = 1;
+    out->unk_00 = f0;
+    f2 = r26[0].z;
+    f0 = r25[0].x;
+    out->unk_0C = f1 * f2 + f0;
+    out->unk_10 = f3;
+    f2 = r26[0].x;
+    f0 = r25[0].z;
+    out->unk_14 = f0 - f1 * f2;
+    f0 = r26[0].x;
+    out->unk_18 = f0;
+    out->unk_1C = f3;
+    f0 = r26[0].z;
+    out->unk_20 = f0;
+    out->unk_08 = f24;
+    out->unk_24 = i21;
+    out->unk_28 = i0;
+    goto L_D154;
+
+L_D0AC:
+    f8 = f6 * f5;
+    f5 = 0.0f;
+    f7 = f2 * f7 + f8;
+    if (f7 >= 0.0f) goto L_D0E0;
+    if (f1 <= f27) goto L_D0FC;
+    f2 = f2 / f1;
+    i18 |= 2;
+    f1 = f6 / f1;
+    f2 = f27 * f2;
+    f6 = f27 * f1;
+    goto L_D0FC;
+L_D0E0:
+    if (f1 <= f26) goto L_D0FC;
+    f2 = f2 / f1;
+    i18 |= 2;
+    f1 = f6 / f1;
+    f2 = f26 * f2;
+    f6 = f26 * f1;
+L_D0FC:
+    f2 = f3 + f2;
+    out->unk_00 = f0;
+    f1 = 0.0f;
+    f0 = f4 + f6;
+    i24 = 1;
+    out->unk_0C = f2;
+    out->unk_10 = f1;
+    out->unk_14 = f0;
+    f2 = r29[0].x;
+    f0 = r29[1].x;
+    f0 = f0 - f2;
+    f0 = f28 * f0 + f2;
+    out->unk_18 = f0;
+    out->unk_1C = f1;
+    f1 = r29[0].z;
+    f0 = r29[1].z;
+    f0 = f0 - f1;
+    f0 = f28 * f0 + f1;
+    out->unk_20 = f0;
+    out->unk_08 = f24;
+    out->unk_24 = i23;
+    out->unk_28 = i18;
+
+L_D154:
+    r30++;
+    r29++;
+    i23++;
+L_D160:
+    if (i23 < i15) goto L_C4BC;
+    return i24;
+}
+
 // Match-only helpers: the original materialises sub/cross/dot results as Vec locals and
 // copies them into by-value argument slots, which only happens when these are inline functions
 // taking Vec by value.
