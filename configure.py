@@ -1098,7 +1098,7 @@ config.libs = [
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/e_asin.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/e_atan2.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/e_fmod.c"),
-            Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/e_hypot.c"),
+            Object(Matching, "MSL_C.PPCEABI.bare.H.a/e_hypot.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/e_log.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/e_pow.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/e_rem_pio2.c"),
