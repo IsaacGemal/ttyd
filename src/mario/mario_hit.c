@@ -112,7 +112,7 @@ extern const f32 float_neg3000_8041a870;
 extern const u8 vec3_802c5730[];
 #define GND_PTR(wp, type, off) (*(type*)((u8*)(wp) + (off)))
 
-// NONMATCHING (88.23%): same 56 calls and immediates as the original. Remaining: (1) the int->float magic
+// NONMATCHING (88.96%): same 56 calls and immediates as the original. Remaining: (1) the int->float magic
 // double loads absolute (@NNN) where the original reads 0x1f0(r30) off the same rodata base as the vec3 anchor (the
 // file-wide blocker until this unit's .rodata is ported); (2) the frame is 0x1c0 against 0x1b0 with f27-f29 also
 // saved: the three inlined marioHitCheckVecOut copies keep more FPR temps than the original's two (f30/f31).
@@ -177,7 +177,7 @@ void marioChkGnd(void) {
     m = marioGetPtr();
     if (m->flags & 0x100) {
         ok = 0;
-    } else if (m->position.y == float_5000_8041a874) {
+    } else if (m->position.y >= float_5000_8041a874) {
         ok = 0;
     } else {
         ok = 1;
@@ -227,7 +227,7 @@ void marioChkGnd(void) {
         }
     } else {
         if (wp->currMotionId != 0x1F && GND_PTR(wp, HitEntry*, 0x1E4) != NULL && (hitGetAttr(GND_PTR(wp, HitEntry*, 0x1E4)) & 0x200)) {
-            if (GND_PTR(wp, f32, 0x7C) == float_0_8041a7a4) {
+            if (GND_PTR(wp, f32, 0x7C) >= float_0_8041a7a4) {
                 marioSetFallPara();
             }
             set_damage_root_ypos(wp->position.y);
@@ -243,9 +243,9 @@ void marioChkGnd(void) {
         }
         if (wp->airTimer == 0) {
             if (!(wp->flags & 0x1000000)) {
-                dy = fy - wp->position.y;
                 if (marioChkFrontStep(&fy, &fd, &fa) != NULL) {
-                    if (dy >= float_11_8041a7ac && dy <= float_5_8041a7b8 && GND_PTR(wp, f32, 0x214) >= float_30_8041a82c) {
+                    dy = fy - wp->position.y;
+                    if (dy <= float_11_8041a7ac && dy >= float_5_8041a7b8 && GND_PTR(wp, f32, 0x214) <= float_30_8041a82c) {
                         GND_PTR(wp, f32, 0x1C4) = fy;
                         if (wp->baseSpeed != float_0_8041a7a4) {
                             if (!(GND_PTR(wp, u32, 4) & 0x1000000)) {
@@ -258,9 +258,9 @@ void marioChkGnd(void) {
                     }
                 }
             } else {
-                dy = fy - wp->position.y;
                 if (marioChkFrontStep(&fy, &fd, &fa) != NULL) {
-                    if (dy >= float_11_8041a7ac && dy <= float_5_8041a7b8 && GND_PTR(wp, f32, 0x214) >= float_30_8041a82c) {
+                    dy = fy - wp->position.y;
+                    if (dy <= float_11_8041a7ac && dy >= float_5_8041a7b8 && GND_PTR(wp, f32, 0x214) <= float_30_8041a82c) {
                         GND_PTR(wp, f32, 0x1C4) = fy;
                         if (wp->baseSpeed != float_0_8041a7a4) {
                             roll_upstairs_on();
