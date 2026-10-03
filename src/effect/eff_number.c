@@ -8,7 +8,7 @@
 
 #ifdef MUST_MATCH
 // MUST_MATCH: `& mask` (mask = -1) is a no-op that gives the eight hoisted colour bytes the original's
-// r20-r27 colouring; the plain reads colour them r18-r24+r31 (a permuter find, wave 62).
+// r20-r27 colouring; the plain reads colour them r18-r24+r31.
 #define NUM_COL(c) ((c) & mask)
 #else
 #define NUM_COL(c) (c)

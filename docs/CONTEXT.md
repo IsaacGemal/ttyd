@@ -3956,3 +3956,33 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   GXColor*-taking function-pointer casts (they reproduce the original's outgoing-colour stack slots and are
   ABI-identical only under MWCC) moved under MUST_MATCH as SW_ICON_COL/SW_NUM_GX, with the header's by-value calls in
   the natural build. Two comments with internal process wording reworded.
+
+## Waves 62 and 63, batch 1 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Wave 62** (07:38, base 05f77c7b, `scratch/wave62/`): 34 agents. Excluding queue17-21, wave 61's units and Claude
+  #3's autolink-failure list left 9 agents of new 90-99% work; 25 retried the units wave 61 dropped, each with the
+  drop reason as its hint (natural build, .sdata2 lower, sac_deka's rodata shift, kept pragmas).
+- **Wave 63** (07:43, same base, `scratch/wave63/`): a second pass over wave 61's units (109 agents; functions still
+  under 100%, each unit's wave 61 REPORT.md files passed in as prev_REPORT_N.md) and a linking arm (9 agents, one
+  fully matched unit each; success = the checksum passing, targets stated with tools/link_diag.py and
+  tools/rodatalayout.py, pyelftools copied to the tower as ~/ttyd-pylib). It shares each key's 24 slots with wave 62
+  (`PFXRE`). Functions two earlier waves left unchanged went to Claude #1's permuter (`permuter.txt`, >= 90%)
+  instead of agents; that count was wrong for 0% functions (see below).
+- Batch 1 (wave 62 and 60 finished wave 63 agents, onto main 05f77c7b): 9,259 -> 9,287, code linked 41.06 ->
+  41.63%, data linked 78.12 -> 79.41%. **Five swarm agents linked their units**: ac_gauge_timing, eff_ibuki,
+  eff_fireflower_n64, evt_yuugijou, gor_01 (configure.py flips applied at collection after the full build passed).
+  battle_icon's agent wanted a compiler flag (not taken), ac_shot didn't link, unit_party_chuchurina didn't build.
+  party.c's five unwritten functions (partyReInit and others) reached 100%. Section drops (seq_title, npcdrv,
+  battle_damage, battle_stage, koopa_hit, sac_zubastar, sac_deka, bom_01, evt_yuuranking), evt_sub (coingetDisp
+  lower), sac_genki and win_main (the [data] check), battle_mario (build) as on main.
+- Reviews (`scratch/wave63/review1.md`, `review1b.md` for the functions below 99%): loadDraw printed the level
+  string as the save-file header and the play-time prefix as the level line (r30+0x2f0 is str_802ED960, +0x328
+  str_802ED998), and built the play time from swapped halves with an unsigned divide (retail: slot+0x28 high word,
+  `__div2i`); all three fixed. Process wording in four comments reworded.
+- **Lost work.** Agents had written most of the "unwritten" 0% functions before (wave 59: winMailGX 99.38%,
+  winHalfBookGX 95.99%, the mario_hit set 85-90%), but collection reverts a whole file for one failure and resolves
+  conflicts between groups that each insert new functions to one side, so the work never landed. Only 5 of 51 had a
+  `// TODO: write` placeholder, so prompts didn't mark the rest as unwritten. `scratch/salvage/audit.py` recompiles
+  every archived agent final.c in place on the tower and lists where an agent's score beats main's
+  (`scratch/lost_work.tsv`). Its first run scored main's object for every file: rsync keeps the old mtime, so ninja
+  saw nothing to rebuild; the sources are touched after the copy now.

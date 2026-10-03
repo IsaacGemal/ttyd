@@ -1305,7 +1305,7 @@ void loadDraw(void) {
         }
         FontDrawScale(0.6f);
         FontDrawEdge();
-        sprintf(nameBuf, str_802ED998, winZenkakuStr(i + 1));
+        sprintf(nameBuf, str_802ED960, winZenkakuStr(i + 1));
         FontDrawString(nameBuf, wd->x - 100.0f, 84.0f + wd->y);
         FontDrawEdgeOff();
         FontDrawScale(1.0f);
@@ -1331,7 +1331,7 @@ void loadDraw(void) {
             }
         } else {
             u32 divisor = *(volatile u32*)0x800000F8 >> 2;
-            u64 ticks = ((u64)field2c << 32) | field28;
+            s64 ticks = ((s64)field28 << 32) | field2c;
             u64 secs;
             u32 hours;
             u32 mins;
@@ -1339,7 +1339,7 @@ void loadDraw(void) {
             f32 half2;
 
             FontGetMessageWidth(str_8041BE34);
-            secs = ticks / divisor;
+            secs = (u64)(ticks / (s64)divisor);
             if (secs > 0x57E3F) {
                 hours = 99;
                 mins = 59;
@@ -1351,7 +1351,7 @@ void loadDraw(void) {
             if (strlen(name) != 0) {
                 FontDrawString(name, wd->x - (f32)(FontGetMessageWidth(name) >> 1), 70.0f + wd->y);
             }
-            sprintf(timeBuf, str_802ED9A4, winZenkakuStr(level));
+            sprintf(timeBuf, str_802ED998, winZenkakuStr(level));
             FontDrawString(timeBuf, wd->x - (f32)FontGetMessageWidth(timeBuf) * 0.5f, 30.0f + wd->y);
             strcpy(timeBuf, str_802ED9A4);
             strcat(timeBuf, unk_8016af5c(hours, 2));

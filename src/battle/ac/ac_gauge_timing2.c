@@ -80,8 +80,8 @@ extern const char str_80300094[];
 
 static void actionCommandDisp(f32 x, f32 y);
 
-// Wave 63: defining dat_80421ad8 non-const (see the .sdata2 definition at the top) stops MWCC
-// hoisting its `lwz` above the case-0 stores and fixes the case-0 schedule (96.74 -> 98.37). Reading
+// Defining dat_80421ad8 non-const (see the .sdata2 definition at the top) stops MWCC hoisting its
+// `lwz` above the case-0 stores and fixes the case-0 schedule. Reading
 // `autoFlag` into a `doCheck` temp before zeroing it (`s32 doCheck = autoFlag; autoFlag = 0; if
 // (doCheck)`) pins the auto-command probe's `li <flag>,0` before its `beq`, which the scheduler only
 // did in the original, and lifts the function to 98.73 (#ifdef-free source change: the temp is

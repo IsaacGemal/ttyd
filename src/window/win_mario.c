@@ -568,9 +568,8 @@ void winMarioInit(WindowWork* work) {
 // contiguous 0x6c Vec block per switch case. MWCC passes a by-value Vec/GXColor by
 // invisible reference (a pointer), so calling the real function through a pointer-parameter
 // signature is ABI-identical but lets the caller pass its own locals instead of hidden
-// argument copies. That is what produces the original's stack layout. The prior wave's
-// fukiMkVec inline shape was dropped; the explicit per-part `sc = vec; tmp = vec; tr = tmp;`
-// order plus this cast is what matches.
+// argument copies. That is what produces the original's stack layout. The explicit per-part
+// `sc = vec; tmp = vec; tr = tmp;` order plus this cast is what matches.
 #ifdef MUST_MATCH
 typedef void (*WinTexSetPtr)(u32, Vec*, Vec*, GXColor*);
 #define WINTEXSET(id, tr, sc, c) ((WinTexSetPtr)winTexSet)((id), &(tr), &(sc), &(c))

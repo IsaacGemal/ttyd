@@ -1235,9 +1235,9 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
 // hangs MWCC). Per-region diff counts are 8/8/11 and the best tail-only form still leaves
 // 8 scheduling diffs. The scheduler never hoists the `float_0` load into f0 above
 // `pos->x`, so `pos->y`/`pos->x` land in f0 instead of the target's f1.
-// Wave 63a re-ran exhaustive first- and second-block linear-extension searches (all 30
+// Exhaustive first- and second-block linear-extension searches (all 30
 // dependency-respecting orderings each, in split and single-statement sum forms) and a
-// tail sweep. The tail breakthrough: writing the product as a signed negated temp
+// tail sweep were tried. The tail breakthrough: writing the product as a signed negated temp
 // `f32 ny = float_24 * -(f32)n; vec.y = pos->y + ny;` (rather than `vec.y = pos->y - ny`)
 // drops the tail diffs from 11 to 10 and lifts the whole function to 89.63%; the direct
 // `pos->y - 24*(f32)n` form emits the target's `fnmsubs` but re-schedules the `vec.x`
