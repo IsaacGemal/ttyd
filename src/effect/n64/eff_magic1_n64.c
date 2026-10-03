@@ -383,11 +383,6 @@ void effMagic1Disp(CameraId camId, EffectEntry* effect) {
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 __declspec(section ".sdata2") u32 dat_8041f650 = 0x000000FF;
 
-// 4 zero bytes that end the unit's .sdata/.sdata2.
-#pragma explicit_zero_data on
-#pragma force_active on
-#pragma force_active reset
-#pragma explicit_zero_data reset
 
 // .sbss2 scratch colour (declared in reverse: MWCC lays uninitialised globals out last-declared-first).
 #pragma section ".sdata" ".sbss2"

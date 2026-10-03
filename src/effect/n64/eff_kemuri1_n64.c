@@ -12,6 +12,7 @@
 // with a small-data section so the object lands where the original's does.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor unk_80423168;
+#pragma section ".sdata" ".sbss"
 
 // .sdata2 colour constants this unit defines.
 const GXColor dat_8041f230 = { 0x80, 0x80, 0x80, 0x80 };

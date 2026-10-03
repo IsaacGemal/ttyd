@@ -1646,9 +1646,7 @@ __declspec(section ".sdata2") f32 float_170_80421a98 = 170.0f;
 // through with the result variable uninitialised), and that is what makes MWCC materialise each
 // switch result in r23/r24/r25 (a `mr` per case plus the join `mr r3,r25`); merging case 6 with
 // default coalesces them away. (2) The target reloads several in-loop vec constants every
-// iteration where MWCC would hoist them: `vec3_802ffb70` is declared non-const in `.rodata`
-// (above) so MWCC cannot prove the winIconSet call leaves it alone, and the remaining three
-// (vec3_802ffb7c/88/94) are read through `const volatile` (assignments marked "anti-hoist"
+// iteration where MWCC would hoist them: vec3_802ffb7c/88/94 are read through `const volatile` (assignments marked "anti-hoist"
 // below), which restores the reloads and the target's callee-saved set (stmw r17). The per-block
 // statement order is also chosen to match the target's schedule: the icon block computes
 // tmpIcon.x before rowY, the arrow block computes tmpArrow.x before rowY, the arrow loop declares

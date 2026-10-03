@@ -1318,7 +1318,7 @@ if (wp->field_0x50 == 5 || wp->field_0x50 == 6) {
 		GXColor color;
 		s32 i;
 		char* p;
-		char buf[0x78];
+		char buf[0x88];
 		s32 lines;
 		char* second = NULL;
 
