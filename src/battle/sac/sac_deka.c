@@ -158,9 +158,9 @@ static s32 nice_event[8] = { 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363
 
 // main_star's .rodata objects (not in a header yet).
 
-GXColor dat_80421e40 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_80421e40 = { 0xFF, 0xFF, 0xFF, 0x00 };
 GXColor dat_80421e44 = { 0xFF, 0xFF, 0xFF, 0x00 };
-GXColor dat_80421e48 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_80421e48 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
 // .sdata2 constants (names from the original object; used by name so the relocations match)
 f32 float_0p5_80421e54 = 0.5f;
