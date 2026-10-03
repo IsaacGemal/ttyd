@@ -47,9 +47,23 @@ END_LOOP
 RETURN
 EVT_END()
 
-USER_FUNC(kpa_chg_pose) {
-    marioChgPose((const char*)evtGetValue(event, event->args[0]));
-    return EVT_RETURN_DONE;
+void kpaScoreDisp(CameraId cameraId, void* param) {
+    Mtx trans;
+    Mtx scale;
+    GXColor color;
+    s32 i;
+
+    PSMTXScale(scale, float_0p5_80420d84, float_0p5_80420d84, float_0p5_80420d84);
+    FontDrawStart();
+    color = dat_80420d80;
+    FontDrawColor(&color);
+    for (i = 0; i < 50; i++) {
+        if (ksdp[i].timer != 0) {
+            PSMTXTrans(trans, ksdp[i].pos.x, ksdp[i].pos.y, float_300_80420d98);
+            PSMTXConcat(trans, scale, trans);
+            FontDrawStringMtx(trans, ksdp[i].text);
+        }
+    }
 }
 
 // Shared popup body for kpaAddScorePos/kpaAddCoinPos. Factoring both into one static inline is
@@ -95,48 +109,17 @@ static inline void kpaScorePopup(s32 n, Vec* pos) {
     }
 }
 
-void kpaAddScorePos(s32 score, Vec* pos) {
-    s32 s = score;
+USER_FUNC(kpa_score_disp_main) {
+    s32 i;
 
-    if (score > 10000) {
-        s = 10000;
+    for (i = 0; i < 50; i++) {
+        if (ksdp[i].timer != 0) {
+            ksdp[i].pos.y += float_1_80420d94;
+            ksdp[i].timer--;
+        }
     }
-    pouchAddKpaScore(s);
-    kpaScorePopup(s, pos);
-}
-
-void kpaAddScore(s32 score) {
-    if (score > 10000) {
-        score = 10000;
-    }
-    pouchAddKpaScore(score);
-}
-
-// Same shape as kpaAddScorePos: shares kpaScorePopup's digit/string block, which is what lets
-// MWCC pick the target's register assignment.
-void kpaAddCoinPos(s32 coins, Vec* pos) {
-    if (pouchAddKpaCoin(coins)) {
-        pouchAddKpaScore(1000);
-    }
-    coins *= 500;
-    if (coins > 10000) {
-        coins = 10000;
-    }
-    pouchAddKpaScore(coins);
-    kpaScorePopup(coins, pos);
-}
-
-void kpaAddCoin(s32 coins) {
-    s32 score;
-
-    if (pouchAddKpaCoin(coins)) {
-        pouchAddKpaScore(1000);
-    }
-    score = coins * 500;
-    if (score > 10000) {
-        score = 10000;
-    }
-    pouchAddKpaScore(score);
+    dispEntry(4, float_0_80420d90, 2, kpaScoreDisp, NULL);
+    return EVT_RETURN_DONE;
 }
 
 // The vec3 addressing is forced to `.rodata` (lis/addi) with __declspec to match the target;
@@ -166,34 +149,51 @@ USER_FUNC(kpa_score_disp_init) {
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(kpa_score_disp_main) {
-    s32 i;
+void kpaAddCoin(s32 coins) {
+    s32 score;
 
-    for (i = 0; i < 50; i++) {
-        if (ksdp[i].timer != 0) {
-            ksdp[i].pos.y += float_1_80420d94;
-            ksdp[i].timer--;
-        }
+    if (pouchAddKpaCoin(coins)) {
+        pouchAddKpaScore(1000);
     }
-    dispEntry(4, float_0_80420d90, 2, kpaScoreDisp, NULL);
-    return EVT_RETURN_DONE;
+    score = coins * 500;
+    if (score > 10000) {
+        score = 10000;
+    }
+    pouchAddKpaScore(score);
 }
 
-void kpaScoreDisp(CameraId cameraId, void* param) {
-    Mtx trans;
-    Mtx scale;
-    GXColor color;
-    s32 i;
-
-    PSMTXScale(scale, float_0p5_80420d84, float_0p5_80420d84, float_0p5_80420d84);
-    FontDrawStart();
-    color = dat_80420d80;
-    FontDrawColor(&color);
-    for (i = 0; i < 50; i++) {
-        if (ksdp[i].timer != 0) {
-            PSMTXTrans(trans, ksdp[i].pos.x, ksdp[i].pos.y, float_300_80420d98);
-            PSMTXConcat(trans, scale, trans);
-            FontDrawStringMtx(trans, ksdp[i].text);
-        }
+// Same shape as kpaAddScorePos: shares kpaScorePopup's digit/string block, which is what lets
+// MWCC pick the target's register assignment.
+void kpaAddCoinPos(s32 coins, Vec* pos) {
+    if (pouchAddKpaCoin(coins)) {
+        pouchAddKpaScore(1000);
     }
+    coins *= 500;
+    if (coins > 10000) {
+        coins = 10000;
+    }
+    pouchAddKpaScore(coins);
+    kpaScorePopup(coins, pos);
+}
+
+void kpaAddScore(s32 score) {
+    if (score > 10000) {
+        score = 10000;
+    }
+    pouchAddKpaScore(score);
+}
+
+void kpaAddScorePos(s32 score, Vec* pos) {
+    s32 s = score;
+
+    if (score > 10000) {
+        s = 10000;
+    }
+    pouchAddKpaScore(s);
+    kpaScorePopup(s, pos);
+}
+
+USER_FUNC(kpa_chg_pose) {
+    marioChgPose((const char*)evtGetValue(event, event->args[0]));
+    return EVT_RETURN_DONE;
 }
