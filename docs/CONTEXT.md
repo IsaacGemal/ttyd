@@ -3869,3 +3869,31 @@ looks the same as a slow agent from the log until the end.
   str_802CE158 "PNK_A_1") are offsets from vec3_802ce138 only under MUST_MATCH, literals in #else; the unused
   include/window/win_party_protos.h (by-value prototypes that disagreed with win_main.h/animdrv.h) and
   WinRootItem/WinRootPlate are out.
+
+## Linking push: 22 units, code linked 36.35 -> 38.65% (2026-10-02/03 night, Claude Opus 5.5 orchestrator + Claude Sonnet 5.5 "TTYD Claude #3")
+
+Code linked had sat at ~36% for days while matching ran ahead. One evening moved it 2.3 points.
+
+- **Pick targets by bytes left to link, not by "all functions 100%".** A ranking over report.json (per unit: total
+  minus matched code and data, plus the sections still under 100%) found **12 REL units with nothing left at all**:
+  per-module copies of shared enemy units (`unit_barriern`, `unit_barriern_z`, `unit_wanwan`, `unit_burst_wanwan`,
+  `unit_pakkun_flower`, `unit_monochrome_pakkun` in aji/jon/las/moo/muj/tou2/win) still `NonMatching` in configure.py.
+  `tools/autolink.py --list` does not see these per-module `Object(..., modules=[...])` entries. Flipped in #280:
+  code linked 36.35 -> 37.43%, data linked 72.91 -> 74.53% (enemy units are data-heavy). Open: teach autolink the
+  per-module entries.
+- **The first targets handed to Claude #3 were the wrong ones:** the matched-but-unlinked list is what earlier passes
+  had already given up on (constant-pool order). Steered to data-only gaps and one-function-short units, it linked
+  10 units in ~1 h: mot_damage (#275), eff_mobj_broken (#276), eff_blow_n64 (#277), eff_hit_n64 (#278), mot_dokan
+  (#279), eff_opuku_jetwrain_n64 (#282), eff_water_damage_n64 (#283), ac_stick_rotate (#284), mario_sbr (#285),
+  evt_party (#286). Code linked 37.43 -> 38.65%.
+- **Method** (in AGENT_BRIEF, #281, with `tools/link_diag.py`, which maps each dol difference to an address): source
+  order is the reverse of `.text`; constants the code must keep reading from memory are `extern const` defined
+  after the code, ones that fold into the pool are `static const f32` before it (folded in first-use order);
+  strings as literals, not named objects; never define the compiler's own i2f double or zero-Vec copies;
+  `__declspec(section ".sdata2")` for writable constants.
+- **Linking found bugs 100% text hid:** eff_water_damage's material colour was byte-reversed (`{00,FF,FF,C8}` ->
+  `{C8,FF,FF,00}`), mario_sbr's 0.19f is retail's 0.19000006f.
+- Parked with reasons (Claude #3): eff_naniga (28-byte zero tail after the compiler's jump table), battle_mario and
+  fadedrv (pool word order), eff_break/mist2/bomb (named vs literal GX quad constants: pool order vs text),
+  break_slot, sac_suki (3.7 KB event data), frankli_sac (REL data order). Register-allocation-only leftovers queued
+  for the permuter (queue 19).
