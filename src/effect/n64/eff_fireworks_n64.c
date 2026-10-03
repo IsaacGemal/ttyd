@@ -50,38 +50,11 @@ u32 vtx_data[3][2] = {
 extern const f32 float_6p2832_8041ef28;
 extern const f32 float_360_8041ef2c;
 extern const f32 float_0p5_8041ef30;
-extern const f32 float_480_8041ef34;
 #ifdef MUST_MATCH
 // volatile stops MWCC from keeping the 0.0f in one FPR across the four GXPosition3f32 calls
 // (the original reloads it from .sdata2 into f0 each time).
-extern const volatile f32 float_0_8041ef38;
 #else
-extern const f32 float_0_8041ef38;
 #endif
-extern const f32 float_608_8041ef3c;
-extern const f32 float_1_8041ef40;
-extern const f32 float_32768_8041ef44;
-extern const f32 float_8_8041ef48;
-extern const f32 float_0p95_8041ef4c;
-extern const f32 float_0p15_8041ef50;
-extern const f32 float_0p11_8041ef54;
-extern const f32 float_80_8041ef58;
-extern const f32 float_0p1_8041ef5c;
-extern const f32 float_neg1000_8041ef60;
-extern const f32 float_1000_8041ef64;
-extern const Vec vec3_802fa618;
-extern const Vec vec3_802fa624;
-extern const Vec vec3_802fa630;
-
-// .rodata
-const Vec vec3_802fa600 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fa60c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fa618 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fa624 = { 0.0f, 0.0f, 1000.0f };
-const Vec vec3_802fa630 = { 0.0f, 1.0f, 0.0f };
-const f64 double_to_int_802fa640 = 4503601774854144.0;
-const f64 double_to_int_mask_802fa648 = 4503599627370496.0;
-const char str_802FA650[16] = "FireworksN64";
 
 EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
 	EffectEntry* entry;
@@ -89,7 +62,7 @@ EffectEntry* effFireworksN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 a
 	s32 i;
 
 	entry = effEntry();
-	entry->type = str_802FA650;
+	entry->type = "FireworksN64";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effFireworksData));
 	entry->userdata = data;
@@ -156,7 +129,7 @@ void effFireworksMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	position = effFireworksMakeVec(data->x, data->y, data->z);
 #else
-	position = vec3_802fa600;
+	position = (Vec){ 0.0f, 0.0f, 0.0f };
 	position.x = data->x;
 	position.y = data->y;
 	position.z = data->z;
@@ -184,11 +157,11 @@ void effFireworksMain(EffectEntry* effect) {
 		data->x += data->field_0x10;
 		data->y += data->field_0x14;
 		data->z += data->field_0x18;
-		data->field_0x10 *= float_0p95_8041ef4c;
-		data->field_0x14 *= float_0p95_8041ef4c;
-		data->field_0x18 *= float_0p95_8041ef4c;
-		data->field_0x14 -= float_0p15_8041ef50;
-		data->field_0x44 += float_0p11_8041ef54 * (data->field_0x48 - data->field_0x44);
+		data->field_0x10 *= 0.95f;
+		data->field_0x14 *= 0.95f;
+		data->field_0x18 *= 0.95f;
+		data->field_0x14 -= 0.15f;
+		data->field_0x44 += 0.11f * (data->field_0x48 - data->field_0x44);
 	}
 	else {
 		b = 32 - counter;
@@ -196,26 +169,26 @@ void effFireworksMain(EffectEntry* effect) {
 		angle = float_6p2832_8041ef28 * (f32)(counter * 90 >> 5) / float_360_8041ef2c;
 		sinAngle = (f32)sin(angle);
 #ifdef MUST_MATCH
-		// The literal 80.0f (not float_80_8041ef58) lets MWCC keep the constant in f0 for both fnmsubs
+		// The literal 80.0f (not 80.f) lets MWCC keep the constant in f0 for both fnmsubs
 		// operands; the named extern leaves it in a third FPR and rotates the conversion/constant
 		// registers (f0/f1/f6 vs f1/f0/f5). It adds an anonymous 80.0 to .sdata2 next to the named one.
 		data->field_0x60[counter & 3] =
 			data->y - data->field_0x14 * (f32)b - (80.0f - 80.0f * sinAngle);
 #else
 		data->field_0x60[counter & 3] =
-			data->y - data->field_0x14 * (f32)b - (float_80_8041ef58 - float_80_8041ef58 * sinAngle);
+			data->y - data->field_0x14 * (f32)b - (80.f - 80.f * sinAngle);
 #endif
 		data->field_0x70[counter & 3] = data->z - data->field_0x18 * (f32)b;
-		data->field_0x80[counter & 3] = (f32)(rand() % 11 - 5) * float_0p1_8041ef5c;
-		data->field_0x90[counter & 3] = (f32)(rand() % 11 - 5) * float_0p1_8041ef5c;
-		data->field_0xA0[counter & 3] = (f32)(rand() % 11 - 5) * float_0p1_8041ef5c;
+		data->field_0x80[counter & 3] = (f32)(rand() % 11 - 5) * 0.1f;
+		data->field_0x90[counter & 3] = (f32)(rand() % 11 - 5) * 0.1f;
+		data->field_0xA0[counter & 3] = (f32)(rand() % 11 - 5) * 0.1f;
 		for (i = 0; i < 4; i++) {
 			data->field_0x50[i] += data->field_0x80[i];
 			data->field_0x60[i] += data->field_0x90[i];
 			data->field_0x70[i] += data->field_0xA0[i];
-			data->field_0x90[i] -= float_0p15_8041ef50;
+			data->field_0x90[i] -= 0.15f;
 			if (counter >= 27) {
-				data->field_0x60[i] = float_neg1000_8041ef60;
+				data->field_0x60[i] = -1000.f;
 			}
 		}
 		if (counter >= 0x20) {
@@ -230,7 +203,7 @@ void effFireworksMain(EffectEntry* effect) {
 // Builds the display-space position; the inline return-value temp is at 0x18 and
 // is copied to the caller's Vec at 0x48, matching the original's stack layout.
 static inline Vec effFireworksPos(f32 x, f32 y, f32 z) {
-	Vec v = vec3_802fa60c;
+	Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
 	v.x = x;
 	v.y = y;
 	v.z = z;
@@ -286,16 +259,8 @@ static inline void effFireworksSetColor1(effFireworksData* data) {
 //   the GXColor from an inline put the first build temp 4 bytes low.
 // - width/height go through w/h/t temporaries, and the quad's `ey` is held in `s`
 //   (the scratch f32) so MWCC colours ex/ey in f2/f1 and loads the z constant into f0.
-// - float_0_8041ef38 is `volatile` so the four GXPosition3f32 z loads are not CSE'd
+// - 0.0f is `volatile` so the four GXPosition3f32 z loads are not CSE'd
 //   into one register; `zero` keeps the two C_MTXOrtho uses in one register.
-// NONMATCHING (99.99%): every instruction matches except the two `lfd` displacements of the
-// compiler's int->float magic doubles. The compiler pools its anonymous magic doubles after all
-// user-defined .rodata (the vec3s, the named doubles and str_802FA650) and after effFireworksMain's
-// makeVec anonymous zero Vec, so they land at +0x70/+0x78 from vec3_802fa600 instead of the
-// original's +0x40/+0x48 (where double_to_int_802fa640 / double_to_int_mask_802fa648 sit, unused by
-// the compiler's idiom). Removing the named doubles/string lets the anonymous ones reach +0x48/+0x50,
-// and removing effFireworksMain's makeVec workaround reaches +0x40 exactly (disp then scores 100%),
-// but that drops effFireworksMain to 97.49%, so the two cannot both match in one unit.
 void effFireworksDisp(CameraId camId, void* param) {
 	// Function-local statics so MWCC emits the original's sflag$NNN/salpha$NNN symbols.
 	static s32 salpha;
@@ -441,17 +406,17 @@ void effFireworksDisp(CameraId camId, void* param) {
 		cy = position.y * s * float_0p5_8041ef30;
 #endif
 
-		target = vec3_802fa618;
-		eye = vec3_802fa624;
-		up = vec3_802fa630;
+		target = (Vec){ 0.0f, 0.0f, 0.0f };
+		eye = (Vec){ 0.0f, 0.0f, 1000.0f };
+		up = (Vec){ 0.0f, 1.0f, 0.0f };
 		GXGetProjectionv(proj);
 #ifdef MUST_MATCH
-		zero = float_0_8041ef38;
-		C_MTXOrtho(ortho, float_480_8041ef34, zero, zero, float_608_8041ef3c, float_1_8041ef40,
-				   float_32768_8041ef44);
+		zero = 0.0f;
+		C_MTXOrtho(ortho, 480.f, zero, zero, 608.0f, 1.0f,
+				   32768.0f);
 #else
-		C_MTXOrtho(ortho, float_480_8041ef34, float_0_8041ef38, float_0_8041ef38, float_608_8041ef3c, float_1_8041ef40,
-				   float_32768_8041ef44);
+		C_MTXOrtho(ortho, 480.f, 0.0f, 0.0f, 608.0f, 1.0f,
+				   32768.0f);
 #endif
 		GXSetProjection(ortho, GX_ORTHOGRAPHIC);
 		C_MTXLookAt(lookAt, &eye, &up, &target);
@@ -459,26 +424,26 @@ void effFireworksDisp(CameraId camId, void* param) {
 		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
-		ex = float_8_8041ef48 + cx;
-		s = cy - float_8_8041ef48;
-		GXPosition3f32(cx, cy, float_0_8041ef38);
+		ex = 8.0f + cx;
+		s = cy - 8.0f;
+		GXPosition3f32(cx, cy, 0.0f);
 		GXTexCoord2s16(0, 1);
-		GXPosition3f32(ex, cy, float_0_8041ef38);
+		GXPosition3f32(ex, cy, 0.0f);
 		GXTexCoord2s16(1, 1);
-		GXPosition3f32(ex, s, float_0_8041ef38);
+		GXPosition3f32(ex, s, 0.0f);
 		GXTexCoord2s16(1, 0);
-		GXPosition3f32(cx, s, float_0_8041ef38);
+		GXPosition3f32(cx, s, 0.0f);
 		GXTexCoord2s16(0, 0);
 #else
-		ex = float_8_8041ef48 + cx;
-		ey = cy - float_8_8041ef48;
-		GXPosition3f32(cx, cy, float_0_8041ef38);
+		ex = 8.0f + cx;
+		ey = cy - 8.0f;
+		GXPosition3f32(cx, cy, 0.0f);
 		GXTexCoord2s16(0, 1);
-		GXPosition3f32(ex, cy, float_0_8041ef38);
+		GXPosition3f32(ex, cy, 0.0f);
 		GXTexCoord2s16(1, 1);
-		GXPosition3f32(ex, ey, float_0_8041ef38);
+		GXPosition3f32(ex, ey, 0.0f);
 		GXTexCoord2s16(1, 0);
-		GXPosition3f32(cx, ey, float_0_8041ef38);
+		GXPosition3f32(cx, ey, 0.0f);
 		GXTexCoord2s16(0, 0);
 #endif
 		GXSetProjectionv(proj);
@@ -490,20 +455,6 @@ void effFireworksDisp(CameraId camId, void* param) {
 const f32 float_6p2832_8041ef28 = 6.2831855f;
 const f32 float_360_8041ef2c = 360.0f;
 const f32 float_0p5_8041ef30 = 0.5f;
-const f32 float_480_8041ef34 = 480.0f;
 #ifdef MUST_MATCH
-const volatile f32 float_0_8041ef38 = 0.0f;
 #else
-const f32 float_0_8041ef38 = 0.0f;
 #endif
-const f32 float_608_8041ef3c = 608.0f;
-const f32 float_1_8041ef40 = 1.0f;
-const f32 float_32768_8041ef44 = 32768.0f;
-const f32 float_8_8041ef48 = 8.0f;
-const f32 float_0p95_8041ef4c = 0.95f;
-const f32 float_0p15_8041ef50 = 0.15f;
-const f32 float_0p11_8041ef54 = 0.11f;
-const f32 float_80_8041ef58 = 80.0f;
-const f32 float_0p1_8041ef5c = 0.1f;
-const f32 float_neg1000_8041ef60 = -1000.0f;
-const f32 float_1000_8041ef64 = 1000.0f;
