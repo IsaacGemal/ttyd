@@ -52,27 +52,19 @@ USER_FUNC(kpa_chg_pose) {
     return EVT_RETURN_DONE;
 }
 
-// The whole instruction sequence matches; only one register swap still differs: the original keeps
-// the loop index in r3 and the hoisted `ksdp` base in r6, this build puts the base in r3 and the
-// index in r6 (plus the two dependent digits). Digit extraction is an `s8 digits[5]` array filled
-// by a `for (j = 0; j != 5; j++)` loop the compiler fully unrolls (that form is what makes the
-// magic-constant registers r9/r8/r7 and the saved digits match); `str`/`base` are read before the
-// digit block so the base lands in a single register for the string walk.
-// NONMATCHING (98.47%)
-void kpaAddScorePos(s32 score, Vec* pos) {
+// Shared popup body for kpaAddScorePos/kpaAddCoinPos. Factoring both into one static inline is
+// what makes MWCC keep the loop index in r3 and the hoisted `ksdp` base in r6; the body written
+// out in each caller instead puts the base in r3 and the index in r6. Digit extraction is an
+// `s8 digits[5]` array filled by a `for (j = 0; j != 5; j++)` loop the compiler fully unrolls
+// (that form is what makes the magic-constant registers r9/r8/r7 and the saved digits match).
+static inline void kpaScorePopup(s32 n, Vec* pos) {
     s32 len;
     s32 j;
     s8 digits[5];
-    s32 n;
     char* str;
     char* base;
     s32 i;
 
-    if (score > 10000) {
-        score = 10000;
-    }
-    pouchAddKpaScore(score);
-    n = score;
     for (i = 0; i < 50; i++) {
         if (ksdp[i].timer != 0) {
             continue;
@@ -101,6 +93,16 @@ void kpaAddScorePos(s32 score, Vec* pos) {
         ksdp[i].pos.z = float_0_80420d90;
         break;
     }
+}
+
+void kpaAddScorePos(s32 score, Vec* pos) {
+    s32 s = score;
+
+    if (score > 10000) {
+        s = 10000;
+    }
+    pouchAddKpaScore(s);
+    kpaScorePopup(s, pos);
 }
 
 void kpaAddScore(s32 score) {
@@ -110,18 +112,9 @@ void kpaAddScore(s32 score) {
     pouchAddKpaScore(score);
 }
 
-// Same shape as kpaAddScorePos (shared body): the digit/string sequence matches; only the
-// loop-index / hoisted-`ksdp` base register swap remains (target: index in r3, base in r6).
-// NONMATCHING (99.73%)
+// Same shape as kpaAddScorePos: shares kpaScorePopup's digit/string block, which is what lets
+// MWCC pick the target's register assignment.
 void kpaAddCoinPos(s32 coins, Vec* pos) {
-    s32 len;
-    s32 j;
-    s8 digits[5];
-    s32 n;
-    char* str;
-    char* base;
-    s32 i;
-
     if (pouchAddKpaCoin(coins)) {
         pouchAddKpaScore(1000);
     }
@@ -130,35 +123,7 @@ void kpaAddCoinPos(s32 coins, Vec* pos) {
         coins = 10000;
     }
     pouchAddKpaScore(coins);
-    n = coins;
-    for (i = 0; i < 50; i++) {
-        if (ksdp[i].timer != 0) {
-            continue;
-        }
-        str = ksdp[i].text;
-        base = str;
-        digits[0] = n / 10000;
-        n %= 10000;
-        digits[1] = n / 1000;
-        n %= 1000;
-        digits[2] = n / 100;
-        n %= 100;
-        digits[3] = n / 10;
-        digits[4] = n % 10;
-        len = 0;
-        for (j = 0; j != 5; j++) {
-            if (len != 0 || digits[j] != 0) {
-                *str++ = digits[j] + '0';
-                len++;
-            }
-        }
-        base[len] = 0;
-        ksdp[i].timer = 30;
-        ksdp[i].pos.x = pos->x - float_0p5_80420d84 * (float_10_80420d88 * (f32)strlen(ksdp[i].text));
-        ksdp[i].pos.y = pos->y + float_20_80420d8c;
-        ksdp[i].pos.z = float_0_80420d90;
-        break;
-    }
+    kpaScorePopup(coins, pos);
 }
 
 void kpaAddCoin(s32 coins) {

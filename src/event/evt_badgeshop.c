@@ -148,11 +148,13 @@ s32 bottakuruComp(const void** sortA, const void** sortB) {
 
 // `s16 count`, `s32 j`, `u32 k`, `u32 dobreak`, `s32 i`, a `s32* p` row pointer for the
 // `[1]` store and a separate `u32 m` counter for the last loop get most compares and the
-// inline `badgeShop_get` (r30/r31) right. What is left: the target stores `[1]` through a
-// pointer and `[0]` through base+scaled-index (`stwx r24, r28, r25`), so it keeps a row
-// pointer AND an offset; ours strength-reduces `table[dobreak][0]` to a second pointer. The
-// remaining diffs are register allocation (target r21-r31, ours r22-r31).
-// NONMATCHING (96.89%): target keeps base+scaled-index for the `[0]` store; regalloc.
+// inline `badgeShop_get` (r30/r31) right. Declaring `i` before `dobreak` (instead of after)
+// reduced the diff count from 29 to 24 (96.89% to 97.14%). What is left: the target stores
+// `[1]` through a pointer and
+// `[0]` through base+scaled-index (`stwx r24, r28, r25`), so it keeps a row pointer AND an
+// integer offset; ours strength-reduces `table[dobreak][0]` to the same pointer and drops
+// the offset register. An explicit `u32 off`/`(u8*)table + off` is folded into `p` too.
+// NONMATCHING (97.14%): target keeps base+scaled-index for the `[0]` store; regalloc.
 void badgeShop_bottakuruGeneration(void) {
 	s32 table[0x11][2];
 	s16 count;
@@ -160,8 +162,8 @@ void badgeShop_bottakuruGeneration(void) {
 	u32 k;
 	s32* bp;
 	s32* p;
-	u32 dobreak;
 	s32 i;
+	u32 dobreak;
 	u32 m;
 	for (k = 0; k < 0x11; k++) {
 		table[k][1] = 200;
@@ -237,17 +239,17 @@ void badgeShop_bteresaGeneration(void) {
 
 #pragma inline_max_size(160) // keep badgeShop_get inlined but badgeShop_set a real `bl`
 // With that pragma the target's prologue/allocation fall into place (badgeShop_get stays
-// inlined, badgeShop_set stays a `bl`). The remaining diffs are (a) the field-init stores:
-// the target shares the first loop's counter register as the zero (`li r25,0`;
-// `stw r25,0xf8..`), MWCC here rematerialises a fresh `r0` and emits a second `li r25,0`; and
-// (b) the final loop's `(s16)badge` conversion, which lands one slot earlier than the
-// target's. (b) is the header's fault: `badgeShop_add`'s second parameter is `s16` in the
-// original (see the MUST_MATCH note in evt_badgeShop_throw_inc); with the header fixed and the
-// cast dropped the final loop matches and the function reaches 99.68% (only (a) left).
+// inlined, badgeShop_set stays a `bl`). The final loop's `(s16)badge` conversion now matches
+// through a MUST_MATCH call cast (original badgeShop_add id is s16; the cast makes the
+// compiler emit the target's `addi r3` before `extsh r4`). The only remaining diff is the
+// field-init stores: the target shares the first loop's counter register as the zero
+// (`li r25,0`; `stw r25,0xf8..`), MWCC here rematerialises a fresh `r0` and emits a second
+// `li r25,0`. An `i = 0;`, a `s32 zero = 0;`, a 5-iteration loop and opt_lifetimes/
+// opt_common_subs/opt_propagation/opt_dead_assignments all leave it unchanged.
 // Earlier findings that still hold: `value`/`count4`/`stopcount` are s16, the first loop's
 // `value |= 1` is the target's `ori r0,r5,1` (not `li`), and the bargain loop must be a real
 // `while (bdsw->field_0x10C + bdsw->field_0x110 < count3)` to get the target's rotated loop.
-// NONMATCHING (99.21%): field-init zero coalescing; final `(s16)` conversion order (header).
+// NONMATCHING (99.68%): field-init zero coalescing (r25 vs a fresh r0 + extra `li`).
 void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably fixes
 	s16 value;
 	s32 count3;
@@ -372,7 +374,13 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 	for (i = 0; i < 5; i++) {
 		badge = bdsw->field_0xF8[i];
 		if (badge) {
+#ifdef MUST_MATCH
+			// Original badgeShop_add takes its id as s16 (see evt_badgeShop_throw_inc); the
+			// cast restores the target's `addi r3` before `extsh r4`.
+			((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->bargain_table, badge, -1);
+#else
 			badgeShop_add(bdsw->bargain_table, (s16)badge, -1);
+#endif
 		}
 	}
 }

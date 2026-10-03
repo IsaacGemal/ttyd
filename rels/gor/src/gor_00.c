@@ -4986,7 +4986,7 @@ USER_FUNC(gundan1000tai_circle_pos_func) {
 
 // Splitting the angle product (marked above) puts the eight pooled float constants in the original's
 // registers; assigning base before field_0x60 puts the 90/-280 and 270/340 address temps in r3/r4.
-// NONMATCHING (99.85%): the second half's angle/s land in f22/f21 instead of the original's f21/f22.
+// NONMATCHING (99.86%): the second half's angle/s land in f22/f21 instead of the original's f21/f22.
 USER_FUNC(gundan1000tai_init) {
     s32 i;
     NanNpcEntry* entry;
@@ -5368,16 +5368,16 @@ void gundan1000tai_seq01(NanNpcEntry* entry) {
     }
 }
 
-// NONMATCHING (99%): in the first atan2 call the original keeps the b.x-a.x intermediate in f0
-// (fneg f1, f0) and schedules fmr f31,f1 before the loads; ours uses f3 and hoists one lfs.
-// The second (identical) block already matches, so this is allocator state from the preceding
-// code. Named dx/dz temps, an atan2 inline wrapper, and swapped evaluation orders all give f3.
+// Taken from the identical matched functions in win_06.c/tik_05.c: the dx/dz locals (rather than the
+// inlined -(b.x - a.x)) plus the Vec declaration order give the original's register allocation.
 static USER_FUNC(cam_kaiten_init) {
     s32* args = event->args;
-    Vec b;
     Vec a;
+    Vec p;
     f32 dist;
     f32 angle;
+    f32 dx;
+    f32 dz;
 
     ckp0 = _mapAlloc(0x20);
     memset(ckp0, 0, 0x20);
@@ -5399,21 +5399,25 @@ static USER_FUNC(cam_kaiten_init) {
     ckp1[4] = evtGetFloat(event, args[10]);
     ckp1[5] = evtGetFloat(event, args[11]);
 
-    a = *(Vec*)&ckp0[0];
-    b = *(Vec*)&ckp0[3];
-    b.y = 0.0f;
+    p = *(Vec*)&ckp0[0];
+    a = *(Vec*)&ckp0[3];
     a.y = 0.0f;
-    dist = PSVECDistance(&a, &b);
-    angle = (f32)atan2(-(b.x - a.x), b.z - a.z) * 57.29579f;
+    p.y = 0.0f;
+    dist = PSVECDistance(&p, &a);
+    dx = a.x - p.x;
+    dz = a.z - p.z;
+    angle = 57.29579f * (f32)atan2(-dx, dz);
     ckp0[6] = angle;
     ckp0[7] = dist;
 
-    a = *(Vec*)&ckp1[0];
-    b = *(Vec*)&ckp1[3];
-    b.y = 0.0f;
+    p = *(Vec*)&ckp1[0];
+    a = *(Vec*)&ckp1[3];
     a.y = 0.0f;
-    dist = PSVECDistance(&a, &b);
-    angle = (f32)atan2(-(b.x - a.x), b.z - a.z) * 57.29579f;
+    p.y = 0.0f;
+    dist = PSVECDistance(&p, &a);
+    dx = a.x - p.x;
+    dz = a.z - p.z;
+    angle = 57.29579f * (f32)atan2(-dx, dz);
     ckp1[6] = angle;
     ckp1[7] = dist;
 

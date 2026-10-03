@@ -10,6 +10,7 @@
 
 extern BattleWork* _battleWorkPointer;
 
+
 // dont_inline keeps BtlIconGetPtr a real `bl` from the evt commands as in retail.
 #pragma dont_inline on
 // The original keeps this 16-iteration loop rolled; at -O4,p the compiler unrolls it 4x.
@@ -172,7 +173,7 @@ USER_FUNC(btlevtcmd_BtlIconEntry) {
 #ifdef MUST_MATCH
 	// The header declares BtlIcon_Entry's id as s16, but retail narrows it with clrlwi (zero-extend,
 	// not extsh), so the original parameter is u16. Call through a cast pointer to emit the unsigned
-	// narrowing without editing the existing header line; see REPORT.md.
+	// narrowing without editing the existing header line
 	icon = ((BattleIcon* (*)(u16, f32, f32, f32))BtlIcon_Entry)(iconId, x, y, z);
 #else
 	icon = BtlIcon_Entry(iconId, x, y, z);
@@ -197,7 +198,7 @@ USER_FUNC(btlevtcmd_BtlIconEntryItemId) {
 #ifdef MUST_MATCH
 	// The header declares BtlIcon_Entry's id as s16, but the original passes the u16 field straight
 	// into r3 (lhz, no extsh); call through a u16-function pointer to avoid the sign extension.
-	// Remove when the header's first parameter becomes u16. See REPORT.md.
+	// Remove when the header's first parameter becomes u16.
 	icon = ((BattleIcon* (*)(u16, f32, f32, f32))BtlIcon_Entry)(itemDataTable[itemId].icon_id, x, y, z);
 #else
 	icon = BtlIcon_Entry(itemDataTable[itemId].icon_id, x, y, z);
@@ -245,12 +246,11 @@ USER_FUNC(btlevtcmd_BtlIconSetFallAccel) {
 	return EVT_RETURN_DONE;
 }
 
-// All logic and almost every instruction match. Remaining: the second `&&` comparison loads
-// field_0x30/field_0x3C into f1/f0 instead of f0/f1, and the 0.5f pool entry keeps a local
-// symbol name (@279) instead of the original's float_0p5_8041e7b0.
-// NONMATCHING (98.65%): see above.
-// Using `icon->fallAccel * (f32)count / 2.0f` (not `(f32)count * icon->fallAccel * 0.5f`)
+// `icon->fallAccel * (f32)count / 2.0f` (not `(f32)count * icon->fallAccel * 0.5f`)
 // is what makes MWCC pick the original's fmuls/fmadds register allocation.
+// The raw 0x20..0x60 fields are undeclared in battle_icon.h; the 0x2C/0x34 pre-move position
+// reads after btlMovePos use a fresh base pointer to keep the size optimiser from caching
+// the two argument addresses (see the MUST_MATCH note on p).
 USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	s32* args = event->args;
 	BattleIcon* icon;
@@ -259,6 +259,13 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	f32 x, y, z;
 	f32 dy;
 	s32 count;
+#ifdef MUST_MATCH
+	// Match-only: a second, separately-created base pointer for the post-btlMovePos reads. Reading
+	// through the same `(u8*)icon + off` expression used by btlMovePos' arguments makes the -O4,s
+	// size optimiser cache both argument addresses in r29/r30 across the call; the fresh pointer
+	// keeps the original's `lfs f0, 0x2c(r31)` displacement form.
+	u8* p;
+#endif
 
 	index = evtGetValue(event, args[0]);
 	x = (f32)evtGetValue(event, args[1]);
@@ -266,6 +273,9 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	z = (f32)evtGetValue(event, args[3]);
 	count = evtGetValue(event, args[4]);
 	icon = BtlIconGetPtr(index);
+#ifdef MUST_MATCH
+	p = (u8*)icon;
+#endif
 	if (isFirstCall) {
 		event->blocked = 1;
 		if (count != 0) {
@@ -312,9 +322,16 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 		*(f32*)((u8*)icon + 0x30) = *(f32*)((u8*)icon + 0x3C);
 	}
 	btlMovePos((f32*)((u8*)icon + 0x2C), (f32*)((u8*)icon + 0x34), *(f32*)((u8*)icon + 0x48), *(f32*)((u8*)icon + 0x54));
+#ifdef MUST_MATCH
+	// Match-only: see the fresh-base-pointer comment above p's declaration.
+	icon->position.x = *(f32*)(p + 0x2C);
+	icon->position.y = *(f32*)(p + 0x30);
+	icon->position.z = *(f32*)(p + 0x34);
+#else
 	icon->position.x = *(f32*)((u8*)icon + 0x2C);
 	icon->position.y = *(f32*)((u8*)icon + 0x30);
 	icon->position.z = *(f32*)((u8*)icon + 0x34);
+#endif
 	*(s32*)((u8*)icon + 0x44) = *(s32*)((u8*)icon + 0x44) - 1;
 	if (*(s32*)((u8*)icon + 0x44) <= 0) {
 		icon->position.x = *(f32*)((u8*)icon + 0x38);

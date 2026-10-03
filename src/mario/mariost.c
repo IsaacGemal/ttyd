@@ -518,6 +518,9 @@ void* gcDvdCheckThread(void* param) {
 #define RUMBLE_MS(now, then) OSTicksToMilliseconds((now) - (then))
 #endif
 
+// dont_inline keeps gcRumbleCheck a real `bl` from viPostCallback (retail emits one); without it
+// the empty body inlines away.
+#pragma dont_inline on
 // NONMATCHING (0.52%): empty placeholder, not decompiled yet.
 void gcRumbleCheck(void) {
 	/*OSTime start;
@@ -535,6 +538,7 @@ void gcRumbleCheck(void) {
 		}
 	}*/
 }
+#pragma dont_inline reset
 
 // dont_inline keeps L_gcResetCheck a real `bl` from marioStMain/gcDvdCheckThread, as in retail.
 #pragma dont_inline on

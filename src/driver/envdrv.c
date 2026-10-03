@@ -1512,16 +1512,17 @@ static inline void envLoadTevTexture(u32 id, u32 map, GXTexObj* obj, GXTlutObj* 
     }
 }
 
-// NONMATCHING (99.58%): the stage/texmap/texcoord cursors land in r30/r29/r28 in the target and r29/r28/r30 here
-// (register allocation only; declaration and use order did not move them).
 // Adds one tev stage for the overlay effect `type` (1..8, 10) and loads its texture, texgen and texture matrix.
 // `param` is the shared stage cursor (EnvironmentYami's first fields: stage, texmap, texcoord).
+// The three cursors must be declared as their GX enum types: MWCC's callee-saved allocator ranks them by
+// type, and only with these types does it colour tevStage/texMap/texCoord to r30/r29/r28
+// (plain s32 gives tevStage/texMap/texCoord = r29/r28/r30, i.e. 99.58%).
 void envAddTev(s32 type, void* param) {
     EnvironmentYami* yami = param;
     EnvironmentWork* wp = envGetWork();
-    s32 tevStage = yami->tevStage;
-    s32 texMap = yami->texMap;
-    s32 texCoord = yami->texCoord;
+    GXTevStageID tevStage = yami->tevStage;
+    GXTexMapID texMap = yami->texMap;
+    GXTexCoordID texCoord = yami->texCoord;
     s32 unk18 = yami->unk18;
     Mtx mtx;
     GXTexObj texObj1;

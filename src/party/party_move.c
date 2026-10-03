@@ -1211,6 +1211,146 @@ Footmark* partyGetFootmarkPtr(u32 index) {
     return (Footmark*)(footmarkBuf + index * 0x500) + id;
 }
 
+extern int __float_nan[];
+
+static inline s32 partyFpClassifyf(f32 x) {
+    switch (*(s32*)&x & 0x7F800000) {
+    case 0x7F800000:
+        if (*(s32*)&x & 0x007FFFFF) {
+            return 1;
+        } else {
+            return 2;
+        }
+        break;
+    case 0:
+        if (*(s32*)&x & 0x007FFFFF) {
+            return 5;
+        } else {
+            return 3;
+        }
+        break;
+    default:
+        return 4;
+    }
+}
+
+static inline f32 partySqrtf(f32 x) {
+    const f64 _half = .5;
+    const f64 _three = 3.0;
+
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        guess = _half * guess * (_three - guess * guess * x);
+        return x * guess;
+    } else if (x < 0.0) {
+        return *(f32*)__float_nan;
+    } else if (partyFpClassifyf(x) == 1) {
+        return *(f32*)__float_nan;
+    }
+    return x;
+}
+
+void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
+    PartyEntry* work = party;
+    MarioWork* mario = work->playerPtr;
+    s32 hosei = partyMarioHosei(work);
+    f32 sinv;
+    f32 cosv;
+    f32 f31;
+    f32 f30;
+    f32 scale;
+    f32 len;
+    Vec pos1;
+    Vec pos;
+
+    if (hosei != 0 && work->field_3B != 2) {
+        if (!(work->flags & 0x8)) {
+            u32* src1;
+            Footmark* f1;
+            u32 i1;
+
+            pos1 = marioGetPtr()->position;
+            src1 = (u32*)&pos1;
+            f1 = (Footmark*)footmarkBuf;
+            for (i1 = 0; i1 < 0x50; i1++) {
+                ((u32*)&f1->x)[0] = src1[0];
+                ((u32*)&f1->x)[1] = src1[1];
+                ((u32*)&f1->x)[2] = src1[2];
+                f1->field_0 = 0;
+                f1++;
+            }
+            writeId[0] = 0;
+            readId[0] = 0;
+        } else {
+            s32 flag = 0;
+            PartyEntry* partner = anotherPartyGetPtr(1);
+
+            if (partner != NULL) {
+                if (nokonokoGetStatus(partner) == 3
+                    || PSVECDistance(&mario->position, &partner->position) >= 150.0f) {
+                    flag = 1;
+                }
+            }
+            if (flag != 0) {
+                MarioWork* m2 = marioGetPtr();
+                PartyEntry* target = partyGetPtr(marioGetPartyId());
+                u32* src;
+                Footmark* f;
+                u32 i;
+
+                if (target != NULL) {
+                    if (nokonokoGetStatus(target) == 3
+                        || PSVECDistance(&m2->position, &target->position) >= 150.0f) {
+                        pos = m2->position;
+                    } else {
+                        pos = target->position;
+                    }
+                } else {
+                    pos = m2->position;
+                }
+                src = (u32*)&pos;
+                f = (Footmark*)(footmarkBuf + 0x500);
+                for (i = 0; i < 0x50; i++) {
+                    ((u32*)&f->x)[0] = src[0];
+                    ((u32*)&f->x)[1] = src[1];
+                    ((u32*)&f->x)[2] = src[2];
+                    f->field_0 = 0;
+                    f++;
+                }
+                writeId[1] = 0;
+                readId[1] = 0;
+            }
+        }
+    }
+    if (work->field_8 & 0x200000) {
+        hosei = 0;
+    }
+    if (hosei >= 0x1E) {
+        *(s16*)((u8*)work + 0x52) = 0;
+        if (!(work->currentMemberId == 4 && work->field_34 == 3)) {
+            work->field_3C[1] = 0;
+            partyChgMoveMode(work, 2);
+            if (work->field_36 == 3) {
+                work->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
+                work->flags &= ~(PARTY_FLAG_FORCE_FALL | PARTY_FLAG_DISABLE_FRONT_WALL_CHK);
+                work->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
+            }
+            work->field_36 = 1;
+            work->field_8 |= 2;
+        }
+    }
+    sincosf(&sinv, &cosv, work->dir);
+    // PartyEntry declares no field in its 0x7C gap at 0xA0/0xA8/0xAC/0xB4; raw offsets kept.
+    f31 = work->speed * sinv + (*(f32*)((u8*)work + 0xAC) + *(f32*)((u8*)work + 0xA0));
+    f30 = work->speed * cosv + (*(f32*)((u8*)work + 0xB4) + *(f32*)((u8*)work + 0xA8));
+    *angle = angleABf(0.0f, 0.0f, f31, f30);
+    scale = (work->flags & 0x80) ? 0.75f : 1.0f;
+    len = partySqrtf(f31 * f31 + f30 * f30);
+    *speed = scale * len;
+}
+
 // The target returns BOOL: `li r3,0x1` (the success and currMotionId==0x18 exits) and `li r3,0x0`
 // (the two currPartySlotId[0]<0 exits and the final exit). include/party/party_move.h declared it
 // `void`, so that single header line was changed to `BOOL` (brief rule 2; both callers, party.c:969
@@ -1534,38 +1674,35 @@ BOOL partyGetAppearPos(PartyEntry* party, Vec* position) {
     return FALSE;
 }
 
-// HEADER PROBLEM: the asm returns BOOL (`li r3,0x1` at 800C3D18/800C3ED0/800C4070 and
-// `li r3,0x0` at 800C407C), but include/party/party_move.h declares this function `void`.
-// Existing header lines may not be changed, so the definition stays `void` and the four `li r3`
-// return-value instructions are missing; the header should become
-// `BOOL partyGetAppearPos2(PartyEntry* party, Vec* pos);` (the only caller, party.c:1105,
-// ignores the result).
-// POOL BLOCKER: the original's Vec templates are the target's named rodata pool entries
-// (vec3_802cdeac, vec3_802cdeb8, vec3_802cdec4, vec3_802cded0, vec3_802cdedc, vec3_802cdee8,
-// vec3_802cdef4, vec3_802cdf00, vec3_802cdf0c, vec3_802cdf18, vec3_802cdf24, vec3_802cdf30) at
-// str_802CDB20+0x38c..0x41c, addressed through one base register (r31, base 
-// str_802CDB20, the first rodata string) live across the whole function.
-// ROOT CAUSE FOUND: the target emits the two inline sqrtf doubles (`_half`/`_three` from
-// math.h's `extern inline sqrtf/sqrt`) at str_802CDB20+0x600, i.e. at the END of .rodata,
-// after the vec3 pool. This compiler emits them as WEAK LOCAL `_half$localstatic`/`
-// `_three$localstatic` at .rodata offset 0, so the compiler's pool base becomes those doubles
-// (and it does not pool our constants at all) instead of str_802CDB20. The 32 vec3s before
-// these (str+0x20c..0x38c) belong to partyGetAppearPos (now written; see its comment above).
-// RESOLVED: `#include <math.h>` used to emit the inline sqrtf/sqrt weak-local `_half`/`_three`
-// doubles at str_802CDB20+0x210, which gave every function a per-object constant base instead of
-// the single pooled str_802CDB20 base. Swapping it for `#include "math_ext.h"` (external MSL math
-// ABI, no inline bodies) restores the pooled base: partyGetAppearPos and partyGetAppearPos4 jumped
-// to 100% and no other function regressed. The offset diffs left in this function are only the
-// 0x180 of other functions' .rodata that is missing until the whole unit is finished.
+// The asm returns BOOL (`li r3,0x1` at 800C3D18/800C3ED0/800C4070 and `li r3,0x0` at
+// 800C407C). include/party/party_move.h declared this `void`; that both dropped the four
+// return-value instructions and made this compiler hang on the conflicting definition, so the
+// header line was corrected to `BOOL partyGetAppearPos2(PartyEntry* party, Vec* pos);` (matching
+// the neighbouring Pos3/4/5 and the only caller, party.c:1105, which ignores the result).
+// The four failing paths share the original's single `.L_800C407C` (`li r3,0`) block, so under
+// MUST_MATCH they `goto false_ret` and one `return FALSE` sits at the end: a plain `return FALSE`
+// at each site makes this compiler inline the `li r3,0` and branch over it. All other opcodes,
+// stack offsets and control flow match.
+//
+// The original's Vec templates are the target's named rodata pool entries
+// (vec3_802cdeac..vec3_802cdf30) at str_802CDB20+0x38c..0x41c, addressed through one base register
+// (r31, base str_802CDB20, the first rodata string) live across the whole function.
+// `#include <math.h>` used to emit the inline sqrtf/sqrt weak-local `_half`/`_three` doubles at
+// str_802CDB20+0x210, which gave every function a per-object constant base instead of the single
+// pooled str_802CDB20 base. Swapping it for `#include "math_ext.h"` (external MSL math ABI, no
+// inline bodies) restores the pooled base: partyGetAppearPos and partyGetAppearPos4 jumped to
+// 100% and no other function regressed.
 // Tried and reverted (none beat 74.24%): `#pragma pool_data on`; named `const Vec` globals
 // (static and global, at the top, next to the function and at the end of the file) + the pragma
 // (57.03%); one `const Vec vec3_pool[44]` array indexed as vec3_pool[32..43], with and without a
 // local pointer (58.90%/65.01%). build.ninja experiments with `-pooldata on -pool on` and with
 // `-str reuse,pool,readonly` changed nothing either.
-// All other opcodes, stack offsets and control flow match.
-// NONMATCHING (98.53%): wrong header return type + the 0x180 of pooled .rodata that other
-// functions contribute once the whole unit is finished.
-void partyGetAppearPos2(PartyEntry* party, Vec* position) {
+#ifdef MUST_MATCH
+#define PARTY_APPEARPOS2_FAIL() goto false_ret
+#else
+#define PARTY_APPEARPOS2_FAIL() return FALSE
+#endif
+BOOL partyGetAppearPos2(PartyEntry* party, Vec* position) {
     MarioWork* player = party->playerPtr;
     HitCheckQuery query;
     f32 unk1A8;
@@ -1590,7 +1727,7 @@ void partyGetAppearPos2(PartyEntry* party, Vec* position) {
         query.targetDir = (Vec){sinv, 0.0f, cosv};
         hit = hitCheckVecFilter(&query, NULL);
         if (hit != NULL) {
-            return;
+            PARTY_APPEARPOS2_FAIL();
         }
 
         angle = toMovedir(player->unk1A8);
@@ -1600,10 +1737,10 @@ void partyGetAppearPos2(PartyEntry* party, Vec* position) {
         query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
         hit = hitCheckVecFilter(&query, NULL);
         if (hit == NULL) {
-            return;
+            PARTY_APPEARPOS2_FAIL();
         }
         position->y = query.hitPos.y;
-        return;
+        return TRUE;
     }
 
     position->x = player->position.x;
@@ -1627,7 +1764,7 @@ void partyGetAppearPos2(PartyEntry* party, Vec* position) {
         hit = hitCheckVecFilter(&query, NULL);
         if (hit != NULL) {
             position->y = query.hitPos.y;
-            return;
+            return TRUE;
         }
     }
 
@@ -1638,7 +1775,7 @@ void partyGetAppearPos2(PartyEntry* party, Vec* position) {
     query.targetDir = (Vec){sinv, 0.0f, cosv};
     hit = hitCheckVecFilter(&query, NULL);
     if (hit != NULL) {
-        return;
+        PARTY_APPEARPOS2_FAIL();
     }
 
     position->x = player->position.x;
@@ -1651,11 +1788,17 @@ void partyGetAppearPos2(PartyEntry* party, Vec* position) {
     query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
     hit = hitCheckVecFilter(&query, NULL);
     if (hit == NULL) {
-        return;
+        PARTY_APPEARPOS2_FAIL();
     }
     position->y = query.hitPos.y;
-    return;
+    return TRUE;
+
+#ifdef MUST_MATCH
+false_ret:
+#endif
+    return FALSE;
 }
+#undef PARTY_APPEARPOS2_FAIL
 
 // With math_ext.h + pool_data the constants share str_802CDB20, but every angle/Vec literal offset
 // still lands at 0x29c.. instead of 0x41c.. (0x180 of other functions' .rodata is missing until the
@@ -1920,9 +2063,13 @@ BOOL partyGetAppearPos4(PartyEntry* party, Vec* position) {
     return FALSE;
 }
 
-// NONMATCHING (99.88%): only the unit-wide pooled-rodata base offset differs (angles reached at
-// +0x58c here vs +0x5a4 in retail, 0x18 short); the 18 `!!` loads are all r30-relative and resolve
-// once the rest of the unit's rodata is written. Named `a`/`fifty` locals fixed the scheduling.
+#ifdef MUST_MATCH
+// MATCH: the original pool carries two dead zero Vec templates between Pos4's
+// and partyGetAppearPos5's angle table; emit them to keep the pool offsets aligned.
+static const Vec partyDeadZeroA = {0.0f, 0.0f, 0.0f};
+static const Vec partyDeadZeroB = {0.0f, 0.0f, 0.0f};
+#endif
+
 BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position) {
     s32 angles[12] = {0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180};
     MapObjectEntry* obj;
@@ -2168,46 +2315,6 @@ void partyForceWalk(PartyEntry* party) {
 }
 #pragma opt_propagation reset
 
-extern int __float_nan[];
-
-static inline s32 partyFpClassifyf(f32 x) {
-    switch (*(s32*)&x & 0x7F800000) {
-    case 0x7F800000:
-        if (*(s32*)&x & 0x007FFFFF) {
-            return 1;
-        } else {
-            return 2;
-        }
-        break;
-    case 0:
-        if (*(s32*)&x & 0x007FFFFF) {
-            return 5;
-        } else {
-            return 3;
-        }
-        break;
-    default:
-        return 4;
-    }
-}
-
-static inline f32 partySqrtf(f32 x) {
-    const f64 _half = .5;
-    const f64 _three = 3.0;
-
-    if (x > 0.0f) {
-        f64 guess = __frsqrte(x);
-        guess = _half * guess * (_three - guess * guess * x);
-        guess = _half * guess * (_three - guess * guess * x);
-        guess = _half * guess * (_three - guess * guess * x);
-        return x * guess;
-    } else if (x < 0.0) {
-        return *(f32*)__float_nan;
-    } else if (partyFpClassifyf(x) == 1) {
-        return *(f32*)__float_nan;
-    }
-    return x;
-}
 
 // Every instruction matches; the only diffs are the three `lfd` offsets into the pool. These are
 // partySqrtf's own `const f64 _half`/`_three` locals; their position depends on the rest of the
@@ -2218,103 +2325,6 @@ static inline f32 partySqrtf(f32 x) {
 // declared first, since MWCC assigns address-taken locals in reverse declaration order), and the
 // scale select is a ternary, which is what keeps scale in f4 and the sqrt argument/result in f5.
 // NONMATCHING (99.99%): only the three inline-sqrt `lfd` pool offsets differ (see above).
-void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed) {
-    PartyEntry* work = party;
-    MarioWork* mario = work->playerPtr;
-    s32 hosei = partyMarioHosei(work);
-    f32 sinv;
-    f32 cosv;
-    f32 f31;
-    f32 f30;
-    f32 scale;
-    f32 len;
-    Vec pos1;
-    Vec pos;
-
-    if (hosei != 0 && work->field_3B != 2) {
-        if (!(work->flags & 0x8)) {
-            u32* src1;
-            Footmark* f1;
-            u32 i1;
-
-            pos1 = marioGetPtr()->position;
-            src1 = (u32*)&pos1;
-            f1 = (Footmark*)footmarkBuf;
-            for (i1 = 0; i1 < 0x50; i1++) {
-                ((u32*)&f1->x)[0] = src1[0];
-                ((u32*)&f1->x)[1] = src1[1];
-                ((u32*)&f1->x)[2] = src1[2];
-                f1->field_0 = 0;
-                f1++;
-            }
-            writeId[0] = 0;
-            readId[0] = 0;
-        } else {
-            s32 flag = 0;
-            PartyEntry* partner = anotherPartyGetPtr(1);
-
-            if (partner != NULL) {
-                if (nokonokoGetStatus(partner) == 3
-                    || PSVECDistance(&mario->position, &partner->position) >= 150.0f) {
-                    flag = 1;
-                }
-            }
-            if (flag != 0) {
-                MarioWork* m2 = marioGetPtr();
-                PartyEntry* target = partyGetPtr(marioGetPartyId());
-                u32* src;
-                Footmark* f;
-                u32 i;
-
-                if (target != NULL) {
-                    if (nokonokoGetStatus(target) == 3
-                        || PSVECDistance(&m2->position, &target->position) >= 150.0f) {
-                        pos = m2->position;
-                    } else {
-                        pos = target->position;
-                    }
-                } else {
-                    pos = m2->position;
-                }
-                src = (u32*)&pos;
-                f = (Footmark*)(footmarkBuf + 0x500);
-                for (i = 0; i < 0x50; i++) {
-                    ((u32*)&f->x)[0] = src[0];
-                    ((u32*)&f->x)[1] = src[1];
-                    ((u32*)&f->x)[2] = src[2];
-                    f->field_0 = 0;
-                    f++;
-                }
-                writeId[1] = 0;
-                readId[1] = 0;
-            }
-        }
-    }
-    if (work->field_8 & 0x200000) {
-        hosei = 0;
-    }
-    if (hosei >= 0x1E) {
-        *(s16*)((u8*)work + 0x52) = 0;
-        if (!(work->currentMemberId == 4 && work->field_34 == 3)) {
-            work->field_3C[1] = 0;
-            partyChgMoveMode(work, 2);
-            if (work->field_36 == 3) {
-                work->flags &= ~(PARTY_FLAG_IS_JUMPING | PARTY_FLAG_IS_FALLING | PARTY_FLAG_IS_STEPPING);
-                work->flags &= ~(PARTY_FLAG_FORCE_FALL | PARTY_FLAG_DISABLE_FRONT_WALL_CHK);
-                work->flags &= ~PARTY_FLAG_DISABLE_FLOORS;
-            }
-            work->field_36 = 1;
-            work->field_8 |= 2;
-        }
-    }
-    sincosf(&sinv, &cosv, work->dir);
-    f31 = work->speed * sinv + (*(f32*)((u8*)work + 0xAC) + *(f32*)((u8*)work + 0xA0));
-    f30 = work->speed * cosv + (*(f32*)((u8*)work + 0xB4) + *(f32*)((u8*)work + 0xA8));
-    *angle = angleABf(0.0f, 0.0f, f31, f30);
-    scale = (work->flags & 0x80) ? 0.75f : 1.0f;
-    len = partySqrtf(f31 * f31 + f30 * f30);
-    *speed = scale * len;
-}
 
 // partyMoveMain returns a state code in r3.
 #ifdef MUST_MATCH

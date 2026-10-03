@@ -5379,27 +5379,55 @@ void psndENVMain(void) {
 	}
 }
 
-// NONMATCHING (97.89%): the body, volume math (x127 / x100) and control flow match; remaining diffs are register
-// allocation (sfx/pan-base/i in r27/r25/r26 where the target has r25/r26/r27), the SoundSSCheck/SongCheck search
-// loops branching the other way (target `bne cont; b found`), an extra r0 temp, and one reordered clrlwi.
+// Inline channel searches: an inline `return` is what makes MWCC emit `bne cont; b found` for the free-channel
+// scans (a `goto`/`break` folds to `beq found`).
+static inline s32 psndSFXFindSSChannel(void) {
+    s32 ch;
+
+    for (ch = 0; (u32)ch < 3; ch++) {
+        if ((u32)SoundSSCheck(ch) == 0) return ch;
+    }
+    for (ch = 0; (u32)ch < 3; ch++) {
+        if (SoundSSCheck(ch) & 0x20) {
+            SoundSSStopCh(ch);
+        }
+    }
+    for (ch = 0; (u32)ch < 3; ch++) {
+        if ((u32)SoundSSCheck(ch) == 0) return ch;
+    }
+    return -1;
+}
+
+static inline s32 psndSFXFindSongChannel(void) {
+    s32 ch;
+
+    for (ch = 0; (u32)ch < 4; ch++) {
+        if ((u32)SoundSongCheck(ch) == 0) return ch;
+    }
+    return -1;
+}
+
+// NONMATCHING (98.21%): body, volume math and control flow all match, and every call/immediate does too. The
+// remaining 150 diffs are the callee-saved colouring of sfx/pp/i/ratio (target r25/r26/r27/r28; ours rotates by
+// one: pp=r25, i=r26, ratio=r27, sfx=r29), one extra r0 temp and one reordered clrlwi. Permuter territory.
 void psndSFXMain(void) {
 
+    s32 target;
+    PaperSoundEffectDetail* sfx;
     PaperSoundEffectDetail* scan;
-    SoundEffectEntry* entry;
-    u8* pp;
-    s32 i;
-    u32 ch;
+    s32 vol;
     s32 numSounds;
     s32 ratio;
-    s32 target;
-    s32 vol;
-    u32 res;
+    s32 i;
     u32 u;
-    PaperSoundEffectDetail* sfx;
+    u32 ch;
+    SoundEffectEntry* entry;
+    u32 res;
+    u8* pp;
     ratio = 0;
-    sfx = (PaperSoundEffectDetail*)pssfx;
     pp = (u8*)&psnd;
-    scan = (PaperSoundEffectDetail*)pssfx;
+    sfx = (PaperSoundEffectDetail*)pssfx;
+    scan = sfx;
     for (i = 0; i < 40; i++, scan++) {
         if ((u32)scan->unk0 == -1) continue;
         if (scan->unk6 & 1) continue;
@@ -5464,25 +5492,7 @@ void psndSFXMain(void) {
                 continue;
             }
             if (entry->field_0x4 & 0x80000000) {
-                ch = 0;
-                for (; ch < 3; ch++) {
-                    u = (u32)SoundSSCheck(ch);
-                    if (u != 0) continue;
-                    goto ss_found;
-                }
-                for (ch = 0; ch < 3; ch++) {
-                    if (SoundSSCheck(ch) & 0x20) {
-                        SoundSSStopCh(ch);
-                    }
-                }
-                ch = 0;
-                for (; ch < 3; ch++) {
-                    u = (u32)SoundSSCheck(ch);
-                    if (u != 0) continue;
-                    goto ss_found;
-                }
-                ch = -1;
-            ss_found:
+                ch = psndSFXFindSSChannel();
                 sfx->unk18 = ch;
                 if ((u32)sfx->unk18 != -1) {
                     SoundSSPlayCh(sfx->unk18, (u32)entry->field_0x8);
@@ -5493,14 +5503,7 @@ void psndSFXMain(void) {
                     SoundSSSetVolCh(sfx->unk18, (u8)vol);
                 }
             } else if (entry->field_0x4 & 0x40000000) {
-                ch = 0;
-                for (; ch < 4; ch++) {
-                    u = (u32)SoundSongCheck(ch);
-                    if (u != 0) continue;
-                    goto song_found;
-                }
-                ch = -1;
-            song_found:
+                ch = psndSFXFindSongChannel();
                 sfx->unk18 = ch;
                 if ((u32)sfx->unk18 != -1) {
                     SoundSongPlayCh(sfx->unk18, entry->field_0x4 & 0x0FFFFFFF);
@@ -6465,16 +6468,19 @@ BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d) {
 	return psndBGMOn_f_d(a, b, c, 0x2EE, d);
 }
 
-// NONMATCHING (97.39%): register allocation (the target maps the params a/b/c/d to r30/r24/r31/r25 and bgm/entry/work to
-// r29/r27/r28; ours picks r25/r29/r26/r28, though bgm/entry/reverb now match) plus a 3-instruction
+// NONMATCHING (97.45%): register allocation (the target maps the params a/b/c/d to r30/r24/r31/r25 and
+// index/bgmid/slot/work/vol/pan to r26/r24/r29/r28/r26/r25; ours picks r25/r29/r26/r28 and
+// r24/r30/r31/r31/r28/r30) plus a 3-instruction
 // branch layout on the three SoundSSCheck/SoundSongCheck loops, and `psbgmlist` being materialised
 // through r0 (`addi r0,r3,psbgmlist@l; mr r27,r0`) instead of `addi r27,r3,psbgmlist@l`. The tail
 // does recompute `psbgm + (a&0xF)*0x38` as the target does (via `&psbgm[a & 0xF]`).
 // Local declaration order is load-bearing for register allocation; the current order was found by
-// search and is the best found.
+// search and is the best found. Computing `bgm = &psbgm[a & 0xF];` before `entry = &psbgmlist[bgmid];`
+// (rather than after) fixed the five register mismatches in that address computation.
 // psbgm prefix fields 0x8/0xD/0xE/0xF/0x10 and the work block at 0x20..0x2B are not
 // declared in PaperSoundBGM; psbgmlist fields 0x8..0xF are not in the local BGMListEntry.
 // All such accesses use raw offsets.
+// NONMATCHING (97.45%): register allocation (params a/b/c/d r30/r24/r31/r25 vs ours r25/r29/r26/r28).
 s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e) {
 	s32 bgmid;
 	s32 slot;
@@ -6589,8 +6595,8 @@ s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e) {
 		}
 	}
 
-	entry = &psbgmlist[bgmid];
 	bgm = &psbgm[a & 0xF];
+	entry = &psbgmlist[bgmid];
 	work = (u8*)bgm + 0x20;
 
 	if (entry->field_0x4 == 0 && !(a & 0x20)) {

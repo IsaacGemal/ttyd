@@ -1216,11 +1216,20 @@ void shadowMain(void) {
 // proj, proj+depth and char shadow draw paths; it was a macro in the source.
 // The 0x4/0x10/0x1C offsets are the camera vectors in the config blob's unnamed head
 // (ShadowConfigFields only names 0x28+); 0x3C is ProjShadowWork's pad3C. No field exists for either.
-// `cfg` is declared before `proj` only to match retail's r26/r27 colouring; the reverse order is
-// semantically identical but leaves 19 more register operands mis-coloured.
+// MUST_MATCH: retail spells the projection matrix two ways -- w->unkC + 0x30 for `proj` and a fresh
+// w + 0x3C for the GXSetProjection argument -- so the two are not CSE'd and the block's registers
+// come out as retail's. The natural code reads both through the helper (#else).
+#ifdef MUST_MATCH
+#define SHADOW_DISP_PROJ(w) shadowDispProjMtx(w)
+#define SHADOW_DISP_GX_PROJ(w) (*(Mtx44*)&(w)->pad3C[0])
+#else
+#define SHADOW_DISP_PROJ(w) ((Mtx44*)&(w)->pad3C[0])
+#define SHADOW_DISP_GX_PROJ(w) (*shadowDispProjMtx(w))
+#endif
+// `size` is declared at function scope (not in the macro) so all three expansions share one temp,
+// which is what keeps it in retail's r27 in every branch.
 #define SHADOW_DISP_PROJ_SETUP(w, extra)                                                                                                   \
     do {                                                                                                                                   \
-        u16 size;                                                                                                                          \
         ShadowConfigFields* cfg;                                                                                                           \
         Mtx44* proj;                                                                                                                       \
         Vec camPos;                                                                                                                        \
@@ -1232,7 +1241,7 @@ void shadowMain(void) {
         GXSetViewport(0.0f, 0.0f, (f32)size, (f32)size, 0.0f, 1.0f);                                                                        \
         GXSetScissor(1, 1, size - 2, size - 2);                                                                                            \
         cfg = (ShadowConfigFields*)(shadowConfig + (w)->unk8 * 0x48);                                                                       \
-        proj = (Mtx44*)((u8*)(w) + 0x3C);                                                                                                  \
+        proj = SHADOW_DISP_PROJ(w);                                                                                                   \
         camPos = cfg->camPos;                                                                                                              \
         C_MTXLookAt(w->unkC, &camPos, &cfg->up, &cfg->target);                                                              \
         if (cfg->unk38 == 0) {                                                                                                             \
@@ -1241,7 +1250,7 @@ void shadowMain(void) {
         else {                                                                                                                             \
             C_MTXOrtho(*proj, cfg->unk2C, -cfg->unk2C, cfg->unk28, -cfg->unk28, cfg->unk30, cfg->unk34);                                   \
         }                                                                                                                                  \
-        GXSetProjection(*shadowDispProjMtx(w), ((ShadowConfigFields*)(shadowConfig + (w)->unk8 * 0x48))->unk38);                                                                                                \
+        GXSetProjection(SHADOW_DISP_GX_PROJ(w), ((ShadowConfigFields*)(shadowConfig + (w)->unk8 * 0x48))->unk38);                                                                                                \
         PSMTXCopy(camGetCurPtr()->view, tmp_view);                                                                                         \
         PSMTXCopy(w->unkC, camGetCurPtr()->view);                                                                          \
     } while (0)
@@ -1262,15 +1271,13 @@ static inline Mtx44* shadowDispProjMtx(ProjShadowWork* w) { return (Mtx44*)((u8*
 
 // The instruction stream, calls and branches all match. shadowConfig (+0x40), testKagePosArray (+0xE0)
 // and vertex_tbl (+0x2C0) are defined in this unit's .data, so MWCC reaches them through the shared
-// base r31 = lbl_80303460 (`addi rX, r31, 0x40`) exactly as retail does.
-// NONMATCHING (99.58%): only register colouring differs. In case 5 our config pointer is r30 (retail
-// r27): retail reuses r27 for the projection block's `proj` while we coalesce config with `workp` in
-// r30; inside the SHADOW_DISP_PROJ_SETUP expansions `cfg`/`proj`/`size` then sit in the opposite of
-// r26/r27. Every other operand and the whole schedule already match.
+// base r31 = lbl_80303460 (`addi rX, r31, 0x40`) exactly as retail does. 100%: the shared `size`
+// temp plus the two spellings of the projection matrix above give retail's r26/r27 colouring.
 void shadowDisp(CameraId cameraId, void* param) {
     DispEntry* work = dispGetCurWork();
     ShadowConfigFields* config;
     ProjShadowWork* workp;
+    u16 size;
 
     if (cameraId == CAMERA_OFFSCREEN2 || cameraId == CAMERA_3D || cameraId == CAMERA_3D_EFFECTA || cameraId == CAMERA_3D_EFFECTB) {
         shadowCharShadowDisp_Polygon(cameraId, param);

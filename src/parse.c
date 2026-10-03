@@ -18,8 +18,10 @@ void parseInit(void* ptr, u32 size) {
 
 
 
-// NONMATCHING (99.7%): the copy loop's strength-reduced buffer pointer and index use swapped scratch
-// registers (mine buf=r4/j=r6, original buf=r6/j=r4); everything else matches.
+// NONMATCHING (99.71%): the copy loop's strength-reduced buffer pointer and index use swapped scratch
+// registers (mine buf=r4/j=r6, original buf=r6/j=r4); everything else matches. Tested without success:
+// u8/s8 buffer, explicit `*(buf+len)`, an explicit `char* bp = buf`, a separate index local, reordered
+// declarations, and the opt_lifetimes/opt_common_subs/optimize_for_size pragmas (all leave the r4/r6 swap).
 BOOL parsePush(const char* tag) {
 	static char buf[128];
 	s32 i = ((s32*)&parse.field_0x4)[parse.field_0x54];
@@ -118,6 +120,11 @@ void parsePopNext(void) {
 // gets base=r4, i=r10, end=r0 but state=r9, tokenStart=r8, parse temp=r5, which cascades into the token-scan
 // scratch registers (r5/r6/r7 vs r7/r8/r9) and case 0's i/src/q/src2 (the original's `mr r10, r6; i =
 // tokenStart` becomes a coalesced copy here). Declaration order is load-bearing (all 7! orders tried).
+// New evidence: making `state` born at function entry (`s32 state = 0;` at the top) gives the original's
+// state=r5 and parse temp=r7, and the token scan's scratch then lands in r8/r9; but the compiler also moves
+// the parse index/end from r0 to r4 (base r4 -> r6, end r0 -> r4) and hoists the `li r5,0` to the entry, so
+// that form scores 96.40%. Every reordering of the five default-block assignments and each opt_* /
+// optimize_for_size pragma around the function was tried without beating this version.
 // NONMATCHING (97.23%): only the volatile register assignment above still differs.
 BOOL parseGet1Next(s32 type, void* data) {
 	s32 result = 1;

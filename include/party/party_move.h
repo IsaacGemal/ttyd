@@ -29,7 +29,7 @@ void partyGetMoveDirSpd(PartyEntry* party, f32* angle, f32* speed);
 BOOL partyGetAppearPos3(PartyEntry* party, Vec* position);
 BOOL partyGetAppearPos4(PartyEntry* party, Vec* position);
 BOOL partyGetAppearPos5(PartyEntry* party, HitEntry* hit, Vec* position);
-void partyGetAppearPos2(PartyEntry* party, Vec* pos);
+BOOL partyGetAppearPos2(PartyEntry* party, Vec* pos);
 void partyMoveFlyInit(PartyEntry* party, s32 mode);
 void partyFlyMain(PartyEntry* party);
 void party_move_mode_beside_mario(PartyEntry* party);

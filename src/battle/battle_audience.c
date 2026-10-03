@@ -1116,29 +1116,32 @@ void BattleAudience_End(void) {
 	}
 }
 
-// NONMATCHING (97.49%): functionally complete; only register allocation, a
-// couple of instruction-scheduling spots and the if/else branch layout differ.
+// NONMATCHING (98.44%): final dispatch is a `switch`; locals reordered; the weight-pick counter
+// (`target`), clamped count (`targetNum`) and list build count (`listTotal`) are split. Left:
+// f30/f31 split, top-`kind`/sort/miss register allocation and a few scheduling spots; permuter case.
 void BattleAudienceSettingAudience(void) {
-	BattleAudience* audience;
-	u8* setupBase;
-	u8* base;
-	PouchData* pouch;
+	s32 kind;
+	s32 i, j;
+	s32 target;
+	s32 targetNum;
+	f32 randomMul;
 	s32 order[12];
 	s32 weights[12];
 	s32 counts[13];
 	s32 typeWeights[11];
 	f32 deltaMultiplier[65];
 	s32 list[200];
-	s32 i, j;
-	s32 kind;
-	s32 maxKinds;
-	s32 mode;
-	s32 target;
-	s32 total;
-	s32 sum;
-	s32 miss;
 	f32 oldAudience;
-	f32 randomMul;
+	s32 mode;
+	s32 miss;
+	s32 maxKinds;
+	s32 sum;
+	s32 total;
+	u8* base;
+	PouchData* pouch;
+	u8* setupBase;
+	s32 listTotal;
+	BattleAudience* audience;
 
 	base = (u8*)_battleWorkPointer + 0x20000;
 	audience = BattleAudienceBaseGetPtr();
@@ -1343,12 +1346,12 @@ void BattleAudienceSettingAudience(void) {
 
 	memset(counts, 0, sizeof(counts));
 
-	target = (s32)(audience->mTargetAudienceCount + audience->mAddedAudienceCount);
-	if (target < 0) {
-		target = 0;
+	targetNum = (s32)(audience->mTargetAudienceCount + audience->mAddedAudienceCount);
+	if (targetNum < 0) {
+		targetNum = 0;
 	}
-	if (target > audience->mMaxAudience) {
-		target = audience->mMaxAudience;
+	if (targetNum > audience->mMaxAudience) {
+		targetNum = audience->mMaxAudience;
 	}
 
 	total = 0;
@@ -1383,13 +1386,13 @@ void BattleAudienceSettingAudience(void) {
 	}
 
 	miss = 0;
-	for (i = 0; total < target; i = (i + 1) % 12) {
+	for (i = 0; total < targetNum; i = (i + 1) % 12) {
 		kind = order[i];
 		if (weights[kind] <= 0) {
 			continue;
 		}
 		if (audience_kind[kind].field_0x0 & 1) {
-			if (total <= target - 2) {
+			if (total <= targetNum - 2) {
 				counts[kind]++;
 				total += 2;
 				miss = 0;
@@ -1425,7 +1428,8 @@ void BattleAudienceSettingAudience(void) {
 		}
 	}
 
-	if (*(s32*)setupBase == 2) {
+	switch (*(s32*)setupBase) {
+	case 2:
 		while ((kind = BattleAudience_NoUsedHaitiRand()) != -1) {
 			if (kind % 20 <= 9) {
 				BattleAudience_Entry(kind, AUDIENCE_PUNI, 0);
@@ -1434,29 +1438,31 @@ void BattleAudienceSettingAudience(void) {
 				BattleAudience_Entry(kind, AUDIENCE_XNAUT, 0);
 			}
 		}
-	}
-	else {
-		total = 0;
+		break;
+	default: {
+		listTotal = 0;
 		kind = 0;
 		for (; kind <= 12; kind++) {
 			for (j = 0; j < counts[kind]; j++) {
-				list[total++] = kind;
+				list[listTotal++] = kind;
 			}
 		}
 		for (i = 0; i < 150; i++) {
-			s32 a = irand(total);
-			s32 b = irand(total);
+			s32 a = irand(listTotal);
+			s32 b = irand(listTotal);
 			s32 t = list[a];
 			list[a] = list[b];
 			list[b] = t;
 		}
-		for (i = 0; i < total; i++) {
+		for (i = 0; i < listTotal; i++) {
 			kind = BattleAudience_NoUsedFCHaitiRand();
 			if (kind == -1) {
 				break;
 			}
 			BattleAudience_Entry(kind, (u8)list[i], 0);
 		}
+		break;
+	}
 	}
 
 	memcpy((u8*)audience + 0x13794, weights, 0x30);
@@ -1478,9 +1484,10 @@ void BattleAudienceGuestTPLRead(s32 id, AudienceMemberType member, const char* p
 
 // Functionally complete; only callee-saved register allocation differs. `wpHigh` (wp + 0x20000)
 // lands in r28 not r27, so the first counting loop's member index takes r22 instead of r25 and the
-// tail's switch result / shuffle registers shift (r27<->r28, r30<->r3). All instructions, calls,
-// branches, constants and FP register usage match.
-// NONMATCHING (98.77%): register allocation only (see above).
+// tail's switch result / shuffle registers shift (r27<->r28, r30<->r3). Writing the first loop's index
+// as `j + i * 20 + 10` (instead of `i * 20 + 10 + j`) removes most of the shift. All instructions,
+// calls, branches, constants and FP register usage match.
+// NONMATCHING (99.19%): register allocation only (see above).
 void BattleAudienceCtrlProcess(void) {
 	BattleWork* wp = _battleWorkPointer;
 	u8* wpHigh = (u8*)wp + 0x20000;
@@ -1501,7 +1508,7 @@ void BattleAudienceCtrlProcess(void) {
 
 	for (i = 0; i < 10; i++) {
 		for (j = 0; j < 10; j++) {
-			index = i * 20 + 10 + j;
+			index = j + i * 20 + 10;
 			if ((u8)BattleAudience_GetExist(index) == 1) {
 				member = BattleAudienceGetPtr(index);
 				if (member->status != 0xC && member->status != 0xB) {
@@ -1791,6 +1798,10 @@ BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 // `pos.y + kind->0x10 - 10` sum first, then Y, Z, X; MWCC orders ours Z, X, sum, Y.  Reordering the block
 // and reshaping the expressions does not move it further.  Functionally complete: every call, immediate,
 // value and branch is the same operation.
+// Rejected: `vecA = (Vec){ 0.0f, 0.0f, 0.0f };` with the natural x,y,z / stores-first order scores 100% in
+// check.py, but MWCC emits the literal as a second 12-byte .rodata object beside `vec3_802f972c` (the unit's
+// .rodata fuzzy drops 99.64% -> 99.28%) and the relocation no longer targets the original symbol, so it cannot
+// link.  The named object must stay; its schedule cannot be reproduced.
 // NONMATCHING (98.46%): case-0 vecA FP load/store scheduling only.
 void BattleAudienceItemCtrlProcess(void) {
 #ifdef MUST_MATCH
@@ -2359,9 +2370,10 @@ BOOL BattleAudienceApSrcEntry(void) {
 }
 
 // The target colours the first cast's 0.0f constant f0 (window->count f1, cast temp f2, diff f3); MWCC colours
-// ours f3 instead, shifting the first block and both step clamps up a register (diff ends in f2, not f3), which
-// also turns the positive clamp's bge+b diamond into a plain bge. The post-update 0.0f loads schedule one slot late.
-// NONMATCHING (95.70%): the positive clamp is a ternary (`step = step < float_0p1 ? float_0p1 : step;`)
+// ours f3 instead, shifting the first block and both step clamps up a register, which also turns the positive
+// clamp's bge+b diamond into a plain bge. Loading the subtrahend first (`diff = window->count; diff =
+// (f32)audience->mCurrentAudienceIntCount - diff;`) gets one more instruction to match than the plain one-liner.
+// NONMATCHING (95.87%): the positive clamp is a ternary (`step = step < float_0p1 ? float_0p1 : step;`)
 // and the two final stores go through locals; the rest is FP register colouring (the first cast's
 // zero lands in f3 instead of f0, rotating both clamps).
 void BattleAudienceWinCtrlProcess(void) {
@@ -2372,7 +2384,8 @@ void BattleAudienceWinCtrlProcess(void) {
 
 	audience = BattleAudienceBaseGetPtr();
 	window = BattleAudienceWinGetPtr();
-	diff = (f32)audience->mCurrentAudienceIntCount - window->count;
+	diff = window->count;
+	diff = (f32)audience->mCurrentAudienceIntCount - diff;
 	if (diff != float_0_8041e618) {
 		if (diff > float_0_8041e618) {
 			f32 step = float_0p1_8041e678 * diff;
@@ -4051,16 +4064,21 @@ void BattleAudience_WinSetActive(u8 active) {
 }
 #pragma dont_inline reset
 
-// Three levers got this from 93.45% to 99.64%: (a) reaching the 0x137C8 store/memcpy through a
-// local `u8*` view (audlocal) makes MWCC recompute `audience + 0x10000` with addis and a fresh
+#pragma opt_lifetimes off // needed: keep the loop accumulator in f31 and the i2f double in f30 (see below)
+// Four levers got this from 93.45% to 99.82%: (a) reaching the 0x137C8 store/memcpy through a `u8*` view (audlocal) makes MWCC recompute `audience + 0x10000` with addis and a fresh
 // register instead of CSEing an addis result across BattleAlloc; (b) writing the two `> 0.0f`
 // comparisons and the `crowdKindSum = 0.0f` reset as float literals (not float_0_8041e618) keeps each
 // a separate load instead of being CSE'd; (c) the declaration order below (crowdKindSum first, then
-// partyMultiplier) puts the multiplier count in f31 to match the original. What is left (9
-// instructions) is the FPR tie on the loop: the accumulator lands in f30 vs the original's f31 and
-// the pooled anonymous i2f double in f31 vs the original's named double_to_int_802f9a00 in f30; the
-// FMUL operand order and `add` operand order in the 0x137C4 update follow from that.
-// NONMATCHING (99.64%): see above (i2f anonymous double forces the f30/f31 tie).
+// partyMultiplier) puts the multiplier count in f31 to match the original. (d) `opt_lifetimes off`
+// resolves the loop's FPR tie: with lifetimes on MWCC kept the pooled i2f double in f31 and the
+// accumulator in f30; with it off the accumulator keeps f31 and the double takes f30 like the
+// original, which also fixes the FMUL and `add` operand orders that followed from that tie. (e) in the
+// slot branch, an initialized accumulator (`s32 delta = 0; delta += (s32)(...)`) before the
+// `*(...0x137C4) += delta;` store makes MWCC load the running count into r0 instead of r3, matching
+// the original's count/delta registers. What is left is one commuted `fmuls` in that branch:
+// original `fmuls f0, f0, f2` (accum * slot->field_0x14), ours `fmuls f0, f2, f0`. The else branch
+// (no slot) matches exactly.
+// NONMATCHING (99.94%): slot branch's final FMUL operand order only (see above).
 void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -4122,10 +4140,12 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 		partyMultiplier = float_1_8041e620;
 	}
 	if (BattleBreakSlot_GetBreakTurn() >= 1) {
+		s32 delta = 0;
 		slot = BattleBreakSlotGetPtr();
-		*(s32*)((u8*)audience + 0x137C4) += (s32)(float_1_8041e620 * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
-		                                            crowdKindSum * marioMultiplier * partyMultiplier *
-		                                            *(f32*)((u8*)slot + 0x14));
+		delta += (s32)(float_1_8041e620 * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
+		               crowdKindSum * marioMultiplier * partyMultiplier *
+		               *(f32*)((u8*)slot + 0x14));
+		*(s32*)((u8*)audience + 0x137C4) += delta;
 	}
 	else {
 		*(s32*)((u8*)audience + 0x137C4) += (s32)(float_1_8041e620 * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
@@ -4135,6 +4155,7 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 		BattleBreakSlot_PointInc();
 	}
 }
+#pragma opt_lifetimes reset
 
 void BattleAudience_Case_JumpNewRecord(void) {
 }
@@ -5243,14 +5264,27 @@ void BattleAudienceSoundBooingKind(s32 kind) {
 	}
 }
 
-// NONMATCHING (94.63%): uses r26-r31 (frame 0x20) where the original uses r25-r31 (frame 0x30);
-// the compiler keeps one fewer value live across the BattleAudience_ChangeStatus calls.
+#pragma opt_loop_invariants off // needed: keep a,b,c,d live and recompute the branch bounds each iteration
+
+// The frame, prologue and every call now match. Two commuted `add`s
+// remain: the second sum add (`add r29, r29, r25` where the original has `add r29, r25, r29`)
+// and the third branch bound (`add r0, r27, r0` vs `add r0, r0, r27`); MWCC picks the other
+// FRA/FRB operand for the last add. `sum = b + c; sum += a;` is required (writing `a + sum`
+// makes MWCC reassociate the first add). The declaration order member/i/sum is also
+// load-bearing: MWCC colours the callee-saved locals in declaration order (member r31, i r30,
+// sum r29); any other order rotates them.
+// NONMATCHING (99.71%): two commuted `add` operands only (see above).
 void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 sum = a + b + c;
-	s32 i = 0;
-	BattleAudienceMember* member = BattleAudienceGetPtr(0);
+	BattleAudienceMember* member;
+	s32 i;
+	s32 sum;
+	BattleAudience* audience;
 	s32 r;
+	audience = BattleAudienceBaseGetPtr();
+	sum = b + c;
+	sum += a;
+	i = 0;
+	member = BattleAudienceGetPtr(0);
 	for (; i < 200; i++, member++) {
 		if ((u8)BattleAudience_GetWaiting(i)) {
 			if (member->type == AUDIENCE_PIRANHA_PLANT) {
@@ -5283,6 +5317,7 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 		}
 	}
 }
+#pragma opt_loop_invariants reset
 
 void BattleAudienceJoy(s32 a) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();

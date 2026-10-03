@@ -1012,9 +1012,27 @@ void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 	}
 }
 
-// NONMATCHING (98.64%): rodata format offsets (another function's string is emitted first), iconDispGxAlpha's
-// s16 iconId (header, see sac_suki.c), the inlined FontDrawStart_alpha/FontDrawColor_ schedule and an 8-byte
-// stack pad before ipos still differ.
+#ifdef MUST_MATCH
+// MUST_MATCH: routing the edge block through this inline makes the compiler allocate c/saved/c2 in the
+// inline pass, i.e. after the inlined FontDrawStart_alpha `start`, which is retail's slot order.
+static inline void FontDrawMessageMtx_Edge(u16 glyph) {
+	GXColor c;
+	GXColor saved = fontColor;
+	GXColor c2;
+	c = fontColTbl[0];
+	FontDrawColor(&c);
+	_JUTFont_DrawPos(glyph, -2, 0);
+	_JUTFont_DrawPos(glyph, 2, 0);
+	_JUTFont_DrawPos(glyph, 0, -2);
+	_JUTFont_DrawPos(glyph, 0, 2);
+	c2 = saved;
+	FontDrawColor(&c2);
+}
+#endif
+
+// NONMATCHING (99.03%): icon scalars hoisted to function scope (MUST_MATCH); the edge block is routed through
+// FontDrawMessageMtx_Edge so its c/saved/c2 land after the inlined FontDrawStart_alpha `start`. Remaining:
+// unit rodata offsets, iconDispGxAlpha's arg order, and the edge/temp argument-copy stack slots.
 void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 	CameraEntry* cam;
 	Mtx m;
@@ -1030,6 +1048,16 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 #endif
 	char arg1[128];
 	char arg2[128];
+#ifdef MUST_MATCH
+	// MUST_MATCH: retail allocates these icon scalars before the colour-branch locals; declaring them at
+	// function scope puts them in the function's scalar block, above the branch colours (natural form is
+	// the block-scope declarations in the icon branch).
+	s32 id;
+	s32 a1;
+	s32 a2;
+	s32 offset;
+	f32 scale;
+#endif
 
 	cam = camGetCurPtr();
 	x = 0;
@@ -1058,11 +1086,13 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 					FontDrawColor(&c);
 				}
 				else if (strcmp(arg1, "icon") == 0) {
+#ifndef MUST_MATCH
 					s32 id;
 					s32 a1;
 					s32 a2;
 					s32 offset;
 					f32 scale;
+#endif
 					char name[32];
 					u16 iw;
 					u16 ih;
@@ -1084,9 +1114,25 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 					ipos.y = (f32)y - (f32)ih * scale + (f32)a2;
 					ipos.z = 0.0f;
 					PSMTXMultVec(mtx, &ipos, &ipos);
+					// MUST_MATCH: the original passes the icon id zero-extended (iconDispGxAlpha's `clrlwi r5, 16`),
+					// but include/driver/icondrv.h declares iconId s16, so a plain call emits `extsh`.
+					// Cast through the signature the original used; still a direct `bl iconDispGxAlpha`.
+#ifdef MUST_MATCH
+					((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&ipos, 0x10, (u16)id, fontAlpha, scale);
+#else
 					iconDispGxAlpha(&ipos, 0x10, (u16)id, fontAlpha, scale);
+#endif
 					FontDrawStart_alpha(fontAlpha);
+#ifdef MUST_MATCH
+					// MUST_MATCH: the explicit by-value GXColor temp is the shape that puts the post-icon colour at
+					// retail's 0x44 stack slot (natural form is the FontDrawColor_() call under the #else).
+					{
+						GXColor c = fontColor;
+						FontDrawColor(&c);
+					}
+#else
 					FontDrawColor_();
+#endif
 					x = (s32)((f32)x + ((f32)iw * scale + (f32)offset));
 				}
 				// Retail's `/r` test is dead: the compiler compares the sign-extended
@@ -1099,8 +1145,7 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 				}
 				break;
 			default:
-				msg++;
-				glyph = JUTFont_CodeToGlyph(*(s8*)(msg - 1));
+				glyph = JUTFont_CodeToGlyph((s8)*msg++);
 				break;
 			}
 		}
@@ -1112,6 +1157,9 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 		PSMTXConcat(m, trans, m);
 		GXLoadPosMtxImm(m, GX_PNMTX0);
 		if (fontEdge) {
+#ifdef MUST_MATCH
+			FontDrawMessageMtx_Edge(glyph);
+#else
 			GXColor c2;
 			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
@@ -1122,6 +1170,7 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 			_JUTFont_DrawPos(glyph, 0, 2);
 			c2 = saved;
 			FontDrawColor(&c2);
+#endif
 		}
 		_JUTFont_DrawPos(glyph, 0, 0);
 		x += *(u8*)((u8*)FontGetWidthPtr(glyph) + 1) + charspace[gp->language];
@@ -1135,21 +1184,34 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 static inline void FontDrawMessage_ColorA(GXColor color) {
 	FontDrawColor(&color);
 }
+
+// MUST_MATCH: routing the edge block through this inline makes the compiler allocate c/saved/c2 in the
+// inline pass, i.e. after the inlined FontDrawStart_alpha `start`, which is retail's slot order.
+static inline void FontDrawMessage_Edge(u16 glyph, s32 x, s32 yy) {
+	GXColor c2;
+	GXColor saved = fontColor;
+	GXColor c = fontColTbl[0];
+	s16 sx;
+	s16 sy;
+	FontDrawMessage_ColorA(c);
+	sx = x;
+	sy = yy;
+	_JUTFont_DrawPos(glyph, sx - 2, sy);
+	_JUTFont_DrawPos(glyph, sx + 2, sy);
+	_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy - 2));
+	_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy + 2));
+	c2 = saved;
+	FontDrawMessage_ColorA(c2);
+}
 #endif
 
-// NONMATCHING (98.75%): FontDrawColor's by-value temps and the edge block's colours still land in different
-// stack slots than retail, and the unit-wide sda21/rodata pool labels differ.
+// NONMATCHING (99.42%): FontDrawMessage_Edge puts the edge c/saved/c2 after the inlined FontDrawStart_alpha
+// `start`; the colour branches' GXSetTevColor argument copies are 0x14 low and the unit sda21 pool labels differ.
 
 void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 	s32 x = x0;
 	s32 yy = y;
 	u16 glyph;
-#ifdef MUST_MATCH
-	// MUST_MATCH: hoisting the edge's saved colour to function scope makes the compiler put it after the
-	// icon locals instead of on top of them, which aligns the icon locals with retail (natural form is the
-	// block-scope `GXColor saved` under the #else in the edge block).
-	GXColor edgeSaved;
-#endif
 	char arg1[128];
 	char arg2[128];
 
@@ -1237,21 +1299,7 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 					iconDispGxAlpha(&ipos, 0x10, (u16)id, fontAlpha, scale);
 #endif
 					{
-#ifdef MUST_MATCH
-					// MUST_MATCH: hand-expanded FontDrawStart_alpha; this statement order is the one whose
-					// register schedule matches retail's (the plain call inlines with a different order).
-						GXColor start;
-						u8 a = fontAlpha;
-						start = fontColTbl[0];
-						fontEdge = FALSE;
-						fontColor = fontColTbl[0];
-						fontAlpha = a;
-						fontScale = vec3_802c48c0;
-						start.a = (start.a * a) / 255;
-						JUTFont_DrawStart(start);
-#else
 						FontDrawStart_alpha(fontAlpha);
-#endif
 					}
 					{
 						GXColor c = fontColor;
@@ -1285,30 +1333,24 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 			continue;
 		}
 		if (fontEdge) {
+#ifdef MUST_MATCH
+			FontDrawMessage_Edge(glyph, x, yy);
+#else
 			GXColor c2;
+			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
 			s16 sx;
 			s16 sy;
-			#ifdef MUST_MATCH
-			edgeSaved = fontColor;
-			FontDrawMessage_ColorA(c);
-			#else
-			GXColor saved = fontColor;
 			FontDrawColor(&c);
-			#endif
 			sx = x;
 			sy = yy;
 			_JUTFont_DrawPos(glyph, sx - 2, sy);
 			_JUTFont_DrawPos(glyph, sx + 2, sy);
 			_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy - 2));
 			_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy + 2));
-			#ifdef MUST_MATCH
-			c2 = edgeSaved;
-			FontDrawMessage_ColorA(c2);
-			#else
 			c2 = saved;
 			FontDrawColor(&c2);
-			#endif
+#endif
 		}
 		_JUTFont_DrawPos(glyph, (s16)x, (s16)yy);
 		x += *(u8*)((u8*)FontGetWidthPtr(glyph) + 1) + charspace[gp->language];

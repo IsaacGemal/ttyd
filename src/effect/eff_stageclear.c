@@ -102,7 +102,7 @@ static inline Vec getStageClearCamPos(void) {
 // party_yoshi.c). The FP colouring did not move under any permutation of the f32 declarations,
 // opt_lifetimes/opt_dead_assignments/opt_propagation/scheduling/global_optimizer off, or
 // optimization_level 1-3, so it is left for the permuter.
-// NONMATCHING (97.38%): FP register colouring, the i/work GPR swap, and the anonymous int->float
+// NONMATCHING (99.18%): FP register colouring, the i/work GPR swap, and the anonymous int->float
 // magic / 0.2181 pool slots differ.
 void effStageClearDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -241,7 +241,7 @@ void effStageClearDisp(CameraId camId, void* param) {
 					GXSetTevOp(0, 3);
 				}
 			}
-			PSMTXTrans(trans, work->x + f27, work->y + f26, MATCH_F32(float_0_80420f28));
+			PSMTXTrans(trans, work->x + f27, work->y + f26, 0.0f);
 			PSMTXScale(scaleMtx, work->scale, work->scale, work->scale);
 			PSMTXConcat(mtx, trans, trans);
 			PSMTXConcat(trans, scaleMtx, trans);
@@ -259,18 +259,18 @@ void effStageClearDisp(CameraId camId, void* param) {
 				C_MTXLookAt(lookAt, &camPos, &camUp, &target);
 				PSMTXConcat(persp, lookAt, persp);
 				PSMTXConcat(persp, trans, trans);
-				PSMTXTrans(scaleMtx, (f32)-field1C, MATCH_F32(float_0_80420f28), MATCH_F32(float_0_80420f28));
+				PSMTXTrans(scaleMtx, (f32)-field1C, 0.0f, 0.0f);
 				PSMTXConcat(trans, scaleMtx, trans);
 				GXLoadTexMtxImm(trans, 0x1E, 1);
 				GXBegin(0x80, 0, 4);
-				GXPosition3f32(f29, f28, MATCH_F32(float_0_80420f28));
-				GXTexCoord2f32(MATCH_F32(float_0_80420f28), MATCH_F32(float_0_80420f28));
-				GXPosition3f32(f28, f28, MATCH_F32(float_0_80420f28));
-				GXTexCoord2f32(float_1_80420f2c, MATCH_F32(float_0_80420f28));
-				GXPosition3f32(f28, f29, MATCH_F32(float_0_80420f28));
-				GXTexCoord2f32(float_1_80420f2c, float_1_80420f2c);
-				GXPosition3f32(f29, f29, MATCH_F32(float_0_80420f28));
-				GXTexCoord2f32(MATCH_F32(float_0_80420f28), float_1_80420f2c);
+				GXPosition3f32(f29, f28, 0.0f);
+				GXTexCoord2f32(0.0f, 0.0f);
+				GXPosition3f32(f28, f28, 0.0f);
+				GXTexCoord2f32(MATCH_F32(float_1_80420f2c), 0.0f);
+				GXPosition3f32(f28, f29, 0.0f);
+				GXTexCoord2f32(MATCH_F32(float_1_80420f2c), float_1_80420f2c);
+				GXPosition3f32(f29, f29, 0.0f);
+				GXTexCoord2f32(0.0f, float_1_80420f2c);
 			}
 		}
 	}

@@ -138,19 +138,16 @@ USER_FUNC(btlevtcmd_WaitEventEnd) {
 }
 
 //s32 retIndex, s32 battleFlags
-// NONMATCHING (98.50%): same instructions; the target keeps `args` in r5 and `args[1]` in r6, ours take r6/r5.
-// The target's `and. r0, r0, r6` reads the flags operand first, so the commutative test is written in that
-// order under MUST_MATCH; the natural order under #else compiles to the same logic.
+// opt_propagation off: keep wp in r4 and args in r5 as the target does (the natural propagation
+// order gives args r6/args[1] r5).
+#pragma opt_propagation off
 USER_FUNC(btlevtcmd_check_battleflag) {
-    s32* args = event->args;
     BattleWork* wp = _battleWorkPointer;
+    s32* args = event->args;
     s32 index = args[0];
+    u32 flags = args[1];
 
-#ifdef MUST_MATCH
-    if (args[1] & wp->flags) {
-#else
-    if (wp->flags & args[1]) {
-#endif
+    if (wp->flags & flags) {
         evtSetValue(event, index, TRUE);
     }
     else {
@@ -158,14 +155,13 @@ USER_FUNC(btlevtcmd_check_battleflag) {
     }
     return EVT_RETURN_DONE;
 }
+#pragma opt_propagation reset
 
 //BOOL* onoff, s32 flags
-// NONMATCHING (97.92%): the target has no live result register across the two loads, so `args[1]` and the work pointer
-// take r3/r4 where ours take r4/r5.
 USER_FUNC(btlevtcmd_onoff_battleflag) {
     s32* args = event->args;
     BOOL onoff = evtGetValue(event, args[0]);
-    s32 flags = args[1];
+    u32 flags = args[1];
     BattleWork* wp = _battleWorkPointer;
 
     if (onoff == TRUE) {
@@ -1777,17 +1773,18 @@ USER_FUNC(btlevtcmd_GetOverTurnCount) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (97.78%): ours sign-extends the value (`extsb`) where the target keeps it as read.
 USER_FUNC(btlevtcmd_SetOverTurnCount) {
     s32 btlId;
     s32 id;
     s32* args = event->args;
     s32 value;
+    BattleUnit* unit;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
     value = evtGetValue(event, args[1]);
-    BattleGetUnitPtr(_battleWorkPointer, id)->flippedTurns = value;
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    unit->flippedTurns = value;
     return EVT_RETURN_DONE;
 }
 
@@ -2266,37 +2263,25 @@ USER_FUNC(btlevtcmd_GetPartyTechLv) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.28%): the logic, calls and schedule match. The remaining instructions differ only in which
+// NONMATCHING (98.89%): the logic, calls and schedule match. The remaining instructions differ only in which
 // callee-saved register holds `event`, `targetId`, `thisPartId`, `flags` and `targetUnit`; declaration order below
 // decides MWCC's allocation and the best order found still leaves that one cycle. The natural order is under #else.
 USER_FUNC(btlevtcmd_CalculateFaceDirection) {
-#ifdef MUST_MATCH
-    s32 index;
-    s32 thisPartId;
-    BattleUnit *targetUnit, *thisUnit;
-    s32* args;
-    u32 flags;
-    s32 value;
     BattleWork* wp;
-    BattleUnitPart* targetPart;
+    BattleUnit* thisUnit;
     s32 targetUnitId;
-    BattleUnitPart* thisPart;
-    s32 btlId;
     s32 targetPartId;
-    // declaration order tuned for MWCC's callee-saved allocation (see note above)
-    s32 targetId;
-    s32 thisId;
-#else
-    BattleWork* wp;
+    s32 value;
     s32* args;
+    s32 index;
+    s32 targetId;
+    s32 btlId;
     u32 flags;
-    BattleUnit *targetUnit, *thisUnit;
-    BattleUnitPart* targetPart;
-    s32 thisId, thisPartId;
+    BattleUnit* targetUnit;
+    s32 thisPartId;
+    s32 thisId;
     BattleUnitPart* thisPart;
-    s32 btlId, index, value;
-    s32 targetId, targetPartId, targetUnitId;
-#endif
+    BattleUnitPart* targetPart;
     f32 calculate;
     f32 thisX, thisY, thisZ;
     f32 targetX, targetY, targetZ;
@@ -2422,31 +2407,33 @@ USER_FUNC(btlevtcmd_GetFaceDirection) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (97.78%): 1 instruction differs, plus register differences.
 USER_FUNC(btlevtcmd_ChangeFaceDirection) {
-    s8 value;
     s32 btlId;
     s32 id;
     s32* args = event->args;
+    s32 value;
+    BattleUnit* unit;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
-    value = (s8)evtGetValue(event, args[1]);
-    BattleGetUnitPtr(_battleWorkPointer, id)->faceDirection = value;
+    value = evtGetValue(event, args[1]);
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    unit->faceDirection = value;
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.06%): 1 instruction differs, plus register differences.
 USER_FUNC(btlevtcmd_ChangePartsFaceDirection) {
     s32* args = event->args;
     s32 btlId, id, partId;
     s32 value;
+    BattleUnitPart* part;
 
     btlId = evtGetValue(event, args[0]);
     id = BattleTransID(event, btlId);
     partId = evtGetValue(event, args[1]);
     value = evtGetValue(event, args[2]);
-    BattleGetUnitPartsPtr(id, partId)->faceDirection = value;
+    part = BattleGetUnitPartsPtr(id, partId);
+    part->faceDirection = value;
     return EVT_RETURN_DONE;
 }
 
@@ -6440,15 +6427,17 @@ USER_FUNC(btlevtcmd_AcSetGaugeParam) {
 }
 
 //s32 chan, s32 mask, s32 retIndex
-// NONMATCHING (98.11%): the original keeps only two callee-saved registers: `args[2]` is loaded after `args[1]` into the
-// register `args` held, where ours keeps `index` in a third one.
+// opt_propagation off: keep the `mask = args[1]` load before `index = args[2]` so index reuses
+// the args register (two callee-saved registers, as in the target).
+#pragma opt_propagation off
 USER_FUNC(btlevtcmd_PadCheckTrigger) {
     s32* args = event->args;
-    s32 chan, index;
+    s32 chan, mask, index;
 
     chan = evtGetValue(event, args[0]);
+    mask = args[1];
     index = args[2];
-    if (BattlePadMultiCheckTrigger(chan, args[1])) {
+    if (BattlePadMultiCheckTrigger(chan, mask)) {
         evtSetValue(event, index, TRUE);
     }
     else {
@@ -6456,17 +6445,20 @@ USER_FUNC(btlevtcmd_PadCheckTrigger) {
     }
     return EVT_RETURN_DONE;
 }
+#pragma opt_propagation reset
 
 //s32 chan, s32 mask, s32 retIndex
-// NONMATCHING (98.11%): the original keeps only two callee-saved registers: `args[2]` is loaded after `args[1]` into the
-// register `args` held, where ours keeps `index` in a third one.
+// opt_propagation off: keep the `mask = args[1]` load before `index = args[2]` so index reuses
+// the args register (two callee-saved registers, as in the target).
+#pragma opt_propagation off
 USER_FUNC(btlevtcmd_PadCheckNow) {
     s32* args = event->args;
-    s32 chan, index;
+    s32 chan, mask, index;
 
     chan = evtGetValue(event, args[0]);
+    mask = args[1];
     index = args[2];
-    if (BattlePadMultiCheckNow(chan, args[1])) {
+    if (BattlePadMultiCheckNow(chan, mask)) {
         evtSetValue(event, index, TRUE);
     }
     else {
@@ -6474,6 +6466,7 @@ USER_FUNC(btlevtcmd_PadCheckNow) {
     }
     return EVT_RETURN_DONE;
 }
+#pragma opt_propagation reset
 
 //s32 value
 USER_FUNC(btlevtcmd_StartAC) {
@@ -6785,10 +6778,8 @@ USER_FUNC(btlevtcmd_AnimeChangePaperAnime) {
 }
 
 //s32* battleId, s32* partId, s32* poseName
-// NONMATCHING (98.05%): same instructions; `id` is staged through r0 in mine
-// (`mr r0,r3; mr r31,r0`) where the target moves it straight to r31 (`mr r31,r3`).
 USER_FUNC(btlevtcmd_AnimeChangePoseDirect) {
-    s32 btlId, id, partId;
+    s32 btlId, partId;
     BattleUnit* unit;
     BattleUnitPart* part;
     s32* args = event->args;
@@ -6796,10 +6787,10 @@ USER_FUNC(btlevtcmd_AnimeChangePoseDirect) {
     s32 name;
 
     btlId = evtGetValue(event, args[0]);
-    id = BattleTransID(event, btlId);
-    unit = BattleGetUnitPtr(wp, id);
+    btlId = BattleTransID(event, btlId);
+    unit = BattleGetUnitPtr(wp, btlId);
     partId = evtGetValue(event, args[1]);
-    part = BattleGetUnitPartsPtr(id, partId);
+    part = BattleGetUnitPartsPtr(btlId, partId);
     name = evtGetValue(event, args[2]);
 
     strcpy((char*)part + 0x1C4, (const char*)name);

@@ -219,9 +219,11 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_calc_param) {
     return 2;
 }
 
-// NONMATCHING (98.97%): the target schedules the `lwz effect` before the `bge` (ours after) and emits
-// the y fmadds as scale*t where ours is t*scale (same registers, operands swapped). `height` must stay
-// an f32 local for the first block to match; the `t` temp below is a MUST_MATCH shape for the FP regs.
+// Matched. Two source shapes are load-bearing: the post-increment branch must be an `else { effect = ...;
+// if (...) }` nest so the scheduler hoists the event->userdata[2] load between the `cmpwi 0x10` and
+// `bge`, and the y computation needs the `t` temp plus `t = t` self-assignment (the evt_npc_set_ry_lr
+// trick) so the contracted fmadds keeps the original's f1,f2 operand order. `height` must stay an f32
+// local for the first block to match.
 USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
     s32 id;
     BattleWork* work;
@@ -298,24 +300,27 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
             1, 16, unit->mMoveCurrentPos.x,
             unit->mSizeMultiplier * (float_0p5_8041dd9c * height) + unit->mMoveCurrentPos.y,
             unit->mMoveCurrentPos.z, float_5_8041dd70 * unit->mSizeMultiplier, newSpeedY);
-    } else if (event->userdata[1] < 16) {
+    } else {
         effect = (EffectEntry*)event->userdata[2];
-        ((effSweatData*)effect->userdata)->position.x = unit->mMoveCurrentPos.x;
-        height = BtlUnit_GetHeight(unit);
+        if (event->userdata[1] < 16) {
+            ((effSweatData*)effect->userdata)->position.x = unit->mMoveCurrentPos.x;
+            height = BtlUnit_GetHeight(unit);
 #ifdef MUST_MATCH
-        // Splitting `0.5f * height` into a named temp is what makes MWCC keep the inner product in
-        // f2 and the scale in f1 (the target's pair); the plain single expression below puts the
-        // literal in f1 and leaves the other three FP instructions differing.
-        {
-            f32 t = float_0p5_8041dd9c * height;
-            ((effSweatData*)effect->userdata)->position.y =
-                t * unit->mSizeMultiplier + unit->mMoveCurrentPos.y;
-        }
+            // The `t` temp keeps the inner `0.5f * height` product in f2, and the self-assignment
+            // pins its load ahead of `mSizeMultiplier`'s so the contracted fmadds is f1,f2 as in the
+            // original (same trick as evt_npc_set_ry_lr). The natural form is under #else.
+            {
+                f32 t = float_0p5_8041dd9c * height;
+                t = t;
+                ((effSweatData*)effect->userdata)->position.y =
+                    unit->mSizeMultiplier * t + unit->mMoveCurrentPos.y;
+            }
 #else
-        ((effSweatData*)effect->userdata)->position.y =
-            unit->mSizeMultiplier * (float_0p5_8041dd9c * height) + unit->mMoveCurrentPos.y;
+            ((effSweatData*)effect->userdata)->position.y =
+                unit->mSizeMultiplier * (float_0p5_8041dd9c * height) + unit->mMoveCurrentPos.y;
 #endif
-        ((effSweatData*)effect->userdata)->position.z = unit->mMoveCurrentPos.z;
+            ((effSweatData*)effect->userdata)->position.z = unit->mMoveCurrentPos.z;
+        }
     }
     *(s32*)((u8*)unit + 0x168) -= 1;
     if (*(s32*)((u8*)unit + 0x168) <= 0) {

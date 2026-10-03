@@ -62,13 +62,15 @@ USER_FUNC(search_result) {
     return EVT_RETURN_DONE;
 }
 
-// Code and instruction schedule match the original except: (a) the loop setup emits `li r23, 0` for
-// `i = 0` where the original reuses found's zero (`mr r23, r24`), which also moves the `li r24, 0`/
-// `mr r30, r3` pair by one slot, and (b) the item/tmp zero vectors are compound literals
-// (`(Vec){0,0,0}`) emitted as local .rodata at `...rodata.0+0` while the original uses the named
-// globals `vec3_802f8288` (0x130) and `vec3_802f839c` (0x244); the latter is shared with
-// chuchu_searchObject, so the pool offsets only settle when the unit's .rodata matches.
-// NONMATCHING (98.64%): see the two differences above.
+// The .rodata is now the original's: the item/tmp zero vectors are read as whole-Vec copies from the
+// named globals vec3_802f8288 (0x130) and vec3_802f839c (0x244) rather than emitted as anonymous local
+// compound literals, so the rodata offsets in this function match. Only the found/i loop preheader
+// register allocation differs: ours emits `li r24, 0` for `found = FALSE` late (after `mr r26, r31`)
+// and a plain `li r23, 0` for `i = 0`, where the original schedules `li r24, 0` first and reuses its
+// zero for `i` (`mr r23, r24`), also moving the `mr r30, r3` (mobj) result copy by one slot. Statement
+// order, declaration order, types, assignment forms (comma/chain), the loop spelling and
+// opt_*/scheduling/optimize_for_size pragmas all leave the preheader as the compiler chose it.
+// NONMATCHING (98.68%): only the found/i loop preheader register allocation differs (5 instructions).
 USER_FUNC(set_msg) {
     MapObjectEntry* mobj;
     ItemEntry* item;
@@ -120,7 +122,7 @@ USER_FUNC(set_msg) {
             if (evtGetValue(NULL, entry->evtId) != 0) {
                 continue;
             }
-            tmp = (Vec){ 0.0f, 0.0f, 0.0f };
+            tmp = vec3_802f839c;
             tmp.x = (f32)entry->x;
             tmp.y = (f32)entry->y;
             tmp.z = (f32)entry->z;
@@ -140,7 +142,7 @@ USER_FUNC(set_msg) {
 
         minDist = 10000.0f;
         if (item != NULL) {
-            itemTmp = (Vec){ 0.0f, 0.0f, 0.0f };
+            itemTmp = vec3_802f8288;
             itemTmp.x = item->position.x;
             itemTmp.y = item->position.y;
             itemTmp.z = item->position.z;
@@ -206,10 +208,15 @@ USER_FUNC(post_msg) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (97.26%): stack frame and instruction sequence match; the loop prologue only differs in
-// scheduling (`addi r0;mr r31` vs `addi r31`) and `li r29,0;li r28,0` vs `mr r28,r29`.
-// `Vec pos = tmp;` (a separate zero-init temp plus a whole-struct copy) is what reproduces the
-// original's 0x14 scratch and the `lwz/stw` (not `lfs/stfs`) copy of pos to 0x8.
+// `Vec pos = tmp;` (a separate zero-init temp plus a whole-struct copy) reproduces the original's 0x14
+// scratch and the `lwz/stw` (not `lfs/stfs`) copy of pos to 0x8. The named rodata vec vec3_802f839c is
+// now read as a whole-Vec copy, matching the original. Remaining: ours computes `entry = unk_8038bb34`
+// through r0 (`addi r0; mr r31`) where the original writes `addi r31` directly, and emits
+// `li r29, 0`/`li r28, 0` for `found = FALSE`/`i = 0` where the original sets found first and reuses its
+// zero for i (`mr r28, r29`). Every source shape tried (statement and declaration permutations,
+// index-in-loop form, assignment comma/chain forms, `i = found`, types, and every opt_*/scheduling/
+// optimize_for_size/optimization_level pragma) leaves the preheader as the compiler chose it.
+// NONMATCHING (97.26%): only the found/i loop preheader register allocation differs (5 instructions).
 BOOL chuchu_searchObject(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     MarioWork* player = party->playerPtr;
@@ -238,7 +245,7 @@ BOOL chuchu_searchObject(void) {
             continue;
         }
         {
-            Vec tmp = { 0.0f, 0.0f, 0.0f };
+            Vec tmp = vec3_802f839c;
             Vec pos;
             f32 dist;
             tmp.x = (f32)entry->x;
@@ -384,6 +391,8 @@ char* mobj_list[] = {
     NULL,
 };
 
+const Vec vec3_802f8288 = { 0.0f, 0.0f, 0.0f };
+
 ChuchuSearchEntry unk_8038bb34[0x28] = {
     { "hei_00", (s32)0xF840715E, (s32)0xFFFFFE2C, (s32)0x0000008B, (s32)0xFFFFFF81 },
     { "hei_00", (s32)0xF8406272, (s32)0xFFFFFE68, (s32)0x0000008B, (s32)0xFFFFFF81 },
@@ -426,6 +435,8 @@ ChuchuSearchEntry unk_8038bb34[0x28] = {
     { "rsh_04_c", (s32)0xF8407194, (s32)0xFFFFFEF7, (s32)0x00000000, (s32)0xFFFFFF06 },
     { "tou_05", (s32)0xF8407179, (s32)0x00000064, (s32)0x00000000, (s32)0xFFFFFFE4 },
 };
+
+const Vec vec3_802f839c = { 0.0f, 0.0f, 0.0f };
 
 u32 msg_evt[] = {
     0x0001005B,

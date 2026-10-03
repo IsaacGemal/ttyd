@@ -156,8 +156,11 @@ USER_FUNC(_get_itemsteal_param) {
 
 #ifdef MUST_MATCH
 // Match-only: retail keeps the stolen item in the same register as the event arg id
-// (r27). Carrying both in one reused s32 gives MWCC the target colouring; the natural
-// u16 local is under #else.
+// (r27). Carrying both in one reused s32 gives MWCC the target colouring. The helper
+// returns the value (instead of writing through an out pointer) and its pick loop is
+// written condition-first: a plain `while` rotates the body ahead of the test, while the
+// `for (;;)` form emits the original's `subf.; bge body; lwz list->type; b done` layout.
+// The natural out-pointer/u16 form is under #else.
 static inline ItemType _chuchu_pick_drop(BattleUnit* unit) {
     ItemDropData* list;
     ItemDropData* d;
@@ -178,12 +181,13 @@ static inline ItemType _chuchu_pick_drop(BattleUnit* unit) {
         }
         if (sum > 0) {
             pick = irand(sum);
-            while ((pick -= list->holdWeight) >= 0) {
+            for (;;) {
+                pick -= list->holdWeight;
+                if (pick < 0) {
+                    return list->type;
+                }
                 list++;
             }
-            return list->type;
-        } else {
-            return 0;
         }
     }
     return 0;
@@ -220,18 +224,23 @@ static inline void _chuchu_pick_drop(BattleUnit* unit, u16* out) {
 }
 #endif
 
+#ifdef MUST_MATCH
+// Match-only: routing these three loads/calls through inline getters is what fixes the
+// callee-saved colouring. MWCC's allocator follows the IR symbol order, and the direct
+// forms colour work r27 / args r28 / item r30; the getters give the original's map
+// (event r26, args/id/item/list r27, unit r28, out r29, work r30, flag r31).
+static inline BattleWork* _chuchu_get_work(void) { return _battleWorkPointer; }
+static inline s32 _chuchu_get_out(s32* args) { return args[1]; }
+static inline BattleUnit* _chuchu_get_unit(BattleWork* work, s32 id) { return BattleGetUnitPtr(work, id); }
+#endif
 // The target holds work->fbatInfo->setup (0xC(r3)) in r5 across the two stores of the
-// first branch; naming it in a local (below) reproduces that (no CSE without it). That was
-// the last structural difference: what is left is the callee-saved map (target event r26,
-// args/id/item/list r27, unit r28, out r29, work r30, flag r31; ours colours event r26,
-// work r27, args r28, item/list r30) and the loop's block order (target checks at the top,
-// ours rotates the body first). Declaration and assignment order, initializer placement,
-// a separate u16/ItemType item, a BattleUnit temp for the getter, and the
-// opt_lifetimes/opt_propagation/opt_dead_assignments/optimize_for_size/opt_common_subs
-// toggles and every loop form were all tried; the loop body is written first in the
-// target, where ours rotates it.
-// NONMATCHING (96.25%): callee-saved map only (ours work r27 vs target r30, args r28 vs
-// r27, item r30 vs r27) plus the pick loop's rotated block order.
+// first branch; naming it in a local (below) reproduces that (no CSE without it).
+// The `else if (list != NULL)` in the helper is what emits the target's redundant `beq`
+// over the count loop, and the inner `else { return 0; }` must be omitted so the sum<=0
+// path falls through to a single shared `return 0` (with it, MWCC emits a second block).
+// The stolen item is masked once into a `u16 item` local used for pouchGetItem and the
+// final evtSetValue, while the range test keeps reading `(u16)id`; that reproduces the
+// original's cached `clrlwi r31, r27, 16`.
 #ifdef MUST_MATCH
 USER_FUNC(_chuchu_item_steal) {
     s32 out;
@@ -240,22 +249,22 @@ USER_FUNC(_chuchu_item_steal) {
     s32* args;
     BattleUnit* unit;
     BattleWork* work;
+    u16 item;
 
-    work = _battleWorkPointer;
+    work = _chuchu_get_work();
     args = event->args;
     id = evtGetValue(event, args[0]);
-    out = args[1];
+    out = _chuchu_get_out(args);
     flag = evtGetValue(event, args[2]);
-    unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, id));
+    unit = _chuchu_get_unit(_battleWorkPointer, BattleTransID(event, id));
     id = (u16)unit->heldItem;
     if ((u16)id == 0) {
-        id = _chuchu_pick_drop(unit);
+        id = (u16)_chuchu_pick_drop(unit);
         if ((u16)id == 0) {
             id = 0x79;
         }
     }
 #else
-// NONMATCHING: natural u16 form; see the note above (same callee-saved map gap).
 USER_FUNC(_chuchu_item_steal) {
     u16 item;
     BattleWork* work;
@@ -282,7 +291,8 @@ USER_FUNC(_chuchu_item_steal) {
         return EVT_RETURN_DONE;
     }
 #ifdef MUST_MATCH
-    if (pouchGetItem((u16)id) == 0) {
+    item = (u16)id;
+    if (pouchGetItem(item) == 0) {
 #else
     if (pouchGetItem(item) == 0) {
 #endif
@@ -315,7 +325,7 @@ USER_FUNC(_chuchu_item_steal) {
         }
     }
 #ifdef MUST_MATCH
-    evtSetValue(event, out, (u16)id);
+    evtSetValue(event, out, item);
 #else
     evtSetValue(event, out, item);
 #endif

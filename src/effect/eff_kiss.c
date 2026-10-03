@@ -192,13 +192,13 @@ EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	return entry;
 }
 
-// The radius-product split below nudges MWCC's FPR allocator; the natural single expression is in
-// the #else branch. `t` is declared without an initializer and assigned after the radius multiplies
-// so this function's .sdata2 constants pool in the target order (0.03125, 1.2, then 360); assigning
-// them in `t`'s declaration would pool 360 first. Both changes leave the .text identical. The target's
-// named pool relocations (float_*, double_to_int_*) need the whole file's .sdata2/.rodata layout fixed;
-// this function's own constants are in the target order.
-// NONMATCHING (99.64%): only FPR numbers differ (case 1 coalesces the u8->f32 conversion into f29 vs retail's temp f3; case 2 rotates base/radius f29/f31 vs f31/f29).
+// The scaleX/scaleY reader writes the *0.03125f as a /32.0f division (under MUST_MATCH): the constant
+// folds to the same float and the instruction stream is identical, but the division makes the allocator
+// keep the 2^52 mask and 0.03125 reloads in retail's f3/f2 instead of f2/f3, and the conversion temp in
+// f3 instead of f29. `base`/`t` are function-scope so the two spiral cases share retail's f31 base /
+// f30 t; the radius-product split keeps retail's two multiplies.
+// NONMATCHING (99.95%): the u8->f32 conversion still coalesces into radius (retail `fsubs f3,f3,f4`,
+// ours `fsubs f29,f3,f4`) in both spiral cases; every other instruction, call and immediate matches.
 void effKissMain(EffectEntry* effect) {
 	KissEffectWork* data = effect->userdata;
 #ifdef MUST_MATCH
@@ -210,6 +210,8 @@ void effKissMain(EffectEntry* effect) {
 	s32 type;
 	s32 i;
 	f32 angle;
+	f32 base;
+	f32 t;
 
 	disp.x = data->x;
 	disp.y = data->y;
@@ -253,14 +255,13 @@ void effKissMain(EffectEntry* effect) {
 		break;
 	}
 	case 1: {
-		f32 base = 6.2831855f * angle;
-		f32 t;
+		base = 6.2831855f * angle;
 		for (i = 1; i < effect->count; i++, data++) {
 			if ((u32)data->frame < 24) {
 				f32 radius = (f32)kuri_kiss[data->frame * 3];
 #ifdef MUST_MATCH
-				/* MUST_MATCH: split the product so MWCC emits retail's two
-				   fmuls-into-radius instead of a continuation temp. */
+				/* MUST_MATCH: the split product is the FPR nudge (see the function comment); the
+				   natural single expression is in #else. */
 				radius *= 0.03125f;
 				radius *= 1.2f;
 #else
@@ -269,8 +270,15 @@ void effKissMain(EffectEntry* effect) {
 				t = base / 360.0f;
 				data->x = radius * (f32)sin(t);
 				data->y = radius * (f32)cos(t);
+#ifdef MUST_MATCH
+				/* MUST_MATCH: the /32 division (rather than the *0.03125f in the #else) is the
+				   register-allocation nudge; the constant folds and the instruction stream matches. */
+				data->scaleX = (f32)kuri_kiss[data->frame * 3 + 1] / 32.0f;
+				data->scaleY = (f32)kuri_kiss[data->frame * 3 + 2] / 32.0f;
+#else
 				data->scaleX = (f32)kuri_kiss[data->frame * 3 + 1] * 0.03125f;
 				data->scaleY = (f32)kuri_kiss[data->frame * 3 + 2] * 0.03125f;
+#endif
 				data->rot = (f32)kuri_kiss_r[data->frame];
 				data->frame++;
 			}
@@ -278,8 +286,7 @@ void effKissMain(EffectEntry* effect) {
 		break;
 	}
 	case 2: {
-		f32 base = 6.2831855f * angle;
-		f32 t;
+		base = 6.2831855f * angle;
 		for (i = 1; i < effect->count; i++, data++) {
 			if ((u32)data->frame < 39) {
 				f32 radius = (f32)kura_kiss[data->frame * 3];
@@ -293,8 +300,14 @@ void effKissMain(EffectEntry* effect) {
 				t = base / 360.0f;
 				data->x = radius * (f32)sin(t);
 				data->y = radius * (f32)cos(t);
+#ifdef MUST_MATCH
+				/* MUST_MATCH: same /32 nudge as case 1. */
+				data->scaleX = (f32)kura_kiss[data->frame * 3 + 1] / 32.0f;
+				data->scaleY = (f32)kura_kiss[data->frame * 3 + 2] / 32.0f;
+#else
 				data->scaleX = (f32)kura_kiss[data->frame * 3 + 1] * 0.03125f;
 				data->scaleY = (f32)kura_kiss[data->frame * 3 + 2] * 0.03125f;
+#endif
 				data->frame++;
 			}
 		}
@@ -336,18 +349,43 @@ void effKissMain(EffectEntry* effect) {
 #endif
 }
 
+#ifdef MUST_MATCH
+/* MUST_MATCH: building the colour inside the helper that issues GXSetChanMatColor (instead of
+   returning it and passing it by value) puts the helper's colour local directly below retail's
+   by-value argument copy, per call. eff_teresa.c/effThunderDisp use the same idiom. */
+static inline void effKissChanAlpha(const void* src, s32 a) {
+	GXColor color = *(const GXColor*)src;
+	color.a = a;
+	GXSetChanMatColor(GX_COLOR0A0, color);
+}
+
+static inline void effKissChanKiss(s32 idx, s32 a) {
+	((u8*)&kiss_col[idx])[3] = a;
+	GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&kiss_col[idx]);
+}
+
+static inline void effKissChanRot(const void* src, const u8* rgb, s32 a) {
+	GXColor color = *(const GXColor*)src;
+	color.r = rgb[0];
+	color.g = rgb[1];
+	color.b = rgb[2];
+	color.a = a;
+	GXSetChanMatColor(GX_COLOR0A0, color);
+}
+#else
 static inline GXColor effKissAlphaColor(const void* src, s32 a) {
 	GXColor c = *(const GXColor*)src;
 	c.a = a;
 	return c;
 }
+#endif
 
-// GXColor temps go through the effKissAlphaColor inline return; halfAlpha/kissAlpha and the cdata base/1/2 temps
-// hoist to retail's r28/r27/r29/r26/r25, so pass/elem/i land in r22/r24/r23. The named .sdata2 floats pool as
-// anonymous @NNN slots (sda21 relocations differ; they resolve when the unit links).
-// NONMATCHING (99.53%): instructions, calls and FPR/GPR colours match; only the 8 by-value GXColor argument
-// temps land in different stack slots (retail places each call's build temp at arg-4; ours are packed
-// elsewhere), the alpha/2 add schedules one slot late, and the second switch's dispatch has two extra branches.
+// Building each GXColor inside the helper that calls GXSetChanMatColor (rather than returning it and
+// letting the caller pass it by value) reproduces retail's stack layout: the helper's colour local lands
+// directly below the by-value argument copy, per call (eff_teresa.c/effThunderDisp use the same idiom).
+// NONMATCHING (99.59%): instructions, calls and all stack slots match; only the alpha/2 sign-correction
+// `add` schedules one slot after the color_rotation_data pointer add (2 instructions), and the final
+// switch dispatch keeps two extra branches in retail (a redundant `b body` plus an unreachable default).
 void effKissDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	KissEffectWork* data = effect->userdata;
@@ -418,10 +456,18 @@ void effKissDisp(CameraId camId, void* param) {
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (pass == 0) {
 					offset = 1.5f;
+#ifdef MUST_MATCH
+					effKissChanAlpha(&unk_80423310, alpha / 2);
+#else
 					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&unk_80423310, alpha / 2));
+#endif
 				} else {
+#ifdef MUST_MATCH
+					effKissChanKiss(type, alpha);
+#else
 					((u8*)&kiss_col[type])[3] = alpha;
 					GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&kiss_col[type]);
+#endif
 				}
 				rectH = 8.0f;
 				texU = 2.0f;
@@ -430,21 +476,32 @@ void effKissDisp(CameraId camId, void* param) {
 				break;
 			case 3:
 				if (pass == 0) {
-					GXColor color;
 					effGetTexObj(0x59, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
-					color = *(GXColor*)&unk_80423314;
-					color.r = ((u8*)color_rotation_data)[frameIdx];
-					color.g = ((u8*)color_rotation_data)[frameIdx + 1];
-					color.b = ((u8*)color_rotation_data)[frameIdx + 2];
-					color.a = alpha;
-					GXSetChanMatColor(GX_COLOR0A0, color);
+#ifdef MUST_MATCH
+					effKissChanRot(&unk_80423314, (const u8*)color_rotation_data + frameIdx, alpha);
+#else
+					{
+						GXColor color;
+
+						color = *(GXColor*)&unk_80423314;
+						color.r = ((u8*)color_rotation_data)[frameIdx];
+						color.g = ((u8*)color_rotation_data)[frameIdx + 1];
+						color.b = ((u8*)color_rotation_data)[frameIdx + 2];
+						color.a = alpha;
+						GXSetChanMatColor(GX_COLOR0A0, color);
+					}
+#endif
 					rectW = 32.0f;
 					rectH = 40.0f;
 				} else {
 					effGetTexObj(0x58, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
+#ifdef MUST_MATCH
+					effKissChanAlpha(&str_804213F0, alpha);
+#else
 					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&str_804213F0, alpha));
+#endif
 					rectW = 20.0f;
 					rectH = 32.0f;
 				}
@@ -551,27 +608,46 @@ void effKissDisp(CameraId camId, void* param) {
 #else
 					offset = 1.5f;
 #endif
+#ifdef MUST_MATCH
+					effKissChanAlpha(&unk_80423318, alpha / 2);
+#else
 					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&unk_80423318, alpha / 2));
+#endif
 				} else {
+#ifdef MUST_MATCH
+					effKissChanKiss(type, alpha);
+#else
 					((u8*)&kiss_col[type])[3] = alpha;
 					GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&kiss_col[type]);
+#endif
 				}
 				break;
 			case 3:
 				if (i == 0) {
-					GXColor color;
 					effGetTexObj(0x5a, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
-					color = *(GXColor*)&unk_8042331c;
-					color.r = ((u8*)color_rotation_data)[frameIdx];
-					color.g = ((u8*)color_rotation_data)[frameIdx + 1];
-					color.b = ((u8*)color_rotation_data)[frameIdx + 2];
-					color.a = alpha;
-					GXSetChanMatColor(GX_COLOR0A0, color);
+#ifdef MUST_MATCH
+					effKissChanRot(&unk_8042331c, (const u8*)color_rotation_data + frameIdx, alpha);
+#else
+					{
+						GXColor color;
+
+						color = *(GXColor*)&unk_8042331c;
+						color.r = ((u8*)color_rotation_data)[frameIdx];
+						color.g = ((u8*)color_rotation_data)[frameIdx + 1];
+						color.b = ((u8*)color_rotation_data)[frameIdx + 2];
+						color.a = alpha;
+						GXSetChanMatColor(GX_COLOR0A0, color);
+					}
+#endif
 				} else {
 					effGetTexObj(0x42, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
+#ifdef MUST_MATCH
+					effKissChanAlpha(&str_804213F4, alpha);
+#else
 					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&str_804213F4, alpha));
+#endif
 				}
 				break;
 			default:

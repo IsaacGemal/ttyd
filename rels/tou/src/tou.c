@@ -1164,9 +1164,9 @@ static void insert(s32* arr, s32 unused, s32 from, s32 to) {
     }
 }
 
-// NONMATCHING (98.85%): logic is right; the allocator still puts the sort loops' i/j in r28/r27 (retail
-// keeps i=r27, j=r28) and swaps r4/r5 in the inlined `insert` bodies. Keeping the second sort's two id
-// lookups in locals (idx2 unscaled, idx scaled by 14) makes MWCC hoist the right operand past the branch.
+// NONMATCHING (99.08%): logic is right; only register allocation differs. The below flag sort's outer
+// counter is r29 (retail r27; its inner is now r28), the scaled `idx` flag test rebases fighterDt instead
+// of folding to `mulli 0x1c; lhzx`, and the inlined `insert` bodies keep the base where retail loads `val`.
 static void rankingControll(void) {
     s32 above[32];
     s32 below[32];
@@ -1174,6 +1174,11 @@ static void rankingControll(void) {
     s32 nBelow;
     s32 i;
     s32 j;
+    s32 k;
+    s32 m;
+    s32 n;
+    s32 p;
+    s32 q;
     s32 tmp;
     s32 idx;
     s32 idx2;
@@ -1183,13 +1188,13 @@ static void rankingControll(void) {
 
     nAbove = 0;
     nBelow = 0;
-    for (i = 0, e = ((RankWork*)rank_wp[0])->entries; i < ((RankWork*)rank_wp[0])->count; i++, e++) {
+    for (k = 0, e = ((RankWork*)rank_wp[0])->entries; k < ((RankWork*)rank_wp[0])->count; k++, e++) {
         if (!(e->flags & 4)) {
             if (e->flags & 1) {
-                below[nBelow] = i;
+                below[nBelow] = k;
                 nBelow++;
             } else {
-                above[nAbove] = i;
+                above[nAbove] = k;
                 nAbove++;
             }
         }
@@ -1206,21 +1211,21 @@ static void rankingControll(void) {
             }
         }
 
-        for (i = 0; i < nAbove - 1; i++) {
-            for (j = i + 1; j < nAbove; j++) {
+        for (m = 0; m < nAbove - 1; m++) {
+            for (n = m + 1; n < nAbove; n++) {
 #ifdef MUST_MATCH
                 // MUST_MATCH: holding both ids in locals makes MWCC hoist the right operand's id past the
                 // short-circuit branch the way retail does (see the NONMATCHING note above the function).
-                idx2 = ((RankWork*)rank_wp[0])->entries[above[j]].id;
-                idx = ((RankWork*)rank_wp[0])->entries[above[i]].id * 14;
+                idx2 = ((RankWork*)rank_wp[0])->entries[above[n]].id;
+                idx = ((RankWork*)rank_wp[0])->entries[above[m]].id * 14;
                 if ((((u16*)fighterDt)[idx2 * 14] & 5) && (((u16*)fighterDt)[idx] & 2)) {
 #else
-                if ((((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[j]].id * 14] & 5) &&
-                    (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[i]].id * 14] & 2)) {
+                if ((((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[n]].id * 14] & 5) &&
+                    (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[m]].id * 14] & 2)) {
 #endif
-                    tmp = above[i];
-                    above[i] = above[j];
-                    above[j] = tmp;
+                    tmp = above[m];
+                    above[m] = above[n];
+                    above[n] = tmp;
                 }
             }
         }
@@ -1304,30 +1309,30 @@ static void rankingControll(void) {
     }
 
     if (nBelow > 0) {
-        for (i = 0; i < nBelow - 1; i++) {
-            for (j = i + 1; j < nBelow; j++) {
-                if (((RankWork*)rank_wp[0])->entries[below[i]].score < ((RankWork*)rank_wp[0])->entries[below[j]].score) {
-                    tmp = below[i];
-                    below[i] = below[j];
-                    below[j] = tmp;
+        for (p = 0; p < nBelow - 1; p++) {
+            for (q = p + 1; q < nBelow; q++) {
+                if (((RankWork*)rank_wp[0])->entries[below[p]].score < ((RankWork*)rank_wp[0])->entries[below[q]].score) {
+                    tmp = below[p];
+                    below[p] = below[q];
+                    below[q] = tmp;
                 }
             }
         }
 
-        for (i = 0; i < nBelow - 1; i++) {
-            for (j = i + 1; j < nBelow; j++) {
+        for (j = 0; j < nBelow - 1; j++) {
+            for (i = j + 1; i < nBelow; i++) {
 #ifdef MUST_MATCH
                 // MUST_MATCH: same eager-id shape as the above pass (see the NONMATCHING note above).
-                idx2 = ((RankWork*)rank_wp[0])->entries[below[j]].id;
-                idx = ((RankWork*)rank_wp[0])->entries[below[i]].id * 14;
+                idx2 = ((RankWork*)rank_wp[0])->entries[below[i]].id;
+                idx = ((RankWork*)rank_wp[0])->entries[below[j]].id * 14;
                 if ((((u16*)fighterDt)[idx2 * 14] & 5) && (((u16*)fighterDt)[idx] & 2)) {
 #else
-                if ((((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[j]].id * 14] & 5) &&
-                    (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[i]].id * 14] & 2)) {
+                if ((((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[i]].id * 14] & 5) &&
+                    (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[j]].id * 14] & 2)) {
 #endif
-                    tmp = below[i];
-                    below[i] = below[j];
-                    below[j] = tmp;
+                    tmp = below[j];
+                    below[j] = below[i];
+                    below[i] = tmp;
                 }
             }
         }

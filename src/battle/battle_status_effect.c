@@ -322,8 +322,6 @@ BOOL BattleStatusChangeAnnouceMain(BattleWork* wp) {
 	return result;
 }
 
-// NONMATCHING (96.17%): retail reads/writes a full int; still differs in count/pos/loop induction register
-// allocation and one extra saved register.
 void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2) {
 	BattleStatusChangeEntry* list = ((BattleUnitStatusChangeFields*)unit)->mStatusChange;
 #ifdef MUST_MATCH
@@ -335,7 +333,6 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2)
 	BattleStatusChangeEntry entry;
 	BattleStatusChangeEntry tmp;
 	s32 j;
-	s32 count;
 	u8 pos;
 	s32 disp;
 
@@ -370,23 +367,22 @@ void BattleStatusChangeInfoSetAnnouce(BattleUnit* unit, s32 type, s8 p1, s32 p2)
 			entry = tmp;
 		}
 	}
-	count = 0;
 	pos = 0;
 	for (j = 0; j < 6; j++) {
 		if (list[j].type != -1) {
 			list[j].field_0x2 = pos;
-			count++;
-			pos += 0xA;
 			list[j].field_0x4 = 0;
+			pos += 0xA;
 		} else {
 			break;
 		}
 	}
-	disp = 0x50;
-	if ((u8)pos == 0) {
+	if ((u8)pos != 0) {
+		disp = 0x50;
+	} else {
 		disp = 0x3C;
 	}
-	for (j = count; j >= 0; j--) {
+	for (; j >= 0; j--) {
 		if (list[j].type != -1) {
 			list[j].field_0x3 = disp;
 			disp += 0xA;

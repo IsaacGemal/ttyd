@@ -58,12 +58,16 @@ typedef struct BattleSampling {
     s8 attackDirection;            // 0xAC8
 } BattleSampling;
 
-// The ac4 keep-loop's first condition was flattened into the else-if chain so its
-// sub-checks fall through to the 0x2 test, and the sort uses a fresh `esort` base so it
-// keeps the original's 0x18/0x4 offsets. The rest is MWCC register colouring: the first
-// loop's i/numParts/kindPart 3-cycle, the dedup loop's keep in r4 vs r0 and its locals,
-// and the sort's i/j/r12 value registers.
-// NONMATCHING (98.79%): remaining diffs are all register choices; control flow matches.
+// The ac4 keep-loop is written as a chain of `if (cond) { keep = 0; goto ac4_keep_done; }`
+// followed by `keep = 1;` (the ac0 chain keeps its plain if/else-if form, which already
+// matches). Writing the first ac4 condition as `(ac4 & 1) && (A || B || C)` made MWCC tail-
+// merge its two `keep = 0` blocks; the separate-if/goto shape reproduces the original's
+// inline `li r0,0; b` per condition. The dedup loop's `noDup` uses the same shape. The sort
+// uses explicit `ei`/`ej` pointers (`&esort[order[i]]`) so its address/value registers land
+// as in the original, and the dedup loop reads `p2->attributes` into a temp.
+// NONMATCHING (99.83%): two register-colouring cycles remain; control flow matches. First
+// loop i(r25)/numParts(r23)/kindPart(r22) vs i(r23)/numParts(r22)/kindPart(r25); dedup loop
+// entry(r21)/offset(r23)/noDup(r22)/u2(r24) vs entry(r29)/offset(r21)/noDup(r23)/u2(r22).
 void _btlSamplingEnemy(u8* sampling) {
     BattleSamplingEntry* esort;
     s8* order;
@@ -229,35 +233,64 @@ void _btlSamplingEnemy(u8* sampling) {
         BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, entry->partId);
         s32 keep;
 
-        if ((s->field_0xAC4 & 0x1) &&
-            ((part->attributes & 0x80000) ||
-             battleGetUnitMonosiriPtr(unit->currentKind) == NULL ||
-             battleGetUnitMonosiriPtr(unit->currentKind)->tattleBtlTag == NULL))
+        if (s->field_0xAC4 & 0x1) {
+            if (part->attributes & 0x80000) {
+                keep = 0;
+                goto ac4_keep_done;
+            }
+            if (battleGetUnitMonosiriPtr(unit->currentKind) == NULL) {
+                keep = 0;
+                goto ac4_keep_done;
+            }
+            if (battleGetUnitMonosiriPtr(unit->currentKind)->tattleBtlTag == NULL) {
+                keep = 0;
+                goto ac4_keep_done;
+            }
+        }
+        if ((s->field_0xAC4 & 0x2) && (unit->mAttributeFlags & 0x4)) {
             keep = 0;
-        else if ((s->field_0xAC4 & 0x2) && (unit->mAttributeFlags & 0x4))
+            goto ac4_keep_done;
+        }
+        if ((s->field_0xAC4 & 0x4) && (unit->mAttributeFlags & 0x2)) {
             keep = 0;
-        else if ((s->field_0xAC4 & 0x4) && (unit->mAttributeFlags & 0x2))
+            goto ac4_keep_done;
+        }
+        if ((s->field_0xAC4 & 0x8) && (unit->mAttributeFlags & 0x4)) {
             keep = 0;
-        else if ((s->field_0xAC4 & 0x8) && (unit->mAttributeFlags & 0x4))
+            goto ac4_keep_done;
+        }
+        if ((s->field_0xAC4 & 0x10) && !(unit->mAttributeFlags & 0x4) &&
+            !(unit->mAttributeFlags & 0x2)) {
             keep = 0;
-        else if ((s->field_0xAC4 & 0x10) && !(unit->mAttributeFlags & 0x4) &&
-                 !(unit->mAttributeFlags & 0x2))
+            goto ac4_keep_done;
+        }
+        if ((s->field_0xAC4 & 0x1000) && (part->attributes & 0x100000)) {
             keep = 0;
-        else if ((s->field_0xAC4 & 0x1000) && (part->attributes & 0x100000))
+            goto ac4_keep_done;
+        }
+        if ((s->field_0xAC4 & 0x2000) && (part->attributes & 0x200000) &&
+            ((s->field_0xAC4 & 0x100000) == 0 || s->unitId != unit->unitId)) {
             keep = 0;
-        else if ((s->field_0xAC4 & 0x2000) && (part->attributes & 0x200000) &&
-                 ((s->field_0xAC4 & 0x100000) == 0 || s->unitId != unit->unitId))
+            goto ac4_keep_done;
+        }
+        if ((s->field_0xAC4 & 0x4000) && (part->attributes & 0x400000)) {
             keep = 0;
-        else if ((s->field_0xAC4 & 0x4000) && (part->attributes & 0x400000))
+            goto ac4_keep_done;
+        }
+        if ((s->field_0xAC4 & 0x8000) && !(part->attributes & 0x400000)) {
             keep = 0;
-        else if ((s->field_0xAC4 & 0x8000) && !(part->attributes & 0x400000))
+            goto ac4_keep_done;
+        }
+        if ((s->field_0xAC4 & 0x2000000) && (unit->mAttributeFlags & 0x20)) {
             keep = 0;
-        else if ((s->field_0xAC4 & 0x2000000) && (unit->mAttributeFlags & 0x20))
+            goto ac4_keep_done;
+        }
+        if ((s->field_0xAC4 & 0x4000000) && (part->attributes & 0x2000000)) {
             keep = 0;
-        else if ((s->field_0xAC4 & 0x4000000) && (part->attributes & 0x2000000))
-            keep = 0;
-        else
-            keep = 1;
+            goto ac4_keep_done;
+        }
+        keep = 1;
+    ac4_keep_done:
 
         if (!keep) {
             for (j = i; j < count - 1; j++) {
@@ -301,18 +334,17 @@ void _btlSamplingEnemy(u8* sampling) {
         BattleSamplingEntry* entry = &entries[i];
         BattleUnit* unit = BattleGetUnitPtr(wp, entry->unitId);
         BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, entry->partId);
-        s32 keep = 1;
+        s32 keep;
 
         if ((s->field_0xAC4 & 0x1000000) && !(part->attributes & 0x10)) {
-            {
-                s32 noDup = 1;
+            s32 noDup = 1;
 
                 for (j = 0; j < count; j++) {
                     BattleSamplingEntry* other = &entries[j];
                     s32 a;
                     s32 b;
 
-                    if (other == entry) {
+                    if (entry == other) {
                         continue;
                     }
                     if (entry->field_0x1D != other->field_0x1D) {
@@ -333,10 +365,11 @@ void _btlSamplingEnemy(u8* sampling) {
                         BattleUnit* u2;
                         BattleUnit* u3;
 
-                        if (p2->attributes & 0x10) {
+                        s32 p2attr = p2->attributes;
+                        if (p2attr & 0x10) {
                             continue;
                         }
-                        if (p2->attributes & 0x400000) {
+                        if (p2attr & 0x400000) {
                             continue;
                         }
                         u2 = BattleGetUnitPtr(wp, s->unitId);
@@ -348,13 +381,13 @@ void _btlSamplingEnemy(u8* sampling) {
                         break;
                     }
                 }
-                if (noDup == 0) {
-                    keep = 0;
-                } else {
-                    keep = 1;
-                }
+            if (noDup == 0) {
+                keep = 0;
+                goto dedup_keep_done;
             }
         }
+        keep = 1;
+    dedup_keep_done:
 
         if (!keep) {
             for (j = i; j < count - 1; j++) {
@@ -378,8 +411,9 @@ void _btlSamplingEnemy(u8* sampling) {
     if (s->attackDirection > 0) {
         for (i = 0; i < count - 1; i++) {
             for (j = i + 1; j < count; j++) {
-                if (esort[order[i]].x + esort[order[i]].field_0x18 * 10 >
-                    esort[order[j]].x + esort[order[j]].field_0x18 * 10) {
+                BattleSamplingEntry* ei = &esort[order[i]];
+                BattleSamplingEntry* ej = &esort[order[j]];
+                if (ei->x + ei->field_0x18 * 10 > ej->x + ej->field_0x18 * 10) {
                     s8 tmp = order[i];
                     order[i] = order[j];
                     order[j] = tmp;
@@ -389,8 +423,9 @@ void _btlSamplingEnemy(u8* sampling) {
     } else {
         for (i = 0; i < count - 1; i++) {
             for (j = i + 1; j < count; j++) {
-                if (esort[order[i]].x + esort[order[i]].field_0x18 * 10 <=
-                    esort[order[j]].x + esort[order[j]].field_0x18 * 10) {
+                BattleSamplingEntry* ei = &esort[order[i]];
+                BattleSamplingEntry* ej = &esort[order[j]];
+                if (ei->x + ei->field_0x18 * 10 <= ej->x + ej->field_0x18 * 10) {
                     s8 tmp = order[i];
                     order[i] = order[j];
                     order[j] = tmp;

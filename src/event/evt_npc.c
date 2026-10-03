@@ -2595,12 +2595,16 @@ USER_FUNC(evt_npc_set_ry_lr) {
 // 7/8/10; the original keeps `tt` in f31 and computes `1.0f - tt` after the call. Cases 4/5/6 use
 // an explicit `f32 a = 1.0f - tt;` temporary, which lets MWCC fuse the final multiply into fnmsubs
 // and matches those cases. Case 7/8 use `f32 v = a * (a * c); return 1.0f - v;` to keep the two
-// separate fmuls. The remaining mismatch is the sda21 constant pool layout (objdiff names ours
-// `@N` where the original has `float_*` symbols) plus the pre-clamp copy propagation.
+// separate fmuls. `#pragma opt_propagation off` is needed for the clamp: with propagation on MWCC
+// forwards `tt` to `t` and emits `fcmpo f1` (the original compares the copy in f31). Case 11 must
+// be written as `(...) / 2.0f` (not `* 0.5f`): the divide-by-two becomes the original's
+// `fmuls f1, f1, f0`, while `* 0.5f` makes MWCC emit the operands the other way round.
 // dont_inline keeps this out of the other functions in the file; the original calls it with a
 // real `bl` (glide_position relies on that).
-// NONMATCHING (97.33%): sda21 constants are unnamed locals, `tt > 1.0f` compares t (f1) instead
-// of the copy (f31), and case 12/13/11 scheduling differs; logic is equivalent.
+#pragma opt_propagation off // keep tt in f31 for the clamp compare
+// NONMATCHING (99.12%): case 12's `(f32)sin` conversion (ours `frsp f1,f1`; original `frsp f0,f1`
+// then `fmr f1,f0`); every other instruction, including the clamp and case 11, matches (the sda21
+// `@N` names go away when the unit links).
 f32 _intplGetFloat(s32 type, f32 t) {
     f32 tt = t;
     if (tt > 1.0f) {
@@ -2649,7 +2653,7 @@ f32 _intplGetFloat(s32 type, f32 t) {
             return 1.0f - v;
         }
         case 11:
-            return 0.5f * (1.0f - (f32)cos(3.1415927f * tt));
+            return (1.0f - (f32)cos(3.1415927f * tt)) / 2.0f;
         case 12:
             return (f32)sin(1.5707964f * tt);
         case 13:
@@ -2657,4 +2661,4 @@ f32 _intplGetFloat(s32 type, f32 t) {
     }
     return 0.0f;
 }
-
+#pragma opt_propagation reset

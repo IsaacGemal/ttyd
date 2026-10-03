@@ -524,13 +524,20 @@ void marioSlitForceCancel(void) {
     }
 }
 
-// The six marioHitCheckVec blocks match in instruction order; only float-register allocation and the
-// schedule differ. Checks 1/4 use `volatile` copies/loads (LHS `*(volatile Vec*)&A = *pos`, a volatile
-// load `A.y = *(volatile f32*)&A.y + ten`, a volatile `dir.z` store), `dist` written before the add,
-// and a duplicated dead `dist = 20.0f;` (MUST_MATCH), to pin the target's load/store order.
-// NONMATCHING (95.01%): register allocation/scheduling differ; the offset checks keep
-// x+offx/z+offz/y+10/dist in f3/f0/f1/f4, ours f4/f3/f1/f0, and the setup blocks split the raw A copy
-// differently. `f32 ten = 10.0f` and the volatile forms are needed for the FP load order.
+// The six marioHitCheckVec blocks match in call sequence and constants; only float-register allocation
+// and the schedule differ. Checks 1/4 use `volatile` copies/loads (LHS `*(volatile Vec*)&A = *pos`, a
+// volatile load read into `tmp` then stored back, a volatile `dir.z` store), `dist` written before the
+// add, and a MUST_MATCH duplicated dead `dist = 20.0f;`, which is the schedule knob that scores best.
+// The `f32 tmp;` local is a real temporary for the volatile `A.y` read; it (or an equivalent form such
+// as `tmp = *(volatile f32*)&A.y + 10.0f; A.y = tmp;`) is worth ~0.04-0.5% here. The target's `A.y`
+// store is an early word copy (`lwz`/`stw`), then the dir block, then the `A.y` add, then `A.x`/`A.z`;
+// ours stores `A.x`/`A.y`/`A.z` together up front. The offset checks keep x+offx/z+offz/y+10/dist in
+// f3/f0/f1/f4, ours f4/f3/f1/f0, and the dir block reads sinv/cosv into one register where the target
+// keeps them in f1/f0. The MUST_MATCH duplicate emits two `stfs dist` per A block (target has one: 318
+// real instructions, ours 320); removing it drops the score to 93.5. This is a permuter candidate: the
+// source shape (`*(volatile Vec*)&A = *pos` + temp/volatile `A.y` add, `Vec a = vec3_*; a.x/z/y = ...;
+// A = a;`) is right and all calls/constants match.
+// NONMATCHING (95.08%): FP register allocation/scheduling only; calls and constants all match.
 BOOL marioCreviceWallChk(Vec* pos) {
     Vec A, B, C, D;
     f32 sinv, cosv, dist;
@@ -538,6 +545,7 @@ BOOL marioCreviceWallChk(Vec* pos) {
     f32 ten = 10.0f;
     f32 angle1;
     f32 angle2;
+    f32 tmp;
     HitEntry* hit1;
     HitEntry* hit2;
 
@@ -559,7 +567,8 @@ BOOL marioCreviceWallChk(Vec* pos) {
 #else
     dist = 20.0f;
 #endif
-    A.y = *(volatile f32*)&A.y + 10.0f;
+    tmp = *(volatile f32*)&A.y;
+    A.y = tmp + 10.0f;
     {
         Vec dir = vec3_802c5e78;
         dir.x = sinv;
@@ -610,7 +619,8 @@ BOOL marioCreviceWallChk(Vec* pos) {
 #else
     dist = 20.0f;
 #endif
-    A.y = *(volatile f32*)&A.y + 10.0f;
+    tmp = *(volatile f32*)&A.y;
+    A.y = tmp + 10.0f;
     {
         Vec dir = vec3_802c5e9c;
         dir.x = sinv;
@@ -685,10 +695,17 @@ static inline void slitSetWalkSpeed(MarioWork* mario) {
             speed = speed;
 #endif
         } else {
+#ifdef MUST_MATCH
+            // The header declares wStickDir1/2 as u8, but the original treats them as signed
+            // (`extsb`). Reading them through an s8 lvalue is what reproduces its register
+            // allocation (`extsb r4,r4; mullw r3,r4,r4` instead of a copy to r3).
+            s8 sx = *(s8*)&m->wStickDir1;
+            s8 sy = *(s8*)&m->wStickDir2;
+#else
             s32 sx = (s8)m->wStickDir1;
             s32 sy = (s8)m->wStickDir2;
-            s32 angle = sx * sx + sy * sy;
-            if (angle <= 0xBD1) {
+#endif
+            if (sx * sx + sy * sy <= 0xBD1) {
                 speed *= 0.5f;
             }
         }
@@ -706,8 +723,6 @@ static inline void slitResetBounce(void) {
     MW_F32(m, 0x158) = 0.004f;
 }
 
-// NONMATCHING (99.96%): the inlined walk-speed block's first s8 product is sign-extended in place in
-// the target (`extsb r4,r4; mullw r3,r4,r4`) but copied to r3 here (`extsb r3,r4; mullw r3,r3,r3`).
 // Mario in the slit (crevice): the paper-mode state machine for squeezing through a gap in a wall.
 void mot_slit(void) {
     MarioWork* mario = marioGetPtr();

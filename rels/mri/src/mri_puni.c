@@ -5598,9 +5598,9 @@ void puniModeEnterSub(PuniData* puni) {
     }
 }
 
-// NONMATCHING (98.62%): the case-3 searchParent loop cursor lands in r6 where the original keeps it in r3
-// (mine folds the global load to `lwz r6, Punidat@l(r3)`; the original emits `addi r3,r3,Punidat@l; lwz r3,0(r3)`),
-// and the inlined puniQrnd(500) uses r4/r5 for the Punigp base/value where the original uses r5/r6.
+// The original calls the real `qrnd`, not the identical-looking `puniQrnd` inline: the inlined body
+// is the same, but the callee name changes MWCC's virtual-register numbering and with it the qrnd
+// expansion's register colours (Punigp base/value r5/r6 instead of r4/r5).
 void puniModeEnter(PuniData* puni) {
     u8* p = (u8*)puni;
     u8* parent;
@@ -5620,7 +5620,7 @@ void puniModeEnter(PuniData* puni) {
                 *(s32*)(p + 0x128) = 700;
             }
             // qrnd(500), inlined
-            *(s32*)(p + 0x128) += puniQrnd(500);
+            *(s32*)(p + 0x128) += qrnd(500);
             if (*(u32*)((u8*)Punigp + 0x324) & 3) {
                 *(s32*)(p + 0x1E0) = 0;
                 *(f32*)(p + 0x18C) = 0.0f;
@@ -5666,10 +5666,19 @@ void puniModeEnter(PuniData* puni) {
             best = 10000;
             for (i = 0; i < 211; i++) {
                 if ((data->unk4 & 0x80000) && (u32)data->field_0x1D8 == 0 &&
-                    ((u32)data->field_0x1D4 == 0 || data->field_0x11A < 2) && (u8*)data != p &&
-                    (s16)best > data->field_0x11A) {
-                    parent = (u8*)data;
-                    best = data->field_0x11A + 1;
+                    ((u32)data->field_0x1D4 == 0 || data->field_0x11A < 2) && (u8*)data != p) {
+#ifdef MUST_MATCH
+                    s16 val = data->field_0x11A;
+                    if ((s16)best > val) {
+                        parent = (u8*)data;
+                        best = val + 1;
+                    }
+#else
+                    if ((s16)best > data->field_0x11A) {
+                        parent = (u8*)data;
+                        best = data->field_0x11A + 1;
+                    }
+#endif
                 }
                 data++;
             }
@@ -7399,9 +7408,8 @@ void toge_init_para(PuniData* punidat, f32 x, f32 y, f32 z) {
     pd->unk4 |= 0x00101402;
 }
 
-// NONMATCHING (97.74%): assigning the inline result to a separate `t` and copying `posy = t` inside
-// each case reproduced the target's per-case `fmr`; only the two registers are swapped (ours
-// t=r=f27 / posy=f29, target t=r=f29 / posy=f27). Splitting moved the inline's `r` from f29 to f27.
+// target reproduces the inline result f29 and the per-case copy; matched 100% by putting the
+// `posy = t` copy between the two randf calls and declaring rx before posy.
 USER_FUNC(evt_puni_rnd_pos) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -7411,19 +7419,19 @@ USER_FUNC(evt_puni_rnd_pos) {
     f32 x = evtGetFloat(event, arg1);
     f32 t = puni_init_posy(evtGetFloat(event, arg2));
     f32 z = evtGetFloat(event, arg3);
-    f32 posy;
     f32 rx;
+    f32 posy;
     f32 rz;
 
     switch (type) {
     case 0:
-        posy = t;
         rx = randf(x - 10.0f, x + 10.0f);
+        posy = t;
         rz = randf(z - 10.0f, z + 10.0f);
         break;
     case 1:
-        posy = t;
         rx = randf(x - 50.0f, x + 50.0f);
+        posy = t;
         rz = randf(z - 50.0f, z + 50.0f);
         break;
     }
@@ -7452,9 +7460,9 @@ USER_FUNC(evt_puni_wait_systemmode) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.49%): logic, constants, offsets and control flow all match. Diffs are pooled rodata
-// symbols (double_to_int_mri_000253a0 and 5 sprintf strings are anonymous @N@ until the unit is done),
-// int->float temps (target r4/r3/r5, ours r3/r5/r6); `flag` still r28 (target r24), `cond` now r23.
+// NONMATCHING (99.67%): all logic, constants, offsets and control flow match. Diffs are pooled rodata
+// symbols (anonymous @N@ until the unit links) plus register colouring: ours xv=r3/yv=r4 (target
+// r4/r3), x=f29/y=f30 (target f30/f29), and `flag` r28 (target r24, the register `f` had).
 USER_FUNC(evt_puni_debug_info) {
     char buf[256];
     s32 i;
@@ -7474,8 +7482,8 @@ USER_FUNC(evt_puni_debug_info) {
         u8 f;
         u8 g;
         s32 base;
-        s32 flag;
         s32 cond;
+        s32 flag;
 
         base = (i - 1) * 7;
         a = (u8)_swByteGet(base);
@@ -7489,8 +7497,8 @@ USER_FUNC(evt_puni_debug_info) {
         xv = puni_sext16(b + (c << 8));
         yv = puni_sext16(d + (e << 8));
         zv = puni_sext16(f + (g << 8));
-        x = (f32)xv;
         y = (f32)yv;
+        x = (f32)xv;
         z = (f32)zv;
         if (i >= 0x67) {
             flag = 0;
@@ -7741,9 +7749,9 @@ USER_FUNC(evt_puni_setup) {
     return 2;
 }
 
-// NONMATCHING (98.66%): computing the z bounds before the x bounds fixes most of the schedule;
-// what remains is the x/z register colouring (target x=f21, z=f3; ours x=f22, z=f2) and the
-// add-before-sub order of the two bound pairs.
+// NONMATCHING (99.78%): writing the bounds inline in the loop instead of precomputing xlo/xhi/zlo/zhi
+// fixed the constant pool and most of the rotation. What remains is x/xrange/zrange/rx inside
+// f21-f23: ours x=f22, xrange=f23, zrange=f22, rx=f21; target x=f21, xrange=f22, zrange=f21, rx=f23.
 USER_FUNC(evt_toge_setup) {
     s32 i;
     s32 count = 1;
@@ -7767,10 +7775,6 @@ USER_FUNC(evt_toge_setup) {
         count = 120;
         break;
     }
-    zlo = z - 120.0f;
-    zhi = z + 120.0f;
-    xlo = x - 50.0f;
-    xhi = x + 50.0f;
     for (i = 110; i < count; i++) {
         PuniData* p = &Punidat[i];
 
@@ -7783,9 +7787,9 @@ USER_FUNC(evt_toge_setup) {
         p->field_0x11C = 0;
         p->field_0x114 = 0;
         p->field_0x11E = 1000;
-        p->field_0x12C.x = xlo + rx * (xhi - xlo);
+        p->field_0x12C.x = (x - 50.0f) + rx * ((x + 50.0f) - (x - 50.0f));
         p->field_0x12C.y = y;
-        p->field_0x12C.z = zlo + rz * (zhi - zlo);
+        p->field_0x12C.z = (z - 120.0f) + rz * ((z + 120.0f) - (z - 120.0f));
         *(Vec*)&p->field_0x138 = p->field_0x12C;
         p->field_0x190 = 6.0f;
         p->field_0x194 = 2.0f;

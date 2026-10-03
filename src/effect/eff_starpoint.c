@@ -48,7 +48,12 @@ const char str_802FDBEC[] = "StarPoint";
 // top-block values (target cTwo..c0=f31..f27,magic=f26; ours magic=f31,cTwo..c0=f30..f26), and the
 // loop temp rad is f1 not f3. Reordering the outer declarations/assignments, moving them inside the
 // loop, naming the conversion or inlining it, and opt_common_subs/opt_lifetimes/scheduling/
-// opt_propagation variants all leave the magic at f31.
+// opt_propagation variants all leave the magic at f31. All 120 permutations of the five outer
+// declarations also keep it at f31; with opt_common_subs on it lands at f22 (polynomial constants
+// f23-f26) instead of f26. global_optimizer/opt_loop_invariants/opt_dead_assignments/
+// optimize_for_size/optimization_level/pool_data/fp_contract change nothing (or worse). Assigning a
+// loop-invariant constant inside the loop (the eff_stageclear/eff_recovery trick) makes mwcceppc 2.6
+// loop forever here, with or without opt_lifetimes. A permuter job is the remaining route.
 // NONMATCHING (96.94%): `i = 1` before `lowAlpha = 4` matches the target's init order (+0.06%).
 EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     s32 lowAlpha;
