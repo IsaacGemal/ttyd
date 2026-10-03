@@ -44,8 +44,8 @@
 // Moamoa EXTask work entry, stride 0x50.
 typedef struct MoamoaPose {
     u16 flags;          // 0x0
-    u16 field_0x2;      // 0x2
-    u16 field_0x4;      // 0x4
+    s16 field_0x2;      // 0x2
+    s16 field_0x4;      // 0x4
     u8 pad_0x6[2];      // 0x6
     Vec field_0x8;      // 0x8
     f32 field_0x14;     // 0x14
@@ -98,7 +98,7 @@ typedef struct MoamoaWork {
     u16 field_0x3E;     // 0x3E
     s16 field_0x40;     // 0x40
     s16 field_0x42;     // 0x42
-    s32 field_0x44;     // 0x44
+    u32 field_0x44;     // 0x44
     s32 field_0x48;     // 0x48
     s32 groupCount;     // 0x4C
     MoamoaGroup groups[32]; // 0x50
@@ -123,9 +123,18 @@ const Vec vec3_rsh_00013710 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_0001371c = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013728 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013734 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013740 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_0001374c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013758 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013764 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013770 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_0001377c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013788 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013794 = {0.0f, 0.0f, 0.0f};
 static USER_FUNC(npc_jump);
 static void ext_moamoa_dispent(void);
 static void ext_moamoa_main(void);
+extern s32 evt_moamoa_escape[];
 static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry);
 static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, s32 field0x2, s32 flag, f32 x, f32 y, f32 z, f32 p4, f32 p5);
 static void ext_shadow_disp(s32 camId);
@@ -233,101 +242,160 @@ static char* group_tbl[11][2] = {
     {"c_n_moa_a", "S_1"},
 };
 
-static void ext_moamoa_dispent(void) {
-    if (wp->flags & 1) {
-        dispEntry(4, 0.0f, 1, (DispCallback)ext_disp, NULL);
-        dispEntry(4, 0.0f, 2, (DispCallback)ext_shadow_disp, NULL);
+#pragma dont_inline on
+static void moamoa_pose_init(void) {
+    MoamoaGroupDef* def = ext_moamoa_data;
+    char name[32];
+    char groupName[32];
+    s32 i;
+    s32 start;
+
+    i = 0;
+    strcpy(name, "");
+    strcpy(groupName, "");
+    wp->groupCount = -1;
+    do {
+        if (strcmp(def->name, name) != 0) {
+            strcpy(name, def->name);
+            strcpy(groupName, "");
+        }
+        if (strcmp(def->name2, groupName) != 0) {
+            strcpy(groupName, def->name2);
+            start = i;
+            wp->groupCount++;
+        }
+        strcpy(wp->groups[wp->groupCount].name, name);
+        strcpy(wp->groups[wp->groupCount].name2, groupName);
+        wp->groups[wp->groupCount].field_0x20 = start;
+        wp->groups[wp->groupCount].field_0x24 = i - start + 1;
+        wp->groups[wp->groupCount].field_0x1C = def->field_0x8;
+        wp->groups[wp->groupCount].field_0x18 = 1;
+        if (strncmp(groupName, "J", 1) == 0) {
+            wp->groups[wp->groupCount].field_0x18 = 0;
+        }
+        def++;
+        i++;
+    } while (def->name != NULL);
+    wp->groupCount++;
+}
+#pragma dont_inline reset
+
+// Inline sine/cosine approximations (the polynomials shared by the NPC blur path).
+static inline f32 moamoa_sin(f32 angle) {
+    f32 v = 0.00761f;
+    f32 b = 0.16605f;
+    f32 one = 1.0f;
+    f32 u;
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) { u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; }
+        else { angle = 1.5707964f - (angle - 1.5707964f); u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; }
+    } else if (angle < 4.712389f) {
+        angle = angle - 3.1415927f; u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; v = -v;
+    } else {
+        angle = 1.5707964f - (angle - 4.712389f); u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; v = -v;
     }
-    if (wp->flags & 2) {
-        dispEntry(1, -5000.0f, 1, (DispCallback)ext_disp, NULL);
-        dispEntry(1, -5000.0f, 2, (DispCallback)ext_shadow_disp, NULL);
-    }
+    return v;
 }
 
-// TODO: write ext_moamoa_main (static, 0x3220 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+static inline f32 moamoa_cos(f32 angle) {
+    f32 v = 0.03705f;
+    f32 b = 0.4967f;
+    f32 one = 1.0f;
+    f32 u;
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) { u = angle * angle; v = v * u - b; v = v * u + one; }
+        else { angle = 1.5707964f - (angle - 1.5707964f); u = angle * angle; v = v * u - b; v = v * u + one; v = -v; }
+    } else if (angle < 4.712389f) {
+        angle = angle - 3.1415927f; u = angle * angle; v = v * u - b; v = v * u + one; v = -v;
+    } else {
+        angle = 1.5707964f - (angle - 4.712389f); u = angle * angle; v = v * u - b; v = v * u + one;
+    }
+    return v;
+}
 
-// Reconstructed logic: allocate/clear wp, copy both npc positions + spawn vector, build the
-// pose array, random matrix translation + ground hitCheckFilter, then 600 warm-up ext_moamoa_main.
-// MWCC would otherwise inline moamoa_pose_init (456 B) into this function, but the target emits a
-// real `bl`; moamoa_pose_change (360 B) must still inline. 200 is the highest inline size that
-// excludes the former and keeps the latter (verified against the instruction diff).
-#pragma inline_max_size(200)
-static void ext_moamoa_init(void) {
-    MapObject* mapObj;
-    NpcEntry* npc;
+// The original builds each temporary Vec from a named zero vector and passes it by
+// value through an inline; MWCC keeps the inline's return temp alongside the local.
+static inline Vec moamoa_vec(f32 x, f32 y, f32 z, const Vec* base) {
+    Vec v = *base;
+
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+
+#ifdef MUST_MATCH
+// Match-only: the volatile copy stops MWCC hoisting the base vector's lane loads above the two
+// `pose->matrix` stores in the pvec rebuild (retail keeps each 12-byte copy serialized); the plain
+// copy is `moamoa_vec`.
+static inline Vec moamoa_vec_v(f32 x, f32 y, f32 z, const Vec* base) {
+    Vec v = *(volatile Vec*)base;
+
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+#endif
+
+
+
+static void moamoa_pose_main(void) {
+    MoamoaGroup* group;
     s32 i;
-    ExtPose* extPose;
-    MoamoaPose* pose;
+    ExtPose* pose;
+    MoamoaPose* work;
+    f32 progress;
 
-    wp = _mapAlloc(0x870);
-    memset(wp, 0, 0x870);
-
-    npc = npcNameToPtr("ウェイトレス");
-    wp->pos[0] = npc->position;
-    npc = npcNameToPtr("車掌");
-    wp->pos[1] = npc->position;
-    wp->pos[2] = vec3_rsh_000136d4;
-
-    wp->poseNum = extGetPoseNum();
-    wp->poses = _mapAlloc(wp->poseNum * 0x50);
-    memset(wp->poses, 0, wp->poseNum * 0x50);
-    moamoa_pose_init();
-
-    extPose = extGetPosePtr();
-    pose = wp->poses;
+    pose = extGetPosePtr();
+    work = wp->poses;
     i = 0;
     while (i < wp->poseNum) {
-        f32 hx;
-        f32 hy;
-        f32 hz;
-        f32 dist;
-        f32 nx;
-        f32 ny;
-        f32 nz;
-        pose->flags = 0;
-        pose->field_0x2 = 0;
-        pose->field_0x4 = 0;
-        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
-        extPose->flags |= 3;
-        PSMTXIdentity(*extPose->matrix);
-        (*extPose->matrix)[0][3] = randf(-290.0f, 240.0f);
-        (*extPose->matrix)[1][3] = 0.0f;
-        (*extPose->matrix)[2][3] = randf(-130.0f, 50.0f);
-        hz = 0.0f;
-        hy = 0.0f;
-        hx = 0.0f;
-        dist = 1000000.0f;
-        if (hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz,
-                           (*extPose->matrix)[0][3], 100.0f + (*extPose->matrix)[1][3],
-                           (*extPose->matrix)[2][3], 0.0f, -1.0f, 0.0f)) {
-            (*extPose->matrix)[1][3] = hy;
+        group = &wp->groups[work->field_0x3C];
+        progress = (f32)OSTicksToMilliseconds((u64)(gp->renderTime - work->time)) * 60.0f / 1000.0f
+                   / group->field_0x1C;
+        if (progress >= 1.0f) {
+            work->time = gp->renderTime;
+            progress = 0.0f;
         }
+        pose->field_0x10 = group->field_0x20 + (s32)((f32)(group->field_0x24 - 1) * progress);
         i++;
-        extPose++;
+        work++;
         pose++;
-    }
-    mapObj = mapGetMapObj("ressha");
-    wp->field_0xC = mapObj;
-    wp->field_0x10 = ((f32*)((u8*)wp->field_0xC + 0x98))[0];
-    for (i = 0; i < 600; i++) {
-        ext_moamoa_main();
     }
 }
 
-static USER_FUNC(evt_moamoa_target_off) {
-    s32* args = event->args;
-    s32 index = evtGetValue(event, args[0]);
+static void moamoa_pose_change(MoamoaPose* pose, char* name1, char* name2) {
+    MoamoaGroup* group = wp->groups;
+    s32 i;
 
-    wp->pos[index] = wp->pos[1 - index];
-    wp->field_0x3A[index] = 100;
-    if (index == 0) {
-        wp->flags |= 0x1000;
+    if (pose->flags & 0x800) {
+        name1 = group_tbl[pose->field_0x4C][0];
+        if (pose->field_0x4C >= 2) {
+            name2 = group_tbl[pose->field_0x4C][1];
+        }
+        if (pose->field_0x4C == 0xA) {
+            name2 = "S_2";
+        }
     }
-    else {
-        wp->flags |= 0x2000;
+    i = 0;
+    while (i < wp->groupCount) {
+        if (strcmp(group->name, name1) == 0 && strcmp(group->name2, name2) == 0) {
+            break;
+        }
+        i++;
+        group++;
     }
-    return EVT_RETURN_DONE;
+    if (i < wp->groupCount && pose->field_0x3C != i) {
+        if ((pose->flags & 0x4) && strncmp(name2, "D", 1) != 0) {
+            return;
+        }
+        if ((pose->flags & 0x10) && strncmp(name2, "R", 1) != 0) {
+            return;
+        }
+        pose->field_0x3C = i;
+        pose->time = gp->renderTime;
+    }
 }
 
 static USER_FUNC(evt_moamoa_flag_onoff) {
@@ -341,6 +409,11 @@ static USER_FUNC(evt_moamoa_flag_onoff) {
     else {
         wp->flags &= ~bits;
     }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(evt_moamoa_exit) {
+    extReset();
     return EVT_RETURN_DONE;
 }
 
@@ -428,8 +501,6 @@ static EVT_BEGIN(evt_meet_moamoa)
     RETURN
 EVT_END()
 
-// TODO: write npc_jump (static, 0x484 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_moamoa_help)
     BEGIN_INLINE_EVENT
@@ -510,8 +581,48 @@ static USER_FUNC(evt_moamoa_end_wait) {
     return EVT_RETURN_DONE;
 }
 
-static USER_FUNC(evt_moamoa_exit) {
-    extReset();
+static USER_FUNC(evt_moamoa_fusion) {
+    ExtPose* extPose;
+    s32 i;
+    MoamoaPose* pose;
+
+    if (isFirstCall) {
+        extPose = extGetPosePtr();
+        pose = wp->poses;
+        i = 0;
+        while (i < wp->poseNum) {
+            (*extPose->matrix)[2][2] = 1.0f;
+            (*extPose->matrix)[1][1] = 1.0f;
+            (*extPose->matrix)[0][0] = 1.0f;
+            pose->field_0x24 = 0xE;
+            pose->field_0x2 = 0xE;
+            pose->field_0x4 = (i < 100) ? (i % 100) : (i % 60 + 100);
+            i++;
+            extPose++;
+            pose->flags |= 0x100;
+            pose++;
+        }
+    }
+    extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->poseNum; i++) {
+        if (!(pose->flags & 0x200)) {
+            return EVT_RETURN_BLOCK;
+        }
+        pose++;
+    }
+    extPose = extGetPosePtr();
+    pose = wp->poses;
+    i = 0;
+    while (i < wp->poseNum) {
+        extPose->flags |= 0x4;
+        pose->flags |= 0x400;
+        pose->field_0x2 = 0x3D;
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+        i++;
+        extPose++;
+        pose++;
+    }
     return EVT_RETURN_DONE;
 }
 
@@ -875,64 +986,262 @@ static u32 jumptable_00014F3C[66] = {
 };
 
 
-// Inline sine/cosine approximations (the polynomials shared by the NPC blur path).
-static inline f32 moamoa_sin(f32 angle) {
-    f32 v = 0.00761f;
-    f32 b = 0.16605f;
-    f32 one = 1.0f;
-    f32 u;
-    if (angle <= 3.1415927f) {
-        if (angle <= 1.5707964f) { u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; }
-        else { angle = 1.5707964f - (angle - 1.5707964f); u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; }
-    } else if (angle < 4.712389f) {
-        angle = angle - 3.1415927f; u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; v = -v;
-    } else {
-        angle = 1.5707964f - (angle - 4.712389f); u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; v = -v;
+static USER_FUNC(evt_moamoa_kind_onoff) {
+    s32* args = event->args;
+    s32 on = evtGetValue(event, args[0]);
+    s32 off = evtGetValue(event, args[1]);
+    s32 i;
+    MoamoaPose* pose;
+
+    extGetPosePtr();
+    pose = wp->poses;
+    i = 0;
+    while (i < wp->poseNum) {
+        if (on) {
+            if (off == 0) {
+                if (pose->field_0x4C == 1) {
+                    pose->flags |= 0x800;
+                }
+            }
+            else {
+                pose->flags |= 0x800;
+            }
+        }
+        else {
+            if (off == 0) {
+                if (pose->field_0x4C != 1) {
+                    pose->flags &= ~0x800;
+                }
+            }
+            else {
+                pose->flags &= ~0x800;
+            }
+        }
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+        i++;
+        pose++;
     }
-    return v;
+    return EVT_RETURN_DONE;
 }
 
-static inline f32 moamoa_cos(f32 angle) {
-    f32 v = 0.03705f;
-    f32 b = 0.4967f;
-    f32 one = 1.0f;
-    f32 u;
-    if (angle <= 3.1415927f) {
-        if (angle <= 1.5707964f) { u = angle * angle; v = v * u - b; v = v * u + one; }
-        else { angle = 1.5707964f - (angle - 1.5707964f); u = angle * angle; v = v * u - b; v = v * u + one; v = -v; }
-    } else if (angle < 4.712389f) {
-        angle = angle - 3.1415927f; u = angle * angle; v = v * u - b; v = v * u + one; v = -v;
-    } else {
-        angle = 1.5707964f - (angle - 4.712389f); u = angle * angle; v = v * u - b; v = v * u + one;
+#pragma opt_propagation reset
+#pragma opt_lifetimes reset
+#pragma inline_max_size reset
+#pragma inline_max_size reset
+
+
+static USER_FUNC(evt_moamoa_blow) {
+    s32 i;
+    MoamoaPose* pose;
+
+    (void)evtGetValue(event, event->args[0]);
+    extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->poseNum; i++) {
+        pose->flags &= ~0x400;
+        pose->field_0x2 = 0x3F;
+        pose++;
     }
-    return v;
+    return EVT_RETURN_DONE;
 }
 
-// The original builds each temporary Vec from a named zero vector and passes it by
-// value through an inline; MWCC keeps the inline's return temp alongside the local.
-static inline Vec moamoa_vec(f32 x, f32 y, f32 z, const Vec* base) {
-    Vec v = *base;
+static USER_FUNC(evt_moamoa_fusion_debug) {
+    s32 i;
+    ExtPose* extPose = extGetPosePtr();
+    MoamoaPose* pose = wp->poses;
 
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
+    i = 0;
+    while (i < wp->poseNum) {
+        extPose->flags |= 0x4;
+        pose->flags |= 0x400;
+        pose->flags |= 0x100;
+        pose->flags |= 0x200;
+        pose->field_0x2 = 0x3D;
+        pose->flags |= 0x800;
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+        i++;
+        extPose++;
+        pose++;
+    }
+    return EVT_RETURN_DONE;
 }
 
-#ifdef MUST_MATCH
-// Match-only: the volatile copy stops MWCC hoisting the base vector's lane loads above the two
-// `pose->matrix` stores in the pvec rebuild (retail keeps each 12-byte copy serialized); the plain
-// copy is `moamoa_vec`.
-static inline Vec moamoa_vec_v(f32 x, f32 y, f32 z, const Vec* base) {
-    Vec v = *(volatile Vec*)base;
+static USER_FUNC(evt_moamoa_target_off) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
 
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
+    wp->pos[index] = wp->pos[1 - index];
+    wp->field_0x3A[index] = 100;
+    if (index == 0) {
+        wp->flags |= 0x1000;
+    }
+    else {
+        wp->flags |= 0x2000;
+    }
+    return EVT_RETURN_DONE;
 }
-#endif
 
+static f32 randf(f32 min, f32 max) {
+    f32 value = (f32)rand() / 32767.0f;
+
+    return value * (max - min) + min;
+}
+
+// Reconstructed logic: allocate/clear wp, copy both npc positions + spawn vector, build the
+// pose array, random matrix translation + ground hitCheckFilter, then 600 warm-up ext_moamoa_main.
+// MWCC would otherwise inline moamoa_pose_init (456 B) into this function, but the target emits a
+// real `bl`; moamoa_pose_change (360 B) must still inline. 200 is the highest inline size that
+// excludes the former and keeps the latter (verified against the instruction diff).
+#pragma inline_max_size(200)
+static void ext_moamoa_init(void) {
+    MapObject* mapObj;
+    NpcEntry* npc;
+    s32 i;
+    ExtPose* extPose;
+    MoamoaPose* pose;
+
+    wp = _mapAlloc(0x870);
+    memset(wp, 0, 0x870);
+
+    npc = npcNameToPtr("ウェイトレス");
+    wp->pos[0] = npc->position;
+    npc = npcNameToPtr("車掌");
+    wp->pos[1] = npc->position;
+    wp->pos[2] = vec3_rsh_000136d4;
+
+    wp->poseNum = extGetPoseNum();
+    wp->poses = _mapAlloc(wp->poseNum * 0x50);
+    memset(wp->poses, 0, wp->poseNum * 0x50);
+    moamoa_pose_init();
+
+    extPose = extGetPosePtr();
+    pose = wp->poses;
+    i = 0;
+    while (i < wp->poseNum) {
+        f32 hx;
+        f32 hy;
+        f32 hz;
+        f32 dist;
+        f32 nx;
+        f32 ny;
+        f32 nz;
+        pose->flags = 0;
+        pose->field_0x2 = 0;
+        pose->field_0x4 = 0;
+        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
+        extPose->flags |= 3;
+        PSMTXIdentity(*extPose->matrix);
+        (*extPose->matrix)[0][3] = randf(-290.0f, 240.0f);
+        (*extPose->matrix)[1][3] = 0.0f;
+        (*extPose->matrix)[2][3] = randf(-130.0f, 50.0f);
+        hz = 0.0f;
+        hy = 0.0f;
+        hx = 0.0f;
+        dist = 1000000.0f;
+        if (hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz,
+                           (*extPose->matrix)[0][3], 100.0f + (*extPose->matrix)[1][3],
+                           (*extPose->matrix)[2][3], 0.0f, -1.0f, 0.0f)) {
+            (*extPose->matrix)[1][3] = hy;
+        }
+        i++;
+        extPose++;
+        pose++;
+    }
+    mapObj = mapGetMapObj("ressha");
+    wp->field_0xC = mapObj;
+    wp->field_0x10 = ((f32*)((u8*)wp->field_0xC + 0x98))[0];
+    for (i = 0; i < 600; i++) {
+        ext_moamoa_main();
+    }
+}
+
+static void ext_disp(s32 camId) {
+    u16 left, top, right, bottom;
+
+    if (camId == 1) {
+        GXClearBoundingBox();
+    }
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+    GXSetNumIndStages(0);
+    GXSetTevDirect(0);
+    if (camId == 1) {
+        sysWaitDrawSync();
+        GXReadBoundingBox(&left, &top, &right, &bottom);
+        offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
+    }
+}
+
+static void ext_shadow_disp(s32 camId) {
+    static Mtx mt = {{8.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 8.0f, 0.0f, 0.5f}, {0.0f, 0.0f, 8.0f, 0.0f}};
+    u16 left, top, right, bottom;
+
+    if (camId == 1) {
+        GXClearBoundingBox();
+    }
+    extLoadShadowMtx(mt);
+    extLoadShadowRenderMode();
+    extLoadShadowVertex();
+    extLoadShadowTev();
+    extDrawShadow();
+    if (camId == 1) {
+        sysWaitDrawSync();
+        GXReadBoundingBox(&left, &top, &right, &bottom);
+        offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
+    }
+}
+
+// The original calls moamoa_jump (a real bl) from ext_moamoa_main; the raised inline limits would inline it.
+#pragma dont_inline on
+static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, s32 field0x2, s32 flag, f32 x, f32 y, f32 z, f32 p4,
+                        f32 p5) {
+    if (flag) {
+        f32 hx, hy, hz, dist, nx, ny, nz;
+
+        hz = 0.0f;
+        hy = 0.0f;
+        hx = 0.0f;
+        dist = 1000000.0f;
+        if (hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, x, 100.0f + y, z, 0.0f, -1.0f, 0.0f)) {
+            if (__fabsf(y - hy) > 30.0) {
+                p4 -= 0.1f;
+                p5 += 0.1f;
+            }
+            y = hy;
+        }
+    }
+    {
+        Vec pos = vec3_rsh_000136e0;
+
+        pos.x = x;
+        pos.y = y;
+        pos.z = z;
+        entry->field_0x8 = pos;
+    }
+    entry->field_0x1C = p4;
+    entry->field_0x20 = p5;
+    {
+        f32 dy = entry->field_0x8.y - (*pose->matrix)[1][3];
+        f32 d = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z);
+        f32 ang = angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z);
+        s32 frames;
+
+        frames = (s32)(d / entry->field_0x1C);
+        entry->field_0x18 = frames;
+        entry->field_0x14 = entry->field_0x20 * entry->field_0x18 / 2.0f + dy / entry->field_0x18;
+        entry->field_0x2 = 3;
+        entry->field_0x24 = field0x2;
+        pose->field_0x4 = 180.0f + ang;
+    }
+    entry->flags |= 2;
+    pose->flags |= 0x10;
+    pose->flags &= ~4;
+}
+#pragma dont_inline reset
 
 // Matches retail. The sine/cosine coefficients hoist and colour like retail (the pik/evt_sub helper
 // shape and the two pragmas). Declaring the six Vec temporaries at function scope instead of
@@ -1119,316 +1428,550 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
     return 0;
 }
 
-#pragma opt_propagation reset
-#pragma opt_lifetimes reset
-#pragma inline_max_size reset
-#pragma inline_max_size reset
+// Calls through the function pointer stay real `bl`s: the original does not inline pose_change/pose_main here.
+#define MOAMOA_POSE_CHANGE(e, a, b) (((void (*)(MoamoaPose*, char*, char*))moamoa_pose_change)((e), (a), (b)))
+#pragma inline_max_total_size(60000)
+#pragma inline_max_size(1000)
+#pragma opt_propagation off
+#pragma opt_lifetimes off
+// Per-frame update of every moamoa (the ordinary variant, no follower).
+static void ext_moamoa_main(void) {
+    MarioWork* mario;
+    PartyEntry* party;
+    ExtPose* ep;
+    MoamoaPose* entry;
+    s32 voicePlayed;
+    s32 handled;
+    s32 i;
+    s32 res;
+    Vec v3;
+    Vec v4;
+    Vec vm;
+    char* sv;
 
-// The original calls moamoa_jump (a real bl) from ext_moamoa_main; the raised inline limits would inline it.
-#pragma dont_inline on
-static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, s32 field0x2, s32 flag, f32 x, f32 y, f32 z, f32 p4,
-                        f32 p5) {
-    if (flag) {
-        f32 hx, hy, hz, dist, nx, ny, nz;
+    mario = marioGetPtr();
+    party = partyGetPtr(0);
+    camGetPtr(CAMERA_3D);
+    handled = 0;
+    if (mario->currMotionId == 0x12) {
+        wp->field_0x40++;
+    } else {
+        wp->field_0x40 = 0;
+    }
+    if (mario->currMotionId == 0) {
+        wp->field_0x42++;
+        if (wp->field_0x42 > 1000) {
+            wp->field_0x42 = 1000;
+        }
+    } else {
+        wp->field_0x42 = 0;
+    }
+    if (party->flags & 0x100) {
+        wp->flags |= 0x10;
+    } else {
+        wp->flags &= ~0x10;
+    }
+    wp->field_0x55C = -1.0f;
+    wp->field_0x560 = -1.0f;
+    if (party->currentMemberId == 5 && (party->flags & 0x100)) {
+        f32 rdx;
 
-        hz = 0.0f;
-        hy = 0.0f;
-        hx = 0.0f;
-        dist = 1000000.0f;
-        if (hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, x, 100.0f + y, z, 0.0f, -1.0f, 0.0f)) {
-            if (__fabsf(y - hy) > 30.0) {
-                p4 -= 0.1f;
-                p5 += 0.1f;
-            }
-            y = hy;
+        wp->field_0x55C = cloudGetBreathDir();
+        wp->field_0x560 = cloudGetBreathDist();
+        rdx = 6.2831855f * wp->field_0x55C / 360.0f;
+        wp->field_0x564.x = wp->field_0x560 * moamoa_sin(rdx) + party->position.x;
+        wp->field_0x564.y = party->position.y;
+        rdx = 6.2831855f * wp->field_0x55C / 360.0f;
+        wp->field_0x564.z = -(wp->field_0x560 * moamoa_cos(rdx) - party->position.z);
+    }
+    if ((s16)wp->field_0x3A[0] > 0x32) {
+        wp->pos[0] = wp->pos[1];
+        if (!(wp->flags & 0x1000)) {
+            wp->flags |= 0x1000;
+            evtEntry(evt_moamoa_escape0, 0, 0);
         }
     }
-    {
-        Vec pos = vec3_rsh_000136e0;
-
-        pos.x = x;
-        pos.y = y;
-        pos.z = z;
-        entry->field_0x8 = pos;
+    if ((s16)wp->field_0x3A[1] > 0x32) {
+        wp->pos[1] = wp->pos[0];
+        if (!(wp->flags & 0x2000)) {
+            wp->flags |= 0x2000;
+            evtEntry(evt_moamoa_escape1, 0, 0);
+        }
     }
-    entry->field_0x1C = p4;
-    entry->field_0x20 = p5;
-    {
-        f32 dy = entry->field_0x8.y - (*pose->matrix)[1][3];
-        f32 d = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z);
-        f32 ang = angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z);
-        s32 frames;
+    if ((wp->flags & 0x1000) && (wp->flags & 0x2000)) {
+        MoamoaPose* p;
 
-        frames = (s32)(d / entry->field_0x1C);
-        entry->field_0x18 = frames;
-        entry->field_0x14 = entry->field_0x20 * entry->field_0x18 / 2.0f + dy / entry->field_0x18;
-        entry->field_0x2 = 3;
-        entry->field_0x24 = field0x2;
-        pose->field_0x4 = 180.0f + ang;
+        extGetPosePtr();
+        for (i = 0, p = wp->poses; i < wp->poseNum; i++, p++) {
+            if (!(p->flags & 4)) {
+                if (p->flags & 0x10) {
+                    break;
+                }
+                p->field_0x2 = 0x19;
+                p->field_0x4 = 0;
+                p->flags |= 0x10;
+            }
+        }
+        if (wp->field_0x44 == 0) {
+            wp->field_0x44 = (u32)evtEntry(evt_moamoa_escape, 0, 0);
+        }
     }
-    entry->flags |= 2;
-    pose->flags |= 0x10;
-    pose->flags &= ~4;
-}
-#pragma dont_inline reset
+    ep = extGetPosePtr();
+    voicePlayed = 0;
+    entry = wp->poses;
+    for (i = 0; i < wp->poseNum; i++, ep++, entry++) {
+        sv = "SFX_STG6_MOAMOA_VOICE1";
+        wp->field_0x550 = angleABf(mario->position.x, mario->position.z, (*ep->matrix)[0][3], (*ep->matrix)[2][3]);
+        wp->field_0x554 = distABf(mario->position.x, mario->position.z, (*ep->matrix)[0][3], (*ep->matrix)[2][3]);
+        if ((wp->flags & 0x1) && !(wp->flags & 0x4) && marioKeyOffChk() == 0 && marioCtrlOffChk() == 0 &&
+            handled == 0 && !(entry->flags & 0x154)) {
+            res = moamoa_hit_check(ep, entry);
+            if (res == 1) {
+                entry->flags |= 0x4;
+                entry->field_0x2 = 0x24;
+                wp->field_0x38++;
+                if (distABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], wp->pos[i % 3].x, wp->pos[i % 3].z) < 200.0f) {
+                    wp->field_0x3A[i % 3]++;
+                }
+                MOAMOA_POSE_CHANGE(entry, "c_n_moa_a", "D_1");
+                handled = 1;
+            } else if (res == 2 || res == 4) {
+                entry->flags |= 0xC;
+                entry->field_0x2 = 0x2F;
+                wp->field_0x38++;
+                if (distABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], wp->pos[i % 3].x, wp->pos[i % 3].z) < 200.0f) {
+                    wp->field_0x3A[i % 3]++;
+                }
+                MOAMOA_POSE_CHANGE(entry, "c_n_moa_a", "D_1");
+                if (res != 4) {
+                    handled = 1;
+                }
+            } else if (res == 3) {
+                f32 f3, dist3, rad3;
 
-static void ext_shadow_disp(s32 camId) {
-    static Mtx mt = {{8.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 8.0f, 0.0f, 0.5f}, {0.0f, 0.0f, 8.0f, 0.0f}};
-    u16 left, top, right, bottom;
-
-    if (camId == 1) {
-        GXClearBoundingBox();
-    }
-    extLoadShadowMtx(mt);
-    extLoadShadowRenderMode();
-    extLoadShadowVertex();
-    extLoadShadowTev();
-    extDrawShadow();
-    if (camId == 1) {
-        sysWaitDrawSync();
-        GXReadBoundingBox(&left, &top, &right, &bottom);
-        offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
-    }
-}
-
-static void ext_disp(s32 camId) {
-    u16 left, top, right, bottom;
-
-    if (camId == 1) {
-        GXClearBoundingBox();
-    }
-    extLoadRenderMode();
-    extLoadVertex();
-    extLoadTexture();
-    extLoadTev();
-    extDraw();
-    extLoadTextureExit();
-    GXSetNumIndStages(0);
-    GXSetTevDirect(0);
-    if (camId == 1) {
-        sysWaitDrawSync();
-        GXReadBoundingBox(&left, &top, &right, &bottom);
-        offscreenAddBoundingBox(offscreenNameToId("offscreen"), left, top, right, bottom);
-    }
-}
-
-static f32 randf(f32 min, f32 max) {
-    f32 value = (f32)rand() / 32767.0f;
-
-    return value * (max - min) + min;
-}
-
-static USER_FUNC(evt_moamoa_fusion_debug) {
-    s32 i;
-    ExtPose* extPose = extGetPosePtr();
-    MoamoaPose* pose = wp->poses;
-
-    i = 0;
-    while (i < wp->poseNum) {
-        extPose->flags |= 0x4;
-        pose->flags |= 0x400;
-        pose->flags |= 0x100;
-        pose->flags |= 0x200;
-        pose->field_0x2 = 0x3D;
-        pose->flags |= 0x800;
-        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
-        i++;
-        extPose++;
-        pose++;
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(evt_moamoa_blow) {
-    s32 i;
-    MoamoaPose* pose;
-
-    (void)evtGetValue(event, event->args[0]);
-    extGetPosePtr();
-    pose = wp->poses;
-    for (i = 0; i < wp->poseNum; i++) {
-        pose->flags &= ~0x400;
-        pose->field_0x2 = 0x3F;
-        pose++;
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(evt_moamoa_kind_onoff) {
-    s32* args = event->args;
-    s32 on = evtGetValue(event, args[0]);
-    s32 off = evtGetValue(event, args[1]);
-    s32 i;
-    MoamoaPose* pose;
-
-    extGetPosePtr();
-    pose = wp->poses;
-    i = 0;
-    while (i < wp->poseNum) {
-        if (on) {
-            if (off == 0) {
-                if (pose->field_0x4C == 1) {
-                    pose->flags |= 0x800;
+                entry->flags |= 0x84;
+                entry->field_0x2 = 0x30;
+                f3 = (wp->field_0x55C + wp->field_0x550) * 0.5f;
+                entry->field_0x8 = vec3_rsh_00013740;
+                rad3 = 6.2831855f * f3 / 360.0f;
+                dist3 = randf(0.1f, 0.2f);
+                entry->field_0x14 = dist3 * moamoa_sin(rad3);
+                entry->field_0x1C = randf(0.03f, 0.06f);
+                entry->field_0x20 = dist3 * -moamoa_cos(rad3);
+                entry->field_0x18 = 0x78;
+                wp->field_0x38++;
+                if (distABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], wp->pos[i % 3].x, wp->pos[i % 3].z) < 200.0f) {
+                    wp->field_0x3A[i % 3]++;
+                }
+                MOAMOA_POSE_CHANGE(entry, "c_n_moa_a", "D_1");
+                handled = 1;
+            }
+        }
+        if (wp->flags & 0x1) {
+            if (!(entry->flags & 0x155) && wp->field_0x554 < 50.0f) {
+                if (entry->flags & 0x2) {
+                    entry->field_0x24 = 1;
+                } else {
+                    entry->field_0x2 = 1;
                 }
             }
-            else {
-                pose->flags |= 0x800;
-            }
         }
-        else {
-            if (off == 0) {
-                if (pose->field_0x4C != 1) {
-                    pose->flags &= ~0x800;
+        if ((wp->flags & 0x1) && !(entry->flags & 0x444) && (u32)i == gp->retraceCount % wp->poseNum &&
+            irand(1000) < 200) {
+            v3 = moamoa_vec((*ep->matrix)[0][3], (*ep->matrix)[1][3], (*ep->matrix)[2][3], &vec3_rsh_0001374c);
+            psndSFXOn_3D(sv, &v3);
+        }
+        if ((u32)entry->field_0x2 <= 0x41U) {
+        switch (entry->field_0x2) {
+        case 0x0:
+            if (i % 133 < 100) {
+                f32 r0, d0, ang0, rad0, x0, z0;
+
+                r0 = randf(0.0f, 6.2831855f);
+                d0 = randf(0.0f, 50.0f);
+                ang0 = angleABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], d0 * moamoa_sin(r0) + wp->pos[i % 3].x,
+                                -(d0 * moamoa_cos(r0) - wp->pos[i % 3].z));
+                rad0 = 6.2831855f * ang0 / 360.0f;
+                x0 = 15.0f * moamoa_sin(rad0) + (*ep->matrix)[0][3];
+                z0 = -(15.0f * moamoa_cos(rad0) - (*ep->matrix)[2][3]);
+                moamoa_jump(ep, entry, entry->field_0x2, 1, x0, (*ep->matrix)[1][3], z0, randf(1.5f, 3.0f),
+                            randf(0.8f, 2.0f));
+                entry->flags |= 1;
+            } else {
+                f32 dist0, ang0b, rad0b, x0b, z0b;
+
+                dist0 = distABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], wp->pos[i % 3].x, wp->pos[i % 3].z);
+                ang0b = angleABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], wp->pos[i % 3].x, wp->pos[i % 3].z);
+                if (dist0 < 200.0f) {
+                    ang0b = randf(0.0f, 360.0f);
                 }
+                rad0b = 6.2831855f * ang0b / 360.0f;
+                x0b = 5.0f * moamoa_sin(rad0b) + (*ep->matrix)[0][3];
+                z0b = -(5.0f * moamoa_cos(rad0b) - (*ep->matrix)[2][3]);
+                moamoa_jump(ep, entry, entry->field_0x2, 1, x0b, (*ep->matrix)[1][3], z0b, randf(0.3f, 0.5f),
+                            randf(0.5f, 0.8f));
+                entry->flags &= ~1;
             }
-            else {
-                pose->flags &= ~0x800;
+            break;
+        case 0x32:
+            if (--entry->field_0x4 < 0) {
+                entry->field_0x4 = 0;
+                entry->field_0x2++;
             }
-        }
-        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
-        i++;
-        pose++;
-    }
-    return EVT_RETURN_DONE;
-}
+            break;
+        case 0x33: {
+            f32 f33, tx33, ty33, tz33, dist33;
 
-static USER_FUNC(evt_moamoa_fusion) {
-    ExtPose* extPose;
-    s32 i;
-    MoamoaPose* pose;
-
-    if (isFirstCall) {
-        extPose = extGetPosePtr();
-        pose = wp->poses;
-        i = 0;
-        while (i < wp->poseNum) {
-            (*extPose->matrix)[2][2] = 1.0f;
-            (*extPose->matrix)[1][1] = 1.0f;
-            (*extPose->matrix)[0][0] = 1.0f;
-            pose->field_0x24 = 0xE;
-            pose->field_0x2 = 0xE;
-            pose->field_0x4 = (i < 100) ? (i % 100) : (i % 60 + 100);
-            i++;
-            extPose++;
-            pose->flags |= 0x100;
-            pose++;
-        }
-    }
-    extGetPosePtr();
-    pose = wp->poses;
-    for (i = 0; i < wp->poseNum; i++) {
-        if (!(pose->flags & 0x200)) {
-            return EVT_RETURN_BLOCK;
-        }
-        pose++;
-    }
-    extPose = extGetPosePtr();
-    pose = wp->poses;
-    i = 0;
-    while (i < wp->poseNum) {
-        extPose->flags |= 0x4;
-        pose->flags |= 0x400;
-        pose->field_0x2 = 0x3D;
-        moamoa_pose_change(pose, "c_n_moa_a", "S_1");
-        i++;
-        extPose++;
-        pose++;
-    }
-    return EVT_RETURN_DONE;
-}
-
-static void moamoa_pose_change(MoamoaPose* pose, char* name1, char* name2) {
-    MoamoaGroup* group = wp->groups;
-    s32 i;
-
-    if (pose->flags & 0x800) {
-        name1 = group_tbl[pose->field_0x4C][0];
-        if (pose->field_0x4C >= 2) {
-            name2 = group_tbl[pose->field_0x4C][1];
-        }
-        if (pose->field_0x4C == 0xA) {
-            name2 = "S_2";
-        }
-    }
-    i = 0;
-    while (i < wp->groupCount) {
-        if (strcmp(group->name, name1) == 0 && strcmp(group->name2, name2) == 0) {
+            entry->field_0x1C = randf(0.0f, 200.0f);
+            f33 = 300.0f * entry->field_0x1C / 200.0f;
+            entry->field_0x20 = randf(0.0f, f33);
+            entry->field_0x2++;
+            entry->field_0x4 = 0;
+            /* fallthrough */
+        case 0x34:
+            if (entry->field_0x4 < 200) {
+                f33 = 1.0f;
+            } else {
+                f33 = (f32)(800 - entry->field_0x4) / 600.0f;
+            }
+            if (f33 < 0.0f) {
+                f33 = 0.0f;
+                entry->flags |= 0x200;
+            }
+            tx33 = wp->pos[i % 3].x;
+            ty33 = wp->pos[i % 3].y;
+            tz33 = wp->pos[i % 3].z;
+            dist33 = entry->field_0x20 * (f32)sin((f32)(i + gp->retraceCount) * 0.25f);
+            ty33 = entry->field_0x1C * f33 + ty33;
+            tx33 = f33 * dist33 + tx33;
+            tz33 = f33 * (-entry->field_0x20 * (f32)cos((f32)(i + gp->retraceCount) * 0.25f)) + tz33;
+            (*ep->matrix)[0][3] += (tx33 - (*ep->matrix)[0][3]) / 15.0f;
+            (*ep->matrix)[1][3] += (ty33 - (*ep->matrix)[1][3]) / 15.0f;
+            (*ep->matrix)[2][3] += (tz33 - (*ep->matrix)[2][3]) / 15.0f;
+            entry->field_0x4++;
             break;
         }
-        i++;
-        group++;
+        case 0x1: {
+            f32 dist1, rad1, tx1, tz1;
+
+            dist1 = wp->field_0x554;
+            rad1 = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f)) / 360.0f;
+            tx1 = 15.0f * moamoa_sin(rad1) + (*ep->matrix)[0][3];
+            tz1 = -(15.0f * moamoa_cos(rad1) - (*ep->matrix)[2][3]);
+            moamoa_jump(ep, entry, (dist1 < 100.0f) ? entry->field_0x2 : 0, 1, tx1, (*ep->matrix)[1][3], tz1,
+                        randf(1.0f, 1.0f), randf(0.4f, 0.4f));
+            break;
+        }
+        case 0x2: {
+            f32 dist2, rad2, tx2, ty2, tz2;
+
+            dist2 = wp->field_0x554;
+            rad2 = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f) + 180.0f) / 360.0f;
+            ty2 = (*ep->matrix)[1][3];
+            tx2 = 30.0f * moamoa_sin(rad2) + (*ep->matrix)[0][3];
+            tz2 = (*ep->matrix)[2][3];
+            moamoa_jump(ep, entry, (dist2 < 100.0f) ? entry->field_0x2 : 0, 1, tx2, ty2, tz2, 2.0f * randf(1.0f, 1.0f),
+                        2.0f * randf(0.4f, 0.4f));
+            break;
+        }
+        case 0x3: {
+            f32 rad3;
+
+            (*ep->matrix)[1][3] += entry->field_0x14;
+            entry->field_0x14 -= entry->field_0x20;
+            rad3 = 6.2831855f * angleABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z) /
+                   360.0f;
+            (*ep->matrix)[0][3] = entry->field_0x1C * moamoa_sin(rad3) + (*ep->matrix)[0][3];
+            (*ep->matrix)[2][3] = entry->field_0x1C * -moamoa_cos(rad3) + (*ep->matrix)[2][3];
+            if (--entry->field_0x18 < 0) {
+                (*ep->matrix)[0][3] = entry->field_0x8.x;
+                (*ep->matrix)[1][3] = entry->field_0x8.y;
+                (*ep->matrix)[2][3] = entry->field_0x8.z;
+                entry->flags &= ~0x2;
+                ep->flags &= ~0x10;
+                entry->field_0x4 = 0;
+                entry->field_0x2++;
+            }
+            break;
+        }
+        case 0x4:
+            if (++entry->field_0x4 > 4) {
+                entry->field_0x2 = entry->field_0x24;
+            }
+            break;
+        case 0x24:
+        case 0x25:
+        case 0x26: {
+            f32 fx, fz, rad24, x24, z24;
+
+            if (!(entry->flags & 0x1)) {
+                fx = mario->position.x;
+                fz = mario->position.z;
+            } else {
+                fx = wp->pos[i % 3].x;
+                fz = wp->pos[i % 3].z;
+            }
+            rad24 = 6.2831855f * (angleABf(fx, fz, (*ep->matrix)[0][3], (*ep->matrix)[2][3]) + randf(-45.0f, 45.0f)) /
+                    360.0f;
+            x24 = 15.0f * moamoa_sin(rad24) + (*ep->matrix)[0][3];
+            z24 = -(15.0f * moamoa_cos(rad24) - (*ep->matrix)[2][3]);
+            moamoa_jump(ep, entry, entry->field_0x2 + 1, 1, x24, (*ep->matrix)[1][3], z24, randf(1.0f, 1.0f),
+                        randf(1.0f, 1.0f));
+            break;
+        }
+        case 0x27:
+            if (++entry->field_0x4 < 0x1E) {
+                (*ep->matrix)[0][0] *= 0.9f;
+                (*ep->matrix)[1][1] *= 0.9f;
+                (*ep->matrix)[2][2] *= 0.9f;
+            } else {
+                entry->field_0x2 = 0x31;
+            }
+            break;
+        case 0x2F: {
+            f32 rad2f, dist2f, x2f, z2f, p4f, p5f;
+
+            rad2f = 6.2831855f * randf(135.0f, 225.0f) / 360.0f;
+            dist2f = randf(300.0f, 500.0f);
+            x2f = dist2f * moamoa_sin(rad2f) + (*ep->matrix)[0][3];
+            z2f = -(dist2f * moamoa_cos(rad2f) - (*ep->matrix)[2][3]);
+            p4f = randf(5.0f, 6.0f);
+            p5f = randf(0.2f, 0.3f);
+            if (voicePlayed == 0) {
+                v4 = moamoa_vec((*ep->matrix)[0][3], (*ep->matrix)[1][3], (*ep->matrix)[2][3], &vec3_rsh_00013758);
+                psndSFXOn_3D((const char*)0x6C3, &v4);
+                voicePlayed = 1;
+            }
+            moamoa_jump(ep, entry, 0x31, 0, x2f, -100.0f, z2f, p4f, p5f);
+            break;
+        }
+        case 0x30:
+            if (--entry->field_0x18 > 0) {
+                entry->field_0x8.x += entry->field_0x14;
+                entry->field_0x8.y += entry->field_0x1C;
+                entry->field_0x8.z += entry->field_0x20;
+                (*ep->matrix)[0][3] += entry->field_0x8.x;
+                (*ep->matrix)[1][3] += entry->field_0x8.y;
+                (*ep->matrix)[2][3] += entry->field_0x8.z;
+            } else {
+                entry->field_0x2 = 0x31;
+            }
+            break;
+        case 0x31:
+            if ((wp->flags & 0x1000) && (wp->flags & 0x2000)) {
+                entry->field_0x2 = 0x3E;
+            } else if ((s16)wp->field_0x38 < 500) {
+                PSMTXIdentity(*ep->matrix);
+                (*ep->matrix)[0][3] = wp->pos[i % 3].x;
+                (*ep->matrix)[1][3] = wp->pos[i % 3].y;
+                (*ep->matrix)[2][3] = wp->pos[i % 3].z;
+                entry->flags = 0;
+                entry->field_0x2 = 0;
+                entry->field_0x4 = 0;
+            } else {
+                entry->field_0x2 = 0x3E;
+            }
+            break;
+        case 0x19:
+            if (entry->field_0x4 < 0x1E) {
+                Mtx rot;
+
+                PSMTXRotRad(rot, 'y', 0.20944f);
+                PSMTXConcat(*ep->matrix, rot, *ep->matrix);
+                ep->flags &= ~0x2;
+                entry->field_0x4++;
+            } else {
+                ep->flags |= 0x2;
+                entry->field_0x4 = rand() % 30;
+                entry->field_0x2++;
+            }
+            break;
+        case 0x1A:
+            if (--entry->field_0x4 < 0) {
+                entry->field_0x4 = 0;
+                entry->field_0x2++;
+            }
+            break;
+        case 0x1B: {
+            f32 dist1b, ang1b, rad1b, x1b, z1b;
+
+            dist1b = distABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], -275.0f, -100.0f);
+            ang1b = angleABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], -275.0f, -100.0f) + randf(-45.0f, 45.0f);
+            if (dist1b > 6.0f && (*ep->matrix)[1][3] < 60.0f) {
+                rad1b = 6.2831855f * ang1b / 360.0f;
+                x1b = 15.0f * moamoa_sin(rad1b) + (*ep->matrix)[0][3];
+                z1b = -(15.0f * moamoa_cos(rad1b) - (*ep->matrix)[2][3]);
+                moamoa_jump(ep, entry, entry->field_0x2, 1, x1b, (*ep->matrix)[1][3], z1b, 3.0f * randf(1.0f, 1.0f),
+                            randf(1.0f, 1.0f));
+            } else {
+                entry->field_0x2++;
+            }
+            break;
+        }
+        case 0x1C:
+            if ((*ep->matrix)[0][3] > -350.0f) {
+                f32 rad1c, x1c, z1c;
+
+                rad1c = 6.2831855f * (angleABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], -350.0f, -100.0f) +
+                                      randf(-45.0f, 45.0f)) /
+                        360.0f;
+                x1c = 15.0f * moamoa_sin(rad1c) + (*ep->matrix)[0][3];
+                z1c = -(15.0f * moamoa_cos(rad1c) - (*ep->matrix)[2][3]);
+                moamoa_jump(ep, entry, entry->field_0x2, 1, x1c, (*ep->matrix)[1][3], z1c, 3.0f * randf(1.0f, 1.0f),
+                            randf(1.0f, 1.0f));
+            } else {
+                entry->field_0x2 = 0x3E;
+            }
+            break;
+        case 0x3E:
+            entry->flags |= 0x20;
+            ep->flags &= ~0x1;
+            ep->flags |= 0x4;
+            break;
+        case 0x3F: {
+            f32 rad3f, dist3f;
+
+            rad3f = 6.2831855f * randf(225.0f, 315.0f) / 360.0f;
+            dist3f = randf(2.0f, 3.0f);
+            entry->field_0x4 = irand(i / 2);
+            entry->field_0x8.x = dist3f * moamoa_sin(rad3f);
+            entry->field_0x8.y = randf(1.0f, 2.0f);
+            entry->field_0x8.z = dist3f * -moamoa_cos(rad3f);
+            entry->field_0x2++;
+            break;
+        }
+        case 0x40:
+            if (--entry->field_0x4 < 0) {
+                entry->field_0x2++;
+            }
+            break;
+        case 0x41: {
+            Mtx rot41;
+
+            entry->field_0x8.x *= 1.1f;
+            entry->field_0x8.y *= 1.02f;
+            entry->field_0x8.z *= 1.1f;
+            (*ep->matrix)[0][3] += entry->field_0x8.x;
+            (*ep->matrix)[1][3] += entry->field_0x8.y;
+            (*ep->matrix)[2][3] += entry->field_0x8.z;
+            PSMTXRotRad(rot41, 'y', 0.20944f);
+            PSMTXConcat(*ep->matrix, rot41, *ep->matrix);
+            ep->flags &= ~0x2;
+            if ((*ep->matrix)[0][3] < -1000.0f) {
+                entry->field_0x2 = 0x3E;
+            }
+            break;
+        }
+        }
+        }
+        if (!(entry->flags & 0x98)) {
+            if ((*ep->matrix)[0][3] > 290.0f) {
+                (*ep->matrix)[0][3] = 290.0f;
+            }
+            if ((*ep->matrix)[0][3] < -290.0f) {
+                (*ep->matrix)[0][3] = -290.0f;
+            }
+            if ((*ep->matrix)[2][3] > 50.0f) {
+                (*ep->matrix)[2][3] = 50.0f;
+            }
+            if ((*ep->matrix)[2][3] < -130.0f) {
+                (*ep->matrix)[2][3] = -130.0f;
+            }
+        }
+        (*ep->matrix)[1][3] += *(f32*)((u8*)wp->field_0xC + 0x38) - wp->field_0x10;
+        entry->field_0x28 = (*ep->matrix)[0][3];
+        entry->field_0x2C = (*ep->matrix)[2][3];
     }
-    if (i < wp->groupCount && pose->field_0x3C != i) {
-        if ((pose->flags & 0x4) && strncmp(name2, "D", 1) != 0) {
-            return;
-        }
-        if ((pose->flags & 0x10) && strncmp(name2, "R", 1) != 0) {
-            return;
-        }
-        pose->field_0x3C = i;
-        pose->time = gp->renderTime;
+    ((void (*)(void))moamoa_pose_main)();
+    wp->field_0x10 = *(f32*)((u8*)wp->field_0xC + 0x38);
+    if (wp->flags & 0x10) {
+        mario->riderDelta.x = 0.0f;
+        mario->riderDelta.y = 0.0f;
+        mario->riderDelta.z = 0.0f;
+        return;
+    }
+    vm = moamoa_vec(mario->riderDelta.x, mario->riderDelta.y, mario->riderDelta.z, &vec3_rsh_00013764);
+    if (PSVECMag(&vm) > 2.0f) {
+        PSVECNormalize(&vm, &vm);
+        mario->riderDelta.x = 2.0f * vm.x;
+        mario->riderDelta.y = 2.0f * vm.y;
+        mario->riderDelta.z = 2.0f * vm.z;
+    }
+}
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
+#pragma inline_max_size reset
+#pragma inline_max_total_size reset
+static void ext_moamoa_dispent(void) {
+    if (wp->flags & 1) {
+        dispEntry(4, 0.0f, 1, (DispCallback)ext_disp, NULL);
+        dispEntry(4, 0.0f, 2, (DispCallback)ext_shadow_disp, NULL);
+    }
+    if (wp->flags & 2) {
+        dispEntry(1, -5000.0f, 1, (DispCallback)ext_disp, NULL);
+        dispEntry(1, -5000.0f, 2, (DispCallback)ext_shadow_disp, NULL);
     }
 }
 
-static void moamoa_pose_main(void) {
-    MoamoaGroup* group;
-    s32 i;
-    ExtPose* pose;
-    MoamoaPose* work;
-    f32 progress;
+// Hops an npc to (x, y, z) over a frame count: userdata holds the frames left, the vertical velocity and the speed.
+static USER_FUNC(npc_jump) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    f32 speed = evtGetFloat(event, args[4]);
+    f32 grav = evtGetFloat(event, args[5]);
+    f32 frames = 60.0f * (f32)evtGetValue(event, args[6]) / 1000.0f;
+    NpcEntry* npc = npcNameToPtr(name);
+    f32 vy;
+    f32 rad;
 
-    pose = extGetPosePtr();
-    work = wp->poses;
-    i = 0;
-    while (i < wp->poseNum) {
-        group = &wp->groups[work->field_0x3C];
-        progress = (f32)OSTicksToMilliseconds((u64)(gp->renderTime - work->time)) * 60.0f / 1000.0f
-                   / group->field_0x1C;
-        if (progress >= 1.0f) {
-            work->time = gp->renderTime;
-            progress = 0.0f;
+    if (isFirstCall) {
+        Vec to;
+        Vec from;
+        f32 dist;
+        f32 dy;
+
+        from = vec3_rsh_00013788;
+        from.x = npc->position.x;
+        from.z = npc->position.z;
+        to = vec3_rsh_0001377c;
+        to.x = x;
+        to.z = z;
+        dist = PSVECDistance(&from, &to);
+        dy = y - npc->position.y;
+        if (0.0f == frames) {
+            frames = dist / speed;
+        } else {
+            speed = dist / frames;
         }
-        pose->field_0x10 = group->field_0x20 + (s32)((f32)(group->field_0x24 - 1) * progress);
-        i++;
-        work++;
-        pose++;
+        event->userdata[0] = *(s32*)&frames;
+        vy = dy / frames + grav * frames * 0.5f;
+        event->userdata[1] = *(s32*)&vy;
+        event->userdata[2] = *(s32*)&speed;
     }
-}
-#pragma dont_inline on
-static void moamoa_pose_init(void) {
-    MoamoaGroupDef* def = ext_moamoa_data;
-    char name[32];
-    char groupName[32];
-    s32 i;
-    s32 start;
+    frames = event->userdataf[0];
+    vy = event->userdataf[1];
+    speed = event->userdataf[2];
+    rad = 6.2831855f * angleABf(npc->position.x, npc->position.z, x, z) / 360.0f;
+    npc->position.x = speed * moamoa_sin(rad) + npc->position.x;
+    npc->position.z = -(speed * moamoa_cos(rad) - npc->position.z);
+    vy -= grav;
+    npc->position.y += event->userdataf[1];
+    frames -= 1.0f;
+    if (frames < 0.0f) {
+        Vec land;
 
-    i = 0;
-    strcpy(name, "");
-    strcpy(groupName, "");
-    wp->groupCount = -1;
-    do {
-        if (strcmp(def->name, name) != 0) {
-            strcpy(name, def->name);
-            strcpy(groupName, "");
-        }
-        if (strcmp(def->name2, groupName) != 0) {
-            strcpy(groupName, def->name2);
-            start = i;
-            wp->groupCount++;
-        }
-        strcpy(wp->groups[wp->groupCount].name, name);
-        strcpy(wp->groups[wp->groupCount].name2, groupName);
-        wp->groups[wp->groupCount].field_0x20 = start;
-        wp->groups[wp->groupCount].field_0x24 = i - start + 1;
-        wp->groups[wp->groupCount].field_0x1C = def->field_0x8;
-        wp->groups[wp->groupCount].field_0x18 = 1;
-        if (strncmp(groupName, "J", 1) == 0) {
-            wp->groups[wp->groupCount].field_0x18 = 0;
-        }
-        def++;
-        i++;
-    } while (def->name != NULL);
-    wp->groupCount++;
+        land = vec3_rsh_00013794;
+        land.x = x;
+        land.y = y;
+        land.z = z;
+        npc->position = land;
+        return EVT_RETURN_YIELD;
+    }
+    event->userdata[0] = *(s32*)&frames;
+    event->userdata[1] = *(s32*)&vy;
+    return EVT_RETURN_BLOCK;
 }
-#pragma dont_inline reset
 // clang-format on
