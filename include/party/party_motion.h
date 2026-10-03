@@ -2,9 +2,6 @@
 
 typedef struct PartyEntry PartyEntry;
 
-// The unit's .rodata base object (this unit's data; the shared header is the right home for it).
-extern u8 vec3_802f3e40[];
-
 #include "evt/evt_cmd.h"
 USER_FUNC(evt_snd_bgmoff);
 USER_FUNC(evt_snd_sfxon);

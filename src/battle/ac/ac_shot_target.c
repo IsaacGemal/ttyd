@@ -95,7 +95,7 @@ static void _ac_disp_init(BattleWork* work);
 // and triples, on and off), MWCC versions 1.0-3.0, case-0 statement order, and 4000+ random source
 // mutations; none moves the swap.
 // The `ac->`-qualified work-area access is required: without it st folds into work (18%).
-// NONMATCHING (19.82%): rumbleType/sfx are coloured swapped (target r24/r28, ours r28/r24).
+// NONMATCHING (99.90%): rumbleType/sfx are coloured swapped (target r24/r28, ours r28/r24).
 // The `#pragma dont_inline on` above `_ac_rumble_param_set` is required: without it MWCC inlines
 // the whole body at all four call sites and the function drops to 19.82%.
 s32 battleAcMain_ShotTarget(BattleWork* work) {
