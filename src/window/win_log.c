@@ -879,8 +879,8 @@ s32 winLogMain(WindowWork* work) {
                     f32 best = float_10000_8041d904;
                     f32 x0 = w->mapScrollX;
                     f32 y0 = w->mapScrollY;
-                    f32 px = float_neg230_8041d908 + w->mapCx + x0;
-                    f32 py = float_neg120_8041d90c + w->mapCy + y0;
+                    f32 px = float_neg230_8041d908 + x0 + w->mapCx;
+                    f32 py = float_neg120_8041d90c + y0 + w->mapCy;
                     f32 qx = float_74_8041d86c + x0;
                     f32 qy = float_120_8041d870 + y0;
                     s32 bestIdx;

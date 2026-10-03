@@ -807,7 +807,7 @@ void effFallMain(EffectEntry* effect) {
 					v[j * 5 + 4] = float_0p066667_80421004 * (f32)(j / 2);
 				}
 				v = (*(smartEntry**)((u8*)elem + 0x40))->address;
-				for (i = 0; i < 0x20; i += 2) {
+				for (i = 0; i < 0x20; i++) {
 					v[i * 5 + 0] += elem->unk44 * ((v[i * 5 + 1] * v[i * 5 + 1]) / float_600_80421008);
 				}
 				DCFlushRange((*(smartEntry**)((u8*)elem + 0x40))->address, 0x280);

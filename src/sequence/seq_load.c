@@ -1251,10 +1251,10 @@ void loadDraw(void) {
         if (wp->field_0x18 == 0x33 && (i == wp->field_0x30 || i == wp->field_0x34)) {
             color = white;
         }
-        if (i == 4 && (wp->field_0x0 & 0x20)) {
+        if (i == 4 && (wp->field_0x0 & 0x10)) {
             color = grey80;
         }
-        if (i == 5 && (wp->field_0x0 & 0x40)) {
+        if (i == 5 && (wp->field_0x0 & 0x20)) {
             color = grey80;
         }
         if (wd->unk10 < 0xe && wd->unk10 >= 0xa) {
@@ -1372,15 +1372,15 @@ void loadDraw(void) {
                 PSMTXConcat(mtx, mtx2, mtx);
                 iconDispGxCol(mtx, 0, 0x201, c);
             }
-        }
 
-        for (j = 0; j < 7; j++) {
-            if (mask & (1 << (j + 1))) {
-                GXColor c = (i == wp->field_0x20) ? white : greyA0;
-                Mtx mtx;
+            for (j = 0; j < 7; j++) {
+                if (mask & (1 << (j + 1))) {
+                    GXColor c = (i == wp->field_0x20) ? white : greyA0;
+                    Mtx mtx;
 
-                PSMTXTrans(mtx, wd->x - 106.0f + (f32)(j * 0x20), wd->y - 52.0f, 0.0f);
-                iconDispGxCol(mtx, 0, stone_id[j] & 0xFFFF, c);
+                    PSMTXTrans(mtx, wd->x - 106.0f + (f32)(j * 0x20), wd->y - 52.0f, 0.0f);
+                    iconDispGxCol(mtx, 0, stone_id[j] & 0xFFFF, c);
+                }
             }
         }
     }
