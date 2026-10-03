@@ -15,10 +15,6 @@ __declspec(section ".sdata") GXColor gap_10_8042316C_sbss2;
 __declspec(section ".sdata") GXColor unk_80423168;
 #pragma section ".sdata" ".sbss"
 
-// .rodata conversion constant used by the int -> float casts.
-
-// .sdata2 constants (named after their original addresses).
-
 typedef struct effKemuri1Data {
 	u16 type; //0x0
 	u8 align_2[2]; //0x2, TODO: verify align
@@ -52,7 +48,7 @@ typedef struct effKemuri1Data {
 // allocator colours the ten-value loop-invariant clique (nine constants + the a5 parameter) with a5 in f24 and
 // the constants rotated (99.69%); with them a5 lands in f31 and neg3..10 in f22..f30 as the original. Scoping
 // `angle` to the loop (shadow of the function-scope `angle`) keeps the angle temp in f20. objdiff names the
-// pooled "Kemuri1N64" string and int->float double anonymous @NNN@ instead of "Kemuri1N64"/
+// pooled "Kemuri1N64" string and int->float double anonymous @NNN instead of Kemuri1N64 and
 // double_to_int_802fa898; those are unscored.
 EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;
