@@ -24,10 +24,10 @@ extern const f32 float_deg2rad_8041f710;
 extern const f32 float_1_8041f714;
 extern const f32 float_neg1_8041f738;
 extern const f32 float_18_8041f73c;
-extern const f32 float_100_8041f740;
-extern const f32 float_0p25_8041f744;
-extern const f32 float_50_8041f748;
-extern const f32 float_0p5_8041f74c;
+// static const: folded into the pool at first use, so they keep the retail pool order.
+static const f32 float_100_8041f740 = 100.0f;
+static const f32 float_50_8041f748 = 50.0f;
+static const f32 float_0p5_8041f74c = 0.5f;
 
 // .rodata zero vectors (named after their original addresses).
 #ifdef MUST_MATCH
@@ -160,7 +160,7 @@ EffectEntry* effMagic3N64Entry(s32 type, s32 life, f32 x, f32 y, f32 z) {
 		temp.x = (f32)sin(yaw);
 		temp.z = -(f32)cos(yaw);
 		axis = temp;
-		angle = (i == 1) ? float_0_8041f70c : 100.0f * i * float_0p25_8041f744 - float_50_8041f748;
+		angle = (i == 1) ? float_0_8041f70c : float_100_8041f740 * i / 4.0f - float_50_8041f748;
 		PSMTXRotAxisRad(mtx, &axis, float_deg2rad_8041f710 * angle);
 		data->type = type;
 		data->x = x;
@@ -306,6 +306,3 @@ const f32 float_0p7_8041f730 = 0.7f;
 const f32 float_30_8041f734 = 30.0f;
 const f32 float_neg1_8041f738 = -1.0f;
 const f32 float_18_8041f73c = 18.0f;
-const f32 float_0p25_8041f744 = 0.25f;
-const f32 float_50_8041f748 = 50.0f;
-const f32 float_0p5_8041f74c = 0.5f;

@@ -1578,22 +1578,61 @@ void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
 
 //more animation functions
 
-// NONMATCHING (21.94%): partial map loader; large body still differs
+// Shared helpers for _mapLoad: the loader searches the chunk table by name seven times and builds its
+// eight bounding-box corners from a zero vector seed; both shapes inline into the caller.
+static inline void* mapLoadFindChunk(MapHeader* header, const char* name) {
+	u32 i;
+
+	for (i = 0; i < (u32)header->file.chunkCount; i++) {
+		if (!strcmp(&header->strings[header->chunks[i].string], name)) {
+			return (u8*)header->data + header->chunks[i].offset;
+		}
+	}
+	return NULL;
+}
+#ifndef MUST_MATCH
+static const Vec ml_zero_seed = { 0.0f, 0.0f, 0.0f };
+#endif
+static inline Vec mapLoadCorner(const Vec* seed, f32 x, f32 y, f32 z) {
+	Vec v = *seed;
+
+	v.x = x;
+	v.y = y;
+	v.z = z;
+	return v;
+}
+// NONMATCHING (90.26%): register allocation/numbering and the string literals. The original reaches the
+// literals as vec3_802c16d8+0x2d0 etc. because its .rodata owns that base; ours pools them and uses
+// lis/addi. Frame matches at 0x280; callee-saved r19-r31 vs the target's r17-r31.
 void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	MapHeader* header;
 	MapEntry* entry;
+	MapFileInfo* info;
+	MapFileJoint* mapJoint;
+	MapFileJoint* hitJoint;
+	MapFileLight* light;
+	MapObject* obj;
 	DVDEntry* dvd;
 	char str1[128];
 	char str2[128];
 	char str3[128];
+	Vec pos;
+	Vec min;
+	Vec max;
+	Mtx mtx;
 	u32 sizeCheck;
+	u32 size;
 	u8 *data;
-	u32 r4, r7, r0;
-	int i;
-
-	MapFileInfo* info;
+	u8* base;
+	void* anim;
+	s32 type;
+	s32 flags;
+	s32 rel_i;
+	s32 disp_i;
+	s32 i;
 
 	entry = &wp->entries[group];
+	base = vec3_802c16d8;
 	error_flag = FALSE;
 	error_count = 0;
 	strncpy(entry->name, map, sizeof(entry->name));
@@ -1630,52 +1669,186 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	GXInvalidateVtxCache();
 	header = &entry->header;
 	data = (u8*)entry->dat;
-	if (header != NULL) {
-		memset(header, 0, sizeof(MapHeader));
-		header->field_0x3C |= 1;
-		memcpy(header, entry->dat, sizeof(MapFileHeader));
-		if (header->file.fileSize == entry->datSize) {
-			sizeCheck = sizeof(MapFileHeader);
-			if (header->file.dataSize) {
-				header->data = &data[sizeCheck];
-				sizeCheck = header->file.dataSize + sizeof(MapFileHeader);
-			}
-			if (header->file.relCount) {
-				header->rel = &data[sizeCheck];
-				sizeCheck += 4 * header->file.relCount; //TODO: sizeof
-			}
-			if (header->file.chunkCount) {
-				header->chunks = (MapFileChunk*)&data[sizeCheck];
-				sizeCheck += sizeof(MapFileChunk) * header->file.chunkCount;
-			}
-			if (header->file.unused) {
-				header->unused = &data[sizeCheck];
-				sizeCheck += 8 * header->file.unused;
-			}
-			if (sizeCheck < header->file.fileSize) {
-				header->strings = (const char*)&data[sizeCheck];
-			}
+	{
+		u32 entryDatSize = wp->entries[group].datSize;
+		if (header != NULL) {
+			memset(header, 0, sizeof(MapHeader));
+			wp->entries[group].header.field_0x3C |= 1;
+			memcpy(header, data, sizeof(MapFileHeader));
+			if (wp->entries[group].header.file.fileSize == entryDatSize) {
+				sizeCheck = sizeof(MapFileHeader);
+				if ((u32)wp->entries[group].header.file.dataSize != 0) {
+					entry->header.data = &data[sizeCheck];
+					sizeCheck = entry->header.file.dataSize + sizeof(MapFileHeader);
+				}
+				if ((u32)wp->entries[group].header.file.relCount != 0) {
+					entry->header.rel = &data[sizeCheck];
+					sizeCheck += 4 * entry->header.file.relCount; //TODO: sizeof
+				}
+				if ((u32)wp->entries[group].header.file.chunkCount != 0) {
+					entry->header.chunks = (MapFileChunk*)&data[sizeCheck];
+					sizeCheck += sizeof(MapFileChunk) * entry->header.file.chunkCount;
+				}
+				if ((u32)wp->entries[group].header.file.unused != 0) {
+					entry->header.unused = &data[sizeCheck];
+					sizeCheck += 8 * entry->header.file.unused;
+				}
+				if (sizeCheck < entry->header.file.fileSize) {
+					wp->entries[group].header.strings = (const char*)&data[sizeCheck];
+				}
+				*(void**)((u8*)&wp->entries[group] + 0x78) = data;
 
-			//iunno about this section
-			for (i = 0; i < header->file.relCount; i++) {
-				r4 = (u32)entry->header.rel;
-				r7 = (u32)entry->header.data;
-				r4 = *(u32*)(r4 + i);
-				r0 = *(u32*)(r7 + r4);
-				if (r0 <= 0x80000000) {
-					*(u32*)(r7 + r4) = (r0 + r7);
+				//iunno about this section
+				for (rel_i = 0; rel_i < (u32)header->file.relCount; rel_i++) {
+					u32 off = ((u32*)header->rel)[rel_i];
+					if (((u32*)header->data)[off / 4] <= 0x80000000) {
+						((u32*)header->data)[off / 4] += (u32)header->data;
+					}
 				}
 			}
 		}
 	}
-	info = NULL;
-	for (i = 0; i < header->file.chunkCount; i++) {
-		if (!strcmp(&header->strings[header->chunks[i].string], "information")) {
-			info = (MapFileInfo*)&data[header->chunks[i].offset];
-			break;
+
+	info = (MapFileInfo*)mapLoadFindChunk(header, "information");
+	// MapEntry fields the header does not name yet (offsets from MapEntry): chunk pointers and anim count.
+	*(void**)((u8*)&wp->entries[group] + 0x94) = mapLoadFindChunk(header, "texture_table");
+	*(void**)((u8*)&wp->entries[group] + 0x98) = mapLoadFindChunk(header, "light_table");
+	*(void**)((u8*)&wp->entries[group] + 0x9C) = mapLoadFindChunk(header, "fog_table");
+	*(void**)((u8*)&wp->entries[group] + 0xA0) = mapLoadFindChunk(header, "material_name_table");
+	*(void**)((u8*)&wp->entries[group] + 0xA4) = mapLoadFindChunk(header, "vcd_table");
+
+	mapJoint = mapSearchDmdJoint(info->joint, (s8*)info->mapName);
+	hitJoint = mapSearchDmdJoint(info->joint, (s8*)info->hitName);
+	if (!strcmp(info->version, "ver1.02")) {
+		wp->entries[group].flags |= 0x8000;
+	}
+	else {
+		wp->entries[group].flags &= ~0x8000;
+	}
+
+	PSMTXScale(mtx, 10.0f, 10.0f, 10.0f);
+	wp->entries[group].rootMapObj = mapEntry(mapJoint, mtx, group);
+	wp->entries[group].rootHitObj = hitEntry(hitJoint, mtx, group);
+
+	for (i = 0; i < ((MapFileLightTable*)*(void**)((u8*)entry + 0x98))->count; i++) {
+		light = ((MapFileLightTable*)*(void**)((u8*)entry + 0x98))->lights[i];
+		type = 1;
+		flags = 0;
+		PSVECScale(&light->position, &pos, 10.0f);
+		if (!strcmp(light->type, "ambientLight")) {
+			type = 0;
+		}
+		else if (!strcmp(light->type, "pointLight")) {
+			type = 1;
+		}
+		else if (!strcmp(light->type, "directionalLight")) {
+			type = 2;
+		}
+		else if (!strcmp(light->type, "spotLight")) {
+			type = 3;
+		}
+		if (light->field_0x40 == 0x12D60D8) {
+			flags = light->field_0x3C;
+		}
+		lightEntry(light->name, type, &pos, &light->rotation, light->color, light->attenType, flags, light->spotAngle, light->attenAngle);
+	}
+
+	paper_ambient = dat_8041982c;
+	paperCraft_ambient = dat_80419830;
+
+	{
+		MapFileFog* fog = (MapFileFog*)*(void**)((u8*)entry + 0x9C);
+		if (fog != NULL) {
+			*(s32*)((u8*)entry + 0x24) = (*(MapFileFog**)((u8*)entry + 0x9C))->field_0x0;
+			*(s32*)((u8*)entry + 0x28) = (*(MapFileFog**)((u8*)entry + 0x9C))->field_0x4;
+			*(f32*)((u8*)entry + 0x2C) = (*(MapFileFog**)((u8*)entry + 0x9C))->field_0x8;
+			*(f32*)((u8*)entry + 0x30) = (*(MapFileFog**)((u8*)entry + 0x9C))->field_0xC;
+			*(s32*)((u8*)entry + 0x34) = (*(MapFileFog**)((u8*)entry + 0x9C))->field_0x10;
+			if (*(s32*)((u8*)entry + 0x24) != 0) {
+				entry->flags |= 1;
+			}
+		}
+		else {
+			*(s32*)((u8*)entry + 0x24) = 0;
+			*(s32*)((u8*)entry + 0x28) = 0;
+			*(f32*)((u8*)entry + 0x2C) = float_0_80419850;
+			*(f32*)((u8*)entry + 0x30) = float_0_80419850;
+			*(u32*)((u8*)entry + 0x34) = *(u32*)&unk_80422f80;
+			entry->flags &= ~1;
+		}
+	}
+	if (activeGroup != 1) {
+		sprintf(str1, "./m/%s/c", map);
+		camLoadRoad(CAMERA_3D, str1);
+	}
+	camSetTypePersp(CAMERA_3D);
+	mapBuildTexture(wp->entries[group].rootMapObj, wp->entries[group].tpl, *(void**)((u8*)&wp->entries[group] + 0x94));
+	mapGetBoundingBox(&min, &max);
+
+#ifdef MUST_MATCH
+	// MUST_MATCH: retail seeds each corner from the unit's .rodata through the vec3_802c16d8 base; every field is
+	// overwritten, so the natural build seeds from zero.
+#define ML_SEED(off) ((const Vec*)(base + (off)))
+#else
+#define ML_SEED(off) (&ml_zero_seed)
+#endif
+	wp->entries[group].bbox[0] = mapLoadCorner(ML_SEED(0x28), max.x, max.y, max.z);
+	wp->entries[group].bbox[1] = mapLoadCorner(ML_SEED(0x34), min.x, max.y, max.z);
+	wp->entries[group].bbox[2] = mapLoadCorner(ML_SEED(0x40), max.x, min.y, max.z);
+	wp->entries[group].bbox[3] = mapLoadCorner(ML_SEED(0x4C), max.x, max.y, min.z);
+	wp->entries[group].bbox[4] = mapLoadCorner(ML_SEED(0x58), min.x, min.y, max.z);
+	wp->entries[group].bbox[5] = mapLoadCorner(ML_SEED(0x64), max.x, min.y, min.z);
+	wp->entries[group].bbox[6] = mapLoadCorner(ML_SEED(0x70), min.x, max.y, min.z);
+	wp->entries[group].bbox[7] = mapLoadCorner(ML_SEED(0x7C), min.x, min.y, min.z);
+#undef ML_SEED
+
+	{
+		MapEntry* entry2 = &mapWork[activeGroup].entries[group];
+
+		anim = mapLoadFindChunk(&entry2->header, "animation_table");
+		if (anim != NULL) {
+			*(s32*)((u8*)entry2 + 0x160) = *(s32*)anim;
+			if (*(s32*)((u8*)entry2 + 0x160) != 0) {
+				size = (*(s32*)((u8*)entry2 + 0x160) * 32 + 0x1F) & ~0x1F;
+				entry2->animData = _mapAlloc(size);
+				memset(entry2->animData, 0, size);
+				{
+					u16* out = (u16*)entry2->animData;
+					u32* in = (u32*)anim;
+
+					for (i = 0; i < *(s32*)((u8*)entry2 + 0x160); i++) {
+						*out = 0;
+						*(u32*)((u8*)out + 0x18) = *++in;
+						out += 16;
+					}
+				}
+			}
 		}
 	}
 
+	makeDisplayList(group);
+	{
+		MapEntry* entry3 = &mapWork[activeGroup].entries[group];
+
+		obj = entry3->objects;
+		for (disp_i = 0; disp_i < entry3->numJoints; disp_i++, obj++) {
+			MapFileJoint* joint = obj->joints;
+
+			if (joint->partCount >= 1 && joint->partCount <= 8) {
+				MapJointDrawMode* dm = joint->drawMode;
+
+				// MapJointDrawMode has no named field at 0x2/0x4; use raw offsets.
+				if (!(*(u8*)((u8*)dm + 2) & 8) && *(u32*)((u8*)dm + 4) == 0) {
+					if (shadowGetCharShadowProjection() == 0 || !(*(u32*)((u8*)obj + 0) & 4)) {
+						if (entry3->flags & 0x8000) {
+							*(u32*)((u8*)obj + 0) |= 0x100;
+						}
+					}
+				}
+			}
+		}
+	}
+	unk_80418458 = 0;
 }
 
 // An empty string; symbols.txt names it as a float.

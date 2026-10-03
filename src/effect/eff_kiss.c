@@ -378,9 +378,11 @@ static inline GXColor effKissAlphaColor(const void* src, s32 a) {
 // Building each GXColor inside the helper that calls GXSetChanMatColor (rather than returning it and
 // letting the caller pass it by value) reproduces retail's stack layout: the helper's colour local lands
 // directly below the by-value argument copy, per call (eff_teresa.c/effThunderDisp use the same idiom).
-// NONMATCHING (99.59%): instructions, calls and all stack slots match; only the alpha/2 sign-correction
-// `add` schedules one slot after the color_rotation_data pointer add (2 instructions), and the final
-// switch dispatch keeps two extra branches in retail (a redundant `b body` plus an unreachable default).
+// The final switch's two extra branches are reproduced by the MUST_MATCH goto form below (the original
+// reaches the shared case body through gotos and a `default: return`).
+// NONMATCHING (99.95%): all instructions, calls and stack slots match; only the alpha/2 sign-correction
+// `add` schedules one slot after the color_rotation_data pointer add (2 instructions). Moving the frameIdx
+// assignment after alpha makes mwcceppc loop forever, and hoisting/reordering pragmas change the frame.
 void effKissDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	KissEffectWork* data = effect->userdata;
@@ -577,10 +579,27 @@ void effKissDisp(CameraId camId, void* param) {
 		}
 	}
 
+#ifdef MUST_MATCH
+	/* MUST_MATCH: the original reaches the one shared body through gotos from cases 0/1/3
+	   (a switch with a single shared body emits two fewer branches); natural form in #else. */
+	switch (type) {
+	case 0:
+	case 1:
+		goto kiss_disp_body;
+	case 3:
+		goto kiss_disp_body;
+	default:
+		return;
+	}
+kiss_disp_body:
+	{
+#else
 	switch (type) {
 	case 0:
 	case 1:
 	case 3:
+		{
+#endif
 		deg = 1.15f;
 		texV = 0.5f;
 		for (i = 0; i < 2; i++) {
@@ -694,8 +713,13 @@ void effKissDisp(CameraId camId, void* param) {
 #endif
 			}
 		}
+#ifdef MUST_MATCH
+	}
+#else
+	}
 		break;
 	}
+#endif
 }
 
 #ifdef MUST_MATCH

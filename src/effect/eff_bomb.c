@@ -4,7 +4,7 @@
 #include "memory.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 
 // .data tables. Each record is 3 bytes: texcoord offset, scaleX, scaleY (scaled by 100).
 static u8 scale_dt[] = {
@@ -33,16 +33,12 @@ static u8 scale_dt2[] = {
 // The original has these constants in .sdata2. Declared const, MWCC folds their values into its own pool;
 // the matching build keeps them writable so the loads reference the original symbols.
 #ifdef MUST_MATCH
-#define SDATA2_CONST
+#define SDATA2_CONST __declspec(section ".sdata2")
 #else
 #define SDATA2_CONST const
 #endif
 SDATA2_CONST GXColor dat_8041e450 = { 0xFF, 0xFF, 0xFF, 0xFF };
 SDATA2_CONST GXColor dat_8041e454 = { 0xFF, 0xFF, 0xFF, 0x30 };
-SDATA2_CONST char str_8041E478[8] = "Bomb";
-
-// .sdata2 float constant this function loads by name (its definition lives in the retail object).
-extern const f32 float_0p5_8041e470;
 
 // Local to this file in the original (`.fn effBombMain, local`).
 static void effBombMain(EffectEntry* effect);
@@ -57,7 +53,7 @@ EffectEntry* effBombEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	f32 radius;
 
 	entry = effEntry();
-	entry->type = str_8041E478;
+	entry->type = "Bomb";
 	entry->count = 9;
 	data = __memAlloc(3, entry->count * 0x28);
 	entry->userdata = data;
@@ -131,6 +127,7 @@ static void effBombMain(EffectEntry* effect) {
 #endif
 }
 
+#pragma opt_loop_invariants off
 static void effBombDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effBombData* data;
@@ -146,9 +143,8 @@ static void effBombDisp(CameraId camId, void* param) {
 	f32 size;
 	f32 one;
 	f32 negHalf;
-#ifndef MUST_MATCH
+	f32 negOne;
 	f32 half;
-#endif
 
 	data = effect->userdata;
 	radius = data->scale;
@@ -189,12 +185,9 @@ static void effBombDisp(CameraId camId, void* param) {
 	PSMTXConcat(mtx, rot, view);
 	PSMTXConcat(camera->view, view, view);
 	GXSetCurrentMtx(0);
-	one = 1.0f;
-#ifndef MUST_MATCH
-	half = 0.5f;
-	negHalf = -one * half;
-#endif
 	size = 30.0f * radius;
+	one = 1.0f;
+	negOne = -one;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		PSMTXTrans(mtx, 0.0625f * (f32)data->texOffset, 0.0f, 0.0f);
@@ -211,28 +204,17 @@ static void effBombDisp(CameraId camId, void* param) {
 		PSMTXConcat(work, scale, work);
 		PSMTXConcat(view, work, work);
 		GXLoadPosMtxImm(work, 0);
-#ifdef MUST_MATCH
-		// MUST_MATCH: retail hoists the quad half-width into f31; computing negHalf in the loop
-		// lets MWCC hoist the named 0.5f constant there (the natural form is the #else branch).
-		negHalf = -one * float_0p5_8041e470;
-#endif
+		half = 0.5f;
+		negHalf = negOne * half;
 		GXBegin(0x80, 0, 4);
 		GXPosition3f32(negHalf, one, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
-#ifdef MUST_MATCH
-		GXPosition3f32(float_0p5_8041e470, one, 0.0f);
-#else
 		GXPosition3f32(half, one, 0.0f);
-#endif
 		GXTexCoord2f32(1.0f, 0.0f);
-#ifdef MUST_MATCH
-		GXPosition3f32(float_0p5_8041e470, 0.0f, 0.0f);
-#else
 		GXPosition3f32(half, 0.0f, 0.0f);
-#endif
 		GXTexCoord2f32(1.0f, 1.0f);
 		GXPosition3f32(negHalf, 0.0f, 0.0f);
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
-
+#pragma opt_loop_invariants reset

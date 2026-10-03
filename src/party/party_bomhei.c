@@ -43,16 +43,6 @@ s32 m_w_7_sync[45] = {
     0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10, 9, 8, 6, 4, 3, 2, 1, 0, 0, 0, 0, 0};
 s32 longQuake_evt[8] = {0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A8F, (s32)0xF24A7A8F, 0x258, 2, 1};
 static s32 quake_evt[8] = {0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A8F, (s32)0xF24A7A8F, 0xC8, 2, 1};
-extern const f32 float_7p5_8041b224;
-extern const f32 float_0p83333_8041b228;
-extern const f32 float_36_8041b23c;
-extern const f32 float_0p25_8041b240;
-extern const f32 float_3p5556_8041b24c;
-extern const f32 float_0p35556_8041b250;
-extern const f32 float_10p5_8041b254;
-extern const f32 float_neg0p33333_8041b258;
-extern const f32 float_0p1_8041b26c;
-extern const f32 float_neg1_8041b270;
 
 // The per-use work block stored in PartyEntry::useStruct (0x170) while Bobbery is active.
 typedef struct BomheiWork {
@@ -251,7 +241,12 @@ void bomhei_use_post(PartyEntry* party) {
         } else if (mario->currMotionId == 2) {
             pose = "M_R_1";
         } else if (mario->flags & 0x10000) {
+#ifdef MUST_MATCH
+            // Natural form is "M_J_1B"; the extra \0 gives the target an 8-byte object.
+            pose = "M_J_1B\0";
+#else
             pose = "M_J_1B";
+#endif
         } else {
             pose = "M_S_1";
         }
@@ -503,8 +498,16 @@ void bomhei_use_main(PartyEntry* party) {
         party->speed = distABf(party->position.x, party->position.z, targetX, targetZ) / 18.0f;
         party->dir = angleABf(party->position.x, party->position.z, targetX, targetZ);
         party->field_FC = party->dir;
-        party->jumpPara1 = float_7p5_8041b224;
-        party->jumpPara2 = -float_0p83333_8041b228;
+        party->jumpPara1 = 7.5f;
+#ifdef MUST_MATCH
+        // Natural form is -0.8333333f; the temp stops -O4,p folding the fneg into the pool word.
+        {
+            f32 gravity = 0.8333333f;
+            party->jumpPara2 = -gravity;
+        }
+#else
+        party->jumpPara2 = -0.8333333f;
+#endif
         partyChgPose(party, (char*)"J_1A");
         party->useMotionId = 2;
         *(u8*)((u8*)party + 0x17A) = 0xA;
@@ -528,10 +531,16 @@ void bomhei_use_main(PartyEntry* party) {
         {
             MarioWork* pm = party->playerPtr;
 
-            f31 = float_36_8041b23c;
+            f31 = 36.0f;
             if (strcmp(pm->animName, (char*)"M_W_7") == 0) {
                 f32 val = (f32)m_w_7_sync[*(u8*)((u8*)party + 0x17B)];
-                f31 += val * float_0p25_8041b240;
+#ifdef MUST_MATCH
+                // Temp keeps 0.25 in the target's f0 instead of f2.
+                f32 quarter = 0.25f;
+                f31 += val * quarter;
+#else
+                f31 += val * 0.25f;
+#endif
             }
             party->position.x = pm->position.x;
             party->position.y = pm->position.y + f31;
@@ -563,9 +572,25 @@ void bomhei_use_main(PartyEntry* party) {
         party->speed = distABf(party->position.x, party->position.z, targetX, targetZ) / 20.0f;
         party->dir = angleABf(party->position.x, party->position.z, targetX, targetZ);
         party->field_FC = party->dir;
-        party->jumpPara1 = float_3p5556_8041b24c;
-        party->jumpPara2 = -float_0p35556_8041b250;
-        *(s32*)((u8*)party + 0x24) = (s16)float_10p5_8041b254;
+        party->jumpPara1 = 3.5555556f;
+#ifdef MUST_MATCH
+        // Natural form is -0.35555556f; the temp stops -O4,p folding the fneg into the pool word.
+        {
+            f32 gravity = 0.35555556f;
+            party->jumpPara2 = -gravity;
+        }
+#else
+        party->jumpPara2 = -0.35555556f;
+#endif
+#ifdef MUST_MATCH
+        // Natural form is (s16)10.5f; the temp stops the conversion folding to an integer.
+        {
+            f32 frames = 10.5f;
+            *(s32*)&party->field_22[2] = (s16)frames;
+        }
+#else
+        *(s32*)&party->field_22[2] = (s16)10.5f;
+#endif
         party->flags2 &= ~0x10;
         party->flags |= 0x10;
         bomhei_checkHit(party);
@@ -578,8 +603,16 @@ void bomhei_use_main(PartyEntry* party) {
             break;
         }
         party->jumpPara1 = 0.0f;
-        party->jumpPara2 = float_neg0p33333_8041b258;
-        *(s32*)((u8*)party + 0x24) = (s16)float_10p5_8041b254;
+        party->jumpPara2 = -0.33333334f;
+#ifdef MUST_MATCH
+        // Natural form is (s16)10.5f; the temp stops the conversion folding to an integer.
+        {
+            f32 frames = 10.5f;
+            *(s32*)&party->field_22[2] = (s16)frames;
+        }
+#else
+        *(s32*)&party->field_22[2] = (s16)10.5f;
+#endif
         party->flags &= ~PARTY_FLAG_IS_JUMPING;
         if (party->field_138 != NULL) {
             party->useMotionId = 0x1E;
@@ -703,7 +736,7 @@ void bomhei_use_main(PartyEntry* party) {
         /* fallthrough */
     case 0x2A:
         {
-            f32 tmp = float_0p1_8041b26c * (float_neg1_8041b270 - party->speed);
+            f32 tmp = 0.1f * (-1.0f - party->speed);
             party->speed += tmp;
         }
         if (party->speed <= 0.0f) {
@@ -736,10 +769,16 @@ void bomhei_use_main(PartyEntry* party) {
         } else {
             MarioWork* pm = party->playerPtr;
 
-            f31 = float_36_8041b23c;
+            f31 = 36.0f;
             if (strcmp(pm->animName, (char*)"M_W_7") == 0) {
                 f32 val = (f32)m_w_7_sync[*(u8*)((u8*)party + 0x17B)];
-                f31 += val * float_0p25_8041b240;
+#ifdef MUST_MATCH
+                // Temp keeps 0.25 in the target's f0 instead of f2.
+                f32 quarter = 0.25f;
+                f31 += val * quarter;
+#else
+                f31 += val * 0.25f;
+#endif
             }
             party->position.x = pm->position.x;
             party->position.y = pm->position.y + f31;
@@ -1043,7 +1082,7 @@ void mario_controll(PartyEntry* party) {
 
 // 100%. Register colouring matches: attempt-0 `radius0` is its own variable, attempt 1 reuses a
 // function-scope `ang` while attempt 2 keeps its own block-scoped `ang`, and the declarations are
-// ordered `radius, md, angle, ang, px, pz, radius0` — that is what puts attempt-0 radius/radius0 in
+// ordered `radius, md, angle, ang, px, pz, radius0` -- that is what puts attempt-0 radius/radius0 in
 // f29, angle in f30, attempt-1/2 radius in f31 and md in f30. Behaviour is identical to one variable.
 // .text:0x3FC | 0x800BD24C | size: 0x880
 void partyGetReturnPos(Vec* pos) {

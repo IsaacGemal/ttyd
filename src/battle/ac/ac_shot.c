@@ -7,44 +7,21 @@
 #include "driver/icondrv.h"
 #include "pmario_sound.h"
 #include "system.h"
-#include <math.h>
 #include <string.h>
 
 // .rodata constants used by _draw_target_mark and actionCommandDisp. The original emitted these as
-// named symbols at 0xC offsets; they are one contiguous array here.
+// six named symbols 0xC apart; one contiguous array here produces the same bytes and lets the
+// code index from the single base pointer as retail does. It is non-const (as the text needs) but
+// __declspec(section) forces it into .rodata where the original keeps it.
 extern Vec vec3_802f92b8[6];
 
-// SFX name the original unit emitted into .rodata.
-const char str_802F9300[] = "SFX_AC_CURSOR_MOVE1";
-
-// Double literals the original emitted into .rodata.
-const f64 double_0p5_802f9318 = 0.5;
-const f64 double_to_int_802f9320 = 4503601774854144.0;
+// SFX name the original unit emitted into .rodata (defined at the end, after the vectors).
 
 // .sdata2 constants used by the whole unit; the original emits them as named symbols.
 extern u32 dat_8041e4a8;
 extern const GXColor dat_8041e4ac;
 extern const GXColor dat_8041e4b0;
 extern const GXColor dat_8041e4b4;
-extern const f32 float_0_8041e4b8;
-extern const f32 float_1_8041e4bc;
-extern const f32 float_60_8041e4c0;
-extern const f32 float_30_8041e4c4;
-extern const f32 float_255_8041e4c8;
-extern const f32 float_neg1_8041e4cc;
-extern const f32 float_neg200_8041e4d0;
-extern const f32 float_25_8041e4d4;
-extern const f32 float_100_8041e4d8;
-extern const f32 float_0p01_8041e4dc;
-extern const f32 float_88_8041e4e0;
-extern const f32 float_33_8041e4e4;
-extern const f32 float_0p1_8041e4e8;
-extern const f32 float_neg1000_8041e4ec;
-extern const f32 float_70_8041e4f0;
-extern const f32 float_8_8041e4f4;
-extern const f32 float_50_8041e4f8;
-extern const f32 float_0p5_8041e4fc;
-extern const f32 float_900_8041e500;
 
 // .sbss2 default colour the original emitted; referenced when building the icon colour.
 extern u32 unk_80423078;
@@ -95,22 +72,23 @@ static inline void _acShotAppendHistory(AcShotWork* aw, BattleWork* work) {
     work->actionCommands.outputParams[0] = 1;
     aw->rotHistory[aw->index] = aw->rotZ;
     aw->angleHistory[aw->index] = aw->field_0x2C;
-    aw->valueHistory[aw->index] = float_70_8041e4f0;
+    aw->valueHistory[aw->index] = 70.0f;
     aw->index++;
     work->actionCommands.outputParams[3]++;
 }
 
 // optimize_for_size: the original keeps the 3-iteration history-init loop as a `bdnz` loop.
 #pragma optimize_for_size on
-// The `f32 r = g + one` temp keeps the sum out of the 1.0f register so MWCC emits the original
-// `fadds f1, f2, f1`; the `f32 sum` temp in the 0x3E9 branch likewise pins the first addend to f2.
+// The unit's float constants are written as literals so MWCC pools them in the original's .sdata2
+// order. A few sites load a constant into a local first (`f32 zero`, `f32 neg`, `f32 half`, the
+// `f32 r = g + one` temp) because that is what reproduces retail's FPR colouring.
 s32 battleAcMain_Shot(BattleWork* work) {
 #ifdef MUST_MATCH
-    // Match-only comma: forces MWCC to materialise str_802F9300 into r31 after `stmw` (`addi r31,r4,@l`)
-    // instead of the shorter-but-different `addi r0,r4,@l; ...; mr r31,r0`.
-    const char* sfx = (str_802F9300, str_802F9300);
+    // Match-only comma: forces MWCC to materialise the SFX name into r31 after `stmw`
+    // (`addi r31,r4,@l`) instead of the shorter-but-different `addi r0,r4,@l; ...; mr r31,r0`.
+    const char* sfx = ("SFX_AC_CURSOR_MOVE1", "SFX_AC_CURSOR_MOVE1");
 #else
-    const char* sfx = str_802F9300;
+    const char* sfx = "SFX_AC_CURSOR_MOVE1";
 #endif
     BattleActions* ac = &work->actionCommands;
     AcShotWork* aw = (AcShotWork*)&ac->field_0x2BC[0];
@@ -128,20 +106,20 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 aw->field_0x10 = (f32)*(s32*)&work->actionCommands.field_34[0x10];
                 aw->field_0x14 = (f32)*(s32*)&work->actionCommands.field_34[0x14];
                 aw->field_0x18 = (f32)*(s32*)&work->actionCommands.field_34[0x18];
-                aw->field_0x20 = float_100_8041e4d8 * aw->field_0x0C / aw->field_0x10;
+                aw->field_0x20 = 100.0f * aw->field_0x0C / aw->field_0x10;
                 aw->field_0x1C = aw->field_0x20;
                 aw->rotZ = aw->field_0x14 + (f32)irand((s32)(aw->field_0x18 - aw->field_0x14));
-                aw->field_0x28 = float_0p1_8041e4e8 * (f32)*(s32*)&work->actionCommands.field_34[0x1C];
+                aw->field_0x28 = 0.1f * (f32)*(s32*)&work->actionCommands.field_34[0x1C];
                 aw->index = 0;
                 work->actionCommands.field_0x8 = 0x1E;
                 unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x04]);
                 BtlUnit_GetPos(unit, &aw->x, &aw->y, &aw->z);
-                aw->y += double_0p5_802f9318 * ((f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier);
+                aw->y += 0.5 * ((f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier);
                 work->actionCommands.outputParams[0] = 0;
                 work->actionCommands.outputParams[3] = 0;
                 for (i = 0; i < 3; i++) {
-                    aw->rotHistory[i] = float_neg1000_8041e4ec;
-                    aw->angleHistory[i] = float_0_8041e4b8;
+                    aw->rotHistory[i] = -1000.0f;
+                    aw->angleHistory[i] = 0.0f;
                 }
                 aw->sfx = -1;
                 work->actionCommands.mAcState = 0x63;
@@ -165,13 +143,14 @@ s32 battleAcMain_Shot(BattleWork* work) {
                     {
                         f32 range = aw->field_0x10 - aw->field_0x0C;
                         s32 r;
-                        if (range != float_0_8041e4b8) {
+                        f32 zero = 0.0f;
+                        if (range != zero) {
                             r = (s32)(aw->field_0x0C + (f32)irand((s32)range));
                         } else {
                             r = (s32)aw->field_0x0C;
                         }
                         work->actionCommands.outputParams[1] =
-                            (s32)(aw->field_0x10 * (f32)r / float_100_8041e4d8);
+                            (s32)(aw->field_0x10 * (f32)r / 100.0f);
                     }
                     if ((f32)work->actionCommands.outputParams[1] < aw->field_0x0C) {
                         work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
@@ -190,7 +169,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
                       *(s16*)&work->actionCommands.field_78[0x10] > 0)) {
                     if (--aw->field_0x00 <= 0) {
                         work->actionCommands.outputParams[1] =
-                            (s32)(aw->field_0x10 * aw->field_0x1C / float_100_8041e4d8);
+                            (s32)(aw->field_0x10 * aw->field_0x1C / 100.0f);
                         if ((f32)work->actionCommands.outputParams[1] < aw->field_0x0C) {
                             work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
                         }
@@ -208,26 +187,30 @@ s32 battleAcMain_Shot(BattleWork* work) {
                         work->actionCommands.mAcState = 0x3E9;
                     }
                 }
-                if (aw->field_0x28 != float_0_8041e4b8) {
-                    aw->rotZ += aw->field_0x28;
-                    if (aw->field_0x28 > float_0_8041e4b8) {
-                        if (aw->rotZ >= aw->field_0x18) {
-                            aw->rotZ = aw->field_0x18;
-                            aw->field_0x28 = aw->field_0x28 * float_neg1_8041e4cc;
-                        }
-                    } else {
-                        if (aw->rotZ <= aw->field_0x14) {
-                            aw->rotZ = aw->field_0x14;
-                            aw->field_0x28 = aw->field_0x28 * float_neg1_8041e4cc;
+                {
+                    f32 zero = 0.0f;
+                    f32 neg = -1.0f;
+                    if (aw->field_0x28 != zero) {
+                        aw->rotZ += aw->field_0x28;
+                        if (aw->field_0x28 > zero) {
+                            if (aw->rotZ >= aw->field_0x18) {
+                                aw->rotZ = aw->field_0x18;
+                                aw->field_0x28 = aw->field_0x28 * neg;
+                            }
+                        } else {
+                            if (aw->rotZ <= aw->field_0x14) {
+                                aw->rotZ = aw->field_0x14;
+                                aw->field_0x28 = aw->field_0x28 * neg;
+                            }
                         }
                     }
                 }
-                aw->field_0x2C += float_8_8041e4f4;
+                aw->field_0x2C += 8.0f;
                 break;
             case 0x3E9:
                 if (*(s16*)&work->actionCommands.field_78[0x10] > 0) {
                     work->actionCommands.outputParams[1] =
-                        (s32)(float_50_8041e4f8 * aw->field_0x10 / float_100_8041e4d8);
+                        (s32)(50.0f * aw->field_0x10 / 100.0f);
                     if ((f32)work->actionCommands.outputParams[1] < aw->field_0x0C) {
                         work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
                     }
@@ -244,8 +227,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 {
                     f32 g = aw->field_0x1C;
                     f32 one = 1.0f;
-                    f32 r = g + one;
-                    aw->field_0x1C = r;
+                    aw->field_0x1C = g + one;
                     if (aw->field_0x1C > 100.0f) {
                         aw->field_0x1C = 100.0f;
                     }
@@ -253,7 +235,8 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 if (*(s32*)&work->actionCommands.field_34[0] & 1) {
                     {
                         f32 sum = aw->field_0x0C + aw->field_0x10;
-                        work->actionCommands.outputParams[1] = (s32)(sum * float_0p5_8041e4fc);
+                        f32 half = 0.5f;
+                        work->actionCommands.outputParams[1] = (s32)(sum * half);
                     }
                     _acShotAppendHistory(aw, work);
                     if (aw->index >= *(s32*)&work->actionCommands.field_34[0x08]) {
@@ -265,7 +248,7 @@ s32 battleAcMain_Shot(BattleWork* work) {
                 } else {
                     if ((s32)BattlePadCheckNow(0x100) == 0) {
                         work->actionCommands.outputParams[1] =
-                            (s32)(aw->field_0x10 * aw->field_0x1C / float_100_8041e4d8);
+                            (s32)(aw->field_0x10 * aw->field_0x1C / 100.0f);
                         if ((f32)work->actionCommands.outputParams[1] < aw->field_0x0C) {
                             work->actionCommands.outputParams[1] = (s32)aw->field_0x0C;
                         }
@@ -307,9 +290,9 @@ s32 battleAcMain_Shot(BattleWork* work) {
     } while (cont);
 
     if (work->actionCommands.mAcState == 0x3E8 || work->actionCommands.mAcState == 0x3E9) {
-        dispEntry(8, float_900_8041e500, 1, _disp_target_mark, work);
+        dispEntry(8, 900.0f, 1, _disp_target_mark, work);
     }
-    dispEntry(8, float_900_8041e500, 1, _disp_target_mark_afterimage, work);
+    dispEntry(8, 900.0f, 1, _disp_target_mark_afterimage, work);
     return 1;
 }
 #pragma optimize_for_size reset
@@ -331,7 +314,7 @@ void battleAcDisp_Shot(CameraId camId, void* param) {
         case 0x3EA:
         case 0x3EB:
             disp->iconX =
-                intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg200_8041e4d0, float_30_8041e4c4);
+                intplGetValue(4, 0x14 - disp->counter, 0x14, -200.0f, 30.0f);
             actionCommandDisp(disp->iconX, disp->iconY);
             if (disp->counter > 0) {
                 disp->counter--;
@@ -341,9 +324,9 @@ void battleAcDisp_Shot(CameraId camId, void* param) {
         case 0x3ED:
             if (disp->counter >= 0x28) {
                 disp->iconX =
-                    intplGetValue(4, disp->counter - 0x28, 0x14, float_30_8041e4c4, float_neg200_8041e4d0);
+                    intplGetValue(4, disp->counter - 0x28, 0x14, 30.0f, -200.0f);
             } else {
-                disp->iconX = float_30_8041e4c4;
+                disp->iconX = 30.0f;
             }
             actionCommandDisp(disp->iconX, disp->iconY);
             if (disp->counter < 0x3C) {
@@ -364,15 +347,15 @@ static void _ac_disp_init(BattleWork* work) {
     BattleACDispParams* disp = &work->actionCommands.dispParams;
 
     memset(disp, 0, 0x2C);
-    disp->iconX = float_neg200_8041e4d0;
-    disp->iconY = float_0_8041e4b8;
+    disp->iconX = -200.0f;
+    disp->iconY = 0.0f;
     disp->counter = 0x14;
     disp->field_0xC = dat_8041e4a8;
     disp->field_0x10[0] = 0;
     *(s8*)&disp->field_0x10[1] = -0x10;
     *(s8*)&disp->field_0x10[2] = -0x10;
     disp->field_0x10[3] = 0;
-    disp->value = float_0_8041e4b8;
+    disp->value = 0.0f;
 }
 #pragma dont_inline reset
 
@@ -401,26 +384,26 @@ static void actionCommandDisp(f32 x, f32 y) {
         return;
     }
 
-    baseX = float_neg200_8041e4d0 + x;
+    baseX = -200.0f + x;
     v = vec3_802f92b8[0];
     v.x = baseX;
-    v.y = float_25_8041e4d4 + y;
-    iconDispGx(&v, 0x10, 0x8C, float_1_8041e4bc);
+    v.y = 25.0f + y;
+    iconDispGx(&v, 0x10, 0x8C, 1.0f);
 
-    target = aw->field_0x1C / float_100_8041e4d8;
+    target = aw->field_0x1C / 100.0f;
     if (disp->value <= target) {
-        disp->value += float_0p01_8041e4dc;
+        disp->value += 0.01f;
         if (disp->value > target) {
             disp->value = target;
         }
     } else {
-        disp->value -= float_0p01_8041e4dc;
+        disp->value -= 0.01f;
         if (disp->value < target) {
             disp->value = target;
         }
     }
 
-    if (disp->value >= float_1_8041e4bc) {
+    if (disp->value >= 1.0f) {
         u8* col = (u8*)&disp->field_0xC;
         s8* dir = (s8*)disp->field_0x10;
 
@@ -442,9 +425,9 @@ static void actionCommandDisp(f32 x, f32 y) {
         Mtx scale;
 
         PSMTXTrans(trans,
-                   baseX - float_88_8041e4e0 * (float_1_8041e4bc - disp->value),
-                   float_33_8041e4e4 + y, float_0_8041e4b8);
-        PSMTXScale(scale, disp->value, float_1_8041e4bc, float_1_8041e4bc);
+                   baseX - 88.0f * (1.0f - disp->value),
+                   33.0f + y, 0.0f);
+        PSMTXScale(scale, disp->value, 1.0f, 1.0f);
         PSMTXConcat(trans, scale, mtx);
         iconDispGxCol(mtx, 0x10, 0x8D, _makeIconColor(disp));
     }
@@ -510,8 +493,8 @@ void _disp_target_mark(CameraId cameraId, void* param) {
     Vec screen;
     GXColor color;
 
-    pos.x = float_60_8041e4c0 * sinfd(tm->rotZ) + tm->x;
-    pos.y = float_60_8041e4c0 * cosfd(tm->rotZ) + tm->y;
+    pos.x = 60.0f * sinfd(tm->rotZ) + tm->x;
+    pos.y = 60.0f * cosfd(tm->rotZ) + tm->y;
     pos.z = tm->z;
     btlGetScreenPoint(&pos, &screen);
     color = dat_8041e4ac;
@@ -520,8 +503,8 @@ void _disp_target_mark(CameraId cameraId, void* param) {
 
 // The original builds the afterimage colour after intplGetValue and copies it to the by-value slot.
 static inline GXColor _makeAfterimageColor(f32 value) {
-    s32 alpha = (s32)intplGetValue(0, (s32)(float_30_8041e4c4 - value), 0x1E, float_255_8041e4c8,
-                                   float_0_8041e4b8);
+    s32 alpha = (s32)intplGetValue(0, (s32)(30.0f - value), 0x1E, 255.0f,
+                                   0.0f);
     GXColor color = dat_8041e4b4;
     color.a = (u8)alpha;
     return color;
@@ -540,23 +523,23 @@ void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
         Vec screen;
         f32 value;
 
-        if (aw->rotHistory[i] >= float_0_8041e4b8) {
-            if (aw->valueHistory[i] > float_0_8041e4b8) {
-                aw->valueHistory[i] -= float_1_8041e4bc;
-                pos.x = float_60_8041e4c0 * sinfd(aw->rotHistory[i]) + aw->x;
-                pos.y = float_60_8041e4c0 * cosfd(aw->rotHistory[i]) + aw->y;
+        if (aw->rotHistory[i] >= 0.0f) {
+            if (aw->valueHistory[i] > 0.0f) {
+                aw->valueHistory[i] -= 1.0f;
+                pos.x = 60.0f * sinfd(aw->rotHistory[i]) + aw->x;
+                pos.y = 60.0f * cosfd(aw->rotHistory[i]) + aw->y;
                 pos.z = aw->z;
                 btlGetScreenPoint(&pos, &screen);
                 value = aw->valueHistory[i];
-                if (value >= float_30_8041e4c4) {
+                if (value >= 30.0f) {
                     GXColor color = dat_8041e4b0;
                     _draw_target_mark(&color, screen.x, screen.y, screen.z, aw->angleHistory[i]);
                 } else {
                     GXColor color = _makeAfterimageColor(value);
                     _draw_target_mark(&color, screen.x, screen.y, screen.z, aw->angleHistory[i]);
                 }
-                if (aw->valueHistory[i] <= float_0_8041e4b8) {
-                    aw->rotHistory[i] = float_neg1_8041e4cc;
+                if (aw->valueHistory[i] <= 0.0f) {
+                    aw->rotHistory[i] = -1.0f;
                 }
             }
         }
@@ -564,7 +547,10 @@ void _disp_target_mark_afterimage(CameraId cameraId, void* param) {
 }
 #pragma optimize_for_size reset
 
-Vec vec3_802f92b8[6] = {
+// .rodata: the vector table then the SFX name, in the original's order. The compiler's pooled
+// 0.5/i2f doubles are emitted after these named objects. The table is non-const to keep the
+// retail load scheduling, forced into .rodata.
+__declspec(section ".rodata") Vec vec3_802f92b8[6] = {
     {0.0f, 0.0f, 0.0f},
     {0.0f, 0.0f, 0.0f},
     {0.5f, 0.5f, 1.0f},
@@ -572,27 +558,22 @@ Vec vec3_802f92b8[6] = {
     {0.5f, 0.5f, 1.0f},
     {0.0f, 0.0f, 0.0f},
 };
-const f32 float_neg200_8041e4d0 = -200.0f;
-const f32 float_0_8041e4b8 = 0.0f;
-u32 dat_8041e4a8 = 0xFFFFFFFF;
-const f32 float_60_8041e4c0 = 60.0f;
+
+// .sdata2 definitions of this unit, in the original's order. dat_8041e4a8 is a mutable
+// 0xFFFFFFFF word in the original; __declspec(section) keeps it in .sdata2 so the text loads it
+// instead of folding the immediate.
+__declspec(section ".sdata2") u32 dat_8041e4a8 = 0xFFFFFFFF;
 const GXColor dat_8041e4ac = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_8041e4b0 = {0x90, 0x80, 0xA0, 0xFF};
 const GXColor dat_8041e4b4 = {0x90, 0x80, 0xA0, 0x00};
-const f32 float_1_8041e4bc = 1.0f;
-const f32 float_30_8041e4c4 = 30.0f;
-const f32 float_255_8041e4c8 = 255.0f;
-const f32 float_neg1_8041e4cc = -1.0f;
-const f32 float_25_8041e4d4 = 25.0f;
-const f32 float_100_8041e4d8 = 100.0f;
-const f32 float_0p01_8041e4dc = 0.01f;
-const f32 float_88_8041e4e0 = 88.0f;
-const f32 float_33_8041e4e4 = 33.0f;
-const f32 float_0p1_8041e4e8 = 0.1f;
-const f32 float_neg1000_8041e4ec = -1000.0f;
-const f32 float_70_8041e4f0 = 70.0f;
-const f32 float_8_8041e4f4 = 8.0f;
-const f32 float_50_8041e4f8 = 50.0f;
-const f32 float_0p5_8041e4fc = 0.5f;
-const f32 float_900_8041e500 = 900.0f;
-u32 unk_80423078;
+
+// The original's .sdata2 also has a 4-byte zero tail (gap_09_8041E504_sdata2). It is the section's
+// 8-byte alignment padding: the pooled floats end at 0x5C and the linker pads the section to 0x60
+// with zeros, matching the original without an explicit object.
+
+// .sbss2 default colour followed by the 4-byte section-tail gap. Objects land in reverse
+// declaration order, so the gap is declared before unk_80423078.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_8042307C_sbss2[4];
+__declspec(section ".sdata") u32 unk_80423078;
+#pragma section ".sdata" ".sbss"

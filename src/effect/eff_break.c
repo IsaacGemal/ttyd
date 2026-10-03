@@ -212,7 +212,15 @@ void effBreakDisp(CameraId cameraId, void* param) {
     for (i = 1; i < effect->count; i++, data++) {
         effGetTexObj(texid_tbl[gp->language != 0][i - 1], &texObj);
         GXLoadTexObj(&texObj, 0);
+#ifdef MUST_MATCH
+        {
+            // One volatile read of the zero word, reused for both arguments (the original loads it once and fmr's).
+            f32 zero = *(volatile f32*)&float_0_804210b0;
+            PSMTXTrans(mtxB8, zero, data->field_0x14, zero);
+        }
+#else
         PSMTXTrans(mtxB8, 0.0f, data->field_0x14, 0.0f);
+#endif
         GXLoadTexMtxImm(mtxB8, 0x1e, 1);
         PSMTXTrans(mtxB8, data->x, data->y, data->z);
         PSMTXScale(mtx58, scale, scale, scale);
@@ -221,6 +229,30 @@ void effBreakDisp(CameraId cameraId, void* param) {
         GXLoadPosMtxImm(mtxB8, 0);
         GXSetCurrentMtx(0);
         GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+        // volatile reads stop MWCC from hoisting the zero constant into a callee-saved FPR; the original reloads it
+        // from float_0_804210b0 before each store.
+        GXWGFifo.f32 = -float_48_804210ac * float_0p5_804210b4;
+        GXWGFifo.f32 = float_24_804210b8;
+        GXWGFifo.f32 = *(volatile f32*)&float_0_804210b0;
+        GXWGFifo.f32 = *(volatile f32*)&float_0_804210b0;
+        GXWGFifo.f32 = *(volatile f32*)&float_0_804210b0;
+        GXWGFifo.f32 = float_24_804210b8;
+        GXWGFifo.f32 = float_24_804210b8;
+        GXWGFifo.f32 = *(volatile f32*)&float_0_804210b0;
+        GXWGFifo.f32 = float_1_804210bc;
+        GXWGFifo.f32 = *(volatile f32*)&float_0_804210b0;
+        GXWGFifo.f32 = float_24_804210b8;
+        GXWGFifo.f32 = -float_48_804210ac * float_0p5_804210b4;
+        GXWGFifo.f32 = *(volatile f32*)&float_0_804210b0;
+        GXWGFifo.f32 = float_1_804210bc;
+        GXWGFifo.f32 = float_1_804210bc;
+        GXWGFifo.f32 = -float_48_804210ac * float_0p5_804210b4;
+        GXWGFifo.f32 = -float_48_804210ac * float_0p5_804210b4;
+        GXWGFifo.f32 = *(volatile f32*)&float_0_804210b0;
+        GXWGFifo.f32 = *(volatile f32*)&float_0_804210b0;
+        GXWGFifo.f32 = float_1_804210bc;
+#else
         GXPosition3f32(-float_48_804210ac * float_0p5_804210b4, float_24_804210b8, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
         GXPosition3f32(float_24_804210b8, float_24_804210b8, 0.0f);
@@ -229,6 +261,7 @@ void effBreakDisp(CameraId cameraId, void* param) {
         GXTexCoord2f32(float_1_804210bc, float_1_804210bc);
         GXPosition3f32(-float_48_804210ac * float_0p5_804210b4, -float_48_804210ac * float_0p5_804210b4, 0.0f);
         GXTexCoord2f32(0.0f, float_1_804210bc);
+#endif
     }
 }
 
@@ -269,3 +302,10 @@ const f32 float_20_804210c0 = 20.0f;
 const char str_804210C4[] = "Break";
 const f32 float_2_804210cc = 2.0f;
 const f32 float_10_804210d0 = 10.0f;
+
+// 4-byte zero word that ends the unit's .sdata2: all-zero objects need explicit_zero_data to be emitted and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata2") const u32 gap_09_804210D4_sdata2 = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset

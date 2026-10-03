@@ -75,29 +75,9 @@ const char str_802FD6EC[] = "msg_slot_SP_max";
 const char str_802FD6FC[] = "msg_slot_HPFPSP_max";
 const char str_802FD710[] = "msg_slot_HPFPSP_half";
 
-// The original has these constants in .sdata2 (const). Declared const, MWCC folds their values into its own
-// pool and BattleBreakSlotDispReel drops from 68% to 64%, so the matching build keeps them writable.
-#ifdef MUST_MATCH
-#define SDATA2_CONST
-#else
-#define SDATA2_CONST const
-#endif
-SDATA2_CONST f32 zero_80420520 = 0.0f;
-SDATA2_CONST u32 dat_80420524 = 0xFFFFFFD0;
-SDATA2_CONST u32 dat_80420528 = 0xFFFFFF00;
-SDATA2_CONST u32 dat_8042052c = 0xFFFFFF00;
-SDATA2_CONST f32 float_226_80420530 = 226.0f;
-SDATA2_CONST f32 float_42_80420534 = 42.0f;
-SDATA2_CONST f32 float_122_80420538 = 122.0f;
-SDATA2_CONST f32 float_0_8042053c = 0.0f;
-SDATA2_CONST f32 float_deg2rad_80420540 = 0.017453292f;
-SDATA2_CONST f32 float_neg32_80420544 = -32.0f;
-SDATA2_CONST f32 float_neg128_80420548 = -128.0f;
-SDATA2_CONST f32 float_490_8042054c = 490.0f;
-SDATA2_CONST f32 float_neg1_80420550 = -1.0f;
-SDATA2_CONST f32 float_0p2_80420554 = 0.2f;
-SDATA2_CONST f32 float_0p15_80420558 = 0.15f;
-SDATA2_CONST f32 float_32767_8042055c = 32767.0f;
+// The original has these constants in .sdata2. They are declared extern const in the unit's header and defined
+// at the end of the file: a const object defined before its use is folded into MWCC's own literal pool, while an
+// extern object defined after the code is a real object the compiler loads by name (and, being const, can hoist).
 
 u16 tex_id_list_small[] = { '+', '-', '/', '.', ',', 0 };
 u16 tex_id_list_big[] = { '0', '2', '4', '3', '1', 0 };
@@ -136,20 +116,27 @@ __declspec(section ".sdata") u32 msg_fault[9] = {
     0xFFFFFF33, (u32)(void*)str_802FD710, 0x00000078, 0x00000002,
     0x00000001,
 };
+// trailing 4-byte gap the original has at the end of this unit's .sdata
+#pragma explicit_zero_data on
+__declspec(section ".sdata") u32 gap_07_80414144_sdata[1] = { 0 };
+#pragma explicit_zero_data reset
 const SlotCards8 R_slot_1_cards = { { 0, 1, 2, 1, 2, 0, 3, 4 } };
 const SlotCards8 R_slot_2_cards = { { 3, 1, 0, 1, 4, 2, 0, 2 } };
 const SlotCards5 R_slot_3_cards = { { 0, 1, 2, 3, 4 } };
 
 // .data objects that follow the lbl_803AB118 base pair in the original unit; the original
 // addresses kinoko/flower/shine/doku_kinoko through lbl_803AB118 (r27), so all of them must be
-// defined here, in this order.
-__declspec(section ".data") u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
+// defined here, in this order. The four non-lbl pairs are local ($) in the original, so they are
+// static here (the same names are globals in ac_air_gauge.c) and force_active keeps them emitted.
+#pragma force_active on
+__declspec(section ".data") static u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
 __declspec(section ".data") u32 lbl_803AB128[2] = { 0x3F800000, 0xBF800000 };
-__declspec(section ".data") u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
 __declspec(section ".data") u32 lbl_803AB138[2] = { 0xBF800000, 0x3F800000 };
-__declspec(section ".data") u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
 __declspec(section ".data") u32 lbl_803AB148[2] = { 0x3F800000, 0xBF800000 };
-__declspec(section ".data") u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+#pragma force_active reset
 
 // TODO: type (0x1ac bytes)
 __declspec(section ".data") u32 kinoko_effect[107] = {
@@ -286,139 +273,6 @@ __declspec(section ".data") u32 doku_kinoko_effect[65] = {
     (u32)&weapon_doku_kinoko_fp, 0x00000100, 0xFE363C85, 0x00000002,
     0x00000001,
 };
-void item_appear_force(BattleBreakSlotReel* reel, s32 id) {
-    s32 i;
-
-    for (i = 0; i < reel->count; i++) {
-        if (reel->cards[i] == id) {
-            reel->index = i - 1;
-        }
-        if (reel->index == -1) {
-            reel->index = reel->count - 1;
-        }
-    }
-}
-void BattleBreakSlot_HideReel(void) {
-    BattleBreakSlot* slot = BattleBreakSlotGetPtr();
-    BattleBreakSlotReel* reel = BattleBreakSlotReelGetPtr(0);
-    s32 i;
-
-    for (i = 0; i < 3; i++) {
-        reel->flags |= 2;
-        reel++;
-    }
-    slot->counter = 0;
-}
-void BattleBreakSlot_DecBreakTurn(void) {
-    BattleBreakSlot* slot = BattleBreakSlotGetPtr();
-
-    slot->breakTurn--;
-    if (slot->breakTurn < 0) {
-        slot->breakTurn = 0;
-    }
-}
-s32 BattleBreakSlot_GetBreakTurn(void) {
-    return BattleBreakSlotGetPtr()->breakTurn;
-}
-s32 BattleBreakSlot_CheckReaction(void) {
-    BattleBreakSlot* slot = BattleBreakSlotGetPtr();
-
-    BattleBreakSlot_Start();
-    if (slot->state >= 1 && slot->state <= 8) {
-        return 1;
-    }
-    if (slot->event != NULL && evtCheckID(slot->event->eventId) != 0) {
-        return 1;
-    }
-    btl_camera_set_mode(0, 0);
-    btl_camera_set_moveSpeedLv(0, 2);
-    BattleAudienceNumToTarget();
-    slot->event = NULL;
-    return 0;
-}
-void BattleBreakSlot_Start(void) {
-    BattleBreakSlot* slot = BattleBreakSlotGetPtr();
-
-    if (slot->counter >= 3) {
-        BattleBreakSlotReel* reel;
-        s32 i;
-
-        slot->counter = 0;
-        slot->state = 2;
-        reel = BattleBreakSlotReelGetPtr(0);
-        for (i = 0; i < 3; i++) {
-            reel->state = 4;
-            reel->field_0C = 0;
-            reel++;
-        }
-    }
-}
-void BattleBreakSlot_PointInc(void) {
-    u8* battle = (u8*)_battleWorkPointer + 0x20000;
-    BattleBreakSlot* slot = BattleBreakSlotGetPtr();
-    BattleBreakSlotReel* reel;
-    PouchData* pouch;
-
-    pouch = pouchGetPtr();
-    if (pouch->mStarPowersObtained == 0) {
-        return;
-    }
-    reel = BattleBreakSlotReelGetPtr(slot->counter);
-    reel->state = 1;
-    reel->field_0C = 0;
-    slot->counter++;
-    if (slot->counter > 3) {
-        slot->counter = 3;
-        return;
-    }
-    switch (reel->type) {
-    case 0:
-        reel->index = irand(reel->count) - 1;
-        if (reel->index == -1) {
-            reel->index = reel->count - 1;
-        }
-        reel->value = reel->cards[reel->index];
-        if (*(u32*)(battle - 0x6F98) & 0x80000) {
-            item_appear_force(reel, *(s32*)(battle - 0x6F84));
-        }
-        if (slot->flags & 1) {
-            item_appear_force(reel, 3);
-        }
-        if (slot->flags & 4) {
-            item_appear_force(reel, 3);
-        }
-        break;
-    case 1:
-        reel->index = irand(reel->count) - 1;
-        if (reel->index == -1) {
-            reel->index = reel->count - 1;
-        }
-        reel->value = reel->cards[reel->index];
-        if (*(u32*)(battle - 0x6F98) & 0x80000) {
-            item_appear_force(reel, *(s32*)(battle - 0x6F84));
-        }
-        if (slot->flags & 1) {
-            item_appear_force(reel, 3);
-        }
-        if (slot->flags & 4) {
-            item_appear_force(reel, 3);
-        }
-        break;
-    case 2: {
-        BattleBreakSlotReel* reel2;
-
-        do {
-            reel2 = BattleBreakSlotReelGetPtr(1);
-            reel->index = irand(reel->count);
-            reel->value = reel->cards[reel->index];
-        } while (reel->value == reel2->value);
-        break;
-    }
-    }
-}
-void BattleBreakSlot_End(void) {
-	//stubbed in retail
-}
 
 #ifdef MUST_MATCH
 // Returning the colour from an inline (rather than writing the channels in place) makes MWCC lay the
@@ -450,12 +304,47 @@ static inline GXColor slotColor(u8 a, GXColor c) {
 }
 #endif
 
-// i->f32 pools an anonymous 2^52 double instead of the original's named double_to_int_802fd930; the value
-// and instructions are identical, only the pool label differs (not scored).
-void BattleBreakSlot_Disp(void) {
-    dispEntry(CAMERA_2D, 490.0f, 0, BattleBreakSlotDispReel, NULL);
+BattleBreakSlot* BattleBreakSlotGetPtr(void) {
+    return (BattleBreakSlot*)((u8*)_battleWorkPointer + 0x1616C);
 }
+BattleBreakSlotReel* BattleBreakSlotReelGetPtr(s32 index) {
+    return &BattleBreakSlotGetPtr()->reels[index];
+}
+void BattleBreakSlot_Init(void) {
+    BattleBreakSlot* slot = BattleBreakSlotGetPtr();
+    BattleBreakSlotReel* reel;
+    SlotCards8 tmp1 = R_slot_1_cards;
+    SlotCards8 tmp2 = R_slot_2_cards;
+    SlotCards5 tmp3 = R_slot_3_cards;
+    s32 i;
 
+    memset(slot, 0, 0x134);
+    slot->state = 0;
+#ifdef MUST_MATCH
+    i = 0;
+    reel = BattleBreakSlotReelGetPtr(0);
+    for (; i < 3; i++) {
+#else
+    reel = BattleBreakSlotReelGetPtr(0);
+    for (i = 0; i < 3; i++) {
+#endif
+        reel->type = i;
+        reel->state = 0;
+        reel++;
+    }
+    reel = BattleBreakSlotReelGetPtr(0);
+    reel->count = 8;
+    reel->cards = BattleAlloc(reel->count * 4);
+    memcpy(reel->cards, &tmp1, reel->count * 4);
+    reel = BattleBreakSlotReelGetPtr(1);
+    reel->count = 8;
+    reel->cards = BattleAlloc(reel->count * 4);
+    memcpy(reel->cards, &tmp2, reel->count * 4);
+    reel = BattleBreakSlotReelGetPtr(2);
+    reel->count = 5;
+    reel->cards = BattleAlloc(reel->count * 4);
+    memcpy(reel->cards, &tmp3, reel->count * 4);
+}
 // 100% (5612 B). Reaching it needed three things outside the function body:
 // - the effect scripts (kinoko/flower/shine/doku_kinoko) and the .data pair padding are defined in this
 //   file's .data, so evtEntry addresses them through the lbl_803AB118 base register (r27);
@@ -550,8 +439,8 @@ void BattleBreakSlot_Main(void) {
             for (i = 0, reel = BattleBreakSlotReelGetPtr(0); i < 3; i++) {
                 if (reel->state == 8) {
                     reel->state = 9;
-                    reel->field_54 = -1.0f * (0.2f + (0.15f * rand()) / 32767.0f);
-                    reel->field_54 = -1.0f;
+                    reel->field_54 = float_neg1_80420550 * (float_0p2_80420554 + (float_0p15_80420558 * rand()) / float_32767_8042055c);
+                    reel->field_54 = float_neg1_80420550;
                     break;
                 }
                 reel++;
@@ -604,7 +493,7 @@ void BattleBreakSlot_Main(void) {
     case 6:
         if (slot->field_08 == 0) {
             if (BattleBreakSlotReelGetPtr(0)->value != 4) {
-                effBreakEntry(0, 240, 0.0f, 80.0f, 0.0f);
+                effBreakEntry(0, 240, float_0_8042053c, 80.0f, float_0_8042053c);
             } else {
                 slot->field_08 = 101;
                 BattleAudienceSoundBooing();
@@ -613,7 +502,7 @@ void BattleBreakSlot_Main(void) {
         if (slot->field_08 == 20 || slot->field_08 == 40 || slot->field_08 == 60 || slot->field_08 == 80 ||
             slot->field_08 == 100 || slot->field_08 == 120) {
             psndSFXOn("SFX_BTL_SYS_BREAK1");
-            btl_camera_shake_h(0, 10, 0, 5.0f, 0.0f);
+            btl_camera_shake_h(0, 10, 0, 5.0f, float_0_8042053c);
         }
         if (slot->field_08 == 120) {
             BattleAudienceSoundCheer(240, 240);
@@ -671,7 +560,7 @@ void BattleBreakSlot_Main(void) {
             }
         }
         if (slot->field_08 == 180) {
-            updown = 0.0f;
+            updown = float_0_8042053c;
             switch (BattleBreakSlotReelGetPtr(0)->value) {
             case 0:
             case 1:
@@ -686,10 +575,10 @@ void BattleBreakSlot_Main(void) {
                 break;
             }
             if (_battleWorkPointer->flags & 0x100) {
-                updown = 0.0f;
+                updown = float_0_8042053c;
             }
         }
-        if (slot->field_08 == 209 && 0.0f != updown) {
+        if (slot->field_08 == 209 && float_0_8042053c != updown) {
             BattleAudienceSoundRun(0);
         }
         if (slot->field_08 == 210) {
@@ -719,7 +608,7 @@ void BattleBreakSlot_Main(void) {
             btl_camera_noshake(0);
         }
         if (slot->field_08 == 270) {
-            BattleAudienceAddTargetNum(0.0f, updown);
+            BattleAudienceAddTargetNum(float_0_8042053c, updown);
             slot->state = 8;
             slot->flags &= ~4;
             if ((u32)gp->language == 0) {
@@ -774,14 +663,14 @@ void BattleBreakSlot_Main(void) {
             reel->field_0C++;
             if (reel->field_0C <= 5) {
                 v = intplGetValue(0, reel->field_0C, 5, 110.0f, 142.0f);
-                reel->pos = (Vec){ 42.0f * i + 226.0f, v, 0.0f };
+                reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
                 reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
                 reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
                 reel->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
                 reel->field_58 = 0xFF;
             } else {
                 v = intplGetValue(4, reel->field_0C - 5, 20, 142.0f, 174.0f);
-                reel->pos = (Vec){ 42.0f * i + 226.0f, v, 0.0f };
+                reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
                 reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
                 reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
                 reel->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -794,11 +683,11 @@ void BattleBreakSlot_Main(void) {
                     reel->index -= reel->count;
                 }
                 reel->value = reel->cards[reel->index];
-                reel->pos = (Vec){ 42.0f * i + 226.0f, 142.0f, 0.0f };
+                reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, 142.0f, 0.0f };
             }
             break;
         case 2:
-            reel->pos = (Vec){ 42.0f * i + 226.0f, 142.0f, 0.0f };
+            reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, 142.0f, 0.0f };
             reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             if (reel->flags & 2) {
@@ -809,7 +698,7 @@ void BattleBreakSlot_Main(void) {
             break;
         case 3:
             v = intplGetValue(0, reel->field_0C, 20, 142.0f, 174.0f);
-            reel->pos = (Vec){ 42.0f * i + 226.0f, v, 0.0f };
+            reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
             reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             reel->field_0C++;
@@ -821,7 +710,7 @@ void BattleBreakSlot_Main(void) {
             break;
         case 4:
             v = intplGetValue(0, reel->field_0C, 20, 142.0f, 174.0f);
-            reel->pos = (Vec){ 42.0f * i + 226.0f, v, 0.0f };
+            reel->pos = (Vec){ float_42_80420534 * i + float_226_80420530, v, 0.0f };
             reel->scale = (Vec){ 0.8f, 0.8f, 0.8f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             reel->field_0C++;
@@ -833,7 +722,7 @@ void BattleBreakSlot_Main(void) {
             break;
         case 5:
             reel->flags |= 1;
-            v = intplGetValue(0, reel->field_0C, 40, -128.0f, 0.0f);
+            v = intplGetValue(0, reel->field_0C, 40, float_neg128_80420548, float_0_8042053c);
             reel->pos = (Vec){ (f32)(i * 128 - 128), v, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -851,8 +740,8 @@ void BattleBreakSlot_Main(void) {
         case 6:
             break;
         case 7:
-            reel->field_50 = intplGetValue(0, reel->field_0C, 20, 0.0f, 22.5f);
-            reel->pos = (Vec){ 128.0f * i + -128.0f, reel->pos.y + reel->field_50, 0.0f };
+            reel->field_50 = intplGetValue(0, reel->field_0C, 20, float_0_8042053c, 22.5f);
+            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->field_50, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             reel->pivot = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -872,7 +761,7 @@ void BattleBreakSlot_Main(void) {
             break;
         case 8:
             reel->field_50 = 22.5f;
-            reel->pos = (Vec){ 128.0f * i + -128.0f, reel->pos.y + reel->field_50, 0.0f };
+            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->field_50, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             if (reel->pos.y >= 128.0f) {
@@ -889,10 +778,10 @@ void BattleBreakSlot_Main(void) {
             if (reel->field_50 < 20.0f) {
                 reel->field_50 = 20.0f;
             }
-            reel->pos = (Vec){ 128.0f * i + -128.0f, reel->pos.y + reel->field_50, 0.0f };
+            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, reel->pos.y + reel->field_50, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
-            if (reel->field_50 >= 0.0f && reel->pos.y >= 128.0f) {
+            if (reel->field_50 >= float_0_8042053c && reel->pos.y >= 128.0f) {
                 reel->pos.y -= 128.0f;
                 reel->index++;
                 if (reel->index == reel->count) {
@@ -916,7 +805,7 @@ void BattleBreakSlot_Main(void) {
                 if ((*(u32*)(battle - 0x6F98) & 0x80000) && reel->value != *(s32*)(battle - 0x6F84)) {
                     break;
                 }
-                reel->pos.y = 0.0f;
+                reel->pos.y = float_0_8042053c;
                 reel->state = 10;
                 reel->field_0C = 0;
                 reel->field_54 = reel->field_50;
@@ -925,16 +814,16 @@ void BattleBreakSlot_Main(void) {
         case 10:
             if (i == 2) {
                 reel->field_0C++;
-                reel->field_50 = intplGetValue(0, reel->field_0C, 20, reel->field_50, 0.0f);
+                reel->field_50 = intplGetValue(0, reel->field_0C, 20, reel->field_50, float_0_8042053c);
                 reel->pos.y = reel->field_50 * (f32)sin(3.141592f * (2.0f * reel->field_0C) / 8.0f);
             }
             break;
         case 11:
-            reel->field_50 = 0.0f;
-            reel->pos.y = 0.0f;
+            reel->field_50 = float_0_8042053c;
+            reel->pos.y = float_0_8042053c;
             v = intplGetValue(0, reel->field_0C, 60, 1.0f, 2.0f);
             reel->scale = (Vec){ v, v, 1.0f };
-            reel->field_58 = intplGetValue(0, reel->field_0C, 60, 255.0f, 0.0f);
+            reel->field_58 = intplGetValue(0, reel->field_0C, 60, 255.0f, float_0_8042053c);
             reel->field_0C++;
             if (reel->field_0C > 60) {
                 reel->state = 13;
@@ -942,10 +831,10 @@ void BattleBreakSlot_Main(void) {
             }
             break;
         case 12:
-            reel->field_50 = 0.0f;
-            reel->pos.y = 0.0f;
-            v = intplGetValue(0, reel->field_0C, 40, 0.0f, 128.0f);
-            reel->pos = (Vec){ 128.0f * i + -128.0f, v, 0.0f };
+            reel->field_50 = float_0_8042053c;
+            reel->pos.y = float_0_8042053c;
+            v = intplGetValue(0, reel->field_0C, 40, float_0_8042053c, 128.0f);
+            reel->pos = (Vec){ 128.0f * i + float_neg128_80420548, v, 0.0f };
             reel->scale = (Vec){ 1.0f, 1.0f, 1.0f };
             reel->rot = (Vec){ 0.0f, 0.0f, 0.0f };
             reel->field_0C++;
@@ -959,6 +848,11 @@ void BattleBreakSlot_Main(void) {
             break;
         }
     }
+}
+// i->f32 pools an anonymous 2^52 double instead of the original's named double_to_int_802fd930; the value
+// and instructions are identical, only the pool label differs (not scored).
+void BattleBreakSlot_Disp(void) {
+    dispEntry(CAMERA_2D, float_490_8042054c, 0, BattleBreakSlotDispReel, NULL);
 }
 void BattleBreakSlotDispReel(CameraId camId, void* param) {
     s32 i;
@@ -1064,46 +958,161 @@ void BattleBreakSlotDispReel(CameraId camId, void* param) {
     }
     GXSetScissor(0, 0, gp->fbWidth, gp->efbHeight);
 }
-void BattleBreakSlot_Init(void) {
+void BattleBreakSlot_End(void) {
+	//stubbed in retail
+}
+void BattleBreakSlot_PointInc(void) {
+    u8* battle = (u8*)_battleWorkPointer + 0x20000;
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleBreakSlotReel* reel;
-    SlotCards8 tmp1 = R_slot_1_cards;
-    SlotCards8 tmp2 = R_slot_2_cards;
-    SlotCards5 tmp3 = R_slot_3_cards;
+    PouchData* pouch;
+
+    pouch = pouchGetPtr();
+    if (pouch->mStarPowersObtained == 0) {
+        return;
+    }
+    reel = BattleBreakSlotReelGetPtr(slot->counter);
+    reel->state = 1;
+    reel->field_0C = 0;
+    slot->counter++;
+    if (slot->counter > 3) {
+        slot->counter = 3;
+        return;
+    }
+    switch (reel->type) {
+    case 0:
+        reel->index = irand(reel->count) - 1;
+        if (reel->index == -1) {
+            reel->index = reel->count - 1;
+        }
+        reel->value = reel->cards[reel->index];
+        if (*(u32*)(battle - 0x6F98) & 0x80000) {
+            item_appear_force(reel, *(s32*)(battle - 0x6F84));
+        }
+        if (slot->flags & 1) {
+            item_appear_force(reel, 3);
+        }
+        if (slot->flags & 4) {
+            item_appear_force(reel, 3);
+        }
+        break;
+    case 1:
+        reel->index = irand(reel->count) - 1;
+        if (reel->index == -1) {
+            reel->index = reel->count - 1;
+        }
+        reel->value = reel->cards[reel->index];
+        if (*(u32*)(battle - 0x6F98) & 0x80000) {
+            item_appear_force(reel, *(s32*)(battle - 0x6F84));
+        }
+        if (slot->flags & 1) {
+            item_appear_force(reel, 3);
+        }
+        if (slot->flags & 4) {
+            item_appear_force(reel, 3);
+        }
+        break;
+    case 2: {
+        BattleBreakSlotReel* reel2;
+
+        do {
+            reel2 = BattleBreakSlotReelGetPtr(1);
+            reel->index = irand(reel->count);
+            reel->value = reel->cards[reel->index];
+        } while (reel->value == reel2->value);
+        break;
+    }
+    }
+}
+
+void BattleBreakSlot_Start(void) {
+    BattleBreakSlot* slot = BattleBreakSlotGetPtr();
+
+    if (slot->counter >= 3) {
+        BattleBreakSlotReel* reel;
+        s32 i;
+
+        slot->counter = 0;
+        slot->state = 2;
+        reel = BattleBreakSlotReelGetPtr(0);
+        for (i = 0; i < 3; i++) {
+            reel->state = 4;
+            reel->field_0C = 0;
+            reel++;
+        }
+    }
+}
+
+s32 BattleBreakSlot_CheckReaction(void) {
+    BattleBreakSlot* slot = BattleBreakSlotGetPtr();
+
+    BattleBreakSlot_Start();
+    if (slot->state >= 1 && slot->state <= 8) {
+        return 1;
+    }
+    if (slot->event != NULL && evtCheckID(slot->event->eventId) != 0) {
+        return 1;
+    }
+    btl_camera_set_mode(0, 0);
+    btl_camera_set_moveSpeedLv(0, 2);
+    BattleAudienceNumToTarget();
+    slot->event = NULL;
+    return 0;
+}
+s32 BattleBreakSlot_GetBreakTurn(void) {
+    return BattleBreakSlotGetPtr()->breakTurn;
+}
+void BattleBreakSlot_DecBreakTurn(void) {
+    BattleBreakSlot* slot = BattleBreakSlotGetPtr();
+
+    slot->breakTurn--;
+    if (slot->breakTurn < 0) {
+        slot->breakTurn = 0;
+    }
+}
+void BattleBreakSlot_HideReel(void) {
+    BattleBreakSlot* slot = BattleBreakSlotGetPtr();
+    BattleBreakSlotReel* reel = BattleBreakSlotReelGetPtr(0);
     s32 i;
 
-    memset(slot, 0, 0x134);
-    slot->state = 0;
-#ifdef MUST_MATCH
-    i = 0;
-    reel = BattleBreakSlotReelGetPtr(0);
-    for (; i < 3; i++) {
-#else
-    reel = BattleBreakSlotReelGetPtr(0);
     for (i = 0; i < 3; i++) {
-#endif
-        reel->type = i;
-        reel->state = 0;
+        reel->flags |= 2;
         reel++;
     }
-    reel = BattleBreakSlotReelGetPtr(0);
-    reel->count = 8;
-    reel->cards = BattleAlloc(reel->count * 4);
-    memcpy(reel->cards, &tmp1, reel->count * 4);
-    reel = BattleBreakSlotReelGetPtr(1);
-    reel->count = 8;
-    reel->cards = BattleAlloc(reel->count * 4);
-    memcpy(reel->cards, &tmp2, reel->count * 4);
-    reel = BattleBreakSlotReelGetPtr(2);
-    reel->count = 5;
-    reel->cards = BattleAlloc(reel->count * 4);
-    memcpy(reel->cards, &tmp3, reel->count * 4);
+    slot->counter = 0;
 }
-BattleBreakSlotReel* BattleBreakSlotReelGetPtr(s32 index) {
-    return &BattleBreakSlotGetPtr()->reels[index];
+void item_appear_force(BattleBreakSlotReel* reel, s32 id) {
+    s32 i;
+
+    for (i = 0; i < reel->count; i++) {
+        if (reel->cards[i] == id) {
+            reel->index = i - 1;
+        }
+        if (reel->index == -1) {
+            reel->index = reel->count - 1;
+        }
+    }
 }
-BattleBreakSlot* BattleBreakSlotGetPtr(void) {
-    return (BattleBreakSlot*)((u8*)_battleWorkPointer + 0x1616C);
-}
+
+// .sdata2 constants, in the original's address order. Defined after the code so the compiler emits them as
+// real objects ahead of its own pooled literals instead of folding them.
+#pragma explicit_zero_data on
+__declspec(section ".sdata2") const f32 zero_80420520 = 0.0f;
+__declspec(section ".sdata2") const u32 dat_80420524 = 0xFFFFFFD0;
+__declspec(section ".sdata2") const u32 dat_80420528 = 0xFFFFFF00;
+__declspec(section ".sdata2") const u32 dat_8042052c = 0xFFFFFF00;
+__declspec(section ".sdata2") const f32 float_226_80420530 = 226.0f;
+__declspec(section ".sdata2") const f32 float_42_80420534 = 42.0f;
+__declspec(section ".sdata2") const f32 float_122_80420538 = 122.0f;
+__declspec(section ".sdata2") const f32 float_0_8042053c = 0.0f;
+__declspec(section ".sdata2") const f32 float_deg2rad_80420540 = 0.017453292f;
+__declspec(section ".sdata2") const f32 float_neg32_80420544 = -32.0f;
+__declspec(section ".sdata2") const f32 float_neg128_80420548 = -128.0f;
+__declspec(section ".sdata2") const f32 float_490_8042054c = 490.0f;
+__declspec(section ".sdata2") const f32 float_neg1_80420550 = -1.0f;
+__declspec(section ".sdata2") const f32 float_0p2_80420554 = 0.2f;
+__declspec(section ".sdata2") const f32 float_0p15_80420558 = 0.15f;
+__declspec(section ".sdata2") const f32 float_32767_8042055c = 32767.0f;
+#pragma explicit_zero_data reset
 
 #pragma dont_inline reset

@@ -5,34 +5,14 @@
 #include "eff/eff_hit.h"
 #include "memory.h"
 #include "system.h"
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 
 #define TWO_PI 6.283185307179586f
 
-// .sdata2 data referenced by effMahorn2Disp
-// data externs that have no header declaration
-extern u32 dat_80422598;
-extern const f32 float_deg2rad_8042259c;
-extern const f32 float_16_804225a0;
-extern const f32 float_2_804225a4;
-extern const f32 float_8_804225a8;
-extern const f32 float_0p5_804225ac;
-extern const f32 float_0p0625_804225b4;
-extern const f32 float_3_804225b8;
-extern const f32 float_6p2832_804225bc;
-extern const f32 float_360_804225c0;
-extern const f32 float_4_804225c4;
-extern const f32 float_0p125_804225c8;
-extern const f32 float_0p88_804225cc;
-extern const f32 float_1_804225d0;
-#ifdef MUST_MATCH
-// MUST_MATCH: retail reloads float_0_804225b0 for every 0.0f FIFO write; a plain literal lets
-// MWCC pool it into an anonymous constant, so the extern is volatile to force the same reloads.
-extern const volatile f32 float_0_804225b0;
-#else
-extern const f32 float_0_804225b0;
-#endif
+// dat_80422598 is a GXColor template (not a float) and stays a named object so the code
+// references it by name. It lands first in .sdata2.
+const u32 dat_80422598 = 0x00DA0000;
 
 // MUST_MATCH: retail's compiler addressed the three zero Vecs below off one base register
 // (offset 0, 0xC, 0x18); MWCC here emits a separate base per `{ 0 }` literal, which changes
@@ -108,7 +88,7 @@ EffectEntry *effMahorn2Entry(BOOL unused, f32 posX, f32 posY, f32 posZ, f32 dstX
         data->position.x = dstX - posX;
         data->position.y = dstY - posY;
         data->position.z = dstZ - posZ;
-        temp = TWO_PI * (f32)(i - 6);
+        temp = 6.283184f * (f32)(i - 6);
         data->target.x = 6.0f * (f32)sin(temp / (f32)(effect->count - 6));
         data->target.y = 6.0f * (f32)cos(temp / (f32)(effect->count - 6));
         data->target.z = 0.0f;
@@ -150,7 +130,10 @@ static inline BOOL mahorn2BeyondHitDistance(effMahorn2Data* data, Vec* position,
 // case-3 sum 0x8. Building them inline (the #else path) lets MWCC coalesce the copy temps and
 // allocate the case-3 sum first (0x20); returning each from an inline makes them inlined temps
 // allocated in source order, which reproduces both the stack slots and the scratch registers.
-// The (C - v) * k + v blend needs `t` as a named temp, or the 4.0f/0.125f loads land f0/f1 swapped.
+// The (C - v) * k + v blends need `k` (and `t` for the 4.0f - v form) as named locals: MWCC then
+// loads the multiplier constant into f0 and the negation/4.0f-v temp into f1 in retail's order and
+// pools 0.0625f, 4.0f, 0.125f at their original .sdata2 offsets (0x1c/0x2c/0x30). With bare literals
+// the two loads land f0/f1 swapped and .sdata2 orders 0.125f before 4.0f.
 void effMahorn2Main(EffectEntry* effect) {
     effMahorn2Data* data;
     Vec position;
@@ -199,14 +182,17 @@ void effMahorn2Main(EffectEntry* effect) {
             if (data->alpha > 255) {
                 data->alpha = 255;
             }
-            data->scale = (0.0f - data->scale) * float_0p0625_804225b4 + data->scale;
+            {
+                f32 k = 0.0625f;
+                data->scale = (0.0f - data->scale) * k + data->scale;
+            }
             break;
         case 2:
             if (data->intplStep < 90) {
                 s32 step = data->intplStep + 1;
 
                 data->intplStep = step;
-                data->scale = intplGetValue(11, step, 45, float_0_804225b0, float_3_804225b8);
+                data->scale = intplGetValue(11, step, 45, 0.0f, 3.0f);
             }
             break;
         case 3: {
@@ -219,20 +205,24 @@ void effMahorn2Main(EffectEntry* effect) {
             v.z = position.z + data->position.z;
             if (PSVECDistance(&target, &v) > hitDistance) {
 #endif
-                angle = float_6p2832_804225bc * angleABf(position.x + data->position.x, position.y + data->position.y, target.x, target.y) / float_360_804225c0;
+                angle = 6.2831855f * angleABf(position.x + data->position.x, position.y + data->position.y, target.x, target.y) / 360.f;
                 data->position.x += hitDistance * (f32)sin(angle);
                 data->position.y += hitDistance * (f32)cos(angle);
 #ifdef MUST_MATCH
                 {
-                    f32 t = float_4_804225c4 - data->scale;
-                    data->scale = t * float_0p125_804225c8 + data->scale;
+                    f32 k = 0.125f;
+                    f32 t = 4.0f - data->scale;
+                    data->scale = t * k + data->scale;
                 }
 #else
-                data->scale = (float_4_804225c4 - data->scale) * float_0p125_804225c8 + data->scale;
+                data->scale = (4.0f - data->scale) * 0.125f + data->scale;
 #endif
             }
             else {
-                data->scale = (0.0f - data->scale) * float_0p125_804225c8 + data->scale;
+                {
+                    f32 k = 0.125f;
+                    data->scale = (0.0f - data->scale) * k + data->scale;
+                }
                 if (!((effMahorn2Data*)effect->userdata)->hasHit) {
                     ((effMahorn2Data*)effect->userdata)->hasHit = TRUE;
                     effHitEntry(0, 4, target.x, target.y, target.z, scale);
@@ -245,10 +235,10 @@ void effMahorn2Main(EffectEntry* effect) {
                 data->position.x += data->target.x;
                 data->position.y += data->target.y;
                 data->position.z += data->target.z;
-                data->target.x *= float_0p88_804225cc;
-                data->target.y *= float_0p88_804225cc;
-                data->target.z *= float_0p88_804225cc;
-                data->scale = float_1_804225d0;
+                data->target.x *= 0.88f;
+                data->target.y *= 0.88f;
+                data->target.z *= 0.88f;
+                data->scale = 1.0f;
                 data->alpha -= 4;
                 if (data->alpha < 0) {
                     data->alpha = 0;
@@ -271,7 +261,7 @@ void effMahorn2Main(EffectEntry* effect) {
 // MUST_MATCH: retail builds the GXColor in a 0x8-based temp and copies it to the 0xc outgoing arg;
 // assigning the field inline makes MWCC use 0xc for the temp and 0x8 for the outgoing copy.
 static inline GXColor mahorn2ChanColor(u8 a) {
-    GXColor c = *(GXColor*)&dat_80422598;
+    GXColor c = *(const GXColor*)&dat_80422598;
     c.a = a;
     return c;
 }
@@ -343,7 +333,7 @@ void effMahorn2Disp(CameraId camId, void* param) {
 #ifdef MUST_MATCH
         color = mahorn2ChanColor((data->alpha * headerAlpha) / 255);
 #else
-        color = *(GXColor*)&dat_80422598;
+        color = *(const GXColor*)&dat_80422598;
         color.a = (data->alpha * headerAlpha) / 255;
 #endif
         GXSetChanMatColor(4, color);
@@ -351,7 +341,7 @@ void effMahorn2Disp(CameraId camId, void* param) {
         PSMTXTrans(mtxFinal, data->position.x, data->position.y, data->position.z);
         PSMTXScale(mtxScale, data->scale * rootScale, data->scale * rootScale, data->scale * rootScale);
         PSMTXConcat(mtxFinal, mtxScale, mtxFinal);
-        PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8042259c);
+        PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
         PSMTXConcat(mtxFinal, mtxRot, mtxFinal);
         PSMTXConcat(mtxRoot, mtxFinal, mtxFinal);
         PSMTXConcat(cam->view, mtxFinal, mtxFinal);
@@ -361,33 +351,33 @@ void effMahorn2Disp(CameraId camId, void* param) {
 #ifdef MUST_MATCH
         half = 0.5f;
 #else
-        half = float_0p5_804225ac;
+        half = 0.5f;
 #endif
         type = data->type;
         switch (type) {
         case 0:
             break;
         case 1:
-            w = float_16_804225a0;
-            texW = float_2_804225a4;
+            w = 16.0f;
+            texW = 2.0f;
             h = w;
             texH = texW;
             break;
         case 2:
-            w = float_16_804225a0;
-            texW = float_2_804225a4;
+            w = 16.0f;
+            texW = 2.0f;
             h = w;
             texH = texW;
             break;
         case 3:
-            h = float_2_804225a4;
-            w = float_16_804225a0;
+            h = 2.0f;
+            w = 16.0f;
             texW = h;
             texH = h;
             break;
         case 4:
-            w = float_8_804225a8;
-            texW = float_2_804225a4;
+            w = 8.0f;
+            texW = 2.0f;
             h = w;
             texH = texW;
             break;
@@ -395,20 +385,20 @@ void effMahorn2Disp(CameraId camId, void* param) {
 
         if (type != 3) {
             GXBegin(0x80, 0, 4);
-            GXPosition3f32(-w * half, h * half, float_0_804225b0);
-            GXTexCoord2f32(float_0_804225b0, float_0_804225b0);
-            GXPosition3f32(w * half, h * half, float_0_804225b0);
-            GXTexCoord2f32(texW, float_0_804225b0);
-            GXPosition3f32(w * half, -h * half, float_0_804225b0);
+            GXPosition3f32(-w * half, h * half, 0.0f);
+            GXTexCoord2f32(0.0f, 0.0f);
+            GXPosition3f32(w * half, h * half, 0.0f);
+            GXTexCoord2f32(texW, 0.0f);
+            GXPosition3f32(w * half, -h * half, 0.0f);
             GXTexCoord2f32(texW, texH);
-            GXPosition3f32(-w * half, -h * half, float_0_804225b0);
-            GXTexCoord2f32(float_0_804225b0, texH);
+            GXPosition3f32(-w * half, -h * half, 0.0f);
+            GXTexCoord2f32(0.0f, texH);
         }
         else {
 #ifdef MUST_MATCH
             // MUST_MATCH: a local for the multiplier keeps the compiler from shifting the whole f24-f31
             // allocation when the pool load is named; the multiply follows in the natural order.
-            f32 two = float_2_804225a4;
+            f32 two = 2.0f;
 #else
             f32 two = 2.0f;
 #endif
@@ -421,36 +411,16 @@ void effMahorn2Disp(CameraId camId, void* param) {
                     f32 widths[6] = { 0.0f, 2.0f, 2.0f, 12.0f, 12.0f, 14.0f };
                     f32 texs[6] = { 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 1.0f };
 
-                    GXPosition3f32(widths[j * 2], top, float_0_804225b0);
-                    GXTexCoord2f32(two * texs[j * 2], float_0_804225b0);
-                    GXPosition3f32(widths[j * 2 + 1], top, float_0_804225b0);
-                    GXTexCoord2f32(two * texs[j * 2 + 1], float_0_804225b0);
-                    GXPosition3f32(widths[j * 2 + 1], bottom, float_0_804225b0);
+                    GXPosition3f32(widths[j * 2], top, 0.0f);
+                    GXTexCoord2f32(two * texs[j * 2], 0.0f);
+                    GXPosition3f32(widths[j * 2 + 1], top, 0.0f);
+                    GXTexCoord2f32(two * texs[j * 2 + 1], 0.0f);
+                    GXPosition3f32(widths[j * 2 + 1], bottom, 0.0f);
                     GXTexCoord2f32(two * texs[j * 2 + 1], texH);
-                    GXPosition3f32(widths[j * 2], bottom, float_0_804225b0);
+                    GXPosition3f32(widths[j * 2], bottom, 0.0f);
                     GXTexCoord2f32(two * texs[j * 2], texH);
                 }
             }
         }
     }
 }
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_deg2rad_8042259c = 0.017453292f;
-const f32 float_16_804225a0 = 16.0f;
-const f32 float_2_804225a4 = 2.0f;
-const f32 float_8_804225a8 = 8.0f;
-const f32 float_0p5_804225ac = 0.5f;
-#ifdef MUST_MATCH
-const volatile f32 float_0_804225b0 = 0.0f;
-#else
-const f32 float_0_804225b0 = 0.0f;
-#endif
-const f32 float_0p0625_804225b4 = 0.0625f;
-const f32 float_3_804225b8 = 3.0f;
-const f32 float_6p2832_804225bc = 6.2831855f;
-const f32 float_360_804225c0 = 360.0f;
-const f32 float_4_804225c4 = 4.0f;
-const f32 float_0p125_804225c8 = 0.125f;
-const f32 float_0p88_804225cc = 0.88f;
-const f32 float_1_804225d0 = 1.0f;

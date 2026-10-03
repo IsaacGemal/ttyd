@@ -42,7 +42,7 @@
 #include "party.h"
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
+#include "math_ext.h"
 
 // Work area for the fortune-teller (uranai) card rendering. Only the fields
 // reached by this file are named; the rest is the copy of the event's LW/GW
@@ -70,9 +70,12 @@ static USER_FUNC(ss_check);
 static USER_FUNC(setmertn);
 s32 kurihakase_event[221];
 
-char* uranaisi_msgp;
-UranaiWork* uranai_wp;
+// Declared in the reverse of the original's .bss address order (MWCC lays
+// uninitialised globals out last-declared-first): ssf at +0x8, uranai_wp at
+// +0x4, uranaisi_msgp at +0x0.
 static s32 ssf[1];
+UranaiWork* uranai_wp;
+char* uranaisi_msgp;
 
 // clang-format off
 extend_data(4,
@@ -93,43 +96,6 @@ extend_data(5,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-static BeroEntry bero_entry_data[4] = {
-    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "tik_07", "e_bero", 1, 1},
-    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "tik_01", "w_bero_1", 1, 1},
-    {"tensou", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "tik_00", "tensou", 1, 1},
-    {NULL},
-};
-
-static char* obj_list[12] = {
-    "sina_1", "a_sina1", "sina_2", "a_sina_2", "sina_3", "a_sina_3", "sina_4", "a_sina_4", "sina_5",
-    "a_sina_5", "sina_6", "a_sina_6",
-};
-
-// TODO: type
-static u32 goods_list[12] = {
-    0x0000009D, 0x0000000F, 0x0000009E, 0x0000000F,
-    0x00000096, 0x000000C8, 0x0000009C, 0x000000C8,
-    0x0000007E, 0x0000006E, 0x0000007F, 0x0000015E,
-};
-
-// TODO: type
-static u32 trade_list[24] = {
-    0x0000009D, 0x00070000, 0x0000009E, 0x00070000,
-    0x00000096, 0x00320000, 0x0000009C, 0x00320000,
-    0x0000007E, 0x00640000, 0x0000007F, 0x012C0000,
-    0x000000D5, 0x00190000, 0x000000CB, 0x00140000,
-    0x000000CA, 0x00080000, 0x000000D1, 0x000F0000,
-    0x000000C4, 0x00280000, 0x00000000, 0x00000000,
-};
-
-static char* shopper_data[38] = {
-    "店員", NULL, NULL, "tik_shop_00", "tik_shop_01", "tik_shop_02", "tik_shop_03", "tik_shop_04",
-    "tik_shop_05", "tik_shop_06", "tik_shop_07", "tik_shop_08", "tik_shop_09", "tik_shop_10",
-    "tik_shop_11", "tik_shop_12", "tik_shop_13", "tik_shop_14", "tik_shop_15", "tik_shop_16",
-    "tik_shop_17", "tik_shop_18", "tik_shop_19", "tik_shop_20", "tik_shop_21", "tik_shop_22",
-    "tik_shop_23", "tik_shop_24", "tik_shop_25", "tik_shop_26", "tik_shop_27", "tik_shop_28",
-    "tik_shop_29", "shop_30", "shop_31", "shop_32", "shop_33", "shop_34",
-};
 static USER_FUNC(setmertn) {
     s32 name = evtGetValue(event, event->args[0]);
 
@@ -170,7 +136,6 @@ USER_FUNC(evt_uranaisi_msg_alloc) {
     memset(uranaisi_msgp, 0, 0x100);
     return EVT_RETURN_DONE;
 }
-
 USER_FUNC(evt_uranaisi_msg_set) {
     s32* args = event->args;
     const char* msg = msgSearch((const char*)evtGetValue(event, args[0]));
@@ -221,6 +186,160 @@ USER_FUNC(uranai_exit_func) {
     return EVT_RETURN_DONE;
 }
 
+static BeroEntry bero_entry_data[4] = {
+    {"w_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "tik_07", "e_bero", 1, 1},
+    {"e_bero", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "tik_01", "w_bero_1", 1, 1},
+    {"tensou", 0, 0, 0x4E20, 100000, 0, 0, -1, NULL, -1, NULL, "tik_00", "tensou", 1, 1},
+    {NULL},
+};
+
+static char* obj_list[12] = {
+    "sina_1", "a_sina1", "sina_2", "a_sina_2", "sina_3", "a_sina_3", "sina_4", "a_sina_4", "sina_5",
+    "a_sina_5", "sina_6", "a_sina_6",
+};
+
+// TODO: type
+static u32 goods_list[12] = {
+    0x0000009D, 0x0000000F, 0x0000009E, 0x0000000F,
+    0x00000096, 0x000000C8, 0x0000009C, 0x000000C8,
+    0x0000007E, 0x0000006E, 0x0000007F, 0x0000015E,
+};
+
+// TODO: type
+static u32 trade_list[24] = {
+    0x0000009D, 0x00070000, 0x0000009E, 0x00070000,
+    0x00000096, 0x00320000, 0x0000009C, 0x00320000,
+    0x0000007E, 0x00640000, 0x0000007F, 0x012C0000,
+    0x000000D5, 0x00190000, 0x000000CB, 0x00140000,
+    0x000000CA, 0x00080000, 0x000000D1, 0x000F0000,
+    0x000000C4, 0x00280000, 0x00000000, 0x00000000,
+};
+
+static char* shopper_data[38] = {
+    "店員", NULL, NULL, "tik_shop_00", "tik_shop_01", "tik_shop_02", "tik_shop_03", "tik_shop_04",
+    "tik_shop_05", "tik_shop_06", "tik_shop_07", "tik_shop_08", "tik_shop_09", "tik_shop_10",
+    "tik_shop_11", "tik_shop_12", "tik_shop_13", "tik_shop_14", "tik_shop_15", "tik_shop_16",
+    "tik_shop_17", "tik_shop_18", "tik_shop_19", "tik_shop_20", "tik_shop_21", "tik_shop_22",
+    "tik_shop_23", "tik_shop_24", "tik_shop_25", "tik_shop_26", "tik_shop_27", "tik_shop_28",
+    "tik_shop_29", "shop_30", "shop_31", "shop_32", "shop_33", "shop_34",
+};
+
+EVT_BEGIN(uranaisi_next_evt)
+    IF_INT_LESS(GSW(0), 405)
+        CALL(uranaisi_data_alloc, 0, STRING("un_next"))
+        CALL(uranaisi_next_check, LW(0))
+        IF_INT_EQUAL(LW(0), 1)
+            CALL(uranaisi_next_makelabel, 0, LW(1))
+            CALL(evt_msg_print, 0, LW(1), 0, STRING("me"))
+        ELSE
+            IF_INT_EQUAL(LW(0), 0)
+                CALL(evt_win_coin_on, 0, LW(12))
+                CALL(evt_osreport, 0, LW(1))
+                CALL(evt_msg_print, 1, STRING("ゆうこうな　データが\n見つかりませんでした\nメッセージを　とうろく　してください\n<key>\n<scrl_auto>\n<once_stop>\n"), 0, STRING("me"))
+                CALL(evt_msg_print_add_insert, 1, STRING("げんざいの　イベントばんごうは\n『%s』\nです\n<key>"), LW(1))
+                CALL(uranaisi_ryokin, 0, LW(2))
+                CALL(evt_pouch_add_coin, LW(2))
+                CALL(evt_win_coin_wait, LW(12))
+                WAIT_MS(200)
+                CALL(evt_win_coin_off, LW(12))
+            ELSE
+                CALL(evt_win_coin_on, 0, LW(12))
+                CALL(evt_osreport, 0, LW(1))
+                CALL(evt_msg_print, 1, STRING("ゆうこうな　データが\nじゅうふくして　みつかりました\nゆうこうな　メッセージは　１つにしてください\n<key>\n<scrl_auto>\n<once_stop>"), 0, STRING("me"))
+                SET_VALUE(LW(2), 0)
+                SET_VALUE(LW(3), LW(0))
+                LOOP(LW(0))
+                    CALL(uranaisi_next_makelabel, LW(2), LW(1))
+                    CALL(evt_msg_print_add_insert, 1, STRING("『%s』\n<key>\n<scrl_auto>\n<once_stop>\n"), LW(1))
+                    ADD(LW(2), 1)
+                END_LOOP
+                CALL(evt_msg_print_add_insert, 1, STRING("いじょう　%dこが\nじゅうふくしている　メッセージです\n<key>"), LW(3))
+                CALL(uranaisi_ryokin, 0, LW(2))
+                CALL(evt_pouch_add_coin, LW(2))
+                CALL(evt_win_coin_wait, LW(12))
+                WAIT_MS(200)
+                CALL(evt_win_coin_off, LW(12))
+            END_IF
+        END_IF
+        CALL(uranaisi_data_free)
+    ELSE
+        CALL(evt_msg_print, 0, STRING("uranaisi_17"), 0, STRING("me"))
+        CALL(evt_win_coin_on, 0, LW(12))
+        WAIT_MS(500)
+        CALL(uranaisi_ryokin, 0, LW(2))
+        CALL(evt_pouch_add_coin, LW(2))
+        CALL(evt_win_coin_wait, LW(12))
+        WAIT_MS(500)
+        CALL(evt_win_coin_off, LW(12))
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(uranaisi_starpiece_evt)
+    CALL(uranaisi_data_alloc, 1, STRING("un_starpiece"))
+    CALL(uranaisi_starpiece_check, LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        CALL(evt_win_coin_on, 0, LW(12))
+        CALL(evt_msg_print, 0, STRING("uranaisi_14"), 0, STRING("me"))
+        CALL(uranaisi_ryokin, 1, LW(2))
+        CALL(evt_pouch_add_coin, LW(2))
+        CALL(evt_win_coin_wait, LW(12))
+        WAIT_MS(200)
+        CALL(evt_win_coin_off, LW(12))
+    ELSE
+        SUBTRACT(LW(0), 1)
+        CALL(evt_sub_random, LW(0), LW(0))
+        CALL(uranaisi_starpiece_makelabel, LW(0), LW(0))
+        CALL(evt_msg_print, 0, LW(0), 0, STRING("me"))
+        CALL(uranaisi_starpiece_setreadflag)
+    END_IF
+    CALL(uranaisi_data_free)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(uranaisi_supercoin_evt)
+    CALL(uranaisi_data_alloc, 2, STRING("un_supercoin"))
+    CALL(uranaisi_supercoin_check, LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        CALL(evt_win_coin_on, 0, LW(12))
+        CALL(evt_msg_print, 0, STRING("uranaisi_16"), 0, STRING("me"))
+        CALL(uranaisi_ryokin, 2, LW(2))
+        CALL(evt_pouch_add_coin, LW(2))
+        CALL(evt_win_coin_wait, LW(12))
+        WAIT_MS(200)
+        CALL(evt_win_coin_off, LW(12))
+    ELSE
+        SUBTRACT(LW(0), 1)
+        CALL(evt_sub_random, LW(0), LW(0))
+        CALL(uranaisi_supercoin_makelabel, LW(0), LW(0))
+        CALL(evt_msg_print, 0, LW(0), 0, STRING("me"))
+        CALL(uranaisi_supercoin_setreadflag)
+    END_IF
+    CALL(uranaisi_data_free)
+    RETURN
+EVT_END()
+
+// TODO: type
+static u32 name_tbl[18] = {
+    (u32)"card_1", 0x00000000, (u32)"card_2", 0x00000001,
+    (u32)"card_3", 0x00000002, (u32)"card_4", 0x00000003,
+    (u32)"card_5", 0x00000001, (u32)"card_6", 0x00000000,
+    (u32)"card_7", 0x00000003, (u32)"card_8", 0x00000002,
+    (u32)"card_9", 0x00000001,
+};
+
+// Named zero/unit vectors used by uranai_cap. Defined as real .rodata objects
+// (in the target's order) so the code reaches them by name instead of the
+// compiler pooling anonymous compound-literal templates in the wrong slots.
+static const Vec vec3_tik_00008358 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_tik_00008364 = { 0.0f, 1.0f, 0.0f };
+static const Vec vec3_tik_00008370 = { 0.0f, 0.0f, 0.0f };
+
+EVT_BEGIN(evt_uranai_cap)
+    CALL(uranai_cap_evt)
+    RETURN
+EVT_END()
+
 void uranai_cap(CameraId cameraId, void* param) {
     CameraEntry cam;
     f32 viewport[6];
@@ -261,10 +380,10 @@ void uranai_cap(CameraId cameraId, void* param) {
     GXSetScissor(1, 1, width - 2, height - 2);
     C_MTXPerspective(persp, 25.0f, (f32)(width / height), 1.0f, 1000.0f);
     GXSetProjection(persp, GX_PERSPECTIVE);
-    camTarget = (Vec){0.0f, 0.0f, 0.0f};
+    camTarget = vec3_tik_00008370;
     camTarget.y = (f32)height / 3.0f;
-    camUp = (Vec){0.0f, 1.0f, 0.0f};
-    camPos = (Vec){0.0f, 0.0f, 0.0f};
+    camUp = vec3_tik_00008364;
+    camPos = vec3_tik_00008358;
     camPos.y = camTarget.y;
 #ifdef MUST_MATCH
     half = 0.5f;
@@ -372,6 +491,7 @@ USER_FUNC(card_camid) {
     return EVT_RETURN_DONE;
 }
 
+
 USER_FUNC(unk_tik_000005e8) {
     MapObject* obj = mapGetMapObj("supotto");
 
@@ -399,141 +519,6 @@ USER_FUNC(mario_key_onoff_wait) {
     }
     return EVT_RETURN_DONE;
 }
-
-static USER_FUNC(scale_func) {
-    f32 scale = evtGetFloat(event, event->args[0]);
-    MarioWork* mario = marioGetPtr();
-    PartyEntry* party = partyGetPtr(0);
-    Vec v = {0.0f, 0.0f, 0.0f};
-
-    v.x = scale;
-    v.y = scale;
-    v.z = scale;
-    mario->scale = v;
-    if (party != NULL) {
-        Vec v2 = {0.0f, 0.0f, 0.0f};
-
-        v2.x = scale;
-        v2.y = scale;
-        v2.z = scale;
-        party->field_70 = v2;
-    }
-    return EVT_RETURN_DONE;
-}
-
-
-EVT_BEGIN(uranaisi_next_evt)
-    IF_INT_LESS(GSW(0), 405)
-        CALL(uranaisi_data_alloc, 0, STRING("un_next"))
-        CALL(uranaisi_next_check, LW(0))
-        IF_INT_EQUAL(LW(0), 1)
-            CALL(uranaisi_next_makelabel, 0, LW(1))
-            CALL(evt_msg_print, 0, LW(1), 0, STRING("me"))
-        ELSE
-            IF_INT_EQUAL(LW(0), 0)
-                CALL(evt_win_coin_on, 0, LW(12))
-                CALL(evt_osreport, 0, LW(1))
-                CALL(evt_msg_print, 1, STRING("ゆうこうな　データが\n見つかりませんでした\nメッセージを　とうろく　してください\n<key>\n<scrl_auto>\n<once_stop>\n"), 0, STRING("me"))
-                CALL(evt_msg_print_add_insert, 1, STRING("げんざいの　イベントばんごうは\n『%s』\nです\n<key>"), LW(1))
-                CALL(uranaisi_ryokin, 0, LW(2))
-                CALL(evt_pouch_add_coin, LW(2))
-                CALL(evt_win_coin_wait, LW(12))
-                WAIT_MS(200)
-                CALL(evt_win_coin_off, LW(12))
-            ELSE
-                CALL(evt_win_coin_on, 0, LW(12))
-                CALL(evt_osreport, 0, LW(1))
-                CALL(evt_msg_print, 1, STRING("ゆうこうな　データが\nじゅうふくして　みつかりました\nゆうこうな　メッセージは　１つにしてください\n<key>\n<scrl_auto>\n<once_stop>"), 0, STRING("me"))
-                SET_VALUE(LW(2), 0)
-                SET_VALUE(LW(3), LW(0))
-                LOOP(LW(0))
-                    CALL(uranaisi_next_makelabel, LW(2), LW(1))
-                    CALL(evt_msg_print_add_insert, 1, STRING("『%s』\n<key>\n<scrl_auto>\n<once_stop>\n"), LW(1))
-                    ADD(LW(2), 1)
-                END_LOOP
-                CALL(evt_msg_print_add_insert, 1, STRING("いじょう　%dこが\nじゅうふくしている　メッセージです\n<key>"), LW(3))
-                CALL(uranaisi_ryokin, 0, LW(2))
-                CALL(evt_pouch_add_coin, LW(2))
-                CALL(evt_win_coin_wait, LW(12))
-                WAIT_MS(200)
-                CALL(evt_win_coin_off, LW(12))
-            END_IF
-        END_IF
-        CALL(uranaisi_data_free)
-    ELSE
-        CALL(evt_msg_print, 0, STRING("uranaisi_17"), 0, STRING("me"))
-        CALL(evt_win_coin_on, 0, LW(12))
-        WAIT_MS(500)
-        CALL(uranaisi_ryokin, 0, LW(2))
-        CALL(evt_pouch_add_coin, LW(2))
-        CALL(evt_win_coin_wait, LW(12))
-        WAIT_MS(500)
-        CALL(evt_win_coin_off, LW(12))
-    END_IF
-    RETURN
-EVT_END()
-
-EVT_BEGIN(uranaisi_starpiece_evt)
-    CALL(uranaisi_data_alloc, 1, STRING("un_starpiece"))
-    CALL(uranaisi_starpiece_check, LW(0))
-    IF_INT_EQUAL(LW(0), 0)
-        CALL(evt_win_coin_on, 0, LW(12))
-        CALL(evt_msg_print, 0, STRING("uranaisi_14"), 0, STRING("me"))
-        CALL(uranaisi_ryokin, 1, LW(2))
-        CALL(evt_pouch_add_coin, LW(2))
-        CALL(evt_win_coin_wait, LW(12))
-        WAIT_MS(200)
-        CALL(evt_win_coin_off, LW(12))
-    ELSE
-        SUBTRACT(LW(0), 1)
-        CALL(evt_sub_random, LW(0), LW(0))
-        CALL(uranaisi_starpiece_makelabel, LW(0), LW(0))
-        CALL(evt_msg_print, 0, LW(0), 0, STRING("me"))
-        CALL(uranaisi_starpiece_setreadflag)
-    END_IF
-    CALL(uranaisi_data_free)
-    RETURN
-EVT_END()
-
-EVT_BEGIN(uranaisi_supercoin_evt)
-    CALL(uranaisi_data_alloc, 2, STRING("un_supercoin"))
-    CALL(uranaisi_supercoin_check, LW(0))
-    IF_INT_EQUAL(LW(0), 0)
-        CALL(evt_win_coin_on, 0, LW(12))
-        CALL(evt_msg_print, 0, STRING("uranaisi_16"), 0, STRING("me"))
-        CALL(uranaisi_ryokin, 2, LW(2))
-        CALL(evt_pouch_add_coin, LW(2))
-        CALL(evt_win_coin_wait, LW(12))
-        WAIT_MS(200)
-        CALL(evt_win_coin_off, LW(12))
-    ELSE
-        SUBTRACT(LW(0), 1)
-        CALL(evt_sub_random, LW(0), LW(0))
-        CALL(uranaisi_supercoin_makelabel, LW(0), LW(0))
-        CALL(evt_msg_print, 0, LW(0), 0, STRING("me"))
-        CALL(uranaisi_supercoin_setreadflag)
-    END_IF
-    CALL(uranaisi_data_free)
-    RETURN
-EVT_END()
-
-// TODO: type
-static u32 name_tbl[18] = {
-    (u32)"card_1", 0x00000000, (u32)"card_2", 0x00000001,
-    (u32)"card_3", 0x00000002, (u32)"card_4", 0x00000003,
-    (u32)"card_5", 0x00000001, (u32)"card_6", 0x00000000,
-    (u32)"card_7", 0x00000003, (u32)"card_8", 0x00000002,
-    (u32)"card_9", 0x00000001,
-};
-
-
-EVT_BEGIN(evt_uranai_cap)
-    CALL(uranai_cap_evt)
-    RETURN
-EVT_END()
-
-
-
 
 
 EVT_BEGIN(uranai_init)
@@ -574,6 +559,9 @@ EVT_BEGIN(uranai_init)
     CALL(evt_npc_set_offscreen, STRING("うらない師"), 0)
     RETURN
 EVT_END()
+
+
+
 
 
 EVT_BEGIN(uranai_main)
@@ -821,9 +809,6 @@ EVT_BEGIN(uranai_exit)
 EVT_END()
 
 
-
-
-
 EVT_BEGIN(uranaisi_table_talk)
     CALL(setmertn, STRING("うらない師"))
     CALL(evt_mario_key_onoff, 0)
@@ -910,6 +895,10 @@ EVT_BEGIN(uranaisi_table_talk)
     RETURN
 EVT_END()
 
+
+
+
+
 EVT_BEGIN(uranaisi_direct_talk)
     CALL(evt_msg_print, 0, STRING("uranaisi_18"), 0, STRING("me"))
     RETURN
@@ -928,12 +917,10 @@ EVT_BEGIN(unk_evt_tik_0000f438)
     RETURN
 EVT_END()
 
-
 EVT_BEGIN(starmaniac_get_event)
     CALL(ss_set, 1)
     RETURN
 EVT_END()
-
 
 
 EVT_BEGIN(starmaniac_talk)
@@ -1020,6 +1007,8 @@ EVT_BEGIN(starmaniac_talk)
     CALL(unk_tik_00000598)
     RETURN
 EVT_END()
+
+
 
 EVT_BEGIN(johoyaketi_talk)
     IF_INT_EQUAL(GSWF(3), 0)
@@ -1928,7 +1917,6 @@ static EVT_BEGIN(evt_door_04_entry)
     RETURN
 EVT_END()
 
-
 EVT_BEGIN(tensou_return)
     CALL(evt_mario_key_onoff, 0)
     CALL(evt_party_stop, 0)
@@ -2011,6 +1999,7 @@ EVT_BEGIN(tensou_return)
     RETURN
 EVT_END()
 
+
 EVT_BEGIN(tensou_init_event)
     SET_VALUE(GW(10), 0)
     SWITCH(GSW(0))
@@ -2070,6 +2059,27 @@ EVT_BEGIN(tensou_init_event)
     CALL(evt_mario_key_onoff, 1)
     RETURN
 EVT_END()
+
+static USER_FUNC(scale_func) {
+    f32 scale = evtGetFloat(event, event->args[0]);
+    MarioWork* mario = marioGetPtr();
+    PartyEntry* party = partyGetPtr(0);
+    Vec v = {0.0f, 0.0f, 0.0f};
+
+    v.x = scale;
+    v.y = scale;
+    v.z = scale;
+    mario->scale = v;
+    if (party != NULL) {
+        Vec v2 = {0.0f, 0.0f, 0.0f};
+
+        v2.x = scale;
+        v2.y = scale;
+        v2.z = scale;
+        party->field_70 = v2;
+    }
+    return EVT_RETURN_DONE;
+}
 
 EVT_BEGIN(tensou_event)
     CALL(evt_mario_key_onoff, 0)
@@ -2411,8 +2421,5 @@ EVT_BEGIN(tik_00_init_evt)
     CALL(evt_mapobj_flag_onoff, 1, 0, STRING("ie_4"), 2)
     RETURN
 EVT_END()
-
-
-
 
 // clang-format on

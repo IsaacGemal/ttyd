@@ -8,12 +8,15 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-// .sbss2 zero GXColor scratch objects, placed by hand (the default .sbss2 only holds compiler pool templates);
-// declared in reverse: placed in reverse of declaration order.
+// .sbss2 zero GXColor scratch the material colours are built from. The pragma pairs the default .sbss2
+// with a small-data section so the object lands where the original's does.
 #pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor gap_10_8042316C_sbss2;
 __declspec(section ".sdata") GXColor unk_80423168;
 #pragma section ".sdata" ".sbss"
+
+// .sdata2 colour constants this unit defines.
+const GXColor dat_8041f230 = { 0x80, 0x80, 0x80, 0x80 };
+const GXColor dat_8041f234 = { 0x00, 0x00, 0x00, 0x60 };
 
 typedef struct effKemuri1Data {
 	u16 type; //0x0
@@ -48,7 +51,7 @@ typedef struct effKemuri1Data {
 // allocator colours the ten-value loop-invariant clique (nine constants + the a5 parameter) with a5 in f24 and
 // the constants rotated (99.69%); with them a5 lands in f31 and neg3..10 in f22..f30 as the original. Scoping
 // `angle` to the loop (shadow of the function-scope `angle`) keeps the angle temp in f20. objdiff names the
-// pooled "Kemuri1N64" string and int->float double anonymous @NNN instead of Kemuri1N64 and
+// pooled "Kemuri1N64" string and int->float double anonymous @NNN@ instead of str_802FA8A0/
 // double_to_int_802fa898; those are unscored.
 EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;
@@ -58,11 +61,12 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	s32 i;
 	f32 angle;
 	f32 sinAngle;
-	f32 pa = 2.3561945f;
-	f32 pb = -2.3561945f;
-	f32 pc = 0.34906587f;
 	f32 cosAngle;
 	f32 k94;
+#ifdef MUST_MATCH
+	// Holds the sin/cos argument so MWCC does not fold the constant into a .rodata double.
+	f32 arg;
+#endif
 
 	effect = effEntry();
 	switch (type) {
@@ -135,8 +139,13 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				entry->position.x = 0.0f;
 				entry->position.y = 0.0f;
 				entry->position.z = 4.0f;
-				angle = reviseAngle(90.f + 180.f * (f32)(i - 1));
-				angle = 6.2831855f * angle / 360.f;
+#ifdef MUST_MATCH
+				// Split so 90/180 pool before 6.28, as the original's .sdata2 order requires.
+				angle = reviseAngle(90.0f + 180.0f * (f32)(i - 1));
+				angle = 6.2831855f * angle / 360.0f;
+#else
+				angle = 6.2831855f * reviseAngle(180.0f * (f32)(i - 1) + 90.0f) / 360.0f;
+#endif
 				entry->field_0x30 = sin(angle);
 				entry->field_0x34 = cos(angle);
 				entry->field_0x44 = 0xFF;
@@ -148,10 +157,19 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 			for (i = 1; i < effCount; i++, entry++) {
 				switch (i - 1) {
 				case 0:
-					sinAngle = (f32)sin(pa);
+#ifdef MUST_MATCH
+					arg = 2.3561945f;
+					sinAngle = (f32)sin(arg);
+#else
+					sinAngle = (f32)sin(2.3561945f);
+#endif
 					entry->position.x = 25.0f * -sinAngle;
 					entry->position.y = 0.0f;
-					cosAngle = (f32)cos(pa);
+#ifdef MUST_MATCH
+					cosAngle = (f32)cos(arg);
+#else
+					cosAngle = (f32)cos(2.3561945f);
+#endif
 					entry->position.z = 25.0f * -cosAngle;
 					entry->field_0x20 = 0.95f;
 					entry->field_0x24 = -0.04f;
@@ -159,10 +177,19 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				entry->field_0x28 = k94;
 					break;
 				case 1:
-					sinAngle = (f32)sin(pb);
+#ifdef MUST_MATCH
+					arg = -2.3561945f;
+					sinAngle = (f32)sin(arg);
+#else
+					sinAngle = (f32)sin(-2.3561945f);
+#endif
 					entry->position.x = 25.0f * -sinAngle;
 					entry->position.y = 4.0f;
-					cosAngle = (f32)cos(pb);
+#ifdef MUST_MATCH
+					cosAngle = (f32)cos(arg);
+#else
+					cosAngle = (f32)cos(-2.3561945f);
+#endif
 					entry->position.z = 25.0f * -cosAngle;
 					entry->field_0x20 = 0.84999996f;
 					entry->field_0x24 = -0.04f;
@@ -170,10 +197,19 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				entry->field_0x28 = k94;
 					break;
 				case 2:
-					sinAngle = (f32)sin(pc);
+#ifdef MUST_MATCH
+					arg = 0.34906587f;
+					sinAngle = (f32)sin(arg);
+#else
+					sinAngle = (f32)sin(0.34906587f);
+#endif
 					entry->position.x = 25.0f * -sinAngle;
-					entry->position.y = 10.f;
-					cosAngle = (f32)cos(pc);
+					entry->position.y = 10.0f;
+#ifdef MUST_MATCH
+					cosAngle = (f32)cos(arg);
+#else
+					cosAngle = (f32)cos(0.34906587f);
+#endif
 					entry->position.z = 25.0f * -cosAngle;
 					entry->field_0x20 = 0.75f;
 					entry->field_0x24 = -0.04f;
@@ -214,12 +250,12 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				entry->field_0x28 = k94;
 				entry->field_0x2C = k94;
 #endif
-				angle = 6.2831855f * (a5 + (f32)((i - 1) * 360 / (effCount - 1))) / 360.f;
+				angle = 6.2831855f * (a5 + (f32)((i - 1) * 360 / (effCount - 1))) / 360.0f;
 				sinAngle = (f32)sin(angle);
-				entry->position.x = 10.f * -sinAngle;
+				entry->position.x = 10.0f * -sinAngle;
 				entry->position.y = 0.0f;
 				cosAngle = (f32)cos(angle);
-				entry->position.z = 10.f * -cosAngle;
+				entry->position.z = 10.0f * -cosAngle;
 #ifdef MUST_MATCH
 				s30 = sin(angle);
 				entry->field_0x30 = s30;
@@ -337,17 +373,13 @@ void effKemuri1Main(EffectEntry* effect) {
 // Building each colour and making its GXSetChanMatColor call inside a void inline pairs the local with
 // its outgoing copy (0x8/0xc and 0x10), so the TEV colour's by-value temp lands at 0x14 as the
 // original's does (the plain `GXColor color` local would take 0x14 instead). Same shape as eff_kemuri8.
-static inline void kemuri1SetTevColor80(void) {
-	GXSetTevColor(1, (GXColor){ 0x80, 0x80, 0x80, 0x80 });
-}
-
 static inline void kemuri1SetChanMatColorA(void) {
-	GXColor c = (GXColor){ 0x00, 0x00, 0x00, 0x60 };
+	GXColor c = dat_8041f234;
 	GXSetChanMatColor(4, c);
 }
 
-static inline void kemuri1SetChanMatColorB(u8 b, u8 g, u8 r) {
-	GXColor c = (GXColor){ 0, 0, 0, 0 };
+static inline void kemuri1SetChanMatColorB(u8 r, u8 g, u8 b) {
+	GXColor c = unk_80423168;
 	c.r = r;
 	c.g = g;
 	c.b = b;
@@ -419,11 +451,7 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
 	GXSetTevColorIn(1, 0, 8, 2, 0xF);
 	GXSetTevAlphaIn(1, 0, 4, 1, 7);
-#ifdef MUST_MATCH
-	kemuri1SetTevColor80();
-#else
-	GXSetTevColor(1, (GXColor){ 0x80, 0x80, 0x80, 0x80 });
-#endif
+	GXSetTevColor(1, dat_8041f230);
 	GXSetTevOrder(2, 0xFF, 0xFF, 4);
 	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
 	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
@@ -460,7 +488,7 @@ void effKemuri1Disp(CameraId camId, void* param) {
 #ifdef MUST_MATCH
 				kemuri1SetChanMatColorA();
 #else
-				GXSetChanMatColor(4, (GXColor){ 0x00, 0x00, 0x00, 0x60 });
+				GXSetChanMatColor(4, dat_8041f234);
 #endif
 				PSMTXTrans(mtxTmp, 2.0f + data->position.x,
 					data->position.y - 2.0f, data->position.z);
@@ -469,9 +497,9 @@ void effKemuri1Disp(CameraId camId, void* param) {
 			}
 			else {
 #ifdef MUST_MATCH
-				kemuri1SetChanMatColorB(data->field_0x46, data->field_0x45, data->field_0x44);
+				kemuri1SetChanMatColorB(data->field_0x44, data->field_0x45, data->field_0x46);
 #else
-				GXColor color = (GXColor){ 0, 0, 0, 0 };
+				GXColor color = unk_80423168;
 				color.r = data->field_0x44;
 				color.g = data->field_0x45;
 				color.b = data->field_0x46;
@@ -536,4 +564,16 @@ void effKemuri1Disp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// The unit's float constants are the compiler's own pool entries; the only named .sdata2 objects are the
+// two colours above. The local `arg` in effKemuri1N64Entry keeps sin/cos from folding their arguments into
+// rodata doubles, and splitting the reviseAngle expression pools 90/180 before 6.28 as the original does.
+
+// 4-byte zero word that ends the unit's .rodata: an all-zero object needs explicit_zero_data to be emitted
+// and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".rodata") const u32 gap_04_802FA8AC_rodata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 

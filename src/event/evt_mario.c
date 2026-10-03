@@ -16,7 +16,7 @@
 #include "party.h"
 #include "system.h"
 
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 #include "mario/mario_hit.h"
 #include "koopa.h"
@@ -36,61 +36,161 @@
 // Locally declared prototypes (move to headers later).
 
 // Data symbols defined in this translation unit's assembly (see evt_mario.s).
-extern const char* a_mario_group[60];
+
+// .sdata2 strings (each <= 6 bytes including the terminator, so they land in .sdata2)
 const char str_8041B750[] = "M_Z_1";
+const char str_8041B758[] = "M_Z_9";
 const char str_8041B760[] = "M_S_1";
+const char str_8041B768[] = "M_S_3";
 const char str_8041B770[] = "M_W_1";
 const char str_8041B778[] = "M_R_1";
-const char str_802E5928[0x08] = "pik_00";
-const char str_802E5930[0x08] = "muj_01";
-const char str_802E5878[0x08] = "M_J_1C";
+const char str_8041B780[] = "M_H_1";
+const char str_8041B788[] = "M_H_2";
+const char str_8041B790[] = "M_H_3";
+const char str_8041B798[] = "M_H_4";
+const char str_8041B7A0[] = "M_H_5";
+const char str_8041B7A8[] = "M_H_6";
+const char str_8041B7B0[] = "M_H_7";
+const char str_8041B7B8[] = "M_H_8";
+const char str_8041B7C0[] = "M_H_9";
+const char str_8041B7C8[] = "M_O_1";
+const char str_8041B7D0[] = "M_O_2";
+const char str_8041B7D8[] = "M_B_1";
+const char str_8041B7E0[] = "M_B_2";
+const char str_8041B7E8[] = "M_D_1";
+const char str_8041B7F0[] = "M_D_2";
+const char str_8041B7F8[] = "M_U_3";
+const char str_8041B800[] = "M_D_6";
+const char str_8041B808[] = "M_P_1";
+const char str_8041B810[] = "M_P_2";
+const char str_8041B818[] = "M_I_1";
+const char str_8041B820[] = "M_I_2";
+const char str_8041B828[] = "M_I_S";
+const char str_8041B830[] = "M_X_1";
+const char str_8041B838[] = "M_I_U";
+const char str_8041B840[] = "M_U_2";
+const char str_8041B848[] = "M_W_7";
+const char str_8041B850[] = "M_C_1";
+const char str_8041B858[] = "M_C_2";
+const char str_8041B860[] = "M_Y_1";
+const char str_8041B868[] = "M_Y_2";
+const char str_8041B870[] = "M_Y_3";
+const char str_8041B878[] = "M_B_3";
+const char str_8041B880[] = "M_B_4";
+const char str_8041B888[] = "M_S_4";
+const char str_8041B890[] = "M_W_6";
+const char str_8041B898[] = "M_V_2";
+const char str_8041B8A0[] = "M_I_Y";
 
 // .rodata
-const char str_802E58F4[] = "M_N_5B";
-const char str_802E58FC[] = "M_N_5A";
+// The reference keeps every .rodata object, but some (the DOKAN name table, the pose vec3 tables)
+// are only reached through base+offset copies, so without this the linker dead-strips them,
+// shrinking .rodata and shifting every later section. force_active reproduces the reference layout.
+#pragma force_active on
+const Vec vec3_802e5730 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e573c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e5748 = {0.0f, 0.0f, 0.0f};
+const char str_802E5754[0x14] = "DOKAN_TATE_DOWNIN";
+const char str_802E5768[0x10] = "DOKAN_TATE_UPIN";
+const char str_802E5778[0x14] = "DOKAN_TATE_DOWNOUT";
+const char str_802E578C[0x14] = "DOKAN_TATE_UPOUT";
+const char str_802E57A0[0x10] = "DOKAN_YOKO_IN";
+const char str_802E57B0[0x10] = "DOKAN_YOKO_OUT";
+const Vec vec3_802e57c0 = {1.0f, 1.0f, 1.0f};
+const Vec vec3_802e57cc = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e57d8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e57e4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e57f0 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e57fc = {1.0f, 1.0f, 1.0f};
+const Vec vec3_802e5808 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e5814 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e5820 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e582c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e5838 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e5844 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e5850 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802e585c = {0.0f, 0.0f, 0.0f};
+const char str_802E5868[0x08] = "M_J_1A";
+const char str_802E5870[0x08] = "M_J_1B";
+const char str_802E5878[0x08] = "M_J_1C";
+const char str_802E5880[0x08] = "M_H_3A";
+const char str_802E5888[0x08] = "M_H_3B";
+const char str_802E5890[0x08] = "M_H_6A";
+const char str_802E5898[0x08] = "M_H_6B";
+const char str_802E58A0[0x08] = "M_H_9A";
+const char str_802E58A8[0x08] = "M_H_9B";
+const char str_802E58B0[0x08] = "M_A_1A";
+const char str_802E58B8[0x08] = "M_A_1B";
+const char str_802E58C0[0x08] = "M_A_2A";
+const char str_802E58C8[0x08] = "M_A_2B";
+const char str_802E58D0[0x08] = "M_A_2C";
+const char str_802E58D8[0x08] = "M_J_5A";
+const char str_802E58E0[0x08] = "M_J_5B";
 const Vec vec3_802e58e8 = {0.0f, 0.0f, 0.0f};
-const char str_802E5910[] = "KPA_A_2D";
-const char str_802E591C[] = "KPA2_J_1C";
+const char str_802E58F4[0x08] = "M_N_5B";
+const char str_802E58FC[0x08] = "M_N_5A";
+#pragma force_active reset
 
-const Vec vec3_802e5730[3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
-f64 double_to_int_802e5908 = 4503601774854144.0;
+// .sdata2 float literals: MWCC folds these references into its own literal pool, so they are
+// declared (not defined as real objects) to avoid emitting a second copy of every constant.
+static const f32 float_1_8041b8a8 = 1.0f;
+static const f32 float_0_8041b8ac = 0.0f;
+static const f32 float_18p5_8041b8b0 = 18.5f;
+static const f32 float_neg0p4744_8041b8b4 = -0.4744f;
+static const f32 float_0p4704_8041b8b8 = 0.4704f;
+static const f32 float_neg0p1904_8041b8bc = -0.1904f;
+static const f32 float_11_8041b8c0 = 11.0f;
+static const f32 float_1p5_8041b8c4 = 1.5f;
+static const f32 float_0p5_8041b8c8 = 0.5f;
+static const f32 float_20_8041b8cc = 20.0f;
+static const f32 float_neg1000_8041b8d0 = -1000.0f;
+static const f32 float_600_8041b8d4 = 600.0f;
+static const f32 float_535_8041b8d8 = 535.0f;
+static const f32 float_0p4_8041b8dc = 0.4f;
+static const f32 float_220_8041b8e0 = 220.0f;
+static const f32 float_140_8041b8e4 = 140.0f;
+static const f32 float_90_8041b8e8 = 90.0f;
+static const f32 float_270_8041b8ec = 270.0f;
+static const f32 float_225_8041b8f0 = 225.0f;
+static const f32 float_135_8041b8f4 = 135.0f;
+static const f32 float_330_8041b8f8 = 330.0f;
+static const f32 float_60_8041b8fc = 60.0f;
+static const f32 float_120_8041b900 = 120.0f;
+static const f32 float_180_8041b904 = 180.0f;
+static const f32 float_240_8041b908 = 240.0f;
+static const f32 float_300_8041b90c = 300.0f;
+static const f32 float_30_8041b910 = 30.0f;
+static const f32 float_360_8041b914 = 360.0f;
+static const f32 float_neg16_8041b918 = -16.0f;
+static const f32 float_neg8_8041b91c = -8.0f;
+static const f32 float_0p1_8041b920 = 0.1f;
 
-// .sdata2
-const f32 float_1_8041b8a8 = 1.0f;
-const f32 float_0_8041b8ac = 0.0f;
-const f32 float_18p5_8041b8b0 = 18.5f;
-const f32 float_neg0p4744_8041b8b4 = -0.4744f;
-const f32 float_0p4704_8041b8b8 = 0.4704f;
-const f32 float_neg0p1904_8041b8bc = -0.1904f;
-const f32 float_11_8041b8c0 = 11.0f;
-const f32 float_1p5_8041b8c4 = 1.5f;
-const f32 float_0p5_8041b8c8 = 0.5f;
-const f32 float_20_8041b8cc = 20.0f;
-const f32 float_neg1000_8041b8d0 = -1000.0f;
-const f32 float_600_8041b8d4 = 600.0f;
-const f32 float_535_8041b8d8 = 535.0f;
-const f32 float_0p4_8041b8dc = 0.4f;
-const f32 float_220_8041b8e0 = 220.0f;
-const f32 float_140_8041b8e4 = 140.0f;
-const f32 float_90_8041b8e8 = 90.0f;
-const f32 float_270_8041b8ec = 270.0f;
-const f32 float_225_8041b8f0 = 225.0f;
-const f32 float_135_8041b8f4 = 135.0f;
-const f32 float_330_8041b8f8 = 330.0f;
-const f32 float_60_8041b8fc = 60.0f;
-const f32 float_120_8041b900 = 120.0f;
-const f32 float_180_8041b904 = 180.0f;
-const f32 float_240_8041b908 = 240.0f;
-const f32 float_300_8041b90c = 300.0f;
-const f32 float_30_8041b910 = 30.0f;
-const f32 float_360_8041b914 = 360.0f;
-const f32 float_neg16_8041b918 = -16.0f;
-const f32 float_neg8_8041b91c = -8.0f;
-const f32 float_0p1_8041b920 = 0.1f;
+// .data
+const char* a_mario_group[60] = {
+    str_8041B750, str_8041B758, str_8041B760, str_8041B768, str_8041B770, str_8041B778,
+    str_802E5868, str_802E5870, str_802E5878, str_8041B780, str_8041B788, str_8041B790,
+    str_802E5880, str_802E5888, str_8041B798, str_8041B7A0, str_8041B7A8, str_802E5890,
+    str_802E5898, str_8041B7B0, str_8041B7B8, str_8041B7C0, str_802E58A0, str_802E58A8,
+    str_8041B7C8, str_8041B7D0, str_8041B7D8, str_8041B7E0, str_8041B7E8, str_8041B7F0,
+    str_8041B7F8, str_8041B800, str_8041B808, str_8041B810, str_8041B818, str_8041B820,
+    str_8041B828, str_8041B830, str_8041B838, str_802E58B0, str_802E58B8, str_8041B840,
+    str_8041B848, str_8041B850, str_8041B858, str_8041B860, str_8041B868, str_8041B870,
+    str_802E58C0, str_802E58C8, str_802E58D0, str_8041B878, str_8041B880, str_802E58D8,
+    str_802E58E0, str_8041B888, str_8041B890, str_8041B898, str_8041B8A0, NULL,
+};
+
+// The original's .rodata places the two strings reached as base+0x208 / base+0x214 immediately
+// after "muj_01". strcmp stops at the first NUL, so carrying them on the end of the "muj_01"
+// literal is inert and reproduces the target's .rodata tail exactly.
+#ifdef MUST_MATCH
+#define STR_MUJ_01 "muj_01\0\0p_dokan_y\0\0\0PM_D_1A"
+#else
+#define STR_MUJ_01 "muj_01"
+#endif
 
 USER_FUNC(evt_mario_dokan_prepare) {
     s32* args = event->args;
-    const Vec* vecs = vec3_802e5730;
+    const Vec* vecs = &vec3_802e5730;
     MarioWork* mario;
     PartyEntry* party;
     s32 type;
@@ -113,7 +213,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
 #ifdef MUST_MATCH
             *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[1];
 #else
-            *(Vec*)((u8*)party + 0x70) = vecs[1];
+            *(Vec*)((u8*)party + 0x70) = vec3_802e573c;
 #endif
             party->flags2 |= 1;
             party->flags |= 0x04000000;
@@ -125,7 +225,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
 #ifdef MUST_MATCH
             *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[2];
 #else
-            *(Vec*)((u8*)party + 0x70) = vecs[2];
+            *(Vec*)((u8*)party + 0x70) = vec3_802e5748;
 #endif
             party->flags2 |= 1;
             party->flags |= 0x04000000;
@@ -139,8 +239,18 @@ USER_FUNC(evt_mario_dokan_prepare) {
     return EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
+// MUST_MATCH: retail reaches these Vecs and the two pose strings through the vec3_802e5730 base register.
+#define EM_VEC(off, sym) (*(Vec*)(base + (off)))
+#define EM_STR(off, lit) ((const char*)(base + (off)))
+#else
+#define EM_VEC(off, sym) (sym)
+#define EM_STR(off, lit) (lit)
+#endif
 USER_FUNC(evt_mario_paper_pose_dokan) {
-    const u8* base = (const u8*)vec3_802e5730;
+#ifdef MUST_MATCH
+    const u8* base = (const u8*)&vec3_802e5730;
+#endif
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
     s32 type;
@@ -152,10 +262,10 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         event->userdata[1] = 0;
         if (mario->currMotionId == 0x1d) {
             marioPaperOff();
-            *(Vec*)((u8*)mario + 0xC8) = *(Vec*)(base + 0x90);
-            *(Vec*)((u8*)mario + 0xBC) = *(Vec*)(base + 0x9C);
-            *(Vec*)((u8*)mario + 0xB0) = *(Vec*)(base + 0xA8);
-            *(Vec*)((u8*)mario + 0x98) = *(Vec*)(base + 0xB4);
+            *(Vec*)((u8*)mario + 0xC8) = EM_VEC(0x90, vec3_802e57c0);
+            *(Vec*)((u8*)mario + 0xBC) = EM_VEC(0x9C, vec3_802e57cc);
+            *(Vec*)((u8*)mario + 0xB0) = EM_VEC(0xA8, vec3_802e57d8);
+            *(Vec*)((u8*)mario + 0x98) = EM_VEC(0xB4, vec3_802e57e4);
         } else {
             switch (type) {
             case 4:
@@ -190,16 +300,16 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         marioRollForceCancel();
         partyShadowOff(partyGetPtr(marioGetPartyId()));
         partyShadowOff(partyGetPtr(marioGetExtraPartyId()));
-        marioPaperOn((const char*)(base + 0x208));
+        marioPaperOn(EM_STR(0x208, "p_dokan_y"));
         marioPaperLightOff();
-        marioChgPaper((const char*)(base + 0x214));
+        marioChgPaper(EM_STR(0x214, "PM_D_1A"));
         marioChgPose(str_8041B750);
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
         mario->unk1A8 = *(f32*)((u8*)mario + 0x1AC); // 0x1AC: field not declared in MarioWork
         zero = 0.0f;
         *(f32*)((u8*)mario + 0x2A0) = zero; // 0x2A0: field not declared in MarioWork
-        pos = *(Vec*)(base + 0xC0);
+        pos = EM_VEC(0xC0, vec3_802e57f0);
         pos.z = (mario->flags & 0x02000000) ? -16.0f : zero;
         *(Vec*)((u8*)mario + 0x98) = pos;
         event->userdata[0] = 0;
@@ -217,13 +327,13 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
     case 2:
         marioSlitForceCancel();
         marioRollForceCancel();
-        marioPaperOn((const char*)(base + 0x208));
+        marioPaperOn(EM_STR(0x208, "p_dokan_y"));
         marioPaperLightOff();
-        marioChgPaper((const char*)(base + 0x214));
+        marioChgPaper(EM_STR(0x214, "PM_D_1A"));
         marioChgPose(str_8041B750);
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
-        *(Vec*)((u8*)mario + 0xC8) = *(Vec*)(base + 0xCC);
+        *(Vec*)((u8*)mario + 0xC8) = EM_VEC(0xCC, vec3_802e57fc);
         *(f32*)((u8*)mario + 0x2A0) = 30.0f;
         event->userdata[0] = 8;
         event->userdata[1] = 3;
@@ -245,8 +355,8 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
     case 0: {
         Vec pos;
 
-        *(Vec*)((u8*)mario + 0xC8) = *(Vec*)(base + 0xD8);
-        pos = *(Vec*)(base + 0xE4);
+        *(Vec*)((u8*)mario + 0xC8) = EM_VEC(0xD8, vec3_802e5808);
+        pos = EM_VEC(0xE4, vec3_802e5814);
         pos.z = (mario->flags & 0x02000000) ? -16.0f : 0.0f;
         *(Vec*)((u8*)mario + 0x98) = pos;
         if (!(mario->flags & 0x02000000)) {
@@ -256,9 +366,9 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         if (party != NULL) {
             *(Vec*)((u8*)party + 0x58) = mario->position;
             *(Vec*)((u8*)party + 0x70) = mario->scale;
-            *(Vec*)((u8*)party + 0x7C) = *(Vec*)(base + 0xF0);
-            *(Vec*)((u8*)party + 0x64) = *(Vec*)(base + 0xFC);
-            *(Vec*)((u8*)party + 0x88) = *(Vec*)(base + 0x108);
+            *(Vec*)((u8*)party + 0x7C) = EM_VEC(0xF0, vec3_802e5820);
+            *(Vec*)((u8*)party + 0x64) = EM_VEC(0xFC, vec3_802e582c);
+            *(Vec*)((u8*)party + 0x88) = EM_VEC(0x108, vec3_802e5838);
             *(f32*)((u8*)party + 0x8C) = *(f32*)((u8*)mario + 0xB4);
             *(f32*)((u8*)party + 0x80) = *(f32*)((u8*)mario + 0x9C);
             *(f32*)((u8*)party + 0x84) = *(f32*)((u8*)mario + 0xA0);
@@ -267,9 +377,9 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         if (party != NULL) {
             *(Vec*)((u8*)party + 0x58) = mario->position;
             *(Vec*)((u8*)party + 0x70) = mario->scale;
-            *(Vec*)((u8*)party + 0x7C) = *(Vec*)(base + 0x114);
-            *(Vec*)((u8*)party + 0x64) = *(Vec*)(base + 0x120);
-            *(Vec*)((u8*)party + 0x88) = *(Vec*)(base + 0x12C);
+            *(Vec*)((u8*)party + 0x7C) = EM_VEC(0x114, vec3_802e5844);
+            *(Vec*)((u8*)party + 0x64) = EM_VEC(0x120, vec3_802e5850);
+            *(Vec*)((u8*)party + 0x88) = EM_VEC(0x12C, vec3_802e585c);
             *(f32*)((u8*)party + 0x8C) = *(f32*)((u8*)mario + 0xB4);
             *(f32*)((u8*)party + 0x80) = *(f32*)((u8*)mario + 0x9C);
             *(f32*)((u8*)party + 0x84) = *(f32*)((u8*)mario + 0xA0);
@@ -1135,9 +1245,9 @@ USER_FUNC(evt_mario_party_door_move) {
         viewYaw = camGetPtr(CAMERA_3D)->viewYaw;
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
-            if (strcmp(gp->currentMapName, str_802E5928) == 0) {
+            if (strcmp(gp->currentMapName, "pik_00") == 0) {
                 angle = party->position.x > float_0_8041b8ac ? float_270_8041b8ec : float_90_8041b8e8;
-            } else if (strcmp(gp->currentMapName, str_802E5930) == 0) {
+            } else if (strcmp(gp->currentMapName, STR_MUJ_01) == 0) {
                 angle = float_330_8041b8f8;
             } else if (viewYaw > float_60_8041b8fc && viewYaw < float_120_8041b900) {
                 angle = float_180_8041b904;
@@ -1153,9 +1263,9 @@ USER_FUNC(evt_mario_party_door_move) {
         }
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
-            if (strcmp(gp->currentMapName, str_802E5928) == 0) {
+            if (strcmp(gp->currentMapName, "pik_00") == 0) {
                 angle = party->position.x > float_0_8041b8ac ? float_270_8041b8ec : float_90_8041b8e8;
-            } else if (strcmp(gp->currentMapName, str_802E5930) == 0) {
+            } else if (strcmp(gp->currentMapName, STR_MUJ_01) == 0) {
                 angle = float_30_8041b910;
             } else {
                 angle = float_270_8041b8ec;
@@ -1173,9 +1283,9 @@ USER_FUNC(evt_mario_party_door_move) {
         viewYaw = camGetPtr(CAMERA_3D)->viewYaw;
         party = partyGetPtr(marioGetPartyId());
         if (party != NULL) {
-            if (strcmp(gp->currentMapName, str_802E5928) == 0) {
+            if (strcmp(gp->currentMapName, "pik_00") == 0) {
                 angle = party->position.x > float_0_8041b8ac ? float_270_8041b8ec : float_90_8041b8e8;
-            } else if (strcmp(gp->currentMapName, str_802E5930) == 0) {
+            } else if (strcmp(gp->currentMapName, STR_MUJ_01) == 0) {
                 angle = float_330_8041b8f8;
             } else if (viewYaw > float_60_8041b8fc && viewYaw < float_120_8041b900) {
                 angle = float_180_8041b904;
@@ -1194,9 +1304,9 @@ USER_FUNC(evt_mario_party_door_move) {
         }
         party = partyGetPtr(marioGetExtraPartyId());
         if (party != NULL) {
-            if (strcmp(gp->currentMapName, str_802E5928) == 0) {
+            if (strcmp(gp->currentMapName, "pik_00") == 0) {
                 angle = party->position.x > float_0_8041b8ac ? float_270_8041b8ec : float_90_8041b8e8;
-            } else if (strcmp(gp->currentMapName, str_802E5930) == 0) {
+            } else if (strcmp(gp->currentMapName, STR_MUJ_01) == 0) {
                 angle = float_30_8041b910;
             } else {
                 angle = float_270_8041b8ec;
@@ -1407,7 +1517,7 @@ USER_FUNC(evt_mario_jump_pos) {
         }
         half = float_0p5_8041b8c8 * framesF;
         dy = y - mario->position.y;
-        if (fabsf(dy) < float_1_8041b8a8) {
+        if (__fabsf(dy) < float_1_8041b8a8) {
             accel = (gravity + gravity) / (half * half - half);
             *(f32*)((u8*)mario + 0x7C) = accel * half;
             *(f32*)((u8*)mario + 0x80) = -accel;
@@ -1502,7 +1612,7 @@ USER_FUNC(evt_mario_jump_pos) {
             mario2->position.y = v0;
             mario2->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING |
                                MARIO_FLAG_IS_STEPPING | MARIO_FLAG_HAS_INPUT_JUMP);
-            *(f32*)((u8*)mario2 + 0x128) = fabsf(distABf(mario2->position.x, mario2->position.z,
+            *(f32*)((u8*)mario2 + 0x128) = __fabsf(distABf(mario2->position.x, mario2->position.z,
                                                           *(f32*)((u8*)mario2 + 0x11C), *(f32*)((u8*)mario2 + 0x124)));
             mario2->airTimer = 0;
             *(s16*)((u8*)mario2 + 0x52) = 0;
@@ -1614,7 +1724,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         *(f32*)((u8*)mario + 0x19C) = mario->directionView;
         dy = ty - mario->position.y;
         t = float_0p5_8041b8c8 * (f32)event->userdata[1];
-        if (fabsf(dy) < float_1_8041b8a8) {
+        if (__fabsf(dy) < float_1_8041b8a8) {
             dy += float_20_8041b8cc;
         } else if (dy >= float_0_8041b8ac) {
             dy = float_0p5_8041b8c8 * *(f32*)((u8*)mario + 0x1B8) + dy;
@@ -1675,7 +1785,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             player->hitobjStandOn = hit;
             player->position.y = outY;
             player->flags &= ~0x000F0000;
-            *(f32*)((u8*)player + 0x128) = fabsf(distABf(player->position.x, player->position.z, *(f32*)((u8*)player + 0x11C), *(f32*)((u8*)player + 0x124)));
+            *(f32*)((u8*)player + 0x128) = __fabsf(distABf(player->position.x, player->position.z, *(f32*)((u8*)player + 0x11C), *(f32*)((u8*)player + 0x124)));
             *(s16*)((u8*)player + 0x50) = 0;
             *(s16*)((u8*)player + 0x52) = 0;
             player->flags &= ~0x80;
@@ -1761,7 +1871,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
             player->hitobjStandOn = hit;
             player->position.y = outY;
             player->flags &= ~0x000F0000;
-            *(f32*)((u8*)player + 0x128) = fabsf(distABf(player->position.x, player->position.z, *(f32*)((u8*)player + 0x11C), *(f32*)((u8*)player + 0x124)));
+            *(f32*)((u8*)player + 0x128) = __fabsf(distABf(player->position.x, player->position.z, *(f32*)((u8*)player + 0x11C), *(f32*)((u8*)player + 0x124)));
             *(s16*)((u8*)player + 0x50) = 0;
             *(s16*)((u8*)player + 0x52) = 0;
             player->flags &= ~0x80;
@@ -1911,7 +2021,7 @@ USER_FUNC(evt_koopa_hip_attack) {
         mario->directionView = angleABf(mario->position.x, mario->position.z, x, z);
         *(f32*)((u8*)mario + 0x19C) = mario->directionView;
         dy = y - mario->position.y;
-        if (fabsf(dy) < float_1_8041b8a8) {
+        if (__fabsf(dy) < float_1_8041b8a8) {
             dy += angle;
         } else if (dy >= float_0_8041b8ac) {
             dy += float_18p5_8041b8b0;
@@ -1940,7 +2050,7 @@ USER_FUNC(evt_koopa_hip_attack) {
             *(f32*)((u8*)mario + 0x84) = float_0p4704_8041b8b8;
             *(f32*)((u8*)mario + 0x88) = float_neg0p1904_8041b8bc;
             *(f32*)((u8*)mario + 0x7C) = *(f32*)((u8*)mario + 0x80);
-            kpaChgPose(str_802E5910, str_802E591C);
+            kpaChgPose("KPA_A_2D", "KPA2_J_1C");
             event->userdata[0] = 2;
         }
         break;
@@ -1984,7 +2094,7 @@ USER_FUNC(evt_koopa_hip_attack) {
             mario2->position.y = v0;
             mario2->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING |
                               MARIO_FLAG_IS_STEPPING | MARIO_FLAG_HAS_INPUT_JUMP);
-            *(f32*)(mp + 0x128) = fabsf(distABf(mario2->position.x, mario2->position.z,
+            *(f32*)(mp + 0x128) = __fabsf(distABf(mario2->position.x, mario2->position.z,
                                                          *(f32*)(mp + 0x11C), *(f32*)(mp + 0x124)));
             mario2->airTimer = 0;
             *(s16*)(mp + 0x52) = 0;

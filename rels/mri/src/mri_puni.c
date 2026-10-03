@@ -5970,37 +5970,38 @@ void puni_puni_init(void) {
     memset(Punimap, 0, 0x24);
 }
 
+static inline void puniCase15Hit(PuniData* puni, s32* flagOut) {
+    u8* p = (u8*)puni;
+    Vec pos;
+    Vec normal;
+    Vec hitPos;
+    Vec hitNor;
+    f32 dist;
+    HitEntry* hit;
+
+    pos = *(Vec*)(p + 0x12C);
+    pos.y += 1.0f;
+    normal = (Vec){ 0.0f, -1.0f, 0.0f };
+    dist = 3.0f;
+    hit = hitCheckFilter(NULL, &hitPos.x, &hitPos.y, &hitPos.z, &dist, &hitNor.x, &hitNor.y, &hitNor.z,
+                         pos.x, pos.y, pos.z, normal.x, normal.y, normal.z);
+    if (hit == NULL) {
+        *flagOut = 2;
+    } else {
+        *flagOut = 0;
+    }
+}
+
 // The original unit's rodata is not yet moved into this source; the symbols are declared above.
-// NONMATCHING (99.96%): 36 instructions differ; the reconstruction (logic, statement sequence,
-// constants, data symbols and callees) is complete. The remainder is MWCC's aggregate-slot order:
-//  - case 7 is correct: it calls the puniSearchTekiNamed/puniSearchMikataNamed static-inline twins
-//    (the same helpers puniSearch uses), which removed the old r28/r30 swap and the float data diffs.
-//  - the inlined puniModePreupdraft (case 18) / puniModeWonder (case 20) `pos` Vecs land at 0x30/0x24
-//    where retail has them at 0x64/0x58.
-//  - case 15's probe: retail has `pos` 0xc / `normal` 0x18 / hit outputs 0x24-0x38, exactly the layout
-//    of the standalone puniModePrehagure (100%, and byte-identical to the inlined case 15 at 0x1320C).
-//    Ours puts the hit outputs at 0xc-0x20 and pos/normal at 0x54/0x60. Root cause is now pinned: the
-//    auto-inline pass allocates inlined callees' slots in source order, so case-18/20 (which this unit
-//    auto-inlines because they are 256/324 B) claim the low slots before case 15. The 716-byte
-//    puniModePrehagure is above the auto-inline threshold, so our compiler never inlines it into case 15.
-//    A `static inline` copy inlines only in a late pass (locals land high: hits 0x24-0x38, pos/normal
-//    0x3c/0x48, case 18/20 0x10-0x20). Calling the 324-byte global puniPositionCheck DOES auto-inline in
-//    source order and put case 18/20 at 0x54/0x60 (matching retail), but its own locals come out
-//    hits-low/pos-normal-high because inlined address-taken locals take the low slots. No reconstructable
-//    source shape beats 36: 24 declaration orders (36-38), case/function/else scope, individual-f32 vs
-//    six-f32 vs two-Vec hits, static-inline copy (62), global copy (no inline, 220), `inline` keyword on
-//    puniModePrehagure (standalone then 0%), puniPositionCheck reorderings (62-64), and every inline_max_*/
-//    inline_depth/defer_codegen/always_inline/auto_inline pragma. Various probe helpers hang the compiler.
-//    A switch-free auto-inlined helper (global or static, value-returning or
-//    void with an out-param) always starts at 0x24 because the early-inlined cases 18/20 hold 0xc-0x20,
-//    whatever the helper's definition position (above preupdraft/prehagure/unk, same result); the best
-//    non-base shape (void helper + s32* out-param) is 52 diffs and keeps the `li 2/li 0` state codegen.
-//    A `volatile f32` pos/normal + six `volatile f32` hits (all 13 locals as scalars) is the ONLY shape
-//    that lands the target slots exactly (dist 0x8, pos 0xc-0x14, normal 0x18-0x20, hits 0x24-0x38) —
-//    scalars allocate low regardless of inline phase — but costs 85 diffs (the `Vec` word copies become
-//    `lfs`/`stfs` and the register/scheduling around them differs), so it loses to the 36-diff base.
-//    `*(Vec*)&posX = self->field_0x12C` word-copy attempts cost 100-140 diffs (register allocation).
-// NONMATCHING (99.96%): only MWCC aggregate stack-slot order (case 15 vs inlined cases 18/20) differs.
+// Three non-obvious shapes were needed for the byte match for the experiment log):
+//  - case 15 calls the `static inline puniCase15Hit` above (Vecs declared `pos, normal, hitPos,
+//    hitNor`: our inline pass allocates frame slots forward, landing them where retail has them),
+//    but keeps the range-check and the `flag = 0` init in the caller's `case 0:` so MWCC keeps
+//    `flag` in r0 and colours the bounds lo->f2, hi->f1.
+//  - cases 18/20 are hand-written inline copies of puniModePreupdraft/puniModeWonder so their
+//    auto-inlined `pos` Vecs do not claim the low aggregate frame slots.
+//  - case 7 keeps the `if (field_0x1DC != NULL)` block inside the `else`, so the field_0x1A0
+//    branch skips both the search and the hit block on its way to the epilogue.
 void unk_mri_00012d58(PuniData* self) {
     switch (self->unkC) {
     case 0:
@@ -6067,24 +6068,26 @@ void unk_mri_00012d58(PuniData* self) {
                 *(PuniData**)((u8*)self + 0x1DC) = (PuniData*)(s32)Punigp->field_0x360;  // PuniData 0x1DC
                 self->unkC = 0xD;
                 self->field_0x114 = 0;
-            } else if (((s32)gp->retraceCount & 3) == (self->field_0x116 & 3)) {
-                if (self->unk4 & 1) {
-                    *(PuniData**)((u8*)self + 0x1DC) = puniSearchTekiNamed(self);  // PuniData 0x1DC
-                } else {
-                    *(PuniData**)((u8*)self + 0x1DC) = puniSearchMikataNamed(self);  // PuniData 0x1DC
+            } else {
+                if (((s32)gp->retraceCount & 3) == (self->field_0x116 & 3)) {
+                    if (self->unk4 & 1) {
+                        *(PuniData**)((u8*)self + 0x1DC) = puniSearchTekiNamed(self);  // PuniData 0x1DC
+                    } else {
+                        *(PuniData**)((u8*)self + 0x1DC) = puniSearchMikataNamed(self);  // PuniData 0x1DC
+                    }
                 }
-            }
-            if (*(PuniData**)((u8*)self + 0x1DC) != NULL) {  // PuniData 0x1DC
-                Vec diff;
-                PSVECSubtract(&(*(PuniData**)((u8*)self + 0x1DC))->field_0x12C, &self->field_0x12C, &diff);  // PuniData 0x1DC
-                if (PSVECMag(&diff) > *(f32*)((u8*)(*(PuniData**)((u8*)self + 0x1DC)) + 0x19C)) {  // PuniData 0x1DC
-                    PSVECNormalize(&diff, &diff);
-                    diff.y = 0.0f;
-                    PSVECScale(&diff, &diff, 1.0f);
-                    PSVECAdd((Vec*)&self->field_0x15C, &diff, (Vec*)&self->field_0x15C);
-                    self->field_0x174 = 3.0f;
-                } else {
-                    puniParaAttack(self, *(PuniData**)((u8*)self + 0x1DC));  // PuniData 0x1DC
+                if (*(PuniData**)((u8*)self + 0x1DC) != NULL) {  // PuniData 0x1DC
+                    Vec diff;
+                    PSVECSubtract(&(*(PuniData**)((u8*)self + 0x1DC))->field_0x12C, &self->field_0x12C, &diff);  // PuniData 0x1DC
+                    if (PSVECMag(&diff) > *(f32*)((u8*)(*(PuniData**)((u8*)self + 0x1DC)) + 0x19C)) {  // PuniData 0x1DC
+                        PSVECNormalize(&diff, &diff);
+                        diff.y = 0.0f;
+                        PSVECScale(&diff, &diff, 1.0f);
+                        PSVECAdd((Vec*)&self->field_0x15C, &diff, (Vec*)&self->field_0x15C);
+                        self->field_0x174 = 3.0f;
+                    } else {
+                        puniParaAttack(self, *(PuniData**)((u8*)self + 0x1DC));  // PuniData 0x1DC
+                    }
                 }
             }
             break;
@@ -6125,84 +6128,114 @@ void unk_mri_00012d58(PuniData* self) {
         self->unk4 &= ~0x8000;
         puniModeWind(self);
         break;
-    case 15:
+    case 15: {
+        u8* p = (u8*)self;
+        s32 flag;
         self->unk4 |= 0x8000;
-        switch (self->field_0x114) {
-        case 0: {
-            BOOL range = FALSE;
-            s32 state;
-            Vec pos;
-            f32 hitY;
-            Vec normal;
-            f32 hitX;
-            f32 hitNX;
-            f32 hitNY;
-            f32 hitZ;
-            f32 bottom;
-            f32 top;
-            f32 hitNZ;
-            f32 distance;
-            PuniWork* gp = Punigp;
-            top = gp->field_0x350;
-            bottom = gp->field_0x354;
-            if (-1000.0f != top && self->field_0x12C.y < top && self->field_0x12C.y > bottom) {
-                range = TRUE;
-            }
-            top = gp->field_0x358;
-            bottom = gp->field_0x35C;
-            if (-1000.0f != top && self->field_0x12C.y < top && self->field_0x12C.y > bottom) {
-                range = TRUE;
-            }
-            if (!range) {
-                state = 1;
-            } else {
-                pos = self->field_0x12C;
-                pos.y += 1.0f;
-                normal = (Vec){0.0f, -1.0f, 0.0f};
-                distance = 3.0f;
-                if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                   pos.x, pos.y, pos.z, normal.x, normal.y, normal.z) == NULL) {
-                    state = 2;
-                } else {
-                    state = 0;
+        switch (*(u16*)(p + 0x114)) {
+            case 0:
+                flag = 0;
+                {
+                    f32 hi = Punigp->field_0x354;
+                    f32 lo = Punigp->field_0x350;
+                    if (lo != -1000.0f && *(f32*)(p + 0x130) < lo && *(f32*)(p + 0x130) > hi) {
+                        flag = 1;
+                    }
                 }
-            }
-            if (state != 0) {
-                self->field_0x58C = state;
-                *(Vec*)&self->field_0x590 = self->field_0x12C;
-                self->field_0x12C = Punigp->field_0x344;
-                self->field_0x12C.x += randf(0.0f, 2.0f) - 1.0f;
-                self->field_0x12C.z += randf(0.0f, 2.0f) - 1.0f;
-                self->field_0x138 = self->field_0x12C;
-                *(Vec*)&self->field_0x59C = self->field_0x12C;
-            }
-            self->field_0x114 = 1;
-            break;
-        }
-        case 1:
-            self->unkC = 0x10;
-            self->field_0x114 = 0;
-            break;
-        default:
-            break;
+                {
+                    f32 lo = Punigp->field_0x358;
+                    f32 hi = Punigp->field_0x35C;
+                    if (lo != -1000.0f && *(f32*)(p + 0x130) < lo && *(f32*)(p + 0x130) > hi) {
+                        flag = 1;
+                    }
+                }
+                if (flag == 0) {
+                    flag = 1;
+                } else {
+                    puniCase15Hit(self, &flag);
+                }
+                if (flag != 0) {
+                    *(s32*)(p + 0x58C) = flag;
+                    *(Vec*)(p + 0x590) = *(Vec*)(p + 0x12C);
+                    *(Vec*)(p + 0x12C) = *(Vec*)&Punigp->field_0x344;
+                    *(f32*)(p + 0x12C) += puniRandfRecover(0.0f, 2.0f) - 1.0f;
+                    *(f32*)(p + 0x134) += puniRandfRecover(0.0f, 2.0f) - 1.0f;
+                    *(Vec*)(p + 0x138) = *(Vec*)(p + 0x12C);
+                    *(Vec*)(p + 0x59C) = *(Vec*)(p + 0x12C);
+                }
+                *(u16*)(p + 0x114) = 1;
+                break;
+            case 1:
+                *(u16*)(p + 0xC) = 0x10;
+                *(u16*)(p + 0x114) = 0;
+                break;
         }
         break;
+    }
     case 16:
         self->unk4 |= 0x8000;
         puniModeHagure(self);
         break;
-    case 18:
+    case 18: {
+        Vec pos;
         self->unk4 |= 0x8000;
-        puniModePreupdraft(self);
+        switch (self->field_0x114) {
+        case 0:
+            pos = self->field_0x12C;
+            pos.y += 15.0f;
+            pos.z += 3.0f;
+            *(EffectEntry**)((u8*)self + 0x218) = effPuniBalloonEntry(0, pos.x, pos.y, pos.z, 1.5f);
+            self->field_0x128 = rand() % 201 + 0x1E;
+            self->field_0x114 = 1;
+            /* fallthrough */
+        case 1:
+            if ((self->field_0x128)-- == 0) {
+                u32* p = *(u32**)((u8*)self + 0x0);
+                *p |= 4;
+                self->unkC = 0x13;
+                self->field_0x114 = 0;
+            }
+            break;
+        }
         break;
+    }
     case 19:
         self->unk4 |= 0x8000;
         puniModeUpdraft(self);
         break;
-    case 20:
+    case 20: {
+        Vec pos;
         self->unk4 |= 0x8000;
-        puniModeWonder(self);
+        switch (self->field_0x114) {
+        case 0:
+            psndSFXOn_3D("SFX_STG2_SOAPBALL_BREAK1\000\000\000", (Vec*)((u8*)self + 0x12C));
+            if (*(u32*)((u8*)self + 0x218) != 0) {
+                effDelete((EffectEntry*)self->field_0x218);
+                self->field_0x218 = 0;
+            }
+            pos = self->field_0x12C;
+            pos.y += 15.0f;
+            pos.z += 3.0f;
+            *(EffectEntry**)((u8*)self + 0x218) = effPuniBalloonEntry(1, pos.x, pos.y, pos.z, 1.5f);
+            self->field_0x128 = 0x14;
+            self->field_0x11C = 9;
+            self->field_0x124 = 0;
+            self->unk4 |= 0x01000000;
+            self->field_0x114 = 1;
+            /* fallthrough */
+        case 1:
+            if ((self->field_0x128)-- == 0) {
+                u32* p = *(u32**)((u8*)self + 0x0);
+                *p &= ~0x4;
+                self->unkC = 0x15;
+                self->field_0x11C = 1;
+                self->unk4 &= ~0x01000000;
+                self->field_0x114 = 0;
+            }
+            break;
+        }
         break;
+    }
     case 21:
         self->unk4 |= 0x8000;
         puniModeFunbari(self);

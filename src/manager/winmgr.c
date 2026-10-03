@@ -1638,6 +1638,318 @@ void select_disp(WinMgrEntry* entry) {
 }
 
 
+__declspec(section ".sdata2") f32 float_170_80421a98 = 170.0f;
+#pragma opt_propagation off // needed: the target's constant/register schedule wants CSE off here
+// Complete reconstruction; all 48 calls, the four jump tables, the techLevel loop bound
+// (recomputed every arrow iteration) and the name-switch phi match. Two target behaviours had
+// to be reproduced explicitly: (1) the name/icon switches have no `default:` (a value > 6 falls
+// through with the result variable uninitialised), and that is what makes MWCC materialise each
+// switch result in r23/r24/r25 (a `mr` per case plus the join `mr r3,r25`); merging case 6 with
+// default coalesces them away. (2) The target reloads several in-loop vec constants every
+// iteration where MWCC would hoist them: vec3_802ffb7c/88/94 are read through `const volatile` (assignments marked "anti-hoist"
+// below), which restores the reloads and the target's callee-saved set (stmw r17). The per-block
+// statement order is also chosen to match the target's schedule: the icon block computes
+// tmpIcon.x before rowY, the arrow block computes tmpArrow.x before rowY, the arrow loop declares
+// `off` before `k`, and both loop increments are ordered to match the target's `addi` sequence.
+// nonmatch note: the calls and every immediate match (tools/diff_shape.py). The frame (0x1d0),
+// the callee-saved set (stmw r17) and every stack slot match; the icon block and both title
+// blocks match register for register. What is left (99.90%, 13 `!!`): the named .rodata i2f pool
+// double at +0x468 is emitted as an anonymous copy at +0x548 (the same project-wide limitation as
+// select_disp/select_disp_luigi; 9 of the 13), the two colorWhite/colorWhite2 stack stores/loads
+// (0x24/0x28; 3, same value, order only), and the outer-loop i*4 init (`slwi r28,r27,2` vs the
+// target's `mr r28,r27`; 1). The outer loop is written `for (j = 0, i = j; ...)` so the target's
+// `li r27; ...; li r22` init order is reproduced; the target's dead
+// `lwz r0,0x38(r30); cmpwi r0,0x0` before the first winFontInit is reproduced by
+// `if (select->field_0x38) { zero = zero; }` (the dead store is removed, the compare stays).
+// NONMATCHING (0.00%): the i2f pool double, colour store order and the i*4 init.
+void select_disp_party(WinMgrEntry* entry) {
+    WinMgrSelect* select = (WinMgrSelect*)entry->param;
+    PouchData* pouch = pouchGetPtr();
+    s32 i;
+    s32 j;
+    Vec posName, tmpName, scaleName, scaleTmp;
+    Vec posIcon, tmpIcon, scaleIcon;
+    Vec posArrow, tmpArrow, scaleArrow;
+    Vec posTitle, tmpTitle, scaleTitle;
+    Vec posTitle2, tmpTitle2, scaleTitle2;
+    Vec posMain;
+    Vec posUp;
+    Vec posDown;
+    u32 scissorLeft;
+    u32 scissorTop;
+    u32 scissorWidth;
+    u32 scissorHeight;
+    GXColor colorBlack = dat_80421a44;
+    GXColor colorGray = dat_80421a48;
+    GXColor colorWhite = dat_80421a4c;
+    GXColor colorWhite2 = dat_80421a4c;
+    GXColor fogColor;
+    const char* msg;
+    u16 width;
+    u16 x;
+    f32 zero;
+    f32 scale;
+
+    if (wp->mEntries[select->descriptorId[0]].flags & 4) {
+        return;
+    }
+
+    fogColor = dat_80421a50;
+#ifdef MUST_MATCH
+    // MUST_MATCH: the original stores the fog colour in fogColor's own slot and passes a pointer
+    // to it; with the by-value GXSetFog prototype MWCC copies it to a call temp. Same as select_disp.
+    ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(0, float_0_80421a80, float_0_80421a80, float_0_80421a80, float_0_80421a80, &fogColor);
+#else
+    GXSetFog(0, float_0_80421a80, float_0_80421a80, float_0_80421a80, float_0_80421a80, fogColor);
+#endif
+    GXGetScissor(&scissorLeft, &scissorTop, &scissorWidth, &scissorHeight);
+    GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
+
+    zero = 0.0f;
+    for (j = 0, i = j; i < select->field_0x34; j += 0x18, i++) {
+        f32 row;
+        f32 bound;
+        u16 w;
+
+        row = (f32)(entry->field_0x1C - 0x2c - j);
+        bound = select->field_0x1C + (zero + row);
+        if ((f32)entry->field_0x1C < bound - 32.0f) {
+            continue;
+        }
+        if ((f32)(entry->field_0x1C - entry->field_0x24) > bound + 32.0f) {
+            continue;
+        }
+
+        if (*(volatile s32*)&select->field_0x38) {
+            zero = zero;
+        }
+        winFontInit();
+        {
+            GXColor color;
+            f32 rowY;
+            const char* n1;
+            const char* n2;
+            const char* n3;
+
+            tmpName = vec3_802ffb58;
+            tmpName.x = (f32)(entry->field_0x18 + 0x3c);
+            rowY = (f32)(entry->field_0x1C - 0x20 - j);
+            tmpName.y = select->field_0x1C + (zero + rowY);
+            posName = tmpName;
+            scaleTmp = vec3_802ffb64;
+
+            switch (((WinMgrSelectItem*)select->field_0x30)[i].field_0x2) {
+            case 0:
+                n1 = msgSearch(str_802FFD38);
+                break;
+            case 1:
+                n1 = msgSearch(str_802FFD44);
+                break;
+            case 2:
+                n1 = msgSearch(str_802FFD50);
+                break;
+            case 3:
+                n1 = pouchGetYoshiName();
+                break;
+            case 4:
+                n1 = msgSearch(str_802FFD5C);
+                break;
+            case 5:
+                n1 = msgSearch(str_802FFD68);
+                break;
+            case 6:
+                n1 = msgSearch(str_802FFD74);
+                break;
+            }
+
+            w = FontGetMessageWidth(n1);
+            if (w > 0xaa) {
+                switch (((WinMgrSelectItem*)select->field_0x30)[i].field_0x2) {
+                case 0:
+                    n2 = msgSearch(str_802FFD38);
+                    break;
+                case 1:
+                    n2 = msgSearch(str_802FFD44);
+                    break;
+                case 2:
+                    n2 = msgSearch(str_802FFD50);
+                    break;
+                case 3:
+                    n2 = pouchGetYoshiName();
+                    break;
+                case 4:
+                    n2 = msgSearch(str_802FFD5C);
+                    break;
+                case 5:
+                    n2 = msgSearch(str_802FFD68);
+                    break;
+                case 6:
+                    n2 = msgSearch(str_802FFD74);
+                    break;
+                }
+                scale = float_170_80421a98 / (f32)FontGetMessageWidth(n2);
+            } else {
+                scale = 1.0f;
+            }
+            scaleTmp.x = scale;
+            scaleName = scaleTmp;
+
+            color = (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) ? colorGray : colorBlack;
+
+            switch (((WinMgrSelectItem*)select->field_0x30)[i].field_0x2) {
+            case 0:
+                n3 = msgSearch(str_802FFD38);
+                break;
+            case 1:
+                n3 = msgSearch(str_802FFD44);
+                break;
+            case 2:
+                n3 = msgSearch(str_802FFD50);
+                break;
+            case 3:
+                n3 = pouchGetYoshiName();
+                break;
+            case 4:
+                n3 = msgSearch(str_802FFD5C);
+                break;
+            case 5:
+                n3 = msgSearch(str_802FFD68);
+                break;
+            case 6:
+                n3 = msgSearch(str_802FFD74);
+                break;
+            }
+            winFontSet(&posName, &scaleName, &color, n3);
+        }
+
+        if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) {
+            winIconGrayInit();
+        } else {
+            winIconInit();
+        }
+        {
+            f32 rowY;
+            s32 icon;
+            GXColor color;
+
+            tmpIcon = vec3_802ffb70;
+            tmpIcon.x = (f32)(entry->field_0x18 + 0x23);
+            rowY = (f32)(entry->field_0x1C - 0x2c - j);
+            tmpIcon.y = select->field_0x1C + (zero + rowY);
+            posIcon = tmpIcon;
+            scaleIcon = *(const volatile Vec*)&vec3_802ffb7c;
+
+            color = colorWhite;
+            icon = party_icon_table[((WinMgrSelectItem*)select->field_0x30)[i].field_0x2];
+            if (icon == 0x158) {
+                switch (pouchGetPartyColor(PARTNER_YOSHI)) {
+                case 0:
+                    icon = 0x158;
+                    break;
+                case 1:
+                    icon = 0x159;
+                    break;
+                case 2:
+                    icon = 0x15a;
+                    break;
+                case 3:
+                    icon = 0x15b;
+                    break;
+                case 4:
+                    icon = 0x15c;
+                    break;
+                case 5:
+                    icon = 0x15d;
+                    break;
+                case 6:
+                default:
+                    icon = 0x15e;
+                    break;
+                }
+            }
+            winIconSet(icon, &posIcon, &scaleIcon, &color);
+        }
+
+        {
+            s32 off;
+            s32 k;
+
+            for (k = 0, off = 0; k < pouch->partyData[party_id_table[((WinMgrSelectItem*)select->field_0x30)[i].field_0x2]].techLevel; off += 0x1b, k++) {
+                if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) {
+                    winIconGrayInit();
+                } else {
+                    winIconInit();
+                }
+                {
+                    GXColor c = colorWhite;
+                    f32 rowY;
+
+                    scaleArrow = *(const volatile Vec*)&vec3_802ffb94;
+                    tmpArrow = *(const volatile Vec*)&vec3_802ffb88;
+                    tmpArrow.x = (f32)(entry->field_0x18 + 0xfd + off);
+                    rowY = (f32)(entry->field_0x1C - 0x2c - j);
+                    tmpArrow.y = select->field_0x1C + (zero + rowY);
+                    posArrow = tmpArrow;
+                    winIconSet(0x102, &posArrow, &scaleArrow, &c);
+                }
+            }
+        }
+    }
+
+    GXSetScissor(scissorLeft, scissorTop, scissorWidth, scissorHeight);
+
+    msg = msgSearch(str_802FFF30);
+    width = FontGetMessageWidth(msg);
+    x = (0x78 - width) / 2;
+    winFontInit();
+    {
+        GXColor color = colorWhite;
+
+        tmpTitle = vec3_802ffba0;
+        scaleTitle = vec3_802ffbac;
+        tmpTitle.x = (f32)(entry->field_0x18 + (entry->field_0x20 * 3 / 5 - 0x78) * 2 / 3 + x);
+        tmpTitle.y = (f32)(entry->field_0x1C + 0xe);
+        posTitle = tmpTitle;
+        winFontSetEdge(&posTitle, &scaleTitle, &color, msg);
+    }
+
+    msg = msgSearch(str_802FFF44);
+    width = FontGetMessageWidth(msg);
+    x = (0x55 - width) / 2;
+    winFontInit();
+    {
+        GXColor color = colorWhite2;
+
+        tmpTitle2 = vec3_802ffbb8;
+        scaleTitle2 = vec3_802ffbc4;
+        tmpTitle2.x = (f32)(entry->field_0x18 + entry->field_0x20 * 3 / 5 + (entry->field_0x20 * 2 / 5 - 0x55) / 3 + x);
+        tmpTitle2.y = (f32)(entry->field_0x1C + 0xe);
+        posTitle2 = tmpTitle2;
+        winFontSetEdge(&posTitle2, &scaleTitle2, &color, msg);
+    }
+
+    posMain = vec3_802ffbd0;
+    posMain.x = select->field_0x14;
+    posMain.y = select->field_0x18;
+    iconDispGx(&posMain, 0x14, 0x1f0, float_1_80421a90);
+
+    if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
+        if (select->field_0x10 != 0) {
+            posUp = vec3_802ffbdc;
+            posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * float_0p5_80421a94;
+            posUp.y = (f32)(entry->field_0x1C - 0x24);
+            iconDispGx(&posUp, 0x10, 0x1b5, float_0p6_80421a8c);
+        }
+        if (select->field_0x10 != select->field_0x34 - 8) {
+            posDown = vec3_802ffbe8;
+            posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 * float_0p5_80421a94;
+            posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
+            iconDispGx(&posDown, 0x10, 0x1b6, float_0p6_80421a8c);
+        }
+    }
+}
+#pragma opt_propagation reset // end the opt_propagation scope from select_disp_party
+
 // Every instruction, call, constant and control-flow edge matches. The only remaining difference is
 // the compiler-generated int->float magic double: MWCC emits an anonymous copy at .rodata+0x548 and
 // references that, where the original references the named double_to_int_802fff00 at .rodata+0x468
