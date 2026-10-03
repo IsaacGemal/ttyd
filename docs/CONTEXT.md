@@ -4173,3 +4173,13 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
 - **Wave 68** (18:20, base 28c77d77, `scratch/wave68/`): 5 link agents for the units wave 66 brought to 100%
   (battle_damage, eff_fire, eff_ripple_n64, party_move, party_vivian) and 24 near-miss agents in units waves 66/67
   didn't touch. Prompts now forbid model, tool and process names in source comments.
+- **Wave 68** results: its five link agents were skipped at launch because wave 66 still held those units (claims
+  are released after a merge, and the launch came first); they went into wave 69. Near-miss arm: evt_item,
+  party_chuchu and yuu evt_yuuranking +1 at 100% each (9,345 -> 9,348); all of evt_item is now 100%, held back
+  from linking only by float_0p5_8041af58, which no source defines (now MUST_MATCH only and out of the shared
+  header). Review: `scratch/wave68/review1.md`.
+- **Wave 69** (19:45, base 5aba9514, `scratch/wave69/`): 7 link agents (the five above, fadedrv, eff_kumokumo_n64),
+  13 data-port agents (party_motion_homing_walk with its three traps as the unit hint, imgDisp/imgShadowDisp,
+  msgWindow_Disp, winRootMain, winBookGX, nameMain, select_disp_mario, bom_01 x3 and others) and 25 near-miss
+  agents. The data-port prompt adds Claude #1's rule: name the field offset of every store and the symbol of every
+  float constant the asm uses, and confirm the C matches; fuzzy scores see neither.
