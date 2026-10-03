@@ -1133,7 +1133,7 @@ static inline char* wmDispNum(WM_BASE_PARAMS s32 width, s32 num) {
 // 0x1C0 matches the 0x1940 frame.
 #pragma inline_max_total_size(60000) // keep wmDispZenkaku/wmDispNum inlined with the by-value color copies
 #pragma inline_max_size(1000)
-// NONMATCHING (93.79%): same 179 calls and no differing immediates; FP/GPR colouring and scheduling differ.
+// NONMATCHING (93.98%): same 179 calls and no differing immediates; FP/GPR colouring and scheduling differ.
 void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     // Draws the Mario status panel: name/level/rank, HP/FP/BP, star pieces and
     // shine sprites, the play-time clock and the collected star powers.
@@ -1169,11 +1169,11 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         f18 = float_10_8041d61c + (x - float_265_8041d60c);
         winFontInit();
         f25 = float_152_8041d620 + y;
+        c = white2;
+        scale = VEC_AT(0x270);
         tmp = VEC_AT(0x264);
         tmp.x = f18;
         tmp.y = f25;
-        c = white2;
-        scale = VEC_AT(0x270);
         pos = tmp;
         winFontSetEdge(&pos, &scale, &c, msgSearch(STR_AT(0x744)));
     }
@@ -1193,11 +1193,11 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     winFontInit();
     {
         Vec pos, scale, tmp;
+        c = white2;
+        scale = VEC_AT(0x2A0);
         tmp = VEC_AT(0x294);
         tmp.x = f18;
         tmp.y = f25;
-        c = white2;
-        scale = VEC_AT(0x2A0);
         pos = tmp;
         winFontSetEdge(&pos, &scale, &c, msgSearch(STR_AT(0x750)));
     }
@@ -1206,22 +1206,22 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         Vec pos, scale, tmp;
         sprintf(buf, str_8041D63C, WM_ZENKAKU(pouch->level));
         winFontInit();
-        tmp = VEC_AT(0x2AC);
+        c = white2;
         scale = VEC_AT(0x2B8);
+        tmp = VEC_AT(0x2AC);
         tmp.x = (x - float_265_8041d60c + float_190_8041d614)
                 - float_0p8_8041d624 * (f32)(u16)FontGetMessageWidth(buf)
                 - float_10_8041d61c;
         tmp.y = f25;
         pos = tmp;
-        c = white2;
         winFontSetEdge(&pos, &scale, &c, buf);
     }
     winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
     {
         Vec tr, sc, tmp;
         tmp = VEC_AT(0x2C4);
-        tmp.x = x - float_255_8041d640;
         tmp.y = float_112_8041d644 + y;
+        tmp.x = x - float_255_8041d640;
         tr = tmp;
         sc = VEC_AT(0x2D0);
         winTexSet(0xB0, tr, sc, white);
@@ -1230,10 +1230,10 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec pos, scale, tmp;
         c = black;
+        scale = VEC_AT(0x2E8);
         tmp = VEC_AT(0x2DC);
         tmp.x = x - float_240_8041d648;
         tmp.y = float_124_8041d64c + y;
-        scale = VEC_AT(0x2E8);
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(BattleGetRankNameLabel(pouch->level)));
     }
@@ -1252,8 +1252,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     f24 = float_50_8041d65c + (x - float_270_8041d650);
     f25 = f24 - float_2_8041d660;
     f28 = y - float_38_8041d668;
-    f19 = float_4_8041d66c;
     f20 = float_12_8041d670;
+    f19 = float_4_8041d66c;
     f21 = float_21_8041d674;
     {
         GXColor colTbl[3];
@@ -1264,45 +1264,45 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         const char* mRaw;
         const char* mTag;
         Vec tr, sc, tmp, pos, scale;
-        tagTbl[0] = WM_TAG_TBL(0);
-        tagTbl[1] = WM_TAG_TBL(1);
-        tagTbl[2] = WM_TAG_TBL(2);
+        rawTbl[0] = WM_RAW_TBL(0);
         colTbl[0] = GXC_AT(0x2F4);
         colTbl[1] = GXC_AT(0x2F8);
         colTbl[2] = GXC_AT(0x2FC);
-        rawTbl[0] = WM_RAW_TBL(0);
+        tagTbl[0] = WM_TAG_TBL(0);
+        tagTbl[1] = WM_TAG_TBL(1);
+        tagTbl[2] = WM_TAG_TBL(2);
         rawTbl[1] = WM_RAW_TBL(1);
         rawTbl[2] = WM_RAW_TBL(2);
         hiliteTbl[0] = GXC_AT(0x300);
         hiliteTbl[1] = GXC_AT(0x304);
         hiliteTbl[2] = GXC_AT(0x308);
         mRaw = rawTbl[i];
-        mTag = tagTbl[i];
         f23 = (f32)(u16)FontGetMessageWidth(mRaw);
         f22 = float_0p5_8041d664 * (f32)(u16)FontGetMessageWidth(msgSearch(mTag));
         winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
         GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
         GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+        mTag = tagTbl[i];
         f18 = f28 - (f32)j;
-        tmp = VEC_AT(0x36C);
+        scale = VEC_AT(0x390);
         tmp.x = f25;
         tmp.y = f18 - float_4_8041d66c;
+        tmp.y = f20 + f18;
         tr = tmp;
+        tmp = VEC_AT(0x36C);
         sc = VEC_AT(0x378);
         winTexSet(0xAF, tr, sc, colTbl[i]);
         winFontInit();
         tmp = VEC_AT(0x384);
         tmp.x = f24 - f27 * f23;
-        tmp.y = f20 + f18;
-        scale = VEC_AT(0x390);
-        pos = tmp;
         c = black;
+        pos = tmp;
         winFontSet(&pos, &scale, &c, mRaw);
+        c = hiliteTbl[i];
+        scale = VEC_AT(0x3A8);
         tmp = VEC_AT(0x39C);
         tmp.x = f24 - f27 * f22;
         tmp.y = f21 + f18;
-        c = hiliteTbl[i];
-        scale = VEC_AT(0x3A8);
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(mTag));
     }
@@ -1348,10 +1348,10 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     f28 = float_4_8041d66c + (float_12_8041d670 + (y - float_38_8041d668));
     {
         Vec pos, scale, tmp;
+        scale = VEC_AT(0x408);
         tmp = VEC_AT(0x3FC);
         tmp.x = f18;
         tmp.y = f28;
-        scale = VEC_AT(0x408);
         pos = tmp;
         c = black;
         winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->currentHP));
@@ -1359,20 +1359,20 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     f24 = float_4_8041d66c + (float_12_8041d670 + f24);
     {
         Vec pos, scale, tmp;
+        scale = VEC_AT(0x420);
         tmp = VEC_AT(0x414);
         tmp.x = f18;
         tmp.y = f24;
-        scale = VEC_AT(0x420);
         pos = tmp;
         c = black;
         winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->currentFP));
     }
     {
         Vec pos, scale, tmp;
+        scale = VEC_AT(0x438);
         tmp = VEC_AT(0x42C);
         tmp.x = f18;
         tmp.y = float_4_8041d66c + (float_12_8041d670 + f25);
-        scale = VEC_AT(0x438);
         pos = tmp;
         c = black;
         winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->maximumBP));
@@ -1382,40 +1382,40 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec tr, sc, tmp;
         tmp = VEC_AT(0x444);
-        tmp.x = f18;
         tmp.y = f26;
+        tmp.x = f18;
         tr = tmp;
         sc = VEC_AT(0x450);
         winTexSet(0x10, tr, sc, white);
     }
     {
         Vec tr, sc, tmp;
-        tmp = VEC_AT(0x45C);
         tmp.x = f18;
+        tmp = VEC_AT(0x45C);
         tmp.y = f27;
         tr = tmp;
         sc = VEC_AT(0x468);
         winTexSet(0x10, tr, sc, white);
     }
+    f28 = float_4_8041d66c + (float_12_8041d670 + (y - float_38_8041d668));
     winFontInit();
     f18 = float_200_8041d684 + (x - float_270_8041d650);
-    f28 = float_4_8041d66c + (float_12_8041d670 + (y - float_38_8041d668));
     {
         Vec pos, scale, tmp;
-        tmp = VEC_AT(0x474);
-        tmp.x = f18;
-        tmp.y = f28;
         scale = VEC_AT(0x480);
+        tmp = VEC_AT(0x474);
+        tmp.y = f28;
+        tmp.x = f18;
         pos = tmp;
         c = black;
         winFontSet(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->maximumHP));
     }
     {
         Vec pos, scale, tmp;
+        scale = VEC_AT(0x498);
         tmp = VEC_AT(0x48C);
         tmp.x = f18;
         tmp.y = f24;
-        scale = VEC_AT(0x498);
         pos = tmp;
         c = black;
         winFontSet(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->maximumFP));
@@ -1444,19 +1444,19 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
             c = white2;
             sc = VEC_AT(0x4C8);
             tmp = VEC_AT(0x4BC);
-            tmp.x = f18;
             tmp.y = f19;
+            tmp.x = f18;
             tr = tmp;
             winIconSet(0x197, &tr, &sc, &c);
         }
         winFontInit();
         {
             Vec pos, scale, tmp;
+            c = white2;
+            scale = VEC_AT(0x4E0);
             tmp = VEC_AT(0x4D4);
             tmp.x = float_10_8041d61c + (float_70_8041d698 + x);
             tmp.y = float_10_8041d61c + f19;
-            c = white2;
-            scale = VEC_AT(0x4E0);
             pos = tmp;
             winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x768)));
         }
@@ -1466,15 +1466,15 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
             Vec tr, sc, tmp;
             c = white3;
             if (i < pouch->currentSP / 100) {
-                tmp = VEC_AT(0x4EC);
                 sc = VEC_AT(0x4F8);
+                tmp = VEC_AT(0x4EC);
                 tmp.x = f19 + (f32)j;
                 tmp.y = f24;
                 tr = tmp;
                 winIconSet(0x1B7 + i, &tr, &sc, &c);
             } else {
-                tmp = VEC_AT(0x504);
                 sc = VEC_AT(0x510);
+                tmp = VEC_AT(0x504);
                 tmp.x = f19 + (f32)j;
                 tmp.y = f24;
                 tr = tmp;
@@ -1491,8 +1491,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec tr, sc, tmp;
         c = white2;
-        tmp = VEC_AT(0x51C);
         sc = VEC_AT(0x528);
+        tmp = VEC_AT(0x51C);
         tmp.x = f24;
         tmp.y = float_10_8041d61c + y;
         tr = tmp;
@@ -1501,8 +1501,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec tr, sc, tmp;
         c = white2;
-        tmp = VEC_AT(0x534);
         sc = VEC_AT(0x540);
+        tmp = VEC_AT(0x534);
         tmp.x = f24;
         tmp.y = float_10_8041d61c + (y - float_28_8041d6a0);
         tr = tmp;
@@ -1511,8 +1511,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec tr, sc, tmp;
         c = white2;
-        tmp = VEC_AT(0x54C);
         sc = VEC_AT(0x558);
+        tmp = VEC_AT(0x54C);
         tmp.x = f24;
         tmp.y = float_10_8041d61c + (y - float_56_8041d6a4);
         tr = tmp;
@@ -1521,8 +1521,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec tr, sc, tmp;
         c = white2;
-        tmp = VEC_AT(0x564);
         sc = VEC_AT(0x570);
+        tmp = VEC_AT(0x564);
         tmp.x = f24;
         tmp.y = float_10_8041d61c + (y - float_84_8041d6a8);
         tr = tmp;
@@ -1531,8 +1531,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec tr, sc, tmp;
         c = white2;
-        tmp = VEC_AT(0x57C);
         sc = VEC_AT(0x588);
+        tmp = VEC_AT(0x57C);
         tmp.x = f24;
         tmp.y = float_10_8041d61c + (y - float_112_8041d644);
         tr = tmp;
@@ -1545,55 +1545,55 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     f26 = float_10_8041d61c + f25;
     {
         Vec pos, scale, tmp;
+        c = white2;
+        scale = VEC_AT(0x5A0);
         tmp = VEC_AT(0x594);
         tmp.x = f24;
         tmp.y = f26;
-        c = white2;
-        scale = VEC_AT(0x5A0);
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x780)));
     }
     f27 = float_10_8041d61c + (f25 - float_28_8041d6a0);
     {
         Vec pos, scale, tmp;
+        c = white2;
+        scale = VEC_AT(0x5B8);
         tmp = VEC_AT(0x5AC);
         tmp.x = f24;
         tmp.y = f27;
-        c = white2;
-        scale = VEC_AT(0x5B8);
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x798)));
     }
     f28 = float_10_8041d61c + (f25 - float_56_8041d6a4);
     {
         Vec pos, scale, tmp;
+        c = white2;
+        scale = VEC_AT(0x5D0);
         tmp = VEC_AT(0x5C4);
         tmp.x = f24;
         tmp.y = f28;
-        c = white2;
-        scale = VEC_AT(0x5D0);
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x7B0)));
     }
     f29 = float_10_8041d61c + (f25 - float_84_8041d6a8);
     {
         Vec pos, scale, tmp;
-        tmp = VEC_AT(0x5DC);
-        tmp.x = f24;
-        tmp.y = f29;
         c = white2;
         scale = VEC_AT(0x5E8);
+        tmp = VEC_AT(0x5DC);
+        tmp.y = f29;
+        tmp.x = f24;
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x7CC)));
     }
     f25 = float_10_8041d61c + (f25 - float_112_8041d644);
     {
         Vec pos, scale, tmp;
+        c = white2;
+        scale = VEC_AT(0x600);
         tmp = VEC_AT(0x5F4);
         tmp.x = f24;
         tmp.y = f25;
-        c = white2;
-        scale = VEC_AT(0x600);
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x7EC)));
     }
@@ -1622,8 +1622,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x63C);
-        tmp.x = f18;
         tmp.y = f28;
+        tmp.x = f18;
         pos = tmp;
         scale = VEC_AT(0x648);
         c = white2;
@@ -1632,8 +1632,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x654);
-        tmp.x = f18;
         tmp.y = f29;
+        tmp.x = f18;
         pos = tmp;
         scale = VEC_AT(0x660);
         c = white2;
@@ -1647,8 +1647,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         u32 mins;
         secs = gp->retraceLocalTime / (s64)(*(volatile u32*)0x800000F8 >> 2);
         if ((u64)secs > 359999) {
-            hours = 99;
             mins = 59;
+            hours = 99;
         } else {
             hours = (u32)((u64)secs / 3600);
             mins = (u32)(((u64)secs % 3600) / 60);
@@ -1673,11 +1673,11 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     f19 = float_10_8041d61c + (float_190_8041d614 + x);
     for (i = 0, j = 0; i < 4; i++, j += 0x1C) {
         Vec tr, sc, tmp;
-        tmp = VEC_AT(0x69C);
         tmp.x = f19;
+        sc = VEC_AT(0x6A8);
+        tmp = VEC_AT(0x69C);
         tmp.y = float_10_8041d61c + (y - (f32)j);
         tr = tmp;
-        sc = VEC_AT(0x6A8);
         winTexSet(0x11, tr, sc, white);
     }
     {
@@ -1721,8 +1721,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         f26 = float_90_8041d6d8 + x - float_270_8041d650;
         {
             Vec pos, scale, tmp;
-            scale = VEC_AT(0x6D8);
             c = white2;
+            scale = VEC_AT(0x6D8);
             tmp = VEC_AT(0x6CC);
             tmp.x = f26;
             pos = tmp;
@@ -1730,8 +1730,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         }
         {
             Vec pos, scale, tmp;
-            scale = VEC_AT(0x6F0);
             c = white2;
+            scale = VEC_AT(0x6F0);
             tmp = VEC_AT(0x6E4);
             tmp.x = f24 - float_270_8041d650;
             pos = tmp;
@@ -1753,17 +1753,17 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
             tmp.y = (f32)(0x82 - j);
             pos1 = tmp;
             winFontSetLabel(&pos1, &scale1, &c, sa->field_0);
+            c = black;
             sprintf(buf, str_8041D63C, WM_ZENKAKU(sa->field_12));
             drop = (f32)(0x82 - j);
-            tmp = VEC_AT(0x714);
             scale2 = VEC_AT(0x720);
-            c = black;
+            tmp = VEC_AT(0x714);
             tmp.x = f20 - (f32)((u16)FontGetMessageWidth(buf) >> 1);
             tmp.y = drop;
             pos2 = tmp;
             winFontSet(&pos2, &scale2, &c, buf);
-            tmp = VEC_AT(0x72C);
             scale3 = VEC_AT(0x738);
+            tmp = VEC_AT(0x72C);
             tmp.x = f21;
             tmp.y = (f32)(0x78 - j);
             pos3 = tmp;

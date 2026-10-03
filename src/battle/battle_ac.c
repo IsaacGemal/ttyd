@@ -131,28 +131,26 @@ extern const GuardFrames N_normal_guard_frames[];
 extern const GuardFrames N_superguard_frames[];
 #endif
 
-// NONMATCHING (32.95%): register allocation only. Retail materialises `N_superguard_frames` with a
-// separate `addi r7, r6, @l` before the `lwzu` and uses `lwzu` for both tables; ours folds the low
-// addend into the `lwzu` offset for the second table. Every instruction is otherwise identical.
 s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	BattleWork* work = _battleWorkPointer;
 	BattleWorkPad* pad = &work->actionCommands.pad;
 	GuardFrames normal;
 	GuardFrames super;
 	s16* guardFrames = (s16*)&work->actionCommands.field_78[0x10];
-	s32 index;
-	s32 normalFrames;
-	s32 superFrames;
-	s32 i;
-	s32 count;
-	s32 trigger;
 	s32 defended = 0;
+	s32 index;
+	s32 i;
+	s32 superFrames;
+	s32 count;
+	s32 normalFrames;
+	s32 trigger;
 
 	normal = N_normal_guard_frames[0];
 	super = N_superguard_frames[0];
 	work->actionCommands.mDefenseResult = 0;
 
-	index = unit->badgesEquipped.Unsimplifier + 3 - unit->badgesEquipped.Simplifier;
+	index = unit->badgesEquipped.Unsimplifier + 3;
+	index -= unit->badgesEquipped.Simplifier;
 	if (index < 0) {
 		index = 0;
 	}

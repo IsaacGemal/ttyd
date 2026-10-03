@@ -552,13 +552,13 @@ USER_FUNC(set_new_goods_list) {
 	GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff); \
 	dispCnt = 0; \
 	for (row = 0; row < ROWMAX; row++) { \
+		s32 blink; \
 		s32 changed = 0; \
 		s32 j; \
 		s32 cnt = 0; \
 		s32 numval; \
 		s32 flag; \
 		s32 arrow; \
-		s32 blink; \
 		GXColor rowColor; \
 		ROWGUARD \
 		CHGBLOCK(wp, c5, c6) \
@@ -595,23 +595,33 @@ USER_FUNC(set_new_goods_list) {
 // through one `s32 item` local (the target loads it once); several declaration runs are ordered to
 // reproduce MWCC's callee-saved colouring (match-only). The int->float magic is the compiler's own pool
 // entry, so the named double_to_int_802f68a8 / double_to_int_mask_802f68b8 definitions in this file are
-// duplicates: every i2f conversion loads 0x408(r30) instead of the target's 0x3f0(r30).
-// NONMATCHING (96.12%): MWCC callee-saved register colouring is shifted one register (r16/r17 vs
-// the target's r17/r18) through the function, which also makes the frame larger.
+// duplicates: every i2f conversion loads 0x408(r30) instead of the target's 0x3f0(r30). This is the
+// project-wide double_to_int limitation (win_log.c, win_item.c, win_badge.c: the original pool entry is
+// named by symbols.txt; defining/removing the doubles only moves the anonymous copy). The case
+// 17/18 `info` pointer is loaded just before its loop (as the target does); it still lands in r14
+// instead of the target's r17. Three things moved the register allocator: a function-scope
+// `s32 dispOff = 0;` (initialised at entry, used by case 4 and case 5/6/7 whose own declarations were
+// dropped), and the declaration runs of case 17/18, case 5/6/7 and the macro's inner loop reordered.
+// Every immediate, call and case body matches; only allocation and
+// stack slots differ (the 37 i2f `lfd` sites included).
+// NONMATCHING (96.54%): MWCC callee-saved register colouring is shifted one register (r16/r17 vs
+// the target's r17/r18) through the function, which also makes the frame larger (0x7a0 vs 0x780),
+// plus MWCC instruction-scheduling moves in the case 4/5-7 and macro loops.
 void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	UnitWinWork* wp = (UnitWinWork*)param;
 	PouchData* pouch = pouchGetPtr();
+	s32 dispOff = 0;
 
 	// --- flags & 1: selected item's name/description, plus the on-map price icons ---
 	if (wp->flags & 1) {
-		u32 len;
-		s32 sellItem = wp->field_0x8[wp->index];
 		GXColor color;
+		u32 len;
+				s32 i;
+		s32 sellItem = wp->field_0x8[wp->index];
 		const char* sellDesc = itemDataTable[sellItem].description;
-		s32 i;
 		const char* sellName = itemDataTable[sellItem].id;
 
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_120_8041dacc, float_300_8041dad0, float_50_8041dad4,
+windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_120_8041dacc, float_300_8041dad0, float_50_8041dad4,
 		                      float_20_8041dad8);
 		FontDrawStart();
 		FontDrawEdge();
@@ -635,7 +645,6 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				f32 sx, sy, sz;
 				CameraEntry* cam;
 				Vec pos;
-				GXColor iconColor;
 
 				mapObjGetPos(wp->objList[i].name, &pos);
 				cam = camGetPtr(CAMERA_3D);
@@ -772,7 +781,6 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		s32 cnt = pouchGetKeepItemCnt();
 		GXColor color;
 		u32 sc[4];
-		s32 dispOff = 0;
 
 		cnt = (8 - cnt > 0) ? (8 - pouchGetKeepItemCnt()) : 0;
 		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9e8, float_neg24_8041db44, float_100_8041db48, float_300_8041dad0, (f32)(0xdc - cnt * 0x18),
@@ -824,20 +832,20 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	case 15:
 	case 16: {
 		// Item / badge / shop list window.
-		ItemData* const dataBase = itemDataTable;
-		const char* selDesc = 0;
-		s32 xofs;
+		u32 sc[4];
+		s32 dispCnt;
+		s32 n;
 		const char* title;
 		s32 listOff;
-		s32 cnt;
-		s32 n;
-		s32 dispCnt;
-		s32 dispOff;
-		s32 mode50 = wp->field_0x50;
-		s32 limit;
 		GXColor color;
-		u32 sc[4];
+		s32 dispOff;
+		const char* selDesc = 0;
+		ItemData* const dataBase = itemDataTable;
+		s32 xofs;
 
+		s32 mode50 = wp->field_0x50;
+		s32 cnt;
+		s32 limit;
 		if (mode50 == 2 || mode50 == 3) {
 			cnt = pouchGetHaveItemCnt();
 			listOff = ((8 - cnt > 0) ? (8 - pouchGetHaveItemCnt()) : 0) * 0x18;
@@ -1061,17 +1069,17 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 
 	case 17:
 	case 18: {
-		InformantWork* jdt = &_jdt;
-		InformantInfo* info = jdt->info;
-		s32 dispOff;
 		s32 entry;
-		s32 listOff;
-		GXColor color;
-		const u8* prefix;
-		u32 sc[4];
 		const char* title;
-		s32 mode50 = wp->field_0x50;
 		s32 m8 = 8 - wp->field_0x58;
+		s32 mode50 = wp->field_0x50;
+		s32 dispOff;
+		GXColor color;
+		u32 sc[4];
+		InformantInfo* info;
+		const u8* prefix;
+		InformantWork* jdt = &_jdt;
+		s32 listOff;
 
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
 		if (mode50 == 0x11) {
@@ -1109,6 +1117,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
 
 		dispOff = 0;
+		info = jdt->info;
 		for (entry = 0; entry < wp->field_0x58; entry++) {
 			InformantInfo* inf = &info[entry];
 			char buf[0x20];
@@ -1146,14 +1155,13 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	case 6:
 	case 7: {
 		// Party member stats window.
-		GXColor color;
-		s32 dispOff;
-		u32 sc[4];
-		s32 entry;
 		s32 dispCnt;
-		char help[0x40];
-		s32 listOff;
+		u32 sc[4];
 		s32 m8;
+		s32 listOff;
+		GXColor color;
+		char help[0x40];
+		s32 entry;
 
 		*(UstBlk40*)help = *(const UstBlk40*)zero_802f64e8;
 		m8 = 8 - wp->field_0x58;
@@ -1181,14 +1189,14 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 
 		dispCnt = 0;
 		for (entry = 0, dispOff = 0; party_id_table[entry] != 0; entry++) {
-			s32 iconId;
-			GXColor nameColor;
 			char buf[16];
-			s32 flag;
-			const char* name;
 			s32 lvl;
+			const char* name;
 
-			if (wp->field_0x50 == 5 || wp->field_0x50 == 6) {
+						s32 flag;
+			GXColor nameColor;
+			s32 iconId;
+if (wp->field_0x50 == 5 || wp->field_0x50 == 6) {
 				if (!partyChkJoin(party_id_table[entry])) {
 					continue;
 				}
@@ -1310,7 +1318,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXColor color;
 		s32 i;
 		char* p;
-		char buf[0x88];
+		char buf[0x78];
 		s32 lines;
 		char* second = NULL;
 

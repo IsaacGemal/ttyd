@@ -13,17 +13,6 @@ extern const f32 float_8_80422428;
 extern const f32 float_6p2832_8042242c;
 extern const f32 float_0p015625_80422430;
 extern const f32 float_0p5_80422434;
-extern const f32 float_0p125_80422440;
-extern const f32 float_4_80422444;
-#ifdef MUST_MATCH
-// MUST_MATCH: retail reloads float_0 for every FIFO write; a plain const lets MWCC pool it into a
-// register, so declare it volatile to force the same reloads (as in eff_mahorn.c).
-extern const volatile f32 float_0_8042243c;
-extern const f32 float_1_80422438;
-#else
-extern const f32 float_0_8042243c;
-extern const f32 float_1_80422438;
-#endif
 
 //local prototypes
 EffectEntry* effSleepEntry(s32 a1, s32 a2, f32 x, f32 y, f32 z, f32 scale, f32 rotation) {
@@ -56,7 +45,7 @@ EffectEntry* effSleepEntry(s32 a1, s32 a2, f32 x, f32 y, f32 z, f32 scale, f32 r
 	}
 	data->field_0x1C = 0;
 
-	radians = (6.2831855f * rotation) / 360.0f;
+	radians = (float_6p2832_8042242c * rotation) / 360.0f;
 	work = data + 1;
 	for (i = 1, smth = 16; i < effect->count; i++, smth += 16, work++) {
 #ifdef MUST_MATCH
@@ -139,7 +128,7 @@ void effSleepMain(EffectEntry* effect) {
 // Sine of one 1/64-turn step; the multiply order and the u32 parameter are what retail's angle
 // conversion uses.
 static inline f32 effSleepSin(u32 a) {
-	f32 rad = (f32)a * 6.2831855f;
+	f32 rad = float_6p2832_8042242c * (f32)a;
 #ifdef MUST_MATCH
 	// MUST_MATCH: retail keeps the half-scale at the call site; that placement is what gives
 	// effSleepDisp's negEight/half-product their f23/f22 FPRs.
@@ -170,11 +159,10 @@ static inline f32 effSleepVx(f32 nh, f32 s) {
 // headerAlpha r25, angle r29) and the integer add order.
 // The half-scale placement in effSleepSin and the named `nh` half-product (both under MUST_MATCH)
 // fix the callee-saved FPR assignment: retail negEight f23, its half-product f22, the two sine
-// results f21/f20. The code still reads 6.2832/1.0/0.125/4.0 from anonymous literal pools (@NNN)
-// rather than the named float_6p2832/float_1/float_0p125/float_4, which is why .sdata2 is 90.9%
-// (two duplicated pool words); the named form changes the FPR allocation and the all-literal form
-// makes MWCC hang, so linking needs the named-vs-literal issue resolved. Functions all score
-// 100.00%.
+// results f21/f20. Only dat/deg2rad/8/6.2832/0.015625/0.5 are named; the rest (1.0, 0.0, 0.125,
+// 4.0, "Sleep", 360, 16, 0.2) stay literal and the compiler pools them in exactly retail's order,
+// which reproduces the whole .sdata2. Offsetting the 6.2832 multiply as `k * (f32)a` (rather than
+// `(f32)a * k`) in effSleepSin is what pins the last two FPRs (mask f24, 6.2832 f25).
 void effSleepDisp(CameraId camId, EffectEntry* effect) {
 	CameraEntry* cam;
 	GXTexObj texObj;
@@ -257,29 +245,21 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 
 			GXBegin(0x80, 0, 4);
 #ifdef MUST_MATCH
-			GXPosition3f32(effSleepVx(nh, s1), one * (f32)(j + 1), float_0_8042243c);
+			GXPosition3f32(effSleepVx(nh, s1), one * (f32)(j + 1), 0.0f);
 #else
-			GXPosition3f32(effSleepVx(negEight * float_0p5_80422434, s1), one * (f32)(j + 1), float_0_8042243c);
+			GXPosition3f32(effSleepVx(negEight * float_0p5_80422434, s1), one * (f32)(j + 1), 0.0f);
 #endif
-			GXTexCoord2f32(float_0_8042243c, 0.125f * (f32)(7 - j));
-			GXPosition3f32(4.0f + s1, one * (f32)(j + 1), float_0_8042243c);
-#ifdef MUST_MATCH
-			GXTexCoord2f32(*(volatile const f32*)&float_1_80422438, 0.125f * (f32)(7 - j));
-#else
+			GXTexCoord2f32(0.0f, 0.125f * (f32)(7 - j));
+			GXPosition3f32(4.0f + s1, one * (f32)(j + 1), 0.0f);
 			GXTexCoord2f32(1.0f, 0.125f * (f32)(7 - j));
-#endif
-			GXPosition3f32(4.0f + s0, one * (f32)j, float_0_8042243c);
-#ifdef MUST_MATCH
-			GXTexCoord2f32(*(volatile const f32*)&float_1_80422438, 0.125f * (f32)(8 - j));
-#else
+			GXPosition3f32(4.0f + s0, one * (f32)j, 0.0f);
 			GXTexCoord2f32(1.0f, 0.125f * (f32)(8 - j));
-#endif
 #ifdef MUST_MATCH
-			GXPosition3f32(effSleepVx(nh, s0), one * (f32)j, float_0_8042243c);
+			GXPosition3f32(effSleepVx(nh, s0), one * (f32)j, 0.0f);
 #else
-			GXPosition3f32(effSleepVx(negEight * float_0p5_80422434, s0), one * (f32)j, float_0_8042243c);
+			GXPosition3f32(effSleepVx(negEight * float_0p5_80422434, s0), one * (f32)j, 0.0f);
 #endif
-			GXTexCoord2f32(float_0_8042243c, 0.125f * (f32)(8 - j));
+			GXTexCoord2f32(0.0f, 0.125f * (f32)(8 - j));
 		}
 	}
 }
@@ -291,9 +271,3 @@ const f32 float_8_80422428 = 8.0f;
 const f32 float_6p2832_8042242c = 6.2831855f;
 const f32 float_0p015625_80422430 = 0.015625f;
 const f32 float_0p5_80422434 = 0.5f;
-const f32 float_1_80422438 = 1.0f;
-#ifdef MUST_MATCH
-const volatile f32 float_0_8042243c = 0.0f;
-#else
-const f32 float_0_8042243c = 0.0f;
-#endif

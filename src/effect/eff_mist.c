@@ -7,34 +7,21 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .sdata2 named prefix loaded by name (definitions at the end of the file). The 0.0f and every
+// later constant are literals in the code so the compiler pools them, which reproduces the
+// original's mixed named/pooled .sdata2 order.
 extern const f32 float_deg2rad_804214e0;
 extern const f32 float_32_804214e4;
 extern const f32 float_255_804214e8;
 extern const f32 float_0p5_804214ec;
 extern const f32 float_16_804214f0;
-extern const f32 float_0_804214f4;
-extern const f32 float_1_804214f8;
-extern const f32 float_0p9_804214fc;
-extern const f32 float_0p88_80421500;
-extern const f32 float_1p02_80421504;
-extern const f32 float_2_80421508;
-extern const f32 float_0p8_80421514;
-extern const f32 float_10_80421518;
-extern const f32 float_20_8042151c;
-extern const f32 float_6p2832_80421520;
-extern const f32 float_360_80421524;
-extern const f32 float_1p1_80421528;
-extern const f32 float_neg2_8042152c;
-extern const f32 float_0p95_80421530;
-extern const f32 float_neg0p04_80421534;
-extern const f32 float_0p94_80421538;
-extern const f32 float_0p3_8042153c;
-extern const f32 float_200_80421540;
-extern GXColor unk_80423320;
 
-const Vec vec3_802fe908 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fe918 = 4503601774854144.0;
-const char str_8042150C[] = "Mist";
+// .sbss2 zero GXColor scratch. The original section holds unk_80423320 then the hidden
+// gap_10_80423324_sbss2; MWCC lays uninitialised globals out in reverse declaration order.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_80423324_sbss2;
+__declspec(section ".sdata") GXColor unk_80423320;
+#pragma section ".sdata" ".sbss"
 
 EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 	EffectEntry* entry = effEntry();
@@ -43,13 +30,14 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 	s32 numEffects;
 	s32 i;
 	f32 c;
+	f32 s;
 
 	if (type == 4) {
 		numEffects = 2;
 	} else {
 		numEffects = 0xb;
 	}
-	entry->type = str_8042150C;
+	entry->type = "Mist";
 	entry->count = numEffects;
 	work = __memAlloc(HEAP_EFFECT, numEffects * sizeof(MistWork));
 	entry->userdata = work;
@@ -70,12 +58,12 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 	for (i = 1, ptr = work + 1; i < entry->count; i++, ptr++) {
 		ptr->x = (f32)(irand(0x32) - 0x19);
 		ptr->y = (f32)(irand(0x32) - 0x19);
-		ptr->z = float_0_804214f4;
-		ptr->scaleX = ptr->scaleY = ptr->scaleZ = float_0p8_80421514 + (f32)irand(0xc) / float_10_80421518;
-		ptr->velX = (f32)(irand(0xa) - 5) / float_20_8042151c;
-		ptr->velY = (f32)(irand(0xa) - 5) / float_20_8042151c;
-		ptr->velZ = float_0_804214f4;
-		ptr->alpha = float_0_804214f4;
+		ptr->z = 0.0f;
+		ptr->scaleX = ptr->scaleY = ptr->scaleZ = 0.8f + (f32)irand(0xc) / 10.0f;
+		ptr->velX = (f32)(irand(0xa) - 5) / 20.0f;
+		ptr->velY = (f32)(irand(0xa) - 5) / 20.0f;
+		ptr->velZ = 0.0f;
+		ptr->alpha = 0.0f;
 		ptr->life = irand(0x1e) + 0x1e;
 		ptr->counter = 0;
 		ptr->field_0x40 = w - camGetPtr(CAMERA_3D)->viewYaw;
@@ -101,23 +89,24 @@ EffectEntry* effMistEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 w) {
 			ptr->b = 0;
 			break;
 		case 4:
-			ptr->x = float_0_804214f4;
-			ptr->y = float_0_804214f4;
-			ptr->z = float_1_804214f8;
-			ptr->velX = float_1p1_80421528 * (f32)sin(float_6p2832_80421520 * ptr->field_0x40 / float_360_80421524);
-			ptr->velY = float_neg2_8042152c;
-			c = (f32)cos(float_6p2832_80421520 * ptr->field_0x40 / float_360_80421524);
-			ptr->velZ = float_1p1_80421528 * -c;
-			ptr->field_0x28 = float_0p95_80421530;
-			ptr->field_0x2C = float_neg0p04_80421534;
-			ptr->field_0x30 = float_0p94_80421538;
+			ptr->x = 0.0f;
+			ptr->y = 0.0f;
+			ptr->z = 1.0f;
+			s = (f32)sin(6.2831855f * ptr->field_0x40 / 360.0f);
+			ptr->velX = 1.1f * s;
+			ptr->velY = -2.0f;
+			c = (f32)cos(6.2831855f * ptr->field_0x40 / 360.0f);
+			ptr->velZ = 1.1f * -c;
+			ptr->field_0x28 = 0.95f;
+			ptr->field_0x2C = -0.04f;
+			ptr->field_0x30 = 0.94f;
 			ptr->r = 0xff;
 			ptr->g = 0xff;
 			ptr->b = 0xff;
-			ptr->scaleX = float_0p3_8042153c;
-			ptr->scaleY = float_0p3_8042153c;
-			ptr->scaleZ = float_0p3_8042153c;
-			ptr->alpha = float_200_80421540;
+			ptr->scaleX = 0.3f;
+			ptr->scaleY = 0.3f;
+			ptr->scaleZ = 0.3f;
+			ptr->alpha = 200.0f;
 			break;
 		case 5:
 			ptr->r = 0x46;
@@ -179,18 +168,18 @@ void effMistMain(EffectEntry* effect) {
 			work->x += work->velX;
 			work->y += work->velY;
 			work->z += work->velZ;
-			work->velX *= float_0p9_804214fc;
-			work->velY *= float_0p88_80421500;
-			work->velZ *= float_0p9_804214fc;
+			work->velX *= 0.9f;
+			work->velY *= 0.88f;
+			work->velZ *= 0.9f;
 			work->y += work->field_0x28;
 			work->field_0x28 += work->field_0x2C;
 			work->field_0x2C *= work->field_0x30;
-			work->scaleX *= float_1p02_80421504;
-			work->scaleY *= float_1p02_80421504;
-			work->scaleZ *= float_1p02_80421504;
-			work->alpha -= float_2_80421508;
-			if (work->alpha < float_0_804214f4) {
-				work->alpha = float_0_804214f4;
+			work->scaleX *= 1.02f;
+			work->scaleY *= 1.02f;
+			work->scaleZ *= 1.02f;
+			work->alpha -= 2.0f;
+			if (work->alpha < 0.0f) {
+				work->alpha = 0.0f;
 			}
 			break;
 		default:
@@ -202,9 +191,9 @@ void effMistMain(EffectEntry* effect) {
 				}
 			} else {
 				work->alpha -= (f32)irand(5);
-				if (work->alpha < float_0_804214f4) {
+				if (work->alpha < 0.0f) {
 					work->counter = 0;
-					work->alpha = float_0_804214f4;
+					work->alpha = 0.0f;
 				}
 			}
 			work->x += work->velX;
@@ -231,10 +220,8 @@ static inline GXColor mistColor(u8 r, u8 g, u8 b, u8 a) {
 }
 #endif
 
-// Matching. The colour helper above keeps retail's stack slots. The int->float magic and the 0.0f/1.0f
-// vertex literals pool as anonymous @NN rather than the named
-// double_to_int_802fe918/float_0_804214f4/float_1_804214f8; those are symbol-only diffs that resolve when
-// the unit links (effMistEntry is 100% with the same anonymous-@ mismatch).
+// Matches the original: the colour helper above keeps retail's stack slots. The int->float magic
+// pools as its anonymous double (@261), which the linker names double_to_int_802fe918 from the map.
 void effMistDisp(CameraId cameraId, void* param) {
 	EffectEntry* entry = param;
 	MistWork* work;
@@ -311,3 +298,12 @@ void effMistDisp(CameraId cameraId, void* param) {
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
+
+// .sdata2 constants the code loads by name, defined after it (defined first, the compiler folds them).
+// Only the prefix the original has before its 0.0 is named; every later constant is a literal in the
+// code so the compiler pools it in the original's order instead of duplicating the named zero/one.
+const f32 float_deg2rad_804214e0 = 0.017453292f;
+const f32 float_32_804214e4 = 32.0f;
+const f32 float_255_804214e8 = 255.0f;
+const f32 float_0p5_804214ec = 0.5f;
+const f32 float_16_804214f0 = 16.0f;

@@ -19,3 +19,4 @@ BOOL marioGetSlitFloorPos(Vec* pos);
 void motSlitCancel2(void);
 s32 U_marioSlitContinueChk(void);
 void mot_slit(void);
+void mot_slit_post(void);

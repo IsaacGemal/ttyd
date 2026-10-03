@@ -2386,12 +2386,23 @@ void yuunpc_set_jump_pose(const char* name, const char* anim, f32 value) {
     }
 }
 
-// NONMATCHING (99.73%): logic complete. The remaining diff is purely register allocation for the
-// `yuunpc_wp` reload (original r6, ours r5) and the sign-extended `idx` (original r5, ours r7);
-// the `(b == a)` form is required or the whole float pair swaps.
+// The `(s16)` narrowing cast has to happen *inside* an inlined helper for MWCC 2.6 to keep the
+// sign-extended index in r5 and the `yuunpc_wp` reload in r6, as the original does (casting at
+// the call site put them in r7/r5). The natural form is under #else. The `(b == a)` guard form
+// is required or the whole float pair swaps.
+#ifdef MUST_MATCH
+static inline s16 yuunpc_pose_lookup(const char* name, const char* anim) {
+    return (s16)yuunpc_pose_check(name, anim);
+}
+#endif
+
 void yuunpc_pose_change2(YuunpcEntry* entry, const char* name, const char* anim, f32 a) {
     f32 b = (f32)rand() / 32767.0f;
+#ifdef MUST_MATCH
+    s16 idx = yuunpc_pose_lookup(name, anim);
+#else
     s16 idx = (s16)yuunpc_pose_check(name, anim);
+#endif
     YuunpcPoseEntry* pe;
     YuunpcPoseEntry* cur;
     cur = &yuunpc_wp->poseEntries[entry->field_54];

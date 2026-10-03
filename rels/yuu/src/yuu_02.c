@@ -183,12 +183,19 @@ void unk_yuu_00001054(CameraId cameraId, void* param) {
 // stores, do/while/goto forms, explicit offset induction, multi-helper splits, s16/u16/u8 index and
 // ~600 further syntactic variants, plus the opt_lifetimes / global_optimizer / opt_dead_assignments /
 // opt_common_subs / scheduling / peephole / optimize_for_size / optimization_level pragmas.
+// A later pass found the form kept below: it also computes a duplicate `base2` expression and uses
+// it for the scale store. The duplicate is dead-equivalent (the allocator coalesces it) but shifts
+// the deferred-inliner's colouring so the row base lands in r10 as the target has it -- the
+// `addi r10,r3,0x8` / `add r10,r8,r10` and all four stores then match. Only the loop counter and
+// monte_p are left swapped (target i=r9 / monte_p=r8; ours i=r8 / monte_p=r9). The natural form is
+// the single-`base` loop in the function's #else branch.
 static inline void monte_fill(void) {
     s32 i;
     for (i = 0; i < monte_p->count; i++) {
         f32* base = (f32*)((u8*)&monte_p[i] + 8);
+        f32* base2 = (f32*)((u8*)&monte_p[i] + 8);
         *(Vec*)&base[1] = vec3_yuu_00014008;
-        base[4] = 1.0f;
+        base2[4] = 1.0f;
         monte_p[i].active = 1;
     }
 }
@@ -197,8 +204,9 @@ static inline void monte_fill(void) {
 // `#pragma opt_propagation off` above is required: with propagation on MWCC folds
 // count*sizeof(MonteEntry) (count==1) to li 0x44 and drops the target's li r28,1 /
 // mulli r29,r28,0x44 / mr r3,r29 sequence and the r28 save.
-// NONMATCHING (99.36%): only the first loop's register swap differs (target monte_p=r8, base=r10;
-// ours monte_p=r10, base=r8) -- see the monte_fill comment above for the shapes tried.
+// NONMATCHING (99.49%): the fill loop now matches the target except that the loop counter and
+// monte_p are swapped (target i=r9 / monte_p=r8; ours i=r8 / monte_p=r9). The base pointer and every
+// store match. See the monte_fill comment above for the shapes tried.
 USER_FUNC(unk_yuu_00000f1c) {
     s32 already = 0;
     s32 count;

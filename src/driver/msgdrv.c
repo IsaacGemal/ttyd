@@ -1295,7 +1295,7 @@ char* msgGetCommand(char* str, char* arg1, char* arg2) {
 // a 32-bit signed local: its liveness pins the allocator's `total`/`skip`/`off` colouring (u16,
 // u32 or inlining the cast costs ~0.3%). The target's conversion uses the unsigned magic because
 // its optimizer had the value's range; ours emits the signed one, numerically identical here.
-// NONMATCHING (96.82%): register-allocation residue around the promoted `var[0]`.
+// NONMATCHING (96.94%): register-allocation residue around the promoted `var[0]`.
 void msgAnalize(smartEntry* smart, const char* msg) {
 	char tagName[128];
 	char tagArg[128];
@@ -1371,8 +1371,8 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 		window->type = 0;
 	}
 	r24 = data->field_0x7A30;
-	var[2] = 0;
 	var[1] = data->field_0x7A38;
+	var[2] = 0;
 	ex = data->field_0x7A34;
 	var[0] = data->field_0x7A3A;
 	ey = data->field_0x7A36;
@@ -1893,7 +1893,7 @@ aftertag:
 	goto loop;
 
 defaultchar:
-	if ((u32)gp->language == 0 && *(s8*)msg >= '0' && *(s8*)msg <= '9') {
+	if ((u32)gp->language == 0 && check >= '0' && check <= '9') {
 		glyph = kanjiSearch((u16)((u8)check + 0x10000 - 0x7DE1));
 	}
 	else {

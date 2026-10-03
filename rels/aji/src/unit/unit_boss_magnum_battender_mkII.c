@@ -290,6 +290,16 @@ static BattleUnitKindPart parts[4] = {
     },
 };
 
+// The original defines these two zero vectors as global .rodata objects; the compiler
+// would otherwise pool them with the function literals at the end of .rodata.
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_aji_00016210 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_aji_0001621c = { 0.0f, 0.0f, 0.0f };
+#else
+const Vec vec3_aji_00016210 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_aji_0001621c = { 0.0f, 0.0f, 0.0f };
+#endif
+
 BattleWeapon weapon_batten_drill_attack = {
     NULL,                                     // name
     0,                                        // icon
@@ -2182,7 +2192,10 @@ USER_FUNC(aud_fire_hit) {
     for (i = start; i < start + 2; i++) {
         aud = BattleAudienceGetPtr(((s32*)list[0])[i]);
         BattleAudience_SetAnim(((s32*)list[0])[i], 9, 0);
-        position = (Vec){ posx, posy, posz };
+        position = vec3_aji_00016210;
+        position.x = posx;
+        position.y = posy;
+        position.z = posz;
         aud->position = position;
         aud->interpFramesTotal = 0;
         *(s32*)aud->field_0x8 = 0;
@@ -2243,7 +2256,7 @@ USER_FUNC(aud_fire_no_hit) {
     for (i = start; i < start + 2; i++) {
         aud = BattleAudienceGetPtr(((s32*)list[0])[i]);
         BattleAudience_SetAnim(((s32*)list[0])[i], 9, 0);
-        position = (Vec){0.0f, 0.0f, 0.0f};
+        position = vec3_aji_0001621c;
         position.x = posx;
         position.y = posy;
         position.z = posz;

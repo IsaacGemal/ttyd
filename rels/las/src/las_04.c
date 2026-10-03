@@ -134,50 +134,42 @@ FirebarDesc firebardesc[7] = {
 
 EVT_BEGIN(firebar_evt)
     BEGIN_INLINE_EVENT_GET_ID(LW(0))
-        CALL(firebar_entry, PTR(firebardesc))
+        CALL(firebar_entry, PTR(&firebardesc[0]))
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT
         SET_TYPE(0)
         CALL(firebar_disp_evt)
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT_GET_ID(LW(0))
-        CALL(firebar_entry, PTR(firebardesc))
+        CALL(firebar_entry, PTR(&firebardesc[1]))
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT
         SET_TYPE(0)
         CALL(firebar_disp_evt)
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT_GET_ID(LW(0))
-        CALL(firebar_entry, PTR(firebardesc))
+        CALL(firebar_entry, PTR(&firebardesc[2]))
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT
         SET_TYPE(0)
         CALL(firebar_disp_evt)
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT_GET_ID(LW(0))
-        CALL(firebar_entry, PTR(firebardesc))
+        CALL(firebar_entry, PTR(&firebardesc[3]))
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT
         SET_TYPE(0)
         CALL(firebar_disp_evt)
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT_GET_ID(LW(0))
-        CALL(firebar_entry, PTR(firebardesc))
+        CALL(firebar_entry, PTR(&firebardesc[4]))
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT
         SET_TYPE(0)
         CALL(firebar_disp_evt)
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT_GET_ID(LW(0))
-        CALL(firebar_entry, PTR(firebardesc))
-    END_INLINE_EVENT
-    BEGIN_INLINE_EVENT
-        SET_TYPE(0)
-        CALL(firebar_disp_evt)
-    END_INLINE_EVENT
-    WAIT_MS(2000)
-    BEGIN_INLINE_EVENT_GET_ID(LW(0))
-        CALL(firebar_entry, PTR(firebardesc))
+        CALL(firebar_entry, PTR(&firebardesc[5]))
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT
         SET_TYPE(0)
@@ -185,7 +177,15 @@ EVT_BEGIN(firebar_evt)
     END_INLINE_EVENT
     WAIT_MS(2000)
     BEGIN_INLINE_EVENT_GET_ID(LW(0))
-        CALL(firebar_entry, PTR(firebardesc))
+        CALL(firebar_entry, PTR(&firebardesc[6]))
+    END_INLINE_EVENT
+    BEGIN_INLINE_EVENT
+        SET_TYPE(0)
+        CALL(firebar_disp_evt)
+    END_INLINE_EVENT
+    WAIT_MS(2000)
+    BEGIN_INLINE_EVENT_GET_ID(LW(0))
+        CALL(firebar_entry, PTR(&firebardesc[5]))
     END_INLINE_EVENT
     BEGIN_INLINE_EVENT
         SET_TYPE(0)
@@ -676,7 +676,10 @@ USER_FUNC(firebar_disp_evt) {
         FirebarSegment* seg;
         s32 i;
 
-        t = 0.625f + 0.375f * (f32)sin(6.2831855f * entry->field_0x40 / 360.0f);
+        f32 s;
+
+        s = (f32)sin(6.2831855f * entry->field_0x40 / 360.0f);
+        t = 0.625f + 0.375f * s;
         b = 0.4f * t;
         a = 0.2f * t;
         seg = entry->segments;

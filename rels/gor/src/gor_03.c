@@ -5003,7 +5003,7 @@ EVT_BEGIN(gor_03_init_evt)
     RETURN
 EVT_END()
 
-// The phase-0x2d block shares `u8* pw = data+i*4` before `u8* pb = data+i`, `s8 s` and indexes `tmp1[j]`
+// The phase-0x2d block declares `u8* pb = data+i` before `u8* pw = data+i*4`, `s8 s` and indexes `tmp1[j]`
 // (the operand order matters for the register pick); case 11 keeps `CaseSetup* sp = &setup` so the struct
 // address is materialised once (r22) exactly like the original, and case 3's `dir` is a single nested ternary
 // (an if/else compiles an extra `mr`). The sel loop is written as a
@@ -5013,8 +5013,14 @@ EVT_END()
 // `li r9,1; stb; addi r9,r9,1; cmpwi r9,2; blt` break.
 // Case 3 is the original's `if (i==sel) { switch(i){...} } else { stop = 0; } if (stop && ...) {...}` (its
 // `bne` after `cmpw i, sel` targets the `li r25,0` the `else` emits). Writing it that way is required for the
-// case-2 `else` to exist, and it changes which registers MWCC hands out; the declaration order
-// `j, k, stop, work, data, i, changed` is part of the shape that scores 98.58%.
+// case-2 `else` to exist, and it changes which registers MWCC hands out. `j2` is declared at the top of the
+// function (not inside the phase-0 `cnt` block) because that makes the `cnt`/`j2` pair come out in the
+// original's r8/r7.
+// The phase-0x2d first loop declares its `s32 a` before `u8* base`, the sel loop declares `u8* pb` before
+// `u8* pw`, the case-3 `data + i` temp is a named top-level `u8* pb3`, the phase-0x2d `tmp[3][3]` plus its row
+// pointer `tptr` are declared at the top, and `s32 stop` is declared first (no logic change). Those
+// declaration moves lifted the allocator out of worse local optima: 98.58% -> 98.92%. A separate top-level
+// `s32 i2` counter is used for the phase-0x2d first loop (plain `i` there costs 0.02%).
 //
 // The trailing `return 0;` is not the original source. The original never writes r3 before `blr`, so it is
 // really a `void` function: with the `USER_FUNC` (s32) prototype MWCC treats r3 as the live return register
@@ -5024,20 +5030,25 @@ EVT_END()
 // existing header line `USER_FUNC(goryuugijo_main_slot);`, which must not be changed here; if it is changed to
 // `void`, drop this `return 0;`.
 //
-// Still differs (all register allocation / scheduling): event stays in r25 vs the original's r26 (the entry
-// `mr r25, r3` vs `mr r26, r3`) even when the two later `event` uses are replaced by `work`/`work->entry`;
-// `stop` lands in r30 vs the original's r25, pb in r31 vs r30; the case-5 string address is materialised into
-// r0 and then `mr`'d instead of loaded directly into its register; and the case-5 pointer / case-11 index /
-// `cnt` loop init / sel conditions keep a different register set. The instruction stream is otherwise
-// identical (40 calls, same immediates except the two structural diffs below and `return 0`'s `li r3,0`).
-// With the sel-loop dead-branch conditions, only the callee-saved colouring of the {event,stop,stopSfx,pb}
-// clique (r25/r26/r30/r31) is left, which is permuter work. `(s32)data[i + 0x30]` (rather than
+// Still differs (all register allocation / scheduling, 71 changed instructions at 98.92%): event stays in
+// r25 vs the original's r26 (the entry `mr r25, r3` vs `mr r26, r3`) even when the two later `event` uses are
+// replaced by `work`/`work->entry`; `stop` lands in r31 vs the original's r25 and `stopSfx` in r25 vs r31 (so
+// the string address is materialised into r0 and then `mr`'d instead of loaded straight into r31; pb now
+// matches at r30); and the phase-0 `cnt` loop init / phase-0x2d first-loop temporaries / case-11 index keep a
+// different register set. The instruction stream is otherwise identical (40 calls, same immediates except the
+// two structural diffs below and `return 0`'s `li r3,0`). What is left is mostly the callee-saved colouring of
+// the {event,stop,stopSfx} clique (r25/r26/r31), which is permuter work. `(s32)data[i + 0x30]` (rather than
 // `(s32)((u8*)data + i)[0x30]`) makes MWCC emit the original's `add r3, r28, r0` operand order.
-// NONMATCHING (98.58%): see above.
+// NONMATCHING (98.92%): see above.
 USER_FUNC(goryuugijo_main_slot) {
+    s32 stop;
     s32 j;
     s32 k;
-    s32 stop;
+    s32 j2;
+    u8* pb3;
+    s32 tmp[3][3];
+    s32* tptr;
+    s32 i2;
     GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
     u8* data = (u8*)work->data;
     s32 i;
@@ -5110,7 +5121,8 @@ USER_FUNC(goryuugijo_main_slot) {
         {
         char* stopSfx = "SFX_EVT_GAME_SLOT_STOP1";
         for (i = 0; i < 3; i++) {
-            if (*(s8*)(data + i + 0x30) == 0) {
+            pb3 = data + i;
+            if (*(s8*)(pb3 + 0x30) == 0) {
                 changed += 1;
                 continue;
             }
@@ -5141,12 +5153,12 @@ USER_FUNC(goryuugijo_main_slot) {
             } else {
                 stop = 0;
             }
-                if (stop && *(s8*)(data + i + 0x30) == 2) {
-                    *(s8*)(data + i + 0x30) = 3;
+                if (stop && *(s8*)(pb3 + 0x30) == 2) {
+                    *(s8*)(pb3 + 0x30) = 3;
                     if (*(u32*)data & 2) {
-                        *(s8*)(data + i + 0x39) = 0;
+                        *(s8*)(pb3 + 0x39) = 0;
                     } else {
-                        *(s8*)(data + i + 0x39) = irand(2);
+                        *(s8*)(pb3 + 0x39) = irand(2);
                     }
                     psndSFXOn(stopSfx);
                 }
@@ -5185,7 +5197,6 @@ USER_FUNC(goryuugijo_main_slot) {
             }
             cnt = 0;
             {
-            s32 j2;
             for (j2 = 0; j2 < 3; j2++) {
                 if (tmp1[j2] == *(s8*)(data + *(s32*)(data + 0x60) * 3 + j2 + 0x33)) {
                     cnt += 1;
@@ -5214,24 +5225,24 @@ USER_FUNC(goryuugijo_main_slot) {
             }
         }
         if (*(s32*)(data + 0x54) == 0x2d) {
-            s32 tmp[3][3];
-            for (i = 0; i < 3; i++) {
-                u8* base = (u8*)slotgara + i * 0x20;
-                s32 a = (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f);
+            for (i2 = 0; i2 < 3; i2++) {
+                s32 a = (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i2 * 4) / 45.0f);
+                u8* base = (u8*)slotgara + i2 * 0x20;
                 for (j = 0; j < 3; j++) {
-                    tmp[j][i] = *(u32*)(base + *(s32*)(data + 0x60) * 0x60 + ((a + j - 1) & 7) * 4);
+                    tmp[j][i2] = *(u32*)(base + *(s32*)(data + 0x60) * 0x60 + ((a + j - 1) & 7) * 4);
                 }
             }
             for (i = 0; i < 3; i++) {
                 s8 s;
                 s32 sel;
-                if (tmp[1][i] == *(s8*)(data + *(s32*)(data + 0x60) * 3 + i + 0x33)) {
+                tptr = &tmp[0][i];
+                if (tptr[3] == *(s8*)(data + *(s32*)(data + 0x60) * 3 + i + 0x33)) {
                     continue;
                 }
                 sel = irand(2);
                 {
-                u8* pw = data + i * 4;
                 u8* pb = data + i;
+                u8* pw = data + i * 4;
                 k = 0;
                 goto sel_test;
                 sel_body:
@@ -5243,7 +5254,7 @@ USER_FUNC(goryuugijo_main_slot) {
                         // The original emits a dead `beq sel_inc` after `beq <after_if>`: MWCC CSEs the
                         // repeated `s == tmp[0][i]` (contradicts the guard) into one compare with two
                         // branches. The redundant OR term reproduces it.
-                        if (s != tmp[0][i] && (s == tmp[0][i] || tmp[2][i] == s)) {
+                        if (s != tptr[0] && (s == tptr[0] || tptr[6] == s)) {
 #else
                         if (s != tmp[0][i] && tmp[2][i] == s) {
 #endif
@@ -5268,7 +5279,7 @@ USER_FUNC(goryuugijo_main_slot) {
                         s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
 #ifdef MUST_MATCH
                         // Same dead-branch artifact as case 0, on the `s != tmp[2][i]` guard.
-                        if (s != tmp[2][i] && (s == tmp[0][i] || s == tmp[2][i])) {
+                        if (s != tptr[6] && (s == tptr[0] || s == tptr[6])) {
 #else
                         if (s != tmp[2][i] && s == tmp[0][i]) {
 #endif

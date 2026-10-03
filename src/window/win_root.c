@@ -61,6 +61,7 @@ extern const f32 float_neg160_8041d1c8;
 extern const f32 float_285_8041d1cc;
 extern const f32 float_144_8041d1d0;
 extern const f32 float_neg144_8041d1d4;
+extern const GXColor dat_8041cf68;
 
 // Extended fields of WindowWork used by this unit. win_main.h only declares the
 // first 0x40 bytes, so the rest are reached through raw offsets below.
@@ -1092,6 +1093,86 @@ void sort_1_2_func(WindowWork* work) {
     winMakeSkipList(work);
     WW_S32(work, 0x214) = 0;
     WW_S32(work, 0x21C) = WW_S32(work, 0x214) / 10;
+}
+
+// winMailGX's copy of winNameQuad. The body is the same, but w and h arrive as
+// f64 so MWCC emits the target's `lfd double_<w>/<h>; fabs; frsp` scale idiom.
+// The drawn rectangles are the f32 sum chains of the caller and the f64 constants
+// fold back to the target's lfs words.
+static inline void winMailQuad(WindowWork* work, s32 texId, f32 x, f32 y, f64 w, f64 h) {
+    GXTexObj texObj;
+    Mtx mtx;
+    f64 sx;
+    f64 sy;
+
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, texId);
+    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    sy = __fabs(h);
+    sx = __fabs(w);
+    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), (f32)sy / (f32)GXGetTexObjHeight(&texObj), float_1_8041d070);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x, y - (f32)h, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(x + (f32)w, y - (f32)h, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(x + (f32)w, y, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+}
+
+// The mail window frame: nineteen textured quads (outer border and inner panels),
+// all drawn with the same inline quad helper. The native texture sizes are the f64
+// literals MWCC pools with its own i2f magic; the drawn rectangles are f32 sums of
+// the caller's x/y, reproducing retail's left-to-right summation chains. The helper
+// is byte-perfect with its `f64 sx;`/`f64 sy;` declaration order and the h-then-w fabs.
+// NONMATCHING (0.00%): only the global FPR of `x` (retail f30, ours f29) and
+// its deep-sum temporaries differ; all 212 calls and immediates match.
+void winMailGX(WindowWork* work, f32 x, f32 y) {
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(0, 7, 0);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041cf68);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+    GXSetCurrentMtx(0);
+
+    winMailQuad(work, 0x4D, x, y, 32.0f, 24.0);
+    winMailQuad(work, 0x63, x + 32.0f, y, 344.0f, 24.0);
+    winMailQuad(work, 0x64, x + 200.0f, y, 16.0f, 24.0);
+    winMailQuad(work, 0x55, x + 32.0f, y - 24.0f, 344.0f, 8.0);
+    winMailQuad(work, 0x4E, 16.0f + (40.0f + (112.0f + (16.0f + (48.0f + (40.0f + (72.0f + (x + 32.0f))))))), y, 40.0f, 24.0);
+    winMailQuad(work, 0x51, x, y - 24.0f, 16.0f, 248.0);
+    winMailQuad(work, 0x55, x + 16.0f, y - 24.0f, 16.0f, 248.0);
+    winMailQuad(work, 0x55, 16.0f + (248.0f + (8.0f + (72.0f + (16.0f + (16.0f + x))))), y - 24.0f, 16.0f, 248.0);
+    winMailQuad(work, 0x51, 16.0f + (16.0f + (248.0f + (8.0f + (72.0f + (16.0f + (16.0f + x)))))), y - 24.0f, 16.0f, 248.0);
+    winMailQuad(work, 0x52, 16.0f + (16.0f + (16.0f + (248.0f + (8.0f + (72.0f + (16.0f + (16.0f + x))))))), y - 24.0f, 8.0f, 248.0);
+    winMailQuad(work, 0x5C, x + 32.0f, y - 32.0f, 344.0f, 240.0);
+    winMailQuad(work, 0x55, x + 32.0f, y - 248.0f, 344.0f, 24.0);
+    winMailQuad(work, 0x4F, x, y - 272.0f, 32.0f, 32.0);
+    winMailQuad(work, 0x53, x + 32.0f, y - 272.0f, 344.0f, 32.0);
+    winMailQuad(work, 0x50, 344.0f + (x + 32.0f), y - 272.0f, 40.0f, 32.0);
+    winMailQuad(work, 0x54, x + 16.0f, (y - 24.0f) - 8.0f, 8.0f, -8.0);
+    winMailQuad(work, 0x54, 8.0f + (384.0f + x), (y - 24.0f) - 8.0f, -8.0f, -8.0);
+    winMailQuad(work, 0x54, x + 16.0f, y - 264.0f, 8.0f, 8.0);
+    winMailQuad(work, 0x54, 8.0f + (384.0f + x), y - 264.0f, -8.0f, 8.0);
+
+    GXSetScissor((u32)(32.0f + (304.0f + x)), (u32)(1.0f + (32.0f + (240.0f - y))), 0x158, 0xC8);
 }
 
 // ---- winHakoGX ------------------------------------------------------------

@@ -16,37 +16,15 @@ static u8 anime_data[12] = {
 
 // Local copy of the effect's per-instance data; the fields used by
 // effMagic1Disp, effMagic1Main and effMagic1N64Entry are named.
-extern const char str_802FAB08[];
-extern const f32 float_0_8041f654;
-extern const f32 float_deg2rad_8041f658;
-extern const f32 float_9_8041f65c;
-extern const f32 float_6_8041f660;
-extern const f32 float_70_8041f664;
-extern const f32 float_2_8041f668;
-extern const f32 float_50_8041f66c;
-extern const f32 float_1p2048_8041f670;
-extern const f32 float_100_8041f674;
-extern const f32 float_255_8041f678;
-extern const f32 float_6p2832_8041f67c;
-extern const f32 float_360_8041f680;
-extern const f32 float_120_8041f684;
-extern const f32 float_0p5_8041f688;
-extern const f32 float_1_8041f68c;
-extern const f32 float_0p25_8041f690;
-extern const f32 float_64_8041f694;
-extern const f32 float_0p0039062_8041f698;
-extern const f32 float_29_8041f6a4;
-extern const f32 float_6p2_8041f6a8;
 extern u32 dat_8041f650;
 extern GXColor unk_804231a8;
-const f64 double_to_int_802fab00 = 4503601774854144.0;
 EffectEntry* effMagic1N64Entry(s32 type, s32 count, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1) {
     EffectEntry* effect;
     effMagic1Data* data;
     f32 scale;
 
     effect = effEntry();
-    effect->type = str_802FAB08;
+    effect->type = "Magic1N64\0\0";
     effect->count = 1;
     data = __memAlloc(HEAP_EFFECT, 0x38);
     effect->userdata = data;
@@ -58,25 +36,25 @@ EffectEntry* effMagic1N64Entry(s32 type, s32 count, f32 x0, f32 y0, f32 z0, f32 
     data->x = x0;
     data->y = y0;
     data->z = z0;
-    data->field_0x28 = float_1_8041f68c;
+    data->field_0x28 = 1.0f;
     switch (type) {
     case 0:
-        scale = float_1_8041f68c / (f32)count;
-        data->field_0x10 = float_0_8041f654;
-        data->field_0x14 = float_0_8041f654;
-        data->field_0x18 = float_0_8041f654;
+        scale = 1.0f / (f32)count;
+        data->field_0x10 = 0.0f;
+        data->field_0x14 = 0.0f;
+        data->field_0x18 = 0.0f;
         data->field_0x1c = (x1 - x0) * scale;
         data->field_0x20 = (y1 - y0) * scale;
         data->field_0x24 = (z1 - z0) * scale;
         data->field_0x30 = count;
         break;
     default:
-        data->field_0x10 = float_29_8041f6a4;
-        data->field_0x14 = float_0_8041f654;
-        data->field_0x18 = float_0_8041f654;
-        data->field_0x1c = float_6p2_8041f6a8;
-        data->field_0x20 = float_0_8041f654;
-        data->field_0x24 = float_0_8041f654;
+        data->field_0x10 = 29.0f;
+        data->field_0x14 = 0.0f;
+        data->field_0x18 = 0.0f;
+        data->field_0x1c = 6.2f;
+        data->field_0x20 = 0.0f;
+        data->field_0x24 = 0.0f;
         data->field_0x30 = 0x18;
         break;
     }
@@ -126,8 +104,10 @@ void effMagic1Main(EffectEntry* effect) {
             ((effMagic1Data*)newEffect->userdata)->field_0x28 = data->field_0x28;
         }
         if (type == 1) {
-            data->field_0x1c *= float_0p83_8041f69c;
-            data->field_0x34 = (s32)((f32)data->field_0x34 * float_0p9_8041f6a0);
+            f32 k83 = 0.83f;
+            f32 k9 = 0.9f;
+            data->field_0x1c *= k83;
+            data->field_0x34 = (s32)((f32)data->field_0x34 * k9);
         }
         data->field_0x10 += data->field_0x1c;
         data->field_0x14 += data->field_0x20;
@@ -152,7 +132,7 @@ void effMagic1Main(EffectEntry* effect) {
 #define MAGIC1_PHASE(phase) (gp->retraceCount * 32 + (phase) + 180)
 #endif
 #define MAGIC1_SIN(phase) \
-    ((f32)sin(float_6p2832_8041f67c * (f32)(s32)MAGIC1_PHASE(phase) / float_360_8041f680))
+    ((f32)sin(6.2831855f * (f32)(s32)MAGIC1_PHASE(phase) / 360.0f))
 // color2's sine has no +180 offset: the original computes retraceCount*32 + anime[0].
 #ifdef MUST_MATCH
 #define MAGIC1_PHASE2(phase) ((gp->retraceCount << 5) + (phase))
@@ -160,7 +140,7 @@ void effMagic1Main(EffectEntry* effect) {
 #define MAGIC1_PHASE2(phase) (gp->retraceCount * 32 + (phase))
 #endif
 #define MAGIC1_SIN2(phase) \
-    ((f32)sin(float_6p2832_8041f67c * (f32)(s32)MAGIC1_PHASE2(phase) / float_360_8041f680))
+    ((f32)sin(6.2831855f * (f32)(s32)MAGIC1_PHASE2(phase) / 360.0f))
 
 // Match-only: building each colour through an inline return puts its local and its
 // return temp where the original does (a plain local lands in the other slot); the
@@ -174,37 +154,37 @@ void effMagic1Main(EffectEntry* effect) {
 static inline GXColor magic1Color2(u8* anime) {
     GXColor c = *(GXColor*)&dat_8041f650;
     { s32 a = anime[1]; f32 s = (f32)MAGIC1_SIN2(anime[0]);
-      c.r = (u8)(s32)(a + float_0p5_8041f688 * ((255 - a) * (float_1_8041f68c + s))); }
+      c.r = (u8)(s32)(a + 0.5f * ((255 - a) * (1.0f + s))); }
     { s32 a = anime[2]; f32 s = (f32)MAGIC1_SIN2(anime[0]);
-      c.g = (u8)(s32)(a + float_0p5_8041f688 * ((255 - a) * (float_1_8041f68c + s))); }
+      c.g = (u8)(s32)(a + 0.5f * ((255 - a) * (1.0f + s))); }
     { s32 a = anime[3]; f32 s = (f32)MAGIC1_SIN2(anime[0]);
-      c.b = (u8)(s32)(a + float_0p5_8041f688 * ((255 - a) * (float_1_8041f68c + s))); }
+      c.b = (u8)(s32)(a + 0.5f * ((255 - a) * (1.0f + s))); }
     return c;
 }
 
 static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
     { s32 a = anime[1]; f32 s = (f32)MAGIC1_SIN(anime[0]);
-      c.r = (u8)(s32)(a + float_0p5_8041f688 * (-a * (float_1_8041f68c + s))); }
+      c.r = (u8)(s32)(a + 0.5f * (-a * (1.0f + s))); }
     { s32 a = anime[2]; f32 s = (f32)MAGIC1_SIN(anime[0]);
-      c.g = (u8)(s32)(a + float_0p5_8041f688 * (-a * (float_1_8041f68c + s))); }
+      c.g = (u8)(s32)(a + 0.5f * (-a * (1.0f + s))); }
     { s32 a = anime[3]; f32 s = (f32)MAGIC1_SIN(anime[0]);
-      c.b = (u8)(s32)(a + float_0p5_8041f688 * (-a * (float_1_8041f68c + s))); }
+      c.b = (u8)(s32)(a + 0.5f * (-a * (1.0f + s))); }
     c.a = alpha;
     return c;
 }
 #else
 static inline GXColor magic1Color2(u8* anime) {
     GXColor c = *(GXColor*)&dat_8041f650;
-    c.r = (u8)(s32)(anime[1] + float_0p5_8041f688 * (255 - anime[1]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0])));
-    c.g = (u8)(s32)(anime[2] + float_0p5_8041f688 * (255 - anime[2]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0])));
-    c.b = (u8)(s32)(anime[3] + float_0p5_8041f688 * (255 - anime[3]) * (float_1_8041f68c + MAGIC1_SIN2(anime[0])));
+    c.r = (u8)(s32)(anime[1] + 0.5f * (255 - anime[1]) * (1.0f + MAGIC1_SIN2(anime[0])));
+    c.g = (u8)(s32)(anime[2] + 0.5f * (255 - anime[2]) * (1.0f + MAGIC1_SIN2(anime[0])));
+    c.b = (u8)(s32)(anime[3] + 0.5f * (255 - anime[3]) * (1.0f + MAGIC1_SIN2(anime[0])));
     return c;
 }
 
 static inline GXColor magic1Color1(GXColor c, u8* anime, s32 alpha) {
-    c.r = (u8)(s32)(anime[1] - float_0p5_8041f688 * anime[1] * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
-    c.g = (u8)(s32)(anime[2] - float_0p5_8041f688 * anime[2] * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
-    c.b = (u8)(s32)(anime[3] - float_0p5_8041f688 * anime[3] * (float_1_8041f68c + MAGIC1_SIN(anime[0])));
+    c.r = (u8)(s32)(anime[1] - 0.5f * anime[1] * (1.0f + MAGIC1_SIN(anime[0])));
+    c.g = (u8)(s32)(anime[2] - 0.5f * anime[2] * (1.0f + MAGIC1_SIN(anime[0])));
+    c.b = (u8)(s32)(anime[3] - 0.5f * anime[3] * (1.0f + MAGIC1_SIN(anime[0])));
     c.a = alpha;
     return c;
 }
@@ -254,15 +234,15 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
 
     switch (type) {
     case 0:
-        radius = float_9_8041f65c;
+        radius = 9.0f;
         ringAngle = (f32)(count * 35);
         angle = -camGetPtr(CAMERA_3D)->viewYaw;
         break;
     default:
         x = x * scale;
-        radius = float_6_8041f660;
+        radius = 6.0f;
         ringAngle = (f32)(count * 25);
-        angle = float_0_8041f654;
+        angle = 0.0f;
         break;
     }
 
@@ -282,23 +262,23 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-    rotAngle = float_deg2rad_8041f658 * angle;
+    rotAngle = 0.017453292f * angle;
 
     for (i = 0; i < 3; i++) {
         if (i > 0) {
             switch (type) {
             case 0:
-                ringAngle -= float_70_8041f664;
-                x -= float_2_8041f668 * data->field_0x1c;
-                y -= float_2_8041f668 * data->field_0x20;
-                z -= float_2_8041f668 * data->field_0x24;
+                ringAngle -= 70.0f;
+                x -= 2.0f * data->field_0x1c;
+                y -= 2.0f * data->field_0x20;
+                z -= 2.0f * data->field_0x24;
                 break;
             default:
-                ringAngle -= float_50_8041f66c;
-                x -= float_2_8041f668 * (float_1p2048_8041f670 * data->field_0x1c);
+                ringAngle -= 50.0f;
+                x -= 2.0f * (1.2048193f * data->field_0x1c);
                 break;
             }
-            alpha = (s32)(float_100_8041f674 * (f32)data->field_0x34 / float_255_8041f678);
+            alpha = (s32)(100.0f * (f32)data->field_0x34 / 255.0f);
         }
 
         GXSetNumTexGens(1);
@@ -313,15 +293,15 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
 #ifdef MUST_MATCH
             /* MUST_MATCH: naming the loop angle `cosAngle` and the cosine `angle` is what
                puts them in the target's f15/f16; the natural assignment swaps the two. */
-            cosAngle = float_6p2832_8041f67c * ringAngle / float_360_8041f680;
+            cosAngle = 6.2831855f * ringAngle / 360.0f;
             angle = (f32)cos(cosAngle);
             PSMTXTrans(mtxE, radius * (f32)sin(cosAngle), radius * angle, 0.0f);
 #else
-            angle = float_6p2832_8041f67c * ringAngle / float_360_8041f680;
+            angle = 6.2831855f * ringAngle / 360.0f;
             cosAngle = (f32)cos(angle);
             PSMTXTrans(mtxE, radius * (f32)sin(angle), radius * cosAngle, 0.0f);
 #endif
-            ringAngle += float_120_8041f684;
+            ringAngle += 120.0f;
             PSMTXConcat(mtxD, mtxE, mtxE);
             PSMTXConcat(mtx, mtxE, mtxE);
             GXLoadPosMtxImm(mtxE, 0);
@@ -330,14 +310,20 @@ static void main_dl(EffectEntry* effect, Mtx mtx) {
             GXSetTevColor(GX_TEVREG1, magic1Color2(anime));
 
             size = (type == 0) ? 15 : 10;
-            PSMTXScale(mtxB, float_2_8041f668, float_0p25_8041f690, float_1_8041f68c);
+            PSMTXScale(mtxB, 2.0f, 0.25f, 1.0f);
 #ifdef MUST_MATCH
-            t = float_64_8041f694 * (f32)(3 - j);
-            PSMTXTrans(mtxA, 0.0f,
-                       t * float_0p0039062_8041f698, 0.0f);
+            {
+                f32 k64 = 64.0f;
+                f32 k256 = 0.00390625f;
+                t = k64 * (f32)(3 - j);
+                PSMTXTrans(mtxA, 0.0f, t * k256, 0.0f);
+            }
 #else
-            PSMTXTrans(mtxA, 0.0f,
-                       (f32)(3 - j) * float_64_8041f694 * float_0p0039062_8041f698, 0.0f);
+            {
+                f32 k64 = 64.0f;
+                f32 k256 = 0.00390625f;
+                PSMTXTrans(mtxA, 0.0f, (f32)(3 - j) * k64 * k256, 0.0f);
+            }
 #endif
             PSMTXConcat(mtxA, mtxB, mtxA);
             GXLoadTexMtxImm(mtxA, 0x1E, 1);
@@ -395,25 +381,16 @@ void effMagic1Disp(CameraId camId, EffectEntry* effect) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f32 float_0_8041f654 = 0.0f;
-const f32 float_deg2rad_8041f658 = 0.017453292f;
-const f32 float_9_8041f65c = 9.0f;
-const f32 float_6_8041f660 = 6.0f;
-const f32 float_70_8041f664 = 70.0f;
-const f32 float_2_8041f668 = 2.0f;
-const f32 float_50_8041f66c = 50.0f;
-const f32 float_1p2048_8041f670 = 1.2048193f;
-const f32 float_100_8041f674 = 100.0f;
-const f32 float_255_8041f678 = 255.0f;
-const f32 float_6p2832_8041f67c = 6.2831855f;
-const f32 float_360_8041f680 = 360.0f;
-const f32 float_120_8041f684 = 120.0f;
-const f32 float_0p5_8041f688 = 0.5f;
-const f32 float_1_8041f68c = 1.0f;
-const f32 float_0p25_8041f690 = 0.25f;
-const f32 float_64_8041f694 = 64.0f;
-const f32 float_0p0039062_8041f698 = 0.00390625f;
-const f32 float_0p83_8041f69c = 0.83f;
-const f32 float_0p9_8041f6a0 = 0.9f;
-const f32 float_29_8041f6a4 = 29.0f;
-const f32 float_6p2_8041f6a8 = 6.2f;
+__declspec(section ".sdata2") u32 dat_8041f650 = 0x000000FF;
+
+// 4 zero bytes that end the unit's .sdata/.sdata2.
+#pragma explicit_zero_data on
+#pragma force_active on
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+// .sbss2 scratch colour (declared in reverse: MWCC lays uninitialised globals out last-declared-first).
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_804231AC_sbss2;
+__declspec(section ".sdata") GXColor unk_804231a8;
+#pragma section ".sdata" ".sbss"
