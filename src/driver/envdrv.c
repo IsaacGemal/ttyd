@@ -642,9 +642,6 @@ void envDisp_DepthOfField(void) {
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
 
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
-
 // MUST_MATCH: a by-value GXColor built as `color = dat; color.a = a;` and then passed lands its local at
 // the higher slot (sp+0x10 here) and the argument copy at sp+0xC, the wrong way round. Building the colour
 // in an inline that returns it puts the return temporary at sp+0xC and the argument at sp+0x10, as the

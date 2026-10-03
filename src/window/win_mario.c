@@ -1130,10 +1130,10 @@ static inline char* wmDispNum(WM_BASE_PARAMS s32 width, s32 num) {
 // The target's i2f magic doubles are read through the rodata base (0x820/0x828);
 // MWCC pools anonymous copies (project-wide limitation, see win_item/win_log).
 // Declaring f29..f18 with x,y last colours x=f31/y=f30, and the level buf at
-// 0x1C0 matches the 0x1940 frame; both are the wins over the 92.05% version.
+// 0x1C0 matches the 0x1940 frame.
 #pragma inline_max_total_size(60000) // keep wmDispZenkaku/wmDispNum inlined with the by-value color copies
 #pragma inline_max_size(1000)
-// NONMATCHING (93.80%): same 179 calls and no differing immediates; FP/GPR colouring and scheduling differ.
+// NONMATCHING (93.79%): same 179 calls and no differing immediates; FP/GPR colouring and scheduling differ.
 void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     // Draws the Mario status panel: name/level/rank, HP/FP/BP, star pieces and
     // shine sprites, the play-time clock and the collected star powers.
@@ -1211,9 +1211,9 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         tmp.x = (x - float_265_8041d60c + float_190_8041d614)
                 - float_0p8_8041d624 * (f32)(u16)FontGetMessageWidth(buf)
                 - float_10_8041d61c;
+        tmp.y = f25;
         pos = tmp;
         c = white2;
-        tmp.y = f25;
         winFontSetEdge(&pos, &scale, &c, buf);
     }
     winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
@@ -1771,10 +1771,10 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         }
     }
 
-#pragma inline_max_total_size reset
-#pragma inline_max_size reset
 #undef POSE
 #undef STR_AT
 #undef GXC_AT
 #undef VEC_AT
 }
+#pragma inline_max_total_size reset
+#pragma inline_max_size reset

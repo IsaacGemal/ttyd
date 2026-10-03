@@ -44,7 +44,7 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
 #define PART ((BattleUnitPart*)partArg)
 // NONMATCHING (99.99%): all 713 instructions match; only the .rodata base symbol (retail zero_802eda80 vs our
 // anonymous section symbol) and the .rodata string/double displacements (0x290 vs 0x20, 0x58 vs 0x18) differ,
-// which settle once this file's other functions (still stubs) emit their literals.
+// which settle once the unit's data is in the original order.
 void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damage, s32 arg4, s32 flags,
                         s32 arg6, s32 arg7) {
     BattleUnit* attacker;
@@ -324,6 +324,7 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
     unit->mTokenFlags |= 1;
     BattleRunHitEvent(unit, flags);
 }
+#undef PART
 
 // dont_inline: the original calls this out of line from BattleCheckDamage.
 #pragma dont_inline on
@@ -1480,13 +1481,6 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
 // The four helpers it calls (`BattleInitCounterPreCheckWork`, `_checkDamageCode_EmergencyRevival`,
 // `BattleCalculateFpDamage`, `BattleSetStatusDamageFromWeapon`) are defined earlier in this file and each
 // needs its `dont_inline` pragma so the original's real `bl`s survive.
-//
-// The three string loads below read `addi r3, r26, 0x20/0x34/0x48` where the original has 0x14/0x28/0x3c,
-// because this file's functions are not yet in the original source order and the .rodata before
-// "SFX_SYSTEM_GREAT1" is 0xC too long. `check.py battle/battle_damage BattleCheckDamage` is 100%, but the
-// merge report counts those three immediates; `tools/fn_order.py` fails on the unlinked unit, so the order
-// (and these offsets) can't be fixed from this function. Everything else matches.
-// NONMATCHING (100.00%): only the three .rodata string offsets above differ (file function order, not this code).
 s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32 flags) {
     BattleWork* wp = _battleWorkPointer;
     CounterPreCheckWork work;

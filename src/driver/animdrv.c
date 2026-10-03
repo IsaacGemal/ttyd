@@ -2489,8 +2489,7 @@ void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f3
 }
 
 // Searches ANIM_POSE_DATA_ANIMS(data) for `name` when i is negative (i is the string's address used as
-// a sentinel), then clamps the result into [0, top). Used by animPoseDrawMtx and
-// animPoseDisp_MakeExtTexture below. The `return` inside the loop makes MWCC emit the target's
+// a sentinel), then clamps the result into [0, top). Used by animPoseDrawMtx below. The `return` inside the loop makes MWCC emit the target's
 // `bne <increment>; b <found>` branch shape, indexing by i makes it emit the target's `offset = i`
 // copy, and the shared `goto zero` tail makes both zero exits one `li`; a plain `goto`/`break`
 // collapses the branch into a single `beq` and drops the copy. animPoseSearchAnim (above) cannot be
@@ -2514,10 +2513,9 @@ zero:
 #pragma dont_inline on
 // All logic/constants/offsets match and the animId search now uses the target's branch shape, so every
 // remaining diff is callee-saved register allocation (this build also saves r22-r31, but still permutes
-// data/top/offset across r22-r25), except `bl animPoseMain` which is inlined away while that callee is
-// still an empty stub. The inner shadow variables (pp/ppd) reproduce the target's non-CSEd
+// data/top/offset across r22-r25). The inner shadow variables (pp/ppd) reproduce the target's non-CSEd
 // rematerialisation of the paper pose inside the animArg block (outer r30, inner r29).
-// NONMATCHING (98.81%): register allocation only (plus the transient inlined animPoseMain).
+// NONMATCHING (98.81%): register allocation only.
 void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* poseData;
