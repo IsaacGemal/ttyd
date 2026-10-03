@@ -1172,6 +1172,14 @@ extern const f32 float_0p5_80419ba0;
 extern const f32 float_0_80419b9c;
 extern const f32 float_180_80419bec;
 extern const f32 float_360_80419be0;
+#ifdef MUST_MATCH
+// The original reaches these two strings from the unit's rodata anchor.
+#define FBAT_SFX_ENEMY ((char*)vec3_802c2f78 + 0x204)
+#define FBAT_SFX_MARIO ((char*)vec3_802c2f78 + 0x220)
+#else
+#define FBAT_SFX_ENEMY "SFX_BTL_FLD_ENEMY_DAMAGED1"
+#define FBAT_SFX_MARIO "SFX_BTL_FLD_MARIO_DAMAGED1"
+#endif
 #define ENC(p, T, off) (*(T*)((u8*)(p) + (off)))
 
 // NONMATCHING (96.19%): same 57 calls and immediates. Remaining: the first/second switch decision trees (the
@@ -1324,12 +1332,12 @@ void fbatEncountCheck(void) {
                 case 0x40000:
                 case 0x20000:
                     if (hit != NULL) {
-                        psndSFXOn_3D((char*)vec3_802c2f78 + 0x204, &hit->position);
+                        psndSFXOn_3D(FBAT_SFX_ENEMY, &hit->position);
                         return;
                     }
                     break;
                 case 0x10000000:
-                    psndSFXOn_3D((char*)vec3_802c2f78 + 0x220, &mario->position);
+                    psndSFXOn_3D(FBAT_SFX_MARIO, &mario->position);
                     return;
             }
         }
