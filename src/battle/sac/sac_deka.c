@@ -254,7 +254,7 @@ s32 main_deka(EventEntry* event, s32 arg) {
 // .text:0x29F8 | 0x802459F0 | size: 0x2D8
 // Every instruction matches except the compiler's int->float magic constant: the original
 // pools `double_to_int_80300630` off `r30=&vec3_803004f8` (`lfd f6, 0x138(r30)`), ours emits
-// an anonymous `@735` with its own `lis` because `vec3_803004f8` is only an extern. Using two
+// an anonymous `@735` with its own `lis` because the magic stays a compiler-pooled literal. Using two
 // separate Vec locals (`v`, `v2`) instead of reusing one was the key to the frame/register
 // layout (86.59 -> 98.18).
 // NONMATCHING (98.18%): only that unpolled magic constant differs.
@@ -466,21 +466,12 @@ s32 yuka_end(EventEntry* event) {
 }
 
 // .text:0x8C8 | 0x80245120 | size: 0x4D8
-// The original addresses main_base's .rodata objects (the DOKKAN strings and the
-// int->double constant) as offsets from vec3_803004f8, held in r30. Under MUST_MATCH
-// reuse party_hit.c's RO trick to force that base; the natural form is under #else.
-#ifdef MUST_MATCH
-#define RO(base, off, sym) (sym)
-#else
-#define RO(base, off, sym) ((const char*)&(sym))
-#endif
 // The int->double magic constant is a local @660 instead of the pooled
 // double_to_int_80300630 at 0x138(r30) (one extra lis; the file's .rodata pool is
 // incomplete), and the third loop holds 7 in f2 and beatPos in f1 where the original
 // holds 7 in f1 and beatPos in f2 (same instructions, swapped f-registers).
 // NONMATCHING (99.60%): only those two register-allocation differences remain.
 static void main_base(void) {
-    const u8* base = (const u8*)&vec3_803004f8;
     DekaWork* p = get_ptr();
     s32 idx[8];
     f32 times[8];
@@ -789,11 +780,7 @@ static void main_star(void) {
         p->starTimer = 0;
         p->starUnk44 = p->starUnk48 = p->starScale.x;
         p->starUnk48 += float_1_80421e88;
-#ifdef MUST_MATCH
         psndSFXOn("SFX_BTL_SAC_DOKKAN4");
-#else
-        psndSFXOn("SFX_BTL_SAC_DOKKAN4");
-#endif
         if (audience >= 1 && audience <= 0x31) {
             BattleAudienceSoundCallKind(1);
         }
@@ -1140,8 +1127,7 @@ s32 end_deka(EventEntry* event) {
 // `ratio` temp in each loop, the volatile `float_1_80421e88` read at the resting-note scale, the
 // `volatile` GXColor `color` (own stack slot), the `y = gaugePos.y - float_18` temp in each note
 // transform, and the `y = gaugePos.y` temp at the beat bar. The natural forms are under #else.
-// NONMATCHING (99.89%): every instruction and call matches except the exact FPR colouring of the
-// top gauge block (gaugeWidth f2 vs f3, float_8 f3 vs f1).
+// .text:0xAA8 | 0x80243AA0 | size: 0x6B0
 static void disp_2D(CameraId cameraId, void* param) {
     DekaWork* p = get_ptr();
 #ifdef MUST_MATCH
