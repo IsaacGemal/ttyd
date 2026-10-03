@@ -506,7 +506,7 @@ config.libs = [
             Object(Matching, "effect/eff_puniballoon.c"),
             Object(Matching, "effect/eff_peach_fukidashi.c"),
             Object(NonMatching, "effect/eff_kemutest.c"),
-            Object(NonMatching, "effect/eff_starstone.c"),
+            Object(Matching, "effect/eff_starstone.c"),
             Object(NonMatching, "effect/eff_itemget.c"),
             Object(NonMatching, "effect/eff_pointget.c"),
             Object(NonMatching, "effect/eff_stageclear.c"),
