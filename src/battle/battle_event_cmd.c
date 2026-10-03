@@ -50,6 +50,12 @@ extern const f32 float_450_8041bf9c;
 extern const f32 float_260_8041bfa0;
 extern const f32 float_150_8041bfc0;
 extern const f32 float_0p75_8041bfa8;
+extern const f32 float_450_8041bf9c;
+extern const f32 float_260_8041bfa0;
+extern const f32 dat_8041c00c;
+extern const f32 float_85_8041c000;
+extern const f32 float_neg50_8041c004;
+extern const f32 float_45_8041c008;
 extern const char str_802EE0EC[];
 extern const double double_0p01_802ee040;
 extern const double double_to_int_802ee038;
@@ -600,6 +606,12 @@ USER_FUNC(btlevtcmd_AddPartsDispOffset) {
 }
 
 //s32* battleId, f32* x, f32* y, f32* z
+// The target compares with the sentinel on the left of each test; the named form only spells that order out.
+#ifdef MUST_MATCH
+#define SENTINEL_NE(v) (dat_8041c00c != (v))
+#else
+#define SENTINEL_NE(v) ((v) != dat_8041c00c)
+#endif
 USER_FUNC(btlevtcmd_SetTogeOffset) {
     s32* args = event->args;
     BattleUnit* unit;
@@ -612,17 +624,18 @@ USER_FUNC(btlevtcmd_SetTogeOffset) {
     x = (f32)evtGetValue(event, args[1]);
     y = (f32)evtGetValue(event, args[2]);
     z = (f32)evtGetValue(event, args[3]);
-    if (x != (f32)EVTDAT_POINTER_MAX) {
+    if (SENTINEL_NE(x)) {
         unit->togeOffset.x = x;
     }
-    if (y != (f32)EVTDAT_POINTER_MAX) {
+    if (SENTINEL_NE(y)) {
         unit->togeOffset.y = y;
     }
-    if (z != (f32)EVTDAT_POINTER_MAX) {
+    if (SENTINEL_NE(z)) {
         unit->togeOffset.z = z;
     }
     return EVT_RETURN_DONE;
 }
+#undef SENTINEL_NE
 
 //s32* battleId, s32 indexX, s32 indexY, s32 indexZ
 USER_FUNC(btlevtcmd_GetHomePos) {
@@ -1112,6 +1125,12 @@ USER_FUNC(btlevtcmd_SetBaseRotate) {
 }
 
 //s32* battleId, s32* partId, f32* x, f32* y, f32* z (can be EVTDAT_POINTER_MAX to skip)
+// The target reloads the sentinel before each test; a volatile read forces the reload.
+#ifdef MUST_MATCH
+#define MATCH_SENTINEL (*(volatile const f32*)&dat_8041c00c)
+#else
+#define MATCH_SENTINEL dat_8041c00c
+#endif
 USER_FUNC(btlevtcmd_SetPartsBaseRotate) {
     s32* args = event->args;
     BattleUnitPart* part;
@@ -1127,18 +1146,19 @@ USER_FUNC(btlevtcmd_SetPartsBaseRotate) {
     z = evtGetFloat(event, args[4]);
     part = BattleGetUnitPartsPtr(id, partId);
     BtlUnit_GetPartsBaseRotate(part, &currX, &currY, &currZ);
-    if (x != (f32)EVTDAT_POINTER_MAX) {
+    if (MATCH_SENTINEL != x) {
         currX = x;
     }
-    if (y != (f32)EVTDAT_POINTER_MAX) {
+    if (MATCH_SENTINEL != y) {
         currY = y;
     }
-    if (z != (f32)EVTDAT_POINTER_MAX) {
+    if (MATCH_SENTINEL != z) {
         currZ = z;
     }
     BtlUnit_SetPartsBaseRotate(part, currX, currY, currZ);
     return EVT_RETURN_DONE;
 }
+#undef MATCH_SENTINEL
 
 //s32* battleId, f32* x, f32* y, f32* z
 USER_FUNC(btlevtcmd_SetRotateOffset) {
@@ -1954,28 +1974,27 @@ USER_FUNC(btlevtcmd_CheckDamageCode) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (84.57%): 2 instructions differ, 4 missing, 5 extra, plus register differences.
 USER_FUNC(btlevtcmd_StartAvoid) {
     s32* args = event->args;
     s32 btlId, damageCode;
-    NiceEffectWork* effect;
+    EffectEntry* entry;
     BattleUnit* unit;
-    f32 x, y, z;
+    Vec pos;
 
     btlId = evtGetValue(event, args[0]);
     unit = BattleGetUnitPtr(_battleWorkPointer, BattleTransID(event, btlId));
     damageCode = args[1] | 0x100;
     if ((u8)damageCode == 0x26) {
-        BtlUnit_GetPos(unit, &x, &y, &z);
-        if (y >= 85.0f) {
-            y += -50.0f;
+        BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+        if (pos.y < float_85_8041c000) {
+            pos.y += float_50_8041bfd0;
         }
         else {
-            y += 50.0f;
+            pos.y += float_neg50_8041c004;
         }
-        x -= 45.0f;
-        effect = effNiceEntry(6, x, y, z)->userdata;
-        effect->field_0x1C = 0.75f;
+        pos.x -= float_45_8041c008;
+        entry = effNiceEntry(6, pos.x, pos.y, pos.z);
+        ((NiceEffectWork*)entry->userdata)->field_0x1C = float_0p75_8041bfa8;
     }
     unit->damagePattern = 0;
     BattleRunHitEvent(unit, damageCode);
@@ -2952,24 +2971,24 @@ USER_FUNC(btlevtcmd_SacBgsetMove) {
             case 1:
                 if (value != 0) {
                     if (obj->mPosition.x >= 0.0f) {
-                        move = intplGetValue(mode, event->userdata[0], 45, 450.0f, 0.0f);
+                        move = intplGetValue(mode, event->userdata[0], 45, float_450_8041bf9c, 0.0f);
                     } else {
-                        move = -intplGetValue(mode, event->userdata[0], 45, 450.0f, 0.0f);
+                        move = -intplGetValue(mode, event->userdata[0], 45, float_450_8041bf9c, 0.0f);
                     }
                 } else {
                     if (obj->mPosition.x >= 0.0f) {
-                        move = intplGetValue(mode, event->userdata[0], 45, 0.0f, 450.0f);
+                        move = intplGetValue(mode, event->userdata[0], 45, 0.0f, float_450_8041bf9c);
                     } else {
-                        move = -intplGetValue(mode, event->userdata[0], 45, 0.0f, 450.0f);
+                        move = -intplGetValue(mode, event->userdata[0], 45, 0.0f, float_450_8041bf9c);
                     }
                 }
                 obj->field_0x28.x = move;
                 break;
             case 2:
                 if (value != 0) {
-                    move = intplGetValue(mode, event->userdata[0], 45, 260.0f, 0.0f);
+                    move = intplGetValue(mode, event->userdata[0], 45, float_260_8041bfa0, 0.0f);
                 } else {
-                    move = intplGetValue(mode, event->userdata[0], 45, 0.0f, 260.0f);
+                    move = intplGetValue(mode, event->userdata[0], 45, 0.0f, float_260_8041bfa0);
                 }
                 obj->field_0x28.y = move;
                 break;
@@ -7176,3 +7195,36 @@ USER_FUNC(btlevtcmd_AnimeFlagOnOff) {
     }
     return EVT_RETURN_DONE;
 }
+
+// The unit's .sdata2 pool constants, defined after the code that loads them (defined first, the
+// compiler folds their values and the code changes). Address order matches the original.
+const f32 float_0_8041bf98 = 0.0f;
+const f32 float_450_8041bf9c = 450.0f;
+const f32 float_260_8041bfa0 = 260.0f;
+const f32 float_1_8041bfa4 = 1.0f;
+const f32 float_0p75_8041bfa8 = 0.75f;
+const f32 float_0p3_8041bfac = 0.3f;
+const f32 float_90_8041bfb0 = 90.0f;
+const f32 float_0p6_8041bfb4 = 0.6f;
+const f32 float_1p2_8041bfb8 = 1.2f;
+const f32 float_120_8041bfbc = 120.0f;
+const f32 float_150_8041bfc0 = 150.0f;
+const f32 float_180_8041bfc4 = 180.0f;
+const f32 float_0p5_8041bfc8 = 0.5f;
+const f32 float_160_8041bfcc = 160.0f;
+const f32 float_50_8041bfd0 = 50.0f;
+const f32 float_80_8041bfd4 = 80.0f;
+const f32 float_360_8041bfd8 = 360.0f;
+const f32 float_6p2832_8041bfdc = 6.2831855f;
+const f32 float_3p1416_8041bfe0 = 3.1415927f;
+const f32 float_1p8_8041bfe4 = 1.8f;
+const f32 float_0p15_8041bfe8 = 0.15f;
+const f32 float_60_8041bfec = 60.0f;
+const f32 float_100_8041bff0 = 100.0f;
+const f32 float_10_8041bff4 = 10.0f;
+const f32 float_5_8041bff8 = 5.0f;
+const f32 float_12_8041bffc = 12.0f;
+const f32 float_85_8041c000 = 85.0f;
+const f32 float_neg50_8041c004 = -50.0f;
+const f32 float_45_8041c008 = 45.0f;
+const f32 dat_8041c00c = -250000000.0f;

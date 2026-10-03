@@ -34,12 +34,6 @@ const Vec vec3_802f31a8[] = {{0.0f, 0.0f, 0.0f}};
 const Vec vec3_802f31b4[] = {{0.0f, 0.0f, 0.0f}};
 const Vec vec3_802f31c0[] = {{0.0f, 0.0f, 0.0f}};
 const Vec vec3_802f31cc[] = {{0.0f, 0.0f, 0.0f}};
-const Vec vec3_802f31d8[] = {{0.0f, 0.0f, -50.0f}};
-const Vec vec3_802f31e4[] = {{0.0f, 0.0f, 0.0f}};
-const Vec vec3_802f31f0[] = {{20.0f, 20.0f, 150.0f}};
-const Vec vec3_802f31fc[] = {{0.0f, 0.0f, 0.0f}};
-const Vec vec3_802f3208[] = {{1.0f, 1.0f, 1.0f}};
-const Vec vec3_802f3214[] = {{0.0f, 0.0f, 0.0f}};
 extern const f32 float_0_8041c7f0;
 extern const f32 float_1_8041c7f4;
 extern const f32 float_0p25_8041c7f8;
@@ -355,16 +349,14 @@ BattleSpotWork* BatSpotGetPtr(void) {
 }
 
 #pragma dont_inline on
-// The .rodata is now this unit's own (the vec3 block plus the two conversion
-// doubles at +0x78/+0x80; see the definitions near the top). The only
-// difference left is the int->float conversion double: the original folds it
-// as `lfd f30, 0x78(r31)` off the vec3 base, ours emits its own
-// `lis @567@ha; lfd @567@l(r3)`. Both are at the same .rodata offset; MWCC
-// picks a separate base for the anonymous literal, and defining the double by
-// name made no difference.
-// NONMATCHING (96.08%): int->float conversion double uses its own base instead of vec3's.
+// The (Vec){...} compound literals are deliberate: their parse-time templates
+// become the .rodata words at +0x30/+0x3c/+0x48, which lets MWCC address them
+// (and the int->float conversion double at +0x78) off the vec3_802f31a8 base,
+// exactly as the original does. Naming those three vectors as globals instead
+// emits the templates after the named objects and gives the double its own
+// base. vec3_802f31fc/208/214 must be defined after this function (see below)
+// for the same reason.
 void batSpotInit(void) {
-	const Vec* g = vec3_802f31a8;
 	int i;
 	BattleSpotEntry* entry;
 
@@ -375,14 +367,21 @@ void batSpotInit(void) {
 	for (i = 0; i < 5; i++) {
 		Vec v;
 		entry = batSpotEntry();
-		v = g[4];
+		v = (Vec){0.0f, 0.0f, -50.0f};
 		v.x = 50.0f * i + -100.0f;
 		entry->field_4 = v;
-		entry->field_10 = g[5];
-		entry->field_1C = g[6];
+		entry->field_10 = (Vec){0.0f, 0.0f, 0.0f};
+		entry->field_1C = (Vec){20.0f, 20.0f, 150.0f};
 		entry->field_28 = dat_8041c7ec;
 	}
 }
+
+// Defined here (not at the top) so the compound-literal templates batSpotInit
+// pools land at +0x30 before these named vectors; the original's .rodata is
+// vec3 a8/b4/c0/cc, then the d8/e4/f0 templates, then fc/208/214.
+const Vec vec3_802f31fc[] = {{0.0f, 0.0f, 0.0f}};
+const Vec vec3_802f3208[] = {{1.0f, 1.0f, 1.0f}};
+const Vec vec3_802f3214[] = {{0.0f, 0.0f, 0.0f}};
 
 void batSpotMain() {
     s32 count = wp->count;

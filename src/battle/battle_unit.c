@@ -27,8 +27,9 @@ extern u32 _enemy_can_use_item_table[];
 GXColor dat_8041c3b8 = { 0xFF, 0xFF, 0xFF, 0xFF }; // part->color initialiser (opaque white)
 const f32 float_0_8041c3bc = 0.0f;
 const f32 float_1_8041c3c0 = 1.0f;
-const f32 float_60_8041c3c4 = 60.0f;
-const f32 float_neg1_8041c3c8 = -1.0f;
+// extern so MWCC loads these from the real .sdata2 objects instead of pooling its own copy.
+extern const f32 float_60_8041c3c4;
+extern const f32 float_neg1_8041c3c8;
 f32 float_1p1_8041c3cc = 1.1f;
 f32 float_1p3_8041c3d0 = 1.3f;
 f32 float_1p5_8041c3d4 = 1.5f;
@@ -2306,6 +2307,95 @@ s32 BtlUnit_snd_se_pos(BattleUnit* unit, const char* name, s32 b, s16 c, Vec* po
 }
 #pragma dont_inline reset
 
+// `opt_propagation off` keeps the 0x7F -> double conversion at runtime (`lis 0x4330` +
+// double_to_int_mask_802efac8, `fsub`, `fmul`) instead of folding 127 * 0.7 at compile time. The
+// `vol` temp pins that conversion before the second psndSFX_vol call.
+#pragma opt_propagation off
+void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part) {
+    BattleWork* wp = _battleWorkPointer;
+    BattleUnitPartFields* fields;
+    BtlUnitPartPoseSound* ps;
+    const char* anim;
+    BtlUnitPoseSound* entry;
+    AnimationPose* pose;
+    s32 soundId;
+    f32 total;
+    u32 frame;
+
+    if (!part) {
+        return;
+    }
+    fields = (BattleUnitPartFields*)part;
+    ps = (BtlUnitPartPoseSound*)&fields->mPoseSoundTable;
+    entry = ps->table;
+    if (!entry) {
+        return;
+    }
+    if (*(s32*)((u8*)part + 0x1C0) == -1) {
+        return;
+    }
+    pose = animPoseGetAnimPosePtr(*(s32*)((u8*)part + 0x1C0));
+    if (!pose) {
+        return;
+    }
+    total = *(f32*)((u8*)pose + 0x24) / float_60_8041c3c4;
+    frame = __cvt_fp2unsigned(pose->loopTime);
+    if ((u32)ps->frame > frame) {
+        ps->prev = total;
+        ps->cur = float_neg1_8041c3c8;
+        ps->frame = (s32)pose->loopTime;
+        ps->count = 0;
+        if (BattleGetSeq(wp, SEQ_PHASE) == 0x04000002 ||
+            BattleGetSeq(wp, SEQ_PHASE) == 0x04000004) {
+            ps->flag = 1;
+        }
+    } else if ((u32)ps->frame == frame && ps->prev > total) {
+        ps->prev = total;
+        ps->cur = float_neg1_8041c3c8;
+    } else if ((u32)ps->frame < frame) {
+        ps->prev = total;
+        ps->cur = float_neg1_8041c3c8;
+        ps->frame = (s32)pose->loopTime;
+    } else {
+        ps->cur = ps->prev;
+        ps->prev = total;
+    }
+    if (ps->prev == ps->cur) {
+        return;
+    }
+    anim = animPoseGetCurrentAnim(*(s32*)((u8*)part + 0x1C0))->name;
+    for (; entry->poseName; entry++) {
+        if (strcmp(entry->poseName, anim) != 0) {
+            continue;
+        }
+        if (entry->volume <= ps->prev && entry->volume > ps->cur) {
+            if (entry->flags & 1) {
+                if (entry->callback) {
+                    soundId = entry->callback(fields->mOwner, entry, ps);
+                } else {
+                    soundId = BtlUnit_snd_se(fields->mOwner, entry->soundName, 0xF1194D80, entry->pitch);
+                }
+                psndSFX_vol(soundId, 0x7F);
+                ps->count++;
+                if (*(s32*)((u8*)fields->mOwner + 0x2C) != BattleGetSeq(wp, SEQ_PHASE)) {
+                    u32 vol = 0x7F;
+                    s32 v2 = (s32)((f64)vol * double_0p7_802efac0);
+
+                    psndSFX_vol(soundId, v2);
+                }
+            } else {
+                if (entry->callback) {
+                    entry->callback(fields->mOwner, entry, ps);
+                } else {
+                    BtlUnit_snd_se(fields->mOwner, entry->soundName, 0xF1194D80, entry->pitch);
+                }
+                ps->count++;
+            }
+        }
+    }
+}
+#pragma opt_propagation reset
+
 // `case 5:` is grouped with `default:` on purpose: it seeds MWCC's switch decision tree at 4 like retail
 // (without it the tree roots at 3 and needs an extra `cmpwi 5`). The `prod` temp pins the multiply order.
 s32 BtlUnit_GetExp(BattleUnit* unit) {
@@ -2441,3 +2531,5 @@ s32 BtlUnit_GetWeaponCost(BattleUnit* unit, BattleWeapon* weapon) {
 #pragma dont_inline reset
 
 const f64 double_0p7_802efac0 = 0.7;
+const f32 float_60_8041c3c4 = 60.0f;
+const f32 float_neg1_8041c3c8 = -1.0f;

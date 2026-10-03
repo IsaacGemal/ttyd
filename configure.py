@@ -743,7 +743,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(NonMatching, "mario/mario.c"),
-            Object(NonMatching, "mario/mariost.c"),
+            Object(Matching, "mario/mariost.c"),
             Object(NonMatching, "mario/mario_hit.c"),
             Object(Matching, "mario/mario_motion.c"),
             Object(Matching, "mario/mario_sbr.c"),
@@ -802,7 +802,7 @@ config.libs = [
         "objects": [
             Object(Matching, "sequence/seq_game.c"),
             Object(Matching, "sequence/seq_mapchange.c"),
-            Object(NonMatching, "sequence/seq_title.c"),
+            Object(Matching, "sequence/seq_title.c"),
             Object(Matching, "seqdef.c"),
             Object(Matching, "sequence/seq_battle.c"),
             Object(Matching, "sequence/seq_gameover.c"),

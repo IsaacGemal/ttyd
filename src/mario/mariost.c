@@ -27,6 +27,8 @@
 #include "driver/swdrv.h"
 #include "driver/windowdrv.h"
 
+#include "eff/eff_ultra_hammer.h"
+
 #include "evt/evt_badgeshop.h"
 #include "evt/evt_johoya.h"
 #include "evt/evt_yuugijou.h"
@@ -51,7 +53,6 @@
 #include "nameent.h"
 #include "pmario_sound.h"
 #include "romfont.h"
-#include "sound.h"
 #include "statuswindow.h"
 #include "system.h"
 
@@ -59,6 +60,8 @@
 #include <string.h>
 #include <dolphin/os.h>
 #include <demo/DEMOPad.h>
+
+#include "sound.h"
 
 extern BOOL g_bFirstSmartAlloc;
 
@@ -79,34 +82,16 @@ s32 _mariostSystemLevel;
 BOOL DvdCheckTreadOn;
 
 //.data
-GXRenderModeObj GXNtsc480ProgMarioSt = {
-	VI_TVMODE_NTSC_PROG, //viTVmode
-	0x260, //fbWidth
-	0x1E0, //efbHeight
-	0x1E0, //xfbHeight
-	0x1E, //viXOrigin
-	0x0, //viYOrigin
-	0x294, //viWidth
-	0x1E0, //viHeight
-	VI_XFBMODE_SF, //xFBmode
-	0, //field_rendering
-	0, //aa
-	6, 6, 6, 6, 6, 6, //pix 0
-	6, 6, 6, 6, 6, 6, //pix 1
-	6, 6, 6, 6, 6, 6, //pix 2
-	6, 6, 6, 6, 6, 6, //pix 3
-	8, 8, 10, 12, 10, 8, 8, //vfilter
-};
 
-GXRenderModeObj GXNtsc480IntDfMarioSt = {
+GXRenderModeObj sRMObjHReso = {
 	VI_TVMODE_NTSC_INT, //viTVmode
 	0x260, //fbWidth
-	0x1E0, //efbHeight
-	0x1E0, //xfbHeight
-	0x1E, //viXOrigin
-	0x0, //viYOrigin
-	0x294, //viWidth
-	0x1E0, //viHeight
+	0x1C0, //efbHeight
+	0x1C0, //xfbHeight
+	0x1B, //viXOrigin
+	0x10, //viYOrigin
+	0x29A, //viWidth
+	0x1C0, //viHeight
 	VI_XFBMODE_DF, //xFBmode
 	0, //field_rendering
 	0, //aa
@@ -116,6 +101,7 @@ GXRenderModeObj GXNtsc480IntDfMarioSt = {
 	6, 6, 6, 6, 6, 6, //pix 3
 	8, 8, 10, 12, 10, 8, 8, //vfilter
 };
+
 
 GXRenderModeObj sRMObjHReso_prog = {
 	VI_TVMODE_NTSC_PROG, //viTVmode
@@ -136,16 +122,36 @@ GXRenderModeObj sRMObjHReso_prog = {
 	8, 8, 10, 12, 10, 8, 8, //vfilter
 };
 
-GXRenderModeObj sRMObjHReso = {
+
+GXRenderModeObj GXNtsc480IntDfMarioSt = {
 	VI_TVMODE_NTSC_INT, //viTVmode
 	0x260, //fbWidth
-	0x1C0, //efbHeight
-	0x1C0, //xfbHeight
-	0x1B, //viXOrigin
-	0x10, //viYOrigin
-	0x29A, //viWidth
-	0x1C0, //viHeight
+	0x1E0, //efbHeight
+	0x1E0, //xfbHeight
+	0x1E, //viXOrigin
+	0x0, //viYOrigin
+	0x294, //viWidth
+	0x1E0, //viHeight
 	VI_XFBMODE_DF, //xFBmode
+	0, //field_rendering
+	0, //aa
+	6, 6, 6, 6, 6, 6, //pix 0
+	6, 6, 6, 6, 6, 6, //pix 1
+	6, 6, 6, 6, 6, 6, //pix 2
+	6, 6, 6, 6, 6, 6, //pix 3
+	8, 8, 10, 12, 10, 8, 8, //vfilter
+};
+
+GXRenderModeObj GXNtsc480ProgMarioSt = {
+	VI_TVMODE_NTSC_PROG, //viTVmode
+	0x260, //fbWidth
+	0x1E0, //efbHeight
+	0x1E0, //xfbHeight
+	0x1E, //viXOrigin
+	0x0, //viYOrigin
+	0x294, //viWidth
+	0x1E0, //viHeight
+	VI_XFBMODE_SF, //xFBmode
 	0, //field_rendering
 	0, //aa
 	6, 6, 6, 6, 6, 6, //pix 0
@@ -172,7 +178,7 @@ void marioStInit(void) {
 		}
 	}
 	DEMOEnableGPHangWorkaround(5);
-	setupErrorHandler();
+	N_setupErrorHandler();
 	DEMOPadInit();
 	GXSetCopyClear((GXColor){0, 0, 0, 0}, 0xFFFFFF);
 	__GXSetIndirectMask(0);
@@ -515,30 +521,68 @@ void* gcDvdCheckThread(void* param) {
 // emits subf/srawi + __div2i rather than a full 64-bit subfc/subfe subtraction.
 #define RUMBLE_MS(now, then) OSTicksToMilliseconds((OSTime)((s32)(now) - (s32)(then)))
 #else
+// The natural form subtracts the full 64-bit tick values; retail's 32-bit difference wraps after about 53 s
+// (2^31 ticks at the 40.5 MHz timebase), so the two differ for intervals that long.
 #define RUMBLE_MS(now, then) OSTicksToMilliseconds((now) - (then))
 #endif
 
-// dont_inline keeps gcRumbleCheck a real `bl` from viPostCallback (retail emits one); without it
-// the empty body inlines away.
-#pragma dont_inline on
-// NONMATCHING (0.52%): empty placeholder, not decompiled yet.
 void gcRumbleCheck(void) {
-	/*OSTime start;
-	volatile BOOL array[4] = { 0 };
-	int i;
+	OSTime start;
+	BOOL array[4] = { 0 };
+	s32 i;
 
 	start = OSGetTime();
 	for (i = 0; i < 4; i++) {
-		if (gp->field_0x12E8[i]) {
-			if (OSTicksToMilliseconds(start - gp->field_0x12F0[i]) > 30000) {
+		if (gp->field_0x12E8[i] == 0) {
+			if (padGetRumbleStatus(i) == 1) {
+				if (gp->field_0x12C0[i] == 0) {
+					gp->field_0x12C0[i] = 1;
+					gp->field_0x12C8[i] = start;
+				}
+				if (RUMBLE_MS(start, gp->field_0x12C8[i]) > 30000) {
+					if (gp->field_0x12EC[i] == 0) {
+						gp->field_0x12EC[i] = 1;
+						gp->field_0x12E8[i] = 1;
+						gp->field_0x12F0[i] = start;
+					}
+				}
+				off_trg[i] = 0;
+			}
+			else if (gp->field_0x12C0[i] != 0) {
+				if (off_trg[i] == 0) {
+					off_trg[i] = 1;
+					off_time[i] = start;
+				}
+				if (off_trg[i]) {
+					if (RUMBLE_MS(start, off_time[i]) > 100) {
+						off_trg[i] = 0;
+						gp->field_0x12C0[i] = 0;
+					}
+				}
+			}
+		}
+		else {
+			if (RUMBLE_MS(start, gp->field_0x12F0[i]) > 30000) {
 				gp->field_0x12EC[i] = 0;
 				gp->field_0x12E8[i] = 0;
+				gp->field_0x12C0[i] = 0;
 			}
 			array[i] = TRUE;
 		}
-	}*/
+		if (gp->dvdError) {
+			array[i] = TRUE;
+		}
+		if ((u32)gp->systemLevelFlags != 0) {
+			array[i] = TRUE;
+		}
+		if (array[i]) {
+			gp->unk1310[i] = 1;
+		}
+		else {
+			gp->unk1310[i] = 0;
+		}
+	}
 }
-#pragma dont_inline reset
 
 // dont_inline keeps L_gcResetCheck a real `bl` from marioStMain/gcDvdCheckThread, as in retail.
 #pragma dont_inline on
