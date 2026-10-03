@@ -39,7 +39,10 @@ extern NpcTribeInfo npcTribe[];
 extern char MarioStayPose[32];
 extern char MarioTalkPose[32];
 #ifdef MUST_MATCH
-extern f32 vec3_802c2f78[];
+// Unit .rodata head (target order); MWCC's generated double pool follows these at +0x1c0.
+const f32 vec3_802c2f78[3] = { 0.0f, 0.0f, 0.0f };
+const f32 vec3_802c2f84[3] = { 1.0f, 1.0f, 1.0f };
+const f32 vec3_802c2f90[3] = { 0.0f, 0.0f, 0.0f };
 #endif
 // This unit's float rodata (the names are the original .sdata2 symbols). Naming the constants lets MWCC
 // hoist the inlined sin/cos coefficient loads once per instance as retail does; the natural literals are
@@ -866,7 +869,7 @@ s32 npcGetReactionOfLivingBody(BOOL inBattle) {
 // TODO: fix entry->position delayed set-Vec with r6/r30
 // TODO: a1 is desc/ription?
 // NONMATCHING (81.76%): the two search loops use a cached `total` and an incrementing `entry` pointer,
-// and the position/scale zero/one vectors are the shared rodata blobs vec3_802c2f78[0]/[3].  Still register
+// and the position/scale zero/one vectors are this file's rodata vec3_802c2f78/vec3_802c2f84.  Still register
 // rotation (a1 in r26 vs r25, so `stmw r26` instead of `stmw r25`) and the vec3 base is scheduled later.
 s32 npcEntry(const char* a1, const char* animName) {
     NpcWork* wp;
@@ -916,7 +919,7 @@ s32 npcEntry(const char* a1, const char* animName) {
     entry->width = animPoseGetHeight(entry->poseId);
     entry->height = animPoseGetRadius(entry->poseId);
 #ifdef MUST_MATCH
-    entry->scale = *(Vec*)&vec3_802c2f78[3];
+    entry->scale = *(Vec*)&vec3_802c2f84;
 #else
     entry->scale.x = 1.0f;
     entry->scale.y = 1.0f;
@@ -2344,7 +2347,7 @@ s32 npcCheckBlow(NpcEntry* entry) {
 // recovered the prologue; computing the point into a `Vec pos` (pos.x, pos.z, pos.y) and copying to px/pz/py
 // gets the target's px,pz,py FP order (was py,px,pz). The angle-table and sqrtf double-pool offsets resolve
 // once the other agents finish the unit's rodata.
-// NONMATCHING (99.20%): the final py fmadds lands in f3 instead of f6 (target px f5, py f6, dx f3), plus
+// NONMATCHING (99.27%): the final py fmadds lands in f3 instead of f6 (target px f5, py f6, dx f3), plus
 // the pending unit-rodata pool offsets.
 NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle) {
     MarioWork* mario;
@@ -2397,6 +2400,25 @@ NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius,
     *outDist = dist;
     return npc;
 }
+
+#pragma force_active on
+const char str_802C2FC8[] = "SFX_EVT_FLD_INCANT_CUBE1";
+const char str_802C2FE4[] = "SFX_EVT_FLD_INCANT_CUBE2";
+const char str_802C3000[] = "SFX_EVT_FLD_INCANT_CUBE3";
+const char str_802C301C[] = "SFX_EVT_FLD_INCANT_CUBE4";
+const char str_802C3038[] = "SFX_EVT_FLD_INCANT_CUBE5";
+const char str_802C3054[] = "SFX_EVT_BTL_INCANT_CUBE1";
+const char str_802C3070[] = "SFX_EVT_BTL_INCANT_CUBE2";
+const char str_802C308C[] = "SFX_EVT_BTL_INCANT_CUBE3";
+const char str_802C30A8[] = "SFX_EVT_BTL_INCANT_CUBE4";
+const char str_802C30C4[] = "SFX_EVT_BTL_INCANT_CUBE5";
+const char str_802C30E0[] = "msg_mj_coin_up";
+const char str_802C30F0[] = "msg_mj_last";
+const char str_802C30FC[] = "a_magu";
+const char str_802C3104[] = "kpa_03";
+const char str_802C310C[] = "SFX_KUPPA_3RD_WATER_FALL1";
+const char str_802C3128[] = "mjef_coinup";
+#pragma force_active reset
 
 // Match-only sqrtf for _npcHitCheckSphere: the original reaches the shared sqrtf double pool
 // (0.5 / 3.0 / 0.0 at vec3_802c2f78 + 0x1c0) with vec3_802c2f78 as the base register, so reproduce
@@ -2682,7 +2704,7 @@ static inline f32 npcHitSideMul(f32 a, f32 b) {
 // `opt_lifetimes off` is what puts the accumulator/pivot/scratch in the target's FPRs.
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-// NONMATCHING (99.58%): the sin/cos blocks and the radius match; only `offZ` (target f4, ours f6) and the
+// NONMATCHING (99.59%): the sin/cos blocks and the radius match; only `offZ` (target f4, ours f6) and the
 // inlined sqrtf expression that reads it (target f6, ours f5) still colour into the other scratch FPR.
 // The remaining symbol-only pool displacements resolve when the unit links.
 s32 npcCheckHitMarioSide(NpcEntry* entry) {
@@ -2751,9 +2773,11 @@ s32 npcCheckHitMarioSide(NpcEntry* entry) {
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
 
-// NONMATCHING (99.97%): only the compiler sqrtf/int-to-float double-pool `lfd` displacements differ
-// (ours relative to this unit's local rodata base, the target's to vec3_802c2f78+0x1c0); they resolve
-// once the unit's remaining rodata is in place. All other instructions match.
+// The unit's .rodata head is defined above (vec3 blob and the SFX/msg string objects). Their
+// presence places MWCC's generated sqrtf (0.5/3.0/0.0) and int->float 2^52 double pool at
+// vec3_802c2f78 + 0x1c0, where this function's target reads it; without them the pool landed at
+// ...rodata.0 + 0x30. Note `a_magu`/`mjef_coinup` also have a later codegen copy from the
+// functions that still use the bare literals; that tail is a separate function-order issue.
 HitEntry* npcHitCheckSide(NpcEntry* entry, f32* outX, f32* outZ, f32* outAngle, f32 dx, f32 dz) {
     HitEntry* hit;
     f32 hx, hy, hz, d, nx, ny, nz;

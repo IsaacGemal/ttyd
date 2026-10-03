@@ -188,8 +188,8 @@ static inline GXColor makeHoraoColor(GXColor c, s32 counter, u8 a) {
 // only reorder together with a check. The vertex writes use the sibling n64 quad layout. The first
 // colour is built by the makeHoraoColor inline above, whose base parameter (rather than the global
 // read inside) is what puts its local at 0x10 and the by-value copy at 0x14.
-// NONMATCHING (99.37%): everything matches except the two zero-copies `v = y` and `j = k`, which this
-// build folds to `li` where the original emits `mr` (copies of the already-zero y / k registers).
+// NONMATCHING (99.86%): everything matches except the zero-copy `v = y`, which this build folds to `li`
+// where the original emits `mr` (a copy of the already-zero y register).
 void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	effMagicHoraoData* data;
 	Mtx mtx1;
@@ -209,7 +209,6 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 #endif
 	MagicHoraoVtx* vtx;
 	s32 i;
-	s32 k;
 	s32 angleBase;
 	EffectEntry* effect;
 	s32 colorAlpha;
@@ -357,7 +356,8 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		DCFlushRange(vtx, 0x1C0);
 		GXInvalidateVtxCache();
 		effSetVtxDescN64((effVtxArray*)vtx);
-		for (k = 0, j = k; k < 15; k++, j += 2) {
+		for (i = 0; i < 15; i++) {
+			j = i * 2;
 			GXBegin(0x90, 0, 6);
 			tri2(j, j + 2, j + 1, j, j + 1, j + 2, j + 3, j);
 		}

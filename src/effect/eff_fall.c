@@ -1214,18 +1214,22 @@ void effFallMain(EffectEntry* effect) {
 	}
 }
 
-// Builds the type-8 light colour. Returning it by value (rather than assigning the base and then
-// `color.a`) is a match-only spelling: it is what puts the colour temp and its outgoing argument copy
-// in the target's stack slots. MUST_MATCH builds it; otherwise the natural assignment is used.
+// Builds the type-8 light colour and the case 0/1 / case 2 material colours. Returning the colour by
+// value (rather than assigning a base and then `color.a`) is what puts the colour temp and its
+// outgoing argument copy in the target's stack slots; `effFallColA`'s (alpha, base) parameter order is
+// what lands the base word / alpha byte in the target's r5 / r0. MUST_MATCH builds them, otherwise the
+// natural assignment at each site is used.
 #ifdef MUST_MATCH
 static inline GXColor effFallCol8(u8 a) { GXColor c = dat_80420f58; c.a = a; return c; }
+static inline GXColor effFallColA(u8 a, GXColor c) { c.a = a; return c; }
 #endif
 
 // GX display for the default/koopa/light types: a per-type textured quad, the procedural type-2 strip,
 // the type 4/5 animation halo, the type 6 koopa body and the type 8 light pose.
-// NONMATCHING (99.92%): 17 instructions differ beyond 27 data-symbol-only ones; all are register
-// allocation/scheduling (viewYaw and case 0/1 f28/quad `fmuls` operand order, the case 0/1 and 2
-// GXColor temp/argument stack slots).
+// The viewYaw product, the case-0/1 half-angle products and the two GXChanMat colours go through
+// explicit locals under MUST_MATCH: `rad`, `w` and `neg29`/`pos29` put the compiler's temporaries in the
+// target's FPRs, and the colour helpers put them in its GPRs/stack slots. The natural expressions sit
+// under each #else.
 void effFallDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	FallWork* elem = effect->userdata;
@@ -1239,13 +1243,22 @@ void effFallDisp(CameraId cameraId, void* param) {
 	f32 f30;
 	f32 f29;
 	f32 f28;
+#ifdef MUST_MATCH
+	f32 rad;
+#endif
 
 	camView = camGetPtr(cameraId);
 	type = elem->type;
 	f30 = elem->unk18;
 	PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
 	cam = camGetPtr(cameraId);
+#ifdef MUST_MATCH
+	rad = -cam->viewYaw;
+	rad = float_deg2rad_80420f70 * rad;
+	PSMTXRotRad(mtxRot, 'y', rad);
+#else
 	PSMTXRotRad(mtxRot, 'y', -cam->viewYaw * float_deg2rad_80420f70);
+#endif
 	PSMTXConcat(mtxPos, mtxRot, mtxView);
 
 	GXSetNumChans(1);
@@ -1281,7 +1294,14 @@ void effFallDisp(CameraId cameraId, void* param) {
 		switch (type) {
 		case 0:
 		case 1: {
+#ifndef MUST_MATCH
 			GXColor color;
+#endif
+#ifdef MUST_MATCH
+			f32 w;
+			f32 neg29;
+			f32 pos29;
+#endif
 			f29 = float_64_80420f74;
 			f28 = float_42p667_80420fb8;
 			f29 = f29 * float_0p5_80420f7c;
@@ -1289,11 +1309,21 @@ void effFallDisp(CameraId cameraId, void* param) {
 			PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
 			PSMTXRotRad(mtxRot, 'y', float_deg2rad_80420f70 * elem->unk18);
 			PSMTXConcat(mtxPos, mtxRot, mtxPos);
+#ifdef MUST_MATCH
+			w = f28 * float_0p5_80420f7c;
+			PSMTXTrans(mtxRot, float_0_80420f84, w * elem->unk2C, float_0_80420f84);
+#else
 			PSMTXTrans(mtxRot, float_0_80420f84, f28 * 0.5f * elem->unk2C, float_0_80420f84);
+#endif
 			PSMTXConcat(mtxPos, mtxRot, mtxPos);
 			PSMTXRotRad(mtxRot, 'z', float_deg2rad_80420f70 * elem->unk48);
 			PSMTXConcat(mtxPos, mtxRot, mtxPos);
+#ifdef MUST_MATCH
+			w = -f28 * float_0p5_80420f7c;
+			PSMTXTrans(mtxRot, float_0_80420f84, w * elem->unk2C, float_0_80420f84);
+#else
 			PSMTXTrans(mtxRot, float_0_80420f84, -f28 * 0.5f * elem->unk2C, float_0_80420f84);
+#endif
 			PSMTXConcat(mtxPos, mtxRot, mtxPos);
 			PSMTXScale(mtxScale, elem->unk2C, elem->unk2C, elem->unk2C);
 			PSMTXConcat(mtxPos, mtxScale, mtxPos);
@@ -1301,26 +1331,51 @@ void effFallDisp(CameraId cameraId, void* param) {
 			PSMTXConcat(camView->view, mtxPos, mtxPos);
 			GXLoadPosMtxImm(mtxPos, 0);
 			GXSetCurrentMtx(0);
+#ifdef MUST_MATCH
+			GXSetChanMatColor(4, effFallColA(elem->unk3C, dat_80420f48));
+#else
 			color = dat_80420f48;
 			color.a = elem->unk3C;
 			GXSetChanMatColor(4, color);
+#endif
 			PSMTXScale(mtxScale, float_1_80420f80, float_0p33333_80420fbc, float_1_80420f80);
 			PSMTXTrans(mtxPos, float_0_80420f84, (f32)elem->unk28, float_0_80420f84);
 			PSMTXConcat(mtxScale, mtxPos, mtxPos);
 			GXLoadTexMtxImm(mtxPos, 0x1e, 1);
 			GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+			neg29 = -f29;
+			neg29 = neg29 * float_0p5_80420f7c;
+			pos29 = f29 * float_0p5_80420f7c;
+			GXPosition3f32(neg29, f28, 0.0f);
+#else
 			GXPosition3f32(-f29 * 0.5f, f28, 0.0f);
+#endif
 			GXTexCoord2f32(0.0f, 0.0f);
+#ifdef MUST_MATCH
+			GXPosition3f32(pos29, f28, 0.0f);
+#else
 			GXPosition3f32(f29 * 0.5f, f28, 0.0f);
+#endif
 			GXTexCoord2f32(1.0f, 0.0f);
+#ifdef MUST_MATCH
+			GXPosition3f32(pos29, 0.0f, 0.0f);
+#else
 			GXPosition3f32(f29 * 0.5f, 0.0f, 0.0f);
+#endif
 			GXTexCoord2f32(1.0f, 1.0f);
+#ifdef MUST_MATCH
+			GXPosition3f32(neg29, 0.0f, 0.0f);
+#else
 			GXPosition3f32(-f29 * 0.5f, 0.0f, 0.0f);
+#endif
 			GXTexCoord2f32(0.0f, 1.0f);
 			break;
 		}
 		case 2: {
+#ifndef MUST_MATCH
 			GXColor color;
+#endif
 			s32 j;
 			f32* v;
 			PSMTXTrans(mtxPos, elem->x, elem->y, elem->z);
@@ -1330,9 +1385,13 @@ void effFallDisp(CameraId cameraId, void* param) {
 			PSMTXConcat(camView->view, mtxPos, mtxPos);
 			GXLoadPosMtxImm(mtxPos, 0);
 			GXSetCurrentMtx(0);
+#ifdef MUST_MATCH
+			GXSetChanMatColor(4, effFallColA(elem->unk3C, dat_80420f4c));
+#else
 			color = dat_80420f4c;
 			color.a = elem->unk3C;
 			GXSetChanMatColor(4, color);
+#endif
 			PSMTXIdentity(mtxPos);
 			GXLoadTexMtxImm(mtxPos, 0x1e, 1);
 			for (j = 0; j < 0x1e; j += 2) {

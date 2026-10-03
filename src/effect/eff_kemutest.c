@@ -40,13 +40,17 @@ const Vec vec3_802fdcc8 = { 0.0f, 5.0f, -5.0f };
 const Vec vec3_802fdcd4 = { 5.0f, 0.0f, -2.0f };
 const Vec vec3_802fdce0 = { 0.0f, 1.0f, 2.0f };
 const Vec vec3_802fdcec = { 0.0f, 0.0f, 0.0f };
-// NONMATCHING (99.91%): everything structural matches — function/`.text` order, rodata order (named
-// arrays before the pool double/strings), GPR allocation, the `work = data; work++;` scheduling, and
-// the case 11 `360.0f * (f32)(i - 1) / (f32)(count - 2)` left-association. What is left is MWCC's FP
-// temp numbering (17 instructions): the lone `angle` temp is f25 vs the original f26 in cases 2/3,
-// f26 vs f25 in case 11, and in case 4/13 the `bom_dir`/`bom_spd` loads and the `angle`/`spd` values
-// (f25/f26) come out swapped. The MUST_MATCH `spd = 0.0f;` dead store pins `spd` in f26 so cases
-// 7/8/9/17/20 match. Instruction sequences are otherwise byte-identical.
+// effKemuTestEntry (99.99%): everything structural matches — function/`.text` order, rodata order
+// (named arrays before the pool double/strings), the `work = data; work++;` scheduling, the case 11
+// `360.0f * (f32)(i - 1) / (f32)(count - 2)` left-association, and MWCC's per-case FP temp colouring
+// (block-scoping `angle`/`spd` inside the paired cases pins it; the `spd = 0.0f;` MUST_MATCH dead
+// store before the loop keeps `spd` function-lived in f26). The only remaining diff is two
+// instructions in case 4/13: the two array base GPRs are swapped (the original materialises
+// `bom_dir` into r22 first, ours `bom_spd`, so the angle/spd `lfs` read r21/r22 the other way).
+// `bom_dir`/`bom_spd` are referenced nowhere else, so this is the allocator's tie-break on the two
+// hoisted `li`s; every source form that hoists `bom_dir` first (angle statement before spd) also
+// renumbers the caller-saved temps, so it needs the permuter.
+// NONMATCHING (99.99%): only the two case-4/13 array base GPRs (r21/r22) are swapped.
 EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effKemuTestData* data;
@@ -263,6 +267,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->field_0x4E = 0xFF;
 			work->field_0x44 = 0;
 			if (type == 4 || type == 13) {
+				f32 angle, spd;
 				spd = 2.0f * bom_spd[i - 1];
 				angle = 6.2831855f * (90.0f + bom_dir[i - 1]) / 360.0f;
 				work->velX = spd * (f32)sin(angle);
@@ -308,6 +313,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 				work->scale = 0.5f;
 			}
 			else if (type == 9 || type == 17 || type == 20) {
+				f32 angle, spd;
 				f32 raw = (f32)irand(0x168);
 
 				if (i < (entry->count - 1) / 2 + 1) {
@@ -371,6 +377,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			break;
 		case 7:
 			{
+				f32 angle, spd;
 				spd = 1.0f + (f32)irand(0x28) / 10.0f;
 
 				work->posX = 0.0f;
@@ -390,6 +397,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			break;
 		case 8:
 			{
+				f32 angle, spd;
 				f32 raw = (f32)irand(0x168);
 
 				spd = 2.0f * ((f32)irand(0x28) / 10.0f) + 1.0f;
@@ -408,7 +416,8 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->field_0x4E = 0xFF;
 			work->scale = 1.0f;
 			break;
-		case 11:
+		case 11: {
+			f32 angle;
 			angle = 6.2831855f * (360.0f * (f32)(i - 1) / (f32)(count - 2)) / 360.0f;
 			work->posX = 0.0f;
 			work->posY = 0.0f;
@@ -424,6 +433,7 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->field_0x4E = 0xFF;
 			work->scale = 1.0f;
 			break;
+		}
 		case 12:
 			work->field_0x34 = 0.95f;
 			work->field_0x38 = -0.04f;

@@ -264,10 +264,10 @@ void effKemuriMain(EffectEntry* effect) {
 #endif
 }
 
-// All instructions are present; the only differences are register allocation.
-// NONMATCHING (98.63%): the original loads effect->userdata into r7 then copies it to the
-// callee-saved r31 before the sin call (we coalesce the load straight into r31), and the alpha
-// block's int->float conversion uses f2/f0/f1 where we use f1/f2/f0.
+// Two MUST_MATCH shapes below are needed for the register allocation: a redundant re-read of
+// effect->userdata makes MWCC load it into a volatile register and copy it to the callee-saved
+// r31 before the sin call (retail's `lwz r7; mr r31, r7`), and a non-const `k = 0.8f` local
+// keeps the alpha int->float conversion in retail's f1/f2/f0 order.
 static void effKemuri2Main(EffectEntry* effect) {
 	effKemuri2Data* data = effect->userdata;
 	s32 i;
@@ -284,8 +284,9 @@ static void effKemuri2Main(EffectEntry* effect) {
 	disp.z = data->z;
 #ifdef MUST_MATCH
 	position = disp;
+	/* MUST_MATCH: redundant re-read makes MWCC split data into r7/r31 as retail does. */
+	data = effect->userdata;
 #endif
-
 	angle = (f32)sin(3.1415927f * (f32)data->counter / 30.0f);
 	data->counter++;
 	if (data->counter > 30) {
@@ -302,7 +303,14 @@ static void effKemuri2Main(EffectEntry* effect) {
 		data->field_0x68 += data->field_0x64;
 		data->field_0x70 = angle;
 		if (data->counter > 15) {
+#ifdef MUST_MATCH
+			/* MUST_MATCH: a local keeps the conversion in retail's f1/f2/f0 order. */
+			f32 k = 0.8f;
+
+			data->alpha = (s32)((f32)data->alpha * k);
+#else
 			data->alpha = (s32)((f32)data->alpha * 0.8f);
+#endif
 		}
 	}
 #ifdef MUST_MATCH
@@ -452,7 +460,8 @@ static inline GXColor kemuriTevColor(u8 alpha, GXColor c) {
 }
 #endif
 
-// NONMATCHING (99.73%): the +6.4 constant lands in f27, not retail's f31.
+// 100% matched: the p8/p12/n12p8 preheader locals (declared p8,p12,n12p8 and assigned
+// n12p8,p12,p8) and the quad's x6/y4/px/py locals reproduce retail's volatile-FPR colouring.
 static void effKemuri2Disp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effKemuri2Data* data = effect->userdata;
@@ -465,7 +474,18 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	Mtx outMtx;
 	Mtx tmpMtx;
 	s32 i;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: a local for the +6.4 constant makes MWCC keep it in f31 as retail does. */
+	f32 sixp4;
+	/* MUST_MATCH: names for the negSize source loads keep their volatile-FPR colouring. */
+	f32 p8;
+	f32 p12;
+	f32 n12p8;
+#endif
 
+#ifdef MUST_MATCH
+	sixp4 = 6.4f;
+#endif
 	camera = camGetPtr(cameraId);
 
 	GXSetNumChans(0);
@@ -490,13 +510,32 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
+#ifdef MUST_MATCH
+	n12p8 = -float_12p8_8041c690;
+	p12 = float_12_8041c688;
+	p8 = float_8_8041c68c;
+#endif
+
 	for (i = 0; i < 2; i++) {
+#ifdef MUST_MATCH
+		const f32 negSizeX = -p12;
+		const f32 negSizeY = -p8;
+		const f32 negSize2 = n12p8 * float_0p5_8041c6cc;
+#else
 		const f32 negSizeX = -float_12_8041c688;
 		const f32 negSizeY = -float_8_8041c68c;
 		const f32 negSize2 = -float_12p8_8041c690 * float_0p5_8041c6cc;
+#endif
 
 		if ((data->field_0x78 > float_20_8041c694 && data->field_0x78 < float_160_8041c698) ||
 		    (data->field_0x78 > float_180_8041c69c && data->field_0x78 < float_340_8041c6a0)) {
+#ifdef MUST_MATCH
+			/* MUST_MATCH: named quad temps reproduce retail's volatile-FPR colouring. */
+			f32 x6;
+			f32 y4;
+			f32 px;
+			f32 py;
+#endif
 			PSMTXTrans(transMtx, data->x + (f32)(1 - i), data->y - (f32)(1 - i), data->z);
 			PSMTXRotRad(rotMtx, 'y', float_deg2rad_8041c6a4 * -camGetPtr(cameraId)->viewYaw);
 			PSMTXRotRad(rotMtx2, 'z', float_0p17453_8041c6a8);
@@ -541,6 +580,20 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 #endif
 			}
 			GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+			px = negSizeX * float_0p5_8041c6cc;
+			py = negSizeY * float_0p5_8041c6cc;
+			y4 = float_4_8041c6d0;
+			x6 = float_6_8041c6c4;
+			GXPosition3f32(px, y4, 0.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(x6, y4, 0.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(x6, py, 0.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(px, py, 0.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
+#else
 			GXPosition3f32(negSizeX * float_0p5_8041c6cc, float_4_8041c6d0, 0.0f);
 			GXTexCoord2f32(0.0f, 0.0f);
 			GXPosition3f32(float_6_8041c6c4, float_4_8041c6d0, 0.0f);
@@ -549,6 +602,7 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			GXTexCoord2f32(1.0f, 1.0f);
 			GXPosition3f32(negSizeX * float_0p5_8041c6cc, negSizeY * float_0p5_8041c6cc, 0.0f);
 			GXTexCoord2f32(0.0f, 1.0f);
+#endif
 		}
 
 		PSMTXTrans(transMtx, data->x + (f32)(1 - i), data->y - (f32)(1 - i), data->z);
@@ -599,13 +653,26 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 #endif
 		}
 		GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+		GXPosition3f32(negSize2, sixp4, 0.0f);
+#else
 		GXPosition3f32(negSize2, float_6p4_8041c6d4, 0.0f);
+#endif
 		GXTexCoord2f32(0.0f, 0.0f);
+#ifdef MUST_MATCH
+		GXPosition3f32(sixp4, sixp4, 0.0f);
+#else
 		GXPosition3f32(float_6p4_8041c6d4, float_6p4_8041c6d4, 0.0f);
+#endif
 		GXTexCoord2f32(1.0f, 0.0f);
+#ifdef MUST_MATCH
+		GXPosition3f32(sixp4, negSize2, 0.0f);
+#else
 		GXPosition3f32(float_6p4_8041c6d4, negSize2, 0.0f);
+#endif
 		GXTexCoord2f32(1.0f, 1.0f);
 		GXPosition3f32(negSize2, negSize2, 0.0f);
 		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
+

@@ -66,66 +66,154 @@ static const char* msg_tbl[] = {
 };
 static NameEntryWork* wp = &work;
 
-void nameMaskGX(f32 alpha) {
-	GXColor color;
-	GXTexObj texObj;
-	Mtx mtxMain;
-	Mtx mtxScale;
-	Mtx mtxNeg;
-	f32 scale;
+// .rodata unit data: nameEntDisp reads these through the str_802FD9A8 base as
+// base+disp (the win_badge VECREL shape). They sit right after the msg strings and
+// before the compiler's literal pool, so they also fix nameBG's pool offsets.
+const Vec vec3_802fd9e8 = { -130.0f, 160.0f, 0.0f };
+const Vec vec3_802fd9f4 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802fda00 = { 0.0f, 160.0f, 0.0f };
+const Vec vec3_802fda0c = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802fda18 = { 142.0f, 160.0f, 0.0f };
+const Vec vec3_802fda24 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802fda30 = { 160.0f, 0.0f, 0.0f };
+const Vec vec3_802fda3c = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802fda48 = { 154.0f, 0.0f, 0.0f };
+const Vec vec3_802fda54 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802fda60 = { 160.0f, 0.0f, 0.0f };
+const Vec vec3_802fda6c = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802fda78 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802fda84 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802fda90 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802fda9c = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802fdaa8 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802fdab4 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802fdac0 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802fdacc = { 1.0f, 1.0f, 1.0f };
 
-	scale = 1000.0f * alpha * alpha * alpha * alpha * alpha;
-	GXSetZCompLoc(GX_TRUE);
-	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
-	GXSetZMode(GX_DISABLE, GX_ALWAYS, GX_DISABLE);
-	GXSetNumChans(0);
-	GXSetNumTevStages(1);
-	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
-	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-	color = (GXColor){ 0, 0, 0, 0x80 };
-	GXSetTevColor(GX_TEVREG0, color);
-	TEXGetGXTexObjFromPalette(fadeGetTpl(), &texObj, 1);
-	GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-	GXLoadTexObj(&texObj, GX_TEXMAP0);
-	GXSetNumTexGens(1);
-	PSMTXTrans(mtxMain, 0.5f, 0.5f, 0.0f);
-	PSMTXScale(mtxScale, scale, scale, 0.0f);
-	PSMTXTrans(mtxNeg, -0.5f, -0.5f, 0.0f);
-	PSMTXConcat(mtxMain, mtxScale, mtxMain);
-	PSMTXConcat(mtxMain, mtxNeg, mtxMain);
-	GXLoadTexMtxImm(mtxMain, GX_TEXMTX0, GX_MTX2x4);
-	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	GXSetCullMode(GX_CULL_NONE);
-	GXClearVtxDesc();
-	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
-	GXSetCurrentMtx(0);
-	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	GXPosition3s16(-304, 240, 0);
-	GXTexCoord2f32(0.0f, 0.0f);
-	GXPosition3s16(304, 240, 0);
-	GXTexCoord2f32(1.0f, 0.0f);
-	GXPosition3s16(304, -240, 0);
-	GXTexCoord2f32(1.0f, 1.0f);
-	GXPosition3s16(-304, -240, 0);
-	GXTexCoord2f32(0.0f, 1.0f);
+void nameEntInit(void) {
+	memset(wp, 0, sizeof(NameEntryWork));
+}
+
+void nameEntReInit(void) {
+	wp->field_0x4 = 3;
+}
+
+BOOL nameEntPrepare(void) {
+	return fileAsyncf(4, NULL, "%s/w/jp/name.tpl", getMarioStDvdRoot()) != 0;
+}
+
+// The integer expression is written in the original's operand order under MUST_MATCH; the natural form
+// `x*24 + x/5*30 - 190` reassociates and emits a different register/add order. The original selects the
+// type-2 table entry with a two-case switch, which is why it branches `beq case2; b default`.
+void nameEntOn(s32 type) {
+	s32 i;
+
+	wp->field_0x0 = 0;
+	wp->field_0xC = type;
+	wp->field_0x4 = 1;
+	wp->field_0x8 = 0;
+	wp->field_0x50 = hiragana_tbl;
+	wp->field_0x18 = 0;
+	wp->field_0x10 = 0;
+	wp->field_0x14 = 0;
+
+#ifdef MUST_MATCH
+	wp->x1 = wp->x2 = (f32)(wp->field_0x10 * 24 - 190 + wp->field_0x10 / 5 * 30);
+#else
+	wp->x1 = wp->x2 = (f32)(wp->field_0x10 * 24 + wp->field_0x10 / 5 * 30 - 190);
+#endif
+	wp->y1 = wp->y2 = (f32)(112 - wp->field_0x14 * 28);
+	wp->field_0x2C = wp->field_0x34 = -106.0f;
+	wp->field_0x30 = wp->field_0x38 = 135.0f;
+
+	strcpy(wp->field_0x3C, "");
+	for (i = 0; i < 8; i++) {
+		strcat(wp->field_0x3C, "\x81\x40");
+	}
+	wp->field_0x54 = 0.0f;
+
+	switch (type) {
+	case 2:
+		hiragana_tbl[9] = "\x81\x40";
+		katakana_tbl[9] = "\x81\x40";
+		break;
+	default:
+		hiragana_tbl[9] = "\x82\xF1";
+		katakana_tbl[9] = "\x83\x93";
+		break;
+	}
+}
+
+void nameEntOff(void) {
+	wp->field_0x4 = 3;
+}
+
+BOOL nameEntWait(void) {
+	wp->field_0x0 |= 1;
+	return wp->field_0x8 != 0x65;
+}
+
+BOOL nameEntIsCancel(void) {
+	return (wp->field_0x0 >> 1) & 1;
+}
+
+char* nameEntGetName(void) {
+	s32 off;
+	s32 i;
+
+	if (wp->field_0x8 != 0x65) {
+		return NULL;
+	}
+	for (i = 7, off = 0xe; i >= 1; i--, off -= 2) {
+		if (strncmp(&wp->field_0x3C[off], "\x81\x40", 2) != 0) {
+			break;
+		}
+		wp->field_0x3C[off] = 0;
+		wp->field_0x3C[off + 1] = 0;
+	}
+	return wp->field_0x3C;
+}
+
+void nameEntMain(void) {
+	BOOL loaded;
+
+	switch (wp->field_0x4) {
+	case 0:
+		break;
+	case 1:
+		if (fileAsyncf(4, NULL, "%s/w/jp/name.tpl", getMarioStDvdRoot()) != 0U) {
+			wp->field_0x60 = fileAllocf(4, "%s/w/jp/name.tpl", getMarioStDvdRoot());
+			loaded = TRUE;
+		} else {
+			loaded = FALSE;
+		}
+		if (loaded) {
+			wp->field_0x4++;
+		}
+	case 2:
+		nameMain();
+		break;
+	case 3:
+		if (wp->field_0x60 != NULL) {
+			fileFree(wp->field_0x60);
+		}
+		wp->field_0x60 = NULL;
+		wp->field_0x4 = 0;
+		break;
+	}
+	if (wp->field_0x4 > 1) {
+		dispEntry(4, 0.0f, 7, nameEntDisp, NULL);
+	}
 }
 
 // The scale is the original's (f32)__fabs(<double literal>) / GXGetTexObj*; the separate f64
 // temporaries per quad keep the pool in instruction order. Depends on the file using math_ext.h
 // instead of <math.h>: math.h's extern inline sqrtf/sqrt put _half/_three at the start of
 // .rodata and stop the compiler anchoring the pool to str_802FD9A8.
-//
-// NONMATCHING (99.97%): only the .rodata pool offsets of the four doubled constants differ
-// (480/32/544/int-mask sit at 0x60/0x68/0x70/0x78 from str_802FD9A8, not 0x148/0x150/0x158/0x138);
-// they resolve once the rest of the unit's constants are in the object.
+// .rodata pool note: the double_480/32/544 displacements are set by the unit's .text/.rodata order,
+// not by this function. The 20 file-scope vec3_* objects above must stay declared between msg_tbl and
+// the functions (they occupy .rodata 0x40..0x12F), and the functions must stay in reverse .s order
+// (nameEntMain after nameBG), or the literals here move and this function drops below 100%.
 void nameBG(void) {
 	GXTexObj texObj1;
 	GXTexObj texObj2;
@@ -245,7 +333,6 @@ void nameBG(void) {
 		GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4); \
 	}
 
-
 static inline void nameKirinukiQuad(f32 x, f32 y, f32 w, f32 h) {
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	GXPosition3f32(x, y, 0.0f);
@@ -299,120 +386,56 @@ void nameKirinukiGX(f32 x, f32 y, f32 z, f32 w) {
 	nameKirinukiQuad(x + z - 8.0f, y - (w - 8.0f), 8.0f, 8.0f);
 }
 
-void nameEntMain(void) {
-	BOOL loaded;
+void nameMaskGX(f32 alpha) {
+	GXColor color;
+	GXTexObj texObj;
+	Mtx mtxMain;
+	Mtx mtxScale;
+	Mtx mtxNeg;
+	f32 scale;
 
-	switch (wp->field_0x4) {
-	case 0:
-		break;
-	case 1:
-		if (fileAsyncf(4, NULL, "%s/w/jp/name.tpl", getMarioStDvdRoot()) != 0U) {
-			wp->field_0x60 = fileAllocf(4, "%s/w/jp/name.tpl", getMarioStDvdRoot());
-			loaded = TRUE;
-		} else {
-			loaded = FALSE;
-		}
-		if (loaded) {
-			wp->field_0x4++;
-		}
-	case 2:
-		nameMain();
-		break;
-	case 3:
-		if (wp->field_0x60 != NULL) {
-			fileFree(wp->field_0x60);
-		}
-		wp->field_0x60 = NULL;
-		wp->field_0x4 = 0;
-		break;
-	}
-	if (wp->field_0x4 > 1) {
-		dispEntry(4, 0.0f, 7, nameEntDisp, NULL);
-	}
-}
-
-char* nameEntGetName(void) {
-	s32 off;
-	s32 i;
-
-	if (wp->field_0x8 != 0x65) {
-		return NULL;
-	}
-	for (i = 7, off = 0xe; i >= 1; i--, off -= 2) {
-		if (strncmp(&wp->field_0x3C[off], "\x81\x40", 2) != 0) {
-			break;
-		}
-		wp->field_0x3C[off] = 0;
-		wp->field_0x3C[off + 1] = 0;
-	}
-	return wp->field_0x3C;
-}
-
-BOOL nameEntIsCancel(void) {
-	return (wp->field_0x0 >> 1) & 1;
-}
-
-BOOL nameEntWait(void) {
-	wp->field_0x0 |= 1;
-	return wp->field_0x8 != 0x65;
-}
-
-void nameEntOff(void) {
-	wp->field_0x4 = 3;
-}
-
-// The integer expression is written in the original's operand order under MUST_MATCH; the natural form
-// `x*24 + x/5*30 - 190` reassociates and emits a different register/add order. The original selects the
-// type-2 table entry with a two-case switch, which is why it branches `beq case2; b default`.
-void nameEntOn(s32 type) {
-	s32 i;
-
-	wp->field_0x0 = 0;
-	wp->field_0xC = type;
-	wp->field_0x4 = 1;
-	wp->field_0x8 = 0;
-	wp->field_0x50 = hiragana_tbl;
-	wp->field_0x18 = 0;
-	wp->field_0x10 = 0;
-	wp->field_0x14 = 0;
-
-#ifdef MUST_MATCH
-	wp->x1 = wp->x2 = (f32)(wp->field_0x10 * 24 - 190 + wp->field_0x10 / 5 * 30);
-#else
-	wp->x1 = wp->x2 = (f32)(wp->field_0x10 * 24 + wp->field_0x10 / 5 * 30 - 190);
-#endif
-	wp->y1 = wp->y2 = (f32)(112 - wp->field_0x14 * 28);
-	wp->field_0x2C = wp->field_0x34 = -106.0f;
-	wp->field_0x30 = wp->field_0x38 = 135.0f;
-
-	strcpy(wp->field_0x3C, "");
-	for (i = 0; i < 8; i++) {
-		strcat(wp->field_0x3C, "\x81\x40");
-	}
-	wp->field_0x54 = 0.0f;
-
-	switch (type) {
-	case 2:
-		hiragana_tbl[9] = "\x81\x40";
-		katakana_tbl[9] = "\x81\x40";
-		break;
-	default:
-		hiragana_tbl[9] = "\x82\xF1";
-		katakana_tbl[9] = "\x83\x93";
-		break;
-	}
-}
-
-BOOL nameEntPrepare(void) {
-	return fileAsyncf(4, NULL, "%s/w/jp/name.tpl", getMarioStDvdRoot()) != 0;
-}
-
-void nameEntReInit(void) {
-	wp->field_0x4 = 3;
-}
-
-void nameEntInit(void) {
-	memset(wp, 0, sizeof(NameEntryWork));
+	scale = 1000.0f * alpha * alpha * alpha * alpha * alpha;
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
+	GXSetZMode(GX_DISABLE, GX_ALWAYS, GX_DISABLE);
+	GXSetNumChans(0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+	GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+	color = (GXColor){ 0, 0, 0, 0x80 };
+	GXSetTevColor(GX_TEVREG0, color);
+	TEXGetGXTexObjFromPalette(fadeGetTpl(), &texObj, 1);
+	GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+	GXLoadTexObj(&texObj, GX_TEXMAP0);
+	GXSetNumTexGens(1);
+	PSMTXTrans(mtxMain, 0.5f, 0.5f, 0.0f);
+	PSMTXScale(mtxScale, scale, scale, 0.0f);
+	PSMTXTrans(mtxNeg, -0.5f, -0.5f, 0.0f);
+	PSMTXConcat(mtxMain, mtxScale, mtxMain);
+	PSMTXConcat(mtxMain, mtxNeg, mtxMain);
+	GXLoadTexMtxImm(mtxMain, GX_TEXMTX0, GX_MTX2x4);
+	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+	GXSetCullMode(GX_CULL_NONE);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+	GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+	GXSetCurrentMtx(0);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	GXPosition3s16(-304, 240, 0);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3s16(304, 240, 0);
+	GXTexCoord2f32(1.0f, 0.0f);
+	GXPosition3s16(304, -240, 0);
+	GXTexCoord2f32(1.0f, 1.0f);
+	GXPosition3s16(-304, -240, 0);
+	GXTexCoord2f32(0.0f, 1.0f);
 }
 static inline void nameWinQuad(f32 x, f32 y, f32 w, f32 h) {
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);

@@ -250,23 +250,22 @@ DepthShadowWork* dswp = &depth_shadow_work;
 ProjShadowWork* pswp = &proj_shadow_work;
 CharShadowWork* cswp = &char_shadow_work;
 
-#ifdef MUST_MATCH
-// MUST_MATCH: returning the size through an inline lets MWCC coalesce the call result into the
-// destination register instead of staging it through r0 (`mr r0,r3; mr rN,r0`). The natural direct-call
-// form is under the #else at each use.
-static inline u32 shadowTexBufferSize(u16 w, u16 h, u32 fmt) {
-    return GXGetTexBufferSize(w, h, fmt, GX_FALSE, 0);
-}
-#endif
-
-// The instruction stream, call sequence and block1 registers match. The block2 ramp rotation differs:
-// MWCC colours `bufferSize2`/`ramp16` r31/r30 where retail has r30/r31 (the loop's sthx base and the
-// second DCFlushRange args follow the swap). Data references use the original symbols, not pool constants.
-// NONMATCHING (99.80%): block2 `bufferSize2`/`ramp16` register swap (r31/r30 vs retail r30/r31).
+// Data references use the original symbols, not pool constants.
+// MUST_MATCH: declaring the two GXGetTexBufferSize results `unsigned long long` (with the calls written
+// out directly) is what stops MWCC staging each call result through r0 (`mr r0,r3; ...; mr rN,r0`) while
+// keeping retail's block-2 bufferSize2/ramp16 r30/r31 rotation. With plain `u32` the first call stages
+// and the block-2 pair rotates the wrong way, whichever call/inline shape is used. The natural types are
+// under #else (that form does not match).
 void shadowInit(void) { //almost 1:1, minor regalloc
+#ifdef MUST_MATCH
+    unsigned long long bufferSize;
+    u8* ramp8;
+    unsigned long long bufferSize2;
+#else
     u32 bufferSize;
     u8* ramp8;
     u32 bufferSize2;
+#endif
     u16* ramp16;
     u32 i;
     CharShadowWork* wp;
@@ -289,11 +288,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     dswp->unk8 = 0;
     dswp->unk100 = (GXColor){0, 0, 0, 0x40};
 
-#ifdef MUST_MATCH
-    bufferSize = shadowTexBufferSize(0x10, 0x10, GX_TF_I8);
-#else
     bufferSize = GXGetTexBufferSize(0x10, 0x10, GX_TF_I8, GX_FALSE, 0);
-#endif
     ramp8 = __memAlloc(HEAP_DEFAULT, GXGetTexBufferSize(0x10, 0x10, GX_TF_I8, GX_FALSE, 0));
     for (i = 0; i < 256; i++) {
         ramp8[(((i & 0x3) * 8) + (((i & 0xC) * 16) + (((i & 0x80) / 4) + ((i & 0x70) / 16))))] = i;
@@ -302,11 +297,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     GXInitTexObjLOD(&rampTex8, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     DCFlushRange(ramp8, bufferSize);
 
-#ifdef MUST_MATCH
-    bufferSize2 = shadowTexBufferSize(0x100, 0x100, GX_TF_IA8);
-#else
     bufferSize2 = GXGetTexBufferSize(0x100, 0x100, GX_TF_IA8, GX_FALSE, 0);
-#endif
     ramp16 = __memAlloc(HEAP_DEFAULT, GXGetTexBufferSize(0x100, 0x100, GX_TF_IA8, GX_FALSE, 0));
     for (i = 0; i < 0x10000; i++) {
         ramp16[(((i & 0x3) * 4) + (((i & 0xFC) * 256) + (((i & 0xFC00) / 64) + ((i & 0x300) / 256))))] = i;
@@ -952,11 +943,13 @@ static inline GXColor shadowProjColor(u8 v) {
 // explicit u32 temps, which is what makes MWCC batch them as "load all nine words, then store all
 // nine" like retail instead of interleaving (that alone is +2.3%). The two .sdata2 `~~` pool labels
 // vanish when the unit links. Still differs only in MWCC allocation/scheduling: inside that batched
-// Vec copy MWCC colours the nine temps in the opposite register order from retail (ours
-// r7..r12,r26,r27,r0 vs retail r27,r26,r12..r7,r0), the GXColor argument scratch slots are permuted
-// (ours 0x18/0x14/0x10/0x8/0xc vs retail 0x8/0xc/0x18/0x10/0x14), and one `fsubs f3,f2,f29` is
-// scheduled one slot later.
-// NONMATCHING (99.27%): register/stack-slot allocation and one scheduler slot, as detailed above.
+// Vec copy MWCC drops the nine loads in a different order from retail (ours v7,v6,...,v1,v8,v0 vs
+// retail v0..v8) and allocates v0/v8 to r0/r27 rather than retail's r27/r0 (v1..v7 already match
+// retail's r26,r12..r7), the GXColor argument scratch slots are permuted (ours
+// 0x18/0x14/0x10/0x8/0xc vs retail 0x8/0xc/0x18/0x10/0x14), and one `fsubs f3,f2,f29` is
+// scheduled one slot later. Declaring the temps in the reversed order below is a MUST_MATCH-only
+// nudge (+0.06%) that lines up more of the nine stores; the natural order is under #else.
+// NONMATCHING (99.33%): register/stack-slot allocation and one scheduler slot, as detailed above.
 void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     ShadowConfigFields* config;
     void* work;
@@ -1062,9 +1055,9 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
             /* Copy the three camera basis vectors through explicit word temps: this forces MWCC to
                emit retail's "nine loads, then nine stores" instead of interleaving load/store. */
             const u32* vp = (const u32*)(vecs + 0xC);
-            s32 v0 = vp[0], v1 = vp[1], v2 = vp[2];
-            s32 v3 = vp[3], v4 = vp[4], v5 = vp[5];
-            s32 v6 = vp[6], v7 = vp[7], v8 = vp[8];
+            s32 v7 = vp[7]; s32 v6 = vp[6]; s32 v5 = vp[5];
+            s32 v4 = vp[4]; s32 v3 = vp[3]; s32 v2 = vp[2];
+            s32 v1 = vp[1]; s32 v0 = vp[0]; s32 v8 = vp[8];
 
             ((u32*)&camPos)[0] = v0; ((u32*)&camPos)[1] = v1; ((u32*)&camPos)[2] = v2;
             ((u32*)&camUp)[0] = v3; ((u32*)&camUp)[1] = v4; ((u32*)&camUp)[2] = v5;

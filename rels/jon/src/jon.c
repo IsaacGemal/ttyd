@@ -2399,9 +2399,6 @@ void _epilog(void) {
 void _unresolved(void) {
 }
 
-// NONMATCHING (99.97%): one inner-loop instruction still differs: MWCC emits `add r4, r4, r31` (halfterm + row)
-// where the target has `add r4, r31, r4` (row + halfterm). The callee-saved rotation, the FP registers, the stack
-// slots and every other instruction match; only that commutative add's operands are swapped.
 void raster_disp(CameraId camera, void* param) {
     s32 row;
     s32 col;
@@ -2439,22 +2436,14 @@ void raster_disp(CameraId camera, void* param) {
         col = i % 4;
 #endif
         for (j = 0; j < 0x40; j++) {
-#ifdef MUST_MATCH
-            // MUST_MATCH: keeping the address in a pointer makes MWCC use the target's `image + (j/4)*512 + row`
-            // order; the #else one-expression form reassociates it and scores lower.
-            u8* p = image + (j / 4) * 512 + row;
-#else
-            s32 off = row + (col + (j % 4) * 4) * 2 + (j / 4) * 512;
-#endif
             f32 k = 0.25f;
             f32 v = (f32)sin((f32)j + ((f32)gp->retraceCount * k + phase));
-#ifdef MUST_MATCH
-            p[(col + (j % 4) * 4) * 2] = (s32)(amplitude * v + 128.0f);
-            p[(col + (j % 4) * 4) * 2 + 1] = 0x80;
-#else
+            // Two-statement offset keeps the target's `row + (j/4)*512` operand order; the one-expression
+            // form reassociates it to `(j/4)*512 + row` and loses the match.
+            s32 off = row + (j / 4) * 512;
+            off += (col + (j % 4) * 4) * 2;
             image[off] = (s32)(amplitude * v + 128.0f);
             image[off + 1] = 0x80;
-#endif
         }
     }
 

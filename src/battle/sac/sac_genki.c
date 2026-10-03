@@ -804,13 +804,15 @@ void main_mario(void) {
     }
 }
 
-// The file's incomplete .rodata pool (same limitation as main_star1) means MWCC does not fold
-// the int->float magic double or str_80300470 into the vec3_803002b0 pool base: it emits a fresh
-// `lis`/`lfd` for the double instead of the original's `lfd 0x1b8(r29)`, and a fresh `lis` for the
-// string instead of `addi r4, r29, 0x1c0`. Those two pool offsets only come out once the vec3/string
-// entries from disp_3D are in the unit. The switch jump tables are anonymous `@...@` too, but those
-// are symbol-only (`~~`) and resolve when the unit links.
-// NONMATCHING (98.88%): the double/string pool base (2 sites, 10 instructions).
+// The file's incomplete .rodata pool (same limitation as main_star1) means MWCC does not fold the
+// int->float magic double into the vec3_803002b0 pool base: it emits a fresh `lis`/`lfd` at a
+// separate anonymous `@NNN` pool entry instead of the original's `lfd 0x1b8(r29)`. That `lis`
+// clobbers r3 and drags the surrounding `lwz 0x74/0x78(r30)` register choice with it. The
+// `str_80300470` load is matched with the vec3_803002b0+0x1C0 base (MUST_MATCH below). Both pool
+// offsets only come out once the vec3/string entries from disp_3D are in the unit; the missing
+// 0x180 of other functions' .rodata is what puts the double at vec3+0x1b8. The switch jump tables
+// are anonymous `@...@` too, but those are symbol-only (`~~`) and resolve when the unit links.
+// NONMATCHING (99.27%): only the double's pool base (the fresh `lis @NNN`; 6 instructions).
 void main_weapon(s32 idx) {
     const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
@@ -862,7 +864,12 @@ void main_weapon(s32 idx) {
                 break;
             }
         }
+#ifdef MUST_MATCH
+        // Match-only: retail reads the sound name through the vec3_803002b0 base (offset 0x1C0).
+        BtlUnit_snd_se(mario, (const char*)((const u8*)vec + 0x1C0), 0xF1194D80, 0);
+#else
         BtlUnit_snd_se(mario, str_80300470, 0xF1194D80, 0);
+#endif
         /* fallthrough */
     case 2:
         weapon->pos[0].x += weapon->vel.x;

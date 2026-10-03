@@ -118,15 +118,13 @@ EffectEntry* effFireFlowerN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) 
 	return effect;
 }
 
-// (1) case 0: the count `7` is materialized as `li r4, 7` one block early, above the mode test;
-// the original emits it after `lfs f2, data->y`. Tried literal/inline/enum/const forms, named
-// count temps, evaluation-order and duplicated-call shapes, the opt/scheduling pragmas (and
-// several compiler versions); the hoist survives `#pragma scheduling off` (the constants appear
-// before the mode load even unscheduled), so it is the global optimizer/register allocator's
-// constant rematerialization, not instruction scheduling, and could not be steered from C.
-// (2) case 6 is fixed under MUST_MATCH: naming the 0.9f constant (`k`) keeps field_0x28 + 18.0f in f2, double_to_int
-// in f3 and 0.9f in f1, matching retail.
-// NONMATCHING (99.15%): only the case 0 `li r4, 7` hoist remains.
+// Both near-misses are handled under MUST_MATCH:
+// (1) case 0: the original's prototype listed `count` between `y` and `z`, so MWCC evaluates the
+// call's arguments in the order r3, f1, f2, r4, f3, r5.  The shared header keeps the semantically
+// ordered prototype, so the call is made through the reordered signature (same registers); without
+// it the compiler hoists `li r4, 7` above the mode test.  Same shape as evt_sub_spline_get_value.
+// (2) case 6: naming the 0.9f constant (`k`) keeps field_0x28 + 18.0f in f2, double_to_int in f3
+// and 0.9f in f1, matching retail.
 void effFireFlowerMain(EffectEntry* effect) {
 	effFireFlowerData* data = effect->userdata;
 #ifdef MUST_MATCH
@@ -166,7 +164,14 @@ void effFireFlowerMain(EffectEntry* effect) {
 		} else {
 			fx = 10.0f + data->x;
 		}
+#ifdef MUST_MATCH
+		/* MUST_MATCH: the original's prototype had count declared between y and z, so the
+		   argument loads come out r3, f1, f2, r4, f3, r5.  The shared header keeps the
+		   semantically ordered prototype, so reorder only here (registers are identical). */
+		((EffectEntry* (*)(s32, f32, f32, s32, f32, s32))effRotHammerSuccessN64Entry)(0, fx, data->y, 7, data->z, 0x14);
+#else
 		effRotHammerSuccessN64Entry(0, 7, fx, data->y, data->z, 0x14);
+#endif
 		data->field_0x34 = 0;
 		data->field_0x38 = 0;
 		data->state++;

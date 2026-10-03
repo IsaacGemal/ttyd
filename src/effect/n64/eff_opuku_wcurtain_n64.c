@@ -102,16 +102,36 @@ void effOpukuWcurtainMain(EffectEntry* effect) {
 	dispEntry(4, dispCalcZ(&position), 2, effOpukuWcurtainDisp, effect);
 }
 
+// Building the colour inside an inline that returns it makes mwcc lay the local and the outgoing argument
+// slot out the way the original does; building them inline in the caller puts them the wrong way round
+// (same quirk as eff_akari_charge_n64.c).
+#ifdef MUST_MATCH
+static inline GXColor opukuWcurtainColor(s32 r, s32 g, s32 b, s32 a) {
+	GXColor c = unk_804231e0;
+	c.r = r;
+	c.g = g;
+	c.b = b;
+	c.a = a;
+	return c;
+}
+#endif
+
 // The packed s16<->f32 vertex conversions are psq_l/psq_st (GQR5) and match through the SDK
-// OSs16tof32/OSf32tos16 fast-cast inlines; the transform loop, GX/TEV setup, matrix math and draw loop are
-// instruction-for-instruction identical. What is left is compiler colouring/layout only:
-//  (1) the GXSetTevColor by-value copy sits at r1+0x10 (target r1+0x18), shifting texObj/scaleMtx/transMtx
-//      and the Vec v down by 4 and putting the transform loop's psq_st scratch at 0xc/0xa/0x8 (target
-//      0x10/0xc/0x8);
-//  (2) the vertex-building loop's volatile temps are a rotated colouring: target texS r4, x r5, t r6,
-//      0xff r7, 0 r8, field_2C r9, i*20 r10, alpha r11, cursor r12; ours r10, r11, r4, r5, r6, r9, r7, r12,
-//      r8 (val r9 and i r29 match).
-// NONMATCHING (98.89%): vertex-building loop's volatile register colouring and the GXSetTevColor copy slot.
+// OSs16tof32/OSf32tos16 fast-cast inlines; the colour local/outgoing copies now land in the original's
+// slots through the opukuWcurtainColor inline above, and the transform loop, GX/TEV setup, matrix math and
+// draw loop are instruction-for-instruction identical. What is left is one allocator permutation: the
+// vertex-building loop's volatile registers are rotated. The original colours texS r4, x r5, fctiwz temp
+// r6, 0xff r7, 0 r8, field_0x2C pointer r9, i*20 r10, alpha r11 and the walking vtx cursor r12; ours gives
+// the temp r4, 0xff r5, 0 r6, i*20 r7, cursor r8, the pointer r9 (matches), texS r10, x r11, alpha r12.
+// Every opcode and operand matches; only these 8 registers differ. Tried without moving the allocation:
+// declaration order (all permutations, comma forms, `a` at function scope), use order, pointer vs indexing
+// (`vtx[2*i]`, `p->`, `p[i]`, `p+=2`, two `p++`, save-base forms), named fctiwz/accumulator temps, named
+// field_0x2C pointer, every integer type for i/texS/x/a, while/for control shape, arithmetic spellings of
+// the alpha and field index, moving the x/texS increments, opt_lifetimes/opt_propagation/opt_common_subs/
+// opt_dead_assignments/opt_loop_invariants/global_optimizer/fp_contract/scheduling and every -O level, and
+// compiler versions GC/1.3..2.7 (all still 33 diffs or worse). The nine volatile registers r4-r12 are all
+// live in the loop, so this is a packed allocation permutation (permuter work).
+// NONMATCHING (98.97%): vertex-building loop's volatile register colouring only.
 void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -130,13 +150,17 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	OpukuWcurtainVtx* vtx;
 	s32 counter = data->counter;
 
+	scale = 0.1f * data->scale;
+#ifdef MUST_MATCH
+	GXSetTevColor(GX_TEVREG0, opukuWcurtainColor(data->field_0x18, data->field_0x1C, data->field_0x20, data->field_0x24));
+#else
 	color = unk_804231e0;
 	color.r = data->field_0x18;
 	color.g = data->field_0x1C;
 	color.b = data->field_0x20;
 	color.a = data->field_0x24;
-	scale = 0.1f * data->scale;
 	GXSetTevColor(GX_TEVREG0, color);
+#endif
 	GXSetNumChans(1);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTevStages(1);

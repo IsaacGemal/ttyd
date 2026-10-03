@@ -85,7 +85,16 @@ s32 _get_angle_hp(s32 hp) {
 }
 
 // NONMATCHING (99.20%): only the 100.0f load target (f2 vs f3) and the add/mul destination
-// register differ; mwcc folds the sum into f1 instead of f2.
+// register differ; mwcc folds the sum into f1 instead of f2. base is dead after the add, so the
+// allocator coalesces it with bumped; keeping base live forces more registers and extra loads.
+// Tried: operand swap, parenthesised/ratio/direct-division forms, locals for every constant before
+// and after the call, extra temps, `register`, `const`, `f64`, compound assignment, comma operator,
+// address-of, struct/union temporaries, nested/do-while scopes, static inline helpers for the add
+// and the scale, and every relevant pragma (opt_lifetimes/opt_propagation/opt_common_subs/
+// opt_dead_assignments/opt_loop_invariants/opt_strength_reduction/global_optimizer/peephole/
+// scheduling/optimize_for_size/optimization_level/pool_data/fp_contract); none forces the
+// non-destructive add. tools/flag_sweep.py confirms no other -O level helps (only -O4,s keeps the
+// file), and MWCC 2.5/2.6/2.7/3.0a3/3.0a3p1/3.0a5 all give 99.2% for this function.
 s32 _get_angle_rate(f32 angle) {
 	f32 base = compAngle(MATCH_F32(float_0_80420978), angle);
 	f32 bumped = base + MATCH_F32(float_45_8042097c);

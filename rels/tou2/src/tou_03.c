@@ -4019,15 +4019,16 @@ EVT_BEGIN(evt_kyaku_8)
     RETURN
 EVT_END()
 
-// The two fill loops now reproduce retail's instruction sequence and schedule (the pixel loop keeps
+// The two fill loops reproduce retail's instruction sequence and schedule (the pixel loop keeps
 // `(i / 4) * 0x100` / `(i % 4) * 8` and uses `row = j / 8` / `pct = j % 8` locals; the sparkle loop
-// precomputes `sgrow` / `sgcol` with shifts). What still differs is register colouring only:
-// retail keeps `param` in r27 and the sparkle `sgrow` in r25 (here r25 / r27), the pixel loop's
-// hoisted row/col/0xFF sit in r7 / r8 / r3 (retail r4 / r3 / r5), and the min-clamp's `ratio`
-// lands in f0 (retail f1). The compiler's colouring of the {param, sgrow, sgcol} clique and of the
-// pixel-loop temporaries could not be steered from C (many declaration orders, expression forms,
-// shifts vs multiplies and pragma settings were tried).
-// NONMATCHING (99.47%): integer and float register allocation only.
+// precomputes `sgrow` / `sgcol` with shifts and adds `col` last via `buf[idx + col]`). The min-clamp
+// also matches after declaring `x` before `ratio` and writing `x = (x > ratio) ? ratio : x`. What
+// still differs is register colouring only: retail keeps `param` in r27 and the sparkle `sgrow` in
+// r25 (here r25 / r27), and the pixel loop's hoisted row/col/0xFF sit in r7 / r8 / r3 (retail
+// r4 / r3 / r5). The compiler's colouring of the {param, sgrow} clique and of the pixel-loop
+// temporaries could not be steered from C (many declaration orders, expression forms, shifts vs
+// multiplies and pragma settings were tried).
+// NONMATCHING (99.54%): integer register allocation only.
 #pragma opt_propagation off // needed: with propagation on the second fill loop folds sgcol into a buf+sgcol pointer
 void screen_tev(TevCallbackParam* param) {
     GXTexObj texObj;
@@ -4065,10 +4066,10 @@ void screen_tev(TevCallbackParam* param) {
                     u8 val = rand() % 0x100;
                     for (j = start; j < start + len; j++) {
                         s32 idx = (j / 8) * 0x20;
+                        s32 col = sgcol;
                         idx += sgrow;
                         idx += (j % 8);
-                        idx += sgcol;
-                        buf[idx] = val;
+                        buf[idx + col] = val;
                     }
                 }
             }
@@ -4118,16 +4119,15 @@ void screen_tev(TevCallbackParam* param) {
         screen_wp->field_0x18 += (screen_wp->field_0x1C - screen_wp->field_0x18) / 60.0f;
         PSMTXScale(mtxScale, screen_wp->field_0x8, screen_wp->field_0x8, 1.0f);
         {
+            f32 x;
             f32 ratio = (1.0f - screen_wp->field_0x8) / screen_wp->field_0x8;
             f32 y = screen_wp->field_0x18;
             if (y > ratio) {
                 y = ratio;
             }
-            {
-                f32 x = screen_wp->field_0x10;
-                x = (ratio > x) ? x : ratio;
-                PSMTXTrans(mtxTrans, x, y, 0.0f);
-            }
+            x = screen_wp->field_0x10;
+            x = (x > ratio) ? ratio : x;
+            PSMTXTrans(mtxTrans, x, y, 0.0f);
         }
         PSMTXConcat(mtxScale, mtxTrans, mtx);
     } else {

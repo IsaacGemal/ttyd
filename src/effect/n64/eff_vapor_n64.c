@@ -116,13 +116,16 @@ static inline GXColor effVaporN64Color2(effVaporN64Data* data, s32 alpha) {
 }
 
 // .data float pairs and tables, in the original's order.
-static f32 negone_one_374[2] = { -1.0f, 1.0f };
-f32 lbl_803A8608[2] = { 1.0f, -1.0f };
-static f32 one_negone_373[2] = { 1.0f, -1.0f };
-f32 lbl_803A8618[2] = { -1.0f, 1.0f };
-static f32 negone_one_360[2] = { -1.0f, 1.0f };
-f32 lbl_803A8628[2] = { 1.0f, -1.0f };
-static f32 one_negone_359[2] = { 1.0f, -1.0f };
+// __declspec(section ".data"): the original keeps these 8-byte pairs in .data (not the
+// default .sdata for small objects), which is what places dx_data/scale_data/... at the
+// original offsets relative to lbl_803A85F8.
+__declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
+__declspec(section ".data") f32 lbl_803A8608[2] = { 1.0f, -1.0f };
+__declspec(section ".data") static f32 one_negone_373[2] = { 1.0f, -1.0f };
+__declspec(section ".data") f32 lbl_803A8618[2] = { -1.0f, 1.0f };
+__declspec(section ".data") static f32 negone_one_360[2] = { -1.0f, 1.0f };
+__declspec(section ".data") f32 lbl_803A8628[2] = { 1.0f, -1.0f };
+__declspec(section ".data") static f32 one_negone_359[2] = { 1.0f, -1.0f };
 s8 dx_data[0x5C] = {
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -8, -15,

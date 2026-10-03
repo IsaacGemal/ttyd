@@ -21,7 +21,7 @@
 #include "koopa_motion.h"
 #include "koopa_hit.h"
 
-// locals for symbols with no home header (see REPORT.md)
+// locals for symbols with no home header
 extern f32 marioJumpData[];
 
 #define MW_U8(m, off)  (*(u8*)((u8*)(m) + (off)))
@@ -88,16 +88,10 @@ f32 kpaGetBaseScale(s32 index) {
     return baseScaleTbl[index];
 }
 
-// The only instruction difference left is the loop preheader: MWCC emits `addi r29,r29,0x50` before
-// `li r28,1` where the original has the reverse. `#pragma scheduling off` flips the pair but changes
-// ~60 other instructions, and every source shape tried (i=1 first, comma and for-init forms, root+1 /
-// &root[1] / pointer-increment inits, an inline helper, and the opt_propagation / opt_lifetimes /
-// global_optimizer / peephole / dead-assignment toggles) leaves the order as the scheduler chose it.
-// The other `!!` arg mismatches are only .sdata2 pool slots: this file is in asm order, so the pool is
-// emitted in reverse; in the canonical (reverse-source) position kpaFireMain's constants pool in the
-// original order. Compiler stamps 02040701/02040201; the paired function kpaEnemyFireHitChk has the
-// identical preheader quirk.
-// NONMATCHING (99.52%): only the loop preheader `li r28,1` / `addi r29,r29,0x50` order differs.
+// Reusing the work pointer as the node cursor (`root++` before the loop and in the for-increment)
+// instead of a separate `node` pointer makes mwcc schedule the preheader `li r28,1` before
+// `addi r29,r29,0x50`, as the original does; a separate cursor emits them in the opposite order
+// (same shape as kpaEnemyFireHitChk in koopa_hit.c).
 void kpaFireMain(void) {
     MarioWork* mp = marioGetPtr();
     f32 sign;
@@ -107,7 +101,6 @@ void kpaFireMain(void) {
     s32 level;
     EffectEntry* efp;
     KpaFireNode* root;
-    KpaFireNode* node;
     s32 i;
     Mtx m2, m0, m1, m3; // declaration order puts the matrices in the original's stack slots
     Vec out;
@@ -166,23 +159,24 @@ void kpaFireMain(void) {
     }
     PSMTXConcat(m0, m1, m0);
     PSMTXConcat(m0, m2, m3);
-    node = (KpaFireNode*)((u8*)root + 0x50);
-    for (i = 1; i < efp->count; i++, node = (KpaFireNode*)((u8*)node + 0x50)) {
+    i = 1;
+    root++;
+    for (; i < efp->count; i++, root++) {
         if ((i - 1) & 3) {
             continue;
         }
-        if (node->unk44 != 0) {
+        if (root->unk44 != 0) {
             continue;
         }
-        if (node->unk1C <= 0x10) {
+        if (root->unk1C <= 0x10) {
             continue;
         }
-        f30 = 7.0f * node->unk40;
+        f30 = 7.0f * root->unk40;
         f31 = f30 * rootScale;
         if (f31 < 7.0f) {
             continue;
         }
-        PSMTXTrans(m0, node->pos.x, node->pos.y, node->pos.z);
+        PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
         PSMTXScale(m2, f30, f30, f30);
         PSMTXConcat(m0, m2, m0);
         PSMTXConcat(m3, m0, m0);

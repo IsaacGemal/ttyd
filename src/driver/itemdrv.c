@@ -116,7 +116,16 @@ const Vec vec3_802cabec = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cabf8 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cac04 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cac10 = {0.0f, 0.0f, 0.0f};
+#ifdef MUST_MATCH
+// Deliberately non-const and pinned to .rodata: itemseq_GetItem copies this zero Vec, and the compiler
+// otherwise treats the const load as hoistable and schedules it above the two stores to `item` that
+// precede the copy inside the inlined itemseq_sfxGet. Non-const blocks that reorder but keeps the three
+// dead loads in the target order; the explicit section keeps the object at the target's .rodata offset
+// (a plain non-const definition lands in .sdata and shifts every string offset).
+__declspec(section ".rodata") Vec vec3_802cac1c = {0.0f, 0.0f, 0.0f};
+#else
 const Vec vec3_802cac1c = {0.0f, 0.0f, 0.0f};
+#endif
 const f64 double_20_802cac28 = 20.0;
 #ifdef MUST_MATCH
 // The original reads 20.0 from the named .rodata object, not from a pooled copy of the literal. Reading it through
@@ -695,15 +704,11 @@ static inline void itemseq_deleteMatching(ItemEntry* item) {
 // Plays the "item obtained" stardust/SFX for the item id, at the item's position.
 static inline void itemseq_sfxGet(ItemEntry* item) {
     Vec pos2;
-    // vec3_802cac1c is the 6th of the contiguous zero Vecs. The indexed form keeps the three dead
-    // loads *after* the caller's stores; the plain symbol makes MWCC's scheduler hoist them. Cost: one
-    // `mr r5, r28` base copy. `(Vec){0.0f,0.0f,0.0f}` schedules perfectly but adds a `.rodata` object
-    // at +0x50 that shifts sqrtf's doubles and regresses itemHitCheck.
-#ifdef MUST_MATCH
-    Vec pos = (&vec3_802cabe0)[5];
-#else
+    // vec3_802cac1c is the 6th of the contiguous zero Vecs. Its declaration (top of file) is non-const
+    // under MUST_MATCH so the compiler keeps the three dead loads *after* the caller's stores instead
+    // of hoisting them; see the comment there. `(Vec){0.0f,0.0f,0.0f}` schedules right but adds a
+    // `.rodata` object at +0x50 that shifts sqrtf's doubles and regresses itemHitCheck.
     Vec pos = vec3_802cac1c;
-#endif
 
     pos.x = item->position.x;
     pos.y = item->position.y;
@@ -769,12 +774,8 @@ static inline s32 itemseq_tryGet(ItemEntry* item) {
     return 1;
 }
 
-// All logic, switch dispatch, constants, call order and the whole .rodata layout match. The one
-// remaining difference is scheduling: in the itemseq_sfxGet zero-Vec init MWCC emits a `mr r5, r28`
-// base copy for the three dead loads (the indexed form keeps them *after* the caller's stores; the
-// plain symbol form instead makes the scheduler hoist the loads above the stores). Neither form
-// reproduces the target exactly.
-// NONMATCHING (99.81%): itemseq_sfxGet zero-Vec init: extra mr r5, r28 base copy and loads scheduled differently.
+// All logic, switch dispatch, constants, call order and the whole .rodata layout match. The
+// itemseq_sfxGet zero-Vec init is kept in order by the non-const declaration of vec3_802cac1c.
 void itemseq_GetItem(ItemEntry* item) {
     ItemWork* wp = itemGetWork();
     MarioWork* mario = marioGetPtr();

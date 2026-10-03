@@ -702,6 +702,259 @@ static u32 splineTableOut4_4[15] = {
     0xC1C80000, 0xC1C80000, 0x00000000,
 };
 
+static s32 zanzou_count[3];
+
+// dont_inline keeps outSplineTableSet_Sub a real `bl` from outSplineTableSet, as in retail.
+#pragma dont_inline on
+#pragma dont_inline reset
+
+// dont_inline keeps the get_target/get_next_target helpers a real `bl` from barriern_wawawa_set_target.
+#pragma dont_inline on
+static USER_FUNC(barriern_zanzou) {
+    BattleUnit* unit;
+    s32 id;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 0);
+}
+
+static USER_FUNC(barriern_zanzou2) {
+    BattleUnit* unit;
+    s32 id;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 1);
+}
+
+static USER_FUNC(barriern_zanzou3) {
+    BattleUnit* unit;
+    s32 id;
+
+    id = BattleTransID(event, evtGetValue(event, event->args[0]));
+    unit = BattleGetUnitPtr(_battleWorkPointer, id);
+    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 2);
+}
+
+static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale, s32 mode) {
+    BattleUnitPart* part;
+    f32 temp2[5];
+    f32 temp1[5];
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 end;
+    f32 s;
+    f32 step;
+    s32 num;
+    s32 i;
+    s32 j;
+    u8 aStart;
+    u8 aEnd;
+    s32 a = 4;
+
+    switch (mode) {
+    case 0:
+        num = 0x24;
+        end = 0.6f;
+        for (i = 0; i < 5; i++) {
+            temp2[i] = 0.8f * scale.value[i];
+            temp1[i] = 0.6f;
+        }
+        step = 0.5f;
+        aStart = 0;
+        aEnd = 0x40;
+        a = 4;
+        break;
+    case 1:
+    case 2:
+        num = 8;
+        end = 0.8f;
+        for (i = 0; i < 5; i++) {
+            temp2[i] = 0.8f;
+            temp1[i] = 0.8f * scale.value[i];
+        }
+        step = -0.5f;
+        aStart = 0x40;
+        aEnd = 0;
+        a = 1;
+        break;
+    }
+    if (mode == 2) {
+        num = 0x24;
+    }
+    if (isFirstCall) {
+        zanzou_count[0] = 0;
+        BtlUnit_GetPos(unit, &x, &y, &z);
+        BtlUnit_SetPartsScale(BtlUnit_GetPartsPtr(unit, 1), 0.8f, 0.8f, 1.0f);
+        for (i = 2, j = 0; i <= 6; i++, j++) {
+            part = BtlUnit_GetPartsPtr(unit, i);
+            BtlUnit_SetPartsPos(part, x, y, z + (f32)i * step);
+            BtlUnit_SetPartsScale(part, temp2[j], temp2[j], 1.0f);
+            part->color.a = aEnd;
+            part->attributes &= ~0x01000000;
+        }
+    }
+    part = BtlUnit_GetPartsPtr(unit, 1);
+    s = intplGetValue(a, zanzou_count[0], num, 0.8f, end);
+    BtlUnit_SetPartsScale(part, s, s, 1.0f);
+    for (i = 2, j = 0; i <= 6; i++, j++) {
+        part = BtlUnit_GetPartsPtr(unit, i);
+        s = intplGetValue(a, zanzou_count[0], num, temp2[j], temp1[j]);
+        BtlUnit_SetPartsScale(part, s, s, 1.0f);
+        part->color.a = (u8)intplGetValue(0, zanzou_count[0], num, (f32)aStart, (f32)aEnd);
+    }
+    if (zanzou_count[0] >= num) {
+        part = BtlUnit_GetPartsPtr(unit, 1);
+        BtlUnit_SetPartsScale(part, 0.8f, 0.8f, 1.0f);
+        part->color.a = 0xff;
+        for (i = 2; i <= 6; i++) {
+            BtlUnit_GetPartsPtr(unit, i)->attributes |= 0x01000000;
+        }
+        return 2;
+    }
+    zanzou_count[0]++;
+    return 0;
+}
+
+// The comma-and-temporary form makes MWCC park the inner BattleGetUnitPtr result in r0
+// (retail `mr r0,r3; mr r3,r31; mr r4,r0`); the direct call form emits `mr r4,r3` instead.
+static USER_FUNC(barriern_satellite_zanzou) {
+    s32 index;
+    BattleUnit* unit;
+#ifdef MUST_MATCH
+    BattleUnit* p;
+#endif
+    s32* args;
+    s32 id;
+    BattleWork* wp;
+
+    args = event->args;
+    id = BattleTransID(event, evtGetValue(event, args[0]));
+    index = evtGetValue(event, args[1]);
+    wp = _battleWorkPointer;
+    unit = BattleGetUnitPtr(wp, id);
+#ifdef MUST_MATCH
+    return barriern_satellite_zanzou_sub(isFirstCall,
+                                         (p = BattleGetUnitPtr(wp, unit->work[4 + index]), p),
+                                         (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 0);
+#else
+    return barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
+                                         (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 0);
+#endif
+}
+
+// The comma-and-temporary form makes MWCC park the inner BattleGetUnitPtr result in r0
+// (retail `mr r0,r3; mr r3,r31; mr r4,r0`); the direct call form emits `mr r4,r3` instead.
+static USER_FUNC(barriern_satellite_zanzou2) {
+    s32 index;
+    BattleUnit* unit;
+#ifdef MUST_MATCH
+    BattleUnit* p;
+#endif
+    s32* args;
+    s32 id;
+    BattleWork* wp;
+
+    args = event->args;
+    id = BattleTransID(event, evtGetValue(event, args[0]));
+    index = evtGetValue(event, args[1]);
+    wp = _battleWorkPointer;
+    unit = BattleGetUnitPtr(wp, id);
+#ifdef MUST_MATCH
+    return barriern_satellite_zanzou_sub(isFirstCall,
+                                         (p = BattleGetUnitPtr(wp, unit->work[4 + index]), p),
+                                         (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 1);
+#else
+    return barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
+                                         (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 1);
+#endif
+}
+
+static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale,
+                                         s32 index, s32 mode) {
+    BattleUnitPart* part;
+    f32 temp2[5];
+    f32 temp1[5];
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 end;
+    f32 s;
+    f32 step;
+    s32 i;
+    s32 j;
+    s32 num;
+    u8 aStart;
+    u8 aEnd;
+    s32 a = 4;
+    s32 ci;
+
+    switch (mode) {
+    case 0:
+        num = 0x24;
+        end = 0.6f;
+        for (i = 0; i < 5; i++) {
+            temp2[i] = 0.8f * scale.value[i];
+            temp1[i] = 0.6f;
+        }
+        step = 0.5f;
+        aStart = 0;
+        aEnd = 0x40;
+        a = 4;
+        break;
+    case 1:
+        num = 8;
+        end = 0.8f;
+        for (i = 0; i < 5; i++) {
+            temp2[i] = 0.8f;
+            temp1[i] = 0.8f * scale.value[i];
+        }
+        step = -0.5f;
+        aStart = 0x40;
+        aEnd = 0;
+        a = 1;
+        break;
+    }
+    if (isFirstCall) {
+        s32* p = &zanzou_count[index + 1];
+        *p = 0;
+        BtlUnit_GetPos(unit, &x, &y, &z);
+        BtlUnit_SetPartsScale(BtlUnit_GetPartsPtr(unit, 1), 0.8f, 0.8f, 1.0f);
+        for (i = 2, j = 0; i <= 6; i++, j++) {
+            part = BtlUnit_GetPartsPtr(unit, i);
+            BtlUnit_SetPartsPos(part, x, y, z + (f32)i * step);
+            BtlUnit_SetPartsScale(part, temp2[j], temp2[j], 1.0f);
+            BtlUnit_SetPartsRotate(part, 0.0f, 0.0f, 0.0f);
+            part->color.a = aStart;
+            BtlUnit_SetAnim(part, "Z_2");
+            part->attributes &= ~0x01000000;
+        }
+    }
+    ci = index + 1;
+    part = BtlUnit_GetPartsPtr(unit, 1);
+    s = intplGetValue(4, zanzou_count[0], num, 0.8f, end);
+    BtlUnit_SetPartsScale(part, s, s, 1.0f);
+    for (i = 2, j = 0; i <= 6; i++, j++) {
+        part = BtlUnit_GetPartsPtr(unit, i);
+        s = intplGetValue(a, zanzou_count[ci], num, temp2[j], temp1[j]);
+        BtlUnit_SetPartsScale(part, s, s, 1.0f);
+        part->color.a = (u8)intplGetValue(0, zanzou_count[ci], num, (f32)aStart, (f32)aEnd);
+    }
+    if (zanzou_count[ci] >= num) {
+        part = BtlUnit_GetPartsPtr(unit, 1);
+        BtlUnit_SetPartsScale(part, 0.8f, 0.8f, 1.0f);
+        part->color.a = 0xff;
+        for (i = 2; i <= 6; i++) {
+            BtlUnit_GetPartsPtr(unit, i)->attributes |= 0x01000000;
+        }
+        return 2;
+    }
+    zanzou_count[ci]++;
+    return 0;
+}
+
 static EVT_BEGIN(init_event)
     CALL(btlevtcmd_SetEventWait, -2, PTR(wait_event))
     CALL(btlevtcmd_SetEventUnisonPhase, -2, PTR(unison_phase_event))
@@ -1479,241 +1732,6 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-static s32 zanzou_count[3];
-
-// dont_inline keeps outSplineTableSet_Sub a real `bl` from outSplineTableSet, as in retail.
-#pragma dont_inline on
-#pragma dont_inline reset
-
-// dont_inline keeps the get_target/get_next_target helpers a real `bl` from barriern_wawawa_set_target.
-#pragma dont_inline on
-static USER_FUNC(barriern_zanzou) {
-    BattleUnit* unit;
-    s32 id;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 0);
-}
-
-static USER_FUNC(barriern_zanzou2) {
-    BattleUnit* unit;
-    s32 id;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 1);
-}
-
-static USER_FUNC(barriern_zanzou3) {
-    BattleUnit* unit;
-    s32 id;
-
-    id = BattleTransID(event, evtGetValue(event, event->args[0]));
-    unit = BattleGetUnitPtr(_battleWorkPointer, id);
-    return barriern_zanzou_sub(isFirstCall, unit, (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, 2);
-}
-
-// NONMATCHING (97.87%): reordering the locals fixed a (r28) and the f29/f30 split; the final block now reuses part. Temp1/temp2 pointer registers and a few literal-pool address registers still differ.
-static s32 barriern_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale, s32 mode) {
-    BattleUnitPart* part;
-    f32 temp2[5];
-    f32 temp1[5];
-    f32 x;
-    f32 y;
-    f32 z;
-    f32 end;
-    f32 s;
-    f32 step;
-    s32 num;
-    s32 i;
-    s32 j;
-    u8 aStart;
-    u8 aEnd;
-    s32 a = 4;
-
-    switch (mode) {
-    case 0:
-        num = 0x24;
-        end = 0.6f;
-        for (i = 0; i < 5; i++) {
-            temp1[i] = 0.6f;
-            temp2[i] = 0.8f * scale.value[i];
-        }
-        step = 0.5f;
-        aStart = 0;
-        aEnd = 0x40;
-        a = 4;
-        break;
-    case 1:
-    case 2:
-        num = 8;
-        end = 0.8f;
-        for (i = 0; i < 5; i++) {
-            temp2[i] = 0.8f;
-            temp1[i] = 0.8f * scale.value[i];
-        }
-        step = -0.5f;
-        aStart = 0x40;
-        aEnd = 0;
-        a = 1;
-        break;
-    }
-    if (mode == 2) {
-        num = 0x24;
-    }
-    if (isFirstCall) {
-        zanzou_count[0] = 0;
-        BtlUnit_GetPos(unit, &x, &y, &z);
-        BtlUnit_SetPartsScale(BtlUnit_GetPartsPtr(unit, 1), 0.8f, 0.8f, 1.0f);
-        for (i = 2, j = 0; i <= 6; i++, j++) {
-            part = BtlUnit_GetPartsPtr(unit, i);
-            BtlUnit_SetPartsPos(part, x, y, z + (f32)i * step);
-            BtlUnit_SetPartsScale(part, temp2[j], temp2[j], 1.0f);
-            part->color.a = aEnd;
-            part->attributes &= ~0x01000000;
-        }
-    }
-    part = BtlUnit_GetPartsPtr(unit, 1);
-    s = intplGetValue(a, zanzou_count[0], num, 0.8f, end);
-    BtlUnit_SetPartsScale(part, s, s, 1.0f);
-    for (i = 2, j = 0; i <= 6; i++, j++) {
-        part = BtlUnit_GetPartsPtr(unit, i);
-        s = intplGetValue(a, zanzou_count[0], num, temp2[j], temp1[j]);
-        BtlUnit_SetPartsScale(part, s, s, 1.0f);
-        part->color.a = (u8)intplGetValue(0, zanzou_count[0], num, (f32)aStart, (f32)aEnd);
-    }
-    if (zanzou_count[0] >= num) {
-        part = BtlUnit_GetPartsPtr(unit, 1);
-        BtlUnit_SetPartsScale(part, 0.8f, 0.8f, 1.0f);
-        part->color.a = 0xff;
-        for (i = 2; i <= 6; i++) {
-            BtlUnit_GetPartsPtr(unit, i)->attributes |= 0x01000000;
-        }
-        return 2;
-    }
-    zanzou_count[0]++;
-    return 0;
-}
-
-// NONMATCHING (97.87%): retail saves the inner BattleGetUnitPtr result in r0 before moving it into r4; ours moves r3->r4 directly.
-static USER_FUNC(barriern_satellite_zanzou) {
-    s32 index;
-    BattleUnit* unit;
-    s32* args;
-    s32 id;
-    BattleWork* wp;
-
-    args = event->args;
-    id = BattleTransID(event, evtGetValue(event, args[0]));
-    index = evtGetValue(event, args[1]);
-    wp = _battleWorkPointer;
-    unit = BattleGetUnitPtr(wp, id);
-    return barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
-                                         (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 0);
-}
-
-// NONMATCHING (97.87%): retail saves the inner BattleGetUnitPtr result in r0 before moving it into r4; ours moves r3->r4 directly.
-static USER_FUNC(barriern_satellite_zanzou2) {
-    s32 index;
-    BattleUnit* unit;
-    s32* args;
-    s32 id;
-    BattleWork* wp;
-
-    args = event->args;
-    id = BattleTransID(event, evtGetValue(event, args[0]));
-    index = evtGetValue(event, args[1]);
-    wp = _battleWorkPointer;
-    unit = BattleGetUnitPtr(wp, id);
-    return barriern_satellite_zanzou_sub(isFirstCall, BattleGetUnitPtr(wp, unit->work[4 + index]),
-                                         (BarriernZanzouScale){ { 1.7f, 2.4f, 3.1f, 3.8f, 4.5f } }, index, 1);
-}
-
-// NONMATCHING (99.93%): all callee-saved registers now line up.  A block-scope `p = &zanzou_count[index + 1]` for the isFirstCall store makes retail's indexed `stwx` come out, and `intplGetValue(4, ...)` (the literal 4, not `a`) in the first scale matches retail, which unlike the non-satellite version always uses 4 there.  What still differs: (1) the first scale computes the zanzou_count base into r6 and loads it after the 0.8f address, where retail uses r4 and loads the float first (register/schedule only); (2) in the second loop ours issues `lwzx r4, r31, r30` one step earlier, before `lfsx f1, r20, r27`, where retail delays it until after `mr r3, r26`.
-static s32 barriern_satellite_zanzou_sub(BOOL isFirstCall, BattleUnit* unit, BarriernZanzouScale scale,
-                                         s32 index, s32 mode) {
-    BattleUnitPart* part;
-    f32 temp2[5];
-    f32 temp1[5];
-    f32 x;
-    f32 y;
-    f32 z;
-    f32 end;
-    f32 s;
-    f32 step;
-    s32 i;
-    s32 j;
-    s32 num;
-    u8 aStart;
-    u8 aEnd;
-    s32 a = 4;
-    s32 ci;
-
-    switch (mode) {
-    case 0:
-        num = 0x24;
-        end = 0.6f;
-        for (i = 0; i < 5; i++) {
-            temp1[i] = 0.6f;
-            temp2[i] = 0.8f * scale.value[i];
-        }
-        step = 0.5f;
-        aStart = 0;
-        aEnd = 0x40;
-        a = 4;
-        break;
-    case 1:
-        num = 8;
-        end = 0.8f;
-        for (i = 0; i < 5; i++) {
-            temp2[i] = 0.8f;
-            temp1[i] = 0.8f * scale.value[i];
-        }
-        step = -0.5f;
-        aStart = 0x40;
-        aEnd = 0;
-        a = 1;
-        break;
-    }
-    if (isFirstCall) {
-        s32* p = &zanzou_count[index + 1];
-        *p = 0;
-        BtlUnit_GetPos(unit, &x, &y, &z);
-        BtlUnit_SetPartsScale(BtlUnit_GetPartsPtr(unit, 1), 0.8f, 0.8f, 1.0f);
-        for (i = 2, j = 0; i <= 6; i++, j++) {
-            part = BtlUnit_GetPartsPtr(unit, i);
-            BtlUnit_SetPartsPos(part, x, y, z + (f32)i * step);
-            BtlUnit_SetPartsScale(part, temp2[j], temp2[j], 1.0f);
-            BtlUnit_SetPartsRotate(part, 0.0f, 0.0f, 0.0f);
-            part->color.a = aEnd;
-            BtlUnit_SetAnim(part, "Z_2");
-            part->attributes &= ~0x01000000;
-        }
-    }
-    ci = index + 1;
-    part = BtlUnit_GetPartsPtr(unit, 1);
-    s = intplGetValue(4, zanzou_count[0], num, 0.8f, end);
-    BtlUnit_SetPartsScale(part, s, s, 1.0f);
-    for (i = 2, j = 0; i <= 6; i++, j++) {
-        part = BtlUnit_GetPartsPtr(unit, i);
-        s = intplGetValue(a, zanzou_count[ci], num, temp2[j], temp1[j]);
-        BtlUnit_SetPartsScale(part, s, s, 1.0f);
-        part->color.a = (u8)intplGetValue(0, zanzou_count[ci], num, (f32)aStart, (f32)aEnd);
-    }
-    if (zanzou_count[ci] >= num) {
-        part = BtlUnit_GetPartsPtr(unit, 1);
-        BtlUnit_SetPartsScale(part, 0.8f, 0.8f, 1.0f);
-        part->color.a = 0xff;
-        for (i = 2; i <= 6; i++) {
-            BtlUnit_GetPartsPtr(unit, i)->attributes |= 0x01000000;
-        }
-        return 2;
-    }
-    zanzou_count[ci]++;
-    return 0;
-}
-
 static s32 barriernSatelliteTo_Init(BattleUnit* unit, s32 index, s32 id) {
     BarriernSatelliteTo* work;
 
@@ -2204,7 +2222,6 @@ static void barriern_wawawa_get_next_target(s32* out1, s32* out2) {
     }
 }
 
-// NONMATCHING (99.82%): a local id for BattleTransID fixed the global-address load, and moving `data` after `hasSat` lines up the rest.  In the glass loop i/w/h still land in r25/r24/r23 instead of retail's r23/r24/r25; `data` shares i's register in both.
 static USER_FUNC(_check_satellite) {
     BattleUnit* unit;
     s32* args;
@@ -2214,13 +2231,9 @@ static USER_FUNC(_check_satellite) {
     f32 x;
     f32 y;
     f32 z;
-    s32 dx;
-    s32 dy;
     s32 i;
-    s32 w;
     s32 hasSat;
     BarriernSatelliteToData* data;
-    s32 h;
 
     id = BattleTransID(event, -2);
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -2240,13 +2253,18 @@ static USER_FUNC(_check_satellite) {
         }
     }
     if (hasSat == 0) {
+        s32 j;
+        s32 w;
+        s32 h;
+        s32 dx;
+        s32 dy;
         part = BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit));
         if (part->attributes & 0x20000000) {
             effDelete((EffectEntry*)unit->work[3]);
             unit->work[3] = 0;
             BtlUnit_snd_se(unit, "SFX_ENM_BARRI_BARRIER_BREAK1", -250000000, 0);
             BtlUnit_GetPos(unit, &x, &y, &z);
-            for (i = 0; i < 20; i++) {
+            for (j = 0; j < 20; j++) {
                 w = BtlUnit_GetWidth(unit) + 0xf;
                 h = BtlUnit_GetHeight(unit) + 0xf;
                 dx = irand(w) - w / 2;

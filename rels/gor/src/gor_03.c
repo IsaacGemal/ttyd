@@ -3097,18 +3097,21 @@ static USER_FUNC(mario_keyoff_wait) {
     return EVT_RETURN_YIELD;
 }
 
-// NONMATCHING (96.89%): byte-offset arithmetic aligned the strength reduction; only the chosen
-// callee-saved register numbers (data r31 vs r17, temporaries) and pool symbol names differ.
+// Matches: `angle`, `j` and `i` are declared in this order so the register allocator keeps the original's
+// callee-saved colouring (`angle` first pins the strength-reduced bases; `j` before `i` puts the inner
+// counter in r30 and the outer in r29). The plain `s32 i; s32 j;` / in-loop `f32* angle` form scores
+// 96.89%
 USER_FUNC(goryuugijo_door_init_slot) {
+    f32* angle;
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
     u8* data = (u8*)work->data;
-    s32 i;
     s32 j;
+    s32 i;
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 3; j++) {
-            f32* angle = (f32*)(data + i * 0xc + j * 4 + 0xc);
+            angle = (f32*)(data + i * 0xc + j * 4 + 0xc);
 
             *angle = 0.0f;
             if (*angle >= 360.0f) {
@@ -4402,11 +4405,21 @@ EVT_BEGIN(kuzi_bomb_talk_husei)
     RETURN
 EVT_END()
 
-// NONMATCHING (99.04%): one extra mr r3,r0 before npcNameToPtr (string address materialised into r0, original into r3).
+// Matches: routing the two evtGetValue results through temporaries before the named locals keeps the
+// original's args[0]-then-args[1] call order and still materialises the npcNameToPtr string address
+// with `addi r3`. The plain form (type = evtGetValue(args[0]); state = evtGetValue(args[1]);) compiles
+// to `addi r0, r4, str@l; mr r3, r0` and scores 99.04%.
 USER_FUNC(kuzi_bomb_bomb_eff) {
     s32* args = event->args;
+#ifdef MUST_MATCH
+    s32 t0 = evtGetValue(event, args[0]);
+    s32 t1 = evtGetValue(event, args[1]);
+    s32 type = t0;
+    s32 state = t1;
+#else
     s32 type = evtGetValue(event, args[0]);
     s32 state = evtGetValue(event, args[1]);
+#endif
     NpcEntry* npc;
     npc = npcNameToPtr("グルメボム兵");
 
@@ -5618,13 +5631,21 @@ void slot_neon_sub(void* arg0, u8* data) {
     }
 }
 
-// NONMATCHING (95.83%): data pointer lands in r5 instead of r4 (constant addr materialised into r4).
+// NONMATCHING (99.17%): only the register holding the `zero_gor_0001b7b4` address differs (r3 in the original, r5 here).
+#ifdef MUST_MATCH
+// MUST_MATCH: the unit's shared 0.0f pool constant, defined by no source file yet.
+extern const f32 zero_gor_0001b7b4;
+#endif
 USER_FUNC(goryuugijo_init_slot) {
-    GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
-    u8* data = (u8*)work->data;
+#ifdef MUST_MATCH
+    f32 zero = zero_gor_0001b7b4;
+#else
+    f32 zero = 0.0f;
+#endif
+    u8* data = (u8*)((GoryuugijoWork*)event->lwData[0])->data;
 
     *(s32*)(data + 0x54) = 0;
-    *(f32*)(data + 0x8) = 0.0f;
+    *(f32*)(data + 0x8) = zero;
     *(s32*)(data + 0x6c) = 0;
     *(u32*)data &= ~1;
 }

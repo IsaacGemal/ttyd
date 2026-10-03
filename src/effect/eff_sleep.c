@@ -140,7 +140,13 @@ void effSleepMain(EffectEntry* effect) {
 // conversion uses.
 static inline f32 effSleepSin(u32 a) {
 	f32 rad = (f32)a * 6.2831855f;
+#ifdef MUST_MATCH
+	// MUST_MATCH: retail keeps the half-scale at the call site; that placement is what gives
+	// effSleepDisp's negEight/half-product their f23/f22 FPRs.
+	return (f32)sin(rad * float_0p015625_80422430);
+#else
 	return float_0p5_80422434 * (f32)sin(rad * float_0p015625_80422430);
+#endif
 }
 
 #ifdef MUST_MATCH
@@ -161,13 +167,14 @@ static inline f32 effSleepVx(f32 nh, f32 s) {
 
 // Declaring angle before data/i/j/headerAlpha and writing the second sine's angle as
 // `gp->retraceCount + angle + (j + 1) * 10` fixes the GPR allocation (retail camId r26,
-// headerAlpha r25, angle r29) and the integer add order; both are load-bearing.
-// The only remaining diff is that negEight and the first sine result trade callee-saved FPRs:
-// ours negEight f21 / s0 f23, retail negEight f23 / s0 f21 (this moves their fneg, fmuls and
-// two fadds). The four anonymous literal pools (6.2832, 1.0, 0.125, 4.0 load from @NNN instead
-// of float_6p2832/float_1/float_0p125/float_4) show in objdiff but are not scored -- effSleepEntry
-// has the same symbol-name mismatches and scores 100.00%.
-// NONMATCHING (99.92%): negEight/s0 FPR assignment; see REPORT.md.
+// headerAlpha r25, angle r29) and the integer add order.
+// The half-scale placement in effSleepSin and the named `nh` half-product (both under MUST_MATCH)
+// fix the callee-saved FPR assignment: retail negEight f23, its half-product f22, the two sine
+// results f21/f20. The code still reads 6.2832/1.0/0.125/4.0 from anonymous literal pools (@NNN)
+// rather than the named float_6p2832/float_1/float_0p125/float_4, which is why .sdata2 is 90.9%
+// (two duplicated pool words); the named form changes the FPR allocation and the all-literal form
+// makes MWCC hang, so linking needs the named-vs-literal issue resolved. Functions all score
+// 100.00%.
 void effSleepDisp(CameraId camId, EffectEntry* effect) {
 	CameraEntry* cam;
 	GXTexObj texObj;
@@ -178,6 +185,9 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 	GXColor color;
 	f32 negEight;
 	f32 one;
+#ifdef MUST_MATCH
+	f32 nh;
+#endif
 	s32 angle;
 	effSleepData* data = effect->userdata;
 	s32 i;
@@ -234,11 +244,23 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 		GXSetCurrentMtx(0);
 
 		for (j = 0; j < 8; j++) {
+#ifdef MUST_MATCH
+			f32 s0 = float_0p5_80422434 * effSleepSin(gp->retraceCount + angle + j * 10);
+			f32 s1 = float_0p5_80422434 * effSleepSin(gp->retraceCount + angle + (j + 1) * 10);
+			// MUST_MATCH: one named half-product per iteration, assigned between the sine results
+			// and GXBegin, is what makes retail's negEight=f23/half-product=f22.
+			nh = negEight * float_0p5_80422434;
+#else
 			f32 s0 = effSleepSin(gp->retraceCount + angle + j * 10);
 			f32 s1 = effSleepSin(gp->retraceCount + angle + (j + 1) * 10);
+#endif
 
 			GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+			GXPosition3f32(effSleepVx(nh, s1), one * (f32)(j + 1), float_0_8042243c);
+#else
 			GXPosition3f32(effSleepVx(negEight * float_0p5_80422434, s1), one * (f32)(j + 1), float_0_8042243c);
+#endif
 			GXTexCoord2f32(float_0_8042243c, 0.125f * (f32)(7 - j));
 			GXPosition3f32(4.0f + s1, one * (f32)(j + 1), float_0_8042243c);
 #ifdef MUST_MATCH
@@ -252,7 +274,11 @@ void effSleepDisp(CameraId camId, EffectEntry* effect) {
 #else
 			GXTexCoord2f32(1.0f, 0.125f * (f32)(8 - j));
 #endif
+#ifdef MUST_MATCH
+			GXPosition3f32(effSleepVx(nh, s0), one * (f32)j, float_0_8042243c);
+#else
 			GXPosition3f32(effSleepVx(negEight * float_0p5_80422434, s0), one * (f32)j, float_0_8042243c);
+#endif
 			GXTexCoord2f32(float_0_8042243c, 0.125f * (f32)(8 - j));
 		}
 	}

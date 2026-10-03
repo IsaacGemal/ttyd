@@ -2020,9 +2020,6 @@ USER_FUNC(get_aud_num) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (94.29% MUST_MATCH / 90.40% natural): marking the loop's float reads volatile moves
-// the mHomePosition load ahead of the interpFramesLeft/Total loads; px/py/pz still load late and
-// the fourth call materialises both 1.0f/0.65f addresses where retail materialises only 1.0f.
 USER_FUNC(aud_suikomi) {
     s32* args = event->args;
     s32 transId = BattleTransID(event, evtGetValue(event, args[0]));
@@ -2109,9 +2106,10 @@ USER_FUNC(aud_suikomi) {
     return (count < 20) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.07% MUST_MATCH / 90.43% natural): the assignment-in-call makes the store
-// precede the call as retail does; the bss address stays addi+stb where retail folds stb @l,
-// and screamId loads direct where retail materialises its base (a 3-insn isel swap).
+// Retail stores the truncated interpolation straight to the byte global and then passes
+// the global back by name; the compiler folds that store into the stb and reuses the
+// converted value. Storing through a `vol` local (the natural form) instead makes it
+// materialise the global's address into a temp (addi + stb 0(base)).
 USER_FUNC(unk_aji_00007668) {
     s32 timer;
     f32 v;
@@ -2123,10 +2121,11 @@ USER_FUNC(unk_aji_00007668) {
     }
     timer = --unk_aji_bss00000168[0];
     v = intplGetValue(0, 120 - timer, 120, unk_aji_bss00000165, 0.0f);
-    vol = (u8)(s32)v;
 #ifdef MUST_MATCH
-    psndSFX_vol(screamId[0], unk_aji_bss00000164 = vol);
+    unk_aji_bss00000164 = (u8)v;
+    psndSFX_vol(screamId[0], unk_aji_bss00000164);
 #else
+    vol = (u8)(s32)v;
     unk_aji_bss00000164 = vol;
     psndSFX_vol(screamId[0], vol);
 #endif
@@ -2267,8 +2266,6 @@ USER_FUNC(aud_fire_no_hit) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (93.45%): the two float args to the second intplGetValue in each case
-// compute in the opposite order (target f1 then f2, ours f2 then f1); values agree
 USER_FUNC(aud_target_mark) {
     s32* args = event->args;
     f32 f31 = (f32)evtGetValue(event, args[0]);

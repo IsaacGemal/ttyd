@@ -1364,7 +1364,7 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
 }
 #pragma opt_propagation reset
 
-// NONMATCHING (98.74%)
+#pragma opt_common_subs off // MWCC otherwise CSEs party+0x94 across the partyGetAppearPos4 call into r29
 void party_motion_behind_mario_fly(PartyEntry* party) {
     MarioWork* mario;
     MarioWork* mario2;
@@ -1464,7 +1464,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
             hit = partySearchFrontWall(party, &pos, speed, angle);
             if (hit != NULL) {
                 party->field_12C = hit;
-                if (0.0f != party->speed) {
+                if (party->speed) {
                     party->field_134 = hit;
                 }
             }
@@ -1530,6 +1530,7 @@ void party_motion_behind_mario_fly(PartyEntry* party) {
         party->field_138 = hit;
     }
 }
+#pragma opt_common_subs reset
 
 void party_motion_stay(PartyEntry* party) {
     extern u8 vec3_802f3e40[];
@@ -1967,12 +1968,18 @@ void party_motion_behind_mario(PartyEntry* party) {
 // them) is what makes MWCC colour the 50/min in f30 and the distance in f31; the `ntx`/`ntz` block temps put
 // the two `fmadds` results in f3/f2; `f32 zero` keeps `party->speed != zero` variable-first; and
 // `party->playerPtr->playerGravity` reproduces the target's fresh `lwz r3, 0x160(r28)` (the local `mario` is
-// not reused there). The `1.4f * (ty - party->position.y)` min block computes in f2/f1 with 50 in f0 where the
-// target uses f0/f0 with 50 in f2; the `ty + 10.0f` and temp-ed `floor.y + 10.0f` pick the opposite operand
-// register; and in the jump-param block the 0x128 load gets f1 and the delta f5 where the target uses f5/f6,
-// its `!(f6 >= 0)` branch comes out `beq` instead of `bne; b`, and the compiler's int->float double is reached
-// with a fresh `lis` rather than `0x108(r31)` (the unit-level pool offset).
-// NONMATCHING (99.10%): the equality test emits `cmpw r27, r3` where the target has `cmpw r3, r27`.
+// not reused there).
+// Register rotation remains (10 diffs): in the jump-param block the 0x128 load gets f1 and the delta f5 where
+// the target uses f5/f6, and the compiler's int->float double is reached with a fresh `lis` rather than
+// `0x108(r31)` (the unit-level pool offset). The min block, the two `+ 10.0f` operand orders and the
+// `!(f6 >= 0)` branch are now exact: inlining the min product, `ty += 10.0f`/`floor.y += 10.0f`, writing the
+// inner test as the ternary `f6 = (f6 >= 0.0f) ? f6 : 10.0f`, and `#pragma opt_lifetimes off` around the
+// function (just below) are all needed for the target's f0/f2 colouring and its `bne assign; b end` layout.
+// The old `cmpw r27, r3` diff is gone: storing the read id in an `s32 readId` local before the test makes
+// MWCC emit the target's `cmpw r3, r27`.
+// NONMATCHING (99.69%): FPR colouring in the jump-param block (0x128 in f1 vs f5, delta in f5 vs f6, fresh
+// `lis` vs `0x108(r31)`); permuter work.
+#pragma opt_lifetimes off
 void party_motion_jump(PartyEntry* party) {
     extern u8 vec3_802f3e40[];
     u8* vec = vec3_802f3e40;
@@ -1987,6 +1994,9 @@ void party_motion_jump(PartyEntry* party) {
     f32 zero = 0.0f;
     u32 id;
     s32 writeId;
+#ifdef MUST_MATCH
+    s32 readId; // holds the call result so MWCC emits the target's `cmpw r3, r27` (see comment above)
+#endif
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
@@ -2017,14 +2027,17 @@ void party_motion_jump(PartyEntry* party) {
 #endif
         } else if (!(party->field_8 & 0x400000)) {
             writeId = partyGetFootmarkWriteId(id);
+#ifdef MUST_MATCH
+            readId = partyGetFootmarkReadId(id);
+            if (readId == writeId) {
+#else
             if (writeId == partyGetFootmarkReadId(id)) {
+#endif
                 if (partyGetTargetDist(id, party->position.x, party->position.z) > 2.0f * mario->wPlayerCollisionBox.x) {
                     f29 = partyGetTargetDir(id, party->position.x, party->position.z);
                     getFrontFloor(party, &floor, f29);
                     {
-                        f32 fy = floor.y;
-                        fy = fy + 10.0f;
-                        floor.y = fy;
+                        floor.y += 10.0f;
                     }
                     ty = floor.y;
                     tx = party->position.x;
@@ -2046,10 +2059,19 @@ void party_motion_jump(PartyEntry* party) {
                 partyGetReadId(id, &tx, &ty, &tz);
                 f30 = 50.0f;
                 f31 = distABf(party->position.x, party->position.z, tx, tz);
+#ifdef MUST_MATCH
+                // Recomputing the product instead of naming the temporary makes MWCC keep
+                // the constant 50 in f0 and the product in f1 (target colouring); the
+                // named-temporary form below scores slightly worse but reads naturally.
+                if (50.0f > 1.4f * (ty - party->position.y)) {
+                    f30 = 1.4f * (ty - party->position.y);
+                }
+#else
                 f0 = 1.4f * (ty - party->position.y);
                 if (50.0f > f0) {
                     f30 = f0;
                 }
+#endif
                 angle = angleABf(party->position.x, party->position.z, tx, tz);
                 sincosf(&sinV, &cosV, angle);
                 if (f31 > f30) {
@@ -2061,7 +2083,7 @@ void party_motion_jump(PartyEntry* party) {
                     tz = party->position.z;
                     tx = tx + f31 * sinV;
                     tz = tz + f31 * cosV;
-                    ty = ty + 10.0f;
+                    ty += 10.0f;
 #ifdef MUST_MATCH
                     {
                         Vec pos = *(Vec*)(vec + 0x30);
@@ -2119,8 +2141,8 @@ void party_motion_jump(PartyEntry* party) {
         f6 = *(f32*)((u8*)party + 0x98) - party->position.y;
         if (fabsf(f6) < 1.0f) {
             f6 = 25.0f;
-        } else if (!(f6 >= 0.0f)) {
-            f6 = 10.0f;
+        } else {
+            f6 = (f6 >= 0.0f) ? f6 : 10.0f;
         }
         f3 = (f6 + f6) / (f4 * f4 - f4);
         party->jumpPara1 = mario->playerGravity * (f3 * f4);
@@ -2203,6 +2225,7 @@ void party_motion_jump(PartyEntry* party) {
     }
 }
 
+#pragma opt_lifetimes reset
 // Inline square root used by the original (same expansion as party_hit.c).
 #define PT_FP_NAN 1
 #define PT_FP_INFINITE 2

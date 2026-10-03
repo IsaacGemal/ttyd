@@ -104,10 +104,9 @@ const Vec vec3_802c5ce4 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5cf0 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5cfc = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5d08 = { 0.0f, 0.0f, 0.0f };
-// .rodata:0x90: occupies the slot the original's int->float conversion magic has, so `lfd f3, 0x90(r29)`
-// reads the right bytes; MWCC still emits its own anonymous copy of the magic after the strings (it does not
-// reuse this symbol), so the 3 remaining instruction diffs are unavoidable (project-wide limitation).
-const f64 double_to_int_802c5d18 = 4503601774854144.0;
+// .rodata:0x90: the int->float conversion magic. Do NOT define it here: MWCC pools its own anonymous copy
+// for the compiler-generated `(f32)(s8)...` conversions, and defining a named object too emits a second copy
+// at 0x98 that shifts every following string by 8. Left undefined so the pooled copy lands at 0x90.
 // .rodata:0x98..0xB8 ("M_J_1B", "PM_P_1A", "PM_P_1B", "M_J_1C"): used as string literals inside mot_plane so
 // MWCC dedups them with marioForcePlaneAnime's "PM_P_1B" and pools them after the magic at 0x98..0xB8.
 
@@ -197,16 +196,13 @@ static inline void planeReset(void) {
 	m->dispFlags &= ~0x100;
 }
 
-// Full transcription of the plane state machine. The single remaining instruction diff is the MWCC
-// int->float "magic double": the compiler pools an anonymous copy at .rodata+0xb8 instead of reusing
-// the named double_to_int_802c5d18 at .rodata+0x90. It is the same instruction with a different
-// immediate, so objdiff scores it as an arg_mismatch and the function reads 100.00% (raw 99.99892).
-// Known project-wide limitation (see win_badge/win_item/win_log/mapdrv); no missing or spurious
-// instruction otherwise. The named f32 constants float_0p02/float_1/float_2 are referenced by their
+// Full transcription of the plane state machine. Now byte-identical (100.00%): leaving the int->float
+// "magic double" undefined lets MWCC's pooled anonymous copy land at .rodata+0x90, which is where the
+// original keeps double_to_int_802c5d18; the four plane-name strings then sit at 0x98/0xA0/0xA8/0xB0 as
+// in the original. The named f32 constants float_0p02/float_1/float_2 are referenced by their
 // plain file-scope value (not MATCH_F32) so MWCC constant-folds them and schedules the loads exactly
 // as the original does. Raw offsets used: mario
 // 0x2A4/0x2AC/0x7C/0x80/0x84/0x88/0x18C/0x1F4/0x98/0xB0/0xBC and MotionPlaneData 0x4/0x8/0xC/0x10/0x14/0x2C.
-// NONMATCHING (99.99892%, 1 arg_mismatch, reported 100.00%): see above.
 void mot_plane(void) {
 	MarioWork* mario = marioGetPtr();
 	s32 wrap;

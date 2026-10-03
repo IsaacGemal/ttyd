@@ -285,9 +285,9 @@ f32 marioGetAngleKaitenHammer(void) {
 }
 
 #pragma opt_propagation off // keep the effUltraHammerEntry and Vec-copy FP/load scheduling
-// NONMATCHING (99.99%): the original's dead hitGetAttr mask comparison is optimized away by this
-// compiler; a self-select ternary keeps it alive but leaves the first `if (hit != NULL)` branching
-// to the second, redundant test instead of past the store (1 arg mismatch; all else matches).
+// The original keeps a dead `hitGetAttr(hit) & 0x800005` comparison in this function (its branch was
+// folded away), while the compiler eliminates it from the natural empty-body form. A no-op store to
+// `hit` (below, under MUST_MATCH) keeps the comparison alive without adding instructions.
 void mot_hammer2(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* m2;
@@ -604,16 +604,16 @@ void mot_hammer2(void) {
                              0.5f * m2->wPlayerCollisionBox.y + m2->position.y,
                              m2->position.z, sa, 0.0f, ca);
 #ifdef MUST_MATCH
-        // The original keeps the wall's attribute-mask comparison in the output even
-        // though its result is never used (the branch on it was folded away).  A
-        // self-select ternary on an unsigned copy of the pointer is the one shape this
-        // compiler emits the comparison for while dropping the branch; without it the
-        // whole comparison is dead-code-eliminated (as under #else).  The only residual
-        // difference is that the original's first `if (hit != NULL)` branch lands on the
-        // redundant second null test rather than on the end of the statement.
+        // The original keeps the wall's attribute-mask comparison in the output even though its result
+        // is never used (the branch on it was folded away). Written as an empty `if`, this compiler
+        // dead-code-eliminates the whole comparison. A no-op store of `hit` back to itself keeps the
+        // first `if` body non-empty so the comparison survives, and the store itself optimises to
+        // nothing. The #else below is the natural (empty-body) form.
         {
-            u32 hitBits = (u32)hit;
-            if (hit != NULL && ((hitGetAttr(hit) & 0x800005) ? hitBits : hitBits)) {
+            if (hit != NULL && (hitGetAttr(hit) & 0x800005)) {
+                hit = (HitEntry*)((u32)hit | 0);
+            }
+            if (hit != NULL) {
                 M_S32(mario, 0x1FC) = (s32)hit;
             }
         }
@@ -762,10 +762,13 @@ static inline s32 minHammerTicks10(s32 b) {
 #endif
 
 // The `type == 7 ? 3 : type` clamp, the se_data update order, the switches, the pool and every callee-saved
-// register (base r31, mario r30, r28/r29, f30/f31) now match. The `rp` clamp keeps the branchy form in the
-// target (`cmpwi; bgt; mr r0,r3; b end; li r0,10`); every source shape tried (if/else, ternary, inline
-// helper, goto, optionally under opt_lifetimes/opt_propagation/opt_dead_assignments/optimize_for_size/
-// scheduling off) is still if-converted to `cmpwi; mr r0,r3; ble; li r0,10`, one instruction shorter.
+// register (base r31, mario r30, r28/r29, f30/f31) now match. The `b <= 10 ? b : 10` pose-time clamp is
+// branchy in the target (`cmpwi; bgt; mr r0,r3; b end; li r0,10`); every source shape tried (if/else,
+// ternary, inline helper, goto, condition spellings, ~18000 generated helper/call-site bodies, optionally
+// under opt_lifetimes/opt_propagation/opt_dead_assignments/optimize_for_size/scheduling/peephole off) is
+// still if-converted to `cmpwi; mr r0,r3; ble; li r0,10` or the mirrored `li`-first form, one instruction
+// shorter. GC/1.3.2, 2.0, 2.5 and 2.7 give the same if-conversion as 2.6, so no source shape or compiler
+// version at hand reaches the target: this one is for the permuter.
 // NONMATCHING (99.72%): only the `b <= 10 ? b : 10` clamp differs (if-conversion, one instruction).
 void mot_hammer(void) {
     MarioWork* mario = marioGetPtr();

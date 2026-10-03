@@ -3930,3 +3930,18 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
 - Claude #1's second review of #305: BattleAudienceSettingAudience's per-type counts multiply by the clamped
   `targetNum` (retail's r27, mullw at 801A07A4), not the weight-pick counter `target` (unset on the case 6 path);
   battle_stage_object's new double_to_int_802f3c30 definition (no codegen effect) out.
+
+## Wave 61, batch 3 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- 74 agents onto main a3adbbff: 9,208 -> 9,251 (+43), from the 90-99% band by unmatched-byte gap. mot_ship,
+  battle_stage, eff_fireworks_n64 (an .sdata2 section lower), seq_load and seq_title (natural build) and
+  sac_bakugame (failed to build after its conflicted merge) as on main. `pragma_audit.py` removed one eff_kemuri
+  pragma.
+- Review (`scratch/wave61/review3.md`): no behaviour defects; `tools/data_check.py` clean over 52 objects. Three
+  changes fix older bugs against the retail asm: barriern_satellite_zanzou_sub's first-call alpha is `aStart` (was
+  `aEnd`), usu_00 yami_view's target/camera sources were swapped, and tou_03 screen_tev's clamp now matches the NaN
+  behaviour of retail's compare. Unused locals (eff_radiation_n64, eff_magic_horao_n64, eff_splash) and unused externs
+  in battle_stage.h/mot_ship.h out. Still open: npcdrv's new `a_magu`/`mjef_coinup` string objects land in .rodata
+  twice (NonMatching unit, matters only when it links); sac_genki disp_3D and mobjdrv's mobjCheckItemboxOpen /
+  mobjNearDistCheck2 are below 100% with no NONMATCHING marker (older code).
+- 17 wave 61 agents were still running at collection; the next batch picks them up.

@@ -21,7 +21,7 @@
 #include "statuswindow.h"
 #include "window/win_main.h"
 
-extern u16 menu_skip_list[18]; // defined with win_item's data
+extern u16 menu_skip_list[]; // defined with win_item's data; intentionally unsized: with its size known (18) -sdata 48 makes MWCC fold it to menu_skip_list@sda21, but winmgr's original uses the full lis/addi address like an object it can't place
 
 extern ItemData itemDataTable[];
 // .sdata
@@ -885,7 +885,6 @@ void select_disp3(WinMgrEntry* entry) {
 static s32 get10(WinMgrDesc* d){ return d->field_0x10; }
 #endif
 
-// NONMATCHING (99.83%)
 WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
     PouchData* pouch = pouchGetPtr();
     InformantWork* jdt = &_jdt;

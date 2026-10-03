@@ -1505,9 +1505,17 @@ static inline GXColor SubIconFontColor(GXColor c, s32 alpha) {
     return c;
 }
 
-// NONMATCHING (99.94%): sequence matches; only the pooled rodata base (this file's .rodata must start
-// with the MainIconCircle tables, still extern here), the font-colour helper's two swapped stack
-// slots, and one int-conversion GPR differ. The s32->u8/u16 arg masks were removed via MUST_MATCH casts.
+// NONMATCHING (99.94%): the instruction sequence matches; every remaining diff is the compiler's .rodata
+// pool anchor. The original bases the ABI-pool at dat_802ef068 (the unit's first .rodata object) and reaches
+// the i2f doubles at +0x130/+0x1b8 and the four msgSearch strings at +0x170/+0x184/+0x198/+0x1a4; our pool
+// anchors the anonymous ...rodata.0 and its order/content differs, so those offsets differ. That is file-wide:
+// dat_802ef068/dat_802ef0e8/the four vec3_802ef1xx are still extern here, and this file's source is in the
+// .fn/asm order while the compiler emits the reverse, so the pool order only lines up once the functions are
+// reordered (fn_order.py) and the unit data is defined. The other 6 diffs are register/stack allocation: the
+// i2f int temp in r4 instead of r3, the cursor->field_0 compare in r3/r0 instead of r0/r3, and the
+// SubIconFontColor GXColor temp/color stack slots 0x30/0x14 swapped. The s32->u8/u16 arg masks were removed
+// via MUST_MATCH casts. Verified: no symbol-only `~~` diff, so every float_/GXColor constant used here is the
+// original's; the field/struct reads match.
 void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s32 c, s32 d, s32 e, void* table,
                     s32 flag) {
     BattleWork* wp = _battleWorkPointer;

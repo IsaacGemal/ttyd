@@ -184,8 +184,6 @@ void mobjReset(BOOL inBattle) {
     koopaRunFlag = FALSE;
 }
 
-// NONMATCHING (99.89%): only the f-register choice in the scale2.x/scale2.z computation differs
-// (the original holds bboxMax in f2 and scale in f1; ours holds bboxMax in f1 and scale in f2).
 void mobjHitEntry(MapObjectEntry* entry, s32 type) {
     AnimationPoseData* animData;
     Vec bboxMin;
@@ -220,9 +218,23 @@ void mobjHitEntry(MapObjectEntry* entry, s32 type) {
     PSVECScale(&entry->translation, &entry->translation, float_0p5_8041a100);
     PSVECScale(&entry->translation, &entry->translation, 10.0f);
     entry->translation.y = float_0_8041a0c8;
+#ifdef MUST_MATCH
+    // MUST_MATCH: holding __fabs()'s double result in an f64 local (its natural return type) makes MWCC
+    // colour bboxMax to f2 and scale to f1 as the target does; the direct form swaps the two.
+    {
+        f64 dx = __fabs(bboxMax.x - bboxMin.x);
+        entry->scale2.x = float_10_8041a0cc * (entry->scale.x * (f32)dx);
+    }
+    entry->scale2.y = float_10_8041a0cc * (entry->scale.y * (f32)__fabs(bboxMax.y));
+    {
+        f64 dz = __fabs(bboxMax.z - bboxMin.z);
+        entry->scale2.z = float_10_8041a0cc * (entry->scale.z * (f32)dz);
+    }
+#else
     entry->scale2.x = float_10_8041a0cc * (entry->scale.x * (f32)__fabs(bboxMax.x - bboxMin.x));
     entry->scale2.y = float_10_8041a0cc * (entry->scale.y * (f32)__fabs(bboxMax.y));
     entry->scale2.z = float_10_8041a0cc * (entry->scale.z * (f32)__fabs(bboxMax.z - bboxMin.z));
+#endif
 
     if (strncmp(animData->fileName, str_8041A0E0, strlen(str_8041A0E0)) == 0) {
         entry->translation.z = float_0_8041a0c8;

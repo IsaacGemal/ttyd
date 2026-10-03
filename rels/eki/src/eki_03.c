@@ -259,8 +259,6 @@ static USER_FUNC(test_glare) {
     return 0;
 }
 
-// NONMATCHING (98.81%): `(i/4)*32` is scheduled one slot before the `i%4` `add` (original after); as a
-// result gp/0x4330/row land in r31/r30/r29 instead of r30/r29/r31.
 static void sun_tev(EnvironmentYami* yami) {
     s32 tevStage = yami->tevStage;
     s32 texMap = yami->texMap;
@@ -269,7 +267,7 @@ static void sun_tev(EnvironmentYami* yami) {
     u8* image;
     GXTexObj texObj;
     f32 indMtx[2][3];
-    s32 i, j;
+    s32 i, j, row;
 
     if (ind_lp == NULL) {
         ind_lp = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, GX_FALSE), 1);
@@ -277,9 +275,19 @@ static void sun_tev(EnvironmentYami* yami) {
 
     image = (u8*)ind_lp->address;
     for (i = 0; i < 0x40; i++) {
+#ifdef MUST_MATCH
+        // MUST_MATCH: reusing `q` as the row base (instead of `row = (i / 4) * 32;`) makes MWCC schedule the
+        // `(i / 4) * 32` slwi after the `i % 4` add and puts row/gp/0x4330/i%4 in r31/r30/r29/r28; the
+        // natural one-bank form rotates them to r29/r31/r30/r28.
+        s32 q = i / 4;
+        q = q * 32;
+        row = q;
+#else
+        row = (i / 4) * 32;
+#endif
         for (j = 0; j < 0x40; j++) {
             f32 s = (f32)sin(31.41592f * (f32)j / 64.0f - (f32)gp->retraceCount / 8.0f);
-            s32 off = (i / 4) * 32 + (j / 4) * 512;
+            s32 off = row + (j / 4) * 512;
             off += ((i % 4) + (j % 4) * 4) * 2;
             image[off] = (s32)(3.0f * s + 128.0f);
             image[off + 1] = 0x80;

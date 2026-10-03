@@ -32,12 +32,17 @@ static const f32 float_0 = 0.0f;
 static const f32 float_neg1 = -1.0f;
 
 const Vec vec3_802ce138 = {0.0f, 0.0f, 0.0f};
+const double double_to_int_802ce148 = 4503601774854144.0;
+const char str_802CE150[] = "PNK_K_2";
+const char str_802CE158[] = "PNK_A_1";
+const double double_180_802ce160 = 180.0;
 #ifdef MUST_MATCH
 // MUST_MATCH: nokonoko_use reads the pose names (str_802CE150/158) as offsets from this first .rodata object.
 #define NK_STR(off, lit) ((char*)vec + (off))
 #else
 #define NK_STR(off, lit) (lit)
 #endif
+#define NKF_180 double_180_802ce160
 
 static const f32 float_1p5708 = 1.5707964f;
 static const f32 float_4p7124 = 4.712389f;
@@ -596,14 +601,12 @@ void nokotaro_hold_cancel(PartyEntry* party) {
 
 // Koops' overworld use state machine.  Reconstructed from the original asm; the
 // many switches mirror the jump tables in party_nokonoko.s.  Control flow, jump
-// tables, case bodies, callees and constants all match.  What is left is
-// register colouring and one stack slot: the by-value `Vec` argument temp of the
-// top screen probe lives at 0x114 in the original but 0x54 here, which also
-// shifts every `lookupSafetyPos*` pos Vec by 12 (0x114..0x60 vs 0x108..0x54).
-// The rest is FPR colouring in the speed-clamp lerps and effKemuTest products,
-// plus the int->float magic double loading through a fresh `lis` instead of the
-// `vec3_802ce138` base in `lfd 0x10/0x28(r31)` (same as party_cloud.c).
-// NONMATCHING (99.60%): register colouring and stack-slot placement only.
+// tables, case bodies, callees and constants all match.  What is left is the
+// compiler's own int->float magic double loading through a fresh `lis` instead
+// of `lfd 0x10(r31)` (the same objdiff-only base/offset difference documented
+// for party_cloud.c), and the effKemuTestEntry height product's two `lfs` in
+// swapped order.
+// NONMATCHING (99.73%): register colouring and stack-slot placement only.
 void nokonoko_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     const Vec* vec = &vec3_802ce138;
@@ -621,7 +624,13 @@ void nokonoko_use(PartyEntry* party) {
         if (marioKeyOffChk()) {
             scr = party->position;
 
+#ifdef MUST_MATCH
+            // MUST_MATCH: the original passes the copy's address (by-value Vec is passed as a
+            // pointer in the ABI), which lets `scr` keep a fixed slot at 0x114 like the original.
+            ((void (*)(Vec*, f32*, f32*, f32*))marioGetScreenPos)(&scr, &sx, &sy, &sz);
+#else
             marioGetScreenPos(scr, &sx, &sy, &sz);
+#endif
             if (!marioChkInScreen((s32)sx, (s32)sy)) {
                 a = mario->position.x;
                 b = mario->position.z;
@@ -776,7 +785,7 @@ void nokonoko_use(PartyEntry* party) {
             goto L_800CC620;
         }
         party->useMotionId = 0xC;
-        NKF(0x104) = 0.15f * (-1.0f - NKF(0x104)) + NKF(0x104);
+        NKF(0x104) += 0.15f * (-1.0f - NKF(0x104));
         if (!(NKF(0x104) <= 0.0f)) {
             goto L_800CC620;
         }
@@ -926,7 +935,7 @@ L_800CC620:
         } else {
             f3 = 10.0f;
         }
-        NKF(0x104) = 0.3f * (f3 - NKF(0x104)) + NKF(0x104);
+        NKF(0x104) += 0.3f * (f3 - NKF(0x104));
         if (NKF(0x104) >= f3) {
             NKF(0x104) = f3;
             if (NKF(0x128) < 10.0f) {
@@ -1071,7 +1080,7 @@ L_800CC620:
             f1 = (f32)sqrt(d4 + d3 + d2);
         }
         if (f1 < 5.0f) {
-            f0 = (mario->directionView >= 180.0f) ? -90.0f : 90.0f;
+            f0 = (mario->directionView >= NKF_180) ? -90.0f : 90.0f;
             movePos(&party->position.x, &party->position.z,
                     0.5f * mario->wPlayerCollisionBox.x, mario->directionView + f0);
             ccwall(party, 1);
@@ -1143,7 +1152,7 @@ L_800CCD8C:
         f1 = revise360(party->dir - NKF(0xF8));
         f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
         NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
-        NKF(0x104) = 0.35f * (-1.0f - NKF(0x104)) + NKF(0x104);
+        NKF(0x104) += 0.35f * (-1.0f - NKF(0x104));
         if (NKI(0x174) == NULL) {
             NKI(0x174) = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
                                                 0.5f * party->field_F4 + 12.0f);
@@ -1209,7 +1218,7 @@ L_800CCD8C:
             f1 = (f32)sqrt(d4 + d3 + d2);
         }
         if (f1 < 5.0f) {
-            f0 = (mario->directionView >= 180.0f) ? 90.0f : -90.0f;
+            f0 = (mario->directionView >= NKF_180) ? 90.0f : -90.0f;
             movePos(&party->position.x, &party->position.z,
                     0.5f * mario->wPlayerCollisionBox.x, mario->directionView + f0);
             ccwall(party, 1);
