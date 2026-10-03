@@ -31,6 +31,10 @@ def words(data):
 def main():
     unit = sys.argv[1].removesuffix(".c")
     target = ROOT / f"build/G8MJ01/obj/{unit}.o"
+    if not target.exists():  # a REL unit: its original object sits under the module's own directory
+        target = next(ROOT.glob(f"build/G8MJ01/*/obj/{unit}.o"), target)
+    if not target.exists():  # a REL unit: its original object sits under the module's own directory
+        target = next(ROOT.glob(f"build/G8MJ01/*/obj/{unit}.o"), target)
     built = ROOT / f"build/G8MJ01/src/{unit}.o"
     for name in SECTIONS[1:5]:
         a, b = words(section(target, name)), words(section(built, name))
