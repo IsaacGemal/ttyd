@@ -825,12 +825,21 @@ void marioReset(void) {
 // vector's load past the previous store.
 void marioOfsRotReset(void) {
 	u8* base = (u8*)mp;
+#ifdef MUST_MATCH
 	const Vec* s = (const Vec*)("a_mario" + 0x88);
 
 	*(Vec*)(base + 0xBC) = s[0];
 	*(Vec*)(base + 0xB0) = s[1];
 	*(Vec*)(base + 0x98) = s[2];
 	*(Vec*)(base + 0xA4) = s[3];
+#else
+	Vec zero = {0.0f, 0.0f, 0.0f};
+
+	*(Vec*)(base + 0xBC) = zero;
+	*(Vec*)(base + 0xB0) = zero;
+	*(Vec*)(base + 0x98) = zero;
+	*(Vec*)(base + 0xA4) = zero;
+#endif
 }
 
 void marioSoundInit(void) {

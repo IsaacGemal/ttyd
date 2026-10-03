@@ -406,12 +406,11 @@ static inline Vec _makeTrans1(const f32* vec, f32 x, f32 y, f32 z) {
     return v;
 }
 
-// 100%: reading each vector by name (`*(const Vec*)vec3_8030034c`) rather than through a
+// Reading each vector by name (`*(const Vec*)vec3_8030034c`) rather than through a
 // `vec3_803002b0` pointer makes MWCC anchor the whole .rodata section in r30 and copies the
 // trans/scale/rot/tmp locals into the original's slots. The two final quads call btlDispTex4
-// directly. The int->float magic double folds at vec3_803002b0+0x1b8 because the two "M_C_2x"
-// strings are ordinary literals in main_target (code-gen data), not file-scope named data
-// emitted before every function's pool. Under MUST_MATCH the five icon colours are named
+// directly. The int->float loads still read the compiler's own pooled copy (+0x1f0) where retail
+// reads double_to_int_80300468 (+0x1b8); objdiff doesn't score that displacement. Under MUST_MATCH the five icon colours are named
 // locals passed by address, so MWCC allocates them 0x20..0x10 and the final colours 0xc/0x8.
 static void disp_3D(CameraId cameraId, void* param) {
     GenkiObject* obj;

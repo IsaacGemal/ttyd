@@ -219,8 +219,14 @@ void N_partyFollowCloseOn(PartyEntry* party) {
 }
 
 
-#define FB(off, sym) ((const char*)vec + (off))
-#define FV(off, sym) (*(const Vec*)(vec + (off)))
+#ifdef MUST_MATCH
+// MUST_MATCH: retail reads these through the vec3_802f3e40 base register.
+#define FB(off, sym, val) ((const char*)vec + (off))
+#define FV(off, sym, val) (*(const Vec*)(vec + (off)))
+#else
+#define FB(off, sym, val) (val)
+#define FV(off, sym, val) (val)
+#endif
 // opt_common_subs off: with it on, MWCC's CSE duplicates the footmark id into a
 // second callee-saved register (7 saved regs / 0x140 frame); the target keeps only
 // 6 (0x130), so the original build had this subexpression sharing disabled.
@@ -272,9 +278,9 @@ void party_motion_homing_fly(PartyEntry* party) {
     } else {
         f31 = 32.0f;
     }
-    if (strcmp(gp->currentMapName, FB(0x188, str_802F3FC8)) == 0 ||
-        strcmp(gp->currentMapName, FB(0x190, str_802F3FD0)) == 0 ||
-        strcmp(gp->currentMapName, FB(0x198, str_802F3FD8)) == 0) {
+    if (strcmp(gp->currentMapName, FB(0x188, str_802F3FC8, "aji_02")) == 0 ||
+        strcmp(gp->currentMapName, FB(0x190, str_802F3FD0, "aji_05")) == 0 ||
+        strcmp(gp->currentMapName, FB(0x198, str_802F3FD8, "aji_12")) == 0) {
         if (!marioKeyOffChk()) {
             if (party->field_32 == 0) {
                 f25 = 18.0f;
@@ -389,7 +395,7 @@ void party_motion_homing_fly(PartyEntry* party) {
         if (dist > (mario->flags & 0x8000
                        ? party->field_F4 + mario->wPlayerCollisionBox.x
                        : 0.5f * party->field_F4 + party->speed)) {
-            tv = FV(0xC, vec3_802f3e4c);
+            tv = FV(0xC, vec3_802f3e4c, ((Vec){0.0f, 0.0f, 0.0f}));
             tv.x = f28;
             tv.y = f27;
             tv.z = f26;

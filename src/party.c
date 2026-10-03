@@ -846,7 +846,12 @@ static inline char* L_ridePose1(PartyEntry* party) {
     party->field_8 |= 0x2000;
     return pose;
 }
+#ifdef MUST_MATCH
+// MUST_MATCH: retail reads these zero vectors through the vec3_802ccd30 base register.
 #define PR_FV(off, sym) (*(const Vec*)(base + (off)))
+#else
+#define PR_FV(off, sym) ((Vec){0.0f, 0.0f, 0.0f})
+#endif
 static inline char* L_ridePose1b(PartyEntry* party, s32 index) {
     s32 lowHp;
     char* pose;
@@ -887,7 +892,6 @@ static inline char* L_ridePose1b(PartyEntry* party, s32 index) {
 // GPR shifts every i2f site's allocation), some FPR colouring rotations (case 1's rotation/
 // 30.0f block, the case-11/111 pose value in r28 instead of r30), and the switch's left
 // subtree (our `case 99:` is an explicit leaf, the target's is the 100/101 range bound).
-// Written from the asm; no `// TODO: write` placeholder existed for it.
 // Raw offsets used: 0x24 frame counter, 0x38 ride mode, 0x80 scale, 0x94 ride target Vec, 0x124
 // rotation speed, 0x128 distance, 0x174 jump accel, 0xF0 vertical assist. Player fields
 // 0x1AC/0x1B8 are read via the file's PF32 macro.

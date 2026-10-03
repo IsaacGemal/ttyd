@@ -408,7 +408,7 @@ void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 // ParticleEmit. `use_last`/`y2` keep the second half of the disc sample for the next call. The
 // first loop needs its constants read-only: MWCC only colours the loads as the original does
 // (float_2 -> f5, dat -> f4, float_1 -> f1) when their values are known at compile time, so
-// float_2/float_1/dat are declared SDATA2_CONST_RO above. The second loop uses `vx`/`vz`
+// float_2/float_1/dat use the file's SDATA2_CONST macro above. The second loop uses `vx`/`vz`
 // temporaries: without them MWCC contracts `float_2 * (dat * conv) - float_1` into fmsubs, where
 // the original emits two fmuls and an fsubs.
 // NONMATCHING (93.13%): the u32->f32 2^52 pool double is at .rodata+0x48 not +0x18, the inlined
