@@ -1314,6 +1314,204 @@ BattleUnitKind unit_boss_shadow_queen = {
     queen_data_table,           // dataTable
 };
 
+
+
+// TODO: type
+u32 hand_wp[1];
+
+// TODO: type
+u32 hand_data[96];
+
+// TODO: write queen_hand_small_drag_4_evt (global, 0x180 bytes) here:
+// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
+
+typedef struct HandElem {
+    /*0x00*/ u16 field_0x00;
+    /*0x02*/ u16 field_0x02;
+    /*0x04*/ s32 field_0x04;
+    /*0x08*/ OSTime field_0x08;
+    /*0x10*/ s16 field_0x10;
+    /*0x12*/ s16 field_0x12;
+    /*0x14*/ f32 field_0x14;
+    /*0x18*/ f32 field_0x18;
+    /*0x1C*/ f32 field_0x1C;
+    /*0x20*/ f32 field_0x20;
+    /*0x24*/ u8 pad_0x24[4];
+} HandElem;
+
+typedef struct HandPose {
+    /*0x00*/ char name[0x10];
+    /*0x10*/ char name2[8];
+    /*0x18*/ f32 field_0x18;
+    /*0x1C*/ s32 field_0x1C;
+    /*0x20*/ s32 field_0x20;
+} HandPose;
+
+typedef struct HandWork {
+    /*0x000*/ HandElem* elems;
+    /*0x004*/ s32 count;
+    /*0x008*/ HandPose poses[32];
+    /*0x488*/ u8 pad_0x488[0x14];
+    /*0x49C*/ f32 field_0x49C;
+    /*0x4A0*/ u8 pad_0x4A0[4];
+    /*0x4A4*/ s32 field_0x4A4;
+    /*0x4A8*/ s32 field_0x4A8;
+    /*0x4AC*/ s32 field_0x4AC;
+} HandWork;
+
+typedef struct HandData {
+    /*0x0*/ const char* str1;
+    /*0x4*/ const char* str2;
+    /*0x8*/ f32 value;
+} HandData;
+
+#define HAND ((HandWork*)hand_wp[0])
+
+typedef struct ShadowQueenData {
+    s32 field_0x00;
+    s32 field_0x04;
+    s32 field_0x08;
+    u8 pad_0x0C[0x34];
+    s32 field_0x40;
+    s32 field_0x44;
+} ShadowQueenData;
+
+
+USER_FUNC(shadow_queen_connect) {
+    ShadowQueenData* data;
+    BattleUnitPart* part;
+    AnimationPose* pose;
+    f32* verts;
+    if (isFirstCall) {
+        data = __memAlloc(4, 0x48);
+        event->userdata[0] = (s32)data;
+        data->field_0x00 = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 2) + 0x1C0);
+        animPoseWorldPositionEvalOn(data->field_0x00);
+        data->field_0x40 = animPoseGetGroupIdx(data->field_0x00, "locator12");
+        data->field_0x04 = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 3) + 0x1C0);
+        animPoseWorldPositionEvalOn(data->field_0x04);
+        data->field_0x44 = animPoseGetGroupIdx(data->field_0x04, "locator12");
+        animPosePeraOff(data->field_0x00);
+        animPosePeraOff(data->field_0x04);
+        data->field_0x08 = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 4) + 0x1C0);
+        animPosePeraOff(data->field_0x08);
+    }
+    data = (ShadowQueenData*)event->userdata[0];
+    pose = animPoseGetAnimPosePtr(data->field_0x00);
+    verts = *(f32**)(*(void**)((u8*)pose + 0x15C));
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
+    BtlUnit_SetPartsPos(part, verts[data->field_0x40 * 3], verts[data->field_0x40 * 3 + 1], verts[data->field_0x40 * 3 + 2]);
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 5);
+    *(f32*)((u8*)part + 0x4F8) = 7.0f;
+    BtlUnit_SetPartsPos(part, verts[data->field_0x40 * 3], verts[data->field_0x40 * 3 + 1], verts[data->field_0x40 * 3 + 2]);
+    pose = animPoseGetAnimPosePtr(data->field_0x04);
+    verts = *(f32**)(*(void**)((u8*)pose + 0x15C));
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 4);
+    *(f32*)((u8*)part + 0x4F8) = 1.0f;
+    BtlUnit_SetPartsPos(part, verts[data->field_0x44 * 3], verts[data->field_0x44 * 3 + 1], verts[data->field_0x44 * 3 + 2]);
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(peach_talk_synchro_shadow_head_evt) {
+    BattleUnitPart* part;
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
+    if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") == 0 || strcmp((char*)&part->field_0x1C0[4], "KRT_T_2") == 0 ||
+        strcmp((char*)&part->field_0x1C0[4], "KRT_T_3") == 0) {
+        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
+        if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") != 0) {
+            BtlUnit_SetAnim(part, "KRT_T_1");
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
+    if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") != 0 && strcmp((char*)&part->field_0x1C0[4], "KRT_T_2") != 0 &&
+        strcmp((char*)&part->field_0x1C0[4], "KRT_T_3") != 0) {
+        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
+        if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") == 0) {
+            BtlUnit_SetAnim(part, "KRT_S_1");
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
+    if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") == 0) {
+        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
+        if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") != 0) {
+            BtlUnit_SetAnim(part, "KRT_D_1");
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
+    if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") != 0) {
+        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
+        if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") == 0) {
+            BtlUnit_SetAnim(part, "KRT_S_1");
+            return EVT_RETURN_BLOCK;
+        }
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(make_pattern) {
+    HandData* p;
+    NpcEntry* npc;
+    AnimData* data;
+    s32 i;
+    p = (HandData*)hand_data;
+    npc = npcNameToPtr("dummy");
+    animPoseSetAnim(npc->poseId, "KRT_S_1", 1);
+    animPoseGetAnimPosePtr(npc->poseId);
+    data = animPoseGetAnimDataPtr(npc->poseId);
+    for (i = 0; i < (s32)*(f32*)(*(u8**)((u8*)data + 0x24) + 0x8); i += 3) {
+        p->str1 = "c_s_hand";
+        p->str2 = "KRT_S_1";
+        p->value = 3.0f * (f32)i;
+        p++;
+    }
+    p->str1 = NULL;
+    return EVT_RETURN_DONE;
+}
+
+// dont_inline keeps pose_init a real `bl` from hand_init as in retail.
+#pragma dont_inline on
+static void pose_init(void) {
+    char name1[0x20];
+    char name2[0x20];
+    Mtx mtx;
+    LightEntry* light;
+    HandData* data;
+    s32 i;
+    s32 start;
+    data = (HandData*)hand_data;
+    i = 0;
+    light = lightGetPaperCraft();
+    light->position = (Vec){-200.0f, 100.0f, 500.0f};
+    PSMTXScale(mtx, 3.0f, 3.0f, 3.0f);
+    PSMTXMultVec(mtx, &light->position, &light->position);
+    strcpy(name1, "");
+    strcpy(name2, "");
+    HAND->field_0x4A4 = -1;
+    do {
+        if (strcmp(data->str1, name1) != 0) {
+            strcpy(name1, data->str1);
+            strcpy(name2, "");
+        }
+        if (strcmp(data->str2, name2) != 0) {
+            strcpy(name2, data->str2);
+            start = i;
+            HAND->field_0x4A4++;
+        }
+        strcpy(HAND->poses[HAND->field_0x4A4].name, name1);
+        strcpy(HAND->poses[HAND->field_0x4A4].name2, name2);
+        HAND->poses[HAND->field_0x4A4].field_0x1C = start;
+        HAND->poses[HAND->field_0x4A4].field_0x20 = i - start + 1;
+        HAND->poses[HAND->field_0x4A4].field_0x18 = data->value;
+        i++;
+        data++;
+    } while (data->str1 != NULL);
+    HAND->field_0x4A4++;
+}
+#pragma dont_inline reset
+
 BattleUnitDefense queen_defence = { { 1, 1, 1, 1, 1 } };
 
 BattleUnitDefenseAttr queen_defence_attr = { { 0, 0, 0, 0, 0 } };
@@ -4430,67 +4628,6 @@ EVT_BEGIN(queen_hand_small_wait_event)
     CALL(btlevtcmd_AnimeChangePoseFromTable, -2, 1)
     RETURN
 EVT_END()
-
-// TODO: type
-u32 hand_wp[1];
-
-// TODO: type
-u32 hand_data[96];
-
-// TODO: write queen_hand_small_drag_4_evt (global, 0x180 bytes) here:
-// its asm is in build/G8MJ01/las/asm/unit/unit_boss_black_peach.s; this is where the original has it, just before the first script that uses it
-
-typedef struct HandElem {
-    /*0x00*/ u16 field_0x00;
-    /*0x02*/ u16 field_0x02;
-    /*0x04*/ s32 field_0x04;
-    /*0x08*/ OSTime field_0x08;
-    /*0x10*/ s16 field_0x10;
-    /*0x12*/ s16 field_0x12;
-    /*0x14*/ f32 field_0x14;
-    /*0x18*/ f32 field_0x18;
-    /*0x1C*/ f32 field_0x1C;
-    /*0x20*/ f32 field_0x20;
-    /*0x24*/ u8 pad_0x24[4];
-} HandElem;
-
-typedef struct HandPose {
-    /*0x00*/ char name[0x10];
-    /*0x10*/ char name2[8];
-    /*0x18*/ f32 field_0x18;
-    /*0x1C*/ s32 field_0x1C;
-    /*0x20*/ s32 field_0x20;
-} HandPose;
-
-typedef struct HandWork {
-    /*0x000*/ HandElem* elems;
-    /*0x004*/ s32 count;
-    /*0x008*/ HandPose poses[32];
-    /*0x488*/ u8 pad_0x488[0x14];
-    /*0x49C*/ f32 field_0x49C;
-    /*0x4A0*/ u8 pad_0x4A0[4];
-    /*0x4A4*/ s32 field_0x4A4;
-    /*0x4A8*/ s32 field_0x4A8;
-    /*0x4AC*/ s32 field_0x4AC;
-} HandWork;
-
-typedef struct HandData {
-    /*0x0*/ const char* str1;
-    /*0x4*/ const char* str2;
-    /*0x8*/ f32 value;
-} HandData;
-
-#define HAND ((HandWork*)hand_wp[0])
-
-typedef struct ShadowQueenData {
-    s32 field_0x00;
-    s32 field_0x04;
-    s32 field_0x08;
-    u8 pad_0x0C[0x34];
-    s32 field_0x40;
-    s32 field_0x44;
-} ShadowQueenData;
-
 #define DEF_QUEEN_HAND_SMALL_SCROLL_EVT(name, startval, limitval)                                        \
     USER_FUNC(name) {                                                                                     \
         if (isFirstCall) {                                                                                \
@@ -4591,140 +4728,6 @@ typedef struct ShadowQueenData {
         }                                                                                                 \
         return EVT_RETURN_BLOCK;                                                                          \
     }
-USER_FUNC(shadow_queen_connect) {
-    ShadowQueenData* data;
-    BattleUnitPart* part;
-    AnimationPose* pose;
-    f32* verts;
-    if (isFirstCall) {
-        data = __memAlloc(4, 0x48);
-        event->userdata[0] = (s32)data;
-        data->field_0x00 = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 2) + 0x1C0);
-        animPoseWorldPositionEvalOn(data->field_0x00);
-        data->field_0x40 = animPoseGetGroupIdx(data->field_0x00, "locator12");
-        data->field_0x04 = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 3) + 0x1C0);
-        animPoseWorldPositionEvalOn(data->field_0x04);
-        data->field_0x44 = animPoseGetGroupIdx(data->field_0x04, "locator12");
-        animPosePeraOff(data->field_0x00);
-        animPosePeraOff(data->field_0x04);
-        data->field_0x08 = *(s32*)((u8*)BattleGetUnitPartsPtr(BattleTransID(event, -2), 4) + 0x1C0);
-        animPosePeraOff(data->field_0x08);
-    }
-    data = (ShadowQueenData*)event->userdata[0];
-    pose = animPoseGetAnimPosePtr(data->field_0x00);
-    verts = *(f32**)(*(void**)((u8*)pose + 0x15C));
-    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
-    BtlUnit_SetPartsPos(part, verts[data->field_0x40 * 3], verts[data->field_0x40 * 3 + 1], verts[data->field_0x40 * 3 + 2]);
-    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 5);
-    *(f32*)((u8*)part + 0x4F8) = 7.0f;
-    BtlUnit_SetPartsPos(part, verts[data->field_0x40 * 3], verts[data->field_0x40 * 3 + 1], verts[data->field_0x40 * 3 + 2]);
-    pose = animPoseGetAnimPosePtr(data->field_0x04);
-    verts = *(f32**)(*(void**)((u8*)pose + 0x15C));
-    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 4);
-    *(f32*)((u8*)part + 0x4F8) = 1.0f;
-    BtlUnit_SetPartsPos(part, verts[data->field_0x44 * 3], verts[data->field_0x44 * 3 + 1], verts[data->field_0x44 * 3 + 2]);
-    return EVT_RETURN_BLOCK;
-}
-
-USER_FUNC(peach_talk_synchro_shadow_head_evt) {
-    BattleUnitPart* part;
-    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
-    if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") == 0 || strcmp((char*)&part->field_0x1C0[4], "KRT_T_2") == 0 ||
-        strcmp((char*)&part->field_0x1C0[4], "KRT_T_3") == 0) {
-        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
-        if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") != 0) {
-            BtlUnit_SetAnim(part, "KRT_T_1");
-            return EVT_RETURN_BLOCK;
-        }
-    }
-    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
-    if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") != 0 && strcmp((char*)&part->field_0x1C0[4], "KRT_T_2") != 0 &&
-        strcmp((char*)&part->field_0x1C0[4], "KRT_T_3") != 0) {
-        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
-        if (strcmp((char*)&part->field_0x1C0[4], "KRT_T_1") == 0) {
-            BtlUnit_SetAnim(part, "KRT_S_1");
-            return EVT_RETURN_BLOCK;
-        }
-    }
-    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
-    if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") == 0) {
-        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
-        if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") != 0) {
-            BtlUnit_SetAnim(part, "KRT_D_1");
-            return EVT_RETURN_BLOCK;
-        }
-    }
-    part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 1);
-    if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") != 0) {
-        part = BattleGetUnitPartsPtr(BattleTransID(event, -2), 3);
-        if (strcmp((char*)&part->field_0x1C0[4], "KRT_D_1") == 0) {
-            BtlUnit_SetAnim(part, "KRT_S_1");
-            return EVT_RETURN_BLOCK;
-        }
-    }
-    return EVT_RETURN_BLOCK;
-}
-
-USER_FUNC(make_pattern) {
-    HandData* p;
-    NpcEntry* npc;
-    AnimData* data;
-    s32 i;
-    p = (HandData*)hand_data;
-    npc = npcNameToPtr("dummy");
-    animPoseSetAnim(npc->poseId, "KRT_S_1", 1);
-    animPoseGetAnimPosePtr(npc->poseId);
-    data = animPoseGetAnimDataPtr(npc->poseId);
-    for (i = 0; i < (s32)*(f32*)(*(u8**)((u8*)data + 0x24) + 0x8); i += 3) {
-        p->str1 = "c_s_hand";
-        p->str2 = "KRT_S_1";
-        p->value = 3.0f * (f32)i;
-        p++;
-    }
-    p->str1 = NULL;
-    return EVT_RETURN_DONE;
-}
-
-// dont_inline keeps pose_init a real `bl` from hand_init as in retail.
-#pragma dont_inline on
-static void pose_init(void) {
-    char name1[0x20];
-    char name2[0x20];
-    Mtx mtx;
-    LightEntry* light;
-    HandData* data;
-    s32 i;
-    s32 start;
-    data = (HandData*)hand_data;
-    i = 0;
-    light = lightGetPaperCraft();
-    light->position = (Vec){-200.0f, 100.0f, 500.0f};
-    PSMTXScale(mtx, 3.0f, 3.0f, 3.0f);
-    PSMTXMultVec(mtx, &light->position, &light->position);
-    strcpy(name1, "");
-    strcpy(name2, "");
-    HAND->field_0x4A4 = -1;
-    do {
-        if (strcmp(data->str1, name1) != 0) {
-            strcpy(name1, data->str1);
-            strcpy(name2, "");
-        }
-        if (strcmp(data->str2, name2) != 0) {
-            strcpy(name2, data->str2);
-            start = i;
-            HAND->field_0x4A4++;
-        }
-        strcpy(HAND->poses[HAND->field_0x4A4].name, name1);
-        strcpy(HAND->poses[HAND->field_0x4A4].name2, name2);
-        HAND->poses[HAND->field_0x4A4].field_0x1C = start;
-        HAND->poses[HAND->field_0x4A4].field_0x20 = i - start + 1;
-        HAND->poses[HAND->field_0x4A4].field_0x18 = data->value;
-        i++;
-        data++;
-    } while (data->str1 != NULL);
-    HAND->field_0x4A4++;
-}
-#pragma dont_inline reset
 static void pose_main(void) {
     ExtPose* pose;
     HandElem* elem;
@@ -5246,7 +5249,7 @@ USER_FUNC(queen_hand_small_1000hand_1_evt) {
             for (i = 0; i < HAND->count; i++, elem++) {
                 if ((i % 10) <= HAND->field_0x4A8 / 3) {
                     elem->field_0x18 -= 3.0f;
-                    elem->field_0x1C -= (f32)cos((f32)elem->field_0x12 / 6.0f) * 0.3f;
+                    { f32 t = (f32)cos((f32)elem->field_0x12 / 6.0f); elem->field_0x1C -= t * 0.3f; }
                     elem->field_0x12++;
                     if (elem->field_0x12 >= 0x870) {
                         elem->field_0x12 -= 0x870;
@@ -5287,3 +5290,9 @@ USER_FUNC(queen_hand_small_1000hand_set_offset_evt) {
 }
 
 // clang-format on
+
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_04_000097A4_data = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset

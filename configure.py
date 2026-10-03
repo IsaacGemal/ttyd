@@ -1788,7 +1788,7 @@ config.libs = [
             Object(NonMatching, "las_05.c"),
             Object(Matching, "las_14.c"),
             Object(Matching, "las_29.c"),
-            Object(NonMatching, "unit/unit_boss_black_peach.c"),
+            Object(Matching, "unit/unit_boss_black_peach.c"),
             Object(Matching, "unit/unit_boss_batten_leader.c"),
             Object(Matching, "unit/unit_boss_batten_satellite.c"),
             Object(Matching, "event/evt_shuryolight.c", modules=["las"]),
