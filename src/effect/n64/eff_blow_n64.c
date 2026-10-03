@@ -54,6 +54,16 @@ typedef struct effBlowParticle {
 	s32 field_0x64;  // 0x64
 } effBlowParticle;
 
+#ifdef MUST_MATCH
+// Reads of the unit's own .sdata2 constants through the object, so the loads point at it instead of a new pool word.
+#define VL(x) (*(volatile const f32*)&(x))
+#else
+#define VL(x) (x)
+#endif
+extern const f32 float_0p03125_8041e984;
+extern const f32 float_0p03_8041e9a0;
+extern const f32 lbl_8041E9A4;
+extern const f32 float_6_8041e9a8;
 extern const f32 float_0p2_8041e9ac;
 extern const f32 float_0p225_8041e9b0;
 extern const f32 float_0p45_8041e9b4;
@@ -304,27 +314,27 @@ void effBlowMain(EffectEntry* effect) {
 		elemLife = data->life;
 		if (elemLife < 0) {
 			if (type == 0) {
-				data->x = 0.0f;
-				data->y = 0.0f;
-				data->z = 0.0f;
+				data->x = float_0_8041e988;
+				data->y = float_0_8041e988;
+				data->z = float_0_8041e988;
 				data->vx = data->field_0x20;
 				data->vy = data->field_0x24;
 				data->vz = data->field_0x28;
-				data->scaleX = 0.5f;
-				data->scaleY = 4.0f;
-				data->field_0x50 = 20.0f;
+				data->scaleX = float_0p5_8041e990;
+				data->scaleY = float_4_8041e994;
+				data->field_0x50 = float_20_8041e998;
 				data->rotZ = data->field_0x54;
 				data->field_0x58 = 0xFF;
 				data->life = 10;
 				data->life--;
 				elemLife = data->life;
 			} else {
-				data->x = 0.0f;
-				data->y = 0.0f;
-				data->z = 0.0f;
-				data->vx = 0.0f;
-				data->vy = 0.0f;
-				data->vz = 0.0f;
+				data->x = float_0_8041e988;
+				data->y = float_0_8041e988;
+				data->z = float_0_8041e988;
+				data->vx = float_0_8041e988;
+				data->vy = float_0_8041e988;
+				data->vz = float_0_8041e988;
 				data->field_0x58 = 0;
 				data->life = 0;
 			}
@@ -335,13 +345,13 @@ void effBlowMain(EffectEntry* effect) {
 			data->vz += data->field_0x34;
 		}
 		if (elemLife < 8) {
-			data->scaleX += 8.0f * (0.03f * (3.0f - data->scaleX));
-			data->scaleY += 6.0f * (0.03f * (0.5f - data->scaleY));
+			data->scaleX += float_8_8041e99c * (float_0p03_8041e9a0 * (lbl_8041E9A4 - data->scaleX));
+			data->scaleY += float_6_8041e9a8 * (float_0p03_8041e9a0 * (float_0p5_8041e990 - data->scaleY));
 		}
 		data->vx += data->field_0x38;
 		data->vy += data->field_0x3C;
 		data->vz += data->field_0x40;
-		if (data->vy < 0.0f) {
+		if (data->vy < float_0_8041e988) {
 			data->field_0x50 *= float_0p2_8041e9ac;
 			data->vx *= float_0p225_8041e9b0;
 			data->vy *= float_0p45_8041e9b4;
@@ -393,13 +403,16 @@ void effBlowDisp(CameraId camId, void* param) {
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-    PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
+    {
+		f32 s = VL(float_0p03125_8041e984);
+		PSMTXScale(scale, s, s, float_0_8041e988);
+	}
     GXLoadTexMtxImm(scale, 0x1E, 1);
     GXSetCullMode(0);
     effSetVtxDescN64((effVtxArray*)size16x16_tex32x32_vtx);
 
     PSMTXTrans(base, data->x, data->y, data->z);
-    deg2rad = 0.017453292f;
+    deg2rad = float_deg2rad_8041e98c;
     for (i = 1, data++; i < effect->count; i++, data++) {
         blowSetColor(data->field_0x58);
 
@@ -419,3 +432,24 @@ void effBlowDisp(CameraId camId, void* param) {
         tri2(0, 1, 2, 0, 0, 2, 3, 0);
     }
 }
+
+// Original data objects of this unit, in address order.
+const f32 float_0p03125_8041e984 = 0.03125f;
+const f32 float_0_8041e988 = 0.0f;
+const f32 float_deg2rad_8041e98c = 0.017453292f;
+const f32 float_0p5_8041e990 = 0.5f;
+const f32 float_4_8041e994 = 4.0f;
+const f32 float_20_8041e998 = 20.0f;
+const f32 float_8_8041e99c = 8.0f;
+const f32 float_0p03_8041e9a0 = 0.03f;
+const f32 lbl_8041E9A4 = 3.0f;
+const f32 float_6_8041e9a8 = 6.0f;
+const f32 float_0p2_8041e9ac = 0.2f;
+const f32 float_0p225_8041e9b0 = 0.225f;
+const f32 float_0p45_8041e9b4 = 0.45f;
+const f32 float_0p8_8041e9b8 = 0.8f;
+const f32 float_neg1_8041e9bc = -1.0f;
+const f32 float_1_8041e9c0 = 1.0f;
+const f32 float_2_8041e9c4 = 2.0f;
+const f32 float_0p05_8041e9c8 = 0.05f;
+const f32 float_0p1_8041e9cc = 0.1f;
