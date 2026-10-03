@@ -101,7 +101,7 @@ static inline Vec initializeVec(Vec* input) {
 // optimization_level/optimize_for_size pragmas, statement reordering, and loop-body declarations; the
 // 16 mismatched instructions are always exactly the args (f23-f26) and reset (f17-f20) block swap.
 // A 15 minute decomp-permuter run on this function did not beat its base score.
-// Deeper notes (DeepSeek V4.1 Flash, second pass): the shipped reference object was built with
+// Deeper notes: the shipped reference object was built with
 // GC/1.3.2, not the project's GC/2.6 (its .comment is CodeWarrior 02040201, ours is 02040701), so
 // this is a genuine 1.3.2-vs-2.6 allocator difference. Recompiling our source under GC/1.3, 1.3.2,
 // 2.0, 2.5 and 2.6 all give the identical wrong colouring, so the version alone does not fix it.

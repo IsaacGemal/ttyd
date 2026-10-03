@@ -693,7 +693,7 @@ void valueUpdate(void) {
 // Matching notes (all codegen-only; each call is ABI-identical to the header's by-value form):
 // * Every GXColor argument is staged in a function-scope local declared colours-first
 //   (colAlways..colB216 then numHp..numPartyMaxHp) and passed through a GXColor*-taking
-//   function-pointer cast. MWCC passes a by-value GXColor as a pointer in r6 either way, so this
+//   function-pointer cast (SW_ICON_COL/SW_NUM_GX, MUST_MATCH only). MWCC passes a by-value GXColor as a pointer in r6 either way, so this
 //   is safe, but it makes the compiler pass each local's home directly instead of building the
 //   fresh outgoing-copy pool that GC/2.6 allocates in program order. The local homes reproduce
 //   the original's slot grouping (iconDispGxCol at 0x28..0x40 above iconNumberDispGx at 0x08..0x24).
@@ -701,6 +701,13 @@ void valueUpdate(void) {
 //   makes MWCC split `ty` and use f29 instead.
 // * The star `ty` is assigned inside the PSMTXTrans argument so its constants colour f0/f1 like
 //   the original; the plain `ty = ...;` form swaps them.
+#ifdef MUST_MATCH
+#define SW_ICON_COL(m, s, id, var, col) var = (col); ((void(*)(Mtx,s16,s32,GXColor*))iconDispGxCol)(m, s, id, &var)
+#define SW_NUM_GX(m, n, f, var, col) var = (col); ((s32(*)(Mtx,s32,BOOL,GXColor*))iconNumberDispGx)(m, n, f, &var)
+#else
+#define SW_ICON_COL(m, s, id, var, col) iconDispGxCol(m, s, id, col)
+#define SW_NUM_GX(m, n, f, var, col) iconNumberDispGx(m, n, f, col)
+#endif
 void statusWinDisp(CameraId camId, void* param) {
     alwaysDtEntry* dtEntry;
     s32 i;
@@ -721,8 +728,10 @@ void statusWinDisp(CameraId camId, void* param) {
     Mtx coinMtx;
     Mtx partyHpMtx;
     Mtx partyMaxHpMtx;
+#ifdef MUST_MATCH
     GXColor colAlways, colParty, colB212, colB213, colB214, colB215, colB216;
     GXColor numHp, numMaxHp, numFp, numMaxFp, numStar, numCoin, numPartyHp, numPartyMaxHp;
+#endif
 
     baseX = wp->field_0x20;
     baseY = wp->field_0x24;
@@ -748,44 +757,37 @@ void statusWinDisp(CameraId camId, void* param) {
         PSMTXTrans(mtx, baseX + (f32)dtEntry->xpos, baseY - (f32)dtEntry->ypos, 0.0f);
         PSMTXScale(scale, dtEntry->scale, dtEntry->scale, dtEntry->scale);
         PSMTXConcat(mtx, scale, mtx);
-        colAlways = *(GXColor*)&dat_8041c8e4;
-        ((void(*)(Mtx,s16,s32,GXColor*))iconDispGxCol)(mtx, 0x10, dtEntry->iconId, &colAlways);
+        SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colAlways, *(GXColor*)&dat_8041c8e4);
     }
 
     if (!(wp->field_0x80 & 1) || v6 != 0) {
         number = *(s16*)((u8*)wp + 0x50);
         PSMTXTrans(hpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 38.0f + 2.0f, 0.0f);
-        numHp = *(GXColor*)&dat_8041c8e0;
-        ((s32(*)(Mtx,s32,BOOL,GXColor*))iconNumberDispGx)(hpMtx, number, 0, &numHp);
+        SW_NUM_GX(hpMtx, number, 0, numHp, *(GXColor*)&dat_8041c8e0);
     }
     number = *(s16*)((u8*)wp + 0x52);
     tx = baseX + 186.0f - 6.0f - 10.0f;
     ty = baseY - 38.0f + 3.0f;
     PSMTXTrans(maxHpMtx, tx, ty, 0.0f);
-    numMaxHp = *(GXColor*)&dat_8041c8e0;
-    ((s32(*)(Mtx,s32,BOOL,GXColor*))iconNumberDispGx)(maxHpMtx, number, 1, &numMaxHp);
+    SW_NUM_GX(maxHpMtx, number, 1, numMaxHp, *(GXColor*)&dat_8041c8e0);
 
     if (!(wp->field_0x80 & 2) || v6 != 0) {
         number = *(s16*)((u8*)wp + 0x54);
         PSMTXTrans(fpMtx, baseX + 292.0f - 6.0f, baseY - 38.0f + 2.0f, 0.0f);
-        numFp = *(GXColor*)&dat_8041c8e0;
-        ((s32(*)(Mtx,s32,BOOL,GXColor*))iconNumberDispGx)(fpMtx, number, 0, &numFp);
+        SW_NUM_GX(fpMtx, number, 0, numFp, *(GXColor*)&dat_8041c8e0);
     }
     number = *(s16*)((u8*)wp + 0x56);
     PSMTXTrans(maxFpMtx, baseX + 358.0f - 6.0f, ty, 0.0f);
-    numMaxFp = *(GXColor*)&dat_8041c8e0;
-    ((s32(*)(Mtx,s32,BOOL,GXColor*))iconNumberDispGx)(maxFpMtx, number, 1, &numMaxFp);
+    SW_NUM_GX(maxFpMtx, number, 1, numMaxFp, *(GXColor*)&dat_8041c8e0);
 
     number = *(s16*)((u8*)wp + 0x5E);
     PSMTXTrans(starMtx, baseX + 462.0f, ty = baseY - 38.0f + 2.0f, 0.0f);
-    numStar = *(GXColor*)&dat_8041c8e0;
-    ((s32(*)(Mtx,s32,BOOL,GXColor*))iconNumberDispGx)(starMtx, number, 0, &numStar);
+    SW_NUM_GX(starMtx, number, 0, numStar, *(GXColor*)&dat_8041c8e0);
 
     if (!(wp->field_0x80 & 0x10) || v6 != 0) {
         number = *(s16*)((u8*)wp + 0x60);
         PSMTXTrans(coinMtx, baseX + 572.0f, ty, 0.0f);
-        numCoin = *(GXColor*)&dat_8041c8e0;
-        ((s32(*)(Mtx,s32,BOOL,GXColor*))iconNumberDispGx)(coinMtx, number, 0, &numCoin);
+        SW_NUM_GX(coinMtx, number, 0, numCoin, *(GXColor*)&dat_8041c8e0);
     }
 
     if (!(wp->field_0x80 & 4) || v6 != 0) {
@@ -830,19 +832,16 @@ void statusWinDisp(CameraId camId, void* param) {
             PSMTXTrans(mtx, baseX + (f32)dtEntry->xpos, baseY - (f32)dtEntry->ypos, 0.0f);
             PSMTXScale(scale, dtEntry->scale, dtEntry->scale, dtEntry->scale);
             PSMTXConcat(mtx, scale, mtx);
-            colParty = *(GXColor*)&dat_8041c8e8;
-            ((void(*)(Mtx,s16,s32,GXColor*))iconDispGxCol)(mtx, 0x10, dtEntry->iconId, &colParty);
+            SW_ICON_COL(mtx, 0x10, dtEntry->iconId, colParty, *(GXColor*)&dat_8041c8e8);
         }
         if (!(wp->field_0x80 & 8) || v6 != 0) {
             number = *(s16*)((u8*)wp + 0x5A);
             PSMTXTrans(partyHpMtx, baseX + 120.0f - 6.0f - 10.0f, baseY - 78.0f + 2.0f + 4.0f, 0.0f);
-            numPartyHp = *(GXColor*)&dat_8041c8e0;
-            ((s32(*)(Mtx,s32,BOOL,GXColor*))iconNumberDispGx)(partyHpMtx, number, 0, &numPartyHp);
+            SW_NUM_GX(partyHpMtx, number, 0, numPartyHp, *(GXColor*)&dat_8041c8e0);
         }
         number = *(s16*)((u8*)wp + 0x5C);
         PSMTXTrans(partyMaxHpMtx, tx, baseY - 78.0f + 2.0f + 4.0f, 0.0f);
-        numPartyMaxHp = *(GXColor*)&dat_8041c8e0;
-        ((s32(*)(Mtx,s32,BOOL,GXColor*))iconNumberDispGx)(partyMaxHpMtx, number, 1, &numPartyMaxHp);
+        SW_NUM_GX(partyMaxHpMtx, number, 1, numPartyMaxHp, *(GXColor*)&dat_8041c8e0);
     }
 
     if ((wp->field_0x4 & 0x100) && gp->inBattle == 0) {
@@ -850,32 +849,27 @@ void statusWinDisp(CameraId camId, void* param) {
         PSMTXTrans(badgeMtx, -190.0f, ty2, 0.0f);
         PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
         PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-        colB212 = *(GXColor*)&dat_8041c8ec;
-        ((void(*)(Mtx,s16,s32,GXColor*))iconDispGxCol)(badgeMtx, 0x10, 0x212, &colB212);
+        SW_ICON_COL(badgeMtx, 0x10, 0x212, colB212, *(GXColor*)&dat_8041c8ec);
         if (swByteGet(0) >= 7 || partyChkJoin(1) != 0) {
             PSMTXTrans(badgeMtx, -250.0f, 16.0f + ty2, 0.0f);
             PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
             PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-            colB213 = *(GXColor*)&dat_8041c8f0;
-            ((void(*)(Mtx,s16,s32,GXColor*))iconDispGxCol)(badgeMtx, 0x10, 0x213, &colB213);
+            SW_ICON_COL(badgeMtx, 0x10, 0x213, colB213, *(GXColor*)&dat_8041c8f0);
         }
         PSMTXTrans(badgeMtx, -190.0f, 50.0f + ty2, 0.0f);
         PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
         PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-        colB214 = *(GXColor*)&dat_8041c8f4;
-        ((void(*)(Mtx,s16,s32,GXColor*))iconDispGxCol)(badgeMtx, 0x10, 0x214, &colB214);
+        SW_ICON_COL(badgeMtx, 0x10, 0x214, colB214, *(GXColor*)&dat_8041c8f4);
         if (swByteGet(0) >= 0x14 || pouchGetHaveBadgeCnt() != 0) {
             PSMTXTrans(badgeMtx, -130.0f, 16.0f + ty2, 0.0f);
             PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
             PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-            colB215 = *(GXColor*)&dat_8041c8f8;
-            ((void(*)(Mtx,s16,s32,GXColor*))iconDispGxCol)(badgeMtx, 0x10, 0x215, &colB215);
+            SW_ICON_COL(badgeMtx, 0x10, 0x215, colB215, *(GXColor*)&dat_8041c8f8);
         }
         PSMTXTrans(badgeMtx, -190.0f, ty2 - 25.0f, 0.0f);
         PSMTXScale(badgeScale, 0.75f, 0.75f, 0.75f);
         PSMTXConcat(badgeMtx, badgeScale, badgeMtx);
-        colB216 = *(GXColor*)&dat_8041c8fc;
-        ((void(*)(Mtx,s16,s32,GXColor*))iconDispGxCol)(badgeMtx, 0x10, 0x216, &colB216);
+        SW_ICON_COL(badgeMtx, 0x10, 0x216, colB216, *(GXColor*)&dat_8041c8fc);
     }
 }
 

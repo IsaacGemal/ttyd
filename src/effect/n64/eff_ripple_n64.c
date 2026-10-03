@@ -92,8 +92,8 @@ static inline Vec makeRippleVec(f32 x, f32 y, f32 z) {
 // same extra load. Further sweep: GC/1.3.2-2.7 all give r30 at -O4,p; `-opt level=2` and
 // `#pragma optimization_level 2/3` give r28 but change the frame (stmw) and instruction count, and
 // `tools/flag_sweep.py` finds no flag variant that helps. The flip needs a memory use of `effect` to
-// survive register allocation, which always costs the load. This is the register-allocation near-miss
-// the brief says to queue for the permuter.
+// survive register allocation, which always costs the load. This is a register-allocation near-miss for
+// the permuter.
 // NONMATCHING (99.18%): one redundant `lwz r4, 0xc(r3)` before the field_0x20 update (retail reuses the
 // cached `data` in r31); everything else, including the callee-saved colours, matches.
 void effRippleMain(EffectEntry* effect) {

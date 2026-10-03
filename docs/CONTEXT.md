@@ -3945,3 +3945,14 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   twice (NonMatching unit, matters only when it links); sac_genki disp_3D and mobjdrv's mobjCheckItemboxOpen /
   mobjNearDistCheck2 are below 100% with no NONMATCHING marker (older code).
 - 17 wave 61 agents were still running at collection; the next batch picks them up.
+
+## Wave 61, batch 4 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- The last 11 finished agents onto main ab358b68: 9,251 -> 9,259 (+8; mobjdrv +3, party_bomhei +2, statuswindow
+  +2, ac_repeatedly_lv +1), no conflicts, nothing lower. party_bomhei's functions are now in reverse source order,
+  which puts every function at its original offset. Wave 61 is finished: 274 agents, 9,132 -> 9,259 over four
+  batches. 40 units stay claimed until this batch merges.
+- Review (`scratch/wave61/review4.md`): no behaviour defects; `tools/data_check.py` clean. statusWinDisp's
+  GXColor*-taking function-pointer casts (they reproduce the original's outgoing-colour stack slots and are
+  ABI-identical only under MWCC) moved under MUST_MATCH as SW_ICON_COL/SW_NUM_GX, with the header's by-value calls in
+  the natural build. Two comments with internal process wording reworded.
