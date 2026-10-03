@@ -57,6 +57,117 @@ void* marioChkLandon(f32* pos, f32 spd) {
     }
 }
 
+static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
+static inline f32 sqrtf_base(f32 x, const char* base);
+#define LND_CENTI(v) ((f32)(s32)(float_100_8041a7f8 * (v) + float_0p5_8041a7c4) / float_100_8041a7f8)
+extern const f32 float_0p25_8041a7d4;
+extern const f32 float_0p1_8041a7e4;
+extern const f32 float_3p1416_8041a7e0;
+extern const f32 float_180_8041a7cc;
+extern const f32 float_100_8041a7f8;
+extern const u8 vec3_802c5730[];
+
+// The hit sample ring of marioChkLandon, with the ground y returned through *out.
+// NONMATCHING (79.15%): same 13 calls; the inlined sqrt's classification switch (cmpwi 1/3) is missing from ours and the
+// frame is 0x1c0 vs 0x1a0. fabs() is __fabsf (f32 add, no frsp) as in the original; the compare `fabs(...) < 0.1` is plain.
+void* marioChkLandon2(f32* out, f32 a, f32 b) {
+    const char* base = (const char*)vec3_802c5730;
+    MarioWork* wp = marioGetPtr();
+    Vec p;
+    Vec up;
+    Vec hitPos;
+    Vec normal;
+    HitEntry* hit;
+    f32 dist;
+    f32 fa;
+    f32 h;
+    f32 rad;
+    f32 angle;
+    f32 f27;
+    f32 f26;
+    f32 yy;
+    f32 d0;
+    f32 px;
+    f32 pz;
+    f32 ox;
+    f32 oz;
+    f32 ang;
+    s32 i;
+
+    *(f32*)((u8*)wp + 0x218) = float_0_8041a7a4;
+    *(f32*)((u8*)wp + 0x21C) = float_0_8041a7a4;
+    *(f32*)((u8*)wp + 0x220) = float_0_8041a7a4;
+    *(f32*)((u8*)wp + 0x214) = float_0_8041a7a4;
+    if (wp->flags & 0x200) {
+        *out = wp->position.y;
+        return NULL;
+    }
+    if (wp->flags & 0x100) {
+        *out = wp->position.y;
+        return NULL;
+    }
+    fa = float_0p1_8041a7e4 + __fabsf(a);
+    h = float_0p5_8041a7c4 * wp->wPlayerCollisionBox.y;
+    if (wp->baseSpeed != float_0_8041a7a4) {
+        angle = *(f32*)((u8*)wp + 0x1A0);
+    } else {
+        angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
+    }
+    rad = float_3p1416_8041a7e0 * angle / float_180_8041a7cc;
+    f27 = float_0p25_8041a7d4 * (*(f32*)((u8*)wp + 0x1B4) * (f32)sin(rad));
+    up = *(const Vec*)(base + 0x78);
+    d0 = h + fa;
+    yy = wp->position.y + b + h;
+    f26 = float_0p25_8041a7d4 * (*(f32*)((u8*)wp + 0x1B4) * -(f32)cos(rad));
+    px = wp->position.x;
+    pz = wp->position.z;
+    for (i = 0; i < 5; i++) {
+        switch (i) {
+        case 0:
+            ox = float_0_8041a7a4;
+            oz = float_0_8041a7a4;
+            break;
+        case 1:
+            ox = f27;
+            oz = f26;
+            break;
+        case 2:
+            ox = -f26;
+            oz = f26;
+            break;
+        case 3:
+            ox = f26;
+            oz = -f27;
+            break;
+        case 4:
+            ox = -f27;
+            oz = -f26;
+            break;
+        }
+        p = *(const Vec*)(base + 0x84);
+        p.x = px + ox;
+        p.y = yy;
+        p.z = pz + oz;
+        dist = d0;
+        hit = marioHitCheckVecOut(&p, &up, &hitPos, &normal, &dist);
+        if (hit != NULL) {
+            MarioWork* wp2 = marioGetPtr();
+
+            *(f32*)((u8*)wp2 + 0x218) = LND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.z, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
+            *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
+            *(f32*)((u8*)wp2 + 0x220) = LND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.x, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
+            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf_base(normal.x * normal.x + normal.z * normal.z, base), -normal.y);
+            *(f32*)((u8*)wp + 0x214) = ang;
+            if (__fabsf(LND_CENTI((yy - hitPos.y) - dist)) < float_0p1_8041a7e4) {
+                *out = hitPos.y;
+                return hit;
+            }
+        }
+    }
+    return NULL;
+}
+
+
 void marioChkToge(void) {
     MarioWork* wp = marioGetPtr();
     HitEntry* hit;
