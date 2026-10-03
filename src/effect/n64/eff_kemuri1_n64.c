@@ -8,43 +8,16 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .sbss2 zero GXColor scratch objects, placed by hand (the default .sbss2 only holds compiler pool templates);
+// declared in reverse: placed in reverse of declaration order.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_8042316C_sbss2;
+__declspec(section ".sdata") GXColor unk_80423168;
+#pragma section ".sdata" ".sbss"
+
 // .rodata conversion constant used by the int -> float casts.
-const f64 double_to_int_802fa898 = 4503601774854144.0;
 
 // .sdata2 constants (named after their original addresses).
-extern const f32 float_1_8041f238;
-extern const f32 float_0p5_8041f23c;
-extern const f32 float_deg2rad_8041f240;
-extern const f32 float_0p0625_8041f244;
-extern const f32 float_0_8041f248;
-extern const f32 float_2_8041f24c;
-extern const f32 float_16_8041f250;
-extern const f32 float_24_8041f254;
-extern const f32 float_32_8041f258;
-extern const f32 float_neg3_8041f25c;
-extern const f32 float_0p3_8041f260;
-extern const f32 float_1p75_8041f264;
-extern const f32 float_neg0p16_8041f268;
-extern const f32 float_4_8041f26c;
-extern const f32 float_90_8041f270;
-extern const f32 float_180_8041f274;
-extern const f32 float_6p2832_8041f278;
-extern const f32 float_360_8041f27c;
-extern const f32 float_2p3562_8041f280;
-extern const f32 float_25_8041f284;
-extern const f32 float_0p95_8041f288;
-extern const f32 float_neg0p04_8041f28c;
-extern const f32 float_0p94_8041f290;
-extern const f32 float_neg2p3562_8041f294;
-extern const f32 float_0p85_8041f298;
-extern const f32 float_0p34907_8041f29c;
-extern const f32 float_10_8041f2a0;
-extern const f32 float_0p75_8041f2a4;
-extern const f32 float_0p93_8041f2a8;
-extern const f32 float_0p1_8041f2ac;
-extern GXColor dat_8041f230;
-extern GXColor dat_8041f234;
-extern GXColor unk_80423168;
 
 typedef struct effKemuri1Data {
 	u16 type; //0x0
@@ -79,7 +52,7 @@ typedef struct effKemuri1Data {
 // allocator colours the ten-value loop-invariant clique (nine constants + the a5 parameter) with a5 in f24 and
 // the constants rotated (99.69%); with them a5 lands in f31 and neg3..10 in f22..f30 as the original. Scoping
 // `angle` to the loop (shadow of the function-scope `angle`) keeps the angle temp in f20. objdiff names the
-// pooled "Kemuri1N64" string and int->float double anonymous @NNN@ instead of str_802FA8A0/
+// pooled "Kemuri1N64" string and int->float double anonymous @NNN@ instead of "Kemuri1N64"/
 // double_to_int_802fa898; those are unscored.
 EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;
@@ -89,6 +62,9 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	s32 i;
 	f32 angle;
 	f32 sinAngle;
+	f32 pa = 2.3561945f;
+	f32 pb = -2.3561945f;
+	f32 pc = 0.34906587f;
 	f32 cosAngle;
 	f32 k94;
 
@@ -152,18 +128,19 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		case 0:
 		case 1:
 			for (i = 1; i < effCount; i++, entry++) {
-				entry->field_0x10 = float_neg3_8041f25c;
-				entry->field_0x14 = float_0p3_8041f260;
-				entry->field_0x18 = float_0_8041f248;
-				entry->field_0x1C = float_0_8041f248;
-				entry->field_0x20 = float_1p75_8041f264;
-				entry->field_0x24 = float_neg0p16_8041f268;
-				entry->field_0x28 = float_0_8041f248;
-				entry->field_0x2C = float_0_8041f248;
-				entry->position.x = float_0_8041f248;
-				entry->position.y = float_0_8041f248;
-				entry->position.z = float_4_8041f26c;
-				angle = float_6p2832_8041f278 * reviseAngle(float_180_8041f274 * (f32)(i - 1) + float_90_8041f270) / float_360_8041f27c;
+				entry->field_0x10 = -3.0f;
+				entry->field_0x14 = 0.29999998f;
+				entry->field_0x18 = 0.0f;
+				entry->field_0x1C = 0.0f;
+				entry->field_0x20 = 1.75f;
+				entry->field_0x24 = -0.16f;
+				entry->field_0x28 = 0.0f;
+				entry->field_0x2C = 0.0f;
+				entry->position.x = 0.0f;
+				entry->position.y = 0.0f;
+				entry->position.z = 4.0f;
+				angle = reviseAngle(90.f + 180.f * (f32)(i - 1));
+				angle = 6.2831855f * angle / 360.f;
 				entry->field_0x30 = sin(angle);
 				entry->field_0x34 = cos(angle);
 				entry->field_0x44 = 0xFF;
@@ -175,41 +152,41 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 			for (i = 1; i < effCount; i++, entry++) {
 				switch (i - 1) {
 				case 0:
-					sinAngle = (f32)sin(float_2p3562_8041f280);
-					entry->position.x = float_25_8041f284 * -sinAngle;
-					entry->position.y = float_0_8041f248;
-					cosAngle = (f32)cos(float_2p3562_8041f280);
-					entry->position.z = float_25_8041f284 * -cosAngle;
-					entry->field_0x20 = float_0p95_8041f288;
-					entry->field_0x24 = float_neg0p04_8041f28c;
-					k94 = float_0p94_8041f290;
+					sinAngle = (f32)sin(pa);
+					entry->position.x = 25.0f * -sinAngle;
+					entry->position.y = 0.0f;
+					cosAngle = (f32)cos(pa);
+					entry->position.z = 25.0f * -cosAngle;
+					entry->field_0x20 = 0.95f;
+					entry->field_0x24 = -0.04f;
+					k94 = 0.94f;
 				entry->field_0x28 = k94;
 					break;
 				case 1:
-					sinAngle = (f32)sin(float_neg2p3562_8041f294);
-					entry->position.x = float_25_8041f284 * -sinAngle;
-					entry->position.y = float_4_8041f26c;
-					cosAngle = (f32)cos(float_neg2p3562_8041f294);
-					entry->position.z = float_25_8041f284 * -cosAngle;
-					entry->field_0x20 = float_0p85_8041f298;
-					entry->field_0x24 = float_neg0p04_8041f28c;
-					k94 = float_0p94_8041f290;
+					sinAngle = (f32)sin(pb);
+					entry->position.x = 25.0f * -sinAngle;
+					entry->position.y = 4.0f;
+					cosAngle = (f32)cos(pb);
+					entry->position.z = 25.0f * -cosAngle;
+					entry->field_0x20 = 0.84999996f;
+					entry->field_0x24 = -0.04f;
+					k94 = 0.94f;
 				entry->field_0x28 = k94;
 					break;
 				case 2:
-					sinAngle = (f32)sin(float_0p34907_8041f29c);
-					entry->position.x = float_25_8041f284 * -sinAngle;
-					entry->position.y = float_10_8041f2a0;
-					cosAngle = (f32)cos(float_0p34907_8041f29c);
-					entry->position.z = float_25_8041f284 * -cosAngle;
-					entry->field_0x20 = float_0p75_8041f2a4;
-					entry->field_0x24 = float_neg0p04_8041f28c;
-					k94 = float_0p94_8041f290;
+					sinAngle = (f32)sin(pc);
+					entry->position.x = 25.0f * -sinAngle;
+					entry->position.y = 10.f;
+					cosAngle = (f32)cos(pc);
+					entry->position.z = 25.0f * -cosAngle;
+					entry->field_0x20 = 0.75f;
+					entry->field_0x24 = -0.04f;
+					k94 = 0.94f;
 				entry->field_0x28 = k94;
 					break;
 				}
-				entry->field_0x30 = float_0_8041f248;
-				entry->field_0x34 = float_0_8041f248;
+				entry->field_0x30 = 0.0f;
+				entry->field_0x34 = 0.0f;
 				entry->field_0x44 = 0xFF;
 				entry->field_0x45 = 0xFF;
 				entry->field_0x46 = 0xFF;
@@ -229,24 +206,24 @@ EffectEntry* effKemuri1N64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 				f32 s30;
 				f32 c34;
 #endif
-				entry->field_0x10 = float_neg3_8041f25c;
-				entry->field_0x14 = float_0p93_8041f2a8;
-				entry->field_0x20 = float_0_8041f248;
-				entry->field_0x24 = float_0p1_8041f2ac;
+				entry->field_0x10 = -3.0f;
+				entry->field_0x14 = 0.93f;
+				entry->field_0x20 = 0.0f;
+				entry->field_0x24 = 0.099999994f;
 #ifdef MUST_MATCH
-				entry->field_0x28 = float_0p94_8041f290;
-				entry->field_0x2C = float_0p94_8041f290;
+				entry->field_0x28 = 0.94f;
+				entry->field_0x2C = 0.94f;
 #else
-				k94 = float_0p94_8041f290;
+				k94 = 0.94f;
 				entry->field_0x28 = k94;
 				entry->field_0x2C = k94;
 #endif
-				angle = float_6p2832_8041f278 * (a5 + (f32)((i - 1) * 360 / (effCount - 1))) / float_360_8041f27c;
+				angle = 6.2831855f * (a5 + (f32)((i - 1) * 360 / (effCount - 1))) / 360.f;
 				sinAngle = (f32)sin(angle);
-				entry->position.x = float_10_8041f2a0 * -sinAngle;
-				entry->position.y = float_0_8041f248;
+				entry->position.x = 10.f * -sinAngle;
+				entry->position.y = 0.0f;
 				cosAngle = (f32)cos(angle);
-				entry->position.z = float_10_8041f2a0 * -cosAngle;
+				entry->position.z = 10.f * -cosAngle;
 #ifdef MUST_MATCH
 				s30 = sin(angle);
 				entry->field_0x30 = s30;
@@ -302,8 +279,8 @@ void effKemuri1Main(EffectEntry* effect) {
 	position = kemuri1InitVec(&data->position);
 
 	type = data->type;
-	b = (s32)(float_16_8041f250 * (f32)data->field_0x3C / (f32)data->field_0x4C);
-	a = (s32)(float_16_8041f250 * (f32)(data->field_0x3C + 1) / (f32)data->field_0x4C);
+	b = (s32)(16.0f * (f32)data->field_0x3C / (f32)data->field_0x4C);
+	a = (s32)(16.0f * (f32)(data->field_0x3C + 1) / (f32)data->field_0x4C);
 	data->field_0x3C++;
 	if (a > 15) {
 		a = 15;
@@ -364,13 +341,17 @@ void effKemuri1Main(EffectEntry* effect) {
 // Building each colour and making its GXSetChanMatColor call inside a void inline pairs the local with
 // its outgoing copy (0x8/0xc and 0x10), so the TEV colour's by-value temp lands at 0x14 as the
 // original's does (the plain `GXColor color` local would take 0x14 instead). Same shape as eff_kemuri8.
+static inline void kemuri1SetTevColor80(void) {
+	GXSetTevColor(1, (GXColor){ 0x80, 0x80, 0x80, 0x80 });
+}
+
 static inline void kemuri1SetChanMatColorA(void) {
-	GXColor c = dat_8041f234;
+	GXColor c = (GXColor){ 0x00, 0x00, 0x00, 0x60 };
 	GXSetChanMatColor(4, c);
 }
 
-static inline void kemuri1SetChanMatColorB(u8 r, u8 g, u8 b) {
-	GXColor c = unk_80423168;
+static inline void kemuri1SetChanMatColorB(u8 b, u8 g, u8 r) {
+	GXColor c = (GXColor){ 0, 0, 0, 0 };
 	c.r = r;
 	c.g = g;
 	c.b = b;
@@ -405,19 +386,19 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	field0 = data->field_0x40;
 	field1 = data->field_0x48;
 
-	scale = float_1_8041f238;
+	scale = 1.0f;
 	switch (type) {
 	case 5:
 	case 6:
 	case 7:
-		scale = float_0p5_8041f23c;
+		scale = 0.5f;
 		break;
 	default:
 		break;
 	}
 
 	PSMTXTrans(mtxTmp, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041f240);
+	PSMTXRotRad(mtxRot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXScale(mtxScale, scale, scale, scale);
 	PSMTXConcat(mtxTmp, mtxRot, mtxTmp);
 	PSMTXConcat(mtxTmp, mtxScale, mtxTmp);
@@ -442,7 +423,11 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
 	GXSetTevColorIn(1, 0, 8, 2, 0xF);
 	GXSetTevAlphaIn(1, 0, 4, 1, 7);
-	GXSetTevColor(1, dat_8041f230);
+#ifdef MUST_MATCH
+	kemuri1SetTevColor80();
+#else
+	GXSetTevColor(1, (GXColor){ 0x80, 0x80, 0x80, 0x80 });
+#endif
 	GXSetTevOrder(2, 0xFF, 0xFF, 4);
 	GXSetTevColorOp(2, 0, 0, 0, 1, 0);
 	GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
@@ -455,8 +440,8 @@ void effKemuri1Disp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 13, 1, 4, 0);
 
-	scrollX = float_0p0625_8041f244 * (f32)field0;
-	scrollY = float_0p0625_8041f244 * (f32)field1;
+	scrollX = 0.0625f * (f32)field0;
+	scrollY = 0.0625f * (f32)field1;
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
@@ -464,13 +449,13 @@ void effKemuri1Disp(CameraId camId, void* param) {
 			continue;
 		}
 
-		PSMTXTrans(mtxTmp, scrollX, float_0_8041f248, float_0_8041f248);
-		PSMTXScale(mtxScale, float_0p0625_8041f244, float_1_8041f238, float_1_8041f238);
+		PSMTXTrans(mtxTmp, scrollX, 0.0f, 0.0f);
+		PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(mtxTmp, mtxScale, mtxTmp);
 		GXLoadTexMtxImm(mtxTmp, 0x1E, 1);
 
-		PSMTXTrans(mtxTmp, scrollY, float_0_8041f248, float_0_8041f248);
-		PSMTXScale(mtxScale, float_0p0625_8041f244, float_1_8041f238, float_1_8041f238);
+		PSMTXTrans(mtxTmp, scrollY, 0.0f, 0.0f);
+		PSMTXScale(mtxScale, 0.0625f, 1.0f, 1.0f);
 		PSMTXConcat(mtxTmp, mtxScale, mtxTmp);
 		GXLoadTexMtxImm(mtxTmp, 0x21, 1);
 
@@ -479,18 +464,18 @@ void effKemuri1Disp(CameraId camId, void* param) {
 #ifdef MUST_MATCH
 				kemuri1SetChanMatColorA();
 #else
-				GXSetChanMatColor(4, dat_8041f234);
+				GXSetChanMatColor(4, (GXColor){ 0x00, 0x00, 0x00, 0x60 });
 #endif
-				PSMTXTrans(mtxTmp, float_2_8041f24c + data->position.x,
-					data->position.y - float_2_8041f24c, data->position.z);
+				PSMTXTrans(mtxTmp, 2.0f + data->position.x,
+					data->position.y - 2.0f, data->position.z);
 				PSMTXConcat(mtxBase, mtxTmp, mtxTmp);
 				GXLoadPosMtxImm(mtxTmp, 0);
 			}
 			else {
 #ifdef MUST_MATCH
-				kemuri1SetChanMatColorB(data->field_0x44, data->field_0x45, data->field_0x46);
+				kemuri1SetChanMatColorB(data->field_0x46, data->field_0x45, data->field_0x44);
 #else
-				GXColor color = unk_80423168;
+				GXColor color = (GXColor){ 0, 0, 0, 0 };
 				color.r = data->field_0x44;
 				color.g = data->field_0x45;
 				color.b = data->field_0x46;
@@ -509,15 +494,15 @@ void effKemuri1Disp(CameraId camId, void* param) {
 			// the 0.0f/1.0f literals make it reload them per store instead of hoisting them into extra FPRs.
 			switch (type) {
 			case 0:
-				size = float_16_8041f250;
+				size = 16.0f;
 				size2 = size;
 				break;
 			case 1:
-				size = float_24_8041f254;
+				size = 24.0f;
 				size2 = size;
 				break;
 			default:
-				size = float_32_8041f258;
+				size = 32.0f;
 				size2 = size;
 				break;
 			}
@@ -533,24 +518,24 @@ void effKemuri1Disp(CameraId camId, void* param) {
 #else
 			switch (type) {
 			case 0:
-				size = float_16_8041f250;
+				size = 16.0f;
 				break;
 			case 1:
-				size = float_24_8041f254;
+				size = 24.0f;
 				break;
 			default:
-				size = float_32_8041f258;
+				size = 32.0f;
 				break;
 			}
 
-			GXPosition3f32(-size * half, size * half, float_0_8041f248);
-			GXTexCoord2f32(float_0_8041f248, float_0_8041f248);
-			GXPosition3f32(size * half, size * half, float_0_8041f248);
-			GXTexCoord2f32(float_1_8041f238, float_0_8041f248);
-			GXPosition3f32(size * half, -size * half, float_0_8041f248);
-			GXTexCoord2f32(float_1_8041f238, float_1_8041f238);
-			GXPosition3f32(-size * half, -size * half, float_0_8041f248);
-			GXTexCoord2f32(float_0_8041f248, float_1_8041f238);
+			GXPosition3f32(-size * half, size * half, 0.0f);
+			GXTexCoord2f32(0.0f, 0.0f);
+			GXPosition3f32(size * half, size * half, 0.0f);
+			GXTexCoord2f32(1.0f, 0.0f);
+			GXPosition3f32(size * half, -size * half, 0.0f);
+			GXTexCoord2f32(1.0f, 1.0f);
+			GXPosition3f32(-size * half, -size * half, 0.0f);
+			GXTexCoord2f32(0.0f, 1.0f);
 #endif
 		}
 	}
