@@ -67,6 +67,124 @@ extern const f32 float_180_8041a7cc;
 extern const f32 float_100_8041a7f8;
 extern const u8 vec3_802c5730[];
 
+extern const f32 float_0p75_8041a7d8;
+extern const f32 float_0p01_8041a854;
+extern const f32 float_neg1_8041a7dc;
+extern const f32 float_11_8041a7ac;
+
+// Older landing check (the Koopa-aware ground probe): same five-sample ring as marioChkLandon2 but the ray points
+// down from 0.75 * height and the accepted hit y is returned rounded to 0.01.
+// NONMATCHING (75.89%): same 15 calls; remaining: frame size/FPR colouring and the inlined sqrt's classification
+// switch (cmpwi 1/3). Compares: fabs(...) < 0.1 and the rounding tests (cror eq,gt -> >=) checked against the asm.
+void* marioLandonChk_old(f32* pos, f32 spd) {
+    const char* base = (const char*)vec3_802c5730;
+    MarioWork* wp = marioGetPtr();
+    Vec p;
+    Vec dir;
+    Vec hitPos;
+    Vec normal;
+    HitEntry* hit;
+    f32 dist;
+    f32 fa;
+    f32 h;
+    f32 rad;
+    f32 angle;
+    f32 f20;
+    f32 f19;
+    f32 yy;
+    f32 d0;
+    f32 px;
+    f32 pz;
+    f32 ox;
+    f32 oz;
+    f32 ang;
+    f32 gy;
+    f32 gx;
+    f32 gz;
+    s32 i;
+    void* r;
+
+    *(f32*)((u8*)wp + 0x218) = float_0_8041a7a4;
+    *(f32*)((u8*)wp + 0x21C) = float_0_8041a7a4;
+    *(f32*)((u8*)wp + 0x220) = float_0_8041a7a4;
+    *(f32*)((u8*)wp + 0x214) = float_0_8041a7a4;
+    if (wp->flags & 0x200) {
+        *pos = wp->position.y;
+        return NULL;
+    }
+    if (wp->flags & 0x100) {
+        *pos = wp->position.y;
+        return NULL;
+    }
+    fa = float_0p01_8041a854 + __fabsf(spd);
+    h = float_0p75_8041a7d8 * wp->wPlayerCollisionBox.y;
+    if (wp->baseSpeed != float_0_8041a7a4) {
+        angle = revise360(*(f32*)((u8*)wp + 0x1A0) - *(f32*)((u8*)wp + 0x198));
+    } else {
+        angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
+    }
+    rad = float_3p1416_8041a7e0 * angle / float_180_8041a7cc;
+    f20 = float_0p25_8041a7d4 * (*(f32*)((u8*)wp + 0x1B4) * (f32)sin(rad));
+    px = wp->position.x;
+    pz = wp->position.z;
+    f19 = float_0p25_8041a7d4 * (*(f32*)((u8*)wp + 0x1B4) * -(f32)cos(rad));
+    if (wp->characterId == 2) {
+        r = kpaSearchGround(&gy, &gx, &gz, float_11_8041a7ac);
+        *pos = gy;
+        return r;
+    }
+    d0 = h + fa;
+    yy = wp->position.y + h;
+    for (i = 0; i < 5; i++) {
+        switch (i) {
+        case 0:
+            ox = float_0_8041a7a4;
+            oz = float_0_8041a7a4;
+            break;
+        case 1:
+            ox = f20;
+            oz = f19;
+            break;
+        case 2:
+            ox = -f19;
+            oz = f19;
+            break;
+        case 3:
+            ox = f19;
+            oz = -f20;
+            break;
+        case 4:
+            ox = -f20;
+            oz = -f19;
+            break;
+        }
+        p = *(const Vec*)(base + 0);
+        dir = *(const Vec*)(base + 0xC);
+        p.x = px + ox;
+        p.y = yy;
+        p.z = pz + oz;
+        dir.x = float_0_8041a7a4;
+        dir.y = float_neg1_8041a7dc;
+        dir.z = float_0_8041a7a4;
+        dist = d0;
+        hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
+        if (hit != NULL) {
+            MarioWork* wp2 = marioGetPtr();
+
+            *(f32*)((u8*)wp2 + 0x218) = LND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.z, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
+            *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
+            *(f32*)((u8*)wp2 + 0x220) = LND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.x, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
+            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf_base(normal.x * normal.x + normal.z * normal.z, base), -normal.y);
+            *(f32*)((u8*)wp + 0x214) = ang;
+            if (__fabsf(LND_CENTI((yy - hitPos.y) - dist)) < float_0p1_8041a7e4) {
+                *pos = LND_CENTI(hitPos.y);
+                return hit;
+            }
+        }
+    }
+    return NULL;
+}
+
 // The hit sample ring of marioChkLandon, with the ground y returned through *out.
 // NONMATCHING (79.15%): same 13 calls; the inlined sqrt's classification switch (cmpwi 1/3) is missing from ours and the
 // frame is 0x1c0 vs 0x1a0. fabs() is __fabsf (f32 add, no frsp) as in the original; the compare `fabs(...) < 0.1` is plain.
