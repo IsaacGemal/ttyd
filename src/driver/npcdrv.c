@@ -28,6 +28,9 @@
 #include "kpa_act.h"
 #include "party/party_cloud.h"
 #include "math_ext.h"
+#include "eff/eff_small_star.h"
+#include "pmario_sound.h"
+#include "mario/mario_sbr.h"
 #include "mario/mario_motion.h"
 #include "battle/battle.h"
 #include "driver/seqdrv.h"
@@ -1156,6 +1159,305 @@ void fbatSetAttackAnnounceEnable(void) {
 
 // 100%: control flow and the `mode == 3` test match. The two `regularEvtId` reads go through a fresh
 // `*(NpcEntry**)(fbatData->field_2 + 2)` load (as in the original), which also fixes `entry`/`mario` to r30/r29.
+extern const f32 float_neg90_80419bd8;
+extern const f32 float_neg180_80419bf0;
+extern const f32 float_270_80419be4;
+extern const f32 float_neg270_80419be8;
+extern const f32 float_90_80419bd0;
+extern const f32 float_0p75_80419bf4;
+extern const f32 float_neg1_80419bf8;
+extern const f32 float_1000_80419bc8;
+extern const f32 float_10_80419bb8;
+extern const f32 float_0p5_80419ba0;
+extern const f32 float_0_80419b9c;
+extern const f32 float_180_80419bec;
+extern const f32 float_360_80419be0;
+#define ENC(p, T, off) (*(T*)((u8*)(p) + (off)))
+
+// NONMATCHING (96.19%): same 57 calls and immediates. Remaining: the first/second switch decision trees (the
+// original's root compares 0x100000, i.e. one case value fewer is in play than the eight listed here), the
+// FieldBattleData* register colouring (r26 vs r28) and a few commuted fadds/fmadds operands.
+void fbatEncountCheck(void) {
+    NpcWork* wk;
+    NpcEntry* npc;
+    NpcEntry* best;
+    NpcEntry* hit;
+    FieldBattleData* fb;
+    MarioWork* mario;
+    AnimationPose* pose;
+    CameraEntry* cam;
+    f32 camAngle;
+    f32 rel;
+    f32 nearest;
+    f32 dist;
+    f32 sx;
+    f32 sz;
+    f32 dx;
+    f32 dz;
+    f32 d;
+    f32 hitX, hitY, hitZ, hitNX, hitNY, hitNZ;
+    f32 vec[3];
+    s32 total;
+    s32 i;
+    s32 side;
+    s32 found;
+    s32 blocked;
+
+    wk = &work.field;
+    if (gp->inBattle != 0) {
+        wk = &work.battle;
+    }
+    total = wk->total;
+    mario = marioGetPtr();
+    wk->field_0x10 = NULL;
+    if ((u32)marioStGetSystemLevel() != 0) {
+        return;
+    }
+    if (!(wk->flags & 1)) {
+        if (marioKeyOffChk() != 0) {
+            return;
+        }
+        if (marioCtrlOffChk() != 0) {
+            return;
+        }
+    }
+    if (N_itemPickUpFromFieldCheck() != 0) {
+        return;
+    }
+    fb = gp->fbatData;
+    hit = (NpcEntry*)fbatHitCheck(0x13F1, (s32)((u8*)fb + 0x10));
+    if (hit != NULL && fb->mode == 1) {
+        FieldBattleData* fb2 = gp->fbatData;
+        s32 ok;
+
+        if (fb2->mode != 1) {
+            ok = 0;
+        } else {
+            fb2->mode = 5;
+            ok = 1;
+            *(s8*)((u8*)fb2 + 2) = 0;
+            *(NpcEntry**)((u8*)fb2 + 4) = hit;
+            fb2->target = hit;
+        }
+        if (ok != 0) {
+            switch (ENC(fb, s32, 0x10)) {
+                case 0x40000:
+                case 0x80000:
+                case 0x20000:
+                    marioChgMotJump2();
+                    if (dbg_battleskip != 1) {
+                        animPoseSetAnim(hit->poseId, ENC(hit->tribe, const char*, 0x20), 1);
+                    }
+                    break;
+                case 0x100000:
+                case 0x400000:
+                case 0x200000:
+                    if (dbg_battleskip != 1) {
+                        animPoseSetAnim(hit->poseId, ENC(hit->tribe, const char*, 0x20), 1);
+                    }
+                    break;
+                case 0x800000:
+                    if (dbg_battleskip != 1) {
+                        animPoseSetAnim(hit->poseId, ENC(hit->tribe, const char*, 0x20), 1);
+                    }
+                    break;
+                case 0x1000000:
+                    if (dbg_battleskip != 1) {
+                        animPoseSetAnim(hit->poseId, ENC(hit->tribe, const char*, 0x20), 1);
+                    }
+                    break;
+            }
+            pose = animPoseGetAnimPosePtr(hit->poseId);
+            ENC(hit, f32, 0x148) = hit->direction;
+            hit->direction = angleABf(hit->position.x, hit->position.z, mario->position.x, mario->position.z);
+            rel = reviseAngle(-hit->direction) + float_neg90_80419bd8;
+            cam = camGetPtr(CAMERA_3D);
+            camAngle = reviseAngle(MTXRadToDeg((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
+            if (camAngle < float_0_80419b9c) {
+                camAngle += float_360_80419be0;
+            }
+            d = reviseAngle(camAngle - rel);
+            if ((d > float_90_80419bd0 && d <= float_270_80419be4) || (d < float_neg90_80419bd8 && d >= float_neg270_80419be8)) {
+                cam = camGetPtr(CAMERA_3D);
+                camAngle = reviseAngle(MTXRadToDeg((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
+                if (camAngle < float_0_80419b9c) {
+                    camAngle += float_360_80419be0;
+                }
+                pose->field_0x7C = reviseAngle(float_180_80419bec + camAngle);
+            } else {
+                cam = camGetPtr(CAMERA_3D);
+                camAngle = reviseAngle(MTXRadToDeg((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
+                if (camAngle < float_0_80419b9c) {
+                    camAngle += float_360_80419be0;
+                }
+                pose->field_0x7C = camAngle;
+            }
+            while (pose->field_0x7C - pose->rotationY > float_180_80419bec) {
+                pose->rotationY += float_360_80419be0;
+            }
+            while (pose->field_0x7C - pose->rotationY < float_neg180_80419bf0) {
+                pose->rotationY -= float_360_80419be0;
+            }
+            pose->rotationY = float_0p75_80419bf4 * (pose->field_0x7C - pose->rotationY) + pose->rotationY;
+            switch (ENC(fb, s32, 0x10)) {
+                case 0x200000:
+                case 0x1000000:
+                case 0x800000:
+                case 0x400000:
+                case 0x80000:
+                case 0x100000:
+                case 0x40000:
+                case 0x20000:
+                    effSmallStarEntry(3, 3, hit->position.x, hit->position.y + hit->height, hit->position.z, float_0_80419b9c, float_neg1_80419bf8, float_0_80419b9c);
+                    break;
+                case 0x10000000:
+                    effSmallStarEntry(3, 3, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z, float_0_80419b9c, float_neg1_80419bf8, float_0_80419b9c);
+                    break;
+            }
+            switch (ENC(fb, s32, 0x10)) {
+                case 0x200000:
+                case 0x1000000:
+                case 0x800000:
+                case 0x400000:
+                case 0x80000:
+                case 0x100000:
+                case 0x40000:
+                case 0x20000:
+                    if (hit != NULL) {
+                        psndSFXOn_3D((char*)vec3_802c2f78 + 0x204, &hit->position);
+                        return;
+                    }
+                    break;
+                case 0x10000000:
+                    psndSFXOn_3D((char*)vec3_802c2f78 + 0x220, &mario->position);
+                    return;
+            }
+        }
+        return;
+    }
+    nearest = float_1000_80419bc8;
+    if (marioChkTalkable() != 0 && *(s8*)((u8*)mario + 0x39) == 0) {
+        npc = wk->entries;
+        best = NULL;
+        for (i = 0; i < total; i++, npc++) {
+            if ((npc->flags & 2) && !(npc->flags & 8) && ENC(npc, u32, 0x128) != 0) {
+                found = 0;
+                if (!(npc->position.y > mario->position.y + mario->wPlayerCollisionBox.y) &&
+                    !(mario->position.y > npc->position.y + npc->height)) {
+                    vec[0] = mario->position.x;
+                    vec[2] = mario->position.z;
+                    vec[1] = npc->position.y;
+                    dist = PSVECDistance((Vec*)vec, &npc->position);
+                    if (dist <= float_0p5_80419ba0 * (mario->wPlayerCollisionBox.x + npc->width) + float_10_80419bb8 && dist < nearest) {
+                        best = npc;
+                    }
+                    side = 0;
+                    camAngle = camGetPtr(CAMERA_3D)->viewYaw;
+                    rel = reviseAngle(marioGetDispDir() - camAngle);
+                    for (blocked = 0; blocked < 3; blocked++) {
+                        f32 ang;
+
+                        if (blocked == 0) {
+                            ang = reviseAngle(angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
+                        } else if (blocked == 1) {
+                            ang = reviseAngle(angleABf(mario->position.x, mario->position.z, float_0p5_80419ba0 * npc->width + npc->position.x, npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
+                        } else {
+                            ang = reviseAngle(angleABf(mario->position.x, mario->position.z, -(float_0p5_80419ba0 * npc->width - npc->position.x), npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
+                        }
+                        if (ang < float_180_80419bec) {
+                            if (!(rel > float_180_80419bec)) {
+                                side = 1;
+                                break;
+                            }
+                        } else if (!(rel < float_180_80419bec)) {
+                            side = 1;
+                            break;
+                        }
+                    }
+                    if (side != 0) {
+                        vec[0] = mario->position.x;
+                        vec[2] = mario->position.z;
+                        vec[1] = npc->position.y;
+                        dist = PSVECDistance((Vec*)vec, &npc->position);
+                        if (!(dist > float_0p5_80419ba0 * (mario->wPlayerCollisionBox.x + npc->width) + float_10_80419bb8)) {
+                            dx = npc->position.x - mario->position.x;
+                            dz = npc->position.z - mario->position.z;
+                            sincosf(&sx, &sz, angleABf(float_0_80419b9c, float_0_80419b9c, dx, dz));
+                            d = sqrtf(dx * dx + dz * dz);
+                            if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &d, &hitNX, &hitNY, &hitNZ, mario->position.x,
+                                               float_0p75_80419bf4 * mario->wPlayerCollisionBox.y + mario->position.y,
+                                               mario->position.z, sx, float_0_80419b9c, sz) == NULL) {
+                                found = 1;
+                                if (dist < nearest) {
+                                    nearest = dist;
+                                    wk->field_0x10 = npc;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (found != 0) {
+                    if (!(npc->jumpFlags & 0x20000000)) {
+                        MarioWork* m2 = marioGetPtr();
+
+                        npc->jumpFlags |= 0x20000000;
+                        ENC(npc, f32, 0x148) = npc->direction;
+                        evtStopID(npc->regularEvtId);
+                        if (!(npc->flags & 0x1000000)) {
+                            npc->direction = reviseAngle(angleABf(npc->position.x, npc->position.z, m2->position.x, m2->position.z));
+                        }
+                    }
+                } else if (npc->jumpFlags & 0x20000000) {
+                    npc->jumpFlags &= ~0x20000000;
+                    if (npc->flags & 0x400000) {
+                        npc->direction = ENC(npc, f32, 0x148);
+                        evtStartID(npc->regularEvtId);
+                    } else {
+                        ENC(npc, s32, 0x140) |= 0x10000000;
+                    }
+                }
+            }
+        }
+        ENC(mario, NpcEntry*, 0x1D4) = best;
+        if (wk->field_0x10 != NULL && (keyGetButtonTrg(0) & 0x100)) {
+            NpcEntry* tgt = wk->field_0x10;
+            FieldBattleData* fb3 = gp->fbatData;
+
+            if (fb3->mode == 1) {
+                fb3->mode = 2;
+                *(s8*)((u8*)fb3 + 2) = 0;
+                *(NpcEntry**)((u8*)fb3 + 4) = tgt;
+                ENC(tgt, s32, 0x318) = 0;
+            }
+            return;
+        }
+    }
+    fb = gp->fbatData;
+    if (fb->mode == 1) {
+        hit = (NpcEntry*)fbatHitCheck(0x2361, (s32)((u8*)fb + 0x10));
+        if (hit != NULL && fb->mode == 1) {
+            FieldBattleData* fb2 = gp->fbatData;
+
+            if (fb2->mode == 1) {
+                fb2->mode = 3;
+                *(s8*)((u8*)fb2 + 2) = 0;
+                *(NpcEntry**)((u8*)fb2 + 4) = hit;
+                ENC(hit, s32, 0x318) = ENC(fb, s32, 0x10);
+            }
+            switch (ENC(fb, s32, 0x10)) {
+                case 0x40000:
+                case 0x20000:
+                case 0x80000:
+                    marioChgMotJump2();
+                    break;
+            }
+            effSmallStarEntry(3, 3, hit->position.x, hit->position.y + hit->height, hit->position.z, float_0_80419b9c, float_neg1_80419bf8, float_0_80419b9c);
+            return;
+        }
+    }
+    npcKoopaModeEncountCheck();
+}
+
 void fbatTalkMode(void) {
     FieldBattleData* fbatData = gp->fbatData;
     NpcEntry* entry = *(NpcEntry**)(fbatData->field_2 + 2);
