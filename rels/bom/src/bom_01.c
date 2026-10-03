@@ -2001,6 +2001,7 @@ static void depthDisp(CameraId cameraId, void* param) {
     s32 i;
     s32 mtxId;
     f32 f1, f2, f3, f4;
+    f32 sq;
 
     scale = (f32)evtGetValue(NULL, GW(5)) / float_100_bom_00007000;
     cam = camGetPtr(cameraId);
@@ -2041,25 +2042,25 @@ static void depthDisp(CameraId cameraId, void* param) {
             } else {
                 f1 = f3 - float_1p5708_bom_00007074;
                 f1 = float_1p5708_bom_00007074 - f1;
-                f1 = f1 * f1;
-                f2 = (f2 * f1) - c16605;
-                f2 = (f2 * f1) + one;
+                sq = f1 * f1;
+                f2 = (f2 * sq) - c16605;
+                f2 = (f2 * sq) + one;
                 f2 = f2 * f1;
             }
         } else {
             if (f3 < float_4p7124_bom_00007078) {
                 f1 = f3 - float_3p1416_bom_00007070;
-                f1 = f1 * f1;
-                f2 = (f2 * f1) - c16605;
-                f2 = (f2 * f1) + one;
+                sq = f1 * f1;
+                f2 = (f2 * sq) - c16605;
+                f2 = (f2 * sq) + one;
                 f2 = f2 * f1;
                 f2 = -f2;
             } else {
                 f1 = f3 - float_4p7124_bom_00007078;
                 f1 = float_1p5708_bom_00007074 - f1;
-                f1 = f1 * f1;
-                f2 = (f2 * f1) - c16605;
-                f2 = (f2 * f1) + one;
+                sq = f1 * f1;
+                f2 = (f2 * sq) - c16605;
+                f2 = (f2 * sq) + one;
                 f2 = f2 * f1;
                 f2 = -f2;
             }

@@ -14,6 +14,13 @@
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_803B70C0[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 
+// MUST_MATCH: the original reaches every message through one base register (str_803019E0); the natural build
+// names them.
+#ifdef MUST_MATCH
+#define UH_STR(off, sym) (strings + (off))
+#else
+#define UH_STR(off, sym) (sym)
+#endif
 // These error strings and the copy-clear colour live in unk_0x8025de70.c (same data blob).
 extern const char str_803019E0[24];
 extern const char str_803019F8[24];
@@ -62,7 +69,9 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	s32 width2, height2;
 	int i;
 	u32 count, stack;
+#ifdef MUST_MATCH
 	const char* strings;
+#endif
 	u16 w1, w2, h1, h2, x1, x2, y1, y2;
 	//stack vars
 	char print_buffer2[0x400]; // 0x10E0
@@ -79,7 +88,9 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	u32 clearColor;
 #endif
 
+#ifdef MUST_MATCH
 	strings = (const char*)str_803019E0;
+#endif
 	if (N_getDebugMode() >= 0) {
 		psndExit();
 		while (1) {} //softlock
@@ -87,42 +98,42 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 
 	switch (error) {
 		case OS_ERROR_DSI:
-			strcpy(print_buffer, strings + 0x0);
+			strcpy(print_buffer, UH_STR(0x0, str_803019E0));
 			break;
 		case OS_ERROR_ISI:
-			strcpy(print_buffer, strings + 0x18);
+			strcpy(print_buffer, UH_STR(0x18, str_803019F8));
 			break;
 		case OS_ERROR_PROGRAM:
-			strcpy(print_buffer, strings + 0x30);
+			strcpy(print_buffer, UH_STR(0x30, str_80301A10));
 			break;
 	}
-	sprintf(print_buffer2, strings + 0x4c, context);
+	sprintf(print_buffer2, UH_STR(0x4c, str_80301A2C), context);
 	strcat(print_buffer, print_buffer2);
 	for (i = 0; i < 16; i++) {
-		sprintf(print_buffer2, strings + 0x68,
+		sprintf(print_buffer2, UH_STR(0x68, str_80301A48),
 			i, context->gpr[i],
 			i + 16, context->gpr[i + 16]
 		);
 		strcat(print_buffer, print_buffer2);
 	}
-	sprintf(print_buffer2, strings + 0x8c, context->lr, context->cr);
+	sprintf(print_buffer2, UH_STR(0x8c, str_80301A6C), context->lr, context->cr);
 	strcat(print_buffer, print_buffer2);
-	sprintf(print_buffer2, strings + 0xac, context->srr0, context->srr1);
+	sprintf(print_buffer2, UH_STR(0xac, str_80301A8C), context->srr0, context->srr1);
 	strcat(print_buffer, print_buffer2);
-	sprintf(print_buffer2, strings + 0xcc, dsisr, dar);
+	sprintf(print_buffer2, UH_STR(0xcc, str_80301AAC), dsisr, dar);
 	strcat(print_buffer, print_buffer2);
 	strcat(print_buffer, str_80422604);
-	sprintf(print_buffer2, strings + 0xec);
+	sprintf(print_buffer2, UH_STR(0xec, str_80301ACC));
 	strcat(print_buffer, print_buffer2);
 	stack = context->gpr[1]; //get r1 (stack)
 	i = 0;
 	while ((stack != 0) && (stack != 0xFFFFFFFF) && (i++ < 16)) {
-		sprintf(print_buffer2, strings + 0x114, stack, *(u32*)stack, *(u32*)(stack + 4));
+		sprintf(print_buffer2, UH_STR(0x114, str_80301AF4), stack, *(u32*)stack, *(u32*)(stack + 4));
 		strcat(print_buffer, print_buffer2);
 		stack = *(u32*)stack;
 	}
 	strcat(print_buffer, str_80422604);
-	sprintf(print_buffer2, strings + 0x130, context->srr0, dar);
+	sprintf(print_buffer2, UH_STR(0x130, str_80301B10), context->srr0, dar);
 	strcat(print_buffer, print_buffer2);
 	psndExit();
 	OSFillFPUContext(context);

@@ -16,8 +16,7 @@
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
 #include <string.h>
-#include "math_ext.h"
-#define fabs(x) __fabs(x)
+#include <math.h>
 #include "pmario_sound.h"
 #include "eff/eff_starstone.h"
 #include "eff/eff_small_star.h"
@@ -43,7 +42,6 @@ void psndSFX_pit(s32 id, s32 pitch);
 // prologues/epilogues use stmw/lmw, which -O4,p never emits. There is no
 // per-Object flag for this unit, so set it here.
 #pragma optimize_for_size on
-#pragma pool_data on // anchor the .rodata pool at vec3_803004f8 so the int->float magic folds in as base+0x138
 
 // ---- local declarations (no header yet) ----
 
@@ -138,7 +136,7 @@ typedef struct DekaYukaMesh {
     /*0x3468*/ f32 texV[2][0x81];
 } DekaYukaMesh;
 
-const Vec vec3_803004f8[];
+extern Vec vec3_803004f8[];
 // EVT script, local to this file in the original (.sdata).
 static s32 nice_event[8] = { 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0, 0x64, 0, 2, 1 };
 extern const char str_80300670[0x18];
@@ -155,9 +153,9 @@ extern const DekaTableInt11 dat_80300584;
 extern const DekaTableF32x6 dat_803005b0;
 extern const DekaTableF32x6 dat_803005c8;
 
-const Vec vec3_80300528;
-const Vec vec3_80300534;
-const Vec vec3_803005e0;
+const Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
+const Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_803005e0 = { 0.0f, 0.0f, -1.0f };
 GXColor dat_80421e40 = { 0xFF, 0xFF, 0xFF, 0x00 };
 GXColor dat_80421e44 = { 0xFF, 0xFF, 0xFF, 0x00 };
 GXColor dat_80421e48 = { 0xFF, 0xFF, 0xFF, 0x00 };
@@ -763,16 +761,18 @@ void main_timing(s32 idx) {
 }
 
 // .text:0x1640 | 0x80244638 | size: 0x89C
-// With this unit's .rodata prefix defined below and pool_data on, MWCC anchors the pool
-// at vec3_803004f8 and folds its own int->float magic in as a base-relative load
-// (`lfd f1, 0x138(r30)`), as the original does. Two things still differ: (1) main_gauge's
-// `(Vec){...}` match trick emits a 0xc word of rodata before the pool, so the pool is
-// 0xc/0x10 too far and the magic lands at base+0x148 instead of +0x138 (removing the
-// compound literal fixes the offset but drops main_gauge below 100%); (2) the
-// starScale/starRot copy materialises `&vec3_803004f8` into a second register (r4) and
-// the state-10/state-11 blocks keep a few FPR/GPR allocation differences.
-// NONMATCHING (97.57%): the 0xc pool shift and its register/scheduling fallout.
+// The algorithm and nearly all instructions match. The rest is the unit's incomplete
+// .rodata pool: the original resolves its int->float magic constant
+// (double_to_int_80300630) as vec3_803004f8+0x138, while ours must materialise an
+// anonymous @NNN constant with its own lis; that extra base register also shifts a few
+// GPRs around it (state 1, and the state-11 camera-shake / yukaUnk / velocity block).
+// Same root cause as main_base and yuka_init. A few register/scheduling diffs remain in
+// the state-10 setup.
+// NONMATCHING (96.59%): the anonymous int->float magic and its register fallout.
 static void main_star(void) {
+#ifdef MUST_MATCH
+    const u8* base = (const u8*)&vec3_803004f8;
+#endif
     DekaWork* p = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     s32 audience = BattleAudience_GetAudienceNum();
@@ -790,8 +790,8 @@ static void main_star(void) {
         p->starTarget.y += float_50_80421ebc;
         p->starTarget.z += float_neg1_80421e94;
 #ifdef MUST_MATCH
-        p->starScale = *(Vec*)((const u8*)&vec3_803004f8 + 0x48);
-        p->starRot = *(Vec*)((const u8*)&vec3_803004f8 + 0x54);
+        p->starScale = *(Vec*)(base + 0x48);
+        p->starRot = *(Vec*)(base + 0x54);
 #else
         p->starScale = vec3_80300540;
         p->starRot = vec3_8030054c;
@@ -842,7 +842,11 @@ static void main_star(void) {
         p->starTimer = 0;
         p->starUnk44 = p->starUnk48 = p->starScale.x;
         p->starUnk48 += float_1_80421e88;
-        psndSFXOn("SFX_BTL_SAC_DOKKAN4");
+#ifdef MUST_MATCH
+        psndSFXOn((const char*)(base + 0x150));
+#else
+        psndSFXOn(str_80300648);
+#endif
         if (audience >= 1 && audience <= 0x31) {
             BattleAudienceSoundCallKind(1);
         }
@@ -862,7 +866,11 @@ static void main_star(void) {
     case 7: {
         DekaTableInt11 tbl;
         f32 s;
+#ifdef MUST_MATCH
+        tbl = *(const DekaTableInt11*)(base + 0x60);
+#else
         tbl = dat_80300558;
+#endif
         p->starTimer++;
         s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starUnk44, p->starUnk48);
         p->starScale.z = s;
@@ -885,7 +893,11 @@ static void main_star(void) {
     case 9: {
         DekaTableInt11 tbl;
         f32 s;
+#ifdef MUST_MATCH
+        tbl = *(const DekaTableInt11*)(base + 0x8c);
+#else
         tbl = dat_80300584;
+#endif
         p->starTimer++;
         s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starUnk44, p->starUnk48);
         p->starScale.z = s;
@@ -914,11 +926,21 @@ static void main_star(void) {
         p->starPos.y = p->starPos.y + p->starVel;
         p->starVel = p->starVel + float_neg0p5_80421ecc;
         if (p->starPos.y < p->starTarget.y) {
+#ifdef MUST_MATCH
+            tblA = *(const DekaTableF32x6*)(base + 0xb8);
+            tblB = *(const DekaTableF32x6*)(base + 0xd0);
+#else
             tblA = dat_803005b0;
             tblB = dat_803005c8;
+#endif
             p->starCounter++;
+#ifdef MUST_MATCH
             btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], float_0_80421e8c);
-            psndSFXOn("SFX_BTL_SAC_DOKKAN5");
+            psndSFXOn((const char*)(base + 0x164));
+#else
+            btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], float_0_80421e8c);
+            psndSFXOn(str_8030065C);
+#endif
             for (j = 0; j < 2; j++) {
                 s32 i;
                 for (i = 0; i < 6; i++) {
@@ -1505,18 +1527,10 @@ const f32 float_4096_80421eec = 4096.0f;
 const f32 float_neg40_80421ef0 = -40.0f;
 const f32 float_0p01_80421ef4 = 0.01f;
 const f32 float_901_80421ef8 = 901.0f;
-
-const Vec vec3_803004f8[4] = { { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f } };
-const Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
-const Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_80300540 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_8030054c = { 0.0f, 0.0f, 0.0f };
-const DekaTableInt11 dat_80300558 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
-const DekaTableInt11 dat_80300584 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
-const DekaTableF32x6 dat_803005b0 = { { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f } };
-const DekaTableF32x6 dat_803005c8 = { { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f } };
-const Vec vec3_803005e0 = { 0.0f, 0.0f, -1.0f };
-const char str_803005EC[0x14] = "SFX_BTL_SAC_START1";
-const char str_80300600[0x14] = "SFX_BTL_SAC_START2";
-const char str_80300614[0x14] = "SFX_BTL_SAC_START3";
 const f64 double_15p75_80300628 = 15.75;
+const f64 double_to_int_80300630 = 4503601774854144.0;
+const f64 double_0p21817_80300638 = 0.21816615760326385;
+const f64 double_to_int_mask_80300640 = 4503599627370496.0;
+const char str_80300670[0x18] = "SFX_BTL_SAC_DOKKAN1_1";
+const char str_80300688[0x14] = "SFX_BTL_SAC_DOKKAN2";
+const char str_8030069C[0x14] = "SFX_BTL_SAC_DOKKAN3";

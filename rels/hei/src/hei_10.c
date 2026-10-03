@@ -308,7 +308,7 @@ static void ext_main(void) {
 #ifdef MUST_MATCH
             f32 ar = (f32)rand() / 32767.0f;
             f32 br = (f32)rand() / 32767.0f;
-            f32 a = ar * 0.2f + 0.3f;
+            f32 a = ar * (0.5f - 0.3f) + 0.3f;
             f32 b = br * 0.3f + 0.5f;
 #else
             f32 a = randf(0.3f, 0.5f);

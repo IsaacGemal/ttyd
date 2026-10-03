@@ -989,7 +989,7 @@ void effFallMain(EffectEntry* effect) {
 				f32 t, s, c;
 				f32 p00761 = float_0p00761_80421034, p16605 = float_0p16605_80421038;
 				f32 p03705 = float_0p03705_80421048, p4967 = float_0p4967_8042104c;
-				f32 one = one;
+				f32 one = float_1_80420f80;
 				elem->y += elem->unk34;
 				elem->unk34 -= elem->unk30;
 				t = float_6p2832_80420fa4 * elem->unk18 / float_360_80420fa8;
