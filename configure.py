@@ -635,7 +635,7 @@ config.libs = [
             Object(Matching, "effect/n64/eff_pokopi_pcharge_n64.c"),
             Object(Matching, "effect/n64/eff_pokopi_pipo_n64.c"),
             Object(NonMatching, "effect/n64/eff_pokopi_thunder_n64.c"),
-            Object(NonMatching, "effect/n64/eff_pturn_n64.c"),
+            Object(Matching, "effect/n64/eff_pturn_n64.c"),
             Object(NonMatching, "effect/n64/eff_radiation_n64.c"),
             Object(Matching, "effect/n64/eff_rappa_n64.c"),
             Object(Matching, "effect/n64/eff_recover_heart_n64.c"),
