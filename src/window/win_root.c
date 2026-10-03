@@ -1123,7 +1123,13 @@ extern const f32 float_380_8041d138;
 extern const f32 float_228_8041d13c;
 extern const f32 float_237_8041d140;
 extern const char str_802F4548[];
+#ifdef MUST_MATCH
+// MUST_MATCH: retail reads the sixteen template Vecs (vec3_802f41a4..vec3_802f4258) through one base.
 extern const Vec vec3_802f41a4[16];
+#define HK_V(i, val) (vec3_802f41a4[i])
+#else
+#define HK_V(i, val) (val)
+#endif
 
 static inline void hakoQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f32 h) {
     GXTexObj texObj;
@@ -1297,10 +1303,10 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                             continue;
                         }
                     }
-                    translate = vec3_802f41a4[0];
+                    translate = HK_V(0, ((Vec){0.0f, 0.0f, 0.0f}));
                     translate.x = ((x + (f32)(col * 0x38)) + float_24_8041d0c8) + float_4_8041d07c;
                     translate.y = ty;
-                    winTexSet(0x97, translate, vec3_802f41a4[1], dat_8041cf70);
+                    winTexSet(0x97, translate, HK_V(1, ((Vec){1.0f, 1.0f, 1.0f})), dat_8041cf70);
                 }
             }
         }
@@ -1332,8 +1338,8 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                         { ItemData* it = &itemDataTable[*(s16*)((u8*)work + 0xFB4 + idx * 2)];
                         iconId = *(u16*)&it[0xB3].icon_id; }
                     }
-                    translate = vec3_802f41a4[2];
-                    scale = vec3_802f41a4[3];
+                    translate = HK_V(2, ((Vec){0.0f, 0.0f, 0.0f}));
+                    scale = HK_V(3, ((Vec){0.8f, 0.8f, 0.8f}));
                     color = dat_8041cf74;
                     translate.x = ((x + (f32)(col * 0x38)) + float_24_8041d0c8) + float_4_8041d07c;
                     translate.y = ty;
@@ -1356,15 +1362,15 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
 
         winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
         bx = float_395_8041d124 + x;
-        translate = vec3_802f41a4[4];
-        scale = vec3_802f41a4[5];
+        translate = HK_V(4, ((Vec){0.0f, 0.0f, 0.0f}));
+        scale = HK_V(5, ((Vec){-1.0f, -1.0f, -1.0f}));
         color = dat_8041cf78;
         translate.x = bx;
         translate.y = float_15_8041d128 + y;
         winTexSet(0x17, translate, scale, color);
         winIconInit();
-        itranslate = vec3_802f41a4[6];
-        iscale = vec3_802f41a4[9];
+        itranslate = HK_V(6, ((Vec){0.0f, 0.0f, 0.0f}));
+        iscale = HK_V(7, ((Vec){0.6f, 0.6f, 0.6f}));
         icolor = dat_8041cf7c;
         itranslate.x = bx;
         itranslate.y = y;
@@ -1381,15 +1387,15 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
 
         winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
         bx = float_395_8041d124 + x;
-        translate = vec3_802f41a4[8];
-        scale = vec3_802f41a4[9];
+        translate = HK_V(8, ((Vec){0.0f, 0.0f, 0.0f}));
+        scale = HK_V(9, ((Vec){1.0f, 1.0f, 1.0f}));
         color = dat_8041cf80;
         translate.x = bx;
         translate.y = y - float_235_8041d12c;
         winTexSet(0x17, translate, scale, color);
         winIconInit();
-        itranslate = vec3_802f41a4[10];
-        iscale = vec3_802f41a4[11];
+        itranslate = HK_V(10, ((Vec){0.0f, 0.0f, 0.0f}));
+        iscale = HK_V(11, ((Vec){0.6f, 0.6f, 0.6f}));
         icolor = dat_8041cf84;
         itranslate.x = bx;
         itranslate.y = y - float_220_8041d130;
@@ -1410,15 +1416,15 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
         w0 = float_0p7_8041d134 * (f32)FontGetMessageWidth(msg);
         winFontInit();
         fx = float_380_8041d138 - w0;
-        pos = vec3_802f41a4[12];
-        scale = vec3_802f41a4[13];
+        pos = HK_V(12, ((Vec){0.0f, 0.0f, 0.0f}));
+        scale = HK_V(13, ((Vec){0.7f, 0.7f, 0.7f}));
         color = dat_8041cf88;
         pos.x = x + fx;
         pos.y = y - float_228_8041d13c;
         winFontSet(&pos, &scale, &color, msg);
         winIconInit();
-        ipos = vec3_802f41a4[14];
-        iscale = vec3_802f41a4[15];
+        ipos = HK_V(14, ((Vec){0.0f, 0.0f, 0.0f}));
+        iscale = HK_V(15, ((Vec){0.6f, 0.6f, 0.6f}));
         icolor = dat_8041cf8c;
         ipos.x = (x + fx) - float_30_8041d100;
         ipos.y = y - float_237_8041d140;
