@@ -149,6 +149,166 @@ void marioChkGnd2(void) {
     }
 }
 
+static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
+static inline f32 sqrtf_base(f32 x, const char* base);
+#define GND_CENTI(v) ((f32)(s32)(float_100_8041a7f8 * (v) + float_0p5_8041a7c4) / float_100_8041a7f8)
+extern const f32 float_0p01_8041a854;
+extern const f32 float_0p425_8041a864;
+extern const f32 float_0p375_8041a868;
+extern const f32 float_neg10000_8041a858;
+extern const f32 float_75_8041a840;
+extern const f32 float_50_8041a844;
+extern const f32 float_3p1416_8041a7e0;
+extern const f32 float_neg1_8041a7dc;
+extern const f32 float_100_8041a7f8;
+extern const f32 float_5_8041a7b8;
+extern const f32 float_11_8041a7ac;
+extern const f32 float_180_8041a7cc;
+extern const f32 float_2_8041a7e8;
+extern const u8 vec3_802c5730[];
+
+// NONMATCHING (86.11%): same 25 calls and immediates as the original; the frame is 0x210 against 0x1e0 (three more
+// 12-byte vec temps than the original keeps), and the int->float double loads absolute (file-wide rodata anchor).
+HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
+    const char* base = (const char*)vec3_802c5730;
+    MarioWork* wp = marioGetPtr();
+    Vec p;
+    Vec up;
+    Vec hitPos;
+    Vec normal;
+    HitEntry* hit;
+    HitEntry* result;
+    f32 dist;
+    f32 fa;
+    f32 fb;
+    f32 ox;
+    f32 oz;
+    f32 f23;
+    f32 f24;
+    f32 bestY;
+    f32 py;
+    f32 px;
+    f32 pz;
+    f32 lim;
+    f32 rad;
+    f32 angle;
+    f32 ang;
+    s32 i;
+
+    *(f32*)((u8*)wp + 0x218) = float_0_8041a7a4;
+    *(f32*)((u8*)wp + 0x21C) = float_0_8041a7a4;
+    *(f32*)((u8*)wp + 0x220) = float_0_8041a7a4;
+    *(f32*)((u8*)wp + 0x214) = float_0_8041a7a4;
+    if (wp->flags & 0x200) {
+        *outY = wp->position.y;
+        return NULL;
+    }
+    if (wp->flags & 0x100) {
+        *outY = wp->position.y;
+        return NULL;
+    }
+    fa = __fabs(a);
+    fb = __fabs(b);
+    *outY = wp->position.y;
+    fa = fa + float_0p01_8041a854;
+    *outX = float_neg1_8041a7dc;
+    fb = float_5_8041a7b8 + fb;
+    if (wp->baseSpeed != float_0_8041a7a4) {
+        angle = revise360(*(f32*)((u8*)wp + 0x1A0) - *(f32*)((u8*)wp + 0x198));
+    } else {
+        angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
+    }
+    if (wp->flags & 0x100000) {
+        rad = float_3p1416_8041a7e0 * angle / float_180_8041a7cc;
+        f24 = float_0p425_8041a864 * (*(f32*)((u8*)wp + 0x1B4) * (f32)sin(rad));
+        f23 = float_0p425_8041a864 * (*(f32*)((u8*)wp + 0x1B4) * -(f32)cos(rad));
+    } else {
+        rad = float_3p1416_8041a7e0 * angle / float_180_8041a7cc;
+        f24 = float_0p375_8041a868 * (*(f32*)((u8*)wp + 0x1B4) * (f32)sin(rad));
+        f23 = float_0p375_8041a868 * (*(f32*)((u8*)wp + 0x1B4) * -(f32)cos(rad));
+    }
+    py = wp->position.y;
+    px = wp->position.x;
+    pz = wp->position.z;
+    result = NULL;
+    bestY = float_neg10000_8041a858;
+    for (i = 0; i < 5; i++) {
+        if (i == 0) {
+            ox = float_0_8041a7a4;
+            oz = float_0_8041a7a4;
+        } else if (i == 1) {
+            ox = f24;
+            oz = f23;
+        } else if (i == 2) {
+            ox = -f23;
+            oz = f24;
+        } else if (i == 3) {
+            ox = f23;
+            oz = -f24;
+        } else if (i == 4) {
+            ox = -f24;
+            oz = -f23;
+        }
+        up = *(const Vec*)(base + 0x48);
+        p = *(const Vec*)(base + 0x54);
+        p.x = px + ox;
+        p.y = py + fb;
+        p.z = pz + oz;
+        dist = fb + fa;
+        hit = marioHitCheckVecOut(&p, &up, &hitPos, &normal, &dist);
+        if (hit != NULL) {
+            MarioWork* wp2;
+            if (wp->dispFlags & 0x1000000) {
+                lim = float_75_8041a840;
+            } else if (wp->currMotionId == 0x10) {
+                lim = float_75_8041a840;
+            } else {
+                lim = float_50_8041a844;
+            }
+            wp2 = marioGetPtr();
+            *(f32*)((u8*)wp2 + 0x218) = GND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.z, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
+            *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
+            *(f32*)((u8*)wp2 + 0x220) = GND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.x, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
+            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf_base(normal.x * normal.x + normal.z * normal.z, base), -normal.y);
+            if (ang >= lim) {
+                hit = NULL;
+            }
+        }
+        if (hit != NULL) {
+            MarioWork* wp2 = marioGetPtr();
+            *(f32*)((u8*)wp2 + 0x218) = GND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.z, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
+            *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
+            *(f32*)((u8*)wp2 + 0x220) = GND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.x, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
+            *(f32*)((u8*)wp + 0x214) = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf_base(normal.x * normal.x + normal.z * normal.z, base), -normal.y);
+            if (hitPos.y < py && __fabs(hitPos.y - py) >= float_2_8041a7e8) {
+                if (__fabs(hitPos.y - py) > __fabs(b)) {
+                    *outX = __fabs(py - hitPos.y);
+                    *outZ = angleABf(px, pz, hitPos.x, hitPos.z);
+                } else if (hitPos.y > bestY) {
+                    *outY = hitPos.y;
+                    bestY = hitPos.y;
+                    *outX = float_0_8041a7a4;
+                    *outZ = angleABf(px, pz, hitPos.x, hitPos.z);
+                    marioUpdateCamCollision(hitPos);
+                    result = hit;
+                }
+            } else if (__fabs(hitPos.y - py) <= float_11_8041a7ac && hitPos.y > bestY) {
+                *outY = hitPos.y;
+                bestY = hitPos.y;
+                *outX = float_0_8041a7a4;
+                *outZ = angleABf(px, pz, hitPos.x, hitPos.z);
+                marioUpdateCamCollision(hitPos);
+                result = hit;
+            }
+        }
+    }
+    if (result != NULL) {
+        return result;
+    }
+    return NULL;
+}
+
+
 BOOL marioChkBero(HitEntry* hit) {
     s32 attr = hitGetAttr(hit);
     MarioWork* wp = marioGetPtr();
