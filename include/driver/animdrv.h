@@ -334,4 +334,8 @@ typedef struct MoamoaChainEntry {
 extern MoamoaChainEntry g_moamoa_chain_tbl[47];
 extern const s32 dat_80419a28;
 extern Vec vec3_802c2db0[];
+// .sdata/.sdata2 objects referenced by name from driver/animdrv.c
+extern GXColor dat_80419a3c;
+extern GXColor dat_80419a40;
+extern const f32 float_16p667_80419a60;
 void evalProc(s32 parentGroupId, s32 groupId);

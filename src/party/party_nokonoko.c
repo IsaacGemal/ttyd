@@ -2,6 +2,13 @@
 #include "party/party_nokonoko.h"
 #include "party/party_move.h"
 #include "mario/mario.h"
+#include "mario/mario_motion.h"
+#include "mario/mario_hit.h"
+#include "mario/mariost.h"
+#include "driver/mobjdrv.h"
+#include "eff/n64/eff_small_star_n64.h"
+#include "eff/eff_kemutest.h"
+#include "party/party_bomhei.h"
 #include "mario/mario_sbr.h"
 #include "mario/mario_party.h"
 #include "driver/hitdrv.h"
@@ -527,6 +534,815 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
 void nokotaro_hold_cancel(PartyEntry* party) {
     party->useMotionId = 0x14;
 }
+
+#define NKF(off) (*(f32*)((u8*)party + (off)))
+#define NKS(off) (*(s32*)((u8*)party + (off)))
+#define NKS16(off) (*(s16*)((u8*)party + (off)))
+#define NKM(off) (*(f32*)((u8*)mario + (off)))
+#define NKI(off) (*(ItemEntry**)((u8*)party + (off)))
+
+// Koops' overworld use state machine.  Reconstructed from the original asm; the
+// many switches mirror the jump tables in party_nokonoko.s.  Control flow, jump
+// tables, case bodies, callees and constants all match.  What is left is
+// register colouring and one stack slot: the by-value `Vec` argument temp of the
+// top screen probe lives at 0x114 in the original but 0x54 here, which also
+// shifts every `lookupSafetyPos*` pos Vec by 12 (0x114..0x60 vs 0x108..0x54).
+// The rest is FPR colouring in the speed-clamp lerps and effKemuTest products,
+// plus the int->float magic double loading through a fresh `lis` instead of the
+// `vec3_802ce138` base in `lfd 0x10/0x28(r31)` (same as party_cloud.c).
+// NONMATCHING (99.60%): register colouring and stack-slot placement only.
+void nokonoko_use(PartyEntry* party) {
+    MarioWork* mario = party->playerPtr;
+    const Vec* vec = &vec3_802ce138;
+    HitEntry* hit;
+    u32 res;
+    Vec out;
+    Vec out2;
+    Vec v;
+    Vec scr;
+    f32 sx, sy, sz;
+    f32 a, b;
+    f32 f0, f1, f2, f3, f4, f5, f6, f31;
+
+    if (!(party->flags & 0x80000000)) {
+        if (marioKeyOffChk()) {
+            scr = party->position;
+
+            marioGetScreenPos(scr, &sx, &sy, &sz);
+            if (!marioChkInScreen((s32)sx, (s32)sy)) {
+                a = mario->position.x;
+                b = mario->position.z;
+                movePos(&a, &b, 160.0f,
+                        angleABf(mario->position.x, mario->position.z, party->position.x, party->position.z));
+                party->position.x = a;
+                party->position.z = b;
+                nokonoko_finish(party);
+                goto L_800CD8BC;
+            }
+        }
+    }
+
+    if (party->field_8 & 0x8) {
+        party->field_8 &= ~0x8;
+        NKI(0x174) = NULL;
+        NKS(0x178) = 0;
+        NKS(0x17c) = 0;
+        NKS(0x180) = 0;
+        if (party->flags & 0x80000000) {
+            if (party->unk16C > 0) {
+                NKS16(0x17e) |= 0x1;
+            }
+        } else {
+            NKS16(0x17e) &= ~0x1;
+        }
+        party->useMotionId = 0;
+    }
+
+    switch (party->useMotionId) {
+    case 0:
+        if (*(u16*)&mario->currMotionId == 0x20 || *(u16*)&mario->currMotionId == 0x1f) {
+            party->useMotionId = 0x46;
+            goto L_800CC620;
+        }
+        partyClearJumpPara(party);
+        party->flags |= 0x04000000;
+        party->flags2 |= 0x10;
+        partyChgPose(party, (char*)vec + 0x18);
+        NKF(0xF0) = 18.5f;
+        party->useMotionId = 1;
+        NKS(0x24) = 100;
+        NKI(0x174) = NULL;
+        NKS16(0x17c) = 0;
+        marioAdjustMoveDir();
+        mario->baseSpeed = 0.0f;
+        *(Vec*)((u8*)party + 0x94) = mario->position;
+        {
+            u8* base = (u8*)party;
+            movePos((f32*)(base + 0x94), (f32*)(base + 0x9c), 2.0f,
+                    toMovedirSimple(*(f32*)((u8*)mario + 0x1AC)));
+        }
+        NKS(0x24) = 4;
+        NKF(0x114) = 0.0f;
+        party->dir = angleABf(party->position.x, party->position.z, NKF(0x94), NKF(0x9c));
+        party->speed = distABf(party->position.x, party->position.z, NKF(0x94), NKF(0x9c)) / (f32)NKS(0x24);
+        NKF(0x10C) = revise360(45.0f + NKF(0x10C));
+        party->useMotionId = 1;
+        marioChgSmallJumpMotion();
+        mario->trigFlags |= 0x20000;
+        mario->baseSpeed = 0.0f;
+        goto L_800CC620;
+
+    case 1:
+        if (*(u16*)&mario->currMotionId == 0x20 || *(u16*)&mario->currMotionId == 0x1f) {
+            party->useMotionId = 0x46;
+            goto L_800CC620;
+        }
+        NKF(0x10C) = revise360(45.0f + NKF(0x10C));
+        NKF(0x58) += (NKF(0x94) - NKF(0x58)) / (f32)NKS(0x24);
+        NKF(0x5c) += (NKF(0x98) - NKF(0x5c)) / (f32)NKS(0x24);
+        NKF(0x60) += (NKF(0x9c) - NKF(0x60)) / (f32)NKS(0x24);
+        if (--NKS(0x24) > 0) {
+            goto L_800CC620;
+        }
+        *(Vec*)((u8*)party + 0x58) = *(Vec*)((u8*)party + 0x94);
+        NKF(0x104) = 0.0f;
+        NKF(0x110) = *(f32*)(mario->unk1AC);
+        NKF(0x10C) = *(f32*)(mario->unk1AC);
+        party->useMotionId = 2;
+        partyChgPose(party, (char*)vec + 0x20);
+        /* fallthrough */
+    case 2:
+        if (*(u16*)&mario->currMotionId == 0x20 || *(u16*)&mario->currMotionId == 0x1f) {
+            party->useMotionId = 0x46;
+            goto L_800CC620;
+        }
+        if (mario->hitobjStandOn == NULL) {
+            goto L_800CC620;
+        }
+        marioChgMot(3);
+        mario->flags |= 0x80;
+        mario->baseSpeed = 0.0f;
+        party->useMotionId = 10;
+        NKS(0x24) = 15;
+        NKF(0x104) = 0.0f;
+        NKF(0x128) = 0.0f;
+        party->dir = toMovedir(*(f32*)(mario->unk1AC));
+        psndSFXOn_3D((const char*)0x92d, &party->position);
+        goto L_800CC620;
+
+    case 10:
+        psndSFXOn_3D((const char*)0x92a, &party->position);
+        f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
+        f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
+        effSmallStarN64Entry(3, 3, party->position.x, party->position.y + NKF(0xF0), party->position.z,
+                             f4, -1.0f, -f31);
+        party->flags |= 0x04000000;
+        party->flags |= 0x01000000;
+        party->useMotionId = 11;
+        /* fallthrough */
+    case 11:
+        NKF(0x104) += 2.0f;
+        if (NKF(0x104) > 10.0f) {
+            NKF(0x104) = 10.0f;
+        }
+        /* fallthrough */
+    case 12:
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        if (gp->retraceCount & 1) {
+            EffectEntry* eff = effKemuTestEntry(0, party->position.x, NKF(0xF0) * 0.25f + party->position.y,
+                                                party->position.z, 0.3f);
+            effKemuTestDrawCam(eff, party->camId);
+        }
+        NKF(0x128) += NKF(0x104);
+        if (NKI(0x174) == NULL) {
+            NKI(0x174) = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
+                                                0.5f * party->field_F4 + 12.0f);
+            if (NKI(0x174) != NULL) {
+                itemPickUp(NKI(0x174));
+                party->useMotionId = 0x32;
+                psndSFXOn_3D((const char*)0x92c, &party->position);
+                f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
+                f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
+                effSmallStarN64Entry(3, 1, party->position.x, party->position.y + NKF(0xF0), party->position.z,
+                                     f4, -1.0f, -f31);
+                goto L_800CC620;
+            }
+        }
+        if (ccwall(party, 0)) {
+            party->useMotionId = 0x32;
+            psndSFXOn_3D((const char*)0x92c, &party->position);
+            f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
+            f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
+            effSmallStarN64Entry(3, 1, party->position.x, party->position.y + NKF(0xF0), party->position.z,
+                                 f4, -1.0f, -f31);
+            goto L_800CC620;
+        }
+        if (!(NKF(0x128) >= 120.0f)) {
+            goto L_800CC620;
+        }
+        party->useMotionId = 0xC;
+        NKF(0x104) = 0.15f * (-1.0f - NKF(0x104)) + NKF(0x104);
+        if (!(NKF(0x104) <= 0.0f)) {
+            goto L_800CC620;
+        }
+        NKF(0x104) = 0.0f;
+        if (!(party->flags & 0x80000000)) {
+            if (*(u16*)(mario->field_0x245 + 1) & 0x400) {
+                party->useMotionId = 0xD;
+                NKS(0x24) = 0;
+            } else {
+                party->useMotionId = 0x32;
+            }
+            goto L_800CC620;
+        }
+        if (NKS16(0x17e) & 1) {
+            NKS(0x24) = 5;
+            party->useMotionId = 0x15;
+            NKS16(0x17c) = 1;
+            if (nokoSe == 0xFFFFFFFFu) {
+                nokoSe = psndSFXOn_3D((const char*)0x92e, &party->position);
+            }
+        } else {
+            party->useMotionId = 0x32;
+        }
+        goto L_800CC620;
+
+    case 13:
+        if (++NKS(0x24) >= 5) {
+            NKS(0x24) = 5;
+            party->useMotionId = 0x14;
+            NKS16(0x17c) = 1;
+            if (nokoSe == 0xFFFFFFFFu) {
+                nokoSe = psndSFXOn_3D((const char*)0x92e, &party->position);
+            }
+        }
+        /* fallthrough */
+    case 20:
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        if (gp->retraceCount % 30 == 0) {
+            EffectEntry* eff = effKemuTestEntry(5, party->position.x, party->position.y, party->position.z, 1.0f);
+            effKemuTestDrawCam(eff, party->camId);
+        }
+        if (ccwall(party, 0)) {
+            party->useMotionId = 0x32;
+            psndSFXOn_3D((const char*)0x92c, &party->position);
+            f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
+            f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
+            effSmallStarN64Entry(3, 1, party->position.x, party->position.y + NKF(0xF0), party->position.z,
+                                 f4, -1.0f, -f31);
+            marioGetPtr();
+            if (nokoSe != 0xFFFFFFFFu) {
+                psndSFXOff(nokoSe);
+                nokoSe = 0xFFFFFFFFu;
+            }
+            goto L_800CC620;
+        }
+        if (NKI(0x174) == NULL) {
+            NKI(0x174) = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
+                                                0.5f * party->field_F4 + 12.0f);
+            if (NKI(0x174) != NULL) {
+                itemPickUp(NKI(0x174));
+                party->useMotionId = 0x32;
+                psndSFXOn_3D((const char*)0x92c, &party->position);
+                f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
+                f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
+                effSmallStarN64Entry(3, 1, party->position.x, party->position.y + NKF(0xF0), party->position.z,
+                                     f4, -1.0f, -f31);
+                marioGetPtr();
+                if (nokoSe != 0xFFFFFFFFu) {
+                    psndSFXOff(nokoSe);
+                    nokoSe = 0xFFFFFFFFu;
+                }
+                goto L_800CC620;
+            }
+        }
+        if (!(party->flags & 0x80000000)) {
+            u16 mot = *(u16*)&mario->currMotionId;
+            if (mot == 0x19) { goto L_800CC4E8; }
+            if (mot == 0x14) { goto L_800CC4E8; }
+            if (mot == 0x18) { goto L_800CC4E8; }
+            if (mot == 0x16) { goto L_800CC4E8; }
+            if ((u16)(mot - 0x1f) <= 1) { goto L_800CC4E8; }
+            if (mario->flags & 0x20) { goto L_800CC4E8; }
+            if (marioChkKey() != 0) {
+                goto L_800CC514;
+            }
+        L_800CC4E8:
+            nokonoko_finish(party);
+            marioGetPtr();
+            if (nokoSe != 0xFFFFFFFFu) {
+                psndSFXOff(nokoSe);
+                nokoSe = 0xFFFFFFFFu;
+            }
+            goto L_800CC620;
+        L_800CC514:
+            if (*(u16*)(mario->field_0x245 + 1) & 0x400) {
+                goto L_800CC620;
+            }
+            party->useMotionId = (NKS16(0x17c) != 0) ? 0x50 : 0x32;
+            marioGetPtr();
+            if (nokoSe != 0xFFFFFFFFu) {
+                psndSFXOff(nokoSe);
+                nokoSe = 0xFFFFFFFFu;
+            }
+            goto L_800CC620;
+        }
+        if (NKS16(0x17e) & 1) {
+            party->useMotionId = 0x50;
+        } else {
+            party->useMotionId = 0x32;
+        }
+        marioGetPtr();
+        if (nokoSe != 0xFFFFFFFFu) {
+            psndSFXOff(nokoSe);
+            nokoSe = 0xFFFFFFFFu;
+        }
+        goto L_800CC620;
+
+    case 21:
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        if (gp->retraceCount % 30 == 0) {
+            EffectEntry* eff = effKemuTestEntry(5, party->position.x, party->position.y, party->position.z, 1.0f);
+            effKemuTestDrawCam(eff, party->camId);
+        }
+        goto L_800CC620;
+
+    default:
+        goto L_800CC620;
+    }
+
+L_800CC620:
+    switch (party->useMotionId) {
+    case 0x32:
+        partyClearJumpPara(party);
+        party->useMotionId = 0x33;
+        NKF(0x104) = 0.0f;
+        party->dir = angleABf(party->position.x, party->position.z, NKF(0x94), NKF(0x9c));
+        psndSFXOn_3D((const char*)0x92b, &party->position);
+        goto L_800CCD8C;
+
+    case 0x33:
+        if (NKS16(0x17c) != 0) {
+            f3 = 20.0f;
+        } else {
+            f3 = 10.0f;
+        }
+        NKF(0x104) = 0.3f * (f3 - NKF(0x104)) + NKF(0x104);
+        if (NKF(0x104) >= f3) {
+            NKF(0x104) = f3;
+            if (NKF(0x128) < 10.0f) {
+                party->useMotionId = 0x34;
+            }
+        }
+        /* fallthrough */
+    case 0x34:
+        if (ccwall(party, 1)) {
+            f32 ang, spd;
+            partyGetMoveDirSpd(party, &ang, &spd);
+            marioChkWallAround(&party->position, 1, spd, ang, party->field_F4, NKF(0xF0));
+            party->useMotionId = 0x46;
+            psndSFXOn_3D((const char*)0x92c, &party->position);
+            f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
+            f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
+            effSmallStarN64Entry(3, 1, party->position.x, party->position.y + NKF(0xF0), party->position.z,
+                                 f4, -1.0f, -f31);
+            goto L_800CD8BC;
+        }
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        NKF(0x104) = 0.1f * (-1.0f - NKF(0x104)) + NKF(0x104);
+        NKF(0x128) -= NKF(0x104);
+        if (!(NKF(0x128) <= 0.0f)) {
+            goto L_800CCD8C;
+        }
+        NKF(0x128) = 0.0f;
+        party->useMotionId = 0x35;
+        NKF(0x104) = 0.1f * (-1.0f - NKF(0x104)) + NKF(0x104);
+        NKF(0x178) = 50.0f;
+        goto L_800CCD8C;
+
+    case 0x35:
+        if (ccwall(party, 1)) {
+            party->useMotionId = 0x46;
+            goto L_800CD8BC;
+        }
+        NKF(0x178) -= 2.2f;
+        if (NKF(0x178) <= 0.0f) {
+            NKF(0x178) = 0.0f;
+        }
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        f3 = -2.0f - NKF(0x104);
+        f2 = (NKS16(0x17c) != 0) ? 0.2f : 0.1f;
+        NKF(0x104) = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
+        NKF(0x128) -= NKF(0x104);
+        if (!(NKF(0x104) <= 0.0f)) {
+            goto L_800CCD8C;
+        }
+        NKF(0x104) = 0.0f;
+        {
+            Vec pos = *(Vec*)((u8*)party + 0x94);
+            res = lookupSafetyPos(&pos, &out, NKF(0xF0));
+        }
+        if (party->field_138 != NULL && (res == 1 || res == 2 || res == 4 || res == 8)) {
+            party->useMotionId = 0x46;
+            goto L_800CCD8C;
+        }
+        switch (res) {
+        case 3:
+            { Vec pos1 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos1, &out, NKF(0xF0), 135.0f); }
+            break;
+        case 5:
+            { Vec pos2 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos2, &out, NKF(0xF0), 315.0f); }
+            break;
+        case 10:
+            { Vec pos3 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos3, &out, NKF(0xF0), 225.0f); }
+            break;
+        case 12:
+            { Vec pos4 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos4, &out, NKF(0xF0), 315.0f); }
+            break;
+        case 7: case 14: case 15:
+            party->useMotionId = 0x46;
+            break;
+        case 1:
+            { Vec pos5 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos5, &out, NKF(0xF0), 270.0f); }
+            break;
+        case 8:
+            { Vec pos6 = *(Vec*)((u8*)party + 0x94); lookupSafetyPos3(&pos6, &out, NKF(0xF0)); }
+            break;
+        case 0: case 2: case 4: case 6: case 9: case 11: case 13:
+        default:
+            { Vec pos7 = *(Vec*)((u8*)party + 0x94); lookupSafetyPos2(&pos7, &out, NKF(0xF0)); }
+            break;
+        }
+        party->useMotionId = 0x36;
+        *(Vec*)((u8*)party + 0x94) = out;
+        NKF(0x128) = distABf(party->position.x, party->position.z, NKF(0x94), NKF(0x9c));
+        party->dir = angleABf(party->position.x, party->position.z, NKF(0x94), NKF(0x9c));
+        goto L_800CCD8C;
+
+    case 0x36:
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        NKF(0x104) += 0.5f;
+        if (NKF(0x104) >= 4.0f) {
+            NKF(0x104) = 4.0f;
+        }
+        NKF(0x128) -= NKF(0x104);
+        if (NKF(0x128) <= 10.0f) {
+            party->useMotionId = 0x46;
+            NKF(0x104) = 0.0f;
+            goto L_800CD8BC;
+        }
+        goto L_800CCD8C;
+
+    case 0x37:
+        if (ccwall(party, 1)) {
+            party->useMotionId = 0x46;
+            goto L_800CD8BC;
+        }
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        NKF(0x178) -= 2.2f;
+        if (NKF(0x178) <= 0.0f) {
+            NKF(0x178) = 0.0f;
+        }
+        f3 = -2.0f - NKF(0x104);
+        f2 = (NKS16(0x17c) != 0) ? 0.2f : 0.1f;
+        NKF(0x104) = f3 * f2 + *(volatile f32*)((u8*)party + 0x104);
+        if (NKF(0x104) <= 0.0f) {
+            party->useMotionId = 0x46;
+            NKF(0x104) = 0.0f;
+            goto L_800CD8BC;
+        }
+        goto L_800CCD8C;
+
+    case 0x46:
+        f3 = party->position.x - mario->position.x;
+        f4 = party->position.y - mario->position.y;
+        f2 = party->position.z - mario->position.z;
+        {
+            f32 d4 = f3 * f3;
+            f32 d3 = f4 * f4;
+            f32 d2 = f2 * f2;
+            f1 = (f32)sqrt(d4 + d3 + d2);
+        }
+        if (f1 < 5.0f) {
+            f0 = (mario->directionView >= 180.0f) ? -90.0f : 90.0f;
+            movePos(&party->position.x, &party->position.z,
+                    0.5f * mario->wPlayerCollisionBox.x, mario->directionView + f0);
+            ccwall(party, 1);
+        }
+        NKF(0x104) = 0.0f;
+        party->flags2 &= ~0x10;
+        party->flags2 |= 0x20;
+        party->useMotionId = 0x47;
+        goto L_800CCD8C;
+
+    case 0x47:
+        if (NKI(0x174) != NULL) {
+            itemNokoForceGet(NKI(0x174));
+            NKI(0x174) = NULL;
+        }
+        nokonoko_finish(party);
+        goto L_800CD8BC;
+
+    default:
+        goto L_800CCD8C;
+    }
+
+L_800CCD8C:
+    switch (party->useMotionId) {
+    case 0x50:
+        party->useMotionId = 0x51;
+        NKF(0x104) = 0.0f;
+        party->dir = angleABf(party->position.x, party->position.z, NKF(0x94), NKF(0x9c));
+        NKF(0x128) += 75.0f;
+        psndSFXOn_3D((const char*)0x92b, &party->position);
+        /* fallthrough */
+    case 0x51:
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        NKF(0x104) += 3.0f;
+        if (NKF(0x104) >= 18.0f) {
+            NKF(0x104) = 18.0f;
+        }
+        if (NKI(0x174) == NULL) {
+            NKI(0x174) = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
+                                                0.5f * party->field_F4 + 12.0f);
+            if (NKI(0x174) != NULL) {
+                itemPickUp(NKI(0x174));
+                psndSFXOn_3D((const char*)0x92c, &party->position);
+                f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
+                f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
+                effSmallStarN64Entry(3, 1, party->position.x, party->position.y + NKF(0xF0), party->position.z,
+                                     f4, -1.0f, -f31);
+            }
+        }
+        hit = ccwall(party, 1);
+        if (hit != NULL) {
+            if (!(hitGetAttr(hit) & 0x80000000)) {
+                party->useMotionId = 0x64;
+                goto L_800CD8BC;
+            }
+            mobjHitObjPtrToPtr(hit);
+            party->useMotionId = 0x6e;
+            goto L_800CD8BC;
+        }
+        NKF(0x128) -= NKF(0x104);
+        if (NKF(0x128) <= 20.0f) {
+            party->useMotionId = 0x52;
+        }
+        goto L_800CD8A8;
+
+    case 0x52:
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        NKF(0x104) = 0.35f * (-1.0f - NKF(0x104)) + NKF(0x104);
+        if (NKI(0x174) == NULL) {
+            NKI(0x174) = itemNearDistCheck(party->position.x, party->position.y, party->position.z,
+                                                0.5f * party->field_F4 + 12.0f);
+            if (NKI(0x174) != NULL) {
+                itemPickUp(NKI(0x174));
+                psndSFXOn_3D((const char*)0x92c, &party->position);
+                f31 = (f32)cos(6.2831855f * party->dir / 360.0f);
+                f4 = (f32)sin(6.2831855f * party->dir / 360.0f);
+                effSmallStarN64Entry(3, 1, party->position.x, party->position.y + NKF(0xF0), party->position.z,
+                                     f4, -1.0f, -f31);
+            }
+        }
+        if (ccwall(party, 1)) {
+            party->useMotionId = 0x64;
+            goto L_800CD8A8;
+        }
+        NKF(0x128) -= NKF(0x104);
+        if (NKF(0x128) <= 0.0f) {
+            NKF(0x128) = distABf(NKF(0x94), NKF(0x9c), party->position.x, party->position.z);
+            party->useMotionId = 0x54;
+            NKF(0x178) = 50.0f;
+            party->dir = angleABf(party->position.x, party->position.z, NKF(0x94), NKF(0x9c));
+        }
+        goto L_800CD8A8;
+
+    case 0x54:
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        if (ccwall(party, 1)) {
+            party->useMotionId = 0x64;
+            goto L_800CD8A8;
+        }
+        NKF(0x128) -= NKF(0x104);
+        if (NKF(0x128) <= 30.0f) {
+            party->useMotionId = 0x56;
+            NKF(0x104) = 0.0f;
+            NKS(0x24) = sysMsec2Frame(500);
+        }
+        goto L_800CD8A8;
+
+    case 0x56:
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        if (--NKS(0x24) <= 0) {
+            party->useMotionId = 0x64;
+        }
+        if (ccwall(party, 1)) {
+            party->useMotionId = 0x64;
+        }
+        goto L_800CD8A8;
+
+    case 0x64:
+        ccwall(party, 1);
+        f3 = party->position.x - mario->position.x;
+        f4 = party->position.y - mario->position.y;
+        f2 = party->position.z - mario->position.z;
+        {
+            f32 d4 = f3 * f3;
+            f32 d3 = f4 * f4;
+            f32 d2 = f2 * f2;
+            f1 = (f32)sqrt(d4 + d3 + d2);
+        }
+        if (f1 < 5.0f) {
+            f0 = (mario->directionView >= 180.0f) ? 90.0f : -90.0f;
+            movePos(&party->position.x, &party->position.z,
+                    0.5f * mario->wPlayerCollisionBox.x, mario->directionView + f0);
+            ccwall(party, 1);
+        }
+        NKF(0x104) = 0.0f;
+        party->flags2 &= ~0x10;
+        if (NKI(0x174) != NULL) {
+            itemNokoForceGet(NKI(0x174));
+            NKI(0x174) = NULL;
+        }
+        if (party->field_138 == NULL) {
+            party->useMotionId = 0x58;
+            goto L_800CD8A8;
+        }
+        if (NKI(0x174) != NULL) {
+            itemNokoForceGet(NKI(0x174));
+            NKI(0x174) = NULL;
+        }
+        nokonoko_finish(party);
+        goto L_800CD8BC;
+
+    case 0x58:
+        NKF(0x104) = 0.0f;
+        {
+            Vec pos = *(Vec*)((u8*)party + 0x94);
+            res = lookupSafetyPos(&pos, &out2, NKF(0xF0));
+        }
+        if (party->field_138 != NULL && (res == 1 || res == 2 || res == 4 || res == 8)) {
+            party->useMotionId = 0x46;
+            goto L_800CD8A8;
+        }
+        switch (res) {
+        case 3:
+            { Vec pos8 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos8, &out2, NKF(0xF0), 135.0f); }
+            break;
+        case 5:
+            { Vec pos9 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos9, &out2, NKF(0xF0), 315.0f); }
+            break;
+        case 10:
+            { Vec pos10 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos10, &out2, NKF(0xF0), 225.0f); }
+            break;
+        case 12:
+            { Vec pos11 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos11, &out2, NKF(0xF0), 315.0f); }
+            break;
+        case 7: case 14: case 15:
+            party->useMotionId = 0x46;
+            break;
+        case 1:
+            { Vec pos12 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos12, &out2, NKF(0xF0), 270.0f); }
+            break;
+        case 8:
+            { Vec pos13 = *(Vec*)((u8*)party + 0x94); lookupSafetyPos3(&pos13, &out2, NKF(0xF0)); }
+            break;
+        case 0: case 2: case 4: case 6: case 9: case 11: case 13:
+        default:
+            { Vec pos14 = *(Vec*)((u8*)party + 0x94); lookupSafetyPos2(&pos14, &out2, NKF(0xF0)); }
+            break;
+        }
+        party->useMotionId = 0x5A;
+        *(Vec*)((u8*)party + 0x94) = out2;
+        NKF(0x128) = distABf(party->position.x, party->position.z, NKF(0x94), NKF(0x9c));
+        party->dir = angleABf(party->position.x, party->position.z, NKF(0x94), NKF(0x9c));
+        NKF(0x178) = 50.0f;
+        goto L_800CD8A8;
+
+    case 0x5A:
+        f1 = revise360(party->dir - NKF(0xF8));
+        f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
+        NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
+        NKF(0x104) += 0.5f;
+        if (NKF(0x104) >= 4.0f) {
+            NKF(0x104) = 4.0f;
+        }
+        NKF(0x128) -= NKF(0x104);
+        if (NKF(0x128) <= 10.0f) {
+            party->useMotionId = 0x46;
+            NKF(0x104) = 0.0f;
+        }
+        goto L_800CD8A8;
+
+    case 0x6E:
+        NKF(0x104) = 0.0f;
+        NKF(0x114) = 15.0f;
+        NKF(0x118) = 0.0f;
+        NKS(0x24) = sysMsec2Frame(1000);
+        party->useMotionId = 0x6f;
+        /* fallthrough */
+    case 0x6F:
+        NKF(0x5c) += NKF(0x114);
+        {
+            Vec vscr = party->position;
+            f32 vsx, vsy, vsz;
+            marioGetScreenPos(vscr, &vsx, &vsy, &vsz);
+            if (vsy <= -300.0f) {
+                NKS(0x24) = sysMsec2Frame(800);
+                party->useMotionId = 0x70;
+            }
+        }
+        goto L_800CD8A8;
+
+    case 0x70:
+        if (--NKS(0x24) > 0) {
+            goto L_800CD8A8;
+        }
+        if (!(party->flags & 0x80000000)) {
+            partyGetReturnPos(&v);
+        } else {
+            *(Vec*)&v = *(Vec*)((u8*)mario + 0x8c);
+            f1 = *(f32*)(mario->unk1AC);
+            {
+                s32 flag = 0;
+                if (f1 >= 90.0f && f1 <= 270.0f) {
+                    flag = 1;
+                }
+                movePos(&v.x, &v.z, 30.0f, toMovedir2(flag ? 0.0f : 180.0f, -30.0f));
+            }
+        }
+        party->position.x = v.x;
+        party->position.y = v.y + 1000.0f;
+        party->position.z = v.z;
+        NKF(0x114) = 0.0f;
+        NKF(0x118) = -1.0f;
+        NKF(0x104) = 0.0f;
+        party->flags |= 0x20;
+        party->flags |= 0x02000000;
+        party->flags &= ~0x04000000;
+        party->flags &= ~0x01000000;
+        party->flags2 &= ~0x20;
+        party->flags2 &= ~0x10;
+        NKF(0xF0) = 37.0f;
+        party->useMotionId = 0x71;
+        goto L_800CD8A8;
+
+    case 0x71:
+        {
+            Vec wscr = party->position;
+            f32 wsx, wsy, wsz;
+            marioGetScreenPos(wscr, &wsx, &wsy, &wsz);
+            if (wsy > 240.0f) {
+                party->flags &= ~0x02000000;
+            }
+            (void)wsx;
+            (void)wsz;
+        }
+        partyMove(party);
+        if (NKF(0x114) <= -6.0f) {
+            NKF(0x118) = 0.0f;
+            NKF(0x114) = -6.0f;
+        }
+        if (party->position.y < -2000.0f) {
+            *(Vec*)((u8*)party + 0x58) = *(Vec*)((u8*)mario + 0x8c);
+            party->position.y += 200.0f;
+        }
+        if (party->field_138 != NULL) {
+            NKF(0x110) = *(f32*)(mario->unk1AC);
+            NKF(0x10C) = NKF(0x110);
+            if (((hitGetAttr((HitEntry*)party->field_138) >> 9) & 1) == 0) {
+                party->useMotionId = 0x72;
+                NKS(0x24) = 30;
+            }
+        }
+        goto L_800CD8A8;
+
+    case 0x72:
+        if (--NKS(0x24) > 0) {
+            goto L_800CD8A8;
+        }
+        nokonoko_finish(party);
+        goto L_800CD8BC;
+
+    default:
+        goto L_800CD8A8;
+    }
+
+L_800CD8A8:
+    if (party->useMotionId != 0x64) {
+        partyMoveNoHosei(party);
+    }
+L_800CD8BC:
+    return;
+}
+
+#undef NKF
+#undef NKS
+#undef NKS16
+#undef NKM
 
 void nokonoko_finish(PartyEntry* party) {
     if (party == NULL) {

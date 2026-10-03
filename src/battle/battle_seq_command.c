@@ -1085,6 +1085,292 @@ void BattleCommandDisplay_ChangePartySelectMenuDisp(CameraId camId, BattleWork* 
 	BattleMenuDisp_ChangePartySelect_Disp(wp);
 }
 
+__declspec(section ".sdata") s32 _jump_badge_table[8] = {0xF0, 0xF1, 0xF4, 0xF5, 0xF6, 0xF3, 0xF2, 0x14C};
+__declspec(section ".sdata") s32 _hammer_badge_table[9] = {0xF7, 0xFA, 0xF9, 0xFB, 0xFD, 0xFC, 0xF8, 0x14D, 0x14E};
+// NONMATCHING (99.52%): the byte stream matches except for the prologue's `arg`/`wp`
+// save pair (retail arg=r31/wp=r30; ours wp=r31/arg=r30 plus one extra `mr r0,r4`).
+// Typing the parameter `s32` to try to fix the colouring hangs MWCC on the whole file.
+s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
+	static BattleWeapon defaultWeapon_Dummy_NoItem = {
+		"btl_wn_dummy_noitem",
+		0,
+		(ItemType)0,
+		"msg_dummy_noitem",
+		0x64, 0, 0, 0,
+		0.0f,
+		0, 0, 0, 0,
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0, 0},
+		NULL,
+		{0, 0, 0, 0, 0, 0, 0, 0},
+		0x01000160,
+		0x20000002,
+		2, 3, 0, 0,
+		NULL,
+		0,
+		0,
+		0x80002000,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		NULL,
+		{0x64},
+	};
+	s16 arg = (s16)arg_;
+	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+	BattleWorkCommand* wcmd = (BattleWorkCommand*)&wp->commandMenu;
+	PouchData* pouch = pouchGetPtr();
+	BattleCursor* cursor;
+	s32 count;
+	u32 i;
+	s32 j;
+	s32 badge;
+	s16* items;
+	s32 id;
+	ItemData* item;
+	s32 mask;
+	s32 field_4;
+
+	if (wcmd == NULL) {
+		return 0;
+	}
+	_btlcmd_GetCursorPtr((BattleCommand*)wcmd, arg, &cursor);
+	count = 0;
+	switch (arg) {
+	case 0:
+		if (pouch->jumpLevel >= 1) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioDefaultWeapon_Jump;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getJumpIconId();
+			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+			}
+			if ((wp->flags & 0x09000000) != 0 && wp->field_424 != -1) {
+				wcmd->mWeaponTable[count].mWeaponParams = BtlUnit_GetData(BattleGetUnitPtr(wp, wp->field_424), 0x44);
+			}
+			count++;
+		}
+		if (pouch->jumpLevel >= 2) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_KururinJump;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getJumpIconId();
+			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+			}
+			count++;
+		}
+		if (pouch->jumpLevel >= 3) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_JyabaraJump;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getJumpIconId();
+			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+			}
+			count++;
+		}
+		break;
+	case 1:
+		if (pouch->hammerLevel >= 1) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioDefaultWeapon_Hammer;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getHammerIconId();
+			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+			}
+			if ((wp->flags & 0x0A000000) != 0 && wp->field_424 != -1) {
+				wcmd->mWeaponTable[count].mWeaponParams = BtlUnit_GetData(BattleGetUnitPtr(wp, wp->field_424), 0x45);
+			}
+			count++;
+		}
+		if (pouch->hammerLevel >= 2) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_KaitenHammer;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getHammerIconId();
+			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+			}
+			count++;
+		}
+		if (pouch->hammerLevel >= 3) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &marioWeapon_UltraHammer;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = _getHammerIconId();
+			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+			}
+			count++;
+		}
+		break;
+	}
+	switch (arg) {
+	case 0:
+		for (i = 0; i < 8; i++) {
+			badge = _jump_badge_table[i];
+			if (pouchEquipCheckBadge(badge) > 0) {
+				wcmd->mWeaponTable[count].mIndex = i;
+				wcmd->mWeaponTable[count].mItem = badge;
+				wcmd->mWeaponTable[count].mWeaponParams = itemDataTable[badge].battle_params;
+				wcmd->mWeaponTable[count].field_0x4 = 0;
+				wcmd->mWeaponTable[count].field_0x18 = 0;
+				if (wcmd->mWeaponTable[count].mWeaponParams->item != 0) {
+					wcmd->mWeaponTable[count].mIcon = *(u16*)&itemDataTable[badge].icon_id;
+				} else {
+					wcmd->mWeaponTable[count].mIcon = *(u16*)&wcmd->mWeaponTable[count].mWeaponParams->icon;
+				}
+				if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+					wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+				} else {
+					wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				}
+				count++;
+			}
+		}
+		break;
+	case 1:
+		for (i = 0; i < 9; i++) {
+			badge = _hammer_badge_table[i];
+			if (pouchEquipCheckBadge(badge) > 0) {
+				wcmd->mWeaponTable[count].mIndex = i;
+				wcmd->mWeaponTable[count].mItem = badge;
+				wcmd->mWeaponTable[count].mWeaponParams = itemDataTable[badge].battle_params;
+				wcmd->mWeaponTable[count].field_0x4 = 0;
+				wcmd->mWeaponTable[count].field_0x18 = 0;
+				if (wcmd->mWeaponTable[count].mWeaponParams->item != 0) {
+					wcmd->mWeaponTable[count].mIcon = *(u16*)&itemDataTable[badge].icon_id;
+				} else {
+					wcmd->mWeaponTable[count].mIcon = *(u16*)&wcmd->mWeaponTable[count].mWeaponParams->icon;
+				}
+				if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+					wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+				} else {
+					wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				}
+				count++;
+			}
+		}
+		break;
+	}
+	switch (arg) {
+	case 6:
+		{ void (*fn)(BattleWorkCommand*, void*) = (void (*)(BattleWorkCommand*, void*))BtlUnit_GetData(unit, 1); fn(wcmd, &count); }
+		break;
+	case 2:
+		items = pouch->heldItems;
+		for (j = 0; j < 20; j++) {
+			id = items[j];
+			item = &itemDataTable[id];
+			if (id != 0 && (item->usable_locations & 2) != 0) {
+				wcmd->mWeaponTable[count].mIndex = i;
+				wcmd->mWeaponTable[count].mItem = id;
+				wcmd->mWeaponTable[count].mWeaponParams = item->battle_params;
+				wcmd->mWeaponTable[count].field_0x4 = 0;
+				wcmd->mWeaponTable[count].field_0x18 = 0;
+				if (wcmd->mWeaponTable[count].mWeaponParams == NULL) {
+					wcmd->mWeaponTable[count].mWeaponParams = &ItemWeaponData_CookingItem;
+					wcmd->mWeaponTable[count].mName = (char*)msgSearch(item->name);
+					wcmd->mWeaponTable[count].mIcon = *(u16*)&item->icon_id;
+				} else {
+					wcmd->mWeaponTable[count].mIcon = *(u16*)&item->icon_id;
+					if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+						wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+					} else {
+						wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+					}
+				}
+				count++;
+				if (count >= 0x15) {
+					break;
+				}
+			}
+		}
+		if (count == 0) {
+			wcmd->mWeaponTable[count].mIndex = -1;
+			wcmd->mWeaponTable[count].mItem = 0;
+			wcmd->mWeaponTable[count].mIndex = 0;
+			wcmd->mWeaponTable[count].mWeaponParams = &defaultWeapon_Dummy_NoItem;
+			wcmd->mWeaponTable[count].field_0x4 = 0;
+			wcmd->mWeaponTable[count].field_0x18 = 0;
+			wcmd->mWeaponTable[count].mIcon = 0x162;
+			if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+			} else {
+				wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+			}
+			count++;
+		}
+		break;
+	case 4:
+		mask = pouch->mStarPowersObtained;
+		for (j = 0; j < 16; j++) {
+			if ((mask & (1 << j)) != 0 && ((BattleWeapon**)superActionTable)[j] != NULL) {
+				wcmd->mWeaponTable[count].mIndex = -1;
+				wcmd->mWeaponTable[count].mItem = 0;
+				wcmd->mWeaponTable[count].mWeaponParams = ((BattleWeapon**)superActionTable)[j];
+				wcmd->mWeaponTable[count].field_0x4 = 0;
+				wcmd->mWeaponTable[count].mIcon = *(u16*)&((BattleWeapon**)superActionTable)[j]->icon;
+				wcmd->mWeaponTable[count].field_0x18 = 0;
+				if (wcmd->mWeaponTable[count].mWeaponParams->name != NULL) {
+					wcmd->mWeaponTable[count].mName = (char*)msgSearch(wcmd->mWeaponTable[count].mWeaponParams->name);
+				} else {
+					wcmd->mWeaponTable[count].mName = (char*)msgSearch(itemDataTable[wcmd->mWeaponTable[count].mWeaponParams->item].name);
+				}
+				count++;
+				if (count >= 0x15) {
+					break;
+				}
+			}
+		}
+		break;
+	}
+	if (count <= 0) {
+		return 0;
+	}
+	cursor->unk8 = count;
+	if (cursor->field_0 >= cursor->unk8) {
+		cursor->field_0 = cursor->unk8 - 1;
+	}
+	while (cursor->unk8 < (field_4 = cursor->field_4) + 6) {
+		if (field_4 <= 0) {
+			break;
+		}
+		cursor->field_4--;
+	}
+	_btlcmd_UpdateSelectWeaponTable(wp, arg);
+	return count;
+}
+
+
+
 s32 _getHammerIconId(void) {
 	switch (pouchGetPtr()->hammerLevel) {
 	case 3:
@@ -2123,6 +2409,336 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 	}
 }
 
+s32 BattleCommandInput(BattleWork* wp) {
+	s32 unitId;
+	s32 partId;
+	const char* sfx;
+	const char* sfx2;
+	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+	BattleCommand* cmd = &wp->commandMenu;
+	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
+	s32 result;
+	s32 action;
+	BattleTargetSampling* sampling;
+	BattleCursor* cursor;
+	EventEntry* event;
+	s32 state;
+	s32 i;
+
+	if (cmd == NULL) {
+		return 1;
+	}
+	_btlcmd_GetCursorPtr(cmd, 0xE, &cursor);
+	if (_check_present_item()) {
+		BattleAcHelpSetDispType(0);
+	}
+	_commandRestoreRec();
+	result = 1;
+	sfx = (0, "SFX_BTL_CURSOR_MOVE2");
+	sfx2 = (0, "SFX_BTL_CURSOR_MOVE2");
+
+	while (result) {
+		result = 0;
+		for (;;) {
+			state = cmd->unk0;
+			switch (state) {
+		case 0:
+			if (wp->commandMenu.unk540[0x18] != 0) {
+				switch (*(s32*)&cmd->unk540[0]) {
+				case 0xB:
+				case 0xC:
+					*(s32*)&cmd->unk540[0] = *(s32*)&cmd->unk540[4];
+					break;
+				}
+				if (wp->commandMenu.unk540[0x18] == 2) {
+					wp->commandMenu.unk540[0x18] = 0;
+				}
+			}
+			cmd->unk540[0x11] = 0;
+			wp->dispFlags |= 1;
+			BtlUnit_SetCommandAnimPose(unit);
+			if (unit->moveState >= 5 && unit->moveState <= 9) {
+				BattleStageOnLightInCommand();
+				BattleStageOffLightFriendInCommand();
+				BattleStageOffLightEnemyInCommand();
+				cmd->unk0 = 5;
+				break;
+			}
+			BattleCommandDisplay_ActMenuSetup(wp, 0);
+			cmd->unk0 = 2;
+			BattleStageOnLightInCommand();
+			BattleStageOffLightFriendInCommand();
+			BattleStageOffLightEnemyInCommand();
+			break;
+		case 1:
+			BattleCommandDisplay_ActMenuSetup(wp, (void*)1);
+			cmd->unk0 = 2;
+			break;
+		case 2:
+			if (BattleCommandDisplay_ActMenuMain(wp)) {
+				result = 1;
+			}
+			break;
+		case 3:
+			cmd->unk0 = 4;
+			event = evtEntry(_btl_cmd_error_msg_event, 0, 0x20);
+			*(s32*)&cmd->unk560[8] = event->eventId;
+			// fallthrough
+		case 4:
+			if (evtCheckID(*(s32*)&cmd->unk560[8]) != 0) {
+				break;
+			}
+			*(s32*)&cmd->unk560[8] = 0;
+			result = 1;
+			cmd->unk0 = 1;
+			break;
+		case 5:
+		case 6:
+			{
+			s32 a = *(s32*)&cmd->unk540[0];
+			if ((a == 0 && (wp->flags & 0x200)) ||
+			    (a == 1 && (wp->flags & 0x400))) {
+				_btlcmd_SelectWeaponDecide(wp, a, 0);
+				BattleCommandDisplay_TargetSelectMenuSetup(wp);
+				cmd->unk0 = 0xA;
+				BattleStageOnLightEnemyInCommand();
+				break;
+			}
+			if (state == 5) {
+				if (a == 2 && (unit->badgesEquipped.DoubleDip || unit->badgesEquipped.TripleDip)) {
+					BattleCommandDisplay_WeaponSelectMenuSetup(wp, (void*)a, 0);
+				} else {
+					BattleCommandDisplay_WeaponSelectMenuSetup(wp, (void*)a, (void*)1);
+				}
+			} else {
+				BattleCommandDisplay_WeaponSelectMenuSetup(wp, (void*)a, 0);
+			}
+			}
+			BattleStageOffLightFriendInCommand();
+			BattleStageOffLightEnemyInCommand();
+			cmd->unk0 = 7;
+			_commandRestoreRec();
+			// fallthrough
+		case 7:
+			if (BattleCommandDisplay_WeaponSelectMenuMain(wp, *(s32*)&cmd->unk540[0])) {
+				result = 1;
+			}
+			break;
+		case 8:
+			cmd->unk0 = 9;
+			event = evtEntry(_btl_cmd_error_msg_event, 0, 0x20);
+			*(s32*)&cmd->unk560[8] = event->eventId;
+			// fallthrough
+		case 9:
+			if (evtCheckID(*(s32*)&cmd->unk560[8]) != 0) {
+				break;
+			}
+			*(s32*)&cmd->unk560[8] = 0;
+			result = 1;
+			cmd->unk0 = 6;
+			break;
+		case 12:
+			cmd->unk0 = 0xD;
+			BattleCommandDisplay_WeaponMultiItemCancelCheckSetup(wp);
+			_commandRestoreRec();
+			break;
+		case 13:
+			if (BattleCommandDisplay_WeaponMultiItemCancelCheckMain(wp)) {
+				result = 1;
+			}
+			break;
+		case 10:
+			_btlcmd_GetCursorPtr(cmd, *(s32*)&cmd->unk540[0], &cursor);
+			BattleAcHelpSetHelp(wcmd->mWeaponTable[cursor->field_0].mWeaponParams->acHelpMsg);
+			BattleAcHelpSetDispType(1);
+			cmd->unk0 = 0xB;
+			break;
+		case 11:
+			action = *(s32*)&cmd->unk540[0];
+			sampling = (BattleTargetSampling*)wp->field_428;
+			_btlcmd_GetCursorPtr(cmd, action, &cursor);
+			{
+				BattleTargetEntry* entry = (BattleTargetEntry*)(sampling->entries + sampling->order[sampling->selectIdx] * 0x24);
+
+				unitId = entry->unitId;
+				partId = entry->partId;
+			}
+			BattleSamplingEnemyUpdate((u8*)sampling);
+			for (i = 0; i < sampling->count; i++) {
+				BattleTargetEntry* entry = (BattleTargetEntry*)(sampling->entries + sampling->order[i] * 0x24);
+
+				if (entry->unitId == unitId && entry->partId == partId) {
+					break;
+				}
+			}
+			if (i >= sampling->count) {
+				i = 0;
+			}
+			sampling->selectIdx = i;
+			if (wcmd->mWeaponTable[cursor->field_0].mWeaponParams->targetClassFlags & 0x01000000) {
+				if (BattlePadCheckRepeat(0x80000)) {
+					sampling->selectIdx++;
+					if (sampling->selectIdx >= sampling->count) {
+						sampling->selectIdx = 0;
+					}
+					if (sampling->count >= 2) {
+						psndSFXOn(sfx);
+					}
+				}
+				if (BattlePadCheckRepeat(0x40000)) {
+					sampling->selectIdx--;
+					if (sampling->selectIdx < 0) {
+						sampling->selectIdx = sampling->count - 1;
+					}
+					if (sampling->count >= 2) {
+						psndSFXOn(sfx2);
+					}
+				}
+			}
+			if (BattlePadCheckTrigger(0x200)) {
+				psndSFXOn((char*)0x9D9);
+				BattleCommandDisplay_TargetSelectMenuEnd(wp);
+				cmd->unk0 = 6;
+				wp->flags &= ~0x4;
+				BattleAcHelpSetDispType(0);
+				BtlUnit_SetCommandAnimPose(unit);
+				if ((*(s32*)&cmd->unk540[0] == 0 && (wp->flags & 0x200)) ||
+				    (*(s32*)&cmd->unk540[0] == 1 && (wp->flags & 0x400))) {
+					cmd->unk0 = 1;
+					BattleStageOffLightEnemyInCommand();
+				}
+				break;
+			}
+			if (BattlePadCheckTrigger(0x100)) {
+				psndSFXOn((char*)0x9D8);
+				BattleStageOffLightInCommand(1, 1);
+				cmd->unk0 = 0x1D;
+				BattleCommandDisplay_TargetSelectMenuEnd(wp);
+				wp->flags |= 4;
+				if (action == 2 && unit->moveState == 0) {
+					switch (cmd->unk540[0x10]) {
+					case 2:
+						unit->moveState = 8;
+						BtlUnit_PayWeaponCost(unit, &badgeWeapon_2KaiItem);
+						break;
+					case 3:
+						unit->moveState = 5;
+						BtlUnit_PayWeaponCost(unit, &badgeWeapon_3KaiItem);
+						break;
+					}
+				}
+				BattleAcHelpSetDispType(2);
+			}
+			if (BattleCommandAttackAudienceCheck()) {
+				wp->commandMenu.unk540[0x18] = 1;
+				BattleCommandDisplay_TargetSelectMenuEnd(wp);
+				BattleAcHelpSetDispType(0);
+			}
+			break;
+		case 14:
+		case 15:
+			if (state == 0xE) {
+				BattleCommandDisplay_MultiItemMenuSetup(wp, (void*)1);
+			} else {
+				BattleCommandDisplay_MultiItemMenuSetup(wp, 0);
+			}
+			cmd->unk0 = 0x10;
+			_commandRestoreRec();
+			// fallthrough
+		case 16:
+			if (BattleCommandDisplay_MultiItemMenuMain(wp)) {
+				result = 1;
+			}
+			break;
+		case 17:
+			cmd->unk0 = 0x12;
+			event = evtEntry(_btl_cmd_error_msg_event, 0, 0x20);
+			*(s32*)&cmd->unk560[8] = event->eventId;
+			// fallthrough
+		case 18:
+			if (evtCheckID(*(s32*)&cmd->unk560[8]) != 0) {
+				break;
+			}
+			*(s32*)&cmd->unk560[8] = 0;
+			result = 1;
+			cmd->unk0 = 0xF;
+			break;
+		case 19:
+		case 20:
+			if (state == 0x13) {
+				BattleCommandDisplay_OperationMenuSetup(wp, (void*)1);
+			} else {
+				BattleCommandDisplay_OperationMenuSetup(wp, 0);
+			}
+			cmd->unk0 = 0x15;
+			_commandRestoreRec();
+			// fallthrough
+		case 21:
+			if (BattleCommandDisplay_OperationMenuMain(wp)) {
+				result = 1;
+			}
+			break;
+		case 22:
+			cmd->unk0 = 0x17;
+			event = evtEntry(_btl_cmd_error_msg_event, 0, 0x20);
+			*(s32*)&cmd->unk560[8] = event->eventId;
+			// fallthrough
+		case 23:
+			if (evtCheckID(*(s32*)&cmd->unk560[8]) != 0) {
+				break;
+			}
+			*(s32*)&cmd->unk560[8] = 0;
+			result = 1;
+			cmd->unk0 = 0x14;
+			break;
+		case 24:
+		case 25:
+			if (state == 0x18) {
+				BattleCommandDisplay_ChangePartySelectMenuSetup(wp, (void*)1);
+			} else {
+				BattleCommandDisplay_ChangePartySelectMenuSetup(wp, 0);
+			}
+			cmd->unk0 = 0x1A;
+			_commandRestoreRec();
+			// fallthrough
+		case 26:
+			if (BattleCommandDisplay_ChangePartySelectMenuMain(wp)) {
+				result = 1;
+			}
+			break;
+		case 27:
+			BattleCommandDisplay_ProtectPartnerSelectMenuSetup(wp);
+			cmd->unk0 = 0x1C;
+			_commandRestoreRec();
+			// fallthrough
+		case 28:
+			if (BattlePadCheckTrigger(0x200)) {
+				psndSFXOn((char*)0x9D9);
+				BattleCommandDisplay_ProtectPartnerSelectMenuEnd(wp);
+				cmd->unk0 = 0x14;
+			} else if (BattlePadCheckTrigger(0x100)) {
+				cmd->unk0 = 0x1D;
+				BattleCommandDisplay_ProtectPartnerSelectMenuEnd(wp);
+			}
+			break;
+		case 29:
+			_btlcmd_SetAttackEvent(unit, cmd);
+			cmd->field_4 &= ~0x01000000;
+			wp->dispFlags &= ~1;
+			BattleStageOffLightInCommand(0, 0);
+			return 1;
+		default:
+			break;
+		}
+		if (wp->commandMenu.unk540[0x18] == 0) {
+			break;
+		}
+		_commandRestoreRec();
+		}
+	}
+	return 0;
+}
+
 
 // Raw offsets into the enemy-sampling buffer `wp->field_428` (battle_detect owns the layout):
 // 0xA6C sample count, 0xA6D.. unit-index codes, entry size 0x24 with s16 unitId at +4, 0xAB7 result.
@@ -2459,7 +3075,7 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 	return count;
 }
 
-// NONMATCHING (98.44%): instruction sequence now matches; only the pooled string base
+// NONMATCHING (98.59%): instruction sequence now matches; only the pooled string base
 // (`str_802EF640` vs local `...rodata.0`, offsets shifted 0x28) and the msg-base/args
 // register swap (target r5/r6, ours r6/r5) differ, both expected to resolve once the
 // file's rodata pool is complete.

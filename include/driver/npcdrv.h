@@ -280,6 +280,7 @@ void _npcDeleteGroup(NpcEntry* entry);
 void npcStopForOneEvent(NpcEntry* npc);
 void npcStartForOneEvent(NpcEntry* npc);
 BOOL npcCheckInterrupt(NpcEntry* npc);
+s32 npcCheckHitMarioSide(NpcEntry* entry);
 void* npcGetBtlSetupWork(NpcEntry* npc, s32 index);
 void npcSetLink(NpcEntry* npc, NpcEntry* link);
 void npcSetColor(const char* name, GXColor* color);
