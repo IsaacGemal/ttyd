@@ -4095,3 +4095,48 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   objects as one array (now MUST_MATCH only, literals in the natural build); sac_deka's agent defined the unit's
   .rodata out of retail's order, so the file's existing MUST_MATCH base+offset reads pointed at the wrong objects
   (as on main, as in wave 61).
+
+## Hand work on the 0% tail and the data ports (2026-10-03, Claude Sonnet 5.5 "TTYD Claude #3")
+
+- **The 0% tail was unwritten, not hard.** marioChkGnd, marioSearchGround(+Roll), marioChkLandon2, marioLandonChk_old,
+  searchFrontWall, marioChkWallAround (mario_hit), calcCamRoad (cam_road), fbatEncountCheck (npcdrv) and rsh_05's
+  moamoa_jump, moamoa_hit_check, ext_moamoa_main and npc_jump were prototypes only. m2c plus the file's own inlines gets
+  calls and immediates identical on the first build; the rest is colouring. e_hypot (fdlibm, 100% first build) and qsort
+  (heap sort, 95.3%) had no source file at all. m2c's `cror eq,lt,eq`/`eq,gt,eq` is `<=`/`>=` (a flipped compare, and
+  stores placed on the wrong side of a `continue`, both got past fuzzy scores in review: marioChkGnd, marioSearchGroundRoll).
+- **By-value Vec arguments.** collisionCurve and collisionTri_simple take their `Vec` by value (the caller makes the stack
+  copies); with `Vec p` in the definition the callee code is the same and collisionTri_simple went 99.65 -> 100%.
+  calcCamRoad's seventh float (f7) is `bank`.
+- **mario_hit .rodata/.sdata2 ports.** The 41 vec3 objects, strings, doubles and the 60 floats are defined from the
+  original bytes. What made them land: the functions in the source order `fn_order_check.py` asks for (reverse .text; the file's
+  `#ifdef` branches carry unbalanced braces, so `fn_order.py` can't parse it), inline sqrtf pooling its own doubles, three
+  vec templates kept as compound literals (parse-time pool entries) with the named vec groups interleaved around them in
+  source order, plain string literals, and the .sdata2 floats defined after the code (deferred unit: named-after-code
+  objects land before the pool). `lfd 0x1f0(r30)` then matches and 8 functions gained 1.7-6 points. searchFrontWall lost
+  0.19 (its "eki_04" can only pool as a literal, loading through its own symbol); marioSearchHead lost 0.6 (a named
+  float_100 stays live across the function, volatile reloads on 6 of 11 uses recover most).
+- **Float pool order** (tested on small files with the project's compiler; also in AGENT_BRIEF): expression-tree order,
+  left to right; templates in inline bodies pool when the inline is *defined*; a literal/`static const` argument to cos()
+  folds to an `lfd` of a double while a plain local `f32 z = 0.0f; cos(z)` gives the `lfs`; dead float constants vanish
+  before pooling (dead double compares don't); named-after-code objects land before the pool in deferred units and after
+  it in `-inline auto` (nodefer) units; a literal negation folds. With these eff_kemuri1_n64 (pool_literals plus three
+  fixes, Disp 99.95 -> 100%), eff_vapor_n64, eff_levelup and eff_splash link; eff_sleep, fadedrv, bomhei, cam_road's
+  .sdata2, magic1, mahorn2 and naniga do not (notes in `scratch/claude3/queue.txt`: pool order that the source can't
+  reach without changing text, or, for naniga, a linker placement difference).
+- **rsh_05**: its function order was fully reversed (the TODO stubs assumed source = text order); the original calls
+  moamoa_pose_change/pose_main as real `bl`s from ext_moamoa_main while inlining pose_change elsewhere, which a
+  direct call can't do under the raised inline limits: main calls them through a function-pointer cast.
+- **sac_deka** (PR #346): `.rodata` byte-exact except the 4-byte tail pad, disp_2D 0 -> 100%, nothing regressed. The named
+  objects are the vec3/dat tables and the START strings; the doubles and the DOKKAN/stg_b_yuka strings are plain literals
+  (they pool in code order, which is what puts them where retail has them), and `math_ext.h` replaces `math.h` so sqrt's
+  doubles stay out of `.rodata`. A `const` object defined in the unit is folded into its uses (a `const f64` defined in-file
+  turned `fabs(x) <= named` into a pooled literal; vec3 reads in loops got hoisted): where the original loads through the
+  symbol, define it non-const with `__declspec(section ".rodata")` (the RW-in-R warning is harmless). The `fabs` that
+  math_ext.h declares is a call, the inline one is `__fabs`. The unit's .sdata2 still has five extra pooled literals from the
+  MUST_MATCH register shapes, so it doesn't link. Converting every float to a literal (pool_literals) gives the right pool
+  but a literal is loaded before the field it combines with where a named constant loads after, which costs get_ride_pos,
+  yuka_capture and main_enemy_sub; pool_literals also rewrites hand-written named objects, `.sbss2` blocks and dat_* u32s
+  into compound literals, so run it first and repair.
+- **Open**: bom_01 ext_main (wave 67 has it); cam_road .sdata2 (nodefer unit: all-literal gives byte-exact .sdata2 but the
+  literal scheduling costs camRoadMain 1.5, calcHokanCamRoad 4.9; non-const section objects lose the const CSE in
+  camRoadReset, 25 points).
