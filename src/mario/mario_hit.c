@@ -712,10 +712,10 @@ s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
             *(f32*)((u8*)wp2 + 0x220) = (f32)(s32)(float_100_8041a7f8 * (ang2 - float_180_8041a7cc) + float_0p5_8041a7c4) /
                                         float_100_8041a7f8;
             ang3 = angleABf(float_0_8041a7a4, float_0_8041a7a4, len2, -out2.y);
-            *(f32*)((u8*)wp + 0x214) = ang3;
             if (ang3 <= float_105_8041a860 && ang3 >= float_75_8041a840) {
                 continue;
             }
+            *(f32*)((u8*)wp + 0x214) = ang3;
             if (out1.y < posY && __fabsf(out1.y - posY) >= dist) {
                 if (__fabsf(out1.y - posY) > __fabsf(b)) {
                     *outX = __fabsf(posY - out1.y);
