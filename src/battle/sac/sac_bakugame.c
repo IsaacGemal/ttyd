@@ -1489,8 +1489,11 @@ s32 bakuGameDecideWeapon(EventEntry* event, BOOL isFirstCall) {
     s32 v;
     BakuGameWork* baku;
     s8* p;
+#ifdef MUST_MATCH
+    s32 weaponArg;
+#endif
 
-    evtGetFloat(event, args[0]);
+    evtGetFloat(event, event->args[0]);
     v = evtGetValue(event, args[1]);
     baku = GetBakuGamePtr();
 #ifdef MUST_MATCH
@@ -1511,11 +1514,20 @@ s32 bakuGameDecideWeapon(EventEntry* event, BOOL isFirstCall) {
             p[2] = 100;
         }
         p[3] = v - 1;
+#ifdef MUST_MATCH
+        // MUST_MATCH: an empty test of `baku` and the temporary below give retail's register use (permuter).
+        if (baku) {
+        }
+#endif
     } else {
         p[2] = 0;
         p[3] = 0;
     }
+#ifdef MUST_MATCH
+    evtSetValue(event, args[2], weaponArg = (s32)&baku->weapon);
+#else
     evtSetValue(event, args[2], (s32)&baku->weapon);
+#endif
     return EVT_RETURN_DONE;
 }
 
