@@ -56,21 +56,20 @@ const char str_802F3E28[] = "p_dokan_x";
 const char str_802F3E34[] = "PM_D_1B";
 
 // .sdata2
-const f32 float_0_8041cd80 = 0.0f;
-const char str_8041CD84[] = "M_Z_1";
-const f32 float_30_8041cd8c = 30.0f;
-const f32 float_neg0p005_8041cd90 = -0.005f;
-const f32 float_neg2_8041cd94 = -2.0f;
-const f32 float_0p03_8041cd98 = 0.03f;
-const f32 float_1_8041cd9c = 1.0f;
-const f32 float_0p05_8041cda0 = 0.05f;
-const f32 float_neg0p02_8041cda4 = -0.02f;
-const f32 float_16_8041cda8 = 16.0f;
-const f32 float_neg3_8041cdac = -3.0f;
-const f32 float_540_8041cdb0 = 540.0f;
-const f32 float_180_8041cdb4 = 180.0f;
-const f32 float_120_8041cdb8 = 120.0f;
-const f32 float_neg120_8041cdbc = -120.0f;
+static const f32 float_0_8041cd80 = 0.0f;
+static const f32 float_30_8041cd8c = 30.0f;
+static const f32 float_neg0p005_8041cd90 = -0.005f;
+static const f32 float_neg2_8041cd94 = -2.0f;
+static const f32 float_0p03_8041cd98 = 0.03f;
+static const f32 float_1_8041cd9c = 1.0f;
+static const f32 float_0p05_8041cda0 = 0.05f;
+static const f32 float_neg0p02_8041cda4 = -0.02f;
+static const f32 float_16_8041cda8 = 16.0f;
+static const f32 float_neg3_8041cdac = -3.0f;
+static const f32 float_540_8041cdb0 = 540.0f;
+static const f32 float_180_8041cdb4 = 180.0f;
+static const f32 float_120_8041cdb8 = 120.0f;
+static const f32 float_neg120_8041cdbc = -120.0f;
 
 void _partyEntry(s32 arg) {
     MarioWork* mario;
@@ -116,9 +115,9 @@ void _partyEntry(s32 arg) {
                     party->flags |= 0x04000000;
                     party->flags |= 0x02000000;
                     if (count == 1) {
-                        angle = MATCH_F32(float_180_8041cdb4);
+                        angle = float_180_8041cdb4;
                     } else {
-                        angle = MATCH_F32(float_120_8041cdb8);
+                        angle = float_120_8041cdb8;
                     }
                     party->flags2 &= ~1;
                     party->field_110 = revise360(mario->unk1A8 + angle);
@@ -135,9 +134,9 @@ void _partyEntry(s32 arg) {
             party->flags |= 0x04000000;
             party->flags |= 0x02000000;
             if (count == 1) {
-                angle = MATCH_F32(float_180_8041cdb4);
+                angle = float_180_8041cdb4;
             } else {
-                angle = MATCH_F32(float_neg120_8041cdbc);
+                angle = float_neg120_8041cdbc;
             }
             party->flags2 &= ~1;
             party->field_110 = revise360(mario->unk1A8 + angle);
@@ -176,7 +175,7 @@ void mot_dokan(void) {
         } else if (M_S8(mario, 0x3E) == 1) {
             marioPaperOn(str_802F3E14);
             marioChgPaper(str_802F3E20);
-            marioChgPose(str_8041CD84);
+            marioChgPose("M_Z_1");
             marioPaperLightOff();
             mario->dispFlags |= 8;
             mario->dispFlags |= 0x100;
@@ -205,7 +204,7 @@ void mot_dokan(void) {
             marioPaperOn(str_802F3E28);
             marioPaperLightOff();
             marioChgPaper(str_802F3E20);
-            marioChgPose(str_8041CD84);
+            marioChgPose("M_Z_1");
             mario->unk1A8 = M_F32(mario, 0x1AC);
             M_F32(mario, 0x2A0) = float_30_8041cd8c;
             mario->multiTimer = 0x14;
@@ -221,7 +220,7 @@ void mot_dokan(void) {
             marioPaperOn(str_802F3E28);
             marioPaperLightOff();
             marioChgPaper(str_802F3E20);
-            marioChgPose(str_8041CD84);
+            marioChgPose("M_Z_1");
             mario->unk1A8 = M_F32(mario, 0x1AC);
             M_F32(mario, 0x2A0) = float_30_8041cd8c;
             mario->currSubMotionId = 0x28;
