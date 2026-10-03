@@ -372,6 +372,62 @@ void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank
     dst[5] *= float_10_80419564;
 }
 
+void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoadState* c, CamRoadState* out) {
+    f32 f31;
+    f32 f30;
+    f32 f6;
+    f32 t0;
+    f32 t1;
+    f32 angle;
+    f32 angleB;
+    f32 fa;
+
+    f31 = (f32)cos(float_0_8041954c);
+    f30 = (f32)cos(float_0_8041954c);
+    // temp for the cos argument: the original pools its constants through this temp's
+    // register assignment (inlining it back swaps f1/f2 in the f6 fmadds)
+    fa = float_3p1416_80419568 * t;
+    f6 = (f32)cos(fa * float_1_80419558 + float_0_8041954c);
+    t0 = float_2_8041955c / (float_1_80419558 + f31);
+    t1 = float_0p5_8041956c * (float_1_80419558 - f30) + f6;
+    t1 = t0 * t1;
+    f31 = float_0p5_80419570 * (float_2_8041955c - (float_1_80419558 + t1));
+    if (f31 > float_1_80419558) {
+        f31 = float_1_80419558;
+    }
+    if (flag != 0) {
+        out->x = a->x + f31 * (b->x - a->x);
+        out->y = a->y + f31 * (b->y - a->y);
+        out->z = a->z + f31 * (b->z - a->z);
+    } else {
+        out->x = b->x;
+        out->y = b->y;
+        out->z = b->z;
+    }
+#ifdef MUST_MATCH
+    // the original converts the first atan2 result in a scratch then copies it to angle
+    t0 = (f32)atan2(a->unk_34, a->unk_3C);
+    angle = t0;
+#else
+    angle = (f32)atan2(a->unk_34, a->unk_3C);
+#endif
+    angleB = (f32)atan2(b->unk_34, b->unk_3C);
+    while (angle - angleB > 3.1415927f) {
+        angle -= 6.2831855f;
+    }
+    while (angle - angleB < -3.1415927f) {
+        angle += 6.2831855f;
+    }
+    angle = angle + f31 * (angleB - angle);
+    out->unk_34 = (f32)sin(angle);
+    out->unk_3C = (f32)cos(angle);
+    out->unk_38 = a->unk_38 + f31 * (b->unk_38 - a->unk_38);
+    out->unk_40 = a->unk_40 + f31 * (b->unk_40 - a->unk_40);
+    out->unk_44 = a->unk_44 + f31 * (b->unk_44 - a->unk_44);
+    out->unk_48 = a->unk_48 + f31 * (b->unk_48 - a->unk_48);
+    out->unk_5C = a->unk_5C + f31 * (b->unk_5C - a->unk_5C);
+}
+
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
 
@@ -563,62 +619,6 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
         flags |= 0x10;
     }
     return flags;
-}
-
-void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoadState* c, CamRoadState* out) {
-    f32 f31;
-    f32 f30;
-    f32 f6;
-    f32 t0;
-    f32 t1;
-    f32 angle;
-    f32 angleB;
-    f32 fa;
-
-    f31 = (f32)cos(float_0_8041954c);
-    f30 = (f32)cos(float_0_8041954c);
-    // temp for the cos argument: the original pools its constants through this temp's
-    // register assignment (inlining it back swaps f1/f2 in the f6 fmadds)
-    fa = float_3p1416_80419568 * t;
-    f6 = (f32)cos(fa * float_1_80419558 + float_0_8041954c);
-    t0 = float_2_8041955c / (float_1_80419558 + f31);
-    t1 = float_0p5_8041956c * (float_1_80419558 - f30) + f6;
-    t1 = t0 * t1;
-    f31 = float_0p5_80419570 * (float_2_8041955c - (float_1_80419558 + t1));
-    if (f31 > float_1_80419558) {
-        f31 = float_1_80419558;
-    }
-    if (flag != 0) {
-        out->x = a->x + f31 * (b->x - a->x);
-        out->y = a->y + f31 * (b->y - a->y);
-        out->z = a->z + f31 * (b->z - a->z);
-    } else {
-        out->x = b->x;
-        out->y = b->y;
-        out->z = b->z;
-    }
-#ifdef MUST_MATCH
-    // the original converts the first atan2 result in a scratch then copies it to angle
-    t0 = (f32)atan2(a->unk_34, a->unk_3C);
-    angle = t0;
-#else
-    angle = (f32)atan2(a->unk_34, a->unk_3C);
-#endif
-    angleB = (f32)atan2(b->unk_34, b->unk_3C);
-    while (angle - angleB > 3.1415927f) {
-        angle -= 6.2831855f;
-    }
-    while (angle - angleB < -3.1415927f) {
-        angle += 6.2831855f;
-    }
-    angle = angle + f31 * (angleB - angle);
-    out->unk_34 = (f32)sin(angle);
-    out->unk_3C = (f32)cos(angle);
-    out->unk_38 = a->unk_38 + f31 * (b->unk_38 - a->unk_38);
-    out->unk_40 = a->unk_40 + f31 * (b->unk_40 - a->unk_40);
-    out->unk_44 = a->unk_44 + f31 * (b->unk_44 - a->unk_44);
-    out->unk_48 = a->unk_48 + f31 * (b->unk_48 - a->unk_48);
-    out->unk_5C = a->unk_5C + f31 * (b->unk_5C - a->unk_5C);
 }
 
 
