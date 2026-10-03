@@ -76,10 +76,6 @@ extern const Vec vec3_802ff7ac;
 extern const Vec vec3_802ff7b8;
 extern const Vec vec3_802ff7c4;
 extern const char str_802FF80C[];
-// The original reaches every .rodata object in this unit through the first one, str_802FF668, with
-// constant offsets; name that base so MWCC emits the same `lis/addi` + offset loads.
-#define RD(off) ((const u8*)str_802FF668 + (off))
-#define ROV(off) (*(const Vec*)RD(off))
 
 // LOCAL_PROTO(psndSFX_pit): the retail callers disagree on the pitch width and
 // signedness; this file passes a full 32-bit signed pitch.
@@ -384,13 +380,17 @@ s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
 // pool load; the sort/max loops and the star gather are otherwise byte-identical).
 s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     const u8* p = (const u8*)str_802FF668;
-#undef RD
-#undef ROV
-#define RD(off) (p + (off))
-#define ROV(off) (*(const Vec*)(p + (off)))
+#ifdef MUST_MATCH
+// MUST_MATCH: the original reads these .rodata objects as offsets from the unit's first one.
+#define ZS_ROV(off, sym) (*(const Vec*)(p + (off)))
+#define ZS_RD(off, sym) ((const char*)(p + (off)))
+#else
+#define ZS_ROV(off, sym) (sym)
+#define ZS_RD(off, sym) (sym)
+#endif
     ZubaStarWork* work = GetZubaStarPtr();
 #ifdef MUST_MATCH
-    ZubaStarPoints4 points = *(ZubaStarPoints4*)RD(0x6c);
+    ZubaStarPoints4 points = *(ZubaStarPoints4*)(p + 0x6c);
 #else
     Vec points[4] = {
         { 0.0f, 240.0f, 0.0f },
@@ -407,10 +407,10 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     if (isFirstCall) {
         work->tex = smartAlloc(GXGetTexBufferSize(0x190, 0x1E0, 4, 0, 0), 1);
 #ifdef MUST_MATCH
-        points.v[0] = ROV(0x9c);
-        points.v[1] = ROV(0xa8);
-        points.v[2] = ROV(0xb4);
-        points.v[3] = ROV(0xc0);
+        points.v[0] = ZS_ROV(0x9c, vec3_802ff704);
+        points.v[1] = ZS_ROV(0xa8, vec3_802ff710);
+        points.v[2] = ZS_ROV(0xb4, vec3_802ff71c);
+        points.v[3] = ZS_ROV(0xc0, vec3_802ff728);
         zubastar_create_takaku(4, points.v);
 #else
         points[0] = vec3_802ff704;
@@ -419,7 +419,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         points[3] = vec3_802ff728;
         zubastar_create_takaku(4, points);
 #endif
-        work->field_0x020 = ROV(0xcc);
+        work->field_0x020 = ZS_ROV(0xcc, vec3_802ff734);
     }
 
     switch (work->field_0x004) {
@@ -436,6 +436,8 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         if (work->field_0x07C == 0xF) {
             work->field_0x07C = 0x10;
         }
+        // fallthrough
+    case 6:
         if (work->field_0x018 == 0xA && work->field_0x07C == 0xA) {
             work->field_0x004 = 0xA;
         }
@@ -510,11 +512,11 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         work->field_0x004 = 0x1A;
         work->field_0x018 = 0x19;
         if (irand(2) == 0) {
-            work->field_0x05C = ROV(0xd8);
-            work->field_0x068 = ROV(0xe4);
+            work->field_0x05C = ZS_ROV(0xd8, vec3_802ff740);
+            work->field_0x068 = ZS_ROV(0xe4, vec3_802ff74c);
         } else {
-            work->field_0x05C = ROV(0xf0);
-            work->field_0x068 = ROV(0xfc);
+            work->field_0x05C = ZS_ROV(0xf0, vec3_802ff758);
+            work->field_0x068 = ZS_ROV(0xfc, vec3_802ff764);
         }
         y[0] = -96.0f;
         x[0] = -96.0f;
@@ -630,8 +632,8 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     case 0x23:
         work->field_0x004 = 0x24;
         work->field_0x018 = 0x19;
-        work->field_0x05C = ROV(0x108);
-        work->field_0x068 = ROV(0x114);
+        work->field_0x05C = ZS_ROV(0x108, vec3_802ff770);
+        work->field_0x068 = ZS_ROV(0x114, vec3_802ff77c);
         break;
     case 0x24:
         if (work->field_0x018 == 0x1E) {
@@ -675,7 +677,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         }
         break;
     case 0xA:
-        work->field_0x020 = ROV(0x120);
+        work->field_0x020 = ZS_ROV(0x120, vec3_802ff788);
         break;
     case 0xF:
         work->field_0x018 = 0x10;
@@ -716,7 +718,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
                 break;
             }
         }
-        psndSFXOn((const char*)RD(0x1c8));
+        psndSFXOn(ZS_RD(0x1c8, str_802FF830));
         // fallthrough
     case 0x1A:
         work->field_0x074++;
@@ -746,7 +748,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         work->field_0x018 = 0x1E;
         // fallthrough
     case 0x1E:
-        work->field_0x020 = ROV(0x12c);
+        work->field_0x020 = ZS_ROV(0x12c, vec3_802ff794);
         break;
     default:
         break;
@@ -763,7 +765,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     case 5:
         work->field_0x07C = 6;
         work->field_0x080 = 0;
-        work->field_0x094 = ROV(0x138);
+        work->field_0x094 = ZS_ROV(0x138, vec3_802ff7a0);
         work->field_0x090 = 200.0f;
         work->field_0x084 = 0.0f;
         work->field_0x088 = 0.0f;
@@ -803,7 +805,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
         }
         if (work->field_0x084 > 0.0f) {
             if (psndSFXChk(work->field_0x0A4) == -1) {
-                work->field_0x0A4 = psndSFXOn((const char*)RD(0x1e0));
+                work->field_0x0A4 = psndSFXOn(ZS_RD(0x1e0, str_802FF848));
             }
         }
         if (psndSFXChk(work->field_0x0A4) == 0) {
@@ -868,6 +870,8 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     dispEntry(8, 900.0f, 1, zubastar_disp2D, NULL);
     return 0;
 }
+#undef ZS_ROV
+#undef ZS_RD
 
 // .text:0x800 | 0x8022ED90 | size: 0x398
 // The state machine matches. Every named float constant is a literal (0.0f, 104.0f, 600.0f, 200.0f,
@@ -1200,6 +1204,7 @@ s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, 
 // .text:0x1F58 | 0x802304E8 | size: 0xE4
 // NONMATCHING (96.49%): a volatile struct copy reproduces the original's load/store interleave for
 // vec3_802ff6b0; the only remaining difference is the loop's branch targets.
+// dont_inline: the original calls zubastar_create_takaku from zubastar_main with `bl`.
 #pragma dont_inline on
 void zubastar_create_takaku(s32 count, Vec* points) {
     ZubaStarWork* work = GetZubaStarPtr();

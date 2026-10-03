@@ -3848,3 +3848,7 @@ looks the same as a slow agent from the log until the end.
 - **Wave 60** queued by `scratch/wave60/chain.sh`: after wave 59 ends and 30 minutes for the permuter, a base from
   current main and the 50-90% band, then 90-99% by unmatched-byte gap, skipping the permuter's queue17
   (`scratch/wave5x/queue17.txt`) and claimed units (`scratch/wave5x/mkspec_band.py`).
+- Claude #1's second review of #273 (2 Claude + Codex): zubastar_main had no `case 6`; retail's jump table sends
+  state 6 to the `field_0x018 == 0xA && field_0x07C == 0xA` check at the end of case 5, so case 5 now falls through
+  into it (state 6 used to stall in default). The unit's .rodata reads through str_802FF668 + offset are under
+  MUST_MATCH with the named vec3/str objects in #else, scoped to zubastar_main.
