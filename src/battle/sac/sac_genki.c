@@ -406,12 +406,14 @@ static inline Vec _makeTrans1(const f32* vec, f32 x, f32 y, f32 z) {
     return v;
 }
 
-// NONMATCHING (94.95%): the trans `makeVec`-style inline matches the caller trans/scale slots, but
-// the inlined wrapper params still land a few Vec slots low, and the magic double is a fresh `@NNN`
-// not `lfd 0x1b8(r30)` (unit .rodata pool incomplete, as in main_star0/1/main_weapon). Loop regs match.
+// Reading each vector by name (`*(const Vec*)vec3_8030034c`) rather than through a
+// `vec3_803002b0` pointer makes MWCC anchor the whole .rodata section in r30 and copies the
+// trans/scale/rot/tmp locals into the original's slots. The two final quads call btlDispTex4
+// directly. The int->float loads still read the compiler's own pooled copy (+0x1f0) where retail
+// reads double_to_int_80300468 (+0x1b8); objdiff doesn't score that displacement. Under MUST_MATCH the five icon colours are named
+// locals passed by address, so MWCC allocates them 0x20..0x10 and the final colours 0xc/0x8.
 static void disp_3D(CameraId cameraId, void* param) {
     GenkiObject* obj;
-    const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     BattleUnit* party = BattleGetPartyPtr(_battleWorkPointer);
@@ -423,6 +425,17 @@ static void disp_3D(CameraId cameraId, void* param) {
     f32 px, py, pz;
     u16 flags;
     s32 i;
+#ifdef MUST_MATCH
+    // Match-only: the original allocates the five icon colours 0x20..0x10 in declaration
+    // order, then the two final colours at 0xc/0x8. That needs each colour to be a named
+    // local whose address is passed, instead of the anonymous by-value temp MWCC makes for
+    // the natural call. The #else forms below use the natural by-value calls.
+    GXColor iconC1;
+    GXColor iconC2;
+    GXColor iconC3;
+    GXColor iconC4;
+    GXColor iconC5;
+#endif
 
     if (genki->field_4 != 0) {
         BtlUnit_GetHomePos(mario, &x, &y, &z);
@@ -436,13 +449,13 @@ static void disp_3D(CameraId cameraId, void* param) {
         {
             s32 frame;
             if (genki->field_1C >= float_10_80421d54) {
-                Vec v = *(const Vec*)&vec[0x9C / 4];
+                Vec v = *(const Vec*)vec3_8030034c;
                 v.x = x + float_6_80421d5c;
                 v.y = y;
                 v.z = z + float_8_80421d60;
                 pos = v;
             } else {
-                Vec v = *(const Vec*)&vec[0xA8 / 4];
+                Vec v = *(const Vec*)vec3_80300358;
                 v.x = x;
                 v.y = y;
                 v.z = z + float_8_80421d60;
@@ -451,7 +464,13 @@ static void disp_3D(CameraId cameraId, void* param) {
             PSMTXTrans(mtx, pos.x, pos.y, pos.z);
             frame = genki->field_28 % 12;
             if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                iconC1 = *(GXColor*)&dat_80421d20;
+                ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_1C, 0, &iconC1);
+#else
                 iconNumberDispGx3D(mtx, (s32)genki->field_1C, 0, *(GXColor*)&dat_80421d20);
+#endif
+
             }
         }
         if (genki->field_50 != -1) {
@@ -466,13 +485,13 @@ static void disp_3D(CameraId cameraId, void* param) {
             {
                 s32 frame;
                 if (genki->field_20 >= float_10_80421d54) {
-                    Vec v = *(const Vec*)&vec[0xB4 / 4];
+                    Vec v = *(const Vec*)vec3_80300364;
                     v.x = px + float_6_80421d5c;
                     v.y = py;
                     v.z = pz + float_8_80421d60;
                     pos2 = v;
                 } else {
-                    Vec v = *(const Vec*)&vec[0xC0 / 4];
+                    Vec v = *(const Vec*)vec3_80300370;
                     v.x = px;
                     v.y = py;
                     v.z = pz + float_8_80421d60;
@@ -481,7 +500,13 @@ static void disp_3D(CameraId cameraId, void* param) {
                 PSMTXTrans(mtx, pos2.x, pos2.y, pos2.z);
                 frame = genki->field_2C % 12;
                 if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                    iconC2 = *(GXColor*)&dat_80421d24;
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_20, 0, &iconC2);
+#else
                     iconNumberDispGx3D(mtx, (s32)genki->field_20, 0, *(GXColor*)&dat_80421d24);
+#endif
+
                 }
             }
             BtlUnit_GetHomePos(mario, &x, &y, &z);
@@ -497,13 +522,13 @@ static void disp_3D(CameraId cameraId, void* param) {
             {
                 s32 frame;
                 if (genki->field_24 >= float_10_80421d54) {
-                    Vec v = *(const Vec*)&vec[0xCC / 4];
+                    Vec v = *(const Vec*)vec3_8030037c;
                     v.x = x + float_6_80421d5c;
                     v.y = y;
                     v.z = z + float_8_80421d60;
                     pos = v;
                 } else {
-                    Vec v = *(const Vec*)&vec[0xD8 / 4];
+                    Vec v = *(const Vec*)vec3_80300388;
                     v.x = x;
                     v.y = y;
                     v.z = z + float_8_80421d60;
@@ -512,7 +537,13 @@ static void disp_3D(CameraId cameraId, void* param) {
                 PSMTXTrans(mtx, pos.x, pos.y, pos.z);
                 frame = genki->field_30 % 12;
                 if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                    iconC3 = *(GXColor*)&dat_80421d28;
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC3);
+#else
                     iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d28);
+#endif
+
                 }
             }
         } else {
@@ -527,13 +558,13 @@ static void disp_3D(CameraId cameraId, void* param) {
             {
                 s32 frame;
                 if (genki->field_24 >= float_10_80421d54) {
-                    Vec v = *(const Vec*)&vec[0xE4 / 4];
+                    Vec v = *(const Vec*)vec3_80300394;
                     v.x = x + float_6_80421d5c;
                     v.y = y;
                     v.z = z + float_8_80421d60;
                     pos = v;
                 } else {
-                    Vec v = *(const Vec*)&vec[0xF0 / 4];
+                    Vec v = *(const Vec*)vec3_803003a0;
                     v.x = x;
                     v.y = y;
                     v.z = z + float_8_80421d60;
@@ -542,7 +573,13 @@ static void disp_3D(CameraId cameraId, void* param) {
                 PSMTXTrans(mtx, pos.x, pos.y, pos.z);
                 frame = genki->field_30 % 12;
                 if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                    iconC4 = *(GXColor*)&dat_80421d2c;
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC4);
+#else
                     iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d2c);
+#endif
+
                 }
             }
         }
@@ -650,8 +687,10 @@ static void disp_3D(CameraId cameraId, void* param) {
                             obj->field_10 - float_20_80421d78 * scale, obj->field_14);
 #ifdef MUST_MATCH
             // The original passes `flags` without a sign extension; with the header's s16
-            // parameter MWCC emits `extsh`, so call it through a u16 prototype.
-            ((void (*)(Mtx, u16, s32, GXColor))iconDispGxCol)(mtx, flags, icon, *(GXColor*)&dat_80421d30);
+            // parameter MWCC emits `extsh`, so call it through a u16 prototype. The named
+            // `iconC5` address (not a by-value temp) gives it the original's 0x10 slot.
+            iconC5 = *(GXColor*)&dat_80421d30;
+            ((void (*)(Mtx, u16, s32, GXColor*))iconDispGxCol)(mtx, flags, icon, &iconC5);
 #else
             iconDispGxCol(mtx, flags, icon, *(GXColor*)&dat_80421d30);
 #endif
@@ -667,24 +706,46 @@ static void disp_3D(CameraId cameraId, void* param) {
         y += float_85_80421d7c * (f32)sin(angle);
         {
             Vec trans;
+            Vec pos;
+            Vec scale;
             Vec rot;
+            Vec tmp;
+            GXColor color;
 
             x += float_10_80421d54;
             y += float_30_80421d80;
             z += float_10_80421d54;
-            rot = *(const Vec*)&vec[0x114 / 4];
-            rot.z = float_6_80421d5c * (f32)genki->field_68;
-            trans = _makeTrans1(vec, x, y, z);
-            _drawGenkiTex(0x41, *(GXColor*)&dat_80421d34, trans, rot, *(const Vec*)&vec[0x108 / 4]);
+            color = *(GXColor*)&dat_80421d34;
+            tmp = *(const Vec*)vec3_803003c4;
+            tmp.z = float_6_80421d5c * (f32)genki->field_68;
+            rot = tmp;
+            scale = *(const Vec*)vec3_803003b8;
+            pos = *(const Vec*)vec3_803003ac;
+            pos.x = x;
+            pos.y = y;
+            pos.z = z;
+            trans = pos;
+            btlDispTex4(0x41, &trans, &scale, &rot, &color);
         }
         {
             Vec trans;
+            Vec pos;
+            Vec scale;
             Vec rot;
+            Vec tmp;
+            GXColor color;
 
-            rot = *(const Vec*)&vec[0x138 / 4];
-            rot.z = float_6_80421d5c * -(f32)genki->field_68;
-            trans = _makeTrans2(vec, x, y, z);
-            _drawGenkiTex2(0x42, *(const Vec*)&vec[0x12C / 4], rot, trans, *(GXColor*)&dat_80421d38);
+            color = *(GXColor*)&dat_80421d38;
+            tmp = *(const Vec*)vec3_803003e8;
+            tmp.z = float_6_80421d5c * -(f32)genki->field_68;
+            rot = tmp;
+            scale = *(const Vec*)vec3_803003dc;
+            pos = *(const Vec*)vec3_803003d0;
+            pos.x = x;
+            pos.y = y;
+            pos.z = z;
+            trans = pos;
+            btlDispTex4(0x42, &trans, &scale, &rot, &color);
         }
     }
 }

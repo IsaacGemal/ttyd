@@ -440,7 +440,40 @@ ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5,
 }
 
 
-// NONMATCHING (96.24%): logic complete; FPR scheduling in mode 1 and one register swap in mode 9 differ.
+// Same body as itemseq_deleteMatching; a separate helper so itemMain inlines the loop with the
+// register allocation the target has (wp2/e/j in r25/r26/r27) without moving the shared helper.
+static inline void itemseq_delMatchingMain(ItemEntry* item) {
+    ItemWork* wp2 = itemGetWork();
+    ItemEntry* e = wp2->entries;
+    s32 j;
+
+    for (j = 0; j < wp2->count; j++, e++) {
+        if (!strcmp(e->name, item->name)) {
+            itemCheckBadge(e);
+            switch (e->itemId) {
+            case 0x72:
+            case 0x73:
+            case 0x74:
+            case 0x75:
+            case 0x76:
+            case 0x77:
+            case 0x78:
+                effSoftDelete(e->effect);
+                break;
+            default:
+                iconDelete(e->name);
+                break;
+            }
+            e->flags &= ~1;
+        }
+    }
+}
+// The mode-9 loop matches (inlined via itemseq_delMatchingMain, giving the target's r25/r26/r27 allocation).
+// In the mode-1 itemId distance setup the compiler folds `double_20_802cac28` to 20.0, pools it and
+// allocates the pool/fabs pair as f5/f2 (target f2/f5, read from the named symbol with `lis r3`); the two
+// address bases also come out r3/r4. Reading it through `p_dbl20` (MATCH_DBL20) stops the fold and reaches
+// 99.78%, but removes the pooled 20.0 from [.rodata] (89.456 -> 88.946), so keep the direct named-constant read.
+// NONMATCHING (99.20%): only the mode-1 distance setup differs, as described above.
 void itemMain(void) {
     ItemWork* wp;
     ItemEntry* entry;
@@ -531,19 +564,25 @@ void itemMain(void) {
             f32 hitX;
             f32 newY;
 
-
-
             if (*(u32*)((u8*)entry + 0x38) & 0x100000) {
                 hit = NULL;
                 newY = y + float_neg1_8041afac;
             } else {
+                f32 xx;
+                f32 yy;
+                f32 zz;
+
+                xx = entry->position.x;
+                zz = entry->position.z;
                 distance = (f32)(double_20_802cac28 + __fabs(double_neg1_802cae60));
+                yy = float_20_8041afa0 + y;
                 hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                     entry->position.x, float_20_8041afa0 + y, entry->position.z,
+                                     xx, yy, zz,
                                      float_0_8041af9c, float_neg1_8041afac, float_0_8041af9c);
                 if (hit != NULL) {
                     newY = hitY;
                 } else {
+                    hit = NULL;
                     newY = y + float_neg1_8041afac;
                 }
             }
@@ -577,34 +616,8 @@ void itemMain(void) {
         }
         break;
         case 9:
-        {
-            ItemEntry* e;
-            int j;
-            ItemWork* wp2;
-
-            wp2 = itemGetWork();
-            for (e = wp2->entries, j = 0; j < wp2->count; j++, e++) {
-                if (!strcmp(e->name, entry->name)) {
-                    itemCheckBadge(e);
-                    switch (e->itemId) {
-                    case 0x72:
-                    case 0x73:
-                    case 0x74:
-                    case 0x75:
-                    case 0x76:
-                    case 0x77:
-                    case 0x78:
-                        effSoftDelete(e->effect);
-                        break;
-                    default:
-                        iconDelete(e->name);
-                        break;
-                    }
-                    e->flags &= ~1;
-                }
-            }
-        }
-        break;
+            itemseq_delMatchingMain(entry);
+            break;
         default:
             break;
         }

@@ -14,14 +14,15 @@
 // original names with a `$NNN` local (`negone_one$374`, ...) are declared here with plain names (cf.
 // eff_booboo_n64); the `lbl_8039CDxx` globals keep the disassembly's names. Porting the tables (instead of
 // addressing them as raw offsets) is what fixes the two-add vertex copy in effFlameDisp below.
+#pragma force_active on
 __declspec(section ".data") u32 lbl_8039CDA8[2] = { 0xBF800000, 0x3F800000 };
-__declspec(section ".data") u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
 __declspec(section ".data") u32 lbl_8039CDB8[2] = { 0x3F800000, 0xBF800000 };
-__declspec(section ".data") u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
 __declspec(section ".data") u32 lbl_8039CDC8[2] = { 0xBF800000, 0x3F800000 };
-__declspec(section ".data") u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
 __declspec(section ".data") u32 lbl_8039CDD8[2] = { 0x3F800000, 0xBF800000 };
-__declspec(section ".data") u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
 
 __declspec(section ".data") u32 stg_flame_v[28] = {
 	0xFFCEFFEC, 0x00020000, 0x0000FFFF, 0xFFFF0032, 0xFFEC0002, 0x04000000, 0xFFFFFFFF,
@@ -45,9 +46,13 @@ __declspec(section ".data") u32 stg_flame_3_v[28] = {
 };
 
 
-// .sbss2 scratch colors referenced by the original display code.
-GXColor unk_80423110;
-GXColor unk_80423114;
+// .sbss2 scratch colors referenced by the original display code (declared in reverse of the
+// original's address order: MWCC lays out nobits objects last-declared-first).
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423114;
+__declspec(section ".sdata") GXColor unk_80423110;
+#pragma section ".sdata" ".sbss"
+#pragma force_active reset
 
 #ifdef MUST_MATCH
 /* Void helpers that build the colour and call GXSetTevColor inside: this is the shape that makes MWCC
@@ -108,8 +113,9 @@ EffectEntry* effFlameN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 
 	entry = effEntry();
 #ifdef MUST_MATCH
-	// the original's .rodata string object is 12 bytes; the trailing nulls reproduce its size
-	entry->type = "FlameN64\0\0\0";
+	// the original's .rodata is a 12-byte "FlameN64" string plus a 4-byte zero gap_04 object;
+	// a 16-byte literal leaves the same 4 trailing zero bytes at the section end
+	entry->type = "FlameN64\0\0\0\0\0\0\0";
 #else
 	entry->type = "FlameN64";
 #endif

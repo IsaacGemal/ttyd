@@ -1167,52 +1167,65 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
 // .text:0x1990 | 0x8022FF20 | size: 0x100
 // Kept out of line: the original's zubastar_bunkatu calls it (bl) instead of inlining it.
 // `opt_lifetimes off` + `opt_propagation off` (reset after the function) give the original's float
-// colouring: the first value (`a`) in f9, the first select result (`b`) in f10, and the reused
-// `ct` temp in f3. Writing the early-exit test and the `d == 0` test with `0.0f` literals, but the
-// two select comparisons with the named `float_0_804217e0` object, forces the original's redundant
-// zero reloads (at the first select and before the second temp); the named object pools a different
-// word than the literals, so MWCC cannot CSE the loads. The second temp reuses `ct` (rather than a
-// separate `dt`) so it lands in f3 like the original.
+// colouring: the first value (`a`) in f9, the first select result (`b`) in f10, the second select
+// result (`c`) in f11, and the `ct` temp in f3. The zero compares must stay `0.0f` literals, not the
+// named `float_0_804217e0` object: with the named object MWCC CSEs the zero reloads away, while the
+// literal (whose pooled word the file already has) forces the original's reloads. The 1e-05 fallback
+// is the named `float_1Eneg05_80421860` because a literal would add a new `.sdata2` word and shift the
+// section. The reused `ct`/`dt` temps and the separate `e`/`f` locals land in the original's registers.
 #pragma dont_inline on
-// `opt_lifetimes off` keeps the select results and the reused ct temp in f9/f10/f3.
-// NONMATCHING (97.34%): `c` lands in f7 instead of f11 and the values that depend on it rotate
-// with it (d f8 vs f0, s1 f11 vs f8, the difference f8 vs f7); all remaining instruction diffs are
-// that one register rotation, otherwise the stream is byte-identical.
+#pragma opt_lifetimes off // keep the select results and the ct temp in f9/f10/f11/f3
+#pragma opt_propagation off // ditto for the rest of the float web
 s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, f32 f8, f32* out1,
                         f32* out2) {
     f32 a = f3 - f1;
     f32 b;
     f32 c;
     f32 d;
-    f32 ct;
-    f32 sl;
+    f32 e;
+    f32 f;
 
     if (a == 0.0f && f7 - f5 == 0.0f) {
         return 0;
     }
-    b = (float_0_804217e0 != a) ? a : float_1Eneg05_80421860;
-    ct = f7 - f5;
-    c = (0.0f != ct) ? ct : float_1Eneg05_80421860;
-    d = f8 - f6;
-    ct = f4 - f2;
-    f8 = ct / b;
-    b = d / c;
-    d = f8 - b;
+    b = (a != 0.0f) ? a : float_1Eneg05_80421860;
+    {
+        // Named temps: MWCC keeps the differences in f3 and the selected results in their own
+        // registers with a copy, like the original (see the comment above the function).
+        f32 ct = f7 - f5;
+        f32 c2 = (ct != 0.0f) ? ct : float_1Eneg05_80421860;
+
+        c = c2;
+    }
+    {
+        f32 dt = f4 - f2;
+
+        d = dt;
+    }
+    e = f8 - f6;
+    f = d / b;
+    b = e / c;
+    d = f - b;
     if (d == 0.0f) {
         return 0;
     }
-    *out1 = ((f6 - f2) + (f8 * f1 - b * f5)) / d;
+    *out1 = ((f6 - f2) + (f * f1 - b * f5)) / d;
     if (a != 0.0f) {
-        *out2 = f8 * (*out1 - f1) + f2;
+        *out2 = f * (*out1 - f1) + f2;
     } else {
         *out2 = b * (*out1 - f5) + f6;
     }
-    sl = (*out1 - f5) / c;
-    if (sl >= float_0_804217e0 && sl <= float_1_804217d0) {
-        return 1;
+    {
+        f32 sl = (*out1 - f5) / c;
+
+        if (sl >= 0.0f && sl <= 1.0f) {
+            return 1;
+        }
     }
     return 0;
 }
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
 #pragma dont_inline reset
 
 

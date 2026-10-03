@@ -222,6 +222,71 @@ static inline void winNameQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w,
 }
 
 
+// The name plate used by win_mario's partner menu: two inlined winNameQuad halves.
+// type 0/1 are the 32px-tall name bar (16px cap on the right), type 2 the 24px
+// tall bar used by the partner panels (8px cap).
+static inline void nameQuadTw(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f32 h) {
+    GXTexObj texObj;
+    Mtx mtx;
+    f32 syf;
+    f64 sy;
+    f64 sx;
+
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, texId);
+    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    sy = __fabs(h);
+    sx = __fabs(w);
+    syf = (f32)sy / (f32)GXGetTexObjHeight(&texObj);
+    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), syf, float_1_8041d070);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x, y - h, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(x + w, y - h, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(x + w, y, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+}
+// NONMATCHING (99.28%): all instructions match; retail colours the inlined
+// quad temps f26/f27/f28 and saves one more FPR (frame 0x280 vs our 0x270).
+// The winNameQuad/nameQuadTw mix is the minimum-diff colouring found.
+void winNameGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(0, 7, 0);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041cf4c);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+    GXSetCurrentMtx(0);
+
+    if (type == 0) {
+        winNameQuad(work, 0x13, x, y, w - 16.0f, 32.0f);
+        nameQuadTw(work, 0x14, x + w - 16.0f, y, 16.0f, 32.0f);
+    } else if (type == 1) {
+        nameQuadTw(work, 0x15, x, y, w - 16.0f, 32.0f);
+        nameQuadTw(work, 0x16, x + w - 16.0f, y, 16.0f, 32.0f);
+    } else if (type == 2) {
+        nameQuadTw(work, 0x78, x, y, w - 8.0f, 24.0f);
+        nameQuadTw(work, 0x79, x + w - 8.0f, y, 8.0f, 24.0f);
+    }
+}
+
 void winZClear(void) {
     Mtx mtx;
 
@@ -1095,16 +1160,30 @@ static inline void winSortPanel(WindowWork* work, s32 texId, f32 x, f32 y, f32 w
     GXTexCoord2f32(1.0f, 0.0f);
 }
 
+extern const f32 float_136_8041d0f0;
 // The panels, sort-name tex selection and winTexSet/winTexSet_x2 loop all reproduce the
 // target: `h` is passed as f64 so MWCC emits the target's `lfd double_24/40/16; fabs; frsp`
 // scale idiom, and `w` as f32 (lfs + fabs + frsp). The six vec3_802f42xx constants are
 // defined as unit-local `const Vec` (all {0,0,0}/{1,1,1}, extracted from the target's
-// .rodata), which lets MWCC emit the target's rodata-base-relative loads. What is left is
-// register colouring and the offsets of the anonymous doubles (MWCC emits ours at
-// rodata+0xe8..0x100; the target's str_802F3FE8 blob puts them at +0x4e0..0x500, because
-// this unit's other .rodata (str_802F3FE8 and the vec3_802f40xx..42xx the unwritten
-// functions need) is not defined here yet).
-// NONMATCHING (96.33%): anonymous-double .rodata offsets + a few register-colouring diffs.
+// .rodata), which lets MWCC emit the target's rodata-base-relative loads.
+//
+// The panel-8 (0xA8) `w` is the named float_136_8041d0f0 rather than the literal 136.0f:
+// the target loads it with lfs+fabs and computes the int->float height with fsubs (asm
+// 0x8014F600/0x8014F664), while the literal/f64 form folded to lfd.
+//
+// The winTex loop's three x offsets are hoisted before the loop as literals
+// (`x + 64.0f + 3.0f + 16.0f`, `x + 64.0f + 16.0f + 4.0f`, and the latter `- 6.0f`): only
+// when the whole computation is written out does MWCC share the target's `x+64`/`+16`
+// partial sums (asm 0x8014F724-0x8014F768). The literals also keep the target's pooled
+// .sdata2 words (64/3/16/4/6) instead of replacing them with a single folded 83/78/84
+// constant, which is what makes the unit's .sdata2 score rise rather than fall.
+//
+// What still differs: the anonymous .rodata pool offsets (MWCC emits the f64 scale
+// constants at rodata+0xe8..0x100 and the sort-name string literals at r31+0x108..; the
+// target's str_802F3FE8 base puts them at +0x4e0..0x500 and +0x27c..) and the FPR
+// colouring of the fsubs/fadds/stfs in the inlined winSortPanel emissions (0xA3..0xA7).
+// Both settle when the rest of the unit's .rodata is present and the file links.
+// NONMATCHING (98.62%): anonymous .rodata pool offsets + FPR colouring in the panels.
 void winSortGX(WindowWork* work) {
     f32 x = WW_F32(work, 0x164);
     f32 y = WW_F32(work, 0x168);
@@ -1129,8 +1208,8 @@ void winSortGX(WindowWork* work) {
     GXLoadPosMtxImm((const f32(*)[4])((u8*)camGetPtr(8) + 0x11C), 0);
     GXSetCurrentMtx(0);
     if (WW_S32(work, 0x184) == 7) {
-        GXSetScissor((u32)(float_16_8041d0e4 +
-                           (float_16_8041d0e4 + (float_304_8041d0a8 + WW_F32(work, 0x244)))),
+        GXSetScissor((u32)(16.0f +
+                           (16.0f + (float_304_8041d0a8 + WW_F32(work, 0x244)))),
                      (u32)(float_40_8041d0e8 + (float_240_8041d0ac - WW_F32(work, 0x24C))), 0x200,
                      0xC0);
     }
@@ -1139,17 +1218,22 @@ void winSortGX(WindowWork* work) {
     winSortPanel(work, 0xA3, x + float_128_8041d0ec, y, 24.0f, 24.0);
 
     for (i = 0; i < WW_S32(work, 0x178); i++) {
-        winSortPanel(work, 0xA6, x + 136.0f, y - float_24_8041d0c8 - (f32)(i * 0x28), 16.0f,
+        winSortPanel(work, 0xA6, x + 136.0f, y - 24.0f - (f32)(i * 0x28), 16.0f,
                      40.0);
     }
 
     winSortPanel(work, 0xA4, x + float_128_8041d0ec,
-                 y - float_24_8041d0c8 - (f32)(WW_S32(work, 0x178) * 0x28), 24.0f,
+                 y - 24.0f - (f32)(WW_S32(work, 0x178) * 0x28), 24.0f,
                  24.0);
-    winSortPanel(work, 0xA7, x, y - float_24_8041d0c8 - (f32)(WW_S32(work, 0x178) * 0x28),
+    winSortPanel(work, 0xA7, x, y - 24.0f - (f32)(WW_S32(work, 0x178) * 0x28),
                  float_128_8041d0ec, 24.0);
-    winSortPanel(work, 0xA8, x, y - float_24_8041d0c8, 136.0f,
-                 (f64)(WW_S32(work, 0x178) * 0x28));
+    winSortPanel(work, 0xA8, x, y - 24.0f, float_136_8041d0f0,
+                 (f32)(WW_S32(work, 0x178) * 0x28));
+
+    {
+        f32 x83 = x + 64.0f + 3.0f + 16.0f;
+        f32 x84 = x + 64.0f + 16.0f + 4.0f;
+        f32 x78 = x + 64.0f + 16.0f + 4.0f - 6.0f;
 
     for (i = 0; i < WW_S32(work, 0x178); i++) {
         const SortTable* list = sort_data[WW_S32(work, 0x184)];
@@ -1173,19 +1257,20 @@ void winSortGX(WindowWork* work) {
             f32 row;
 
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-            row = y - float_20_8041d0c0 - (f32)(i * 0x28) - float_16_8041d0e4 - float_8_8041d0a0;
-            winTexSet(0xB6, winSortMkVec(vec3_802f42cc, x + 83.0f, row), vec3_802f42d8, dat_8041d008);
+            row = y - float_20_8041d0c0 - (f32)(i * 0x28) - 16.0f - float_8_8041d0a0;
+            winTexSet(0xB6, winSortMkVec(vec3_802f42cc, x83, row), vec3_802f42d8, dat_8041d008);
             winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-            winTexSet_x2(tex, 0xB6, winSortMkVec(vec3_802f42e4, x + 78.0f, float_6_8041d0f8 + row),
+            winTexSet_x2(tex, 0xB6, winSortMkVec(vec3_802f42e4, x78, float_6_8041d0f8 + row),
                          vec3_802f42f0, dat_8041d00c);
         } else {
             f32 row;
 
             winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-            row = y - float_20_8041d0c0 - (f32)(i * 0x28) - float_16_8041d0e4 - float_8_8041d0a0;
-            winTexSet_x2(tex, 0xB6, winSortMkVec(vec3_802f42fc, x + 84.0f, row), vec3_802f4308,
+            row = y - float_20_8041d0c0 - (f32)(i * 0x28) - 16.0f - float_8_8041d0a0;
+            winTexSet_x2(tex, 0xB6, winSortMkVec(vec3_802f42fc, x84, row), vec3_802f4308,
                          dat_8041d010);
         }
+    }
     }
 
     if (WW_S32(work, 0x184) == 7) {

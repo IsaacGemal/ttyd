@@ -4045,3 +4045,23 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   recipe), and 57 agents seeded with a salvage candidate insert.py couldn't keep, each told why (a data section or
   another function lower, or it doesn't compile against today's file), plus the unwritten win_root GX functions
   from m2c drafts. Collected per function through insert.py.
+
+## Waves 64 and 65, batch 1 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- Onto main 712a9122 (with salvage 2): 9,312 -> 9,317, **code linked 41.75 -> 43.13%**, data linked 79.41 ->
+  79.61%. Eight of wave 65's eleven link agents' units link: ac_repeatedly_lv, extdrv, mobjdrv, eff_itemget,
+  eff_flame_n64, eff_opuku_wgun_n64, mot_hammer, statuswindow (each flip tested alone against the checksums;
+  party_bomhei's agent believed it linked and it doesn't). eff_flame_n64's objdiff data score drops as it links
+  (`--allow-regress`; linked units' data scores are imperfect, the checksum is the check). mot_hammer.h now
+  declares mot_hammer/mot_hammer2/mot_ham2_post, which replaced mario_motion.c's array externs for them.
+- Function agents (wave 64's unwritten arm and wave 65's seeded salvage) collected per function through
+  insert.py: 20 kept of 51 (party_motion_homing_fly 0 -> 97.8%, partyRideMain 0 -> 97.1%, winNameGX 0 -> 99.3%,
+  mobj_itembox 0 -> 100%, effKamekiTornadeDisp 0 -> 99.1%, animPoseDisp_MakeExtTexture 0 -> 98.4%, and near-misses).
+  Most of the rest still lower a data section, which is the remaining salvage problem.
+- Reviews (`scratch/wave65/review1.md`, `review1b.md`): rule 13 came back behind macros whose `sym` argument is
+  ignored (homing_fly's FB/FV, partyRideMain's PR_FV) and through a string literal ("a_mario" + 0x88 in
+  marioOfsRotReset); all now MUST_MATCH only with literal natural forms. Two hacks dropped: a second copy of
+  btlataudevtDummy's script returned under MUST_MATCH, and gor evt_yuuranking_disp_func's unguarded by-pointer
+  colour casts. mobj_lv_blk_evt left out again (unguarded base reads). Open LOWs: sac_genki's now-unused
+  _drawGenkiTex/_makeRot/_makeTrans inlines, itemMain's dead `hit = NULL`, eff_opuku_wgun_n64's `.sbss2` section
+  pragma not switched back (linked unit), partyRideMain's explicit `case 99` (same as the default exit).

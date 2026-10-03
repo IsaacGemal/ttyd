@@ -9,15 +9,20 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-static const Vec vec3_802fdda8 = { 0.0f, 0.0f, 0.0f };
+// Local copy of system.c's inline helper so it inlines here (as in eff_rankup.c).
+// Its anonymous {0,0,0} template is the unit's first .rodata object and stands in for the
+// original's named vec3_802fdda8, so the function must be defined before the named vectors.
+inline Vec initializeVec(Vec* input) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
+}
+
 static const Vec vec3_802fddb4 = { 0.0f, 0.0f, 1000.0f };
 static const Vec vec3_802fddc0 = { 0.0f, 1.0f, 0.0f };
 static const Vec vec3_802fddcc = { 0.0f, 0.0f, 0.0f };
-
-static const f64 double_to_int_mask_802fddd8 = 4503599627370496.0;
-static const f64 double_to_int_802fdde8 = 4503601774854144.0;
-
-static const char str_802FDDE0[] = "ItemGet";
 
 static u8 scale_data[12] = {
 	0x00, 0x12, 0x26, 0x3B, 0x4E, 0x60, 0x6E, 0x78, 0x79, 0x72, 0x69, 0x64
@@ -41,9 +46,13 @@ u8 size_tbl[12] = {
 static const GXColor dat_80420b98 = { 0xFF, 0xFF, 0xFF, 0x00 };
 static const GXColor dat_80420b9c = { 0xFF, 0xFF, 0xFF, 0x00 };
 static const GXColor dat_80420ba0 = { 0xFF, 0xFF, 0xFF, 0x00 };
-GXColor unk_804232f0;
-GXColor unk_804232f4;
-GXColor unk_804232f8;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it
+// with a small-data section and place the objects by hand, declared in reverse address order.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804232f8;
+__declspec(section ".sdata") GXColor unk_804232f4;
+__declspec(section ".sdata") GXColor unk_804232f0;
+#pragma section ".sdata" ".sbss"
 
 EffectEntry* effItemGetEntry(s32 id, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
@@ -59,7 +68,7 @@ EffectEntry* effItemGetEntry(s32 id, f32 x, f32 y, f32 z) {
 	} else if (id == 10) {
 		count = 6;
 	}
-	entry->type = str_802FDDE0;
+	entry->type = "ItemGet";
 	entry->count = count;
 	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(effItemGetData));
 	entry->userdata = data;
@@ -98,15 +107,6 @@ EffectEntry* effItemGetEntry(s32 id, f32 x, f32 y, f32 z) {
 		ptr->field_0x1C = 0;
 	}
 	return entry;
-}
-
-// Local copy of system.c's inline helper so it inlines here (as in eff_rankup.c).
-inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = input->x;
-	temp.y = input->y;
-	temp.z = input->z;
-	return temp;
 }
 
 void effItemGetMain(EffectEntry* effect) {
@@ -550,3 +550,10 @@ void effItemUseDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// the 4 zero bytes after the unit's last .sdata object (gap_07_804159FC_sdata)
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") static u32 gap_end_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset

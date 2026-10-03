@@ -104,10 +104,67 @@ void imgDisp(CameraId camId, void* param) {
 
 }
 
-// NONMATCHING (0.61%): 164 missing.
+// .rodata in the original; left extern because <math.h>'s inline sqrt statics already fill this
+// file's .rodata, and defining it here would shift them (see report).
+extern const Vec vec3_802c4808;
+// Objects the original unit defines in .sdata2/.rodata.
+const GXColor dat_8041a278 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041a27c = {0xFF, 0xFF, 0xFF, 0xFF};
 void imgDisp_ProjPlane(CameraId camId, void* param) {
 	ImageEntry* entry = param;
+	Mtx mtx;
+	Mtx concat;
+	Vec lightPos;
+	GXColor color1;
+	GXColor color2;
+	CameraEntry* camera;
+	u32 flags;
 
+	switch (entry->shadowId) {
+		case 0:
+			return;
+		case 1:
+			flags = 0x20000;
+			PSMTXIdentity(mtx);
+			GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+			break;
+		case 2:
+			flags = 0x40000;
+			PSMTXTrans(mtx, 0.0f, 0.0f, entry->field_0x11C);
+			GXSetBlendMode(GX_BM_SUBTRACT, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+			break;
+	}
+
+	lightPos = vec3_802c4808;
+	PSMTXMultVec(mtx, &lightPos, &lightPos);
+	mapSetMaterialLight(0, lightPos);
+	color1 = dat_8041a278;
+	color2 = dat_8041a27c;
+	mapSetMaterialLastStageBlend(flags, color1, color2);
+	mapSetMaterialTev(0, 0, flags, mtx);
+	camera = camGetCurPtr();
+	PSMTXConcat(camera->view, mtx, concat);
+	GXLoadPosMtxImm(concat, 0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	GXSetAlphaUpdate(GX_TRUE);
+	GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+	GXSetZCompLoc(GX_TRUE);
+	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+	GXSetCullMode(GX_CULL_NONE);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+	GXSetVtxDesc(GX_VA_CLR0, GX_DIRECT);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	GXPosition3f32(-32.0f, 24.0f, 0.0f);
+	GXColor4u8(0, 0, 0, 0);
+	GXPosition3f32(32.0f, 24.0f, 0.0f);
+	GXColor4u8(0, 0, 0, 0);
+	GXPosition3f32(32.0f, -24.0f, 0.0f);
+	GXColor4u8(0, 0, 0, 0);
+	GXPosition3f32(-32.0f, -24.0f, 0.0f);
+	GXColor4u8(0, 0, 0, 0);
 }
 
 //1:1

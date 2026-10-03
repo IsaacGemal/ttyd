@@ -787,6 +787,323 @@ s32 partyRideChk(PartyEntry* party) {
     return result;
 }
 
+// Case 0's pose selection: index 4, and the dead `partyGetHp` call the original still makes.
+static inline char* L_ridePose0(PartyEntry* party) {
+    char* pose;
+
+    if (party->currentMemberId < 8) {
+        partyGetHp(party->currentMemberId);
+    }
+    if (!(party->flags2 & 0x8000)) {
+        char** row = partyPoseTbl[party->currentMemberId];
+        pose = row[4];
+    } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+        char** row = partyDotPoseTbl[party->currentMemberId];
+        pose = row[4];
+    } else {
+        char** row = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)];
+        pose = row[4];
+    }
+    if (!party->field_18 || strcmp(party->field_18, pose) != 0) {
+        party->field_18 = pose;
+        party->field_20 = 0;
+        party->field_8 |= 0x2000;
+    }
+    return pose;
+}
+static inline char* L_ridePose1(PartyEntry* party) {
+    s32 lowHp;
+    s32 index = 1;
+    char* pose;
+    char* prev;
+
+    if ((party->flags2 & 2) != 0) {
+        return party->field_18;
+    }
+    lowHp = 0;
+    if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
+        lowHp = TRUE;
+    }
+    if (lowHp == TRUE) {
+        index = 12;
+    }
+    if (!(party->flags2 & 0x8000)) {
+        char** row = partyPoseTbl[party->currentMemberId];
+        pose = row[index];
+    } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+        char** row = partyDotPoseTbl[party->currentMemberId];
+        pose = row[index];
+    } else {
+        char** row = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)];
+        pose = row[index];
+    }
+    prev = party->field_18;
+    if (prev && !strcmp(prev, pose)) {
+        return pose;
+    }
+    party->field_18 = pose;
+    party->field_20 = 0;
+    party->field_8 |= 0x2000;
+    return pose;
+}
+#ifdef MUST_MATCH
+// MUST_MATCH: retail reads these zero vectors through the vec3_802ccd30 base register.
+#define PR_FV(off, sym) (*(const Vec*)(base + (off)))
+#else
+#define PR_FV(off, sym) ((Vec){0.0f, 0.0f, 0.0f})
+#endif
+static inline char* L_ridePose1b(PartyEntry* party, s32 index) {
+    s32 lowHp;
+    char* pose;
+    char* prev;
+
+    if ((party->flags2 & 2) != 0) {
+        return party->field_18;
+    }
+    lowHp = 0;
+    if (party->currentMemberId < 8 && partyGetHp(party->currentMemberId) <= 5) {
+        lowHp = TRUE;
+    }
+    if (lowHp == TRUE) {
+        index = 12;
+    }
+    if (!(party->flags2 & 0x8000)) {
+        char** row = partyPoseTbl[party->currentMemberId];
+        pose = row[index];
+    } else if (party->currentMemberId != PARTY_MEMBER_YOSHI) {
+        char** row = partyDotPoseTbl[party->currentMemberId];
+        pose = row[index];
+    } else {
+        char** row = yoshiDotPoseTbl[pouchGetPartyColor(PARTNER_YOSHI)];
+        pose = row[index];
+    }
+    prev = party->field_18;
+    if (prev && !strcmp(prev, pose)) {
+        return pose;
+    }
+    party->field_18 = pose;
+    party->field_20 = 0;
+    party->field_8 |= 0x2000;
+    return pose;
+}
+// NONMATCHING (97.06%): calls, immediates and code shape all match. What still differs is the
+// int->float magic double (the target reads it as `lfd fN, 0x1d0(r31)`; our object pools an
+// anonymous `@NNN` copy with `lis`/`addi`, a documented project-wide limitation whose extra
+// GPR shifts every i2f site's allocation), some FPR colouring rotations (case 1's rotation/
+// 30.0f block, the case-11/111 pose value in r28 instead of r30), and the switch's left
+// subtree (our `case 99:` is an explicit leaf, the target's is the 100/101 range bound).
+// Raw offsets used: 0x24 frame counter, 0x38 ride mode, 0x80 scale, 0x94 ride target Vec, 0x124
+// rotation speed, 0x128 distance, 0x174 jump accel, 0xF0 vertical assist. Player fields
+// 0x1AC/0x1B8 are read via the file's PF32 macro.
+// NONMATCHING (97.06%): the int->float literal pool and a few FPR colours still differ.
+void partyRideMain(PartyEntry* party) {
+    MarioWork* player = party->playerPtr;
+    const u8* base = (const u8*)vec3_802ccd30;
+    Vec ridePos;
+    f32 dy;
+    f32 tmp;
+    f32 t;
+    f32 scale;
+    f32 px;
+    f32 pz;
+
+    switch (P8(party, 0x38)) {
+        case 0:
+            getRidePos(party, &ridePos);
+            *(Vec*)(party->field_7C + (0x94 - 0x7C)) = ridePos;
+            PF32(party, 0x128) =
+                distABf(party->position.x, party->position.z, PF32(party, 0x94), PF32(party, 0x9C));
+            party->dir =
+                angleABf(party->position.x, party->position.z, PF32(party, 0x94), PF32(party, 0x9C));
+            PS32(party, 0x24) = 30;
+            party->speed = PF32(party, 0x128) / (f32)PS32(party, 0x24);
+            dy = PF32(party, 0x98) - party->position.y;
+            party->jumpPara3 = float_0p4_8041b174;
+            party->jumpPara1 =
+                (float_0p5_8041b170 *
+                     ((f32)PS32(party, 0x24) * (party->jumpPara3 * (f32)PS32(party, 0x24))) +
+                 dy) /
+                (f32)PS32(party, 0x24);
+            PF32(party, 0x124) = float_1_8041b0e8;
+            party->flags2 |= 0x10;
+            if (!(party->flags2 & 2)) {
+                L_ridePose0(party);
+            }
+            P8(party, 0x38) = 1;
+            break;
+        case 1:
+            party->jumpPara1 = party->jumpPara1 - party->jumpPara3;
+            party->position.y = party->position.y + party->jumpPara1;
+            movePos(&party->position.x, &party->position.z, party->speed, party->dir);
+            party->field_10C = revise360(party->field_10C + PF32(party, 0x124));
+            PF32(party, 0x124) = float_2_8041b0e4 + PF32(party, 0x124);
+            if (PF32(party, 0x124) >= float_30_8041b178) {
+                PF32(party, 0x124) = float_30_8041b178;
+            }
+            scale = (f32)PS32(party, 0x24);
+            if (scale > float_10_8041b124) {
+                scale = float_10_8041b124;
+            }
+            party->field_70.x = scale / float_10_8041b124;
+            party->field_70.y = party->field_70.x;
+            party->field_70.z = party->field_70.x;
+            if ((PS32(party, 0x24) = PS32(party, 0x24) - 1) < 0) {
+                P8(party, 0x38) = 2;
+            }
+            break;
+        case 2:
+            L_ridePose1(party);
+            party->jumpPara1 = float_0_8041b100;
+            party->position.y = PF32(party, 0x98);
+            party->field_70 = PR_FV(0x15c, vec3_802cce8c);
+            party->flags2 |= 1;
+            if (party != NULL) {
+                party->flags2 |= 0x100000;
+            }
+            P8(party, 0x38) = 10;
+            break;
+        case 10:
+            party->position = player->position;
+            party->field_110 = PF32(player, 0x1AC);
+            party->field_FC = toMovedir(party->field_110);
+            break;
+        case 11:
+            L_ridePose1b(party, 1);
+            party->flags2 |= 1;
+            if (party != NULL) {
+                party->flags2 |= 0x100000;
+            }
+            getRidePos(party, &ridePos);
+            party->field_70 = PR_FV(0x168, vec3_802cce98);
+            party->position = ridePos;
+            party->jumpPara1 = float_0_8041b100;
+            party->field_110 = PF32(party->playerPtr, 0x1AC);
+            party->field_FC = toMovedir(party->field_110);
+            break;
+        case 20:
+            P8(party, 0x38) = 21;
+            PS32(party, 0x24) = 16;
+            party->jumpPara1 = float_16_8041b17c;
+            PF32(party, 0x174) = float_0p5_8041b170;
+            /* fallthrough */
+        case 21:
+            party->position.y = party->position.y + party->jumpPara1;
+            party->jumpPara1 = party->jumpPara1 + PF32(party, 0x174);
+            if ((PS32(party, 0x24) = PS32(party, 0x24) - 1) <= 0) {
+                P8(party, 0x38) = 22;
+                party->flags |= 0x02000000;
+            }
+            break;
+        case 200:
+            party->flags &= ~0x70000;
+            PF32(party, 0x80) = float_0_8041b100;
+            party->field_70.x = float_1_8041b0e8;
+            party->field_70.y = party->field_70.x;
+            party->field_70.z = party->field_70.x;
+            if (party != NULL) {
+                party->flags2 &= ~0x100000;
+            }
+            partyChgRunMode(party, 1);
+            break;
+        case 100:
+        case 101:
+            party->flags2 &= ~1;
+            px = player->position.x;
+            pz = player->position.z;
+            party->position.x = px;
+            party->position.y = PF32(player, 0x1B8) * float_0p5_8041b170 + player->position.y;
+            party->position.z = pz;
+            if (P8(party, 0x38) == 100) {
+                partyGetAppearPos(party, (Vec*)(party->field_7C + (0x94 - 0x7C)));
+            } else {
+                partyGetAppearPos2(party, (Vec*)(party->field_7C + (0x94 - 0x7C)));
+            }
+            party->field_110 = PF32(player, 0x1AC);
+            PS32(party, 0x24) = 16;
+            PF32(party, 0x128) = distABf(px, pz, PF32(party, 0x94), PF32(party, 0x9C));
+            party->dir = angleABf(px, pz, PF32(party, 0x94), PF32(party, 0x9C));
+            party->speed = PF32(party, 0x128) / (f32)PS32(party, 0x24);
+            dy = PF32(party, 0x98) - party->position.y;
+            tmp = float_0p5_8041b170 * (f32)PS32(party, 0x24);
+            if (__fabsf(dy) < float_1_8041b0e8) {
+                dy = float_10_8041b124;
+            } else if (dy >= float_0_8041b100) {
+                dy = float_0p5_8041b170 * PF32(party, 0xF0) + dy;
+            } else {
+                dy = float_10_8041b124;
+            }
+            t = (dy + dy) / ((tmp * tmp) - tmp);
+            party->jumpPara1 = t * tmp;
+            party->jumpPara2 = -t;
+            party->flags |= 0x10;
+            party->flags2 &= ~1;
+            if (party != NULL) {
+                party->flags2 &= ~0x100000;
+            }
+            P8(party, 0x38) = 110;
+            break;
+        case 99:
+            break;
+        case 110:
+            partyMoveNoHosei(party);
+            if (party->jumpPara1 <= float_0_8041b100) {
+                party->flags &= ~0x10;
+                party->jumpPara2 = float_neg1p6_8041b180;
+            }
+            if (party->position.y < float_neg2000_8041b164) {
+                PS32(party, 0x24) = 0;
+                P8(party, 0x38) = 111;
+                break;
+            } else if (party->field_138 == 0) {
+                Vec vec;
+                t = (f32)(16 - PS32(party, 0x24)) * float_0p0625_8041b184;
+                vec = PR_FV(0x174, vec3_802ccea4);
+                vec.x = t;
+                vec.y = t;
+                vec.z = t;
+                party->field_70 = vec;
+                if ((PS32(party, 0x24) = PS32(party, 0x24) - 1) <= 0) {
+                    PS32(party, 0x24) = 0;
+                }
+                break;
+            }
+            P8(party, 0x38) = 111;
+            /* fallthrough */
+        case 111:
+        {
+            Vec vec;
+            t = (f32)(16 - PS32(party, 0x24)) * float_0p0625_8041b184;
+            vec = PR_FV(0x180, vec3_802cceb0);
+            vec.x = t;
+            vec.y = t;
+            vec.z = t;
+            party->field_70 = vec;
+            if ((PS32(party, 0x24) = PS32(party, 0x24) - 1) <= 0) {
+                PS32(party, 0x24) = 0;
+                party->field_110 = PF32(player, 0x1AC);
+                party->field_10C = PF32(player, 0x1AC);
+                party->field_FC = toMovedirSimple(party->field_10C);
+                party->dir = party->field_FC;
+                partyClearJumpPara(party);
+                L_ridePose1b(party, 1);
+                party->flags2 &= ~0x10;
+                party->flags &= ~0x70000;
+                PF32(party, 0x80) = float_0_8041b100;
+                party->field_70.x = float_1_8041b0e8;
+                party->field_70.y = party->field_70.x;
+                party->field_70.z = party->field_70.x;
+                party->flags2 &= ~1;
+                if (party != NULL) {
+                    party->flags2 &= ~0x100000;
+                }
+                partyChgRunMode(party, 1);
+            }
+            break;
+        }
+    }
+    party->field_B8 = party->position;
+}
+
 void partySetForceMove(PartyEntry* party, s32 unk, f32 x, f32 z) {
     PF32(party, 0x100) = x;
     P16(party, 0x28) = unk;
