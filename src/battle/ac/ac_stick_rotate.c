@@ -55,10 +55,6 @@ const Vec vec3_802fd560[9] = {
 #define STICK_ZERO_VEC(i) ((Vec){ 0.0f, 0.0f, 0.0f })
 #endif
 
-void battleAcDelete_StickRotate(BattleWork* work) {
-    work->actionCommands.mAcState = 0x3EC;
-}
-
 // Match-only: the header declares s16 _get_icon_id(u8), but the original passes the s8 field with
 // sign extension (extsb); the s16(*)(s8) cast reproduces that. Same workaround as ac_gauge_timing/ac_lst_rc_keep.
 #ifdef MUST_MATCH
@@ -67,221 +63,77 @@ void battleAcDelete_StickRotate(BattleWork* work) {
 #define GET_ICON_ID(id) _get_icon_id((id))
 #endif
 
-// opt_lifetimes/opt_propagation: without both, MWCC folds the StickRotateWork base (work+0x1F4C) into
-// the BattleWork base instead of materialising it in its own register as the original does.
-#pragma opt_lifetimes off // needed: the default lifetime pass folds the StickRotateWork base into the BattleWork base
-#pragma opt_propagation off // needed: with propagation on the same fold happens
-void actionCommandDisp2(f32 x, f32 y) {
-    BattleWork* work = _battleWorkPointer;
-    BattleActions* ac = &work->actionCommands;
-    StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
-    STICK_VEC_BASE
+static void actionCommandDisp(f32 x, f32 y);
 
-    switch (work->actionCommands.mAcState) {
-        case 0x63:
-        case 0x64: {
-            Vec v = STICK_ZERO_VEC(6);
-            v.x = float_neg200_804204d0 + x;
-            v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
-            break;
-        }
-        case 0x3E8:
-        case 0x3E9: {
-            Vec v;
-            sr->field_0x07++;
-            if (sr->field_0x07 >=
-                (*(s32*)&work->actionCommands.field_34[0x14] +
-                 *(s32*)&work->actionCommands.field_34[0x18]) /
-                    2) {
-                s32 roll;
-                sr->field_0x07 = 0;
-                roll = sr->field_0x04;
-                if (roll == 0) {
-                    roll = -1;
-                }
-                if (sr->field_0x06 == 0) {
-                    sr->field_0x06 = 1;
-                } else {
-                    sr->field_0x06 += roll;
-                    if (sr->field_0x06 >= 9) {
-                        sr->field_0x06 = 1;
-                    } else if (sr->field_0x06 <= 0) {
-                        sr->field_0x06 = 8;
-                    }
-                }
-            }
-            v = STICK_ZERO_VEC(7);
-            v.x = float_neg200_804204d0 + x;
-            v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x06), float_1_804204d8);
-            break;
-        }
-        case 0x3EA:
-        case 0x3EB:
-        case 0x3EC:
-        case 0x3ED:
-        case 0x3EE: {
-            Vec v = STICK_ZERO_VEC(8);
-            v.x = float_neg200_804204d0 + x;
-            v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
-            break;
-        }
-        default:
-            break;
-    }
-}
-#pragma opt_propagation reset
-#pragma opt_lifetimes reset
-
-// The target keeps the work-area base `work + 0x1F4C` in r5 (`addi r5, r4, 0x1f4c`). The
-// `GET_ICON_ID` function-pointer cast (see the macro above) is what makes MWCC hold that base:
-// with a plain `_get_icon_id(sr->field_0x02)` call it rematerialises the base per case
-// (`lbz r3, 0x1f4e(r4)`) instead of keeping it live in r5. Same workaround as actionCommandDisp2.
-// opt_lifetimes/opt_propagation: same workaround as actionCommandDisp2, needed to keep the
-// StickRotateWork base (work+0x1F4C) in its own register instead of folding it into BattleWork.
-#pragma opt_lifetimes off // needed: the default lifetime pass folds the StickRotateWork base into the BattleWork base
-#pragma opt_propagation off // needed: with propagation on the same fold happens
-static void actionCommandDisp(f32 x, f32 y) {
-    BattleWork* work = _battleWorkPointer;
-    BattleActions* ac = &work->actionCommands;
-    StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
-    STICK_VEC_BASE
-
-    switch (work->actionCommands.mAcState) {
-        case 0x63:
-        case 0x64: {
-            Vec v = STICK_ZERO_VEC(0);
-            v.x = float_neg200_804204d0 + x;
-            v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
-            break;
-        }
-        case 0x3E8: {
-            Vec v = STICK_ZERO_VEC(1);
-            v.x = float_neg200_804204d0 + x;
-            v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02), float_1_804204d8);
-            break;
-        }
-        case 0x3E9:
-            if (sr->field_0x05 <
-                *(s32*)&work->actionCommands.field_34[0x14]) {
-                if (sr->field_0x08 <= 1) {
-                    Vec v = STICK_ZERO_VEC(2);
-                    v.x = float_neg200_804204d0 + x;
-                    v.y = float_70_804204d4 + y;
-                    iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02),
-                               float_1_804204d8);
-                } else {
-                    Vec v = STICK_ZERO_VEC(3);
-                    v.x = float_neg200_804204d0 + x;
-                    v.y = float_70_804204d4 + y;
-                    iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x01),
-                               float_1_804204d8);
-                }
-            } else {
-                Vec v = STICK_ZERO_VEC(4);
-                v.x = float_neg200_804204d0 + x;
-                v.y = float_70_804204d4 + y;
-                iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02), float_1_804204d8);
-            }
-            break;
-        case 0x3EA:
-        case 0x3EB:
-        case 0x3EC:
-        case 0x3ED:
-        case 0x3EE: {
-            Vec v = STICK_ZERO_VEC(5);
-            v.x = float_neg200_804204d0 + x;
-            v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
-            break;
-        }
-        default:
-            break;
-    }
-}
-#pragma opt_propagation reset
-#pragma opt_lifetimes reset
-
-// dont_inline: the original calls _get_icon_id from both display functions.
+// dont_inline: the original calls _CalcRollDir/_GetInputDir; MWCC inline-expanded them.
 #pragma dont_inline on
-s16 _get_icon_id(u8 id) {
-    switch ((s8)id) {
-        case 1:
-            return 0x7C;
-        case 2:
-            return 0x7D;
-        case 3:
-            return 0x7A;
-        case 4:
-            return 0x77;
-        case 5:
-            return 0x76;
-        case 6:
-            return 0x75;
-        case 7:
-            return 0x78;
-        case 8:
-            return 0x7B;
-        default:
-            return 0x79;
+s32 _GetInputDir(void) {
+    BattleWork* work = _battleWorkPointer;
+    u32 mask = *(u32*)&work->actionCommands.field_34[0x0C];
+    s32 p;
+
+    if (mask != 0) {
+        p = (s32)BattlePadCheckNow(mask);
+        if (p == 0) {
+            return -1;
+        }
+    }
+    p = (s32)BattlePadCheckNow(0x10000);
+    if (p) {
+        p = (s32)BattlePadCheckNow(0x80000);
+        if (p) {
+            return 2;
+        }
+        p = (s32)BattlePadCheckNow(0x40000);
+        return p ? 8 : 1;
+    }
+    p = (s32)BattlePadCheckNow(0x20000);
+    if (p) {
+        p = (s32)BattlePadCheckNow(0x80000);
+        if (p) {
+            return 4;
+        }
+        p = (s32)BattlePadCheckNow(0x40000);
+        return p ? 6 : 5;
+    }
+    p = (s32)BattlePadCheckNow(0x80000);
+    if (p) {
+        return 3;
+    }
+    p = (s32)BattlePadCheckNow(0x40000);
+    return p ? 7 : 0;
+}
+
+s32 _CalcRollDir(void) {
+    BattleWork* work = _battleWorkPointer;
+    StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
+    s8 input = sr->field_0x00;
+    s8 prev = sr->field_0x01;
+
+    if (input <= 0) {
+        return 0;
+    }
+    if (prev <= 0) {
+        return 0;
+    }
+    if (input == prev) {
+        return (u8)sr->field_0x04;
+    }
+    if (input == 1 && prev == 8) {
+        return 1;
+    }
+    if (prev == 1 && input == 8) {
+        return -1;
+    }
+    {
+        s8 diff = input - prev;
+        if ((((diff >> 31) ^ diff) - (diff >> 31)) > 1) {
+            return 0;
+        }
+        return diff;
     }
 }
 #pragma dont_inline reset
-
-// The function-pointer selection must be a single conditional expression (not `if`), otherwise MWCC
-// materialises the address through a scratch register (`addi r3, r3, sym@l; mr r31, r3`) instead of
-// directly into r31. Deriving disp from a BattleActions* keeps it in r30 instead of folding it into param.
-void battleAcDisp_StickRotate(CameraId camId, void* param) {
-    BattleActions* ac = &((BattleWork*)param)->actionCommands;
-    void (*disp_fn)(f32, f32);
-    BattleACDispParams* disp;
-
-    disp = &ac->dispParams;
-    disp_fn = (*(s32*)&ac->field_34[0x00] & 2) ? actionCommandDisp : actionCommandDisp2;
-
-    switch (ac->mAcState) {
-        case 0x63:
-            disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14,
-                                        float_neg300_804204dc, float_30_804204e0);
-            disp_fn(disp->iconX, disp->iconY);
-            if (disp->counter > 0) {
-                disp->counter--;
-            }
-            break;
-        case 0x64:
-        case 0x3E8:
-        case 0x3E9:
-        case 0x3EA:
-        case 0x3EB:
-            disp->iconX = float_30_804204e0;
-            disp_fn(disp->iconX, disp->iconY);
-            break;
-        case 0x3EC:
-        case 0x3ED:
-        case 0x3EE:
-            if (disp->counter > 0) {
-                disp->counter--;
-            }
-            if (disp->counter <= 0x28) {
-                disp->iconX = intplGetValue(4, disp->counter, 0x28,
-                                            float_neg300_804204dc, float_30_804204e0);
-            } else {
-                disp->iconX = float_30_804204e0;
-            }
-            disp_fn(disp->iconX, disp->iconY);
-            break;
-        default:
-            break;
-    }
-}
-
-s32 battleAcResult_StickRotate(BattleWork* work) {
-    return work->actionCommands.result;
-}
 
 // optimization_level 2: at the default -O4,s MWCC folds the work-area pointer (work+0x1F4C)
 // into the BattleWork base and never materialises it; the level-2 colouring keeps sr in r31
@@ -564,72 +416,237 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
 }
 #pragma optimization_level reset
 
-// dont_inline: the original calls _CalcRollDir/_GetInputDir; MWCC inline-expanded them.
-#pragma dont_inline on
-s32 _CalcRollDir(void) {
-    BattleWork* work = _battleWorkPointer;
-    StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
-    s8 input = sr->field_0x00;
-    s8 prev = sr->field_0x01;
 
-    if (input <= 0) {
-        return 0;
-    }
-    if (prev <= 0) {
-        return 0;
-    }
-    if (input == prev) {
-        return (u8)sr->field_0x04;
-    }
-    if (input == 1 && prev == 8) {
-        return 1;
-    }
-    if (prev == 1 && input == 8) {
-        return -1;
-    }
-    {
-        s8 diff = input - prev;
-        if ((((diff >> 31) ^ diff) - (diff >> 31)) > 1) {
-            return 0;
-        }
-        return diff;
+s32 battleAcResult_StickRotate(BattleWork* work) {
+    return work->actionCommands.result;
+}
+
+
+// The function-pointer selection must be a single conditional expression (not `if`), otherwise MWCC
+// materialises the address through a scratch register (`addi r3, r3, sym@l; mr r31, r3`) instead of
+// directly into r31. Deriving disp from a BattleActions* keeps it in r30 instead of folding it into param.
+void battleAcDisp_StickRotate(CameraId camId, void* param) {
+    BattleActions* ac = &((BattleWork*)param)->actionCommands;
+    void (*disp_fn)(f32, f32);
+    BattleACDispParams* disp;
+
+    disp = &ac->dispParams;
+    disp_fn = (*(s32*)&ac->field_34[0x00] & 2) ? actionCommandDisp : actionCommandDisp2;
+
+    switch (ac->mAcState) {
+        case 0x63:
+            disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14,
+                                        float_neg300_804204dc, float_30_804204e0);
+            disp_fn(disp->iconX, disp->iconY);
+            if (disp->counter > 0) {
+                disp->counter--;
+            }
+            break;
+        case 0x64:
+        case 0x3E8:
+        case 0x3E9:
+        case 0x3EA:
+        case 0x3EB:
+            disp->iconX = float_30_804204e0;
+            disp_fn(disp->iconX, disp->iconY);
+            break;
+        case 0x3EC:
+        case 0x3ED:
+        case 0x3EE:
+            if (disp->counter > 0) {
+                disp->counter--;
+            }
+            if (disp->counter <= 0x28) {
+                disp->iconX = intplGetValue(4, disp->counter, 0x28,
+                                            float_neg300_804204dc, float_30_804204e0);
+            } else {
+                disp->iconX = float_30_804204e0;
+            }
+            disp_fn(disp->iconX, disp->iconY);
+            break;
+        default:
+            break;
     }
 }
 
-s32 _GetInputDir(void) {
-    BattleWork* work = _battleWorkPointer;
-    u32 mask = *(u32*)&work->actionCommands.field_34[0x0C];
-    s32 p;
 
-    if (mask != 0) {
-        p = (s32)BattlePadCheckNow(mask);
-        if (p == 0) {
-            return -1;
-        }
+// dont_inline: the original calls _get_icon_id from both display functions.
+#pragma dont_inline on
+s16 _get_icon_id(u8 id) {
+    switch ((s8)id) {
+        case 1:
+            return 0x7C;
+        case 2:
+            return 0x7D;
+        case 3:
+            return 0x7A;
+        case 4:
+            return 0x77;
+        case 5:
+            return 0x76;
+        case 6:
+            return 0x75;
+        case 7:
+            return 0x78;
+        case 8:
+            return 0x7B;
+        default:
+            return 0x79;
     }
-    p = (s32)BattlePadCheckNow(0x10000);
-    if (p) {
-        p = (s32)BattlePadCheckNow(0x80000);
-        if (p) {
-            return 2;
-        }
-        p = (s32)BattlePadCheckNow(0x40000);
-        return p ? 8 : 1;
-    }
-    p = (s32)BattlePadCheckNow(0x20000);
-    if (p) {
-        p = (s32)BattlePadCheckNow(0x80000);
-        if (p) {
-            return 4;
-        }
-        p = (s32)BattlePadCheckNow(0x40000);
-        return p ? 6 : 5;
-    }
-    p = (s32)BattlePadCheckNow(0x80000);
-    if (p) {
-        return 3;
-    }
-    p = (s32)BattlePadCheckNow(0x40000);
-    return p ? 7 : 0;
 }
 #pragma dont_inline reset
+
+
+// The target keeps the work-area base `work + 0x1F4C` in r5 (`addi r5, r4, 0x1f4c`). The
+// `GET_ICON_ID` function-pointer cast (see the macro above) is what makes MWCC hold that base:
+// with a plain `_get_icon_id(sr->field_0x02)` call it rematerialises the base per case
+// (`lbz r3, 0x1f4e(r4)`) instead of keeping it live in r5. Same workaround as actionCommandDisp2.
+// opt_lifetimes/opt_propagation: same workaround as actionCommandDisp2, needed to keep the
+// StickRotateWork base (work+0x1F4C) in its own register instead of folding it into BattleWork.
+#pragma opt_lifetimes off // needed: the default lifetime pass folds the StickRotateWork base into the BattleWork base
+#pragma opt_propagation off // needed: with propagation on the same fold happens
+static void actionCommandDisp(f32 x, f32 y) {
+    BattleWork* work = _battleWorkPointer;
+    BattleActions* ac = &work->actionCommands;
+    StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
+    STICK_VEC_BASE
+
+    switch (work->actionCommands.mAcState) {
+        case 0x63:
+        case 0x64: {
+            Vec v = STICK_ZERO_VEC(0);
+            v.x = float_neg200_804204d0 + x;
+            v.y = float_70_804204d4 + y;
+            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
+            break;
+        }
+        case 0x3E8: {
+            Vec v = STICK_ZERO_VEC(1);
+            v.x = float_neg200_804204d0 + x;
+            v.y = float_70_804204d4 + y;
+            iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02), float_1_804204d8);
+            break;
+        }
+        case 0x3E9:
+            if (sr->field_0x05 <
+                *(s32*)&work->actionCommands.field_34[0x14]) {
+                if (sr->field_0x08 <= 1) {
+                    Vec v = STICK_ZERO_VEC(2);
+                    v.x = float_neg200_804204d0 + x;
+                    v.y = float_70_804204d4 + y;
+                    iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02),
+                               float_1_804204d8);
+                } else {
+                    Vec v = STICK_ZERO_VEC(3);
+                    v.x = float_neg200_804204d0 + x;
+                    v.y = float_70_804204d4 + y;
+                    iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x01),
+                               float_1_804204d8);
+                }
+            } else {
+                Vec v = STICK_ZERO_VEC(4);
+                v.x = float_neg200_804204d0 + x;
+                v.y = float_70_804204d4 + y;
+                iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02), float_1_804204d8);
+            }
+            break;
+        case 0x3EA:
+        case 0x3EB:
+        case 0x3EC:
+        case 0x3ED:
+        case 0x3EE: {
+            Vec v = STICK_ZERO_VEC(5);
+            v.x = float_neg200_804204d0 + x;
+            v.y = float_70_804204d4 + y;
+            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
+            break;
+        }
+        default:
+            break;
+    }
+}
+#pragma opt_propagation reset
+#pragma opt_lifetimes reset
+
+
+// opt_lifetimes/opt_propagation: without both, MWCC folds the StickRotateWork base (work+0x1F4C) into
+// the BattleWork base instead of materialising it in its own register as the original does.
+#pragma opt_lifetimes off // needed: the default lifetime pass folds the StickRotateWork base into the BattleWork base
+#pragma opt_propagation off // needed: with propagation on the same fold happens
+void actionCommandDisp2(f32 x, f32 y) {
+    BattleWork* work = _battleWorkPointer;
+    BattleActions* ac = &work->actionCommands;
+    StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
+    STICK_VEC_BASE
+
+    switch (work->actionCommands.mAcState) {
+        case 0x63:
+        case 0x64: {
+            Vec v = STICK_ZERO_VEC(6);
+            v.x = float_neg200_804204d0 + x;
+            v.y = float_70_804204d4 + y;
+            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
+            break;
+        }
+        case 0x3E8:
+        case 0x3E9: {
+            Vec v;
+            sr->field_0x07++;
+            if (sr->field_0x07 >=
+                (*(s32*)&work->actionCommands.field_34[0x14] +
+                 *(s32*)&work->actionCommands.field_34[0x18]) /
+                    2) {
+                s32 roll;
+                sr->field_0x07 = 0;
+                roll = sr->field_0x04;
+                if (roll == 0) {
+                    roll = -1;
+                }
+                if (sr->field_0x06 == 0) {
+                    sr->field_0x06 = 1;
+                } else {
+                    sr->field_0x06 += roll;
+                    if (sr->field_0x06 >= 9) {
+                        sr->field_0x06 = 1;
+                    } else if (sr->field_0x06 <= 0) {
+                        sr->field_0x06 = 8;
+                    }
+                }
+            }
+            v = STICK_ZERO_VEC(7);
+            v.x = float_neg200_804204d0 + x;
+            v.y = float_70_804204d4 + y;
+            iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x06), float_1_804204d8);
+            break;
+        }
+        case 0x3EA:
+        case 0x3EB:
+        case 0x3EC:
+        case 0x3ED:
+        case 0x3EE: {
+            Vec v = STICK_ZERO_VEC(8);
+            v.x = float_neg200_804204d0 + x;
+            v.y = float_70_804204d4 + y;
+            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
+            break;
+        }
+        default:
+            break;
+    }
+}
+#pragma opt_propagation reset
+#pragma opt_lifetimes reset
+
+
+void battleAcDelete_StickRotate(BattleWork* work) {
+    work->actionCommands.mAcState = 0x3EC;
+}
+
+
+// Original data objects of this unit, in address order.
+const f32 float_neg200_804204d0 = -200.0f;
+const f32 float_70_804204d4 = 70.0f;
+const f32 float_1_804204d8 = 1.0f;
+const f32 float_neg300_804204dc = -300.0f;
+const f32 float_30_804204e0 = 30.0f;
+const f32 float_0_804204e4 = 0.0f;
