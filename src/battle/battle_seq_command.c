@@ -469,7 +469,8 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckSetup(BattleWork* wp) {
 	wp->commandMenu.cursor[13].unk8 = 2;
 }
 
-// NONMATCHING (85.10%): `#pragma opt_propagation off` stops the compiler hoisting the two (f32)len
+#pragma opt_propagation off // the two (f32)len conversions and the pooled string base keep retail's un-hoisted load order
+// NONMATCHING (94.57%): `#pragma opt_propagation off` stops the compiler hoisting the two (f32)len
 // magic-double and 6.25/12.5/65 loads, restoring retail's order; the `f30` local then places 30 on f2.
 // Remaining: conversion magic doubles (retail f2/f0, ours f1/f5) and the pooled string base.
 void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleWork* wp) {
@@ -498,6 +499,7 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	pos.z = float_0_8041c2f0;
 	iconDispGx(&pos, 0x14, 0x1F0, float_1_8041c2f4);
 }
+#pragma opt_propagation reset
 
 // opt_propagation off: with propagation on MWCC folds the `cursor` base into `wp`; the original keeps it
 // in r31 (`addi r31, r28, 0x1c50`). The `cmd` intermediate is needed so the cursor is derived from a local

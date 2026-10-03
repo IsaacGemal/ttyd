@@ -1813,3 +1813,142 @@ void winBgGX(WindowWork* work, s32 type, f32 x, f32 y) {
     BG_POS(float_285_8041d1cc, float_144_8041d1d0, float_0_8041d068);
     BG_TEX(float_1_8041d070, float_0_8041d068);
 }
+extern const GXColor dat_8041cf5c;
+#ifdef MUST_MATCH
+// MUST_MATCH: retail reads these doubles through the str_802F3FE8 base register.
+#define HB_DBL(off, sym, val) (*(const f64*)((const u8*)&str_802F3FE8 + (off)))
+#else
+#define HB_DBL(off, sym, val) (val)
+#endif
+extern const GXColor dat_8041cf60;
+extern const f32 float_neg8_8041d158;
+extern const GXColor dat_8041cf64;
+static inline void winHalfBookPage(void* pal, s32 texId, f64 numY, f64 numX,
+                                   f32 x0, f32 y0, f32 x1, f32 y1) {
+    GXTexObj texObj;
+    Mtx mtx;
+    f64 sy;
+    f64 sx;
+
+    TEXGetGXTexObjFromPalette((TEXPalette*)pal, &texObj, texId);
+    GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    sy = (f32)numY / (f32)GXGetTexObjHeight(&texObj);
+    sx = (f32)numX / (f32)GXGetTexObjWidth(&texObj);
+    PSMTXScale(mtx, (f32)sx, (f32)sy, float_1_8041d070);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x0, y0, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x0, y1, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(x1, y1, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(x1, y0, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+}
+// NONMATCHING (95.25%): register allocation/scheduling only.
+void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
+    f32 x8;
+    f32 x16;
+    f32 x32;
+    f32 x264;
+    f32 x312;
+    f32 x320;
+    f32 y8;
+    f32 y16;
+    f32 y200;
+    f32 y256;
+    f32 y264;
+    f64 sn16;
+    f64 s24;
+    f64 s40;
+    f64 s320;
+    f64 s16;
+    f64 s48;
+    f64 s248;
+    f32 s8;
+    f32 s240;
+    Mtx mtx;
+    s32 i;
+
+    (void)a4;
+
+    GXSetFog(0, float_0_8041d068, float_0_8041d068, float_0_8041d068, float_0_8041d068, dat_8041cf5c);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 4);
+    GXSetTevOp(0, 0);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+
+    y8 = y - 8.0f;
+    y16 = y - 16.0f;
+    y200 = y - 200.0f;
+    y256 = y - 256.0f;
+    y264 = y256 - 8.0f;
+    x8 = x + 8.0f;
+    x16 = x + 16.0f;
+    x32 = x + 32.0f;
+    x264 = x16 + 248.0f;
+    x312 = x264 + 48.0f;
+    x320 = x + 320.0f;
+
+    s8 = __fabs(HB_DBL(0x548, double_8_802f4530, 8.0));
+    sn16 = __fabs(HB_DBL(0x5A0, double_neg16_802f4588, -16.0));
+    s320 = __fabs(HB_DBL(0x598, double_320_802f4580, 320.0));
+    s248 = __fabs(HB_DBL(0x580, double_248_802f4568, 248.0));
+    s40 = __fabs(HB_DBL(0x4F8, double_40_802f44e0, 40.0));
+    s48 = __fabs(HB_DBL(0x558, double_48_802f4540, 48.0));
+    s16 = __fabs(HB_DBL(0x500, double_16_802f44e8, 16.0));
+    s240 = __fabs(HB_DBL(0x588, double_240_802f4570, 240.0));
+    s24 = __fabs(HB_DBL(0x4F0, double_24_802f44d8, 24.0));
+
+    for (i = 0; i < 2; i++) {
+        if (i == 0) {
+            GXSetChanMatColor(4, dat_8041cf60);
+            GXSetBlendMode(1, 4, 5, 0);
+            GXSetZCompLoc(1);
+            GXSetAlphaCompare(7, 0, 0, 7, 0);
+            GXSetZMode(0, 7, 0);
+            PSMTXTrans(mtx, float_8_8041d0a0, float_neg8_8041d158, float_0_8041d068);
+            PSMTXConcat(camGetPtr(CAMERA_2D)->view, mtx, mtx);
+            GXLoadPosMtxImm(mtx, 0);
+            GXSetCurrentMtx(0);
+        } else {
+            GXSetChanMatColor(4, dat_8041cf64);
+            GXSetBlendMode(0, 1, 0, 0);
+            GXSetZCompLoc(0);
+            GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+            GXSetZMode(0, 7, 0);
+            GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+            GXSetCurrentMtx(0);
+        }
+
+        winHalfBookPage(pal, 0x33, s248, s320, x8,           y8,   x8 + 320.0f,              y8 - 248.0f);
+        winHalfBookPage(pal, 0x28, s8,   s16,  x,            y,    x16,                      y8);
+        winHalfBookPage(pal, 0x35, s8,   s248, x16,          y,    x264,                     y8);
+        winHalfBookPage(pal, 0x26, s16,  s48,  x264,         y,    x312,                     y16);
+        winHalfBookPage(pal, 0x3B, s16,  s24,  x312,         y,    x312 + 24.0f,             y16);
+        winHalfBookPage(pal, 0x30, s248, s8,   x,            y8,   x8,                       y8 - 248.0f);
+        winHalfBookPage(pal, 0x32, s240, s16,  x264 + 8.0f,  y16,  (x264 + 8.0f) + 16.0f,    y16 - 240.0f);
+        winHalfBookPage(pal, 0x36, s40,  s248, x16,          y200, x264,                     y200 - 40.0f);
+        winHalfBookPage(pal, 0x3A, s8,   s16,  x,            y256, x16,                      y264);
+        winHalfBookPage(pal, 0x38, s8,   sn16, x32,          y256, x32 + -16.0f,              y264);
+        winHalfBookPage(pal, 0x38, s8,   s240, x32,          y256, x32 + 240.0f,             y264);
+        winHalfBookPage(pal, 0x39, s8,   s16,  x + 272.0f,   y256, (x + 272.0f) + 16.0f,     y264);
+        winHalfBookPage(pal, 0x38, s8,   s16,  x + 288.0f,   y256, (x + 288.0f) + 16.0f,     y264);
+        winHalfBookPage(pal, 0x38, s8,   sn16, x320,         y256, x320 + -16.0f,             y264);
+        winHalfBookPage(pal, 0x38, s8,   s16,  x320,         y256, x320 + 16.0f,             y264);
+        winHalfBookPage(pal, 0x3C, s240, s8,   x + 328.0f,   y16,  (x + 328.0f) + 8.0f,      y16 - 240.0f);
+
+    }
+}
+

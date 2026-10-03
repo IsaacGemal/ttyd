@@ -4030,3 +4030,18 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   eq,lt,eq` is <=; check every compare and every read against the store that sets it). A function reviews took out
   is given to its agent with the review's reason instead of "don't write". 12 functions now; win_root's GX
   functions, nameent, winmgr, mapdrv and evt_mobj follow once batch 2 merges (salvage 2 first).
+
+## Salvage 2 and wave 65 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- Salvage 2 (units wave 63 had held): 7 of 78 kept by `scratch/salvage/insert.py` (winHalfBookGX 0 -> 95.25%,
+  btlDispMain 1.93 -> 94.37%, five near-misses). The review (`scratch/salvage/review2.md`) caught a salvaged
+  marioCheckMenuDisable that carried a static copy of marioChkKey, which MWCC also emits as a function retail
+  doesn't have (mario.c as on main), and winHalfBookGX's double reads through str_802F3FE8 + offset, now MUST_MATCH
+  only. sac_genki's main_weapon sound string str_80300470 was defined nowhere (Claude #1's review of #329); it is
+  now (.rodata 93.72 -> 96.61%). insert.py looks objects up in build.ninja (two RELs share evt_yuuranking.c).
+- **Wave 65** (base 0fb74851, `scratch/wave65/`): 11 link agents for units at 100% code that don't link (Claude
+  #3's `link_candidates_1140.txt`; `tools/fn_order_check.py --write` alone broke the build on four of the six
+  whose order differs, since reordered code needs forward declarations, so the prompt makes it step 3 of the link
+  recipe), and 57 agents seeded with a salvage candidate insert.py couldn't keep, each told why (a data section or
+  another function lower, or it doesn't compile against today's file), plus the unwritten win_root GX functions
+  from m2c drafts. Collected per function through insert.py.
