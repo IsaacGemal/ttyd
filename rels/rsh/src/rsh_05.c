@@ -16,6 +16,14 @@
 #include "evt/evt_sub.h"
 #include "forcedata.h"
 #include "party/party_motion.h"
+#include "party.h"
+#include "party/party_nokonoko.h"
+#include "party/party_cloud.h"
+#include "pmario_sound.h"
+#include "driver/camdrv.h"
+#include "mario/mario.h"
+#include "mario/mario_motion.h"
+#include "math_ext.h"
 #include "driver/dispdrv.h"
 #include "driver/extdrv.h"
 #include "driver/hitdrv.h"
@@ -38,9 +46,18 @@ typedef struct MoamoaPose {
     u16 flags;          // 0x0
     u16 field_0x2;      // 0x2
     u16 field_0x4;      // 0x4
-    u8 pad_0x6[0x1E];   // 0x6
+    u8 pad_0x6[2];      // 0x6
+    Vec field_0x8;      // 0x8
+    f32 field_0x14;     // 0x14
+    s16 field_0x18;     // 0x18
+    u8 pad_0x1A[2];     // 0x1A
+    f32 field_0x1C;     // 0x1C
+    f32 field_0x20;     // 0x20
     u16 field_0x24;     // 0x24
-    u8 pad_0x26[0x16];  // 0x26
+    u8 pad_0x26[2];     // 0x26
+    f32 field_0x28;     // 0x28
+    f32 field_0x2C;     // 0x2C
+    Vec field_0x30;     // 0x30
     s16 field_0x3C;     // 0x3C
     u8 pad_0x3E[2];     // 0x3E
     OSTime time;        // 0x40
@@ -79,12 +96,18 @@ typedef struct MoamoaWork {
     u16 field_0x38;     // 0x38
     u16 field_0x3A[2];  // 0x3A
     u16 field_0x3E;     // 0x3E
-    u16 field_0x40;     // 0x40
-    u16 field_0x42;     // 0x42
+    s16 field_0x40;     // 0x40
+    s16 field_0x42;     // 0x42
     s32 field_0x44;     // 0x44
     s32 field_0x48;     // 0x48
     s32 groupCount;     // 0x4C
-    MoamoaGroup groups[1]; // 0x50
+    MoamoaGroup groups[32]; // 0x50
+    f32 field_0x550;    // 0x550
+    f32 field_0x554;    // 0x554
+    s32 field_0x558;    // 0x558
+    f32 field_0x55C;    // 0x55C
+    f32 field_0x560;    // 0x560
+    Vec field_0x564;    // 0x564
 } MoamoaWork;
 
 #pragma force_active on
@@ -92,11 +115,19 @@ typedef struct MoamoaWork {
 // The original keeps this global and read-only, but not `const`: MWCC then cannot hoist the
 // copy in ext_moamoa_init past the wp->pos[1] stores (it emits the `lwzu` form).
 __declspec(section ".rodata") Vec vec3_rsh_000136d4 = {-290.0f, 65.0f, -95.0f};
+const Vec vec3_rsh_000136e0 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_000136ec = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_000136f8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013704 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013710 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_0001371c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013728 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013734 = {0.0f, 0.0f, 0.0f};
 static USER_FUNC(npc_jump);
 static void ext_moamoa_dispent(void);
 static void ext_moamoa_main(void);
-static void moamoa_hit_check(void);
-static void moamoa_jump(void);
+static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry);
+static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, s32 field0x2, s32 flag, f32 x, f32 y, f32 z, f32 p4, f32 p5);
 static void ext_shadow_disp(s32 camId);
 static void ext_disp(s32 camId);
 static void ext_moamoa_init(void);
@@ -283,7 +314,6 @@ static void ext_moamoa_init(void) {
         ext_moamoa_main();
     }
 }
-#pragma inline_max_size reset
 
 static USER_FUNC(evt_moamoa_target_off) {
     s32* args = event->args;
@@ -844,11 +874,303 @@ static u32 jumptable_00014F3C[66] = {
     (u32)((u8*)&ext_moamoa_main + 0x2f3c), (u32)((u8*)&ext_moamoa_main + 0x2f60),
 };
 
-// TODO: write moamoa_hit_check (static, 0xb28 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write moamoa_jump (static, 0x270 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
+// Inline sine/cosine approximations (the polynomials shared by the NPC blur path).
+static inline f32 moamoa_sin(f32 angle) {
+    f32 v = 0.00761f;
+    f32 b = 0.16605f;
+    f32 one = 1.0f;
+    f32 u;
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) { u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; }
+        else { angle = 1.5707964f - (angle - 1.5707964f); u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; }
+    } else if (angle < 4.712389f) {
+        angle = angle - 3.1415927f; u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; v = -v;
+    } else {
+        angle = 1.5707964f - (angle - 4.712389f); u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; v = -v;
+    }
+    return v;
+}
+
+static inline f32 moamoa_cos(f32 angle) {
+    f32 v = 0.03705f;
+    f32 b = 0.4967f;
+    f32 one = 1.0f;
+    f32 u;
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) { u = angle * angle; v = v * u - b; v = v * u + one; }
+        else { angle = 1.5707964f - (angle - 1.5707964f); u = angle * angle; v = v * u - b; v = v * u + one; v = -v; }
+    } else if (angle < 4.712389f) {
+        angle = angle - 3.1415927f; u = angle * angle; v = v * u - b; v = v * u + one; v = -v;
+    } else {
+        angle = 1.5707964f - (angle - 4.712389f); u = angle * angle; v = v * u - b; v = v * u + one;
+    }
+    return v;
+}
+
+// The original builds each temporary Vec from a named zero vector and passes it by
+// value through an inline; MWCC keeps the inline's return temp alongside the local.
+static inline Vec moamoa_vec(f32 x, f32 y, f32 z, const Vec* base) {
+    Vec v = *base;
+
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+
+#ifdef MUST_MATCH
+// Match-only: the volatile copy stops MWCC hoisting the base vector's lane loads above the two
+// `pose->matrix` stores in the pvec rebuild (retail keeps each 12-byte copy serialized); the plain
+// copy is `moamoa_vec`.
+static inline Vec moamoa_vec_v(f32 x, f32 y, f32 z, const Vec* base) {
+    Vec v = *(volatile Vec*)base;
+
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+#endif
+
+
+// Matches retail. The sine/cosine coefficients hoist and colour like retail (the pik/evt_sub helper
+// shape and the two pragmas). Declaring the six Vec temporaries at function scope instead of
+// per-block is load-bearing: with them block-local the pragma pushes the frame to 0x130; at function
+// scope it is the target's 0xf0 and every stack slot lines up.
+// Reusing the parameter as the sine/cosine half-angle (`angle = halfpi - (angle - halfpi)`) colours
+// the reduced angle into the target's register. In the block whose cosine recomputes its argument,
+// the sine's argument must NOT be named (the `rad` local is inlined into the call): keeping a `rad`
+// local there leaves f5 live and pushes the reduced angle to f1, whereas retail coalesces it into f5.
+// Naming the box-delta `d = f31 - f29` once (assigned after the sine, used by both riderDelta lanes)
+// fixes the operand order of the two `d * s`/`d * c` fmuls. Giving the pvec's x lane a local `px`
+// pins the mpos/pvec lane registers (retail pose x -> f3, z -> f1; without it they swap).
+// The first ang/rad block matches by splitting `ang = reviseAngle(...)` from `rad = TWO_PI * ang / 360`
+// and inlining `camGetPtr(4)` (check_hammer's shape), and the two `(20+box.x)*0.5` sites match by
+// writing `(box.x + 20) / 2` (folded to the same fmuls, under MUST_MATCH).
+#pragma inline_max_size(1000)
+#pragma opt_lifetimes off // keeps the sin/cos coefficients in the target's FPRs
+#pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
+static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
+    MarioWork* mario = marioGetPtr();
+    Vec v65, v55c, vnoko, vparty, mpos, pvec;
+    PartyEntry* party;
+    f32 f29, f30, f31;
+
+    if (mario->position.y > 20.0f + (*pose->matrix)[1][3])
+        return 0;
+    if ((*pose->matrix)[1][3] > mario->position.y + mario->wPlayerCollisionBox.y)
+        return 0;
+
+    {
+        f32 d = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], mario->position.x, mario->position.z);
+
+#ifdef MUST_MATCH
+        // (x + 20) / 2 folds to the same * 0.5 but colours the operands like retail.
+        if (d < (mario->wPlayerCollisionBox.x + 20.0f) / 2.0f) {
+#else
+        if (d < (20.0f + mario->wPlayerCollisionBox.x) * 0.5f) {
+#endif
+            if (mario->position.y > 10.0f + (*pose->matrix)[1][3] && (mario->flags & 0x20000) &&
+                !(mario->flags & 0x10000) && wp->field_0x558 < 2) {
+                if (mario->currMotionId != 0x16 && mario->currMotionId != 0x1A)
+                    marioChgMot(5);
+                wp->field_0x558++;
+                return 1;
+            }
+        }
+    }
+
+    if ((mario->flags & 0x30000) == 0)
+        wp->field_0x558 = 0;
+
+    if (mario->currMotionId == 0x12 && wp->field_0x40 > 10) {
+        f32 ang;
+        f32 rad;
+        f32 s;
+        f32 c;
+        f32 x;
+        f32 z;
+
+        ang = reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(4)->viewYaw);
+        rad = 6.2831855f * ang / 360.0f;
+        s = moamoa_sin(rad);
+        x = 35.0f * s + mario->position.x;
+        c = moamoa_cos(rad);
+        z = mario->position.z - 35.0f * c;
+        if (distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], x, z) < 35.0f)
+            return 2;
+    }
+
+    if (mario->currMotionId == 0x13 && (s32)mario->currSubMotionId == 0x14) {
+        v65 = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                             &vec3_rsh_000136ec);
+
+        if (PSVECDistance(&mario->position, &v65) < 65.0f)
+            return 2;
+    }
+
+    if (wp->field_0x55C >= 0.0f) {
+        v55c = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                              &vec3_rsh_000136f8);
+
+        if (PSVECDistance(&wp->field_0x564, &v55c) < 30.0f)
+            return 3;
+    }
+
+    party = partyGetPtr(0);
+    if (nokonokoGetStatus(party) == 2) {
+        vnoko = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                               &vec3_rsh_00013704);
+
+        if (PSVECDistance(&partyGetPtr(0)->position, &vnoko) < 30.0f)
+            return 2;
+    }
+
+    party = partyGetPtr(0);
+    if (party->currentMemberId == 3 && partyGetPtr(0)->useMotionId == 0x46) {
+        vparty = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                                &vec3_rsh_00013710);
+
+        if (PSVECDistance(&partyGetPtr(0)->position, &vparty) < 50.0f)
+            return 4;
+    }
+
+    {
+        mpos = moamoa_vec(mario->position.x, (*pose->matrix)[1][3], mario->position.z,
+                              &vec3_rsh_0001371c);
+#ifdef MUST_MATCH
+        {
+            // Matching temp: giving the pvec's x lane a name pins the mpos/pvec lane registers
+            // (retail pose.x -> f3, pose.z -> f1; without it MWCC loads them the other way round).
+            f32 px = (*pose->matrix)[0][3];
+            pvec = moamoa_vec(px, (*pose->matrix)[1][3], (*pose->matrix)[2][3], &vec3_rsh_00013728);
+        }
+#else
+        pvec = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                              &vec3_rsh_00013728);
+#endif
+
+#ifdef MUST_MATCH
+        f31 = (mario->wPlayerCollisionBox.x + 20.0f) / 2.0f;
+#else
+        f31 = (20.0f + mario->wPlayerCollisionBox.x) * 0.5f;
+#endif
+        if (PSVECDistance(&mpos, &pvec) < f31) {
+#ifdef MUST_MATCH
+            // Match-only volatile accesses: they keep the pvec base copy below the two matrix
+            // stores, the order the target has.
+            *(volatile f32*)&(*pose->matrix)[0][3] = entry->field_0x28;
+            *(volatile f32*)&(*pose->matrix)[2][3] = entry->field_0x2C;
+            {
+                Mtx* pm = *(Mtx* volatile*)&pose->matrix;
+
+                pvec = moamoa_vec_v((*pm)[0][3], (*pm)[1][3], (*pm)[2][3], &vec3_rsh_00013734);
+
+                f29 = PSVECDistance(&mpos, &pvec);
+            }
+#else
+            (*pose->matrix)[0][3] = entry->field_0x28;
+            (*pose->matrix)[2][3] = entry->field_0x2C;
+            {
+                pvec = moamoa_vec((*pose->matrix)[0][3], (*pose->matrix)[1][3], (*pose->matrix)[2][3],
+                                  &vec3_rsh_00013734);
+
+                f29 = PSVECDistance(&mpos, &pvec);
+            }
+#endif
+            if (f29 < f31) {
+                f30 = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3],
+                               (*pose->matrix)[2][3]);
+                if (__fabsf(compAngle(f30, mario->directionView)) < 40.0f) {
+#ifdef MUST_MATCH
+                    // Matching shapes: inlining the sine argument (no `rad` local) lets the reduced
+                    // angle coalesce into the argument FPR, and naming the box delta once fixes the
+                    // operand order of the two `d * s` / `d * c` fmuls.
+                    f32 s, c, d;
+
+                    s = moamoa_sin(6.2831855f * mario->directionView / 360.0f);
+                    d = f31 - f29;
+                    mario->riderDelta.x = -(d * s);
+                    c = moamoa_cos(6.2831855f * mario->directionView / 360.0f);
+                    mario->riderDelta.z = d * c;
+#else
+                    f32 rad, s, c;
+
+                    rad = 6.2831855f * mario->directionView / 360.0f;
+                    s = moamoa_sin(rad);
+                    mario->riderDelta.x = -((f31 - f29) * s);
+                    c = moamoa_cos(6.2831855f * mario->directionView / 360.0f);
+                    mario->riderDelta.z = (f31 - f29) * c;
+#endif
+                } else {
+                    f32 rad, s, c;
+
+                    rad = 6.2831855f * f30 / 360.0f;
+                    s = moamoa_sin(rad);
+                    mario->riderDelta.x = ((*pose->matrix)[0][3] - f31 * s) - mario->position.x;
+                    c = moamoa_cos(rad);
+                    mario->riderDelta.z = ((*pose->matrix)[2][3] + f31 * c) - mario->position.z;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+#pragma opt_propagation reset
+#pragma opt_lifetimes reset
+#pragma inline_max_size reset
+#pragma inline_max_size reset
+
+// The original calls moamoa_jump (a real bl) from ext_moamoa_main; the raised inline limits would inline it.
+#pragma dont_inline on
+static void moamoa_jump(ExtPose* pose, MoamoaPose* entry, s32 field0x2, s32 flag, f32 x, f32 y, f32 z, f32 p4,
+                        f32 p5) {
+    if (flag) {
+        f32 hx, hy, hz, dist, nx, ny, nz;
+
+        hz = 0.0f;
+        hy = 0.0f;
+        hx = 0.0f;
+        dist = 1000000.0f;
+        if (hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, x, 100.0f + y, z, 0.0f, -1.0f, 0.0f)) {
+            if (__fabsf(y - hy) > 30.0) {
+                p4 -= 0.1f;
+                p5 += 0.1f;
+            }
+            y = hy;
+        }
+    }
+    {
+        Vec pos = vec3_rsh_000136e0;
+
+        pos.x = x;
+        pos.y = y;
+        pos.z = z;
+        entry->field_0x8 = pos;
+    }
+    entry->field_0x1C = p4;
+    entry->field_0x20 = p5;
+    {
+        f32 dy = entry->field_0x8.y - (*pose->matrix)[1][3];
+        f32 d = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z);
+        f32 ang = angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->field_0x8.x, entry->field_0x8.z);
+        s32 frames;
+
+        frames = (s32)(d / entry->field_0x1C);
+        entry->field_0x18 = frames;
+        entry->field_0x14 = entry->field_0x20 * entry->field_0x18 / 2.0f + dy / entry->field_0x18;
+        entry->field_0x2 = 3;
+        entry->field_0x24 = field0x2;
+        pose->field_0x4 = 180.0f + ang;
+    }
+    entry->flags |= 2;
+    pose->flags |= 0x10;
+    pose->flags &= ~4;
+}
+#pragma dont_inline reset
 
 static void ext_shadow_disp(s32 camId) {
     static Mtx mt = {{8.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 8.0f, 0.0f, 0.5f}, {0.0f, 0.0f, 8.0f, 0.0f}};
@@ -1072,6 +1394,7 @@ static void moamoa_pose_main(void) {
         pose++;
     }
 }
+#pragma dont_inline on
 static void moamoa_pose_init(void) {
     MoamoaGroupDef* def = ext_moamoa_data;
     char name[32];
@@ -1107,4 +1430,5 @@ static void moamoa_pose_init(void) {
     } while (def->name != NULL);
     wp->groupCount++;
 }
+#pragma dont_inline reset
 // clang-format on
