@@ -53,9 +53,6 @@
 #include "nameent.h"
 #include "pmario_sound.h"
 #include "romfont.h"
-// sound.h is deliberately not included: it pulls <musyx/musyx.h>, whose <math.h> inline sqrtf/sqrt
-// emit 0x20 bytes of _half/_three localstatics into .rodata that the original unit does not have.
-// The three Sound* entry points mariost.c uses are declared in pmario_sound.h instead.
 #include "statuswindow.h"
 #include "system.h"
 
@@ -267,10 +264,10 @@ void marioStInit(void) {
 	seqSetSeq(0, NULL, NULL);
 	gp->unk1274 = 0;
 	if (OSGetSoundMode() == OS_SOUND_MODE_MONO) {
-		SoundSetOutputMode(0);
+		SoundSetOutputMode(SND_OUTPUTMODE_MONO);
 	}
 	else {
-		SoundSetOutputMode(1);
+		SoundSetOutputMode(SND_OUTPUTMODE_STEREO);
 	}
 }
 
