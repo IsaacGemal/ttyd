@@ -7,6 +7,9 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
+// The unit's first .rodata object (retail +0x0): effRippleMain's zero position template.
+__declspec(section ".rodata") Vec vec3_802fb520 = { 0.0f, 0.0f, 0.0f };
+
 // .sdata2 constants owned by this unit (named after their original addresses).
 const GXColor dat_8041fb98;
 const f32 float_0p0625_8041fb9c;
@@ -74,19 +77,11 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 }
 #pragma dont_inline reset
 
-// Superseded by the direct `position` writes in `effRippleMain`; kept for reference.
-static inline Vec makeRippleVec(f32 x, f32 y, f32 z) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = x;
-	temp.y = y;
-	temp.z = z;
-	return temp;
-}
 
 // Retail keeps `field_0x1C--` before `field_0x20++` and colours `effect`/`timer`/`type` r28/r30/r29.
 // At -O4,p mwcc coalesces the two read-modify-writes the other way round and gives `effect` r30; at
 // -O2 it emits the retail order and colours with the same 0x50 frame. `position` is built from the
-// shared .rodata zero vector (`vec3_802fb520`, declared far in the header); the direct field writes
+// .rodata zero vector (`vec3_802fb520`, defined above); the direct field writes
 // put the zero-vector load before the callee-save stores, as retail does.
 #pragma push
 #pragma optimization_level 2 // only this function needs the level-2 allocation; see above

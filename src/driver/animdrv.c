@@ -1743,7 +1743,7 @@ inline BOOL animSetMaterial_ChangeTexture(AnimationPoseData* data, AnimPoseShape
             printf("Error: animSetMaterial_ChangeTexture: "
                    "\x83\x65\x83\x4E\x83\x58\x83\x60\x83\x83\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1 "
                    "frameExt=%d\n",
-                   texEntry[dataId].bindId);
+                   frameExt);
         }
         if (bind[bindId].texType == texType) {
             if (texObj) {
@@ -1795,7 +1795,7 @@ static inline BOOL materialProc_ChangeTexture(AnimationPoseData* data, AnimPoseS
             printf("Error: animSetMaterial_ChangeTexture: "
                    "\x83\x65\x83\x4E\x83\x58\x83\x60\x83\x83\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1 "
                    "frameExt=%d\n",
-                   texEntry[dataId].bindId);
+                   frameExt);
         }
         if (bind[bindId].texType == texType) {
             if (texObj) {
@@ -1961,7 +1961,7 @@ static inline BOOL renderProc_ChangeTexture(AnimationPoseData* data, AnimPoseSha
             printf("Error: animSetMaterial_ChangeTexture: "
                    "\x83\x65\x83\x4E\x83\x58\x83\x60\x83\x83\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1 "
                    "frameExt=%d\n",
-                   texEntry[dataId].bindId);
+                   frameExt);
         }
         if (bind[bindId].texType == texType) {
             if (texObj) {
