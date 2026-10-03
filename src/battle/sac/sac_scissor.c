@@ -546,6 +546,13 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
     return 2;
 }
 
+// MUST_MATCH: re-deriving &points[i] at each use (instead of the cached `p`) gives retail's register use
+// (permuter). The natural build uses `p`.
+#ifdef MUST_MATCH
+#define SC_P (&points[i])
+#else
+#define SC_P p
+#endif
 // NONMATCHING (99.92%): only the two intersection-result stores differ, where the address
 // scratch is r4 (ours) vs r5 (target). Constants as literals, p hoisted to function scope
 // and right-chained stores got it here
@@ -621,15 +628,15 @@ s32 scissor_control(s32 unused, s32 reset) {
             f32 oy;
             p = &points[i];
 
-            if (scissor_intersection(p->x, p->y, p[1].x, p[1].y,
+            if (scissor_intersection(SC_P->x, SC_P->y, SC_P[1].x, SC_P[1].y,
                                      points[work->field_0x9C - 2].x, points[work->field_0x9C - 2].y, points[work->field_0x9C - 1].x, points[work->field_0x9C - 1].y,
                                      &ox, &oy) != 0) {
                 s32 k;
 
-                p->x = points[work->field_0x9C - 1].x = ox;
-                p->y = points[work->field_0x9C - 1].y = oy;
+                SC_P->x = points[work->field_0x9C - 1].x = ox;
+                SC_P->y = points[work->field_0x9C - 1].y = oy;
                 for (k = 0; k < i; k++) {
-                    points[k] = *p;
+                    points[k] = *SC_P;
                 }
                 if (work->field_0x170 != NULL) {
                     smartFree(work->field_0x170);
