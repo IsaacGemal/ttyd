@@ -127,6 +127,10 @@ const Vec vec3_rsh_00013740 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_0001374c = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013758 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013764 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013770 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_0001377c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013788 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_rsh_00013794 = {0.0f, 0.0f, 0.0f};
 static USER_FUNC(npc_jump);
 static void ext_moamoa_dispent(void);
 static void ext_moamoa_main(void);
@@ -497,8 +501,6 @@ static EVT_BEGIN(evt_meet_moamoa)
     RETURN
 EVT_END()
 
-// TODO: write npc_jump (static, 0x484 bytes) here:
-// its asm is in build/G8MJ01/rsh/asm/rsh_05.s; this is where the original has it, just before the first script that uses it
 
 EVT_BEGIN(evt_moamoa_help)
     BEGIN_INLINE_EVENT
@@ -1909,5 +1911,67 @@ static void ext_moamoa_dispent(void) {
         dispEntry(1, -5000.0f, 1, (DispCallback)ext_disp, NULL);
         dispEntry(1, -5000.0f, 2, (DispCallback)ext_shadow_disp, NULL);
     }
+}
+
+// Hops an npc to (x, y, z) over a frame count: userdata holds the frames left, the vertical velocity and the speed.
+static USER_FUNC(npc_jump) {
+    s32* args = event->args;
+    const char* name = (const char*)evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+    f32 speed = evtGetFloat(event, args[4]);
+    f32 grav = evtGetFloat(event, args[5]);
+    f32 frames = 60.0f * (f32)evtGetValue(event, args[6]) / 1000.0f;
+    NpcEntry* npc = npcNameToPtr(name);
+    f32 vy;
+    f32 rad;
+
+    if (isFirstCall) {
+        Vec to;
+        Vec from;
+        f32 dist;
+        f32 dy;
+
+        from = vec3_rsh_00013788;
+        from.x = npc->position.x;
+        from.z = npc->position.z;
+        to = vec3_rsh_0001377c;
+        to.x = x;
+        to.z = z;
+        dist = PSVECDistance(&from, &to);
+        dy = y - npc->position.y;
+        if (0.0f == frames) {
+            frames = dist / speed;
+        } else {
+            speed = dist / frames;
+        }
+        event->userdata[0] = *(s32*)&frames;
+        vy = dy / frames + grav * frames * 0.5f;
+        event->userdata[1] = *(s32*)&vy;
+        event->userdata[2] = *(s32*)&speed;
+    }
+    frames = event->userdataf[0];
+    vy = event->userdataf[1];
+    speed = event->userdataf[2];
+    rad = 6.2831855f * angleABf(npc->position.x, npc->position.z, x, z) / 360.0f;
+    npc->position.x = speed * moamoa_sin(rad) + npc->position.x;
+    npc->position.z = -(speed * moamoa_cos(rad) - npc->position.z);
+    vy -= grav;
+    npc->position.y += event->userdataf[1];
+    frames -= 1.0f;
+    if (frames < 0.0f) {
+        Vec land;
+
+        land = vec3_rsh_00013794;
+        land.x = x;
+        land.y = y;
+        land.z = z;
+        npc->position = land;
+        return EVT_RETURN_YIELD;
+    }
+    event->userdata[0] = *(s32*)&frames;
+    event->userdata[1] = *(s32*)&vy;
+    return EVT_RETURN_BLOCK;
 }
 // clang-format on
