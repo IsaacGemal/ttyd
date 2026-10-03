@@ -1,3 +1,8 @@
+// sound.h -> musyx.h includes the SDK <math.h>, whose `extern inline` sqrtf/sqrt emit four 0.5/3.0
+// localstatics into .rodata that the original unit does not have (shifting every string by 0x20).
+// Suppress it and take the out-of-line MSL math ABI from math_ext.h instead.
+#define _MATH_H_
+#include "math_ext.h"
 #include "seq/seq_title.h"
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
@@ -10,9 +15,7 @@
 #include "system.h"
 #include "win/win_main.h"
 #include "manager/fontmgr.h"
-#include <musyx/musyx.h>
 #include <string.h>
-#include "sequence/seq_title.h"
 
 extern SoundWork sound;
 extern PaperSoundBGM psbgm[2];
@@ -21,6 +24,25 @@ extern GlobalWork* gp;
 
 TitleWork work2;
 TitleWork* wp2 = &work2;
+
+// This unit's .rodata: the six Vec constants come first, in retail's order. disp1 passes the
+// first two by name; disp2/titleMain/L_titleInit reach the rest by fixed offsets from the base.
+const Vec vec3_802c11a0[1] = {{ 0.0f, 0.0f, 0.0f }};
+const Vec vec3_802c11ac[1] = {{ 1.0f, 1.0f, 1.0f }};
+const Vec vec3_802c11b8[1] = {{ 0.0f, 0.0f, 0.0f }};
+const Vec vec3_802c11c4[1] = {{ 1.0f, 1.0f, 1.0f }};
+const Vec vec3_802c11d0[1] = {{ 0.0f, 0.0f, 0.0f }};
+const Vec vec3_802c11dc[1] = {{ 1.0f, 1.0f, 1.0f }};
+
+// The first string block of the .rodata pool (reached by fixed offsets from the base).
+const char str_802C11E8[] = "%s/demo.tpl";
+const char str_802C11F4[] = "c_peach";
+const char str_802C11FC[] = "c_nazo";
+const char str_802C1204[] = "MOBJ_GoldenTreasureBox";
+const char str_802C121C[] = "MOBJ_BigTreasureBox";
+const char str_802C1230[] = "c_roten";
+const char str_802C1238[] = "c_kuribo_n";
+const char str_802C1244[] = "c_tyusan";
 
 //local prototypes
 static void pressStartGX(s32 alpha, f32 x, f32 y); // local to this file in the original
@@ -56,19 +78,12 @@ s32 N_getDebugMode(void) {
 	return wp2->debug;
 }
 
-// The original reaches this unit's pooled .rodata strings as offsets from its first rodata object,
-// vec3_802c11a0 (held in r31); MWCC's -rostr pool only names that base when it is referenced, so the
-// offset form below is what the original source must have used. The #else form is the plain literals.
+// The original's L_titleInit and titleMain reach the later pooled strings by fixed offsets from the
+// unit's first rodata object, vec3_802c11a0; plain literals are pooled the same way once the named
+// .rodata objects below are in place, so the natural (non-MATCH) form is the literal one.
 void L_titleInit(SequenceWork* work) {
-#ifdef MUST_MATCH
-	char* base = (char*)vec3_802c11a0;
-#endif
 	memset(wp2, 0, sizeof(TitleWork));
-#ifdef MUST_MATCH
-	wp2->texture = fileAllocf(4, base + 0xF4, getMarioStDvdRoot());
-#else
 	wp2->texture = fileAllocf(4, "%s/mariost.tpl", getMarioStDvdRoot());
-#endif
 	wp2->field_0xC = 0.0f;
 	wp2->field_0x10 = 1000.0f;
 	wp2->field_0x14 = 0.0f;
@@ -96,21 +111,13 @@ void L_titleInit(SequenceWork* work) {
 			else {
 				SoundSetOutputMode(SND_OUTPUTMODE_STEREO);
 			}
-#ifdef MUST_MATCH
-			psndBGMOn(0x200, base + 0x104);
-#else
 			psndBGMOn(0x200, "BGM_DIGEST1");
-#endif
 			if (psbgm[0].streamId != 0xFFFFFFFF) {
 				sound.streams[psbgm[0].streamId].flags |= 0x8000;
 			}
 		}
 		else {
-#ifdef MUST_MATCH
-			psndBGMOn(0x200, base + 0x110);
-#else
-			psndBGMOn(0x200, "BGM_TITLE1");
-#endif
+			psndBGMOn(0x200, "BGM_TITLE1\0\0\0\0\0");
 			if (psbgm[0].streamId != 0xFFFFFFFF) {
 				sound.streams[psbgm[0].streamId].flags |= 0x8000;
 			}
@@ -136,17 +143,226 @@ const GXColor dat_804194a8 = {0x00, 0x00, 0x00, 0xFF};
 
 // dont_inline keeps titleMain a real `bl` from seq_titleMain; retail does not inline it.
 #pragma dont_inline on
-// NONMATCHING (4.50%)
 void titleMain(SequenceWork* work) {
+// The eight animation-name strings are named objects at the base of the pool (str_802C11E8..1244);
+// the three later ones are pooled literals from this function. Using the named objects here keeps
+// the compiler from pooling a second copy of the first eight, which would shift the whole pool.
+// The natural form is the plain literals.
+#ifdef MUST_MATCH
+#define TITLE_MAKU_LR "OFF_d_maku_left_right"
+#define TITLE_MAKU_C "OFF_d_maku_center"
+#define TITLE_DEMO_TPL str_802C11E8
+#define TITLE_PEACH str_802C11F4
+#define TITLE_NAZO str_802C11FC
+#define TITLE_GOLD str_802C1204
+#define TITLE_BIG str_802C121C
+#define TITLE_ROTEN str_802C1230
+#define TITLE_KURIBO str_802C1238
+#define TITLE_TYUSAN str_802C1244
+#define TITLE_DMO00 "dmo_00"
+#else
+#define TITLE_MAKU_LR "OFF_d_maku_left_right"
+#define TITLE_MAKU_C "OFF_d_maku_center"
+#define TITLE_DEMO_TPL "%s/demo.tpl"
+#define TITLE_PEACH "c_peach"
+#define TITLE_NAZO "c_nazo"
+#define TITLE_GOLD "MOBJ_GoldenTreasureBox"
+#define TITLE_BIG "MOBJ_BigTreasureBox"
+#define TITLE_ROTEN "c_roten"
+#define TITLE_KURIBO "c_kuribo_n"
+#define TITLE_TYUSAN "c_tyusan"
+#define TITLE_DMO00 "dmo_00"
+#endif
 	switch (wp2->field_0x8) {
-		case 0:
-			if (psndBGMStartCheck(0)
-				&& animGroupBaseAsync("OFF_d_maku_left_right", 2, 0)
-				&& animGroupBaseAsync("OFF_d_maku_center", 2, 0))
+		case 0: {
+			u32 bgmCheck = (u32)psndBGMStartCheck(0);
+			if (bgmCheck && animGroupBaseAsync(TITLE_MAKU_LR, 2, 0)
+				&& animGroupBaseAsync(TITLE_MAKU_C, 2, 0))
 			{
-
+				if (seqGetPrevSeq() == SEQ_LOAD) {
+					fadeEntry(0x40, 0, *(GXColor*)&dat_80419480);
+					fadeEntry(0x1f, 0, *(GXColor*)&dat_80419484);
+					wp2->field_0x10 = 120.0f;
+					wp2->field_0x18 = -170.0f;
+					wp2->field_0x24 = 0;
+				}
+				else if (seqGetPrevSeq() == SEQ_GAME_OVER) {
+					fadeEntry(0x15, 0, *(GXColor*)&dat_80419488);
+					fadeEntry(0x1d, 0, *(GXColor*)&dat_8041948c);
+					wp2->field_0x24 = 0x4e;
+				}
+				else {
+					fadeEntry(0x15, 0, *(GXColor*)&dat_80419490);
+					fadeEntry(0x22, 0, *(GXColor*)&dat_80419494);
+					fadeSetNarrowFast();
+					wp2->field_0x24 = 0x17;
+				}
+				wp2->field_0x8++;
 			}
 			break;
+		}
+		case 1:
+			wp2->field_0x24 = wp2->field_0x24 - 1;
+			if (wp2->field_0x24 == 0
+				&& psbgm[0].streamId != 0xFFFFFFFF)
+			{
+				sound.streams[psbgm[0].streamId].flags &= ~0x8000;
+			}
+			if (fadeIsFinish()) {
+				if (seqGetPrevSeq() != SEQ_LOAD) {
+					fadeEntry(0x14, 0x1f4, *(GXColor*)&dat_80419498);
+					wp2->field_0x8++;
+				}
+				else {
+					wp2->field_0x10 = 120.0f;
+					wp2->field_0x18 = -170.0f;
+					wp2->field_0x2C = 0;
+					wp2->field_0x8 = 3;
+				}
+			}
+			break;
+		case 2:
+			wp2->field_0xC = 0.0f;
+			wp2->field_0x10 = intplGetValue(0xa, wp2->field_0x20, 0x3c, 300.0f, 120.0f);
+			wp2->field_0x24 = wp2->field_0x24 - 1;
+			if (wp2->field_0x24 == 0) {
+				if (psbgm[0].streamId != 0xFFFFFFFF) {
+					sound.streams[psbgm[0].streamId].flags &= ~0x8000;
+				}
+				if (seqGetPrevSeq() == SEQ_GAME_OVER) {
+					psndSFXOn((const char*)0xab8);
+				}
+			}
+			wp2->field_0x14 = 0.0f;
+			wp2->field_0x18 = intplGetValue(0xb, wp2->field_0x20, 0x3c, -300.0f, -170.0f);
+			wp2->field_0x20 = wp2->field_0x20 + 1;
+			if (wp2->field_0x20 > 0x3c) {
+				fileAsyncf(4, 0, TITLE_DEMO_TPL, getMarioStDvdRoot());
+				animGroupBaseAsync(TITLE_PEACH, 0, 0);
+				animGroupBaseAsync(TITLE_NAZO, 0, 0);
+				animGroupBaseAsync(TITLE_GOLD, 0, 0);
+				animGroupBaseAsync(TITLE_BIG, 0, 0);
+				animGroupBaseAsync(TITLE_ROTEN, 0, 0);
+				animGroupBaseAsync(TITLE_KURIBO, 0, 0);
+				animGroupBaseAsync(TITLE_TYUSAN, 0, 0);
+				wp2->field_0x2C = 0;
+				wp2->field_0x8++;
+			}
+			break;
+		case 3:
+			wp2->field_0x1C += 0.1f;
+			if (wp2->field_0x1C > 1.0f) {
+				wp2->field_0x1C = 1.0f;
+			}
+			if (keyGetButtonTrg(0) & 0x1100) {
+				psndSFXOn((const char*)8);
+				wp2->field_0x8 = 0xa;
+				break;
+			}
+			if (++wp2->field_0x28 > 0x474) {
+				wp2->field_0x8 = 0x14;
+			}
+			break;
+		case 10:
+			fadeEntry(0x3f, 0, *(GXColor*)&dat_8041949c);
+			wp2->field_0x8++;
+			// fallthrough
+		case 11:
+			if (fadeIsFinish()) {
+				fadeEntry(0x1a, 0, *(GXColor*)&dat_804194a0);
+				wp2->field_0x8++;
+			}
+			break;
+		case 12:
+			if (fadeIsFinish()) {
+				fadeReset(4);
+				seqSetSeq(SEQ_LOAD, NULL, NULL);
+			}
+			break;
+		case 20:
+			fadeEntry(0x21, 0, *(GXColor*)&dat_804194a4);
+			fadeEntry(0xa, 0x3e8, *(GXColor*)&dat_804194a8);
+			psndBGMOff_f_d(0x200, 0x3e8, 0);
+			wp2->field_0x20 = 0;
+			wp2->field_0x8++;
+			break;
+		case 21:
+			wp2->field_0x10 = intplGetValue(0xb, wp2->field_0x20, 0x3c, 120.0f, 400.0f);
+			wp2->field_0x18 = intplGetValue(0xb, wp2->field_0x20, 0x3c, -170.0f, -400.0f);
+			wp2->field_0x20 = wp2->field_0x20 + 1;
+			if (wp2->field_0x20 > 0x3c) {
+				wp2->field_0x20 = 0x3c;
+			}
+			wp2->field_0x1C -= 0.1f;
+			if (wp2->field_0x1C < 0.0f) {
+				wp2->field_0x1C = 0.0f;
+			}
+			if (fadeIsFinish()) {
+				fadeReset(1);
+				if (pouchGetHP() <= 0) {
+					pouchSetHP(1);
+				}
+				gp->areaFadeInType = 0xa;
+				gp->areaFadeInDuration = 0;
+				seqSetSeq(SEQ_MAP_CHANGE, TITLE_DMO00, NULL);
+			}
+			break;
+	}
+
+	if (wp2->field_0x8 != 12 && work->state < 14) {
+		dispEntry(CAMERA_3D, 0.0f, 0, disp1, NULL);
+		dispEntry(CAMERA_3D_EFFECTB, 0.0f, 0, disp2, NULL);
+
+		switch (wp2->debug) {
+			case 0:
+				if (keyGetButtonTrg(0) & ~0x400) {
+					wp2->debug = 0;
+				}
+				else if (keyGetButtonTrg(0) & 0x400) {
+					wp2->debug++;
+				}
+				break;
+			case 1:
+				if (keyGetButtonTrg(0) & ~0x200) {
+					wp2->debug = 0;
+				}
+				else if (keyGetButtonTrg(0) & 0x200) {
+					wp2->debug++;
+				}
+				break;
+			case 2:
+				if (keyGetButtonTrg(0) & ~0x20) {
+					wp2->debug = 0;
+				}
+				else if (keyGetButtonTrg(0) & 0x20) {
+					wp2->debug++;
+				}
+				break;
+			case 3:
+				if (keyGetButtonTrg(0) & ~0x200) {
+					wp2->debug = 0;
+				}
+				else if (keyGetButtonTrg(0) & 0x200) {
+					wp2->debug++;
+				}
+				break;
+			case 4:
+				if (keyGetButtonTrg(0) & ~0x800) {
+					wp2->debug = 0;
+				}
+				else if (keyGetButtonTrg(0) & 0x800) {
+					wp2->debug++;
+				}
+				break;
+			case 5:
+				if (keyGetButtonTrg(0) & ~0x40) {
+					wp2->debug = 0;
+				}
+				else if (keyGetButtonTrg(0) & 0x40) {
+					wp2->debug = -1;
+				}
+				break;
+		}
 	}
 }
 
@@ -168,7 +384,7 @@ void disp1(CameraId cameraId, void* param) {
 	              camera->viewport[4], camera->viewport[5]);
 
 	winTexInit(*wp2->texture->data);
-	winTexSet(7, (Vec){ 0.0f, 0.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+	winTexSet(7, vec3_802c11a0[0], vec3_802c11ac[0], (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
 	*camGetPtr(cameraId) = camBackup;
 	GXSetProjectionv(projBackup);
@@ -188,16 +404,11 @@ static inline Vec disp2Vec(Vec v, f32 y, f32 x) {
 }
 
 // The two Vec by-value argument temp blocks sit in the original slots (scale 0x38/0x14,
-// intermediate 0x44/0x20, outgoing 0x50/0x2c) and the pulse multiply matches. One diff remains,
-// outside this function's control: the int-to-float magic double. The target loads it from the
-// rodata base (`lfd f2, 0xb0(r31)`, r31 = vec3_802c11a0); MWCC here emits its own address
-// (`lis r3, @300@ha; lfd f2, @300@l(r3)`). This unit's vec3_802c11a0 is an extern in
-// include/sequence/seq_title.h and the unit does not define its .rodata blob, so the compiler
-// cannot pool the generated double against that base.
-// NONMATCHING (99.34%): the magic double above (5 instructions, all in its addressing and the
-// register colouring it forces); the Vec arg temps, pulse multiply and FontDrawString order match.
+// intermediate 0x44/0x20, outgoing 0x50/0x2c), the pulse multiply matches, and the compiler's
+// int-to-float magic double is pooled at 0xb0 and read through the rodata base (`lfd f2, 0xb0(r31)`)
+// because the unit defines its .rodata. The Vec arguments are the named objects: taking
+// *(Vec*)(base + off) instead made the optimizer re-schedule the arg setup and cost ~10 points.
 void disp2(CameraId cameraId, void* param) {
-	u8* base = (u8*)vec3_802c11a0; // base of this unit's .rodata pool
 	CameraEntry* camera = camGetPtr(CAMERA_2D);
 	f32 projBackup[GX_PROJECTION_SZ];
 	f32 viewportBackup[GX_VIEWPORT_SZ];
@@ -216,10 +427,10 @@ void disp2(CameraId cameraId, void* param) {
 
 	winTexInit(*wp2->texture->data);
 
-	unk_80177008(5, disp2Vec(*(Vec*)(base + 0x18), wp2->field_0x10, wp2->field_0xC), *(Vec*)(base + 0x24),
+	unk_80177008(5, disp2Vec(vec3_802c11b8[0], wp2->field_0x10, wp2->field_0xC), vec3_802c11c4[0],
 	             (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
-	winTexSet(6, disp2Vec(*(Vec*)(base + 0x30), wp2->field_0x18, wp2->field_0x14), *(Vec*)(base + 0x3c),
+	winTexSet(6, disp2Vec(vec3_802c11d0[0], wp2->field_0x18, wp2->field_0x14), vec3_802c11dc[0],
 	          (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
 
 	wp2->field_0x2C += 1; // title pulse counter
@@ -311,3 +522,10 @@ static void pressStartGX(s32 alpha, f32 x, f32 y) {
 	GXTexCoord2f32(0.0f, 0.0f);
 	GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
 }
+
+// The 4-byte zero that ends the unit's .sdata (after wp2).
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_8040F2E4_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset

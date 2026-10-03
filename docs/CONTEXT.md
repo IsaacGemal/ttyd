@@ -4074,3 +4074,24 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   (objdiff ignores data values), x/y were swapped in two places and template Vecs shifted by one; it and
   marioReInit (unguarded "a_mario" + offset reads) are as on main. seq_mapchange's two pool strings existed only
   under MUST_MATCH, so the natural build couldn't link.
+
+## Wave 66, batch 1 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Wave 66** (14:37, base 6e6ae043, `scratch/wave66/`): a data-port arm (19 agents: each seeded function that
+  rises but lowers a data section, with porting the unit's data in scope: constants/strings named or reordered,
+  missing objects defined by their original names, function order, rodatalayout/link_diag to measure; a link is a
+  bonus) and a near-miss arm (83 agents over units changed since 07:30). Both prompts carry Claude #1's rule:
+  objdiff doesn't compare data values, so byte-check every data object added or changed (rodatalayout; data_check
+  needs git, which workspaces lack) and check the argument order of every call with more than two arguments.
+- Batch 1 (onto main 711fdc5e): 9,318 -> 9,326, code linked 43.25 -> 43.50%, data linked 79.69 -> 79.88%. The
+  data-port arm works: titleMain, gcRumbleCheck, nameEntDisp, effFireDisp3, btlevtcmd_StartAvoid, batSpotInit and
+  BtlUnit_ControlPoseSoundMain to 100%, kpaFireAttack 0 -> 99.99%, wave 65's winHakoGX 0 -> 84%; **mariost and
+  seq_title then link** (autolink). These need the agent's data changes too, so they come in by merge3.py (now
+  applying the agent's include.patch when the merged file needs it), not insert.py. One include.patch changed an
+  existing pmario_sound.h line (SoundSetOutputMode's signature) and broke six units; mariost includes sound.h
+  instead. The near-miss arm's first 11 agents found nothing new: two passes have been through most near-misses.
+- Reviews (`scratch/wave66/review1.md`, `review1b.md`; data first, data_check clean over 125 objects):
+  winHakoGX's previous-page arrow took the 1.0 template instead of 0.6, hidden by indexing sixteen separate Vec
+  objects as one array (now MUST_MATCH only, literals in the natural build); sac_deka's agent defined the unit's
+  .rodata out of retail's order, so the file's existing MUST_MATCH base+offset reads pointed at the wrong objects
+  (as on main, as in wave 61).

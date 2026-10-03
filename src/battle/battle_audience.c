@@ -2154,12 +2154,17 @@ void BattleAudienceItemCtrlProcess(void) {
 }
 
 // Functionally complete. `opt_common_subs off` is load-bearing: with CSE on the active count lands
-// in r29 (retail r28) and the whole first block shifts (98.62 -> 99.34). Remaining diffs are
-// FP-register tie-breaks only: case 0's float_50/float_25 land f2/f4 (retail f3/f2) because the
-// int->float mask lands f3 (retail f2), case 10's dx lands f2 (retail f1), and the vec3_802f9744
-// copy loads a pointer (retail lis+addi); every reshaping/pragma tried is equal or worse.
+// in r29 (retail r28) and the whole first block shifts (98.62 -> 99.34). Storing rand()'s result
+// in a local `rv` before the case-0 conversion then pulled the int->float magic double into retail's
+// f2 (99.34 -> 99.40); it is the only handle, a direct `(f32)rand()` picks f3. Assigning float_50 to
+// `start` before multiplying (`start = float_50; start = start * (f32)rv;` instead of one
+// expression) made the multiply overwrite float_50's register, retail's `fmuls f3,f3,f4`
+// (99.40 -> 99.44). What is left is FP-register tie-breaks only: the case-0 conversion result lands
+// f2 (retail f4) so float_25 lands f4 (retail f2); case 10 loads star+0x2c before star+0x20 (retail
+// the reverse, so c sits f0 where retail has f2 and vice versa); and the vec3_802f9744 copy loads a
+// pointer (retail lis+addi); every reshaping/pragma tried is equal or worse.
 #pragma opt_common_subs off // needed: with CSE on the active count lands in r29 and the int->float mask in f3
-// NONMATCHING (99.34%): FP-register tie-breaks only (see above).
+// NONMATCHING (99.44%): FP-register tie-breaks only (see above).
 void BattleAudienceApSrcCtrlProcess(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	u8* star;
@@ -2174,6 +2179,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 	f32 end;
 	f32 zero;
 	f32 k25;
+	s32 rv;
 
 	if (!(audience->flags & 2)) {
 		return;
@@ -2226,7 +2232,9 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			*(s32*)(star + 4) = 5;
 			*(Vec*)(star + 0x2C) = *(Vec*)(star + 8);
 			*(Vec*)(star + 0x20) = *(Vec*)(star + 0x2C);
-			start = float_50_8041e6d8 * (f32)rand();
+			rv = rand();
+			start = float_50_8041e6d8;
+			start = start * (f32)rv;
 			k25 = float_25_8041e6dc;
 			start = start / float_32767_8041e674 - k25;
 			*(f32*)(star + 0x2C) += start;
@@ -2266,8 +2274,8 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			pos = statusGetApPos();
 			*(Vec*)(star + 0x2C) = pos;
 			radius = *(f32*)(star + 0x24) - *(f32*)(star + 0x30);
-			dx = *(f32*)(star + 0x20);
-			dx = dx - *(f32*)(star + 0x2C);
+			dx = *(f32*)(star + 0x2C);
+			dx = *(f32*)(star + 0x20) - dx;
 			*(f32*)(star + 0x4C) = (*(f32*)(star + 0x50) = sqrt(dx * dx + radius * radius));
 			*(f32*)(star + 0x54) = asin(radius / *(f32*)(star + 0x4C));
 			*(f32*)(star + 0x58) = float_0p05_8041e6e4 +

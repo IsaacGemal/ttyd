@@ -187,6 +187,10 @@ void btlDispTexPlaneInit(void) {
 // `u8`/array temporaries, direct `GXWGFifo` accesses, and every relevant opt_* pragma (opt_lifetimes,
 // opt_common_subs, opt_propagation, opt_pointer_analysis, ...) all leave one of {base r12, colour registers}
 // wrong. The 1.0f/double pool-symbol names differ but do not affect the score.
+// Also tried without a win: local GXColor copies (90.53%), `-x`/`-y` inline instead of the nx/ny locals
+// (hangs), nx/ny assigned before GXBegin (30 diffs), and opt_lifetimes/opt_common_subs/opt_propagation/
+// opt_strength_reduction/peephole/scheduling off (30-102 diffs), optimization_level 1 (68 diffs),
+// global_optimizer/defer_codegen/always_inline/opt_loop_invariants off or on (30 diffs).
 void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3) {
 	GXTexObj texobj;
 	f32 x, y;
@@ -361,6 +365,8 @@ void btlDispInit(void) {
 // The header's BtlUnit_CheckStatus second parameter is StatusEffectType (int), but the callee
 // sign-extends it and battle_status_effect.h says it "should be an s8". Calling through a matching
 // function pointer makes MWCC coerce the argument like the original (`extsb r4,r30` after `mr r3,r29`).
+// Keep _GetStatusPoseType out of line: the original calls it rather than inlining it into btlDispMain.
+#pragma dont_inline on
 StatusEffectType _GetStatusPoseType(BattleUnit* unit) {
 	s32* table = _status_pose_table;
 	StatusEffectType type;
@@ -382,12 +388,19 @@ StatusEffectType _GetStatusPoseType(BattleUnit* unit) {
 	}
 	return STATUS_INVALID;
 }
+#pragma dont_inline reset
 
 extern f32 float_7_8041bf84;
 extern f32 float_10_8041bf40;
-// Call sequence, stack layout and the shadow `frsp` all match; what is left is floating-point
-// register allocation in a few straight-line blocks.
-// NONMATCHING (94.37%): see above.
+
+// `_GetStatusPoseType` and `BattleStockExpDisp` are kept out of line so the original's `bl`s are
+// emitted. Case 2 matches only with the `double fabsx` local below: it keeps the __fabs result in f4
+// while the 10.0 double stays in f0, which the bare `10.0 < __fabs(...)` form gets backwards.
+// The second status block assigns 1.0f to f0 and float_2 to f3 (target has f3/f0), and four `lfd`
+// load the unit's to-int double at +0x60 instead of +0x58 because the unit's pooled rodata order is
+// not the original's (the file's function order is not yet the original's; that resolves when the
+// whole file is reordered).
+// NONMATCHING (99.96%): second status block FP register swap + pooled-rodata lfd offsets.
 void btlDispMain(void) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleUnit* unit;
@@ -427,8 +440,9 @@ void btlDispMain(void) {
 					pos2.z += float_7_8041bf84;
 					floor = BattleGetFloorHeight(wp, pos2.x, pos2.y, pos2.z);
 					switch (unit->work[2]) {
-					case 2:
-						if (10.0 < __fabs(pos1.x - pos2.x)) {
+					case 2: {
+						double fabsx = __fabs(pos1.x - pos2.x);
+						if (fabsx > 10.0) {
 							if (pos2.x > pos1.x) {
 								pos1.x = pos1.x + ((pos2.x - pos1.x) - float_10_8041bf40);
 							} else {
@@ -437,6 +451,7 @@ void btlDispMain(void) {
 						}
 						BtlUnit_SetPos(unit, pos1.x, pos2.y, pos2.z);
 						break;
+					}
 					case 3:
 						if (__fabs(pos1.x - pos2.x) < 1.0) {
 							BtlUnit_SetPos(unit, pos2.x, floor, pos2.z);
@@ -1414,6 +1429,8 @@ void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor
 
 extern f32 float_901_8041bf50;
 
+// Keep BattleStockExpDisp out of line: the original calls it rather than inlining it into btlDispMain.
+#pragma dont_inline on
 void BattleStockExpDisp(void) {
 	BattleWork* wp = _battleWorkPointer;
 
@@ -1427,6 +1444,7 @@ void BattleStockExpDisp(void) {
 		dispEntry(CAMERA_2D, float_901_8041bf50, 1, _btlStockExpDisp, NULL);
 	}
 }
+#pragma dont_inline reset
 
 // .rodata
 static volatile const Vec vec3_802ede0c = { 0.0f, 0.0f, -100.0f };
@@ -1488,6 +1506,16 @@ extern f32 float_5_8041bf6c;
 // f2/f3 with float_5/float_1 sharing f1), and `add r5, r4, r0` vs `add r4, r4, r0` (the target coalesces
 // the table address into the icon-argument register r5, ours reuses the base r4).
 // NONMATCHING (91.46%): only the FP allocation (f3/f4/f2 vs f2/f3/f1) and `add r5` vs `add r4` differ; the unsigned `lhz` matches.
+// Tried without a win: `float_5 + mSizeMultiplier * height` (same), `height * mSizeMultiplier` (same),
+// `v.y = v.y + ...` (90.00%), a local for the height, the multiplier or float_5 (below 72%), reading
+// icon_id into a local at 91.46% (same regs), a `s32`/`u16` height local (89.63/70.32%), a static inline
+// height or product helper (90.73/82.68%), an `ItemDataView*` item pointer (17.78%) or an inline
+// `itemDataTable[unit->heldItem]` index (67.68%), a `MATCH_F32` volatile read of float_1/float_5
+// (8-23 diffs), and opt_lifetimes/opt_common_subs/opt_propagation/opt_dead_assignments/
+// opt_strength_reduction/scheduling/global_optimizer/defer_codegen/always_inline/opt_loop_invariants
+// off (8 diffs), optimization_level 1/2 (28/23 diffs), optimize_for_size off (80.24%). The target keeps
+// f1 reserved for float_1 across the fmadds, which shifts every other FP register by one; no source form
+// reserves f1 without parking the value in a callee-saved FPR.
 void btlUnitStolenItemDisp(CameraId cameraId, void* param) {
 	BattleUnit* unit = param;
 	Vec v;
@@ -1569,6 +1597,17 @@ static inline void _btlDispTex4Sub(s32 id, Vec trans, Vec scale, Vec rot, Vec po
 // NONMATCHING (86.94%): the target batches every argument store into r14-r25 and keeps its
 // trans/scale/rot pointers in r27-r29; caching the dereferences in locals reproduces the batching
 // but spills them (frame 0x1c0 vs 0x1a0) and puts the u16->f32 double at +0x58 not +0x60.
+// Passing the dereferences straight to the by-value wrapper is the natural form and gets the target's
+// stack slots exactly (0x100/0xf4/0xe8/0xdc/0xd0/0x18) but only 64.06%: the compiler no longer batches
+// (stmw r23, frame 0x180). Partial caching (any one or two of trans/scale/rot) and explicit per-call
+// by-value temporaries both send mwcceppc 2.6 into an endless loop -- keep the all-three cache.
+// #pragma scheduling off is worse (27.28%); opt_lifetimes on/off, optimize_for_size on/off,
+// optimization_level 2/3, global_optimizer off, defer_codegen on, always_inline on and a raised
+// inline_max_total_size all leave 177 diffs on the cached form, and the direct form stays at 64.06%
+// under every one of them. The original `_btlDispTex4` likely took the Vecs by value (a by-value
+// definition compiles to the same 100% asm), but calling it that way directly still gives 64.06% --
+// the batching is the scheduler's, not the signature's. Reordering the wrapper's by-value parameters
+// is worse (68.69%).
 void btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, GXColor* color) {
 #ifdef MUST_MATCH
 	u16 width;

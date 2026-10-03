@@ -3,6 +3,7 @@
 #include "data/item_data.h"
 #include "driver/camdrv.h"
 #include "driver/msgdrv.h"
+#include "driver/swdrv.h"
 #include "driver/windowdrv.h"
 #include "manager/fontmgr.h"
 #include "mario/mario_pouch.h"
@@ -1093,6 +1094,345 @@ void sort_1_2_func(WindowWork* work) {
     WW_S32(work, 0x21C) = WW_S32(work, 0x214) / 10;
 }
 
+// ---- winHakoGX ------------------------------------------------------------
+// The item/badge container window ("hako" = box). It draws a scrolling grid of
+// item tiles, an overlay of item icons, and the bottom status bar. Every tile is
+// an inlined textured quad, so it uses its own hakoQuad copy below (the same body
+// as wazaQuad, matching retail's height-then-width scale computation).
+extern const GXColor dat_8041cf6c;
+extern const GXColor dat_8041cf70;
+extern const GXColor dat_8041cf74;
+extern const GXColor dat_8041cf78;
+extern const GXColor dat_8041cf7c;
+extern const GXColor dat_8041cf80;
+extern const GXColor dat_8041cf84;
+extern const GXColor dat_8041cf88;
+extern const GXColor dat_8041cf8c;
+extern const f32 float_224_8041d10c;
+extern const f32 float_392_8041d110;
+extern const f32 float_400_8041d114;
+extern const f32 float_neg400_8041d118;
+extern const f32 float_48_8041d11c;
+extern const f32 float_28_8041d120;
+extern const f32 float_395_8041d124;
+extern const f32 float_15_8041d128;
+extern const f32 float_235_8041d12c;
+extern const f32 float_220_8041d130;
+extern const f32 float_0p7_8041d134;
+extern const f32 float_380_8041d138;
+extern const f32 float_228_8041d13c;
+extern const f32 float_237_8041d140;
+extern const char str_802F4548[];
+#ifdef MUST_MATCH
+// MUST_MATCH: retail reads the sixteen template Vecs (vec3_802f41a4..vec3_802f4258) through one base.
+extern const Vec vec3_802f41a4[16];
+#define HK_V(i, val) (vec3_802f41a4[i])
+#else
+#define HK_V(i, val) (val)
+#endif
+
+static inline void hakoQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f32 h) {
+    GXTexObj texObj;
+    Mtx mtx;
+    f64 sy;
+    f64 sx;
+    f32 syf;
+
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, texId);
+    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    sy = __fabs(h);
+    sx = __fabs(w);
+    syf = (f32)sy / (f32)GXGetTexObjHeight(&texObj);
+    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), syf, float_1_8041d070);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x, y - h, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(x + w, y - h, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(x + w, y, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+}
+
+// Section 1 draws the scrolling page of the box. Retail reads the row counter
+// before it is ever written (its `mulli r4, r25, 0x38` is at the top of the
+// outer loop, and r25 is only assigned inside the inner loops), i.e. the
+// original had an uninitialised `row`. That is undefined behaviour, so `row` is
+// initialised to 0 here; the only observable difference is page 0's visibility
+// test on the very first call, and the instruction count is unchanged (MWCC
+// still keeps it in a register and emits the `mulli`).
+// NONMATCHING: register colouring inside the many inlined quads and the
+// anonymous .rodata pool offsets (the unit's base object is not defined here).
+void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
+    f32 scroll;
+    s32 count;
+    s32 cursor;
+    s32 pageCount;
+    s32 texBase;
+    s32 page;
+    s32 row = 0; // retail reads r25 (row) without setting it first at 0x80152E00, not only on page 0; 0 keeps it defined
+    s32 col;
+    s32 i;
+    s32 ofs;
+    s32 t7e, t7f, t84, t80, t87, t82, t81, t85, t86, t7d, t7b, t83;
+    f32 f24;
+    f32 f25;
+    f32 f26;
+
+    if (type == 0) {
+        scroll = WW_F32(work, 0xEA0);
+        count = WW_S32(work, 0xE94);
+        cursor = WW_S32(work, 0xE9C);
+    } else {
+        scroll = WW_F32(work, 0xF9C);
+        count = WW_S32(work, 0xF90);
+        cursor = WW_S32(work, 0xF98);
+    }
+
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(0, 7, 0);
+    GXSetFog(0, float_0_8041d068, float_0_8041d068, float_0_8041d068, float_0_8041d068, dat_8041cf6c);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+    GXSetCurrentMtx(0);
+    GXSetScissor((u32)(float_304_8041d0a8 + x), (u32)(float_240_8041d0ac - y), 0x190, 0xE4);
+
+    texBase = type * 0xD;
+    pageCount = (count + 0x1B) / 28;
+    t7d = texBase + 0x7D;
+    t7e = texBase + 0x7E;
+    t85 = texBase + 0x85;
+    t84 = texBase + 0x84;
+    t7b = texBase + 0x7B;
+    t81 = texBase + 0x81;
+    t86 = texBase + 0x86;
+    t80 = texBase + 0x80;
+    t7f = texBase + 0x7F;
+    t83 = texBase + 0x83;
+    t87 = texBase + 0x87;
+    t82 = texBase + 0x82;
+    ofs = 0;
+    for (page = 0; page < pageCount; ofs += 0xE8, page++) {
+        f32 vis = (scroll + (y - (f32)(row * 0x38))) - (f32)ofs;
+
+        if (vis > float_400_8041d114 || vis < float_neg400_8041d118) {
+            continue;
+        }
+        if ((texBase != 0 && page == 2) || (texBase != 1 && page == 3)) {
+                hakoQuad(work, t7b, x, (y + scroll) - (f32)(page * 0xE8), 56.0f, 56.0f);
+                hakoQuad(work, t7d, x, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                hakoQuad(work, t7e, x + 8.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 48.0f, 8.0f);
+                hakoQuad(work, t85, x + 56.0f, (y + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                hakoQuad(work, t84, x + 56.0f, ((y - 8.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 48.0f);
+                hakoQuad(work, t81, x + 56.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                break; // retail leaves the page loop once the special page is drawn (b .L_80154348 at 0x8015386C)
+            } else {
+                f32 f23;
+                f32 f22;
+
+                for (col = 0; col < 7; col++) {
+                    for (row = 0; row < 4; row++) {
+                        hakoQuad(work, t7b + ((col + 7 * row) & 1),
+                                 x + (f32)(col * 0x38),
+                                 (scroll + (y - (f32)(row * 0x38))) - (f32)ofs,
+                                 56.0f, 56.0f);
+                    }
+                }
+                f24 = float_392_8041d110 + x;
+                f26 = (y - float_224_8041d10c) + scroll;
+                f25 = f24 + 8.0f;
+                f23 = f26 - (f32)ofs;
+                f22 = f23 - 8.0f;
+                for (i = 0; i < 7; i++) {
+                    s32 t1 = i == 0 ? t7d : ((i & 1) ? t7f : t86);
+                    s32 t2 = (i & 1) ? t80 : t7e;
+                    hakoQuad(work, t1, x + (f32)(i * 0x38), f23, 8.0f, 8.0f);
+                    hakoQuad(work, t2, x + (f32)(i * 0x38) + 8.0f, f23, 48.0f, 8.0f);
+                }
+                for (i = 0; i < 4; i++) {
+                    s32 t1 = i == 0 ? t85 : ((i & 1) ? t83 : t87);
+                    f32 qy = (scroll + (y - (f32)(i * 0x38))) - (f32)ofs;
+                    hakoQuad(work, t1, f24, qy, 8.0f, 8.0f);
+                    {
+                        s32 t2 = (i & 1) ? t82 : t84;
+                        hakoQuad(work, t2, f24, (scroll + ((y - (f32)(i * 0x38)) - 8.0f)) - (f32)ofs, 8.0f, 48.0f);
+                    }
+                }
+                hakoQuad(work, t81, f24, f23, 8.0f, 8.0f);
+            }
+    }
+
+    // Section 2: the empty-slot tiles. Drawn when the item is not yet obtained.
+    winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+    for (page = 0; page < pageCount; page++) {
+        f32 vis2 = (scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8);
+        if (vis2 > float_400_8041d114 || vis2 < float_neg400_8041d118) {
+            continue;
+        }
+        for (row = 0; row < 4; row++) {
+            f32 ty = ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - float_28_8041d120;
+            for (col = 0; col < 7; col++) {
+                s32 idx = page * 0x1C + row * 7 + col;
+                if (idx < count) {
+                    Vec translate;
+
+                    if (type == 0) {
+                        s16 itemId = *(s16*)((u8*)work + 0xEB8 + idx * 2);
+                        if (swGet(itemId + 0x80) != 0) {
+                            continue;
+                        }
+                    } else {
+                        s16 itemId = *(s16*)((u8*)work + 0xFB4 + idx * 2);
+                        if (swGet(itemId + 0x41) != 0) {
+                            continue;
+                        }
+                    }
+                    translate = HK_V(0, ((Vec){0.0f, 0.0f, 0.0f}));
+                    translate.x = ((x + (f32)(col * 0x38)) + float_24_8041d0c8) + float_4_8041d07c;
+                    translate.y = ty;
+                    winTexSet(0x97, translate, HK_V(1, ((Vec){1.0f, 1.0f, 1.0f})), dat_8041cf70);
+                }
+            }
+        }
+    }
+
+    // Section 3: the item icons, drawn when the item is obtained.
+    winIconInit();
+    for (page = 0; page < pageCount; page++) {
+        for (row = 0; row < 4; row++) {
+            f32 ty = ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - float_28_8041d120;
+            for (col = 0; col < 7; col++) {
+                s32 idx = page * 0x1C + row * 7 + col;
+                if (idx < count) {
+                    s32 iconId;
+                    Vec translate;
+                    Vec scale;
+                    GXColor color;
+
+                    if (type == 0) {
+                        if (swGet(*(s16*)((u8*)work + 0xEB8 + idx * 2) + 0x80) == 0) {
+                            continue;
+                        }
+                        { ItemData* it = &itemDataTable[*(s16*)((u8*)work + 0xEB8 + idx * 2)];
+                        iconId = *(u16*)&it[0xF0].icon_id; }
+                    } else {
+                        if (swGet(*(s16*)((u8*)work + 0xFB4 + idx * 2) + 0x41) == 0) {
+                            continue;
+                        }
+                        { ItemData* it = &itemDataTable[*(s16*)((u8*)work + 0xFB4 + idx * 2)];
+                        iconId = *(u16*)&it[0xB3].icon_id; }
+                    }
+                    translate = HK_V(2, ((Vec){0.0f, 0.0f, 0.0f}));
+                    scale = HK_V(3, ((Vec){0.8f, 0.8f, 0.8f}));
+                    color = dat_8041cf74;
+                    translate.x = ((x + (f32)(col * 0x38)) + float_24_8041d0c8) + float_4_8041d07c;
+                    translate.y = ty;
+                    winIconSet(iconId, &translate, &scale, &color);
+                }
+            }
+        }
+    }
+
+    // Bottom status bar.
+    GXSetScissor(0, 0, 0x260, 0x1E0);
+    if (cursor > 0) {
+        Vec translate;
+        Vec scale;
+        GXColor color;
+        Vec itranslate;
+        Vec iscale;
+        GXColor icolor;
+        f32 bx;
+
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        bx = float_395_8041d124 + x;
+        translate = HK_V(4, ((Vec){0.0f, 0.0f, 0.0f}));
+        scale = HK_V(5, ((Vec){-1.0f, -1.0f, -1.0f}));
+        color = dat_8041cf78;
+        translate.x = bx;
+        translate.y = float_15_8041d128 + y;
+        winTexSet(0x17, translate, scale, color);
+        winIconInit();
+        itranslate = HK_V(6, ((Vec){0.0f, 0.0f, 0.0f}));
+        iscale = HK_V(7, ((Vec){0.6f, 0.6f, 0.6f}));
+        icolor = dat_8041cf7c;
+        itranslate.x = bx;
+        itranslate.y = y;
+        winIconSet(0x7E, &itranslate, &iscale, &icolor);
+    }
+    if (count > cursor * 0x1C + 0x1C) {
+        Vec translate;
+        Vec scale;
+        GXColor color;
+        Vec itranslate;
+        Vec iscale;
+        GXColor icolor;
+        f32 bx;
+
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        bx = float_395_8041d124 + x;
+        translate = HK_V(8, ((Vec){0.0f, 0.0f, 0.0f}));
+        scale = HK_V(9, ((Vec){1.0f, 1.0f, 1.0f}));
+        color = dat_8041cf80;
+        translate.x = bx;
+        translate.y = y - float_235_8041d12c;
+        winTexSet(0x17, translate, scale, color);
+        winIconInit();
+        itranslate = HK_V(10, ((Vec){0.0f, 0.0f, 0.0f}));
+        iscale = HK_V(11, ((Vec){0.6f, 0.6f, 0.6f}));
+        icolor = dat_8041cf84;
+        itranslate.x = bx;
+        itranslate.y = y - float_220_8041d130;
+        winIconSet(0x80, &itranslate, &iscale, &icolor);
+    }
+    {
+        const char* msg;
+        f32 w0;
+        f32 fx;
+        Vec pos;
+        Vec scale;
+        GXColor color;
+        Vec ipos;
+        Vec iscale;
+        GXColor icolor;
+
+        msg = msgSearch(str_802F4548);
+        w0 = float_0p7_8041d134 * (f32)FontGetMessageWidth(msg);
+        winFontInit();
+        fx = float_380_8041d138 - w0;
+        pos = HK_V(12, ((Vec){0.0f, 0.0f, 0.0f}));
+        scale = HK_V(13, ((Vec){0.7f, 0.7f, 0.7f}));
+        color = dat_8041cf88;
+        pos.x = x + fx;
+        pos.y = y - float_228_8041d13c;
+        winFontSet(&pos, &scale, &color, msg);
+        winIconInit();
+        ipos = HK_V(14, ((Vec){0.0f, 0.0f, 0.0f}));
+        iscale = HK_V(15, ((Vec){0.6f, 0.6f, 0.6f}));
+        icolor = dat_8041cf8c;
+        ipos.x = (x + fx) - float_30_8041d100;
+        ipos.y = y - float_237_8041d140;
+        winIconSet(0x217, &ipos, &iscale, &icolor);
+    }
+}
+
 
 // winWazaGX's copy of winNameQuad. The only difference from winNameQuad is the
 // nested `tw` local around the width division: with the division inlined MWCC gives
@@ -1607,7 +1947,7 @@ extern const char str_802F45B8[];
 // What still differs: the by-value parameter copies land low in our frame where the
 // original interleaves them with each block's local, so a few dozen stack offsets and the
 // register colouring/scheduling that follows are still off.
-// NONMATCHING (73.99%): by-value parameter-copy placement and register colouring/scheduling.
+// NONMATCHING (74.25%): by-value parameter-copy placement and register colouring/scheduling.
 void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     const char* base = (const char*)&str_802F3FE8;
     char buf[0x400];
