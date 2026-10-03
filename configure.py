@@ -1502,7 +1502,7 @@ config.libs = [
             Object(NonMatching, "gor_03.c"),
             Object(Matching, "gor_irai.c"),
             Object(NonMatching, "gor_10.c"),
-            Object(NonMatching, "unit/unit_lecture_frankli_sac.c"),
+            Object(Matching, "unit/unit_lecture_frankli_sac.c"),
             Object(Matching, "event/evt_lect_gor.c"),
             Object(Matching, "data/battle/battle_database_gor.c"),
             Object(NonMatching, "event/evt_yuuranking.c", modules=["gor"]),

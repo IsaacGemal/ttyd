@@ -29,9 +29,9 @@ static s32 phase_event[105];
 s32 actend_event[538];
 static s32 damage_event[75];
 static s32 wait_event[6];
-f32 point[4];
-s32 darkCount;
 u8 dark;
+s32 darkCount;
+f32 point[4];
 
 // clang-format off
 extend_data(80,
@@ -187,9 +187,19 @@ EVT_BEGIN(stop_wait_event)
     RETURN
 EVT_END()
 
+// The opt_* block above also covers this function: with the default
+// optimizations it keeps _battleWorkPointer's address temp in r5 instead of r4.
 #pragma opt_dead_assignments off
 #pragma opt_common_subs off
 #pragma opt_propagation off
+static USER_FUNC(_battle_set_lecture_unit_id) {
+    BattleWork* wp = _battleWorkPointer;
+    s32* args = event->args;
+
+    wp->field_424 = evtGetValue(event, args[0]);
+    return EVT_RETURN_DONE;
+}
+
 static USER_FUNC(lecture_init) {
     BattleBreakSlot* slot = BattleBreakSlotGetPtr();
     BattleAudience* aud = BattleAudienceBaseGetPtr();
@@ -217,16 +227,6 @@ static USER_FUNC(lecture_init) {
     }
     return EVT_RETURN_DONE;
 }
-
-// The opt_* block above also covers this function: with the default
-// optimizations it keeps _battleWorkPointer's address temp in r5 instead of r4.
-static USER_FUNC(_battle_set_lecture_unit_id) {
-    BattleWork* wp = _battleWorkPointer;
-    s32* args = event->args;
-
-    wp->field_424 = evtGetValue(event, args[0]);
-    return EVT_RETURN_DONE;
-}
 #pragma opt_dead_assignments reset
 #pragma opt_common_subs reset
 #pragma opt_propagation reset
@@ -249,6 +249,62 @@ static EVT_BEGIN(init_event)
     CALL(btlevtcmd_StartWaitEvent, -2)
     RETURN
 EVT_END()
+USER_FUNC(get_actkind) {
+    evtSetValue(event, event->args[0], *(s32*)&_battleWorkPointer->commandMenu.unk540[0]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_ac_result) {
+    evtSetValue(event, event->args[0], _battleWorkPointer->field_19064[0]);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(aud_joy) {
+    BattleAudienceJoySACLecture();
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(aud_inc) {
+    BattleAudienceAddAudienceNum(5);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(aud_dec) {
+    BattleAudienceAddAudienceNum(-5);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(hammer_on) {
+    BattleAudience* base = BattleAudienceBaseGetPtr();
+    BattleAudienceMember* member = BattleAudienceGetPtr(0x30);
+
+    base->flags &= ~0x40000;
+    if (BattleAudienceItemOn(0x30, 0xEF, 1) == 1) {
+        member->flags &= ~0x200;
+        base->flags |= 0x40000;
+        return EVT_RETURN_DONE;
+    }
+    return EVT_RETURN_BLOCK;
+}
+
+USER_FUNC(aud_attack_init) {
+    BattleWork* wp = _battleWorkPointer;
+
+    *(s32*)&wp->field_19064[0x1C] |= 1;
+    *(s32*)&wp->field_19064[0x20] = event->printWindowId;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(aud_attack_end) {
+    *(s32*)&_battleWorkPointer->field_19064[0x1C] |= 1;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(blinkAP) {
+    statusAPBlink(0xA0);
+    return EVT_RETURN_DONE;
+}
+
 USER_FUNC(spot_square) {
     s32* args = event->args;
     s32 a;
@@ -275,9 +331,59 @@ USER_FUNC(spot_square) {
     return (darkCount >= b + 2 * a) ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-USER_FUNC(blinkAP) {
-    statusAPBlink(0xA0);
-    return EVT_RETURN_DONE;
+
+
+
+
+#ifdef MUST_MATCH
+// The original keeps the colour in a temp at 0x8 and copies it to the argument slot at 0xc;
+// building it through a returning inline reproduces that extra copy.
+static inline GXColor spot_square_color(u8 a) {
+    GXColor c = { 0, 0, 0, 0 };
+    c.a = a;
+    return c;
+}
+#endif
+void Quads2D(f32 x0, f32 y0, f32 x1, f32 y1) {
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition3f32(x0, y0, 0.0f);
+    GXPosition3f32(x1, y0, 0.0f);
+    GXPosition3f32(x1, y1, 0.0f);
+    GXPosition3f32(x0, y1, 0.0f);
+}
+
+void spot_square_disp(CameraId cameraId, void* param) {
+    Mtx mtx;
+    CameraEntry* cam;
+    GXColor color;
+
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
+#ifdef MUST_MATCH
+    color = spot_square_color(dark);
+#else
+    color = (GXColor){ 0, 0, 0, 0 };
+    color.a = dark;
+#endif
+    GXSetChanMatColor(GX_COLOR0A0, color);
+    GXSetNumTexGens(0);
+    GXSetNumTevStages(1);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+    cam = camGetPtr(8);
+    PSMTXIdentity(mtx);
+    PSMTXConcat(cam->view, mtx, mtx);
+    GXLoadPosMtxImm(mtx, GX_PNMTX0);
+    Quads2D(-320.0f, 240.0f, 320.0f, point[1]);
+    Quads2D(-320.0f, point[1], point[0], point[3]);
+    Quads2D(point[2], point[1], 320.0f, point[3]);
+    Quads2D(-320.0f, point[3], 320.0f, -240.0f);
 }
 
 static EVT_BEGIN(phase_event)
@@ -312,56 +418,6 @@ static EVT_BEGIN(phase_event)
     LABEL(99)
     RETURN
 EVT_END()
-USER_FUNC(aud_attack_end) {
-    *(s32*)&_battleWorkPointer->field_19064[0x1C] |= 1;
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(aud_attack_init) {
-    BattleWork* wp = _battleWorkPointer;
-
-    *(s32*)&wp->field_19064[0x1C] |= 1;
-    *(s32*)&wp->field_19064[0x20] = event->printWindowId;
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(hammer_on) {
-    BattleAudience* base = BattleAudienceBaseGetPtr();
-    BattleAudienceMember* member = BattleAudienceGetPtr(0x30);
-
-    base->flags &= ~0x40000;
-    if (BattleAudienceItemOn(0x30, 0xEF, 1) == 1) {
-        member->flags &= ~0x200;
-        base->flags |= 0x40000;
-        return EVT_RETURN_DONE;
-    }
-    return EVT_RETURN_BLOCK;
-}
-
-USER_FUNC(aud_dec) {
-    BattleAudienceAddAudienceNum(-5);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(aud_inc) {
-    BattleAudienceAddAudienceNum(5);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(aud_joy) {
-    BattleAudienceJoySACLecture();
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(get_ac_result) {
-    evtSetValue(event, event->args[0], _battleWorkPointer->field_19064[0]);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(get_actkind) {
-    evtSetValue(event, event->args[0], *(s32*)&_battleWorkPointer->commandMenu.unk540[0]);
-    return EVT_RETURN_DONE;
-}
 
 EVT_BEGIN(actend_event)
     CALL_CHILD(stop_wait_event)
@@ -549,60 +605,9 @@ static EVT_BEGIN(wait_event)
     RETURN
 EVT_END()
 
-f32 point[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-s32 darkCount = 0;
-
-u8 dark = 0;
-
-#ifdef MUST_MATCH
-// The original keeps the colour in a temp at 0x8 and copies it to the argument slot at 0xc;
-// building it through a returning inline reproduces that extra copy.
-static inline GXColor spot_square_color(u8 a) {
-    GXColor c = { 0, 0, 0, 0 };
-    c.a = a;
-    return c;
-}
-#endif
-void spot_square_disp(CameraId cameraId, void* param) {
-    Mtx mtx;
-    CameraEntry* cam;
-    GXColor color;
-
-    GXSetCullMode(GX_CULL_NONE);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-    GXSetNumChans(1);
-    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_CLAMP, GX_AF_NONE);
-#ifdef MUST_MATCH
-    color = spot_square_color(dark);
-#else
-    color = (GXColor){ 0, 0, 0, 0 };
-    color.a = dark;
-#endif
-    GXSetChanMatColor(GX_COLOR0A0, color);
-    GXSetNumTexGens(0);
-    GXSetNumTevStages(1);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
-    cam = camGetPtr(8);
-    PSMTXIdentity(mtx);
-    PSMTXConcat(cam->view, mtx, mtx);
-    GXLoadPosMtxImm(mtx, GX_PNMTX0);
-    Quads2D(-320.0f, 240.0f, 320.0f, point[1]);
-    Quads2D(-320.0f, point[1], point[0], point[3]);
-    Quads2D(point[2], point[1], 320.0f, point[3]);
-    Quads2D(-320.0f, point[3], 320.0f, -240.0f);
-}
-
-void Quads2D(f32 x0, f32 y0, f32 x1, f32 y1) {
-    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-    GXPosition3f32(x0, y0, 0.0f);
-    GXPosition3f32(x1, y0, 0.0f);
-    GXPosition3f32(x1, y1, 0.0f);
-    GXPosition3f32(x0, y1, 0.0f);
-}
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_04_0004A934_data = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 // clang-format on
