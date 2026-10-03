@@ -3986,3 +3986,9 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   every archived agent final.c in place on the tower and lists where an agent's score beats main's
   (`scratch/lost_work.tsv`). Its first run scored main's object for every file: rsync keeps the old mtime, so ninja
   saw nothing to rebuild; the sources are touched after the copy now.
+- Claude #1's second review of #321 (2 Claude + Codex): loadDraw greyed windows 4/5 on flags 0x20/0x40 (retail
+  0x10/0x20, as loadMain) and drew the 7-stone icons for every slot (retail only in the play-time branch);
+  effFallMain's type-2 loop stepped `i += 2` and bent only the even vertices (retail: all 32); winLogMain case 10
+  regrouped `(-230 + scrollX) + cx`. All fixed; effFallMain (94.67 -> 94.29%) and winLogMain pay for the right
+  behaviour (`--allow-regress`). The batch also fixed older bugs: animdrv's PSMTXConcat order, mapdrv
+  makeDisplayList's material, mot_ship's case 32 break, eki_00 moamoa_hit_check and yuunpc's signed conversion.
