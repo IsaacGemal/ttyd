@@ -83,6 +83,16 @@ void* geso_shibuki_dl_0_tbl[] = {
 
 u8 geso_shibuki_dl_0_size_tbl[] = { 1, 1, 1, 1, 1, 0, 0, 0 };
 
+// The sin/cos go through these helpers in the original's inlining order (permuter): the radius multiply is
+// inside the sin helper, outside the cos one.
+static inline f32 splashScaledSin(f32 radius, f32 angle) {
+    return radius * (f32)sin(angle);
+}
+
+static inline f32 splashCos(f32 angle) {
+    return (f32)cos(angle);
+}
+
 // NONMATCHING (99.33%): the four float args colour to f25-f28 where the target has f26-f29 and the
 // second loop's hoisted constants shift down with them: MWCC keeps 360 in the high block (f31, with
 // double_to_int/6.2832) where the target puts it in the low block (f20). Otherwise instruction-exact.
@@ -215,8 +225,8 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 		f32 angle = (f32)irand(360);
 		f32 radius = (f32)irand(5);
 		angle = 6.2831855f * angle / 360.0f;
-		ptr->offsetX = radius * (f32)sin(angle);
-		ptr->offsetY = radius * (f32)cos(angle);
+		ptr->offsetX = splashScaledSin(radius, angle);
+		ptr->offsetY = radius * splashCos(angle);
 		ptr->position.x = 2.0f * ptr->offsetX;
 		ptr->position.y = 0.0f;
 		ptr->position.z = 2.0f * ptr->offsetY;
@@ -231,7 +241,7 @@ EffectEntry* effSplashEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	if (type == 2) {
 		spawnAngle = 6.2831855f * camGetPtr(CAMERA_3D)->viewYaw / 360.0f;
 		sn = (f32)sin(spawnAngle);
-		cs = (f32)cos(spawnAngle);
+		cs = splashCos(spawnAngle);
 		sx = -30.0f * sn;
 		sz = 30.0f * cs;
 		dx = scale * sx;
