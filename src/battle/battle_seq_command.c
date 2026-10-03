@@ -1290,7 +1290,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 			id = items[j];
 			item = &itemDataTable[id];
 			if (id != 0 && (item->usable_locations & 2) != 0) {
-				wcmd->mWeaponTable[count].mIndex = i;
+				wcmd->mWeaponTable[count].mIndex = j;
 				wcmd->mWeaponTable[count].mItem = id;
 				wcmd->mWeaponTable[count].mWeaponParams = item->battle_params;
 				wcmd->mWeaponTable[count].field_0x4 = 0;

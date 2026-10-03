@@ -3864,3 +3864,8 @@ looks the same as a slow agent from the log until the end.
   and win_party as on main (rule 13 outside MUST_MATCH); unused header externs and include/cam_road_ext.h out.
   **Data inside a function isn't scored and the [data] step only checks named data objects**, so function-static
   initialisers need a byte check by the review.
+- Claude #1's second review of #274: _btlcmd_MakeSelectWeaponTable's held-item loop stored `i` (unset when
+  arg == 2) where retail stores the slot counter `j` (r25); nokonoko_use's pose names (str_802CE150 "PNK_K_2",
+  str_802CE158 "PNK_A_1") are offsets from vec3_802ce138 only under MUST_MATCH, literals in #else; the unused
+  include/window/win_party_protos.h (by-value prototypes that disagreed with win_main.h/animdrv.h) and
+  WinRootItem/WinRootPlate are out.

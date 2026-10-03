@@ -32,6 +32,12 @@ static const f32 float_0 = 0.0f;
 static const f32 float_neg1 = -1.0f;
 
 const Vec vec3_802ce138 = {0.0f, 0.0f, 0.0f};
+#ifdef MUST_MATCH
+// MUST_MATCH: nokonoko_use reads the pose names (str_802CE150/158) as offsets from this first .rodata object.
+#define NK_STR(off, lit) ((char*)vec + (off))
+#else
+#define NK_STR(off, lit) (lit)
+#endif
 
 static const f32 float_1p5708 = 1.5707964f;
 static const f32 float_4p7124 = 4.712389f;
@@ -607,7 +613,7 @@ void nokonoko_use(PartyEntry* party) {
         partyClearJumpPara(party);
         party->flags |= 0x04000000;
         party->flags2 |= 0x10;
-        partyChgPose(party, (char*)vec + 0x18);
+        partyChgPose(party, NK_STR(0x18, "PNK_K_2"));
         NKF(0xF0) = 18.5f;
         party->useMotionId = 1;
         NKS(0x24) = 100;
@@ -649,7 +655,7 @@ void nokonoko_use(PartyEntry* party) {
         NKF(0x110) = *(f32*)(mario->unk1AC);
         NKF(0x10C) = *(f32*)(mario->unk1AC);
         party->useMotionId = 2;
-        partyChgPose(party, (char*)vec + 0x20);
+        partyChgPose(party, NK_STR(0x20, "PNK_A_1"));
         /* fallthrough */
     case 2:
         if (*(u16*)&mario->currMotionId == 0x20 || *(u16*)&mario->currMotionId == 0x1f) {

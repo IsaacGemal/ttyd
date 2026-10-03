@@ -63,21 +63,3 @@ typedef struct WinRootVecs {
 // for the swap (only the 3-word size matters).
 typedef struct SortRec { u32 a; u32 b; u32 c; } SortRec;
 
-// Item record at work+0x48, stride 0x18; the menu entries winRootDisp draws.
-typedef struct WinRootItem {
-    s32 mode;        // 0x00
-    f32 x;           // 0x04
-    f32 y;           // 0x08
-    s32 state;       // 0x0C
-    s32 timer;       // 0x10
-    const char* msg; // 0x14
-} WinRootItem;
-
-// One plate of the label row at work+0xC0, stride 0x14.
-typedef struct WinRootPlate {
-    s32 mode;     // 0x00
-    f32 x;        // 0x04
-    f32 y;        // 0x08
-    s32 state;    // 0x0C
-    s32 field_10; // 0x10
-} WinRootPlate;
