@@ -8623,7 +8623,7 @@ USER_FUNC(evt_puni_get_lsw_index) {
     return EVT_RETURN_DONE;
 }
 
-// reason: opt_propagation off stops MWCC rematerialising the named high bytes (h1/h2) at each
+// opt_propagation off stops MWCC rematerialising the named high bytes (h1/h2) at each
 // _swByteSet, so they stay in callee-saved registers like the original.
 #pragma opt_propagation off
 // NONMATCHING (98.27%): instruction sequence now matches; only the callee-saved numbering rotates

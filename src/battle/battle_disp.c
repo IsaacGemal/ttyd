@@ -386,8 +386,8 @@ StatusEffectType _GetStatusPoseType(BattleUnit* unit) {
 extern f32 float_7_8041bf84;
 extern f32 float_10_8041bf40;
 // Call sequence, stack layout and the shadow `frsp` all match; what is left is floating-point
-// register allocation in a few straight-line blocks (permuter-class work).
-// NONMATCHING (99.93%): see above.
+// register allocation in a few straight-line blocks.
+// NONMATCHING (94.37%): see above.
 void btlDispMain(void) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleUnit* unit;

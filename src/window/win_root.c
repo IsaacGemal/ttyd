@@ -1814,7 +1814,12 @@ void winBgGX(WindowWork* work, s32 type, f32 x, f32 y) {
     BG_TEX(float_1_8041d070, float_0_8041d068);
 }
 extern const GXColor dat_8041cf5c;
-#define HB_DBL(off, sym) (*(const f64*)((const u8*)&str_802F3FE8 + (off)))
+#ifdef MUST_MATCH
+// MUST_MATCH: retail reads these doubles through the str_802F3FE8 base register.
+#define HB_DBL(off, sym, val) (*(const f64*)((const u8*)&str_802F3FE8 + (off)))
+#else
+#define HB_DBL(off, sym, val) (val)
+#endif
 extern const GXColor dat_8041cf60;
 extern const f32 float_neg8_8041d158;
 extern const GXColor dat_8041cf64;
@@ -1844,7 +1849,7 @@ static inline void winHalfBookPage(void* pal, s32 texId, f64 numY, f64 numX,
     GXPosition3f32(x1, y0, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
 }
-// NONMATCHING (95.99%): register allocation/scheduling only; see the note above the externs.
+// NONMATCHING (95.25%): register allocation/scheduling only.
 void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
     f32 x8;
     f32 x16;
@@ -1896,15 +1901,15 @@ void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
     x312 = x264 + 48.0f;
     x320 = x + 320.0f;
 
-    s8 = __fabs(HB_DBL(0x548, double_8_802f4530));
-    sn16 = __fabs(HB_DBL(0x5A0, double_neg16_802f4588));
-    s320 = __fabs(HB_DBL(0x598, double_320_802f4580));
-    s248 = __fabs(HB_DBL(0x580, double_248_802f44d8));
-    s40 = __fabs(HB_DBL(0x4F8, double_40_802f44e0));
-    s48 = __fabs(HB_DBL(0x558, double_48_802f4540));
-    s16 = __fabs(HB_DBL(0x500, double_16_802f44e8));
-    s240 = __fabs(HB_DBL(0x588, double_240_802f4570));
-    s24 = __fabs(HB_DBL(0x4F0, double_24_802f44d8));
+    s8 = __fabs(HB_DBL(0x548, double_8_802f4530, 8.0));
+    sn16 = __fabs(HB_DBL(0x5A0, double_neg16_802f4588, -16.0));
+    s320 = __fabs(HB_DBL(0x598, double_320_802f4580, 320.0));
+    s248 = __fabs(HB_DBL(0x580, double_248_802f4568, 248.0));
+    s40 = __fabs(HB_DBL(0x4F8, double_40_802f44e0, 40.0));
+    s48 = __fabs(HB_DBL(0x558, double_48_802f4540, 48.0));
+    s16 = __fabs(HB_DBL(0x500, double_16_802f44e8, 16.0));
+    s240 = __fabs(HB_DBL(0x588, double_240_802f4570, 240.0));
+    s24 = __fabs(HB_DBL(0x4F0, double_24_802f44d8, 24.0));
 
     for (i = 0; i < 2; i++) {
         if (i == 0) {

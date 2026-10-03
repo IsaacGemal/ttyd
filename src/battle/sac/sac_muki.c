@@ -276,7 +276,7 @@ static MukiWork* get_ptr(void) {
 // away; the call sequence is unchanged.
 static inline GXColor mukiAlphaColor(GXColor c, u8 a) { c.a = a; return c; }
 #endif
-// The interleaved argv fill removed the extra temp store; adding any mid-block temp loops MWCC.
+// The interleaved argv fill removed the extra temp store; adding any mid-block temp makes the compiler hang.
 // NONMATCHING (98.39%): frame and Mtx base match; the scratch block is still 0x8 low and float_2
 // pools as @939 (also swapping f30/f31 and f1/f2).
 // .text:0x1A4 | 0x80246F70 | size: 0x38C

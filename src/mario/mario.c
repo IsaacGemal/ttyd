@@ -432,73 +432,32 @@ static inline BOOL marioChkMenuYoshi(void) {
 	return FALSE;
 }
 
-static BOOL marioChkKeySub2(void) {
-	PartyEntry* party = partyGetPtr(marioGetPartyId());
-
-	if (seqGetSeq() != 2) {
-		return FALSE;
-	}
-	if (((s8*)mp->field_0x32)[7] != 0) {
-		return FALSE;
-	}
-	if (marioShipChanging() == 1 || marioShipChanging() == 2) {
-		return FALSE;
-	}
-	if (!marioRollKeyDisable()) {
-		return FALSE;
-	}
-	if (!marioSlitKeyDisable()) {
-		return FALSE;
-	}
-	if (party == NULL) {
-		return TRUE;
-	}
-	if (christineGetStatus() == 1) {
-		return FALSE;
-	}
-	if (!mario_bomhei_keychk2()) {
-		return FALSE;
-	}
-	if (yoshiGetStatus() != 0) {
-		return FALSE;
-	}
-	if (party->flags & PARTY_FLAG_IS_BEING_USED) {
-		if (party->currentMemberId == PARTY_MEMBER_MS_MOWZ || party->currentMemberId == PARTY_MEMBER_FLURRIE || party->currentMemberId == PARTY_MEMBER_VIVIAN) {
-			return FALSE;
-		}
-	}
-	if (nokonoko_holdItem()) {
-		return FALSE;
-	}
-	return TRUE;
-}
-// NONMATCHING (95.39%): the body and every call match. Remaining: (a) the two `marioChkCtrl()` tests, where the
-// target materialises the inner (field_0x32[6]==0) with cntlzw/srwi before negating (ours folds to a single srwi.),
-// and (b) the two block tails, where the target negates the materialised result with cntlzw/srwi. (ours uses cmpwi).
+// The two ctrl guards and the yoshi/seq/key block match (BOOL notCtrl = !ctrl; plus opt_dead_assignments
+// off keeps their cntlzw/srwi materialisation). The second ctrl guard's `return TRUE` has to be nested as
+// `if (!notCtrl2) { ...key check... } return TRUE;` so the compiler shares the TRUE block; the flat form
+// is one instruction off. Remaining: the final !marioChkKey() at both sites (a cntlzw/srwi. + branch our
+// compile folds into srwi r3); every source form that forces that materialisation hangs mwcceppc.
+// NONMATCHING (94.85%): the final !marioChkKey() materialisation at both key-check sites differs.
 BOOL marioCheckMenuDisable(void) {
 	MarioWork* wp = mp;
 
-	{
-		s32 c = marioChkCtrl();
-		if (c == 0) {
-			return TRUE;
-		}
+	BOOL ctrl = marioChkCtrl();
+	BOOL notCtrl = !ctrl;
+
+	if (notCtrl) {
+		return TRUE;
 	}
 	if (strncmp(gp->currentMapName, "yuu_", 4) == 0) {
-		{
-			s32 c = marioChkCtrl();
-			if (c == 0) {
-				return TRUE;
+		BOOL ctrl2 = marioChkCtrl();
+		BOOL notCtrl2 = !ctrl2;
+
+		if (!notCtrl2) {
+			if (marioChkKey()) {
+				return FALSE;
 			}
+			return TRUE;
 		}
-		{
-		BOOL b = marioChkKeySub2();
-		BOOL neg = FALSE;
-		if (b == 0) {
-			neg = TRUE;
-		}
-		return neg;
-	}
+		return TRUE;
 	}
 	if (wp->characterId == 1) {
 		return TRUE;
@@ -506,10 +465,10 @@ BOOL marioCheckMenuDisable(void) {
 	if (wp->characterId == 2 && kpaGetStageViewType() != 0) {
 		return TRUE;
 	}
-	if (wp->currMotionId == MARIO_MOTION_HAMMER || wp->currMotionId == MARIO_MOTION_HAMMER_2) {
+	if (wp->currMotionId == 0x12 || wp->currMotionId == 0x13) {
 		return TRUE;
 	}
-	if (wp->currMotionId == MARIO_MOTION_JABARA) {
+	if (wp->currMotionId == 0x14) {
 		return TRUE;
 	}
 	if (marioGetPlaneStatus() == 1) {
@@ -518,7 +477,7 @@ BOOL marioCheckMenuDisable(void) {
 	if (marioShipChanging() == 1 || marioShipChanging() == 2) {
 		return TRUE;
 	}
-	if (wp->currMotionId == MARIO_MOTION_DAMAGE || wp->currMotionId == MARIO_MOTION_DAMAGE_TOGE) {
+	if (wp->currMotionId == 0x1f || wp->currMotionId == 0x20) {
 		return TRUE;
 	}
 	if (wp->characterId != 2 && marioGetPlaneStatus() == 0 && wp->hitobjStandOn == NULL) {
@@ -527,39 +486,16 @@ BOOL marioCheckMenuDisable(void) {
 	if (!mario_bomhei_keychk()) {
 		return TRUE;
 	}
-	if (vivianGetStatus() != 0) {
-		if (vivianGetStatus() == 2) {
-			return FALSE;
-		}
+	if (vivianGetStatus() != 0 && vivianGetStatus() == 2) {
+		return FALSE;
 	}
-	partyGetPtr(marioGetPartyId());
-	{
-		BOOL flag;
-
-		if (seqGetSeq() != 2) {
-			flag = FALSE;
-		}
-		else if (((s8*)mp->field_0x32)[7] != 0) {
-			flag = FALSE;
-		}
-		else if (yoshiGetStatus() == 1) {
-			flag = TRUE;
-		}
-		else {
-			flag = FALSE;
-		}
-		if (flag) {
-			return FALSE;
-		}
+	if (marioChkMenuYoshi()) {
+		return FALSE;
 	}
-	{
-		BOOL b = marioChkKeySub2();
-		BOOL neg = FALSE;
-		if (b == 0) {
-			neg = TRUE;
-		}
-		return neg;
+	if (marioChkKey()) {
+		return FALSE;
 	}
+	return TRUE;
 }
 
 BOOL marioChkKey(void) {
