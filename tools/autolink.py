@@ -31,9 +31,14 @@ def objects():
     rels = [(m.start(), m.end(), m.group(1)) for m in
             re.finditer(r'Rel\(\s*"(\w+)",\s*\[.*?\]\s*,?\s*\)', text, re.S)]
     out = []
-    for m in re.finditer(r'Object\((NonMatching|Matching), "([^"]+)"', text):
-        module = next((name for a, b, name in rels if a <= m.start() < b), "MarioSt")
-        out.append((module, m.group(2), m.group(1) == "Matching"))
+    for m in re.finditer(r'Object\((NonMatching|Matching), "([^"]+)"([^\n]*)', text):
+        mods = re.search(r'modules=\[([^\]]*)\]', m.group(3))
+        if mods:  # a unit built into other modules: Object(..., "unit/x.c", modules=["aji", "gor"])
+            modules = re.findall(r'"(\w+)"', mods.group(1))
+        else:
+            modules = [next((name for a, b, name in rels if a <= m.start() < b), "MarioSt")]
+        for module in modules:
+            out.append((module, m.group(2), m.group(1) == "Matching"))
     return out
 
 
@@ -49,7 +54,7 @@ def candidates():
         u = units.get(name)
         if not matching and u and name in compiled and u.get("measures", {}).get("matched_code_percent") == 100:
             out.append(src)
-    return out
+    return list(dict.fromkeys(out))
 
 
 def build():
@@ -68,9 +73,8 @@ def build():
 def set_matching(src, on):
     text = CONFIGURE.read_text()
     a, b = f'Object(NonMatching, "{src}"', f'Object(Matching, "{src}"'
-    if text.count(f'"{src}"') != 1:
-        sys.exit(f"{src} is listed {text.count(chr(34) + src + chr(34))} times in configure.py; flip it by hand")
-    CONFIGURE.write_text(text.replace(a, b, 1) if on else text.replace(b, a, 1))
+    # one source built into several modules is listed once per module: flip every listing together
+    CONFIGURE.write_text(text.replace(a, b) if on else text.replace(b, a))
 
 
 def main():
