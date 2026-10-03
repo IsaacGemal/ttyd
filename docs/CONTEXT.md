@@ -4165,6 +4165,11 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   base+offset loads in winMailGX): no behaviour defects; evt_mario's natural build indexed past one Vec and read
   base + offset Vecs/strings that only exist under MUST_MATCH, and _mapLoad seeded corners from 0x28-0x7C past a
   12-byte object; all MUST_MATCH only now, with named objects or literals otherwise.
+- Claude #1's second review of #350: the near-miss winMarioDisp reordered statements across their data flow (as on
+  main); evt_win's common-tail buffer had shrunk to 0x78 (0x88 again); party_motion_homing_walk, written from a
+  seed, stored the jump target into party->position, used 1000.0 for retail's 100.0 and skipped a clamp: it scored
+  96.7% and behaved differently, so it is as on main. The batch fixes older bugs too: las_04's firebar
+  descriptors, eff_mahorn2's and muj_20's 2-pi constants.
 - **Wave 68** (18:20, base 28c77d77, `scratch/wave68/`): 5 link agents for the units wave 66 brought to 100%
   (battle_damage, eff_fire, eff_ripple_n64, party_move, party_vivian) and 24 near-miss agents in units waves 66/67
   didn't touch. Prompts now forbid model, tool and process names in source comments.
