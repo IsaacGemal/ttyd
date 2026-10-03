@@ -101,6 +101,26 @@ static inline Vec initializeVec(Vec* input) {
 // optimization_level/optimize_for_size pragmas, statement reordering, and loop-body declarations; the
 // 16 mismatched instructions are always exactly the args (f23-f26) and reset (f17-f20) block swap.
 // A 15 minute decomp-permuter run on this function did not beat its base score.
+// Deeper notes: the shipped reference object was built with
+// GC/1.3.2, not the project's GC/2.6 (its .comment is CodeWarrior 02040201, ours is 02040701), so
+// this is a genuine 1.3.2-vs-2.6 allocator difference. Recompiling our source under GC/1.3, 1.3.2,
+// 2.0, 2.5 and 2.6 all give the identical wrong colouring, so the version alone does not fix it.
+// A K&R-style definition (params declared in the body) reproduces the *exact* target colouring
+// (args f23-f26, reset f17-f20, 6p2832/360 f21/f22) but MWCC then emits four `frsp` for the old-style
+// default argument promotion instead of `fmr`, and rejects the definition outright when the header
+// prototype is in scope; `#pragma ignore_oldstyle`/`require_prototypes` do not remove the promotion,
+// and `short double`/`double` params avoid `frsp` but promote the arithmetic to double. The target's
+// preheader also loads its hoisted constants in first-use order (early temps f27-f31, then reset
+// f17-f20, then 6p2832/360 f21/f22), whereas we hoist the explicit reset assignments first; that
+// reordering does not move the arg/reset colour blocks either. Third pass: `tools/diff_shape.py`
+// confirms calls/immediates match (pure register-allocation residue), K&R emits `frsp` on every
+// installed compiler (1.0-3.0a5), file-scope `register f32 x asm("fNN")` pins emit `fmr` but are not
+// saved in the prologue, and no flag (`-O4,s`, nodefer, `-inline off`, `-fp_contract off`), opt_* pragma,
+// local/param qualifier, dummy extra parameter, declaration/statement position or parameter rename
+// changes the swap. Queue for the permuter (same class as eff_magic3_n64 / eff_kumokumo_n64 / eff_bomb).
+// Fourth pass: inlining the rad tail moves the 6p2832/360 temps before the params (f19-f22) but the
+// reset still colours after them; siblings effSweat/effKemuri9/effConfetti all keep params at the
+// bottom of their callee-saved range, so the target's params-above-locals order has no reusable idiom.
 EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     EffectEntry* effect;
     effKemuri5Data* data;

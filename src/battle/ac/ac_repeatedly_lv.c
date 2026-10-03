@@ -426,16 +426,9 @@ void battleAcDelete_RepeatedlyLv(BattleWork* work) {
 // magic-multiply -O4,p emits, and the frame/allocator match only at this level). Other functions in the
 // file match at the default -O4,p, so the pragma is scoped to just this function.
 #pragma optimize_for_size on
-//
-// The remaining difference (8 instructions) is a register-colouring tie-break in the two-icon branches:
-// for the FIRST icon of each pair the original computes `neg225 + x` into f3 and loads the paired
-// `float_70` into f0; ours swaps them (neg225+x -> f0, float_70 -> f3), and the final `fadds` operand
-// order follows. Every other instruction, including the second icon of each pair and PSMTXTrans, is
-// byte-identical. MWCC 2.6 picks f0 for the first temp regardless of declaration/statement order, of
-// routing the sum through a local / a constant local / an `offAf` temp, a nested block, or a MUST_MATCH
-// inline. `#pragma opt_propagation off` does move the sum to f3 but also perturbs the prologue's r3/r4
-// assignment and the iconNumberDispGx argument order (and scores lower), so it is not used.
-// NONMATCHING (99.88%): in the two-icon branches the first `neg225 + x` sum is coloured f0 (orig f3) and the paired float_70 f3 (orig f0); 8 instructions, all register-only.
+// The two-icon branches name the first `-225 + x` sum and compute the paired `70 + y` only after
+// `vec.x` is set. That order keeps `-225` in f0 across the sum (so the later `70.0f` load reloads f0)
+// and colours the sum f3; folding the sum into `vec.x` colours it f0 and `70` f3 instead.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
@@ -509,9 +502,11 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
     } else {
         if ((div7 & 1) == 1) {
-            f32 y0 = float_70_8041e7fc + y;
+            f32 x0 = float_neg225_8041e804 + x;
+            f32 y0;
             Vec vec = vec3_802fa100;
-            vec.x = float_neg225_8041e804 + x + (f32)offA;
+            vec.x = x0 + (f32)offA;
+            y0 = float_70_8041e7fc + y;
             vec.y = y0;
             ICON_DISP(&vec, 0x10, iconB, float_1_8041e800);
             {
@@ -522,9 +517,11 @@ static void actionCommandDisp(f32 x, f32 y) {
                 ICON_DISP(&vec2, 0x10, iconC, float_1_8041e800);
             }
         } else {
-            f32 y0 = float_70_8041e7fc + y;
+            f32 x0 = float_neg225_8041e804 + x;
+            f32 y0;
             Vec vec = vec3_802fa118;
-            vec.x = float_neg225_8041e804 + x + (f32)offA;
+            vec.x = x0 + (f32)offA;
+            y0 = float_70_8041e7fc + y;
             vec.y = y0;
             ICON_DISP(&vec, 0x10, iconA, float_1_8041e800);
             {

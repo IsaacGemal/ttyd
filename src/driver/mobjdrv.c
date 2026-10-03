@@ -424,6 +424,13 @@ void mobjSetPosition(const char* name, f32 x, f32 y, f32 z) {
     entry->position.z = z;
 }
 
+// The two zero Vecs the bbox code reads. Declared non-const but forced into .rodata: MWCC's
+// scheduler/register allocator reproduce the original's scale2.x codegen only for this form, and
+// both mobjCalcMtx and the inlined mobjMainCalcMtx must reference these same objects so the unit
+// does not emit two extra Vecs and shift the rest of .rodata by 0x18.
+__declspec(section ".rodata") Vec vec3_802c3d10 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_802c3d1c = { 0.0f, 0.0f, 0.0f };
+
 // Static inline duplicates of mobjCalcMtx/mobjCalcMtx2 so the compiler always inlines them into
 // mobjMain (the original's mobjMain has both bodies inlined).
 static inline void mobjMainCalcMtx(MapObjectEntry* entry, Mtx mtx, BOOL calcBBox) {
@@ -445,12 +452,12 @@ static inline void mobjMainCalcMtx(MapObjectEntry* entry, Mtx mtx, BOOL calcBBox
     if (calcBBox) {
         animData = animPoseGetAnimBaseDataPtr(entry->poseId);
 
-        minTmp = (Vec){ 0.0f, 0.0f, 0.0f };
+        minTmp = vec3_802c3d10;
         minTmp.x = animData->bboxMin.x;
         minTmp.y = animData->bboxMin.y;
         minTmp.z = animData->bboxMin.z;
         bboxMin = minTmp;
-        maxTmp = (Vec){ 0.0f, 0.0f, 0.0f };
+        maxTmp = vec3_802c3d1c;
         maxTmp.x = animData->bboxMax.x;
         maxTmp.y = animData->bboxMax.y;
         maxTmp.z = animData->bboxMax.z;
@@ -482,9 +489,10 @@ static inline void mobjMainCalcMtx(MapObjectEntry* entry, Mtx mtx, BOOL calcBBox
     }
 }
 
-// NONMATCHING (99.99%): the 4 string and 3 double literals differ only by a +0x18 rodata offset, because this
-// unit's .rodata has two more Vecs before the strings than the target's (vec3_802c3d28 and one anonymous Vec from
-// other functions; the whole unit's rodata needs reordering, which mobjMain alone cannot do).
+// mobjMain's inlined mobjMainCalcMtx and the out-of-line mobjCalcMtx must reference the SAME zero Vecs
+// (vec3_802c3d10/vec3_802c3d1c, .rodata +0x48/+0x54). Written as two separate compound literals each, MWCC
+// emits two extra Vecs and every later .rodata offset (the MOBJ_* strings and doubles) shifts by 0x18. Sharing
+// the named globals fixes mobjMain, mobjCalcMtx, mobjNearDistCheck2 and mobjCheckItemboxOpen.
 void mobjMain(void) {
     MapObjectWork* wp;
     s32 count;
@@ -892,12 +900,12 @@ void mobjCalcMtx(MapObjectEntry* entry) {
     PSVECAdd(&entry->position, &entry->translation, &position);
     animData = animPoseGetAnimBaseDataPtr(entry->poseId);
 
-    minTmp = (Vec){ 0.0f, 0.0f, 0.0f };
+    minTmp = vec3_802c3d10;
     minTmp.x = animData->bboxMin.x;
     minTmp.y = animData->bboxMin.y;
     minTmp.z = animData->bboxMin.z;
     bboxMin = minTmp;
-    maxTmp = (Vec){ 0.0f, 0.0f, 0.0f };
+    maxTmp = vec3_802c3d1c;
     maxTmp.x = animData->bboxMax.x;
     maxTmp.y = animData->bboxMax.y;
     maxTmp.z = animData->bboxMax.z;
