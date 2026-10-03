@@ -76,9 +76,11 @@ extern const char str_8041D7B0[];
 // i2f below uses lands at +0x420 and is then addressed through the same
 // single rodata base register the original uses (`lfd f3, 0x420(r31)`).  The
 // bytes are irrelevant to the instruction match
+#ifdef MUST_MATCH
 #pragma force_active on // keep the pad object in .rodata
 static const char pad_pool_802f5eb8[0x410] = {1};
 #pragma force_active off
+#endif
 // Compiler-generated int->float conversion constant, a global data symbol in
 // the original object; defining it here makes the cast below reference the
 // original name instead of an anonymous @NNN local.

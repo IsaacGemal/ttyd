@@ -506,16 +506,16 @@ f32 unk_800c93d0(PartyEntry* party, f32 value) {
     if (value != zero) {
         work->speed2 = value;
         if (work->field_28 != 0) {
-            return;
+            return value;
         }
         if (work->field_36 == 2) {
-            return;
+            return value;
         }
         if (work->field_36 == 3) {
-            return;
+            return value;
         }
         if (work->field_36 == 6) {
-            return;
+            return value;
         }
         mario = work->playerPtr;
         f3 = work->speed;

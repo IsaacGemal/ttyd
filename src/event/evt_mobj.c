@@ -4959,10 +4959,8 @@ __declspec(section ".sdata2") const char str_8041A1E8[4] = "S_3";
 __declspec(section ".sdata2") f32 float_40_8041a1ec = 40.0f;
 const f32 float_360_8041a1f0 = 360.0f;
 __declspec(section ".sdata2") f32 float_45_8041a1f4 = 45.0f;
-#pragma force_active on  // the two 8-byte strings the header wrongly declares as [4]; emit them in place
-__declspec(section ".sdata2") const u32 gap_str_8041A1F8[2] = { 0x4D5F495F, 0x31000000 };
-__declspec(section ".sdata2") const u32 gap_str_8041A200[2] = { 0x4D5F535F, 0x31000000 };
-#pragma force_active reset
+__declspec(section ".sdata2") const char str_8041A1F8[8] = "M_I_1";
+__declspec(section ".sdata2") const char str_8041A200[8] = "M_S_1";
 const f32 float_1p4_8041a208 = 1.4f;
 const f32 float_1p2_8041a20c = 1.2f;
 __declspec(section ".sdata2") f32 float_5_8041a210 = 5.0f;
