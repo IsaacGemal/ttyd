@@ -71,16 +71,24 @@ USER_FUNC(unk_yuu_00009d5c) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.72%): every instruction's opcode and operands match; only callee-saved register
-// colouring differs. MWCC colours `work` r31 (target r24); digits r30 (target r31), digit r29 (target
-// r30), skip r24 (target r25/r29) and xoff r25 (target r23/r25) all follow from that one web. Writing
-// the loop counters as `for (i = 0, xoff = 0; ...)` fixed the loop-init order (96.65 -> 96.72).
-// Tried without reaching 100%: 1700+ declaration-order permutations (work drops to r29/r30 but the
-// score falls and r24 never appears), merging/splitting digit/i/xoff/skip, a separate digits pointer,
-// per-case declaration scopes, reordering the colour assignments and expressions, FP-constant locals,
-// `register` hints, and every opt_lifetimes/opt_propagation/opt_dead_assignments/opt_common_subs pragma
-// combination (the ones that move `work` add a spill, frame 0x150). The 0x140 frame and the r20-r31
-// save set already match, so this is a web-ordering tie the permuter should resolve.
+// NONMATCHING (99.21%): every instruction's opcode, operands and scheduling now match; only register
+// allocation differs. The original keeps `work` in r24; MWCC puts it in r31, and the loop webs follow:
+// `&digits` r30 -> target r31, `digit` r29 -> r30, `skip0` r24 -> r25, `xoff0` r25 -> r23,
+// `byteoff0` r23 -> r22, the case-1 float_8 pointer r20 -> r21. Our allocator also reuses r20 for both
+// `time` and the float_8 pointer and r29 for both `seconds` and `digit`, where the target keeps them
+// apart. The case-0 `marioGetPtr()->position.x` temp lands in f2 (target f0), rotating the
+// fadds/fmuls operands (5 instructions).
+// Fixed this session: the digit/icon ids are built with `& 0xFFFF`, not `(u16)` casts; that removed
+// the six `clrlwi r5` scheduler slips and moved the function 96.72 -> 99.21.
+// Tried without reaching 100%: declaration-order permutations (18 lines, every position of `work`),
+// splitting multi-variable declarations, merging/splitting digit/i/xoff/skip (sharing a variable across
+// the case blocks makes mwcceppc loop forever), colour and scale/icon/xbase statement orders,
+// explicit-subtraction forms of the `%` chains, every accumulating/associating form of the case-0 time
+// expression, `register`/`restrict`/`volatile`/inline-helper tricks, and the opt_lifetimes /
+// opt_propagation / opt_common_subs / opt_dead_assignments / global_optimizer / optimize_for_size /
+// optimization_level / scheduling pragma combinations. The 0x140 frame and the r20-r31 save set match;
+// this is the same web-ordering tie the permuter resolves.
+// NONMATCHING (99.21%): only register colouring differs; see the note above.
 void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     s32 digits[4];
     s32 digit0, digit1, digit2;
@@ -179,7 +187,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
             if (!skip0) {
                 PSMTXTrans(mtxTemp, xbase + (f32)xoff0, 8.0f, 0.0f);
                 PSMTXConcat(mtx, mtxTemp, mtxTemp);
-                iconDispGxCol(mtxTemp, 0x10, (u16)(digit0 + 0x1F7), digitColor);
+                iconDispGxCol(mtxTemp, 0x10, (digit0 + 0x1F7) & 0xFFFF, digitColor);
             }
             xoff0 += 30;
         }
@@ -195,7 +203,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
             digit1 = digits[i1];
             PSMTXTrans(mtxTemp, xbase + (f32)xoff1 - (f32)((i1 == 0) << 4), 8.0f, 0.0f);
             PSMTXConcat(mtx, mtxTemp, mtxTemp);
-            iconDispGxCol(mtxTemp, 0x10, (u16)(digit1 + 0x1F7), digitColor);
+            iconDispGxCol(mtxTemp, 0x10, (digit1 + 0x1F7) & 0xFFFF, digitColor);
             xoff1 += 30;
         }
 
@@ -203,7 +211,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
         PSMTXScale(mtxScale, 2.0f, 2.0f, 2.0f);
         PSMTXConcat(mtxTemp, mtxScale, mtxTemp);
         PSMTXConcat(mtx, mtxTemp, mtxTemp);
-        iconDispGxCol(mtxTemp, 0x10, (u16)icon, iconColor);
+        iconDispGxCol(mtxTemp, 0x10, icon & 0xFFFF, iconColor);
         break;
     }
     case 2: {
@@ -225,7 +233,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
             if (!skip2) {
                 PSMTXTrans(mtxTemp, xbase + (f32)xoff2, 8.0f, 0.0f);
                 PSMTXConcat(mtx, mtxTemp, mtxTemp);
-                iconDispGxCol(mtxTemp, 0x10, (u16)(digit2 + 0x1F7), digitColor);
+                iconDispGxCol(mtxTemp, 0x10, (digit2 + 0x1F7) & 0xFFFF, digitColor);
             }
             xoff2 += 30;
         }
@@ -236,7 +244,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     if (icon != -1) {
         PSMTXTrans(mtxTemp, 90.0f + xbase - 12.0f, 10.0f, 0.0f);
         PSMTXConcat(mtx, mtxTemp, mtxTemp);
-        iconDispGxCol(mtxTemp, 0x10, (u16)icon, iconColor);
+        iconDispGxCol(mtxTemp, 0x10, icon & 0xFFFF, iconColor);
     }
 
     switch (work->mode) {
@@ -249,7 +257,7 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
             PSMTXScale(mtxScale, 0.5f, 0.5f, 0.5f);
             PSMTXConcat(mtxTemp, mtxScale, mtxTemp);
             PSMTXConcat(mtx, mtxTemp, mtxTemp);
-            iconDispGxCol(mtxTemp, 0x10, (u16)(digits[i3] + 0x1F7), digitColor);
+            iconDispGxCol(mtxTemp, 0x10, (digits[i3] + 0x1F7) & 0xFFFF, digitColor);
             xoff3 += 15;
         }
         break;

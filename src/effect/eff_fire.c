@@ -12,7 +12,13 @@
 #include <stdlib.h>
 
 extern GXColor unk_80423064;
+#ifdef MUST_MATCH
+// Match-only: non-const object forced into .rodata so effFireEntry copies it with integer lwz/stw
+// (a const object is folded into lfsu), as the target does.
+__declspec(section ".rodata") Vec vec3_802f8c10 = { 0.0f, 0.0f, 0.0f };
+#else
 const Vec vec3_802f8c10 = { 0.0f, 0.0f, 0.0f };
+#endif
 const Vec vec3_802f8c1c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f8c28 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f8c34 = { 0.0f, 0.0f, 0.0f };
@@ -25,8 +31,6 @@ __declspec(section ".rodata") Vec vec3_802f8c4c = { 0.0f, 0.0f, 0.0f };
 #else
 const Vec vec3_802f8c4c = { 0.0f, 0.0f, 0.0f };
 #endif
-extern const f64 double_to_int_mask_802f8c58;
-const f64 double_to_int_802f8c70 = 4503601774854144.0;
 extern const f32 float_0p0078125_8041e0ec;
 extern const f32 float_1p5_8041e0f0;
 extern const f32 float_0p8_8041e0f4;
@@ -128,7 +132,7 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 #ifdef MUST_MATCH
 	// Match-only: an anonymous zero literal instead of the named vec3_802f8c10 makes MWCC schedule the
 	// alpha store before the position copy, as the target does (same shape as effFireworksMakeVec).
-	position = (Vec){ 0.0f, 0.0f, 0.0f };
+	position = vec3_802f8c10;
 #else
 	position = vec3_802f8c10;
 #endif
@@ -720,6 +724,29 @@ void effFireDisp2(CameraId camId, void* param) {
 }
 #pragma opt_common_subs reset
 
+// Several source choices are deliberate match-only shape fixes, each found by search against objdiff:
+//  - `data` is declared after `type` and assigned just before `camGetPtr`, with `type = data->type` after
+//    the call; that gives the target's data r26 / type r27 instead of r26/r27 swapped (worth ~1.4%).
+//  - the inner loop writes yA/yB inline in the GXPosition3f32 calls (`f27 * (f32)(j + 1)` / `* (f32)j`)
+//    rather than hoisting them into f32 locals; c0/c1 stay `const u8*`.
+//  - `third` (0.33333f) and `sixteen` (16.0f) are f32 locals: MWCC then caches them in f29/f30 and the
+//    int->float double in f28, the target's colouring. The inner-loop 0/1 arguments are literals so the
+//    scheduler produces the target's loads.
+//  - the four zero-vector copies below are MUST_MATCH: without the volatile read MWCC hoists all twelve
+//    loads out of the outer loop, and without the explicit temp the frame loses 0x30.
+//  - the TevReg0 colour is built by the MUST_MATCH inline effFireDisp3KColor so GXSetTevColor gets the
+//    target's stack argument slot.
+//  - vec3_802f8c10 is a non-const object forced into .rodata so effFireEntry copies it with integer
+//    lwz/stw as the target does (a const object is folded into lfsu).
+#ifdef MUST_MATCH
+// Match-only: building the TevReg0 colour in an inline returning GXColor gives the target's
+// GXSetTevColor stack argument slot; a plain assignment lands in a different one.
+static inline GXColor effFireDisp3KColor(u8 a) {
+	GXColor c = *(GXColor*)&unk_80423060;
+	c.a = a;
+	return c;
+}
+#endif
 // The remaining differences are register colouring plus the pool/scheduling tail. Several source choices
 // are deliberate match-only colouring fixes; each was found by search against the objdiff score:
 //  - `data` is declared after `type` and assigned just before `camGetPtr`, with `type = data->type` after
@@ -736,7 +763,7 @@ void effFireDisp2(CameraId camId, void* param) {
 // hoists all twelve loads out of the outer loop; without the explicit temp the frame loses 0x30. The
 // PSMTXScale/PSMTXTrans 1.0f/0.0f arguments are the named float_1_8041e100/float_0_8041e108 objects the
 // target loads by name (a literal would pool its own copy elsewhere).
-// NONMATCHING (96.53%): float f28/f30 (16 vs the int->float double) and FIFO/base r30/r31 colouring, the
+// NONMATCHING (96.54%): float f28/f30 (16 vs the int->float double) and FIFO/base r30/r31 colouring, the
 // int->float pool offset and stack-slot layout, and the remaining inner-loop schedule differ.
 void effFireDisp3(CameraId camId, void* param) {
 	EffectEntry* effect = param;

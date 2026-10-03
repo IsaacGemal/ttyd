@@ -14,4 +14,5 @@ s32 scissor_intersection4(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx
 
 typedef struct ScissorWork ScissorWork;
 ScissorWork* GetScissorPtr(void);
+extern char str_802FF570[];
 void star_disp2D(void);

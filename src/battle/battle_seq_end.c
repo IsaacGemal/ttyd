@@ -166,11 +166,10 @@ extern BattleDispPose pose_table_nokotarou_stay[];
 // (Without this mwcc inlines _audience_Whistle_control, btlseqEnd_DispMain, ... into btlseqEnd.)
 #pragma dont_inline on
 #pragma opt_common_subs off // without it MWCC re-associates the BattleInformation flag masks and the callee-saved map drifts further
-// NONMATCHING (98.19%): only the callee-saved map differs (mwcc puts wp in r31, work in r26; the target has
-// wp=r26, work=r28), plus one effPointGetEntry load order and two `mr rN, r0` moves.
+#pragma opt_lifetimes off // the target keeps unit/party/setup in the registers the default lifetime pass moves; also drops the two `mr rN, r0` moves
 void btlseqEnd(BattleWork* wp) {
-    FieldBattleInfo* info;
     BattleSeqEndWork* work;
+    FieldBattleInfo* info;
 #ifdef MUST_MATCH
     u8* data;
 #endif
@@ -272,7 +271,7 @@ void btlseqEnd(BattleWork* wp) {
                 break;
             }
             if (*(s32*)((u8*)fbat + 0x44) != 0) {
-                BattleSetSeq(wp, SEQ_INIT, 0x03000001);
+                BattleSetSeq(wp, SEQ_TURN, 0x03000001);
                 BattleSetSeq(wp, SEQ_UNKNOWN, 2);
                 return;
             }
@@ -337,10 +336,10 @@ void btlseqEnd(BattleWork* wp) {
             event = evtEntry(BtlUnit_GetData(party, 3), 0xA, 0);
             event->unitId = party->unitId;
             party->attackEventId = event->eventId;
+            break;
         } else {
             BattleSetSeq(wp, SEQ_END, 0x07000006);
         }
-        /* fallthrough */
 
     case 0x07000006:
         if (!BattleWaitAllActiveEvtEnd(wp)) {
@@ -423,23 +422,29 @@ void btlseqEnd(BattleWork* wp) {
 
     case 0x0700000A:
         if (*(s16*)((u8*)work + 0x8) > 0) {
-            unit = BattleGetMarioPtr(wp);
-            party = BattleGetPartyPtr(wp);
-            event = evtEntry(BtlUnit_GetData(unit, 0x40), 0xA, 0);
+            BattleUnit* u = BattleGetMarioPtr(wp);
+            BattleUnit* p = BattleGetPartyPtr(wp);
+            event = evtEntry(BtlUnit_GetData(u, 0x40), 0xA, 0);
             if (event != NULL) {
-                event->unitId = unit->unitId;
-                unit->attackEventId = event->eventId;
+                event->unitId = u->unitId;
+                u->attackEventId = event->eventId;
             }
-            if (party != NULL) {
-                event = evtEntry(BtlUnit_GetData(party, 0x40), 0xA, 0);
+            if (p != NULL) {
+                event = evtEntry(BtlUnit_GetData(p, 0x40), 0xA, 0);
                 if (event != NULL) {
-                    event->unitId = party->unitId;
-                    party->attackEventId = event->eventId;
+                    event->unitId = p->unitId;
+                    p->attackEventId = event->eventId;
                 }
             }
             if (*(void**)((u8*)work + 0x29C) == NULL) {
-                *(void**)((u8*)work + 0x29C) =
-                    effPointGetEntry(0, *(s16*)((u8*)work + 0x8), 0, 0.0f, 90.0f, 0.0f);
+#ifdef MUST_MATCH
+                // MUST_MATCH: source-order of the arguments is what decides which load MWCC schedules last
+                // (it emits `lfs f2` before `lha r4` here, the original's order). The prototype's register
+                // mapping is unchanged, so the natural call below still links to the same function.
+                *(void**)((u8*)work + 0x29C) = ((EffectEntry* (*)(s32, f32, f32, s32, s32, f32))effPointGetEntry)(0, 0.0f, 90.0f, *(s16*)((u8*)work + 0x8), 0, 0.0f);
+#else
+                *(void**)((u8*)work + 0x29C) = effPointGetEntry(0, *(s16*)((u8*)work + 0x8), 0, 0.0f, 90.0f, 0.0f);
+#endif
             }
             BattleSetSeq(wp, SEQ_END, 0x0700000B);
             break;
@@ -611,13 +616,13 @@ void btlseqEnd(BattleWork* wp) {
             }
         }
         if (BattlePadCheckTrigger(0x100)) {
-            flag = 0;
+            s32 f2 = 0;
             switch (*(s32*)((u8*)work + 0x10)) {
-            case 0: if (pouch->baseMaxHP < 0xC8) flag = 1; break;
-            case 1: if (pouch->baseMaxFP < 0xC8) flag = 1; break;
-            case 2: if (pouch->maximumBP < 0x63) flag = 1; break;
+            case 0: if (pouch->baseMaxHP < 0xC8) f2 = 1; break;
+            case 1: if (pouch->baseMaxFP < 0xC8) f2 = 1; break;
+            case 2: if (pouch->maximumBP < 0x63) f2 = 1; break;
             }
-            if (flag != 0) {
+            if (f2 != 0) {
                 *(s32*)((u8*)work + 0x24) = 0;
                 *(s32*)((u8*)work + 0x28) = 0;
                 *(s32*)((u8*)work + 0x2C) = 2;
@@ -689,26 +694,31 @@ void btlseqEnd(BattleWork* wp) {
                 party->currentHp = party->maxHp;
             }
         }
-        flag = 1;
-        setup = wp->fbatInfo->setup;
-        unit = BattleGetMarioPtr(wp);
-        party = BattleGetPartyPtr(wp);
         {
-            u32 sf = (u32)unit->mStatusFlags;
+            NpcBattleInfo* su;
+            BattleUnit* uu;
 
-            if ((sf & 0x10000000) || (sf & 0x20000000)) {
-                flag = 0;
-            } else if (party != NULL) {
-                if ((sf & 0x10000000) || (sf & 0x20000000) || BtlUnit_CheckStatus(party, 0x1B)) {
+            flag = 1;
+            su = wp->fbatInfo->setup;
+            uu = BattleGetMarioPtr(wp);
+            party = BattleGetPartyPtr(wp);
+            {
+                u32 sf = (u32)uu->mStatusFlags;
+
+                if ((sf & 0x10000000) || (sf & 0x20000000)) {
                     flag = 0;
+                } else if (party != NULL) {
+                    if ((sf & 0x10000000) || (sf & 0x20000000) || BtlUnit_CheckStatus(party, 0x1B)) {
+                        flag = 0;
+                    }
                 }
             }
-        }
-        if (flag != 0) {
-            if (setup->field_4 & 0x20000000) {
-                BtlUnit_snd_se(unit, str + 0x384, 0xF1194D80, 0);
-            } else {
-                BtlUnit_snd_se(unit, str + 0x39C, 0xF1194D80, 0);
+            if (flag != 0) {
+                if (su->field_4 & 0x20000000) {
+                    BtlUnit_snd_se(uu, str + 0x384, 0xF1194D80, 0);
+                } else {
+                    BtlUnit_snd_se(uu, str + 0x39C, 0xF1194D80, 0);
+                }
             }
         }
         BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), "M_V_2");
@@ -759,26 +769,31 @@ void btlseqEnd(BattleWork* wp) {
         break;
 
     case 0x07000019:
-        flag = 1;
-        setup = wp->fbatInfo->setup;
-        unit = BattleGetMarioPtr(wp);
-        party = BattleGetPartyPtr(wp);
         {
-            u32 sf = (u32)unit->mStatusFlags;
+            NpcBattleInfo* su;
+            BattleUnit* uu;
 
-            if ((sf & 0x10000000) || (sf & 0x20000000)) {
-                flag = 0;
-            } else if (party != NULL) {
-                if ((sf & 0x10000000) || (sf & 0x20000000) || BtlUnit_CheckStatus(party, 0x1B)) {
+            flag = 1;
+            su = wp->fbatInfo->setup;
+            uu = BattleGetMarioPtr(wp);
+            party = BattleGetPartyPtr(wp);
+            {
+                u32 sf = (u32)uu->mStatusFlags;
+
+                if ((sf & 0x10000000) || (sf & 0x20000000)) {
                     flag = 0;
+                } else if (party != NULL) {
+                    if ((sf & 0x10000000) || (sf & 0x20000000) || BtlUnit_CheckStatus(party, 0x1B)) {
+                        flag = 0;
+                    }
                 }
             }
-        }
-        if (flag == 0) {
-            if (setup->field_4 & 0x20000000) {
-                BtlUnit_snd_se(unit, str + 0x3B4, 0xF1194D80, 0);
-            } else {
-                BtlUnit_snd_se(unit, str + 0x3CC, 0xF1194D80, 0);
+            if (flag == 0) {
+                if (su->field_4 & 0x20000000) {
+                    BtlUnit_snd_se(uu, str + 0x3B4, 0xF1194D80, 0);
+                } else {
+                    BtlUnit_snd_se(uu, str + 0x3CC, 0xF1194D80, 0);
+                }
             }
         }
         BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), "M_V_1");
@@ -830,14 +845,16 @@ void btlseqEnd(BattleWork* wp) {
     case 0x0700001F:
         {
             s32 id;
+            NpcBattleInfo* su;
+            BattleUnit* uu;
 
             party = BattleGetPartyPtr(wp);
             flag = (party != NULL) ? party->currentKind : 0;
             id = BattleTransPartyId((BattleUnitType)flag);
-            setup = wp->fbatInfo->setup;
-            unit = BattleGetMarioPtr(wp);
-            if ((setup->field_4 & 0x40) && unit->currentHp <= 0) {
-                unit->currentHp = 1;
+            su = wp->fbatInfo->setup;
+            uu = BattleGetMarioPtr(wp);
+            if ((su->field_4 & 0x40) && uu->currentHp <= 0) {
+                uu->currentHp = 1;
             }
             BattleSetMarioParamToFieldBattle(wp);
             BattleFree(wp->seqEndWork);
@@ -865,6 +882,7 @@ void btlseqEnd(BattleWork* wp) {
     btlseqEnd_DispMain(8, wp);
 }
 #pragma opt_common_subs reset
+#pragma opt_lifetimes reset
 
 // The original keeps _keta_get out of line: _lvup_select_object_disp calls it with bl, not inlined.
 s32 _keta_get(s32 value) {
@@ -1326,8 +1344,6 @@ void _GetExpIcon_End(BattleSeqEndWork* work) {
         iconDelete((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18));
     }
 }
-// NONMATCHING (99.18%): first two loops + iconSetPos match; third block now has j=r31/offset=r28.
-// The only remaining diff is the modulo constant 10 materialized in r3 instead of reusing r31.
 void _GetExpIcon_Main(BattleWork* wp) {
     BattleSeqEndWork* work = wp->seqEndWork;
     s32 exp = *(s16*)((u8*)work + 0xA);
@@ -1520,9 +1536,18 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     FontDrawMessage((s32)x, (s32)float_neg148_80420cfc + (lines - 1) * 29, msg);
 }
 
-// NONMATCHING (85.41%): windows/strings/icon match; the rest are .rodata string+mask offsets (our .rodata is
-// 0x1A4 short, so btl_msg_* sits at +0x158 not +0x304), the str/work base swap, and len-conversion
-// scheduling. No `f32 w` local: written out twice, mwcc CSEs `6.25f * (f32)len` into the target's `fmuls`.
+// NONMATCHING (85.41%): every call and non-data immediate matches (tools/diff_shape.py); the score is
+// dominated by (a) register allocation: the string-base and `work` base are swapped (orig r30=base, r31=work;
+// ours r31=base, r30=work) and `-30.0f`/`12.5f` land in the other of f4/f5; and (b) the len int->float
+// schedule, which inserts one extra `mr r6, r3` -- the original stores the strlen result from r3 twice
+// (0x34, 0x3c) before clobbering r3 with the camId 0.  The remaining diffs are rodata offsets: here
+// btl_msg_lvup_ok/yes/no sit at +0x278/+0x288/+0x29c and the two doubles at +0x268/+0x270, vs
+// +0x304/+0x314/+0x328 and +0x260/+0x338 in the original.  Those move closer if this function is placed
+// before L__LvupParamHelpMsgDisp in the source (then btl_msg_* is +0x2fc), but the function score does not
+// change, so the reorder is not kept here (the unit needs the whole file in reverse-asm order anyway).
+// Written out twice with no `f32 w` local so mwcc CSEs `6.25f * (f32)len` into the original's `fmuls f31`.
+// Tried a `w`/`lf` local, s32/size_t len, mixed signed casts, named dat_80420c0c/dat_80420c10, an inline
+// colour, non-const float locals, and opt_propagation/size/commonsubs/scheduling/lifetimes pragmas: all <= 85.41.
 void _LvupParamConfirmDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;

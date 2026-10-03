@@ -1513,17 +1513,20 @@ extern char str_802F3BF8[];
 extern char str_802F3C18[];
 extern Vec vec3_802f3bd0;
 
-// NONMATCHING (95.54%): register allocation only — MWCC gave `event` r31 where the original used r15, so
-// every callee-saved register shifted and the frame is 16 B short (the original spills strTub/strRest/part
-// where we keep them); the int->float double is pooled locally too. No op_mismatch remains.
+// Register allocation only: MWCC gave `event` r31 where the original used r15, so every callee-saved
+// register shifted and the frame is 16 B short (the original spills strTub/strRest/part where we keep
+// them). No op_mismatch remains. The only source lever that moved the score was splitting the four
+// initialised locals into a plain declaration plus an assignment (the scheduler then emits the original's
+// top-of-function schedule exactly) and shuffling the scalar declarations; both are semantically
+// irrelevant and only steer MWCC's register colouring.
+// NONMATCHING (95.57%): see above.
 USER_FUNC(_object_fall_attack) {
-	s32 dst = *event->args;
-	BattleWork* wp = _battleWorkPointer;
-	u8* vec = (u8*)vec3_802f3ac8;
-	// BattleWork.field_180C0 padding: pointer to the fall-object data table (weights at +0xC0, stats at +0xCC).
-	u8* typeTable = *(u8**)((u8*)wp + 0x180F8);
-	// The scalar declaration order below is not semantic: MWCC assigns callee-saved registers in declaration
-	// order, and this shuffle is the best-scoring one found (it only affects which register each local gets).
+	// Scalar declarations: the order is not semantic. MWCC colours callee-saved registers roughly in
+	// declaration order, so this sequence only decides which register each local lands in.
+	s32 dst;
+	s32 active;
+	u8* vec;
+	u8* typeTable;
 	s32 rand;
 	BattleUnit* unit;
 	s32 outId;
@@ -1535,7 +1538,7 @@ USER_FUNC(_object_fall_attack) {
 	s32 flags;
 	BattleWeapon* weapon;
 	f32 f30;
-	s32 active;
+	BattleWork* wp;
 	s32 outPartId;
 	s32 check;
 	s32 off;
@@ -1554,6 +1557,11 @@ USER_FUNC(_object_fall_attack) {
 	char* strRest;
 	char* strNormal;
 
+	// `wp` is the BattleWork base; typeTable is its fall-object data table (weights at +0xC0, stats at +0xCC).
+	wp = _battleWorkPointer;
+	typeTable = *(u8**)((u8*)wp + 0x180F8);
+	vec = (u8*)vec3_802f3ac8;
+	dst = *event->args;
 	flag = 0;
 	if (isFirstCall) {
 		alloc = (s8*)BattleAlloc(0xEC);

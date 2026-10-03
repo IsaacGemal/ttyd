@@ -577,43 +577,46 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
 // `fcmpu 0.0,x; beq` skip that the target has. The callee-saved float locals must be declared in
 // DESCENDING order (f31..f14): MWCC hands the declaration order back to the FPR allocator, and
 // reversing it recovers ~100 FPR operand matches (91.7 -> 92.9).
-// NONMATCHING (93.47%): register/encoding only. The frame matches (0x1A0) but `sf28`/`sf24` and
-// `sf18`/`sf1C` swap stack slots; the volatile f0-f5 assignment still differs; ~21 float compares
-// compile to `cror;beq` vs `bge`/`ble`; the dead `if (f28 < -1e-7)` compare is folded away.
+// The GPR allocation permutes the parameters/locals: target p/out->r16/r17, i18-i24->r18-r24, pool
+// base->r31; ours shifts the i's down (i23->r17, i24->r16), p/out->r24/r25 and pool base->r23. The
+// scratch FPRs and spill slots (0x18/0x1c vs 0x24/0x28) still differ, and this compiler folds the
+// dead `if (f28 < -1e-7)` compare. Declaration order, statement order and the mode-block order were
+// searched extensively (f0-before-f1 and the mode0/mode1 reorders recovered 95.90 -> 96.52).
+// NONMATCHING (96.52%): register/encoding only; see notes above.
 BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec* p, CollisionCurveHit* out) {
     f32 f0, f1, f2, f3, f4, f5, f6, f7, f8, f10, f9;
     f32 f31, f30, f29, f28, f27, f26, f25, f24, f23, f22, f21, f20, f19, f18, f17, f16, f15, f14;
     f32 sf18, sf1c, sf20, sf24, sf28, sf2c;
     f64 d0;
-    s32 i18, i19, i20, i21, i22, i23, i24, i15, i0, half;
-    Vec *r6, *r7, *r25, *r26, *r29, *r28, *r27, *r30;
     Vec* base;
+    s32 i22, i21, i20, i19, i18, i23, i24, half, i0, i15;
+    Vec *r25, *r30, *r29, *r6, *r28, *r27, *r26, *r7;
 
     sf20 = dat_804195a8;
     i24 = 0;
     d0 = 0.0;
 
     if (mode == 0) {
+        i20 = data->unk_84;
+        f26 = data->unk_4C;
         i19 = 0;
         half = data->unk_A4 / 2;
-        f27 = data->unk_48;
-        f26 = data->unk_4C;
         base = (Vec*)wp->map->unk_F8;
-        i22 = data->unk_40;
-        i21 = data->unk_44;
-        i20 = data->unk_84;
         r6 = &base[data->unk_A0];
+        f27 = data->unk_48;
         r7 = &base[data->unk_A0 + half];
+        i21 = data->unk_44;
+        i22 = data->unk_40;
     } else {
-        i22 = 0;
-        i21 = 1;
-        half = data->unk_64 / 2;
-        f27 = 0.0f;
-        f26 = 0.0f;
         i20 = 0;
-        i19 = 1;
+        f27 = 0.0f;
         base = (Vec*)wp->map->unk_F8;
+        f26 = 0.0f;
         r6 = &base[data->unk_60];
+        i21 = 1;
+        i22 = 0;
+        i19 = 1;
+        half = data->unk_64 / 2;
         r7 = &base[data->unk_60 + half];
     }
 
@@ -640,8 +643,8 @@ L_C4BC:
     f23 = r30[0].z;
     i18 = 0;
     f3 = p->z;
-    f1 = r29[1].x;
     f0 = f3 - f23;
+    f1 = r29[1].x;
     f5 = r29[0].z;
     f25 = r30[0].x;
     f7 = -f1;
@@ -899,7 +902,7 @@ L_CBB0:
     if (f3 > double_0_802c1318) {
     f2 = 0.0f;
     if (f29 < 0.0f) {
-    if (f0 <= f27) goto L_CD0C;
+    if (f0 > f27) {
     f31 = f31 / f17;
     i18 |= 2;
     f30 = f30 / f17;
@@ -907,10 +910,9 @@ L_CBB0:
     f17 = f17 + f0;
     f31 = f31 * f17;
     f30 = f30 * f17;
-    goto L_CD0C;
     }
-L_CBF0:
-    if (f0 <= f26) goto L_CD0C;
+    } else {
+    if (f0 > f26) {
     f31 = f31 / f17;
     i18 |= 2;
     f30 = f30 / f17;
@@ -918,12 +920,14 @@ L_CBF0:
     f17 = f17 - f0;
     f31 = f31 * f17;
     f30 = f30 * f17;
+    }
     goto L_CD0C;
     }
-L_CC18:
+    goto L_CD0C;
+    } else {
     f2 = 0.0f;
-    if (f29 >= 0.0f) goto L_CC4C;
-    if (f0 <= f26) goto L_CC70;
+    if (f29 < 0.0f) {
+    if (f0 > f26) {
     f31 = f31 / f17;
     i18 |= 2;
     f30 = f30 / f17;
@@ -931,9 +935,9 @@ L_CC18:
     f17 = f17 + f0;
     f31 = f31 * f17;
     f30 = f30 * f17;
-    goto L_CC70;
-L_CC4C:
-    if (f0 <= f27) goto L_CC70;
+    }
+    } else {
+    if (f0 > f27) {
     f31 = f31 / f17;
     i18 |= 2;
     f30 = f30 / f17;
@@ -941,34 +945,39 @@ L_CC4C:
     f17 = f17 - f0;
     f31 = f31 * f17;
     f30 = f30 * f17;
-L_CC70:
+    }
+    }
     f0 = float_neg1_804195a4;
     sf18 = f0;
+    }
     goto L_CD0C;
 
 L_CC7C:
     if (i19 == 0) goto L_CCF8;
-    if (f3 <= double_0_802c1318) goto L_CCC0;
+    if (f3 > double_0_802c1318) {
     f2 = 0.0f;
     if (f29 < 0.0f) goto L_CD0C;
-    if (f0 <= 0.0f) goto L_CD0C;
+    if (f0 > 0.0f) {
     f31 = f31 / f17;
     i18 = 3;
     f30 = f30 / f17;
     f17 = f17 - f0;
     f31 = f31 * f17;
     f30 = f30 * f17;
+    }
     goto L_CD0C;
-L_CCC0:
+    }
     f2 = 0.0f;
-    if (f29 >= 0.0f) goto L_CCEC;
-    if (f0 <= 0.0f) goto L_CCEC;
+    if (f29 < 0.0f) {
+    if (f0 > 0.0f) {
     f31 = f31 / f17;
     i18 = 3;
     f30 = f30 / f17;
     f17 = f17 + f0;
     f31 = f31 * f17;
     f30 = f30 * f17;
+    }
+    }
 L_CCEC:
     f0 = float_neg1_804195a4;
     sf18 = f0;
@@ -1022,7 +1031,7 @@ L_CD80:
     f7 = -f6;
     f3 = __fabsf(f5);
     f4 = __fabsf(f7);
-    if (f4 <= f3) goto L_CDD4;
+    if (f4 > f3) {
     f4 = f10 - f1;
     f3 = f5 / f7;
     f4 = f4 / f7;
@@ -1031,6 +1040,7 @@ L_CD80:
     f4 = f4 - f0;
     f4 = f4 / f3;
     goto L_CE04;
+    }
 L_CDD4:
     if (double_0_802c1318 == f5) goto L_CE00;
     f4 = f0 - f2;
@@ -1054,7 +1064,6 @@ L_CE04:
         if (f28 < double_neg1Eneg07_802c1338) {
             goto L_CE48;
         }
-        goto L_CE48;
     } else {
         if (double_0_802c1318 == f6) goto L_CE48;
         f0 = f4 - f0;
@@ -1075,22 +1084,22 @@ L_CF48:
     if (f1 >= f8) goto L_D154;
     sf20 = f1;
     if (i20 == 0) goto L_D0FC;
-    if (f0 >= sf28) goto L_D008;
+    if (f0 < sf28) {
     f3 = f6 * f5;
     f0 = 0.0f;
     f2 = f2 * f7 + f3;
-    if (f2 >= 0.0f) goto L_CF98;
-    if (f1 <= f27) goto L_CFAC;
+    if (f2 < 0.0f) {
+    if (f1 > f27) {
     f1 = f27;
     i18 |= 2;
-    goto L_CFAC;
-L_CF98:
-    if (f1 <= f26) goto L_CFA8;
+    }
+    } else {
+    if (f1 > f26) {
     f1 = f26;
     i18 |= 2;
-L_CFA8:
+    }
     f1 = -f1;
-L_CFAC:
+    }
     f0 = sf28;
     i0 = i18 | 1;
     f3 = 0.0f;
@@ -1112,24 +1121,23 @@ L_CFAC:
     out->unk_24 = i22;
     out->unk_28 = i0;
     goto L_D154;
-
-L_D008:
-    if (f0 <= sf24) goto L_D0AC;
+    } else {
+    if (f0 > sf24) {
     f3 = f6 * f5;
     f0 = 0.0f;
     f2 = f2 * f7 + f3;
-    if (f2 >= 0.0f) goto L_D03C;
-    if (f1 <= f27) goto L_D050;
+    if (f2 < 0.0f) {
+    if (f1 > f27) {
     f1 = f27;
     i18 |= 2;
-    goto L_D050;
-L_D03C:
-    if (f1 <= f26) goto L_D04C;
+    }
+    } else {
+    if (f1 > f26) {
     f1 = f26;
     i18 |= 2;
-L_D04C:
+    }
     f1 = -f1;
-L_D050:
+    }
     f0 = sf24;
     i0 = i18 | 1;
     f3 = 0.0f;
@@ -1151,26 +1159,30 @@ L_D050:
     out->unk_24 = i21;
     out->unk_28 = i0;
     goto L_D154;
-
+    }
+    }
 L_D0AC:
     f8 = f6 * f5;
     f5 = 0.0f;
     f7 = f2 * f7 + f8;
-    if (f7 >= 0.0f) goto L_D0E0;
-    if (f1 <= f27) goto L_D0FC;
+    if (f7 < 0.0f) {
+    if (f1 > f27) {
     f2 = f2 / f1;
     i18 |= 2;
     f1 = f6 / f1;
     f2 = f27 * f2;
     f6 = f27 * f1;
+    }
     goto L_D0FC;
-L_D0E0:
-    if (f1 <= f26) goto L_D0FC;
+    } else {
+    if (f1 > f26) {
     f2 = f2 / f1;
     i18 |= 2;
     f1 = f6 / f1;
     f2 = f26 * f2;
     f6 = f26 * f1;
+    }
+    }
 L_D0FC:
     f2 = f3 + f2;
     out->unk_00 = f0;

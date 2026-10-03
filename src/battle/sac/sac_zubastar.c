@@ -1010,7 +1010,8 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
 // loop), the dedupe comparison inlines the (s32)out1/out2 casts (the original CSEs them into r6/r7), the two
 // point stores go through a `j1` temp (the original computes j+1 and adds 2 to j), and the bomb1/bomb2
 // field order below is the one whose schedule matches. The natural forms are under #else.
-// NONMATCHING (94.51%): 78 callee-saved arg-mismatches and 12 scheduled instructions in bomb1/bomb2's setup.
+// NONMATCHING (94.51%): register colouring (64 callee-saved + 18 caller-saved argument mismatches);
+// the 12 insert/delete/replace lines are the bomb1/bomb2 setup and the points[0]/[1] schedule.
 void zubastar_bunkatu(Vec* a, Vec* b) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 bombCount = work->bombCount;
@@ -1157,47 +1158,53 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
 
 // .text:0x1990 | 0x8022FF20 | size: 0x100
 // Kept out of line: the original's zubastar_bunkatu calls it (bl) instead of inlining it.
-// The constants are literals (0.0f, 1e-05f, 1.0f) so MWCC has their values. The float register
-// colouring needs three source details: `opt_lifetimes off` + `opt_propagation off` (reset after the
-// function) keep the select result `b` in f10 rather than f3; giving the `f7 - f5` and `f4 - f2`
-// differences their own temps (`ct`/`c2`, `dt`) puts those temps in f3 and the results in f11/f7 with
-// the copies the original has; and naming the final slope (`sl`) rather than reusing `a` lets it land
-// in f1.
+// `opt_lifetimes off` + `opt_propagation off` (reset after the function) give the original's float
+// colouring: the first value (`a`) in f9, the first select result (`b`) in f10, and the reused
+// `ct` temp in f3. Writing the early-exit test and the `d == 0` test with `0.0f` literals, but the
+// two select comparisons with the named `float_0_804217e0` object, forces the original's redundant
+// zero reloads (at the first select and before the second temp); the named object pools a different
+// word than the literals, so MWCC cannot CSE the loads. The second temp reuses `ct` (rather than a
+// separate `dt`) so it lands in f3 like the original.
 #pragma dont_inline on
-// NONMATCHING (86.64%)
+// `opt_lifetimes off` keeps the select results and the reused ct temp in f9/f10/f3.
+// NONMATCHING (97.34%): `c` lands in f7 instead of f11 and the values that depend on it rotate
+// with it (d f8 vs f0, s1 f11 vs f8, the difference f8 vs f7); all remaining instruction diffs are
+// that one register rotation, otherwise the stream is byte-identical.
 s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, f32 f8, f32* out1,
                         f32* out2) {
     f32 a = f3 - f1;
     f32 b;
     f32 c;
     f32 d;
+    f32 ct;
+    f32 sl;
 
-    if (a == float_0_804217e0 && f7 - f5 == float_0_804217e0) {
+    if (a == 0.0f && f7 - f5 == 0.0f) {
         return 0;
     }
-    b = (a != float_0_804217e0) ? a : float_1Eneg05_80421860;
-    c = (f7 - f5 != float_0_804217e0) ? f7 - f5 : float_1Eneg05_80421860;
+    b = (float_0_804217e0 != a) ? a : float_1Eneg05_80421860;
+    ct = f7 - f5;
+    c = (0.0f != ct) ? ct : float_1Eneg05_80421860;
     d = f8 - f6;
-    f8 = (f4 - f2) / b;
+    ct = f4 - f2;
+    f8 = ct / b;
     b = d / c;
     d = f8 - b;
-    if (d == float_0_804217e0) {
+    if (d == 0.0f) {
         return 0;
     }
     *out1 = ((f6 - f2) + (f8 * f1 - b * f5)) / d;
-    if (a != float_0_804217e0) {
+    if (a != 0.0f) {
         *out2 = f8 * (*out1 - f1) + f2;
     } else {
         *out2 = b * (*out1 - f5) + f6;
     }
-    a = (*out1 - f5) / c;
-    if (a >= float_0_804217e0 && a <= float_1_804217d0) {
+    sl = (*out1 - f5) / c;
+    if (sl >= float_0_804217e0 && sl <= float_1_804217d0) {
         return 1;
     }
     return 0;
 }
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
 #pragma dont_inline reset
 
 

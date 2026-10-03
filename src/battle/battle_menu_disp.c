@@ -389,12 +389,16 @@ extern const f32 float_90_8041c158;
 extern const f32 float_360_8041c160;
 extern const f32 float_0p017453_8041c164;
 
-// Register allocation and instruction scheduling only. The state machine, item switch,
-// ring transforms and all values match. Splitting `d` into `d = window->cursor->field_0;
-// d -= window->field_0x18;` puts `d` in r4 like the target (a one-expression form gave
-// r5); `window->cursor` is still r3 where the target has r5. The case-1/case-4/case-5
-// angle temporaries land in different f registers.
-// NONMATCHING (98.50%): see above.
+// Register allocation only: every instruction, call, constant and branch matches the target;
+// the remaining diffs are FPR/GPR colours. Case 5's angles are built from the explicit
+// `pi * deg` numerators (a70/a84) before the `/ 180` divisions; that fixes the original's
+// interleaved `fmuls, fmuls, fdivs, fdivs` schedule, and writing case 4's `0.2 * n` as
+// `n * 0.2` puts its i2f magic/double in f4/f3 like the target (98.50% -> 99.77%).
+// Still differing: case 1 reloads `window->cursor` into r3 where the target uses r5 (and
+// field_0x18 in r0 vs r3); in case 4 only `v84` (f2 vs f3) and the `float_180`/`float_0p2`
+// pair (f5/f2 vs f2/f5) are swapped; case 5 keeps `pi`/`float_180` in f6/f5 where the target
+// has f3/f2, so its i2f magic/double/0.2 sit in f3/f2/f4 instead of f5/f4/f6.
+// NONMATCHING (99.77%): see above.
 void DrawMainMenu(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -553,7 +557,7 @@ void DrawMainMenu(void) {
                 if (v84 == 0.0f) {
                     v84 = float_360_8041c160;
                 }
-                cur = float_0p2_8041c148 * (f32)window->field_0x48[i] + float_3p1416_8041c14c * v70 / float_180_8041c150;
+                cur = (f32)window->field_0x48[i] * float_0p2_8041c148 + float_3p1416_8041c14c * v70 / float_180_8041c150;
                 angle = float_3p1416_8041c14c * v84 / float_180_8041c150;
                 if (cur >= angle) {
                     window->field_0x34[i] = 3;
@@ -577,14 +581,26 @@ void DrawMainMenu(void) {
                 f32 v84;
                 f32 cur;
                 f32 a70;
+#ifdef MUST_MATCH
+                f32 a84;
+#endif
                 v70 = kakutable[cursor->unk8 - 3][window->field_0x70[i]];
                 if (v70 == 0.0f) {
                     v70 = float_360_8041c160;
                 }
-                a70 = float_3p1416_8041c14c * v70 / float_180_8041c150;
                 v84 = kakutable[cursor->unk8 - 3][window->field_0x84[i]];
+#ifdef MUST_MATCH
+                // Compute both `pi * deg` numerators before the divisions: the target's
+                // fmuls, fmuls, fdivs, fdivs schedule only comes out of this order.
+                a70 = float_3p1416_8041c14c * v70;
+                a84 = float_3p1416_8041c14c * v84;
+                cur = a70 / float_180_8041c150 - float_0p2_8041c148 * (f32)window->field_0x48[i];
+                angle = a84 / float_180_8041c150;
+#else
+                a70 = float_3p1416_8041c14c * v70 / float_180_8041c150;
                 angle = float_3p1416_8041c14c * v84 / float_180_8041c150;
                 cur = a70 - float_0p2_8041c148 * (f32)window->field_0x48[i];
+#endif
                 if (cur <= angle) {
                     window->field_0x34[i] = 3;
                     cur = angle;
@@ -1206,7 +1222,15 @@ void BattleMenuDisp_ActSelect_Init(BattleWork* wp, BattleCursor* a, void* b, u32
 // first block's load/add/store statements compile identically, as do single-expression,
 // local-constant, shared-temp and volatile forms and opt_propagation/opt_lifetimes/
 // opt_common_subs/opt_dead_assignments off; only the register rotation is left, so this
-// is permuter work.
+// is permuter work. Re-verified: 140 first-block orderings, a joint cross product of
+// block1/block2/tail forms, a 324-combination single/rev/split sum sweep (max 87.98%), the
+// volatile/local/literal `zero` forms, compound-literal/designated-initializer/array forms,
+// a hand-ordered whole-function rewrite under `#pragma scheduling off` (49.57%, and it
+// moves `pos` to r29), every `-O` level, GC compilers 2.0/2.5/2.6/2.7 (identical 88.09%),
+// and the `optimize_for_size`/`scheduling`/opt_* pragmas (all lower; function-scope zero
+// hangs MWCC). Per-region diff counts are 8/8/11 and the best tail-only form still leaves
+// 8 scheduling diffs. The scheduler never hoists the `float_0` load into f0 above
+// `pos->x`, so `pos->y`/`pos->x` land in f0 instead of the target's f1.
 // NONMATCHING (88.09%): see above.
 void DrawMenuCursorAndScrollArrow(Vec* pos) {
     BattleWork* wp = _battleWorkPointer;

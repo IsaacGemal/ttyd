@@ -1117,8 +1117,9 @@ void pouchRevisePartyParam(void) {
 	}
 }
 
-// NONMATCHING (65.00%): header include/mario/mario_pouch.h declares u16, forcing a clrlwi on the return; the original's `lha r3, 0x96(r3)` (no clrlwi) shows it returns s16, and callers assign straight to an s16. Header cannot be changed per task rules; see REPORT.
-u16 pouchGetStarPoint(void) {
+// Return type is s32 like the file's other s16-field accessors: the original's `lha r3, 0x96(r3)`
+// sign-extends with no clrlwi, so the header's previous `u16` was wrong.
+s32 pouchGetStarPoint(void) {
 	return mpp->mStarPoints;
 }
 

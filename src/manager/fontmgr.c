@@ -246,7 +246,9 @@ static BinaryFontWidth* FontGetWidthPtr(u16 code) {
 	return NULL;
 }
 
-// NONMATCHING (98.42%): head block-scan register swap (pfh in r8/r6, i in r6/r8), OSRoundUp32B scheduling of __memAlloc args, and sdata2/rodata label names.
+// NONMATCHING (99.60%): dvd/rounded-size are allocated to r30/r31 (retail r31/r30) and the head block-scan
+// uses pfh=r6/i=r8 (retail pfh=r8/i=r6). The OSRoundUp32B(__memAlloc) schedule now matches; this is a pure
+// register swap.
 void fontmgrTexSetup(void) {
 	DVDEntry* dvd;
 	u32 size;
@@ -257,9 +259,9 @@ void fontmgrTexSetup(void) {
 	if (!pfh) {
 		sprintf(path, "%s/f/%s.bfn", getMarioStDvdRoot(), fontname[0]);
 		dvd = DVDMgrOpen(path, 2, 0);
-		size = OSRoundUp32B(DVDMgrGetLength(dvd));
-		pfh = __memAlloc(HEAP_DEFAULT, size);
-		DVDMgrRead(dvd, pfh, size, 0);
+		size = DVDMgrGetLength(dvd);
+		pfh = __memAlloc(HEAP_DEFAULT, OSRoundUp32B(size));
+		DVDMgrRead(dvd, pfh, OSRoundUp32B(size), 0);
 		DVDMgrClose(dvd);
 		ptr = (BinaryFontBlock*)(pfh + 1);
 		for (i = 0; i < pfh->blockcount; i++) {
@@ -302,8 +304,6 @@ void fontmgrTexSetup(void) {
 	}
 }
 
-// NONMATCHING (98.66%): only the OSRoundUp32B() evaluation before __memAlloc differs (orig keeps len in r4
-// across `li r3,0`; ours folds it into r0 before the clear) plus sdata2/rodata label names.
 void JUTFontSetup(u16 idx) {
 	u32 size;
 	DVDEntry* dvd;
@@ -314,9 +314,9 @@ void JUTFontSetup(u16 idx) {
 	if (!pfh) {
 		sprintf(path, "%s/f/%s.bfn", getMarioStDvdRoot(), fontname[idx]);
 		dvd = DVDMgrOpen(path, 2, 0);
-		size = OSRoundUp32B(DVDMgrGetLength(dvd));
-		pfh = __memAlloc(HEAP_DEFAULT, size);
-		DVDMgrRead(dvd, pfh, size, 0);
+		size = DVDMgrGetLength(dvd);
+		pfh = __memAlloc(HEAP_DEFAULT, OSRoundUp32B(size));
+		DVDMgrRead(dvd, pfh, OSRoundUp32B(size), 0);
 		DVDMgrClose(dvd);
 		ptr = (BinaryFontBlock*)(pfh + 1);
 		for (i = 0; i < pfh->blockcount; i++) {
@@ -671,9 +671,9 @@ void FontDrawStringCenterMtx(Mtx mtx, const char* msg) {
 	}
 }
 
-// NONMATCHING (95.76%): `x`/`y` after camGetCurPtr fixed f31/f30 and the mtx register; the first edge pair
-// now uses `(s16)x`/`(s16)y` inline and the second caches `s32 sx`/`sy` (CenterMtx shape). Remaining: frame
-// 0x1a0 vs 0x1b0 and retail CSEs the first pair's `(s16)y` where ours does not.
+// Matched: the s16 first-pair locals give the two separate conversion pairs (x=r27/y=r28 then y=r27/x=r28);
+// the MUST_MATCH `sy + 0` promotion makes MWCC emit the first pair's y extsh that retail has, and the s32
+// second-pair locals (ty declared before tx) get its fctiwz order and register assignment right.
 void FontDrawStringMtx(Mtx mtx, const char* msg) {
 	CameraEntry* cam;
 	Mtx m;
@@ -727,19 +727,31 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 			GXColor c2;
 			GXColor saved = fontColor;
 			GXColor c = fontColTbl[0];
-			s32 sx;
-			s32 sy;
+			s16 sx;
+			s16 sy;
+			s32 ty;
+			s32 tx;
 #ifdef MUST_MATCH
 			FontDrawCode_ColorA(c);
 #else
 			FontDrawColor(&c);
 #endif
-			_JUTFont_DrawPos(glyph, (s16)x - 2, (s16)y);
-			_JUTFont_DrawPos(glyph, (s16)x + 2, (s16)y);
 			sx = (s16)x;
 			sy = (s16)y;
-			_JUTFont_DrawPos(glyph, sx, sy - 2);
-			_JUTFont_DrawPos(glyph, sx, sy + 2);
+#ifdef MUST_MATCH
+			// MUST_MATCH: `sy + 0` promotes the s16 to int, which makes MWCC emit the extsh on the
+			// first pair's y that retail has. Writing sy as s32 (the natural form) makes MWCC CSE the
+			// second pair's conversions and shrink the frame; `+ 0` is a no-op.
+			_JUTFont_DrawPos(glyph, sx - 2, sy + 0);
+			_JUTFont_DrawPos(glyph, sx + 2, sy + 0);
+#else
+			_JUTFont_DrawPos(glyph, sx - 2, sy);
+			_JUTFont_DrawPos(glyph, sx + 2, sy);
+#endif
+			tx = (s16)x;
+			ty = (s16)y;
+			_JUTFont_DrawPos(glyph, tx, ty - 2);
+			_JUTFont_DrawPos(glyph, tx, ty + 2);
 			c2 = saved;
 			FontDrawColor(&c2);
 		}
@@ -1000,7 +1012,7 @@ void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 	}
 }
 
-// NONMATCHING (98.65%): rodata format offsets (another function's string is emitted first), iconDispGxAlpha's
+// NONMATCHING (98.64%): rodata format offsets (another function's string is emitted first), iconDispGxAlpha's
 // s16 iconId (header, see sac_suki.c), the inlined FontDrawStart_alpha/FontDrawColor_ schedule and an 8-byte
 // stack pad before ipos still differ.
 void FontDrawMessageMtx(Mtx mtx, const char* msg) {

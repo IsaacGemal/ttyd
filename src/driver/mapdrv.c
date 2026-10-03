@@ -21,7 +21,8 @@
 
 extern s32 texmtx_tbl[];
 
-extern f32 queen_uv[4]; //gxsub.c
+// Original reaches queen_uv with absolute @ha/@l addressing, not the .sdata sda21 form.
+__declspec(section ".rodata") extern f32 queen_uv[4]; //gxsub.c
 extern GlobalWork* gp;
 
 #ifdef MUST_MATCH
@@ -788,28 +789,16 @@ static inline f32 spline_sqrtf(f32 x, const f64* c) {
 	return x;
 }
 
-// NONMATCHING (90.75%): only the tangents[count-2] block differs, in register/scheduling details: ours
-// reads both tangents through the one tg+count base kept live from the init, while the target reads
-// tangents[count-1] through the init's base and [count-2] through a recomputed one. Everything else matches.
+// NONMATCHING (98.36%): all instructions match up to register names. GPRs are permuted (target count,a,b,c,dt
+// in r26-r30 with mat in volatile r3; ours count,c,dt,b,a) and sq lands in f2 where the target keeps it in f5.
+// `sizeof(f32)`/`sizeof(Vec)` on the _mapAlloc sizes is what got the prologue/spilling this close.
 void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
-#ifdef MUST_MATCH
-	// The target keeps the incoming pointers in r27/r28/r29 in argument order. Naming the parameters
-	// through macros (instead of copying them to locals) is what reproduces that colouring; with locals
-	// MWCC colours tangents/dt first and shifts every callee-saved GPR one register low.
-#define points ((Vec*)a)
-#define knots ((f32*)b)
-#define tangents ((Vec*)c)
-	Vec* tg = (Vec*)c; // separate base for the two count-1/count-2 blocks, so they stay base+offset
-	Vec* tend; // match-only: kept live from the tangents init to the count-2 block, like the target's r9
-#else
 	Vec* points = (Vec*)a;
 	f32* knots = (f32*)b;
 	Vec* tangents = (Vec*)c;
-	Vec* tg = tangents;
-#endif
 	const f64* cf = (const f64*)(vec3_802c16d8 + 0x2A8);
-	f32* dt = (f32*)_mapAlloc(count * 4);
-	Vec* mat = (Vec*)_mapAlloc(count * 0xC);
+	f32* dt = (f32*)_mapAlloc(count * sizeof(f32));
+	Vec* mat = (Vec*)_mapAlloc(count * sizeof(Vec));
 	s32 i;
 
 	knots[0] = 0.0f;
@@ -845,15 +834,12 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 		knots[i] = knots[i] / knots[count - 1];
 	}
 
-	tg[0].x = 0.0f;
-	tg[0].y = 0.0f;
-	tg[0].z = 0.0f;
-	tg[count - 1].x = 0.0f;
-	tg[count - 1].y = 0.0f;
-	tg[count - 1].z = 0.0f;
-#ifdef MUST_MATCH
-	tend = tg + count; // evaluated here (not in the block) so MWCC keeps count*12 in a register across the loops
-#endif
+	tangents[0].x = 0.0f;
+	tangents[0].y = 0.0f;
+	tangents[0].z = 0.0f;
+	tangents[count - 1].x = 0.0f;
+	tangents[count - 1].y = 0.0f;
+	tangents[count - 1].z = 0.0f;
 	for (i = 0; i < count - 1; i++) {
 		dt[i] = knots[i + 1] - knots[i];
 		if (dt[i] == 0.0f) {
@@ -884,20 +870,9 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 		mat[i + 1].z = 2.0f * (knots[i + 2] - knots[i]) - wz * dt[i];
 	}
 
-#ifdef MUST_MATCH
-	// match-only: the target reads tangents[count-1] through a tg+count base and dt[count-2] through
-	// dt+(count-2) (negative offsets), so name those bases instead of indexing both through tg
-	{
-		f32* dprev = dt + (count - 2);
-		tend[-2].x = tend[-2].x - dprev[0] * tend[-1].x;
-		tend[-2].y = tend[-2].y - dprev[0] * tend[-1].y;
-		tend[-2].z = tend[-2].z - dprev[0] * tend[-1].z;
-	}
-#else
-	tg[count - 2].x = tg[count - 2].x - dt[count - 2] * tg[count - 1].x;
-	tg[count - 2].y = tg[count - 2].y - dt[count - 2] * tg[count - 1].y;
-	tg[count - 2].z = tg[count - 2].z - dt[count - 2] * tg[count - 1].z;
-#endif
+	tangents[count - 2].x = tangents[count - 2].x - dt[count - 2] * tangents[count - 1].x;
+	tangents[count - 2].y = tangents[count - 2].y - dt[count - 2] * tangents[count - 1].y;
+	tangents[count - 2].z = tangents[count - 2].z - dt[count - 2] * tangents[count - 1].z;
 
 	for (i = count - 2; i > 0; i--) {
 		tangents[i].x = (tangents[i].x - dt[i] * tangents[i + 1].x) / mat[i].x;
@@ -907,11 +882,6 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 
 	_mapFree(mat);
 	_mapFree(dt);
-#ifdef MUST_MATCH
-#undef points
-#undef knots
-#undef tangents
-#endif
 }
 
 // NONMATCHING (94.57%): arithmetic and control flow match instruction for instruction; only MWCC's FP
@@ -1769,9 +1739,9 @@ typedef struct MapAnimData {
 	MapAnimKey key[]; // 0x5C
 } MapAnimData;
 
-// NONMATCHING (98.51%): spline math, constants and compare directions match. What differs is MWCC
-// register colouring of the inner loop's three pointers (chan/out/chan2) and the key-select value (f4 vs
-// f13); the d==0 boolean is `clrlwi.` vs the original's `cntlzw/srwi.` (same result, different normalisation.)
+// NONMATCHING (98.70%): spline math, constants and compare directions match. What differs is MWCC
+// register colouring of the inner loop's pointers (out/chan base swapped r4/r5), the key-select value
+// (target f13, ours f6) and the polynomial temps; the d==0 boolean is `clrlwi.` vs `cntlzw/srwi.`.
 void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* jointPtr) {
 	MapAnimData* joint = (MapAnimData*)jointPtr;
 	MapAnimKey* key;
@@ -1788,6 +1758,7 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 	f32 f31, f30, f29, f28, f27, f23;
 	f32 f26, f25, f24;
 	f32 zero;
+	f32 u, u2, u3;
 
 	count = joint->count;
 	for (i = 1; i < count; i++) {
@@ -1815,15 +1786,15 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 			else {
 				f32 k0 = key->time;
 				f32 k1 = next->time;
-				f32 dt = t - k0;
-				f32 d = k1 - k0;
 				f32 tan1 = chn->unk4;
 				f32 value1 = chn->value;
 				f32 tan0 = ch->unk8;
 				f32 value0 = ch->value;
+				f32 dt = t - k0;
+				f32 d = k1 - k0;
 				f32 den;
 				s32 flag;
-				f32 u, u2, u3, a, b, c, h10, h00, h01, h11;
+				f32 a, b, c, h10, h00, h01, h11;
 				f32 two, neg2;
 
 				flag = (d != MATCH_F32(float_0_80419850));
@@ -1952,8 +1923,9 @@ void bmapLoad(const char* map1, const char* map2) {
 	}
 }
 
-// NONMATCHING (96.81%): entry/i (r29/r30) register swap in the first two loops and one extra
-// activeGroup reload; our build also inlines makeDisplayList, which the original calls.
+// NONMATCHING (99.62%): only the third loop's counter/base registers differ (target i=r31,
+// mapWork=r30; ours i=r30, mapWork=r31). The first two loops match after `i = 0;` was hoisted
+// before `wp`/`entry`, and `memset(wp, ...)` reuses wp instead of recomputing &mapWork[1].
 void bmapUnLoad(void) {
 	MapWork* wp;
 	MapEntry* entry;
@@ -1961,9 +1933,10 @@ void bmapUnLoad(void) {
 
 	sysWaitDrawSync();
 	activeGroup = 1;
+	i = 0;
 	wp = &mapWork[1];
 	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+	for (; i < wp->entries[0].count; entry++, i++) {
 		if (entry->objects) {
 			_mapFree(entry->objects);
 			entry->numJoints = 0;
@@ -2006,7 +1979,7 @@ void bmapUnLoad(void) {
 	}
 	arcDelete(1);
 	arcDelete(2);
-	memset(&mapWork[1], 0, 0x2F4);
+	memset(wp, 0, 0x2F4);
 
 	activeGroup = 0;
 	wp = mapWork;
@@ -2032,7 +2005,9 @@ void bmapUnLoad(void) {
 	}
 }
 
-// NONMATCHING (94.58%): register colouring/scheduling only -- texCoord/texMap coalesce into one call-clobbered register, the int->float magic double is a fresh copy not base+0x2C8, the texCount test folds into `mr.`, and case 9 uses indexed scrl_uv updates (see REPORT.md).
+// NONMATCHING (96.87%): register colouring/scheduling only (276 real instruction diffs). The int->float
+// magic double is still a fresh anonymous pool entry (so the flags&0x800000 block and the GXColor stack
+// temporaries are one GPR off), TEXMTX uses add+lwzu instead of addi+lwzx, and texCount>0 folds into mr.
 void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	u8* base;
 	s32 texMap;
@@ -2252,39 +2227,20 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				tevStage = GX_TEVSTAGE1;
 				break;
 
-			case 9:
-				scrl_uv[0] += queen_uv[0];
-				if (scrl_uv[0] > 100.0f) {
-					scrl_uv[0] -= 100.0f;
+			case 9: {
+				f32* p = scrl_uv;
+				f32* q = queen_uv;
+				s32 i;
+				for (i = 0; i < 4; i++) {
+					p[i] += q[i];
+					if (p[i] > 100.0f) {
+						p[i] -= 100.0f;
+					}
+					if (p[i] < -100.0f) {
+						p[i] += 100.0f;
+					}
 				}
-				if (scrl_uv[0] < -100.0f) {
-					scrl_uv[0] += 100.0f;
-				}
-
-				scrl_uv[1] += queen_uv[1];
-				if (scrl_uv[1] > 100.0f) {
-					scrl_uv[1] -= 100.0f;
-				}
-				if (scrl_uv[1] < -100.0f) {
-					scrl_uv[1] += 100.0f;
-				}
-
-				scrl_uv[2] += queen_uv[2];
-				if (scrl_uv[2] > 100.0f) {
-					scrl_uv[2] -= 100.0f;
-				}
-				if (scrl_uv[2] < -100.0f) {
-					scrl_uv[2] += 100.0f;
-				}
-
-				scrl_uv[3] += queen_uv[3];
-				if (scrl_uv[3] > 100.0f) {
-					scrl_uv[3] -= 100.0f;
-				}
-				if (scrl_uv[3] < -100.0f) {
-					scrl_uv[3] += 100.0f;
-				}
-
+			}
 				MTXTrans(queen_mtx, scrl_uv[0], scrl_uv[1], 0.0f);
 				GXLoadTexMtxImm(queen_mtx, 0x1E, GX_MTX2x4);
 				GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
@@ -2635,11 +2591,11 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 				GXSetTevColorIn(stage, GX_CC_C0, GX_CC_KONST, GX_CC_CPREV, GX_CC_ZERO);
 				GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevKColor(GX_KCOLOR1, color);
-				GXSetTevKColorSel(stage, GX_TEV_KCSEL_K1);
 				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ONE);
 				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevKColor(GX_KCOLOR1, color);
+				GXSetTevKColorSel(stage, GX_TEV_KCSEL_K1);
 				GXSetTevKAlphaSel(stage, GX_TEV_KASEL_K1_A);
 				tevStage += 3;
 				break;
@@ -2765,18 +2721,23 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 
 	if (flags & 0xF000000) {
 		MapTevCallback work;
+		MapTevCallback* workPtr = &work;
 		void (*callback)(MapTevCallback*);
+		u32 cbIndex;
+		u8* cbBase;
 
-		work.obj = current_mp;
-		work.mtx = mtx;
-		work.drawMode = drawMode;
-		work.tevStage = tevStage;
-		work.texMap = texMap;
-		work.texCoord = texCoord;
-		work.numIndStage = 0;
-		callback = *(void**)((u8*)&mapWork[activeGroup].entries[0] + 0x110 + ((flags & 0xF000000) >> 22));
+		workPtr->obj = current_mp;
+		workPtr->mtx = mtx;
+		workPtr->drawMode = drawMode;
+		workPtr->tevStage = tevStage;
+		workPtr->texMap = texMap;
+		workPtr->texCoord = texCoord;
+		workPtr->numIndStage = 0;
+		cbIndex = (u32)(flags & 0xF000000) >> 22 & 0x3FC;
+		cbBase = (u8*)&mapWork[activeGroup].entries[0] + 0x110;
+		callback = *(void**)(cbBase + cbIndex);
 		if (callback != NULL) {
-			callback(&work);
+			callback(workPtr);
 		}
 		tevStage = work.tevStage;
 		texCoord = work.texCoord;
@@ -2952,11 +2913,14 @@ void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
 	}
 }
 
+// Inline copy of mapSearchAnmObj for mapMain. `pair = table + 4; pair += j * 8;` is what
+// reproduces retail's `addi rX,r28,0x4; add rX,r3,rX` address form in the inlined search (a
+// single `table + 4 + j*8` expression folds the +4 into the load instead).
 static inline u8* mapSearchAnimObj(const char* name) {
-	MapEntry* entry;
-	MapWork* wp;
 	s32 i;
 	s32 j;
+	MapEntry* entry;
+	MapWork* wp;
 	u8* p;
 	u8* table;
 
@@ -2968,7 +2932,8 @@ static inline u8* mapSearchAnimObj(const char* name) {
 			return NULL;
 		}
 		for (j = 0; j < *(s32*)table; j++) {
-			u8* pair = table + 4 + j * 8;
+			u8* pair = table + 4;
+			pair += j * 8;
 			if (!strcmp(*(char**)pair, name)) {
 				return *(u8**)(pair + 4);
 			}
@@ -2977,11 +2942,14 @@ static inline u8* mapSearchAnimObj(const char* name) {
 	return NULL;
 }
 
-// Complete and logically correct; remaining diffs are register allocation/scheduling: the outer entry
-// loop spills i, the five animation-list pointers and the OSTime land in different callee-saved
-// registers, the inlined Hermite interpolation uses f29-f31 (frame 0x310 vs 0x2e0), and the
-// list17/18/16 key loops pick an equivalent but differently laid-out compare/branch.
-// NONMATCHING (80.60%): see above.
+// Complete and logically correct; the instruction shape matches retail exactly (verified with
+// tools/diff_shape.py: no shape-only diffs). The rest is callee-saved register colouring: the
+// outer entry loop spills i, the five animation-list pointers and the OSTime land in different
+// registers, and the inlined Hermite blocks colour t/u3 differently (f5/f31 vs f12/f5).
+// The d==0 boolean uses the __cntlzw intrinsic to reproduce retail's cntlzw/srwi normalisation.
+// The colour/light Hermite loops have no `if (cnt > 1)` wrapper: the bare `for (ki = 1; ...)`
+// guard reproduces retail's `subi cnt-1; mtctr` scheduled before the `cmpwi`.
+// NONMATCHING (91.67%):
 void mapMain(void) {
 	MapWork* wp0;
 	MapEntry* entry;
@@ -2993,15 +2961,15 @@ void mapMain(void) {
 	u8* list15;
 	OSTime time;
 	BOOL updated;
-	s32 i;
-	s32 j;
+	s32 i = 0;
+	s32 j = 0;
 	u8* p;
 	char namebuf[0x100];
 	char namebuf2[0x100];
 
 	wp0 = &mapWork[activeGroup];
 	entry = &wp0->entries[0];
-	for (i = 0; i < wp0->entries[0].count; entry++, i++) {
+	for (; i < wp0->entries[0].count; entry++, i++) {
 		anim = (u8*)entry->animData;
 		updated = FALSE;
 		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim += 0x20) {
@@ -3074,14 +3042,13 @@ void mapMain(void) {
 			if (list19 != NULL) {
 				u8* lp = list19;
 				s32 li;
-				for (li = 0; li < *(s32*)list19; li++, lp += 4) {
-					u8* joint = *(u8**)(lp + 4);
-					MapObject* obj = mapGetMapObjSub(*(char**)joint);
+				for (li = 0; li < *(s32*)list19; lp += 4, li++) {
+					MapObject* obj = mapGetMapObjSub(*(char**)*(u8**)(lp + 4));
 					if (obj != NULL) {
-						mapCalcAnimMatrix((f32(*)[4])((u8*)obj + 0x7C), (f32(*)[4])((u8*)obj + 0x4C), (MapEntryAnimData*)anim, joint);
-						*(u32*)obj |= 0x2000;
-						*(u32*)obj |= 0x200;
-						updated = TRUE;
+					mapCalcAnimMatrix((f32(*)[4])((u8*)obj + 0x7C), (f32(*)[4])((u8*)obj + 0x4C), (MapEntryAnimData*)anim, *(u8**)(lp + 4));
+					*(u32*)obj |= 0x2000;
+					*(u32*)obj |= 0x200;
+					updated = TRUE;
 					}
 				}
 			}
@@ -3089,210 +3056,198 @@ void mapMain(void) {
 			if (list18 != NULL) {
 				u8* lp = list18;
 				s32 li;
-				for (li = 0; li < *(s32*)list18; li++, lp += 4) {
+				for (li = 0; li < *(s32*)list18; lp += 4, li++) {
 					u8* item = *(u8**)(lp + 4);
 					u8* obj;
 					strcpy(namebuf, *(char**)item);
 					obj = mapSearchAnimObj(namebuf);
 					if (obj != NULL) {
-						{
-							s32 cnt = *(s32*)(item + 0x10);
-							s32 ki;
-							if (cnt > 1) {
-								for (ki = 1; ki < cnt; ki++) {
-									u8* prev = item + 0x14 + (ki - 1) * 0x68;
-									u8* next = item + 0x14 + ki * 0x68;
-									f32 t = *(f32*)(anim + 0x10);
-									s32 k;
-									u8* ch;
-									u8* chn;
-									if (t > *(f32*)next) {
-										if (ki == cnt - 1) {
-											t = *(f32*)next;
-										}
-										else {
-											continue;
-										}
-									}
-									ch = prev + 4;
-									chn = next + 4;
-									for (k = 0; k < 5; k++, ch += 0x14, chn += 0x14) {
-										if (*(s32*)(ch + 0x10) != 0) {
-											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)ch;
-										}
-										else {
-											f32 k0 = *(f32*)prev;
-											f32 k1 = *(f32*)next;
-											f32 d = k1 - k0;
-											f32 dt = t - k0;
-											f32 tan0 = *(f32*)(ch + 8);
-											f32 value0 = *(f32*)ch;
-											f32 tan1 = *(f32*)(chn + 4);
-											f32 value1 = *(f32*)chn;
-											f32 den;
-											f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
-											s32 flag;
-											flag = (d != MATCH_F32(float_0_80419850));
-											if (flag) {
-												den = d;
-											}
-											else {
-												den = float_1Eneg08_804198b8;
-											}
-											u = dt / den;
-											u2 = u * u;
-											u3 = u2 * u;
-											a = float_3_8041984c * u2;
-											b = u3 - float_2_80419858 * u2;
-											c = float_2_80419858 * u3 - a;
-											h10 = u + b;
-											h00 = float_1_80419860 + c;
-											h01 = float_neg2_804198a0 * u3 + a;
-											h11 = u3 - u2;
-											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
-										}
-									}
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
-									break;
+						s32 cnt = *(s32*)(item + 0x10);
+						s32 ki;
+						for (ki = 1; ki < cnt; ki++) {
+							u8* prev = item + 0x14 + (ki - 1) * 0x68;
+							u8* next = item + 0x14 + ki * 0x68;
+							f32 t = *(f32*)(anim + 0x10);
+							s32 k;
+							u8* ch;
+							u8* chn;
+							if (!(t <= *(f32*)next)) {
+								if (ki == cnt - 1) {
+									t = *(f32*)next;
+								}
+								else {
+									continue;
 								}
 							}
+							ch = prev;
+							chn = next;
+							for (k = 0; k < 5; ch += 0x14, chn += 0x14, k++) {
+								if (*(s32*)(ch + 0x14) != 0) {
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)(ch + 4);
+								}
+								else {
+									f32 k0 = *(f32*)prev;
+									f32 k1 = *(f32*)next;
+									f32 dt = t - k0;
+									f32 d = k1 - k0;
+									f32 tan1 = *(f32*)(chn + 8);
+									f32 value1 = *(f32*)(chn + 4);
+									f32 tan0 = *(f32*)(ch + 0xC);
+									f32 value0 = *(f32*)(ch + 4);
+									f32 den;
+									f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+									s32 flag;
+									flag = (d != MATCH_F32(float_0_80419850));
+									if (((u32)__cntlzw(flag) >> 5) != 0) {
+										den = float_1Eneg08_804198b8;
+									}
+									else {
+										den = d;
+									}
+									u = dt / den;
+									u2 = u * u;
+									u3 = u2 * u;
+									a = float_3_8041984c * u2;
+									b = u3 - float_2_80419858 * u2;
+									c = float_2_80419858 * u3 - a;
+									h11 = u3 - u2;
+									h10 = u + b;
+									h00 = float_1_80419860 + c;
+									h01 = float_neg2_804198a0 * u3 + a;
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								}
+							}
+							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
+							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
+							break;
 						}
 					}
 					strcpy(namebuf, *(char**)item);
 					strcat(namebuf, "_v");
 					obj = mapSearchAnimObj(namebuf);
 					if (obj != NULL) {
-						{
-							s32 cnt = *(s32*)(item + 0x10);
-							s32 ki;
-							if (cnt > 1) {
-								for (ki = 1; ki < cnt; ki++) {
-									u8* prev = item + 0x14 + (ki - 1) * 0x68;
-									u8* next = item + 0x14 + ki * 0x68;
-									f32 t = *(f32*)(anim + 0x10);
-									s32 k;
-									u8* ch;
-									u8* chn;
-									if (t > *(f32*)next) {
-										if (ki == cnt - 1) {
-											t = *(f32*)next;
-										}
-										else {
-											continue;
-										}
-									}
-									ch = prev + 4;
-									chn = next + 4;
-									for (k = 0; k < 5; k++, ch += 0x14, chn += 0x14) {
-										if (*(s32*)(ch + 0x10) != 0) {
-											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)ch;
-										}
-										else {
-											f32 k0 = *(f32*)prev;
-											f32 k1 = *(f32*)next;
-											f32 d = k1 - k0;
-											f32 dt = t - k0;
-											f32 tan0 = *(f32*)(ch + 8);
-											f32 value0 = *(f32*)ch;
-											f32 tan1 = *(f32*)(chn + 4);
-											f32 value1 = *(f32*)chn;
-											f32 den;
-											f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
-											s32 flag;
-											flag = (d != MATCH_F32(float_0_80419850));
-											if (flag) {
-												den = d;
-											}
-											else {
-												den = float_1Eneg08_804198b8;
-											}
-											u = dt / den;
-											u2 = u * u;
-											u3 = u2 * u;
-											a = float_3_8041984c * u2;
-											b = u3 - float_2_80419858 * u2;
-											c = float_2_80419858 * u3 - a;
-											h10 = u + b;
-											h00 = float_1_80419860 + c;
-											h01 = float_neg2_804198a0 * u3 + a;
-											h11 = u3 - u2;
-											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
-										}
-									}
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
-									break;
+						s32 cnt = *(s32*)(item + 0x10);
+						s32 ki;
+						for (ki = 1; ki < cnt; ki++) {
+							u8* prev = item + 0x14 + (ki - 1) * 0x68;
+							u8* next = item + 0x14 + ki * 0x68;
+							f32 t = *(f32*)(anim + 0x10);
+							s32 k;
+							u8* ch;
+							u8* chn;
+							if (!(t <= *(f32*)next)) {
+								if (ki == cnt - 1) {
+									t = *(f32*)next;
+								}
+								else {
+									continue;
 								}
 							}
+							ch = prev;
+							chn = next;
+							for (k = 0; k < 5; ch += 0x14, chn += 0x14, k++) {
+								if (*(s32*)(ch + 0x14) != 0) {
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)(ch + 4);
+								}
+								else {
+									f32 k0 = *(f32*)prev;
+									f32 k1 = *(f32*)next;
+									f32 dt = t - k0;
+									f32 d = k1 - k0;
+									f32 tan1 = *(f32*)(chn + 8);
+									f32 value1 = *(f32*)(chn + 4);
+									f32 tan0 = *(f32*)(ch + 0xC);
+									f32 value0 = *(f32*)(ch + 4);
+									f32 den;
+									f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+									s32 flag;
+									flag = (d != MATCH_F32(float_0_80419850));
+									if (((u32)__cntlzw(flag) >> 5) != 0) {
+										den = float_1Eneg08_804198b8;
+									}
+									else {
+										den = d;
+									}
+									u = dt / den;
+									u2 = u * u;
+									u3 = u2 * u;
+									a = float_3_8041984c * u2;
+									b = u3 - float_2_80419858 * u2;
+									c = float_2_80419858 * u3 - a;
+									h11 = u3 - u2;
+									h10 = u + b;
+									h00 = float_1_80419860 + c;
+									h01 = float_neg2_804198a0 * u3 + a;
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								}
+							}
+							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
+							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
+							break;
 						}
 					}
 					strcpy(namebuf, *(char**)item);
 					strcat(namebuf, "_v_x");
 					obj = mapSearchAnimObj(namebuf);
 					if (obj != NULL) {
-						{
-							s32 cnt = *(s32*)(item + 0x10);
-							s32 ki;
-							if (cnt > 1) {
-								for (ki = 1; ki < cnt; ki++) {
-									u8* prev = item + 0x14 + (ki - 1) * 0x68;
-									u8* next = item + 0x14 + ki * 0x68;
-									f32 t = *(f32*)(anim + 0x10);
-									s32 k;
-									u8* ch;
-									u8* chn;
-									if (t > *(f32*)next) {
-										if (ki == cnt - 1) {
-											t = *(f32*)next;
-										}
-										else {
-											continue;
-										}
-									}
-									ch = prev + 4;
-									chn = next + 4;
-									for (k = 0; k < 5; k++, ch += 0x14, chn += 0x14) {
-										if (*(s32*)(ch + 0x10) != 0) {
-											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)ch;
-										}
-										else {
-											f32 k0 = *(f32*)prev;
-											f32 k1 = *(f32*)next;
-											f32 d = k1 - k0;
-											f32 dt = t - k0;
-											f32 tan0 = *(f32*)(ch + 8);
-											f32 value0 = *(f32*)ch;
-											f32 tan1 = *(f32*)(chn + 4);
-											f32 value1 = *(f32*)chn;
-											f32 den;
-											f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
-											s32 flag;
-											flag = (d != MATCH_F32(float_0_80419850));
-											if (flag) {
-												den = d;
-											}
-											else {
-												den = float_1Eneg08_804198b8;
-											}
-											u = dt / den;
-											u2 = u * u;
-											u3 = u2 * u;
-											a = float_3_8041984c * u2;
-											b = u3 - float_2_80419858 * u2;
-											c = float_2_80419858 * u3 - a;
-											h10 = u + b;
-											h00 = float_1_80419860 + c;
-											h01 = float_neg2_804198a0 * u3 + a;
-											h11 = u3 - u2;
-											*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
-										}
-									}
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
-									break;
+						s32 cnt = *(s32*)(item + 0x10);
+						s32 ki;
+						for (ki = 1; ki < cnt; ki++) {
+							u8* prev = item + 0x14 + (ki - 1) * 0x68;
+							u8* next = item + 0x14 + ki * 0x68;
+							f32 t = *(f32*)(anim + 0x10);
+							s32 k;
+							u8* ch;
+							u8* chn;
+							if (!(t <= *(f32*)next)) {
+								if (ki == cnt - 1) {
+									t = *(f32*)next;
+								}
+								else {
+									continue;
 								}
 							}
+							ch = prev;
+							chn = next;
+							for (k = 0; k < 5; ch += 0x14, chn += 0x14, k++) {
+								if (*(s32*)(ch + 0x14) != 0) {
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)(ch + 4);
+								}
+								else {
+									f32 k0 = *(f32*)prev;
+									f32 k1 = *(f32*)next;
+									f32 dt = t - k0;
+									f32 d = k1 - k0;
+									f32 tan1 = *(f32*)(chn + 8);
+									f32 value1 = *(f32*)(chn + 4);
+									f32 tan0 = *(f32*)(ch + 0xC);
+									f32 value0 = *(f32*)(ch + 4);
+									f32 den;
+									f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+									s32 flag;
+									flag = (d != MATCH_F32(float_0_80419850));
+									if (((u32)__cntlzw(flag) >> 5) != 0) {
+										den = float_1Eneg08_804198b8;
+									}
+									else {
+										den = d;
+									}
+									u = dt / den;
+									u2 = u * u;
+									u3 = u2 * u;
+									a = float_3_8041984c * u2;
+									b = u3 - float_2_80419858 * u2;
+									c = float_2_80419858 * u3 - a;
+									h11 = u3 - u2;
+									h10 = u + b;
+									h00 = float_1_80419860 + c;
+									h01 = float_neg2_804198a0 * u3 + a;
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								}
+							}
+							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
+							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
+							break;
 						}
 					}
 				}
@@ -3301,67 +3256,63 @@ void mapMain(void) {
 			if (list17 != NULL) {
 				u8* lp = list17;
 				s32 li;
-				for (li = 0; li < *(s32*)list17; li++, lp += 4) {
+				for (li = 0; li < *(s32*)list17; lp += 4, li++) {
 					u8* item = *(u8**)(lp + 4);
 					u8* obj;
 					strcpy(namebuf2, *(char**)item);
 					obj = mapSearchAnimObj(namebuf2);
 					if (obj != NULL) {
-						{
-							s32 cnt = *(s32*)(item + 4);
-							s32 ki;
-							if (cnt > 1) {
-								for (ki = 1; ki < cnt; ki++) {
-									u8* prev = item + 8 + (ki - 1) * 0x54;
-									u8* next = item + 8 + ki * 0x54;
-									f32 t = *(f32*)(anim + 0x10);
-									if (t > *(f32*)next) {
-										if (ki == cnt - 1) {
-											t = *(f32*)next;
-										}
-										else {
-											continue;
-										}
-									}
-									if (*(s32*)(prev + 0x14) != 0) {
-										f32 value = *(f32*)(prev + 4);
-										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
-										break;
-									}
-									else {
-										f32 k0 = *(f32*)prev;
-										f32 k1 = *(f32*)next;
-										f32 d = k1 - k0;
-										f32 dt = t - k0;
-										f32 tan0 = *(f32*)(prev + 0xC);
-										f32 value0 = *(f32*)(prev + 4);
-										f32 tan1 = *(f32*)(next + 8);
-										f32 value1 = *(f32*)(next + 4);
-										f32 den;
-										f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
-										s32 flag;
-										flag = (d != MATCH_F32(float_0_80419850));
-										if (flag) {
-											den = d;
-										}
-										else {
-											den = float_1Eneg08_804198b8;
-										}
-										u = dt / den;
-										u2 = u * u;
-										u3 = u2 * u;
-										a = float_3_8041984c * u2;
-										b = u3 - float_2_80419858 * u2;
-										c = float_2_80419858 * u3 - a;
-										h10 = u + b;
-										h00 = float_1_80419860 + c;
-										h01 = float_neg2_804198a0 * u3 + a;
-										h11 = u3 - u2;
-										val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
-										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
-										break;
-									}
+						s32 cnt = *(s32*)(item + 4);
+						s32 ki;
+						for (ki = 1; ki < cnt; ki++) {
+							u8* prev = item + 8 + (ki - 1) * 0x54;
+							u8* next = item + 8 + ki * 0x54;
+							f32 t = *(f32*)(anim + 0x10);
+							if (!(t <= *(f32*)next)) {
+								if (ki == cnt - 1) {
+									t = *(f32*)next;
 								}
+								else {
+									continue;
+								}
+							}
+							if (*(s32*)(prev + 0x14) != 0) {
+								f32 value = *(f32*)(prev + 4);
+								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
+								break;
+							}
+							else {
+								f32 k0 = *(f32*)prev;
+								f32 k1 = *(f32*)next;
+								f32 dt = t - k0;
+								f32 d = k1 - k0;
+								f32 tan1 = *(f32*)(next + 8);
+								f32 value1 = *(f32*)(next + 4);
+								f32 tan0 = *(f32*)(prev + 0xC);
+								f32 value0 = *(f32*)(prev + 4);
+								f32 den;
+								f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
+								s32 flag;
+								flag = (d != MATCH_F32(float_0_80419850));
+								if (((u32)__cntlzw(flag) >> 5) != 0) {
+									den = float_1Eneg08_804198b8;
+								}
+								else {
+									den = d;
+								}
+								u = dt / den;
+								u2 = u * u;
+								u3 = u2 * u;
+								a = float_3_8041984c * u2;
+								b = u3 - float_2_80419858 * u2;
+								c = float_2_80419858 * u3 - a;
+								h11 = u3 - u2;
+								h10 = u + b;
+								h00 = float_1_80419860 + c;
+								h01 = float_neg2_804198a0 * u3 + a;
+								val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
+								break;
 							}
 						}
 					}
@@ -3369,61 +3320,57 @@ void mapMain(void) {
 					strcat(namebuf2, "_v");
 					obj = mapSearchAnimObj(namebuf2);
 					if (obj != NULL) {
-						{
-							s32 cnt = *(s32*)(item + 4);
-							s32 ki;
-							if (cnt > 1) {
-								for (ki = 1; ki < cnt; ki++) {
-									u8* prev = item + 8 + (ki - 1) * 0x54;
-									u8* next = item + 8 + ki * 0x54;
-									f32 t = *(f32*)(anim + 0x10);
-									if (t > *(f32*)next) {
-										if (ki == cnt - 1) {
-											t = *(f32*)next;
-										}
-										else {
-											continue;
-										}
-									}
-									if (*(s32*)(prev + 0x14) != 0) {
-										f32 value = *(f32*)(prev + 4);
-										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
-										break;
-									}
-									else {
-										f32 k0 = *(f32*)prev;
-										f32 k1 = *(f32*)next;
-										f32 d = k1 - k0;
-										f32 dt = t - k0;
-										f32 tan0 = *(f32*)(prev + 0xC);
-										f32 value0 = *(f32*)(prev + 4);
-										f32 tan1 = *(f32*)(next + 8);
-										f32 value1 = *(f32*)(next + 4);
-										f32 den;
-										f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
-										s32 flag;
-										flag = (d != MATCH_F32(float_0_80419850));
-										if (flag) {
-											den = d;
-										}
-										else {
-											den = float_1Eneg08_804198b8;
-										}
-										u = dt / den;
-										u2 = u * u;
-										u3 = u2 * u;
-										a = float_3_8041984c * u2;
-										b = u3 - float_2_80419858 * u2;
-										c = float_2_80419858 * u3 - a;
-										h10 = u + b;
-										h00 = float_1_80419860 + c;
-										h01 = float_neg2_804198a0 * u3 + a;
-										h11 = u3 - u2;
-										val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
-										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
-										break;
-									}
+						s32 cnt = *(s32*)(item + 4);
+						s32 ki;
+						for (ki = 1; ki < cnt; ki++) {
+							u8* prev = item + 8 + (ki - 1) * 0x54;
+							u8* next = item + 8 + ki * 0x54;
+							f32 t = *(f32*)(anim + 0x10);
+							if (!(t <= *(f32*)next)) {
+								if (ki == cnt - 1) {
+									t = *(f32*)next;
 								}
+								else {
+									continue;
+								}
+							}
+							if (*(s32*)(prev + 0x14) != 0) {
+								f32 value = *(f32*)(prev + 4);
+								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
+								break;
+							}
+							else {
+								f32 k0 = *(f32*)prev;
+								f32 k1 = *(f32*)next;
+								f32 dt = t - k0;
+								f32 d = k1 - k0;
+								f32 tan1 = *(f32*)(next + 8);
+								f32 value1 = *(f32*)(next + 4);
+								f32 tan0 = *(f32*)(prev + 0xC);
+								f32 value0 = *(f32*)(prev + 4);
+								f32 den;
+								f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
+								s32 flag;
+								flag = (d != MATCH_F32(float_0_80419850));
+								if (((u32)__cntlzw(flag) >> 5) != 0) {
+									den = float_1Eneg08_804198b8;
+								}
+								else {
+									den = d;
+								}
+								u = dt / den;
+								u2 = u * u;
+								u3 = u2 * u;
+								a = float_3_8041984c * u2;
+								b = u3 - float_2_80419858 * u2;
+								c = float_2_80419858 * u3 - a;
+								h11 = u3 - u2;
+								h10 = u + b;
+								h00 = float_1_80419860 + c;
+								h01 = float_neg2_804198a0 * u3 + a;
+								val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
+								break;
 							}
 						}
 					}
@@ -3431,61 +3378,57 @@ void mapMain(void) {
 					strcat(namebuf2, "_v_x");
 					obj = mapSearchAnimObj(namebuf2);
 					if (obj != NULL) {
-						{
-							s32 cnt = *(s32*)(item + 4);
-							s32 ki;
-							if (cnt > 1) {
-								for (ki = 1; ki < cnt; ki++) {
-									u8* prev = item + 8 + (ki - 1) * 0x54;
-									u8* next = item + 8 + ki * 0x54;
-									f32 t = *(f32*)(anim + 0x10);
-									if (t > *(f32*)next) {
-										if (ki == cnt - 1) {
-											t = *(f32*)next;
-										}
-										else {
-											continue;
-										}
-									}
-									if (*(s32*)(prev + 0x14) != 0) {
-										f32 value = *(f32*)(prev + 4);
-										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
-										break;
-									}
-									else {
-										f32 k0 = *(f32*)prev;
-										f32 k1 = *(f32*)next;
-										f32 d = k1 - k0;
-										f32 dt = t - k0;
-										f32 tan0 = *(f32*)(prev + 0xC);
-										f32 value0 = *(f32*)(prev + 4);
-										f32 tan1 = *(f32*)(next + 8);
-										f32 value1 = *(f32*)(next + 4);
-										f32 den;
-										f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
-										s32 flag;
-										flag = (d != MATCH_F32(float_0_80419850));
-										if (flag) {
-											den = d;
-										}
-										else {
-											den = float_1Eneg08_804198b8;
-										}
-										u = dt / den;
-										u2 = u * u;
-										u3 = u2 * u;
-										a = float_3_8041984c * u2;
-										b = u3 - float_2_80419858 * u2;
-										c = float_2_80419858 * u3 - a;
-										h10 = u + b;
-										h00 = float_1_80419860 + c;
-										h01 = float_neg2_804198a0 * u3 + a;
-										h11 = u3 - u2;
-										val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
-										*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
-										break;
-									}
+						s32 cnt = *(s32*)(item + 4);
+						s32 ki;
+						for (ki = 1; ki < cnt; ki++) {
+							u8* prev = item + 8 + (ki - 1) * 0x54;
+							u8* next = item + 8 + ki * 0x54;
+							f32 t = *(f32*)(anim + 0x10);
+							if (!(t <= *(f32*)next)) {
+								if (ki == cnt - 1) {
+									t = *(f32*)next;
 								}
+								else {
+									continue;
+								}
+							}
+							if (*(s32*)(prev + 0x14) != 0) {
+								f32 value = *(f32*)(prev + 4);
+								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
+								break;
+							}
+							else {
+								f32 k0 = *(f32*)prev;
+								f32 k1 = *(f32*)next;
+								f32 dt = t - k0;
+								f32 d = k1 - k0;
+								f32 tan1 = *(f32*)(next + 8);
+								f32 value1 = *(f32*)(next + 4);
+								f32 tan0 = *(f32*)(prev + 0xC);
+								f32 value0 = *(f32*)(prev + 4);
+								f32 den;
+								f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
+								s32 flag;
+								flag = (d != MATCH_F32(float_0_80419850));
+								if (((u32)__cntlzw(flag) >> 5) != 0) {
+									den = float_1Eneg08_804198b8;
+								}
+								else {
+									den = d;
+								}
+								u = dt / den;
+								u2 = u * u;
+								u3 = u2 * u;
+								a = float_3_8041984c * u2;
+								b = u3 - float_2_80419858 * u2;
+								c = float_2_80419858 * u3 - a;
+								h11 = u3 - u2;
+								h10 = u + b;
+								h00 = float_1_80419860 + c;
+								h01 = float_neg2_804198a0 * u3 + a;
+								val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
+								break;
 							}
 						}
 					}
@@ -3495,76 +3438,77 @@ void mapMain(void) {
 			if (list16 != NULL) {
 				u8* lp = list16;
 				s32 li;
-				for (li = 0; li < *(s32*)list16; li++, lp += 4) {
+				for (li = 0; li < *(s32*)list16; lp += 4, li++) {
 					u8* item = *(u8**)(lp + 4);
 					LightEntry* light = lightNameToPtr(*(char**)item);
 					if (light != NULL) {
-						s32 cnt = *(s32*)(item + 4);
-						s32 ki;
-						f32 out[9];
-						if (cnt > 1) {
-							for (ki = 1; ki < cnt; ki++) {
-								u8* prev = item + 8 + (ki - 1) * 0xB8;
-								u8* next = item + 8 + ki * 0xB8;
-								f32 t = *(f32*)(anim + 0x10);
-								s32 k;
-								u8* ch;
-								u8* chn;
-								if (t > *(f32*)next) {
-									if (ki == cnt - 1) {
-										t = *(f32*)next;
-									}
-									else {
-										continue;
-									}
-								}
-								ch = prev + 4;
-								chn = next + 4;
-								for (k = 0; k < 9; k++, ch += 0x14, chn += 0x14) {
-									if (*(s32*)(ch + 0x10) != 0) {
-										out[k] = *(f32*)ch;
-									}
-									else {
-										f32 k0 = *(f32*)prev;
-										f32 k1 = *(f32*)next;
-										f32 d = k1 - k0;
-										f32 dt = t - k0;
-										f32 tan0 = *(f32*)(ch + 8);
-										f32 value0 = *(f32*)ch;
-										f32 tan1 = *(f32*)(chn + 4);
-										f32 value1 = *(f32*)chn;
-										f32 den;
-										f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
-										s32 flag;
-										flag = (d != MATCH_F32(float_0_80419850));
-										if (flag) {
-											den = d;
-										}
-										else {
-											den = float_1Eneg08_804198b8;
-										}
-										u = dt / den;
-										u2 = u * u;
-										u3 = u2 * u;
-										a = float_3_8041984c * u2;
-										b = u3 - float_2_80419858 * u2;
-										c = float_2_80419858 * u3 - a;
-										h10 = u + b;
-										h00 = float_1_80419860 + c;
-										h01 = float_neg2_804198a0 * u3 + a;
-										h11 = u3 - u2;
-										out[k] = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
-									}
-								}
-								light->position.x = float_10_80419864 * out[0];
-								light->position.y = float_10_80419864 * out[1];
-								light->position.z = float_10_80419864 * out[2];
-								light->rotation.x = out[3];
-								light->rotation.y = out[4];
-								light->rotation.z = out[5];
-								break;
+					s32 cnt = *(s32*)(item + 4);
+					s32 ki;
+					f32 out[9];
+					for (ki = 1; ki < cnt; ki++) {
+						u8* prev = item + 8 + (ki - 1) * 0xB8;
+						u8* next = item + 8 + ki * 0xB8;
+						f32 t = *(f32*)(anim + 0x10);
+						s32 k;
+						u8* ch;
+						u8* chn;
+						if (!(t <= *(f32*)next)) {
+							if (ki == cnt - 1) {
+								t = *(f32*)next;
+							}
+							else {
+								continue;
 							}
 						}
+						ch = prev;
+						chn = next;
+						for (k = 0; k < 9; ch += 0x14, chn += 0x14, k++) {
+							if (*(s32*)(ch + 0x14) != 0) {
+								out[k] = *(f32*)(ch + 4);
+							}
+							else {
+								f32 k0 = *(f32*)prev;
+								f32 k1 = *(f32*)next;
+								f32 dt = t - k0;
+								f32 d = k1 - k0;
+								f32 tan1 = *(f32*)(chn + 8);
+								f32 value1 = *(f32*)(chn + 4);
+								f32 tan0 = *(f32*)(ch + 0xC);
+								f32 value0 = *(f32*)(ch + 4);
+								f32 den;
+								f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+								s32 flag;
+								flag = (d != MATCH_F32(float_0_80419850));
+								if (((u32)__cntlzw(flag) >> 5) != 0) {
+									den = float_1Eneg08_804198b8;
+								}
+								else {
+									den = d;
+								}
+								u = dt / den;
+								u2 = u * u;
+								u3 = u2 * u;
+								a = float_3_8041984c * u2;
+								b = u3 - float_2_80419858 * u2;
+								c = float_2_80419858 * u3 - a;
+								h11 = u3 - u2;
+								h10 = u + b;
+								h00 = float_1_80419860 + c;
+								h01 = float_neg2_804198a0 * u3 + a;
+								out[k] = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+							}
+						}
+						{
+							f32 scale = float_10_80419864;
+							light->position.x = scale * out[0];
+							light->position.y = scale * out[1];
+							light->position.z = scale * out[2];
+						}
+						light->rotation.x = out[3];
+						light->rotation.y = out[4];
+						light->rotation.z = out[5];
+						break;
+					}
 					}
 				}
 			}
@@ -3572,76 +3516,74 @@ void mapMain(void) {
 			if (list15 != NULL) {
 				u8* lp = list15;
 				s32 li;
-				for (li = 0; li < *(s32*)list15; li++, lp += 4) {
+				for (li = 0; li < *(s32*)list15; lp += 4, li++) {
 					u8* item = *(u8**)(lp + 4);
 					LightEntry* light = lightNameToPtr(*(char**)item);
 					if (light != NULL) {
-						s32 cnt = *(s32*)(item + 4);
-						s32 ki;
-						f32 out[5];
-						if (cnt > 1) {
-							for (ki = 1; ki < cnt; ki++) {
-								u8* prev = item + 8 + (ki - 1) * 0x68;
-								u8* next = item + 8 + ki * 0x68;
-								f32 t = *(f32*)(anim + 0x10);
-								s32 k;
-								u8* ch;
-								u8* chn;
-								if (t > *(f32*)next) {
-									if (ki == cnt - 1) {
-										t = *(f32*)next;
-									}
-									else {
-										continue;
-									}
-								}
-								ch = prev + 4;
-								chn = next + 4;
-								for (k = 0; k < 5; k++, ch += 0x14, chn += 0x14) {
-									if (*(s32*)(ch + 0x10) != 0) {
-										out[k] = *(f32*)ch;
-									}
-									else {
-										f32 k0 = *(f32*)prev;
-										f32 k1 = *(f32*)next;
-										f32 d = k1 - k0;
-										f32 dt = t - k0;
-										f32 tan0 = *(f32*)(ch + 8);
-										f32 value0 = *(f32*)ch;
-										f32 tan1 = *(f32*)(chn + 4);
-										f32 value1 = *(f32*)chn;
-										f32 den;
-										f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
-										s32 flag;
-										flag = (d != MATCH_F32(float_0_80419850));
-										if (flag) {
-											den = d;
-										}
-										else {
-											den = float_1Eneg08_804198b8;
-										}
-										u = dt / den;
-										u2 = u * u;
-										u3 = u2 * u;
-										a = float_3_8041984c * u2;
-										b = u3 - float_2_80419858 * u2;
-										c = float_2_80419858 * u3 - a;
-										h10 = u + b;
-										h00 = float_1_80419860 + c;
-										h01 = float_neg2_804198a0 * u3 + a;
-										h11 = u3 - u2;
-										out[k] = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
-									}
-								}
-								light->color.r = (s32)(255.0f * out[0]);
-								light->color.g = (s32)(255.0f * out[1]);
-								light->color.b = (s32)(255.0f * out[2]);
-								light->color.a = 0xFF;
-								light->spotAngle = out[4];
-								light->attenAngle = out[3];
-								break;
+					s32 cnt = *(s32*)(item + 4);
+					s32 ki;
+					f32 out[5];
+					for (ki = 1; ki < cnt; ki++) {
+						u8* prev = item + 8 + (ki - 1) * 0x68;
+						u8* next = item + 8 + ki * 0x68;
+						f32 t = *(f32*)(anim + 0x10);
+						s32 k;
+						u8* ch;
+						u8* chn;
+						if (!(t <= *(f32*)next)) {
+							if (ki == cnt - 1) {
+								t = *(f32*)next;
+							}
+							else {
+								continue;
 							}
 						}
+						ch = prev;
+						chn = next;
+						for (k = 0; k < 5; ch += 0x14, chn += 0x14, k++) {
+							if (*(s32*)(ch + 0x14) != 0) {
+								out[k] = *(f32*)(ch + 4);
+							}
+							else {
+								f32 k0 = *(f32*)prev;
+								f32 k1 = *(f32*)next;
+								f32 dt = t - k0;
+								f32 d = k1 - k0;
+								f32 tan1 = *(f32*)(chn + 8);
+								f32 value1 = *(f32*)(chn + 4);
+								f32 tan0 = *(f32*)(ch + 0xC);
+								f32 value0 = *(f32*)(ch + 4);
+								f32 den;
+								f32 u, u2, a, u3, b, c, h10, h00, h01, h11;
+								s32 flag;
+								flag = (d != MATCH_F32(float_0_80419850));
+								if (((u32)__cntlzw(flag) >> 5) != 0) {
+									den = float_1Eneg08_804198b8;
+								}
+								else {
+									den = d;
+								}
+								u = dt / den;
+								u2 = u * u;
+								u3 = u2 * u;
+								a = float_3_8041984c * u2;
+								b = u3 - float_2_80419858 * u2;
+								c = float_2_80419858 * u3 - a;
+								h11 = u3 - u2;
+								h10 = u + b;
+								h00 = float_1_80419860 + c;
+								h01 = float_neg2_804198a0 * u3 + a;
+								out[k] = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+							}
+						}
+						light->color.r = (s32)(255.0f * out[0]);
+						light->color.g = (s32)(255.0f * out[1]);
+						light->color.b = (s32)(255.0f * out[2]);
+						light->color.a = 0xFF;
+						light->spotAngle = out[4];
+						light->attenAngle = out[3];
+						break;
+					}
 					}
 				}
 			}
@@ -4102,8 +4044,9 @@ typedef struct MapVtxFmt {
 	u32 field_0x48[8];  // 0x48
 } MapVtxFmt;
 
-// NONMATCHING (94.99%): register colouring only; the address computations and immediates match, but wp/pos/nrm
-// land in r29/r30/r31 vs the target r31/r30/r29, and the vertex-loop pointers/indices still permute.
+// NONMATCHING (94.99%): the address computations and immediates match; only the wp/pos/nrm callee-saved
+// rotation and the vertex-loop pointers/indices differ. `opt_common_subs off` is needed: with CSE on MWCC
+// hoists GX_VA_TEX0+i into a register across the GX calls, which the target recomputes at each use.
 void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 	MapWork* wp = &mapWork[activeGroup];
 	void* nrm = (void*)(((u32*)mesh->vcdTableOffset)[1] + 4);
@@ -4420,13 +4363,23 @@ void _mapDispMapGrp(CameraId camId, MapObject* obj) {
 	if ((*(u32*)obj->field_0x0 & 0x20) && obj->next) _mapDispMapGrp(camId, obj->next);
 }
 
-// NONMATCHING (98.00%): inlined _mapDispMapObj_NoMaterial keeps an extra camId copy and one extra callee-saved reg
 void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2) {
 	MapObject* o = (MapObject*)a2;
 
 	_mapDispMapObj_NoMaterial((s32)obj, o);
-	if (o->child) _mapDispMapGrp_NoMaterial(obj, o->child);
-	if ((*(u32*)o->field_0x0 & 0x20) && o->next) _mapDispMapGrp_NoMaterial(obj, o->next);
+	if (o->child)
+#ifdef MUST_MATCH
+		// match-only: the redundant cast is what makes MWCC colour the camera id to r30 and o to r31
+		_mapDispMapGrp_NoMaterial((MapObject*)obj, o->child);
+#else
+		_mapDispMapGrp_NoMaterial(obj, o->child);
+#endif
+	if ((*(u32*)o->field_0x0 & 0x20) && o->next)
+#ifdef MUST_MATCH
+		_mapDispMapGrp_NoMaterial((MapObject*)obj, o->next);
+#else
+		_mapDispMapGrp_NoMaterial(obj, o->next);
+#endif
 }
 
 void mapFlgOff(MapObject* obj, u32 flag, s32 a3) {
@@ -4455,17 +4408,21 @@ void _setOffScrnId(MapObject* obj, s32 id, s32 a3) {
 	if (a3 && obj->next) _setOffScrnId(obj->next, id, 1);
 }
 
-// NONMATCHING (90.01%): field write must be a real GXColor struct copy and each `a3 && next` level needs its own
-// fresh GXColor copy (loaded from *color) while `child` passes the parent's &c. Remaining diff is scheduling:
-// target stores each level's copy just before the out-of-line bl, we store early (r0/r3 swap).
+// NONMATCHING (99.60%): the target keeps the first `*color` load in r3 and reuses it for the inlined child
+// call (spilling it to 0x4c); ours loads it into r0 for the field write then reloads *color into r3 in the
+// child block. A function-scope `c` removes the reload but makes MWCC spill it before the flag (90.01%).
 void setColor(MapObject* obj, GXColor* color, s32 a3) {
-	GXColor c;
 	if (obj == 0) return;
-	c = *color;
-	*(GXColor*)&obj->field_0xC = c;
+	*(GXColor*)&obj->field_0xC = *color;
 	*(u32*)obj->field_0x0 |= 0x40;
-	if (obj->child) setColor(obj->child, &c, 1);
-	if (a3 && obj->next) { GXColor d = *color; setColor(obj->next, &d, 1); }
+	if (obj->child) {
+		GXColor c = *color;
+		setColor(obj->child, &c, 1);
+	}
+	if (a3 && obj->next) {
+		GXColor d = *color;
+		setColor(obj->next, &d, 1);
+	}
 }
 
 void* mapSearchDmdJointSub(void* a, void* b) {
@@ -4545,26 +4502,28 @@ void mapObjGetPosSub(MapObject* obj, Vec* pos, s32* count, void* a4) {
 	}
 }
 
-// NONMATCHING (98.53%): a/c callee-saved swap (target a->r29, c->r30; mine reversed) plus an
-// extra `mr r0,r3` in the prologue. All strcpy/strcat/strcmp/recursion instructions match.
+#pragma opt_lifetimes off // target assigns a->r29/c->r30; default lifetime analysis swaps them
 void* mapSearchDmdJointSub2(void* a, void* b, const char* c) {
-	MapFileJoint* joint = (MapFileJoint*)a;
-	const char* name = (const char*)b;
+	// match-only: `a` is cast at each use rather than aliased into a `joint` local -- the alias pushes
+	// a's live range past the buf-address computation and makes MWCC emit the prologue differently.
 	char buf[256];
+	const char* name = (const char*)b;
 	void* result;
 
 	strcpy(buf, c);
-	strcat(buf, joint->name);
-	if (!strcmp(buf, name)) return joint;
+	strcat(buf, ((MapFileJoint*)a)->name);
+	if (!strcmp(buf, name)) return a;
 
-	if (joint->child) {
+	if (((MapFileJoint*)a)->child) {
 		strcat(buf, str_8041986C);
-		result = mapSearchDmdJointSub2(joint->child, b, buf);
+		result = mapSearchDmdJointSub2(((MapFileJoint*)a)->child, b, buf);
 		if (result) return result;
 	}
-	if (joint->next) {
-		result = mapSearchDmdJointSub2(joint->next, b, c);
+	if (((MapFileJoint*)a)->next) {
+		result = mapSearchDmdJointSub2(((MapFileJoint*)a)->next, b, c);
 		if (result) return result;
 	}
 	return NULL;
 }
+#pragma opt_lifetimes reset
+

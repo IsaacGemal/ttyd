@@ -16,7 +16,6 @@
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
 #include <string.h>
-#include <math.h>
 #include "pmario_sound.h"
 #include "eff/eff_starstone.h"
 #include "eff/eff_small_star.h"
@@ -136,26 +135,36 @@ typedef struct DekaYukaMesh {
     /*0x3468*/ f32 texV[2][0x81];
 } DekaYukaMesh;
 
-extern Vec vec3_803004f8[];
 // EVT script, local to this file in the original (.sdata).
 static s32 nice_event[8] = { 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0, 0x64, 0, 2, 1 };
-extern const char str_80300670[0x18];
-extern const char str_80300688[0x14];
-extern const char str_8030069C[0x14];
 
-// main_star's .rodata objects (not in a header yet).
-extern const char str_80300648[0x14];
-extern const char str_8030065C[0x14];
-extern const Vec vec3_80300540;
-extern const Vec vec3_8030054c;
-extern const DekaTableInt11 dat_80300558;
-extern const DekaTableInt11 dat_80300584;
-extern const DekaTableF32x6 dat_803005b0;
-extern const DekaTableF32x6 dat_803005c8;
-
-const Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
-const Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_803005e0 = { 0.0f, 0.0f, -1.0f };
+// The unit's .rodata, defined in the original's address order. With every object
+// present MWCC keeps one .rodata base register (vec3_803004f8) and folds all of
+// them, including its own anonymous int->float pool double, to base+offset.
+// vec3_8030051c is declared non-const in the header, so keep it non-const and pin
+// the section to .rodata.
+__declspec(section ".rodata") const Vec vec3_803004f8[1] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") const Vec vec3_80300504[1] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") const Vec vec3_80300510[1] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") Vec vec3_8030051c[1] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") const Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
+__declspec(section ".rodata") const Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") const Vec vec3_80300540 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") const Vec vec3_8030054c = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") const DekaTableInt11 dat_80300558 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
+__declspec(section ".rodata") const DekaTableInt11 dat_80300584 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
+__declspec(section ".rodata") const DekaTableF32x6 dat_803005b0 = { { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f } };
+__declspec(section ".rodata") const DekaTableF32x6 dat_803005c8 = { { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f } };
+__declspec(section ".rodata") const Vec vec3_803005e0 = { 0.0f, 0.0f, -1.0f };
+__declspec(section ".rodata") const char str_803005EC[0x14] = "SFX_BTL_SAC_START1";
+__declspec(section ".rodata") const char str_80300600[0x14] = "SFX_BTL_SAC_START2";
+__declspec(section ".rodata") const char str_80300614[0x14] = "SFX_BTL_SAC_START3";
+__declspec(section ".rodata") const char str_80300648[0x14] = "SFX_BTL_SAC_DOKKAN4";
+__declspec(section ".rodata") const char str_8030065C[0x14] = "SFX_BTL_SAC_DOKKAN5";
+__declspec(section ".rodata") const char str_80300670[0x18] = "SFX_BTL_SAC_DOKKAN1_1";
+__declspec(section ".rodata") const char str_80300688[0x14] = "SFX_BTL_SAC_DOKKAN2";
+__declspec(section ".rodata") const char str_8030069C[0x14] = "SFX_BTL_SAC_DOKKAN3";
+__declspec(section ".rodata") const char str_803006B0[0xC] = "stg_b_yuka";
 GXColor dat_80421e40 = { 0xFF, 0xFF, 0xFF, 0x00 };
 GXColor dat_80421e44 = { 0xFF, 0xFF, 0xFF, 0x00 };
 GXColor dat_80421e48 = { 0xFF, 0xFF, 0xFF, 0x00 };
@@ -204,12 +213,13 @@ extern const f32 float_neg40_80421ef0;
 extern const f32 float_0p01_80421ef4;
 extern const f32 float_901_80421ef8;
 extern const f64 double_15p75_80300628;
-extern const f64 double_to_int_80300630;
 extern const f64 double_0p21817_80300638;
 extern const f64 double_to_int_mask_80300640;
 
 
 // .text:0x0 | 0x80242FF8 | size: 0x44
+#include <math.h>
+
 s32 get_result(EventEntry* event) {
     DekaWork* p = get_ptr();
     evtSetValue(event, event->args[0], p->combo);
@@ -735,7 +745,9 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
 // .text:0x1EE0 | 0x80244ED8 | size: 0xB8
 #pragma dont_inline reset
 #pragma dont_inline on
-// NONMATCHING (85.22%): 1 instruction differs, 3 missing, 6 extra, plus register differences.
+// 100%: the case-2 vector copy is written as a compound literal so the scheduler
+// issues the vec3_80300534 address after the alpha store, as the original does;
+// the named form hoists the address. The literal pools to the same slot.
 void main_timing(s32 idx) {
     DekaWork* p = get_ptr();
     DekaTiming* t = &p->timing[idx];
@@ -746,7 +758,11 @@ void main_timing(s32 idx) {
             break;
         case 2:
             t->alpha = 0xFF;
+#ifdef MUST_MATCH
+            t->unk10 = (Vec){ 0.0f, 0.0f, 0.0f };
+#else
             t->unk10 = vec3_80300534;
+#endif
             break;
         case 3:
             t->state = 4;
@@ -768,11 +784,8 @@ void main_timing(s32 idx) {
 // GPRs around it (state 1, and the state-11 camera-shake / yukaUnk / velocity block).
 // Same root cause as main_base and yuka_init. A few register/scheduling diffs remain in
 // the state-10 setup.
-// NONMATCHING (96.59%): the anonymous int->float magic and its register fallout.
+// NONMATCHING (97.58%): the anonymous int->float magic and its register fallout.
 static void main_star(void) {
-#ifdef MUST_MATCH
-    const u8* base = (const u8*)&vec3_803004f8;
-#endif
     DekaWork* p = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     s32 audience = BattleAudience_GetAudienceNum();
@@ -789,13 +802,8 @@ static void main_star(void) {
         p->starTarget = p->starPos;
         p->starTarget.y += float_50_80421ebc;
         p->starTarget.z += float_neg1_80421e94;
-#ifdef MUST_MATCH
-        p->starScale = *(Vec*)(base + 0x48);
-        p->starRot = *(Vec*)(base + 0x54);
-#else
-        p->starScale = vec3_80300540;
-        p->starRot = vec3_8030054c;
-#endif
+        p->starScale = *(const Vec*)((const u8*)&vec3_803004f8 + 0x48);
+        p->starRot = *(const Vec*)((const u8*)&vec3_803004f8 + 0x54);
         /* fallthrough */
     case 2:
         p->starTimer++;
@@ -842,11 +850,7 @@ static void main_star(void) {
         p->starTimer = 0;
         p->starUnk44 = p->starUnk48 = p->starScale.x;
         p->starUnk48 += float_1_80421e88;
-#ifdef MUST_MATCH
-        psndSFXOn((const char*)(base + 0x150));
-#else
         psndSFXOn(str_80300648);
-#endif
         if (audience >= 1 && audience <= 0x31) {
             BattleAudienceSoundCallKind(1);
         }
@@ -866,11 +870,7 @@ static void main_star(void) {
     case 7: {
         DekaTableInt11 tbl;
         f32 s;
-#ifdef MUST_MATCH
-        tbl = *(const DekaTableInt11*)(base + 0x60);
-#else
         tbl = dat_80300558;
-#endif
         p->starTimer++;
         s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starUnk44, p->starUnk48);
         p->starScale.z = s;
@@ -893,11 +893,7 @@ static void main_star(void) {
     case 9: {
         DekaTableInt11 tbl;
         f32 s;
-#ifdef MUST_MATCH
-        tbl = *(const DekaTableInt11*)(base + 0x8c);
-#else
         tbl = dat_80300584;
-#endif
         p->starTimer++;
         s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starUnk44, p->starUnk48);
         p->starScale.z = s;
@@ -926,21 +922,11 @@ static void main_star(void) {
         p->starPos.y = p->starPos.y + p->starVel;
         p->starVel = p->starVel + float_neg0p5_80421ecc;
         if (p->starPos.y < p->starTarget.y) {
-#ifdef MUST_MATCH
-            tblA = *(const DekaTableF32x6*)(base + 0xb8);
-            tblB = *(const DekaTableF32x6*)(base + 0xd0);
-#else
             tblA = dat_803005b0;
             tblB = dat_803005c8;
-#endif
             p->starCounter++;
-#ifdef MUST_MATCH
-            btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], float_0_80421e8c);
-            psndSFXOn((const char*)(base + 0x164));
-#else
             btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], float_0_80421e8c);
             psndSFXOn(str_8030065C);
-#endif
             for (j = 0; j < 2; j++) {
                 s32 i;
                 for (i = 0; i < 6; i++) {
@@ -1531,6 +1517,3 @@ const f64 double_15p75_80300628 = 15.75;
 const f64 double_to_int_80300630 = 4503601774854144.0;
 const f64 double_0p21817_80300638 = 0.21816615760326385;
 const f64 double_to_int_mask_80300640 = 4503599627370496.0;
-const char str_80300670[0x18] = "SFX_BTL_SAC_DOKKAN1_1";
-const char str_80300688[0x14] = "SFX_BTL_SAC_DOKKAN2";
-const char str_8030069C[0x14] = "SFX_BTL_SAC_DOKKAN3";

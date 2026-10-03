@@ -3389,14 +3389,11 @@ static void printRanking(void) {
 static const char str_00001F74[] = "ランキング";
 static const char str_00001FA0[] = "%s%s";
 
-// NONMATCHING (96.88%): 1st GXSetScissor fctiwz/stfd ordering + `scW & 0xffff` (MUST_MATCH); the
-// rank/10 suuji lookup is an unconditional load + overwrite (MUST_MATCH); float_135 is inlined so
-// MWCC puts its scratch base and dwp's in r6/r7.
 static void disp_proc(CameraId cameraId, void* param) {
     FighterEntry* dt;
     f32 f31;
-    s32 scW;
-    s32 scX;
+    u16 scW;
+    u16 scX;
     s32 w;
     s32 i;
     s32 rank;
@@ -3432,15 +3429,9 @@ static void disp_proc(CameraId cameraId, void* param) {
     }
     FontDrawMessage(-w / 2, (s32)float_135_tou_0000a8b0, str_00001F74);
     c250 = float_250_tou_0000a890;
-    scX = (s32)(float_304_tou_0000a8b4 + f31);
-    scW = (s32)c250;
-#ifdef MUST_MATCH
-    // match-only: `scW & 0xffff` (with the 145/220 args left as u32) is what makes MWCC load
-    // float_304/float_145 symbol-relative and land the scissor stores in the target's slots.
-    GXSetScissor((u32)scX, (u32)(s32)float_145_tou_0000a8b8, (u32)scW & 0xffff, (u32)(s32)float_220_tou_0000a8bc);
-#else
-    GXSetScissor((u32)scX, (u32)(s32)float_145_tou_0000a8b8, (u32)scW, (u32)(s32)float_220_tou_0000a8bc);
-#endif
+    scX = (u16)(float_304_tou_0000a8b4 + f31);
+    scW = (u16)c250;
+    GXSetScissor(scX, (u16)float_145_tou_0000a8b8, scW, (u16)float_220_tou_0000a8bc);
     f27 = float_10_tou_0000a8c0 + f31;
     rank = 0;
     y = 0;
@@ -3451,16 +3442,7 @@ static void disp_proc(CameraId cameraId, void* param) {
         if (!(((RankEntry*)((u8*)((RankWork*)rank_wp[0])->entries + off))->flags & 2)) {
             PSMTXScale(scale, float_0p8_tou_0000a8c8, float_0p8_tou_0000a8c8, float_0p8_tou_0000a8c8);
             if (rank != 0) {
-                s32 a = rank / 10;
-#ifdef MUST_MATCH
-                // match-only: the unconditional load + overwrite keeps the sprintf str/buf setup in the
-                // target's position; the natural if/else form hoists it above the divide (95.86%).
-                const char* p1 = suuji[a];
-                if (!a) { p1 = (const char*)&zero_tou_0000a8cc; }
-#else
-                const char* p1;
-                if (a) { p1 = suuji[a]; } else { p1 = (const char*)&zero_tou_0000a8cc; }
-#endif
+                const char* p1 = (rank / 10) ? suuji[rank / 10] : (const char*)&zero_tou_0000a8cc;
 
                 sprintf(buf, str_00001FA0, p1, suuji[rank % 10]);
                 FontDrawStart();

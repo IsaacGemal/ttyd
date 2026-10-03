@@ -69,6 +69,12 @@ const s32 R_num_audience_type_weights[] = { 20, 40, 20, 5, 3, 2, 1, 1, 1, 1, 1 }
 const Vec vec3_802f972c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f9738 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f9744 = { 0.9f, 0.9f, 0.9f };
+// Match-only: reading these through a near-data constant lands the loads in the original's
+// registers (a direct `vec3_802f9744` copy compiles to `lwzu`, a pooled zero schedules late, and
+// the pooled 360 in DispAudience lands in a different register).
+static const Vec* const p_vec3_802f9744 = &vec3_802f9744;
+static const f32 zero_8041e618 = 0.0f;
+static const f32 f360_8041e6b4 = 360.0f;
 const Vec vec3_802f9750 = { 0.75f, 0.75f, 0.75f };
 const Vec vec3_802f975c = { -96.0f, 106.0f, 0.0f };
 const Vec vec3_802f9768 = { 0.0f, 0.0f, -1.0f };
@@ -2121,9 +2127,9 @@ void BattleAudienceItemCtrlProcess(void) {
 	}
 }
 
-// NONMATCHING (96.74%): functionally complete; only instruction scheduling / FP-register allocation differs.
-// case 0's double_to_int bias lands in f1 not f2; case 5's y-intpl arg order; the vec3 copy uses lwzu;
-// case 10's dx load order; case 15's angle += delta uses f0 not f1. All values/calls/branches match.
+// NONMATCHING (98.62%): functionally complete. Remaining diffs are FP-register tie-breaks only:
+// case 0's float_50/float_25 land f2/f4 (retail f3/f2) because the int->float mask lands f3 (retail f2),
+// case 10's dx lands f2 (retail f1), and the vec3_802f9744 copy loads a pointer (retail lis+addi).
 void BattleAudienceApSrcCtrlProcess(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	u8* star;
@@ -2137,6 +2143,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 	f32 start;
 	f32 end;
 	f32 zero;
+	f32 k25;
 
 	if (!(audience->flags & 2)) {
 		return;
@@ -2189,8 +2196,11 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			*(s32*)(star + 4) = 5;
 			*(Vec*)(star + 0x2C) = *(Vec*)(star + 8);
 			*(Vec*)(star + 0x20) = *(Vec*)(star + 0x2C);
-			*(f32*)(star + 0x2C) += float_50_8041e6d8 * (f32)rand() / float_32767_8041e674 - float_25_8041e6dc;
-			*(f32*)(star + 0x30) += float_25_8041e6dc;
+			start = float_50_8041e6d8 * (f32)rand();
+			k25 = float_25_8041e6dc;
+			start = start / float_32767_8041e674 - k25;
+			*(f32*)(star + 0x2C) += start;
+			*(f32*)(star + 0x30) += k25;
 			*(s32*)(star + 0x44) = 0;
 			*(s32*)(star + 0x48) = 0x1E;
 			// fall through
@@ -2212,7 +2222,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			*(s32*)(star + 4) = 0xA;
 			*(s32*)(star + 0x44) = 0;
 			*(s32*)(star + 0x48) = irand(0xA) + 0xF;
-			*(Vec*)(star + 0x38) = vec3_802f9744;
+			*(Vec*)(star + 0x38) = *p_vec3_802f9744;
 			break;
 		case 10:
 			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
@@ -2226,8 +2236,8 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			pos = statusGetApPos();
 			*(Vec*)(star + 0x2C) = pos;
 			radius = *(f32*)(star + 0x24) - *(f32*)(star + 0x30);
-			dx = *(f32*)(star + 0x2C);
-			dx = *(f32*)(star + 0x20) - dx;
+			dx = *(f32*)(star + 0x20);
+			dx = dx - *(f32*)(star + 0x2C);
 			*(f32*)(star + 0x4C) = (*(f32*)(star + 0x50) = sqrt(dx * dx + radius * radius));
 			*(f32*)(star + 0x54) = asin(radius / *(f32*)(star + 0x4C));
 			*(f32*)(star + 0x58) = float_0p05_8041e6e4 +
@@ -2238,7 +2248,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
 			start = *(f32*)(star + 0x50);
 			*(f32*)(star + 0x4C) = intplGetValue(4, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
-			zero = float_0_8041e618;
+			zero = zero_8041e618;
 			start = *(f32*)(star + 0x54) + *(f32*)(star + 0x58);
 			*(f32*)(star + 0x54) = start;
 			if (*(f32*)(star + 0x54) < zero) {
@@ -2256,7 +2266,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			break;
 		case 20:
 			start = float_128_8041e6ec;
-			end = float_0_8041e618;
+			end = zero_8041e618;
 			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
 			*(u8*)(star + 0x5C) = (u8)intplGetValue(4, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
 			if (*(s32*)(star + 0x44) >= *(s32*)(star + 0x48)) {
@@ -2270,7 +2280,8 @@ void BattleAudienceApSrcCtrlProcess(void) {
 	}
 }
 
-// NONMATCHING (86.07%): complete and correct; the `star+8..0x10 -> star+0x20` copy is a Vec
+
+// NONMATCHING (88.93%): complete and correct; the `star+8..0x10 -> star+0x20` copy is a Vec
 // assignment (MWCC emits lwz/lwz/stw/stw/lwz/stw), the `star+0x44` zero is written after the Vec
 // copy, and the remaining diffs are FP scheduling of the two Vec constant copies / post-multiply loads.
 BOOL BattleAudienceApSrcEntry(void) {
@@ -2313,8 +2324,15 @@ BOOL BattleAudienceApSrcEntry(void) {
 	}
 	*(s32*)star = 1;
 	*(s32*)(star + 4) = 0;
+#ifdef MUST_MATCH
+	// Match-only: the original stores star+0x44 before the constant Vec copy and serialises that copy's
+	// loads/stores (lwz/lwz/stw/stw/lwz/stw); the named-global form lets MWCC software-pipeline it.
+	*(s32*)(star + 0x44) = 0;
+	*(volatile Vec*)(star + 0x38) = *(const volatile Vec*)&vec3_802f9750;
+#else
 	*(Vec*)(star + 0x38) = vec3_802f9750;
 	*(s32*)(star + 0x44) = 0;
+#endif
 	*(u8*)(star + 0x5c) = 0x80;
 	member = BattleAudienceGetPtr(ids[irand(count)]);
 	*(f32*)(star + 8) = member->position.x;
@@ -2332,7 +2350,11 @@ BOOL BattleAudienceApSrcEntry(void) {
 	*(f32*)(star + 0x18) = float_10_8041e694 * (f32)rand() / float_32767_8041e674;
 	*(f32*)(star + 0x1c) = float_0_8041e618;
 	*(Vec*)(star + 0x20) = *(Vec*)(star + 8);
+#ifdef MUST_MATCH
+	*(volatile Vec*)(star + 0x2c) = *(const volatile Vec*)&vec3_802f975c;
+#else
 	*(Vec*)(star + 0x2c) = vec3_802f975c;
+#endif
 	return TRUE;
 }
 
@@ -2522,9 +2544,9 @@ static inline GXColor BattleAudienceDispAudience_color(u8 r, u8 g, u8 b, u8 a) {
 }
 #endif
 
-// NONMATCHING (95.67%): functionally complete. The texture scale uses explicit k/s locals in the
-// MUST_MATCH arm and the flip test is two separate ifs; what still differs is FP scheduling and
-// register allocation in the matrix build, the angle wrap's fused multiply-add, and the GX output.
+// NONMATCHING (95.98%): functionally complete. The angle wrap now fuses and the texture scale uses
+// explicit k/s locals in the MUST_MATCH arm; what still differs is FP scheduling and register
+// allocation in the matrix build (including the trig call order) and the GX texcoord output.
 void BattleAudienceDispAudience(CameraId camId, void* param) {
 	BattleAudience* audience;
 	CameraEntry* cam;
@@ -2751,20 +2773,19 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			texBase = 8;
 		}
 
-		if (*(f32*)((u8*)member + 0xE8) >= float_360_8041e6b4) {
-			*(f32*)((u8*)member + 0xE8) = *(f32*)((u8*)member + 0xE8) -
-			                              float_360_8041e6b4 * (f32)(s32)(*(f32*)((u8*)member + 0xE8) / float_360_8041e6b4);
+		if (member->field_0xE8 >= f360_8041e6b4) {
+			member->field_0xE8 = member->field_0xE8 -
+			                     f360_8041e6b4 * (f32)(s32)(member->field_0xE8 / f360_8041e6b4);
 		}
-		if (*(f32*)((u8*)member + 0xE8) < 0.0f) {
-			*(f32*)((u8*)member + 0xE8) = float_360_8041e6b4 *
-			                              (f32)(1 - (s32)(*(f32*)((u8*)member + 0xE8) / float_360_8041e6b4)) +
-			                              *(f32*)((u8*)member + 0xE8);
+		if (member->field_0xE8 < 0.0f) {
+			angle = (f32)(1 - (s32)(member->field_0xE8 / f360_8041e6b4));
+			member->field_0xE8 = member->field_0xE8 + f360_8041e6b4 * angle;
 		}
-		angle = *(f32*)((u8*)member + 0xE8);
+		angle = member->field_0xE8;
 		if (angle > 0.0f && angle <= float_180_8041e6b8) {
 			flip = 1;
 		}
-		if (angle == 0.0f || (angle > float_180_8041e6b8 && angle < float_360_8041e6b4)) {
+		if (angle == 0.0f || (angle > float_180_8041e6b8 && angle < f360_8041e6b4)) {
 			flip = 0;
 		}
 		if ((u8)front == 1) {
@@ -2962,10 +2983,13 @@ BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 	return TRUE;
 }
 
-// NONMATCHING (83.61%): the conversion's int->float magic pools a duplicate @N double instead of reusing double_to_int_802f9a00, and the seven Vec copies schedule pipelined where the original does load2/store2/load1/store1.
+// NONMATCHING (88.54%): the conversion's int->float magic pools a duplicate @N double instead of reusing double_to_int_802f9a00, and the seven Vec copies schedule pipelined where the original does load2/store2/load1/store1.
 void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	BattleAudienceMember* member;
 	BattleStage* stage;
+#ifdef MUST_MATCH
+	const Vec* vec = (const Vec*)str_802F9578;
+#endif
 	s32 col;
 	s32 row;
 	f32 y;
@@ -3000,14 +3024,27 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	member->mHomePosition.z = z;
 
 	if (member->type == AUDIENCE_PIRANHA_PLANT) {
-		member->mHomePosition.z += float_0p2_8041e67c;
-		member->position.z += float_0p2_8041e67c;
+		f32 off = float_0p2_8041e67c;
+		member->mHomePosition.z += off;
+		member->position.z += off;
 	}
 	if (member->status == 0xb) {
 		member->position.y = float_neg2000_8041e680;
 	}
 
-	member->field_0xE8 = float_270_8041e684;
+#ifdef MUST_MATCH
+	// Match-only: addressing the vec3_802f98xx constants through the .rodata section symbol
+	// (like BattleAudience_ChangeStatus) serialises each 12-byte copy; the named globals let MWCC
+	// software-pipeline the loads across the previous copy's stores.
+	*(Vec*)((unsigned char*)member + 0x84) = *(const Vec*)((const u8*)vec + 0x288);
+	*(Vec*)((unsigned char*)member + 0x78) = *(Vec*)((unsigned char*)member + 0x84);
+	*(Vec*)((unsigned char*)member + 0x90) = *(const Vec*)((const u8*)vec + 0x294);
+	member->mRotation = *(const Vec*)((const u8*)vec + 0x2a0);
+	member->mRotationOffset = *(const Vec*)((const u8*)vec + 0x2ac);
+	*(Vec*)((unsigned char*)member + 0x54) = *(const Vec*)((const u8*)vec + 0x2b8);
+	*(Vec*)((unsigned char*)member + 0x60) = *(const Vec*)((const u8*)vec + 0x2c4);
+	*(Vec*)((unsigned char*)member + 0x6c) = *(const Vec*)((const u8*)vec + 0x2d0);
+#else
 	*(Vec*)((u8*)member + 0x84) = vec3_802f9800;
 	*(Vec*)((u8*)member + 0x78) = *(Vec*)((u8*)member + 0x84);
 	*(Vec*)((u8*)member + 0x90) = vec3_802f980c;
@@ -3016,6 +3053,8 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	*(Vec*)((u8*)member + 0x54) = vec3_802f9830;
 	*(Vec*)((u8*)member + 0x60) = vec3_802f983c;
 	*(Vec*)((u8*)member + 0x6c) = vec3_802f9848;
+#endif
+	member->field_0xE8 = float_270_8041e684;
 
 	if ((index >= 4 && index <= 0xf) ||
 	    (index >= 0x18 && index <= 0x23) ||

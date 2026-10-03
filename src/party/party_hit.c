@@ -365,7 +365,7 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     return NULL;
 }
 
-// NONMATCHING (80.52%): register set matches (r26-r31, no extra GPR); the frame is 0x10 smaller
+// NONMATCHING (80.57%): register set matches (r26-r31, no extra GPR); the frame is 0x10 smaller
 // because the natural direction build leaves out the original's phase-1 temp, so the Vec slots
 // sit below the original's.
 HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
@@ -382,6 +382,7 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
     Vec dtmp2;
 #endif
     f32 sin, cos;
+    f32 sin2, cos2;
     f32 f31;
 #ifdef MUST_MATCH
     // Match-only: `volatile` keeps the running best distance in memory so the compare is
@@ -390,11 +391,11 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
 #else
     f32 dist;
 #endif
-    f32 curDist;
-    f32 sin2, cos2;
-    HitEntry* best;
     HitEntry* hit;
+    HitEntry* best;
+    f32 curDist;
     s32 i;
+
 
     delta = vec3_802cd368;
     sincosf(&sin, &cos, b);
@@ -494,23 +495,27 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
 
 // Caching 100*n.y, f32 hxyz[3], and giving each hitCheckVecFilter result its own variable (h2) that is copied
 // into `hit` at the end of each arm reproduces the retail phi (raw r3 tested, copy only inside the arm).
-// Remaining: fpu temp colouring and a forwarded hitNormal copy (query 0x24 vs 0x30, frame 0x140 vs 0x150).
-// NONMATCHING (86.74%)
+// Keeping a second live `n2` copy of the hit normal (the original does the same) fixes the query offset
+// (0x30) and the frame (0x150); using only `n` collapsed that slot and shifted the whole frame down 0x10.
+// Remaining: FP register colouring (f24/f25/f26 rotated), the pooled i2f magic double (ours sits at
+// rodata+0x128, the original's named object at +0xC0), and some statement scheduling.
+// NONMATCHING (87.17%): FP colouring + magic-double offset
 u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3) {
     f32 ny100;
-    Vec targetPos;
     Vec n;
+    Vec targetPos;
+    Vec n2;
     HitCheckQuery query;
     HitEntry* hit;
     HitEntry* h2;
-    f32 h;
-    f32 f24;
     f32 px, py, pz;
     f32 angle;
     f32 s, c;
-    f32 off;
     f32 rad;
+    f32 off;
     f32 hxyz[3];
+    f32 h;
+    f32 f24;
 
     f24 = a + float_0p01_8041b418;
     *(Vec*)party->field_C4 = vec3_802cd338;
@@ -556,20 +561,21 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
         hxyz[1] = ROUND_MILLI(query.hitPos.y);
         hxyz[2] = ROUND_MILLI(query.hitPos.z);
         n = query.hitNormal;
-        ny100 = float_100_8041b3f8 * n.y;
+        n2 = n;
+        ny100 = float_100_8041b3f8 * n2.y;
         hit = h2;
     }
     if (hit == NULL) {
         return 0;
     }
 
-    *(f32*)((u8*)party + 0xC4) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * n.z,
+    *(f32*)(party->field_C4 + 0x00) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * n2.z,
                                                      ny100) - float_180_8041b424);
     *(f32*)((u8*)party + 0xC8) = float_0_8041b3ec;
-    *(f32*)((u8*)party + 0xCC) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * n.x,
+    *(f32*)(party->field_C4 + 0x08) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * n2.x,
                                                      ny100) - float_180_8041b424);
     *(f32*)(party->field_C4 + (0xE0 - 0xC4)) =
-        angleABf(float_0_8041b3ec, float_0_8041b3ec, sqrtf(n.x * n.x + n.z * n.z), -n.y);
+        angleABf(float_0_8041b3ec, float_0_8041b3ec, sqrtf(n2.x * n2.x + n2.z * n2.z), -n2.y);
     if (hxyz[1] < py && __fabsf(hxyz[1] - py) >= float_2_8041b428) {
         *out2 = py - hxyz[1];
         *out3 = angleABf(px, pz, hxyz[0], hxyz[2]);

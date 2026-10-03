@@ -51,6 +51,11 @@ static const f32 float_6 = 6.0f;
 static const f32 float_1 = 1.0f;
 static const f32 float_0p4 = 0.4f;
 
+#ifdef MUST_MATCH
+// MUST_MATCH: inlined add helper; the call boundary steers MWCC's FP register colouring in the probes.
+static inline float fadd32(f32 arg0, f32 arg1);
+#endif
+
 void lookupSafetyPosSub(Vec* pos, Vec* out, f32 height, f32 angle) {
     Vec sp;
     f32 distance;
@@ -86,8 +91,9 @@ void lookupSafetyPosSub(Vec* pos, Vec* out, f32 height, f32 angle) {
     *out = *p;
 }
 
-// NONMATCHING (93.96%): probe values and control flow match; z lands in f26 like the original,
-// but s/x take f27 and baseY/distance use f29/f28 where the original uses f29/f28/f27.
+// NONMATCHING (95.03%): probe values and control flow match; z/baseY/distance land like the original. The
+// remaining diffs are the sin result s (f27 here, f29 in the original), the float_0/pos->z schedule and the
+// tail word copy. Wrapping the x add in an inlined helper (fadd32) steered the baseY/distance colouring.
 void lookupSafetyPos3(Vec* pos, Vec* out, f32 height) {
     f32 s, c, distance;
     f32 hitX, hitY, hitZ;
@@ -99,41 +105,61 @@ void lookupSafetyPos3(Vec* pos, Vec* out, f32 height) {
     s = sin(MATCH_F32(float_1p5708));
     c = cos(MATCH_F32(float_1p5708));
     baseY = pos->y;
-    t = radius * s;
-    x = pos->x + t;
+    s = radius * s;
+#ifdef MUST_MATCH
+    s = fadd32(s, pos->x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+#else
+    s = s + pos->x;
+#endif
     y = pos->y + height;
     t = radius * -c;
     z = pos->z + t;
     distance = float_0p1 + height;
-    if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
-        out->x = x;
+    if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, s, y, z, float_0, float_neg1, float_0)) {
+        out->x = s;
         out->z = z;
         out->y = baseY;
     } else {
         s = sin(MATCH_F32(float_4p7124));
         c = cos(MATCH_F32(float_4p7124));
         baseY = pos->y;
-        t = radius * s;
-        x = pos->x + t;
+        s = radius * s;
+#ifdef MUST_MATCH
+        s = fadd32(s, pos->x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+#else
+        s = s + pos->x;
+#endif
         y = pos->y + height;
         t = radius * -c;
         z = pos->z + t;
         distance = float_0p1 + height;
-        if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
-            out->x = x;
+        if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, s, y, z, float_0, float_neg1, float_0)) {
+            out->x = s;
             out->z = z;
             out->y = baseY;
         } else {
+#ifdef MUST_MATCH
+            // MUST_MATCH: the natural *out = *pos lets MWCC fold all three words through one r0
+            // scratch; volatile word accesses keep the loads/stores as written and recover one instruction
+            // of the original's r0/r3 tail. Same three words either way.
+            {
+                volatile u32* sp = (volatile u32*)pos;
+                volatile u32* dp = (volatile u32*)out;
+                dp[0] = sp[0];
+                dp[1] = sp[1];
+                dp[2] = sp[2];
+            }
+#else
             *out = *pos;
+#endif
         }
     }
 }
 
-// The four probes, the selection logic and the register mask (r4) match; what
-// still differs is scheduler-only: blocks 2-4 load float_0 after pos->z (the
-// original loads float_0 first), and the final pos copy stores out->x before
-// loading pos->y where the original loads pos->y first.
-// NONMATCHING (98.38%)
+// The four probes, the selection logic and the register mask (r4) match.  What is left is
+// scheduler-only: blocks 2-4 load float_0 after pos->z (the original loads float_0 first), and
+// the hit0&&hit1 branch reads v1.y instead of the original's pos->y.
+// NONMATCHING (98.97%)
 s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
     s32 result;
     Vec v1;
@@ -276,18 +302,27 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
         }
     }
 #ifdef MUST_MATCH
-    // Word-wise copy keeps `result` in r4 and reuses r4 as the second scratch, as the original does;
-    // the plain struct copy makes the compiler pick r5 for result.  Same three words either way.
-    *(u32*)&out->x = *(u32*)&pos->x;
-    *(u32*)&out->y = *(u32*)&pos->y;
-    *(u32*)&out->z = *(u32*)&pos->z;
+    // MUST_MATCH: the natural `*out = *pos;` makes the compiler keep `result` in r5 and reorder the
+    // three loads/stores; volatile word accesses pin the original's load/load/store/load/store/store
+    // order and its r0/r3/r4 scratch registers.  Same three words either way.
+    {
+        volatile u32* s = (volatile u32*)pos;
+        volatile u32* d = (volatile u32*)out;
+        u32 a, b, c;
+        a = s[0];
+        b = s[1];
+        d[0] = a;
+        c = s[2];
+        d[1] = b;
+        d[2] = c;
+    }
 #else
     *out = *pos;
 #endif
     return result;
 }
 
-// NONMATCHING (95.80%): early-return four probes; calls, dead pi sin/cos, baseY cache and constants match.
+// NONMATCHING (95.83%): early-return four probes; calls, dead pi sin/cos, baseY cache and constants match.
 // Only register allocation differs: the original puts height/radius/distance in f29/f30/f31 (sin reuses
 // f31), ours uses f30/f31/f29 (f26 for sin), shifting the float_0 load and the final pos copy.
 void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
@@ -310,7 +345,11 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
     c = cos(MATCH_F32(float_1p5708));
     baseY = pos->y;
     t = radius * s;
+#ifdef MUST_MATCH
+    x = fadd32(pos->x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+#else
     x = pos->x + t;
+#endif
     y = baseY + height;
     u = radius * -c;
     z = pos->z + u;
@@ -326,7 +365,11 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
     c = cos(MATCH_F32(float_4p7124));
     baseY = pos->y;
     t = radius * s;
+#ifdef MUST_MATCH
+    x = fadd32(pos->x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+#else
     x = pos->x + t;
+#endif
     y = baseY + height;
     u = radius * -c;
     z = pos->z + u;
@@ -356,7 +399,11 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
     c = cos(MATCH_F32(float_0));
     baseY = pos->y;
     t = radius * s;
+#ifdef MUST_MATCH
+    x = fadd32(pos->x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+#else
     x = pos->x + t;
+#endif
     y = baseY + height;
     u = radius * -c;
     z = pos->z + u;

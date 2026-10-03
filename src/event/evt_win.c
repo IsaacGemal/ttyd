@@ -517,15 +517,15 @@ USER_FUNC(set_new_goods_list) {
 	}
 
 #define UNITWIN_STATUS_DISP(wp, c0, c1, c2, c3, c4, c5, c6, c7, levelFmt, ROWGUARD, CHGBLOCK, ZEROBLK, TAILBLOCK, POSBLK, ROWMAX) do { \
-	char help[0x40]; \
-	char help2[0x10]; \
-	char num[0x40]; \
-	s32 listOff; \
-	s32 row; \
-	s32 dispOff = 0; \
 	s32 dispCnt; \
-	s32 m8; \
+	char help2[0x10]; \
+	s32 row; \
+	s32 listOff; \
+	char help[0x40]; \
+	s32 dispOff = 0; \
+	char num[0x40]; \
 	u32 sc[4]; \
+	s32 m8; \
 	GXColor color; \
 	*(UstBlk40*)help = *(const UstBlk40*)ZEROBLK; \
 	m8 = 8 - wp->field_0x58; \
@@ -565,7 +565,7 @@ USER_FUNC(set_new_goods_list) {
 		{ \
 			Vec pc = POSBLK; \
 			pc.y = wp->field_0x44 + (f32)(0x38 - dispOff); \
-			iconDispGxU(&pc, (s16)(flag | 0x10), mario_status_icon_table[row], float_0p5_8041db60); \
+			iconDispGxU(&pc, flag | 0x10, mario_status_icon_table[row], float_0p5_8041db60); \
 		} \
 		FontDrawStart(); \
 		{ GXColor cc = rowColor; FontDrawColor(&cc); } \
@@ -587,27 +587,34 @@ USER_FUNC(set_new_goods_list) {
 
 
 
-// NONMATCHING (95.82%): complete reconstruction; the bl sequence (338 calls), case layout
-// and .rodata order all match. What remains is MWCC's callee-saved colouring: our first-block
-// sellName/sellDesc get r16/r17 where the target uses r17/r18, and the same one-register
-// shift runs through the function, which also makes the frame 0x20 larger (0x7a0 vs 0x780).
-// The int->float magic is the compiler's own pool entry, so the named double_to_int_802f68a8 /
-// double_to_int_mask_802f68b8 definitions in this file are duplicates: every i2f conversion
-// loads 0x408(r30) instead of the target's 0x3f0(r30) (removing those two data definitions
-// moves the loads to 0x3f0 but does not change the registers). Display callback for the shop
-// window.
+// NONMATCHING (96.35%): complete reconstruction; the bl sequence (338 calls), case layout
+// and .rodata order all match. Fixed here: the status-macro flag is passed as `flag | 0x10` (the
+// target does `ori` + `clrlwi`, not `extsh`); the badge/icon `iconId` is `s32` (the target
+// truncates it with `clrlwi` at the iconDispGx call); the common-tail buffer check keeps the
+// base pointer in a `char*` variable used by the loop, so `p != NULL` compiles to `cmplwi` on a
+// register instead of the folded `addic. r0, r1, 0x660`; and five declaration runs are ordered to
+// reproduce MWCC's callee-saved colouring (match-only, see REPORT). What remains is MWCC's
+// callee-saved colouring: our first-block sellName/sellDesc get r16/r17 where the target uses
+// r17/r18, and the same one-register shift runs through the function, which also makes the frame
+// 0x20 larger (0x7a0 vs 0x780). The int->float magic is the compiler's own pool entry, so the named
+// double_to_int_802f68a8 / double_to_int_mask_802f68b8 definitions in this file are duplicates:
+// every i2f conversion loads 0x408(r30) instead of the target's 0x3f0(r30) (removing those two
+// data definitions moves the loads to 0x3f0 but does not change the score). Display callback
+// for the shop window.
+// NONMATCHING (96.35%): MWCC callee-saved register colouring is shifted one register (r16/r17 vs
+// the target's r17/r18) and the frame is 0x20 larger; see the note above.
 void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	UnitWinWork* wp = (UnitWinWork*)param;
 	PouchData* pouch = pouchGetPtr();
 
 	// --- flags & 1: selected item's name/description, plus the on-map price icons ---
 	if (wp->flags & 1) {
-		s32 i;
-		s32 sellItem = wp->field_0x8[wp->index];
-		const char* sellName = itemDataTable[sellItem].id;
-		const char* sellDesc = itemDataTable[sellItem].description;
-		GXColor color;
 		u32 len;
+		s32 sellItem = wp->field_0x8[wp->index];
+		GXColor color;
+		const char* sellDesc = itemDataTable[sellItem].description;
+		s32 i;
+		const char* sellName = itemDataTable[sellItem].id;
 
 		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_120_8041dacc, float_300_8041dad0, float_50_8041dad4,
 		                      float_20_8041dad8);
@@ -626,13 +633,13 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		for (i = 0; i < wp->count; i++) {
 
 			if (wp->field_0x8[i] != 0) {
-				Vec pos;
 				Mtx mtx;
 				f32 projv[7];
+				u8 price;
 				f32 vp[6];
 				f32 sx, sy, sz;
 				CameraEntry* cam;
-				u8 price;
+				Vec pos;
 				GXColor iconColor;
 
 				mapObjGetPos(wp->objList[i].name, &pos);
@@ -657,10 +664,10 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 
 	// --- flags & 0xD000: coin / super coin / star piece window ---
 	if (wp->flags & 0xD000) {
-		GXColor color;
-		Mtx mtx;
 		Mtx scale;
 		s32 cur;
+		GXColor color;
+		Mtx mtx;
 
 		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9d0, float_neg250_8041db04, float_neg75_8041db08, float_150_8041db0c, float_45_8041db10,
 		                      float_20_8041dad8);
@@ -709,9 +716,9 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 
 	// --- flags & 0x2000: shop-points window ---
 	if (wp->flags & 0x2000) {
-		GXColor color;
 		Mtx mtx;
 		Mtx scale;
+		GXColor color;
 
 		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9d8, float_neg250_8041db04, float_neg130_8041dae4, float_150_8041db0c, float_45_8041db10,
 		                      float_20_8041dad8);
@@ -738,10 +745,10 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	// --- flags & 0x100: lottery number ---
 	if (wp->flags & 0x100) {
 		if (lotteryGetPtr()->mFlags & 2) {
-			GXColor color;
-			Mtx mtx;
 			char buf[8];
+			GXColor color;
 			const char* p;
+			Mtx mtx;
 			s32 k;
 
 			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9e0, float_neg250_8041db04, float_neg130_8041dae4, float_150_8041db0c, float_45_8041db10,
@@ -761,13 +768,19 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	switch (wp->field_0x50) {
 	case 4: {
 		// Stored-item (keep) list.
+#ifdef MUST_MATCH
+		// match-only: the target zeroes selDesc (li r19,0) but omitting the initialiser is what
+		// reproduces MWCC's register colouring here (adding = 0 drops the function to 95.98%).
 		const char* selDesc;
+#else
+		const char* selDesc = 0;
+#endif
 		s32 dispOff = 0;
 		s32 dispCnt = 0;
 		s32 cnt = pouchGetKeepItemCnt();
-		s32 k;
-		u32 sc[4];
 		GXColor color;
+		u32 sc[4];
+		s32 k;
 
 		cnt = (8 - cnt > 0) ? (8 - pouchGetKeepItemCnt()) : 0;
 		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9e8, float_neg24_8041db44, float_100_8041db48, float_300_8041dad0, (f32)(0xdc - cnt * 0x18),
@@ -819,7 +832,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	case 15:
 	case 16: {
 		// Item / badge / shop list window.
-		s32 limit;
+		ItemData* const dataBase = itemDataTable;
+		const char* selDesc = 0;
 		s32 xofs;
 		const char* title;
 		s32 listOff;
@@ -828,10 +842,9 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		s32 dispCnt;
 		s32 dispOff;
 		s32 mode50 = wp->field_0x50;
-		const char* selDesc = 0;
-		ItemData* const dataBase = itemDataTable;
-		u32 sc[4];
+		s32 limit;
 		GXColor color;
+		u32 sc[4];
 
 		if (mode50 == 2 || mode50 == 3) {
 			cnt = pouchGetHaveItemCnt();
@@ -887,9 +900,9 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		FontDrawEdgeOff();
 
 		if (wp->field_0x50 != 3) {
-			Mtx mtx;
 			Mtx scale;
-			u16 iconId;
+			s32 iconId;
+			Mtx mtx;
 
 			PSMTXTrans(mtx, float_244_8041db68, float_82_8041db6c, float_0_8041db00);
 			PSMTXScale(scale, float_0p6_8041db70, float_0p6_8041db70, float_0p6_8041db70);
@@ -967,9 +980,9 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				continue;
 			}
 			{
+				s32 price;
 				ItemData* data = &dataBase[item];
 				char buf[16];
-				s32 price;
 
 				if (wp->field_0x50 == 0xD) {
 					if (data->star_piece_price > pouchGetStarPiece()) {
@@ -1058,13 +1071,13 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	case 18: {
 		InformantWork* jdt = &_jdt;
 		InformantInfo* info = jdt->info;
-		const u8* prefix;
-		const char* title;
-		s32 listOff;
 		s32 entry;
 		s32 dispOff;
-		u32 sc[4];
+		s32 listOff;
 		GXColor color;
+		const u8* prefix;
+		u32 sc[4];
+		const char* title;
 		s32 mode50 = wp->field_0x50;
 		s32 m8 = 8 - wp->field_0x58;
 
@@ -1107,8 +1120,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		for (entry = 0; entry < wp->field_0x58; entry++) {
 			InformantInfo* inf = &info[entry];
 			char buf[0x20];
-			GXColor tcolor;
 			char saved;
+			GXColor tcolor;
 
 			if (johoya_get((u8*)prefix, inf->storyId) != 0) {
 				sprintf(buf, "");
@@ -1142,12 +1155,12 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	case 7: {
 		// Party member stats window.
 		GXColor color;
-		u32 sc[4];
-		s32 listOff;
-		s32 entry;
 		s32 dispOff;
-		s32 m8;
+		u32 sc[4];
+		s32 entry;
 		char help[0x40];
+		s32 listOff;
+		s32 m8;
 
 		*(UstBlk40*)help = *(const UstBlk40*)zero_802f64e8;
 		m8 = 8 - wp->field_0x58;
@@ -1174,12 +1187,12 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
 
 		for (entry = 0, dispOff = 0; party_id_table[entry] != 0; entry++) {
-			GXColor nameColor;
-			s32 flag;
-			s32 lvl;
 			s32 iconId;
-			const char* name;
+			GXColor nameColor;
 			char buf[16];
+			s32 flag;
+			const char* name;
+			s32 lvl;
 
 			if (wp->field_0x50 == 5 || wp->field_0x50 == 6) {
 				if (!partyChkJoin(party_id_table[entry])) {
@@ -1256,8 +1269,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			FontDrawStart();
 			FontDrawString(buf, float_236_8041dbb0, wp->field_0x44 + (f32)(0x50 - dispOff));
 			if ((f32)entry == wp->field_0x34) {
-				char lank[0x10];
 				char help2[0x10];
+				char lank[0x10];
 
 				if (lvl == 0) {
 					sprintf(help2, "help");
@@ -1299,12 +1312,12 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 
 	// --- common tail: title/help window selected by wp->field_0x50 ---
 	if (wp->field_0x50 != 0 && wp->field_0x50 != 1) {
-		char buf[0x88];
-		char* second = NULL;
-		s32 lines;
-		s8* p;
-		s32 i;
 		GXColor color;
+		s32 i;
+		char* p;
+		char buf[0x88];
+		s32 lines;
+		char* second = NULL;
 
 		switch (wp->field_0x50) {
 		case 11:
@@ -1326,9 +1339,10 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		case 10: strcpy(buf, msgSearch(str_802F687C)); break;
 		default: break;
 		}
+		p = buf;
 		lines = 1;
-		for (p = (s8*)buf, i = 0; *p != 0; p++, i++) {
-			if (*p == '\n') {
+		for (i = 0; ((s8*)p)[i] != 0; i++) {
+			if (((s8*)p)[i] == '\n') {
 				buf[i] = 0;
 				second = &buf[i] + 1;
 				lines = 2;
@@ -1339,7 +1353,6 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		                      (f32)((lines - 1) * 0x18 + 0x2D), float_20_8041dad8);
 		FontDrawStart();
 		{
-			char* p = buf;
 			s32 w1;
 			s32 w2;
 

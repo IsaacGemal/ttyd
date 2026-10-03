@@ -4703,13 +4703,11 @@ BOOL psndPushGroup(void) {
 
 
 
-// The volume pointer `w` is cast through u32 under MUST_MATCH so MWCC recomputes it into r6
-// instead of reusing `work` (r29); the natural form is under #else.
-// NONMATCHING (99.83%): 8 instructions differ, all register naming in the per-slot volume call: the target keeps the volume in r5 and the bgm id in r4 through the psbgmlist lookup; ours allocates them the other way (id r5, volume r4 then moved to r7).
 void psndBGMMain(void) {
 	s32 level;
 	u32 active;
 	s32 master;
+	PaperSoundBGM* cur;
 	u8 base;
 	u8 range;
 	u8 vol;
@@ -4805,11 +4803,12 @@ void psndBGMMain(void) {
 		vol = base * range / 127;
 
 		if ((u32)psbgm[i & 0xF].unk0 != (u32)-1) {
-			if (psbgmlist[psbgm[i & 0xF].unk0].field_0x4 & 0x80000000) {
-				SoundSSSetVolCh(psbgm[i & 0xF].streamId, (vol * master) / 100);
+			cur = &psbgm[i & 0xF];
+			if (psbgmlist[cur->unk0].field_0x4 & 0x80000000) {
+				SoundSSSetVolCh(cur->streamId, (vol * master) / 100);
 			}
 			else {
-				SoundSongSetVolCh(psbgm[i & 0xF].streamId, (vol * master) / 100);
+				SoundSongSetVolCh(cur->streamId, (vol * master) / 100);
 			}
 		}
 

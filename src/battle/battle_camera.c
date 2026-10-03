@@ -713,7 +713,6 @@ USER_FUNC(evt_btl_camera_set_homing_unitparts) {
   return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (94.84%): register allocation and the order of two moves before the BtlUnit_GetPos call.
 USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   s32 *args = event->args;
   s32 priority, type, partId, memberId;
@@ -723,8 +722,10 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   BattleAudienceMember *member;
   BattleUnit *unit;
   BattleUnitPart *part;
-  f32 x, y, z;
-  f32 x2, y2, z2;
+  Vec pos;
+  Vec pos2;
+  Vec home;
+  Vec hit;
 
   priority = evtGetValue(event, args[0]);
   type = evtGetValue(event, args[1]);
@@ -740,12 +741,17 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
   camera->unk18 = partId;
   unit = BattleGetUnitPtr(wp, camera->unk10);
   part = BattleGetUnitPartsPtr(camera->unk10, camera->unk18);
-  BtlUnit_GetPos(unit, &x, &y, &z);
-  BtlUnit_GetHitPos(unit, part, &x2, &y2, &z2);
-  camera->unkBC = (Vec){x, y, z};
+  BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+  BtlUnit_GetHitPos(unit, part, &pos2.x, &pos2.y, &pos2.z);
+  home = vec3_802efc94;
+  home.x = pos.x;
+  home.y = pos.y;
+  home.z = pos.z;
+  camera->unkBC = home;
   camera->unk20 = memberId;
   member = &audience->members[memberId];
-  camera->unkC8 = (Vec){member->position.x, member->position.y, member->position.z};
+  hit = (Vec){member->position.x, member->position.y, member->position.z};
+  camera->unkC8 = hit;
   return EVT_RETURN_DONE;
 }
 

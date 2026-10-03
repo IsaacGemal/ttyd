@@ -186,9 +186,15 @@ s32 effFallCheckHit(EffectEntry* effect) {
 }
 
 // Full GX state, quad display list and both shibuki splash passes. The quad uses float literals and the
-// splash pointer is re-read from effect->userdata
-// NONMATCHING (99.05%): 18 instructions differ, all register-allocation/scheduling: quad `fneg`/`fmuls`
-// operand order, GXColor temp slots, and the u16->float mask address. for details.
+// splash pointer is re-read from effect->userdata. `rad`/`nf31` and the effFallCol68 inline are
+// match-only spellings for the register-allocation clusters.
+#ifdef MUST_MATCH
+static inline GXColor effFallCol68(u8 a) { GXColor c = dat_80420f68; c.a = a; return c; }
+#endif
+
+// NONMATCHING (99.07%): 14 instructions differ, all register-allocation/scheduling: the u16->float mask
+// address and its surrounding load order, the quad `fmuls` operand order, and the GXColor temp/argument
+// stack slots.
 void effFallDispWater(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	FallWork* work = effect->userdata;
@@ -201,11 +207,21 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	u16 height;
 	f32 f31;
 	f32 f30;
+#ifdef MUST_MATCH
+	f32 rad;
+	f32 nf31;
+#endif
 	base = lbl_803ADD20;
 	camView = camGetPtr(cameraId);
 	PSMTXTrans(mtxPos, work->x, work->y, work->z);
 	cam = camGetPtr(cameraId);
+#ifdef MUST_MATCH
+	rad = -cam->viewYaw;
+	rad = float_deg2rad_80420f70 * rad;
+	PSMTXRotRad(mtxRot, 'y', rad);
+#else
 	PSMTXRotRad(mtxRot, 'y', -cam->viewYaw * float_deg2rad_80420f70);
+#endif
 	PSMTXConcat(mtxPos, mtxRot, mtxView);
 	PSMTXConcat(camView->view, mtxView, mtxView);
 
@@ -249,8 +265,15 @@ void effFallDispWater(CameraId cameraId, void* param) {
 	PSMTXConcat(mtxView, mtxPos, mtxPos);
 	GXLoadPosMtxImm(mtxPos, 0);
 	GXSetTevColor(1, dat_80420f64);
+#ifdef MUST_MATCH
+	nf31 = -f31;
+#endif
 	GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+	GXPosition3f32(nf31 * 0.5f, f30, 0.0f);
+#else
 	GXPosition3f32(0.5f * -f31, f30, 0.0f);
+#endif
 	GXColor4u8(0xff, 0xff, 0xff, 0xff);
 	GXTexCoord2f32(0.0f, 0.0f);
 	GXPosition3f32(f31 * 0.5f, f30, 0.0f);
@@ -272,8 +295,12 @@ void effFallDispWater(CameraId cameraId, void* param) {
 		GXLoadPosMtxImm(mtxPos, 0);
 		PSMTXTrans(mtxPos, work[1].unk54 * float_0p125_80420f98, float_0_80420f84, float_0_80420f84);
 		GXLoadTexMtxImm(mtxPos, 0x1e, 1);
+#ifdef MUST_MATCH
+		color = effFallCol68(work[1].unk3C);
+#else
 		color = dat_80420f68;
 		color.a = work[1].unk3C;
+#endif
 		GXSetTevColor(1, color);
 		effGetTexObj(0x37, &texObj);
 		GXLoadTexObj(&texObj, 0);
@@ -400,9 +427,9 @@ void effFallDispInseki(CameraId cameraId, void* param) {
 // copy stores the zero vector before the x/y/z overwrite, and the sound-name address is hoisted into a
 // callee-saved register: the declaration order (cInt, sfx, entry, elem) is what puts entry in r28 and cInt in
 // r30 as the original does. `sfx` exists only to force that hoist.
-// NONMATCHING (95.74%): the type-check branch order (`blt`/`beq` swapped, plus two dead `b`s the original
-// emits), the sound-name address picks up an extra `mr` before r29, and the vec3_802fe418 `lwz`s in case 3
-// schedule earlier than the original's. Everything else is byte-identical.
+// NONMATCHING (95.77%): the original emits two dead `b`s after the type-check `&&` chain that this compiler
+// will not produce from any source shape tried (if/nested-if/goto/do-while); the sound-name address picks up
+// an extra `mr` before r29; and the vec3_802fe418 `lwz`s in case 3 schedule earlier than the original's.
 EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f32 d, f32 e) {
 	s32 cInt;
 #ifdef MUST_MATCH
@@ -420,7 +447,7 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 
 	entry = effEntry();
 	count = a + 1;
-	if (type >= 0 && type != 0 && type < 9) {
+	if (type != 0 && type >= 0 && type < 9) {
 		a = 1;
 		count = 2;
 	}
@@ -573,37 +600,43 @@ static inline Vec effFallMakePos(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-// Register allocation only: the original keeps the pool base (vec3_802fe418) live in r31 and
-// rematerialises `addi rX, r31, imm` at each string use, while ours hoists the string addresses into
-// callee-saved registers and drops the base; effect/data land in different registers, we save an extra
-// FPR f25 and GPR r14 (frame 0x130 vs 0x120), and the int-to-float magic doubles come from the compiler's
-// anonymous pool instead of base+0x60/0x68.
-// NONMATCHING (90.92%): see the note above.
+// Register allocation and the int-to-float pool remain. Every call, constant and switch body is
+// byte-identical; the diffs are:
+//  - ours saves r14 where the target's lowest callee-saved is r15: effect lands in r18 (target r19) and
+//    data in r6 (target r26); the loop-invariant strings 0x154/0x160 are hoisted into callee-saved
+//    registers where the target rematerialises `addi rX, r31, imm` at each use.
+//  - the compiler's `(f32)` magic doubles are addressed from its anonymous pool (@664/@992); the target
+//    loads them as the named objects at r31+0x60/0x68 (a .rodata pool layout difference).
+// The sfx70/sfx88 locals force the two BUG sound-name addresses into registers the way the target does
+// (using the named constants instead made MWCC hoist `unk10 * 0.5f` as a common subexpression).
+// NONMATCHING (94.67%): see the note above.
 void effFallMain(EffectEntry* effect) {
 	FallWork* data = effect->userdata;
 	FallWork* elem;
 	Vec pos;
-	s32 i;
-	s32 done;
-	s32 flag = 0;
+	s32 inBattle;
 	s32 type;
 	s32 unk20;
-	s32 inBattle;
+	s32 i;
+	s32 flag = 0;
+	s32 done;
 	f32 y;
 	f32 f30;
-	f32 floor;
-	f32 unk10;
 	f32 f29;
+	f32 unk10;
+	f32 floor;
 	f32 f26;
+	f32 unk18;
 
 	pos = effFallMakePos(data->x, data->y, data->z);
 
-	inBattle = gp->inBattle != 0;
 	y = data->y;
-	type = data->type;
-	unk10 = data->unk10;
 	unk20 = data->unk20;
+	type = data->type;
+	unk18 = data->unk18;
+	unk10 = data->unk10;
 	floor = y + data->unk14;
+	inBattle = gp->inBattle != 0;
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -620,10 +653,12 @@ void effFallMain(EffectEntry* effect) {
 		return;
 	}
 
-	f30 = float_6p2832_80420fa4 * data->unk18;
+	f30 = float_6p2832_80420fa4 * unk18;
 	f29 = float_30_80420fe0 + y;
 
 	{
+	const char* sfx70 = FB(0x70, str_802FE488);
+	const char* sfx88 = FB(0x88, str_802FE4A0);
 	done = 0;
 	for (i = 1, elem = &data[1]; i < effect->count; i++, elem++) {
 		switch (type) {
@@ -637,20 +672,20 @@ void effFallMain(EffectEntry* effect) {
 				if (elem->unk24 == 0) {
 					elem->unk38++;
 					if (type == 1) {
-						psndSFXOn_3D(str_802FE488, &pos);
+						psndSFXOn_3D(sfx70, &pos);
 					} else if (i == 1) {
-						psndSFXOn_3D(str_802FE4A0, &pos);
+						psndSFXOn_3D(sfx88, &pos);
 					}
 				}
 				break;
 			case 1:
 				if (type == 0 && i > 1 && flag == 0 && gp->retraceCount % 6 == 0) {
-					psndSFXOn_3D(str_802FE4A0, &pos);
+					psndSFXOn_3D(sfx88, &pos);
 					flag = 1;
 				}
 				elem->y += elem->unk34;
 				elem->unk34 -= elem->unk30;
-				if (distABf(elem->x, elem->z, float_0_80420f84, float_0_80420f84) < unk10 * 0.5f) {
+				if (distABf(elem->x, elem->z, float_0_80420f84, float_0_80420f84) < unk10 * float_0p5_80420f7c) {
 					if (elem->y < floor) {
 						elem->y = floor;
 						elem->unk34 *= float_neg0p3_80420fe4;
@@ -702,7 +737,7 @@ void effFallMain(EffectEntry* effect) {
 			if (elem->unk28 >= 3) {
 				elem->unk28 = 0;
 			}
-			elem->unk48 = float_35_80420fe8 * (f32)sin(0.5f * (f32)gp->retraceCount + (f32)i);
+			elem->unk48 = float_35_80420fe8 * (f32)sin(float_0p5_80420f7c * (f32)gp->retraceCount + (f32)i);
 			break;
 		case 2:
 			switch (elem->unk38) {
@@ -743,11 +778,10 @@ void effFallMain(EffectEntry* effect) {
 				break;
 			}
 			{
-				smartEntry* se = smartAlloc(0x280, 3);
 				f32* v;
 				s32 j;
-				*(smartEntry**)((u8*)elem + 0x40) = se;
-				v = se->address;
+				*(smartEntry**)((u8*)elem + 0x40) = smartAlloc(0x280, 3);
+				v = (*(smartEntry**)((u8*)elem + 0x40))->address;
 				for (j = 0; j < 0x20; j++) {
 					v[j * 5 + 0] = (j & 1) ? float_16_80420ff4 : float_neg16_80420ff8;
 					v[j * 5 + 1] = float_128_80420ffc - float_8p5333_80421000 * (f32)(j / 2);
@@ -755,13 +789,14 @@ void effFallMain(EffectEntry* effect) {
 					v[j * 5 + 3] = (j & 1) ? float_2_80420f88 : float_0_80420f84;
 					v[j * 5 + 4] = float_0p066667_80421004 * (f32)(j / 2);
 				}
+				v = (*(smartEntry**)((u8*)elem + 0x40))->address;
 				for (j = 0; j < 0x20; j += 4) {
 					v[(j + 0) * 5 + 0] += elem->unk44 * ((v[(j + 0) * 5 + 1] * v[(j + 0) * 5 + 1]) / float_600_80421008);
 					v[(j + 1) * 5 + 0] += elem->unk44 * ((v[(j + 1) * 5 + 1] * v[(j + 1) * 5 + 1]) / float_600_80421008);
 					v[(j + 2) * 5 + 0] += elem->unk44 * ((v[(j + 2) * 5 + 1] * v[(j + 2) * 5 + 1]) / float_600_80421008);
 					v[(j + 3) * 5 + 0] += elem->unk44 * ((v[(j + 3) * 5 + 1] * v[(j + 3) * 5 + 1]) / float_600_80421008);
 				}
-				DCFlushRange(se->address, 0x280);
+				DCFlushRange((*(smartEntry**)((u8*)elem + 0x40))->address, 0x280);
 			}
 			break;
 		case 3:
@@ -827,7 +862,7 @@ void effFallMain(EffectEntry* effect) {
 			case 1:
 				elem->y += elem->unk34;
 				elem->unk34 -= elem->unk30;
-				if (distABf(elem->x, elem->z, float_0_80420f84, float_0_80420f84) < unk10 * 0.5f) {
+				if (distABf(elem->x, elem->z, float_0_80420f84, float_0_80420f84) < unk10 * float_0p5_80420f7c) {
 					if (elem->y < floor) {
 						elem->y = floor;
 						elem->unk34 *= float_neg0p3_80420fe4;
@@ -1000,7 +1035,7 @@ void effFallMain(EffectEntry* effect) {
 			case 3:
 			case 5:
 			case 7: {
-				f32 t, s, c;
+				f32 t, s, c, t2;
 				f32 p00761 = float_0p00761_80421034, p16605 = float_0p16605_80421038;
 				f32 p03705 = float_0p03705_80421048, p4967 = float_0p4967_8042104c;
 				f32 one = float_1_80420f80;
@@ -1008,48 +1043,56 @@ void effFallMain(EffectEntry* effect) {
 				elem->unk34 -= elem->unk30;
 				t = float_6p2832_80420fa4 * elem->unk18 / float_360_80420fa8;
 				if (t <= float_3p1416_8042103c) {
+					t2 = t * t;
 					if (t <= float_1p5708_80421040) {
-						s = ((p00761 * (t * t) - p16605) * (t * t) +
+						s = ((p00761 * t2 - p16605) * t2 +
 						     one) *
 						    t;
 					} else {
 						t = float_1p5708_80421040 - (t - float_1p5708_80421040);
-						s = ((p00761 * (t * t) - p16605) * (t * t) +
+						t2 = t * t;
+						s = ((p00761 * t2 - p16605) * t2 +
 						     one) *
 						    t;
 					}
 				} else {
 					if (t < float_4p7124_80421044) {
 						t = t - float_3p1416_8042103c;
-						s = -(((p00761 * (t * t) - p16605) * (t * t) +
+						t2 = t * t;
+						s = -(((p00761 * t2 - p16605) * t2 +
 						       one) *
 						      t);
 					} else {
 						t = float_1p5708_80421040 - (t - float_4p7124_80421044);
-						s = -(((p00761 * (t * t) - p16605) * (t * t) +
+						t2 = t * t;
+						s = -(((p00761 * t2 - p16605) * t2 +
 						       one) *
 						      t);
 					}
 				}
 				elem->x += float_5_80421030 * s;
-				t = float_6p2832_80420fa4 * elem->unk18 / float_360_80420fa8;
+				t = elem->unk18 * float_6p2832_80420fa4 / float_360_80420fa8;
 				if (t <= float_3p1416_8042103c) {
 					if (t <= float_1p5708_80421040) {
-						c = (p03705 * (t * t) - p4967) * (t * t) +
+						t2 = t * t;
+						c = (p03705 * t2 - p4967) * t2 +
 						    one;
 					} else {
 						t = float_1p5708_80421040 - (t - float_1p5708_80421040);
-						c = -((p03705 * (t * t) - p4967) * (t * t) +
+						t2 = t * t;
+						c = -((p03705 * t2 - p4967) * t2 +
 						      one);
 					}
 				} else {
 					if (t < float_4p7124_80421044) {
 						t = t - float_3p1416_8042103c;
-						c = -((p03705 * (t * t) - p4967) * (t * t) +
+						t2 = t * t;
+						c = -((p03705 * t2 - p4967) * t2 +
 						      one);
 					} else {
 						t = float_1p5708_80421040 - (t - float_4p7124_80421044);
-						c = (p03705 * (t * t) - p4967) * (t * t) +
+						t2 = t * t;
+						c = (p03705 * t2 - p4967) * t2 +
 						    one;
 					}
 				}
@@ -1093,10 +1136,10 @@ void effFallMain(EffectEntry* effect) {
 		case 8:
 			switch (elem->unk38) {
 			case 0:
-				if (!animGroupBaseAsync(FB(0x160, str_802FE578), inBattle, NULL)) {
+				if (!animGroupBaseAsync(str_802FE578, inBattle, NULL)) {
 					break;
 				}
-				elem->unk5C = animPoseEntry(FB(0x160, str_802FE578), inBattle);
+				elem->unk5C = animPoseEntry(str_802FE578, inBattle);
 				animPoseSetAnim(elem->unk5C, str_80421018, 1);
 				elem->unk38++;
 				break;

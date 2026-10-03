@@ -117,3 +117,7 @@ extern const char str_802C4438[];
 extern const char str_802C4224[];
 extern const char str_802C423C[];
 extern const char str_802C4458[];
+extern const char str_802C46E4[];
+extern const char str_802C4738[];
+extern const char str_802C4770[];
+extern const char str_802C4788[];

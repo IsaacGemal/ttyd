@@ -486,7 +486,7 @@ BOOL pouchAddKeepItem(s32 id);
 BOOL pouchRemoveKeepItem(s32 id, int index);
 void pouchReviseMarioParam(void);
 void pouchRevisePartyParam(void);
-u16 pouchGetStarPoint(void);
+s32 pouchGetStarPoint(void);
 BOOL pouchEquipBadgeIndex(s32 index);
 BOOL pouchUnEquipBadgeIndex(s32 index);
 s32 pouchEquipCheckBadge(s32 badgeId);

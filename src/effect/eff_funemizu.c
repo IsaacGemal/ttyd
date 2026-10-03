@@ -49,32 +49,8 @@ extern const char str_802FE8B8[];
 extern FunemizuMapEntry unk_803b0640[];
 extern u8 funemizu_vertex_tbl[];
 extern u8 funemizu_texcoord0_tbl[];
-extern u8 funemizu_normal_tbl[];
-extern u8 funemizu_color0_tbl[];
-extern u8* funemizu_dl_0_tbl[];
-extern u8 funemizu_dl_0_size_tbl[];
-extern u8* funemizu_dl_1_tbl[];
-extern u8 funemizu_dl_1_size_tbl[];
 extern u8 gor_fune_vertex_tbl[];
 extern u8 gor_fune_texcoord0_tbl[];
-extern u8 gor_fune_normal_tbl[];
-extern u8 gor_fune_color0_tbl[];
-extern u8* gor_fune_dl_0_tbl[];
-extern u8 gor_fune_dl_0_size_tbl[];
-extern u8* gor_fune_dl_1_tbl[];
-extern u8 gor_fune_dl_1_size_tbl[];
-extern u8 funemizu_normal_tbl[32];
-extern u8 funemizu_color0_tbl[32];
-extern u8* funemizu_dl_0_tbl[3];
-extern u8 funemizu_dl_0_size_tbl[4];
-extern u8* funemizu_dl_1_tbl[4];
-extern u8 funemizu_dl_1_size_tbl[4];
-extern u8 gor_fune_normal_tbl[32];
-extern u8 gor_fune_color0_tbl[8];
-extern u8* gor_fune_dl_0_tbl[2];
-extern u8 gor_fune_dl_0_size_tbl[4];
-extern u8* gor_fune_dl_1_tbl[2];
-extern u8 gor_fune_dl_1_size_tbl[4];
 
 const f64 double_to_int_802fe8b0 = 4503601774854144.0;
 
@@ -304,6 +280,11 @@ void effFunemizuMain(EffectEntry* effect) {
 	}
 #endif
 
+// The `.sdata` addressing below comes from the `__declspec(section ".sdata")` on the display-list/colour/
+// normal table externs in include/eff/eff_funemizu.h; without it MWCC emits lis/addi for them.
+// A second pointer variable coalesces back to r26, and keeping the first pointer live across the second
+// walk (comma/&& in the condition, or shared/inlined helpers) makes mwcceppc 2.6 loop forever, so r24 is
+// left to the permuter.
 // NONMATCHING (99.94%): the map-lookup's two walks match except the second walk's pointer, which the
 // original keeps in r24 while MWCC reuses r26 for both (the first walk is r26). Everything else - the
 // .data base+offset addressing, the .sdata (r13) addressing and the display-list loop registers - matches.

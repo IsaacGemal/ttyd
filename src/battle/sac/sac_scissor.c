@@ -553,9 +553,6 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
 #else
 #define SC_P p
 #endif
-// NONMATCHING (99.92%): only the two intersection-result stores differ, where the address
-// scratch is r4 (ours) vs r5 (target). Constants as literals, p hoisted to function scope
-// and right-chained stores got it here
 s32 scissor_control(s32 unused, s32 reset) {
     ScissorWork* work = GetScissorPtr();
     ScissorPoint* points = (ScissorPoint*)work->field_0x114;
@@ -777,15 +774,35 @@ void star_disp2D(void) {
     }
 }
 
-// NONMATCHING (77.45%): the original addresses the five vectors from one common base; the int->float magic double is an anonymous pool copy (@863) instead
-// of the folded double_to_int_802ff638, which shifts the FP registers through case 1;
-// intplGetValue also loads r4 before f1/f2.
+// The five .rodata vectors and the int->float magic double are addressed in the original from one
+// common base, str_802FF570 (held in r30); without the base MWCC emits a separate lis/addi per
+// vector and the FP allocation through case 1 shifts. MUST_MATCH reads them through the base;
+// the natural named-symbol form is under #else. MWCC still pools the int->float magic double as
+// an anonymous @NNN slot (project-wide limitation) instead of the named double_to_int_802ff638
+// at base+0xC8.
+#ifdef MUST_MATCH
+#define SCVEC(off, sym) (*(const Vec*)(base + (off)))
+#else
+#define SCVEC(off, sym) (sym)
+#endif
+// With the base pointer the vector accesses and the FP allocation through case 1 line up; what
+// remains is register/schedule colouring. The int->float magic double is the biggest piece (MWCC
+// pools an anonymous @NNN slot instead of the named double_to_int_802ff638 at base+0xC8, which
+// shifts one GPR and the whole FP block f0-f5); the effStarStoneEntry argument stores, the
+// work->field_0x140/0x144 adds and the case-2 else/trail-loop constants are scheduled a few
+// instructions later than the original. A hand-written i2f (union + base+0xC8) recovered the
+// magic load but emitted `fsub`+`frsp` instead of `fsubs` and scored 1 diff worse, so it is not
+// kept.
+// NONMATCHING (92.32%): FP register and schedule colouring only (see above).
 s32 star_control(void) {
+    const u8* base = (const u8*)&str_802FF570;
     ScissorWork* work = GetScissorPtr();
     StarTrail* star = (StarTrail*)((u8*)work + 0x9C);
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     f32 f;
     s32 i;
+
+    (void)base;
 
     if ((gp->retraceCount & 3) == 0) {
         for (i = 3; i > 0; i--) {
@@ -807,14 +824,13 @@ s32 star_control(void) {
             work->field_0x16C = effStarStoneEntry(3, zero, neg, zero, one);
         }
         BtlUnit_GetPos(mario, &work->field_0x124, &work->field_0x128, &work->field_0x12C);
-        work->field_0x128 = work->field_0x128 +
-            (mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804217a0);
+        work->field_0x128 += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804217a0;
         *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
         *(Vec*)&work->field_0x13C = *(Vec*)&work->field_0x124;
         work->field_0x140 += float_50_80421770;
         work->field_0x144 += float_neg1_80421750;
-        *(Vec*)&work->field_0x154 = vec3_802ff59c;
-        *(Vec*)&work->field_0x160 = vec3_802ff5a8;
+        *(Vec*)&work->field_0x154 = SCVEC(0x2C, vec3_802ff59c);
+        *(Vec*)&work->field_0x160 = SCVEC(0x38, vec3_802ff5a8);
         /* fallthrough */
     case 2:
         work->field_0x120++;
@@ -854,9 +870,9 @@ s32 star_control(void) {
                 f32 neg = float_neg1000_8042179c;
                 f32 zero = float_0_80421734;
 
-                *(Vec*)&work->field_0x124 = vec3_802ff5b4;
-                *(Vec*)&work->field_0x154 = vec3_802ff5c0;
-                *(Vec*)&work->field_0x160 = vec3_802ff5cc;
+                *(Vec*)&work->field_0x124 = SCVEC(0x44, vec3_802ff5b4);
+                *(Vec*)&work->field_0x154 = SCVEC(0x50, vec3_802ff5c0);
+                *(Vec*)&work->field_0x160 = SCVEC(0x5C, vec3_802ff5cc);
                 work->field_0x134 = work->field_0x128;
                 work->field_0x140 = zero;
                 star->velX = work->field_0x124;

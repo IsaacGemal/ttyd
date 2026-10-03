@@ -1364,7 +1364,7 @@ char* msgGetCommand(char* str, char* arg1, char* arg2) {
 // register allocation for the spilled s16 cursor group and the R-ruby float temps to match the
 // shipped binary (this is how MWCC 2.6 behaves under the original's higher register pressure).
 #pragma opt_dead_assignments off
-// NONMATCHING (95.97%): full reimplementation of the message-tag parser. The remaining diffs are
+// NONMATCHING (96.51%): full reimplementation of the message-tag parser. The remaining diffs are
 // almost entirely register allocation/scheduling (plus the file-wide string-pool offset); every
 // tag case and the R-ruby/kanji paths are byte-for-byte equivalent in effect.
 void msgAnalize(smartEntry* smart, const char* msg) {
@@ -1485,7 +1485,7 @@ loop:
 		glyph = kanjiSearch(*(const u16*)msg);
 		width = kanjiGetWidth((u16)glyph);
 		{
-		s32 exinc = (s32)(scale * (f32)(width + 4));
+		s32 exinc = (s32)((f32)(width + 4) * scale);
 		entry->glyph = glyph;
 		*(s16*)(entry->field_0x6) = ex;
 		*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.0f * scale));
@@ -1830,7 +1830,7 @@ loop:
 			else {
 				glyph = kanjiSearch(0x94B5);
 				width = kanjiGetWidth((u16)glyph);
-				w = (u16)(s32)(scale * (f32)(width + 4));
+				w = (u16)(s32)((f32)(width + 4) * scale);
 				entry->glyph = glyph;
 				*(s16*)(entry->field_0x6) = ex;
 				*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.0f * scale));
@@ -1898,9 +1898,9 @@ loop:
 				r25 = ex;
 			}
 		}
-		else if ((s8)tagName[0] == 'R' || ((s8)tagName[0] == '/' && (s8)tagName[0] == '/r')) {
+		else if (*(s8*)tagName == 'R' || (*(s8*)tagName == '/' && *(s8*)tagName == '/r')) {
 			skip = 1;
-			if ((s8)tagName[0] != 'R') {
+			if (*(s8*)tagName != 'R') {
 				skip = 2;
 			}
 			if (data->window->type == 1) {
@@ -1908,7 +1908,7 @@ loop:
 			}
 			rp = tagName + skip;
 			len = strlen(rp);
-			half = (len + (len >> 31)) >> 1;
+			half = (len + (s32)((u32)len >> 31)) >> 1;
 			total = 0;
 			{
 			s32 off = skip;
@@ -1916,7 +1916,7 @@ loop:
 				u16 g = kanjiSearch(*(const u16*)(tagName + off));
 				u16 kwidth = kanjiGetWidth((u16)g);
 
-				total += (s32)((f32)(kwidth + 4) * scale * 0.55f);
+				total += (s32)(0.55f * ((f32)(kwidth + 4) * scale));
 				rp += 2;
 			}
 			}
@@ -1925,14 +1925,14 @@ loop:
 			mid = (s32)((f32)total16 - 0.55f * base);
 			{
 				f32 t = (f32)((s16)r25 + (s32)ex) - base;
-				r25 = (s32)(0.5f * (t - (f32)(u16)mid));
+				r25 = (s32)((t - (f32)(u16)mid) * 0.5f);
 			}
 
 			rp = tagName + skip;
 			for (j = 0; j < half; j++) {
 				u16 g = kanjiSearch(*(const u16*)rp);
 				u16 kwidth = kanjiGetWidth((u16)g);
-				s32 rinc = (s32)(0.55f * scale * (f32)(kwidth + 4));
+				s32 rinc = (s32)(0.55f * ((f32)(kwidth + 4) * scale));
 
 				entry->glyph = g;
 				*(s16*)(entry->field_0x6) = (s16)r25;
@@ -1964,7 +1964,7 @@ aftertag:
 	goto loop;
 
 defaultchar:
-	if ((u32)gp->language == 0 && (u8)check >= '0' && (u8)check <= '9') {
+	if ((u32)gp->language == 0 && *(s8*)msg >= '0' && *(s8*)msg <= '9') {
 		glyph = kanjiSearch((u16)((u8)check + 0x10000 - 0x7DE1));
 	}
 	else {
@@ -1972,7 +1972,7 @@ defaultchar:
 	}
 	width = kanjiGetWidth((u16)glyph);
 	{
-	s32 exinc = (s32)(scale * (f32)(width + 2));
+	s32 exinc = (s32)((f32)(width + 2) * scale);
 	entry->glyph = glyph;
 	*(s16*)(entry->field_0x6) = ex;
 	*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.0f * scale));
