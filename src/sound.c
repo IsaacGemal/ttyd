@@ -1555,26 +1555,28 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
     return in;
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: separate register-homed copies of buffer1 so MWCC picks the retail registers for the
-// zero-fill and byte-copy loops. The #else keeps the natural code (same names, no hint).
-#define SS_CB_REG register
-#else
-#define SS_CB_REG
-#endif
-// Register colouring only: MWCC homes buffer1 in r9 instead of retail r6, which then reshuffles the
-// prologue (`li r0,0x0`/`mulli r8`/`lwz r9,...` vs `mulli r3`/`lwz r10,...`). The `register` copies of
-// buffer1 below re-home the three loop pointers to the retail registers (98.73 vs 97.56 without). The
-// R4a/R5 `src` setup and the DPCM `in` setup still colour temporaries differently (r10 vs r7).
 // SoundStream has no write-position field; it lives at +0x24 and is written raw. SoundStreamEntry at
 // +0x2c is loadBuffer[?] and +0x38..0x60 is unk38/unk4C; all accessed raw here.
-// NONMATCHING (95.94%): every path and branch structure matches; only buffer1's home register
-// (r9 vs retail r6) and the prologue/temporary colouring it cascades into differ.
+#ifdef MUST_MATCH
+// MUST_MATCH: two register-homed copies of buffer1 so the zero-fill/7 loops and the PCM byte/s16
+// copy paths each get a register MWCC colours toward retail r6. The #else keeps the natural code
+// (buffer1 used directly), which still compiles but scores lower.
+#define SS_CB_LOOP t1
+#define SS_CB_COPY t3
+#else
+#define SS_CB_LOOP buffer1
+#define SS_CB_COPY buffer1
+#endif
+#pragma opt_propagation off // needed: with propagation on MWCC folds the /7 magic and homes n in r0
+// NONMATCHING (99.06%): every path, branch and constant matches; the remaining differences are
+// register colouring only. MWCC homes the zero-fill/7 loop pointer in r6 and the PCM copy pointer
+// in r9; retail uses r6 for both, which cascades into the prologue and the DPCM/byte/PCM loops.
 u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
     SoundStream* stream = &sound.streams[user & 0xFF];
-    SS_CB_REG void* t1 = buffer1;
-    SS_CB_REG void* t3 = buffer1;
-    SS_CB_REG void* t5 = buffer1;
+#ifdef MUST_MATCH
+    void* t1 = buffer1;
+    void* t3 = buffer1;
+#endif
     u8* ep;
     u32 i;
 
@@ -1583,8 +1585,8 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
     if ((stream->flags & 0x8006) || sound.unk214) {
         if (!(stream->flags & 0x100)) {
             for (i = 0; i != len1; i++) {
-                *(s16*)t1 = 0;
-                t1 = (s16*)t1 + 1;
+                *(s16*)SS_CB_LOOP = 0;
+                SS_CB_LOOP = (s16*)SS_CB_LOOP + 1;
                 *(u32*)(stream->unk1C + 8) += 1;
             }
             for (i = 0; i != len2; i++) {
@@ -1601,8 +1603,8 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
             n = len1 / 7 * 4 & ~7;
             n /= 2;
             for (j = 0; j != n; j++) {
-                *(u16*)t3 = 0;
-                t3 = (void*)((u16*)t3 + 1);
+                *(u16*)SS_CB_LOOP = 0;
+                SS_CB_LOOP = (void*)((u16*)SS_CB_LOOP + 1);
             }
             n = len2 / 7 * 4 & ~7;
             n /= 2;
@@ -1631,7 +1633,7 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
         u32 count;
 
         src = (u8*)(((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)] + *(u32*)(ep + 0x44));
-        dst = (u8*)t5;
+        dst = (u8*)SS_CB_COPY;
         count = (len1 + 13) / 7 * 4 & ~7;
         while (count != 0) {
             *dst++ = *src++;
@@ -1696,7 +1698,7 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
         s16* dst;
         u32 count;
 
-        dst = (s16*)buffer1;
+        dst = (s16*)SS_CB_COPY;
         count = len1;
         src = (u8*)(((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)] + (*(u32*)(ep + 0x44) & ~1));
         while (count != 0) {
@@ -1760,8 +1762,10 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
     }
     return *(u32*)(stream->unk1C + 8);
 }
-#undef SS_CB_REG
 
+#undef SS_CB_LOOP
+#undef SS_CB_COPY
+#pragma opt_propagation reset
 // Returns void: the original never writes r3, and an s32 definition (or header prototype!) shifts the tail to r4.
 #ifdef MUST_MATCH
 // Forces MWCC to materialise str's address into path's home register (r27) before the copy to r3;

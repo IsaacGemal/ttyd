@@ -607,9 +607,15 @@ static void* weapon[0xC0 / 4] = {
 // psndSFX_pit has no shared prototype; this file passes a full-width pitch (fctiwz result).
 extern s32 psndSFX_pit(s32 id, s32 pit);
 
-// NONMATCHING (96.28%): the whole body is reconstructed; what is left is MWCC register allocation (args,
-// event, _battleWorkPointer, party and mario land in different callee-saved registers, so most operands
-// differ only in their register) and float/vector load scheduling in case 4 / case 20 / case 22.
+// The whole body is reconstructed; what is left is MWCC global register coloring (event,
+// _battleWorkPointer, party, args and mario land in different callee-saved registers, so most operands differ
+// only in their register), float/vector load scheduling in case 4 / case 20 / case 22, and the stack frame: the
+// original keeps four separate Vec temporaries (0x20/0x2c/0x38/0x44) for the two case-20 and two case-22 copies,
+// this compiler shares one slot, so the frame is 0x90 where the original's is 0xa0 and tbl sits at 0x44 instead of
+// 0x50. Splitting the case-20 temporary into two variables reproduces the 0xa0 frame and slot layout but changes
+// the surrounding code enough that the score falls to 95.96, so it is not kept.
+// NONMATCHING (96.31%): reordering the entry-init loop's three stores to the original's type/0x10/0x20 order is
+// the one change that raises the score (96.25 -> 96.31).
 s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
     BattleWork* wp = _battleWorkPointer;
@@ -636,9 +642,9 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
         bakuGameDecideButton(1);
         for (i = 0; i < 3; i++) {
             BakuGameWorkEntry* entry = &baku->entries[i];
-            entry->field_0x20 = 0.0f;
-            *(f32*)&entry->field_0x10[0] = 100.0f;
             entry->type = tbl[i];
+            *(f32*)&entry->field_0x10[0] = 100.0f;
+            entry->field_0x20 = 0.0f;
         }
         memcpy(&baku->weapon, &weapon, 0xC0);
 

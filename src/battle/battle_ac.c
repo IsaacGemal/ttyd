@@ -501,8 +501,10 @@ static inline void gaugeHighlight(CameraEntry* cam, s32 x, s32 y, s32 type, s32 
 	}
 }
 
-// NONMATCHING (69.21%): every instruction and constant matches; only float-register allocation
-// differs, see the note above gaugeSegment. This function (and only this one) is built with -O4,s.
+#pragma optimize_for_size on // -O4,s: the target keeps divw for /100 instead of a magic multiply
+// NONMATCHING (99.83%): the three 2px marker (gaugeHighlight) blocks colour xa/xb the other way
+// (retail xa=f27, xb=f29; ours xa=f29, xb=f27). Every other block matches; see REPORT.md for the
+// shapes tried. Register colouring only.
 void BattleAcDrawGauge(s32 x, s32 y, s32 type, s32 count, s32 t0, s32 t1, s32 t2, s32 flags, f32 ratio) {
 	BattleWork* work = getWorkPointer();
 	CameraEntry* cam;
@@ -602,6 +604,7 @@ void BattleAcDrawGauge(s32 x, s32 y, s32 type, s32 count, s32 t0, s32 t1, s32 t2
 		}
 	}
 }
+#pragma optimize_for_size reset
 
 
 void BattleAcGaugeSeInit(void) {

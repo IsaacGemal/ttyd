@@ -89,7 +89,9 @@ typedef struct MoamoaWork {
 
 #pragma force_active on
 // Constant spawn offset used by ext_moamoa_init (moamoa spawn vector).
-static const Vec vec3_rsh_000136d4 = {-290.0f, 65.0f, -95.0f};
+// The original keeps this global and read-only, but not `const`: MWCC then cannot hoist the
+// copy in ext_moamoa_init past the wp->pos[1] stores (it emits the `lwzu` form).
+__declspec(section ".rodata") Vec vec3_rsh_000136d4 = {-290.0f, 65.0f, -95.0f};
 static USER_FUNC(npc_jump);
 static void ext_moamoa_dispent(void);
 static void ext_moamoa_main(void);
@@ -216,13 +218,16 @@ static void ext_moamoa_dispent(void) {
 
 // Reconstructed logic: allocate/clear wp, copy both npc positions + spawn vector, build the
 // pose array, random matrix translation + ground hitCheckFilter, then 600 warm-up ext_moamoa_main.
-// NONMATCHING (50.01%): larger frame + different hitCheckFilter stack layout than the original.
+// MWCC would otherwise inline moamoa_pose_init (456 B) into this function, but the target emits a
+// real `bl`; moamoa_pose_change (360 B) must still inline. 200 is the highest inline size that
+// excludes the former and keeps the latter (verified against the instruction diff).
+#pragma inline_max_size(200)
 static void ext_moamoa_init(void) {
     MapObject* mapObj;
     NpcEntry* npc;
+    s32 i;
     ExtPose* extPose;
     MoamoaPose* pose;
-    s32 i;
 
     wp = _mapAlloc(0x870);
     memset(wp, 0, 0x870);
@@ -242,13 +247,13 @@ static void ext_moamoa_init(void) {
     pose = wp->poses;
     i = 0;
     while (i < wp->poseNum) {
-        f32 hz;
-        f32 hy;
         f32 hx;
+        f32 hy;
+        f32 hz;
         f32 dist;
-        f32 nz;
-        f32 ny;
         f32 nx;
+        f32 ny;
+        f32 nz;
         pose->flags = 0;
         pose->field_0x2 = 0;
         pose->field_0x4 = 0;
@@ -273,11 +278,12 @@ static void ext_moamoa_init(void) {
     }
     mapObj = mapGetMapObj("ressha");
     wp->field_0xC = mapObj;
-    wp->field_0x10 = *(f32*)((u8*)mapObj + 0x98);
+    wp->field_0x10 = ((f32*)((u8*)wp->field_0xC + 0x98))[0];
     for (i = 0; i < 600; i++) {
         ext_moamoa_main();
     }
 }
+#pragma inline_max_size reset
 
 static USER_FUNC(evt_moamoa_target_off) {
     s32* args = event->args;

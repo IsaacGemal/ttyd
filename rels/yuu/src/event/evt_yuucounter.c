@@ -71,9 +71,16 @@ USER_FUNC(unk_yuu_00009d5c) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.72%): all instructions match but MWCC colours `work` r31 (target r24); the case-loop
-// registers, the GXColor copies' scheduling and the final loop's register reuse all follow from that.
-// Writing the loop counters as `for (i = 0, xoff = 0; ...)` fixed the loop-init order (96.65 -> 96.72).
+// NONMATCHING (96.72%): every instruction's opcode and operands match; only callee-saved register
+// colouring differs. MWCC colours `work` r31 (target r24); digits r30 (target r31), digit r29 (target
+// r30), skip r24 (target r25/r29) and xoff r25 (target r23/r25) all follow from that one web. Writing
+// the loop counters as `for (i = 0, xoff = 0; ...)` fixed the loop-init order (96.65 -> 96.72).
+// Tried without reaching 100%: 1700+ declaration-order permutations (work drops to r29/r30 but the
+// score falls and r24 never appears), merging/splitting digit/i/xoff/skip, a separate digits pointer,
+// per-case declaration scopes, reordering the colour assignments and expressions, FP-constant locals,
+// `register` hints, and every opt_lifetimes/opt_propagation/opt_dead_assignments/opt_common_subs pragma
+// combination (the ones that move `work` add a spill, frame 0x150). The 0x140 frame and the r20-r31
+// save set already match, so this is a web-ordering tie the permuter should resolve.
 void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     s32 digits[4];
     s32 digit0, digit1, digit2;

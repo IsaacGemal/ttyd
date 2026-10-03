@@ -14,6 +14,11 @@
 // optimize_for_size, opt_propagation/opt_common_subs/opt_lifetimes and register/volatile hints all
 // score lower.
 // NONMATCHING (98.71%): len does not reuse type's r19; value/color/cam are r14/r17/r25, not r14/r17/r18.
+// Wave 60: GC 1.3-2.7 all give 98.71; -O2/-O3/-O4/-O4,s, optimization_level 0-4, every opt_* pragma on/off,
+// scheduling off, inline/peephole/pool pragmas, separate color0/color1 variables, u8/GXColor component locals,
+// a 10-arg inlined quad helper and declaration/case/statement reorderings all score <=98.71. Named-`end` keeps
+// type in r19 but rotates value/color/cam to r17/r18/r14; the folded form fixes value/color but puts type in r18
+// and cam in r25, so the allocator's cam-vs-colour-bytes choice is the remaining difference.
 void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 	CameraEntry* cam;
 	GXColor colors[2];

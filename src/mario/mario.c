@@ -833,10 +833,15 @@ void marioInit(void) {
 	partyInit();
 }
 
-// The declaration order below steers MWCC's allocator to the target's registers.
-// NONMATCHING (92.67%): only camId/motionId/partySlot0/partySlot1/animGroup0 still land in the
-// wrong callee-saved register and the scale/bottomless Vec word copies schedule r3/r0 one step
-// differently; everything else, all constants and all calls match.
+// Calling marioSoundInit() (inlined by the target) makes the three 0x278/0x27C/0x280 stores reuse one
+// `lwz mp`, as the original does; writing them out as three mp->... stores reloads mp each time.
+// The snapshot's callee-saved registers are permuted versus the target (target/ours: camId r31/r30,
+// motionId r21/r31, partySlot0 r29/r21, partySlot1 r28/r24, animGroup0 r24/r28, str r30/r29),
+// `wp = mp` fails to coalesce (extra `mr r25, r4`), and the prevParty0/1 loads and the
+// scale/bottomlessReset Vec word copies are scheduled slightly differently. All calls, constants and
+// the rest of the body match; reordering the declarations, the snapshot loads and the restore stores
+// (all tried) did not move the registers.
+// NONMATCHING (93.47%): register/scheduling permutation of the snapshot and the Vec copies.
 void marioReInit(void) {
 	s32 animGroup1;
 	s32 animGroup2;
@@ -890,9 +895,7 @@ void marioReInit(void) {
 
 	memset(wp, 0, sizeof(MarioWork));
 
-	*(s32*)(mp->field_0x250 + 0x28) = -1;
-	*(s32*)(mp->field_0x250 + 0x2C) = -1;
-	*(s32*)(mp->field_0x250 + 0x30) = -1;
+	marioSoundInit();
 	if (highFlag != 0) {
 		wp->flags |= 0x80000000;
 	}

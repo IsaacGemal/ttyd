@@ -449,17 +449,19 @@ static void ext_moamoa_dispent(void) {
 #pragma inline_max_size(1000)
 // Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
 #pragma opt_propagation off
-// NONMATCHING (87.92%): behaviour complete, checked against the asm. The rest is register allocation and where the
-// scheduler places the randf results; the three inlined pose-change loops keep their own registers in the original.
 // Per-frame update of every moamoa: hit checks against Mario and his partner, the jump/scatter state machine
 // (MoamoaPose.field_0x02), clamping into the room, then the animation frame update and the rider-delta limit.
 #define MOA_TARGET(i) ((&wp->field_0x14)[(i) % 3])
+// NONMATCHING (88.88%): FPR colouring/scheduling inside the inlined ekiSinf/ekiCosf/randf bodies (retail
+// keeps sinv in f4, ours often uses f0/f1 in context) and one swapped GPR pair (retail handled=r25/voice
+// string=r24, ours the reverse); the prologue, frame size and callee-saved register set now match retail.
 static void ext_moamoa_main(void) {
     MarioWork* mario;
     PartyEntry* party;
     ExtPose* ep;
     MoamoaPose* pose;
     s32 i;
+    const char* voiceSfx;
     s32 handled;
     s32 voicePlayed;
     f32 rad;
@@ -522,6 +524,7 @@ static void ext_moamoa_main(void) {
         }
     }
     ep = extGetPosePtr();
+    voiceSfx = "SFX_STG6_MOAMOA_VOICE1";
     voicePlayed = 0;
     pose = wp->poses;
     for (i = 0; i < wp->poseNum; i++, ep++, pose++) {
@@ -572,7 +575,7 @@ static void ext_moamoa_main(void) {
         if ((wp->field_0x00 & 0x1) && !(pose->flags & 0x444) && (u32)i == gp->retraceCount % wp->poseNum
             && irand(1000) < 200) {
             v = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_00008914);
-            psndSFXOn_3D("SFX_STG6_MOAMOA_VOICE1", &v);
+            psndSFXOn_3D(voiceSfx, &v);
         }
         switch (pose->field_0x02) {
         case 0x0:
@@ -767,7 +770,7 @@ static void ext_moamoa_main(void) {
             }
             break;
         case 0x1B:
-            if (fabs(ep->matrix[0][0][3]) < 300.0 && fabs(ep->matrix[0][2][3]) < 300.0) {
+            if (__fabsf(ep->matrix[0][0][3]) < 300.0 && __fabsf(ep->matrix[0][2][3]) < 300.0) {
                 rad = 6.2831855f * (angleABf(MOA_TARGET(i).x, MOA_TARGET(i).z, ep->matrix[0][0][3], ep->matrix[0][2][3])
                                     + randf(-45.0f, 45.0f))
                       / 360.0f;
@@ -840,11 +843,9 @@ static void ext_moamoa_main(void) {
         return;
     }
     {
-        Vec a;
         Vec b;
 
-        a = ekiVec3(mario->riderDelta.x, mario->riderDelta.y, mario->riderDelta.z, &vec3_eki_0000892c);
-        b = a;
+        b = ekiVec3(mario->riderDelta.x, mario->riderDelta.y, mario->riderDelta.z, &vec3_eki_0000892c);
         if (PSVECMag(&b) > 2.0f) {
             PSVECNormalize(&b, &b);
             mario->riderDelta.x = 2.0f * b.x;

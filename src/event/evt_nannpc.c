@@ -725,19 +725,21 @@ static inline HitEntry* hitCheckFilterVec(HitFilterCallback callback, f32* hitX,
 // reproduce the original's whole local stack layout (pos 0x60, velNorm 0x6c, staged copies
 // 0x78/0x84, hitPos 0x24, hitNormal 0x30). The second ray's scalar hit buffers are declared in
 // reverse (fnz2..fpx2) so their stack slots ascend like the original's.
-// NONMATCHING (94.26%): only the callee-saved colouring of work/scale/temps and the two
+// NONMATCHING (94.27%): only the callee-saved colouring of work/scale/temps and the two
 // hitCheckFilter argument-staging schedules differ. first-loop other/entry and the third-loop cursor
 // (r23/r24/r25) now match; work is r27 vs r26, scale r26 vs r31, the four hit-pointer temps r28-r31
 // vs r27-r30. Real fixes from 92.21: the `zero` named constant for `vlen == 0.0f` (the literal form
 // emitted `fcmpu f0, f31`), reusing the posArg Vec across the second ray (MUST_MATCH block below),
 // giving the third loop its own `cursor` (the shared `entry` left r25 to a staging temp), naming the
 // dot product (`d`) so the fused op matches `fmadds f1, f1, f2, f0`, and passing the second ray's
-// middle lane via posArg but its outer lanes straight from `savedPos`.
+// middle lane via posArg but its outer lanes straight from `savedPos`. 94.26 -> 94.27: C_VECReflect
+// and PSVECDotProduct read the staged `dirArg` copy at 0x84 (the original reuses the copy made for
+// hitCheckFilter), not `velNorm` at 0x6c.
 // Tried: every declaration order (no effect), every allowed pragma and combination, all
 // posArg/dirArg copy orders, the natural hitCheckFilterVec first call, extra per-loop cursor
-// splits, and every second-call Vec/field staging shape; all <=94.26. The rest is pure colouring,
+// splits, and every second-call Vec/field staging shape; all <=94.27. The rest is pure colouring,
 // the same class as battle/ac/ac_shot_target.c.
-// NONMATCHING (94.26%): callee-saved colouring (work/scale/temps shifted) plus the two
+// NONMATCHING (94.27%): callee-saved colouring (work/scale/temps shifted) plus the two
 // hitCheckFilter argument-staging schedules differ.
 void nanNPCOption(void) {
     Vec delta;
@@ -848,10 +850,18 @@ void nanNPCOption(void) {
                 hitNormal.y = 0.0f;
             }
             PSVECNormalize(&hitNormal, &hitNormal);
+#ifdef MUST_MATCH
+            C_VECReflect(&dirArg, &hitNormal, &reflect);
+#else
             C_VECReflect(&velNorm, &hitNormal, &reflect);
+#endif
             PSVECScale(&reflect, &cursor->field_0x3C, vlen);
             scale = FALSE;
+#ifdef MUST_MATCH
+            d = PSVECDotProduct(&dirArg, &hitNormal);
+#else
             d = PSVECDotProduct(&velNorm, &hitNormal);
+#endif
             PSVECScale(&hitNormal, &hitNormal, d * -(vlen - hitDist) + 0.1f);
             PSVECAdd(&cursor->position, &hitNormal, &cursor->position);
             PSVECSubtract(&cursor->position, &savedPos, &move);

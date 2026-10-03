@@ -111,12 +111,15 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
 // The loop's multiply operand order (`fmuls f22, f27, f0`) only comes out right when `float_360 / denom`
 // is named in an in-loop local (MWCC still hoists it); the natural expression form emits `f0, f27`.
 // What still differs is one volatile-register tie-break in the preheader: this build loads 0.4 into f2
-// and the int->float conversion double into f0 (original f0/f2), keeps (count+1) in f0 (original f1) and
-// schedules `li r5, 0` before the 1.0 load. No source shape found moves it (declaration/statement order,
-// operand swaps, named int->float temp, constant locals, and the opt_/scheduling pragmas were all tried).
+// and the int->float conversion double into f0 (original f0/f2), keeps the (count+1) conversion in f0
+// (original f1) and schedules `li r5, 0` before the 1.0 load. No source shape found moves it (declaration/
+// statement order, operand swaps, named int->float temp, constant locals, inline helpers, pragma combos and
+// a 400-permutation random search were all tried). The MUST_MATCH reorder below groups stepB/baseA/stepA; it
+// does not move the registers but schedules one more instruction like the original (11 -> 10 differing
+// instructions, 98.61 -> 98.67).
 // The int->float pool constant also resolves to an anonymous .rodata entry because Main/Disp pool two
 // extra double literals there.
-// NONMATCHING (98.61%): only the preheader f0/f2/f1 tie-break above; see the comment.
+// NONMATCHING (98.67%): the preheader f0/f2/f1 tie-break above; see the comment.
 EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 scaleA, f32 scaleB) {
     EffectEntry* effect;
     EffStardust2Data* data;
@@ -153,11 +156,21 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
         data->flags = 0;
     }
 
+#ifdef MUST_MATCH
+    // Match-only statement order: it schedules the preheader's step/base multiplies one
+    // instruction closer to the original (10 vs 11 differing instructions).
+    k1 = float_0p1_8041fea4;
+    k4 = float_0p4_8041fed4;
+    stepB = k1 * scaleB;
+    baseA = k4 * scaleA;
+    stepA = k1 * scaleA;
+#else
     k1 = float_0p1_8041fea4;
     stepA = k1 * scaleA;
     stepB = k1 * scaleB;
     k4 = float_0p4_8041fed4;
     baseA = k4 * scaleA;
+#endif
 
     data->x = x;
     baseB = k4 * scaleB;

@@ -40,14 +40,20 @@ void N_setupErrorHandler(void) {
 	OSSetErrorHandler(OS_ERROR_PROGRAM, (OSErrorHandler)N_systemErrorHandler);
 }
 
-// NONMATCHING (89.04%): register allocation, the signed int->float conversion, and the interrupt
-// restore after OSFillFPUContext: the original is inline mfmsr/ori 0x8000/ori 2/mtmsr/isync (inline asm
-// is not allowed here), written as PPCMtmsr(PPCMfmsr() | 0x8002), which calls the two SDK functions. The original keeps
-// context/error/dsisr/dar in r26/r23/r25/r24 and the string base in r29 with an indexed gpr loop, while
-// this compiler uses different callee-saved registers and a running pointer, so two more callee-saved
-// registers and 0x10 of frame differ. The original's font MTXScale u16->float conversion uses the
-// unsigned magic double_to_int_mask_80301b70 from unk_0x8025de70.o's .rodata; under MUST_MATCH it
-// converts as signed and shares double_to_int_803019d8.
+// NONMATCHING (93.72%): the remaining diffs are register allocation plus two things the original did while
+// the error strings and this function shared one translation unit. (1) The interrupt restore after
+// OSFillFPUContext: the original is inline mfmsr/ori 0x8000/ori 2/mtmsr/isync (inline asm is not allowed here),
+// written as PPCMtmsr(PPCMfmsr() | 0x8002), which calls the two SDK functions. (2) The font MTXScale
+// conversion: the original is unsigned and loads its 2^52 mask at str_803019E0+0x190
+// (double_to_int_mask_80301b70 in unk_0x8025de70.o's .rodata); under MUST_MATCH it converts as signed and
+// shares this unit's .rodata double_to_int_803019d8, because an unsigned conversion would emit an extra
+// 8-byte .rodata object here and shift the unit's data (matched_data drops 80 -> 32). The error strings are
+// read as offsets from str_803019E0, the single .rodata base register the original compiler used (its `addi
+// rN, r29, off`); the offsets are the original's. The original also keeps context/error/dsisr/dar in
+// r26/r23/r25/r24, the string base in r29 and an indexed gpr loop (offset in r23), while this compiler picks
+// different callee-saved registers and a running pointer, so it saves two fewer registers and the frame is
+// 0x10 smaller.
+// NONMATCHING (93.72%): register allocation, the inline-msr restore and the unsigned font-conversion mask.
 void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 	//registers
 	OSFontHeader* fontHeader;
@@ -56,6 +62,7 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	s32 width2, height2;
 	int i;
 	u32 count, stack;
+	const char* strings;
 	u16 w1, w2, h1, h2, x1, x2, y1, y2;
 	//stack vars
 	char print_buffer2[0x400]; // 0x10E0
@@ -72,6 +79,7 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	u32 clearColor;
 #endif
 
+	strings = (const char*)str_803019E0;
 	if (N_getDebugMode() >= 0) {
 		psndExit();
 		while (1) {} //softlock
@@ -79,42 +87,42 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 
 	switch (error) {
 		case OS_ERROR_DSI:
-			strcpy(print_buffer, str_803019E0);
+			strcpy(print_buffer, strings + 0x0);
 			break;
 		case OS_ERROR_ISI:
-			strcpy(print_buffer, str_803019F8);
+			strcpy(print_buffer, strings + 0x18);
 			break;
 		case OS_ERROR_PROGRAM:
-			strcpy(print_buffer, str_80301A10);
+			strcpy(print_buffer, strings + 0x30);
 			break;
 	}
-	sprintf(print_buffer2, str_80301A2C, context);
+	sprintf(print_buffer2, strings + 0x4c, context);
 	strcat(print_buffer, print_buffer2);
 	for (i = 0; i < 16; i++) {
-		sprintf(print_buffer2, str_80301A48,
+		sprintf(print_buffer2, strings + 0x68,
 			i, context->gpr[i],
 			i + 16, context->gpr[i + 16]
 		);
 		strcat(print_buffer, print_buffer2);
 	}
-	sprintf(print_buffer2, str_80301A6C, context->lr, context->cr);
+	sprintf(print_buffer2, strings + 0x8c, context->lr, context->cr);
 	strcat(print_buffer, print_buffer2);
-	sprintf(print_buffer2, str_80301A8C, context->srr0, context->srr1);
+	sprintf(print_buffer2, strings + 0xac, context->srr0, context->srr1);
 	strcat(print_buffer, print_buffer2);
-	sprintf(print_buffer2, str_80301AAC, dsisr, dar);
+	sprintf(print_buffer2, strings + 0xcc, dsisr, dar);
 	strcat(print_buffer, print_buffer2);
 	strcat(print_buffer, str_80422604);
-	sprintf(print_buffer2, str_80301ACC);
+	sprintf(print_buffer2, strings + 0xec);
 	strcat(print_buffer, print_buffer2);
 	stack = context->gpr[1]; //get r1 (stack)
 	i = 0;
 	while ((stack != 0) && (stack != 0xFFFFFFFF) && (i++ < 16)) {
-		sprintf(print_buffer2, str_80301AF4, stack, *(u32*)stack, *(u32*)(stack + 4));
+		sprintf(print_buffer2, strings + 0x114, stack, *(u32*)stack, *(u32*)(stack + 4));
 		strcat(print_buffer, print_buffer2);
 		stack = *(u32*)stack;
 	}
 	strcat(print_buffer, str_80422604);
-	sprintf(print_buffer2, str_80301B10, context->srr0, dar);
+	sprintf(print_buffer2, strings + 0x130, context->srr0, dar);
 	strcat(print_buffer, print_buffer2);
 	psndExit();
 	OSFillFPUContext(context);

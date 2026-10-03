@@ -391,12 +391,14 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
 }
 
 
-// Only 13 instructions differ, all register naming or block layout: the clear loop's counter is r28
-// where the original uses r27 (offset r27 vs r28), the `kpaGetLevel()==0` test emits bne+b where the
-// original emits beq+b, and in the x/y/z block the sz/entry[1] temporaries land in f3/f4 vs f5/f3.
-// Computing the head offsets first and only adding the position after the entry[2]/flags guard (with
-// `entry += 3` as a body statement) is what took this from 46 to 13 differing instructions.
-// NONMATCHING (95.67%): no instruction selection, constant or stack slot differs.
+// The clear loop is the only difference left. Using a separate loop variable `j` (not the main
+// loop's `i`) keeps the clear-loop copy and the `3.1415927f * angle / 180.0f` constants in the
+// original's registers; the counter/offset then sit in r28/r27 where the original has r27/r28, so
+// 7 instructions differ only by that swap. Nothing tried flips it: giving the clear loop its own
+// byte-offset variable fixes the roles but emits `li r28, 0` where the original has `mr r28, r27`
+// (2 opcode diffs, a slightly lower objdiff score), and the struct/bitfield aggregate copies that
+// produce that `mr` are spilled to the stack in this function.
+// NONMATCHING (99.52%): only the clear-loop counter/offset register swap differs.
 void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     // per-head offset tables (forward, height, facing condition)
     static s32 _ofs0[] = { 3, 12, 16, 1, 0, 16, 0, -9, 16, 0 };
@@ -414,6 +416,7 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     s32* entry;
     void* result;
     s32 ofs;
+    s32 j;
 
     mp = marioGetPtr();
     if (mp->flags & 0x20000) {
@@ -427,9 +430,9 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     }
     dist = *outY;
     *outY = -1.0f;
-    for (i = 0; i < 10; i++) {
-        KPA(marioGetPtr())->head[i] = NULL;
-        KPA(marioGetPtr())->headDist[i] = 1000.0f;
+    for (j = 0; j < 10; j++) {
+        KPA(marioGetPtr())->head[j] = NULL;
+        KPA(marioGetPtr())->headDist[j] = 1000.0f;
     }
     entry = headchkofs[kpaGetLevel()];
     count = entry[0];
@@ -450,28 +453,32 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
             break;
         }
     } else {
-        if (kpaGetLevel() == 0) {
+        switch (kpaGetLevel()) {
+        case 0:
             if (mp->currMotionId == 0x25) {
                 dist = 10.0f;
             } else {
                 dist = a;
             }
-        } else {
+            break;
+        default:
             dist = a;
+            break;
         }
     }
     angle = 3.1415927f * angle / 180.0f;
     ofs = 0;
     for (i = 0; i < count; i++, ofs += 4) {
+        f32 yo;
         f32 sx = (f32)entry[0] * (f32)sin(angle);
         f32 c = (f32)cos(angle);
         f32 sz = (f32)entry[0] * -c;
-        f32 yo = (f32)entry[1];
         f32 hitX, hitY, hitZ, hitNX, hitNY, hitNZ, distance;
         f32 x, y, z;
         s32 t = entry[2];
         void* hit;
 
+        yo = (f32)entry[1];
         entry += 3;
         if (t == 0 && !(mp->flags & 0x10000)) continue;
         x = mp->position.x + sx;

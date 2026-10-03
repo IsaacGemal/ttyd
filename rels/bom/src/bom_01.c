@@ -1977,15 +1977,20 @@ extern const f32 float_0p4967_bom_00007080;
 extern const f32 float_100_bom_00007000;
 extern const f32 float_1_bom_00006ffc;
 
-// The instruction sequence, frame (0x110) and the sin/cos polynomial all match; only
-// the FPR colouring differs. Comparing float_3p1416 directly (no `pi` local) removes the
-// f31 clash, but MWCC still colours angle as f1 and shifts the coefficient group.
-// Retail keeps angle in f3, pi in f31, twoPi/double/quarter on f28/f29/f30 and the sin/cos
-// coefficients on f23..f27. Declaring the scratch temps `f0, f2, f4, f3, f1` is what puts
-// angle in f3; the remaining diff is the f29/f30 (double/quarter) swap and the f0/f1
-// scratch pair, which MWCC will not reproduce. Declaration order was exhausted over all
-// 120 permutations of the five constants (best is the one below).
-// NONMATCHING (89.33%): a permuter candidate - only register colouring differs.
+// The instruction sequence, frame (0x110) and the whole preheader FPR block match: retail keeps
+// 100=f23, scale=f24, c4967=f25, c16605=f26, one=f27, twoPi=f28, double=f29, quarter=f30, pi=f31
+// and the angle in f3, and so does this version. The sin/cos seed loads must stay inside the loop
+// (the constants are read through a MUST_MATCH volatile cast; a plain read is hoisted to a
+// callee-saved register), and opt_common_subs off is needed or MWCC merges the loop-invariant
+// pool loads and shifts the whole f23..f31 block. opt_lifetimes off is what makes the seed
+// accumulate in place (seed f2/f4, `fmsubs f2, f2, f0, ...`) instead of through an extra temp.
+// Remaining diff: the per-branch angle-square / half-pi scratch works in f1 where retail uses f0
+// (one FPR off for the whole sin/cos scratch block). Two separate temps come out f0/f1 swapped
+// and score lower; every scratch declaration/assignment order and angle form tried leaves this.
+#pragma opt_common_subs off // CSE on merges the loop-invariant float pool loads, shifting the f23..f31 block
+#pragma opt_lifetimes off // default lifetime analysis splits the seed load from its accumulator (f4/f0/f1 instead of f2)
+// NONMATCHING (96.91%): constant block and seed accumulators match; only the sin/cos per-branch
+// scratch temp is f1 where retail uses f0.
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
@@ -1995,7 +2000,7 @@ static void depthDisp(CameraId cameraId, void* param) {
     f32 scale;
     s32 i;
     s32 mtxId;
-    f32 f0, f2, f4, f3, f1;
+    f32 f1, f2, f3, f4;
 
     scale = (f32)evtGetValue(NULL, GW(5)) / float_100_bom_00007000;
     cam = camGetPtr(cameraId);
@@ -2018,70 +2023,79 @@ static void depthDisp(CameraId cameraId, void* param) {
     for (i = 0; i < 8; i++) {
         twoPi = float_6p2832_bom_00007060;
         quarter = float_0p125_bom_00007064;
-        f3 = (twoPi * (f32)i) * quarter;
+        f1 = twoPi * (f32)i;
+        f3 = f1 * quarter;
+#ifdef MUST_MATCH
+        f2 = *(volatile const f32*)&float_0p00761_bom_00007068;
+#else
         f2 = float_0p00761_bom_00007068;
+#endif
         c16605 = float_0p16605_bom_0000706c;
         one = float_1_bom_00006ffc;
         if (f3 <= float_3p1416_bom_00007070) {
             if (f3 <= float_1p5708_bom_00007074) {
-                f0 = f3 * f3;
-                f2 = (f2 * f0) - c16605;
-                f2 = (f2 * f0) + one;
+                f1 = f3 * f3;
+                f2 = (f2 * f1) - c16605;
+                f2 = (f2 * f1) + one;
                 f2 = f2 * f3;
             } else {
-                f0 = f3 - float_1p5708_bom_00007074;
-                f1 = float_1p5708_bom_00007074 - f0;
-                f0 = f1 * f1;
-                f2 = (f2 * f0) - c16605;
-                f2 = (f2 * f0) + one;
+                f1 = f3 - float_1p5708_bom_00007074;
+                f1 = float_1p5708_bom_00007074 - f1;
+                f1 = f1 * f1;
+                f2 = (f2 * f1) - c16605;
+                f2 = (f2 * f1) + one;
                 f2 = f2 * f1;
             }
         } else {
             if (f3 < float_4p7124_bom_00007078) {
                 f1 = f3 - float_3p1416_bom_00007070;
-                f0 = f1 * f1;
-                f2 = (f2 * f0) - c16605;
-                f2 = (f2 * f0) + one;
+                f1 = f1 * f1;
+                f2 = (f2 * f1) - c16605;
+                f2 = (f2 * f1) + one;
                 f2 = f2 * f1;
                 f2 = -f2;
             } else {
-                f0 = f3 - float_4p7124_bom_00007078;
-                f1 = float_1p5708_bom_00007074 - f0;
-                f0 = f1 * f1;
-                f2 = (f2 * f0) - c16605;
-                f2 = (f2 * f0) + one;
+                f1 = f3 - float_4p7124_bom_00007078;
+                f1 = float_1p5708_bom_00007074 - f1;
+                f1 = f1 * f1;
+                f2 = (f2 * f1) - c16605;
+                f2 = (f2 * f1) + one;
                 f2 = f2 * f1;
                 f2 = -f2;
             }
         }
+#ifdef MUST_MATCH
+        f4 = *(volatile const f32*)&float_0p03705_bom_0000707c;
+#else
         f4 = float_0p03705_bom_0000707c;
+#endif
         c4967 = float_0p4967_bom_00007080;
         if (f3 <= float_3p1416_bom_00007070) {
             if (f3 <= float_1p5708_bom_00007074) {
-                f0 = f3 * f3;
-                f4 = (f4 * f0) - c4967;
-                f4 = (f4 * f0) + one;
+                f1 = f3 * f3;
+                f4 = (f4 * f1) - c4967;
+                f4 = (f4 * f1) + one;
             } else {
-                f0 = f3 - float_1p5708_bom_00007074;
-                f0 = float_1p5708_bom_00007074 - f0;
-                f0 = f0 * f0;
-                f4 = (f4 * f0) - c4967;
-                f4 = (f4 * f0) + one;
+                f1 = f3 - float_1p5708_bom_00007074;
+                f1 = float_1p5708_bom_00007074 - f1;
+                f1 = f1 * f1;
+                f4 = (f4 * f1) - c4967;
+                f4 = (f4 * f1) + one;
                 f4 = -f4;
             }
         } else {
             if (f3 < float_4p7124_bom_00007078) {
-                f0 = f3 - float_3p1416_bom_00007070;
-                f0 = f0 * f0;
-                f4 = (f4 * f0) - c4967;
-                f4 = (f4 * f0) + one;
+                f1 = f3 - float_3p1416_bom_00007070;
+                f1 = f1 * f1;
+                f4 = (f4 * f1) - c4967;
+                f4 = (f4 * f1) + one;
                 f4 = -f4;
             } else {
-                f0 = f3 - float_4p7124_bom_00007078;
-                f0 = float_1p5708_bom_00007074 - f0;
-                f0 = f0 * f0;
-                f4 = (f4 * f0) - c4967;
-                f4 = (f4 * f0) + one;
+                f1 = f3 - float_4p7124_bom_00007078;
+                f1 = float_1p5708_bom_00007074 - f1;
+                f1 = f1 * f1;
+                f4 = (f4 * f1) - c4967;
+                f4 = (f4 * f1) + one;
             }
         }
         mtxId = 30 + i * 3;
@@ -2125,6 +2139,8 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXTexCoord2s16(0, 1);
     sysWaitDrawSync();
 }
+#pragma opt_lifetimes reset
+#pragma opt_common_subs reset
 
 extern const Vec vec3_bom_0000649c;
 extern const Vec vec3_bom_000064a8;

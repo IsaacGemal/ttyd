@@ -1305,11 +1305,15 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 
 // immediate-mode GX quad reconstructed; loading blockGlyph after FontGetWidthPtr, declaring hueoff/hueL/hueR
 // as u8 and computing hueR at its second use matched retail's schedule. width is a u8 (retail lbz's it).
-// yoffs is computed as a separate multiply then add (retail's fmuls+fadds are not contracted). The right-edge
-// x is (s16)(x + fwidthS) (kept in an s16 local, and the hue recomputes it cast through u16) and the
-// bottom-edge y is (s16)((y - 1) - fheightS). All four vertices write HSV2RGB's result after the position pair.
-// NONMATCHING (56.70%): retail keeps a taller frame (0x140 vs 0x130) and two more callee-saved GPRs; the
-// preamble's int->float conversion schedule and register colours still differ.
+// fheight/fheightS/fwidth/fwidthS are read from the raw fields (fheightS/fwidthS re-read the field, which
+// changes the int->float conversion schedule), the `n - row*sheetrows` / `row - col*sheetcolumns` values live in
+// s32 locals across the GXBegin/irand calls (retail keeps them), the edge coordinates use s16 locals (`xs`/`ys`),
+// and the texture-coordinate noise offsets are float (`n1 + fwidthS`, `n2 + fheightS`). The right-edge x is
+// (s16)(x + fwidthS) and the bottom-edge y is (s16)((y - 1) - fheightS); all four vertices write HSV2RGB's
+// result after the position pair.
+// NONMATCHING (61.01%): retail keeps a 0x140 frame with 11 callee-saved GPRs (stmw r21); ours needs 0x160
+// with 9 (stmw r23). The int->float conversion schedule/colors and the texcoord re-conversion (extra fctiwz)
+// still differ, so the FIFO store schedule is not yet identical.
 void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	u8* info = (u8*)FontGetWidthPtr(code);
 	BinaryFontGlyph* blk = blockGlyph;
@@ -1317,6 +1321,8 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	s32 n = code - blk->firstcode;
 	s32 row = n / blk->sheetrows;
 	s32 col = row / blk->sheetcolumns;
+	s32 yy = row - col * blk->sheetcolumns;
+	s32 xx = n - row * blk->sheetrows;
 	f32 xoffs;
 	f32 yoffs;
 	f32 fwidth;
@@ -1325,6 +1331,8 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	f32 fheightS;
 		s16 xr;
 	s16 yb;
+	s16 xs;
+	s16 ys;
 	u8 hueoff;
 	u8 hueL;
 	u8 hueR;
@@ -1333,24 +1341,26 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	u8 n2;
 	u8 n1;
 
-	yoffs = (f32)(row - col * blk->sheetcolumns) * blk->cellheight;
-	xoffs = (f32)(n - row * blk->sheetrows) * blk->cellwidth + info[0];
-	fheight = blk->cellheight;
+	yoffs = (f32)yy * blk->cellheight;
+	xoffs = (f32)xx * blk->cellwidth + info[0];
+	fheight = (f32)blk->cellheight;
 	yoffs = 1.0f + yoffs;
-	fheightS = fheight * 1.0f;
-	fwidth = width;
-	fwidthS = fwidth * 1.0f;
+	fheightS = blk->cellheight * 1.0f;
+	fwidth = info[1];
+	fwidthS = width * 1.0f;
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	n1 = irand(64);
 	n2 = irand(64);
-	hueoff = (u8)gp->retraceCount * 2;
+	hueoff = (u8)(gp->retraceCount * 2);
 	hueL = (u8)(x + (u8)(x - hueoff));
-	xr = (s16)(x + fwidthS);
-	yb = (s16)(y - 1 - fheightS);
+	xs = x;
+	ys = y - 1;
+	xr = (s16)(xs + fwidthS);
+	yb = (s16)(ys - fheightS);
 
 	hsv = dat_8041a2f0;
-	GXPosition3s16(x, y - 1, 0);
+	GXPosition3s16(xs, ys, 0);
 	hsv.r = hueL;
 
 	rgb = HSV2RGB(&hsv);
@@ -1358,14 +1368,14 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	GXTexCoord2u16((u16)xoffs, (u16)yoffs);
 	GXTexCoord2u8(n1, n2);
 
-	hueR = (u8)((u16)(s16)(x + fwidthS) + (u8)(x - hueoff));
-	GXPosition3s16(xr, y - 1, 0);
+	hueR = (u8)((u16)xr + (u8)(x - hueoff));
+	GXPosition3s16(xr, ys, 0);
 	hsv.r = hueR;
 
 	rgb = HSV2RGB(&hsv);
 	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
 	GXTexCoord2u16((u16)(xoffs + fwidth), (u16)yoffs);
-	GXTexCoord2u8(n1 + (u8)width, n2);
+	GXTexCoord2u8(n1 + fwidthS, n2);
 
 	hsv.r = hueR;
 	GXPosition3s16(xr, yb, 0);
@@ -1373,13 +1383,13 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	rgb = HSV2RGB(&hsv);
 	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
 	GXTexCoord2u16((u16)(xoffs + fwidth), (u16)(yoffs + fheight));
-	GXTexCoord2u8(n1 + (u8)width, n2 + (u8)fheight);
+	GXTexCoord2u8(n1 + fwidthS, n2 + fheightS);
 
-	GXPosition3s16(x, yb, 0);
+	GXPosition3s16(xs, yb, 0);
 	hsv.r = hueL;
 
 	rgb = HSV2RGB(&hsv);
 	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
 	GXTexCoord2u16((u16)xoffs, (u16)(yoffs + fheight));
-	GXTexCoord2u8(n1, n2 + (u8)fheight);
+	GXTexCoord2u8(n1, n2 + fheightS);
 }

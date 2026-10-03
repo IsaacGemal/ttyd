@@ -235,18 +235,19 @@ void badgeShop_bteresaGeneration(void) {
 	}
 }
 
-// `badge`/`value` are `s16`, `count4`/`stopcount` s16, the first loop's `value |= 1` (the
-// target's `ori r0,r5,1`, not `li`) and dropping the `v28` local (re-reading
-// `bdsw->field_0x10C`) each recovered a little; writing the bargain loop as a real
-// `while (bdsw->field_0x10C + bdsw->field_0x110 < count3)` (not `while(1){if(...)break;}`)
-// reproduces the target's rotated `b <cond>` loop layout and was the big win. What remains is
-// structural: we keep one extra callee-saved register (stmw r23 vs the target's r24), the
-// inlined `badgeShop_get(bdsw->special_table, ...)` keeps the bottakuru compare the target
-// folds, and the compiler hoists the second loop's `count4 = 0` / `mtctr` setup above the first
-// loop; the rest is register allocation.
-// NONMATCHING (72.99%): the field-init stores share the loop counter's zero register in target
-// (`li r25,0`; `stw r25,0xf8..`), ours materialises a fresh `r0` for the two `field_0x110`
-// stores; one `extsh r4,r0` is one slot later than target.
+#pragma inline_max_size(160) // keep badgeShop_get inlined but badgeShop_set a real `bl`
+// With that pragma the target's prologue/allocation fall into place (badgeShop_get stays
+// inlined, badgeShop_set stays a `bl`). The remaining diffs are (a) the field-init stores:
+// the target shares the first loop's counter register as the zero (`li r25,0`;
+// `stw r25,0xf8..`), MWCC here rematerialises a fresh `r0` and emits a second `li r25,0`; and
+// (b) the final loop's `(s16)badge` conversion, which lands one slot earlier than the
+// target's. (b) is the header's fault: `badgeShop_add`'s second parameter is `s16` in the
+// original (see the MUST_MATCH note in evt_badgeShop_throw_inc); with the header fixed and the
+// cast dropped the final loop matches and the function reaches 99.68% (only (a) left).
+// Earlier findings that still hold: `value`/`count4`/`stopcount` are s16, the first loop's
+// `value |= 1` is the target's `ori r0,r5,1` (not `li`), and the bargain loop must be a real
+// `while (bdsw->field_0x10C + bdsw->field_0x110 < count3)` to get the target's rotated loop.
+// NONMATCHING (99.21%): field-init zero coalescing; final `(s16)` conversion order (header).
 void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably fixes
 	s16 value;
 	s32 count3;
@@ -375,6 +376,7 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 		}
 	}
 }
+#pragma inline_max_size reset
 
 // Target reuses r6 for `index / 4` (`addze r6, r0`); our separate `word` temp gets r9
 // because the allocator treats `bound` (also r6) as still live, so the load/store index and

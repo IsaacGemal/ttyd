@@ -274,8 +274,9 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
     return result;
 }
 
-// NONMATCHING (76.08%): the pi branch in the original makes dead sin/cos calls
-// and register allocation differs.
+// NONMATCHING (95.80%): early-return four probes; calls, dead pi sin/cos, baseY cache and constants match.
+// Only register allocation differs: the original puts height/radius/distance in f29/f30/f31 (sin reuses
+// f31), ours uses f30/f31/f29 (f26 for sin), shifting the float_0 load and the final pos copy.
 void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
     f32 distance;
     f32 hitX, hitY, hitZ;
@@ -286,58 +287,81 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
     f32 c;
     f32 y;
     f32 z;
+    f32 baseY;
+    f32 t;
+    f32 u;
 
     radius = marioGetPtr()->wPlayerCollisionBox.x;
-    distance = float_0p1 + height;
+
     s = sin(MATCH_F32(float_1p5708));
     c = cos(MATCH_F32(float_1p5708));
-    x = radius * s;
-    x = pos->x + x;
-    y = pos->y + height;
-    z = radius * -c;
-    z = pos->z + z;
+    baseY = pos->y;
+    t = radius * s;
+    x = pos->x + t;
+    y = baseY + height;
+    u = radius * -c;
+    z = pos->z + u;
+    distance = float_0p1 + height;
     if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
         out->x = x;
         out->z = z;
-        out->y = pos->y;
-    } else {
-        s = sin(MATCH_F32(float_4p7124));
-        c = cos(MATCH_F32(float_4p7124));
-        x = radius * s;
-        x = pos->x + x;
-        y = pos->y + height;
-        z = radius * -c;
-        z = pos->z + z;
-        if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
-            out->x = x;
-            out->z = z;
-            out->y = pos->y;
-        } else {
-            x = pos->x;
-            y = pos->y + height;
-            z = pos->z;
-            if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
-                out->x = x;
-                out->z = z;
-                out->y = pos->y;
-            } else {
-                s = sin(float_0);
-                c = cos(float_0);
-                x = radius * s;
-                x = pos->x + x;
-                y = pos->y + height;
-                z = radius * -c;
-                z = pos->z + z;
-                if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
-                    out->x = x;
-                    out->z = z;
-                    out->y = pos->y;
-                } else {
-                    *out = *pos;
-                }
-            }
-        }
+        out->y = baseY;
+        return;
     }
+
+    s = sin(MATCH_F32(float_4p7124));
+    c = cos(MATCH_F32(float_4p7124));
+    baseY = pos->y;
+    t = radius * s;
+    x = pos->x + t;
+    y = baseY + height;
+    u = radius * -c;
+    z = pos->z + u;
+    distance = float_0p1 + height;
+    if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
+        out->x = x;
+        out->z = z;
+        out->y = baseY;
+        return;
+    }
+
+    s = sin(MATCH_F32(float_3p1416));
+    c = cos(MATCH_F32(float_3p1416));
+    x = pos->x;
+    z = pos->z;
+    baseY = pos->y;
+    y = baseY + height;
+    distance = float_0p1 + height;
+    if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
+        out->x = x;
+        out->z = z;
+        out->y = baseY;
+        return;
+    }
+
+    s = sin(MATCH_F32(float_0));
+    c = cos(MATCH_F32(float_0));
+    baseY = pos->y;
+    t = radius * s;
+    x = pos->x + t;
+    y = baseY + height;
+    u = radius * -c;
+    z = pos->z + u;
+    distance = float_0p1 + height;
+    if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
+        out->x = x;
+        out->z = z;
+        out->y = baseY;
+        return;
+    }
+#ifdef MUST_MATCH
+    // Word-wise copy keeps the original's r0/r3 scratch order.
+    *(u32*)&out->x = *(u32*)&pos->x;
+    *(u32*)&out->y = *(u32*)&pos->y;
+    *(u32*)&out->z = *(u32*)&pos->z;
+#else
+    *out = *pos;
+#endif
 }
 
 static inline float fsub32(f32 arg0, f32 arg1)

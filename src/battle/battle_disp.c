@@ -1216,63 +1216,47 @@ const double double_to_int_mask_802ede30 = 4503599627370496.0;
 
 // The original passes the vectors and colour by value to an inlined wrapper, which copies
 // them into the _btlDispTex4 argument slots. Keep the wrapper's body a plain pass-through.
-// NONMATCHING (86.14%): the target holds every argument value in registers before storing it
-// into the argument block (r14-r25), but the compiler here interleaves the loads and stores
-// unless the match-only copies below force the same register pressure. The extra copies add
-// 0x30 of frame (0x1d0 vs the target's 0x1a0) and the parameter registers come out r15/r22-r26
-// instead of the target's r26-r30; the conversion double is also at .rodata+0x58 instead of +0x60.
 static inline void _btlDispTex4Sub(s32 id, Vec trans, Vec scale, Vec rot, Vec pos, Vec scale2, GXColor color) {
 	_btlDispTex4(id, &trans, &scale, &rot, &pos, &scale2, &color);
 }
 
-// NONMATCHING (86.14%): see the note on the helper above. Everything under MUST_MATCH is a
-// match-only copy sequence; the natural form is the #else branch.
+// NONMATCHING (86.94%): the target batches every argument store into r14-r25 and keeps its
+// trans/scale/rot pointers in r27-r29; caching the dereferences in locals reproduces the batching
+// but spills them (frame 0x1c0 vs 0x1a0) and puts the u16->f32 double at +0x58 not +0x60.
 void btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, GXColor* color) {
 #ifdef MUST_MATCH
-	Vec new_var3;
 	u16 width;
 	u16 height;
-	Vec new_var7;
-	int new_var6;
-	Vec new_var4;
-	Vec new_var;
 	f32 halfW;
 	f32 halfH;
-	Vec new_var5;
+	Vec t;
+	Vec s;
+	Vec r;
 	Vec pos;
-	Vec new_var2;
 
 	pos.z = float_0_8041bf58;
 	btlDispGetTexSize(id, &width, &height);
-	new_var6 = color != NULL;
 	halfW = float_0p5_8041bf4c * ((f32)width * scale->x);
-	halfH = (f32)height * scale->y;
-	halfH = float_0p5_8041bf4c * halfH;
+	halfH = float_0p5_8041bf4c * ((f32)height * scale->y);
 
+	t = *trans;
+	s = *scale;
+	r = *rot;
 	pos.x = -halfW;
-	new_var3 = *scale;
-	new_var7 = *trans;
-	// match-only: the repeated test keeps `color` live in a callee-saved register like the target
-	if ((new_var6 && new_var6) && new_var6) {
-	}
-	new_var4 = new_var7;
 	pos.y = halfH;
-	new_var5 = *rot;
-	new_var = new_var5;
-	_btlDispTex4Sub(id, new_var7, new_var3, *rot, pos, vec3_802edddc, *color);
+	_btlDispTex4Sub(id, t, s, r, pos, vec3_802edddc, *color);
 
 	pos.x = halfW;
-	new_var2 = new_var4;
 	pos.y = halfH;
-	_btlDispTex4Sub(id, new_var2, new_var3, new_var, pos, vec3_802edde8, *color);
+	_btlDispTex4Sub(id, t, s, r, pos, vec3_802edde8, *color);
 
 	pos.x = halfW;
 	pos.y = -halfH;
-	_btlDispTex4Sub(id, *trans, new_var3, new_var, pos, vec3_802eddf4, *color);
+	_btlDispTex4Sub(id, t, s, r, pos, vec3_802eddf4, *color);
 
 	pos.x = -halfW;
 	pos.y = -halfH;
-	_btlDispTex4Sub(id, new_var4, new_var3, new_var5, pos, vec3_802ede00, *color);
+	_btlDispTex4Sub(id, t, s, r, pos, vec3_802ede00, *color);
 #else
 	u16 width;
 	u16 height;

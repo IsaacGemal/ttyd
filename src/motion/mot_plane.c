@@ -1082,9 +1082,10 @@ void mot_plane_post(void) {
 	allPartyRideOff2();
 }
 
-// v3C and v30 blocks plus the five marioHitCheck calls now match except for a few FP/address
-// registers (v30.y result f30 vs f1, planeData/vec3 r3/r4) and the call-1 load schedule.
-// NONMATCHING (97.18%): every constant, call argument and data reference is correct.
+// The v3C block and the five marioHitCheck calls match. Remaining diffs (98.79%) are
+// register/schedule only: the v30.y fmadds result lands in f1 instead of f30, which also
+// puts ten in f3 instead of f7, and the first marioHitCheck hoists dist/a1 before a0/a2.
+// NONMATCHING (98.79%): every constant, call argument and data reference is correct.
 s32 chkCollision(f32* out) {
 	s32 flag = 0;
 	MarioWork* mario = marioGetPtr();
@@ -1148,8 +1149,8 @@ s32 chkCollision(f32* out) {
 		vz = pd40 * (cosC * -cosA) + vz;
 		vy = sinA * pd40 + vy;
 		sincosf(&sinA, &cosA, MF32(DATA, 0x4) - MATCH_F32(float_90_8041ac04));
-		v30 = vec3_802c5d08;
 		vx = vx + (planeData[39] * (cosA * sinC) - planeData[39] * (sinR * cosC));
+		v30 = vec3_802c5d08;
 		v30.x = vx;
 		v30.y = vy + planeData[39] * (sinA * cosR);
 		vz = vz + (planeData[39] * (cosA * cosC) - planeData[39] * (sinR * sinC));
@@ -1191,7 +1192,7 @@ s32 chkCollision(f32* out) {
 		f32 a1 = MF32(DATA, 0x34);
 		f32 a2 = MF32(DATA, 0x38);
 		mario->hitobjStandOn = NULL;
-		dist = MATCH_F32(float_10p1_8041ac10);
+		dist = float_10p1_8041ac10;
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
 		                    a0, a1 + ten, a2, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
 	}
@@ -1207,7 +1208,7 @@ s32 chkCollision(f32* out) {
 			f32 a1 = MF32(DATA, 0x40);
 			f32 a2 = MF32(DATA, 0x44);
 			mario->hitobjStandOn = NULL;
-			dist = MATCH_F32(float_10p1_8041ac10);
+			dist = float_10p1_8041ac10;
 			hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
 			                    a0, a1 + ten, a2, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
 		}
@@ -1233,10 +1234,10 @@ s32 chkCollision(f32* out) {
 	*(HitEntry**)((u8*)mario + 0x1F4) = NULL;
 	if (mario->hitobjStandOn == NULL) {
 		{
+			f32 a0 = MF32(DATA, 0x30);
 			f32 a1 = MF32(DATA, 0x34);
 			f32 a2 = MF32(DATA, 0x38);
-			f32 a0 = MF32(DATA, 0x30);
-			dist = MATCH_F32(float_2_8041ac18);
+			dist = float_2_8041ac18;
 			hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
 			                    a0, a1, a2, 0.0f, MATCH_F32(float_1_8041ac1c), 0.0f);
 		}

@@ -78,20 +78,25 @@ s32 battleAcResult_ButtonDown(BattleWork* work) {
 // optimize_for_size: battleAcMain's prologue uses stmw/lmw.
 #pragma optimize_for_size on
 // The two unique-button loops must be `while (!found)` (a do-while leaves `pick` unspilled and drops
-// the frame to 0x30 with only 10 callee-saved GPRs). With that, the frame (0x40), the stmw/lmw range
-// (r20-r31) and bd/disp/cont/found all match. Tried: every relevant pragma (opt_lifetimes/propagation/
-// dead_assignments/common_subs/peephole/scheduling/global_optimizer/optimize_for_size), local
-// declaration order/scope/type, `register`, an inline helper, case order, do-while vs while, and
-// pool/data placement.
-// NONMATCHING (95.94%): control flow, constants and memory accesses match; what is left is MWCC's
-// callee-saved colouring (work r21/target r22, smooth r30/r25, sfx r26/r31, i r31/r30, offset r22/r26,
-// table r23/r21, pick r25/r24), a couple of `add`+`stw` vs `stwx` addresses, and one extra `mr`.
+// the frame to 0x30 with only 10 callee-saved GPRs). `bd->states[i] = 0;` must be written inside both
+// arms of `case -3` (duplicated, not once after the if/else): a shared store lets MWCC merge the two
+// tails, and that alone changes every callee-saved colouring. `i` and `allDone` must be declared here
+// at function scope (declaring them in their case blocks leaves work in r21 instead of r22).
+// Tried on top of that: all 7! declaration orders, every relevant pragma (opt_lifetimes/propagation/
+// dead_assignments/common_subs/peephole/scheduling/global_optimizer/optimize_for_size), types/`register`/
+// scope for i, sfx, allDone, smooth, statement order, an inline helper, case order, do-while vs while,
+// and pool/data placement. Everything else (work r22, smooth r25, disp r28, bd r29, cont r27, offset
+// r26, table r21, found r20, pick r24/r23) matches.
+// NONMATCHING (99.52%): only the i/sfx callee-saved swap (i r31/target r30, sfx r30/target r31) and the
+// one extra `mr` from the string `addi r0, r3, @l; mr r30, r0` (target: direct `addi r31, r3, @l`) remain.
 s32 battleAcMain_ButtonDown(BattleWork* work) {
-    s32 smooth = 0;
+    const char* sfx;
     ButtonDownWork* bd = (ButtonDownWork*)((u8*)work + 0x1F4C);
     BattleACDispParams* disp = &work->actionCommands.dispParams;
     s32 cont;
-    const char* sfx;
+    s32 i;
+    s32 allDone;
+    s32 smooth = 0;
 
     if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
         smooth = 1;
@@ -104,7 +109,6 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
         cont = 0;
         switch (work->actionCommands.mAcState) {
             case 0: {
-                s32 i;
                 work->actionCommands.result = 1;
                 memset(disp, 0, 0x2C);
                 disp->iconX = float_neg300_804204fc;
@@ -125,6 +129,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                         case -3:
                             if (*(s32*)&work->actionCommands.field_34[0x00] & 4) {
                                 bd->buttons[i] = _button_table[irand(4)];
+                                bd->states[i] = 0;
                             } else {
                                 u32 pick;
                                 s32 found = 0;
@@ -143,8 +148,8 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                                     }
                                 }
                                 bd->buttons[i] = pick;
+                                bd->states[i] = 0;
                             }
-                            bd->states[i] = 0;
                             break;
                         default: {
                             u32 pick;
@@ -201,8 +206,7 @@ s32 battleAcMain_ButtonDown(BattleWork* work) {
                     break;
                 }
                 {
-                    s32 i;
-                    s32 allDone = 1;
+                    allDone = 1;
                     work->actionCommands.outputParams[0] = 0;
                     for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
                         if (bd->buttons[i] == 0) {

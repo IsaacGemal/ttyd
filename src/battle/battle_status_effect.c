@@ -135,25 +135,33 @@ typedef struct BattleStatusChangeMsgWork {
 	u64 field_0x250;                       // 0x250
 } BattleStatusChangeMsgWork;
 
-// NONMATCHING (60.57%): 7 instructions differ, 16 missing, 10 extra, plus register differences.
+// The original passes the GXColor by value; the call below goes through a by-pointer prototype, which is
+// ABI-identical (a by-value GXColor struct is passed by reference) but steers MWCC's register allocation so
+// the 0x4330 conversion magic, the double_to_int base and the colour land in the target's r8/r9/r10 instead
+// of the swapped set (same trick as battle_message.c _disp).
 void _st_chg_msg_disp(CameraId camera, void* param) {
 	BattleWork* wp = _battleWorkPointer;
+	BattleStatusChangeMsgWork* work = (BattleStatusChangeMsgWork*)((u8*)wp + 0x18D88);
 	u16 lines;
-	u32 packed;
-	s32 width;
-	s32 half;
-	GXColor color = { 0xFF, 0xFF, 0xFF, 0xFF };
-	f32 f31;
-	char* msg = (char*)((u8*)wp + 0x18ED8);
+	u16 width;
+	f32 x;
+	f32 zero = 0.0f;
+	f32 neg120 = -120.0f; // keep the pool load: a bare `(s32)-120.0f` folds to -120 and drops the fctiwz
+	GXColor color;
 
-	packed = FontGetMessageWidthLine(msg, &lines);
-	width = packed & 0xFFFF;
-	half = (packed >> 1) & 0x7FFF;
-	f31 = 0.0f - (f32)half;
-	windowDispGX_Waku_col(0, color, f31 - 20.0f, -117.0f + (f32)(lines * 0x1D), (f32)(width + 0x28),
-	                      (f32)((lines + 1) * 0x1D + 1), 10.0f);
+	width = FontGetMessageWidthLine(work->message, &lines);
+	lines++;
+	color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+	x = zero - (f32)(width / 2);
+#ifdef MUST_MATCH
+	((void (*)(s32, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &color, x - 20.0f,
+	    -117.0f + (f32)((lines - 1) * 0x1D), (f32)(width + 0x28), (f32)(lines * 0x1D + 1), 10.0f);
+#else
+	windowDispGX_Waku_col(0, color, x - 20.0f, -117.0f + (f32)((lines - 1) * 0x1D),
+	                      (f32)(width + 0x28), (f32)(lines * 0x1D + 1), 10.0f);
+#endif
 	FontDrawStart();
-	FontDrawMessage((s32)f31, (s32)-120.0f + lines * 0x1D, msg);
+	FontDrawMessage((s32)x, (s32)neg120 + (lines - 1) * 0x1D, work->message);
 }
 
 BOOL BattleStatusChangeMsgMain(BattleWork* wp) {

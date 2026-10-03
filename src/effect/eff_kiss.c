@@ -343,9 +343,11 @@ static inline GXColor effKissAlphaColor(const void* src, s32 a) {
 }
 
 // GXColor temps go through the effKissAlphaColor inline return; halfAlpha/kissAlpha and the cdata base/1/2 temps
-// hoist to retail's r28/r27/r29/r26/r25, so pass/elem/i land in r22/r24/r23. Remaining: the named .sdata2 floats
-// pool as anonymous @NNN slots (sda21 relocations differ) and angleDeg/deg land f31/f30 vs retail f30/f31.
-// NONMATCHING (98.47%): structure, control flow, GX/MTX/vertex stream and all GPR/FPR saves match.
+// hoist to retail's r28/r27/r29/r26/r25, so pass/elem/i land in r22/r24/r23. The named .sdata2 floats pool as
+// anonymous @NNN slots (sda21 relocations differ; they resolve when the unit links).
+// NONMATCHING (99.53%): instructions, calls and FPR/GPR colours match; only the 8 by-value GXColor argument
+// temps land in different stack slots (retail places each call's build temp at arg-4; ours are packed
+// elsewhere), the alpha/2 add schedules one slot late, and the second switch's dispatch has two extra branches.
 void effKissDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	KissEffectWork* data = effect->userdata;
@@ -415,8 +417,8 @@ void effKissDisp(CameraId camId, void* param) {
 				effGetTexObj(0x14, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (pass == 0) {
-					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&unk_80423310, alpha / 2));
 					offset = 1.5f;
+					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&unk_80423310, alpha / 2));
 				} else {
 					((u8*)&kiss_col[type])[3] = alpha;
 					GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&kiss_col[type]);
@@ -476,6 +478,18 @@ void effKissDisp(CameraId camId, void* param) {
 			GXSetCurrentMtx(0);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 			if (type == 3) {
+#ifdef MUST_MATCH
+				// MUST_MATCH: a named 0.5f local makes MWCC emit rectW/rectH as the first fmuls operand like retail.
+				f32 h = 0.5f;
+				GXPosition3f32(-rectW * h, rectH * h, 0.0f);
+				GXTexCoord2f32(0.0f, 0.0f);
+				GXPosition3f32(rectW * h, rectH * h, 0.0f);
+				GXTexCoord2f32(texU, 0.0f);
+				GXPosition3f32(rectW * h, -rectH * h, 0.0f);
+				GXTexCoord2f32(texU, texV);
+				GXPosition3f32(-rectW * h, -rectH * h, 0.0f);
+				GXTexCoord2f32(0.0f, texV);
+#else
 				GXPosition3f32(-rectW * 0.5f, rectH * 0.5f, 0.0f);
 				GXTexCoord2f32(0.0f, 0.0f);
 				GXPosition3f32(rectW * 0.5f, rectH * 0.5f, 0.0f);
@@ -484,7 +498,20 @@ void effKissDisp(CameraId camId, void* param) {
 				GXTexCoord2f32(texU, texV);
 				GXPosition3f32(-rectW * 0.5f, -rectH * 0.5f, 0.0f);
 				GXTexCoord2f32(0.0f, texV);
+#endif
 			} else {
+#ifdef MUST_MATCH
+				// MUST_MATCH: same as the type-3 branch: keeps rectW first in the fmuls.
+				f32 h = 0.5f;
+				GXPosition3f32(-rectW * h, rectH, 0.0f);
+				GXTexCoord2f32(0.0f, 0.0f);
+				GXPosition3f32(rectW * h, rectH, 0.0f);
+				GXTexCoord2f32(texU, 0.0f);
+				GXPosition3f32(rectW * h, 0.0f, 0.0f);
+				GXTexCoord2f32(texU, texV);
+				GXPosition3f32(-rectW * h, 0.0f, 0.0f);
+				GXTexCoord2f32(0.0f, texV);
+#else
 				GXPosition3f32(-rectW * 0.5f, rectH, 0.0f);
 				GXTexCoord2f32(0.0f, 0.0f);
 				GXPosition3f32(rectW * 0.5f, rectH, 0.0f);
@@ -493,6 +520,7 @@ void effKissDisp(CameraId camId, void* param) {
 				GXTexCoord2f32(texU, texV);
 				GXPosition3f32(-rectW * 0.5f, 0.0f, 0.0f);
 				GXTexCoord2f32(0.0f, texV);
+#endif
 			}
 		}
 	}
@@ -504,7 +532,12 @@ void effKissDisp(CameraId camId, void* param) {
 		deg = 1.15f;
 		texV = 0.5f;
 		for (i = 0; i < 2; i++) {
+#ifdef MUST_MATCH
+			// MUST_MATCH: a second copy of the loop's offset keeps its register different from the first loop's.
+			f32 off2 = 0.0f;
+#else
 			offset = 0.0f;
+#endif
 			data = effect->userdata;
 			switch (type) {
 			case 0:
@@ -513,8 +546,12 @@ void effKissDisp(CameraId camId, void* param) {
 				effGetTexObj(0x42, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (i == 0) {
-					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&unk_80423318, alpha / 2));
+#ifdef MUST_MATCH
+					off2 = 1.5f;
+#else
 					offset = 1.5f;
+#endif
+					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&unk_80423318, alpha / 2));
 				} else {
 					((u8*)&kiss_col[type])[3] = alpha;
 					GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&kiss_col[type]);
@@ -541,7 +578,11 @@ void effKissDisp(CameraId camId, void* param) {
 				break;
 			}
 
+#ifdef MUST_MATCH
+			PSMTXTrans(mtxA, off2, -off2, 0.0f);
+#else
 			PSMTXTrans(mtxA, offset, -offset, 0.0f);
+#endif
 			PSMTXRotRad(rot, 'z', negAngleDeg);
 			PSMTXConcat(rot, mtxA, mtxA);
 			PSMTXConcat(view, mtxA, mtxA);
@@ -549,19 +590,38 @@ void effKissDisp(CameraId camId, void* param) {
 			GXLoadPosMtxImm(mtxA, 0);
 			GXSetCurrentMtx(0);
 			GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-			rectH = deg * data[1].y;
-			texU = 1.0f;
-			if (type == 3 && i == 0) {
-				texU = 2.0f;
+			{
+#ifdef MUST_MATCH
+				// MUST_MATCH: loop-local h/w keep the vertex temps in retail's scratch FPRs and texV supplies 0.5.
+				f32 h = deg * data[1].y;
+				f32 w = 1.0f;
+				if (type == 3 && i == 0) {
+					w = 2.0f;
+				}
+				GXPosition3f32(-w * texV, h, 0.0f);
+				GXTexCoord2f32(0.0f, 0.0f);
+				GXPosition3f32(w * texV, h, 0.0f);
+				GXTexCoord2f32(1.0f, 0.0f);
+				GXPosition3f32(w * texV, 0.0f, 0.0f);
+				GXTexCoord2f32(1.0f, 1.0f);
+				GXPosition3f32(-w * texV, 0.0f, 0.0f);
+				GXTexCoord2f32(0.0f, 1.0f);
+#else
+				rectH = deg * data[1].y;
+				texU = 1.0f;
+				if (type == 3 && i == 0) {
+					texU = 2.0f;
+				}
+				GXPosition3f32(-texU * 0.5f, rectH, 0.0f);
+				GXTexCoord2f32(0.0f, 0.0f);
+				GXPosition3f32(texU * 0.5f, rectH, 0.0f);
+				GXTexCoord2f32(1.0f, 0.0f);
+				GXPosition3f32(texU * 0.5f, 0.0f, 0.0f);
+				GXTexCoord2f32(1.0f, 1.0f);
+				GXPosition3f32(-texU * 0.5f, 0.0f, 0.0f);
+				GXTexCoord2f32(0.0f, 1.0f);
+#endif
 			}
-			GXPosition3f32(-texU * 0.5f, rectH, 0.0f);
-			GXTexCoord2f32(0.0f, 0.0f);
-			GXPosition3f32(texU * 0.5f, rectH, 0.0f);
-			GXTexCoord2f32(1.0f, 0.0f);
-			GXPosition3f32(texU * 0.5f, 0.0f, 0.0f);
-			GXTexCoord2f32(1.0f, 1.0f);
-			GXPosition3f32(-texU * 0.5f, 0.0f, 0.0f);
-			GXTexCoord2f32(0.0f, 1.0f);
 		}
 		break;
 	}

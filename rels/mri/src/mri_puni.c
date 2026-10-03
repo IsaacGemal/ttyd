@@ -1851,13 +1851,20 @@ void puniMapDataSet(s32 w, s32 h, f32 a, f32 b, void* data) {
     }
 }
 
-// NONMATCHING (84.06%): probe setup + loop register allocation still differ (target saves r27-r31,
-// we keep fewer live values). Neighbours now read/write `buf[i +/- w]` / `buf[i +/- 1]` via the
-// `iw`/`ipw`/`im1`/`ip1` temps so the target's byte-index `lhzx`/`sthx` addressing matches.
+// NONMATCHING (90.35%): shape/constants/calls all match; only register colouring + the four neighbour
+// `slwi` scalings differ. The target keeps `&Punimap` in r5 (`addi r5,r3,Punimap@l; lwz r3,0(r5)`);
+// we get `lwzu r4,Punimap@l(r3)` and r3, shifting every loop register a couple lower.
 void puniMapFindbuff(Vec* pos) {
     s32 changed;
     u16 id;
+    u16 nid;
+    u16 cur;
     s32 i;
+    s32 iw;
+    s32 ipw;
+    s32 im1;
+    s32 ip1;
+    s32 hi;
     s32 out1;
     s32 total;
     s32 out2;
@@ -1889,7 +1896,7 @@ void puniMapFindbuff(Vec* pos) {
         }
     }
     {
-        s32 index = out1 + out2 * Punimap->field_0x8;
+        s32 index = Punimap->field_0x8 * out2 + out1;
 
         if (index < 0)
             Punimap->field_0x1C = 0;
@@ -1903,22 +1910,17 @@ void puniMapFindbuff(Vec* pos) {
         total = Punimap->field_0x8 * Punimap->field_0xC;
         for (i = 0; i < total; i++) {
             u16* buf = Punimap->field_0x20;
-            u16* q = &buf[i];
-            u8* byteBuf = (u8*)buf;
-            u16 cur = *(u16*)(byteBuf + i * 2);
-            s32 hi;
+            cur = buf[i];
 
             if (cur == 0xFFFF)
                 continue;
             if ((cur & 0xFFF) != id)
                 continue;
             {
-                s32 w = Punimap->field_0x8;
-                s32 iw = i - w;
-                s32 ipw = i + w;
-                s32 im1 = i - 1;
-                s32 ip1 = i + 1;
-
+                iw = i - Punimap->field_0x8;
+                ipw = i + Punimap->field_0x8;
+                im1 = i - 1;
+                ip1 = i + 1;
                 hi = cur & 0xF000;
                 {
                     u16 nb = buf[iw];
@@ -1927,7 +1929,8 @@ void puniMapFindbuff(Vec* pos) {
                     if (low == 0) {
                         if (low < id) {
                             if (abs((nb & 0xF000) - hi) <= 0x1000) {
-                                buf[iw] = nb | (id + 1);
+                                nid = id + 1;
+                                buf[iw] = nb | nid;
                                 changed = 1;
                             }
                         }
@@ -1940,7 +1943,8 @@ void puniMapFindbuff(Vec* pos) {
                     if (low == 0) {
                         if (low < id) {
                             if (abs((nb & 0xF000) - hi) <= 0x1000) {
-                                buf[ipw] = nb | (id + 1);
+                                nid = id + 1;
+                                buf[ipw] = nb | nid;
                                 changed = 1;
                             }
                         }
@@ -1953,7 +1957,8 @@ void puniMapFindbuff(Vec* pos) {
                     if (low == 0) {
                         if (low < id) {
                             if (abs((nb & 0xF000) - hi) <= 0x1000) {
-                                buf[im1] = nb | (id + 1);
+                                nid = id + 1;
+                                buf[im1] = nb | nid;
                                 changed = 1;
                             }
                         }
@@ -1966,7 +1971,8 @@ void puniMapFindbuff(Vec* pos) {
                     if (low == 0) {
                         if (low < id) {
                             if (abs((nb & 0xF000) - hi) <= 0x1000) {
-                                buf[ip1] = nb | (id + 1);
+                                nid = id + 1;
+                                buf[ip1] = nb | nid;
                                 changed = 1;
                             }
                         }

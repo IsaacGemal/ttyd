@@ -284,22 +284,28 @@ void tegami_delete(void) {
 // The tev color-in argument is cached in `cc` so the `(i == 0)` boolean is computed once
 // (cntlzw/srwi) before the arg setup instead of being interleaved with it.
 //
-// The .rodata pool order matches the target exactly (no data-symbol diffs). 18 instruction diffs
+// The .rodata pool order matches the target exactly (no data-symbol diffs). 6 instruction diffs
 // remain, all MWCC register colouring:
-//  * The anonymous int->float magic double takes the target's f29 in the target but f23 here
-//    (hundred takes f29 here and f23 in the target); the two swap. The conversion double is
-//    compiler-generated (our object's is an anonymous pooled @NNN@, the target's is the named
-//    global `double_to_int_gor_0001dbb0`) and MWCC always colours it after the named loop
-//    constants, so it lands in the lowest free FPR; no declaration or statement arrangement (nor
-//    any opt_* toggle) moves it between twoPi and quarter. It costs `lfd f23`/`lfs f29`, the
-//    `fsubs`, and the two `fdivs` by hundred at the PSMTXTrans. The fmuls that combines
-//    twoPi*dbl with quarter also comes out with its operands swapped (target `f0*f30`, ours
-//    `f30*f0`).
-//  * r24 and r25 are swapped for the two short chains: ours keeps texBuf/named-zero/twoPi-address
-//    in r25 and mtxId/the tev boolean in r24; the target has them in r24 and r25 respectively.
+//  * The anonymous int->float magic double takes f29 in the target but f23 here (hundred takes
+//    f29 here and f23 in the target); the two swap. The conversion double is compiler-generated
+//    (our object's is an anonymous pooled @NNN@, the target's is the named global
+//    `double_to_int_gor_0001dbb0`). MWCC colours it into the lowest free callee-saved FPR
+//    regardless of declaration or statement arrangement; only the shape of the angle expression
+//    moves it, and no shape tried keeps the target's named-constant block (f31..f24). It costs
+//    the `lfd`/`lfs`, the `fsubs`, and the two `fdivs` by hundred at the PSMTXTrans.
+//  * The fmuls combining twoPi*dbl with quarter comes out with its operands swapped (target
+//    `f0*f30`, ours `f30*f0`); the commutative encoding is not controlled by the source operand
+//    order (`quarter * (twoPi*dbl)` compiles the same).
 // `mtxId` is `u32` (the GX headers take `u32 mtx`/`u32 id`); as `s32` MWCC adds a redundant
 // `mr` copying the computed id into the loop variable.
-// NONMATCHING (99.75%, 18 diffs): MWCC register colouring only (see above).
+// As in envdrv.c's envDisp_FF: without this MWCC rematerialises the polynomial coefficients
+// into every branch instead of hoisting them into the loop preheader (the target hoists them).
+#pragma opt_propagation off
+// The lifetime pass would hoist the two seed loads (0.00761/0.03705) out of the loop, keeping
+// two extra FPRs live; the target reloads them per iteration.
+#pragma opt_lifetimes off
+// NONMATCHING (99.91%, 6 diffs): the f23/f29 magic-double/hundred colour swap and one
+// commutative fmuls operand order (see above); everything else is byte-identical.
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
@@ -414,7 +420,13 @@ static void depthDisp(CameraId cameraId, void* param) {
         GXSetTevColorOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         GXSetTevAlphaOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
         {
+#ifdef MUST_MATCH
+            // match-only: `(i == 0)` emits the same cntlzw/srwi pair but colours the boolean
+            // into r24 (target r25) and pulls the whole integer chain with it.
+            s32 zero = !i;
+#else
             s32 zero = (i == 0);
+#endif
 #ifdef MUST_MATCH
             s32 cc = zero ? GX_CC_ZERO : GX_CC_CPREV; // match-only: caches the boolean so it is computed first
 
@@ -445,6 +457,8 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXTexCoord2s16(0, 1);
     sysWaitDrawSync();
 }
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
 
 USER_FUNC(depth) {
     dispEntry(8, 1200.0f, 0, depthDisp, NULL);

@@ -2034,7 +2034,9 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
 #pragma inline_max_size(1000)
 // Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
 #pragma opt_propagation off
-// NONMATCHING (87.18%): behaviour complete, checked against the asm; the rest is register allocation and constant hoisting.
+// Keeps the inlined sin/cos argument in a callee-saved FPR instead of rematerialising it per branch.
+#pragma opt_lifetimes off
+// NONMATCHING (88.26%): calls/immediates match; the rest is MWCC register+stack allocation (push f30 vs retail f31, GPR/FPR map, 0x18 smaller frame).
 #define MOA_TARGET(i) (wp->vec[(i) % 3])
 // Per-frame update of every moamoa (the Great Moamoa variant: a follower pulls the swarm to a joint of "base").
 static void ext_moamoa_main(void) {
@@ -2058,8 +2060,8 @@ static void ext_moamoa_main(void) {
 
     mario = marioGetPtr();
     party = partyGetPtr(0);
-    push = 0.0f;
     cam = camGetPtr(CAMERA_3D);
+    push = 0.0f;
     handled = 0;
     if (mario->currMotionId == MARIO_MOTION_HAMMER) {
         wp->field_0x40++;
@@ -2428,6 +2430,7 @@ static void ext_moamoa_main(void) {
 }
 #undef MOA_TARGET
 #pragma opt_propagation reset
+#pragma opt_lifetimes reset
 #pragma inline_max_size reset
 #pragma inline_max_total_size reset
 static void ext_moamoa_dispent(void) {

@@ -529,12 +529,14 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
 // The packed s16 vertex reads use the SDK __OSs16tof32 fast-cast inline, so they lower to retail's
 // psq_lx through GQR5 and the frame is back at 0x80. Retail's GQR5 setup (mtspr with the map file's
 // fraction shift, mapGetWork()->entries[hit->field0xAA].field_0x8C + 0x18 -> +0x44) is inline asm,
-// which this project forbids, so its 10 instructions per packed part are missing (the mapGetWork call,
-// the table walk, the shift packing and the mtspr) and the register allocation that follows differs
-// (numVectors in r24 vs retail r30, mesh r23 vs r29, hit r31 vs r27). Everything else -- the packed
-// triangle maths, the stride popcount loop, the index selection and the whole unpacked path -- is
-// structurally identical to retail apart from register colouring.
-// NONMATCHING (72.95%): the packed GQR5 setup is inline asm and cannot be emitted from C, so the packed
+// which this project forbids, so its 10 instructions in the packed part are missing (the mapGetWork
+// call, the table walk, the shift packing and the mtspr) and the register allocation through the whole
+// function differs as a result (retail numVectors r30/mesh r29/hit r27, ours r25/r23/r31). Retail
+// keeps mapGetWork() live in r26 across the packed loop; without it the packed index selection also
+// comes out as xori+cmp instead of cntlzw+srwi. include/driver/hitdrv.h declares the function s16,
+// but retail leaves numVectors in r3 with no extsh, so it returns s32; the rest of the packed and
+// unpacked structure matches retail instruction for instruction.
+// NONMATCHING (73.50%): the packed GQR5 setup is inline asm and cannot be emitted from C, so the packed
 // vertices are not scaled by the map file's fraction shift (wrong whenever that shift is nonzero) and
 // the register colouring through the rest of the function differs as a result.
 s16 hitCalcVtxPosition(HitEntry* hit) {
@@ -567,6 +569,8 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                     BOOL even = (triIndex & 1) == 0;
                     s16 v1i = even ? i2 : i1;
                     s16 v2i = even ? i1 : i2;
+                    off += 0x54;
+                    numVectors++;
 
                     PSMTXMultVec(hit->worldMtx, &vtx[i0], &vector->v0);
                     PSMTXMultVec(hit->worldMtx, &vtx[v1i], &vector->v1);
@@ -575,14 +579,13 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                     PSVECSubtract(&vector->v0, &vector->v1, &vector->edge1);
                     PSVECSubtract(&vector->v1, &vector->v2, &vector->edge2);
                     PSVECCrossProduct(&vector->edge0, &vector->edge1, &vector->normal);
-                    off += 0x54;
-                    numVectors++;
                 }
             }
         } else {
             u32 mask = mesh->elementMask;
             s32 stride = 0;
             s32 s;
+            f32 zero = 0.0f;
 
             for (s = 0; s < 12; s++) {
                 stride += (mask >> s) & 1;
@@ -631,7 +634,7 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                         PSVECSubtract(&vector->v0, &vector->v1, &vector->edge1);
                         PSVECSubtract(&vector->v1, &vector->v2, &vector->edge2);
                         PSVECCrossProduct(&vector->edge0, &vector->edge1, &vector->normal);
-                        if (vector->normal.x != 0.0f || vector->normal.y != 0.0f || vector->normal.z != 0.0f) {
+                        if (vector->normal.x != zero || vector->normal.y != zero || vector->normal.z != zero) {
                             off += 0x54;
                             vecOffset += 0x54;
                             numVectors++;

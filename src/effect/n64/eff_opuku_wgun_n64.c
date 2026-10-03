@@ -170,17 +170,19 @@ void effOpukuWgunMain(EffectEntry* effect) {
 }
 
 #ifdef MUST_MATCH
-static inline GXColor makeOpukuWgunColor1(u8 r, u8 g, u8 b, u8 a) {
+// Build each colour and make the GXSetTevColor call inside the inline: mwcc then places each colour local
+// and its by-value copy in the original's stack slots (the eff_opuku_wprotect pattern). Returning the GXColor
+// and calling outside packs all locals together instead.
+static inline void opukuWgunColor1(u8 r, u8 g, u8 b, u8 a) {
 	GXColor c = unk_804231e8;
 	c.r = r; c.g = g; c.b = b; c.a = a;
-	return c;
+	GXSetTevColor(GX_TEVREG0, c);
 }
-static inline GXColor makeOpukuWgunColor2p(GXColor c, u8 r, u8 g, u8 b) {
+static inline void opukuWgunColor2(u8 r, u8 g, u8 b) {
+	GXColor c = *(GXColor*)&dat_8041f840;
 	c.r = r; c.g = g; c.b = b;
-	return c;
+	GXSetTevColor(GX_TEVREG1, c);
 }
-// Building both tev colours through an inline (as eff_opuku_jetwrain does) makes mwcc keep each temporary
-// in its own slot and copy it to a separate outgoing argument slot, producing retail's temp/arg pairs.
 #endif
 // The frame (0x190), the saved-register set (f21-f31, r22-r31), both TEV-colour blocks, the first vertex
 // loop, the transform loop, the GX state and the triangle loop all line up. The GQR2-5 setup retail runs
@@ -189,19 +191,22 @@ static inline GXColor makeOpukuWgunColor2p(GXColor c, u8 r, u8 g, u8 b) {
 // would lower to lha/fctiwz). The `zero` local keeps `data->z[i] + 0.0f` from folding away, which lands the
 // 0.0 in f31 and the 2pi/360/20/scale constants in retail's f28/f29/f30/f24; the `angle`/`rad` split gives
 // angle f22, rad/s f23 and t f21; `alpha` is an s32 so a_data*data->alpha/255 stores with a plain stb (no
-// clrlwi); and the triangle loop's `if (j >= 0)` guard reproduces retail's always-taken test. What still
-// differs (every instruction opcode/operand matches): mwcc's integer colouring of the two vertex loops
-// (retail keeps the walking vtx pointer in r23 and its base in r24, i in r26, texS in r28 and alpha in r22;
-// we get base r26 / running r28, i r24, texS r23 and alpha r22 -- two independent register swaps), the
-// first TEV colour's temporary slot (retail 0x1c/0x20, ours 0x10/0x1c) and the redundant `beq` retail emits
-// before the i==0 `bne`. The f32->s16 temporaries now land 4 apart (OSFastCast.h's temp is an f32).
-// NONMATCHING (98.28%): integer register colouring and the colour1 temp slot;
+// clrlwi); and the triangle loop's `if (j >= 0)` guard reproduces retail's always-taken test. The two TEV
+// colours are built inside the inline (the eff_opuku_wprotect pattern) so each colour local and its by-value
+// copy land in retail's stack slots (temp/arg 0x1c/0x20 and 0x14/0x18); returning the GXColor and calling
+// outside packed them differently. What still differs (every instruction opcode/operand matches): mwcc's
+// integer colouring of the two vertex loops -- retail keeps the walking vtx pointer in r23 and its base in
+// r24, i in r26, texS in r28, alpha in r22, and the triangle loop's j in r24 / x in r23; we now get base r24
+// and i r26 right (declaration order below), but the running pointer and texS are swapped (r28/r23) and the
+// triangle loop's j/x are swapped (r23/r24) -- and retail emits a redundant `beq` before the i==0 `bne`
+// (a branch-to-next-instruction) that we do not. The f32->s16 temporaries land 4 apart (OSFastCast.h's temp
+// is an f32).
+// NONMATCHING (98.43%): the running/texS and j/x register swaps plus retail's redundant `beq`;
 // every instruction opcode/operand matches.
 void effOpukuWgunDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
 	EffOpukuWgunData* data = effect->userdata;
-	OpukuWgunVtx* vtx;
 	smartEntry* entry;
 	GXTexObj texObj;
 	Mtx scaleMtx;
@@ -215,19 +220,20 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	f32 rad;
 	f32 zero = 0.0f;
 	f32 c;
-	s32 type;
 	s32 i;
-	s32 j;
+	s32 type;
+	OpukuWgunVtx* vtx;
 	s32 texS;
-	s32 x;
 	s32 alpha;
+	s32 x;
+	s32 j;
 
 	type = data->type;
 	scale = data->scale;
 
 #ifdef MUST_MATCH
-	GXSetTevColor(GX_TEVREG0, makeOpukuWgunColor1(data->field_0x34, data->field_0x38, data->field_0x3C, data->field_0x40));
-	GXSetTevColor(GX_TEVREG1, makeOpukuWgunColor2p(*(GXColor*)&dat_8041f840, data->field_0x44, data->field_0x48, data->field_0x4C));
+	opukuWgunColor1(data->field_0x34, data->field_0x38, data->field_0x3C, data->field_0x40);
+	opukuWgunColor2(data->field_0x44, data->field_0x48, data->field_0x4C);
 #else
 	color = unk_804231e8;
 	color.r = data->field_0x34;

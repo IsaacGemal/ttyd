@@ -494,9 +494,11 @@ void unk_yuu_00008e40(const char* msg, s32 maxWidth, f32 x, f32 y, f32 scale) {
 #define A74(i) (*(s32*)((unsigned char*)yuwp + work->mode * 24 + 0x74 + (i) * 4))
 #define AD4(i) (*(s32*)((unsigned char*)yuwp + work->mode * 24 + 0xd4 + (i) * 4))
 
-// NONMATCHING (96.67%): block order, the nested mode switches and the callee-saved set (r24-r31) all match. The
-// rest is the top waku/FontDrawMessage x-offset maths (the original contracts a `1.0f` scale and negates the width
-// in the int->float helper), the GXColor stack slots, and the inlined fontlenpitch's copied pointer argument.
+// The top waku/FontDrawMessage maths (a non-const `k=1.0f` keeps the `fnmadds` that negates the sum, integer-negated
+// width), the signed `cmpwi` menu test and the `A74(i)/1000` recompute now match; see REPORT.md for what was tried.
+// NONMATCHING (97.28%): the original assigns GXColor c0..c19 monotonically to 0x54..0x08 in dat order, but MWCC's
+// stack-colourer packs the same 20 slots in a different order, and the inlined fontlenpitch expands with
+// p=r26/len=r25 where the target has p=r25/len=r26, so every colour offset and the inline's registers differ.
 static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     YuuRankingWork* work = param;
     const char* titleTbl[4] = {
@@ -550,16 +552,19 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         break;
     }
     c1 = *(GXColor*)&dat_yuu_00014a84;
-    w = (f32)FontGetMessageWidth(msg);
-    { f32 k = 1.0f; sc = k * w + 50.0f; }
-    w = (f32)FontGetMessageWidth(msg);
-    windowDispGX_Waku_col(0, c1, work->field_0C - (w + 50.0f) * 0.5f, work->field_10 + 128.0f + 1.0f, sc, 28.0f, 8.0f);
-    FontDrawStart();
-    FontDrawScale(1.0f);
-    c2 = *(GXColor*)&dat_yuu_00014a88;
-    FontDrawColor(&c2);
-    w = (f32)FontGetMessageWidth(msg);
-    FontDrawMessage((s32)(work->field_0C - w * 0.5f), (s32)(work->field_10 + 128.0f), msg);
+    {
+        f32 k = 1.0f;
+        w = (f32)FontGetMessageWidth(msg);
+        sc = k * w + 50.0f;
+        w = (f32)FontGetMessageWidth(msg);
+        { f32 t = -(k * w + 50.0f); windowDispGX_Waku_col(0, c1, work->field_0C + t * 0.5f, work->field_10 + 128.0f + k, sc, 28.0f, 8.0f); }
+        FontDrawStart();
+        FontDrawScale(1.0f);
+        c2 = *(GXColor*)&dat_yuu_00014a88;
+        FontDrawColor(&c2);
+        w = (f32)(-(s32)FontGetMessageWidth(msg));
+        FontDrawMessage((s32)(work->field_0C + k * w * 0.5f), (s32)(work->field_10 + 128.0f), msg);
+    }
 
     if (work->field_18 != 0) {
         goto rank;
@@ -815,7 +820,7 @@ rank:
             FontDrawColor(&c19);
         }
         msg = subTbl[i];
-        if (msg[0] == 'm' && msg[1] == 'e' && msg[2] == 'n' && msg[3] == 'u' && msg[4] == '_') {
+        if ((s8)msg[0] == 'm' && (s8)msg[1] == 'e' && (s8)msg[2] == 'n' && (s8)msg[3] == 'u' && (s8)msg[4] == '_') {
             msg = msgSearch(msg);
         }
         if (i == 5) {
@@ -830,7 +835,7 @@ rank:
                 s32 v = A74(i);
 
                 msg = msgSearch("menu_decimal_point");
-                sprintf(buf, "%3d%s%02d", v / 1000, msg, (v % 1000) / 10);
+                sprintf(buf, "%3d%s%02d", A74(i) / 1000, msg, (v % 1000) / 10);
                 FontDrawStringPitch(buf, work->field_0C + -75.200005f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
                 sprintf(buf, "%4d", AD4(i));
                 FontDrawStringPitch(buf, work->field_0C + 75.19998f, work->field_10 + (104.0f - 24.0f * y), 18.0f);

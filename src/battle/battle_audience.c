@@ -2522,8 +2522,9 @@ static inline GXColor BattleAudienceDispAudience_color(u8 r, u8 g, u8 b, u8 a) {
 }
 #endif
 
-// NONMATCHING (95.22%): functionally complete; only instruction scheduling and FP-register
-// allocation differ (matrix build, texture-scale formulas, GX-vertex emission).
+// NONMATCHING (95.67%): functionally complete. The texture scale uses explicit k/s locals in the
+// MUST_MATCH arm and the flip test is two separate ifs; what still differs is FP scheduling and
+// register allocation in the matrix build, the angle wrap's fused multiply-add, and the GX output.
 void BattleAudienceDispAudience(CameraId camId, void* param) {
 	BattleAudience* audience;
 	CameraEntry* cam;
@@ -2628,13 +2629,27 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			GXLoadTexObj(&texObj, GX_TEXMAP0);
 			{
 				f32 w = (f32)GXGetTexObjWidth(&texObj);
+#ifdef MUST_MATCH
+				f32 k = audience_kind[member->type].field_0x18;
+				f32 s = k * w;
+				s = float_0p015625_8041e6ac * s;
+				*(f32*)member->field_0x54 = *(f32*)(member->field_0x54 + 0xC) * s;
+#else
 				*(f32*)((u8*)member + 0x54) = *(f32*)((u8*)member + 0x60) *
 					(audience_kind[member->type].field_0x18 * w * float_0p015625_8041e6ac);
+#endif
 			}
 			{
 				f32 h = (f32)GXGetTexObjHeight(&texObj);
+#ifdef MUST_MATCH
+				f32 k = audience_kind[member->type].field_0x1C;
+				f32 s = k * h;
+				s = float_0p015625_8041e6ac * s;
+				*(f32*)(member->field_0x54 + 4) = *(f32*)(member->field_0x54 + 0x10) * s;
+#else
 				*(f32*)((u8*)member + 0x58) = *(f32*)((u8*)member + 0x64) *
 					(audience_kind[member->type].field_0x1C * h * float_0p015625_8041e6ac);
+#endif
 			}
 		}
 		else {
@@ -2645,13 +2660,27 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 					GXLoadTexObj(&texObj, GX_TEXMAP0);
 					{
 						f32 w = (f32)GXGetTexObjWidth(&texObj);
+#ifdef MUST_MATCH
+						f32 k = audience_kind[member->type].field_0x18;
+						f32 s = k * w;
+						s = float_0p015625_8041e6ac * s;
+						*(f32*)member->field_0x54 = *(f32*)(member->field_0x54 + 0xC) * s;
+#else
 						*(f32*)((u8*)member + 0x54) = *(f32*)((u8*)member + 0x60) *
 							(audience_kind[member->type].field_0x18 * w * float_0p015625_8041e6ac);
+#endif
 					}
 					{
 						f32 h = (f32)GXGetTexObjHeight(&texObj);
+#ifdef MUST_MATCH
+						f32 k = audience_kind[member->type].field_0x1C;
+						f32 s = k * h;
+						s = float_0p015625_8041e6ac * s;
+						*(f32*)(member->field_0x54 + 4) = *(f32*)(member->field_0x54 + 0x10) * s;
+#else
 						*(f32*)((u8*)member + 0x58) = *(f32*)((u8*)member + 0x64) *
 							(audience_kind[member->type].field_0x1C * h * float_0p015625_8041e6ac);
+#endif
 					}
 					break;
 				}
@@ -2735,7 +2764,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		if (angle > 0.0f && angle <= float_180_8041e6b8) {
 			flip = 1;
 		}
-		else if (angle == 0.0f || (angle > float_180_8041e6b8 && angle < float_360_8041e6b4)) {
+		if (angle == 0.0f || (angle > float_180_8041e6b8 && angle < float_360_8041e6b4)) {
 			flip = 0;
 		}
 		if ((u8)front == 1) {

@@ -2322,8 +2322,9 @@ void _btlcmd_MakeOperationTable(BattleWork* wp) {
 	}
 }
 
-// NONMATCHING (88.46%): the instruction stream matches; only the pooled string base differs
-// (`str_802EF640` addends +0x228/+0x23c/+0x24c short of the target), which lands when the unit links.
+// NONMATCHING (99.98%): the instruction stream matches; only the pooled string base differs:
+// "btl_cmd_act_item"/"in_3kai_item_p"/"msg_3kai_item_p" are +0x228/+0x23c/+0x24c here vs +0x2d0/+0x2e4/+0x2f4
+// in the target (0xa8 short), which lands when the unit links. `count = 0; ...; count++` keeps the `mulli` alive.
 void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleCommand* cmd;
@@ -2333,13 +2334,14 @@ void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
 		BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 		BattleCursor* cursor;
 		_btlcmd_GetCursorPtr(cmd, 3, &cursor);
-		wcmd->mMultiItemTable[0].pad_0xE[0] = 1;
-		wcmd->mMultiItemTable[0].mEnabled = 1;
-		wcmd->mMultiItemTable[0].mName = (char*)msgSearch("btl_cmd_act_item");
-		wcmd->mMultiItemTable[0].mIcon = 0x14C;
-		wcmd->mMultiItemTable[0].mDescription = NULL;
-		wcmd->mMultiItemTable[0].mWeaponCost = 0;
-		count = 1;
+		count = 0;
+		wcmd->mMultiItemTable[count].pad_0xE[0] = 1;
+		wcmd->mMultiItemTable[count].mEnabled = 1;
+		wcmd->mMultiItemTable[count].mName = (char*)msgSearch("btl_cmd_act_item");
+		wcmd->mMultiItemTable[count].mIcon = 0x14C;
+		wcmd->mMultiItemTable[count].mDescription = NULL;
+		wcmd->mMultiItemTable[count].mWeaponCost = 0;
+		count++;
 		if (unit->badgesEquipped.DoubleDip) {
 			wcmd->mMultiItemTable[count].pad_0xE[0] = 2;
 			if (unit->currentKind == UNIT_MARIO) {

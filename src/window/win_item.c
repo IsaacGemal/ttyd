@@ -1448,20 +1448,25 @@ void winMakeSkipList(WindowWork* work) {
 // Draws the item/submenu window: the selected item's icon, name and description, the
 // party members' names and HP/FP, the item grid and the window's background textures.
 // Complete and logically correct; MWCC saves the original's 9 callee-saved registers and, with the
-// per-block `Vec tcopy`, the frame matches the original's 0x490 exactly.
-// NONMATCHING (94.44%): a residue of stack-slot names and integer register colours; `i`/`ofs`/`list`
-// land in different saved registers and the by-value `winTexSet` scale arguments are copied where the
-// original passes them in place, so those instructions differ in operands only.
+// per-block `Vec tcopy`, the frame matches the original's 0x490 exactly. The original walks the party
+// list with a running pointer (the target increments r27 by 4 in the loop header and reads `-4(r27)`),
+// so the else branch keeps `lp[-1]` and the loop increments `lp++`; that shape matched the target's
+// list increment and lifted 94.44 -> 94.50. Remaining: `i`/`ofs` land in r28/r25 where the target has
+// r25/r28 (the list pointer and `ofs2` are already r27/r26), the low stack area is shifted +0xC from
+// the target, and the by-value `winTexSet` argument copies sit in different slots (the target passes
+// some source locals in place). Every call, constant and instruction otherwise matches.
+// NONMATCHING (94.50%): stack-slot offsets and integer register colours only.
 void itemUseDisp(WinMgrEntry* entry) {
     WindowWork* work = winGetPtr();
     WindowPartyDt* list[7];
+    WindowPartyDt** lp;
     WindowPartyDt* party;
     GXColor color = dat_8041d480;
     GXColor iconColor = dat_8041d484;
     GXColor white = dat_8041d484;
-    s32 i;
-    s32 ofs;
     s32 ofs2;
+    s32 ofs;
+    s32 i;
     s32 sel2e0;
     f32 f31;
     f32 w;
@@ -1494,7 +1499,8 @@ void itemUseDisp(WinMgrEntry* entry) {
 
     }
 
-    for (i = 0, ofs = 0, ofs2 = 0; i < WW_S32(work, 0x1E0) + 1; ofs += 0x16, ofs2 += 0x1C, i++) {
+    lp = list;
+    for (i = 0, ofs = 0, ofs2 = 0; i < WW_S32(work, 0x1E0) + 1; ofs += 0x16, lp++, ofs2 += 0x1C, i++) {
         if (i == 0) {
             f31 = float_0_8041d4ac;
         } else if (i == 1) {
@@ -1668,8 +1674,8 @@ void itemUseDisp(WinMgrEntry* entry) {
 
 
 
-            if (list[i - 1]->field_0x0 != 4) {
-                name = msgSearch(list[i - 1]->field_0x8);
+            if (lp[-1]->field_0x0 != 4) {
+                name = msgSearch(lp[-1]->field_0x8);
             } else {
                 name = pouchGetYoshiName();
             }
@@ -1702,9 +1708,9 @@ void itemUseDisp(WinMgrEntry* entry) {
                 translate.y = f31 + ((f32)(entry->field_0x1C - 0x14 - ofs2));
 #ifdef MUST_MATCH
                 tcopy = translate;
-                winIconSet(list[i - 1]->field_0x4, &tcopy, &scale, &c);
+                winIconSet(lp[-1]->field_0x4, &tcopy, &scale, &c);
 #else
-                winIconSet(list[i - 1]->field_0x4, &translate, &scale, &c);
+                winIconSet(lp[-1]->field_0x4, &translate, &scale, &c);
 #endif
             }
             winFontInit();
@@ -1746,7 +1752,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                 translate.x = (f32)(entry->field_0x18 + 0xF5);
                 translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2));
                 tcopy = translate;
-                winFontSetR(&tcopy, &scale, &c, str_8041D4C4, pouchGetPtr()->partyData[list[i - 1]->field_0x0].currentHP);
+                winFontSetR(&tcopy, &scale, &c, str_8041D4C4, pouchGetPtr()->partyData[lp[-1]->field_0x0].currentHP);
             }
             {
                 GXColor c = color;
@@ -1766,7 +1772,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                 translate.x = (f32)(entry->field_0x18 + 0x136);
                 translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2)) - float_2_8041d4e0;
                 tcopy = translate;
-                winFontSet(&tcopy, &scale, &c, str_8041D4C4, pouchGetPtr()->partyData[list[i - 1]->field_0x0].maximumHP);
+                winFontSet(&tcopy, &scale, &c, str_8041D4C4, pouchGetPtr()->partyData[lp[-1]->field_0x0].maximumHP);
             }
         }
     }

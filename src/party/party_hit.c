@@ -120,54 +120,59 @@ extern const f32 float_neg10000_8041b438;
 extern const f32 float_50_8041b43c;
 extern const f32 float_30_8041b440;
 
-// NONMATCHING (70.07%): the volatile pvx/pvy/pvz locals now spill position->x/y/z to stack like the
-// retail code, but the slots land at 0x08-0x10 rather than the original's 0x78-0x80 (the retail
-// compiler puts the sin/cos and position scalars above the Vecs, ours puts them below).
+// NONMATCHING (71.38%): stack layout and callee-saved registers match retail. The key was that the hit
+// outputs are scalar f32, not Vecs: MWCC groups aggregates above scalars, so scalars interleave (outputs
+// 0x08-0x74, position 0x78-0x80, sin/cos 0x84-0x88). Left: MWCC's p/q store and constant-load scheduling.
 HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle) {
     HitEntry* hit;
     Vec q;
     Vec p1, p2, p3, p4;
     f32 sin, cos;
     f32 h;
-    f32 offSin, offCos;
+    f32 x;
     f32 py;
+    f32 z;
+    f32 dist;
+    f32 offSin, offCos;
 #ifdef MUST_MATCH
     // Match-only: forcing the three position scalars through volatile locals reproduces the
     // retail spill of position->x/y/z to stack (the plain Vec copy lands in the wrong slot).
     volatile f32 pvx, pvy, pvz;
 #endif
-    f32 d1, d2, d3, d4;
-    Vec nor1, pos1, nor2, pos2, nor3, pos3, nor4, pos4;
-    f32 x, z;
-    f32 dist;
+    f32 d1, hnz1, hny1, hnx1, hz1, hy1, hx1;
+    f32 d2, hnz2, hny2, hnx2, hz2, hy2, hx2;
+    f32 d3, hnz3, hny3, hnx3, hz3, hy3, hx3;
+    f32 d4, hnz4, hny4, hnx4, hz4, hy4, hx4;
 
-
-    h = 0.3f * *(f32*)((u8*)party + 0xF4);
+    h = 0.3f * party->field_F4;
     sincosf(&sin, &cos, angle);
-    offSin = h * sin;
-    offCos = -h * cos;
 #ifdef MUST_MATCH
+    // Match-only ordering: `-cos * h` (not `-h * cos`) and the position store between the two
+    // offset products reproduce retail's scheduling; the natural form is under #else.
+    offCos = -cos * h;
     pvx = position->x;
+    offSin = h * sin;
     pvy = position->y;
     pvz = position->z;
-    py = pvy;
-    dist = *out;
     x = pvx + offSin;
     z = pvz + offCos;
+    py = pvy;
+    dist = *out;
 #else
+    offCos = -h * cos;
+    offSin = h * sin;
     py = position->y;
     dist = *out;
     x = position->x + offSin;
     z = position->z + offCos;
 #endif
     p1 = vec3_802cd3b0;
-    p1.x = x;
     p1.y = py;
     p1.z = z;
+    p1.x = x;
     q = p1;
     d1 = dist;
-    hit = hitCheckFilter(NULL, &pos1.x, &pos1.y, &pos1.z, &d1, &nor1.x, &nor1.y, &nor1.z, q.x, q.y + 10.0f,
-                         q.z, 0.0f, 1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, &hx1, &hy1, &hz1, &d1, &hnx1, &hny1, &hnz1, q.x, q.y + 10.0f, q.z, 0.0f, 1.0f, 0.0f);
     if (hit != NULL) {
         if (dist >= d1) {
             dist = d1;
@@ -182,13 +187,13 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
         z = position->z - offCos;
 #endif
         p2 = vec3_802cd3bc;
-        p2.x = x;
         p2.y = py;
         p2.z = z;
+        p2.x = x;
         q = p2;
         d2 = dist;
-        hit = hitCheckFilter(NULL, &pos2.x, &pos2.y, &pos2.z, &d2, &nor2.x, &nor2.y, &nor2.z, q.x, q.y + 10.0f,
-                             q.z, 0.0f, 1.0f, 0.0f);
+        hit = hitCheckFilter(NULL, &hx2, &hy2, &hz2, &d2, &hnx2, &hny2, &hnz2, q.x, q.y + 10.0f, q.z, 0.0f, 1.0f,
+                             0.0f);
         if (hit != NULL) {
             if (dist >= d2) {
                 dist = d2;
@@ -204,13 +209,13 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
         z = position->z + offSin;
 #endif
         p3 = vec3_802cd3c8;
-        p3.x = x;
         p3.y = py;
         p3.z = z;
+        p3.x = x;
         q = p3;
         d3 = dist;
-        hit = hitCheckFilter(NULL, &pos3.x, &pos3.y, &pos3.z, &d3, &nor3.x, &nor3.y, &nor3.z, q.x, q.y + 10.0f,
-                             q.z, 0.0f, 1.0f, 0.0f);
+        hit = hitCheckFilter(NULL, &hx3, &hy3, &hz3, &d3, &hnx3, &hny3, &hnz3, q.x, q.y + 10.0f, q.z, 0.0f, 1.0f,
+                             0.0f);
         if (hit != NULL) {
             if (dist >= d3) {
                 dist = d3;
@@ -226,13 +231,13 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
         z = position->z - offSin;
 #endif
         p4 = vec3_802cd3d4;
-        p4.x = x;
         p4.y = py;
         p4.z = z;
+        p4.x = x;
         q = p4;
         d4 = dist;
-        hit = hitCheckFilter(NULL, &pos4.x, &pos4.y, &pos4.z, &d4, &nor4.x, &nor4.y, &nor4.z, q.x, q.y + 10.0f,
-                             q.z, 0.0f, 1.0f, 0.0f);
+        hit = hitCheckFilter(NULL, &hx4, &hy4, &hz4, &d4, &hnx4, &hny4, &hnz4, q.x, q.y + 10.0f, q.z, 0.0f, 1.0f,
+                             0.0f);
         if (hit != NULL) {
             if (dist >= d4) {
                 dist = d4;

@@ -1131,7 +1131,13 @@ static inline char* wmDispNum(WM_BASE_PARAMS s32 width, s32 num) {
     return unk_803dfbf8;
 }
 
-// NONMATCHING (92.05%): register allocation and instruction scheduling still differ; the target keeps three stack copies of white/black, hoists loop-invariant colour loads, and folds the double->int conversion magic into the rodata base register. The stack frame matches exactly (0x1940). The 26 colour-temp copies below are the target's `GXColor c = <col>; winFontSet*(..., &c, ...)` pattern; the remaining sites cannot be added without blowing MWCC's inlining budget (which drops every inlined wmDisp* buffer).
+// The target's i2f magic doubles are read through the rodata base (0x820/0x828);
+// MWCC pools anonymous copies (project-wide limitation, see win_item/win_log).
+// Declaring f29..f18 with x,y last colours x=f31/y=f30, and the level buf at
+// 0x1C0 matches the 0x1940 frame; both are the wins over the 92.05% version.
+// NONMATCHING (92.20%): FP register colouring and scheduling still differ; the
+// target also keeps three stack copies of white/black (adding the per-block
+// `GXColor c = <col>;` copies makes MWCC loop forever on its inlining budget).
 void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     // Draws the Mario status panel: name/level/rank, HP/FP/BP, star pieces and
     // shine sprites, the play-time clock and the collected star powers.
@@ -1142,8 +1148,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     const u8* e;
     GXColor white, black;
     GXColor c;
+    f32 f29, f28, f27, f26, f25, f24, f23, f22, f21, f20, f19, f18;
     f32 x, y;
-    f32 f18, f19, f20, f21, f22, f23, f24, f25, f26, f27, f28, f29;
     s32 i, j;
     (void)camId;
 
@@ -1196,7 +1202,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         winFontSetEdge(&pos, &scale, &c, msgSearch(STR_AT(0x750)));
     }
     {
-        char buf[0x1D0];
+        char buf[0x1C0];
         Vec pos, scale, tmp;
         sprintf(buf, str_8041D63C, WM_ZENKAKU(pouch->level));
         winFontInit();

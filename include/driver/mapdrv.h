@@ -276,3 +276,12 @@ typedef struct MapMaterialTex {
 void mapSetTextureMatrix(MapMaterialTex* material);
 void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force);
 BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b);
+typedef struct MapTevCallback {
+    MapObject* obj;  // 0x0
+    void* mtx;       // 0x4
+    s32 drawMode;    // 0x8
+    s32 tevStage;    // 0xC
+    s32 texMap;      // 0x10
+    s32 texCoord;    // 0x14
+    s32 numIndStage; // 0x18
+} MapTevCallback;

@@ -283,17 +283,18 @@ s32 battleAcResult_StickRotate(BattleWork* work) {
     return work->actionCommands.result;
 }
 
-// The volatile launder under MUST_MATCH stops the fold and puts sr in r31 as the original does, at
-// the cost of the stw/lwz pair the original does not have. Without it the function is at 97.13% and
-// the remaining diffs are that fold plus the s8 temp registers (r0 vs r3) in case 0x3E9.
-// NONMATCHING (98.35%): MWCC folds the work-area pointer (work+0x1F4C) into the BattleWork base.
+// optimization_level 2: at the default -O4,s MWCC folds the work-area pointer (work+0x1F4C)
+// into the BattleWork base and never materialises it; the level-2 colouring keeps sr in r31
+// and disp in r30, as the original does. Reset after the function.
+#pragma optimization_level 2
 s32 battleAcMain_StickRotate(BattleWork* work) {
 #ifdef MUST_MATCH
-    // Match-only: the volatile read makes sr opaque to rematerialisation, so MWCC keeps it in r31
-    // (the original's register) instead of folding it into `work`.
-    StickRotateWork* volatile srv = (StickRotateWork*)((u8*)work + 0x1F4C);
-    StickRotateWork* sr = srv;
-    BattleACDispParams* disp = &work->actionCommands.dispParams;
+    // Match-only: addressing the work area through the header's named field (via the `ac`
+    // intermediate) is what keeps work=r28, sr=r31 and disp=r30 in separate registers; the
+    // natural form below folds sr into the BattleWork base.
+    BattleActions* ac = &work->actionCommands;
+    StickRotateWork* sr = (StickRotateWork*)&ac->field_0x2BC[0];
+    BattleACDispParams* disp = &ac->dispParams;
 #else
     StickRotateWork* sr = (StickRotateWork*)((u8*)work + 0x1F4C);
     BattleACDispParams* disp = &work->actionCommands.dispParams;
@@ -370,7 +371,14 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                 }
                 break;
             case 0x3E9: {
+#ifdef MUST_MATCH
+                // Match-only: as an `s8` local MWCC keeps the sign-extended copy in r0 and puts the
+                // other s8 temps in different registers; the s32 local with explicit (s8) casts keeps
+                // roll in r3 and the temps in r0/r4/r5 as the original does.
+                s32 roll;
+#else
                 s8 roll;
+#endif
                 if (*(s16*)&work->actionCommands.field_78[0x10] > 0) {
                     (*(s16*)&work->actionCommands.field_78[0x10])--;
                     work->actionCommands.result = 2;
@@ -424,10 +432,10 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                     goto L_801FD700;
                 }
                 roll = _CalcRollDir();
-                if (roll != 0) {
+                if ((s8)roll != 0) {
                 if (sr->field_0x04 == 0) {
                     s8 dir;
-                    sr->field_0x04 = roll;
+                    sr->field_0x04 = (s8)roll;
                     dir = sr->field_0x00 + sr->field_0x04;
                     if (dir >= 9) {
                         dir = 1;
@@ -437,7 +445,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                     }
                     sr->field_0x02 = sr->field_0x00;
                     sr->field_0x03 = dir;
-                } else if (sr->field_0x04 != roll) {
+                } else if (sr->field_0x04 != (s8)roll) {
                     work->actionCommands.result &= ~1;
                     work->actionCommands.mAcState = 0x3EA;
                     cont = 1;
@@ -474,9 +482,11 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
                             }
                         }
                     }
+                } else {
+                    goto L_801FD700;
                 }
                 sr->field_0x05 = 0;
-                if (sr->field_0x04 != 0 && sr->field_0x04 != roll) {
+                if (sr->field_0x04 != 0 && sr->field_0x04 != (s8)roll) {
                     work->actionCommands.result &= ~1;
                     work->actionCommands.mAcState = 0x3EA;
                     cont = 1;
@@ -552,6 +562,7 @@ s32 battleAcMain_StickRotate(BattleWork* work) {
 
     return 1;
 }
+#pragma optimization_level reset
 
 // dont_inline: the original calls _CalcRollDir/_GetInputDir; MWCC inline-expanded them.
 #pragma dont_inline on

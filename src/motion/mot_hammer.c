@@ -741,9 +741,32 @@ s32 marioChkHammer2(void) {
     return 1;
 }
 
-// NONMATCHING (98.25%): the switch/loop/pose shapes, pool offsets, base r31 and mario r30 now
-// match. Left: the `type==7?3:type` clamp keeps `type`/`v` in r0/r3 vs the original's r3/r0, and
-// the `b<=10?b:10` clamp hoists `li r0,0xa` one slot before the compare.
+// Common subexpression elimination off keeps the rodata base in r31 and the mario pointer in r30; with it on
+// the two are swapped and every access thereafter shifts. Needed only for this function.
+#pragma opt_common_subs off
+#ifdef MUST_MATCH
+// These two inline helpers exist to reproduce the original's register allocation and schedule: the plain
+// expressions put `type` in r0 and `v` in r3 (the target is the other way), and let the compiler if-convert the
+// constant clamp. The #else keeps the natural expressions for --non-matching builds.
+static inline s32 clampHammerType(s32 t) {
+    return (t == 7) ? 3 : t;
+}
+
+static inline s32 minHammerTicks10(s32 b) {
+    s32 v = b;
+    if (b > 10) {
+        v = 10;
+    }
+    return v;
+}
+#endif
+
+// The `type == 7 ? 3 : type` clamp, the se_data update order, the switches, the pool and every callee-saved
+// register (base r31, mario r30, r28/r29, f30/f31) now match. The `rp` clamp keeps the branchy form in the
+// target (`cmpwi; bgt; mr r0,r3; b end; li r0,10`); every source shape tried (if/else, ternary, inline
+// helper, goto, optionally under opt_lifetimes/opt_propagation/opt_dead_assignments/optimize_for_size/
+// scheduling off) is still if-converted to `cmpwi; mr r0,r3; ble; li r0,10`, one instruction shorter.
+// NONMATCHING (99.72%): only the `b <= 10 ? b : 10` clamp differs (if-conversion, one instruction).
 void mot_hammer(void) {
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
@@ -755,10 +778,11 @@ void mot_hammer(void) {
     u32 i;
     s32 type;
     s32 r27;
+    s32 eff;
     s32 lv;
     HitEntry* hit;
-    f32 f30;
     f32 f31;
+    f32 f30;
     f32 ang2;
     f32 px;
     f32 pz;
@@ -861,11 +885,11 @@ void mot_hammer(void) {
             break;
         }
         if (type != 0) {
-            s32 v = 3;
-            if (type != 7) {
-                v = type;
-            }
-            M_S32(mario, 0x2A0) = v;
+#ifdef MUST_MATCH
+            M_S32(mario, 0x2A0) = clampHammerType(type);
+#else
+            M_S32(mario, 0x2A0) = (type == 7) ? 3 : type;
+#endif
             mario->flags |= 0x800;
         } else {
             mario->flags &= ~0x800;
@@ -902,7 +926,11 @@ void mot_hammer(void) {
         }
     } else {
         s32 b = mario->multiTimer;
+#ifdef MUST_MATCH
+        r27 = minHammerTicks10(b);
+#else
         r27 = (b <= 10) ? b : 10;
+#endif
         if (b == 10) {
             rp = 1;
         }
@@ -924,56 +952,56 @@ void mot_hammer(void) {
         f30 = mario->position.y;
         pz = mario->position.z;
         if (!(mario->dispFlags & 0x80000000)) {
-            r27 = -1;
+            eff = -1;
             switch (M_S32(mario, 0x2A8)) {            case 7:
                 movePos(&px, &pz, float_16_8041aaa0, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
                 f31 = float_53_8041aaa4;
-                r27 = 0x16;
+                eff = 0x16;
                 break;
                         case 0:
             case 6:
                 movePos(&px, &pz, float_25_8041aaa8, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
                 f31 = float_neg3_8041aaac;
-                r27 = 0x15;
+                eff = 0x15;
                 break;
             case 5:
                 movePos(&px, &pz, float_31_8041aab0, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
                 f31 = float_5_8041a9cc;
-                r27 = 0x15;
+                eff = 0x15;
                 break;
             case 4:
                 movePos(&px, &pz, float_30_8041a9d4, toMovedir2(M_F32(mario, 0x1AC), float_0_8041a9a8));
                 f31 = float_30_8041a9d4;
-                r27 = 0x16;
+                eff = 0x16;
                 break;
 }
         } else {
-            r27 = -1;
+            eff = -1;
             switch (M_S32(mario, 0x2A8)) {            case 7:
                 movePos(&px, &pz, float_16_8041aaa0, toMovedir2(M_F32(mario, 0x1AC), float_neg2_8041a9f8));
                 f31 = float_53_8041aaa4;
-                r27 = 0x16;
+                eff = 0x16;
                 break;
                         case 0:
             case 6:
                 movePos(&px, &pz, float_30_8041a9d4, toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4));
                 f31 = float_neg3_8041aaac;
-                r27 = 0x15;
+                eff = 0x15;
                 break;
             case 5:
                 movePos(&px, &pz, float_36_8041a9dc, toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4));
                 f31 = float_20_8041a9e0;
-                r27 = 0x16;
+                eff = 0x16;
                 break;
             case 4:
                 movePos(&px, &pz, float_37_8041a9e8, toMovedir2(M_F32(mario, 0x1AC), float_neg6_8041aab4));
                 f31 = float_28_8041aab8;
-                r27 = 0x16;
+                eff = 0x16;
                 break;
 }
         }
-        if (r27 > 0) {
-            effKemuTestEntry(r27, px, f30 + f31, pz, float_1_8041aa38);
+        if (eff > 0) {
+            effKemuTestEntry(eff, px, f30 + f31, pz, float_1_8041aa38);
         }
         mario3 = marioGetPtr();
         sound = 0x161;
@@ -1014,6 +1042,7 @@ void mot_hammer(void) {
         marioChgMot(0);
     }
 }
+#pragma opt_common_subs reset
 s32 marioGetHammerLevel(void) {
     return pouchGetPtr()->hammerLevel;
 }

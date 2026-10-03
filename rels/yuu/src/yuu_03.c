@@ -495,18 +495,37 @@ static void polygon(f32 x, f32 y, f32 w, f32 h, f32 u, f32 v) {
     GXTexCoord2f32(0.0f, v);
 }
 
-// NONMATCHING (97.40%): ryushi_disp; `wp = &wp[1]` (reuse local instead of reloading xwp) matched; base registers and angle-block schedule still differ
+#ifdef MUST_MATCH
+// Passing the base colour by value puts the built colour and its by-value copy in the original's stack slots.
+static inline GXColor ryushiColor0(GXColor c, u32 r, u32 g, u32 b) {
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    return c;
+}
+
+static inline GXColor ryushiColor1(u32 r, u32 g, u32 b, u32 a) {
+    GXColor c = *(GXColor*)&zero_yuu_00014164;
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    c.a = a;
+    return c;
+}
+#endif
+
+// The colour helpers and the angle expression are written to reproduce the original's stack slots and
+// instruction schedule; the plain forms are under #else (see the comments in the body).
 void ryushi_disp(CameraId cameraId, void* param) {
     RyushiEntry* wp = xwp;
     s32 unk30 = xwp->unk30;
     s32 unk34 = xwp->unk34;
-    Mtx mtx;
+    Mtx trans;
     Mtx rot;
     Mtx scale;
-    Mtx trans;
     Mtx out;
+    Mtx mtx;
     GXTexObj texObj;
-    GXColor color;
     f32 f31;
     f32 f30;
     f32 f29;
@@ -518,11 +537,17 @@ void ryushi_disp(CameraId cameraId, void* param) {
     PSMTXConcat(mtx, rot, mtx);
     effGetTexObj(0x1E, &texObj);
     GXLoadTexObj(&texObj, 0);
-    color = *(GXColor*)&zero_yuu_00014160;
-    color.r = wp->unk38;
-    color.g = wp->unk3C;
-    color.b = wp->unk40;
-    GXSetTevColor(2, color);
+#ifdef MUST_MATCH
+    GXSetTevColor(2, ryushiColor0(*(GXColor*)&zero_yuu_00014160, wp->unk38, wp->unk3C, wp->unk40));
+#else
+    {
+        GXColor color = *(GXColor*)&zero_yuu_00014160;
+        color.r = wp->unk38;
+        color.g = wp->unk3C;
+        color.b = wp->unk40;
+        GXSetTevColor(2, color);
+    }
+#endif
     GXSetNumChans(0);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetNumTexGens(1);
@@ -552,16 +577,23 @@ void ryushi_disp(CameraId cameraId, void* param) {
         if (f30 == f31) {
             continue;
         }
-        color = *(GXColor*)&zero_yuu_00014164;
-        color.r = (s32)f29;
-        color.g = unk30;
-        color.b = unk34;
-        color.a = wp->unk20;
-        GXSetTevColor(1, color);
-        {
-            // target sums wp->z*0.125 first; the natural order schedules its loads differently
 #ifdef MUST_MATCH
-            f32 t = (wp->z * 0.125f + 3.14f * (f32)i * 0.25f) / 3.14f;
+        GXSetTevColor(1, ryushiColor1((s32)f29, unk30, unk34, wp->unk20));
+#else
+        {
+            GXColor color = *(GXColor*)&zero_yuu_00014164;
+            color.r = (s32)f29;
+            color.g = unk30;
+            color.b = unk34;
+            color.a = wp->unk20;
+            GXSetTevColor(1, color);
+        }
+#endif
+        {
+            // The target computes these as reciprocals of powers of two; the divisions schedule the constant
+            // loads the way the original does. The result is identical to z*0.125 and 3.14*i*0.25.
+#ifdef MUST_MATCH
+            f32 t = (wp->z / 8.0f + 3.14f * (f32)i / 4.0f) / 3.14f;
 #else
             f32 t = (3.14f * (f32)i * 0.25f + wp->z * 0.125f) / 3.14f;
 #endif
@@ -571,9 +603,11 @@ void ryushi_disp(CameraId cameraId, void* param) {
                 k -= 1;
             }
             {
-                f32 a = d - (f32)(k * 360);
-                s32 idx = (s32)a;
-                f32 s = *(f32*)&yuusintbl[idx];
+                s32 idx;
+                f32 s;
+                d = d - (f32)(k * 360);
+                idx = (s32)d;
+                s = *(f32*)&yuusintbl[idx];
                 f29 = 3.0f;
                 PSMTXTrans(trans, f29 * s + wp->x, wp->y, wp->z);
             }

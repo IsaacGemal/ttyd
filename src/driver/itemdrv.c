@@ -1235,9 +1235,9 @@ void itemModeChange(ItemEntry* item, u16 mode) {
 #define IT_F32(i, off) (*(f32*)((u8*)(i) + (off)))
 #define IT_S64(i, off) (*(s64*)((u8*)(i) + (off)))
 #ifdef MUST_MATCH
-#define IB_STR(off, sym) ((const char*)&vec3_802cabe0 + (off))
-#define IB_DBL20 (*(const f64*)((const u8*)&vec3_802cabe0 + 0x48))
-#define IB_VEC(off, sym) (*(const Vec*)((const u8*)&vec3_802cabe0 + (off)))
+#define IB_STR(off, sym) ((const char*)ibBase + (off))
+#define IB_DBL20 (*(const f64*)((const u8*)ibBase + 0x48))
+#define IB_VEC(off, sym) (*(const Vec*)((const u8*)ibBase + (off)))
 #else
 #define IB_STR(off, sym) (sym)
 #define IB_DBL20 double_20_802cac28
@@ -1261,12 +1261,17 @@ static inline f32 itemTicksToSec(s64 ticks) {
     return (f32)OSTicksToMicroseconds(ticks) / 1000000.0f;
 }
 
-// NONMATCHING (81.91%): structure and calls match; what differs is float/GPR scheduling and register choice, and the i2f double (original reaches it through the vec3_802cabe0 base register).
 // Falling/bouncing motion of a dropped item: gravity from the elapsed time, the side/floor/ceiling hit checks, the
-// bounce sounds and the water splash.
+// bounce sounds and the water splash. The compiler's int->float magic is loaded with its own `lis`+`lfd` (@1386)
+// instead of the target's `lfd 0x68(r30)`, which re-schedules every `(f32)int` conversion and cascades into the
+// FP/GPR colouring; the base register is r28 here vs r30, and the item pointer and switch decision trees match.
+// NONMATCHING (86.27%): the compiler's int->float magic load and the resulting register schedule only.
 void itemseq_Bound(ItemEntry* item) {
     MarioWork* mario = marioGetPtr();
     CameraEntry* camera = camGetPtr(CAMERA_3D);
+#ifdef MUST_MATCH
+    const u8* ibBase = (const u8*)&vec3_802cabe0;
+#endif
 
     switch (item->field_0x26) {
     case 0:
@@ -1289,20 +1294,25 @@ void itemseq_Bound(ItemEntry* item) {
                 if (!(IT_U32(item, 0x38) & 0x40)) {
                     s32 id = item->itemId;
 
-                    if (id != 0x7A && (id >= 0x79 && id < 0x7D)) {
+                    switch (id) {
+                    case 0x79:
+                    case 0x7B:
+                    case 0x7C:
                         IT_F32(item, 0x50) = (f32)(irand(0x1E) + 0x2D);
                         if (irand(0x64) < 0x32) {
                             IT_S32(item, 0x54) = (s32)((90.0f + camera->viewYaw + (f32)irand(0x3C)) - 30.0f);
                         } else {
                             IT_S32(item, 0x54) = (s32)(((camera->viewYaw - 90.0f) + (f32)irand(0x3C)) - 30.0f);
                         }
-                    } else {
+                        break;
+                    default:
                         IT_F32(item, 0x50) = 100.0f;
                         if (irand(0x64) < 0x32) {
                             IT_S32(item, 0x54) = (s32)((90.0f + camera->viewYaw + (f32)irand(0x1E)) - 15.0f);
                         } else {
                             IT_S32(item, 0x54) = (s32)(((camera->viewYaw - 90.0f) + (f32)irand(0x1E)) - 15.0f);
                         }
+                        break;
                     }
                 } else {
                     IT_S32(item, 0x54) = _move_dir;
@@ -1509,36 +1519,31 @@ void itemseq_Bound(ItemEntry* item) {
                         p0.z = item->position.z;
                         p1 = p0;
                         id = item->itemId;
-                        if (id != 0x7B) {
-                            if (id < 0x7B) {
-                                if (id != 0x79) {
-                                    if (id < 0x79) {
-                                        if (id < 0x72) {
-                                            goto badge_sfx;
-                                        }
-                                        psndSFXOn_3D(IB_STR(0x12C, str_802CAD0C), &p1);
-                                    } else {
-                                        psndSFXOn_3D(IB_STR(0xD0, str_802CACB0), &p1);
-                                    }
-                                } else {
-                                    psndSFXOn_3D(IB_STR(0xBC, str_802CAC9C), &p1);
-                                }
-                            } else if (id != 0x7D) {
-                                if (id < 0x7D) {
-                                    psndSFXOn_3D(IB_STR(0x100, str_802CACE0), &p1);
-                                } else {
-                                badge_sfx:
-                                    if (id >= 0xF0 && id < 0x153) {
-                                        psndSFXOn_3D(IB_STR(0x144, str_802CAD24), &p1);
-                                    } else {
-                                        psndSFXOn_3D(IB_STR(0x158, str_802CAD38), &p1);
-                                    }
-                                }
-                            } else {
-                                psndSFXOn_3D(IB_STR(0x114, str_802CACF4), &p1);
-                            }
-                        } else {
+                        switch (id) {
+                        case 0x79:
+                            psndSFXOn_3D(IB_STR(0xBC, str_802CAC9C), &p1);
+                            break;
+                        case 0x7A:
+                            psndSFXOn_3D(IB_STR(0xD0, str_802CACB0), &p1);
+                            break;
+                        case 0x7B:
                             psndSFXOn_3D(IB_STR(0xEC, str_802CACCC), &p1);
+                            break;
+                        case 0x7C:
+                            psndSFXOn_3D(IB_STR(0x100, str_802CACE0), &p1);
+                            break;
+                        case 0x7D:
+                            psndSFXOn_3D(IB_STR(0x114, str_802CACF4), &p1);
+                            break;
+                        default:
+                            if (id >= 0x72 && id < 0x79) {
+                                psndSFXOn_3D(IB_STR(0x12C, str_802CAD0C), &p1);
+                            } else if (id >= 0xF0 && id < 0x153) {
+                                psndSFXOn_3D(IB_STR(0x144, str_802CAD24), &p1);
+                            } else {
+                                psndSFXOn_3D(IB_STR(0x158, str_802CAD38), &p1);
+                            }
+                            break;
                         }
                         if ((item->flags & 0x80) && IT_F32(item, 0x58) != 0.0f) {
                             bounce = 1;
