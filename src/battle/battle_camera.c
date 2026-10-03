@@ -305,8 +305,12 @@ void battleCameraMain(void) {
     }
     base = 2.0f * wp->cameraWork.zoom;
     base -= 1.5f * w;
-    // The original only writes yc in the two clamp arms; an in-range midpoint leaves it as it was.
+    // Retail only writes yc (f31) in the two clamp arms, and nothing on this path set f31 before, so an
+    // in-range midpoint reads whatever the caller left in f31. The natural build starts from the midpoint.
     mid = 0.5f * (vv.y + hv.y);
+#ifndef MUST_MATCH
+    yc = mid;
+#endif
     off = -base / 10.0f;
     if (mid > 50.0f) {
       yc = 50.0f;

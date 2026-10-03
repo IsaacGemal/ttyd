@@ -2528,9 +2528,16 @@ static void pose_init(void) {
 // NONMATCHING (90.63%): retail materialises event->args in r27 and a separate args+2 in r31 (seven
 // callee-saved registers); here the args pointer lands in r31 and args+2 folds into displacements,
 // so the remaining callee-saved colours are shifted by one. The a2 aliases below are codegen-only.
+#ifdef MUST_MATCH
+#define BOM_ARG(n) a2[(n) - 2]
+#else
+#define BOM_ARG(n) event->args[n]
+#endif
 USER_FUNC(bom1000_msg) {
+#ifdef MUST_MATCH
     s32* a2 = event->args + 2;
-    s32 a = evtGetValue(event, a2[-2]);
+#endif
+    s32 a = evtGetValue(event, BOM_ARG(0));
     s32 b = evtGetValue(event, event->args[1]);
     ExtPose* pose = extGetPosePtr();
     s32 base;
@@ -2547,11 +2554,12 @@ USER_FUNC(bom1000_msg) {
     idx = b + base * 14;
     b = (b + (rand() % 2 + 1) * 4) % 14;
     evtSetValue(event, event->args[0], flag);
-    evtSetValue(event, a2[-1], b);
-    evtSetFloat(event, a2[0], pose[idx].matrix[0][0][3]);
-    evtSetFloat(event, a2[1], pose[idx].matrix[0][2][3]);
+    evtSetValue(event, BOM_ARG(1), b);
+    evtSetFloat(event, BOM_ARG(2), pose[idx].matrix[0][0][3]);
+    evtSetFloat(event, BOM_ARG(3), pose[idx].matrix[0][2][3]);
     return EVT_RETURN_DONE;
 }
+#undef BOM_ARG
 
 #pragma opt_common_subs off // keeps the three float temps and the schedule the target has (see the NONMATCHING note)
 // NONMATCHING (99.66%): the first block loads float_100 into r4 and zero into r3;

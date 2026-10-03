@@ -632,7 +632,13 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
     f32 px = 0.0f;
     f32 py = 0.0f;
     f32 pz = 0.0f;
+#ifdef MUST_MATCH
+    // Retail loads -2.0f into f31 only when the counter is exactly 0x1A and reads f31 for every count >= 0x1A, so
+    // on counts 0x1B-0x1E it adds whatever f31 still holds; the natural build uses -2.0f throughout.
     f32 neg2;
+#else
+    f32 neg2 = float_neg2_80421634;
+#endif
     f32 hx = 0.0f;
     f32 hy = 0.0f;
     f32 hz = 0.0f;

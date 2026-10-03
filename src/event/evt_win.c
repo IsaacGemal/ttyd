@@ -596,7 +596,7 @@ USER_FUNC(set_new_goods_list) {
 // reproduce MWCC's callee-saved colouring (match-only). The int->float magic is the compiler's own pool
 // entry, so the named double_to_int_802f68a8 / double_to_int_mask_802f68b8 definitions in this file are
 // duplicates: every i2f conversion loads 0x408(r30) instead of the target's 0x3f0(r30).
-// NONMATCHING (96.15%): MWCC callee-saved register colouring is shifted one register (r16/r17 vs
+// NONMATCHING (96.12%): MWCC callee-saved register colouring is shifted one register (r16/r17 vs
 // the target's r17/r18) through the function, which also makes the frame larger.
 void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	UnitWinWork* wp = (UnitWinWork*)param;
@@ -1150,6 +1150,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		s32 dispOff;
 		u32 sc[4];
 		s32 entry;
+		s32 dispCnt;
 		char help[0x40];
 		s32 listOff;
 		s32 m8;
@@ -1178,6 +1179,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		GXGetScissor(&sc[0], &sc[1], &sc[2], &sc[3]);
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
 
+		dispCnt = 0;
 		for (entry = 0, dispOff = 0; party_id_table[entry] != 0; entry++) {
 			s32 iconId;
 			GXColor nameColor;
@@ -1260,7 +1262,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 			sprintf(buf, "%d", pouch->partyData[party_id_table[entry]].techLevel);
 			FontDrawStart();
 			FontDrawString(buf, float_236_8041dbb0, wp->field_0x44 + (f32)(0x50 - dispOff));
-			if ((f32)entry == wp->field_0x34) {
+			if ((f32)dispCnt == wp->field_0x34) {
 				char help2[0x10];
 				char lank[0x10];
 
@@ -1277,6 +1279,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				sprintf(help, str_802F6750, help2, lank, pouch->partyData[party_id_table[entry]].techLevel + 1, party_labelname_table[entry]);
 			}
 			dispOff += 0x18;
+			dispCnt++;
 		}
 		GXSetScissor(sc[0], sc[1], sc[2], sc[3]);
 		if ((s8)help[0] != 0) {
