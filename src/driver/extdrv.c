@@ -461,14 +461,16 @@ typedef struct ExtMakeTextureEntry {
 	f32 field_0x8;    //0x8
 } ExtMakeTextureEntry;
 
-// NONMATCHING (99.82%): the only difference is the compiler's colour for the two induction variables
-// i*4 (texIdx, used by GXPosition1x16 and dlSizes) and i*0x80 (dlBuffer offset): the target has them
-// in r27/r28, ours in r28/r27 (all six differing instructions are that swap).
+// The header's animPoseDisp_MakeExtTexture prototype puts f1 (the float) second, before field_0x4/texObj/base;
+// the original call site loads it last, so its declaration is (name, field_0x4, texObj, base, f1, f2, ...) -- the
+// integer registers are identical either way. The cast reproduces that evaluation order (MUST_MATCH); the natural
+// call with the header's order sits in the #else.
 void extMakeTexture(CameraId camId, void* param) {
 	ExtWork* wp = extGetWork();
-	ExtMakeTextureEntry* p = param;
+	void* p = param;
 	ExtTexture* tex = wp->textures;
 	f32 backup[4];
+	f32 half = 0.5f;
 	s32 i;
 
 	anim_ext_tex_size = 0;
@@ -478,90 +480,50 @@ void extMakeTexture(CameraId camId, void* param) {
 	queen_uv[1] = -2.0f / (f32)wp->texCount;
 	queen_uv[3] = -1.0f / (f32)wp->texCount;
 
+	for (i = 0; i < wp->texCount; i++, p = (u8*)p + 0xC, tex++) {
+		s32 out0;
+		s32 out1;
+		s32 out2;
+		s32 out3;
+		s32 j;
+		s32 k;
+		const u8* q;
+
 #ifdef MUST_MATCH
-	// Match-only shapes: the post-incremented vtxIdx/texIdx force MWCC's index-strength-reduction
-	// chains, the loop-local `half` forces the fmuls operand order, the empty for-increment fixes
-	// the induction-variable update order, and the cast evaluates the pointer arguments before the
-	// float ones (the header declares f1 second).
-	for (i = 0; i < wp->texCount; ) {
-		s32 vtxIdx = i * 12;
-		s32 texIdx = i * 4;
-		f32 half = 0.5f;
-		s32 out0;
-		s32 out1;
-		s32 out2;
-		s32 out3;
-
+		q = (const u8*)p;
 		((void (*)(const char*, void*, void*, void*, f32, f32, s32*, s32*, s32*, s32*))animPoseDisp_MakeExtTexture)(
-		    p->name, p->field_0x4, &tex->texObj, tex, p->field_0x8, 4.0f,
-		    &out0, &out1, &out2, &out3);
-		wp->vertices[vtxIdx++] = (f32)out0 * half;
-		wp->vertices[vtxIdx++] = (f32)(-out1) * half;
-		wp->vertices[vtxIdx++] = 0.0f;
-		wp->vertices[vtxIdx++] = (f32)out2 * half;
-		wp->vertices[vtxIdx++] = (f32)(-out1) * half;
-		wp->vertices[vtxIdx++] = 0.0f;
-		wp->vertices[vtxIdx++] = (f32)out2 * half;
-		wp->vertices[vtxIdx++] = (f32)(-out3) * half;
-		wp->vertices[vtxIdx++] = 0.0f;
-		wp->vertices[vtxIdx++] = (f32)out0 * half;
-		wp->vertices[vtxIdx++] = (f32)(-out3) * half;
-		wp->vertices[vtxIdx++] = 0.0f;
-
-		GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
-		GXBegin(0x80, 0, 4);
-		GXPosition1x16(texIdx++);
-		GXTexCoord1x16(0);
-		GXPosition1x16(texIdx++);
-		GXTexCoord1x16(1);
-		GXPosition1x16(texIdx++);
-		GXTexCoord1x16(2);
-		GXPosition1x16(texIdx++);
-		GXTexCoord1x16(3);
-		wp->dlSizes[i] = GXEndDisplayList();
-
-		i++;
-		p++;
-		tex++;
-	}
+		    *(const char**)q, *(void**)(q + 4), &tex->texObj, tex, *(f32*)(q + 8), 4.0f, &out0, &out1, &out2, &out3);
 #else
-	for (i = 0; i < wp->texCount; i++) {
-		s32 out0;
-		s32 out1;
-		s32 out2;
-		s32 out3;
-
-		animPoseDisp_MakeExtTexture(p->name, p->field_0x8, p->field_0x4, &tex->texObj, tex,
+		animPoseDisp_MakeExtTexture(*(const char**)p, *(f32*)((u8*)p + 8), *(void**)((u8*)p + 4), &tex->texObj, tex,
 		                            4.0f, &out0, &out1, &out2, &out3);
-		wp->vertices[i * 12 + 0] = (f32)out0 * 0.5f;
-		wp->vertices[i * 12 + 1] = (f32)(-out1) * 0.5f;
-		wp->vertices[i * 12 + 2] = 0.0f;
-		wp->vertices[i * 12 + 3] = (f32)out2 * 0.5f;
-		wp->vertices[i * 12 + 4] = (f32)(-out1) * 0.5f;
-		wp->vertices[i * 12 + 5] = 0.0f;
-		wp->vertices[i * 12 + 6] = (f32)out2 * 0.5f;
-		wp->vertices[i * 12 + 7] = (f32)(-out3) * 0.5f;
-		wp->vertices[i * 12 + 8] = 0.0f;
-		wp->vertices[i * 12 + 9] = (f32)out0 * 0.5f;
-		wp->vertices[i * 12 + 10] = (f32)(-out3) * 0.5f;
-		wp->vertices[i * 12 + 11] = 0.0f;
+#endif
+		j = i * 12;
+		wp->vertices[j++] = (f32)out0 * half;
+		wp->vertices[j++] = (f32)(-out1) * half;
+		wp->vertices[j++] = 0.0f;
+		wp->vertices[j++] = (f32)out2 * half;
+		wp->vertices[j++] = (f32)(-out1) * half;
+		wp->vertices[j++] = 0.0f;
+		wp->vertices[j++] = (f32)out2 * half;
+		wp->vertices[j++] = (f32)(-out3) * half;
+		wp->vertices[j++] = 0.0f;
+		wp->vertices[j++] = (f32)out0 * half;
+		wp->vertices[j++] = (f32)(-out3) * half;
+		wp->vertices[j++] = 0.0f;
 
 		GXBeginDisplayList((u8*)wp->dlBuffer + i * 0x80, 0x80);
 		GXBegin(0x80, 0, 4);
-		GXPosition1x16(i * 4 + 0);
+		k = i * 4;
+		GXPosition1x16(k++);
 		GXTexCoord1x16(0);
-		GXPosition1x16(i * 4 + 1);
+		GXPosition1x16(k++);
 		GXTexCoord1x16(1);
-		GXPosition1x16(i * 4 + 2);
+		GXPosition1x16(k++);
 		GXTexCoord1x16(2);
-		GXPosition1x16(i * 4 + 3);
+		GXPosition1x16(k++);
 		GXTexCoord1x16(3);
 		wp->dlSizes[i] = GXEndDisplayList();
-
-		p++;
-		tex++;
 	}
-#endif
 	memcpy(queen_uv, backup, 0x10);
 }
 

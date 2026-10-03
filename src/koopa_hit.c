@@ -586,12 +586,14 @@ void* kpaGetHitFlame(void) {
 }
 
 
+#pragma opt_lifetimes off // keeps the target's register colouring this close (see NONMATCHING below)
+#pragma opt_dead_assignments off // same: without it the diff grows from 30 to 36 instructions
 // Register allocation only: the clear loop's `i`/`ofs` zero-inits are emitted as `mr r28,r26` + `li r27,0`
 // instead of the original's `mr r27,r26` + `mr r28,r26`, and the pi constant is in f30 vs the original's f31
 // (double_to_int stays in f31 vs f30). `result` is correctly in r25. Declaring `result` last (after
 // entry/i/count/mp) is what fixes the colouring; the `pi`/`deg` locals are deliberate and removing them
 // costs 3 more instructions.
-// NONMATCHING (97.11%): every other instruction, constant and stack slot matches.
+// NONMATCHING (99.37%): every other instruction, constant and stack slot matches.
 void* kpaHitCheck(void) {
     s32* entry;
     s32 i;

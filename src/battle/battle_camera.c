@@ -60,6 +60,626 @@ void battleCameraInit(void) {
 // (not inlined); keep inlining off across the small API surface.
 #pragma dont_inline on
 
+// Prologue/epilogue (frame 0x100, stmw r25), the stack layout, every call and every rodata reference all match.
+// The only structural difference left is the original's dead `lfs f30, float_0` prologue load (MWCC
+// folds our `zero` initialiser instead of keeping it in f30); everything else is FP/GP register
+// allocation (the `!!` arg mismatches).
+// NONMATCHING (98.08%): see report; the unit cannot reach 100% until the dead-vector rodata in the other functions is fixed.
+void battleCameraMain(void) {
+  CameraEntry* cam;
+  BattleWork* wp;
+  BattleAudience* audience;
+  BattleUnit* unit;
+  BattleUnitPart* part;
+  BattleUnit* unit2;
+  BattleUnitPart* part2;
+  PouchData* pouch;
+  BattleAudienceMember* member;
+  Vec vv;
+  Vec hv;
+  f32 o1, o2, o3, o4, o5, o6;
+  f32 t1, t2, t3;
+  f32 zb, zc;
+  f32 zero;
+  char name[0x40];
+
+  cam = camGetPtr(CAMERA_3D);
+  wp = _battleWorkPointer;
+  audience = BattleAudienceBaseGetPtr();
+  zero = 0.0f;
+  (void)BattleGetMarioPtr(wp);
+  o1 = zero;
+  o2 = zero;
+  o3 = zero;
+  o4 = zero;
+  o5 = zero;
+  o6 = zero;
+
+  if (wp->cameraWork.mode != 3) {
+    wp->cameraWork.unk84 = 0;
+  }
+
+  cam->cameraPos.x = *(f32*)((f32*)&wp->cameraWork + 11);
+  cam->cameraPos.y = *(f32*)((f32*)&wp->cameraWork + 12);
+  cam->cameraPos.z = *(f32*)((f32*)&wp->cameraWork + 13);
+  cam->cameraAt.x = *(f32*)((f32*)&wp->cameraWork + 17);
+  cam->cameraAt.y = *(f32*)((f32*)&wp->cameraWork + 18);
+  cam->cameraAt.z = *(f32*)((f32*)&wp->cameraWork + 19);
+  *(f32*)((f32*)&wp->cameraWork + 14) = cam->cameraPos.x;
+  *(f32*)((f32*)&wp->cameraWork + 15) = cam->cameraPos.y;
+  *(f32*)((f32*)&wp->cameraWork + 16) = cam->cameraPos.z;
+  *(f32*)((f32*)&wp->cameraWork + 20) = cam->cameraAt.x;
+  *(f32*)((f32*)&wp->cameraWork + 21) = cam->cameraAt.y;
+  *(f32*)((f32*)&wp->cameraWork + 22) = cam->cameraAt.z;
+
+  switch (wp->cameraWork.mode) {
+  case 0:
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, 0.0f, 110.0f, 750.0f, 0.0f, 60.0f, 0.0f);
+    strcpy(name, "\202\251\202\337\202\347\201@\202\305\202\323\202\247\202\351\202\306");
+    break;
+  case 1:
+    zb = 0.5f * wp->cameraWork.zoom;
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, 0.0f, 110.0f, 750.0f - zb, 0.0f, 60.0f, -zb);
+    strcpy(name, "\202\251\202\337\202\347\201@\202\305\202\323\202\247\202\351\202\306\203Y\201[\203\200");
+    break;
+  case 2:
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, 0.0f, 160.0f, 750.0f, 0.0f, 110.0f, 0.0f);
+    strcpy(name, "\202\251\202\337\202\347\201@\202\251\201[\202\273\202\351\202\252\202\244\202\246\202\311");
+    /* fallthrough */
+  case 3: {
+    if (wp->cameraWork.unk84 > 0) {
+      s16 save = wp->cameraWork.moveSpeedLv;
+
+      wp->cameraWork.unk84--;
+      vv.x = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
+                         wp->cameraWork.unk8C.x, wp->cameraWork.unk98.x);
+      vv.y = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
+                         wp->cameraWork.unk8C.y, wp->cameraWork.unk98.y);
+      vv.z = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
+                         wp->cameraWork.unk8C.z, wp->cameraWork.unk98.z);
+      t1 = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
+                         wp->cameraWork.unkA4.x, wp->cameraWork.unkB0.x);
+      t2 = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
+                         wp->cameraWork.unkA4.y, wp->cameraWork.unkB0.y);
+      t3 = intplGetValue(wp->cameraWork.unk80, wp->cameraWork.unk88 - wp->cameraWork.unk84, wp->cameraWork.unk88,
+                         wp->cameraWork.unkA4.z, wp->cameraWork.unkB0.z);
+      wp->cameraWork.moveSpeedLv = 3;
+      wp->cameraWork.zoomSpeedLv = 3;
+      battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, vv.x, vv.y, vv.z, t1, t2, t3);
+      wp->cameraWork.moveSpeedLv = save;
+    }
+    strcpy(name, "\202\251\202\337\202\347\201@\202\323\202\350\201[");
+    break;
+  }
+  case 4:
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, 0.0f, 110.0f, -750.0f, 0.0f, 60.0f, 0.0f);
+    strcpy(name, "\202\251\202\337\202\347\201@\202\324\202\275\202\242\202\244\202\347");
+    break;
+  case 5:
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, 0.0f, 400.0f, -617.0f, 0.0f, 60.0f, 0.0f);
+    strcpy(name, "\202\251\202\337\202\347\201@\202\324\202\275\202\242\202\244\202\347\202Q");
+    break;
+  case 6:
+    pouch = pouchGetPtr();
+    switch (pouch->rank) {
+    case 0:
+      zc = 750.0f;
+      break;
+    case 1:
+      zc = 830.0f;
+      break;
+    case 2:
+      zc = 920.0f;
+      break;
+    case 3:
+      zc = 1000.0f;
+      break;
+    }
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, 0.0f, 110.0f, zc, 0.0f, 60.0f, 0.0f);
+    strcpy(name, "\202\251\202\337\202\347\201@\202\251\202\361\202\253\202\341\202\255");
+    break;
+  case 7: {
+    f32 w;
+    f32 dz;
+    f32 cvy;
+    f32 off;
+    BattleUnit* u;
+
+    u = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+    if (u == NULL) {
+      btl_camera_set_mode(0, 0);
+      break;
+    }
+    part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
+    BtlUnit_GetPos(u, &vv.x, &vv.y, &vv.z);
+    {
+      f32 hh = (f32)BtlUnit_GetHeight(u) - 50.0f;
+      hh *= 0.5f;
+      vv.y += hh;
+    }
+    w = (f32)BtlUnit_GetWidth(u) - 24.0f;
+    if (w < 0.0f) {
+      w = 0.0f;
+    }
+    dz = wp->cameraWork.zoom;
+    dz = dz - 1.5f * w;
+    cvy = vv.y;
+    off = -dz / 9.0f;
+    if (cvy > 100.0f) {
+      cvy = 100.0f;
+    }
+    if (vv.y < 0.0f) {
+      cvy = 0.0f;
+    }
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, vv.x, 110.0f + cvy + off, 750.0f - dz, vv.x,
+                       60.0f + cvy + off, -dz);
+    strcpy(name,
+           "\202\251\202\337\202\347\201@\202\344\202\311\202\301\202\306\202\302\202\242\202\321");
+    break;
+  }
+  case 8: {
+    f32 wa;
+    f32 num;
+    f32 f9;
+    f32 dxc;
+    f32 xv;
+    f32 f7;
+    f32 t;
+    f32 v;
+    f32 f11;
+    f32 base;
+    f32 wb;
+
+    unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk14);
+    if (unit == NULL || unit2 == NULL) {
+      btl_camera_set_mode(0, 0);
+      break;
+    }
+    part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
+    part = BattleGetUnitPartsPtr(wp->cameraWork.unk14, wp->cameraWork.unk1C);
+    BtlUnit_GetPos(unit, &vv.x, &vv.y, &vv.z);
+    BtlUnit_GetHitPos(unit2, part, &hv.x, &hv.y, &hv.z);
+    wa = (f32)BtlUnit_GetWidth(unit) - 24.0f;
+    wb = (f32)BtlUnit_GetWidth(unit2) - 24.0f;
+    if (wa < 0.0f) {
+      wa = 0.0f;
+    }
+    if (wb < 0.0f) {
+      wb = 0.0f;
+    }
+    dxc = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x;
+    num = hv.x - vv.x;
+    if (dxc == 0.0f) {
+      t = 0.5f;
+    } else {
+      t = num / dxc;
+    }
+    if (t > 1.0f) {
+      t = 1.0f;
+    }
+    if (t < 0.5f) {
+      t = 0.5f;
+    }
+    base = 2.0f * wp->cameraWork.zoom;
+    base -= 1.5f * (wa + wb);
+    v = (1.0f - t) * base;
+    xv = (1.0f - t) * wp->cameraWork.unkC8.x;
+    f11 = -v / 10.0f;
+    f9 = (wp->cameraWork.unkC8.y / 80.0f) * (vv.y - wp->cameraWork.unkC8.y);
+    if (f9 > 100.0f) {
+      f9 = 100.0f;
+    }
+    if (f9 < 0.0f) {
+      f9 = 0.0f;
+    }
+    f7 = 20.0 * -(1.0 - t) + f9;
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, xv, 110.0f + f7 + f11, 750.0f - v,
+                       xv, 60.0f + f7 + f11, -v);
+    strcpy(name,
+           "\202\251\202\337\202\347\201@\202Q\202\344\202\311\202\301\202\306\202\251\202\361\202\302\202\242\202\321");
+    break;
+  }
+  case 9: {
+    f32 w;
+    f32 base;
+    f32 off;
+    f32 yc;
+    f32 xc;
+    BattleUnitPart* pt;
+
+    unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk14);
+    if (unit == NULL || unit2 == NULL) {
+      btl_camera_set_mode(0, 0);
+      break;
+    }
+    pt = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
+    pt = BattleGetUnitPartsPtr(wp->cameraWork.unk14, wp->cameraWork.unk1C);
+    BtlUnit_GetPos(unit, &vv.x, &vv.y, &vv.z);
+    BtlUnit_GetHitPos(unit2, pt, &hv.x, &hv.y, &hv.z);
+    w = (f32)BtlUnit_GetWidth(unit) - 24.0f;
+    (void)BtlUnit_GetWidth(unit2);
+    if (w < 0.0f) {
+      w = 0.0f;
+    }
+    base = 2.0f * wp->cameraWork.zoom;
+    base -= 1.5f * w;
+    yc = 0.5f * (vv.y + hv.y);
+    off = -base / 10.0f;
+    if (yc > 50.0f) {
+      yc = 50.0f;
+    }
+    if (yc < 0.0f) {
+      yc = 0.0f;
+    }
+    xc = 0.5f * (vv.x + hv.x);
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, xc, 110.0f + yc + off, 750.0f - base, xc,
+                       60.0f + yc + off, -base);
+    strcpy(name,
+           "\202\251\202\337\202\347\201@\202\344\202\311\202\301\202\306\202\302\202\242\202\321");
+    break;
+  }
+  case 10: {
+    f32 w;
+    f32 dz;
+    f32 cvy;
+    f32 off;
+
+    unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+    if (unit == NULL) {
+      btl_camera_set_mode(0, 0);
+      break;
+    }
+    part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
+    if (part == NULL) {
+      btl_camera_set_mode(0, 0);
+      break;
+    }
+    BtlUnit_GetHitPos(unit, part, &vv.x, &vv.y, &vv.z);
+    {
+      f32 hh = (f32)BtlUnit_GetHeight(unit) - 50.0f;
+      hh *= 0.5f;
+      vv.y += hh;
+    }
+    w = (f32)BtlUnit_GetWidth(unit) - 24.0f;
+    if (w < 0.0f) {
+      w = 0.0f;
+    }
+    dz = wp->cameraWork.zoom;
+    dz = dz - 1.5f * w;
+    cvy = vv.y;
+    off = -dz / 9.0f;
+    if (cvy > 100.0f) {
+      cvy = 100.0f;
+    }
+    if (vv.y < 0.0f) {
+      cvy = 0.0f;
+    }
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, vv.x, 110.0f + cvy + off, 750.0f - dz, vv.x,
+                       60.0f + cvy + off, -dz);
+    strcpy(name, "\202\251\202\337\202\347\201@\202\317\201[\202\302\202\302\202\242\202\321");
+    break;
+  }
+  case 11: {
+    f32 wa;
+    f32 num;
+    f32 f9;
+    f32 dxc;
+    f32 xv;
+    f32 f7;
+    f32 t;
+    f32 v;
+    f32 f11;
+    f32 base;
+    f32 wb;
+
+    unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk14);
+    if (unit == NULL || unit2 == NULL) {
+      btl_camera_set_mode(0, 0);
+      break;
+    }
+    part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
+    part2 = BattleGetUnitPartsPtr(wp->cameraWork.unk14, wp->cameraWork.unk1C);
+    if (part == NULL || part2 == NULL) {
+      btl_camera_set_mode(0, 0);
+      break;
+    }
+    BtlUnit_GetPartsWorldPos(part, &vv.x, &vv.y, &vv.z);
+    BtlUnit_GetHitPos(unit2, part2, &hv.x, &hv.y, &hv.z);
+    wa = (f32)BtlUnit_GetWidth(unit) - 24.0f;
+    wb = (f32)BtlUnit_GetWidth(unit2) - 24.0f;
+    if (wa < 0.0f) {
+      wa = 0.0f;
+    }
+    if (wb < 0.0f) {
+      wb = 0.0f;
+    }
+    dxc = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x;
+    num = hv.x - vv.x;
+    if (dxc == 0.0f) {
+      dxc = 1e-05f;
+    }
+    t = num / dxc;
+    if (t > 1.0f) {
+      t = 1.0f;
+    }
+    if (t < 0.5f) {
+      t = 0.5f;
+    }
+    base = 2.0f * wp->cameraWork.zoom;
+    base -= 1.5f * (wa + wb);
+    v = (1.0f - t) * base;
+    xv = (1.0f - t) * wp->cameraWork.unkC8.x;
+    f11 = -v / 10.0f;
+    f9 = (wp->cameraWork.unkC8.y / 80.0f) * (vv.y - wp->cameraWork.unkC8.y);
+    if (f9 > 100.0f) {
+      f9 = 100.0f;
+    }
+    if (f9 < 0.0f) {
+      f9 = 0.0f;
+    }
+    f7 = 20.0 * -(1.0 - t) + f9;
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, xv, 110.0f + f7 + f11, 750.0f - v,
+                       xv, 60.0f + f7 + f11, -v);
+    strcpy(name,
+           "\202\251\202\337\202\347\201@\202Q\202\317\201[\202\302\202\251\202\361\202\302\202\242\202\321");
+    break;
+  }
+  case 12:
+    member = &audience->members[wp->cameraWork.unk20];
+    battleCameraMoveTo(1, 0, &o1, &o2, &o3, &o4, &o5, &o6, member->position.x, 200.0f,
+                       400.0f + member->position.z, member->position.x, 0.0f, member->position.z);
+    strcpy(name,
+           "\202\251\202\337\202\347\201@\202\251\202\361\202\253\202\341\202\255\202\302\202\242\202\321");
+    break;
+  case 13: {
+    f32 w;
+    f32 cy;
+    f32 t;
+    f32 v;
+    f32 dx;
+    f32 dxn;
+    f32 zz;
+    f32 u;
+    f32 off;
+
+    unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+    if (unit == NULL) {
+      btl_camera_set_mode(0, 0);
+      break;
+    }
+    part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
+    if (part == NULL) {
+      btl_camera_set_mode(0, 0);
+      break;
+    }
+    wp->cameraWork.unk20 = 10;
+    dx = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x;
+    BtlUnit_GetPos(unit, &vv.x, &vv.y, &vv.z);
+    dxn = wp->cameraWork.unkC8.x - vv.x;
+    if (dx == 0.0f) {
+      t = 0.5f;
+    } else {
+      t = dxn / dx;
+    }
+    if (t > 1.0f) {
+      t = 1.0f;
+    }
+    if (t < 0.5f) {
+      t = 0.5f;
+    }
+    u = 1.0f - t;
+    cy = vv.y - wp->cameraWork.unkBC.y - 100.0f;
+    zz = 2.0f * wp->cameraWork.zoom;
+    v = u * wp->cameraWork.unkC8.x;
+    if (cy > 0.0f) {
+      cy = 0.0f;
+    }
+    if (cy < -30.0f) {
+      cy = -30.0f;
+    }
+    off = -(1.0 - t) * (125.0f - cy);
+    w = u * zz;
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, v, 110.0f + off, 750.0f - w, v, 60.0f + off,
+                       -w);
+    strcpy(name,
+           "\202\251\202\337\202\347\201@\202\344\202\311\202\301\202\306\202\251\202\361\202\253\202\341\202\255\202\251\202\361\202\302\202\242\202\321");
+    break;
+  }
+  case 14:
+    wp->cameraWork.unk4++;
+    if (wp->cameraWork.unk4 == 1) {
+      pouch = pouchGetPtr();
+      switch (pouch->rank) {
+      case 0:
+        zc = 750.0f;
+        break;
+      case 1:
+        zc = 830.0f;
+        break;
+      case 2:
+        zc = 920.0f;
+        break;
+      case 3:
+        zc = 1000.0f;
+        break;
+      }
+      wp->cameraWork.moveSpeedLv = 3;
+      wp->cameraWork.zoomSpeedLv = 3;
+      battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, 0.0f, 110.0f, zc, 0.0f, 60.0f, 0.0f);
+    }
+    if (wp->cameraWork.unk4 == 10) {
+      wp->cameraWork.unk4 = 0;
+      btl_camera_set_mode(0, 3);
+      btl_camera_set_moveto(0, 120, 4, 0.0f, 110.0f, 750.0f, 0.0f, 60.0f, 0.0f);
+    }
+    strcpy(name,
+           "\202\251\202\337\202\347\201@\202\323\202\302\202\244\202\311\202\315\202\242\202\301\202\275");
+    break;
+  case 15:
+    wp->cameraWork.moveSpeedLv = 3;
+    wp->cameraWork.zoomSpeedLv = 3;
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, 0.0f, 110.0f, 500.0f, 0.0f, 60.0f, 0.0f);
+    strcpy(name,
+           "\202\251\202\337\202\347\201@\202\244\202\334\202\255\202\315\202\242\202\301\202\275");
+    break;
+  case 16:
+    wp->cameraWork.moveSpeedLv = 3;
+    wp->cameraWork.zoomSpeedLv = 3;
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, -100.0f, 110.0f, 500.0f, -100.0f, 60.0f,
+                       0.0f);
+    strcpy(name,
+           "\202\251\202\337\202\347\201@\202\276\202\337\202\311\202\315\202\242\202\301\202\275");
+    break;
+  case 17:
+  case 18: {
+    f32 mx;
+    f32 my;
+    f32 mz;
+    f32 h1x, h1y, h1z, h2x, h2y, h2z;
+    BattleUnit* u;
+    BattleUnit* u2;
+
+    u = BattleGetMarioPtr(wp);
+    u2 = BattleGetPartyPtr(wp);
+    if (u2 != NULL) {
+      BtlUnit_GetHomePos(u, &h1x, &h1y, &h1z);
+      BtlUnit_GetHomePos(u2, &h2x, &h2y, &h2z);
+      mx = 0.5f * (h1x + h2x);
+      my = 0.5f * (h1y + h2y);
+      mz = 0.5f * (h1z + h2z);
+      if (wp->cameraWork.mode == 18) {
+        my -= 20.0f;
+      }
+    } else {
+      BtlUnit_GetHomePos(u, &h1x, &h1y, &h1z);
+      mx = h1x;
+      my = h1y;
+      mz = h1z;
+    }
+    wp->cameraWork.moveSpeedLv = 1;
+    wp->cameraWork.zoomSpeedLv = 1;
+    battleCameraMoveTo(0, 1, &o1, &o2, &o3, &o4, &o5, &o6, mx, 100.0f + my, 350.0f + mz, mx,
+                       50.0f + my, 0.0f);
+    strcpy(name, "\202\251\202\337\202\347\201@\202\265\202\345\202\244\202\350");
+    break;
+  }
+  case 19:
+    strcpy(name, "\202\251\202\337\202\347\201@\202\315\202\242\202\332\202\255");
+    break;
+  case 20:
+    wp->cameraWork.moveSpeedLv = 2;
+    wp->cameraWork.zoomSpeedLv = 2;
+    battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, -100.0f, 100.0f, 400.0f, -100.0f, 50.0f,
+                       0.0f);
+    strcpy(name, "\202\251\202\337\202\347\201@\202\311\202\260\202\304\202\351");
+    break;
+  default:
+    strcpy(name, "\202\251\202\337\202\347\201@\202\250\202\251\202\265\202\242");
+    break;
+  }
+
+  if (cam->cameraPos.z >= 1000.0f) {
+    cam->cameraPos.z = 1000.0f;
+  }
+  if (wp->cameraWork.flags & 4) {
+    cam->cameraPos.x = *(f32*)((f32*)&wp->cameraWork + 14);
+    cam->cameraAt.x = *(f32*)((f32*)&wp->cameraWork + 20);
+    o1 = 0.0f;
+    o4 = 0.0f;
+  }
+  if (wp->cameraWork.flags & 8) {
+    cam->cameraPos.y = *(f32*)((f32*)&wp->cameraWork + 15);
+    cam->cameraAt.y = *(f32*)((f32*)&wp->cameraWork + 21);
+    o2 = 0.0f;
+    o5 = 0.0f;
+  }
+  if (wp->cameraWork.flags & 0x10) {
+    cam->cameraPos.z = *(f32*)((f32*)&wp->cameraWork + 16);
+    cam->cameraAt.z = *(f32*)((f32*)&wp->cameraWork + 22);
+    o3 = 0.0f;
+    o6 = 0.0f;
+  }
+  *(f32*)((f32*)&wp->cameraWork + 11) = cam->cameraPos.x;
+  *(f32*)((f32*)&wp->cameraWork + 12) = cam->cameraPos.y;
+  *(f32*)((f32*)&wp->cameraWork + 13) = cam->cameraPos.z;
+  *(f32*)((f32*)&wp->cameraWork + 17) = cam->cameraAt.x;
+  *(f32*)((f32*)&wp->cameraWork + 18) = cam->cameraAt.y;
+  *(f32*)((f32*)&wp->cameraWork + 19) = cam->cameraAt.z;
+  {
+    Vec tmp = vec3_802efc4c;
+    tmp.x = o1;
+    tmp.y = o2;
+    tmp.z = o3;
+    *(Vec*)((f32*)&wp->cameraWork + 26) = tmp;
+  }
+  {
+    Vec tmp2 = vec3_802efc58;
+    tmp2.x = o4;
+    tmp2.y = o5;
+    tmp2.z = o6;
+    *(Vec*)((f32*)&wp->cameraWork + 29) = tmp2;
+  }
+  if (!(wp->cameraWork.flags & 1) && !(wp->cameraWork.flags & 2)) {
+    padRumbleOff(0);
+  }
+  if (wp->cameraWork.flags & 0x40) {
+    padRumbleOff(0);
+  }
+  if (wp->cameraWork.flags & 1) {
+    s16 saveMove = wp->cameraWork.moveSpeedLv;
+    s16 saveZoom = wp->cameraWork.zoomSpeedLv;
+    s32 odd;
+
+    odd = (wp->cameraWork.unkDC - wp->cameraWork.unkE4) & 2;
+    wp->cameraWork.moveSpeedLv = 3;
+    wp->cameraWork.zoomSpeedLv = 3;
+    *(f32*)&wp->cameraWork.unkFC[0] = intplGetValue(wp->cameraWork.unkD4, (wp->cameraWork.unkDC - wp->cameraWork.unkE4) / 2, wp->cameraWork.unkDC / 2, wp->cameraWork.unkEC, wp->cameraWork.unkF0);
+    if (wp->cameraWork.unkE4 > 0) {
+      if (odd == 0) {
+        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x + *(f32*)&wp->cameraWork.unkFC[0],
+                           cam->cameraPos.y, cam->cameraPos.z, cam->cameraAt.x + *(f32*)&wp->cameraWork.unkFC[0], cam->cameraAt.y,
+                           cam->cameraAt.z);
+      } else {
+        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x - *(f32*)&wp->cameraWork.unkFC[0],
+                           cam->cameraPos.y, cam->cameraPos.z, cam->cameraAt.x - *(f32*)&wp->cameraWork.unkFC[0], cam->cameraAt.y,
+                           cam->cameraAt.z);
+      }
+    } else if (wp->cameraWork.unkE4 == 0) {
+      wp->cameraWork.flags &= ~1;
+    }
+    wp->cameraWork.moveSpeedLv = saveMove;
+    wp->cameraWork.zoomSpeedLv = saveZoom;
+    wp->cameraWork.unkE4--;
+  }
+  if (wp->cameraWork.flags & 2) {
+    s16 saveMove = wp->cameraWork.moveSpeedLv;
+    s16 saveZoom = wp->cameraWork.zoomSpeedLv;
+    s32 odd;
+
+    odd = (wp->cameraWork.unkE0 - wp->cameraWork.unkE8) & 2;
+    wp->cameraWork.moveSpeedLv = 3;
+    wp->cameraWork.zoomSpeedLv = 3;
+    *(f32*)&wp->cameraWork.unkFC[4] = intplGetValue(wp->cameraWork.unkD8, (wp->cameraWork.unkE0 - wp->cameraWork.unkE8) / 2, wp->cameraWork.unkE0 / 2, wp->cameraWork.unkF4, wp->cameraWork.unkF8);
+    if (wp->cameraWork.unkE8 > 0) {
+      if (odd == 0) {
+        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x, cam->cameraPos.y + *(f32*)&wp->cameraWork.unkFC[4],
+                           cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.y + *(f32*)&wp->cameraWork.unkFC[4], cam->cameraAt.z);
+      } else {
+        battleCameraMoveTo(0, 0, &o1, &o2, &o3, &o4, &o5, &o6, cam->cameraPos.x, cam->cameraPos.y - *(f32*)&wp->cameraWork.unkFC[4],
+                           cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.y - *(f32*)&wp->cameraWork.unkFC[4], cam->cameraAt.z);
+      }
+    } else if (wp->cameraWork.unkE8 == 0) {
+      wp->cameraWork.flags &= ~2;
+    }
+    wp->cameraWork.moveSpeedLv = saveMove;
+    wp->cameraWork.zoomSpeedLv = saveZoom;
+    wp->cameraWork.unkE8--;
+  }
+}
+
 USER_FUNC(evt_btl_camera_wait_move_end) {
   if (battleCameraGetPosMoveSpeed() >= 2.0f) {
     return EVT_RETURN_BLOCK;
