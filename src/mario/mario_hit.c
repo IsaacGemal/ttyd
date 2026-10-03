@@ -1974,10 +1974,10 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
                                                             ny100) -
                                                   float_180_8041a7cc) +
                           float_0p5_8041a7c4) /
-                float_100_8041a7f8;
+                (*(const volatile f32*)&float_100_8041a7f8);
             *(f32*)&wp2->field_0x1F0[0x2C] = float_0_8041a7a4;
             *(f32*)&wp2->field_0x1F0[0x30] =
-                (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
+                (f32)(s32)((*(const volatile f32*)&float_100_8041a7f8) * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
                                                             float_100_8041a7f8 * nx,
                                                             ny100) -
                                                   float_180_8041a7cc) +
