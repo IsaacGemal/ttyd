@@ -801,7 +801,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(Matching, "sequence/seq_game.c"),
-            Object(NonMatching, "sequence/seq_mapchange.c"),
+            Object(Matching, "sequence/seq_mapchange.c"),
             Object(NonMatching, "sequence/seq_title.c"),
             Object(Matching, "seqdef.c"),
             Object(Matching, "sequence/seq_battle.c"),

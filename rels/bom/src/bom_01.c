@@ -2183,8 +2183,27 @@ void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
     }
 }
 
-// TODO: write pose_main (static, 0x180 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+extern const f32 float_1000_bom_0000705c;
+extern const f32 float_60_bom_000070dc;
+
+static void pose_main(void) {
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    s32 i;
+    ExtPose* pose;
+
+    pose = extGetPosePtr();
+    for (i = 0; i < *(s32*)((u8*)pd + 0x4); i++) { // 0x4 of PoseData is the pose count (the header keeps it as padding)
+        PoseEntry* entry = &pd->entries[pd->states[i].field_20];
+        f32 t = float_60_bom_000070dc * (f32)OSTicksToMilliseconds(gp->renderTime - pd->states[i].time) / float_1000_bom_0000705c / entry->field_8;
+
+        if (t >= float_1_bom_00006ffc) {
+            pd->states[i].time = gp->renderTime;
+            t = zero_bom_00007004;
+        }
+        pose->field_0x10 = entry->field_C + (s32)((f32)(entry->field_10 - 1) * t);
+        pose++;
+    }
+}
 
 // TODO: write disp_sight (global, 0x16fc bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it

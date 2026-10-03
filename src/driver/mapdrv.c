@@ -4132,13 +4132,16 @@ typedef struct MapVtxFmt {
 	u32 field_0x48[8];  // 0x48
 } MapVtxFmt;
 
-// NONMATCHING (94.99%): the address computations and immediates match; only the wp/pos/nrm callee-saved
-// rotation and the vertex-loop pointers/indices differ.
+#pragma opt_common_subs off // MUST_MATCH: stop MWCC CSEing a shared base into the wp/nrm/pos slots
+// NONMATCHING (99.93%): 3 insns differ, all one register: the final GXCallDisplayList loop counter lands in
+// r25 (the freed colour-loop `i`) instead of the target's r28 (the freed `mask`); only the `li`/`addi`/`cmpw`
+// names differ. The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
 void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
-	MapWork* wp = &mapWork[activeGroup];
-	void* nrm = (void*)(((u32*)mesh->vcdTableOffset)[1] + 4);
-	void* pos = (void*)(((u32*)mesh->vcdTableOffset)[0] + 4);
-	s32 texCount = ((u32*)mesh->vcdTableOffset)[5];
+	MapWork* wp = mapGetWork();
+	u32* vcd = (u32*)mesh->vcdTableOffset;
+	void* pos = (void*)(vcd[0] + 4);
+	void* nrm = (void*)(vcd[1] + 4);
+	s32 texCount = vcd[5];
 	s32 i;
 	s32 j;
 	u8* p;
@@ -4161,22 +4164,26 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 		}
 
 		{
+			MapVtx* v;
+			MapVtx* vp;
+			s16 t;
+			s32 n;
 			u8* dp = (u8*)mesh;
 
 			for (i = 0; i < mesh->displayListCount; i++) {
-				MapVtx* v = (MapVtx*)*(u32*)(dp + 0x10);
-				MapVtx* vp;
+				v = (MapVtx*)*(u32*)(dp + 0x10);
 
 				GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, (u16)v->field_0x0);
 				vp = v;
-				for (j = 0; j < (s32)v->field_0x0; j++) {
+				for (n = 0; n < (s32)v->field_0x0; n++) {
 					s32 k;
+					s16* p = &vp->x;
 
 					GXWGFifo.s16 = vp->x;
 					GXWGFifo.s16 = vp->y;
-					GXWGFifo.s16 = vp->z;
+					GXWGFifo.s16 = p[2];
 					for (k = 0; k < texCount; k++) {
-						s16 t = vp->tex[k];
+						t = p[k + 4];
 						GXWGFifo.u16 = (t != -1) ? (u16)t : 0;
 					}
 					vp = (MapVtx*)((u8*)vp + 0x18);
@@ -4191,7 +4198,10 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 
 		GXClearVtxDesc();
 		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
-		fmt = (MapVtxFmt*)*(void**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
+		{
+			u8* base = (u8*)wp + 0xA4;
+			fmt = (MapVtxFmt*)*(void**)(base + *(s16*)(obj->field_0xDC + 2) * 0x178);
+		}
 		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)fmt->field_0x44);
 		GXSetArray(GX_VA_POS, pos, 6);
 		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
@@ -4216,13 +4226,14 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 		{
 			u8* dp = (u8*)mesh;
 
-			for (i = 0; i < mesh->displayListCount; i++) {
+			for (j = 0; j < mesh->displayListCount; j++) {
 				GXCallDisplayList((void*)*(u32*)(dp + 0x10), *(u32*)(dp + 0x14));
 				dp += 8;
 			}
 		}
 	}
 }
+#pragma opt_common_subs reset
 
 
 #pragma opt_common_subs off // MUST_MATCH: keep GX_VA_TEX0+i from being CSE-hoisted

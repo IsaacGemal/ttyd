@@ -250,76 +250,92 @@ void chb_jump(ExtPose* pose, HeiExtEntry* entry, s16 field24, f32 x, f32 y, f32 
     entry->field_0x24 = field24;
 }
 
-// Structure, the switch dispatch, the case ordering, the decrement-then-test
-// of field_0x18 and the inlined heiSinf/heiCosf blocks now match. Three source
-// spellings were needed to get MWCC to emit the original's branches: the case-1
-// range test is `if (dist < 800.0f) { body } else { state = 99; }` (an
-// early-return `if (!(dist < 800.0f))` makes MWCC emit the NaN-safe
-// `cror eq,gt,eq; bne`), the trailing clamp guard is a `switch (entry->state)`
-// with only `case 0` (MWCC will not emit the original's two-compare range test
-// for `if (entry->state == 0)`), and the jitter is `+ -45.0f` so the pool holds
-// float_neg45 and the op is fmadds.
-// The three pragmas below are needed only to steer MWCC's register allocator:
-// opt_propagation off stops it rematerialising the heiSinf/heiCosf coefficients
-// per branch, and opt_lifetimes off together with opt_dead_assignments off
-// recovers retail's callee-saved FPR colouring across the sin/cos and
-// angle-wrap blocks (all three are needed; any two alone score lower).
-// What is left is MWCC's choices, not source shape: the loop's live pointers
-// colour differently (we get pose/entry/sfx in r28/r27/r25, the original's
-// r25/r24/r27; the original keeps r28 free as an oldState scratch, we keep r24
-// free), the four Vec temporaries are slotted in a different order, and the
-// case-0 `deg` fmadds is scheduled before the second rand call rather than
-// after it.
+// Inline degree->radian used by ext_main (the original inlines pi*deg/180).
+static inline f32 heiDeg2Rad(f32 deg) {
+    return 3.1415927f * deg / 180.0f;
+}
+// Structure, the switch dispatch, the case ordering, the clamp guard and the
+// inlined sin/cos blocks match the original. Source spellings the original
+// needs:
+//  - case 1's range test is `if (dist < 800.0f) { ... } else { state = 99; }`
+//    (an early-return would make MWCC emit the NaN-safe cror eq,gt,eq form);
+//  - the trailing clamp guard is `switch (entry->state)` with `case 1: break;`
+//    before `case 0:` so MWCC emits the original's two-compare range test;
+//  - the jitter is `+ -45.0f` (loads float_neg45 and contracts to fmadds);
+//  - case 0's `a` is `aR * 0.19999999f + 0.3f` for float_0p2_hei_00007bec,
+//    and case 1's field_0x1C uses 0.20000005f (float_0p2_hei_00007c08);
+//    plain 0.2f shifts .rodata;
+//  - `Vec pos = { 0 }` (case 0 and case 1) and `Vec sfxPos = { 0 }` must all
+//    keep their initialiser so the six vec3 zero templates are emitted; the
+//    case-1 copy must sit in its own `{ }` block or MWCC sinks it;
+//  - case 1's `field_0x20 = zero * b + 0.8f` needs a block-local `zero` so the
+//    original's zero_hei_00007b88 load and fmadds survive (a literal folds);
+//  - case 0x64 keeps `matrix[2][3] += field_0x1C * -cosv` (fneg + fmadds, not
+//    fnmsubs) and updates matrix[0][3] before heiCosf;
+//  - the inlined randf calls are unfolded by hand so the normalised
+//    rand()/32767 survives the next rand() call in a callee-saved FPR;
+//  - `oldState` is declared at function scope first;
+//  - heiSinf/heiCosf reuse `rad` as the reduced angle and spell the reduction
+//    `1.5707964f - (rad - 1.5707964f)`: that is what colours the 1p5708 pivot
+//    into f1 and the accumulator seed into f6/f4 like the original;
+//  - the loop header increments `pose++, entry++, i++`, not the original
+//    `i++, pose++, entry++` (worth 0.02%).
+// What is left: MWCC's allocator still keeps pz/aR swapped (f28/f29) through
+// the case-0 rand calls, slots the case-0/case-1 Vec temporaries 0x18 bytes
+// high (0x2c/0x20 vs the original's 0x14/0x8), reads the case-0 `deg` fmadd
+// with its operands the other way round, and spills the sfx address through r0
+// (`mr r28, r0`). Allocator work, no source-shape fix left.
+// NONMATCHING (93.67%): MWCC FPR/GPR allocation and instruction scheduling.
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
-#pragma opt_lifetimes off // recover retail's callee-saved FPR colouring across the sin/cos blocks
-#pragma opt_dead_assignments off // with opt_lifetimes, recover retail's FPR colouring in the same blocks
-// NONMATCHING (85.84%): loop register colouring + Vec stack-slot order + fp scheduling.
 static void ext_main(void) {
-    MarioWork* mario = marioGetPtr();
-    ExtPose* pose = extGetPosePtr();
-    HeiExtEntry* entry = wp->entries;
+    s16 oldState;
+    const char* sfx;
+    MarioWork* mario;
     s32 i;
-    const char* sfx = "SFX_STG1_CHORO_ESCAPE1";
+    ExtPose* pose;
+    HeiExtEntry* entry;
 
-    for (i = 0; i < wp->count; i++, pose++, entry++) {
+    mario = marioGetPtr();
+    pose = extGetPosePtr();
+    entry = wp->entries;
+    sfx = "SFX_STG1_CHORO_ESCAPE1";
+
+    for (i = 0; i < wp->count; pose++, entry++, i++) {
         switch (entry->state) {
         case 0: {
 #ifdef MUST_MATCH
-            // randf's body is spelled out so MWCC schedules the `deg` fmadd
-            // after the second rand call, and the zero/pi locals fix the FPR
-            // colouring of the sin/cos blocks; both are score-lowering otherwise.
-            f32 dr = (f32)rand() / 32767.0f;
-            f32 sr = (f32)rand() / 32767.0f;
+            // The original's inlined randf(0,360) keeps the normalised
+            // rand()/32767 in a callee-saved FPR across the following rand()
+            // call, and folds the `*360+0` scaling in after it. Unfold by hand.
+            f32 degR = (f32)rand() / 32767.0f;
+            f32 speed = randf(4.0f, 7.0f);
             f32 zero = 0.0f;
-            f32 pi = 3.1415927f;
-            f32 deg = dr * 360.0f + zero;
-            f32 speed = sr * 3.0f + 4.0f;
-            f32 rad = pi * deg / 180.0f;
+            f32 deg = degR * 360.0f + zero;
 #else
             f32 deg = randf(0.0f, 360.0f);
             f32 speed = randf(4.0f, 7.0f);
-            f32 rad = 3.1415927f * deg / 180.0f;
 #endif
+            f32 rad = heiDeg2Rad(deg);
             f32 sinv = heiSinf(rad);
-            f32 px = speed * sinv + (*pose->matrix)[0][3];
             f32 py = (*pose->matrix)[1][3];
+            f32 px = speed * sinv + (*pose->matrix)[0][3];
             f32 cosv = heiCosf(rad);
             f32 pz = (*pose->matrix)[2][3] - speed * cosv;
 #ifdef MUST_MATCH
-            f32 ar = (f32)rand() / 32767.0f;
-            f32 br = (f32)rand() / 32767.0f;
-            f32 a = ar * (0.5f - 0.3f) + 0.3f;
-            f32 b = br * 0.3f + 0.5f;
+            f32 aR = (f32)rand() / 32767.0f;
+            f32 bR = (f32)rand() / 32767.0f;
+            f32 a = aR * 0.19999999f + 0.3f;
+            f32 b = bR * 0.3f + 0.5f;
 #else
             f32 a = randf(0.3f, 0.5f);
             f32 b = randf(0.5f, 0.8f);
 #endif
             Vec pos = { 0 };
-            s16 oldState = entry->state;
             f32 dy;
             f32 dist;
             s32 frames;
 
+            oldState = entry->state;
             pos.x = px;
             pos.y = py;
             pos.z = pz;
@@ -331,7 +347,7 @@ static void ext_main(void) {
             angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
             frames = (s32)(dist / entry->field_0x1C);
             entry->field_0x18 = frames;
-            entry->field_0x14 = entry->field_0x20 * (f32)(s16)entry->field_0x18 * 0.5f + dy / (f32)(s16)entry->field_0x18;
+            entry->field_0x14 = entry->field_0x20 * (f32)(s16)entry->field_0x18 / 2.0f + dy / (f32)(s16)entry->field_0x18;
             entry->state = 0x64;
             entry->field_0x24 = oldState;
         } break;
@@ -344,12 +360,10 @@ static void ext_main(void) {
             f32 sinv;
             f32 py;
             f32 cosv;
-            f32 px;
             f32 pz;
             f32 a;
+            f32 px;
             f32 b;
-            Vec pos = { 0 };
-            s16 oldState;
             f32 dy;
             s32 frames;
 
@@ -366,11 +380,11 @@ static void ext_main(void) {
             // `- 45.0f` instead pools float_45 and emits fmsubs.
             dir = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]) + (r * 90.0f + -45.0f);
             speed = randf(15.0f, 20.0f);
-            rad = 3.1415927f * dir / 180.0f;
+            rad = heiDeg2Rad(dir);
             sinv = heiSinf(rad);
+            px = speed * sinv + (*pose->matrix)[0][3];
             py = (*pose->matrix)[1][3];
             cosv = heiCosf(rad);
-            px = speed * sinv + (*pose->matrix)[0][3];
             pz = (*pose->matrix)[2][3] - speed * cosv;
 #ifdef MUST_MATCH
             a = (f32)rand() / 32767.0f;
@@ -379,19 +393,27 @@ static void ext_main(void) {
             a = randf(0.0f, 1.0f);
             b = randf(0.0f, 1.0f);
 #endif
-            pos.x = px;
-            pos.y = py;
-            pos.z = pz;
-            oldState = entry->state;
-            entry->position = pos;
-            entry->field_0x1C = 2.0f * (1.0f + 0.2f * a);
-            entry->field_0x20 = 0.8f + 0.0f * b;
+            {
+                Vec pos = { 0 };
+
+                pos.x = px;
+                pos.y = py;
+                pos.z = pz;
+                oldState = entry->state;
+                entry->position = pos;
+            }
+            entry->field_0x1C = 2.0f * (1.0f + 0.20000005f * a);
+            {
+                f32 zero = 0.0f;
+
+                entry->field_0x20 = zero * b + 0.8f;
+            }
             dy = entry->position.y - (*pose->matrix)[1][3];
             dist = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
             angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
             frames = (s32)(dist / entry->field_0x1C);
             entry->field_0x18 = frames;
-            entry->field_0x14 = entry->field_0x20 * (f32)(s16)entry->field_0x18 * 0.5f + dy / (f32)(s16)entry->field_0x18;
+            entry->field_0x14 = entry->field_0x20 * (f32)(s16)entry->field_0x18 / 2.0f + dy / (f32)(s16)entry->field_0x18;
             entry->state = 0x64;
             entry->field_0x24 = oldState;
             if (rand() % 150 == 0) {
@@ -431,9 +453,9 @@ static void ext_main(void) {
             angle = angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
             rad = 3.1415927f * angle / 180.0f;
             sinv = heiSinf(rad);
-            cosv = heiCosf(rad);
             (*pose->matrix)[0][3] += entry->field_0x1C * sinv;
-            (*pose->matrix)[2][3] -= entry->field_0x1C * cosv;
+            cosv = heiCosf(rad);
+            (*pose->matrix)[2][3] += entry->field_0x1C * -cosv;
             if (--entry->field_0x18 < 0) {
                 (*pose->matrix)[0][3] = entry->position.x;
                 (*pose->matrix)[1][3] = entry->position.y;
@@ -445,6 +467,8 @@ static void ext_main(void) {
             break;
         }
         switch (entry->state) {
+        case 1:
+            break;
         case 0:
             if ((*pose->matrix)[0][3] > 230.0f) {
                 (*pose->matrix)[0][3] = 230.0f;
@@ -461,13 +485,11 @@ static void ext_main(void) {
             break;
         }
         if (gp->retraceCount & 1) {
-            pose->field_0x10 = (i + gp->retraceCount) % 20;
+            pose->field_0x10 = (gp->retraceCount + i) % 20;
         }
     }
 }
 #pragma opt_propagation reset
-#pragma opt_lifetimes reset
-#pragma opt_dead_assignments reset
 static void ext_dispent(void) {
     dispEntry(4, 0.0f, 1, ext_disp, NULL);
 }
