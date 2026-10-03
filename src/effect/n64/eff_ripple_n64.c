@@ -86,16 +86,22 @@ static inline Vec makeRippleVec(f32 x, f32 y, f32 z) {
 }
 
 // The Vec copy above fixed the prologue schedule and declaring `timer` before `type` fixed their
-// colours, leaving only `effect` in r30 instead of r28. Reading `effect->userdata` once more (an alias
-// of `data`) is what makes the allocator give `effect` the last callee-saved register; every pragma,
-// declaration/assignment order and pure-expression form tried either left `effect` in r30 or added the
-// same extra load. Further sweep: GC/1.3.2-2.7 all give r30 at -O4,p; `-opt level=2` and
-// `#pragma optimization_level 2/3` give r28 but change the frame (stmw) and instruction count, and
-// `tools/flag_sweep.py` finds no flag variant that helps. The flip needs a memory use of `effect` to
-// survive register allocation, which always costs the load. This is a register-allocation near-miss for
-// the permuter.
-// NONMATCHING (99.18%): one redundant `lwz r4, 0xc(r3)` before the field_0x20 update (retail reuses the
-// cached `data` in r31); everything else, including the callee-saved colours, matches.
+// colours, leaving only `effect` in r30 instead of r28. The natural 32-bit `field_0x20++` never colours
+// `effect` r28; the flip only happens when the increment is given a different value kind, and every
+// such form costs exactly one instruction: a sub-word cast adds the extension instruction (`clrlwi`
+// here), a redundant `effect->userdata` read adds a load. Every pragma, declaration/assignment order
+// and pure-expression form tried either left `effect` in r30 or added an instruction. Further sweep:
+// GC/1.3.2-2.7 all give r30 at -O4,p; `-opt level=2` and `#pragma optimization_level 2/3` give r28 but
+// change the frame (stmw) and instruction count, and `tools/flag_sweep.py` finds no flag variant that
+// helps. `#pragma opt_propagation off` plus a local `effect` copy (parameter renamed `arg`, copy declared
+// after `timer`/`type`) *is* the one shape that colours the function exactly right (`mr r28, r3` through
+// the whole body), but propagation-off then cannot coalesce the anonymous zero-literal temporary into
+// `position`, so the frame grows to 0x60 and the score drops to 95.65%; naming the zero vector fixes the
+// layout but makes the scheduler hoist the zero loads and coalesce `arg`/`effect` back to r30 (93.03%).
+// This is a register-allocation near-miss for the permuter.
+// NONMATCHING (99.23%): the only difference is one `clrlwi r0, r0, 24` before the `stw r0, 0x20(r31)`
+// (a `(u8)` truncation of the increment, used purely to force the retail callee-saved colours); the
+// load and every other instruction, including `effect` r28 / `type` r29 / `timer` r30 / `data` r31, match.
 void effRippleMain(EffectEntry* effect) {
 	EffRippleData* data = effect->userdata;
 	Vec position2;
@@ -110,9 +116,10 @@ void effRippleMain(EffectEntry* effect) {
 	type = data->type;
 	data->field_0x1C--;
 #ifdef MUST_MATCH
-	/* MUST_MATCH: the extra `effect->userdata` read (same pointer as `data`) is what moves `effect`
-	   to r28; the natural form leaves it in r30. */
-	data->field_0x20 = ((EffRippleData*)effect->userdata)->field_0x20 + 1;
+	/* MUST_MATCH: the `(u8)` is a fake cast. It gives the increment a sub-word value kind, which is
+	   what moves `effect` to r28; it costs the one `clrlwi r0, r0, 24` the original does not have. The
+	   natural 32-bit increment is under #else. */
+	data->field_0x20 = (u8)(data->field_0x20 + 1);
 #else
 	data->field_0x20++;
 #endif

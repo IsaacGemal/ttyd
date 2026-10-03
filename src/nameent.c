@@ -345,7 +345,18 @@ static inline void nameKirinukiQuad(f32 x, f32 y, f32 w, f32 h) {
 	GXTexCoord2f32(1.0f, 0.0f);
 }
 
-// NONMATCHING (99.75%): frame 0x3e0 and the whole instruction stream match; only the float callee-saved register numbers differ (45 register-name diffs, all `arg_mismatch`). MWCC's float allocator colors the per-quad temporaries differently: e.g. in quad 4 ours parks `ww = __fabs(8.0f)` in f24 and the raw height `w - 16.0f` in f25, while the target keeps the raw height in f24 and `ww` in f30; the difference then cascades through quads 2-8. This is a permuter-class FP colouring difference; the instruction stream, calls and immediates are already identical.
+// NONMATCHING (99.75%): the frame (0x3e0), the whole instruction stream, the call sequence and every immediate
+// match; only the FP callee-saved register names differ (45 `arg_mismatch` diffs). Three derived values that
+// the compiler CSEs and keeps live across calls are each assigned one register higher in ours than in the
+// target:  z-16 (live Q2..Q7) target f28 / ours f29;  x+8 (live Q2..Q8) target f29 / ours f30;
+// w-16 (live Q4..Q5) target f24 / ours f25.  The target's short-lived Q4 `ww = __fabs(8.0f)` therefore lands
+// in f30 where ours reuses f24, and the whole Q2-Q8 temp assignment cascades. Every mwcceppc in
+// build/compilers/GC (1.0 .. 3.0a5) plus 2.7 reproduces exactly these 45, as does every pragma tried
+// (optimize_for_size, opt_lifetimes, opt_common_subs, opt_propagation, opt_dead_assignments,
+// opt_loop_invariants, opt_strength_reduction, global_optimizer, ...), so this is a register-colouring
+// tie-break, not a flag: a decomp-permuter job. Naming the long-lived CSE values, hoisting them, making the
+// scale a static-inline function, an identity inline accessor, and distinct per-quad temp names all score
+// worse (66-183).
 void nameKirinukiGX(f32 x, f32 y, f32 z, f32 w) {
 	f32 yscale;
 

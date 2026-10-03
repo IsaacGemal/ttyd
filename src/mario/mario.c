@@ -2004,25 +2004,20 @@ inline void marioPaperRelease(void) {
 	}
 }
 
-// NONMATCHING (95.91%): 1 missing, 1 extra, plus register differences.
-BOOL marioPaperOn(const char* name) { //almost 1:1, some regalloc
+BOOL marioPaperOn(const char* name) { //1:1
 	MarioWork* wp = mp;
 	BOOL flag;
 
 	marioPaperRelease();
 	wp->dispFlags |= 0x40000000; //paper on
 	wp->paperPoseId = animPaperPoseEntry(name, 2);
-	flag = FALSE;
-	if (   !strcmp(name, "p_roll")
+	flag = !strcmp(name, "p_roll")
 		|| !strcmp(name, "p_plane")
 		|| !strcmp(name, "p_hune")
 		|| !strcmp(name, "p_jyabara")
 		|| !strcmp(name, "p_dokan_x")
-		|| !strcmp(name, "p_dokan_y"))
-	{
-		flag = TRUE;
-	}
-	animPoseSetPaperAnimGroup(wp->paperAnimGroupId[0], name, !flag);
+		|| !strcmp(name, "p_dokan_y");
+	animPoseSetPaperAnimGroup(wp->paperAnimGroupId[0], name, flag == FALSE);
 	return TRUE;
 }
 

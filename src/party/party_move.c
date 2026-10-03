@@ -486,16 +486,23 @@ f32 unk_800c92c4(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (97.81%): only FP register colouring differs: the target keeps `speed` in f5, the
-// 0.0f constant in f3 and the rate constants in f2; ours gets f3/f2/f0. A named `zero` and explicit
-// `f2 = 0.05f;`/`f2 = 0.1f;` rate variables fixed everything else.
+// Body written in the same idiom as the sibling `unk_800c92c4` (one accumulator f0/f1 per
+// branch, no separate rate temporaries) so the target's `0.5f`/accumulator/fmr colouring matches;
+// only four callee locals stay displaced: target keeps `speed` in f5, the gravity temp/0.05/0.1 in
+// f2 and the `0.0f` compare constant in f3, while ours uses f3/f1/f2. The target compiler does not
+// reuse the argument register f1 for a local even though `value` is dead after the initial store;
+// declaring the function to return f32 (with no return statement) reproduces the f1 reservation and
+// gets the target colouring except that speed/base swap (99.04%), but that is undefined behaviour.
+//
+// NONMATCHING (98.51%): four FPRs displaced (speed f3 vs f5, gravity temp/rate f1 vs f2, 0.0f f2 vs f3).
 void unk_800c93d0(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
     MarioWork* mario;
-    f32 f5;
+    f32 f3;
     f32 f4;
     f32 f2;
     f32 f0;
+    f32 f1;
     f32 zero = 0.0f;
 
     if (value != zero) {
@@ -513,7 +520,7 @@ void unk_800c93d0(PartyEntry* party, f32 value) {
             return;
         }
         mario = work->playerPtr;
-        f5 = work->speed;
+        f3 = work->speed;
         if (mario->flags & 0x8000) {
             f4 = mario->baseSpeed;
         } else {
@@ -526,22 +533,20 @@ void unk_800c93d0(PartyEntry* party, f32 value) {
             f4 = f2 * f0;
         }
         if (f4 > 0.0f) {
-            f2 = 0.05f;
-            f0 = 0.5f + f4 - f5;
-            f0 = f0 * f2 + f5;
-            if (f0 >= f4) {
-                f0 = f4;
+            f0 = 0.5f + f4 - f3;
+            f1 = f0 * 0.05f + f3;
+            if (f1 >= f4) {
+                f1 = f4;
             }
-            work->speed = f0;
+            work->speed = f1;
             return;
         } else {
-            f2 = 0.1f;
-            f0 = -1.0f - f5;
-            f0 = f0 * f2 + f5;
-            if (f0 <= 0.0f) {
-                f0 = 0.0f;
+            f0 = -1.0f - f3;
+            f1 = f0 * 0.1f + f3;
+            if (f1 <= 0.0f) {
+                f1 = 0.0f;
             }
-            work->speed = f0;
+            work->speed = f1;
             return;
         }
     } else {
@@ -1804,9 +1809,14 @@ false_ret:
 // still lands at 0x29c.. instead of 0x41c.. (0x180 of other functions' .rodata is missing until the
 // whole unit is finished), plus a few fpr/stack slots follow the same shift. Declaring `u32 i` first
 // and the `targetDist` initializer before `unk1AC` fixed the r26/r27 and f25/f26 swaps.
-// NONMATCHING (99.91%): only the four scratch Vecs in the hit-check loop sit in rotated stack
-// slots (targetPos/Dir and hitNormal are 0xc lower than retail). bestX/Y/Z above targetDist and
-// declaring unk1AC before targetDist (assigned after) fixed all FP colouring (f25-f29).
+// The `hitNormal = query.hitNormal;` copy originally sat in a function-scope local, which MWCC
+// assigned the top scratch slot (0x34) instead of retail's bottom one (0x10), rotating the three
+// compound-literal scratch Vecs below it. Passing the Vec to the inline helper by value makes MWCC
+// materialise the by-value argument copy as an anonymous temp allocated at the call site, which is
+// the 3-word copy at 0x10 the original has.
+static inline f32 partyNrmToAngleV(Vec v) {
+    return partyNrmToAngle(&v);
+}
 BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
     u32 i;
     MarioWork* player = party->playerPtr;
@@ -1822,7 +1832,6 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
     f32 bestDist = -1.0f;
     f32 sinv;
     f32 cosv;
-    Vec hitNormal;
     f32 angle;
 
     targetDist = 30.0f + party->field_F4;
@@ -1857,11 +1866,8 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
         if (unk_800c8dd0(hit) != 0) {
             continue;
         }
-        {
-            hitNormal = query.hitNormal;
-            if (partyNrmToAngle(&hitNormal) > 60.0f) {
-                continue;
-            }
+        if (partyNrmToAngleV(query.hitNormal) > 60.0f) {
+            continue;
         }
         {
             BOOL proceed;

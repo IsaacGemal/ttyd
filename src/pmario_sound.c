@@ -6442,53 +6442,51 @@ BOOL unk_800d7270(s32 a, char* b, s32 c, s32 d) {
 	return psndBGMOn_f_d(a, b, c, 0x2EE, d);
 }
 
-// NONMATCHING (97.45%): register allocation (the target maps the params a/b/c/d to r30/r24/r31/r25 and
-// index/bgmid/slot/work/vol/pan to r26/r24/r29/r28/r26/r25; ours picks r25/r29/r26/r28 and
-// r24/r30/r31/r31/r28/r30) plus a 3-instruction
-// branch layout on the three SoundSSCheck/SoundSongCheck loops, and `psbgmlist` being materialised
-// through r0 (`addi r0,r3,psbgmlist@l; mr r27,r0`) instead of `addi r27,r3,psbgmlist@l`. The tail
-// does recompute `psbgm + (a&0xF)*0x38` as the target does (via `&psbgm[a & 0xF]`).
-// Local declaration order is load-bearing for register allocation; the current order was found by
-// search and is the best found. Computing `bgm = &psbgm[a & 0xF];` before `entry = &psbgmlist[bgmid];`
-// (rather than after) fixed the five register mismatches in that address computation.
-// psbgm prefix fields 0x8/0xD/0xE/0xF/0x10 and the work block at 0x20..0x2B are not
-// declared in PaperSoundBGM; psbgmlist fields 0x8..0xF are not in the local BGMListEntry.
-// All such accesses use raw offsets.
-// NONMATCHING (97.45%): register allocation (params a/b/c/d r30/r24/r31/r25 vs ours r25/r29/r26/r28).
-s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e) {
-	s32 bgmid;
-	s32 slot;
+// Inlined BGM-list name lookup. The inliner reproduces the target's pointer/index colouring
+// (namePtr=r27, index=r26); the `name >= 0` early return and the 0x106 wraparound are the original's.
+static inline s32 psndBGMFindName(const char* name) {
+	BGMListEntry* namePtr;
 	s32 index;
+
+	namePtr = psbgmlist;
+	if ((s32)name >= 0) {
+		return (s32)name;
+	}
+	for (index = 0; index < 0x106; index++, namePtr++) {
+		if (!strcmp((const char*)namePtr->field_0x0, name)) {
+			break;
+		}
+	}
+	if (index >= 0x106) {
+		index = 0;
+	}
+	return index;
+}
+
+// The target gives `bgmid` r24 (reusing the dead `b`), work1 r27 and work2 r28; ours gives `bgmid` r27,
+// work1 r28 and work2 r26. The name lookup, calls, immediates, stack slots and every other colour match;
+// `bgmid` is a pure graph-colouring tie-break (declaration order, types and opt_* pragmas exhausted).
+#pragma opt_lifetimes off // needed: without it bgmid/work/entry colour differently (98.75%)
+// NONMATCHING (99.27%): only the register of `bgmid` still differs, cascading into the mid/tail.
+s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e) {
 	s32 reverb;
-	u32 u;
-	OSTime time;
-	PaperSoundBGM* bgm;
-	u32 i;
-	s32 vol;
 	u8* work;
+	s32 slot;
 	BGMListEntry* ptr;
-	s32 pan;
+	s32 bgmid;
+	OSTime time;
+	u32 i;
 	BGMListEntry* entry;
+	PaperSoundBGM* bgm;
+	s32 index;
+	s32 vol;
+	s32 pan;
 
 	if (psnd.unk56 & 1) {
 		return 0;
 	}
 
-	ptr = psbgmlist;
-	if ((s32)b >= 0) {
-		index = (s32)b;
-	}
-	else {
-		for (index = 0; index < 0x106; index++) {
-			if (!strcmp((const char*)ptr->field_0x0, b)) {
-				break;
-			}
-			ptr++;
-		}
-		if (index >= 0x106) {
-			index = 0;
-		}
-	}
+	index = psndBGMFindName(b);
 
 	bgmid = index;
 	slot = a & 0xF;
@@ -6665,25 +6663,7 @@ s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e) {
 	*(OSTime*)((u8*)bgm + 0x30) = time;
 
 	if (entry->field_0x4 & 0x80000000) {
-		for (i = 0; i < 3; i++) {
-			u = SoundSSCheck(i);
-			if (u == 0) {
-				goto ss_found;
-			}
-		}
-		for (i = 0; i < 3; i++) {
-			if (SoundSSCheck(i) & 0x20) {
-				SoundSSStopCh(i);
-			}
-		}
-		for (i = 0; i < 3; i++) {
-			u = SoundSSCheck(i);
-			if (u == 0) {
-				goto ss_found;
-			}
-		}
-		i = -1;
-	ss_found:
+		i = psndSFXFindSSChannel();
 		bgm->streamId = i;
 		if ((u32)bgm->streamId == (u32)-1) {
 			goto no_channel;
@@ -6700,14 +6680,7 @@ s32 psndBGMOn_f_d(s32 a, const char* b, s32 c, s32 d, s32 e) {
 		}
 	}
 	else {
-		for (i = 0; i < 4; i++) {
-			u = SoundSongCheck(i);
-			if (u == 0) {
-				goto song_found;
-			}
-		}
-		i = -1;
-	song_found:
+		i = psndSFXFindSongChannel();
 		bgm->streamId = i;
 		if ((u32)bgm->streamId == (u32)-1) {
 			goto no_channel;
@@ -6743,6 +6716,7 @@ done:
 	return 1;
 }
 
+#pragma opt_lifetimes reset
 BOOL psndBGMOff(s32 flags) {
 	return psndBGMOff_f_d(flags, 0x3E8, 0);
 }

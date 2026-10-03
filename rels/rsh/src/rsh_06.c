@@ -218,9 +218,11 @@ static u32 ext_moamoa_data[213] = {
 };
 
 const Vec vec3_rsh_00013cec = {0.0f, -1000.0f, 0.0f};
-const Vec vec3_rsh_00013cf8 = {10.0f, 215.0f, 0.0f};
-const Vec vec3_rsh_00013d04 = {10.0f, 215.0f, 0.0f};
-const Vec vec3_rsh_00013d10 = {10.0f, 215.0f, 0.0f};
+// Non-const on purpose: ext_moamoa_init copies all three into wp->vec; as `const` MWCC knows they
+// are equal and reuses the loads, which changes the first copy's schedule (see that function).
+__declspec(section ".rodata") Vec vec3_rsh_00013cf8 = {10.0f, 215.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_rsh_00013d04 = {10.0f, 215.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_rsh_00013d10 = {10.0f, 215.0f, 0.0f};
 const Vec vec3_rsh_00013d1c = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013d28 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013d34 = {0.0f, 0.0f, 0.0f};
@@ -1615,13 +1617,10 @@ static f32 randf(f32 min, f32 max) {
 }
 
 
-// The local-declaration order is load-bearing: `s32 i; ExtPose* pose; MoamoaEntry* entry;` gives
-// 98.23% (97.49% in the source order, and every other permutation of these four declarations scores
-// differently). The remaining `float_*`/`@NNN` symbol-name diffs are the .rodata shift from the
-// still-unwritten ext_moamoa_main, not this function.
-// NONMATCHING (99.50%): seven instructions of the first `wp->vec[0]` copy differ: retail computes the
-// vec3 address and loads lane 0 before loading `wp`, ours (with the volatile accesses that serialize
-// the other two copies) loads `wp` first; the lane split, stores and both later copies all match.
+// The local-declaration order is load-bearing: `s32 i; ExtPose* pose; MoamoaEntry* entry;` gives the
+// target's register allocation (every other permutation scores lower). The three source vectors must
+// stay non-const: as `const` MWCC knows their equal values, CSEs the later loads and schedules the
+// first `wp->vec[0]` copy differently (`wp` loaded before lane 0).
 static void ext_moamoa_init(void) {
     s32 i;
     ExtPose* pose;
@@ -1631,17 +1630,9 @@ static void ext_moamoa_init(void) {
     wp = _mapAlloc(0x870);
     memset(wp, 0, 0x870);
 
-#ifdef MUST_MATCH
-    // Match-only volatile accesses: they keep each 12-byte copy serialized and order the `wp`
-    // pointer load like the target (the natural assignments are under #else).
-    *(volatile Vec*)&wp->vec[0] = *(volatile Vec*)&vec3_rsh_00013cf8;
-    *(volatile Vec*)&(*(MoamoaWork* volatile*)&wp)->vec[1] = *(volatile Vec*)&vec3_rsh_00013d04;
-    *(volatile Vec*)&(*(MoamoaWork* volatile*)&wp)->vec[2] = *(volatile Vec*)&vec3_rsh_00013d10;
-#else
     wp->vec[0] = vec3_rsh_00013cf8;
     wp->vec[1] = vec3_rsh_00013d04;
     wp->vec[2] = vec3_rsh_00013d10;
-#endif
 
     wp->count = extGetPoseNum();
     wp->entries = _mapAlloc(wp->count * 0x50);

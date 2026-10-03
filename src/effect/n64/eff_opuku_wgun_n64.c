@@ -194,15 +194,11 @@ static inline void opukuWgunColor2(u8 r, u8 g, u8 b) {
 // clrlwi); and the triangle loop's `if (j >= 0)` guard reproduces retail's always-taken test. The two TEV
 // colours are built inside the inline (the eff_opuku_wprotect pattern) so each colour local and its by-value
 // copy land in retail's stack slots (temp/arg 0x1c/0x20 and 0x14/0x18); returning the GXColor and calling
-// outside packed them differently. What still differs (every instruction opcode/operand matches): mwcc's
-// integer colouring of the two vertex loops -- retail keeps the walking vtx pointer in r23 and its base in
-// r24, i in r26, texS in r28, alpha in r22, and the triangle loop's j in r24 / x in r23; we now get base r24
-// and i r26 right (declaration order below), but the running pointer and texS are swapped (r28/r23) and the
-// triangle loop's j/x are swapped (r23/r24) -- and retail emits a redundant `beq` before the i==0 `bne`
-// (a branch-to-next-instruction) that we do not. The f32->s16 temporaries land 4 apart (OSFastCast.h's temp
-// is an f32).
-// NONMATCHING (99.56%): the running/texS and j/x register swaps plus retail's redundant `beq`;
-// every instruction opcode/operand matches.
+// outside packed them differently. The f32->s16 temporaries land 4 apart (OSFastCast.h's temp is an f32).
+// The dispatch's redundant `beq` is restored by the MUST_MATCH goto pair below. The triangle loop reuses
+// `j` as its counter with `x = j * 2` in the body: MWCC strength-reduces that multiply to an induction
+// variable initialised as `mr r23, r24` (not `li r23,0`), which is what puts the preheader in retail's
+// order `li r24,0; subi r22; mr r23,r24`.
 void effOpukuWgunDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -227,7 +223,6 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	s32 alpha;
 	s32 x;
 	s32 j;
-	s32 m;
 
 	type = data->type;
 	scale = data->scale;
@@ -256,6 +251,27 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	p = vtx;
 
 	for (i = 0; i < 12; i++) {
+#ifdef MUST_MATCH
+		// The original lowers the dispatch as two conditional branches from one compare (`beq` to
+		// the case-0 body sitting immediately after, `bne` to the default), which a switch or an
+		// if/else does not reproduce (they emit a bare `b` for the default). The two gotos keep
+		// both comparisons, matching retail; the natural switch is under #else.
+		if (i == 0) {
+			goto opuku_then;
+		}
+		if (i != 0) {
+			goto opuku_else;
+		}
+	opuku_then:
+		angle = -angleABf(data->y[i + 1], -data->x[i + 1], data->y[i], -data->x[i]);
+		goto opuku_done;
+	opuku_else:
+		if (i != 11 && data->counter[i] == 0) {
+			angle = -angleABf(data->y[i + 1], -data->x[i + 1], data->y[i], -data->x[i]);
+		}
+	opuku_done:
+		;
+#else
 		switch (i) {
 		case 0:
 			angle = -angleABf(data->y[i + 1], -data->x[i + 1], data->y[i], -data->x[i]);
@@ -266,6 +282,7 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 			}
 			break;
 		}
+#endif
 		if (data->type == 0) {
 			t = float_0p5_8041f848 * (f32)data->counter2[i] + float_2_8041f844;
 			if (t > float_6_8041f84c) {
@@ -366,8 +383,9 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
 	}
 
-	for (m = 0, x = 0; m < i - 1; x += 2, m++) {
-		if (m >= 0) {
+	for (j = 0; j < i - 1; j++) {
+		x = j * 2;
+		if (j >= 0) {
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(x, x + 2, x + 1, x, x + 1, x + 2, x + 3, x);
 		}

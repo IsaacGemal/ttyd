@@ -746,8 +746,9 @@ s32 marioChkHammer2(void) {
 #pragma opt_common_subs off
 #ifdef MUST_MATCH
 // These two inline helpers exist to reproduce the original's register allocation and schedule: the plain
-// expressions put `type` in r0 and `v` in r3 (the target is the other way), and let the compiler if-convert the
-// constant clamp. The #else keeps the natural expressions for --non-matching builds.
+// expressions put `type` in r0 and `v` in r3 (the target is the other way). `minHammerTicks10` is kept for
+// reference/other matching builds; the pose-time clamp below no longer calls it. The #else holds the natural
+// expressions for --non-matching builds.
 static inline s32 clampHammerType(s32 t) {
     return (t == 7) ? 3 : t;
 }
@@ -762,15 +763,14 @@ static inline s32 minHammerTicks10(s32 b) {
 #endif
 
 // The `type == 7 ? 3 : type` clamp, the se_data update order, the switches, the pool and every callee-saved
-// register (base r31, mario r30, r28/r29, f30/f31) now match. The `b <= 10 ? b : 10` pose-time clamp is
-// branchy in the target (`cmpwi; bgt; mr r0,r3; b end; li r0,10`); every source shape tried (if/else,
-// ternary, inline helper, goto, condition spellings, ~18000 generated helper/call-site bodies, optionally
-// under opt_lifetimes/opt_propagation/opt_dead_assignments/optimize_for_size/scheduling/peephole off) is
-// still if-converted to `cmpwi; mr r0,r3; ble; li r0,10` or the mirrored `li`-first form, one instruction
-// shorter. GC/1.3.2, 2.0, 2.5 and 2.7 give the same if-conversion as 2.6, so no source shape or compiler
-// version at hand reaches the target: this one is for the permuter.
-// NONMATCHING (99.72%): only the `b <= 10 ? b : 10` clamp differs (if-conversion, one instruction).
+// register (base r31, mario r30, r28/r29, f30/f31) match. The pose-time clamp `b <= 10 ? b : 10` is branchy
+// in the target (`cmpwi; bgt; mr r0,r3; b end; li r0,10`); the plain ternary is if-converted to the one
+// instruction shorter `cmpwi; mr r0,r3; ble; li r0,10`. Under MUST_MATCH the clamp goes through a temp whose
+// condition and arm are syntactically different (the named field vs this file's raw accessor), which blocks
+// that if-conversion, and `opt_dead_assignments off` keeps the `r27 = t` copy so the target's `r0`/`r27`
+// split survives. Together they give the target's bytes; the #else holds the natural ternary.
 void mot_hammer(void) {
+#pragma opt_dead_assignments off // keep the `r27 = t` pose-time copy (target splits r0/r27)
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
     MarioWork* mario3;
@@ -930,7 +930,8 @@ void mot_hammer(void) {
     } else {
         s32 b = mario->multiTimer;
 #ifdef MUST_MATCH
-        r27 = minHammerTicks10(b);
+        s32 t = (b <= 10) ? M_S32(mario, 0x48) : 10;
+        r27 = t;
 #else
         r27 = (b <= 10) ? b : 10;
 #endif
@@ -1045,6 +1046,7 @@ void mot_hammer(void) {
         marioChgMot(0);
     }
 }
+#pragma opt_dead_assignments reset
 #pragma opt_common_subs reset
 s32 marioGetHammerLevel(void) {
     return pouchGetPtr()->hammerLevel;

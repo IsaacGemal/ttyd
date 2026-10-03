@@ -409,13 +409,24 @@ end:
 #define FV(off, sym) (*(const Vec*)(fbase + (off)))
 // The original compares the c==-2/-3 fallthrough as unsigned (cmplwi); `c != 0` emits cmpwi.
 #define FUKI_C_NONZERO(x) ((u32)(x) != 0)
-// MUST_MATCH: retail copies each zero sfx Vec as a batched load-all/store-all. Reading the source
-// through a volatile word pointer pins the load order (x,y,z) and the z,y,x stores give MWCC the
-// x->r6, y->r5, z->r0 colouring (99.06%); the plain base+offset copy interleaves (95.61%).
+// MUST_MATCH: retail copies each zero sfx Vec as a batched load-all/store-all (lwz x,y,z into
+// r6,r5,r0 then stw). A plain base+offset aggregate copy interleaves and reuses r0 (95.61%).
+// Three things together reproduce retail:
+//  - a *non-volatile* `const u32*` source. A `volatile const u32*` source also batches but then
+//    MWCC colours the function's callee-saved registers the other way (a=r31/fbase=r30/entry=r29,
+//    the wave-61 99.30%); the non-volatile source keeps retail's a=r29/fbase=r31/entry=r30. Any
+//    volatile on the source pointer is the trigger, regardless of its element type.
+//  - the volatile *destination* pins the load-all/store-all order.
+//  - the temp declaration order and store order give retail's load colouring x->r6, y->r5, z->r0.
+//    MWCC assigns the first-stored temp to r0, so with this store order the emitted stores are
+//    z->0x2c, y->0x30, x->0x34: word0/word2 are swapped versus retail. That is harmless here (all
+//    three source words are zero and the vector is overwritten immediately after).
 #define FV_COPY(vec, off, sym) do { \
-	volatile const u32* fv_vp = (volatile const u32*)(fbase + (off)); \
-	s32 fv_0 = fv_vp[0], fv_1 = fv_vp[1], fv_2 = fv_vp[2]; \
-	((u32*)&(vec))[2] = fv_2; ((u32*)&(vec))[1] = fv_1; ((u32*)&(vec))[0] = fv_0; \
+	const u32* fv_sp = (const u32*)(fbase + (off)); \
+	volatile u32* fv_dp = (volatile u32*)&(vec); \
+	s32 fv_1, fv_0, fv_2; \
+	fv_0 = fv_sp[0]; fv_1 = fv_sp[1]; fv_2 = fv_sp[2]; \
+	fv_dp[0] = fv_2; fv_dp[1] = fv_1; fv_dp[2] = fv_0; \
 } while (0)
 #else
 #define FB(off, sym) (sym)
@@ -424,11 +435,13 @@ end:
 #define FV_COPY(vec, off, sym) ((vec) = (sym))
 #endif
 
-// The four dead sfx-Vec copies are the only remaining difference: retail colours them r6,r5,r0,
-// MWCC's plain base+offset copy interleaves and reuses r0. FV_COPY (above) is the MUST_MATCH
-// workaround; see its comment.
-// NONMATCHING (99.06%): the base register and frame match; `entry`/`fbase` land on r29/r30 instead
-// of r30/r31 (a/r29 swap) and the copy's x/z words sit in r0/r6 rather than r6/r0.
+// NONMATCHING (99.58%): every instruction matches except 8 store-register swaps in the four
+// zero-Vec copies (retail stw r6,0x2c / stw r0,0x34; ours stw r0,0x2c / stw r6,0x34 -- see FV_COPY
+// above) and 4 scheduling swaps of the two `addi` that set up psndSFXOn_3D's r3/r4 in the two
+// string cases. The callee-saved allocation (a=r29, entry=r30, fbase=r31) now matches. The store
+// swap is what remains of MWCC's "first-stored temp takes r0" behaviour; declaration-order
+// permutations, `register`, and the opt_*/scheduling/optimize_for_size pragma set do not change it.
+// Remaining work is register/schedule colouring for the permuter.
 EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, f32 h, f32 i) {
 	EffectEntry* entry;
 	effFukidashiData* data;
