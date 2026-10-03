@@ -16,25 +16,23 @@ const Vec vec3_802fb248 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fb254 = { 0.0f, 1.0f, 0.0f };
 const Vec vec3_802fb260 = { 304.0f, 240.0f, 0.0f };
 const Vec vec3_802fb26c = { 304.0f, 240.0f, 100.0f };
-const f64 double_to_int_802fb278 = 4503601774854144.0;
-const char str_802FB280[20] = "OpukuJetwrainN64";
 
 // .sdata2 float constants (named after their original addresses).
-const f32 float_0_8041f7d8 = 0.0f;
-const f32 float_480_8041f7dc = 480.0f;
-const f32 float_608_8041f7e0 = 608.0f;
-const f32 float_1_8041f7e4 = 1.0f;
-const f32 float_32768_8041f7e8 = 32768.0f;
-const f32 float_0p0039062_8041f7ec = 0.00390625f;
-const f32 float_255_8041f7f0 = 255.0f;
-const f32 float_6p2832_8041f7f4 = 6.2831855f;
-const f32 float_360_8041f7f8 = 360.0f;
-const f32 float_neg64_8041f7fc = -64.0f;
-const f32 float_4_8041f800 = 4.0f;
-const f32 float_0p5_8041f804 = 0.5f;
-const f32 float_0p7_8041f808 = 0.7f;
-const f32 float_0p98_8041f80c = 0.98f;
-const f32 float_0p02_8041f810 = 0.02f;
+static const f32 float_0_8041f7d8 = 0.0f;
+static const f32 float_480_8041f7dc = 480.0f;
+static const f32 float_608_8041f7e0 = 608.0f;
+static const f32 float_1_8041f7e4 = 1.0f;
+static const f32 float_32768_8041f7e8 = 32768.0f;
+static const f32 float_0p0039062_8041f7ec = 0.00390625f;
+static const f32 float_255_8041f7f0 = 255.0f;
+static const f32 float_6p2832_8041f7f4 = 6.2831855f;
+static const f32 float_360_8041f7f8 = 360.0f;
+static const f32 float_neg64_8041f7fc = -64.0f;
+static const f32 float_4_8041f800 = 4.0f;
+static const f32 float_0p5_8041f804 = 0.5f;
+static const f32 float_0p7_8041f808 = 0.7f;
+static const f32 float_0p98_8041f80c = 0.98f;
+static const f32 float_0p02_8041f810 = 0.02f;
 
 // .data vertex array, modified in place by effOpukuJetwrainDisp.
 u32 opuku_jetwrain_vtx[56] = {
@@ -48,8 +46,10 @@ u32 opuku_jetwrain_vtx[56] = {
 	0xFF60FF98, 0xFEC00000, 0x02800000, 0x00FFFF70, 0xFF98FEC0, 0x02800280, 0x000000FF,
 };
 
-// .sbss2
-GXColor unk_804231d8;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a
+// small-data section and place it by hand.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804231d8;
 
 EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
@@ -58,7 +58,7 @@ EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 	s32 j;
 
 	effect = effEntry();
-	effect->type = str_802FB280;
+	effect->type = "OpukuJetwrainN64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x308);
 	effect->userdata = data;
@@ -93,7 +93,7 @@ EffectEntry* effOpukuJetwrainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 }
 
 static inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	Vec temp = vec3_802fb248;
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
@@ -153,7 +153,10 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 	scale = (f32)alpha / float_255_8041f7f0;
 
 	for (j = 1; j < 18; j++) {
-		data->field_0x23[j][6] = (s8)(f32)(scale * (float_neg64_8041f7fc * (f32)sin(float_6p2832_8041f7f4 * (f32)((counter - j) * -20) / float_360_8041f7f8)));
+		{
+			f32 s = (f32)sin(float_6p2832_8041f7f4 * (f32)((counter - j) * -20) / float_360_8041f7f8);
+			data->field_0x23[j][6] = (s8)(f32)(scale * (float_neg64_8041f7fc * s));
+		}
 	}
 
 	for (j = 1; j < 18; j++) {
@@ -195,13 +198,6 @@ void effOpukuJetwrainMain(EffectEntry* effect) {
 // (iPos + xEnd + 0x10) << 2, which keeps xEnd a pure source and yields the target's
 // addi r0,r4,0x10 / add r3,r24,r3 / add r0,r24,r0 sequence. All callee-saved registers
 // (vtx=r31, magic 0x4330=r29, xoris=r30, iPos=r24, fieldBase=r26, fieldEnd=r25) match.
-// NONMATCHING (99.99686%, one `lfd`; check.py rounds it to 100.00%): the compiler's int->float magic
-// double pools at .rodata+0x58 instead of the target +0x30, so the hoisted `lfd f31, 0x58(r29)` differs.
-// It only moves to +0x30 when Main's initializeVec starts from vec3_802fb248 instead of a { 0, 0, 0 }
-// literal (no anonymous zero-Vec) AND Entry assigns the "OpukuJetwrainN64" literal instead of the named
-// str_802FB280; with both, mwcc reuses the named double at +0x30 (its own @NNN copy is not made for this
-// function) and this function scores 100%. Both edits are in other functions, so this is left to the
-// unit's pool finisher rather than made here.
 void effOpukuJetwrainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	s32 alpha;
