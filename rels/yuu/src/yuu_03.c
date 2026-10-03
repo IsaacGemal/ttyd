@@ -103,12 +103,23 @@ void unk_yuu_0000365c(CameraId cameraId, void* param) {
     }
 }
 
-// NONMATCHING (94.59%): unk_yuu_000034bc; MWCC folds num*sizeof to li 0x44 (no li r27,1/mulli r28),
-// so the volatile size only spills it to the stack; the first loop body now matches apart from the
-// base/i register swap (target base=r6 i=r8, ours base=r8 i=r6), the same swap monte_fill hit in yuu_02.
+#ifdef MUST_MATCH
+static inline void yuu4_init_work(MarioWork* mario) {
+    s32 i;
+    for (i = 0; i < unk_yuu_bss00000010->count; i++) {
+        f32* base = (f32*)((u8*)&unk_yuu_bss00000010[i] + 8);
+        *(Vec*)&base[1] = mario->position;
+        base[2] += 40.0f;
+        base[4] = 1.0f;
+    }
+}
+#endif
+// NONMATCHING (99.42%): unk_yuu_000034bc; the first loop's base/address registers are swapped
+// (target global base=r5, address=r6; ours reversed). Helper gives the target's li/mr init.
+#pragma opt_propagation off // keep count*sizeof as the target's li/mulli sequence
 USER_FUNC(unk_yuu_000034bc) {
     s32 prev = 0;
-    s32 num = 1;
+    s32 num;
     YuuminigameWork* work2 = (YuuminigameWork*)event->lwData[0];
     MarioWork* mario = marioGetPtr();
     if (isFirstCall) {
@@ -116,23 +127,21 @@ USER_FUNC(unk_yuu_000034bc) {
         if (unk_yuu_bss00000010 != NULL) {
             prev = 1;
         }
-        // size is opaque so the compiler keeps one computed size for both calls, like the target's mulli/mr/mr
-#ifdef MUST_MATCH
-        { volatile s32 size = num * sizeof(Yuuminigame4Work);
-        unk_yuu_bss00000010 = _mapAlloc(size);
-        memset(unk_yuu_bss00000010, 0, size); }
-#else
+        num = 1;
         unk_yuu_bss00000010 = _mapAlloc(num * sizeof(Yuuminigame4Work));
         memset(unk_yuu_bss00000010, 0, num * sizeof(Yuuminigame4Work));
-#endif
         unk_yuu_bss00000010->count = num;
         unk_yuu_bss00000010->work = work2;
+#ifdef MUST_MATCH
+        yuu4_init_work(mario);
+#else
         for (i = 0; i < unk_yuu_bss00000010->count; i++) {
-            f32* base = (f32*)((u8*)&unk_yuu_bss00000010[i] + 8);
-            *(Vec*)&base[1] = mario->position;
-            base[2] += 40.0f;
-            base[4] = 1.0f;
+            Yuuminigame4Work* e = &unk_yuu_bss00000010[i];
+            e->position = mario->position;
+            e->position.y += 40.0f;
+            e->unk18 = 1.0f;
         }
+#endif
     }
     {
         s32 i;
@@ -153,6 +162,7 @@ USER_FUNC(unk_yuu_000034bc) {
     }
     return EVT_RETURN_BLOCK;
 }
+#pragma opt_propagation reset
 
 
 

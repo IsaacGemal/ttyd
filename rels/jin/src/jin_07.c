@@ -209,25 +209,25 @@ static f32 computePos(f32 a, f32 b, f32 t) {
     return (1.0f - t) * a + t * b;
 }
 
-// NONMATCHING (68.96%): math is correct. Naming t2 = t*t and ordering the
-// basis h10, h00, h11, h01 plus hoisting p1h00 helped, but MWCC still places
-// t*t and the basis temps in different f-registers than the original.
+// NONMATCHING (74.17%): building va as vec3_jin_00007f9c with va.x = p[9]
+// and va.y = 3.4f*p[4] reproduces the original's va.x/va.y stores; MWCC still
+// schedules t*t and the h10/h00 sub-products in a different order.
 void computePosHermite(ExtPose* pose, f32* p) {
     f32 t = p[6];
     f32 two_t = 2.0f * t;
     f32 omt = 1.0f - t;
     f32 t2 = t * t;
-    f32 h10 = t * omt * omt;
     f32 h00 = (1.0f + two_t) * omt * omt;
-    f32 h11 = (t - 1.0f) * t2;
     f32 h01 = (3.0f - two_t) * t2;
+    f32 h10 = t * omt * omt;
+    f32 h11 = (t - 1.0f) * t2;
     Vec va = vec3_jin_00007f9c;
     Vec vb = vec3_jin_00007fa8;
+    va.x = p[9];
+    va.y = 3.4f * p[4];
 
-    f32 p1h00 = p[1] * h00;
-
-    (*pose->matrix)[0][3] = p[0] * h00 + p[9] * h10 + vb.x * h11 + p[3] * h01;
-    (*pose->matrix)[1][3] = p1h00 + 3.4f * p[4] * h10 + vb.y * h11 + p[4] * h01;
+    (*pose->matrix)[0][3] = p[0] * h00 + va.x * h10 + vb.x * h11 + p[3] * h01;
+    (*pose->matrix)[1][3] = p[1] * h00 + va.y * h10 + vb.y * h11 + p[4] * h01;
     (*pose->matrix)[2][3] = p[2] * h00 + va.z * h10 + vb.z * h11 + p[5] * h01;
 }
 

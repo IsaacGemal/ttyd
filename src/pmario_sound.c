@@ -5700,7 +5700,7 @@ static inline s32 psndENVFindName(s32 name) {
 	return index;
 }
 
-// NONMATCHING (97.57%): name lookup and free-env scan are inlined static helpers; with them index lands
+// NONMATCHING (99.20%): name lookup and free-env scan are inlined static helpers; with them index lands
 // in r31 and env in r30 as the target. Remaining: the target keeps slot*2 in r27 and active in r29, ours
 // swaps them (slot*2 r29, active r27); the empty `case 1`/`case 3` fix the switch's 2-then-0 tree.
 s32 psndENVOn_f_d(s32 id, s32 name, s32 value, s32 flag) {
@@ -5768,9 +5768,14 @@ s32 psndENVOn_f_d(s32 id, s32 name, s32 value, s32 flag) {
 				env->unk6[2] = list->field_0x6;
 				env->unk6[3] = list->field_0x7;
 				env->unk6[4] = list->field_0x8;
-				*(u32*)(env->unk6 + 0x12) = list->field_0xC;
-				*(u32*)(env->unk6 + 0x16) = list->field_0x10;
-				*(u32*)(env->unk6 + 0x1A) = list->field_0x14;
+				{
+					u32 a = list->field_0xC;
+					u32 b = list->field_0x10;
+
+					*(u32*)(env->unk6 + 0x16) = b;
+					*(u32*)(env->unk6 + 0x12) = a;
+					*(u32*)(env->unk6 + 0x1A) = list->field_0x14;
+				}
 				env->unk6[5] = list->field_0x18;
 				env->unk6[6] = list->field_0x19;
 				*(u16*)(env->unk6 + 0xA) = list->field_0x1A;
@@ -6295,156 +6300,125 @@ void psndSFXOnVol(s32 a, s32 b) {
 	__psndSFXOn(a, b, 0xFF, 0, 0, 0, 0x10, 0);
 }
 
-// NONMATCHING (93.07%): structurally identical (same calls and immediates); only the callee-saved register
-// allocation differs (target maps a/b/c/d/e/f/g/h to r26/r20/r21/r22/r23/r24/r25/r17 and free/freeIndex/
-// entry/index/i to r29/r27/r28/r31/r30; ours rotates them). `seq` reads psnd+0x54 as u16, not the header's s16.
-s32 __psndSFXOn(s32 a, s32 b, s32 c, s32 d, Vec* e, s32 f, s32 g, s32 h) {
-	int i;
-	PaperSoundEffectDetail* sfx;
-	u32 j;
-	PaperSoundEffectDetail* free;
-	SoundEffectEntry* entry;
-	s32 freeIndex;
-	s32 seq;
-	s32 index;
-	s32 id;
+// NONMATCHING (95.24%): logic and constants match. `name`/priority is in r20 instead of r26, which
+// rotates the r20-r26 argument block and adds a clrlwi+move; the int->float magic doubles are
+// anonymous, the Vec is copied float-wise not word-wise, and the final `or` writes r3 not r27.
+s32 __psndSFXOn(s32 name, s32 vol, s32 pan, s32 pitch, Vec* position, s32 a6, s32 flags, s32 a8) {
+    s32 sfxid;
+    s32 index;
+    s32 i;
+    s32 j;
+    PaperSoundEffect* sfx;
+    PaperSoundEffect* slot = 0;
+    SoundEffectEntry* entry;
+    s32 slotIndex = 0;
 
-	free = NULL;
-	freeIndex = 0;
-	id = searchPSSFXList((const char*)a);
-	index = id & 0x1FFF;
-	entry = &pssfxlist[index];
-	if (entry->field_0x4 == 0) {
-		return -1;
-	}
-	if ((psnd.unk56 & 4) && h == 0) {
-		return -1;
-	}
-	if (index == 0x5B || index == 0x8CA || (u32)(index - 0x1BE) <= 1 || index == 0x205) {
-		if (psnd.unk5C != 0) {
-			return -1;
-		}
-		psnd.unk5C = 6;
-	}
-	if (evtGetValue(NULL, 0xF5DE0180) <= 2 && index == 0x365) {
-		return -1;
-	}
-	seq = 0;
-	for (i = 0; i < 40; i++) {
-		sfx = (PaperSoundEffectDetail*)&pssfx[i];
-		if ((u32)sfx->unk0 != -1 && (sfx->unk0 & 0x1FFF) == index && (sfx->unk6 & 0x100) && seq == 0) {
-			{
-				u16 t = *(u16*)&psnd.unk54 + 8;
-				*(u16*)&psnd.unk54 = t;
-				seq = t;
-			}
-		}
-		if ((u32)sfx->unk0 == -1) {
-			free = sfx;
-			freeIndex = i;
-		}
-	}
-	if (free == NULL) {
-		for (j = 0; j < 40; j++) {
-			sfx = (PaperSoundEffectDetail*)&pssfx[j];
-			if ((u32)sfx->unk0 == -1) {
-				free = sfx;
-				freeIndex = j;
-				break;
-			}
-			if (*(u16*)&sfx->padB[1] > entry->field_0x10) {
-				if (j != -1) {
-					PaperSoundEffectDetail* victim = (PaperSoundEffectDetail*)&pssfx[j & 0xFF];
+    index = searchPSSFXList((const char*)name);
+    sfxid = index & 0x1FFF;
+    entry = &pssfxlist[sfxid];
+    if (entry->field_0x4 == 0) {
+        return -1;
+    }
+    if ((psnd.unk56 & 4) && a8 == 0) {
+        return -1;
+    }
+    if (sfxid == 0x5B || sfxid == 0x8CA || (u32)(sfxid - 0x1BE) <= 1 || sfxid == 0x205) {
+        if (psnd.unk5C != 0) {
+            return -1;
+        }
+        psnd.unk5C = 6;
+    }
+    if (evtGetValue(0, 0xF5DE0180) <= 2 && sfxid == 0x365) {
+        return -1;
+    }
 
-					if ((u32)victim->unk0 != -1) {
-						if (victim->unk6 & 1) {
-							victim->unk0 = -1;
-							victim->unk18 = -1;
-						}
-						else {
-							SoundEffectEntry* ventry = &pssfxlist[victim->unk0 & 0x1FFF];
+    name = 0;
+    for (i = 0; i < 40; i++) {
+        sfx = &pssfx[i];
+        if ((u32)sfx->unk0 != -1 && (u32)(sfx->unk0 & 0x1FFF) == (u32)sfxid
+            && (((u16*)sfx)[3] & 0x100) && name == 0) {
+            name = (u16)(*(u16*)((u8*)&psnd + 0x54) + 8);
+            *(u16*)((u8*)&psnd + 0x54) = name;
+        }
+        if ((u32)sfx->unk0 == -1) {
+            slot = sfx;
+            slotIndex = i;
+        }
+    }
 
-							if ((u32)victim->unk18 != -1) {
-								if (ventry->field_0x4 & 0x80000000) {
-									SoundSSStopCh(victim->unk18);
-								}
-								else if (ventry->field_0x4 & 0x40000000) {
-									SoundSongStopCh(victim->unk18);
-								}
-								else {
-									SoundEfxStop(victim->unk18);
-								}
-							}
-							victim->unk0 = -1;
-							victim->unk18 = -1;
-						}
-					}
-				}
-				free = sfx;
-				freeIndex = j;
-				break;
-			}
-		}
-		if (free == NULL) {
-			return -1;
-		}
-	}
-	if ((u8)b == 0xFF) {
-		b = 0x7F;
-	}
-	if ((u8)c == 0xFF) {
-		c = entry->field_0xD;
-	}
-	free->unk6 = 0x101;
-	if (psnd.unk56 & 0x10) {
-		free->unk6 |= 0x10;
-	}
-	if (id & 0x04000000) {
-		free->unk6 |= 0x20;
-	}
-	if (index == 0x518 || index == 0x742) {
-		free->unk6 |= 0x280;
-	}
-	if (entry->field_0xE == 1) {
-		free->unk6 |= 0x200;
-	}
-	if (id & 0x10000) {
-		free->unk6 |= 0x400;
-	}
-	if (id & 0x20000) {
-		free->unk6 |= 0x800;
-	}
-	if (id & 0x40000) {
-		free->unk6 |= 0x80;
-	}
-	free->unk0 = id;
-	free->vol = b;
-	free->pan = entry->field_0xC;
-	free->unkA = c;
-	free->unkE = (s16)((f32)entry->field_0x11 + ((f32)seq + (f32)(u16)d / float_16p667_8041b69c));
-	free->unk10 = seq * 5;
-	free->padB[0] = entry->field_0xF;
-	*(u16*)&free->padB[1] = entry->field_0x10;
-	free->unk14 = *(s16*)&entry->field_0x12;
-	if (e != NULL) {
-		*(Vec*)free->pad1C = *e;
-		if ((u32)f == 0) {
-			free->unk6 |= 2;
-		}
-		else {
-			free->unk6 |= 4;
-		}
-	}
-	free->unk12 = g;
-	*(u16*)free->pad16 = 0x7D00;
-	{
-		u16 cnt = *(u16*)&psnd.unk50 + 1;
+    if (slot == 0) {
+        for (j = 0; j < 40; j++) {
+            sfx = &pssfx[j];
+            if ((u32)sfx->unk0 == -1) {
+                slot = sfx;
+                slotIndex = j;
+                break;
+            }
+            if (*(u16*)((u8*)sfx + 0xC) > entry->field_0x10) {
+                psndSFXOff(j);
+                slot = sfx;
+                slotIndex = j;
+                break;
+            }
+        }
+    }
+    if (slot == 0) {
+        return -1;
+    }
 
-		*(u16*)&psnd.unk50 = cnt;
-		free->unk4 = cnt;
-	}
-	freeIndex = freeIndex | (*(u16*)&psnd.unk50 << 8);
-	return freeIndex;
+    if ((u8)vol == 0xFF) {
+        vol = 0x7F;
+    }
+    if ((u8)pan == 0xFF) {
+        pan = entry->field_0xD;
+    }
+    *(u16*)&slot->unk6 = 0x101;
+    if (psnd.unk56 & 0x10) {
+        *(u16*)&slot->unk6 |= 0x10;
+    }
+    if (index & 0x04000000) {
+        *(u16*)&slot->unk6 |= 0x20;
+    }
+    if (sfxid == 0x518 || sfxid == 0x742) {
+        *(u16*)&slot->unk6 |= 0x280;
+    }
+    if (entry->field_0xE == 1) {
+        *(u16*)&slot->unk6 |= 0x200;
+    }
+    if (index & 0x10000) {
+        *(u16*)&slot->unk6 |= 0x400;
+    }
+    if (index & 0x20000) {
+        *(u16*)&slot->unk6 |= 0x800;
+    }
+    if (index & 0x40000) {
+        *(u16*)&slot->unk6 |= 0x80;
+    }
+
+    slot->unk0 = index;
+    *(u8*)((u8*)slot + 8) = (u8)vol;
+    *(u8*)((u8*)slot + 9) = entry->field_0xC;
+    *(u8*)((u8*)slot + 0xA) = (u8)pan;
+    *(s16*)((u8*)slot + 0xE) = (s16)(s32)((f32)(u16)pitch / float_16p667_8041b69c + (f32)name + (f32)entry->field_0x11);
+    *(u16*)((u8*)slot + 0x10) = (u16)(name * 5);
+    *(u8*)((u8*)slot + 0xB) = entry->field_0xF;
+    *(u16*)((u8*)slot + 0xC) = entry->field_0x10;
+    *(s16*)((u8*)slot + 0x14) = *(s16*)((u8*)entry + 0x12);
+    if (position != 0) {
+        *(f32*)((u8*)slot + 0x1C) = position->x;
+        *(f32*)((u8*)slot + 0x20) = position->y;
+        *(f32*)((u8*)slot + 0x24) = position->z;
+        if ((u32)a6 == 0) {
+            *(u16*)&slot->unk6 |= 2;
+        } else {
+            *(u16*)&slot->unk6 |= 4;
+        }
+    }
+    *(u16*)((u8*)slot + 0x12) = (u16)flags;
+    *(u16*)((u8*)slot + 0x16) = 0x7D00;
+    *(u16*)((u8*)&psnd + 0x50) += 1;
+    *(u16*)((u8*)slot + 4) = *(u16*)((u8*)&psnd + 0x50);
+    return slotIndex | (*(u16*)((u8*)&psnd + 0x50) << 8);
 }
 
 s32 psndSFXOn_(const char* name) {
@@ -6794,18 +6768,27 @@ void psndSetReverb(s32 mode) {
 	}
 }
 
-// NONMATCHING (81.94%): `li r3,1` scheduled after the psnd address calc, which then uses r3 not r5.
+// NONMATCHING (88.89%): only `li r3,1` is scheduled before the `bne` instead of between `lis r5`
+// and `addi r0, r5`; the `ret` value is materialised at the right place, MWCC's ready-list order differs.
 s32 psndENV_LPF(s32 id, s32 freq) {
-	u16* env = (u16*)((u8*)&psnd + 0x18);
+s32 ret;
 
-	if (env[id & 0xF] == 0) {
-		return 0;
+	if (((u16*)((u8*)&psnd + 0x18))[id & 0xF] == 0) {
+		ret = 0;
 	}
-	if ((freq & 0xFFFF) == 0) {
+	else {
+		ret = 1;
+		if ((freq & 0xFFFF) == 0) {
+			goto setdef;
+		}
+		goto stored;
+setdef:
 		freq = 0x7D00;
+stored:
+		((u16*)((u8*)&psnd + 0x20))[id & 0xF] = freq;
 	}
-	((u16*)((u8*)&psnd + 0x20))[id & 0xF] = freq;
-	return 1;
+	return ret;
+
 }
 
 void psndSFXOff(s32 id) {

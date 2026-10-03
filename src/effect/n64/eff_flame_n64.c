@@ -312,7 +312,8 @@ void effFlameMain(EffectEntry* effect) {
 // The two `GXColor` values are built inside the `effFlameSetColor1/2` void inlines above; that is the shape that
 // gives MWCC the original's interleaved temp/arg slots (see those helpers).
 #pragma opt_propagation off
-// NONMATCHING (98.49%): the table-offset/vertex-index add split, the base/alpha register pick and the
+#pragma opt_common_subs off
+// NONMATCHING (98.70%): the table-offset/vertex-index add split, the base/alpha register pick and the
 // three branch offsets still differ.
 void effFlameDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -523,4 +524,5 @@ void effFlameDisp(CameraId camId, void* param) {
 		break;
 	}
 }
+#pragma opt_common_subs reset
 #pragma opt_propagation reset
