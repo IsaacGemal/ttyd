@@ -24,6 +24,7 @@
 #include "memory.h"
 #include "mario/mario.h"
 #include "mario/mariost.h"
+#include "matching.h"
 #include "math_ext.h"
 #include "mario/mario_party.h"
 #include "motion/mot_hammer.h"
@@ -725,13 +726,20 @@ void move_check(ExtPose* pose, s32 index) {
     }
 }
 
-// NONMATCHING (82.91%): all 46 instructions are present; only the f-register assignment differs. The original
-// puts the x quotient (x - neg570)/40 in f4 and the divisor 40 in f0, we put the x quotient in f0 and 40 in f3
-// (our (s32)/(u16) conversions and the 0x4330 double setup then schedule from those registers).
+// NONMATCHING (99.02%): the shared divisor 40 lands in f4 and the x difference in f0; retail has them the
+// other way round, which also swaps the two fdivs and the fctiwz that consumes the x quotient.
 void calc_area(s32 index, f32 x, f32 z) {
     KaronPoseEntry* entries = skwp->entries;
+#ifdef MUST_MATCH
+    // A volatile read of neg570 keeps its load from folding into the x difference until f0 is needed for the
+    // divisor, which fixes the constant-load order and everything but those two registers.
+    f32 n570 = MATCH_F32(float_neg570_las_00012210);
+    u16 a = (u16)(s32)((z - float_neg270_las_00012214) / float_40_las_00012218);
+    u16 b = (u16)(s32)((x - n570) / float_40_las_00012218);
+#else
     u16 a = (u16)(s32)((z - float_neg270_las_00012214) / float_40_las_00012218);
     u16 b = (u16)(s32)((x - float_neg570_las_00012210) / float_40_las_00012218);
+#endif
 
     entries[index].area = (u16)(s32)(float_29p5_las_0001221c * (f32)a + (f32)b);
 }

@@ -486,13 +486,18 @@ static inline Vec winBadgeMkVec(Vec base, f32 x, f32 y) {
 // font rows keep `float_20 + (float_40 + y)` inline rather than through a `fy` local; and in each font block
 // the `GXColor c = color;` copy is declared before the `Vec`s. The first-branch (i == work->0x3E0)
 // winTexSet_x2 colour is `white` (not dat_8041d354, the else branch's colour).
-// Still differs (99.22%, all compiler allocation/scheduling): the by-value winTexSet copy region and the
-// winFontSet locals are swapped (ours winTexSet 0xc4..0xe4 / winFontSet 0xe8..0x174; retail winFontSet
-// 0x7c..0x108 / winTexSet 0x154..0x174); GPR colouring keeps `work` in r28 vs retail r29 and the grid
-// counter `i` in r29 vs r24, with the mask/`white` pairs rotated (r25/r26/r27, f30/f31); and the rodata is
-// pooled as `...rodata.0` with a different int->float double offset. The first loop / font blocks' logic,
-// constants, call arguments and control flow all match for everything tried.
-// NONMATCHING (99.22%): compiler register/stack allocation only, see above.
+// The first-loop winTexSet/winTexSet_x2 calls are written through a `(void(*)(u32, Vec*, Vec*, GXColor*))`
+// cast with explicit translate/base/scale locals (guarded by MUST_MATCH below). MWCC passes by-value structs
+// via invisible reference, so this is byte-identical to the header's by-value prototype in the callee, but it
+// makes the caller build the named locals in the high stack region exactly as retail does; the declaration
+// order `translate, col, base, scale` with `base = vec3;` as a separate assignment then matches the whole
+// first loop instruction-for-instruction (99.22% -> 99.37%).
+// Still differs (99.37%, all compiler allocation/scheduling): the font blocks' `pos`/`scale` slots are
+// swapped (ours pos 0xe8 / scale 0x100 per block; retail scale 0xe8 / pos 0x100); GPR colouring keeps
+// `work` in r28 vs retail r29 and the grid counter `i` in r25 vs r24 (the mask/`white` pairs rotate with
+// them, r25/r26/r27, f30/f31); and the rodata is pooled as `...rodata.0` with the int->float double at
+// 0x2c8 vs retail 0x228. Every other instruction, constant and call argument matches.
+// NONMATCHING (99.37%): compiler register/stack allocation only, see above.
 void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
     GXColor white = *(GXColor*)&dat_8041d348;
     GXColor color = *(GXColor*)&dat_8041d34c;
@@ -517,7 +522,17 @@ void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
         if (i == WW_S32(work, 0x3E0)) {
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
 #ifdef MUST_MATCH
-            winTexSet(0xB4, winBadgeMkVec(vec3_802f4a38, x - float_190_8041d3dc, float_20_8041d39c + (a - (f32)ofs)), vec3_802f4a44, *(GXColor*)&dat_8041d350);
+            {
+                Vec translate;
+                GXColor col = *(GXColor*)&dat_8041d350;
+                Vec base;
+                Vec scale = vec3_802f4a44;
+                base = vec3_802f4a38;
+                base.x = x - float_190_8041d3dc;
+                base.y = float_20_8041d39c + (a - (f32)ofs);
+                translate = base;
+                ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0xB4, &translate, &scale, &col);
+            }
 #else
             {
                 Vec translate = vec3_802f4a38;
@@ -529,7 +544,17 @@ void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
 #endif
             winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
 #ifdef MUST_MATCH
-            winTexSet_x2(i + 0x1A, 0xB4, winBadgeMkVec(vec3_802f4a50, c, float_20_8041d39c + (b - (f32)ofs)), vec3_802f4a5c, white);
+            {
+                Vec translate;
+                GXColor col = white;
+                Vec base;
+                Vec scale = vec3_802f4a5c;
+                base = vec3_802f4a50;
+                base.x = c;
+                base.y = float_20_8041d39c + (b - (f32)ofs);
+                translate = base;
+                ((void(*)(u32, u32, Vec*, Vec*, GXColor*))winTexSet_x2)(i + 0x1A, 0xB4, &translate, &scale, &col);
+            }
 #else
             {
                 Vec translate = vec3_802f4a50;
@@ -542,7 +567,17 @@ void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
         } else {
             winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
 #ifdef MUST_MATCH
-            winTexSet_x2(i + 0x1A, 0xB4, winBadgeMkVec(vec3_802f4a68, x - float_190_8041d3dc, float_20_8041d39c + (a - (f32)ofs)), vec3_802f4a74, *(GXColor*)&dat_8041d354);
+            {
+                Vec translate;
+                GXColor col = *(GXColor*)&dat_8041d354;
+                Vec base;
+                Vec scale = vec3_802f4a74;
+                base = vec3_802f4a68;
+                base.x = x - float_190_8041d3dc;
+                base.y = float_20_8041d39c + (a - (f32)ofs);
+                translate = base;
+                ((void(*)(u32, u32, Vec*, Vec*, GXColor*))winTexSet_x2)(i + 0x1A, 0xB4, &translate, &scale, &col);
+            }
 #else
             {
                 Vec translate = vec3_802f4a68;
@@ -652,8 +687,10 @@ void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
 // .rodata+0x2B0 instead of double_to_int_802f4c60 at +0x228 (project-wide limitation; the explicit definition
 // is still needed so mario_change keeps its 100%). The by-value Vec arguments of winTexSet/winIconSet need the
 // MUST_MATCH copies below, the same shape item_disp in win_item.c uses.
+// A full optimizer-pragma sweep (opt_propagation / opt_common_subs / opt_lifetimes / opt_dead_assignments /
+// opt_loop_invariants / opt_strength_reduction off, optimization_level, scheduling, fp_contract,
+// optimize_for_size) is neutral or worse, so the compiler's default is kept.
 // NONMATCHING (95.39%): callee-saved register colouring and the int->float pool double only, see above.
-#pragma optimize_for_size on // nudge the allocator toward retail's register assignment (see report)
 void badge_disp(WindowWork* work, f32 x, f32 y) {
     GXColor iconColor = *(GXColor*)&dat_8041d358;
     GXColor color;
@@ -935,4 +972,3 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
         }
     }
 }
-#pragma optimize_for_size reset

@@ -8,16 +8,83 @@
 #include "mario/mariost.h"
 #include "system.h"
 
-// `#pragma opt_propagation off` required: with it on MWCC rematerialises the polynomial
-// coefficients into every branch, as in evt_sub_get_coin. `opt_lifetimes off` is required too:
-// with lifetimes on the frame, stack homes and FPR colouring all shift.
+// The polynomial helpers only colour the angle^2 scratch into f0 and the pivot into f1 with
+// propagation off; lifetimes off holds retail's FPR colouring across the first-call block.
 #pragma opt_propagation off
-#pragma opt_lifetimes off // needed: with lifetimes on the FPR colouring and stack homes of this function shift
-// The `f0,f2,f3,f4,f5,f1,half` declaration order below is load-bearing for the allocator; `half`
-// holds a fresh 0.5 so MWCC rematerialises the fmadd constant (as the target does) instead of
-// reusing `scale`'s FPR. NONMATCHING (98.61%): frame, stack slots and the polynomial match; only
-// FPR colouring differs. The if-block puts `d` in f1 instead of f3 and `half` in f3 instead of f1
-// (swapped), and `6.28*angle` coalesces into f1 instead of f2, pushing pi from f1 to f6 throughout.
+#pragma opt_lifetimes off
+// Included here (not at the top): the unit header declares the named 0.5 pool constant, whose
+// declaration point is load-bearing for the first-block fmadds operand order.
+#include "evt/evt_item.h"
+static inline f32 item_sin_approx(f32 angle) {
+	f32 v = 0.00761f;
+	f32 b = 0.16605f;
+	f32 one = 1.0f;
+	f32 t, u;
+
+	if (angle <= 3.1415927f) {
+		if (angle <= 1.5707964f) {
+			u = angle * angle;
+			v = v * u - b;
+			v = v * u + one;
+			v = v * angle;
+		} else {
+			t = 1.5707964f - (angle - 1.5707964f);
+			u = t * t;
+			v = v * u - b;
+			v = v * u + one;
+			v = v * t;
+		}
+	} else if (angle < 4.712389f) {
+		t = angle - 3.1415927f;
+		u = t * t;
+		v = v * u - b;
+		v = v * u + one;
+		v = v * t;
+		v = -v;
+	} else {
+		t = 1.5707964f - (angle - 4.712389f);
+		u = t * t;
+		v = v * u - b;
+		v = v * u + one;
+		v = v * t;
+		v = -v;
+	}
+	return v;
+}
+
+static inline f32 item_cos_approx(f32 angle) {
+	f32 v = 0.03705f;
+	f32 b = 0.4967f;
+	f32 one = 1.0f;
+	f32 u;
+
+	if (angle <= 3.1415927f) {
+		if (angle <= 1.5707964f) {
+			u = angle * angle;
+			v = v * u - b;
+			v = v * u + one;
+		} else {
+			u = 1.5707964f - (angle - 1.5707964f);
+			u = u * u;
+			v = v * u - b;
+			v = v * u + one;
+			v = -v;
+		}
+	} else if (angle < 4.712389f) {
+		u = angle - 3.1415927f;
+		u = u * u;
+		v = v * u - b;
+		v = v * u + one;
+		v = -v;
+	} else {
+		u = 1.5707964f - (angle - 4.712389f);
+		u = u * u;
+		v = v * u - b;
+		v = v * u + one;
+	}
+	return v;
+}
+
 USER_FUNC(evt_item_get_important_item) {
 	s32* args = event->args;
 	ItemEntry* item = itemNameToPtr((char*)evtGetValue(event, args[0]));
@@ -25,109 +92,35 @@ USER_FUNC(evt_item_get_important_item) {
 	f32 mx = mario->position.x;
 	f32 my = mario->position.y + *(f32*)((u8*)mario + 0x1B8);
 	f32 mz = mario->position.z;
-	f32 t, scale, d;
-	f32 f0, f2, f3, f4, f5, f1, half;
+	f32 f2, f4, f5;
+	f32 t;
+	f32 scale;
+	f32 d;
 
 	scale = 0.5f;
 	if (isFirstCall) {
 		d = distABf(mx, mz, item->position.x, item->position.z) / scale;
-		half = 0.5f;
 		f4 = my - item->position.y;
 		f2 = 0.1f * d;
-		f0 = f4 / d;
-		t = f2 * half + f0;
+		t = f2 * float_0p5_8041af58 + f4 / d;
 		event->userdata[0] = *(s32*)&d;
 		event->userdata[1] = *(s32*)&t;
 		event->userdata[2] = *(s32*)&scale;
 		event->field_84 = 0;
 	}
+
 	d = event->userdataf[0];
 	t = event->userdataf[1];
 	scale = event->userdataf[2];
 
-	f5 = (6.2831855f * angleABf(item->position.x, item->position.z, mx, mz)) / 360.0f;
+	f2 = 6.2831855f * angleABf(item->position.x, item->position.z, mx, mz);
+	f5 = f2 / 360.0f;
+	item->position.x = scale * item_sin_approx(f5) + item->position.x;
+	item->position.z = item->position.z - scale * item_cos_approx(f5);
+	item->position.y = item->position.y + t;
 
-	f4 = 0.00761f;
-	f3 = 0.16605f;
-	f2 = 1.0f;
-	f1 = 3.1415927f;
-	if (f5 <= f1) {
-		f1 = 1.5707964f;
-		if (f5 <= f1) {
-			f0 = f5 * f5;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-			f4 = f4 * f5;
-		} else {
-			f0 = f5 - f1;
-			f1 = f1 - f0;
-			f0 = f1 * f1;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-			f4 = f4 * f1;
-		}
-	} else {
-		f0 = 4.712389f;
-		if (f5 < f0) {
-			f1 = f5 - f1;
-			f0 = f1 * f1;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-			f4 = f4 * f1;
-			f4 = -f4;
-		} else {
-			f0 = f5 - f0;
-			f1 = 1.5707964f;
-			f1 = f1 - f0;
-			f0 = f1 * f1;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-			f4 = f4 * f1;
-			f4 = -f4;
-		}
-	}
-	item->position.x += scale * f4;
-
-	f4 = 0.03705f;
-	f3 = 0.4967f;
-	f2 = 1.0f;
-	f1 = 3.1415927f;
-	if (f5 <= f1) {
-		f1 = 1.5707964f;
-		if (f5 <= f1) {
-			f0 = f5 * f5;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-		} else {
-			f0 = f5 - f1;
-			f0 = f1 - f0;
-			f0 = f0 * f0;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-			f4 = -f4;
-		}
-	} else {
-		f0 = 4.712389f;
-		if (f5 < f0) {
-			f0 = f5 - f1;
-			f0 = f0 * f0;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-			f4 = -f4;
-		} else {
-			f0 = f5 - f0;
-			f1 = 1.5707964f;
-			f0 = f1 - f0;
-			f0 = f0 * f0;
-			f4 = f4 * f0 - f3;
-			f4 = f4 * f0 + f2;
-		}
-	}
-	item->position.z -= scale * f4;
-	item->position.y += t;
-
-	d = d - 1.0f;
 	t = t - 0.1f;
+	d = d - 1.0f;
 	if (d < 0.0f) {
 		item->position.x = mx;
 		item->position.y = my;
@@ -139,8 +132,8 @@ USER_FUNC(evt_item_get_important_item) {
 	return EVT_RETURN_BLOCK;
 }
 #pragma opt_lifetimes reset
-
 #pragma opt_propagation reset
+
 
 #pragma opt_propagation off // needed: with propagation on the step value is coalesced into r27 instead of dividing into r4
 USER_FUNC(evt_item_move_3d_position) {

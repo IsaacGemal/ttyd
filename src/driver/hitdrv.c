@@ -527,18 +527,23 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
 #pragma dont_inline on
 
 // The packed s16 vertex reads use the SDK __OSs16tof32 fast-cast inline, so they lower to retail's
-// psq_lx through GQR5 and the frame is back at 0x80. Retail's GQR5 setup (mtspr with the map file's
-// fraction shift, mapGetWork()->entries[hit->field0xAA].field_0x8C + 0x18 -> +0x44) is inline asm,
-// which this project forbids, so its 10 instructions in the packed part are missing (the mapGetWork
-// call, the table walk, the shift packing and the mtspr) and the register allocation through the whole
-// function differs as a result (retail numVectors r30/mesh r29/hit r27, ours r25/r23/r31). Retail
-// keeps mapGetWork() live in r26 across the packed loop; without it the packed index selection also
-// comes out as xori+cmp instead of cntlzw+srwi. include/driver/hitdrv.h declares the function s16,
-// but retail leaves numVectors in r3 with no extsh, so it returns s32; the rest of the packed and
-// unpacked structure matches retail instruction for instruction.
-// NONMATCHING (73.50%): the packed GQR5 setup is inline asm and cannot be emitted from C, so the packed
+// psq_lx through GQR5. Retail programs GQR5 from the per-map vertex fraction before each packed read
+// (mtspr with mapGetWork()->entries[hit->mapIndex].field_0x8C + 0x18 -> +0x44); that computation is
+// inline asm, which this project forbids, so its instructions are missing (the mapGetWork call, the
+// table walk, the shift packing and the mtspr) and the round-to-GQR5 scale is dropped. Because those
+// instructions sit in the packed branch, MWCC's register allocation over the whole function differs
+// (retail keeps mapGetWork live in r26 and colours numVectors r30 / mesh r29 / hit r27). The rest of
+// the packed and unpacked structure reproduces retail instruction for instruction: the unpacked
+// even/odd pick is `!(triIndex & 1)` narrowed to s16 after the first PSMTXMultVec, the packed index is
+// computed once per vertex before the fast-cast reads, and the element stride is the popcount of the
+// low 12 bits of elementMask times two (`for (s = 0; 12 > s; s++)`). Declaring the `HitVector* vector`
+// local before `Vec* vtx` (and the packed index loads after `vtx`) is what fixes the two loops'
+// schedule/colouring.
+// include/driver/hitdrv.h declares the function s16, but retail leaves numVectors in r3 with no extsh,
+// so it returns s32.
+// NONMATCHING (84.36%): the packed GQR5 setup is inline asm and cannot be emitted from C, so the packed
 // vertices are not scaled by the map file's fraction shift (wrong whenever that shift is nonzero) and
-// the register colouring through the rest of the function differs as a result.
+// the register colouring caused by its absence differs through the whole function.
 s16 hitCalcVtxPosition(HitEntry* hit) {
     s32 numVectors = 0;
     s32 partIndex;
@@ -561,20 +566,20 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
             for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
                 u8* base = (u8*)mesh->displayLists.normalLists[dlIndex];
                 for (triIndex = 0; triIndex < *(s32*)base - 2; triIndex++) {
-                    s32 i2 = *(s16*)(base + (triIndex + 2) * 0x18 + 4);
-                    Vec* vtx = (Vec*)(((u32*)mesh->vcdTableOffset)[0] + 4);
-                    HitVector* vector = (HitVector*)((u8*)hit->vectors + off);
                     s32 i0 = *(s16*)(base + triIndex * 0x18 + 4);
                     s32 i1 = *(s16*)(base + (triIndex + 1) * 0x18 + 4);
-                    BOOL even = (triIndex & 1) == 0;
-                    s16 v1i = even ? i2 : i1;
-                    s16 v2i = even ? i1 : i2;
+                    s32 i2 = *(s16*)(base + (triIndex + 2) * 0x18 + 4);
+                    HitVector* vector = (HitVector*)((u8*)hit->vectors + off);
+                    Vec* vtx = (Vec*)(((u32*)mesh->vcdTableOffset)[0] + 4);
                     off += 0x54;
                     numVectors++;
 
                     PSMTXMultVec(hit->worldMtx, &vtx[i0], &vector->v0);
-                    PSMTXMultVec(hit->worldMtx, &vtx[v1i], &vector->v1);
-                    PSMTXMultVec(hit->worldMtx, &vtx[v2i], &vector->v2);
+                    {
+                        BOOL even = !(triIndex & 1);
+                        PSMTXMultVec(hit->worldMtx, &vtx[(s16)(even ? i2 : i1)], &vector->v1);
+                        PSMTXMultVec(hit->worldMtx, &vtx[(s16)(even ? i1 : i2)], &vector->v2);
+                    }
                     PSVECSubtract(&vector->v2, &vector->v0, &vector->edge0);
                     PSVECSubtract(&vector->v0, &vector->v1, &vector->edge1);
                     PSVECSubtract(&vector->v1, &vector->v2, &vector->edge2);
@@ -587,7 +592,7 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
             s32 s;
             f32 zero = 0.0f;
 
-            for (s = 0; s < 12; s++) {
+            for (s = 0; 12 > s; s++) {
                 stride += (mask >> s) & 1;
             }
             stride *= 2;
@@ -613,19 +618,24 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                         Vec v2;
                         HitVector* vector = (HitVector*)((u8*)hit->vectors + off);
 
-                        BOOL even = (triIndex & 1) == 0;
+                        BOOL even = !(triIndex & 1);
                         v1i = even ? i2 : i1;
                         v2i = even ? i1 : i2;
 
-                        v0.x = __OSs16tof32(&vtx[i0 * 3 + 0]);
-                        v0.y = __OSs16tof32(&vtx[i0 * 3 + 1]);
-                        v0.z = __OSs16tof32(&vtx[i0 * 3 + 2]);
-                        v1.x = __OSs16tof32(&vtx[v1i * 3 + 0]);
-                        v1.y = __OSs16tof32(&vtx[v1i * 3 + 1]);
-                        v1.z = __OSs16tof32(&vtx[v1i * 3 + 2]);
-                        v2.x = __OSs16tof32(&vtx[v2i * 3 + 0]);
-                        v2.y = __OSs16tof32(&vtx[v2i * 3 + 1]);
-                        v2.z = __OSs16tof32(&vtx[v2i * 3 + 2]);
+                        {
+                            s32 o0 = i0 * 3;
+                            s32 o1 = v1i * 3;
+                            s32 o2 = v2i * 3;
+                            v0.x = __OSs16tof32(&vtx[o0 + 0]);
+                            v0.y = __OSs16tof32(&vtx[o0 + 1]);
+                            v0.z = __OSs16tof32(&vtx[o0 + 2]);
+                            v1.x = __OSs16tof32(&vtx[o1 + 0]);
+                            v1.y = __OSs16tof32(&vtx[o1 + 1]);
+                            v1.z = __OSs16tof32(&vtx[o1 + 2]);
+                            v2.x = __OSs16tof32(&vtx[o2 + 0]);
+                            v2.y = __OSs16tof32(&vtx[o2 + 1]);
+                            v2.z = __OSs16tof32(&vtx[o2 + 2]);
+                        }
 
                         PSMTXMultVec(hit->worldMtx, &v0, &vector->v0);
                         PSMTXMultVec(hit->worldMtx, &v1, &vector->v1);

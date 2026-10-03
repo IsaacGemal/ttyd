@@ -38,29 +38,109 @@ extern const f32 float_14_804209fc;
 const f64 double_to_int_802fdbf8 = 4503601774854144.0;
 const char str_802FDBEC[] = "StarPoint";
 
+static inline f32 effStarPointSinf(f32 rad, f32 b) {
+    f32 v = MATCH_F32(float_0p00761_804209d8);
+    f32 one = float_1_804209e0;
+    f32 t, u;
+
+    if (rad <= float_3p1416_804209e4) {
+        if (rad <= float_1p5708_804209e8) {
+            t = rad * rad;
+            v = v * t - b;
+            v = v * t + one;
+            v = v * rad;
+        } else {
+            t = rad - float_1p5708_804209e8;
+            u = float_1p5708_804209e8 - t;
+            t = u * u;
+            v = v * t - b;
+            v = v * t + one;
+            v = v * u;
+        }
+    } else if (rad < float_4p7124_804209ec) {
+        t = rad - float_3p1416_804209e4;
+        u = t * t;
+        v = v * u - b;
+        v = v * u + one;
+        v = v * t;
+        v = -v;
+    } else {
+        t = rad - float_4p7124_804209ec;
+        u = float_1p5708_804209e8 - t;
+        t = u * u;
+        v = v * t - b;
+        v = v * t + one;
+        v = v * u;
+        v = -v;
+    }
+    return v;
+}
+
+static inline f32 effStarPointCosf(f32 rad) {
+    f32 v = MATCH_F32(float_0p03705_804209f4);
+    f32 b = float_0p4967_804209f8;
+    f32 one = float_1_804209e0;
+    f32 t, u;
+
+    if (rad <= float_3p1416_804209e4) {
+        if (rad <= float_1p5708_804209e8) {
+            t = rad * rad;
+            v = v * t - b;
+            v = v * t + one;
+        } else {
+            t = rad - float_1p5708_804209e8;
+            u = float_1p5708_804209e8 - t;
+            t = u * u;
+            v = v * t - b;
+            v = v * t + one;
+            v = -v;
+        }
+    } else if (rad < float_4p7124_804209ec) {
+        t = rad - float_3p1416_804209e4;
+        t = t * t;
+        v = v * t - b;
+        v = v * t + one;
+        v = -v;
+    } else {
+        t = rad - float_4p7124_804209ec;
+        u = float_1p5708_804209e8 - t;
+        t = u * u;
+        v = v * t - b;
+        v = v * t + one;
+    }
+    return v;
+}
+
 // opt_common_subs off: with CSE on MWCC merges the loop-invariant float pool loads, which
 // shifts the loop constants (k16605/cOne/k4967/14) one FPR too high versus the target.
 #pragma opt_common_subs off
 // opt_lifetimes off: the default lifetime analysis schedules the seed/temp FPRs differently
 // (0.00761 lands in f4 vs f2); this recovers the target's instruction scheduling.
 #pragma opt_lifetimes off
-// Loop constants/seed FPRs match; only the int->float magic is f31 instead of f26, rotating the six
-// top-block values (target cTwo..c0=f31..f27,magic=f26; ours magic=f31,cTwo..c0=f30..f26), and the
-// loop temp rad is f1 not f3. Reordering the outer declarations/assignments, moving them inside the
-// loop, naming the conversion or inlining it, and opt_common_subs/opt_lifetimes/scheduling/
-// opt_propagation variants all leave the magic at f31. All 120 permutations of the five outer
-// declarations also keep it at f31; with opt_common_subs on it lands at f22 (polynomial constants
-// f23-f26) instead of f26. global_optimizer/opt_loop_invariants/opt_dead_assignments/
-// optimize_for_size/optimization_level/pool_data/fp_contract change nothing (or worse). Assigning a
-// loop-invariant constant inside the loop (the eff_stageclear/eff_recovery trick) makes mwcceppc 2.6
-// loop forever here, with or without opt_lifetimes. A permuter job is the remaining route.
-// NONMATCHING (96.94%): `i = 1` before `lowAlpha = 4` matches the target's init order (+0.06%).
+// The sin/cos polynomial is written as the two static inline helpers above (the eff_damage_star
+// shape). Expanding it there instead of inline keeps the target's seed/temp/rad registers (0.00761
+// in f2, rad in f3) and raises the score; written inline the same maths loses those. Passing the
+// sin helper's first coefficient (`b`) as an argument is load-bearing for the FPR colouring
+// (this shape vs the one that reads it inside).
+// What remains is only FPR colouring of the ten loop-invariant floats live across `bl rand`:
+// target f22..f31 = c14, cCos1, cSin1, cOne, magic(i2f), c0, c6, c360, cPi, cTwo;
+// ours = cPi, c14, cSin1, c6, cTwo, c0, c360, cCos1, cOne, magic (cSin1 in f24 matches).
+// In the target these are ordered inner-first, then the i2f magic, then the preheader constants
+// (f22..f25, f26, f27..f31); here the magic is pinned to an end (f31 with opt_common_subs off,
+// f22 with it on) and never lands at f26. Passing cPi into the helpers, giving the inner
+// coefficients loop-local declarations, an explicit two-helper `logI2F` cast, an `angleF` temp,
+// and all 120 preheader-assignment / 120 outer-declaration / 24 in-loop-declaration permutations
+// all leave that colouring unchanged or worse; the target's per-statement `f32 c14 = ...;` shape
+// and loop-local coefficient declarations make mwcceppc 2.6 loop forever here. A permuter job is
+// the remaining route. `i = 1` before `lowAlpha = 4` matches the target's init order.
+// NONMATCHING (97.39%): only the loop-invariant FPR colouring differs; no instruction differs for a
+// logic reason.
 EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     s32 lowAlpha;
     EffectEntry* entry;
     StarPointData* data;
     s32 i;
-    f32 cTwo, cPi, c360, c6, c0;
+    f32 cPi, c360, c0, cTwo, c6;
 
     entry = effEntry();
     entry->type = str_802FDBEC;
@@ -87,81 +167,18 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     for (; i < entry->count; i++, data++) {
         s32 angle = rand() % 360;
         f32 rad = (c6 * (f32)angle) / c360;
-        f32 sinv, cosv, f0, f1;
-        const f32 cOne = float_1_804209e0;
         f32 cSin1 = float_0p16605_804209dc;
-        f32 cCos1 = float_0p4967_804209f8;
-        f32 c14 = float_14_804209fc;
 
         data->position.x = c0;
         data->position.y = c0;
         data->position.z = c0;
 
-        // sin approximation
-        sinv = MATCH_F32(float_0p00761_804209d8);
-        if (rad <= cPi) {
-            if (rad <= float_1p5708_804209e8) {
-                f0 = rad * rad;
-                sinv = sinv * f0 - cSin1;
-                sinv = sinv * f0 + cOne;
-                sinv = sinv * rad;
-            } else {
-                f0 = rad - float_1p5708_804209e8;
-                f1 = float_1p5708_804209e8 - f0;
-                f0 = f1 * f1;
-                sinv = sinv * f0 - cSin1;
-                sinv = sinv * f0 + cOne;
-                sinv = sinv * f1;
-            }
-        } else if (rad < float_4p7124_804209ec) {
-            f1 = rad - cPi;
-            f0 = f1 * f1;
-            sinv = sinv * f0 - cSin1;
-            sinv = sinv * f0 + cOne;
-            sinv = sinv * f1;
-            sinv = -sinv;
-        } else {
-            f0 = rad - float_4p7124_804209ec;
-            f1 = float_1p5708_804209e8 - f0;
-            f0 = f1 * f1;
-            sinv = sinv * f0 - cSin1;
-            sinv = sinv * f0 + cOne;
-            sinv = sinv * f1;
-            sinv = -sinv;
-        }
-        data->field_0x18 = cTwo * sinv;
+        data->field_0x18 = cTwo * effStarPointSinf(rad, cSin1);
 
         // cos approximation
-        cosv = MATCH_F32(float_0p03705_804209f4);
-        if (rad <= cPi) {
-            if (rad <= float_1p5708_804209e8) {
-                f0 = rad * rad;
-                cosv = cosv * f0 - cCos1;
-                cosv = cosv * f0 + cOne;
-            } else {
-                f0 = rad - float_1p5708_804209e8;
-                f0 = float_1p5708_804209e8 - f0;
-                f0 = f0 * f0;
-                cosv = cosv * f0 - cCos1;
-                cosv = cosv * f0 + cOne;
-                cosv = -cosv;
-            }
-        } else if (rad < float_4p7124_804209ec) {
-            f0 = rad - cPi;
-            f0 = f0 * f0;
-            cosv = cosv * f0 - cCos1;
-            cosv = cosv * f0 + cOne;
-            cosv = -cosv;
-        } else {
-            f0 = rad - float_4p7124_804209ec;
-            f0 = float_1p5708_804209e8 - f0;
-            f0 = f0 * f0;
-            cosv = cosv * f0 - cCos1;
-            cosv = cosv * f0 + cOne;
-        }
-        data->field_0x1C = cTwo * cosv;
+        data->field_0x1C = cTwo * effStarPointCosf(rad);
 
-        data->field_0x20 = c14;
+        data->field_0x20 = float_14_804209fc;
         data->field_0x24 = cTwo;
         data->field_0x2C = 0;
         data->field_0x30 = lowAlpha;
