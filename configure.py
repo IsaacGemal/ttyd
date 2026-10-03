@@ -836,7 +836,7 @@ config.libs = [
             Object(NonMatching, "unit/party/unit_party_yoshi.c"),
             Object(NonMatching, "unit/party/unit_party_chuchurina.c"),
             Object(Matching, "unit/party/unit_party_sanders.c"),
-            Object(NonMatching, "unit/party/unit_party_vivian.c"),
+            Object(Matching, "unit/party/unit_party_vivian.c"),
             Object(Matching, "unit/party/unit_party_nokotarou.c"),
             Object(Matching, "unit/party/unit_party_christine.c"),
         ],
