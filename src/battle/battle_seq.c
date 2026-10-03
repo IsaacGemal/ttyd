@@ -2474,16 +2474,18 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 	BattleFogEndCheck();
 }
 
-// NONMATCHING (97.01%): the four event-id guards use while(...){...;break;} to get the original's
-// check-after-body layout; only the wp/i callee-saved pair is swapped (r28/r30 here, r30/r28 in the
-// original). No declaration order, loop form, pragma or compiler version in 1.3-2.7 flips it.
+// NONMATCHING (99.55%): the four event-id guards use while(...){...;break;} for the original's check-after-body
+// layout, and the local `void* p` (copied from wp before the loop) fixes the prologue scheduling. Only the
+// wp/i callee-saved pair is still swapped (we get wp r28/i r30; the original has wp r30/i r28).
 s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
 	s32 i;
 	BOOL result = TRUE;
 	BattleUnit* unit;
+	void* p;
 
+	p = wp;
 	for (i = 0; i < 64; i++) {
-		unit = BattleGetUnitPtr(wp, i);
+		unit = BattleGetUnitPtr((BattleWork*)p, i);
 		if (unit) {
 			while (unit->phaseEventId) {
 				if (evtCheckID(unit->phaseEventId)) {

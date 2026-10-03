@@ -64,10 +64,12 @@ typedef struct BattleSampling {
 // merge its two `keep = 0` blocks; the separate-if/goto shape reproduces the original's
 // inline `li r0,0; b` per condition. The dedup loop's `noDup` uses the same shape. The sort
 // uses explicit `ei`/`ej` pointers (`&esort[order[i]]`) so its address/value registers land
-// as in the original, and the dedup loop reads `p2->attributes` into a temp.
-// NONMATCHING (99.83%): two register-colouring cycles remain; control flow matches. First
-// loop i(r25)/numParts(r23)/kindPart(r22) vs i(r23)/numParts(r22)/kindPart(r25); dedup loop
-// entry(r21)/offset(r23)/noDup(r22)/u2(r24) vs entry(r29)/offset(r21)/noDup(r23)/u2(r22).
+// as in the original, and the dedup loop reads `p2->attributes` into a temp. Declaring the
+// first loop's `kindPart` in the outer loop (where the original's allocation puts it) lands
+// numParts(r22), part(r24) and faceDirection(r21) right. The dedup loop reads
+// entry(r21)/offset(r23)/noDup(r22)/u2(r24) vs the original's entry(r29)/offset(r21)/
+// noDup(r23)/u2(r22).
+// NONMATCHING (99.84%): first loop still swaps i(r25)/kindPart(r23) for i(r23)/kindPart(r25).
 void _btlSamplingEnemy(u8* sampling) {
     BattleSamplingEntry* esort;
     s8* order;
@@ -84,9 +86,11 @@ void _btlSamplingEnemy(u8* sampling) {
     }
 
     for (i = 0; i < 64; i++) {
-        BattleUnit* unit = BattleGetUnitPtr(wp, i);
         BattleUnitPart* part;
+        BattleUnitKindPart* kindPart;
         s32 numParts;
+        BattleUnit* unit;
+        unit = BattleGetUnitPtr(wp, i);
 
         if (unit == NULL) {
             continue;
@@ -107,7 +111,6 @@ void _btlSamplingEnemy(u8* sampling) {
             f32 x;
             f32 y;
             f32 z;
-            BattleUnitKindPart* kindPart;
             f32 wz;
             s32 faceDirection;
 

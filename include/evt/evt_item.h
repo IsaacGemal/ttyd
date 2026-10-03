@@ -2,6 +2,8 @@
 
 #include "evt/evt_cmd.h"
 
+// Pool constant whose value is unknown at compile time, keeping the fmadds product in front.
+
 USER_FUNC(evt_item_delete);
 USER_FUNC(evt_item_entry);
 USER_FUNC(evt_item_set_scale);

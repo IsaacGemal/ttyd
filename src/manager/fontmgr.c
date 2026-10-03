@@ -205,7 +205,10 @@ void FontDrawCode(u16 code, f32 x, f32 y) {
 	_JUTFont_DrawPos(code, 0, 0);
 }
 
-// NONMATCHING (83.60%)
+// NONMATCHING (83.60%): only the first two loads are ordered differently. Retail loads color->a into r5
+// before the fontColor word load (lwz r7); ours loads the word first (r5), stores it, and reloads the byte into
+// r5. Every other instruction, including the /255 magic sequence and the GXSetTevColor argument setup, matches;
+// the GXSetTevColor argument pointer (addi r4) also sits one slot earlier in ours.
 void FontDrawColor(GXColor* color) {
 	fontColor = *color;
 	color->a = (color->a * fontAlpha) / 255;
@@ -1365,9 +1368,11 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 // and the texture-coordinate noise offsets are float (`n1 + fwidthS`, `n2 + fheightS`). The right-edge x is
 // (s16)(x + fwidthS) and the bottom-edge y is (s16)((y - 1) - fheightS); all four vertices write HSV2RGB's
 // result after the position pair.
-// NONMATCHING (61.01%): retail keeps a 0x140 frame with 11 callee-saved GPRs (stmw r21); ours needs 0x160
-// with 9 (stmw r23). The int->float conversion schedule/colors and the texcoord re-conversion (extra fctiwz)
-// still differ, so the FIFO store schedule is not yet identical.
+// texcoord conversions done once each (tx0/ty0/tx1/ty1/nx1/ny1), matching retail's 8 fctiwz; fheightS reuses
+// the converted fheight as retail's `fmuls f28, f31, f0` does, giving a 0x130 frame with 11 callee-saved GPRs
+// (stmw r21). Retail's frame is 0x140 (local area 0x10 larger, so every stack offset differs by 0x10); the
+// int->float and FIFO store schedules also still differ.
+// NONMATCHING (63.72%): see above.
 void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	u8* info = (u8*)FontGetWidthPtr(code);
 	BinaryFontGlyph* blk = blockGlyph;
@@ -1392,6 +1397,12 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	u8 hueR;
 	GXColor hsv;
 	u32 rgb;
+	u16 tx0;
+	u16 ty0;
+	u16 tx1;
+	u16 ty1;
+	u8 nx1;
+	u8 ny1;
 	u8 n2;
 	u8 n1;
 
@@ -1399,7 +1410,7 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	xoffs = (f32)xx * blk->cellwidth + info[0];
 	fheight = (f32)blk->cellheight;
 	yoffs = 1.0f + yoffs;
-	fheightS = blk->cellheight * 1.0f;
+	fheightS = fheight * 1.0f;
 	fwidth = info[1];
 	fwidthS = width * 1.0f;
 
@@ -1419,7 +1430,9 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 
 	rgb = HSV2RGB(&hsv);
 	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
-	GXTexCoord2u16((u16)xoffs, (u16)yoffs);
+	tx0 = (u16)xoffs;
+	ty0 = (u16)yoffs;
+	GXTexCoord2u16(tx0, ty0);
 	GXTexCoord2u8(n1, n2);
 
 	hueR = (u8)((u16)xr + (u8)(x - hueoff));
@@ -1428,22 +1441,26 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 
 	rgb = HSV2RGB(&hsv);
 	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
-	GXTexCoord2u16((u16)(xoffs + fwidth), (u16)yoffs);
-	GXTexCoord2u8(n1 + fwidthS, n2);
+	tx1 = (u16)(xoffs + fwidth);
+	nx1 = n1 + fwidthS;
+	GXTexCoord2u16(tx1, ty0);
+	GXTexCoord2u8(nx1, n2);
 
 	hsv.r = hueR;
 	GXPosition3s16(xr, yb, 0);
 
 	rgb = HSV2RGB(&hsv);
 	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
-	GXTexCoord2u16((u16)(xoffs + fwidth), (u16)(yoffs + fheight));
-	GXTexCoord2u8(n1 + fwidthS, n2 + fheightS);
+	ty1 = (u16)(yoffs + fheight);
+	ny1 = n2 + fheightS;
+	GXTexCoord2u16(tx1, ty1);
+	GXTexCoord2u8(nx1, ny1);
 
 	GXPosition3s16(xs, yb, 0);
 	hsv.r = hueL;
 
 	rgb = HSV2RGB(&hsv);
 	GXColor4u8(((u8*)&rgb)[0], ((u8*)&rgb)[1], ((u8*)&rgb)[2], ((u8*)&rgb)[3]);
-	GXTexCoord2u16((u16)xoffs, (u16)(yoffs + fheight));
-	GXTexCoord2u8(n1, n2 + fheightS);
+	GXTexCoord2u16(tx0, ty1);
+	GXTexCoord2u8(n1, ny1);
 }

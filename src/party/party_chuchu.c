@@ -208,23 +208,29 @@ USER_FUNC(post_msg) {
     return EVT_RETURN_DONE;
 }
 
-// `Vec pos = tmp;` (a separate zero-init temp plus a whole-struct copy) reproduces the original's 0x14
-// scratch and the `lwz/stw` (not `lfs/stfs`) copy of pos to 0x8. The named rodata vec vec3_802f839c is
-// now read as a whole-Vec copy, matching the original. Remaining: ours computes `entry = unk_8038bb34`
-// through r0 (`addi r0; mr r31`) where the original writes `addi r31` directly, and emits
-// `li r29, 0`/`li r28, 0` for `found = FALSE`/`i = 0` where the original sets found first and reuses its
-// zero for i (`mr r28, r29`). Every source shape tried (statement and declaration permutations,
-// index-in-loop form, assignment comma/chain forms, `i = found`, types, and every opt_*/scheduling/
-// optimize_for_size/optimization_level pragma) leaves the preheader as the compiler chose it.
-// NONMATCHING (97.26%): only the found/i loop preheader register allocation differs (5 instructions).
+// The original loads `entry` straight into r31 (`addi r31`) and initialises
+// `found` before `i`, sharing one zero register between them
+// (`li r29, 0` then `mr r28, r29`). Written with plain locals MWCC folds
+// `i = found` back to `li r28, 0` and materialises the entry address through r0
+// (`addi r0; mr r31`). Holding the loop's four variables in one aggregate
+// (ChuchuSearchState) makes the `i = found` read a struct-field copy that is not
+// constant-folded, which is what reproduces the target's setup block; the
+// natural spelling is under #else.
+// `Vec pos = tmp;` (a separate zero-init temp plus a whole-struct copy) is what
+// reproduces the original's 0x14 scratch and the `lwz/stw` (not `lfs/stfs`) copy
+// of pos to 0x8; vec3_802f839c is read as a whole-Vec copy.
 BOOL chuchu_searchObject(void) {
     PartyEntry* party = partyGetPtr(marioGetPartyId());
     MarioWork* player = party->playerPtr;
+    f32 minDist;
+#ifdef MUST_MATCH
+    ChuchuSearchState search;
+#else
     ChuchuSearchEntry* entry;
     MarioWork* loopPlayer;
     BOOL found;
     u32 i;
-    f32 minDist;
+#endif
 
     if (itemNearDistCheck(player->position.x, player->position.y, player->position.z, 150.0f) != NULL) {
         return TRUE;
@@ -233,6 +239,39 @@ BOOL chuchu_searchObject(void) {
         return TRUE;
     }
 
+#ifdef MUST_MATCH
+    search.entry = unk_8038bb34;
+    search.loopPlayer = party->playerPtr;
+    search.found = FALSE;
+    minDist = 10000.0f;
+    search.i = search.found;
+    for (; search.i < 0x28; search.i++, search.entry++) {
+        if (strcmp(gp->currentMapName, search.entry->name) != 0) {
+            continue;
+        }
+        if (evtGetValue(NULL, search.entry->evtId) != 0) {
+            continue;
+        }
+        {
+            Vec tmp = vec3_802f839c;
+            Vec pos;
+            f32 dist;
+            tmp.x = (f32)search.entry->x;
+            tmp.y = (f32)search.entry->y;
+            tmp.z = (f32)search.entry->z;
+            pos = tmp;
+            dist = PSVECDistance(&search.loopPlayer->position, &pos);
+            if (150.0f < dist) {
+                continue;
+            }
+            if (minDist > dist) {
+                minDist = dist;
+                search.found = TRUE;
+            }
+        }
+    }
+    return search.found != 0;
+#else
     found = FALSE;
     loopPlayer = party->playerPtr;
     entry = unk_8038bb34;
@@ -263,6 +302,7 @@ BOOL chuchu_searchObject(void) {
         }
     }
     return found != 0;
+#endif
 }
 
 void chuchu_init(PartyEntry* party) {

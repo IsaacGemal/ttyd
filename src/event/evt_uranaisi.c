@@ -213,9 +213,9 @@ s32 uranaisi_ryokin_rtn(s32 idx) {
     return pouchGetPtr()->level * 2;
 }
 
-// NONMATCHING (98.75%): the instruction sequence is the target's; only the callee-saved
-// colouring differs (tagNum/saved/count*6 two registers below the target, the outer
-// prefix/&_udt/literal/maxLabel/count set two above).
+// NONMATCHING (98.81%): instructions identical; only callee-saved colouring differs.
+// The target keeps mbbpos in r18 and gives saved r25, pushing the early
+// prefix/&_udt/literal/maxLabel block two up and permuting tagNum/count/offset.
 s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     s32 tagNum;
     char label[64];
@@ -231,7 +231,7 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     s32 labelId;
     s32 storyId;
     s32 gswf;
-    char* tagdata;
+    const s8* tagdata;
     char* initEndPos;
     s16 tagEndPos;
 
@@ -245,7 +245,7 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
         if (msg[0] != '<') {
             break;
         }
-        tagdata = (char*)msg + 2;
+        tagdata = msg + 2;
         if (msg[1] != '!') {
             break;
         }
@@ -254,7 +254,7 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
         mbbpos = 0;
         tagdone = FALSE;
         while (!tagdone) {
-            if (_ismbblead((s8)*tagdata)) {
+            if (_ismbblead(*tagdata)) {
                 if (tagNum == 0) {
                     tag[mbbpos++] = tagdata[0];
                     tag[mbbpos++] = tagdata[1];
@@ -264,7 +264,7 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
                     tagdata += 2;
                 }
             } else {
-                switch ((s8)tagdata[0]) {
+                switch (tagdata[0]) {
                     case '>':
                         tagdone = TRUE;
                         // fallthrough
@@ -272,7 +272,7 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
                         tagdata++;
                         if (tagNum == 0) {
                             tag[mbbpos] = '\0';
-                            initEndPos = tagdata;
+                            initEndPos = (char*)tagdata;
                         } else {
                             tagEndPos = (s16)mbbpos;
                         }
@@ -340,9 +340,9 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     return count;
 }
 
-// NONMATCHING (98.75%): mirror of make_supercoin, same remaining difference (only the
-// callee-saved colouring: tagNum/saved/count*6 two registers below the target, the
-// outer prefix/&_udt/literal/maxLabel/count set two above).
+// NONMATCHING (98.81%): mirror of make_supercoin, same callee-saved colouring
+// difference (the lookup-index/saved split shifts the early
+// prefix/&_udt/literal/maxLabel block two up and permutes tagNum/count/offset).
 s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     s32 tagNum;
     char label[64];
@@ -358,7 +358,7 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     s32 labelId;
     s32 storyId;
     s32 gswf;
-    char* tagdata;
+    const s8* tagdata;
     char* initEndPos;
     s16 tagEndPos;
 
@@ -372,7 +372,7 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
         if (msg[0] != '<') {
             break;
         }
-        tagdata = (char*)msg + 2;
+        tagdata = msg + 2;
         if (msg[1] != '!') {
             break;
         }
@@ -381,7 +381,7 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
         mbbpos = 0;
         tagdone = FALSE;
         while (!tagdone) {
-            if (_ismbblead((s8)*tagdata)) {
+            if (_ismbblead(*tagdata)) {
                 if (tagNum == 0) {
                     tag[mbbpos++] = tagdata[0];
                     tag[mbbpos++] = tagdata[1];
@@ -391,7 +391,7 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
                     tagdata += 2;
                 }
             } else {
-                switch ((s8)tagdata[0]) {
+                switch (tagdata[0]) {
                     case '>':
                         tagdone = TRUE;
                         // fallthrough
@@ -399,7 +399,7 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
                         tagdata++;
                         if (tagNum == 0) {
                             tag[mbbpos] = '\0';
-                            initEndPos = tagdata;
+                            initEndPos = (char*)tagdata;
                         } else {
                             tagEndPos = (s16)mbbpos;
                         }
