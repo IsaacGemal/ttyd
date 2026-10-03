@@ -203,17 +203,6 @@ static inline GXColor itemColor0(u8 a, GXColor c) {
 }
 #endif
 
-// The cos result used to land in f30 (target f31) because the compiler coloured it with the first-loop
-// `-64.0f * 0.5f` value in f30; giving the second-loop `-42.666668f` its own `f30b` variable (reused as
-// the same machine register f30) puts cos in f31 and is byte-neutral otherwise. Only the second-loop
-// preheader is left: the target gets 10.666667 in f0, 42.666668 in f1 and the negation of 10.666667 in
-// f2 (`fneg f2,f0` / `fneg f30,f1` / `fmuls f29,f2,f0`); we get 10.666667 in f0, its negation in f1 and
-// 42.666668 in f2 (4 instructions). The scheduler emits the negation before 42.666668 is loaded, so the
-// negation takes f1. Source shapes tried without changing this: statement/declaration order, an explicit
-// negate temp, separate load statements, a separate `f42` temp, inline literals, top-level vs block
-// scopes, and `#pragma opt_propagation/opt_lifetimes/opt_common_subs/opt_dead_assignments/scheduling
-// off` (each breaks other instructions or the stack frame). The GXColor temporaries match via itemColor0.
-// NONMATCHING (99.96%): second-loop setup scratch f1/f2 swap (4 insns).
 void effItemGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effItemGetData* data = effect->userdata;
@@ -349,16 +338,33 @@ void effItemGetDisp(CameraId camId, void* param) {
 	GXLoadTexObj(&texObj, 1);
 
 	{
-		f32 f10 = 10.666667f;
 		f32 f42 = 42.666668f;
-		f32 half = 0.5f;
 		f30b = -f42;
-		f29 = -f10 * half;
 	}
 	f31 = 5.3333335f;
+#ifdef MUST_MATCH
+	// The half-size is computed inside the loop; MWCC hoists the negate back to the preheader but
+	// colours its scratch in f2 (as the original) instead of fusing it into the product destination's
+	// register.  `f30b` gives the direct `-42.666668f` its own variable (reused as machine f30), which
+	// puts the first-loop cos result in f31 as the original.  The values are idempotent, so recomputing
+	// them per iteration is harmless.
+#else
+	{
+		f32 f10 = 10.666667f;
+		f32 half = 0.5f;
+		f29 = -f10 * half;
+	}
+#endif
 	i = 1;
 	data++;
 	for (; i < effect->count; i++, data++) {
+#ifdef MUST_MATCH
+		{
+			f32 f = 10.666667f;
+			f29 = -f;
+		}
+		f29 = f29 / 2.0f;
+#endif
 		for (j = 0; j < 2; j++) {
 			if (j == 0) {
 				alphaA = data->field_0x34 * 128 / 255;
@@ -425,8 +431,6 @@ static inline GXColor itemColor1(u8 a, GXColor c) {
 
 #endif
 
-// NONMATCHING (99.96%): .sdata2 2.0/0.5 are swapped (the division's 0.5 registers in the preheader
-// before the loop's 2.0); the -f is fused into fmuls' destination (fneg f30) instead of scratch f2.
 void effItemUseDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effItemGetData* data = effect->userdata;
@@ -471,16 +475,22 @@ void effItemUseDisp(CameraId camId, void* param) {
 	effGetTexObj(0x2B, &texObj);
 	GXLoadTexObj(&texObj, 0);
 
+#ifdef MUST_MATCH
+	// The half-size is computed inside the loop after the j==0 branch's 2.0f call; MWCC hoists it to
+	// the preheader, colours the product's negate scratch in f2 (as the original) and pools 2.0 before
+	// 0.5.  The values are idempotent, so recomputing them per iteration is harmless.
+#else
 	{
 		f32 f = 21.333334f;
 		f31 = -f;
 	}
+	f31 = f31 / 2.0f;
 	{
 		f32 f = 42.666668f;
 		f30 = -f;
 	}
-	f31 = f31 / 2.0f;
 	f29 = 10.666667f;
+#endif
 	i = 1;
 	data++;
 	for (; i < effect->count; i++, data++) {
@@ -514,6 +524,18 @@ void effItemUseDisp(CameraId camId, void* param) {
 				}
 #endif
 			}
+#ifdef MUST_MATCH
+			{
+				f32 f = 21.333334f;
+				f31 = -f;
+			}
+			f31 = f31 / 2.0f;
+			{
+				f32 f = 42.666668f;
+				f30 = -f;
+			}
+			f29 = 10.666667f;
+#endif
 			GXLoadPosMtxImm(mtx1, 0);
 			GXSetCurrentMtx(0);
 			GXBegin(0x80, 0, 4);

@@ -343,9 +343,13 @@ void effNiceDisp(CameraId camId, void* param) {
 // original, instead of the non-const `float_1_8041cbb8` extern — MWCC schedules a non-const load
 // after the const ones), and the prologue li order (i, x, y) is reproduced by initialising them in
 // the for-clause.
-// NONMATCHING (98.86%): only register allocation differs: the string address is materialised as
-// `addi r0, r3, str@l; mr r29, r0` (retail `addi r29, r3, str@l`), and the third word of the zero
-// Vec loads into r3 (retail r0).
+// The comma in the `sfx` initialiser is the `ac_button_down` allocator nudge: it makes MWCC
+// materialise the string address directly (`addi rN, r3, @l`) instead of through a scratch
+// (`addi r0, r3, @l; mr rN, r0`). It also makes the address temp take r31, so retail's x=r31/y=r30
+// become x=r30/y=r29 and sfx=r31 instead of r29; all 10 remaining `!!` are that one
+// register-colouring shift. Without the comma the address is copied through r0 and the third word of
+// the zero Vec loads into r3 (5 `!!`).
+// NONMATCHING (99.78%): one register-colouring shift (x/y/sfx and their uses).
 void acrobatMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: retail builds the Vec in a scratch and copies it into a second local
@@ -355,7 +359,12 @@ void acrobatMain(EffectEntry* effect) {
 	Vec disp = { 0 };
 	s32 x;
 	s32 y;
+#ifdef MUST_MATCH
+	// MUST_MATCH: allocator nudge (see above); the natural form is under #else.
+	const char* sfx = (0, "SFX_SYSTEM_ACROBAT1");
+#else
 	const char* sfx = "SFX_SYSTEM_ACROBAT1";
+#endif
 	NiceEffectWork* data = effect->userdata;
 	s32 i;
 	s32 done = 0;

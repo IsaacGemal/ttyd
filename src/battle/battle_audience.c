@@ -1125,15 +1125,18 @@ void BattleAudience_End(void) {
 	}
 }
 
-// NONMATCHING (98.45%): final dispatch is a `switch`; locals reordered; the weight-pick counter
-// (`target`), clamped count (`targetNum`) and list build count (`listTotal`) are split. Left:
-// f30/f31 split, top-`kind`/sort/miss register allocation and a few scheduling spots; permuter case.
+// final dispatch is a `switch`; the clamp index is a separate `deltaIdx` ternary, the first
+// shuffle and weight sort use a separate `k` counter, `i = 0` moved before `target = 0`,
+// `listTotal` after `kind`, the randomMul cast is inlined into the FMA, the sort's tie test
+// reads `weights[j] == weights[k]` and its swap loads `order[j]` first. Left: the sort/miss/list
+// callee-saved rotation (a 4-cycle on r21/r23/r28/r31); `diff_shape.py`: same calls/branches.
+// NONMATCHING (98.73%): see above.
 void BattleAudienceSettingAudience(void) {
 	s32 kind;
-	s32 i, j;
+	s32 deltaIdx;
+	s32 i, j, k;
 	s32 target;
 	s32 targetNum;
-	f32 randomMul;
 	s32 order[12];
 	s32 weights[12];
 	s32 counts[13];
@@ -1183,11 +1186,8 @@ void BattleAudienceSettingAudience(void) {
 		audience->mMaxAudience = 0;
 	}
 
-	kind = 0x40;
-	if (pouch->level - 1 < 0x41) {
-		kind = pouch->level - 1;
-	}
-	audience->mAudienceDeltaMultiplier = deltaMultiplier[kind];
+	deltaIdx = (pouch->level - 1 < 0x41) ? pouch->level - 1 : 0x40;
+	audience->mAudienceDeltaMultiplier = deltaMultiplier[deltaIdx];
 
 	if (*(u32*)(base - 0x6F98) & 0x10000) {
 		audience->mTargetAudienceCount = (f32) * (s32*)(base - 0x6F8C);
@@ -1197,9 +1197,8 @@ void BattleAudienceSettingAudience(void) {
 	}
 	else {
 		oldAudience = pouchGetAudienceNum();
-		randomMul = (f32)(irand(10) + (irand(10) - 13));
 		audience->mTargetAudienceCount =
-		    float_0p01_8041e628 * ((pouchGetAudienceNum() - audience->mAudienceDeltaMultiplier) * randomMul) + oldAudience;
+		    float_0p01_8041e628 * ((pouchGetAudienceNum() - audience->mAudienceDeltaMultiplier) * (f32)(irand(10) - 13 + irand(10))) + oldAudience;
 	}
 
 	switch (*(s32*)setupBase) {
@@ -1272,7 +1271,7 @@ void BattleAudienceSettingAudience(void) {
 		for (i = 0; i < 12; i++) {
 			order[i] = i;
 		}
-		for (i = 0; i < 24; i++) {
+		for (k = 0; k < 24; k++) {
 			s32 a = irand(12);
 			s32 b = irand(12);
 			s32 t = order[a];
@@ -1280,8 +1279,9 @@ void BattleAudienceSettingAudience(void) {
 			order[b] = t;
 		}
 
+		i = 0;
 		target = 0;
-		for (i = 0; i <= 11; i++) {
+		for (; i <= 11; i++) {
 			kind = order[i];
 			if (target >= maxKinds) {
 				weights[kind] = 0;
@@ -1384,12 +1384,12 @@ void BattleAudienceSettingAudience(void) {
 		order[i] = i;
 	}
 
-	for (i = 0; i <= 10; i++) {
-		for (j = i + 1; j <= 11; j++) {
-			if ((weights[i] == weights[j] && irand(2) == 0) || weights[i] < weights[j]) {
-				s32 t = order[i];
-				order[i] = order[j];
-				order[j] = t;
+	for (k = 0; k <= 10; k++) {
+		for (j = k + 1; j <= 11; j++) {
+			if ((weights[j] == weights[k] && irand(2) == 0) || weights[k] < weights[j]) {
+				s32 t = order[j];
+				order[j] = order[k];
+				order[k] = t;
 			}
 		}
 	}
@@ -1416,7 +1416,7 @@ void BattleAudienceSettingAudience(void) {
 		}
 	}
 
-	if (mode == 1 && total != 0 && (irand(20) == 0 || (*(u32*)(base - 0x6F98) & 0x40000))) {
+	if (1 == mode && total != 0 && (irand(20) == 0 || (*(u32*)(base - 0x6F98) & 0x40000))) {
 		for (i = 0; i < 12; i++) {
 			order[i] = i;
 		}
@@ -1449,8 +1449,8 @@ void BattleAudienceSettingAudience(void) {
 		}
 		break;
 	default: {
-		listTotal = 0;
 		kind = 0;
+		listTotal = 0;
 		for (; kind <= 12; kind++) {
 			for (j = 0; j < counts[kind]; j++) {
 				list[listTotal++] = kind;

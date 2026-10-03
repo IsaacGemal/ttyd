@@ -148,10 +148,18 @@ static inline void sstarSetVtx(s16* dst, Mtx mtx, s16* src) {
 // swaps those two, which cascades into the `addi` association for src2 and the r28-relative vtx.y2/z2
 // stores. The loop source below reaches the exact instruction shape otherwise (dataInd=r28, i=r26,
 // the `(u8*)data + off + 0x1d0` dst2 form is what makes the dst2 `addi rX, off, 0x1d0` association
-// match). Searches that did not help: every declaration order of colB/off/src, 100 random
-// declaration permutations, colour-load reordering, `register`/initialisers, loop-carried `off`,
-// a derived `src`, and all the -O pragmas. Fixing the camId/colB pair is the key: once colB owns
-// r24 the loop's `off` reuses it and the rest falls out.
+// match). Searches that did not help: all 171 single-swap declaration permutations and 1200 random
+// permutations, every subset of opt_lifetimes/opt_common_subs/opt_dead_assignments/opt_loop_invariants/
+// global_optimizer set off, opt_strength_reduction off (98.18), whole-file optimize_for_size (98.18),
+// optimization_level 0-3, `register`/initialisers/moving GXColor color, splitting the colour or loop
+// variables per block, block-scoping the colour locals, colour arrays/local structs, every
+// colour-construction shape (init list, direct `data->col*` reads and inline-return/inline-void GXColor
+// helpers all shift the tev scratch slots), colour-load reordering, a `s32 mi`/`Mtx*` matrix temp, the
+// fully inlined `i*0x1C+0xE` loop, a derived `src`, a `SstarVertex*` helper signature and a 900-case
+// random search over declaration order x colour form x loop form x pragmas (best 99.47). Compilers
+// GC/1.3..2.7 all give the same 99.51%, so this is not a compiler-version issue. A loop-carried `off`
+// (for-clause or body) makes mwcceppc loop forever; do not use it. Fixing the camId/colB pair is the
+// key: once colB owns r24 the loop's `off` reuses it and the rest falls out.
 // NONMATCHING (99.51%): register colouring only (camId/colB swap, loop src/off swap); no differing
 // instruction or constant -- `tools/diff_shape.py` reports no shape difference.
 void effSstarDisp(CameraId camId, void* param) {

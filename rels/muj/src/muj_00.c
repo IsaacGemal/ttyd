@@ -982,23 +982,28 @@ USER_FUNC(cam_test_init_func) {
 // Writing the addend of the second set as `rad = (radius * s) * 0.0f;` (a runtime zero) makes MWCC
 // emit the original `fnmsubs` instead of `fmuls`+`fneg`. Still differs: the original keeps a second
 // args+1 int base (frame 0x60 vs our 0x50), and s/rad land in f30/f29 instead of f29/f30.
-// NONMATCHING (95.47%)
+// The original keeps a second `args+1` integer base (`mr r30, r31; addi r31, r31, 4`,
+// frame 0x60, event in r29) that MWCC 2.6 folds away at the file's -O4,s, in every
+// spelling tried (`args++`, `args = args + 1`, an explicit `argp = args + 1`);
+// `optimization_level 1` keeps two bases but changes the FPRs and schedule. Declaring
+// `s`/`c` before `rad` is what puts angle/radius/rad in f30/f31/f29.
+// NONMATCHING (96.02%): only the second `args+1` base differs.
 USER_FUNC(cam_test_func) {
-#ifdef MUST_MATCH
-    s32* new_var;
-#endif
     s32* args = event->args;
     f32 angle = evtGetFloat(event, args[2]);
     f32 radius = evtGetFloat(event, args[3]);
+    f32 s;
+    f32 c;
     f32 rad = angle * 6.2831855f / 360.0f;
-    f32 s = sin(rad);
-    f32 c = cos(rad);
+    s = sin(rad);
+    c = cos(rad);
 
     evtSetValue(event, args[0], (s32)(radius * s + 70.0f));
 #ifdef MUST_MATCH
-    new_var = &args[1];
+    // Reusing `rad` as the (zero) addend makes MWCC emit the target's `fnmsubs`
+    // instead of the natural form's `fmuls`+`fneg`.
     rad = (radius * s) * 0.0f;
-    evtSetValue(event, *new_var, (s32)(rad - (radius * c)));
+    evtSetValue(event, args[1], (s32)(rad - (radius * c)));
 #else
     evtSetValue(event, args[1], (s32)(0.0f - radius * c));
 #endif

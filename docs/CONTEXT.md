@@ -4012,3 +4012,21 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   clamp arms as retail. Pragma resets, stale notes and comments pointing at agent reports fixed. Left open (LOW):
   raw offsets where named fields exist (battleCameraMain's camera work, __psndSFXOn, mobj_switch_float_blk,
   extMakeTexture), unguarded match-only shapes in bom1000_msg and psndENV_LPF, envDisp_DepthOfField's bare GX enums.
+
+## Waves 62 and 63, batch 2; wave 64 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- Batch 2 (the wave 62/63 agents that finished after batch 1, onto main 7839c2bb with both salvage PRs): 9,298 ->
+  9,312. win_mario, evt_win and sac_bakugame merged with conflicts resolved to the agent's whole file, which would
+  have dropped the salvage reviews' fixes (winMarioDisp's level y, the party list's help row, neg2), so they are as
+  on main; so are npcdrv and battle_seq_command (a function lower), bom_01 and gor's evt_yuuranking (.rodata lower).
+- Review (`scratch/wave63/review2.md`): an agent deleted sac_genki's str_8030048C/str_80300494 definitions while
+  the code still names them. **Neither objdiff nor tools/data_check.py notices a deleted data object** (the symbol
+  just goes undefined in an unlinked unit); restored. effRippleMain's new `(u8)` increment changed behaviour for
+  +0.05% (as on main).
+- **Wave 64** (11:20, base 7839c2bb, `scratch/wave64/`): the unwritten arm, one agent per function with no
+  definition. Where an archived agent version exists it starts from that (`seeds/`, with why salvage didn't keep
+  it: a data section lower, or it doesn't compile against today's headers), otherwise from an m2c draft
+  (`drafts/`, no type context). The prompt carries Claude #1's compare rule (`cror eq,gt,eq` is >=, `cror
+  eq,lt,eq` is <=; check every compare and every read against the store that sets it). A function reviews took out
+  is given to its agent with the review's reason instead of "don't write". 12 functions now; win_root's GX
+  functions, nameent, winmgr, mapdrv and evt_mobj follow once batch 2 merges (salvage 2 first).

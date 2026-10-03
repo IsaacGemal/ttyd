@@ -81,13 +81,15 @@ const char* language_dir[2] = {"msg", "emsg"};
 
 //local prototypes
 
-// NONMATCHING (99.94%): the code is byte-identical; the three string offsets (0x208/0x210/0x218)
-// are whole-unit .rodata layout. Our section is 0x243 bytes vs the original's 0x220; everything up
-// to the PM strings (0xe8) agrees. From there the +0x24 is compiler-generated conversion doubles:
-// msgAnalize's four inlined sqrtf/sqrt doubles at 0x118 add 0x20, and the unsigned magic
-// 0x4330000000000000 that the original emits at 0x120 is emitted after /paper at 0x210 here, whose
-// 8-byte alignment adds 4 more. Neither is reachable from msgInit; it resolves once the rest of the
-// unit's literal pool matches.
+// Matching. Three things have to hold for its `hoshi_2`/`HOS_C_1`/`global` offsets
+// (0x208/0x210/0x218 from the R_no_messages_JP base) to come out right, all of them outside the
+// body: (1) `#include "math_ext.h"` instead of the SDK <math.h>, whose `extern inline`
+// sqrtf/sqrt otherwise dump four 0.5/3.0 localstatics (0x20 bytes) into .rodata; (2) msgWindow_Entry
+// (whose `(f32)` cast of an unsigned value is what makes MWCC pool the second i2f magic
+// 0x4330000000000000) generated before msgAnalize, whose strcmp strings are keyxon..; (3) no
+// duplicate i2f magic. (2) is why msgWindow_Entry sits after msgAnalize in this source: function
+// bodies are emitted in reverse source order, so putting it later makes MWCC generate it first and
+// places the magic at 0x120, right after 0x4330000080000000. Moving it back costs msgInit 0.06%.
 void msgInit(void) {
 	msgw->poseId = animPoseEntry("hoshi_2", 2);
 	animPoseSetAnim(msgw->poseId, "HOS_C_1", TRUE);
@@ -477,8 +479,11 @@ BOOL _ismbblead(u32 a1) {
 
 
 
-// math.h comes after msgInit: included at the top it changes how msgInit addresses its strings.
-#include <math.h>
+// math_ext.h declares sin/cos as out-of-line MSL entry points. Do NOT include the SDK <math.h>
+// here: its `extern inline` sqrtf/sqrt emit four 0.5/3.0 localstatics into .rodata (0x20 bytes)
+// that the original unit does not have, shifting every later string (and msgInit's offsets) by
+// 0x20. It also has to come after msgInit, as it did before.
+#include "math_ext.h"
 #ifdef MUST_MATCH
 // MUST_MATCH: retail passes these colours by value (MWCC copies the GXColor to a stack temp and passes
 // its address to FontDrawColor). The header declares a pointer, so the natural call is FontDrawColor(&c)
@@ -851,95 +856,6 @@ void msgWindow_ForceClose(const char* tag) {
 	}
 }
 
-// The third parameter is really s16 (the caller in evt_msg.c sign-extends it with `extsh`), but
-// windowEntry is declared u16 in windowdrv.h and defined that way in windowdrv.c, so the plain
-// call zero-extends b. Calling through the callee's real width reproduces the original's `mr r3, r5`
-// without touching the shared header/definition; the natural call is kept under #else.
-s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
-	// Declaration order steers MWCC's callee-saved allocation to the original (msg=r28, id=r27,
-	// buf=r30); the natural order lands msg in r27/buf in r27.
-	char* buf;
-	WindowEntry* window;
-	MessageData* data;
-	smartEntry* smart;
-	s32 id;
-
-#ifdef MUST_MATCH
-	id = ((s32 (*)(s32))windowEntry)(b);
-#else
-	id = windowEntry(b);
-#endif
-	window = windowGetPointer(id);
-	window->main = msgWindow_Main;
-	window->delete = msgWindow_Delete;
-	*(u16*)window->field_0x0 = 5;
-	window->type = -1;
-	window->flags |= 2;
-	buf = __memAlloc(HEAP_DEFAULT, strlen(msg));
-	strcpy(buf, msg);
-	smart = smartAlloc(0x7A58, 1);
-	data = smart->address;
-	memset(data, 0, 0x7A58);
-	data->window = window;
-	data->field_0x4 = 3;
-	data->field_0x79FC = a;
-	data->field_0x30 = gp->renderTime;
-	data->field_0x18 = gp->renderTime;
-	data->field_0x7A28 = 0;
-	data->field_0x7A2C = 0x7f;
-	data->field_0x7A30 = 0;
-	data->field_0x7A34 = 0;
-	data->field_0x7A36 = 0;
-	data->field_0x7A38 = 0;
-	data->field_0x7A3A = 0;
-	data->field_0x7A3C = 0x19;
-	data->field_0x7840 = 0;
-	msgAnalize(smart, buf);
-	if (window->type == 1) {
-		data->field_0x4 |= 0x200;
-	}
-	__memFree(HEAP_DEFAULT, buf);
-	window->userdata = smart;
-	data = window->userdata->address;
-	data->field_0x7A50 = 0;
-	data->field_0x7A54 = 0;
-	switch (window->type) {
-	case 11:
-		window->main = msgWindow_Clear_Main;
-		/* fallthrough */
-	case 0:
-	case 2:
-	case 3:
-	case 4:
-	case 6:
-	case 7:
-	case 8:
-	case 9:
-	case 10:
-		if (!(window->flags & 4)) {
-			window->x = -280.0f;
-			window->y = 225.0f;
-			window->height = 560.0f;
-			window->width = 176.0f;
-		}
-		break;
-	case 5:
-		window->main = selectWindow_Main;
-		window->x = (s16)((-((MessageData*)window->userdata->address)->field_0x7A44) / 2);
-		window->y = ((MessageData*)window->userdata->address)->field_0x7A46;
-		window->height = ((MessageData*)window->userdata->address)->field_0x7A44;
-		window->width = (s16)(((MessageData*)window->userdata->address)->field_0x7A40 * 0x24 + 0x28);
-		((MessageData*)window->userdata->address)->field_0x7A43 = ((MessageData*)window->userdata->address)->field_0x7A41;
-		data->field_0x7A48 = window->y - (f32)(data->field_0x7A43 * 0x1F + 0x3A);
-		break;
-	case 1:
-		window->field_0x4 = 10;
-		window->height = 0.7f * (f32)GXGetTexObjWidth(getWakuTexObj(3));
-		window->width = 0.7f * (f32)GXGetTexObjHeight(getWakuTexObj(3));
-		break;
-	}
-	return id;
-}
 
 void selectWindow_Main(WindowEntry* window) {
 	MessageData* data = window->userdata->address;
@@ -1379,7 +1295,7 @@ char* msgGetCommand(char* str, char* arg1, char* arg2) {
 // a 32-bit signed local: its liveness pins the allocator's `total`/`skip`/`off` colouring (u16,
 // u32 or inlining the cast costs ~0.3%). The target's conversion uses the unsigned magic because
 // its optimizer had the value's range; ours emits the signed one, numerically identical here.
-// NONMATCHING (96.80%): register-allocation residue around the promoted `var[0]`.
+// NONMATCHING (96.82%): register-allocation residue around the promoted `var[0]`.
 void msgAnalize(smartEntry* smart, const char* msg) {
 	char tagName[128];
 	char tagArg[128];
@@ -2015,6 +1931,96 @@ done:
 
 
 #pragma opt_dead_assignments reset
+
+// The third parameter is really s16 (the caller in evt_msg.c sign-extends it with `extsh`), but
+// windowEntry is declared u16 in windowdrv.h and defined that way in windowdrv.c, so the plain
+// call zero-extends b. Calling through the callee's real width reproduces the original's `mr r3, r5`
+// without touching the shared header/definition; the natural call is kept under #else.
+s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
+	// Declaration order steers MWCC's callee-saved allocation to the original (msg=r28, id=r27,
+	// buf=r30); the natural order lands msg in r27/buf in r27.
+	char* buf;
+	WindowEntry* window;
+	MessageData* data;
+	smartEntry* smart;
+	s32 id;
+
+#ifdef MUST_MATCH
+	id = ((s32 (*)(s32))windowEntry)(b);
+#else
+	id = windowEntry(b);
+#endif
+	window = windowGetPointer(id);
+	window->main = msgWindow_Main;
+	window->delete = msgWindow_Delete;
+	*(u16*)window->field_0x0 = 5;
+	window->type = -1;
+	window->flags |= 2;
+	buf = __memAlloc(HEAP_DEFAULT, strlen(msg));
+	strcpy(buf, msg);
+	smart = smartAlloc(0x7A58, 1);
+	data = smart->address;
+	memset(data, 0, 0x7A58);
+	data->window = window;
+	data->field_0x4 = 3;
+	data->field_0x79FC = a;
+	data->field_0x30 = gp->renderTime;
+	data->field_0x18 = gp->renderTime;
+	data->field_0x7A28 = 0;
+	data->field_0x7A2C = 0x7f;
+	data->field_0x7A30 = 0;
+	data->field_0x7A34 = 0;
+	data->field_0x7A36 = 0;
+	data->field_0x7A38 = 0;
+	data->field_0x7A3A = 0;
+	data->field_0x7A3C = 0x19;
+	data->field_0x7840 = 0;
+	msgAnalize(smart, buf);
+	if (window->type == 1) {
+		data->field_0x4 |= 0x200;
+	}
+	__memFree(HEAP_DEFAULT, buf);
+	window->userdata = smart;
+	data = window->userdata->address;
+	data->field_0x7A50 = 0;
+	data->field_0x7A54 = 0;
+	switch (window->type) {
+	case 11:
+		window->main = msgWindow_Clear_Main;
+		/* fallthrough */
+	case 0:
+	case 2:
+	case 3:
+	case 4:
+	case 6:
+	case 7:
+	case 8:
+	case 9:
+	case 10:
+		if (!(window->flags & 4)) {
+			window->x = -280.0f;
+			window->y = 225.0f;
+			window->height = 560.0f;
+			window->width = 176.0f;
+		}
+		break;
+	case 5:
+		window->main = selectWindow_Main;
+		window->x = (s16)((-((MessageData*)window->userdata->address)->field_0x7A44) / 2);
+		window->y = ((MessageData*)window->userdata->address)->field_0x7A46;
+		window->height = ((MessageData*)window->userdata->address)->field_0x7A44;
+		window->width = (s16)(((MessageData*)window->userdata->address)->field_0x7A40 * 0x24 + 0x28);
+		((MessageData*)window->userdata->address)->field_0x7A43 = ((MessageData*)window->userdata->address)->field_0x7A41;
+		data->field_0x7A48 = window->y - (f32)(data->field_0x7A43 * 0x1F + 0x3A);
+		break;
+	case 1:
+		window->field_0x4 = 10;
+		window->height = 0.7f * (f32)GXGetTexObjWidth(getWakuTexObj(3));
+		window->width = 0.7f * (f32)GXGetTexObjHeight(getWakuTexObj(3));
+		break;
+	}
+	return id;
+}
 
 s32 msgIconStr2ID(const char* str) {
 	u32 i;
