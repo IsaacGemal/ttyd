@@ -425,7 +425,7 @@ config.libs = [
             Object(Matching, "battle/sac/sac_common.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_deka.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_muki.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/sac/sac_suki.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/sac/sac_suki.c", extra_cflags=["-O4,s"]),
         ],
     },
     {
