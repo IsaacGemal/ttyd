@@ -3911,3 +3911,9 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
 - Review (`scratch/wave61/review1.md`, about a third of the files): no behaviour defects; the batch fixes three older
   bugs: win_badge's BP pips (x from `i % 10`, y from `i / 10`), btlseqEnd (`SEQ_TURN`, and a `break` before case
   0x07000006), extMain (its angle/matrix block only when `flags & 2`).
+- Claude #1's second review of #304: marioChkFrontStep wrote field_0x1F0[0x2C]/[0x30] through `wp2` before it was
+  assigned (retail stores all four through the marioGetPtr result, now `wp`); evt_unitwin_disp_func's case 4 zeroes
+  `selDesc` in every build as retail (`li r19,0`; the match-only uninitialised form is gone, 96.07%); sac_deka as on
+  main (its new .rodata definitions shifted the layout under the existing MUST_MATCH base reads, so yuka_init and
+  main_base read the wrong bytes); include/rel/yuu/event/evt_yuuranking.h (unused, conflicting prototypes) out.
+  Confirmed fixes in the batch: sys's PSMTXConcat order, tou's scissor clrlwi.

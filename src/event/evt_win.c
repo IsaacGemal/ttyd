@@ -587,7 +587,7 @@ USER_FUNC(set_new_goods_list) {
 
 
 
-// NONMATCHING (96.35%): complete reconstruction; the bl sequence (338 calls), case layout
+// NONMATCHING (96.07%): complete reconstruction; the bl sequence (338 calls), case layout
 // and .rodata order all match. Fixed here: the status-macro flag is passed as `flag | 0x10` (the
 // target does `ori` + `clrlwi`, not `extsh`); the badge/icon `iconId` is `s32` (the target
 // truncates it with `clrlwi` at the iconDispGx call); the common-tail buffer check keeps the
@@ -601,7 +601,7 @@ USER_FUNC(set_new_goods_list) {
 // every i2f conversion loads 0x408(r30) instead of the target's 0x3f0(r30) (removing those two
 // data definitions moves the loads to 0x3f0 but does not change the score). Display callback
 // for the shop window.
-// NONMATCHING (96.35%): MWCC callee-saved register colouring is shifted one register (r16/r17 vs
+// NONMATCHING (96.07%): MWCC callee-saved register colouring is shifted one register (r16/r17 vs
 // the target's r17/r18) and the frame is 0x20 larger; see the note above.
 void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	UnitWinWork* wp = (UnitWinWork*)param;
@@ -768,13 +768,7 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	switch (wp->field_0x50) {
 	case 4: {
 		// Stored-item (keep) list.
-#ifdef MUST_MATCH
-		// match-only: the target zeroes selDesc (li r19,0) but omitting the initialiser is what
-		// reproduces MWCC's register colouring here (adding = 0 drops the function to 95.98%).
-		const char* selDesc;
-#else
 		const char* selDesc = 0;
-#endif
 		s32 dispOff = 0;
 		s32 dispCnt = 0;
 		s32 cnt = pouchGetKeepItemCnt();

@@ -1516,8 +1516,8 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
     f32 c;
 
     *(f32*)&wp->field_0x1F0[0x28] = float_0_8041a7a4;
-    *(f32*)&wp2->field_0x1F0[0x2C] = float_0_8041a7a4;
-    *(f32*)&wp2->field_0x1F0[0x30] = float_0_8041a7a4;
+    *(f32*)&wp->field_0x1F0[0x2C] = float_0_8041a7a4;
+    *(f32*)&wp->field_0x1F0[0x30] = float_0_8041a7a4;
     *(f32*)&wp->field_0x1F0[0x24] = float_0_8041a7a4;
     if (wp->flags & 0x1000000) {
         h = float_18p5_8041a7ec;
