@@ -771,7 +771,7 @@ config.libs = [
             Object(Matching, "motion/mot_stay.c"),
             Object(NonMatching, "motion/mot_damage.c"),
             Object(Matching, "motion/mot_yoshi.c"),
-            Object(NonMatching, "motion/mot_dokan.c"),
+            Object(Matching, "motion/mot_dokan.c"),
             Object(Matching, "motion/mot_hip.c"),
         ],
     },
