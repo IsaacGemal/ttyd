@@ -28,20 +28,20 @@
 
 // local prototypes (not in headers yet)
 extern s32 partyCtrlNo;
+extern const f32 float_1_8041bb10;
+extern const f32 float_0p5_8041bb14;
+extern const f32 float_20_8041bb18;
+extern const f32 float_0_8041bb1c;
+extern const f32 float_37_8041bb20;
+extern const f32 float_neg1000_8041bb24;
+extern const f32 float_180_8041bb28;
+extern const f32 float_270_8041bb2c;
+extern const f32 float_neg5000_8041bb30;
+extern const f32 float_100_8041bb34;
+extern const f32 float_50_8041bb38;
 
 // Data owned by this translation unit (see config/G8MJ01/splits.txt).
 const Vec vec3_802e9668 = {0.0f, -1.0f, 0.0f};
-f32 float_1_8041bb10 = 1.0f;
-f32 float_0p5_8041bb14 = 0.5f;
-f32 float_20_8041bb18 = 20.0f;
-f32 float_0_8041bb1c = 0.0f;
-f32 float_37_8041bb20 = 37.0f;
-f32 float_neg1000_8041bb24 = -1000.0f;
-f32 float_180_8041bb28 = 180.0f;
-f32 float_270_8041bb2c = 270.0f;
-f32 float_neg5000_8041bb30 = -5000.0f;
-f32 float_100_8041bb34 = 100.0f;
-f32 float_50_8041bb38 = 50.0f;
 
 // party_cloud.h declares cloudGetStatus as returning u8 (its definition masks the result), but the original
 // evt_party_cloud_breathout uses the result unmasked, as if this file saw it declared int.
@@ -237,9 +237,9 @@ USER_FUNC(evt_party_get_pos) {
 
     party = partyGetPtr(args[0] ? 1 : partyCtrlNo);
     if (!party) {
-        evtSetFloat(event, args[1], -5000.0f);
-        evtSetFloat(event, args[2], -5000.0f);
-        evtSetFloat(event, args[3], -5000.0f);
+        evtSetFloat(event, args[1], float_neg5000_8041bb30);
+        evtSetFloat(event, args[2], float_neg5000_8041bb30);
+        evtSetFloat(event, args[3], float_neg5000_8041bb30);
         return EVT_RETURN_DONE;
     }
     evtSetFloat(event, args[1], party->position.x);
@@ -358,7 +358,7 @@ USER_FUNC(evt_party_get_dispdir) {
 
     party = partyGetPtr(args[0] ? 1 : partyCtrlNo);
     if (!party) {
-        evtSetFloat(event, args[1], 0.0f);
+        evtSetFloat(event, args[1], float_0_8041bb1c);
     } else {
         evtSetFloat(event, args[1], party->field_10C);
     }
@@ -545,8 +545,8 @@ USER_FUNC(evt_party_jump_pos) {
     msec = evtGetValue(event, args[3]);
     flag = evtGetValue(event, args[4]);
     d = evtGetFloat(event, args[5]);
-    if (d <= -1000.0f) {
-        d = 20.0f;
+    if (d <= float_neg1000_8041bb24) {
+        d = float_20_8041bb18;
     }
     frames = (f32)sysMsec2Frame(msec);
     switch (event->userdata[3]) {
@@ -560,11 +560,11 @@ USER_FUNC(evt_party_jump_pos) {
             }
             partyChgPoseId(party, 4);
             dy = ty - party->position.y;
-            tmp = 0.5f * frames;
-            if (__fabsf(dy) < 1.0f) {
+            tmp = float_0p5_8041bb14 * frames;
+            if (__fabsf(dy) < float_1_8041bb10) {
                 dy = d;
-            } else if (dy >= 0.0f) {
-                dy += 37.0f;
+            } else if (dy >= float_0_8041bb1c) {
+                dy += float_37_8041bb20;
 #ifdef MUST_MATCH
             // MUST_MATCH: the header declares searchUnder2 as s32, but it returns a pointer;
             // the cast restores the original's unsigned (cmplwi) null test.
@@ -577,7 +577,7 @@ USER_FUNC(evt_party_jump_pos) {
             dy = (dy + dy) / (tmp * tmp - tmp);
             party->jumpPara1 = dy * tmp;
             PF32(party, 0x174) = -dy;
-            event->userdata[2] = (s32)(0.5f + tmp);
+            event->userdata[2] = (s32)(float_0p5_8041bb14 + tmp);
             event->userdata[3] = 1;
             /* fallthrough */
         case 1:
@@ -585,12 +585,12 @@ USER_FUNC(evt_party_jump_pos) {
             party->position.y += party->jumpPara1;
             party->jumpPara1 += PF32(party, 0x174);
             if (--event->userdata[2] <= 0) {
-                tmp = 0.5f * frames;
+                tmp = float_0p5_8041bb14 * frames;
                 dy = ty - party->position.y;
-                party->jumpPara1 = 0.0f;
+                party->jumpPara1 = float_0_8041bb1c;
                 PF32(party, 0x174) = (dy + dy) / (tmp * tmp - tmp);
-                party->jumpPara3 = 0.0f;
-                event->userdata[2] = (s32)(0.5f + tmp);
+                party->jumpPara3 = float_0_8041bb1c;
+                event->userdata[2] = (s32)(float_0p5_8041bb14 + tmp);
                 event->userdata[3] = 2;
             }
             break;
@@ -615,9 +615,9 @@ USER_FUNC(evt_party_jump_pos) {
             }
             if (--event->userdata[2] <= 0) {
                 partyChgPoseId(party, 1);
-                party->jumpPara3 = 0.0f;
-                PF32(party, 0x174) = 0.0f;
-                party->speed = 0.0f;
+                party->jumpPara3 = float_0_8041bb1c;
+                PF32(party, 0x174) = float_0_8041bb1c;
+                party->speed = float_0_8041bb1c;
                 unk_800ba2dc(party);
                 return 1;
             }
@@ -1067,3 +1067,17 @@ USER_FUNC(evt_party_cloud_breathout) {
     }
     return 0;
 }
+
+#pragma explicit_zero_data on
+const f32 float_1_8041bb10 = 1.0f;
+const f32 float_0p5_8041bb14 = 0.5f;
+const f32 float_20_8041bb18 = 20.0f;
+const f32 float_0_8041bb1c = 0.0f;
+const f32 float_37_8041bb20 = 37.0f;
+const f32 float_neg1000_8041bb24 = -1000.0f;
+const f32 float_180_8041bb28 = 180.0f;
+const f32 float_270_8041bb2c = 270.0f;
+const f32 float_neg5000_8041bb30 = -5000.0f;
+const f32 float_100_8041bb34 = 100.0f;
+const f32 float_50_8041bb38 = 50.0f;
+#pragma explicit_zero_data reset
