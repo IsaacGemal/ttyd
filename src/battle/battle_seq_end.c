@@ -1332,29 +1332,28 @@ void _GetExpIcon_Main(BattleWork* wp) {
     BattleSeqEndWork* work = wp->seqEndWork;
     s32 exp = *(s16*)((u8*)work + 0xA);
     s32 j;
-    s32 i;
     f32 zero = 0.0f;
 
-    for (i = 0; i < exp / 10; i++) {
-        iconFlagOff((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18), 2);
-        if (*(s32*)((u8*)work + 0x80 + i * 4) <= 0) {
-            *(s32*)((u8*)work + 0x80 + i * 4) = 0x40;
+    for (j = 0; j < exp / 10; j++) {
+        iconFlagOff((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18), 2);
+        if (*(s32*)((u8*)work + 0x80 + j * 4) <= 0) {
+            *(s32*)((u8*)work + 0x80 + j * 4) = 0x40;
         } else {
-            *(s32*)((u8*)work + 0x80 + i * 4) += 0x40;
-            if (*(s32*)((u8*)work + 0x80 + i * 4) > 0xFF) {
-                *(s32*)((u8*)work + 0x80 + i * 4) = 0xFF;
+            *(s32*)((u8*)work + 0x80 + j * 4) += 0x40;
+            if (*(s32*)((u8*)work + 0x80 + j * 4) > 0xFF) {
+                *(s32*)((u8*)work + 0x80 + j * 4) = 0xFF;
             }
         }
-        if (*(s32*)((u8*)work + 0xCC + i * 4) < 0x10) {
-            *(s32*)((u8*)work + 0xCC + i * 4) += 1;
+        if (*(s32*)((u8*)work + 0xCC + j * 4) < 0x10) {
+            *(s32*)((u8*)work + 0xCC + j * 4) += 1;
         }
-        *(f32*)((u8*)work + 0x118 + i * 0xC) =
-            36.0f * (f32)i + (24.0f - 18.0f * (f32)(*(s16*)((u8*)work + 0xA) / 10));
+        *(f32*)((u8*)work + 0x118 + j * 0xC) =
+            36.0f * (f32)j + (24.0f - 18.0f * (f32)(*(s16*)((u8*)work + 0xA) / 10));
     }
-    for (; i < 10; i++) {
-        iconFlagOn((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18), 2);
-        *(s32*)((u8*)work + 0x80 + i * 4) = 0;
-        *(s32*)((u8*)work + 0xCC + i * 4) = 0;
+    for (; j < 10; j++) {
+        iconFlagOn((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18), 2);
+        *(s32*)((u8*)work + 0x80 + j * 4) = 0;
+        *(s32*)((u8*)work + 0xCC + j * 4) = 0;
     }
     {
         for (j = 10; j - 10 < exp % 10; j++) {
@@ -1373,12 +1372,12 @@ void _GetExpIcon_Main(BattleWork* wp) {
             *(s32*)((u8*)work + 0x80 + j * 4) = 0;
         }
     }
-    for (i = 0; i < 0x13; i++) {
-        iconSetAlpha((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18),
-                     (u8)*(s32*)((u8*)work + 0x80 + i * 4));
-        iconSetPos((const char*)(*(u32*)((u8*)work + 0x34 + i * 4) + 0x18),
-                   ((f32*)((u8*)work + 0x118 + i * 0xC))[0], ((f32*)((u8*)work + 0x11C + i * 0xC))[0] + zero,
-                   ((f32*)((u8*)work + 0x120 + i * 0xC))[0]);
+    for (j = 0; j < 0x13; j++) {
+        iconSetAlpha((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18),
+                     (u8)*(s32*)((u8*)work + 0x80 + j * 4));
+        iconSetPos((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18),
+                   ((f32*)((u8*)work + 0x118 + j * 0xC))[0], ((f32*)((u8*)work + 0x11C + j * 0xC))[0] + zero,
+                   ((f32*)((u8*)work + 0x120 + j * 0xC))[0]);
     }
 }
 

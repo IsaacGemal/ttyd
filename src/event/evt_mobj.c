@@ -2598,6 +2598,10 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
     Vec* vec = vec3_802c3dc8;
 
     switch (obj->unk1DC) {
+#ifdef MUST_MATCH
+        // MUST_MATCH: case 2's temporary declared at switch scope gets retail's stack slot (permuter).
+        Vec v;
+#endif
         case 0:
             if (obj->flags & 8) {
                 mobjRunEvent(obj, obj->unk1D4);
@@ -2633,7 +2637,6 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
             // with 10.0 kept live) and the retail temp-copy of the Vec. The natural form is under #else.
             // The named float_0p8_8041a1b0/float_10_8041a1a4 loads (rather than literals) keep both
             // constants live, as in retail.
-            Vec v;
             Vec w;
             f32 vx;
             f32 vy;

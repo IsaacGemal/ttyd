@@ -272,6 +272,11 @@ void bakuGameDisp3D(CameraId camId, void* param) {
     }
 }
 
+// Taking the entry through this accessor is what gets bakuGameDisp2D's loads in the original's order (permuter).
+static inline BakuGameWorkEntry* bakuGameEntry(BakuGameWork* work, s32 i) {
+    return &work->entries[i];
+}
+
 // NONMATCHING (99.49%): the wp integer round-trip fixes baku=r30/wp=r31, but MWCC still swaps the loop
 // induction registers (i in r28, entry in r27; the original has i=r27, entry=r28).
 void bakuGameDisp2D(void) {
@@ -288,7 +293,7 @@ void bakuGameDisp2D(void) {
     wp = (BattleWork*)((u32)wp - 0x1F2C);
 #endif
     for (i = 0; i < 3; i++) {
-        BakuGameWorkEntry* entry = &baku->entries[i];
+        BakuGameWorkEntry* entry = bakuGameEntry(baku, i);
         s16 icon;
 
         switch (entry->type) {
