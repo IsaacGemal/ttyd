@@ -2057,22 +2057,23 @@ void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
     }
 }
 
-// NONMATCHING (95.19%): structure and register colouring match; only the x-conversion scheduling
-// differs (target `lfs f0,0; fctiwz f2,f0; lfs f0,8` reusing f0 for z, ours loads all three then
-// converts in place).
+#pragma push
+#pragma opt_propagation off // the target keeps xh/yh in registers instead of rematerializing them
+// NONMATCHING (96.11%): register allocation now matches; only the FP scheduling of the three
+// pos->x/y/z loads+conversions differs (target loads z between the x and y conversions).
 void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
-    u32 off;
     s32 xh;
     s32 yh;
+    u32 off;
     s32 x;
     s32 y;
     s32 z;
 
-    xh = ((s32)pos->x >> 8) & 0xFF;
     x = (s32)pos->x;
-    yh = ((s32)pos->y >> 8) & 0xFF;
-    y = (s32)pos->y;
-    z = (s32)pos->z;
+    { f32 ty = pos->y; y = (s32)ty; }
+    { f32 tz = pos->z; z = (s32)tz; }
+    xh = (x >> 8) & 0xFF;
+    yh = (y >> 8) & 0xFF;
     off = base + index * 7;
 
     _swByteSet(off + 0x8F0D180, *out);
@@ -2083,6 +2084,7 @@ void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
     _swByteSet(off + 0x8F0D185, z);
     _swByteSet(off + 0x8F0D186, (z >> 8) & 0xFF);
 }
+#pragma pop
 
 void puniswTrapGetindex(s32 index, s32* out) {
     s32 byte;
@@ -8621,7 +8623,10 @@ USER_FUNC(evt_puni_get_lsw_index) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.37%): instruction sequence now matches; only the callee-saved numbering rotates
+// reason: opt_propagation off stops MWCC rematerialising the named high bytes (h1/h2) at each
+// _swByteSet, so they stay in callee-saved registers like the original.
+#pragma opt_propagation off
+// NONMATCHING (98.27%): instruction sequence now matches; only the callee-saved numbering rotates
 // (original event=r28,args=r26,index=r27,i=r30,b0=r31; ours event=r26,args=r28,index=r31,i=r29,b0=r30).
 USER_FUNC(evt_puni_set_lsw_index) {
     s32* args = event->args;
@@ -8648,6 +8653,7 @@ USER_FUNC(evt_puni_set_lsw_index) {
     _swByteSet(index + EVTDAT_LSW_BASE + 6, (s3 >> 8) & 0xFF);
     return EVT_RETURN_DONE;
 }
+#pragma opt_propagation reset
 
 USER_FUNC(evt_puni_get_trap_index) {
     s32* args = event->args;
