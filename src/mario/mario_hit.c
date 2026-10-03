@@ -1992,6 +1992,207 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
 }
 
 
+#ifdef MUST_MATCH
+// Match-only: building the direction in an inline that starts from the named
+// vector and returns by value makes MWCC materialise the original's extra
+// built-then-copied Vec slot (as in searchUnder2's makeVec5760).
+static inline Vec makeDirVec(const Vec* src, f32 x, f32 z) {
+    Vec v = *src;
+    v.x = x;
+    v.z = z;
+    return v;
+}
+#endif
+
+extern const f32 float_360_8041a7c0;
+extern const f32 float_0p125_8041a7d0;
+extern const Vec vec3_802c58c8;
+extern const Vec vec3_802c58d4;
+extern const Vec vec3_802c58e0;
+extern const Vec vec3_802c58ec;
+
+// NONMATCHING (90.33%): each sweep builds `pHigh`/`pLow` copies of `position` (this fixes the original's yTop/yBot GPR-bit handling and was worth +7%) and calls `marioHitCheckVecRound` with caller-built queries (NULL hitPos/normal, so only targetDistance rounds). Both sweeps build `dir` through `makeDirVec` (a by-value inline starting from the named rodata vec) so MWCC emits the original's built-then-copied `Vec` slots (first-sweep copy at 0x6c, second at 0x18); that closed the frame gap (now 0x260, matching). Remaining: register colouring, 3 extra saved GPRs (r16-r31 vs r19-r31, costs exactly the 4 extra insns of the i2f pool workaround), and the file-wide i2f magic-double pool blocker. Named args: f1 (`a`) is unused, f24=f2 `b`, f25=f3 `c`, f26=f4 `d`.
+s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
+    const char* base = (const char*)vec3_802c5730;
+    HitEntry* hit;
+    HitEntry* hit2;
+    HitCheckQuery query1;
+    HitCheckQuery query2;
+    HitCheckQuery query3;
+    HitCheckQuery query4;
+    Vec dir;
+    Vec p;
+    Vec pHigh;
+    Vec pLow;
+    Vec disp;
+    Vec prev;
+#ifdef MUST_MATCH
+    Vec dtmpW;
+    Vec dtmpW2;
+#endif
+    f32 sin;
+    f32 cos;
+    f32 step;
+    f32 angle;
+    f32 dist;
+    f32 d1;
+    f32 d2;
+    f32 yTop;
+    f32 yBot;
+    f32 limit;
+    f32 mag;
+    s32 n;
+    s32 i;
+    s32 found;
+
+    n = 8;
+    found = 0;
+    if (kpaGetStageViewType() == 0) {
+        n = 2;
+    }
+    angle = b;
+    step = float_360_8041a7c0 / (f32)n;
+    dist = float_0p5_8041a7c4 * c;
+    disp = *(const Vec*)RO(base, 0x198, vec3_802c58c8);
+    yTop = position->y + float_11_8041a7ac;
+    yBot = position->y + (d - float_1_8041a7bc);
+    p = *position;
+    pHigh = p;
+    pLow = p;
+    pHigh.y = yTop;
+    pLow.y = yBot;
+    for (i = 0; i < n; i++) {
+        sincosf(&sin, &cos, angle);
+#ifdef MUST_MATCH
+        dtmpW2 = makeDirVec((const Vec*)RO(base, 0x1A4, vec3_802c58d4), sin, cos);
+        dir = dtmpW2;
+#else
+        dir = *(const Vec*)RO(base, 0x1A4, vec3_802c58d4);
+        dir.x = sin;
+        dir.z = cos;
+#endif
+        query1.targetPos = pHigh;
+        query1.targetDir = dir;
+        query1.targetDistance = dist;
+        d1 = dist;
+        hit = marioHitCheckVecRound(&query1, NULL, NULL, &d1);
+        query2.targetPos = pLow;
+        query2.targetDir = dir;
+        query2.targetDistance = dist;
+        d2 = dist;
+        hit2 = marioHitCheckVecRound(&query2, NULL, NULL, &d2);
+        if (marioChkBero(hit)) {
+            hit = NULL;
+        }
+        if (marioChkBero(hit2)) {
+            hit2 = NULL;
+        }
+        if (hit != NULL && hit2 != NULL) {
+            if (d1 > d2) {
+                d1 = d2;
+                hit = hit2;
+            }
+        } else if (hit2 != NULL) {
+            hit = hit2;
+            d1 = d2;
+        }
+        if (hit != NULL) {
+            f32 t;
+
+            sincosf(&sin, &cos, float_180_8041a7cc + angle);
+            t = __fabsf(dist - d1);
+            disp.x += sin * t;
+            disp.z += cos * t;
+            found = 1;
+        }
+        angle += step;
+    }
+    if (found == 0) {
+        return found;
+    }
+    limit = float_0p125_8041a7d0 * c;
+    if (flag == 0) {
+        MarioWork* wp2 = marioGetPtr();
+
+        if (wp2->currMotionId == 0xA || wp2->currMotionId == 0xB) {
+            limit = float_0p25_8041a7d4 * c;
+        }
+    }
+    if (limit < float_1_8041a7bc) {
+        limit = float_1_8041a7bc;
+    }
+    prev = disp;
+    mag = PSVECMag(&disp);
+    if (mag > limit) {
+        PSVECScale(&disp, &disp, limit / mag);
+    }
+    PSVECAdd(position, &disp, position);
+    angle = b;
+    disp = *(const Vec*)RO(base, 0x1B0, vec3_802c58e0);
+    yTop = position->y + float_11_8041a7ac;
+    yBot = position->y + (d - float_1_8041a7bc);
+    p = *position;
+    pHigh = p;
+    pLow = p;
+    pHigh.y = yTop;
+    pLow.y = yBot;
+    for (i = 0; i < n; i++) {
+        sincosf(&sin, &cos, angle);
+#ifdef MUST_MATCH
+        dtmpW = makeDirVec((const Vec*)RO(base, 0x1BC, vec3_802c58ec), sin, cos);
+        dir = dtmpW;
+#else
+        dir = *(const Vec*)RO(base, 0x1BC, vec3_802c58ec);
+        dir.x = sin;
+        dir.z = cos;
+#endif
+        query3.targetPos = pHigh;
+        query3.targetDir = dir;
+        query3.targetDistance = dist;
+        d1 = dist;
+        hit = marioHitCheckVecRound(&query3, NULL, NULL, &d1);
+        query4.targetPos = pLow;
+        query4.targetDir = dir;
+        query4.targetDistance = dist;
+        d2 = dist;
+        hit2 = marioHitCheckVecRound(&query4, NULL, NULL, &d2);
+        if (marioChkBero(hit)) {
+            hit = NULL;
+        }
+        if (marioChkBero(hit2)) {
+            hit2 = NULL;
+        }
+        if (hit != NULL && hit2 != NULL) {
+            if (d1 > d2) {
+                d1 = d2;
+                hit = hit2;
+            }
+        } else if (hit2 != NULL) {
+            hit = hit2;
+            d1 = d2;
+        }
+        if (hit != NULL) {
+            f32 t;
+
+            sincosf(&sin, &cos, float_180_8041a7cc + angle);
+            t = __fabsf(dist - d1);
+            disp.x += sin * t;
+            disp.z += cos * t;
+            found = 1;
+        }
+        angle += step;
+    }
+    if (found == 0) {
+        return 1;
+    }
+    if (PSVECDotProduct(&prev, &disp) >= float_0_8041a7a4) {
+        return 1;
+    }
+    PSVECScale(&disp, &disp, float_0p5_8041a7c4);
+    PSVECAdd(position, &disp, position);
+    return 1;
+}
+
 // The original copies each dir vector as three raw words in x, z, y order, then
 // overwrites x with sn and z with cs. A plain `dir = *(volatile Vec*)` emits the
 // copy in x, y, z order, so the MUST_MATCH branch does the copy as three u32
