@@ -1361,7 +1361,7 @@ void BattleAudienceSettingAudience(void) {
 	}
 
 	for (i = 0; i < 12; i++) {
-		counts[i] = target * weights[i] / sum;
+		counts[i] = targetNum * weights[i] / sum;
 		if (audience_kind[i].field_0x0 & 1) {
 			counts[i] /= 2;
 			total += counts[i] * 2;
