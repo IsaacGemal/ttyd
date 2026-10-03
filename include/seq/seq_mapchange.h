@@ -9,3 +9,16 @@ void seq_mapChangeExit(SequenceWork* work);
 void _relUnLoad(void);
 void _unload(const char* arg0, const char* arg1, const char* arg2);
 void _load(const char* arg0, const char* arg1, const char* arg2);
+
+// .rodata/.sdata2 string objects this unit defines and refers to by name
+extern const char str_802C1060[];
+extern const char str_802C1068[];
+extern const char str_80419420[];
+extern const char str_80419424[];
+extern const char str_8041942C[];
+extern const char str_80419430[];
+
+// Two-pointer view of table_802C1028; the original copies both words in one 64-bit move.
+#ifdef MUST_MATCH
+typedef struct { const char* a; const char* b; } MapLangPair;
+#endif

@@ -4065,3 +4065,12 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   colour casts. mobj_lv_blk_evt left out again (unguarded base reads). Open LOWs: sac_genki's now-unused
   _drawGenkiTex/_makeRot/_makeTrans inlines, itemMain's dead `hit = NULL`, eff_opuku_wgun_n64's `.sbss2` section
   pragma not switched back (linked unit), partyRideMain's explicit `case 99` (same as the default exit).
+- **Batch 2** (onto main after #331): seq_mapchange links (evt_npc's agent's version doesn't; as on main); code
+  linked 43.13 -> 43.25%. Functions: hei_10 ext_main, materialProc, mapSetPolygon through insert.py, and
+  winKirinukiGX (0 -> 95.8%), winMsgDisp (0 -> 74.0%) and bom_01 pose_main (0 -> 100%) through
+  `scratch/salvage/merge3.py` (a three-way merge of the agent's whole file against its wave's base, kept only if
+  the unit builds and nothing in it drops) where insert.py couldn't find a helper the agent had added. Review
+  (`scratch/wave65/review2.md`): winPartyDisp scored 80.4% and drew wrong: its GXColor data was byte-reversed
+  (objdiff ignores data values), x/y were swapped in two places and template Vecs shifted by one; it and
+  marioReInit (unguarded "a_mario" + offset reads) are as on main. seq_mapchange's two pool strings existed only
+  under MUST_MATCH, so the natural build couldn't link.
