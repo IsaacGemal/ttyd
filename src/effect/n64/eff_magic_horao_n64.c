@@ -209,7 +209,6 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 #endif
 	MagicHoraoVtx* vtx;
 	s32 i;
-	s32 k;
 	s32 angleBase;
 	EffectEntry* effect;
 	s32 colorAlpha;

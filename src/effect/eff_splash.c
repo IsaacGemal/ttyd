@@ -423,7 +423,6 @@ void effSplashDisp(enum CameraId camId, void* param) {
 	f32 mulG;
 	f32 mulB;
 	s32 i;
-	u32 k;
 	s32 j;
 	CameraEntry* cam;
 	Mtx mtxC;

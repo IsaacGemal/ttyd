@@ -144,7 +144,6 @@ void effRadiationMain(EffectEntry* effect) {
 	s32 life;
 	s32 row;
 	s32 counter;
-	s32 v4;
 
 	data = effect->userdata;
 	position = initializeVec((Vec*)&data->pad_0x04);
