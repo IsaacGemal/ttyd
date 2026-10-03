@@ -10,18 +10,6 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
-const s32 dat_802fe5a0[10] = {
-	0x00000000, 0x00000040, 0x000000BC, 0x00000104, 0x00000088,
-	0x00000000, 0x00000058, 0x000000D2, 0x00000100, 0x00000086
-};
-const Vec vec3_802fe5c8 = { 0.0f, 0.0f, 0.0f };
-const s32 dat_802fe5d4[8] = {
-	0x00000000, 0x00000080, 0x00000078, 0x00000018,
-	0x00000000, 0x000000B0, 0x00000044, 0x00000018
-};
-const f64 double_to_int_802fe5f8 = 4503601774854144.0;
-const f64 double_to_int_mask_802fe600 = 4503599627370496.0;
-const char str_802FE608[] = "Levelup";
 
 u16 y_trans[46] = {
 	0x01F4, 0x01F4, 0x01DF, 0x01CA, 0x01B5, 0x01A0, 0x018B, 0x0177, 0x0162, 0x014D, 0x0138, 0x0123,
@@ -46,13 +34,6 @@ static s32 evt_shake[8] = {
 const GXColor dat_80421080 = { 0x00, 0x00, 0x00, 0x80 };
 const GXColor dat_80421084 = { 0xFF, 0xFF, 0xFF, 0xFF };
 
-inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
-	temp.x = input->x;
-	temp.y = input->y;
-	temp.z = input->z;
-	return temp;
-}
 
 EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	EffectEntry* entry;
@@ -61,7 +42,7 @@ EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	s32 i;
 
 	entry = effEntry();
-	entry->type = str_802FE608;
+	entry->type = "Levelup";
 	entry->count = 4;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effLevelupData) * entry->count);
 	entry->userdata = data;
@@ -90,6 +71,14 @@ EffectEntry* effLevelupEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 		elem->scaleY = (i < 3) ? 1.0f : 0.0f;
 	}
 	return entry;
+}
+
+inline Vec initializeVec(Vec* input) {
+	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
 }
 
 void effLevelupMain(EffectEntry* effect) {
@@ -268,3 +257,11 @@ void effLevelupDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// 4-byte zero words that end the unit's .data and .sdata: all-zero objects need explicit_zero_data to be emitted and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_803AE0F4_data = 0;
+__declspec(section ".sdata") u32 gap_07_80415D84_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
