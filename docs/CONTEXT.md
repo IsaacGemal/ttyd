@@ -3992,3 +3992,23 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   regrouped `(-230 + scrollX) + cx`. All fixed; effFallMain (94.67 -> 94.29%) and winLogMain pay for the right
   behaviour (`--allow-regress`). The batch also fixed older bugs: animdrv's PSMTXConcat order, mapdrv
   makeDisplayList's material, mot_ship's case 32 break, eki_00 moamoa_hit_check and yuunpc's signed conversion.
+
+## Salvage 1: agent work collection dropped (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- `scratch/salvage/audit.py` compiled all 797 archived final.c files (waves 50-63) whose functions are still open,
+  in place on main + #321 on the tower: 158 functions where an agent version beats main (`scratch/lost_work.tsv`;
+  115 outputs no longer compile against today's headers). Collection had dropped them whole-file: one data section
+  lower, a natural-build failure or a conflict with another group anywhere in the file reverted every function in
+  it. Excluded: removed.json's functions, a version its own wave's review found a bug in (wave 59's loadDraw passes
+  "WW" where retail passes str_8041BE34), and units with running agents or held by Claude #3.
+- `scratch/salvage/insert.py` moves one function at a time: the best version's definition (with its comment, a
+  MUST_MATCH/#else pair and its pragmas) replaces or joins the tree's, the agent's #includes, helpers or
+  prototypes come along on undefined identifiers, and it stays only if its score rises and no function or data
+  section of its unit drops (agent_check's one-unit report; DOL units cache as MarioSt_*). 42 of 105 kept, split
+  into two PRs by unit (salvage1a, salvage1b) with three review chunks each.
+- Reviews (`scratch/salvage/review1a.md`, `review1b.md`, compare direction, order around calls, dead paths):
+  winMarioDisp's level-text y store sat after the vector copy (dead; retail stores first); battleCameraMain's zc
+  starts at 0.0 (retail's prologue `lfs f30` is zc's default, not a dead load) and case 9 writes yc only in the
+  clamp arms as retail. Pragma resets, stale notes and comments pointing at agent reports fixed. Left open (LOW):
+  raw offsets where named fields exist (battleCameraMain's camera work, __psndSFXOn, mobj_switch_float_blk,
+  extMakeTexture), unguarded match-only shapes in bom1000_msg and psndENV_LPF, envDisp_DepthOfField's bare GX enums.
