@@ -456,6 +456,7 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     pz = wp->position.z;
     result = NULL;
     bestY = float_neg10000_8041a858;
+    up = *(const Vec*)(base + 0x48);
     for (i = 0; i < 5; i++) {
         if (i == 0) {
             ox = float_0_8041a7a4;
@@ -473,7 +474,6 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
             ox = -f24;
             oz = -f23;
         }
-        up = *(const Vec*)(base + 0x48);
         p = *(const Vec*)(base + 0x54);
         p.x = px + ox;
         p.y = py + fb;
@@ -531,6 +531,155 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     }
     return NULL;
 }
+
+extern const f32 float_8p64_8041a85c;
+extern const f32 float_105_8041a860;
+extern const f32 float_90_8041a81c;
+extern const f32 float_3_8041a7f0;
+
+// The roll variant of marioSearchGround: the sample ring depends on |wp+0x214| (flat: 0..3, steep: 4..6) and the
+// accepted slope window is ang > 105 or ang < 75.
+// NONMATCHING (83.25%): same 24 calls and immediates; frame 0x1b0 vs 0x180 (ours keeps more vec temps live) and
+// `fabs(a)` is narrowed (frsp) where the original keeps it f64. All six float compares checked against the asm
+// (ang > 105 || ang < 75 is the accepted window; the cror eq,gt / eq,lt ones are >= / <=).
+s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
+    const char* base = (const char*)vec3_802c5730;
+    MarioWork* wp = marioGetPtr();
+    Vec p;
+    Vec up;
+    Vec hitPos;
+    Vec normal;
+    HitEntry* hit;
+    u32 result;
+    f32 dist;
+    f32 fa;
+    f32 ox;
+    f32 oz;
+    f32 bestY;
+    f32 py;
+    f32 px;
+    f32 pz;
+    f32 thresh;
+    f32 top;
+    f32 ang;
+    f32 h;
+    s32 i;
+    s32 start;
+    s32 end;
+
+    *(f32*)((u8*)wp + 0x218) = float_0_8041a7a4;
+    *(f32*)((u8*)wp + 0x21C) = float_0_8041a7a4;
+    *(f32*)((u8*)wp + 0x220) = float_0_8041a7a4;
+    if (wp->flags & 0x200) {
+        *outY = wp->position.y;
+        return 0;
+    }
+    if (wp->flags & 0x100) {
+        *outY = wp->position.y;
+        return 0;
+    }
+    h = wp->wPlayerCollisionBox.y;
+    fa = __fabs(a);
+    result = 0;
+    *outY = wp->position.y;
+    *outX = float_neg1_8041a7dc;
+    bestY = float_neg10000_8041a858;
+    up = *(const Vec*)(base + 0x60);
+    py = wp->position.y;
+    px = wp->position.x;
+    pz = wp->position.z;
+    if (__fabs(*(f32*)((u8*)wp + 0x214)) < float_0p01_8041a854) {
+        thresh = float_2_8041a7e8;
+        start = 0;
+        end = 4;
+    } else {
+        thresh = float_10_8041a7fc;
+        start = 4;
+        end = 7;
+    }
+    top = py + h;
+    dist = h + (fa + float_0p01_8041a854);
+    for (i = start; i < end; i++) {
+        f32 rad;
+
+        switch (i) {
+        case 0:
+            ox = float_0_8041a7a4;
+            oz = float_0_8041a7a4;
+            break;
+        case 1:
+            rad = float_3p1416_8041a7e0 * (float_90_8041a81c + *(f32*)((u8*)wp + 0x1A0)) / float_180_8041a7cc;
+            ox = float_8p64_8041a85c * (f32)sin(rad);
+            oz = float_8p64_8041a85c * -(f32)cos(rad);
+            break;
+        case 2:
+            rad = float_3p1416_8041a7e0 * (*(f32*)((u8*)wp + 0x1A0) - float_90_8041a81c) / float_180_8041a7cc;
+            ox = float_8p64_8041a85c * (f32)sin(rad);
+            oz = float_8p64_8041a85c * -(f32)cos(rad);
+            break;
+        case 3:
+            ox = float_0_8041a7a4;
+            oz = float_0_8041a7a4;
+            movePos(&ox, &oz, float_3_8041a7f0, *(f32*)((u8*)wp + 0x1A0));
+            break;
+        case 4:
+            ox = float_0_8041a7a4;
+            oz = float_0_8041a7a4;
+            break;
+        case 5:
+            rad = float_3p1416_8041a7e0 * (float_90_8041a81c + *(f32*)((u8*)wp + 0x1A0)) / float_180_8041a7cc;
+            ox = float_8p64_8041a85c * (f32)sin(rad);
+            oz = float_8p64_8041a85c * -(f32)cos(rad);
+            movePos(&ox, &oz, float_3_8041a7f0, *(f32*)((u8*)wp + 0x1A0));
+            break;
+        case 6:
+            rad = float_3p1416_8041a7e0 * (*(f32*)((u8*)wp + 0x1A0) - float_90_8041a81c) / float_180_8041a7cc;
+            ox = float_8p64_8041a85c * (f32)sin(rad);
+            oz = float_8p64_8041a85c * -(f32)cos(rad);
+            movePos(&ox, &oz, float_3_8041a7f0, *(f32*)((u8*)wp + 0x1A0));
+            break;
+        }
+        p = *(const Vec*)(base + 0x6C);
+        p.x = px + ox;
+        p.y = top;
+        p.z = pz + oz;
+        hit = marioHitCheckVecOut(&p, &up, &hitPos, &normal, &dist);
+        if (hit != NULL) {
+            MarioWork* wp2 = marioGetPtr();
+
+            *(f32*)((u8*)wp2 + 0x218) = GND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.z, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
+            *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
+            *(f32*)((u8*)wp2 + 0x220) = GND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.x, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
+            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf_base(normal.x * normal.x + normal.z * normal.z, base), -normal.y);
+            if (ang > float_105_8041a860 || ang < float_75_8041a840) {
+                *(f32*)((u8*)wp + 0x214) = ang;
+                if (hitPos.y < py && __fabs(hitPos.y - py) >= thresh) {
+                    if (__fabs(hitPos.y - py) > __fabs(b)) {
+                        *outX = __fabs(py - hitPos.y);
+                        *outZ = angleABf(px, pz, hitPos.x, hitPos.z);
+                    } else if (hitPos.y > bestY) {
+                        *outY = hitPos.y;
+                        bestY = hitPos.y;
+                        *outX = float_0_8041a7a4;
+                        *outZ = angleABf(px, pz, hitPos.x, hitPos.z);
+                        result = (u32)hit;
+                    }
+                } else if (__fabs(hitPos.y - py) <= float_11_8041a7ac && hitPos.y > bestY) {
+                    *outY = hitPos.y;
+                    bestY = hitPos.y;
+                    *outX = float_0_8041a7a4;
+                    *outZ = angleABf(px, pz, hitPos.x, hitPos.z);
+                    result = (u32)hit;
+                }
+            }
+        }
+    }
+    if (result != 0) {
+        return result;
+    }
+    return 0;
+}
+
 
 
 BOOL marioChkBero(HitEntry* hit) {
