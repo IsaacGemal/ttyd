@@ -1,3 +1,4 @@
+#include "matching.h"
 #include "eff/n64/eff_pturn_n64.h"
 #include "eff/eff_n64.h"
 #include "memory.h"
@@ -6,12 +7,26 @@
 #include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+extern const f32 float_deg2rad_8041fa60;
+extern const f32 float_1_8041fa64;
+extern const f32 float_0_8041fa68;
+extern const f32 float_0p03125_8041fa6c;
+extern const f32 float_0p0026042_8041fa70;
+extern const f32 float_6p2832_8041fa74;
+extern const f32 float_0p05_8041fa78;
+extern const f32 float_360_8041fa7c;
+extern const f32 float_4_8041fa80;
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_803A4790[2] = { 0xBF800000, 0x3F800000 };
 
 // .rodata and .sdata2 constants (named after their original addresses in the asm).
 f32 scale_dat[9] = { 5.0f, 4.5f, 4.0f, 3.0f, 2.0f, 1.0f, 0.7f, 1.2f, 1.0f };
+#pragma explicit_zero_data on
+#pragma force_active on
+u32 gap_07_80413C9C_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 // .rodata: zero vector copied into the local position before the particle fields are set
 const Vec vec3_802fb450 = { 0.0f, 0.0f, 0.0f };
@@ -20,9 +35,11 @@ const Vec vec3_802fb450 = { 0.0f, 0.0f, 0.0f };
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor unk_8042322c;
 __declspec(section ".sdata") GXColor unk_80423228;
+#pragma section ".sdata" ".sbss"
 
 // .data anchors ahead of the vertex arrays (compiler-generated in the original; kept so the
 // section bytes between lbl_803A4790 and the vertex arrays match).
+#pragma force_active on
 __declspec(section ".data") static u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
 __declspec(section ".data") u32 lbl_803A47A0[2] = { 0x3F800000, 0xBF800000 };
 __declspec(section ".data") static u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
@@ -30,7 +47,9 @@ __declspec(section ".data") u32 lbl_803A47B0[2] = { 0xBF800000, 0x3F800000 };
 __declspec(section ".data") static u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
 __declspec(section ".data") u32 lbl_803A47C0[2] = { 0x3F800000, 0xBF800000 };
 __declspec(section ".data") static u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+#pragma force_active reset
 
+#pragma force_active on
 // .data vertex arrays owned by this unit.
 u32 size48x48_tex32x32_pturn_vtx[0x38 / 4] = {
     0xFFE8FFE8, 0x0000FE00, 0x0200FFFF, 0xFFFF0018,
@@ -56,20 +75,21 @@ u32 size16x24_tex32x32_r_pturn_vtx[0x38 / 4] = {
     0x00000400, 0x0400FAFA, 0x00FFFFFC, 0x000C0000,
     0x00000400, 0xFAFA00FF,
 };
+#pragma force_active reset
 
 EffectEntry* effPturnN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z) {
     EffectEntry* effect;
     effPturnN64Data* data;
 
     effect = effEntry();
-    effect->type = "PturnN64";
+    effect->type = "PturnN64\0\0\0\0\0\0\0";
     effect->count = 2;
     data = __memAlloc(HEAP_EFFECT, 0x90);
     effect->userdata = data;
     effect->callback = effPturnMain;
     effect->flags |= 2;
     data->field_0x0 = type;
-    data->field_0x34 = 1.0f;
+    data->field_0x34 = float_1_8041fa64;
     if (type == 1) {
         data->field_0x38 = 1;
         data->field_0x3C = 0;
@@ -94,14 +114,14 @@ EffectEntry* effPturnN64Entry(s32 type, s32 a1, f32 x, f32 y, f32 z) {
     data->field_0x2C = 0;
     data->field_0x44 = 0;
     data->field_0x4 = 1;
-    data->field_0x58 = 0.0f;
-    data->field_0x54 = 0.0f;
-    data->field_0x50 = 0.0f;
-    data->field_0x68 = 0.0f;
-    data->field_0x64 = 0.0f;
-    data->field_0x60 = 0.0f;
-    data->field_0x5C = 0.0f;
-    data->field_0x88 = 0.0f;
+    data->field_0x58 = float_0_8041fa68;
+    data->field_0x54 = float_0_8041fa68;
+    data->field_0x50 = float_0_8041fa68;
+    data->field_0x68 = float_0_8041fa68;
+    data->field_0x64 = float_0_8041fa68;
+    data->field_0x60 = float_0_8041fa68;
+    data->field_0x5C = float_0_8041fa68;
+    data->field_0x88 = float_0_8041fa68;
     data->field_0x70 = 0;
     data->field_0x6C = 0xFF;
     return effect;
@@ -178,8 +198,8 @@ void effPturnMain(EffectEntry* effect) {
         }
     }
 
-    f31 = 6.2831855f * (f32)(counter * 12);
-    f30 = 0.05f * (f32)life;
+    f31 = float_6p2832_8041fa74 * (f32)(counter * 12);
+    f30 = float_0p05_8041fa78 * (f32)life;
     life25 = life * 25;
 
     data++;
@@ -187,15 +207,15 @@ void effPturnMain(EffectEntry* effect) {
         s32 elemLife = data->life;
         f32 scale;
 
-        scale = (elemLife >= 9 || type == 10) ? 1.0f : scale_dat[elemLife];
+        scale = (elemLife >= 9 || type == 10) ? float_1_8041fa64 : scale_dat[elemLife];
         data->field_0x30 = scale;
         data->field_0x30 *= scaleFactor;
-        data->field_0x20 = (type == 0 || type == 1) ? 4.0f * (f32)cos(f31 / 360.f) : 0.0f;
+        data->field_0x20 = (type == 0 || type == 1) ? float_4_8041fa80 * (f32)cos(f31 / float_360_8041fa7c) : float_0_8041fa68;
         data->x += data->field_0x14;
         data->y += data->field_0x18;
         data->z += data->field_0x1C;
         if (life == 20) {
-            data->field_0x18 = 4.0f;
+            data->field_0x18 = float_4_8041fa80;
             data->field_0x14 = -2.0f;
         }
         if (life < 20) {
@@ -258,7 +278,7 @@ void pturn_main_dispp(CameraId camId, void* param) {
     cam = camGetPtr(camId);
     data = effect->userdata;
     PSMTXTrans(trans, data->x, data->y, data->z);
-    PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
+    PSMTXRotRad(rot, 'y', float_deg2rad_8041fa60 * -camGetPtr(CAMERA_3D)->viewYaw);
     PSMTXConcat(trans, rot, work);
     PSMTXConcat(cam->view, work, work);
 
@@ -271,11 +291,11 @@ void pturn_main_dispp(CameraId camId, void* param) {
             effGetTexObjN64(0x92, &texObj);
             GXLoadTexObj(&texObj, 0);
             PSMTXTrans(trans, data->x, data->y, data->z);
-            PSMTXScale(scale, data->field_0x30, data->field_0x30, 1.0f);
-            PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x40);
+            PSMTXScale(scale, data->field_0x30, data->field_0x30, float_1_8041fa64);
+            PSMTXRotRad(rot, 'z', float_deg2rad_8041fa60 * data->field_0x40);
             PSMTXConcat(trans, scale, trans);
             PSMTXConcat(trans, rot, trans);
-            PSMTXTrans(scale, 0.0f, data->field_0x20, 0.0f);
+            PSMTXTrans(scale, float_0_8041fa68, data->field_0x20, float_0_8041fa68);
             PSMTXConcat(trans, scale, trans);
             PSMTXConcat(work, trans, trans);
             GXLoadPosMtxImm(trans, 0);
@@ -302,7 +322,7 @@ void pturn_main_dispp(CameraId camId, void* param) {
             }
             GXSetNumTexGens(1);
             GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-            PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
+            PSMTXScale(scale, float_0p03125_8041fa6c, float_0p03125_8041fa6c, float_0_8041fa68);
             GXLoadTexMtxImm(scale, 0x1e, 1);
             GXSetCullMode(0);
             effSetVtxDescN64((effVtxArray*)size48x48_tex32x32_pturn_vtx);
@@ -340,7 +360,7 @@ void pturn_num_dispp(CameraId camId, void* param) {
     cam = camGetPtr(camId);
     data = effect->userdata;
     PSMTXTrans(trans, data->x, data->y, data->z);
-    PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
+    PSMTXRotRad(rot, 'y', float_deg2rad_8041fa60 * -camGetPtr(CAMERA_3D)->viewYaw);
     PSMTXConcat(trans, rot, work);
     PSMTXConcat(cam->view, work, work);
 
@@ -352,11 +372,11 @@ void pturn_num_dispp(CameraId camId, void* param) {
     data++;
     for (; i < effect->count; i++, data++) {
         PSMTXTrans(trans, data->x, data->y, data->z);
-        PSMTXScale(scale, data->field_0x30, data->field_0x30, 1.0f);
-        PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x40);
+        PSMTXScale(scale, data->field_0x30, data->field_0x30, float_1_8041fa64);
+        PSMTXRotRad(rot, 'z', float_deg2rad_8041fa60 * data->field_0x40);
         PSMTXConcat(trans, scale, trans);
         PSMTXConcat(trans, rot, trans);
-        PSMTXTrans(scale, 0.0f, data->field_0x20, 0.0f);
+        { f32 zz = MATCH_F32(float_0_8041fa68); PSMTXTrans(scale, zz, data->field_0x20, zz); }
         PSMTXConcat(trans, scale, trans);
         PSMTXConcat(work, trans, trans);
         GXLoadPosMtxImm(trans, 0);
@@ -376,8 +396,8 @@ void pturn_num_dispp(CameraId camId, void* param) {
             GXSetNumTexGens(1);
             GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
             if (field38 < 10) {
-                PSMTXScale(scale, 0.03125f, 0.0026041667f, 0.0f);
-                PSMTXTrans(trans, 0.0f, (f32)offsetA, 0.0f);
+                PSMTXScale(scale, float_0p03125_8041fa6c, float_0p0026042_8041fa70, MATCH_F32(float_0_8041fa68));
+                { f32 z1 = MATCH_F32(float_0_8041fa68); PSMTXTrans(trans, z1, (f32)offsetA, z1); }
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, 0x1e, 1);
 #ifdef MUST_MATCH
@@ -388,8 +408,8 @@ void pturn_num_dispp(CameraId camId, void* param) {
                 GXBegin(0x90, 0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
             } else {
-                PSMTXScale(scale, 0.03125f, 0.0026041667f, 0.0f);
-                PSMTXTrans(trans, 0.0f, (f32)offsetB, 0.0f);
+                PSMTXScale(scale, float_0p03125_8041fa6c, float_0p0026042_8041fa70, MATCH_F32(float_0_8041fa68));
+                { f32 z2 = MATCH_F32(float_0_8041fa68); PSMTXTrans(trans, z2, (f32)offsetB, z2); }
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, 0x1e, 1);
 #ifdef MUST_MATCH
@@ -399,8 +419,8 @@ void pturn_num_dispp(CameraId camId, void* param) {
 #endif
                 GXBegin(0x90, 0, 6);
                 tri2(0, 1, 2, 0, 0, 2, 3, 0);
-                PSMTXScale(scale, 0.03125f, 0.0026041667f, 0.0f);
-                PSMTXTrans(trans, 0.0f, (f32)offsetC, 0.0f);
+                PSMTXScale(scale, float_0p03125_8041fa6c, float_0p0026042_8041fa70, MATCH_F32(float_0_8041fa68));
+                { f32 z3 = MATCH_F32(float_0_8041fa68); PSMTXTrans(trans, z3, (f32)offsetC, z3); }
                 PSMTXConcat(scale, trans, scale);
                 GXLoadTexMtxImm(scale, 0x1e, 1);
 #ifdef MUST_MATCH
@@ -416,3 +436,14 @@ void pturn_num_dispp(CameraId camId, void* param) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const f32 float_deg2rad_8041fa60 = 0.017453292f;
+const f32 float_1_8041fa64 = 1.0f;
+const f32 float_0_8041fa68 = 0.0f;
+const f32 float_0p03125_8041fa6c = 0.03125f;
+const f32 float_0p0026042_8041fa70 = 0.0026041667f;
+const f32 float_6p2832_8041fa74 = 6.2831855f;
+const f32 float_0p05_8041fa78 = 0.05f;
+const f32 float_360_8041fa7c = 360.0f;
+const f32 float_4_8041fa80 = 4.0f;
