@@ -674,7 +674,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(Matching, "event/evt_map.c"),
-            Object(NonMatching, "event/evt_npc.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "event/evt_npc.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "event/evt_sub.c"),
             Object(NonMatching, "event/evt_mobj.c"),
             Object(NonMatching, "event/evt_eff.c"),
