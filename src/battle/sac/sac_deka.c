@@ -25,6 +25,7 @@
 #include "battle/sac/sac_deka.h"
 #include "battle/sac/sac_genki.h"
 #include <stdlib.h>
+#pragma pool_data on
 static struct DekaWork* get_ptr(void);
 static void disp_2D(CameraId cameraId, void* param);  // local to this file in the original
 static void main_star(void);  // local to this file in the original
@@ -469,7 +470,7 @@ s32 yuka_end(EventEntry* event) {
 // int->double constant) as offsets from vec3_803004f8, held in r30. Under MUST_MATCH
 // reuse party_hit.c's RO trick to force that base; the natural form is under #else.
 #ifdef MUST_MATCH
-#define RO(base, off, sym) ((const char*)(base) + (off))
+#define RO(base, off, sym) (sym)
 #else
 #define RO(base, off, sym) ((const char*)&(sym))
 #endif
@@ -789,7 +790,7 @@ static void main_star(void) {
         p->starUnk44 = p->starUnk48 = p->starScale.x;
         p->starUnk48 += float_1_80421e88;
 #ifdef MUST_MATCH
-        psndSFXOn((const char*)(base + 0x150));
+        psndSFXOn("SFX_BTL_SAC_DOKKAN4");
 #else
         psndSFXOn("SFX_BTL_SAC_DOKKAN4");
 #endif
@@ -882,7 +883,7 @@ static void main_star(void) {
             p->starCounter++;
 #ifdef MUST_MATCH
             btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], float_0_80421e8c);
-            psndSFXOn((const char*)(base + 0x164));
+            psndSFXOn("SFX_BTL_SAC_DOKKAN5");
 #else
             btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], float_0_80421e8c);
             psndSFXOn("SFX_BTL_SAC_DOKKAN5");
@@ -1127,6 +1128,238 @@ s32 end_deka(EventEntry* event) {
     effDelete(((DekaStarEffectData*)p->starEffect->userdata)->unk34);
     effDelete(p->starEffect);
     return 2;
+}
+
+// Draws the deka gauge: two planes with a scaling middle section, a beat bar, then the
+// timing notes (timingCopy for the falling icons, timing for the resting ones). Each
+// GXColor is built in disp2D_color so the value lands in the same stack slot. The `width; left;
+// right;` declaration order, the (deliberately kept) `s32 id;` local, and declaring the loop
+// cursor `DekaTiming* t;` *before* `s32 i;` (each loop then assigns it after a leading `f32 x;`
+// declaration) all steer MWCC's GPR/FPR colouring and constant hoisting; dropping any of them
+// regresses the score. The MUST_MATCH shapes that recover the original's FPR colouring are: the
+// `ratio` temp in each loop, the volatile `float_1_80421e88` read at the resting-note scale, the
+// `volatile` GXColor `color` (own stack slot), the `y = gaugePos.y - float_18` temp in each note
+// transform, and the `y = gaugePos.y` temp at the beat bar. The natural forms are under #else.
+// NONMATCHING (99.89%): every instruction and call matches except the exact FPR colouring of the
+// top gauge block (gaugeWidth f2 vs f3, float_8 f3 vs f1).
+static void disp_2D(CameraId cameraId, void* param) {
+    DekaWork* p = get_ptr();
+#ifdef MUST_MATCH
+    // Match shape: `volatile` gives `color` its own stack slot (0x38) separate from the
+    // disp2D_color return temp (0x34); without it MWCC coalesces them. Plain local under #else.
+    volatile GXColor color;
+#else
+    GXColor color;
+#endif
+    Mtx mtx;
+    Mtx scale;
+    Mtx trans;
+    f32 width;
+    f32 left;
+    f32 right;
+    DekaTiming* t;
+    s32 i;
+    s32 id;
+
+    f32 mid = p->gaugePos.x;
+    f32 e8 = 8.0f;
+    f32 hw = float_0p5_80421e54 * p->gaugeWidth;
+    left = mid - hw - e8;
+    right = mid + hw + e8;
+
+    if (p->gaugeState >= 2 && p->gaugeState <= 5) {
+#ifdef MUST_MATCH
+        color = disp2D_color(dat_80421e40, p->gaugeAlpha);
+#else
+        color = dat_80421e40;
+        color.a = p->gaugeAlpha;
+#endif
+#ifdef MUST_MATCH
+        // Match trick: spell the expression out so MWCC rematerialises left here instead of
+        // `fmr`ing f28; the original recomputes it at this call. Natural form under #else.
+        PSMTXTrans(mtx, p->gaugePos.x - float_0p5_80421e54 * p->gaugeWidth - e8, p->gaugePos.y, p->gaugePos.z);
+#else
+        PSMTXTrans(mtx, left, p->gaugePos.y, p->gaugePos.z);
+#endif
+        btlDispTexPlane2(mtx, 0x43, color, 0);
+
+        PSMTXScale(scale, p->gaugeWidth * float_0p25_80421e58, float_1_80421e88, float_1_80421e88);
+        PSMTXTrans(trans, p->gaugePos.x, p->gaugePos.y, p->gaugePos.z);
+        PSMTXConcat(trans, scale, mtx);
+        btlDispTexPlane2(mtx, 0x44, color, 0);
+
+        PSMTXScale(scale, float_neg1_80421e94, float_1_80421e88, float_1_80421e88);
+#ifdef MUST_MATCH
+        // Same trick as the first plane: spell `right` out so it is rematerialised here rather than
+        // reusing the live register (worth ~40 instructions of colouring drift).
+        PSMTXTrans(trans, float_0p5_80421e54 * p->gaugeWidth + p->gaugePos.x + float_8_80421e90, p->gaugePos.y, p->gaugePos.z);
+#else
+        PSMTXTrans(trans, right, p->gaugePos.y, p->gaugePos.z);
+#endif
+        PSMTXConcat(trans, scale, mtx);
+        btlDispTexPlane2(mtx, 0x43, color, 0);
+    }
+
+    if (p->gaugeState >= 2 && p->gaugeState <= 5) {
+        f32 ratio = p->beatPos / p->beatPeriod;
+
+        if (ratio >= float_0_80421e8c && ratio <= float_1_80421e88) {
+            btlDispGXInit2DRasta();
+            GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+#ifdef MUST_MATCH
+            // Match shape: the `y` temp reproduces the target's load order (f5=y, f4=float_8).
+            {
+                f32 y = p->gaugePos.y;
+                btlDispGXQuads2DRasta(left, float_8_80421e90 + y,
+                    ratio * (right - left) + left, y - float_8_80421e90,
+                    0xFF, 0, 0, p->gaugeAlpha);
+            }
+#else
+            btlDispGXQuads2DRasta(left, float_8_80421e90 + p->gaugePos.y,
+                ratio * (right - left) + left, p->gaugePos.y - float_8_80421e90,
+                0xFF, 0, 0, p->gaugeAlpha);
+#endif
+        }
+    }
+
+    GXSetScissor(0, 0x78, gp->fbWidth, gp->efbHeight);
+
+    if (p->gaugeState >= 2 && p->gaugeState <= 5) {
+        width = right - left;
+
+        for (i = 0; i < 8; i++) {
+            f32 x;
+            t = &p->timingCopy[i];
+#ifdef MUST_MATCH
+            // Match shape: the explicit ratio temp makes MWCC emit the target's
+            // `fmadds f2,f2,f29,f28` operand order; the natural form under #else is the same math.
+            {
+                f32 ratio = t->time / p->beatPeriod;
+                x = ratio * width + left + t->unk10.x;
+            }
+#else
+            x = t->time / p->beatPeriod * width + left + t->unk10.x;
+#endif
+
+#ifdef MUST_MATCH
+            color = disp2D_color(dat_80421e44, p->gaugeAlpha);
+#else
+            color = dat_80421e44;
+            color.a = p->gaugeAlpha;
+#endif
+            color.a = color.a * (t->alpha / float_255_80421e98);
+
+            if (t->unk08 == 1) {
+                PSMTXScale(scale, float_0p75_80421e9c, float_0p75_80421e9c, float_0p75_80421e9c);
+#ifdef MUST_MATCH
+                // Match shape: the explicit `y` temp makes MWCC emit the target's
+                // `fsubs f3,f3,f2` / `fadds f4,f3,f0` operand order.
+                {
+                    f32 y = p->gaugePos.y - float_18_80421ea0;
+                    PSMTXTrans(trans, x,
+                        float_40_80421e68 + (p->unk4C + (y + t->unk10.y)),
+                        p->gaugePos.z + t->unk10.z);
+                }
+#else
+                PSMTXTrans(trans, x,
+                    float_40_80421e68 + (p->unk4C + (p->gaugePos.y - float_18_80421ea0 + t->unk10.y)),
+                    p->gaugePos.z + t->unk10.z);
+#endif
+                PSMTXConcat(trans, scale, mtx);
+                iconDispGxCol(mtx, 0x10, 0x95, color);
+            }
+            else if (t->unk08 == 2) {
+                PSMTXScale(scale, float_1_80421e88, float_1_80421e88, float_1_80421e88);
+                PSMTXTrans(trans, x,
+                    float_40_80421e68 + (p->unk4C + (p->gaugePos.y + t->unk10.y)),
+                    p->gaugePos.z + t->unk10.z);
+                PSMTXConcat(trans, scale, mtx);
+                btlDispTexPlane2(mtx, 0x2C, color, 0);
+            }
+        }
+
+        for (i = 0; i < 8; i++) {
+            f32 x;
+            t = &p->timing[i];
+#ifdef MUST_MATCH
+            // Match shape: the explicit ratio temp makes MWCC emit the target's
+            // `fmadds f2,f2,f29,f28` operand order; the natural form under #else is the same math.
+            {
+                f32 ratio = t->time / p->beatPeriod;
+                x = ratio * width + left + t->unk10.x;
+            }
+#else
+            x = t->time / p->beatPeriod * width + left + t->unk10.x;
+#endif
+
+            if (t->state >= 2 && t->state <= 5) {
+#ifdef MUST_MATCH
+                color = disp2D_color(dat_80421e48, p->gaugeAlpha);
+#else
+                color = dat_80421e48;
+                color.a = p->gaugeAlpha;
+#endif
+                color.a = color.a * (t->alpha / float_255_80421e98);
+
+                if (t->unk08 == 1) {
+                    PSMTXScale(scale, float_0p75_80421e9c, float_0p75_80421e9c, float_0p75_80421e9c);
+#ifdef MUST_MATCH
+                    // Match shape: same `y` temp as the first-loop note.
+                    {
+                        f32 y = p->gaugePos.y - float_18_80421ea0;
+                        PSMTXTrans(trans, x,
+                            p->unk4C + (y + t->unk10.y),
+                            p->gaugePos.z + t->unk10.z);
+                    }
+#else
+                    PSMTXTrans(trans, x,
+                        p->unk4C + (p->gaugePos.y - float_18_80421ea0 + t->unk10.y),
+                        p->gaugePos.z + t->unk10.z);
+#endif
+                    PSMTXConcat(trans, scale, mtx);
+                    id = p->beatPos >= t->time - float_7_80421e78 ? 0x95 : 0x91;
+                    iconDispGxCol(mtx, 0x10, id, color);
+                }
+                else {
+                    PSMTXScale(scale, float_1_80421e88, float_1_80421e88, float_1_80421e88);
+                    PSMTXTrans(trans, x,
+                        p->unk4C + (p->gaugePos.y + t->unk10.y),
+                        p->gaugePos.z + t->unk10.z);
+                    PSMTXConcat(trans, scale, mtx);
+                    btlDispTexPlane2(mtx, 0x2C, color, 0);
+                }
+            }
+
+#ifdef MUST_MATCH
+            // Match trick: reading float_1_80421e88 through a volatile pointer makes MWCC treat it as a
+            // reloadable constant like a literal, reproducing the original's FPR colouring for the rest
+            // of the function; the plain named read under #else is the same value but colours several
+            // FPRs one register lower. Only this site needs it.
+            {
+                f32 one = *(volatile const f32*)&float_1_80421e88;
+                PSMTXScale(scale, one, one, one);
+            }
+#else
+            PSMTXScale(scale, float_1_80421e88, float_1_80421e88, float_1_80421e88);
+#endif
+            PSMTXTrans(trans, x,
+                p->gaugePos.y + t->unk10.y - float_40_80421e68,
+                p->gaugePos.z + t->unk10.z);
+            PSMTXConcat(trans, scale, mtx);
+            switch (t->flag) {
+            case 0:
+                break;
+            case 1:
+                btlDispTexPlane2(mtx, 0x3E, color, 0);
+                break;
+            case 2:
+                btlDispTexPlane2(mtx, 0x3F, color, 0);
+                break;
+            }
+        }
+    }
+
+    GXSetScissor(0, 0, gp->fbWidth, gp->efbHeight);
 }
 
 // .text:0xAA4 | 0x80243A9C | size: 0x4
