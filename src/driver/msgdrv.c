@@ -1375,9 +1375,11 @@ char* msgGetCommand(char* str, char* arg1, char* arg2) {
 // register allocation for the spilled s16 cursor group and the R-ruby float temps to match the
 // shipped binary (this is how MWCC 2.6 behaves under the original's higher register pressure).
 #pragma opt_dead_assignments off
-// NONMATCHING (96.51%): full reimplementation of the message-tag parser. The remaining diffs are
-// almost entirely register allocation/scheduling (plus the file-wide string-pool offset); every
-// tag case and the R-ruby/kanji paths are byte-for-byte equivalent in effect.
+// The target's i2f conversion for `mid` reads a 32-bit stack slot at 0x22c, so `total16` must stay
+// a 32-bit signed local: its liveness pins the allocator's `total`/`skip`/`off` colouring (u16,
+// u32 or inlining the cast costs ~0.3%). The target's conversion uses the unsigned magic because
+// its optimizer had the value's range; ours emits the signed one, numerically identical here.
+// NONMATCHING (96.80%): register-allocation residue around the promoted `var[0]`.
 void msgAnalize(smartEntry* smart, const char* msg) {
 	char tagName[128];
 	char tagArg[128];
@@ -1437,7 +1439,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	s32 half;
 	s32 total;
 	const char* rp;
-	u16 total16;
+	s32 total16;
 	f32 base;
 	s32 mid;
 	s32 j;

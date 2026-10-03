@@ -16,31 +16,35 @@ __declspec(section ".sdata2") s32 dat_80421870 = -1;
 #else
 const s32 dat_80421870 = -1;
 #endif
-const f32 float_100_80421874 = 100.0f;
-const f32 float_1_80421878 = 1.0f;
-const f32 float_neg1_8042187c = -1.0f;
-const f32 float_16_80421880 = 16.0f;
-const f32 float_176_80421884 = 176.0f;
-const f32 float_neg288_80421888 = -288.0f;
-const f32 float_18_8042188c = 18.0f;
-const f32 float_0_80421890 = 0.0f;
-const f32 float_neg200_80421894 = -200.0f;
-const f32 float_88_80421898 = 88.0f;
-const f32 float_173_8042189c = 173.0f;
-const f32 float_49_804218a0 = 49.0f;
-const f32 float_10_804218a4 = 10.0f;
-const f32 float_20_804218a8 = 20.0f;
-const f32 float_0p8_804218ac = 0.8f;
-const f32 float_neg228_804218b0 = -228.0f;
-const f32 float_55_804218b4 = 55.0f;
-const f32 float_56_804218b8 = 56.0f;
-const f32 float_28_804218bc = 28.0f;
-const f32 float_neg300_804218c0 = -300.0f;
-const f32 float_30_804218c4 = 30.0f;
-const f32 float_50_804218c8 = 50.0f;
-const f32 float_90_804218cc = 90.0f;
-const f32 float_180_804218d0 = 180.0f;
-const f32 float_270_804218d4 = 270.0f;
+// All-literal pool (AGENT_BRIEF "Pool recipes"): the target's .sdata2 is MWCC's literal pool in
+// first-use order over the .text function order. Defining these as named objects emits the objects
+// and pools a duplicate at every folded read (200 bytes vs the target's 104). Mapping the names to
+// literals and letting the compiler pool them reproduces the target's 25 entries exactly.
+#define float_100_80421874 100.0f
+#define float_1_80421878 1.0f
+#define float_neg1_8042187c -1.0f
+#define float_16_80421880 16.0f
+#define float_176_80421884 176.0f
+#define float_neg288_80421888 -288.0f
+#define float_18_8042188c 18.0f
+#define float_0_80421890 0.0f
+#define float_neg200_80421894 -200.0f
+#define float_88_80421898 88.0f
+#define float_173_8042189c 173.0f
+#define float_49_804218a0 49.0f
+#define float_10_804218a4 10.0f
+#define float_20_804218a8 20.0f
+#define float_0p8_804218ac 0.8f
+#define float_neg228_804218b0 -228.0f
+#define float_55_804218b4 55.0f
+#define float_56_804218b8 56.0f
+#define float_28_804218bc 28.0f
+#define float_neg300_804218c0 -300.0f
+#define float_30_804218c4 30.0f
+#define float_50_804218c8 50.0f
+#define float_90_804218cc 90.0f
+#define float_180_804218d0 180.0f
+#define float_270_804218d4 270.0f
 
 // .rodata: 17 separate zero Vecs (not one array), then the compiler's conversion pool. As
 // separate objects they make MWCC anchor the int->float pool entry to the first vec's base.
@@ -68,6 +72,7 @@ const Vec vec3_802ff920 = {0.0f, 0.0f, 0.0f};
 #else
 #define MATCH_F64(x) (x)
 #endif
+
 
 // GaugeTiming work area at BattleWork+0x1F4C (inside BattleActions.field_0x2BC). No header declares it.
 typedef struct GaugeTimingWork {
@@ -119,8 +124,8 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         {
             f32 zero;
             f32 neg;
-            neg = MATCH_F32(float_neg300_804218c0);
-            zero = MATCH_F32(float_0_80421890);
+            neg = -300.0f;
+            zero = 0.0f;
             disp->iconX = neg;
             disp->iconY = zero;
             disp->counter = 0x14;
@@ -158,11 +163,11 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         }
         switch (*(s32*)&work->actionCommands.field_34[0x0C]) {
         case 1:
-            dec->field_0x04 = MATCH_F32(float_0_80421890);
+            dec->field_0x04 = 0.0f;
             *(s32*)&work->actionCommands.field_34[0x14] &= ~1;
             break;
         default:
-            dec->field_0x04 = MATCH_F32(float_50_804218c8);
+            dec->field_0x04 = 50.0f;
             break;
         }
         break;
@@ -217,7 +222,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
         if (work->actionCommands.mAcState == 0x3E8) {
             if (dec->frame > 0x78) {
                 work->actionCommands.result = 0;
-                dec->field_0x04 = MATCH_F32(float_0_80421890);
+                dec->field_0x04 = 0.0f;
                 work->actionCommands.mAcState = 0x3EB;
                 work->actionCommands.outputParams[0] = 2;
                 break;
@@ -239,21 +244,21 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                 (f32)(dec->field_0x08 * 0x168 / *(s32*)&work->actionCommands.field_34[0x14]));
             if (angle <= float_90_804218cc) {
                 dec->field_0x04 =
-                    intplGetValue(5, (s32)angle, 0x5A, MATCH_F32(float_0_80421890), MATCH_F32(float_100_80421874));
+                    intplGetValue(5, (s32)angle, 0x5A, 0.0f, 100.0f);
             } else if (angle <= float_180_804218d0) {
-                dec->field_0x04 = intplGetValue(2, (s32)(angle - float_90_804218cc), 0x5A, MATCH_F32(float_100_80421874),
-                                                MATCH_F32(float_0_80421890));
+                dec->field_0x04 = intplGetValue(2, (s32)(angle - float_90_804218cc), 0x5A, 100.0f,
+                                                0.0f);
             } else if (angle <= float_270_804218d4) {
-                dec->field_0x04 = intplGetValue(5, (s32)(angle - float_180_804218d0), 0x5A, MATCH_F32(float_0_80421890),
-                                                MATCH_F32(float_100_80421874));
+                dec->field_0x04 = intplGetValue(5, (s32)(angle - float_180_804218d0), 0x5A, 0.0f,
+                                                100.0f);
             } else {
-                dec->field_0x04 = intplGetValue(2, (s32)(angle - float_270_804218d4), 0x5A, MATCH_F32(float_100_80421874),
-                                                MATCH_F32(float_0_80421890));
+                dec->field_0x04 = intplGetValue(2, (s32)(angle - float_270_804218d4), 0x5A, 100.0f,
+                                                0.0f);
             }
             if (dec->field_0x1C > 0) {
                 dec->field_0x1C--;
                 if (dec->field_0x1C > 0) {
-                    dec->field_0x04 = MATCH_F32(float_0_80421890);
+                    dec->field_0x04 = 0.0f;
                     dec->field_0x10 = 0;
                     goto tail;
                 }
@@ -271,7 +276,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             gaugeCheck1:
                 if ((s32)dec->field_0x04 <= 0) {
                     dec->field_0x20++;
-                    dec->field_0x04 = MATCH_F32(float_0_80421890);
+                    dec->field_0x04 = 0.0f;
                     dec->field_0x10 = 0;
                     if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
                         dec->field_0x1C = 0xF;
@@ -286,7 +291,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             } else if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) &&
                        ((s32)dec->field_0x04 <= 0)) {
                 dec->field_0x20++;
-                dec->field_0x04 = MATCH_F32(float_0_80421890);
+                dec->field_0x04 = 0.0f;
                 dec->field_0x10 = 0;
                 if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
                     dec->field_0x1C = 0xF;
@@ -307,7 +312,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             if (dec->field_0x1C > 0) {
                 dec->field_0x1C--;
                 if (dec->field_0x1C > 0) {
-                    dec->field_0x04 = MATCH_F32(float_0_80421890);
+                    dec->field_0x04 = 0.0f;
                     dec->field_0x10 = 0;
                     goto tail;
                 }
@@ -315,7 +320,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             {
                 s32 a = *(s32*)&work->actionCommands.field_34[0x14];
                 f32 f = (f32)a / float_100_80421874;
-                dec->field_0x04 = f * (f32)dec->field_0x08 + MATCH_F32(float_50_804218c8);
+                dec->field_0x04 = f * (f32)dec->field_0x08 + 50.0f;
             }
             if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
                 s32 v = (s32)dec->field_0x04;
@@ -330,7 +335,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             gaugeCheck2:
                 if (v / 100 > dec->field_0x20) {
                     dec->field_0x20 = v / 100;
-                    dec->field_0x04 = MATCH_F32(float_0_80421890);
+                    dec->field_0x04 = 0.0f;
                     dec->field_0x10 = 0;
                     if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
                         dec->field_0x1C = 0xF;
@@ -343,7 +348,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
 #else
                 if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) && (v / 100 > dec->field_0x20)) {
                     dec->field_0x20 = v / 100;
-                    dec->field_0x04 = MATCH_F32(float_0_80421890);
+                    dec->field_0x04 = 0.0f;
                     dec->field_0x10 = 0;
                     if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
                         dec->field_0x1C = 0xF;
@@ -356,7 +361,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                 v %= 100;
                 dec->field_0x04 = (f32)v;
             }
-            if (__fabsf(dec->field_0x04 - MATCH_F32(float_50_804218c8)) <= 12.0) {
+            if (__fabsf(dec->field_0x04 - 50.0f) <= 12.0) {
                 dec->field_0x10 = 1;
             } else {
                 dec->field_0x10 = 0;

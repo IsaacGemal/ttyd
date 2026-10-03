@@ -1,4 +1,12 @@
 #include "sequence/seq_load.h"
+#include "driver/camdrv.h"
+#include "driver/icondrv.h"
+#include "driver/windowdrv.h"
+#include "manager/fontmgr.h"
+#include "sdk/texPalette.h"
+#include "win/win_main.h"
+#include "window/win_mario.h"
+#include <stdio.h>
 #include "countdown.h"
 #include "driver/fadedrv.h"
 #include "driver/msgdrv.h"
@@ -38,7 +46,7 @@ typedef struct LoadWork {
     s32 field_0x20; //0x20
     s32 field_0x24; //0x24
     s32 field_0x28; //0x28
-    u8 field_0x2C[0x30 - 0x2C];
+    f32 field_0x2C; //0x2C
     s32 field_0x30; //0x30
     s32 field_0x34; //0x34
     s32 field_0x38; //0x38
@@ -60,6 +68,13 @@ typedef struct WinDt {
     u8 b1a; //0x1A
     u8 b1b; //0x1B
 } WinDt;
+
+// loadDraw copies the 16-entry angle table to the stack in one 64-byte block before indexing it;
+// a struct assignment reproduces that copy (an array typedef cannot be assigned).
+struct LoadAngleTable
+{
+    f32 v[16];
+};
 
 #ifdef MUST_MATCH
 // loadMain reaches the three window tables from one base (the object before them, lbl_80349DE8, plus 0x40/0x13c/0x200),
@@ -129,6 +144,61 @@ const GXColor dat_8041bd74 = {0, 0, 0, 0xFF};
 const GXColor dat_8041bd78 = {0, 0, 0, 0xFF};
 const GXColor dat_8041bd7c = {0, 0, 0, 0xFF};
 const GXColor dat_8041bd80 = {0, 0, 0, 0xFF};
+// Colors/data the loadDraw screen reads by name (the original's .sdata2 block).
+const GXColor dat_8041bd84 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041bd88 = {0xA0, 0xA0, 0xA0, 0xFF};
+const GXColor dat_8041bd8c = {0x80, 0x80, 0x80, 0x80};
+const GXColor dat_8041bd90 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041bd94 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041bd98 = {0xC0, 0xC0, 0xC0, 0xFF};
+const GXColor dat_8041bd9c = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041bda0 = {0x20, 0x20, 0x20, 0xFF};
+const GXColor dat_8041bda4 = {0, 0, 0, 0xFF};
+const GXColor dat_8041bda8 = {0, 0, 0, 0xFF};
+const GXColor dat_8041bdac = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041bdb0 = {0xFF, 0xFF, 0xFF, 0xFF};
+const u32 dat_8041bdb4 = 0x40;
+const GXColor dat_8041bdb8 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041bdbc = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041bdc0 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041bdc4 = {0xFF, 0xFF, 0xFF, 0xFF};
+const u32 dat_8041bdc8 = 0x40;
+const GXColor dat_8041bdcc = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041bdd0 = {0xFF, 0xFF, 0xFF, 0xFF};
+const u32 dat_8041bdd4 = 0x80;
+const u32 dat_8041bdd8 = 0x80;
+const char str_8041BE34[] = "\202W\202W\000\000";
+const char str_8041BE40[] = " \000";
+const f32 float_0_8041bde4 = 0.0f;
+const f32 float_1_8041bde8 = 1.0f;
+const f32 float_neg304_8041bdec = -304.0f;
+const f32 float_240_8041bdf0 = 240.0f;
+const f32 float_neg240_8041bdf4 = -240.0f;
+const f32 float_neg272_8041bdf8 = -272.0f;
+const f32 float_272_8041bdfc = 272.0f;
+const f32 float_304_8041be00 = 304.0f;
+const f32 float_60_8041be04 = 60.0f;
+const f32 float_neg250_8041be08 = -250.0f;
+const f32 float_200_8041be0c = 200.0f;
+const f32 float_500_8041be10 = 500.0f;
+const f32 float_40_8041be14 = 40.0f;
+const f32 float_20_8041be18 = 20.0f;
+const f32 float_0p6_8041be1c = 0.6f;
+const f32 float_100_8041be20 = 100.0f;
+const f32 float_84_8041be24 = 84.0f;
+const f32 float_0p5_8041be28 = 0.5f;
+const f32 float_12_8041be2c = 12.0f;
+const f32 float_70_8041be30 = 70.0f;
+const f32 float_8_8041be44 = 8.0f;
+const f32 float_22_8041be48 = 22.0f;
+const f32 float_1p5_8041be4c = 1.5f;
+const f32 float_106_8041be50 = 106.0f;
+const f32 float_52_8041be54 = 52.0f;
+const f32 float_0p05_8041be58 = 0.05f;
+const f32 float_120_8041be5c = 120.0f;
+const f32 float_140_8041be60 = 140.0f;
+const f32 float_neg150_8041be64 = -150.0f;
+const f32 float_300_8041be68 = 300.0f;
 
 const Vec vec3_802ed670 = {0, 0, 0};
 const Vec vec3_802ed67c = {1, 1, 1};
@@ -1055,3 +1125,356 @@ void loadMain(SequenceWork* workArg) {
     dispEntry(4, float_1000_8041be84, 0, (DispCallback)loadDraw, NULL);
 }
 #pragma opt_propagation reset
+
+// NONMATCHING (76.47%): complete reconstruction of the save-file load screen. Every call, loop bound,
+// rodata object, table read and branch is present and semantically correct. The remaining diffs are
+// compiler only: MWCC's stack-frame live-range packing (the frame size matches at 0x890, but the
+// name/time buffers and the viewport/projection pair land in different slots), the register colouring
+// that follows, and the target's single base-pointer addressing of the .rodata vecs/strings/doubles
+// (this file names those objects individually, so MWCC emits lis+addi per use; routing them through
+// the RO macro re-colours every register and scores lower). The angle table is copied on the stack
+// through a struct assignment (the target does a 16-word block copy before indexing); the name width
+// is halved with `>> 1`, which is what makes MWCC fold the shift and mask into the target's `extrwi`;
+// the texture-strip scale uses the double __fabs idiom shared with win_root.c's winNameQuad; the
+// play-time divide is s64 on the target but emitted as u64 here (one __div2i vs __div2u). Raw offsets
+// used for undeclared CardSaveSlot fields are listed in REPORT.md.
+// A textured strip quad, the same form as win_root.c's winNameQuad but sourced from the global
+// LoadWork. Kept static inline so the three constant-folded calls match the target's double __fabs
+// scale idiom and per-call palette reload.
+static inline void loadDrawQuad(s32 texId, f32 x, f32 y, f32 w, f32 h) {
+    GXTexObj texObj;
+    Mtx mtx;
+    f64 sy;
+    f64 sx;
+    f32 syf;
+
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)wp->file + 0xA0), &texObj, texId);
+    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041bde4, float_0_8041bde4, float_0_8041bde4, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    sy = __fabs(h);
+    sx = __fabs(w);
+    syf = (f32)sy / (f32)GXGetTexObjHeight(&texObj);
+    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), syf, float_1_8041bde8);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x, y - h, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(x + w, y - h, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(x + w, y, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+}
+
+// Build a by-value Vec from a named base and two coordinates; mirrors win_root.c's winBadgeMkVec so
+// each call site gets its own stack temp instead of reusing one local.
+static inline Vec loadDrawVec(const Vec* bp, f32 x, f32 y) {
+    Vec base = *bp;
+    base.x = x;
+    base.y = y;
+    return base;
+}
+
+// Same, for the calls that only move y and keep the base's x/z.
+static inline Vec loadDrawVecY(const Vec* bp, f32 y) {
+    Vec base = *bp;
+    base.y = y;
+    return base;
+}
+
+// Retail passes these colours by value (MWCC copies the GXColor to a stack temp and passes its
+// address to FontDrawColor); the header declares a pointer, so a plain FontDrawColor(&global) does
+// not copy. Taking the colour by value forces the copy in both builds.
+static inline void loadDrawColor(GXColor color) {
+    FontDrawColor(&color);
+}
+
+// NONMATCHING (76.47%): see the full note above the helpers; frame live-range packing and one
+// s64 divide differ; all calls, loops and rodata are present.
+void loadDraw(void) {
+    CameraEntry* cam = camGetPtr(CAMERA_2D);
+    GXColor white = *(GXColor*)&dat_8041bd84;
+    GXColor greyA0 = *(GXColor*)&dat_8041bd88;
+    GXColor grey80 = *(GXColor*)&dat_8041bd8c;
+    WinDt* wd;
+    CardData* card;
+    u8* slot;
+    char timeBuf[0x70];
+    char nameBuf[0x70];
+    s32 i;
+    s32 j;
+    f32 viewport[6];
+    f32 projection[7];
+    CameraEntry saved;
+
+    if (wp->field_0x18 >= 0x20 && wp->field_0x18 < 0x28) {
+        return;
+    }
+
+    GXGetViewportv(viewport);
+    GXGetProjectionv(projection);
+    GXSetProjection(cam->projection, cam->projType);
+    saved = *camGetCurPtr();
+    *camGetCurPtr() = *cam;
+
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(0, 7, 0);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, *(GXColor*)&dat_8041bd90);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(13, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 13, 1, 4, 0);
+    GXLoadPosMtxImm(cam->view, 0);
+    GXSetCurrentMtx(0);
+
+    loadDrawQuad(0x35, -304.0f, 240.0f, 32.0f, 480.0f);
+    loadDrawQuad(0x34, -272.0f, 240.0f, 544.0f, 480.0f);
+    loadDrawQuad(0x36, 272.0f, 240.0f, 32.0f, 480.0f);
+
+    // The nine file windows.
+    for (i = 0; i < 9; i++) {
+        GXColor color = (i == wp->field_0x20) ? white : greyA0;
+
+        wd = &((WinDt*)win_dt)[i];
+        if (wp->field_0x18 == 0x33 && (i == wp->field_0x30 || i == wp->field_0x34)) {
+            color = white;
+        }
+        if (i == 4 && (wp->field_0x0 & 0x20)) {
+            color = grey80;
+        }
+        if (i == 5 && (wp->field_0x0 & 0x40)) {
+            color = grey80;
+        }
+        if (wd->unk10 < 0xe && wd->unk10 >= 0xa) {
+            color.a = 0xFE;
+            winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+            winTexSet(0xe, loadDrawVec(&vec3_802ed670, wd->x, wd->y), vec3_802ed67c, color);
+            winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+            winTexSet(wd->unk10, loadDrawVec(&vec3_802ed688, wd->x, wd->y + 60.0f), vec3_802ed694, color);
+        } else {
+            winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+            winTexSet_x2(wd->unk10, wd->unk14, loadDrawVec(&vec3_802ed6a0, wd->x, wd->y), vec3_802ed6ac, color);
+        }
+    }
+
+    windowDispGX_Waku_col(0, *(GXColor*)&dat_8041bd94, -250.0f, 200.0f, 500.0f, 40.0f, 20.0f);
+    FontDrawStart();
+    {
+        const char* msg = (const char*)wp->field_0x38;
+
+        FontDrawMessage(-((s32)FontGetMessageWidth(msg)) / 2, 0xc0, msg);
+    }
+
+    // The four save files.
+    for (i = 0; i < 4; i++) {
+        u16 flags;
+        u16 mask;
+        s32 level;
+        s32 field28;
+        u32 field2c;
+        s32 field17c;
+        const char* name;
+
+        card = cardGetFilePtr();
+        slot = (u8*)card + i * 0x4000 + 0x2000;
+        flags = *(u16*)(slot + 0x0);
+        level = *(s16*)(slot + 0x146a);
+        field28 = *(u32*)(slot + 0x28);
+        field2c = *(u32*)(slot + 0x2c);
+        mask = *(u16*)(slot + 0x146c);
+        field17c = *(u32*)(slot + 0x17c);
+        name = (const char*)(slot + 0x11c4);
+        wd = &((WinDt*)win_dt)[i];
+
+        FontDrawStart();
+        loadDrawColor(*(GXColor*)&dat_8041bd98);
+        if (i == wp->field_0x20) {
+            loadDrawColor(*(GXColor*)&dat_8041bd9c);
+        }
+        FontDrawScale(0.6f);
+        FontDrawEdge();
+        sprintf(nameBuf, str_802ED998, winZenkakuStr(i + 1));
+        FontDrawString(nameBuf, wd->x - 100.0f, 84.0f + wd->y);
+        FontDrawEdgeOff();
+        FontDrawScale(1.0f);
+        loadDrawColor(*(GXColor*)&dat_8041bda0);
+        if (i == wp->field_0x20) {
+            loadDrawColor(*(GXColor*)&dat_8041bda4);
+        }
+
+        if (flags & 2) {
+            const char* s = str_802ED96C;
+
+            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) * 0.5f, 12.0f + wd->y);
+        } else if (flags & 1) {
+            const char* s = str_802ED97C;
+
+            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) * 0.5f, 12.0f + wd->y);
+        } else if (field17c == 0) {
+            const char* s = str_802ED98C;
+
+            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) * 0.5f, 12.0f + wd->y);
+            if (strlen(name) != 0) {
+                FontDrawString(name, wd->x - (f32)(FontGetMessageWidth(name) >> 1), 70.0f + wd->y);
+            }
+        } else {
+            u32 divisor = *(volatile u32*)0x800000F8 >> 2;
+            u64 ticks = ((u64)field2c << 32) | field28;
+            u64 secs;
+            u32 hours;
+            u32 mins;
+            f32 half;
+            f32 half2;
+
+            FontGetMessageWidth(str_8041BE34);
+            secs = ticks / divisor;
+            if (secs > 0x57E3F) {
+                hours = 99;
+                mins = 59;
+            } else {
+                hours = (u32)(secs / 3600);
+                mins = (u32)((secs % 3600) / 60);
+            }
+
+            if (strlen(name) != 0) {
+                FontDrawString(name, wd->x - (f32)(FontGetMessageWidth(name) >> 1), 70.0f + wd->y);
+            }
+            sprintf(timeBuf, str_802ED9A4, winZenkakuStr(level));
+            FontDrawString(timeBuf, wd->x - (f32)FontGetMessageWidth(timeBuf) * 0.5f, 30.0f + wd->y);
+            strcpy(timeBuf, str_802ED9A4);
+            strcat(timeBuf, unk_8016af5c(hours, 2));
+            strcat(timeBuf, str_8041BE40);
+            strcat(timeBuf, unk_8016af5c(mins, 2));
+            half = (f32)FontGetMessageWidth(timeBuf) * 0.5f;
+            FontDrawString(timeBuf, wd->x - half, wd->y);
+            strcpy(timeBuf, str_802ED9A4);
+            strcat(timeBuf, unk_8016af5c(hours, 2));
+            half2 = (f32)FontGetMessageWidth(timeBuf);
+            {
+                Mtx mtx;
+                Mtx mtx2;
+                GXColor c = *(GXColor*)&dat_8041bda8;
+
+                PSMTXTrans(mtx, 8.0f + (half2 + (wd->x - half)), 1.0f + (wd->y - 22.0f), 0.0f);
+                PSMTXScale(mtx2, 1.5f, 1.5f, 1.5f);
+                PSMTXConcat(mtx, mtx2, mtx);
+                iconDispGxCol(mtx, 0, 0x201, c);
+            }
+        }
+
+        for (j = 0; j < 7; j++) {
+            if (mask & (1 << (j + 1))) {
+                GXColor c = (i == wp->field_0x20) ? white : greyA0;
+                Mtx mtx;
+
+                PSMTXTrans(mtx, wd->x - 106.0f + (f32)(j * 0x20), wd->y - 52.0f, 0.0f);
+                iconDispGxCol(mtx, 0, stone_id[j] & 0xFFFF, c);
+            }
+        }
+    }
+
+    if (wp->field_0x0 & 1) {
+        wp->field_0x2C += 0.05f;
+    } else {
+        wp->field_0x2C -= 0.05f;
+    }
+    if (wp->field_0x2C < 0.0f) {
+        wp->field_0x2C = 0.0f;
+    }
+    if (wp->field_0x2C > 1.0f) {
+        wp->field_0x2C = 1.0f;
+    }
+    nameMaskGX(wp->field_0x2C);
+
+    if (wp->field_0x18 >= 0x64 && wp->field_0x18 < 0xc8) {
+        winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+        winTexSet(0xf, vec3_802ed6b8, vec3_802ed6c4, *(GXColor*)&dat_8041bdac);
+        winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+        winTexSet_x2(0x13, 0x1f, vec3_802ed6d0, vec3_802ed6dc, *(GXColor*)&dat_8041bdb0);
+
+        for (j = 0; j < 3; j++) {
+            if (wp->field_0x24 == j) {
+                winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexSet(0x33, loadDrawVecY(&vec3_802ed6e8, (f32)(0x32 - j * 0x32)), vec3_802ed6f4, *(GXColor*)&dat_8041bdb4);
+                winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY(&vec3_802ed700, (f32)(0x36 - j * 0x32)), vec3_802ed70c, white);
+            } else {
+                winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY(&vec3_802ed718, (f32)(0x32 - j * 0x32)), vec3_802ed724, white);
+            }
+        }
+    }
+
+    if (wp->field_0x18 >= 0xc8 && wp->field_0x18 < 0x12c) {
+        winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+        winTexSet(0xf, vec3_802ed730, vec3_802ed73c, *(GXColor*)&dat_8041bdc0);
+        winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+        winTexSet_x2(0x14, 0x1f, vec3_802ed748, vec3_802ed754, *(GXColor*)&dat_8041bdc4);
+
+        for (j = 0; j < 2; j++) {
+            if (wp->field_0x28 == j) {
+                winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexSet(0x33, loadDrawVecY(&vec3_802ed760, (f32)(0x1e - j * 0x32)), vec3_802ed76c, *(GXColor*)&dat_8041bdc8);
+                winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY(&vec3_802ed778, (f32)(0x22 - j * 0x32)), vec3_802ed784, white);
+            } else {
+                winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
+                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY(&vec3_802ed790, (f32)(0x1e - j * 0x32)), vec3_802ed79c, white);
+            }
+        }
+    }
+
+    if (wp->field_0x18 == 0x33 && wp->field_0x34 < 4) {
+        struct LoadAngleTable angles = *(struct LoadAngleTable*)dat_802ed7a8;
+        f32 angle = angles.v[wp->field_0x30 * 4 + wp->field_0x34];
+        f32 f29;
+        f32 f30;
+
+        if (fmod(angle, 90.0) == 0.0f) {
+            f32 fa = (f32)(wp->field_0x30 / 2);
+            f32 fb = (f32)(wp->field_0x34 / 2);
+            if (fa == fb) {
+                f29 = 0.0f;
+                f30 = 120.0f - 140.0f * fa;
+            } else {
+                f29 = 300.0f * (f32)(wp->field_0x30 % 2) - 150.0f;
+                f30 = 50.0f;
+            }
+        } else {
+            f29 = 0.0f;
+            f30 = 50.0f;
+        }
+        f30 -= 40.0f;
+
+        {
+            Mtx mtx;
+
+            winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+            winTexSetRot(0x1d, loadDrawVec(&vec3_802ed7e8, 2.0f + f29, f30 - 2.0f), vec3_802ed7f4, angle, *(GXColor*)&dat_8041bdd4);
+            winTexSetRot(0x1d, loadDrawVec(&vec3_802ed800, f29, f30), vec3_802ed80c, angle, white);
+            (void)mtx;
+        }
+    }
+
+    if (!(wp->field_0x0 & 0x40)) {
+        winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
+        winTexSet(0, loadDrawVec(&vec3_802ed818, wp->field_0x8 + 2.0f, wp->field_0xC - 2.0f), vec3_802ed824, *(GXColor*)&dat_8041bdd8);
+        winTexSet(0, loadDrawVec(&vec3_802ed830, wp->field_0x8, wp->field_0xC), vec3_802ed83c, white);
+    }
+
+    GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
+    GXSetProjectionv(projection);
+    *camGetCurPtr() = saved;
+}

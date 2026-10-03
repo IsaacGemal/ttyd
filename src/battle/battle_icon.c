@@ -10,6 +10,12 @@
 
 extern BattleWork* _battleWorkPointer;
 
+// .sdata2: float_1 is a real (extern) object defined at the bottom of the file, so MWCC emits it before
+// the 0.5 it pools for the `/ 2.0f` below; that puts .sdata2 in the original's 0, 1, 0.5 order. float_0 is
+// read by name at the x-vx/fallAccel comparisons; as a real object it lands before float_1.
+extern const f32 float_0_8041e7a8;
+extern const f32 float_1_8041e7ac;
+
 
 // dont_inline keeps BtlIconGetPtr a real `bl` from the evt commands as in retail.
 #pragma dont_inline on
@@ -113,8 +119,8 @@ BattleIcon* BtlIcon_Entry(s16 iconId, f32 x, f32 y, f32 z) {
 	memset(icon, 0, sizeof(BattleIcon));
 	icon->index = i;
 	icon->flags = 1;
-	icon->field_0x14 = 1.0f;
-	icon->field_0x18 = 1.0f;
+	icon->field_0x14 = float_1_8041e7ac;
+	icon->field_0x18 = float_1_8041e7ac;
 	icon->position.x = x;
 	icon->position.y = y;
 	icon->position.z = z;
@@ -260,6 +266,9 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	f32 dy;
 	s32 count;
 #ifdef MUST_MATCH
+	// Match-only: computing x - vx into a local makes MWCC put the fsubs result in f2 and the named
+	// float_0 load in f0, as the original does; writing x - vx inline swaps those two registers.
+	f32 d;
 	// Match-only: a second, separately-created base pointer for the post-btlMovePos reads. Reading
 	// through the same `(u8*)icon + off` expression used by btlMovePos' arguments makes the -O4,s
 	// size optimiser cache both argument addresses in r29/r30 across the call; the fresh pointer
@@ -295,10 +304,19 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 		*(f32*)((u8*)icon + 0x28) = vz;
 		*(f32*)((u8*)icon + 0x54) = angleABf(vx, vz, x, z);
 		*(f32*)((u8*)icon + 0x58) = distABf(vx, vz, x, z);
-		if (x - vx > 0.0f) {
+#ifdef MUST_MATCH
+		d = x - vx;
+		if (d > float_0_8041e7a8) {
+#else
+		if (x - vx > float_0_8041e7a8) {
+#endif
 			*(s8*)((u8*)icon + 0x60) = 1;
 		}
-		else if (x - vx < 0.0f) {
+#ifdef MUST_MATCH
+		else if (d < float_0_8041e7a8) {
+#else
+		else if (x - vx < float_0_8041e7a8) {
+#endif
 			*(s8*)((u8*)icon + 0x60) = -1;
 		}
 		dy = y - vy;
@@ -318,7 +336,7 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	}
 	*(f32*)((u8*)icon + 0x30) = *(f32*)((u8*)icon + 0x30) + *(f32*)((u8*)icon + 0x50);
 	*(f32*)((u8*)icon + 0x50) = *(f32*)((u8*)icon + 0x50) - icon->fallAccel;
-	if (*(f32*)((u8*)icon + 0x50) < 0.0f && *(f32*)((u8*)icon + 0x30) < *(f32*)((u8*)icon + 0x3C)) {
+	if (*(f32*)((u8*)icon + 0x50) < float_0_8041e7a8 && *(f32*)((u8*)icon + 0x30) < *(f32*)((u8*)icon + 0x3C)) {
 		*(f32*)((u8*)icon + 0x30) = *(f32*)((u8*)icon + 0x3C);
 	}
 	btlMovePos((f32*)((u8*)icon + 0x2C), (f32*)((u8*)icon + 0x34), *(f32*)((u8*)icon + 0x48), *(f32*)((u8*)icon + 0x54));
@@ -341,3 +359,8 @@ USER_FUNC(btlevtcmd_BtlIconJumpPosition) {
 	}
 	return EVT_RETURN_BLOCK;
 }
+
+// .sdata2 objects the code refers to by name. Defined after the code so the references above stay bound
+// to these names; the compiler's own 0.5 pool entry (from `... / 2.0f`) lands after them.
+const f32 float_0_8041e7a8 = 0.0f;
+const f32 float_1_8041e7ac = 1.0f;

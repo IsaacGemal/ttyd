@@ -377,31 +377,30 @@ label_5:
     return poseId;
 }
 
-// NONMATCHING (97.41%): register allocation only. The target keeps offset in r30 (mr from the
-// zeroed i in r31) where this build uses li, and swaps wp/pose between r5/r3 in the loop; the
-// `id != -2` test also branches bne-to-create + b-over in the target vs beq-over here.
-s32 animPaperPoseEntry(const char* animName, s32 group) {
-    s32 i;
-    s32 offset;
+// Searches wp->poses for a paper pose of `type` whose animation file name is animName. Shared by
+// animPaperPoseEntry and both loops of animPoseSetPaperAnimGroup; the original evidently factored it
+// out, and reproducing the helper boundary is what gives the callers the target's register allocation.
+static inline s32 animPaperPoseSearchGroup(s32 type, const char* animName) {
     AnimationPose* pose;
+    s32 i;
 
-    i = 0;
-    offset = i;
-    while (i < wp->totalPoses) {
-        pose = (AnimationPose*)((u8*)wp->poses + offset);
-        if (pose->flags & 1) {
-            if (pose->typeFlags & 1 && pose->typeFlags & 2 && pose->type == group) {
-                if (!strcmp(animPoseGetBaseData(pose)->fileName, animName)) {
-                    break;
-                }
+    for (i = 0; i < wp->totalPoses; i++) {
+        pose = &wp->poses[i];
+        if ((pose->flags & 1) && (pose->typeFlags & 1) && (pose->typeFlags & 2) && pose->type == type) {
+            if (!strcmp(animPoseGetBaseData(pose)->fileName, animName)) {
+                break;
             }
         }
-        offset += 0x170;
-        i++;
     }
     if (i == wp->totalPoses) {
         i = -1;
     }
+    return i;
+}
+
+s32 animPaperPoseEntry(const char* animName, s32 group) {
+    s32 i = animPaperPoseSearchGroup(group, animName);
+
     if (i >= 0) {
         ((AnimationPose*)((u8*)wp->poses + i * 0x170))->references += 1;
         return i;
@@ -409,8 +408,12 @@ s32 animPaperPoseEntry(const char* animName, s32 group) {
     {
         s32 id = animPoseEntry(animName, group);
 
-        if (id != -2) {
-            pose = &wp->poses[id];
+        if (id == -2) {
+            return id;
+        }
+        {
+            AnimationPose* pose = &wp->poses[id];
+
             pose->typeFlags = 3;
             pose->references = 0;
             pose->flags |= 1;
@@ -531,54 +534,13 @@ void animPoseSetStartTime(s32 poseId, OSTime startTime) {
     pose->localTime = startTime;
 }
 
-// NONMATCHING (97.05%): the search loop still differs. MWCC 2.6 inverts both branches
-// (target uses `bne`/`bge`, this build emits `beq`/`blt`) and initialises the byte
-// offset with `li` where the target uses `mr`; the block layout and registers now match.
+// Forward declaration: the shared search helper is defined below, next to animPoseSetEffectAnim.
+static inline s32 animPoseSearchAnim(AnimationPose* pose, const char* animName);
+
 void animPoseSetAnim(s32 poseId, const char* animName, BOOL reset) {
     AnimationPose* pose = &wp->poses[poseId];
-#ifdef MUST_MATCH
-    // Match-only: the explicit byte offset keeps the induction variable in r28 (the
-    // compiler's own choice puts it in r30), and jumping to Zero keeps the not-found
-    // path from re-testing the clamp (the target folds it). See the check.py diff.
-    s32 top;
-    AnimationPoseData* data = *wp->files[pose->fileId].handle->data;
-    s32 off;
-    s32 animId;
+    s32 animId = animPoseSearchAnim(pose, animName);
 
-    animId = (s32)animName;
-    top = data->mAnimCount;
-    if (animId < 0) {
-        for (animId = 0, off = animId; animId < top; off += 0x40, animId++) {
-            if (!strcmp(((AnimTableEntry*)((u8*)ANIM_POSE_DATA_ANIMS(data) + off))->name, animName)) {
-                goto Found;
-            }
-        }
-        goto Zero;
-    }
-    if (animId < top) {
-        goto Found;
-    }
-Zero:
-    animId = 0;
-Found:;
-#else
-    s32 top;
-    AnimationPoseData* data = *wp->files[pose->fileId].handle->data;
-    s32 animId;
-
-    animId = (s32)animName;
-    top = data->mAnimCount;
-    if (animId < 0) {
-        for (animId = 0; animId < top; animId++) {
-            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[animId].name, animName)) {
-                break;
-            }
-        }
-    }
-    if (animId >= top) {
-        animId = 0;
-    }
-#endif
     if (!reset && animId == pose->animId) {
         return;
     }
@@ -613,14 +575,13 @@ s32 animPaperPoseGetId(const char* animName, s32 group) {
     return i;
 }
 
-// NONMATCHING (95.43%): register allocation only; the two search loops now use the target's
-// explicit byte offsets and the logic/stack frame match.
+// NONMATCHING (98.83%): the two search loops call animPaperPoseSearchGroup, so only the callee-saved
+// colouring differs (target pose r27/someflag r30/i r29/type r28/offset r26; here r30/r29/r28/r27/r26).
 void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) {
     s32 poseOffset = poseId * 0x170;
     s32 type;
     s32 i;
     s32 j;
-    s32 offset;
     AnimationPose* pose = &wp->poses[poseId];
 
     if (animName == NULL) {
@@ -629,40 +590,10 @@ void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) 
         return;
     }
     type = pose->type;
-    i = 0;
-    offset = i;
-    while (i < wp->totalPoses) {
-        AnimationPose* p = (AnimationPose*)((u8*)wp->poses + offset);
-
-        if ((p->flags & 1) && (p->typeFlags & 1) && (p->typeFlags & 2) && p->type == type) {
-            if (!strcmp(animPoseGetBaseData(p)->fileName, animName)) {
-                break;
-            }
-        }
-        offset += 0x170;
-        i++;
-    }
-    if (i == wp->totalPoses) {
-        i = -1;
-    }
+    i = animPaperPoseSearchGroup(type, animName);
     pose->paperId = i;
     if (pose->paperId < 0) {
-        j = 0;
-        offset = j;
-        while (j < wp->totalPoses) {
-            AnimationPose* p = (AnimationPose*)((u8*)wp->poses + offset);
-
-            if ((p->flags & 1) && (p->typeFlags & 1) && (p->typeFlags & 2) && p->type == 2) {
-                if (!strcmp(animPoseGetBaseData(p)->fileName, animName)) {
-                    break;
-                }
-            }
-            offset += 0x170;
-            j++;
-        }
-        if (j == wp->totalPoses) {
-            j = -1;
-        }
+        j = animPaperPoseSearchGroup(2, animName);
         pose->paperId = j;
     }
     *(s32*)((u8*)pose + 0x94) = -1;
@@ -676,55 +607,61 @@ void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) 
     }
     ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag |= 1;
 }
-// Match-only: mirrors animPoseSearchAnim (defined below with animPoseSetEffectAnim) so this function
-// can use it too. The target's search exits through an early `return`, which MWCC compiles to the
-// `bne <increment>; b <found>` branch pair (a plain `break` gives one `beq <found>`).
+// Match-only: the target's search exits through an early `return`, which MWCC compiles to the
+// `bne <increment>; b <found>` branch pair (a plain `break` gives one `beq <found>`). Taking the poseId
+// and computing the pose/paper/data/top inside the helper is what gives the caller the target's
+// callee-saved colouring (i r30, pose r31, paper materialised so the fileId load folds).
 #ifdef MUST_MATCH
-static inline s32 animPoseSearchAnimPaper(AnimationPoseData* data, const char* animName, s32 i, s32 top) {
+static inline s32 animPoseSearchAnimPaper(s32 poseId, const char* animName) {
+    s32 i = (s32)animName;
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPose* paper = &wp->poses[pose->paperId];
+    AnimationPoseData* data = animPoseGetBaseData(paper);
+    s32 top = data->mAnimCount;
+
     if (i < 0) {
         for (i = 0; i < top; i++) {
             if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
                 return i;
             }
         }
-        i = 0;
+        goto Zero;
     }
-    if (i < top) {
-        return i;
+    if (i >= top) {
+        goto Zero;
     }
-    return 0;
+    return i;
+Zero:
+    i = 0;
+Found:
+    return i;
 }
-#endif
-
-// NONMATCHING (98.24%): the search loop, the paperId test and the animPoseMain bl now match. Only
-// callee-saved colours in the inlined search differ (target animName r29/animId r30/top r28/off r26;
-// here r30/r28/r26/r29) and the exhausted loop falls through to `li i,0` where the target branches.
-void animPoseSetPaperAnim(s32 poseId, const char* animName) {
-#ifdef MUST_MATCH
-    s32 animId = (s32)animName;
-#endif
-    AnimationPose* pose = &wp->poses[poseId];
-    s32 paperOffset = pose->paperId * 0x170;
-    AnimationPoseData* data = *wp->files[((AnimationPose*)((u8*)wp->poses + paperOffset))->fileId].handle->data;
-#ifdef MUST_MATCH
-    s32 top = data->mAnimCount;
-
-    animId = animPoseSearchAnimPaper(data, animName, animId, top);
 #else
+static inline s32 animPoseSearchAnimPaper(s32 poseId, const char* animName) {
+    s32 i = (s32)animName;
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPose* paper = &wp->poses[pose->paperId];
+    AnimationPoseData* data = animPoseGetBaseData(paper);
     s32 top = data->mAnimCount;
-    s32 animId = (s32)animName;
 
-    if (animId < 0) {
-        for (animId = 0; animId < top; animId++) {
-            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[animId].name, animName)) {
+    if (i < 0) {
+        for (i = 0; i < top; i++) {
+            if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
                 break;
             }
         }
     }
-    if (animId >= top) {
-        animId = 0;
+    if (i >= top) {
+        i = 0;
     }
+    return i;
+}
 #endif
+
+void animPoseSetPaperAnim(s32 poseId, const char* animName) {
+    AnimationPose* pose = &wp->poses[poseId];
+    s32 animId = animPoseSearchAnimPaper(poseId, animName);
+
     *(s32*)((u8*)pose + 0x94) = animId;
     pose->mLocalTimeInit = animTimeGetTime(pose->type);
     if (pose->paperId != -1 && !(((AnimationPose*)((u8*)wp->poses + pose->paperId * 0x170))->typeFlags & 2)) {
@@ -732,9 +669,33 @@ void animPoseSetPaperAnim(s32 poseId, const char* animName) {
     }
 }
 
-// NONMATCHING (97.20%): register allocation only. The target keeps pose in r31 and the pose byte
-// offset in r30; this build swaps them, and the `id != -2` test branches bne-to-create + b-over
-// in the target vs beq-over here.
+// Inline form of the paper-pose release block shared with animPoseSetEffect; the original evidently
+// inlined it too.
+static inline void animPoseReleasePaper(AnimationPose* paper) {
+    AnimationPoseFile* file;
+    AnimationTextureFile* texture;
+
+    paper->references--;
+    if (paper->references < 0) {
+        file = &wp->files[paper->fileId];
+        file->references--;
+        if (file->references <= 0) {
+            file->active = 0;
+            texture = &wp->textures[file->textureId];
+            texture->references--;
+            if (texture->references <= 0) {
+                fileFree(texture->handle);
+                texture->active = 0;
+            }
+            fileFree(file->handle);
+        }
+        paper->flags = 0;
+    }
+}
+
+// NONMATCHING (97.33%): the paper-release block is now the shared inline animPoseReleasePaper above. What
+// differs is the whole callee-saved map (target poseOffset r30/pose r31/someflag r29/paper r27/file r28;
+// here r29/r28/r27/r30/r31), one handle-address fold and the `id != -2` branch layout.
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     AnimationPose* pose = &wp->poses[poseId];
     s32 poseOffset;
@@ -749,29 +710,7 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
                 }
             }
         }
-        {
-            AnimationPose* paper = &wp->poses[pose->paperId];
-
-            paper->references--;
-            if (paper->references < 0) {
-                AnimationPoseFile* file = &wp->files[paper->fileId];
-
-                file->references--;
-                if (file->references <= 0) {
-                    AnimationTextureFile* texture;
-
-                    file->active = 0;
-                    texture = &wp->textures[file->textureId];
-                    texture->references--;
-                    if (texture->references <= 0) {
-                        fileFree(texture->handle);
-                        texture->active = 0;
-                    }
-                    fileFree(file->handle);
-                }
-                paper->flags = 0;
-            }
-        }
+        animPoseReleasePaper(&wp->poses[pose->paperId]);
     }
     poseOffset = poseId * 0x170;
     if (animName == NULL) {
@@ -804,24 +743,37 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
 
 // Searches ANIM_POSE_DATA_ANIMS(data) for animName when i is negative (i is the string's address used
 // as a sentinel), then clamps the result into [0, top). MUST_MATCH keeps the target's exact control flow;
-// the natural form is in the #else.
+// the natural form is in the #else. Computing data/top from the passed pose inside the helper (rather
+// than passing them in) is what gives the callers the target's callee-saved colouring.
 #ifdef MUST_MATCH
-static inline s32 animPoseSearchAnim(AnimationPoseData* data, const char* animName, s32 i, s32 top) {
+static inline s32 animPoseSearchAnim(AnimationPose* pose, const char* animName) {
+    s32 i = (s32)animName;
+    AnimationPoseData* data = animPoseGetBaseData(pose);
+    s32 top = data->mAnimCount;
+
     if (i < 0) {
         for (i = 0; i < top; i++) {
             if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
                 return i;
             }
         }
-        i = 0;
+        goto Zero;
     }
-    if (i < top) {
-        return i;
+    if (i >= top) {
+        goto Zero;
     }
-    return 0;
+    return i;
+Zero:
+    i = 0;
+Found:
+    return i;
 }
 #else
-static inline s32 animPoseSearchAnim(AnimationPoseData* data, const char* animName, s32 i, s32 top) {
+static inline s32 animPoseSearchAnim(AnimationPose* pose, const char* animName) {
+    s32 i = (s32)animName;
+    AnimationPoseData* data = animPoseGetBaseData(pose);
+    s32 top = data->mAnimCount;
+
     if (i < 0) {
         for (i = 0; i < top; i++) {
             if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, animName)) {
@@ -836,21 +788,15 @@ static inline s32 animPoseSearchAnim(AnimationPoseData* data, const char* animNa
 }
 #endif
 
-// NONMATCHING (98.55%): only register allocation and one branch differ. The target keeps i in r25,
-// offset r26, data r27 (top is r28 in both); we get data r25, i r26, offset r27. The target branches the
-// exhausted-loop path to the shared i=0 block (b .A8); we assign i=0 inline and fall into the clamp.
 void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
     AnimationPose* pose = &wp->poses[poseId];
-    AnimationPoseData* data;
     s32 i;
 
     if (pose->paperId == -1) {
         return;
     }
     pose = &wp->poses[pose->paperId];
-    data = *wp->files[pose->fileId].handle->data;
-    i = (s32)animName;
-    i = animPoseSearchAnim(data, animName, i, data->mAnimCount);
+    i = animPoseSearchAnim(pose, animName);
     if (!reset && i == pose->animId) {
         return;
     }
@@ -931,34 +877,447 @@ u32 animPoseGetMaterialEvtColor(s32 poseId) {
     return *(u32*)&pose->materialColor;
 }
 
-// dont_inline: the 6464-byte original is never inlined, so the empty stub must stay a real bl for
-// animPoseSetPaperAnim and animPoseDrawShape (retail emits `bl animPoseMain` there).
-// NONMATCHING (0.06%): empty placeholder, not decompiled yet.
-#pragma dont_inline on
-void animPoseMain(s32 poseId) {
+// animPoseMain
+#include <dolphin/os/OSFastCast.h>
+// AnimationPose's 0x20-0x3C block and AnimationPoseData's 0x190/0x1A0/0x1A4 words are opaque
+// padding in include/driver/animdrv.h, so they are reached by raw offset here. The animation
+// record (AnimTableEntry::data, the header's opaque `AnimData`) keeps its frame and delta
+// tables behind the same padding; a frame record is 0x2C bytes.
+#define ANIM_DATA_CLIP(a)         (*(s32**)((u8*)(a) + 0x24))
+#define ANIM_DATA_FRAMES(a)       (*(u8**)((u8*)(a) + 0x28))
+#define ANIM_DATA_FRAME_COUNT(a)  (*(s32*)((u8*)(a) + 0x8))
+#define ANIM_DATA_FRAMES2(a)      (*(u8**)((u8*)(a) + 0x40))
+#define ANIM_DATA_FRAME2_COUNT(a) (*(s32*)((u8*)(a) + 0x20))
+#define ANIM_DATA_POS(a)          (*(u8**)((u8*)(a) + 0x2C))
+#define ANIM_DATA_NRM(a)          (*(u8**)((u8*)(a) + 0x30))
+#define ANIM_DATA_TEX(a)          (*(u8**)((u8*)(a) + 0x34))
+#define ANIM_DATA_VIS(a)          (*(u8**)((u8*)(a) + 0x38))
+#define ANIM_DATA_NODE(a)         (*(u8**)((u8*)(a) + 0x3C))
+
+#define ANIM_FRAME_TIME(f)       (*(f32*)((u8*)(f) + 0x0))
+#define ANIM_FRAME_POS_OFF(f)    (*(s32*)((u8*)(f) + 0x4))
+#define ANIM_FRAME_POS_COUNT(f)  (*(s32*)((u8*)(f) + 0x8))
+#define ANIM_FRAME_NRM_OFF(f)    (*(s32*)((u8*)(f) + 0xC))
+#define ANIM_FRAME_NRM_COUNT(f)  (*(s32*)((u8*)(f) + 0x10))
+#define ANIM_FRAME_TEX_OFF(f)    (*(s32*)((u8*)(f) + 0x14))
+#define ANIM_FRAME_TEX_COUNT(f)  (*(s32*)((u8*)(f) + 0x18))
+#define ANIM_FRAME_VIS_OFF(f)    (*(s32*)((u8*)(f) + 0x1C))
+#define ANIM_FRAME_VIS_COUNT(f)  (*(s32*)((u8*)(f) + 0x20))
+#define ANIM_FRAME_NODE_OFF(f)   (*(s32*)((u8*)(f) + 0x24))
+#define ANIM_FRAME_NODE_COUNT(f) (*(s32*)((u8*)(f) + 0x28))
+
+#define ANIM_FRAME_SIZE 0x2C
+#define APOSE_F(p, off) (*(f32*)((u8*)(p) + (off)))
+#define APOSE_S(p, off) (*(s32*)((u8*)(p) + (off)))
+
+// One position/normal delta run: [u8 index][s8 dx][s8 dy][s8 dz]; the index walks the
+// destination array from the previous record.
+static inline void animPoseAddVecDelta(Vec* dst, u8* src, s32 size, f32 scale) {
+    u8* end = src + size;
+    while (src < end) {
+        dst += *src;
+        {
+            f32 dx = __OSs8tof32((s8*)src + 1);
+            f32 dy = __OSs8tof32((s8*)src + 2);
+            f32 dz = __OSs8tof32((s8*)src + 3);
+            dst->x += scale * dx;
+            dst->y += scale * dy;
+            dst->z += scale * dz;
+        }
+        src += 4;
+    }
 }
-#pragma dont_inline reset
+
+static inline void animPoseAddVecDeltaRange(Vec* dst, u8* src, u8* end, f32 scale) {
+    while (src < end) {
+        dst += *src;
+        {
+            f32 dx = __OSs8tof32((s8*)src + 1);
+            f32 dy = __OSs8tof32((s8*)src + 2);
+            f32 dz = __OSs8tof32((s8*)src + 3);
+            dst->x += scale * dx;
+            dst->y += scale * dy;
+            dst->z += scale * dz;
+        }
+        src += 4;
+    }
+}
+
+// Visibility delta run: [u8 index][u8 delta].
+static inline void animPoseAddVisDelta(u8* src, u8* dst, s32 size) {
+    u8* end = src + size;
+    while (src < end) {
+        dst += src[0];
+        *dst += src[1];
+        src += 2;
+    }
+}
+
+// Node scalar delta run: [u8 index][s8 delta][u8][u8].
+static inline void animPoseAddNodeDelta(f32* dst, u8* src, s32 size, f32 scale) {
+    u8* end = src + size;
+    while (src < end) {
+        dst += src[0];
+        *dst += scale * __OSs8tof32((s8*)src + 1);
+        src += 4;
+    }
+}
+
+// Texture-animation delta run: [u8 index][u8 delta][f32 s][f32 t], index in 0x18-byte entries.
+static inline void animPoseAddTexDelta(AnimTexMtx* dst, u8* src, s32 size) {
+    u8* end = src + size;
+    while (src < end) {
+        dst = (AnimTexMtx*)((u8*)dst + src[0] * 0x18);
+        dst->mTexBindIdx += src[1];
+        dst->mTransS += *(f32*)(src + 4);
+        dst->mTransT += *(f32*)(src + 8);
+        src += 0xC;
+    }
+}
+
+// Applies one frame's five delta channels to the pose buffers. Retail inlines this at both
+// update paths (reset and catch-up). It is a macro rather than a helper function because the
+// combined expansion exceeds the default auto-inline size, and raising #pragma inline_max_size
+// for it leaks into the earlier functions in this file (testAlloc/animPoseRefresh stop matching).
+#define ANIM_POSE_ADD_FRAME(pose, anim, frame, scale)                                               \
+    do {                                                                                            \
+        animPoseAddVecDelta((pose)->mpBufferVtxPos,                                                 \
+                            ANIM_DATA_POS(anim) + ANIM_FRAME_POS_OFF(frame) * 4,                    \
+                            ANIM_FRAME_POS_COUNT(frame) * 4, scale);                                \
+        animPoseAddVecDelta((pose)->mpBufferVtxNrm,                                                 \
+                            ANIM_DATA_NRM(anim) + ANIM_FRAME_NRM_OFF(frame) * 4,                    \
+                            ANIM_FRAME_NRM_COUNT(frame) * 4, scale);                                \
+        animPoseAddVisDelta(ANIM_DATA_VIS(anim) + ANIM_FRAME_VIS_OFF(frame) * 2,                    \
+                            (pose)->mpBufferGroupVisibility,                                        \
+                            ANIM_FRAME_VIS_COUNT(frame) * 2);                                       \
+        animPoseAddNodeDelta((f32*)(pose)->mpBufferNode,                                            \
+                             ANIM_DATA_NODE(anim) + ANIM_FRAME_NODE_OFF(frame) * 4,                 \
+                             ANIM_FRAME_NODE_COUNT(frame) * 4, scale);                              \
+        animPoseAddTexDelta((pose)->mpBufferTexAnimEntries,                                         \
+                            ANIM_DATA_TEX(anim) + ANIM_FRAME_TEX_OFF(frame) * 0xC,                  \
+                            ANIM_FRAME_TEX_COUNT(frame) * 0xC);                                     \
+    } while (0)
+
+// The unit's own .sdata2 constants referenced by name from the assembly below.
+extern const f32 float_60_80419ac4;
+extern const f32 float_1000_80419ac8;
+extern const f32 float_0p0625_80419acc;
+extern const f32 float_2_80419a84;
+extern const f32 float_3_80419ad0;
+
+// The four inlined delta loops make each update path large; retail inlines them in both.
+#pragma inline_max_total_size(60000)
+// The whole recursive pose evaluator is reconstructed from the assembly; the bl sequence and
+// immediates match (17 calls). What is left is register allocation and instruction scheduling,
+// not semantics: the `pose->field_0x80` indexed load folds its +4 into the index (one extra
+// `addi 0x4`), the inlined animPoseAddVecDelta/NodeDelta loops take their source in r7 where
+// retail uses r5, the blend loops colour their source/destination registers differently from
+// retail after the buffer memcpy, and the node cubic-Hermite block schedules a2/a3 and the
+// tanfTbl loads in another order. Permuter work: no call, immediate or control-flow difference
+// remains.
+// NONMATCHING (97.46%): matches the structure; only register allocation/scheduling differs.
+void animPoseMain(s32 poseId) {
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPoseData* data = animPoseGetBaseData(pose);
+    AnimData* anim;
+    Vec* vtxNrm;
+    Vec* vtxPos;
+    s32 canLoop;
+    OSTime now;
+    f32 time;
+    f32 start;
+    f32 end;
+    f32 duration;
+    f32 clamped;
+    s32 i;
+    s32 frame2;
+    s32 frame1;
+    f32 alpha;
+    s32 posNum, nrmNum, visNum, nodeNum, texNum;
+
+    anim = ANIM_POSE_DATA_ANIMS(data)[pose->animId].data;
+
+    OSInitFastCast();
+
+    if (*(s32*)&wp->mbUseFloatScratch) {
+        vtxPos = wp->vtxArrayPos;
+        vtxNrm = wp->vtxArrayNrm;
+    } else {
+        vtxPos = pose->mpVtxArrayPos;
+        vtxNrm = pose->mpVtxArrayNrm;
+    }
+
+    if (pose->paperId != -1 && !(((AnimationPose*)((u8*)wp->poses + pose->paperId * 0x170))->typeFlags & 2)) {
+        animPoseMain(pose->paperId);
+    }
+
+    if (anim == NULL) {
+        return;
+    }
+
+    canLoop = ANIM_DATA_CLIP(anim)[0];
+    now = animTimeGetTime(pose->type);
+    APOSE_F(pose, 0x20) = (f32)(u64)(now - pose->localTime) * float_60_80419ac4 / float_1000_80419ac8;
+    APOSE_F(pose, 0x20) *= pose->localTimeRate;
+
+    time = APOSE_F(pose, 0x20);
+    start = *(f32*)((u8*)ANIM_DATA_CLIP(anim) + 4);
+    end = *(f32*)((u8*)ANIM_DATA_CLIP(anim) + 8);
+    duration = end - start;
+
+    if (duration == float_0_80419a48) {
+        pose->loopTime = time - start;
+        clamped = start;
+    } else if (canLoop) {
+        f32 t = time - start;
+        if (t < 0.0f) {
+            pose->loopTime = 0.0f;
+            clamped = start;
+        } else {
+            pose->loopTime = t / duration;
+            clamped = time - (f32)(s32)pose->loopTime * duration;
+        }
+    } else {
+        if (time < start) {
+            pose->loopTime = 0.0f;
+            clamped = start;
+        } else if (time > end) {
+            pose->loopTime = (time - start) / duration;
+            clamped = end;
+        } else {
+            pose->loopTime = (time - start) / duration;
+            clamped = time;
+        }
+    }
+    APOSE_F(pose, 0x24) = clamped;
+
+    {
+    f32 frameTime = APOSE_F(pose, 0x24);
+    {
+    u8* fp = ANIM_DATA_FRAMES(anim);
+    for (i = 0; i < ANIM_DATA_FRAME_COUNT(anim); i++) {
+        if (*(f32*)fp > frameTime) {
+            break;
+        }
+        fp += ANIM_FRAME_SIZE;
+    }
+    }
+    APOSE_S(pose, 0x28) = i - 1;
+    APOSE_S(pose, 0x2C) = APOSE_S(pose, 0x28) + 1;
+
+    {
+    f32 frameTime2 = APOSE_F(pose, 0x24);
+    u8* fp2 = ANIM_DATA_FRAMES2(anim);
+    for (i = 0; i < ANIM_DATA_FRAME2_COUNT(anim); fp2 += 8, i++) {
+        if (*(f32*)fp2 > frameTime2) {
+            break;
+        }
+    }
+    }
+    APOSE_S(pose, 0x34) = i - 1;
+    APOSE_S(pose, 0x38) = APOSE_S(pose, 0x34) + 1;
+    }
+    if (!canLoop) {
+        if (APOSE_S(pose, 0x2C) >= ANIM_DATA_FRAME_COUNT(anim)) {
+            APOSE_S(pose, 0x2C) = APOSE_S(pose, 0x28);
+        }
+        if (APOSE_S(pose, 0x38) >= ANIM_DATA_FRAME2_COUNT(anim)) {
+            APOSE_S(pose, 0x38) = APOSE_S(pose, 0x34);
+        }
+    }
+
+    pose->field_0x80 = *(s32*)(ANIM_DATA_FRAMES2(anim) + APOSE_S(pose, 0x34) * 8 + 4);
+
+    {
+        f32 num = APOSE_F(pose, 0x24) - *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x28) * ANIM_FRAME_SIZE);
+        f32 den;
+        if (canLoop) {
+            if (APOSE_S(pose, 0x2C) >= ANIM_DATA_FRAME_COUNT(anim)) {
+                APOSE_S(pose, 0x2C) = 0;
+                den = *(f32*)((u8*)ANIM_DATA_CLIP(anim) + 8) - *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x28) * ANIM_FRAME_SIZE);
+            } else {
+                den = *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x2C) * ANIM_FRAME_SIZE)
+                    - *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x28) * ANIM_FRAME_SIZE);
+            }
+        } else {
+            den = *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x2C) * ANIM_FRAME_SIZE)
+                - *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x28) * ANIM_FRAME_SIZE);
+        }
+        if (den == float_0_80419a48) {
+            APOSE_F(pose, 0x30) = float_0_80419a48;
+        } else {
+            APOSE_F(pose, 0x30) = num / den;
+        }
+    }
+
+    frame1 = APOSE_S(pose, 0x28);
+    frame2 = APOSE_S(pose, 0x2C);
+    alpha = APOSE_F(pose, 0x30);
+    posNum = data->mBufferPosNum;
+    nrmNum = data->mBufferNrmNum;
+    visNum = data->mBufferVisibilityNum;
+    nodeNum = data->mBufferNodeNum;
+    texNum = data->mBufferTexAnimNum;
+
+    if (pose->lastFrameZero != frame1) {
+        if (pose->lastFrameZero == -1 || pose->lastFrameZero > frame1) {
+            u8* f = ANIM_DATA_FRAMES(anim);
+            u8* fend = ANIM_DATA_FRAMES(anim) + frame1 * ANIM_FRAME_SIZE + ANIM_FRAME_SIZE;
+            if (posNum) {
+                memcpy_as4(pose->mpBufferVtxPos, data->bufferVtxPos, posNum * 0xC);
+            }
+            if (nrmNum) {
+                memcpy_as4(pose->mpBufferVtxNrm, data->nrmVtxBuffer, nrmNum * 0xC);
+            }
+            if (visNum) {
+                memcpy(pose->mpBufferGroupVisibility, *(void**)((u8*)data + 0x1A0), visNum);
+            }
+            if (nodeNum) {
+                memcpy_as4(pose->mpBufferNode, *(void**)((u8*)data + 0x1A4), nodeNum * 4);
+            }
+            if (texNum) {
+                memcpy_as4(pose->mpBufferTexAnimEntries, *(void**)((u8*)data + 0x190), texNum * 0x18);
+            }
+            if (pose->lastFrameZero == -1) {
+                pose->lastFrameZero = 0;
+            }
+            for (; f < fend; f += ANIM_FRAME_SIZE) {
+                ANIM_POSE_ADD_FRAME(pose, anim, f, float_0p0625_80419acc);
+            }
+        } else if (pose->lastFrameZero < frame1) {
+            u8* f = ANIM_DATA_FRAMES(anim) + (pose->lastFrameZero + 1) * ANIM_FRAME_SIZE;
+            u8* fend = ANIM_DATA_FRAMES(anim) + (frame1 + 1) * ANIM_FRAME_SIZE;
+            for (; f < fend; f += ANIM_FRAME_SIZE) {
+                ANIM_POSE_ADD_FRAME(pose, anim, f, float_0p0625_80419acc);
+            }
+        }
+    } else {
+        if (pose->lastFrameTime > alpha) {
+            pose->lastFrameTime = float_0_80419a48;
+        }
+    }
+
+    if (frame1 == frame2) {
+        if (posNum) {
+            memcpy_as4(vtxPos, pose->mpBufferVtxPos, posNum * 0xC);
+        }
+        if (nrmNum) {
+            memcpy_as4(vtxNrm, pose->mpBufferVtxNrm, nrmNum * 0xC);
+        }
+        if (nodeNum) {
+            memcpy_as4(pose->mpNodes, pose->mpBufferNode, nodeNum * 4);
+        }
+    } else if (frame1 <= frame2) {
+        u8* key2 = ANIM_DATA_FRAMES(anim) + frame2 * ANIM_FRAME_SIZE;
+        f32 blend = float_0p0625_80419acc * alpha;
+
+        {
+            u8* posSrc = ANIM_DATA_POS(anim) + ANIM_FRAME_POS_OFF(key2) * 4;
+            u8* posEnd = posSrc + ANIM_FRAME_POS_COUNT(key2) * 4;
+            void* posBase = pose->mpBufferVtxPos;
+            if (posNum) {
+                memcpy_as4(vtxPos, posBase, posNum * 0xC);
+            }
+            animPoseAddVecDeltaRange(vtxPos, posSrc, posEnd, blend);
+        }
+
+        {
+            u8* nrmSrc = ANIM_DATA_NRM(anim) + ANIM_FRAME_NRM_OFF(key2) * 4;
+            u8* nrmEnd = nrmSrc + ANIM_FRAME_NRM_COUNT(key2) * 4;
+            void* nrmBase = pose->mpBufferVtxNrm;
+            if (nrmNum) {
+                memcpy_as4(vtxNrm, nrmBase, nrmNum * 0xC);
+            }
+            animPoseAddVecDeltaRange(vtxNrm, nrmSrc, nrmEnd, blend);
+        }
+
+        {
+            u8* src = ANIM_DATA_NODE(anim) + ANIM_FRAME_NODE_OFF(key2) * 4;
+            u8* srcEnd = src + ANIM_FRAME_NODE_COUNT(key2) * 4;
+            void* nodeSrc = pose->mpBufferNode;
+            f32* dst = (f32*)pose->mpNodes;
+            f32 timedelta = *(f32*)(ANIM_DATA_FRAMES(anim) + frame2 * ANIM_FRAME_SIZE)
+                          - *(f32*)(ANIM_DATA_FRAMES(anim) + frame1 * ANIM_FRAME_SIZE);
+
+            if (nodeNum) {
+                memcpy_as4(dst, nodeSrc, nodeNum * 4);
+            }
+            {
+                f32 a2 = alpha * alpha;
+                while (src < srcEnd) {
+                    f32 a3 = alpha * a2;
+                    s32 t1 = (s8)src[3];
+                    dst += src[0];
+                    if (t1 < 0x59 && t1 > -0x59) {
+                        f32 step = float_0p0625_80419acc * __OSs8tof32((s8*)src + 1);
+                        f32 tan0 = tanfTbl[(s8)src[2] + 0x59];
+                        f32 tan1 = tanfTbl[t1 + 0x59];
+                        *dst += (float_3_80419ad0 * a2 + float_neg2_80419ab8 * a3) * step
+                              + (a3 - float_2_80419a84 * a2 + alpha) * (timedelta * tan0)
+                              + (a3 - a2) * (timedelta * tan1);
+                    }
+                    src += 4;
+                }
+            }
+        }
+    }
+
+    pose->lastFrameZero = frame1;
+    pose->lastFrameTime = alpha;
+
+    if (pose->flags & 8) {
+        CameraEntry* cam = camGetPtr(CAMERA_3D);
+        f32 rad = (f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z));
+        f32 angle = float_rad2deg_80419a94 * rad;
+        f32 diff;
+
+        while (angle < float_neg360_80419a9c) {
+            angle += float_360_80419a98;
+        }
+        while (angle >= float_360_80419a98) {
+            angle -= float_360_80419a98;
+        }
+        if (angle < float_0_80419a48) {
+            angle += float_360_80419a98;
+        }
+
+        diff = angle - pose->rotationY;
+        while (diff < float_neg360_80419a9c) {
+            diff += float_360_80419a98;
+        }
+        while (diff >= float_360_80419a98) {
+            diff -= float_360_80419a98;
+        }
+
+        if ((diff > float_90_80419aa0 && diff <= float_270_80419aa4)
+            || (diff < float_neg90_80419a90 && diff >= float_neg270_80419aa8)) {
+            pose->field_0x78 = float_neg1_80419a8c;
+        } else {
+            pose->field_0x78 = float_1_80419a44;
+        }
+    }
+}
+#pragma inline_max_size reset
+#pragma inline_max_total_size reset
 
 // pushGXModelMtx_TransformNode__
-// NONMATCHING (96.99%): all logic/constants/offsets and the switch dispatch match; the
-// original keeps every node field live in f14-f31 (frame 0x310) while the compiler here
-// reloads several fields and uses one extra GPR for the void*->AnimPoseNode* cast.
+// Matches retail. Local declaration order (translation, scale, rotation, then the four
+// centre/translation groups) fixes the f14-f31 allocation; the outer centre zero tests are
+// `!=` (constant-first fcmpu) while translation/rotation use truthiness (value-first).
 void pushGXModelMtx_TransformNode__(void* node) {
     AnimPoseNode* n = node;
     Mtx mTrans, mScale, mRotX, mRot, t1, t2, t3, t4, t5, t6;
     f32 (*result)[4];
     u32 flags = 0;
-    f32 rotX = n->mRot1.x * 2.0f;
-    f32 rotY = n->mRot1.y * 2.0f;
-    f32 rotZ = n->mRot1.z * 2.0f;
+    f32 tx = n->mTranslation.x, ty = n->mTranslation.y, tz = n->mTranslation.z;
+    f32 sx = n->mScale.x, sy = n->mScale.y, sz = n->mScale.z;
+    f32 rotX = n->mRot1.x * 2.0f, rotY = n->mRot1.y * 2.0f, rotZ = n->mRot1.z * 2.0f;
     f32 rcx = n->mRotationCenter.x, rcy = n->mRotationCenter.y, rcz = n->mRotationCenter.z;
     f32 scx = n->mScaleCenter.x, scy = n->mScaleCenter.y, scz = n->mScaleCenter.z;
     f32 rtx = n->mRotationTranslation.x, rty = n->mRotationTranslation.y, rtz = n->mRotationTranslation.z;
     f32 stx = n->mScaleTranslation.x, sty = n->mScaleTranslation.y, stz = n->mScaleTranslation.z;
-    f32 sx = n->mScale.x, sy = n->mScale.y, sz = n->mScale.z;
-    f32 tx = n->mTranslation.x, ty = n->mTranslation.y, tz = n->mTranslation.z;
 
-    if (tx != 0.0f || ty != 0.0f || tz != 0.0f) {
+    if (tx || ty || tz) {
         PSMTXTrans(mTrans, tx, ty, tz);
         flags |= 1;
     }
@@ -974,23 +1333,23 @@ void pushGXModelMtx_TransformNode__(void* node) {
             PSMTXConcat(t3, t1, mRot);
             PSMTXConcat(mRot, mScale, mRot);
             PSMTXConcat(mRot, t2, mScale);
-        } else if (stx != 0.0f || sty != 0.0f || stz != 0.0f) {
+        } else if (stx || sty || stz) {
             PSMTXTrans(mScale, stx, sty, stz);
             flags |= 2;
         }
     }
     PSMTXIdentity(mRotX);
-    if (rotZ != 0.0f) {
+    if (rotZ) {
         PSMTXRotRad(mRot, 'z', MTXDegToRad(rotZ));
         PSMTXConcat(mRotX, mRot, mRotX);
         flags |= 4;
     }
-    if (rotY != 0.0f) {
+    if (rotY) {
         PSMTXRotRad(mRot, 'y', MTXDegToRad(rotY));
         PSMTXConcat(mRotX, mRot, mRotX);
         flags |= 4;
     }
-    if (rotX != 0.0f) {
+    if (rotX) {
         PSMTXRotRad(mRot, 'x', MTXDegToRad(rotX));
         PSMTXConcat(mRotX, mRot, mRotX);
         flags |= 4;
@@ -1001,9 +1360,9 @@ void pushGXModelMtx_TransformNode__(void* node) {
             PSMTXTrans(t4, rcx, rcy, rcz);
             PSMTXTrans(t6, rtx, rty, rtz);
             PSMTXConcat(t6, t4, mRot);
-            PSMTXConcat(mRot, mRotX, mRot);
+            PSMTXConcat(mRot, mRotX, mRotX);
             PSMTXConcat(mRotX, t5, mRotX);
-        } else if (rtx != 0.0f || rty != 0.0f || rtz != 0.0f) {
+        } else if (rtx || rty || rtz) {
             PSMTXTrans(mRotX, rtx, rty, rtz);
             flags |= 4;
         }
@@ -1344,50 +1703,100 @@ void materialProc(s32 shapeId, s32 field_0x28) {
     }
 }
 
+// renderProc-local copy of animSetMaterial_ChangeTexture. The texture-argument group is declared
+// (texObj, texData, mtx) so MWCC's right-to-left argument evaluation loads mtx first, then texData,
+// then texObj, matching retail. The `idx` local keeps retail's separate `subi ..., 1` (MWCC folds
+// an inline `count - i - 1` into the array base otherwise).
+static inline BOOL renderProc_ChangeTexture(AnimationPoseData* data, AnimPoseShapeDraw* draw, AnimationPose* pose,
+                                            GXTexObj* texObj, void** texData, Mtx mtx, s32 texType) {
+    AnimTexBind* bind;
+    AnimPoseTexEntry* texEntry;
+    AnimTexMtx* texAnim;
+    s32 bindCount, texCount;
+    s32 dataId, bindId, frameExt, idx;
+    GXTexObj* smartObj;
+    int i;
+
+    bind = data->texBinds;
+    bindCount = data->texBindCount;
+    texAnim = pose->mpTexAnimEntries;
+    texEntry = data->texData;
+    texCount = draw->texCount;
+
+    for (i = 0; i < texCount; i++) {
+        idx = texCount - i - 1;
+        dataId = draw->texDataIds[idx];
+        frameExt = texAnim[dataId].mTexBindIdx;
+        bindId = texEntry[dataId].bindId + frameExt;
+        if (bindId < 0 || bindId >= bindCount) {
+            bindId = 0;
+            //"Error: animSetMaterial_ChangeTexture: テクスチャがありません frameExt=%d\n"
+            printf("Error: animSetMaterial_ChangeTexture: "
+                   "\x83\x65\x83\x4E\x83\x58\x83\x60\x83\x83\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1 "
+                   "frameExt=%d\n",
+                   frameExt);
+        }
+        if (bind[bindId].texType == texType) {
+            if (texObj) {
+                smartObj = smartTexObj(texObj, texData);
+                GXLoadTexObj(smartObj, i);
+                if (mtx) {
+                    GXLoadTexMtxImm(mtx, GX_TEXMTX0 + (u32)(i * 3), GX_MTX2x4);
+                    GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_TEXMTX0 + (u32)(i * 3));
+                } else {
+                    GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_IDENTITY);
+                }
+            }
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
 // I'm so sorry, whoever gets tasked with matching this function
 // note: I detect at least 8 inlined functions here.
-// The call/constant/byte-offset structure now matches: the texVtx and pos/nrm/clr index pointers are byte
-// arithmetic, texIds is s8, count is u16. What is left is callee-saved register allocation (shape/draw/i land
-// in r16/r23/r15 here vs r14/r28/r29 in the target; the ChangeTexture temps likewise), the loop-remainder
-// shape, and the texDataIds[texCount-i-1] -1 that the target does not fold into the base offset.
-// NONMATCHING (86.86%): register allocation and the loop-remainder shape differ; see the notes above.
-// opt_unroll_count 4: the target unrolls both inner vertex loops by 4; the default -O4,p unrolls by 8.
-#pragma opt_unroll_count 4
+// All calls (64), constants and byte offsets match; the inner vertex loops' `!=` trip-count spelling makes the
+// `.p` unroller emit retail's split `srwi`/`andi` remainder guard. The ChangeTexture body is inlined through
+// the renderProc_ChangeTexture helper above (group declared (texObj, texData, mtx) so MWCC's right-to-left
+// argument evaluation loads mtx first, and an explicit `idx = texCount - i - 1` keeps retail's `subi ..., 1`
+// instead of folding it into the array base).
+// The remaining diffs are callee-saved register colouring: retail keeps the outer-loop `draw`/`i` in r28/r29
+// and the draw-call scratch in r20..r27; this build lands them in r23/r22 and r15..r21. The non-register
+// remainder is retail's folded `lbz -0x1(base)` for texIds[texCount-l-1] (this build emits `subi` + a
+// byte-indexed `lbzx`) and two `ble`/`beq` unroll guards.
+// NONMATCHING (96.55%): all calls, constants and offsets match; only callee-saved register colouring differs.
 void renderProc(s32 shapeId, s32 field_0x28) {
-    CameraEntry* camera;
-    AnimationPoseData* data;
-    AnimPoseShape *shapes, *shape;
-    AnimPoseShapeDraw *draws, *draw;
     s32 dispMode, drawId;
-    s32 posFirstVtx, nrmFirstVtx, clr0FirstVtx;
-
-    f32* buffer;
-    s32 nrmVtxSize;
+    s32 texIndex;
+    u16 *posIndexPtr, *nrmIndexPtr, *clr0IndexPtr, *texIndexPtr;
+    u8* texEntryPtr;
     s32 texCount;
-    AnimationPose* pose;
-    Mtx* mtx;
-    GXTexObj* texObj;
-    BOOL texChange1, check1, texChange2, check2;
     GXTexObj* currTexObj;
-    s8* texIds;
+    AnimPoseShapeDraw *draws, *draw;
+    int i, j, k, k1, l;
+    f32* buffer;
     s32* firstId;
     AnimDrawCallEntry* drawCall;
-    s32 drawCallCount;
-    GXColor* clr0VtxPtr;
-    s32 posFirstId, nrmFirstId, clr0FirstId;
     Vec *nrmVtxPtr, *posVtxPtr;
-
+    CameraEntry* camera;
     u16 count;
-    u16 *posIndexPtr, *nrmIndexPtr, *clr0IndexPtr, *texIndexPtr;
+    BOOL texChange1, check1, texChange2, check2;
     s32 firstDrawId;
+    s32 posFirstId, nrmFirstId, clr0FirstId;
+    AnimationPoseData* data;
+    AnimPoseShape *shapes, *shape;
+    GXColor* clr0VtxPtr;
+    s32 drawCallCount;
     s32 index;
-    s32 texIndex;
-
-    int i, j, k, k1, l;
+    AnimationPose* pose;
+    GXTexObj* texObj;
+    s32 posFirstVtx, nrmFirstVtx, clr0FirstVtx;
+    Mtx* mtx;
+    s8* texIds;
 
     // stack variables
-    s32 clr0VtxSize, posVtxSize; // TODO: make sure stack, +0xB0, +0xAC
-    s32 drawCount;               // TODO: make sure stack, +0xA8
+    s32 clr0VtxSize, posVtxSize, nrmVtxSize;
+    s32 drawCount;
     Mtx camMtx, invCamMtx;
     f32* texVtxIndices[8];
     Vec lightPos, lightPos2; // TODO: rename? 2 is probably implicit stack copy
@@ -1450,19 +1859,20 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                 }
                 pose = wp->mpCurPose;
                 if ((u32)pose->typeFlags != 0) {
-                    texChange1 = animSetMaterial_ChangeTexture(wp->mpCurPoseData, draw, pose, *wp->paperMtxPtr[0],
-                                                               wp->mpTexDatas[0], wp->mpTexObjs[0], 1);
+                    AnimationPoseData* d1 = wp->mpCurPoseData;
+                    texChange1 = renderProc_ChangeTexture(d1, draw, pose, wp->mpTexObjs[0],
+                                                          wp->mpTexDatas[0], *wp->paperMtxPtr[0], 1);
                     check1 = texChange1;
                     if (!texChange1) {
-                        texChange2 = animSetMaterial_ChangeTexture(wp->mpCurPoseData, draw, pose, *wp->paperMtxPtr[1],
-                                                                   wp->mpTexDatas[1], wp->mpTexObjs[1], 2);
+                        texChange2 = renderProc_ChangeTexture(wp->mpCurPoseData, draw, pose, wp->mpTexObjs[1],
+                                                              wp->mpTexDatas[1], *wp->paperMtxPtr[1], 2);
                         check1 = texChange2;
                         check2 = texChange2;
                     } else {
                         check2 = FALSE;
                     }
 
-                    if (check1 && (texChange1 && !(s32)wp->field_0xD8 || check2 && !(s32)wp->field_0xDC) &&
+                    if (check1 && (texChange1 && (s32)wp->field_0xD8 == 0 || check2 && (s32)wp->field_0xDC == 0) &&
                         !draw->drawMode) {
                         GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
                     }
@@ -1481,7 +1891,7 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                                 GXLoadTexObj(texObj, GX_TEXMAP0);
                                 GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE,
                                                   GX_PTIDENTITY);
-                                GXLoadTexMtxImm(*wp->paperMtxPtr[texChange1 == 0], GX_TEXMTX0, GX_MTX2x4);
+                                GXLoadTexMtxImm(*wp->paperMtxPtr[!texChange1], GX_TEXMTX0, GX_MTX2x4);
                             }
                             GXLoadTexObj(currTexObj, GX_TEXMAP1);
                             GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX1, GX_FALSE,
@@ -1498,8 +1908,8 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                     if (texObj) {
                         mtx = wp->paperMtxPtr[0];
                         if (mtx) {
-                            animSetMaterial_ChangeTexture(wp->mpCurPoseData, draw, pose, *mtx, wp->mpTexDatas[0],
-                                                          texObj, 1);
+                            renderProc_ChangeTexture(wp->mpCurPoseData, draw, pose, texObj, wp->mpTexDatas[0],
+                                                     *mtx, 1);
                         }
                     }
                 }
@@ -1547,7 +1957,7 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                         clr0IndexPtr = (u16*)((u8*)data->clr0Index + (drawCall->first + clr0FirstId) * 4 + 2);
                         texIndexPtr = (u16*)((u8*)data->texIndex[texIds[0]] + (drawCall->first + firstId[texIds[0]]) * 4 + 2);
                         GXBegin(GX_TRIANGLEFAN, GX_VTXFMT0, count);
-                        for (k1 = 0; k1 < count; k1++) { // unrolled, warning
+                        for (k1 = 0; k1 != count; k1++) { // unrolled, warning
                             GXPosition1x16(*posIndexPtr);
                             posIndexPtr += 2;
                             GXNormal1x16(*nrmIndexPtr);
@@ -1578,12 +1988,15 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                             GXPosition1x16(*posIndexPtr);
                             GXNormal1x16(*nrmIndexPtr);
                             GXColor1x16(*clr0IndexPtr);
-                            for (l = 0; l < texCount; l++) {
+                            for (l = 0; l != texCount; l++) {
                                 index = texIds[texCount - l - 1];
-                                GXTexCoord1x16(wp->mpCurPoseData
-                                                   ->texIndex[index][((firstDrawId + firstId[index]) * 2) + texIndex]);
+                                // The header types texIndex as u16*, but retail loads a full word (lwzx) and
+                                // stores its low half; the pointer is a byte base and texIndex is the byte offset
+                                // into the entry, stepping 4 per vertex.
+                                texEntryPtr = (u8*)wp->mpCurPoseData->texIndex[index];
+                                GXTexCoord1x16(*(u32*)(texEntryPtr + (firstDrawId + firstId[index]) * 4 + texIndex));
                             }
-                            texIndex += 2;
+                            texIndex += 4;
                             posIndexPtr += 2;
                             nrmIndexPtr += 2;
                             clr0IndexPtr += 2;
@@ -1594,7 +2007,6 @@ void renderProc(s32 shapeId, s32 field_0x28) {
         }
     }
 }
-#pragma opt_unroll_count reset
 
 // dispProc
 void dispProc(s32 parentGroupId, s32 groupId, s32 field_0x28, s32 field_0x2c, f32 f1) {

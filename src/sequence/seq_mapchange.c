@@ -304,8 +304,6 @@ extern const f32 float_5_8041947c;
 extern const f32 float_10_80419454;
 extern s32 key_off[10];
 
-// NONMATCHING (99.84%): behaviour complete, checked against the asm; one branch polarity in the field-save block
-// (`if (swByteGet(4) == 0)` here compiles to bne where the target has beq + b).
 void seq_mapChangeMain(SequenceWork* work) {
     const char* const base = table_802C1028;
     BOOL newarea;
@@ -508,7 +506,11 @@ void seq_mapChangeMain(SequenceWork* work) {
 
             party = partyGetPtr(marioGetPartyId());
             extraParty = partyGetPtr(marioGetExtraPartyId());
-            if (swByteGet(4) == 0) {
+            // Written as a `switch` with one `case 0` and a `default` because that makes mwcc emit the
+            // target's `beq then; b else` layout; a plain `if (swByteGet(4) == 0) ... else ...` comes out as
+            // `bne else` and mismatches the branch pair.
+            switch (swByteGet(4)) {
+            case 0:
                 mario->position = gp->savePlayerPos;
                 evt_cam_road_reset(NULL, FALSE);
                 if (party != NULL) {
@@ -541,8 +543,10 @@ void seq_mapChangeMain(SequenceWork* work) {
                                                mario->position.z);
                 marioKeyOff();
                 evtEntryType(key_off, 0, 0, 0);
-            } else {
+                break;
+            default:
                 fadeEntry(0x1C, 0, unk_80422f60);
+                break;
             }
             statusWinForceUpdate();
             gp->flags &= ~1;

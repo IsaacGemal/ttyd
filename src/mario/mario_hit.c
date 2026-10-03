@@ -440,9 +440,9 @@ extern const f32 float_3p1416_8041a7e0;
 extern const f32 float_neg23p7_8041a834;
 extern const f32 float_5p8_8041a838;
 
-// NONMATCHING (96.55%): the up = vec3_802c5820 assignment must come after y = a2 + a for the
-// FP register colouring; what remains is only the prologue interleaving of the vec-copy loads
-// with the float_3p1416/float_180/float_0p5/float_5p8 constant loads (the loop body matches).
+// 100%. `up` must be built as a compound literal (not the named vec3_802c5820 read) so MWCC
+// schedules its loads after y = a2 + a; the named read starts the copy one slot early and
+// costs the prologue interleave (96.55%). The literal is the MUST_MATCH spelling.
 void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
     MarioWork* wp = marioGetPtr();
     Vec p;
@@ -461,7 +461,11 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
     radius = float_neg23p7_8041a834;
     *outY = float_neg1_8041a7dc;
     y = a2 + a;
+#ifdef MUST_MATCH
+    up = (Vec){ 0.0f, 1.0f, 0.0f };
+#else
     up = vec3_802c5820;
+#endif
 
     for (i = 0; i < 8; i++) {
         outF = y;
@@ -1493,7 +1497,7 @@ void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist) {
 // the base, so the hit test is `cmplwi r30` instead of the original's `mr r29,r3`); and the
 // ROUND_CENTI float_100 loads are hoisted into f31/f30 (callee-saved) instead of the
 // original's volatile f7/f5 reloads, which costs `h` its f31.
-// NONMATCHING (87.14%): only the rodata-pool folding and the GPR/FPR colouring above remain.
+// NONMATCHING (87.17%): only the rodata-pool folding and the GPR/FPR colouring above remain.
 HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
 #ifdef MUST_MATCH
     const u8* base = vec3_802c5730;

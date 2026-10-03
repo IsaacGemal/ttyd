@@ -37,6 +37,8 @@ extern const f32 float_290_8041c854;
 extern const f32 float_200_8041c858;
 extern const f32 float_90_8041c85c;
 extern const f32 float_neg50_8041c860;
+extern const f32 float_neg100_8041c830;
+extern const f32 float_50_8041c834;
 
 
 

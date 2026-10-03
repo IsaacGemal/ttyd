@@ -1574,9 +1574,9 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
 #define SS_CB_COPY buffer1
 #endif
 #pragma opt_propagation off // needed: with propagation on MWCC folds the /7 magic and homes n in r0
-// NONMATCHING (99.06%): every path, branch and constant matches; the remaining differences are
-// register colouring only. MWCC homes the zero-fill/7 loop pointer in r6 and the PCM copy pointer
-// in r9; retail uses r6 for both, which cascades into the prologue and the DPCM/byte/PCM loops.
+// NONMATCHING (99.29%): only register colouring differs. Retail keeps one buffer1 in r6 for the
+// zero-fill/7 loops, DPCM and byte/s16 dst; ours keeps the parameter in r11 and two loop copies,
+// t1=r6/t3=r9, so the DPCM path and the second /7 division (r3/r4) differ.
 u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
     SoundStream* stream = &sound.streams[user & 0xFF];
 #ifdef MUST_MATCH
@@ -1630,10 +1630,7 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
         in = (u8*)(((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)] + *(u32*)(ep + 0x44));
         in = ssDecodeDPCM(stream, (SoundStreamEntry*)ep, (s16*)buffer1, len1, in);
         ssDecodeDPCM(stream, (SoundStreamEntry*)ep, (s16*)buffer2, len2, in);
-        return *(u32*)(stream->unk1C + 8);
-    }
-
-    if (stream->flags & 0x100) {
+    } else if (stream->flags & 0x100) {
         u8* src;
         u8* dst;
         u32 count;
@@ -1696,10 +1693,7 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
             }
         }
         *(u32*)(stream->unk1C + 8) = len1 + len2;
-        return len1 + len2;
-    }
-
-    {
+    } else {
         u8* src;
         s16* dst;
         u32 count;

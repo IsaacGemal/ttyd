@@ -5014,7 +5014,7 @@ EVT_END()
 // Case 3 is the original's `if (i==sel) { switch(i){...} } else { stop = 0; } if (stop && ...) {...}` (its
 // `bne` after `cmpw i, sel` targets the `li r25,0` the `else` emits). Writing it that way is required for the
 // case-2 `else` to exist, and it changes which registers MWCC hands out; the declaration order
-// `j, k, stop, work, data, i, changed` is what makes that structure score 98.06%.
+// `j, k, stop, work, data, i, changed` is part of the shape that scores 98.58%.
 //
 // The trailing `return 0;` is not the original source. The original never writes r3 before `blr`, so it is
 // really a `void` function: with the `USER_FUNC` (s32) prototype MWCC treats r3 as the live return register
@@ -5028,8 +5028,12 @@ EVT_END()
 // `mr r25, r3` vs `mr r26, r3`) even when the two later `event` uses are replaced by `work`/`work->entry`;
 // `stop` lands in r30 vs the original's r25, pb in r31 vs r30; the case-5 string address is materialised into
 // r0 and then `mr`'d instead of loaded directly into its register; and the case-5 pointer / case-11 index /
-// `cnt` loop init / sel conditions keep a different register set.
-// NONMATCHING (98.06%): see above.
+// `cnt` loop init / sel conditions keep a different register set. The instruction stream is otherwise
+// identical (40 calls, same immediates except the two structural diffs below and `return 0`'s `li r3,0`).
+// With the sel-loop dead-branch conditions, only the callee-saved colouring of the {event,stop,stopSfx,pb}
+// clique (r25/r26/r30/r31) is left, which is permuter work. `(s32)data[i + 0x30]` (rather than
+// `(s32)((u8*)data + i)[0x30]`) makes MWCC emit the original's `add r3, r28, r0` operand order.
+// NONMATCHING (98.58%): see above.
 USER_FUNC(goryuugijo_main_slot) {
     s32 j;
     s32 k;
@@ -5085,10 +5089,10 @@ USER_FUNC(goryuugijo_main_slot) {
             *(s32*)(data + 0x54) += 1;
         }
         i = *(s16*)(data + 0x74);
-        if ((s32)((u8*)data + i)[0x30] != 2 || (keyGetDirRep(0) & 0xC000) != 0) {
+        if ((s32)data[i + 0x30] != 2 || (keyGetDirRep(0) & 0xC000) != 0) {
             s32 dir;
             i = *(s16*)(data + 0x74);
-            dir = ((s32)((u8*)data + i)[0x30] != 2) ? 1 : ((keyGetDirRep(0) & 0x4000) ? -1 : 1);
+            dir = ((s32)data[i + 0x30] != 2) ? 1 : ((keyGetDirRep(0) & 0x4000) ? -1 : 1);
             for (j = 0; j < 3; j++) {
                 i = *(s16*)(data + 0x74) + dir;
                 *(s16*)(data + 0x74) = i;
@@ -5235,7 +5239,14 @@ USER_FUNC(goryuugijo_main_slot) {
                     switch (sel) {
                     case 0:
                         s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
+#ifdef MUST_MATCH
+                        // The original emits a dead `beq sel_inc` after `beq <after_if>`: MWCC CSEs the
+                        // repeated `s == tmp[0][i]` (contradicts the guard) into one compare with two
+                        // branches. The redundant OR term reproduces it.
+                        if (s != tmp[0][i] && (s == tmp[0][i] || tmp[2][i] == s)) {
+#else
                         if (s != tmp[0][i] && tmp[2][i] == s) {
+#endif
                             goto sel_inc;
                         }
                         if (s == 0) {
@@ -5255,7 +5266,12 @@ USER_FUNC(goryuugijo_main_slot) {
                         break;
                     case 1:
                         s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
+#ifdef MUST_MATCH
+                        // Same dead-branch artifact as case 0, on the `s != tmp[2][i]` guard.
+                        if (s != tmp[2][i] && (s == tmp[0][i] || s == tmp[2][i])) {
+#else
                         if (s != tmp[2][i] && s == tmp[0][i]) {
+#endif
                             goto sel_inc;
                         }
                         if (s == 0) {

@@ -69,7 +69,6 @@ extern const char str_802F5EFC[];
 extern const char str_802F5F14[];
 extern const char str_8041D7AC[];
 extern const char str_8041D7B0[];
-extern const char str_8041D810[];
 
 // Compiler-generated int->float conversion constant, a global data symbol in
 // the original object; defining it here makes the cast below reference the
@@ -147,25 +146,30 @@ extern const char str_802F63B4[];
 #endif
 
 
-// NONMATCHING (91.96%): only the language-table base differs. `jp`/`us` live in
-// a local table the original pools at str_802F5EB8+0x350 and copies through the
-// section base in r31; our object pools the same table as an anonymous @185
-// local at .rodata+0x8 and copies it through its own base register, so the two
-// prologue `lis`/`addi` and the two `lwz` bases differ (the surrounding schedule
-// is identical). Caching gp in `g` keeps it in r29 as the original does, and the
-// first path lookup uses `g->language` while the second reloads gp, matching the
-// original's `lwz r5, gp@sda21`. GXGetTexObjHeight's u16 result is kept in a u16
-// local and fileAsyncf's result is compared unsigned, matching the original.
+// 100%: matches through the unit's rodata base. The {jp, us} language table
+// lives at str_802F5EB8+0x350; reading it through `base` (instead of a local
+// initialiser) makes the compiler emit the original's `lwz r3, 0x350(r31)`.
+// `inBattle` is computed before the two table reads and as `!(x == 0)` so the
+// boolean lands in r3 and is copied to r28 exactly as the original does
+// (semantically identical to `x != 0`, just different MWCC colouring).
+// `opt_common_subs off` stops MWCC hoisting `base+0x438`/`base+0x448` into
+// registers once, which the original rematerialises per use.
+#pragma opt_common_subs off
 void monosiriMain(void* work) {
     MonosiriWork* w = work;
     TattleEntry* tattle;
     const char* base = str_802F5EB8;
     GlobalWork* g = gp;
-    const char* lang[2] = {str_8041D7AC, str_8041D7B0};
-    s32 inBattle = (g->inBattle != 0);
+    const char* lang[2];
+    s32 inBattle;
     GXTexObj texObj;
-    u16 height;
     s32 size;
+
+    // Raw offsets 0x350/0x354: the original's `jumptable_802F6208` (a local 2-entry
+    // const char* table) sits there in .rodata; no header names it.
+    inBattle = !(g->inBattle == 0);
+    lang[0] = *(const char**)(base + 0x350);
+    lang[1] = *(const char**)(base + 0x354);
 
     if (w == NULL) {
         return;
@@ -179,8 +183,7 @@ void monosiriMain(void* work) {
                 w->file2 = fileAllocf(0, RO(base, 0x448, str_802F6300), getMarioStDvdRoot());
                 w->state++;
                 TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &texObj, 0x37);
-                height = GXGetTexObjHeight(&texObj);
-                size = GXGetTexBufferSize(GXGetTexObjWidth(&texObj), height, 5, 0, 0);
+                size = GXGetTexBufferSize(GXGetTexObjWidth(&texObj), GXGetTexObjHeight(&texObj), 5, 0, 0);
                 w->alloc = smartAlloc(size, 0);
             }
         }
@@ -226,6 +229,7 @@ void monosiriMain(void* work) {
 }
 
 
+#pragma opt_common_subs reset
 void* monosiriInit(BattleUnitType kind, f32 x, f32 y) {
     MonosiriWork* w = _mapAlloc(sizeof(MonosiriWork));
 
@@ -697,14 +701,34 @@ static inline BOOL tubuUnlocked(TubuDt* t) {
     return FALSE;
 }
 
-// NONMATCHING (95.42%): behaviour complete, checked against the asm. What differs is register allocation (the
-// original keeps the string base in r31 and `work` in r29; ours swaps them) and the int->float conversion double,
-// which the original reaches through the string base register (base+0x420) while ours pools an anonymous literal.
+
+#ifdef MUST_MATCH
+// Match-only int->float like winLogI2F (defined later for winLogInit): the compiler pools its
+// own i2f double and addresses it absolutely because str_802F5EB8 is extern; the original reads
+// the unit's double through the base register (0x420(r31)).
+static inline f32 mainLogI2F(s32 v, const char* base, f64* scratch) {
+    u32* w = (u32*)scratch;
+    w[0] = 0x43300000;
+    w[1] = (u32)v ^ 0x80000000;
+    return (f32)(*scratch - *(const f64*)(base + 0x420));
+}
+#else
+#define mainLogI2F(v, base, scratch) ((f32)(v))
+#endif
+
 // Tattle log / menu main: the tabbed "kiroku" window (map, crystal stars, cards, tattle log).
+// NONMATCHING (96.35%): behaviour complete, checked against the asm. What still differs: the int->float pool (at all but the case-0 site ours emits an anonymous
+// `@NNN@l` load with its own `lis` where the original reads `base+0x420`; the case-0 site uses the MUST_MATCH
+// `mainLogI2F` helper above, which is base-relative but costs fsub+frsp), the 0xa0 vs 0x90 frame the helper
+// scratch forces, and the FPR colouring the pool register drives (map px/qx/py/qy, the map clamps,
+// card/badge/char).
+// NONMATCHING (96.35%): register allocation + the i2f pool remain (see the note above)
 s32 winLogMain(WindowWork* work) {
     LogWin* w = (LogWin*)work;
     const char* base = str_802F5EB8;
     const char* tpl;
+    const char* root;
+    LogRow* row;
     s32 i;
 
     {
@@ -736,8 +760,12 @@ s32 winLogMain(WindowWork* work) {
                     SFX(0x20005);
                 }
             } else if (w->buttonTrg & 0x100) {
-                for (i = 0; i < w->count; i++) {
-                    w->rows[i].phase = 0x1E;
+                row = w->rows;
+                    i = 0;
+                    while (i < w->count) {
+                        row->phase = 0x1E;
+                        row++;
+                        i++;
                 }
                 w->rows[w->sel].phase = 0xA;
                 w->state = w->rows[w->sel].type + 0xA;
@@ -768,18 +796,24 @@ s32 winLogMain(WindowWork* work) {
             }
             w->curX = float_neg128_8041d8dc;
             {
-                f32 t = float_45_8041d880 * (f32)w->count;
+                f64 cvtB;
+                f64 cvtA;
+                f32 t = float_45_8041d880 * mainLogI2F(w->count, base, &cvtA);
                 w->curY =
-                    float_8_8041d7d4 + (t * float_0p5_8041d7c8 - float_45_8041d880 * (f32)w->sel);
+                    float_8_8041d7d4 + (t * float_0p5_8041d7c8 - float_45_8041d880 * mainLogI2F(w->sel, base, &cvtB));
             }
             winMsgEntry(work, 0, w->rows[w->sel].name, 0);
             break;
         case 10:
             MAP_TPL_NAME(tpl, base);
-            if ((u32)fileAsyncf(4, NULL, RO(base, 0x510, str_802F63C8), getMarioStDvdRoot(), tpl) != 0) {
+            root = getMarioStDvdRoot();
+            if ((u32)fileAsyncf(4, NULL, RO(base, 0x510, str_802F63C8), root, tpl) != 0) {
                 if (w->file == 0) {
                     MAP_TPL_NAME(tpl, base);
-                    w->file = (FileEntry*)fileAllocf(4, RO(base, 0x510, str_802F63C8), getMarioStDvdRoot(), tpl);
+                    root = getMarioStDvdRoot();
+                    // (s32) add defeats the CSE with the fileAsyncf string above, so MWCC recomputes it
+                    // into r4 (as the original) instead of pinning it in r28 across the call.
+                    w->file = (FileEntry*)fileAllocf(4, (const char*)((s32)base + 0x510), root, tpl);
                 }
                 if (w->pose == -1) {
                     if (w->flags & 0x2000) {
@@ -822,8 +856,12 @@ s32 winLogMain(WindowWork* work) {
                 }
                 if (w->buttonTrg & 0x200) {
                     SFX(0x20013);
-                    for (i = 0; i < w->count; i++) {
-                        w->rows[i].phase = 0x28;
+                    row = w->rows;
+                        i = 0;
+                        while (i < w->count) {
+                            row->phase = 0x28;
+                            row++;
+                            i++;
                     }
                     w->rows[w->sel].phase = 0x14;
                     w->state = 0;
@@ -838,16 +876,16 @@ s32 winLogMain(WindowWork* work) {
                     return -2;
                 }
                 {
+                    f32 best = float_10000_8041d904;
                     f32 x0 = w->mapScrollX;
                     f32 y0 = w->mapScrollY;
-                    f32 px = float_neg230_8041d908 + x0 + w->mapCx;
+                    f32 px = float_neg230_8041d908 + w->mapCx + x0;
+                    f32 py = float_neg120_8041d90c + w->mapCy + y0;
                     f32 qx = float_74_8041d86c + x0;
-                    f32 py = float_neg120_8041d90c + y0 + w->mapCy;
                     f32 qy = float_120_8041d870 + y0;
-                    f32 best = float_10000_8041d904;
                     s32 bestIdx;
-                    u32 j;
                     TubuDt* t = tubuDt;
+                    s32 j;
                     f32 sx, sy;
                     s32 ox, oy;
 
@@ -950,8 +988,12 @@ s32 winLogMain(WindowWork* work) {
         case 11:
             if (w->buttonTrg & 0x200) {
                 SFX(0x20013);
-                for (i = 0; i < w->count; i++) {
-                    w->rows[i].phase = 0x28;
+                row = w->rows;
+                    i = 0;
+                    while (i < w->count) {
+                        row->phase = 0x28;
+                        row++;
+                        i++;
                 }
                 w->rows[w->sel].phase = 0x14;
                 w->state = 0;
@@ -997,8 +1039,12 @@ s32 winLogMain(WindowWork* work) {
             s32 pages = (cnt + 0x1B) / 28;
             if (trg & 0x200) {
                 SFX(0x20013);
-                for (i = 0; i < w->count; i++) {
-                    w->rows[i].phase = 0x28;
+                row = w->rows;
+                    i = 0;
+                    while (i < w->count) {
+                        row->phase = 0x28;
+                        row++;
+                        i++;
                 }
                 w->rows[w->sel].phase = 0x14;
                 w->state = 0;
@@ -1075,8 +1121,12 @@ s32 winLogMain(WindowWork* work) {
             s32 pages = (cnt + 0x1B) / 28;
             if (trg & 0x200) {
                 SFX(0x20013);
-                for (i = 0; i < w->count; i++) {
-                    w->rows[i].phase = 0x28;
+                row = w->rows;
+                    i = 0;
+                    while (i < w->count) {
+                        row->phase = 0x28;
+                        row++;
+                        i++;
                 }
                 w->rows[w->sel].phase = 0x14;
                 w->state = 0;
@@ -1152,8 +1202,12 @@ s32 winLogMain(WindowWork* work) {
             s32 pages = (w->charCnt + 0xF) / 16;
             if (trg & 0x200) {
                 SFX(0x20013);
-                for (i = 0; i < w->count; i++) {
-                    w->rows[i].phase = 0x28;
+                row = w->rows;
+                    i = 0;
+                    while (i < w->count) {
+                        row->phase = 0x28;
+                        row++;
+                        i++;
                 }
                 w->rows[w->sel].phase = 0x14;
                 w->state = 0;
@@ -1368,47 +1422,78 @@ extern const f32 float_neg1000_8041d948;
         }                                                                             \
     } while (0)
 
-// The remaining diff is one root cause: the int->float conversion double. The original loads it through the string
-// base (`lfd f3, 0x420(r31)`, r31 = str_802F5EB8), but this translation unit leaves str_802F5EB8 extern, so MWCC
-// pools an anonymous .rodata copy (@1305) and forms its address with lis/addi instead. `winLogI2F` below rebuilds
-// the i2f double by hand into a caller scratch and subtracts the unit's double at base+0x420. It is used for the
-// two LOG_ADD_TAB conversions and for `e7c`. That keeps `base` live through the function, restores the original
-// callee-saved set, and makes those doubles load base-relative with the original's FPR colouring (float_0/float_45/
-// float_0p5 in f5/f4/f1, double in f3). The LOG_ADD_TAB y_ is computed as two sequential products (`a_` then `b_`)
-// so the two conversions can share the one `macScratch`; the original writes the count scratch, converts it, then
-// the k scratch, exactly this order. The mapCx/mapCy/mapScroll conversions are left on the compiler's native i2f
-// (@1305) because routing them through the helper scores lower Remaining diffs are `fsub`+`frsp`
-// vs the compiler's fused `fsubs`, the frame (0x70 vs 0x60: the two named scratches are address-taken and cannot
-// overlap the native mapCx scratch) and register colouring (r5/r7 in the card loop, r27/r29 in the char loop).
+#ifdef MUST_MATCH
+// Match-only: tab 0's conversion keeps the compiler's native i2f, which emits the single fused
+// `fsubs` the original has; the winLogI2F helper's C double subtract can only produce `fsub`+`frsp`.
+// Using the helper for tab 0 scores lower, so this one call site stays native.
+#define LOG_ADD_TAB_0(w, tabType, msg)                                               \
+    do {                                                                              \
+        LogRow* r_ = &(w)->rows[(w)->count];                                          \
+        s32 k_;                                                                       \
+        r_->type = (tabType);                                                         \
+        r_->timer = 0;                                                                \
+        r_->phase = 0;                                                                \
+        r_->name = (msg);                                                             \
+        (w)->count++;                                                                 \
+        for (k_ = 0; k_ < (w)->count; k_++) {                                         \
+            (w)->rows[k_].curX = float_0_8041d7bc;                                    \
+            (w)->rows[k_].targetX = float_0_8041d7bc;                                 \
+            {                                                                         \
+                f32 a_ = float_45_8041d880 * ((f32)(w)->count);                       \
+                f32 b_ = float_45_8041d880 * ((f32)k_);                               \
+                f32 y_ = a_ * float_0p5_8041d7c8 - b_;                                \
+                (w)->rows[k_].curY = y_;                                              \
+                (w)->rows[k_].targetY = y_;                                           \
+            }                                                                         \
+        }                                                                             \
+    } while (0)
+#else
+#define LOG_ADD_TAB_0(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
+#endif
+
+// What still differs is one root cause: the int->float conversion double. The original loads it through the string
+// base (`lfd f3, 0x420(r31)`, r31 = str_802F5EB8), but this translation unit leaves that whole .rodata block extern,
+// so MWCC pools an anonymous .rodata copy and forms its address with lis/addi instead. `winLogI2F` below rebuilds
+// the i2f double by hand (one `u64` store into a caller scratch) and subtracts the unit's double at base+0x420.
+// That keeps `base` live through the function and makes those doubles load base-relative with the original's FPR
+// colouring (float_0/float_45/float_0p5 in f5/f4/f1, double in f3). It is used for tabs 1..4 and for `e7c`. The
+// LOG_ADD_TAB y_ is computed as two sequential products (`a_` then `b_`), one per scratch (count into e7cScratch,
+// k into macScratch), matching the original's store/convert order. Tab 0 keeps the compiler's native i2f
+// (`LOG_ADD_TAB_0`): its fused `fsubs` matches the original and scores higher than the helper there. The
+// mapCx/mapCy/mapScroll conversions are also left on the compiler's native i2f because routing them through the
+// helper scores lower. Remaining diffs are `fsub`+`frsp` vs the compiler's fused `fsubs` (tabs 1..4), the anonymous
+// tab-0/map i2f pool with its extra `lis`, the frame (0x70 vs 0x60: the two named scratches are address-taken and
+// cannot overlap the native map scratch), and register colouring.
 
 #ifdef MUST_MATCH
 // Match-only int->float: the compiler pools its own i2f double and addresses it absolutely because
 // str_802F5EB8 is extern; the original reads the unit's double through the base register (0x420(r31)).
+// One `u64` store builds the magic exactly like the compiler's native i2f, and unlike two `u32` stores it
+// keeps the named scratch live in one slot (scores 94.78 vs 94.41).
 static inline f32 winLogI2F(s32 v, const char* base, f64* scratch) {
-    u32* w = (u32*)scratch;
-    w[0] = 0x43300000;
-    w[1] = (u32)v ^ 0x80000000;
+    *(u64*)scratch = 0x4330000000000000ULL | (u64)((u32)v ^ 0x80000000u);
     return (f32)(*scratch - *(const f64*)(base + 0x420));
 }
 #else
 #define winLogI2F(v, base, scratch) ((f32)(v))
 #endif
 
-// NONMATCHING (93.16%): the map/scroll int->float doubles still pool as @1305; see above.
+#pragma opt_common_subs off // keeps MWCC from CSE-ing the map/base addresses across the load loops
+// NONMATCHING (94.78%): tabs 1..4 use fsub+frsp vs the original's fused fsubs, an anonymous tab-0/map i2f pool
+// (the original reads base+0x420), and a 0x10-larger frame; the rest is register colouring.
 void winLogInit(WindowWork* work) {
     LogWin* w = (LogWin*)work;
     static const char* msg_help[5] = {str_802F5EB8, str_802F5ECC, str_802F5EE4, str_802F5EFC, str_802F5F14};
     const char* base = str_802F5EB8;
     const char* area;
     s32 i;
-    const u8* sortp;
     f64 e7cScratch;
     f64 macScratch;
 
     w->state = 0;
     w->sel = 0;
     w->count = 0;
-    LOG_ADD_TAB(w, 0, msg_help[0]);
+    LOG_ADD_TAB_0(w, 0, msg_help[0]);
     if (swByteGet(0) >= 0x13) {
         LOG_ADD_TAB(w, 1, msg_help[1]);
     }
@@ -1583,8 +1668,7 @@ void winLogInit(WindowWork* work) {
     w->fb0 = float_neg300_8041d80c;
     w->fac = float_neg300_8041d80c;
     w->charCnt = 0;
-    sortp = enemy_monoshiri_sort_table + 1;
-    for (i = 1; i < 0xD8; i++, sortp++) {
+    for (i = 1; i < 0xD8; i++) {
         if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL) {
             if (evtGetValue(NULL, GSW(0)) < 0x187) {
                 if ((u32)(i - 0x85) <= 1 || i == 0x87) {
@@ -1604,7 +1688,7 @@ void winLogInit(WindowWork* work) {
                     continue;
                 }
             }
-            w->chars[w->charCnt].pad = *sortp;
+            w->chars[w->charCnt].pad = enemy_monoshiri_sort_table[i];
             w->chars[w->charCnt++].id = i;
         }
     }
@@ -1639,6 +1723,7 @@ void winLogInit(WindowWork* work) {
     }
 }
 
+#pragma opt_common_subs reset
 extern const Vec vec3_802f5f2c;
 extern const Vec vec3_802f5f38;
 extern const Vec vec3_802f5f44;
@@ -1855,11 +1940,19 @@ extern const f32 float_neg148_8041d898;
 
 // Fixes that got here: the tail bounce ternaries computed into a local `d` before winTexInit (0xBC/0xBE/0xBB)
 // and the mapSel/visible selection written as an argument-level ternary both stop mwcc hoisting the argument
-// setup past the branch (that was ~90% of the old gap).
-// Remaining: tx/ty are coloured f30/f29 swapped, the dat_8041d7a0 colour load is hoisted above the scroll
-// loads at the top, and the s16->f32 conversion magic is read from a fresh anonymous @N literal where the
-// original reads it at base+0x420 (double_to_int_802f62d8).
-// NONMATCHING (92.86%): behaviour complete; only register colouring and the rodata-base conversion differ.
+// setup past the branch (that was ~90% of the old gap). Later: declaring the two colours `tx, c0, ty, c1, c2`
+// (tx before c0 before ty) and routing the icon call through the by-value `logIconSet` helper (a fresh
+// `GXColor cc = c0` copy) with the `Vec` arguments left as inline `logMkVec`/`LV` expressions fixed the
+// by-value temp region; the two pragmas below give the original's FPR/GPR colouring. Both pragmas are
+// load-bearing: loop-only 94.35%, common-only 93.80%, neither 92.86%.
+// Remaining (94.84%): behaviour complete; register colouring, the int->float magic read at base+0x420 vs our
+// anonymous @N pool entry, the `extrwi.`-branch texture id (ours computes 0xBA-((count>>4)&1) branchless),
+// and the low by-value colour region (ours sits 4 bytes below the original, which keeps a dead colour slot at 0x8).
+// opt_loop_invariants off: the target recomputes the vec3/colour loads inside the tubuDt loop, not hoisted.
+// opt_common_subs off: needed for the original's FPR/GPR colouring and by-value temp layout.
+// NONMATCHING (94.85%): behaviour complete; only register/allocation and the rodata-base conversion differ.
+#pragma opt_loop_invariants off
+#pragma opt_common_subs off
 void mapGX(WindowWork* work, f32 x, f32 y) {
     static f32 pos_tbl[7][2] = {
         {165.0f, 68.0f}, {0.0f, 75.0f}, {97.0f, 150.0f}, {-139.0f, -33.0f}, {41.0f, -163.0f}, {211.0f, -91.0f}, {-209.0f, 159.0f},
@@ -1867,9 +1960,9 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
     LogWin* w = (LogWin*)work;
     const char* base = str_802F5EB8;
     f32 top;
-    f32 ty = float_120_8041d870 + (y + w->mapScrollY);
-    GXColor c0 = dat_8041d7a0;
     f32 tx = float_74_8041d86c + (x + w->mapScrollX);
+    GXColor c0 = dat_8041d7a0;
+    f32 ty = float_120_8041d870 + (y + w->mapScrollY);
     GXColor c1 = dat_8041d7a0;
     GXColor c2 = dat_8041d7a0;
     f32 bounce;
@@ -1892,11 +1985,11 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 }
             }
             if (w->mapSel == i) {
-                GXColor c = c2;
+                GXColor c = c0;
 
                 winTexSet(((gp->retraceCount >> 4) & 1) ? 0xB9 : 0xBA, logMkVec(LV(0x158, vec3_802f6010), tx + (f32)t->x, ty + (f32)t->y), LV(0x164, vec3_802f601c), c);
             } else {
-                GXColor c = c2;
+                GXColor c = c0;
 
                 winTexSet((t->visible != 0) ? 0xBA : 0xB8, logMkVec(LV(0x170, vec3_802f6028), tx + (f32)t->x, ty + (f32)t->y), LV(0x17C, vec3_802f6034), c);
             }
@@ -1929,13 +2022,10 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 k = 6;
             }
             if (icon != -1) {
-                Vec scale;
-                Vec translate;
+                GXColor cc = c2;
 
                 winIconInit();
-                scale = LV(0x194, vec3_802f604c);
-                translate = logMkVec(LV(0x188, vec3_802f6040), tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1]));
-                winIconSet(icon, &translate, &scale, &c0);
+                logIconSet(icon, &cc, logMkVec(LV(0x188, vec3_802f6040), tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1])), LV(0x194, vec3_802f604c));
             }
         }
         if (w->pose != -1) {
@@ -1995,6 +2085,8 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         winTexSet(0xBB, logMkVec(LV(0x248, vec3_802f6100), (x - float_220_8041d868) - d, y), LV(0x254, vec3_802f610c), c1);
     }
 }
+#pragma opt_loop_invariants reset
+#pragma opt_common_subs reset
 extern const Vec vec3_802f6118;
 extern const Vec vec3_802f6124;
 extern const Vec vec3_802f6130;

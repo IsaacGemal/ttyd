@@ -1161,15 +1161,30 @@ void _btlStockExpDisp(CameraId cameraId, void* param) {
 extern ItemData itemDataTable[];
 extern f32 float_5_8041bf6c;
 
-// NONMATCHING (91.46%): 2 instructions differ, 2 missing, 2 extra, plus register differences.
+// The original reads ItemData.icon_id with `lhz` (unsigned), but the header declares it s16, so this uses
+// the ItemDataView field plus the u16 callee signature to reproduce that with no `extsh` (fixing
+// ItemData.icon_id and iconDispGx's iconId to u16 in the headers would remove the MUST_MATCH).
+// The rest: target f3=mSizeMultiplier, f4=height, f2=float_5 with float_1 live before the fmadds (ours
+// f2/f3 with float_5/float_1 sharing f1), and `add r5, r4, r0` vs `add r4, r4, r0` (the target coalesces
+// the table address into the icon-argument register r5, ours reuses the base r4).
+// NONMATCHING (91.46%): only the FP allocation (f3/f4/f2 vs f2/f3/f1) and `add r5` vs `add r4` differ; the unsigned `lhz` matches.
 void btlUnitStolenItemDisp(CameraId cameraId, void* param) {
 	BattleUnit* unit = param;
 	Vec v;
+#ifdef MUST_MATCH
+	/* MUST_MATCH: the header's s16 icon_id makes the load `lha`; the view + u16 callee signature
+	   reproduce the original's unsigned `lhz` with no `extsh`. */
+	ItemDataView* items = (ItemDataView*)itemDataTable;
+#endif
 	s32 itemId = unit->heldItem;
 
 	BtlUnit_GetPos(unit, &v.x, &v.y, &v.z);
 	v.y += unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit) + float_5_8041bf6c;
+#ifdef MUST_MATCH
+	((void (*)(Vec*, s16, u16, f32))iconDispGx)(&v, 0, items[itemId].icon_id, float_1_8041bf64);
+#else
 	iconDispGx(&v, 0, itemDataTable[itemId].icon_id, float_1_8041bf64);
+#endif
 }
 
 void btlUnitItemDisp2(CameraId cameraId, BattleUnit* unit) {

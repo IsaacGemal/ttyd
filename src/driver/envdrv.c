@@ -282,19 +282,22 @@ void envMain(void) {
 s32 texmtx_tbl[] = {30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 4, 5, 6, 14, 0, 1, 2, 3, 8, 9, 10}; //TODO: put in right spot
 
 // These pragmas keep the seven loop constants live across the loop like the target; without them
-// the allocator rematerialises three of them from the pool (55% instead of 93.7%).
+// the allocator rematerialises three of them from the pool (55% instead of 94.1%).
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-// Target half 1: twoPi f31, i2f double f30, quarter f29, pi f28, one f27, coefK f26, coefA f25,
-// hundred f24; dp r29, i r31, texMtx r30, texCoord r25, tevStage r26. We match quarter f29,
-// coefK f26 and hundred f24; the compiler hoists the int->float double to f31 (target f30) and
-// the rest shifts around it, and half 2 gets its own layout (i r25, cursors copied from a zero).
-// The `dp` pointer (a raw EnvironmentUnk88* to wp->unk88) produces the target's
-// `addi r29, r28, 0x88`; the constants are assigned inside the loop, the phase is split
-// `twoPi * (f32)i` then `* quarter`, halfpi is assigned to f1 before each nested compare, and the
-// outer-else subtraction runs through f0, all to nudge the FP loads. The double will not move to
-// f30 by source order, so the rest is permuter work.
-// NONMATCHING (93.87%): calls and instructions match; only callee-saved allocation differs.
+// Half 1's FP allocation matches the target exactly (twoPi f31, i2f double f30, quarter f29,
+// pi f28, one f27, coefK f26, coefA f25, hundred f24). Half 2's bottom four match (hundred f24,
+// one f25, coefK f26, coefA f27); its top four are reversed vs the target (ours double f31,
+// twoPi f30, pi f29, quarter f28; target pi f31, quarter f30, double f29, twoPi f28) and will
+// not move by declaration/assignment order. The integer callee-saved web is still shifted:
+// target half 1 texCoord r25, tevStage r26, first r27, dp r29, texMtx r30, i r31; ours texMtx
+// r25, tevStage r28, texCoord r29, dp r30, i r31. The four `// NONMATCHING`-tuning knobs found
+// by search are the two blocks' locals declaration orders and constant-assignment orders (the
+// text is otherwise the natural one); the `dp` pointer (a raw EnvironmentUnk88* to wp->unk88)
+// produces the target's `addi r29, r28, 0x88`, the phase is split `twoPi * (f32)i` then
+// `* quarter`, halfpi is assigned to f1 before each nested compare, and the outer-else
+// subtraction runs through f0. The rest is permuter work.
+// NONMATCHING (94.08%): calls and instructions match; only callee-saved allocation differs.
 void envDisp_DepthOfField(void) {
     EnvironmentWork* wp = envGetWork();
     s32 i;
@@ -330,24 +333,24 @@ void envDisp_DepthOfField(void) {
 
     if ((dp->unk0 & 1) && (dp->unk4 != float_0_8041e53c)) {
         f32 twoPi, quarter, pi, one, coefK, coefA, hundred;
-        s32* texMtx = texmtx_tbl;
-        GXTexCoordID texCoord = GX_TEXCOORD0;
-        GXTevStageID tevStage = GX_TEVSTAGE0;
-        GXTevColorArg v33;
-        GXTevAlphaArg v34;
         s32 first;
         GXTevStageID finalStage;
+        GXTevAlphaArg v34;
+        s32* texMtx = texmtx_tbl;
+        GXTevColorArg v33;
+        GXTexCoordID texCoord = GX_TEXCOORD0;
+        GXTevStageID tevStage = GX_TEVSTAGE0;
 
         for (i = 0; i < 4; i++) {
             twoPi = TWO_PI;
             quarter = 0.25f;
             f0 = TWO_PI * (f32)i;
             f3 = f0 * quarter;
-            hundred = 100.0f;
             pi = PI;
+            coefK = 0.16605f;
             one = 1.0f;
             coefA = 0.4967f;
-            coefK = 0.16605f;
+            hundred = 100.0f;
             f2 = 0.00761f;
             if (f3 <= pi) {
                 f1 = MTXDegToRad(90.0f);
@@ -402,8 +405,8 @@ void envDisp_DepthOfField(void) {
             } else {
                 f0 = MTXDegToRad(270.0f);
                 if (f3 < f0) {
-                    f1 = f3 - pi;
-                    f0 = f1 * f1;
+                    f0 = f3 - pi;
+                    f0 = f0 * f0;
                     f4 = (f4 * f0) - coefA;
                     f4 = (f4 * f0) + one;
                     f4 = -f4;
@@ -471,25 +474,25 @@ void envDisp_DepthOfField(void) {
     }
 
     if ((dp->unk0 & 2) && (dp->unk8 != float_0_8041e53c)) {
-        f32 twoPi, quarter, pi, one, coefK, coefA, hundred;
+        f32 hundred, one, coefK, twoPi, coefA, quarter, pi;
+        s32 first;
         s32* texMtx = texmtx_tbl;
         GXTexCoordID texCoord = GX_TEXCOORD0;
-        GXTevStageID tevStage = GX_TEVSTAGE0;
         GXTevColorArg v33;
         GXTevAlphaArg v34;
-        s32 first;
         GXTevStageID finalStage;
+        GXTevStageID tevStage = GX_TEVSTAGE0;
 
         for (i = 0; i < 4; i++) {
             twoPi = TWO_PI;
             quarter = 0.25f;
             f0 = TWO_PI * (f32)i;
             f3 = f0 * quarter;
-            hundred = 100.0f;
             pi = PI;
+            coefK = 0.16605f;
             one = 1.0f;
             coefA = 0.4967f;
-            coefK = 0.16605f;
+            hundred = 100.0f;
             f2 = 0.00761f;
             if (f3 <= pi) {
                 f1 = MTXDegToRad(90.0f);
@@ -544,8 +547,8 @@ void envDisp_DepthOfField(void) {
             } else {
                 f0 = MTXDegToRad(270.0f);
                 if (f3 < f0) {
-                    f1 = f3 - pi;
-                    f0 = f1 * f1;
+                    f0 = f3 - pi;
+                    f0 = f0 * f0;
                     f4 = (f4 * f0) - coefA;
                     f4 = (f4 * f0) + one;
                     f4 = -f4;

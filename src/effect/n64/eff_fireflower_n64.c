@@ -10,17 +10,23 @@
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 
+// The unit's .sdata2 colors, before the compiler's float pool.
+__declspec(section ".sdata2") u32 dat_8041eec8 = 0xFF000000;
+__declspec(section ".sdata2") u32 dat_8041eecc = 0xFF000000;
+
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_8039CA10[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 
-// .data float pairs and vertex arrays, in the original's order.
-static f32 negone_one_374[2] = { -1.0f, 1.0f };
-f32 lbl_8039CA20[2] = { 1.0f, -1.0f };
-static f32 one_negone_373[2] = { 1.0f, -1.0f };
-f32 lbl_8039CA30[2] = { -1.0f, 1.0f };
-static f32 negone_one_360[2] = { -1.0f, 1.0f };
-f32 lbl_8039CA40[2] = { 1.0f, -1.0f };
-static f32 one_negone_359[2] = { 1.0f, -1.0f };
+// .data float pairs and vertex arrays, in the original's order.  force_active keeps the
+// unreferenced ones (the MUST_MATCH code reaches them through lbl_8039CA10).
+#pragma force_active on
+__declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
+__declspec(section ".data") f32 lbl_8039CA20[2] = { 1.0f, -1.0f };
+__declspec(section ".data") static f32 one_negone_373[2] = { 1.0f, -1.0f };
+__declspec(section ".data") f32 lbl_8039CA30[2] = { -1.0f, 1.0f };
+__declspec(section ".data") static f32 negone_one_360[2] = { -1.0f, 1.0f };
+__declspec(section ".data") f32 lbl_8039CA40[2] = { 1.0f, -1.0f };
+__declspec(section ".data") static f32 one_negone_359[2] = { 1.0f, -1.0f };
 u32 size4x4_tex4x4_vtx[14] = {
 	0xFFFEFFFE, 0x00000000, 0x0000FF00, 0x00FF0002,
 	0xFFFE0000, 0x02000000, 0xFF0000FF, 0x00020002,
@@ -39,6 +45,7 @@ static u32 size32x32_tex32x32_vtx[14] = {
 	0x00020400, 0x0400FFFF, 0xFFFFFFF0, 0x00200002,
 	0x00000400, 0xFFFFFFFF,
 };
+#pragma force_active reset
 
 #ifdef MUST_MATCH
 // The original reaches the three vertex arrays from the address 8 bytes before its .data.
@@ -68,7 +75,7 @@ EffectEntry* effFireFlowerN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z) 
 	s32 i;
 
 	effect = effEntry();
-	effect->type = "FireFlowerN64";
+	effect->type = "FireFlowerN64\0\0";
 	effect->count = 0x1f;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effFireFlowerData) * 0x1f);
 	effect->userdata = data;

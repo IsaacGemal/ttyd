@@ -449,20 +449,91 @@ static void ext_moamoa_dispent(void) {
 #pragma inline_max_size(1000)
 // Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
 #pragma opt_propagation off
+// Keeps the inlined sin/cos argument in a callee-saved FPR instead of rematerialising it per branch.
+#pragma opt_lifetimes off
 // Per-frame update of every moamoa: hit checks against Mario and his partner, the jump/scatter state machine
 // (MoamoaPose.field_0x02), clamping into the room, then the animation frame update and the rider-delta limit.
+static inline f32 ekiSinfM(f32 rad) {
+    f32 sinv = 0.00761f;
+    f32 c1 = 0.16605f, c2 = 1.0f;
+    f32 f0;
+
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * rad;
+        } else {
+            rad = 1.5707964f - (rad - 1.5707964f);
+            f0 = rad * rad;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * rad;
+        }
+    } else if (rad < 4.712389f) {
+        rad = rad - 3.1415927f;
+        f0 = rad * rad;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * rad;
+        sinv = -sinv;
+    } else {
+        rad = 1.5707964f - (rad - 4.712389f);
+        f0 = rad * rad;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * rad;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+static inline f32 ekiCosfM(f32 rad) {
+    f32 cosv = 0.03705f;
+    f32 c1 = 0.4967f, c2 = 1.0f;
+    f32 f0;
+
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+        } else {
+            rad = 1.5707964f - (rad - 1.5707964f);
+            f0 = rad * rad;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+            cosv = -cosv;
+        }
+    } else if (rad < 4.712389f) {
+        rad = rad - 3.1415927f;
+        f0 = rad * rad;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+        cosv = -cosv;
+    } else {
+        rad = 1.5707964f - (rad - 4.712389f);
+        f0 = rad * rad;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+    }
+    return cosv;
+}
+
 #define MOA_TARGET(i) ((&wp->field_0x14)[(i) % 3])
-// NONMATCHING (88.88%): FPR colouring/scheduling inside the inlined ekiSinf/ekiCosf/randf bodies (retail
-// keeps sinv in f4, ours often uses f0/f1 in context) and one swapped GPR pair (retail handled=r25/voice
-// string=r24, ours the reverse); the prologue, frame size and callee-saved register set now match retail.
+// NONMATCHING (95.86%): FPR/GPR colouring and scheduling in the inlined ekiSinf/ekiCosf/randf bodies.
+// ekiSinfM/ekiCosfM (parameter-reusing shape) + opt_propagation/opt_lifetimes off fixed the sin/cos
+// colouring; block-local temps match cases 0x1-0x3/0x24-26/0x33-34/0x1B. Permuter work remains.
 static void ext_moamoa_main(void) {
     MarioWork* mario;
     PartyEntry* party;
     ExtPose* ep;
     MoamoaPose* pose;
     s32 i;
-    const char* voiceSfx;
+    s32 j;
     s32 handled;
+    const char* voiceSfx;
     s32 voicePlayed;
     f32 rad;
     f32 tx;
@@ -470,6 +541,7 @@ static void ext_moamoa_main(void) {
     f32 tz;
     f32 dist;
     f32 f;
+    f32 r1;
     s32 res;
     Vec v;
 
@@ -500,23 +572,24 @@ static void ext_moamoa_main(void) {
     if (party->currentMemberId == 5 && (party->flags & 0x100)) {
         wp->field_0x55C = cloudGetBreathDir();
         wp->field_0x560 = cloudGetBreathDist();
-        rad = 6.2831855f * wp->field_0x55C / 360.0f;
-        wp->field_0x564.x = wp->field_0x560 * ekiSinf(rad) + party->position.x;
+        wp->field_0x564.x =
+            wp->field_0x560 * ekiSinfM(6.2831855f * wp->field_0x55C / 360.0f) + party->position.x;
         wp->field_0x564.y = party->position.y;
-        rad = 6.2831855f * wp->field_0x55C / 360.0f;
-        wp->field_0x564.z = -(wp->field_0x560 * ekiCosf(rad) - party->position.z);
+        wp->field_0x564.z = -(wp->field_0x560 * ekiCosfM(6.2831855f * wp->field_0x55C / 360.0f) - party->position.z);
     }
     if (wp->field_0x38 > 0xFA) {
+        MoamoaPose* p;
+
         extGetPosePtr();
-        pose = wp->poses;
-        for (i = 0; i < wp->poseNum; i++, pose++) {
-            if (!(pose->flags & 0x4)) {
-                if (pose->flags & 0x10) {
+        p = wp->poses;
+        for (j = 0; j < wp->poseNum; j++, p++) {
+            if (!(p->flags & 0x4)) {
+                if (p->flags & 0x10) {
                     break;
                 }
-                pose->field_0x02 = 0x19;
-                pose->field_0x04 = 0;
-                pose->flags |= 0x10;
+                p->field_0x02 = 0x19;
+                p->field_0x04 = 0;
+                p->flags |= 0x10;
             }
         }
         if (wp->escapeEvt == NULL) {
@@ -524,10 +597,10 @@ static void ext_moamoa_main(void) {
         }
     }
     ep = extGetPosePtr();
-    voiceSfx = "SFX_STG6_MOAMOA_VOICE1";
     voicePlayed = 0;
     pose = wp->poses;
     for (i = 0; i < wp->poseNum; i++, ep++, pose++) {
+        voiceSfx = "SFX_STG6_MOAMOA_VOICE1";
         wp->field_0x550 = angleABf(mario->position.x, mario->position.z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
         wp->field_0x554 = distABf(mario->position.x, mario->position.z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
         if ((wp->field_0x00 & 0x1) && !(wp->field_0x00 & 0x4) && marioKeyOffChk() == 0 && marioCtrlOffChk() == 0
@@ -548,15 +621,15 @@ static void ext_moamoa_main(void) {
                     handled = 1;
                 }
             } else if (res == 3) {
+                f = (wp->field_0x55C + wp->field_0x550) * 0.5f;
                 pose->flags |= 0x84;
                 pose->field_0x02 = 0x30;
-                f = (wp->field_0x55C + wp->field_0x550) * 0.5f;
                 pose->position = vec3_eki_00008908;
                 dist = randf(0.1f, 0.2f);
                 rad = 6.2831855f * f / 360.0f;
-                pose->field_0x14 = dist * ekiSinf(rad);
+                pose->field_0x14 = dist * ekiSinfM(rad);
                 pose->field_0x1C = randf(0.03f, 0.06f);
-                pose->field_0x20 = dist * -ekiCosf(rad);
+                pose->field_0x20 = dist * -ekiCosfM(rad);
                 pose->field_0x18 = 0x78;
                 wp->field_0x38++;
                 moamoa_pose_change(pose, "c_n_moa_a", "D_1");
@@ -580,19 +653,22 @@ static void ext_moamoa_main(void) {
         switch (pose->field_0x02) {
         case 0x0:
             if (i % 50 < 0x14) {
+                f32 tx, tz, rad, ar, br;
                 f32 ang = randf(0.0f, 6.2831855f);
                 f32 len = randf(0.0f, 50.0f);
 
-                tx = len * ekiSinf(ang) + MOA_TARGET(i).x;
-                tz = -(len * ekiCosf(ang) - MOA_TARGET(i).z);
+                tx = len * ekiSinfM(ang) + MOA_TARGET(i).x;
+                tz = -(len * ekiCosfM(ang) - MOA_TARGET(i).z);
                 rad = 6.2831855f * angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], tx, tz) / 360.0f;
-                tx = 15.0f * ekiSinf(rad) + ep->matrix[0][0][3];
+                tx = 15.0f * ekiSinfM(rad) + ep->matrix[0][0][3];
                 ty = ep->matrix[0][1][3];
-                tz = -(15.0f * ekiCosf(rad) - ep->matrix[0][2][3]);
-                moamoa_jump(ep, pose, pose->field_0x02, 1, tx, ty, tz, randf(1.5f, 3.0f), randf(0.8f, 2.0f));
+                tz = -(15.0f * ekiCosfM(rad) - ep->matrix[0][2][3]);
+                ar = (f32)rand() / 32767.0f;
+                br = (f32)rand() / 32767.0f;
+                moamoa_jump(ep, pose, pose->field_0x02, 1, tx, ty, tz, ar * 1.5f + 1.5f, br * 1.2f + 0.8f);
                 pose->flags |= 0x1;
             } else {
-                f32 ang;
+                f32 ang, rad, ar, br;
 
                 dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z);
                 ang = angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z);
@@ -600,10 +676,12 @@ static void ext_moamoa_main(void) {
                     ang = randf(0.0f, 360.0f);
                 }
                 rad = 6.2831855f * ang / 360.0f;
-                tx = 5.0f * ekiSinf(rad) + ep->matrix[0][0][3];
+                tx = 5.0f * ekiSinfM(rad) + ep->matrix[0][0][3];
                 ty = ep->matrix[0][1][3];
-                tz = -(5.0f * ekiCosf(rad) - ep->matrix[0][2][3]);
-                moamoa_jump(ep, pose, pose->field_0x02, 1, tx, ty, tz, randf(0.3f, 0.5f), randf(0.5f, 0.8f));
+                tz = -(5.0f * ekiCosfM(rad) - ep->matrix[0][2][3]);
+                ar = (f32)rand() / 32767.0f;
+                br = (f32)rand() / 32767.0f;
+                moamoa_jump(ep, pose, pose->field_0x02, 1, tx, ty, tz, ar * 0.2f + 0.3f, br * 0.3f + 0.5f);
                 pose->flags &= ~0x1;
             }
             break;
@@ -613,10 +691,11 @@ static void ext_moamoa_main(void) {
                 pose->field_0x02++;
             }
             break;
-        case 0x33:
+        case 0x33: {
+            f32 f, dist;
+
             pose->field_0x1C = randf(0.0f, 200.0f);
-            f = 300.0f * pose->field_0x1C / 200.0f;
-            pose->field_0x20 = randf(0.0f, f);
+            pose->field_0x20 = randf(0.0f, 300.0f * pose->field_0x1C / 200.0f);
             pose->field_0x02++;
             pose->field_0x04 = 0;
             /* fallthrough */
@@ -642,31 +721,40 @@ static void ext_moamoa_main(void) {
             ep->matrix[0][2][3] += (tz - ep->matrix[0][2][3]) / 15.0f;
             pose->field_0x04++;
             break;
-        case 0x1:
-            dist = wp->field_0x554;
+        }
+        case 0x1: {
+            f32 dist, rad;
+
             rad = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f)) / 360.0f;
-            tx = 15.0f * ekiSinf(rad) + ep->matrix[0][0][3];
+            dist = wp->field_0x554;
+            tx = 15.0f * ekiSinfM(rad) + ep->matrix[0][0][3];
             ty = ep->matrix[0][1][3];
-            tz = -(15.0f * ekiCosf(rad) - ep->matrix[0][2][3]);
+            tz = -(15.0f * ekiCosfM(rad) - ep->matrix[0][2][3]);
             moamoa_jump(ep, pose, (dist < 100.0f) ? pose->field_0x02 : 0, 1, tx, ty, tz, randf(1.0f, 1.0f),
                         randf(0.4f, 0.4f));
             break;
-        case 0x2:
-            dist = wp->field_0x554;
+        }
+        case 0x2: {
+            f32 dist, rad, a, b;
+
             rad = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f) + 180.0f) / 360.0f;
+            dist = wp->field_0x554;
             ty = ep->matrix[0][1][3];
-            tx = 30.0f * ekiSinf(rad) + ep->matrix[0][0][3];
+            tx = 30.0f * ekiSinfM(rad) + ep->matrix[0][0][3];
             tz = ep->matrix[0][2][3];
             moamoa_jump(ep, pose, (dist < 100.0f) ? pose->field_0x02 : 0, 1, tx, ty, tz,
-                        2.0f * randf(1.0f, 1.0f), 2.0f * randf(0.4f, 0.4f));
+                        (a = randf(1.0f, 1.0f), 2.0f * a), (b = randf(0.4f, 0.4f), 2.0f * b));
             break;
-        case 0x3:
+        }
+        case 0x3: {
+            f32 rad;
+
             ep->matrix[0][1][3] += pose->field_0x14;
             pose->field_0x14 -= pose->field_0x20;
             rad = 6.2831855f * angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], pose->position.x, pose->position.z)
                   / 360.0f;
-            ep->matrix[0][0][3] = pose->field_0x1C * ekiSinf(rad) + ep->matrix[0][0][3];
-            ep->matrix[0][2][3] = pose->field_0x1C * -ekiCosf(rad) + ep->matrix[0][2][3];
+            ep->matrix[0][0][3] = pose->field_0x1C * ekiSinfM(rad) + ep->matrix[0][0][3];
+            ep->matrix[0][2][3] = pose->field_0x1C * -ekiCosfM(rad) + ep->matrix[0][2][3];
             if (--pose->field_0x18 < 0) {
                 ep->matrix[0][0][3] = pose->position.x;
                 ep->matrix[0][1][3] = pose->position.y;
@@ -677,6 +765,7 @@ static void ext_moamoa_main(void) {
                 pose->field_0x02++;
             }
             break;
+        }
         case 0x4:
             if (++pose->field_0x04 > 4) {
                 pose->field_0x02 = pose->field_0x24;
@@ -684,7 +773,9 @@ static void ext_moamoa_main(void) {
             break;
         case 0x24:
         case 0x25:
-        case 0x26:
+        case 0x26: {
+            f32 rad;
+
             if (!(pose->flags & 0x1)) {
                 tx = mario->position.x;
                 tz = mario->position.z;
@@ -692,13 +783,15 @@ static void ext_moamoa_main(void) {
                 tx = MOA_TARGET(i).x;
                 tz = MOA_TARGET(i).z;
             }
-            rad = 6.2831855f * (angleABf(tx, tz, ep->matrix[0][0][3], ep->matrix[0][2][3]) + randf(-45.0f, 45.0f))
+            r1 = (f32)rand() / 32767.0f;
+            rad = 6.2831855f * (angleABf(tx, tz, ep->matrix[0][0][3], ep->matrix[0][2][3]) + (r1 * 90.0f + -45.0f))
                   / 360.0f;
-            tx = 15.0f * ekiSinf(rad) + ep->matrix[0][0][3];
+            tx = 15.0f * ekiSinfM(rad) + ep->matrix[0][0][3];
             ty = ep->matrix[0][1][3];
-            tz = -(15.0f * ekiCosf(rad) - ep->matrix[0][2][3]);
+            tz = -(15.0f * ekiCosfM(rad) - ep->matrix[0][2][3]);
             moamoa_jump(ep, pose, pose->field_0x02 + 1, 1, tx, ty, tz, randf(1.0f, 1.0f), randf(1.0f, 1.0f));
             break;
+        }
         case 0x27:
             if (++pose->field_0x04 < 0x1E) {
                 ep->matrix[0][0][0] *= 0.9f;
@@ -708,11 +801,14 @@ static void ext_moamoa_main(void) {
                 pose->field_0x02 = 0x31;
             }
             break;
-        case 0x2F:
-            rad = 6.2831855f * randf(135.0f, 225.0f) / 360.0f;
+        case 0x2F: {
+            f32 rad, dist, f;
+
+            r1 = (f32)rand() / 32767.0f;
             dist = randf(300.0f, 500.0f);
-            tx = dist * ekiSinf(rad) + ep->matrix[0][0][3];
-            tz = -(dist * ekiCosf(rad) - ep->matrix[0][2][3]);
+            rad = 6.2831855f * (r1 * 90.0f + 135.0f) / 360.0f;
+            tx = dist * ekiSinfM(rad) + ep->matrix[0][0][3];
+            tz = -(dist * ekiCosfM(rad) - ep->matrix[0][2][3]);
             f = randf(5.0f, 6.0f);
             ty = randf(0.2f, 0.3f);
             if (voicePlayed == 0) {
@@ -722,6 +818,7 @@ static void ext_moamoa_main(void) {
             }
             moamoa_jump(ep, pose, 0x31, 0, tx, -100.0f, tz, f, ty);
             break;
+        }
         case 0x30:
             if (--pose->field_0x18 > 0) {
                 pose->position.x += pose->field_0x14;
@@ -769,30 +866,35 @@ static void ext_moamoa_main(void) {
                 pose->field_0x02++;
             }
             break;
-        case 0x1B:
+        case 0x1B: {
+            f32 rad;
+
             if (__fabsf(ep->matrix[0][0][3]) < 300.0 && __fabsf(ep->matrix[0][2][3]) < 300.0) {
+                r1 = (f32)rand() / 32767.0f;
                 rad = 6.2831855f * (angleABf(MOA_TARGET(i).x, MOA_TARGET(i).z, ep->matrix[0][0][3], ep->matrix[0][2][3])
-                                    + randf(-45.0f, 45.0f))
+                                    + (r1 * 90.0f + -45.0f))
                       / 360.0f;
-                tx = 15.0f * ekiSinf(rad) + ep->matrix[0][0][3];
-                tz = -(15.0f * ekiCosf(rad) - ep->matrix[0][2][3]);
+                tx = 15.0f * ekiSinfM(rad) + ep->matrix[0][0][3];
+                tz = -(15.0f * ekiCosfM(rad) - ep->matrix[0][2][3]);
                 moamoa_jump(ep, pose, pose->field_0x02, 1, tx, 0.0f, tz, 3.0f * randf(1.0f, 1.0f), randf(1.0f, 1.0f));
             } else {
                 pose->field_0x02 = 0x3E;
             }
             break;
+        }
         case 0x3E:
             pose->flags |= 0x20;
             ep->flags &= ~0x1;
             ep->flags |= 0x4;
             break;
         case 0x3F:
-            rad = 6.2831855f * randf(225.0f, 315.0f) / 360.0f;
+            r1 = (f32)rand() / 32767.0f;
             f = randf(2.0f, 3.0f);
             pose->field_0x04 = irand(i / 2);
-            pose->position.x = f * ekiSinf(rad);
+            rad = 6.2831855f * (r1 * 90.0f + 225.0f) / 360.0f;
+            pose->position.x = f * ekiSinfM(rad);
             pose->position.y = randf(1.0f, 2.0f);
-            pose->position.z = f * -ekiCosf(rad);
+            pose->position.z = f * -ekiCosfM(rad);
             pose->field_0x02++;
             break;
         case 0x40:
@@ -855,6 +957,7 @@ static void ext_moamoa_main(void) {
     }
 }
 
+#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 #pragma inline_max_size reset
 #pragma inline_max_total_size reset
@@ -918,14 +1021,92 @@ static u32 jumptable_00002400[66] = {
     (u32)((u8*)&ext_moamoa_main + 0x2e08), (u32)((u8*)&ext_moamoa_main + 0x2e2c),
 };
 
-#pragma opt_propagation off // stop MWCC rematerialising the ekiSinf/ekiCosf coefficients per branch
-// NONMATCHING (89.32%): `#pragma opt_propagation off` above stops MWCC rematerialising the ekiSinf/ekiCosf
-// coefficients per branch, which recovered most of the gap (72.30 -> 79.81). What is left is register
-// pressure: retail saves f20-f31 and r17-r31 (frame 0x140), ours f21-f31 and r19-r31 (frame 0x120).
+
+// ext_moamoa_init needs its own copy of the sin/cos polynomials: the shared ekiSinf/ekiCosf above are
+// consumed by ext_moamoa_main and moamoa_hit_check, and changing them drops those scores. The `f2`
+// scratch in the last sine branch plus `#pragma opt_lifetimes off` at the call site are what give
+// retail's in-loop seed accumulators (sine in f2, cosine in f3).
+static inline f32 initSinf(f32 rad) {
+    const f32 pi = 3.1415927f;
+    const f32 halfpi = 1.5707964f;
+    const f32 threehalves = 4.712389f;
+    f32 f0, f1, f2, sinv = 0.00761f;
+    f32 c1 = 0.16605f;
+    f32 c2 = 1.0f;
+
+    if (rad <= pi) {
+        if (rad <= halfpi) {
+            sinv = sinv * (rad * rad) - c1;
+            sinv = sinv * (rad * rad) + c2;
+            sinv = sinv * rad;
+        } else {
+            f1 = halfpi - (rad - halfpi);
+            f0 = f1 * f1;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
+        }
+    } else if (rad < threehalves) {
+        f1 = rad - pi;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    } else {
+        f1 = halfpi - (rad - threehalves);
+        f2 = f1 * f1;
+        sinv = sinv * f2 - c1;
+        sinv = sinv * f2 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+static inline f32 initCosf(f32 rad) {
+    const f32 pi = 3.1415927f;
+    const f32 halfpi = 1.5707964f;
+    const f32 threehalves = 4.712389f;
+    f32 f0, cosv = 0.03705f;
+    f32 c1 = 0.4967f;
+    f32 c2 = 1.0f;
+
+    if (rad <= pi) {
+        if (rad <= halfpi) {
+            cosv = cosv * (rad * rad) - c1;
+            cosv = cosv * (rad * rad) + c2;
+        } else {
+            f0 = halfpi - (rad - halfpi);
+            f0 = f0 * f0;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+            cosv = -cosv;
+        }
+    } else if (rad < threehalves) {
+        f0 = (rad - pi) * (rad - pi);
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+        cosv = -cosv;
+    } else {
+        f0 = halfpi - (rad - threehalves);
+        f0 = f0 * f0;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+    }
+    return cosv;
+}
+
+#pragma opt_lifetimes off // keeps the inlined sin/cos seeds in f2/f3 like retail instead of reusing f1
+#pragma opt_propagation off // stop MWCC rematerialising the sin/cos coefficients per branch
+// NONMATCHING (99.27%): pose/ep/i GPRs, the inlined polynomial and the copy instruction selection all
+// match; the 11 `!!` left are the scheduler's order for the three `wp->field_0x14/0x20/0x2C` copy
+// prologues (retail does the source address/load before the destination's; ours does the destination).
 static void ext_moamoa_init(void) {
+    s32 i;
     ExtPose* ep;
     MoamoaPose* pose;
-    s32 i;
+    s32 j;
     f32 angle;
     f32 radius;
     f32 hitX;
@@ -938,9 +1119,12 @@ static void ext_moamoa_init(void) {
 
     wp = _mapAlloc(0x870);
     memset(wp, 0, 0x870);
-    wp->field_0x14 = vec3_eki_00008884;
-    wp->field_0x20 = vec3_eki_00008890;
-    wp->field_0x2C = vec3_eki_0000889c;
+    // A plain `Vec = Vec` copy makes MWCC hoist the third word above the second store here; the
+    // volatile cast forces retail's load/load/store/store/load/store order (and the same for the
+    // other two). This is the only way found to reproduce it at -O4 (the plain copy matches only at -O3).
+    *(volatile Vec*)&wp->field_0x14 = *(const volatile Vec*)&vec3_eki_00008884;
+    *(volatile Vec*)&wp->field_0x20 = *(const volatile Vec*)&vec3_eki_00008890;
+    *(volatile Vec*)&wp->field_0x2C = *(const volatile Vec*)&vec3_eki_0000889c;
     wp->poseNum = extGetPoseNum();
     wp->poses = _mapAlloc(wp->poseNum * 0x50);
     memset(wp->poses, 0, wp->poseNum * 0x50);
@@ -956,12 +1140,12 @@ static void ext_moamoa_init(void) {
         radius = randf(0.0f, 100.0f);
         ep->flags |= 0x13;
         PSMTXIdentity(*ep->matrix);
-        ep->matrix[0][0][3] = radius * ekiSinf(angle) + wp->field_0x14.x;
+        ep->matrix[0][0][3] = radius * initSinf(angle) + wp->field_0x14.x;
         ep->matrix[0][1][3] = 0.0f;
-        ep->matrix[0][0][3] = wp->field_0x14.z - radius * ekiCosf(angle);  // retail stores z here too, over x
-        hitX = 0.0f;
-        hitY = 0.0f;
+        ep->matrix[0][0][3] = wp->field_0x14.z - radius * initCosf(angle);  // retail stores z here too, over x
         hitZ = 0.0f;
+        hitY = 0.0f;
+        hitX = 0.0f;
         distance = 1000000.0f;
         if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, ep->matrix[0][0][3],
                            ep->matrix[0][1][3] + 100.0f, ep->matrix[0][2][3], 0.0f, -1.0f, 0.0f)
@@ -969,11 +1153,12 @@ static void ext_moamoa_init(void) {
             ep->matrix[0][1][3] = hitY;
         }
     }
-    for (i = 0; i < 600; i++) {
+    for (j = 0; j < 600; j++) {
         ext_moamoa_main();
     }
 }
 
+#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 static EVT_BEGIN(evt_moamoa_init)
     CALL(evt_npc_entry, STRING("moa_a"), STRING("c_n_moa_a"))
@@ -1524,14 +1709,88 @@ EVT_BEGIN(eki_00_init_evt)
     RETURN
 EVT_END()
 
-#pragma opt_propagation off // stop MWCC rematerialising the ekiSinf/ekiCosf coefficients per branch
-// NONMATCHING (89.38%): dropping the cached `Mtx* mtx` local fixed the r29/r30 argument-register
-// swap and `#pragma opt_propagation off` recovered the sin/cos coefficient gap (58.50 -> 68.14).
-// Left: Vec temporaries make the frame 0xc0 vs retail 0xf0, plus a few FPR-colouring diffs.
+#pragma opt_propagation off // required: without it this body collapses to 67%
+// Local copies of ekiSinf/ekiCosf for moamoa_hit_check only (the shared inlines feed the other open
+// functions). ekiSinf2 uses the envdrv.c spelling; ekiCosf2 uses the tou_02.c `fanCosf` spelling
+// (halfpi - (rad - halfpi), and (rad - pi) * (rad - pi)). The mixed spelling reproduces the retail
+// constant/scratch registers much more closely than the shared inlines do.
+static inline f32 ekiCosf2(f32 rad) {
+    f32 f0, cosv = 0.03705f;
+    f32 c1 = 0.4967f;
+    f32 c2 = 1.0f;
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
+            cosv = cosv * (rad * rad) - c1;
+            cosv = cosv * (rad * rad) + c2;
+        } else {
+            f0 = 1.5707964f - (rad - 1.5707964f);
+            f0 = f0 * f0;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+            cosv = -cosv;
+        }
+    } else if (rad < 4.712389f) {
+        f0 = (rad - 3.1415927f) * (rad - 3.1415927f);
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+        cosv = -cosv;
+    } else {
+        f0 = 1.5707964f - (rad - 4.712389f);
+        f0 = f0 * f0;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+    }
+    return cosv;
+}
+
+static inline f32 ekiSinf2(f32 rad) {
+    f32 f0, f1, sinv = 0.00761f;
+    f32 c1 = 0.16605f, one = 1.0f;
+    if (rad <= 3.1415927f) {
+        f1 = 1.5707964f;
+        if (rad <= f1) {
+            sinv = sinv * (rad * rad) - c1;
+            sinv = sinv * (rad * rad) + one;
+            sinv = sinv * rad;
+        } else {
+            f0 = rad - f1;
+            f1 = f1 - f0;
+            f0 = f1 * f1;
+            sinv = sinv * f0 - c1;
+            sinv = sinv * f0 + one;
+            sinv = sinv * f1;
+        }
+    } else if (rad < 4.712389f) {
+        f1 = rad - 3.1415927f;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + one;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    } else {
+        f0 = rad - 4.712389f;
+        f1 = 1.5707964f;
+        f1 = f1 - f0;
+        f0 = f1 * f1;
+        sinv = sinv * f0 - c1;
+        sinv = sinv * f0 + one;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+// NONMATCHING (95.77%): FPR colouring inside the inlined trig bodies (retail keeps the
+// accumulator in place, ours chains the fmsubs/fmadds results) and the base-vector load
+// hoisted early in the second vc build. Frame (0xf0), branch shape and all opcodes match.
 static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
     MarioWork* mario = marioGetPtr();
-    Vec va;
-    Vec vc;
+    Vec vh;   // hammer_2 case
+    Vec v55;  // field_0x55C case
+    Vec vn;   // nokonoko case
+    Vec vp;   // party case
+    Vec va;   // final main check
+    Vec vc;   // final main check
     f32 dist;
     f32 thresh;
     f32 angle;
@@ -1546,7 +1805,7 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
         return 0;
     }
     dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], mario->position.x, mario->position.z);
-    if (dist < (20.0f + mario->wPlayerCollisionBox.x) * 0.5f) {
+    if (dist < (20.0f + mario->wPlayerCollisionBox.x) / 2.0f) {
         if (mario->position.y > ep->matrix[0][1][3] + 10.0f && (mario->flags & MARIO_FLAG_IS_FALLING)
             && !(mario->flags & MARIO_FLAG_IS_JUMPING) && wp->field_0x558 < 2) {
             if (mario->currMotionId != MARIO_MOTION_ROLL && mario->currMotionId != MARIO_MOTION_YOSHI) {
@@ -1561,62 +1820,62 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
     }
     if (mario->currMotionId == MARIO_MOTION_HAMMER && wp->field_0x40 > 10) {
         CameraEntry* cam = camGetPtr(CAMERA_3D);
-        angle = reviseAngle((mario->unk1A8 - 90.0f) + cam->viewYaw);
+        angle = reviseAngle(cam->viewYaw + (mario->unk1A8 - 90.0f));
         rad = angle * 6.2831855f / 360.0f;
-        t = 35.0f * ekiSinf(rad) + mario->position.x;
-        diff = mario->position.z - 35.0f * ekiCosf(rad);
+        t = 35.0f * ekiSinf2(rad) + mario->position.x;
+        diff = mario->position.z - 35.0f * ekiCosf2(rad);
         if (distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], t, diff) < 35.0f) {
             return 2;
         }
     }
     if (mario->currMotionId == MARIO_MOTION_HAMMER_2 && (s32)mario->currSubMotionId == 0x14) {
-        va = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088b4);
-        if (PSVECDistance(&mario->position, &va) < 65.0f) {
+        vh = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088b4);
+        if (PSVECDistance(&mario->position, &vh) < 65.0f) {
             return 2;
         }
     }
     if (wp->field_0x55C >= 0.0f) {
-        va = ekiVec3(mario->position.x, ep->matrix[0][1][3], mario->position.z, &vec3_eki_000088c0);
-        if (PSVECDistance(&wp->field_0x564, &va) < 30.0f) {
+        v55 = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088c0);
+        if (PSVECDistance(&wp->field_0x564, &v55) < 30.0f) {
             return 3;
         }
     }
     if (nokonokoGetStatus(partyGetPtr(0)) == 2) {
-        va = ekiVec3(mario->position.x, ep->matrix[0][1][3], mario->position.z, &vec3_eki_000088cc);
-        if (PSVECDistance(&partyGetPtr(0)->position, &va) < 30.0f) {
+        vn = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088cc);
+        if (PSVECDistance(&partyGetPtr(0)->position, &vn) < 30.0f) {
             return 2;
         }
     }
     if (partyGetPtr(0)->currentMemberId == 3 && partyGetPtr(0)->useMotionId == 0x46) {
-        va = ekiVec3(mario->position.x, ep->matrix[0][1][3], mario->position.z, &vec3_eki_000088d8);
-        if (PSVECDistance(&partyGetPtr(0)->position, &va) < 50.0f) {
+        vp = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088d8);
+        if (PSVECDistance(&partyGetPtr(0)->position, &vp) < 50.0f) {
             return 4;
         }
     }
     va = ekiVec3(mario->position.x, ep->matrix[0][1][3], mario->position.z, &vec3_eki_000088e4);
     vc = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088f0);
-    thresh = (20.0f + mario->wPlayerCollisionBox.x) * 0.5f;
-    if (PSVECDistance(&va, &vc) >= thresh) {
-        return 0;
-    }
-    ep->matrix[0][0][3] = pose->field_0x28.x;
-    ep->matrix[0][2][3] = pose->field_0x28.y;
-    vc = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088f0);
-    dist = PSVECDistance(&va, &vc);
-    if (dist >= thresh) {
-        return 0;
-    }
-    angle = angleABf(mario->position.x, mario->position.z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
-    diff = compAngle(angle, mario->directionView);
-    if (__fabsf(diff) < 40.0f) {
-        rad = mario->directionView * 6.2831855f / 360.0f;
-        t = thresh - dist;
-        mario->riderDelta.x = -(t * ekiSinf(rad));
-        mario->riderDelta.z = t * ekiCosf(rad);
-    } else {
-        rad = angle * 6.2831855f / 360.0f;
-        mario->riderDelta.x = (ep->matrix[0][0][3] - thresh * ekiSinf(rad)) - mario->position.x;
-        mario->riderDelta.z = (thresh * ekiCosf(rad) + ep->matrix[0][2][3]) - mario->position.z;
+    thresh = (20.0f + mario->wPlayerCollisionBox.x) / 2.0f;
+    if (PSVECDistance(&va, &vc) < thresh) {
+        ep->matrix[0][0][3] = pose->field_0x28.x;
+        ep->matrix[0][2][3] = pose->field_0x28.y;
+        vc = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088fc);
+        dist = PSVECDistance(&va, &vc);
+        if (dist < thresh) {
+            angle = angleABf(mario->position.x, mario->position.z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
+            diff = compAngle(angle, mario->directionView);
+            if (__fabsf(diff) < 40.0f) {
+                f32 s;
+                rad = mario->directionView * 6.2831855f / 360.0f;
+                s = ekiSinf2(rad);
+                t = thresh - dist;
+                mario->riderDelta.x = -t * s;
+                mario->riderDelta.z = t * ekiCosf2(rad);
+            } else {
+                rad = angle * 6.2831855f / 360.0f;
+                mario->riderDelta.x = (ep->matrix[0][0][3] - thresh * ekiSinf2(rad)) - mario->position.x;
+                mario->riderDelta.z = (thresh * ekiCosf2(rad) + ep->matrix[0][2][3]) - mario->position.z;
+            }
+        }
     }
     return 0;
 }

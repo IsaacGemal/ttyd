@@ -114,8 +114,16 @@ extern const f64 double_neg1_802cae60;
 const Vec vec3_802cabe0 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cabec = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cabf8 = {0.0f, 0.0f, 0.0f};
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_802cac04 = {0.0f, 0.0f, 0.0f};
+#else
 const Vec vec3_802cac04 = {0.0f, 0.0f, 0.0f};
+#endif
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_802cac10 = {0.0f, 0.0f, 0.0f};
+#else
 const Vec vec3_802cac10 = {0.0f, 0.0f, 0.0f};
+#endif
 #ifdef MUST_MATCH
 // Deliberately non-const and pinned to .rodata: itemseq_GetItem copies this zero Vec, and the compiler
 // otherwise treats the const load as hoistable and schedules it above the two stores to `item` that
@@ -1257,7 +1265,7 @@ void itemModeChange(ItemEntry* item, u16 mode) {
 #ifdef MUST_MATCH
 #define IB_STR(off, sym) ((const char*)ibBase + (off))
 #define IB_DBL20 (*(const f64*)((const u8*)ibBase + 0x48))
-#define IB_VEC(off, sym) (*(const Vec*)((const u8*)ibBase + (off)))
+#define IB_VEC(off, sym) (sym)
 #else
 #define IB_STR(off, sym) (sym)
 #define IB_DBL20 double_20_802cac28
@@ -1282,29 +1290,30 @@ static inline f32 itemTicksToSec(s64 ticks) {
 }
 
 // Falling/bouncing motion of a dropped item: gravity from the elapsed time, the side/floor/ceiling hit checks, the
-// bounce sounds and the water splash. The compiler's int->float magic is loaded with its own `lis`+`lfd` (@1389)
-// instead of the target's `lfd 0x68(r30)`, which re-schedules every `(f32)int` conversion and cascades into the
-// FP/GPR colouring; that is why the rodata base is r27 here vs the target's r30 (the base is only first used late,
-// since our i2f conversions do not read it) and the stack slots/frame shift by 8-0xc. The bounce float polynomial
-// is split into locals so MWCC does not contract it into `fmsubs`/`fnmadds`, the itemId range tests are written as
-// explicit switch cases (so the switch tree gains the target's merged 0x72 bound check) and hardHit is zeroed after
-// the switch as the target does. The two identical `IT_S64(item,0x60) += d1` tails (splash and no-hit) and the two
+// bounce sounds and the water splash. The bounce float polynomial is split into locals so MWCC does not contract it
+// into `fmsubs`/`fnmadds`; the itemId range test is written as explicit switch cases (0x72..0x78) so the branch
+// layout matches; hardHit is zeroed after the switch; the two identical `IT_S64(item,0x60) += d1` tails and the two
 // `bounce = 0` tails are reached through a label/goto so MWCC keeps one shared out-of-line copy, as the target does;
-// the 7 hitCheckFilter locals are declared in target stack order, and camera is fetched before the base is taken so
-// the base lands in the target's rodata register. The three hitCheckFilter calls load pos.x/y/z into block locals
-// (with the `20.0f + pos.y` folded into the local) so the compiler hoists the loads and the dependency-free FPRs
-// the way the target does; the `x * 0.25f` amplitude damping is forced through a single-use `k` local so the
-// variable stays the left operand. `ibBase` is spelled `(u8*)&double_20 - 0x48` rather than `&vec3_802cabe0`: it is
-// the same address, but it changes the pool symbol the compiler factors the base out of and lands two more
-// instructions on the target's schedule.
-// NONMATCHING (94.22%): the compiler's anonymous int->float magic load (extra `lis` per conversion) and the
-// rodata-base/register colouring it forces; the item pointer, call order, switch trees and call arguments match.
+// the 7 hitCheckFilter locals are declared in target stack order, and the three calls load pos.x/y/z into block
+// locals (with `20.0f + pos.y` folded in) so the compiler hoists the loads the way the target does; the `x * 0.25f`
+// damping goes through a single-use `k` local so the variable stays the left operand. Referencing the vec3_802cac04/
+// vec3_802cac10 objects by name (IB_VEC) makes MWCC build the .rodata base register and fold the int->float magic
+// onto it as `lfd 0x68(rBase)`, which is what the target has; they are non-const under MUST_MATCH and pinned to
+// .rodata so the two vec loads are not hoisted above the preceding status store. `ibBase = &vec3_802cabe0` (spelled
+// as the 6th zero Vec's address) addresses the strings and 20.0 through the same section, and the second status
+// 0x100000 test is a volatile read so it is not common-subsumed into the first.
+// What still differs: MWCC keeps ibBase in a second register (`addi r28, r29, 0`) instead of reusing its
+// internal .rodata base `r29`, so the item/mario/camera allocation shifts by one callee-saved register (target r30
+// base, r27 mario, r28 camera vs ours r29/r30/r26 + r28). That is ~170 of the remaining arg_mismatch diffs. The
+// only non-register difference left is the third hitCheckFilter return (ours `mr. r25,r3`, target `cmplwi r3,0`
+// then `mr r26,r3`). Call order, switch trees, constants and call arguments match.
+// NONMATCHING (98.83%): the extra ibBase register shifts the callee-saved colouring; see above.
 void itemseq_Bound(ItemEntry* item) {
-    CameraEntry* camera = camGetPtr(CAMERA_3D);
 #ifdef MUST_MATCH
-    const u8* ibBase = (const u8*)((const u8*)&double_20_802cac28 - 0x48);
+    const u8* ibBase = (const u8*)&vec3_802cabe0;
 #endif
     MarioWork* mario = marioGetPtr();
+    CameraEntry* camera = camGetPtr(CAMERA_3D);
 
     switch (item->field_0x26) {
     case 0:
@@ -1423,10 +1432,19 @@ void itemseq_Bound(ItemEntry* item) {
             for (e = w->entries, j = 0; j < w->count; j++, e++) {
                 if (strcmp(e->name, item->name) == 0) {
                     itemCheckBadge(e);
-                    if (e->itemId < 0x79 && e->itemId >= 0x72) {
+                    switch (e->itemId) {
+                    case 0x72:
+                    case 0x73:
+                    case 0x74:
+                    case 0x75:
+                    case 0x76:
+                    case 0x77:
+                    case 0x78:
                         effSoftDelete(e->effect);
-                    } else {
+                        break;
+                    default:
                         iconDelete(e->name);
+                        break;
                     }
                     e->flags &= ~1;
                 }
@@ -1504,7 +1522,11 @@ void itemseq_Bound(ItemEntry* item) {
             if (vy >= 0.0f) {
                 hit = NULL;
                 item->position.y += vy;
+#ifdef MUST_MATCH
+            } else if (*(volatile u32*)((u8*)item + 0x38) & 0x100000) {
+#else
             } else if (IT_U32(item, 0x38) & 0x100000) {
+#endif
                 hit = NULL;
                 item->position.y += vy;
             } else {

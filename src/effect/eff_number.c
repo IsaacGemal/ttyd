@@ -6,19 +6,15 @@
 #include <stdio.h>
 #include <string.h>
 
-// Register allocation is the only difference; the instruction stream and switch dispatch match.
-// Folding `end` into the index (`buf[len - 1 - j]`) puts value/color in the target's r14/r17, but
-// type lands in r18 (not r19), cam in r25 (not r18), len stays r26 instead of reusing type's r19 and
-// the eight colour bytes take r18-r25 instead of r20-r27. The named-`end` form scores 98.58% (cam r14,
-// value r17, color r18, len r26). Local declaration order, GXColor-returning inlines, -O4,s/
-// optimize_for_size, opt_propagation/opt_common_subs/opt_lifetimes and register/volatile hints all
-// score lower.
-// NONMATCHING (98.71%): len does not reuse type's r19; value/color/cam are r14/r17/r25, not r14/r17/r18.
-// Wave 60: GC 1.3-2.7 all give 98.71; -O2/-O3/-O4/-O4,s, optimization_level 0-4, every opt_* pragma on/off,
-// scheduling off, inline/peephole/pool pragmas, separate color0/color1 variables, u8/GXColor component locals,
-// a 10-arg inlined quad helper and declaration/case/statement reorderings all score <=98.71. Named-`end` keeps
-// type in r19 but rotates value/color/cam to r17/r18/r14; the folded form fixes value/color but puts type in r18
-// and cam in r25, so the allocator's cam-vs-colour-bytes choice is the remaining difference.
+#ifdef MUST_MATCH
+// MUST_MATCH: `& mask` (mask = -1) is a no-op that gives the eight hoisted colour bytes the original's
+// r20-r27 colouring; the plain reads colour them r18-r24+r31 (a permuter find, wave 62).
+#define NUM_COL(c) ((c) & mask)
+#else
+#define NUM_COL(c) (c)
+#endif
+
+// .text:0x0 | 0x802519D4 | size: 0x7D4
 void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 	CameraEntry* cam;
 	GXColor colors[2];
@@ -28,12 +24,18 @@ void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 	f32 neg24;
 	f32 pos24;
 	char buf[0x20];
+#ifdef MUST_MATCH
+	s32 mask;
+#endif
 	s32 half;
 	s32 len;
 	s32 i;
 	s32 j;
 
 	cam = camGetCurPtr();
+#ifdef MUST_MATCH
+	mask = -1;
+#endif
 
 	switch (type) {
 	case 0:
@@ -132,16 +134,16 @@ void effNumberGX(Mtx* mtx, s32 type, s32 value, s32 color, s32 unk) {
 
 			GXBegin(0x80, 0, 4);
 			GXPosition3f32(neg24, pos24, 0.0f);
-			GXColor4u8(colors[1].r, colors[1].g, colors[1].b, colors[1].a);
+			GXColor4u8(NUM_COL(colors[1].r), NUM_COL(colors[1].g), NUM_COL(colors[1].b), NUM_COL(colors[1].a));
 			GXTexCoord2f32(0.0f, 0.0f);
 			GXPosition3f32(pos24, pos24, 0.0f);
-			GXColor4u8(colors[1].r, colors[1].g, colors[1].b, colors[1].a);
+			GXColor4u8(NUM_COL(colors[1].r), NUM_COL(colors[1].g), NUM_COL(colors[1].b), NUM_COL(colors[1].a));
 			GXTexCoord2f32(1.0f, 0.0f);
 			GXPosition3f32(pos24, neg24, 0.0f);
-			GXColor4u8(colors[0].r, colors[0].g, colors[0].b, colors[0].a);
+			GXColor4u8(NUM_COL(colors[0].r), NUM_COL(colors[0].g), NUM_COL(colors[0].b), NUM_COL(colors[0].a));
 			GXTexCoord2f32(1.0f, 1.0f);
 			GXPosition3f32(neg24, neg24, 0.0f);
-			GXColor4u8(colors[0].r, colors[0].g, colors[0].b, colors[0].a);
+			GXColor4u8(NUM_COL(colors[0].r), NUM_COL(colors[0].g), NUM_COL(colors[0].b), NUM_COL(colors[0].a));
 			GXTexCoord2f32(0.0f, 1.0f);
 		}
 

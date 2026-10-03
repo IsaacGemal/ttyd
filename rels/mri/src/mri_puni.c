@@ -7948,15 +7948,21 @@ void puniHagurePos(PuniData* punidat) {
 // go away when the unit links. The main scan loop is a pointer walk so its `addi 0x5a8` matches.
 // Matched scheduling details: the field stores after the FP setup are ordered 0x480.z, 0x4B0,
 // 0x48C.xyz, 0x4B4; in the `!&0x8` branch BeroSZ is fetched before BeroEX; in the `&0x8`
-// branch the copies are ordered `f27 = f30; f28 = f31;`. The declaration order below
+// branch BeroSZ is stored to f1 first and then copied to f29 (`f1 = BeroSZ; f29 = f1;`) so the
+// target's `fmr f29, f1` appears. The declaration order below
 // (`args, punidat, mode, floats, then yh, xh, arg2, x, name, y, cmp, i, z, pos, base`) is tuned to
 // mwcc's callee-saved colouring; a random declaration-order search tops out at this score.
-// xh/yh are u8, which lets the loop's callee-saved colours match the target; the target extracts each
-// high byte with a single hoisted `extrwi`, while we emit `srawi`+`clrlwi` (the `(x >> 8) & 0xFF`
-// form restores `extrwi` but reallocates the loops and scores lower, so the direct-cast form stays).
-// `cmp` still lands in r31 where the target uses r28, and we `stw` z one slot before the target.
-// NONMATCHING (89.29%): call sequence and every immediate now match; only the xh/yh extraction
-// instruction (5 extra `clrlwi`) and the cmp/callee-saved colouring differ.
+// x,y,z are `u32`: `x >> 8` is then a logical shift and the `(u8)` truncation folds to the single
+// `extrwi` the target uses for each high byte (the same expression with `s32` x emits `srawi`+
+// `clrlwi`). The redundant second assignment under MUST_MATCH (`xh = (u8)xh;`) is a no-op but keeps
+// the loops' callee-saved colouring (dropping it drops the score to 85%). The final loop's locals
+// are `u32 x = (s32)v.x;` for the same reason: the conversion stays signed (`fctiwz`) while `>> 8`
+// stays logical. Still differs: `mode` lands in r29 (target r28, so `name` reuses r29 and `cmp`
+// takes r31 while `i` reuses arg2's r28; target keeps name r29, mode/cmp r28, i r31), the `&0x8`
+// branch's f27/f28 copy order and `fadds` operand, and the byte-store `addi r3`/`clrlwi r4`
+// scheduling. `tools/diff_shape.py` reports the same 38 calls and all immediates.
+// NONMATCHING (93.40%): call sequence and every immediate match; only callee-saved/FPR colouring
+// and scheduling differ.
 USER_FUNC(evt_puni_exit) {
     s32* args = event->args;
     PuniData* punidat;
@@ -7970,12 +7976,12 @@ USER_FUNC(evt_puni_exit) {
     u8 yh;
     u8 xh;
     s32 arg2;
-    s32 x;
+    u32 x;
     const char* name;
-    s32 y;
+    u32 y;
     s32 cmp;
     s32 i;
-    s32 z;
+    u32 z;
     Vec pos;
     s32 base;
     evtGetValue(event, args[1]);
@@ -8015,10 +8021,10 @@ USER_FUNC(evt_puni_exit) {
     } else {
         f31 = bero_get_BeroSX();
         f30 = puniExitNearest(bero_get_BeroSY());
-        f29 = bero_get_BeroSZ();
-        f27 = f30;
+        f1 = bero_get_BeroSZ();
+        f29 = f1;
         f28 = f31;
-        f1 = f29;
+        f27 = f30;
         f29 = f29 + 60.0f;
     }
     Punigp->field_0x47C = 2;
@@ -8117,23 +8123,26 @@ USER_FUNC(evt_puni_exit) {
     if (name != NULL && strcmp(name, "mri_00") == 0) {
         for (i = 1; i <= 0x66; i++) {
             Vec v = { 0.0f, 0.0f, 0.0f };
+            u32 x = (s32)v.x;
+            u32 y = (s32)v.y;
+            u32 z = (s32)v.z;
             s32 base = (i - 1) * 7;
-            s32 x = (s32)v.x;
-            s32 y = (s32)v.y;
-            s32 z = (s32)v.z;
 #ifdef MUST_MATCH
-            // the second assignment is a no-op (xh is u8) needed for the target's extrwi
+            // the second assignments are no-ops (xh/yh are u8) needed for the target's extrwi
             xh = x >> 8;
             xh = (u8)xh;
+            yh = y >> 8;
+            yh = (u8)yh;
 #else
             xh = x >> 8;
+            yh = y >> 8;
 #endif
 
             _swByteSet(base + 0, 0);
             _swByteSet(base + 1, (u8)x);
             _swByteSet(base + 2, (u8)xh);
             _swByteSet(base + 3, (u8)y);
-            _swByteSet(base + 4, (u8)((y >> 8) & 0xFF));
+            _swByteSet(base + 4, (u8)yh);
             _swByteSet(base + 5, (u8)z);
             _swByteSet(base + 6, (u8)((z >> 8) & 0xFF));
         }

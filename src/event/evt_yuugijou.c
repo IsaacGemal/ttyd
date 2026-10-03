@@ -1,5 +1,8 @@
 #include "evt/evt_yuugijou.h"
 #include "evt/evt_cmd.h"
+#include "evt/evt_bero.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_msg.h"
 #include "driver/icondrv.h"
 #include "driver/windowdrv.h"
 #include "manager/evtmgr.h"
@@ -9,24 +12,59 @@
 #include <dolphin/mtx.h>
 #include <string.h>
 
-extern s32 minigame_end[];
-extern s32 window_open[];
-extern u32 dat_804214b0;
-extern u32 dat_804214b4;
-extern u32 dat_804214b8;
-extern u32 dat_804214bc;
-extern f32 float_neg288_804214c0;
-extern f32 float_200_804214c4;
-extern f32 float_44_804214c8;
-extern f32 float_16_804214cc;
-extern f32 float_neg260_804214d0;
-extern f32 float_0_804214d4;
-extern f32 float_neg230_804214d8;
-extern f32 float_neg128_804214dc;
-s32 unk_80418b54;
+__declspec(section ".sdata2") GXColor dat_804214b0 = { 0xFF, 0xFF, 0xFF, 0x99 };
+__declspec(section ".sdata2") GXColor dat_804214b4 = { 0xFF, 0xFF, 0xFF, 0xFF };
+__declspec(section ".sdata2") GXColor dat_804214b8 = { 0xFF, 0xFF, 0xFF, 0xFF };
+__declspec(section ".sdata2") GXColor dat_804214bc = { 0xFF, 0xFF, 0xFF, 0xFF };
+__declspec(section ".sdata2") f32 float_neg288_804214c0 = -288.0f;
+__declspec(section ".sdata2") f32 float_200_804214c4 = 200.0f;
+__declspec(section ".sdata2") f32 float_44_804214c8 = 44.0f;
+__declspec(section ".sdata2") f32 float_16_804214cc = 16.0f;
+__declspec(section ".sdata2") f32 float_neg260_804214d0 = -260.0f;
+// explicit_zero_data: a zero float would otherwise be placed in .bss and dropped from .sdata2.
+#pragma explicit_zero_data on
+__declspec(section ".sdata2") f32 float_0_804214d4 = 0.0f;
+#pragma explicit_zero_data reset
+__declspec(section ".sdata2") f32 float_neg230_804214d8 = -230.0f;
+__declspec(section ".sdata2") f32 float_neg128_804214dc = -128.0f;
 
-PiantaParlorWork yuugijouwork;
+const char str_802FE8C8[8] = "gor_03";
+const char str_802FE8D0[12] = "A_dokan_02";
+const char str_802FE8DC[16] = "sysyuu_all_01";
+const char str_802FE8EC[16] = "sysyuu_all_02";
+
+s32 minigame_end[] = {
+	0x00020032, 0xFD050F80, 0x00000002, 0x00020032,
+	0xF840604D, 0x00000001, 0x0005005B, (s32)evt_mario_set_prev_party_pos,
+	0x00000000, 0x00000000, 0xFFFFFC18, 0x00000000,
+	0x0005005B, (s32)evt_mario_set_prev_party_pos, 0x00000001, 0x00000000,
+	0xFFFFFC18, 0x00000000, 0x0002005B, (s32)evt_mario_set_enable_key,
+	0x00000000, 0x0003005B, (s32)evt_bero_mapchange, (s32)(char*)str_802FE8C8,
+	(s32)(char*)str_802FE8D0, 0x00000002, 0x00000001,
+};
+
+s32 window_open[] = {
+	0x0002005B, (s32)evt_mario_cont_onoff, 0x00000000, 0x0000006E,
+	0x0005005B, (s32)evt_mario_get_pos, 0x00000000, 0xFE363C81,
+	0xFE363C82, 0xFE363C83, 0x00010005, 0x00000000,
+	0x00010009, 0x00000001, 0x0004005B, (s32)evt_mario_set_pos,
+	0xFE363C81, 0xFE363C82, 0xFE363C83, 0x00000006,
+	0x00000070, 0x0002005B, (s32)unk_802243a4, 0xFE363C80,
+	0x0001005E, 0xFE363C80, 0x0005005B, (s32)evt_msg_print,
+	0x00000000, (s32)(char*)str_802FE8DC, 0x00000000, 0x00000000,
+	0x0003005B, (s32)evt_msg_select, 0x00000000, (s32)(char*)str_802FE8EC,
+	0x0001005B, (s32)evt_msg_continue, 0x00020018, 0xFE363C80,
+	0x00000000, 0x0001005B, (s32)yuuminigame_end, 0x00000021,
+	0x0001005B, (s32)yuuminigame_window_end, 0x0002005B, (s32)evt_mario_cont_onoff,
+	0x00000001, 0x00000002, 0x00000001,
+};
+
+// .sbss: the trailing 4 bytes after yuwp in the original; a plain uninitialised static lands in .sbss.
+static u32 gap_08_80418B5C_sbss;
+
 PiantaParlorWork* yuwp;
+s32 unk_80418b54;
+PiantaParlorWork yuugijouwork;
 
 static inline s32 scale700(u32 v) {
 	s32 r = (0x2BC - (s32)v) * 15 / 0x2BC;

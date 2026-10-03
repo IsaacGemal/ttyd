@@ -66,7 +66,16 @@ const f32 R_audience_delta_multiplier[] = {
 
 const s32 R_num_audience_type_weights[] = { 20, 40, 20, 5, 3, 2, 1, 1, 1, 1, 1 };
 
+// Match-only: the original's vec3_802f972c is a zero Vec the case-0 block copies as an
+// rvalue aggregate.  Expressing it as a compound literal makes MWCC pool the template object
+// at this source position, which is exactly the deleted vec3_802f972c slot in .rodata, and
+// reproduces the original case-0 load/store schedule (a named load schedules the arithmetic
+// z,x,y instead of the original y,z,x).  The helper must stay here, not above the function:
+// the template's .rodata offset follows the helper's source position, not the call site.
+static inline Vec battleAudienceItemZeroVec(void) { return (Vec){ 0.0f, 0.0f, 0.0f }; }
+#ifndef MUST_MATCH
 const Vec vec3_802f972c = { 0.0f, 0.0f, 0.0f };
+#endif
 const Vec vec3_802f9738 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f9744 = { 0.9f, 0.9f, 0.9f };
 // Match-only: reading these through a near-data constant lands the loads in the original's
@@ -1116,7 +1125,7 @@ void BattleAudience_End(void) {
 	}
 }
 
-// NONMATCHING (98.44%): final dispatch is a `switch`; locals reordered; the weight-pick counter
+// NONMATCHING (98.45%): final dispatch is a `switch`; locals reordered; the weight-pick counter
 // (`target`), clamped count (`targetNum`) and list build count (`listTotal`) are split. Left:
 // f30/f31 split, top-`kind`/sort/miss register allocation and a few scheduling spots; permuter case.
 void BattleAudienceSettingAudience(void) {
@@ -1482,14 +1491,16 @@ void BattleAudienceGuestTPLRead(s32 id, AudienceMemberType member, const char* p
 }
 #pragma dont_inline reset
 
-// Functionally complete; only callee-saved register allocation differs. `wpHigh` (wp + 0x20000)
-// lands in r28 not r27, so the first counting loop's member index takes r22 instead of r25 and the
-// tail's switch result / shuffle registers shift (r27<->r28, r30<->r3). Writing the first loop's index
-// as `j + i * 20 + 10` (instead of `i * 20 + 10 + j`) removes most of the shift. All instructions,
-// calls, branches, constants and FP register usage match.
-// NONMATCHING (99.19%): register allocation only (see above).
+// 100%: writing the first loop's index as `j + i * 20 + 10` (instead of `i * 20 + 10 + j`) and
+// declaring `s32 r;` immediately after `wp` (before every other local) put `wpHigh` (wp + 0x20000)
+// in r27 and `r` in r28 as the original does. The last hold-out was the `wp->flags & 0x80` tail:
+// MWCC merged the `audience + 0x137F0` base of the increment with the compare/switch above into one
+// callee-saved register (r30, wp's dead register), while retail recomputes it in a caller-saved
+// temp. Reading the increment through `&audience->window + 0x94` (the same address) breaks the
+// merge; see the MUST_MATCH block below.
 void BattleAudienceCtrlProcess(void) {
 	BattleWork* wp = _battleWorkPointer;
+	s32 r;
 	u8* wpHigh = (u8*)wp + 0x20000;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member;
@@ -1500,7 +1511,6 @@ void BattleAudienceCtrlProcess(void) {
 	s32 temp;
 	s32 a;
 	s32 b;
-	s32 r;
 
 	audience->mCurrentAudienceIntCountLeft = 0;
 	audience->mCurrentAudienceIntCountRight = 0;
@@ -1625,7 +1635,14 @@ void BattleAudienceCtrlProcess(void) {
 				}
 				for (i = 0; i < 200; i++) {
 					if (BattleAudienceItemOn(order[i], 0, 1) == 1) {
+#ifdef MUST_MATCH
+						// Match-only: the window-relative spelling of this field's address keeps MWCC
+						// from merging it with the compare/switch above into one callee-saved base
+						// (retail recomputes it in a caller-saved temp). 0x137F0 - 0x1375C == 0x94.
+						(*(s32*)((unsigned char*)&audience->window + 0x94))++;
+#else
 						(*(s32*)((u8*)audience + 0x137F0))++;
+#endif
 						break;
 					}
 				}
@@ -1790,19 +1807,17 @@ BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 //  - the outer `if (item+0x44)` was inverted so the else body is the fall-through branch;
 //  - the `case 0` vecA block is written/ordered so MWCC's scheduler reproduces the original's float
 //    load/store schedule (wrapped in MUST_MATCH; the #else order is the natural one);
+//  - the case-0 vecA block copies the zero Vec from a compound-literal rvalue (the
+//    `battleAudienceItemZeroVec` helper above), not from a named global: MWCC then emits the
+//    template object at the helper's source position, which is the original `vec3_802f972c`
+//    .rodata slot, and schedules the arithmetic `y, z, x` like the original instead of `z, x, y`.
+//    The helper's position is load-bearing (the template's offset follows it), so it sits with
+//    the data, not above this function; the `#else` keeps the natural named-object form.
 //  - the case-3 inner `if (0x44 == 2)` jumps straight to the case-4 body like the original (MUST_MATCH
 //    `goto`; without it MWCC falls through the `state != 4` check, 1 instruction);
 //  - the deactivate path reuses `member` for the second `BattleAudienceGetPtr` call, which is what the
 //    original did (it materialises -1 in r0, not r22).
-// What is left (~20 instructions) is the `case 0` vecA FP scheduling: the original computes the
-// `pos.y + kind->0x10 - 10` sum first, then Y, Z, X; MWCC orders ours Z, X, sum, Y.  Reordering the block
-// and reshaping the expressions does not move it further.  Functionally complete: every call, immediate,
-// value and branch is the same operation.
-// Rejected: `vecA = (Vec){ 0.0f, 0.0f, 0.0f };` with the natural x,y,z / stores-first order scores 100% in
-// check.py, but MWCC emits the literal as a second 12-byte .rodata object beside `vec3_802f972c` (the unit's
-// .rodata fuzzy drops 99.64% -> 99.28%) and the relocation no longer targets the original symbol, so it cannot
-// link.  The named object must stay; its schedule cannot be reproduced.
-// NONMATCHING (98.46%): case-0 vecA FP load/store scheduling only.
+// 100%: every call, immediate, value, branch and the case-0 scheduling match.
 void BattleAudienceItemCtrlProcess(void) {
 #ifdef MUST_MATCH
 	u8* tbl = (u8*)lbl_80399940;
@@ -1882,11 +1897,11 @@ void BattleAudienceItemCtrlProcess(void) {
 			/* Statement order is a scheduling aid only: it makes MWCC emit the original's
 			   float load/store schedule.  The #else block is behaviourally identical. */
 			*(f32*)((u8*)item + 0x20) = 1.0f;
-			vecA = vec3_802f972c;
-			vecA.z = member->position.z + 1.0f;
-			vecA.x = member->position.x + kind->field_0xC;
 			*(f32*)((u8*)item + 0x24) = 0.0f;
+			vecA = battleAudienceItemZeroVec();
+			vecA.x = member->position.x + kind->field_0xC;
 			vecA.y = member->position.y + kind->field_0x10 - 10.0f;
+			vecA.z = member->position.z + 1.0f;
 			*(Vec*)((u8*)item + 0x14) = vecA;
 #else
 			vecA = vec3_802f972c;
@@ -2138,9 +2153,13 @@ void BattleAudienceItemCtrlProcess(void) {
 	}
 }
 
-// NONMATCHING (98.62%): functionally complete. Remaining diffs are FP-register tie-breaks only:
-// case 0's float_50/float_25 land f2/f4 (retail f3/f2) because the int->float mask lands f3 (retail f2),
-// case 10's dx lands f2 (retail f1), and the vec3_802f9744 copy loads a pointer (retail lis+addi).
+// Functionally complete. `opt_common_subs off` is load-bearing: with CSE on the active count lands
+// in r29 (retail r28) and the whole first block shifts (98.62 -> 99.34). Remaining diffs are
+// FP-register tie-breaks only: case 0's float_50/float_25 land f2/f4 (retail f3/f2) because the
+// int->float mask lands f3 (retail f2), case 10's dx lands f2 (retail f1), and the vec3_802f9744
+// copy loads a pointer (retail lis+addi); every reshaping/pragma tried is equal or worse.
+#pragma opt_common_subs off // needed: with CSE on the active count lands in r29 and the int->float mask in f3
+// NONMATCHING (99.34%): FP-register tie-breaks only (see above).
 void BattleAudienceApSrcCtrlProcess(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	u8* star;
@@ -2290,11 +2309,12 @@ void BattleAudienceApSrcCtrlProcess(void) {
 		}
 	}
 }
+#pragma opt_common_subs reset
 
 
-// NONMATCHING (88.93%): complete and correct; the `star+8..0x10 -> star+0x20` copy is a Vec
-// assignment (MWCC emits lwz/lwz/stw/stw/lwz/stw), the `star+0x44` zero is written after the Vec
-// copy, and the remaining diffs are FP scheduling of the two Vec constant copies / post-multiply loads.
+// NONMATCHING (91.72%): hoisting `z0 = float_0` before the multiplies and `k1 = float_1` before the
+// position stores emits the original's early loads (88.93 -> 91.21 -> 91.72); what remains is the
+// anonymous-i2f double register, the hoisted `star+0x2c` copy loads and FP scheduling.
 BOOL BattleAudienceApSrcEntry(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -2302,6 +2322,8 @@ BOOL BattleAudienceApSrcEntry(void) {
 	u8* star;
 	f32 sx;
 	f32 sy;
+	f32 z0;
+	f32 k1;
 	s32 ids[200];
 	s32 idx;
 	s32 count;
@@ -2346,17 +2368,19 @@ BOOL BattleAudienceApSrcEntry(void) {
 #endif
 	*(u8*)(star + 0x5c) = 0x80;
 	member = BattleAudienceGetPtr(ids[irand(count)]);
+	k1 = float_1_8041e620;
 	*(f32*)(star + 8) = member->position.x;
 	*(f32*)(star + 0xc) = float_20_8041e6a8 + member->position.y;
-	*(f32*)(star + 0x10) = float_1_8041e620 + member->position.z;
+	*(f32*)(star + 0x10) = k1 + member->position.z;
 	cam = camGetPtr(CAMERA_3D);
 	PSMTXMultVec(cam->view, (Vec*)(star + 8), (Vec*)(star + 8));
 	PSMTX44MultVec(cam->projection, (Vec*)(star + 8), (Vec*)(star + 8));
+	z0 = float_0_8041e618;
 	sx = float_304_8041e6cc;
 	sy = float_240_8041e6d0;
 	*(f32*)(star + 8) *= sx;
 	*(f32*)(star + 0xc) *= sy;
-	*(f32*)(star + 0x10) = float_0_8041e618;
+	*(f32*)(star + 0x10) = z0;
 	*(f32*)(star + 0x14) = float_40_8041e690 * (f32)rand() / float_32767_8041e674 - float_20_8041e6a8;
 	*(f32*)(star + 0x18) = float_10_8041e694 * (f32)rand() / float_32767_8041e674;
 	*(f32*)(star + 0x1c) = float_0_8041e618;
@@ -2373,7 +2397,9 @@ BOOL BattleAudienceApSrcEntry(void) {
 // ours f3 instead, shifting the first block and both step clamps up a register, which also turns the positive
 // clamp's bge+b diamond into a plain bge. Loading the subtrahend first (`diff = window->count; diff =
 // (f32)audience->mCurrentAudienceIntCount - diff;`) gets one more instruction to match than the plain one-liner.
-// NONMATCHING (95.87%): the positive clamp is a ternary (`step = step < float_0p1 ? float_0p1 : step;`)
+// Writing the zero test constant-first (`float_0 != diff`) makes objdiff's first `fcmpu` operand order match
+// (the constant is FRA) and is worth 95.87 -> 95.91.
+// NONMATCHING (95.91%): the positive clamp is a ternary (`step = step < float_0p1 ? float_0p1 : step;`)
 // and the two final stores go through locals; the rest is FP register colouring (the first cast's
 // zero lands in f3 instead of f0, rotating both clamps).
 void BattleAudienceWinCtrlProcess(void) {
@@ -2386,7 +2412,7 @@ void BattleAudienceWinCtrlProcess(void) {
 	window = BattleAudienceWinGetPtr();
 	diff = window->count;
 	diff = (f32)audience->mCurrentAudienceIntCount - diff;
-	if (diff != float_0_8041e618) {
+	if (float_0_8041e618 != diff) {
 		if (diff > float_0_8041e618) {
 			f32 step = float_0p1_8041e678 * diff;
 			step = step < float_0p1_8041e678 ? float_0p1_8041e678 : step;
@@ -2996,7 +3022,10 @@ BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 	return TRUE;
 }
 
-// NONMATCHING (88.54%): the conversion's int->float magic pools a duplicate @N double instead of reusing double_to_int_802f9a00, and the seven Vec copies schedule pipelined where the original does load2/store2/load1/store1.
+#pragma opt_dead_assignments off // needed: stops MWCC folding col/row back together so the divide lands in the original's register
+// NONMATCHING (90.35%): the i2f magic pools an @N double instead of double_to_int_802f9a00, so its `lis r3`
+// steals the register the original puts `col = index / 20` in and the early block + seven Vec copies rotate.
+// Writing `row` as `index - col * 20` (== `index % 20`) and this pragma lifted it 88.54 -> 90.22 -> 90.35.
 void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	BattleAudienceMember* member;
 	BattleStage* stage;
@@ -3022,7 +3051,7 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	BattleAudience_SetAnim(index, 1, 1);
 
 	col = index / 20;
-	row = index % 20;
+	row = index - col * 20;
 	*(u8*)((u8*)member + 0x40) = 0;
 	*(u8*)((u8*)member + 0x43) = 0;
 	*(u8*)((u8*)member + 0x42) = 0;
@@ -3075,6 +3104,7 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 		member->flags |= 8;
 	}
 }
+#pragma opt_dead_assignments reset
 
 void BattleAudience_Delete(s32 index) {
 	BattleAudienceMember* member;
@@ -3724,8 +3754,9 @@ BOOL BattleAudience_GetPPAudienceNum_Sub(s32 id) {
 
 
 
-// NONMATCHING (98.72%): register allocation only; the outer counter and the inner weighted-pick accumulator
-// land in r26/r25 instead of r25/r26, shifting the rest of the body.
+// NONMATCHING (98.94%): register allocation only; the outer counter and the inner weighted-pick accumulator
+// land in r26/r25 instead of r25/r26, shifting the rest of the body. Declaring the negative branch's
+// `count` at function scope (instead of inside the `else`) moves it to r26 and lifts this 98.72 -> 98.94.
 s32 BattleAudienceAddAudienceNum(s32 num) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -3733,6 +3764,7 @@ s32 BattleAudienceAddAudienceNum(s32 num) {
 	s32 total = 0;
 	u8 type;
 	s32 result = 0;
+	s32 count;
 	s32 j;
 	s32 i;
 	s32 id;
@@ -3772,7 +3804,7 @@ s32 BattleAudienceAddAudienceNum(s32 num) {
 		}
 	}
 	else {
-		s32 count = 0;
+		count = 0;
 		for (; count > num; count--) {
 			s32 n = 0;
 			for (i = 0; i < 200; i++) {
