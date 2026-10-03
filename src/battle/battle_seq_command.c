@@ -222,16 +222,17 @@ void BattleCommandInit(BattleWork* wp) {
 }
 
 
-// NONMATCHING (99.98%): the code matches instruction for instruction. Only the .rodata
-// pool base differs, so all seven string addends fall short of the target: six by 0x24
-// (e.g. "btl_cmd_act_jump" at r29+0x3b8 vs +0x3dc) and "btl_cmd_act_item" by 0xa8 (it
-// dedupes into _btlcmd_MakeMultiItemTable's earlier block, +0x228 vs +0x2d0). The pool is
-// missing content owned by other functions in this TU: "btl_wn_dummy_noitem" (its first
-// user, _get_msg, currently drops the dead initial assignment and so never emits it),
-// "msg_dummy_noitem" (the static defaultWeapon_Dummy_NoItem data in the 0%
-// _btlcmd_MakeSelectWeaponTable), the double/SFX run, and _btlcmd_MakeMultiItemTable's
-// dedupe anchor for "btl_cmd_act_item". None of it can be fixed from this function; the
-// offsets will land once those functions are written/ordered.
+// NONMATCHING (99.98%): the instruction stream is byte-for-byte right; the only
+// diffs are the seven `addi r3, r29, <str>` immediates. Six of them are +4 here
+// (e.g. "btl_cmd_act_jump" at r29+0x3e0 vs the target's +0x3dc) because our
+// `.rodata` has 4 extra bytes before this function's string block, and
+// "btl_cmd_act_item" is -0x80 (+0x250 vs +0x2d0): the 0x80-byte
+// i2f/SFX_NOT_CHOICE1/SFX_BTL_CURSOR_MOVE1/2/btl_msg_multi_item_cancel_check block
+// owned by BattleCommandDisplay_WeaponMultiItemCancelCheckDisp is emitted after
+// _btlcmd_MakeMultiItemTable's block here but before it in the target. Function-body
+// strings pool in `.text` emission order, and the unit's functions are not yet in the
+// target's (reverse-.text-source) order, so this cannot be fixed from this function;
+// it resolves when the whole unit links with the functions reordered.
 void _btlcmd_MakeActClassTable(BattleWork* wp) {
 	BattleUnit* mario = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleCommand* cmd = &wp->commandMenu;
@@ -470,9 +471,11 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckSetup(BattleWork* wp) {
 }
 
 #pragma opt_propagation off // the two (f32)len conversions and the pooled string base keep retail's un-hoisted load order
-// NONMATCHING (94.57%): `#pragma opt_propagation off` stops the compiler hoisting the two (f32)len
-// magic-double and 6.25/12.5/65 loads, restoring retail's order; the `f30` local then places 30 on f2.
-// Remaining: conversion magic doubles (retail f2/f0, ours f1/f5) and the pooled string base.
+// `opt_propagation off` stops the compiler hoisting the two (f32)len magic-double and
+// 6.25/12.5/65 loads; `xarg` before `yoff` plus a named `neg30` temp recover six more
+// load-order/colour instructions.
+// NONMATCHING (95.32%): remaining are the r0/r5 magic-vs-colour GPR assignment, two
+// scheduler slots and the pooled string base (which resolves at link).
 void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleWork* wp) {
 	char buf[0x20];
 	Vec pos;
@@ -484,9 +487,10 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	len = strlen(buf);
 	xoff = float_6p25_8041c318 * (f32)len;
 	{
-	f32 f30 = float_30_8041c348;
+	f32 neg30 = float_neg30_8041c344;
+	f32 xarg = neg30 - xoff;
 	f32 yoff = float_12p5_8041c320 * (f32)len + float_65_8041c34c;
-	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c0, float_neg30_8041c344 - xoff, f30, yoff, float_32_8041c30c, float_10_8041c2e4);
+	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c0, xarg, float_30_8041c348, yoff, float_32_8041c30c, float_10_8041c2e4);
 	}
 	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c4, float_neg70_8041c350, float_neg10_8041c354,
 	                      float_130_8041c358, float_60_8041c314, float_10_8041c2e4);
@@ -569,11 +573,11 @@ void BattleCommandDisplay_ActMenuEnd(BattleWork* wp) {
 	wp->commandMenu.field_4 &= ~0x1;
 }
 
-// The t>=2 part of the guard matches; only the t<0 part differs: the target lays it out as
-// `cmpwi 0; bge A; b out` (comparison reuse into the following t==0 test) while MWCC here
-// emits `cmpwi 0; blt out` — same comparison, opposite block layout, 2 instructions.
-// The 12 symbol diffs are the unit's pooled string base, not this function.
-// NONMATCHING (99.62%): guard-branch polarity/block layout only.
+// Matches. The range guard is a `switch (t)` with cases 0 and 1 (the original's `default:
+// continue;`), not `if (t >= 2 || t < 0) continue;`: MWCC emits the switch range check as
+// `cmpwi 2; bge default; cmpwi 0; bge body; b default`, whose `bge body` is the redundant
+// branch to the next instruction the `if` form can't produce. The 12 remaining diffs are
+// the unit's pooled string base.
 s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
@@ -601,23 +605,28 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 		s32 t;
 		for (i = 0; i < cursor->unk8; i++) {
 			t = wcmd->mActionTable[i].mType;
-			if (t >= 2 || t < 0) {
-				continue;
-			}
-			if ((t == 0 && (wp->flags & 0x200)) || (t == 1 && (wp->flags & 0x400))) {
-				_btlcmd_MakeSelectWeaponTable(wp, (void*)t);
-				if (_btlcmd_CheckWeaponTargetNum(wp, unit, wcmd->mWeaponTable[0].mWeaponParams) > 0) {
-					continue;
-				}
-				wcmd->mActionTable[i].mEnabled = 0;
-				if ((s32)wcmd->mActionTable[i].field_0x10 == 0) {
-					if (t == 0) {
-						wcmd->mActionTable[i].field_0x10 = 4;
-					} else {
-						wcmd->mActionTable[i].field_0x10 = 5;
+			switch (t) {
+			case 0:
+			case 1:
+				if ((t == 0 && (wp->flags & 0x200)) || (t == 1 && (wp->flags & 0x400))) {
+					_btlcmd_MakeSelectWeaponTable(wp, (void*)t);
+					if (_btlcmd_CheckWeaponTargetNum(wp, unit, wcmd->mWeaponTable[0].mWeaponParams) > 0) {
+						continue;
+					}
+					wcmd->mActionTable[i].mEnabled = 0;
+					if ((s32)wcmd->mActionTable[i].field_0x10 == 0) {
+						if (t == 0) {
+							wcmd->mActionTable[i].field_0x10 = 4;
+						} else {
+							wcmd->mActionTable[i].field_0x10 = 5;
+						}
 					}
 				}
+				break;
+			default:
+				continue;
 			}
+
 		}
 		if ((s32)BattlePadCheckNow(-1)) {
 			*(s32*)&cmd->unk560[0] = 0;
@@ -3127,14 +3136,14 @@ s32 _btlcmd_MakePartyTable(BattleWork* wp) {
 }
 
 #pragma opt_dead_assignments off
-// NONMATCHING (99.49%): `opt_dead_assignments off` keeps the overwritten first `msg` assignment
-// so the pooled string base stays in r5; the only leftover is the wp/args r4/r6 colouring.
+// `opt_dead_assignments off` keeps the overwritten first `msg` assignment so the pooled string
+// base stays in r5. The `args` local (instead of a `wp` local) is what colours wp r4 / args r6.
 s32 _get_msg(EventEntry* event) {
 	char* msg = "btl_wn_dummy_noitem";
-	BattleWork* wp = _battleWorkPointer;
-	s32 index = event->args[0];
+	s32* args = event->args;
+	s32 index = args[0];
 
-	switch (*(s32*)&wp->commandMenu.unk560[4]) {
+	switch (*(s32*)&_battleWorkPointer->commandMenu.unk560[4]) {
 	case 1:
 		msg = "btl_msg_cmderror_no_fp";
 		break;

@@ -606,7 +606,7 @@ static inline const char* L_reinitAnimName(PartyEntry* party, const u8* base) {
     }
 }
 
-// NONMATCHING (99.81%): the second block's inlined pose value lands in r28 instead
+// NONMATCHING (99.82%): the second block's inlined pose value lands in r28 instead
 // of r29, plus one branch-target difference.
 void partyReInit(void) {
     const u8* base = (const u8*)vec3_802ccd30;
@@ -662,25 +662,25 @@ void partyReInit(void) {
                 animPoseSetMaterialFlagOff(paperAnimGroup, -1);
                 animPoseSetMaterialLightFlagOn(paperAnimGroup, 2);
             }
-        }
-        if (party->field_1C) {
-            animPoseSetPaperAnimGroup(party->paperAnimGroup, NULL, 0);
-            party->field_1C = 0;
-            party->flags2 &= ~0x04000000;
-            if (party->paperPoseId >= 0) {
-                animPaperPoseRelease(party->paperPoseId);
-                party->paperPoseId = -1;
+            if (party->field_1C) {
+                animPoseSetPaperAnimGroup(party->paperAnimGroup, NULL, 0);
+                party->field_1C = 0;
+                party->flags2 &= ~0x04000000;
+                if (party->paperPoseId >= 0) {
+                    animPaperPoseRelease(party->paperPoseId);
+                    party->paperPoseId = -1;
+                }
             }
+            P32(party, 0x130) = 0;
+            P32(party, 0x12C) = 0;
+            P32(party, 0x148) = 0;
+            P32(party, 0x138) = 0;
+            P32(party, 0x13C) = 0;
+            P32(party, 0x134) = 0;
+            P32(party, 0x140) = 0;
+            P32(party, 0x144) = 0;
+            party->field_70 = *(const Vec*)(base + 0xc0);
         }
-        P32(party, 0x130) = 0;
-        P32(party, 0x12C) = 0;
-        P32(party, 0x148) = 0;
-        P32(party, 0x138) = 0;
-        P32(party, 0x13C) = 0;
-        P32(party, 0x134) = 0;
-        P32(party, 0x140) = 0;
-        P32(party, 0x144) = 0;
-        party->field_70 = *(const Vec*)(base + 0xc0);
         partyClearFootmark();
         if (playSound) {
             const char* animName = L_reinitAnimName(party, base);

@@ -1459,15 +1459,22 @@ void winMakeSkipList(WindowWork* work) {
 
 // Draws the item/submenu window: the selected item's icon, name and description, the
 // party members' names and HP/FP, the item grid and the window's background textures.
-// Complete and logically correct; MWCC saves the original's 9 callee-saved registers and, with the
-// per-block `Vec tcopy`, the frame matches the original's 0x490 exactly. The original walks the party
-// list with a running pointer (the target increments r27 by 4 in the loop header and reads `-4(r27)`),
-// so the else branch keeps `lp[-1]` and the loop increments `lp++`; that shape matched the target's
-// list increment and lifted 94.44 -> 94.50. Remaining: `i`/`ofs` land in r28/r25 where the target has
-// r25/r28 (the list pointer and `ofs2` are already r27/r26), the low stack area is shifted +0xC from
-// the target, and the by-value `winTexSet` argument copies sit in different slots (the target passes
-// some source locals in place). Every call, constant and instruction otherwise matches.
-// NONMATCHING (94.50%): stack-slot offsets and integer register colours only.
+// Complete and logically correct. The original walks the party list with a running pointer (the
+// target increments r27 by 4 in the loop header and reads `-4(r27)`), so the else branch keeps
+// `lp[-1]` and the loop increments `lp++`. Every call, constant, branch and loop shape matches.
+// The object is now the target's 5284 B (was 5404 B). `winTexSet` (`include/win/win_main.h:44`) is
+// declared by value, but retail passes `scale`/`color` in their own home slot (the arg address
+// equals the local) and copies only the rebuilt `translate`; MWCC materialises a fresh outgoing
+// copy per by-value `Vec`/`GXColor` argument, which was 30 extra instructions. Calling through a
+// pointer-signature cast reproduces retail's arg addresses without editing the header; the original
+// prototype was almost certainly `void winTexSet(u32, Vec*, Vec*, GXColor*)`
+// What remains is the by-value outgoing area the cast no longer reserves: the frame is 0x400
+// against the target's 0x490, so the locals and the `i`/`ofs` callee-saved colours (target
+// i=r25/ofs=r28, ours reversed) differ. Fixing that needs the header/ABI, outside this file.
+// The `(*(s32(*)(void))pouchGetFP)()` cast suppresses an `extsh` the `s16` header prototype
+// would emit before the variadic winFontSetR; retail passes pouchGetFP's sign-extended r3
+// straight through (`mr r7, r3`), and winItemMain already calls it through this cast.
+// NONMATCHING (98.84%): the `winTexSet` by-value ABI and the `i`/`ofs` register colours.
 void itemUseDisp(WinMgrEntry* entry) {
     WindowWork* work = winGetPtr();
     WindowPartyDt* list[7];
@@ -1565,7 +1572,12 @@ void itemUseDisp(WinMgrEntry* entry) {
                 w = (f32)FontGetMessageWidth(str_8041D4BC);
                 translate.x = float_0p9_8041d4b8 * w * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
                 translate.y = (f32)(entry->field_0x1C - 0x13 - ofs);
+#ifdef MUST_MATCH
+                tcopy = translate;
+                ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0xAF, &tcopy, &scale, &c);
+#else
                 winTexSet(0xAF, translate, scale, c);
+#endif
             }
             {
                 GXColor c = dat_8041d494;
@@ -1574,7 +1586,12 @@ void itemUseDisp(WinMgrEntry* entry) {
                 w = (f32)FontGetMessageWidth(str_8041D4BC);
                 translate.x = float_0p9_8041d4b8 * w * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
                 translate.y = (f32)(entry->field_0x1C - 0x13 - (i + 1) * 0x16);
+#ifdef MUST_MATCH
+                tcopy = translate;
+                ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0xAF, &tcopy, &scale, &c);
+#else
                 winTexSet(0xAF, translate, scale, c);
+#endif
             }
             winFontInit();
             {
@@ -1658,7 +1675,7 @@ void itemUseDisp(WinMgrEntry* entry) {
                 translate.x = (f32)(entry->field_0x18 + 0xF5);
                 translate.y = (f32)(entry->field_0x1C - 8 - (i + 1) * 0x16);
                 tcopy = translate;
-                winFontSetR(&tcopy, &scale, &c, str_8041D4C4, pouchGetFP());
+                winFontSetR(&tcopy, &scale, &c, str_8041D4C4, (*(s32(*)(void))pouchGetFP)());
             }
             {
                 Vec scale;
@@ -1704,7 +1721,12 @@ void itemUseDisp(WinMgrEntry* entry) {
                 w = (f32)FontGetMessageWidth(str_8041D4BC);
                 translate.x = float_0p9_8041d4b8 * w * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
                 translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2)) - float_14_8041d4d4;
+#ifdef MUST_MATCH
+                tcopy = translate;
+                ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0xAF, &tcopy, &scale, &c);
+#else
                 winTexSet(0xAF, translate, scale, c);
+#endif
             }
             if (gray) {
                 winIconGrayInit();
@@ -1820,7 +1842,12 @@ void itemUseDisp(WinMgrEntry* entry) {
         GXColor c = dat_8041d4a0;
         translate.y = WW_F32(work, 0x154) - float_2_8041d4e0;
         translate.x = float_2_8041d4e0 + WW_F32(work, 0x150);
+#ifdef MUST_MATCH
+        tcopy = translate;
+        ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0, &tcopy, &scale, &c);
+#else
         winTexSet(0, translate, scale, c);
+#endif
     }
     {
         Vec scale = *(const volatile Vec*)&vec3_802f55a0;
@@ -1828,7 +1855,12 @@ void itemUseDisp(WinMgrEntry* entry) {
         GXColor c = white;
         translate.x = WW_F32(work, 0x150);
         translate.y = WW_F32(work, 0x154);
+#ifdef MUST_MATCH
+        tcopy = translate;
+        ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0, &tcopy, &scale, &c);
+#else
         winTexSet(0, translate, scale, c);
+#endif
     }
 }
 

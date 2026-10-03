@@ -587,9 +587,17 @@ static inline void _ssDropSeq(void) {
     }
 }
 
-// NONMATCHING (99.71%): instruction stream, branches and constants match; only callee-saved
-// pointer/offset register choices in the second half's effects and dvd loops differ. The streams
-// loops match once the test reads `sound.streams[i].flags` and `stream` is assigned inside the block.
+#ifdef MUST_MATCH
+// MUST_MATCH: the original homes the second half's effects and dvd pointers in r26/r27. Taking the
+// element address through a pointer-returning inline reproduces that; the plain `&sound.effects[i]`
+// swaps the pointer and the strength-reduced offset registers (99.71%).
+static inline SoundEffect* sdd_eff(u32 i) { return &sound.effects[i]; }
+static inline SoundDVD* sdd_dvd(u32 i) { return &sound.dvds[i]; }
+#else
+#define sdd_eff(i) (&sound.effects[i])
+#define sdd_dvd(i) (&sound.dvds[i])
+#endif
+
 BOOL SoundDropData(void) {
     SoundSong* song;
     SoundEffect* effect;
@@ -610,7 +618,7 @@ BOOL SoundDropData(void) {
         }
     }
     for (i = 0; i < 40; i++) {
-        effect = &sound.effects[i];
+        effect = sdd_eff(i);
         if (effect->flags) {
             sndFXKeyOff(effect->voiceId);
             if (effect->flags & 0x10) {
@@ -620,7 +628,7 @@ BOOL SoundDropData(void) {
         }
     }
     for (i = 0; i < 2; i++) {
-        dvd = &sound.dvds[i];
+        dvd = sdd_dvd(i);
         if (dvd->flags & 3) {
             AISetStreamPlayState(0);
             dvd->flags = 0;

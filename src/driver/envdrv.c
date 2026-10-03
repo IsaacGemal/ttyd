@@ -290,20 +290,23 @@ s32 texmtx_tbl[] = {30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 4, 5, 6, 14, 0, 1, 2
 // wants and every block-1 FPR now matches (TWO_PI=f31, magic=f30, 0.25=f29, PI=f28, 1.0=f27, 0.16605=f26,
 // 0.4967=f25, 100=f24). The GXColor temporaries go through a named `color` local (only the r/a fields
 // written), which puts the two GXSetTevKColor argument copies on sp+0x10/sp+0xC and keeps sp48 at 0x48 /
-// sp18 at 0x18. What remains is integer register colouring (block 2's loop vars land in different
-// callee-saved regs, GX-call argument scheduling differs in a few places) and block 2's magic/0.25 FPR swap.
-// NONMATCHING (94.51%): register colouring only; no instruction differs for a logic reason.
+// sp18 at 0x18. The declaration order below (`i`, `tevStage`, `temp_r27`, `wp`, `u`, `mtx`, `texCoord`)
+// was found by search and raises the score to 94.61%. What remains is integer register colouring (block 2's
+// loop vars land in different callee-saved regs, GX-call argument scheduling differs in a few places) and
+// block 2's magic/0.25 FPR swap. Renaming any of block 2's loop variables to give it its own live range makes
+// MWCC loop forever, so the swap cannot be fixed that way; the rest needs the permuter.
+// NONMATCHING (94.61%): register colouring/scheduling only; no instruction differs for a logic reason.
 void envDisp_DepthOfField(void) {
+    s32 i;
+    s32 tevStage;
+    CameraEntry* temp_r27;
     EnvironmentWork* wp = envGetWork();
     EnvironmentUnk88* u = &wp->unk88;
+    s32* mtx;
+    s32 texCoord;
     Mtx sp48;
     GXColor color;
     Mtx sp18;
-    s32 tevStage;
-    CameraEntry* temp_r27;
-    s32* mtx;
-    s32 i;
-    s32 texCoord;
     GXTexObj* texobj;
     f32 v30;
     f32 v29;
@@ -347,8 +350,7 @@ void envDisp_DepthOfField(void) {
         mtx = texmtx_tbl;
         texCoord = 0;
         tevStage = 0;
-        i = 0;
-        for (; i < 4; i++) {
+        for (i = 0; i < 4; i++) {
             v31 = TWO_PI;
             f2 = 0.00761f;
             f3 = v31 * (f32)i * 0.25f;
@@ -498,7 +500,7 @@ void envDisp_DepthOfField(void) {
         v27 = 0.4967f;
         v24 = 100.0f;
         tevStage = 0;
-        for (; i < 4; i++) {
+        for (i = 0; i < 4; i++) {
             f2 = 0.00761f;
             f0 = (f32)i;
             f0 = v28 * f0;

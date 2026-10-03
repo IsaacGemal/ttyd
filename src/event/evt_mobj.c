@@ -3969,16 +3969,15 @@ void kururing_capture(CameraId cameraId, void* param) {
 extern const char str_8041A11C[4];
 s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
 
-static inline BOOL mobjIsInRange(f32 cz, f32 range, f32 cx, f32 z, f32 x) {
+static inline BOOL mobjIsInRange(f32 cx, f32 cz, f32 range, f32 x, f32 z) {
     if (cx - range <= x && x <= cx + range && cz - range <= z && z <= cz + range) {
         return TRUE;
     }
     return FALSE;
 }
 
-// NONMATCHING (95.66%): the state machine and every position-range box check are right; the residue is
-// the FP register allocation at a few inlined mobjIsInRange sites (helper parameter order is permuted so
-// the compiler lands box-origin/half-range/entity in the target's f1-f5) plus constant-load scheduling.
+// NONMATCHING (99.94%): range-box checks, state machine, literals and the itemEntry schedule match. Residue is
+// the global allocator colouring posBuf r28 where the target uses r30 (6 instructions).
 s32 mobj_kururing_floor(MapObjectEntry* obj) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -4020,11 +4019,11 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
             }
             {
                 f32 objx = obj->position.x;
-                if (mobjIsInRange(obj->position.z, float_30_8041a1a8, objx, mario->position.z, mario->position.x)) {
+                if (mobjIsInRange(objx, obj->position.z, 30.0f, mario->position.x, mario->position.z)) {
                     flag = 1;
                 }
                 if (party != NULL &&
-                    mobjIsInRange(obj->position.z, float_30_8041a1a8, objx, party->position.z, party->position.x)) {
+                    mobjIsInRange(objx, obj->position.z, 30.0f, party->position.x, party->position.z)) {
                     flag = 1;
                 }
             }
@@ -4051,26 +4050,35 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
                     f32 y = float_30_8041a1a8;
 
                     y += obj->position.y;
+#ifdef MUST_MATCH
+                    // The target evaluates the floats before evtId: `itemEntry`'s declared parameter order must be
+                    // (name, type, a3, f32, f32, f32, evtId, a5), not the header's (name, type, a3, evtId, a5, f32...).
+                    // The registers are identical either way; only the evaluation order (and so the schedule)
+                    // differs. Reported in REPORT.md; this cast reproduces the target order until the header is fixed.
+                    if (((ItemEntry* (*)(const char*, ItemType, u16, f32, f32, f32, s32, s32))itemEntry)(
+                            obj->name, 0x7d, 4, obj->position.x, y, obj->position.z, obj->unk1E4, 0) != NULL) {
+#else
                     if (itemEntry(obj->name, 0x7d, 4, obj->unk1E4, 0, obj->position.x,
                                   y, obj->position.z) != NULL) {
+#endif
                         item = itemNameToPtr(obj->name);
                         itemFlagOn(item, 0x10);
-                        *(f32*)&item->field_0x70[0x10] = float_0p6_8041a1e0;
-                        *(f32*)&item->field_0x70[0x14] = float_1_8041a160;
+                        *(f32*)&item->field_0x70[0x10] = 0.6f;
+                        *(f32*)&item->field_0x70[0x14] = 1.0f;
                         *(s32*)&item->field_0x70[0x18] = 5;
-                        *(f32*)&item->field_0x4D[0xB] = float_300_8041a158;
+                        *(f32*)&item->field_0x4D[0xB] = 300.0f;
                     }
                 }
             }
             animGetPtr()->poses[obj->poseId].flags |= 0x10;
             obj->flags |= 0x400;
-            dispEntry(2, float_0_8041a150, 0, kururing_capture, obj);
+            dispEntry(2, 0.0f, 0, kururing_capture, obj);
             break;
 
         case 1:
             animGetPtr()->poses[obj->poseId].flags |= 0x10;
             obj->flags |= 0x400;
-            dispEntry(2, float_0_8041a150, 0, kururing_capture, obj);
+            dispEntry(2, 0.0f, 0, kururing_capture, obj);
             if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
                 break;
             }
@@ -4085,27 +4093,27 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
         case 0xa:
             animGetPtr()->poses[obj->poseId].flags |= 0x10;
             obj->flags |= 0x400;
-            dispEntry(2, float_0_8041a150, 0, kururing_capture, obj);
+            dispEntry(2, 0.0f, 0, kururing_capture, obj);
             posBuf = (u8*)((smartEntry*)*(void**)((u8*)animPoseGetAnimPosePtr(obj->poseId) + 0x15C))->address;
             mario = marioGetPtr();
-            if (mobjIsInRange(obj->position.z, float_30_8041a1a8, obj->position.x, mario->position.z, mario->position.x)) {
+            if (mobjIsInRange(obj->position.x, obj->position.z, 30.0f, mario->position.x, mario->position.z)) {
                 mario->position.y = *(f32*)(posBuf + 0x10);
             }
             party2 = partyGetPtr(marioGetPartyId());
             if (party2 != NULL &&
-                mobjIsInRange(obj->position.z, float_30_8041a1a8, obj->position.x, party2->position.z, party2->position.x)) {
+                mobjIsInRange(obj->position.x, obj->position.z, 30.0f, party2->position.x, party2->position.z)) {
                 party2->position.y = *(f32*)(posBuf + 0x10);
             }
             party2 = partyGetPtr(marioGetExtraPartyId());
             if (party2 != NULL &&
-                mobjIsInRange(obj->position.z, float_30_8041a1a8, obj->position.x, party2->position.z, party2->position.x)) {
+                mobjIsInRange(obj->position.x, obj->position.z, 30.0f, party2->position.x, party2->position.z)) {
                 party2->position.y = *(f32*)(posBuf + 0x10);
             }
             npcWork = npcGetWorkPtr();
             entry = npcWork->entries;
             for (i = 0; i < npcWork->total; i++, entry++) {
                 if (entry->flags & 1) {
-                    if (mobjIsInRange(obj->position.z, float_42p42_8041a1dc, obj->position.x, entry->position.z, entry->position.x)) {
+                    if (mobjIsInRange(obj->position.x, obj->position.z, 42.420002f, entry->position.x, entry->position.z)) {
                         entry->position.y = *(f32*)(posBuf + 0x10);
                     }
                 }
@@ -4138,6 +4146,7 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
     }
     return 0;
 }
+
 
 s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
 #ifdef MUST_MATCH
@@ -4891,3 +4900,78 @@ s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
+
+// ROData pool objects
+__declspec(section ".sdata2") const char str_8041A118[4] = "A_1";
+__declspec(section ".sdata2") const char str_8041A11C[4] = "A_2";
+__declspec(section ".sdata2") const char str_8041A120[4] = "A_3";
+__declspec(section ".sdata2") const char str_8041A124[4] = "A_4";
+__declspec(section ".sdata2") const char str_8041A128[4] = "A_5";
+__declspec(section ".sdata2") const char str_8041A12C[4] = "S_1";
+__declspec(section ".sdata2") u32 dat_8041a130 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041a134 = 0xFFFFFFFF;
+__declspec(section ".sdata2") const char str_8041A138[4] = "_h\000";
+const f32 float_180_8041a13c = 180.0f;
+__declspec(section ".sdata2") f32 float_25_8041a140 = 25.0f;
+__declspec(section ".sdata2") f32 float_170_8041a144 = 170.0f;
+__declspec(section ".sdata2") f32 float_100_8041a148 = 100.0f;
+__declspec(section ".sdata2") f32 float_50_8041a14c = 50.0f;
+#pragma explicit_zero_data on  // keep the zero float_0 in .sdata2 (otherwise MWCC puts it in bss)
+__declspec(section ".sdata2") f32 float_0_8041a150 = 0.0f;
+#pragma explicit_zero_data reset
+const f32 float_230_8041a154 = 230.0f;
+__declspec(section ".sdata2") f32 float_300_8041a158 = 300.0f;
+__declspec(section ".sdata2") f32 float_0p5_8041a15c = 0.5f;
+__declspec(section ".sdata2") f32 float_1_8041a160 = 1.0f;
+const f32 float_175_8041a164 = 175.0f;
+__declspec(section ".sdata2") const char str_8041A168[8] = "%s%2x\000\000";
+const f32 float_150_8041a170 = 150.0f;
+const f32 float_deg2rad_8041a174 = 0.017453292f;
+__declspec(section ".sdata2") f32 float_12p5_8041a178 = 12.5f;
+const f32 float_neg1000_8041a17c = -1000.0f;
+const f32 float_200_8041a180 = 200.0f;
+const f32 float_6_8041a184 = 6.0f;
+const f32 float_75_8041a188 = 75.0f;
+const f32 float_4p8_8041a18c = 4.8f;
+__declspec(section ".sdata2") f32 float_2_8041a190 = 2.0f;
+const f32 float_0p04_8041a194 = 0.04f;
+const f32 float_3_8041a198 = 3.0f;
+const f32 float_0p2_8041a19c = 0.2f;
+__declspec(section ".sdata2") f32 float_1024_8041a1a0 = 1024.0f;
+__declspec(section ".sdata2") f32 float_10_8041a1a4 = 10.0f;
+__declspec(section ".sdata2") f32 float_30_8041a1a8 = 30.0f;
+__declspec(section ".sdata2") f32 float_60_8041a1ac = 60.0f;
+__declspec(section ".sdata2") f32 float_0p8_8041a1b0 = 0.8f;
+__declspec(section ".sdata2") f32 float_0p125_8041a1b4 = 0.125f;
+__declspec(section ".sdata2") f32 float_0p99_8041a1b8 = 0.99f;
+__declspec(section ".sdata2") f32 float_7p5_8041a1bc = 7.5f;
+__declspec(section ".sdata2") const char str_8041A1C0[4] = "S_2";
+__declspec(section ".sdata2") f32 float_0p45_8041a1c4 = 0.45f;
+__declspec(section ".sdata2") f32 float_0p7_8041a1c8 = 0.7f;
+__declspec(section ".sdata2") f32 float_500_8041a1cc = 500.0f;
+__declspec(section ".sdata2") f32 float_120_8041a1d0 = 120.0f;
+const f32 float_0p1_8041a1d4 = 0.1f;
+__declspec(section ".sdata2") f32 float_1E05_8041a1d8 = 100000.0f;
+__declspec(section ".sdata2") f32 float_42p42_8041a1dc = 42.420002f;
+__declspec(section ".sdata2") f32 float_0p6_8041a1e0 = 0.6f;
+__declspec(section ".sdata2") f32 float_32767_8041a1e4 = 32767.0f;
+__declspec(section ".sdata2") const char str_8041A1E8[4] = "S_3";
+__declspec(section ".sdata2") f32 float_40_8041a1ec = 40.0f;
+const f32 float_360_8041a1f0 = 360.0f;
+__declspec(section ".sdata2") f32 float_45_8041a1f4 = 45.0f;
+#pragma force_active on  // the two 8-byte strings the header wrongly declares as [4]; emit them in place
+__declspec(section ".sdata2") const u32 gap_str_8041A1F8[2] = { 0x4D5F495F, 0x31000000 };
+__declspec(section ".sdata2") const u32 gap_str_8041A200[2] = { 0x4D5F535F, 0x31000000 };
+#pragma force_active reset
+const f32 float_1p4_8041a208 = 1.4f;
+const f32 float_1p2_8041a20c = 1.2f;
+__declspec(section ".sdata2") f32 float_5_8041a210 = 5.0f;
+__declspec(section ".sdata2") f32 float_neg1_8041a214 = -1.0f;
+__declspec(section ".sdata2") const char str_8041A218[4] = "S_4";
+__declspec(section ".sdata2") const char str_8041A21C[4] = "Z_1";
+const f32 float_neg0p8_8041a220 = -0.8f;
+const f32 float_4_8041a224 = 4.0f;
+__declspec(section ".sdata2") f32 float_0p9_8041a228 = 0.9f;
+const f32 float_15_8041a22c = 15.0f;
+const f32 float_0p3_8041a230 = 0.3f;
+__declspec(section ".sdata2") const char str_8041A234[4] = "me\000";

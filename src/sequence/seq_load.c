@@ -167,7 +167,7 @@ const GXColor dat_8041bdcc = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_8041bdd0 = {0xFF, 0xFF, 0xFF, 0xFF};
 const u32 dat_8041bdd4 = 0x80;
 const u32 dat_8041bdd8 = 0x80;
-const char str_8041BE34[] = "\202W\202W\000\000";
+__declspec(section ".sdata2") const char str_8041BE34[] = "\202W\202W\000\000\000";
 const char str_8041BE40[] = " \000";
 const f32 float_0_8041bde4 = 0.0f;
 const f32 float_1_8041bde8 = 1.0f;
@@ -1126,18 +1126,28 @@ void loadMain(SequenceWork* workArg) {
 }
 #pragma opt_propagation reset
 
-// NONMATCHING (76.47%): complete reconstruction of the save-file load screen. Every call, loop bound,
+// NONMATCHING (80.64%): complete reconstruction of the save-file load screen. Every call, loop bound,
 // rodata object, table read and branch is present and semantically correct. The remaining diffs are
-// compiler only: MWCC's stack-frame live-range packing (the frame size matches at 0x890, but the
-// name/time buffers and the viewport/projection pair land in different slots), the register colouring
-// that follows, and the target's single base-pointer addressing of the .rodata vecs/strings/doubles
-// (this file names those objects individually, so MWCC emits lis+addi per use; routing them through
-// the RO macro re-colours every register and scores lower). The angle table is copied on the stack
-// through a struct assignment (the target does a 16-word block copy before indexing); the name width
-// is halved with `>> 1`, which is what makes MWCC fold the shift and mask into the target's `extrwi`;
-// the texture-strip scale uses the double __fabs idiom shared with win_root.c's winNameQuad; the
-// play-time divide is s64 on the target but emitted as u64 here (one __div2i vs __div2u). Raw offsets
-// used for undeclared CardSaveSlot fields are listed in REPORT.md.
+// compiler only: MWCC's stack-frame live-range packing (the frame, the r30 base and the whole prologue
+// now match at 0x890, but the angle table and the viewport/projection pair still land in different slots)
+// and the register colouring (several loop variables sit in adjacent registers to the target).
+// The target addresses its whole .rodata region from one base register (r30 = &vec3_802ed670); routing
+// the six format strings, the angle table (dat_802ed7a8 at 0x138), the fmod 90.0 double
+// (double_90_802ed9b8 at 0x348) and the vec3_802ed670/vec3_802ed754 loads through the existing RO macro
+// reproduces those, while routing the remaining vecs raises the register pressure past the target's 12
+// callee-saved registers and scores lower, so only those are routed.
+// Other source-shape fixes that removed real diffs: keeping the play-time divisor inline at its use
+// (`ticks / (s64)(*(volatile u32*)0x800000F8 >> 2)`) so the `lwz 0xf8/srwi` schedule matches; loading
+// the loop colours through a volatile pointer so MWCC does not hoist them out of the loop; computing the
+// icon `GXColor c` after the PSMTXTrans/Scale/Concat chain; writing the nine-window colour select as
+// `GXColor color = greyA0; if (...) color = white;` instead of a ternary (MWCC then copies the value
+// directly instead of taking the address of the colour local); and dividing by 2.0f instead of
+// multiplying by 0.5f in the centred-text x positions, which fixes the `fnmsubs` operand order.
+// The angle table is copied on the stack through a struct assignment (the target does a 16-word block
+// copy before indexing); the name width is halved with `>> 1`, which is what makes MWCC fold the shift
+// and mask into the target's `extrwi`; the texture-strip scale uses the double __fabs idiom shared with
+// win_root.c's winNameQuad. Raw offsets used for undeclared CardSaveSlot fields are listed in REPORT.md.
+#pragma opt_loop_invariants off // with the lifetime pass off, keeping the target's loop-invariant codegen
 // A textured strip quad, the same form as win_root.c's winNameQuad but sourced from the global
 // LoadWork. Kept static inline so the three constant-folded calls match the target's double __fabs
 // scale idiom and per-call palette reload.
@@ -1192,22 +1202,25 @@ static inline void loadDrawColor(GXColor color) {
     FontDrawColor(&color);
 }
 
-// NONMATCHING (76.47%): see the full note above the helpers; frame live-range packing and one
-// s64 divide differ; all calls, loops and rodata are present.
+// NONMATCHING (80.64%): see the full note above the helpers; stack-slot placement and the
+// callee-saved register colouring differ; all calls, loops and rodata are present.
 void loadDraw(void) {
+#ifdef MUST_MATCH
+    const char* base = (const char*)&vec3_802ed670;
+#endif
     CameraEntry* cam = camGetPtr(CAMERA_2D);
     GXColor white = *(GXColor*)&dat_8041bd84;
     GXColor greyA0 = *(GXColor*)&dat_8041bd88;
-    GXColor grey80 = *(GXColor*)&dat_8041bd8c;
+    s32 j;
     WinDt* wd;
     CardData* card;
     u8* slot;
-    char timeBuf[0x70];
-    char nameBuf[0x70];
     s32 i;
-    s32 j;
-    f32 viewport[6];
+    GXColor grey80 = *(GXColor*)&dat_8041bd8c;
+    char timeBuf[0x70];
+    char nameBuf[0x80];
     f32 projection[7];
+    f32 viewport[6];
     CameraEntry saved;
 
     if (wp->field_0x18 >= 0x20 && wp->field_0x18 < 0x28) {
@@ -1245,7 +1258,8 @@ void loadDraw(void) {
 
     // The nine file windows.
     for (i = 0; i < 9; i++) {
-        GXColor color = (i == wp->field_0x20) ? white : greyA0;
+        GXColor color = greyA0;
+        if (i == wp->field_0x20) { color = white; }
 
         wd = &((WinDt*)win_dt)[i];
         if (wp->field_0x18 == 0x33 && (i == wp->field_0x30 || i == wp->field_0x34)) {
@@ -1260,7 +1274,7 @@ void loadDraw(void) {
         if (wd->unk10 < 0xe && wd->unk10 >= 0xa) {
             color.a = 0xFE;
             winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
-            winTexSet(0xe, loadDrawVec(&vec3_802ed670, wd->x, wd->y), vec3_802ed67c, color);
+            winTexSet(0xe, loadDrawVec((const Vec*)RO(base, 0x0, vec3_802ed670), wd->x, wd->y), vec3_802ed67c, color);
             winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
             winTexSet(wd->unk10, loadDrawVec(&vec3_802ed688, wd->x, wd->y + 60.0f), vec3_802ed694, color);
         } else {
@@ -1299,38 +1313,37 @@ void loadDraw(void) {
         wd = &((WinDt*)win_dt)[i];
 
         FontDrawStart();
-        loadDrawColor(*(GXColor*)&dat_8041bd98);
+        loadDrawColor(*(volatile GXColor*)&dat_8041bd98);
         if (i == wp->field_0x20) {
-            loadDrawColor(*(GXColor*)&dat_8041bd9c);
+            loadDrawColor(*(volatile GXColor*)&dat_8041bd9c);
         }
         FontDrawScale(0.6f);
         FontDrawEdge();
-        sprintf(nameBuf, str_802ED960, winZenkakuStr(i + 1));
+        sprintf(nameBuf, RO(base, 0x2f0, str_802ED960), winZenkakuStr(i + 1));
         FontDrawString(nameBuf, wd->x - 100.0f, 84.0f + wd->y);
         FontDrawEdgeOff();
         FontDrawScale(1.0f);
-        loadDrawColor(*(GXColor*)&dat_8041bda0);
+        loadDrawColor(*(volatile GXColor*)&dat_8041bda0);
         if (i == wp->field_0x20) {
-            loadDrawColor(*(GXColor*)&dat_8041bda4);
+            loadDrawColor(*(volatile GXColor*)&dat_8041bda4);
         }
 
         if (flags & 2) {
-            const char* s = str_802ED96C;
+            const char* s = RO(base, 0x2fc, str_802ED96C);
 
-            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) * 0.5f, 12.0f + wd->y);
+            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
         } else if (flags & 1) {
-            const char* s = str_802ED97C;
+            const char* s = RO(base, 0x30c, str_802ED97C);
 
-            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) * 0.5f, 12.0f + wd->y);
+            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
         } else if (field17c == 0) {
-            const char* s = str_802ED98C;
+            const char* s = RO(base, 0x31c, str_802ED98C);
 
-            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) * 0.5f, 12.0f + wd->y);
+            FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
             if (strlen(name) != 0) {
                 FontDrawString(name, wd->x - (f32)(FontGetMessageWidth(name) >> 1), 70.0f + wd->y);
             }
         } else {
-            u32 divisor = *(volatile u32*)0x800000F8 >> 2;
             s64 ticks = ((s64)field28 << 32) | field2c;
             u64 secs;
             u32 hours;
@@ -1339,7 +1352,7 @@ void loadDraw(void) {
             f32 half2;
 
             FontGetMessageWidth(str_8041BE34);
-            secs = (u64)(ticks / (s64)divisor);
+            secs = (u64)(ticks / (s64)(*(volatile u32*)0x800000F8 >> 2));
             if (secs > 0x57E3F) {
                 hours = 99;
                 mins = 59;
@@ -1351,34 +1364,36 @@ void loadDraw(void) {
             if (strlen(name) != 0) {
                 FontDrawString(name, wd->x - (f32)(FontGetMessageWidth(name) >> 1), 70.0f + wd->y);
             }
-            sprintf(timeBuf, str_802ED998, winZenkakuStr(level));
-            FontDrawString(timeBuf, wd->x - (f32)FontGetMessageWidth(timeBuf) * 0.5f, 30.0f + wd->y);
-            strcpy(timeBuf, str_802ED9A4);
+            sprintf(timeBuf, RO(base, 0x328, str_802ED998), winZenkakuStr(level));
+            FontDrawString(timeBuf, wd->x - (f32)FontGetMessageWidth(timeBuf) / 2.0f, 30.0f + wd->y);
+            strcpy(timeBuf, RO(base, 0x334, str_802ED9A4));
             strcat(timeBuf, unk_8016af5c(hours, 2));
             strcat(timeBuf, str_8041BE40);
             strcat(timeBuf, unk_8016af5c(mins, 2));
-            half = (f32)FontGetMessageWidth(timeBuf) * 0.5f;
+            half = (f32)FontGetMessageWidth(timeBuf) / 2.0f;
             FontDrawString(timeBuf, wd->x - half, wd->y);
-            strcpy(timeBuf, str_802ED9A4);
+            strcpy(timeBuf, RO(base, 0x334, str_802ED9A4));
             strcat(timeBuf, unk_8016af5c(hours, 2));
             half2 = (f32)FontGetMessageWidth(timeBuf);
             {
                 Mtx mtx;
                 Mtx mtx2;
-                GXColor c = *(GXColor*)&dat_8041bda8;
+                GXColor c;
 
                 PSMTXTrans(mtx, 8.0f + (half2 + (wd->x - half)), 1.0f + (wd->y - 22.0f), 0.0f);
                 PSMTXScale(mtx2, 1.5f, 1.5f, 1.5f);
                 PSMTXConcat(mtx, mtx2, mtx);
+                c = *(GXColor*)&dat_8041bda8;
                 iconDispGxCol(mtx, 0, 0x201, c);
             }
 
             for (j = 0; j < 7; j++) {
                 if (mask & (1 << (j + 1))) {
-                    GXColor c = (i == wp->field_0x20) ? white : greyA0;
                     Mtx mtx;
+                    GXColor c;
 
                     PSMTXTrans(mtx, wd->x - 106.0f + (f32)(j * 0x20), wd->y - 52.0f, 0.0f);
+                    c = (i == wp->field_0x20) ? white : greyA0;
                     iconDispGxCol(mtx, 0, stone_id[j] & 0xFFFF, c);
                 }
             }
@@ -1421,7 +1436,7 @@ void loadDraw(void) {
         winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
         winTexSet(0xf, vec3_802ed730, vec3_802ed73c, *(GXColor*)&dat_8041bdc0);
         winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
-        winTexSet_x2(0x14, 0x1f, vec3_802ed748, vec3_802ed754, *(GXColor*)&dat_8041bdc4);
+        winTexSet_x2(0x14, 0x1f, vec3_802ed748, *(const Vec*)RO(base, 0xe4, vec3_802ed754), *(GXColor*)&dat_8041bdc4);
 
         for (j = 0; j < 2; j++) {
             if (wp->field_0x28 == j) {
@@ -1437,12 +1452,12 @@ void loadDraw(void) {
     }
 
     if (wp->field_0x18 == 0x33 && wp->field_0x34 < 4) {
-        struct LoadAngleTable angles = *(struct LoadAngleTable*)dat_802ed7a8;
+        struct LoadAngleTable angles = *(struct LoadAngleTable*)RO(base, 0x138, dat_802ed7a8);
         f32 angle = angles.v[wp->field_0x30 * 4 + wp->field_0x34];
-        f32 f29;
         f32 f30;
+        f32 f29;
 
-        if (fmod(angle, 90.0) == 0.0f) {
+        if ((f32)fmod(angle, *(const f64*)RO(base, 0x348, double_90_802ed9b8)) == 0.0f) {
             f32 fa = (f32)(wp->field_0x30 / 2);
             f32 fb = (f32)(wp->field_0x34 / 2);
             if (fa == fb) {
@@ -1478,3 +1493,4 @@ void loadDraw(void) {
     GXSetProjectionv(projection);
     *camGetCurPtr() = saved;
 }
+#pragma opt_loop_invariants reset

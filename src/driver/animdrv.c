@@ -693,9 +693,9 @@ static inline void animPoseReleasePaper(AnimationPose* paper) {
     }
 }
 
-// NONMATCHING (97.33%): the paper-release block is now the shared inline animPoseReleasePaper above. What
-// differs is the whole callee-saved map (target poseOffset r30/pose r31/someflag r29/paper r27/file r28;
-// here r29/r28/r27/r30/r31), one handle-address fold and the `id != -2` branch layout.
+// NONMATCHING (98.27%): the paper-release block is now the shared inline animPoseReleasePaper above; the
+// instruction stream matches, so only the callee-saved colouring is left (target pose r31/someflag r29/
+// file r28/paper r27; here file r31/pose r29/paper r28/someflag r27).
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     AnimationPose* pose = &wp->poses[poseId];
     s32 poseOffset;
@@ -703,14 +703,20 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     if (pose->paperId != -1) {
         if (animName != NULL) {
             AnimationPose* paper = &wp->poses[pose->paperId];
+            FileEntry* handle = *(FileEntry**)((u8*)wp->files + paper->fileId * 0x10 + 8);
 
-            if (!strcmp(animPoseGetBaseData(paper)->fileName, animName)) {
-                if (((pose->flags & 2) ? 1 : 0) == someflag) {
+            if (!strcmp((*(AnimationPoseData**)(handle->data))->fileName, animName)) {
+                s32 f = (pose->flags & 2) ? 1 : 0;
+
+                if (f == someflag) {
                     return;
                 }
             }
         }
-        animPoseReleasePaper(&wp->poses[pose->paperId]);
+        {
+            AnimationPose* paper = &wp->poses[pose->paperId];
+            animPoseReleasePaper(paper);
+        }
     }
     poseOffset = poseId * 0x170;
     if (animName == NULL) {
@@ -935,9 +941,9 @@ static inline void animPoseAddVecDeltaRange(Vec* dst, u8* src, u8* end, f32 scal
             f32 dx = __OSs8tof32((s8*)src + 1);
             f32 dy = __OSs8tof32((s8*)src + 2);
             f32 dz = __OSs8tof32((s8*)src + 3);
-            dst->x += scale * dx;
-            dst->y += scale * dy;
-            dst->z += scale * dz;
+            dst->x += dx * scale;
+            dst->y += dy * scale;
+            dst->z += dz * scale;
         }
         src += 4;
     }
@@ -1007,15 +1013,21 @@ extern const f32 float_3_80419ad0;
 
 // The four inlined delta loops make each update path large; retail inlines them in both.
 #pragma inline_max_total_size(60000)
-// The whole recursive pose evaluator is reconstructed from the assembly; the bl sequence and
-// immediates match (17 calls). What is left is register allocation and instruction scheduling,
-// not semantics: the `pose->field_0x80` indexed load folds its +4 into the index (one extra
+// Reconstruction notes. The whole recursive pose evaluator is reconstructed from the assembly;
+// the bl sequence and immediates match (17 calls), so only register allocation and instruction
+// scheduling remain. Source shapes that reproduce retail's operand order and register split: the
+// two `float_0_80419a48 == x` compares keep the constant first in `fcmpu`; the clamped value
+// accumulates back into `start` (retail's clamp lives in start's f3) instead of a separate
+// `clamped` variable; `end` is declared before `start` and loaded first, giving retail's f1/f3
+// split; the range delta helper multiplies `dx * scale` (the size helper's `scale * dx` is what
+// retail's reset loop uses), and the cubic `-2*a3 + 3*a2` term order matches retail's fmadds.
+// What is left: the `pose->field_0x80` indexed load folds its +4 into the index (one extra
 // `addi 0x4`), the inlined animPoseAddVecDelta/NodeDelta loops take their source in r7 where
-// retail uses r5, the blend loops colour their source/destination registers differently from
-// retail after the buffer memcpy, and the node cubic-Hermite block schedules a2/a3 and the
-// tanfTbl loads in another order. Permuter work: no call, immediate or control-flow difference
-// remains.
-// NONMATCHING (97.46%): matches the structure; only register allocation/scheduling differs.
+// retail's reset loop uses r5, the blend loops colour their source/destination registers
+// differently from retail after the buffer memcpy, and the node cubic-Hermite block schedules
+// a2/a3 and the tanfTbl loads in another order. Permuter work: no call, immediate or control-flow
+// difference remains.
+// NONMATCHING (97.71%): register allocation/scheduling only; all calls and immediates match.
 void animPoseMain(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* data = animPoseGetBaseData(pose);
@@ -1025,10 +1037,9 @@ void animPoseMain(s32 poseId) {
     s32 canLoop;
     OSTime now;
     f32 time;
-    f32 start;
     f32 end;
+    f32 start;
     f32 duration;
-    f32 clamped;
     s32 i;
     s32 frame2;
     s32 frame1;
@@ -1061,35 +1072,32 @@ void animPoseMain(s32 poseId) {
     APOSE_F(pose, 0x20) *= pose->localTimeRate;
 
     time = APOSE_F(pose, 0x20);
-    start = *(f32*)((u8*)ANIM_DATA_CLIP(anim) + 4);
-    end = *(f32*)((u8*)ANIM_DATA_CLIP(anim) + 8);
+    end = ((f32*)ANIM_DATA_CLIP(anim))[2];
+    start = ((f32*)ANIM_DATA_CLIP(anim))[1];
     duration = end - start;
 
-    if (duration == float_0_80419a48) {
+    if (float_0_80419a48 == duration) {
         pose->loopTime = time - start;
-        clamped = start;
     } else if (canLoop) {
         f32 t = time - start;
         if (t < 0.0f) {
             pose->loopTime = 0.0f;
-            clamped = start;
         } else {
             pose->loopTime = t / duration;
-            clamped = time - (f32)(s32)pose->loopTime * duration;
+            start = time - (f32)(s32)pose->loopTime * duration;
         }
     } else {
         if (time < start) {
             pose->loopTime = 0.0f;
-            clamped = start;
         } else if (time > end) {
             pose->loopTime = (time - start) / duration;
-            clamped = end;
+            start = end;
         } else {
             pose->loopTime = (time - start) / duration;
-            clamped = time;
+            start = time;
         }
     }
-    APOSE_F(pose, 0x24) = clamped;
+    APOSE_F(pose, 0x24) = start;
 
     {
     f32 frameTime = APOSE_F(pose, 0x24);
@@ -1134,7 +1142,7 @@ void animPoseMain(s32 poseId) {
         if (canLoop) {
             if (APOSE_S(pose, 0x2C) >= ANIM_DATA_FRAME_COUNT(anim)) {
                 APOSE_S(pose, 0x2C) = 0;
-                den = *(f32*)((u8*)ANIM_DATA_CLIP(anim) + 8) - *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x28) * ANIM_FRAME_SIZE);
+                den = ((f32*)ANIM_DATA_CLIP(anim))[2] - *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x28) * ANIM_FRAME_SIZE);
             } else {
                 den = *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x2C) * ANIM_FRAME_SIZE)
                     - *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x28) * ANIM_FRAME_SIZE);
@@ -1143,7 +1151,7 @@ void animPoseMain(s32 poseId) {
             den = *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x2C) * ANIM_FRAME_SIZE)
                 - *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x28) * ANIM_FRAME_SIZE);
         }
-        if (den == float_0_80419a48) {
+        if (float_0_80419a48 == den) {
             APOSE_F(pose, 0x30) = float_0_80419a48;
         } else {
             APOSE_F(pose, 0x30) = num / den;
@@ -1252,7 +1260,7 @@ void animPoseMain(s32 poseId) {
                         f32 step = float_0p0625_80419acc * __OSs8tof32((s8*)src + 1);
                         f32 tan0 = tanfTbl[(s8)src[2] + 0x59];
                         f32 tan1 = tanfTbl[t1 + 0x59];
-                        *dst += (float_3_80419ad0 * a2 + float_neg2_80419ab8 * a3) * step
+                        *dst += (float_neg2_80419ab8 * a3 + float_3_80419ad0 * a2) * step
                               + (a3 - float_2_80419a84 * a2 + alpha) * (timedelta * tan0)
                               + (a3 - a2) * (timedelta * tan1);
                     }
@@ -1542,9 +1550,9 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z) {
     PSMTXConcat(g_modeling_mtx_stack[g_modeling_mtx_lv - 1], result, g_modeling_mtx_stack[g_modeling_mtx_lv]);
 }
 
-// NONMATCHING (97.86%): every instruction/constant/offset is right apart from scheduling; what is left is
-// register colouring (loop2 texMtxId/flags one off) plus the wrapS ternary materialising through r3 (`mr`)
-// and the loop2 `texMtxId` init (`mr r19,r21` in the target vs a `li` here).
+// NONMATCHING (97.89%): every instruction/constant/offset matches; what is left is register colouring
+// (loop2 texMtxId/flags one off) plus the wrapS ternary materialising through r3 (`mr`) and the loop2
+// `texMtxId` init (`mr r19,r21` in the target vs a `li` here).
 void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pTexEntries, AnimTexMtx* animEntries,
                              s32 texBindsCapacity, AnimTexBind* texBinds, AnimationTextureFile* texFile) {
     Mtx mRot, mTrans, mScale, mTmp;
@@ -1641,7 +1649,7 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
     }
 
     texMtxId = 0;
-    for (j = 0; j < texCount; texMtxId += 3, j++) {
+    for (j = 0; j < texCount; j++, texMtxId += 3) {
 #ifdef MUST_MATCH // `1u` keeps the original's `subf; subi 1; slwi` instead of folding it to `subf; slwi; subi 4`
         s32 texId = texIdRemap[texCount - j - 1u];
 #else
@@ -1735,7 +1743,7 @@ inline BOOL animSetMaterial_ChangeTexture(AnimationPoseData* data, AnimPoseShape
             printf("Error: animSetMaterial_ChangeTexture: "
                    "\x83\x65\x83\x4E\x83\x58\x83\x60\x83\x83\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1 "
                    "frameExt=%d\n",
-                   frameExt);
+                   texEntry[dataId].bindId);
         }
         if (bind[bindId].texType == texType) {
             if (texObj) {
@@ -1787,7 +1795,7 @@ static inline BOOL materialProc_ChangeTexture(AnimationPoseData* data, AnimPoseS
             printf("Error: animSetMaterial_ChangeTexture: "
                    "\x83\x65\x83\x4E\x83\x58\x83\x60\x83\x83\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1 "
                    "frameExt=%d\n",
-                   frameExt);
+                   texEntry[dataId].bindId);
         }
         if (bind[bindId].texType == texType) {
             if (texObj) {
@@ -1953,7 +1961,7 @@ static inline BOOL renderProc_ChangeTexture(AnimationPoseData* data, AnimPoseSha
             printf("Error: animSetMaterial_ChangeTexture: "
                    "\x83\x65\x83\x4E\x83\x58\x83\x60\x83\x83\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1 "
                    "frameExt=%d\n",
-                   frameExt);
+                   texEntry[dataId].bindId);
         }
         if (bind[bindId].texType == texType) {
             if (texObj) {
@@ -2577,15 +2585,19 @@ zero:
 // dont_inline keeps animPoseDrawMtx a real bl from animPoseDraw (retail emits one).
 #pragma dont_inline on
 // All logic/constants/offsets match and the animId search now uses the target's branch shape, so every
-// remaining diff is callee-saved register allocation (this build also saves r22-r31, but still permutes
-// data/top/offset across r22-r25). The inner shadow variables (pp/ppd) reproduce the target's non-CSEd
+// remaining diff is callee-saved register allocation. The target colours the long-lived webs
+// pose/paperPose/pMtx/xluMode/matrix/poseData to r31/r30/r29/r28/r27/r26; this build puts xluMode in r29
+// and drops pMtx/poseData to r23/r24, so the whole function is a permutation of the same registers. The
+// local declaration order below was searched to get the typeFlags block's posNum/nrmNum and the animArg
+// block's top/found right (it moved the score 98.81 -> 99.24%); no order found reaches the target's
+// colouring. No pragma helps. The inner shadow variables (pp/ppd) reproduce the target's non-CSEd
 // rematerialisation of the paper pose inside the animArg block (outer r30, inner r29).
-// NONMATCHING (98.81%): register allocation only.
+// NONMATCHING (99.24%): register allocation only (60 instructions, all register renames).
 void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
     AnimationPose* pose = &wp->poses[poseId];
-    AnimationPoseData* poseData;
-    AnimationPose* paperPose;
-    AnimationPoseData* paperPoseData;
+    s32 top;
+    s32 nrmNum;
+    s32 animArg;
     Mtx mtxE;
     Mtx mtxD;
     Mtx mtxC;
@@ -2593,10 +2605,10 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
     Mtx mtxA;
     f32(*pMtx)[4];
     s32 found;
-    s32 animArg;
-    s32 top;
+    AnimationPoseData* paperPoseData;
+    AnimationPoseData* poseData;
     s32 posNum;
-    s32 nrmNum;
+    AnimationPose* paperPose;
 
     if (pose->paperId != -1) {
         if ((pose->flags & 0xC0) != 0) {

@@ -522,9 +522,9 @@ static inline f32 ekiCosfM(f32 rad) {
 }
 
 #define MOA_TARGET(i) ((&wp->field_0x14)[(i) % 3])
-// NONMATCHING (95.86%): FPR/GPR colouring and scheduling in the inlined ekiSinf/ekiCosf/randf bodies.
-// ekiSinfM/ekiCosfM (parameter-reusing shape) + opt_propagation/opt_lifetimes off fixed the sin/cos
-// colouring; block-local temps match cases 0x1-0x3/0x24-26/0x33-34/0x1B. Permuter work remains.
+// NONMATCHING (96.29%): FPR/GPR colouring and scheduling in the inlined ekiSinf/ekiCosf/randf bodies.
+// Statement reorder in cases 0x1/0x2 and a block-local Vec at 0x2F restore the original stack frame and
+// scheduling; opt_propagation/opt_lifetimes off are load-bearing. Permuter work remains.
 static void ext_moamoa_main(void) {
     MarioWork* mario;
     PartyEntry* party;
@@ -726,10 +726,10 @@ static void ext_moamoa_main(void) {
             f32 dist, rad;
 
             rad = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f)) / 360.0f;
-            dist = wp->field_0x554;
             tx = 15.0f * ekiSinfM(rad) + ep->matrix[0][0][3];
-            ty = ep->matrix[0][1][3];
             tz = -(15.0f * ekiCosfM(rad) - ep->matrix[0][2][3]);
+            ty = ep->matrix[0][1][3];
+            dist = wp->field_0x554;
             moamoa_jump(ep, pose, (dist < 100.0f) ? pose->field_0x02 : 0, 1, tx, ty, tz, randf(1.0f, 1.0f),
                         randf(0.4f, 0.4f));
             break;
@@ -739,8 +739,8 @@ static void ext_moamoa_main(void) {
 
             rad = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f) + 180.0f) / 360.0f;
             dist = wp->field_0x554;
-            ty = ep->matrix[0][1][3];
             tx = 30.0f * ekiSinfM(rad) + ep->matrix[0][0][3];
+            ty = ep->matrix[0][1][3];
             tz = ep->matrix[0][2][3];
             moamoa_jump(ep, pose, (dist < 100.0f) ? pose->field_0x02 : 0, 1, tx, ty, tz,
                         (a = randf(1.0f, 1.0f), 2.0f * a), (b = randf(0.4f, 0.4f), 2.0f * b));
@@ -812,8 +812,12 @@ static void ext_moamoa_main(void) {
             f = randf(5.0f, 6.0f);
             ty = randf(0.2f, 0.3f);
             if (voicePlayed == 0) {
-                v = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_00008920);
-                psndSFXOn_3D((const char*)0x6C3, &v);
+                Vec w;
+                w = vec3_eki_00008920;
+                w.x = ep->matrix[0][0][3];
+                w.y = ep->matrix[0][1][3];
+                w.z = ep->matrix[0][2][3];
+                psndSFXOn_3D((const char*)0x6C3, &w);
                 voicePlayed = 1;
             }
             moamoa_jump(ep, pose, 0x31, 0, tx, -100.0f, tz, f, ty);
@@ -1099,9 +1103,9 @@ static inline f32 initCosf(f32 rad) {
 
 #pragma opt_lifetimes off // keeps the inlined sin/cos seeds in f2/f3 like retail instead of reusing f1
 #pragma opt_propagation off // stop MWCC rematerialising the sin/cos coefficients per branch
-// NONMATCHING (99.27%): pose/ep/i GPRs, the inlined polynomial and the copy instruction selection all
-// match; the 11 `!!` left are the scheduler's order for the three `wp->field_0x14/0x20/0x2C` copy
-// prologues (retail does the source address/load before the destination's; ours does the destination).
+// NONMATCHING (99.38%): pose/ep/i GPRs, the inlined polynomial and copies 2/3 all match. The 7 `!!`
+// left are only the first `wp->field_0x14` copy: retail emits the source address/load before the `wp`
+// address/load (and so keeps wp@ha in r5); ours emits wp first (r4).
 static void ext_moamoa_init(void) {
     s32 i;
     ExtPose* ep;
@@ -1122,9 +1126,11 @@ static void ext_moamoa_init(void) {
     // A plain `Vec = Vec` copy makes MWCC hoist the third word above the second store here; the
     // volatile cast forces retail's load/load/store/store/load/store order (and the same for the
     // other two). This is the only way found to reproduce it at -O4 (the plain copy matches only at -O3).
-    *(volatile Vec*)&wp->field_0x14 = *(const volatile Vec*)&vec3_eki_00008884;
-    *(volatile Vec*)&wp->field_0x20 = *(const volatile Vec*)&vec3_eki_00008890;
-    *(volatile Vec*)&wp->field_0x2C = *(const volatile Vec*)&vec3_eki_0000889c;
+    // The `(*(MoamoaWork* volatile*)&wp)` read is a match-only trick: it makes each `wp` reload volatile
+    // so the scheduler cannot reorder it against the source loads. It fixed copies 2/3 (11 -> 7 diffs).
+    *(volatile Vec*)&(*(MoamoaWork* volatile*)&wp)->field_0x14 = *(const volatile Vec*)&vec3_eki_00008884;
+    *(volatile Vec*)&(*(MoamoaWork* volatile*)&wp)->field_0x20 = *(const volatile Vec*)&vec3_eki_00008890;
+    *(volatile Vec*)&(*(MoamoaWork* volatile*)&wp)->field_0x2C = *(const volatile Vec*)&vec3_eki_0000889c;
     wp->poseNum = extGetPoseNum();
     wp->poses = _mapAlloc(wp->poseNum * 0x50);
     memset(wp->poses, 0, wp->poseNum * 0x50);

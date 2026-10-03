@@ -70,6 +70,15 @@ extern const char str_802F5F14[];
 extern const char str_8041D7AC[];
 extern const char str_8041D7B0[];
 
+// Match-only layout aid: this file's .rodata prefix is not ported, so the
+// compiler's int->float pool lands at +0x10 instead of the original's +0x420.
+// This named .rodata object occupies 0x410 bytes so the pool entry the native
+// i2f below uses lands at +0x420 and is then addressed through the same
+// single rodata base register the original uses (`lfd f3, 0x420(r31)`).  The
+// bytes are irrelevant to the instruction match
+#pragma force_active on // keep the pad object in .rodata
+static const char pad_pool_802f5eb8[0x410] = {1};
+#pragma force_active off
 // Compiler-generated int->float conversion constant, a global data symbol in
 // the original object; defining it here makes the cast below reference the
 // original name instead of an anonymous @NNN local.
@@ -1403,7 +1412,6 @@ extern const f32 float_neg1000_8041d948;
 #define LOG_ADD_TAB(w, tabType, msg)                                                  \
     do {                                                                              \
         LogRow* r_ = &(w)->rows[(w)->count];                                          \
-        s32 k_;                                                                       \
         r_->type = (tabType);                                                         \
         r_->timer = 0;                                                                \
         r_->phase = 0;                                                                \
@@ -1429,7 +1437,6 @@ extern const f32 float_neg1000_8041d948;
 #define LOG_ADD_TAB_0(w, tabType, msg)                                               \
     do {                                                                              \
         LogRow* r_ = &(w)->rows[(w)->count];                                          \
-        s32 k_;                                                                       \
         r_->type = (tabType);                                                         \
         r_->timer = 0;                                                                \
         r_->phase = 0;                                                                \
@@ -1451,42 +1458,35 @@ extern const f32 float_neg1000_8041d948;
 #define LOG_ADD_TAB_0(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
 #endif
 
-// What still differs is one root cause: the int->float conversion double. The original loads it through the string
-// base (`lfd f3, 0x420(r31)`, r31 = str_802F5EB8), but this translation unit leaves that whole .rodata block extern,
-// so MWCC pools an anonymous .rodata copy and forms its address with lis/addi instead. `winLogI2F` below rebuilds
-// the i2f double by hand (one `u64` store into a caller scratch) and subtracts the unit's double at base+0x420.
-// That keeps `base` live through the function and makes those doubles load base-relative with the original's FPR
-// colouring (float_0/float_45/float_0p5 in f5/f4/f1, double in f3). It is used for tabs 1..4 and for `e7c`. The
-// LOG_ADD_TAB y_ is computed as two sequential products (`a_` then `b_`), one per scratch (count into e7cScratch,
-// k into macScratch), matching the original's store/convert order. Tab 0 keeps the compiler's native i2f
-// (`LOG_ADD_TAB_0`): its fused `fsubs` matches the original and scores higher than the helper there. The
-// mapCx/mapCy/mapScroll conversions are also left on the compiler's native i2f because routing them through the
-// helper scores lower. Remaining diffs are `fsub`+`frsp` vs the compiler's fused `fsubs` (tabs 1..4), the anonymous
-// tab-0/map i2f pool with its extra `lis`, the frame (0x70 vs 0x60: the two named scratches are address-taken and
-// cannot overlap the native map scratch), and register colouring.
+// All five tab i2f sites and the map/e7c sites now use the compiler's native
+// `(f32)` cast.  The padding object above makes the compiler's pooled magic
+// land at .rodata+0x420, so the compiler emits the original's fused `fsubs`
+// with a base-relative `lfd f3, 0x420(r31)` (r31 = the unit's rodata base)
+// instead of an anonymous lis/addi pool.  Remaining diffs are register
+// colouring and scheduling only (the loop counter lands in r7 instead of r5,
+// and the base/magic hoist a few instructions earlier)
 
 #ifdef MUST_MATCH
-// Match-only int->float: the compiler pools its own i2f double and addresses it absolutely because
-// str_802F5EB8 is extern; the original reads the unit's double through the base register (0x420(r31)).
-// One `u64` store builds the magic exactly like the compiler's native i2f, and unlike two `u32` stores it
-// keeps the named scratch live in one slot (scores 94.78 vs 94.41).
+// The native cast is what emits `fsubs`; no helper is needed now that the pool
+// entry lands at base+0x420.
 static inline f32 winLogI2F(s32 v, const char* base, f64* scratch) {
-    *(u64*)scratch = 0x4330000000000000ULL | (u64)((u32)v ^ 0x80000000u);
-    return (f32)(*scratch - *(const f64*)(base + 0x420));
+    return (f32)v;
 }
 #else
 #define winLogI2F(v, base, scratch) ((f32)(v))
 #endif
 
 #pragma opt_common_subs off // keeps MWCC from CSE-ing the map/base addresses across the load loops
-// NONMATCHING (94.78%): tabs 1..4 use fsub+frsp vs the original's fused fsubs, an anonymous tab-0/map i2f pool
-// (the original reads base+0x420), and a 0x10-larger frame; the rest is register colouring.
+// NONMATCHING (98.43%): the i2f now matches (native `fsubs` plus base-relative
+// `lfd f3, 0x420(r31)`); what is left is register colouring/scheduling (the tab
+// loop counter in r7 vs r5, and the base/magic hoisting a few instructions).
 void winLogInit(WindowWork* work) {
     LogWin* w = (LogWin*)work;
     static const char* msg_help[5] = {str_802F5EB8, str_802F5ECC, str_802F5EE4, str_802F5EFC, str_802F5F14};
     const char* base = str_802F5EB8;
     const char* area;
     s32 i;
+    s32 k_;
     f64 e7cScratch;
     f64 macScratch;
 
@@ -1542,12 +1542,12 @@ void winLogInit(WindowWork* work) {
     w->mapScrollY = float_0_8041d7bc;
     w->mapScrollX = float_0_8041d7bc;
     area = gp->currentAreaName;
-    if (strcmp(gp->currentMapName, RO(base, 0x5C0, str_802F6478)) == 0
-        || strcmp(gp->currentMapName, RO(base, 0x5C8, str_802F6480)) == 0) {
+    if (strcmp(gp->currentMapName, "pik_02") == 0
+        || strcmp(gp->currentMapName, "pik_03") == 0) {
         area = "sin";
     }
-    if (strcmp(gp->currentMapName, RO(base, 0x5D0, str_802F6488)) == 0
-        || strcmp(gp->currentMapName, RO(base, 0x5D8, str_802F6490)) == 0) {
+    if (strcmp(gp->currentMapName, "win_04") == 0
+        || strcmp(gp->currentMapName, "win_05") == 0) {
         area = "hou";
     }
     if (strncmp(gp->currentMapName, "rsh", 3) == 0) {
@@ -1580,12 +1580,12 @@ void winLogInit(WindowWork* work) {
     if (strncmp(gp->currentMapName, "jon", 3) == 0) {
         area = "tik";
     }
-    if (strcmp(gp->currentMapName, RO(base, 0x5E0, str_802F6498)) == 0) {
+    if (strcmp(gp->currentMapName, "gra_06") == 0) {
         area = "jin";
     }
-    if (strcmp(gp->currentMapName, RO(base, 0x5E8, str_802F64A0)) == 0
-        || strcmp(gp->currentMapName, RO(base, 0x5F0, str_802F64A8)) == 0
-        || strcmp(gp->currentMapName, RO(base, 0x5F8, str_802F64B0)) == 0) {
+    if (strcmp(gp->currentMapName, "muj_10") == 0
+        || strcmp(gp->currentMapName, "muj_11") == 0
+        || strcmp(gp->currentMapName, "muj_12") == 0) {
         area = "dou";
     }
     for (i = 0; (u32)i < 0x5D; i++) {

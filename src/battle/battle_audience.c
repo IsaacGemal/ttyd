@@ -2320,9 +2320,11 @@ void BattleAudienceApSrcCtrlProcess(void) {
 #pragma opt_common_subs reset
 
 
-// NONMATCHING (91.72%): hoisting `z0 = float_0` before the multiplies and `k1 = float_1` before the
-// position stores emits the original's early loads (88.93 -> 91.21 -> 91.72); what remains is the
-// anonymous-i2f double register, the hoisted `star+0x2c` copy loads and FP scheduling.
+// hoisting `z0 = float_0` before the multiplies (88.93 -> 91.21), `k1 = float_1` before the position
+// stores and a separate `k20 = float_20_8041e6a8` for the y add emit the original's early loads;
+// making the `star+0x44` store `volatile` serialises it before the constant-Vec copy (91.72 -> 92.21).
+// NONMATCHING (92.21%): what remains is the anonymous-i2f double register, the hoisted `star+0x2c`
+// copy loads and FP scheduling.
 BOOL BattleAudienceApSrcEntry(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -2332,6 +2334,7 @@ BOOL BattleAudienceApSrcEntry(void) {
 	f32 sy;
 	f32 z0;
 	f32 k1;
+	f32 k20;
 	s32 ids[200];
 	s32 idx;
 	s32 count;
@@ -2368,7 +2371,7 @@ BOOL BattleAudienceApSrcEntry(void) {
 #ifdef MUST_MATCH
 	// Match-only: the original stores star+0x44 before the constant Vec copy and serialises that copy's
 	// loads/stores (lwz/lwz/stw/stw/lwz/stw); the named-global form lets MWCC software-pipeline it.
-	*(s32*)(star + 0x44) = 0;
+	*(volatile s32*)(star + 0x44) = 0;
 	*(volatile Vec*)(star + 0x38) = *(const volatile Vec*)&vec3_802f9750;
 #else
 	*(Vec*)(star + 0x38) = vec3_802f9750;
@@ -2377,8 +2380,9 @@ BOOL BattleAudienceApSrcEntry(void) {
 	*(u8*)(star + 0x5c) = 0x80;
 	member = BattleAudienceGetPtr(ids[irand(count)]);
 	k1 = float_1_8041e620;
+	k20 = float_20_8041e6a8;
 	*(f32*)(star + 8) = member->position.x;
-	*(f32*)(star + 0xc) = float_20_8041e6a8 + member->position.y;
+	*(f32*)(star + 0xc) = k20 + member->position.y;
 	*(f32*)(star + 0x10) = k1 + member->position.z;
 	cam = camGetPtr(CAMERA_3D);
 	PSMTXMultVec(cam->view, (Vec*)(star + 8), (Vec*)(star + 8));
@@ -5304,16 +5308,25 @@ void BattleAudienceSoundBooingKind(s32 kind) {
 	}
 }
 
+#ifdef MUST_MATCH
+// Match-only: the third bound's `(a + b) + c` must keep its operands in that order; written
+// directly MWCC commutes the final add to `c + (a + b)`. The inlined add leaves the tree alone.
+static inline s32 BattleAudienceJoyAdd2(s32 x, s32 y) {
+	return x + y;
+}
+#else
+#define BattleAudienceJoyAdd2(x, y) ((x) + (y))
+#endif
+
 #pragma opt_loop_invariants off // needed: keep a,b,c,d live and recompute the branch bounds each iteration
 
-// The frame, prologue and every call now match. Two commuted `add`s
-// remain: the second sum add (`add r29, r29, r25` where the original has `add r29, r25, r29`)
-// and the third branch bound (`add r0, r27, r0` vs `add r0, r0, r27`); MWCC picks the other
-// FRA/FRB operand for the last add. `sum = b + c; sum += a;` is required (writing `a + sum`
-// makes MWCC reassociate the first add). The declaration order member/i/sum is also
-// load-bearing: MWCC colours the callee-saved locals in declaration order (member r31, i r30,
-// sum r29); any other order rotates them.
-// NONMATCHING (99.71%): two commuted `add` operands only (see above).
+// The frame, prologue and every call now match. The third branch bound's commuted `add` is fixed by
+// routing it through the inlined BattleAudienceJoyAdd2 helper above. One commuted `add` remains: the
+// second sum add (`add r29, r29, r25` where the original has `add r29, r25, r29`). `sum = b + c;
+// sum += a;` is required (writing `a + sum` makes MWCC reassociate the first add and recolour the
+// callee-saved set). The declaration order member/i/sum is load-bearing: MWCC colours the
+// callee-saved locals in declaration order (member r31, i r30, sum r29); any other order rotates them.
+// NONMATCHING (99.86%): one commuted `add` operand on the loop-invariant sum.
 void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 	BattleAudienceMember* member;
 	s32 i;
@@ -5350,7 +5363,7 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 				else if (r < a + b) {
 					BattleAudience_ChangeStatus(i, 5);
 				}
-				else if (r < a + b + c) {
+				else if (r < BattleAudienceJoyAdd2(a + b, c)) {
 					BattleAudience_ChangeStatus(i, 6);
 				}
 			}

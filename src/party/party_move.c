@@ -294,8 +294,8 @@ void party_move_mode_stay(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (99.29%): same instructions; only register numbers or operands differ.
-void unk_800c9398(PartyEntry* party, f32 value) {
+// f32 return keeps the argument live in f1, so the product takes f2 as in the original.
+f32 unk_800c9398(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
     f32 gravity = work->playerPtr->playerGravity;
     f32 speed = value * gravity;
@@ -307,6 +307,7 @@ void unk_800c9398(PartyEntry* party, f32 value) {
     }
     work->speed2 = speed * scale;
     work->speed = work->speed2;
+    return value;
 }
 
 void partyClearJumpPara(PartyEntry* party) {
@@ -487,19 +488,16 @@ f32 unk_800c92c4(PartyEntry* party) {
 }
 
 // Body written in the same idiom as the sibling `unk_800c92c4` (one accumulator f0/f1 per
-// branch, no separate rate temporaries) so the target's `0.5f`/accumulator/fmr colouring matches;
-// only four callee locals stay displaced: target keeps `speed` in f5, the gravity temp/0.05/0.1 in
-// f2 and the `0.0f` compare constant in f3, while ours uses f3/f1/f2. The target compiler does not
-// reuse the argument register f1 for a local even though `value` is dead after the initial store;
-// declaring the function to return f32 (with no return statement) reproduces the f1 reservation and
-// gets the target colouring except that speed/base swap (99.04%), but that is undefined behaviour.
-//
-// NONMATCHING (98.51%): four FPRs displaced (speed f3 vs f5, gravity temp/rate f1 vs f2, 0.0f f2 vs f3).
-void unk_800c93d0(PartyEntry* party, f32 value) {
+// branch, no separate rate temporaries). The f32 return keeps `value` live in f1 for the whole
+// function, which is what the original does: it reserves f1 and pushes every local FPR up one slot
+// (`speed` lands in f5 not f3, the gravity temp/rate in f2, the `0.0f` compare constant in f3).
+// The declaration is f32 in the header; a void declaration makes MWCC reuse f1 and miss by 18
+// instructions (and MWCC hangs if the header and the definition disagree on the return type).
+f32 unk_800c93d0(PartyEntry* party, f32 value) {
     PartyEntry* work = party;
     MarioWork* mario;
-    f32 f3;
     f32 f4;
+    f32 f3;
     f32 f2;
     f32 f0;
     f32 f1;
@@ -539,7 +537,6 @@ void unk_800c93d0(PartyEntry* party, f32 value) {
                 f1 = f4;
             }
             work->speed = f1;
-            return;
         } else {
             f0 = -1.0f - f3;
             f1 = f0 * 0.1f + f3;
@@ -547,11 +544,11 @@ void unk_800c93d0(PartyEntry* party, f32 value) {
                 f1 = 0.0f;
             }
             work->speed = f1;
-            return;
         }
     } else {
         work->speed2 = 0.0f;
     }
+    return value;
 }
 
 // Layout of a footmark record (0x10 bytes) inside footmarkBuf.
@@ -2564,9 +2561,9 @@ void partyRecordFootmark(PartyEntry* party) {
     }
 }
 
-// NONMATCHING (99.81%): everything matches except the speed ramp at the bottom, where this
-// compiler colours the running sum f1 (and the 0.05f/0.1f constant f0) where retail has the sum in
-// f0 and the constant in f1. Declaration order, scope and expression shape were all tried.
+// The speed ramp is one expression: `(0.5f + target - speed) * 0.05f + speed` keeps the running
+// sum in f0 and the rate constant in f1 as retail does; split temporaries made this compiler swap
+// them (`f32 k = 0.05f; f = 0.5f + target - speed; f = f * k + speed;`).
 void partyMoveWalk(PartyEntry* party) {
     PartyEntry* work = party;
     MarioWork* mario;
@@ -2662,17 +2659,13 @@ void partyMoveWalk(PartyEntry* party) {
             target = v * f;
         }
         if (target > 0.0f) {
-            f32 k = 0.05f;
-            f = 0.5f + target - speed;
-            f = f * k + speed;
+            f = (0.5f + target - speed) * 0.05f + speed;
             if (f >= target) {
                 f = target;
             }
             work->speed = f;
         } else {
-            f32 k = 0.1f;
-            f = -1.0f - speed;
-            f = f * k + speed;
+            f = (-1.0f - speed) * 0.1f + speed;
             if (f <= 0.0f) {
                 f = 0.0f;
             }

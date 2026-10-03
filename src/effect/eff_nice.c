@@ -349,7 +349,12 @@ void effNiceDisp(CameraId camId, void* param) {
 // become x=r30/y=r29 and sfx=r31 instead of r29; all 10 remaining `!!` are that one
 // register-colouring shift. Without the comma the address is copied through r0 and the third word of
 // the zero Vec loads into r3 (5 `!!`).
-// NONMATCHING (99.78%): one register-colouring shift (x/y/sfx and their uses).
+// Declaring y before x (with the comma nudge below) makes MWCC colour y=r30 and leaves only the
+// x/sfx pair swapped: retail wants x=r31, sfx=r29, ours is x=r29, sfx=r31; the other 5 diffs are
+// uses of those two. The plain (no-comma) form gets x=r31/y=r30/sfx=r29 exactly right and only
+// pays the `addi r0`/`mr r29` scratch, but scores lower (5 real diffs, 98.86%), and the comma only
+// ever colours the nudged local last. This is a pure register-permutation, so a permuter job.
+// NONMATCHING (99.85%): x and sfx are swapped (r29/r31); all other registers match.
 void acrobatMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: retail builds the Vec in a scratch and copies it into a second local
@@ -357,8 +362,8 @@ void acrobatMain(EffectEntry* effect) {
 	Vec position;
 #endif
 	Vec disp = { 0 };
-	s32 x;
 	s32 y;
+	s32 x;
 #ifdef MUST_MATCH
 	// MUST_MATCH: allocator nudge (see above); the natural form is under #else.
 	const char* sfx = (0, "SFX_SYSTEM_ACROBAT1");

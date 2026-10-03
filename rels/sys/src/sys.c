@@ -439,7 +439,7 @@ s32 getLightColor(f32 angle) {
 // MWCC's loop-invariant code motion from pulling per-iteration loads into the preheader. The local declaration
 // order is tuned so MWCC colours the integer registers like the target (`frame` in r19 etc.). The string-loop
 // `PSMTXConcat` output matrices are the target's (write mtx3 then mtx), not the earlier guess.
-// NONMATCHING (99.69%): text differs only in integer/FPR register allocation and stack-slot assignment; the
+// NONMATCHING (99.70%): text differs only in integer/FPR register allocation and stack-slot assignment; the
 // instruction sequence, frame size, FPR saves and call structure all match.
 void display_func(CameraId cameraId, void* param) {
     SysWork* work = param;
@@ -453,6 +453,9 @@ void display_func(CameraId cameraId, void* param) {
     Mtx mtx4;
     Mtx mtx5;
     Vec pos;
+#ifdef MUST_MATCH
+    Vec camPosTmp;
+#endif
     Vec camUp;
     Vec target;
 #ifdef MUST_MATCH
@@ -471,9 +474,6 @@ void display_func(CameraId cameraId, void* param) {
     f32 w;
     s32 glresult;
     f32 gla;
-#ifdef MUST_MATCH
-    Vec camPosTmp;
-#endif
     Vec camPos;
     frame = work->field_0x10;
     work->field_0x10 = frame + 1;
@@ -703,10 +703,10 @@ void display_func(CameraId cameraId, void* param) {
         // 12-byte copy that C_MTXLookAt receives.
         camPos = *(volatile Vec*)&vec3_sys_000019d8;
         camPos.z = 1.0f / (f32)tan(double_0p21817_sys_00001b50);
+        camPosTmp = camPos;
         camUp = *(volatile Vec*)&vec3_sys_000019e4;
         target = *(volatile Vec*)&vec3_sys_000019f0;
         {
-            camPosTmp = camPos;
             C_MTXLightPerspective(mtx4, float_25_sys_00001b58, float_640_sys_00001b5c, 0.5f,
                                   0.5f, 0.5f, 0.5f);
             C_MTXLookAt(mtx5, &camPosTmp, &camUp, &target);
