@@ -18,7 +18,12 @@ typedef struct CamRoadState {
     /* 0x00 */ s32 unk_00;
     /* 0x04 */ s32 unk_04;
     /* 0x08 */ s32 unk_08;
-    /* 0x0C */ u8 pad_0C[0x18];
+    /* 0x0C */ f32 unk_0C;
+    /* 0x10 */ f32 unk_10;
+    /* 0x14 */ f32 unk_14;
+    /* 0x18 */ f32 unk_18;
+    /* 0x1C */ f32 unk_1C;
+    /* 0x20 */ f32 unk_20;
     /* 0x24 */ void* unk_24;
     /* 0x28 */ f32 x;
     /* 0x2C */ f32 y;
@@ -67,6 +72,45 @@ typedef struct CamRoadMap {
     /* 0x108 */ u32 unk_108;
 } CamRoadMap;
 
+// The 0xB8-byte curve entries of CamRoadMap::entries (CamRoadMapEntry is the same record seen from the name side).
+typedef struct CamRoadCurve {
+    /* 0x00 */ u8 pad_00[0x20];
+    /* 0x20 */ u32 unk_20;
+    /* 0x24 */ f32 unk_24;
+    /* 0x28 */ u32 disabled;
+    /* 0x2C */ u8 pad_2C[0x2C];
+    /* 0x58 */ f32 unk_58;
+    /* 0x5C */ u8 pad_5C[0x8];
+    /* 0x64 */ f32 unk_64;
+    /* 0x68 */ u8 pad_68[0x8];
+    /* 0x70 */ f32 unk_70;
+    /* 0x74 */ u8 pad_74[0x8];
+    /* 0x7C */ f32 unk_7C;
+    /* 0x80 */ u8 pad_80[0xC];
+    /* 0x8C */ f32 unk_8C;
+    /* 0x90 */ u8 pad_90[0x18];
+    /* 0xA8 */ s32 subStart;
+    /* 0xAC */ s32 subCount;
+    /* 0xB0 */ s32 curveIdx;
+    /* 0xB4 */ s32 hasCurve;
+} CamRoadCurve;
+
+typedef struct CamRoadSub {
+    /* 0x00 */ u8 pad_00[0x58];
+    /* 0x58 */ s32 vertStart;
+    /* 0x5C */ u8 pad_5C[0x4];
+    /* 0x60 */ s32 listStart;
+    /* 0x64 */ s32 listCount;
+} CamRoadSub;
+
+typedef struct CamRoadList {
+    /* 0x0 */ s32 idxStart;
+    /* 0x4 */ s32 idxCount;
+} CamRoadList;
+
+#define CAMROAD_TIME(st) (*(s64*)((u8*)(st) + 0x50))
+#define CAMROAD_BANK(st) (*(f32*)((u8*)(st) + 0x58))
+
 typedef struct CamRoadWork {
     /* 0x000 */ CamRoadMap* map;
     /* 0x004 */ u32 unk_04;
@@ -92,7 +136,12 @@ typedef struct CamRoadWork {
     /* 0x1C4 */ f32 unk_1C4;
     /* 0x1C8 */ OSTime unk_1C8;
     /* 0x1D0 */ u32 unk_1D0;
-    /* 0x1D4 */ u8 pad_1D4[0x18];
+    /* 0x1D4 */ f32 unk_1D4;
+    /* 0x1D8 */ f32 unk_1D8;
+    /* 0x1DC */ f32 unk_1DC;
+    /* 0x1E0 */ f32 unk_1E0;
+    /* 0x1E4 */ f32 unk_1E4;
+    /* 0x1E8 */ f32 unk_1E8;
     /* 0x1EC */ f32 unk_1EC;
     /* 0x1F0 */ f32 unk_1F0;
     /* 0x1F4 */ f32 unk_1F4;
@@ -242,7 +291,7 @@ void camRoadMain(f32* dst, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank
     wp->unk_200 = az;
     calcCamRoad(&wp->state1, &wp->state2, x / float_10_80419564, y / float_10_80419564,
                 z / float_10_80419564, ax / float_10_80419564, ay / float_10_80419564,
-                az / float_10_80419564);
+                az / float_10_80419564, bank);
 
     if (wp->unk_C8 != 0) {
         result = compareCamRoad(&wp->state2, &wp->state1, &wp->unk_D4);
@@ -589,6 +638,390 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
 }
 
 
+// Finds the camera road under the player (ray tests down the road triangles, the curve collision) and eases the
+// look-at point along it. The seventh float arg (f7) is the bank.
+// collisionCurve/collisionTri_simple take their Vec arguments by value (the caller makes the stack copies).
+// NONMATCHING (80.7%): 19 calls and every immediate identical; the original keeps x..az in f16..f21 (one FPR higher
+// than here) and spills `b` to the stack, and the doubles load through the unported rodata base.
+void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank) {
+    s32 m;
+    s32* idxp;
+    s32 k;
+    s32 found;
+    CamRoadCurve* entry = (CamRoadCurve*)wp->map->entries;
+    CamRoadCurve* hit = NULL;
+    s32 subCount;
+    CamRoadSub* sub;
+    Vec* verts;
+    s32 n;
+    CamRoadList* list;
+    s32 j;
+    s32* idx;
+    s32 i;
+    CamRoadCurve* cur;
+    s32 flags;
+    s32 found2;
+    f32 tmin = dat_8041959c;
+    Vec pos;
+    Vec ang;
+    Vec q;
+    CollisionCurveHit h1;
+    CollisionCurveHit h2;
+    CollisionCurveHit h3;
+    f32 f30;
+    f32 f29;
+    f32 nzv;
+    f32 px;
+    f32 py;
+    f32 pz;
+    f32 f24;
+    f32 rad;
+    f32 f31;
+    f32 gx;
+    f32 gz;
+    f32 s1B0;
+    f32 s1AC;
+    f32 s1A8;
+
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
+    ang.x = ax;
+    ang.y = ay;
+    ang.z = az;
+
+    for (i = 0; i < wp->map->count; i++, entry++) {
+        subCount = entry->subCount;
+        sub = (CamRoadSub*)wp->map->unk_F0 + entry->subStart;
+        if (wp->unk_1D0 != 0x65 || entry->disabled == 0) {
+            if (subCount == 0) {
+                f32 top = entry->unk_8C;
+
+                if (!(top > ay) && top > tmin) {
+                    tmin = top;
+                    hit = entry;
+                }
+            } else {
+                for (k = 0; k < subCount; k++, sub++) {
+                    CamRoadMap* map = wp->map;
+
+                    verts = (Vec*)map->unk_FC + sub->vertStart;
+                    n = sub->listCount;
+                    list = (CamRoadList*)map->unk_F4 + sub->listStart;
+                    for (j = 0; j < n; j++, list++) {
+                        idx = (s32*)wp->map->unk_100 + list->idxStart;
+                        idxp = idx + 1;
+                        m = list->idxCount - 1;
+                        for (found = 1; found < m; found++, idxp++) {
+                            if (collisionTri_simple(ang, verts[idx[0]], verts[idxp[0]], verts[idxp[1]], &tmin)) {
+                                hit = entry;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (hit != NULL) {
+        h1.unk_08 = float_neg1E06_804195a0;
+        h1.unk_18 = float_0_8041954c;
+        h1.unk_1C = float_0_8041954c;
+        h1.unk_20 = float_0_8041954c;
+        if (!collisionCurve(0, (CollisionCurveData*)hit, pos, &h1)) {
+            hit = NULL;
+        }
+    }
+
+    cur = hit;
+    if (hit == NULL) {
+        if (b->unk_00 != 0) {
+            cur = (CamRoadCurve*)b->unk_24;
+        } else {
+            cur = NULL;
+        }
+        if (cur == NULL) {
+            wp->unk_1D4 = x;
+            wp->unk_1D8 = y;
+            wp->unk_1DC = z;
+            wp->unk_1E0 = ax;
+            wp->unk_1E4 = ay;
+            wp->unk_1E8 = az;
+            return;
+        }
+        px = x;
+        if (wp->unk_1D0 == 0x65 && cur != NULL && cur->unk_20 != 0) {
+            py = cur->unk_24;
+        } else {
+            py = y;
+        }
+        pz = z;
+        flags = 0;
+        f29 = -b->unk_3C;
+        f31 = -b->unk_34;
+        s1B0 = b->unk_44;
+        f30 = -b->unk_38;
+        f24 = b->unk_40;
+        s1AC = b->unk_48;
+        s1A8 = b->unk_4C;
+    } else {
+        f32 nx;
+        f32 nz;
+        f32 len;
+
+        if (h1.unk_00 < float_0_8041954c) {
+            h1.unk_00 = float_0_8041954c;
+        }
+        if (h1.unk_00 > float_1_80419558) {
+            h1.unk_00 = float_1_80419558;
+        }
+        s1B0 = cur->unk_64;
+        f24 = cur->unk_58;
+        s1AC = cur->unk_70;
+        px = h1.unk_0C;
+        if (wp->unk_1D0 == 0x65 && cur->unk_20 != 0) {
+            py = cur->unk_24;
+        } else {
+            py = y;
+        }
+        nz = -h1.unk_20;
+        nx = h1.unk_18;
+        len = nz * nz + h1.unk_18 * h1.unk_18;
+        pz = h1.unk_14;
+        flags = h1.unk_28;
+        s1A8 = (f32)h1.unk_24;
+        f30 = h1.unk_1C;
+        if (len != 0.0) {
+            len = sqrtf(len);
+            nz /= len;
+            f30 = float_0_8041954c;
+            nx /= len;
+        }
+        f31 = nz * float_neg1_804195a4;
+        f30 = f30 * float_neg1_804195a4;
+        f29 = nx * float_neg1_804195a4;
+    }
+
+    if (cur->hasCurve != 0) {
+        q.x = px;
+        q.y = dat_804195a8;
+        q.z = pz;
+        h1.unk_08 = float_neg1E06_804195a0;
+        if (collisionCurve(1, (CollisionCurveData*)((CamRoadSub*)wp->map->unk_104 + cur->curveIdx), q, &h1)) {
+            px = h1.unk_0C;
+            pz = h1.unk_14;
+            flags |= h1.unk_28;
+        }
+    }
+
+    if (cur != NULL) {
+        rad = float_3p1416_80419568 * ((*(f32*)wp->map->unk_E8 * float_0p5_8041956c) / float_180_80419588);
+
+        if (bank != float_0_8041954c && hit != NULL && b->unk_00 != 0) {
+            f32 c1;
+            f32 s1;
+            f32 k1;
+            f32 k2;
+            f32 bk;
+            f32 m1;
+            f32 m2;
+            f32 lim1;
+            f32 lim2;
+            f32 vel1;
+            f32 vel2;
+            f32 hx;
+            f32 hz;
+            f32 pp;
+            f32 qq;
+            f32 sgnq;
+            f32 sgnp;
+            f32 fx;
+            f32 fz;
+            Vec dA;
+            Vec dB;
+            Vec u;
+            Vec w;
+            Vec w1;
+            Vec w2;
+            Vec t1;
+            Vec t2;
+
+            c1 = (f32)cos(rad);
+            s1 = (f32)sin(rad);
+            nzv = -f29;
+            t1.x = pos.x;
+            t1.z = pos.z;
+            bk = CAMROAD_BANK(b);
+            k1 = (float_640_804195ac * ((f24 * s1) / c1)) / float_480_804195b0;
+            h2.unk_08 = float_neg1E06_804195a0;
+            t1.y = pos.y;
+            h2.unk_18 = float_0_8041954c;
+            t1.y = float_1E06_804195b4;
+            h2.unk_1C = float_0_8041954c;
+            h2.unk_20 = float_0_8041954c;
+            k2 = float_0p01_8041958c * (bk * (float_1_80419558 * k1));
+            t1.x = t1.x + k2 * nzv;
+            t1.z = t1.z + k2 * f31;
+            found = 0;
+            if (collisionCurve(0, (CollisionCurveData*)cur, t1, &h2)) {
+                found = 1;
+                t1.x = h2.unk_0C;
+                t1.y = py;
+                t1.z = h2.unk_14;
+            }
+            if (cur->hasCurve != 0) {
+                h2.unk_08 = float_neg1E06_804195a0;
+                if (collisionCurve(1, (CollisionCurveData*)((CamRoadSub*)wp->map->unk_104 + cur->curveIdx), t1, &h2)) {
+                    found = 1;
+                    t1.x = h2.unk_0C;
+                    t1.y = py;
+                    t1.z = h2.unk_14;
+                }
+            }
+            if (found != 0) {
+                gx = t1.x;
+                gz = t1.z;
+            } else {
+                gx = px;
+                gz = pz;
+            }
+
+            t2.x = pos.x;
+            t2.z = pos.z;
+            found2 = 0;
+            flags = 0;
+            k1 = (float_640_804195ac * ((f24 * (f32)sin(rad)) / (f32)cos(rad))) / float_480_804195b0;
+            h3.unk_08 = float_neg1E06_804195a0;
+            t2.y = pos.y;
+            h3.unk_18 = float_0_8041954c;
+            h3.unk_1C = float_0_8041954c;
+            h3.unk_20 = float_0_8041954c;
+            t2.y = float_1E06_804195b4;
+            k2 = float_0p01_8041958c * (bank * (float_1_80419558 * k1));
+            t2.x = t2.x + k2 * nzv;
+            t2.z = t2.z + k2 * f31;
+            if (collisionCurve(0, (CollisionCurveData*)cur, t2, &h3)) {
+                found2 = 1;
+                flags = h3.unk_28;
+                t2.x = h3.unk_0C;
+                t2.y = py;
+                t2.z = h3.unk_14;
+            }
+            if (cur->hasCurve != 0) {
+                h3.unk_08 = float_neg1E06_804195a0;
+                if (collisionCurve(1, (CollisionCurveData*)((CamRoadSub*)wp->map->unk_104 + cur->curveIdx), t2, &h3)) {
+                    found2 = 1;
+                    t2.x = h3.unk_0C;
+                    flags |= h3.unk_28;
+                    t2.z = h3.unk_14;
+                }
+            }
+            if (found2 != 0) {
+                hx = t2.x;
+                hz = t2.z;
+                if (!(h3.unk_28 & 1) && (b->unk_08 & 1)) {
+                    wp->unk_1AC = float_0_8041954c;
+                }
+                if (!(h3.unk_28 & 2) && (b->unk_08 & 2)) {
+                    wp->unk_1B0 = float_0_8041954c;
+                }
+            } else {
+                hx = px;
+                hz = pz;
+            }
+
+            dA.x = gx - b->x;
+            dA.y = float_0_8041954c;
+            dA.z = gz - b->z;
+            dB.x = hx - b->x;
+            dB.y = float_0_8041954c;
+            dB.z = hz - b->z;
+            m1 = PSVECMag(&dA);
+            PSVECMag(&dB);
+            m1 = m1 + getV60FPS(wp->unk_19C, CAMROAD_TIME(b), gp->renderFieldTime);
+            m2 = getV60FPS(wp->unk_1A0, CAMROAD_TIME(b), gp->renderFieldTime);
+            lim1 = m1 * wp->unk_1AC;
+            lim2 = m1 * wp->unk_1B0;
+            vel1 = m2 * wp->unk_1AC;
+            vel2 = m2 * wp->unk_1B0;
+            u.x = nzv;
+            u.y = float_0_8041954c;
+            u.z = f31;
+            w.x = -f31;
+            w.y = float_0_8041954c;
+            w.z = nzv;
+            w1.y = float_0_8041954c;
+            w2.y = float_0_8041954c;
+            if (__fabsf(f31) > __fabsf(nzv)) {
+                pp = (dB.x - nzv * (dB.z / f31)) / (-f31 - nzv * (nzv / f31));
+                qq = (dB.z - pp * nzv) / f31;
+            } else {
+                pp = (dB.z - f31 * (dB.x / nzv)) / (nzv - f31 * (-f31 / nzv));
+                qq = (dB.x - pp * -f31) / nzv;
+            }
+            w1.x = qq * u.x;
+            w1.z = qq * u.z;
+            w2.x = pp * w.x;
+            w2.z = pp * w.z;
+            if (qq < float_0_8041954c) {
+                sgnq = float_neg1_804195a4;
+            } else {
+                sgnq = float_1_80419558;
+            }
+            if (pp < float_0_8041954c) {
+                sgnp = float_neg1_804195a4;
+            } else {
+                sgnp = float_1_80419558;
+            }
+            fx = PSVECMag(&w1);
+            fz = PSVECMag(&w2);
+            if (fx > lim1 && fx > vel1) {
+                PSVECScale(&u, &w1, lim1 * sgnq);
+            }
+            if (fz > lim2 && fz > vel2) {
+                PSVECScale(&w, &w2, lim2 * sgnp);
+            }
+            px = b->x + (w1.x + w2.x);
+            pz = b->z + (w1.z + w2.z);
+        }
+    }
+
+    wp->unk_1AC = wp->unk_1AC + wp->unk_1A4;
+    if (wp->unk_1AC > float_1_80419558) {
+        wp->unk_1AC = float_1_80419558;
+    }
+    wp->unk_1B0 = wp->unk_1B0 + wp->unk_1A8;
+    if (wp->unk_1B0 > float_1_80419558) {
+        wp->unk_1B0 = float_1_80419558;
+    }
+
+    a->unk_00 = 1;
+    a->unk_04 = hit != NULL;
+    a->unk_08 = flags;
+    a->unk_0C = x;
+    a->unk_10 = y;
+    a->unk_14 = z;
+    a->unk_18 = ax;
+    a->unk_1C = ay;
+    a->unk_20 = az;
+    a->unk_24 = cur;
+    a->x = px;
+    a->y = py;
+    a->z = pz;
+    a->unk_34 = -f31;
+    a->unk_38 = -f30;
+    a->unk_3C = -f29;
+    a->unk_40 = f24;
+    a->unk_44 = s1B0;
+    a->unk_48 = s1AC;
+    a->unk_4C = s1A8;
+    CAMROAD_TIME(a) = gp->renderFieldTime;
+    CAMROAD_BANK(a) = bank;
+    a->unk_5C = cur->unk_7C;
+}
+
+
 // The `if (x != 0.0) x = sqrtf(x);` guards are intentional: removing them drops the pool's
 // `fcmpu 0.0,x; beq` skip that the target has. The callee-saved float locals must be declared in
 // DESCENDING order (f31..f14): MWCC hands the declaration order back to the FPR allocator, and
@@ -599,7 +1032,7 @@ void calcHokanCamRoad(s32 flag, CamRoadState* a, CamRoadState* b, f32 t, CamRoad
 // dead `if (f28 < -1e-7)` compare. Declaration order, statement order and the mode-block order were
 // searched extensively (f0-before-f1 and the mode0/mode1 reorders recovered 95.90 -> 96.52).
 // NONMATCHING (96.52%): register/encoding only; see notes above.
-BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec* p, CollisionCurveHit* out) {
+BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit* out) {
     f32 f0, f1, f2, f3, f4, f5, f6, f7, f8, f10, f9;
     f32 f31, f30, f29, f28, f27, f26, f25, f24, f23, f22, f21, f20, f19, f18, f17, f16, f15, f14;
     f32 sf18, sf1c, sf20, sf24, sf28, sf2c;
@@ -658,13 +1091,13 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec* p, CollisionCurveHi
 L_C4BC:
     f23 = r30[0].z;
     i18 = 0;
-    f3 = p->z;
+    f3 = p.z;
     f0 = f3 - f23;
     f1 = r29[1].x;
     f5 = r29[0].z;
     f25 = r30[0].x;
     f7 = -f1;
-    f4 = p->x;
+    f4 = p.x;
     f0 = f5 * f0;
     f1 = f4 - f25;
     f6 = r29[0].x;
@@ -738,8 +1171,8 @@ L_C5EC:
     f19 = f16 * f16 + f0;
     if (f19 != 0.0) f19 = sqrtf(f19);
 L_C6F8:
-    f0 = p->z;
-    f2 = p->x;
+    f0 = p.z;
+    f2 = p.x;
     f30 = f0 - f20;
     f0 = sf1c;
     f31 = f2 - f0;
@@ -1041,9 +1474,9 @@ L_CD80:
     f10 = r30[0].x;
     f6 = f1 - f0;
     f2 = r30[1].x;
-    f1 = p->x;
+    f1 = p.x;
     f5 = f2 - f10;
-    f2 = p->z;
+    f2 = p.z;
     f7 = -f6;
     f3 = __fabsf(f5);
     f4 = __fabsf(f7);
@@ -1282,11 +1715,11 @@ static inline Vec collisionTriAdd(Vec a, Vec b) {
 // prologue store in the opposite direction; `scheduling off` collapses the whole function). Everything else --
 // instructions, slots, constants and all FP/GP register assignments -- matches.
 // NONMATCHING (99.65%): first vertex-load pair swapped (target hoists `lwz v1.x` above `stmw`).
-BOOL collisionTri_simple(Vec* p, Vec* v0, Vec* v1, Vec* v2, f32* out) {
+BOOL collisionTri_simple(Vec p, Vec v0, Vec v1, Vec v2, f32* out) {
     Vec dir = { 0.0f, -1.0f, 0.0f };
-    Vec bc = collisionTriSub(*v2, *v0);
-    Vec ab = collisionTriSub(*v0, *v1);
-    Vec ca = collisionTriSub(*v1, *v2);
+    Vec bc = collisionTriSub(v2, v0);
+    Vec ab = collisionTriSub(v0, v1);
+    Vec ca = collisionTriSub(v1, v2);
     Vec n = collisionTriCross(bc, ab);
     f32 d;
     f32 s;
@@ -1295,37 +1728,37 @@ BOOL collisionTri_simple(Vec* p, Vec* v0, Vec* v1, Vec* v2, f32* out) {
     if (n.x == 0.0f && n.y == 0.0f && n.z == 0.0f) {
         return FALSE;
     }
-    d = collisionTriDot(n, collisionTriSub(*p, *v0));
+    d = collisionTriDot(n, collisionTriSub(p, v0));
     if (d > 0.0f) {
         if (collisionTriDot(n, dir) >= 0.0) {
             return FALSE;
         }
-        if (collisionTriDot(collisionTriSub(*p, *v0), collisionTriCross(bc, dir)) > 0.0) {
+        if (collisionTriDot(collisionTriSub(p, v0), collisionTriCross(bc, dir)) > 0.0) {
             return FALSE;
         }
-        if (collisionTriDot(collisionTriSub(*p, *v1), collisionTriCross(ab, dir)) > 0.0) {
+        if (collisionTriDot(collisionTriSub(p, v1), collisionTriCross(ab, dir)) > 0.0) {
             return FALSE;
         }
-        if (collisionTriDot(collisionTriSub(*p, *v2), collisionTriCross(ca, dir)) > 0.0) {
+        if (collisionTriDot(collisionTriSub(p, v2), collisionTriCross(ca, dir)) > 0.0) {
             return FALSE;
         }
     } else {
         if (collisionTriDot(n, dir) <= 0.0) {
             return FALSE;
         }
-        if (collisionTriDot(collisionTriSub(*p, *v0), collisionTriCross(bc, dir)) < 0.0) {
+        if (collisionTriDot(collisionTriSub(p, v0), collisionTriCross(bc, dir)) < 0.0) {
             return FALSE;
         }
-        if (collisionTriDot(collisionTriSub(*p, *v1), collisionTriCross(ab, dir)) < 0.0) {
+        if (collisionTriDot(collisionTriSub(p, v1), collisionTriCross(ab, dir)) < 0.0) {
             return FALSE;
         }
-        if (collisionTriDot(collisionTriSub(*p, *v2), collisionTriCross(ca, dir)) < 0.0) {
+        if (collisionTriDot(collisionTriSub(p, v2), collisionTriCross(ca, dir)) < 0.0) {
             return FALSE;
         }
     }
     s = -d / collisionTriDot(n, dir);
     {
-        Vec hit = collisionTriAdd(*p, collisionTriScale(dir, s));
+        Vec hit = collisionTriAdd(p, collisionTriScale(dir, s));
         if (hit.y < *out) {
             return FALSE;
         }
