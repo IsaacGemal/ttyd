@@ -1570,7 +1570,7 @@ static inline void* winMsgDispField(WindowWork* work, s32 off) {
 // winMsgDisp's .rodata objects are addressed by the original as offsets from the
 // unit's first rodata symbol (str_802F3FE8), read through one base register
 // (r31). MUST_MATCH codegen shaping: the natural form names each object (the
-// externs live in window/win_root.h).
+// externs are declared under #else below).
 #define FV(off, sym) (*(const Vec*)((const char*)base + (off)))
 #define FS(off, sym) ((const char*)base + (off))
 #else
@@ -1739,7 +1739,7 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
             e3bTranslate = FV(0x15C, vec3_802f4144);
             e3bScale = FV(0x168, vec3_802f4150);
             e3bTranslate.x = (float_250_8041d1a4 + x) - float_10_8041d1a0;
-            e3bTranslate.y = (float_24_8041d0c8 + (float_40_8041d0e8 + (y - float_40_8041d0e8))) - float_24_8041d0c8;
+            e3bTranslate.y = (float_40_8041d0e8 + (y - float_40_8041d0e8)) - float_24_8041d0c8;
             winMsgDispIcon(0x1B6, e3bTranslate, &e3bScale, dat_8041cf40);
         }
         tailTranslate = FV(0x174, vec3_802f415c);
