@@ -24,6 +24,27 @@ typedef struct effWaterDamageData {
 	s32 field_0x38;  //0x38
 } effWaterDamageData; //0x3C
 
+static const f32 float_deg2rad_8042015c = 0.017453292f;
+static const f32 float_0p0625_80420160 = 0.0625f;
+static const f32 float_0_80420164 = 0.0f;
+static const f32 float_0p98_80420168 = 0.98f;
+static const f32 float_neg0p8_8042016c = -0.8f;
+static const f32 float_neg0p1_80420170 = -0.1f;
+static const f32 float_1p2_80420174 = 1.2f;
+static const f32 float_0p9_80420178 = 0.9f;
+static const f32 float_2_8042017c = 2.0f;
+static const f32 float_0p07_80420180 = 0.07f;
+static const f32 float_0p2_80420184 = 0.2f;
+static const f32 float_0p5_80420188 = 0.5f;
+static const f32 float_0p4_8042018c = 0.4f;
+static const f32 float_0p3_80420190 = 0.3f;
+static const f32 float_1_80420194 = 1.0f;
+static const f32 float_6p2832_80420198 = 6.2831855f;
+static const f32 float_10_8042019c = 10.0f;
+static const f32 float_12_804201a0 = 12.0f;
+static const f32 float_360_804201a4 = 360.0f;
+static const f32 float_0p1_804201a8 = 0.1f;
+
 //data (matches the original unit's .data layout)
 u32 negone_one_data[16] = {
 	0xBF800000, 0x3F800000, 0xBF800000, 0x3F800000, 0x3F800000, 0xBF800000, 0x3F800000, 0xBF800000,
@@ -41,7 +62,7 @@ u32 size8x8_tex16x16_2_vtx[14] = {
 	0xFFFDFFFB, 0x00000000, 0x00000000, 0x00FF0003, 0xFFFB0000, 0x02000000, 0x000000FF,
 	0x00030005, 0x00000200, 0x02000000, 0x00FFFFFD, 0x00050000, 0x00000200, 0x000000FF
 };
-u32 gap_803a89e8[6] = { 0, 0, 0, 0, 0, 0 };
+__declspec(section ".data") u32 gap_803a89e8[6] = { 0, 0, 0, 0, 0, 0 };
 u32 unk_803a8a00[0x20] = {
 	0x78A31427, 0x572B0B52, 0x5167133A, 0x7FDF7F2F, 0x653E32A7, 0xF5FFFF8B, 0x32670486, 0x8BFFD55E,
 	0x60830B26, 0xF8E8FA55, 0x602011C5, 0x2E020278, 0x59A40486, 0xF7155555, 0x90200486, 0xBC555555,
@@ -244,7 +265,7 @@ static inline Vec initializeVec(Vec* input) {
 // Calling GXSetTevColor inside each inline places the colour build word and its by-value argument
 // copy in the original's slots (color 0xc/0x10, color2 0x8).
 static inline void effWaterDamageSetColor0(s32 alpha) {
-	GXColor c = { 0x00, 0xFF, 0xFF, 0xC8 };
+	GXColor c = { 0xC8, 0xFF, 0xFF, 0x00 };
 	c.a = alpha;
 	GXSetTevColor(GX_TEVREG0, c);
 }
@@ -257,7 +278,6 @@ static inline void effWaterDamageSetColor1(void) {
 
 // The two colour inlines above reproduce the original's GXColor stack slots, and the loop's initial
 // data++ is hoisted to just before GXInitTexObj to match the original's schedule.
-// NONMATCHING (99.997%): one `addi r4, r30, 0x100` string-pool offset differs (ours 0xe8).
 void effWaterDamageDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -346,7 +366,7 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 		effWaterDamageSetColor0(alpha * data->field_0x30 / 255);
 		effWaterDamageSetColor1();
 #else
-		color = (GXColor){ 0x00, 0xFF, 0xFF, 0xC8 };
+		color = (GXColor){ 0xC8, 0xFF, 0xFF, 0x00 };
 		color.a = alpha * data->field_0x30 / 255;
 		GXSetTevColor(GX_TEVREG0, color);
 		GXSetTevColor(GX_TEVREG1, (GXColor){ 0x00, 0x20, 0x20, 0x00 });
@@ -372,10 +392,10 @@ void effWaterDamageDisp(CameraId camId, void* param) {
 
 
 #ifdef MUST_MATCH
-// The original builds the material colour from dat_80420158 and only overwrites .a; MWCC keeps the
+// The original builds the material colour from a pooled GXColor and only overwrites .a; MWCC keeps the
 // colour in the 0x8 stack slot and the outgoing copy at 0xc (the reverse of a plain assignment here).
 static inline GXColor effWaterDamageColor(s32 alpha) {
-	GXColor color = *(GXColor*)&dat_80420158;
+	GXColor color = (GXColor){ 0xC8, 0xFF, 0xFF, 0x00 };
 	color.a = alpha;
 	return color;
 }
@@ -420,7 +440,7 @@ void effWaterDamageDisp2(CameraId camId, void* param) {
 #ifdef MUST_MATCH
 	color = effWaterDamageColor(alpha * data->field_0x30 / 255);
 #else
-	color = *(GXColor*)&dat_80420158;
+	color = (GXColor){ 0xC8, 0xFF, 0xFF, 0x00 };
 	color.a = alpha * data->field_0x30 / 255;
 #endif
 	GXSetChanMatColor(4, color);
