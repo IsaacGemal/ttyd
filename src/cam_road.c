@@ -164,17 +164,6 @@ const Vec vec3_802c12d0 = { 0.0f, 1.0f, 0.0f };
 const Vec vec3_802c12dc = { 90.0f, 110.0f, 13.0f };
 const Vec vec3_802c12e8 = { -110.0f, -70.0f, -190.0f };
 const Vec vec3_802c12f4 = { 0.0f, -1.0f, 0.0f };
-const f64 double_1_802c1300 = 1.0;
-const f64 double_0p5_802c1308 = 0.5;
-const f64 double_3_802c1310 = 3.0;
-const f64 double_0_802c1318 = 0.0;
-const f64 double_to_int_802c1320 = 4503601774854144.0;
-const f64 double_0p0001_802c1328 = 0.00009999999747378752;
-const f64 double_0p01_802c1330 = 0.009999999776482582;
-const f64 double_neg1Eneg07_802c1338 = -0.0000001;
-const f64 double_1_802c1340 = 1.0000001;
-const char str_802C1348[] = "%scam = %d\n";
-const char str_802C1354[] = "%scurve = %d\n";
 
 //.sdata2
 extern const f32 float_0p005_80419548;
@@ -434,9 +423,6 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
-// The inline-sqrtf double pool now lands right after vec3_802c12d0: the unused named double_*
-// definitions were removed and the two str_802C1348/54 literals moved to the end of the file, so
-// MWCC's pooled doubles land at +0x30/+0x38/+0x40/+0x48.
 // NONMATCHING (98.20%): the fabs of `deg` lands in f4 instead of f3, which cascades through the
 // maxVal/diff/cand blocks and leaves `dist` in f3 instead of f6; `d`/`node` are swapped (r5/r6);
 // the sqrtf x==0 return block is inline (bne + b) instead of a `beq` to a block at the end.
@@ -489,9 +475,7 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     }
 #ifdef MUST_MATCH
     // the compiler materialises the negated `<=` here; the natural `> 1.0` emits a plain branch.
-    // Reading the named double through its own address keeps MWCC from folding it into an anonymous
-    // pool copy, so the load lands at vec3_802c12d0+0x30 like the original.
-    if (!(__fabsf(cur->unk_4C - prev->unk_4C) <= *(const f64*)&double_1_802c1300)) {
+    if (!(__fabsf(cur->unk_4C - prev->unk_4C) <= 1.0)) {
 #else
     if (__fabsf(cur->unk_4C - prev->unk_4C) > 1.0) {
 #endif
@@ -1071,7 +1055,7 @@ BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit
 
     sf28 = r7[i22].y;
     sf24 = r7[i21].y;
-    if (__fabsf(sf24 - sf28) < double_0p0001_802c1328) {
+    if (__fabsf(sf24 - sf28) < 0.00009999999747378752) {
         sf28 = sf24;
     }
     if (i19 != 0) {
@@ -1120,10 +1104,10 @@ L_C4BC:
     f0 = f2 - f8;
     f5 = -f7;
     f0 = __fabsf(f0);
-    if (!(f0 < double_0p01_802c1330)) goto L_C57C;
+    if (!(f0 < 0.009999999776482582)) goto L_C57C;
     f0 = f6 - f5;
     f0 = __fabsf(f0);
-    if (!(f0 < double_0p01_802c1330)) goto L_C57C;
+    if (!(f0 < 0.009999999776482582)) goto L_C57C;
     f1 = f2 + f8;
     f2 = float_0p5_8041956c;
     f0 = f6 + f5;
@@ -1139,7 +1123,7 @@ L_C57C:
 L_C58C:
     f29 = float_1_80419558;
     sf18 = f29;
-    if (double_0_802c1318 == f4) goto L_C5C0;
+    if (0.0 == f4) goto L_C5C0;
     f1 = f25 - f22;
     f0 = f2 / f4;
     f1 = f1 / f4;
@@ -1149,7 +1133,7 @@ L_C58C:
     f0 = f1 / f0;
     goto L_C5EC;
 L_C5C0:
-    if (double_0_802c1318 == f5) goto L_C5E8;
+    if (0.0 == f5) goto L_C5E8;
     f1 = f23 - f21;
     f0 = f3 / f5;
     f1 = f1 / f5;
@@ -1237,7 +1221,7 @@ L_C9B0:
     if (i20 == 0) goto L_CC7C;
 
     if (f1 < sf28) {
-        if (f3 > double_0_802c1318) {
+        if (f3 > 0.0) {
             f1 = 0.0f;
             if (f29 < f1) {
                 if (f0 > f27) {
@@ -1294,7 +1278,7 @@ L_CA74:
 
 L_CAD0:
     if (f1 > sf24) {
-    if (f3 > double_0_802c1318) {
+    if (f3 > 0.0) {
         f1 = 0.0f;
         if (f29 < f1) {
             if (f0 > f27) {
@@ -1348,7 +1332,7 @@ L_CB54:
     }
 
 L_CBB0:
-    if (f3 > double_0_802c1318) {
+    if (f3 > 0.0) {
     f2 = 0.0f;
     if (f29 < 0.0f) {
     if (f0 > f27) {
@@ -1403,7 +1387,7 @@ L_CBB0:
 
 L_CC7C:
     if (i19 == 0) goto L_CCF8;
-    if (f3 > double_0_802c1318) {
+    if (f3 > 0.0) {
     f2 = 0.0f;
     if (f29 < 0.0f) goto L_CD0C;
     if (f0 > 0.0f) {
@@ -1432,7 +1416,7 @@ L_CCEC:
     sf18 = f0;
     goto L_CD0C;
 L_CCF8:
-    if (f3 > double_0_802c1318) goto L_CD0C;
+    if (f3 > 0.0) goto L_CD0C;
     f0 = float_neg1_804195a4;
     sf18 = f0;
 
@@ -1491,7 +1475,7 @@ L_CD80:
     goto L_CE04;
     }
 L_CDD4:
-    if (double_0_802c1318 == f5) goto L_CE00;
+    if (0.0 == f5) goto L_CE00;
     f4 = f0 - f2;
     f3 = f6 / f5;
     f4 = f4 / f5;
@@ -1510,11 +1494,15 @@ L_CE04:
     if (f9 > f8) {
         f6 = f3 - f10;
         f28 = f6 / f5;
-        if (f28 < double_neg1Eneg07_802c1338) {
+        if (f28 < -0.0000001) {
+            goto L_CE48;
+        }
+        // dead like the compare above; it pools the double the original has at +0x70
+        if (f28 > 1.0000001) {
             goto L_CE48;
         }
     } else {
-        if (double_0_802c1318 == f6) goto L_CE48;
+        if (0.0 == f6) goto L_CE48;
         f0 = f4 - f0;
         f28 = f0 / f6;
     }
@@ -1709,14 +1697,14 @@ static inline Vec collisionTriAdd(Vec a, Vec b) {
 // the literal pools to the same .rodata Vec and restores the target's interleaved load schedule.
 // Remaining diff: the first two vertex loads are swapped -- the target issues `lwz v1.x` before the `stmw`
 // (this build issues `lwz v0.x` after it). The `dot(...) > 0.0` edge guards must be `0.0` (double, reusing the
-// guard block's already-resident `double_0_802c1318`), not `0.0f`; the float form keeps a second 0.0f live and
+// guard block's already-resident `0.0` double), not `0.0f`; the float form keeps a second 0.0f live and
 // shifts the `collisionTriDot(n, dir)` guard accumulators one FP register higher (f2..f5 vs f0,f2,f3,f4).
 // This is the same known-hard load-hoist class as `marioOfsRotReset` (the scheduler moves a load across the
 // prologue store in the opposite direction; `scheduling off` collapses the whole function). Everything else --
 // instructions, slots, constants and all FP/GP register assignments -- matches.
 // NONMATCHING (99.65%): first vertex-load pair swapped (target hoists `lwz v1.x` above `stmw`).
 BOOL collisionTri_simple(Vec p, Vec v0, Vec v1, Vec v2, f32* out) {
-    Vec dir = { 0.0f, -1.0f, 0.0f };
+    Vec dir = vec3_802c12f4;
     Vec bc = collisionTriSub(v2, v0);
     Vec ab = collisionTriSub(v0, v1);
     Vec ca = collisionTriSub(v1, v2);
@@ -1828,6 +1816,7 @@ BOOL camRoadSetup(const char* filename) {
     u32 length;
     char path[0x80];
     DVDEntry* entry;
+    s32 dbg;
 
     memset(wp, 0, sizeof(CamRoadWork));
     wp->unk_C8 = 0;
@@ -1846,6 +1835,13 @@ BOOL camRoadSetup(const char* filename) {
     wp->unk_1C4 = float_1_80419558;
     wp->unk_204 = -1;
     wp->unk_208 = 0;
+    {
+        // The original pools these two debug-print strings but nothing reads them; a function-local static
+        // lands them after the doubles the earlier functions pool.
+        static const char s1[] = "%scam = %d\n";
+        static const char s2[16] = "%scurve = %d\n";
+        dbg = (s32)s1 + (s32)s2;
+    }
     camShiftInit();
     arcOpen(filename, (void**)&wp->map, &length);
     if (wp->map == NULL) {
@@ -1878,3 +1874,10 @@ BOOL camRoadSetup(const char* filename) {
     }
     return TRUE;
 }
+
+// 4-byte zero word that ends the unit's .sdata: all-zero objects need explicit_zero_data to be emitted and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_8040F2EC_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
