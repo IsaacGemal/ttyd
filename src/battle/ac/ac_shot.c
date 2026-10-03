@@ -473,10 +473,16 @@ static inline Vec _drawTargetMarkRot(Vec v, f32 angle) {
 #define DRW_VEC(i, name) (name)
 #endif
 
-// NONMATCHING (97.69%): vec3 base (r31), colour pointer (r30), all wrapper slots and both
-// reviseAngle calls match; only the first colour load is scheduled after `lwz r4,0xc(r31)` instead
-// of after the prologue `lis`. No opt_*/scheduling/peephole pragma or declaration order moves it.
-void _draw_target_mark(GXColor* color, f32 x, f32 y, f32 z, f32 angle) {
+// 100%: the first `*color` load is only hoisted next to the prologue `lis` (as the original has
+// it) when MWCC knows the colour pointer cannot alias the stack/rodata it reads; declaring the
+// parameter `__restrict` supplies that and the emitted code is byte-identical.
+// Match-only qualifier: the natural form leaves the pointer unqualified.
+#ifdef MUST_MATCH
+#define MARK_COLOR_RESTRICT __restrict
+#else
+#define MARK_COLOR_RESTRICT
+#endif
+void _draw_target_mark(GXColor* MARK_COLOR_RESTRICT color, f32 x, f32 y, f32 z, f32 angle) {
 #ifdef MUST_MATCH
     Vec* vecs = (Vec*)vec3_802f92b8;
 #endif
@@ -494,6 +500,7 @@ void _draw_target_mark(GXColor* color, f32 x, f32 y, f32 z, f32 angle) {
                         _drawTargetMarkRot(DRW_VEC(5, vec3_802f92b8[5]), angle), *color);
 }
 #undef DRW_VEC
+#undef MARK_COLOR_RESTRICT
 #pragma dont_inline reset
 
 void _disp_target_mark(CameraId cameraId, void* param) {

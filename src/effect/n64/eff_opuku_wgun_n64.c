@@ -201,7 +201,7 @@ static inline void opukuWgunColor2(u8 r, u8 g, u8 b) {
 // triangle loop's j/x are swapped (r23/r24) -- and retail emits a redundant `beq` before the i==0 `bne`
 // (a branch-to-next-instruction) that we do not. The f32->s16 temporaries land 4 apart (OSFastCast.h's temp
 // is an f32).
-// NONMATCHING (98.43%): the running/texS and j/x register swaps plus retail's redundant `beq`;
+// NONMATCHING (99.56%): the running/texS and j/x register swaps plus retail's redundant `beq`;
 // every instruction opcode/operand matches.
 void effOpukuWgunDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -222,11 +222,12 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 	f32 c;
 	s32 i;
 	s32 type;
+	OpukuWgunVtx* p;
 	OpukuWgunVtx* vtx;
-	s32 texS;
 	s32 alpha;
 	s32 x;
 	s32 j;
+	s32 m;
 
 	type = data->type;
 	scale = data->scale;
@@ -251,17 +252,19 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 
 	GXSetCullMode(GX_CULL_NONE);
 
-	entry = smartAlloc(0x2A0, HEAP_EFFECT);
-	vtx = (OpukuWgunVtx*)entry->address;
-	texS = 0;
+	vtx = (OpukuWgunVtx*)smartAlloc(0x2A0, HEAP_EFFECT)->address;
+	p = vtx;
 
 	for (i = 0; i < 12; i++) {
-		if (i == 0) {
+		switch (i) {
+		case 0:
 			angle = -angleABf(data->y[i + 1], -data->x[i + 1], data->y[i], -data->x[i]);
-		} else {
+			break;
+		default:
 			if (i != 11 && data->counter[i] == 0) {
 				angle = -angleABf(data->y[i + 1], -data->x[i + 1], data->y[i], -data->x[i]);
 			}
+			break;
 		}
 		if (data->type == 0) {
 			t = float_0p5_8041f848 * (f32)data->counter2[i] + float_2_8041f844;
@@ -280,44 +283,44 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 		rad = float_6p2832_8041f858 * angle / float_360_8041f85c;
 		s = t * (f32)sin(rad);
 		c = t * (f32)cos(rad);
-		vtx[2 * i].x = (s16)(float_20_8041f860 * (data->x[i] + s));
-		vtx[2 * i].y = (s16)(float_20_8041f860 * (data->y[i] + c));
-		vtx[2 * i].z = (s16)(float_20_8041f860 * (data->z[i] + zero));
-		vtx[2 * i].s = texS;
-		vtx[2 * i].t = 0;
-		vtx[2 * i].r = (i & 1) * 255;
-		vtx[2 * i].g = ((i >> 1) & 1) * 255;
-		vtx[2 * i].b = ((i >> 2) & 1) * 255;
-		vtx[2 * i].a = alpha;
-		vtx[2 * i + 1].x = (s16)(float_20_8041f860 * (data->x[i] - s));
-		vtx[2 * i + 1].y = (s16)(float_20_8041f860 * (data->y[i] - c));
-		vtx[2 * i + 1].z = (s16)(float_20_8041f860 * (data->z[i] + zero));
-		vtx[2 * i + 1].s = texS;
-		vtx[2 * i + 1].t = 0x400;
-		vtx[2 * i + 1].r = (i & 1) * 255;
-		vtx[2 * i + 1].g = ((i >> 1) & 1) * 255;
-		vtx[2 * i + 1].b = ((i >> 2) & 1) * 255;
-		vtx[2 * i + 1].a = alpha;
-		texS += 0x140;
+		vtx[0].x = (s16)(float_20_8041f860 * (data->x[i] + s));
+		vtx[0].y = (s16)(float_20_8041f860 * (data->y[i] + c));
+		vtx[0].z = (s16)(float_20_8041f860 * (data->z[i] + zero));
+		vtx[0].s = (i * 5) << 6;
+		vtx[0].t = 0;
+		vtx[0].r = (i & 1) * 255;
+		vtx[0].g = ((i >> 1) & 1) * 255;
+		vtx[0].b = ((i >> 2) & 1) * 255;
+		vtx[0].a = alpha;
+		vtx[1].x = (s16)(float_20_8041f860 * (data->x[i] - s));
+		vtx[1].y = (s16)(float_20_8041f860 * (data->y[i] - c));
+		vtx[1].z = (s16)(float_20_8041f860 * (data->z[i] + zero));
+		vtx[1].s = (i * 5) << 6;
+		vtx[1].t = 0x400;
+		vtx[1].r = (i & 1) * 255;
+		vtx[1].g = ((i >> 1) & 1) * 255;
+		vtx[1].b = ((i >> 2) & 1) * 255;
+		vtx[1].a = alpha;
+		vtx += 2;
 	}
 
 	PSMTXScale(scaleMtx, float_0p05_8041f868, float_0p05_8041f868, float_0p05_8041f868);
 
 	for (j = 0; j < i * 2; j++) {
 		OSInitFastCast();
-		OW_VEC->x = __OSs16tof32(&vtx[j].x);
-		OW_VEC->y = __OSs16tof32(&vtx[j].y);
-		OW_VEC->z = __OSs16tof32(&vtx[j].z);
+		OW_VEC->x = __OSs16tof32(&p[j].x);
+		OW_VEC->y = __OSs16tof32(&p[j].y);
+		OW_VEC->z = __OSs16tof32(&p[j].z);
 		PSMTXMultVec(scaleMtx, OW_VEC, OW_VEC);
 		OSInitFastCast();
-		vtx[j].x = __OSf32tos16(OW_VEC->x);
-		vtx[j].y = __OSf32tos16(OW_VEC->y);
-		vtx[j].z = __OSf32tos16(OW_VEC->z);
+		p[j].x = __OSf32tos16(OW_VEC->x);
+		p[j].y = __OSf32tos16(OW_VEC->y);
+		p[j].z = __OSf32tos16(OW_VEC->z);
 	}
 
-	DCFlushRange(vtx, 0x2A0);
+	DCFlushRange(p, 0x2A0);
 	GXInvalidateVtxCache();
-	effSetVtxDescN64((effVtxArray*)vtx);
+	effSetVtxDescN64((effVtxArray*)p);
 	GXLoadPosMtxImm(cam->view, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 
@@ -363,8 +366,8 @@ void effOpukuWgunDisp(CameraId camId, void* param) {
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
 	}
 
-	for (j = 0, x = 0; j < i - 1; j++, x += 2) {
-		if (j >= 0) {
+	for (m = 0, x = 0; m < i - 1; x += 2, m++) {
+		if (m >= 0) {
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 			tri2(x, x + 2, x + 1, x, x + 1, x + 2, x + 3, x);
 		}

@@ -42,16 +42,25 @@ const f32 float_90_804218cc = 90.0f;
 const f32 float_180_804218d0 = 180.0f;
 const f32 float_270_804218d4 = 270.0f;
 
-// .rodata: 17 consecutive zero Vecs, then the two conversion doubles.
-const Vec vec3_802ff860[17] = {
-    {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f},
-    {0.0f, 0.0f, 0.0f},
-};
-const f64 double_to_int_802ff930 = 4503601774854144.0;
-const f64 double_12_802ff938 = 12.0;
+// .rodata: 17 separate zero Vecs (not one array), then the compiler's conversion pool. As
+// separate objects they make MWCC anchor the int->float pool entry to the first vec's base.
+const Vec vec3_802ff860 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff86c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff878 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff884 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff890 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff89c = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff8a8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff8b4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff8c0 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff8cc = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff8d8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff8e4 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff8f0 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff8fc = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff908 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff914 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ff920 = {0.0f, 0.0f, 0.0f};
 
 // MATCH_F64: read the constant through a volatile pointer so mwcc loads it from its own symbol.
 #ifdef MUST_MATCH
@@ -83,12 +92,6 @@ static void actionCommandDisp(f32 x, f32 y);
 
 // optimize_for_size: the original saves r28-r31 with `stmw` and keeps `work` in r29.
 #pragma optimize_for_size on
-// The two `field_34[0] & 2` short-circuit tests emit a single `beq skip` where the original emits
-// a redundant `bne` to the next instruction before `beq skip` (the pattern occurs nowhere else in
-// the tree and does not reproduce from any source shape tried: nested ifs, `!= 0`, explicit
-// empty/goto else, do/while(0), ternary, every GC compiler version, and scheduling/opt pragmas all
-// give the single branch).
-// NONMATCHING (99.58%): two `field_34[0] & 2` tests miss a redundant `bne` before `beq skip`.
 // The default-case field_34[0x14]/100*field_0x08+50 conversion matches r4 (not r0) once the /100
 // constant is read plainly instead of through MATCH_F32's volatile (float_50 stays volatile).
 s32 battleAcMain_GaugeTiming(BattleWork* work) {
@@ -254,6 +257,32 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     dec->field_0x10 = 0;
                     goto tail;
                 }
+#ifdef MUST_MATCH
+            } else {
+                // The natural `A && B` (see the #else form) emits a single `beq skip`.  The original
+                // tests `field_34[0] & 2` twice, positive then negative, so MWCC emits the first as a
+                // `bne` to the fallthrough label and the second as the `beq` skip.
+                if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                    goto gaugeCheck1;
+                }
+                if (!(*(s32*)&work->actionCommands.field_34[0x00] & 2)) {
+                    goto gaugeSkip1;
+                }
+            gaugeCheck1:
+                if ((s32)dec->field_0x04 <= 0) {
+                    dec->field_0x20++;
+                    dec->field_0x04 = MATCH_F32(float_0_80421890);
+                    dec->field_0x10 = 0;
+                    if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                        dec->field_0x1C = 0xF;
+                    } else {
+                        dec->field_0x1C = 0x1E;
+                    }
+                    goto tail;
+                }
+            }
+        gaugeSkip1:
+#else
             } else if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) &&
                        ((s32)dec->field_0x04 <= 0)) {
                 dec->field_0x20++;
@@ -266,6 +295,7 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                 }
                 goto tail;
             }
+#endif
             if (dec->field_0x04 >= (f32)*(s32*)&work->actionCommands.field_34[0x10]) {
                 dec->field_0x10 = 1;
             } else {
@@ -289,6 +319,28 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
             }
             if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
                 s32 v = (s32)dec->field_0x04;
+#ifdef MUST_MATCH
+                // Same double-test trick as gaugeCheck1 above.
+                if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                    goto gaugeCheck2;
+                }
+                if (!(*(s32*)&work->actionCommands.field_34[0x00] & 2)) {
+                    goto gaugeMod2;
+                }
+            gaugeCheck2:
+                if (v / 100 > dec->field_0x20) {
+                    dec->field_0x20 = v / 100;
+                    dec->field_0x04 = MATCH_F32(float_0_80421890);
+                    dec->field_0x10 = 0;
+                    if (*(s32*)&work->actionCommands.field_34[0x00] & 2) {
+                        dec->field_0x1C = 0xF;
+                    } else {
+                        dec->field_0x1C = 0x1E;
+                    }
+                    goto tail;
+                }
+            gaugeMod2:
+#else
                 if ((*(s32*)&work->actionCommands.field_34[0x00] & 2) && (v / 100 > dec->field_0x20)) {
                     dec->field_0x20 = v / 100;
                     dec->field_0x04 = MATCH_F32(float_0_80421890);
@@ -300,10 +352,11 @@ s32 battleAcMain_GaugeTiming(BattleWork* work) {
                     }
                     goto tail;
                 }
+#endif
                 v %= 100;
                 dec->field_0x04 = (f32)v;
             }
-            if (__fabsf(dec->field_0x04 - MATCH_F32(float_50_804218c8)) <= double_12_802ff938) {
+            if (__fabsf(dec->field_0x04 - MATCH_F32(float_50_804218c8)) <= 12.0) {
                 dec->field_0x10 = 1;
             } else {
                 dec->field_0x10 = 0;
@@ -421,17 +474,12 @@ void battleAcDelete_GaugeTiming(BattleWork* work) {
 
 // optimize_for_size: the original saves r25-r31 with `stmw` and keeps the 2D camera in r27.
 #pragma optimize_for_size on
-// Remaining diffs (99.32%): MWCC leaves the int->float pool double (the anonymous @NNN that
-// backs `(f32)int`) on its own `lis` base unless the function references enough distinct doubles
-// for it to build a shared .rodata pool.  Two MUST_MATCH seed reads of the existing conversion
-// doubles are enough to make it pool, so the `lfd`s become `lfd fN, 0xe0(r28)` instead of
-// `lis @NNN` (the target has `lfd fN, 0xd0(r30)`).  The remaining magic diffs are just that:
-// the pool base is r28 = `...rodata.0` rather than the vec3 pointer r30, and the anonymous magic
-// sits at +0xe0 (after the two named doubles) rather than the target's +0xd0, which would require
-// the named `double_to_int_802ff930` / `double_12_802ff938` to be compiler pool entries instead of
-// globals (out of scope, they are shared with battleAcMain_GaugeTiming).  An unused `f64 temp =
-// <magic>` local makes MWCC drop the pool base and use `vec3_802ff860` (the target's prologue) but
-// then it does not fold the magic (98.71%), so the seed form is kept.
+// 100%. The int->float magic must be MWCC's own anonymous pool entry: do not define
+// `double_to_int_802ff930` in the source, or the compiler emits a second anonymous copy after the
+// named one and the loads move to `0xe0(r28)`. The 17 zero Vecs must be separate objects (the
+// original names each at a 0xc stride): that makes MWCC anchor the pool entry to the first vec and
+// emit the target's `lfd fN, 0xd0(r30)` (with `double_12_802ff938` also left to the pool, which is
+// why battleAcMain compares against the literal 12.0).
 // The gauge loop's `176 * (100/(count+1) * (i+1)) / 100` is split into `f32 t`/`u` steps that
 // straddle the icon test, which reproduces the target's `fdivs; fmuls; beq; fmuls; fdivs`
 // schedule; separating `u` from `t` keeps the intermediate in the target's f0; naming
@@ -439,12 +487,10 @@ void battleAcDelete_GaugeTiming(BattleWork* work) {
 // The ELSE rasta's two cross-call values live in `f32 q[2]` (not two scalars): as array elements
 // MWCC colours them f27/f28, exactly the target's registers (`fadds f28, f0, f31` / `fadds f27,
 // f2, f1`); with four scalars it used f25/f26 (the loop's v.x/v.y).
-// NONMATCHING (99.32%): the top `if (field_34[0x0C] == 1)` is a switch (case 1 / default) that
-// reproduces the target's `cmpwi; beq then; b else`; only the int->float double pool base/offset
-// differ (see above).
+// The top `if (field_34[0x0C] == 1)` is a switch (case 1 / default) that reproduces the target's
+// `cmpwi; beq then; b else`.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
-    const Vec* vec = vec3_802ff860;
 #ifdef MUST_MATCH
     // Deriving disp before camGetPtr (and dec after it) keeps work=r31, vec=r30, disp=r27 and dec=r29,
     // as the original; the BattleActions intermediate keeps them from folding into the BattleWork base.
@@ -466,11 +512,6 @@ static void actionCommandDisp(f32 x, f32 y) {
     s32 icon1;
     s32 icon2;
     s32 icon3;
-
-#ifdef MUST_MATCH
-    (void)*(volatile f64*)&double_to_int_802ff930;
-    (void)*(volatile f64*)&double_12_802ff938;
-#endif
 
     camGetPtr(CAMERA_2D);
 #ifdef MUST_MATCH
@@ -499,7 +540,7 @@ static void actionCommandDisp(f32 x, f32 y) {
         {
             s32 icon =
                 (dec->field_0x04 >= (f32)*(s32*)&ac->field_34[0x10]) ? 0x95 : 0x91;
-            Vec v = vec[0];
+            Vec v = vec3_802ff860;
             v.x = float_16_80421880 + (float_176_80421884 + (float_neg288_80421888 + x));
             v.y = float_18_8042188c + y;
             ICON_DISP(&v, 0x10, icon, float_1_80421878);
@@ -534,10 +575,10 @@ static void actionCommandDisp(f32 x, f32 y) {
                 u = float_176_80421884 * u;
                 u = u / float_100_80421874;
 #ifdef MUST_MATCH
-                // volatile: stops MWCC hoisting the vec[1] copy out of the loop (the target reloads it each pass).
-                v = *(volatile Vec*)&vec[1];
+                // volatile: stops MWCC hoisting the vec3_802ff86c copy out of the loop (the target reloads it each pass).
+                v = *(volatile Vec*)&vec3_802ff86c;
 #else
-                v = vec[1];
+                v = vec3_802ff86c;
 #endif
                 bx = float_neg288_80421888 + x;
                 v.x = bx + u;
@@ -583,19 +624,19 @@ static void actionCommandDisp(f32 x, f32 y) {
             baseX = float_neg228_804218b0 + x;
             baseY = float_55_804218b4 + y;
             {
-                Vec v = vec[2];
+                Vec v = vec3_802ff878;
                 v.x = baseX;
                 v.y = baseY;
                 ICON_DISP(&v, 0x10, icon1, float_1_80421878);
             }
             {
-                Vec v = vec[3];
+                Vec v = vec3_802ff884;
                 v.x = float_56_804218b8 + baseX;
                 v.y = baseY;
                 ICON_DISP(&v, 0x10, icon3, float_1_80421878);
             }
         } else {
-            Vec v = vec[4];
+            Vec v = vec3_802ff890;
             v.x = float_28_804218bc + (float_neg228_804218b0 + x);
             v.y = float_55_804218b4 + y;
             ICON_DISP(&v, 0x10, icon1, float_1_80421878);
@@ -609,19 +650,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {
-                        Vec v = vec[5];
+                        Vec v = vec3_802ff89c;
                         v.x = baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon0, float_1_80421878);
                     }
                     {
-                        Vec v = vec[6];
+                        Vec v = vec3_802ff8a8;
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon2, float_1_80421878);
                     }
                 } else {
-                    Vec v = vec[7];
+                    Vec v = vec3_802ff8b4;
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
                     ICON_DISP(&v, 0x10, icon0, float_1_80421878);
@@ -631,19 +672,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {
-                        Vec v = vec[8];
+                        Vec v = vec3_802ff8c0;
                         v.x = baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon1, float_1_80421878);
                     }
                     {
-                        Vec v = vec[9];
+                        Vec v = vec3_802ff8cc;
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon3, float_1_80421878);
                     }
                 } else {
-                    Vec v = vec[10];
+                    Vec v = vec3_802ff8d8;
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
                     ICON_DISP(&v, 0x10, icon1, float_1_80421878);
@@ -655,19 +696,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {
-                        Vec v = vec[11];
+                        Vec v = vec3_802ff8e4;
                         v.x = baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon1, float_1_80421878);
                     }
                     {
-                        Vec v = vec[12];
+                        Vec v = vec3_802ff8f0;
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon3, float_1_80421878);
                     }
                 } else {
-                    Vec v = vec[13];
+                    Vec v = vec3_802ff8fc;
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
                     ICON_DISP(&v, 0x10, icon1, float_1_80421878);
@@ -677,19 +718,19 @@ static void actionCommandDisp(f32 x, f32 y) {
                     baseX = float_neg228_804218b0 + x;
                     baseY = float_55_804218b4 + y;
                     {
-                        Vec v = vec[14];
+                        Vec v = vec3_802ff908;
                         v.x = baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon0, float_1_80421878);
                     }
                     {
-                        Vec v = vec[15];
+                        Vec v = vec3_802ff914;
                         v.x = float_56_804218b8 + baseX;
                         v.y = baseY;
                         ICON_DISP(&v, 0x10, icon2, float_1_80421878);
                     }
                 } else {
-                    Vec v = vec[16];
+                    Vec v = vec3_802ff920;
                     v.x = float_28_804218bc + (float_neg228_804218b0 + x);
                     v.y = float_55_804218b4 + y;
                     ICON_DISP(&v, 0x10, icon0, float_1_80421878);

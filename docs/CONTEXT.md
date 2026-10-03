@@ -3917,3 +3917,16 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   main (its new .rodata definitions shifted the layout under the existing MUST_MATCH base reads, so yuka_init and
   main_base read the wrong bytes); include/rel/yuu/event/evt_yuuranking.h (unused, conflicting prototypes) out.
   Confirmed fixes in the batch: sys's PSMTXConcat order, tou's scissor clrlwi.
+
+## Wave 61, batch 2 (2026-10-03, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- 70 agents onto main a85596dc: 9,169 -> 9,208 (+39), all from the 90-99% band. `pragma_audit.py` now keeps a removal
+  only if no function in the unit scores lower without the pragma (batch 1's rule, "no 100% function lost", let
+  removals lower bom_01, eki_00 and yuu_02/03); it removed none here. icondrv, koopa_hit (lower) and sac_zubastar
+  (natural build) as on main.
+- Review (`scratch/wave61/review2.md`): no behaviour defects in the 31 functions newly at 100%; `tools/data_check.py`
+  clean over 68 objects. SoundDropData's `groupCount[i]` loop fixes an older bug. Dead evt_sub sin/cos helpers and a
+  stranded party_move note removed.
+- Claude #1's second review of #305: BattleAudienceSettingAudience's per-type counts multiply by the clamped
+  `targetNum` (retail's r27, mullw at 801A07A4), not the weight-pick counter `target` (unset on the case 6 path);
+  battle_stage_object's new double_to_int_802f3c30 definition (no codegen effect) out.

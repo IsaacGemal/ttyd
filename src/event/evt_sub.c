@@ -710,88 +710,13 @@ void coingetDisp(WinMgrEntry* entry) {
 
 extern WinMgrDesc coinget_window_desc;
 
-static inline f32 evt_sub_sin_approx(f32 angle) {
-	f32 v = 0.00761f;
-	f32 b = 0.16605f;
-	f32 one = 1.0f;
-	f32 t, u;
-
-	if (angle <= 3.1415927f) {
-		if (angle <= 1.5707964f) {
-			t = angle * angle;
-			v = v * t - b;
-			v = v * t + one;
-			v = v * angle;
-		} else {
-			t = angle - 1.5707964f;
-			u = 1.5707964f - t;
-			t = u * u;
-			v = v * t - b;
-			v = v * t + one;
-			v = v * u;
-		}
-	} else if (angle < 4.712389f) {
-		t = angle - 3.1415927f;
-		u = t * t;
-		v = v * u - b;
-		v = v * u + one;
-		v = v * t;
-		v = -v;
-	} else {
-		t = angle - 4.712389f;
-		u = 1.5707964f - t;
-		t = u * u;
-		v = v * t - b;
-		v = v * t + one;
-		v = v * u;
-		v = -v;
-	}
-	return v;
-}
-
-static inline f32 evt_sub_cos_approx(f32 angle) {
-	f32 v = 0.03705f;
-	f32 b = 0.4967f;
-	f32 one = 1.0f;
-	f32 t, u;
-
-	if (angle <= 3.1415927f) {
-		if (angle <= 1.5707964f) {
-			t = angle * angle;
-			v = v * t - b;
-			v = v * t + one;
-		} else {
-			t = angle - 1.5707964f;
-			u = 1.5707964f - t;
-			t = u * u;
-			v = v * t - b;
-			v = v * t + one;
-			v = -v;
-		}
-	} else if (angle < 4.712389f) {
-		t = angle - 3.1415927f;
-		t = t * t;
-		v = v * t - b;
-		v = v * t + one;
-		v = -v;
-	} else {
-		t = angle - 4.712389f;
-		u = 1.5707964f - t;
-		t = u * u;
-		v = v * t - b;
-		v = v * t + one;
-	}
-	return v;
-}
-
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-// The two static inline helpers above reproduce the target's polynomial instruction sequence.
-// opt_propagation off stops MWCC rematerialising the coefficients into every branch; opt_lifetimes
-// off stops the default lifetime pass from shifting the seed/coefficient FPRs. Every FPR matches
-// except the scratch pair: the target has the angle^2 scratch in f0 and the 1.5708 pivot/wrapped
-// angle in f1; ours swaps them in both helpers.
-// NONMATCHING (99.18%): scratch pair f0/f1 swapped (target f0 scratch / f1 pivot, ours f0 pivot / f1 scratch).
+// The polynomial is written inline in evt_sub_get_coin with explicit f0-f5 locals (the
+// evt_item_get_important_item technique) so MWCC colours the scratch in f0 and the 1.5708
+// pivot/wrapped angle in f1, as the target does. opt_propagation off stops MWCC rematerialising the
+// coefficients into every branch; opt_lifetimes off stops the default lifetime pass from shifting
+// the seed/coefficient FPRs.
 USER_FUNC(evt_sub_get_coin) {
 	s32* args = event->args;
 	s32 coin = evtGetValue(event, args[0]);
@@ -813,8 +738,83 @@ USER_FUNC(evt_sub_get_coin) {
 	f2 = 6.2831855f * reviseAngle(f1);
 	f6 = f2 / 360.0f;
 
-	f4 = evt_sub_sin_approx(f6) * 10.0f;
-	f5 = evt_sub_cos_approx(f6) * 10.0f;
+	f4 = 0.00761f;
+	f3 = 0.16605f;
+	f2 = 1.0f;
+	f1 = 3.1415927f;
+	if (f6 <= f1) {
+		f1 = 1.5707964f;
+		if (f6 <= f1) {
+			f0 = f6 * f6;
+			f4 = f4 * f0 - f3;
+			f4 = f4 * f0 + f2;
+			f4 = f4 * f6;
+		} else {
+			f0 = f6 - f1;
+			f1 = f1 - f0;
+			f0 = f1 * f1;
+			f4 = f4 * f0 - f3;
+			f4 = f4 * f0 + f2;
+			f4 = f4 * f1;
+		}
+	} else {
+		f0 = 4.712389f;
+		if (f6 < f0) {
+			f1 = f6 - f1;
+			f0 = f1 * f1;
+			f4 = f4 * f0 - f3;
+			f4 = f4 * f0 + f2;
+			f4 = f4 * f1;
+			f4 = -f4;
+		} else {
+			f0 = f6 - f0;
+			f1 = 1.5707964f;
+			f1 = f1 - f0;
+			f0 = f1 * f1;
+			f4 = f4 * f0 - f3;
+			f4 = f4 * f0 + f2;
+			f4 = f4 * f1;
+			f4 = -f4;
+		}
+	}
+	f4 = 10.0f * f4;
+
+	f5 = 0.03705f;
+	f3 = 0.4967f;
+	f2 = 1.0f;
+	f1 = 3.1415927f;
+	if (f6 <= f1) {
+		f1 = 1.5707964f;
+		if (f6 <= f1) {
+			f0 = f6 * f6;
+			f5 = f5 * f0 - f3;
+			f5 = f5 * f0 + f2;
+		} else {
+			f0 = f6 - f1;
+			f0 = f1 - f0;
+			f0 = f0 * f0;
+			f5 = f5 * f0 - f3;
+			f5 = f5 * f0 + f2;
+			f5 = -f5;
+		}
+	} else {
+		f0 = 4.712389f;
+		if (f6 < f0) {
+			f0 = f6 - f1;
+			f0 = f0 * f0;
+			f5 = f5 * f0 - f3;
+			f5 = f5 * f0 + f2;
+			f5 = -f5;
+		} else {
+			f0 = f6 - f0;
+			f1 = 1.5707964f;
+			f0 = f1 - f0;
+			f0 = f0 * f0;
+			f5 = f5 * f0 - f3;
+			f5 = f5 * f0 + f2;
+		}
+	}
+	f5 = 10.0f * f5;
 
 	pos1.x += f4;
 	pos1.z -= f5;

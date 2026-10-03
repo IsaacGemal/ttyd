@@ -400,10 +400,13 @@ void btlDispMain(void) {
 // #pragma dont_inline because the target does not inline them. MWCC gives owner r31 / wp r29 and puts
 // height in f27 and the 270/90 constant in f30; every x/z/1.0/angle and stack slot already matches. The
 // f32 declaration order and the prologue load order below are chosen so the allocator lands as close as
-// it can - reordering them moved several dozen instructions into the target's registers.
-// NONMATCHING (98.82%): only the callee-saved register assignment (owner/wp GPR swap and the height/270
-// FPR swap) plus the prologue schedule differ. parts->mOwner reloads at the flag tests, the rotation-sum
-// grouping, FP operand order, the float_270 initializer and opt_common_subs off moved the rest into place.
+// it can - reordering them moved several dozen instructions into the target's registers. Writing the
+// alliance lookup as the named fields `wp->alliances[owner->mAlliance].attackDirection` (not a flat
+// +0xA offset) fixed the add/addi/lbzx addressing shape. parts->mOwner reloads at the flag tests, the
+// rotation-sum grouping, FP operand order, the float_270 initializer and opt_common_subs off moved the
+// rest into place.
+// NONMATCHING (99.10%): only the callee-saved register assignment (owner/wp GPR swap and the height/270
+// FPR swap) plus the prologue schedule differ.
 void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 	BattleWork* wp;
 	BattleUnit* owner;
@@ -412,7 +415,13 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 	f32 f27 = float_270_8041bf70;
 	f32 f28;
 	f32 f29;
+#ifdef MUST_MATCH
+	// Dead initializer (f30 is assigned before every use); its presence alone reproduces MWCC's
+	// callee-saved FPR allocation in the else branch.
+	f32 f30 = float_0_8041bf58;
+#else
 	f32 f30;
+#endif
 	f32 f26;
 	f32 f31;
 	Mtx m28;
@@ -446,9 +455,9 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 	Mtx m0;
 
 	(void)camId;
-	owner = parts->mOwner;
-	f26 = float_1_8041bf64;
 	wp = _battleWorkPointer;
+	f26 = float_1_8041bf64;
+	owner = parts->mOwner;
 	if (*(s32*)((char*)parts + 0x1C0) < 0) {
 		return;
 	}
@@ -544,7 +553,7 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 		} else if (dir < float_0_8041bf58) {
 			sign = float_neg1_8041bf78;
 		} else {
-			sign = (f32)*(s8*)((char*)wp + owner->mAlliance * 8 + 0xA);
+			sign = (f32)wp->alliances[owner->mAlliance].attackDirection;
 		}
 		f30 = sign * parts->mPositionOffset.x + owner->mPosition.x;
 		f26 = getFloatDispOffset((BattleUnit*)parts);

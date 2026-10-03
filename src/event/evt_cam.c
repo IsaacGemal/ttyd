@@ -112,8 +112,11 @@ static inline f32 camShakeSqrtf(f32 x) {
     return x;
 }
 
-// NONMATCHING (96.60%): only register colouring and the second 64-bit store mask differ;
-// the sqrtf, its pool offsets and the 64-bit userdata store now match the original.
+// evt_cam_shake: the call order, sqrtf, pool offsets and every 32-bit store match. The wInterp
+// halves are stored through the s32* cast because that is the form the original compiled (the
+// u64 expression schedules the two stores in the opposite order).
+// NONMATCHING (98.46%): only register colouring differs (event r29->r26, isFirstCall r30->r24,
+// pool base r26->r30, camId r25->r29, start hi/lo r31/r30 -> r28/r27). Permuter work.
 USER_FUNC(evt_cam_shake) {
     s32* args = event->args;
     CameraId camId = evtGetValue(event, args[0]);
@@ -127,7 +130,8 @@ USER_FUNC(evt_cam_shake) {
         event->userdata[1] = (start >> 32) & 0xFFFFFFFF;
         event->userdata[2] = start & 0xFFFFFFFF;
         event->field_84 = 0;
-        event->wInterpRelatedTime = (start & 0xFFFFFFFF00000000) | (start & 0xFFFFFFFF);
+        ((s32*)&event->wInterpRelatedTime)[0] = (start >> 32) & 0xFFFFFFFF;
+        ((s32*)&event->wInterpRelatedTime)[1] = start & 0xFFFFFFFF;
     }
     event->userdata[0]++;
     event->userdata[0] = event->userdata[0] % 4;
@@ -155,13 +159,15 @@ USER_FUNC(evt_cam_shake) {
                 padRumbleOn(0);
                 if (OSTicksToMilliseconds(start - wInterp) > onTime) {
                     event->field_84 = 1 - event->field_84;
-                    event->wInterpRelatedTime = (start & 0xFFFFFFFF00000000) | (start & 0xFFFFFFFF);
+                    ((s32*)&event->wInterpRelatedTime)[0] = (start >> 32) & 0xFFFFFFFF;
+                    ((s32*)&event->wInterpRelatedTime)[1] = start & 0xFFFFFFFF;
                 }
             } else {
                 padRumbleOff(0);
                 if (OSTicksToMilliseconds(start - wInterp) > offTime) {
                     event->field_84 = 1 - event->field_84;
-                    event->wInterpRelatedTime = (start & 0xFFFFFFFF00000000) | (start & 0xFFFFFFFF);
+                    ((s32*)&event->wInterpRelatedTime)[0] = (start >> 32) & 0xFFFFFFFF;
+                    ((s32*)&event->wInterpRelatedTime)[1] = start & 0xFFFFFFFF;
                 }
             }
         }

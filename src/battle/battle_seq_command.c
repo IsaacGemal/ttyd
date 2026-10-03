@@ -561,7 +561,11 @@ void BattleCommandDisplay_ActMenuEnd(BattleWork* wp) {
 	wp->commandMenu.field_4 &= ~0x1;
 }
 
-// NONMATCHING (97.45%): 11 instructions differ, 4 missing, plus register differences.
+// The t>=2 part of the guard matches; only the t<0 part differs: the target lays it out as
+// `cmpwi 0; bge A; b out` (comparison reuse into the following t==0 test) while MWCC here
+// emits `cmpwi 0; blt out` — same comparison, opposite block layout, 2 instructions.
+// The 12 symbol diffs are the unit's pooled string base, not this function.
+// NONMATCHING (99.62%): guard-branch polarity/block layout only.
 s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
@@ -575,7 +579,13 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 		BattleCommandDisplay_ActMenuEnd(wp);
 		*(s32*)&cmd->unk540[0] = 9;
 		cmd->unk0 = 0x1D;
+#ifdef MUST_MATCH
+		// The original passes wp to this empty function although its header prototype takes (void):
+		// the target loads r3 with wp before both calls. Header should be fixed to take BattleWork*.
+		((void (*)(BattleWork*))BattleMenuDisp_ActSelect_Main)(wp);
+#else
 		BattleMenuDisp_ActSelect_Main();
+#endif
 		return 1;
 	}
 	while (BattleMenuKeyOKInACT(wp)) {
@@ -586,25 +596,18 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 			if (t >= 2 || t < 0) {
 				continue;
 			}
-			if (t == 0) {
-				if (!(wp->flags & 0x200)) {
+			if ((t == 0 && (wp->flags & 0x200)) || (t == 1 && (wp->flags & 0x400))) {
+				_btlcmd_MakeSelectWeaponTable(wp, (void*)t);
+				if (_btlcmd_CheckWeaponTargetNum(wp, unit, wcmd->mWeaponTable[0].mWeaponParams) > 0) {
 					continue;
 				}
-			} else {
-				if (!(wp->flags & 0x400)) {
-					continue;
-				}
-			}
-			_btlcmd_MakeSelectWeaponTable(wp, (void*)t);
-			if (_btlcmd_CheckWeaponTargetNum(wp, unit, wcmd->mWeaponTable[0].mWeaponParams) > 0) {
-				continue;
-			}
-			wcmd->mActionTable[i].mEnabled = 0;
-			if (wcmd->mActionTable[i].field_0x10 == 0) {
-				if (t == 0) {
-					wcmd->mActionTable[i].field_0x10 = 4;
-				} else {
-					wcmd->mActionTable[i].field_0x10 = 5;
+				wcmd->mActionTable[i].mEnabled = 0;
+				if ((s32)wcmd->mActionTable[i].field_0x10 == 0) {
+					if (t == 0) {
+						wcmd->mActionTable[i].field_0x10 = 4;
+					} else {
+						wcmd->mActionTable[i].field_0x10 = 5;
+					}
 				}
 			}
 		}
@@ -666,7 +669,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 				psndSFXOn("SFX_NOT_CHOICE1");
 			}
 			wp->commandMenu.unk540[0x18] = 0;
-			if (wcmd->mActionTable[cursor->field_0].field_0x10 != 0) {
+			if ((s32)wcmd->mActionTable[cursor->field_0].field_0x10 != 0) {
 				BattleCommandDisplay_ActMenuEnd(wp);
 				cmd->unk0 = 3;
 				result = 1;
@@ -707,7 +710,11 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 		break;
 	}
 end:
+#ifdef MUST_MATCH
+	((void (*)(BattleWork*))BattleMenuDisp_ActSelect_Main)(wp);
+#else
 	BattleMenuDisp_ActSelect_Main();
+#endif
 	return result;
 }
 
@@ -1109,9 +1116,9 @@ void BattleCommandDisplay_ChangePartySelectMenuDisp(CameraId camId, BattleWork* 
 
 __declspec(section ".sdata") s32 _jump_badge_table[8] = {0xF0, 0xF1, 0xF4, 0xF5, 0xF6, 0xF3, 0xF2, 0x14C};
 __declspec(section ".sdata") s32 _hammer_badge_table[9] = {0xF7, 0xFA, 0xF9, 0xFB, 0xFD, 0xFC, 0xF8, 0x14D, 0x14E};
-// NONMATCHING (99.04%): the byte stream matches except for the prologue's `arg`/`wp`
-// save pair (retail arg=r31/wp=r30; ours wp=r31/arg=r30 plus one extra `mr r0,r4`).
-// Typing the parameter `s32` to try to fix the colouring hangs MWCC on the whole file.
+// NONMATCHING (99.77%): only the arg/wp save pair differs (20 rows). Retail saves arg=r31/wp=r30
+// (arg is a real s32 parameter); the header types it `void*`, so ours is a local and swaps them.
+// Typing it `s32` in the header gives 100% byte-for-byte. All loops/cases match.
 s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 	static BattleWeapon defaultWeapon_Dummy_NoItem = {
 		"btl_wn_dummy_noitem",
@@ -1138,20 +1145,20 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 		NULL,
 		{0, 0, 0, 0x64},
 	};
-	s16 arg = (s16)arg_;
+	s32 arg = (s32)arg_;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)&wp->commandMenu;
 	PouchData* pouch = pouchGetPtr();
 	BattleCursor* cursor;
-	s32 count;
 	u32 i;
-	s32 j;
 	s32 badge;
+	s32 count;
+	s32 j;
+	u16 mask;
 	s16* items;
 	s32 id;
-	ItemData* item;
-	s32 mask;
 	s32 field_4;
+	ItemData* item;
 
 	if (wcmd == NULL) {
 		return 0;
@@ -1279,6 +1286,9 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 		}
 		break;
 	case 1:
+	{
+		u32 i;
+		s32 badge;
 		for (i = 0; i < 9; i++) {
 			badge = _hammer_badge_table[i];
 			if (pouchEquipCheckBadge(badge) > 0) {
@@ -1301,6 +1311,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 			}
 		}
 		break;
+	}
 	}
 	switch (arg) {
 	case 6:
@@ -1352,6 +1363,8 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 		}
 		break;
 	case 4:
+	{
+		s32 j;
 		mask = pouch->mStarPowersObtained;
 		for (j = 0; j < 16; j++) {
 			if ((mask & (1 << j)) != 0 && ((BattleWeapon**)superActionTable)[j] != NULL) {
@@ -1374,6 +1387,7 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 		}
 		break;
 	}
+	}
 	if (count <= 0) {
 		return 0;
 	}
@@ -1381,7 +1395,8 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 	if (cursor->field_0 >= cursor->unk8) {
 		cursor->field_0 = cursor->unk8 - 1;
 	}
-	while (cursor->unk8 < (field_4 = cursor->field_4) + 6) {
+	while (cursor->unk8 < cursor->field_4 + 6) {
+		field_4 = cursor->field_4;
 		if (field_4 <= 0) {
 			break;
 		}

@@ -142,14 +142,18 @@ static inline void sstarSetVtx(s16* dst, Mtx mtx, s16* src) {
 // (rather than a `b += 2` induction) is what makes the loop emit retail's `mr r24, r22` init. The
 // declaration order below (found by search) is the only one that gives type=r25/colR=r22/colG=r23
 // and matches the GXColor argument slots for tev stages 2/3.
-// Retail has camId=r26, our camId=r24; our colB=r26 where retail has colB=r24 (the two are swapped). The
-// vertex-copy loop's induction registers differ (retail off=r24, src=r29, i=r26, r28=&vtx; ours
-// off=r28, src=r26, i=r25, r29=&vtx) because retail's `off` is `0xE + i*0x1C` -- an induction the
-// compiler creates and our `i*0x1C` + later `+0xE` does not. All source shapes that create that
-// induction (off=i*0x1C+0xE, a loop-carried `off`, a `dst`/`p` pointer) lower the total score by
-// 0.5-2% by shifting the prologue. The first GXColor by-value local is at 0x28 where retail has
-// it at 0x2c (the arg copy is at 0x2c); the inline-return trick moves it the wrong way here.
-// NONMATCHING (99.06%): register colouring only, no differing instruction/constant.
+// The colouring still differs in two places. (1) Retail has colB=r24/camId=r26; ours has the pair
+// swapped (camId=r24/colB=r26), which also shifts the GXColor by-value local from 0x28 to 0x2c
+// (arg copy at 0x2c vs 0x28). (2) In the vertex-copy loop retail keeps src=r29 and off=r24; ours
+// swaps those two, which cascades into the `addi` association for src2 and the r28-relative vtx.y2/z2
+// stores. The loop source below reaches the exact instruction shape otherwise (dataInd=r28, i=r26,
+// the `(u8*)data + off + 0x1d0` dst2 form is what makes the dst2 `addi rX, off, 0x1d0` association
+// match). Searches that did not help: every declaration order of colB/off/src, 100 random
+// declaration permutations, colour-load reordering, `register`/initialisers, loop-carried `off`,
+// a derived `src`, and all the -O pragmas. Fixing the camId/colB pair is the key: once colB owns
+// r24 the loop's `off` reuses it and the rest falls out.
+// NONMATCHING (99.51%): register colouring only (camId/colB swap, loop src/off swap); no differing
+// instruction or constant -- `tools/diff_shape.py` reports no shape difference.
 void effSstarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
     u8* base = (u8*)lbl_803A5C90;
@@ -268,10 +272,10 @@ void effSstarDisp(CameraId camId, void* param) {
 
         src = base + 0xC0;
         for (i = 0; i < 5; i++, src += 0x1C) {
-            u32 off = i * 0x1C;
+            u32 off = i * 0x1C + 0xE;
             sstarSetVtx((s16*)&data->vtx[i], data->mtx[(idx - i + 8) % 8], (s16*)src);
-            sstarSetVtx((s16*)((u8*)&data->vtx[i] + 0xE), data->mtx[(idx - i + 8) % 8],
-                (s16*)((u8*)(base + 0xC0) + off + 0xE));
+            sstarSetVtx((s16*)((u8*)data + off + 0x1d0), data->mtx[(idx - i + 8) % 8],
+                (s16*)((u8*)base + 0xC0 + off));
         }
         GXInvalidateVtxCache();
         DCFlushRange(data->vtx, 0x8C);

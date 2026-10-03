@@ -952,12 +952,14 @@ void _audience_Whistle_control(void) {
     }
 }
 
-// NONMATCHING (98.45%): only the intplGetValue 0.0f float-constant load is scheduled after lwz r4/r5;
-// the original loads it first.
+// The declaration order below is deliberate: it drives MWCC's callee-saved allocation to the
+// original's (spot r31, i r30, event r29, entry r26, byte offset r28).
 s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
     BattleSpotWork* spot = BatSpotGetPtr();
-    s32 i;
     s32* args = event->args;
+    BattleSpotEntry* entry;
+    s32 i;
+    GXColor color;
 
     if (isFirstCall) {
         event->userdata[0] = evtGetValue(event, args[0]);
@@ -966,8 +968,8 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
     }
     event->userdata[1]--;
     for (i = 0; i < 5; i++) {
-        BattleSpotEntry* entry = &spot->entries[i];
-        GXColor color = {0xFF, 0xFF, 0xFF, 0x00};
+        entry = &spot->entries[i];
+        color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
 
         ((u8*)&color)[3] = (s32)intplGetValue(2, event->userdata[1], event->userdata[0], 0.0f, (f32)event->userdata[2]);
         entry->field_28 = *(u32*)&color;
@@ -1656,7 +1658,9 @@ typedef struct BattleSeqEndWorkLvup {
 // comes from btlDispTexPlane's missing 8th parameter -- see the report). Remaining: the register/scheduling
 // of the cur!=max position computation and the pooled int->float double is @N instead of
 // double_to_int_802fe050.
-// NONMATCHING (97.84%): see the note above.
+// NONMATCHING (98.09%): logic and calls match. The remaining 18 `!!` are FP register/schedule
+// (ours computes y's fmadds into f0 rather than f4 and loads float_0p8 late). Statement order below is
+// the best-scoring of 24 permutations tried; see the note above.
 void _lvup_select_object_disp(CameraId camId, void* param) {
     BattleSeqEndWorkLvup* work = (BattleSeqEndWorkLvup*)_battleWorkPointer->seqEndWork;
     Mtx mtxMain;
@@ -1786,9 +1790,11 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
                 continue;
             }
             pos2 = obj->pos;
-            pos2.x -= float_8_80420c50; pos2.x -= float_6_80420c54;
-            pos2.y = pos2.y - (float_96_80420c58 * obj->scale.y + float_2_80420c4c);
+            // Statement order is not semantic: it steers MWCC's FP scheduler toward the original's
+            // schedule (pos2.z, then the single-expression x, then y).
             pos2.z = pos2.z + float_5_80420c5c;
+            pos2.x = pos2.x - float_8_80420c50 - float_6_80420c54;
+            pos2.y = pos2.y - (float_96_80420c58 * obj->scale.y + float_2_80420c4c);
             PSMTXScale(mtxS2, float_0p8_80420c60, float_0p8_80420c60, float_1_80420c64);
             PSMTXTrans(mtxT2, pos2.x, pos2.y, pos2.z);
             PSMTXConcat(mtxT2, mtxS2, mtxT2);

@@ -579,13 +579,21 @@ void title_disp(WinMgrEntry* entry) {
 
 // list_disp: every call and immediate matches (tools/diff_shape.py: calls same 38 38), so the
 // remaining diffs are register allocation/scheduling. `i = 0` is emitted just before the loop
-// preheader, not back after `bl pouchGetPtr`; the two header x-sums and the loop's price x-sum
-// keep their last intermediate in r3 where the original uses r0; and the int->float block
-// materialises the conversions in a different order: ours creates a signed double first and
-// converts `width` with f30, the original creates the unsigned double first and uses f28.
-// Changing the unit's .rodata order does not change this (verified by neutralising name_disp's
-// first conversion), so it is internal to this function's codegen, not a pool/order problem.
-// NONMATCHING (95.80%): register allocation/scheduling only; see above.
+// preheader, not back after `bl pouchGetPtr`, and the two header x-sums and the loop's price x-sum
+// keep their last intermediate in r3 where the original uses r0.
+// The int->float block: splitting the price-width product into two statements
+// `f32 w = width; w *= 0.6f;` (rather than `f32 w = 0.6f * width;`, and rather than the original
+// inline `0.6f * width`) makes the compiler lay the block out the way the original does: the
+// unsigned `width` conversion is met first, so `f28` is the mask (2^52, the original's
+// `double_to_int_mask_802ece28`) and `width`'s stack slot is 0x188. It also moves `li r23, 0`
+// next to `bl pouchGetPtr`. 95.80 -> 97.19. The original's y argument is
+// `field_0x1C - 28 - i*26`, not `field_0x1C - i*26 - 28`.
+// What is left is that the two statements keep the product materialised (`fmuls`+`fsubs`) where
+// the original fuses it into one `fnmsubs`; inlining the product back folds the conversion and
+// reverts f28 to the signed double, so the two cannot both be had from source. Changing the
+// unit's .rodata order, `pool_data`/`global_optimizer`/`dont_inline`/`opt_*` pragmas, and the
+// function order do not change it: the pool order is internal to this function's codegen.
+// NONMATCHING (97.19%): register allocation/scheduling only; see above.
 void list_disp(WinMgrEntry* entry) {
 	PouchData* pouch;
 	GXColor color0;
@@ -657,7 +665,11 @@ void list_disp(WinMgrEntry* entry) {
 		msg = msgSearch(str_802ECDF8);
 		sprintf(buf, "%s", msg);
 		width = FontGetMessageWidth(buf);
-		PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - 0.6f * width) - 40.0f, entry->field_0x1C - i * 26 - 28, 0.0f);
+		{
+			f32 w = width;
+			w *= 0.6f;
+			PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - w) - 40.0f, entry->field_0x1C - 28 - i * 26, 0.0f);
+		}
 		PSMTXScale(scale, 0.64f, 0.64f, 0.64f);
 		PSMTXConcat(mtx, scale, mtx);
 		FontDrawMessageMtx(mtx, buf);

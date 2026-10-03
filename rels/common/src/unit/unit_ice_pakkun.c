@@ -331,10 +331,13 @@ static USER_FUNC(shadow_scale_memory) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (95.45%): MWCC schedules the intplGetValue argument setup differently; the target evaluates the 0.0f
-// (end) before work[1] (arg2), emits a single 0.0f load and computes both pool addresses with addi. Forcing a volatile
-// 0.0f read plus a volatile work[1] read recovers the late work[1] but leaves extra 0.0f loads and a folded 2^52
-// address (same MWCC scheduling wall as battle_seq_end.c).
+// `#pragma opt_propagation off`: with propagation on MWCC folds the int->float magic
+// double and rematerialises the 0.0f load, so shadow_scale_return loses the original's
+// fp register allocation and store order; off keeps both as separate .rodata loads.
+#pragma opt_propagation off
+// intplGetValue's real prototype is (s32, f32, f32, s32, s32) (r3, f1, f2, r4, r5). The cast
+// makes MWCC materialise the pooled constants and load the int arguments right-to-left,
+// reproducing the retail bytes; the natural argument order under #else is the same call.
 static USER_FUNC(shadow_scale_small) {
     BattleUnit* unit;
     BattleUnitPart* part;
@@ -347,7 +350,7 @@ static USER_FUNC(shadow_scale_small) {
         unit->work[1] = 0;
     }
 #ifdef MUST_MATCH
-    part->field_0x78 = intplGetValue(0, ((volatile f32)0.0f, *(volatile s32*)&unit->work[1]), 15, (f32)unit->work[0], ((volatile f32)0.0f, 0.0f));
+    part->field_0x78 = ((f32 (*)(s32, f32, f32, s32, s32))intplGetValue)(0, (f32)unit->work[0], 0.0f, unit->work[1], 15);
 #else
     part->field_0x78 = intplGetValue(0, unit->work[1], 15, (f32)unit->work[0], 0.0f);
 #endif
@@ -358,13 +361,12 @@ static USER_FUNC(shadow_scale_small) {
     return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (97.91%): MWCC loads the 2^52 int->float magic into f1 and the 0.0f into f2, while the target loads the
-// magic into f2 and keeps it there; the volatile comma recovers the target's addi address/li-stw order but forces a
-// second 0.0f load (same MWCC FPR-allocation wall as battle_seq_end.c).
 static USER_FUNC(shadow_scale_return) {
     BattleUnit* unit;
     BattleUnitPart* part;
     s32 id;
+    f32 start;
+    f32 end;
 
     id = BattleTransID(event, evtGetValue(event, event->args[0]));
     unit = BattleGetUnitPtr(_battleWorkPointer, id);
@@ -372,17 +374,16 @@ static USER_FUNC(shadow_scale_return) {
     if (isFirstCall) {
         unit->work[1] = 0;
     }
-#ifdef MUST_MATCH
-    part->field_0x78 = intplGetValue(0, ((volatile f32)0.0f, unit->work[1]), 15, 0.0f, (f32)unit->work[0]);
-#else
-    part->field_0x78 = intplGetValue(0, unit->work[1], 15, 0.0f, (f32)unit->work[0]);
-#endif
+    start = 0.0f;
+    end = (f32)unit->work[0];
+    part->field_0x78 = intplGetValue(0, unit->work[1], 15, start, end);
     if (unit->work[1] >= 15) {
         return EVT_RETURN_DONE;
     }
     unit->work[1]++;
     return EVT_RETURN_BLOCK;
 }
+#pragma opt_propagation reset
 
 
 static EVT_BEGIN(init_event)

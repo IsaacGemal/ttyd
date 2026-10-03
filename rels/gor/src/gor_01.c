@@ -5125,7 +5125,7 @@ s32 itemNameToID(const char* name) {
     return i;
 }
 
-// NONMATCHING (97% cook_chk: hoisting ItemData* p = &itemDataTable[item] matched the target; the inlined naniga_okorukana_cook tail still differs)
+#pragma opt_dead_assignments off // needed: keeps the inlined itemNameToID tail's mr r3, r30 after subfe
 USER_FUNC(cook_chk) {
     s32* args = event->args;
     s32 item = evtGetValue(event, args[0]);
@@ -5141,8 +5141,11 @@ USER_FUNC(cook_chk) {
     }
     for (i = 0; i < 0x1A; i++) {
         if (strcmp(p->id, R_simple_recipe_table[i * 3]) == 0) {
-            evtSetValue(event, args[1], itemNameToID(R_simple_recipe_table[i * 3 + 1]));
-            evtSetValue(event, args[2], itemNameToID(R_simple_recipe_table[i * 3 + 2]));
+            s32 id = itemNameToID(R_simple_recipe_table[i * 3 + 1]);
+
+            evtSetValue(event, args[1], id);
+            id = itemNameToID(R_simple_recipe_table[i * 3 + 2]);
+            evtSetValue(event, args[2], id);
             return EVT_RETURN_DONE;
         }
     }
@@ -5151,6 +5154,7 @@ USER_FUNC(cook_chk) {
     return EVT_RETURN_DONE;
 }
 
+#pragma opt_dead_assignments reset
 
 #pragma opt_propagation off // needed: with propagation on MWCC hoists the args load before the inlined naniga_okorukana_cook
 USER_FUNC(cook_chk2) {

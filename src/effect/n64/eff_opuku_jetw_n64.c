@@ -221,59 +221,53 @@ static inline void effOpukuJetwSetTev0b(s32 field18, s32 field1c, s32 field20, s
     GXSetTevColor(GX_TEVREG0, color);
 }
 
-// Callee-saved allocation, plus one loop code shape. Matches
-// counter/data/field24/field18/field1c/field20/half/table/columns/rows/threshold/col; off: `.data` base
-// r31 vs r20, lifetime r15 vs r31, cam r17 vs r15, i r15 vs r29, j r19 vs r30, counter-copy r29 vs r18,
-// rowOffset r20 vs r19. The base claims r31 so lifetime cannot. Computed `ptr = &table[rowOffset + col]`
-// after the two `continue` tests (it used to be before them) and `colPtr` after the PSMTXTrans: worth
-// +0.16% (94.19 -> 94.35). The target still differs structurally: it builds rowPtr = &table[rowOffset]
-// first, then ptr = &rowPtr[col] and colPtr = &table[col] sharing one col*10, and tests
-// `columns - 1 - col > lifetime` off the cached local (no reload); ours uses `&table[rowOffset + col]`
-// and reloads `data->lifetime` with the addition form `columns - 1 > col + data->lifetime`. Writing the
-// target's shapes (rowPtr, subtraction, cached lifetime) makes GC/2.6 keep `counter`/`rowOffset` as
-// inductions, hoist `columns*10`/`columns-1` and spill half/rowOffset, so it scores lower (86-92%, or
-// 88-91% with opt_strength_reduction off); every GC/1.3..3.0 compiler, -O level, flag and pragma tried
-// behaves the same. Declaration/assignment permutation moves the `.data` base off r31 (random orders give
-// r14..r28), but never with the rest of the target colouring, so only the plain shuffle is kept.
-// See the note above the TEV colour inlines.
-// NONMATCHING (94.35%): callee-saved GPR map and one loop code shape; see the note above.
+#pragma opt_strength_reduction off // without it MWCC strength-reduces the rowPtr induction and hoists columns*10
+#pragma opt_loop_invariants off // without it the hoisted col*10/rowPtr live across calls and spill half/rowOffset
+// The original's loop shapes: a running counterCurrent (the target computes counter + i*2 once and steps
+// it by 2), rowPtr = &table[rowOffset] built before the two `continue` tests, ptr = &rowPtr[col] sharing
+// one col*10 with colPtr = &table[col], and the second test as `columns - 1 - col > lifetime` off the
+// cached local. With plain -O4 MWCC strength-reduces the rowPtr induction and hoists columns*10; these two
+// pragmas stop that and lift the function from 94.35% to 99.19%.
+// NONMATCHING (99.19%): every instruction is present and the loop structure matches. What is left is the
+// compiler's callee-saved GPR colouring (`.data` base r20 vs ours r18, lifetime r31 vs r29, the field
+// colours rotated) and the stack homes of the `rot`/`scale` Mtx temporaries (0x70/0xa0 swapped).
 void effOpukuJetwDisp(CameraId camId, void* param) {
+    GXTexObj texObj;
+    CameraEntry* cam;
+    s32 threshold;
+    s32 counterCurrent;
+    effOpukuJetwPoint* colPtr;
+    s32 counter;
+    s32 i;
+    s32 j;
+    EffectEntry* effect;
     Mtx trans;
+    s32 lifetime;
+    Mtx rot;
     s32 half;
-    s32 field24;
     s32 field18;
     s32 field1c;
+    Mtx scale;
     s32 field20;
+    effOpukuJetwData* data;
+    effOpukuJetwPoint* ptr;
     s32 columns;
     s32 rows;
-    Mtx scale;
-    Mtx rot;
-    EffectEntry* effect;
-    effOpukuJetwPoint* table;
-    s32 counter;
-    effOpukuJetwPoint* colPtr;
+    s32 field24;
     s32 col;
-    CameraEntry* cam;
-    s32 lifetime;
-    s32 j;
     s32 rowOffset;
-    effOpukuJetwPoint* ptr;
-    s32 threshold;
-    GXTexObj texObj;
-    effOpukuJetwData* data;
     Mtx work;
-    s32 i;
+    effOpukuJetwPoint* table;
 
     effect = param;
     cam = camGetPtr(camId);
     data = effect->userdata;
     counter = data->counter;
     lifetime = data->lifetime;
-    field24 = data->field_0x24;
     field18 = data->field_0x18;
     field1c = data->field_0x1C;
     field20 = data->field_0x20;
-
+    field24 = data->field_0x24;
     switch (data->type) {
         case 0:
             table = (effOpukuJetwPoint*)adata;
@@ -327,17 +321,19 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
 
     threshold = counter * 5;
     half = columns / 2;
+    counterCurrent = counter;
     for (i = 0; i < half; i++) {
-        col = (counter + i * 2) % columns;
+        col = counterCurrent % columns;
         rowOffset = 0;
         for (j = 0; j < rows; rowOffset += columns, j++) {
+            effOpukuJetwPoint* rowPtr = &table[rowOffset];
             if (col > threshold) {
                 continue;
             }
-            if (columns - 1 > col + data->lifetime) {
+            if (columns - 1 - col > lifetime) {
                 continue;
             }
-            ptr = &table[rowOffset + col];
+            ptr = &rowPtr[col];
             PSMTXTrans(trans, (f32)ptr->field_0x0, float_10_8041f7d0 + (f32)ptr->field_0x1, float_0_8041f7c8);
             colPtr = &table[col];
             PSMTXScale(scale, (f32)colPtr->field_0x2 * float_0p01_8041f7d4, (f32)colPtr->field_0x4 * float_0p01_8041f7d4, float_1_8041f7cc);
@@ -352,5 +348,8 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
             tri2(0, 1, 2, 0, 0, 2, 3, 0);
         }
+        counterCurrent += 2;
     }
 }
+#pragma opt_strength_reduction reset
+#pragma opt_loop_invariants reset

@@ -1111,15 +1111,23 @@ USER_FUNC(_bgset_kemuri_effect) {
 // The whole body, control flow, constants and every memory access match. What is left is MWCC's callee-saved
 // register choice: the original keeps event=r29, wp=r28, base=r27, changed=r26; here the allocator gives
 // event=r26, changed=r28, wp=r29 (base already r27), a 3-cycle that also rotates the loop counter/string
-// temporaries. The int->float conversion constant is also materialised as a fresh `@N@` .rodata literal with its
-// own base instead of `0x168(r30)` (the unit's rodata is provided out of band, so MWCC cannot fold it onto the
-// vec3_802f3ac8 base; `_fall_frame` in this file has the same object-file artefact). Tried: every pragma in the
-// file (opt_propagation/common_subs/dead_assignments/global_optimizer/peephole/scheduling/optimize_for_size),
-// declaration order, local event copy, float temporaries; none moves event off r26. Also tried (this session):
-// #pragma opt_lifetimes off (event->r25, changed->r27, base->r26) and global_optimizer off (event->r25), the
-// other pragma on/off pairs, defining the double in-file (MWCC still emits its own `@N@` int->float magic),
-// removing the `base`/`vec` variables, relocating the s0/s1 SFX temporaries, and s32/BOOL/u32 changed: none
-// reproduces event=r29/wp=r28/changed=r26. `--final` PASSes with the file unchanged.
+// temporaries. The int->float conversion constant is materialised as a fresh `@N@` .rodata literal with its
+// own base. Elsewhere in this file (`_fall_frame`, `_mobj_shake_main`) that same anonymous literal is only a
+// `~~` symbol-only difference against the original's named `double_to_int_802f3c30` and is not scored, but
+// here the original compiler folded the bias onto the `vec3_802f3ac8` base (`lfd f1, 0x168(r30)`), so ours
+// really differs by the extra `lis`/base. MWCC 2.6 always pools this literal and never folds it onto an
+// existing base (verified: defining `double_to_int_802f3c30`/`vec3_802f3ac8` in-file and laying them out at
+// the original .rodata offsets still emits `@1191`), so the fold is not reachable while the unit's .rodata is
+// supplied out of band. That extra address value is also what keeps the event/wp/changed colouring from being
+// reachable (the two are coupled). Tried: every pragma in the file
+// (opt_propagation/common_subs/dead_assignments/global_optimizer/peephole/scheduling/optimize_for_size),
+// declaration order (all permutations), local event copy, float temporaries; none moves event off r26. Also
+// tried: #pragma opt_lifetimes off (event->r25, changed->r27, base->r26) and global_optimizer off (event->r25),
+// every other opt_*/global_optimizer/scheduling/optimize_for_size/pool_data/optimization_level 0-4 on-off pair,
+// the reordered intpl_sub prototype cast that fixed `_fall_frame` (moves the lfs order but not the colouring),
+// inline int->float/store helpers, removing the `base`/`vec` variables, relocating the s0/s1 SFX temporaries,
+// and s32/BOOL/u32 changed: none reproduces event=r29/wp=r28/changed=r26 or beats 40 diffs. `--final` PASSes
+// with the file unchanged.
 // NONMATCHING (97.01%): but for the event/wp/changed register cycle and the conversion constant base.
 USER_FUNC(_set_mobj_rotate_x) {
 	BattleStageObject* obj;

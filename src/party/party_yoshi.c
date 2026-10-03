@@ -455,10 +455,22 @@ void yoshi_bye(PartyEntry* party) {
 #define M_S(off) (*(s32*)((u8*)mario + (off)))
 #define M_P(off) (*(void**)((u8*)mario + (off)))
 
-// Semantics fully reconstructed. Remaining diffs (see REPORT.md): the
-// int->float conversion double (MWCC pools its own copy instead of anchoring
-// to vec3+0x28), a few stack-slot offsets, and register/scheduling choices.
-// NONMATCHING (98.83%): semantics complete, not yet byte-exact.
+// MUST_MATCH: `&vec[4]` is `(char*)vec + 0x30` but keeps MWCC from CSE-ing the
+// PYS_S_2 address into a callee-saved register across the whole function (the
+// original recomputes `addi r4, r31, 0x30` each time).  Natural form under #else.
+#ifdef MUST_MATCH
+#define VEC_S2 ((char*)&vec[4])
+#else
+#define VEC_S2 ((char*)vec + 0x30)
+#endif
+
+// Semantics fully reconstructed. Remaining diffs: the
+// int->float conversion magic double (MWCC pools its own anonymous copy and
+// addresses it with lis/lfd instead of the original's `lfd fX, 0x28(r31)`),
+// the stack-slot rotation of the five `Vec` temporaries, and a couple of
+// scheduling choices.  The second PYS_* strcmp block now reloads
+// party->playerPtr (r27) like the original.
+// NONMATCHING (99.11%): semantics complete, not yet byte-exact.
 void yoshi_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     const Vec* vec = vec3_802cccd0;
@@ -711,7 +723,7 @@ L_312C:
                 psndSFXOn_3D((const char*)0x940, &party->position);
             }
         } else {
-            if (strcmp(party->field_18, (char*)vec + 0x30) != 0) {
+            if (strcmp(party->field_18, VEC_S2) != 0) {
                 mario->poseTime = 0;
             }
             partyChgPose(party, (char*)(vec + 4));
@@ -933,7 +945,7 @@ L_3800:
                     party->yoshiPsndSFXId = -1;
                 }
                 party->useMotionId = 0xA;
-                partyChgPose(party, (char*)vec + 0x30);
+                partyChgPose(party, VEC_S2);
                 marioChgPose("M_Y_2");
                 M_F(0x2B0) = 0.0f;
                 M_F(0x2B4) = 0.0f;
@@ -984,7 +996,7 @@ L_3800:
             f30 = 0.0f;
             {
                 MarioWork* pm = party->playerPtr;
-                if (strcmp(party->field_18, (char*)vec + 0x30) == 0) {
+                if (strcmp(party->field_18, VEC_S2) == 0) {
                     f30 = 2.0f * ofs_PYS_S_2[*(u16*)((u8*)pm + 0x28)] + f30;
                 } else if (strcmp(party->field_18, (char*)vec + 0x40) == 0) {
                     f30 = 2.0f * ofs_PYS_R_2[*(u16*)((u8*)pm + 0x28)] + f30;
@@ -995,13 +1007,14 @@ L_3800:
             M_F(0xA8) = 8.0f + f30;
             extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
+                MarioWork* pm2 = party->playerPtr;
                 f30 = 0.0f;
-                if (strcmp(party->field_18, (char*)vec + 0x30) == 0) {
-                    f30 = 2.0f * ofs_PYS_S_2[*(u16*)((u8*)mario + 0x28)] + f30;
+                if (strcmp(party->field_18, VEC_S2) == 0) {
+                    f30 = 2.0f * ofs_PYS_S_2[*(u16*)&pm2->poseTime] + f30;
                 } else if (strcmp(party->field_18, (char*)vec + 0x40) == 0) {
-                    f30 = 2.0f * ofs_PYS_R_2[*(u16*)((u8*)mario + 0x28)] + f30;
+                    f30 = 2.0f * ofs_PYS_R_2[*(u16*)&pm2->poseTime] + f30;
                 } else if (strcmp(party->field_18, (char*)vec + 0x50) == 0) {
-                    f30 = 2.0f * ofs_PYS_F_1[*(u16*)((u8*)mario + 0x28)] + f30;
+                    f30 = 2.0f * ofs_PYS_F_1[*(u16*)&pm2->poseTime] + f30;
                 }
                 *(f32*)((u8*)extra + 0x80) = f30;
             }
@@ -1149,7 +1162,7 @@ L_3800:
             if (party->field_138 != NULL) {
                 mario->hitobjJumpFrom = NULL;
                 party->useMotionId = 0xD;
-                partyChgPose(party, (char*)vec + 0x30);
+                partyChgPose(party, VEC_S2);
                 marioChgPose("M_Y_2");
                 M_F(0x2B0) = 0.0f;
                 M_F(0x2B4) = 0.0f;
@@ -1226,12 +1239,15 @@ L_3800:
         M_F(0x1AC) = party->field_110;
         mario->position = party->position;
         {
-            Vec v = party->position;
-            marioUpdateCamCollision(v);
+            Vec v;
+            Vec* pv = &v;
+            v = party->position;
+            marioUpdateCamCollision(*pv);
         }
     }
 }
 
+#undef VEC_S2
 #undef P_F
 #undef P_S
 #undef P_U16

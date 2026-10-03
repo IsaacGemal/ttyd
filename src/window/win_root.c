@@ -853,15 +853,58 @@ void sort_1_2_func(WindowWork* work) {
 }
 
 
+// winWazaGX's copy of winNameQuad. The only difference from winNameQuad is the
+// nested `tw` local around the width division: with the division inlined MWCC gives
+// winWazaGX's callee-saved FPRs a different colouring (w/w75/h in f26/f27/f17
+// instead of retail's f22/f23/f31) and the whole function cascades. Naming the
+// texture width first makes MWCC colour it exactly as retail. No other function uses
+// this copy, so winNameQuad stays untouched for the rest of the unit.
+static inline void wazaQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f32 h) {
+    GXTexObj texObj;
+    Mtx mtx;
+    f64 sy;
+    f64 sx;
+    f32 syf;
+
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, texId);
+    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    sy = __fabs(h);
+    sx = __fabs(w);
+    syf = (f32)sy / (f32)GXGetTexObjHeight(&texObj);
+#ifdef MUST_MATCH
+    // The named width temporary is what reproduces retail's FPR colouring; the
+    // natural inlined form is under #else.
+    { f32 tw = (f32)GXGetTexObjWidth(&texObj);
+    PSMTXScale(mtx, (f32)sx / tw, syf, float_1_8041d070); }
+#else
+    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), syf, float_1_8041d070);
+#endif
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x, y - h, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(x + w, y - h, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(x + w, y, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+}
+
 // The waza window frame: eleven textured quads (a 3x3 border plus inner strips),
-// each an inlined winNameQuad. They come in three rows: the top bar at y (height
+// each an inlined wazaQuad. They come in three rows: the top bar at y (height
 // 32), the body at y-32 (height h-48), and the bottom bar at y-h+16 (height 8/16).
 //
-// The instruction stream and schedule are identical to retail; the only `!!` diffs
-// are callee-saved FPR colouring (retail keeps w in f22, h in f31, w75 in f23; MWCC
-// puts ours in f26/f17/f27) and the anonymous i2f magic-double pool slot
-// (`lfd r31+0xb0` vs retail's `r31+0x540`), which is unit-wide .rodata order.
-// NONMATCHING (99.35%): callee-saved FPR colouring and the anonymous i2f double pool slot only.
+// Every instruction, register and stack slot now matches retail. The only `!!`
+// rows left are the anonymous compiler-pooled double constants (`lfd r31+0x180`
+// vs retail's `r31+0x540` for 32.0, and the i2f magic double `r31+0xe8` vs
+// `r31+0x4e0`); those live in the unit's shared .rodata and only settle once the
+// other functions in this unit define their own .rodata (retail's base object
+// `str_802F3FE8` has ~0x360 more bytes in front of them). They clear on link.
+// NONMATCHING (99.97%): anonymous compiler-pool double offsets only (unit-wide .rodata order).
 void winWazaGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
     GXSetBlendMode(0, 1, 0, 0);
     GXSetZCompLoc(0);
@@ -884,17 +927,17 @@ void winWazaGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
 
     {
     f32 w75 = 0.75f * w;
-    winNameQuad(work, 0x98, x, y, w75, 32.0f);
-    winNameQuad(work, 0x9A, x + w75, y, (w - w75) - 16.0f, 32.0f);
-    winNameQuad(work, 0x9B, x + (w - 16.0f), y, 16.0f, 32.0f);
-    winNameQuad(work, 0xA2, x, y - 32.0f, w75, (h - 32.0f) - 16.0f);
-    winNameQuad(work, 0x9E, x + w75, y - 32.0f, (w - w75) - 8.0f, (h - 32.0f) - 16.0f);
-    winNameQuad(work, 0xA1, x + (w - 8.0f), y - 32.0f, 8.0f, (h - 32.0f) - 16.0f);
-    winNameQuad(work, 0x9E, x + w75, y - (h - 16.0f), (w - w75) - 8.0f, 8.0f);
-    winNameQuad(work, 0xA1, x + (w - 8.0f), y - (h - 16.0f), 8.0f, 8.0f);
-    winNameQuad(work, 0x9C, x, y - (h - 16.0f), w75, 16.0f);
-    winNameQuad(work, 0x9F, x + w75, y - (h - 8.0f), (w - w75) - 16.0f, 8.0f);
-    winNameQuad(work, 0x9D, x + (w - 16.0f), y - (h - 16.0f), 16.0f, 16.0f);
+    wazaQuad(work, 0x98, x, y, w75, 32.0f);
+    wazaQuad(work, 0x9A, x + w75, y, (w - w75) - 16.0f, 32.0f);
+    wazaQuad(work, 0x9B, x + (w - 16.0f), y, 16.0f, 32.0f);
+    wazaQuad(work, 0xA2, x, y - 32.0f, w75, (h - 32.0f) - 16.0f);
+    wazaQuad(work, 0x9E, x + w75, y - 32.0f, (w - w75) - 8.0f, (h - 32.0f) - 16.0f);
+    wazaQuad(work, 0xA1, x + (w - 8.0f), y - 32.0f, 8.0f, (h - 32.0f) - 16.0f);
+    wazaQuad(work, 0x9E, x + w75, y - (h - 16.0f), (w - w75) - 8.0f, 8.0f);
+    wazaQuad(work, 0xA1, x + (w - 8.0f), y - (h - 16.0f), 8.0f, 8.0f);
+    wazaQuad(work, 0x9C, x, y - (h - 16.0f), w75, 16.0f);
+    wazaQuad(work, 0x9F, x + w75, y - (h - 8.0f), (w - w75) - 16.0f, 8.0f);
+    wazaQuad(work, 0x9D, x + (w - 16.0f), y - (h - 16.0f), 16.0f, 16.0f);
     }
 }
 
@@ -1344,68 +1387,68 @@ void winBgMain(WindowWork* work) {
     }
 }
 
-// bubble sort of the 0xc-byte records at work+0x404. Writing the swap as a
-// `SortRec` (3-word) copy `t = *pa; *pa = *pb; *pb = t;` reproduces the original's
-// interleaved load/store sequence and its stack spills at 0x14/0x18/0x1c exactly.
-// NONMATCHING (96.69%): the instruction sequence is identical; only MWCC's
-// register coloring differs (the original keeps loop counters i/j in r5/r6 and the
-// table base in r11, ours uses r10/r11 and r9; the temps shift with them).
+// Bubble sort of the 0xC-byte records at work+0x404 (the item id is the s16 at
+// +0x40C). Writing the two record addresses as indices (`work + i*0xC`) rather than
+// raw `pa`/`pb` pointers is what makes MWCC strength-reduce them to the target's
+// pa=r4/pb=r12 induction variables and colour the item-table base r11; the pointer
+// form leaves those in r9/r10/r11. The `SortRec` (3-word) copy `t = *pa; *pa = *pb;
+// *pb = t;` reproduces the original's interleaved load/store sequence and its stack
+// spills at 0x14/0x18/0x1c exactly.
 void sort_4_3_func(WindowWork* work) {
+    u8* base = (u8*)work;
     if (WW_S32(work, 0x180) == 0) {
+        s32 ida;
+        s32 idb;
         s32 i;
-        u8* pa = (u8*)work;
+        s32 j;
+        s32 swap;
 
         for (i = 0; i < WW_S32(work, 0xD64) - 1; i++) {
-            s32 j = i + 1;
-            u8* pb = (u8*)work + j * 0xC;
-
+            j = i + 1;
             while (j < WW_S32(work, 0xD64)) {
-                s32 swap = 0;
-                ItemData* da = &itemDataTable[(s16)*(u32*)(pa + 0x40C)];
-                ItemData* db = &itemDataTable[(s16)*(u32*)(pb + 0x40C)];
+                ida = (s16)*(u32*)(base + i * 0xC + 0x40C);
+                idb = (s16)*(u32*)(base + j * 0xC + 0x40C);
+                swap = 0;
 
-                if (da->bp_cost > db->bp_cost) {
+                if (itemDataTable[ida].bp_cost > itemDataTable[idb].bp_cost) {
                     swap = 1;
-                } else if (da->bp_cost == db->bp_cost && da->type_sort_order > db->type_sort_order) {
+                } else if (itemDataTable[ida].bp_cost == itemDataTable[idb].bp_cost && itemDataTable[ida].type_sort_order > itemDataTable[idb].type_sort_order) {
                     swap = 1;
                 }
                 if (swap) {
-                    SortRec t = *(SortRec*)(pa + 0x404);
-                    *(SortRec*)(pa + 0x404) = *(SortRec*)(pb + 0x404);
-                    *(SortRec*)(pb + 0x404) = t;
+                    SortRec t = *(SortRec*)(base + i * 0xC + 0x404);
+                    *(SortRec*)(base + i * 0xC + 0x404) = *(SortRec*)(base + j * 0xC + 0x404);
+                    *(SortRec*)(base + j * 0xC + 0x404) = t;
                 }
-                pb += 0xC;
                 j++;
             }
-            pa += 0xC;
         }
     } else {
+        s32 ida;
+        s32 idb;
         s32 i;
-        u8* pa = (u8*)work;
+        s32 j;
+        s32 swap;
 
         for (i = 0; i < WW_S32(work, 0xD64) - 1; i++) {
-            s32 j = i + 1;
-            u8* pb = (u8*)work + j * 0xC;
-
+            j = i + 1;
             while (j < WW_S32(work, 0xD64)) {
-                s32 swap = 0;
-                ItemData* da = &itemDataTable[(s16)*(u32*)(pa + 0x40C)];
-                ItemData* db = &itemDataTable[(s16)*(u32*)(pb + 0x40C)];
+                ida = (s16)*(u32*)(base + i * 0xC + 0x40C);
+                idb = (s16)*(u32*)(base + j * 0xC + 0x40C);
+                swap = 0;
 
-                if (da->bp_cost < db->bp_cost) {
+                if (itemDataTable[ida].bp_cost < itemDataTable[idb].bp_cost) {
                     swap = 1;
-                } else if (da->bp_cost == db->bp_cost && da->type_sort_order < db->type_sort_order) {
+                } else if (itemDataTable[ida].bp_cost == itemDataTable[idb].bp_cost && itemDataTable[ida].type_sort_order < itemDataTable[idb].type_sort_order) {
                     swap = 1;
                 }
                 if (swap) {
-                    SortRec t = *(SortRec*)(pa + 0x404);
-                    *(SortRec*)(pa + 0x404) = *(SortRec*)(pb + 0x404);
-                    *(SortRec*)(pb + 0x404) = t;
+                    SortRec t = *(SortRec*)(base + i * 0xC + 0x404);
+                    *(SortRec*)(base + i * 0xC + 0x404) = *(SortRec*)(base + j * 0xC + 0x404);
+                    *(SortRec*)(base + j * 0xC + 0x404) = t;
                 }
-                pb += 0xC;
                 j++;
             }
-            pa += 0xC;
         }
     }
 
@@ -1414,67 +1457,74 @@ void sort_4_3_func(WindowWork* work) {
     WW_S32(work, 0x3F0) = WW_S32(work, 0x3E8) / 8;
 }
 
-// NONMATCHING (98.13%): same bubble sort as sort_4_3 but over the s16 array at
-// work+0xeb8 (index +0xF0). Loops/branches match; only MWCC's register assignment
-// differs (original: i=r12, j=r31, pb=r6; ours: i=r6, j=r8, pb=r9).
+// Same bubble sort as sort_4_3 but over the s16 array at work+0xEB8 (index +0xF0).
+// Writing the two record addresses as indices (`work + i*2`) rather than the raw
+// `pa`/`pb` pointers lets MWCC strength-reduce them to the same pa=r7/pb=r6
+// induction variables the target uses. The per-branch declaration order of the
+// locals reproduces the target's register colours (j=r31/swap=r30 in the ascending
+// branch, swap=r30/j=r31 in the descending one); the orders differ between the two
+// branches only for that reason.
 void sort_5_3_func(WindowWork* work) {
+    u8* base = (u8*)work;
     if (WW_S32(work, 0x180) == 0) {
+        s16 la;
+        s16 lb;
         s32 i;
-        u8* pa = (u8*)work;
+        s32 j;
+        s16 ia;
+        s16 ib;
+        s32 swap;
 
         for (i = 0; i < WW_S32(work, 0xE94) - 1; i++) {
-            s32 j = i + 1;
-            u8* pb = (u8*)work + j * 2;
-
+            j = i + 1;
             while (j < WW_S32(work, 0xE94)) {
-                s16 la = *(s16*)(pa + 0xEB8);
-                s16 lb = *(s16*)(pb + 0xEB8);
-                ItemData* da = &itemDataTable[(s16)((s32)la + 0xF0)];
-                ItemData* db = &itemDataTable[(s16)((s32)lb + 0xF0)];
-                s32 swap = 0;
+                la = *(s16*)(base + i * 2 + 0xEB8);
+                lb = *(s16*)(base + j * 2 + 0xEB8);
+                ia = (s16)((s32)la + 0xF0);
+                ib = (s16)((s32)lb + 0xF0);
+                swap = 0;
 
-                if (da->bp_cost > db->bp_cost) {
+                if (itemDataTable[ia].bp_cost > itemDataTable[ib].bp_cost) {
                     swap = 1;
-                } else if (da->bp_cost == db->bp_cost && da->type_sort_order > db->type_sort_order) {
+                } else if (itemDataTable[ia].bp_cost == itemDataTable[ib].bp_cost && itemDataTable[ia].type_sort_order > itemDataTable[ib].type_sort_order) {
                     swap = 1;
                 }
                 if (swap) {
-                    *(s16*)(pa + 0xEB8) = lb;
-                    *(s16*)(pb + 0xEB8) = la;
+                    *(s16*)(base + i * 2 + 0xEB8) = lb;
+                    *(s16*)(base + j * 2 + 0xEB8) = la;
                 }
-                pb += 2;
                 j++;
             }
-            pa += 2;
         }
     } else {
+        s16 la;
+        s16 lb;
         s32 i;
-        u8* pa = (u8*)work;
+        s32 swap;
+        s32 j;
+        s16 ia;
+        s16 ib;
 
         for (i = 0; i < WW_S32(work, 0xE94) - 1; i++) {
-            s32 j = i + 1;
-            u8* pb = (u8*)work + j * 2;
-
+            j = i + 1;
             while (j < WW_S32(work, 0xE94)) {
-                s16 la = *(s16*)(pa + 0xEB8);
-                s16 lb = *(s16*)(pb + 0xEB8);
-                ItemData* da = &itemDataTable[(s16)((s32)la + 0xF0)];
-                ItemData* db = &itemDataTable[(s16)((s32)lb + 0xF0)];
-                s32 swap = 0;
+                la = *(s16*)(base + i * 2 + 0xEB8);
+                lb = *(s16*)(base + j * 2 + 0xEB8);
+                ia = (s16)((s32)la + 0xF0);
+                ib = (s16)((s32)lb + 0xF0);
+                swap = 0;
 
-                if (da->bp_cost < db->bp_cost) {
+                if (itemDataTable[ia].bp_cost < itemDataTable[ib].bp_cost) {
                     swap = 1;
-                } else if (da->bp_cost == db->bp_cost && da->type_sort_order < db->type_sort_order) {
+                } else if (itemDataTable[ia].bp_cost == itemDataTable[ib].bp_cost && itemDataTable[ia].type_sort_order < itemDataTable[ib].type_sort_order) {
                     swap = 1;
                 }
                 if (swap) {
-                    *(s16*)(pa + 0xEB8) = lb;
-                    *(s16*)(pb + 0xEB8) = la;
+                    *(s16*)(base + i * 2 + 0xEB8) = lb;
+                    *(s16*)(base + j * 2 + 0xEB8) = la;
                 }
-                pb += 2;
                 j++;
             }
-            pa += 2;
         }
     }
 

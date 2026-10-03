@@ -1670,9 +1670,17 @@ void BattleAudienceCtrlProcessKinopioFireSub(s32 index) {
 }
 
 
-// NONMATCHING (98.25%): all constants are literals. Case 9 is the only thing left and it is pure
-// register colouring the compiler fixes regardless of source shape: target id=r28, col=r5,
-// 0x14=r6, 0x7fff=r7, magic=f4, 0.1=f2, row=f1, x=f3; ours r27/r6/r7/r5 and f1/f3/f2/f4.
+// Case 9's instruction sequence is byte-identical to the original (the sibling
+// `BattleAudience_Entry` shape `r = rand()*10/0x7fff; x = (f32)(row*0x19 - 0xeb + r);`
+// was the missing piece); the remaining diffs are pure register allocation that MWCC's
+// allocator fixes regardless of source shape. GPR: target id=r28, ours r27. FP: target
+// magic=f4, 0.1=f2, row=f1, xi=f3, zterm=f0; ours magic=f1, 0.1=f3, row=f2, xi=f4, zterm=f1
+// (the last conversion coalesces with the magic double). Tried without moving it: named vs
+// literal 0.1, separate rowf/xi/zf temps, all decl orders, `static inline` + always_inline
+// helper, block/do-while wrappers, and every opt_*/pool_data/scheduling/optimization_level
+// pragma. Compiler hangs (avoid): reusing `i`/`found`/`count`/a function-scope `id` here and
+// in the case 7 loop. All compilers 1.3-2.7 give the same 15 diffs. Queue for the permuter.
+// NONMATCHING (99.67%): 15 register diffs in case 9 (id r28/r27; FP register permutation).
 void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
@@ -1786,11 +1794,10 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	case 9:
 		if (member->position.y <= -100.0f) {
 			s32 id = member->field_0x12C;
-			s32 r = rand();
+			s32 r = rand() * 10 / 0x7fff;
 			s32 col = id / 0x14;
 			s32 row = id % 0x14;
-			s32 xi = row * 0x19 - 0xeb;
-			f32 x = (f32)(xi + (r * 0xa) / 0x7fff);
+			f32 x = (f32)(row * 0x19 - 0xeb + r);
 
 			f32 z = 0.1f * (f32)row + (f32)(col * 0x1e + 0x73);
 			member->position.x = x;

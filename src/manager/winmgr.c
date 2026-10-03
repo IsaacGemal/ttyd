@@ -87,8 +87,11 @@ const Vec vec3_802ffab0 = { 0, 0, 0 };
 const Vec vec3_802ffabc = { 1, 1, 1 };
 const Vec vec3_802ffac8 = { 0, 0, 0 };
 const Vec vec3_802ffad4 = { 1, 1, 1 };
-const Vec vec3_802ffae0 = { 0, 0, 0 };
-const Vec vec3_802ffaec = { 0.15, 0.15, 0.15 };
+// Non-const by design: MWCC then can't prove select_disp's winIconSet call doesn't write them, so it
+// reloads them each dots-loop iteration (matching the original) instead of hoisting them into
+// callee-saved registers. The explicit section keeps them in .rodata at the original offsets.
+__declspec(section ".rodata") Vec vec3_802ffae0 = { 0, 0, 0 };
+__declspec(section ".rodata") Vec vec3_802ffaec = { 0.15, 0.15, 0.15 };
 const Vec vec3_802ffaf8 = { 0, 0, 0 };
 const Vec vec3_802ffb04 = { 1, 1, 1 };
 const Vec vec3_802ffb10 = { 0, 0, 0 };
@@ -1352,20 +1355,23 @@ void select_main(WinMgrEntry* entry) {
 #pragma opt_common_subs reset
 
 
-// Register allocation: the item loop now matches the original register for register (entry r31,
-// select r25, rodata r28, itemDataTable r29, 0x4330 r30, counter r24, rowoff r26, itemoff r27,
-// item r22, value r23). What is left is the dots (`if (select->field_0x38)`) loop: its six
-// tmpDot/scaleDot word temps get callee-saved registers and its 0x4330 magic r20 here, where the
-// original keeps the three long-lived tmpDot words in caller-saved r10/r11/r12 and the magic in
-// r22. That forces r20/r21 to be saved too (`stmw r20` vs `stmw r22`) and makes the six vec loads
-// hoist to the top of the loop instead of interleaving with their stores; the same r20/r21 leak
-// then colours the edge block's tmpEdge.x and the title's message width. The scheduler also drops
-// the original's dead `lwz r0, 0x38(r25); cmpwi r0, 0x0` compare at the top of the item loop.
-// Finally the (f32)int pool double still differs: the original references the named
-// double_to_int_802fff00 at .rodata+0x468 where this build emits an anonymous copy at +0x548 (the
-// same documented limitation as select_disp_luigi).
-// NONMATCHING (97.76%): the dots loop's colouring (two extra saved registers, r20/r21) and its
-// vec-load scheduling, the dead select->field_0x38 compare, and the (f32)int pool double.
+// The item loop matches register for register (entry r31, select r25, rodata r28, itemDataTable r29,
+// 0x4330 r30, counter r24, rowoff r26, itemoff r27, item r22, value r23). The dots loop matches too:
+// vec3_802ffae0/vec3_802ffaec are declared non-const (section ".rodata") above so MWCC cannot prove
+// the winIconSet call leaves them alone and therefore reloads them inside the loop in caller-saved
+// registers (r10/r11/r12) instead of hoisting them into callee-saved r21/r27/r29 and pulling r20/r21
+// into the frame; the scaleDot/tmpDot assignments also have to sit before the dotX/dotY computation
+// to reproduce the original schedule.
+// What is left (99.73%):
+//  - 15 (f32)int pool doubles: the original reads the named double_to_int_802fff00 at .rodata+0x468
+//    and double_to_int_mask_802fff58 at +0x4c0; this build emits anonymous copies at +0x548/+0x550.
+//    Same documented project-wide limitation as select_disp_luigi, no source spelling changes it.
+//  - the two dat_80421a30 initialisations are stored 0x30 then 0x34 in the original and 0x34 then
+//    0x30 here (a pure store-scheduling difference around the descriptorId flags load).
+//  - the original keeps a dead `lwz r0, 0x38(r25); cmpwi r0, 0x0` pair at the top of the item loop;
+//    the scheduler drops it here.
+// NONMATCHING (99.73%): the pool doubles above, the two swapped colorWhite stores, and the dead
+// select->field_0x38 compare pair.
 void select_disp(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 i;
@@ -1526,10 +1532,10 @@ void select_disp(WinMgrEntry* entry) {
             f32 dotX;
             f32 dotY;
 
+            scaleDot = vec3_802ffaec;
+            tmpDot = vec3_802ffae0;
             dotX = (f32)(entry->field_0x18 + (i * entry->field_0x20) / 31);
             dotY = (f32)(entry->field_0x1C - 0x38) + select->field_0x1C;
-            tmpDot = vec3_802ffae0;
-            scaleDot = vec3_802ffaec;
             tmpDot.x = dotX;
             tmpDot.y = dotY;
             posDot = tmpDot;

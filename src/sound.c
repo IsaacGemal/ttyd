@@ -526,16 +526,13 @@ BOOL SoundSLibLoadDVD(const char* path) { // 1:1
     return TRUE;
 }
 
-// NONMATCHING (97.77%): 2 instructions differ, plus register differences.
-BOOL SoundDropData(void) {
+static inline void _ssDropSeq(void) {
     SoundSong* song;
     SoundEffect* effect;
     SoundDVD* dvd;
     SoundStream* stream;
-    SoundGroup *group, *temp;
-    u32 i, *j;
+    u32 i;
 
-    group = sound.groups;
     for (i = 0; i < 4; i++) {
         song = &sound.songs[i];
         if (sndSeqGetValid(song->seqId)) {
@@ -553,7 +550,6 @@ BOOL SoundDropData(void) {
             effect->flags = 0;
         }
     }
-
     for (i = 0; i < 2; i++) {
         dvd = &sound.dvds[i];
         if (dvd->flags & 3) {
@@ -564,10 +560,9 @@ BOOL SoundDropData(void) {
             DVDClose(&dvd->info);
         }
     }
-
     for (i = 0; i < 3; i++) {
-        stream = &sound.streams[i];
-        if (stream->flags) {
+        if (sound.streams[i].flags) {
+            stream = &sound.streams[i];
             if (!sound.unk20C) {
                 sound.interrupts = OSDisableInterrupts();
             }
@@ -590,7 +585,21 @@ BOOL SoundDropData(void) {
             sound.unk104 = -1;
         }
     }
+}
 
+// NONMATCHING (99.71%): instruction stream, branches and constants match; only callee-saved
+// pointer/offset register choices in the second half's effects and dvd loops differ. The streams
+// loops match once the test reads `sound.streams[i].flags` and `stream` is assigned inside the block.
+BOOL SoundDropData(void) {
+    SoundSong* song;
+    SoundEffect* effect;
+    SoundDVD* dvd;
+    SoundStream* stream;
+    SoundGroup *group, *temp;
+    u32 i;
+
+    group = sound.groups;
+    _ssDropSeq();
     sndSilence();
 
     for (i = 0; i < 4; i++) {
@@ -610,7 +619,6 @@ BOOL SoundDropData(void) {
             effect->flags = 0;
         }
     }
-
     for (i = 0; i < 2; i++) {
         dvd = &sound.dvds[i];
         if (dvd->flags & 3) {
@@ -621,10 +629,9 @@ BOOL SoundDropData(void) {
             DVDClose(&dvd->info);
         }
     }
-
     for (i = 0; i < 3; i++) {
-        stream = &sound.streams[i];
-        if (stream->flags) {
+        if (sound.streams[i].flags) {
+            stream = &sound.streams[i];
             if (!sound.unk20C) {
                 sound.interrupts = OSDisableInterrupts();
             }
@@ -647,9 +654,8 @@ BOOL SoundDropData(void) {
             sound.unk104 = -1;
         }
     }
-
     for (i = 0; i < sound.dataId; i++) {
-        for (j = sound.groupCount; *j;) {
+        while (sound.groupCount[i]) {
             sndPopGroup();
             sound.groupCount[i]--;
         }
@@ -2353,11 +2359,10 @@ void SoundSSMainInt(void) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (96.03%): second half matches byte-for-byte now that sound.unk330 is read unsigned (lhz) and
-// the toggle uses clrlslwi; only the first loop's r6/r7/r8 assignment (i/dest/base) and one hoisted li r4 differ.
+// The two loops share `length` as their counter; the original keeps the first
+// loop's counter in r3 and reuses r6 for the second, and `src`/`dest` both start at &sound.unk33C.
 void SoundAIDMACallback(void) {
-    s32 i;
-    u32 length;
+    s32 length;
     u8* address;
     u16* dest;
     s16* src;
@@ -2369,18 +2374,18 @@ void SoundAIDMACallback(void) {
     address = sound.dmaAddress;
     sound.dmaLength = length;
 
-    dest = (u16*)&sound.unk33C[0];
-    for (; (s32)length != 0; length -= 2) {
+    src = (s16*)&sound.unk33C[0];
+    dest = (u16*)src;
+    for (; length != 0; length -= 2) {
         *dest = (address[0] << 8) | address[1];
         dest++;
         address += 2;
     }
 
-    src = (s16*)&sound.unk33C[0];
     sel = sound.unk330;
     dest = (u16*)(sound.unk5C0 + (sel << 11));
     dest += sound.unk15C0;
-    for (i = sound.dmaLength >> 1; i != 0; i -= 2) {
+    for (length = sound.dmaLength >> 1; length != 0; length -= 2) {
         *dest = *src;
         src += 2;
         dest++;

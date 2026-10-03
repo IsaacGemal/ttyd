@@ -472,13 +472,30 @@ void winMarioInit2(WindowWork* work) {
 }
 
 
-// NONMATCHING (99.97%): every instruction matches except five
-// `addi rN, r30, str_802F5650+...` rodata immediates (0x830..0x858); they land
-// at 0xb8..0xe0 until fukidashi/winMarioDisp own the earlier literals.
+// The five anim-name strings live in .rodata past the unit's msg tables; the
+// target reaches them through the r30 rodata base (`addi rN, r30, 0x830..0x858`).
+// Named literals pool at the section start instead, so the matching build reads
+// them through `vp` (same base winMarioDisp uses) and the natural form under #else.
 void winMarioInit(WindowWork* work) {
+#ifdef MUST_MATCH
+    const u8* vp = (const u8*)&str_802F5650;
+#endif
     PouchData* pouch = pouchGetPtr();
     const char* anim;
     s32 i;
+#ifdef MUST_MATCH
+#define D_MARIO ((const char*)(vp + 0x830))
+#define A_MARIO ((const char*)(vp + 0x838))
+#define A_MARIO_L ((const char*)(vp + 0x840))
+#define A_MARIO_W ((const char*)(vp + 0x84c))
+#define A_MARIO_WL ((const char*)(vp + 0x858))
+#else
+#define D_MARIO "d_mario"
+#define A_MARIO "a_mario"
+#define A_MARIO_L "a_mario_l"
+#define A_MARIO_W "a_mario_w"
+#define A_MARIO_WL "a_mario_wl"
+#endif
 
     if (work->flags & 0x2000) {
         anim = str_8041D580;
@@ -496,27 +513,32 @@ void winMarioInit(WindowWork* work) {
             anim = str_8041D70C;
             break;
         }
-        WW_S32(work, 0x188) = animPoseEntry("d_mario", 0);
+        WW_S32(work, 0x188) = animPoseEntry(D_MARIO, 0);
         animPoseSetAnim(WW_S32(work, 0x188), anim, 1);
     } else {
-        anim = "a_mario";
+        anim = A_MARIO;
         switch (marioGetColor()) {
         case 0:
-            anim = "a_mario";
+            anim = A_MARIO;
             break;
         case 1:
-            anim = "a_mario_l";
+            anim = A_MARIO_L;
             break;
         case 2:
-            anim = "a_mario_w";
+            anim = A_MARIO_W;
             break;
         case 3:
-            anim = "a_mario_wl";
+            anim = A_MARIO_WL;
             break;
         }
         WW_S32(work, 0x188) = animPoseEntry(anim, 0);
         animPoseSetAnim(WW_S32(work, 0x188), str_8041D578, 1);
     }
+#undef D_MARIO
+#undef A_MARIO
+#undef A_MARIO_L
+#undef A_MARIO_W
+#undef A_MARIO_WL
 
     animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0x1800);
     if (marioGetPtr()->flags & 0x40000000) {
@@ -542,9 +564,17 @@ void winMarioInit(WindowWork* work) {
 #else
 #define FUKI_VEC(off, sym) sym
 #endif
+// Match shape (same as win_item's winItemMkVec): building the modified Vec in an
+// inline that returns it puts the caller's translate temp in the target's slot.
+static inline Vec fukiMkVec(Vec base, f32 x, f32 y) {
+    base.x = x;
+    base.y = y;
+    return base;
+}
 
-// NONMATCHING (98.85%): all calls, constants, branches and the 0x300 frame
-// match; only per-block stack-slot placement differs.
+// NONMATCHING (99.35%): same 50 calls and no differing immediates; only the
+// first winTexSet part's translate temp slot (0x2cc vs 0x278) and a few volatile
+// GPR colours differ - MWCC stack/register coloring.; permuter work.
 void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
 #ifdef MUST_MATCH
     const u8* vp;
@@ -573,23 +603,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         winTexSet(0xB1, tr, FUKI_VEC(0x228, vec3_802f5878), c1);
     }
     {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x234, vec3_802f5884);
-        tmp.x = x - float_230_8041d6ec;
-        tmp.y = y;
         c2 = dat_8041d5e0;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x240, vec3_802f5890), c2);
+        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x234, vec3_802f5884), x - float_230_8041d6ec, y), FUKI_VEC(0x240, vec3_802f5890), c2);
     }
     winIconInit();
     {
-        Vec tr,sc,tmp;
-        tmp = FUKI_VEC(0x24C, vec3_802f589c);
-        tmp.x = (x - float_230_8041d6ec) - float_6_8041d6f4;
-        tmp.y = y;
+        Vec sc,tr;
         c3 = dat_8041d5e4;
         sc = FUKI_VEC(0x258, vec3_802f58a8);
-        tr = tmp;
+        tr = fukiMkVec(FUKI_VEC(0x24C, vec3_802f589c), (x - float_230_8041d6ec) - float_6_8041d6f4, y);
         winIconSet(iconId, &tr, &sc, &c3);
     }
         }
@@ -612,23 +634,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         winTexSet(0xB1, tr, FUKI_VEC(0x228, vec3_802f5878), c1);
     }
     {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x234, vec3_802f5884);
-        tmp.x = x - float_210_8041d6f8;
-        tmp.y = y;
         c2 = dat_8041d5e0;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x240, vec3_802f5890), c2);
+        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x234, vec3_802f5884), x - float_210_8041d6f8, y), FUKI_VEC(0x240, vec3_802f5890), c2);
     }
     winIconInit();
     {
-        Vec tr,sc,tmp;
-        tmp = FUKI_VEC(0x24C, vec3_802f589c);
-        tmp.x = (x - float_210_8041d6f8) - float_6_8041d6f4;
-        tmp.y = y;
+        Vec sc,tr;
         c3 = dat_8041d5e4;
         sc = FUKI_VEC(0x258, vec3_802f58a8);
-        tr = tmp;
+        tr = fukiMkVec(FUKI_VEC(0x24C, vec3_802f589c), (x - float_210_8041d6f8) - float_6_8041d6f4, y);
         winIconSet(iconId, &tr, &sc, &c3);
     }
         }
@@ -651,23 +665,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
     }
     {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x1EC, vec3_802f583c);
-        tmp.x = x - float_80_8041d68c;
-        tmp.y = y;
         c2 = dat_8041d5d4;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x1F8, vec3_802f5848), c2);
+        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x1EC, vec3_802f583c), x - float_80_8041d68c, y), FUKI_VEC(0x1F8, vec3_802f5848), c2);
     }
     winIconInit();
     {
-        Vec tr,sc,tmp;
-        tmp = FUKI_VEC(0x204, vec3_802f5854);
-        tmp.x = (x - float_80_8041d68c) + float_6_8041d6f4;
-        tmp.y = y;
+        Vec sc,tr;
         c3 = dat_8041d5d8;
         sc = FUKI_VEC(0x210, vec3_802f5860);
-        tr = tmp;
+        tr = fukiMkVec(FUKI_VEC(0x204, vec3_802f5854), (x - float_80_8041d68c) + float_6_8041d6f4, y);
         winIconSet(iconId, &tr, &sc, &c3);
     }
         }
@@ -690,23 +696,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
     }
     {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x1EC, vec3_802f583c);
-        tmp.x = x - float_80_8041d68c;
-        tmp.y = y;
         c2 = dat_8041d5d4;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x1F8, vec3_802f5848), c2);
+        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x1EC, vec3_802f583c), x - float_80_8041d68c, y), FUKI_VEC(0x1F8, vec3_802f5848), c2);
     }
     winIconInit();
     {
-        Vec tr,sc,tmp;
-        tmp = FUKI_VEC(0x204, vec3_802f5854);
-        tmp.x = (x - float_80_8041d68c) + float_6_8041d6f4;
-        tmp.y = y;
+        Vec sc,tr;
         c3 = dat_8041d5d8;
         sc = FUKI_VEC(0x210, vec3_802f5860);
-        tr = tmp;
+        tr = fukiMkVec(FUKI_VEC(0x204, vec3_802f5854), (x - float_80_8041d68c) + float_6_8041d6f4, y);
         winIconSet(iconId, &tr, &sc, &c3);
     }
         }
@@ -729,23 +727,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
     }
     {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x1EC, vec3_802f583c);
-        tmp.x = x - float_30_8041d6fc;
-        tmp.y = y;
         c2 = dat_8041d5d4;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x1F8, vec3_802f5848), c2);
+        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x1EC, vec3_802f583c), x - float_30_8041d6fc, y), FUKI_VEC(0x1F8, vec3_802f5848), c2);
     }
     winIconInit();
     {
-        Vec tr,sc,tmp;
-        tmp = FUKI_VEC(0x204, vec3_802f5854);
-        tmp.x = (x - float_30_8041d6fc) + float_6_8041d6f4;
-        tmp.y = y;
+        Vec sc,tr;
         c3 = dat_8041d5d8;
         sc = FUKI_VEC(0x210, vec3_802f5860);
-        tr = tmp;
+        tr = fukiMkVec(FUKI_VEC(0x204, vec3_802f5854), (x - float_30_8041d6fc) + float_6_8041d6f4, y);
         winIconSet(iconId, &tr, &sc, &c3);
     }
         }
@@ -768,23 +758,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         winTexSet(0xB1, tr, FUKI_VEC(0x1E0, vec3_802f5830), c1);
     }
     {
-        Vec tr,tmp;
-        tmp = FUKI_VEC(0x1EC, vec3_802f583c);
-        tmp.x = x - float_30_8041d6fc;
-        tmp.y = y;
         c2 = dat_8041d5d4;
-        tr = tmp;
-        winTexSet(0xB1, tr, FUKI_VEC(0x1F8, vec3_802f5848), c2);
+        winTexSet(0xB1, fukiMkVec(FUKI_VEC(0x1EC, vec3_802f583c), x - float_30_8041d6fc, y), FUKI_VEC(0x1F8, vec3_802f5848), c2);
     }
     winIconInit();
     {
-        Vec tr,sc,tmp;
-        tmp = FUKI_VEC(0x204, vec3_802f5854);
-        tmp.x = (x - float_30_8041d6fc) + float_6_8041d6f4;
-        tmp.y = y;
+        Vec sc,tr;
         c3 = dat_8041d5d8;
         sc = FUKI_VEC(0x210, vec3_802f5860);
-        tr = tmp;
+        tr = fukiMkVec(FUKI_VEC(0x204, vec3_802f5854), (x - float_30_8041d6fc) + float_6_8041d6f4, y);
         winIconSet(iconId, &tr, &sc, &c3);
     }
         }

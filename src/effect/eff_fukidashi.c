@@ -15,27 +15,50 @@
 #include <dolphin/mtx.h>
 #include <math.h>
 
-extern u32 moja_model_vertex_tbl[];
-extern u32 moja_model_normal_tbl[];
-extern u32 moja_model_dl_0_tbl[];
-extern u8 moja_model_dl_0_size_tbl[];
-extern u32 moja_model_color0_tbl[];
-extern u32 chuchu_dt[];
 extern u32 unk_80422ff8;
 extern u32 unk_80422ffc;
 extern u32 unk_80423000;
 extern u32 unk_80423004;
 extern u32 unk_80423008;
 
+__declspec(section ".data") u8 lbl_8036BEA0[8] = {
+	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
+};
 
-const Vec vec3_802f3048 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3054 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3060 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f306C = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3078 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3084 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3090 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".data") u8 negone_one_374[8] = {
+	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
+};
 
+__declspec(section ".data") u8 lbl_8036BEB0[8] = {
+	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
+};
+
+__declspec(section ".data") u8 one_negone_373[8] = {
+	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
+};
+
+__declspec(section ".data") u8 lbl_8036BEC0[8] = {
+	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
+};
+
+__declspec(section ".data") u8 negone_one_360[8] = {
+	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
+};
+
+__declspec(section ".data") u8 lbl_8036BED0[8] = {
+	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
+};
+
+__declspec(section ".data") u8 one_negone_359[8] = {
+	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
+};
+
+u8 anim_data_tenten[] = {
+	0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02,
+	0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
+	0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
+	0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0xFF, 0x00,
+};
 u32 anim_data_bikkuri[] = {
 	0x00000102, 0x03050405, 0x05050505, 0x05050505, 0x05050505, 0x05050505, 0x05050505,
 	0x05050505, 0x05050505, 0x0505FF00,
@@ -50,12 +73,6 @@ u32 anim_data_loop[] = { 0x00F60000 };
 
 u32 anim_data_moja[] = { 0x00000101, 0x02020303, 0xF6000000 };
 
-u8 anim_data_tenten[] = {
-	0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02,
-	0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
-	0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
-	0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0xFF, 0x00,
-};
 
 static void* anim_data_table[] = {
 	anim_data_bikkuri, anim_data_hatena, anim_data_bikkuri, anim_data_loop,
@@ -75,6 +92,240 @@ void* anim_data_table_2[] = {
 	anim_data_bikkuri_2, anim_data_hatena_2, anim_data_bikkuri_2, anim_data_loop,
 	anim_data_tenten_2, anim_data_moja, anim_data_loop,
 };
+
+__declspec(section ".sdata") u8 gap_07_804114D4_sdata[12] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u32 moja_model_color0_tbl[8] = {
+	0x224EB7FF, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_1[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x05, 0x1B, 0x0D, 0x00, 0x1A, 0x0D,
+	0x00, 0x18, 0x0C, 0x00, 0x19, 0x0C, 0x00, 0x12,
+	0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_2[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x1C, 0x0E, 0x00, 0x1A, 0x0D,
+	0x00, 0x20, 0x0E, 0x00, 0x1B, 0x0D, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_3[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x1D, 0x0F, 0x00, 0x1C, 0x0E,
+	0x00, 0x21, 0x0F, 0x00, 0x20, 0x0E, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_4[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x1E, 0x10, 0x00, 0x1D, 0x0F,
+	0x00, 0x22, 0x10, 0x00, 0x21, 0x0F, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_5[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x1F, 0x06, 0x00, 0x1E, 0x10,
+	0x00, 0x23, 0x06, 0x00, 0x22, 0x10, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_6[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x24, 0x11, 0x00, 0x1F, 0x06,
+	0x00, 0x29, 0x11, 0x00, 0x23, 0x06, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_7[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x25, 0x12, 0x00, 0x24, 0x11,
+	0x00, 0x2A, 0x12, 0x00, 0x29, 0x11, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_8[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x26, 0x13, 0x00, 0x25, 0x12,
+	0x00, 0x2B, 0x13, 0x00, 0x2A, 0x12, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_9[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x27, 0x14, 0x00, 0x26, 0x13,
+	0x00, 0x2C, 0x14, 0x00, 0x2B, 0x13, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_10[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x28, 0x15, 0x00, 0x27, 0x14,
+	0x00, 0x2D, 0x15, 0x00, 0x2C, 0x14, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_11[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x2E, 0x0D, 0x00, 0x28, 0x15,
+	0x00, 0x33, 0x0D, 0x00, 0x2D, 0x15, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_12[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x2F, 0x0E, 0x00, 0x2E, 0x0D,
+	0x00, 0x34, 0x0E, 0x00, 0x33, 0x0D, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_13[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x30, 0x0F, 0x00, 0x2F, 0x0E,
+	0x00, 0x35, 0x0F, 0x00, 0x34, 0x0E, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_14[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x31, 0x10, 0x00, 0x30, 0x0F,
+	0x00, 0x36, 0x10, 0x00, 0x35, 0x0F, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_15[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x32, 0x06, 0x00, 0x31, 0x10,
+	0x00, 0x37, 0x06, 0x00, 0x36, 0x10, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_16[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x38, 0x11, 0x00, 0x32, 0x06,
+	0x00, 0x3D, 0x11, 0x00, 0x37, 0x06, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_17[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x39, 0x12, 0x00, 0x38, 0x11,
+	0x00, 0x3E, 0x12, 0x00, 0x3D, 0x11, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_18[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x3A, 0x13, 0x00, 0x39, 0x12,
+	0x00, 0x3F, 0x13, 0x00, 0x3E, 0x12, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_19[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x3B, 0x14, 0x00, 0x3A, 0x13,
+	0x00, 0x40, 0x14, 0x00, 0x3F, 0x13, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_20[32] ATTRIBUTE_ALIGN(32) = {
+	0x98, 0x00, 0x04, 0x3C, 0x16, 0x00, 0x3B, 0x14,
+	0x00, 0x41, 0x16, 0x00, 0x40, 0x14, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+__declspec(section ".sdata") u8 moja_model_dl_0_size_tbl[24] = {
+	0x03, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00,
+};
+__declspec(section ".data") u32 moja_model_vertex_tbl[104] = {
+	0xF6010000, 0x0000F757, 0x030004FF, 0xFB000600, 0x08A90000, 0x09000A00,
+	0x05000C00, 0x08A908A9, 0x0F000500, 0x0A001200, 0x0000F601, 0x0E000000,
+	0xF7571100, 0x04FFFB00, 0x140008A9, 0x00001700, 0x0A000500, 0x19FF08A9,
+	0x08A91D00, 0x05000A00, 0x20000000, 0x07FD1500, 0xF8810280, 0x1800F303,
+	0xFB011B00, 0xF101F381, 0x1E00F303, 0xEE032100, 0xF88107FD, 0x2300F881,
+	0x02802600, 0xF303FB01, 0x2900F101, 0xF3812C00, 0xF303EE03, 0x2F00F881,
+	0xEC013200, 0x0000EC01, 0x24000000, 0xEFD22700, 0x0BC1EFD2, 0x35000BC1,
+	0xF9D22A00, 0x1305062E, 0x2D001305, 0x102E3000, 0x0BC11400, 0x33000000,
+	0xF9D23800, 0x1305062E, 0x3B001305, 0x102E3E00, 0x0BC11400, 0x41000000,
+	0x0F393600, 0xF14F02B9, 0x3900E83A, 0xF3473C00, 0xE83AE6C7, 0x3F00F14F,
+	0xE2004200, 0x00000F39, 0x4400F14F, 0x02B94700, 0xE83AF347, 0x49FFE83A,
+	0xE6C74CFF, 0xF14FE200, 0x50000000, 0xE7BB44FF, 0x11A2F6BB, 0x47FF1C88,
+	0x09454B00, 0x1C881845, 0x4E0011A2, 0x1E0050FF, 0x0000E7BB, 0x52FF11A2,
+	0xF6BB55FF, 0x1C880945, 0x58FF1C88, 0x18455BFF, 0x11A21E00, 0x5EFF0000,
+	0x175053FF, 0xEB6E05D0, 0x56FFDEB7, 0xF03059FF, 0xDEB7DEB0, 0x5CFFEB6E,
+	0xD8005FFF, 0x00001750, 0x61FFEB6E, 0x05D064FF, 0xDEB7F030, 0x67FFDEB7,
+	0xDEB06AFF, 0xEB6ED800, 0x6DFF0000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000,
+};
+
+__declspec(section ".data") u32 moja_model_normal_tbl[24] = {
+	0xC30010C9, 0x0020E000, 0x37000040, 0x20003737, 0x00204000, 0x003700E0,
+	0x2000C900, 0x00C0E000, 0xC9C900E0, 0xC10001CD, 0x0025ED00, 0x3C13003C,
+	0x33002533, 0x00DB1300, 0xC4ED00C4, 0xCD00DBC0, 0x0000C400, 0xED000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+__declspec(section ".data") u32 moja_model_dl_0_0[24] = {
+	0x98001918, 0x0C00120B, 0x00170B00, 0x110A0016, 0x0A001009, 0x00150900,
+	0x0F080014, 0x08000E07, 0x00130700, 0x0606000D, 0x06000505, 0x000C0500,
+	0x0404000B, 0x04000303, 0x000A0300, 0x02020009, 0x02000101, 0x00080100,
+	0x00000007, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+__declspec(section ".data") void* moja_model_dl_0_tbl[21] = {
+	moja_model_dl_0_0,
+	moja_model_dl_0_1,
+	moja_model_dl_0_2,
+	moja_model_dl_0_3,
+	moja_model_dl_0_4,
+	moja_model_dl_0_5,
+	moja_model_dl_0_6,
+	moja_model_dl_0_7,
+	moja_model_dl_0_8,
+	moja_model_dl_0_9,
+	moja_model_dl_0_10,
+	moja_model_dl_0_11,
+	moja_model_dl_0_12,
+	moja_model_dl_0_13,
+	moja_model_dl_0_14,
+	moja_model_dl_0_15,
+	moja_model_dl_0_16,
+	moja_model_dl_0_17,
+	moja_model_dl_0_18,
+	moja_model_dl_0_19,
+	moja_model_dl_0_20
+};
+
+__declspec(section ".data") u32 chuchu_dt[45] = {
+	0x00000000, 0x3F800000, 0x3F800000, 0xBE2D5555, 0x3F58EEEF, 0x3F493334,
+	0xBEBC71C7, 0x3F2D27D3, 0x3F0BBBBC, 0xBF020000, 0x3F0ACCCD, 0x3EB73333,
+	0xBF000000, 0x3F000000, 0x3E99999A, 0xBE8FD0AB, 0x3F143ACD, 0x3ED40949,
+	0x3DAC0831, 0x3F3D07C8, 0x3F247454, 0x3EFA89E6, 0x3F6DA2E2, 0x3F69E1B1,
+	0x3F546C51, 0x3F8CA406, 0x3F940949, 0x3F800000, 0x3F99999A, 0x3FA66666,
+	0x3F746509, 0x3F9CA062, 0x3FAA6A96, 0x3F439581, 0x3F99F9B8, 0x3FA6293C,
+	0x3EFDF3B6, 0x3F93404F, 0x3F9C0EBF, 0x3E5FEA28, 0x3F8A0ED6, 0x3F8E8788,
+	0x00000000, 0x3F800000, 0x3F800000,
+};
+
+
+
+const Vec vec3_802f3048 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f3054 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f3060 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f306C = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f3078 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f3084 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802f3090 = { 0.0f, 0.0f, 0.0f };
 
 const u32 dat_8041c5b0 = 0xFFFFFF00;
 const u32 dat_8041c5b4 = 0xA0A0A000;
@@ -158,18 +409,26 @@ end:
 #define FV(off, sym) (*(const Vec*)(fbase + (off)))
 // The original compares the c==-2/-3 fallthrough as unsigned (cmplwi); `c != 0` emits cmpwi.
 #define FUKI_C_NONZERO(x) ((u32)(x) != 0)
+// MUST_MATCH: retail copies each zero sfx Vec as a batched load-all/store-all. Reading the source
+// through a volatile word pointer pins the load order (x,y,z) and the z,y,x stores give MWCC the
+// x->r6, y->r5, z->r0 colouring (99.06%); the plain base+offset copy interleaves (95.61%).
+#define FV_COPY(vec, off, sym) do { \
+	volatile const u32* fv_vp = (volatile const u32*)(fbase + (off)); \
+	s32 fv_0 = fv_vp[0], fv_1 = fv_vp[1], fv_2 = fv_vp[2]; \
+	((u32*)&(vec))[2] = fv_2; ((u32*)&(vec))[1] = fv_1; ((u32*)&(vec))[0] = fv_0; \
+} while (0)
 #else
 #define FB(off, sym) (sym)
 #define FV(off, sym) (sym)
 #define FUKI_C_NONZERO(x) ((x) != 0)
+#define FV_COPY(vec, off, sym) ((vec) = (sym))
 #endif
 
-// The original loads x,y,z (r6,r5,r0) then stores x,y,z for each dead sfx-Vec copy; ours
-// interleaves the loads/stores because the base is already live. effFukidashiMain gets the batched
-// shape because its copy uses a named symbol; nothing tried (int/union temps, a return-by-value
-// helper, pool_data / opt_* / scheduling pragmas) batches the base+offset copy while keeping r31.
-// The natural forms sit under #else.
-// NONMATCHING (95.61%): the base register, frame and every other instruction match.
+// The four dead sfx-Vec copies are the only remaining difference: retail colours them r6,r5,r0,
+// MWCC's plain base+offset copy interleaves and reuses r0. FV_COPY (above) is the MUST_MATCH
+// workaround; see its comment.
+// NONMATCHING (99.06%): the base register and frame match; `entry`/`fbase` land on r29/r30 instead
+// of r30/r31 (a/r29 swap) and the copy's x/z words sit in r0/r6 rather than r6/r0.
 EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, f32 h, f32 i) {
 	EffectEntry* entry;
 	effFukidashiData* data;
@@ -238,7 +497,8 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 	if (c == -2 || c == -3) {
 		switch (a) {
 		case 0: {
-			Vec vec = FV(0x0C, vec3_802f3054);
+			Vec vec;
+			FV_COPY(vec, 0x0C, vec3_802f3054);
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
@@ -246,7 +506,8 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 			break;
 		}
 		case 1: {
-			Vec vec = FV(0x18, vec3_802f3060);
+			Vec vec;
+			FV_COPY(vec, 0x18, vec3_802f3060);
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
@@ -257,7 +518,8 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 	} else if (FUKI_C_NONZERO(c) && c != -1) {
 		switch (a) {
 		case 0: {
-			Vec vec = FV(0x24, vec3_802f306C);
+			Vec vec;
+			FV_COPY(vec, 0x24, vec3_802f306C);
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
@@ -265,7 +527,8 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 			break;
 		}
 		case 1: {
-			Vec vec = FV(0x30, vec3_802f3078);
+			Vec vec;
+			FV_COPY(vec, 0x30, vec3_802f3078);
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
@@ -353,54 +616,70 @@ void effFukidashiMain(EffectEntry* effect) {
 	}
 }
 
-#ifdef MUST_MATCH
-// Builds a GXColor from a base constant with the alpha byte overridden; returning it by value
-// gives each call site its own compiler temporary, as the original's frame layout shows.
-static inline GXColor fukidashiColor(const u32* base, u8 a) {
-	GXColor c = *(const GXColor*)base;
+// Builds a GXColor from a base constant with the alpha byte overridden. Calling it directly as the
+// GXSet*/iconDispGxCol argument (rather than through a named local) makes the compiler reserve the
+// by-value argument slot first and the source copy below it, which is the original's stack layout.
+static inline GXColor fukidashiColor(u8 a, GXColor c) {
 	c.a = a;
 	return c;
 }
-#endif
 
-// The remaining differences are stack/register allocation. The frame is 0x10
-// smaller (0x380 vs 0x390): the display-list loop's pointers land in r20-r22 where the original uses
-// r19-r21, so the prologue saves 12 GPRs instead of 13. The 15 GXColor temporaries are packed (all
-// source temps in 0x8-0x40, all call copies in 0x44-0x80) instead of the original's interleaved 8-byte
-// [source, copy] pairs, and the GXLightObj lands at 0xd8 (reusing a dead first-loop Mtx slot) instead
-// of 0x108, which rotates the Mtx slot assignment (the original's 0xd8 matrix is at 0x2c8 here). The
-// original also reaches moja_model_vertex_tbl / moja_model_normal_tbl / moja_model_dl_0_tbl / chuchu_dt
-// through one base register (r29 = lbl_8036BEA0); those arrays are extern here, so the compiler emits
-// lis/addi pairs instead (this resolves once the unit's .data is defined in this file). Everything
-// else matches the original's layout and code: the 10 Mtx slots, vec/v2, buf, tex, the case-2 Vec
-// temp+copy, s32 alpha, the gp->retraceCount reads, the FontGetMessageWidth float, and the u32
-// display-list counter (cmplwi, not cmpwi).
-// NONMATCHING (98.51%): stack/register allocation and the .data base register differ; see above.
+// The frame (0x390), prologue (stmw r19), the single .data base r29 = lbl_8036BEA0 and every GPR/FPR
+// match the original. The register/stack allocation is pinned by these source facts:
+//  - the unit's .data (the 8 compiler literal pairs, anim_data_tenten, moja_model_* and chuchu_dt) is
+//    now defined here in the original address order, so vertex/normal/dl_0_tbl/chuchu_dt are reached
+//    through r29 instead of lis/addi pairs;
+//  - the locals alphaA/alphaB, data, alpha, i/j, count are declared in that order (MWCC gives a
+//    later-declared callee-saved variable the lower register), putting count/i in r23/r24, alpha r25,
+//    data r26, alphaB r27, alphaA r28 as retail does;
+//  - the Mtx locals are declared in the order m5, m3, m0, m6, m1, m4, m2, m8, m9, then GXLightObj
+//    light, then m7. MWCC gives the first-declared Mtx the highest stack slot (0x2c8) and steps down
+//    0x30, so this order makes the first loop's m0=0x268, m1=0x208, m2=0x1a8, m3=0x298, m4=0x1d8,
+//    m5=0x2c8, m6=0x238, m8=0x178, m9=0x148, light=0x108 and m7=0xd8, matching retail; the case-2
+//    scratch uses m7 and the case-0/1 `PSMTXConcat(m3, m0, m0)` writes back to m0, as retail does;
+//  - the 15 colours are built through a `fukidashiColor(u8, GXColor)` inline called directly in each
+//    GXSet* argument (no separate `color` local). That makes the compiler reserve the by-value call
+//    argument slot first and the source copy below it, so the colours land as the original's
+//    interleaved 8-byte [source,copy] pairs instead of two 4-byte banks.
+//  - loading `cam = camGetPtr(camId)` before `alpha = data->field_0x48` makes the compiler hoist the
+//    .data base `lis r5, lbl_8036BEA0@ha` ahead of the userdata load (`lwz r26, 0xc(r4)`), as retail;
+//  - computing `count = 1` before the `mapSetMaterialFog()` call matches retail's `li r23, 0x1`;
+//  - the display-list loop lives in its own `static inline` (MWCC colours a loop's induction variables
+//    differently when it is a named call): this puts the table pointer in r19, `m` in r20 and the size
+//    pointer in r21 -- retail's colours -- and the chuchu_dt base falls into r19 as well;
+//  - `-width / 2.0f`, not `* 0.5f`, is what lands the last FPR in f1: the division folds to the same
+//    `fmuls` but negotiates the negation/constant operands the other way round.
+static inline void fukiDrawDl(void) {
+	u32 m;
+	for (m = 0; m < 0x15; m++) {
+		GXCallDisplayList((void*)moja_model_dl_0_tbl[m], moja_model_dl_0_size_tbl[m] << 5);
+	}
+}
+
 void effFukidashiDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
+	s32 alphaA, alphaB;
 	effFukidashiData* data = effect->userdata;
+	s32 alpha;
+	s32 i, j;
+	s32 count;
 	CameraEntry* cam;
 	GXTexObj tex;
-	GXColor color;
-	Mtx m0, m1, m2, m3;
-	Mtx m4, m5, m6, m7, m8, m9;
+	Mtx m5, m3, m0, m6, m1, m4, m2, m8, m9;
 	GXLightObj light;
+	Mtx m7;
 	Vec vec;
 	Vec v2;
-	s32 alpha;
-	s32 alphaA, alphaB;
-	s32 count;
-	s32 i, j;
 	u32 n;
 	s32 lang;
 	f32 width;
 	char buf[0x20];
 
-	alpha = data->field_0x48;
 	cam = camGetPtr(camId);
+	alpha = data->field_0x48;
+	count = 1;
 	mapSetMaterialFog();
 
-	count = 1;
 	if (data->field_0x24 != 0.0f) {
 		count = 2;
 	}
@@ -452,13 +731,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 			if (j == 0) {
 				effGetTexObj(5, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
-				#ifdef MUST_MATCH
-				color = fukidashiColor(&unk_80422ff8, alpha);
-				#else
-				color = *(GXColor*)&unk_80422ff8;
-				color.a = alpha;
-				#endif
-				GXSetChanMatColor(GX_COLOR0A0, color);
+				GXSetChanMatColor(GX_COLOR0A0, fukidashiColor(alpha, *(GXColor*)&unk_80422ff8));
 				PSMTXTrans(m0, 1.3f, -1.3f, 0.0f);
 				PSMTXConcat(m5, m0, m0);
 				PSMTXRotRad(m6, 'y', MTXDegToRad(data->field_0x24));
@@ -469,21 +742,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				effGetTexObj(4, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (i == 0) {
-					#ifdef MUST_MATCH
-					color = fukidashiColor(&dat_8041c5b0, alpha);
-					#else
-					color = *(GXColor*)&dat_8041c5b0;
-					color.a = alpha;
-					#endif
-					GXSetChanMatColor(GX_COLOR0A0, color);
+					GXSetChanMatColor(GX_COLOR0A0, fukidashiColor(alpha, *(GXColor*)&dat_8041c5b0));
 				} else {
-					#ifdef MUST_MATCH
-					color = fukidashiColor(&dat_8041c5b4, alpha);
-					#else
-					color = *(GXColor*)&dat_8041c5b4;
-					color.a = alpha;
-					#endif
-					GXSetChanMatColor(GX_COLOR0A0, color);
+					GXSetChanMatColor(GX_COLOR0A0, fukidashiColor(alpha, *(GXColor*)&dat_8041c5b4));
 				}
 				PSMTXTrans(m0, 0.0f, 0.0f, 0.0f);
 				PSMTXConcat(m5, m0, m0);
@@ -504,8 +765,8 @@ void effFukidashiDisp(CameraId camId, void* param) {
 			GXTexCoord2f32(0.0f, 1.0f);
 		}
 
-		PSMTXScale(m7, 1.3f, 1.3f, 1.3f);
-		PSMTXConcat(m5, m7, m5);
+		PSMTXScale(m8, 1.3f, 1.3f, 1.3f);
+		PSMTXConcat(m5, m8, m5);
 
 		switch (data->field_0x0) {
 			case 0:
@@ -522,25 +783,19 @@ void effFukidashiDisp(CameraId camId, void* param) {
 						GXLoadTexObj(&tex, GX_TEXMAP0);
 						PSMTXScale(m3, 0.16666667f, 1.0f, 1.0f);
 						PSMTXTrans(m0, (f32)data->field_0x38, 0.0f, 0.0f);
-						PSMTXConcat(m3, m0, m3);
-						GXLoadTexMtxImm(m3, 0x1E, 1);
+						PSMTXConcat(m3, m0, m0);
+						GXLoadTexMtxImm(m0, 0x1E, 1);
 						break;
 					case 1:
 						effGetTexObj(7, &tex);
 						GXLoadTexObj(&tex, GX_TEXMAP0);
 						PSMTXScale(m3, 0.25f, 1.0f, 1.0f);
 						PSMTXTrans(m0, (f32)data->field_0x38, 0.0f, 0.0f);
-						PSMTXConcat(m3, m0, m3);
-						GXLoadTexMtxImm(m3, 0x1E, 1);
+						PSMTXConcat(m3, m0, m0);
+						GXLoadTexMtxImm(m0, 0x1E, 1);
 						break;
 				}
-				#ifdef MUST_MATCH
-				color = fukidashiColor(&unk_80422ffc, alphaA);
-				#else
-				color = *(GXColor*)&unk_80422ffc;
-				color.a = alphaA;
-				#endif
-				GXSetTevColor(GX_TEVREG0, color);
+				GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaA, *(GXColor*)&unk_80422ffc));
 				PSMTXTransApply(m5, m8, 1.0f, -1.0f, 0.0f);
 				GXLoadPosMtxImm(m8, 0);
 				if (data->field_0x0 == 0) {
@@ -565,21 +820,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					GXTexCoord2f32(0.0f, 1.0f);
 				}
 				if (i == 0) {
-					#ifdef MUST_MATCH
-					color = fukidashiColor(&dat_8041c5b8, alphaB);
-					#else
-					color = *(GXColor*)&dat_8041c5b8;
-					color.a = alphaB;
-					#endif
-					GXSetTevColor(GX_TEVREG0, color);
+					GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5b8));
 				} else {
-					#ifdef MUST_MATCH
-					color = fukidashiColor(&dat_8041c5bc, alphaB);
-					#else
-					color = *(GXColor*)&dat_8041c5bc;
-					color.a = alphaB;
-					#endif
-					GXSetTevColor(GX_TEVREG0, color);
+					GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5bc));
 				}
 				GXLoadPosMtxImm(m5, 0);
 				if (data->field_0x0 == 0) {
@@ -614,13 +857,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
 				GXSetNumChans(1);
 				GXSetChanCtrl(4, GX_TRUE, GX_SRC_REG, GX_SRC_VTX, 1, 2, 2);
-				#ifdef MUST_MATCH
-				color = fukidashiColor(&dat_8041c5c0, alphaB);
-				#else
-				color = *(GXColor*)&dat_8041c5c0;
-				color.a = alphaB;
-				#endif
-				GXSetChanAmbColor(GX_COLOR0A0, color);
+				GXSetChanAmbColor(GX_COLOR0A0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5c0));
 				v2 = *(Vec*)&vec3_802f3090;
 				v2.x = data->position.x + 10.0f * (f32)cos((f32)gp->retraceCount / 10.0f);
 				v2.y = data->position.y;
@@ -628,23 +865,17 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				vec = v2;
 				PSMTXMultVec(camGetPtr(camId)->view, &vec, &vec);
 				GXInitLightPos(&light, vec.x, vec.y, vec.z);
-				#ifdef MUST_MATCH
-				color = fukidashiColor(&dat_8041c5c4, alphaB);
-				#else
-				color = *(GXColor*)&dat_8041c5c4;
-				color.a = alphaB;
-				#endif
-				GXInitLightColor(&light, color);
+				GXInitLightColor(&light, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5c4));
 				GXInitLightAttn(&light, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 				GXLoadLightObjImm(&light, GX_LIGHT0);
-				PSMTXTrans(m0, 5.0f, -8.0f, 0.0f);
-				PSMTXConcat(m5, m0, m8);
-				PSMTXRotRad(m0, 'z', 0.43633232f);
-				PSMTXConcat(m8, m0, m8);
-				PSMTXRotRad(m0, 'y', MTXDegToRad((f32)(gp->retraceCount * 10)));
-				PSMTXConcat(m8, m0, m8);
-				PSMTXScale(m0, 0.15f, 0.15f, 0.15f);
-				PSMTXConcat(m8, m0, m8);
+				PSMTXTrans(m7, 5.0f, -8.0f, 0.0f);
+				PSMTXConcat(m5, m7, m8);
+				PSMTXRotRad(m7, 'z', 0.43633232f);
+				PSMTXConcat(m8, m7, m8);
+				PSMTXRotRad(m7, 'y', MTXDegToRad((f32)(gp->retraceCount * 10)));
+				PSMTXConcat(m8, m7, m8);
+				PSMTXScale(m7, 0.15f, 0.15f, 0.15f);
+				PSMTXConcat(m8, m7, m8);
 				GXLoadPosMtxImm(m8, 0);
 				PSMTXInvXpose(m8, m9);
 				GXLoadNrmMtxImm(m9, 0);
@@ -659,37 +890,23 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
 				GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 				GXSetArray(GX_VA_CLR0, moja_model_color0_tbl, 4);
-				for (n = 0; n < 0x15; n++) {
-					GXCallDisplayList((void*)moja_model_dl_0_tbl[n], moja_model_dl_0_size_tbl[n] << 5);
-				}
+				fukiDrawDl();
 				break;
 
 			case 3:
 				if (data->field_0x3C >= 0 && data->field_0x3C <= 0x63) {
 					sprintf(buf, "%d", data->field_0x3C);
 					width = 10.0f + (f32)FontGetMessageWidth(buf);
-					PSMTXRotRad(m4, 'y', MTXDegToRad(data->field_0x24));
+					PSMTXRotRad(m6, 'y', MTXDegToRad(data->field_0x24));
 					PSMTXScale(m3, 0.5f, 0.5f, 0.5f);
-					PSMTXTrans(m0, -width * 0.5f, -10.0f, 0.0f);
-					PSMTXConcat(m2, m4, m8);
+					PSMTXTrans(m0, -width / 2.0f, -10.0f, 0.0f);
+					PSMTXConcat(m2, m6, m8);
 					PSMTXConcat(m8, m3, m8);
 					PSMTXConcat(m8, m0, m8);
 					if (i == 0) {
-						#ifdef MUST_MATCH
-						color = fukidashiColor(&dat_8041c5c8, alpha);
-						#else
-						color = *(GXColor*)&dat_8041c5c8;
-						color.a = alpha;
-						#endif
-						iconDispGxCol(m8, 0x400, 0x18B, color);
+						iconDispGxCol(m8, 0x400, 0x18B, fukidashiColor(alpha, *(GXColor*)&dat_8041c5c8));
 					} else {
-						#ifdef MUST_MATCH
-						color = fukidashiColor(&dat_8041c5cc, alpha);
-						#else
-						color = *(GXColor*)&dat_8041c5cc;
-						color.a = alpha;
-						#endif
-						iconDispGxCol(m8, 0x800, 0x18B, color);
+						iconDispGxCol(m8, 0x800, 0x18B, fukidashiColor(alpha, *(GXColor*)&dat_8041c5cc));
 					}
 					PSMTXTrans(m0, 10.0f, 22.0f, 0.0f);
 					PSMTXConcat(m8, m0, m8);
@@ -713,13 +930,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO);
 				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-				#ifdef MUST_MATCH
-				color = fukidashiColor(&unk_80423000, alphaB);
-				#else
-				color = *(GXColor*)&unk_80423000;
-				color.a = alphaB;
-				#endif
-				GXSetTevColor(GX_TEVREG0, color);
+				GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&unk_80423000));
 				effGetTexObj(8, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				for (j = 0; j < data->field_0x38; j++) {
@@ -750,13 +961,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				PSMTXTrans(m0, (f32)data->field_0x38, 0.0f, 0.0f);
 				PSMTXConcat(m3, m0, m3);
 				GXLoadTexMtxImm(m3, 0x1E, 1);
-				#ifdef MUST_MATCH
-				color = fukidashiColor(&unk_80423004, alphaB);
-				#else
-				color = *(GXColor*)&unk_80423004;
-				color.a = alphaB;
-				#endif
-				GXSetTevColor(GX_TEVREG0, color);
+				GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&unk_80423004));
 				GXLoadPosMtxImm(m5, 0);
 				GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 				GXPosition3f32(-7.0f, 7.0f, 0.0f);
@@ -773,7 +978,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				lang = gp->retraceCount % 15;
 				PSMTXIdentity(m0);
 				GXLoadTexMtxImm(m0, 0x1E, 1);
-				PSMTXTrans(m0, ((f32*)chuchu_dt)[lang * 3 + 0], 0.0f, 0.0f);
+				PSMTXTrans(m0, 0.0f, ((f32*)chuchu_dt)[lang * 3 + 0], 0.0f);
 				PSMTXScale(m3, 0.7f * ((f32*)chuchu_dt)[lang * 3 + 1], 0.7f * ((f32*)chuchu_dt)[lang * 3 + 2], 0.7f);
 				PSMTXRotRad(m6, 'y', MTXDegToRad(data->field_0x24));
 				PSMTXConcat(m0, m6, m0);
@@ -787,13 +992,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				effGetTexObj(0xA, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (i == 0) {
-					#ifdef MUST_MATCH
-					color = fukidashiColor(&unk_80423008, alphaA);
-					#else
-					color = *(GXColor*)&unk_80423008;
-					color.a = alphaA;
-					#endif
-					GXSetTevColor(GX_TEVREG0, color);
+					GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaA, *(GXColor*)&unk_80423008));
 					PSMTXTransApply(m5, m8, 1.0f, -1.0f, 0.0f);
 					PSMTXConcat(m8, m0, m8);
 					GXLoadPosMtxImm(m8, 0);
@@ -807,21 +1006,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					GXPosition3f32(-8.0f, -8.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 1.0f);
 					if (i == 0) {
-						#ifdef MUST_MATCH
-						color = fukidashiColor(&dat_8041c5d0, alphaB);
-						#else
-						color = *(GXColor*)&dat_8041c5d0;
-						color.a = alphaB;
-						#endif
-						GXSetTevColor(GX_TEVREG0, color);
+						GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5d0));
 					} else {
-						#ifdef MUST_MATCH
-						color = fukidashiColor(&dat_8041c5d4, alphaB);
-						#else
-						color = *(GXColor*)&dat_8041c5d4;
-						color.a = alphaB;
-						#endif
-						GXSetTevColor(GX_TEVREG0, color);
+						GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5d4));
 					}
 					PSMTXConcat(m5, m0, m8);
 					GXLoadPosMtxImm(m8, 0);
