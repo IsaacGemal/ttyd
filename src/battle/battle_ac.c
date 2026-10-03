@@ -131,6 +131,7 @@ extern const GuardFrames N_normal_guard_frames[];
 extern const GuardFrames N_superguard_frames[];
 #endif
 
+// NONMATCHING (34.62%): the body is written; the structure and register use still differ from retail.
 s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	BattleWork* work = _battleWorkPointer;
 	BattleWorkPad* pad = &work->actionCommands.pad;

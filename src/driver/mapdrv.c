@@ -1590,6 +1590,9 @@ static inline void* mapLoadFindChunk(MapHeader* header, const char* name) {
 	}
 	return NULL;
 }
+#ifndef MUST_MATCH
+static const Vec ml_zero_seed = { 0.0f, 0.0f, 0.0f };
+#endif
 static inline Vec mapLoadCorner(const Vec* seed, f32 x, f32 y, f32 z) {
 	Vec v = *seed;
 
@@ -1598,7 +1601,7 @@ static inline Vec mapLoadCorner(const Vec* seed, f32 x, f32 y, f32 z) {
 	v.z = z;
 	return v;
 }
-// NONMATCHING (21.94%): register allocation/numbering and the string literals. The original reaches the
+// NONMATCHING (90.26%): register allocation/numbering and the string literals. The original reaches the
 // literals as vec3_802c16d8+0x2d0 etc. because its .rodata owns that base; ours pools them and uses
 // lis/addi. Frame matches at 0x280; callee-saved r19-r31 vs the target's r17-r31.
 void _mapLoad(MapWork* wp, BOOL group, const char* map) {
@@ -1782,14 +1785,22 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	mapBuildTexture(wp->entries[group].rootMapObj, wp->entries[group].tpl, *(void**)((u8*)&wp->entries[group] + 0x94));
 	mapGetBoundingBox(&min, &max);
 
-	wp->entries[group].bbox[0] = mapLoadCorner((const Vec*)(base + 0x28), max.x, max.y, max.z);
-	wp->entries[group].bbox[1] = mapLoadCorner((const Vec*)(base + 0x34), min.x, max.y, max.z);
-	wp->entries[group].bbox[2] = mapLoadCorner((const Vec*)(base + 0x40), max.x, min.y, max.z);
-	wp->entries[group].bbox[3] = mapLoadCorner((const Vec*)(base + 0x4C), max.x, max.y, min.z);
-	wp->entries[group].bbox[4] = mapLoadCorner((const Vec*)(base + 0x58), min.x, min.y, max.z);
-	wp->entries[group].bbox[5] = mapLoadCorner((const Vec*)(base + 0x64), max.x, min.y, min.z);
-	wp->entries[group].bbox[6] = mapLoadCorner((const Vec*)(base + 0x70), min.x, max.y, min.z);
-	wp->entries[group].bbox[7] = mapLoadCorner((const Vec*)(base + 0x7C), min.x, min.y, min.z);
+#ifdef MUST_MATCH
+	// MUST_MATCH: retail seeds each corner from the unit's .rodata through the vec3_802c16d8 base; every field is
+	// overwritten, so the natural build seeds from zero.
+#define ML_SEED(off) ((const Vec*)(base + (off)))
+#else
+#define ML_SEED(off) (&ml_zero_seed)
+#endif
+	wp->entries[group].bbox[0] = mapLoadCorner(ML_SEED(0x28), max.x, max.y, max.z);
+	wp->entries[group].bbox[1] = mapLoadCorner(ML_SEED(0x34), min.x, max.y, max.z);
+	wp->entries[group].bbox[2] = mapLoadCorner(ML_SEED(0x40), max.x, min.y, max.z);
+	wp->entries[group].bbox[3] = mapLoadCorner(ML_SEED(0x4C), max.x, max.y, min.z);
+	wp->entries[group].bbox[4] = mapLoadCorner(ML_SEED(0x58), min.x, min.y, max.z);
+	wp->entries[group].bbox[5] = mapLoadCorner(ML_SEED(0x64), max.x, min.y, min.z);
+	wp->entries[group].bbox[6] = mapLoadCorner(ML_SEED(0x70), min.x, max.y, min.z);
+	wp->entries[group].bbox[7] = mapLoadCorner(ML_SEED(0x7C), min.x, min.y, min.z);
+#undef ML_SEED
 
 	{
 		MapEntry* entry2 = &mapWork[activeGroup].entries[group];

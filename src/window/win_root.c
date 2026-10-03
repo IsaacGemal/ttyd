@@ -1130,7 +1130,7 @@ static inline void winMailQuad(WindowWork* work, s32 texId, f32 x, f32 y, f64 w,
 // literals MWCC pools with its own i2f magic; the drawn rectangles are f32 sums of
 // the caller's x/y, reproducing retail's left-to-right summation chains. The helper
 // is byte-perfect with its `f64 sx;`/`f64 sy;` declaration order and the h-then-w fabs.
-// NONMATCHING (0.00%): only the global FPR of `x` (retail f30, ours f29) and
+// NONMATCHING (99.80%): only the global FPR of `x` (retail f30, ours f29) and
 // its deep-sum temporaries differ; all 212 calls and immediates match.
 void winMailGX(WindowWork* work, f32 x, f32 y) {
     GXSetBlendMode(0, 1, 0, 0);

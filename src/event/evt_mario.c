@@ -213,7 +213,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
 #ifdef MUST_MATCH
             *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[1];
 #else
-            *(Vec*)((u8*)party + 0x70) = vecs[1];
+            *(Vec*)((u8*)party + 0x70) = vec3_802e573c;
 #endif
             party->flags2 |= 1;
             party->flags |= 0x04000000;
@@ -225,7 +225,7 @@ USER_FUNC(evt_mario_dokan_prepare) {
 #ifdef MUST_MATCH
             *(volatile Vec*)((u8*)party + 0x70) = *(volatile Vec*)&vecs[2];
 #else
-            *(Vec*)((u8*)party + 0x70) = vecs[2];
+            *(Vec*)((u8*)party + 0x70) = vec3_802e5748;
 #endif
             party->flags2 |= 1;
             party->flags |= 0x04000000;
@@ -239,8 +239,18 @@ USER_FUNC(evt_mario_dokan_prepare) {
     return EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
+// MUST_MATCH: retail reaches these Vecs and the two pose strings through the vec3_802e5730 base register.
+#define EM_VEC(off, sym) (*(Vec*)(base + (off)))
+#define EM_STR(off, lit) ((const char*)(base + (off)))
+#else
+#define EM_VEC(off, sym) (sym)
+#define EM_STR(off, lit) (lit)
+#endif
 USER_FUNC(evt_mario_paper_pose_dokan) {
+#ifdef MUST_MATCH
     const u8* base = (const u8*)&vec3_802e5730;
+#endif
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
     s32 type;
@@ -252,10 +262,10 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         event->userdata[1] = 0;
         if (mario->currMotionId == 0x1d) {
             marioPaperOff();
-            *(Vec*)((u8*)mario + 0xC8) = *(Vec*)(base + 0x90);
-            *(Vec*)((u8*)mario + 0xBC) = *(Vec*)(base + 0x9C);
-            *(Vec*)((u8*)mario + 0xB0) = *(Vec*)(base + 0xA8);
-            *(Vec*)((u8*)mario + 0x98) = *(Vec*)(base + 0xB4);
+            *(Vec*)((u8*)mario + 0xC8) = EM_VEC(0x90, vec3_802e57c0);
+            *(Vec*)((u8*)mario + 0xBC) = EM_VEC(0x9C, vec3_802e57cc);
+            *(Vec*)((u8*)mario + 0xB0) = EM_VEC(0xA8, vec3_802e57d8);
+            *(Vec*)((u8*)mario + 0x98) = EM_VEC(0xB4, vec3_802e57e4);
         } else {
             switch (type) {
             case 4:
@@ -290,16 +300,16 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         marioRollForceCancel();
         partyShadowOff(partyGetPtr(marioGetPartyId()));
         partyShadowOff(partyGetPtr(marioGetExtraPartyId()));
-        marioPaperOn((const char*)(base + 0x208));
+        marioPaperOn(EM_STR(0x208, "p_dokan_y"));
         marioPaperLightOff();
-        marioChgPaper((const char*)(base + 0x214));
+        marioChgPaper(EM_STR(0x214, "PM_D_1A"));
         marioChgPose(str_8041B750);
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
         mario->unk1A8 = *(f32*)((u8*)mario + 0x1AC); // 0x1AC: field not declared in MarioWork
         zero = 0.0f;
         *(f32*)((u8*)mario + 0x2A0) = zero; // 0x2A0: field not declared in MarioWork
-        pos = *(Vec*)(base + 0xC0);
+        pos = EM_VEC(0xC0, vec3_802e57f0);
         pos.z = (mario->flags & 0x02000000) ? -16.0f : zero;
         *(Vec*)((u8*)mario + 0x98) = pos;
         event->userdata[0] = 0;
@@ -317,13 +327,13 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
     case 2:
         marioSlitForceCancel();
         marioRollForceCancel();
-        marioPaperOn((const char*)(base + 0x208));
+        marioPaperOn(EM_STR(0x208, "p_dokan_y"));
         marioPaperLightOff();
-        marioChgPaper((const char*)(base + 0x214));
+        marioChgPaper(EM_STR(0x214, "PM_D_1A"));
         marioChgPose(str_8041B750);
         mario->dispFlags |= 0x8;
         mario->dispFlags |= 0x100;
-        *(Vec*)((u8*)mario + 0xC8) = *(Vec*)(base + 0xCC);
+        *(Vec*)((u8*)mario + 0xC8) = EM_VEC(0xCC, vec3_802e57fc);
         *(f32*)((u8*)mario + 0x2A0) = 30.0f;
         event->userdata[0] = 8;
         event->userdata[1] = 3;
@@ -345,8 +355,8 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
     case 0: {
         Vec pos;
 
-        *(Vec*)((u8*)mario + 0xC8) = *(Vec*)(base + 0xD8);
-        pos = *(Vec*)(base + 0xE4);
+        *(Vec*)((u8*)mario + 0xC8) = EM_VEC(0xD8, vec3_802e5808);
+        pos = EM_VEC(0xE4, vec3_802e5814);
         pos.z = (mario->flags & 0x02000000) ? -16.0f : 0.0f;
         *(Vec*)((u8*)mario + 0x98) = pos;
         if (!(mario->flags & 0x02000000)) {
@@ -356,9 +366,9 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         if (party != NULL) {
             *(Vec*)((u8*)party + 0x58) = mario->position;
             *(Vec*)((u8*)party + 0x70) = mario->scale;
-            *(Vec*)((u8*)party + 0x7C) = *(Vec*)(base + 0xF0);
-            *(Vec*)((u8*)party + 0x64) = *(Vec*)(base + 0xFC);
-            *(Vec*)((u8*)party + 0x88) = *(Vec*)(base + 0x108);
+            *(Vec*)((u8*)party + 0x7C) = EM_VEC(0xF0, vec3_802e5820);
+            *(Vec*)((u8*)party + 0x64) = EM_VEC(0xFC, vec3_802e582c);
+            *(Vec*)((u8*)party + 0x88) = EM_VEC(0x108, vec3_802e5838);
             *(f32*)((u8*)party + 0x8C) = *(f32*)((u8*)mario + 0xB4);
             *(f32*)((u8*)party + 0x80) = *(f32*)((u8*)mario + 0x9C);
             *(f32*)((u8*)party + 0x84) = *(f32*)((u8*)mario + 0xA0);
@@ -367,9 +377,9 @@ USER_FUNC(evt_mario_paper_pose_dokan) {
         if (party != NULL) {
             *(Vec*)((u8*)party + 0x58) = mario->position;
             *(Vec*)((u8*)party + 0x70) = mario->scale;
-            *(Vec*)((u8*)party + 0x7C) = *(Vec*)(base + 0x114);
-            *(Vec*)((u8*)party + 0x64) = *(Vec*)(base + 0x120);
-            *(Vec*)((u8*)party + 0x88) = *(Vec*)(base + 0x12C);
+            *(Vec*)((u8*)party + 0x7C) = EM_VEC(0x114, vec3_802e5844);
+            *(Vec*)((u8*)party + 0x64) = EM_VEC(0x120, vec3_802e5850);
+            *(Vec*)((u8*)party + 0x88) = EM_VEC(0x12C, vec3_802e585c);
             *(f32*)((u8*)party + 0x8C) = *(f32*)((u8*)mario + 0xB4);
             *(f32*)((u8*)party + 0x80) = *(f32*)((u8*)mario + 0x9C);
             *(f32*)((u8*)party + 0x84) = *(f32*)((u8*)mario + 0xA0);
