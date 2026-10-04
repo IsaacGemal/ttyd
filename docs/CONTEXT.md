@@ -4576,3 +4576,18 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   was misalignment. Launcher note: set_aside moves `<tag>` to `<tag>.prevN` when the task starts, so a follow-up's spec
   `files` must not point into its own results folder (mot_ship's first relaunch failed in prepare); they live under
   scratch/wave74/prev/.
+- **Batch 18:** data ports for eff_nice, eff_ultra_hammer, eff_pokopi_thunder_n64, effdrv and eff_sstar_n64 (wave 74 arm
+  D), and animdrv's follow-up (10 measures improved). mri_puni's 572-byte .data excess is exactly its eight MUST_MATCH
+  `jumptable_*` copies; without them .data is byte-identical but objdiff's name pairing drops (95.75 -> 80.79), so
+  they go in its linking commit (#418: AGENT_BRIEF recipe and oneshort prompt; scratch/wave74/link_regress.sh merges
+  such a result only when tools/autolink.py links the unit, excusing it with --allow-regress). Arm F, on a pre-#415
+  base, also ran win_item and win_log after arm G's claims were released; its win_item reverts winBookGX's floats and
+  was discarded. Rejected: gor_10 (.bss 100 -> 85.7, first attempt). scratch/wave71/repair_headers.py now inserts
+  the externs after the last #include before their first use (animdrv has a stray #include at line 1045).
+  Also in this batch: rsh_00 linked (wave 74 arm L, the fifth; evt_moamoa_set_one 99.10 -> 100 with two MUST_MATCH
+  register shapes; merged by hand: its audit flagged `pkill -9 -f mwcceppc`, contained by bwrap's --unshare-pid, and
+  provenance showed fetches from GitHub, including upstream rsh_00.c and JackPriceBurns/mwcc; the diff was read
+  against them and is original; #420 tightened the brief); win_log's follow-up (14 measures improved, winLogInit's
+  sub-display drop excused with --allow-regress winLogInit); data ports for eff_horao_spell_n64 and evt_yuunpc.
+  Collect checklist: when provenance shows a fetch from a repo without a CC0/MIT licence or from compiler source,
+  read the diff against that file before merging.

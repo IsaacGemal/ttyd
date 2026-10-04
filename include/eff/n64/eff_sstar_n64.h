@@ -38,3 +38,4 @@ typedef struct SstarWork {
 EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8);
 void effSstarMain(EffectEntry* effect);
 void effSstarDisp(CameraId camId, void* param);
+// .sdata2 objects of this unit, named as in the original object; defined in eff_sstar_n64.c.

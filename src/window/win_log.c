@@ -27,6 +27,100 @@
 #include "sdk/texPalette.h"
 #include "system.h"
 #include "memory.h"
+extern const f32 float_0_8041d7bc;
+extern const f32 float_1_8041d7c0;
+extern const f32 float_0p04_8041d7c4;
+extern const f32 float_0p5_8041d7c8;
+extern const f32 float_neg0p5_8041d7cc;
+extern const f32 float_32_8041d7d0;
+extern const f32 float_8_8041d7d4;
+extern const f32 float_160_8041d7d8;
+extern const f32 float_216_8041d7dc;
+extern const f32 float_0p75_8041d7e0;
+extern const f32 float_16_8041d7e4;
+extern const f32 float_248_8041d7e8;
+extern const f32 float_180_8041d7ec;
+extern const f32 float_210_8041d7f0;
+extern const f32 float_25_8041d7f4;
+extern const f32 float_1p2667_8041d7f8;
+extern const f32 float_1000_8041d7fc;
+extern const f32 float_neg1000_8041d948;
+extern const f32 float_608_8041d800;
+extern const f32 float_480_8041d804;
+extern const f32 float_500_8041d808;
+extern const f32 float_neg300_8041d80c;
+extern const f32 float_600_8041d814;
+extern const f32 float_neg400_8041d818;
+extern const f32 float_6_8041d81c;
+extern const f32 float_110_8041d820;
+extern const f32 float_100_8041d824;
+extern const f32 float_50_8041d828;
+extern const f32 float_108_8041d82c;
+extern const f32 float_166_8041d830;
+extern const f32 float_184_8041d834;
+extern const f32 float_24_8041d838;
+extern const f32 float_5_8041d83c;
+extern const f32 float_56_8041d840;
+extern const f32 float_440_8041d84c;
+extern const f32 float_18_8041d850;
+extern const f32 float_15_8041d854;
+extern const f32 float_240_8041d858;
+extern const f32 float_0p7_8041d85c;
+extern const f32 float_420_8041d860;
+extern const f32 float_30_8041d864;
+extern const f32 float_220_8041d868;
+extern const f32 float_74_8041d86c;
+extern const f32 float_120_8041d870;
+extern const f32 float_304_8041d874;
+extern const f32 float_230_8041d878;
+extern const f32 float_2_8041d87c;
+extern const f32 float_45_8041d880;
+extern const f32 float_1p5_8041d884;
+extern const f32 float_3_8041d888;
+extern const f32 float_4_8041d88c;
+extern const f32 float_0p125_8041d890;
+extern const f32 float_neg240_8041d894;
+extern const f32 float_neg148_8041d898;
+extern const f32 float_neg480_8041d89c;
+extern const f32 float_0p43633_8041d8a0;
+extern const f32 float_0p017453_8041d8a4;
+extern const f32 float_51p429_8041d8a8;
+extern const f32 float_20_8041d8ac;
+extern const f32 float_320_8041d8b0;
+extern const f32 float_10_8041d8b4;
+extern const f32 float_170_8041d8b8;
+extern const f32 float_130_8041d8bc;
+extern const f32 float_140_8041d8c0;
+extern const f32 float_neg160_8041d8c4;
+extern const f32 float_0p25_8041d8c8;
+extern const f32 float_255_8041d8cc;
+extern const f32 float_neg130_8041d8d0;
+extern const f32 float_neg200_8041d8d4;
+extern const f32 float_60_8041d8d8;
+extern const f32 float_neg128_8041d8dc;
+extern const f32 float_10000_8041d904;
+extern const f32 float_neg230_8041d908;
+extern const f32 float_neg120_8041d90c;
+extern const f32 float_neg8_8041d910;
+extern const f32 float_0p2_8041d914;
+extern const f32 float_604_8041d918;
+extern const f32 float_468_8041d91c;
+extern const f32 float_neg150_8041d920;
+extern const f32 float_150_8041d924;
+extern const f32 float_80_8041d928;
+extern const f32 float_neg80_8041d92c;
+extern const f32 float_360_8041d930;
+extern const f32 float_neg50_8041d934;
+extern const f32 float_330_8041d938;
+extern const f32 float_neg250_8041d93c;
+extern const f32 float_neg310_8041d940;
+extern const f32 float_neg60_8041d944;
+#pragma pool_data on // the original addresses its .rodata through one base register
+#ifdef MUST_MATCH
+#define RELOAD_F32(x) (*(const volatile f32*)&(x))
+#else
+#define RELOAD_F32(x) (x)
+#endif
 
 // The monosiri (tattle) viewer work struct. Not declared in any header yet;
 // fields recovered from monosiriInit / monosiriMain / monosiriExit.
@@ -63,28 +157,121 @@ extern const f32 float_140_8041d8c0;
 extern const f32 float_neg160_8041d8c4;
 extern const f32 float_0p25_8041d8c8;
 extern const f64 double_0p125_802f63c0;
+extern const f64 double_to_int_802f62d8;
+extern const f64 double_to_int_mask_802f62e0;
+extern const f64 double_0p21817_802f62e8;
 extern const char str_802F5ECC[];
 extern const char str_802F5EE4[];
 extern const char str_802F5EFC[];
 extern const char str_802F5F14[];
 extern const char str_8041D7AC[];
 extern const char str_8041D7B0[];
+extern const char str_8041D810[];
 
-// Match-only layout aid: this file's .rodata prefix is not ported, so the
-// compiler's int->float pool lands at +0x10 instead of the original's +0x420.
-// This named .rodata object occupies 0x410 bytes so the pool entry the native
-// i2f below uses lands at +0x420 and is then addressed through the same
-// single rodata base register the original uses (`lfd f3, 0x420(r31)`).  The
-// bytes are irrelevant to the instruction match
+// The read-only data prefix this unit addresses through the single base
+// register `str_802F5EB8`: the five tab labels, the sprite scale/translate Vec
+// pool, the two-entry language jump table, the tattle-viewer Vec pool and the
+// format strings for the tattle pages.  `force_active` keeps the objects the
+// code reaches through the language jump table and the base-plus-offset Vec
+// loads from being dropped.
+//
+// The Vec pool is declared as opaque `char[12]` byte images rather than `Vec`:
+// MWCC's -O4 propagation can see a `Vec` object's constant value through the
+// `vec3_...` reference and re-colours every function that uses the pool
+// (monoshiriGX falls from 94.76% to 87.61%).  A byte image keeps the exact
+// bytes and the symbol/relocation identity without the fold.  The
+// `str_802F5EB8` definition is `char` in the match build (see the header) so
+// the base is not hoisted out of the reload loops.
+#pragma force_active on
 #ifdef MUST_MATCH
-#pragma force_active on // keep the pad object in .rodata
-static const char pad_pool_802f5eb8[0x410] = {1};
-#pragma force_active off
+// `char` (not const) in the match build: MWCC then cannot hoist the base out
+// of the reload loops, which is what the original's per-iteration loads do.
+__declspec(section ".rodata") char str_802F5EB8[20] = "msg_menu_kiroku_map";
+#else
+__declspec(section ".rodata") const char str_802F5EB8[20] = "msg_menu_kiroku_map";
 #endif
-// Compiler-generated int->float conversion constant, a global data symbol in
-// the original object; defining it here makes the cast below reference the
-// original name instead of an anonymous @NNN local.
-const f64 double_to_int_802f62d8 = 4503601774854144.0;
+const char str_802F5ECC[24] = "msg_menu_kiroku_stone";
+const char str_802F5EE4[24] = "msg_menu_kiroku_badge";
+const char str_802F5EFC[24] = "msg_menu_kiroku_ryori";
+const char str_802F5F14[24] = "msg_menu_kiroku_mono";
+__declspec(section ".rodata") char vec3_802f5f2c[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5f38[12] = { 0x42, 0x70, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5f44[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x43, 0x2a, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5f50[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5f5c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5f68[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5f74[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5f80[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5f8c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5f98[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5fa4[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5fb0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5fbc[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5fc8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5fd4[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5fe0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5fec[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f5ff8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6004[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6010[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f601c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6028[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6034[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6040[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f604c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6058[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6064[12] = { 0x3f, 0x80, 0x00, 0x00, 0x42, 0x00, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6070[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f607c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x42, 0x00, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6088[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6094[12] = { 0x42, 0x6e, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f60a0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f60ac[12] = { 0x42, 0x6e, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f60b8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f60c4[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f60d0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f60dc[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f60e8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f60f4[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6100[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f610c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6118[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6124[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6130[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f613c[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6148[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6154[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6160[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f616c[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6178[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6184[12] = { 0xbf, 0x80, 0x00, 0x00, 0xbf, 0x80, 0x00, 0x00, 0xbf, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6190[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f619c[12] = { 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a };
+__declspec(section ".rodata") char vec3_802f61a8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f61b4[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f61c0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f61cc[12] = { 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a };
+__declspec(section ".rodata") char vec3_802f61d8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f61e4[12] = { 0x3f, 0x33, 0x33, 0x33, 0x3f, 0x33, 0x33, 0x33, 0x3f, 0x33, 0x33, 0x33 };
+__declspec(section ".rodata") char vec3_802f61f0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f61fc[12] = { 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a };
+const char* const jumptable_802F6208[2] = { str_8041D7AC, str_8041D7B0 };
+__declspec(section ".rodata") char vec3_802f6210[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f621c[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6228[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6234[12] = { 0x00, 0x00, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6240[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f624c[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6258[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6264[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f6270[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+__declspec(section ".rodata") char vec3_802f627c[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
+const char str_802F6288[8] = "%d\201D%s";
+const char str_802F6290[16] = "btl_un_hatena";
+const char str_802F62A0[16] = "btl_un_rampell";
+const char str_802F62B0[8] = "%s\201@%s";
+const char str_802F62B8[28] = "menu_monosiri_derutokoro";
+#pragma force_active off
 
 #define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
@@ -142,17 +329,6 @@ void monosiriClose(void* work) {
 #ifdef MUST_MATCH
 #define RO(base, off, sym) ((const char*)(base) + (off))
 #else
-extern const char str_802F62F0[];
-extern const char str_802F6300[];
-extern const char str_802F6314[];
-extern const char str_802F6360[];
-extern const char str_802F636C[];
-extern const char str_802F6378[];
-extern const char str_802F6384[];
-extern const char str_802F6390[];
-extern const char str_802F639C[];
-extern const char str_802F63A8[];
-extern const char str_802F63B4[];
 #define RO(base, off, sym) ((const char*)&(sym))
 #endif
 
@@ -188,10 +364,10 @@ void monosiriMain(void* work) {
 
     switch (w->state) {
     case 0:
-        if ((u32)fileAsyncf(4, NULL, RO(base, 0x438, str_802F62F0), getMarioStDvdRoot(), lang[g->language]) != 0) {
-            if ((u32)fileAsyncf(0, NULL, RO(base, 0x448, str_802F6300), getMarioStDvdRoot()) != 0) {
-                w->file1 = fileAllocf(4, RO(base, 0x438, str_802F62F0), getMarioStDvdRoot(), lang[gp->language]);
-                w->file2 = fileAllocf(0, RO(base, 0x448, str_802F6300), getMarioStDvdRoot());
+        if ((u32)fileAsyncf(4, NULL, RO(base, 0x438, "%s/w/%s/win.tpl"), getMarioStDvdRoot(), lang[g->language]) != 0) {
+            if ((u32)fileAsyncf(0, NULL, RO(base, 0x448, "%s/w/jp/mono.dat"), getMarioStDvdRoot()) != 0) {
+                w->file1 = fileAllocf(4, RO(base, 0x438, "%s/w/%s/win.tpl"), getMarioStDvdRoot(), lang[gp->language]);
+                w->file2 = fileAllocf(0, RO(base, 0x448, "%s/w/jp/mono.dat"), getMarioStDvdRoot());
                 w->state++;
                 TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &texObj, 0x37);
                 size = GXGetTexBufferSize(GXGetTexObjWidth(&texObj), GXGetTexObjHeight(&texObj), 5, 0, 0);
@@ -202,7 +378,7 @@ void monosiriMain(void* work) {
     case 1:
         tattle = battleGetUnitMonosiriPtr(w->unitKind);
         if (animGroupBaseAsync(tattle->modelName, inBattle, NULL)) {
-            if (w->unitKind != 0x6B || animGroupBaseAsync(RO(base, 0x45C, str_802F6314), inBattle, NULL)) {
+            if (w->unitKind != 0x6B || animGroupBaseAsync(RO(base, 0x45C, "c_n_moa_a"), inBattle, NULL)) {
                 w->alpha += 0x14;
                 if (w->alpha > 0xFF) {
                     w->alpha = 0xFF;
@@ -213,7 +389,7 @@ void monosiriMain(void* work) {
                         animPoseSetAnim(w->poseId, tattle->poseName, TRUE);
                         animPoseWorldPositionEvalOn(w->poseId);
                         animPoseMain(w->poseId);
-                        w->poseId2 = animPoseEntry(RO(base, 0x45C, str_802F6314), inBattle);
+                        w->poseId2 = animPoseEntry(RO(base, 0x45C, "c_n_moa_a"), inBattle);
                         animPoseSetAnim(w->poseId2, str_8041D810, TRUE);
                         animPoseMain(w->poseId2);
                     } else {
@@ -264,22 +440,22 @@ const char* winGetMapTplName(void) {
     const char* base = str_802F5EB8;
 
     if (swByteGet(0) < 0x13) {
-        return RO(base, 0x4A8, str_802F6360);
+        return RO(base, 0x4A8, "map0.tpl");
     }
     if (swByteGet(0) < 0x41) {
-        return RO(base, 0x4B4, str_802F636C);
+        return RO(base, 0x4B4, "map1.tpl");
     }
     if (swByteGet(0) < 0x79) {
-        return RO(base, 0x4C0, str_802F6378);
+        return RO(base, 0x4C0, "map2.tpl");
     }
     if (swByteGet(0) < 0xAF) {
-        return RO(base, 0x4CC, str_802F6384);
+        return RO(base, 0x4CC, "map3.tpl");
     }
     if (swByteGet(0) < 0xDE) {
-        return RO(base, 0x4D8, str_802F6390);
+        return RO(base, 0x4D8, "map4.tpl");
     }
     if (swByteGet(0) < 0x110) {
-        return RO(base, 0x4E4, str_802F639C);
+        return RO(base, 0x4E4, "map5.tpl");
     }
     {
 #ifdef MUST_MATCH
@@ -289,16 +465,16 @@ const char* winGetMapTplName(void) {
         const char* result;
         s32 v = swByteGet(0);
 
-        result = RO(base, 0x4FC, str_802F63B4);
+        result = RO(base, 0x4FC, "map7.tpl");
         if (v < 0x15C) {
-            result = RO(base, 0x4F0, str_802F63A8);
+            result = RO(base, 0x4F0, "map6.tpl");
         }
         return result;
 #else
         if (swByteGet(0) >= 0x15C) {
-            return RO(base, 0x4FC, str_802F63B4);
+            return RO(base, 0x4FC, "map7.tpl");
         }
-        return RO(base, 0x4F0, str_802F63A8);
+        return RO(base, 0x4F0, "map6.tpl");
 #endif
     }
 }
@@ -325,8 +501,8 @@ typedef struct WinLogWork {
 
 // 100%: advances the tattle-log rows (state machine) and eases the panel
 // springs. The original's int->float conversions reference
-// double_to_int_802f62d8; our object emits an anonymous @271 literal instead,
-// which objdiff does not score (same as winBadgeInit2). The per-block `dN`
+// 4503601774854144.0; our object emits an anonymous @271 literal instead,
+// which does not affect the match (same as winBadgeInit2). The per-block `dN`
 // temps give the diff-first fmadd operand order; `ep` steps the entry base so
 // the prologue copy lands first. The MUST_MATCH `new_var` alias is scheduling
 // shaping only (see its comment).
@@ -507,21 +683,21 @@ typedef struct TubuDt {
 #ifdef MUST_MATCH
 #define MAP_TPL_NAME(dst, base)                                       \
     if (swByteGet(0) < 0x13) {                                        \
-        dst = RO(base, 0x4A8, str_802F6360);                          \
+        dst = RO(base, 0x4A8, "map0.tpl");                          \
     } else if (swByteGet(0) < 0x41) {                                 \
-        dst = RO(base, 0x4B4, str_802F636C);                          \
+        dst = RO(base, 0x4B4, "map1.tpl");                          \
     } else if (swByteGet(0) < 0x79) {                                 \
-        dst = RO(base, 0x4C0, str_802F6378);                          \
+        dst = RO(base, 0x4C0, "map2.tpl");                          \
     } else if (swByteGet(0) < 0xAF) {                                 \
-        dst = RO(base, 0x4CC, str_802F6384);                          \
+        dst = RO(base, 0x4CC, "map3.tpl");                          \
     } else if (swByteGet(0) < 0xDE) {                                 \
-        dst = RO(base, 0x4D8, str_802F6390);                          \
+        dst = RO(base, 0x4D8, "map4.tpl");                          \
     } else if (swByteGet(0) < 0x110) {                                \
-        dst = RO(base, 0x4E4, str_802F639C);                          \
+        dst = RO(base, 0x4E4, "map5.tpl");                          \
     } else if (swByteGet(0) < 0x15C) {                                \
-        dst = RO(base, 0x4F0, str_802F63A8);                          \
+        dst = RO(base, 0x4F0, "map6.tpl");                          \
     } else {                                                          \
-        dst = RO(base, 0x4FC, str_802F63B4);                          \
+        dst = RO(base, 0x4FC, "map7.tpl");                          \
     }
 #else
 #define MAP_TPL_NAME(dst, base) dst = winGetMapTplName()
@@ -639,17 +815,6 @@ LOGWIN_CHECK(mono, 0x1200);
 
 extern TubuDt tubuDt[0x5D];
 extern s32 stone_tbl[7];
-extern const char str_802F63C8[];
-extern const char str_802F63D4[];
-extern const char str_802F63DC[];
-extern const char str_802F63E4[];
-extern const char str_802F63F0[];
-extern const char str_802F63FC[];
-extern const char str_802F6408[];
-extern const char str_802F641C[];
-extern const char str_802F6428[];
-extern const char str_802F6444[];
-extern const char str_802F6460[];
 extern const f32 float_20_8041d8ac;
 extern const f32 float_255_8041d8cc;
 extern const f32 float_neg130_8041d8d0;
@@ -683,6 +848,106 @@ extern const f32 float_neg250_8041d93c;
 extern const f32 float_neg310_8041d940;
 extern const f32 float_neg60_8041d944;
 extern const f32 float_neg8_8041d910;
+
+
+// The map table: one entry per "tubu" map region. The id field points into
+// the .sdata2 region-name pool; entry order is the original's address order.
+TubuDt tubuDt[0x5D] = {
+    { 14, -34, 0x01, 0x00, 0x0003, "gor" },
+    { -4, -31, 0x00, 0x02, 0x000C, "gor" },
+    { -20, -31, 0x00, 0x02, 0x000C, "gor" },
+    { -33, -38, 0x01, 0x02, 0x000C, "tik" },
+    { 118, 30, 0x01, 0x00, 0x0017, "hei" },
+    { 134, 22, 0x00, 0x00, 0x001A, "hei" },
+    { 150, 14, 0x00, 0x00, 0x001A, "hei" },
+    { 176, 9, 0x00, 0x00, 0x001A, "hei" },
+    { 200, 6, 0x01, 0x00, 0x001A, "nok" },
+    { 136, 39, 0x00, 0x03, 0x0023, "hei" },
+    { 152, 48, 0x00, 0x03, 0x0023, "hei" },
+    { 165, 53, 0x00, 0x03, 0x0023, "hei" },
+    { 165, 68, 0x01, 0x03, 0x0023, "gon" },
+    { 0, 36, 0x01, 0x00, 0x0047, "win" },
+    { 0, 56, 0x00, 0x00, 0x004A, "win" },
+    { 0, 75, 0x01, 0x00, 0x004A, "mri" },
+    { 16, 44, 0x00, 0x00, 0x0051, "win" },
+    { 27, 53, 0x00, 0x00, 0x0051, "win" },
+    { 42, 65, 0x01, 0x00, 0x0051, "hou" },
+    { 30, -17, 0x00, 0x00, 0x007F, "gor" },
+    { 36, 0, 0x00, 0x00, 0x007F, "gor" },
+    { 46, 15, 0x00, 0x00, 0x007F, "gor" },
+    { 55, 32, 0x00, 0x00, 0x007F, "gor" },
+    { 74, 45, 0x00, 0x00, 0x007F, "gor" },
+    { 83, 61, 0x00, 0x00, 0x007F, "gor" },
+    { 83, 75, 0x00, 0x00, 0x007F, "gor" },
+    { 83, 93, 0x00, 0x00, 0x007F, "gor" },
+    { 72, 101, 0x00, 0x00, 0x007F, "gor" },
+    { 71, 114, 0x00, 0x00, 0x007F, "gor" },
+    { 71, 132, 0x00, 0x00, 0x007F, "gor" },
+    { 80, 141, 0x00, 0x00, 0x007F, "gor" },
+    { 97, 150, 0x01, 0x00, 0x007F, "tou" },
+    { -181, -90, 0x01, 0x00, 0x00B2, "usu" },
+    { -163, -90, 0x00, 0x04, 0x00B8, "usu" },
+    { -145, -90, 0x00, 0x04, 0x00B8, "usu" },
+    { -135, -77, 0x00, 0x04, 0x00B8, "usu" },
+    { -143, -63, 0x00, 0x04, 0x00B8, "usu" },
+    { -159, -63, 0x00, 0x04, 0x00B8, "usu" },
+    { -176, -63, 0x00, 0x04, 0x00B8, "usu" },
+    { -191, -63, 0x00, 0x04, 0x00B8, "usu" },
+    { -206, -63, 0x00, 0x04, 0x00B8, "usu" },
+    { -228, -63, 0x01, 0x04, 0x00B8, "gra" },
+    { -228, -44, 0x00, 0x00, 0x00C1, "gra" },
+    { -216, -31, 0x00, 0x00, 0x00C1, "gra" },
+    { -198, -27, 0x00, 0x00, 0x00C1, "gra" },
+    { -181, -29, 0x00, 0x00, 0x00C1, "gra" },
+    { -160, -33, 0x00, 0x00, 0x00C1, "gra" },
+    { -139, -33, 0x01, 0x00, 0x00C1, "jin" },
+    { 13, -56, 0x00, 0x00, 0x00E8, "gor" },
+    { 13, -70, 0x00, 0x00, 0x00E8, "gor" },
+    { 12, -84, 0x00, 0x00, 0x00E8, "gor" },
+    { -3, -94, 0x00, 0x00, 0x00E8, "gor" },
+    { -14, -104, 0x00, 0x00, 0x00E8, "gor" },
+    { -31, -115, 0x00, 0x00, 0x00E8, "gor" },
+    { -45, -128, 0x00, 0x00, 0x00E8, "gor" },
+    { -48, -143, 0x00, 0x00, 0x00E8, "gor" },
+    { -38, -158, 0x00, 0x00, 0x00E8, "gor" },
+    { -11, -163, 0x01, 0x00, 0x00E8, "muj" },
+    { 7, -163, 0x00, 0x00, 0x00F3, "muj" },
+    { 21, -163, 0x00, 0x00, 0x00F3, "muj" },
+    { 41, -163, 0x01, 0x00, 0x00F3, "dou" },
+    { 36, -34, 0x00, 0x00, 0x0136, "gor" },
+    { 53, -27, 0x00, 0x00, 0x0136, "gor" },
+    { 69, -12, 0x00, 0x00, 0x0136, "gor" },
+    { 85, 1, 0x00, 0x00, 0x0136, "gor" },
+    { 109, 7, 0x00, 0x00, 0x0136, "gor" },
+    { 132, 4, 0x00, 0x00, 0x0136, "gor" },
+    { 149, -8, 0x00, 0x00, 0x0136, "gor" },
+    { 158, -25, 0x01, 0x00, 0x0136, "eki" },
+    { 143, -40, 0x00, 0x00, 0x014E, "eki" },
+    { 133, -52, 0x00, 0x00, 0x014E, "eki" },
+    { 132, -66, 0x00, 0x00, 0x014E, "eki" },
+    { 132, -82, 0x00, 0x00, 0x014E, "eki" },
+    { 155, -90, 0x01, 0x00, 0x014E, "pik" },
+    { 175, -90, 0x00, 0x00, 0x0150, "pik" },
+    { 193, -91, 0x00, 0x00, 0x0150, "pik" },
+    { 211, -91, 0x01, 0x00, 0x0150, "sin" },
+    { -167, 17, 0x01, 0x00, 0x0161, "bom" },
+    { -167, 37, 0x00, 0x00, 0x0166, "bom" },
+    { -167, 50, 0x00, 0x00, 0x0166, "bom" },
+    { -167, 64, 0x00, 0x00, 0x0166, "bom" },
+    { -167, 82, 0x00, 0x00, 0x0166, "bom" },
+    { -167, 99, 0x00, 0x00, 0x0166, "bom" },
+    { -167, 116, 0x00, 0x00, 0x0166, "bom" },
+    { -167, 133, 0x00, 0x00, 0x0166, "bom" },
+    { -167, 151, 0x01, 0x00, 0x0166, "moo" },
+    { -171, 169, 0x00, 0x00, 0x0169, "moo" },
+    { -185, 177, 0x00, 0x00, 0x0169, "moo" },
+    { -200, 171, 0x00, 0x00, 0x0169, "moo" },
+    { -209, 159, 0x01, 0x00, 0x0169, "aji" },
+    { -33, -50, 0x00, 0x00, 0x017E, "gor" },
+    { -33, -62, 0x00, 0x00, 0x017E, "gor" },
+    { -33, -74, 0x01, 0x00, 0x017E, "las" },};
+
+s32 stone_tbl[7] = {0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78};
 
 static inline BOOL tubuUnlocked(TubuDt* t) {
     switch (t->flagIdx) {
@@ -832,7 +1097,7 @@ s32 winLogMain(WindowWork* work) {
         case 10:
             MAP_TPL_NAME(tpl, base);
             root = getMarioStDvdRoot();
-            if ((u32)fileAsyncf(4, NULL, RO(base, 0x510, str_802F63C8), root, tpl) != 0) {
+            if ((u32)fileAsyncf(4, NULL, RO(base, 0x510, "%s/w/jp/%s"), root, tpl) != 0) {
                 if (w->file == 0) {
                     MAP_TPL_NAME(tpl, base);
                     root = getMarioStDvdRoot();
@@ -843,7 +1108,7 @@ s32 winLogMain(WindowWork* work) {
                 if (w->pose == -1) {
                     if (w->flags & 0x2000) {
                         const char* anim = "W_1";
-                        w->pose = animPoseEntry(RO(base, 0x51C, str_802F63D4), 0);
+                        w->pose = animPoseEntry(RO(base, 0x51C, "d_mario"), 0);
                         switch (marioGetColor()) {
                         case 0:
                             anim = "W_1";
@@ -860,18 +1125,18 @@ s32 winLogMain(WindowWork* work) {
                         }
                         animPoseSetAnim(w->pose, anim, 1);
                     } else {
-                        const char* model = RO(base, 0x524, str_802F63DC);
+                        const char* model = RO(base, 0x524, "a_mario");
                         switch (marioGetColor()) {
                         case 0:
                             break;
                         case 1:
-                            model = RO(base, 0x52C, str_802F63E4);
+                            model = RO(base, 0x52C, "a_mario_l");
                             break;
                         case 2:
-                            model = RO(base, 0x538, str_802F63F0);
+                            model = RO(base, 0x538, "a_mario_w");
                             break;
                         case 3:
-                            model = RO(base, 0x544, str_802F63FC);
+                            model = RO(base, 0x544, "a_mario_wl");
                             break;
                         }
                         w->pose = animPoseEntry(model, 0);
@@ -931,8 +1196,8 @@ s32 winLogMain(WindowWork* work) {
                     if (best < float_50_8041d828) {
                         static char name[0x40];
                         static char help[0x40];
-                        sprintf(name, RO(base, 0x550, str_802F6408), tubuDt[bestIdx].id);
-                        sprintf(help, RO(base, 0x564, str_802F641C), tubuDt[bestIdx].id);
+                        sprintf(name, RO(base, 0x550, "menu_monosiri_%s"), tubuDt[bestIdx].id);
+                        sprintf(help, RO(base, 0x564, "menu_map_%s"), tubuDt[bestIdx].id);
                         if (w->mapSel != bestIdx) {
                             SFX(0x20035);
                         }
@@ -1061,7 +1326,7 @@ s32 winLogMain(WindowWork* work) {
                 ItemData* it = &itemDataTable[stone_tbl[w->stoneSel]];
                 winMsgEntry(work, -1, it->description, (s32)it->name);
             } else {
-                winMsgEntry(work, -1, RO(base, 0x570, str_802F6428), (s32)RO(base, 0x58C, str_802F6444));
+                winMsgEntry(work, -1, RO(base, 0x570, "msg_menu_stone_none_help"), (s32)RO(base, 0x58C, "msg_menu_stone_none_name"));
             }
             break;
         case 12: {
@@ -1144,7 +1409,7 @@ s32 winLogMain(WindowWork* work) {
                 ItemData* it = &itemDataTable[w->cardIcon[w->cardSel]];
                 winMsgEntry(work, -2, (it + 240)->menu_description, (s32)(it + 240)->name);
             } else {
-                winMsgEntry(work, -2, RO(base, 0x570, str_802F6428), (s32)RO(base, 0x58C, str_802F6444));
+                winMsgEntry(work, -2, RO(base, 0x570, "msg_menu_stone_none_help"), (s32)RO(base, 0x58C, "msg_menu_stone_none_name"));
             }
             break;
         }
@@ -1228,7 +1493,7 @@ s32 winLogMain(WindowWork* work) {
                 ItemData* it = &itemDataTable[w->badgeIcon[w->badgeSel]];
                 winMsgEntry(work, -2, (it + 179)->menu_description, (s32)(it + 179)->name);
             } else {
-                winMsgEntry(work, -2, RO(base, 0x570, str_802F6428), (s32)RO(base, 0x58C, str_802F6444));
+                winMsgEntry(work, -2, RO(base, 0x570, "msg_menu_stone_none_help"), (s32)RO(base, 0x58C, "msg_menu_stone_none_name"));
             }
             break;
         }
@@ -1324,7 +1589,7 @@ s32 winLogMain(WindowWork* work) {
                 winMsgEntry(work, 0,
                             battleGetUnitMonosiriPtr(w->chars[w->charSel].id)->tattleLogTag, 0);
             } else {
-                winMsgEntry(work, 0, RO(base, 0x5A8, str_802F6460), 0);
+                winMsgEntry(work, 0, RO(base, 0x5A8, "msg_menu_monosiri_enemy"), 0);
             }
     
             break;
@@ -1384,7 +1649,7 @@ void winLogExit(WindowWork* work) {
 // f6; the entry address is formed with real WinLogEntry pointer indexing, which
 // makes the compiler emit `add rWork, rIndex` in the original's operand order.
 // The conversion double still pools as an anonymous @271 literal instead of the
-// named double_to_int_802f62d8 (project-wide limitation, not scored).
+// named 4503601774854144.0 (project-wide limitation, not scored).
 void winLogInit2(WindowWork* work) {
     f32 v;
     const char* name;
@@ -1425,16 +1690,7 @@ void winLogInit2(WindowWork* work) {
 }
 
 extern const u8 enemy_monoshiri_sort_table[];
-extern const char str_802F6478[];
-extern const char str_802F6480[];
-extern const char str_802F6488[];
-extern const char str_802F6490[];
-extern const char str_802F6498[];
-extern const char str_802F64A0[];
-extern const char str_802F64A8[];
-extern const char str_802F64B0[];
 extern const f32 float_2_8041d87c;
-extern const f32 float_neg1000_8041d948;
 
 // Appends a tab to the menu and re-centres every tab row.
 #define LOG_ADD_TAB(w, tabType, msg)                                                  \
@@ -1752,23 +2008,23 @@ void winLogInit(WindowWork* work) {
 }
 
 #pragma opt_common_subs reset
-extern const Vec vec3_802f5f2c;
-extern const Vec vec3_802f5f38;
-extern const Vec vec3_802f5f44;
-extern const Vec vec3_802f5f50;
-extern const Vec vec3_802f5f5c;
-extern const Vec vec3_802f5f68;
-extern const Vec vec3_802f5f74;
-extern const Vec vec3_802f5f80;
-extern const Vec vec3_802f5f8c;
-extern const Vec vec3_802f5f98;
-extern const Vec vec3_802f5fa4;
-extern const Vec vec3_802f5fb0;
-extern const Vec vec3_802f5fbc;
-extern const Vec vec3_802f5fc8;
-extern const Vec vec3_802f5fd4;
-extern const Vec vec3_802f5fe0;
-extern const Vec vec3_802f5fec;
+extern char vec3_802f5f2c[];
+extern char vec3_802f5f38[];
+extern char vec3_802f5f44[];
+extern char vec3_802f5f50[];
+extern char vec3_802f5f5c[];
+extern char vec3_802f5f68[];
+extern char vec3_802f5f74[];
+extern char vec3_802f5f80[];
+extern char vec3_802f5f8c[];
+extern char vec3_802f5f98[];
+extern char vec3_802f5fa4[];
+extern char vec3_802f5fb0[];
+extern char vec3_802f5fbc[];
+extern char vec3_802f5fc8[];
+extern char vec3_802f5fd4[];
+extern char vec3_802f5fe0[];
+extern char vec3_802f5fec[];
 extern const GXColor dat_8041d78c;
 extern const GXColor dat_8041d790;
 extern const GXColor dat_8041d794;
@@ -1784,19 +2040,19 @@ extern const f32 float_130_8041d8bc;
 extern const f32 float_1_8041d7c0;
 
 #ifdef MUST_MATCH
-#define LV(off, sym) (*(const Vec*)((const char*)base + (off)))
+#define LV(off, sym) (*(const Vec*)(sym))
 // Volatile variant: forces the load to be repeated each loop iteration instead
 // of being hoisted into a callee-saved register, as the original does for the
 // per-stone Vec with the same address (MUST_MATCH codegen shaping).
-#define LVV(off, sym) (*(volatile const Vec*)((const char*)base + (off)))
+#define LVV(off, sym) (*(volatile const Vec*)(sym))
 // Volatile read of the per-stone shadow colour: the original reloads it from
 // the data symbol each loop iteration rather than hoisting it into a
 // callee-saved register (MUST_MATCH codegen shaping).
 #define VCOL(sym) (*(volatile const GXColor*)&(sym))
 #else
-#define LV(off, sym) (sym)
-#define LVV(off, sym) (sym)
-#define VCOL(sym) (sym)
+#define LV(off, sym) (*(const Vec*)(sym))
+#define LVV(off, sym) (*(volatile const Vec*)(sym))
+#define VCOL(sym) (*(volatile const GXColor*)&(sym))
 #endif
 static inline void logIconSet(u32 id, GXColor* c, Vec translate, Vec scale) {
     winIconSet(id, &translate, &scale, c);
@@ -1814,7 +2070,7 @@ static inline Vec logMkVec(Vec base, f32 x, f32 y) {
 static inline f32 logI2F(const char* base, s32 i, Mtx* cvp) {
     ((u32*)cvp)[0] = 0x43300000;
     ((u32*)cvp)[1] = (u32)i ^ 0x80000000;
-    return (f32)(*(f64*)cvp - *(const f64*)(base + 0x420));
+    return (f32)(*(f64*)cvp - double_to_int_802f62d8);
 }
 #endif
 
@@ -1929,30 +2185,30 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
         }
     }
 }
-extern const Vec vec3_802f5ff8;
-extern const Vec vec3_802f6004;
-extern const Vec vec3_802f6010;
-extern const Vec vec3_802f601c;
-extern const Vec vec3_802f6028;
-extern const Vec vec3_802f6034;
-extern const Vec vec3_802f6040;
-extern const Vec vec3_802f604c;
-extern const Vec vec3_802f6058;
-extern const Vec vec3_802f6064;
-extern const Vec vec3_802f6070;
-extern const Vec vec3_802f607c;
-extern const Vec vec3_802f6088;
-extern const Vec vec3_802f6094;
-extern const Vec vec3_802f60a0;
-extern const Vec vec3_802f60ac;
-extern const Vec vec3_802f60b8;
-extern const Vec vec3_802f60c4;
-extern const Vec vec3_802f60d0;
-extern const Vec vec3_802f60dc;
-extern const Vec vec3_802f60e8;
-extern const Vec vec3_802f60f4;
-extern const Vec vec3_802f6100;
-extern const Vec vec3_802f610c;
+extern char vec3_802f5ff8[];
+extern char vec3_802f6004[];
+extern char vec3_802f6010[];
+extern char vec3_802f601c[];
+extern char vec3_802f6028[];
+extern char vec3_802f6034[];
+extern char vec3_802f6040[];
+extern char vec3_802f604c[];
+extern char vec3_802f6058[];
+extern char vec3_802f6064[];
+extern char vec3_802f6070[];
+extern char vec3_802f607c[];
+extern char vec3_802f6088[];
+extern char vec3_802f6094[];
+extern char vec3_802f60a0[];
+extern char vec3_802f60ac[];
+extern char vec3_802f60b8[];
+extern char vec3_802f60c4[];
+extern char vec3_802f60d0[];
+extern char vec3_802f60dc[];
+extern char vec3_802f60e8[];
+extern char vec3_802f60f4[];
+extern char vec3_802f6100[];
+extern char vec3_802f610c[];
 
 extern const GXColor dat_8041d7a0;
 extern const f32 float_74_8041d86c;
@@ -2151,26 +2407,26 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
 }
 #pragma opt_loop_invariants reset
 #pragma opt_common_subs reset
-extern const Vec vec3_802f6118;
-extern const Vec vec3_802f6124;
-extern const Vec vec3_802f6130;
-extern const Vec vec3_802f613c;
-extern const Vec vec3_802f6148;
-extern const Vec vec3_802f6154;
-extern const Vec vec3_802f6160;
-extern const Vec vec3_802f616c;
-extern const Vec vec3_802f6178;
-extern const Vec vec3_802f6184;
-extern const Vec vec3_802f6190;
-extern const Vec vec3_802f619c;
-extern const Vec vec3_802f61a8;
-extern const Vec vec3_802f61b4;
-extern const Vec vec3_802f61c0;
-extern const Vec vec3_802f61cc;
-extern const Vec vec3_802f61d8;
-extern const Vec vec3_802f61e4;
-extern const Vec vec3_802f61f0;
-extern const Vec vec3_802f61fc;
+extern char vec3_802f6118[];
+extern char vec3_802f6124[];
+extern char vec3_802f6130[];
+extern char vec3_802f613c[];
+extern char vec3_802f6148[];
+extern char vec3_802f6154[];
+extern char vec3_802f6160[];
+extern char vec3_802f616c[];
+extern char vec3_802f6178[];
+extern char vec3_802f6184[];
+extern char vec3_802f6190[];
+extern char vec3_802f619c[];
+extern char vec3_802f61a8[];
+extern char vec3_802f61b4[];
+extern char vec3_802f61c0[];
+extern char vec3_802f61cc[];
+extern char vec3_802f61d8[];
+extern char vec3_802f61e4[];
+extern char vec3_802f61f0[];
+extern char vec3_802f61fc[];
 extern const f32 float_110_8041d820;
 extern const f32 float_160_8041d7d8;
 extern const f32 float_100_8041d824;
@@ -2195,12 +2451,6 @@ extern const f32 float_220_8041d868;
 
 extern const GXColor dat_8041d7a4;
 extern const GXColor dat_8041d7a8;
-extern const char str_802F6320[];
-extern const char str_802F6338[];
-extern const char str_802F6340[];
-extern const char str_802F6348[];
-extern const char str_802F6290[];
-extern const char str_802F62A0[];
 
 #pragma opt_loop_invariants off // needed: the target reloads the vec3 tables and address offsets inside the loop
 // Behaviour complete, checked against the asm. Declaring the shared rodata base non-const and
@@ -2230,7 +2480,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
     winBookGX(work, 1, x, y);
     winKirinukiGX(work, 0, x - float_110_8041d820, y - float_160_8041d7d8, float_100_8041d824, float_50_8041d828);
     {
-        const char* pmsg = msgSearch(RO(base, 0x468, str_802F6320));
+        const char* pmsg = msgSearch(RO(base, 0x468, "msg_menu_monosiri_kazu"));
         wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(pmsg));
         winFontInit();
         {
@@ -2242,7 +2492,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
             winFontSet(&pos, &scale, &c, pmsg);
         }
     }
-    sprintf(buf, RO(base, 0x480, str_802F6338), w->seenCnt, w->charCnt);
+    sprintf(buf, RO(base, 0x480, "%d\201^%d"), w->seenCnt, w->charCnt);
     wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf));
     {
         Vec scale = LV(0x284, vec3_802f613c);
@@ -2267,15 +2517,15 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         if (swGet(id + 0x117A) != 0) {
             if (id == 0x4D || id == 0x87) {
                 if (evtGetValue(NULL, GSW(0)) < 0xD2) {
-                    msg = msgSearch(RO(base, 0x3D8, str_802F6290));
+                    msg = msgSearch(RO(base, 0x3D8, "btl_un_hatena"));
                 } else {
-                    msg = msgSearch(RO(base, 0x3E8, str_802F62A0));
+                    msg = msgSearch(RO(base, 0x3E8, "btl_un_rampell"));
                 }
             } else {
                 msg = msgSearch(tattle->enemyTag);
             }
         } else {
-            msg = RO(base, 0x488, str_802F6340);
+            msg = RO(base, 0x488, "\201H\201H\201H");
         }
         sprintf(buf2, "%d\x81\x44", (s32)enemy_monoshiri_sort_table[id]);
         xoff = (i / 8) * 0xD8;
@@ -2316,7 +2566,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
             winIconSet(0x80, &pos, &scale, &c4);
         }
     }
-    msg = msgSearch(RO(base, 0x490, str_802F6348));
+    msg = msgSearch(RO(base, 0x490, "msg_menu_sort_narabikae"));
     {
         f32 fw = float_0p7_8041d85c * (f32)FontGetMessageWidth(msg);
         f32 ox;
@@ -2340,17 +2590,14 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
     }
 }
 #pragma opt_loop_invariants reset
-extern const Vec vec3_802f6258;
-extern const Vec vec3_802f6264;
-extern const Vec vec3_802f6270;
-extern const Vec vec3_802f627c;
+extern char vec3_802f6258[];
+extern char vec3_802f6264[];
+extern char vec3_802f6270[];
+extern char vec3_802f627c[];
 
 extern const GXColor dat_8041d7b4;
 extern const GXColor dat_8041d7b8;
 extern const GXColor unk_80423050;
-extern const char str_802F6288[];
-extern const char str_802F62B0[];
-extern const char str_802F62B8[];
 extern const f32 float_0p04_8041d7c4;
 extern const f32 float_neg0p5_8041d7cc;
 extern const f32 float_32_8041d7d0;
@@ -2484,14 +2731,14 @@ void monosiri_disp(CameraId camId, void* param) {
         tattle = battleGetUnitMonosiriPtr(unitKind);
         if (unitKind == 0x4D || unitKind == 0x87) {
             if (evtGetValue(NULL, GSW(0)) < 0xD2) {
-                sprintf(buf, RO(base, 0x3D0, str_802F6288), enemy_monoshiri_sort_table[unitKind],
-                        msgSearch(RO(base, 0x3D8, str_802F6290)));
+                sprintf(buf, RO(base, 0x3D0, "%d\201D%s"), enemy_monoshiri_sort_table[unitKind],
+                        msgSearch(RO(base, 0x3D8, "btl_un_hatena")));
             } else {
-                sprintf(buf, RO(base, 0x3D0, str_802F6288), enemy_monoshiri_sort_table[unitKind],
-                        msgSearch(RO(base, 0x3E8, str_802F62A0)));
+                sprintf(buf, RO(base, 0x3D0, "%d\201D%s"), enemy_monoshiri_sort_table[unitKind],
+                        msgSearch(RO(base, 0x3E8, "btl_un_rampell")));
             }
         } else {
-            sprintf(buf, RO(base, 0x3D0, str_802F6288), enemy_monoshiri_sort_table[unitKind],
+            sprintf(buf, RO(base, 0x3D0, "%d\201D%s"), enemy_monoshiri_sort_table[unitKind],
                     msgSearch(tattle->enemyTag));
         }
         wdt = float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
@@ -2512,7 +2759,7 @@ void monosiri_disp(CameraId camId, void* param) {
             winFontSet(&pos, &scale, &cc, buf);
         }
         loc = msgSearch(tattle->locationTag);
-        sprintf(buf, RO(base, 0x3F8, str_802F62B0), msgSearch(RO(base, 0x400, str_802F62B8)), loc);
+        sprintf(buf, RO(base, 0x3F8, "%s\201@%s"), msgSearch(RO(base, 0x400, "menu_monosiri_derutokoro")), loc);
         wdt = float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
         wdt = float_248_8041d7e8 - wdt;
         {
@@ -2537,13 +2784,13 @@ extern const f32 float_1000_8041d7fc;
 extern const f32 float_608_8041d800;
 extern const f32 float_480_8041d804;
 
-extern const Vec vec3_802f6228;
-extern const Vec vec3_802f6234;
-extern const Vec vec3_802f6240;
-extern const Vec vec3_802f624c;
+extern char vec3_802f6228[];
+extern char vec3_802f6234[];
+extern char vec3_802f6240[];
+extern char vec3_802f624c[];
 
 #ifdef MUST_MATCH
-#define HALF_FOV_TAN (*(const f64*)((const char*)base + 0x430))
+#define HALF_FOV_TAN double_0p21817_802f62e8
 #else
 #define HALF_FOV_TAN 0.21816615760326385
 #endif
@@ -2745,3 +2992,128 @@ void capture(CameraId camId, void* param) {
     GXSetProjectionv(proj);
     GXSetScissor(sl, st, sw, sh);
 }
+
+const f64 double_to_int_802f62d8 = 4503601774854144.0;
+const f64 double_to_int_mask_802f62e0 = 4503599627370496.0;
+const f64 double_0p21817_802f62e8 = 0.21816615760326385;
+
+// The SBSS2 region holds the tattle-viewer alpha scratch used by monosiri_disp.
+// A named zero-initialised object keeps it in .sbss2; the object after it is
+// the section's trailing gap.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") const GXColor unk_80423050;
+__declspec(section ".sdata") u8 gap_10_80423054_sbss2[4];
+#pragma section ".sdata" ".sbss"
+
+// .sdata2 colour words and short region strings, in the original's address
+// order. The GXColor words are the shadow/page/tab tints the draw functions
+// load as flat colours.
+const GXColor dat_8041d78c = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041d790 = {0xFF, 0xFF, 0xFF, 0x00};
+const GXColor dat_8041d794 = {0x00, 0x00, 0x00, 0x80};
+const GXColor dat_8041d798 = {0x00, 0x00, 0x00, 0x80};
+const GXColor dat_8041d79c = {0x80, 0x80, 0x80, 0xFF};
+const GXColor dat_8041d7a0 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041d7a4 = {0xFF, 0xFF, 0xFF, 0xFF};
+const GXColor dat_8041d7a8 = {0x00, 0x00, 0x00, 0xFF};
+const char str_8041D7AC[4] = "jp";
+const char str_8041D7B0[4] = "us";
+const GXColor dat_8041d7b4 = {0x00, 0x00, 0x00, 0xFF};
+const GXColor dat_8041d7b8 = {0xCF, 0xBC, 0x9E, 0xFF};
+
+// Named .sdata2 constants, defined after the code in the original's order.
+#pragma explicit_zero_data on
+const f32 float_0_8041d7bc = 0.0f;
+#pragma explicit_zero_data reset
+const f32 float_1_8041d7c0 = 1.0f;
+#pragma explicit_zero_data on
+const f32 float_0p04_8041d7c4 = 0.04f;
+#pragma explicit_zero_data reset
+const f32 float_0p5_8041d7c8 = 0.5f;
+const f32 float_neg0p5_8041d7cc = -0.5f;
+const f32 float_32_8041d7d0 = 32.0f;
+const f32 float_8_8041d7d4 = 8.0f;
+const f32 float_160_8041d7d8 = 160.f;
+const f32 float_216_8041d7dc = 216.0f;
+const f32 float_0p75_8041d7e0 = 0.75f;
+const f32 float_16_8041d7e4 = 16.0f;
+const f32 float_248_8041d7e8 = 248.0f;
+const f32 float_180_8041d7ec = 180.f;
+const f32 float_210_8041d7f0 = 210.f;
+const f32 float_25_8041d7f4 = 25.0f;
+const f32 float_1p2667_8041d7f8 = 1.2666667f;
+const f32 float_1000_8041d7fc = 1000.f;
+const f32 float_608_8041d800 = 608.0f;
+const f32 float_480_8041d804 = 480.f;
+const f32 float_500_8041d808 = 500.f;
+const f32 float_neg300_8041d80c = -300.f;
+const char str_8041D810[4] = "S_1";
+const f32 float_600_8041d814 = 600.f;
+const f32 float_neg400_8041d818 = -400.f;
+const f32 float_6_8041d81c = 6.0f;
+const f32 float_110_8041d820 = 110.f;
+const f32 float_100_8041d824 = 100.f;
+const f32 float_50_8041d828 = 50.f;
+const f32 float_108_8041d82c = 108.0f;
+const f32 float_166_8041d830 = 166.0f;
+const f32 float_184_8041d834 = 184.0f;
+const f32 float_24_8041d838 = 24.0f;
+const f32 float_5_8041d83c = 5.0f;
+const f32 float_56_8041d840 = 56.0f;
+const f32 float_440_8041d84c = 440.f;
+const f32 float_18_8041d850 = 18.0f;
+const f32 float_15_8041d854 = 15.0f;
+const f32 float_240_8041d858 = 240.f;
+const f32 float_0p7_8041d85c = 0.7f;
+const f32 float_420_8041d860 = 420.f;
+const f32 float_30_8041d864 = 30.f;
+const f32 float_220_8041d868 = 220.f;
+const f32 float_74_8041d86c = 74.0f;
+const f32 float_120_8041d870 = 120.f;
+const f32 float_304_8041d874 = 304.0f;
+const f32 float_230_8041d878 = 230.f;
+const f32 float_2_8041d87c = 2.0f;
+const f32 float_45_8041d880 = 45.0f;
+const f32 float_1p5_8041d884 = 1.5f;
+const f32 float_3_8041d888 = 3.0f;
+const f32 float_4_8041d88c = 4.0f;
+const f32 float_0p125_8041d890 = 0.125f;
+const f32 float_neg240_8041d894 = -240.f;
+const f32 float_neg148_8041d898 = -148.0f;
+const f32 float_neg480_8041d89c = -480.f;
+const f32 float_0p43633_8041d8a0 = 0.43633232f;
+#pragma explicit_zero_data on
+const f32 float_0p017453_8041d8a4 = 0.017453292f;
+#pragma explicit_zero_data reset
+const f32 float_51p429_8041d8a8 = 51.42857f;
+const f32 float_20_8041d8ac = 20.f;
+const f32 float_320_8041d8b0 = 320.f;
+const f32 float_10_8041d8b4 = 10.f;
+const f32 float_170_8041d8b8 = 170.f;
+const f32 float_130_8041d8bc = 130.f;
+const f32 float_140_8041d8c0 = 140.f;
+const f32 float_neg160_8041d8c4 = -160.f;
+const f32 float_0p25_8041d8c8 = 0.25f;
+const f32 float_255_8041d8cc = 255.0f;
+const f32 float_neg130_8041d8d0 = -130.f;
+const f32 float_neg200_8041d8d4 = -200.f;
+const f32 float_60_8041d8d8 = 60.f;
+const f32 float_neg128_8041d8dc = -128.0f;
+const f32 float_10000_8041d904 = 10000.f;
+const f32 float_neg230_8041d908 = -230.f;
+const f32 float_neg120_8041d90c = -120.f;
+const f32 float_neg8_8041d910 = -8.0f;
+const f32 float_0p2_8041d914 = 0.2f;
+const f32 float_604_8041d918 = 604.0f;
+const f32 float_468_8041d91c = 468.0f;
+const f32 float_neg150_8041d920 = -150.f;
+const f32 float_150_8041d924 = 150.f;
+const f32 float_80_8041d928 = 80.f;
+const f32 float_neg80_8041d92c = -80.f;
+const f32 float_360_8041d930 = 360.f;
+const f32 float_neg50_8041d934 = -50.f;
+const f32 float_330_8041d938 = 330.f;
+const f32 float_neg250_8041d93c = -250.f;
+const f32 float_neg310_8041d940 = -310.f;
+const f32 float_neg60_8041d944 = -60.f;
+const f32 float_neg1000_8041d948 = -1000.f;

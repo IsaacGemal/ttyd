@@ -10,17 +10,24 @@
 #include "memory.h"
 #include "system.h"
 #include "math_trig.h"
-#include <math.h>
+#include "math_ext.h"
+#define fabs(x) __fabs(x)
 
 #include <stdio.h>
 
 #include <string.h>
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern GXColor dat_80419a2c;
+extern GXColor dat_80419a30;
+extern u32 zero_80419a50;
+extern const char str_80419A54[];
+extern const char str_80419A5C[];
+
 #define TESTHEAP_SIZE (u32)(1.5 * 1024 * 1024)
 #define PI 3.14159265358979323846264338327950288419716939937510f
 
 extern GlobalWork* gp;
-extern const f64 double_10_802c2f20;
 
 // The header's AnimationPoseData padding at 0x1A0 is 4 bytes short: the original
 // binary has groups at 0x1A8 and mpAnims at 0x1AC. Work around it locally.
@@ -28,19 +35,180 @@ extern const f64 double_10_802c2f20;
 #define ANIM_POSE_DATA_ANIMS(data) (*(AnimTableEntry**)((u8*)(data) + 0x1AC))
 
 //.data
-u8 _vivihimoData[0xC00]; // TODO: embed the actual data? gets overwritten by a/vivian.bin in animInit()
+u32 _vivihimoData[0x300] ATTRIBUTE_ALIGN(32) = {
+    0x00000000, 0x3F4CCCCD, 0x3F99999A, 0x3F4CCCCD, 0x00000000, 0x00000000, 0x3F4CCCCD, 0x3F333333,
+    0x3F000000, 0x3F333333, 0x3ECCCCCD, 0x3F333333, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x3E4CCCCD, 0x3F800000, 0x00000000, 0x00000000,
+    0x3E4CCCCD, 0x3F4CCCCD, 0x00000000, 0x3F4CCCCD, 0x00000000, 0x3F4CCCCD, 0x00000000, 0x00000000,
+    0x00000000, 0x3F4CCCCD, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x3F4CCCCD, 0x00000000, 0x3F4CCCCD, 0x00000000, 0x3F4CCCCD, 0x3F800000, 0x3F800000,
+    0x00000000, 0x3F4CCCCD, 0x3F666666, 0x3F333333, 0x3F19999A, 0x3F333333, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+    0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000, 0x3F800000,
+};
+
+MoamoaChainEntry g_moamoa_chain_tbl[47] = {
+    { "joint_00", "jointdai1_A01" },
+    { "jointdai1_A01", "jointdai1_A02" },
+    { "jointdai1_A02", "jointdai1_A03" },
+    { "jointdai1_A03", "jointdai1_A04" },
+    { "jointdai1_A04", "jointdai1_A05" },
+    { "joint_00", "jointdai1_B01" },
+    { "jointdai1_B01", "jointdai1_B02" },
+    { "jointdai1_B02", "jointdai1_B03" },
+    { "jointdai1_B03", "jointdai1_B04" },
+    { "jointdai1_B04", "jointdai1_B05" },
+    { "joint_00", "jointdai1_C01" },
+    { "jointdai1_C01", "jointdai1_C02" },
+    { "jointdai1_C02", "jointdai1_C03" },
+    { "jointdai1_C03", "jointdai1_C04" },
+    { "jointdai1_C04", "jointdai1_C05" },
+    { "joint_00", "jointdai2_01" },
+    { "jointdai2_01", "jointdai2_02" },
+    { "jointdai2_02", "jointdai2_03" },
+    { "jointdai2_03", "jointdai2_04" },
+    { "jointdai2_04", "jointdai2_05" },
+    { "jointdai2_05", "jointdai2_06" },
+    { "jointdai2_06", "jointdai2_07" },
+    { "jointdai2_07", "jointdai2_upper01" },
+    { "jointdai2_upper01", "jointdai2_upper02" },
+    { "jointdai2_upper02", "jointdai2_upper03" },
+    { "jointdai2_upper03", "jointdai2_upper04" },
+    { "jointdai2_07", "jointdai2_lower01" },
+    { "jointdai2_lower01", "jointdai2_lower02" },
+    { "jointdai2_lower02", "jointdai2_lower03" },
+    { "jointdai2_lower03", "jointdai2_lower04" },
+    { "joint_00", "jointasi_A01" },
+    { "jointasi_A01", "jointasi_A02" },
+    { "jointasi_A02", "jointasi_A03" },
+    { "jointasi_A03", "jointasi_A04" },
+    { "joint_00", "jointasi_B01" },
+    { "jointasi_B01", "jointasi_B02" },
+    { "jointasi_B02", "jointasi_B03" },
+    { "jointasi_B03", "jointasi_B04" },
+    { "joint_00", "jointasi_C01" },
+    { "jointasi_C01", "jointasi_C02" },
+    { "jointasi_C02", "jointasi_C03" },
+    { "jointasi_C03", "jointasi_C04" },
+    { "joint_00", "jointasi_D01" },
+    { "jointasi_D01", "jointasi_D02" },
+    { "jointasi_D02", "jointasi_D03" },
+    { "jointasi_D03", "jointasi_D04" },
+    { "joint_00", "joint_core" },
+}; // filled in at runtime from a/vivian.bin
+__declspec(section ".rodata") Vec vec3_802c2db0[1] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") Vec vec3_802c2dbc[1] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") Vec vec3_802c2dc8[1] = { { 0.0f, 0.0f, 0.0f } };
+__declspec(section ".rodata") Vec vec3_802c2dd4[1] = { { 0.0f, 0.0f, 0.0f } };
+
+// An ordinary, immediately generated helper pools the unsigned-int->float conversion double
+// before the deferred functions' strings. Nothing calls it; the linker strips the body.
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static f32 animdrv_pool_i2f_mask(u32 v) {
+    return (f32)v;
+}
+#pragma defer_codegen reset
+#endif
 
 //.bss
 static AnimationWork work;
 f32 tanfTbl[0xB2];
 
 //.sdata
-s32 vivihimoTailGroupNo[4] = { 0, 2, -1, -1 };
+s32 vivihimoTailGroupNo[4] ATTRIBUTE_ALIGN(32) = { 0, 2, -1, -1 };
 void* vivihimoData[4] = {
     NULL,
     &_vivihimoData,
-    &_vivihimoData + 0x400,
-    &_vivihimoData + 0x800,
+    (u8*)_vivihimoData + 0x400,
+    (u8*)_vivihimoData + 0x800,
 };
 static AnimationWork* wp = &work;
 s32 _dummy = -1;
@@ -52,8 +220,6 @@ Mtx mtx; // TODO: make sure it's put in .sbss
 s32 g_modeling_mtx_lv;
 Mtx* g_modeling_mtx;
 Mtx g_modeling_mtx_stack[32];
-extern Vec vec3_802c2dd4[];
-extern Vec vec3_802c2dc8[];
 
 // .sdata2 constants this unit references by name in retail
 extern const f32 float_0_80419a48;
@@ -84,7 +250,6 @@ extern const f32 float_neg270_80419aa8;
 extern const f32 float_180_80419aac;
 extern const f32 float_neg180_80419ab0;
 extern const f32 float_0p1_80419ab4;
-u32 zero_80419a50 = 0;
 
 
 // local declarations
@@ -282,7 +447,7 @@ label_1:
 label_2:
     file->active = TRUE;
     file->references++;
-    file->handle = fileAllocf(5, "%s/%s", "a", animName);
+    file->handle = fileAllocf(5, str_80419A54, str_80419A5C, animName);
 
     if (file->handle) {
         fileId = -2;
@@ -296,7 +461,7 @@ label_2:
             file->active = FALSE;
             file->references--;
         } else {
-            sprintf(textureName, "%s/%s-", "a", data->textureName);
+            sprintf(textureName, "%s/%s-", str_80419A5C, data->textureName);
             check = wp->totalTextures;
             for (i = 0; i < check; i++) {
                 texture = &wp->textures[i];
@@ -349,8 +514,8 @@ label_5:
     pose->disableDraw = 0;
     pose->materialFlag = 0;
     pose->materialLightFlag = 0;
-    pose->materialColor = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
-    pose->materialColor2 = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+    pose->materialColor = dat_80419a2c;
+    pose->materialColor2 = dat_80419a30;
     pose->field_0xFC = 1.0f;
     pose->field_0xF8 = 1.0f;
     pose->field_0x100 = 0.0f;
@@ -443,7 +608,7 @@ BOOL animEffectAsync(const char* animName, u32 group) {
             fileSetCurrentArchiveType(0);
             break;
     }
-    fileId = fileAsyncf(5, NULL, "%s/%s", "a", animName);
+    fileId = fileAsyncf(5, NULL, str_80419A54, str_80419A5C, animName);
     data = wp->mp_ag2tg->data;
     size = (s32)data[1];
     entry = (u8*)data[0];
@@ -456,7 +621,7 @@ BOOL animEffectAsync(const char* animName, u32 group) {
     }
     result = (u8*)&zero_80419a50;
 found:
-    other = fileAsyncf(4, NULL, "%s/%s-", "a", result);
+    other = fileAsyncf(4, NULL, "%s/%s-", str_80419A5C, result);
 
     if (fileId == -1) {
         return TRUE;
@@ -841,7 +1006,7 @@ f32 animPoseGetLoopTimes(s32 id) {
 BOOL animPoseGetPeraEnd(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
 
-    return !(pose->flags & 8) ? TRUE : fabs(pose->field_0x7C - pose->rotationY) < double_10_802c2f20;
+    return !(pose->flags & 8) ? TRUE : fabs(pose->field_0x7C - pose->rotationY) < 10.0;
 }
 void animPoseSetMaterialFlagOn(s32 poseId, u32 mask) {
     AnimationPose* pose = &wp->poses[poseId];
@@ -2096,7 +2261,7 @@ void renderProc(s32 shapeId, s32 field_0x28) {
             for (i = 0; i < drawCount; i++, draw++) {
                 texCount = draw->texCount;
                 if ((u32)wp->mpCurPose->disableDraw == 0) {
-                    lightPos = (Vec){ 0.0f, 0.0f, 0.0f };
+                    lightPos = vec3_802c2dbc[0];
                     MTXMultVec(*g_modeling_mtx, &lightPos, &lightPos);
                     lightPos2 = lightPos;
                     mapSetMaterialLight(wp->mpCurPose->materialLightFlag, lightPos2);
@@ -3349,7 +3514,7 @@ BOOL animGroupBaseAsync(const char* name, s32 group, void* callback) {
             fileSetCurrentArchiveType(0);
             break;
     }
-    fileId = fileAsyncf(5, callback, "%s/%s", "a", name);
+    fileId = fileAsyncf(5, callback, str_80419A54, str_80419A5C, name);
     data = wp->mp_ag2tg->data;
     size = (s32)data[1];
     entry = (u8*)data[0];
@@ -3362,7 +3527,7 @@ BOOL animGroupBaseAsync(const char* name, s32 group, void* callback) {
     }
     result = (u8*)&zero_80419a50;
 found:
-    other = fileAsyncf(4, NULL, "%s/%s-", "a", result);
+    other = fileAsyncf(4, NULL, "%s/%s-", str_80419A5C, result);
 
     if (fileId == -1) {
         return TRUE;
@@ -3677,3 +3842,54 @@ const char* animPoseGetGroupName(s32 poseId, s32 group) {
     AnimationPoseData* data = animPoseGetAnimBaseDataPtr(poseId);
     return ANIM_POSE_DATA_GROUPS(data)[group].name;
 }
+
+// Named .sdata2 GXColor objects, defined after the code so the compiler keeps the loads.
+#pragma force_active on // dat_80419a28 has no reference and must still be emitted
+const s32 dat_80419a28 = 0x0000002f;
+__declspec(section ".sdata2") GXColor dat_80419a2c = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor dat_80419a30 = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor dat_80419a34 = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor dat_80419a38 = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor dat_80419a3c = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor dat_80419a40 = { 0xff, 0xff, 0xff, 0xff };
+#pragma force_active reset
+
+const f32 float_1_80419a44 = 1.0f;
+#pragma explicit_zero_data on // emit float_0_80419a48 as 4 zero bytes instead of .sbss
+const f32 float_0_80419a48 = 0.0f;
+#pragma explicit_zero_data reset
+const f32 float_deg2rad_80419a4c = 0.017453292f;
+#pragma explicit_zero_data on // emit zero_80419a50 as 4 zero bytes instead of .sbss
+__declspec(section ".sdata2") u32 zero_80419a50 = 0;
+#pragma explicit_zero_data reset
+__declspec(section ".sdata2") const char str_80419A54[] = "%s/%s";
+__declspec(section ".sdata2") const char str_80419A5C[] = "a";
+const f32 float_16p667_80419a60 = 16.666666f;
+const f32 float_0p5_80419a64 = 0.5f;
+const f32 float_0p75_80419a68 = 0.75f;
+const f32 float_0p25_80419a6c = 0.25f;
+const f32 float_8_80419a70 = 8.0f;
+const f32 float_25p74_80419a74 = 25.74f;
+const f32 float_0p14881_80419a78 = 0.14881f;
+const f32 float_150_80419a7c = 150.f;
+const f32 float_215_80419a80 = 215.0f;
+const f32 float_2_80419a84 = 2.0f;
+const f32 float_neg0p5_80419a88 = -0.5f;
+const f32 float_neg1_80419a8c = -1.0f;
+const f32 float_neg90_80419a90 = -90.f;
+const f32 float_rad2deg_80419a94 = 57.29579f;
+const f32 float_360_80419a98 = 360.f;
+const f32 float_neg360_80419a9c = -360.f;
+const f32 float_90_80419aa0 = 90.f;
+const f32 float_270_80419aa4 = 270.f;
+const f32 float_neg270_80419aa8 = -270.f;
+const f32 float_180_80419aac = 180.f;
+const f32 float_neg180_80419ab0 = -180.f;
+const f32 float_0p1_80419ab4 = 0.1f;
+const f32 float_neg2_80419ab8 = -2.0f;
+const f32 float_neg3_80419abc = -3.0f;
+const f32 float_0p04_80419ac0 = 0.04f;
+const f32 float_60_80419ac4 = 60.f;
+const f32 float_1000_80419ac8 = 1000.f;
+const f32 float_0p0625_80419acc = 0.0625f;
+const f32 float_3_80419ad0 = 3.0f;
