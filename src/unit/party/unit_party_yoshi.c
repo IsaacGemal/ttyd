@@ -1681,6 +1681,16 @@ u8 _yoshig_tpl_no_tbl[8] = { 0x46, 0x49, 0x47, 0x46, 0x4A, 0x48, 0x00, 0x00 };
 // clang-format on
 #pragma force_active off
 
+#ifdef MUST_MATCH
+// An ordinary, immediately generated function pools the i2f double before the deferred functions' strings
+// ("SFX_BTL_YOSHI_TAIGUN1"); nothing calls it and the linker strips the body.
+#pragma defer_codegen off
+static f32 yoshi_pool_i2f(s32 v) {
+    return (f32)v;
+}
+#pragma defer_codegen on
+#endif
+
 // Reusing one variable for both evtGetValue and BattleTransID (`id = evtGetValue(...);
 // id = BattleTransID(event, id);`) removed the extra `mr r0` the two-variable form emitted.
 // The pool base register is r5/r6 as the original only with the pragma below (with propagation on
@@ -2202,7 +2212,7 @@ USER_FUNC(_gundan_yoshi_run_effect) {
                              5.0f + work->field_0x04 + (f32)irand(15),
                              65.0f, scale);
         }
-        area->field_0x3008 = area->field_0x3008 * 0.00390625f;
+        area->field_0x3008 *= 0.00390625f;
         pos.x = area->field_0x3008;
         pos.y = 0.0f;
         pos.z = 0.0f;

@@ -833,7 +833,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(Matching, "unit/party/unit_party_clauda.c"),
-            Object(NonMatching, "unit/party/unit_party_yoshi.c"),
+            Object(Matching, "unit/party/unit_party_yoshi.c"),
             Object(Matching, "unit/party/unit_party_chuchurina.c"),
             Object(Matching, "unit/party/unit_party_sanders.c"),
             Object(Matching, "unit/party/unit_party_vivian.c"),
