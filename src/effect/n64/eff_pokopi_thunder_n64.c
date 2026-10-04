@@ -70,15 +70,34 @@ static inline f32 pt_sqrtf(f32 x) {
 }
 
 // .rodata
+
+#ifdef MUST_MATCH
+// Immediately generated helpers pool the zero-Vec copy template and the two int->float
+// conversion doubles (the unsigned mask first, then the signed one) ahead of the
+// "PokopiThunderN64" string, in the original's .rodata order. Nothing calls the conversion
+// helpers; the linker strips their unused bodies.
+#pragma defer_codegen off
+static inline Vec pool_vec3(void) {
+	return (Vec){ 0.0f, 0.0f, 0.0f };
+}
+
+static f32 pool_i2f_mask(s32 v) {
+	return (f32)(u32)v;
+}
+
+static f32 pool_i2f_signed(s32 v) {
+	return (f32)v;
+}
+#pragma defer_codegen reset
+#else
 const Vec vec3_802fb400 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_mask_802fb410 = 4503599627370496.0;
-const f64 double_to_int_802fb418 = 4503601774854144.0;
+#endif
+
 const char str_802FB420[] = "PokopiThunderN64";
 // Named in the original .rodata (see the .obj blocks).
 const f64 double_0p5_802fb438 = 0.5;
 const f64 double_3_802fb440 = 3.0;
 const f64 double_0_802fb448 = 0.0;
-const f32 float_0p5_8041fa54 = 0.5f;
 
 // The named sqrtf doubles (0x38/0x40/0x48) sit where the original .rodata has them, and the
 // else-return-0 block is placed next to the sqrt result; together with a real zero variable (so
@@ -165,7 +184,11 @@ void effPokopiThunderMain(EffectEntry* effect) {
 	s32 timer;
 
 	data = effect->userdata;
-	pos = (Vec){ 0.0f, 0.0f, 0.0f };
+#ifdef MUST_MATCH
+	pos = pool_vec3();
+#else
+	pos = vec3_802fb400;
+#endif
 	pos.x = data->x;
 	pos.y = data->y;
 	pos.z = data->z;
@@ -258,8 +281,12 @@ u8 yuragi_data2[0x108] = {
 // .sdata
 u8* yuragi_data_table[2] = { yuragi_data, yuragi_data2 };
 
-// .sbss2 scratch GXColor the original copies before filling its fields.
-GXColor unk_80423220;
+// .sbss2 scratch GXColor followed by the 4-byte section-tail gap. Objects land in reverse
+// declaration order, so the gap is declared before unk_80423220.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_80423224_sbss2[4];
+__declspec(section ".sdata") GXColor unk_80423220;
+#pragma section ".sdata" ".sbss"
 
 // .sdata2 scratch word the original builds the second TEV colour from.
 __declspec(section ".sdata2") const u32 dat_8041fa20 = 0x00000080;
@@ -272,20 +299,6 @@ typedef struct EffPokopiThunderVtx {
 } EffPokopiThunderVtx;
 
 // The original's .sdata2 float pool, named after its addresses.
-extern const f32 float_0p1_8041fa24;
-extern const f32 float_0p0078125_8041fa28;
-extern const f32 float_0p03125_8041fa2c;
-extern const f32 float_0_8041fa30;
-extern const f32 float_0p090909_8041fa34;
-extern const f32 float_6p2832_8041fa38;
-extern const f32 float_360_8041fa3c;
-extern const f32 float_0p04_8041fa40;
-extern const f32 float_8_8041fa44;
-extern const f32 float_neg90_8041fa48;
-extern const f32 float_180_8041fa4c;
-extern const f32 float_neg180_8041fa50;
-extern const f32 float_10_8041fa58;
-extern const f32 float_0p005_8041fa5c;
 
 // Retail builds each Tev colour from the unk_80423220/dat_8041fa20 globals and passes it straight to
 // GXSetTevColor. They are void inlines (not a colour returned and passed on) because that is what makes
