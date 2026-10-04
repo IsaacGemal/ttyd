@@ -236,34 +236,75 @@ while queues['.data'] or queues['.sdata']:
     seen.update(rendered[o['name']][1])
 
 
+PRAGMA_STATE = re.compile(r'#pragma\s+(\w+)\s+(on|off|reset)\b(.*)')
+
+
 def split_source(text):
-    """(preamble, [(function name, text)], epilogue): the existing source cut into its function definitions."""
+    """(preamble, [(function name, text)], epilogue): the existing source cut into its function definitions.
+
+    A chunk is one function together with the preprocessor block that wraps it (an `#ifdef` ... `#endif` around a helper
+    ends at its `#endif`; a function with `#ifdef`/`#else` bodies counts only the first branch's braces). A `#pragma NAME
+    on|off|reset` pair is not kept as text between chunks, where reordering would separate it: the pragma state in effect
+    at each chunk is recorded and re-emitted around that chunk alone (`off`/`on` before, `reset` after), so the chunks can
+    be moved without changing which functions the pragma applies to."""
     lines = text.split('\n')
-    chunks, cur, depth, start = [], [], 0, None
     first = None
     for i, l in enumerate(lines):
         code = re.sub(r'//.*', '', l)
-        if first is None and depth == 0 and re.match(r'^[A-Za-z_][\w\s\*]*\(.*\)\s*\{?\s*$', code) and not code.startswith(('typedef', 'extern')) and '=' not in code and not code.rstrip().endswith(';'):
+        if re.match(r'^[A-Za-z_][\w\s\*]*\(.*\)\s*\{?\s*$', code) and not code.startswith(('typedef', 'extern')) and '=' not in code and not code.rstrip().endswith(';'):
             first = i
-        if first is not None:
-            cur.append(l)
-            depth += code.count('{') - code.count('}')
-            if depth == 0 and '}' in code:
-                chunks.append(cur)
-                cur = []
+            break
+    if first is None:
+        return text, [], ''
+    # a preprocessor block (#if ... ) that opens right above the first function belongs to it
     lead = first
-    while first is not None and first > 0 and (lines[first - 1].startswith('//') or lines[first - 1].startswith('#pragma')):
+    while first > 0 and (lines[first - 1].startswith('//') or lines[first - 1].startswith('#')):
         first -= 1
-    if chunks and first is not None and first < lead:
-        chunks[0] = lines[first:lead] + chunks[0]  # comments and pragmas that lead into the first function stay with it
-    pre = '\n'.join(lines[:first]) if first is not None else text
+    pre_lines = lines[:first]
+    body_lines = lines[first:]
+    chunks, cur = [], []
+    depth = 0
+    pp = []          # one entry per open #if: True while inside its first branch
+    state = {}
+    cur_state = None
+    continued = False
+    for l in body_lines:
+        code = re.sub(r'//.*', '', l)
+        m = PRAGMA_STATE.match(l.strip())
+        if m and m.group(1) != 'force_active':
+            k, v, rest = m.groups()
+            state[k] = (v != 'reset', v, rest.strip())
+            if not cur and cur_state is None:
+                pass
+            continue
+        if cur_state is None and code.strip():
+            cur_state = dict(state)
+        cur.append(l)
+        t = l.strip()
+        was_continued, continued = continued, l.rstrip().endswith('\\')
+        if was_continued or (t.startswith('#') and continued):
+            continue   # the lines of a multi-line #define hold braces that are not the function's
+        if re.match(r'#\s*if', t):
+            pp.append(True)
+        elif re.match(r'#\s*(else|elif)', t) and pp:
+            pp[-1] = False
+        elif re.match(r'#\s*endif', t) and pp:
+            pp.pop()
+        elif not t.startswith('#') and (not pp or pp[-1]):
+            depth += code.count('{') - code.count('}')
+        if depth == 0 and not pp and ('}' in code or re.match(r'#\s*endif', t)) and any(re.search(r'\{', re.sub(r'//.*', '', c)) for c in cur):
+            chunks.append((cur, cur_state or {}))
+            cur, cur_state = [], None
     out = []
-    for c in chunks:
-        body = '\n'.join(c)
-        m = re.search(r'(?:USER_FUNC|EVT_DEF)\((\w+)\)|\b(\w+)\s*\(', re.sub(r'(?m)^\s*(//.*|#pragma.*)$', '', body))
-        out.append(((m.group(1) or m.group(2)) if m else '', body))
+    for c, st in chunks:
+        body = '\n'.join(c).strip('\n')
+        wrap_pre = [f'#pragma {k} {v}{(" " + r) if r else ""}' for k, (act, v, r) in sorted(st.items()) if act]
+        wrap_post = [f'#pragma {k} reset' for k, (act, v, r) in sorted(st.items()) if act]
+        full = '\n'.join(wrap_pre + [body] + wrap_post)
+        m2 = re.search(r'(?:USER_FUNC|EVT_DEF)\((\w+)\)|\b(\w+)\s*\(', re.sub(r'(?m)^\s*(//.*|#.*)$', '', body))
+        out.append(((m2.group(1) or m2.group(2)) if m2 else '', full))
     tail = '\n'.join(cur)
-    return pre, out, tail
+    return '\n'.join(pre_lines), out, tail
 
 
 if APPEND:
