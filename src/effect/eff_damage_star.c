@@ -240,21 +240,23 @@ static inline f32 damageStarCosf(f32 angle) {
 // branch; `opt_lifetimes off` keeps the seed loads (0.00761/0.03705) inside the loop instead of
 // hoisting them to the preheader (the envdrv.c/envDisp_FF shape). Both are required: with only one
 // the coefficient loads move and the diff count grows.
-// The five named constant locals below (k6/k360/k15/k02/f4) and their declaration and
-// assignment order are load-bearing for MWCC's FPR colouring (the eff_starpoint/eff_gonbaba_breath
-// technique): without them the whole preheader constant block shifts several registers.
-// The magic double also pools as @378 rather than double_to_int_802f3458 (objdiff resolves data by
-// section offset, so that is not scored).
+// The named constant locals below (k6/k360/k15/f4) and their declaration and assignment order
+// are load-bearing for MWCC's FPR colouring (the eff_starpoint/eff_gonbaba_breath technique):
+// without them the whole preheader constant block shifts several registers. The 0.2 scale is
+// written as a literal inside the loop rather than a preheader local so it pools last, which is
+// where the target keeps float_0p2; with a preheader `k02` local the pool was displaced at slot
+// 0x6c (360/.00761/... vs 0.2/360/...). The .sdata2 pool now matches the target entry for entry.
 // The instruction sequence, control flow, stack frame, the loop accumulator (f13), rad (f29), the
 // 30-count local (f4), the per-branch 1.5708/4.7124 scratch and the preheader load order all match.
-// The 12 loop-invariant constants are all live across the loop, so they form a clique and any FPR
+// The loop-invariant constants are all live across the loop, so they form a clique and any FPR
 // permutation is a legal colouring; only the colour choice differs. Target value->FPR: 30->f6,
 // 0.0->f12, 6.28->f11, 360->f10, .166->f2, 1.0->f1, pi->f9, 1.5->f8, .4967->f3, .2->f5, magic->f0,
-// seed->f13; ours: 30->f6, 0.0->f1, 6.28->f3, 360->f5, .166->f2, 1.0->f8, pi->f12, 1.5->f11,
-// .4967->f7, .2->f0, magic->f9, seed->f13. Permuting the outer locals' and the helpers' internals'
-// declarations/assignments, parameterising or inlining the polynomial, const locals, and
-// opt_common_subs/global_optimizer/scheduling/fp_contract/optimization_level/optimize_for_size/pool_data
-// variants all leave >=68 differing instructions (or make it worse); it is allocator luck.
+// 30-count->f4, seed->f13; ours: 30->f6, 0.0->f1, 6.28->f3, 360->f2, .166->f8, 1.0->f12, pi->f11,
+// 1.5->f7, .4967->f0, .2->f5, magic->f9, 30-count->f4, seed->f13. Permuting the outer locals' and
+// the helpers' internals' declarations/assignments, parameterising or inlining the polynomial,
+// const locals, and opt_common_subs/global_optimizer/scheduling/fp_contract/optimization_level/
+// optimize_for_size/pool_data variants all leave >=68 differing instructions (or make it worse);
+// it is allocator luck.
 // NONMATCHING (97.66%): only the loop-invariant constants' FPR colouring differs (allocator luck; a permuter job should finish it).
 #pragma opt_propagation off
 #pragma opt_lifetimes off
@@ -267,7 +269,6 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
     f32 k360;
     f32 k15;
     f32 f4;
-    f32 k02;
 
     entry = effEntry();
     origCount = count;
@@ -296,7 +297,6 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
     f4 = 30.0f - (f32)(count + 2);
     k6 = 6.2831855f;
     k15 = 1.5f;
-    k02 = 0.2f;
     k360 = 360.0f;
     i = 1;
     data = &data[1];
@@ -316,9 +316,9 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
         data->vz = 0.0f;
         data->rot = 0.0f;
         data->alpha = 0xFF;
-        data->scaleX = k02;
-        data->scaleY = k02;
-        data->scaleZ = k02;
+        data->scaleX = 0.2f;
+        data->scaleY = 0.2f;
+        data->scaleZ = 0.2f;
     }
 
     return entry;
