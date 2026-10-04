@@ -14,32 +14,14 @@ extern GlobalWork* gp;
 // first entry, and a second `position` local is copied from it before dispCalcZ.
 // vec3_802f3748 is this unit's data (retail .rodata:0xb0); the compiler pools the zero
 // for `disp` and the int->float 2^52 double right behind it, so define it to keep those
-// pool entries at vec3_802f3754 (0xbc), str_802F3760 (0xc8) and double_to_int (0xe0).
-extern const f32 float_500_8041cbbc;
-extern const f32 float_0p4_8041cbc0;
-extern const f32 float_1p5_8041cbc4;
-extern const f32 float_0p2_8041cbc8;
-extern const f32 float_0p1_8041cbcc;
-extern const f32 float_2_8041cbd0;
+// pool entries at vec3_802f3754 (0xbc), "SFX_SYSTEM_ACROBAT1" (0xc8) and double_to_int (0xe0).
 
 // .sdata2 named float constants
 extern const f32 float_0p017453_8041cba4;
 extern f32 float_20_8041cba8;
 extern f32 float_0p5_8041cbac;
-extern f32 float_0_8041cbb0;
-extern f32 float_10_8041cbb4;
-extern f32 float_1_8041cbb8;
-extern const f32 float_8_8041cbd4;
 extern const GXColor dat_8041cba0;
 // effNiceMain's fade thresholds and per-type colours
-extern const f32 float_32_8041cbd8;
-extern const f32 float_34_8041cbdc;
-extern const f32 float_255_8041cbe0;
-extern const f32 float_35_8041cbe4;
-extern const f32 float_37_8041cbe8;
-extern const f32 float_45_8041cbec;
-extern const f32 float_40_8041cbf0;
-extern const f32 float_48_8041cbf4;
 extern const GXColor dat_8041cb90;
 extern const GXColor dat_8041cb94;
 extern const GXColor dat_8041cb98;
@@ -67,7 +49,13 @@ const char* anim_us[] = {
 const char** anim_tbl[2] = { anim_jp, anim_us };
 s32 acrobat_jp[] = {179, 180, 181, 182, 183, 184, 185};
 s32 acrobat_us[] = {183, 184, 185, 186, 187, 188}; //includes nonexistant textures
-s32* acrobal_tbl[2] = { acrobat_jp, acrobat_us };
+s32* acrobat_tbl[2] = { acrobat_jp, acrobat_us };
+// 4-byte zero word that ends the unit's .sdata; needs explicit_zero_data to stay in the section.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_80411CDC_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 // retail effNiceMain's zero Vec (it is not decompiled yet); defined here for the .rodata layout.
 const Vec vec3_802f3748 = { 0.0f, 0.0f, 0.0f };
@@ -218,20 +206,20 @@ void effNiceMain(EffectEntry* effect) {
 		case 0:
 		case 1:
 			end = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
-			base = (u32)gp->language == 0 ? float_32_8041cbd8 : float_34_8041cbdc;
+			base = (u32)gp->language == 0 ? 32.0f : 34.0f;
 			time = *(f32*)((u8*)pose + 0x24);
 			if (time > base) {
-				alpha = float_1_8041cbb8 - (time - base) / (end - base);
-				if (alpha < float_0_8041cbb0) {
-					alpha = float_0_8041cbb0;
+				alpha = 1.0f - (time - base) / (end - base);
+				if (alpha < 0.0f) {
+					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
 #ifdef MUST_MATCH
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb90, (u8)(s32)(float_255_8041cbe0 * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb90, (u8)(s32)(255.0f * alpha)));
 #else
 				{
 					GXColor color = *(GXColor*)&dat_8041cb90;
-					color.a = (u8)(s32)(float_255_8041cbe0 * alpha);
+					color.a = (u8)(s32)(255.0f * alpha);
 					animPoseSetMaterialEvtColor(data->poseId, color);
 				}
 #endif
@@ -239,20 +227,20 @@ void effNiceMain(EffectEntry* effect) {
 			break;
 		case 2:
 			end2 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
-			base2 = (u32)gp->language == 0 ? float_35_8041cbe4 : float_37_8041cbe8;
+			base2 = (u32)gp->language == 0 ? 35.0f : 37.0f;
 			time2 = *(f32*)((u8*)pose + 0x24);
 			if (time2 > base2) {
-				alpha = float_1_8041cbb8 - (time2 - base2) / (end2 - base2);
-				if (alpha < float_0_8041cbb0) {
-					alpha = float_0_8041cbb0;
+				alpha = 1.0f - (time2 - base2) / (end2 - base2);
+				if (alpha < 0.0f) {
+					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
 #ifdef MUST_MATCH
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb94, (u8)(s32)(float_255_8041cbe0 * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb94, (u8)(s32)(255.0f * alpha)));
 #else
 				{
 					GXColor color = *(GXColor*)&dat_8041cb94;
-					color.a = (u8)(s32)(float_255_8041cbe0 * alpha);
+					color.a = (u8)(s32)(255.0f * alpha);
 					animPoseSetMaterialEvtColor(data->poseId, color);
 				}
 #endif
@@ -260,20 +248,20 @@ void effNiceMain(EffectEntry* effect) {
 			break;
 		case 3:
 			end3 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
-			base3 = (u32)gp->language == 0 ? float_45_8041cbec : float_40_8041cbf0;
+			base3 = (u32)gp->language == 0 ? 45.0f : 40.f;
 			time3 = *(f32*)((u8*)pose + 0x24);
 			if (time3 > base3) {
-				alpha = float_1_8041cbb8 - (time3 - base3) / (end3 - base3);
-				if (alpha < float_0_8041cbb0) {
-					alpha = float_0_8041cbb0;
+				alpha = 1.0f - (time3 - base3) / (end3 - base3);
+				if (alpha < 0.0f) {
+					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
 #ifdef MUST_MATCH
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb98, (u8)(s32)(float_255_8041cbe0 * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb98, (u8)(s32)(255.0f * alpha)));
 #else
 				{
 					GXColor color = *(GXColor*)&dat_8041cb98;
-					color.a = (u8)(s32)(float_255_8041cbe0 * alpha);
+					color.a = (u8)(s32)(255.0f * alpha);
 					animPoseSetMaterialEvtColor(data->poseId, color);
 				}
 #endif
@@ -281,20 +269,20 @@ void effNiceMain(EffectEntry* effect) {
 			break;
 		case 4:
 			end4 = *(f32*)((u8*)*(void**)((u8*)animData + 0x24) + 8);
-			base4 = (u32)gp->language == 0 ? float_48_8041cbf4 : float_40_8041cbf0;
+			base4 = (u32)gp->language == 0 ? 48.0f : 40.f;
 			time4 = *(f32*)((u8*)pose + 0x24);
 			if (time4 > base4) {
-				alpha = float_1_8041cbb8 - (time4 - base4) / (end4 - base4);
-				if (alpha < float_0_8041cbb0) {
-					alpha = float_0_8041cbb0;
+				alpha = 1.0f - (time4 - base4) / (end4 - base4);
+				if (alpha < 0.0f) {
+					alpha = 0.0f;
 				}
 				animPoseSetMaterialFlagOn(data->poseId, 0x40);
 #ifdef MUST_MATCH
-				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb9c, (u8)(s32)(float_255_8041cbe0 * alpha)));
+				animPoseSetMaterialEvtColor(data->poseId, niceEvtColor(*(GXColor*)&dat_8041cb9c, (u8)(s32)(255.0f * alpha)));
 #else
 				{
 					GXColor color = *(GXColor*)&dat_8041cb9c;
-					color.a = (u8)(s32)(float_255_8041cbe0 * alpha);
+					color.a = (u8)(s32)(255.0f * alpha);
 					animPoseSetMaterialEvtColor(data->poseId, color);
 				}
 #endif
@@ -303,7 +291,7 @@ void effNiceMain(EffectEntry* effect) {
 		case 6:
 			break;
 		}
-		if (animPoseGetLoopTimes(data->poseId) >= float_1_8041cbb8) {
+		if (animPoseGetLoopTimes(data->poseId) >= 1.0f) {
 			animPoseRelease(data->poseId);
 			effDelete(effect);
 			return;
@@ -331,18 +319,17 @@ void effNiceDisp(CameraId camId, void* param) {
 	PSMTXScale(mtxScale, data->field_0x1C, data->field_0x1C, data->field_0x1C);
 	PSMTXConcat(mtxTrans, mtxRot, mtxFinal);
 	PSMTXConcat(mtxFinal, mtxScale, mtxFinal);
-	PSMTXScale(mtxScale, float_8_8041cbd4, float_8_8041cbd4, float_8_8041cbd4);
+	PSMTXScale(mtxScale, 8.0f, 8.0f, 8.0f);
 	PSMTXConcat(mtxFinal, mtxScale, mtxFinal);
-	animPoseDrawMtx(data->poseId, mtxFinal, 1, float_0_8041cbb0, float_1_8041cbb8);
-	animPoseDrawMtx(data->poseId, mtxFinal, 2, float_0_8041cbb0, float_1_8041cbb8);
-	animPoseDrawMtx(data->poseId, mtxFinal, 3, float_0_8041cbb0, float_1_8041cbb8);
+	animPoseDrawMtx(data->poseId, mtxFinal, 1, 0.0f, 1.0f);
+	animPoseDrawMtx(data->poseId, mtxFinal, 2, 0.0f, 1.0f);
+	animPoseDrawMtx(data->poseId, mtxFinal, 3, 0.0f, 1.0f);
 }
 
 // The control flow, values and jump table all match. The int->float magic in case 2 now lands in
 // f2, the lfs loads are in the original order (the 1.0f start constant is a literal, as in the
-// original, instead of the non-const `float_1_8041cbb8` extern — MWCC schedules a non-const load
-// after the const ones), and the prologue li order (i, x, y) is reproduced by initialising them in
-// the for-clause.
+// original, instead of a non-const named load — MWCC schedules a non-const load after the const
+// ones), and the prologue li order (i, x, y) is reproduced by initialising them in the for-clause.
 // The comma in the `sfx` initialiser is the `ac_button_down` allocator nudge: it makes MWCC
 // materialise the string address directly (`addi rN, r3, @l`) instead of through a scratch
 // (`addi r0, r3, @l; mr rN, r0`). It also makes the address temp take r31, so retail's x=r31/y=r30
@@ -400,7 +387,7 @@ void acrobatMain(EffectEntry* effect) {
 			break;
 		case 2:
 			data->field_0x20++;
-			data->position.x = intplGetValue(0xC, data->field_0x20, 0x1E, float_500_8041cbbc, (f32)x);
+			data->position.x = intplGetValue(0xC, data->field_0x20, 0x1E, 500.f, (f32)x);
 			if (data->field_0x20 >= 0x1E) {
 				data->field_0x20 = 0;
 				data->field_0x28++;
@@ -408,8 +395,8 @@ void acrobatMain(EffectEntry* effect) {
 			break;
 		case 3:
 			data->field_0x20++;
-			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 8, 1.0f, float_0p4_8041cbc0);
-			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 8, 1.0f, float_1p5_8041cbc4);
+			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 8, 1.0f, 0.4f);
+			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 8, 1.0f, 1.5f);
 			if (data->field_0x20 >= 8) {
 				data->field_0x20 = 0;
 				data->field_0x28++;
@@ -425,8 +412,8 @@ void acrobatMain(EffectEntry* effect) {
 		case 5:
 			data->field_0x20++;
 			data->position.x = intplGetValue(8, data->field_0x20, 0x1E, (f32)x, (f32)y);
-			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0x1E, float_0p2_8041cbc8, float_1_8041cbb8);
-			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0x1E, float_1p5_8041cbc4, float_1_8041cbb8);
+			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0x1E, 0.2f, 1.0f);
+			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0x1E, 1.5f, 1.0f);
 			if (data->field_0x20 >= 0x1E) {
 				data->field_0x20 = 0;
 				data->field_0x28++;
@@ -441,8 +428,8 @@ void acrobatMain(EffectEntry* effect) {
 			break;
 		case 7:
 			data->field_0x20++;
-			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0xF, 1.0f, float_1p5_8041cbc4);
-			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0xF, 1.0f, float_0p1_8041cbcc);
+			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0xF, 1.0f, 1.5f);
+			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0xF, 1.0f, 0.1f);
 			if (data->field_0x20 >= 0xF) {
 				data->field_0x20 = 0;
 				data->field_0x28++;
@@ -450,8 +437,8 @@ void acrobatMain(EffectEntry* effect) {
 			break;
 		case 8:
 			data->field_0x20++;
-			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0xF, float_1p5_8041cbc4, float_0p1_8041cbcc);
-			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0xF, float_0p1_8041cbcc, float_2_8041cbd0);
+			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0xF, 1.5f, 0.1f);
+			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0xF, 0.1f, 2.0f);
 			if (data->field_0x20 >= 0xF) {
 				data->field_0x20 = 0;
 				data->field_0x28++;
@@ -525,9 +512,11 @@ void effAcrobatDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-	max = float_10_8041cbb4;
 	negSize = -float_20_8041cba8;
 	min = negSize * float_0p5_8041cbac;
+#ifndef MUST_MATCH
+	max = 10.0f;
+#endif
 	i = 1;
 #ifdef MUST_MATCH
 	texIdx = 1;
@@ -540,17 +529,22 @@ void effAcrobatDisp(CameraId camId, void* param) {
 #endif
 		if (data->field_0x28 < 6) {
 			offsetX = negSize * float_0p5_8041cbac;
-			offsetY = float_0_8041cbb0;
+			offsetY = 0.0f;
 		}
 		else {
-			offsetX = float_0_8041cbb0;
+			offsetX = 0.0f;
 			offsetY = negSize * float_0p5_8041cbac;
 		}
+#ifdef MUST_MATCH
+		// The original pools 10.0f after the loop's own 0.0f, so assign it here; the loop-invariant
+		// load is still hoisted into the preheader. The plain form is assigned before the loop.
+		max = 10.f;
+#endif
 		PSMTXTrans(mtxTrans, data->position.x, data->position.y, data->position.z);
-		PSMTXTrans(mtxRot, offsetX, offsetY, float_0_8041cbb0);
+		PSMTXTrans(mtxRot, offsetX, offsetY, 0.0f);
 		PSMTXScale(mtxScale, data->field_0x10, data->field_0x14, data->field_0x18);
 		PSMTXConcat(mtxRot, mtxScale, mtxScale);
-		PSMTXTrans(mtxRot, -offsetX, -offsetY, float_0_8041cbb0);
+		PSMTXTrans(mtxRot, -offsetX, -offsetY, 0.0f);
 		PSMTXConcat(mtxScale, mtxRot, mtxScale);
 		PSMTXConcat(mtxTrans, mtxScale, mtxScale);
 		PSMTXConcat(mtxFinal, mtxScale, mtxScale);
@@ -559,23 +553,35 @@ void effAcrobatDisp(CameraId camId, void* param) {
 		GXSetCurrentMtx(0);
 
 #ifdef MUST_MATCH
-		effGetTexObj(acrobal_tbl[gp->language][texIdx - 1], &texObj);
+		effGetTexObj(acrobat_tbl[gp->language][texIdx - 1], &texObj);
 #else
-		effGetTexObj(acrobal_tbl[gp->language][i - 1], &texObj);
+		effGetTexObj(acrobat_tbl[gp->language][i - 1], &texObj);
 #endif
 		GXLoadTexObj(&texObj, GX_TEXMAP0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(min, max, float_0_8041cbb0);
-		GXTexCoord2f32(float_0_8041cbb0, float_0_8041cbb0);
-		GXPosition3f32(max, max, float_0_8041cbb0);
-		GXTexCoord2f32(float_1_8041cbb8, float_0_8041cbb0);
-		GXPosition3f32(max, min, float_0_8041cbb0);
-		GXTexCoord2f32(float_1_8041cbb8, float_1_8041cbb8);
-		GXPosition3f32(min, min, float_0_8041cbb0);
-		GXTexCoord2f32(float_0_8041cbb0, float_1_8041cbb8);
+		GXPosition3f32(min, max, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(max, max, 0.0f);
+		GXTexCoord2f32(1.0f, 0.0f);
+		GXPosition3f32(max, min, 0.0f);
+		GXTexCoord2f32(1.0f, 1.0f);
+		GXPosition3f32(min, min, 0.0f);
+		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
 #pragma opt_common_subs on
 #ifdef MUST_MATCH
 #pragma opt_dead_assignments reset
 #endif
+
+// The unit's named .sdata2 objects, in the original's order, defined after the code so a
+// const object is not folded into a literal at its uses.
+const GXColor dat_8041cb90 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_8041cb94 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_8041cb98 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_8041cb9c = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_8041cba0 = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+const f32 float_0p017453_8041cba4 = 0.017453292f;
+__declspec(section ".sdata2") f32 float_20_8041cba8 = 20.0f;
+__declspec(section ".sdata2") f32 float_0p5_8041cbac = 0.5f;
