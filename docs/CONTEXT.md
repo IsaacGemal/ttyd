@@ -4558,3 +4558,11 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   FAIL lines: a `grep -E '^PASS|^FAIL'` chain let a lint FAIL commit (#411, re-verified PASS after). Tools-only
   changes need `--allow-protected`, and a stale build/ci/accepted.json from another branch shows that branch's work
   as regressions: re-init the baseline (`ci.py --init`) on the clean base first.
+- **Batch 15:** npcdrv's fbatEncountCheck 96.19 -> 99.24 (wave 73 audit: all eight flagged rows real, a switch tree one
+  case short and an if/else-if that is a switch in the original; merged by hand with the agent's deletion of the
+  MUST_MATCH rodata-anchor string defines undone, which was the ratchet's .rodata refusal); data ports for mot_jabara,
+  evt_bero, evt_shop, battle_stage, eff_gonbaba_breath and eff_recovery; battle_stage_object's .rodata pool base. Allowlist:
+  opt_loop_invariants (already in three files). eff_recovery's link task left .sdata2 in a different object order, its
+  second failed link: for Codex. Rejected: mot_ship (data port regressed .data 100 -> 57.6 on an unchanged file; queued
+  for a follow-up). Open: proto_asm reports winBookGX (win_root.h) as 2 int parameters where the original reads 2 int
+  and 2 float, so its win_item/win_log callers may be passing too few arguments.
