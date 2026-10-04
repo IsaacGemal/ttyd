@@ -16,20 +16,45 @@ $MWCCDBG_HOME (default ~/mwccdbg: mwcc-debugger/ and retrowin32/ on its gdb-stub
 x86-unicorn --profile lto`), and gdb must be on PATH (set MWCCDBG_PATH to prepend directories). Read the dumps with tools/rasim.py."""
 import os
 import pathlib
+import random
 import re
 import shlex
 import shutil
 import subprocess
 import sys
+import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import perm_unit  # noqa: E402
 
 HOME = pathlib.Path(os.environ.get("MWCCDBG_HOME", pathlib.Path.home() / "mwccdbg"))
+LOCK_PORT = int(os.environ.get("MWCCDBG_LOCK_PORT", "9099"))
 UP = ("import fcntl, os, socket, struct, sys; "
       "fcntl.ioctl(socket.socket(), 0x8914, struct.pack('16sH14s', b'lo', 0x41, bytes(14))); "
       "os.execv(sys.executable, [sys.executable] + sys.argv[1:])")
+
+
+class net_lock:
+    """Machine-wide mutex: holds TCP port LOCK_PORT on 127.0.0.1 (waits for it, a run takes about 7 s)."""
+
+    def __enter__(self, timeout=900):
+        import socket
+        deadline = time.time() + timeout
+        while True:
+            self.s = socket.socket()
+            try:
+                self.s.bind(("127.0.0.1", LOCK_PORT))
+                self.s.listen(1)
+                return self
+            except OSError:
+                self.s.close()
+                if time.time() > deadline:
+                    sys.exit(f"mwccdbg: waited {timeout} s for port {LOCK_PORT} (another run holds the lock)")
+                time.sleep(random.uniform(1, 4))
+
+    def __exit__(self, *a):
+        self.s.close()
 
 
 def compile_args(unit, src_override=None, out_obj="obj.o"):
@@ -100,16 +125,17 @@ def main():
         shutil.rmtree(out)
     out.mkdir(parents=True)
     env = os.environ.copy()
-    env["PATH"] = os.pathsep.join(filter(None, [env.get("MWCCDBG_PATH", ""), "/opt/homebrew/bin", env.get("PATH", "")]))
+    env["PATH"] = os.pathsep.join(filter(None, [env.get("MWCCDBG_PATH", ""), str(HOME / "env/bin"), "/opt/homebrew/bin", env.get("PATH", "")]))
     dbg = [sys.executable, str(script), "-e", str(emu), "-a", shlex.join(args), fn, str(out)]
-    # Linux: one network namespace per run (its own loopback, so its own gdb port 9001): runs do not queue on one lock.
-    if sys.platform.startswith("linux") and shutil.which("unshare") and subprocess.run(["unshare", "-n", "true"], capture_output=True).returncode == 0:
+    # The emulator's gdb stub listens on a fixed port (9001), so two runs at once would talk to each other's emulator. Linux with
+    # a network namespace of its own per run: no conflict. Otherwise runs take turns on a lock that every process on the machine
+    # shares, whatever its /tmp: a TCP port bound on 127.0.0.1 (released when the run ends, even if it dies).
+    own_ns = (sys.platform.startswith("linux") and shutil.which("unshare")
+              and subprocess.run(["unshare", "-n", "true"], capture_output=True).returncode == 0)
+    if own_ns:
         r = subprocess.run(["unshare", "-n", sys.executable, "-c", UP] + dbg[1:], cwd=ROOT, capture_output=True, text=True, env=env)
     else:
-        import fcntl
-        import tempfile
-        with open(os.path.join(tempfile.gettempdir(), "mwccdbg.lock"), "w") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
+        with net_lock():
             r = subprocess.run(dbg, cwd=ROOT, capture_output=True, text=True, env=env)
     if not list(out.glob("*before-regalloc*")):
         sys.exit((r.stdout + r.stderr)[-1500:])
