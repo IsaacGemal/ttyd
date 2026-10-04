@@ -2539,7 +2539,6 @@ void npcBlurOn(const char* name) {
     entry->positionHistory[4] = entry->position;
 }
 
-// NONMATCHING (98.84%): the callee-save prologue now matches; one dead `cmplwi r28, 0` before the first `strcmp` remains.
 void npcSetStayPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
@@ -2550,9 +2549,9 @@ void npcSetStayPose(const char* name) {
         return;
     }
 #ifdef MUST_MATCH
-    // No-op ternary: reproduces retail's callee-save prologue (the parameter copy stays before the
-    // `lbz`); the conditional still leaves one dead `cmplwi r28, 0` before the first call.
-    if (!strcmp(name ? name : name, "(^x^)party")) {
+    // The sign-extend round trip on the argument leaves the dead value that pins retail's parameter
+    // save (`mr r28, r3`) before the `name[0]` load; the backend folds it away.
+    if (!strcmp((const char*)(s64)(s32)name, "(^x^)party")) {
 #else
     if (!strcmp(name, "(^x^)party")) {
 #endif
@@ -2592,7 +2591,6 @@ void npcSetStayPose(const char* name) {
     }
 }
 
-// NONMATCHING (98.84%): same one dead `cmplwi r28, 0`; the partyChgPoseId arg is 7.
 void npcSetTalkPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
@@ -2603,9 +2601,9 @@ void npcSetTalkPose(const char* name) {
         return;
     }
 #ifdef MUST_MATCH
-    // No-op ternary: reproduces retail's callee-save prologue (the parameter copy stays before the
-    // `lbz`); the conditional still leaves one dead `cmplwi r28, 0` before the first call.
-    if (!strcmp(name ? name : name, "(^x^)party")) {
+    // The sign-extend round trip on the argument leaves the dead value that pins retail's parameter
+    // save (`mr r28, r3`) before the `name[0]` load; the backend folds it away.
+    if (!strcmp((const char*)(s64)(s32)name, "(^x^)party")) {
 #else
     if (!strcmp(name, "(^x^)party")) {
 #endif
