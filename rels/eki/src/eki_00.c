@@ -1634,6 +1634,28 @@ static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
 
 #pragma opt_propagation reset
 
+// Load the matrix inside the inline to retain retail's matrix/base register order.
+#ifdef MUST_MATCH
+static inline Vec moaSoundVec(ExtPose* ep, const Vec* base) {
+    Vec v = *base;
+    v.x = ep->matrix[0][0][3];
+    v.y = ep->matrix[0][1][3];
+    v.z = ep->matrix[0][2][3];
+    return v;
+}
+#endif
+
+// Keeping both sound vectors in inline scopes reproduces their stack-slot order.
+#ifdef MUST_MATCH
+static inline void moaPlayHit(ExtPose* ep) {
+    Vec w = vec3_eki_00008920;
+    w.x = ep->matrix[0][0][3];
+    w.y = ep->matrix[0][1][3];
+    w.z = ep->matrix[0][2][3];
+    psndSFXOn_3D((const char*)0x6C3, &w);
+}
+#endif
+
 #pragma inline_max_total_size(60000)
 #pragma inline_max_size(1000)
 // Keep the sin/cos coefficient loads hoisted instead of rematerialised per branch.
@@ -1711,8 +1733,8 @@ static inline f32 ekiCosfM(f32 rad) {
 }
 
 #define MOA_TARGET(i) ((&wp->field_0x14)[(i) % 3])
-// NONMATCHING (97.04%): calls and immediates match and every register web colours as retail's; what is left is scheduling
-// around the 0.5f and Vec constants (retail addresses them as named rodata objects) and the inlined ekiSinf/ekiCosf/randf bodies.
+// NONMATCHING (97.29%): 204 instruction differences remain in the half-angle setup and state-machine
+// float registers, operand order and random-range scheduling. Sound Vec setup and the rider-vector tail match.
 // voiceSfx is a union under MUST_MATCH so it is not copy-propagated (as yuu_01 fall_rtn): that puts it in r24 and `handled` in r25.
 static void ext_moamoa_main(void) {
     MarioWork* mario;
@@ -1821,12 +1843,25 @@ static void ext_moamoa_main(void) {
             } else if (res == 3) {
                 {
                     f32 t = wp->field_0x550 + wp->field_0x55C;
+#ifdef MUST_MATCH
+                    // A local literal retains lis/addi/lfs while sharing the existing half pool entry.
+                    f32 half = 0.5f;
+#endif
 
                     pose->flags |= 0x84;
                     pose->field_0x02 = 0x30;
+                    #ifdef MUST_MATCH
+                    f = t * half;
+#else
                     f = t * 0.5f;
+#endif
                 }
+#ifdef MUST_MATCH
+                // Preserve retail's load/load/store/store/load/store copy order.
+                *(volatile Vec*)&pose->position = *(const volatile Vec*)&vec3_eki_00008908;
+#else
                 pose->position = vec3_eki_00008908;
+#endif
                 dist = randf(0.1f, 0.2f);
                 rad = 6.2831855f * f / 360.0f;
                 pose->field_0x14 = dist * ekiSinfM(rad);
@@ -1849,7 +1884,11 @@ static void ext_moamoa_main(void) {
         }
         if ((wp->field_0x00 & 0x1) && !(pose->flags & 0x444) && (u32)i == gp->retraceCount % wp->poseNum
             && irand(1000) < 200) {
+#ifdef MUST_MATCH
+            v = moaSoundVec(ep, &vec3_eki_00008914);
+#else
             v = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_00008914);
+#endif
             #ifdef MUST_MATCH
             psndSFXOn_3D((const char*)(u32)voiceSfx.p, &v);
 #else
@@ -2058,20 +2097,33 @@ static void ext_moamoa_main(void) {
         case 0x2F: {
             f32 rad, dist, f, ty;
 
+#ifdef MUST_MATCH
+            // These values are never live together; sharing ty preserves the random fraction in f28.
+            ty = (f32)rand() / 32767.0f;
+#else
             r1 = (f32)rand() / 32767.0f;
+#endif
             dist = randf(300.0f, 500.0f);
+#ifdef MUST_MATCH
+            rad = 6.2831855f * (ty * 90.0f + 135.0f) / 360.0f;
+#else
             rad = 6.2831855f * (r1 * 90.0f + 135.0f) / 360.0f;
+#endif
             tx = dist * ekiSinfM(rad) + ep->matrix[0][0][3];
             tz = -(dist * ekiCosfM(rad) - ep->matrix[0][2][3]);
             f = randf(5.0f, 6.0f);
             ty = randf(0.2f, 0.3f);
             if (voicePlayed == 0) {
+#ifdef MUST_MATCH
+                moaPlayHit(ep);
+#else
                 Vec w;
                 w = vec3_eki_00008920;
                 w.x = ep->matrix[0][0][3];
                 w.y = ep->matrix[0][1][3];
                 w.z = ep->matrix[0][2][3];
                 psndSFXOn_3D((const char*)0x6C3, &w);
+#endif
                 voicePlayed = 1;
             }
             moamoa_jump(ep, pose, 0x31, 0, tx, -100.0f, tz, f, ty);
@@ -2207,9 +2259,17 @@ static void ext_moamoa_main(void) {
     }
     {
         {
+#ifdef MUST_MATCH
+            // Declaration order sets the float registers; assignment order sets the load schedule.
+            f32 dz, dy, dx;
+            dx = mario->riderDelta.x;
+            dy = mario->riderDelta.y;
+            dz = mario->riderDelta.z;
+#else
             f32 dx = mario->riderDelta.x;
             f32 dy = mario->riderDelta.y;
             f32 dz = mario->riderDelta.z;
+#endif
 
             b = ekiVec3(dx, dy, dz, &vec3_eki_0000892c);
         }
