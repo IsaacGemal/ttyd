@@ -170,6 +170,19 @@ lists EXTRA, MISSING and duplicate values with the functions that emit them, tag
 holds: the original negates at runtime, we folded the literal) and `prod` (a MISSING value that is a product or quotient of two we
 hold). `--literal` builds with every float written as a literal first, so what remains is the real gap.
 
+**Spellings that fix a `--literal` gap** (each verified on eff_kemuri, which still isn't linked: with literals MWCC also hoists
+constants into more FPRs than the original, which costs code score; pool order and hoisting are separate problems).
+- `neg` (EXTRA `-x` where the target holds `x`): a literal negation folds. Keep the positive value in a local and negate that:
+  `f32 p12p8 = 12.8f; n12p8 = -p12p8;` instead of `n12p8 = -12.8f;`. For `-1.0f * half` (folded to -0.5): `f32 one = 1.0f;` once, then
+  `-one * half`; the product stays a runtime fmuls and 1.0 stays its own pooled entry.
+- `prod` (MISSING `a*b` the target pools): the literal product folded away; the same local trick (`-p12p8` then `* 0.5f`) brought
+  12.8 back as its own entry.
+- GXColor / `u32` colour words in .sdata2 (`dat_xxxx` = 0xffffffff, 0x80808080 ...): one `static const GXColor c670 = { 0xFF, 0xFF,
+  0xFF, 0xFF };` per original object, declared at the top of the function that uses it in the original's source order (the words land
+  before the floats, in declaration order). Uses of the named extern become uses of the local; the header's extern goes.
+- Statement order of the preheader assignments does not change pool order (tried all 12 orders); moving a literal's first textual use
+  later only helps if the compiler does not hoist it.
+
 **Conversion double before strings.** If the target's `.rodata` has an int->float double (`double_to_int_*`) ahead of a string that a
 deferred function pools, our build pools the double later, since a deferred unit emits functions in reverse source order and each
 function pools its strings before its own conversion double. Under `#ifdef MUST_MATCH` add an ordinary helper that is generated
