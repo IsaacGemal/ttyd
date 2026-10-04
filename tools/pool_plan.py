@@ -361,7 +361,7 @@ def traps(e, entries, tobj, funcs):
     return out
 
 
-FLOAT_DEF = (r"^(?:extern )?(?:__declspec\([^)]*\) )?(?:const )?(?:(?:MATCH_VOLATILE|volatile) )?f32 {n}(?: = [^;]+)?;[ \t]*(?://[^\n]*)?\n")
+FLOAT_DEF = (r"^(?:extern |static )*(?:__declspec\([^)]*\) )?(?:(?:const|volatile|MATCH_VOLATILE) )*f32 {n}(?: = [^;]+)?;[ \t]*(?://[^\n]*)?\n")
 
 
 def f32_literal(blob):
@@ -407,6 +407,26 @@ def literalise(text, tobj, keep=(), nonconst=(), reload=None):
     for addr, size, name, _ in tobj.objects(".sdata2"):
         if name.startswith("float_") and size >= 4 and size == 4:
             names[name] = f32_literal(data[addr:addr + 4])
+    addr_macros = set()
+    for m in re.finditer(r"^#\s*define\s+(\w+)\(([^)]*)\)([^\n]*(?:\\\n[^\n]*)*)", text, re.M):
+        params = [x.strip() for x in m.group(2).split(",") if x.strip()]
+        if any(re.search(r"&\s*\(?\s*%s\b" % re.escape(pm), m.group(3)) for pm in params):
+            addr_macros.add(m.group(1))
+    for mac in addr_macros:
+        for m in re.finditer(r"\b%s\s*\(([^;]*)" % re.escape(mac), text):
+            for nm in list(names):
+                if re.search(r"\b%s\b" % nm, m.group(1)):
+                    del names[nm]
+    for nm in list(names):
+        if re.search(r"^[^\n(/]*\b(?:u32|s32|u16|u8|GXColor|Vec|char)\b[^\n(;=]*\b%s\b" % nm, text, re.M):
+            del names[nm]  # the source types this word as something else: leave it alone
+    nonconst = set(nonconst) | {nm for nm in names if re.search(r"^(?:extern |static )*(?:__declspec\([^)]*\) )?(?:volatile )?f32 %s\b" % nm, text, re.M)}
+    # the compiler's own int->float doubles: drop any definition of them and write the value where the code names them
+    for addr, size, name, _ in tobj.objects(".rodata"):
+        if name.startswith("double_to_int") and size == 8 and re.search(r"\b%s\b" % name, text):
+            (dv,) = struct.unpack(">d", tobj.sec[".rodata"][addr:addr + 8])
+            text = re.sub(r"^(?:extern |static )*(?:__declspec\([^)]*\) )?(?:(?:const|volatile) )*(?:f64|double) %s(?: = [^;]+)?;[ \t]*(?://[^\n]*)?\n" % name, "", text, flags=re.M)
+            text = re.sub(r"\b%s\b" % name, "%.1f" % dv, text)
     # strings only code uses become plain string literals too (named string objects land before the pool)
     code_syms = {nm for off, typ, nm, tsec, ta in tobj.relocs(".text") if tsec in SECS}
     data_syms = {nm for ds in (".data", ".sdata", ".rodata", ".sdata2") if ds in tobj.sec for off, typ, nm, tsec, ta in tobj.relocs(ds) if tsec in SECS}
@@ -418,7 +438,7 @@ def literalise(text, tobj, keep=(), nonconst=(), reload=None):
                 raw = d[addr:addr + size].split(b"\0")[0]
                 strs[name] = '"' + "".join(chr(b) if 32 <= b < 127 and chr(b) not in '"\\' else "\\%03o" % b for b in raw) + '"'
     for name, lit in strs.items():
-        text = re.sub(r"^(?:extern )?(?:__declspec\([^)]*\) )?const char %s(?:\[[^\]]*\])?(?: = \"[^\n]*\")?;[ \t]*(?://[^\n]*)?\n" % name, "", text, flags=re.M)
+        text = re.sub(r"^(?:extern |static |const |volatile |__declspec\([^)]*\) )*(?:char|u8|u32|s32)\s+\*?%s(?:\[[^\]]*\])?(?:\s*=\s*[^;]*)?;[ \t]*(?://[^\n]*)?\n" % name, "", text, flags=re.M)
         text = re.sub(r"\b%s\b" % name, lambda m: lit, text)
     n = 0
     addr_of = {name: addr for addr, size, name, _ in tobj.objects(".sdata2")}
@@ -431,6 +451,8 @@ def literalise(text, tobj, keep=(), nonconst=(), reload=None):
             continue
         if not re.search(r"\b%s\b" % name, text):
             continue
+        if re.search(r"\*\(\s*(?:const\s+|volatile\s+)*(?!f32)\w+\s*\*\)\s*&\s*\(?\s*%s\b" % name, text) or re.search(r"&\s*%s\b" % name, text) and not re.search(r"\*\(\s*(?:const\s+|volatile\s+)*f32\s*\*\)\s*&\s*\(?\s*%s\b" % name, text):
+            continue  # its address is taken (a GXColor/array view of the word): keep the object
         text = re.sub(FLOAT_DEF.format(n=name), "", text, flags=re.M)
         text = re.sub(r"\*\(\s*(?:const\s+|volatile\s+)*f32\s*\*\)\s*&\s*\(?\s*%s\s*\)?" % name, name, text)
         text = re.sub(r"(?:RELOAD_F32|MATCH_F32)\(\s*%s\s*\)" % name, lit, text)
@@ -477,15 +499,19 @@ def literalise(text, tobj, keep=(), nonconst=(), reload=None):
             incs = [m.end() for m in re.finditer(r"^#include[^\n]*\n", text, re.M)]
             at = incs[-1] if incs else 0
             text = text[:at] + "#ifdef MUST_MATCH\n#define RELOAD_F32(x) (*(const volatile f32*)&(x))\n#else\n#define RELOAD_F32(x) (x)\n#endif\n" + text[at:]
+    allk = [nm for nm in sorted(keep, key=lambda k: addr_of.get(k, 0)) if nm in names]
+    if allk:
+        for nm in allk:
+            if nm in nonconst:
+                text = re.sub(r"^(\s*)extern const f32 %s;" % nm, r"\1extern f32 %s;" % nm, text, flags=re.M)
+        top = "".join(f"extern {'' if nm in nonconst else 'const '}f32 {nm};\n" for nm in allk)
+        incs = [m.end() for m in re.finditer(r"^#include[^\n]*\n", text, re.M)]
+        at = incs[-1] if incs else 0
+        text = text[:at] + top + text[at:]
     if defs:
         for nm, lit in defs:
             if nm in nonconst:
                 text = re.sub(r"^(\s*)extern const f32 %s;" % nm, r"\1extern f32 %s;" % nm, text, flags=re.M)
-        decls = "".join(f"extern {'' if nm in nonconst else 'const '}f32 {nm};\n" for nm, lit in defs if not re.search(r"^\s*extern\b[^\n;]*\b%s\b" % nm, text, re.M))
-        if decls:
-            incs = [m.end() for m in re.finditer(r"^#include[^\n]*\n", text, re.M)]
-            at = incs[-1] if incs else 0
-            text = text[:at] + decls + text[at:]
         block = "\n// Named .sdata2 constants kept by tools/pool_plan.py, defined after the code in the original's order.\n"
         for name, lit in defs:
             zero = lit.startswith("0.0")
@@ -589,6 +615,9 @@ def verify(tobj, keep, uses, data_uses, write=False):
     base = fn_scores()
     new, n = literalise(orig, tobj, keep=set(keep), reload=reload_map(tobj))
     ok = False
+    import os
+    if os.environ.get("POOL_PLAN_DUMP"):
+        open(os.environ["POOL_PLAN_DUMP"], "w").write(new)
     try:
         open(sp, "w").write(new)
         r = subprocess.run(["ninja", ours_path], capture_output=True, text=True)
@@ -925,9 +954,6 @@ if __name__ == "__main__":
     if "--check" in flags:
         check()
     else:
-        cmds = plan()
+        plan()
         if "--apply" in flags:
-            for c in cmds:
-                print("$", c)
-                subprocess.run(c, shell=True)
             check()
