@@ -4456,3 +4456,10 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   (shadowCharShadowDisp_Projection 99.33 -> 99.52); evt_yuucounter_disp_func 99.21 -> 99.33 (loop increments in
   the for-header). AGENT_BRIEF gets the jump-table exception to the trailing-gap rule. Round 3 (11:25, base on
   main): data prep for evt_bero, eff_funemizu and sac_scissor, whose strings are owned by their .data.
+- **Batch 7:** _bsi_regeneration 90.14 -> 100 and battle_status_icon linked (the named-Vec hypothesis; the
+  one-short arm's eighth link); yoshi_use 99.11 -> 99.46, where the agent's `YOSHI_S_2 + 8` reached PYS_H_1 only
+  through the MUST_MATCH concatenated literal and ran past the string without it (fixed with YOSHI_H_1/2); and wave
+  72's first data port, npc_event: all four data sections byte-identical (54 KB of .data as raw EVT words), and three
+  more functions match with the data in place (9,371 -> 9,374).
+- **Wave 72** (11:42, base on main): arm P, 13 pool tasks from Claude #3's w72_queue (near/link prompts with each
+  unit's sdata2_diff classes as a hint); arm D, 12 data-prep units ranked by unmatched data bytes.
