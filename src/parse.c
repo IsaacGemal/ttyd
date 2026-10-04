@@ -5,8 +5,8 @@
 //.bss
 ParseWork parse;
 
-const char str_8041A6B0[] = "%d\0";
-const char str_8041A6B4[] = "%f\0";
+const char str_8041A6B0[4] = "%d";
+const char str_8041A6B4[4] = "%f";
 void parseInit(void* ptr, u32 size) {
 	parse.ptr = ptr;
 	parse.field_0x54 = 0;
