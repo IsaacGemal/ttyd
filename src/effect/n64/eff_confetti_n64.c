@@ -41,8 +41,11 @@ extern const f32 float_0p02_8041ec4c;
 
 // .rodata effect name the original stores into EffectEntry::type.
 
-// .sbss2 scratch GXColor the original builds its TEV colour from.
-extern GXColor unk_804230c8;
+// .sbss2 scratch GXColor the original builds its TEV colour from, followed by the section's
+// trailing 4-byte gap.  Objects land in reverse declaration order, so the gap is declared first.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_804230CC_sbss2[4];
+__declspec(section ".sdata") GXColor unk_804230c8;
 
 // .sdata tables and .data vertex arrays belonging to this unit.
 u8 color_table[36] = {
