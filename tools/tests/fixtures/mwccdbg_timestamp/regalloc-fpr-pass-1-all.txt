@@ -1,0 +1,156 @@
+f32 -> f0 s
+  flags:
+  cost: 0
+  neighbors: 6 (f33 f39 f40 f44 f46 f57)
+f33 -> f26 fieldScale
+  flags:
+  cost: 0
+  neighbors: 30 (f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f32 f39 f40 f41 f42 f43 f44 f46 f47 f48 f49 f52 f53 f54 f57 f58)
+f34 -> f1 scaleF
+  flags: fCoalesced
+  cost: 0
+  neighbors: 3 (f61 f62 f65)
+f35 -> f1
+  flags:
+  cost: 0
+  neighbors: 1 (f37)
+f36 -> f1
+  flags:
+  cost: 0
+  neighbors: 1 (f37)
+f37 -> f0
+  flags:
+  cost: 0
+  neighbors: 2 (f35 f36)
+f38 -> f1
+  flags: fCoalesced
+  cost: 0
+  neighbors: 0
+f39 -> f27
+  flags:
+  cost: 0
+  neighbors: 32 (f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f32 f33 f40 f41 f42 f43 f44 f46 f47 f48 f49 f52 f53 f54 f57 f58 f59 f60)
+f40 -> f28
+  flags:
+  cost: 0
+  neighbors: 32 (f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f32 f33 f39 f41 f42 f43 f44 f46 f47 f48 f49 f52 f53 f54 f57 f58 f59 f60)
+f41 -> f0
+  flags:
+  cost: 0
+  neighbors: 6 (f33 f39 f40 f44 f46 f57)
+f42 -> f0
+  flags:
+  cost: 0
+  neighbors: 6 (f33 f39 f40 f44 f46 f57)
+f43 -> f0
+  flags:
+  cost: 0
+  neighbors: 6 (f33 f39 f40 f44 f46 f57)
+f44 -> f31
+  flags:
+  cost: 0
+  neighbors: 32 (f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f32 f33 f39 f40 f41 f42 f43 f46 f47 f48 f49 f52 f53 f54 f57 f58 f59 f60)
+f45 -> f0
+  flags:
+  cost: 0
+  neighbors: 0
+f46 -> f30
+  flags:
+  cost: 0
+  neighbors: 32 (f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f32 f33 f39 f40 f41 f42 f43 f44 f47 f48 f49 f52 f53 f54 f57 f58 f59 f60)
+f47 -> f1
+  flags:
+  cost: 0
+  neighbors: 7 (f33 f39 f40 f44 f46 f52 f57)
+f48 -> f1
+  flags:
+  cost: 0
+  neighbors: 8 (f33 f39 f40 f44 f46 f52 f53 f57)
+f49 -> f1
+  flags:
+  cost: 0
+  neighbors: 8 (f33 f39 f40 f44 f46 f53 f54 f57)
+f50 -> f0
+  flags:
+  cost: 0
+  neighbors: 0
+f51 -> f0
+  flags:
+  cost: 0
+  neighbors: 0
+f52 -> f0
+  flags:
+  cost: 0
+  neighbors: 8 (f33 f39 f40 f44 f46 f47 f48 f57)
+f53 -> f0
+  flags:
+  cost: 0
+  neighbors: 8 (f33 f39 f40 f44 f46 f48 f49 f57)
+f54 -> f0
+  flags:
+  cost: 0
+  neighbors: 7 (f33 f39 f40 f44 f46 f49 f57)
+f55 -> f0
+  flags:
+  cost: 0
+  neighbors: 0
+f56 -> f0
+  flags:
+  cost: 0
+  neighbors: 0
+f57 -> f29
+  flags:
+  cost: 0
+  neighbors: 32 (f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f32 f33 f39 f40 f41 f42 f43 f44 f46 f47 f48 f49 f52 f53 f54 f58 f59 f60)
+f58 -> f0
+  flags:
+  cost: 0
+  neighbors: 6 (f33 f39 f40 f44 f46 f57)
+f59 -> f0
+  flags:
+  cost: 0
+  neighbors: 5 (f39 f40 f44 f46 f57)
+f60 -> f0
+  flags:
+  cost: 0
+  neighbors: 5 (f39 f40 f44 f46 f57)
+f61 -> f29
+  flags:
+  cost: 0
+  neighbors: 22 (f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f34 f62 f63 f64 f65 f66 f68 f70)
+f62 -> f30
+  flags:
+  cost: 0
+  neighbors: 22 (f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f34 f61 f63 f64 f65 f66 f68 f70)
+f63 -> f0
+  flags:
+  cost: 0
+  neighbors: 3 (f61 f62 f65)
+f64 -> f0
+  flags:
+  cost: 0
+  neighbors: 3 (f61 f62 f65)
+f65 -> f31
+  flags:
+  cost: 0
+  neighbors: 22 (f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 f10 f11 f12 f13 f34 f61 f62 f63 f64 f66 f68 f70)
+f66 -> f0
+  flags:
+  cost: 0
+  neighbors: 3 (f61 f62 f65)
+f67 -> f0
+  flags:
+  cost: 0
+  neighbors: 0
+f68 -> f0
+  flags:
+  cost: 0
+  neighbors: 3 (f61 f62 f65)
+f69 -> f0
+  flags:
+  cost: 0
+  neighbors: 0
+f70 -> f0
+  flags:
+  cost: 0
+  neighbors: 3 (f61 f62 f65)
