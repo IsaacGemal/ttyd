@@ -677,13 +677,10 @@ event/evt_bg.c:
 
 battle/battle.c:
 	.text       start:0x800F2568 end:0x800F4144
-	.data       start:0x8034A0C0 end:0x8034A578
+	.data       start:0x8034A0C0 end:0x8034A150
 	.sdata      start:0x80410CA0 end:0x80410D00
 	.sbss       start:0x80418970 end:0x80418978
 	.sdata2     start:0x8041BE88 end:0x8041BE98
-
-battle/battle_evt_cmd.c:
-	.data       start:0x8034A578 end:0x8034A598
 
 battle/battle_ac.c:
 	.text       start:0x800F4144 end:0x800F5728
@@ -693,7 +690,11 @@ battle/battle_ac.c:
 battle/battle_damage.c:
 	.text       start:0x800F5728 end:0x800F9B80
 	.rodata     start:0x802EDA80 end:0x802EDDC8
+	.data       start:0x8034A150 end:0x8034A578
 	.sdata2     start:0x8041BEC8 end:0x8041BF08
+
+battle/battle_evt_cmd.c:
+	.data       start:0x8034A578 end:0x8034A598
 
 battle/battle_detect.c:
 	.text       start:0x800F9B80 end:0x800FB2D8

@@ -40,6 +40,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
                           s32 rate, s32 levelDiff, s8 turns, s8 strength);
 s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part,
                                     BattleWeapon* weapon, s32 flags);
+static inline u8 getAllOrNothing(BattleUnit* unit);
 
 #define PART ((BattleUnitPart*)partArg)
 // The .rodata displacements (the i2f double at 0x58 and the SFX_MARIO_HAMMER_PIKKYO strings at 0x290) only
@@ -95,47 +96,47 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
             switch ((u8)flags) {
             case 0x18:
             case 0x19:
-                effKemuri12N64Entry(0, 30, effectX, effectY, effectZ, float_1_8041bed8);
-                effHitEntry(1, 3, effectX, effectY, effectZ, float_1_8041bed8);
+                effKemuri12N64Entry(0, 30, effectX, effectY, effectZ, 1.0f);
+                effHitEntry(1, 3, effectX, effectY, effectZ, 1.0f);
                 break;
             case 0x1b:
-                effHitEntry(2, 3, effectX, effectY, effectZ, float_1_8041bed8);
+                effHitEntry(2, 3, effectX, effectY, effectZ, 1.0f);
                 break;
             case 0x1a:
                 effIceN64Entry(0, effectX, effectY, effectZ);
-                effHitEntry(3, 3, effectX, effectY, effectZ, float_1_8041bed8);
+                effHitEntry(3, 3, effectX, effectY, effectZ, 1.0f);
                 break;
             default:
-                effHitEntry(0, 3, effectX, effectY, effectZ, float_1_8041bed8);
+                effHitEntry(0, 3, effectX, effectY, effectZ, 1.0f);
                 break;
             }
             if (BtlUnit_GetBelong(unit) == 0) {
                 if (damage != 0 && !(unit->mAttributeFlags & 0x400000)) {
-                    effDamageStarEntry(0, damage, effectX - float_8_8041bef0, float_5_8041bef4 + effectY, effectZ, float_10_8041bed0, float_30_8041bee4);
+                    effDamageStarEntry(0, damage, effectX - 8.0f, 5.0f + effectY, effectZ, 10.0f, 30.0f);
                 }
                 if (arg4 != 0) {
                     if (damage != 0) {
-                        effDamageStarEntry(1, arg4, effectX - float_8_8041bef0, float_5_8041bef4 + effectY, effectZ, float_10_8041bed0, float_60_8041bec8);
+                        effDamageStarEntry(1, arg4, effectX - 8.0f, 5.0f + effectY, effectZ, 10.0f, 60.0f);
                     } else {
-                        effDamageStarEntry(1, arg4, effectX - float_8_8041bef0, float_5_8041bef4 + effectY, effectZ, float_10_8041bed0, float_30_8041bee4);
+                        effDamageStarEntry(1, arg4, effectX - 8.0f, 5.0f + effectY, effectZ, 10.0f, 30.0f);
                     }
                 }
             } else {
                 if (damage != 0 && !(unit->mAttributeFlags & 0x400000)) {
-                    effDamageStarEntry(0, damage, effectX, float_10_8041bed0 + effectY, effectZ, float_10_8041bed0, float_neg30_8041bef8);
+                    effDamageStarEntry(0, damage, effectX, 10.0f + effectY, effectZ, 10.0f, -30.0f);
                 }
                 if (arg4 != 0) {
                     if (damage != 0) {
-                        effDamageStarEntry(1, arg4, effectX, float_10_8041bed0 + effectY, effectZ, float_10_8041bed0, float_neg60_8041befc);
+                        effDamageStarEntry(1, arg4, effectX, 10.0f + effectY, effectZ, 10.0f, -60.0f);
                     } else {
-                        effDamageStarEntry(1, arg4, effectX, float_10_8041bed0 + effectY, effectZ, float_10_8041bed0, float_neg30_8041bef8);
+                        effDamageStarEntry(1, arg4, effectX, 10.0f + effectY, effectZ, 10.0f, -30.0f);
                     }
                 }
             }
             if (damageCode != -5 && attacker != NULL && attacker->badgesEquipped.MegaRush != 0 &&
                 attacker->currentHp <= attacker->mKindParams->mPerilHP) {
                 BtlUnit_GetHitPos(unit, PART, &fukidashiHitX, &fukidashiHitY, &fukidashiHitZ);
-                effFukidashiEntry(0, 0, 0, 60, fukidashiHitX, fukidashiHitY, fukidashiHitZ, float_10_8041bed0, float_0_8041bf00);
+                effFukidashiEntry(0, 0, 0, 60, fukidashiHitX, fukidashiHitY, fukidashiHitZ, 10.0f, 0.0f);
             }
         } else {
             BtlUnit_GetHitPos(unit, PART, &missHitX, &missHitY, &missHitZ);
@@ -167,7 +168,7 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
         if (recovered > 0) {
             BtlUnit_RecoverFp(unit, recovered);
             BtlUnit_GetPos(unit, &recoverX, &recoverY, &recoverZ);
-            recoverY = recoverY + (unit->mSizeMultiplier * BtlUnit_GetHeight(unit) + float_5_8041bef4);
+            recoverY = recoverY + (unit->mSizeMultiplier * BtlUnit_GetHeight(unit) + 5.0f);
             effRecoveryEntry(1, recovered, recoverX, recoverY, recoverZ);
         }
     }
@@ -268,7 +269,7 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
             BtlUnit_CheckRecoveryStatus(unit, STATUS_SLEEP);
             BtlUnit_GetPos(unit, &fukidashiX, &fukidashiY, &fukidashiZ);
             fukidashiY = fukidashiY + BtlUnit_GetHeight(unit) / 2;
-            effFukidashiEntry(0, 0, 0, 60, fukidashiX, fukidashiY, fukidashiZ, float_10_8041bed0, float_0_8041bf00);
+            effFukidashiEntry(0, 0, 0, 60, fukidashiX, fukidashiY, fukidashiZ, 10.0f, 0.0f);
         }
     }
     if (unit->currentKind == 0xde) {
@@ -325,43 +326,82 @@ void BattleDamageDirect(s32 damageCode, BattleUnit* unit, s32 partArg, s32 damag
 }
 #undef PART
 
-// dont_inline: the original calls this out of line from BattleCheckDamage.
-#pragma dont_inline on
-void BattleInitCounterPreCheckWork(void* work) {
-    memset(work, 0, 0x30);
-    *(s32*)work = 1;
-}
-#pragma dont_inline reset
+s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
+    BattleWork* wp = _battleWorkPointer;
+    s32 weights[5] = { 0 };
+    s32 count = 0;
+    s32 selected = 0;
+    s32 result = 0;
 
-// dont_inline: BattleCheckDamage calls this out of line in the original.
-#pragma dont_inline on
-s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
-    if (unit->currentKind == UNIT_MARIO) {
-        if ((s32)pouchCheckItem(ITEM_LIFE_SHROOM) > 0) {
-            *flags |= 0x800;
-            return 1;
+    if (out) {
+        result = *out;
+    }
+    if (weapon->special & 0x800) {
+        u32 badges = wp->badgeEquippedFlags;
+
+        if (badges & 0x100) {
+            weights[0] = 1;
+            selected = 0;
+            count = 1;
         }
-        return 0;
-    }
-    if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
-        if ((s32)pouchCheckItem(ITEM_LIFE_SHROOM) > 0) {
-            *flags |= 0x800;
-            return 1;
+        if (badges & 0x200) {
+            weights[1] = 1;
+            selected = 1;
+            count++;
         }
-        return 0;
+        if (badges & 0x400) {
+            weights[2] = 1;
+            selected = 2;
+            count++;
+        }
+        if (badges & 0x800) {
+            weights[3] = 1;
+            selected = 3;
+            count++;
+        }
+        if (badges & 0x1000) {
+            weights[4] = 1;
+            selected = 4;
+            count++;
+        }
     }
-    if (unit->heldItem == ITEM_LIFE_SHROOM) {
-        *flags |= 0x800;
-        return 1;
+    if (count > 0) {
+        if (count >= 2) {
+            s32 r = irand(count);
+            s32 i;
+
+            selected = 4;
+            for (i = 4; i > 0; i--) {
+                r -= weights[i];
+                if (r < 0) {
+                    break;
+                }
+                selected--;
+            }
+        }
+        switch (selected) {
+        case 0:
+            result |= 0x01000000;
+            break;
+        case 1:
+            result |= 0x02000000;
+            break;
+        case 2:
+            result |= 0x04000000;
+            break;
+        case 3:
+            result |= 0x08000000;
+            break;
+        case 4:
+            result |= 0x10000000;
+            break;
+        }
     }
-    return 0;
+    if (out) {
+        *out = result;
+    }
+    return result;
 }
-#pragma dont_inline reset
-
-static inline u8 getAllOrNothing(BattleUnit* unit) {
-    return unit->badgesEquipped.AllOrNothing;
-}
-
 // `int flags2` (not `s32`, which is `signed long` here) and reading the defense tables through `s8*` are what
 // reproduce the original's register allocation: flags2 in r31 and defenseAttr in r27. The tables are declared
 // `u8` in battle_unit.h but the original sign-extends them (`extsb`), so they are really signed bytes; the
@@ -602,6 +642,9 @@ calculate_defense:
     }
     return result;
 }
+static inline u8 getAllOrNothing(BattleUnit* unit) {
+    return unit->badgesEquipped.AllOrNothing;
+}
 
 // dont_inline: BattleCheckDamage calls this out of line in the original.
 #pragma dont_inline on
@@ -643,156 +686,263 @@ s32 BattleCalculateFpDamage(BattleUnit* attacker, BattleUnit* target, BattleUnit
 }
 #pragma dont_inline reset
 
-void BattleAttackDeclareAll(BattleWork* wp) {
-    s32 i;
-    u8* sampling = wp->field_428;
 
-    for (i = 0; i < (s8)sampling[0xa6c]; i++) {
-        u8* entry = sampling + (s8)sampling[0xa6d + i] * 0x24 + 4;
-        s32 out1;
-        s32 out2;
+s32 _getSickStatusRate(BattleWeapon* weapon, s32 type) {
+    u8* w = (u8*)weapon;
 
-        __declare(*(s16*)(entry + 0), *(s16*)(entry + 2), &out1, &out2);
-        if (out1 != -1) {
-            s32 j;
-
-            for (j = 0; j < (s8)sampling[0xa6c]; j++) {
-                s16 matchId = *(s16*)(sampling + (s8)sampling[0xa6d + j] * 0x24 + 4);
-                if (matchId == out1) {
-                    s32 k;
-
-                    for (k = j; k < (s8)sampling[0xa6c] - 1; k++) {
-                        sampling[0xa6d + k] = sampling[0xa6d + k + 1];
-                    }
-                    if (j <= i) {
-                        i--;
-                    }
-                    sampling[0xa6c]--;
-                    break;
-                }
-            }
-            *(s16*)(entry + 0) = out1;
-            *(s16*)(entry + 2) = out2;
+    switch (type) {
+    case STATUS_SLEEP: return w[0x80];
+    case STATUS_STOP: return w[0x82];
+    case STATUS_DIZZY: return w[0x84];
+    case STATUS_POISON: return w[0x86];
+    case STATUS_CONFUSE: return w[0x89];
+    case STATUS_ELECTRIC: return w[0x8B];
+    case STATUS_DODGY: return w[0x8D];
+    case STATUS_BURN: return w[0x8F];
+    case STATUS_FREEZE: return w[0x91];
+    case STATUS_HUGE:
+        if ((s8)w[0x95] > 0) {
+            return w[0x93];
         }
+        return 0;
+    case STATUS_TINY:
+        if ((s8)w[0x95] <= 0) {
+            return w[0x93];
+        }
+        return 0;
+    case STATUS_ATTACK_UP:
+        if ((s8)w[0x98] > 0) {
+            return w[0x96];
+        }
+        return 0;
+    case STATUS_ATTACK_DOWN:
+        if ((s8)w[0x98] <= 0) {
+            return w[0x96];
+        }
+        return 0;
+    case STATUS_DEFENSE_UP:
+        if ((s8)w[0x9B] > 0) {
+            return w[0x99];
+        }
+        return 0;
+    case STATUS_DEFENSE_DOWN:
+        if ((s8)w[0x9B] <= 0) {
+            return w[0x99];
+        }
+        return 0;
+    case STATUS_ALLERGIC: return w[0x9C];
+    case STATUS_FAST: return w[0xA0];
+    case STATUS_SLOW: return w[0xA2];
+    case STATUS_FRIGHT: return w[0xA4];
+    case STATUS_GALE_FORCE: return w[0xA5];
+    case STATUS_INSTANT_KILL: return w[0x9E];
+    case STATUS_INVISIBLE: return w[0xA8];
+    case STATUS_HP_REGEN: return (s8)w[0xAA] > 0 ? 100 : 0;
+    case STATUS_FP_REGEN: return (s8)w[0xAC] > 0 ? 100 : 0;
+    case STATUS_CHARGE: return (s8)w[0x9F] != 0 ? 100 : 0;
+    case STATUS_PAYBACK: return (s8)w[0xA6] != 0 ? 100 : 0;
+    case STATUS_HOLD_FAST: return (s8)w[0xA7] > 0 ? 100 : 0;
+    case STATUS_FLIPPED: return 0;
     }
-    sampling[0xab7] = 0;
+    return 0;
 }
+void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* out1, s8* out2) {
+    s32 param1;
+    s32 param2;
+    s32 item;
+    s32 count;
+    u32 utype = (u32)type;
 
-void __declare(s32 unitId, s32 partId, s32* out1, s32* out2) {
-    s32 i;
-    BattleUnit* unit;
-    BattleUnitPart* part;
-    BattleWork* wp = _battleWorkPointer;
+    switch (type) {
+    case STATUS_SLEEP:
+        param1 = param2 = weapon->sleepTime;
+        break;
+    case STATUS_STOP:
+        param1 = param2 = weapon->stopTime;
+        break;
+    case STATUS_DIZZY:
+        param1 = param2 = weapon->dizzyTime;
+        break;
+    case STATUS_POISON:
+        param1 = weapon->poisonTime;
+        param2 = weapon->poisonStrength;
+        break;
+    case STATUS_CONFUSE:
+        param1 = param2 = weapon->confuseTime;
+        break;
+    case STATUS_ELECTRIC:
+        param1 = param2 = weapon->electricTime;
+        break;
+    case STATUS_DODGY:
+        param1 = param2 = weapon->dodgyTime;
+        break;
+    case STATUS_BURN:
+        param1 = param2 = weapon->burnTime;
+        break;
+    case STATUS_FREEZE:
+        param1 = param2 = weapon->freezeTime;
+        break;
+    case STATUS_HUGE:
+        if (weapon->sizeChangeStrength > 0) {
+            param1 = weapon->sizeChangeTime;
+            param2 = weapon->sizeChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_TINY:
+        if (weapon->sizeChangeStrength < 0) {
+            param1 = weapon->sizeChangeTime;
+            param2 = weapon->sizeChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_ATTACK_UP:
+        if (weapon->atkChangeStrength > 0) {
+            param1 = weapon->atkChangeTime;
+            param2 = weapon->atkChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_ATTACK_DOWN:
+        if (weapon->atkChangeStrength < 0) {
+            param1 = weapon->atkChangeTime;
+            param2 = weapon->atkChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_DEFENSE_UP:
+        if (weapon->defChangeStrength > 0) {
+            param1 = weapon->defChangeTime;
+            param2 = weapon->defChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_DEFENSE_DOWN:
+        if (weapon->defChangeStrength < 0) {
+            param1 = weapon->defChangeTime;
+            param2 = weapon->defChangeStrength;
+        } else {
+            param1 = param2 = 0;
+        }
+        break;
+    case STATUS_ALLERGIC:
+        param1 = param2 = weapon->allergicTime;
+        break;
+    case STATUS_FAST:
+        param1 = param2 = weapon->fastTime;
+        break;
+    case STATUS_SLOW:
+        param1 = param2 = weapon->slowTime;
+        break;
+    case STATUS_INSTANT_KILL:
+#ifdef MUST_MATCH
+        // The original sign-extends the byte at 0x9E, but battle_database_common.h declares ohkoChance u8.
+        param1 = param2 = ((s8*)weapon)[0x9E];
+#else
+        param1 = param2 = weapon->ohkoChance;
+#endif
+        break;
+    case STATUS_INVISIBLE:
+        param1 = param2 = weapon->invisibleTime;
+        break;
+    case STATUS_HP_REGEN:
+        param1 = weapon->hpRegenTime;
+        param2 = weapon->hpRegenStrength;
+        break;
+    case STATUS_FP_REGEN:
+        param1 = weapon->fpRegenTime;
+        param2 = weapon->fpRegenStrength;
+        break;
+    case STATUS_CHARGE:
+        param1 = weapon->chargeStrength;
+        param2 = weapon->chargeStrength;
+        break;
+    case STATUS_PAYBACK:
+        param1 = param2 = weapon->paybackTime;
+        break;
+    case STATUS_HOLD_FAST:
+        param1 = param2 = weapon->holdFastTime;
+        break;
+    default:
+        param1 = param2 = 0;
+        break;
+    }
 
-    (void)partId;
-    *out1 = -1;
-    *out2 = 0;
-    for (i = 0; i < 0x40; i++) {
-        s32 numParts;
-        s32 j;
-
-        if (i == unitId) {
-            continue;
-        }
-        unit = BattleGetUnitPtr(wp, i);
-        if (unit == 0) {
-            continue;
-        }
-        if (unit->protectId != unitId) {
-            continue;
-        }
-        if (unit->mTokenFlags & 1) {
-            continue;
-        }
-        if (unit->mTokenFlags & 4) {
-            continue;
-        }
-        if (!BtlUnit_CanGuardStatus(unit)) {
-            continue;
-        }
-        numParts = unit->mKindParams->numParts;
-        part = unit->mParts;
-        for (j = 0; j < numParts; j++) {
-            if (part->attributes & 0x8) {
-                break;
+    item = weapon->item;
+    count = 0;
+    if (item >= BADGE_MIN && item < BADGE_MAX) {
+        count = pouchEquipCheckBadge(item);
+    }
+    if (count > 0) {
+        switch (item) {
+        case ITEM_SHRINK_STOMP:
+            if (utype == STATUS_TINY) {
+                param1 += (count - 1) * 2;
             }
-            part = part->mNextPart;
-        }
-        if (j < numParts) {
+            break;
+        case ITEM_SLEEPY_STOMP:
+            if (utype == STATUS_SLEEP) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_SOFT_STOMP:
+            if (utype == STATUS_DEFENSE_DOWN) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_HEAD_RATTLE:
+            if (utype == STATUS_CONFUSE) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_ICE_SMASH:
+            if (utype == STATUS_FREEZE) {
+                param1 += (count - 1) * 2;
+            }
+            break;
+        case ITEM_UNUSED_DEFEND_BADGE:
+        case ITEM_UNUSED_DEFEND_BADGE_P:
+            if (utype == STATUS_DEFENSE_UP && unit->badgesEquipped.DefendUnused >= 2) {
+                param2 += unit->badgesEquipped.DefendUnused - 1;
+            }
             break;
         }
     }
-    if (i < 0x40) {
-        BattleUnit* u;
 
-        BattleGetUnitPtr(wp, unitId)->damagePattern = 0;
-        BattleRunHitEvent(BattleGetUnitPtr(wp, unitId), 0x1029);
-        u = BattleGetUnitPtr(wp, unitId);
-        u->mTokenFlags |= 4;
-        wp->flags |= 1;
-        unit->damagePattern = 0;
-        BattleRunHitEvent(unit, 0x1038);
-        unit->mTokenFlags |= 2;
-        *out1 = i;
-        *out2 = part->mKindPartParams->partNum;
-    }
-}
+    if (utype == STATUS_CHARGE) {
+        s32 n;
 
-void BattleAttackDeclare(s32* out1, s32* out2) {
-    s32 i;
-    BattleUnit* unit;
-    BattleUnitPart* part;
-    BattleWork* wp = _battleWorkPointer;
-
-    for (i = 0; i < 0x40; i++) {
-        s32 numParts;
-        s32 j;
-
-        if (i == *out1) {
-            continue;
-        }
-        unit = BattleGetUnitPtr(wp, i);
-        if (unit == 0) {
-            continue;
-        }
-        if (unit->protectId != *out1) {
-            continue;
-        }
-        if (unit->mTokenFlags & 1) {
-            continue;
-        }
-        if (unit->mTokenFlags & 4) {
-            continue;
-        }
-        if (!BtlUnit_CanGuardStatus(unit)) {
-            continue;
-        }
-        numParts = unit->mKindParams->numParts;
-        part = unit->mParts;
-        for (j = 0; j < numParts; j++) {
-            if (part->attributes & 0x8) {
-                break;
+        if (weapon == &badgeWeapon_Charge || weapon == &badgeWeapon_ChargeP) {
+            if (unit->currentKind == UNIT_MARIO) {
+                n = pouchEquipCheckBadge(ITEM_CHARGE);
+            } else {
+                n = pouchEquipCheckBadge(ITEM_CHARGE_P);
             }
-            part = part->mNextPart;
+            if (n >= 2) {
+                param2 += n - 1;
+            }
+        } else if (weapon == &badgeWeapon_SuperCharge || weapon == &badgeWeapon_SuperChargeP) {
+            if (unit->currentKind == UNIT_MARIO) {
+                n = pouchEquipCheckBadge(ITEM_SUPER_CHARGE);
+            } else {
+                n = pouchEquipCheckBadge(ITEM_SUPER_CHARGE_P);
+            }
+            if (n >= 2) {
+                param2 += (n - 1) * 2;
+            }
         }
-        if (j < numParts) {
-            break;
+        if (param2 >= 10) {
+            param2 = 9;
         }
     }
-    if (i < 0x40) {
-        BattleUnit* u;
 
-        BattleGetUnitPtr(wp, *out1)->damagePattern = 0;
-        BattleRunHitEvent(BattleGetUnitPtr(wp, *out1), 0x1029);
-        u = BattleGetUnitPtr(wp, *out1);
-        u->mTokenFlags |= 4;
-        wp->flags |= 1;
-        unit->damagePattern = 0;
-        BattleRunHitEvent(unit, 0x1038);
-        unit->mTokenFlags |= 2;
-        *out1 = i;
-        *out2 = part->mKindPartParams->partNum;
-    }
+    *out1 = param1;
+    *out2 = param2;
 }
 
 // dont_inline: BattleSetStatusDamage calls this out of line
@@ -851,82 +1001,6 @@ u8 _getRegistStatus(BattleUnit* unit, s32 type) {
 }
 #pragma dont_inline reset
 
-s32 BattleCheckPikkyoro(BattleWeapon* weapon, s32* out) {
-    BattleWork* wp = _battleWorkPointer;
-    s32 weights[5] = { 0 };
-    s32 count = 0;
-    s32 selected = 0;
-    s32 result = 0;
-
-    if (out) {
-        result = *out;
-    }
-    if (weapon->special & 0x800) {
-        u32 badges = wp->badgeEquippedFlags;
-
-        if (badges & 0x100) {
-            weights[0] = 1;
-            selected = 0;
-            count = 1;
-        }
-        if (badges & 0x200) {
-            weights[1] = 1;
-            selected = 1;
-            count++;
-        }
-        if (badges & 0x400) {
-            weights[2] = 1;
-            selected = 2;
-            count++;
-        }
-        if (badges & 0x800) {
-            weights[3] = 1;
-            selected = 3;
-            count++;
-        }
-        if (badges & 0x1000) {
-            weights[4] = 1;
-            selected = 4;
-            count++;
-        }
-    }
-    if (count > 0) {
-        if (count >= 2) {
-            s32 r = irand(count);
-            s32 i;
-
-            selected = 4;
-            for (i = 4; i > 0; i--) {
-                r -= weights[i];
-                if (r < 0) {
-                    break;
-                }
-                selected--;
-            }
-        }
-        switch (selected) {
-        case 0:
-            result |= 0x01000000;
-            break;
-        case 1:
-            result |= 0x02000000;
-            break;
-        case 2:
-            result |= 0x04000000;
-            break;
-        case 3:
-            result |= 0x08000000;
-            break;
-        case 4:
-            result |= 0x10000000;
-            break;
-        }
-    }
-    if (out) {
-        *out = result;
-    }
-    return result;
-}
 
 // The six colour bytes the stamp effect reads (the tint and the fade-out tint).
 #define STAMP_COLOR(e, r0, g0, b0, r1, g1, b1)                           \
@@ -1403,6 +1477,7 @@ s32 BattleSetStatusDamage(s32* work, BattleUnit* unit, BattleUnitPart* part, s32
 }
 #pragma opt_common_subs reset
 
+
 // The `s32 rate` plus `(s8)` casts reproduce the original `extsb r8,r3` / `cmpwi r8,0` (a plain s8
 // rate makes the GALE_FORCE test `extsb. r0,r8`). The call casts BattleSetStatusDamage to a prototype
 // whose arg8/arg9 are `s8` (the callee sign-extends both, `extsb. r0,r28`/`extsb. r0,r29`); with the
@@ -1457,22 +1532,22 @@ s32 BattleSetStatusDamageFromWeapon(BattleUnit* unit1, BattleUnit* unit2, Battle
             }
 #ifdef MUST_MATCH
             if (((s32 (*)(s32*, BattleUnit*, BattleUnitPart*, s32, s32, s32, s32, s8, s8))BattleSetStatusDamage)(&work, unit2, part, weapon->special, i, (s8)rate, levelDiff, p1, p2)) {
-#else
-            if (BattleSetStatusDamage(&work, unit2, part, weapon->special, i, rate, levelDiff, p1, p2)) {
-#endif
                 if (i == STATUS_INVISIBLE) {
                     btlDispPoseAnime(part);
                 }
             }
+#else
+            if (BattleSetStatusDamage(&work, unit2, part, weapon->special, i, rate, levelDiff, p1, p2)) {
+                if (i == STATUS_INVISIBLE) {
+                    btlDispPoseAnime(part);
+                }
+            }
+#endif
         }
     }
     return work;
 }
 #pragma dont_inline reset
-
-#define BU_S8(u, off) (*(s8*)((u8*)(u) + (off)))
-#define BU_S32(u, off) (*(s32*)((u8*)(u) + (off)))
-#define BU_U32(u, off) (*(u32*)((u8*)(u) + (off)))
 
 // The original loads the 0.5f multiplier from its own .sdata2 symbol; MATCH_F32 keeps the compiler
 // from folding it into an anonymous pooled literal (see matching.h).
@@ -1562,6 +1637,31 @@ s32 BattlePreCheckDamage(BattleUnit* attacker, BattleUnit* target, BattleUnitPar
     return 1;
 }
 
+// dont_inline: BattleCheckDamage calls this out of line in the original.
+#pragma dont_inline on
+s32 _checkDamageCode_EmergencyRevival(BattleUnit* unit, s32* flags) {
+    if (unit->currentKind == UNIT_MARIO) {
+        if ((s32)pouchCheckItem(ITEM_LIFE_SHROOM) > 0) {
+            *flags |= 0x800;
+            return 1;
+        }
+        return 0;
+    }
+    if (unit->currentKind >= TYPE_PARTNER_MIN && unit->currentKind < TYPE_PARTNER_MAX) {
+        if ((s32)pouchCheckItem(ITEM_LIFE_SHROOM) > 0) {
+            *flags |= 0x800;
+            return 1;
+        }
+        return 0;
+    }
+    if (unit->heldItem == ITEM_LIFE_SHROOM) {
+        *flags |= 0x800;
+        return 1;
+    }
+    return 0;
+}
+#pragma dont_inline reset
+
 // The shapes here that reproduce the original's scheduling and block layout:
 //  - `damage = 0;` is a plain assignment placed after the `part` block (not an initializer); the original
 //    hoists it to between the `weapon->special` load and its test, which is also where `damage` (r22) first
@@ -1595,6 +1695,7 @@ static const char _sfxThunders[28] = "SFX_BTL_THUNDERS_ATTACK4";
 #define SFX_STR_NICE1 "SFX_SYSTEM_NICE1"
 #define SFX_STR_THUNDERS "SFX_BTL_THUNDERS_ATTACK4"
 #endif
+
 s32 BattleCheckDamage(BattleUnit* unit1, BattleUnit* unit2, BattleUnitPart* part, BattleWeapon* weapon, s32 flags) {
     BattleWork* wp = _battleWorkPointer;
     CounterPreCheckWork work;
@@ -1843,265 +1944,170 @@ counter_done:
     }
     return ret;
 }
+#define BU_S8(u, off) (*(s8*)((u8*)(u) + (off)))
+#define BU_S32(u, off) (*(s32*)((u8*)(u) + (off)))
+#define BU_U32(u, off) (*(u32*)((u8*)(u) + (off)))
 
-void _getSickStatusParam(BattleUnit* unit, BattleWeapon* weapon, s32 type, s8* out1, s8* out2) {
-    s32 param1;
-    s32 param2;
-    s32 item;
-    s32 count;
-    u32 utype = (u32)type;
+void BattleAttackDeclare(s32* out1, s32* out2) {
+    s32 i;
+    BattleUnit* unit;
+    BattleUnitPart* part;
+    BattleWork* wp = _battleWorkPointer;
 
-    switch (type) {
-    case STATUS_SLEEP:
-        param1 = param2 = weapon->sleepTime;
-        break;
-    case STATUS_STOP:
-        param1 = param2 = weapon->stopTime;
-        break;
-    case STATUS_DIZZY:
-        param1 = param2 = weapon->dizzyTime;
-        break;
-    case STATUS_POISON:
-        param1 = weapon->poisonTime;
-        param2 = weapon->poisonStrength;
-        break;
-    case STATUS_CONFUSE:
-        param1 = param2 = weapon->confuseTime;
-        break;
-    case STATUS_ELECTRIC:
-        param1 = param2 = weapon->electricTime;
-        break;
-    case STATUS_DODGY:
-        param1 = param2 = weapon->dodgyTime;
-        break;
-    case STATUS_BURN:
-        param1 = param2 = weapon->burnTime;
-        break;
-    case STATUS_FREEZE:
-        param1 = param2 = weapon->freezeTime;
-        break;
-    case STATUS_HUGE:
-        if (weapon->sizeChangeStrength > 0) {
-            param1 = weapon->sizeChangeTime;
-            param2 = weapon->sizeChangeStrength;
-        } else {
-            param1 = param2 = 0;
-        }
-        break;
-    case STATUS_TINY:
-        if (weapon->sizeChangeStrength < 0) {
-            param1 = weapon->sizeChangeTime;
-            param2 = weapon->sizeChangeStrength;
-        } else {
-            param1 = param2 = 0;
-        }
-        break;
-    case STATUS_ATTACK_UP:
-        if (weapon->atkChangeStrength > 0) {
-            param1 = weapon->atkChangeTime;
-            param2 = weapon->atkChangeStrength;
-        } else {
-            param1 = param2 = 0;
-        }
-        break;
-    case STATUS_ATTACK_DOWN:
-        if (weapon->atkChangeStrength < 0) {
-            param1 = weapon->atkChangeTime;
-            param2 = weapon->atkChangeStrength;
-        } else {
-            param1 = param2 = 0;
-        }
-        break;
-    case STATUS_DEFENSE_UP:
-        if (weapon->defChangeStrength > 0) {
-            param1 = weapon->defChangeTime;
-            param2 = weapon->defChangeStrength;
-        } else {
-            param1 = param2 = 0;
-        }
-        break;
-    case STATUS_DEFENSE_DOWN:
-        if (weapon->defChangeStrength < 0) {
-            param1 = weapon->defChangeTime;
-            param2 = weapon->defChangeStrength;
-        } else {
-            param1 = param2 = 0;
-        }
-        break;
-    case STATUS_ALLERGIC:
-        param1 = param2 = weapon->allergicTime;
-        break;
-    case STATUS_FAST:
-        param1 = param2 = weapon->fastTime;
-        break;
-    case STATUS_SLOW:
-        param1 = param2 = weapon->slowTime;
-        break;
-    case STATUS_INSTANT_KILL:
-#ifdef MUST_MATCH
-        // The original sign-extends the byte at 0x9E, but battle_database_common.h declares ohkoChance u8.
-        param1 = param2 = ((s8*)weapon)[0x9E];
-#else
-        param1 = param2 = weapon->ohkoChance;
-#endif
-        break;
-    case STATUS_INVISIBLE:
-        param1 = param2 = weapon->invisibleTime;
-        break;
-    case STATUS_HP_REGEN:
-        param1 = weapon->hpRegenTime;
-        param2 = weapon->hpRegenStrength;
-        break;
-    case STATUS_FP_REGEN:
-        param1 = weapon->fpRegenTime;
-        param2 = weapon->fpRegenStrength;
-        break;
-    case STATUS_CHARGE:
-        param1 = weapon->chargeStrength;
-        param2 = weapon->chargeStrength;
-        break;
-    case STATUS_PAYBACK:
-        param1 = param2 = weapon->paybackTime;
-        break;
-    case STATUS_HOLD_FAST:
-        param1 = param2 = weapon->holdFastTime;
-        break;
-    default:
-        param1 = param2 = 0;
-        break;
-    }
+    for (i = 0; i < 0x40; i++) {
+        s32 numParts;
+        s32 j;
 
-    item = weapon->item;
-    count = 0;
-    if (item >= BADGE_MIN && item < BADGE_MAX) {
-        count = pouchEquipCheckBadge(item);
-    }
-    if (count > 0) {
-        switch (item) {
-        case ITEM_SHRINK_STOMP:
-            if (utype == STATUS_TINY) {
-                param1 += (count - 1) * 2;
+        if (i == *out1) {
+            continue;
+        }
+        unit = BattleGetUnitPtr(wp, i);
+        if (unit == 0) {
+            continue;
+        }
+        if (unit->protectId != *out1) {
+            continue;
+        }
+        if (unit->mTokenFlags & 1) {
+            continue;
+        }
+        if (unit->mTokenFlags & 4) {
+            continue;
+        }
+        if (!BtlUnit_CanGuardStatus(unit)) {
+            continue;
+        }
+        numParts = unit->mKindParams->numParts;
+        part = unit->mParts;
+        for (j = 0; j < numParts; j++) {
+            if (part->attributes & 0x8) {
+                break;
             }
-            break;
-        case ITEM_SLEEPY_STOMP:
-            if (utype == STATUS_SLEEP) {
-                param1 += (count - 1) * 2;
-            }
-            break;
-        case ITEM_SOFT_STOMP:
-            if (utype == STATUS_DEFENSE_DOWN) {
-                param1 += (count - 1) * 2;
-            }
-            break;
-        case ITEM_HEAD_RATTLE:
-            if (utype == STATUS_CONFUSE) {
-                param1 += (count - 1) * 2;
-            }
-            break;
-        case ITEM_ICE_SMASH:
-            if (utype == STATUS_FREEZE) {
-                param1 += (count - 1) * 2;
-            }
-            break;
-        case ITEM_UNUSED_DEFEND_BADGE:
-        case ITEM_UNUSED_DEFEND_BADGE_P:
-            if (utype == STATUS_DEFENSE_UP && unit->badgesEquipped.DefendUnused >= 2) {
-                param2 += unit->badgesEquipped.DefendUnused - 1;
-            }
+            part = part->mNextPart;
+        }
+        if (j < numParts) {
             break;
         }
     }
+    if (i < 0x40) {
+        BattleUnit* u;
 
-    if (utype == STATUS_CHARGE) {
-        s32 n;
-
-        if (weapon == &badgeWeapon_Charge || weapon == &badgeWeapon_ChargeP) {
-            if (unit->currentKind == UNIT_MARIO) {
-                n = pouchEquipCheckBadge(ITEM_CHARGE);
-            } else {
-                n = pouchEquipCheckBadge(ITEM_CHARGE_P);
-            }
-            if (n >= 2) {
-                param2 += n - 1;
-            }
-        } else if (weapon == &badgeWeapon_SuperCharge || weapon == &badgeWeapon_SuperChargeP) {
-            if (unit->currentKind == UNIT_MARIO) {
-                n = pouchEquipCheckBadge(ITEM_SUPER_CHARGE);
-            } else {
-                n = pouchEquipCheckBadge(ITEM_SUPER_CHARGE_P);
-            }
-            if (n >= 2) {
-                param2 += (n - 1) * 2;
-            }
-        }
-        if (param2 >= 10) {
-            param2 = 9;
-        }
+        BattleGetUnitPtr(wp, *out1)->damagePattern = 0;
+        BattleRunHitEvent(BattleGetUnitPtr(wp, *out1), 0x1029);
+        u = BattleGetUnitPtr(wp, *out1);
+        u->mTokenFlags |= 4;
+        wp->flags |= 1;
+        unit->damagePattern = 0;
+        BattleRunHitEvent(unit, 0x1038);
+        unit->mTokenFlags |= 2;
+        *out1 = i;
+        *out2 = part->mKindPartParams->partNum;
     }
-
-    *out1 = param1;
-    *out2 = param2;
 }
 
-s32 _getSickStatusRate(BattleWeapon* weapon, s32 type) {
-    u8* w = (u8*)weapon;
+void __declare(s32 unitId, s32 partId, s32* out1, s32* out2) {
+    s32 i;
+    BattleUnit* unit;
+    BattleUnitPart* part;
+    BattleWork* wp = _battleWorkPointer;
 
-    switch (type) {
-    case STATUS_SLEEP: return w[0x80];
-    case STATUS_STOP: return w[0x82];
-    case STATUS_DIZZY: return w[0x84];
-    case STATUS_POISON: return w[0x86];
-    case STATUS_CONFUSE: return w[0x89];
-    case STATUS_ELECTRIC: return w[0x8B];
-    case STATUS_DODGY: return w[0x8D];
-    case STATUS_BURN: return w[0x8F];
-    case STATUS_FREEZE: return w[0x91];
-    case STATUS_HUGE:
-        if ((s8)w[0x95] > 0) {
-            return w[0x93];
+    (void)partId;
+    *out1 = -1;
+    *out2 = 0;
+    for (i = 0; i < 0x40; i++) {
+        s32 numParts;
+        s32 j;
+
+        if (i == unitId) {
+            continue;
         }
-        return 0;
-    case STATUS_TINY:
-        if ((s8)w[0x95] <= 0) {
-            return w[0x93];
+        unit = BattleGetUnitPtr(wp, i);
+        if (unit == 0) {
+            continue;
         }
-        return 0;
-    case STATUS_ATTACK_UP:
-        if ((s8)w[0x98] > 0) {
-            return w[0x96];
+        if (unit->protectId != unitId) {
+            continue;
         }
-        return 0;
-    case STATUS_ATTACK_DOWN:
-        if ((s8)w[0x98] <= 0) {
-            return w[0x96];
+        if (unit->mTokenFlags & 1) {
+            continue;
         }
-        return 0;
-    case STATUS_DEFENSE_UP:
-        if ((s8)w[0x9B] > 0) {
-            return w[0x99];
+        if (unit->mTokenFlags & 4) {
+            continue;
         }
-        return 0;
-    case STATUS_DEFENSE_DOWN:
-        if ((s8)w[0x9B] <= 0) {
-            return w[0x99];
+        if (!BtlUnit_CanGuardStatus(unit)) {
+            continue;
         }
-        return 0;
-    case STATUS_ALLERGIC: return w[0x9C];
-    case STATUS_FAST: return w[0xA0];
-    case STATUS_SLOW: return w[0xA2];
-    case STATUS_FRIGHT: return w[0xA4];
-    case STATUS_GALE_FORCE: return w[0xA5];
-    case STATUS_INSTANT_KILL: return w[0x9E];
-    case STATUS_INVISIBLE: return w[0xA8];
-    case STATUS_HP_REGEN: return (s8)w[0xAA] > 0 ? 100 : 0;
-    case STATUS_FP_REGEN: return (s8)w[0xAC] > 0 ? 100 : 0;
-    case STATUS_CHARGE: return (s8)w[0x9F] != 0 ? 100 : 0;
-    case STATUS_PAYBACK: return (s8)w[0xA6] != 0 ? 100 : 0;
-    case STATUS_HOLD_FAST: return (s8)w[0xA7] > 0 ? 100 : 0;
-    case STATUS_FLIPPED: return 0;
+        numParts = unit->mKindParams->numParts;
+        part = unit->mParts;
+        for (j = 0; j < numParts; j++) {
+            if (part->attributes & 0x8) {
+                break;
+            }
+            part = part->mNextPart;
+        }
+        if (j < numParts) {
+            break;
+        }
     }
-    return 0;
+    if (i < 0x40) {
+        BattleUnit* u;
+
+        BattleGetUnitPtr(wp, unitId)->damagePattern = 0;
+        BattleRunHitEvent(BattleGetUnitPtr(wp, unitId), 0x1029);
+        u = BattleGetUnitPtr(wp, unitId);
+        u->mTokenFlags |= 4;
+        wp->flags |= 1;
+        unit->damagePattern = 0;
+        BattleRunHitEvent(unit, 0x1038);
+        unit->mTokenFlags |= 2;
+        *out1 = i;
+        *out2 = part->mKindPartParams->partNum;
+    }
 }
+
+void BattleAttackDeclareAll(BattleWork* wp) {
+    s32 i;
+    u8* sampling = wp->field_428;
+
+    for (i = 0; i < (s8)sampling[0xa6c]; i++) {
+        u8* entry = sampling + (s8)sampling[0xa6d + i] * 0x24 + 4;
+        s32 out1;
+        s32 out2;
+
+        __declare(*(s16*)(entry + 0), *(s16*)(entry + 2), &out1, &out2);
+        if (out1 != -1) {
+            s32 j;
+
+            for (j = 0; j < (s8)sampling[0xa6c]; j++) {
+                s16 matchId = *(s16*)(sampling + (s8)sampling[0xa6d + j] * 0x24 + 4);
+                if (matchId == out1) {
+                    s32 k;
+
+                    for (k = j; k < (s8)sampling[0xa6c] - 1; k++) {
+                        sampling[0xa6d + k] = sampling[0xa6d + k + 1];
+                    }
+                    if (j <= i) {
+                        i--;
+                    }
+                    sampling[0xa6c]--;
+                    break;
+                }
+            }
+            *(s16*)(entry + 0) = out1;
+            *(s16*)(entry + 2) = out2;
+        }
+    }
+    sampling[0xab7] = 0;
+}
+
+// dont_inline: the original calls this out of line from BattleCheckDamage.
+#pragma dont_inline on
+void BattleInitCounterPreCheckWork(void* work) {
+    memset(work, 0, 0x30);
+    *(s32*)work = 1;
+}
+#pragma dont_inline reset
+
 
 
 s32 BattleCheckCounter(void* work, BattleUnit* attacker, BattleUnit* target, BattleUnitPart* part,
