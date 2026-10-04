@@ -1695,7 +1695,7 @@ config.libs = [
             Object(Matching, "unit/unit_boss_rampell.c"),
             Object(Matching, "jin.c"),
             Object(Matching, "jin_00.c"),
-            Object(NonMatching, "jin_07.c"),
+            Object(Matching, "jin_07.c"),
             Object(Matching, "unit/unit_faker_mario.c"),
             Object(Matching, "unit/unit_atmic_teresa.c"),
             Object(Matching, "data/battle/battle_database_jin.c"),
