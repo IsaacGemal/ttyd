@@ -12,7 +12,21 @@
 #include <stdio.h>
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
+// The code and the linker's only handle on the tables below is this anchor, so the compiler-emitted
+// pairs and the arrays they reach are force-kept here.
+#pragma force_active on
 __declspec(section ".data") u8 lbl_803B70C0[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+// The compiler emitted four { -1.0f, 1.0f } / { 1.0f, -1.0f } pairs between the anchor and
+// wakka_vertex_tbl (the local names drop the compiler's $); the code reaches the tables that
+// follow through lbl_803B70C0, so the pairs are what puts wakka_vertex_tbl at +0x40.
+__declspec(section ".data") u8 negone_one_374[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+__declspec(section ".data") u8 lbl_803B70D0[8] = { 0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00 };
+__declspec(section ".data") u8 one_negone_373[8] = { 0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00 };
+__declspec(section ".data") u8 lbl_803B70E0[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+__declspec(section ".data") u8 negone_one_360[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+__declspec(section ".data") u8 lbl_803B70F0[8] = { 0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00 };
+__declspec(section ".data") u8 one_negone_359[8] = { 0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00 };
+#pragma force_active reset
 
 // MUST_MATCH: the original reaches every message through one base register (str_803019E0); the natural build
 // names them.
@@ -267,6 +281,17 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 #pragma opt_common_subs reset
 
 #ifdef __MWERKS__
+#pragma force_active on
+// Original .sdata order: these two 32-byte tables come first, then the twenty display lists.
+s8 wakka_normal_tbl[32] ATTRIBUTE_ALIGN(32) = {
+	0, 64, 0, // 0
+};
+
+u8 wakka_color0_tbl[32] ATTRIBUTE_ALIGN(32) = {
+	0xFF, 0xFF, 0xFF, 0x7F, // 0
+	0xFF, 0xFF, 0xFF, 0x00  // 1
+};
+
 u8 wakka_dl_0_0[] ATTRIBUTE_ALIGN(32) = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
@@ -510,6 +535,11 @@ u8 wakka_dl_0_size_tbl[] = {
 	1, // 19
 };
 
+// Trailing zero word: the section ends at the original offset before the next unit's `.sdata`.
+#pragma explicit_zero_data on
+__declspec(section ".sdata") static u32 gap_07_80418194_sdata[1] = { 0 };
+#pragma explicit_zero_data reset
+
 s16 wakka_vertex_tbl[] ATTRIBUTE_ALIGN(32) = {
 	24347, 0, -8825, // 0
 	20710, 0, -15961, // 1
@@ -553,15 +583,6 @@ s16 wakka_vertex_tbl[] ATTRIBUTE_ALIGN(32) = {
 	12800, 0, -914, // 39
 	0, 0, -13714, // 40
 	0, 0, -26514, // 41
-};
-
-s8 wakka_normal_tbl[] ATTRIBUTE_ALIGN(32) = {
-	0, 64, 0, // 0
-};
-
-u8 wakka_color0_tbl[] ATTRIBUTE_ALIGN(32) = {
-	0xFF, 0xFF, 0xFF, 0x7F, // 0
-	0xFF, 0xFF, 0xFF, 0x00  // 1
 };
 
 s16 wakka_texcoord0_tbl[] ATTRIBUTE_ALIGN(32) = {
@@ -659,6 +680,7 @@ s8 wakka_normal_tbl[];
 u32 wakka_color0_tbl[];
 s16 wakka_texcoord0_tbl[];
 #endif
+#pragma force_active reset
 
 //-3.5 / 24 * i (up to 25) with some imprecision
 f32 scroll_tbl[] = {
@@ -668,6 +690,13 @@ f32 scroll_tbl[] = {
 	-2.1875f, -2.3333333f, -2.4791667f, -2.625f, -2.7708333f,
 	-2.9166667f, -3.0625f, -3.2083333f, -3.3541667f, -3.5f
 };
+
+// Trailing zero word: the section ends at the original offset (the next unit's jump tables follow).
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") static u32 gap_05_803B735C_data[1] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 
 EffectEntry* effUltraHammerEntry(BOOL arg0, s32 counter, f32 x, f32 y, f32 z, f32 scale) {
