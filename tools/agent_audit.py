@@ -239,11 +239,14 @@ def audit_shell(cmd, ws, cwd=None, depth=0):
             continue
         name = posixpath.basename(words[0])
         args = words[1:]
-        # wrappers that carry a command in their arguments
-        if name in SHELLS and "-c" in args[:3]:
-            i = args.index("-c")
-            if i + 1 < len(args):
-                flags += audit_shell(args[i + 1], ws, cwd, depth + 1)
+        if raw and posixpath.basename(raw[0]) == "command" and raw[1:2] and raw[1] in ("-v", "-V"):
+            continue  # a lookup, not a run
+        # wrappers that carry a command in their arguments (-c, also inside combined flags: -lc, -ec, -xec)
+        copt = next((i for i, a in enumerate(args) if re.match(r"^-[A-Za-z]*c[A-Za-z]*$", a)), None)
+        if name in SHELLS and copt is not None:
+            rest = [a for a in args[copt + 1:] if not a.startswith("-")]
+            if rest:
+                flags += audit_shell(rest[0], ws, cwd, depth + 1)
             continue
         if name == "eval":
             flags += audit_shell(" ".join(args), ws, cwd, depth + 1)
@@ -283,11 +286,13 @@ def audit_shell(cmd, ws, cwd=None, depth=0):
         if pids_from_pgrep and name != "pgrep" and name != "kill" and op != "|":
             pids_from_pgrep = False
         # what runs: a program or script under /home outside the workspace
-        script = words[0]
-        if (PYTHONS.match(name) or name in SHELLS or name in ("node", "perl")) and args:
+        script, interp = words[0], PYTHONS.match(name) or name in SHELLS or name in ("node", "perl")
+        if interp and args:
             script = next((a for a in args if not a.startswith("-")), "")
-        if pathlike(script) and outside(script, ws, cwd) and norm(script, cwd).startswith("/home/") \
-                and not norm(script, cwd).startswith(SHARED):
+        # an interpreter's script argument is a path even without a slash; `python3 -m` runs code from the cwd
+        runs_cwd = PYTHONS.match(name) and "-m" in args
+        target = cwd if runs_cwd else (norm(script, cwd) if script and (pathlike(script) or interp) else "")
+        if target and target.startswith("/home/") and outside(target, ws) and not (target + "/").startswith(SHARED):
             flags.append(("EXEC-OUTSIDE", seg.strip()))
         targets = [r for r in redirects(seg) if not r.startswith("&")]
         wrote = any(outside(t, ws, cwd) for t in targets)
@@ -295,7 +300,12 @@ def audit_shell(cmd, ws, cwd=None, depth=0):
             operands = [a for a in args if not a.startswith("-")]
             if name == "git":
                 operands = operands[1:] if operands and operands[0] in ("clone", "init", "worktree") else []
+            if name == "dd":
+                operands = [a[3:] for a in args if a.startswith("of=")]
             wrote = any(outside(a, ws, cwd) for a in operands)
+        # in-place editors: every file operand is written
+        if not wrote and name in ("sed", "perl") and any(re.match(r"^-[A-Za-z]*i", a) or a.startswith("--in-place") for a in args):
+            wrote = any(outside(a, ws, cwd) for a in args[1:] if pathlike(a) and not a.startswith("-"))
         if wrote:
             flags.append(("WRITE-OUTSIDE", seg.strip()))
             continue

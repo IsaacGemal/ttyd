@@ -19,8 +19,8 @@ KEY = "sk-test-0123456789abcdef"
 
 def setup_globals(here):
     W.HERE, W.WAVE, W.MODEL, W.KEY_ENV, W.MODEL_LINE = Path(here), "wave_test", "m", "TEST_KEY", "Model: test"
-    W.BASE, W.ARCHIVE, W.PFX, W.PFXRE = "$HOME/base", "~/archive", "wt_", "wt_"
-    W.KEY_FILE, W.UID = "~/.config/ttyd-keys/wt", "1000"
+    W.BASE, W.ARCHIVE, W.PFX, W.PFXRE = "$HOME/base", "archive", "wt_", "wt_"
+    W.KEY_FILE, W.UID, W.KEY_HASH, W.NODE_BIN = "~/.config/ttyd-keys/wt", "1000", "abc123", "/opt/node/bin"
 
 
 class Reaper(unittest.TestCase):
@@ -107,6 +107,30 @@ class Remote(unittest.TestCase):
         with self.fake(out="audit=0"):
             self.assertEqual(W.collect("t", SPEC), 0)
 
+    def test_reap_stops_exact_scopes(self):
+        with self.fake():
+            W.reap("t")
+        cmd = self.calls[0][0][-1]
+        self.assertIn("ttyd-wt_t-run.scope", cmd)
+        self.assertNotIn("*", cmd.split("; for p in")[0].split("2>/dev/null")[0])  # no glob that would hit ttyd-wt_t-2
+
+    def test_an_earlier_runs_results_are_kept_aside(self):
+        d = Path(self.tmp.name) / "t"
+        d.mkdir()
+        (d / "final.c").write_text("old")
+        with self.fake(out="rc=0"):
+            W.prepare("t", SPEC)
+        self.assertFalse((d / "final.c").exists())
+        self.assertEqual((Path(self.tmp.name) / "t.prev1" / "final.c").read_text(), "old")
+
+    def test_agent_steps_have_disk_and_log_caps(self):
+        c = W.agent_cmd("t", 100, "x", "run")
+        self.assertIn("du -smx", c)
+        self.assertIn(f"head -c {W.EVENTS_MAX}", c)
+        self.assertIn(f"head -c {W.STDERR_MAX}", c)
+        self.assertIn("kill $wd", c)
+        self.assertIn("du -smx", W.box_cmd("t", "check0", "true"))
+
     def test_hung_ssh_raises_instead_of_waiting(self):
         with self.fake(exc=subprocess.TimeoutExpired("ssh", 1)):
             with self.assertRaises(subprocess.TimeoutExpired):
@@ -120,7 +144,7 @@ class Sandbox(unittest.TestCase):
 
     def test_agent_sandbox(self):
         s = W.sandbox("t", "run", "agent")
-        for part in ['--tmpfs "$HOME"', "--tmpfs /run/user/1000", "/dev/null /run/docker.sock",
+        for part in ["MemorySwapMax=", "MemoryHigh=", "/opt/node/bin:", '--tmpfs "$HOME"', "--tmpfs /run/user/1000", "/dev/null /run/docker.sock",
                      "/dev/null /run/dbus/system_bus_socket", "--unshare-pid", "--unshare-ipc", "--die-with-parent",
                      "--clearenv", "--ro-bind / /", "--slice=ttyd-agents.slice", "MemoryMax=", "TasksMax=",
                      "--bind $HOME/ttyd-agents/wt_t $HOME/ttyd-agents/wt_t", "--bind $HOME/ttyd-agents-priv/wt_t/tmp /tmp"]:
@@ -145,6 +169,30 @@ class Sandbox(unittest.TestCase):
             os.rmdir(f"{home}/ttyd-agents-priv/wt_t/tmp")
             os.symlink(home, f"{home}/ttyd-agents-priv/wt_t/tmp")
             self.assertEqual(subprocess.run(["bash", "-c", check], env=env, capture_output=True).returncode, 4)
+
+    def test_archive_path(self):
+        self.assertEqual(W.archive_rel("~/ttyd-archive/x"), "ttyd-archive/x")
+        self.assertEqual(W.archive_rel("$HOME/ttyd-archive/x"), "ttyd-archive/x")
+        with self.assertRaises(SystemExit):
+            W.archive_rel("/etc/x")
+
+    @unittest.skipUnless(subprocess.run(["which", "timeout"], capture_output=True).returncode == 0, "needs timeout(1)")
+    def test_step_shell_gates_on_binds_and_leaves_nothing_behind(self):
+        with tempfile.TemporaryDirectory() as home:
+            for d in ("ttyd-agents/wt_t", "ttyd-agents-out/wt_t", "ttyd-agents-priv/wt_t/tmp", "ttyd-agents-priv/wt_t/pi-agent"):
+                os.makedirs(f"{home}/{d}")
+            env = dict(os.environ, HOME=home)
+            with mock.patch.object(W, "sandbox", return_value=""):
+                cmd = W.box_cmd("t", "check0", "echo ran")
+            t0 = time.time()
+            r = subprocess.run(["bash", "-c", cmd], env=env, capture_output=True, text=True, timeout=20)
+            # capture_output waits for every holder of stdout: a watchdog that kept it would hang here
+            self.assertLess(time.time() - t0, 5)
+            self.assertEqual((r.returncode, r.stdout.strip()), (0, "ran"))
+            os.rmdir(f"{home}/ttyd-agents-priv/wt_t/tmp")
+            os.symlink(home, f"{home}/ttyd-agents-priv/wt_t/tmp")
+            r = subprocess.run(["bash", "-c", cmd], env=env, capture_output=True, text=True, timeout=20)
+            self.assertEqual((r.returncode, r.stdout.strip()), (4, ""))
 
     def test_deadline(self):
         now = time.mktime((2026, 10, 4, 23, 0, 0, 0, 0, -1))

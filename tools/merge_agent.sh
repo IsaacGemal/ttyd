@@ -13,6 +13,7 @@
 # declarations and type definitions).
 # UNIT is the source path without src/ and .c, e.g. event/evt_map. The wave name in the commit is RESULTS_DIR's
 # parent folder name. ORCHESTRATOR (env) names the model doing the merge in the commit trailer.
+# Results must carry COLLECT-OK and a clean audit.txt (tools/agent_collect.sh) unless ALLOW_UNAUDITED is set.
 # Prints MERGED, REJECT or SKIP. Run on a clean tree.
 set -u
 D=$(cd "$1" && pwd); UNIT=${2#./}
@@ -33,6 +34,12 @@ top=$F; while [ ! -d "$(dirname "$top")" ]; do top=$(dirname "$top"); done
 own="Only in $(dirname "$top"): $(basename "$top")"
 if [ -s "$D/other_changes.txt" ] && grep -v -x -F "$own" "$D/other_changes.txt" | grep -q .; then
   echo "REJECT $TAG: touched other files:"; cat "$D/other_changes.txt"; exit 1
+fi
+
+# the launcher's collect step marks results it gathered without trouble; its audit must be clean
+if [ -z "${ALLOW_UNAUDITED:-}" ] && ! { [ -f "$D/COLLECT-OK" ] && [ -f "$D/audit.txt" ] && tail -1 "$D/audit.txt" | grep -q '^0 flagged'; }; then
+  echo "REJECT $TAG: no clean collect (COLLECT-OK and a clean audit.txt from tools/agent_collect.sh); results from before the audit: ALLOW_UNAUDITED=1"
+  exit 1
 fi
 
 NEW=0

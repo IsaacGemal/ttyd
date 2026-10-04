@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Look for signs of an agent getting past its sandbox on the build host. Parses no agent commands: it looks at the host.
 
-    python3 tools/tower_check.py [--allow FILE] [--since MINUTES]   run on the host; exit 1 if anything is found
+    python3 tools/tower_check.py [--allow FILE] [--since MINUTES]   run on the host
+
+Exit 0 clean, 1 findings, 2 the check itself failed (no allowlist, a crash): the launcher reports 2 as FAILED.
 
 Findings (exit 1):
   HOME-ENTRY     an entry of ~ matching no allowlist pattern (fnmatch, one per line in FILE, default
@@ -12,7 +14,8 @@ Findings (exit 1):
   NEW-CONTAINER  a docker container created in the last MINUTES
   NEW-UNIT       a transient user unit (systemd-run's run-*) started in the last MINUTES
 Information (printed, not counted): recent writes per directory under ~ outside the workspaces and archives, running
-containers, stale agent slot files. Run by tools/wave_launch.py at the end of each wave; MINUTES defaults to 60."""
+containers, stale agent slot files. Run by tools/wave_launch.py at the end of each wave with MINUTES covering the
+whole wave; it defaults to 60."""
 import fnmatch
 import glob
 import os
@@ -35,7 +38,8 @@ def arg(name, default):
 
 def allowlist(path):
     if not os.path.exists(path):
-        sys.exit(f"no allowlist at {path}: list the expected entries of ~ there, one fnmatch pattern per line")
+        print(f"no allowlist at {path}: list the expected entries of ~ there, one fnmatch pattern per line", file=sys.stderr)
+        sys.exit(2)
     return [l.strip() for l in open(path) if l.strip() and not l.lstrip().startswith("#")]
 
 
@@ -145,4 +149,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit:
+        raise
+    except BaseException as e:
+        print(f"tower_check failed: {e!r}", file=sys.stderr)
+        sys.exit(2)

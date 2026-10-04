@@ -4291,10 +4291,13 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
 - **Threat model.** Agents are not malicious, but they are resourceful and will take compute or paths the prompt
   doesn't forbid. Covered: writes outside the workspace; processes that outlive the agent (nohup, setsid, &); signals
   to processes outside the agent; CPU, memory and task monopoly; host services that act outside any sandbox (docker,
-  whose group is root; the user D-Bus and systemd, which start unsandboxed units; X11); credentials in ~; the
+  whose group is root; the user D-Bus and systemd, which start unsandboxed units); credentials in ~; the
   launcher's own post-run steps, which ran agent-editable code and followed agent-planted links on the host; and the
   evidence (events, audit) living where the agent could rewrite it. Accepted: the agent reads its own key (it sits in
-  its environment) and whatever the sandbox shows; its network is open (it needs the API).
+  its environment) and whatever the sandbox shows; its network is open (it needs the API). X11 is only partly
+  covered: the X authority files are hidden, and the tower's X server refuses a connection without a cookie, but
+  its abstract socket stays reachable without a network namespace, so that holds only while nothing like `xhost
+  +SI:localuser` is set on the host.
 - **Fix** (`tools/wave_launch.py`, now the versioned launcher; per-wave configs in scratch call its main()). Every
   step that runs the agent's files (the agent, check.py between passes, rel_link.py) runs in one sandbox:
   `systemd-run --user --scope --slice=ttyd-agents.slice` (CPUQuota 200%, MemoryMax, TasksMax per agent; the slice
@@ -4308,8 +4311,14 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   pipes into ~/ttyd-agents-out/<ws>; after the agent, `tools/agent_collect.sh` from the base (never the workspace)
   gathers final.c, the patches, provenance and the audit there, in a second sandbox that sees the workspace
   read-only, copying only regular files whose real path is inside the workspace; only that directory comes back
-  (`rsync --no-links`). Every ssh/rsync has a deadline; the reaper stops the agent's scopes and kills only the known
-  build programs in an existing workspace. Agent slots are reserved under a flock on the host, shared by every
+  (`rsync --no-links --max-size`). Collection runs after the reaper, and writes COLLECT-OK only if every step
+  worked; `tools/merge_agent.sh` refuses results without it and a clean audit.txt (ALLOW_UNAUDITED=1 for results
+  from before the audit). Disk: a host-side watchdog stops a step's scope when the agent's workspace, private and
+  output dirs pass 4 GB, the event and stderr pipes are cut at 512/64 MB per pass, and collect copies files of at
+  most 16 MB. Memory: MemoryHigh and MemorySwapMax besides MemoryMax (the tower doesn't delegate the io
+  controller, so no IO weight). An earlier run's local results are moved to <tag>.prevN before a rerun. Every
+  ssh/rsync has a deadline; the reaper stops the agent's scopes by exact name and kills only the known build
+  programs in an existing workspace. Agent slots are reserved under a flock on the host, shared by every
   launcher on the key; an unanswered count is no capacity. The prompt forbids background processes and copies
   outside the workspace ("if you want more parallelism, say so in REPORT.md and stop").
 - **Evidence that doesn't parse commands.** The launcher records containers and user units before and after each

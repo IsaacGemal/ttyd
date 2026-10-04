@@ -69,6 +69,14 @@ class AgentAudit(unittest.TestCase):
         self.assertEqual(kinds(ev("bash", command="docker run -v /:/host alpine true")), ["HOST-SERVICE"])
         self.assertEqual(kinds(ev("bash", command="systemctl --user list-units")), ["HOST-SERVICE"])
 
+    def test_round_three_bypasses(self):
+        for cmd in ["bash -lc 'mkdir /home/isaac/x'", "sh -ec 'touch ~/x'", "bash -c 'true > /home/isaac/x'",
+                    "sed -i 's/a/b/' /home/isaac/.bashrc", "perl -pi -e 's/a/b/' ~/.profile", "dd if=/dev/zero of=/home/isaac/x bs=1 count=1"]:
+            self.assertIn("WRITE-OUTSIDE", kinds(ev("bash", command=cmd)), cmd)
+        self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="cd ~/permuter; python3 -m permuter tmp/x")))
+        self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="cd /home/isaac/par && python3 worker.py w0")))
+        self.assertEqual(kinds(ev("bash", command="command -v nohup; sed -i 's/a/b/' src/a.c; python3 -m json.tool tmp/x.json")), [])
+
     def test_running_tools_from_outside(self):
         self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="python3 ~/permuter/permuter.py tmp/perm")))
         self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="/home/isaac/permuter/import.py src/x.c")))
