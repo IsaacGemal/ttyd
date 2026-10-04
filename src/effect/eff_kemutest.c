@@ -11,7 +11,17 @@
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
-extern GXColor unk_804232d8;
+#ifdef MUST_MATCH
+/* The retail unit owns this zero-initialized colour template and its padding. */
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804232d8;
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_10_804232DC_sbss2;
+#pragma force_active reset
+#pragma section ".sdata" ".sbss"
+#else
+GXColor unk_804232d8;
+#endif
 #ifdef MUST_MATCH
 /* Match-only trick: named .sdata2 constants, defined at the end of the file, so the compiler can't
    fold `-32.0f * 0.5f` into -16 (the original does the multiply at runtime). The original's 0.5 and 16.0
@@ -125,7 +135,12 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 		break;
 	}
 
+#ifdef MUST_MATCH
+	/* Retail keeps three additional NUL bytes in this pooled string. */
+	entry->type = "KemuTest\0\0\0";
+#else
 	entry->type = "KemuTest";
+#endif
 	entry->count = count;
 	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(effKemuTestData));
 	entry->userdata = data;
@@ -785,9 +800,14 @@ void effKemuTestDisp(CameraId camId, void* param) {
 			PSMTXConcat(mtx, scale, mtx);
 			GXLoadTexMtxImm(mtx, 0x21, 1);
 			{
+#ifdef MUST_MATCH
+				f32 dsize_half;
+				f32 size;
+#else
 				f32 half = 0.5f;
 				f32 dsize_half = dsize * half;
 				f32 size = 16.0f;
+#endif
 
 				for (j = flag; j < 2; j++) {
 					if (j == 0) {
@@ -824,6 +844,16 @@ void effKemuTestDisp(CameraId camId, void* param) {
 						PSMTXConcat(mtx, scale, mtx);
 						GXLoadPosMtxImm(mtx, 0);
 					}
+#ifdef MUST_MATCH
+					/* Pool the shadow offset before the dimensions; MWCC still moves
+					   these loads and the multiply to the inner-loop preheader. */
+					{
+						f32 half = 0.5f;
+
+						dsize_half = dsize * half;
+						size = 16.0f;
+					}
+#endif
 					GXBegin(0x80, 0, 4);
 					GXPosition3f32(dsize_half, size, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
