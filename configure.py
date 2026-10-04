@@ -364,7 +364,7 @@ config.libs = [
             Object(Matching, "battle/battle_monosiri.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_stage.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_database_common.c"),
-            Object(NonMatching, "battle/battle_attack_audience.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/battle_attack_audience.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_stage_object.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_weapon_power.c", extra_cflags=["-O4,s", "-inline none"]),
             Object(Matching, "battle/battle_actrecord.c", extra_cflags=["-O4,s"]),
