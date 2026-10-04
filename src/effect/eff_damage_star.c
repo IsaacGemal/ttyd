@@ -11,11 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 
-// .rodata constants.
-const Vec vec3_802f3448 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802f3458 = 4503601774854144.0;
-const f64 double_to_int_mask_802f3460 = 4503599627370496.0;
-const char str_802F3468[] = "DamageStar";
 
 // .sdata2 constants used by effDamageStarEntry's inlined sin/cos polynomial.
 extern const f32 float_0_8041c990;
@@ -33,8 +28,12 @@ extern const f32 float_0p03705_8041ca0c;
 extern const f32 float_0p4967_8041ca10;
 extern const f32 float_0p2_8041ca14;
 
-// .sdata2/sbss2 globals used by effDamageStarDisp's colour build.
-GXColor unk_80423038;
+// .sbss2 scratch object used by effDamageStarDisp's colour build. Declared in reverse
+// (the second is placed first) with the small-data section remapped to .sbss2.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_8042303C_sbss2;
+__declspec(section ".sdata") GXColor unk_80423038;
+#pragma section ".sdata" ".sbss"
 u32 damageStar_effHermit_0[312] = {
 	0x0000FD80, 0x00000008, 0x00000000, 0x0000000C, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
 	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000040, 0x00000000, 0x00000040, 0x00000000,
@@ -160,6 +159,15 @@ u32 damageStar_effAnimRST[8] = {
 u32 damageStar_effAnimRSTDt[2] = { 2, (u32)damageStar_effAnimRST };
 u32 damageStar_effAnimDt[3] = { 0, 0x42820000, (u32)damageStar_effAnimRSTDt };
 
+// Trailing zero words: the .data word ends damageStar_effHermit_1 and the .sdata word ends
+// damageStar_effAnimDt. Both are unreferenced, so keep them with explicit_zero_data/force_active.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_8036F624_data[1] = { 0 };
+__declspec(section ".sdata") u32 gap_07_80411BE4_sdata[1] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
 // Inline sine/cosine polynomial approximations (the same two helpers evt_sub.c uses; they
 // reproduce the target's polynomial instruction sequence).
 static inline f32 damageStarSinf(f32 angle) {
@@ -275,7 +283,7 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
     if (count > 20) {
         count = 20;
     }
-    entry->type = str_802F3468;
+    entry->type = "DamageStar\0";
     entry->count = count + 2;
     data = __memAlloc(HEAP_EFFECT, (count + 2) * sizeof(DamageStarData));
     entry->userdata = data;
@@ -336,7 +344,7 @@ void effDamageStarMain(EffectEntry* effect) {
 
     data = effect->userdata;
 
-    disp = vec3_802f3448;
+    disp = (Vec){ 0.0f, 0.0f, 0.0f };
     disp.x = data->position.x;
     disp.y = data->position.y;
     disp.z = data->position.z;
