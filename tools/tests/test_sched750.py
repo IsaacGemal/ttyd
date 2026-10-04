@@ -24,6 +24,10 @@ class SchedTest(unittest.TestCase):
         self.assertGreaterEqual(int(total), 15)
         self.assertGreaterEqual(int(ok) / int(total), 0.9)
 
+    def test_validate_reproduces_floating_point_blocks(self):
+        out = run("validate", str(Path(FIX).parent / "mwccdbg_sched_fp")).stdout
+        self.assertIn("of which 2 of 2 blocks with floating-point ops", out)
+
     def test_validate_skips_a_dump_directory_without_scheduling_files(self):
         import tempfile
         with tempfile.TemporaryDirectory() as d:

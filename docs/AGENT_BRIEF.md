@@ -312,11 +312,12 @@ macOS; needs gdb, cmake, Rust; the clones live in `$MWCCDBG_HOME`, default `~/mw
    `int` vs `s32` for a local; initialiser in the declaration vs a separate assignment.
 
 **Scheduling-only differences** (same instructions, same registers, a different order inside a block): `tools/sched750.py`
-(tw2004, CC0) replays MWCC 2.6's list scheduler on a dump. `python3 tools/sched750.py predict build/mwccdbg/FUNC B23` prints the model's
-first-pass and last-pass order for block B23 next to the compiler's real one (`validate DIR...` reproduces 94.7% of 3263 integer-only blocks
-across our dumps), and `deadsearch DIR BLOCK target.txt` finds a dead value or extra copy that gives the original's order (confirm with a
-build). Floating-point ops, calls and record forms are not modelled: a block containing an `fmuls` raises KeyError (eff_kiss's effKissDisp
-block B25 and eff_kemutest's FP block are of this kind). Extending it needs the FPU rows of the timing table at 0x5d2c98 in mwcceppc.exe.
+(tw2004, CC0; extended here to floating point) replays MWCC 2.6's list scheduler on a dump. `python3 tools/sched750.py predict build/mwccdbg/FUNC B23`
+prints the model's first-pass and last-pass order for block B23 next to the compiler's real one (`validate DIR...` reproduces 95.6% of 4129
+blocks across our dumps, 92.2% of those with FP ops), and `deadsearch DIR BLOCK target.txt` finds a dead value or extra copy that gives the
+original's order (confirm with a build). Calls (`bl`) and record forms are not modelled: a block containing one is skipped. Known misses: an
+op the real scheduler issues late where the model issues it in an idle cycle, and `lis` pairs; check that `predict` reproduces the compiler's
+current order before trusting a `deadsearch` lead.
 
 The tool needs the repo's build.ninja and `build/G8MJ01/obj` (the original objects); a function's dump is for the source as it is in the
 tree (`--src copy.c` compiles a scratch copy with the unit's flags).
