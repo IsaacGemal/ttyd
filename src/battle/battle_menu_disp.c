@@ -1422,7 +1422,7 @@ void DrawMenuPinchMark(void) {
 void DrawMenuPartyChangeButton_Sub(u32 tex, f32 x, f32 y, f32 angle) {
     Mtx mtx;
 
-    PSMTXRotRad(mtx, 'y', 0.017453f * angle);
+    PSMTXRotRad(mtx, 'y', 0.017453292f * angle);
     PSMTXTransApply(mtx, mtx, x, y, 0.0f);
     {
         GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};

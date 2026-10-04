@@ -428,7 +428,7 @@ void JUTFont_DrawStart(GXColor color) {
 	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_ONE, GX_CC_ZERO);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 	GXLoadTexObj(&fgTexObj, GX_TEXMAP0);
-	PSMTXScale(mtx, 0.0019531f, 0.00097656f, 1.0f);
+	PSMTXScale(mtx, 1.0f / 512.0f, 1.0f / 1024.0f, 1.0f);
 	GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXLoadPosMtxImm(camera->view, GX_PNMTX0);

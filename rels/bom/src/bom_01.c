@@ -633,7 +633,7 @@ USER_FUNC(bom_fall) {
     for (i = 0; i < *(s32*)((u8*)data + 0x4); i++, pose++) {
         data->states[i].field_0 = 0x7f;
         pose->matrix[0][0][3] = float_600_bom_000070f4 * rand() / float_32767_bom_000070ac;
-        pose->matrix[0][1][3] = float_3700_bom_000070fc + float_300_bom_000070f8 * rand() / float_32767_bom_000070ac;
+        pose->matrix[0][1][3] = float_300_bom_000070f8 + float_3700_bom_000070fc * rand() / float_32767_bom_000070ac;
         pose->matrix[0][2][3] = float_neg650_bom_00007100 + float_neg450_bom_00007104 * rand() / float_32767_bom_000070ac;
         pd = ((PoseRoot*)lp[0])->data;
         for (j = 0, e = pd->entries; j < pd->count; j++, e++) {
