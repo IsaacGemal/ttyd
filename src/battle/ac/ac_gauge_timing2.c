@@ -220,7 +220,12 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 
 		if (triggered || autoFlag) {
 			const char* ng2 = "SFX_AC_COMMAND_NG1";
+#ifdef MUST_MATCH
+			// the original's string object is padded to the next word: the extra NUL spells the pad out
 			const char* ok = "SFX_AC_COMMAND_OK1\0";
+#else
+			const char* ok = "SFX_AC_COMMAND_OK1";
+#endif
 			s32 done = 0;
 			{
 				s32 q;
