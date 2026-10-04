@@ -68,9 +68,13 @@ void battleCameraInit(void) {
 #pragma dont_inline on
 
 // Prologue/epilogue (frame 0x100, stmw r25), the stack layout, every call and every rodata reference all match.
-// What differs is FP/GP register allocation only (all remaining diffs are `arg_mismatch`, no insert/delete).
-// NONMATCHING (99.69%): register allocation (callee-saved GP choice in the unit-pointer cases, and
-// caller-saved FPR choices in the two-unit cases 8/9/11 and case 13). Permuter work.
+// What differs is register allocation only (29 instructions, no inserts/deletes, every diff `arg_mismatch`).
+// The per-case declarations are ordered for the register allocator (first-declared gets the highest
+// vreg), which recovers the register picks of cases 7, 9 and 10, and the case 8/11 base/f9/xv statements
+// are ordered so the caller-saved FPRs land on the originals.
+// NONMATCHING (99.88%): case 13's FPR set (shifted by one), plus the case-7 `u` (r25, want r28), the
+// case-11 `unit2`/`part` swap (r26/r28) and the `cvy`/`vv.y` f2/f3 pair with one `fmuls` operand order
+// in cases 7/10. Permuter work.
 void battleCameraMain(void) {
   CameraEntry* cam;
   BattleWork* wp;
@@ -186,11 +190,11 @@ void battleCameraMain(void) {
     strcpy(name, "\202\251\202\337\202\347\201@\202\251\202\361\202\253\202\341\202\255");
     break;
   case 7: {
-    f32 w;
     f32 dz;
-    f32 cvy;
     f32 off;
+    f32 cvy;
     BattleUnit* u;
+    f32 w;
 
     u = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
     if (u == NULL) {
@@ -224,17 +228,17 @@ void battleCameraMain(void) {
     break;
   }
   case 8: {
-    f32 wa;
-    f32 num;
-    f32 f9;
     f32 dxc;
-    f32 xv;
-    f32 f7;
     f32 t;
+    f32 f9;
     f32 v;
-    f32 f11;
-    f32 base;
+    f32 f7;
+    f32 num;
     f32 wb;
+    f32 wa;
+    f32 xv;
+    f32 base;
+    f32 f11;
 
     unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
     unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk14);
@@ -269,13 +273,10 @@ void battleCameraMain(void) {
     if (t < 0.5f) {
       t = 0.5f;
     }
-    // Match-only: one expression with `2.0f * zoom` in a temporary reproduces the original's
-    // fnmsubs/register allocation for base.
     { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
+    f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
+    xv = (1.0f - t) * wp->cameraWork.unkC8.x;
     v = (1.0f - t) * base;
-    xv = wp->cameraWork.unkC8.x * (1.0f - t);
-    // Match-only: the temporary and operand order match the original fmuls schedule.
-    { f32 _t = (vv.y - wp->cameraWork.unkC8.y); f9 = _t * (wp->cameraWork.unkC8.y / 80.0f); }
     f11 = -v / 10.0f;
     if (f9 > 100.0f) {
       f9 = 100.0f;
@@ -291,11 +292,11 @@ void battleCameraMain(void) {
     break;
   }
   case 9: {
-    f32 w;
+    f32 mid;
+    f32 yc;
     f32 base;
     f32 off;
-    f32 yc;
-    f32 mid;
+    f32 w;
     f32 xc;
     BattleUnitPart* pt;
 
@@ -337,10 +338,10 @@ void battleCameraMain(void) {
     break;
   }
   case 10: {
-    f32 w;
     f32 dz;
-    f32 cvy;
     f32 off;
+    f32 w;
+    f32 cvy;
 
     unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
     if (unit == NULL) {
@@ -378,16 +379,16 @@ void battleCameraMain(void) {
   }
   case 11: {
     f32 wa;
-    f32 num;
-    f32 f9;
-    f32 dxc;
     f32 xv;
-    f32 f7;
+    f32 f9;
+    f32 num;
     f32 t;
+    f32 f7;
     f32 v;
-    f32 f11;
-    f32 base;
     f32 wb;
+    f32 dxc;
+    f32 base;
+    f32 f11;
 
     unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
     unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk14);
@@ -423,13 +424,10 @@ void battleCameraMain(void) {
     if (t < 0.5f) {
       t = 0.5f;
     }
-    // Match-only: one expression with `2.0f * zoom` in a temporary reproduces the original's
-    // fnmsubs/register allocation for base.
     { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
+    f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
+    xv = (1.0f - t) * wp->cameraWork.unkC8.x;
     v = (1.0f - t) * base;
-    xv = wp->cameraWork.unkC8.x * (1.0f - t);
-    // Match-only: the temporary and operand order match the original fmuls schedule.
-    { f32 _t = (vv.y - wp->cameraWork.unkC8.y); f9 = _t * (wp->cameraWork.unkC8.y / 80.0f); }
     f11 = -v / 10.0f;
     if (f9 > 100.0f) {
       f9 = 100.0f;
@@ -452,15 +450,15 @@ void battleCameraMain(void) {
            "\202\251\202\337\202\347\201@\202\251\202\361\202\253\202\341\202\255\202\302\202\242\202\321");
     break;
   case 13: {
-    f32 w;
-    f32 cy;
-    f32 t;
-    f32 v;
-    f32 dx;
-    f32 dxn;
-    f32 zz;
-    f32 u;
     f32 off;
+    f32 zz;
+    f32 dxn;
+    f32 w;
+    f32 t;
+    f32 dx;
+    f32 u;
+    f32 v;
+    f32 cy;
 
     unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
     if (unit == NULL) {
