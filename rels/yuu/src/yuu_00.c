@@ -575,14 +575,8 @@ static void monte_disp(CameraId cameraId, void* param) {
 
 // Setting base[3]=0.0f before the do-while (not at its top) matched the target's store layout, and
 // expanding the y-range monte_rand with `max -= min` (MUST_MATCH) made its subtraction reuse max's
-// register (f1), as the target does. The remaining difference is the sfx string address: a plain
-// `const char*` assignment makes MWCC emit `addi r0,r4,str@l` plus an extra `mr`. Folding the
-// literal through a comma (`sfx = (0, "...")`, MUST_MATCH) removes the `mr` and materialises the
-// address directly, but the allocator then picks r29 where the target picks r26 (the first loop
-// leaves both r26 and r29 dead; the target's compiler frees them in the other order). The same
-// quirk hits hei_10's ext_main. No source form or opt pragma tried changed the choice (see
-// REPORT.md). Two instructions (the addi and the `mr r3` at the call), 3 bytes, still differ.
-// NONMATCHING (99.96%): sfx in r29 vs the target's r26.
+// register (f1), as the target does. The sfx string uses yuu_01's union shape (see the MUST_MATCH
+// blocks): a plain `const char*` adds an `mr`, and the union member alone colours it r29, not r26.
 static USER_FUNC(fall_rtn) {
     YuuminigameWork* work = (YuuminigameWork*)event->lwData[0];
     s32 wasAllocated;
@@ -591,7 +585,13 @@ static USER_FUNC(fall_rtn) {
     s32 i;
     s32 tableIdx;
     s32 pointIdx;
+#ifdef MUST_MATCH
+    // Match-only (as in yuu_01's fall_rtn): the union member writes the string address straight into the
+    // callee-saved register, and the (u32) round-trip at the call colours it r26 as the target does.
+    union { const char* p; u32 u; } sfx;
+#else
     const char* sfx;
+#endif
 
     wasAllocated = 0;
     data = work->data;
@@ -665,9 +665,7 @@ static USER_FUNC(fall_rtn) {
 
     {
 #ifdef MUST_MATCH
-        // match-only: folding the literal through a comma makes MWCC materialise the address
-        // directly (no extra `mr`); the target's compiler puts it in r26, ours in r29 (see above).
-        sfx = (0, "SFX_EVT_GAME_MONTE_COUNT1");
+        sfx.p = "SFX_EVT_GAME_MONTE_COUNT1";
 #else
         sfx = "SFX_EVT_GAME_MONTE_COUNT1";
 #endif
@@ -677,7 +675,11 @@ static USER_FUNC(fall_rtn) {
                 case 0:
                     if (get_monte_check(&p->pos, &marioGetPtr()->position) == 1) {
                         data->count++;
+#ifdef MUST_MATCH
+                        psndSFXOn_3D((const char*)(u32)sfx.p, &marioGetPtr()->position);
+#else
                         psndSFXOn_3D(sfx, &marioGetPtr()->position);
+#endif
                         p->flag = 1;
                         p->state = 1;
                     }
