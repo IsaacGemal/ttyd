@@ -4,20 +4,24 @@
 Per-wave configs (scratch/waveNN/launch.py, untracked) call main(...) with the wave's name, base checkout, spec and
 the agent's model settings; everything that decides what an agent may touch lives here so it is versioned and reviewed.
 
-Each agent runs in a workspace ~/ttyd-agents/<PFX><tag> (an rsync of the base checkout, shared read-only parts linked)
-inside a sandbox:
-  systemd-run --user --scope -p CPUQuota=<CPU_QUOTA>   one agent can't take the tower
-  bwrap --ro-bind / /                                   the whole filesystem read-only, except
-        --bind $WS $WS --bind $WS/tmp /tmp              its own workspace and a private /tmp
-        --unshare-pid --die-with-parent --new-session   everything it starts dies with it
-The agent's sessions are kept in the workspace (pi --session-dir), and the API key is read from a 0600 file on the
-host, never put on a command line. After each agent, tools/agent_audit.py scans its events for commands that reach
-outside the workspace or start background processes; flagged agents are marked in the launcher log.
+Each agent runs in a workspace ~/ttyd-agents/<PFX><tag> (an rsync of the base checkout, shared read-only parts linked).
+Everything that runs the agent's files (the agent, check.py between passes, rel_link.py) runs in sandbox():
+  systemd-run --user --scope in ttyd-agents.slice    CPU, memory and task limits per agent and for all agents together
+  bwrap --ro-bind / / --tmpfs $HOME --tmpfs /run/user/<uid>   read-only filesystem, no credentials, no user bus/X auth
+        --bind $WS $WS --bind $WS/tmp /tmp                   writable: its own workspace and a private /tmp
+        docker and system bus sockets replaced by /dev/null, a clean environment
+        --unshare-pid --unshare-ipc --die-with-parent        everything it starts dies with it
+The API key reaches the agent CLI through a file on a tmpfs inside the sandbox, never a command line. The agent's
+stdout/stderr go through pipes into ~/ttyd-agents-out/<PFX><tag>, which no sandbox can write. After the agent,
+tools/agent_collect.sh (from the base, never the workspace) gathers the results there in a second sandbox that sees
+the workspace read-only, and runs tools/agent_audit.py; only that directory is copied back, without links.
 
 Environment: KEY (the API key), PFX (workspace prefix, one per key), PFXRE (every prefix sharing this key's slots),
-PART ("k/n": this launcher's share of the spec), CAP/QUIET_FROM/QUIET_TO/QUIET_CAP, WORKERS, DEADLINE, ONLY, SPECFILE.
+PART ("k/n": this launcher's share of the spec), CAP/QUIET_FROM/QUIET_TO/QUIET_CAP, WORKERS, START_STAGGER,
+DEADLINE ("HH:MM" next occurrence, or "YYYY-MM-DD HH:MM"), ONLY, SPECFILE, BASE, ARCHIVE, HOST,
+SLICE_PROPS/MEM_MAX/TASKS_MAX.
 """
-import json, os, queue, shlex, subprocess, sys, threading, time
+import json, os, queue, re, shlex, subprocess, sys, threading, time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -37,7 +41,7 @@ PART = os.environ.get("PART", "")  # "0/2" or "1/2": this launcher's share of un
 ARCHIVE = ""
 SPEC = []
 
-PROMPT = """You are one of 24 agents making progress on a matching decompilation of Paper Mario: The
+PROMPT = """You are one of several agents making progress on a matching decompilation of Paper Mario: The
 Thousand-Year Door (GameCube, PowerPC, Metrowerks C compiler). A function counts as done only when it compiles to
 exactly the original bytes (100%).
 
@@ -103,7 +107,7 @@ size, its final %, what made it match or what still differs, and any header line
 BEFORE YOU STOP: run `python3 check.py --final {unit}`. It rebuilds and runs the same checks the merge runs. Fix
 everything it lists, run it again, and only then finish."""
 
-LINK_PROMPT = """You are one of 24 agents working on a matching decompilation of Paper Mario: The Thousand-Year Door
+LINK_PROMPT = """You are one of several agents working on a matching decompilation of Paper Mario: The Thousand-Year Door
 (GameCube, PowerPC, Metrowerks C compiler).
 
 YOUR TASK: MAKE {src} (unit {unit}, {part}) LINK. Every function in it already compiles to exactly the original bytes
@@ -166,6 +170,7 @@ CAP = int(os.environ.get("CAP", 24))
 QUIET_FROM = os.environ.get("QUIET_FROM", "23:00")
 QUIET_TO = os.environ.get("QUIET_TO", "05:00")
 QUIET_CAP = int(os.environ.get("QUIET_CAP", 6))
+START_STAGGER = float(os.environ.get("START_STAGGER", 2))
 
 
 def cap_now():
@@ -173,70 +178,218 @@ def cap_now():
     t = time.strftime("%H:%M")
     quiet = (QUIET_FROM <= t or t < QUIET_TO) if QUIET_FROM > QUIET_TO else (QUIET_FROM <= t < QUIET_TO)
     return QUIET_CAP if quiet else CAP
-# functions reviews took out of the tree (wave 50-52 ledger chapters): agents must not write them back
+
+
 REMOVED = []  # (unit, function, why): functions reviews took out; agents must not write them back
 HINTS = {}  # unit -> hint text
 WHY = {}  # source path -> why the unit does not link
 slot_lock = threading.Lock()
+DEADLINE = None  # set by main() from $DEADLINE: epoch seconds after which no new agent starts
+
+# Resource limits: per agent (its sandbox's scope) and for every agent together (one slice, set at start, runtime only)
+SLICE = "ttyd-agents.slice"
+SLICE_PROPS = os.environ.get("SLICE_PROPS", "CPUQuota=1000% MemoryMax=40G TasksMax=8192")
+MEM_MAX = os.environ.get("MEM_MAX", "12G")
+TASKS_MAX = os.environ.get("TASKS_MAX", "1024")
+# What the sandbox shows of $HOME (everything else under it is an empty tmpfs): the agent CLI and node, the venv's
+# python, and the shared read-only parts of the checkout the workspaces link to. No credentials live in any of these.
+HOME_RO = [".local/bin", ".local/lib/node_modules", ".local/share/uv/python", ".nvm/versions/node",
+           "ttyd/orig", "ttyd/.venv", "ttyd/build/compilers", "ttyd-pylib"]
+# Host sockets the sandbox replaces with /dev/null: docker (the docker group is root), the system bus. The user bus,
+# systemd's private socket and any X/ICE authority are under /run/user/<uid>, which becomes an empty tmpfs.
+HIDE_SOCKETS = ["/run/docker.sock", "/run/dbus/system_bus_socket"]
+KEY_FILE = ""  # set by main(): ~/.config/ttyd-keys/<PFX>, mode 0600
+UID = ""  # set by main(): the host user's uid
 
 
-def running():
-    r = subprocess.run(["ssh", HOST, f"for p in $(pgrep -f 'pi --mode json'); do readlink /proc/$p/cwd; done | grep -E 'ttyd-agents/({PFXRE})' | sort -u | wc -l"],
-                       capture_output=True, text=True)
+def ssh(cmd, timeout=1800, check=True):
+    """Run cmd under bash on the host. Every call has a deadline: a launcher thread once waited 16 h on a hung compile."""
+    return subprocess.run(["ssh", HOST, "bash -c " + shlex.quote(cmd)], capture_output=True, text=True,
+                          timeout=timeout, check=check)
+
+
+def rsync(*args, timeout=600):
+    return subprocess.run(["rsync", "-az", *args], check=True, timeout=timeout)
+
+
+SLOTS = "$HOME/ttyd-agents-slots"
+SLOT_STALE_MIN = 360  # a slot file older than any agent's budget plus its finisher is a dead launcher's
+
+
+def slot_dir():
+    return f"{SLOTS}/" + re.sub(r"[^A-Za-z0-9_]", "", "".join(sorted(PFXRE.split("|"))))
+
+
+def reserve(tag):
+    """Take one of this key's agent slots on the host, under a lock every launcher on the key shares, so two launchers
+    can't both see a free slot. Running agents without a slot file (an older launcher's) count too. True if taken,
+    False if full or the host didn't answer (no answer is no capacity)."""
+    d = slot_dir()
     try:
-        return int(r.stdout.strip() or 0)
-    except ValueError:
-        return CAP
+        r = ssh(f"mkdir -p {d} && exec 8>{d}/.lock && flock -w 120 8 || exit 3; "
+                f"find {d} -maxdepth 1 -type f -name '*.slot' -mmin +{SLOT_STALE_MIN} -delete; "
+                f"n=$(find {d} -maxdepth 1 -type f -name '*.slot' | wc -l); "
+                f"p=$(for p in $(pgrep -f 'pi --mode json'); do readlink /proc/$p/cwd; done | grep -E 'ttyd-agents/({PFXRE})' | sort -u | wc -l); "
+                f"[ \"$p\" -gt \"$n\" ] && n=$p; "
+                f"if [ \"$n\" -lt {cap_now()} ]; then touch {d}/{PFX}{tag}.slot && echo TAKEN; else echo FULL; fi",
+                timeout=200, check=False)
+    except subprocess.TimeoutExpired:
+        return False
+    return r.returncode == 0 and r.stdout.strip() == "TAKEN"
 
 
-DEADLINE = os.environ.get("DEADLINE", "")
+def free(tag):
+    try:
+        ssh(f"rm -f {slot_dir()}/{PFX}{tag}.slot", timeout=60, check=False)
+    except subprocess.TimeoutExpired:
+        pass
 
 
 def claim(unit):
-    out = subprocess.run(["python3", str(REPO / "tools/claims.py"), "claim", WAVE, unit], capture_output=True, text=True).stdout
+    out = subprocess.run(["python3", str(REPO / "tools/claims.py"), "claim", WAVE, unit], capture_output=True, text=True,
+                         timeout=60).stdout
     return "CLAIMED" in out
 
 
-KEY_FILE = ""  # set by main(): ~/.config/ttyd-keys/<PFX>, mode 0600
-AUDIT = ""  # set by main(): the base's tools/agent_audit.py
+def release(unit):
+    subprocess.run(["python3", str(REPO / "tools/claims.py"), "release", WAVE, unit], capture_output=True, timeout=60)
 
 
-def sandbox():
-    """The command prefix every agent run goes through (expanded by the remote shell, so $PWD is the workspace)."""
-    return (f"systemd-run --user --scope --quiet -p CPUQuota={CPU_QUOTA} "
-            "bwrap --ro-bind / / --dev /dev --proc /proc --bind \"$PWD\" \"$PWD\" --bind \"$PWD/tmp\" /tmp "
-            # the agent CLI writes lock files next to its settings: it gets a private copy made by prepare()
-            "--bind \"$PWD/.pi-agent\" \"$HOME/.pi/agent\" "
-            "--unshare-pid --die-with-parent --new-session --")
+def paths(tag):
+    """(workspace, output dir) as the host's shell spells them, and the same relative to ~ for rsync."""
+    name = f"{PFX}{tag}"
+    return f"$HOME/ttyd-agents/{name}", f"$HOME/ttyd-agents-out/{name}", f"ttyd-agents/{name}", f"ttyd-agents-out/{name}"
+
+
+def priv(tag):
+    """The launcher's own directory for this agent: the sandbox's /tmp and the agent CLI's settings copy. Outside the
+    workspace and hidden from every sandbox, so the agent can't swap either for a link before the next pass binds it."""
+    return f"$HOME/ttyd-agents-priv/{PFX}{tag}"
+
+
+def scope(tag, step):
+    return "ttyd-" + re.sub(r"[^A-Za-z0-9_.-]", "_", f"{PFX}{tag}") + "-" + step
+
+
+def sandbox(tag, step, mode):
+    """The command prefix for one sandboxed step, expanded by the host's bash.
+
+    mode "agent": the workspace writable, a private /tmp and copy of the agent CLI's settings (priv()), and the key
+    as a file on a tmpfs (fd 9 must be the key file). mode "collect": the workspace read-only and the output dir the
+    only writable place. Both: the whole filesystem read-only, $HOME and /run/user/<uid> empty tmpfs (credentials,
+    the user bus, systemd's socket, X authority) with HOME_RO mounted back, docker and system bus sockets hidden, a
+    clean environment, and new pid/ipc/uts namespaces so nothing started inside outlives the step or signals outside."""
+    ws, out, _, _ = paths(tag)
+    run_user = f"/run/user/{UID}"
+    env = {"HOME": "$HOME", "USER": "$USER", "LANG": "C.UTF-8", "TMPDIR": "/tmp", "TTYD_BASE": BASE,
+           "PYTHONPATH": "$HOME/ttyd-pylib",
+           "PATH": "$HOME/.local/bin:$HOME/ttyd/.venv/bin:$(dirname \"$(readlink -f \"$(command -v node)\")\"):/usr/local/bin:/usr/bin:/bin"}
+    a = [f"systemd-run --user --scope --quiet --collect --unit={scope(tag, step)} --slice={SLICE}",
+         f"-p CPUQuota={CPU_QUOTA} -p MemoryMax={MEM_MAX} -p TasksMax={TASKS_MAX}",
+         "bwrap --die-with-parent --new-session --unshare-pid --unshare-ipc --unshare-uts --clearenv"]
+    a += [f'--setenv {k} "{v}"' for k, v in env.items()]
+    a += ["--ro-bind / / --dev /dev --proc /proc", '--tmpfs "$HOME"', f"--tmpfs {run_user}"]
+    a += [f"$([ -e {s} ] && echo --ro-bind /dev/null {s})" for s in HIDE_SOCKETS]
+    a += [f'--ro-bind-try "$HOME/{p}" "$HOME/{p}"' for p in HOME_RO]
+    a.append(f"--ro-bind {BASE} {BASE}")
+    if mode == "agent":
+        a += [f"--bind {ws} {ws} --bind {priv(tag)}/tmp /tmp", f'--bind {priv(tag)}/pi-agent "$HOME/.pi/agent"',
+              f"--file 9 {run_user}/key", "--chdir", ws, "--"]
+        # the key goes from the tmpfs file into the agent CLI's environment, never onto a command line
+        a.append(shlex.quote(f'export {KEY_ENV}="$(cat {run_user}/key)"; exec "$@"').join(["/bin/sh -c ", " sh"]))
+    else:
+        a += [f"--ro-bind {ws} {ws} --tmpfs /tmp --bind {out} {out}", "--chdir", out, "--"]
+    return " ".join(a)
+
+
+def bind_check(tag, mode):
+    """Shell test run on the host before a sandboxed step: every writable bind source is a real directory, not a link."""
+    ws, out, _, _ = paths(tag)
+    dirs = [ws, f"{priv(tag)}/tmp", f"{priv(tag)}/pi-agent"] if mode == "agent" else [out]
+    test = " && ".join(f"[ -d {d} ] && [ ! -L {d} ]" for d in dirs)
+    return f"{{ {test} || {{ echo 'a bind source is a link or missing' >&2; exit 4; }}; }}"
+
+
+def agent_cmd(tag, secs, args, step):
+    """Run the agent CLI in the sandbox for at most secs. Its stdout and stderr go through pipes to files in the output
+    dir, which the sandbox can't reach: the agent can add lines to its event log but not change or remove any."""
+    ws, out, _, _ = paths(tag)
+    return (f"cd {ws} && {bind_check(tag, 'agent')} && timeout -k 30 {int(secs)} {sandbox(tag, step, 'agent')} "
+            f"pi --mode json --session-dir {ws}/.pi-sessions --model {MODEL} {args} </dev/null 9<{KEY_FILE} "
+            f"2> >(cat >> {out}/stderr.log) | cat >> {out}/events.jsonl; echo rc=${{PIPESTATUS[0]}}")
+
+
+def box_cmd(tag, step, cmd, secs=600):
+    """A non-agent step on the workspace (check.py, rel_link.py): the same sandbox, since it runs the agent's files."""
+    ws, _, _, _ = paths(tag)
+    return (f"cd {ws} && {bind_check(tag, 'agent')} && timeout -k 30 {secs} {sandbox(tag, step, 'agent')} "
+            f"/bin/sh -c {shlex.quote(cmd)} 9</dev/null")
+
+
+# Programs the reaper kills in a workspace: a person's shell that happens to sit there is left alone.
+REAP_NAMES = "wibo|ninja|python*|pi|node|bwrap|timeout|sh|objdiff-cli|dtk|nice|mwcceppc*"
+
+
+def reap_script(ws, proc="/proc"):
+    """Kill what still runs with its cwd in workspace ws. Nothing happens unless ws exists: `cd` failing must not
+    turn the match into every process."""
+    if not ws.strip() or ws.strip() == "/":
+        return "true"
+    return (f"cd {ws} 2>/dev/null || exit 0; d=$(pwd -P); [ -n \"$d\" ] && [ \"$d\" != / ] && [ \"$d\" != \"$(cd ~ && pwd -P)\" ] || exit 0; "
+            f"for p in {proc}/[0-9]*; do "
+            f"case \"$(readlink $p/cwd 2>/dev/null)\" in \"$d\"|\"$d\"/*) ;; *) continue;; esac; "
+            f"case \"$(cat $p/comm 2>/dev/null)\" in {REAP_NAMES}) "
+            f"[ \"${{p##*/}}\" != $$ ] && kill -9 \"${{p##*/}}\" 2>/dev/null;; esac; done; true")
+
+
+def reap(tag):
+    """Stop this agent's sandbox scopes (everything in them dies), then kill stragglers in the workspace."""
+    ws, _, _, _ = paths(tag)
+    try:
+        ssh(f"systemctl --user stop '{scope(tag, '')}*' 2>/dev/null; " + reap_script(ws), timeout=120, check=False)
+    except subprocess.TimeoutExpired:
+        pass
+
+
+def host_state():
+    """Containers and user units (other than the agents' own scopes): an agent that got out would show up here."""
+    try:
+        r = ssh("docker ps -q --no-trunc 2>/dev/null | sed 's/^/container /'; "
+                "systemctl --user list-units --all --plain --no-legend 2>/dev/null | awk '{print \"unit \" $1}' | grep -v ' ttyd-'",
+                timeout=60, check=False)
+        return set(r.stdout.split("\n")) - {""}
+    except subprocess.TimeoutExpired:
+        return set()
 
 
 def install_key(key):
-    """Put the key in a 0600 file on the host once (over stdin), so no command line ever carries it."""
-    subprocess.run(["ssh", HOST, f"umask 077 && mkdir -p ~/.config/ttyd-keys && cat > {KEY_FILE}"], input=key, text=True, check=True)
+    """Put the key in a 0600 file on the host (over stdin, written to a temp file and renamed into place)."""
+    subprocess.run(["ssh", HOST, "umask 077 && mkdir -p ~/.config/ttyd-keys && chmod 700 ~/.config/ttyd-keys && "
+                    "t=$(mktemp ~/.config/ttyd-keys/.new.XXXXXX) && cat > \"$t\" && chmod 600 \"$t\" && "
+                    f"mv -f \"$t\" {KEY_FILE}"], input=key, text=True, check=True, timeout=60)
 
 
 def MODEL_LINE_FIX(text):
     return text.replace("@@MODEL_LINE@@", MODEL_LINE)
 
 
-def ssh(cmd, **kw):
-    return subprocess.run(["ssh", HOST, cmd], capture_output=True, text=True, **kw)
-
-
 def prepare(tag, spec):
     unit = spec["unit"]
-    ws = f"~/ttyd-agents/{PFX}{tag}"
+    ws, out, rws, _ = paths(tag)
     # Shared, never-modified parts are links, not copies: the disc (orig/), the venv, the compilers and the build
     # tools (~190 MB per workspace otherwise). Build outputs stay per workspace: each agent builds its own code.
-    # as tools/wave_launch.py: no permuter entry points (it was most of the tower's CPU), DOL asm linked from the base
+    # No permuter entry points (it was most of the tower's CPU); DOL asm linked from the base.
     ssh(f"mkdir -p ~/ttyd-agents && rsync -a --delete --delete-excluded --exclude orig/ --exclude .venv/ --exclude build/compilers/ "
         f"--exclude build/tools/ --exclude build/G8MJ01/asm/ --exclude 'tools/perm_*.py' --exclude .git/ {BASE}/ {ws}/ "
         f"&& ln -sfn {BASE}/build/G8MJ01/asm {ws}/build/G8MJ01/asm && ln -sfn ~/ttyd/orig {ws}/orig && ln -sfn ~/ttyd/.venv {ws}/.venv "
         f"&& ln -sfn ~/ttyd/build/compilers {ws}/build/compilers && ln -sfn {BASE}/build/tools {ws}/build/tools")
     src = spec['src']
+    # the agent CLI gets its settings and model list only (no credential store, no shared session history)
+    pv = priv(tag)
     ssh(f"cp {ws}/tools/agent_check.py {ws}/check.py && cp {ws}/{src} {ws}/orig_file.c && mkdir -p {ws}/tmp "
-        # the agent CLI's settings and credential store, without the shared session history; bound over ~/.pi/agent
-        f"&& rsync -a --delete --exclude sessions/ ~/.pi/agent/ {ws}/.pi-agent/")
+        # the launcher's dirs (output, private /tmp and settings), outside every sandbox's view, emptied for this run
+        f"&& mkdir -p {out} {pv} && find {out} {pv} -mindepth 1 -delete && mkdir {pv}/tmp {pv}/pi-agent "
+        f"&& cp ~/.pi/agent/settings.json ~/.pi/agent/models.json {pv}/pi-agent/")
     p = HERE / tag
     p.mkdir(exist_ok=True)
     if spec["dol"]:
@@ -252,8 +405,8 @@ def prepare(tag, spec):
         order = (" (This module is built without deferred inlining, so its functions are emitted in source order.)"
                  if spec["source_order"] else "")
     if spec.get("start_c"):
-        subprocess.run(["rsync", "-az", spec["start_c"], f"{HOST}:{ws}/{src}"], check=True)
-        subprocess.run(["rsync", "-az", spec["start_h"], f"{HOST}:{ws}/{spec['hdr']}"], check=True)
+        rsync(spec["start_c"], f"{HOST}:{rws}/{src}")
+        rsync(spec["start_h"], f"{HOST}:{rws}/{spec['hdr']}")
         ssh(f"cp {ws}/{src} {ws}/orig_file.c")
     if spec.get("mode") == "link":
         cfg = src[len("src/"):] if spec["dol"] else src.rsplit("/src/", 1)[1]
@@ -265,13 +418,13 @@ def prepare(tag, spec):
         hint = ("\n- HINT for this file: " + HINTS[unit]) if unit in HINTS else ""
         if spec.get("prev"):
             for i, pr in enumerate(spec["prev"]):
-                subprocess.run(["rsync", "-az", str(REPO / pr), f"{HOST}:{ws}/prev_REPORT_{i + 1}.md"], check=True)
+                rsync(str(REPO / pr), f"{HOST}:{rws}/prev_REPORT_{i + 1}.md")
             hint += ("\n- An earlier agent already tried to link this unit; its notes are in "
                      + " ".join(f"prev_REPORT_{i + 1}.md" for i in range(len(spec["prev"])))
                      + ". Read them first and don't repeat what didn't work.")
         (p / "PROMPT.md").write_text(MODEL_LINE_FIX(LINK_PROMPT.format(src=src, unit=unit, part=part, why=why, cfg=cfg, build=build,
                                                         asm=asm, done=done, hint=hint)) + "\n")
-        subprocess.run(["rsync", "-az", str(p / "PROMPT.md"), f"{HOST}:{ws}/PROMPT.md"], check=True)
+        rsync(str(p / "PROMPT.md"), f"{HOST}:{rws}/PROMPT.md")
         return
     shared = ""
     if "/common/" in src:
@@ -288,7 +441,7 @@ def prepare(tag, spec):
                 "(.data/.rodata) as close to the original as they were: the earlier work was held back because a data section "
                 "scored lower than the repository's.")
     if spec.get("mode") == "dataport":
-        subprocess.run(["rsync", "-az", str(REPO / spec["seed"]), f"{HOST}:{ws}/salvaged_version.c"], check=True)
+        rsync(str(REPO / spec["seed"]), f"{HOST}:{rws}/salvaged_version.c")
         fn = spec["open"][0][0]
         note += (f"\n./salvaged_version.c is an earlier agent's version of `{fn}` that never landed: {spec['seed_why']}."
                  " YOUR GOAL: get it into the file so the function scores that high AND no data section (.rodata/.sdata2/"
@@ -313,7 +466,7 @@ def prepare(tag, spec):
     if spec.get("mode") == "dataport" and spec.get("draft"):
         pass
     elif spec.get("seed") and not spec.get("draft") and spec.get("mode") != "dataport":
-        subprocess.run(["rsync", "-az", str(REPO / spec["seed"]), f"{HOST}:{ws}/salvaged_version.c"], check=True)
+        rsync(str(REPO / spec["seed"]), f"{HOST}:{rws}/salvaged_version.c")
         fn = spec["open"][0][0]
         note += (f"\n./salvaged_version.c is an earlier agent's version of `{fn}` (with its comments and any helpers/pragmas"
                  f" it needed) that never landed: {spec['seed_why']}. Start from it: bring it into the file in place of the"
@@ -323,10 +476,10 @@ def prepare(tag, spec):
                  " new code: it has never been reviewed. Partial scores barely notice wrong compares: `cror eq,gt,eq` is"
                  " `>=` and `cror eq,lt,eq` is `<=`; check every comparison and every read against the store that sets it.")
     if spec.get("draft"):
-        subprocess.run(["rsync", "-az", str(REPO / spec["draft"]), f"{HOST}:{ws}/m2c_draft.c"], check=True)
+        rsync(str(REPO / spec["draft"]), f"{HOST}:{rws}/m2c_draft.c")
         fn = spec["open"][0][0]
         if spec.get("seed"):
-            subprocess.run(["rsync", "-az", str(REPO / spec["seed"]), f"{HOST}:{ws}/salvaged_version.c"], check=True)
+            rsync(str(REPO / spec["seed"]), f"{HOST}:{rws}/salvaged_version.c")
             note += (f"\n`{fn}` has NO DEFINITION in the file yet. START FROM ./salvaged_version.c: an earlier agent's version of"
                      f" it (with its comments and any helpers/pragmas it needed). It never landed: {spec['seed_why']}."
                      " Put it in the file, make it build, and fix that problem without lowering its score more than you"
@@ -346,7 +499,7 @@ def prepare(tag, spec):
                  " your conditions make unreachable is a bug.")
     if spec.get("prev"):
         for i, pr in enumerate(spec["prev"]):
-            subprocess.run(["rsync", "-az", str(REPO / pr), f"{HOST}:{ws}/prev_REPORT_{i + 1}.md"], check=True)
+            rsync(str(REPO / pr), f"{HOST}:{rws}/prev_REPORT_{i + 1}.md")
         names = " ".join(f"prev_REPORT_{i + 1}.md" for i in range(len(spec["prev"])))
         note += (f"\nEarlier agents already worked on this file (wave 61); their notes are in {names} in this directory. Read them "
                  "first: don't repeat what they say didn't work, and build on what they found. Their work that kept every score "
@@ -380,8 +533,7 @@ def prepare(tag, spec):
                + ("\n- HINT for this file: " + HINTS[unit] if unit in HINTS else ""))
     (p / "PROMPT.md").write_text(MODEL_LINE_FIX(PROMPT.format(removed=removed, unit=unit, src=src, asm=asm, funcs=funcs, todo=todo, note=note, group=group, part=part, extra=extra,
                                                order=order, shared=shared)) + "\n")
-    subprocess.run(["rsync", "-az", str(p / "PROMPT.md"), f"{HOST}:{ws}/PROMPT.md"], check=True)
-
+    rsync(str(p / "PROMPT.md"), f"{HOST}:{rws}/PROMPT.md")
 
 def limit(spec):
     if spec.get("mode") == "link":
@@ -392,88 +544,85 @@ def limit(spec):
     return 5400 if b <= 2500 else 7200 if b <= 5000 else 10800
 
 
-def run(tag, unit, src, spec, key, log):
-    ws = f"~/ttyd-agents/{PFX}{tag}"
+
+def run(tag, unit, src, spec, log):
+    ws, out, _, _ = paths(tag)
     t0 = time.time()
-    # The sandbox: the whole filesystem read-only except this workspace and a private /tmp, a pid namespace so
-    # nothing the agent starts (nohup, &, setsid) outlives it or can signal anything outside, and a CPU quota.
-    # If it stops without REPORT.md or without running check.py --final, one short continuation asks for just that.
-    box = sandbox()
+    budget = limit(spec)
+    left = lambda: budget - (time.time() - t0)
     finish = (f"You stopped before finishing. Do only this: run python3 check.py --final {unit}, fix what it lists, "
               f"and write REPORT.md as PROMPT.md describes. Don't start other work.")
-    r = ssh(f"export {KEY_ENV}=\"$(cat {KEY_FILE})\" TTYD_BASE={BASE} PYTHONPATH=$HOME/ttyd-pylib; export PATH=$HOME/.local/bin:$HOME/ttyd/.venv/bin:$PATH; "
-            f"mkdir -p {ws}/tmp && export TMPDIR=/tmp; "
-            f"cd {ws} && timeout {limit(spec)} {box} pi --mode json --session-dir $PWD/.pi-sessions --model {MODEL} @PROMPT.md @docs/AGENT_BRIEF.md "
-            f"'Do the task described in the attached PROMPT.md, following docs/AGENT_BRIEF.md.' </dev/null >events.jsonl 2>stderr.log; echo rc=$?; "
-            f"true")
+    r = ssh(agent_cmd(tag, budget, "@PROMPT.md @docs/AGENT_BRIEF.md "
+                      "'Do the task described in the attached PROMPT.md, following docs/AGENT_BRIEF.md.'", "run"),
+            timeout=budget + 600, check=False)
+    rcs = r.stdout.strip()
     names = {n for n, _, _ in spec["open"]}
     for k in range(3):  # continuation passes, moderate
-        left = limit(spec) - (time.time() - t0)
-        # timeout: an mwcceppc hang once blocked this call (and its worker thread) for 16 hours
         if spec.get("mode") == "link":
             cfg = src[len("src/"):] if spec["dol"] else src.rsplit("/src/", 1)[1]
-            if ssh(f"grep -qF 'Object(Matching, \"{cfg}\"' {ws}/configure.py && echo yes").stdout.strip() == "yes" or left < 1800:
+            linked = ssh(f"grep -qF 'Object(Matching, \"{cfg}\"' {ws}/configure.py && echo yes", timeout=60, check=False)
+            if linked.stdout.strip() == "yes" or left() < 1800 or k >= 2:
                 break
-            more = (f"Keep going: you still have about {int(left // 60)} minutes and the unit doesn't link yet. Continue as "
+            more = (f"Keep going: you still have about {int(left() // 60)} minutes and the unit doesn't link yet. Continue as "
                     f"PROMPT.md describes (re-run tools/link_diag.py {unit} for where it stands), keep REPORT.md current, and "
                     f"run python3 check.py --final {unit} before you stop.")
-            if k >= 2:
+            log(f"{tag} link continuation {k + 1}, {int(left())}s left")
+        else:
+            c = ssh(box_cmd(tag, f"check{k}", f"python3 check.py {unit}"), timeout=700, check=False)
+            still = [l.split()[-1] for l in c.stdout.splitlines()[1:]
+                     if l.split() and l.split()[-1] in names and not l.strip().startswith("100.00%")]
+            if not still or left() < 900:
                 break
-            log(f"{tag} link continuation {k + 1}, {int(left)}s left")
-            r2 = ssh(f"export {KEY_ENV}=\"$(cat {KEY_FILE})\" TTYD_BASE={BASE} PYTHONPATH=$HOME/ttyd-pylib; export PATH=$HOME/.local/bin:$HOME/ttyd/.venv/bin:$PATH; "
-                     f"export TMPDIR=/tmp; cd {ws} && timeout {int(left)} {box} pi --mode json --session-dir $PWD/.pi-sessions -c --model {MODEL} {shlex.quote(more)} "
-                     f"</dev/null >>events.jsonl 2>>stderr.log; echo rc=$?")
-            r = subprocess.CompletedProcess(r.args, 0, r.stdout + " cont" + r2.stdout.strip(), "")
-            continue
-        c = ssh(f"cd {ws} && PATH=$HOME/ttyd/.venv/bin:$PATH timeout -k 10 600 python3 check.py {unit}")
-        still = [l.split()[-1] for l in c.stdout.splitlines()[1:] if l.split() and l.split()[-1] in names and not l.strip().startswith("100.00%")]
-        if not still or left < 900:
-            break
-        more = (f"Keep going: you still have about {int(left // 60)} minutes. These functions are still below 100%: "
-                f"{', '.join(still)}. Continue with them as PROMPT.md describes (same rules; never lower a score), "
-                f"keep REPORT.md current, and run python3 check.py --final {unit} before you stop.")
-        log(f"{tag} continuation {k + 1}: {len(still)} open, {int(left)}s left")
-        r2 = ssh(f"export {KEY_ENV}=\"$(cat {KEY_FILE})\" TTYD_BASE={BASE} PYTHONPATH=$HOME/ttyd-pylib; export PATH=$HOME/.local/bin:$HOME/ttyd/.venv/bin:$PATH; "
-                 f"export TMPDIR=/tmp; cd {ws} && timeout {int(left)} {box} pi --mode json --session-dir $PWD/.pi-sessions -c --model {MODEL} {shlex.quote(more)} "
-                 f"</dev/null >>events.jsonl 2>>stderr.log; echo rc=$?")
-        r = subprocess.CompletedProcess(r.args, 0, r.stdout + " cont" + r2.stdout.strip(), "")
-    r3 = ssh(f"export {KEY_ENV}=\"$(cat {KEY_FILE})\" TTYD_BASE={BASE} PYTHONPATH=$HOME/ttyd-pylib; export PATH=$HOME/.local/bin:$HOME/ttyd/.venv/bin:$PATH; "
-            f"export TMPDIR=/tmp; cd {ws} && "
-            f"if ! test -s REPORT.md || ! grep -q -- '--final' events.jsonl; then echo finisher; "
-            f"timeout 900 {box} pi --mode json --session-dir $PWD/.pi-sessions -c --model {MODEL} {shlex.quote(finish)} </dev/null >>events.jsonl 2>>stderr.log; fi; "
-            f"cp {src} final.c 2>/dev/null; timeout -k 10 600 python3 tools/rel_link.py {unit} > link.txt 2>&1; git -C . status >/dev/null 2>&1; "
-            f"{{ diff -rq {BASE}/src src; diff -rq {BASE}/libs libs; diff -rq {BASE}/rels rels; diff -q {BASE}/configure.py configure.py; }} | grep -v -F '{src} differ' > other_changes.txt; "  # merge_agent.sh allows the agent's own file
-            # header additions come back as a patch (a/include -> b/include); tools/merge_agent.sh checks and applies it
-            f"diff -u {BASE}/configure.py configure.py > configure.patch; "
-            f"diff -ruN {BASE}/include include | sed -e 's#^--- /.*/include/#--- a/include/#' "
-            f"-e 's#^+++ include/#+++ b/include/#' > include.patch; "
-            f"for d in rels/*/include; do diff -ruN {BASE}/$d $d; done > rels_include.patch; "
-            # what it fetched or searched outside the workspace, for the merge (tools/merge_agent.sh shows it)
-            f"python3 tools/provenance.py events.jsonl $(pwd) > provenance.txt 2>&1 "
-            f"|| echo 'ERROR tools/provenance.py failed; check events.jsonl by hand' >> provenance.txt; "
-            # commands that reached outside the workspace or started background processes
-            f"python3 {AUDIT} events.jsonl $(pwd) > audit.txt 2>&1; echo audit=$?; "
-            f"mkdir -p {ARCHIVE}/{tag} && zstd -q -3 -f events.jsonl -o {ARCHIVE}/{tag}/events.jsonl.zst; true")
-    subprocess.run(["rsync", "-az", f"{HOST}:{ws}/REPORT.md", f"{HOST}:{ws}/final.c", f"{HOST}:{ws}/link.txt",
-                    f"{HOST}:{ws}/other_changes.txt", f"{HOST}:{ws}/include.patch", f"{HOST}:{ws}/rels_include.patch", f"{HOST}:{ws}/provenance.txt", f"{HOST}:{ws}/stderr.log", f"{HOST}:{ws}/configure.patch", f"{HOST}:{ws}/audit.txt",
-                    str(HERE / tag) + "/"])
-    # kill anything still running from this workspace (a hung mwcceppc/wibo outlives the agent otherwise)
-    ssh(f"d=$(cd {ws} && pwd); for p in $(pgrep -u $(id -u)); do case $(readlink /proc/$p/cwd 2>/dev/null) in $d|$d/*) kill -9 $p;; esac; done; true")
-    flagged = ""
-    if "audit=1" in r3.stdout:
-        flagged = " AUDIT FLAGGED (see audit.txt)"
-        # keep the flagged session's events with the results: the host's workspaces are pruned
-        subprocess.run(["rsync", "-az", f"{HOST}:{ARCHIVE}/{tag}/events.jsonl.zst", str(HERE / tag) + "/"])
-    log(f"{tag} finished in {time.time() - t0:.0f}s: {r.stdout.strip()} {r3.stdout.strip()}{flagged}")
+            more = (f"Keep going: you still have about {int(left() // 60)} minutes. These functions are still below 100%: "
+                    f"{', '.join(still)}. Continue with them as PROMPT.md describes (same rules; never lower a score), "
+                    f"keep REPORT.md current, and run python3 check.py --final {unit} before you stop.")
+            log(f"{tag} continuation {k + 1}: {len(still)} open, {int(left())}s left")
+        secs = left()  # measured after the check, so the pass can't overrun the budget
+        r2 = ssh(agent_cmd(tag, secs, "-c " + shlex.quote(more), f"cont{k}"), timeout=secs + 600, check=False)
+        rcs += " cont" + r2.stdout.strip()
+    done = ssh(f"test -s {ws}/REPORT.md && grep -q -- '--final' {out}/events.jsonl && echo yes", timeout=60, check=False)
+    if done.stdout.strip() != "yes":
+        r3 = ssh(agent_cmd(tag, 900, "-c " + shlex.quote(finish), "finish"), timeout=1500, check=False)
+        rcs += " finisher" + r3.stdout.strip()
+    ssh(box_cmd(tag, "link", f"python3 tools/rel_link.py {unit} > link.txt 2>&1"), timeout=700, check=False)
+    return rcs
+
+
+def collect(tag, spec):
+    """Gather the results with tools/agent_collect.sh from the base, in the collect sandbox; archive the events and
+    copy the output dir back (no links followed). Returns the audit's exit status (0 clean)."""
+    ws, out, _, rout = paths(tag)
+    c = ssh(f"cd {out} && {bind_check(tag, 'collect')} && timeout -k 30 600 {sandbox(tag, 'collect', 'collect')} "
+            f"bash {BASE}/tools/agent_collect.sh {BASE} {ws} {out} {spec['src']} {spec.get('mode', '')}; echo audit=$?; "
+            f"mkdir -p {ARCHIVE}/{tag} && zstd -q -3 -f {out}/events.jsonl -o {ARCHIVE}/{tag}/events.jsonl.zst",
+            timeout=900, check=False)
+    rsync("--no-links", "--exclude", "events.jsonl", f"{HOST}:{rout}/", str(HERE / tag) + "/")
+    m = re.search(r"audit=(\d+)", c.stdout)
+    return int(m.group(1)) if m else -1
+
+
+def parse_deadline(s, now=None):
+    """$DEADLINE as epoch seconds: "YYYY-MM-DD HH:MM", or "HH:MM" meaning its next occurrence after now."""
+    if not s:
+        return None
+    now = now or time.time()
+    if len(s) > 5:
+        return time.mktime(time.strptime(s, "%Y-%m-%d %H:%M"))
+    h, m = map(int, s.split(":"))
+    t = time.localtime(now)
+    d = time.mktime((t.tm_year, t.tm_mon, t.tm_mday, h, m, 0, 0, 0, -1))
+    return d if d > now else d + 86400
 
 
 def main(wave, here, base, model, key_env, model_line, specfile="units.json", removed=None, hints=None, why=None,
          cpu_quota="200%", archive=None):
     """Run a wave. here: the wave's scratch directory (spec, prompts and results live there). removed/hints/why: paths
-    to removed.json (unit, function, why), hints.json (unit -> text) and an autolink failure list, if any."""
-    global HERE, WAVE, BASE, MODEL, KEY_ENV, MODEL_LINE, CPU_QUOTA, ARCHIVE, SPEC, REMOVED, HINTS, WHY, KEY_FILE, AUDIT
-    HERE, WAVE, BASE, MODEL, KEY_ENV, MODEL_LINE, CPU_QUOTA = Path(here), wave, base, model, key_env, model_line, cpu_quota
-    ARCHIVE = archive or "~/ttyd-archive/scratch/" + HERE.name
+    to removed.json (unit, function, why), hints.json (unit -> text) and an autolink failure list, if any.
+    $BASE and $ARCHIVE override base and archive."""
+    global HERE, WAVE, BASE, MODEL, KEY_ENV, MODEL_LINE, CPU_QUOTA, ARCHIVE, SPEC, REMOVED, HINTS, WHY, KEY_FILE, UID, DEADLINE
+    HERE, WAVE, MODEL, KEY_ENV, MODEL_LINE, CPU_QUOTA = Path(here), wave, model, key_env, model_line, cpu_quota
+    BASE = re.sub(r"^~(?=/)", "$HOME", os.environ.get("BASE") or base)
+    ARCHIVE = os.environ.get("ARCHIVE") or archive or "~/ttyd-archive/scratch/" + HERE.name
     SPEC = json.load(open(HERE / os.environ.get("SPECFILE", specfile)))
     if os.environ.get("ONLY"):
         SPEC = [x for x in SPEC if x["unit"] in os.environ["ONLY"].split()]
@@ -483,12 +632,16 @@ def main(wave, here, base, model, key_env, model_line, specfile="units.json", re
     REMOVED = [tuple(x) for x in json.load(open(removed))] if removed else []
     HINTS = json.load(open(hints)) if hints else {}
     WHY = ({l.split()[1].rstrip(":"): l.split(None, 2)[2].strip() for l in open(why) if len(l.split()) > 2} if why else {})
+    DEADLINE = parse_deadline(os.environ.get("DEADLINE", ""))
     if not PFX:
         sys.exit("PFX not set")
+    if len(os.environ.get("HOSTS", HOST).replace(",", " ").split()) > 1:
+        sys.exit("one host per launcher (slots are counted per host): set HOST")
     KEY_FILE = f"~/.config/ttyd-keys/{PFX.rstrip('_')}"
-    AUDIT = f"{BASE}/tools/agent_audit.py"
     key = os.environ.get("KEY") or sys.exit("KEY not set")
     install_key(key)
+    UID = ssh("id -u", timeout=60).stdout.strip()
+    ssh(f"systemctl --user set-property --runtime {SLICE} {SLICE_PROPS}", timeout=60)
     lock = threading.Lock()
 
     def log(msg):
@@ -506,30 +659,57 @@ def main(wave, here, base, model, key_env, model_line, specfile="units.json", re
             except queue.Empty:
                 return
             tag = s["tag"]
+            slot = claimed = started = False
             try:
-                if DEADLINE and DEADLINE <= time.strftime("%H:%M") < "12:00":  # an after-midnight deadline
-                    log(f"{tag} skipped: past {DEADLINE}")
+                if DEADLINE and time.time() >= DEADLINE:
+                    log(f"{tag} skipped: past the deadline")
                     continue
-                with slot_lock:  # one start at a time across all w5x waves, so each agent shows up before the next check
-                    while running() >= cap_now():
+                with slot_lock:  # one reservation at a time from this launcher; the host's lock covers the others
+                    while not reserve(tag):
                         time.sleep(60)
-                    if not claim(s["unit"]):
-                        log(f"{tag} skipped: {s['unit']} is claimed by another wave")
-                        continue
-                    prepare(tag, s)
-                    time.sleep(20)
-                run(tag, s["unit"], s["src"], s, key, log)
-            except Exception as e:
+                slot = True
+                if not claim(s["unit"]):
+                    log(f"{tag} skipped: {s['unit']} is claimed by another wave")
+                    continue
+                claimed = True
+                reap(tag)  # a scope left from an earlier run of this tag would block the new one's name
+                prepare(tag, s)
+                started = True
+                before = host_state()
+                t0 = time.time()
+                rcs = run(tag, s["unit"], s["src"], s, log)
+                log(f"{tag} finished in {time.time() - t0:.0f}s: {rcs}")
+                new = host_state() - before
+                if new:
+                    (HERE / tag / "host_changes.txt").write_text("\n".join(sorted(new)) + "\n")
+                    log(f"{tag} NEW ON HOST while it ran (another session may have started these): {', '.join(sorted(new))}")
+            except Exception as e:  # including every ssh deadline (subprocess.TimeoutExpired) and failed step
                 log(f"{tag} ERROR {e}")
+                if claimed and not started:
+                    release(s["unit"])
+            finally:
+                if started:
+                    try:
+                        audit = collect(tag, s)
+                        if audit != 0:
+                            log(f"{tag} AUDIT FLAGGED (exit {audit}; see audit.txt)")
+                            rsync(f"{HOST}:{ARCHIVE.replace('~/', '', 1)}/{tag}/events.jsonl.zst", str(HERE / tag) + "/")
+                    except Exception as e:
+                        log(f"{tag} COLLECT ERROR {e}")
+                if claimed:
+                    reap(tag)
+                if slot:
+                    free(tag)
 
     log(f"{len(SPEC)} files, {WORKERS} at a time")
     threads = [threading.Thread(target=worker) for _ in range(WORKERS)]
     for th in threads:
         th.start()
-        time.sleep(2)  # stagger the workspace copies
+        time.sleep(START_STAGGER)  # stagger the workspace copies
     for th in threads:
         th.join()
-    log("all done")
+    c = ssh(f"python3 {BASE}/tools/tower_check.py", timeout=600, check=False)
+    log("all done; tower_check: " + (c.stdout.strip() or "clean"))
 
 
 if __name__ == "__main__":

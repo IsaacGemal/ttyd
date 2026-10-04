@@ -32,7 +32,7 @@ class AgentAudit(unittest.TestCase):
         self.assertEqual(kinds(
             ev("bash", command=f"cd {WS} && python3 check.py battle/battle_camera 2>&1 | tail -40 && echo done"),
             ev("bash", command=f"cd {WS} && cp src/battle/battle_camera.c tmp/backup.c && python3 - <<'EOF'\n"
-                               "import os; os.system('true &')\nprint('/home/isaac/elsewhere')\nEOF"),
+                               "import os; print(os.listdir('.'))\nprint('/home/isaac/elsewhere')\nEOF"),
             ev("read", path=f"{WS}/src/battle/battle_camera.c"),
             ev("write", path=f"{WS}/REPORT.md", content="Model: x"),
             ev("bash", command=f"cd {WS} && make 2>&1 >/dev/null; ls /tmp/x &>/dev/null"),
@@ -44,6 +44,41 @@ class AgentAudit(unittest.TestCase):
 
     def test_background_inside_the_workspace_is_still_flagged(self):
         self.assertEqual(kinds(ev("bash", command=f"cd {WS} && setsid python3 tmp/search.py > tmp/log 2>&1")), ["BACKGROUND"])
+
+    def test_quoted_newline_home_and_relative_paths(self):
+        for cmd in ['cp x "/home/isaac/par/y"', f"cd {WS}\nmkdir /home/isaac/par", "mkdir $HOME/par", "mkdir ${HOME}/par",
+                    "touch ~/x", "cd .. && touch x", "cp -a . ../w1", f"cd /home/isaac/par && cp -a {WS}/src w0"]:
+            self.assertEqual(kinds(ev("bash", command=cmd)), ["WRITE-OUTSIDE"], cmd)
+
+    def test_wrapped_commands(self):
+        for cmd in ["timeout -k 10 60 cp a /home/isaac/x", "env A=1 cp a /home/isaac/x", "/bin/cp a /home/isaac/x",
+                    "ls | xargs -I{} cp {} /home/isaac/x", "find . -name '*.c' -exec cp {} /home/isaac/x \\;",
+                    "bash -c 'mkdir /home/isaac/x'", "eval 'touch /home/isaac/x'", "nice -n 5 rsync -a . /home/isaac/x",
+                    "python3 -c \"open('/home/isaac/x', 'w').write('1')\"",
+                    "python3 - <<'EOF'\nimport shutil\nshutil.copytree('.', '/home/isaac/par/w0')\nEOF",
+                    "bash <<'EOF'\nmkdir -p /home/isaac/par\nEOF"]:
+            self.assertIn("WRITE-OUTSIDE", kinds(ev("bash", command=cmd)), cmd)
+
+    def test_background_signals_and_services(self):
+        self.assertIn("BACKGROUND", kinds(ev("bash", command="python3 - <<'EOF'\nimport os\nos.system('nohup sleep 9 &')\nEOF")))
+        self.assertIn("BACKGROUND", kinds(ev("bash", command="python3 -c \"import subprocess; subprocess.Popen(['sleep','9'], start_new_session=True)\"")))
+        self.assertIn("SIGNAL", kinds(ev("bash", command="kill $(pgrep -f worker.py)")))
+        self.assertIn("SIGNAL", kinds(ev("bash", command="pgrep -f worker | xargs kill -9")))
+        self.assertIn("SIGNAL", kinds(ev("bash", command="kill -9 -1")))
+        self.assertEqual(kinds(ev("bash", command="sleep 5 & kill $!")), ["BACKGROUND"])
+        self.assertEqual(kinds(ev("bash", command="docker run -v /:/host alpine true")), ["HOST-SERVICE"])
+        self.assertEqual(kinds(ev("bash", command="systemctl --user list-units")), ["HOST-SERVICE"])
+
+    def test_running_tools_from_outside(self):
+        self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="python3 ~/permuter/permuter.py tmp/perm")))
+        self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="/home/isaac/permuter/import.py src/x.c")))
+
+    def test_words_in_arguments_are_not_commands(self):
+        self.assertEqual(kinds(
+            ev("bash", command="grep -n 'at' src/a.c; echo look at this; grep screen src/a.c | head"),
+            ev("bash", command="git diff --stat; echo 'nohup is not allowed' > tmp/note"),
+            ev("bash", command="python3 tools/rodatalayout.py battle/battle_camera .data 2>&1 | grep -c '|'"),
+        ), [])
 
 
 if __name__ == "__main__":

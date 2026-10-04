@@ -4290,17 +4290,41 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   several ran nohup/& searches inside their workspace. Older sessions were pruned before they could be scanned.
 - **Threat model.** Agents are not malicious, but they are resourceful and will take compute or paths the prompt
   doesn't forbid. Covered: writes outside the workspace; processes that outlive the agent (nohup, setsid, &); signals
-  to processes outside the agent (pkill/killall by name); CPU monopoly. Accepted: reads of other paths (the sandbox
-  allows them; tools/agent_audit.py records them).
-- **Fix** (`tools/wave_launch.py`, now the versioned launcher; per-wave configs in scratch call its main()):
-  `systemd-run --user --scope -p CPUQuota=200%` around `bwrap --ro-bind / / --dev /dev --proc /proc --bind $WS $WS
-  --bind $WS/tmp /tmp --bind $WS/.pi-agent ~/.pi/agent --unshare-pid --die-with-parent --new-session`. The agent CLI
-  writes lock files next to its settings, so each workspace gets a private copy of ~/.pi/agent (without the shared
-  session history) and keeps its sessions in the workspace (`--session-dir`). The API key is read from a 0600 file on
-  the host instead of the command line. The prompt forbids background processes and copies outside the workspace
-  ("if you want more parallelism, say so in REPORT.md and stop"). `tools/agent_audit.py` scans every agent's events
-  after its run (WRITE-OUTSIDE, BACKGROUND, SIGNAL; READ-OUTSIDE reported); flagged agents are marked in the launcher
-  log, their events are copied next to the results, and collection prints a verdict per agent.
-  `tools/tower_check.py` lists entries of ~ not on the host's allowlist (~/.config/ttyd-tower-allowlist, untracked)
-  and sandboxed processes outside their workspace. The old tracked launcher also named the inference provider; the
-  model and key settings now come from the untracked per-wave config.
+  to processes outside the agent; CPU, memory and task monopoly; host services that act outside any sandbox (docker,
+  whose group is root; the user D-Bus and systemd, which start unsandboxed units; X11); credentials in ~; the
+  launcher's own post-run steps, which ran agent-editable code and followed agent-planted links on the host; and the
+  evidence (events, audit) living where the agent could rewrite it. Accepted: the agent reads its own key (it sits in
+  its environment) and whatever the sandbox shows; its network is open (it needs the API).
+- **Fix** (`tools/wave_launch.py`, now the versioned launcher; per-wave configs in scratch call its main()). Every
+  step that runs the agent's files (the agent, check.py between passes, rel_link.py) runs in one sandbox:
+  `systemd-run --user --scope --slice=ttyd-agents.slice` (CPUQuota 200%, MemoryMax, TasksMax per agent; the slice
+  gets a runtime-only total of CPUQuota=1000% at launch) around `bwrap --clearenv --ro-bind / / --tmpfs $HOME
+  --tmpfs /run/user/<uid>`, with /dev/null over /run/docker.sock and the system bus socket, only the agent CLI, node,
+  the venv's python and the checkout's shared read-only parts mounted back under ~, the workspace writable, and new
+  pid/ipc/uts namespaces (`--die-with-parent --new-session`). The sandbox's /tmp and the agent CLI's settings copy
+  (settings and model list only; no credential store) live in ~/ttyd-agents-priv/<ws>, which no sandbox sees, and the
+  host checks before every step that each writable bind source is a real directory, not a link. The key reaches the
+  CLI through `bwrap --file` onto the sandbox's tmpfs, never a command line. The agent's stdout and stderr go through
+  pipes into ~/ttyd-agents-out/<ws>; after the agent, `tools/agent_collect.sh` from the base (never the workspace)
+  gathers final.c, the patches, provenance and the audit there, in a second sandbox that sees the workspace
+  read-only, copying only regular files whose real path is inside the workspace; only that directory comes back
+  (`rsync --no-links`). Every ssh/rsync has a deadline; the reaper stops the agent's scopes and kills only the known
+  build programs in an existing workspace. Agent slots are reserved under a flock on the host, shared by every
+  launcher on the key; an unanswered count is no capacity. The prompt forbids background processes and copies
+  outside the workspace ("if you want more parallelism, say so in REPORT.md and stop").
+- **Evidence that doesn't parse commands.** The launcher records containers and user units before and after each
+  agent (host_changes.txt) and runs `tools/tower_check.py` at the end of each wave: entries of ~ not on the host's
+  allowlist (~/.config/ttyd-tower-allowlist, untracked because it lists the home directory), shell startup files,
+  ~/.ssh and ~/.config/systemd changed recently, processes in the agents' slice or in a workspace outside a sandbox's
+  mount namespace, new containers and transient units, recent write counts per directory of ~.
+  `tools/agent_audit.py` stays as a hint, not a defence: it follows `bash -c`, eval, `$(...)`, find -exec, xargs,
+  heredocs and python -c, resolves $HOME, ~ and relative paths against `cd`, and flags WRITE-OUTSIDE, EXEC-OUTSIDE,
+  BACKGROUND, HOST-SERVICE and SIGNAL. Rerun over 90 sessions from waves 66-70, it found more than the first scan: a
+  wave 70 seq_command agent edited another agent's workspace (seq_action_g1's copy of battle_seq_command.c), a
+  win_item agent ran ~/ttyd-perm's perm_objdump.py, and wave 69/70 agents on party_hit and ac_gauge_timing2 ran nohup
+  searches in their workspaces.
+- **Review round.** #367's first version (read-only filesystem only) went through a red-team review, a correctness
+  review and Codex. Its filesystem part held; the holes were the ones the threat model now lists, plus regressions
+  against the previous launcher (no ssh deadlines, an unguarded reaper, other_changes.txt and include.patch formats).
+  Proposed, needing Isaac: a dedicated agent user outside the docker group, and `--unshare-net` with an API proxy
+  outside the sandbox holding the key.
