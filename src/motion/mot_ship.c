@@ -216,31 +216,19 @@ void mot_ship_post(void) {
         marioGetPtr()->motStruct = NULL;
     }
 }
-// Full transcription of the ship sub-motion switch machine. All logic, branches and stores are present
-// and in the original order. Collapsing intermediate temporaries and re-homing a few values is what
-// removes the register-allocation near-misses: `data` is function-scoped and reused by every case
-// instead of a fresh `d` per block; `dir` is shared by cases 0 and 10; case 1 writes the 30/-30 ramp
-// with an if/else rather than a `?:`; case 40 assigns `unk04` straight from `unk3C.y`; case 52's
-// preamble feeds `revise360` directly; the case-2/4 and case-45/46 ramps are folded into the `unk20`
-// expression instead of a saved f30; and the case-41 `cos` result is kept in f30. The file's functions
-// are ordered reverse of the .text order so the unit's .sdata2/.rodata pools come out in the original
-// order (that is what moved the top free GPRs to match). What still differs is register allocation
-// only: the top `data`/`m` web is colored r29 instead of r28, so the case-0 `hit`/`dir` scratch lands
-// in r27 (target r29); case 52's two identical effect blocks have their `m`/`data` register pairs
-// swapped; and case 31's `f30 = 1.6f` load is sunk instead of hoisted (f30/f31 swapped). The prologue
-// (`stfd f31`/`stfd f30` + `stmw r27, 0x5c(r1)`) matches.
-// NONMATCHING (99.76%): see above.
+// NONMATCHING (99.89%): 39 GPR differences remain. Initialization and case 0 use r29 for
+// the data/Mario pointer (target r28), and case 0 uses r27 for hit/direction (target r29).
+// Case 52's two wake updates swap their r29/r30 Mario/data pairs. FP register allocation,
+// arithmetic, the 0x90-byte frame, and the literal data pools match.
+#ifdef MUST_MATCH
+// Keep case 31's 1.6 scale loaded before the effect lookups; scoped zeros avoid an extra saved FPR.
+#pragma opt_propagation off
+#endif
 void mot_ship(void) {
     MarioWork* mario = marioGetPtr();
     MotionShipData* data;
     s32 dir;
-#ifdef MUST_MATCH
-    // Dead init: it lengthens the C variable f30's live range so MWCC colors it to hardware f30 like
-    // the target. It is score-neutral here (removing it leaves the same diff count) but kept for safety.
-    f32 f30 = 0.0f;
-#else
     f32 f30;
-#endif
     f32 f31;
 
     if (mario->trigFlags & 1) {
@@ -589,15 +577,27 @@ void mot_ship(void) {
         f30 = 1.6f;
         {
             MarioWork* m;
-            f32 zero = 0.0f;
             m = marioGetPtr();
             ((f32*)SHIP_DATA->eff->userdata)[1] = (m->position.x);
-            ((f32*)SHIP_DATA->eff->userdata)[2] = (m->position.y + zero);
+#ifdef MUST_MATCH
+            // Assign zero in the right operand to keep the original f0/f1 loads and fadds.
+            {
+                f32 zero;
+                ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + (zero = 0.0f);
+            }
+#else
+            ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + 0.0f;
+#endif
             f31 = m->position.z;
             ((f32*)SHIP_DATA->eff->userdata)[3] = f31;
             ((f32*)SHIP_DATA->eff->userdata)[4] = f30;
+#ifdef MUST_MATCH
+            // The direct yaw store lets the scratch value stay in f31 after the scale's last use.
+            ((f32*)SHIP_DATA->eff->userdata)[5] = m->unk1A8;
+#else
             f31 = m->unk1A8;
             ((f32*)SHIP_DATA->eff->userdata)[5] = f31;
+#endif
         }
         break;
     case 32:
@@ -618,8 +618,14 @@ void mot_ship(void) {
             SHIP_DATA->unk04 = SHIP_DATA->unk3C.y;
             mario->baseSpeed = 2.8f;
             {
+#ifdef MUST_MATCH
+                // Keep the rounding factor first in the expression tree to pool 10 before 2.
+                s32 n = (s32)((10.0f * ((2.0f * distABf(mario->position.x, mario->position.z,
+                    SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z)) / mario->baseSpeed) + 0.5f) / 10.0f);
+#else
                 f32 t = (2.0f * distABf(mario->position.x, mario->position.z, SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z)) / mario->baseSpeed;
                 s32 n = (s32)((10.0f * t + 0.5f) / 10.0f);
+#endif
                 f32 f6;
                 mario->directionView = angleABf(mario->position.x, mario->position.z, SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z);
                 *(f32*)((u8*)mario + 0x19C) = mario->directionView;
@@ -828,10 +834,14 @@ void mot_ship(void) {
         }
         if (mario->flags & 0x20) {
             MarioWork* m;
-            f32 zero0 = 0.0f;
             f30 = mario->baseSpeed;
             m = marioGetPtr();
-            if (f30 == zero0) {
+#ifdef MUST_MATCH
+            // Variable-first float compare, without a zero local spanning the lookups.
+            if (!f30) {
+#else
+            if (f30 == 0.0f) {
+#endif
                 marioGetPtr();
                 { s32 b; if (SHIP_DATA->unk08 > 180.0f) b = 0; else b = 1; f30 = b ? 0.3f : 0.6f; }
                 {
@@ -842,10 +852,16 @@ void mot_ship(void) {
                 }
             }
             {
-                f32 zero = 0.0f;
-
                 ((f32*)SHIP_DATA->eff->userdata)[1] = m->position.x;
-                ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + zero;
+#ifdef MUST_MATCH
+                // Assign zero in the right operand to keep the original f0/f1 loads and fadds.
+                {
+                    f32 zero;
+                    ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + (zero = 0.0f);
+                }
+#else
+                ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + 0.0f;
+#endif
                 ((f32*)SHIP_DATA->eff->userdata)[3] = m->position.z;
                 ((f32*)SHIP_DATA->eff->userdata)[4] = f30;
                 ((f32*)SHIP_DATA->eff->userdata)[5] = m->unk1A8;
@@ -914,10 +930,14 @@ void mot_ship(void) {
         }
         {
             MarioWork* m;
-            f32 zero = 0.0f;
             f30 = mario->baseSpeed;
             m = marioGetPtr();
-            if (f30 == zero) {
+#ifdef MUST_MATCH
+            // Variable-first float compare, without a zero local spanning the lookups.
+            if (!f30) {
+#else
+            if (f30 == 0.0f) {
+#endif
                 marioGetPtr();
                 { s32 b; if (SHIP_DATA->unk08 > 180.0f) b = 0; else b = 1; f30 = b ? 0.3f : 0.6f; }
                 {
@@ -928,7 +948,15 @@ void mot_ship(void) {
                 }
             }
             ((f32*)SHIP_DATA->eff->userdata)[1] = m->position.x;
-            ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + zero;
+#ifdef MUST_MATCH
+            // Assign zero in the right operand to keep the original f0/f1 loads and fadds.
+            {
+                f32 zero;
+                ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + (zero = 0.0f);
+            }
+#else
+            ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + 0.0f;
+#endif
             ((f32*)SHIP_DATA->eff->userdata)[3] = m->position.z;
             ((f32*)SHIP_DATA->eff->userdata)[4] = f30;
             ((f32*)SHIP_DATA->eff->userdata)[5] = m->unk1A8;
@@ -945,6 +973,10 @@ void mot_ship(void) {
         break;
     }
 }
+#ifdef MUST_MATCH
+#pragma opt_propagation reset
+#endif
+
 void marioShipChgFall(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -1127,6 +1159,15 @@ void shipMove(void) {
     }
     *(f32*)((u8*)mario + 0x18C) = f29;
 }
+#ifdef MUST_MATCH
+// Reverse source order emits 15, 50, 30.30303, then 180 between checkHarbor and shipMove.
+// These unreferenced helpers position the shared literal pool; their bodies are stripped when linked.
+static f32 shipPoolAngle(void) { return 180.0f; }
+static f32 shipPoolHarborInset(void) { return 30.30303f; }
+static f32 shipPoolHarborWidth(void) { return 50.0f; }
+static f32 shipPoolHarborHeight(void) { return 15.0f; }
+#endif
+
 s32 checkHarbor(Vec* out) {
     MarioWork* mario = marioGetPtr();
     HitEntry* hit;
