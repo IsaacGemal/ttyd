@@ -1144,7 +1144,7 @@ void loadMain(SequenceWork* workArg) {
 // registers and scores lower, so only those are routed. The f64 scales are passed to loadDrawQuad by pointer so
 // the load sits by the `fabs` the target has instead of being hoisted to the inline's entry.
 // A by-value loadDrawVec (the win_item.c form) drops the real diffs to 648 but scores 81.57, so this
-// pointer form is kept for the ratchet for that trade-off.
+// pointer form is kept for that trade-off.
 // Other source-shape fixes that removed real diffs: keeping the play-time divisor inline at its use
 // (`ticks / (s64)(*(volatile u32*)0x800000F8 >> 2)`) so the `lwz 0xf8/srwi` schedule matches; loading
 // the loop colours through a volatile pointer so MWCC does not hoist them out of the loop; computing the

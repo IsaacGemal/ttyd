@@ -3271,7 +3271,7 @@ static inline u8* mapSearchAnimObj(const char* name) {
 // a reload; (3) in the mapSearchAnimObj helper the table is read with the expression inside the
 // inner-loop bound (assigned to `table` in the bound), so retail's second `0xa0(entry)` load
 // disappears; (4) the main-function declaration order moves the callee-saved allocation a lot: a
-// greedy swap/insertion hill-climb over the 15 top-level locals (guided by check.py) went 96.03 ->
+// greedy swap/insertion hill-climb over the 15 top-level locals went 96.03 ->
 // 96.20 by itself, so this list is the optimum found, not an arbitrary order; (5) the four
 // orientation-load orders per Hermite block matter for the FPR/score even though the scheduler
 // reorders them (colour `tan0, value0, value1, tan1`, light `tan0, value0, value1, tan1`, alpha

@@ -2272,7 +2272,11 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			*(s32*)(star + 4) = 0xF;
 			*(s32*)(star + 0x44) = 0;
 			*(s32*)(star + 0x48) = irand(0x14) + 0x14;
+#ifdef MUST_MATCH
 			*(volatile Vec*)(star + 0x20) = *(Vec*)(star + 8);
+#else
+			*(Vec*)(star + 0x20) = *(Vec*)(star + 8);
+#endif
 			pos = statusGetApPos();
 			*(Vec*)(star + 0x2C) = pos;
 			radius = *(f32*)(star + 0x24) - *(f32*)(star + 0x30);

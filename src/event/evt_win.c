@@ -600,7 +600,7 @@ USER_FUNC(set_new_goods_list) {
 // named by symbols.txt; defining/removing the doubles only moves the anonymous copy). The case
 // 17/18 `info` pointer is loaded just before its loop (as the target does); it still lands in r14
 // instead of the target's r17. Every immediate, call and case body matches. The frame now matches
-// the target's 0x780 (the status macro's unused `help2` is `[0x8]`, not `[0x10]`; at `[0x10]`
+// the target's 0x780 (the status macro's `help2` is `[0x8]`, not `[0x10]`; at `[0x10]`
 // `stmw r14` sat at 0x718 and the frame was 0x7a0).
 // MWCC's callee-saved colouring is still one register low in places (the first block's
 // `wp->field_0x8[i]`/`wp->objList[i]` use r16/r17 instead of the target's r17/r18 and `sellDesc`

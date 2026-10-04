@@ -291,7 +291,7 @@ s32 texmtx_tbl[] = {30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 4, 5, 6, 14, 0, 1, 2
 // 0.4967=f25, 100=f24). The GXColor temporaries go through a named `color` local (only the r/a fields
 // written), which puts the two GXSetTevKColor argument copies on sp+0x10/sp+0xC and keeps sp48 at 0x48 /
 // sp18 at 0x18. The declaration order below (`i`, `tevStage`, `temp_r27`, `wp`, `u`, `mtx`, `texCoord`)
-// was found by search. Four later edits (found by search) raised the score to 96.21% (119 real diffs):
+// was found by search. Four later edits raised the score to 96.21% (119 real diffs):
 // block 2's `v34` uses the if/else form, block 1's coefficients are ordered v24,v26,v27,v28,v25, the
 // `f32 half` local in the two `GXBegin` runs is gone (the 0.5f factor is a literal in each GXPosition3f32),
 // and block 2 reaches the matrix table through its own `mtx2` pointer. What remains is integer register
