@@ -606,9 +606,8 @@ void suifu_kyorokyoro_init(NanNpcEntry* entry) {
     entry->callback = suifu_kyorokyoro;
 }
 
-// NONMATCHING (99.74%): `int delta` matches the FP side and using `isFirstCall` as the loop counter
-// (instead of `s32 i`) fixes the entry/args layout. The only diff left is the work/isFirstCall int
-// swap (original work r27/isFirstCall r29, ours the reverse).
+// `delta` is an `int` so the integer conversion stays in one place, and `entry` is declared
+// outside the loop and assigned each iteration; both are needed for the original's registers.
 USER_FUNC(dai3_butai_main_func) {
     s32* args = event->args;
     f32 cur = (f32)evtGetValue(event, args[0]);
@@ -617,18 +616,14 @@ USER_FUNC(dai3_butai_main_func) {
     f32 centerZ = (f32)evtGetValue(event, args[3]);
     f32 s;
     int delta = (s32)(target - cur);
+    s32 i;
+    NanNpcEntry* entry;
     NanNpcWork* work = nanNPCWork;
 
-#ifdef MUST_MATCH
-    // The original counts in the register MWCC gives the unused isFirstCall parameter.
-#define i isFirstCall
-#else
-    s32 i;
-#endif
     for (i = 0; i < 100; i++) {
-        NanNpcEntry* entry = &work->entries[i + 0xCD];
         f32 radius;
 
+        entry = &work->entries[i + 0xCD];
         entry->work[0] += delta;
         radius = (f32)entry->work[1];
         target = 3.141592f * (f32)entry->work[0] / 180.0f;
@@ -637,9 +632,6 @@ USER_FUNC(dai3_butai_main_func) {
         entry->position.x = radius * cur + centerX;
         entry->position.z = radius * s + centerZ;
     }
-#ifdef MUST_MATCH
-#undef i
-#endif
     return EVT_RETURN_DONE;
 }
 
