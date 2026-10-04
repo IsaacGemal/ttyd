@@ -2116,7 +2116,7 @@ config.libs = [
             Object(NonMatching, "yuu_02.c"),
             Object(NonMatching, "yuu_03.c"),
             Object(Matching, "yuu.c"),
-            Object(NonMatching, "yuu_00.c"),
+            Object(Matching, "yuu_00.c"),
             Object(Matching, "yuu_01.c"),
             Object(NonMatching, "event/evt_yuutitle.c"),
             Object(NonMatching, "event/evt_yuucounter.c"),
