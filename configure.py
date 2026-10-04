@@ -464,7 +464,7 @@ config.libs = [
             Object(NonMatching, "driver/imgdrv.c"),
             Object(Matching, "driver/offscreendrv.c"),
             Object(Matching, "driver/arcdrv.c"),
-            Object(NonMatching, "driver/windowdrv.c"),
+            Object(Matching, "driver/windowdrv.c"),
             Object(NonMatching, "driver/msgdrv.c"),
             Object(Matching, "driver/swdrv.c"),
             Object(NonMatching, "driver/itemdrv.c"),
