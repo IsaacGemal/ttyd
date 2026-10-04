@@ -4518,3 +4518,29 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   sac_zubastar and msgdrv found only misalignment and changed nothing. Rejected: win_mario (doesn't build without
   MUST_MATCH, and the value gate caught two functions loading an ASCII "-" where the original has the full-width
   Shift-JIS minus 0x817C), win_log (winLogInit 98.43 -> 98.43, a rounding-level drop).
+
+
+## fadedrv linked (2026-10-04, Codex)
+
+`driver/fadedrv.c` now links with all 27 functions at 100% and all 32 checksums passing. A deferred unused pi helper between `disp_maku` and `disp_tec` pools pi before half/180 without changing instructions. At EOF, an immediately generated u32-to-f32 helper flushes deferred code before `force_active` and the `.rodata`/`.data` tail words; the linker strips both helper bodies. The const `lbl_802C1538` then lands at exactly 0x802C1538. Texture padding uses u8/u16/u32[7] to avoid introducing alignment; `.sbss` and `.sbss2` each need one gap word (the first `.sbss2` word is already a compiler-generated zero GXColor). All data section bytes/sizes match; `.sdata` and `.sbss2` objdiff scores are imperfect because their source objects partition the padding differently.
+
+## Codex's wins, and why each worked (2026-10-04)
+
+Every hard problem routed to Codex (gpt-6.1-sol, high effort, CLI `codex exec --sandbox workspace-write`) was one
+that cheaper methods had failed: Claude #3 by hand, swarm agents, and the permuter. Seven runs, seven results. Each
+row: the blocker, what Codex found, and the reusable lesson. The full attempt logs, including what did NOT work, are
+in `docs/codex/`; read them before retrying a similar unit.
+
+| Unit (PR) | Tokens | Blocker before | What fixed it | Reusable lesson |
+|---|---|---|---|---|
+| battle_unit (#374) | 156k | BtlUnit_snd_se_pos and pool order | s16-annotated temporary; literal floats; also corrected a wrong sentinel (-250000000.0f) in 20 setters | a "fix" can uncover a wrong value; checksum it |
+| windowdrv (#375) | 150k | windowDispGX_System 99.97%, link failed | X FIFO write before y3 setup; `math_ext.h` + `__fabsf` drops 32 B of math-header doubles; one shared const GXColor; reversed .sbss declarations + gap word; NO trailing .data padding (MWCC emits it before jump tables) | math.h statics, shared colour constants, reversed .sbss order |
+| koopa (#376) | 176k | i2f double pooled after a string in a deferred unit | an unused helper doing an int->float conversion, generated first with `#pragma defer_codegen off` ... `reset`, pools the double early; the linker strips the body | the "conversion double before strings" recipe in AGENT_BRIEF |
+| eff_kemutest (#397) | 208k | .sdata2 2.0/0.5 order (inner-loop-only hoist) | assign the hoisted values in a block INSIDE the inner loop, just before GXBegin, so MWCC hoists them to the inner-loop preheader only; string NUL tail; unit-owned zero colour template in .sbss2 | block-scoped assignment controls how far MWCC hoists |
+| eff_fire (#404) | 148k | all functions 100%, DOL differed; 2 Claude failures | removed 6 duplicate .sdata2 constants (values the original merges) while keeping runtime products and registers via locals, fixed pool order, reversed .sbss2 scratch declarations | DUP_OURS in sdata2_diff = we pool a value twice; .sbss/.sbss2 declarations often reversed |
+| fadedrv (#406) | 161k | pi pool order + unreferenced .rodata tail word; 3 failures | an unused pi helper placed between disp_maku and disp_tec pools pi early; at EOF an immediately generated u32->f32 helper flushes deferred code ahead of force_active tail words, so tail objects land last | helpers can position pool entries AND force tail data placement in deferred units |
+| fontmgr fontmgrTexSetup (#408) | 103k | register swap after ~27 variants (Claude #3 with mwcc-debugger) | rounded size assigned inside __memAlloc's argument (keeps size in r4, gives dvd/rounded r31/r30); block scan moved to an inline helper (header/i get r8/r6) | assignment-in-argument and inline helpers change web ranks where declaration order can't |
+
+Pattern: Codex wins by running many cheap build-and-measure experiments against a precise brief (current section
+diff, tools to use, what already failed, MUST_MATCH rule, never regress). Each brief is in the PR's worktree as
+CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-25 minutes, 100-210k tokens.

@@ -1,0 +1,50 @@
+# windowDispGX_System attempts
+
+- Baseline: 99.97%, 6 real instruction differences at 0x9cc–0x9ec; 16 other functions at 100%.
+- local k before y3: Build failed: declaration after statements is invalid in this C dialect (check.py mislabeled the command-line timeout marker); retried with declarations at function start below.
+- local z before y3: Build failed: declaration after statements is invalid in this C dialect (check.py mislabeled the command-line timeout marker); retried with declarations at function start below.
+- locals k then z: Build failed: declaration after statements is invalid in this C dialect (check.py mislabeled the command-line timeout marker); retried with declarations at function start below.
+- locals z then k: Build failed: declaration after statements is invalid in this C dialect (check.py mislabeled the command-line timeout marker); retried with declarations at function start below.
+- y4 after first position: windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- y3 assigned in position, y4 follows: windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- k local, y3 assigned in position: Build failed: declaration after statements is invalid in this C dialect (check.py mislabeled the command-line timeout marker); retried with declarations at function start below.
+- y3 split subtract and negate: windowDispGX_System: 99.90% (4188 B); 20 real diffs
+- y3 temp subtract then negate: Build failed: declaration after statements is invalid in this C dialect (check.py mislabeled the command-line timeout marker); retried with declarations at function start below.
+- k local, temp subtract: Build failed: declaration after statements is invalid in this C dialect (check.py mislabeled the command-line timeout marker); retried with declarations at function start below.
+- split y4 compound subtract: windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- z declared after y3: Build failed: declaration after statements is invalid in this C dialect (check.py mislabeled the command-line timeout marker); retried with declarations at function start below.
+- local k before y3 (temps declared at function start): windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- local z before y3 (temps declared at function start): windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- locals k then z (temps declared at function start): windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- locals z then k (temps declared at function start): windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- y4 after first position (temps declared at function start): windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- y3 assigned in position, y4 follows (temps declared at function start): windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- k local, y3 assigned in position (temps declared at function start): windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- y3 split subtract and negate (temps declared at function start): windowDispGX_System: 99.90% (4188 B); 20 real diffs
+- y3 temp subtract then negate (temps declared at function start): windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- k local, temp subtract (temps declared at function start): windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- split y4 compound subtract (temps declared at function start): windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- z declared after y3 (temps declared at function start): windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- named 32 for both subtracts: windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- named 32 first subtract only: windowDispGX_System: 99.89% (4188 B); 5 real diffs
+- named 32 second subtract only: windowDispGX_System: 99.89% (4188 B); 5 real diffs
+- named zero first x only: windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- named 32 and first zero: windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- named zero loaded before subtracts: windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- named k and z locals in order: windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- named z then k locals: windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- named 32, y3 in position: windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- named zero, y3 in position: windowDispGX_System: 99.97% (4188 B); 6 real diffs
+- direct first x store before y3 setup: windowDispGX_System: 100.00% (4188 B); 0 real diffs
+- Cleaned matching FIFO variant: 17/17 functions at 100%; pool_plan reports extra GXColor words, testing the authorized Matching link.
+- Matching link trial: DOL checksum failed (31 RELs passed); found extra math-header doubles, 4 duplicate fog-colour words, reversed .sbss globals and missing padding.
+- math_ext.h with explicit __fabsf intrinsic: all 17 functions at 100%; removes 32 extra .rodata bytes.
+- One shared const GXColor dat_8041a430: all 17 functions at 100%; .sdata2 now byte-identical (128 bytes).
+- Reverse .sbss declarations and force-active 4-byte trailing .sbss gap: all 17 functions at 100%; globals now match original offsets and section size (24 bytes).
+- Explicit global trailing .data padding object: all 17 functions at 100%, but MWCC emits the object before jump tables, so discarded.
+- Function-local __declspec(section ".data") padding: compiler rejects local section attribute; discarded.
+- Remove explicit .data padding and let linker align the next section: python3 configure.py && ninja passes; DOL has 0 differing bytes, all 32 checksums pass.
+- Cleanup: preserve fabsf spelling through the original SDK MWERKS intrinsic alias with math_ext.h.
+- Final verification: cleaned source keeps all 17 functions at exactly 100%; python3 check.py --final driver/windowdrv builds all_source and reports no merge issues; python3 configure.py && ninja passes checksum verification; cmp confirms MarioSt.dol equals orig/G8MJ01/sys/main.dol byte for byte.
+
+Result: SUCCESS. windowDispGX_System is 4188 bytes, 99.97% -> 100%; first X FIFO write precedes y3 setup, Y write precedes y4 setup. No header changes, new raw offsets, external reference code or compiler flag changes. Changed files: src/driver/windowdrv.c, configure.py, ATTEMPTS.md.
