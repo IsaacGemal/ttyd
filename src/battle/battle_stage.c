@@ -15,17 +15,41 @@ static void screen_capture(CameraId camId, void* param);  // local to this file 
 //.sbss
 static BattleSpotWork work;
 
-//.sbss2
-s32 batSpotEntry_28;
+//.sbss2: the six zero words the original's light/spot colour compound literals
+// pool. Declared last-declared-first so they land at the original addresses.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u32 unk_8042302c;
+__declspec(section ".sdata") u32 unk_80423028;
+__declspec(section ".sdata") u32 unk_80423024;
+__declspec(section ".sdata") u32 unk_80423020;
+__declspec(section ".sdata") u32 unk_8042301c;
+__declspec(section ".sdata") u32 unk_80423018;
+#pragma section ".sdata" ".sbss"
 
 //.sdata
 static BattleSpotWork* wp = &work;
 
+//.sdata: the 7 zero words between wp and inta_tex in the original
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_804117E4_sdata[7] = {0};
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
 //.sdata (local to this file in the original)
 static u32 inta_tex[8] = {0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000};
 
-//.sdata2
-s32 dat_8041c7ec = -1;
+//.sdata (local to this file in the original)
+static u32 screen_evt[7] = {0x0000006B, 0x0002005B, (u32)screen_evt_func, 0xFE363C80, 0x0000006D, 0x00000002, 0x00000001};
+
+//.sdata: the trailing zero word of the section
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_8041183C_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+//.sdata2 objects are defined at the end of the file.
 
 // .rodata zero/constant vectors this unit emitted; MWCC pools every access
 // through the vec3_802f31a8 base, and the int->float conversion double the
@@ -48,9 +72,6 @@ extern f32 float_neg1_8041c818;
 extern f32 float_32767_8041c81c;
 extern f32 float_5000_8041c84c;
 extern f32 float_6000_8041c850;
-extern u32 unk_80423018;
-extern u32 unk_8042301c;
-extern u32 unk_80423028;
 extern f32 float_deg2rad_8041c820;
 extern f32 float_6p2832_8041c824;
 extern f32 float_30_8041c828;
@@ -59,6 +80,8 @@ extern f32 float_640_8041c844;
 extern f32 float_105_8041c848;
 extern f32 float_2_8041c838;
 extern f32 float_0p34907_8041c83c;
+extern f32 float_neg1000_8041c82c;
+extern s32 dat_8041c7ec;
 
 typedef struct BattleStageDark {
 	u32 field_0;  //0x0
@@ -368,7 +391,7 @@ void batSpotInit(void) {
 		Vec v;
 		entry = batSpotEntry();
 		v = (Vec){0.0f, 0.0f, -50.0f};
-		v.x = 50.0f * i + -100.0f;
+		v.x = float_50_8041c834 * i + float_neg100_8041c830;
 		entry->field_4 = v;
 		entry->field_10 = (Vec){0.0f, 0.0f, 0.0f};
 		entry->field_1C = (Vec){20.0f, 20.0f, 150.0f};
@@ -388,7 +411,7 @@ void batSpotMain() {
 
     while (count-- > 0) {}
     if (wp->skipRender > 0) {
-        dispEntry(CAMERA_3D_IMAGE, -1000.0f, 0, batSpotDisp, NULL);
+        dispEntry(CAMERA_3D_IMAGE, float_neg1000_8041c82c, 0, batSpotDisp, NULL);
     }
 }
 
@@ -461,7 +484,7 @@ BattleSpotEntry* batSpotEntry(void) {
 	entry->field_4 = g[7];
 	entry->field_1C = g[8];
 	entry->field_10 = g[9];
-	entry->field_28 = batSpotEntry_28;
+	entry->field_28 = unk_8042302c;
 	entry->flags |= 1;
 
 	return entry;
@@ -486,8 +509,7 @@ typedef struct ScreenWork {
 	f32 field_0x28;    //0x28
 } ScreenWork;
 
-extern ScreenWork* screen_wp;
-extern u32 screen_evt[7];
+static ScreenWork* screen_wp;
 
 // dont_inline: without it the compiler inlines randf into tou_gamen_screen_tev
 // (the original leaves it as a call).
@@ -500,7 +522,7 @@ f32 randf(f32 min, f32 max) {
 #pragma dont_inline reset
 
 s32 screen_evt_func(void) {
-	dispEntry(8, 1000.0f, 0, screen_capture, NULL);
+	dispEntry(8, float_1000_8041c814, 0, screen_capture, NULL);
 	return 0;
 }
 
@@ -524,12 +546,12 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 	screen_wp->field_0x0 = _mapAlloc(size);
 	{
 		screen_wp->field_0x4 = 0;
-		screen_wp->field_0xC = 1.0f;
-		screen_wp->field_0x8 = 1.0f;
-		screen_wp->field_0x14 = 0.0f;
-		screen_wp->field_0x10 = 0.0f;
-		screen_wp->field_0x1C = 0.0f;
-		screen_wp->field_0x18 = 0.0f;
+		screen_wp->field_0xC = float_1_8041c7f4;
+		screen_wp->field_0x8 = float_1_8041c7f4;
+		screen_wp->field_0x14 = float_0_8041c7f0;
+		screen_wp->field_0x10 = float_0_8041c7f0;
+		screen_wp->field_0x1C = float_0_8041c7f0;
+		screen_wp->field_0x18 = float_0_8041c7f0;
 		screen_wp->field_0x20 = 0;
 		screen_wp->field_0x28 = -1.0f;
 	}
@@ -893,8 +915,20 @@ void BattleStageLightSetLightColor(s32 idx, u8 r, u8 g, u8 b, s32 frames, u8 eas
 	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
 	BattleStageLight* light = &stage->lights[idx];
 
-	light->colorFrom = (BattleStageColor){light->colorCur.r, light->colorCur.g, light->colorCur.b, 0};
-	light->colorTo = (BattleStageColor){r, g, b, 0};
+	{
+		BattleStageColor c = *(BattleStageColor*)&unk_80423020;
+		c.r = light->colorCur.r;
+		c.g = light->colorCur.g;
+		c.b = light->colorCur.b;
+		light->colorFrom = c;
+	}
+	{
+		BattleStageColor c = *(BattleStageColor*)&unk_80423024;
+		c.r = r;
+		c.g = g;
+		c.b = b;
+		light->colorTo = c;
+	}
 	light->colorFrames = frames;
 	light->colorFramesTotal = frames;
 	light->colorEase = ease;
@@ -915,7 +949,13 @@ void BattleStageLightRelease(s32 idx, s32 frames, u8 ease) {
 			light->flags = 0;
 		} else {
 			light->flags |= 2;
-			light->colorFrom = (BattleStageColor){light->colorCur.r, light->colorCur.g, light->colorCur.b, 0};
+			{
+				BattleStageColor c = *(BattleStageColor*)&unk_80423018;
+				c.r = light->colorCur.r;
+				c.g = light->colorCur.g;
+				c.b = light->colorCur.b;
+				light->colorFrom = c;
+			}
 			light->colorTo = *(BattleStageColor*)&unk_8042301c;
 			light->colorFrames = frames;
 			light->colorFramesTotal = frames;
@@ -1182,3 +1222,46 @@ void BattleStageDispLight(CameraId camId, void* param) {
 		}
 	}
 }
+
+
+// .sdata2 objects owned by this unit, in the original's order. Defined after the
+// code so MWCC emits them before its own pooled literals. dat_8041c7e8's 0xFF
+// word is the compiler's pool entry for the colour literal in
+// BattleStageLightSetLightColor, so it is not defined here as a separate object.
+__declspec(section ".sdata2") s32 dat_8041c7ec = -1;
+#pragma explicit_zero_data on
+__declspec(section ".sdata2") const f32 float_0_8041c7f0 = 0.0f;
+#pragma explicit_zero_data reset
+__declspec(section ".sdata2") const f32 float_1_8041c7f4 = 1.0f;
+__declspec(section ".sdata2") const f32 float_0p25_8041c7f8 = 0.25f;
+__declspec(section ".sdata2") const f32 float_60_8041c7fc = 60.f;
+__declspec(section ".sdata2") const f32 float_4p75_8041c800 = 4.75f;
+__declspec(section ".sdata2") const f32 float_3p75_8041c804 = 3.75f;
+__declspec(section ".sdata2") const f32 float_16_8041c808 = 16.0f;
+__declspec(section ".sdata2") const f32 float_6_8041c80c = 6.0f;
+__declspec(section ".sdata2") const f32 float_100_8041c810 = 100.f;
+__declspec(section ".sdata2") const f32 float_1000_8041c814 = 1000.f;
+__declspec(section ".sdata2") f32 float_neg1_8041c818 = -1.0f;
+__declspec(section ".sdata2") f32 float_32767_8041c81c = 32767.0f;
+__declspec(section ".sdata2") f32 float_deg2rad_8041c820 = 0.017453292f;
+__declspec(section ".sdata2") f32 float_6p2832_8041c824 = 6.2831855f;
+__declspec(section ".sdata2") f32 float_30_8041c828 = 30.f;
+__declspec(section ".sdata2") f32 float_neg1000_8041c82c = -1000.f;
+__declspec(section ".sdata2") const f32 float_neg100_8041c830 = -100.f;
+__declspec(section ".sdata2") const f32 float_50_8041c834 = 50.f;
+__declspec(section ".sdata2") f32 float_2_8041c838 = 2.0f;
+__declspec(section ".sdata2") f32 float_0p34907_8041c83c = 0.34906584f;
+__declspec(section ".sdata2") f32 float_neg640_8041c840 = -640.f;
+__declspec(section ".sdata2") f32 float_640_8041c844 = 640.f;
+__declspec(section ".sdata2") f32 float_105_8041c848 = 105.f;
+__declspec(section ".sdata2") f32 float_5000_8041c84c = 5000.f;
+__declspec(section ".sdata2") f32 float_6000_8041c850 = 6000.f;
+__declspec(section ".sdata2") const f32 float_290_8041c854 = 290.f;
+__declspec(section ".sdata2") const f32 float_200_8041c858 = 200.f;
+__declspec(section ".sdata2") const f32 float_90_8041c85c = 90.f;
+__declspec(section ".sdata2") const f32 float_neg50_8041c860 = -50.f;
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata2") u32 gap_09_8041C864_sdata2 = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
