@@ -7,6 +7,42 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 
+// .sdata vertex array (0x2C = 11 words); the trailing zero word is the section gap.
+#pragma force_active on
+__declspec(section ".sdata") u32 size300x40_tex32x32[0x2C / 4] = {
+    0x00000000, 0x00000010, 0x0000FFFF, 0xFFFF012C, 0x00140000,
+    0x00000400, 0xEBFFF500, 0x012CFFEC, 0x00000400, 0x0400EBFF, 0xF5000000,
+};
+#pragma explicit_zero_data on
+__declspec(section ".sdata") u32 gap_07_80413CCC_sdata = 0;
+#pragma explicit_zero_data reset
+#pragma force_active reset
+
+#pragma force_active on
+__declspec(section ".data") u32 size150x20_tex32x32[0x38 / 4] = {
+    0x0000000A, 0x00000000, 0x0000FFFF, 0xFFFF0000, 0xFFF60000, 0x04000000, 0xFFFFFFFF,
+    0x0096FFF6, 0x00000400, 0x0400FFFF, 0xFFFF0096, 0x000A0000, 0x00000400, 0xFFFFFFFF,
+};
+__declspec(section ".data") s32 r_data[0x140 / 4] = {
+    0x00000000, 0xFFFFFFEC, 0x00000000, 0x00000001, 0x00000012,
+    0xFFFFFFF6, 0xFFFFFFC4, 0x0000002D, 0xFFFFFFFF, 0x00000004,
+    0xFFFFFFEC, 0xFFFFFFEC, 0x0000005A, 0x00000001, 0x00000001,
+    0xFFFFFFF6, 0xFFFFFFC4, 0x00000087, 0x00000001, 0xFFFFFFFC,
+    0x00000000, 0xFFFFFFEC, 0x000000B4, 0xFFFFFFF8, 0x00000001,
+    0xFFFFFFF6, 0xFFFFFFC4, 0x000000E1, 0xFFFFFFFF, 0xFFFFFFFF,
+    0xFFFFFFEC, 0xFFFFFFEC, 0x0000010E, 0x00000001, 0xFFFFFFF7,
+    0xFFFFFFF6, 0xFFFFFFC4, 0x0000013B, 0x00000004, 0x00000004,
+    0x00000000, 0x0000000A, 0x00000016, 0x00000004, 0x00000001,
+    0xFFFFFFF6, 0x00000014, 0x00000043, 0x00000001, 0xFFFFFFFF,
+    0xFFFFFFEC, 0x0000000A, 0x00000070, 0xFFFFFFFF, 0xFFFFFFFF,
+    0xFFFFFFF6, 0x00000014, 0x0000009D, 0xFFFFFFF8, 0x00000001,
+    0x00000000, 0x0000000A, 0x000000CA, 0x00000001, 0xFFFFFFFC,
+    0xFFFFFFF6, 0x00000014, 0x000000F7, 0x00000001, 0xFFFFFFEE,
+    0xFFFFFFEC, 0x0000000A, 0x00000124, 0xFFFFFFFF, 0x00000009,
+    0xFFFFFFF6, 0x00000014, 0x00000151, 0x00000001, 0x00000001,
+};
+#pragma force_active reset
+
 // Local copy of system.c's inline helper so it inlines here (as in eff_guruguru.c).
 inline Vec initializeVec(Vec* input) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -53,7 +89,13 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		count = 9;
 	}
 
+#ifdef MUST_MATCH
+	// str_802FB490: the original object is 16 bytes, i.e. the 12-character text plus the
+	// terminator plus three zero pad bytes, so the literal spells the pad out.
+	effect->type = "RadiationN64\0\0\0";
+#else
 	effect->type = "RadiationN64";
+#endif
 	effect->count = count;
 	data = __memAlloc(HEAP_EFFECT, count * sizeof(EffRadiationData));
 	effect->userdata = data;
@@ -289,16 +331,6 @@ void effRadiationMain(EffectEntry* effect) {
 
 // .sdata2/.rodata constants and .data/.sdata vertex arrays used by effRadiationDisp
 // (original symbols from config/G8MJ01/symbols.txt).
-extern const f64 double_to_int_802fb488;
-extern const f32 float_0p03125_8041fa98;
-extern const f32 float_0_8041fa9c;
-extern const f32 float_255_8041faa0;
-extern const f32 float_deg2rad_8041faa4;
-extern const f32 float_0p25_8041faa8;
-extern const f32 float_3_8041faac;
-extern const f32 float_0p3_8041fab0;
-extern const f32 float_0p5_8041fab4;
-extern const f32 float_0p9_8041fab8;
 extern const GXColor dat_8041fa90;
 extern const GXColor dat_8041fa94;
 extern u32 size150x20_tex32x32[14];
@@ -364,7 +396,7 @@ void effRadiationDisp(CameraId camId, void* param) {
 		GXLoadTexObj(&texObj, 0);
 		GXSetNumTexGens(1);
 		GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-		PSMTXScale(scale, float_0p03125_8041fa98, float_0p03125_8041fa98, float_0_8041fa9c);
+		PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
 		GXLoadTexMtxImm(scale, 0x1e, 1);
 		break;
 	default:
@@ -383,34 +415,34 @@ void effRadiationDisp(CameraId camId, void* param) {
 
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
-		alpha = (f32)data->field_0x24 / float_255_8041faa0;
+		alpha = (f32)data->field_0x24 / 255.0f;
 
-		PSMTXRotRad(rot, 'x', float_deg2rad_8041faa4 * data->field_0x5C);
+		PSMTXRotRad(rot, 'x', 0.017453292f * data->field_0x5C);
 		PSMTXConcat(trans, rot, work);
 
 		if (type >= 2) {
-			PSMTXRotRad(rot, 'z', float_deg2rad_8041faa4 * (data->field_0x64 + (f32)(type == 3 ? 45 : 0)));
+			PSMTXRotRad(rot, 'z', 0.017453292f * (data->field_0x64 + (f32)(type == 3 ? 45 : 0)));
 			PSMTXConcat(work, rot, work);
-			PSMTXRotRad(rot, 'y', float_deg2rad_8041faa4 * data->field_0x60);
+			PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x60);
 			PSMTXConcat(work, rot, work);
-			PSMTXTrans(trans2, data->field_0x58, float_0_8041fa9c, float_0_8041fa9c);
+			PSMTXTrans(trans2, data->field_0x58, 0.0f, 0.0f);
 			PSMTXConcat(work, trans2, work);
 #ifdef MUST_MATCH
-			scaleX = float_0p25_8041faa8 * (float_3_8041faac + alpha);
-			scaleZ = float_0p25_8041faa8 * (float_3_8041faac + alpha);
+			scaleX = 0.25f * (3.0f + alpha);
+			scaleZ = 0.25f * (3.0f + alpha);
 #else
-			scaleX = float_0p25_8041faa8 * (float_3_8041faac + alpha);
+			scaleX = 0.25f * (3.0f + alpha);
 			scaleZ = scaleX;
 #endif
 			switch (i & 3) {
 			case 0:
-				scaleY = float_0p3_8041fab0 * alpha;
+				scaleY = 0.3f * alpha;
 				break;
 			case 1:
-				scaleY = float_0p5_8041fab4 * alpha;
+				scaleY = 0.5f * alpha;
 				break;
 			case 2:
-				scaleY = float_0p9_8041fab8 * alpha;
+				scaleY = 0.9f * alpha;
 				break;
 			default:
 				scaleY = alpha;
@@ -428,11 +460,11 @@ void effRadiationDisp(CameraId camId, void* param) {
 			}
 #endif
 		} else {
-			PSMTXRotRad(rot, 'y', float_deg2rad_8041faa4 * data->field_0x60);
+			PSMTXRotRad(rot, 'y', 0.017453292f * data->field_0x60);
 			PSMTXConcat(work, rot, work);
-			PSMTXRotRad(rot, 'z', float_deg2rad_8041faa4 * (data->field_0x64 + (f32)(type == 3 ? 45 : 0)));
+			PSMTXRotRad(rot, 'z', 0.017453292f * (data->field_0x64 + (f32)(type == 3 ? 45 : 0)));
 			PSMTXConcat(work, rot, work);
-			PSMTXTrans(trans2, data->field_0x58, float_0_8041fa9c, float_0_8041fa9c);
+			PSMTXTrans(trans2, data->field_0x58, 0.0f, 0.0f);
 			PSMTXConcat(work, trans2, work);
 #ifdef MUST_MATCH
 			GXSetTevColor(1, radiationSetColor(data->field_0x24, dat_8041fa94));
@@ -475,3 +507,8 @@ void effRadiationDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// .sdata2 colour constants (0xFFFFFA00 / 0xFFFFB500 as GXColor bytes). Defined after the code
+// so they stay real objects and land before the compiler's pooled float literals.
+const GXColor dat_8041fa90 = { 0xFF, 0xFF, 0xFA, 0x00 };
+const GXColor dat_8041fa94 = { 0xFF, 0xFF, 0xB5, 0x00 };

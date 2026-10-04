@@ -1028,7 +1028,13 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
                     s32 xoff = x;
 
                     if (x == 0) {
+#ifdef MUST_MATCH
+                        // The original's .rodata pools 0.8 before 0.5; splitting the product into a local reproduces that order.
+                        f32 fw = (f32)FontGetMessageWidth(msg) * 0.8f;
+                        xoff = (s32)((f32)x - fw * 0.5f);
+#else
                         xoff = (s32)((f32)x - 0.8f * (f32)FontGetMessageWidth(msg) * 0.5f);
+#endif
                     } else if (x > 0) {
                         xoff = (s32)((f32)x - 0.8f * (f32)FontGetMessageWidth(msg));
                     }

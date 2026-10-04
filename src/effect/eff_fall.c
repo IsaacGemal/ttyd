@@ -8,6 +8,7 @@
 #include "eff/n64/eff_kemuri1_n64.h"
 #include "eff/n64/eff_water_damage_n64.h"
 #include "manager/evtmgr.h"
+#include "evt/evt_cam.h"
 #include <dolphin/os/OSCache.h>
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
@@ -15,6 +16,61 @@
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u8 lbl_803ADD20[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+
+// Float-pair anchors at .data+0x8..0x40. The original names the local ones `negone_one$374` etc.;
+// no code references them, so `force_active` keeps them. The following shibuki tables are reached
+// from effFallDispWater through lbl_803ADD20 as the common base register.
+#pragma force_active on
+__declspec(section ".data") static u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_803ADD30[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 lbl_803ADD40[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_803ADD50[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 shibuki_vertex_tbl[64] = {
+	0xC94403B2, 0xF600E345, 0x03B2F600, 0xFD4703B2, 0xF6001747, 0x03B2F600,
+	0x314903B2, 0xF600BC47, 0x1CF9F600, 0xE03E29DD, 0xF600FD47, 0x2FEFF600,
+	0x1A4E29DD, 0xF6003E46, 0x1CF9F600, 0xA5C72D0F, 0xF600D2C7, 0x48A2F600,
+	0xFD474FCF, 0xF6002A46, 0x48A2F600, 0x54C62D0F, 0xF600C647, 0x0F30F600,
+	0xE2590F52, 0xF600FD47, 0x0F52F600, 0x18330F52, 0xF60033CE, 0x0F52F600,
+	0xB4A4226F, 0xF600D9AE, 0x38DCF600, 0xFD473F71, 0xF600227F, 0x39A5F600,
+	0x45E8226F, 0xF600CF07, 0x0000F240, 0x01060000, 0xF2403306, 0x0000F240,
+	0xCF0706A6, 0xF2400106, 0x0FA6F240, 0x330606A6, 0xF240CF07, 0x134CF240,
+	0x01061F4C, 0xF2403306, 0x134CF240, 0x2925174C, 0xF24028C7, 0x0AA6F240,
+	0x28E40000, 0xF240D8CB, 0x174CF240, 0xD8DB0AA6, 0xF240D8EA, 0x0000F240,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+__declspec(section ".data") u32 shibuki_texcoord0_tbl[40] = {
+	0x00002EF2, 0x100031CD, 0x10003999, 0x00003999, 0x200032DF, 0x20003999,
+	0x300031CD, 0x30003999, 0x40002EF2, 0x40003999, 0x00000666, 0x10000666,
+	0x10001385, 0x00001750, 0x20000666, 0x2000138B, 0x30000666, 0x300012DE,
+	0x40000666, 0x40001750, 0x00002000, 0x10002000, 0x20002000, 0x30002000,
+	0x40002000, 0xF36C2000, 0xC0002000, 0xC0004000, 0xF3584000, 0x32E22000,
+	0x40004000, 0x33084000, 0xF3800000, 0xC0000000, 0x335B0000, 0x40000000,
+	0x00000000, 0x00004000, 0x00000000, 0x00000000,
+};
+__declspec(section ".data") u32 shibuki_dl_0_0[16] = {
+	0x98000A0A, 0x00000A0B, 0x00000B14, 0x00000D15, 0x00020C05, 0x00001406,
+	0x0003150F, 0x00000010, 0x00010100, 0x00000301, 0x00000200, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+__declspec(section ".data") u32 shibuki_dl_0_1[16] = {
+	0x98000A0B, 0x00000B0C, 0x00000E15, 0x00020C16, 0x00020F06, 0x00031507,
+	0x00031610, 0x00010111, 0x00010401, 0x00000202, 0x00000500, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+__declspec(section ".data") u32 shibuki_dl_0_2[16] = {
+	0x98000A0C, 0x00000E0D, 0x00001016, 0x00020F17, 0x00021107, 0x00031608,
+	0x00031711, 0x00010412, 0x00010602, 0x00000503, 0x00000700, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+__declspec(section ".data") u32 shibuki_dl_0_3[16] = {
+	0x98000A0D, 0x0000100E, 0x00001217, 0x00021118, 0x00001308, 0x00031709,
+	0x00001812, 0x00010613, 0x00000803, 0x00000704, 0x00000900, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+#pragma force_active reset
 
 extern const f32 float_deg2rad_80420f70;
 extern const f32 float_6p2832_80420fa4;
@@ -97,6 +153,7 @@ extern const f32 float_40_80421050;
 __declspec(section ".sdata2") extern const char str_80421018[];
 __declspec(section ".sdata2") extern const char str_8042102C[];
 __declspec(section ".sdata2") extern const char str_80421054[];
+__declspec(section ".sdata2") extern const char str_80421058[];
 extern const char str_802FE488[];
 extern const char str_802FE4A0[];
 extern const char str_802FE4B8[];
@@ -109,13 +166,36 @@ extern const char str_802FE554[];
 extern const char str_802FE560[];
 extern const char str_802FE56C[];
 extern const char str_802FE578[];
-__declspec(section ".sdata") extern s32 evt_shake[];
-__declspec(section ".sdata") extern u8 shibuki_normal_tbl[];
-__declspec(section ".sdata") extern u8 shibuki_color0_tbl[];
-__declspec(section ".sdata") extern u8 shibuki_dl_1_0[];
-__declspec(section ".sdata") extern u8 shibuki_dl_1_1[];
-__declspec(section ".sdata") extern u8 shibuki_dl_1_2[];
-__declspec(section ".sdata") extern u8 shibuki_dl_1_3[];
+// .sdata tables and the shake event script. `shibuki_normal_tbl`/`shibuki_color0_tbl` are the
+// GXSetArray sources; `evt_shake` is the local event script (the original names it local).
+__declspec(section ".sdata") u32 shibuki_normal_tbl[8] = {
+	0x00004000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000,
+};
+__declspec(section ".sdata") u32 shibuki_color0_tbl[8] = {
+	0xFFFFFF00, 0xFFFFFF7F, 0xFFFFFF19, 0xFFFFFF4C, 0xB6CCCB33, 0xB6CCCB4C,
+	0xB6CCCB99, 0xB6CCCB00,
+};
+__declspec(section ".sdata") u32 shibuki_dl_1_0[8] = {
+	0x9800061F, 0x00072425, 0x0004201C, 0x00071426, 0x00041919, 0x00072527,
+	0x00061C00, 0x00000000,
+};
+__declspec(section ".sdata") u32 shibuki_dl_1_1[8] = {
+	0x98000620, 0x00042422, 0x0004221D, 0x00051423, 0x00041D1A, 0x00062524,
+	0x00061F00, 0x00000000,
+};
+__declspec(section ".sdata") u32 shibuki_dl_1_2[8] = {
+	0x98000622, 0x00042221, 0x00072323, 0x00041D1E, 0x00071824, 0x00061F1B,
+	0x00071E00, 0x00000000,
+};
+__declspec(section ".sdata") u32 shibuki_dl_1_3[8] = {
+	0x98000625, 0x00042020, 0x00042126, 0x0004191D, 0x00051A27, 0x00061C1A,
+	0x00061B00, 0x00000000,
+};
+__declspec(section ".sdata") static u32 evt_shake[8] = {
+	0x0005005B, (u32)evt_cam_shake, 0x00000004, 0xF24A7A8A,
+	0xF24A7A8A, 0x0000012C, 0x00000002, 0x00000001,
+};
 const Vec vec3_802fe418 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802fe424 = { 0.0f, 0.0f, 0.0f };
 const Vec dat_802fe430[4] = {
@@ -140,7 +220,6 @@ const char str_802FE554[] = "EFF_Tarai";
 const char str_802FE560[] = "EFF_koopa";
 const char str_802FE56C[] = "EFF_inseki";
 const char str_802FE578[] = "EFF_light";
-const char str_80421058[] = "Fall";
 const char str_802FE584[] = "SFX_BTL_STAGE_FALL_WATER1";
 
 s32 effFallCheckHit(EffectEntry* effect) {
@@ -1549,3 +1628,90 @@ void effFallDisp(CameraId cameraId, void* param) {
 		}
 	}
 }
+
+// 4-byte zero word that ends the unit's .data (after the compiler's switch jump tables): an all-zero
+// object needs explicit_zero_data to stay in .data and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_803AE094_data[1] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+// .sdata2 objects, in the original address order. Defined after the code so the compiler does not
+// fold their values into the functions; the code loads each by name.
+const GXColor dat_80420f48 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_80420f4c = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_80420f50 = { 0x00, 0x00, 0x00, 0xFF };
+const GXColor dat_80420f54 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80420f58 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_80420f5c = { 0x00, 0x00, 0x00, 0xFF };
+const GXColor dat_80420f60 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80420f64 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_80420f68 = { 0xFF, 0xFF, 0xFF, 0x00 };
+const GXColor dat_80420f6c = { 0xFF, 0xFF, 0xFF, 0xFF };
+const f32 float_deg2rad_80420f70 = 0.017453292f;
+const f32 float_64_80420f74 = 64.0f;
+const f32 float_704_80420f78 = 704.0f;
+const f32 float_0p5_80420f7c = 0.5f;
+const f32 float_1_80420f80 = 1.0f;
+const f32 float_0_80420f84 = 0.0f;
+const f32 float_2_80420f88 = 2.0f;
+const f32 float_0p56_80420f8c = 0.56f;
+const f32 float_0p4_80420f90 = 0.4f;
+const f32 float_0p8_80420f94 = 0.8f;
+const f32 float_0p125_80420f98 = 0.125f;
+const f32 float_0p7_80420f9c = 0.7f;
+const f32 float_0p25_80420fa0 = 0.25f;
+const f32 float_6p2832_80420fa4 = 6.2831855f;
+const f32 float_360_80420fa8 = 360.0f;
+const f32 float_2p05_80420fac = 2.05f;
+const f32 float_10_80420fb0 = 10.0f;
+const f32 float_2p1_80420fb4 = 2.1f;
+const f32 float_42p667_80420fb8 = 42.666668f;
+const f32 float_0p33333_80420fbc = 0.33333334f;
+const f32 float_180_80420fc0 = 180.0f;
+const f32 float_neg200_80420fc4 = -200.0f;
+const f32 float_200_80420fc8 = 200.0f;
+const f32 float_neg82p655_80420fcc = -82.655f;
+const f32 float_88p8_80420fd0 = 88.8f;
+const f32 float_1p03_80420fd4 = 1.03f;
+const f32 float_82p655_80420fd8 = 82.655f;
+const f32 float_neg88p8_80420fdc = -88.8f;
+const f32 float_30_80420fe0 = 30.0f;
+const f32 float_neg0p3_80420fe4 = -0.3f;
+const f32 float_35_80420fe8 = 35.0f;
+const f32 float_62p832_80420fec = 62.831856f;
+const f32 float_60_80420ff0 = 60.0f;
+const f32 float_16_80420ff4 = 16.0f;
+const f32 float_neg16_80420ff8 = -16.0f;
+const f32 float_128_80420ffc = 128.0f;
+const f32 float_8p5333_80421000 = 8.533334f;
+const f32 float_0p066667_80421004 = 0.06666667f;
+const f32 float_600_80421008 = 600.0f;
+const f32 float_0p9_8042100c = 0.9f;
+const f32 float_0p01_80421010 = 0.01f;
+const f32 float_0p2_80421014 = 0.2f;
+__declspec(section ".sdata2") const char str_80421018[4] = "Z_1";
+const f32 float_neg0p5_8042101c = -0.5f;
+const f32 float_430_80421020 = 430.0f;
+const f32 float_neg27_80421024 = -27.0f;
+const f32 float_80_80421028 = 80.0f;
+__declspec(section ".sdata2") const char str_8042102C[4] = "Z_2";
+const f32 float_5_80421030 = 5.0f;
+const f32 float_0p00761_80421034 = 0.00761f;
+const f32 float_0p16605_80421038 = 0.16605f;
+const f32 float_3p1416_8042103c = 3.1415927f;
+const f32 float_1p5708_80421040 = 1.5707964f;
+const f32 float_4p7124_80421044 = 4.712389f;
+const f32 float_0p03705_80421048 = 0.03705f;
+const f32 float_0p4967_8042104c = 0.4967f;
+const f32 float_40_80421050 = 40.0f;
+__declspec(section ".sdata2") const char str_80421054[4] = "A_1";
+__declspec(section ".sdata2") const char str_80421058[8] = "Fall";
+const f32 float_300_80421060 = 300.0f;
+const f32 float_1p2_80421064 = 1.2f;
+const f32 float_1p6_80421068 = 1.6f;
+const f32 float_0p1_8042106c = 0.1f;
+const f32 float_0p6_80421070 = 0.6f;
+const f32 float_1p3_80421074 = 1.3f;
+const f32 float_400_80421078 = 400.0f;
