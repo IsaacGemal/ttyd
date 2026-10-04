@@ -4603,3 +4603,8 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   follow-up was refused (mot_ship 99.76 -> 99.62), its second failure: queued for Codex. win_04 made no change
   (flower_disp 99.92, register-only; in the permuter's queue q29); its agent ran decomp-permuter -j 14 in the background,
   which AGENT_BRIEF now forbids (no nohup/&, no private permuter clones, -j <= 2).
+- **Batch 21:** win_main's second data pass (one measure improved; its float_0p5_8041dc98 was a non-const volatile so every use
+  reloads, now a plain const read through MATCH_F32, identical code) and eki_00's audit (its ext_moamoa_main row was
+  misalignment). No change: evt_yuutitle (99.80), eff_booboo_n64 and tou2 (data already done). Wave 75 arm M (15:57):
+  the ext_moamoa_main group task on eki_00's copy (96.9%; rsh_06 89.4% and rsh_05 86.7% reserved as `grp` for the
+  carry-over tasks), base from this branch.

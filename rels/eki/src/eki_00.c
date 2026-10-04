@@ -1711,9 +1711,9 @@ static inline f32 ekiCosfM(f32 rad) {
 }
 
 #define MOA_TARGET(i) ((&wp->field_0x14)[(i) % 3])
-// NONMATCHING (96.82%): FPR/GPR colouring and scheduling in the inlined ekiSinf/ekiCosf/randf bodies. Hoisting the
-// inlined randf and rad additions, spelling the case 0x2 angle's randf as the explicit `randf` expansion, and
-// picking which randf of each moamoa_jump pair is hoisted all match retail; opt_propagation/opt_lifetimes off.
+// NONMATCHING (96.85%): FPR/GPR colouring and scheduling in the inlined ekiSinf/ekiCosf/randf bodies. Hoisting the
+// inlined randf and rad additions, spelling the case 0x2 angle's randf as the explicit `randf` expansion, picking
+// which randf of each moamoa_jump pair is hoisted, and the case 0x34 branch temp all match retail.
 static void ext_moamoa_main(void) {
     MarioWork* mario;
     PartyEntry* party;
@@ -1847,13 +1847,13 @@ static void ext_moamoa_main(void) {
         switch (pose->field_0x02) {
         case 0x0:
             if (i % 50 < 0x14) {
-                f32 tx, tz, rad, ar, br;
+                f32 dist, tx, ntx, ntz, ty, tz, rad, ar, br;
                 f32 ang = randf(0.0f, 6.2831855f);
                 f32 len = randf(0.0f, 50.0f);
 
-                tx = len * ekiSinfM(ang) + MOA_TARGET(i).x;
-                tz = -(len * ekiCosfM(ang) - MOA_TARGET(i).z);
-                rad = 6.2831855f * angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], tx, tz) / 360.0f;
+                ntx = len * ekiSinfM(ang) + MOA_TARGET(i).x;
+                ntz = -(len * ekiCosfM(ang) - MOA_TARGET(i).z);
+                rad = 6.2831855f * angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], ntx, ntz) / 360.0f;
                 tx = 15.0f * ekiSinfM(rad) + ep->matrix[0][0][3];
                 ty = ep->matrix[0][1][3];
                 tz = -(15.0f * ekiCosfM(rad) - ep->matrix[0][2][3]);
@@ -1862,7 +1862,7 @@ static void ext_moamoa_main(void) {
                 moamoa_jump(ep, pose, pose->field_0x02, 1, tx, ty, tz, ar * 1.5f + 1.5f, br * 1.2f + 0.8f);
                 pose->flags |= 0x1;
             } else {
-                f32 ang, rad, ar, br;
+                f32 dist, rad, ang, tz, ar, br;
 
                 dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z);
                 ang = angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], MOA_TARGET(i).x, MOA_TARGET(i).z);
@@ -1886,14 +1886,30 @@ static void ext_moamoa_main(void) {
             }
             break;
         case 0x33: {
-            f32 f, dist;
+            f32 rad, tx, f, dist;
 
             pose->field_0x1C = randf(0.0f, 200.0f);
             pose->field_0x20 = randf(0.0f, 300.0f * pose->field_0x1C / 200.0f);
             pose->field_0x02++;
             pose->field_0x04 = 0;
             /* fallthrough */
-        case 0x34:
+        case 0x34: {
+#ifdef MUST_MATCH
+            // The branch keeps its result in a temp and copies it to f at the join; writing f directly
+            // coalesces the two and shifts the FP colouring for the rest of the case.
+            f32 ft;
+
+            if (pose->field_0x04 < 200) {
+                ft = 1.0f;
+            } else {
+                ft = (f32)(800 - pose->field_0x04) / 600.0f;
+            }
+            f = ft;
+            if (ft < 0.0f) {
+                f = 0.0f;
+                pose->flags |= 0x200;
+            }
+#else
             if (pose->field_0x04 < 200) {
                 f = 1.0f;
             } else {
@@ -1903,6 +1919,7 @@ static void ext_moamoa_main(void) {
                 f = 0.0f;
                 pose->flags |= 0x200;
             }
+#endif
             tx = MOA_TARGET(i).x;
             ty = MOA_TARGET(i).y;
             tz = MOA_TARGET(i).z;
@@ -1915,6 +1932,7 @@ static void ext_moamoa_main(void) {
             ep->matrix[0][2][3] += (tz - ep->matrix[0][2][3]) / 15.0f;
             pose->field_0x04++;
             break;
+        }
         }
         case 0x1: {
             f32 dist, rad;
@@ -1936,7 +1954,7 @@ static void ext_moamoa_main(void) {
             break;
         }
         case 0x2: {
-            f32 dist, rad, a, b;
+            f32 r1, rad, a, b;
 
             {
                 f32 rr;
@@ -1989,7 +2007,7 @@ static void ext_moamoa_main(void) {
         case 0x24:
         case 0x25:
         case 0x26: {
-            f32 rad;
+            f32 tz, rad;
 
             if (!(pose->flags & 0x1)) {
                 tx = mario->position.x;
@@ -2094,7 +2112,7 @@ static void ext_moamoa_main(void) {
             }
             break;
         case 0x1B: {
-            f32 rad;
+            f32 ;
 
             if (__fabsf(ep->matrix[0][0][3]) < 300.0 && __fabsf(ep->matrix[0][2][3]) < 300.0) {
                 r1 = (f32)rand() / 32767.0f;
