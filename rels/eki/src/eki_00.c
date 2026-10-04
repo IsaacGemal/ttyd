@@ -1711,9 +1711,9 @@ static inline f32 ekiCosfM(f32 rad) {
 }
 
 #define MOA_TARGET(i) ((&wp->field_0x14)[(i) % 3])
-// NONMATCHING (97.01%): calls, immediates and pool match; 256 `!!` are register colouring and scheduling in the
-// inlined ekiSinf/ekiCosf/randf bodies, plus `handled` in r24 / `voiceSfx` in r25 (retail swaps them and
-// materialises the string address straight into r24; ours goes through r0 and an extra `mr`). Case 0x1B's `rad` is block-local (volatile FPR like retail).
+// NONMATCHING (97.04%): calls and immediates match and every register web colours as retail's; what is left is scheduling
+// around the 0.5f and Vec constants (retail addresses them as named rodata objects) and the inlined ekiSinf/ekiCosf/randf bodies.
+// voiceSfx is a union under MUST_MATCH so it is not copy-propagated (as yuu_01 fall_rtn): that puts it in r24 and `handled` in r25.
 static void ext_moamoa_main(void) {
     MarioWork* mario;
     PartyEntry* party;
@@ -1722,7 +1722,11 @@ static void ext_moamoa_main(void) {
     s32 i;
     s32 j;
     s32 handled;
+#ifdef MUST_MATCH
+    union { const char* p; u32 u; } voiceSfx;
+#else
     const char* voiceSfx;
+#endif
     s32 voicePlayed;
     f32 rad;
     f32 tx;
@@ -1790,7 +1794,11 @@ static void ext_moamoa_main(void) {
     voicePlayed = 0;
     pose = wp->poses;
     for (i = 0; i < wp->poseNum; i++, ep++, pose++) {
+#ifdef MUST_MATCH
+        voiceSfx.p = "SFX_STG6_MOAMOA_VOICE1";
+#else
         voiceSfx = "SFX_STG6_MOAMOA_VOICE1";
+#endif
         wp->field_0x550 = angleABf(mario->position.x, mario->position.z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
         wp->field_0x554 = distABf(mario->position.x, mario->position.z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
         if ((wp->field_0x00 & 0x1) && !(wp->field_0x00 & 0x4) && marioKeyOffChk() == 0 && marioCtrlOffChk() == 0
@@ -1842,7 +1850,12 @@ static void ext_moamoa_main(void) {
         if ((wp->field_0x00 & 0x1) && !(pose->flags & 0x444) && (u32)i == gp->retraceCount % wp->poseNum
             && irand(1000) < 200) {
             v = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_00008914);
+            #ifdef MUST_MATCH
+            psndSFXOn_3D((const char*)(u32)voiceSfx.p, &v);
+#else
             psndSFXOn_3D(voiceSfx, &v);
+#endif
+
         }
         switch (pose->field_0x02) {
         case 0x0:
