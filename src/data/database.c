@@ -239,25 +239,25 @@ static inline MapAttrData* findMapAttr(const char* name) {
     return p;
 }
 
-// NONMATCHING (99.78%): the attribute-table helper above makes attr r28, dead r29 and the string base r31 match
-// the original; only `flag`/`ai`/`j` are swapped (the target keeps flag in r27, fbat's old register, and ai/j in
-// r24, mapName's old register; ours is the reverse). Every instruction and stack slot is otherwise identical.
+#pragma opt_lifetimes off // with the default live-range splitting the callee-saved colours come out swapped
+// The declaration order below gives the original's callee-saved colours: flag in r27 and npcIndex in r26
+// (the natural order splits their live ranges the other way).
 void setupDataBase(const char* areaName, const char* mapName) {
-    FieldBattleData* fbat;
-    NpcDeadInfo* dead;
-    MapAttrData* attr;
-    NpcAiInfo* ai;
-    MapAttrData* attr2;
-    MapAttrData* attr3;
-    s32 npcIndex;
     NpcTribeInfo* tribe;
-    NpcEntry* npc;
-    AreaData* area;
-    NpcDeadInfo tmp;
-    s32 i;
-    char* deadMap;
+    FieldBattleData* fbat;
     s32 flag;
+    s32 npcIndex;
+    NpcDeadInfo tmp;
+    NpcDeadInfo* dead;
+    MapAttrData* attr3;
+    MapAttrData* attr;
+    NpcEntry* npc;
+    s32 i;
+    AreaData* area;
+    char* deadMap;
     s32 j;
+    MapAttrData* attr2;
+    NpcAiInfo* ai;
     char name[64];
     char tribeName[64];
     char aitype[64];
@@ -274,11 +274,6 @@ void setupDataBase(const char* areaName, const char* mapName) {
     f32 homingAngle;
 
     fbat = fbatGetPointer();
-#ifdef MUST_MATCH
-    // Dead store: it fixes which callee-saved registers MWCC picks for the whole function below (the natural
-    // form, without it, miscolours attr/dead/the string base).
-    attr = (MapAttrData*)_map_attr_data;
-#endif
     dead = fbat->deadInfo;
     deadMap = fbat->deadInfo[1].mapName;
 
@@ -405,6 +400,7 @@ no_ai:
     }
     parsePop();
 }
+#pragma opt_lifetimes reset
 // clang-format on
 
 // The original keeps these four .sdata2 words as named symbols; see config/G8MJ01/symbols.txt.

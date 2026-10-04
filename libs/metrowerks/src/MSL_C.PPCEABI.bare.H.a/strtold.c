@@ -7,6 +7,7 @@
 #include "MSL_C/MSL_Common_Embedded/Math/fdlibm.h"
 
 extern double __dec2num(const decimal* d);
+extern const char str_803025CC[12];
 
 extern int __extended_min[];
 extern int __extended_max[];
@@ -130,7 +131,10 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
 
             case infin_state: {
                 int i = 1;
-                char model[] = "INFINITY";
+                // Copy through the named object so it stays a 12-byte entry in .rodata.
+                typedef struct { char b[9]; } model_t;
+                char model[9];
+                *(model_t*)model = *(model_t*)str_803025CC;
 
                 while ((i < 8) && (_toupper(c) == model[i])) {
                     i++;
@@ -553,3 +557,8 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
         return *dbl;
     }
 }
+
+// The "INFINITY" string literal, emitted as a 12-byte .rodata object.
+#pragma force_active on
+const __declspec(section ".rodata") char str_803025CC[12] = "INFINITY";
+#pragma force_active reset

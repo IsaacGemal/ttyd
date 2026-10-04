@@ -4631,3 +4631,12 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   battle_audience_kinopio. From now on a unit whose data was ported once goes straight to arm L: the leftover gap is
   usually the unmatched function's pool order and closes with it (Claude #1). Stopping a launcher I started, letting
   its agents finish, is ordinary wave management; the reaper, its limits, the sandbox and load gates are Isaac's.
+- **Batch 25:** database linked (wave 76 arm L, the second); data ports for strtold and mot_jabara; AGENT_BRIEF gains the
+  early-parameter-save lever (a dead `(s64)(s32)` cast round trip at the first use, from npcSetStayPose/TalkPose).
+  ext_moamoa_main group, first task (eki_00's copy): 96.93 -> 97.01 and now structurally correct (diff_shape: 85/85 calls,
+  every immediate and float symbol matches; 257 register-colouring differences left), so eki_00's copy goes to the
+  register lane (Claude #3's mwccdbg / the permuter) and wave 75 arm C (17:34) carries its structure to rsh_06 (89.38)
+  and rsh_05 (86.65). Routing: repeat failures are flagged by class: data/pool/link to Codex (5 for 5 today), pure
+  register colouring to the permuter and mwccdbg. eff_kemuri's blocker is pool interleaving (four anonymous literals at
+  the .sdata2 tail), a hold after Codex's miss; mot_ship is register class, with Claude #3. Arm D: a unit whose data
+  was ported once goes straight to arm L (wave 76: party_yoshi's and kinopio's second passes regressed).
