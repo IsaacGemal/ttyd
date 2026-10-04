@@ -11,8 +11,9 @@ Reads the agent's JSON event log (tool_execution_start events: bash commands, an
   BACKGROUND      nohup, setsid, disown, screen, tmux, at/batch/crontab, or a command backgrounded with `&`
   HOST-SERVICE    docker/podman/containerd, systemctl/systemd-run, D-Bus or X clients: ways past the sandbox
   SIGNAL          pkill/killall, `kill $(pgrep ...)`, `pgrep | xargs kill`, kill -1 or a negative pid
-  EVENTS-CORRUPT  an unparseable line in the event log, except one right before the launcher's marker for a pass that
-                  timed out (cut off mid-write); logs without markers (older launchers) may end in one such line
+  EVENTS-CORRUPT  an unparseable line, except one truncated final line at a timeout boundary in the host's sibling
+                  passes.txt (byte offset, exit code and host timeout flag). Legacy logs without that file retain marker
+                  and marker-free final-line tolerance. Recovered calls are audited; malformed actual tool events always fail
   ASSIGN-OUTSIDE  a shell variable set to a path under /home outside WORKSPACE, BASE and the shared read-only paths
                   (reported, not counted: a hint that it may be used to write)
   READ-OUTSIDE    a read of a path under /home, /root, /etc, /var, /opt, /srv, /mnt, /media or /run outside
@@ -26,6 +27,7 @@ import posixpath
 import re
 import shlex
 import sys
+from pathlib import Path
 
 HOME = "/home/isaac"
 WRITE_CMDS = {"cp", "mv", "mkdir", "rm", "rmdir", "touch", "tee", "rsync", "ln", "install", "dd", "truncate", "chmod",
@@ -358,58 +360,223 @@ def audit_shell(cmd, ws, cwd=None, depth=0):
     return flags
 
 
-def audit(events, ws):
+def tool_flags(e, ws, n):
+    """Audit a parsed event, including events recovered from a damaged line."""
+    if not isinstance(e, dict) or e.get("type") != "tool_execution_start":
+        return []
+    tool, args = e.get("toolName"), e.get("args") or {}
+    if not isinstance(args, dict):
+        return [("EVENTS-CORRUPT", n, "tool call arguments are not an object")]
+    if tool in ("write", "edit", "read"):
+        p = args.get("path", "")
+        if p and outside(p, ws):
+            return [("READ-OUTSIDE" if tool == "read" else "WRITE-OUTSIDE", n, f"{tool} {p}")]
+        return []
+    full = args.get("command", "")
+    if not full:
+        return []
+    short = full if len(full) < 200 else full[:200] + "..."
+    kinds = []
+    for kind, _ in audit_shell(full, ws):
+        if kind not in kinds:
+            kinds.append(kind)
+    if "WRITE-OUTSIDE" in kinds and "READ-OUTSIDE" in kinds:
+        kinds.remove("READ-OUTSIDE")
+    return [(k, n, short) for k in kinds]
+
+
+# Decode only plausible objects, charging the entire suffix against a linear work budget. A damaged nested
+# prefix can otherwise cause raw_decode to rescan the same megabytes once for every opening brace.
+OBJECT_START = re.compile(r'\{\s*"')
+JSON_STRING = r'"(?:[^"\\]|\\.)*"'
+TYPE_ATOM = JSON_STRING + r'|(?:[A-Za-z0-9_]|\\u[0-9a-fA-F]{4})+'
+TYPE_VALUE = TYPE_ATOM + r'|"(?:[^"\\]|\\.)*$'
+TYPE_PAIR = re.compile(r'(?:\{|,)\s*(' + TYPE_ATOM + r')\s*:\s*(' + TYPE_VALUE + r')')
+NUMBER = r'-?(?:0|[1-9][0-9]*)'
+JSON_NUMBER = re.compile(NUMBER + r'(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?')
+NUMBER_PREFIX = re.compile(r'-|' + NUMBER + r'\.[0-9]*|' + NUMBER + r'(?:\.[0-9]+)?[eE][+-]?[0-9]*')
+
+
+def json_object_prefix(line):
+    """Recognize an unfinished prefix of a JSON object in linear time, without recursive decoding."""
+    i, size = 0, len(line)
+    stack = []
+    while i < size and line[i] in ' \t\r\n':
+        i += 1
+    if i == size or line[i] != '{':
+        return False
+    stack.append('key_or_end')
+    i += 1
+    while True:
+        while i < size and line[i] in ' \t\r\n':
+            i += 1
+        if i == size:
+            return bool(stack)
+        if not stack:
+            return False  # a complete object followed by garbage cannot be a timeout cut
+        state, char = stack[-1], line[i]
+        if state in ('key_or_end', 'array_value_or_end', 'object_comma', 'array_comma'):
+            end = '}' if state in ('key_or_end', 'object_comma') else ']'
+            if char == end:
+                stack.pop()
+                i += 1
+                continue
+        if state in ('object_comma', 'array_comma'):
+            if char != ',':
+                return False
+            stack[-1] = 'key' if state == 'object_comma' else 'array_value'
+            i += 1
+            continue
+        if state == 'colon':
+            if char != ':':
+                return False
+            stack[-1] = 'object_value'
+            i += 1
+            continue
+        key = state in ('key', 'key_or_end')
+        stack[-1] = 'colon' if key else ('object_comma' if state == 'object_value' else 'array_comma')
+        if char == '"':
+            i += 1
+            while i < size:
+                char = line[i]
+                i += 1
+                if char == '"':
+                    break
+                if ord(char) < 32:
+                    return False
+                if char == '\\':
+                    if i == size:
+                        return True
+                    escape = line[i]
+                    i += 1
+                    if escape == 'u':
+                        for _ in range(4):
+                            if i == size:
+                                return True
+                            if line[i] not in '0123456789abcdefABCDEF':
+                                return False
+                            i += 1
+                    elif escape not in '"\\/bfnrt':
+                        return False
+            else:
+                return True
+            continue
+        if key:
+            return False
+        if char in '{[':
+            stack.append('key_or_end' if char == '{' else 'array_value_or_end')
+            i += 1
+            continue
+        if char in '-0123456789':
+            start = i
+            while i < size and line[i] in '-+0123456789.eE':
+                i += 1
+            token = line[start:i]
+            if JSON_NUMBER.fullmatch(token):
+                continue
+            return i == size and NUMBER_PREFIX.fullmatch(token) is not None
+        literal = {'t': 'true', 'f': 'false', 'n': 'null'}.get(char)
+        if literal is None:
+            return False
+        remaining = line[i:i + len(literal)]
+        if remaining != literal:
+            return i + len(remaining) == size and literal.startswith(remaining)
+        i += len(literal)
+
+
+def recover_events(line, ws, n):
+    """Recover calls and identify actual type keys (including JSON escapes), with bounded decode work."""
+    flags, has_tool, capped = [], False, False
+    for pair in TYPE_PAIR.finditer(line):
+        try:
+            atoms = [atom if atom.startswith('"') else '"' + atom + '"' for atom in pair.groups()]
+            # A cut immediately after the complete tool type's text still identifies a tool event.
+            if not atoms[1].endswith('"'):
+                atoms[1] += '"'
+            key, value = map(json.loads, atoms)
+            if key == "type" and value == "tool_execution_start":
+                has_tool = True
+        except ValueError:
+            pass
+    decoder = json.JSONDecoder()
+    budget = 4 * len(line)
+    for start in OBJECT_START.finditer(line):
+        budget -= len(line) - start.start()
+        if budget < 0:
+            capped = True
+            break
+        try:
+            e, _ = decoder.raw_decode(line, start.start())
+        except (ValueError, RecursionError):
+            continue
+        if isinstance(e, dict) and e.get("type") == "tool_execution_start":
+            has_tool = True
+        flags += tool_flags(e, ws, n)
+    return flags, has_tool, capped
+
+
+def audit(events, ws, passes=None):
+    """Read physical lines, splitting at host (byte offset, exit code, timeout fired) pass ends.
+
+    Two-column boundary files remain readable but cannot prove a timeout. Only logs without passes.txt get the
+    legacy timeout-marker and single marker-free final-garbled-line tolerances. Byte splitting also handles partial UTF-8.
+    """
     ws = ws.rstrip("/")
     flags = []
-    bad = []  # unparseable lines: the agent can append to its own log, so a garbled line may hide a command
-    order = []  # non-blank lines in order: ("bad", n) or ("marker", rc) or ("ok", n)
-    for n, line in enumerate(events, 1):
-        if not line.strip():
-            continue
-        try:
-            e = json.loads(line)
-        except ValueError:
-            bad.append(n)
-            order.append(("bad", n))
-            continue
-        if isinstance(e, dict) and e.get("type") == "launcher_pass_end":
-            order.append(("marker", e.get("rc")))
-            continue
-        order.append(("ok", n))
-        if not isinstance(e, dict) or e.get("type") != "tool_execution_start":
-            continue
-        tool, args = e.get("toolName"), e.get("args") or {}
-        if tool in ("write", "edit"):
-            p = args.get("path", "")
-            if p and outside(p, ws):
-                flags.append(("WRITE-OUTSIDE", n, f"{tool} {p}"))
-            continue
-        if tool == "read":
-            p = args.get("path", "")
-            if p and outside(p, ws):
-                flags.append(("READ-OUTSIDE", n, f"read {p}"))
-            continue
-        full = args.get("command", "")
-        if not full:
-            continue
-        short = full if len(full) < 200 else full[:200] + "..."
-        kinds = []
-        for kind, _ in audit_shell(full, ws):
-            if kind not in kinds:
-                kinds.append(kind)
-        if "WRITE-OUTSIDE" in kinds and "READ-OUTSIDE" in kinds:
-            kinds.remove("READ-OUTSIDE")
-        flags += [(k, n, short) for k in kinds]
-    if any(k == "marker" for k, _ in order):
-        # the launcher marks every pass's end; a pass killed by its timeout (124, or 137 after -k) may leave one
-        # half-written line right before its marker, and nothing else may be garbled
-        unexplained = [n for i, (k, n) in enumerate(order) if k == "bad"
-                       and not (i + 1 < len(order) and order[i + 1][0] == "marker" and order[i + 1][1] in (124, 137))]
-    else:
-        unexplained = bad if len(bad) > 1 or (bad and order[-1] != ("bad", bad[0])) else []
-    if unexplained:
-        flags.append(("EVENTS-CORRUPT", unexplained[0],
-                      f"{len(unexplained)} unparseable line(s) in the event log (first: line {unexplained[0]})"))
+    boundaries = []
+    try:
+        for p in (() if passes is None else passes):
+            if len(p) not in (2, 3) or any(type(v) is not int for v in p):
+                raise ValueError
+            end, rc = p[:2]
+            fired = p[2] if len(p) == 3 else 0
+            if end < 0 or not 0 <= rc <= 255 or fired not in (0, 1) or (boundaries and end < boundaries[-1][0]):
+                raise ValueError
+            boundaries.append((end, rc, fired))
+    except (ValueError, TypeError):
+        flags.append(("EVENTS-CORRUPT", 0, "invalid pass boundaries"))
+        boundaries = []  # still recover and audit every event
+    offset, pass_index, n = 0, 0, 0
+    bad = []
+    legacy_pending = None
+    legacy_marker = False
+    for raw in events:
+        raw = raw.encode("utf-8") if isinstance(raw, str) else raw
+        while raw:
+            while pass_index < len(boundaries) and boundaries[pass_index][0] == offset:
+                pass_index += 1  # empty passes (or a boundary consumed by the previous line)
+            end, rc, fired = boundaries[pass_index] if pass_index < len(boundaries) else (offset + len(raw), None, 0)
+            piece, raw = raw[:end - offset], raw[end - offset:]
+            offset += len(piece)
+            n += 1
+            line = piece.decode("utf-8", errors="replace")
+            if not line.strip():
+                continue
+            try:
+                e = json.loads(line)
+            except (ValueError, RecursionError):
+                recovered, has_tool, _ = recover_events(line, ws, n)
+                flags += recovered
+                # Recovery's work cap does not change whether a non-tool line is a legitimate timeout cut.
+                truncated = (offset == end and fired == 1 and not piece.endswith(b"\n")
+                             and not has_tool and json_object_prefix(line))
+                if not truncated:
+                    bad.append(n)
+                legacy_pending = n if not has_tool else None
+            else:
+                flags += tool_flags(e, ws, n)
+                if passes is None and isinstance(e, dict) and e.get("type") == "launcher_pass_end":
+                    legacy_marker = True
+                    if legacy_pending is not None and e.get("rc") in (124, 137):
+                        bad.remove(legacy_pending)
+                legacy_pending = None
+    if passes is not None and (not boundaries or boundaries[-1][0] != offset):
+        flags.append(("EVENTS-CORRUPT", n, "pass boundaries do not cover the event log"))
+    if passes is None and not legacy_marker and len(bad) == 1 and legacy_pending == bad[0]:
+        bad.clear()
+    if bad:
+        flags.append(("EVENTS-CORRUPT", bad[0],
+                      f"{len(bad)} unparseable line(s) in the event log (first: line {bad[0]})"))
     return flags
 
 
@@ -419,7 +586,19 @@ def main():
         sys.exit(__doc__)
     ws = sys.argv[2].rstrip("/")
     BASE = sys.argv[3] if len(sys.argv) == 4 else ""
-    flags = audit(open(sys.argv[1], errors="replace"), ws)
+    pass_file = Path(sys.argv[1]).with_name("passes.txt")
+    boundary_errors = []
+    try:
+        passes = [tuple(map(int, line.split())) for line in pass_file.read_text().splitlines()]
+        if any(len(p) not in (2, 3) for p in passes):
+            raise ValueError("expected byte offset, exit code and optional timeout flag")
+    except FileNotFoundError:
+        passes = None  # older logs retain their in-stream marker tolerance
+    except (OSError, ValueError) as e:
+        passes = []
+        boundary_errors.append(("EVENTS-CORRUPT", 0, f"cannot read pass boundaries: {e}"))
+    with open(sys.argv[1], "rb") as events:
+        flags = boundary_errors + audit(events, ws, passes)
     bad = [f for f in flags if f[0] not in NOT_COUNTED]
     seen = set()
     for kind, n, what in flags:

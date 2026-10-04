@@ -1,8 +1,13 @@
 """tools/agent_audit.py: what it flags in an agent's event log."""
+import io
 import json
 import os
+import subprocess
 import sys
+import tempfile
 import unittest
+from unittest import mock
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import agent_audit  # noqa: E402
@@ -91,15 +96,198 @@ class AgentAudit(unittest.TestCase):
     def test_corrupted_event_log(self):
         good = ev("bash", command="ls")
         marker = lambda rc: json.dumps({"type": "launcher_pass_end", "step": "run", "rc": rc})
-        # older logs (no markers): one cut-off last line is fine, anything else isn't
+        # Legacy logs retain one damaged line immediately before a timeout marker.
         self.assertEqual(kinds(good, good, '{"type": "tool_exec'), [])
+        self.assertEqual(kinds(good, 'garbage', '', '  '), [])
+        self.assertIn("EVENTS-CORRUPT", kinds(good, ev("bash", command="ls") + 'garbage'))
         self.assertIn("EVENTS-CORRUPT", kinds(good, '{"type": "tool_exec', good))
         self.assertIn("EVENTS-CORRUPT", kinds('garbage', good, 'more garbage'))
-        # with markers: only right before the marker of a timed-out pass
         self.assertEqual(kinds(good, '{"type": "tool_exec', "", marker(124), good, marker(0)), [])
         self.assertIn("EVENTS-CORRUPT", kinds(good, '{"type": "tool_exec', marker(0)))
         self.assertIn("EVENTS-CORRUPT", kinds(good, 'garbage', good, marker(124)))
+        self.assertEqual(kinds(good, 'garbage', marker(137)), [])
+        self.assertIn("EVENTS-CORRUPT", kinds('garbage', 'more garbage', marker(124)))
         self.assertIn("EVENTS-CORRUPT", kinds(good, marker(0), '{"type": "tool_exec'))
+
+    def pass_kinds(self, *passes):
+        data = b""
+        boundaries = []
+        for p in passes:
+            text, rc = p[:2]
+            fired = p[2] if len(p) == 3 else int(rc in (124, 137))
+            data += text.encode() if isinstance(text, str) else text
+            boundaries.append((len(data), rc, fired))
+        return sorted({k for k, _, _ in agent_audit.audit(io.BytesIO(data), WS, boundaries)})
+
+    def test_host_timeout_boundaries_split_joined_passes_by_bytes(self):
+        # The first pass ends mid-UTF-8 and without a newline; the next event still needs its own audit.
+        partial = b'{"type":"message","text":"\xc3'
+        self.assertEqual(self.pass_kinds((partial, 124), (ev("bash", command="echo ok") + "\n", 0)), [])
+        self.assertEqual(self.pass_kinds((partial, 137), (b"", 0), (partial, 124)), [])
+        for rc in (0, 1, 143):
+            self.assertIn("EVENTS-CORRUPT", self.pass_kinds((partial, rc)))
+        self.assertIn("WRITE-OUTSIDE", self.pass_kinds((partial, 124), (ev("write", path="/home/isaac/x"), 0)))
+
+    def test_only_one_unterminated_final_line_per_timeout_pass(self):
+        partial = '{"type":"message'
+        for data in (partial + "\n", partial + "\n" + partial, partial + "\n" + ev("bash", command="ls")):
+            self.assertIn("EVENTS-CORRUPT", self.pass_kinds((data, 124)), data)
+        self.assertEqual(self.pass_kinds((partial, 124), (partial, 137)), [])
+
+    def test_corrupt_lines_recover_every_embedded_tool_call(self):
+        calls = ev("write", path="/home/isaac/x") + ev("bash", command="nohup python3 tmp/a.py &")
+        for prefix in ("junk ", '{"type":"message","text":"broken ', "{}"):
+            found = self.pass_kinds((prefix + calls + " garbage", 124))
+            self.assertIn("WRITE-OUTSIDE", found)
+            self.assertIn("BACKGROUND", found)
+            self.assertIn("EVENTS-CORRUPT", found)
+        self.assertIn("EVENTS-CORRUPT", self.pass_kinds(('{"type":"tool_execution_start","args":', 124)))
+        self.assertIn("EVENTS-CORRUPT", self.pass_kinds(("junk " + ev("bash", command="ls"), 124)))
+
+    def test_exit_codes_alone_do_not_exempt_truncation(self):
+        partial = '{"type":"message'
+        for rc in (124, 137):
+            self.assertIn("EVENTS-CORRUPT", self.pass_kinds((partial, rc, 0)))
+            data = partial.encode()
+            self.assertIn("EVENTS-CORRUPT", {k for k, _, _ in agent_audit.audit(io.BytesIO(data), WS, [(len(data), rc)])})
+        # Even an in-stream timeout marker does not override a boundary file.
+        marker = json.dumps({"type": "launcher_pass_end", "rc": 124})
+        self.assertIn("EVENTS-CORRUPT", self.pass_kinds((partial + "\n" + marker, 124, 0)))
+
+    def test_all_final_byte_timeout_cuts_are_tolerated(self):
+        for partial in ('{"type":"message","n":0.', '{"type":"message","n":1e',
+                        '{"type":"message","text":"\\u00', '{"type":"message","text":"\\u00ff',
+                        '{"type":"message","text":"mentions tool_execution_start',
+                        '{"type":"message","text":"mentions \\"type\\":\\"tool_execution_start\\"'):
+            self.assertEqual(self.pass_kinds((partial, 124, 1)), [], partial)
+            self.assertIn("EVENTS-CORRUPT", self.pass_kinds((partial, 124, 0)), partial)
+            self.assertIn("EVENTS-CORRUPT", self.pass_kinds((partial + "\n", 124, 1)), partial)
+
+    def test_legacy_marker_tolerance_only_applies_without_boundary_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            event_file = Path(d) / "events.jsonl"
+            event_file.write_text('{"type":"message\n\n' + json.dumps({"type": "launcher_pass_end", "rc": 124}) + "\n")
+            command = [sys.executable, agent_audit.__file__, str(event_file), WS]
+            result = subprocess.run(command, capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            (Path(d) / "passes.txt").write_text(f"{event_file.stat().st_size} 124 0\n")
+            result = subprocess.run(command, capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn("EVENTS-CORRUPT", result.stdout)
+
+    def test_escaped_event_types_and_keys_cannot_hide_tool_events(self):
+        for key in ('type', r'\u0074ype'):
+            for value in ('tool_execution_start', r'tool_execution_\u0073tart'):
+                partial = '{"' + key + '":"' + value + '","args":'
+                self.assertIn("EVENTS-CORRUPT", self.pass_kinds((partial, 124, 1)), partial)
+        for partial in ('{"type":"tool_execution_start', r'{"\u0074ype":"tool_execution_\u0073tart'):
+            self.assertIn("EVENTS-CORRUPT", self.pass_kinds((partial, 124, 1)), partial)
+        call = ev("write", path="/home/isaac/x").replace('tool_execution_start', r'tool_execution_\u0073tart')
+        found = self.pass_kinds(("junk " + call, 124, 1))
+        self.assertIn("WRITE-OUTSIDE", found)
+        self.assertIn("EVENTS-CORRUPT", found)
+
+    def test_recovery_decode_work_is_bounded_on_large_broken_lines(self):
+        for line in ('{' * 500_000, '{"a":' * 100_000):
+            decoder = json.JSONDecoder()
+            with mock.patch.object(agent_audit.json, "JSONDecoder", return_value=decoder), \
+                 mock.patch.object(decoder, "raw_decode", wraps=decoder.raw_decode) as decode:
+                found = self.pass_kinds((line, 124, 1))
+                work = sum(len(line) - call.args[1] for call in decode.call_args_list)
+                self.assertLessEqual(work, 4 * len(line))
+                if line.startswith('{"'):
+                    self.assertEqual(found, [])  # a valid nested prefix remains exempt even when recovery is capped
+                else:
+                    self.assertIn("EVENTS-CORRUPT", found)
+
+    def test_realistic_nested_pi_events_at_many_timeout_cuts(self):
+        # Pi's end events repeat complete messages, content blocks, usage and model metadata. Even a normal
+        # dozen-message agent_end exhausts suffix-charged recovery long before the end of the first message.
+        usage = {"input": 41082, "output": 234, "cacheRead": 39555, "cacheWrite": 0,
+                 "totalTokens": 41316, "cost": {"input": 0.123, "output": 0.004, "total": 0.127}}
+        assistant = {"role": "assistant", "content": [
+            {"type": "thinking", "thinking": "Inspect nested events and then run the checks. " * 12,
+             "thinkingSignature": "signature"},
+            {"type": "toolCall", "id": "call_01", "name": "bash", "arguments": {"command": "ls tools"}},
+            {"type": "text", "text": "Nested objects, Unicode é, and JSON escapes \\u0074. " * 12}],
+            "api": "anthropic-messages", "provider": "anthropic", "model": "claude-sonnet-4-5",
+            "usage": usage, "stopReason": "toolUse", "timestamp": 1791012345678}
+        result = {"role": "toolResult", "toolCallId": "call_01", "toolName": "bash", "content": [
+            {"type": "text", "text": "a.py\nb.py\nc.py\n" * 80}], "details": {"exitCode": 0},
+            "isError": False, "timestamp": 1791012346000}
+        events = [{"type": "agent_end", "messages": [assistant, result] * 6},
+                  {"type": "turn_end", "message": assistant, "toolResults": [result]},
+                  {"type": "message_end", "message": assistant}]
+        for event in events:
+            line = json.dumps(event, ensure_ascii=True, separators=(",", ":"))
+            cuts = set(range(1, len(line), max(1, len(line) // 160)))
+            cuts.update(i for i, c in enumerate(line) if c in '{}[],:')
+            cuts.update(range(len(line) - 12, len(line)))
+            for cut in sorted(cuts - {0}):
+                partial = line[:cut]
+                with self.subTest(event=event["type"], cut=cut):
+                    self.assertEqual(self.pass_kinds((partial, 124, 1)), [])
+            # Demonstrate that this exercises the old recovery-budget failure, rather than only small prefixes.
+            self.assertTrue(agent_audit.recover_events(line[:-1], WS, 1)[2])
+
+    def test_host_timeout_rejects_non_prefix_corruption(self):
+        corrupt = ['{}garbage', '{"type":bad}', '{"type":bad', '{"a":trueX', '{"a":falsee',
+                   '{"a":nulX', '{"a":01', '{"a":1.e', '{"a":--1', '{"a":+1', '{"a":1,}',
+                   '{"a":[1,]', '{"a" 1', '{"a":}', '{"a":[}', '{"a":"bad\\q',
+                   '{"a":"bad\\u00Z', '{"a":"raw\t', 'garbage', '[1,']
+        for line in corrupt:
+            with self.subTest(line=line):
+                self.assertIn("EVENTS-CORRUPT", self.pass_kinds((line, 124, 1)))
+
+    def test_unquoted_and_escaped_tool_types_never_get_legacy_or_timeout_tolerance(self):
+        for key in ('"type"', 'type', r'"\u0074ype"', r'\u0074ype'):
+            for value in ('"tool_execution_start"', 'tool_execution_start',
+                          r'"tool_execution_\u0073tart"', r'tool_execution_\u0073tart'):
+                line = '{' + key + ':' + value + ',"args":'
+                with self.subTest(line=line):
+                    self.assertTrue(agent_audit.recover_events(line, WS, 1)[1])
+                    self.assertIn("EVENTS-CORRUPT", self.pass_kinds((line, 124, 1)))
+                    self.assertIn("EVENTS-CORRUPT", kinds(line))
+                    self.assertIn("EVENTS-CORRUPT", kinds(line, '{"type":"launcher_pass_end","rc":124}'))
+
+    def test_tool_type_scan_survives_exhausted_recovery_budget(self):
+        line = '{"nested":' * 100 + '{"type":"tool_execution_start","args":'
+        self.assertTrue(agent_audit.recover_events(line, WS, 1)[2])
+        self.assertIn("EVENTS-CORRUPT", self.pass_kinds((line, 124, 1)))
+
+    def test_marker_free_legacy_tolerance_requires_one_final_non_tool_bad_line(self):
+        good = '{"type":"message_end"}'
+        self.assertEqual(kinds(good, 'garbage'), [])
+        self.assertEqual(kinds(good, '{"type":"message_end",', '', '  '), [])
+        for lines in [('garbage', good), ('garbage', good, 'more garbage'),
+                      (good, '{"type":"launcher_pass_end","rc":0}', 'garbage')]:
+            self.assertIn("EVENTS-CORRUPT", kinds(*lines))
+        self.assertIn("EVENTS-CORRUPT", self.pass_kinds((good + '\ngarbage', 124, 1)))
+
+    def test_boundary_metadata_must_be_ordered_and_cover_the_log(self):
+        data = (ev("write", path="/home/isaac/x") + "\n").encode()
+        for boundaries in ([], [(len(data) + 1, 124)], [(len(data) - 1, 124)],
+                           [(len(data), 124), (0, 0)], [(-1, 124)], [(len(data), 999)]):
+            found = {k for k, _, _ in agent_audit.audit(io.BytesIO(data), WS, boundaries)}
+            self.assertIn("EVENTS-CORRUPT", found)
+            # Invalid metadata never prevents recovering calls.
+            self.assertIn("WRITE-OUTSIDE", found)
+
+    def test_cli_reads_sibling_host_boundary_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            event_file = Path(d) / "events.jsonl"
+            event_file.write_bytes(b'{"type":"message')
+            command = [sys.executable, agent_audit.__file__, str(event_file), WS]
+            self.assertEqual(subprocess.run(command, capture_output=True, timeout=5).returncode, 0)
+            boundary_file = Path(d) / "passes.txt"
+            boundary_file.write_text(f"{event_file.stat().st_size} 124 1\n")
+            result = subprocess.run(command, capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            for text in ("not numbers\n", "0 124 extra\n", "0 124 1 1\n", "0 124 2\n", f"{event_file.stat().st_size} 124\n", ""):
+                boundary_file.write_text(text)
+                result = subprocess.run(command, capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertIn("EVENTS-CORRUPT", result.stdout)
 
     def test_running_tools_from_outside(self):
         self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="python3 ~/permuter/permuter.py tmp/perm")))

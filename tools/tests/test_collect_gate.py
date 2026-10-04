@@ -45,6 +45,13 @@ class Gate(unittest.TestCase):
         open(os.path.join(self.d, "include.patch"), "w").write("+x")
         self.assertIn("not in COLLECT-OK", collect_gate.check(self.d))
 
+    def test_host_pass_boundaries_use_the_existing_manifest_format(self):
+        write_collect(self.d, {"final.c": "int x;\n", "passes.txt": "100 124\n200 0\n"})
+        self.assertIsNone(collect_gate.check(self.d))
+        with open(os.path.join(self.d, "passes.txt"), "w") as f:
+            f.write("100 0\n200 0\n")
+        self.assertIn("passes.txt: differs", collect_gate.check(self.d))
+
     def test_limits_flags_and_failed_collects_fail(self):
         write_collect(self.d, {"final.c": "x"})
         open(os.path.join(self.d, "limits.txt"), "w").write("run: events.jsonl reached its cap")
