@@ -4,6 +4,7 @@
 #include "math_ext.h"
 #include "memory.h"
 #include "system.h"
+#include "matching.h"
 
 #include <dolphin/gx.h>
 
@@ -28,7 +29,7 @@ typedef struct effKemuriData {
 	s32 field_0x88; //0x88
 } effKemuriData;
 
-// Named sdata2 constants of the original unit (definitions live in the original object's data).
+// Small-data constants owned by this effect unit; definitions follow the functions.
 extern const f32 float_1_8041c6b0;
 extern const f32 float_0_8041c6bc;
 extern const f32 float_360_8041c70c;
@@ -37,7 +38,6 @@ extern const f32 float_6p2832_8041c714;
 extern const f32 float_5_8041c718;
 extern const f32 float_0p7_8041c71c;
 extern const f32 float_neg20_8041c720;
-extern const char str_802F3120[];
 extern const f32 float_12_8041c688;
 extern const f32 float_8_8041c68c;
 extern const f32 float_12p8_8041c690;
@@ -61,9 +61,21 @@ extern const GXColor unk_80423014;
 extern const GXColor dat_8041c680;
 extern const GXColor dat_8041c684;
 
-// .rodata conversion constant used by the int -> float casts.
-const f64 double_to_int_802f3110 = 4503601774854144.0;
-
+extern const f32 float_0p0625_8041c6d8;
+extern const f32 float_neg0p2_8041c6dc;
+extern const f32 float_3p1416_8041c6e0;
+extern const f32 float_30_8041c6e4;
+extern const f32 float_0p9_8041c6e8;
+extern const f32 float_0p95_8041c6ec;
+extern const f32 float_0p8_8041c6f0;
+extern const f32 float_16_8041c6f4;
+extern const f32 float_0p0078125_8041c6f8;
+extern const f32 float_1p5_8041c6fc;
+extern const f32 float_0p85_8041c700;
+extern const f32 float_2_8041c704;
+extern const f32 float_1p2_8041c708;
+extern const f32 float_3_8041c724;
+extern const f32 float_neg3_8041c728;
 // local per the original: .fn effKemuri2Disp, local
 static void effKemuri2Disp(CameraId camId, void* param);
 // local per the original: .fn effKemuri2Main, local
@@ -86,7 +98,12 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 			numEffects = 2;
 			break;
 	}
+#ifdef MUST_MATCH
+	// Retail reserves eight bytes for this string.
+	entry->type = "Kemuri\0";
+#else
 	entry->type = "Kemuri";
+#endif
 	entry->count = numEffects;
 	data = (effKemuriData*)__memAlloc(HEAP_EFFECT, sizeof(effKemuriData) * numEffects);
 	entry->userdata = data;
@@ -99,21 +116,21 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 
 	data->field_0x40 = 0;
 
-	data->field_0x44 = 1.0f;
-	data->field_0x48 = 1.0f;
-	data->field_0x74 = 1.0f;
+	data->field_0x44 = float_1_8041c6b0;
+	data->field_0x48 = float_1_8041c6b0;
+	data->field_0x74 = float_1_8041c6b0;
 	data++;
 	for (i = 1; i < entry->count; i++, data++) {
-		data->field_0x4 = 0.0f;
-		data->field_0x8 = 0.0f;
-		data->field_0xC = 0.0f;
+		data->field_0x4 = float_0_8041c6bc;
+		data->field_0x8 = float_0_8041c6bc;
+		data->field_0xC = float_0_8041c6bc;
 
-		data->field_0x44 = 1.0f;
-		data->field_0x48 = 1.0f;
-		data->field_0x74 = 1.0f;
+		data->field_0x44 = float_1_8041c6b0;
+		data->field_0x48 = float_1_8041c6b0;
+		data->field_0x74 = float_1_8041c6b0;
 
-		data->field_0x58 = 0.0f;
-		data->field_0x5C = 0.0f;
+		data->field_0x58 = float_0_8041c6bc;
+		data->field_0x5C = float_0_8041c6bc;
 
 		data->field_0x40 = 0;
 		data->field_0x80 = 0;
@@ -121,15 +138,15 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 
 		switch (int2) {
 			case 0:
-				data->field_0x4C = i & 1 ? 3.0f : -3.0f;
+				data->field_0x4C = i & 1 ? float_3_8041c724 : float_neg3_8041c728;
 				data->field_0x88 = 32;
 				break;
 			case 1:
-				data->field_0x4C = 0.0f;
+				data->field_0x4C = float_0_8041c6bc;
 				data->field_0x88 = 32;
 				break;
 			case 2:
-				data->field_0x4C = 0.0f;
+				data->field_0x4C = float_0_8041c6bc;
 				data->field_0x88 = 64;
 				break;
 		}
@@ -155,7 +172,7 @@ EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 f
 	f32 angle;
 	f32 cosVal;
 
-	entry->type = str_802F3120;
+	entry->type = "Kemuri2";
 	entry->count = 1;
 	data = (effKemuri2Data*)__memAlloc(HEAP_EFFECT, sizeof(effKemuri2Data));
 	entry->userdata = data;
@@ -291,7 +308,7 @@ static void effKemuri2Main(EffectEntry* effect) {
 	/* MUST_MATCH: redundant re-read makes MWCC split data into r7/r31 as retail does. */
 	data = effect->userdata;
 #endif
-	angle = (f32)sin(3.1415927f * (f32)data->counter / 30.0f);
+	angle = (f32)sin(float_3p1416_8041c6e0 * (f32)data->counter / float_30_8041c6e4);
 	data->counter++;
 	if (data->counter > 30) {
 		effDelete(effect);
@@ -301,19 +318,19 @@ static void effKemuri2Main(EffectEntry* effect) {
 	for (i = 0; i < effect->count; i++, data++) {
 		data->x += data->field_0x10 * data->field_0x30;
 		data->z += data->field_0x10 * data->field_0x34;
-		data->field_0x20 *= 0.9f;
+		data->field_0x20 *= float_0p9_8041c6e8;
 		data->y += data->field_0x20;
-		data->field_0x64 *= 0.95f;
+		data->field_0x64 *= float_0p95_8041c6ec;
 		data->field_0x68 += data->field_0x64;
 		data->field_0x70 = angle;
 		if (data->counter > 15) {
 #ifdef MUST_MATCH
 			/* MUST_MATCH: a local keeps the conversion in retail's f1/f2/f0 order. */
-			f32 k = 0.8f;
+			f32 k = float_0p8_8041c6f0;
 
 			data->alpha = (s32)((f32)data->alpha * k);
 #else
-			data->alpha = (s32)((f32)data->alpha * 0.8f);
+			data->alpha = (s32)((f32)data->alpha * float_0p8_8041c6f0);
 #endif
 		}
 	}
@@ -328,6 +345,8 @@ static void effKemuri2Main(EffectEntry* effect) {
 // named float_0p5_8041c6cc/float_20_8041c694) because the compiler then hoists them into the
 // FPRs retail uses (half f31, twenty f30); the named constants give a different hoist order.
 void effKemuriDisp(CameraId camId, void* param) {
+
+
 	f32 half = 0.5f;
 	f32 twenty = 20.0f;
 	EffectEntry* effect = param;
@@ -421,7 +440,7 @@ void effKemuriDisp(CameraId camId, void* param) {
 			GXLoadPosMtxImm(tmpMtx, 0);
 
 #ifdef MUST_MATCH
-			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, 1.0f, 1.0f);
+			{ f32 unity = MATCH_F32(float_1_8041c6b0); PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity); }
 #else
 			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, float_1_8041c6b0, float_1_8041c6b0);
 #endif
@@ -430,7 +449,7 @@ void effKemuriDisp(CameraId camId, void* param) {
 			GXLoadTexMtxImm(transMtx, 0x1E, 1);
 
 #ifdef MUST_MATCH
-			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, 1.0f, 1.0f);
+			{ f32 unity = MATCH_F32(float_1_8041c6b0); PSMTXScale(scaleMtx, float_0p0625_8041c6d8, unity, unity); }
 #else
 			PSMTXScale(scaleMtx, float_0p0625_8041c6d8, float_1_8041c6b0, float_1_8041c6b0);
 #endif
@@ -439,24 +458,63 @@ void effKemuriDisp(CameraId camId, void* param) {
 			GXLoadTexMtxImm(transMtx, 0x21, 1);
 
 			GXBegin(0x80, 0, 4);
-			GXPosition3f32(-float_1_8041c6b0 * half, float_1_8041c6b0, 0.0f);
-			GXTexCoord2f32(0.0f, 0.0f);
-			GXPosition3f32(half, float_1_8041c6b0, 0.0f);
-			GXTexCoord2f32(1.0f, 0.0f);
-			GXPosition3f32(half, 0.0f, 0.0f);
-			GXTexCoord2f32(1.0f, 1.0f);
-			GXPosition3f32(-float_1_8041c6b0 * half, 0.0f, 0.0f);
-			GXTexCoord2f32(0.0f, 1.0f);
+#ifdef MUST_MATCH
+			GXParam1f32(-float_1_8041c6b0 * half);
+			GXParam1f32(float_1_8041c6b0);
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(-float_1_8041c6b0 * half, float_1_8041c6b0, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXTexCoord2f32(float_0_8041c6bc, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXParam1f32(half);
+			GXParam1f32(float_1_8041c6b0);
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(half, float_1_8041c6b0, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXTexCoord2f32(float_1_8041c6b0, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXParam1f32(half);
+			GXParam1f32(MATCH_F32(float_0_8041c6bc));
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(half, float_0_8041c6bc, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+#else
+			GXTexCoord2f32(float_1_8041c6b0, float_1_8041c6b0);
+#endif
+#ifdef MUST_MATCH
+			GXParam1f32(-float_1_8041c6b0 * half);
+			GXParam1f32(MATCH_F32(float_0_8041c6bc));
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(-float_1_8041c6b0 * half, float_0_8041c6bc, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+#else
+			GXTexCoord2f32(float_0_8041c6bc, float_1_8041c6b0);
+#endif
 		}
 	}
 }
 
-// Draws a Kemuri2 puff as two camera-facing textured quads. Setup order, constants and stack layout
-// match; only the callee-saved FPR numbering (our -6.4/-8/-12 land in f26/f24/f25 instead of retail
-// f24/f25/f26, shifting 20/double/deg2rad/180/6.4 up one), the four by-value GXColor argument copies
-// (they sit below their variable instead of above) and the local @284/@285 pool symbols for 0.0/1.0
-// (retail float_0_8041c6bc/float_1_8041c6b0) differ.
-// NONMATCHING (99.67%): see the five lines above.
+// Draws two camera-facing textured quads for the secondary smoke effect.
 #ifdef MUST_MATCH
 static inline GXColor kemuriTevColor(u8 alpha, GXColor c) {
 	c.a = alpha;
@@ -466,6 +524,10 @@ static inline GXColor kemuriTevColor(u8 alpha, GXColor c) {
 
 // 100% matched: the p8/p12/n12p8 preheader locals (declared p8,p12,n12p8 and assigned
 // n12p8,p12,p8) and the quad's x6/y4/px/py locals reproduce retail's volatile-FPR colouring.
+#ifdef MUST_MATCH
+// Preserve the retail load and temporary order.
+#pragma opt_loop_invariants off
+#endif
 static void effKemuri2Disp(CameraId cameraId, void* param) {
 	EffectEntry* effect = param;
 	effKemuri2Data* data = effect->userdata;
@@ -482,9 +544,12 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 	/* MUST_MATCH: a local for the +6.4 constant makes MWCC keep it in f31 as retail does. */
 	f32 sixp4;
 	/* MUST_MATCH: names for the negSize source loads keep their volatile-FPR colouring. */
+	f32 half = 0.5f;
 	f32 p8;
 	f32 p12;
 	f32 n12p8;
+#else
+	f32 half = 0.5f;
 #endif
 
 #ifdef MUST_MATCH
@@ -524,14 +589,14 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
 		const f32 negSizeX = -p12;
 		const f32 negSizeY = -p8;
-		const f32 negSize2 = n12p8 * float_0p5_8041c6cc;
+		const f32 negSize2 = n12p8 * half;
 #else
 		const f32 negSizeX = -float_12_8041c688;
 		const f32 negSizeY = -float_8_8041c68c;
-		const f32 negSize2 = -float_12p8_8041c690 * float_0p5_8041c6cc;
+		const f32 negSize2 = -float_12p8_8041c690 * half;
 #endif
 
-		if ((data->field_0x78 > float_20_8041c694 && data->field_0x78 < float_160_8041c698) ||
+		if ((data->field_0x78 > 20.0f && data->field_0x78 < float_160_8041c698) ||
 		    (data->field_0x78 > float_180_8041c69c && data->field_0x78 < float_340_8041c6a0)) {
 #ifdef MUST_MATCH
 			/* MUST_MATCH: named quad temps reproduce retail's volatile-FPR colouring. */
@@ -549,16 +614,16 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 				PSMTXScale(tmpMtx, float_neg1_8041c6ac, float_1_8041c6b0, float_neg1_8041c6ac);
 				PSMTXConcat(outMtx, tmpMtx, outMtx);
 			}
-			PSMTXTrans(tmpMtx, float_10_8041c6b4, float_neg6_8041c6b8, 0.0f);
+			PSMTXTrans(tmpMtx, float_10_8041c6b4, float_neg6_8041c6b8, float_0_8041c6bc);
 			PSMTXConcat(outMtx, tmpMtx, outMtx);
 			PSMTXScale(tmpMtx, data->field_0x74, data->field_0x74, data->field_0x74);
 			PSMTXConcat(outMtx, tmpMtx, outMtx);
-			PSMTXTrans(tmpMtx, float_neg10_8041c6c0, float_6_8041c6c4, 0.0f);
+			PSMTXTrans(tmpMtx, float_neg10_8041c6c0, float_6_8041c6c4, float_0_8041c6bc);
 			PSMTXConcat(outMtx, tmpMtx, outMtx);
 			PSMTXConcat(outMtx, rotMtx2, outMtx);
 			PSMTXConcat(outMtx, scaleMtx, outMtx);
 			PSMTXConcat(camera->view, outMtx, outMtx);
-			PSMTXTrans(transMtx, float_6_8041c6c4, float_neg4_8041c6c8, 0.0f);
+			PSMTXTrans(transMtx, float_6_8041c6c4, float_neg4_8041c6c8, float_0_8041c6bc);
 			PSMTXConcat(outMtx, transMtx, outMtx);
 			GXLoadPosMtxImm(outMtx, 0);
 			GXSetCurrentMtx(0);
@@ -585,27 +650,115 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			}
 			GXBegin(0x80, 0, 4);
 #ifdef MUST_MATCH
-			px = negSizeX * float_0p5_8041c6cc;
-			py = negSizeY * float_0p5_8041c6cc;
+			px = negSizeX * half;
+			py = negSizeY * half;
 			y4 = float_4_8041c6d0;
 			x6 = float_6_8041c6c4;
-			GXPosition3f32(px, y4, 0.0f);
-			GXTexCoord2f32(0.0f, 0.0f);
-			GXPosition3f32(x6, y4, 0.0f);
-			GXTexCoord2f32(1.0f, 0.0f);
-			GXPosition3f32(x6, py, 0.0f);
-			GXTexCoord2f32(1.0f, 1.0f);
-			GXPosition3f32(px, py, 0.0f);
-			GXTexCoord2f32(0.0f, 1.0f);
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = px;
+			GXWGFifo.f32 = y4;
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
 #else
-			GXPosition3f32(negSizeX * float_0p5_8041c6cc, float_4_8041c6d0, 0.0f);
-			GXTexCoord2f32(0.0f, 0.0f);
-			GXPosition3f32(float_6_8041c6c4, float_4_8041c6d0, 0.0f);
-			GXTexCoord2f32(1.0f, 0.0f);
-			GXPosition3f32(float_6_8041c6c4, negSizeY * float_0p5_8041c6cc, 0.0f);
-			GXTexCoord2f32(1.0f, 1.0f);
-			GXPosition3f32(negSizeX * float_0p5_8041c6cc, negSizeY * float_0p5_8041c6cc, 0.0f);
-			GXTexCoord2f32(0.0f, 1.0f);
+			GXPosition3f32(px, y4, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXTexCoord2f32(float_0_8041c6bc, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = x6;
+			GXWGFifo.f32 = y4;
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(x6, y4, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXTexCoord2f32(float_1_8041c6b0, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = x6;
+			GXWGFifo.f32 = py;
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(x6, py, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+#else
+			GXTexCoord2f32(float_1_8041c6b0, float_1_8041c6b0);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = px;
+			GXWGFifo.f32 = py;
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(px, py, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+#else
+			GXTexCoord2f32(float_0_8041c6bc, float_1_8041c6b0);
+#endif
+#else
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = negSizeX * half;
+			GXWGFifo.f32 = float_4_8041c6d0;
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(negSizeX * half, float_4_8041c6d0, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXTexCoord2f32(float_0_8041c6bc, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = float_6_8041c6c4;
+			GXWGFifo.f32 = float_4_8041c6d0;
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(float_6_8041c6c4, float_4_8041c6d0, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXTexCoord2f32(float_1_8041c6b0, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = float_6_8041c6c4;
+			GXWGFifo.f32 = negSizeY * half;
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(float_6_8041c6c4, negSizeY * half, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+#else
+			GXTexCoord2f32(float_1_8041c6b0, float_1_8041c6b0);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = negSizeX * half;
+			GXWGFifo.f32 = negSizeY * half;
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+			GXPosition3f32(negSizeX * half, negSizeY * half, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+			GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+			GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+#else
+			GXTexCoord2f32(float_0_8041c6bc, float_1_8041c6b0);
+#endif
 #endif
 		}
 
@@ -618,11 +771,11 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 			PSMTXScale(tmpMtx, float_neg1_8041c6ac, float_1_8041c6b0, float_neg1_8041c6ac);
 			PSMTXConcat(outMtx, tmpMtx, outMtx);
 		}
-		PSMTXTrans(tmpMtx, float_10_8041c6b4, float_neg6_8041c6b8, 0.0f);
+		PSMTXTrans(tmpMtx, float_10_8041c6b4, float_neg6_8041c6b8, float_0_8041c6bc);
 		PSMTXConcat(outMtx, tmpMtx, outMtx);
 		PSMTXScale(tmpMtx, data->field_0x74, data->field_0x74, data->field_0x74);
 		PSMTXConcat(outMtx, tmpMtx, outMtx);
-		PSMTXTrans(tmpMtx, float_neg10_8041c6c0, float_6_8041c6c4, 0.0f);
+		PSMTXTrans(tmpMtx, float_neg10_8041c6c0, float_6_8041c6c4, float_0_8041c6bc);
 		PSMTXConcat(outMtx, tmpMtx, outMtx);
 		PSMTXConcat(outMtx, rotMtx2, outMtx);
 		PSMTXConcat(outMtx, scaleMtx, outMtx);
@@ -658,25 +811,177 @@ static void effKemuri2Disp(CameraId cameraId, void* param) {
 		}
 		GXBegin(0x80, 0, 4);
 #ifdef MUST_MATCH
-		GXPosition3f32(negSize2, sixp4, 0.0f);
-#else
-		GXPosition3f32(negSize2, float_6p4_8041c6d4, 0.0f);
-#endif
-		GXTexCoord2f32(0.0f, 0.0f);
 #ifdef MUST_MATCH
-		GXPosition3f32(sixp4, sixp4, 0.0f);
+		GXWGFifo.f32 = negSize2;
+		GXWGFifo.f32 = sixp4;
+		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
 #else
-		GXPosition3f32(float_6p4_8041c6d4, float_6p4_8041c6d4, 0.0f);
+		GXPosition3f32(negSize2, sixp4, float_0_8041c6bc);
 #endif
-		GXTexCoord2f32(1.0f, 0.0f);
+#else
 #ifdef MUST_MATCH
-		GXPosition3f32(sixp4, negSize2, 0.0f);
+		GXWGFifo.f32 = negSize2;
+		GXWGFifo.f32 = float_6p4_8041c6d4;
+		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
 #else
-		GXPosition3f32(float_6p4_8041c6d4, negSize2, 0.0f);
+		GXPosition3f32(negSize2, float_6p4_8041c6d4, float_0_8041c6bc);
 #endif
-		GXTexCoord2f32(1.0f, 1.0f);
-		GXPosition3f32(negSize2, negSize2, 0.0f);
-		GXTexCoord2f32(0.0f, 1.0f);
+#endif
+#ifdef MUST_MATCH
+		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+		GXTexCoord2f32(float_0_8041c6bc, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+#ifdef MUST_MATCH
+		GXWGFifo.f32 = sixp4;
+		GXWGFifo.f32 = sixp4;
+		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+		GXPosition3f32(sixp4, sixp4, float_0_8041c6bc);
+#endif
+#else
+#ifdef MUST_MATCH
+		GXWGFifo.f32 = float_6p4_8041c6d4;
+		GXWGFifo.f32 = float_6p4_8041c6d4;
+		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+		GXPosition3f32(float_6p4_8041c6d4, float_6p4_8041c6d4, float_0_8041c6bc);
+#endif
+#endif
+#ifdef MUST_MATCH
+		GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+		GXTexCoord2f32(float_1_8041c6b0, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+#ifdef MUST_MATCH
+		GXWGFifo.f32 = sixp4;
+		GXWGFifo.f32 = negSize2;
+		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+		GXPosition3f32(sixp4, negSize2, float_0_8041c6bc);
+#endif
+#else
+#ifdef MUST_MATCH
+		GXWGFifo.f32 = float_6p4_8041c6d4;
+		GXWGFifo.f32 = negSize2;
+		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+		GXPosition3f32(float_6p4_8041c6d4, negSize2, float_0_8041c6bc);
+#endif
+#endif
+#ifdef MUST_MATCH
+		GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+		GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+#else
+		GXTexCoord2f32(float_1_8041c6b0, float_1_8041c6b0);
+#endif
+#ifdef MUST_MATCH
+		GXWGFifo.f32 = negSize2;
+		GXWGFifo.f32 = negSize2;
+		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+#else
+		GXPosition3f32(negSize2, negSize2, float_0_8041c6bc);
+#endif
+#ifdef MUST_MATCH
+		GXWGFifo.f32 = MATCH_F32(float_0_8041c6bc);
+		GXWGFifo.f32 = MATCH_F32(float_1_8041c6b0);
+#else
+		GXTexCoord2f32(float_0_8041c6bc, float_1_8041c6b0);
+#endif
 	}
 }
+#ifdef MUST_MATCH
+#pragma opt_loop_invariants reset
+#endif
 
+
+const GXColor dat_8041c670 = { 0xff, 0xff, 0xff, 0xff };
+const GXColor dat_8041c674 = { 0x80, 0x80, 0x80, 0x80 };
+const GXColor dat_8041c678 = { 0x0, 0x0, 0x0, 0x60 };
+const GXColor dat_8041c67c = { 0xff, 0xff, 0xff, 0xff };
+const GXColor dat_8041c680 = { 0xff, 0xff, 0xff, 0x0 };
+const GXColor dat_8041c684 = { 0xff, 0xff, 0xff, 0x0 };
+const f32 float_12_8041c688 = 12.0f;
+const f32 float_8_8041c68c = 8.0f;
+const f32 float_12p8_8041c690 = 12.8000002f;
+const f32 float_160_8041c698 = 160.0f;
+const f32 float_180_8041c69c = 180.0f;
+const f32 float_340_8041c6a0 = 340.0f;
+const f32 float_deg2rad_8041c6a4 = 0.0174532924f;
+const f32 float_0p17453_8041c6a8 = 0.17453292f;
+const f32 float_neg1_8041c6ac = -1.0f;
+const f32 float_1_8041c6b0 = 1.0f;
+const f32 float_10_8041c6b4 = 10.0f;
+const f32 float_neg6_8041c6b8 = -6.0f;
+const f32 float_0_8041c6bc = 0.0f;
+const f32 float_neg10_8041c6c0 = -10.0f;
+const f32 float_6_8041c6c4 = 6.0f;
+const f32 float_neg4_8041c6c8 = -4.0f;
+const f32 float_4_8041c6d0 = 4.0f;
+const f32 float_0p0625_8041c6d8 = 0.0625f;
+const f32 float_neg0p2_8041c6dc = -0.200000003f;
+const f32 float_3p1416_8041c6e0 = 3.14159274f;
+const f32 float_30_8041c6e4 = 30.0f;
+const f32 float_0p9_8041c6e8 = 0.899999976f;
+const f32 float_0p95_8041c6ec = 0.949999988f;
+const f32 float_0p8_8041c6f0 = 0.800000012f;
+const f32 float_16_8041c6f4 = 16.0f;
+const f32 float_1p5_8041c6fc = 1.5f;
+const f32 float_0p85_8041c700 = 0.850000024f;
+const f32 float_2_8041c704 = 2.0f;
+const f32 float_1p2_8041c708 = 1.20000005f;
+const f32 float_360_8041c70c = 360.0f;
+const f32 float_1000_8041c710 = 1000.0f;
+const f32 float_6p2832_8041c714 = 6.28318548f;
+const f32 float_5_8041c718 = 5.0f;
+const f32 float_0p7_8041c71c = 0.699999988f;
+const f32 float_neg20_8041c720 = -20.0f;
+const f32 float_3_8041c724 = 3.0f;
+const f32 float_neg3_8041c728 = -3.0f;
+#ifdef MUST_MATCH
+__declspec(section ".data")
+#endif
+const u8 touchdown_scale[60] = { 0x80, 0x80, 0x82, 0x7f, 0x84, 0x7e, 0x87, 0x7d, 0x89, 0x7c, 0x8c, 0x7a, 0x8f, 0x79, 0x92, 0x78, 0x95, 0x77, 0x98, 0x76, 0x9b, 0x75, 0x9d, 0x74, 0xa0, 0x72, 0xa3, 0x71, 0xa6, 0x70, 0xa9, 0x6f, 0xac, 0x6e, 0xae, 0x6d, 0xb1, 0x6c, 0xb3, 0x6b, 0xb5, 0x6a, 0xb7, 0x69, 0xb9, 0x69, 0xbb, 0x68, 0xbc, 0x67, 0xbd, 0x67, 0xbe, 0x66, 0xbf, 0x66, 0xbf, 0x66, 0xc0, 0x66 };
+#ifdef MUST_MATCH
+__declspec(section ".data")
+#endif
+const u8 heavy_scale[60] = { 0x80, 0x80, 0x84, 0x80, 0x89, 0x81, 0x8e, 0x82, 0x93, 0x83, 0x99, 0x85, 0x9e, 0x86, 0xa4, 0x87, 0xaa, 0x88, 0xb0, 0x89, 0xb6, 0x8a, 0xbb, 0x8b, 0xc1, 0x8d, 0xc7, 0x8e, 0xcd, 0x8f, 0xd2, 0x90, 0xd8, 0x91, 0xdd, 0x92, 0xe2, 0x93, 0xe6, 0x94, 0xeb, 0x95, 0xef, 0x96, 0xf2, 0x96, 0xf6, 0x97, 0xf9, 0x98, 0xfb, 0x98, 0xfd, 0x99, 0xfe, 0x99, 0xff, 0x99, 0xff, 0x99 };
+#ifdef MUST_MATCH
+// MWCC emits uninitialized objects in reverse declaration order.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") const GXColor unk_80423014;
+__declspec(section ".sdata") const GXColor unk_80423010;
+#else
+const GXColor unk_80423014 = { 0, 0, 0, 0 };
+const GXColor unk_80423010 = { 0, 0, 0, 0 };
+#endif
+
+#ifndef MUST_MATCH
+const f32 float_20_8041c694 = 20.0f;
+#endif
+
+#ifndef MUST_MATCH
+const f32 float_0p5_8041c6cc = 0.5f;
+#endif
+
+#ifndef MUST_MATCH
+const f32 float_6p4_8041c6d4 = 6.4000001f;
+#endif
+
+#ifndef MUST_MATCH
+const f32 float_0p0078125_8041c6f8 = 0.0078125f;
+#endif
+
+#ifdef MUST_MATCH
+// Flush the deferred literal pool before emitting its four-byte section padding.
+#pragma defer_codegen off
+static f32 kemuriPoolFlush(s32 value) { return (f32)value; }
+#pragma defer_codegen reset
+#pragma force_active on
+__declspec(section ".sdata2") const u32 gap_8041c72c = 0;
+#pragma force_active reset
+#endif
