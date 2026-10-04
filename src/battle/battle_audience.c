@@ -77,7 +77,13 @@ static inline Vec battleAudienceItemZeroVec(void) { return (Vec){ 0.0f, 0.0f, 0.
 const Vec vec3_802f972c = { 0.0f, 0.0f, 0.0f };
 #endif
 const Vec vec3_802f9738 = { 0.0f, 0.0f, 0.0f };
+#ifdef MUST_MATCH
+// Retail keeps this in .rodata, but MWCC only materialises its address with lis+addi
+// (instead of folding the copy into lwzu) when the object is not const.
+__declspec(section ".rodata") Vec vec3_802f9744 = { 0.9f, 0.9f, 0.9f };
+#else
 const Vec vec3_802f9744 = { 0.9f, 0.9f, 0.9f };
+#endif
 // Match-only: reading these through a near-data constant lands the loads in the original's
 // registers (a direct `vec3_802f9744` copy compiles to `lwzu`, a pooled zero schedules late, and
 // the pooled 360 in DispAudience lands in a different register).
@@ -2155,18 +2161,14 @@ void BattleAudienceItemCtrlProcess(void) {
 	}
 }
 
-// Functionally complete. `opt_common_subs off` is load-bearing: with CSE on the active count lands
-// in r29 (retail r28) and the whole first block shifts (98.62 -> 99.34). Storing rand()'s result
-// in a local `rv` before the case-0 conversion then pulled the int->float magic double into retail's
-// f2 (99.34 -> 99.40); it is the only handle, a direct `(f32)rand()` picks f3. Assigning float_50 to
-// `start` before multiplying (`start = float_50; start = start * (f32)rv;` instead of one
-// expression) made the multiply overwrite float_50's register, retail's `fmuls f3,f3,f4`
-// (99.40 -> 99.44). What is left is FP-register tie-breaks only: the case-0 conversion result lands
-// f2 (retail f4) so float_25 lands f4 (retail f2); case 10 loads star+0x2c before star+0x20 (retail
-// the reverse, so c sits f0 where retail has f2 and vice versa); and the vec3_802f9744 copy loads a
-// pointer (retail lis+addi); every reshaping/pragma tried is equal or worse.
+// `opt_common_subs off` is load-bearing: with CSE on the active count lands in r29 (retail r28) and
+// the whole first block shifts. Storing rand()'s result in a local `rv` before the case-0 conversion
+// pulls the int->float magic double into retail's f2; writing that conversion through `k25`
+// (`k25 = (f32)rv; start = start * k25;`) keeps the magic live and lands it f4, so float_25 stays f2.
+// Computing the case-10 `dx` before `radius` loads star+0x20 first, matching retail's register order.
+// The vec3_802f9744 copy emits retail's lis+addi only when the object is non-const (see its
+// MUST_MATCH definition).
 #pragma opt_common_subs off // needed: with CSE on the active count lands in r29 and the int->float mask in f3
-// NONMATCHING (99.44%): FP-register tie-breaks only (see above).
 void BattleAudienceApSrcCtrlProcess(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	u8* star;
@@ -2235,8 +2237,9 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			*(Vec*)(star + 0x2C) = *(Vec*)(star + 8);
 			*(Vec*)(star + 0x20) = *(Vec*)(star + 0x2C);
 			rv = rand();
+			k25 = (f32)rv;
 			start = float_50_8041e6d8;
-			start = start * (f32)rv;
+			start = start * k25;
 			k25 = float_25_8041e6dc;
 			start = start / float_32767_8041e674 - k25;
 			*(f32*)(star + 0x2C) += start;
@@ -2262,7 +2265,11 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			*(s32*)(star + 4) = 0xA;
 			*(s32*)(star + 0x44) = 0;
 			*(s32*)(star + 0x48) = irand(0xA) + 0xF;
+#ifdef MUST_MATCH
+			*(Vec*)(star + 0x38) = vec3_802f9744;
+#else
 			*(Vec*)(star + 0x38) = *p_vec3_802f9744;
+#endif
 			break;
 		case 10:
 			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
@@ -2272,16 +2279,11 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			*(s32*)(star + 4) = 0xF;
 			*(s32*)(star + 0x44) = 0;
 			*(s32*)(star + 0x48) = irand(0x14) + 0x14;
-#ifdef MUST_MATCH
-			*(volatile Vec*)(star + 0x20) = *(Vec*)(star + 8);
-#else
 			*(Vec*)(star + 0x20) = *(Vec*)(star + 8);
-#endif
 			pos = statusGetApPos();
 			*(Vec*)(star + 0x2C) = pos;
+			dx = *(f32*)(star + 0x20) - *(f32*)(star + 0x2C);
 			radius = *(f32*)(star + 0x24) - *(f32*)(star + 0x30);
-			dx = *(f32*)(star + 0x2C);
-			dx = *(f32*)(star + 0x20) - dx;
 			*(f32*)(star + 0x4C) = (*(f32*)(star + 0x50) = sqrt(dx * dx + radius * radius));
 			*(f32*)(star + 0x54) = asin(radius / *(f32*)(star + 0x4C));
 			*(f32*)(star + 0x58) = float_0p05_8041e6e4 +

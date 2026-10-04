@@ -66,7 +66,7 @@ void battleCameraInit(void) {
 
 // Prologue/epilogue (frame 0x100, stmw r25), the stack layout, every call and every rodata reference all match.
 // What differs is FP/GP register allocation only (all remaining diffs are `arg_mismatch`, no insert/delete).
-// NONMATCHING (99.60%): register allocation (callee-saved GP choice in the unit-pointer cases, and
+// NONMATCHING (99.69%): register allocation (callee-saved GP choice in the unit-pointer cases, and
 // caller-saved FPR choices in the two-unit cases 8/9/11 and case 13). Permuter work.
 void battleCameraMain(void) {
   CameraEntry* cam;
@@ -251,7 +251,9 @@ void battleCameraMain(void) {
     if (wb < 0.0f) {
       wb = 0.0f;
     }
-    dxc = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x;
+    // Match-only: materialising the subtraction keeps dxc in the original register (and leaves the
+    // earlier width in f3 instead of f4).
+    { f32 _t = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x; dxc = _t; }
     num = hv.x - vv.x;
     if (dxc == 0.0f) {
       t = 0.5f;
@@ -264,12 +266,14 @@ void battleCameraMain(void) {
     if (t < 0.5f) {
       t = 0.5f;
     }
-    base = 2.0f * wp->cameraWork.zoom;
-    base -= 1.5f * (wa + wb);
+    // Match-only: one expression with `2.0f * zoom` in a temporary reproduces the original's
+    // fnmsubs/register allocation for base.
+    { f32 _t = 2.0f * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
     v = (1.0f - t) * base;
     xv = wp->cameraWork.unkC8.x * (1.0f - t);
     f11 = -v / 10.0f;
-    f9 = (wp->cameraWork.unkC8.y / 80.0f) * (vv.y - wp->cameraWork.unkC8.y);
+    // Match-only: the temporary and operand order match the original fmuls schedule.
+    { f32 _t = (vv.y - wp->cameraWork.unkC8.y); f9 = _t * (wp->cameraWork.unkC8.y / 80.0f); }
     if (f9 > 100.0f) {
       f9 = 100.0f;
     }
@@ -416,12 +420,14 @@ void battleCameraMain(void) {
     if (t < 0.5f) {
       t = 0.5f;
     }
-    base = 2.0f * wp->cameraWork.zoom;
-    base -= 1.5f * (wa + wb);
+    // Match-only: one expression with `2.0f * zoom` in a temporary reproduces the original's
+    // fnmsubs/register allocation for base.
+    { f32 _t = 2.0f * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
     v = (1.0f - t) * base;
     xv = wp->cameraWork.unkC8.x * (1.0f - t);
     f11 = -v / 10.0f;
-    f9 = (wp->cameraWork.unkC8.y / 80.0f) * (vv.y - wp->cameraWork.unkC8.y);
+    // Match-only: the temporary and operand order match the original fmuls schedule.
+    { f32 _t = (vv.y - wp->cameraWork.unkC8.y); f9 = _t * (wp->cameraWork.unkC8.y / 80.0f); }
     if (f9 > 100.0f) {
       f9 = 100.0f;
     }
@@ -479,7 +485,9 @@ void battleCameraMain(void) {
       t = 0.5f;
     }
     u = 1.0f - t;
-    cy = vv.y - wp->cameraWork.unkBC.y - 100.0f;
+    // Match-only: splitting the subtraction stops MWCC from introducing an extra temporary.
+    cy = vv.y;
+    cy = cy - wp->cameraWork.unkBC.y - 100.0f;
     zz = 2.0f * wp->cameraWork.zoom;
     v = wp->cameraWork.unkC8.x * u;
     if (cy > 0.0f) {
