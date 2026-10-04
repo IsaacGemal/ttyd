@@ -361,7 +361,7 @@ def traps(e, entries, tobj, funcs):
     return out
 
 
-FLOAT_DEF = (r"^(?:extern |static )*(?:__declspec\([^)]*\) )?(?:const )?(?:(?:MATCH_VOLATILE|volatile) )?f32 {n}(?: = [^;]+)?;[ \t]*(?://[^\n]*)?\n")
+FLOAT_DEF = (r"^(?:extern |static )*(?:__declspec\([^)]*\) )?(?:(?:const|volatile|MATCH_VOLATILE) )*f32 {n}(?: = [^;]+)?;[ \t]*(?://[^\n]*)?\n")
 
 
 def f32_literal(blob):
@@ -407,6 +407,16 @@ def literalise(text, tobj, keep=(), nonconst=(), reload=None):
     for addr, size, name, _ in tobj.objects(".sdata2"):
         if name.startswith("float_") and size >= 4 and size == 4:
             names[name] = f32_literal(data[addr:addr + 4])
+    addr_macros = set()
+    for m in re.finditer(r"^#\s*define\s+(\w+)\(([^)]*)\)([^\n]*(?:\\\n[^\n]*)*)", text, re.M):
+        params = [x.strip() for x in m.group(2).split(",") if x.strip()]
+        if any(re.search(r"&\s*\(?\s*%s\b" % re.escape(pm), m.group(3)) for pm in params):
+            addr_macros.add(m.group(1))
+    for mac in addr_macros:
+        for m in re.finditer(r"\b%s\s*\(([^;]*)" % re.escape(mac), text):
+            for nm in list(names):
+                if re.search(r"\b%s\b" % nm, m.group(1)):
+                    del names[nm]
     for nm in list(names):
         if re.search(r"^[^\n(/]*\b(?:u32|s32|u16|u8|GXColor|Vec|char)\b[^\n(;=]*\b%s\b" % nm, text, re.M):
             del names[nm]  # the source types this word as something else: leave it alone
@@ -415,7 +425,7 @@ def literalise(text, tobj, keep=(), nonconst=(), reload=None):
     for addr, size, name, _ in tobj.objects(".rodata"):
         if name.startswith("double_to_int") and size == 8 and re.search(r"\b%s\b" % name, text):
             (dv,) = struct.unpack(">d", tobj.sec[".rodata"][addr:addr + 8])
-            text = re.sub(r"^(?:extern |static )*(?:__declspec\([^)]*\) )?(?:const )?(?:volatile )?f64 %s(?: = [^;]+)?;[ \t]*(?://[^\n]*)?\n" % name, "", text, flags=re.M)
+            text = re.sub(r"^(?:extern |static )*(?:__declspec\([^)]*\) )?(?:(?:const|volatile) )*(?:f64|double) %s(?: = [^;]+)?;[ \t]*(?://[^\n]*)?\n" % name, "", text, flags=re.M)
             text = re.sub(r"\b%s\b" % name, "%.1f" % dv, text)
     # strings only code uses become plain string literals too (named string objects land before the pool)
     code_syms = {nm for off, typ, nm, tsec, ta in tobj.relocs(".text") if tsec in SECS}
