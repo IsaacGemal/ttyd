@@ -249,23 +249,61 @@ static BinaryFontWidth* FontGetWidthPtr(u16 code) {
 	return NULL;
 }
 
-// NONMATCHING (99.60%): dvd/rounded-size are allocated to r30/r31 (retail r31/r30) and the head block-scan
-// uses pfh=r6/i=r8 (retail pfh=r8/i=r6). The OSRoundUp32B(__memAlloc) schedule now matches; this is a pure
-// register swap.
+#ifdef MUST_MATCH
+// MUST_MATCH: inlining the scan with ptr declared before i gives header/i retail registers r8/r6.
+static inline void fontmgrScanBlocks(BinaryFontHeader* header) {
+	BinaryFontBlock* ptr;
+	int i;
+
+	ptr = (BinaryFontBlock*)(header + 1);
+	for (i = 0; i < header->blockcount; i++) {
+		switch (ptr->magic) {
+			case 'INF1':
+				pfi = (BinaryFontInfo*)ptr;
+				break;
+			case 'GLY1':
+				blockGlyph = (BinaryFontGlyph*)ptr;
+				break;
+			case 'MAP1':
+			case 'WID1':
+			default:
+				break;
+		}
+		ptr = (BinaryFontBlock*)((u32)ptr + ptr->size);
+	}
+}
+#endif
+
 void fontmgrTexSetup(void) {
 	DVDEntry* dvd;
+#ifdef MUST_MATCH
+	u32 rounded;
+#endif
 	u32 size;
+#ifndef MUST_MATCH
 	BinaryFontBlock* ptr;
+#endif
 	char path[128];
+#ifndef MUST_MATCH
 	int i;
+#endif
 
 	if (!pfh) {
 		sprintf(path, "%s/f/%s.bfn", getMarioStDvdRoot(), fontname[0]);
 		dvd = DVDMgrOpen(path, 2, 0);
 		size = DVDMgrGetLength(dvd);
+#ifdef MUST_MATCH
+		// Keeping the assignment in the argument preserves size in r4 and allocates dvd/rounded to r31/r30.
+		pfh = __memAlloc(HEAP_DEFAULT, rounded = OSRoundUp32B(size));
+		DVDMgrRead(dvd, pfh, rounded, 0);
+#else
 		pfh = __memAlloc(HEAP_DEFAULT, OSRoundUp32B(size));
 		DVDMgrRead(dvd, pfh, OSRoundUp32B(size), 0);
+#endif
 		DVDMgrClose(dvd);
+#ifdef MUST_MATCH
+		fontmgrScanBlocks(pfh);
+#else
 		ptr = (BinaryFontBlock*)(pfh + 1);
 		for (i = 0; i < pfh->blockcount; i++) {
 			switch (ptr->magic) {
@@ -282,6 +320,7 @@ void fontmgrTexSetup(void) {
 			}
 			ptr = (BinaryFontBlock*)((u32)ptr + ptr->size);
 		}
+#endif
 		GXInitTexObj(
 			&fgTexObj,
 			&blockGlyph[1],
