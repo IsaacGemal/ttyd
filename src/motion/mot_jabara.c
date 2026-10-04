@@ -82,6 +82,13 @@ const char str_802C5C0C[] = "PM_J_1F";
 const char str_802C5C14[] = "PM_J_1G";
 const char str_802C5C1C[] = "PM_J_1H";
 __declspec(section ".rodata") const u32 gap_04_802C5C24_rodata = 0;
+
+// .data trailing zero word after the two switch jump tables.
+#pragma force_active on
+#pragma explicit_zero_data on
+__declspec(section ".data") u32 gap_05_8030E97C_data = 0;
+#pragma explicit_zero_data reset
+#pragma force_active reset
 const f64 double_1p5708_802c5c28 = 1.5707963705062866;
 const char str_802C5C30[] = "M_J_1B";
 
