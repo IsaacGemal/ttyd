@@ -44,6 +44,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const char str_00000E08[];
+extern const char str_00000E10[];
+extern const char str_00000E18[];
+extern const char str_00000EB4[];
+extern const char str_00000ED0[];
+extern const char str_00000ED8[];
+
 #pragma pool_data off
 
 #pragma force_active on
@@ -67,6 +75,14 @@ static void pose_init(void);
 __declspec(section ".rodata") GXColor dat_bom_00006360 = {0xff, 0xff, 0xff, 0xff};
 __declspec(section ".rodata") Vec vec3_bom_00006364 = {0.0f, 0.0f, 0.0f};
 __declspec(section ".rodata") Vec vec3_bom_00006370 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") u32 dat_bom_0000637c = 0xFFFFFFFF;
+__declspec(section ".rodata") u32 dat_bom_00006380 = 0x000000FF;
+__declspec(section ".rodata") Vec vec3_bom_00006384 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_bom_00006390 = {1.0f, 1.0f, 1.0f};
+__declspec(section ".rodata") Vec vec3_bom_0000639c = {-200.0f, 150.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_bom_000063a8 = {1.0f, 1.0f, 1.0f};
+__declspec(section ".rodata") Vec vec3_bom_000063b4 = {-210.0f, -140.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_bom_000063c0 = {1.0f, 1.0f, 1.0f};
 
 // clang-format off
 extend_data(8,
@@ -228,6 +244,13 @@ EVT_BEGIN(evt_bom_01_karakara)
     RETURN
 EVT_END()
 
+__declspec(section ".rodata") const Vec vec3_bom_0000649c = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_bom_000064a8 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_bom_000064b4 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_bom_000064c0 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_bom_000064cc = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_bom_000064d8 = {0.0f, 0.0f, 0.0f};
+
 static ExtTableEntry ext_data[31] = {0};
 
 // TODO: write ext_main (static, 0x1494 bytes) here:
@@ -367,7 +390,7 @@ static void ext_init(void) {
 
             e = pd2->entries;
             for (j = 0; j < pd2->count; j++, e++) {
-                if (strcmp(e->name, "R_1") == 0) {
+                if (strcmp(e->name, str_00000E10) == 0) {
                     break;
                 }
             }
@@ -609,12 +632,12 @@ USER_FUNC(bom_fall) {
     // 0x4 of PoseData is the pose count written by ext_init; the header keeps it as padding
     for (i = 0; i < *(s32*)((u8*)data + 0x4); i++, pose++) {
         data->states[i].field_0 = 0x7f;
-        pose->matrix[0][0][3] = 600.0f * rand() / 32767.0f;
-        pose->matrix[0][1][3] = 3700.0f + 300.0f * rand() / 32767.0f;
-        pose->matrix[0][2][3] = -650.0f + -450.0f * rand() / 32767.0f;
+        pose->matrix[0][0][3] = float_600_bom_000070f4 * rand() / float_32767_bom_000070ac;
+        pose->matrix[0][1][3] = float_3700_bom_000070fc + float_300_bom_000070f8 * rand() / float_32767_bom_000070ac;
+        pose->matrix[0][2][3] = float_neg650_bom_00007100 + float_neg450_bom_00007104 * rand() / float_32767_bom_000070ac;
         pd = ((PoseRoot*)lp[0])->data;
         for (j = 0, e = pd->entries; j < pd->count; j++, e++) {
-            if (strcmp(e->name, "S_2") == 0) {
+            if (strcmp(e->name, str_00000EB4) == 0) {
                 break;
             }
         }
@@ -1533,6 +1556,12 @@ static EVT_BEGIN(musume_c_entry)
     RETURN
 EVT_END()
 
+__declspec(section ".rodata") const Vec vec3_bom_00006ea4 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_bom_00006eb0 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_bom_00006ebc = {0.0f, 100.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_bom_00006ec8 = {0.0f, 1.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_bom_00006ed4 = {0.0f, 0.0f, 0.0f};
+
 // TODO: type
 static u32 npcEnt[161] = {
     (u32)"村長", 0x40000600, 0x00000000, (u32)&init_soncho,
@@ -1640,7 +1669,7 @@ void ext_init_minnnanokoe(void) {
         pose->field_0x4 = float_270_bom_0000703c;
         pd = ((PoseRoot*)lp[0])->data;
         for (j = 0, e = pd->entries; j < pd->count; e++, j++) {
-            if (strcmp(e->name, "S_1") == 0) {
+            if (strcmp(e->name, str_00000E08) == 0) {
                 break;
             }
         }
@@ -1930,10 +1959,6 @@ EVT_BEGIN(bom_01_init_evt)
     END_INLINE_EVENT
     RETURN
 EVT_END()
-
-u32 lp[1] = {
-    0x00000000,
-};
 
 // TODO: name$915 is a static local of a function: move it inside that function as
 // `static` with this data (it's here at its place in .data)
@@ -2329,22 +2354,18 @@ extern const double double_to_int_bom_00007030;
 extern const char zero_bom_00007038[];
 extern const f32 float_800_bom_0000711c;
 
-const Vec vec3_bom_00006ebc = {0.0f, 100.0f, 0.0f};
-const Vec vec3_bom_00006ec8 = {0.0f, 1.0f, 0.0f};
-const Vec vec3_bom_00006ed4 = {0.0f, 0.0f, 0.0f};
-
 USER_FUNC(make_ext_table) {
     s32 i;
 
     memset(ext_data, 0, 0x174);
     for (i = 0; i < 10; i++) {
         ext_data[i].name = "c_bom_sen";
-        ext_data[i].type = "R_1";
+        ext_data[i].type = str_00000E10;
         ext_data[i].value = (f32)i * 2.0f;
     }
     for (i = 0; i < 20; i++) {
         ext_data[10 + i].name = "c_bom_sen";
-        ext_data[10 + i].type = "S_2";
+        ext_data[10 + i].type = str_00000EB4;
         ext_data[10 + i].value = (f32)i * 6.0f;
     }
     ext_data[30].name = NULL;
@@ -2357,12 +2378,12 @@ USER_FUNC(make_ext_table_minnnanokoe) {
     memset(ext_data, 0, 0x174);
     for (i = 0; i < 10; i++) {
         ext_data[i].name = "c_bom_sen";
-        ext_data[i].type = "S_1";
+        ext_data[i].type = str_00000E08;
         ext_data[i].value = (f32)i * 4.0f;
     }
     for (i = 0; i < 20; i++) {
         ext_data[10 + i].name = "c_bom_sen";
-        ext_data[10 + i].type = "R_1";
+        ext_data[10 + i].type = str_00000E10;
         ext_data[10 + i].value = (f32)i * 2.0f;
     }
     ext_data[30].name = NULL;
@@ -2428,7 +2449,7 @@ static USER_FUNC(yami_view) {
     target.z = value;
     up = vec3_bom_00006ec8;
     camPos = vec3_bom_00006ebc;
-    camPos.z = 100.0f + value;
+    camPos.z = float_100_bom_00007000 + value;
     C_MTXLookAt(mtx, &camPos, &up, &target);
     envSetYamiView(mtx);
     return EVT_RETURN_DONE;
@@ -2439,7 +2460,7 @@ static USER_FUNC(make_name) {
     s32* args = event->args;
     s32 value = evtGetValue(event, args[0]);
 
-    sprintf(name, "S_hikari%d", value);
+    sprintf(name, str_00000E18, value);
     evtSetValue(event, args[1], (s32)name);
     return EVT_RETURN_DONE;
 }
@@ -2463,10 +2484,10 @@ static USER_FUNC(sight) {
         sight_wp->state = 5;
     }
     if (sight_wp->file == NULL) {
-        if ((u32)fileAsyncf(4, 0, "%s/%s", getMarioStDvdRoot(), "taihou.tpl") == 0) {
+        if ((u32)fileAsyncf(4, 0, str_00000ED0, getMarioStDvdRoot(), str_00000ED8) == 0) {
             return EVT_RETURN_BLOCK;
         }
-        sight_wp->file = fileAllocf(4, "%s/%s", getMarioStDvdRoot(), "taihou.tpl");
+        sight_wp->file = fileAllocf(4, str_00000ED0, getMarioStDvdRoot(), str_00000ED8);
     }
     if (sight_wp->state == 6) {
         fileFree(sight_wp->file);
@@ -2647,22 +2668,80 @@ USER_FUNC(taihou_r) {
 
 // clang-format on
 
+const f32 float_1_bom_00006ffc = 1.0f;
 const f32 float_100_bom_00007000 = 100.0f;
 const f32 zero_bom_00007004 = 0.0f;
-const f32 float_1000_bom_0000705c = 1000.0f;
-const f32 float_1_bom_00006ffc = 1.0f;
-const f32 float_2_bom_0000704c = 2.0f;
-const f32 float_4_bom_00007044 = 4.0f;
-const f32 float_6_bom_000070f0 = 6.0f;
-const double double_0p7854_bom_00007088 = 0.7853981852531433;
+const f32 float_0p1_bom_00007008 = 0.1f;
+const f32 float_0p5_bom_0000700c = 0.5f;
+const f32 float_10_bom_00007010 = 10.0f;
+const char str_00000DDC[] = "SFX_STG7_BOMB_TOGETHER2";
 const double double_to_int_bom_00007030 = 4503601774854144.0;
 const char zero_bom_00007038[4] = {0};
-const f32 float_800_bom_0000711c = 800.0f;
-const f32 float_600_bom_000070f4 = 600.0f;
+const f32 float_270_bom_0000703c = 270.0f;
+const char str_00000E08[] = "S_1";
+const f32 float_4_bom_00007044 = 4.0f;
+const char str_00000E10[] = "R_1";
+const f32 float_2_bom_0000704c = 2.0f;
+const char str_00000E18[] = "S_hikari%d";
+const f32 float_1000_bom_0000705c = 1000.0f;
+const f32 float_6p2832_bom_00007060 = 6.2831855f;
+const f32 float_0p125_bom_00007064 = 0.125f;
+const f32 float_0p00761_bom_00007068 = 0.00761f;
+const f32 float_0p16605_bom_0000706c = 0.16605f;
+const f32 float_3p1416_bom_00007070 = 3.1415927f;
+const f32 float_1p5708_bom_00007074 = 1.5707964f;
+const f32 float_4p7124_bom_00007078 = 4.712389f;
+const f32 float_0p03705_bom_0000707c = 0.03705f;
+const f32 float_0p4967_bom_00007080 = 0.4967f;
+const double double_0p7854_bom_00007088 = 0.7853981852531433;
+const char str_00000E58[] = "SFX_STG7_BOMB_FALL1";
+const f32 float_280_bom_000070a4 = 280.0f;
+const f32 float_3_bom_000070a8 = 3.0f;
 const f32 float_32767_bom_000070ac = 32767.0f;
+const f32 float_150_bom_000070b0 = 150.0f;
+const f32 float_30_bom_000070b4 = 30.0f;
+const f32 float_50_bom_000070b8 = 50.0f;
+const f32 float_400_bom_000070bc = 400.0f;
+const f32 float_70_bom_000070c0 = 70.0f;
+const f32 float_350_bom_000070c4 = 350.0f;
+const f32 float_180_bom_000070c8 = 180.0f;
+const f32 float_neg1000_bom_000070cc = -1000.0f;
+const f32 float_neg20_bom_000070d0 = -20.0f;
+const f32 float_deg2rad_bom_000070d4 = 0.017453292f;
+const f32 float_20_bom_000070d8 = 20.0f;
+const f32 float_60_bom_000070dc = 60.0f;
+const double double_to_int_mask_bom_000070e0 = 4503599627370496.0;
+const f32 float_500_bom_000070e8 = 500.0f;
+const char str_00000EB4[] = "S_2";
+const f32 float_6_bom_000070f0 = 6.0f;
+const f32 float_600_bom_000070f4 = 600.0f;
 const f32 float_300_bom_000070f8 = 300.0f;
 const f32 float_3700_bom_000070fc = 3700.0f;
-const f32 float_neg450_bom_00007104 = -450.0f;
 const f32 float_neg650_bom_00007100 = -650.0f;
-const f32 float_270_bom_0000703c = 270.0f;
+const f32 float_neg450_bom_00007104 = -450.0f;
+const char str_00000ED0[] = "%s/%s";
+const char str_00000ED8[] = "taihou.tpl";
+const f32 float_800_bom_0000711c = 800.0f;
+const f32 float_neg1_bom_00007120 = -1.0f;
+const f32 float_neg100_bom_00007124 = -100.0f;
+const f32 float_neg60_bom_00007128 = -60.0f;
+const f32 float_0p6_bom_0000712c = 0.6f;
+const f32 float_90_bom_00007130 = 90.0f;
+const f32 float_126_bom_00007134 = 126.0f;
+const f32 float_162_bom_00007138 = 162.0f;
+const f32 float_120_bom_0000713c = 120.0f;
+const f32 float_110_bom_00007140 = 110.0f;
+const f32 float_neg160_bom_00007144 = -160.0f;
+const f32 float_0p8_bom_00007148 = 0.8f;
+const f32 float_230_bom_0000714c = 230.0f;
+const f32 float_neg170_bom_00007150 = -170.0f;
+const f32 float_neg240_bom_00007154 = -240.0f;
+const f32 float_neg190_bom_00007158 = -190.0f;
+const f32 float_16_bom_0000715c = 16.0f;
+const f32 float_neg16_bom_00007160 = -16.0f;
+const f32 float_neg180_bom_00007164 = -180.0f;
+const f32 float_neg220_bom_00007168 = -220.0f;
+const f32 float_200_bom_0000716c = 200.0f;
+
+u32 lp[1];
 

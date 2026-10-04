@@ -85,6 +85,10 @@ def main():
         return
     linked = []
     for src in todo:
+        if f'Object(NonMatching, "{src}"' not in CONFIGURE.read_text():
+            # a path as configure.py doesn't spell it (src/... or a typo) would flip nothing and "link"
+            print(f"FAIL   {src}: no Object(NonMatching, \"{src}\") in configure.py (use its path, e.g. effect/eff_fire.c)")
+            continue
         set_matching(src, True)
         err = build()
         if err:

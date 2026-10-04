@@ -23,7 +23,7 @@
 #include "memory.h"
 #include "system.h"
 #include <dolphin/os.h>
-#include <math.h>
+#include "math_ext.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -31,6 +31,9 @@
 
 #pragma force_active on
 extern s32 evt_rsh_window[];
+
+// The 4 bytes after wp in the target's .bss (gap_05_00000004_bss).
+static u32 gap_05_00000004_bss;
 
 static MoamoaWork* wp;
 
@@ -172,7 +175,13 @@ static void moamoa_pose_init(void) {
         wp->poses[wp->poseCount].frameCount = i - first + 1;
         wp->poses[wp->poseCount].duration = data->frame;
         wp->poses[wp->poseCount].field_0x18 = 1;
+#ifdef MUST_MATCH
+        // The target's pooled "J" object is 4 bytes (the compiler pads the last string);
+        // the trailing NULs keep the object the same size. strncmp only reads one byte.
+        if (strncmp(name2, "J\0\0", 1) == 0) {
+#else
         if (strncmp(name2, "J", 1) == 0) {
+#endif
             wp->poses[wp->poseCount].field_0x18 = 0;
         }
         data++;

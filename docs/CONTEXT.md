@@ -4469,3 +4469,9 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   effStarPointEntry 97.39 -> 97.96. eff_funemizu's agent also dropped matching.h's trailing newline by accident;
   that hunk was left out. Unchanged: ac_pendulum's _get_angle_rate (99.20), magic_horao (99.86; its collect was
   flagged for a `pkill -9 -f mwcceppc` inside its sandbox).
+- **Batch 9:** data ports for bom_01 (strings and floats named, each checked against its literal; .bss identical),
+  rsh, rsh_00 and rsh_06 (rsh_06's `mt`, a function-local static in the original, kept local at file scope).
+  autolink.py given a path configure.py doesn't spell (src/effect/eff_kemuri.c) flipped nothing and printed LINKED;
+  it now refuses such a path. With the right paths eff_kemuri, fadedrv and eff_recovery fail on undefined data objects
+  their code reaches by name, mot_plane on the DOL checksum: wave 72 round 2 (12:20) gives each a link task with its
+  failure as the hint, plus data prep for the next 12 units by unmatched bytes.
