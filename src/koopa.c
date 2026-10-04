@@ -43,81 +43,37 @@ f32 kpaWidthDat[4] = {20.0f, 60.0f, 84.0f, 186.0f};
 f32 baseScaleTbl[4] = {0.3f, 1.0f, 1.4f, 3.1f};
 void* fireefp;
 const Vec vec3_802fc920 = {0.0f, 0.0f, 0.0f};
-// The unit's rodata for kpaFireAttack and the map-name strings: kpaPreInit addresses these as offsets from
-// vec3_802fc920, and the named objects keep the original .rodata layout and symbol names.
-const double double_to_int_802fc930 = 4503601774854144.0;
-const char str_802FC938[0xC] = "KPA_A_1A";
-const char str_802FC944[0xC] = "KPA2_A_1A";
-const char str_802FC950[0xC] = "KPA_A_1B";
-const char str_802FC95C[0xC] = "KPA2_A_1B";
-const char str_802FC968[0xC] = "KPA_A_1C";
-const char str_802FC974[0xC] = "KPA2_A_1C";
-const char str_802FC980[0xC] = "KPA_A_1D";
-const char str_802FC98C[0xC] = "KPA2_A_1D";
-const char str_802FC998[0x8] = "KPA_S_1";
-const char str_802FC9A0[0xC] = "KPA2_S_1";
-const char str_802FC9AC[0x8] = "KPA_W_1";
-const char str_802FC9B4[0xC] = "KPA2_W_1";
-const char str_802FC9C0[0x8] = "KPA_R_1";
-const char str_802FC9C8[0xC] = "KPA2_R_1";
-const char str_802FC9D4[0xC] = "KPA2_Z_2";
-const char str_802FC9E0[0x8] = "kpa_03";
-const char str_802FC9E8[0x8] = "M_J_1B";
-const char str_802FC9F0[0x8] = "M_J_1C";
-const char str_802FC9F8[0x8] = "kpa_02";
-const char str_802FCA00[0x8] = "kpa_04";
-const char str_802FCA08[0x8] = "kpa_05";
-const char str_802FCA10[0x8] = "kpa_06";
 
-
-void* getKoopaFireEfp(void) {
-    return fireefp;
-}
-
-s32 kpaNoHitEnemyCheck(void) {
-    return MW_S16(marioGetPtr(), 0x78);
-}
-
-s32 kpaMutekiCheck(void) {
-    return (KPA(marioGetPtr())->flags >> 16) & 1;
-}
-
-void kpaMutekiOn(void) {
-    MarioWork* mp = marioGetPtr();
-    animPoseSetMaterialFlagOn(mp->paperAnimGroupId[0], 0x80000000);
-    KPA(mp)->flags |= 0x10000;
-}
-
-void kpaMutekiOff(void) {
-    MarioWork* mp = marioGetPtr();
-    animPoseSetMaterialFlagOff(mp->paperAnimGroupId[0], 0x80000000);
-    KPA(mp)->flags &= ~0x10000;
-}
-
-void kpaMSetMutekiTimer(void) {
-    MarioWork* mp = marioGetPtr();
-    KPA(mp)->mutekiTimer = sysMsec2Frame(0x2EE0);
-    MW_S16(mp, 0x78) = 0;
-}
-
-void kpaChgPose(const char* a, const char* b) {
-    marioChgPose((((MW_S32(marioGetPtr(), 0x14) & 1) ^ 1) == 1) ? a : b);
-}
-
-s32 kpaGetLevel(void) {
-    s32 level = 0;
-    MarioWork* mp = marioGetPtr();
-    if (mp->characterId == 2) {
-        level = KPA(mp)->level;
-    }
-    return level;
-}
+// Defined after the code: these follow the breath helpers' eight pooled floats,
+// before the remaining deferred functions' literals. Early helper references need
+// the section declared here, too, or MWCC places their constants in .sdata.
+__declspec(section ".sdata2") extern const f32 float_deg2rad_804203d8;
+__declspec(section ".sdata2") extern const f32 float_7_804203dc;
+__declspec(section ".sdata2") extern const f32 float_0p4_804203e0;
+__declspec(section ".sdata2") extern const f32 float_0p3_804203e4;
+__declspec(section ".sdata2") extern const f32 float_1p4_804203e8;
+__declspec(section ".sdata2") extern const f32 float_1p5_804203ec;
+__declspec(section ".sdata2") extern const f32 float_neg0p05_804203f0;
+__declspec(section ".sdata2") extern const f32 float_neg0p08_804203f4;
+__declspec(section ".sdata2") extern const f32 float_neg0p006_804203f8;
+__declspec(section ".sdata2") extern const f32 float_neg0p002_804203fc;
+__declspec(section ".sdata2") extern const f32 float_neg0p1_80420400;
+__declspec(section ".sdata2") extern const f32 float_neg0p2_80420404;
+__declspec(section ".sdata2") extern const f32 float_neg0p024_80420408;
+__declspec(section ".sdata2") extern const f32 float_neg0p01_8042040c;
 
 // The original inlines this breath spawn into kpaFireAttack's four breath states; keep it one helper so the four
 // copies share a body. `unk1AC` is only named as bytes in mario.h but the original reads it as a float here.
 // This copy (one declarator `scale, x`) drives the first breath block; the `#ifdef` twin below drives the
 // other three and exists only to give MWCC the declaration order it needs for the right FPR colouring.
+#ifdef MUST_MATCH
+// An ordinary, immediately generated helper pools the i2f double before the deferred
+// functions' strings. Its calls still inline; the linker strips the unused body.
+#pragma defer_codegen off // Pool the conversion double before kpaFireAttack's strings.
+static void kpaFireBreath(MarioWork* mp, Vec* pos) {
+#else
 static inline void kpaFireBreath(MarioWork* mp, Vec* pos) {
+#endif
     f32 sign;
     f32 scale, x;
     f32 y;
@@ -144,19 +100,19 @@ static inline void kpaFireBreath(MarioWork* mp, Vec* pos) {
     }
     z = pos->z;
     type = 7;
-    escale = 0.4f;
+    escale = float_0p4_804203e0;
     switch (KPA(mp)->level) {
     case 0:
-        escale = 0.3f;
+        escale = float_0p3_804203e4;
         break;
     case 1:
         escale = 1.0f;
         break;
     case 2:
-        escale = 1.4f;
+        escale = float_1p4_804203e8;
         break;
     case 3:
-        escale = 1.5f;
+        escale = float_1p5_804203ec;
         type = 0;
         break;
     }
@@ -202,19 +158,19 @@ static inline void kpaFireBreath2(MarioWork* mp, Vec* pos) {
     }
     z = pos->z;
     type = 7;
-    escale = 0.4f;
+    escale = float_0p4_804203e0;
     switch (KPA(mp)->level) {
     case 0:
-        escale = 0.3f;
+        escale = float_0p3_804203e4;
         break;
     case 1:
         escale = 1.0f;
         break;
     case 2:
-        escale = 1.4f;
+        escale = float_1p4_804203e8;
         break;
     case 3:
-        escale = 1.5f;
+        escale = float_1p5_804203ec;
         type = 0;
         break;
     }
@@ -229,6 +185,53 @@ static inline void kpaFireBreath2(MarioWork* mp, Vec* pos) {
 #else
 #define kpaFireBreath2(m, pos) kpaFireBreath(m, pos)
 #endif
+
+#ifdef MUST_MATCH
+#pragma defer_codegen on // Restore reverse-source emission for the public functions.
+#endif
+
+void* getKoopaFireEfp(void) {
+    return fireefp;
+}
+
+s32 kpaNoHitEnemyCheck(void) {
+    return MW_S16(marioGetPtr(), 0x78);
+}
+
+s32 kpaMutekiCheck(void) {
+    return (KPA(marioGetPtr())->flags >> 16) & 1;
+}
+
+void kpaMutekiOn(void) {
+    MarioWork* mp = marioGetPtr();
+    animPoseSetMaterialFlagOn(mp->paperAnimGroupId[0], 0x80000000);
+    KPA(mp)->flags |= 0x10000;
+}
+
+void kpaMutekiOff(void) {
+    MarioWork* mp = marioGetPtr();
+    animPoseSetMaterialFlagOff(mp->paperAnimGroupId[0], 0x80000000);
+    KPA(mp)->flags &= ~0x10000;
+}
+
+void kpaMSetMutekiTimer(void) {
+    MarioWork* mp = marioGetPtr();
+    KPA(mp)->mutekiTimer = sysMsec2Frame(0x2EE0);
+    MW_S16(mp, 0x78) = 0;
+}
+
+void kpaChgPose(const char* a, const char* b) {
+    marioChgPose((((MW_S32(marioGetPtr(), 0x14) & 1) ^ 1) == 1) ? a : b);
+}
+
+s32 kpaGetLevel(void) {
+    s32 level = 0;
+    MarioWork* mp = marioGetPtr();
+    if (mp->characterId == 2) {
+        level = KPA(mp)->level;
+    }
+    return level;
+}
 
 void kpaSetLevel(s32 level) {
     MarioWork* mp = marioGetPtr();
@@ -257,7 +260,7 @@ s32 kpaGetBodyStatus(void) {
         return -1;
     }
     result = 0;
-    if (strcmp(gp->currentMapName, str_802FC9E0) == 0) {
+    if (strcmp(gp->currentMapName, "kpa_03") == 0) {
         if (mp->position.y > 370.0f) {
             return 0;
         }
@@ -292,8 +295,7 @@ s32 kpaCamFollow(void) {
 // The five map-name strings are addressed as `addi r4, r31, off` off the vec3_802fc920 rodata base.
 // MWCC pools literals in emitted (reverse-source) first-use order, so kpaPreInit sits before
 // kpa_jumpNpc here: kpaFall/kpaGetBodyStatus emit kpa_03 first, then kpa_jumpNpc's M_J_1B/M_J_1C,
-// then kpaPreInit's kpa_02/kpa_04/kpa_05/kpa_06, matching the target .rodata. The kpaFireAttack
-// pool entries above must also be present.
+// then kpaPreInit's kpa_02/kpa_04/kpa_05/kpa_06, matching the target .rodata.
 void kpaPreInit(void) {
     MarioWork* mp = marioGetPtr();
 
@@ -308,17 +310,17 @@ void kpaPreInit(void) {
     mp = marioGetPtr();
     KPA(mp)->sfxId = -1;
     mp = marioGetPtr();
-    if (strcmp(gp->currentMapName, str_802FC9F8) == 0
-        || strcmp(gp->currentMapName, str_802FC9E0) == 0
-        || strcmp(gp->currentMapName, str_802FCA00) == 0
-        || strcmp(gp->currentMapName, str_802FCA08) == 0
-        || strcmp(gp->currentMapName, str_802FCA10) == 0) {
+    if (strcmp(gp->currentMapName, "kpa_02") == 0
+        || strcmp(gp->currentMapName, "kpa_03") == 0
+        || strcmp(gp->currentMapName, "kpa_04") == 0
+        || strcmp(gp->currentMapName, "kpa_05") == 0
+        || strcmp(gp->currentMapName, "kpa_06") == 0) {
         MW_U32(mp, 0x14) |= 1;
     } else {
         MW_U32(mp, 0x14) &= ~1;
     }
     mp = marioGetPtr();
-    if (strcmp(gp->currentMapName, str_802FC9E0) == 0) {
+    if (strcmp(gp->currentMapName, "kpa_03") == 0) {
         MW_U32(mp, 0x14) |= 2;
     } else {
         MW_U32(mp, 0x14) &= ~2;
@@ -554,7 +556,7 @@ f32 kpaSetJumpPara(void) {
     MW_F32(mp, 0x88) = jump[3];
     switch (KPA(mp)->level) {
         case 0:
-            MW_F32(mp, 0x7C) = 7.0f;
+            MW_F32(mp, 0x7C) = float_7_804203dc;
             MW_F32(mp, 0x80) = -0.4f;
             MW_F32(mp, 0x84) = 0.08f;
             MW_F32(mp, 0x88) = -0.02f;
@@ -567,7 +569,7 @@ f32 kpaSetJumpPara(void) {
             break;
         case 2:
             MW_F32(mp, 0x7C) = 8.4f;
-            MW_F32(mp, 0x80) = -0.1f;
+            MW_F32(mp, 0x80) = float_neg0p1_80420400;
             MW_F32(mp, 0x84) = 0.08f;
             MW_F32(mp, 0x88) = -0.018f;
             break;
@@ -586,15 +588,15 @@ f32 kpaSetJumpPara(void) {
 f32 kpaSetFallPara(void) {
     MarioWork* mp = marioGetPtr();
     if (MW_U16(mp, 0x246) & 0x100) {
-        MW_F32(mp, 0x7C) = -0.05f;
-        MW_F32(mp, 0x80) = -0.08f;
-        MW_F32(mp, 0x84) = -0.006f;
-        MW_F32(mp, 0x88) = -0.002f;
+        MW_F32(mp, 0x7C) = float_neg0p05_804203f0;
+        MW_F32(mp, 0x80) = float_neg0p08_804203f4;
+        MW_F32(mp, 0x84) = float_neg0p006_804203f8;
+        MW_F32(mp, 0x88) = float_neg0p002_804203fc;
     } else {
-        MW_F32(mp, 0x7C) = -0.1f;
-        MW_F32(mp, 0x80) = -0.2f;
-        MW_F32(mp, 0x84) = -0.024f;
-        MW_F32(mp, 0x88) = -0.01f;
+        MW_F32(mp, 0x7C) = float_neg0p1_80420400;
+        MW_F32(mp, 0x80) = float_neg0p2_80420404;
+        MW_F32(mp, 0x84) = float_neg0p024_80420408;
+        MW_F32(mp, 0x88) = float_neg0p01_8042040c;
     }
 }
 
@@ -610,11 +612,11 @@ void kpa_jumpNpc(void) {
         marioPreJump();
         MW_F32(mp, 0x7C) = 2.6f;
         MW_F32(mp, 0x80) = -0.06f;
-        MW_F32(mp, 0x84) = -0.01f;
-        MW_F32(mp, 0x88) = -0.002f;
+        MW_F32(mp, 0x84) = float_neg0p01_8042040c;
+        MW_F32(mp, 0x88) = float_neg0p002_804203fc;
         if (!(mp->flags & 0x2000)) {
             if (mp->characterId == 0) {
-                marioChgPose(str_802FC9E8);
+                marioChgPose("M_J_1B");
             }
         }
         mp->flags |= 0x10000;
@@ -626,13 +628,13 @@ void kpa_jumpNpc(void) {
         if (MW_F32(mp, 0x7C) <= 0.0f) {
             if (!(mp->flags & 0x2000)) {
                 if (mp->characterId == 0) {
-                    marioChgPose(str_802FC9F0);
+                    marioChgPose("M_J_1C");
                 }
             }
             marioSetPeakYpos();
             MW_F32(mp, 0x80) = -0.06f;
             MW_F32(mp, 0x84) = -0.004f;
-            MW_F32(mp, 0x88) = -0.002f;
+            MW_F32(mp, 0x88) = float_neg0p002_804203fc;
             mp->flags &= ~0x10000;
             mp->flags |= 0x20000;
         }
@@ -647,7 +649,7 @@ void kpaFall(void) {
     f32 spd;
     void* res;
     f32 landY;
-    if (strcmp(gp->currentMapName, str_802FC9E0) == 0) {
+    if (strcmp(gp->currentMapName, "kpa_03") == 0) {
         mp->hitobjStandOn = NULL;
         kpaClearHitobjRide();
         spd = marioGetFallSpd();
@@ -657,15 +659,15 @@ void kpaFall(void) {
         if (!spd) {
             MarioWork* mp2 = marioGetPtr();
             if (MW_U16(mp2, 0x246) & 0x100) {
-                MW_F32(mp2, 0x7C) = -0.05f;
-                MW_F32(mp2, 0x80) = -0.08f;
-                MW_F32(mp2, 0x84) = -0.006f;
-                MW_F32(mp2, 0x88) = -0.002f;
+                MW_F32(mp2, 0x7C) = float_neg0p05_804203f0;
+                MW_F32(mp2, 0x80) = float_neg0p08_804203f4;
+                MW_F32(mp2, 0x84) = float_neg0p006_804203f8;
+                MW_F32(mp2, 0x88) = float_neg0p002_804203fc;
             } else {
-                MW_F32(mp2, 0x7C) = -0.1f;
-                MW_F32(mp2, 0x80) = -0.2f;
-                MW_F32(mp2, 0x84) = -0.024f;
-                MW_F32(mp2, 0x88) = -0.01f;
+                MW_F32(mp2, 0x7C) = float_neg0p1_80420400;
+                MW_F32(mp2, 0x80) = float_neg0p2_80420404;
+                MW_F32(mp2, 0x84) = float_neg0p024_80420408;
+                MW_F32(mp2, 0x88) = float_neg0p01_8042040c;
             }
             spd = marioGetFallSpd();
         }
@@ -699,7 +701,7 @@ void kpaFall(void) {
             if (MW_U16(mp, 0x246) & 0x100) {
                 MW_F32(mp, 0x88) = -0.001f;
             } else {
-                MW_F32(mp, 0x88) = -0.01f;
+                MW_F32(mp, 0x88) = float_neg0p01_8042040c;
             }
         }
         mp->hitobjStandOn = NULL;
@@ -755,11 +757,6 @@ void kpaAttackStart2(void) {
     }
 }
 
-// The eight rotation i2f sites load the compiler's anonymous pooled copy of the magic double at
-// r31+0xf8; the original loads the unit's named double_to_int_802fc930 at r31+0x10. Reading the
-// named double by hand removes the anonymous copy but emits fsub+frsp instead of the fused fsubs
-// and grows the frame 0xa0 -> 0xe0 (94%) This is the project-wide i2f limit.
-// NONMATCHING (99.99%): 8 i2f `lfd` offsets (anonymous double 0xf8 vs named double 0x10).
 void kpaFireAttack(void) {
     MarioWork* mp = marioGetPtr();
     Vec pos16, pos17, pos2A, pos2B;
@@ -779,13 +776,13 @@ void kpaFireAttack(void) {
         }
         // fallthrough
     case 0x14:
-        kpaChgPose(str_802FC938, str_802FC944);
+        kpaChgPose("KPA_A_1A", "KPA2_A_1A");
         MW_S32(KPA(mp), 0x140) = 6;
         KPA(mp)->attackMode = 0x15;
         break;
     case 0x15:
         if (--MW_S32(KPA(mp), 0x140) <= 0) {
-            kpaChgPose(str_802FC950, str_802FC95C);
+            kpaChgPose("KPA_A_1B", "KPA2_A_1B");
             MW_S32(KPA(mp), 0x140) = 8;
             KPA(mp)->attackMode = 0x16;
             {
@@ -808,7 +805,7 @@ void kpaFireAttack(void) {
         }
         if (--MW_S32(KPA(mp), 0x140) <= 0) {
             MW_S32(KPA(mp), 0x140) = sysMsec2Frame(0x190);
-            kpaChgPose(str_802FC968, str_802FC974);
+            kpaChgPose("KPA_A_1C", "KPA2_A_1C");
             KPA(mp)->attackMode = 0x17;
         }
         break;
@@ -825,7 +822,7 @@ void kpaFireAttack(void) {
         if (--MW_S32(KPA(mp), 0x140) <= 0) {
             if (!(MW_U16(mp, 0x246) & 0x200) && MW_S32(KPA(mp), 0x144) == 0) {
                 MarioWork* m;
-                kpaChgPose(str_802FC980, str_802FC98C);
+                kpaChgPose("KPA_A_1D", "KPA2_A_1D");
                 KPA(mp)->attackMode = 0x18;
                 MW_S32(KPA(mp), 0x140) = 6;
                 m = marioGetPtr();
@@ -840,7 +837,7 @@ void kpaFireAttack(void) {
     case 0x18:
         if (--MW_S32(KPA(mp), 0x140) <= 0) {
             KPA(mp)->attackMode = 0;
-            kpaChgPose(str_802FC998, str_802FC9A0);
+            kpaChgPose("KPA_S_1", "KPA2_S_1");
         }
         break;
     default:
@@ -859,13 +856,13 @@ void kpaFireAttack(void) {
         }
         // fallthrough
     case 0x28:
-        kpaChgPose(str_802FC938, str_802FC944);
+        kpaChgPose("KPA_A_1A", "KPA2_A_1A");
         MW_S32(KPA(mp), 0x140) = 6;
         KPA(mp)->attackMode = 0x29;
         break;
     case 0x29:
         if (--MW_S32(KPA(mp), 0x140) <= 0) {
-            kpaChgPose(str_802FC950, str_802FC95C);
+            kpaChgPose("KPA_A_1B", "KPA2_A_1B");
             MW_S32(KPA(mp), 0x140) = 8;
             KPA(mp)->attackMode = 0x2A;
             {
@@ -888,7 +885,7 @@ void kpaFireAttack(void) {
         }
         if (--MW_S32(KPA(mp), 0x140) <= 0) {
             MW_S32(KPA(mp), 0x140) = sysMsec2Frame(0x190);
-            kpaChgPose(str_802FC968, str_802FC974);
+            kpaChgPose("KPA_A_1C", "KPA2_A_1C");
             KPA(mp)->attackMode = 0x2B;
         }
         break;
@@ -905,7 +902,7 @@ void kpaFireAttack(void) {
         if (--MW_S32(KPA(mp), 0x140) <= 0) {
             if (!(MW_U16(mp, 0x246) & 0x200) && MW_S32(KPA(mp), 0x144) == 0) {
                 MarioWork* m;
-                kpaChgPose(str_802FC980, str_802FC98C);
+                kpaChgPose("KPA_A_1D", "KPA2_A_1D");
                 KPA(mp)->attackMode = 0x2C;
                 MW_S32(KPA(mp), 0x140) = 6;
                 m = marioGetPtr();
@@ -922,16 +919,16 @@ void kpaFireAttack(void) {
             KPA(mp)->attackMode = 0;
             switch (mp->currMotionId) {
             case 0:
-                kpaChgPose(str_802FC998, str_802FC9A0);
+                kpaChgPose("KPA_S_1", "KPA2_S_1");
                 break;
             case 1:
-                kpaChgPose(str_802FC9AC, str_802FC9B4);
+                kpaChgPose("KPA_W_1", "KPA2_W_1");
                 break;
             case 2:
-                kpaChgPose(str_802FC9C0, str_802FC9C8);
+                kpaChgPose("KPA_R_1", "KPA2_R_1");
                 break;
             case MARIO_MOTION_KPA_SWIM:
-                kpaChgPose(str_802FC998, str_802FC9D4);
+                kpaChgPose("KPA_S_1", "KPA2_Z_2");
                 break;
             }
         }
@@ -1032,7 +1029,7 @@ void kpaFireMain(void) {
     root = efp->userdata;
     rootScale = root->unk40;
     PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
-    PSMTXRotRad(m1, 0x79, (root->unk48 - camGetPtr(4)->viewYaw) * 0.017453292f);
+    PSMTXRotRad(m1, 0x79, (root->unk48 - camGetPtr(4)->viewYaw) * float_deg2rad_804203d8);
     if (root->unk48 > 90.0f && root->unk48 < 270.0f) {
         PSMTXScale(m2, root->unk40, root->unk40, -root->unk40);
     } else {
@@ -1052,9 +1049,9 @@ void kpaFireMain(void) {
         if (root->unk1C <= 0x10) {
             continue;
         }
-        f30 = 7.0f * root->unk40;
+        f30 = float_7_804203dc * root->unk40;
         f31 = f30 * rootScale;
-        if (f31 < 7.0f) {
+        if (f31 < float_7_804203dc) {
             continue;
         }
         PSMTXTrans(m0, root->pos.x, root->pos.y, root->pos.z);
@@ -1101,3 +1098,18 @@ s32 kpaJumpChk(void) {
 void kpaPauseSE2(void) {
     psndSFXOn((const char*)(kpaPauseSeTable[irand(0x1C)] | 0x20000));
 }
+
+__declspec(section ".sdata2") const f32 float_deg2rad_804203d8 = 0.017453292f;
+__declspec(section ".sdata2") const f32 float_7_804203dc = 7.0f;
+__declspec(section ".sdata2") const f32 float_0p4_804203e0 = 0.4f;
+__declspec(section ".sdata2") const f32 float_0p3_804203e4 = 0.3f;
+__declspec(section ".sdata2") const f32 float_1p4_804203e8 = 1.4f;
+__declspec(section ".sdata2") const f32 float_1p5_804203ec = 1.5f;
+__declspec(section ".sdata2") const f32 float_neg0p05_804203f0 = -0.05f;
+__declspec(section ".sdata2") const f32 float_neg0p08_804203f4 = -0.08f;
+__declspec(section ".sdata2") const f32 float_neg0p006_804203f8 = -0.006f;
+__declspec(section ".sdata2") const f32 float_neg0p002_804203fc = -0.002f;
+__declspec(section ".sdata2") const f32 float_neg0p1_80420400 = -0.1f;
+__declspec(section ".sdata2") const f32 float_neg0p2_80420404 = -0.2f;
+__declspec(section ".sdata2") const f32 float_neg0p024_80420408 = -0.024f;
+__declspec(section ".sdata2") const f32 float_neg0p01_8042040c = -0.01f;
