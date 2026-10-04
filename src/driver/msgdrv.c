@@ -16,14 +16,19 @@
 #include <stdio.h>
 
 extern GlobalWork* gp;
-extern GXColor unk_80422fe4;
-extern f32 float_0p36_8041a6a0;
-extern f32 float_0p6_8041a570;
-extern s32 msgWindowOpen_SE_Data[12][2];
+
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80422fe4;
+#pragma section ".sdata" ".sbss"
 extern GXColor dat_8041a4f0;
 extern GXColor dat_8041a4f4;
 extern GXColor dat_8041a4f8;
 extern GXColor dat_8041a4fc;
+extern GXColor dat_8041a510;
+
+const char R_no_messages_JP[] = "<col ff0000ff>\x83\x81\x83\x62\x83\x5A\x81\x5B\x83\x57\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1</col>\n<key>"; /*"メッセージがありません"*/
+const char R_no_messages_US[] = "<col ff0000ff>No messages.<col>\n<key>";
 
 typedef struct MsgLookupEntry {
 	u32 startaddr; //0x0
@@ -57,23 +62,48 @@ MsgIcon msgIcon[] = {
 	{"ANM_PAD_START", 0x20D}
 };
 
-//.sbss
-u16 active; //TODO: re-type
-void* msgSortDvdData; //TODO: re-type
-BOOL msgSEflag; //msgSEInit and related functions are unused
+//.data
+s32 msgWindowOpen_SE_Data[12][2] = {
+	{0x16, 0x17},
+	{0x1A, 0x1B},
+	{0x20, 0x21},
+	{0x1C, 0x1D},
+	{0x20, 0x21},
+	{0x1C, 0x1D},
+	{0x18, 0x19},
+	{0x22, 0x23},
+	{0x24, 0x25},
+	{0x26, 0x27},
+	{0x1E, 0x1F},
+	{-1, -1}
+};
+
+//.sbss (declared in reverse: MWCC emits these in reverse source order, and the original's order is
+// active, gap_08, msgSortDvdData, msgSEflag, msgWork)
 MessageWork msgWork;
+BOOL msgSEflag; //msgSEInit and related functions are unused
+void* msgSortDvdData; //TODO: re-type
+u16 gap_08_80418812_sbss;
+u16 active; //TODO: re-type
 
 //.sdata
 MessageWork* msgw = &msgWork;
 const char* ErrMessage[2] = {
-	"<col ff0000ff>\x83\x81\x83\x62\x83\x5A\x81\x5B\x83\x57\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1</col>\n<key>", /*"メッセージがありません"*/
-	"<col ff0000ff>No messages.<col>\n<key>"
+	R_no_messages_JP,
+	R_no_messages_US
 };
 const char* paperPoseTbl[6] = {
 	"PM_Y_1B", "PM_Y_2B", "PM_F_1B",
 	"PM_F_3B", "PM_C_1B", "PM_C_2B"
 };
 const char* language_dir[2] = {"msg", "emsg"};
+
+// 4-byte zero word that ends the unit's .sdata.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_804103F4_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 
 
@@ -100,7 +130,12 @@ void msgInit(void) {
 	msgw->entries[0].lookup = NULL;
 	msgw->entries[1].address = NULL;
 	msgw->entries[1].lookup = NULL;
+#ifdef MUST_MATCH
+	// the original's string object is padded to the next word: the extra NUL spells the pad out
+	msgLoad("global\0", 1);
+#else
 	msgLoad("global", 1);
+#endif
 }
 
 void msgLoad(const char* filename, s32 index) {
@@ -220,7 +255,7 @@ s32 msgMain(smartEntry* smart) {
 	}
 
 	if (data->field_0x24 > data->field_0x28) {
-		data->field_0x28 += float_0p36_8041a6a0 * (f32)OSTicksToMilliseconds(gp->renderTime - data->field_0x30);
+		data->field_0x28 += 0.36f * (f32)OSTicksToMilliseconds(gp->renderTime - data->field_0x30);
 		if (!(data->field_0x4 & 0x80)) {
 			i = (((MessageData*)smart->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
 			mask = i | 0x200;
@@ -230,7 +265,7 @@ s32 msgMain(smartEntry* smart) {
 			}
 		}
 		if (!(data->field_0x4 & 0x10) && (data->field_0x4 & 0x4)) {
-			data->field_0x28 += float_0p36_8041a6a0 * (f32)OSTicksToMilliseconds(gp->renderTime - data->field_0x30);
+			data->field_0x28 += 0.36f * (f32)OSTicksToMilliseconds(gp->renderTime - data->field_0x30);
 		}
 		if (data->field_0x24 < data->field_0x28) {
 			data->field_0x28 = data->field_0x24;
@@ -398,78 +433,6 @@ s32 msgMain(smartEntry* smart) {
 	return 3;
 }
 
-//s32 msgMain(void* somearray)
-//BOOL msgDisp(unused r3, r4, f32 f1, f32 f2)
-
-void msgDispKeyWait_render(s32 wXluStage) {
-	AnimationWork* anim = animGetPtr();
-
-	GXSetZMode(1, 7, 0);
-	GXSetBlendMode(0, 4, 5, 0);
-	GXSetZCompLoc(0);
-	GXSetAlphaCompare(6, 0x80, 1, 0, 0);
-	anim->currDispMode = wXluStage;
-}
-
-//void msgAnalize(void* sameasmsgmain)
-
-MessageWork* L_msgGetWork(void) {
-	return &msgWork;
-}
-
-int msg_compare(const void* a, const void* b) {
-	s32 result = strcmp((const char*)((u32)msgSortDvdData + *(const u32*)a),
-	                    (const char*)((u32)msgSortDvdData + *(const u32*)b));
-
-	if (result > 0) {
-		return 1;
-	}
-	return result < 0 ? -1 : 0;
-}
-
-const char* msgSearch(const char* tag) { //1:1
-	MessageEntry* entry;
-	MsgLookupEntry* lookup;
-	smartEntry* smart;
-	s32 i, max, j, index;
-	s32 result;
-
-	for (i = 0; i < 2; i++) { //check both entries
-		entry = &msgw->entries[i];
-		smart = entry->lookup;
-		if (smart) {
-			lookup = smart->address;
-			j = 0;
-			max = entry->count;
-			while (max >= j) {
-				index = (j + max) / 2; //tag, message
-				if (index >= (s32)entry->count) {
-					break;
-				}
-				result = strcmp(tag, (const char*)((u32)entry->address + lookup[index].startaddr));
-				if (!result) {
-					return (const char*)((u32)entry->address + lookup[index].endaddr);
-				}
-				if (result < 0) {
-					max = index - 1;
-				}
-				else {
-					j = index + 1;
-				}
-			}
-		}
-	}
-	return ErrMessage[gp->language];
-}
-
-BOOL _ismbblead(u32 a1) {
-	u8 check = (u8)a1;
-	if ((check >= 0x81 && check <= 0x9F) || (check >= 0xE0 && check <= 0xFC)) {
-		return TRUE;
-	}
-	return FALSE;
-}
-
 
 
 
@@ -484,6 +447,31 @@ BOOL _ismbblead(u32 a1) {
 // that the original unit does not have, shifting every later string (and msgInit's offsets) by
 // 0x20. It also has to come after msgInit, as it did before.
 #include "math_ext.h"
+extern const f32 float_0_8041a514;
+extern const f32 float_30_8041a518;
+extern const f32 float_40_8041a51c;
+extern const f32 float_25_8041a520;
+extern const f32 float_2_8041a524;
+extern const f32 float_0p3_8041a528;
+extern const f32 float_1_8041a52c;
+extern const f32 float_400_8041a530;
+extern const f32 float_0p5_8041a534;
+extern const f32 float_10_8041a538;
+extern const f32 float_240_8041a53c;
+extern const f32 float_36_8041a540;
+extern const f32 float_62_8041a544;
+extern const f32 float_80_8041a548;
+extern const f32 float_60_8041a54c;
+extern const f32 float_28_8041a550;
+extern const f32 float_6_8041a554;
+extern const f32 float_8_8041a558;
+extern const f32 float_50_8041a55c;
+extern const f32 float_52_8041a560;
+extern const f32 float_31_8041a564;
+extern const f32 float_180_8041a568;
+extern const f32 float_5_8041a56c;
+extern const f32 float_0p6_8041a570;
+#pragma pool_data on // the original addresses its .rodata through one base register
 #ifdef MUST_MATCH
 // MUST_MATCH: retail passes these colours by value (MWCC copies the GXColor to a stack temp and passes
 // its address to FontDrawColor). The header declares a pointer, so the natural call is FontDrawColor(&c)
@@ -538,12 +526,12 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			PSMTXIdentity(mtx);
 			rotY = *(f32*)((u8*)entry + 0x14);
 			if (rotY >= 90.0f && rotY <= 270.0f) {
-				PSMTXScaleApply(mtx, mtx, 1.0f, 1.0f, -1.0f);
+				PSMTXScaleApply(mtx, mtx, float_1_8041a52c, float_1_8041a52c, -1.0f);
 			}
 			PSMTXTransApply(mtx, mtx,
 				x + (f32)*(s16*)((u8*)entry + 0x6),
-				y + (f32)data->field_0x28 + (f32)*(s16*)((u8*)entry + 0x8) - 40.0f,
-				0.0f);
+				y + (f32)data->field_0x28 + (f32)*(s16*)((u8*)entry + 0x8) - float_40_8041a51c,
+				float_0_8041a514);
 			animPoseMain(entry->field_0x0);
 			animPoseDrawMtx(entry->field_0x0, mtx, 2,
 				*(f32*)((u8*)entry + 0x14), *(f32*)((u8*)entry + 0x10));
@@ -642,9 +630,9 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			if (entry->glyph == 0xFFF8) {
 				GXColor color = FontGetDrawColor();
 				Vec pos;
-				pos.x = 20.0f + (x + (f32)*(s16*)((u8*)entry + 0x6));
-				pos.y = (f32)*(s16*)((u8*)entry + 0xA) + (((f32)*(s16*)((u8*)entry + 0x8) + (y + (f32)data->field_0x28)) - 40.0f);
-				pos.z = 0.0f;
+				pos.x = float_28_8041a550 + (x + (f32)*(s16*)((u8*)entry + 0x6));
+				pos.y = (f32)*(s16*)((u8*)entry + 0xA) + (((f32)*(s16*)((u8*)entry + 0x8) + (y + (f32)data->field_0x28)) - float_40_8041a51c);
+				pos.z = float_0_8041a514;
 				// MUST_MATCH: retail converts iconId as u16 (clrlwi, no extsh); cast the callee at the call site.
 #ifdef MUST_MATCH
 				((void (*)(Vec*, s16, u16, u8, f32))iconDispGxAlpha)(&pos, 0x10, (u16)(entry->field_0x0),
@@ -662,7 +650,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				break;
 			}
 
-			if ((f32)(*(s16*)((u8*)entry + 0x8) + data->field_0x28) >= 32.0f * *(f32*)((u8*)entry + 0x10) - 10.0f) {
+			if ((f32)(*(s16*)((u8*)entry + 0x8) + data->field_0x28) >= 32.0f * *(f32*)((u8*)entry + 0x10) - float_10_8041a538) {
 				break;
 			}
 
@@ -693,13 +681,13 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 					fx = px + (f32)(irand(10000) % 3);
 					fy = py + (f32)(irand(10000) % 3);
 				}
-				PSMTXTrans(mtx, (f32)(-half), 12.0f, 0.0f);
+				PSMTXTrans(mtx, (f32)(-half), 12.0f, float_0_8041a514);
 				PSMTXScaleApply(mtx, mtx, *(f32*)((u8*)entry + 0x14), *(f32*)((u8*)entry + 0x14), *(f32*)((u8*)entry + 0x14));
-				PSMTXTransApply(mtx, mtx, (f32)half, -12.0f, 0.0f);
+				PSMTXTransApply(mtx, mtx, (f32)half, -12.0f, float_0_8041a514);
 				PSMTXScaleApply(mtx, mtx, *(f32*)((u8*)entry + 0x10), *(f32*)((u8*)entry + 0x10), *(f32*)((u8*)entry + 0x10));
-				PSMTXTransApply(mtx, mtx, fx, fy, 0.0f);
+				PSMTXTransApply(mtx, mtx, fx, fy, float_0_8041a514);
 				FontDrawCodeMtx(mtx, entry->glyph);
-				*(f32*)((u8*)entry + 0x14) = 0.5f * (*(f32*)((u8*)entry + 0x14) - 1.0f) + 1.0f;
+				*(f32*)((u8*)entry + 0x14) = float_0p5_8041a534 * ((*(f32*)((u8*)entry + 0x14)) - 1.0f) + 1.0f;
 			}
 			else if (entry->field_0x0 & 2) {
 				f32 fx = px + (f32)(irand(10000) % 3);
@@ -761,530 +749,17 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 	return result;
 }
 
+//s32 msgMain(void* somearray)
+//BOOL msgDisp(unused r3, r4, f32 f1, f32 f2)
 
-// NONMATCHING (3.56%): 2 instructions differ, 422 missing, plus register differences.
-void msgWindow_Disp(CameraId camId, void* param) {
-	WindowEntry* window = param; //cast to correct type
-	CameraEntry* camera = camGetCurPtr();
-	s32 type;
+void msgDispKeyWait_render(s32 wXluStage) {
+	AnimationWork* anim = animGetPtr();
 
-	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0, 0, 0, 0});
-	type = window->type;
-
-	switch (type) {
-	case 0:
-	case 1:
-	case 6:
-	case 8:
-	case 9:
-		break;
-	}
-
-}
-
-void msgWindow_Continue(s32 id) {
-	WindowEntry* window = windowGetPointer(id);
-	MessageData* data;
-
-	*(u16*)window->field_0x0 = 1;
-	window->flags |= 2;
-	data = window->userdata->address;
-	data->field_0x30 = gp->renderTime;
-}
-
-void msgWindow_Add(const char* msg, s32 id) {
-	WindowEntry* window = windowGetPointer(id);
-	smartEntry* smart = window->userdata;
-	MessageData* data;
-
-	data = smart->address;
-	data->field_0x30 = gp->renderTime;
-	msgAnalize(smart, msg);
-	*(u16*)window->field_0x0 = 1;
-	window->flags |= 2;
-}
-
-void msgWindow_Repeat(s32 id) {
-	WindowEntry* window = windowGetPointer(id);
-	MessageData* data;
-
-	*(u16*)window->field_0x0 = 1;
-	window->flags |= 2;
-	data = window->userdata->address;
-	data->field_0x30 = gp->renderTime;
-	data->field_0x18 = gp->renderTime;
-	data->field_0x20 = 0;
-	data->field_0x24 = 0;
-	data->field_0x28 = 0;
-	data->field_0x10 = 0;
-}
-
-void msgWindow_Delete(WindowEntry* window) {
-	MessageData* data;
-	s32 i;
-
-	if (window->userdata) {
-		// The original emits an empty mtctr/bdnz loop over data->entryId here.
-		data = window->userdata->address;
-		for (i = data->entryId; i > 0; i--) {
-		}
-		smartFree(window->userdata);
-		window->userdata = NULL;
-	}
-}
-
-void msgWindow_ForceClose(const char* tag) {
-	s32 i = 0;
-	WindowEntry* window;
-	MessageData* data;
-
-	for (i = 0; i < 7; i++) {
-		window = windowGetPointer(i);
-		if (window->flags && *(u16*)window->field_0x0 && window->userdata) {
-			data = window->userdata->address;
-			if (data->tag && strcmp(data->tag, tag) == 0) {
-				*(u16*)window->field_0x0 = 7;
-				data = window->userdata->address;
-				if (data->field_0x4 & 8) {
-					BtlUnit_ChangeStayAnim(data->field_0x7A24);
-				}
-				else {
-					npcSetStayPose(data->text);
-				}
-			}
-		}
-	}
-}
-
-
-void selectWindow_Main(WindowEntry* window) {
-	MessageData* data = window->userdata->address;
-	s8 old;
-
-	msgMain(window->userdata);
-	switch (*(u16*)window->field_0x0) {
-	case 5:
-		window->alpha += 0x19;
-		if (window->alpha > 0xff) {
-			window->alpha = 0xff;
-			*(u16*)window->field_0x0 = 1;
-		}
-		break;
-	case 1:
-		old = data->field_0x7A43;
-		if ((keyGetButtonTrg(0) & 8) || (keyGetDirTrg(0) & 0x1000)) {
-			data->field_0x7A43--;
-		}
-		else if ((keyGetButtonRep(0) & 8) || (keyGetDirRep(0) & 0x1000)) {
-			if (data->field_0x7A43 != 0) {
-				data->field_0x7A43--;
-			}
-		}
-		if ((keyGetButtonTrg(0) & 4) || (keyGetDirTrg(0) & 0x2000)) {
-			data->field_0x7A43++;
-		}
-		else if ((keyGetButtonRep(0) & 4) || (keyGetDirRep(0) & 0x2000)) {
-			if ((s8)data->field_0x7A43 < (s8)data->field_0x7A40 - 1) {
-				data->field_0x7A43++;
-			}
-		}
-		if (data->field_0x7A43 < 0) {
-			data->field_0x7A43 = data->field_0x7A40 - 1;
-		}
-		if (data->field_0x7A43 >= data->field_0x7A40) {
-			data->field_0x7A43 = 0;
-		}
-		if (old != data->field_0x7A43) {
-			psndSFXOn((const char*)0x20005);
-		}
-		if (keyGetButtonTrg(0) & 0x200) {
-			switch (data->field_0x7A42) {
-			case -1:
-				break;
-			case -2:
-				data->field_0x7A43 = -1;
-				*(u16*)window->field_0x0 = 7;
-				psndSFXOn((const char*)0x20013);
-				break;
-			default:
-				data->field_0x7A43 = data->field_0x7A42;
-				*(u16*)window->field_0x0 = 7;
-				psndSFXOn((const char*)0x20013);
-				break;
-			}
-		}
-		else if (keyGetButtonTrg(0) & 0x100) {
-			*(u16*)window->field_0x0 = 7;
-			psndSFXOn((const char*)0x20012);
-		}
-		break;
-	case 7:
-		if (window->alpha == 0) {
-			*(u16*)window->field_0x0 = 4;
-			window->flags &= ~2;
-			return;
-		}
-		window->alpha -= 0x19;
-		if (window->alpha <= 0) {
-			window->alpha = 0;
-		}
-		break;
-	case 4:
-		return;
-	}
-	dispEntry(8, 400.0f - (f32)*(s16*)&window->field_0x4, 0, selectWindow_Disp, window);
-}
-
-// 100%: the original keeps window->userdata in r30 and the MessageData pointer in r29; this compiler
-// otherwise swaps them, so `value` is hoisted to function scope to steer the allocator (below is the
-// natural per-case scope). The button temp likewise fixes the two commutative `and.` operand orders.
-// The switch jump table is emitted as an anonymous @829 instead of jumptable_8030DBA0 (its .data offset
-// differs because msgWindowOpen_SE_Data is extern in this unit rather than defined here); objdiff does
-// not score that data-symbol name (winMsgMain matches with the same difference).
-void msgWindow_Main(WindowEntry* window) {
-	smartEntry* smart = window->userdata;
-	MessageData* data = smart->address;
-#ifdef MUST_MATCH
-	s32 value;
-#endif
-
-	if (data->field_0x7A50 != 0) {
-		if (data->field_0x7A54 == 0) {
-			if (data->field_0x4 & 8) {
-				BtlUnit_ChangeTalkAnim(data->field_0x7A24);
-			}
-			else {
-				npcSetTalkPose(data->text);
-			}
-			data->field_0x7A54 = 1;
-		}
-		data->field_0x7A50--;
-		if (data->field_0x7A50 == 0) {
-			if (((MessageData*)smart->address)->field_0x4 & 8) {
-				BtlUnit_ChangeStayAnim(((MessageData*)smart->address)->field_0x7A24);
-			}
-			else {
-				npcSetStayPose(((MessageData*)smart->address)->text);
-			}
-			data->field_0x7A54 = 0;
-		}
-	}
-
-	switch (*(u16*)window->field_0x0) {
-	case 5:
-		if (!(window->flags & 8)) {
-			s32 se = msgWindowOpen_SE_Data[window->type][0];
-			if (se >= 0) {
-				psndSFXOn((const char*)(se | 0x20000));
-			}
-		}
-		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-		*(u16*)window->field_0x0 = 6;
-		/* fallthrough */
-	case 6:
-		window->flags |= 2;
-		window->alpha = (s16)(OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200);
-		if (window->alpha > 0xff) {
-			window->alpha = 0xff;
-			*(u16*)window->field_0x0 = 1;
-			data->field_0x18 = gp->renderTime;
-			data->field_0x30 = gp->renderTime;
-		}
-		break;
-	case 7:
-		if (!(window->flags & 8)) {
-			s32 se = msgWindowOpen_SE_Data[window->type][1];
-			if (se >= 0) {
-				psndSFXOn((const char*)(se | 0x20000));
-			}
-		}
-		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-		*(u16*)window->field_0x0 = 8;
-		/* fallthrough */
-	case 8:
-		if (window->alpha == 0) {
-			windowDelete(window);
-			return;
-		}
-		window->alpha = 0xff - OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200;
-		if (window->alpha <= 0) {
-			window->alpha = 0;
-		}
-		break;
-	case 1:
-		switch (msgMain(window->userdata)) {
-		case 0:
-			*(u16*)window->field_0x0 = 7;
-			data = window->userdata->address;
-			if (data->field_0x4 & 8) {
-				BtlUnit_ChangeStayAnim(data->field_0x7A24);
-			}
-			else {
-				npcSetStayPose(data->text);
-			}
-			break;
-		case 1:
-			*(u16*)window->field_0x0 = 2;
-			window->flags &= ~2;
-			data = window->userdata->address;
-			if (data->field_0x4 & 8) {
-				BtlUnit_ChangeStayAnim(data->field_0x7A24);
-			}
-			else {
-				npcSetStayPose(data->text);
-			}
-			break;
-		case 2:
-			*(u16*)window->field_0x0 = 3;
-			break;
-		case 3:
-			break;
-		}
-		break;
-	case 3: {
-#ifdef MUST_MATCH
-		u32 mask;
-		u32 button;
-
-		mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
-		button = keyGetButtonTrg(0);
-		if (button & (mask | 0x200)) {
-#else
-		u32 mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
-		if (keyGetButtonTrg(0) & (mask | 0x200)) {
-#endif
-			*(u16*)window->field_0x0 = 1;
-			*(u16*)((u8*)data + 0xa) = 2;
-			if (keyGetButtonTrg(0) & 0x200) {
-				if (!(data->field_0x4 & 0x80)) {
-					data->field_0x4 |= 4;
-				}
-			}
-		}
-		if (keyGetButtonTrg(0) & 0x10) {
-			u32 ok;
-			*(s32*)((u8*)data + 0x783C) = data->field_0x7840 - 1;
-			{
-				MessageData* d = window->userdata->address;
-				(*(s32*)((u8*)d + 0x783C))--;
-				if (*(s32*)((u8*)d + 0x783C) < 0) {
-					*(s32*)((u8*)d + 0x783C) = (ok = 0);
-				}
-				else {
-					ok = 1;
-				}
-			}
-			if (ok) {
-				*(u16*)window->field_0x0 = 9;
-				*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-				psndSFXOn((const char*)0x20041);
-				data->field_0x4 |= 0x40;
-			}
-		}
-		break;
-	}
-	// The (MessageData*) cast here is a no-op that stops the compiler CSE-ing field_0x28 across the
-	// OSTicksToMilliseconds call; the original reloads it.
-	case 9: {
-#ifdef MUST_MATCH
-		value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
-#else
-		s32 value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
-#endif
-		if (data->field_0x28 < value) {
-			break;
-		}
-		data->field_0x28 = (s32)((f32)((MessageData*)data)->field_0x28 - float_0p6_8041a570 * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
-		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-		if (data->field_0x28 > value) {
-			break;
-		}
-		data->field_0x28 = value;
-		*(u16*)window->field_0x0 = 0xb;
-		break;
-	}
-	// Same no-op cast as case 9, on the field_0x28 update below.
-	case 10: {
-#ifdef MUST_MATCH
-		value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
-#else
-		s32 value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
-#endif
-		if (data->field_0x28 > value) {
-			break;
-		}
-		data->field_0x28 = (s32)((f32)((MessageData*)data)->field_0x28 + float_0p6_8041a570 * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
-		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-		if (data->field_0x28 < value) {
-			break;
-		}
-		data->field_0x28 = value;
-		if (*(s32*)((u8*)data + 0x783C) == data->field_0x7840 - 1) {
-			*(u16*)window->field_0x0 = 3;
-			data->field_0x4 &= ~0x40;
-		}
-		else {
-			*(u16*)window->field_0x0 = 0xb;
-		}
-		break;
-	}
-	case 11: {
-#ifdef MUST_MATCH
-		u32 mask;
-		u32 button;
-
-		mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
-		button = keyGetButtonTrg(0);
-		if (button & mask) {
-#else
-		u32 mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
-		if (keyGetButtonTrg(0) & mask) {
-#endif
-			*(u16*)window->field_0x0 = 0xa;
-			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-			{
-				MessageData* d = window->userdata->address;
-				(*(s32*)((u8*)d + 0x783C))++;
-				if (*(s32*)((u8*)d + 0x783C) > d->field_0x7840 - 1) {
-					*(s32*)((u8*)d + 0x783C) = d->field_0x7840 - 1;
-				}
-			}
-			psndSFXOn((const char*)0x20041);
-		}
-		if (keyGetButtonTrg(0) & 0x200) {
-			*(u16*)window->field_0x0 = 0xa;
-			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-			*(s32*)((u8*)data + 0x783C) = data->field_0x7840 - 1;
-			psndSFXOn((const char*)0x20041);
-		}
-		if (keyGetButtonTrg(0) & 0x10) {
-			u32 ok;
-			*(u16*)window->field_0x0 = 9;
-			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-			{
-				MessageData* d = window->userdata->address;
-				(*(s32*)((u8*)d + 0x783C))--;
-				if (*(s32*)((u8*)d + 0x783C) < 0) {
-					*(s32*)((u8*)d + 0x783C) = (ok = 0);
-				}
-				else {
-					ok = 1;
-				}
-			}
-			if (ok) {
-				psndSFXOn((const char*)0x20041);
-			}
-		}
-		break;
-	}
-	}
-
-	dispEntry(8, float_400_8041a530 - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
-}
-
-void msgWindow_Clear_Main(WindowEntry* window) {
-	MessageData* data = window->userdata->address;
-
-	switch (*(u16*)window->field_0x0) {
-	case 5:
-		*(u16*)window->field_0x0 = 1;
-		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-		data->field_0x18 = gp->renderTime;
-		data->field_0x30 = gp->renderTime;
-		/* fallthrough */
-	case 1:
-	case 6:
-		window->flags |= 2;
-		if (window->alpha < 0xff) {
-			window->alpha = (s16)(OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200);
-			if (window->alpha > 0xff) {
-				window->alpha = 0xff;
-			}
-		}
-		if (*(u16*)window->field_0x0 != 2) {
-			s32 ret = msgMain(window->userdata);
-			switch (ret) {
-			case 0:
-				*(u16*)window->field_0x0 = 7;
-				*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
-				data = window->userdata->address;
-				if (data->field_0x4 & 8) {
-					BtlUnit_ChangeStayAnim(data->field_0x7A24);
-				}
-				else {
-					npcSetStayPose(data->text);
-				}
-				break;
-			case 1:
-				*(u16*)window->field_0x0 = 2;
-				window->flags &= ~2;
-				data = window->userdata->address;
-				if (data->field_0x4 & 8) {
-					BtlUnit_ChangeStayAnim(data->field_0x7A24);
-				}
-				else {
-					npcSetStayPose(data->text);
-				}
-				break;
-			case 2:
-				*(u16*)window->field_0x0 = 3;
-				break;
-			case 3:
-				break;
-			}
-		}
-		break;
-	case 7:
-		if (window->alpha == 0) {
-			windowDelete(window);
-			return;
-		}
-		window->alpha = 0xff - OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200;
-		if (window->alpha <= 0) {
-			window->alpha = 0;
-		}
-		break;
-	}
-	dispEntry(8, 400.0f - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
-}
-
-char* msgGetCommand(char* str, char* arg1, char* arg2) {
-	s32 i;
-	char c;
-	s32 state = 0;
-
-	for (i = 0; i < 0x80; i++) {
-		c = *str;
-		switch ((s8)c) {
-		case '>':
-			if (state == 0) {
-				arg1[0] = 0;
-			}
-			else {
-				arg2[0] = 0;
-			}
-			return str + 1;
-		case ' ':
-			if (state == 0) {
-				arg1[0] = 0;
-				state = 1;
-			}
-			else {
-				*arg2++ = c;
-			}
-			break;
-		default:
-			if (state == 0) {
-				*arg1++ = c;
-			}
-			else {
-				*arg2++ = c;
-			}
-			break;
-		}
-		str++;
-	}
-	return NULL;
+	GXSetZMode(1, 7, 0);
+	GXSetBlendMode(0, 4, 5, 0);
+	GXSetZCompLoc(0);
+	GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+	anim->currDispMode = wXluStage;
 }
 
 // opt_dead_assignments off: keeps the original's dead cursor stores in place, which pins MWCC's
@@ -1417,7 +892,7 @@ loop:
 		s32 exinc = (s32)((f32)(width + 4) * scale);
 		entry->glyph = glyph;
 		*(s16*)(entry->field_0x6) = ex;
-		*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.0f * scale));
+		*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(float_10_8041a538 * scale));
 		*(f32*)(entry->field_0x10) = scale;
 		entry->field_0x0 = flags;
 		if (*(const u16*)msg == 0x8145) {
@@ -1762,7 +1237,7 @@ loop:
 				w = (u16)(s32)((f32)(width + 4) * scale);
 				entry->glyph = glyph;
 				*(s16*)(entry->field_0x6) = ex;
-				*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.0f * scale));
+				*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(float_10_8041a538 * scale));
 				*(f32*)(entry->field_0x10) = scale;
 				entry->field_0x0 = flags;
 				entry->field_0x0 |= 8;
@@ -1790,7 +1265,7 @@ loop:
 			*(s16*)(entry->field_0x6) = (s16)animA;
 			*(s16*)(entry->field_0x6 + 2) = (s16)((s32)var[2] - animB);
 			*(f32*)(entry->field_0x10) = animF;
-			*(f32*)(entry->field_0x10 + 4) = (animC == 0) ? 0.0f : 180.0f;
+			*(f32*)(entry->field_0x10 + 4) = (animC == 0) ? float_0_8041a514 : float_180_8041a568;
 			r24 += var54;
 			entry++;
 			data->entryId++;
@@ -1854,7 +1329,7 @@ loop:
 			mid = (s32)((f32)total16 - 0.55f * base);
 			{
 				f32 t = (f32)((s16)r25 + (s32)ex) - base;
-				r25 = (s32)((t - (f32)(u16)mid) * 0.5f);
+				r25 = (s32)((t - (f32)(u16)mid) * float_0p5_8041a534);
 			}
 
 			rp = tagName + skip;
@@ -1904,7 +1379,7 @@ defaultchar:
 	s32 exinc = (s32)((f32)(width + 2) * scale);
 	entry->glyph = glyph;
 	*(s16*)(entry->field_0x6) = ex;
-	*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.0f * scale));
+	*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(float_10_8041a538 * scale));
 	*(f32*)(entry->field_0x10) = scale;
 	entry->field_0x0 = flags;
 	if ((s8)*msg != ' ') {
@@ -1927,6 +1402,115 @@ defaultchar:
 
 done:
 	return;
+}
+
+//void msgAnalize(void* sameasmsgmain)
+
+MessageWork* L_msgGetWork(void) {
+	return &msgWork;
+}
+
+int msg_compare(const void* a, const void* b) {
+	s32 result = strcmp((const char*)((u32)msgSortDvdData + *(const u32*)a),
+	                    (const char*)((u32)msgSortDvdData + *(const u32*)b));
+
+	if (result > 0) {
+		return 1;
+	}
+	return result < 0 ? -1 : 0;
+}
+
+const char* msgSearch(const char* tag) { //1:1
+	MessageEntry* entry;
+	MsgLookupEntry* lookup;
+	smartEntry* smart;
+	s32 i, max, j, index;
+	s32 result;
+
+	for (i = 0; i < 2; i++) { //check both entries
+		entry = &msgw->entries[i];
+		smart = entry->lookup;
+		if (smart) {
+			lookup = smart->address;
+			j = 0;
+			max = entry->count;
+			while (max >= j) {
+				index = (j + max) / 2; //tag, message
+				if (index >= (s32)entry->count) {
+					break;
+				}
+				result = strcmp(tag, (const char*)((u32)entry->address + lookup[index].startaddr));
+				if (!result) {
+					return (const char*)((u32)entry->address + lookup[index].endaddr);
+				}
+				if (result < 0) {
+					max = index - 1;
+				}
+				else {
+					j = index + 1;
+				}
+			}
+		}
+	}
+	return ErrMessage[gp->language];
+}
+
+BOOL _ismbblead(u32 a1) {
+	u8 check = (u8)a1;
+	if ((check >= 0x81 && check <= 0x9F) || (check >= 0xE0 && check <= 0xFC)) {
+		return TRUE;
+	}
+	return FALSE;
+}
+
+char* msgGetCommand(char* str, char* arg1, char* arg2) {
+	s32 i;
+	char c;
+	s32 state = 0;
+
+	for (i = 0; i < 0x80; i++) {
+		c = *str;
+		switch ((s8)c) {
+		case '>':
+			if (state == 0) {
+				arg1[0] = 0;
+			}
+			else {
+				arg2[0] = 0;
+			}
+			return str + 1;
+		case ' ':
+			if (state == 0) {
+				arg1[0] = 0;
+				state = 1;
+			}
+			else {
+				*arg2++ = c;
+			}
+			break;
+		default:
+			if (state == 0) {
+				*arg1++ = c;
+			}
+			else {
+				*arg2++ = c;
+			}
+			break;
+		}
+		str++;
+	}
+	return NULL;
+}
+
+s32 msgIconStr2ID(const char* str) {
+	u32 i;
+
+	for (i = 0; i < 18; i++) {
+		if (!strcmp(msgIcon[i].name, str)) {
+			return msgIcon[i].value;
+		}
+	}
+	return -1;
 }
 
 
@@ -2022,21 +1606,497 @@ s32 msgWindow_Entry(const char* msg, s32 a, s32 b) {
 	return id;
 }
 
-s32 msgIconStr2ID(const char* str) {
-	u32 i;
+void msgWindow_Delete(WindowEntry* window) {
+	MessageData* data;
+	s32 i;
 
-	for (i = 0; i < 18; i++) {
-		if (!strcmp(msgIcon[i].name, str)) {
-			return msgIcon[i].value;
+	if (window->userdata) {
+		// The original emits an empty mtctr/bdnz loop over data->entryId here.
+		data = window->userdata->address;
+		for (i = data->entryId; i > 0; i--) {
+		}
+		smartFree(window->userdata);
+		window->userdata = NULL;
+	}
+}
+
+void msgWindow_Add(const char* msg, s32 id) {
+	WindowEntry* window = windowGetPointer(id);
+	smartEntry* smart = window->userdata;
+	MessageData* data;
+
+	data = smart->address;
+	data->field_0x30 = gp->renderTime;
+	msgAnalize(smart, msg);
+	*(u16*)window->field_0x0 = 1;
+	window->flags |= 2;
+}
+
+void msgWindow_Continue(s32 id) {
+	WindowEntry* window = windowGetPointer(id);
+	MessageData* data;
+
+	*(u16*)window->field_0x0 = 1;
+	window->flags |= 2;
+	data = window->userdata->address;
+	data->field_0x30 = gp->renderTime;
+}
+
+void msgWindow_Repeat(s32 id) {
+	WindowEntry* window = windowGetPointer(id);
+	MessageData* data;
+
+	*(u16*)window->field_0x0 = 1;
+	window->flags |= 2;
+	data = window->userdata->address;
+	data->field_0x30 = gp->renderTime;
+	data->field_0x18 = gp->renderTime;
+	data->field_0x20 = 0;
+	data->field_0x24 = 0;
+	data->field_0x28 = 0;
+	data->field_0x10 = 0;
+}
+
+void msgWindow_ForceClose(const char* tag) {
+	s32 i = 0;
+	WindowEntry* window;
+	MessageData* data;
+
+	for (i = 0; i < 7; i++) {
+		window = windowGetPointer(i);
+		if (window->flags && *(u16*)window->field_0x0 && window->userdata) {
+			data = window->userdata->address;
+			if (data->tag && strcmp(data->tag, tag) == 0) {
+				*(u16*)window->field_0x0 = 7;
+				data = window->userdata->address;
+				if (data->field_0x4 & 8) {
+					BtlUnit_ChangeStayAnim(data->field_0x7A24);
+				}
+				else {
+					npcSetStayPose(data->text);
+				}
+			}
 		}
 	}
-	return -1;
+}
+
+// 100%: the original keeps window->userdata in r30 and the MessageData pointer in r29; this compiler
+// otherwise swaps them, so `value` is hoisted to function scope to steer the allocator (below is the
+// natural per-case scope). The button temp likewise fixes the two commutative `and.` operand orders.
+// The switch jump table is emitted as an anonymous @829 instead of jumptable_8030DBA0 (its .data offset
+// differs because msgWindowOpen_SE_Data is extern in this unit rather than defined here); objdiff does
+// not score that data-symbol name (winMsgMain matches with the same difference).
+void msgWindow_Main(WindowEntry* window) {
+	smartEntry* smart = window->userdata;
+	MessageData* data = smart->address;
+#ifdef MUST_MATCH
+	s32 value;
+#endif
+
+	if (data->field_0x7A50 != 0) {
+		if (data->field_0x7A54 == 0) {
+			if (data->field_0x4 & 8) {
+				BtlUnit_ChangeTalkAnim(data->field_0x7A24);
+			}
+			else {
+				npcSetTalkPose(data->text);
+			}
+			data->field_0x7A54 = 1;
+		}
+		data->field_0x7A50--;
+		if (data->field_0x7A50 == 0) {
+			if (((MessageData*)smart->address)->field_0x4 & 8) {
+				BtlUnit_ChangeStayAnim(((MessageData*)smart->address)->field_0x7A24);
+			}
+			else {
+				npcSetStayPose(((MessageData*)smart->address)->text);
+			}
+			data->field_0x7A54 = 0;
+		}
+	}
+
+	switch (*(u16*)window->field_0x0) {
+	case 5:
+		if (!(window->flags & 8)) {
+			s32 se = msgWindowOpen_SE_Data[window->type][0];
+			if (se >= 0) {
+				psndSFXOn((const char*)(se | 0x20000));
+			}
+		}
+		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		*(u16*)window->field_0x0 = 6;
+		/* fallthrough */
+	case 6:
+		window->flags |= 2;
+		window->alpha = (s16)(OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200);
+		if (window->alpha > 0xff) {
+			window->alpha = 0xff;
+			*(u16*)window->field_0x0 = 1;
+			data->field_0x18 = gp->renderTime;
+			data->field_0x30 = gp->renderTime;
+		}
+		break;
+	case 7:
+		if (!(window->flags & 8)) {
+			s32 se = msgWindowOpen_SE_Data[window->type][1];
+			if (se >= 0) {
+				psndSFXOn((const char*)(se | 0x20000));
+			}
+		}
+		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		*(u16*)window->field_0x0 = 8;
+		/* fallthrough */
+	case 8:
+		if (window->alpha == 0) {
+			windowDelete(window);
+			return;
+		}
+		window->alpha = 0xff - OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200;
+		if (window->alpha <= 0) {
+			window->alpha = 0;
+		}
+		break;
+	case 1:
+		switch (msgMain(window->userdata)) {
+		case 0:
+			*(u16*)window->field_0x0 = 7;
+			data = window->userdata->address;
+			if (data->field_0x4 & 8) {
+				BtlUnit_ChangeStayAnim(data->field_0x7A24);
+			}
+			else {
+				npcSetStayPose(data->text);
+			}
+			break;
+		case 1:
+			*(u16*)window->field_0x0 = 2;
+			window->flags &= ~2;
+			data = window->userdata->address;
+			if (data->field_0x4 & 8) {
+				BtlUnit_ChangeStayAnim(data->field_0x7A24);
+			}
+			else {
+				npcSetStayPose(data->text);
+			}
+			break;
+		case 2:
+			*(u16*)window->field_0x0 = 3;
+			break;
+		case 3:
+			break;
+		}
+		break;
+	case 3: {
+#ifdef MUST_MATCH
+		u32 mask;
+		u32 button;
+
+		mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
+		button = keyGetButtonTrg(0);
+		if (button & (mask | 0x200)) {
+#else
+		u32 mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
+		if (keyGetButtonTrg(0) & (mask | 0x200)) {
+#endif
+			*(u16*)window->field_0x0 = 1;
+			*(u16*)((u8*)data + 0xa) = 2;
+			if (keyGetButtonTrg(0) & 0x200) {
+				if (!(data->field_0x4 & 0x80)) {
+					data->field_0x4 |= 4;
+				}
+			}
+		}
+		if (keyGetButtonTrg(0) & 0x10) {
+			u32 ok;
+			*(s32*)((u8*)data + 0x783C) = data->field_0x7840 - 1;
+			{
+				MessageData* d = window->userdata->address;
+				(*(s32*)((u8*)d + 0x783C))--;
+				if (*(s32*)((u8*)d + 0x783C) < 0) {
+					*(s32*)((u8*)d + 0x783C) = (ok = 0);
+				}
+				else {
+					ok = 1;
+				}
+			}
+			if (ok) {
+				*(u16*)window->field_0x0 = 9;
+				*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+				psndSFXOn((const char*)0x20041);
+				data->field_0x4 |= 0x40;
+			}
+		}
+		break;
+	}
+	// The (MessageData*) cast here is a no-op that stops the compiler CSE-ing field_0x28 across the
+	// OSTicksToMilliseconds call; the original reloads it.
+	case 9: {
+#ifdef MUST_MATCH
+		value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
+#else
+		s32 value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
+#endif
+		if (data->field_0x28 < value) {
+			break;
+		}
+		data->field_0x28 = (s32)((f32)((MessageData*)data)->field_0x28 - float_0p6_8041a570 * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
+		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		if (data->field_0x28 > value) {
+			break;
+		}
+		data->field_0x28 = value;
+		*(u16*)window->field_0x0 = 0xb;
+		break;
+	}
+	// Same no-op cast as case 9, on the field_0x28 update below.
+	case 10: {
+#ifdef MUST_MATCH
+		value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
+#else
+		s32 value = ((s32*)data->pad_0x7844)[*(s32*)data->pad_0x783C];
+#endif
+		if (data->field_0x28 > value) {
+			break;
+		}
+		data->field_0x28 = (s32)((f32)((MessageData*)data)->field_0x28 + float_0p6_8041a570 * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
+		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		if (data->field_0x28 < value) {
+			break;
+		}
+		data->field_0x28 = value;
+		if (*(s32*)((u8*)data + 0x783C) == data->field_0x7840 - 1) {
+			*(u16*)window->field_0x0 = 3;
+			data->field_0x4 &= ~0x40;
+		}
+		else {
+			*(u16*)window->field_0x0 = 0xb;
+		}
+		break;
+	}
+	case 11: {
+#ifdef MUST_MATCH
+		u32 mask;
+		u32 button;
+
+		mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
+		button = keyGetButtonTrg(0);
+		if (button & mask) {
+#else
+		u32 mask = (((MessageData*)window->userdata->address)->field_0x4 & 0x100) ? 0x500 : 0x100;
+		if (keyGetButtonTrg(0) & mask) {
+#endif
+			*(u16*)window->field_0x0 = 0xa;
+			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+			{
+				MessageData* d = window->userdata->address;
+				(*(s32*)((u8*)d + 0x783C))++;
+				if (*(s32*)((u8*)d + 0x783C) > d->field_0x7840 - 1) {
+					*(s32*)((u8*)d + 0x783C) = d->field_0x7840 - 1;
+				}
+			}
+			psndSFXOn((const char*)0x20041);
+		}
+		if (keyGetButtonTrg(0) & 0x200) {
+			*(u16*)window->field_0x0 = 0xa;
+			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+			*(s32*)((u8*)data + 0x783C) = data->field_0x7840 - 1;
+			psndSFXOn((const char*)0x20041);
+		}
+		if (keyGetButtonTrg(0) & 0x10) {
+			u32 ok;
+			*(u16*)window->field_0x0 = 9;
+			*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+			{
+				MessageData* d = window->userdata->address;
+				(*(s32*)((u8*)d + 0x783C))--;
+				if (*(s32*)((u8*)d + 0x783C) < 0) {
+					*(s32*)((u8*)d + 0x783C) = (ok = 0);
+				}
+				else {
+					ok = 1;
+				}
+			}
+			if (ok) {
+				psndSFXOn((const char*)0x20041);
+			}
+		}
+		break;
+	}
+	}
+
+	dispEntry(8, float_400_8041a530 - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
+}
+
+void msgWindow_Clear_Main(WindowEntry* window) {
+	MessageData* data = window->userdata->address;
+
+	switch (*(u16*)window->field_0x0) {
+	case 5:
+		*(u16*)window->field_0x0 = 1;
+		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+		data->field_0x18 = gp->renderTime;
+		data->field_0x30 = gp->renderTime;
+		/* fallthrough */
+	case 1:
+	case 6:
+		window->flags |= 2;
+		if (window->alpha < 0xff) {
+			window->alpha = (s16)(OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200);
+			if (window->alpha > 0xff) {
+				window->alpha = 0xff;
+			}
+		}
+		if (*(u16*)window->field_0x0 != 2) {
+			s32 ret = msgMain(window->userdata);
+			switch (ret) {
+			case 0:
+				*(u16*)window->field_0x0 = 7;
+				*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
+				data = window->userdata->address;
+				if (data->field_0x4 & 8) {
+					BtlUnit_ChangeStayAnim(data->field_0x7A24);
+				}
+				else {
+					npcSetStayPose(data->text);
+				}
+				break;
+			case 1:
+				*(u16*)window->field_0x0 = 2;
+				window->flags &= ~2;
+				data = window->userdata->address;
+				if (data->field_0x4 & 8) {
+					BtlUnit_ChangeStayAnim(data->field_0x7A24);
+				}
+				else {
+					npcSetStayPose(data->text);
+				}
+				break;
+			case 2:
+				*(u16*)window->field_0x0 = 3;
+				break;
+			case 3:
+				break;
+			}
+		}
+		break;
+	case 7:
+		if (window->alpha == 0) {
+			windowDelete(window);
+			return;
+		}
+		window->alpha = 0xff - OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)) * 255 / 200;
+		if (window->alpha <= 0) {
+			window->alpha = 0;
+		}
+		break;
+	}
+	dispEntry(8, float_400_8041a530 - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
+}
+
+
+// NONMATCHING (3.56%): 2 instructions differ, 422 missing, plus register differences.
+void msgWindow_Disp(CameraId camId, void* param) {
+	WindowEntry* window = param; //cast to correct type
+	CameraEntry* camera = camGetCurPtr();
+	s32 type;
+
+	GXSetFog(GX_FOG_NONE, float_0_8041a514, float_0_8041a514, float_0_8041a514, float_0_8041a514, (GXColor){0, 0, 0, 0});
+	type = window->type;
+
+	switch (type) {
+	case 0:
+	case 1:
+	case 6:
+	case 8:
+	case 9:
+		break;
+	}
+
+}
+
+
+void selectWindow_Main(WindowEntry* window) {
+	MessageData* data = window->userdata->address;
+	s8 old;
+
+	msgMain(window->userdata);
+	switch (*(u16*)window->field_0x0) {
+	case 5:
+		window->alpha += 0x19;
+		if (window->alpha > 0xff) {
+			window->alpha = 0xff;
+			*(u16*)window->field_0x0 = 1;
+		}
+		break;
+	case 1:
+		old = data->field_0x7A43;
+		if ((keyGetButtonTrg(0) & 8) || (keyGetDirTrg(0) & 0x1000)) {
+			data->field_0x7A43--;
+		}
+		else if ((keyGetButtonRep(0) & 8) || (keyGetDirRep(0) & 0x1000)) {
+			if (data->field_0x7A43 != 0) {
+				data->field_0x7A43--;
+			}
+		}
+		if ((keyGetButtonTrg(0) & 4) || (keyGetDirTrg(0) & 0x2000)) {
+			data->field_0x7A43++;
+		}
+		else if ((keyGetButtonRep(0) & 4) || (keyGetDirRep(0) & 0x2000)) {
+			if ((s8)data->field_0x7A43 < (s8)data->field_0x7A40 - 1) {
+				data->field_0x7A43++;
+			}
+		}
+		if (data->field_0x7A43 < 0) {
+			data->field_0x7A43 = data->field_0x7A40 - 1;
+		}
+		if (data->field_0x7A43 >= data->field_0x7A40) {
+			data->field_0x7A43 = 0;
+		}
+		if (old != data->field_0x7A43) {
+			psndSFXOn((const char*)0x20005);
+		}
+		if (keyGetButtonTrg(0) & 0x200) {
+			switch (data->field_0x7A42) {
+			case -1:
+				break;
+			case -2:
+				data->field_0x7A43 = -1;
+				*(u16*)window->field_0x0 = 7;
+				psndSFXOn((const char*)0x20013);
+				break;
+			default:
+				data->field_0x7A43 = data->field_0x7A42;
+				*(u16*)window->field_0x0 = 7;
+				psndSFXOn((const char*)0x20013);
+				break;
+			}
+		}
+		else if (keyGetButtonTrg(0) & 0x100) {
+			*(u16*)window->field_0x0 = 7;
+			psndSFXOn((const char*)0x20012);
+		}
+		break;
+	case 7:
+		if (window->alpha == 0) {
+			*(u16*)window->field_0x0 = 4;
+			window->flags &= ~2;
+			return;
+		}
+		window->alpha -= 0x19;
+		if (window->alpha <= 0) {
+			window->alpha = 0;
+		}
+		break;
+	case 4:
+		return;
+	}
+	dispEntry(8, float_400_8041a530 - (f32)*(s16*)&window->field_0x4, 0, selectWindow_Disp, window);
 }
 
 // Builds the waku colour in one expression so MWCC lands it in the same stack slot as the
 // original (a plain local followed by `color.a = ...` puts it one slot higher).
 static inline GXColor selectWindowColor(u8 a) {
-	GXColor c = { 0xFF, 0xFF, 0xFF, 0 };
+	GXColor c = dat_8041a510;
 	c.a = a;
 	return c;
 }
@@ -2047,25 +2107,65 @@ void selectWindow_Disp(CameraId camId, void* param) {
 #ifdef MUST_MATCH
 	GXColor color;
 #else
-	GXColor color = { 0xFF, 0xFF, 0xFF, 0 };
+	GXColor color = dat_8041a510;
 #endif
 	Vec pos;
 
-	GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422fe4);
+	GXSetFog(0, float_0_8041a514, float_0_8041a514, float_0_8041a514, float_0_8041a514, unk_80422fe4);
 
 #ifdef MUST_MATCH
 	color = selectWindowColor(window->alpha);
 #else
 	color.a = window->alpha;
 #endif
-	windowDispGX_Waku_col(0, color, window->x, window->y, window->height, window->width, 30.0f);
+	windowDispGX_Waku_col(0, color, window->x, window->y, window->height, window->width, float_30_8041a518);
 
-	msgDisp(window->userdata, (u8)window->alpha, 40.0f + window->x, window->y - 25.0f);
+	msgDisp(window->userdata, (u8)window->alpha, float_40_8041a51c + window->x, window->y - float_25_8041a520);
 
-	pos.x = 2.0f + window->x;
-	data->field_0x7A48 += 0.3f * (window->y - (f32)((s8)data->field_0x7A43 * 0x1F + 0x3A) - data->field_0x7A48);
+	pos.x = float_2_8041a524 + window->x;
+	data->field_0x7A48 += float_0p3_8041a528 * (window->y - (f32)((s8)data->field_0x7A43 * 0x1F + 0x3A) - data->field_0x7A48);
 	pos.y = data->field_0x7A48;
-	pos.z = 0.0f;
+	pos.z = float_0_8041a514;
 
-	iconDispGxAlpha(&pos, 0x14, 0x1F0, (u8)window->alpha, 1.0f);
+	iconDispGxAlpha(&pos, 0x14, 0x1F0, (u8)window->alpha, float_1_8041a52c);
 }
+
+// .sdata2 colour words read by name in the message renderer.
+__declspec(section ".sdata2") GXColor dat_8041a4f0 = { 0x50, 0x50, 0x50, 0xFF };
+__declspec(section ".sdata2") GXColor dat_8041a4f4 = { 0x6E, 0x6E, 0x6E, 0xFF };
+__declspec(section ".sdata2") GXColor dat_8041a4f8 = { 0x00, 0x00, 0x00, 0x50 };
+__declspec(section ".sdata2") GXColor dat_8041a4fc = { 0xFF, 0xFF, 0xFF, 0xFF };
+__declspec(section ".sdata2") u32 dat_8041a500 = 0xDCC8DCFF;
+__declspec(section ".sdata2") u32 dat_8041a504 = 0x00D914FF;
+__declspec(section ".sdata2") u32 dat_8041a508 = 0xDCC8DCFF;
+__declspec(section ".sdata2") u32 dat_8041a50c = 0x00D914FF;
+__declspec(section ".sdata2") GXColor dat_8041a510 = { 0xFF, 0xFF, 0xFF, 0x00 };
+
+// Named .sdata2 constants kept by tools/pool_plan.py, defined after the code in the original's order.
+#pragma explicit_zero_data on
+const f32 float_0_8041a514 = 0.0f;
+#pragma explicit_zero_data reset
+const f32 float_30_8041a518 = 30.f;
+const f32 float_40_8041a51c = 40.f;
+const f32 float_25_8041a520 = 25.0f;
+const f32 float_2_8041a524 = 2.0f;
+const f32 float_0p3_8041a528 = 0.3f;
+const f32 float_1_8041a52c = 1.0f;
+const f32 float_400_8041a530 = 400.f;
+const f32 float_0p5_8041a534 = 0.5f;
+const f32 float_10_8041a538 = 10.f;
+const f32 float_240_8041a53c = 240.f;
+const f32 float_36_8041a540 = 36.0f;
+const f32 float_62_8041a544 = 62.0f;
+const f32 float_80_8041a548 = 80.f;
+const f32 float_60_8041a54c = 60.f;
+const f32 float_28_8041a550 = 20.f;
+const f32 float_6_8041a554 = 7.0f;
+const f32 float_8_8041a558 = 8.0f;
+const f32 float_50_8041a55c = 50.f;
+const f32 float_52_8041a560 = 52.0f;
+const f32 float_31_8041a564 = 31.0f;
+const f32 float_180_8041a568 = 180.f;
+const f32 float_5_8041a56c = 5.0f;
+const f32 float_0p6_8041a570 = 0.6f;
+

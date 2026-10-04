@@ -4417,3 +4417,8 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   to headers. Two agents spelled a string's word padding out as `"...\0"` without a guard; my review put both under
   MUST_MATCH. `merge_agent.sh` now also accepts `opt_dead_assignments` (28 uses in the tree). msgdrv's data port
   (a function move plus `#pragma section` and an unguarded padded string) waits for a separate review.
+- **msgdrv** (data prep, its own PR): the port moves functions into the original's order for the pool (610 of its
+  ~1,400 changed lines are pure moves), defines the .sdata2 colours and named constants after the code
+  (base-register recipe), the no-messages strings and msgWindowOpen_SE_Data by name, declares .sbss in reverse and
+  adds the .sdata gap word. `float_28_8041a550` and `float_6_8041a554` hold 20 and 7 in the original: the names
+  are misnomers, not wrong data.
