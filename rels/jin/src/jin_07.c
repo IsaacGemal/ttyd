@@ -35,8 +35,8 @@ static void senteresa_ext_shadow_disp(void);
 static void senteresa_ext_dispent(void);
 static void senteresa_ext_main(void);
 static TeresaEntry* pTeresa;
-u32 g_nNumOutBox[1];
 static s32 g_nNumEndProc[1];
+u32 g_nNumOutBox[1];
 
 // clang-format off
 extend_data(32,
@@ -615,11 +615,4 @@ EVT_BEGIN(jin_07_init_evt)
     RETURN
 EVT_END()
 
-u32 g_nNumOutBox[1] = {
-    0x00000000,
-};
-
-static s32 g_nNumEndProc[1] = {
-    0x00000000,
-};
 // clang-format on
