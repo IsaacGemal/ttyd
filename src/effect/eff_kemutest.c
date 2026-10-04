@@ -16,9 +16,6 @@ extern GXColor unk_804232d8;
 /* Match-only trick: named .sdata2 constants, defined at the end of the file, so the compiler can't
    fold `-32.0f * 0.5f` into -16 (the original does the multiply at runtime). The original's 0.5 and 16.0
    are ordinary pool literals, so this duplicates them (two extra .sdata2 words). */
-extern const f32 float_32_80420abc;
-extern const f32 float_0p5_80420ad0;
-extern const f32 float_16_80420ad4;
 #endif
 
 extern const Vec vec3_802fdcf8;
@@ -688,6 +685,9 @@ static inline GXColor kemuTestColor(effKemuTestData* data, u8 alpha) {
 /* Matches using the named .sdata2 constants above (so the compiler emits the
    `-32 * 0.5` multiply at runtime instead of folding it into -16), and a helper
    that returns the channel-built GXColor so it lands in the original's stack slot. */
+// The original keeps dsize/dsize_half/size in FPRs but computes them where they are written: with MWCC's loop-invariant
+// hoisting on they move to the function preheader (98.1%); off, the function is 100% (the constants are still pooled).
+#pragma opt_loop_invariants off
 void effKemuTestDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effKemuTestData* data = effect->userdata;
@@ -766,11 +766,8 @@ void effKemuTestDisp(CameraId camId, void* param) {
 
 	data++;
 	{
-#ifdef MUST_MATCH
-		f32 dsize = -float_32_80420abc;
-#else
-		f32 dsize = -32.0f;
-#endif
+		f32 p32 = 32.0f;
+		f32 dsize = -p32;
 
 		for (i = 1; i < effect->count; i++, data++) {
 			if (data->field_0x44 != 0) {
@@ -788,12 +785,9 @@ void effKemuTestDisp(CameraId camId, void* param) {
 			PSMTXConcat(mtx, scale, mtx);
 			GXLoadTexMtxImm(mtx, 0x21, 1);
 			{
-#ifdef MUST_MATCH
-				f32 dsize_half = dsize * float_0p5_80420ad0;
-#else
-				f32 dsize_half = dsize * 0.5f;
+				f32 half = 0.5f;
+				f32 dsize_half = dsize * half;
 				f32 size = 16.0f;
-#endif
 
 				for (j = flag; j < 2; j++) {
 					if (j == 0) {
@@ -831,19 +825,11 @@ void effKemuTestDisp(CameraId camId, void* param) {
 						GXLoadPosMtxImm(mtx, 0);
 					}
 					GXBegin(0x80, 0, 4);
-#ifdef MUST_MATCH
-					GXPosition3f32(dsize_half, float_16_80420ad4, 0.0f);
-					GXTexCoord2f32(0.0f, 0.0f);
-					GXPosition3f32(float_16_80420ad4, float_16_80420ad4, 0.0f);
-					GXTexCoord2f32(1.0f, 0.0f);
-					GXPosition3f32(float_16_80420ad4, dsize_half, 0.0f);
-#else
 					GXPosition3f32(dsize_half, size, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
 					GXPosition3f32(size, size, 0.0f);
 					GXTexCoord2f32(1.0f, 0.0f);
 					GXPosition3f32(size, dsize_half, 0.0f);
-#endif
 					GXTexCoord2f32(1.0f, 1.0f);
 					GXPosition3f32(dsize_half, dsize_half, 0.0f);
 					GXTexCoord2f32(0.0f, 1.0f);
@@ -852,6 +838,7 @@ void effKemuTestDisp(CameraId camId, void* param) {
 		}
 	}
 }
+#pragma opt_loop_invariants reset
 void effKemuTestDrawCam(EffectEntry* effect, s32 camId) {
 	effKemuTestData* data = effect->userdata;
 
@@ -871,6 +858,3 @@ void effKemuTestSetRxRz(EffectEntry* effect, f32 rx, f32 rz) {
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const Vec vec3_802fdcf8 = { 0.0f, 0.0f, 0.0f };
-const f32 float_32_80420abc = 32.0f;
-const f32 float_0p5_80420ad0 = 0.5f;
-const f32 float_16_80420ad4 = 16.0f;
