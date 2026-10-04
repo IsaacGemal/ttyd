@@ -6,7 +6,8 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <dolphin/os/OSCache.h>
-#include <math.h>
+#define _MATH_H_ // keep the SDK math.h (sqrt inlines and their pooled doubles) out of this unit
+#include "math_ext.h"
 
 typedef struct effTimestampN64Data {
 	s32 type;            // 0x0
@@ -33,8 +34,6 @@ typedef struct effTimestampN64Data {
 } effTimestampN64Data;
 
 // .rodata / .sdata2 constants (float constants referenced through the linker)
-const f64 double_to_int_802fb8c8 = 4503601774854144.0;
-const f64 double_to_int_mask_802fb8d0 = 4503599627370496.0;
 
 // .sdata local tables used only by effTimestampDisp.
 static u8 scale_data[4] = { 0x78, 0x50, 0x28, 0x3C };
@@ -53,7 +52,6 @@ static u8 colb[20] = {
 
 
 // .rodata
-const char str_802FB8D8[16] = "TimestampN64";
 
 // .data: ten vertices, { x, y, timer } each
 s32 pos_data[10][3] = {
@@ -75,7 +73,7 @@ EffectEntry* effTimestampN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 s
 	s32 i;
 
 	effect = effEntry();
-	effect->type = str_802FB8D8;
+	effect->type = "TimestampN64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effTimestampN64Data));
 	effect->userdata = data;
@@ -97,15 +95,15 @@ EffectEntry* effTimestampN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 s
 	data->field_0x1c = 180;
 	data->field_0x20 = 120;
 	data->field_0x2c = 0;
-	data->field_0x30 = float_1_804200d4;
+	data->field_0x30 = 1.0f;
 
 	for (i = 0; i < 10; i++) {
 		data->posX[i] = (f32)pos_data[i][0];
 		data->posY[i] = (f32)pos_data[i][1];
-		data->posZ[i] = float_0_804200b8;
-		data->rotX[i] = float_0_804200b8;
-		data->rotY[i] = float_0_804200b8;
-		data->rotZ[i] = float_0_804200b8;
+		data->posZ[i] = 0.0f;
+		data->rotX[i] = 0.0f;
+		data->rotY[i] = 0.0f;
+		data->rotZ[i] = 0.0f;
 		data->field_0x124[i] = 0;
 		data->field_0x14c[i] = pos_data[i][2];
 	}
@@ -222,6 +220,8 @@ static inline void effTimestampSetVtxColor(effTimestampN64Data* data, s32 counte
 // is the only knob that moves `data` to r26, but it also breaks the FPR/moving-pointer shapes
 // (51-82 diffs), so it must stay off. It is allocator tie-break luck and wants a permuter job.
 // NONMATCHING (99.40%): instruction shapes and frame match; only register colouring differs.
+// 99.4%: the only remaining difference is integer register colouring (the original keeps the data pointer in r26
+// and the loop counter in r28 where we use r28/r26); pools are identical. Declaration-order swaps did not move it.
 void effTimestampDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -255,7 +255,7 @@ void effTimestampDisp(CameraId camId, void* param) {
 	scaleF = data->scale;
 	PSMTXScale(scale, scaleF, scaleF, scaleF);
 	PSMTXConcat(trans, scale, work);
-	PSMTXRotRad(rot, 'y', float_deg2rad_804200b0 * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(work, rot, work);
 	PSMTXConcat(cam->view, work, work);
 	GXSetNumChans(0);
@@ -277,8 +277,8 @@ void effTimestampDisp(CameraId camId, void* param) {
 	GXSetNumTexGens(2);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-	scaleF = float_0p015625_804200b4;
-	PSMTXScale(scale, scaleF, scaleF, float_0_804200b8);
+	scaleF = 0.015625f;
+	PSMTXScale(scale, scaleF, scaleF, 0.0f);
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 	effTimestampSetColor(data);
 	entry = smartAlloc(0x1C0, HEAP_EFFECT);
@@ -291,10 +291,10 @@ void effTimestampDisp(CameraId camId, void* param) {
 	for (i = 0; i < 16; i++, vtx += 2, v += 0x80) {
 		f32 s;
 		fieldScale = data->field_0x30;
-		s = (f32)sin(float_6p2832_804200bc * (f32)angleA / float_360_804200c0);
-		valA = (s32)(fieldScale * (float_500_804200c4 * s));
-		s = (f32)sin(float_6p2832_804200bc * (f32)angleB / float_360_804200c0);
-		valB = (s32)(fieldScale * (float_200_804200c8 * s));
+		s = (f32)sin(6.2831855f * (f32)angleA / 360.f);
+		valA = (s32)(fieldScale * (500.f * s));
+		s = (f32)sin(6.2831855f * (f32)angleB / 360.f);
+		valB = (s32)(fieldScale * (200.f * s));
 		vtx[0].x = valA - 3200;
 		vtx[0].y = valB + offset - 3000;
 		vtx[0].z = 0;
@@ -315,16 +315,16 @@ void effTimestampDisp(CameraId camId, void* param) {
 	effSetVtxDescN64((effVtxArray*)base);
 	for (i = 0; i < 10; i++) {
 		PSMTXTrans(trans, data->posX[i], data->posY[i], data->posZ[i]);
-		scaleF = float_0p01_804200cc * (f32)scale_data[i % 4];
+		scaleF = 0.01f * (f32)scale_data[i % 4];
 		PSMTXScale(scale, scaleF, scaleF, scaleF);
 		PSMTXConcat(trans, scale, trans);
-		PSMTXRotRad(rot, 'x', float_deg2rad_804200b0 * data->rotX[i]);
+		PSMTXRotRad(rot, 'x', 0.017453292f * data->rotX[i]);
 		PSMTXConcat(trans, rot, trans);
-		PSMTXRotRad(rot, 'y', float_deg2rad_804200b0 * data->rotY[i]);
+		PSMTXRotRad(rot, 'y', 0.017453292f * data->rotY[i]);
 		PSMTXConcat(trans, rot, trans);
-		PSMTXRotRad(rot, 'z', float_deg2rad_804200b0 * data->rotZ[i]);
+		PSMTXRotRad(rot, 'z', 0.017453292f * data->rotZ[i]);
 		PSMTXConcat(trans, rot, trans);
-		scaleF = float_0p01_804200cc;
+		scaleF = 0.01f;
 		PSMTXScale(scale, scaleF, scaleF, scaleF);
 		PSMTXConcat(trans, scale, trans);
 		PSMTXConcat(work, trans, trans);

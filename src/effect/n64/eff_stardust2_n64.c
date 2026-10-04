@@ -6,19 +6,32 @@
 #include "memory.h"
 
 #include <stdlib.h>
-#include <math.h>
+#define _MATH_H_ // keep the SDK math.h (sqrt inlines and their pooled doubles) out of this unit
+#include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
+extern const f32 float_deg2rad_8041fe8c;
+extern const f32 float_0p0056818_8041fe90;
+extern const f32 float_0p045455_8041fe94;
+extern const f32 float_0_8041fe98;
+extern const f32 float_1_8041fe9c;
+extern const f32 float_0p5_8041fea0;
+extern const f32 float_0p1_8041fea4;
+extern const f32 float_0p8_8041fea8;
+extern const f32 float_0p7_8041feac;
+extern const f32 float_1p4_8041feb0;
+extern const f32 float_neg0p02_8041feb4;
+extern const f32 float_0p01_8041feb8;
+extern const f32 float_60_8041febc;
+extern const f32 float_360_8041fec0;
+extern const f32 float_120_8041fec4;
+extern const f32 float_6p2832_8041fec8;
+extern const f32 float_neg0p05_8041fecc;
+extern const f32 float_0p96_8041fed0;
+extern const f32 float_0p4_8041fed4;
 
 extern const f32 float_0p4_8041fed4;
-extern const f32 float_10_8041fed8;
-extern const f32 float_90_8041fedc;
-extern const f32 float_0p03_8041fee0;
-extern const f32 float_0p04_8041fee4;
-extern const f32 float_0p005_8041fee8;
 extern const Vec vec3_802fb740;
-extern const f64 double_to_int_mask_802fb750;
-extern const f64 double_to_int_802fb758;
 
 // .sdata2 constants (named after their original addresses; defined by the
 // not-yet-written Entry function of this unit).
@@ -120,6 +133,9 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
 // The int->float pool constant also resolves to an anonymous .rodata entry because Main/Disp pool two
 // extra double literals there.
 // NONMATCHING (98.67%): the preheader f0/f2/f1 tie-break above; see the comment.
+// 98.67%: the only remaining difference is the FPR schedule of the preheader step/base multiplies (the original
+// loads 0.4 before the two multiplies and issues them in a different order); pools are identical. Every dependency-valid
+// order of the k1/k4/step/base statements was tried.
 EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 scaleA, f32 scaleB) {
     EffectEntry* effect;
     EffStardust2Data* data;
@@ -200,7 +216,7 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
         rad = float_6p2832_8041fec8 * (y + (f32)r) / float_360_8041fec0;
         s = (f32)sin(rad);
         c = (f32)cos(rad);
-        t = (f32)sin(float_6p2832_8041fec8 * (float_10_8041fed8 * y - float_90_8041fedc) / float_360_8041fec0);
+        t = (f32)sin(float_6p2832_8041fec8 * (10.f * y - 90.f) / float_360_8041fec0);
         vA = baseA - stepA * t;
         vB = baseB - stepB * t;
 
@@ -222,12 +238,12 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
             ptr->field_10 = s * vA;
             ptr->y = yStep;
             ptr->z = c * vA;
-            ptr->field_14 = float_0p03_8041fee0 * (f32)(-(rand() % 10));
-            ptr->field_18 = float_0p04_8041fee4 * (f32)(rand() % 10) + float_0p01_8041feb8;
+            ptr->field_14 = 0.03f * (f32)(-(rand() % 10));
+            ptr->field_18 = 0.04f * (f32)(rand() % 10) + float_0p01_8041feb8;
             break;
         case 3:
-            ptr->x = float_0p005_8041fee8 * (s * scaleA * (f32)(rand() % 100));
-            ptr->y = float_0p005_8041fee8 * (c * scaleB * (f32)(rand() % 100));
+            ptr->x = 0.005f * (s * scaleA * (f32)(rand() % 100));
+            ptr->y = 0.005f * (c * scaleB * (f32)(rand() % 100));
             ptr->z = float_0_8041fe98;
             ptr->field_14 = float_0_8041fe98;
             ptr->field_10 = float_0_8041fe98;
@@ -238,8 +254,8 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
             ptr->field_10 = s * vA;
             ptr->y = yStep;
             ptr->z = c * vA;
-            ptr->field_14 = float_0p03_8041fee0 * (f32)(-(rand() % 10));
-            ptr->field_18 = float_0p04_8041fee4 * (f32)(rand() % 10) + float_0p01_8041feb8;
+            ptr->field_14 = 0.03f * (f32)(-(rand() % 10));
+            ptr->field_18 = 0.04f * (f32)(rand() % 10) + float_0p01_8041feb8;
             break;
         }
     }
@@ -529,8 +545,6 @@ void effStardust2N64SetDrawCam(EffectEntry* entry, s32 cam) {
 }
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-const f64 double_to_int_mask_802fb750 = 4503599627370496.0;
-const f64 double_to_int_802fb758 = 4503601774854144.0;
 
 // .sdata2 constants, defined after the code that loads them by name (defined first, the compiler folds them).
 
@@ -556,8 +570,3 @@ const f32 float_6p2832_8041fec8 = 6.2831855f;
 const f32 float_neg0p05_8041fecc = -0.05f;
 const f32 float_0p96_8041fed0 = 0.96f;
 const f32 float_0p4_8041fed4 = 0.4f;
-const f32 float_10_8041fed8 = 10.0f;
-const f32 float_90_8041fedc = 90.0f;
-const f32 float_0p03_8041fee0 = 0.03f;
-const f32 float_0p04_8041fee4 = 0.04f;
-const f32 float_0p005_8041fee8 = 0.005f;
