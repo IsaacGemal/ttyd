@@ -24,14 +24,31 @@
 #include "motion/mot_jump.h"
 #include "eff/n64/eff_sweat_n64.h"
 #include "math_ext.h"
+#pragma pool_data on // the original addresses its .rodata through one base register
 
 // .sbss
 f32 jumpheight;
 s32 evt_yoshi_frm;
 f32 evt_yoshi_spd;
 
+// The original .rodata keeps PYS_H_1/PYS_H_2 right after PYS_S_2/PYS_R_2, and the
+// code reaches them as the S/R string plus 8. Match-only: the S/R literals carry the
+// H strings (strcmp stops at the first NUL, so the comparisons are unchanged); the
+// natural form names all four.
+#ifdef MUST_MATCH
+#define YOSHI_S_2 "PYS_S_2\0PYS_H_1"
+#define YOSHI_R_2 "PYS_R_2\0PYS_H_2"
+#define YOSHI_H_1 (YOSHI_S_2 + 8)
+#define YOSHI_H_2 (YOSHI_R_2 + 8)
+#else
+#define YOSHI_S_2 "PYS_S_2"
+#define YOSHI_R_2 "PYS_R_2"
+#define YOSHI_H_1 "PYS_H_1"
+#define YOSHI_H_2 "PYS_H_2"
+#endif
+#define YOSHI_F_1 "PYS_F_1"
+
 // Local declarations: not yet in a header.
-// NONMATCHING (0.00%): not implemented yet (bulk of the file).
 
 // Sweat/smoke struct stored in PartyEntry::useStruct (0x170) while riding Yoshi.
 typedef struct PartyYoshiUse {
@@ -56,14 +73,13 @@ typedef struct YoshiZeroVec6 {
 } YoshiZeroVec6;
 
 // .rodata
-const Vec vec3_802cccd0[3] = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}};
+const Vec vec3_802cccd0 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802cccdc = {0.0f, 0.0f, 0.0f};
+const Vec vec3_802ccce8 = {0.0f, 0.0f, 0.0f};
 
-// The original's .rodata puts this conversion double between the vec3 array
-// and the PYS_* strings; naming it pins that slot so the strings below land
-// at the offsets the original code uses (see unk_800b45e0). MWCC still pools
-// its own copy for the actual int->float conversions in yoshi_use (it does
-// not anchor them to this named object), which is one of the remaining diffs.
-const double double_to_int_802cccf8 = 4503601774854144.0;
+// The original's .rodata is these three Vecs (0x00), then the compiler's
+// int->float magic double (0x28), then the PYS_* strings (0x30..0x57) and the
+// mask double (0x58). Ours matches byte-for-byte; see the yoshi_use note.
 
 // .sdata2
 static const f32 float_0 = 0.0f;
@@ -103,64 +119,6 @@ static const f32 float_neg10 = -10.0f;
 static const f32 float_26 = 26.0f;
 static const f32 float_20 = 20.0f;
 
-// 100%: `x`/`y` are s32 (the original sign-extends each byte once), the
-// `!dist` zero test makes MWCC emit the original mfcr/extrwi/xori/cntlzw/srwi
-// boolean, and the `flags |=` before `dist *= 0.75f` puts the fmuls where the
-// original schedules it. The literals pool anonymously because the file's
-// function order is not yet the original's (their addresses will land right
-// once the functions are reordered).
-void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
-    s32 x;
-    s32 y;
-    MarioWork* mario = party->playerPtr;
-
-    if ((s8)*(u8*)((u8*)mario + 0x39) != 0) {
-        *outDist = 0.0f;
-        *outAngle = party->field_FC;
-        return;
-    }
-
-    {
-        f32 dist;
-        f32 ang;
-
-        x = *(s8*)((u8*)party + 0x158);
-        y = -(s32)*(s8*)((u8*)party + 0x159);
-        dist = distABf(0.0f, 0.0f, (f32)x, (f32)-y);
-
-        if (dist >= 70.0f) {
-            dist = 70.0f;
-        }
-        ang = angleABf(0.0f, 0.0f, (f32)x, (f32)-y);
-#ifdef MUST_MATCH
-        // `!dist` makes MWCC emit the original mfcr/.../srwi boolean; the
-        // natural `dist == 0.0f` test is under #else.
-        if (!dist) {
-#else
-        if (dist == 0.0f) {
-#endif
-            ang = party->field_FC;
-        }
-        ang = revise360(ang + *(f32*)((u8*)party + 0xF8));
-        *outAngle = ang;
-
-        if (dist > 0.0f) {
-            if (x * x + y * y > 0xBD1) {
-                dist = 1.5f * (mario->mBaseDashSpeed * marioGetMoveRate(ang));
-            } else {
-                dist = 1.5f * (mario->mBaseWalkSpeed * marioGetMoveRate(ang));
-            }
-            if (hitGetAttr(mario->hitobjStandOn) & 0x100) {
-                mario->flags |= 0x04000000;
-                dist *= 0.75f;
-            } else {
-                mario->flags &= ~0x04000000;
-            }
-            dist *= mario->playerGravity;
-        }
-        *outDist = dist;
-    }
-}
 
 void yoshi_init(PartyEntry* party) {
     party->field_33 = 4;
@@ -300,7 +258,7 @@ void unk_800b474c(PartyEntry* party) {
     }
     marioChgMot(0x20);
     party->useMotionId = 0xA;
-    partyChgPose(party, "PYS_S_2");
+    partyChgPose(party, YOSHI_S_2);
     marioChgPose("M_Y_2");
     *(f32*)((u8*)mario + 0x2B0) = 0.0f;
     *(f32*)((u8*)mario + 0x2B4) = 0.0f;
@@ -317,7 +275,7 @@ void unk_800b474c(PartyEntry* party) {
 // load/store interleave in the two 6-float copies (and the playerPtr load order).
 // MUST_MATCH only: the natural form is under #else.
 void marioYoshiForceCancel(void) {
-    const Vec* vec = vec3_802cccd0;
+    const Vec* vec = &vec3_802cccd0;
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(marioGetPartyId());
 
@@ -373,7 +331,7 @@ void marioYoshiForceCancel(void) {
 // 100%: same volatile-copy MUST_MATCH trick as marioYoshiForceCancel; the
 // natural form is under #else.
 void yoshi_exit(PartyEntry* arg) {
-    const Vec* vec = vec3_802cccd0;
+    const Vec* vec = &vec3_802cccd0;
     MarioWork* mario;
     PartyEntry* party;
 
@@ -455,25 +413,18 @@ void yoshi_bye(PartyEntry* party) {
 #define M_S(off) (*(s32*)((u8*)mario + (off)))
 #define M_P(off) (*(void**)((u8*)mario + (off)))
 
-// MUST_MATCH: `&vec[4]` is `(char*)vec + 0x30` but keeps MWCC from CSE-ing the
-// PYS_S_2 address into a callee-saved register across the whole function (the
-// original recomputes `addi r4, r31, 0x30` each time).  Natural form under #else.
-#ifdef MUST_MATCH
-#define VEC_S2 ((char*)&vec[4])
-#else
-#define VEC_S2 ((char*)vec + 0x30)
-#endif
 
-// Semantics fully reconstructed. Remaining diffs: the
-// int->float conversion magic double (MWCC pools its own anonymous copy and
-// addresses it with lis/lfd instead of the original's `lfd fX, 0x28(r31)`),
-// the stack-slot rotation of the five `Vec` temporaries, and a couple of
-// scheduling choices.  The second PYS_* strcmp block now reloads
-// party->playerPtr (r27) like the original.
-// NONMATCHING (99.11%): semantics complete, not yet byte-exact.
+#define VEC_S2 YOSHI_S_2
+
+// Semantics fully reconstructed. The `vec` pointer is gone, so MWCC builds the
+// `.rodata` base from the section symbol and folds the int->float magic double
+// to `lfd fX, 0x28(r31)` like the original; the zero-`Vec` copies are volatile
+// on both sides so MWCC keeps the original's load/store interleave. Remaining
+// diffs: the five `Vec` stack temporaries' slots, two one-instruction `addi`s
+// for the PYS_H_* tails and a couple of list-scheduling choices.
+// NONMATCHING (99.46%): semantics complete, not yet byte-exact.
 void yoshi_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
-    const Vec* vec = vec3_802cccd0;
     PartyEntry* extra;
     PartyYoshiUse* use;
     HitEntry* hit;
@@ -630,7 +581,7 @@ L_312C:
         /* fallthrough */
     case 0xB:
         marioChgMot(0x1A);
-        partyChgPose(party, (char*)vec + 0x38);
+        partyChgPose(party, YOSHI_H_1);
         marioChgPose("M_Y_1");
         party->speed = 0.0f;
         P_F(0x128) = 0.0f;
@@ -649,7 +600,7 @@ L_312C:
     case 0xD:
         if (!(mario->flags & 0x20)) goto L_3354;
         marioChgPose("M_Y_2");
-        partyChgPose(party, (char*)vec + 0x40);
+        partyChgPose(party, YOSHI_R_2);
         party->field_12C = NULL;
         party->field_134 = NULL;
         party->field_140 = NULL;
@@ -716,7 +667,7 @@ L_312C:
             party->dir = outAngle;
             party->field_FC = outAngle;
             marioChgPose("M_Y_2");
-            partyChgPose(party, (char*)vec + 0x40);
+            partyChgPose(party, YOSHI_R_2);
             use = party->useStruct;
             use->counter++;
             if (((PartyYoshiUse*)party->useStruct)->counter % 10 == 0) {
@@ -726,7 +677,7 @@ L_312C:
             if (strcmp(party->field_18, VEC_S2) != 0) {
                 mario->poseTime = 0;
             }
-            partyChgPose(party, (char*)(vec + 4));
+            partyChgPose(party, YOSHI_S_2);
             party->speed = 0.0f;
             ((PartyYoshiUse*)party->useStruct)->counter = 0;
         }
@@ -768,16 +719,16 @@ L_3588:
     case 0x64:
         {
             MarioWork* pl64 = party->playerPtr;
-            *(Vec*)((u8*)pl64 + 0x98) = vec[0];
-            *(Vec*)((u8*)pl64 + 0xA4) = vec[1];
+            *(volatile Vec*)((u8*)pl64 + 0x98) = *(const volatile Vec*)&vec3_802cccd0;
+            *(volatile Vec*)((u8*)pl64 + 0xA4) = *(const volatile Vec*)&vec3_802cccdc;
         }
         extra = partyGetPtr(marioGetExtraPartyId());
         if (extra != NULL) {
-            *(Vec*)((u8*)extra + 0x7C) = vec[2];
+            *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec3_802ccce8;
         }
         marioChgSmallJumpMotion();
         mario->baseSpeed = 0.0f;
-        partyChgPose(party, (char*)vec + 0x48);
+        partyChgPose(party, YOSHI_H_2);
         party->speed = 0.0f;
         party->useMotionId = 0x65;
         if (party->field_138 != NULL) {
@@ -849,7 +800,7 @@ L_3800:
         mario->hitobjJumpFrom = mario->hitobjStandOn;
         mario->hitobjStandOn = NULL;
         *(Vec*)((u8*)mario + 0x11C) = party->position;
-        partyChgPose(party, (char*)vec + 0x50);
+        partyChgPose(party, YOSHI_F_1);
         marioChgPose("M_Y_3");
         mario->airTimer = 0;
         party->useMotionId = 0x15;
@@ -998,9 +949,9 @@ L_3800:
                 MarioWork* pm = party->playerPtr;
                 if (strcmp(party->field_18, VEC_S2) == 0) {
                     f30 = 2.0f * ofs_PYS_S_2[*(u16*)((u8*)pm + 0x28)] + f30;
-                } else if (strcmp(party->field_18, (char*)vec + 0x40) == 0) {
+                } else if (strcmp(party->field_18, YOSHI_R_2) == 0) {
                     f30 = 2.0f * ofs_PYS_R_2[*(u16*)((u8*)pm + 0x28)] + f30;
-                } else if (strcmp(party->field_18, (char*)vec + 0x50) == 0) {
+                } else if (strcmp(party->field_18, YOSHI_F_1) == 0) {
                     f30 = 2.0f * ofs_PYS_F_1[*(u16*)((u8*)pm + 0x28)] + f30;
                 }
             }
@@ -1011,9 +962,9 @@ L_3800:
                 f30 = 0.0f;
                 if (strcmp(party->field_18, VEC_S2) == 0) {
                     f30 = 2.0f * ofs_PYS_S_2[*(u16*)&pm2->poseTime] + f30;
-                } else if (strcmp(party->field_18, (char*)vec + 0x40) == 0) {
+                } else if (strcmp(party->field_18, YOSHI_R_2) == 0) {
                     f30 = 2.0f * ofs_PYS_R_2[*(u16*)&pm2->poseTime] + f30;
-                } else if (strcmp(party->field_18, (char*)vec + 0x50) == 0) {
+                } else if (strcmp(party->field_18, YOSHI_F_1) == 0) {
                     f30 = 2.0f * ofs_PYS_F_1[*(u16*)&pm2->poseTime] + f30;
                 }
                 *(f32*)((u8*)extra + 0x80) = f30;
@@ -1219,12 +1170,12 @@ L_3800:
             party->field_3B = 0;
             {
                 MarioWork* pl = party->playerPtr;
-                *(Vec*)((u8*)pl + 0x98) = vec[0];
-                *(Vec*)((u8*)pl + 0xA4) = vec[1];
+                *(volatile Vec*)((u8*)pl + 0x98) = *(const volatile Vec*)&vec3_802cccd0;
+                *(volatile Vec*)((u8*)pl + 0xA4) = *(const volatile Vec*)&vec3_802cccdc;
             }
             extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
-                *(Vec*)((u8*)extra + 0x7C) = vec[2];
+                *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec3_802ccce8;
             }
             return;
         }
@@ -1407,7 +1358,7 @@ void searchGround2(PartyEntry* party) {
         }
         marioChgMot(0x20);
         party->useMotionId = 0xA;
-        partyChgPose(party, "PYS_S_2");
+        partyChgPose(party, YOSHI_S_2);
         marioChgPose("M_Y_2");
         *(f32*)((u8*)m + 0x2B0) = 0.0f;
         *(f32*)((u8*)m + 0x2B4) = 0.0f;
@@ -1432,7 +1383,7 @@ void searchGround2(PartyEntry* party) {
 // reached through the vec3 base register (r31) rather than a fresh lis; the
 // 6-float zero copy is emitted as two Vec copies.
 void searchGround(PartyEntry* party) {
-    const Vec* vec = vec3_802cccd0;
+    const Vec* vec = &vec3_802cccd0;
     HitEntry* hit = NULL;
     MarioWork* mario = party->playerPtr;
     s32 attr;
@@ -1545,7 +1496,7 @@ void searchGround(PartyEntry* party) {
         // base register (r31) for it instead of a fresh lis.
         partyChgPose(party, (char*)vec + 0x30);
 #else
-        partyChgPose(party, "PYS_S_2");
+        partyChgPose(party, YOSHI_S_2);
 #endif
         marioChgPose("M_Y_2");
         *(f32*)((u8*)m + 0x2B0) = 0.0f;
@@ -1688,7 +1639,7 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
             }
             marioChgMot(0x20);
             party->useMotionId = 0xA;
-            partyChgPose(party, "PYS_S_2");
+            partyChgPose(party, YOSHI_S_2);
             marioChgPose("M_Y_2");
             *(f32*)((u8*)m + 0x2B0) = 0.0f;
             *(f32*)((u8*)m + 0x2B4) = 0.0f;
@@ -1754,7 +1705,7 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
                     }
                     marioChgMot(0x20);
                     party->useMotionId = 0xA;
-                    partyChgPose(party, "PYS_S_2");
+                    partyChgPose(party, YOSHI_S_2);
                     marioChgPose("M_Y_2");
                     *(f32*)((u8*)m + 0x2B0) = 0.0f;
                     *(f32*)((u8*)m + 0x2B4) = 0.0f;
@@ -1783,7 +1734,7 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
                 }
                 marioChgMot(0x20);
                 party->useMotionId = 0xA;
-                partyChgPose(party, "PYS_S_2");
+                partyChgPose(party, YOSHI_S_2);
                 marioChgPose("M_Y_2");
                 *(f32*)((u8*)m + 0x2B0) = 0.0f;
                 *(f32*)((u8*)m + 0x2B4) = 0.0f;
@@ -1809,21 +1760,7 @@ end: ;
 // anchor with a shared base register (r31), so the string and mask offsets
 // are the original's.  The original .rodata is vec3 (0x00) / double_to_int
 // (0x28) / PYS_S_2 (0x30) / PYS_H_1 (0x38) / PYS_R_2 (0x40) / PYS_H_2 (0x48)
-// / PYS_F_1 (0x50) / mask (0x58).  The named double above pins the 0x28 slot;
-// the S/R literals carry the PYS_H strings that follow them in the original
-// pool (strcmp stops at the first NUL, so the comparison is unchanged) so
-// S/R/F land at 0x30/0x40/0x50.  PYS_H_1/H_2 are otherwise only used by the
-// unwritten yoshi_use; when it is written this layout should be redone with
-// the real named strings.
-#ifdef MUST_MATCH
-#define YOSHI_S_2 "PYS_S_2\0PYS_H_1"
-#define YOSHI_R_2 "PYS_R_2\0PYS_H_2"
-#else
-#define YOSHI_S_2 "PYS_S_2"
-#define YOSHI_R_2 "PYS_R_2"
-#endif
-#define YOSHI_F_1 "PYS_F_1"
-
+// / PYS_F_1 (0x50) / mask (0x58).
 void unk_800b45e0(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
 
@@ -1854,6 +1791,62 @@ void unk_800b45e0(PartyEntry* party) {
     }
 }
 
-#undef YOSHI_S_2
-#undef YOSHI_R_2
-#undef YOSHI_F_1
+
+// 100%: `x`/`y` are s32 (the original sign-extends each byte once), the
+// `!dist` zero test makes MWCC emit the original mfcr/extrwi/xori/cntlzw/srwi
+// boolean, and the `flags |=` before `dist *= 0.75f` puts the fmuls where the
+// original schedules it. The literals pool anonymously because the file's
+// function order is not yet the original's (their addresses will land right
+// once the functions are reordered).
+void L_getStick(PartyEntry* party, f32* outAngle, f32* outDist) {
+    s32 x;
+    s32 y;
+    MarioWork* mario = party->playerPtr;
+
+    if ((s8)*(u8*)((u8*)mario + 0x39) != 0) {
+        *outDist = 0.0f;
+        *outAngle = party->field_FC;
+        return;
+    }
+
+    {
+        f32 dist;
+        f32 ang;
+
+        x = *(s8*)((u8*)party + 0x158);
+        y = -(s32)*(s8*)((u8*)party + 0x159);
+        dist = distABf(0.0f, 0.0f, (f32)x, (f32)-y);
+
+        if (dist >= 70.0f) {
+            dist = 70.0f;
+        }
+        ang = angleABf(0.0f, 0.0f, (f32)x, (f32)-y);
+#ifdef MUST_MATCH
+        // `!dist` makes MWCC emit the original mfcr/.../srwi boolean; the
+        // natural `dist == 0.0f` test is under #else.
+        if (!dist) {
+#else
+        if (dist == 0.0f) {
+#endif
+            ang = party->field_FC;
+        }
+        ang = revise360(ang + *(f32*)((u8*)party + 0xF8));
+        *outAngle = ang;
+
+        if (dist > 0.0f) {
+            if (x * x + y * y > 0xBD1) {
+                dist = 1.5f * (mario->mBaseDashSpeed * marioGetMoveRate(ang));
+            } else {
+                dist = 1.5f * (mario->mBaseWalkSpeed * marioGetMoveRate(ang));
+            }
+            if (hitGetAttr(mario->hitobjStandOn) & 0x100) {
+                mario->flags |= 0x04000000;
+                dist *= 0.75f;
+            } else {
+                mario->flags &= ~0x04000000;
+            }
+            dist *= mario->playerGravity;
+        }
+        *outDist = dist;
+    }
+}

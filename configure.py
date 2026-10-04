@@ -379,7 +379,7 @@ config.libs = [
             Object(NonMatching, "battle/battle_seq_end.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_ac_help.c"),
             Object(NonMatching, "battle/battle_audience_kind_data.c"),
-            Object(NonMatching, "battle/battle_status_icon.c"),
+            Object(Matching, "battle/battle_status_icon.c"),
         ],
     },
     {
