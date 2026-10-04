@@ -4051,15 +4051,17 @@ EVT_BEGIN(evt_kyaku_8)
 EVT_END()
 
 // The two fill loops reproduce retail's instruction sequence and schedule (the pixel loop keeps
-// `(i / 4) * 0x100` / `(i % 4) * 8` and uses `row = j / 8` / `pct = j % 8` locals; the sparkle loop
+// `(i / 4) * 0x100` / `(i % 4) * 8` and hoists `base` / `row` / `col` / `mask` / `pct` locals so the
+// `(i & 1) ? 0xFF : 0` mask and the `j % 8` term select the retail instructions; the sparkle loop
 // precomputes `sgrow` / `sgcol` with shifts and adds `col` last via `buf[idx + col]`). The min-clamp
-// also matches after declaring `x` before `ratio` and writing `x = (x > ratio) ? ratio : x`. What
-// still differs is register colouring only: retail keeps `param` in r27 and the sparkle `sgrow` in
-// r25 (here r25 / r27), and the pixel loop's hoisted row/col/0xFF sit in r7 / r8 / r3 (retail
-// r4 / r3 / r5). The compiler's colouring of the {param, sgrow} clique and of the pixel-loop
+// also matches after declaring `x` before `ratio` and writing `x = (x > ratio) ? ratio : x`. The
+// whole instruction stream now matches opcode-for-opcode; what still differs is register colouring
+// only, in two clusters: retail keeps `param` in r27 and the sparkle `sgrow` in r25 (here r25 /
+// r27), and the pixel loop's hoisted values sit in r7 / r8 / r3 / r4 / r3 (retail r4 / r3 / r6 /
+// r8 / r7). The compiler's colouring of the {param, sgrow} clique and of the pixel-loop
 // temporaries could not be steered from C (many declaration orders, expression forms, shifts vs
 // multiplies and pragma settings were tried).
-// NONMATCHING (99.54%): integer register allocation only.
+// NONMATCHING (99.74%): integer register allocation only.
 #pragma opt_propagation off // needed: with propagation on the second fill loop folds sgcol into a buf+sgcol pointer
 void screen_tev(TevCallbackParam* param) {
     GXTexObj texObj;
@@ -4079,13 +4081,16 @@ void screen_tev(TevCallbackParam* param) {
 
         for (i = 0; i < 0x40; i++) {
             for (j = 0; j < 0x40; j++) {
+                int base = (i / 4) * 0x100;
                 int row = j / 8;
+                int col = (i % 4) * 8;
+                int mask = (i & 1) ? 0xFF : 0;
                 int pct = j % 8;
-                int idx = (i / 4) * 0x100;
+                int idx = base;
                 idx += row * 0x20;
                 idx += pct;
-                idx += (i % 4) * 8;
-                buf[idx] = (i & 1) ? 0xFF : 0;
+                idx += col;
+                buf[idx] = mask;
             }
             {
                 s32 count = 100 + rand() % 100;

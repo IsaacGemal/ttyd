@@ -14,14 +14,34 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const f32 float_88_80420994;
+extern const f32 float_50_80420998;
+extern const f32 float_18_8042099c;
+extern const f32 float_neg288_804209a0;
+extern const f32 float_neg300_804209a4;
+extern const f32 float_30_804209a8;
+extern const f32 float_3_804209ac;
+extern const f32 float_0p5_804209b0;
+extern const f32 float_270_804209b4;
+extern const f32 float_neg1_804209b8;
+extern const f32 float_0p0078125_804209bc;
+extern const f32 float_0p95_804209c0;
+
+#ifdef MUST_MATCH
+// Match-only: read the constant from its own symbol instead of folding it, so the code below
+// loads it as the original does and the pool keeps one copy.
+#define NF32(x) (*(const f32*)&(x))
+#else
+#define NF32(x) (x)
+#endif
+
 // .rodata
 const Vec vec3_802fdba0 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fdbac = {0.0f, 0.0f, 0.0f};
-const f64 double_to_int_802fdbb8 = 4503601774854144.0;
-const char str_802FDBC0[] = "SFX_AC_GAUGE_MOVE1";
-const f64 double_to_int_mask_802fdbd8 = 4503599627370496.0;
 
-// .sdata2
+// .sdata2, first block: the original lays these seven out ahead of the deferred constants, so
+// they are defined here (before the code) while the rest are defined after it.
 const f32 float_0_80420978 = 0.0f;
 const f32 float_45_8042097c = 45.0f;
 const f32 float_100_80420980 = 100.0f;
@@ -29,18 +49,19 @@ const f32 float_90_80420984 = 90.0f;
 const f32 float_neg200_80420988 = -200.0f;
 const f32 float_25_8042098c = 25.0f;
 const f32 float_1_80420990 = 1.0f;
-const f32 float_88_80420994 = 88.0f;
-const f32 float_50_80420998 = 50.0f;
-const f32 float_18_8042099c = 18.0f;
-const f32 float_neg288_804209a0 = -288.0f;
-const f32 float_neg300_804209a4 = -300.0f;
-const f32 float_30_804209a8 = 30.0f;
-const f32 float_3_804209ac = 3.0f;
-const f32 float_0p5_804209b0 = 0.5f;
-const f32 float_270_804209b4 = 270.0f;
-const f32 float_neg1_804209b8 = -1.0f;
-const f32 float_0p0078125_804209bc = 0.0078125f;
-const f32 float_0p95_804209c0 = 0.95f;
+
+// .sdata2 constants the code reads by name are declared in this unit's header.
+
+
+#ifdef MUST_MATCH
+// An ordinary, immediately generated helper pools the int->float conversion double ahead of the
+// deferred functions' string literals; nothing calls it and the linker strips the body.
+#pragma defer_codegen off
+static f32 pool_i2f(s32 v) {
+	return (f32)v;
+}
+#pragma defer_codegen reset
+#endif
 
 // .sdata
 typedef struct HpAngle {
@@ -155,17 +176,17 @@ static void actionCommandDisp(f32 x, f32 y) {
 			x0 = xBase;
 		}
 		else {
-			x0 = xBase + (f32)(((u16*)_hp_tbl)[2 * i - 2] * 175) / float_100_80420980;
+			x0 = xBase + (f32)(((u16*)_hp_tbl)[2 * i - 2] * 175) / NF32(float_100_80420980);
 		}
-		x1 = xBase + (f32)(((u16*)_hp_tbl)[2 * i] * 175) / float_100_80420980;
+		x1 = xBase + (f32)(((u16*)_hp_tbl)[2 * i] * 175) / NF32(float_100_80420980);
 		btlDispGXQuads2DRasta(x0, yTop, x1, yBottom, (u8)((3 - abs(3 - i)) * 60), 0,
 		                      (u8)(180 - (3 - abs(3 - i)) * 60), 0xFF);
 	}
 
 	v2 = vec3_802fdbac;
-	v2.x = float_neg288_804209a0 + x + (f32)(dec->rate * 176) / float_100_80420980;
-	v2.y = float_45_8042097c + y;
-	iconDispGx(&v2, 0x10, 0x96, float_1_80420990);
+	v2.x = float_neg288_804209a0 + x + (f32)(dec->rate * 176) / NF32(float_100_80420980);
+	v2.y = NF32(float_45_8042097c) + y;
+	iconDispGx(&v2, 0x10, 0x96, NF32(float_1_80420990));
 }
 #pragma dont_inline reset
 
@@ -317,10 +338,10 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 						t = float_1_80420990;
 					}
 #ifdef MUST_MATCH
-					k = MATCH_F32(float_0p95_804209c0) * -dec->amplitude;
+					k = float_0p95_804209c0 * -dec->amplitude;
 					delta = k * t;
 #else
-					delta = (MATCH_F32(float_0p95_804209c0) * -dec->amplitude) * t;
+					delta = (float_0p95_804209c0 * -dec->amplitude) * t;
 #endif
 				}
 			}
@@ -331,10 +352,10 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 						t = float_1_80420990;
 					}
 #ifdef MUST_MATCH
-					k = MATCH_F32(float_0p95_804209c0) * -dec->amplitude;
+					k = float_0p95_804209c0 * -dec->amplitude;
 					delta = k * t;
 #else
-					delta = (MATCH_F32(float_0p95_804209c0) * -dec->amplitude) * t;
+					delta = (float_0p95_804209c0 * -dec->amplitude) * t;
 #endif
 				}
 			}
@@ -382,7 +403,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 			d = 1;
 		}
 		if (d != -1 && d != dec->lastDir) {
-			psndSFXOn(str_802FDBC0);
+			psndSFXOn("SFX_AC_GAUGE_MOVE1");
 			dec->lastDir = d;
 		}
 
@@ -428,3 +449,27 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	}
 	return 1;
 }
+
+// Named .sdata2 constants, defined after the code in the original's order.
+const f32 float_88_80420994 = 88.0f;
+const f32 float_50_80420998 = 50.0f;
+const f32 float_18_8042099c = 18.0f;
+const f32 float_neg288_804209a0 = -288.0f;
+const f32 float_neg300_804209a4 = -300.0f;
+const f32 float_30_804209a8 = 30.0f;
+const f32 float_3_804209ac = 3.0f;
+const f32 float_0p5_804209b0 = 0.5f;
+const f32 float_270_804209b4 = 270.0f;
+const f32 float_neg1_804209b8 = -1.0f;
+const f32 float_0p0078125_804209bc = 0.0078125f;
+const f32 float_0p95_804209c0 = 0.95f;
+
+
+// 4-byte zero word that ends the unit's .sdata: explicit_zero_data keeps the zero word instead of
+// dropping it, force_active keeps it through the linker, and the section keeps it out of .bss.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") static u32 gap_07_804141CC_sdata[1] = {0};
+#pragma force_active reset
+#pragma explicit_zero_data reset
+

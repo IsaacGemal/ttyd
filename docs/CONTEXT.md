@@ -4591,3 +4591,10 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   sub-display drop excused with --allow-regress winLogInit); data ports for eff_horao_spell_n64 and evt_yuunpc.
   Collect checklist: when provenance shows a fetch from a repo without a CC0/MIT licence or from compiler source,
   read the diff against that file before merging.
+- **Batch 19:** ac_shot_target linked (wave 74 arm L, the sixth: battleAcMain_ShotTarget 99.90 -> 100); win_mario's
+  follow-up passes the value gate (the full-width minus is back) and builds without MUST_MATCH; data ports for
+  eff_opuku_wcurtain_n64, ac_pendulum_crane_timing (merged by hand: its audit flag was a scratch copy into the
+  sandbox's /tmp) and tou_03. Held: rsh_06's data port deletes its jumptable copy (.data objdiff 99.03 -> 96.50) and
+  gains nothing with the copy kept, so it waits for rsh_06's linking commit (scratch/wave74/followups.tsv). No change:
+  yuu_03 (evt_ryushi_clr 98.37; the original materialises &xwp for one load, and rsh_00's one-iteration-loop shape
+  hangs mwcceppc here). Arm F's second win_log was a pre-#415 duplicate and was discarded.

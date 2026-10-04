@@ -12,16 +12,16 @@
 #include <stdlib.h>
 
 // .rodata
-const char str_802FB2A4[] = "OpukuWcurtainN64";
 
-// .sbss2 scratch color (same pattern as eff_opuku_jetwrain_n64.c's unk_804231d8).
-GXColor unk_804231e0;
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates, so pair it with a
+// small-data section and place the object and the 4-byte section-tail gap by hand (the gap is declared
+// first so it lands higher).
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_804231E4_sbss2[4];
+__declspec(section ".sdata") GXColor unk_804231e0;
+#pragma section ".sdata" ".sbss"
 
 // .sdata2
-extern const f32 float_0_8041f820;
-extern const f32 float_neg1_8041f834;
-extern const f32 float_0p01_8041f838;
-extern const f32 float_0p5_8041f83c;
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_opuku_jetw_n64.c).
 inline Vec initializeVec(Vec* input) {
@@ -37,7 +37,7 @@ EffectEntry* effOpukuWcurtainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 	s32 i;
 
 	entry = effEntry();
-	entry->type = str_802FB2A4;
+	entry->type = "OpukuWcurtainN64";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effOpukuWcurtainData));
 	entry->userdata = data;
@@ -60,9 +60,9 @@ EffectEntry* effOpukuWcurtainN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 
 	data->field_0x1C = 120;
 	data->field_0x20 = 255;
 	for (i = 0; i < 12; i++) {
-		data->field_0x2C[i] = float_0_8041f820;
-		data->field_0x5C[i] = (rand() % 11) * float_0p01_8041f838 + float_neg1_8041f834;
-		data->field_0x5C[i] *= float_0p5_8041f83c;
+		data->field_0x2C[i] = 0.0f;
+		data->field_0x5C[i] = (rand() % 11) * 0.01f + -1.0f;
+		data->field_0x5C[i] *= 0.5f;
 	}
 
 	return entry;
