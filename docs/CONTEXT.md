@@ -4357,6 +4357,26 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   Proposed, needing Isaac: a dedicated agent user outside the docker group, and `--unshare-net` with an API proxy
   outside the sandbox holding the key.
 
+- **Status after round 6 (2026-10-04 04:30).** Round 6 landed the disk floor's action (tools/floor_stop.py: only
+  home-filesystem blocks, each file once, a scope stopped only above 1 GB and its results marked so the gate refuses
+  them) and PAUSED as its own state (checked inside the slot lock and at launcher start; every launcher stops taking
+  work once paused). #367 stays open for Isaac; the swarm stays frozen until he decides.
+  - **Open, blocked (owner decision):** (1) the disk watchdog can miss space hidden in directories it can't enter;
+    (3) the audit's tolerance for a garbled event line can be abused, and a garbled line may hide a tool call;
+    (6) the watchdog can act on a step that has just ended, and doesn't treat repeated failed scope queries as a trip;
+    (7) work can continue briefly after an event or stderr log hits its cap. Writing these fixes was repeatedly
+    stopped by a safety classifier on the orchestrator's side, so they weren't attempted further or handed to
+    another session.
+  - **Accepted residual risk:** the audit is a hint and the sandbox is the barrier; outside paths held in variables
+    or in attached sed expressions may evade the audit; the gate proves the copied-back files are consistent with
+    their manifest, not who wrote it (the agent can't write the local results folder); one agent can pause every
+    launch by filling the disk (availability only; resume is manual); archive retention is left to the existing
+    prune cron; busybox applets may run commands the audit doesn't name; on btrfs the inode floor needs a guard; the
+    collect step's text pipelines don't catch every write error.
+  - **Needs sudo (proposal for Isaac):** a dedicated agent user outside the docker group; a network namespace with an
+    API proxy outside the sandbox that holds the key; ext4 project quotas or a loop image per workspace, which would
+    replace the soft disk watchdog and the pause and settle open items 1 and 7 properly; tower_check by cron.
+
 ## Wave 70 tail collection (2026-10-04, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
 
 - Wave 70's last five agents, collected onto main 365c6ad6. CI 9,356 -> 9,357.
