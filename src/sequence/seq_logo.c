@@ -18,6 +18,20 @@
 #include <dolphin/vi.h>
 #include <string.h>
 #include <dolphin/os.h>
+#ifdef MUST_MATCH
+// Immediately generated helpers pool the int-to-float conversion double and the "%s/b/first" string
+// ahead of the deferred functions' pooled constants, matching the original's .rodata order. Nothing
+// calls them and the linker strips the bodies.
+#pragma defer_codegen off
+static f32 pool_i2f(s32 v) {
+	return (f32)v;
+}
+static const char* pool_first_str(void) {
+	return "%s/b/first";
+}
+#pragma defer_codegen reset
+#endif
+
 #include "sequence/seq_logo.h"
 
 extern GlobalWork* gp;
@@ -110,6 +124,19 @@ void seq_logoExit(SequenceWork* work) {
 // size=r30/decode=r29 again, so the swap remains. Copy-free codegen and the desired colouring look mutually
 // exclusive with this compiler: the forms that colour size=r29 (plain temp) all add the `mr r29, r0`.
 // NONMATCHING (99.89%): size/decode are assigned r30/r29 where the original has r29/r30.
+static const GXColor sFadeColor0 = { 0, 0, 0, 0xFF };
+static const GXColor sFadeColor1 = { 0, 0, 0, 0xFF };
+static const GXColor sFadeColor2 = { 0, 0, 0, 0xFF };
+static const GXColor sFadeColor3 = { 0, 0, 0, 0xFF };
+static const GXColor sFadeColor4 = { 0, 0, 0, 0xFF };
+static const GXColor sFadeColor5 = { 0, 0, 0, 0xFF };
+static const GXColor sFadeColor6 = { 0, 0, 0, 0xFF };
+
+// opt_dead_assignments off: the compiler normally drops the dead zero-init of `decode` below before
+// it allocates registers; keeping it alive through allocation makes `decode` take the higher of the
+// two callee-saved registers, so the byte-swap result lands in the other one, as in the original. The
+// dead store is still removed from the emitted code.
+#pragma opt_dead_assignments off
 void seq_logoMain(SequenceWork* work) {
 	static OSTime time; //time instance 1
 	u8* decode;
@@ -120,7 +147,7 @@ void seq_logoMain(SequenceWork* work) {
 
 	switch (work->state) {
 		case 0:
-			fadeEntry(FADE_IN_BLACK, 500, (GXColor){0, 0, 0, 0xFF});
+			fadeEntry(FADE_IN_BLACK, 500, sFadeColor0);
 			DVDMgrSetupCallback(psndPushGroup);
 			work->state++;
 			break;
@@ -135,14 +162,14 @@ void seq_logoMain(SequenceWork* work) {
 		
 		case 2:
 			if (OSTicksToMilliseconds(gp->renderTime - time) > 1000) {
-				fadeEntry(FADE_OUT_BLACK, 500, (GXColor){0, 0, 0, 0xFF});
+				fadeEntry(FADE_OUT_BLACK, 500, sFadeColor1);
 				work->state++;
 			}
 			break;
 
 		case 3:
 			if (fadeIsFinish()) {
-				fadeEntry(FADE_IN_BLACK, 500, (GXColor){0, 0, 0, 0xFF});
+				fadeEntry(FADE_IN_BLACK, 500, sFadeColor2);
 				work->state++;
 				wp->field_0x10 = 1;
 			}
@@ -157,14 +184,14 @@ void seq_logoMain(SequenceWork* work) {
 
 		case 5:
 			if (OSTicksToMilliseconds(gp->renderTime - time) > 1000) {
-				fadeEntry(FADE_OUT_BLACK, 500, (GXColor){0, 0, 0, 0xFF});
+				fadeEntry(FADE_OUT_BLACK, 500, sFadeColor3);
 				work->state++;
 			}
 			break;
 
 		case 6:
 			if (fadeIsFinish()) {
-				fadeEntry(FADE_IN_BLACK, 500, (GXColor){0, 0, 0, 0xFF});
+				fadeEntry(FADE_IN_BLACK, 500, sFadeColor4);
 				work->state++;
 				wp->field_0x10 = 2;
 			}
@@ -179,7 +206,7 @@ void seq_logoMain(SequenceWork* work) {
 
 		case 8:
 			if (OSTicksToMilliseconds(gp->renderTime - time) > 1000) {
-				fadeEntry(FADE_OUT_BLACK, 500, (GXColor){0, 0, 0, 0xFF});
+				fadeEntry(FADE_OUT_BLACK, 500, sFadeColor5);
 				wp->skipStory = FALSE;
 				work->state++;
 			}
@@ -228,6 +255,8 @@ void seq_logoMain(SequenceWork* work) {
 			if (result) {
 				first = fileAllocf(0, "%s/b/first", getMarioStDvdRoot());
 				if (first) {
+					// Pins decode's live range ahead of the byte swap so the two locals colour as the original.
+					decode = (u8*)0;
 					size = *(u32*)*first->data;
 					size = ((size & 0xFF) << 16) | (size & 0xFF00) | ((size >> 16) & 0xFF);
 					decode = __memAlloc(HEAP_DEFAULT, size);
@@ -240,7 +269,7 @@ void seq_logoMain(SequenceWork* work) {
 						seqSetSeq(SEQ_MAP_CHANGE, "dmo_00", NULL);
 					}
 					else { //continue to title screen
-						fadeEntry(FADE_OUT_WHITE, 500, (GXColor){0, 0, 0, 0xFF});
+						fadeEntry(FADE_OUT_WHITE, 500, sFadeColor6);
 						work->state++;
 					}
 				}
@@ -263,6 +292,7 @@ void seq_logoMain(SequenceWork* work) {
 		dispEntry(CAMERA_2D, 0.0f, 0, progDisp, NULL);
 	}
 }
+#pragma opt_dead_assignments reset
 
 //param is unused
 void logoDisp(CameraId camId, void* param) {
