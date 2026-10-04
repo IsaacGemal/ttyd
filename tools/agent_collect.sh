@@ -10,7 +10,7 @@
 # other_changes.txt, include.patch, configure.patch, provenance.txt and audit.txt to OUT (events.jsonl and
 # stderr.log and passes.txt are already there: the host wrote them), problems to collect.txt, and COLLECT-OK last if
 # every step worked and no limit tripped (no limits.txt): a manifest (sha256, size, name) of every file the launcher
-# copies back, which tools/collect_gate.py checks before a merge. MODE link or dataport: the agent may flip its unit in configure.py (configure.patch carries
+# copies back, which tools/collect_gate.py checks before a merge. MODE link, dataport or oneshort: the agent may flip its unit in configure.py (configure.patch carries
 # it), so configure.py isn't listed as another file changed.
 # Exit status: the audit's if it flagged (or failed), else 5 if a collect step failed, 6 if a limit tripped, else 0.
 set -u
@@ -38,7 +38,7 @@ D="diff --no-dereference"
 # diff exits 1 for "different" (expected) and 2 for trouble
 run_diff() { "$@"; [ $? -le 1 ] || note "diff failed: $*"; }
 { run_diff $D -rq "$BASE/src" src; run_diff $D -rq "$BASE/libs" libs; run_diff $D -rq "$BASE/rels" rels
-  case $MODE in link|dataport) ;; *) run_diff $D -q "$BASE/configure.py" configure.py;; esac; } 2>&1 \
+  case $MODE in link|dataport|oneshort) ;; *) run_diff $D -q "$BASE/configure.py" configure.py;; esac; } 2>&1 \
   | grep -v -F "$SRC differ" | grep -v -E 'rels/[^/ ]+/include[/:]' > "$OUT/other_changes.txt"
 run_diff $D -u "$BASE/configure.py" configure.py > "$OUT/configure.patch"
 # header additions (include/ and each REL's rels/<mod>/include/) as one patch (a/... -> b/...) for tools/merge_agent.sh

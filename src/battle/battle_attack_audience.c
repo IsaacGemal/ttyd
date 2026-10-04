@@ -22,27 +22,31 @@
 extern ItemData itemDataTable[];
 
 // .data event tables are defined below the functions that use them.
-extern s32 btlataudevtDummy[16];
+s32 btlataudevtDummy[];
+s32 btlataudevtDummyBody[];
 extern s32 btlataudevtPresentItem_Damage[];
 extern s32 btlataudevtPresentItem_Get[];
 
 // psndSFX_pit has no shared prototype; the original's callers disagree on the pitch width.
 void psndSFX_pit(s32 id, s16 pitch);
 
-// .rodata
-const char str_802F3A98[] = "btl_msg_get_item";
-const char str_802F3AAC[] = "SFX_BTL_DAMAGED_PLIABLE1";
-
 // .sdata2
-s32 dat_8041ccc0 = -1;
-f32 float_8_8041ccc4 = 8.0f;
-f32 float_900_8041ccc8 = 900.0f;
-f32 float_0_8041cccc = 0.0f;
-f32 float_10_8041ccd0 = 10.0f;
-f32 float_34_8041ccd4 = 34.0f;
-f32 float_60_8041ccd8 = 60.0f;
-f32 float_32_8041ccdc = 32.0f;
-f32 float_1_8041cce0 = 1.0f;
+__declspec(section ".sdata2") s32 dat_8041ccc0 = -1;
+__declspec(section ".sdata2") f32 float_8_8041ccc4 = 8.0f;
+__declspec(section ".sdata2") f32 float_900_8041ccc8 = 900.0f;
+#pragma explicit_zero_data on // the target keeps the zero float in .sdata2, not .sbss2
+__declspec(section ".sdata2") f32 float_0_8041cccc = 0.0f;
+#pragma explicit_zero_data reset
+__declspec(section ".sdata2") f32 float_10_8041ccd0 = 10.0f;
+__declspec(section ".sdata2") f32 float_34_8041ccd4 = 34.0f;
+__declspec(section ".sdata2") f32 float_60_8041ccd8 = 60.0f;
+__declspec(section ".sdata2") f32 float_32_8041ccdc = 32.0f;
+__declspec(section ".sdata2") f32 float_1_8041cce0 = 1.0f;
+#pragma explicit_zero_data on // 4-byte zero word ending the section (gap_09_8041CCE4_sdata2)
+#pragma force_active on
+__declspec(section ".sdata2") static u32 gap_09_8041CCE4_sdata2 = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 s32 _get_attack_aud_no(EventEntry* event) {
     s32* args = event->args;
@@ -93,7 +97,7 @@ s32 _attack_aud(EventEntry* event) {
     y += float_32_8041ccdc;
     if (type != 1) {
         effHitEntry(0, 3, x, y, z, float_1_8041cce0);
-        sound = (char*)str_802F3AAC;
+        sound = "SFX_BTL_DAMAGED_PLIABLE1";
     }
     BattleAudience_GetPosition(memberId, &x, py, pz);
     if (sound != NULL) {
@@ -166,7 +170,7 @@ s32 _get_present_target_id(EventEntry* event) {
 void _get_item_announce_disp(CameraId camera, void* param) {
     s32 itemNo = BattleAudience_GetPresentItemNo();
     const char* itemName = msgSearch(itemDataTable[itemNo].name);
-    const char* fmt = msgSearch(str_802F3A98);
+    const char* fmt = msgSearch("btl_msg_get_item");
     char buf[128];
     u16 lines;
     s32 width;
@@ -254,21 +258,25 @@ void* btlataudGetMoveEventPtr(s32 unitId) {
 #undef pz
 #endif
 
-// NONMATCHING (93.75%): MWCC emits the btlataudevtDummy base plus a separate `addi 0x4`; the original
-// folds the +4 into the @ha/@l reloc addend (btlataudevtDummy+0x4). No C form folds under this compiler:
-// arr+1, &arr[1], (char*)arr+4, struct/flexible-array/union member addresses, signed/unsigned/const/
-// volatile, all GC/Wii MWCC versions and the -O/-model/-opt flag variants materialise the base then add.
+// The default event script, which the original addresses as btlataudevtDummy+0x4 (its @ha/@l
+// relocation carries the +4 addend). MWCC materialises a symbol's base and then adds any offset for
+// every C address expression (btlataudevtDummy + 1, &btlataudevtDummy[1], a struct member, a cast),
+// so the script is a separate object immediately after btlataudevtDummy's one-word header: the same
+// 64 bytes in the same order, reached by name.
 s32* btlataudGetAttackEventPtr(s32 index) {
     s32* data = BtlUnit_GetData(BattleGetUnitPtr(_battleWorkPointer, index), 6);
     if (data == NULL) {
-        return btlataudevtDummy + 1;
+        return btlataudevtDummyBody;
     }
     return data;
 }
 
 // .data
-s32 btlataudevtDummy[] = {
+__declspec(section ".data") s32 btlataudevtDummy[] = {
     0x00000000,
+};
+
+s32 btlataudevtDummyBody[] = {
     0x0005005B, (s32)_get_attack_aud_no, 0xFE363C83, 0xFE363C80, 0xFE363C81, 0xFE363C82,
     0x0003005B, (s32)_attack_aud, 0xFE363C83,
     0x00000000,
@@ -305,4 +313,3 @@ s32 btlataudevtPresentItem_Get[] = {
     0x0002005B, (s32)btlevtcmd_StartWaitEvent, 0xFFFFFFFE,
     0x00000002, 0x00000001,
 };
-

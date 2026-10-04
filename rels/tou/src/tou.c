@@ -153,6 +153,10 @@ extern const f32 float_15_tou_0000a8e4;
 extern const f32 float_24_tou_0000a8e8;
 extern const f32 float_neg1_tou_0000a8ec;
 
+static const char str_00001F04[12];
+static const char str_00001F74[12];
+static const char str_00001FA0[8];
+
 
 typedef void (*voidfunctionptr)(void);
 
@@ -2137,6 +2141,8 @@ EVT_BEGIN(evt_michel_7)
     RETURN
 EVT_END()
 
+__declspec(section ".rodata") Vec vec3_tou_0000a2b4 = { 80.0f, 0.0f, 85.0f };
+
 EVT_BEGIN(evt_michel_8)
     CALL(evt_npc_set_position, STRING("オクトール"), 145, 0, 50)
     CALL(evt_npc_set_position, STRING("ガンガン"), 95, 0, 50)
@@ -3391,9 +3397,6 @@ static void printRanking(void) {
     }
 }
 
-static const char str_00001F74[] = "ランキング";
-static const char str_00001FA0[] = "%s%s";
-
 static void disp_proc(CameraId cameraId, void* param) {
     FighterEntry* dt;
     f32 f31;
@@ -3760,9 +3763,9 @@ USER_FUNC(octo_stop) {
 
     if (npc != NULL) {
         evtStopID(npc->regularEvtId);
-        npc->prevPosition = (Vec){ 80.0f, 0.0f, 85.0f };
+        npc->prevPosition = vec3_tou_0000a2b4;
         npc->position = npc->prevPosition;
-        npc->direction = 270.0f;
+        npc->direction = float_270_tou_0000a84c;
     }
     return EVT_RETURN_DONE;
 }
@@ -3799,15 +3802,13 @@ USER_FUNC(fight_money) {
 static f32 camGetRy(void) {
     CameraEntry* cam = camGetPtr(CAMERA_3D);
     f32 ry = reviseAngle((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z)) *
-                         57.29579f);
+                         float_rad2deg_tou_0000a840);
 
-    if (ry < 0.0f) {
-        ry += 360.0f;
+    if (ry < zero_tou_0000a82c) {
+        ry += float_360_tou_0000a844;
     }
     return ry;
 }
-
-static const char str_00001F04[] = "locator8";
 
 // NONMATCHING (99.24%): event/npc callee-saved regs (r30/r31) swapped, cascading the whole body;
 // the case1 fadds/fsubs land in f0/f1 instead of f1/f0
@@ -3872,6 +3873,7 @@ static USER_FUNC(tou_champion_belt_onoff) {
 
 const f32 zero_tou_0000a82c = 0.0f;
 const f32 float_0p6_tou_0000a830 = 0.6f;
+static const char str_00001F04[12] = "locator8";
 const f32 float_rad2deg_tou_0000a840 = 57.29579162597656f;
 const f32 float_360_tou_0000a844 = 360.0f;
 const f32 float_90_tou_0000a848 = 90.0f;
@@ -3884,6 +3886,7 @@ const f32 float_0p99_tou_0000a860 = 0.99f;
 const f32 float_2_tou_0000a864 = 2.0f;
 const f32 float_0p5_tou_0000a868 = 0.5f;
 const f32 float_5_tou_0000a86c = 5.0f;
+const f64 double_to_int_tou_0000a870 = 4503601774854144.0;
 const f32 float_128_tou_0000a878 = 128.0f;
 const f32 float_1_tou_0000a87c = 1.0f;
 const f32 float_25_tou_0000a880 = 25.0f;
@@ -3895,6 +3898,7 @@ const f32 float_30_tou_0000a894 = 30.0f;
 const f32 float_165_tou_0000a898 = 165.0f;
 const f32 float_310_tou_0000a89c = 310.0f;
 const f32 float_330_tou_0000a8a0 = 330.0f;
+static const char str_00001F74[12] = "ランキング";
 const f32 float_135_tou_0000a8b0 = 135.0f;
 const f32 float_304_tou_0000a8b4 = 304.0f;
 const f32 float_145_tou_0000a8b8 = 145.0f;
@@ -3903,6 +3907,7 @@ const f32 float_10_tou_0000a8c0 = 10.0f;
 const f32 float_40_tou_0000a8c4 = 40.0f;
 const f32 float_0p8_tou_0000a8c8 = 0.8f;
 const f32 zero_tou_0000a8cc = 0.0f;
+static const char str_00001FA0[8] = "%s%s";
 const f32 float_137_tou_0000a8d8 = 137.0f;
 const f32 float_228_tou_0000a8dc = 228.0f;
 const f32 float_95_tou_0000a8e0 = 95.0f;

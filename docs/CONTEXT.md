@@ -4391,3 +4391,22 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   its workspace; the source change is three expression shapes).
 - **Left as on main:** sound's `_sscallback` (99.29 on the agent's base, 97.72 on current main) and mot_ship
   (unchanged). The agent's winItemMain `list[9] -> list[10]` was unneeded and reverted.
+
+## Wave 71: one-short and data-prep arms (2026-10-04, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- **Launch** (09:37, base 8710d5c5 = main plus the two launcher modes of #370), the first real wave on the hardened
+  launcher, 24 at a time across two keys. Arm A (`oneshort`, 16 agents): units one text function away from
+  linking, each admitted only with a hypothesis read off the function's current instruction diff and a DOSSIER.md;
+  the same agent goes on to link the unit once the function matches. Register-only one-shorts (no specific
+  hypothesis) stayed out, as did Claude #3's units and the expensive repeated near-misses. Arm B (`dataprep`, 12
+  agents): two-short units with the largest data gaps; the agent ports the data only. Spec builder and hypotheses:
+  scratch/wave71/mkspec.py.
+- **Collection checks:** tools/collect_gate.py on every result, then scratch/wave71/pp_check.py (lost #pragma
+  lines, moved or lost #if/#endif, code that crossed a directive: the dol_gen.py --append bug Claude #3 found), then
+  tools/merge_agent.sh (CI ratchet). `merge_agent.sh` rejected `#pragma force_active`, which the brief prescribes
+  for ported tables and the tree uses ~600 times; it is now on the allowlist.
+- **Batch 1:** btlataudGetAttackEventPtr to 100% and battle_attack_audience linked (the agent split
+  btlataudevtDummy's one-word header from the 64-byte script, reached by name: no C address expression folds the
+  +4 into the relocation); data ports for end_unknown, eff_radiation_n64, eff_fall and tou (data matched +0.52
+  points; tou's header patch only added data externs that the file doesn't need and was left out). sys's agent
+  changed nothing: its last 33 .rodata bytes come from the two unmatched functions.

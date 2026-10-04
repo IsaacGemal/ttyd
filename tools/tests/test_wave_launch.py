@@ -617,6 +617,67 @@ stat() { python3 -c 'import os,sys; print(os.stat(sys.argv[1]).st_size)' "${@: -
                 self.assertNotIn("EVENTS-CORRUPT", {kind for kind, _, _ in agent_audit.audit(events, home, boundaries)})
             self.assertFalse((out / "limits.txt").exists())
 
+class Modes(unittest.TestCase):
+    """The one-short arm (chained into a link attempt) and the data-prep arm."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        setup_globals(self.tmp.name)
+        self.calls = []
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def fake(self, respond):
+        def run(cmd, **kw):
+            self.calls.append(cmd)
+            return subprocess.CompletedProcess(cmd, 0, respond(" ".join(map(str, cmd))), "")
+        return mock.patch.object(W.subprocess, "run", side_effect=run)
+
+    def test_oneshort_prompt_carries_hypothesis_prerequisites_and_link_steps(self):
+        spec = dict(SPEC, mode="oneshort", hyp="the conversion double is read through the base register",
+                    secs=[[".sdata2", 41.2]], files={"DOSSIER.md": "scratch/x.md"})
+        with self.fake(lambda c: ""):
+            W.prepare("t", spec)
+        prompt = (Path(self.tmp.name) / "t" / "PROMPT.md").read_text()
+        for part in ("ONE FUNCTION AWAY FROM LINKING", "base register", ".sdata2 41.2%", "LINKING:",
+                     'Object(Matching, "battle/ac/ac_pendulum_crane_timing.c")', "DOSSIER.md"):
+            self.assertIn(part, prompt)
+        self.assertTrue(any("DOSSIER.md" in " ".join(map(str, c)) for c in self.calls))
+
+    def test_dataprep_prompt_is_about_data_only(self):
+        spec = dict(SPEC, mode="dataprep", secs=[[".data", 80.0], [".rodata", 60.5]],
+                    open=[["a", 100, 90.0], ["b", 200, 95.0]])
+        with self.fake(lambda c: ""):
+            W.prepare("t", spec)
+        prompt = (Path(self.tmp.name) / "t" / "PROMPT.md").read_text()
+        self.assertIn("PORT THE DATA", prompt)
+        self.assertIn(".rodata 60.5%", prompt)
+        self.assertIn("don't try to match them", prompt)
+        self.assertNotIn("FINISH THE OPEN FUNCTIONS", prompt)
+        self.assertNotIn("{", prompt.replace("{0}", ""))  # every placeholder filled
+
+    def test_budgets(self):
+        self.assertEqual(W.limit(dict(SPEC, mode="oneshort")), 10800)
+        self.assertEqual(W.limit(dict(SPEC, mode="dataprep")), 7200)
+
+    def test_oneshort_goes_on_to_link_once_its_function_matches(self):
+        def respond(c):
+            if "check.py battle" in c and "--final" not in c:
+                return "MarioSt/battle/ac/ac_pendulum_crane_timing: 7/7\n  100.00%    100 B  _get_angle_rate\n"
+            return "rc=0" if "pi --mode json" in c else ""
+        with self.fake(respond), mock.patch.object(W.time, "sleep"):
+            W.run("t", SPEC["unit"], SPEC["src"], dict(SPEC, mode="oneshort", hyp="h"), lambda m: None)
+        links = [c for c in self.calls if "LINKING part of PROMPT.md" in " ".join(map(str, c))]
+        self.assertEqual(len(links), 3)  # unlinked after each pass: up to the three continuation passes
+
+    def test_dataprep_gets_one_pass(self):
+        with self.fake(lambda c: "rc=0" if "pi --mode json" in c else ""), mock.patch.object(W.time, "sleep"):
+            W.run("t", SPEC["unit"], SPEC["src"], dict(SPEC, mode="dataprep"), lambda m: None)
+        passes = [c for c in self.calls if "pi --mode json" in " ".join(map(str, c))]
+        self.assertLessEqual(len(passes), 2)  # the pass, and at most the finisher
+        self.assertFalse(any("Keep going" in " ".join(map(str, c)) for c in passes))
+
+
 class Sandbox(unittest.TestCase):
     def setUp(self):
         setup_globals(tempfile.gettempdir())
