@@ -165,6 +165,66 @@ link_diag/rodatalayout showed), each change and its effect, and the final state:
 
 BEFORE YOU STOP: run `python3 check.py --final {unit}` and fix everything it lists."""
 
+DATA_PROMPT = """You are one of several agents working on a matching decompilation of Paper Mario: The Thousand-Year Door
+(GameCube, PowerPC, Metrowerks C compiler).
+
+YOUR TASK: PORT THE DATA of {src} (unit {unit}, {part}) so the unit is ready to link once its functions match. {nfun}
+functions in it are still below 100% ({funcs}); other agents or the permuter work on those, so don't try to match them.
+The data sections are what you fix: {secs}. SUCCESS MEANS: those sections' match rises (ideally to identical), no
+function's score drops, and every object you add or change holds exactly the original's bytes.
+
+Steps:
+1. State the target before changing anything: `python3 tools/rodatalayout.py {unit} SECTION` for .data, .rodata,
+   .sdata and .sdata2 shows the original and built layout side by side with symbol names (`|` marks differing rows);
+   `python3 tools/link_diag.py {unit}` gives the word-level diff and the first differing address. Write in REPORT.md
+   what differs, section by section.
+2. Define every data object by its original name (config/G8MJ01/symbols.txt, and the asm {asm}) in the original's order
+   and with its exact bytes: tables, strings (string literal order follows first use; see the brief), float constants,
+   zero-filled and uninitialised (.bss/.sbss) objects, trailing `gap_*` objects.
+3. Literal pools (.sdata2/.rodata float constants): `python3 tools/pool_plan.py {unit}` prints a plan (which constants
+   are named objects and which stay literals, and the BASE-REGISTER recipe where it applies); follow it where it applies
+   (docs/AGENT_BRIEF.md "Pool recipes", "Where pool entries come from", "Pool and string order", "Base-register units").
+4. Don't change what any function does. Change a function body only to reference an object you defined, by its name;
+   where that shape is only for matching, put it under `#ifdef MUST_MATCH` with the plain form in `#else`.
+5. Rebuild and re-run rodatalayout/link_diag after each change; keep a change only if the diff shrinks. `python3
+   check.py {unit}` lists the functions' scores: none may end below where it started (orig_file.c is the file as you got
+   it; restore from it if something gets worse and you can't fix it).
+
+Only this file may change, with one exception: declarations go in headers (add lines only; never change or remove
+existing ones). Don't edit configure.py, config/ or other source files.
+
+Hard rules:
+- No network: don't fetch, search or clone anything from the web.
+- objdiff does not compare data VALUES. For every data object you add or change, compare its bytes against the
+  original with rodatalayout before finishing. Check the argument order of every call you touch against the asm.
+- Stay inside this directory: don't read or list anything outside it. Scratch files go in ./tmp.
+- Work only inside this directory. Start no background or detached processes (no `&`, nohup, setsid, screen,
+  tmux, disown) and make no copies of this workspace elsewhere.
+- Never `#pragma scheduling <cpu number>` (e.g. 601, 801): it sends the compiler into an endless loop.
+- No inline `asm` and no changes to compiler flags.
+- Source comments describe the code and the original, nothing else: no model, tool or agent names, no
+  "pass"/"wave"/"attempt" history, no references to REPORT.md or this prompt (put those in REPORT.md).
+- Reach a named object by its name, never as another object's address plus an offset.{hint}
+
+Write REPORT.md in this directory and update it as you go (you can be stopped at any moment). First line
+exactly: `@@MODEL_LINE@@`. Then: the target (what rodatalayout/link_diag showed), each change and its effect on the
+sections and on the functions' scores, and what still differs.
+
+BEFORE YOU STOP: run `python3 check.py --final {unit}` and fix everything it lists."""
+
+# one-short tasks: the agent goes on to link the unit once its last function matches
+ONESHORT_NOTE = """
+THIS UNIT IS ONE FUNCTION AWAY FROM LINKING: `{fn}` is the only function below 100%. ./DOSSIER.md has its differing
+instructions (original | ours) and what earlier agents tried; the hypothesis to test first: {hyp}
+Linking prerequisites still open (the unit's data sections below 100%): {secs}.
+LINKING: once `{fn}` is at 100%, go on to make the unit link, in the same session. In configure.py change
+`Object(NonMatching, "{cfg}")` to `Object(Matching, "{cfg}")` (that one line is the only configure.py change allowed,
+and it stays only if the checksum passes), run `python3 configure.py`, then build: {build}. `python3 tools/link_diag.py
+{unit}` and `python3 tools/rodatalayout.py {unit} SECTION` show what differs; fix it with the brief's linking recipes
+(function order: `python3 tools/fn_order_check.py {unit} {src}`; pools: `python3 tools/pool_plan.py {unit}`; named data
+in the original order). Done when {done}. If it doesn't link, set the line back to `NonMatching` and write in REPORT.md
+exactly what still differs."""
+
 
 CAP = int(os.environ.get("CAP", 24))
 QUIET_FROM = os.environ.get("QUIET_FROM", "23:00")
@@ -592,13 +652,23 @@ def prepare(tag, spec):
         rsync(spec["start_c"], f"{HOST}:{rws}/{src}")
         rsync(spec["start_h"], f"{HOST}:{rws}/{spec['hdr']}")
         ssh(f"cp {ws}/{src} {ws}/orig_file.c")
+    for dest, path in spec.get("files", {}).items():  # task packets (a dossier, notes) next to the prompt
+        rsync(str(REPO / path), f"{HOST}:{rws}/{dest}")
+    cfg = src[len("src/"):] if spec["dol"] else src.rsplit("/src/", 1)[1]
+    build = ("`ninja` (it links MarioSt.dol and checks it; `FAILED: build/G8MJ01/ok` or a sha1 mismatch means not linked)"
+             if spec["dol"] else "`ninja`, then `python3 tools/rel_link.py " + unit + "`")
+    done = ("`ninja` finishes with the checksum passing" if spec["dol"]
+            else "`python3 tools/rel_link.py " + unit + "` prints LINKED")
+    secs = ", ".join(f"{n} {sc:.1f}%" for n, sc in spec.get("secs", [])) or "none listed"
+    if spec.get("mode") == "dataprep":
+        hint = ("\n- HINT for this file: " + HINTS[unit]) if unit in HINTS else ""
+        funcs = ", ".join(f"`{n}` {sc:.1f}%" for n, _, sc in spec["open"])
+        (p / "PROMPT.md").write_text(MODEL_LINE_FIX(DATA_PROMPT.format(src=src, unit=unit, part=part, asm=asm, nfun=len(spec["open"]),
+                                                                       funcs=funcs, secs=secs, hint=hint)) + "\n")
+        rsync(str(p / "PROMPT.md"), f"{HOST}:{rws}/PROMPT.md")
+        return
     if spec.get("mode") == "link":
-        cfg = src[len("src/"):] if spec["dol"] else src.rsplit("/src/", 1)[1]
         why = next((v for k, v in WHY.items() if src.endswith("/" + k) or src == k), "checksum mismatch")
-        build = ("`ninja` (it links MarioSt.dol and checks it; `FAILED: build/G8MJ01/ok` or a sha1 mismatch means not linked)"
-                 if spec["dol"] else "`ninja`, then `python3 tools/rel_link.py " + unit + "`")
-        done = ("`ninja` finishes with the checksum passing" if spec["dol"]
-                else "`python3 tools/rel_link.py " + unit + "` prints LINKED")
         hint = ("\n- HINT for this file: " + HINTS[unit]) if unit in HINTS else ""
         if spec.get("prev"):
             for i, pr in enumerate(spec["prev"]):
@@ -624,6 +694,9 @@ def prepare(tag, spec):
                 f"{unit}` first for where each function stands now. Finish the rest, and keep the file's data sections "
                 "(.data/.rodata) as close to the original as they were: the earlier work was held back because a data section "
                 "scored lower than the repository's.")
+    if spec.get("mode") == "oneshort":
+        note += ONESHORT_NOTE.format(fn=spec["open"][0][0], hyp=spec["hyp"], secs=secs, cfg=cfg, build=build, unit=unit, src=src,
+                                     done=done)
     if spec.get("mode") == "dataport":
         rsync(str(REPO / spec["seed"]), f"{HOST}:{rws}/salvaged_version.c")
         fn = spec["open"][0][0]
@@ -720,8 +793,10 @@ def prepare(tag, spec):
     rsync(str(p / "PROMPT.md"), f"{HOST}:{rws}/PROMPT.md")
 
 def limit(spec):
-    if spec.get("mode") == "link":
+    if spec.get("mode") in ("link", "oneshort"):  # a one-short task may go on to link its unit
         return 10800
+    if spec.get("mode") == "dataprep":
+        return 7200
     if spec.get("draft"):
         return 14400 if spec["open"][0][1] >= 6000 else 10800 if spec["open"][0][1] >= 2500 else 7200
     b = sum(sz for _, sz, _ in spec["open"])
@@ -742,14 +817,17 @@ def run(tag, unit, src, spec, log):
     rcs = r.stdout.strip()
     names = {n for n, _, _ in spec["open"]}
     tripped = lambda: ssh(f"{{ test -e {out}/limits.txt || test -e {PAUSED}; }} && echo yes", timeout=60, check=False).stdout.strip() != ""
+    cfg = src[len("src/"):] if spec["dol"] else src.rsplit("/src/", 1)[1]
+    is_linked = lambda: ssh(f"[ -f {ws}/configure.py ] && [ ! -L {ws}/configure.py ] && [ $(stat -c %s {ws}/configure.py) -lt 4000000 ] && "
+                            f"timeout 20 grep -qF 'Object(Matching, \"{cfg}\"' {ws}/configure.py && echo yes",
+                            timeout=60, check=False).stdout.strip() == "yes"
     for k in range(3):  # continuation passes, moderate
         if tripped():
             return rcs + " LIMIT (no further steps; see limits.txt, or PAUSED on the host)"
+        if spec.get("mode") == "dataprep":
+            break  # one pass: porting a unit's data has no per-function list to continue on
         if spec.get("mode") == "link":
-            cfg = src[len("src/"):] if spec["dol"] else src.rsplit("/src/", 1)[1]
-            linked = ssh(f"[ -f {ws}/configure.py ] && [ ! -L {ws}/configure.py ] && [ $(stat -c %s {ws}/configure.py) -lt 4000000 ] && "
-                         f"timeout 20 grep -qF 'Object(Matching, \"{cfg}\"' {ws}/configure.py && echo yes", timeout=60, check=False)
-            if linked.stdout.strip() == "yes" or left() < 1800 or k >= 2:
+            if is_linked() or left() < 1800 or k >= 2:
                 break
             more = (f"Keep going: you still have about {int(left() // 60)} minutes and the unit doesn't link yet. Continue as "
                     f"PROMPT.md describes (re-run tools/link_diag.py {unit} for where it stands), keep REPORT.md current, and "
@@ -759,6 +837,17 @@ def run(tag, unit, src, spec, log):
             c = ssh(box_cmd(tag, f"check{k}", f"python3 check.py {unit}"), timeout=700, check=False)
             still = [l.split()[-1] for l in c.stdout.splitlines()[1:]
                      if l.split() and l.split()[-1] in names and not l.strip().startswith("100.00%")]
+            if not still and spec.get("mode") == "oneshort" and left() >= 1800 and not is_linked():
+                # the unit's last function is at 100%: the same agent goes on to link it (PROMPT.md's LINKING part)
+                more = (f"`{', '.join(sorted(names))}` is at 100%, so every function of {unit} matches. Now link the unit as the "
+                        f"LINKING part of PROMPT.md describes (you have about {int(left() // 60)} minutes): flip its Object line, "
+                        f"build, and make the checksum pass. Keep REPORT.md current and run python3 check.py --final {unit} "
+                        f"before you stop.")
+                log(f"{tag} link continuation {k + 1}: function at 100%, {int(left())}s left")
+                secs = left()
+                r2 = ssh(agent_cmd(tag, secs, "-c " + shlex.quote(more), f"cont{k}"), timeout=secs + 600, check=False)
+                rcs += " link" + r2.stdout.strip()
+                continue
             if not still or left() < 900:
                 break
             more = (f"Keep going: you still have about {int(left() // 60)} minutes. These functions are still below 100%: "
