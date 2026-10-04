@@ -42,10 +42,20 @@ const s32 dat_802f8c9c[24][2] = {
     { 1, -1 },  { 2, -1 },  { -1, -2 }, { 0, -2 },  { 1, -2 },  { 0, -3 },
 };
 
+#ifdef MUST_MATCH
+// An ordinary, immediately generated helper pools the int->float conversion double ahead of the
+// deferred functions' strings; nothing calls it and the linker strips the body.
+#pragma defer_codegen off
+static f32 audience_pool_i2f(s32 v) {
+    return (f32)v;
+}
+#pragma defer_codegen reset
+#endif
+
+
 extern u8 weapon_teresa_trans[];
 static s32 intrudeSound;
 
-const f64 double_to_int_802f8d60 = 4503601774854144.0;
 const char str_802F8D68[] = "SFX_AUDIENCE_HEIHO_MOVE1";
 const f64 double_450_802f8d88 = 450.0;
 const f64 double_300_802f8d90 = 300.0;
@@ -53,6 +63,14 @@ const char str_802F8D98[] = "SFX_AUDIENCE_TELESA_MOVE1";
 const char str_802F8DB4[] = "SFX_AUDIENCE_TELESA_INVISIBLE1";
 const char str_802F8DD4[] = "SFX_AUDIENCE_RUN3";
 const char str_802F8DE8[] = "SFX_AUDIENCE_PANIC_SCREAM2";
+
+// 4-byte zero word that ends the unit's .rodata: an all-zero object needs explicit_zero_data to be emitted
+// and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".rodata") const u32 gap_04_802F8E04_rodata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 
 // .sdata2 constants referenced by symbol name in the original
@@ -1670,22 +1688,15 @@ void BattleAudienceCtrlProcessKinopioFireSub(s32 index) {
 }
 
 
-// Case 9's instruction sequence is byte-identical to the original (the sibling
-// `BattleAudience_Entry` shape `r = rand()*10/0x7fff; x = (f32)(row*0x19 - 0xeb + r);`
-// was the missing piece); the remaining diffs are pure register allocation that MWCC's
-// allocator fixes regardless of source shape. GPR: target id=r28, ours r27. FP: target
-// magic=f4, 0.1=f2, row=f1, xi=f3, zterm=f0; ours magic=f1, 0.1=f3, row=f2, xi=f4, zterm=f1
-// (the last conversion coalesces with the magic double). Tried without moving it: named vs
-// literal 0.1, separate rowf/xi/zf temps, all decl orders, `static inline` + always_inline
-// helper, block/do-while wrappers, and every opt_*/pool_data/scheduling/optimization_level
-// pragma. Compiler hangs (avoid): reusing `i`/`found`/`count`/a function-scope `id` here and
-// in the case 7 loop. All compilers 1.3-2.7 give the same 15 diffs. Queue for the permuter.
-// NONMATCHING (99.67%): 15 register diffs in case 9 (id r28/r27; FP register permutation).
+// NONMATCHING (99.89%): 6 register diffs in case 9, the i2f magic double and the xi conversion
+// swapping f3/f4 (0.1f f2, frow f1, zterm f0 and the id/col/row GPRs r28/r5/r4 all match).
+// Declaring id at function scope and storing position.x before the stage y load got here.
 void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 	BattleStage* stage = BattleStageGetPtr();
 	BattleAudienceMember* target;
+	s32 id;
 	s32 candidates[60];
 	s32 found;
 	s32 i;
@@ -1793,16 +1804,21 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	}
 	case 9:
 		if (member->position.y <= -100.0f) {
-			s32 id = member->field_0x12C;
-			s32 r = rand() * 10 / 0x7fff;
-			s32 col = id / 0x14;
-			s32 row = id % 0x14;
-			f32 x = (f32)(row * 0x19 - 0xeb + r);
+			s32 r;
+			s32 col;
+			s32 row;
+			f32 x;
+			f32 z;
 
-			f32 z = 0.1f * (f32)row + (f32)(col * 0x1e + 0x73);
+			id = member->field_0x12C;
+			r = rand() * 10 / 0x7fff;
+			col = id / 0x14;
+			row = id % 0x14;
+			x = (f32)(row * 0x19 - 0xeb + r);
 			member->position.x = x;
 			member->mHomePosition.x = x;
 			member->mHomePosition.y = *(f32*)((u8*)stage + 0xb34);
+			z = 0.1f * (f32)row + (f32)(col * 0x1e + 0x73);
 			member->position.z = z;
 			member->mHomePosition.z = z;
 			member->field_0x4++;

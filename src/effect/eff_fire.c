@@ -11,7 +11,14 @@
 #include <dolphin/gx.h>
 #include <stdlib.h>
 
-extern GXColor unk_80423064;
+// .sbss2 zero-init scratch words the original unit defines; the linker script allocates them there.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u32 unk_80423058;
+__declspec(section ".sdata") u32 unk_8042305c;
+__declspec(section ".sdata") u32 unk_80423060;
+__declspec(section ".sdata") GXColor unk_80423064;
+#pragma section ".sdata" ".sbss"
+
 #ifdef MUST_MATCH
 // Match-only: non-const object forced into .rodata so effFireEntry copies it with integer lwz/stw
 // (a const object is folded into lfsu), as the target does.
@@ -70,16 +77,12 @@ extern const f32 float_12_8041e138;
 extern const f32 float_25_8041e140;
 extern const f32 float_0p7854_8041e144;
 extern const f32 float_2_8041e148;
-extern const u32 unk_80423058;
-extern const u32 unk_8042305c;
-extern const u32 unk_80423060;
 extern const f32 float_5_8041e11c;
 extern const f32 float_0p6_8041e120;
 extern const f32 float_13p333_8041e124;
 extern const f32 float_0p33333_8041e128;
 extern const u32 dat_8041e0b8;
 const char str_8041E168[]; // tentative definition, completed after the code so it emits last in .sdata2
-const char str_802F8C60[] = "FireSmoke";
 
 
 ScaleEntry scale1[13] = {
@@ -90,6 +93,15 @@ ScaleEntry scale1[13] = {
 };
 ScaleEntry scale2[4] = {
 	{ 0x00, 1.0f }, { 0x64, 1.2f }, { 0xA0, 0.95f }, { 0xC8, 1.0f },
+};
+
+static u32 col_tbl[24] = {
+	0xAC2E00FF, 0xE02200FF, 0xFD5F00FF, 0xFD5F04FF,
+	0xFF6900FF, 0xFF8A00FF, 0xFFB700FF, 0xFFD700FF,
+	0x0AE0FFFF, 0x10C3FFFF, 0x0961FFFF, 0x0961FFFF,
+	0xD1F9FFFF, 0xD1F9FFFF, 0xA3E5FFFF, 0x3ACAFFFF,
+	0x5BF63DFF, 0x3BDE1CFF, 0x3BDE1CFF, 0x1DB900FF,
+	0xDEF618FF, 0xA0F606FF, 0xA0F606FF, 0x92E400FF,
 };
 
 static u8 scale_dt[] = {
@@ -103,14 +115,20 @@ static u8 scale_dt[] = {
 	0xB9, 0x68, 0xBB, 0x68, 0xBD, 0x67, 0xC0, 0x66,
 };
 
-static u32 col_tbl[24] = {
-	0xAC2E00FF, 0xE02200FF, 0xFD5F00FF, 0xFD5F04FF,
-	0xFF6900FF, 0xFF8A00FF, 0xFFB700FF, 0xFFD700FF,
-	0x0AE0FFFF, 0x10C3FFFF, 0x0961FFFF, 0x0961FFFF,
-	0xD1F9FFFF, 0xD1F9FFFF, 0xA3E5FFFF, 0x3ACAFFFF,
-	0x5BF63DFF, 0x3BDE1CFF, 0x3BDE1CFF, 0x1DB900FF,
-	0xDEF618FF, 0xA0F606FF, 0xA0F606FF, 0x92E400FF,
-};
+#ifdef MUST_MATCH
+// Match-only: these two immediately generated helpers pool the u32->f32 conversion double and the
+// "FireSmoke" string before the deferred functions, in the original's .rodata order (mask double, string,
+// signed double). Nothing calls them; the linker strips the unused bodies.
+#pragma defer_codegen off
+static f32 effFire_pool_u2f(u32 v) {
+	return (f32)v;
+}
+
+static const char* effFire_pool_str(void) {
+	return "FireSmoke";
+}
+#pragma defer_codegen reset
+#endif
 
 EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
@@ -301,7 +319,7 @@ void effFireMain(EffectEntry* effect) {
 			f32 pz;
 			f32 sc;
 #else
-			f32 pz = data->position.z - 5.0f;
+			f32 pz = data->position.z - float_5_8041e11c;
 			f32 py = data->position.y + (f32)((u8*)&offsets)[type];
 			f32 px = data->position.x;
 			f32 sc = data->scale;
@@ -309,14 +327,14 @@ void effFireMain(EffectEntry* effect) {
 			Vec smokePos;
 			effFireSmokeData* smoke;
 #ifdef MUST_MATCH
-			pz = data->position.z - 5.0f;
+			pz = data->position.z - float_5_8041e11c;
 			sc = data->scale;
 			px = data->position.x;
 			py = data->position.y + (f32)((u8*)&offsets)[type];
 #endif
 
 			smokeEntry = effEntry();
-			smokeEntry->type = str_802F8C60;
+			smokeEntry->type = "FireSmoke";
 			smokeEntry->count = 1;
 			smoke = __memAlloc(HEAP_EFFECT, 0x40);
 			smokeEntry->userdata = smoke;

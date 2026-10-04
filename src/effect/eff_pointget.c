@@ -9,6 +9,9 @@
 #include <dolphin/mtx.h>
 #include <stdio.h>
 #include <string.h>
+const char str_80420ED8[];
+const f32 float_32_80420edc;
+const f32 float_362_80420ee0;
 
 // .sdata2 explicit color globals
 const GXColor dat_80420ec8 = { 0x00, 0x00, 0x00, 0x80 };
@@ -25,9 +28,6 @@ __declspec(section ".rodata") Vec vec3_802fe390 = { 0.0f, 0.0f, 0.0f };
 #else
 const Vec vec3_802fe390 = { 0.0f, 0.0f, 0.0f };
 #endif
-const f64 double_to_int_mask_802fe3a0 = 4503599627370496.0;
-const f64 double_to_int_802fe3a8 = 4503601774854144.0;
-const char str_802FE3B0[] = "PointGet";
 
 // .sdata texture ids indexed [language != 0][texture]
 static u32 texid_tbl[2][4] = {
@@ -40,7 +40,7 @@ EffectEntry* effPointGetEntry(s32 type, s32 value, s32 wait, f32 x, f32 y, f32 z
 	PointGetWork* work;
 
 	entry = effEntry();
-	entry->type = str_802FE3B0;
+	entry->type = "PointGet";
 	entry->count = 1;
 	work = __memAlloc(HEAP_EFFECT, entry->count * sizeof(PointGetWork));
 	entry->userdata = work;
@@ -107,18 +107,15 @@ void effPointGetMain(EffectEntry* effect) {
 }
 
 // The frame (0x1e0), the callee-saved set (f19-f31/r26-r31), the order of the constant
-// loads and the mtx offsets (0xb8/0x88/0x58) all match. Only the callee-saved FP colouring
-// differs: the original holds 48/32/dconst/half/basehalf in f23/f24/f25/f26/f27 with
-// scale->f19 and s->f20. With the declaration order below ours puts 48/32/dconst/half in
-// f24/f26/f27/f25 and basehalf in f23 (nx now correctly reuses the dead scale register f19).
-// That declaration order is what moves nx onto the freed f19: the natural order puts basehalf
-// there and gives the loop's nx temp f23, which is two more instructions off. The remaining
-// five registers are one 5-cycle over f23-f27 that no declaration order, assignment order or
-// opt pragma (opt_lifetimes/opt_common_subs/opt_propagation/optimization_level/scheduling)
-// tried so far changes. Writing part2's `base / 2.0f` as a division stops the compiler
-// CSEing it with the precomputed basehalf, which keeps the 13-register frame.
+// loads and the mtx offsets (0xb8/0x88/0x58) all match. Only three callee-saved FP registers
+// are permuted: the precomputed basehalf (base * 0.5) lands in f23 where the original holds 48,
+// 48 lands in f25 where the original holds the conversion double, and the conversion double
+// (double_to_int_802fe3a8) lands in f27 where the original holds basehalf. 32/f24, 0.5/f26,
+// base/f22, ox/f20 and nx-on-f19 (reusing the dead scale register) all match. Writing part2's
+// `base / 2.0f` as a division stops the compiler CSEing it with the precomputed basehalf,
+// which keeps the 13-register frame.
 // The @NNN vs named double_to_int_* pool labels are benign (see window/win_mario.c).
-// NONMATCHING (99.79%): only the callee-saved FP register colouring differs (5-cycle f23-f27).
+// NONMATCHING (99.87%): three callee-saved FP registers are cycled (basehalf/48/dconst over f23/f25/f27).
 void effPointGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	PointGetWork* work = effect->userdata;
@@ -128,25 +125,25 @@ void effPointGetDisp(CameraId camId, void* param) {
 	Mtx mtx88;
 	Mtx mtx58;
 	char buf[32];
+	f32 f24;
+	f32 scale;
 	f32 f26;
 	f32 f27;
-	f32 f23;
 	f32 f22;
-	f32 scale;
-	f32 f28;
-	f32 f31;
-	f32 f20;
 	f32 f30;
 	f32 f21;
 	f32 ox;
+	f32 f23;
 	f32 nx;
-	f32 f24;
+	f32 f28;
+	f32 f31;
+	f32 f20;
 	s32 i;
 
 	cam = camGetPtr(camId);
 	scale = work->scale;
-	sprintf(buf, "%d", work->value);
-	f20 = 32.0f * (f32)strlen(buf);
+	sprintf(buf, str_80420ED8, work->value);
+	f20 = float_32_80420edc * (f32)strlen(buf);
 	PSMTXTrans(mtxB8, work->x, work->y, work->z);
 	PSMTXScale(mtx88, scale, scale, scale);
 	PSMTXConcat(mtxB8, mtx88, mtx58);
@@ -171,10 +168,10 @@ void effPointGetDisp(CameraId camId, void* param) {
 	f30 = 10.0f;
 	f26 = 0.5f;
 	f28 = 24.0f;
-	f24 = 32.0f;
+	f24 = float_32_80420edc;
 	f23 = 48.0f;
 	f21 = -f23 * f26;
-	f22 = -(362.0f + f20);
+	f22 = -(float_362_80420ee0 + f20);
 	f31 = 352.0f;
 	f27 = f22 * f26;
 
@@ -253,3 +250,7 @@ void effPointGetDisp(CameraId camId, void* param) {
 	}
 }
 
+// Named .sdata2 constants kept by tools/pool_plan.py, defined after the code in the original's order.
+const char str_80420ED8[] = "%d";
+const f32 float_32_80420edc = 32.0f;
+const f32 float_362_80420ee0 = 362.0f;

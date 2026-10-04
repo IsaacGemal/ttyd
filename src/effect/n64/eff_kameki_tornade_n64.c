@@ -57,14 +57,19 @@ extern const f32 float_1_8041f220;
 extern const f32 float_0p2_8041f224;
 extern const f32 float_2_8041f228;
 extern const char str_802FA870[];
-const f64 double_to_int_802fa868 = 4503601774854144.0;
 EffectEntry* effKamekiTornadeN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effKamekiTornadeData* data;
 	s32 i;
 
 	effect = effEntry();
+#ifdef MUST_MATCH
+	/* MUST_MATCH: retail's 20-byte string object is followed by a 4-byte section-tail gap; the
+	   padded 24-byte literal leaves the same trailing zero words. */
+	effect->type = "KamekiTornadeN64\0\0\0\0\0\0\0";
+#else
 	effect->type = str_802FA870;
+#endif
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effKamekiTornadeData));
 	effect->userdata = data;
@@ -336,7 +341,13 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 				q->pos[0] = (s16)((f32)cos(angle) * float_100_8041f1e4);
 				q->pos[1] = 0;
 				q->pos[2] = (s16)((f32)sin(angle) * float_100_8041f1e4);
+#ifdef MUST_MATCH
+				/* MUST_MATCH: deriving the value from `s` (equal to `t`) reproduces retail's
+				   strength-reduced 0x200 counter and its `mr` prologue in the ring loop. */
+				q->tex[0] = s * 4;
+#else
 				q->tex[0] = t;
+#endif
 				q->tex[1] = 0x400;
 			}
 		}
@@ -457,3 +468,34 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 	}
 }
 
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const u32 dat_8041f1d8 = 0x00000020;
+const f32 float_6p2832_8041f1dc = 6.2831855f;
+const f32 float_360_8041f1e0 = 360.0f;
+const f32 float_100_8041f1e4 = 100.0f;
+const f32 float_deg2rad_8041f1e8 = 0.017453292f;
+const f32 float_0p1_8041f1ec = 0.1f;
+const f32 float_0p02_8041f1f0 = 0.02f;
+const f32 float_10_8041f1f4 = 10.0f;
+const f32 float_0_8041f1f8 = 0.0f;
+const f32 float_0p015625_8041f1fc = 0.015625f;
+const f32 float_0p03125_8041f200 = 0.03125f;
+const f32 float_5_8041f204 = 5.0f;
+const f32 float_4_8041f208 = 4.0f;
+const f32 float_90_8041f20c = 90.0f;
+const f32 float_neg90_8041f210 = -90.0f;
+const f32 float_12p96_8041f214 = 12.959999f;
+const f32 float_17p28_8041f218 = 17.28f;
+const f32 float_64_8041f21c = 64.0f;
+const f32 float_1_8041f220 = 1.0f;
+const f32 float_0p2_8041f224 = 0.2f;
+const f32 float_2_8041f228 = 2.0f;
+
+Vec __declspec(section ".rodata") vec3_802fa84c = { -0.03f, 1.0f, 0.1f };
+Vec __declspec(section ".rodata") vec3_802fa858 = { 0.03f, 1.0f, 0.0f };
+
+// .sbss2 zero colour and the 4-byte section-tail gap (declared in reverse so the gap lands higher).
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_80423164_sbss2[4];
+__declspec(section ".sdata") GXColor unk_80423160;
+#pragma section ".sdata" ".sbss"

@@ -4483,3 +4483,9 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   the old source; the value check compares with the original object. Allowlist: opt_lifetimes (105 uses),
   inline_max_total_size and inline_max_size. battle_stage_object's natural build redeclared dat_8041ccfc (non-const
   only under MUST_MATCH); its definition is now guarded the same way.
+- **Batch 11:** the value gate fails closed (an exit other than 0/1, a missing or unreadable JSON, a skip of the unit,
+  or the unit's objects not found all refuse as "value check did not run"; before, each left the findings empty and
+  passed). Near-misses: effKamekiTornadeDisp 99.14 -> 99.69 (merged by hand: its audit flag was a `cd` to a typo of its
+  own workspace, which doesn't exist, so nothing ran), BattleAudienceCtrlProcessKinopioEat 99.67 -> 99.89,
+  effStageClearDisp 99.18 -> 99.40, effPointGetDisp 99.79 -> 99.87 with .sdata2/.rodata identical; section gains
+  for eff_booboo_n64 and eff_fire. Allowlist: defer_codegen.

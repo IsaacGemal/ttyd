@@ -72,7 +72,7 @@ restore() {
 }
 
 FLAGS=""
-bad=$(git diff -U0 "$F" | grep -E '^\+\s*#\s*pragma' | grep -v -E 'pragma\s+(dont_inline|opt_propagation|opt_common_subs|pool_data|explicit_zero_data|force_active|opt_dead_assignments|optimize_for_size|section|opt_lifetimes|inline_max_total_size|inline_max_size|inline_depth|push|pop)\b')
+bad=$(git diff -U0 "$F" | grep -E '^\+\s*#\s*pragma' | grep -v -E 'pragma\s+(dont_inline|opt_propagation|opt_common_subs|pool_data|explicit_zero_data|force_active|opt_dead_assignments|optimize_for_size|section|opt_lifetimes|inline_max_total_size|inline_max_size|defer_codegen|inline_depth|push|pop)\b')
 [ -n "$bad" ] && { restore; echo "REJECT $TAG: unfamiliar pragma: $bad"; exit 1; }
 git diff -U0 "$F" | grep -q -E '^\+\s*#\s*pragma' && FLAGS="--allow-pragma"
 
@@ -89,17 +89,41 @@ if [ -n "$HDRS" ]; then  # main reports no problems, so anything here came from 
 fi
 # objdiff never compares relocation targets by value, so a function can score 100% loading the wrong constant:
 # any `value*` finding in this unit (tools/reloc_value_check.py) refuses the merge; `name` findings are shown only
-RVJ=$(mktemp); python3 tools/reloc_value_check.py "$(basename "$UNIT")" --json "$RVJ" >/dev/null 2>&1
-RV=$(python3 - "$RVJ" "$UNIT" <<'PY'
-import json, sys
-res, unit = json.load(open(sys.argv[1])), sys.argv[2]
+# It fails closed: an exit status other than 0/1, a missing or unreadable JSON, a `skip` of this unit, or this unit not
+# among the ones the checker selects (its objects not found) all mean the check didn't run, which refuses too.
+RVJ=$(mktemp); RVE=$(mktemp)
+python3 tools/reloc_value_check.py "$(basename "$UNIT")" --json "$RVJ" >/dev/null 2>"$RVE"; RVS=$?
+RV=$(python3 - "$RVJ" "$RVE" "$RVS" "$UNIT" <<'PY' 2>&1
+import json, os, sys
+sys.path.insert(0, "tools")
+jpath, epath, status, unit = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
+mine = lambda n: n == unit or n.endswith("/" + unit)
+def fail(why):
+    print("FAIL " + why)
+    sys.exit()
+if status not in (0, 1):
+    fail(f"reloc_value_check exited {status}: " + open(epath).read().strip()[-300:])
+try:
+    res = json.load(open(jpath))
+except Exception as e:
+    fail(f"no readable JSON from reloc_value_check ({e})")
+skips = [l.strip() for l in open(epath) if l.startswith("skip ") and mine(l.split()[1].rstrip(":"))]
+if skips:
+    fail("it skipped this unit: " + skips[0])
+import reloc_value_check as R
+if not any(mine(n) for n, *_ in R.units(os.path.join(R.BUILD, "report.json"), [os.path.basename(unit)], True)):
+    fail("this unit's objects weren't found, so nothing was checked")
 for name, fs in res.items():
-    if name == unit or name.endswith("/" + unit):
+    if mine(name):
         for x in fs:
             print(("BLOCK " if x["kind"].startswith("value") else "note  ") + f"{x['fn']} +{x['off']:#x} {x['kind']}: original {x['target']} ours {x['ours']}")
 PY
-); rm -f "$RVJ"
+); rm -f "$RVJ" "$RVE"
 [ -n "$RV" ] && echo "$RV"
+if [ -n "$RV" ] && echo "$RV" | grep -qv '^\(BLOCK \|note  \)'; then  # a FAIL line or a traceback
+  restore
+  echo "REJECT $TAG: the value check did not run (tools/reloc_value_check.py):"; echo "$RV" | head -5; exit 1
+fi
 if echo "$RV" | grep -q '^BLOCK'; then
   restore
   echo "REJECT $TAG: loads a wrong constant (tools/reloc_value_check.py):"; echo "$RV" | grep '^BLOCK'; exit 1
