@@ -8000,15 +8000,18 @@ void puniHagurePos(PuniData* punidat) {
 // `clrlwi`). The redundant second assignment under MUST_MATCH (`xh = (u8)xh;`) is a no-op but keeps
 // the loops' callee-saved colouring (dropping it drops the score to 85%). The final loop's locals
 // are `u32 x = (s32)v.x;` for the same reason: the conversion stays signed (`fctiwz`) while `>> 8`
-// stays logical. Still differs: `mode` lands in r29 (target r28, so `name` reuses r29 and `cmp`
-// takes r31 while `i` reuses arg2's r28; target keeps name r29, mode/cmp r28, i r31), the `&0x8`
-// branch's f27/f28 copy order and `fadds` operand, and the byte-store `addi r3`/`clrlwi r4`
-// scheduling. `tools/diff_shape.py` reports the same 38 calls and all immediates.
+// stays logical. Giving the first scan loop its own counter `k` (the final loop keeps `i`) moves
+// the final loop's byte temps off r27/r22 and lifts the score to 93.48. Still differs: `mode`
+// lands in r29 (target r28, so `name` reuses r29 and `cmp` takes r31; target keeps name r29,
+// mode/cmp r28), `arg2` in r28 (target r27), the final loop counter in r22 (target r27, which
+// pushes the `!&0x8000`/final byte temps into r25-r27 instead of r24-r26), the `&0x8` branch's
+// f27/f28 copy order and `fadds` operand, and the byte-store `addi r3`/`clrlwi r4` scheduling.
+// `tools/diff_shape.py` reports the same 38 calls and all immediates.
 // The `&0x8000` branch colours yh before xh (`yh = y >> 8; yh = (u8)yh; xh = ...`) rather than the
 // xh-first order the other two blocks use: that one web-order difference fixes two byte-store
 // instructions (93.40 -> 93.42). Changing it in the other blocks does not help. This is a
 // permuter candidate: the remaining diffs are all web colouring/scheduling.
-// NONMATCHING (93.42%): call sequence and every immediate match; only callee-saved/FPR colouring
+// NONMATCHING (93.48%): call sequence and every immediate match; only callee-saved/FPR colouring
 // and scheduling differ.
 USER_FUNC(evt_puni_exit) {
     s32* args = event->args;
@@ -8031,6 +8034,7 @@ USER_FUNC(evt_puni_exit) {
     u32 z;
     Vec pos;
     s32 base;
+    s32 k;
     evtGetValue(event, args[1]);
     arg2 = evtGetValue(event, args[2]);
     name = (const char*)evtGetValue(event, args[3]);
@@ -8091,7 +8095,7 @@ USER_FUNC(evt_puni_exit) {
     }
 
     punidat = &Punidat[1];
-    for (i = 1; i <= 0x66; i++, punidat++) {
+    for (k = 1; k <= 0x66; k++, punidat++) {
 
         if (!(punidat->unk4 & 0x400)) {
             continue;
@@ -8963,11 +8967,11 @@ USER_FUNC(evt_puni_force_se_off) {
 }
 
 // x,y,z are read first, then the high bytes are extracted as (x >> 8) & 0xFF and re-cast to the u8 that
-// holds them; that keeps the target's single hoisted extrwi per byte and its prologue. puni still colours
-// r31 (target r29) while z takes r29 (target r31); the remaining diffs are that swap plus small call-setup
-// scheduling.
-// NONMATCHING (89.23%): control flow, calls and field writes match; only the puni/z register swap and a
-// couple of call-setup scheduling slots differ.
+// holds them; that keeps the target's single hoisted extrwi per byte and its prologue.
+// NONMATCHING (89.23%): the schedule is identical to the target; the only difference is register colouring
+// (puni gets r31 where the target uses r29, and z gets r29 where the target uses r31, and the else branch's
+// colours follow from that). Statement-order, declaration-order, type, temp/alias, z-split and
+// optimizer-pragma sweeps all stay at or below 89.23, so the tail is a permuter target.
 USER_FUNC(evt_puni_all_save) {
     PuniData* puni = &Punidat[1];
     s32 i;

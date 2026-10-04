@@ -1125,12 +1125,14 @@ void BattleAudience_End(void) {
 	}
 }
 
-// final dispatch is a `switch`; the clamp index is a separate `deltaIdx` ternary, the first
-// shuffle and weight sort use a separate `k` counter, `i = 0` moved before `target = 0`,
-// `listTotal` after `kind`, the randomMul cast is inlined into the FMA, the sort's tie test
-// reads `weights[j] == weights[k]` and its swap loads `order[j]` first. Left: the sort/miss/list
-// callee-saved rotation (a 4-cycle on r21/r23/r28/r31); `diff_shape.py`: same calls/branches.
-// NONMATCHING (98.73%): see above.
+// The final dispatch is a `switch`; the clamp index is a separate `deltaIdx` ternary, `i = 0`
+// is set before `target = 0`, `listTotal` is declared after `kind`, the random-multiplier cast
+// is inlined into the FMA. The weight sort walks `kind` from `k + 1`, tests
+// `weights[k] == weights[kind]` and swaps `order[k]` first; `diff_shape.py` shows the same calls
+// and branches as the original.
+// NONMATCHING (99.06%): the sort, both shuffles and the list build match; only the miss loop's
+// caller-saved assignment differs (retail i=r3, miss=r4, kind=r6, weights=r7, order=r8, kind*4=r9;
+// this build i=r9, miss=r3, kind=r5, weights=r6, order=r7, kind*4=r8).
 void BattleAudienceSettingAudience(void) {
 	s32 kind;
 	s32 deltaIdx;
@@ -1385,11 +1387,11 @@ void BattleAudienceSettingAudience(void) {
 	}
 
 	for (k = 0; k <= 10; k++) {
-		for (j = k + 1; j <= 11; j++) {
-			if ((weights[j] == weights[k] && irand(2) == 0) || weights[k] < weights[j]) {
-				s32 t = order[j];
-				order[j] = order[k];
-				order[k] = t;
+		for (kind = k + 1; kind <= 11; kind++) {
+			if ((weights[k] == weights[kind] && irand(2) == 0) || weights[k] < weights[kind]) {
+				s32 t = order[k];
+				order[k] = order[kind];
+				order[kind] = t;
 			}
 		}
 	}
@@ -2270,7 +2272,11 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			*(s32*)(star + 4) = 0xF;
 			*(s32*)(star + 0x44) = 0;
 			*(s32*)(star + 0x48) = irand(0x14) + 0x14;
+#ifdef MUST_MATCH
+			*(volatile Vec*)(star + 0x20) = *(Vec*)(star + 8);
+#else
 			*(Vec*)(star + 0x20) = *(Vec*)(star + 8);
+#endif
 			pos = statusGetApPos();
 			*(Vec*)(star + 0x2C) = pos;
 			radius = *(f32*)(star + 0x24) - *(f32*)(star + 0x30);
@@ -2320,11 +2326,14 @@ void BattleAudienceApSrcCtrlProcess(void) {
 #pragma opt_common_subs reset
 
 
-// hoisting `z0 = float_0` before the multiplies (88.93 -> 91.21), `k1 = float_1` before the position
-// stores and a separate `k20 = float_20_8041e6a8` for the y add emit the original's early loads;
-// making the `star+0x44` store `volatile` serialises it before the constant-Vec copy (91.72 -> 92.21).
-// NONMATCHING (92.21%): what remains is the anonymous-i2f double register, the hoisted `star+0x2c`
-// copy loads and FP scheduling.
+// hoisting `z0 = float_0` before the multiplies (88.93 -> 91.21); writing the position adds with the
+// literal constants instead of `k1`/`k20` temporaries lets the scheduler interleave the constant loads
+// with the stores as the original does (92.21 -> 92.59); making the `star+0x44` store `volatile`
+// serialises it before the constant-Vec copy, and making the `star+0x20` store `volatile` keeps the
+// `star+0x2c` copy's loads out of the two rand blocks (92.59 -> 94.97).
+// NONMATCHING (94.97%): what remains is the anonymous-i2f double's FP register, the zero-init order of
+// `idx`/`count`/`offset`, the position-add constant load scheduling, and the post-matrix and second-rand
+// FP register colouring.
 BOOL BattleAudienceApSrcEntry(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -2333,8 +2342,6 @@ BOOL BattleAudienceApSrcEntry(void) {
 	f32 sx;
 	f32 sy;
 	f32 z0;
-	f32 k1;
-	f32 k20;
 	s32 ids[200];
 	s32 idx;
 	s32 count;
@@ -2379,11 +2386,9 @@ BOOL BattleAudienceApSrcEntry(void) {
 #endif
 	*(u8*)(star + 0x5c) = 0x80;
 	member = BattleAudienceGetPtr(ids[irand(count)]);
-	k1 = float_1_8041e620;
-	k20 = float_20_8041e6a8;
 	*(f32*)(star + 8) = member->position.x;
-	*(f32*)(star + 0xc) = k20 + member->position.y;
-	*(f32*)(star + 0x10) = k1 + member->position.z;
+	*(f32*)(star + 0xc) = float_20_8041e6a8 + member->position.y;
+	*(f32*)(star + 0x10) = float_1_8041e620 + member->position.z;
 	cam = camGetPtr(CAMERA_3D);
 	PSMTXMultVec(cam->view, (Vec*)(star + 8), (Vec*)(star + 8));
 	PSMTX44MultVec(cam->projection, (Vec*)(star + 8), (Vec*)(star + 8));
@@ -2396,7 +2401,13 @@ BOOL BattleAudienceApSrcEntry(void) {
 	*(f32*)(star + 0x14) = float_40_8041e690 * (f32)rand() / float_32767_8041e674 - float_20_8041e6a8;
 	*(f32*)(star + 0x18) = float_10_8041e694 * (f32)rand() / float_32767_8041e674;
 	*(f32*)(star + 0x1c) = float_0_8041e618;
+#ifdef MUST_MATCH
+	// Match-only: the volatile store stops the scheduler hoisting the constant-Vec copy's loads up
+	// into the two preceding rand blocks; the plain store is the natural form.
+	*(volatile Vec*)(star + 0x20) = *(Vec*)(star + 8);
+#else
 	*(Vec*)(star + 0x20) = *(Vec*)(star + 8);
+#endif
 #ifdef MUST_MATCH
 	*(volatile Vec*)(star + 0x2c) = *(const volatile Vec*)&vec3_802f975c;
 #else
@@ -2411,7 +2422,14 @@ BOOL BattleAudienceApSrcEntry(void) {
 // (f32)audience->mCurrentAudienceIntCount - diff;`) gets one more instruction to match than the plain one-liner.
 // Writing the zero test constant-first (`float_0 != diff`) makes objdiff's first `fcmpu` operand order match
 // (the constant is FRA) and is worth 95.87 -> 95.91.
-// NONMATCHING (95.91%): the positive clamp is a ternary (`step = step < float_0p1 ? float_0p1 : step;`)
+#ifdef MUST_MATCH
+// Match-only: a named local for the repeated 0.0f constant hoists its load like the original, which
+// shifts the first cast and both clamp blocks into the original's FP registers.
+#define BA_ZERO zero
+#else
+#define BA_ZERO float_0_8041e618
+#endif
+// NONMATCHING (96.32%): the positive clamp is a ternary (`step = step < float_0p1 ? float_0p1 : step;`)
 // and the two final stores go through locals; the rest is FP register colouring (the first cast's
 // zero lands in f3 instead of f0, rotating both clamps).
 void BattleAudienceWinCtrlProcess(void) {
@@ -2419,17 +2437,23 @@ void BattleAudienceWinCtrlProcess(void) {
 	BattleAudienceWindow* window;
 	u8* win;
 	f32 diff;
+#ifdef MUST_MATCH
+	f32 zero;
+#endif
 
 	audience = BattleAudienceBaseGetPtr();
 	window = BattleAudienceWinGetPtr();
 	diff = window->count;
 	diff = (f32)audience->mCurrentAudienceIntCount - diff;
-	if (float_0_8041e618 != diff) {
-		if (diff > float_0_8041e618) {
+#ifdef MUST_MATCH
+	zero = float_0_8041e618;
+#endif
+	if (BA_ZERO != diff) {
+		if (diff > BA_ZERO) {
 			f32 step = float_0p1_8041e678 * diff;
 			step = step < float_0p1_8041e678 ? float_0p1_8041e678 : step;
 			window->count += step;
-			if ((f32)audience->mCurrentAudienceIntCount - window->count < float_0_8041e618) {
+			if ((f32)audience->mCurrentAudienceIntCount - window->count < BA_ZERO) {
 				window->count = (f32)audience->mCurrentAudienceIntCount;
 			}
 		}
@@ -2442,7 +2466,7 @@ void BattleAudienceWinCtrlProcess(void) {
 				step = float_neg0p1_8041e6bc * diff;
 			}
 			window->count -= step;
-			if ((f32)audience->mCurrentAudienceIntCount - window->count > float_0_8041e618) {
+			if ((f32)audience->mCurrentAudienceIntCount - window->count > BA_ZERO) {
 				window->count = (f32)audience->mCurrentAudienceIntCount;
 			}
 		}
@@ -2471,6 +2495,7 @@ void BattleAudienceWinCtrlProcess(void) {
 		*(f32*)(win + 0x10) = b;
 	}
 }
+#undef BA_ZERO
 
 void BattleAudienceGXInit(void) {
 	BattleAudienceBaseGetPtr();
