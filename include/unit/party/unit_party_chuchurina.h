@@ -19,6 +19,7 @@ extern u32 partyWeapon_ChuchurinaItemSteal[48];
 extern u32 partyWeapon_ChuchurinaMadowaseAttack[48];
 extern u32 partyWeapon_ChuchurinaKiss[48];
 extern s32 btldefaultevt_avoid_counter_event[];
+extern s32 lbl_80003500[];
 extern s32 evt_audience_acrobat_notry[];
 extern s32 subset_attack_ready_jump_event[];
 extern s32 unk_evt_803510ec[];
