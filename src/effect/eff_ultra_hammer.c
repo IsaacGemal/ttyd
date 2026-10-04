@@ -283,16 +283,16 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 #ifdef __MWERKS__
 #pragma force_active on
 // Original .sdata order: these two 32-byte tables come first, then the twenty display lists.
-s8 wakka_normal_tbl[32] ATTRIBUTE_ALIGN(32) = {
+s8 wakka_normal_tbl[32] = {
 	0, 64, 0, // 0
 };
 
-u8 wakka_color0_tbl[32] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_color0_tbl[32] = {
 	0xFF, 0xFF, 0xFF, 0x7F, // 0
 	0xFF, 0xFF, 0xFF, 0x00  // 1
 };
 
-u8 wakka_dl_0_0[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_0[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	1, 0, 0, 2, // 0
@@ -303,7 +303,7 @@ u8 wakka_dl_0_0[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_1[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_1[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	2, 0, 0, 5, // 0
@@ -314,7 +314,7 @@ u8 wakka_dl_0_1[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_2[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_2[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	3, 0, 0, 7, // 0
@@ -325,7 +325,7 @@ u8 wakka_dl_0_2[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_3[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_3[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	39, 0, 0, 38, // 0
@@ -336,7 +336,7 @@ u8 wakka_dl_0_3[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_4[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_4[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	38, 0, 0, 36, // 0
@@ -347,7 +347,7 @@ u8 wakka_dl_0_4[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_5[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_5[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	37, 0, 0, 34, // 0
@@ -358,7 +358,7 @@ u8 wakka_dl_0_5[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_6[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_6[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	36, 0, 0, 32, // 0
@@ -369,7 +369,7 @@ u8 wakka_dl_0_6[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_7[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_7[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	35, 0, 0, 30, // 0
@@ -380,7 +380,7 @@ u8 wakka_dl_0_7[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_8[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_8[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	34, 0, 0, 28, // 0
@@ -391,7 +391,7 @@ u8 wakka_dl_0_8[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_9[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_9[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	33, 0, 0, 26, // 0
@@ -402,7 +402,7 @@ u8 wakka_dl_0_9[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_10[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_10[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	32, 0, 0, 24, // 0
@@ -413,7 +413,7 @@ u8 wakka_dl_0_10[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_11[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_11[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	31, 0, 0, 22, // 0
@@ -424,7 +424,7 @@ u8 wakka_dl_0_11[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_12[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_12[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	30, 0, 0, 20, // 0
@@ -435,7 +435,7 @@ u8 wakka_dl_0_12[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_13[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_13[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	29, 0, 0, 18, // 0
@@ -446,7 +446,7 @@ u8 wakka_dl_0_13[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_14[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_14[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	28, 0, 0, 16, // 0
@@ -457,7 +457,7 @@ u8 wakka_dl_0_14[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_15[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_15[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	27, 0, 0, 14, // 0
@@ -468,7 +468,7 @@ u8 wakka_dl_0_15[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_16[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_16[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	26, 0, 0, 12, // 0
@@ -479,7 +479,7 @@ u8 wakka_dl_0_16[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_17[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_17[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	25, 0, 0, 9, // 0
@@ -490,7 +490,7 @@ u8 wakka_dl_0_17[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_18[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_18[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	24, 0, 0, 8, // 0
@@ -501,7 +501,7 @@ u8 wakka_dl_0_18[] ATTRIBUTE_ALIGN(32) = {
 	GX_NOP, GX_NOP, GX_NOP, GX_NOP, GX_NOP, 
 };
 
-u8 wakka_dl_0_19[] ATTRIBUTE_ALIGN(32) = {
+u8 wakka_dl_0_19[] = {
 	(GX_DRAW_TRIANGLE_STRIP | GX_VTXFMT0), // command
 	0, 4, //number of verts
 	41, 0, 1, 41, // 0
@@ -540,7 +540,9 @@ u8 wakka_dl_0_size_tbl[] = {
 __declspec(section ".sdata") static u32 gap_07_80418194_sdata[1] = { 0 };
 #pragma explicit_zero_data reset
 
-s16 wakka_vertex_tbl[] ATTRIBUTE_ALIGN(32) = {
+// Explicit 128-element size: the original's object covers the 252 bytes of vertex data plus the
+// two zero s16 that pad it to the 32-byte alignment.
+s16 wakka_vertex_tbl[128] = {
 	24347, 0, -8825, // 0
 	20710, 0, -15961, // 1
 	15047, 0, -21625, // 2
@@ -585,7 +587,7 @@ s16 wakka_vertex_tbl[] ATTRIBUTE_ALIGN(32) = {
 	0, 0, -26514, // 41
 };
 
-s16 wakka_texcoord0_tbl[] ATTRIBUTE_ALIGN(32) = {
+s16 wakka_texcoord0_tbl[] = {
 	24576, 0, // 0
 	25600, 0, // 1
 	25600, 8192, // 2

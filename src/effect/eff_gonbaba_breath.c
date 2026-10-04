@@ -91,36 +91,31 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// Detailed diff: control flow, the sin/cos polynomial, the direct col_tbl[type % 10][i] reloads
-// and the case-17 speed coalescing all match. Splitting pi per block is load-bearing; the named
-// locals `ten` (10.0f) and `zero` (0.0f), the `conv`/`rad` scopes and the two-statement speed split
-// were each chosen for MWCC's FPR colouring (name/scope/declaration-order permutations were tried,
-// The remaining 22 diffs are all register-only (diff_shape: same calls/immediates):
-// case 10's `piA`/`piB` land in f8 not f1, so the quotient is f1 (retail f7); case 17's 0.0f takes
-// f1 and `piC`/`piD` f3/f7 (retail 0.0f f3, pi f1). Splitting case 10's speed (which would coalesce
-// the quotient into f7) moves the radian from f6 to f5, so it stays one expression.
+// The sin/cos blocks are the inlined polynomial approximation (same shape as eff_damage_star.c).
+// The scratch locals and their declaration order reproduce MWCC's FPR colouring: each pi constant
+// is written into the polynomial's own scratch register f1, `rad` is a function-scope local so it
+// outranks `zero`, and `speedScale` is named so the 1.5f lands in f2 while the quotient reaches f7.
+// `ten` (10.0f) and `zero` (0.0f) are named for the same colouring, and the speed computations are
+// split (divide, then multiply) so the divide coalesces into the speed register.
 // `#pragma opt_propagation off` required: stops MWCC rematerialising the sin/cos coefficients per branch.
 #pragma opt_propagation off
 // `#pragma opt_lifetimes off` required: with lifetimes on the frame, stack homes and FPR colouring shift.
 #pragma opt_lifetimes off // with lifetimes on the frame, stack homes and FPR colouring shift
-// NONMATCHING (99.69%): only FPR colouring differs (case 10 quotient/pi, case 17 zero/pi).
 void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 	f32 f0;
 	f32 f1;
+	f32 f2;
 	f32 f3;
 	f32 f4;
+	f32 speedScale;
 	f32 f5;
 	f32 f6;
-	f32 f2;
 	f32 f7;
 	f32 speed;
-	f32 ten;
+	f32 rad;
 	f32 zero;
-	f32 piA;
-	f32 piB;
-	f32 piC;
-	f32 piD;
 	f32 angle;
+	f32 ten;
 
 	data->type = type;
 	switch (type) {
@@ -163,7 +158,9 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		{
 			f32 conv = (f32)(irand(50) + 10);
 			ten = 10.0f;
-			f7 = (conv / ten) * 1.5f;
+			f7 = conv / ten;
+			speedScale = 1.5f;
+			f7 = f7 * speedScale;
 		}
 		f6 = (6.2831855f * angle) / 360.0f;
 		data->field_0x44 = index;
@@ -172,17 +169,17 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		data->position.z = 0.0f;
 
 #ifdef MUST_MATCH
-		// This order makes MWCC pool 0.00761 and 0.16605 before piA, as in the target.
+		// This order makes MWCC pool 0.00761 and 0.16605 before f1, as in the target.
 		f5 = 0.00761f;
 		f4 = 0.16605f;
-		piA = 3.1415927f;
+		f1 = 3.1415927f;
 #else
-		piA = 3.1415927f;
+		f1 = 3.1415927f;
 		f5 = 0.00761f;
 		f4 = 0.16605f;
 #endif
 		f3 = 1.0f;
-		if (f6 <= piA) {
+		if (f6 <= f1) {
 			f1 = 1.5707964f;
 			if (f6 <= f1) {
 				f0 = f6 * f6;
@@ -190,7 +187,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 				f5 = f5 * f0 + f3;
 				f5 = f5 * f6;
 			} else {
-				f0 = f6 - piA;
+				f0 = f6 - f1;
 				f1 = f1 - f0;
 				f0 = f1 * f1;
 				f5 = f5 * f0 - f4;
@@ -200,7 +197,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		} else {
 			f0 = 4.712389f;
 			if (f6 < f0) {
-				f1 = f6 - piA;
+				f1 = f6 - f1;
 				f0 = f1 * f1;
 				f5 = f5 * f0 - f4;
 				f5 = f5 * f0 + f3;
@@ -219,18 +216,18 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		}
 		data->velX = f7 * f5;
 
-		piB = 3.1415927f;
+		f1 = 3.1415927f;
 		f4 = 0.03705f;
 		f3 = 0.4967f;
 		f2 = 1.0f;
-		if (f6 <= piB) {
+		if (f6 <= f1) {
 			f1 = 1.5707964f;
 			if (f6 <= f1) {
 				f0 = f6 * f6;
 				f4 = f4 * f0 - f3;
 				f4 = f4 * f0 + f2;
 			} else {
-				f0 = f6 - piB;
+				f0 = f6 - f1;
 				f0 = f1 - f0;
 				f0 = f0 * f0;
 				f4 = f4 * f0 - f3;
@@ -240,7 +237,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		} else {
 			f0 = 4.712389f;
 			if (f6 < f0) {
-				f0 = f6 - piB;
+				f0 = f6 - f1;
 				f0 = f0 * f0;
 				f4 = f4 * f0 - f3;
 				f4 = f4 * f0 + f2;
@@ -276,27 +273,25 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		speed = ((f32)(irand(50) + 10) / 10.0f) * 1.5f;
 #endif
 		data->field_0x44 = irand(100);
-		{
-			f32 rad = 6.2831855f * angle;
-			f6 = rad / 360.0f;
-		}
+		rad = 6.2831855f * angle;
+		f6 = rad / 360.0f;
 		zero = 0.0f;
 		data->position.x = zero;
 		data->position.y = zero;
 		data->position.z = zero;
 
 #ifdef MUST_MATCH
-		// This order makes MWCC pool 0.00761 and 0.16605 before piC, as in the target.
+		// This order makes MWCC pool 0.00761 and 0.16605 before f1, as in the target.
 		f5 = 0.00761f;
 		f4 = 0.16605f;
-		piC = 3.1415927f;
+		f1 = 3.1415927f;
 #else
-		piC = 3.1415927f;
+		f1 = 3.1415927f;
 		f5 = 0.00761f;
 		f4 = 0.16605f;
 #endif
 		f2 = 1.0f;
-		if (f6 <= piC) {
+		if (f6 <= f1) {
 			f1 = 1.5707964f;
 			if (f6 <= f1) {
 				f0 = f6 * f6;
@@ -304,7 +299,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 				f5 = f5 * f0 + f2;
 				f5 = f5 * f6;
 			} else {
-				f0 = f6 - piC;
+				f0 = f6 - f1;
 				f1 = f1 - f0;
 				f0 = f1 * f1;
 				f5 = f5 * f0 - f4;
@@ -314,7 +309,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		} else {
 			f0 = 4.712389f;
 			if (f6 < f0) {
-				f1 = f6 - piC;
+				f1 = f6 - f1;
 				f0 = f1 * f1;
 				f5 = f5 * f0 - f4;
 				f5 = f5 * f0 + f2;
@@ -333,18 +328,18 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		}
 		data->velX = speed * f5;
 
-		piD = 3.1415927f;
+		f1 = 3.1415927f;
 		f4 = 0.03705f;
 		f3 = 0.4967f;
 		f2 = 1.0f;
-		if (f6 <= piD) {
+		if (f6 <= f1) {
 			f1 = 1.5707964f;
 			if (f6 <= f1) {
 				f0 = f6 * f6;
 				f4 = f4 * f0 - f3;
 				f4 = f4 * f0 + f2;
 			} else {
-				f0 = f6 - piD;
+				f0 = f6 - f1;
 				f0 = f1 - f0;
 				f0 = f0 * f0;
 				f4 = f4 * f0 - f3;
@@ -354,7 +349,7 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		} else {
 			f0 = 4.712389f;
 			if (f6 < f0) {
-				f0 = f6 - piD;
+				f0 = f6 - f1;
 				f0 = f0 * f0;
 				f4 = f4 * f0 - f3;
 				f4 = f4 * f0 + f2;

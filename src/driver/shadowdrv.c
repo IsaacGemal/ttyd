@@ -982,7 +982,8 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
 // r27/r0; a plain read loads them v7..v0,v8 with v0/v8 in r0/r27. The two .sdata2 `~~` pool labels vanish
 // when the unit links.
 // NONMATCHING (99.52%): one `fsubs f3,f2,f29` (the `(float_0 + w) - we` term shared by the last two
-// vertices) is scheduled one slot later than retail; every other instruction matches.
+// vertices) is scheduled five instructions later than retail -- after v11's four colour bytes instead of
+// between v11's y and z stores; every other instruction and register matches.
 void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     ShadowConfigFields* config;
     void* work;

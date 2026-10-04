@@ -272,11 +272,21 @@ void effFunemizuMain(EffectEntry* effect) {
 			GXCallDisplayList(*dl, *sz << 5); \
 		} \
 	}
+#define FUNEMIZU_DL_LOOP_H(n, tbl, sztbl) \
+	{ \
+		j = 0; \
+		sz = (sztbl); \
+		dl = (u8**)(tbl); \
+		for (; j < (n); j++, sz++, dl++) { \
+			GXCallDisplayList(*dl, *sz << 5); \
+		} \
+	}
 #else
 #define FUNEMIZU_DL_LOOP(n, tbl, sztbl) \
 	for (j = 0; j < (n); j++) { \
 		GXCallDisplayList((tbl)[j], (sztbl)[j] << 5); \
 	}
+#define FUNEMIZU_DL_LOOP_H(n, tbl, sztbl) FUNEMIZU_DL_LOOP(n, tbl, sztbl)
 #endif
 
 // The `.sdata` addressing below comes from the `__declspec(section ".sdata")` on the display-list/colour/
@@ -287,6 +297,7 @@ void effFunemizuMain(EffectEntry* effect) {
 // NONMATCHING (99.94%): the map-lookup's two walks match except the second walk's pointer, which the
 // original keeps in r24 while MWCC reuses r26 for both (the first walk is r26). Everything else - the
 // .data base+offset addressing, the .sdata (r13) addressing and the display-list loop registers - matches.
+#pragma opt_lifetimes off
 void effFunemizuDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	EffFunemizuData* data;
@@ -302,6 +313,11 @@ void effFunemizuDisp(CameraId camId, void* param) {
 	s32 type;
 	u32 j;
 	s32 i;
+	u8* sz;
+	u8** dl;
+	f32 zero;
+	f32 z;
+	f32 oneR;
 #ifdef MUST_MATCH
 	u8* base = (u8*)lbl_803B0200; // first object of the unit's .data; the tables below are reached as base+offset
 #endif
@@ -320,12 +336,12 @@ void effFunemizuDisp(CameraId camId, void* param) {
 			goto found;
 		}
 	}
-	for (p = (FunemizuMapEntry*)FUNE_DATA(0x440, unk_803b0640); p; p++) {
-		if (p->name == NULL) {
+	for (dl = (u8**)FUNE_DATA(0x440, unk_803b0640); dl; dl += 2) {
+		if (((FunemizuMapEntry*)dl)->name == NULL) {
 			break;
 		}
-		if (strncmp(p->name, gp->currentMapName, 3) == 0) {
-			colorVal = p->value;
+		if (strncmp(((FunemizuMapEntry*)dl)->name, gp->currentMapName, 3) == 0) {
+			colorVal = ((FunemizuMapEntry*)dl)->value;
 			goto found;
 		}
 	}
@@ -355,7 +371,8 @@ found:
 	PSMTXScale(mtx90, data->field_0x44, data->field_0x44, data->field_0x44);
 	PSMTXConcat(mtxC0, mtx60, mtxC0);
 	PSMTXConcat(mtxC0, mtx90, mtxC0);
-	PSMTXTrans(mtx60, float_neg15_80421488, 0.0f, 0.0f);
+	zero = float_0_80421478;
+	PSMTXTrans(mtx60, float_neg15_80421488, zero, zero);
 	PSMTXConcat(mtxC0, mtx60, mtxC0);
 	PSMTXConcat(cam->view, mtxC0, mtx30);
 
@@ -380,16 +397,19 @@ found:
 		else {
 			GXSetCullMode(GX_CULL_FRONT);
 		}
-		scale = 1.0f - float_2_8042148c * (f32)i;
-		PSMTXTrans(mtxC0, 0.0f, 0.0f, scale);
+		scale = float_1_80421484 - float_2_8042148c * (f32)i;
+		oneR = float_0_80421478;
+		PSMTXTrans(mtxC0, oneR, oneR, scale);
 		PSMTXConcat(mtx30, mtxC0, mtxC0);
-		PSMTXScale(mtx90, 1.0f, 1.0f, scale);
+		oneR = *(volatile f32*)&float_1_80421484;
+		PSMTXScale(mtx90, oneR, oneR, scale);
 		PSMTXConcat(mtxC0, mtx90, mtxC0);
 		PSMTXScale(mtx90, data->field_0x18, data->field_0x20, data->field_0x18);
 		PSMTXConcat(mtxC0, mtx90, mtx90);
 		GXLoadPosMtxImm(mtx90, 0);
 		GXSetCurrentMtx(0);
-		PSMTXTrans(mtx90, data->field_0x28, 0.0f, 0.0f);
+		zero = float_0_80421478;
+		PSMTXTrans(mtx90, data->field_0x28, zero, zero);
 		GXLoadTexMtxImm(mtx90, 0x1e, GX_MTX2x4);
 
 		if (type == 0) {
@@ -406,7 +426,7 @@ found:
 			GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
 			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xc);
 			GXSetArray(GX_VA_TEX0, FUNE_DATA(0x100, funemizu_texcoord0_tbl), 4);
-			FUNEMIZU_DL_LOOP(3, funemizu_dl_0_tbl, funemizu_dl_0_size_tbl);
+			FUNEMIZU_DL_LOOP_H(3, funemizu_dl_0_tbl, funemizu_dl_0_size_tbl);
 		}
 		else {
 			GXClearVtxDesc();
@@ -429,7 +449,8 @@ found:
 		PSMTXConcat(mtxC0, mtx90, mtx90);
 		GXLoadPosMtxImm(mtx90, 0);
 		GXSetCurrentMtx(0);
-		PSMTXTrans(mtx90, data->field_0x2C, 0.0f, 0.0f);
+		zero = float_0_80421478;
+		PSMTXTrans(mtx90, data->field_0x2C, zero, zero);
 		GXLoadTexMtxImm(mtx90, 0x1e, GX_MTX2x4);
 
 		if (type == 0) {
@@ -466,6 +487,8 @@ found:
 		}
 	}
 }
+
+#pragma opt_lifetimes reset
 
 // 100%: `data++` before the loop (rather than a separate `ptr`) and the GX colour helper below put the
 // pointer init and the by-value GXColor in the original's slots.  The 0.0f/1.0f arguments are literals
@@ -545,14 +568,31 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtx90, 0);
 		GXSetCurrentMtx(0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(sz * float_0p5_8042147c, float_1p5_80421480, 0.0f);
-		GXTexCoord2f32(0.0f, 0.0f);
-		GXPosition3f32(float_1p5_80421480, float_1p5_80421480, 0.0f);
-		GXTexCoord2f32(1.0f, 0.0f);
-		GXPosition3f32(float_1p5_80421480, sz * float_0p5_8042147c, 0.0f);
-		GXTexCoord2f32(1.0f, 1.0f);
-		GXPosition3f32(sz * float_0p5_8042147c, sz * float_0p5_8042147c, 0.0f);
-		GXTexCoord2f32(0.0f, 1.0f);
+		{
+			f32 one5 = float_1p5_80421480;
+			f32 half = sz * float_0p5_8042147c;
+
+			GXWGFifo.f32 = half;
+			GXWGFifo.f32 = one5;
+			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
+			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
+			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
+			GXWGFifo.f32 = one5;
+			GXWGFifo.f32 = one5;
+			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
+			GXWGFifo.f32 = *(volatile f32*)&float_1_80421484;
+			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
+			GXWGFifo.f32 = one5;
+			GXWGFifo.f32 = half;
+			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
+			GXWGFifo.f32 = *(volatile f32*)&float_1_80421484;
+			GXWGFifo.f32 = *(volatile f32*)&float_1_80421484;
+			GXWGFifo.f32 = half;
+			GXWGFifo.f32 = half;
+			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
+			GXWGFifo.f32 = *(volatile f32*)&float_0_80421478;
+			GXWGFifo.f32 = *(volatile f32*)&float_1_80421484;
+		}
 		GXEnd();
 	}
 }

@@ -341,6 +341,10 @@ void effNiceDisp(CameraId camId, void* param) {
 // uses of those two. The plain (no-comma) form gets x=r31/y=r30/sfx=r29 exactly right and only
 // pays the `addi r0`/`mr r29` scratch, but scores lower (5 real diffs, 98.86%), and the comma only
 // ever colours the nudged local last. This is a pure register-permutation, so a permuter job.
+// A base+offset initialiser (`(const char*)&vec3_802f3754 + 0xC`) drops the scratch and keeps
+// x=r31/y=r30/sfx=r29, but MWCC splits the symbol add into two addis
+// (`addi r3, r3, vec3@l; addi r29, r3, 0xC`) where retail folds it (`addi r29, r3, str@l`); the same
+// split leaves eff_fall's effFallEntry at 99.22%, so the fold is not reachable with this compiler.
 // NONMATCHING (99.85%): x and sfx are swapped (r29/r31); all other registers match.
 void acrobatMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
