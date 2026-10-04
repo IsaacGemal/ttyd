@@ -2874,7 +2874,7 @@ const char* toRearPose(const char* name) { //1:1
 		else if (!strcmp(name, "M_H_8")) {
 			rear = "M_H_8R";
 		}
-		else if (!strcmp(name, "M_O_2")) {
+		else if (!strcmp(name, "M_O_1")) {
 			rear = "M_O_2R";
 		}
 		else if (!strcmp(name, "M_I_2")) {

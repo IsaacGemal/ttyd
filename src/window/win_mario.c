@@ -138,7 +138,7 @@ char* unk_8016af5c(s32 num, s32 width) {
     s32 i;
 
     if (num < 0) {
-        strcpy(unk_803dfbf8, "-");
+        strcpy(unk_803dfbf8, "\x81\x7C");
         num = -num;
     } else {
         strcpy(unk_803dfbf8, "");
@@ -164,7 +164,7 @@ char* winZenkakuStr(s32 num) {
     u32 i;
 
     if (num < 0) {
-        strcpy(tmp2, "-");
+        strcpy(tmp2, "\x81\x7C");
         num = -num;
     } else {
         strcpy(tmp2, "");
@@ -1069,7 +1069,7 @@ static inline char* wmDispZenkaku(WM_BASE_PARAMS s32 num) {
     tbl[9] = "\x82\x58";
 #endif
     if (num < 0) {
-        strcpy(tmp2, "-");
+        strcpy(tmp2, "\x81\x7C");
         num = -num;
     } else {
         strcpy(tmp2, "");
@@ -1111,7 +1111,7 @@ static inline char* wmDispNum(WM_BASE_PARAMS s32 width, s32 num) {
     tbl[9] = "\x82\x58";
 #endif
     if (num < 0) {
-        strcpy(unk_803dfbf8, "-");
+        strcpy(unk_803dfbf8, "\x81\x7C");
         num = -num;
     } else {
         strcpy(unk_803dfbf8, "");

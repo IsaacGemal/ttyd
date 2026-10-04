@@ -157,7 +157,7 @@ void animInit(void) {
     initTestHeap(); // inlined
 
     for (i = 0; i < 0xB2; i++) {
-        tanfTbl[i] = (f32)tan(MTXDegToRad(i - 0x59));
+        tanfTbl[i] = (f32)tan((i - 0x59) * (3.141592f / 180.0f));
     }
     file = fileAllocf(0, "a/vivian.bin");
     if (file) {

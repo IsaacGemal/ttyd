@@ -899,7 +899,7 @@ void BattleStageLightSetLightColor(s32 idx, u8 r, u8 g, u8 b, s32 frames, u8 eas
 	light->colorFramesTotal = frames;
 	light->colorEase = ease;
 	if (frames == 0) {
-		light->colorCur = (BattleStageColor){light->colorCur.r, light->colorCur.g, light->colorCur.b, 0};
+		light->colorCur = (BattleStageColor){light->colorCur.r, light->colorCur.g, light->colorCur.b, 0xFF};
 	}
 }
 #pragma opt_propagation on

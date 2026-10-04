@@ -35,6 +35,9 @@
 #include "battle/battle.h"
 #include "driver/seqdrv.h"
 
+// This file's radians-to-degrees factor is 180/3.141592 (0x42652EE4), not the SDK's 57.29577951f.
+#define NPC_RAD2DEG(r) ((r) * (180.0f / 3.141592f))
+
 extern char _evt_majinai_coin_up_effect[];
 
 extern GlobalWork* gp;
@@ -313,7 +316,7 @@ static inline void npcOffscreenSetup(NpcEntry* entry) {
         camera = camGetPtr(CAMERA_3D);
         dx = camera->cameraAt.x - camera->cameraPos.x;
         dz = camera->cameraAt.z - camera->cameraPos.z;
-        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+        angle = reviseAngle(NPC_RAD2DEG((f32)atan2(-dx, -dz)));
         if (angle < 0.0f) {
             angle += 360.0f;
         }
@@ -366,7 +369,7 @@ static inline void npcOffscreenSetup2(NpcEntry* entry, GXColor* colorp) {
         camera = camGetPtr(CAMERA_3D);
         dx = camera->cameraAt.x - camera->cameraPos.x;
         dz = camera->cameraAt.z - camera->cameraPos.z;
-        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+        angle = reviseAngle(NPC_RAD2DEG((f32)atan2(-dx, -dz)));
         if (angle < 0.0f) {
             angle += 360.0f;
         }
@@ -431,7 +434,7 @@ void npcDisp_xlu(CameraId cameraId, void* param) {
         camera = camGetPtr(CAMERA_3D);
         dx = camera->cameraAt.x - camera->cameraPos.x;
         dz = camera->cameraAt.z - camera->cameraPos.z;
-        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+        angle = reviseAngle(NPC_RAD2DEG((f32)atan2(-dx, -dz)));
         if (angle < 0.0f) {
             angle += 360.0f;
         }
@@ -504,7 +507,7 @@ void npcDisp(CameraId camId, void* param) {
                 camera = camGetPtr(CAMERA_3D);
                 dx = camera->cameraAt.x - camera->cameraPos.x;
                 dz = camera->cameraAt.z - camera->cameraPos.z;
-                angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+                angle = reviseAngle(NPC_RAD2DEG((f32)atan2(-dx, -dz)));
                 if (angle < 0.0f) {
                     angle += 360.0f;
                 }
@@ -584,7 +587,7 @@ void npcDisp_offscreen_xlu(CameraId camId, void* param) {
         camera = camGetPtr(CAMERA_3D);
         dx = camera->cameraAt.x - camera->cameraPos.x;
         dz = camera->cameraAt.z - camera->cameraPos.z;
-        angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+        angle = reviseAngle(NPC_RAD2DEG((f32)atan2(-dx, -dz)));
         if (angle < 0.0f) {
             angle += 360.0f;
         }
@@ -663,7 +666,7 @@ void npcDisp_offscreen(CameraId camId, void* param) {
                 camera = camGetPtr(CAMERA_3D);
                 dx = camera->cameraAt.x - camera->cameraPos.x;
                 dz = camera->cameraAt.z - camera->cameraPos.z;
-                angle = reviseAngle(MTXRadToDeg((f32)atan2(-dx, -dz)));
+                angle = reviseAngle(NPC_RAD2DEG((f32)atan2(-dx, -dz)));
                 if (angle < 0.0f) {
                     angle += 360.0f;
                 }
@@ -1280,21 +1283,21 @@ void fbatEncountCheck(void) {
             hit->direction = angleABf(hit->position.x, hit->position.z, mario->position.x, mario->position.z);
             rel = reviseAngle(-hit->direction) + float_neg90_80419bd8;
             cam = camGetPtr(CAMERA_3D);
-            camAngle = reviseAngle(MTXRadToDeg((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
+            camAngle = reviseAngle(NPC_RAD2DEG((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
             if (camAngle < float_0_80419b9c) {
                 camAngle += float_360_80419be0;
             }
             d = reviseAngle(camAngle - rel);
             if ((d > float_90_80419bd0 && d <= float_270_80419be4) || (d < float_neg90_80419bd8 && d >= float_neg270_80419be8)) {
                 cam = camGetPtr(CAMERA_3D);
-                camAngle = reviseAngle(MTXRadToDeg((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
+                camAngle = reviseAngle(NPC_RAD2DEG((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
                 if (camAngle < float_0_80419b9c) {
                     camAngle += float_360_80419be0;
                 }
                 pose->field_0x7C = reviseAngle(float_180_80419bec + camAngle);
             } else {
                 cam = camGetPtr(CAMERA_3D);
-                camAngle = reviseAngle(MTXRadToDeg((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
+                camAngle = reviseAngle(NPC_RAD2DEG((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
                 if (camAngle < float_0_80419b9c) {
                     camAngle += float_360_80419be0;
                 }
