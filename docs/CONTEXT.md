@@ -4249,6 +4249,14 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
 - Codex reviews today (run as one whole-batch `codex exec` at the default medium effort) caught 1 HIGH, missed about 9
   that Claude reviewers found, and raised 2 false positives. The setup, not the model, is the first suspect: see the
   private ledger.
+- **Waves 69/70 near batch** (onto main 0e460be9): yuu_03 +1 at 100% and partial gains; review
+  (`scratch/wave70/review1.md`) found no behaviour drift (one unguarded volatile store, now MUST_MATCH only).
+  **Near-miss yield is spent**: waves 69 and 70's near arms gave 3 new functions from 49 agents. The remaining
+  data-blocked functions (imgDisp, imgShadowDisp, msgWindow_Disp, winBookGX, bom_01 disp_sight/ext_main,
+  winPartyDisp) have each had two or more agent passes; they go to hand work, and the four links agents couldn't
+  get (battle_damage, fadedrv, eff_fire, jin_07) to Claude #3. Wave 71 was not launched; the tower went to the
+  permuter (queue 23) overnight.
+
 
 ## Hand work on data-blocked functions (2026-10-03 night, Claude Opus 5.5 "TTYD Claude #2")
 
