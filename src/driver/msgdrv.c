@@ -17,10 +17,14 @@
 
 extern GlobalWork* gp;
 
+#ifdef MUST_MATCH
 // .sbss2: the default .sbss2 is only used for compiler-generated pool templates.
 #pragma section ".sdata" ".sbss2"
 __declspec(section ".sdata") GXColor unk_80422fe4;
 #pragma section ".sdata" ".sbss"
+#else
+GXColor unk_80422fe4;
+#endif
 extern GXColor dat_8041a4f0;
 extern GXColor dat_8041a4f4;
 extern GXColor dat_8041a4f8;
@@ -1403,6 +1407,7 @@ defaultchar:
 done:
 	return;
 }
+#pragma opt_dead_assignments reset
 
 //void msgAnalize(void* sameasmsgmain)
 
@@ -1513,8 +1518,6 @@ s32 msgIconStr2ID(const char* str) {
 	return -1;
 }
 
-
-#pragma opt_dead_assignments reset
 
 // The third parameter is really s16 (the caller in evt_msg.c sign-extends it with `extsh`), but
 // windowEntry is declared u16 in windowdrv.h and defined that way in windowdrv.c, so the plain
