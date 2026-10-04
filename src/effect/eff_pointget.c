@@ -40,7 +40,7 @@ EffectEntry* effPointGetEntry(s32 type, s32 value, s32 wait, f32 x, f32 y, f32 z
 	PointGetWork* work;
 
 	entry = effEntry();
-	entry->type = "PointGet";
+	entry->type = "PointGet\0\0\0";
 	entry->count = 1;
 	work = __memAlloc(HEAP_EFFECT, entry->count * sizeof(PointGetWork));
 	entry->userdata = work;

@@ -1421,9 +1421,3 @@ USER_FUNC(moamoa_set_bodyScale) {
 }
 // clang-format on
 
-#pragma explicit_zero_data on
-#pragma force_active on
-__declspec(section ".data") u32 gap_04_0001A55C_data = 0;
-#pragma force_active reset
-#pragma explicit_zero_data reset
-

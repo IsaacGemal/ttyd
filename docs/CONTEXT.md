@@ -4608,3 +4608,8 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   misalignment). No change: evt_yuutitle (99.80), eff_booboo_n64 and tou2 (data already done). Wave 75 arm M (15:57):
   the ext_moamoa_main group task on eki_00's copy (96.9%; rsh_06 89.4% and rsh_05 86.7% reserved as `grp` for the
   carry-over tasks), base from this branch.
+- **Batch 22:** mbstring linked (wave 74 arm L, the seventh; collected late: its 15:16 finish was missed in the stream);
+  data ports for eff_damage_star, unit_boss_moamoa, eff_confetti_n64 and eff_pointget. No change: npc_event (chain_main
+  99.93), evt_yuucounter (99.33), aji_17 (noiseDisp 99.11) and the evt_mobj group (five switch functions at 99.78,
+  register-only; for Claude #3's grind). Arm L: 15 tasks, 7 linked (gor_00, jon, rsh, yuu_02, rsh_00, ac_shot_target,
+  mbstring), tou_03 improved, 6 no change, evt_yuuranking still running.
