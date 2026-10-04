@@ -232,8 +232,13 @@ static DispWork* dwp = &disp_work;
 static const char* suuji[] = { "０", "１", "２", "３", "４", "５", "６", "７", "８", "９" };
 // clang-format on
 
-// The area-name literal is padded with four zero bytes so the compiler's last
-// .rodata object ends exactly where the original object's does.
+#ifdef MUST_MATCH
+// the original's last .rodata object, the area name, ends four bytes past its NUL: the extra NULs spell the pad out
+#define AREA_TOU "tou\0\0\0\0"
+#else
+#define AREA_TOU "tou"
+#endif
+
 void _prolog(void) {
     voidfunctionptr* ctor;
 
@@ -241,7 +246,7 @@ void _prolog(void) {
         (*ctor)();
     }
     relSetEvtAddr("tou_03", tou_03_init_evt);
-    relSetBtlAddr("tou\0\0\0\0", btlsetup_tou_tbl, btl_tou_setup_no_tbl);
+    relSetBtlAddr(AREA_TOU, btlsetup_tou_tbl, btl_tou_setup_no_tbl);
     rankingInit();
 }
 
@@ -250,7 +255,7 @@ void _epilog(void) {
 
     rankingExit();
     relSetEvtAddr("tou_03", NULL);
-    relSetBtlAddr("tou\0\0\0\0", NULL, NULL);
+    relSetBtlAddr(AREA_TOU, NULL, NULL);
     for (dtor = _dtors; *dtor != NULL; dtor++) {
         (*dtor)();
     }
