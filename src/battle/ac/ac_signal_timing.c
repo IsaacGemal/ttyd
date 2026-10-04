@@ -9,26 +9,13 @@
 #include "pmario_sound.h"
 #include "system.h"
 #include <string.h>
+#pragma pool_data on // the original addresses its .rodata through one base register
 
 // .sdata2 constants used by this unit. Order matches the original .sdata2 (report).
 const u32 dat_804216d0 = 0xFFFFFFFF;
 const u32 dat_804216d4 = 0xFFFFFFFF;
 const u32 dat_804216d8 = 0xFFFFFFFF;
 const u32 dat_804216dc = 0xFFFFFFFF;
-const f32 float_neg200_804216e0 = -200.0f;
-const f32 float_70_804216e4 = 70.0f;
-const f32 float_1_804216e8 = 1.0f;
-const f32 float_neg288_804216ec = -288.0f;
-const f32 float_25_804216f0 = 25.0f;
-const f32 float_0_804216f4 = 0.0f;
-const f32 float_1p5_804216f8 = 1.5f;
-const f32 float_0p5_804216fc = 0.5f;
-const f32 float_15_80421700 = 15.0f;
-const f32 float_0p8_80421704 = 0.8f;
-const f32 float_0p6_80421708 = 0.6f;
-const f32 float_20p8_8042170c = 20.800001f;
-const f32 float_neg300_80421710 = -300.0f;
-const f32 float_30_80421714 = 30.0f;
 
 // The original unit's .rodata: 14 separate zero vectors, the int->float magic double, then the
 // SFX names. The vectors must be separate `vec3_*` objects (not a `vec3[14]` array) so MWCC
@@ -49,11 +36,6 @@ const Vec vec3_802fee40 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fee4c = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fee58 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fee64 = {0.0f, 0.0f, 0.0f};
-const f64 double_to_int_802fee70 = 4503601774854144.0;
-const char str_802FEE78[] = "SFX_AC_PI1";
-const char str_802FEE84[] = "SFX_AC_PONE1";
-const char str_802FEE94[] = "SFX_AC_COMMAND_OK1";
-const char str_802FEEA8[] = "SFX_AC_COMMAND_NG1";
 
 // Local to this file in the original (`.fn actionCommandDisp, local`).
 static void actionCommandDisp(f32 x, f32 y);
@@ -106,10 +88,10 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
     if (ac->mAcUnit->badgesEquipped.AutoCommand != 0) {
         autoCommand = 1;
     }
-    sfxNg = str_802FEEA8;
-    sfxPi1 = str_802FEE78;
-    sfxPone1 = str_802FEE84;
-    sfxOk = str_802FEE94;
+    sfxPi1 = "SFX_AC_PI1";
+    sfxPone1 = "SFX_AC_PONE1";
+    sfxOk = "SFX_AC_COMMAND_OK1";
+    sfxNg = "SFX_AC_COMMAND_NG1";
     do {
         cont = 0;
         pressed = 0;
@@ -118,8 +100,8 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
             s32 i;
             ac->result = 1;
             memset(disp, 0, 0x2C);
-            disp->iconX = float_neg300_80421710;
-            disp->iconY = float_0_804216f4;
+            disp->iconX = -300.f;
+            disp->iconY = 0.0f;
             disp->counter = 0x14;
             bd->field_0x00 = 0;
             bd->field_0x04 = 0;
@@ -365,7 +347,7 @@ void battleAcDisp_SignalTiming(CameraId camId, void* param) {
     switch (ac->mAcState) {
     case 0x63:
     case 0x64:
-        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_80421710, float_30_80421714);
+        disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.f, 30.f);
         actionCommandDisp(disp->iconX, disp->iconY);
         if (disp->counter > 0) {
             disp->counter--;
@@ -375,14 +357,14 @@ void battleAcDisp_SignalTiming(CameraId camId, void* param) {
     case 0x3E9:
     case 0x3EA:
     case 0x3EB:
-        actionCommandDisp(float_30_80421714, float_0_804216f4);
+        actionCommandDisp(30.f, 0.0f);
         break;
     case 0x3EC:
     case 0x3ED:
         if (disp->counter >= 0x28) {
-            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_80421714, float_neg300_80421710);
+            disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, 30.f, -300.f);
         } else {
-            disp->iconX = float_30_80421714;
+            disp->iconX = 30.f;
         }
         actionCommandDisp(disp->iconX, disp->iconY);
         if (disp->counter < 0x3C) {
@@ -463,14 +445,14 @@ static void actionCommandDisp(f32 x, f32 y) {
     if (!(*(s32*)&ac->field_34[0] & 1)) {
         if (bd->field_0x30 != 0) {
             Vec t = vec3_802fedc8;
-            t.x = float_neg200_804216e0 + x;
-            t.y = float_70_804216e4 + y;
-            ICON_DISP(&t, 0x10, 0x65, float_1_804216e8);
+            t.x = -200.f + x;
+            t.y = 70.f + y;
+            ICON_DISP(&t, 0x10, 0x65, 1.0f);
         } else {
             Vec t = vec3_802fedd4;
-            t.x = float_neg200_804216e0 + x;
-            t.y = float_70_804216e4 + y;
-            ICON_DISP(&t, 0x10, 0x64, float_1_804216e8);
+            t.x = -200.f + x;
+            t.y = 70.f + y;
+            ICON_DISP(&t, 0x10, 0x64, 1.0f);
         }
     }
 
@@ -495,22 +477,22 @@ static void actionCommandDisp(f32 x, f32 y) {
         }
         {
             Vec t = vec3_802fede0;
-            t.x = float_neg288_804216ec + x;
-            f31 = float_25_804216f0 + y;
+            t.x = -288.0f + x;
+            f31 = 25.0f + y;
             t.y = f31;
-            ICON_DISP(&t, 0x10, 0x8F, float_1_804216e8);
+            ICON_DISP(&t, 0x10, 0x8F, 1.0f);
         }
         for (i = 1; i < limit; i++) {
             Vec t = *(volatile Vec*)&vec3_802fedec;
             t.x = x + (f32)(i * 0x10 - 0x120);
             t.y = f31;
-            ICON_DISP(&t, 0x10, 0x8E, float_1_804216e8);
+            ICON_DISP(&t, 0x10, 0x8E, 1.0f);
         }
         {
             Vec t = vec3_802fedf8;
             t.x = x + (f32)(i * 0x10 - 0x120);
             t.y = f31;
-            ICON_DISP(&t, 0x10, 0x90, float_1_804216e8);
+            ICON_DISP(&t, 0x10, 0x90, 1.0f);
         }
     }
 
@@ -527,14 +509,14 @@ static void actionCommandDisp(f32 x, f32 y) {
                 ioff = (num * 0x30 - 0x1a + (*(s32*)&ac->field_34[0x1C] * 32));
             }
             {
-                f32 fneg = float_neg200_804216e0 + x;
-                PSMTXTrans(mtx, fneg + (f32)ioff, f31, float_0_804216f4);
+                f32 fneg = -200.f + x;
+                PSMTXTrans(mtx, fneg + (f32)ioff, f31, 0.0f);
             }
         }
         if (*(s32*)&ac->field_34[0] & 8) {
-            PSMTXScale(scale, float_1p5_804216f8, float_1p5_804216f8, float_1p5_804216f8);
+            PSMTXScale(scale, 1.5f, 1.5f, 1.5f);
         } else {
-            PSMTXScale(scale, float_1_804216e8, float_1_804216e8, float_1_804216e8);
+            PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
         }
         PSMTXConcat(mtx, scale, mtx2);
         iconNumberDispGx(mtx2, number, 0, *(GXColor*)&dat_804216d0);
@@ -547,18 +529,18 @@ static void actionCommandDisp(f32 x, f32 y) {
                 u16 id = (u16)(0x92 + i);
                 t.y = f31;
                 t.x = x + (f32)(i * 0x21 - 0x102);
-                ICON_DISP_B(&t, 0x10, id, float_1_804216e8);
+                ICON_DISP_B(&t, 0x10, id, 1.0f);
             } else {
                 Vec t = vec3_802fee10;
                 t.y = f31;
                 t.x = x + (f32)(i * 0x21 - 0x102);
-                ICON_DISP(&t, 0x10, 0x94, float_1_804216e8);
+                ICON_DISP(&t, 0x10, 0x94, 1.0f);
             }
         } else {
             Vec t = vec3_802fee1c;
             t.y = f31;
             t.x = x + (f32)(i * 0x21 - 0x102);
-            ICON_DISP(&t, 0x10, 0x91, float_0p5_804216fc);
+            ICON_DISP(&t, 0x10, 0x91, 0.5f);
         }
     }
 
@@ -568,18 +550,18 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec t = vec3_802fee28;
                 t.x = x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa)));
                 t.y = f31;
-                ICON_DISP(&t, 0x10, 0x95, float_1_804216e8);
+                ICON_DISP(&t, 0x10, 0x95, 1.0f);
             } else {
                 Vec t = vec3_802fee34;
                 t.x = x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa)));
                 t.y = f31;
-                ICON_DISP(&t, 0x10, 0x91, float_1_804216e8);
+                ICON_DISP(&t, 0x10, 0x91, 1.0f);
             }
         }
     } else if (!(*(s32*)&ac->field_34[0] & 2)) {
-        f28 = float_15_80421700 + y;
+        f28 = 15.0f + y;
         for (i = 0; i < num; i++) {
-            f32 scale = float_0p8_80421704;
+            f32 scale = 0.8f;
 #ifdef MUST_MATCH
             // The leading comma (a discarded second read of `i`) nudges the allocator to colour
             // t0 in r4 as the target; the natural form below colours it r7 and costs ~12 diffs.
@@ -592,13 +574,13 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec t = vec3_802fee40;
                 t.y = f28;
                 t.x = x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa)));
-                ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0), float_0p8_80421704);
+                ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0), 0.8f);
             } else {
                 s32 delta;
                 Vec t;
                 if (bd->field_0x0C <= t0) {
                     delta = -2;
-                    scale = float_0p6_80421708;
+                    scale = 0.6f;
                 } else {
                     delta = -0xa;
                 }
@@ -609,7 +591,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             }
         }
     } else {
-        f28 = float_20p8_8042170c + f31;
+        f28 = 20.800001f + f31;
         for (i = 0; i < num; i++) {
 #ifdef MUST_MATCH
             s32 t0 = (i, i + *(s32*)&ac->field_34[0x1C]); // see the note on the first t0 loop
@@ -621,7 +603,7 @@ static void actionCommandDisp(f32 x, f32 y) {
                 Vec t = vec3_802fee58;
                 t.x = x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa)));
                 t.y = f31;
-                ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0), float_0p8_80421704);
+                ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 0), 0.8f);
             } else if (bd->field_0x0C <= t0) {
                 if (i >= num - 1) {
                     // Match-only: the original sets r5=0 before every btlDispTexPlane call (the
@@ -630,46 +612,46 @@ static void actionCommandDisp(f32 x, f32 y) {
 #ifdef MUST_MATCH
                     ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
                         x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))),
-                        f28, float_0_804216f4, float_0p8_80421704, float_0p8_80421704,
+                        f28, 0.0f, 0.8f, 0.8f,
                         0x40, *(GXColor*)&dat_804216d4, 0);
 #else
                     btlDispTexPlane(0x40, *(GXColor*)&dat_804216d4,
                                     x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))),
-                                    f28, float_0_804216f4, float_0p8_80421704, float_0p8_80421704);
+                                    f28, 0.0f, 0.8f, 0.8f);
 #endif
                 }
             } else {
                 Vec t = vec3_802fee64;
                 t.x = x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa)));
                 t.y = f31;
-                ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 1), float_0p8_80421704);
+                ICON_DISP(&t, 0x10, BattleACGetButtonIcon(bd->buttons[i], 1), 0.8f);
             }
         }
     }
 
-    f28 = f31 - float_25_804216f0;
+    f28 = f31 - 25.0f;
     for (i = 0; i < num; i++) {
         if (bd->states[i] == 1) {
 #ifdef MUST_MATCH
             ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
                 x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))), f28,
-                float_0_804216f4, float_1_804216e8, float_1_804216e8,
+                0.0f, 1.0f, 1.0f,
                 0x3E, *(GXColor*)&dat_804216d8, 0);
 #else
             btlDispTexPlane(0x3E, *(GXColor*)&dat_804216d8,
                             x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))), f28,
-                            float_0_804216f4, float_1_804216e8, float_1_804216e8);
+                            0.0f, 1.0f, 1.0f);
 #endif
         } else if (bd->states[i] == -1) {
 #ifdef MUST_MATCH
             ((void (*)(f32, f32, f32, f32, f32, s32, GXColor, s32))btlDispTexPlane)(
                 x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))), f28,
-                float_0_804216f4, float_1_804216e8, float_1_804216e8,
+                0.0f, 1.0f, 1.0f,
                 0x3F, *(GXColor*)&dat_804216dc, 0);
 #else
             btlDispTexPlane(0x3F, *(GXColor*)&dat_804216dc,
                             x + (f32)((i * 0x30 + (*(s32*)&ac->field_34[0x1C] * 0x21 - 0xfa))), f28,
-                            float_0_804216f4, float_1_804216e8, float_1_804216e8);
+                            0.0f, 1.0f, 1.0f);
 #endif
         }
     }
