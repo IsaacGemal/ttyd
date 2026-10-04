@@ -806,7 +806,7 @@ config.libs = [
             Object(Matching, "seqdef.c"),
             Object(Matching, "sequence/seq_battle.c"),
             Object(Matching, "sequence/seq_gameover.c"),
-            Object(NonMatching, "sequence/seq_logo.c"),
+            Object(Matching, "sequence/seq_logo.c"),
             Object(NonMatching, "sequence/seq_load.c"),
             Object(Matching, "sequence/seq_demo.c"),
             Object(Matching, "sequence/seq_e3.c"),
