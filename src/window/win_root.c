@@ -7,6 +7,7 @@
 #include "driver/windowdrv.h"
 #include "manager/fontmgr.h"
 #include "mario/mario_pouch.h"
+#include "mario/mario_party.h"
 #include "mario/mariost.h"
 #include <dolphin/types.h>
 #include "math_ext.h"
@@ -62,6 +63,10 @@ extern const f32 float_285_8041d1cc;
 extern const f32 float_144_8041d1d0;
 extern const f32 float_neg144_8041d1d4;
 extern const GXColor dat_8041cf68;
+extern const f32 float_1000_8041d1e8;
+extern const f32 float_185_8041d1e4;
+extern const f32 float_180_8041d18c;
+extern const f32 float_0p25_8041d1ec;
 
 // Extended fields of WindowWork used by this unit. win_main.h only declares the
 // first 0x40 bytes, so the rest are reached through raw offsets below.
@@ -76,6 +81,32 @@ typedef struct SortTable {
     const char* name;                 // 0x0
     void (*func)(WindowWork* work);    // 0x4
 } SortTable;
+
+// Menu tab and record blocks embedded in WindowWork at 0x48/0xC0.
+typedef struct WinRootTab {
+    s32 id;          // 0x0
+    f32 x;           // 0x4
+    f32 y;           // 0x8
+    s32 state;       // 0xC
+    s32 counter;     // 0x10
+    const char* str; // 0x14
+} WinRootTab;
+
+typedef struct WinRootRec {
+    u32 a; // 0x0
+    u32 b; // 0x4
+    u32 c; // 0x8
+    s32 d; // 0xC
+    u32 e; // 0x10
+} WinRootRec;
+
+typedef struct WinRoot {
+    u8 pad0[0x48];
+    WinRootTab tabs[5]; // 0x48
+    WinRootRec recs[5]; // 0xC0
+} WinRoot;
+
+#define WROOT(w) ((WinRoot*)(w))
 
 extern SortTable* sort_data[8];
 extern const f32 float_neg1000_8041d0cc;
@@ -106,6 +137,411 @@ static const char* const tbl[] = {
 const GXColor dat_8041cf90 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_8041d064 = {0xFF, 0xFF, 0xFF, 0xFF};
 
+// Main menu. Builds the visible tab set into the work block, then runs the
+// per-state logic and the common per-tab animation. The string array is the
+// unit's static msg_help object; the byte-pointer casts reproduce the original
+// `add base,base,idx; lwz disp(base)` reads of tabs[]/recs[].
+// NONMATCHING (96.97%): remaining diff is MWCC register colouring/scheduling and
+// a few `add base,base,idx` vs `addi+index` addressing forms.
+s32 winRootMain(WindowWork* work) {
+    static const char* msg_help[5] = {
+        "msg_menu_mario", "msg_menu_nakama", "msg_menu_mochimono", "msg_menu_badge", "msg_menu_kiroku",
+    };
+    s32 result;
+    WinRootTab* tab;
+    s32 i;
+    s32 j;
+    const char* str;
+
+    switch (WW_S32(work, 0x24)) {
+    case 0:
+        psndSFXOn((const char*)0x2002A);
+        WW_S32(work, 0x44) = 0;
+        tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+        tab->id = 0;
+        tab->state = 0;
+        tab->y = float_1000_8041d1e8;
+        tab->x = float_1000_8041d1e8;
+        tab->str = msg_help[0];
+        WW_S32(work, 0x44)++;
+        if (swByteGet(0) >= 7 || partyChkJoin(1) != 0) {
+            tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+            tab->id = 1;
+            tab->state = 0;
+            tab->y = float_1000_8041d1e8;
+            tab->x = float_1000_8041d1e8;
+            tab->str = msg_help[1];
+            WW_S32(work, 0x44)++;
+        }
+        tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+        tab->id = 2;
+        tab->state = 0;
+        tab->y = float_1000_8041d1e8;
+        tab->x = float_1000_8041d1e8;
+        tab->str = msg_help[2];
+        WW_S32(work, 0x44)++;
+        if (swByteGet(0) >= 0x14 || pouchGetHaveBadgeCnt() != 0) {
+            tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+            tab->id = 3;
+            tab->state = 0;
+            tab->y = float_1000_8041d1e8;
+            tab->x = float_1000_8041d1e8;
+            tab->str = msg_help[3];
+            WW_S32(work, 0x44)++;
+        }
+        tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+        tab->id = 4;
+        tab->state = 0;
+        tab->y = float_1000_8041d1e8;
+        tab->x = float_1000_8041d1e8;
+        tab->str = msg_help[4];
+        WW_S32(work, 0x44)++;
+        for (j = 0; j < WW_S32(work, 0x44); j++) {
+            if (WROOT(work)->tabs[j].id == WW_S32(work, 0x1C)) {
+                WW_S32(work, 0x40) = j;
+            }
+        }
+        WW_S32(work, 0xCC) = -1;
+        WW_F32(work, 0xC8) = float_1000_8041d1e8;
+        WW_F32(work, 0xC4) = float_1000_8041d1e8;
+        WW_S32(work, 0xC0) = -1;
+        WW_S32(work, 0xE0) = -1;
+        WW_F32(work, 0xDC) = float_1000_8041d1e8;
+        WW_F32(work, 0xD8) = float_1000_8041d1e8;
+        WW_S32(work, 0xD4) = -1;
+        WW_S32(work, 0xF4) = -1;
+        WW_F32(work, 0xF0) = float_1000_8041d1e8;
+        WW_F32(work, 0xEC) = float_1000_8041d1e8;
+        WW_S32(work, 0xE8) = -1;
+        WW_S32(work, 0x108) = -1;
+        WW_F32(work, 0x104) = float_1000_8041d1e8;
+        WW_F32(work, 0x100) = float_1000_8041d1e8;
+        WW_S32(work, 0xFC) = -1;
+        WW_S32(work, 0x11C) = -1;
+        WW_F32(work, 0x118) = float_1000_8041d1e8;
+        WW_F32(work, 0x114) = float_1000_8041d1e8;
+        WW_S32(work, 0x110) = -1;
+        WW_F32(work, 0xC8) = float_1000_8041d1e8;
+        WW_F32(work, 0xC4) = float_1000_8041d1e8;
+        WW_S32(work, 0xCC) = 0;
+        WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id;
+        WW_S32(work, 0x130) = 0;
+        WW_F32(work, 0x12C) = float_1000_8041d1e8;
+        WW_F32(work, 0x128) = float_1000_8041d1e8;
+        WW_S32(work, 0x13C) = 0;
+        WW_S32(work, 0x140) = 0;
+        WW_S32(work, 0x144) = 0;
+        winMarioInit(work);
+        winPartyInit(work);
+        winItemInit(work);
+        winBadgeInit(work);
+        winLogInit(work);
+        {
+            f32 pos = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
+
+            WW_F32(work, 0x158) = pos;
+            WW_F32(work, 0x150) = pos;
+        }
+        WW_F32(work, 0x154) = float_300_8041d0d4;
+        WW_F32(work, 0x15C) = float_185_8041d1e4;
+        WW_F32(work, 0x16C) = float_neg1000_8041d0cc;
+        WW_F32(work, 0x164) = float_neg1000_8041d0cc;
+        WW_F32(work, 0x170) = float_neg1000_8041d0cc;
+        WW_F32(work, 0x168) = float_neg1000_8041d0cc;
+        str = WROOT(work)->tabs[WW_S32(work, 0x40)].str;
+        if (str != NULL) {
+            winMsgEntry(work, 0, str, 0);
+        }
+        WW_S32(work, 0x24) = 0xA;
+        switch (WW_S32(work, 0x1C)) {
+        case 1:
+            winPartyInit2(work);
+            WW_S32(work, 0x24) = 0xC;
+            work->flags |= 0x4000;
+            break;
+        case 2:
+            winItemInit2(work);
+            WW_S32(work, 0x24) = 0xD;
+            work->flags |= 0x4000;
+            break;
+        case 3:
+            winBadgeInit2(work);
+            WW_S32(work, 0x24) = 0xE;
+            work->flags |= 0x4000;
+            break;
+        case 4:
+            winLogInit2(work);
+            WW_S32(work, 0x24) = 0xF;
+            work->flags |= 0x4000;
+            break;
+        }
+        if (gp->flags & 0x1000) {
+            WW_S32(work, 0x44) = 0;
+            tab = &WROOT(work)->tabs[WW_S32(work, 0x44)];
+            tab->id = 1;
+            tab->state = 0;
+            tab->y = float_1000_8041d1e8;
+            tab->x = float_1000_8041d1e8;
+            tab->str = msg_help[1];
+            WW_S32(work, 0x44)++;
+            winPartyInit2(work);
+            WW_S32(work, 0x24) = 0xC;
+            WW_S32(work, 0x40) = 0;
+        }
+        WW_PTR(work, 0x34) = smartAlloc(GXGetTexBufferSize(gp->fbWidth, gp->efbHeight, 4, 0, 0), 1);
+        WW_S32(work, 0x38) = 0;
+        dispEntry(CAMERA_2D, float_1000_8041d1e8, 0, (DispCallback)unk_8014d5dc, work);
+        break;
+    case 10:
+        if (work->buttonTrg & 0x1200) {
+            if (WW_S32(work, 0xCC) == 0x64) {
+                WW_S32(work, 0x24) = 0x14;
+            }
+            break;
+        }
+        if (work->buttonTrg & 0x100) {
+            if (WROOT(work)->tabs[WW_S32(work, 0x40)].id != 1 || WW_S32(work, 0x1E0) != 0) {
+                psndSFXOn((const char*)0x20012);
+                WW_S32(work, 0x24) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id + 0xB;
+                switch (WROOT(work)->tabs[WW_S32(work, 0x40)].id) {
+                case 0:
+                    winMarioInit2(work);
+                    break;
+                case 1:
+                    winPartyInit2(work);
+                    break;
+                case 2:
+                    winItemInit2(work);
+                    break;
+                case 3:
+                    winBadgeInit2(work);
+                    break;
+                case 4:
+                    winLogInit2(work);
+                    break;
+                }
+            }
+            break;
+        }
+        if (work->dirRep & 0x4000) {
+            psndSFXOn((const char*)0x20032);
+            psndSFXOn((const char*)0x20031);
+            WW_S32(work, 0x40)--;
+            if (WW_S32(work, 0x40) < 0) {
+                WW_S32(work, 0x40) = WW_S32(work, 0x44) - 1;
+            }
+            for (j = 4; j > 0; j--) {
+                WROOT(work)->recs[j] = WROOT(work)->recs[j - 1];
+            }
+            WW_F32(work, 0xC8) = float_1000_8041d1e8;
+            WW_F32(work, 0xC4) = float_1000_8041d1e8;
+            WW_S32(work, 0xCC) = 0x1E;
+            WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id;
+            WW_F32(work, 0x158) = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
+            str = WROOT(work)->tabs[WW_S32(work, 0x40)].str;
+            if (str != NULL) {
+                winMsgEntry(work, 0, str, 0);
+            }
+        } else if (work->dirRep & 0x8000) {
+            psndSFXOn((const char*)0x20032);
+            psndSFXOn((const char*)0x20031);
+            WW_S32(work, 0x40)++;
+            if (WW_S32(work, 0x40) >= WW_S32(work, 0x44)) {
+                WW_S32(work, 0x40) = 0;
+            }
+            for (j = 4; j > 0; j--) {
+                WROOT(work)->recs[j] = WROOT(work)->recs[j - 1];
+            }
+            WW_F32(work, 0xC8) = float_1000_8041d1e8;
+            WW_F32(work, 0xC4) = float_1000_8041d1e8;
+            WW_S32(work, 0xCC) = 0x14;
+            WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id;
+            WW_F32(work, 0x158) = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
+            str = WROOT(work)->tabs[WW_S32(work, 0x40)].str;
+            if (str != NULL) {
+                winMsgEntry(work, 0, str, 0);
+            }
+        }
+        break;
+    case 100:
+        if (((WinRootRec*)((u8*)WROOT(work)->recs + WW_S32(work, 0x40) * 0x14))->d == 0x64) {
+            WW_S32(work, 0x24) = 0xA;
+        }
+        break;
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+        switch (WW_S32(work, 0x24)) {
+        case 11:
+            result = winMarioMain(work);
+            break;
+        case 12:
+            result = winPartyMain(work);
+            break;
+        case 13:
+            result = winItemMain(work);
+            break;
+        case 14:
+            result = winBadgeMain(work);
+            break;
+        case 15:
+            result = winLogMain(work);
+            break;
+        }
+        if ((gp->flags & 0x1000) && result == -1) {
+            result = -2;
+        }
+        if (result == -1) {
+            WW_F32(work, 0x158) = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
+            WW_F32(work, 0x15C) = float_185_8041d1e4;
+            WW_S32(work, 0x24) = 0xA;
+            str = WROOT(work)->tabs[WW_S32(work, 0x40)].str;
+            if (str != NULL) {
+                winMsgEntry(work, 0, str, 0);
+            }
+            work->flags &= ~0x4000;
+        } else if (result == -2) {
+            WW_S32(work, 0x24) = 0x14;
+            work->flags &= ~0x4000;
+        }
+        break;
+    case 20:
+        psndSFXOn((const char*)0x2002B);
+        for (j = 0; j < WW_S32(work, 0x44); j++) {
+            WROOT(work)->tabs[j].state = 0xA;
+        }
+        WW_S32(work, 0xCC) = 0xA;
+        WW_S32(work, 0xE0) = 0xA;
+        WW_S32(work, 0xF4) = 0xA;
+        WW_S32(work, 0x108) = 0xA;
+        WW_S32(work, 0x11C) = 0xA;
+        WW_S32(work, 0x130) = 0xA;
+        N_mapDispOn();
+        camDispOn(CAMERA_3D);
+        WW_S32(work, 0x24)++;
+        break;
+    default:
+        if (WW_PTR(work, 0x34) != NULL) {
+            smartFree((smartEntry*)WW_PTR(work, 0x34));
+            WW_PTR(work, 0x34) = NULL;
+            WW_S32(work, 0x38) = 0;
+        }
+        WW_S32(work, 0x24)++;
+        if (WW_S32(work, 0x24) > 0x32) {
+            winMarioExit(work);
+            winPartyExit(work);
+            winItemExit(work);
+#ifdef MUST_MATCH
+            // winBadgeExit's header says void(void), but the original passes work in r3.
+            ((void (*)(WindowWork*))winBadgeExit)(work);
+#else
+            winBadgeExit();
+#endif
+            winLogExit(work);
+            if (WW_S32(work, 0x19C) != 0 && WW_S32(work, 0x1DC) != WW_S32(work, 0x1FC)) {
+                return -2;
+            }
+            if (WW_S32(work, 0x2D4) != 0) {
+                return -3;
+            }
+            return -1;
+        }
+        break;
+    }
+
+    {
+    u8* base;
+    s32 xoff;
+    s32 cnt;
+
+    i = 0;
+    base = (u8*)work;
+    cnt = i;
+    xoff = -0xCD;
+
+    for (; i < 5; i++) {
+        switch (*(s32*)(base + 0x54)) {
+        case 0:
+            *(f32*)(base + 0x4C) = (f32)xoff;
+            *(f32*)(base + 0x50) = float_300_8041d0d4;
+            *(s32*)(base + 0x58) = cnt;
+            (*(s32*)(base + 0x54))++;
+            break;
+        case 1:
+        case 11: {
+            s32 c = *(s32*)(base + 0x58) - 1;
+
+            *(s32*)(base + 0x58) = c;
+            if (c < 0) {
+                *(s32*)(base + 0x58) = 0;
+                (*(s32*)(base + 0x54))++;
+            }
+            break;
+        }
+        case 2: {
+            s32 c = *(s32*)(base + 0x58);
+
+            *(s32*)(base + 0x58) = c + 1;
+            *(f32*)(base + 0x50) = intplGetValue(0xB, c, 0xA, float_300_8041d0d4, float_185_8041d1e4);
+            if (*(s32*)(base + 0x58) > 0xA) {
+                (*(s32*)(base + 0x54))++;
+            }
+            break;
+        }
+        case 10:
+            *(s32*)(base + 0x58) = (4 - i) * 4;
+            (*(s32*)(base + 0x54))++;
+            break;
+        case 12: {
+            s32 c = *(s32*)(base + 0x58);
+
+            *(s32*)(base + 0x58) = c + 1;
+            *(f32*)(base + 0x50) = intplGetValue(0xB, c, 0xA, float_180_8041d18c, float_300_8041d0d4);
+            if (*(s32*)(base + 0x58) > 0xA) {
+                (*(s32*)(base + 0x54))++;
+            }
+            break;
+        }
+        case 13:
+            break;
+        }
+        base += 0x18;
+        xoff += 0x69;
+        cnt += 4;
+    }
+    }
+    winBgMain(work);
+    winMsgMain(work);
+    winMarioMain2(work);
+    winPartyMain2(work);
+    winItemMain2(work);
+    winBadgeMain2(work);
+    winLogMain2(work);
+    winSortMain(work);
+    if (WW_S32(work, 0x24) < 0x14) {
+        if (work->flags & 0x4000) {
+            WW_F32(work, 0x150) += (WW_F32(work, 0x158) - WW_F32(work, 0x150)) * float_0p25_8041d1ec;
+            WW_F32(work, 0x154) += (WW_F32(work, 0x15C) - WW_F32(work, 0x154)) * float_0p25_8041d1ec;
+        } else {
+            WW_F32(work, 0x150) += (WW_F32(work, 0x158) - WW_F32(work, 0x150)) * float_0p25_8041d1ec;
+            WW_F32(work, 0x154) += (WW_F32(work, 0x15C) + (WROOT(work)->tabs[WW_S32(work, 0x40)].y - float_185_8041d1e4) - WW_F32(work, 0x154)) * float_0p25_8041d1ec;
+        }
+    } else if (WW_F32(work, 0x154) > float_180_8041d18c) {
+            WW_F32(work, 0x150) += (WW_F32(work, 0x158) - WW_F32(work, 0x150)) * float_0p25_8041d1ec;
+            WW_F32(work, 0x154) += (WW_F32(work, 0x15C) + (WROOT(work)->tabs[WW_S32(work, 0x40)].y - float_185_8041d1e4) - WW_F32(work, 0x154)) * float_0p25_8041d1ec;
+    } else {
+            WW_F32(work, 0x150) += (WW_F32(work, 0x158) + WW_F32(work, 0xC4) - WW_F32(work, 0x150)) * float_0p25_8041d1ec;
+            WW_F32(work, 0x154) += (WW_F32(work, 0x15C) - WW_F32(work, 0x154)) * float_0p25_8041d1ec;
+    }
+    WW_F32(work, 0x150) = (f32)(WW_F32(work, 0x150) +
+        __fabs(float_2_8041d090 * (f32)sin((f32)gp->retraceCount * float_0p125_8041d104)));
+    WW_F32(work, 0x164) += (WW_F32(work, 0x16C) - WW_F32(work, 0x164)) * float_0p25_8041d1ec;
+    WW_F32(work, 0x168) += (WW_F32(work, 0x170) - WW_F32(work, 0x168)) * float_0p25_8041d1ec;
+    dispEntry(CAMERA_2D, float_1000_8041d1e8, 0, (DispCallback)unk_8014d338, work);
+    return 0;
+}
 
 s32 winSortWait(WindowWork* work) {
     return WW_S32(work, 0x17C) != 0;

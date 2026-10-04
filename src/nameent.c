@@ -1,4 +1,6 @@
 #include "nameent.h"
+#include "mario/mariost.h"
+#include "pmario_sound.h"
 #include "driver/dispdrv.h"
 #include "driver/fadedrv.h"
 #include "driver/windowdrv.h"
@@ -188,6 +190,256 @@ void nameEntMain(void) {
 	if (wp->field_0x4 > 1) {
 		dispEntry(4, 0.0f, 7, nameEntDisp, NULL);
 	}
+}
+
+// Two source shapes are load-bearing: the four `(target-cur)/4.0f` blends must be a division, not `*0.25f`
+// (both fold to the same `float_0p25` load, but the division makes MWCC emit the target's `fmadds fD, diff, k,
+// cur`; the multiply commutes to `fD, k, diff, cur`), and the `idx = idx - 1` clamp must be an explicit
+// subtraction, not `idx--` (the decrement form pushes the tail's i2f conversions into the wrong stack slots).
+s32 nameMain(void) {
+	f32 dist;
+	s32 count;
+	s32 ofs;
+	s32 half;
+
+	dist = distABf(wp->x2, wp->y2, wp->x1, wp->y1);
+
+	switch (wp->field_0x8) {
+	case 0:
+		if (wp->field_0x0 & 1) {
+			if (gp->unk8 == 0) {
+				if (keyGetButtonTrg(0) & 0x100) {
+					s32 f10 = wp->field_0x10;
+
+					if (f10 >= 10 && wp->field_0x14 >= 4) {
+						switch (wp->field_0x14) {
+						case 4:
+							wp->field_0x50 = hiragana_tbl;
+							psndSFXOn((const char*)0x2000C);
+							break;
+						case 5:
+							wp->field_0x50 = katakana_tbl;
+							psndSFXOn((const char*)0x2000C);
+							break;
+						case 6:
+							if (wp->field_0x18 > 0) {
+								wp->field_0x18--;
+								psndSFXOn((const char*)0x2000B);
+							}
+							break;
+						case 7:
+							half = strlen(wp->field_0x3C) >> 1;
+							for (count = 0; count < half; count++) {
+								if (strncmp(&wp->field_0x3C[count * 2], "\x81\x40", 2) != 0) {
+									break;
+								}
+							}
+							if (count < half || wp->field_0xC != 0) {
+								wp->field_0x5C = 1;
+								wp->field_0x8 = 100;
+								psndSFXOn((const char*)0x20012);
+								if (wp->field_0xC == 1 && count >= half) {
+									strcpy(wp->field_0x3C, msgSearch("name_party3"));
+									wp->field_0x18 = strlen(wp->field_0x3C) >> 1;
+								}
+							} else {
+								psndSFXOn((const char*)0x20014);
+							}
+							break;
+						}
+					} else {
+						if (wp->field_0x18 < 8) {
+							((u16*)wp->field_0x3C)[wp->field_0x18] =
+							    *(u16*)wp->field_0x50[wp->field_0x14 * 14 + wp->field_0x10];
+							wp->field_0x18++;
+							if (wp->field_0x18 >= 8) {
+								wp->field_0x18 = 7;
+								wp->field_0x10 = 0xA;
+								wp->field_0x14 = 7;
+							}
+							psndSFXOn((const char*)0xA);
+						} else if (wp->field_0x18 == 8) {
+							wp->field_0x18 = 7;
+							((u16*)wp->field_0x3C)[wp->field_0x18] =
+							    *(u16*)wp->field_0x50[wp->field_0x14 * 14 + wp->field_0x10];
+							wp->field_0x10 = 0xA;
+							wp->field_0x14 = 7;
+							psndSFXOn((const char*)0xA);
+						}
+					}
+				} else if (keyGetButtonTrg(0) & 0x1000) {
+					s32 count2;
+					s32 half2 = strlen(wp->field_0x3C) >> 1;
+					s32 ofs2;
+
+#ifdef MUST_MATCH
+					// target increments the byte offset before the counter; a plain
+					// `count2++, ofs2 += 2` emits them the other way around.
+					for (count2 = 0, ofs2 = 0; count2 < half2; ofs2 += 2, count2++) {
+#else
+					for (count2 = 0, ofs2 = 0; count2 < half2; count2++, ofs2 += 2) {
+#endif
+						if (strncmp(&wp->field_0x3C[ofs2], "\x81\x40", 2) != 0) {
+							break;
+						}
+					}
+					if (count2 < half2 || wp->field_0xC != 0) {
+						wp->field_0x5C = 1;
+						wp->field_0x8 = 100;
+						psndSFXOn((const char*)0x12);
+						if (wp->field_0xC == 1 && count2 >= half2) {
+							strcpy(wp->field_0x3C, msgSearch("name_party3"));
+							wp->field_0x18 = strlen(wp->field_0x3C) >> 1;
+						}
+					} else {
+						psndSFXOn((const char*)0x20014);
+					}
+				} else if (keyGetButtonTrg(0) & 0x200) {
+					if (wp->field_0x18 == 0 && wp->field_0xC == 0 &&
+					    strncmp(wp->field_0x3C, "\x81\x40", 2) == 0) {
+						psndSFXOn((const char*)0x13);
+						wp->field_0x8 = 0x65;
+						wp->field_0x0 |= 2;
+					} else {
+						((u16*)wp->field_0x3C)[wp->field_0x18] = *(u16*)"\x81\x40";
+						wp->field_0x18--;
+						if (wp->field_0x18 < 0) {
+							wp->field_0x18 = 0;
+						}
+						psndSFXOn((const char*)0xB);
+					}
+				} else if (keyGetDirRep(0) & 0x4000) {
+					if (dist < 10.0f) {
+						wp->field_0x10--;
+						if (wp->field_0x14 > 3) {
+							if (wp->field_0x10 < 0) {
+								wp->field_0x10 = 10;
+								if (wp->field_0x14 > 7) {
+									wp->field_0x14 = 7;
+								}
+							}
+						} else if (wp->field_0x10 < 0) {
+							wp->field_0x10 = 13;
+						}
+						psndSFXOn((const char*)5);
+					}
+				} else if (keyGetDirRep(0) & 0x8000) {
+					if (dist < 10.0f) {
+						wp->field_0x10++;
+						if (wp->field_0x14 > 3) {
+							if (wp->field_0x10 >= 10 && wp->field_0x14 > 7) {
+								wp->field_0x14 = 7;
+							}
+							if (wp->field_0x10 >= 11) {
+								wp->field_0x10 = 0;
+							}
+						} else if (wp->field_0x10 >= 14) {
+							wp->field_0x10 = 0;
+						}
+						psndSFXOn((const char*)5);
+					}
+				} else if (keyGetDirRep(0) & 0x1000) {
+					if (dist < 10.0f) {
+						wp->field_0x14--;
+						if (wp->field_0x14 < 0) {
+							if (wp->field_0x10 > 9) {
+								wp->field_0x14 = 7;
+								wp->field_0x10 = 10;
+							} else {
+								wp->field_0x14 = 8;
+							}
+						}
+						psndSFXOn((const char*)5);
+					}
+				} else if (keyGetDirRep(0) & 0x2000) {
+					if (dist < 10.0f) {
+						wp->field_0x14++;
+						if (wp->field_0x10 > 9) {
+							if (wp->field_0x14 >= 4) {
+								wp->field_0x10 = 10;
+							}
+							if (wp->field_0x14 >= 8) {
+								wp->field_0x14 = 0;
+							}
+						} else if (wp->field_0x14 >= 9) {
+							wp->field_0x14 = 0;
+						}
+						psndSFXOn((const char*)5);
+					}
+				}
+			}
+		}
+		{
+			s32 f10 = wp->field_0x10;
+
+			if (f10 > 9 && wp->field_0x14 > 3) {
+				wp->x2 = 100.0f;
+				wp->y2 = (f32)(-((wp->field_0x14 - 4) * 0x22) - 0x14);
+				wp->x2 -= 6.0f;
+				wp->y2 += 6.0f;
+			} else {
+				wp->x2 = (f32)(f10 * 24 - 190 + (f10 / 5) * 30);
+				wp->y2 = (f32)(112 - wp->field_0x14 * 28);
+				wp->x2 -= 16.0f;
+				wp->y2 -= 12.0f;
+			}
+		}
+		wp->field_0x54 -= 0.05f;
+		if (wp->field_0x54 <= 0.0f) {
+			wp->field_0x54 = 0.0f;
+		}
+		break;
+	case 100:
+		if (keyGetButtonTrg(0) & 0x100) {
+			if (wp->field_0x5C == 0) {
+				wp->field_0x8++;
+				psndSFXOn((const char*)0x12);
+			} else {
+				wp->field_0x8 = 0;
+				psndSFXOn((const char*)0x13);
+			}
+		} else if (keyGetButtonTrg(0) & 0x200) {
+			wp->field_0x8 = 0;
+			psndSFXOn((const char*)0x13);
+		} else if (keyGetDirRep(0) & 0x3000) {
+			wp->field_0x5C = 1 - wp->field_0x5C;
+			psndSFXOn((const char*)5);
+		}
+		wp->x2 = -60.0f;
+		wp->y2 = -30.0f - 40.0f * (f32)wp->field_0x5C;
+		wp->field_0x54 += 0.05f;
+		if (wp->field_0x54 >= 1.0f) {
+			wp->field_0x54 = 1.0f;
+		}
+		break;
+	}
+
+	wp->x1 += (wp->x2 - wp->x1) / 4.0f;
+	wp->y1 += (wp->y2 - wp->y1) / 4.0f;
+	{
+		f32 k125 = 0.125f;
+
+		wp->x1 += __fabs(2.0f * (f32)sin((f32)gp->retraceCount * k125));
+	}
+
+	{
+		s32 idx = wp->field_0x18;
+
+		if (idx >= 8) {
+			idx = idx - 1;
+		}
+		wp->field_0x34 = (f32)(idx * 32 - 106);
+		wp->field_0x38 = 135.0f;
+		wp->field_0x2C += (wp->field_0x34 - wp->field_0x2C) / 4.0f;
+		wp->field_0x30 += (wp->field_0x38 - wp->field_0x30) / 4.0f;
+		{
+			f32 k125 = 0.125f;
+
+			wp->field_0x30 += __fabs(2.0f * (f32)sin((f32)gp->retraceCount * k125));
+		}
+	}
+
+	return 0;
 }
 
 // The translate/scale Vecs are written as compound literals, not named objects: MWCC then reloads them

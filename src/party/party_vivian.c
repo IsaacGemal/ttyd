@@ -532,11 +532,3 @@ void vivian_use(PartyEntry* party) {
         break;
     }
 }
-
-// Alignment gap after vivian_use's switch jump tables (0x4C..0x50). Defined after the function so the
-// compiler places it after the jump tables it emits while generating vivian_use.
-#pragma explicit_zero_data on
-#pragma force_active on
-__declspec(section ".data") u32 gap_05_8038BA54_data = 0;
-#pragma force_active reset
-#pragma explicit_zero_data reset

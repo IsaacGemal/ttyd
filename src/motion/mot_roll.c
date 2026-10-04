@@ -560,14 +560,9 @@ static inline float mot_roll_sqrtf(float x) {
     return x;
 }
 
-// motion userdata allocated in mot_roll (0x14 bytes); no header declares it yet.
-// Fixed this pass: `45.0` (double) for the final angle test, the roll_tail block's single marioGetPtr, the
-// f31=unk19C block's targetYaw reload, the unsigned field_0x1D8 test, and splitting/reusing the velocity temps
-// (fmax/fqm, second block's multiplier back into f31, final angle into f28, vel_apply cos into f30) so the
-// callee-saved FPR set and frame 0xF0 match. Inlined MSL sqrtf/fpclassify match.
-// NONMATCHING (97.89%): remaining diffs are MWCC register naming/coloring (velocity lands in f27 vs f29),
-// scheduler ordering and .rodata/.sdata2 constant addressing (i2f magic and sqrtf doubles reached via r30 in
-// the target, pooled @NNNN here).
+// NONMATCHING (98.53%): all calls and immediates match; remaining diffs are MWCC register colouring (velocity
+// X/Y f27<->f29 swap), scheduler ordering of the float loads / i2f sequence, and an extra anonymous i2f pool copy.
+// MotRoll userdata is allocated here (0x14 bytes).
 void mot_roll(void) {
 #define vec vec3_802c5d40
     MarioWork* mario = marioGetPtr();
@@ -582,6 +577,16 @@ void mot_roll(void) {
     f32 f31;
     f32 fmax;
     f32 fqm;
+#ifdef MUST_MATCH
+    /* A named constant stops MWCC hoisting the 0.1 load, so the field is added before the constant as in
+       the original. */
+    f32 kOneTenth = 0.1f;
+#endif
+#ifdef MUST_MATCH
+    /* A local zero makes MWCC load the pooled 0.0 into a register and keep the compared value as the first
+       operand, as the original does (its float_0, not a folded literal). */
+    f32 zero = 0.0f;
+#endif
     s32 cond;
     s32 i;
 
@@ -651,10 +656,7 @@ void mot_roll(void) {
             m->field_68 = 2.0f;
             m->field_6C = vec[0];
         }
-        {
-            MotRoll* d = marioGetPtr()->motStruct;
-            d->unk8 = 0;
-        }
+        ((MotRoll*)marioGetPtr()->motStruct)->unk8 = 0;
         ((MotRoll*)marioGetPtr()->motStruct)->state = 0;
         psndSFXOn_3D((char*)0x179, &mario->position);
         psndSFXOn_3D((char*)0x9F, &mario->position);
@@ -665,7 +667,12 @@ void mot_roll(void) {
         if (mario->multiTimer == 0x36) {
             allPartyRideShip();
         }
+#ifdef MUST_MATCH
+        /* 0x9C is inside the header's field_0x98 block. */
+        *(f32*)(mario->field_0x98 + 4) = *(f32*)(mario->field_0x98 + 4) + kOneTenth;
+#else
         *(f32*)((u8*)mario + 0x9C) = *(f32*)((u8*)mario + 0x9C) + 0.1f;
+#endif
         if (*(f32*)((u8*)mario + 0x9C) > 1.0f) {
             *(f32*)((u8*)mario + 0x9C) = 1.0f;
         }
@@ -915,8 +922,14 @@ void mot_roll(void) {
         f26 = 3.1415927f * f26 / 180.0f;
         f30 = f27 * (f32)sin(f26);
         f27 = f27 * -(f32)cos(f26);
+#ifdef MUST_MATCH
+        /* Volatile read keeps the directionView load before the inlined 10.0 load, as in the original. */
+        if (rollDispAngleInRange(*(volatile f32*)&mario->directionView,
+                                 angleABf(0.0f, 0.0f, f30, f27), 135.0f) == 1) {
+#else
         if (rollDispAngleInRange(mario->directionView,
                                  angleABf(0.0f, 0.0f, f30, f27), 135.0f) == 1) {
+#endif
             f27 = distABf(0.0f, 0.0f, f30, f27);
             f30 = -f27 * (f32)sin(3.1415927f * mario->directionView / 180.0f);
             f27 = f27 * (f32)cos(3.1415927f * mario->directionView / 180.0f);
@@ -963,8 +976,14 @@ void mot_roll(void) {
                 f27 = 100.0f;
             }
         }
+#ifdef MUST_MATCH
+        /* Volatile read keeps the directionView load before the inlined 10.0 load, as in the original. */
+        if (rollDispAngleInRange(*(volatile f32*)&mario->directionView,
+                                 angleABf(0.0f, 0.0f, f30, f27), 135.0f) == 1) {
+#else
         if (rollDispAngleInRange(mario->directionView,
                                  angleABf(0.0f, 0.0f, f30, f27), 135.0f) == 1) {
+#endif
             f27 = distABf(0.0f, 0.0f, f30, -f27);
             f30 = -f27 * (f32)sin(3.1415927f * mario->directionView / 180.0f);
             f27 = f27 * (f32)cos(3.1415927f * mario->directionView / 180.0f);
@@ -996,7 +1015,11 @@ void mot_roll(void) {
         }
     }
 
+#ifdef MUST_MATCH
+    if (mario->forceMoveTimer == 0 && f30 == zero && f27 == zero) {
+#else
     if (mario->forceMoveTimer == 0 && f30 == 0.0f && f27 == 0.0f) {
+#endif
         if (*(void**)((u8*)mario + 0x1F0) != NULL) {
             if (!marioChkBero(*(HitEntry**)((u8*)mario + 0x1F0))) {
                 f29 = f29 + f29 * ((f32*)&rollData)[2];
@@ -1033,12 +1056,12 @@ void mot_roll(void) {
         a10 = (f32)(s32)(10.0f * *(f32*)m->unk19C) / 10.0f;
         s1 = (f32)(s8)*(volatile u8*)&m->wStickDir1;
         s2 = (f32)(s8)*(volatile u8*)&m->wStickDir2;
+        ref = angleABf(0.0f, 0.0f, s1, s2);
         lo = a10 - 135.0f;
         if (lo < 0.0f) {
             lo += 360.0f;
             kind = 1;
         }
-        ref = angleABf(0.0f, 0.0f, s1, s2);
         hi = a10 + 135.0f;
         if (hi > 360.0f) {
             hi -= 360.0f;
@@ -1052,7 +1075,7 @@ void mot_roll(void) {
             if (hi < ref && ref < lo) {
                 res = 1;
             }
-        } else {
+        } else if (kind == 0) {
             if (ref < lo || hi < ref) {
                 res = 1;
             }
@@ -1136,9 +1159,10 @@ vel_apply:
     }
     f27 = 0.05f * f27;
     {
-        MarioWork* m = marioGetPtr();
+        MarioWork* m;
 
         i = 0;
+        m = marioGetPtr();
         if ((m->flags & 0x01000000) && (*(u32*)((u8*)m + 0x2A4) & 0x100)) {
             i = 1;
         }
@@ -1157,7 +1181,11 @@ vel_apply:
         }
     }
 
+#ifdef MUST_MATCH
+    if (mario->baseSpeed != zero) {
+#else
     if (mario->baseSpeed != 0.0f) {
+#endif
         MarioWork* m = marioGetPtr();
         if (*(u32*)((u8*)m + 0x2A8) == 0xFFFFFFFF) {
             *(s32*)((u8*)m + 0x2A8) = psndSFXOn_3D((char*)0x17B, &m->position);
@@ -1173,8 +1201,14 @@ vel_apply:
 
     f28 = ((f32*)&rollData)[4];
     {
+#ifdef MUST_MATCH
+        /* Volatile read keeps the directionView load before the inlined 10.0 load, as in the original. */
+        s32 r = rollDispAngleInRange(*(volatile f32*)&mario->directionView,
+                                     toMovedir(mario->unk1A8), 90.0f);
+#else
         s32 r = rollDispAngleInRange(mario->directionView,
                                      toMovedir(mario->unk1A8), 90.0f);
+#endif
         f32 t = mario->baseSpeed * f28;
         *(f32*)((u8*)mario + 0xC4) = revise360(t * ((r == 1) ? -1.0f : 1.0f) +
                                                  *(f32*)((u8*)mario + 0xC4));
@@ -1242,7 +1276,8 @@ vel_apply:
             }
         }
     }
-    f28 = revise360(1.2f * (f30 - f28) + f28);
+    f28 = 1.2f * (f30 - f28) + f28;
+    f28 = revise360(f28);
     f30 = toMovedir(mario->unk1A8);
     if (*(s8*)((u8*)mario + 0x43) != 0) {
         f30 = revise360(180.0f + f30);
@@ -1277,17 +1312,22 @@ roll_tail:
     if ((s8)mario->wStickDir1 != 0 || (s8)mario->wStickDir2 != 0) {
         *(u32*)((u8*)mario + 0x2A4) |= 0x4000;
     }
+#ifdef MUST_MATCH
+    if (mario->baseSpeed != zero) {
+#else
     if (mario->baseSpeed != 0.0f) {
+#endif
         MarioWork* m = marioGetPtr();
         m->unk148 = 0.0f;
         m->unk150.z = 0.004f;
     }
     {
         MarioWork* m = marioGetPtr();
-        Vec a;
-        Vec b;
-        Vec c;
+        Vec tb;
         Vec d;
+        Vec c;
+        Vec b;
+        Vec a;
         f32 dist = 100.0f;
 
         a = m->position;
@@ -1317,14 +1357,11 @@ roll_tail:
                     f32 s;
 
                     sincosf(&s, &co, 90.0f);
-                    {
-                        Vec tb;
-                        a = m->position;
-                        tb = vec[8];
-                        tb.x = s;
-                        tb.z = co;
-                        b = tb;
-                    }
+                    a = m->position;
+                    tb = vec[8];
+                    tb.x = s;
+                    tb.z = co;
+                    b = tb;
                     marioHitCheckVec(&a, &b, &c, &d, &dist);
                 }
             }

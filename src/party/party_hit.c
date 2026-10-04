@@ -801,10 +801,12 @@ void partyChkGnd(PartyEntry* party) {
     }
 }
 
-#pragma opt_common_subs off // stops the x*x/z*z multiply contracting to fmadds and defers the rodata base
-// NONMATCHING (84.11%): the inline-sqrtf body matches; the scheduler run-up (lis/addi/stw
-// placement around the two loads) differs, and opt_common_subs off keeps the two fmuls and
-// defers the pooled-constant base.
+#pragma opt_common_subs off // defers the rodata base (the two double constants) into the sqrtf body like the original
+// NONMATCHING (84.11%): the inline-sqrtf body and the two fmuls/fadds shape match once the
+// multiply contraction is suppressed, but this source contracts x*x into an fmadds. Every
+// two-temp form tried that keeps the two fmuls moves the sum to f4 (f3 is reserved for the
+// angleABf argument) and the pooled 0.5 double to f3; the target also schedules the lis/addi
+// of the rodata base after the two position loads and the LR store after the muls.
 f32 partyNrmToAngle(Vec* v) {
     f32 len = sqrtf(v->x * v->x + v->z * v->z);
 

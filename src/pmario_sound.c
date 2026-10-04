@@ -4471,9 +4471,15 @@ static inline f32 psndSqrtf(f32 x) {
 // the base in r31 like the target; written in the initialiser the whole callee-saved basis
 // rotates by one (vol/span/pan/base/ps). `pan`/`angOut` are s16 with a separate s32 temp
 // (`pan2`/`angOut2`) so the compiler truncates into the target's register instead of an `mr`.
-// NONMATCHING (85.60%): rel/dist sit in f30/f31 instead of the target's f31/f30, the conversion
-// temporaries use permuted stack slots in the same 0x18..0x34 area, and the .rodata base
-// displacements (0x5410 vs 0x7558) await the rest of the unit's functions/data.
+// Needed: the original used the size optimiser for this function; without it the
+// callee-saved GPR set and the immediate materialisation differ from the target.
+#pragma optimize_for_size on
+// NONMATCHING (88.71%): `dir`/`rel`/`dist` use f30/f30/f31 instead of the target's
+// f30/f31/f30 (the allocator reuses `dir`'s register for `rel`), and the target's single
+// .rodata base register (`str_802CE198 + 0x10000`) is not produced because this unit's
+// `.rodata` is not defined yet; without it `psnd` sits in r28 instead of r27 and every
+// register past it shifts by one. The conversion temporaries also use a few permuted
+// stack slots. The logic, constants and call sequence match.
 u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 	static u8 PAN[4];
 	Vec pos;
@@ -4594,6 +4600,8 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 	PAN[2] = angOut;
 	return *(u32*)PAN;
 }
+
+#pragma optimize_for_size reset
 
 s32 searchPSSFXList(const char* name) {
 	SoundEffectEntry* entry = pssfxlist;
@@ -6750,7 +6758,7 @@ void psndSetReverb(s32 mode) {
 // NONMATCHING (88.89%): only `li r3,1` is scheduled before the `bne` instead of between `lis r5`
 // and `addi r0, r5`; the `ret` value is materialised at the right place, MWCC's ready-list order differs.
 s32 psndENV_LPF(s32 id, s32 freq) {
-s32 ret;
+	s32 ret;
 
 	if (((u16*)((u8*)&psnd + 0x18))[id & 0xF] == 0) {
 		ret = 0;
@@ -6758,16 +6766,11 @@ s32 ret;
 	else {
 		ret = 1;
 		if ((freq & 0xFFFF) == 0) {
-			goto setdef;
+			freq = 0x7D00;
 		}
-		goto stored;
-setdef:
-		freq = 0x7D00;
-stored:
 		((u16*)((u8*)&psnd + 0x20))[id & 0xF] = freq;
 	}
 	return ret;
-
 }
 
 void psndSFXOff(s32 id) {

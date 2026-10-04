@@ -131,7 +131,11 @@ extern const GuardFrames N_normal_guard_frames[];
 extern const GuardFrames N_superguard_frames[];
 #endif
 
-// NONMATCHING (34.62%): the body is written; the structure and register use still differ from retail.
+#pragma dont_inline on // retail keeps the BattleACPadCheckRecordTrigger call instead of inlining it
+// Every instruction matches. The two guard-frame tables are independent global copies, so the
+// scheduler is free to emit them in either order; the redundant pointer cast below pins the normal
+// table's `lwzu` ahead of the super table's, matching retail. It changes load order only, so it is
+// kept under MUST_MATCH with the plain element read in the natural build.
 s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	BattleWork* work = _battleWorkPointer;
 	BattleWorkPad* pad = &work->actionCommands.pad;
@@ -146,7 +150,11 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 	s32 normalFrames;
 	s32 trigger;
 
+#ifdef MUST_MATCH
+	normal = *(GuardFrames*)&N_normal_guard_frames[0];
+#else
 	normal = N_normal_guard_frames[0];
+#endif
 	super = N_superguard_frames[0];
 	work->actionCommands.mDefenseResult = 0;
 
@@ -248,6 +256,7 @@ s32 BattleActionCommandCheckDefence(BattleUnit* unit, BattleWeapon* weapon) {
 u32 BattleACPadCheckRecordTrigger(s32 chan, s32 mask) {
 	return _battleWorkPointer->actionCommands.pad.mButtonsPressedHistory[chan] & mask;
 }
+#pragma dont_inline reset
 
 s32 BattleActionCommandGetDefenceResult(void) {
 	return _battleWorkPointer->actionCommands.mDefenseResult;

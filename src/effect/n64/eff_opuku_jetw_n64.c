@@ -227,47 +227,52 @@ static inline void effOpukuJetwSetTev0b(s32 field18, s32 field1c, s32 field20, s
 // it by 2), rowPtr = &table[rowOffset] built before the two `continue` tests, ptr = &rowPtr[col] sharing
 // one col*10 with colPtr = &table[col], and the second test as `columns - 1 - col > lifetime` off the
 // cached local. With plain -O4 MWCC strength-reduces the rowPtr induction and hoists columns*10; these two
-// pragmas stop that and lift the function from 94.35% to 99.19%.
-// NONMATCHING (99.19%): every instruction is present and the loop structure matches. What is left is the
-// compiler's callee-saved GPR colouring (`.data` base r20 vs ours r18, lifetime r31 vs r29, the field
-// colours rotated) and the stack homes of the `rot`/`scale` Mtx temporaries (0x70/0xa0 swapped).
+// pragmas stop that.
+// The Mtx declarations keep `scale` before `rot` so the two temporaries land in the original's 0x70/0xa0
+// slots (the allocator places Mtx locals in reverse declaration order), the field assignments load
+// field_0x24 before the other colours as the original does, `dat_ry[(j + i) & 7]` gives the original's
+// operand order in the run-angle sum, and `for (j = 0, rowOffset = 0; ...)` gives its loop-init order.
+// The declaration order below holds the rest of the callee-saved GPR map (counter r14, cam r15, data r16,
+// counterCurrent r18, rowOffset r19, col r21, table r22, rows r23, columns r24, field20 r25, field1c r26,
+// field18 r27, field24 r28, i r29, j r30, lifetime r31).
+// NONMATCHING (99.84%): all instructions, operands and stack slots match; two callee-saved colouring pairs remain: the compiled `.data` base (r17 here, r20 original) with `threshold` (r20 here, r17 original), and the inner-body col*10 temporary/`colPtr` (r16 here, r15 original) with `ptr` (r15 here, r16 original).
 void effOpukuJetwDisp(CameraId camId, void* param) {
-    GXTexObj texObj;
-    CameraEntry* cam;
-    s32 threshold;
-    s32 counterCurrent;
-    effOpukuJetwPoint* colPtr;
     s32 counter;
-    s32 i;
-    s32 j;
-    EffectEntry* effect;
-    Mtx trans;
-    s32 lifetime;
-    Mtx rot;
-    s32 half;
-    s32 field18;
-    s32 field1c;
-    Mtx scale;
-    s32 field20;
-    effOpukuJetwData* data;
+    s32 counterCurrent;
+    s32 threshold;
+    CameraEntry* cam;
     effOpukuJetwPoint* ptr;
+    EffectEntry* effect;
+    s32 rowOffset;
+    effOpukuJetwPoint* colPtr;
+    s32 lifetime;
+    Mtx trans;
+    s32 j;
+    Mtx scale;
+    s32 i;
+    s32 field24;
+    s32 field18;
+    Mtx rot;
+    s32 field1c;
+    s32 field20;
     s32 columns;
     s32 rows;
-    s32 field24;
-    s32 col;
-    s32 rowOffset;
-    Mtx work;
+    effOpukuJetwData* data;
     effOpukuJetwPoint* table;
+    s32 half;
+    s32 col;
+    Mtx work;
+    GXTexObj texObj;
 
     effect = param;
     cam = camGetPtr(camId);
     data = effect->userdata;
     counter = data->counter;
     lifetime = data->lifetime;
+    field24 = data->field_0x24;
     field18 = data->field_0x18;
     field1c = data->field_0x1C;
     field20 = data->field_0x20;
-    field24 = data->field_0x24;
     switch (data->type) {
         case 0:
             table = (effOpukuJetwPoint*)adata;
@@ -324,8 +329,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     counterCurrent = counter;
     for (i = 0; i < half; i++) {
         col = counterCurrent % columns;
-        rowOffset = 0;
-        for (j = 0; j < rows; rowOffset += columns, j++) {
+        for (j = 0, rowOffset = 0; j < rows; rowOffset += columns, j++) {
             effOpukuJetwPoint* rowPtr = &table[rowOffset];
             if (col > threshold) {
                 continue;
@@ -338,7 +342,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             colPtr = &table[col];
             PSMTXScale(scale, (f32)colPtr->field_0x2 * float_0p01_8041f7d4, (f32)colPtr->field_0x4 * float_0p01_8041f7d4, float_1_8041f7cc);
             PSMTXConcat(trans, scale, trans);
-            PSMTXRotRad(rot, 'z', float_deg2rad_8041f7c0 * ((f32)ptr->field_0x6 + (f32)dat_ry[(i + j) & 7]));
+            PSMTXRotRad(rot, 'z', float_deg2rad_8041f7c0 * ((f32)ptr->field_0x6 + (f32)dat_ry[(j + i) & 7]));
             PSMTXConcat(trans, rot, trans);
             PSMTXConcat(work, trans, trans);
             GXLoadPosMtxImm(trans, 0);

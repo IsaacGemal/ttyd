@@ -1021,13 +1021,12 @@ extern const f32 float_3_80419ad0;
 // `clamped` variable; `end` is declared before `start` and loaded first, giving retail's f1/f3
 // split; the range delta helper multiplies `dx * scale` (the size helper's `scale * dx` is what
 // retail's reset loop uses), and the cubic `-2*a3 + 3*a2` term order matches retail's fmadds.
-// What is left: the `pose->field_0x80` indexed load folds its +4 into the index (one extra
-// `addi 0x4`), the inlined animPoseAddVecDelta/NodeDelta loops take their source in r7 where
-// retail's reset loop uses r5, the blend loops colour their source/destination registers
-// differently from retail after the buffer memcpy, and the node cubic-Hermite block schedules
-// a2/a3 and the tanfTbl loads in another order. Permuter work: no call, immediate or control-flow
-// difference remains.
-// NONMATCHING (97.71%): register allocation/scheduling only; all calls and immediates match.
+// What is left: the reset loops take their source in r7 where retail uses r5, the node
+// cubic-Hermite block schedules a2/a3 and the tanfTbl loads in another order and keeps its
+// `angle` in f3 where retail uses f2, and the two `0.0f` clamp stores rematerialise
+// `float_0_80419a48` where retail keeps it live in f0. Permuter work: no call, immediate or
+// control-flow difference remains.
+// NONMATCHING (98.53%): register allocation/scheduling only; all calls and immediates match.
 void animPoseMain(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* data = animPoseGetBaseData(pose);
@@ -1134,7 +1133,10 @@ void animPoseMain(s32 poseId) {
         }
     }
 
-    pose->field_0x80 = *(s32*)(ANIM_DATA_FRAMES2(anim) + APOSE_S(pose, 0x34) * 8 + 4);
+    {
+        s32* p = (s32*)ANIM_DATA_FRAMES2(anim);
+        pose->field_0x80 = p[APOSE_S(pose, 0x34) * 2 + 1];
+    }
 
     {
         f32 num = APOSE_F(pose, 0x24) - *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x28) * ANIM_FRAME_SIZE);
@@ -1222,21 +1224,45 @@ void animPoseMain(s32 poseId) {
         {
             u8* posSrc = ANIM_DATA_POS(anim) + ANIM_FRAME_POS_OFF(key2) * 4;
             u8* posEnd = posSrc + ANIM_FRAME_POS_COUNT(key2) * 4;
-            void* posBase = pose->mpBufferVtxPos;
+            Vec* d = vtxPos;
+            Vec* vc = pose->mpBufferVtxPos;
             if (posNum) {
-                memcpy_as4(vtxPos, posBase, posNum * 0xC);
+                memcpy_as4(d, vc, posNum * 0xC);
             }
-            animPoseAddVecDeltaRange(vtxPos, posSrc, posEnd, blend);
+            while (posSrc < posEnd) {
+                d += *posSrc;
+                {
+                    f32 dx = __OSs8tof32((s8*)posSrc + 1);
+                    f32 dy = __OSs8tof32((s8*)posSrc + 2);
+                    f32 dz = __OSs8tof32((s8*)posSrc + 3);
+                    d->x += dx * blend;
+                    d->y += dy * blend;
+                    d->z += dz * blend;
+                }
+                posSrc += 4;
+            }
         }
 
         {
             u8* nrmSrc = ANIM_DATA_NRM(anim) + ANIM_FRAME_NRM_OFF(key2) * 4;
             u8* nrmEnd = nrmSrc + ANIM_FRAME_NRM_COUNT(key2) * 4;
-            void* nrmBase = pose->mpBufferVtxNrm;
+            Vec* d = vtxNrm;
+            Vec* nc = pose->mpBufferVtxNrm;
             if (nrmNum) {
-                memcpy_as4(vtxNrm, nrmBase, nrmNum * 0xC);
+                memcpy_as4(d, nc, nrmNum * 0xC);
             }
-            animPoseAddVecDeltaRange(vtxNrm, nrmSrc, nrmEnd, blend);
+            while (nrmSrc < nrmEnd) {
+                d += *nrmSrc;
+                {
+                    f32 dx = __OSs8tof32((s8*)nrmSrc + 1);
+                    f32 dy = __OSs8tof32((s8*)nrmSrc + 2);
+                    f32 dz = __OSs8tof32((s8*)nrmSrc + 3);
+                    d->x += dx * blend;
+                    d->y += dy * blend;
+                    d->z += dz * blend;
+                }
+                nrmSrc += 4;
+            }
         }
 
         {
@@ -1259,7 +1285,8 @@ void animPoseMain(s32 poseId) {
                     if (t1 < 0x59 && t1 > -0x59) {
                         f32 step = float_0p0625_80419acc * __OSs8tof32((s8*)src + 1);
                         f32 tan0 = tanfTbl[(s8)src[2] + 0x59];
-                        f32 tan1 = tanfTbl[t1 + 0x59];
+                        s32 i1 = t1 + 0x59;
+                        f32 tan1 = tanfTbl[i1];
                         *dst += (float_neg2_80419ab8 * a3 + float_3_80419ad0 * a2) * step
                               + (a3 - float_2_80419a84 * a2 + alpha) * (timedelta * tan0)
                               + (a3 - a2) * (timedelta * tan1);

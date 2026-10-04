@@ -44,4 +44,4 @@ void nameMaskGX(f32 alpha);
 void nameKirinukiGX(f32 x, f32 y, f32 z, f32 w);
 void nameBG(void);
 void nameEntDisp(CameraId cameraId, void* param);
-void nameMain(void);
+s32 nameMain(void);
