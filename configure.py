@@ -1496,7 +1496,7 @@ config.libs = [
             Object(Matching, "event/evt_keijiban.c"),
             Object(Matching, "unit/unit_lecture_christine.c"),
             Object(Matching, "gor.c"),
-            Object(NonMatching, "gor_00.c"),
+            Object(Matching, "gor_00.c"),
             Object(Matching, "gor_01.c"),
             Object(Matching, "gor_02.c"),
             Object(NonMatching, "gor_03.c"),

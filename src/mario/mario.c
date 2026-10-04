@@ -432,12 +432,10 @@ static inline BOOL marioChkMenuYoshi(void) {
 	return FALSE;
 }
 
-// The two ctrl guards and the yoshi/seq/key block match (BOOL notCtrl = !ctrl; plus opt_dead_assignments
-// off keeps their cntlzw/srwi materialisation). The second ctrl guard's `return TRUE` has to be nested as
-// `if (!notCtrl2) { ...key check... } return TRUE;` so the compiler shares the TRUE block; the flat form
-// is one instruction off. Remaining: the final !marioChkKey() at both sites (a cntlzw/srwi. + branch our
-// compile folds into srwi r3); every source form that forces that materialisation hangs mwcceppc.
-// NONMATCHING (94.85%): the final !marioChkKey() materialisation at both key-check sites differs.
+// opt_dead_assignments off: keeps the two ctrl guards' `!ctrl` materialised as
+// cntlzw/srwi (without it MWCC folds them into the extsb condition and the guards
+// shrink to a single compare).
+#pragma opt_dead_assignments off
 BOOL marioCheckMenuDisable(void) {
 	MarioWork* wp = mp;
 
@@ -451,13 +449,31 @@ BOOL marioCheckMenuDisable(void) {
 		BOOL ctrl2 = marioChkCtrl();
 		BOOL notCtrl2 = !ctrl2;
 
+#ifdef MUST_MATCH
+		// The target emits `beq <FALSE>` after the key's notKey materialisation and
+		// lets the shared TRUE block fall through right after it (the ctrl guard's
+		// `bne` targets that same block). A plain `if`/`return` makes MWCC fall
+		// through the local FALSE and branch to TRUE (`bne <TRUE>`) instead, with
+		// the TRUE block below FALSE. The gotos pin the target's order.
+		if (!notCtrl2) {
+			BOOL notKey = !marioChkKey();
+			if (!notKey) {
+				goto yuu_false;
+			}
+			goto yuu_true;
+		}
+yuu_true:
+		return TRUE;
+yuu_false:
+		return FALSE;
+#else
 		if (!notCtrl2) {
 			if (marioChkKey()) {
 				return FALSE;
 			}
-			return TRUE;
 		}
 		return TRUE;
+#endif
 	}
 	if (wp->characterId == 1) {
 		return TRUE;
@@ -492,11 +508,27 @@ BOOL marioCheckMenuDisable(void) {
 	if (marioChkMenuYoshi()) {
 		return FALSE;
 	}
+#ifdef MUST_MATCH
+	// The target materialises !marioChkKey() (cntlzw/srwi.) and branches
+	// `beq <FALSE>` with the TRUE block inlined after it; a plain
+	// `if (marioChkKey()) return FALSE; return TRUE;` folds to `srwi r3`.
+	// The comma assignment and the empty then keep the materialised compare.
+	{
+		BOOL notKey;
+		if (notKey = !marioChkKey(), !notKey) {
+		} else {
+			return TRUE;
+		}
+	}
+	return FALSE;
+#else
 	if (marioChkKey()) {
 		return FALSE;
 	}
 	return TRUE;
+#endif
 }
+#pragma opt_dead_assignments reset
 
 BOOL marioChkKey(void) {
 	PartyEntry* party = partyGetPtr(marioGetPartyId());

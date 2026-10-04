@@ -886,16 +886,16 @@ static inline char* L_ridePose1b(PartyEntry* party, s32 index) {
     party->field_8 |= 0x2000;
     return pose;
 }
-// NONMATCHING (97.06%): calls, immediates and code shape all match. What still differs is the
+// NONMATCHING (97.13%): calls, immediates and code shape all match. What still differs is the
 // int->float magic double (the target reads it as `lfd fN, 0x1d0(r31)`; our object pools an
 // anonymous `@NNN` copy with `lis`/`addi`, a documented project-wide limitation whose extra
-// GPR shifts every i2f site's allocation), some FPR colouring rotations (case 1's rotation/
-// 30.0f block, the case-11/111 pose value in r28 instead of r30), and the switch's left
-// subtree (our `case 99:` is an explicit leaf, the target's is the 100/101 range bound).
+// GPR shifts every i2f site's allocation), some FPR colouring rotations (the case-11/111 pose
+// value in r28 instead of r30), and the switch's left subtree (our `case 99:` is an explicit
+// leaf, the target's is the 100/101 range bound).
 // Raw offsets used: 0x24 frame counter, 0x38 ride mode, 0x80 scale, 0x94 ride target Vec, 0x124
 // rotation speed, 0x128 distance, 0x174 jump accel, 0xF0 vertical assist. Player fields
 // 0x1AC/0x1B8 are read via the file's PF32 macro.
-// NONMATCHING (97.06%): the int->float literal pool and a few FPR colours still differ.
+// NONMATCHING (97.13%): the int->float literal pool and a few FPR colours still differ.
 void partyRideMain(PartyEntry* party) {
     MarioWork* player = party->playerPtr;
     const u8* base = (const u8*)vec3_802ccd30;
@@ -936,9 +936,12 @@ void partyRideMain(PartyEntry* party) {
             party->position.y = party->position.y + party->jumpPara1;
             movePos(&party->position.x, &party->position.z, party->speed, party->dir);
             party->field_10C = revise360(party->field_10C + PF32(party, 0x124));
-            PF32(party, 0x124) = float_2_8041b0e4 + PF32(party, 0x124);
-            if (PF32(party, 0x124) >= float_30_8041b178) {
-                PF32(party, 0x124) = float_30_8041b178;
+            PF32(party, 0x124) = PF32(party, 0x124) + float_2_8041b0e4;
+            {
+                f32 cap = 30.0f;
+                if (PF32(party, 0x124) >= cap) {
+                    PF32(party, 0x124) = cap;
+                }
             }
             scale = (f32)PS32(party, 0x24);
             if (scale > float_10_8041b124) {

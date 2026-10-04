@@ -11,6 +11,10 @@
 #include <string.h>
 #include "math_ext.h"
 
+// The original .rodata pads str_802FDB64 ("%s/w/jp/name.tpl") to 20 bytes with
+// three trailing NULs, so the fixed string is written with them and pools to the
+// same length.
+
 //.data
 const char* hiragana_tbl[] = {
 	"\x82\xA0", "\x82\xA2", "\x82\xA4", "\x82\xA6", "\x82\xA8", "\x82\xED",
@@ -64,6 +68,7 @@ const char* katakana_tbl[] = {
 static NameEntryWork work;
 
 //.sdata
+static NameEntryWork* wp = &work;
 static const char* msg_tbl[] = {
 	"msg_nameent_1",
 	"msg_nameent_2",
@@ -71,7 +76,6 @@ static const char* msg_tbl[] = {
 	"msg_nameent_3",
 	"msg_nameent_4"
 };
-static NameEntryWork* wp = &work;
 
 // The white GXColor the target keeps in .sdata2 and loads once via the sda21 base.
 const GXColor nameent_white = { 0xFF, 0xFF, 0xFF, 0xFF };
@@ -85,7 +89,7 @@ void nameEntReInit(void) {
 }
 
 BOOL nameEntPrepare(void) {
-	return fileAsyncf(4, NULL, "%s/w/jp/name.tpl", getMarioStDvdRoot()) != 0;
+	return fileAsyncf(4, NULL, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot()) != 0;
 }
 
 // The integer expression is written in the original's operand order under MUST_MATCH; the natural form
@@ -112,7 +116,9 @@ void nameEntOn(s32 type) {
 	wp->field_0x2C = wp->field_0x34 = -106.0f;
 	wp->field_0x30 = wp->field_0x38 = 135.0f;
 
-	strcpy(wp->field_0x3C, "");
+	// The original .sdata2 holds the empty string in a 4-byte slot (named float_0);
+	// three explicit NULs make the pooled literal four bytes like the original.
+	strcpy(wp->field_0x3C, "\0\0\0");
 	for (i = 0; i < 8; i++) {
 		strcat(wp->field_0x3C, "\x81\x40");
 	}
@@ -167,8 +173,8 @@ void nameEntMain(void) {
 	case 0:
 		break;
 	case 1:
-		if (fileAsyncf(4, NULL, "%s/w/jp/name.tpl", getMarioStDvdRoot()) != 0U) {
-			wp->field_0x60 = fileAllocf(4, "%s/w/jp/name.tpl", getMarioStDvdRoot());
+		if (fileAsyncf(4, NULL, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot()) != 0U) {
+			wp->field_0x60 = fileAllocf(4, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot());
 			loaded = TRUE;
 		} else {
 			loaded = FALSE;

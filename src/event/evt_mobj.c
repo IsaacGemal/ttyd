@@ -36,7 +36,38 @@
 #include "driver/swdrv.h"
 #include "statuswindow.h"
 #include "evt/evt_img.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_memcard.h"
+#include "evt/evt_sub.h"
+#include "evt/evt_map.h"
+#include "party/party_motion.h"
 #include <dolphin/mtx.h>
+
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const char str_802C3DE0[];
+extern const char str_802C3DF8[];
+extern const char str_802C3E68[];
+extern const char str_802C3E7C[];
+extern const char str_802C3E98[];
+extern const char str_802C3EAC[];
+extern const char str_802C4218[];
+extern const char str_802C4388[];
+extern const char str_802C4390[];
+extern const char str_802C43A0[];
+extern const char str_802C43DC[];
+extern const char str_802C43EC[];
+extern const char str_802C43FC[];
+extern const char str_802C4410[];
+extern const char str_802C44E0[];
+extern const char str_802C44F8[];
+extern const char str_802C4514[];
+extern const char str_802C4530[];
+extern const char str_802C454C[];
+extern const char str_802C474C[];
+extern const char str_802C475C[];
 
 // Prototypes for functions in other, not-yet-decompiled units (koopa / hit / etc.)
 
@@ -110,6 +141,11 @@ typedef struct PoleWork {
 } PoleWork;
 
 PoleWork* psw;
+
+// trailing zero word after psw in the unit's .sbss (declared first: MWCC lays .sbss out last-declared-first)
+#pragma force_active on
+u32 gap_08_80418714_sbss;
+#pragma force_active reset
 
 // Anchor for the .data addresses below (kpa_pole and friends live at fixed offsets past it).
 #ifdef MUST_MATCH
@@ -1416,7 +1452,7 @@ s32 evt_mobj_lock_unlock(EventEntry* event, BOOL isFirstCall) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);
     MapObjectEntry* obj = mobjNameToPtr(name);
 
-    if (strcmp(obj->animName, "MOBJ_Lock") != 0) {
+    if (strcmp(obj->animName, str_802C44E0) != 0) {
         return 2;
     }
     if (obj->unk1D0 == NULL) {
@@ -1552,17 +1588,17 @@ s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
 #ifdef MUST_MATCH
     switch (type) {
         case 0:
-            asyncName = "MOBJ_RedSwitch";
+            asyncName = str_802C474C;
             break;
         case 1:
         default:
-            asyncName = "MOBJ_WhiteSwitch";
+            asyncName = str_802C475C;
             break;
     }
 #else
-    asyncName = "MOBJ_WhiteSwitch";
+    asyncName = str_802C475C;
     if (type == 0) {
-        asyncName = "MOBJ_RedSwitch";
+        asyncName = str_802C474C;
     }
 #endif
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
@@ -1661,6 +1697,16 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+// .rodata (part A)
+#pragma force_active on
+// vec3_802c3dc8: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec gap_vec3_802c3dc8_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+// vec3_802c3dd4: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec gap_vec3_802c3dd4_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+const char str_802C3DE0[0x18] = "MOBJ_BlueTimerSwitch";
+const char str_802C3DF8[0x14] = "MOBJ_RedTimerSwitch";
+#pragma force_active reset
+
 s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -1677,7 +1723,7 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
     const char* asyncName;
 
     {
-        const char* jumptable[2] = {"MOBJ_BlueTimerSwitch", "MOBJ_RedTimerSwitch"};
+        const char* jumptable[2] = {str_802C3DE0, str_802C3DF8};
         asyncName = jumptable[type];
     }
     names[0] = (const char*)evtGetValue(event, args[1]);
@@ -1717,7 +1763,6 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-extern u8 evt_cam_shake[];
 static u32 evt_shake[] = {
     0x0005005B, (u32)evt_cam_shake, 0x00000004, 0xF24A7A80,
     0xF24A7A8A, 0x000000C8, 0x00000002, 0x00000001,
@@ -1780,7 +1825,7 @@ s32 mobj_timerswitch(MapObjectEntry* obj) {
                     break;
                 }
                 mobjRunEvent(obj, obj->unk1D4);
-                if (strcmp(obj->animName, "MOBJ_RedTimerSwitch") == 0) {
+                if (strcmp(obj->animName, str_802C3DF8) == 0) {
                     obj->flags &= ~8;
                     child->flags &= ~8;
                     animPoseSetAnim(obj->poseId, "S_1", 1);
@@ -2468,6 +2513,19 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+// .rodata (part B)
+#pragma force_active on
+__declspec(section ".rodata") Vec vec3_802c3e14[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e20[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e2c[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e38[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e44[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e50[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e5c[1] = {{0.0f, 0.0f, 0.0f}};
+const char str_802C3E68[0x14] = "MOBJ_RedJumpStand";
+const char str_802C3E7C[0x14] = "MOBJ_RedJumpStand2";
+#pragma force_active reset
+
 s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
     const char* asyncName;
@@ -2483,7 +2541,7 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     s32 inBattle;
     inBattle = gp->inBattle != 0;
     {
-        const char* jumptable[2] = {"MOBJ_BlueJumpStand", "MOBJ_BlueJumpStand2"};
+        const char* jumptable[2] = {str_802C3E98, str_802C3EAC};
 #ifdef MUST_MATCH
         // match-only: the byte-offset indexing reproduces retail's gp-before-slwi schedule
         asyncName = *(const char**)((u8*)jumptable + (type << 2));
@@ -2519,7 +2577,7 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
                     marioChgJumpStandMotion(*(f32*)((u8*)obj + 0x1AC));
                 }
                 if (mario->characterId != 2) {
-                    if (strcmp(obj->animName, "MOBJ_BlueJumpStand") == 0) {
+                    if (strcmp(obj->animName, str_802C3E98) == 0) {
                         psndSFXOn_3D((const char*)0x1eb, &obj->position);
                     } else {
                         psndSFXOn_3D((const char*)0x1ec, &obj->position);
@@ -2541,7 +2599,7 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
                             psndSFXOn_3D((const char*)0xaf, &obj->position);
                             break;
                     }
-                } else if (strcmp(obj->animName, "MOBJ_BlueJumpStand") == 0) {
+                } else if (strcmp(obj->animName, str_802C3E98) == 0) {
                     psndSFXOn((const char*)0x1eb);
                 } else {
                     psndSFXOn((const char*)0x1ec);
@@ -2568,6 +2626,12 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
     return 0;
 }
 
+// .rodata (part C)
+#pragma force_active on
+const char str_802C3E98[0x14] = "MOBJ_BlueJumpStand";
+const char str_802C3EAC[0x14] = "MOBJ_BlueJumpStand2";
+#pragma force_active reset
+
 s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
     const char* asyncName;
@@ -2582,7 +2646,7 @@ s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
     s32 inBattle;
     inBattle = gp->inBattle != 0;
     {
-        const char* jumptable[2] = {"MOBJ_RedJumpStand", "MOBJ_RedJumpStand2"};
+        const char* jumptable[2] = {str_802C3E68, str_802C3E7C};
 #ifdef MUST_MATCH
         // match-only: the byte-offset indexing reproduces retail's gp-before-slwi schedule
         asyncName = *(const char**)((u8*)jumptable + (type << 2));
@@ -2629,7 +2693,7 @@ s32 mobj_jumpstand_red(MapObjectEntry* obj) {
                     evt->lwData[0] = flag;
                 }
                 if (mario->characterId != 2) {
-                    if (strcmp(obj->animName, "MOBJ_RedJumpStand") == 0) {
+                    if (strcmp(obj->animName, str_802C3E68) == 0) {
                         psndSFXOn_3D((const char*)0x1eb, &obj->position);
                     } else {
                         psndSFXOn_3D((const char*)0x1ec, &obj->position);
@@ -2651,7 +2715,7 @@ s32 mobj_jumpstand_red(MapObjectEntry* obj) {
                             psndSFXOn_3D((const char*)0xaf, &obj->position);
                             break;
                     }
-                } else if (strcmp(obj->animName, "MOBJ_RedJumpStand") == 0) {
+                } else if (strcmp(obj->animName, str_802C3E68) == 0) {
                     psndSFXOn((const char*)0x1eb);
                 } else {
                     psndSFXOn((const char*)0x1ec);
@@ -2837,10 +2901,10 @@ s32 evt_mobj_koopa_blk(EventEntry* event, BOOL isFirstCall) {
     s32 unk1E4 = args[6];
     MapObjectEntry* obj;
 
-    if (!animGroupBaseAsync("MOBJ_Block", gp->inBattle != 0, NULL)) {
+    if (!animGroupBaseAsync(str_802C4218, gp->inBattle != 0, NULL)) {
         return 0;
     }
-    mobjEntry(name, "MOBJ_Block");
+    mobjEntry(name, str_802C4218);
     obj = mobjNameToPtr(name);
     mobjSetPosition(name, f31, f30, f29);
     obj->unk1D0 = mobj_koopa_blk;
@@ -2913,7 +2977,7 @@ s32 evt_mobj_powerupblk(EventEntry* event, BOOL isFirstCall) {
     s32 unk1D4 = evtGetValue(event, args[4]);
     s32 unk1E4 = args[5];
     f32 f31 = evtGetFloat(event, args[6]);
-    const char* asyncName = "MOBJ_PowerUpBlock";
+    const char* asyncName = str_802C43A0;
     MapObjectEntry* obj;
 
     if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
@@ -2948,7 +3012,7 @@ s32 evt_mobj_save_blk(EventEntry* event, BOOL isFirstCall) {
     f32 f29 = evtGetFloat(event, args[3]);
     s32 unk1D4 = evtGetValue(event, args[4]);
     s32 unk1E4 = args[5];
-    const char* asyncName = "MOBJ_SaveBlock";
+    const char* asyncName = str_802C43EC;
     MapObjectEntry* obj;
     BOOL inBattle = gp->inBattle != 0;
 
@@ -3111,7 +3175,7 @@ s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
 
     inBattle = gp->inBattle != 0;
-    asyncName = (var != 0) ? "MOBJ_BadgeBlock" : "MOBJ_HatenaBlock";
+    asyncName = (var != 0) ? str_802C43DC : str_802C423C;
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
@@ -3130,7 +3194,7 @@ s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
     if (evtGetValue(event, unk1E4) != 0) {
         obj->unk1DC = 0x5a;
         animPoseSetAnim(obj->poseId, "S_2", 1);
-        strcpy(obj->animName, (var != 0) ? "MOBJ_PinkBlock" : "MOBJ_Block");
+        strcpy(obj->animName, (var != 0) ? str_802C4390 : str_802C4218);
     }
     return 2;
 }
@@ -3161,7 +3225,7 @@ s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
-    if (!animGroupBaseAsync("P_box_y", inBattle, NULL)) {
+    if (!animGroupBaseAsync(str_802C4388, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -3335,7 +3399,7 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
     s32 unk1E4 = args[8];
     BOOL inBattle = gp->inBattle != 0;
     MapObjectEntry* obj;
-    const char* asyncName = "MOBJ_Lock";
+    const char* asyncName = str_802C44E0;
 
     if (evtGetValue(event, unk1E4) != 0) {
         return 2;
@@ -3549,7 +3613,7 @@ s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     evtGetValue(event, args[5]);
     unk1E4 = args[6];
     inBattle = gp->inBattle != 0;
-    asyncName = (type == 0) ? "MOBJ_RecoveryBlock" : "MOBJ_CoinTakenRecoveryBlock";
+    asyncName = (type == 0) ? str_802C43FC : str_802C4410;
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
@@ -4364,7 +4428,7 @@ s32 mobj_10countblk(MapObjectEntry* obj) {
             if (obj->flags & 8) {
                 if (obj->flags & 0x800) {
                     obj->flags &= ~0x800;
-                    strcpy(obj->animName, "MOBJ_Block");
+                    strcpy(obj->animName, str_802C4218);
                 }
                 animPoseSetAnim(obj->poseId, "A_1", 1);
                 psndSFXOn_3D((const char*)0x1BE, &obj->position);
@@ -4388,7 +4452,7 @@ s32 mobj_10countblk(MapObjectEntry* obj) {
             if (*(s32*)((u8*)obj + 0x1B0) <= 0) {
                 obj->unk1DC = 0x5a;
                 animPoseSetAnim(obj->poseId, "S_2", 1);
-                strcpy(obj->animName, "MOBJ_Block");
+                strcpy(obj->animName, str_802C4218);
             } else if (obj->flags & 8) {
                 psndSFXOn_3D((const char*)0x1BF, &obj->position);
                 pouchAddCoin(1);
@@ -4479,7 +4543,7 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
             animPoseSetAnim(obj->poseId, "S_2", 1);
             obj->flags &= ~8;
             obj->unk1DC = 0x5a;
-            strcpy(obj->animName, "MOBJ_Block");
+            strcpy(obj->animName, str_802C4218);
             break;
         case 0x5a:
             if (obj->flags & 8) {
@@ -4852,19 +4916,19 @@ s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
 
     switch (type) {
         case 0:
-            asyncName = "MOBJ_green_FlowBlockSwitch";
+            asyncName = str_802C44F8;
             break;
         case 1:
-            asyncName = "MOBJ_purple_FlowBlockSwitch";
+            asyncName = str_802C4514;
             break;
         case 2:
-            asyncName = "MOBJ_orange_FlowBlockSwitch";
+            asyncName = str_802C4530;
             break;
         case 3:
-            asyncName = "MOBJ_red_FlowBlockSwitch";
+            asyncName = str_802C454C;
             break;
         default:
-            asyncName = "MOBJ_green_FlowBlockSwitch";
+            asyncName = str_802C44F8;
             break;
     }
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
@@ -4973,3 +5037,361 @@ __declspec(section ".sdata2") f32 float_0p9_8041a228 = 0.9f;
 const f32 float_15_8041a22c = 15.0f;
 const f32 float_0p3_8041a230 = 0.3f;
 __declspec(section ".sdata2") const char str_8041A234[4] = "me\000";
+
+// .sdata
+const char* _switch_anim[6] = {
+    str_8041A118, str_8041A11C, str_8041A120, str_8041A124, str_8041A128, str_8041A12C,
+};
+s32 kpa_powerup_evt[7] = {
+    0x0004005B, (s32)kpa_powerup, 0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000002, 0x00000001,
+};
+s32 evt_fire[8] = {
+    0x0005005B, (s32)fire_func, 0xFE363C80, 0xFE363C81, 0xFE363C82, 0xFE363C83, 0x00000002, 0x00000001,
+};
+// trailing zero word that ends the unit's .sdata: needs explicit_zero_data to be emitted and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_80410304_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+
+// .rodata (part D)
+#pragma force_active on
+const char str_802C3EC8[0x10] = "o_";
+const char str_802C3ED8[0x10] = "i_";
+__declspec(section ".rodata") Vec vec3_802c3ee8[1] = {{0.0f, -2000.0f, 0.0f}};
+// vec3_802c3ef4: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec gap_vec3_802c3ef4_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") char str_802C3F00[0x18] = "SFX_MOBJ_LOCK_SWING1";
+__declspec(section ".rodata") char str_802C3F18[0x14] = "SFX_MOBJ_UNLOCK1";
+__declspec(section ".rodata") char str_802C3F2C[0x20] = "SFX_MOBJ_TREASURE_BOX_SWING1";
+__declspec(section ".rodata") char str_802C3F4C[0x1C] = "SFX_MOBJ_TREASURE_BOX_OPEN1";
+__declspec(section ".rodata") char str_802C3F68[0x20] = "SFX_MOBJ_TREASURE_BOX_SWING2";
+__declspec(section ".rodata") char str_802C3F88[0x1C] = "SFX_MOBJ_TREASURE_BOX_OPEN2";
+__declspec(section ".rodata") char str_802C3FA4[0x1C] = "SFX_MOBJ_BLACKBOX_SWING1";
+__declspec(section ".rodata") char str_802C3FC0[0x18] = "SFX_MOBJ_BLACKBOX_OPEN1";
+__declspec(section ".rodata") Vec vec3_802c3fd8[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3fe4[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") char str_802C3FF0[0x10] = "save_first_hit";
+const char str_802C4000[0x10] = "o_";
+const char str_802C4010[0x10] = "i_";
+__declspec(section ".rodata") Vec vec3_802c4020[1] = {{0.0f, -2000.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c402c[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c4038[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c4044[1] = {{0.0f, 0.0f, -1.0f}};
+// vec3_802c4050: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec gap_vec3_802c4050_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+// vec3_802c405c: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec gap_vec3_802c405c_rodata[1] = {{200.0f, 0.0f, 200.0f}};
+__declspec(section ".rodata") Vec vec3_802c4068[1] = {{0.0f, 0.0f, 0.0f}};
+const char str_802C4074[0x10] = "o_";
+const char str_802C4084[0x10] = "i_";
+__declspec(section ".rodata") Vec vec3_802c4094[1] = {{0.0f, -2000.0f, 0.0f}};
+// vec3_802c40a0: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec gap_vec3_802c40a0_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+// vec3_802c40ac: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec gap_vec3_802c40ac_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+// vec3_802c40b8: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec gap_vec3_802c40b8_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+// vec3_802c40c4: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec gap_vec3_802c40c4_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c40d0[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") char str_802C40DC[0xC] = "KPA2_G_1";
+__declspec(section ".rodata") char str_802C40E8[0x18] = "SFX_KUPPA_POST_JUMP1";
+__declspec(section ".rodata") char str_802C4100[0x18] = "SFX_KUPPA_POST_SLIDE1";
+__declspec(section ".rodata") char str_802C4118[0x18] = "SFX_KUPPA_POST_THROW1";
+__declspec(section ".rodata") char str_802C4130[0x8] = "kpa_06";
+__declspec(section ".rodata") char str_802C4138[0x8] = "toride";
+__declspec(section ".rodata") char str_802C4140[0x8] = "toride_";
+__declspec(section ".rodata") char str_802C4148[0x14] = "SFX_KUPPA_STRUGGLE1";
+__declspec(section ".rodata") char str_802C415C[0xC] = "KPA2_S_1";
+__declspec(section ".rodata") Vec vec3_802c4168[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c4174[1] = {{0.0f, 0.0f, 0.0f}};
+const char str_802C4180[0x10] = "MOBJ_goal_pole";
+const char str_802C4190[0x10] = "MOBJ_goal_hata";
+const char str_802C41A0[0x10] = "MOBJ_fire_dodai";
+const char str_802C41B0[0xC] = "c_fireber";
+const char str_802C41BC[0x8] = "FRB_S_1";
+// double_to_int_802c41c8: compiler int->float conversion constant, emitted at the first conversion
+const char str_802C41D0[0xC] = "MOBJ_sango";
+const char str_802C41DC[0x14] = "MOBJ_GreenPipe_ks";
+const char str_802C41F0[0x14] = "MOBJ_GreenPipe_kl";
+const char str_802C4204[0x14] = "MOBJ_GreenPipe_ky";
+const char str_802C4218[0xC] = "MOBJ_Block";
+const char str_802C4224[0x18] = "MOBJ_HiddenHatenaBlock";
+const char str_802C423C[0x14] = "MOBJ_HatenaBlock";
+const char str_802C4250[0x14] = "MOBJ_FlowBrickBlock";
+const char str_802C4264[0x10] = "MOBJ_block_ky";
+const char str_802C4274[0x14] = "MOBJ_bigblock_01";
+const char str_802C4288[0x14] = "MOBJ_bigblock_02";
+const char str_802C429C[0x10] = "MOBJ_BombRock";
+const char str_802C42AC[0xC] = "OFF_d_bom";
+const char str_802C42B8[0xC] = "MOBJ_trap";
+const char str_802C42C4[0x14] = "MOBJ_KururinFloor";
+const f64 double_0p21817_802c42d8 = 0.21816615760326385;
+// double_to_int_mask_802c42e0: compiler int->float conversion constant, emitted at the first conversion
+const char str_802C42E8[0x14] = "MOBJ_BreakingFloor";
+const char str_802C42FC[0x18] = "MOBJ_BlackBreakingFloor";
+const char str_802C4314[0x18] = "MOBJ_BrickHatenaBlock";
+const char str_802C432C[0x18] = "MOBJ_BrickBadgeBlock";
+const char str_802C4344[0x14] = "MOBJ_10CountBlock";
+const char str_802C4358[0x18] = "MOBJ_HiddenBadgeBlock";
+const char str_802C4370[0x18] = "MOBJ_Hidden10CountBlock";
+const char str_802C4388[0x8] = "P_box_y";
+const char str_802C4390[0x10] = "MOBJ_PinkBlock";
+const char str_802C43A0[0x14] = "MOBJ_PowerUpBlock";
+const char str_802C43B4[0x8] = "dou_02";
+const char str_802C43BC[0x8] = "dou_05";
+const char str_802C43C4[0x8] = "dou_10";
+const char str_802C43CC[0x8] = "pwrblk1";
+const char str_802C43D4[0x8] = "pwrblk2";
+const char str_802C43DC[0x10] = "MOBJ_BadgeBlock";
+const char str_802C43EC[0x10] = "MOBJ_SaveBlock";
+const char str_802C43FC[0x14] = "MOBJ_RecoveryBlock";
+const char str_802C4410[0x1C] = "MOBJ_CoinTakenRecoveryBlock";
+const char str_802C442C[0xC] = "sys_no_coin";
+const char str_802C4438[0x14] = "kaifuku_first_hit";
+const char str_802C444C[0xC] = "MOBJ_Arrow";
+const char str_802C4458[0x10] = "MOBJ_Signboard";
+const char str_802C4468[0x14] = "MOBJ_TreasureBox";
+const char str_802C447C[0x14] = "MOBJ_BigTreasureBox";
+const char str_802C4490[0x18] = "MOBJ_GrayTreasureBox";
+const char str_802C44A8[0x18] = "MOBJ_BlackTreasureBox";
+const char str_802C44C0[0x18] = "MOBJ_GoldenTreasureBox";
+const f64 double_0p2_802c44d8 = 0.20000000298023224;
+const char str_802C44E0[0xC] = "MOBJ_Lock";
+const char str_802C44EC[0xC] = "sys_no_key";
+const char str_802C44F8[0x1C] = "MOBJ_green_FlowBlockSwitch";
+const char str_802C4514[0x1C] = "MOBJ_purple_FlowBlockSwitch";
+const char str_802C4530[0x1C] = "MOBJ_orange_FlowBlockSwitch";
+const char str_802C454C[0x1C] = "MOBJ_red_FlowBlockSwitch";
+const char str_802C4568[0x18] = "MOBJ_green_FlowBlock";
+const char str_802C4580[0x1C] = "MOBJ_green_big_FlowBlock";
+const char str_802C459C[0x1C] = "MOBJ_green_big02_FlowBlock";
+const char str_802C45B8[0x18] = "MOBJ_purple_FlowBlock";
+const char str_802C45D0[0x1C] = "MOBJ_purple_big_FlowBlock";
+const char str_802C45EC[0x1C] = "MOBJ_purple_big02_FlowBlock";
+const char str_802C4608[0x18] = "MOBJ_orange_FlowBlock";
+const char str_802C4620[0x1C] = "MOBJ_orange_big_FlowBlock";
+const char str_802C463C[0x1C] = "MOBJ_orange_big02_FlowBlock";
+const char str_802C4658[0x1C] = "MOBJ_red_big02_FlowBlock";
+const char str_802C4674[0x10] = "MOBJ_Lv1Block";
+const char str_802C4684[0x14] = "MOBJ_Lv1BigBlock";
+const char str_802C4698[0x14] = "MOBJ_Lv1BigBigBlock";
+const char str_802C46AC[0x10] = "MOBJ_Lv2Block";
+const char str_802C46BC[0x14] = "MOBJ_Lv2BigBlock";
+const char str_802C46D0[0x14] = "MOBJ_Lv2BigBigBlock";
+const char str_802C46E4[0x14] = "MOBJ_RideSwitchC";
+const char str_802C46F8[0x14] = "MOBJ_RideSwitchB";
+const char str_802C470C[0x14] = "MOBJ_RideSwitchA";
+const char str_802C4720[0x18] = "MOBJ_RedTornadoSwitch";
+const char str_802C4738[0x14] = "MOBJ_RedSwitchBlock";
+const char str_802C474C[0x10] = "MOBJ_RedSwitch";
+const char str_802C475C[0x14] = "MOBJ_WhiteSwitch";
+const char str_802C4770[0x18] = "MOBJ_BlueTornadoSwitch";
+const char str_802C4788[0x18] = "MOBJ_BlueSwitchBlock";
+const char str_802C47A0[0x10] = "MOBJ_BlueSwitch";
+const char str_802C47B0[0x14] = "MOBJ_BlackSwitch";
+const char str_802C47C4[0x10] = "HOBJ_BlueSwitch";
+#pragma force_active reset
+
+// .data
+#pragma force_active on
+__declspec(section ".data") f32 lbl_80309CF0[2] = {-1.0f, 1.0f};
+__declspec(section ".data") static f32 one_negone_373[2] = {1.0f, -1.0f};
+__declspec(section ".data") f32 lbl_80309D00[2] = {1.0f, -1.0f};
+__declspec(section ".data") static f32 negone_one_360[2] = {-1.0f, 1.0f};
+__declspec(section ".data") f32 lbl_80309D10[2] = {-1.0f, 1.0f};
+__declspec(section ".data") static f32 one_negone_359[2] = {1.0f, -1.0f};
+__declspec(section ".data") f32 lbl_80309D20[2] = {1.0f, -1.0f};
+s32 evt_lock_sound[20] = {
+    0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)str_802C3F00, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00000000, 0x0001000A, 0x000000C8, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)str_802C3F18, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x00000000, 0x00000002, 0x00000001,
+};
+s32 evt_box_sound1[20] = {
+    0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)str_802C3F2C, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00000000, 0x0001000A, 0x000000C8, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)str_802C3F4C, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x00000000, 0x00000002, 0x00000001,
+};
+s32 evt_box_sound2[20] = {
+    0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)str_802C3F68, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00000000, 0x0001000A, 0x000000C8, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)str_802C3F88, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x00000000, 0x00000002, 0x00000001,
+};
+s32 evt_box_sound3[23] = {
+    0x0001000A, 0x00000064, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)str_802C3FA4, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0xFE363C8F, 0x0001000A, 0x000000C8, 0x0002005B,
+    (s32)evt_snd_sfxoff, 0xFE363C8F, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)str_802C3FC0, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00000000, 0x00000002, 0x00000001,
+};
+s32 mobj_save_blk_sysevt[41] = {
+    0x00010063, 0x00000000, 0x0002005B, (s32)evt_mario_key_onoff,
+    0x00000000, 0x00020032, 0xFBD3E28A, 0x00000000,
+    0x00020018, 0xF8405C69, 0x00000000, 0x00020032,
+    0xF8405C69, 0x00000001, 0x0005005B, (s32)evt_msg_print,
+    0x00000000, (s32)str_802C3FF0, 0x00000000, 0x00000000,
+    0x00020032, 0xFBD3E28A, 0x00000001, 0x00000021,
+    0x0002001D, 0xF5DE0180, 0x00000007, 0x00020032,
+    0xF8405C6C, 0x00000001, 0x00000021, 0x00020032,
+    0xFE363C80, 0x00000000, 0x0001005E, (s32)evt_memcard_save,
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000001, 0x00000002,
+    0x00000001,
+};
+s32 kpa_pole[280] = {
+    0x0002005B, (s32)evt_cam_letter_box_disable, 0x00000001, 0x0003005B,
+    (s32)evt_cam_letter_box_onoff, 0x00000000, 0x00000000, 0x0002005B,
+    (s32)evt_mario_cont_onoff, 0x00000000, 0x0001005B, (s32)evt_mario_cam_y_on,
+    0x0001005B, (s32)kpa_disp_pole_init, 0x0001005B, (s32)kpa_clear_jump_data,
+    0x0002005B, (s32)kpa_get_hata_name, 0xFE363C8F, 0x0004005B,
+    (s32)evt_mario_set_dir, 0x0000005A, 0x00000000, 0x00000000,
+    0x0002005B, (s32)kpa_chg_pose, (s32)str_802C40DC, 0x0005005B,
+    (s32)evt_mario_get_pos, 0x00000000, 0xFE363C81, 0xFE363C82,
+    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)str_802C40E8,
+    0xFE363C81, 0xFE363C82, 0xFE363C83, 0x00000000,
+    0x0003005B, (s32)evt_mobj_get_x_position, 0xFE363C8F, 0xFE363C84,
+    0x0002005B, (s32)kpa_get_width, 0xFE363C85, 0x0002003C,
+    0xFE363C85, 0xF24A7CE6, 0x0002003B, 0xFE363C84,
+    0xFE363C85, 0x0004005B, (s32)evt_mario_set_pos, 0xFE363C84,
+    0xFE363C82, 0xFE363C83, 0x0002005B, (s32)kpa_score_to_str,
+    0xFE363C80, 0x00020034, 0xFE363C8E, 0xF24A8280,
+    0x00020034, 0xFE363C8D, 0xF24A8280, 0x00020034,
+    0xFE363C87, 0xF24B4280, 0x0000006B, 0x0005005B,
+    (s32)evt_mobj_get_position, 0xFE363C8F, 0xFE363C83, 0xFE363C84,
+    0xFE363C85, 0x0002003A, 0xFE363C83, 0xF24A9880,
+    0x0005005B, (s32)kpa_disp_pole_score_main, 0xFE363C83, 0xFE363C87,
+    0xFE363C85, 0xFE363C8D, 0x0000006D, 0x0005005B,
+    (s32)evt_mario_get_pos, 0x00000000, 0xFE363C81, 0xFE363C82,
+    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)str_802C4100,
+    0xFE363C81, 0xFE363C82, 0xFE363C83, 0xFE363C8A,
+    0x0001006C, 0xFE363C86, 0x00010005, 0x00000000,
+    0x0003005B, (s32)evt_mobj_get_y_position, 0xFE363C8F, 0xFE363C84,
+    0x0002003B, 0xFE363C84, 0xFE363C8E, 0x0003005B,
+    (s32)evt_mobj_set_y_position, 0xFE363C8F, 0xFE363C84, 0x00010009,
+    0x00000001, 0x0002001C, 0xFE363C84, 0x00000019,
+    0x0003005B, (s32)evt_mobj_set_y_position, 0xFE363C8F, 0xF24ADE80,
+    0x00000007, 0x00000021, 0x00000006, 0x0000006D,
+    0x00010005, 0x00000000, 0x0005005B, (s32)evt_mario_get_pos,
+    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0002003B, 0xFE363C81, 0xF24A8280, 0x0004005B,
+    (s32)evt_mario_set_pos, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0002001C, 0xFE363C81, 0xF24ADE80, 0x0004005B,
+    (s32)evt_mario_set_pos, 0xFE363C80, 0xF24ADE80, 0xFE363C82,
+    0x00000007, 0x00000021, 0x00010009, 0x00000001,
+    0x00000006, 0x00010005, 0x00000000, 0x0002006A,
+    0xFE363C86, 0xFE363C87, 0x00020018, 0xFE363C87,
+    0x00000000, 0x00000007, 0x00000021, 0x00010009,
+    0x00000001, 0x00000006, 0x0002005B, (s32)evt_snd_sfxoff,
+    0xFE363C8A, 0x0001000A, 0x000000C8, 0x0005005B,
+    (s32)evt_cam_get_pos, 0x00000004, 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0x0005005B, (s32)evt_cam_get_at, 0x00000004,
+    0xFE363C87, 0xFE363C88, 0xFE363C89, 0x0009005B,
+    (s32)evt_cam3d_evt_set, 0xFE363C84, 0xFE363C85, 0xFE363C86,
+    0xFE363C87, 0xFE363C88, 0xFE363C89, 0x00000000,
+    0x0000000B, 0x00010009, 0x00000001, 0x0002005B,
+    (s32)kpa_get_width, 0xFE363C83, 0x0005005B, (s32)evt_mario_get_pos,
+    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0002003C, 0xFE363C83, 0xF24A7F4C, 0x0002003A,
+    0xFE363C80, 0xFE363C83, 0x0005005B, (s32)evt_cam3d_get_shift,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0xFE363C83,
+    0x000B005B, (s32)evt_cam3d_event_from_road, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0xFE363C83, 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0xFE363C87, 0xFE363C88, 0xFE363C89,
+    0x0009005B, (s32)evt_cam3d_evt_set, 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0xFE363C87, 0xFE363C88, 0xFE363C89,
+    0x0000012C, 0x00000000, 0x0001000A, 0x000000C8,
+    0x0004005B, (s32)evt_mario_set_pos, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x0004005B, (s32)evt_mario_set_dir, 0x0000010E,
+    0x00000000, 0x00000000, 0x0002005B, (s32)evt_mario_set_mov_spd,
+    0x00000000, 0x0001000A, 0x000000C8, 0x00020035,
+    0xFE363C80, 0x00000014, 0x0004005B, (s32)evt_mario_set_pos,
+    0xFE363C80, 0x00000000, 0x0000000A, 0x00010009,
+    0x00000001, 0x0002005B, (s32)evt_mario_cont_onoff, 0x00000001,
+    0x0003005B, (s32)evt_cam3d_evt_off, 0x000000C8, 0x0000000B,
+    0x0001000A, 0x000000C8, 0x00000002, 0x00000001,
+};
+s32 kpa_pole_move[151] = {
+    0x0002005B, (s32)evt_cam_letter_box_disable, 0x00000001, 0x0003005B,
+    (s32)evt_cam_letter_box_onoff, 0x00000000, 0x00000000, 0x0002005B,
+    (s32)evt_mario_key_onoff, 0x00000000, 0x0002005B, (s32)kpa_get_pole_name,
+    0xFE363C8E, 0x0002005B, (s32)kpa_get_hata_name, 0xFE363C8F,
+    0x0003005B, (s32)evt_mobj_get_x_position, 0xFE363C8E, 0xFE363C80,
+    0x0003005B, (s32)evt_mobj_get_y_position, 0xFE363C8E, 0xFE363C81,
+    0x0003005B, (s32)evt_mobj_get_z_position, 0xFE363C8E, 0xFE363C82,
+    0x00020034, 0xFE363C86, 0xF24A8280, 0x00020034,
+    0xFE363C87, 0xF24A9E80, 0x00020034, 0xFE363C88,
+    0xF24A91B3, 0x0003005B, (s32)evt_mobj_get_x_position, 0xFE363C8F,
+    0xFE363C83, 0x0003005B, (s32)evt_mobj_get_y_position, 0xFE363C8F,
+    0xFE363C84, 0x0003005B, (s32)evt_mobj_get_z_position, 0xFE363C8F,
+    0xFE363C85, 0x00020034, 0xFE363C89, 0xF24A8280,
+    0x00020034, 0xFE363C8B, 0xF24A91B3, 0x00020034,
+    0xFE363C8C, 0xF24A7E80, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)str_802C4118, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0xFE363C8D, 0x00010005, 0x00000064, 0x0002003A,
+    0xFE363C80, 0xFE363C86, 0x0002003A, 0xFE363C81,
+    0xFE363C87, 0x0002003A, 0xFE363C82, 0xFE363C88,
+    0x0002003A, 0xFE363C83, 0xFE363C89, 0x00020034,
+    0xFE363C84, 0xF24D4A80, 0x0002003C, 0xFE363C84,
+    0xFE363C8C, 0x0002003A, 0xFE363C84, 0xFE363C81,
+    0x0002003A, 0xFE363C85, 0xFE363C8B, 0x0005005B,
+    (s32)evt_mobj_set_position, 0xFE363C8E, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x0005005B, (s32)evt_mobj_set_scale, 0xFE363C8E,
+    0xFE363C8C, 0xFE363C8C, 0xFE363C8C, 0x0005005B,
+    (s32)evt_mobj_set_position, 0xFE363C8F, 0xFE363C83, 0xFE363C84,
+    0xFE363C85, 0x0005005B, (s32)evt_mobj_set_scale, 0xFE363C8F,
+    0xFE363C8C, 0xFE363C8C, 0xFE363C8C, 0x0002003A,
+    0xFE363C86, 0xF24A7A80, 0x0002003A, 0xFE363C87,
+    0xF24A774D, 0x0002003A, 0xFE363C88, 0xF24A7A80,
+    0x0002003A, 0xFE363C89, 0xF24A7A80, 0x0002003A,
+    0xFE363C8B, 0xF24A7A80, 0x0002003A, 0xFE363C8C,
+    0xF24A7AA8, 0x0002001B, 0xFE363C8C, 0x00000003,
+    0x00020034, 0xFE363C8C, 0xF24A8680, 0x00000021,
+    0x00010009, 0x00000001, 0x00000006, 0x0002005B,
+    (s32)evt_snd_sfxoff, 0xFE363C8D, 0x0002005B, (s32)evt_mario_key_onoff,
+    0x00000001, 0x00000002, 0x00000001,
+};
+s32 kpa_move_to_toride[110] = {
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000000, 0x0001005B,
+    (s32)evt_mario_wait_landon, 0x00020032, 0xF9718885, 0x00000001,
+    0x0002005B, (s32)evt_sub_get_mapname, 0xFE363C80, 0x0002000C,
+    0xFE363C80, (s32)str_802C4130, 0x0005005B, (s32)evt_mapobj_get_position,
+    (s32)str_802C4138, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00000020, 0x0005005B, (s32)evt_mapobj_get_position, (s32)str_802C4140,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000021,
+    0x0002005B, (s32)kpa_get_level, 0xFE363C86, 0x00010022,
+    0xFE363C86, 0x00010028, 0x00000001, 0x00020035,
+    0xFE363C80, 0x00000064, 0x00010024, 0x00000002,
+    0x0002005B, (s32)kpa_get_width, 0xFE363C87, 0x0002003C,
+    0xFE363C87, 0xF24A7F4C, 0x0002003B, 0xFE363C80,
+    0xFE363C87, 0x00010024, 0x00000003, 0x0002005B,
+    (s32)kpa_get_width, 0xFE363C87, 0x0002003C, 0xFE363C87,
+    0xF24A7F4C, 0x0002003B, 0xFE363C80, 0xFE363C87,
+    0x00000031, 0x0005005B, (s32)evt_mario_get_pos, 0x00000000,
+    0xFE363C83, 0xFE363C84, 0xFE363C85, 0x0004005B,
+    (s32)evt_mario_mov_pos2, 0xFE363C80, 0xFE363C85, 0x0000005A,
+    0x0002001D, 0xFE363C86, 0x00000002, 0x0005005B,
+    (s32)evt_mario_get_pos, 0x00000000, 0xFE363C81, 0xFE363C82,
+    0xFE363C83, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)str_802C4148,
+    0xFE363C81, 0xFE363C82, 0xFE363C83, 0xFE363C8A,
+    0x0003005B, (s32)evt_mario_dispflag_onoff, 0x00000001, 0x00000002,
+    0x0001000A, 0x000007D0, 0x0003005B, (s32)evt_mario_dispflag_onoff,
+    0x00000000, 0x00000002, 0x0002005B, (s32)evt_snd_sfxoff,
+    0xFE363C8A, 0x0002005B, (s32)kpa_chg_pose, (s32)str_802C415C,
+    0x00000021, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000001,
+    0x00000002, 0x00000001,
+};
+// jumptable_8030A78C: generated by the switch in the referencing function
+// jumptable_8030A7C4: generated by the switch in the referencing function
+// jumptable_8030A7FC: generated by the switch in the referencing function
+// jumptable_8030A834: generated by the switch in the referencing function
+
+#pragma force_active reset

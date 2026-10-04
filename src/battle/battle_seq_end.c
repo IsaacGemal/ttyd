@@ -115,6 +115,14 @@ s32 _koura_delete_event[] = {
     0x00000021, 0x00000002, 0x00000001,
 };
 
+__declspec(section ".data") u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_803ACB20[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 lbl_803ACB30[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_803ACB40[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+
 #pragma dont_inline on
 RankUpData* _get_rank_data(s32 level) {
     RankUpData* rank;
@@ -1835,3 +1843,100 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
 }
 // Reset at the end of the file: with -inline deferred the setting in force at end of file decides.
 #pragma dont_inline reset
+
+// .sdata2 constants, in the original address order.
+#pragma force_active on
+__declspec(section ".sdata2") const GXColor dat_80420c00 = { 0x00, 0x00, 0x00, 0xFF };
+__declspec(section ".sdata2") const GXColor dat_80420c04 = { 0x00, 0x00, 0x00, 0xFF };
+__declspec(section ".sdata2") const u32 dat_80420c08 = 0xFFFFFFFF;
+__declspec(section ".sdata2") const u32 dat_80420c0c = 0xFFFFFFFF;
+__declspec(section ".sdata2") const u32 dat_80420c10 = 0xFFFFFFFF;
+__declspec(section ".sdata2") const GXColor dat_80420c14 = { 0xFF, 0xFF, 0xFF, 0xFF };
+__declspec(section ".sdata2") const u32 dat_80420c18 = 0xFFFFFF80;
+__declspec(section ".sdata2") const f32 float_0_80420c1c = 0.0f;
+__declspec(section ".sdata2") const char str_80420C20[8] = "M_V_2";
+__declspec(section ".sdata2") const u32 dat_80420c28 = 0xFFFFFFFF;
+__declspec(section ".sdata2") const u32 dat_80420c2c = 0xFFFFFF00;
+__declspec(section ".sdata2") const u32 dat_80420c30 = 0xFFFFFF00;
+__declspec(section ".sdata2") const u32 dat_80420c34 = 0xC8FFFFFF;
+__declspec(section ".sdata2") const u32 dat_80420c38 = 0xC8FFFFFF;
+__declspec(section ".sdata2") const u32 dat_80420c3c = 0xC8FFFFFF;
+__declspec(section ".sdata2") const f32 float_deg2rad_80420c40 = 0.017453292f;
+__declspec(section ".sdata2") const f32 float_16_80420c44 = 16.0f;
+__declspec(section ".sdata2") const f32 float_20_80420c48 = 20.0f;
+__declspec(section ".sdata2") const f32 float_2_80420c4c = 2.0f;
+__declspec(section ".sdata2") const f32 float_8_80420c50 = 8.0f;
+__declspec(section ".sdata2") const f32 float_6_80420c54 = 6.0f;
+__declspec(section ".sdata2") const f32 float_96_80420c58 = 96.0f;
+__declspec(section ".sdata2") const f32 float_5_80420c5c = 5.0f;
+__declspec(section ".sdata2") const f32 float_0p8_80420c60 = 0.8f;
+__declspec(section ".sdata2") const f32 float_1_80420c64 = 1.0f;
+__declspec(section ".sdata2") const f32 float_1p2_80420c68 = 1.2f;
+__declspec(section ".sdata2") const f32 float_3_80420c6c = 3.0f;
+__declspec(section ".sdata2") const f32 float_neg0p6_80420c70 = -0.6f;
+__declspec(section ".sdata2") const f32 float_0p6_80420c74 = 0.6f;
+__declspec(section ".sdata2") const f32 float_4_80420c78 = 4.0f;
+__declspec(section ".sdata2") const f32 float_0_80420c7c = 0.0f;
+__declspec(section ".sdata2") const f32 float_1p5_80420c80 = 1.5f;
+__declspec(section ".sdata2") const f32 float_2160_80420c84 = 2160.0f;
+__declspec(section ".sdata2") const f32 float_255_80420c88 = 255.0f;
+__declspec(section ".sdata2") const f32 float_0p5_80420c8c = 0.5f;
+__declspec(section ".sdata2") const f32 float_neg20_80420c90 = -20.0f;
+__declspec(section ".sdata2") const f32 float_50_80420c94 = 50.0f;
+__declspec(section ".sdata2") const f32 float_1p1_80420c98 = 1.1f;
+__declspec(section ".sdata2") const f32 float_25_80420c9c = 25.0f;
+__declspec(section ".sdata2") const f32 float_90_80420ca0 = 90.0f;
+__declspec(section ".sdata2") const f32 float_2p5_80420ca4 = 2.5f;
+__declspec(section ".sdata2") const f32 float_65_80420ca8 = 65.0f;
+__declspec(section ".sdata2") const f32 float_180_80420cac = 180.0f;
+__declspec(section ".sdata2") const f32 float_7p5_80420cb0 = 7.5f;
+__declspec(section ".sdata2") const f32 float_270_80420cb4 = 270.0f;
+__declspec(section ".sdata2") const f32 float_4p5_80420cb8 = 4.5f;
+__declspec(section ".sdata2") const f32 float_neg25_80420cbc = -25.0f;
+__declspec(section ".sdata2") const f32 float_128_80420cc0 = 128.0f;
+__declspec(section ".sdata2") const f32 float_neg50_80420cc4 = -50.0f;
+__declspec(section ".sdata2") const f32 float_neg76p9_80420cc8 = -76.899994f;
+__declspec(section ".sdata2") const f32 float_21_80420ccc = 21.0f;
+__declspec(section ".sdata2") const f32 float_165p8_80420cd0 = 165.79999f;
+__declspec(section ".sdata2") const f32 float_24p2_80420cd4 = 24.199999f;
+__declspec(section ".sdata2") const f32 float_10_80420cd8 = 10.0f;
+__declspec(section ".sdata2") const f32 float_24_80420cdc = 24.0f;
+__declspec(section ".sdata2") const f32 float_18_80420ce0 = 18.0f;
+__declspec(section ".sdata2") const f32 float_36_80420ce4 = 36.0f;
+__declspec(section ".sdata2") const f32 float_0p9_80420ce8 = 0.9f;
+__declspec(section ".sdata2") const f32 float_0p45_80420cec = 0.45f;
+__declspec(section ".sdata2") const f32 float_86p9_80420cf0 = 86.899994f;
+__declspec(section ".sdata2") const f32 float_16p2_80420cf4 = 16.199999f;
+__declspec(section ".sdata2") const f32 float_neg145_80420cf8 = -145.0f;
+__declspec(section ".sdata2") const f32 float_neg148_80420cfc = -148.0f;
+__declspec(section ".sdata2") const f32 float_neg30_80420d00 = -30.0f;
+__declspec(section ".sdata2") const f32 float_6p25_80420d04 = 6.25f;
+__declspec(section ".sdata2") const f32 float_30_80420d08 = 30.0f;
+__declspec(section ".sdata2") const f32 float_12p5_80420d0c = 12.5f;
+__declspec(section ".sdata2") const f32 float_32_80420d10 = 32.0f;
+__declspec(section ".sdata2") const f32 float_neg70_80420d14 = -70.0f;
+__declspec(section ".sdata2") const f32 float_neg10_80420d18 = -10.0f;
+__declspec(section ".sdata2") const f32 float_130_80420d1c = 130.0f;
+__declspec(section ".sdata2") const f32 float_60_80420d20 = 60.0f;
+__declspec(section ".sdata2") const f32 float_27_80420d24 = 27.0f;
+__declspec(section ".sdata2") const f32 float_neg13_80420d28 = -13.0f;
+__declspec(section ".sdata2") const f32 float_neg38_80420d2c = -38.0f;
+__declspec(section ".sdata2") const f32 float_neg40_80420d30 = -40.0f;
+__declspec(section ".sdata2") const f32 float_200_80420d34 = 200.0f;
+__declspec(section ".sdata2") const f32 float_neg200_80420d38 = -200.0f;
+__declspec(section ".sdata2") const char str_80420D3C[4] = "%2d";
+__declspec(section ".sdata2") const f32 float_neg160_80420d40 = -160.0f;
+__declspec(section ".sdata2") const f32 float_225_80420d44 = 225.0f;
+__declspec(section ".sdata2") const f32 float_neg163_80420d48 = -163.0f;
+__declspec(section ".sdata2") const f32 float_900_80420d4c = 900.0f;
+__declspec(section ".sdata2") const f32 float_40_80420d50 = 40.0f;
+__declspec(section ".sdata2") const char str_80420D54[8] = "M_V_1";
+__declspec(section ".sdata2") const f32 float_0_80420d5c = 0.0f;
+__declspec(section ".sdata2") const u32 dat_80420d60 = 0xFFFFFF00;
+__declspec(section ".sdata2") const f32 float_0_80420d64 = 0.0f;
+__declspec(section ".sdata2") const f32 float_20_80420d68 = 20.0f;
+__declspec(section ".sdata2") const f32 float_neg145_80420d6c = -145.0f;
+__declspec(section ".sdata2") const f32 float_10_80420d70 = 10.0f;
+__declspec(section ".sdata2") const f32 float_neg148_80420d74 = -148.0f;
+__declspec(section ".sdata2") const f32 float_498_80420d78 = 498.0f;
+#pragma force_active off
