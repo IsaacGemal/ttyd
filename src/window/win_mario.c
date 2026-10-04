@@ -15,63 +15,14 @@
 #include <stdio.h>
 
 // .sdata2/.sdata objects this unit reads but does not define
-#define EXT_F32(name) extern const f32 name
-EXT_F32(float_265_8041d60c);
-EXT_F32(float_154_8041d610);
-EXT_F32(float_190_8041d614);
-EXT_F32(float_24_8041d618);
-EXT_F32(float_152_8041d620);
-EXT_F32(float_0p8_8041d624);
-EXT_F32(float_20_8041d628);
-EXT_F32(float_142_8041d62c);
-EXT_F32(float_0_8041d634);
-EXT_F32(float_255_8041d640);
-EXT_F32(float_112_8041d644);
-EXT_F32(float_240_8041d648);
-EXT_F32(float_124_8041d64c);
-EXT_F32(float_270_8041d650);
-EXT_F32(float_264_8041d654);
-EXT_F32(float_110_8041d658);
-EXT_F32(float_50_8041d65c);
-EXT_F32(float_2_8041d660);
-EXT_F32(float_0p5_8041d664);
-EXT_F32(float_38_8041d668);
-EXT_F32(float_4_8041d66c);
-EXT_F32(float_21_8041d674);
-EXT_F32(float_34_8041d678);
-EXT_F32(float_68_8041d67c);
-EXT_F32(float_130_8041d680);
-EXT_F32(float_200_8041d684);
-EXT_F32(float_260_8041d688);
-EXT_F32(float_80_8041d68c);
-EXT_F32(float_40_8041d690);
-EXT_F32(float_106_8041d694);
-EXT_F32(float_70_8041d698);
-EXT_F32(float_150_8041d69c);
-EXT_F32(float_28_8041d6a0);
-EXT_F32(float_56_8041d6a4);
-EXT_F32(float_84_8041d6a8);
-EXT_F32(float_35_8041d6ac);
-EXT_F32(float_8_8041d6b0);
-EXT_F32(float_205_8041d6b4);
-EXT_F32(float_172_8041d6b8);
-EXT_F32(float_16_8041d6bc);
-EXT_F32(float_220_8041d6c0);
-EXT_F32(float_0_8041d6c4);
-EXT_F32(float_1_8041d6c8);
-EXT_F32(float_5_8041d6cc);
-EXT_F32(float_160_8041d6d0);
-EXT_F32(float_254_8041d6d4);
-EXT_F32(float_90_8041d6d8);
-EXT_F32(float_228_8041d6e4);
-EXT_F32(float_17_8041d6e8);
-EXT_F32(float_230_8041d6ec);
-EXT_F32(float_72_8041d6f0);
-EXT_F32(float_6_8041d6f4);
-EXT_F32(float_210_8041d6f8);
-EXT_F32(float_30_8041d6fc);
-EXT_F32(float_60_8041d700);
-#undef EXT_F32
+// .sdata2 anim names shared with winMarioInit
+const char str_8041D578[6] = "M_S_1";
+const char str_8041D580[4] = "S_1";
+const char str_8041D584[6] = "M_H_1";
+const char str_8041D58C[4] = "R_1";
+const char str_8041D590[6] = "M_R_1";
+const char str_8041D598[6] = "M_H_4";
+const char str_8041D5A0[6] = "M_H_7";
 
 // WindowWork only declares its first 0x40 bytes in the header; the fields this
 // unit uses past that point are reached through raw offsets, like win_root.c.
@@ -84,8 +35,6 @@ EXT_F32(float_60_8041d700);
 char unk_803dfbf8[0x100];
 
 // .rodata / .sdata2 objects this unit reads but does not define yet
-extern const char str_8041D578[];
-const f64 double_to_int_802f5e78 = 4503601774854144.0;
 
 // .data table: one entry per window "link" (see linkDt in win_mario.s)
 typedef struct LinkDt {
@@ -110,24 +59,39 @@ typedef struct SuperActionEntry {
 
 extern LinkDt linkDt[];
 extern SuperActionEntry* superActionTable[];
-extern const f32 float_neg280_8041d72c;
-extern const f32 float_120_8041d730;
-extern const f32 float_26_8041d734;
-extern const f32 float_0p89_8041d728;
-// .sdata2 anim names shared with winMarioInit
-const char str_8041D578[6] = "M_S_1";
-const char str_8041D580[4] = "S_1";
-const char str_8041D58C[4] = "R_1";
-const char str_8041D704[4] = "S_2";
-const char str_8041D708[4] = "S_3";
-const char str_8041D70C[4] = "S_4";
-const char str_8041D710[5] = "R_15";
-const char str_8041D718[5] = "R_17";
-const char str_8041D720[5] = "R_18";
+
+// .rodata strings, before the code: their jumptable pools land after them
+__declspec(section ".rodata") const char str_802F5650_base[20] = "msg_menu_mario_lv\x00\x00\x00";
+#ifdef MUST_MATCH
+#define WM_MSG_BASE ((const char*)&str_802F5650)
+#else
+#define WM_MSG_BASE str_802F5650_base
+#endif
+const char str_802F5664[24] = "msg_menu_mario_star_r\x00\x00\x00";
+const char str_802F567C[20] = "msg_menu_mario_hp\x00\x00\x00";
+const char str_802F5690[20] = "msg_menu_mario_fp\x00\x00\x00";
+const char str_802F56A4[20] = "msg_menu_mario_bp\x00\x00\x00";
+const char str_802F56B8[12] = "msg_slit\x00\x00\x00\x00";
+const char str_802F56C4[12] = "msg_plane\x00\x00\x00";
+const char str_802F56D0[12] = "msg_ship\x00\x00\x00\x00";
+const char str_802F56DC[12] = "msg_roll\x00\x00\x00\x00";
+const char str_802F56E8[20] = "msg_menu_star_power\x00";
+const char str_802F56FC[20] = "msg_menu_mario_waza\x00";
+const char str_802F5710[24] = "msg_menu_mario_star_p\x00\x00\x00";
+const char str_802F5728[20] = "msg_menu_mario_coin\x00";
+const char str_802F573C[24] = "msg_menu_mario_kakera\x00\x00\x00";
+const char str_802F5754[24] = "msg_menu_mario_scoin\x00\x00\x00\x00";
+const char str_802F576C[20] = "msg_menu_mario_time\x00";
+const char str_802F5780[16] = "msg_hammer_1\x00\x00\x00\x00";
+const char str_802F5790[16] = "msg_hammer_2\x00\x00\x00\x00";
+const char str_802F57A0[16] = "msg_hammer_3\x00\x00\x00\x00";
+const char str_802F57B0[12] = "msg_boots_1\x00";
+const char str_802F57BC[12] = "msg_boots_2\x00";
+const char str_802F57C8[12] = "msg_boots_3\x00";
 
 // .sdata lookup tables (window "help" message ids per upgrade level)
-const char* hammer_help[4] = { NULL, "msg_hammer_1", "msg_hammer_2", "msg_hammer_3" };
-const char* boots_help[4] = { NULL, "msg_boots_1", "msg_boots_2", "msg_boots_3" };
+const char* hammer_help[4] = { NULL, str_802F5780, str_802F5790, str_802F57A0 };
+const char* boots_help[4] = { NULL, str_802F57B0, str_802F57BC, str_802F57C8 };
 
 char* unk_8016af5c(s32 num, s32 width) {
     signed char buf[0x100];
@@ -176,6 +140,16 @@ char* winZenkakuStr(s32 num) {
     return tmp2;
 }
 
+// .sdata2 colour constants (referenced by fukidashi/winMarioDisp)
+const GXColor dat_8041d5d0 = { 0x00, 0x00, 0x00, 0x80 };
+const GXColor dat_8041d5d4 = { 0xE1, 0xE1, 0xE1, 0xFE };
+const GXColor dat_8041d5d8 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_8041d5dc = { 0x00, 0x00, 0x00, 0x80 };
+const GXColor dat_8041d5e0 = { 0xE1, 0xE1, 0xE1, 0xFE };
+const GXColor dat_8041d5e4 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_8041d5e8 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_8041d5ec = { 0x00, 0x00, 0x00, 0xFF };
+
 void winMarioMain2(WindowWork* work) {
     (void)work;
 }
@@ -217,13 +191,13 @@ s32 winMarioMain(WindowWork* work) {
                         SET_ANIM(str_8041D580);
                         break;
                     case 1:
-                        SET_ANIM(str_8041D704);
+                        SET_ANIM("S_2");
                         break;
                     case 2:
-                        SET_ANIM(str_8041D708);
+                        SET_ANIM("S_3");
                         break;
                     case 3:
-                        SET_ANIM(str_8041D70C);
+                        SET_ANIM("S_4");
                         break;
                     }
                 } else {
@@ -232,13 +206,13 @@ s32 winMarioMain(WindowWork* work) {
                         SET_ANIM(str_8041D58C);
                         break;
                     case 1:
-                        SET_ANIM(str_8041D710);
+                        SET_ANIM("R_15");
                         break;
                     case 2:
-                        SET_ANIM(str_8041D718);
+                        SET_ANIM("R_17");
                         break;
                     case 3:
-                        SET_ANIM(str_8041D720);
+                        SET_ANIM("R_18");
                         break;
                     }
                 }
@@ -316,13 +290,13 @@ s32 winMarioMain(WindowWork* work) {
                         anim = str_8041D580;
                         break;
                     case 1:
-                        anim = str_8041D704;
+                        anim = "S_2";
                         break;
                     case 2:
-                        anim = str_8041D708;
+                        anim = "S_3";
                         break;
                     case 3:
-                        anim = str_8041D70C;
+                        anim = "S_4";
                         break;
                     }
                 } else {
@@ -331,13 +305,13 @@ s32 winMarioMain(WindowWork* work) {
                         anim = str_8041D58C;
                         break;
                     case 1:
-                        anim = str_8041D710;
+                        anim = "R_15";
                         break;
                     case 2:
-                        anim = str_8041D718;
+                        anim = "R_17";
                         break;
                     case 3:
-                        anim = str_8041D720;
+                        anim = "R_18";
                         break;
                     }
                 }
@@ -347,7 +321,7 @@ s32 winMarioMain(WindowWork* work) {
 
             animPoseSetAnim(WW_S32(work, 0x188), anim, 0);
             if (WW_S32(work, 0x18C) == 0) {
-                if (animPoseGetLoopTimes(WW_S32(work, 0x188)) >= float_0p89_8041d728) {
+                if (animPoseGetLoopTimes(WW_S32(work, 0x188)) >= 0.89f) {
                     WW_S32(work, 0x18C) = 30;
                 }
             } else {
@@ -366,13 +340,13 @@ s32 winMarioMain(WindowWork* work) {
                         anim = str_8041D580;
                         break;
                     case 1:
-                        anim = str_8041D704;
+                        anim = "S_2";
                         break;
                     case 2:
-                        anim = str_8041D708;
+                        anim = "S_3";
                         break;
                     case 3:
-                        anim = str_8041D70C;
+                        anim = "S_4";
                         break;
                     }
                 } else {
@@ -381,13 +355,13 @@ s32 winMarioMain(WindowWork* work) {
                         anim = str_8041D58C;
                         break;
                     case 1:
-                        anim = str_8041D710;
+                        anim = "R_15";
                         break;
                     case 2:
-                        anim = str_8041D718;
+                        anim = "R_17";
                         break;
                     case 3:
-                        anim = str_8041D720;
+                        anim = "R_18";
                         break;
                     }
                 }
@@ -429,9 +403,9 @@ s32 winMarioMain(WindowWork* work) {
         } else if (work->buttonTrg & 0x1000) {
             return -2;
         }
-        WW_F32(work, 0x158) = float_neg280_8041d72c;
+        WW_F32(work, 0x158) = -280.0f;
         f2 = (f32)WW_S32(work, 0x194);
-        WW_F32(work, 0x15C) = float_10_8041d61c + ((float_120_8041d730 - float_26_8041d734 * f2) - float_12_8041d670);
+        WW_F32(work, 0x15C) = 10.0f + ((120.0f - 26.0f * f2) - 12.0f);
         winMsgEntry(work, 0, superActionTable[WW_S32(work, 0x194)]->field_C, 0);
         break;
     }
@@ -484,11 +458,11 @@ void winMarioInit(WindowWork* work) {
     const char* anim;
     s32 i;
 #ifdef MUST_MATCH
-#define D_MARIO ((const char*)(vp + 0x830))
-#define A_MARIO ((const char*)(vp + 0x838))
-#define A_MARIO_L ((const char*)(vp + 0x840))
-#define A_MARIO_W ((const char*)(vp + 0x84c))
-#define A_MARIO_WL ((const char*)(vp + 0x858))
+#define D_MARIO "d_mario"
+#define A_MARIO "a_mario"
+#define A_MARIO_L "a_mario_l"
+#define A_MARIO_W "a_mario_w"
+#define A_MARIO_WL "a_mario_wl"
 #else
 #define D_MARIO "d_mario"
 #define A_MARIO "a_mario"
@@ -504,13 +478,13 @@ void winMarioInit(WindowWork* work) {
             anim = str_8041D580;
             break;
         case 1:
-            anim = str_8041D704;
+            anim = "S_2";
             break;
         case 2:
-            anim = str_8041D708;
+            anim = "S_3";
             break;
         case 3:
-            anim = str_8041D70C;
+            anim = "S_4";
             break;
         }
         WW_S32(work, 0x188) = animPoseEntry(D_MARIO, 0);
@@ -598,15 +572,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c1 = dat_8041d5dc;
         sc1 = FUKI_VEC(0x228, vec3_802f5878);
         tmp1 = FUKI_VEC(0x21C, vec3_802f586c);
-        tmp1.x = (x - float_230_8041d6ec) + float_5_8041d6cc;
-        y = float_72_8041d6f0 + y;
-        tmp1.y = y - float_5_8041d6cc;
+        tmp1.x = (x - 230.0f) + 5.0f;
+        y = 72.0f + y;
+        tmp1.y = y - 5.0f;
         tr1 = tmp1;
         WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5e0;
         sc2 = FUKI_VEC(0x240, vec3_802f5890);
         tmp2 = FUKI_VEC(0x234, vec3_802f5884);
-        tmp2.x = x - float_230_8041d6ec;
+        tmp2.x = x - 230.0f;
         tmp2.y = y;
         tr2 = tmp2;
         WINTEXSET(0xB1, tr2, sc2, c2);
@@ -614,7 +588,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c3 = dat_8041d5e4;
         sc3 = FUKI_VEC(0x258, vec3_802f58a8);
         tmp3 = FUKI_VEC(0x24C, vec3_802f589c);
-        tmp3.x = (x - float_230_8041d6ec) - float_6_8041d6f4;
+        tmp3.x = (x - 230.0f) - 6.0f;
         tmp3.y = y;
         tr3 = tmp3;
         winIconSet(iconId, &tr3, &sc3, &c3);
@@ -631,15 +605,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c1 = dat_8041d5dc;
         sc1 = FUKI_VEC(0x228, vec3_802f5878);
         tmp1 = FUKI_VEC(0x21C, vec3_802f586c);
-        tmp1.x = (x - float_210_8041d6f8) + float_5_8041d6cc;
-        y = float_20_8041d628 + y;
-        tmp1.y = y - float_5_8041d6cc;
+        tmp1.x = (x - 210.0f) + 5.0f;
+        y = 20.0f + y;
+        tmp1.y = y - 5.0f;
         tr1 = tmp1;
         WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5e0;
         sc2 = FUKI_VEC(0x240, vec3_802f5890);
         tmp2 = FUKI_VEC(0x234, vec3_802f5884);
-        tmp2.x = x - float_210_8041d6f8;
+        tmp2.x = x - 210.0f;
         tmp2.y = y;
         tr2 = tmp2;
         WINTEXSET(0xB1, tr2, sc2, c2);
@@ -647,7 +621,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c3 = dat_8041d5e4;
         sc3 = FUKI_VEC(0x258, vec3_802f58a8);
         tmp3 = FUKI_VEC(0x24C, vec3_802f589c);
-        tmp3.x = (x - float_210_8041d6f8) - float_6_8041d6f4;
+        tmp3.x = (x - 210.0f) - 6.0f;
         tmp3.y = y;
         tr3 = tmp3;
         winIconSet(iconId, &tr3, &sc3, &c3);
@@ -664,15 +638,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c1 = dat_8041d5d0;
         sc1 = FUKI_VEC(0x1E0, vec3_802f5830);
         tmp1 = FUKI_VEC(0x1D4, vec3_802f5824);
-        tmp1.x = (x - float_80_8041d68c) + float_5_8041d6cc;
-        y = float_90_8041d6d8 + y;
-        tmp1.y = y - float_5_8041d6cc;
+        tmp1.x = (x - 80.0f) + 5.0f;
+        y = 90.0f + y;
+        tmp1.y = y - 5.0f;
         tr1 = tmp1;
         WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5d4;
         sc2 = FUKI_VEC(0x1F8, vec3_802f5848);
         tmp2 = FUKI_VEC(0x1EC, vec3_802f583c);
-        tmp2.x = x - float_80_8041d68c;
+        tmp2.x = x - 80.0f;
         tmp2.y = y;
         tr2 = tmp2;
         WINTEXSET(0xB1, tr2, sc2, c2);
@@ -680,7 +654,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c3 = dat_8041d5d8;
         sc3 = FUKI_VEC(0x210, vec3_802f5860);
         tmp3 = FUKI_VEC(0x204, vec3_802f5854);
-        tmp3.x = (x - float_80_8041d68c) + float_6_8041d6f4;
+        tmp3.x = (x - 80.0f) + 6.0f;
         tmp3.y = y;
         tr3 = tmp3;
         winIconSet(iconId, &tr3, &sc3, &c3);
@@ -697,15 +671,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c1 = dat_8041d5d0;
         sc1 = FUKI_VEC(0x1E0, vec3_802f5830);
         tmp1 = FUKI_VEC(0x1D4, vec3_802f5824);
-        tmp1.x = (x - float_80_8041d68c) + float_5_8041d6cc;
-        y = float_20_8041d628 + y;
-        tmp1.y = y - float_5_8041d6cc;
+        tmp1.x = (x - 80.0f) + 5.0f;
+        y = 20.0f + y;
+        tmp1.y = y - 5.0f;
         tr1 = tmp1;
         WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5d4;
         sc2 = FUKI_VEC(0x1F8, vec3_802f5848);
         tmp2 = FUKI_VEC(0x1EC, vec3_802f583c);
-        tmp2.x = x - float_80_8041d68c;
+        tmp2.x = x - 80.0f;
         tmp2.y = y;
         tr2 = tmp2;
         WINTEXSET(0xB1, tr2, sc2, c2);
@@ -713,7 +687,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c3 = dat_8041d5d8;
         sc3 = FUKI_VEC(0x210, vec3_802f5860);
         tmp3 = FUKI_VEC(0x204, vec3_802f5854);
-        tmp3.x = (x - float_80_8041d68c) + float_6_8041d6f4;
+        tmp3.x = (x - 80.0f) + 6.0f;
         tmp3.y = y;
         tr3 = tmp3;
         winIconSet(iconId, &tr3, &sc3, &c3);
@@ -730,15 +704,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c1 = dat_8041d5d0;
         sc1 = FUKI_VEC(0x1E0, vec3_802f5830);
         tmp1 = FUKI_VEC(0x1D4, vec3_802f5824);
-        tmp1.x = (x - float_30_8041d6fc) + float_5_8041d6cc;
-        y = float_130_8041d680 + y;
-        tmp1.y = y - float_5_8041d6cc;
+        tmp1.x = (x - 30.0f) + 5.0f;
+        y = 130.0f + y;
+        tmp1.y = y - 5.0f;
         tr1 = tmp1;
         WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5d4;
         sc2 = FUKI_VEC(0x1F8, vec3_802f5848);
         tmp2 = FUKI_VEC(0x1EC, vec3_802f583c);
-        tmp2.x = x - float_30_8041d6fc;
+        tmp2.x = x - 30.0f;
         tmp2.y = y;
         tr2 = tmp2;
         WINTEXSET(0xB1, tr2, sc2, c2);
@@ -746,7 +720,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c3 = dat_8041d5d8;
         sc3 = FUKI_VEC(0x210, vec3_802f5860);
         tmp3 = FUKI_VEC(0x204, vec3_802f5854);
-        tmp3.x = (x - float_30_8041d6fc) + float_6_8041d6f4;
+        tmp3.x = (x - 30.0f) + 6.0f;
         tmp3.y = y;
         tr3 = tmp3;
         winIconSet(iconId, &tr3, &sc3, &c3);
@@ -763,15 +737,15 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c1 = dat_8041d5d0;
         sc1 = FUKI_VEC(0x1E0, vec3_802f5830);
         tmp1 = FUKI_VEC(0x1D4, vec3_802f5824);
-        tmp1.x = (x - float_30_8041d6fc) + float_5_8041d6cc;
-        y = float_60_8041d700 + y;
-        tmp1.y = y - float_5_8041d6cc;
+        tmp1.x = (x - 30.0f) + 5.0f;
+        y = 60.0f + y;
+        tmp1.y = y - 5.0f;
         tr1 = tmp1;
         WINTEXSET(0xB1, tr1, sc1, c1);
         c2 = dat_8041d5d4;
         sc2 = FUKI_VEC(0x1F8, vec3_802f5848);
         tmp2 = FUKI_VEC(0x1EC, vec3_802f583c);
-        tmp2.x = x - float_30_8041d6fc;
+        tmp2.x = x - 30.0f;
         tmp2.y = y;
         tr2 = tmp2;
         WINTEXSET(0xB1, tr2, sc2, c2);
@@ -779,7 +753,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
         c3 = dat_8041d5d8;
         sc3 = FUKI_VEC(0x210, vec3_802f5860);
         tmp3 = FUKI_VEC(0x204, vec3_802f5854);
-        tmp3.x = (x - float_30_8041d6fc) + float_6_8041d6f4;
+        tmp3.x = (x - 30.0f) + 6.0f;
         tmp3.y = y;
         tr3 = tmp3;
         winIconSet(iconId, &tr3, &sc3, &c3);
@@ -790,6 +764,7 @@ void fukidashi(WindowWork* work, u32 type, f32 x, f32 y) {
     }
 }
 
+const char* hammer_pose[4] = { NULL, str_8041D584, str_8041D598, str_8041D5A0 };
 static s32 pri[6] = { 3, 2, 8, 10, 7, 9 };
 
 #ifdef MUST_MATCH
@@ -1175,10 +1150,10 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     winBgGX(work, 0, x, y);
     {
         Vec pos, scale, tmp;
-        winNameGX(work, 2, x - float_265_8041d60c, float_154_8041d610 + y, float_190_8041d614, float_24_8041d618);
-        f18 = float_10_8041d61c + (x - float_265_8041d60c);
+        winNameGX(work, 2, x - 265.0f, 154.0f + y, 190.0f, 24.0f);
+        f18 = 10.0f + (x - 265.0f);
         winFontInit();
-        f25 = float_152_8041d620 + y;
+        f25 = 152.0f + y;
         tmp = VEC_AT(0x264);
         tmp.x = f18;
         tmp.y = f25;
@@ -1187,7 +1162,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         pos = tmp;
         winFontSetEdge(&pos, &scale, &c, msgSearch(STR_AT(0x744)));
     }
-    f18 = f18 + float_0p8_8041d624 * (f32)(u16)FontGetMessageWidth(msgSearch(STR_AT(0x744))) + float_20_8041d628;
+    f18 = f18 + 0.8f * (f32)(u16)FontGetMessageWidth(msgSearch(STR_AT(0x744)));
+    f18 = f18 + 20.0f;
     winIconInit();
     {
         Vec tr, sc, tmp;
@@ -1195,11 +1171,11 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         sc = VEC_AT(0x288);
         tmp = VEC_AT(0x27C);
         tmp.x = f18;
-        tmp.y = float_142_8041d62c + y;
+        tmp.y = 142.0f + y;
         tr = tmp;
         winIconSet(0x19E, &tr, &sc, &c);
     }
-    f18 = f18 + float_20_8041d628;
+    f18 = f18 + 20.0f;
     winFontInit();
     {
         Vec pos, scale, tmp;
@@ -1214,13 +1190,13 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         char buf[0x1C0];
         Vec pos, scale, tmp;
-        sprintf(buf, str_8041D63C, WM_ZENKAKU(pouch->level));
+        sprintf(buf, "%s", WM_ZENKAKU(pouch->level));
         winFontInit();
         tmp = VEC_AT(0x2AC);
         scale = VEC_AT(0x2B8);
-        tmp.x = (x - float_265_8041d60c + float_190_8041d614)
-                - float_0p8_8041d624 * (f32)(u16)FontGetMessageWidth(buf)
-                - float_10_8041d61c;
+        tmp.x = (x - 265.0f + 190.0f)
+                - 0.8f * (f32)(u16)FontGetMessageWidth(buf)
+                - 10.0f;
         tmp.y = f25;
         pos = tmp;
         c = white2;
@@ -1230,8 +1206,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec tr, sc, tmp;
         tmp = VEC_AT(0x2C4);
-        tmp.x = x - float_255_8041d640;
-        tmp.y = float_112_8041d644 + y;
+        tmp.x = x - 255.0f;
+        tmp.y = 112.0f + y;
         tr = tmp;
         sc = VEC_AT(0x2D0);
         winTexSet(0xB0, tr, sc, white);
@@ -1241,8 +1217,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         Vec pos, scale, tmp;
         c = black;
         tmp = VEC_AT(0x2DC);
-        tmp.x = x - float_240_8041d648;
-        tmp.y = float_124_8041d64c + y;
+        tmp.x = x - 240.0f;
+        tmp.y = 124.0f + y;
         scale = VEC_AT(0x2E8);
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(BattleGetRankNameLabel(pouch->level)));
@@ -1255,22 +1231,22 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     }
     fukidashi(work, WW_S32(work, 0x160), x, y);
 
-    winKirinukiGX(work, 0, x - float_270_8041d650, y - float_10_8041d61c,
-                  float_264_8041d654, float_110_8041d658);
+    winKirinukiGX(work, 0, x - 270.0f, y - 10.0f,
+                  264.0f, 110.0f);
 
-    f27 = float_0p5_8041d664;
-    f24 = float_50_8041d65c + (x - float_270_8041d650);
-    f25 = f24 - float_2_8041d660;
-    f28 = y - float_38_8041d668;
+    f27 = 0.5f;
+    f24 = 50.0f + (x - 270.0f);
+    f25 = f24 - 2.0f;
+    f28 = y - 38.0f;
 #ifdef MUST_MATCH
     // Match-only evaluation order (f20/f21 before f19) for the row-block constants.
-    f20 = float_12_8041d670;
-    f21 = float_21_8041d674;
-    f19 = float_4_8041d66c;
+    f20 = 12.0f;
+    f21 = 21.0f;
+    f19 = 4.0f;
 #else
-    f19 = float_4_8041d66c;
-    f20 = float_12_8041d670;
-    f21 = float_21_8041d674;
+    f19 = 4.0f;
+    f20 = 12.0f;
+    f21 = 21.0f;
 #endif
     {
         GXColor colTbl[3];
@@ -1296,14 +1272,14 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         mTag = tagTbl[i];
         mRaw = rawTbl[i];
         f23 = (f32)(u16)FontGetMessageWidth(mRaw);
-        f22 = float_0p5_8041d664 * (f32)(u16)FontGetMessageWidth(msgSearch(mTag));
+        f22 = 0.5f * (f32)(u16)FontGetMessageWidth(msgSearch(mTag));
         winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
         GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
         GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
         f18 = f28 - (f32)j;
         tmp = VEC_AT(0x36C);
         tmp.x = f25;
-        tmp.y = f18 - float_4_8041d66c;
+        tmp.y = f18 - 4.0f;
         tr = tmp;
         sc = VEC_AT(0x378);
         winTexSet(0xAF, tr, sc, colTbl[i]);
@@ -1325,8 +1301,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     }
     }
     winIconInit();
-    f18 = float_110_8041d658 + (x - float_270_8041d650);
-    f26 = float_4_8041d66c + (y - float_38_8041d668);
+    f18 = 110.0f + (x - 270.0f);
+    f26 = 4.0f + (y - 38.0f);
     {
         Vec tr, sc, tmp;
         c = white2;
@@ -1337,8 +1313,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         tr = tmp;
         winIconSet(0x19F, &tr, &sc, &c);
     }
-    f24 = (y - float_38_8041d668) - float_34_8041d678;
-    f27 = float_4_8041d66c + f24;
+    f24 = (y - 38.0f) - 34.0f;
+    f27 = 4.0f + f24;
     {
         Vec tr, sc, tmp;
         c = white2;
@@ -1349,20 +1325,20 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         tr = tmp;
         winIconSet(0x1A0, &tr, &sc, &c);
     }
-    f25 = (y - float_38_8041d668) - float_68_8041d67c;
+    f25 = (y - 38.0f) - 68.0f;
     {
         Vec tr, sc, tmp;
         c = white2;
         sc = VEC_AT(0x3F0);
         tmp = VEC_AT(0x3E4);
         tmp.x = f18;
-        tmp.y = float_4_8041d66c + f25;
+        tmp.y = 4.0f + f25;
         tr = tmp;
         winIconSet(0x1A1, &tr, &sc, &c);
     }
     winFontInit();
-    f18 = float_130_8041d680 + (x - float_270_8041d650);
-    f28 = float_4_8041d66c + (float_12_8041d670 + (y - float_38_8041d668));
+    f18 = 130.0f + (x - 270.0f);
+    f28 = 4.0f + (12.0f + (y - 38.0f));
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x3FC);
@@ -1371,9 +1347,9 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x408);
         pos = tmp;
         c = black;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->currentHP));
+        winFontSetR(&pos, &scale, &c, "%s", WM_ZENKAKU(pouch->currentHP));
     }
-    f24 = float_4_8041d66c + (float_12_8041d670 + f24);
+    f24 = 4.0f + (12.0f + f24);
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x414);
@@ -1382,20 +1358,20 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x420);
         pos = tmp;
         c = black;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->currentFP));
+        winFontSetR(&pos, &scale, &c, "%s", WM_ZENKAKU(pouch->currentFP));
     }
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x42C);
         tmp.x = f18;
-        tmp.y = float_4_8041d66c + (float_12_8041d670 + f25);
+        tmp.y = 4.0f + (12.0f + f25);
         scale = VEC_AT(0x438);
         pos = tmp;
         c = black;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->maximumBP));
+        winFontSetR(&pos, &scale, &c, "%s", WM_ZENKAKU(pouch->maximumBP));
     }
     winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-    f18 = float_190_8041d614 + (x - float_270_8041d650);
+    f18 = 190.0f + (x - 270.0f);
     {
         Vec tr, sc, tmp;
         tmp = VEC_AT(0x444);
@@ -1415,8 +1391,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         winTexSet(0x10, tr, sc, white);
     }
     winFontInit();
-    f18 = float_200_8041d684 + (x - float_270_8041d650);
-    f28 = float_4_8041d66c + (float_12_8041d670 + (y - float_38_8041d668));
+    f18 = 200.0f + (x - 270.0f);
+    f28 = 4.0f + (12.0f + (y - 38.0f));
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x474);
@@ -1425,7 +1401,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         scale = VEC_AT(0x480);
         pos = tmp;
         c = black;
-        winFontSet(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->maximumHP));
+        winFontSet(&pos, &scale, &c, "%s", WM_ZENKAKU(pouch->maximumHP));
     }
     {
         Vec pos, scale, tmp;
@@ -1435,16 +1411,16 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         pos = tmp;
         scale = VEC_AT(0x498);
         c = black;
-        winFontSet(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->maximumFP));
+        winFontSet(&pos, &scale, &c, "%s", WM_ZENKAKU(pouch->maximumFP));
     }
 
     if (WW_S32(work, 0x198) > 0) {
-        winKirinukiGX(work, 0, float_10_8041d61c + x,
-                      (float_20_8041d628 + (float_130_8041d680 + y)) - float_20_8041d628,
-                      float_260_8041d688, float_80_8041d68c);
+        winKirinukiGX(work, 0, 10.0f + x,
+                      (20.0f + (130.0f + y)) - 20.0f,
+                      260.0f, 80.0f);
         winIconInit();
-        f18 = float_10_8041d61c + (float_40_8041d690 + x);
-        f24 = float_106_8041d694 + y;
+        f18 = 10.0f + (40.0f + x);
+        f24 = 106.0f + y;
         {
             Vec tr, sc, tmp;
             c = white2;
@@ -1455,7 +1431,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
             tr = tmp;
             winIconSet(0x20F, &tr, &sc, &c);
         }
-        f19 = float_70_8041d698 + y;
+        f19 = 70.0f + y;
         {
             Vec tr, sc, tmp;
             c = white2;
@@ -1475,15 +1451,15 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         {
             Vec pos, scale, tmp;
             tmp = VEC_AT(0x4D4);
-            tmp.x = float_10_8041d61c + (float_70_8041d698 + x);
-            tmp.y = float_10_8041d61c + f19;
+            tmp.x = 10.0f + (70.0f + x);
+            tmp.y = 10.0f + f19;
             c = white2;
             scale = VEC_AT(0x4E0);
             pos = tmp;
             winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x768)));
         }
         winIconInit();
-        f19 = float_10_8041d61c + (float_80_8041d68c + x);
+        f19 = 10.0f + (80.0f + x);
         for (i = 0, j = 0; i < WW_S32(work, 0x198); i++, j += 0x16) {
             Vec tr, sc, tmp;
             c = white3;
@@ -1505,19 +1481,19 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         }
     }
 
-    f23 = float_10_8041d61c + x;
+    f23 = 10.0f + x;
     winKirinukiGX(work, 0, f23,
-                  float_20_8041d628 + (float_10_8041d61c + y),
-                  float_260_8041d688, float_150_8041d69c);
+                  20.0f + (10.0f + y),
+                  260.0f, 150.0f);
     winIconInit();
-    f24 = float_10_8041d61c + (float_20_8041d628 + x);
+    f24 = 10.0f + (20.0f + x);
     {
         Vec tr, sc, tmp;
         c = white2;
         sc = VEC_AT(0x528);
         tmp = VEC_AT(0x51C);
         tmp.x = f24;
-        tmp.y = float_10_8041d61c + y;
+        tmp.y = 10.0f + y;
         tr = tmp;
         winIconSet(0x18C, &tr, &sc, &c);
     }
@@ -1527,7 +1503,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         sc = VEC_AT(0x540);
         tmp = VEC_AT(0x534);
         tmp.x = f24;
-        tmp.y = float_10_8041d61c + (y - float_28_8041d6a0);
+        tmp.y = 10.0f + (y - 28.0f);
         tr = tmp;
         winIconSet(0x18B, &tr, &sc, &c);
     }
@@ -1537,7 +1513,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         sc = VEC_AT(0x558);
         tmp = VEC_AT(0x54C);
         tmp.x = f24;
-        tmp.y = float_10_8041d61c + (y - float_56_8041d6a4);
+        tmp.y = 10.0f + (y - 56.0f);
         tr = tmp;
         winIconSet(0x18D, &tr, &sc, &c);
     }
@@ -1547,7 +1523,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         sc = VEC_AT(0x570);
         tmp = VEC_AT(0x564);
         tmp.x = f24;
-        tmp.y = float_10_8041d61c + (y - float_84_8041d6a8);
+        tmp.y = 10.0f + (y - 84.0f);
         tr = tmp;
         winIconSet(0x102, &tr, &sc, &c);
     }
@@ -1557,15 +1533,15 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         sc = VEC_AT(0x588);
         tmp = VEC_AT(0x57C);
         tmp.x = f24;
-        tmp.y = float_10_8041d61c + (y - float_112_8041d644);
+        tmp.y = 10.0f + (y - 112.0f);
         tr = tmp;
         winIconSet(0x1A2, &tr, &sc, &c);
     }
 
     winFontInit();
-    f24 = float_10_8041d61c + (float_35_8041d6ac + x);
-    f25 = float_12_8041d670 + y;
-    f26 = float_10_8041d61c + f25;
+    f24 = 10.0f + (35.0f + x);
+    f25 = 12.0f + y;
+    f26 = 10.0f + f25;
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x594);
@@ -1576,7 +1552,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x780)));
     }
-    f27 = float_10_8041d61c + (f25 - float_28_8041d6a0);
+    f27 = 10.0f + (f25 - 28.0f);
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x5AC);
@@ -1587,7 +1563,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x798)));
     }
-    f28 = float_10_8041d61c + (f25 - float_56_8041d6a4);
+    f28 = 10.0f + (f25 - 56.0f);
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x5C4);
@@ -1598,7 +1574,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x7B0)));
     }
-    f29 = float_10_8041d61c + (f25 - float_84_8041d6a8);
+    f29 = 10.0f + (f25 - 84.0f);
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x5DC);
@@ -1614,7 +1590,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         pos = tmp;
         winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x7CC)));
     }
-    f25 = float_10_8041d61c + (f25 - float_112_8041d644);
+    f25 = 10.0f + (f25 - 112.0f);
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x5F4);
@@ -1626,7 +1602,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         winFontSet(&pos, &scale, &c, msgSearch(STR_AT(0x7EC)));
     }
 
-    f18 = float_2_8041d660 + (float_8_8041d6b0 + (float_205_8041d6b4 + x));
+    f18 = 2.0f + (8.0f + (205.0f + x));
     {
         Vec pos, scale, tmp;
         tmp = VEC_AT(0x60C);
@@ -1635,7 +1611,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         pos = tmp;
         scale = VEC_AT(0x618);
         c = white2;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->mStarPoints));
+        winFontSetR(&pos, &scale, &c, "%s", WM_ZENKAKU(pouch->mStarPoints));
     }
     {
         Vec pos, scale, tmp;
@@ -1645,7 +1621,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         pos = tmp;
         scale = VEC_AT(0x630);
         c = white2;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->coins));
+        winFontSetR(&pos, &scale, &c, "%s", WM_ZENKAKU(pouch->coins));
     }
     {
         Vec pos, scale, tmp;
@@ -1655,7 +1631,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         pos = tmp;
         scale = VEC_AT(0x648);
         c = white2;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->mStarPieceCount));
+        winFontSetR(&pos, &scale, &c, "%s", WM_ZENKAKU(pouch->mStarPieceCount));
     }
     {
         Vec pos, scale, tmp;
@@ -1670,7 +1646,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         pos = tmp;
         scale = VEC_AT(0x660);
         c = white2;
-        winFontSetR(&pos, &scale, &c, str_8041D63C, WM_ZENKAKU(pouch->mShineSpriteCount));
+        winFontSetR(&pos, &scale, &c, "%s", WM_ZENKAKU(pouch->mShineSpriteCount));
     }
 
     {
@@ -1687,28 +1663,28 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
             mins = (u32)(((u64)secs % 3600) / 60);
         }
         tmp = VEC_AT(0x66C);
-        tmp.x = float_2_8041d660 + (float_2_8041d660 + ((float_8_8041d6b0 + (float_172_8041d6b8 + x)) - float_16_8041d6bc));
+        tmp.x = 2.0f + (2.0f + ((8.0f + (172.0f + x)) - 16.0f));
         tmp.y = f25;
         pos1 = tmp;
         scale1 = VEC_AT(0x678);
         c = white2;
-        winFontSetR(&pos1, &scale1, &c, str_8041D63C, WM_NUM(2, hours));
+        winFontSetR(&pos1, &scale1, &c, "%s", WM_NUM(2, hours));
         tmp = VEC_AT(0x684);
         tmp.x = f18;
         tmp.y = f25;
         pos2 = tmp;
         scale2 = VEC_AT(0x690);
         c = white2;
-        winFontSetR(&pos2, &scale2, &c, str_8041D63C, WM_NUM(2, mins));
+        winFontSetR(&pos2, &scale2, &c, "%s", WM_NUM(2, mins));
     }
 
     winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-    f19 = float_10_8041d61c + (float_190_8041d614 + x);
+    f19 = 10.0f + (190.0f + x);
     for (i = 0, j = 0; i < 4; i++, j += 0x1C) {
         Vec tr, sc, tmp;
         tmp = VEC_AT(0x69C);
         tmp.x = f19;
-        tmp.y = float_10_8041d61c + (y - (f32)j);
+        tmp.y = 10.0f + (y - (f32)j);
         tr = tmp;
         sc = VEC_AT(0x6A8);
         winTexSet(0x11, tr, sc, white);
@@ -1716,9 +1692,9 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     {
         Vec tr, sc, tmp;
         tmp = VEC_AT(0x6B4);
-        f24 = float_220_8041d6c0 + x;
+        f24 = 220.0f + x;
         tmp.x = f24;
-        tmp.y = (float_10_8041d61c + (float_2_8041d660 + (y - float_112_8041d644))) - float_2_8041d660;
+        tmp.y = (10.0f + (2.0f + (y - 112.0f))) - 2.0f;
         tr = tmp;
         sc = VEC_AT(0x6C0);
         winTexSet(0x12, tr, sc, white);
@@ -1738,20 +1714,20 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
         }
         animPoseMain(POSE);
         kc = *(GXColor*)&dat_8041d608;
-        winKageGX(work, &kc, x - float_150_8041d69c, y, float_0_8041d6c4, float_1_8041d6c8);
+        winKageGX(work, &kc, x - 150.0f, y, 0.0f, 1.0f);
         {
             Mtx mtx;
-            PSMTXTrans(mtx, x - float_150_8041d69c, y, float_0_8041d6c4);
+            PSMTXTrans(mtx, x - 150.0f, y, 0.0f);
             winZClear();
-            animPoseDrawMtx(POSE, mtx, 2, float_0_8041d6c4, float_5_8041d6cc);
+            animPoseDrawMtx(POSE, mtx, 2, 0.0f, 5.0f);
         }
     }
 
     if (WW_S32(work, 0x190) != 0) {
-        winWazaGX(work, 0, x - float_270_8041d650, float_160_8041d6d0,
-                  float_270_8041d650, float_254_8041d6d4);
+        winWazaGX(work, 0, x - 270.0f, 160.0f,
+                  270.0f, 254.0f);
         winFontInit();
-        f26 = float_90_8041d6d8 + x - float_270_8041d650;
+        f26 = 90.0f + x - 270.0f;
         {
             Vec pos, scale, tmp;
             c = white2;
@@ -1766,13 +1742,13 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
             c = white2;
             scale = VEC_AT(0x6F0);
             tmp = VEC_AT(0x6E4);
-            tmp.x = f24 - float_270_8041d650;
+            tmp.x = f24 - 270.0f;
             pos = tmp;
-            winFontSetEdge(&pos, &scale, &c, str_8041D6DC);
+            winFontSetEdge(&pos, &scale, &c, "\x82r\x82o");
         }
-        f20 = float_228_8041d6e4 + x - float_270_8041d650;
-        f21 = float_4_8041d66c + (float_17_8041d6e8 + f24 - float_270_8041d650);
-        f19 = float_10_8041d61c + (float_10_8041d61c + x - float_270_8041d650);
+        f20 = 228.0f + x - 270.0f;
+        f21 = 4.0f + (17.0f + f24 - 270.0f);
+        f19 = 10.0f + (10.0f + x - 270.0f);
         for (i = 0, j = 0; i < WW_S32(work, 0x198); j += 0x1A, i++) {
             SuperActionEntry* sa;
             char buf[0x40];
@@ -1786,7 +1762,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
             tmp.y = (f32)(0x82 - j);
             pos1 = tmp;
             winFontSetLabel(&pos1, &scale1, &c, sa->field_0);
-            sprintf(buf, str_8041D63C, WM_ZENKAKU(sa->field_12));
+            sprintf(buf, "%s", WM_ZENKAKU(sa->field_12));
             drop = (f32)(0x82 - j);
             scale2 = VEC_AT(0x720);
             tmp = VEC_AT(0x714);
@@ -1800,7 +1776,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
             tmp.x = f21;
             tmp.y = (f32)(0x78 - j);
             pos3 = tmp;
-            winFontSet(&pos3, &scale3, &black, str_8041D6DC);
+            winFontSet(&pos3, &scale3, &black, "\x82r\x82o");
         }
     }
 
@@ -1811,3 +1787,159 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
 }
 #pragma inline_max_total_size reset
 #pragma inline_max_size reset
+
+// ---- named data, defined after the code so MWCC does not fold it ----
+#pragma explicit_zero_data on
+#pragma force_active on
+// .rodata named objects in address order
+const Vec vec3_802f5824 = { 0, 0, 0 };
+const Vec vec3_802f5830 = { 0.8, 0.8, 0.8 };
+const Vec vec3_802f583c = { 0, 0, 0 };
+const Vec vec3_802f5848 = { 0.8, 0.8, 0.8 };
+const Vec vec3_802f5854 = { 0, 0, 0 };
+const Vec vec3_802f5860 = { 0.7, 0.7, 0.7 };
+const Vec vec3_802f586c = { 0, 0, 0 };
+const Vec vec3_802f5878 = { -0.8, 0.8, 0.8 };
+const Vec vec3_802f5884 = { 0, 0, 0 };
+const Vec vec3_802f5890 = { -0.8, 0.8, 0.8 };
+const Vec vec3_802f589c = { 0, 0, 0 };
+const Vec vec3_802f58a8 = { 0.7, 0.7, 0.7 };
+const Vec vec3_802f58b4 = { 0, 0, 0 };
+const Vec vec3_802f58c0 = { 0.8, 0.8, 0.8 };
+const Vec vec3_802f58cc = { 0, 0, 0 };
+const Vec vec3_802f58d8 = { 0.6, 0.6, 0.6 };
+const Vec vec3_802f58e4 = { 0, 0, 0 };
+const Vec vec3_802f58f0 = { 0.8, 0.8, 0.8 };
+const Vec vec3_802f58fc = { 0, 0, 0 };
+const Vec vec3_802f5908 = { 0.8, 0.8, 0.8 };
+const Vec vec3_802f5914 = { 0, 0, 0 };
+const Vec vec3_802f5920 = { 1, 1, 1 };
+const Vec vec3_802f592c = { 0, 0, 0 };
+const Vec vec3_802f5938 = { 0.7, 0.7, 0.7 };
+const GXColor dat_802f5944[3] = { { 0xCB, 0x8C, 0xA2, 0xFE }, { 0xCB, 0xBE, 0x89, 0xFE }, { 0x94, 0xB9, 0xC7, 0xFE } };
+const GXColor dat_802f5950[3] = { { 0xA7, 0x3C, 0x3C, 0xFF }, { 0x37, 0x69, 0x1E, 0xFF }, { 0x0F, 0x21, 0x7A, 0xFF } };
+const char* const N_stat_name_tbl[3] = { "\x82g\x82o", "\x82""e\x82o", "\x82""a\x82o" };
+const char str_802F5968[24] = "msg_menu_mario_ruby_hp\x00\x00";
+const char str_802F5980[24] = "msg_menu_mario_ruby_fp\x00\x00";
+const char str_802F5998[24] = "msg_menu_mario_ruby_bp\x00\x00";
+const GXColor dat_8041d608 = { 0x00, 0x00, 0x00, 0x80 };
+__declspec(section ".rodata") const u32 jumptable_802F59B0[3] = { 0, 0, 0 };
+const Vec vec3_802f59bc = { 0, 0, 0 };
+const Vec vec3_802f59c8 = { 1, 1, 1 };
+const Vec vec3_802f59d4 = { 0, 0, 0 };
+const Vec vec3_802f59e0 = { 1, 1, 1 };
+const Vec vec3_802f59ec = { 0, 0, 0 };
+const Vec vec3_802f59f8 = { 0.5, 0.5, 0.5 };
+const Vec vec3_802f5a04 = { 0, 0, 0 };
+const Vec vec3_802f5a10 = { 0.82, 0.82, 0.82 };
+const Vec vec3_802f5a1c = { 0, 0, 0 };
+const Vec vec3_802f5a28 = { 0.82, 0.82, 0.82 };
+const Vec vec3_802f5a34 = { 0, 0, 0 };
+const Vec vec3_802f5a40 = { 0.82, 0.82, 0.82 };
+const Vec vec3_802f5a4c = { 0, 0, 0 };
+const Vec vec3_802f5a58 = { 1, 1, 1 };
+const Vec vec3_802f5a64 = { 0, 0, 0 };
+const Vec vec3_802f5a70 = { 1, 1, 1 };
+const Vec vec3_802f5a7c = { 0, 0, 0 };
+const Vec vec3_802f5a88 = { 1, 1, 1 };
+const Vec vec3_802f5a94 = { 0, 0, 0 };
+const Vec vec3_802f5aa0 = { 1, 1, 1 };
+const Vec vec3_802f5aac = { 0, 0, 0 };
+const Vec vec3_802f5ab8 = { 1, 1, 1 };
+const Vec vec3_802f5ac4 = { 0, 0, 0 };
+const Vec vec3_802f5ad0 = { 1, 1, 1 };
+const Vec vec3_802f5adc = { 0, 0, 0 };
+const Vec vec3_802f5ae8 = { 1, 1, 1 };
+const Vec vec3_802f5af4 = { 0, 0, 0 };
+const Vec vec3_802f5b00 = { 0.8, 0.8, 0.8 };
+const Vec vec3_802f5b0c = { 0, 0, 0 };
+const Vec vec3_802f5b18 = { 0.8, 0.8, 0.8 };
+const Vec vec3_802f5b24 = { 0, 0, 0 };
+const Vec vec3_802f5b30 = { 1, 1, 1 };
+const Vec vec3_802f5b3c = { 0, 0, 0 };
+const Vec vec3_802f5b48 = { 0.8, 0.8, 0.8 };
+const Vec vec3_802f5b54 = { 0, 0, 0 };
+const Vec vec3_802f5b60 = { 0.8, 0.8, 0.8 };
+const Vec vec3_802f5b6c = { 0, 0, 0 };
+const Vec vec3_802f5b78 = { 0.62, 0.62, 0.62 };
+const Vec vec3_802f5b84 = { 0, 0, 0 };
+const Vec vec3_802f5b90 = { 0.62, 0.62, 0.62 };
+const Vec vec3_802f5b9c = { 0, 0, 0 };
+const Vec vec3_802f5ba8 = { 0.62, 0.62, 0.62 };
+const Vec vec3_802f5bb4 = { 0, 0, 0 };
+const Vec vec3_802f5bc0 = { 0.62, 0.62, 0.62 };
+const Vec vec3_802f5bcc = { 0, 0, 0 };
+const Vec vec3_802f5bd8 = { 0.62, 0.62, 0.62 };
+const Vec vec3_802f5be4 = { 0, 0, 0 };
+const Vec vec3_802f5bf0 = { 0.9, 0.9, 0.9 };
+const Vec vec3_802f5bfc = { 0, 0, 0 };
+const Vec vec3_802f5c08 = { 0.9, 0.9, 0.9 };
+const Vec vec3_802f5c14 = { 0, 0, 0 };
+const Vec vec3_802f5c20 = { 0.9, 0.9, 0.9 };
+const Vec vec3_802f5c2c = { 0, 0, 0 };
+const Vec vec3_802f5c38 = { 0.9, 0.9, 0.9 };
+const Vec vec3_802f5c44 = { 0, 0, 0 };
+const Vec vec3_802f5c50 = { 0.9, 0.9, 0.9 };
+const Vec vec3_802f5c5c = { 0, 0, 0 };
+const Vec vec3_802f5c68 = { 0.9, 0.9, 0.9 };
+const Vec vec3_802f5c74 = { 0, 0, 0 };
+const Vec vec3_802f5c80 = { 0.9, 0.9, 0.9 };
+const Vec vec3_802f5c8c = { 0, 0, 0 };
+const Vec vec3_802f5c98 = { 0.9, 0.9, 0.9 };
+const Vec vec3_802f5ca4 = { 0, 0, 0 };
+const Vec vec3_802f5cb0 = { 0.9, 0.9, 0.9 };
+const Vec vec3_802f5cbc = { 0, 0, 0 };
+const Vec vec3_802f5cc8 = { 0.9, 0.9, 0.9 };
+const Vec vec3_802f5cd4 = { 0, 0, 0 };
+const Vec vec3_802f5ce0 = { 0.9, 0.9, 0.9 };
+const Vec vec3_802f5cec = { 0, 0, 0 };
+const Vec vec3_802f5cf8 = { 1, 1, 1 };
+const Vec vec3_802f5d04 = { 0, 0, 0 };
+const Vec vec3_802f5d10 = { 1, 1, 1 };
+const Vec vec3_802f5d1c = { 0, 155, 0 };
+const Vec vec3_802f5d28 = { 0.8, 0.8, 0.8 };
+const Vec vec3_802f5d34 = { 0, 155, 0 };
+const Vec vec3_802f5d40 = { 0.8, 0.8, 0.8 };
+const Vec vec3_802f5d4c = { 0, 0, 0 };
+const Vec vec3_802f5d58 = { 1, 1, 1 };
+const Vec vec3_802f5d64 = { 0, 0, 0 };
+const Vec vec3_802f5d70 = { 1, 1, 1 };
+const Vec vec3_802f5d7c = { 0, 0, 0 };
+const Vec vec3_802f5d88 = { 0.5, 0.5, 0.5 };
+const char str_802F5D94[12] = "name_mario\x00\x00";
+const char str_802F5DA0[24] = "msg_menu_mario_level\x00\x00\x00\x00";
+const char str_802F5DB8[24] = "msg_menu_mario_special\x00\x00";
+const char str_802F5DD0[24] = "msg_menu_mario_num_sp\x00\x00\x00";
+const char str_802F5DE8[24] = "msg_menu_mario_num_coin\x00";
+const char str_802F5E00[28] = "msg_menu_mario_num_hoshi\x00\x00\x00\x00";
+const char str_802F5E1C[32] = "msg_menu_mario_num_super_coin\x00\x00\x00";
+const char str_802F5E3C[28] = "msg_menu_mario_num_playtime\x00";
+const char str_802F5E58[24] = "msg_menu_mario_sac_waza\x00";
+
+
+// .data: link table
+LinkDt linkDt[18] = {
+    { (s16)0xFEF4, (s16)0x008E, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, WM_MSG_BASE, { 0x06, 0x01, 0x0B, 0x09 } },
+    { (s16)0xFEF4, (s16)0x0076, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5664, { 0x00, 0x02, 0x0B, 0x07 } },
+    { (s16)0xFEF0, (s16)0x0044, str_8041D584, NULL, str_8041D58C, 0x0009, 0x0000, NULL, { 0x01, 0x03, 0x0B, 0x07 } },
+    { (s16)0xFF0E, (s16)0x0018, str_8041D590, NULL, str_8041D58C, 0x0006, 0x0000, NULL, { 0x02, 0x04, 0x0B, 0x08 } },
+    { (s16)0xFEF2, (s16)0xFFDE, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F567C, { 0x03, 0x05, 0x0D, 0x0D } },
+    { (s16)0xFEF2, (s16)0xFFBC, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5690, { 0x04, 0x06, 0x0D, 0x0D } },
+    { (s16)0xFEF2, (s16)0xFF9A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F56A4, { 0x05, 0x00, 0x0D, 0x0D } },
+    { (s16)0xFF9C, (s16)0x005A, str_8041D578, str_8041D578, str_8041D580, 0x0002, 0x0000, str_802F56B8, { 0x09, 0x0A, 0x02, 0x09 } },
+    { (s16)0xFF9C, (s16)0x0014, str_8041D578, str_8041D578, str_8041D580, 0x0004, 0x0000, str_802F56C4, { 0x0A, 0x04, 0x03, 0x0A } },
+    { (s16)0xFFCE, (s16)0x0082, str_8041D578, str_8041D578, str_8041D580, 0x0005, 0x0000, str_802F56D0, { 0x00, 0x07, 0x00, 0x0B } },
+    { (s16)0xFFCE, (s16)0x003C, str_8041D578, str_8041D578, str_8041D580, 0x0003, 0x0000, str_802F56DC, { 0x07, 0x08, 0x08, 0x0C } },
+    { (s16)0x0014, (s16)0x006A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F56E8, { 0x11, 0x0C, 0x09, 0x00 } },
+    { (s16)0x0014, (s16)0x0046, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F56FC, { 0x0B, 0x0D, 0x0A, 0x00 } },
+    { (s16)0x0003, (s16)0x000A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5710, { 0x0C, 0x0E, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFFEE, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5728, { 0x0D, 0x0F, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFFD2, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F573C, { 0x0E, 0x10, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFFB6, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5754, { 0x0F, 0x11, 0x04, 0x04 } },
+    { (s16)0x0003, (s16)0xFF9A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F576C, { 0x10, 0x0B, 0x04, 0x04 } },
+};
+
+__declspec(section ".data") const u32 gap_05_80374F34_data = 0;
+
+#pragma force_active off
+#pragma explicit_zero_data reset
