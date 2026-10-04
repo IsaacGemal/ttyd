@@ -4576,3 +4576,11 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   was misalignment. Launcher note: set_aside moves `<tag>` to `<tag>.prevN` when the task starts, so a follow-up's spec
   `files` must not point into its own results folder (mot_ship's first relaunch failed in prepare); they live under
   scratch/wave74/prev/.
+- **Batch 18:** data ports for eff_nice, eff_ultra_hammer, eff_pokopi_thunder_n64, effdrv and eff_sstar_n64 (wave 74 arm
+  D), and animdrv's follow-up (10 measures improved). mri_puni's 572-byte .data excess is exactly its eight MUST_MATCH
+  `jumptable_*` copies; without them .data is byte-identical but objdiff's name pairing drops (95.75 -> 80.79), so
+  they go in its linking commit (#418: AGENT_BRIEF recipe and oneshort prompt; scratch/wave74/link_regress.sh merges
+  such a result only when tools/autolink.py links the unit, excusing it with --allow-regress). Arm F, on a pre-#415
+  base, also ran win_item and win_log after arm G's claims were released; its win_item reverts winBookGX's floats and
+  was discarded. Rejected: gor_10 (.bss 100 -> 85.7, first attempt). scratch/wave71/repair_headers.py now inserts
+  the externs after the last #include before their first use (animdrv has a stray #include at line 1045).
