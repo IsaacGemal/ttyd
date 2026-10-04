@@ -213,32 +213,38 @@ s32 uranaisi_ryokin_rtn(s32 idx) {
     return pouchGetPtr()->level * 2;
 }
 
-// NONMATCHING (98.81%): instructions identical; only callee-saved colouring differs.
-// The target keeps mbbpos in r18 and gives saved r25, pushing the early
-// prefix/&_udt/literal/maxLabel block two up and permuting tagNum/count/offset.
+// NONMATCHING (99.78%): instructions identical; only callee-saved colouring differs.
+// The explicit offset (count*6), u8 saved and the declaration order reproduce every
+// target register except a prefix<->tagdone/saved swap (7 arg_mismatch diffs).
 s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
-    s32 tagNum;
+    s32 mbbpos;
     char label[64];
     char tag[64];
-    BOOL tagdone;
+    s32 tagNum;
     UranaiWork* wp = &_udt;
-    char saved;
+    u8 saved;
+#ifdef MUST_MATCH
+    s32 offset;
+#endif
     const s8* msg;
-    s32 mbbpos;
-    s32 count;
+    BOOL tagdone;
     BOOL typeFlag;
-    s32 maxLabel;
-    s32 labelId;
     s32 storyId;
+    char* initEndPos;
+    s32 labelId;
+    s16 tagEndPos;
     s32 gswf;
     const s8* tagdata;
-    char* initEndPos;
-    s16 tagEndPos;
+    s32 maxLabel;
+    s32 count;
 
     maxLabel = evtGetValue(NULL, -170000000);
     typeFlag = type & 1;
     count = 0;
     storyId = 0;
+#ifdef MUST_MATCH
+    offset = 0;
+#endif
     while (TRUE) {
         sprintf(label, "%s_%04d", prefix, storyId);
         msg = (const s8*)msgSearch(label);
@@ -328,9 +334,17 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
                 initEndPos[tagEndPos] = saved;
                 if (gswf != -1 && evtGetValue(NULL, gswf) == 0) {
                     if (typeFlag) {
+#ifdef MUST_MATCH
+                        ((UranaiInfo*)((u8*)wp->info + offset))->labelId = (s16)labelId;
+                        ((UranaiInfo*)((u8*)wp->info + offset))->unk4 = (s16)storyId;
+#else
                         wp->info[count].labelId = (s16)labelId;
                         wp->info[count].unk4 = (s16)storyId;
+#endif
                     }
+#ifdef MUST_MATCH
+                    offset += 6;
+#endif
                     count++;
                 }
             }
@@ -340,32 +354,37 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     return count;
 }
 
-// NONMATCHING (98.81%): mirror of make_supercoin, same callee-saved colouring
-// difference (the lookup-index/saved split shifts the early
-// prefix/&_udt/literal/maxLabel block two up and permutes tagNum/count/offset).
+// NONMATCHING (99.78%): mirror of make_supercoin, same 7 callee-saved colouring
+// diffs (prefix in r25 instead of r24, tagdone/saved in r24 instead of r25).
 s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
-    s32 tagNum;
+    s32 mbbpos;
     char label[64];
     char tag[64];
-    BOOL tagdone;
+    s32 tagNum;
     UranaiWork* wp = &_udt;
-    char saved;
+    u8 saved;
+#ifdef MUST_MATCH
+    s32 offset;
+#endif
     const s8* msg;
-    s32 mbbpos;
-    s32 count;
+    BOOL tagdone;
     BOOL typeFlag;
-    s32 maxLabel;
-    s32 labelId;
     s32 storyId;
+    char* initEndPos;
+    s32 labelId;
+    s16 tagEndPos;
     s32 gswf;
     const s8* tagdata;
-    char* initEndPos;
-    s16 tagEndPos;
+    s32 maxLabel;
+    s32 count;
 
     maxLabel = evtGetValue(NULL, -170000000);
     typeFlag = type & 1;
     count = 0;
     storyId = 0;
+#ifdef MUST_MATCH
+    offset = 0;
+#endif
     while (TRUE) {
         sprintf(label, "%s_%04d", prefix, storyId);
         msg = (const s8*)msgSearch(label);
@@ -455,9 +474,17 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
                 initEndPos[tagEndPos] = saved;
                 if (gswf != -1 && evtGetValue(NULL, gswf) == 0) {
                     if (typeFlag) {
+#ifdef MUST_MATCH
+                        ((UranaiInfo*)((u8*)wp->info + offset))->labelId = (s16)labelId;
+                        ((UranaiInfo*)((u8*)wp->info + offset))->unk4 = (s16)storyId;
+#else
                         wp->info[count].labelId = (s16)labelId;
                         wp->info[count].unk4 = (s16)storyId;
+#endif
                     }
+#ifdef MUST_MATCH
+                    offset += 6;
+#endif
                     count++;
                 }
             }
