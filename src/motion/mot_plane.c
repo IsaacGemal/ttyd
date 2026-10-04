@@ -33,7 +33,20 @@
 // .rodata zero vectors used by the plane motion (original vec3_802c5c9c / vec3_802c5cd8...).
 // They are defined at the source positions that reproduce the original .rodata order.
 
-EVT_BEGIN(sound_evt)
+// .data:0x0. Plane geometry/trig table read by chkCollision/flyMain (41 words, original order).
+f32 planeData[41] = {
+    5.0f,        -0.02f,       -0.03f,       25.0f,       -45.0f,
+    0.4f,        1.0f,         0.1f,        -0.1f,        1.5f,
+    0.2f,        0.05f,        3.4f,         1.0f,        0.025f,
+    0.045f,      0.8f,         1.5f,        -0.3f,       -5.0f,
+    3.9f,        -0.112f,       0.118f,       0.5f,        0.4f,
+    -8.0f,       -2.0f,        -4.0f,        -2.0f,        0.2f,
+    0.0f,        1.2f,         1.0f,        15.0f,      -30.0f,
+    12.0f,       0.0f,        30.0f,       -30.0f,        6.0f,
+    28.0f,
+};
+
+static EVT_BEGIN(sound_evt)
 CALL(evt_snd_sfxon_3d, STRING("SFX_MARIO_AIRPLANE1"), LW(0), LW(1), LW(2), 0)
 WAIT_FRAMES(12)
 CALL(evt_snd_sfxon_3d, STRING("SFX_MARIO_AIRPLANE1"), LW(0), LW(1), LW(2), 0)
@@ -1146,9 +1159,10 @@ s32 chkCollision(f32* out) {
 		vy = sinA * pd40 + vy;
 		sincosf(&sinA, &cosA, MF32(DATA, 0x4) - MATCH_F32(float_90_8041ac04));
 		vx = vx + (planeData[39] * (cosA * sinC) - planeData[39] * (sinR * cosC));
+		vy = vy + planeData[39] * (sinA * cosR);
 		v30 = vec3_802c5d08;
 		v30.x = vx;
-		v30.y = vy + planeData[39] * (sinA * cosR);
+		v30.y = vy;
 		vz = vz + (planeData[39] * (cosA * cosC) - planeData[39] * (sinR * sinC));
 		v30.z = vz;
 		MFVEC(DATA, 0x30) = v30;
@@ -1158,10 +1172,11 @@ s32 chkCollision(f32* out) {
 	{
 		MotionPlaneData* d = DATA;
 		f32 a0 = MF32(d, 0x30) - ten * sinC;
+		f32 a2 = MF32(d, 0x38) - ten * cosC;
 		f32 a1 = MF32(d, 0x34);
 		dist = ten + mario->baseSpeed;
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-		                    a0, a1, MF32(d, 0x38) - ten * cosC, sinC, 0.0f, cosC);
+		                    a0, a1, a2, sinC, 0.0f, cosC);
 	}
 	if (hit != NULL) {
 		*(HitEntry**)((u8*)mario + 0x1E0) = hit;
@@ -1245,3 +1260,4 @@ s32 chkCollision(f32* out) {
 	}
 	return flag;
 }
+

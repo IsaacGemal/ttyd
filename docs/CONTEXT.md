@@ -4434,3 +4434,12 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   base-register/named-constant pool recipe) and 8 data-prep units. The first start passed BASE=~/... unquoted, so the
   Mac expanded the tilde and every prepare failed before an agent started (claims released, no slots held); relaunched
   quoted a minute later.
+- **Batch 4:** BattleAcDrawGauge (battle_ac, unit linked: the one-short arm's sixth), effRecoveryDisp4 and
+  chkCollision (mot_plane; three link continuations, still unlinked) to 100%; parse's two format strings sized as
+  their 4-byte objects. agent_audit counted every operand of a copy as written, so battle_ac's agent was flagged
+  for copying the base's built object into its own build directory; a copy now writes only its destination, and
+  the fixed audit was installed in both wave 71 bases (~/ttyd-w71base, ~/ttyd-w71r2base) for the remaining collects
+  before battle_ac was collected again. Rejected by the ratchet: evt_nannpc, seq_load, mot_jump (its .data scores
+  0% after the port although data_check passes: the section's relocations now name new symbols).
+  scratch/wave71/repair_headers.py moves an agent's data externs from headers into its .c (header_patch.py refuses
+  them; four agents so far).

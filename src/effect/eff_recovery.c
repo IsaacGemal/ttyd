@@ -852,9 +852,23 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (99.93%): the frame (0x130) and matrix offsets match; MWCC swaps the else branch's
-// colour build (0x14) and the i==1 branch's outgoing copy (0xc) vs the original (0xc / 0x14), plus
-// one swapped fadds operand order in the last GXPosition3f32.
+#ifdef MUST_MATCH
+// Match-only: the original inlined both colour builders. Passing the GXColor by value through a
+// helper in this shape is what places the colour stack slots exactly as the original (else build
+// 0xc / outgoing copy 0x8, i==1 build 0x10 / outgoing copy 0x14).
+static inline GXColor rcA(u8 a, GXColor c) {
+	c.a = a;
+	return c;
+}
+static inline GXColor rcC(s32 idx, u8 a, GXColor c) {
+	c.r = color_rotation_data[idx * 3 + 0];
+	c.g = color_rotation_data[idx * 3 + 1];
+	c.b = color_rotation_data[idx * 3 + 2];
+	c.a = a;
+	return c;
+}
+#endif
+
 void effRecoveryDisp4(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* ptr = entry->userdata;
@@ -867,8 +881,7 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 	// Match-only: the original copies the else branch's colour to a second slot before loading the
 	// textures and re-reads it for GXSetChanMatColor. The volatile shim reproduces that extra stack
 	// slot (and the resulting 0x130 frame); it changes no value. The natural form is under #else.
-	volatile u32 saved;
-	GXColor chanColor;
+	volatile GXColor saved;
 #endif
 	GXTexObj tex;
 	s32 i;
@@ -877,6 +890,10 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 	f32 s;
 	f32 t;
 	f32 one = float_1_8041cae0;
+#ifdef MUST_MATCH
+	// Match-only: naming the half-offset keeps MWCC from commuting the fadds that adds it to s.
+	f32 half;
+#endif
 
 	cam = camGetPtr(camId);
 	color = ptr->color;
@@ -904,24 +921,25 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 			continue;
 		}
 		if (i == 1) {
+#ifdef MUST_MATCH
+			effGetTexObj(0x12, &tex);
+			GXLoadTexObj(&tex, GX_TEXMAP0);
+			GXSetChanMatColor(GX_COLOR0A0, rcA((color * ptr->color) / 255, *(GXColor*)&dat_8041cacc));
+#else
 			GXColor chanColor;
 			effGetTexObj(0x12, &tex);
 			GXLoadTexObj(&tex, GX_TEXMAP0);
 			*(u32*)&chanColor = dat_8041cacc;
 			chanColor.a = (color * ptr->color) / 255;
 			GXSetChanMatColor(GX_COLOR0A0, chanColor);
+#endif
 		} else {
 			s32 idx = (i + gp->retraceCount) % 12;
 #ifdef MUST_MATCH
-			chanColor = *(GXColor*)&unk_80423044;
-			chanColor.r = color_rotation_data[idx * 3 + 0];
-			chanColor.g = color_rotation_data[idx * 3 + 1];
-			chanColor.b = color_rotation_data[idx * 3 + 2];
-			chanColor.a = (color * ptr->color) / 255;
-			saved = *(u32*)&chanColor;
+			saved = rcC(idx, (color * ptr->color) / 255, *(GXColor*)&unk_80423044);
 			effGetTexObj(0x14, &tex);
 			GXLoadTexObj(&tex, GX_TEXMAP0);
-			GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&saved);
+			GXSetChanMatColor(GX_COLOR0A0, saved);
 #else
 			GXColor chanColor = *(GXColor*)&unk_80423044;
 			chanColor.r = color_rotation_data[idx * 3 + 0];
@@ -959,9 +977,16 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 		GXTexCoord2f32(float_0_8041cadc, float_0_8041cadc);
 		GXPosition3f32(float_16_8041caf0, float_16_8041caf0 + s, float_0_8041cadc);
 		GXTexCoord2f32(t, float_0_8041cadc);
+#ifdef MUST_MATCH
+		half = y * float_0p5_8041caec;
+		GXPosition3f32(float_16_8041caf0, half + s, float_0_8041cadc);
+		GXTexCoord2f32(t, one);
+		GXPosition3f32(y * float_0p5_8041caec, half + s, float_0_8041cadc);
+#else
 		GXPosition3f32(float_16_8041caf0, y * float_0p5_8041caec + s, float_0_8041cadc);
 		GXTexCoord2f32(t, one);
 		GXPosition3f32(y * float_0p5_8041caec, y * float_0p5_8041caec + s, float_0_8041cadc);
+#endif
 		GXTexCoord2f32(float_0_8041cadc, one);
 	}
 }

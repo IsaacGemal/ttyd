@@ -289,6 +289,13 @@ class AgentAudit(unittest.TestCase):
                 self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
                 self.assertIn("EVENTS-CORRUPT", result.stdout)
 
+    def test_copying_in_from_outside_is_a_read(self):
+        self.assertNotIn("WRITE-OUTSIDE", kinds(ev("bash", command="cp /home/isaac/ttyd-w71base/build/x.o build/x.o")))
+        self.assertNotIn("WRITE-OUTSIDE", kinds(ev("bash", command="rsync -a /home/isaac/base/src/ src/")))
+        for cmd in ["cp build/x.o /home/isaac/x.o", "cp -t /home/isaac/par a b", "mv /home/isaac/x tmp/x",
+                    "ln -s ../x /home/isaac/y"]:
+            self.assertIn("WRITE-OUTSIDE", kinds(ev("bash", command=cmd)), cmd)
+
     def test_running_tools_from_outside(self):
         self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="python3 ~/permuter/permuter.py tmp/perm")))
         self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="/home/isaac/permuter/import.py src/x.c")))

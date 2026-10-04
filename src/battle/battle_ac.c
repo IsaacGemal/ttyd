@@ -13,6 +13,9 @@ extern const Vec vec3_802eda58;
 extern GXColor dat_8041be98;
 extern GXColor dat_8041be9c;
 
+__declspec(section ".sdata2") GXColor dat_8041be98 = { 0x00, 0xE4, 0x86, 0xFF };
+__declspec(section ".sdata2") GXColor dat_8041be9c = { 0xFF, 0x00, 0x00, 0xFF };
+
 //local prototypes
 void psndSFX_pit(s32 id, s32 pitch);
 
@@ -126,10 +129,20 @@ typedef struct GuardFrames {
 // `volatile` on the first table stops CSE from reusing the base register for the loaded word.
 extern volatile GuardFrames N_normal_guard_frames[];
 extern GuardFrames N_superguard_frames[];
+__declspec(section ".rodata") volatile GuardFrames N_normal_guard_frames[1] = {
+	{ 0x0A, 0x09, 0x08, 0x08, 0x07, 0x06, 0x05 }
+};
+__declspec(section ".rodata") GuardFrames N_superguard_frames[1] = {
+	{ 0x05, 0x04, 0x03, 0x03, 0x02, 0x01, 0x01 }
+};
 #else
 extern const GuardFrames N_normal_guard_frames[];
 extern const GuardFrames N_superguard_frames[];
+const GuardFrames N_normal_guard_frames[1] = { { 0x0A, 0x09, 0x08, 0x08, 0x07, 0x06, 0x05 } };
+const GuardFrames N_superguard_frames[1] = { { 0x05, 0x04, 0x03, 0x03, 0x02, 0x01, 0x01 } };
 #endif
+
+__declspec(section ".rodata") const Vec vec3_802eda58 = { 0.0f, 0.0f, 0.0f };
 
 #pragma dont_inline on // retail keeps the BattleACPadCheckRecordTrigger call instead of inlining it
 // Every instruction matches. The two guard-frame tables are independent global copies, so the
@@ -442,27 +455,22 @@ static inline BattleWork* getWorkPointer(void) {
 	return _battleWorkPointer;
 }
 
-// NONMATCHING (99.83%): every instruction and constant matches; only two runs of float registers differ.
-// Reading `work` through the `getWorkPointer()` call above was needed to get the `work`/boundary-temp
-// split right (retail keeps `work` in r30 and the cross-segment boundary `x + type*t0/100 - 289` in
-// r29, shared by segment 1's right edge and segment 2's left edge and live across segment 1's draw).
-// Grouping each draw's four edge floats into a local `struct { f32 ...; }` (in the order declared in
-// the helpers below) reproduces retail's f27-f30 allocation everywhere except the three 2px marker
-// highlights, whose y/colour conversion order still comes out one register off (27 instructions).
 // Draws one gauge segment between two thresholds, both scaled by `type`/100 and offset from x.
+// The four edge floats are declared as locals in the order that reproduces the original's f27-f30
+// allocation (MWCC colours locals in reverse declaration order).
 static inline void gaugeSegment(CameraEntry* cam, s32 x, s32 y, s32 type, s32 prev, s32 next, u8 r, u8 g,
                                 u8 b, u8 a) {
-	struct { f32 xa, yb, xb, yt; } e;
+	f32 yt, xb, yb, xa;
 
-	e.xa = (f32)(x - 289 + type * prev / 100);
-	e.yb = (f32)(y + 50);
-	e.xb = (f32)(x - 289 + type * next / 100);
-	e.yt = (f32)(y + 32);
+	xa = (f32)(x - 289 + type * prev / 100);
+	yb = (f32)(y + 50);
+	xb = (f32)(x - 289 + type * next / 100);
+	yt = (f32)(y + 32);
 
-	if (e.xb >= e.xa) {
+	if (xb >= xa) {
 		btlDispGXInit2DRasta();
 		GXLoadPosMtxImm(cam->view, 0);
-		btlDispGXQuads2DRasta(e.xa, e.yb, e.xb, e.yt, r, g, b, a);
+		btlDispGXQuads2DRasta(xa, yb, xb, yt, r, g, b, a);
 	}
 }
 
@@ -495,25 +503,21 @@ static inline void gaugeProgress(CameraEntry* cam, s32 x, s32 y, s32 type, s32 p
 static inline void gaugeHighlight(CameraEntry* cam, s32 x, s32 y, s32 type, s32 threshold, u8 r, u8 g,
                                   u8 b, u8 a) {
 	s32 off = type * threshold / 100;
-	struct { f32 xb, yb, xa, yt; } e;
+	f32 yt, xb, yb, xa;
 
-	e.xb = (f32)(x - 289 + off);
-	e.yb = (f32)(y + 50);
-	e.xa = e.xb - 2.0f;
-	e.yt = (f32)(y + 32);
+	xb = (f32)(x - 289 + off);
+	yt = (f32)(y + 32);
+	xa = xb - 2.0f;
+	yb = (f32)(y + 50);
 
-	if (e.xb >= e.xa) {
+	if (xb >= xa) {
 		btlDispGXInit2DRasta();
 		GXLoadPosMtxImm(cam->view, 0);
-		btlDispGXQuads2DRasta(e.xa, e.yb, e.xb, e.yt, r, g, b, a);
+		btlDispGXQuads2DRasta(xa, yb, xb, yt, r, g, b, a);
 	}
 }
 
-#pragma optimize_for_size on // -O4,s: the target keeps divw for /100 instead of a magic multiply
-// NONMATCHING (99.83%): the three 2px marker (gaugeHighlight) blocks colour xa/xb the other way
-// (retail xa=f27, xb=f29; ours xa=f29, xb=f27) and materialise y+32 before y+50 (ours the reverse).
-// Every other block matches; a wide search of struct/assignment orders (tmp/variants*.py) found
-// nothing better, so this is pure register colouring: permuter work.
+#pragma optimize_for_size on // keeps divw for /100 instead of a magic multiply
 void BattleAcDrawGauge(s32 x, s32 y, s32 type, s32 count, s32 t0, s32 t1, s32 t2, s32 flags, f32 ratio) {
 	BattleWork* work = getWorkPointer();
 	CameraEntry* cam;
