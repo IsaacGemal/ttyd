@@ -33,7 +33,6 @@ static s32 _get_mario_hammer_lv(EventEntry* event, BOOL isFirstCall);  // local 
 extern s32 btlevtcmd_ACHelpSet[];
 extern s32 btlevtcmd_AnimeChangePaperAnime[];
 extern s32 btlevtcmd_AnimeChangePaperGroup[];
-extern s32 btlevtcmd_FallPartsPosition[];
 extern s32 btlevtcmd_GetWeaponActionLv[];
 extern s32 evt_audience_acrobat_notry[];
 extern s32 evt_majinai_effect_se_btl[];
