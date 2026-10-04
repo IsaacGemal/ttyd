@@ -8,6 +8,10 @@
 #include "system.h"
 #include <string.h>
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const f32 float_0p4_80419910;
+extern const f32 float_255_80419914;
+
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 // This unit's .data, in the original order (shadowConfig at +0x40, testKagePosArray at +0xE0,
 // vertex_tbl at +0x2C0). The original functions reach these through the common base lbl_80303460.
@@ -190,10 +194,6 @@ __declspec(section ".rodata") const char str_802C1B88[] = "actual depth from the
 __declspec(section ".rodata") const char str_802C1BB4[] = "projected shadow depth map (16bit depth)";
 extern GXColor dat_804198e4;
 extern GXColor dat_804198e8;
-extern GXColor unk_80422f98;
-extern GXColor unk_80422f9c;
-extern GXColor unk_80422fa0;
-extern GXColor unk_80422fa4;
 extern const f32 float_1000_8041992c;
 extern const f32 float_0_804198f4;
 extern const f32 float_0p5_804198f8;
@@ -222,23 +222,33 @@ typedef struct ShadowConfigFields {
     f32 unk44;
 } ShadowConfigFields;
 
-Mtx tmp_view;
-u32 tmp_sci[4];
-f32 tmp_vp[6];
-
 extern GXColor dat_804198e0;
 extern GXColor dat_804198ec;
 extern GXColor dat_804198f0;
 extern const f32 float_20_80419928;
 
-//.bss
+//.bss (MWCC lays these out in reverse declaration order; the trailing gap pads to the next unit)
+#pragma section ".sdata" ".bss"
+u8 gap_06_803C63D4_bss[4];
 CharShadowWork char_shadow_work;
 ProjShadowWork proj_shadow_work;
 DepthShadowWork depth_shadow_work;
+#pragma section ".sdata" ".sbss"
 
 //.sbss
 GXTexObj rampTex8;
 GXTexObj rampTex16;
+f32 tmp_vp[6];
+u32 tmp_sci[4];
+Mtx tmp_view;
+
+//.sbss2 zero colours (declared in reverse of their address order)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80422fa4;
+__declspec(section ".sdata") GXColor unk_80422fa0;
+__declspec(section ".sdata") GXColor unk_80422f9c;
+__declspec(section ".sdata") GXColor unk_80422f98;
+#pragma section ".sdata" ".sbss"
 
 //.sdata
 CharShadowWork* cswp = &char_shadow_work;
@@ -298,10 +308,10 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     cswp->unk0 = 0;
     cswp->unk4 = 0;
     cswp->unk8 = 1;
-    cswp->unk100 = (GXColor){0, 0, 0, 0x6E};
+    cswp->unk100 = dat_804198e0;
     cswp->unk10C = 1;
     cswp->unk110 = 2;
-    cswp->unk114 = 20.0f;
+    cswp->unk114 = float_20_80419928;
     cswp->unk118 = 1;
     cswp->unk104 = 0;
     cswp->entries = __memAlloc(HEAP_DEFAULT, sizeof(ShadowEntry) * 64);
@@ -311,7 +321,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
     dswp->unk0 = 2;
     dswp->unk4 = 0;
     dswp->unk8 = 0;
-    dswp->unk100 = (GXColor){0, 0, 0, 0x40};
+    dswp->unk100 = dat_804198ec;
 
     bufferSize = GXGetTexBufferSize(0x10, 0x10, GX_TF_I8, GX_FALSE, 0);
     ramp8 = __memAlloc(HEAP_DEFAULT, GXGetTexBufferSize(0x10, 0x10, GX_TF_I8, GX_FALSE, 0));
@@ -319,7 +329,7 @@ void shadowInit(void) { //almost 1:1, minor regalloc
         ramp8[(((i & 0x3) * 8) + (((i & 0xC) * 16) + (((i & 0x80) / 4) + ((i & 0x70) / 16))))] = i;
     }
     GXInitTexObj(&rampTex8, ramp8, 0x10, 0x10, GX_TF_I8, GX_CLAMP, GX_REPEAT, GX_FALSE);
-    GXInitTexObjLOD(&rampTex8, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXInitTexObjLOD(&rampTex8, GX_NEAR, GX_NEAR, float_0_804198f4, float_0_804198f4, float_0_804198f4, GX_FALSE, GX_FALSE, GX_ANISO_1);
     DCFlushRange(ramp8, bufferSize);
 
     bufferSize2 = GXGetTexBufferSize(0x100, 0x100, GX_TF_IA8, GX_FALSE, 0);
@@ -328,13 +338,13 @@ void shadowInit(void) { //almost 1:1, minor regalloc
         ramp16[(((i & 0x3) * 4) + (((i & 0xFC) * 256) + (((i & 0xFC00) / 64) + ((i & 0x300) / 256))))] = i;
     }
     GXInitTexObj(&rampTex16, ramp16, 0x100, 0x100, GX_TF_IA8, GX_CLAMP, GX_REPEAT, GX_FALSE);
-    GXInitTexObjLOD(&rampTex16, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXInitTexObjLOD(&rampTex16, GX_NEAR, GX_NEAR, float_0_804198f4, float_0_804198f4, float_0_804198f4, GX_FALSE, GX_FALSE, GX_ANISO_1);
     DCFlushRange(ramp16, bufferSize2);
 
     pswp->unk0 = 2;
     pswp->unk4 = 0;
     pswp->unk8 = 0;
-    pswp->unk100 = (GXColor){0, 0, 0, 0x40};
+    pswp->unk100 = dat_804198f0;
 }
 
 GXTexObj* shadowGetRamp8TexObj(void) {
@@ -491,9 +501,9 @@ s32 shadowEntryMode(s32 unk2, f32 x, f32 y, f32 z, f32 size) {
     entry->type = 0;
     entry->unk18 = -1;
     entry->camId = 4;
-    entry->decayX = 1.0f;
-    entry->decayY = 0.2f;
-    entry->decayZ = 0.4f;
+    entry->decayX = float_1_80419904;
+    entry->decayY = float_0p2_8041990c;
+    entry->decayZ = float_0p4_80419910;
     entry->mode = 0xFF;
     cswp->unk104++;
     return id;
@@ -520,14 +530,15 @@ s32 shadowEntry(f32 x, f32 y, f32 z, f32 size) {
     entry->type = 0;
     entry->unk18 = -1;
     entry->camId = 4;
-    entry->decayX = 1.0f;
-    entry->decayY = 0.2f;
-    entry->decayZ = 0.4f;
+    entry->decayX = float_1_80419904;
+    entry->decayY = float_0p2_8041990c;
+    entry->decayZ = float_0p4_80419910;
     entry->mode = 0xFF;
     cswp->unk104++;
     return id;
 }
 
+#pragma opt_common_subs off // needed: keeps the fade clamp and alpha ramp in separate FP temporaries
 void cylinder(ShadowEntry* entry) {
     u8* base = lbl_80303460;
 
@@ -541,36 +552,36 @@ void cylinder(ShadowEntry* entry) {
 #ifdef MUST_MATCH
         // MUST_MATCH: declaring the fade clamp before the alpha ramp makes MWCC keep the u8->f32
         // conversion scratch in f3 and reuse it, giving retail's FP register allocation.
-        f32 f31 = 1.0f - entry->decayZ;
-        f32 f2 = alpha * entry->decayX / 255.0f;
+        f32 f31 = float_1_80419904 - entry->decayZ;
+        f32 f2 = alpha * entry->decayX / float_255_80419914;
 #else
-        f32 f2 = alpha * entry->decayX / 255.0f;
-        f32 f31 = 1.0f - entry->decayZ;
+        f32 f2 = alpha * entry->decayX / float_255_80419914;
+        f32 f31 = float_1_80419904 - entry->decayZ;
 #endif
         f32 f1 = f2 * entry->decayY;
 
-        if (f31 < 0.0f) {
-            f31 = 0.0f;
+        if (f31 < float_0_804198f4) {
+            f31 = float_0_804198f4;
         }
-        else if (f31 > 1.0f) {
-            f31 = 1.0f;
+        else if (f31 > float_1_80419904) {
+            f31 = float_1_80419904;
         }
-        if (f2 <= 0.0f) {
+        if (f2 <= float_0_804198f4) {
             return;
         }
-        if (f1 <= 0.0f) {
-            f1 = 0.0f;
+        if (f1 <= float_0_804198f4) {
+            f1 = float_0_804198f4;
         }
-        if (f1 >= 1.0f) {
-            f1 = 1.0f;
+        if (f1 >= float_1_80419904) {
+            f1 = float_1_80419904;
         }
         {
-            s32 c = (s32)(255.0f * f1);
+            s32 c = (s32)(float_255_80419914 * f1);
             GXSetArray(0xB, color_tbl, 4);
-            if (f31 != 0.0f) {
+            if (float_0_804198f4 != f31) {
                 GXCallDisplayList(base + 0x200, 0x40);
             }
-            if (f31 != 1.0f && (c & 0xFF) != 0) {
+            if (float_1_80419904 != f31 && (c & 0xFF) != 0) {
                 GXCallDisplayList(base + 0x240, 0x40);
             }
         }
@@ -613,6 +624,7 @@ static inline void shadowMatColor(GXColor c) {
 }
 #endif
 
+#pragma opt_common_subs reset
 void cylinderShadowDraw(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
     f32 (*view)[4];
@@ -731,14 +743,14 @@ void projShadowEnd(s32 arg0, ProjShadowWork* work) {
         else {
             GXInitTexObj(&work->texObj, work->unkFC->address, size, size, 2, 0, 0, 0);
         }
-        GXInitTexObjLOD(&work->texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+        GXInitTexObjLOD(&work->texObj, 1, 1, float_0_804198f4, float_0_804198f4, float_0_804198f4, 0, 0, 0);
         config = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
         if (&work->unk7C != NULL) {
             if (config->unk38 == 0) {
-                C_MTXLightFrustum(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, config->unk30, 0.5f, 0.5f, 0.5f, 0.5f);
+                C_MTXLightFrustum(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, config->unk30, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
             else {
-                C_MTXLightOrtho(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, 0.5f, 0.5f, 0.5f, 0.5f);
+                C_MTXLightOrtho(mtx, -config->unk2C, config->unk2C, config->unk28, -config->unk28, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
             PSMTXConcat(mtx, work->unkC, work->unk7C);
         }
@@ -771,10 +783,8 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
 #ifdef MUST_MATCH
     f32 size;
     f32 negSize;
-    f32 half = 0.5f;
-    f32 quarter = 1.25f;
 #else
-    f32 size = 2.5f;
+    f32 size = float_2p5_80419918;
     f32 negSize = -size;
 #endif
     s32 i;
@@ -813,7 +823,7 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 #ifdef MUST_MATCH
-    size = 2.5f;
+    size = float_2p5_80419918;
     negSize = -size;
 #endif
     for (i = 0; i < cswp->unk104; i++, entry++) {
@@ -837,27 +847,27 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
         GXLoadPosMtxImm(mtx, 0);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
-        GXPosition3f32(negSize * half, 0.0f, quarter);
+        GXPosition3f32(negSize * float_0p5_804198f8, 0.0f, float_1p25_8041991c);
 #else
-        GXPosition3f32(negSize * 0.5f, 0.0f, 1.25f);
+        GXPosition3f32(negSize * float_0p5_804198f8, 0.0f, float_1p25_8041991c);
 #endif
         GXTexCoord2f32(0.0f, 0.0f);
 #ifdef MUST_MATCH
-        GXPosition3f32(quarter, 0.0f, quarter);
+        GXPosition3f32(float_1p25_8041991c, 0.0f, float_1p25_8041991c);
 #else
-        GXPosition3f32(1.25f, 0.0f, 1.25f);
+        GXPosition3f32(float_1p25_8041991c, 0.0f, float_1p25_8041991c);
 #endif
         GXTexCoord2f32(1.0f, 0.0f);
 #ifdef MUST_MATCH
-        GXPosition3f32(quarter, 0.0f, negSize * half);
+        GXPosition3f32(float_1p25_8041991c, 0.0f, negSize * float_0p5_804198f8);
 #else
-        GXPosition3f32(1.25f, 0.0f, negSize * 0.5f);
+        GXPosition3f32(float_1p25_8041991c, 0.0f, negSize * float_0p5_804198f8);
 #endif
         GXTexCoord2f32(1.0f, 1.0f);
 #ifdef MUST_MATCH
-        GXPosition3f32(negSize * half, 0.0f, negSize * half);
+        GXPosition3f32(negSize * float_0p5_804198f8, 0.0f, negSize * float_0p5_804198f8);
 #else
-        GXPosition3f32(negSize * 0.5f, 0.0f, negSize * 0.5f);
+        GXPosition3f32(negSize * float_0p5_804198f8, 0.0f, negSize * float_0p5_804198f8);
 #endif
         GXTexCoord2f32(0.0f, 1.0f);
         if (camId == 1) {
@@ -1189,15 +1199,15 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
             q = &query;
             q->targetPos = entry->position;
-            q->targetPos.y += 1.0f;
+            q->targetPos.y += float_1_80419904;
             q->targetDir = vec3_802c1a90;
-            q->targetDistance = 150.0f;
+            q->targetDistance = float_150_80419920;
             hit = hitCheckVecFilter(q, _filter);
 #else
             query.targetPos = entry->position;
-            query.targetPos.y += 1.0f;
+            query.targetPos.y += float_1_80419904;
             query.targetDir = vec3_802c1a90;
-            query.targetDistance = 150.0f;
+            query.targetDistance = float_150_80419920;
             hit = hitCheckVecFilter(&query, _filter);
 #endif
             if (hit == NULL) {
@@ -1276,7 +1286,7 @@ void shadowMain(void) {
         extra;                                                                                                                             \
         GXGetViewportv(tmp_vp);                                                                                                            \
         GXGetScissor(&tmp_sci[0], &tmp_sci[1], &tmp_sci[2], &tmp_sci[3]);                                                                  \
-        GXSetViewport(0.0f, 0.0f, (f32)size, (f32)size, 0.0f, 1.0f);                                                                        \
+        GXSetViewport(float_0_804198f4, float_0_804198f4, (f32)size, (f32)size, float_0_804198f4, float_1_80419904);                                                                        \
         GXSetScissor(1, 1, size - 2, size - 2);                                                                                            \
         cfg = (ShadowConfigFields*)(shadowConfig + (w)->unk8 * 0x48);                                                                       \
         proj = SHADOW_DISP_PROJ(w);                                                                                                   \
@@ -1441,15 +1451,15 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
         GXCopyTex(((smartEntry*)*(void**)((u8*)work + 0xFC))->address, 1);
         GXPixModeSync();
         GXInitTexObj((GXTexObj*)&work->unkC[0xD0], ((smartEntry*)*(void**)((u8*)work + 0xFC))->address, size, size, sizeFmt, 0, 0, 0);
-        GXInitTexObjLOD((GXTexObj*)&work->unkC[0xD0], 0, 0, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+        GXInitTexObjLOD((GXTexObj*)&work->unkC[0xD0], 0, 0, float_0_804198f4, float_0_804198f4, float_0_804198f4, 0, 0, 0);
         config2 = (ShadowConfigFields*)(shadowConfig + work->unk8 * 0x48);
         flag = (config2->unk3C > 2);
         if (&work->unkC[0x70] != NULL) {
             if (config2->unk38 == 0) {
-                C_MTXLightFrustum(mtx, -config2->unk2C, config2->unk2C, config2->unk28, -config2->unk28, config2->unk30, 0.5f, 0.5f, 0.5f, 0.5f);
+                C_MTXLightFrustum(mtx, -config2->unk2C, config2->unk2C, config2->unk28, -config2->unk28, config2->unk30, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
             else {
-                C_MTXLightOrtho(mtx, -config2->unk2C, config2->unk2C, config2->unk28, -config2->unk28, 0.5f, 0.5f, 0.5f, 0.5f);
+                C_MTXLightOrtho(mtx, -config2->unk2C, config2->unk2C, config2->unk28, -config2->unk28, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8, float_0p5_804198f8);
             }
             PSMTXConcat(mtx, (f32(*)[4])work->unkC, (f32(*)[4])&work->unkC[0x70]);
         }
@@ -1457,7 +1467,7 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
             f29 = config2->unk30;
             f30 = config2->unk34;
             f31 = f30 - f29;
-            PSMTXScale(mtx2, 0.0f, 0.0f, 0.0f);
+            PSMTXScale(mtx2, float_0_804198f4, float_0_804198f4, float_0_804198f4);
             if (flag) {
                 f4 = float_256_804198fc;
             }
@@ -1490,3 +1500,29 @@ void depthShadowEnd(s32 arg0, DepthShadowWork* work) {
         work->unk0 |= 1;
     }
 }
+
+// .sdata2 objects, in the original's address order. Named objects are emitted before the compiler's
+// pooled literals, so they are defined after the code; float_0 and float_1 are non-const because the
+// original reloads them between uses in one basic block.
+__declspec(section ".sdata2") GXColor dat_804198e0 = {0, 0, 0, 0x6E};
+__declspec(section ".sdata2") GXColor dat_804198e4 = {0xFF, 0xFF, 0xFF, 0xFF};
+__declspec(section ".sdata2") GXColor dat_804198e8 = {0, 0, 0, 0xFF};
+__declspec(section ".sdata2") GXColor dat_804198ec = {0, 0, 0, 0x40};
+__declspec(section ".sdata2") GXColor dat_804198f0 = {0, 0, 0, 0x40};
+#pragma explicit_zero_data on
+__declspec(section ".sdata2") const f32 float_0_804198f4 = 0.0f;
+#pragma explicit_zero_data reset
+__declspec(section ".sdata2") const f32 float_0p5_804198f8 = 0.5f;
+__declspec(section ".sdata2") const f32 float_256_804198fc = 256.0f;
+__declspec(section ".sdata2") const f32 float_16_80419900 = 16.0f;
+__declspec(section ".sdata2") const f32 float_1_80419904 = 1.0f;
+__declspec(section ".sdata2") const f32 float_neg1_80419908 = -1.0f;
+__declspec(section ".sdata2") const f32 float_0p2_8041990c = 0.2f;
+__declspec(section ".sdata2") const f32 float_0p4_80419910 = 0.4f;
+__declspec(section ".sdata2") const f32 float_255_80419914 = 255.0f;
+__declspec(section ".sdata2") const f32 float_2p5_80419918 = 2.5f;
+__declspec(section ".sdata2") const f32 float_1p25_8041991c = 1.25f;
+__declspec(section ".sdata2") const f32 float_150_80419920 = 150.0f;
+__declspec(section ".sdata2") const f32 float_1p5_80419924 = 1.5f;
+__declspec(section ".sdata2") const f32 float_20_80419928 = 20.0f;
+__declspec(section ".sdata2") const f32 float_1000_8041992c = 1000.0f;
