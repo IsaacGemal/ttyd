@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Create a decomp-permuter input directory for one function of a dol unit.
+"""Create a decomp-permuter input directory for one function of a dol or REL unit.
 
-    python3 tools/perm_prepare.py UNIT FUNC [OUTDIR] [--keep-all]       e.g. effect/eff_hibashira effHibashiraMain
+    python3 tools/perm_prepare.py UNIT FUNC [OUTDIR] [--keep-all]       e.g. effect/eff_hibashira effHibashiraMain; REL: yuu/event/evt_yuucounter FUNC (see tools/perm_unit.py)
 
 Writes OUTDIR (default $PERM_ROOT/inputs/UNIT__FUNC, PERM_ROOT default ~/permuter) with
   base.c         the unit's source, preprocessed with the unit's flags, every other function reduced to a prototype
-  target.o       the original unit object (build/G8MJ01/obj/UNIT.o); the scorer only reads FUNC from it
+  target.o       the original unit object (build/G8MJ01/obj/UNIT.o, or build/G8MJ01/MOD/obj/PATH.o for a REL); the scorer only reads FUNC from it
   compile.sh     the project's MWCC command line (wibo + sjiswrap), run from the repo root
   settings.toml  func_name, compiler_type = "mwcc", and tools/perm_objdump.py as the disassembler (PERM_FUNC selects FUNC)
 Needs a build first (build.ninja, build/G8MJ01/obj). Run it with tools/perm_run.py, which adds the time, CPU and disk limits."""
@@ -20,19 +20,22 @@ PERMUTER = os.environ.get("PERM_HOME", os.path.expanduser("~/permuter/decomp-per
 sys.path.insert(0, PERMUTER)
 from strip_other_fns import strip_other_fns  # noqa: E402
 
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import perm_unit  # noqa: E402
+
 KEEP_ALL = "--keep-all" in sys.argv
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 unit, func = args[0], args[1]
 out = args[2] if len(args) > 2 else os.path.join(os.environ.get("PERM_ROOT", os.path.expanduser("~/permuter")), "inputs", unit.replace("/", "_") + "__" + func)
+try:
+    res = perm_unit.resolve(unit, ROOT)
+    cflags = perm_unit.cflags(open(os.path.join(ROOT, "build.ninja")).read(), res["name"])
+except LookupError as e:
+    sys.exit(str(e))
 os.makedirs(out, exist_ok=True)
-ninja = open(os.path.join(ROOT, "build.ninja")).read()
-m = re.search(rf"^build build/G8MJ01/src/{re.escape(unit)}\.o: mwcc\w* .*?\n  cflags = (.*?)\n  basedir", ninja, re.M | re.S)
-if not m:
-    sys.exit(f"{unit}: no compile rule in build.ninja")
-cflags = re.sub(r"\s+", " ", re.sub(r"\$\n\s*", "", m.group(1))).strip()
 toks = [t for t in shlex.split(cflags) if t != "-MMD"]
 pre = subprocess.run(["build/tools/wibo", "build/tools/sjiswrap.exe", "build/compilers/GC/2.6/mwcceppc.exe", *toks, "-E",
-                      os.path.join("src", unit + ".c")], capture_output=True, cwd=ROOT)
+                      res["src"]], capture_output=True, cwd=ROOT)
 pre.stdout = pre.stdout.decode("utf-8", errors="replace")  # Shift-JIS string literals: the code is what is scored
 pre.stderr = pre.stderr.decode("utf-8", errors="replace")
 if pre.returncode:
@@ -59,7 +62,7 @@ def drop_extern_c(s):
 text = drop_extern_c(text)
 src = text if KEEP_ALL else strip_other_fns(text, func)  # --keep-all: constants pooled by the other functions change how this one compiles
 open(os.path.join(out, "base.c"), "w").write(src)
-target = os.path.join(ROOT, "build/G8MJ01/obj", unit + ".o")
+target = os.path.join(ROOT, res["target"])
 if not os.path.exists(target):
     sys.exit(f"{target} missing: build first")
 subprocess.run(["cp", target, os.path.join(out, "target.o")], check=True)

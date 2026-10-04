@@ -3,7 +3,7 @@
 
     python3 tools/perm_run.py QUEUE [--minutes 20] [--jobs 2] [--threads 4] [--log ~/permuter/runs.log]
 
-QUEUE: one `UNIT FUNC [+all]` per line (+all: keep the other functions in base.c) (e.g. `koopa_motion kpa_jump`; `#` comments). For each line it runs tools/perm_prepare.py, then
+QUEUE: one `UNIT FUNC [+all]` per line (+all: keep the other functions in base.c) (e.g. `koopa_motion kpa_jump`; a REL unit is `MODULE/path`, e.g. `yuu/event/evt_yuucounter`; `#` comments). For each line it runs tools/perm_prepare.py, then
 the permuter with `--stop-on-zero --best-only -j THREADS` under `nice -n 15`. JOBS runs go at once; JOBS x THREADS is capped
 at 8 (the tower's budget while waves run). Nothing outlives this process:
   - every run is its own process group inside this supervisor's session; a run older than MINUTES (+60 s grace) is killed
