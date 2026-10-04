@@ -12,6 +12,12 @@
 #include <stdio.h>
 #include <string.h>
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const char zero_8041a6b8[4];
+extern const char str_8041A6BC[8];
+extern const f32 float_0_8041a6c4;
+extern const char str_8041A6C8[8];
+
 
 // clang-format off
 // TODO: type
@@ -168,6 +174,9 @@ u32 _map_attr_data[597] = {
     0x00000000,
 };
 
+// .data ends with a 4-byte zero before the next unit's data.
+__declspec(section ".data") u32 gap_05_8030E58C_data[] = { 0x00000000 };
+
 //.sbss
 void* ptr; //but why
 u32 size;
@@ -178,7 +187,8 @@ void setupDataLoad(const char* mapName) {
 
     ptr = NULL;
     sprintf(path, "%s/m/%s/s", getMarioStDvdRoot(), mapName);
-    if (strcmp(mapName, "muj_20") || evtGetValue(NULL, GSW(0)) != 2) {
+    // The original keeps this string as an 8-byte object: "muj_20" followed by two NULs.
+    if (strcmp(mapName, "muj_20\0") || evtGetValue(NULL, GSW(0)) != 2) {
         arcOpen(path, &ptr, &size);
         if (!ptr) {
             dvd = DVDMgrOpen(path, 2, 0);
@@ -202,7 +212,7 @@ BOOL setupDataCheck(void) {
         return TRUE;
     }
     parseInit(ptr, size);
-    while (parsePush("<Npc>")) {
+    while (parsePush(str_8041A6C8)) {
         parseTagGet1("<tribe>", 0, tribeName);
         parsePopNext();
         flag = gp->inBattle != 0;
@@ -275,7 +285,7 @@ void setupDataBase(const char* areaName, const char* mapName) {
     attr = findMapAttr(mapName);
 
     for (i = 0; i < 64; i++) {
-        if (strcmp(fbat->deadInfo[i].mapName, "") == 0) {
+        if (strcmp(fbat->deadInfo[i].mapName, zero_8041a6b8) == 0) {
             memset(&fbat->deadInfo[i], 0, sizeof(NpcDeadInfo));
             strcpy(fbat->deadInfo[i].mapName, mapName);
             break;
@@ -313,11 +323,11 @@ void setupDataBase(const char* areaName, const char* mapName) {
         return;
     }
     parseInit(ptr, size);
-    for (; parsePush("<Npc>"); npcIndex++) {
+    for (; parsePush(str_8041A6C8); npcIndex++) {
         parseTagGet1("<name>", 0, name);
         parseTagGet1("<tribe>", 0, tribeName);
         parseTagGet1("<position>", 3, &position);
-        parseTagGet1("<dir>", 2, &direction);
+        parseTagGet1(str_8041A6BC, 2, &direction);
         parseTagGet1("<aitype>", 0, aitype);
         parseTagGet1("<territory_type>", 0, territoryType);
         parseTagGet1("<territory_base>", 3, &territoryBase);
@@ -375,7 +385,7 @@ no_ai:
         npc->landSfx = tribe->landSfx;
         npc->footstepStride = tribe->footstepStride;
         npc->footstepToggle = 1;
-        npc->footstepAccum = 0.0f;
+        npc->footstepAccum = float_0_8041a6c4;
         j = -1;
         area = areaDataPtr(areaName);
         if (strcmp(btlSetupNo, "BTLNO_INVALID") != 0) {
@@ -396,3 +406,9 @@ no_ai:
     parsePop();
 }
 // clang-format on
+
+// The original keeps these four .sdata2 words as named symbols; see config/G8MJ01/symbols.txt.
+__declspec(section ".sdata2") const char zero_8041a6b8[4] = "";
+__declspec(section ".sdata2") const char str_8041A6BC[8] = "<dir>";
+__declspec(section ".sdata2") const f32 float_0_8041a6c4 = 0.0f;
+__declspec(section ".sdata2") const char str_8041A6C8[8] = "<Npc>";

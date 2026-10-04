@@ -4598,3 +4598,8 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   gains nothing with the copy kept, so it waits for rsh_06's linking commit (scratch/wave74/followups.tsv). No change:
   yuu_03 (evt_ryushi_clr 98.37; the original materialises &xwp for one load, and rsh_00's one-iteration-loop shape
   hangs mwcceppc here). Arm F's second win_log was a pre-#415 duplicate and was discarded.
+- **Batch 20:** mot_jump linked by wave 75's first group task (mot_jumpSw 99.04 and mot_jumpNpc 99.14, near-copies, both to
+  100 with one pool/vec shape); data ports for data/database, party_yoshi and battle_audience_kinopio. mot_ship's
+  follow-up was refused (mot_ship 99.76 -> 99.62), its second failure: queued for Codex. win_04 made no change
+  (flower_disp 99.92, register-only; in the permuter's queue q29); its agent ran decomp-permuter -j 14 in the background,
+  which AGENT_BRIEF now forbids (no nohup/&, no private permuter clones, -j <= 2).
