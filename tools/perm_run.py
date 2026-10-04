@@ -109,6 +109,8 @@ def launch(unit, func, keep_all=False):
     d = os.path.join(PERM_ROOT, "inputs", unit.replace("/", "_") + "__" + func)
     r = {"unit": unit, "func": func, "start": time.time(), "dir": d}
     if p.returncode:
+        os.makedirs(d, exist_ok=True)
+        open(os.path.join(d, "prepare.err"), "w").write((p.stdout + p.stderr)[-2000:])  # the first error / why the base was refused
         log(r, "prepare-failed")
         return
     manual = os.path.join(d, "base.c.manual")
