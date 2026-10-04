@@ -347,6 +347,10 @@ def audit_shell(cmd, ws, cwd=None, depth=0):
                 operands = operands[1:] if operands and operands[0] in ("clone", "init", "worktree") else []
             if name == "dd":
                 operands = [a[3:] for a in args if a.startswith("of=")]
+            if name in ("cp", "rsync", "install", "ln", "scp"):
+                # only the destination is written: `-t DIR`, or the last operand (copying in from outside is a read)
+                t = next((args[i + 1] for i, a in enumerate(args[:-1]) if a in ("-t", "--target-directory")), None)
+                operands = [t] if t else operands[-1:]
             wrote = any(outside(a, ws, cwd) for a in operands)
         # in-place editors: every file operand is written (resolved against the tracked cwd, slash or not)
         if not wrote and name in ("sed", "perl") and any(re.match(r"^-[A-Za-z]*i", a) or a.startswith("--in-place") for a in args):
