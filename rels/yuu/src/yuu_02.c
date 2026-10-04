@@ -118,6 +118,7 @@ __declspec(section ".rodata") Vec vec3_yuu_00014008 = { 0.0f, 0.0f, 0.0f };
 #else
 const Vec vec3_yuu_00014008 = { 0.0f, 0.0f, 0.0f };
 #endif
+u32 gap_05_0000000C_bss;
 static void* yuunpc_wp;
 MonteEntry* unk_yuu_bss00000004;
 static MonteEntry* monte_p;
@@ -911,6 +912,13 @@ EVT_BEGIN(yuu_02_init_evt)
     CALL_CHILD(evt_yuunpc_minigame3)
     RETURN
 EVT_END()
+
+// 4-byte zero the original keeps at the end of .data, after yuu_02_init_evt.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_04_000000E4_data = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 
 
