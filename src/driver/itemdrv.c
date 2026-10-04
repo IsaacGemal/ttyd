@@ -1320,7 +1320,7 @@ static inline f32 itemTicksToSec(s64 ticks) {
 // base, r27 mario, r28 camera vs ours r29/r30/r26 + r28). That is ~170 of the remaining arg_mismatch diffs. The
 // only non-register difference left is the third hitCheckFilter return (ours `mr. r25,r3`, target `cmplwi r3,0`
 // then `mr r26,r3`). Call order, switch trees, constants and call arguments match.
-// NONMATCHING (98.83%): the extra ibBase register shifts the callee-saved colouring; see above.
+// NONMATCHING (98.84%): the extra ibBase register shifts the callee-saved colouring; see above.
 void itemseq_Bound(ItemEntry* item) {
 #ifdef MUST_MATCH
     const u8* ibBase = (const u8*)&vec3_802cabe0;
@@ -1405,13 +1405,13 @@ void itemseq_Bound(ItemEntry* item) {
         break;
     case 1: {
         s64 d1;
+        f32 y2;
         f32 t1;
         f32 t2;
         f32 t3;
         f32 vx;
         f32 vz;
         f32 vy;
-        f32 y2;
         f32 nx;
         f32 nz;
         s32 angle;

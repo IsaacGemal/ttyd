@@ -518,7 +518,7 @@ USER_FUNC(set_new_goods_list) {
 
 #define UNITWIN_STATUS_DISP(wp, c0, c1, c2, c3, c4, c5, c6, c7, levelFmt, ROWGUARD, CHGBLOCK, ZEROBLK, TAILBLOCK, POSBLK, ROWMAX) do { \
 	s32 dispCnt; \
-	char help2[0x10]; \
+	char help2[0x8]; \
 	s32 row; \
 	s32 listOff; \
 	char help[0x40]; \
@@ -526,7 +526,6 @@ USER_FUNC(set_new_goods_list) {
 	char num[0x40]; \
 	u32 sc[4]; \
 	s32 m8; \
-	GXColor color; \
 	*(UstBlk40*)help = *(const UstBlk40*)ZEROBLK; \
 	m8 = 8 - wp->field_0x58; \
 	listOff = ((m8 > 0) ? m8 : 0) * 0x18; \
@@ -592,25 +591,30 @@ USER_FUNC(set_new_goods_list) {
 // `extsh`); the badge/icon `iconId` is `s32` (the target truncates it with `clrlwi` at the iconDispGx
 // call); the common-tail buffer check keeps the base pointer in a `char*` variable used by the loop, so
 // `p != NULL` compiles to `cmplwi` on a register; the first block's price reads `wp->field_0x8[i]`
-// through one `s32 item` local (the target loads it once); several declaration runs are ordered to
-// reproduce MWCC's callee-saved colouring (match-only). The int->float magic is the compiler's own pool
+// through one `s32 item` local (the target loads it once); `dispCnt`, `color` (the status macro's),
+// `xofs` and `dispOff` are declared once for the whole function instead of per case, which moves
+// MWCC's callee-saved colouring. The int->float magic is the compiler's own pool
 // entry, so the named double_to_int_802f68a8 / double_to_int_mask_802f68b8 definitions in this file are
 // duplicates: every i2f conversion loads 0x408(r30) instead of the target's 0x3f0(r30). This is the
 // project-wide double_to_int limitation (win_log.c, win_item.c, win_badge.c: the original pool entry is
 // named by symbols.txt; defining/removing the doubles only moves the anonymous copy). The case
 // 17/18 `info` pointer is loaded just before its loop (as the target does); it still lands in r14
-// instead of the target's r17. Three things moved the register allocator: a function-scope
-// `s32 dispOff = 0;` (initialised at entry, used by case 4 and case 5/6/7 whose own declarations were
-// dropped), and the declaration runs of case 17/18, case 5/6/7 and the macro's inner loop reordered.
-// Every immediate, call and case body matches; only allocation and
-// stack slots differ (the 37 i2f `lfd` sites included).
-// NONMATCHING (96.54%): MWCC callee-saved register colouring is shifted one register (r16/r17 vs
-// the target's r17/r18) through the function, which also makes the frame larger (0x7a0 vs 0x780),
-// plus MWCC instruction-scheduling moves in the case 4/5-7 and macro loops.
+// instead of the target's r17. Every immediate, call and case body matches. The frame now matches
+// the target's 0x780 (the status macro's unused `help2` is `[0x8]`, not `[0x10]`; at `[0x10]`
+// `stmw r14` sat at 0x718 and the frame was 0x7a0).
+// MWCC's callee-saved colouring is still one register low in places (the first block's
+// `wp->field_0x8[i]`/`wp->objList[i]` use r16/r17 instead of the target's r17/r18 and `sellDesc`
+// gets r16 instead of r18, because the target keeps r16 reserved from entry by a value we cannot
+// see in the asm), plus the 37 i2f `lfd` sites that load the pooled double at 0x408(r30) instead
+// of the target's 0x3f0 and MWCC instruction-scheduling moves in the case 4/5-7 and macro loops.
+// NONMATCHING (96.51%): only callee-saved colouring, scheduling and those i2f offsets differ.
 void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	UnitWinWork* wp = (UnitWinWork*)param;
 	PouchData* pouch = pouchGetPtr();
 	s32 dispOff = 0;
+	s32 dispCnt;
+	GXColor color;
+	s32 xofs;
 
 	// --- flags & 1: selected item's name/description, plus the on-map price icons ---
 	if (wp->flags & 1) {
@@ -833,15 +837,12 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 	case 16: {
 		// Item / badge / shop list window.
 		u32 sc[4];
-		s32 dispCnt;
 		s32 n;
 		const char* title;
 		s32 listOff;
 		GXColor color;
-		s32 dispOff;
 		const char* selDesc = 0;
 		ItemData* const dataBase = itemDataTable;
-		s32 xofs;
 
 		s32 mode50 = wp->field_0x50;
 		s32 cnt;
@@ -1073,7 +1074,6 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 		const char* title;
 		s32 m8 = 8 - wp->field_0x58;
 		s32 mode50 = wp->field_0x50;
-		s32 dispOff;
 		GXColor color;
 		u32 sc[4];
 		InformantInfo* info;
@@ -1155,7 +1155,6 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 	case 6:
 	case 7: {
 		// Party member stats window.
-		s32 dispCnt;
 		u32 sc[4];
 		s32 m8;
 		s32 listOff;

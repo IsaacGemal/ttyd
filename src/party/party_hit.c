@@ -503,7 +503,9 @@ HitEntry* partySearchWallFront(PartyEntry* party, Vec* pos, f32 a, f32 b) {
 // placed after the first rounding) took the function 87.17% -> 88.82% (87 -> 83 diffs).
 // Remaining: FP register colouring (f24/f25/f26 rotated), the pooled i2f magic double (ours sits at
 // rodata+0x128, the original's named object at +0xC0), and some statement scheduling.
-// NONMATCHING (88.82%): FP colouring + magic-double offset
+// Both `return 0` exits are written as `goto fail` to one label so MWCC tail-merges them into the single
+// shared `li r3, 0x0` block the original has (two separate `return 0;` statements make it inline one of them).
+// NONMATCHING (89.49%): FP colouring + magic-double offset
 u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3) {
     f32 ny100;
     Vec n;
@@ -573,7 +575,7 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
         hit = h2;
     }
     if (hit == NULL) {
-        return 0;
+        goto fail;
     }
 
     *(f32*)(party->field_C4 + 0x00) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec, float_100_8041b3f8 * n2.z,
@@ -586,12 +588,14 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     if (hxyz[1] < py && __fabsf(hxyz[1] - py) >= float_2_8041b428) {
         *out2 = py - hxyz[1];
         *out3 = angleABf(px, pz, hxyz[0], hxyz[2]);
-        return 0;
+        goto fail;
     }
     *out1 = hxyz[1];
     *out2 = float_0_8041b3ec;
     *out3 = angleABf(px, pz, n.x, n.z);
     return (u32)hit;
+fail:
+    return 0;
 }
 
 // The algorithm and stack frame match exactly (0x1b0 frame, all 14 callee-saved floats f18-f31). Giving the

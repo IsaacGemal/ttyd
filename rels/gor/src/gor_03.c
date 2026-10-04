@@ -5023,23 +5023,30 @@ EVT_END()
 // `s32 i2` counter is used for the phase-0x2d first loop (plain `i` there costs 0.02%).
 //
 // The trailing `return 0;` is not the original source. The original never writes r3 before `blr`, so it is
-// really a `void` function: with the `USER_FUNC` (s32) prototype MWCC treats r3 as the live return register
-// and uses r4 for the switch jump-table base, shifting the whole scratch register set (that version scores
-// 97.25%). Any non-`void` return makes r3 free again and the dispatch matches; compiling the same body as
-// `void` scores 98.18% and removes the extra `li r3,0` that `return 0` emits. The prototype is in the
-// existing header line `USER_FUNC(goryuugijo_main_slot);`, which must not be changed here; if it is changed to
-// `void`, drop this `return 0;`.
+// really a `void` function. Under the `USER_FUNC` (s32) prototype a return statement is needed to keep the
+// switch jump-table base in r3 (dropping it moves the dispatch to r4 and costs ~190 extra diffs); `return 0`
+// is the cheapest such statement and emits the single extra `li r3,0` at the epilogue. Declaring this function
+// `void` while keeping the same two parameters removes that `li r3,0` and leaves the dispatch in r3 (59 diffs,
+// 99.15%), but the return type comes from the existing header line `USER_FUNC(goryuugijo_main_slot);`, which
+// must not be changed here. If that prototype is ever made `void`, drop this `return 0;`.
 //
-// Still differs (all register allocation / scheduling, 71 changed instructions at 98.92%): event stays in
+// Two operand-order reorders removed several diff instructions without changing the logic: the phase-0 `cnt`
+// loop compares the table byte before `tmp1[j2]` (the original loads the byte as the first compare operand),
+// and the sel loop's case-1 guard and OR term are written `tptr[6] != s` / `tptr[6] == s`. The `cnt` loop
+// also initialises `j2` and `cnt` in one comma expression, which reproduces the original's setup order.
+//
+// Still differs (all register allocation / scheduling, 60 changed instructions at 99.03%): event stays in
 // r25 vs the original's r26 (the entry `mr r25, r3` vs `mr r26, r3`) even when the two later `event` uses are
 // replaced by `work`/`work->entry`; `stop` lands in r31 vs the original's r25 and `stopSfx` in r25 vs r31 (so
 // the string address is materialised into r0 and then `mr`'d instead of loaded straight into r31; pb now
-// matches at r30); and the phase-0 `cnt` loop init / phase-0x2d first-loop temporaries / case-11 index keep a
-// different register set. The instruction stream is otherwise identical (40 calls, same immediates except the
-// two structural diffs below and `return 0`'s `li r3,0`). What is left is mostly the callee-saved colouring of
-// the {event,stop,stopSfx} clique (r25/r26/r31), which is permuter work. `(s32)data[i + 0x30]` (rather than
-// `(s32)((u8*)data + i)[0x30]`) makes MWCC emit the original's `add r3, r28, r0` operand order.
-// NONMATCHING (98.92%): see above.
+// matches at r30); the flag loops use i=r26/p=r27 where the original has i=r27/p=r26, and the case-11 index
+// is swapped the same way. The phase-0 `cnt` loop still emits `li r7,0` where the original reuses the zero in
+// r8 via `mr r7,r8`, and both phase-0 loops keep a different scratch-register set. The instruction stream is
+// otherwise identical (40 calls, same immediates except `return 0`'s `li r3,0`). What is left is the
+// callee-saved colouring of the {event,stop,stopSfx} clique (r25/r26/r31), which is permuter work.
+// `(s32)data[i + 0x30]` (rather than `(s32)((u8*)data + i)[0x30]`) makes MWCC emit the original's
+// `add r3, r28, r0` operand order.
+// NONMATCHING (99.03%): see above.
 USER_FUNC(goryuugijo_main_slot) {
     s32 stop;
     s32 j;
@@ -5195,10 +5202,9 @@ USER_FUNC(goryuugijo_main_slot) {
                 *(s32*)(data + 0x04) = 6;
                 break;
             }
-            cnt = 0;
             {
-            for (j2 = 0; j2 < 3; j2++) {
-                if (tmp1[j2] == *(s8*)(data + *(s32*)(data + 0x60) * 3 + j2 + 0x33)) {
+            for (j2 = 0, cnt = 0; j2 < 3; j2++) {
+                if (*(s8*)(data + *(s32*)(data + 0x60) * 3 + j2 + 0x33) == tmp1[j2]) {
                     cnt += 1;
                 }
             }
@@ -5279,7 +5285,7 @@ USER_FUNC(goryuugijo_main_slot) {
                         s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
 #ifdef MUST_MATCH
                         // Same dead-branch artifact as case 0, on the `s != tmp[2][i]` guard.
-                        if (s != tptr[6] && (s == tptr[0] || s == tptr[6])) {
+                        if (tptr[6] != s && (s == tptr[0] || tptr[6] == s)) {
 #else
                         if (s != tmp[2][i] && s == tmp[0][i]) {
 #endif

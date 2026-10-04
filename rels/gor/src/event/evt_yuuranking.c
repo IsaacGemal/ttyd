@@ -165,7 +165,7 @@ static inline s32 fontlenpitch_inl(s8* text, s32 pitch) {
 #endif
 
 
-// NONMATCHING (97.87%): block order, the nested mode switches, the callee-saved set (stmw r24-r31) and the
+// NONMATCHING (98.02%): block order, the nested mode switches, the callee-saved set (stmw r24-r31) and the
 // call sequence all match. Adopting the yuu source's `k = 1.0f` forms (sc = k*w + 50.0f,
 // x = field_0C + -(k*w + 50.0f)*0.5f, y = field_10 + 128.0f + k, FontDrawMessage x = k*(-w)*0.5f) reproduces
 // the target's fnmadds/fmadds and lifted this function 96.67 -> 97.03 (the earlier note that they lowered the
@@ -179,13 +179,16 @@ static inline s32 fontlenpitch_inl(s8* text, s32 pitch) {
 // case-2/3 first `msgSearch("menu_colon")` in the sprintf (keeping the same two calls) lifted it to 97.82.
 // Writing the minute/second remainder as `sec = sec % 60` instead of `sec - min * 60` makes MWCC emit the
 // target's `mullw` (reusing the 0x3c already in r0) in both case-2/3 blocks and lifted 97.82 -> 97.87.
-// What is left is pure register/stack allocation: the 20 GXColor slots (target assigns them in first-use
-// order c0..c19 at 0x54..0x08; MWCC's stack colourer packs the four address-not-taken colours
-// c0,c1,c15,c16 into the low slots and shifts buf/Mtx by 4), the by-value c1 argument gets an extra copy
-// slot, the inlined fontlenpitch copies bp with `mr` where the target re-materialises it with `addi`, and
-// the rank loop's strength-reduced offset starts with
-// `mr` instead of `li`.
-// NONMATCHING (97.87%): see the notes above; what remains is MWCC register/stack allocation only.
+// The 20 GXColor locals only reach the target's first-use stack order (c0=0x54 .. c19=0x08) once all of them
+// are address-taken. The real ABI for windowDispGX_Waku_col/iconDispGxCol/iconNumberDispGx takes GXColor*
+// (the shared by-value headers are wrong; the battle callers cast), so the four by-value colours c0,c1,c15,c16
+// go through the same by-pointer cast with `&cN`. With every colour an lvalue the stack colourer places all
+// 20 in the main block at 0x08..0x54, and declaring them c0..c19 with the colourer's c5,c6,c4 / c9,c10,c8 /
+// c13,c12 rotations pre-applied reproduces the target slots exactly; lifted 97.87 -> 98.02. The `+ k` on the
+// windowDispGX y argument is grouped `k + (...)` to keep the target's fadds operand order.
+// What is left is pure register allocation: the inlined fontlenpitch copies `buf` with `mr` where the target
+// re-materialises it with `addi`, and the rank loop's strength-reduced offset starts with `mr` instead of `li`.
+// NONMATCHING (98.02%): see the notes above; what remains is MWCC register allocation only.
 static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     YuRankWork* work = param;
     const char* titleTbl[4] = {
@@ -198,7 +201,6 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         "\x81\x40\x82\x50", "\x81\x40\x82\x51", "\x81\x40\x82\x52",
         "\x81\x40\x82\x53", "\x81\x40\x82\x54", "menu_subtitle2_rankgai",
     };
-    GXColor c1;
     char buf[32];
     const char* bp;
     const char* msg;
@@ -207,28 +209,29 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     f32 w;
     f32 sc;
     f32 y;
-    GXColor c19;
-    GXColor c18;
-    GXColor c17;
-    GXColor c16;
-    GXColor c15;
-    GXColor c14;
+    GXColor c0;
+    GXColor c1;
+    GXColor c2;
+    GXColor c3;
+    GXColor c5;
+    GXColor c6;
+    GXColor c4;
+    GXColor c7;
+    GXColor c9;
+    GXColor c10;
+    GXColor c8;
+    GXColor c11;
     GXColor c13;
     GXColor c12;
-    GXColor c11;
-    GXColor c10;
-    GXColor c9;
-    GXColor c8;
-    GXColor c7;
-    GXColor c6;
-    GXColor c5;
-    GXColor c4;
-    GXColor c3;
-    GXColor c2;
-    GXColor c0;
+    GXColor c14;
+    GXColor c15;
+    GXColor c16;
+    GXColor c17;
+    GXColor c18;
+    GXColor c19;
 
     c0 = *(GXColor*)&dat_gor_0001cd30;
-    windowDispGX_Waku_col(0, c0, work->field_0C + -196.0f, work->field_10 + 112.0f, 392.0f, 224.0f, 20.0f);
+    ((void (*)(u16, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &c0, work->field_0C + -196.0f, work->field_10 + 112.0f, 392.0f, 224.0f, 20.0f);
     switch (work->field_18) {
     case 0:
         msg = msgSearch(scoreTbl[work->field_14]);
@@ -244,7 +247,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         w = (f32)FontGetMessageWidth(msg);
         sc = k * w + 50.0f;
         w = (f32)FontGetMessageWidth(msg);
-        { f32 t = -(k * w + 50.0f); windowDispGX_Waku_col(0, c1, work->field_0C + t * 0.5f, work->field_10 + 128.0f + k, sc, 28.0f, 8.0f); }
+        { f32 t = -(k * w + 50.0f); ((void (*)(u16, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &c1, work->field_0C + t * 0.5f, k + (work->field_10 + 128.0f), sc, 28.0f, 8.0f); }
         FontDrawStart();
         FontDrawScale(1.0f);
         c2 = *(GXColor*)&dat_gor_0001cd38;
@@ -455,10 +458,10 @@ end:
 
         PSMTXTrans(m, (f32)(ix - 10), (f32)(iy + 2), 0.0f);
         c15 = *(GXColor*)&dat_gor_0001cd6c;
-        iconDispGxCol(m, 16, 0x13f, c15);
+        ((void (*)(Mtx, s16, s32, GXColor*))iconDispGxCol)(m, 16, 0x13f, &c15);
         PSMTXTrans(m, (f32)(ix + 60), (f32)(iy + 2), 0.0f);
         c16 = *(GXColor*)&dat_gor_0001cd70;
-        iconNumberDispGx(m, work->field_34, 0, c16);
+        ((s32 (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx)(m, work->field_34, 0, &c16);
     }
     goto finish;
 

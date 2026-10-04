@@ -20,7 +20,10 @@
 #include "party.h"
 #include "memory.h"
 #include "matching.h"
-#include <math.h>
+#include "math_ext.h"
+// fabs/fabsf must lower to the FPU instruction, not a call to the C library.
+#define fabs(x) __fabs(x)
+#define fabsf(x) __fabsf(x)
 #include <string.h>
 
 // Backing struct for `mario->motStruct` while the jabara motion runs; the fields
@@ -36,13 +39,13 @@ typedef struct JabaraWork {
     s32 unk1C;   // 0x1C
 } JabaraWork;
 
-// Read the unit's rodata strings/doubles through the base register (vec3_802c5b88),
-// the way the original addresses them (`addi rX, r30, off`).
-#ifdef MUST_MATCH
-#define RSTR(off, sym) ((const char*)vec + (off))
-#define RDBL(off, sym) (*(const f64*)((const u8*)vec + (off)))
-#else
+// The original reaches all of the unit's rodata through one base register. Naming
+// the string symbols (the natural form) lets the compiler establish that base; the
+// match-only RDBL form reads the 1.5708 double through the same base register.
 #define RSTR(off, sym) (sym)
+#ifdef MUST_MATCH
+#define RDBL(off, sym) (*(volatile const f64*)&(sym))
+#else
 #define RDBL(off, sym) (sym)
 #endif
 
@@ -81,7 +84,6 @@ const char str_802C5C1C[] = "PM_J_1H";
 const u32 gap_04_802C5C24_rodata = 0;
 const f64 double_1p5708_802c5c28 = 1.5707963705062866;
 const char str_802C5C30[] = "M_J_1B";
-const f64 double_to_int_802c5c38 = 4503601774854144.0;
 
 // .sdata2
 const f32 float_40_8041aac0 = 40.0f;
@@ -245,9 +247,18 @@ BOOL marioChkJabara(void) {
     return out2 >= 1;
 }
 
-// NONMATCHING (0.00%): callee-saved register colouring, the compiler's int->float
-// pool double addressed absolutely instead of through the rodata base, and two stack
-// slots. Calls, immediates and instruction shape all match.
+// The original keeps one register (r30) as both the `.rodata` base and the `vec`
+// pointer; here the compiler copies `vec` into a second callee-saved register
+// (`addi r29, r30, 0x0`), so the frame is `stwu r1,-0x100` + `stmw r27` where the
+// original is `stwu r1,-0xf0` + four `stw r28..r31` (and `lmw`/`lwz r0,0xf4(r1)` in
+// the mirror). Every string/Vec read then comes out as `0x..(r29)` where the
+// original has `0x..(r30)`, and the allocator shifts mario2 (ours r28, original
+// r29) and var_r28 (ours r27, original r28) down a register. Expressing the Vecs
+// with the named `vec3_*` symbols frees r29 and restores the original frame, but
+// makes MWCC hoist the three-word copies out of the original
+// load/load/store/store/load/store order.
+// NONMATCHING (98.86%): only the prologue/epilogue frame differs.
+#pragma opt_common_subs off // keep the 0x2BA state byte sign-extended again for the second compare
 void mot_jabara(void) {
     const Vec* vec = &vec3_802c5b88;
     MarioWork* mario = marioGetPtr();
@@ -269,6 +280,7 @@ void mot_jabara(void) {
     f32 sp28, sp24, sp20, sp1C, sp18, sp14, sp10;
     f32 spC, sp8;
     s32 var_r28;
+    s32 var_sp40;
     f32 var_f28;
 
     if (mario->trigFlags & 1) {
@@ -320,7 +332,7 @@ void mot_jabara(void) {
         mario2->unk148 = 0.2f;
         mario2->unk150.z = 0.005f;
         mario2->field_68 = 1.5f;
-        mario2->field_6C = vec[0];
+        mario2->field_6C = (&vec3_802c5b88)[0];
         mario->multiTimer = 8;
         mario->currSubMotionId = 0xB;
         /* fallthrough */
@@ -353,7 +365,7 @@ void mot_jabara(void) {
                 mario2->unk148 = 0.4f;
                 mario2->unk150.z = 0.005f;
                 mario2->field_68 = 1.7f;
-                mario2->field_6C = vec[0];
+                mario2->field_6C = (&vec3_802c5b88)[0];
             } else if (jt == 2) {
                 if (!(((JabaraWork*)marioGetPtr()->motStruct)->flags & 0x20000)) {
                     ((JabaraWork*)marioGetPtr()->motStruct)->flags |= 0x20000;
@@ -365,7 +377,7 @@ void mot_jabara(void) {
                 mario2->unk148 = 0.3f;
                 mario2->unk150.z = 0.005f;
                 mario2->field_68 = 1.6f;
-                mario2->field_6C = vec[0];
+                mario2->field_6C = (&vec3_802c5b88)[0];
             }
         }
         marioChkGnd();
@@ -465,8 +477,7 @@ void mot_jabara(void) {
             allPartyRideOff();
             mario2 = marioGetPtr();
             mario2->unk1A8 = MW_F32(mario2, 0x2A4);
-            f30 = MW_F32(mario2, 0x2A4);
-            MW_F32(mario2, 0x1AC) = f30;
+            MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
             MW_VEC(mario2, 0xB0) = vec[1];
             MW_VEC(mario2, 0x98) = vec[2];
             MW_VEC(mario2, 0xBC) = vec[3];
@@ -504,13 +515,14 @@ void mot_jabara(void) {
                 mario->dispFlags |= 4;
                 marioChgPose(RSTR(0x5C, str_802C5BE4));
                 psndSFXOn_3D((const char*)0x186, &mario->position);
+                var_sp40 = sp40;
                 mario2 = marioGetPtr();
                 MW_S16(mario2, 0x2B8) = 4;
                 MW_F32(mario2, 0x2B0) = 24.0f;
                 ((JabaraWork*)marioGetPtr()->motStruct)->unk4 = 2.4f;
                 ((JabaraWork*)marioGetPtr()->motStruct)->unk8 = -0.4f;
                 ((JabaraWork*)marioGetPtr()->motStruct)->unk10 = 0.18f;
-                if (sp40 < 0) {
+                if (var_sp40 < 0) {
                     MW_S8(mario2, 0x2BA) = 0xB;
                 } else {
                     MW_S8(mario2, 0x2BA) = 1;
@@ -551,8 +563,7 @@ void mot_jabara(void) {
         allPartyRideOff();
         mario2 = marioGetPtr();
         mario2->unk1A8 = MW_F32(mario2, 0x2A4);
-        f30 = MW_F32(mario2, 0x2A4);
-        MW_F32(mario2, 0x1AC) = f30;
+        MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
         MW_VEC(mario2, 0xB0) = vec[1];
         MW_VEC(mario2, 0x98) = vec[2];
         MW_VEC(mario2, 0xBC) = vec[3];
@@ -644,8 +655,8 @@ block_72:
                         var_f28 = -0.6f;
                     }
                     if (var_f28 != ((JabaraWork*)marioGetPtr()->motStruct)->unk18) {
-                        var_r28 = 1;
                         ((JabaraWork*)marioGetPtr()->motStruct)->unk14++;
+                        var_r28 = 1;
                     }
                     ((JabaraWork*)marioGetPtr()->motStruct)->unk18 = var_f28;
                 } else {
@@ -655,8 +666,8 @@ block_72:
                         var_f28 = 0.6f;
                     }
                     if (var_f28 != ((JabaraWork*)marioGetPtr()->motStruct)->unk18) {
-                        var_r28 = 1;
                         ((JabaraWork*)marioGetPtr()->motStruct)->unk14++;
+                        var_r28 = 1;
                     }
                     ((JabaraWork*)marioGetPtr()->motStruct)->unk18 = var_f28;
                 }
@@ -696,8 +707,7 @@ block_72:
                     allPartyRideOff();
                     mario2 = marioGetPtr();
                     mario2->unk1A8 = MW_F32(mario2, 0x2A4);
-                    f30 = MW_F32(mario2, 0x2A4);
-                    MW_F32(mario2, 0x1AC) = f30;
+                    MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
                     MW_VEC(mario2, 0xB0) = vec[1];
                     MW_VEC(mario2, 0x98) = vec[2];
                     MW_VEC(mario2, 0xBC) = vec[3];
@@ -736,7 +746,8 @@ block_72:
 block_121:
     {
         s32 sm = mario->currSubMotionId;
-        if (sm == 0x3C) {
+        switch (sm) {
+        case 0x3C:
             allPartyRideOff();
             mario->currSubMotionId = 0x3D;
             mario->hitobjJumpFrom = mario->hitobjStandOn;
@@ -745,8 +756,7 @@ block_121:
             mario->flags &= ~0x400;
             mario2 = marioGetPtr();
             mario2->unk1A8 = MW_F32(mario2, 0x2A4);
-            f30 = MW_F32(mario2, 0x2A4);
-            MW_F32(mario2, 0x1AC) = f30;
+            MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
             MW_VEC(mario2, 0xB0) = vec[1];
             MW_VEC(mario2, 0x98) = vec[2];
             MW_VEC(mario2, 0xBC) = vec[3];
@@ -818,8 +828,7 @@ block_121:
                         allPartyRideOff();
                         mario2 = marioGetPtr();
                         mario2->unk1A8 = MW_F32(mario2, 0x2A4);
-                        f30 = MW_F32(mario2, 0x2A4);
-                        MW_F32(mario2, 0x1AC) = f30;
+                        MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
                         MW_VEC(mario2, 0xB0) = vec[1];
                         MW_VEC(mario2, 0x98) = vec[2];
                         MW_VEC(mario2, 0xBC) = vec[3];
@@ -944,6 +953,7 @@ block_177:
             }
     }
 }
+#pragma opt_common_subs reset
 
 s32 jabaraNoHitChk(void) {
     MarioWork* mario = marioGetPtr();

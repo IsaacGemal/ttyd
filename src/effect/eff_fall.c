@@ -439,9 +439,9 @@ void effFallDispInseki(CameraId cameraId, void* param) {
 // copy stores the zero vector before the x/y/z overwrite, and the sound-name address is hoisted into a
 // callee-saved register: the declaration order (cInt, sfx, entry, elem) is what puts entry in r28 and cInt in
 // r30 as the original does. `sfx` exists only to force that hoist.
-// NONMATCHING (98.57%): the original emits two dead `b`s after the type-check `&&` chain that this compiler
-// will not produce from any source shape tried (if/nested-if/goto/do-while); the sound-name address picks up
-// an extra `mr` before r29; and the vec3_802fe418 `lwz`s in case 3 schedule earlier than the original's.
+// NONMATCHING (99.22%): the count/type `switch` below (with the redundant `case 0`) reproduces the original's two
+// dead `b`s; the one remaining diff is the sound-name address (single `lis r5; addi r29, r5` in the original,
+// scratch `addi`+copy or an extra `addi` here).
 EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f32 d, f32 e) {
 	s32 cInt;
 #ifdef MUST_MATCH
@@ -459,9 +459,15 @@ EffectEntry* effFallEntry(s32 type, f32 x, f32 y, s32 a, f32 z, s32 b, f32 c, f3
 
 	entry = effEntry();
 	count = a + 1;
-	if (type != 0 && type >= 0 && type < 9) {
+	switch (type) {
+	case 0:
+		count = a + 1;
+		break;
+	case 1: case 2: case 3: case 4:
+	case 5: case 6: case 7: case 8:
 		a = 1;
 		count = 2;
+		break;
 	}
 	entry->type = str_80421058;
 	entry->count = count;

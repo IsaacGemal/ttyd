@@ -291,11 +291,14 @@ s32 texmtx_tbl[] = {30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 4, 5, 6, 14, 0, 1, 2
 // 0.4967=f25, 100=f24). The GXColor temporaries go through a named `color` local (only the r/a fields
 // written), which puts the two GXSetTevKColor argument copies on sp+0x10/sp+0xC and keeps sp48 at 0x48 /
 // sp18 at 0x18. The declaration order below (`i`, `tevStage`, `temp_r27`, `wp`, `u`, `mtx`, `texCoord`)
-// was found by search and raises the score to 94.61%. What remains is integer register colouring (block 2's
-// loop vars land in different callee-saved regs, GX-call argument scheduling differs in a few places) and
-// block 2's magic/0.25 FPR swap. Renaming any of block 2's loop variables to give it its own live range makes
-// MWCC loop forever, so the swap cannot be fixed that way; the rest needs the permuter.
-// NONMATCHING (94.61%): register colouring/scheduling only; no instruction differs for a logic reason.
+// was found by search. Four later edits (found by search) raised the score to 96.21% (119 real diffs):
+// block 2's `v34` uses the if/else form, block 1's coefficients are ordered v24,v26,v27,v28,v25, the
+// `f32 half` local in the two `GXBegin` runs is gone (the 0.5f factor is a literal in each GXPosition3f32),
+// and block 2 reaches the matrix table through its own `mtx2` pointer. What remains is integer register
+// colouring (the loop-base addi uses an r0 scratch, and the target's mtx/tevStage/magic regs differ) and
+// block 2's magic/0.25 FPR swap. Renaming block 2's `tevStage` (or any coefficient) makes MWCC loop forever,
+// so those cannot be separated; the rest needs the permuter.
+// NONMATCHING (96.21%): register colouring/scheduling only; no instruction differs for a logic reason.
 void envDisp_DepthOfField(void) {
     s32 i;
     s32 tevStage;
@@ -303,6 +306,7 @@ void envDisp_DepthOfField(void) {
     EnvironmentWork* wp = envGetWork();
     EnvironmentUnk88* u = &wp->unk88;
     s32* mtx;
+    s32* mtx2;
     s32 texCoord;
     Mtx sp48;
     GXColor color;
@@ -354,11 +358,11 @@ void envDisp_DepthOfField(void) {
             v31 = TWO_PI;
             f2 = 0.00761f;
             f3 = v31 * (f32)i * 0.25f;
-            v28 = PI;
+            v24 = 100.0f;
             v26 = 0.16605f;
             v27 = 1.0f;
+            v28 = PI;
             v25 = 0.4967f;
-            v24 = 100.0f;
             if (f3 <= v28) {
                 f1 = MTXDegToRad(90.0f);
                 if (f3 <= f1) {
@@ -447,9 +451,10 @@ void envDisp_DepthOfField(void) {
                 v33 = 0xF;
             }
             GXSetTevColorIn(tevStage, 0xF, 8, 0xE, v33);
-            v34 = 0;
             if (vcond) {
                 v34 = 7;
+            } else {
+                v34 = 0;
             }
             GXSetTevAlphaIn(tevStage, 7, 4, 6, v34);
             GXSetTevSwapMode(tevStage, 0, 0);
@@ -475,22 +480,20 @@ void envDisp_DepthOfField(void) {
         GXSetNumTevStages(tevStage);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         {
-            f32 half = 0.5f;
-
-            GXPosition3f32(half * -gp->fbWidth, gp->efbHeight * half, 0.0f);
+            GXPosition3f32(0.5f * -gp->fbWidth, gp->efbHeight * 0.5f, 0.0f);
             GXTexCoord2f32(0.0f, 0.0f);
-            GXPosition3f32(half * gp->fbWidth, gp->efbHeight * half, 0.0f);
+            GXPosition3f32(0.5f * gp->fbWidth, gp->efbHeight * 0.5f, 0.0f);
             GXTexCoord2f32(1.0f, 0.0f);
-            GXPosition3f32(half * gp->fbWidth, half * -gp->efbHeight, 0.0f);
+            GXPosition3f32(0.5f * gp->fbWidth, 0.5f * -gp->efbHeight, 0.0f);
             GXTexCoord2f32(1.0f, 1.0f);
-            GXPosition3f32(half * -gp->fbWidth, half * -gp->efbHeight, 0.0f);
+            GXPosition3f32(0.5f * -gp->fbWidth, 0.5f * -gp->efbHeight, 0.0f);
             GXTexCoord2f32(0.0f, 1.0f);
         }
     }
 
     if ((u->unk0 & 2) && (u->unk8)) {
         v28 = TWO_PI;
-        mtx = texmtx_tbl;
+        mtx2 = texmtx_tbl;
         v31 = PI;
         i = 0;
         texCoord = 0;
@@ -580,8 +583,8 @@ void envDisp_DepthOfField(void) {
             }
             f0 = u->unk8;
             MTXTrans(sp18, f0 * f2 / v24, f0 * f4 / v24, 0.0f);
-            GXLoadTexMtxImm(sp18, *mtx, 1);
-            GXSetTexCoordGen2(texCoord, 1, 4, *mtx, 0, 0x7D);
+            GXLoadTexMtxImm(sp18, *mtx2, 1);
+            GXSetTexCoordGen2(texCoord, 1, 4, *mtx2, 0, 0x7D);
             GXSetTevKColorSel(tevStage, 6);
             GXSetTevKAlphaSel(tevStage, 6);
             GXSetTevOrder(tevStage, texCoord, 0, 0xFF);
@@ -593,14 +596,15 @@ void envDisp_DepthOfField(void) {
                 v33 = 0xF;
             }
             GXSetTevColorIn(tevStage, 0xF, 8, 0xE, v33);
-            v34 = 0;
             if (vcond) {
                 v34 = 7;
+            } else {
+                v34 = 0;
             }
             GXSetTevAlphaIn(tevStage, 7, 4, 6, v34);
             GXSetTevSwapMode(tevStage, 0, 0);
             texCoord++;
-            mtx++;
+            mtx2++;
             tevStage++;
         }
         color.r = u->unk3;
@@ -628,15 +632,13 @@ void envDisp_DepthOfField(void) {
         GXSetNumTevStages(tevStage);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         {
-            f32 half = 0.5f;
-
-            GXPosition3f32(half * -gp->fbWidth, gp->efbHeight * half, 0.0f);
+            GXPosition3f32(0.5f * -gp->fbWidth, gp->efbHeight * 0.5f, 0.0f);
             GXTexCoord2f32(0.0f, 0.0f);
-            GXPosition3f32(half * gp->fbWidth, gp->efbHeight * half, 0.0f);
+            GXPosition3f32(0.5f * gp->fbWidth, gp->efbHeight * 0.5f, 0.0f);
             GXTexCoord2f32(1.0f, 0.0f);
-            GXPosition3f32(half * gp->fbWidth, half * -gp->efbHeight, 0.0f);
+            GXPosition3f32(0.5f * gp->fbWidth, 0.5f * -gp->efbHeight, 0.0f);
             GXTexCoord2f32(1.0f, 1.0f);
-            GXPosition3f32(half * -gp->fbWidth, half * -gp->efbHeight, 0.0f);
+            GXPosition3f32(0.5f * -gp->fbWidth, 0.5f * -gp->efbHeight, 0.0f);
             GXTexCoord2f32(0.0f, 1.0f);
         }
     }

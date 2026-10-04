@@ -106,18 +106,22 @@ void unk_yuu_0000365c(CameraId cameraId, void* param) {
 }
 
 #ifdef MUST_MATCH
+// Match-only helper: MWCC colours an inlined helper's locals in declaration order, and assigning the
+// work global inside the loop condition keeps its reload per iteration (and the base pointer in r5).
 static inline void yuu4_init_work(MarioWork* mario) {
     s32 i;
-    for (i = 0; i < unk_yuu_bss00000010->count; i++) {
-        f32* base = (f32*)((u8*)&unk_yuu_bss00000010[i] + 8);
-        *(Vec*)&base[1] = mario->position;
+    f32* base;
+    Yuuminigame4Work* arr;
+    MarioWork* m;
+    m = mario;
+    for (i = 0; i < (arr = unk_yuu_bss00000010)->count; i++) {
+        base = (f32*)((u8*)&arr[i] + 8);
+        *(Vec*)&base[1] = m->position;
         base[2] += 40.0f;
         base[4] = 1.0f;
     }
 }
 #endif
-// NONMATCHING (99.42%): unk_yuu_000034bc; the first loop's base/address registers are swapped
-// (target global base=r5, address=r6; ours reversed). Helper gives the target's li/mr init.
 #pragma opt_propagation off // keep count*sizeof as the target's li/mulli sequence
 USER_FUNC(unk_yuu_000034bc) {
     s32 prev = 0;

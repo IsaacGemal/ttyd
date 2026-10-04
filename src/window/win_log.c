@@ -728,21 +728,32 @@ static inline f32 mainLogI2F(s32 v, const char* base) {
 #endif
 
 // Tattle log / menu main: the tabbed "kiroku" window (map, crystal stars, cards, tattle log).
-// NONMATCHING (97.19%): behaviour complete, checked against the asm. The row-phase loops walk each
+// NONMATCHING (97.46%): behaviour complete, checked against the asm. The row-phase loops walk each
 // row from `work` with `p + offsetof(LogWin,rows) + offsetof(LogRow,phase)` (rows[i].phase, 0xD88);
 // the natural `w->rows[i].phase` form is the original's shape but moves MWCC's `w` from r29 to r31 and
-// costs ~300 more diffs, so the raw walk is kept (match-only).
-// What still differs: the int->float pool (at all but the case-0 site ours emits an anonymous `@NNN@l`
-// load with its own `lis` where the original reads `base+0x420`; the case-0 site uses the MUST_MATCH
-// `mainLogI2F` helper above, which is base-relative but costs fsub+frsp), the 0xa0 vs 0x90 frame the
-// helper scratch forces, and the FPR colouring the pool register drives (map px/qx/py/qy, the map
-// clamps, card/badge/char).
-// NONMATCHING (97.19%): register allocation + the i2f pool remain (see the note above)
+// costs ~300 more diffs, so the raw walk is kept (match-only). The loop pointer `p` is a function-scope
+// local shared by the five copies of the walk (declaring it inside each block makes MWCC colour it r5
+// instead of the original's r4); incrementing `p` before `i` gives the original's instruction order.
+// The five int->float sites at the case-0 and keyGetStick conversions use the MUST_MATCH `mainLogI2F`
+// helper above (base-relative `0x420(r31)` load).  Its fsub+frsp loses the fused `fsubs` the native
+// `(f32)` cast would emit, but the native cast's pooled double is addressed absolutely here (unlike
+// winLogInit, whose base is the compiler's own `...rodata.0`), and its `lis` steals a register; the
+// helper wins the sum locally at the case-0 and sx/sy sites even though every other site stays native.
+// The map-target sx/sy computation is written as separate in-place assignments (`sx = 304 + x;`
+// `sx -= w->mapCx;` `sx *= 0.2;`) rather than one nested expression: MWCC then emits the original's
+// `fadds`/`fsubs`/`fmuls` all into f27/f28 instead of routing the subtraction through f0/f2, which
+// alone was worth +0.03 on the fuzzy score.
+// What still differs: the 0xb0 vs 0x90 frame the inline union scratch forces (which shifts every
+// stack temp by 0x20), the FPR colouring the pool register drives (map px/qx/py/qy, the map clamps,
+// card/badge/char) and the non-authored `addi r31, r4, sym@l` at entry (ours materialises the base in
+// r4 and copies it to r31) and the inlined monosiriExit's object register (r29 vs r28).
+// NONMATCHING (97.46%): register allocation + the i2f pool remain (see the note above)
 s32 winLogMain(WindowWork* work) {
     LogWin* w = (LogWin*)work;
     const char* base = str_802F5EB8;
     const char* tpl;
     const char* root;
+    u8* p;
     s32 i;
 
     {
@@ -775,12 +786,12 @@ s32 winLogMain(WindowWork* work) {
                 }
             } else if (w->buttonTrg & 0x100) {
                 {
-                    u8* p = (u8*)work;
+                    p = (u8*)work;
                     i = 0;
                     while (i < w->count) {
                         *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x1E;
-                        i++;
                         p += 0x20;
+                        i++;
                     }
                 }
                 w->rows[w->sel].phase = 0xA;
@@ -871,12 +882,12 @@ s32 winLogMain(WindowWork* work) {
                 if (w->buttonTrg & 0x200) {
                     SFX(0x20013);
                     {
-                        u8* p = (u8*)work;
+                        p = (u8*)work;
                         i = 0;
                         while (i < w->count) {
                             *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x28;
-                            i++;
                             p += 0x20;
+                            i++;
                         }
                     }
                     w->rows[w->sel].phase = 0x14;
@@ -897,9 +908,9 @@ s32 winLogMain(WindowWork* work) {
                     f32 py = float_neg120_8041d90c + w->mapScrollY + w->mapCy;
                     f32 qx = float_74_8041d86c + w->mapScrollX;
                     f32 qy = float_120_8041d870 + w->mapScrollY;
-                    s32 bestIdx;
                     TubuDt* t = tubuDt;
                     u32 j;
+                    s32 bestIdx;
                     f32 sx, sy;
                     s32 ox, oy;
 
@@ -931,8 +942,8 @@ s32 winLogMain(WindowWork* work) {
                         w->mapSel = -1;
                         winMsgEntry(work, 0, base, 0);
                     }
-                    sx = (f32)keyGetStickX(0) * float_0p125_8041d890;
-                    sy = (f32)keyGetStickY(0) * float_0p125_8041d890;
+                    sx = mainLogI2F(keyGetStickX(0), base) * float_0p125_8041d890;
+                    sy = mainLogI2F(keyGetStickY(0), base) * float_0p125_8041d890;
                     if (float_0_8041d7bc == sx && float_0_8041d7bc == sy) {
                         if (keyGetButton(0) & 1) {
                             sx = float_neg8_8041d910;
@@ -948,8 +959,12 @@ s32 winLogMain(WindowWork* work) {
                     if (float_0_8041d7bc == sx && float_0_8041d7bc == sy) {
                         s32 sel = w->mapSel;
                         if (sel != -1) {
-                            sx = ((float_304_8041d874 + (f32)tubuDt[sel].x) - w->mapCx) * float_0p2_8041d914;
-                            sy = ((float_240_8041d858 + (f32)tubuDt[sel].y) - w->mapCy) * float_0p2_8041d914;
+                            sx = float_304_8041d874 + (f32)tubuDt[sel].x;
+                            sy = float_240_8041d858 + (f32)tubuDt[sel].y;
+                            sx -= w->mapCx;
+                            sy -= w->mapCy;
+                            sx *= float_0p2_8041d914;
+                            sy *= float_0p2_8041d914;
                         }
                     }
                     w->mapCx = w->mapCx + sx;
@@ -1003,12 +1018,12 @@ s32 winLogMain(WindowWork* work) {
             if (w->buttonTrg & 0x200) {
                 SFX(0x20013);
                 {
-                    u8* p = (u8*)work;
+                    p = (u8*)work;
                     i = 0;
                     while (i < w->count) {
                         *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x28;
-                        i++;
                         p += 0x20;
+                        i++;
                     }
                 }
                 w->rows[w->sel].phase = 0x14;
@@ -1056,12 +1071,12 @@ s32 winLogMain(WindowWork* work) {
             if (trg & 0x200) {
                 SFX(0x20013);
                 {
-                    u8* p = (u8*)work;
+                    p = (u8*)work;
                     i = 0;
                     while (i < w->count) {
                         *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x28;
-                        i++;
                         p += 0x20;
+                        i++;
                     }
                 }
                 w->rows[w->sel].phase = 0x14;
@@ -1140,12 +1155,12 @@ s32 winLogMain(WindowWork* work) {
             if (trg & 0x200) {
                 SFX(0x20013);
                 {
-                    u8* p = (u8*)work;
+                    p = (u8*)work;
                     i = 0;
                     while (i < w->count) {
                         *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x28;
-                        i++;
                         p += 0x20;
+                        i++;
                     }
                 }
                 w->rows[w->sel].phase = 0x14;
@@ -1223,12 +1238,12 @@ s32 winLogMain(WindowWork* work) {
             if (trg & 0x200) {
                 SFX(0x20013);
                 {
-                    u8* p = (u8*)work;
+                    p = (u8*)work;
                     i = 0;
                     while (i < w->count) {
                         *(s32*)(p + offsetof(LogWin, rows) + offsetof(LogRow, phase)) = 0x28;
-                        i++;
                         p += 0x20;
+                        i++;
                     }
                 }
                 w->rows[w->sel].phase = 0x14;
