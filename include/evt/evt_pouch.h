@@ -30,3 +30,5 @@ USER_FUNC(evt_pouch_set_ap);
 USER_FUNC(evt_pouch_set_coin);
 USER_FUNC(evt_pouch_set_supercoin);
 USER_FUNC(evt_pouch_set_yoshiname);
+USER_FUNC(evt_pouch_add_keepitem);
+USER_FUNC(evt_pouch_remove_keepitem);

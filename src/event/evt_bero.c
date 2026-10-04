@@ -12,17 +12,32 @@
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
 #include <dolphin/os.h>
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 #include "cam_road.h"
 #include "cam_shift.h"
 #include "system.h"
+#include "battle/ac/ac_table.h"
+#include "battle/battle_ac.h"
+#include "battle/battle_unit.h"
+#include "driver/mobjdrv.h"
+#include "evt/evt_cam.h"
+#include "evt/evt_case.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_hit.h"
+#include "evt/evt_map.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_party.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_sub.h"
+
+#ifdef MUST_MATCH
+// the shared backing store of the local name tables; MWCC pools the three identical tables
+// into this one object, and each use copies it to the stack.
+__declspec(section ".rodata") const char* jumptable_802C4970[8] = {"n_", "ne_", "e_", "se_", "s_", "sw_", "w_", "nw_"};
+#endif
 
 extern GlobalWork* gp;
-extern const char str_802C4DA8[];
-extern const char str_802C4DB4[];
-extern f32 float_37p5_8041a408;
-const f64 double_to_int_802c4da0 = 4503601774854144.0;
 
 //.bss
 s32 BeroSW[16]; //switches
@@ -35,6 +50,15 @@ s32 bero_null[15] = {
 	0x00010001, 0x00000000, 0x00000000,
 };
 
+s32 bero_case_switch_on[19];
+s32 bero_case_switch_off[31];
+s32 evt_bero_info_run_pipe_sub00[51];
+s32 evt_bero_initial_pos[158];
+s32 evt_bero_mario_enter[95];
+s32 evt_bero_info_run_none[5];
+s32 evt_bero_info_run_gate[5];
+
+// clang-format off
 EVT_BEGIN(default_entevt)
 SET_VALUE(LW(0), 0)
 RETURN
@@ -55,19 +79,7 @@ f32 BeroEX, BeroEY, BeroEZ; //end position
 Vec BeroPT, BeroAT;
 BOOL BeroMarioGO;
 
-EVT_BEGIN(evt_bero_mario_enter)
-CALL(evt_seq_wait, SEQ_GAME)
-CALL(evt_npc_change_fbat_mode, 7)
 
-
-
-EVT_END()
-
-EVT_BEGIN(evt_bero_info_run)
-CALL(evt_bero_get_into_info)
-
-
-EVT_END()
 
 //new in retail, f32* x, f32* y, f32* z
 USER_FUNC(evt_bero_set_reset_position) {
@@ -85,6 +97,23 @@ USER_FUNC(evt_bero_set_reset_position) {
 USER_FUNC(evt_bero_set_reset_position_current) {
 	MarioWork* wp = marioGetPtr();
 	marioSetBottomlessResetPosition(wp->position.x, wp->position.y, wp->position.z);
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(N_evt_bero_set_mario_bottomless_respawn_pos_on_bero_entry) {
+	s32* args = event->args;
+	s32 x = evtGetValue(event, args[0]);
+	s32 y = evtGetValue(event, args[1]);
+	s32 z = evtGetValue(event, args[2]);
+
+	N_marioSetBottomlessRespawnPosOnBeroEntry((f32)x, (f32)y, (f32)z);
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(N_evt_bero_set_mario_bottomless_respawn_pos_to_current_mario_pos) {
+	MarioWork* wp = marioGetPtr();
+
+	N_marioSetBottomlessRespawnPosOnBeroEntry(wp->position.x, wp->position.y, wp->position.z);
 	return EVT_RETURN_DONE;
 }
 
@@ -366,7 +395,20 @@ USER_FUNC(evt_bero_get_into_info) {
 		event->lwData[4] = entry->kinddirArg1;
 		kind = entry->kinddirArg3;
 		{
+#ifdef MUST_MATCH
+			// the screen name table; the original's compiler shares one backing store across the three uses
+			const char* names[8];
+			names[0] = jumptable_802C4970[0];
+			names[1] = jumptable_802C4970[1];
+			names[2] = jumptable_802C4970[2];
+			names[3] = jumptable_802C4970[3];
+			names[4] = jumptable_802C4970[4];
+			names[5] = jumptable_802C4970[5];
+			names[6] = jumptable_802C4970[6];
+			names[7] = jumptable_802C4970[7];
+#else
 			const char* names[8] = {"n_", "ne_", "e_", "se_", "s_", "sw_", "w_", "nw_"};
+#endif
 			switch (kind) {
 			case 0x4E20:
 				if (kind == 0x2710) {
@@ -413,7 +455,20 @@ USER_FUNC(evt_bero_get_into_info) {
 		event->lwData[4] = entry->kinddirArg1;
 		kind = entry->kinddirArg3;
 		{
+#ifdef MUST_MATCH
+			// the screen name table; the original's compiler shares one backing store across the three uses
+			const char* names[8];
+			names[0] = jumptable_802C4970[0];
+			names[1] = jumptable_802C4970[1];
+			names[2] = jumptable_802C4970[2];
+			names[3] = jumptable_802C4970[3];
+			names[4] = jumptable_802C4970[4];
+			names[5] = jumptable_802C4970[5];
+			names[6] = jumptable_802C4970[6];
+			names[7] = jumptable_802C4970[7];
+#else
 			const char* names[8] = {"n_", "ne_", "e_", "se_", "s_", "sw_", "w_", "nw_"};
+#endif
 			switch (kind) {
 			case 0x4E20:
 				if (kind == 0x2710) {
@@ -455,230 +510,6 @@ USER_FUNC(evt_bero_get_into_info) {
 	}
 }
 
-// ---- reconstructed functions ----
-
-USER_FUNC(evt_bero_mario_go_init) {
-	BeroMarioGO = 0;
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_bero_mario_go) {
-	BeroMarioGO = 1;
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_bero_mario_go_wait) {
-	return BeroMarioGO == 0 ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_bero_cam_shift_init) {
-	camRoadReset();
-	camShiftReset();
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_bero_cam3d_change) {
-	s32* args = event->args;
-	CameraEntry* cam = camGetPtr(CAMERA_3D);
-	s32 time = evtGetValue(event, args[0]);
-	s32 curve = evtGetValue(event, args[1]);
-
-	cam->presetPos = cam->cameraPos;
-	cam->presetAt = cam->cameraAt;
-	cam->storedPos = BeroPT;
-	cam->storedAt = BeroAT;
-	cam->startTimeA = gp->renderTime;
-	cam->durationA = OSMillisecondsToTicks(time);
-	cam->stateA = 3;
-	cam->curveA = curve;
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_bero_disppos_save) {
-	MarioWork* wp;
-
-	wp = marioGetPtr();
-	BeroOX = *(f32*)((u8*)wp + 0x98);
-	wp = marioGetPtr();
-	BeroOY = *(f32*)((u8*)wp + 0x9C);
-	wp = marioGetPtr();
-	BeroOZ = *(f32*)((u8*)wp + 0xA0);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_bero_disppos_load) {
-	MarioWork* wp;
-	f32 pos;
-
-	pos = BeroOX;
-	wp = marioGetPtr();
-	*(f32*)((u8*)wp + 0x98) = pos;
-	pos = BeroOY;
-	wp = marioGetPtr();
-	*(f32*)((u8*)wp + 0x9C) = pos;
-	pos = BeroOZ;
-	wp = marioGetPtr();
-	*(f32*)((u8*)wp + 0xA0) = pos;
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_bero_case_id_load) {
-	s32* args = event->args;
-	s32 id = evtGetValue(event, args[0]);
-
-	evtSetValue(event, args[1], BeroID[id]);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_bero_case_id_save) {
-	s32* args = event->args;
-	s32 id = evtGetValue(event, args[0]);
-
-	BeroID[id] = evtGetValue(event, args[1]);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(evt_bero_1stcheck) {
-	s32* args = event->args;
-
-	if (!strcmp((const char*)event->lwData[13], "sys_01")) {
-		evtSetValue(event, args[0], 1);
-	} else {
-		evtSetValue(event, args[0], 0);
-	}
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(N_evt_bero_set_mario_bottomless_respawn_pos_to_current_mario_pos) {
-	MarioWork* wp = marioGetPtr();
-
-	N_marioSetBottomlessRespawnPosOnBeroEntry(wp->position.x, wp->position.y, wp->position.z);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(N_evt_bero_set_mario_bottomless_respawn_pos_on_bero_entry) {
-	s32* args = event->args;
-	s32 x = evtGetValue(event, args[0]);
-	s32 y = evtGetValue(event, args[1]);
-	s32 z = evtGetValue(event, args[2]);
-
-	N_marioSetBottomlessRespawnPosOnBeroEntry((f32)x, (f32)y, (f32)z);
-	return EVT_RETURN_DONE;
-}
-
-// NOTE (100%): the filter body is inlined from bero_id_filter(id); writing it inline
-// directly gave the wrong callee-saved assignment (args r31, test r29).
-USER_FUNC(evt_bero_id_filter) {
-	s32* args = event->args;
-	s32 id = evtGetValue(event, args[0]);
-
-	evtSetValue(event, args[0], bero_id_filter(id));
-	return EVT_RETURN_DONE;
-}
-
-	// NONMATCHING (99.58%): register allocation / branch layout differs from the original
-#pragma opt_propagation off // needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r4 for the table, r5 for event->args)
-USER_FUNC(evt_bero_get_number) {
-	BeroEntry** temp, **table = BeroINFOARR;
-	s32* args = event->args;
-	s32 id = evtGetValue(event, args[0]);
-	s32 newId = id;
-	const char *string, *test;
-
-	if (id < 0 || id >= 16) {
-		test = (const char*)id;
-		if (&newId != NULL) {
-			newId = 0;
-		}
-		temp = table;
-		while (1) {
-			string = (*temp)->hitName;
-			if (!string || !strcmp(string, test)) {
-				break;
-			}
-			temp++;
-			if (&newId != NULL) {
-				newId++;
-			}
-		}
-	}
-	event->lwData[1] = newId;
-	return EVT_RETURN_DONE;
-}
-#pragma opt_propagation reset
-
-#pragma opt_propagation off // needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r5 for event->args, r4 for the table)
-USER_FUNC(evt_bero_switch_off) {
-	BeroEntry** temp, **table = BeroINFOARR;
-	s32* args = event->args;
-	s32 id = evtGetValue(event, args[0]);
-	s32 newId = id;
-	const char *string, *test;
-
-	if (id < 0 || id >= 16) {
-		test = (const char*)id;
-		if (&newId != NULL) {
-			newId = 0;
-		}
-		temp = table;
-		while (1) {
-			string = (*temp)->hitName;
-			if (!string || !strcmp(string, test)) {
-				break;
-			}
-			temp++;
-			if (&newId != NULL) {
-				newId++;
-			}
-		}
-	}
-	if (BeroSW[newId] != 1) {
-		event->lwData[0] = 1;
-	} else {
-		event->lwData[0] = 0;
-	}
-	BeroSW[newId] = 0;
-	event->lwData[1] = newId;
-	return EVT_RETURN_DONE;
-}
-#pragma opt_propagation reset
-
-#pragma opt_propagation off // needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r4 for the table, r5 for event->args)
-USER_FUNC(evt_bero_switch_on) {
-	BeroEntry** temp, **table = BeroINFOARR;
-	s32* args = event->args;
-	s32 id = evtGetValue(event, args[0]);
-	s32 newId = id;
-	const char *string, *test;
-
-	if (id < 0 || id >= 16) {
-		test = (const char*)id;
-		if (&newId != NULL) {
-			newId = 0;
-		}
-		temp = table;
-		while (1) {
-			string = (*temp)->hitName;
-			if (!string || !strcmp(string, test)) {
-				break;
-			}
-			temp++;
-			if (&newId != NULL) {
-				newId++;
-			}
-		}
-	}
-	if (BeroSW[newId] == 1) {
-		event->lwData[0] = 1;
-	} else {
-		event->lwData[0] = 0;
-	}
-	BeroSW[newId] = 1;
-	event->lwData[1] = newId;
-	return EVT_RETURN_DONE;
-}
-#pragma opt_propagation reset
-
 USER_FUNC(evt_bero_read_mario_pera) {
 	if (isFirstCall) {
 		event->userdata[0] = 0;
@@ -693,12 +524,21 @@ USER_FUNC(evt_bero_read_mario_pera) {
 		break;
 #endif
 	case 0:
-		if (animGroupBaseAsync(str_802C4DA8, 0, 0)) {
+#ifdef MUST_MATCH
+		// MUST_MATCH: the original string object carries two trailing padding bytes.
+		if (animGroupBaseAsync("p_dokan_x\0\0", 0, 0)) {
+#else
+		if (animGroupBaseAsync("p_dokan_x", 0, 0)) {
+#endif
 			event->userdata[0] = 1;
 		}
 		break;
 	case 1:
-		if (animGroupBaseAsync(str_802C4DB4, 0, 0)) {
+#ifdef MUST_MATCH
+		if (animGroupBaseAsync("p_dokan_y\0\0", 0, 0)) {
+#else
+		if (animGroupBaseAsync("p_dokan_y", 0, 0)) {
+#endif
 			event->userdata[0] = 100;
 		}
 		break;
@@ -706,151 +546,13 @@ USER_FUNC(evt_bero_read_mario_pera) {
 	return event->userdata[0] == 100 ? EVT_RETURN_DONE : EVT_RETURN_BLOCK;
 }
 
-USER_FUNC(evt_bero_overwrite) {
-	BeroEntry** temp, **table = BeroINFOARR;
+// NOTE (100%): the filter body is inlined from bero_id_filter(id); writing it inline
+// directly gave the wrong callee-saved assignment (args r31, test r29).
+USER_FUNC(evt_bero_id_filter) {
 	s32* args = event->args;
 	s32 id = evtGetValue(event, args[0]);
-	s32 newId = id;
-	const char *string, *test;
 
-	if (id < 0 || id >= 16) {
-		test = (const char*)id;
-		if (&newId != NULL) {
-			newId = 0;
-		}
-		temp = table;
-		while (1) {
-			string = (*temp)->hitName;
-			if (!string || !strcmp(string, test)) {
-				break;
-			}
-			temp++;
-			if (&newId != NULL) {
-				newId++;
-			}
-		}
-	}
-	BeroINFOARR[newId] = (BeroEntry*)evtGetValue(event, args[1]);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(bero_set_disp_position_pipe) {
-	MarioWork* wp;
-
-	switch (event->lwData[5]) {
-	case 2:
-	case 6:
-		if (!(event->lwData[4] & 0x1000)) {
-			wp = marioGetPtr();
-			*(f32*)((u8*)wp + 0x9C) += 3.0f;
-			wp = marioGetPtr();
-			*(f32*)((u8*)wp + 0xA0) -= 15.0f;
-		}
-		break;
-	case 8:
-	case 9:
-		if (!(event->lwData[4] & 0x1000)) {
-			wp = marioGetPtr();
-			*(f32*)((u8*)wp + 0xA0) -= 13.0f;
-		} else {
-			wp = marioGetPtr();
-			*(f32*)((u8*)wp + 0xA0) -= 20.0f;
-		}
-		break;
-	case 7:
-	case 0x2710:
-	default:
-		break;
-	}
-	return EVT_RETURN_DONE;
-}
-
-
-// NOTE (100%): like bero_get_position_pipe2, cam->storedPos/storedAt go through two
-// local Vecs assigned a (Vec){0,0,0} compound literal at the store site and then
-// field-written from work; the direct struct copy drops the original's zero temps.
-USER_FUNC(evt_camera_change_event_from_road) {
-	MarioWork* mario = marioGetPtr();
-	CameraEntry* cam = camGetPtr(CAMERA_3D);
-	CameraParams work;
-	Vec bpt, bat;
-	f32 out;
-
-	camShiftMain(cam, mario, &out);
-	camRoadMain(&work.fovY, mario->position.x, cam->marioPos.y, mario->position.z,
-	            mario->position.x, cam->marioPos.y, mario->position.z, out);
-	bpt = (Vec){ 0.0f, 0.0f, 0.0f };
-	bpt.x = work.pos.x;
-	bpt.y = work.pos.y;
-	bpt.z = work.pos.z;
-	bat = (Vec){ 0.0f, 0.0f, 0.0f };
-	bat.x = work.at.x;
-	bat.y = work.at.y;
-	bat.z = work.at.z;
-	cam->presetPos = cam->cameraPos;
-	cam->presetAt = cam->cameraAt;
-	cam->storedPos = bpt;
-	cam->storedAt = bat;
-	cam->startTimeA = gp->renderTime;
-	cam->durationA = OSMillisecondsToTicks(500);
-	cam->stateA = 3;
-	cam->curveA = 0xb;
-	return EVT_RETURN_DONE;
-}
-
-// NOTE (100%): BeroPT/BeroAT go through local Vecs assigned a (Vec){0,0,0} compound
-// literal at the store site, then field-written from work; the direct struct copy
-// (BeroPT = work.pos) drops the two zero-vector temps the original keeps.
-USER_FUNC(bero_get_position_pipe2) {
-	s32* args = event->args;
-	s32 a = evtGetValue(event, args[0]);
-	s32 b = (s32)evtGetFloat(event, args[1]);
-	Vec start, end;
-	Vec bpt, bat;
-	CameraParams work;
-
-	bero_get_position_pipe_sub(a, b, event->lwData[3], event->lwData[5], &start, &end);
-	end.y += 1.0f;
-	camRoadReset();
-	camShiftReset();
-	camRoadMain(&work.fovY, end.x, end.y, end.z, end.x, end.y, end.z, 0.0f);
-	bpt = (Vec){ 0.0f, 0.0f, 0.0f };
-	bpt.x = work.pos.x;
-	bpt.y = work.pos.y;
-	bpt.z = work.pos.z;
-	bat = (Vec){ 0.0f, 0.0f, 0.0f };
-	bat.x = work.at.x;
-	bat.y = work.at.y;
-	bat.z = work.at.z;
-	BeroPT = bpt;
-	BeroAT = bat;
-	return EVT_RETURN_DONE;
-}
-
-	// NONMATCHING (97.50%): kind/a are in r31/r30 where the original has r30/r31, and the
-	// BeroEY ternary is stored directly from f2 instead of the original's f0 + frsp f2,f0.
-USER_FUNC(bero_get_position_pipe_pure) {
-	s32* args = event->args;
-	s32 a;
-	s32 kind;
-	s32 b;
-	Vec start, end;
-
-	a = evtGetValue(event, args[0]);
-	b = (s32)evtGetFloat(event, args[1]);
-	kind = event->lwData[5];
-	bero_get_position_pipe_sub(a, b, event->lwData[3], kind, &start, &end);
-	BeroSX = start.x;
-	BeroSY = kind == 8 ? start.y - float_37p5_8041a408 : start.y;
-	BeroSZ = start.z;
-	BeroEX = end.x;
-	if (kind == 8) {
-		BeroEY = end.y - float_37p5_8041a408;
-	} else {
-		BeroEY = end.y;
-	}
-	BeroEZ = end.z;
-	N_marioSetBottomlessRespawnPosOnBeroEntry(BeroEX, BeroEY, BeroEZ);
+	evtSetValue(event, args[0], bero_id_filter(id));
 	return EVT_RETURN_DONE;
 }
 
@@ -869,7 +571,21 @@ USER_FUNC(evt_bero_get_info_num) {
 	event->lwData[4] = *(u16*)&entry->kinddirArg1;
 	kind = entry->kinddirArg3;
 	{
-		const char* names[8] = {"n_", "ne_", "e_", "se_", "s_", "sw_", "w_", "nw_"};
+		
+#ifdef MUST_MATCH
+			// the screen name table; the original's compiler shares one backing store across the three uses
+			const char* names[8];
+			names[0] = jumptable_802C4970[0];
+			names[1] = jumptable_802C4970[1];
+			names[2] = jumptable_802C4970[2];
+			names[3] = jumptable_802C4970[3];
+			names[4] = jumptable_802C4970[4];
+			names[5] = jumptable_802C4970[5];
+			names[6] = jumptable_802C4970[6];
+			names[7] = jumptable_802C4970[7];
+#else
+			const char* names[8] = {"n_", "ne_", "e_", "se_", "s_", "sw_", "w_", "nw_"};
+#endif
 	switch (kind) {
 	case 0x4E20:
 		if (kind == 0x2710) {
@@ -943,56 +659,6 @@ USER_FUNC(evt_bero_get_info_num) {
 	event->lwData[12] = 0xffff0000;
 	event->lwData[13] = (s32)entry->nextareaArg1;
 	event->lwData[14] = (s32)entry->nextareaArg2;
-	return EVT_RETURN_DONE;
-}
-
-// NONMATCHING (99.83%): only a scratch-register swap around the int->double conversion:
-// the original keeps sec*cs in f2 (double const f1, BeroSX f2), ours uses f1 for the
-// product (const f2, BeroSX f1); rad/dist callee-saved maps all match.
-USER_FUNC(evt_bero_move_mario_speed) {
-	f32 speed = evtGetFloat(event, event->args[0]);
-	OSTime now = gp->inBattle ? gp->renderTime : gp->renderFieldTime;
-	MarioWork* mario;
-	f32 sec, sn, cs, rad, dist, dx, dy, vx, vy;
-	s32 frames;
-	BOOL reachedX, reachedY;
-
-	if (isFirstCall) {
-		event->savedTime = now;
-	}
-	sec = sysFrame2SecFloat(speed);
-	rad = 6.2831855f * reviseAngle(angleABf(BeroSX, BeroSY, BeroEX, BeroEY)) / 360.0f;
-	sn = (f32)sin(rad);
-	cs = (f32)cos(rad);
-	frames = sysMsec2Frame((s32)OSTicksToMilliseconds((u64)(s64)(s32)((s32)now - (s32)event->savedTime)));
-	vx = sec * sn;
-	vy = -(sec * cs);
-	dist = sec * (f32)frames;
-	dx = sn * dist;
-	dy = -(cs * dist);
-	marioGetPtr()->position.x = BeroSX + dx;
-	marioGetPtr()->position.y = BeroSY + dy;
-	marioGetPtr()->position.z = BeroSZ;
-	reachedX = 0;
-	if (vx >= 0 && BeroEX <= marioGetPtr()->position.x) {
-		reachedX = 1;
-	}
-	if (vx < 0 && BeroEX >= marioGetPtr()->position.x) {
-		reachedX = 1;
-	}
-	reachedY = 0;
-	if (vy >= 0 && BeroEY <= marioGetPtr()->position.y) {
-		reachedY = 1;
-	}
-	if (vy < 0 && BeroEY >= marioGetPtr()->position.y) {
-		reachedY = 1;
-	}
-	if (reachedX + reachedY != 2) {
-		return 0;
-	}
-	marioGetPtr()->position.x = BeroEX;
-	marioGetPtr()->position.y = BeroEY;
-	marioGetPtr()->position.z = BeroEZ;
 	return EVT_RETURN_DONE;
 }
 
@@ -1150,3 +816,1137 @@ void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end
 		break;
 	}
 }
+
+	// NONMATCHING (97.50%): kind/a are in r31/r30 where the original has r30/r31, and the
+	// BeroEY ternary is stored directly from f2 instead of the original's f0 + frsp f2,f0.
+USER_FUNC(bero_get_position_pipe_pure) {
+	s32* args = event->args;
+	s32 a;
+	s32 kind;
+	s32 b;
+	Vec start, end;
+
+	a = evtGetValue(event, args[0]);
+	b = (s32)evtGetFloat(event, args[1]);
+	kind = event->lwData[5];
+	bero_get_position_pipe_sub(a, b, event->lwData[3], kind, &start, &end);
+	BeroSX = start.x;
+	BeroSY = kind == 8 ? start.y - 37.5f : start.y;
+	BeroSZ = start.z;
+	BeroEX = end.x;
+	if (kind == 8) {
+		BeroEY = end.y - 37.5f;
+	} else {
+		BeroEY = end.y;
+	}
+	BeroEZ = end.z;
+	N_marioSetBottomlessRespawnPosOnBeroEntry(BeroEX, BeroEY, BeroEZ);
+	return EVT_RETURN_DONE;
+}
+
+// NOTE (100%): BeroPT/BeroAT go through local Vecs assigned a (Vec){0,0,0} compound
+// literal at the store site, then field-written from work; the direct struct copy
+// (BeroPT = work.pos) drops the two zero-vector temps the original keeps.
+USER_FUNC(bero_get_position_pipe2) {
+	s32* args = event->args;
+	s32 a = evtGetValue(event, args[0]);
+	s32 b = (s32)evtGetFloat(event, args[1]);
+	Vec start, end;
+	Vec bpt, bat;
+	CameraParams work;
+
+	bero_get_position_pipe_sub(a, b, event->lwData[3], event->lwData[5], &start, &end);
+	end.y += 1.0f;
+	camRoadReset();
+	camShiftReset();
+	camRoadMain(&work.fovY, end.x, end.y, end.z, end.x, end.y, end.z, 0.0f);
+	bpt = (Vec){ 0.0f, 0.0f, 0.0f };
+	bpt.x = work.pos.x;
+	bpt.y = work.pos.y;
+	bpt.z = work.pos.z;
+	bat = (Vec){ 0.0f, 0.0f, 0.0f };
+	bat.x = work.at.x;
+	bat.y = work.at.y;
+	bat.z = work.at.z;
+	BeroPT = bpt;
+	BeroAT = bat;
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(bero_set_disp_position_pipe) {
+	MarioWork* wp;
+
+	switch (event->lwData[5]) {
+	case 2:
+	case 6:
+		if (!(event->lwData[4] & 0x1000)) {
+			wp = marioGetPtr();
+			*(f32*)((u8*)wp + 0x9C) += 3.0f;
+			wp = marioGetPtr();
+			*(f32*)((u8*)wp + 0xA0) -= 15.0f;
+		}
+		break;
+	case 8:
+	case 9:
+		if (!(event->lwData[4] & 0x1000)) {
+			wp = marioGetPtr();
+			*(f32*)((u8*)wp + 0xA0) -= 13.0f;
+		} else {
+			wp = marioGetPtr();
+			*(f32*)((u8*)wp + 0xA0) -= 20.0f;
+		}
+		break;
+	case 7:
+	case 0x2710:
+	default:
+		break;
+	}
+	return EVT_RETURN_DONE;
+}
+
+#pragma opt_propagation off // needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r4 for the table, r5 for event->args)
+USER_FUNC(evt_bero_switch_on) {
+	BeroEntry** temp, **table = BeroINFOARR;
+	s32* args = event->args;
+	s32 id = evtGetValue(event, args[0]);
+	s32 newId = id;
+	const char *string, *test;
+
+	if (id < 0 || id >= 16) {
+		test = (const char*)id;
+		if (&newId != NULL) {
+			newId = 0;
+		}
+		temp = table;
+		while (1) {
+			string = (*temp)->hitName;
+			if (!string || !strcmp(string, test)) {
+				break;
+			}
+			temp++;
+			if (&newId != NULL) {
+				newId++;
+			}
+		}
+	}
+	if (BeroSW[newId] == 1) {
+		event->lwData[0] = 1;
+	} else {
+		event->lwData[0] = 0;
+	}
+	BeroSW[newId] = 1;
+	event->lwData[1] = newId;
+	return EVT_RETURN_DONE;
+}
+#pragma opt_propagation reset
+
+#pragma opt_propagation off // needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r5 for event->args, r4 for the table)
+USER_FUNC(evt_bero_switch_off) {
+	BeroEntry** temp, **table = BeroINFOARR;
+	s32* args = event->args;
+	s32 id = evtGetValue(event, args[0]);
+	s32 newId = id;
+	const char *string, *test;
+
+	if (id < 0 || id >= 16) {
+		test = (const char*)id;
+		if (&newId != NULL) {
+			newId = 0;
+		}
+		temp = table;
+		while (1) {
+			string = (*temp)->hitName;
+			if (!string || !strcmp(string, test)) {
+				break;
+			}
+			temp++;
+			if (&newId != NULL) {
+				newId++;
+			}
+		}
+	}
+	if (BeroSW[newId] != 1) {
+		event->lwData[0] = 1;
+	} else {
+		event->lwData[0] = 0;
+	}
+	BeroSW[newId] = 0;
+	event->lwData[1] = newId;
+	return EVT_RETURN_DONE;
+}
+#pragma opt_propagation reset
+
+#pragma opt_propagation off // needed: without it MWCC pre-colours the evtGetValue argument into r4, pushing BeroINFOARR's address temp into r5 (target uses r4 for the table, r5 for event->args)
+	// NONMATCHING (99.58%): register allocation / branch layout differs from the original
+USER_FUNC(evt_bero_get_number) {
+	BeroEntry** temp, **table = BeroINFOARR;
+	s32* args = event->args;
+	s32 id = evtGetValue(event, args[0]);
+	s32 newId = id;
+	const char *string, *test;
+
+	if (id < 0 || id >= 16) {
+		test = (const char*)id;
+		if (&newId != NULL) {
+			newId = 0;
+		}
+		temp = table;
+		while (1) {
+			string = (*temp)->hitName;
+			if (!string || !strcmp(string, test)) {
+				break;
+			}
+			temp++;
+			if (&newId != NULL) {
+				newId++;
+			}
+		}
+	}
+	event->lwData[1] = newId;
+	return EVT_RETURN_DONE;
+}
+#pragma opt_propagation reset
+
+USER_FUNC(evt_bero_case_id_save) {
+	s32* args = event->args;
+	s32 id = evtGetValue(event, args[0]);
+
+	BeroID[id] = evtGetValue(event, args[1]);
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_bero_case_id_load) {
+	s32* args = event->args;
+	s32 id = evtGetValue(event, args[0]);
+
+	evtSetValue(event, args[1], BeroID[id]);
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_bero_disppos_save) {
+	MarioWork* wp;
+
+	wp = marioGetPtr();
+	BeroOX = *(f32*)((u8*)wp + 0x98);
+	wp = marioGetPtr();
+	BeroOY = *(f32*)((u8*)wp + 0x9C);
+	wp = marioGetPtr();
+	BeroOZ = *(f32*)((u8*)wp + 0xA0);
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_bero_disppos_load) {
+	MarioWork* wp;
+	f32 pos;
+
+	pos = BeroOX;
+	wp = marioGetPtr();
+	*(f32*)((u8*)wp + 0x98) = pos;
+	pos = BeroOY;
+	wp = marioGetPtr();
+	*(f32*)((u8*)wp + 0x9C) = pos;
+	pos = BeroOZ;
+	wp = marioGetPtr();
+	*(f32*)((u8*)wp + 0xA0) = pos;
+	return EVT_RETURN_DONE;
+}
+
+// NONMATCHING (99.83%): only a scratch-register swap around the int->double conversion:
+// the original keeps sec*cs in f2 (double const f1, BeroSX f2), ours uses f1 for the
+// product (const f2, BeroSX f1); rad/dist callee-saved maps all match.
+USER_FUNC(evt_bero_move_mario_speed) {
+	f32 speed = evtGetFloat(event, event->args[0]);
+	OSTime now = gp->inBattle ? gp->renderTime : gp->renderFieldTime;
+	MarioWork* mario;
+	f32 sec, sn, cs, rad, dist, dx, dy, vx, vy;
+	s32 frames;
+	BOOL reachedX, reachedY;
+
+	if (isFirstCall) {
+		event->savedTime = now;
+	}
+	sec = sysFrame2SecFloat(speed);
+	rad = 6.2831855f * reviseAngle(angleABf(BeroSX, BeroSY, BeroEX, BeroEY)) / 360.0f;
+	sn = (f32)sin(rad);
+	cs = (f32)cos(rad);
+	frames = sysMsec2Frame((s32)OSTicksToMilliseconds((u64)(s64)(s32)((s32)now - (s32)event->savedTime)));
+	vx = sec * sn;
+	vy = -(sec * cs);
+	dist = sec * (f32)frames;
+	dx = sn * dist;
+	dy = -(cs * dist);
+	marioGetPtr()->position.x = BeroSX + dx;
+	marioGetPtr()->position.y = BeroSY + dy;
+	marioGetPtr()->position.z = BeroSZ;
+	reachedX = 0;
+	if (vx >= 0 && BeroEX <= marioGetPtr()->position.x) {
+		reachedX = 1;
+	}
+	if (vx < 0 && BeroEX >= marioGetPtr()->position.x) {
+		reachedX = 1;
+	}
+	reachedY = 0;
+	if (vy >= 0 && BeroEY <= marioGetPtr()->position.y) {
+		reachedY = 1;
+	}
+	if (vy < 0 && BeroEY >= marioGetPtr()->position.y) {
+		reachedY = 1;
+	}
+	if (reachedX + reachedY != 2) {
+		return 0;
+	}
+	marioGetPtr()->position.x = BeroEX;
+	marioGetPtr()->position.y = BeroEY;
+	marioGetPtr()->position.z = BeroEZ;
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_bero_overwrite) {
+	BeroEntry** temp, **table = BeroINFOARR;
+	s32* args = event->args;
+	s32 id = evtGetValue(event, args[0]);
+	s32 newId = id;
+	const char *string, *test;
+
+	if (id < 0 || id >= 16) {
+		test = (const char*)id;
+		if (&newId != NULL) {
+			newId = 0;
+		}
+		temp = table;
+		while (1) {
+			string = (*temp)->hitName;
+			if (!string || !strcmp(string, test)) {
+				break;
+			}
+			temp++;
+			if (&newId != NULL) {
+				newId++;
+			}
+		}
+	}
+	BeroINFOARR[newId] = (BeroEntry*)evtGetValue(event, args[1]);
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_bero_cam3d_change) {
+	s32* args = event->args;
+	CameraEntry* cam = camGetPtr(CAMERA_3D);
+	s32 time = evtGetValue(event, args[0]);
+	s32 curve = evtGetValue(event, args[1]);
+
+	cam->presetPos = cam->cameraPos;
+	cam->presetAt = cam->cameraAt;
+	cam->storedPos = BeroPT;
+	cam->storedAt = BeroAT;
+	cam->startTimeA = gp->renderTime;
+	cam->durationA = OSMillisecondsToTicks(time);
+	cam->stateA = 3;
+	cam->curveA = curve;
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_bero_cam_shift_init) {
+	camRoadReset();
+	camShiftReset();
+	return EVT_RETURN_DONE;
+}
+
+// ---- reconstructed functions ----
+
+USER_FUNC(evt_bero_mario_go_init) {
+	BeroMarioGO = 0;
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_bero_mario_go) {
+	BeroMarioGO = 1;
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_bero_mario_go_wait) {
+	return BeroMarioGO == 0 ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_bero_1stcheck) {
+	s32* args = event->args;
+
+	if (!strcmp((const char*)event->lwData[13], "sys_01")) {
+		evtSetValue(event, args[0], 1);
+	} else {
+		evtSetValue(event, args[0], 0);
+	}
+	return EVT_RETURN_DONE;
+}
+
+// TODO: type
+s32 evt_bero_nonride_check[37] = {
+    0x00020019, 0xFE363C8A, 0x00000006, 0x00020032,
+    0xFE363C80, 0xFE363C83, 0x0001005E, (s32)&bero_case_switch_on,
+    0x00000002, 0x00000021, 0x00010005, 0x00000000,
+    0x0002005B, (s32)evt_mario_get_motion, 0xFE363C80, 0x00020018,
+    0xFE363C80, 0x00000003, 0x00000007, 0x00000021,
+    0x00020018, 0xFE363C80, 0x0000000A, 0x00000007,
+    0x00000021, 0x00010009, 0x00000001, 0x00000006,
+    0x00010071, (s32)"土管から降りた", 0x00020032, 0xFE363C80,
+    0xFE363C83, 0x0001005E, (s32)&bero_case_switch_on, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 bero_open_door_play_se[188] = {
+    0x0002005B, (s32)evt_bero_get_info_num, 0xFE363C81, 0x00020032,
+    0xFE363C84, 0x00000000, 0x00020032, 0xFE363C85,
+    0x00000000, 0x00020032, 0xFE363C86, 0x00000000,
+    0x00020019, 0xFE363C83, 0x00000000, 0x0005005B,
+    (s32)evt_hit_get_position, 0xFE363C83, 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0x00000021, 0x0005005B, (s32)evt_bero_get_info_kinddir,
+    0xFE363C81, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
+    0x00010022, 0xFE363C8B, 0x00010024, 0x00000000,
+    0x00010024, 0x00000001, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)"SFX_DOOR_OPEN1", 0xFE363C84, 0xFE363C85, 0xFE363C86,
+    0x00000000, 0x00010024, 0x00000002, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_OPEN_WOOD1", 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0x00000000, 0x00010024, 0x00000003,
+    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_OPEN_WOOD2", 0xFE363C84,
+    0xFE363C85, 0xFE363C86, 0x00000000, 0x00010024,
+    0x00000004, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_OPEN_WOOD3",
+    0xFE363C84, 0xFE363C85, 0xFE363C86, 0x00000000,
+    0x00010024, 0x00000005, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)"SFX_DOOR_OPEN_IRON1", 0xFE363C84, 0xFE363C85, 0xFE363C86,
+    0x00000000, 0x00010024, 0x00000006, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_OPEN_IRON2", 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0x00000000, 0x00010024, 0x00000007,
+    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_OPEN_GRILLE1", 0xFE363C84,
+    0xFE363C85, 0xFE363C86, 0x00000000, 0x00010024,
+    0x00000008, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_OPEN_SLIDE1",
+    0xFE363C84, 0xFE363C85, 0xFE363C86, 0x00000000,
+    0x00010024, 0x00000009, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)"SFX_DOOR_OPEN_TURN1", 0xFE363C84, 0xFE363C85, 0xFE363C86,
+    0x00000000, 0x00010024, 0x0000000A, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_OPEN_ELEC1", 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0x00000000, 0x00010024, 0x0000000B,
+    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_OPEN_STONE1", 0xFE363C84,
+    0xFE363C85, 0xFE363C86, 0x00000000, 0x00010024,
+    0x0000000C, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_OPEN_CASTLE1",
+    0xFE363C84, 0xFE363C85, 0xFE363C86, 0x00000000,
+    0x00010024, 0x0000000D, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)"SFX_DOOR_OPEN_CASTLE2", 0xFE363C84, 0xFE363C85, 0xFE363C86,
+    0x00000000, 0x00010024, 0x0000000E, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_OPEN_METAL1", 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0x00000000, 0x00010024, 0x0000000F,
+    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_STG3_AUTO_DOOR1", 0xFE363C84,
+    0xFE363C85, 0xFE363C86, 0x00000000, 0x00010024,
+    0x00000010, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_STG3_LOCKER_OPEN1",
+    0xFE363C84, 0xFE363C85, 0xFE363C86, 0x00000000,
+    0x00010024, 0x00000011, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)"SFX_DOOR_OPEN_SLIDE1_3", 0xFE363C84, 0xFE363C85, 0xFE363C86,
+    0x00000000, 0x00000031, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 bero_close_door_play_se[188] = {
+    0x0002005B, (s32)evt_bero_get_info_num, 0xFE363C81, 0x00020032,
+    0xFE363C84, 0x00000000, 0x00020032, 0xFE363C85,
+    0x00000000, 0x00020032, 0xFE363C86, 0x00000000,
+    0x00020019, 0xFE363C83, 0x00000000, 0x0005005B,
+    (s32)evt_hit_get_position, 0xFE363C83, 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0x00000021, 0x0005005B, (s32)evt_bero_get_info_kinddir,
+    0xFE363C81, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
+    0x00010022, 0xFE363C8B, 0x00010024, 0x00000000,
+    0x00010024, 0x00000001, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)"SFX_DOOR_SHUT1", 0xFE363C84, 0xFE363C85, 0xFE363C86,
+    0x00000000, 0x00010024, 0x00000002, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_SHUT_WOOD1", 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0x00000000, 0x00010024, 0x00000003,
+    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_SHUT_WOOD2", 0xFE363C84,
+    0xFE363C85, 0xFE363C86, 0x00000000, 0x00010024,
+    0x00000004, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_SHUT_WOOD2",
+    0xFE363C84, 0xFE363C85, 0xFE363C86, 0x00000000,
+    0x00010024, 0x00000005, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)"SFX_DOOR_SHUT_IRON1", 0xFE363C84, 0xFE363C85, 0xFE363C86,
+    0x00000000, 0x00010024, 0x00000006, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_SHUT_IRON2", 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0x00000000, 0x00010024, 0x00000007,
+    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_SHUT_GRILLE1", 0xFE363C84,
+    0xFE363C85, 0xFE363C86, 0x00000000, 0x00010024,
+    0x00000008, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_SHUT_SLIDE1",
+    0xFE363C84, 0xFE363C85, 0xFE363C86, 0x00000000,
+    0x00010024, 0x00000009, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)"SFX_DOOR_SHUT_TURN1", 0xFE363C84, 0xFE363C85, 0xFE363C86,
+    0x00000000, 0x00010024, 0x0000000A, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_SHUT_ELEC1", 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0x00000000, 0x00010024, 0x0000000B,
+    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_OPEN_STONE1", 0xFE363C84,
+    0xFE363C85, 0xFE363C86, 0x00000000, 0x00010024,
+    0x0000000C, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_SHUT_CASTLE1",
+    0xFE363C84, 0xFE363C85, 0xFE363C86, 0x00000000,
+    0x00010024, 0x0000000D, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)"SFX_DOOR_SHUT_CASTLE2", 0xFE363C84, 0xFE363C85, 0xFE363C86,
+    0x00000000, 0x00010024, 0x0000000E, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)"SFX_DOOR_SHUT_METAL1", 0xFE363C84, 0xFE363C85,
+    0xFE363C86, 0x00000000, 0x00010024, 0x0000000F,
+    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_STG3_AUTO_DOOR1", 0xFE363C84,
+    0xFE363C85, 0xFE363C86, 0x00000000, 0x00010024,
+    0x00000010, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_STG3_LOCKER_CLOSE1",
+    0xFE363C84, 0xFE363C85, 0xFE363C86, 0x00000000,
+    0x00010024, 0x00000011, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    (s32)"SFX_DOOR_SHUT_SLIDE1_3", 0xFE363C84, 0xFE363C85, 0xFE363C86,
+    0x00000000, 0x00000031, 0x00000002, 0x00000001,
+};
+
+// NOTE (100%): like bero_get_position_pipe2, cam->storedPos/storedAt go through two
+// local Vecs assigned a (Vec){0,0,0} compound literal at the store site and then
+// field-written from work; the direct struct copy drops the original's zero temps.
+USER_FUNC(evt_camera_change_event_from_road) {
+	MarioWork* mario = marioGetPtr();
+	CameraEntry* cam = camGetPtr(CAMERA_3D);
+	CameraParams work;
+	Vec bpt, bat;
+	f32 out;
+
+	camShiftMain(cam, mario, &out);
+	camRoadMain(&work.fovY, mario->position.x, cam->marioPos.y, mario->position.z,
+	            mario->position.x, cam->marioPos.y, mario->position.z, out);
+	bpt = (Vec){ 0.0f, 0.0f, 0.0f };
+	bpt.x = work.pos.x;
+	bpt.y = work.pos.y;
+	bpt.z = work.pos.z;
+	bat = (Vec){ 0.0f, 0.0f, 0.0f };
+	bat.x = work.at.x;
+	bat.y = work.at.y;
+	bat.z = work.at.z;
+	cam->presetPos = cam->cameraPos;
+	cam->presetAt = cam->cameraAt;
+	cam->storedPos = bpt;
+	cam->storedAt = bat;
+	cam->startTimeA = gp->renderTime;
+	cam->durationA = OSMillisecondsToTicks(500);
+	cam->stateA = 3;
+	cam->curveA = 0xb;
+	return EVT_RETURN_DONE;
+}
+
+// TODO: type
+s32 bero_play_enter_anime[147] = {
+    0x0006005B, (s32)evt_bero_get_info_anime, 0xFE363C81, 0xFE363C8A,
+    0xFE363C8B, 0xFE363C8C, 0xFE363C8D, 0x00010022,
+    0xFE363C8A, 0x00010024, 0x00000000, 0x00010024,
+    0x00000001, 0x0000006B, 0x0001000A, 0x000000C8,
+    0x0001005B, (s32)evt_bero_mario_go, 0x0000006D, 0x00020019,
+    0xFE363C8C, 0x00000000, 0x0004005B, (s32)evt_map_playanim,
+    0xFE363C8C, 0x00000000, 0x00000000, 0x0003005B,
+    (s32)evt_map_pauseanim, 0x00000000, 0xFE363C8C, 0x0001000A,
+    0x000002BC, 0x0001005C, (s32)&bero_close_door_play_se, 0x0003005B,
+    (s32)evt_map_replayanim, 0x00000000, 0xFE363C8C, 0x00000021,
+    0x00010024, 0x00000002, 0x00020018, 0xFE363C8C,
+    0x00000000, 0x00000030, 0x00000021, 0x00020032,
+    0xFE363C88, 0xFE363C8C, 0x0006005B, (s32)evt_mapobj_rotate,
+    0x00000001, 0xFE363C88, 0x00000000, 0xFFFFFFB0,
+    0x00000000, 0x0001005B, (s32)evt_bero_mario_go, 0x0001000A,
+    0x000001F4, 0x0001005C, (s32)&bero_close_door_play_se, 0x0005005B,
+    (s32)evt_sub_intpl_msec_init, 0x0000000B, 0xFFFFFFB0, 0x00000000,
+    0x000001F4, 0x00010005, 0x00000000, 0x0003005B,
+    (s32)evt_sub_intpl_msec_get_value_para, 0xFE363C80, 0xFE363C81, 0x0006005B,
+    (s32)evt_mapobj_rotate, 0x00000001, 0xFE363C88, 0x00000000,
+    0xFE363C80, 0x00000000, 0x00020018, 0xFE363C81,
+    0x00000000, 0x00000007, 0x00000021, 0x00010009,
+    0x00000001, 0x00000006, 0x00010024, 0x00000004,
+    0x00020019, 0xFE363C8C, 0x00000000, 0x0001005C,
+    0xFE363C8C, 0x00000021, 0x00010024, 0x00000005,
+    0x00020019, 0xFE363C8C, 0x00000000, 0x00020034,
+    0xFE363C80, 0xF24D4A80, 0x0001005E, 0xFE363C8C,
+    0x0001005B, (s32)evt_bero_mario_go, 0x0001000A, 0x000001F4,
+    0x0001005C, (s32)&bero_close_door_play_se, 0x00020032, 0xFE363C89,
+    0xFE363C8C, 0x0005005B, (s32)evt_sub_intpl_msec_init, 0x0000000B,
+    0x000000B4, 0x00000000, 0x000001F4, 0x00010005,
+    0x00000000, 0x0003005B, (s32)evt_sub_intpl_msec_get_value_para, 0xFE363C80,
+    0xFE363C8A, 0x00020018, 0xFE363C8A, 0x00000000,
+    0x00020034, 0xFE363C80, 0xF24A7A80, 0x0001005E,
+    0xFE363C89, 0x00000007, 0x00000020, 0x0001005E,
+    0xFE363C89, 0x00000021, 0x00000006, 0x00000021,
+    0x00000031, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 bero_play_out_anime[133] = {
+    0x0006005B, (s32)evt_bero_get_info_anime, 0xFE363C81, 0xFE363C8A,
+    0xFE363C8B, 0xFE363C8C, 0xFE363C8D, 0x00010022,
+    0xFE363C8B, 0x00010024, 0x00000000, 0x00010024,
+    0x00000001, 0x00020019, 0xFE363C8D, 0x00000000,
+    0x0001005C, (s32)&bero_open_door_play_se, 0x0004005B, (s32)evt_map_playanim,
+    0xFE363C8D, 0x00000000, 0x00000000, 0x0000006B,
+    0x0004005B, (s32)evt_map_checkanim, 0xFE363C8D, 0xFE363C88,
+    0xFE363C89, 0x0001000A, 0xFE363C89, 0x0001005B,
+    (s32)evt_bero_mario_go, 0x0000006D, 0x00000020, 0x0000006B,
+    0x0001000A, 0x000001F4, 0x0001005B, (s32)evt_bero_mario_go,
+    0x0000006D, 0x00000021, 0x00010024, 0x00000002,
+    0x00020018, 0xFE363C8C, 0x00000000, 0x00000030,
+    0x00000021, 0x00020032, 0xFE363C88, 0xFE363C8C,
+    0x0001005C, (s32)&bero_open_door_play_se, 0x0005005B, (s32)evt_sub_intpl_msec_init,
+    0x0000000B, 0x00000000, 0x00000050, 0x000001F4,
+    0x00010005, 0x00000000, 0x0003005B, (s32)evt_sub_intpl_msec_get_value_para,
+    0xFE363C80, 0xFE363C81, 0x0006005B, (s32)evt_mapobj_rotate,
+    0x00000001, 0xFE363C88, 0x00000000, 0xFE363C80,
+    0x00000000, 0x00020018, 0xFE363C81, 0x00000000,
+    0x00000007, 0x00000021, 0x00010009, 0x00000001,
+    0x00000006, 0x0001005B, (s32)evt_bero_mario_go, 0x00010024,
+    0x00000004, 0x00020019, 0xFE363C8D, 0x00000000,
+    0x0001005C, 0xFE363C8D, 0x00000021, 0x00010024,
+    0x00000005, 0x00020019, 0xFE363C8D, 0x00000000,
+    0x0001005C, (s32)&bero_open_door_play_se, 0x00020032, 0xFE363C89,
+    0xFE363C8D, 0x0005005B, (s32)evt_sub_intpl_msec_init, 0x0000000B,
+    0x00000000, 0x000000B4, 0x000001F4, 0x00010005,
+    0x00000000, 0x0003005B, (s32)evt_sub_intpl_msec_get_value_para, 0xFE363C80,
+    0xFE363C8A, 0x00020018, 0xFE363C8A, 0x00000000,
+    0x00020034, 0xFE363C80, 0xF24D4A80, 0x0001005E,
+    0xFE363C89, 0x00000007, 0x00000020, 0x0001005E,
+    0xFE363C89, 0x00000021, 0x00000006, 0x0001005B,
+    (s32)evt_bero_mario_go, 0x00000021, 0x00000031, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 bero_case_init_check[99] = {
+    0x0003005B, (s32)evt_bero_exec_onoff, 0x00000001, 0x00010000,
+    0x0002005B, (s32)evt_bero_exec_get, 0xFE363C80, 0x0002004E,
+    0xFE363C80, 0x00000001, 0x00020019, 0xFE363C80,
+    0x00000000, 0x00020032, 0xFE363C80, 0x00000001,
+    0x00000002, 0x00000021, 0x0002005B, (s32)evt_npc_change_fbat_mode,
+    0x00000007, 0x0001005B, (s32)evt_npc_stop_for_event, 0x00020032,
+    0xFE363C80, 0xFE363C84, 0x0002004E, 0xFE363C80,
+    0x00000FFF, 0x00010022, 0xFE363C80, 0x0001002B,
+    0x00000000, 0x0001002B, 0x00000001, 0x0003005B,
+    (s32)evt_bero_get_info_length, 0xFE363C81, 0xFE363C80, 0x0003005B,
+    (s32)bero_get_position_normal, 0x00000000, 0xFE363C80, 0x0000002E,
+    0x0001002B, 0x00000F00, 0x0001002B, 0x00000003,
+    0x0003005B, (s32)bero_get_position_normal, 0x00000000, 0xF24A7A80,
+    0x0000002E, 0x00010024, 0x00000002, 0x0003005B,
+    (s32)evt_bero_get_info_length, 0xFE363C81, 0xFE363C80, 0x0003005B,
+    (s32)bero_get_position_pipe_pure, 0x00000000, 0xFE363C80, 0x00000031,
+    0x0002005B, (s32)evt_bero_set_now_number, 0xFE363C81, 0x0003005B,
+    (s32)evt_bero_exec_onoff, 0x00000000, 0x00000001, 0x00020032,
+    0xFE363C8F, 0x00000000, 0x0001005E, 0xFE363C8B,
+    0x00020018, 0xFE363C80, 0x00000001, 0x0002005B,
+    (s32)evt_npc_change_fbat_mode, 0x00000001, 0x0001005B, (s32)evt_npc_start_for_event,
+    0x0003005B, (s32)evt_bero_exec_onoff, 0x00000000, 0x00010000,
+    0x0003005B, (s32)evt_bero_exec_onoff, 0x00000001, 0x00000001,
+    0x00020032, 0xFE363C80, 0x00000001, 0x00000002,
+    0x00000021, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 bero_case_exec_none[45] = {
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000000, 0x0001005E,
+    (s32)&bero_case_init_check, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000001,
+    0x00020018, 0xFE363C80, 0x00000001, 0x00000002,
+    0x00000021, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000000,
+    0x0003005B, (s32)evt_bero_exec_onoff, 0x00000000, 0x00010000,
+    0x0003005B, (s32)evt_bero_exec_onoff, 0x00000001, 0x00000001,
+    0x0003005B, (s32)evt_bero_exec_onoff, 0x00000000, 0x00000008,
+    0x00010009, 0x00000002, 0x0002005B, (s32)evt_bero_1stcheck,
+    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000001,
+    0x0001000A, 0x000003E8, 0x00000021, 0x0003005B,
+    (s32)evt_bero_mapchange, 0xFE363C8D, 0xFE363C8E, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 bero_case_exec_road[75] = {
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000000, 0x0001005E,
+    (s32)&bero_case_init_check, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000001,
+    0x00020018, 0xFE363C80, 0x00000001, 0x00000002,
+    0x00000021, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000000,
+    0x0000006B, 0x00020032, 0xFE363C80, 0xFE363C85,
+    0x00020037, 0xFE363C80, 0x0000002D, 0x0002005B,
+    (s32)evt_mario_set_force_dir, 0xFE363C80, 0x0001005B, (s32)evt_mario_wait_landon,
+    0x0003005B, (s32)bero_get_position_normal, 0x00000000, 0xF24CD280,
+    0x00020056, 0xFE363C8A, (s32)&BeroEX, 0x00020056,
+    0xFE363C8C, (s32)&BeroEZ, 0x0004005B, (s32)evt_mario_mov_pos2,
+    0xFE363C8A, 0xFE363C8C, 0xF24CD280, 0x0003005B,
+    (s32)evt_bero_exec_onoff, 0x00000000, 0x00010000, 0x0003005B,
+    (s32)evt_bero_exec_onoff, 0x00000001, 0x00000001, 0x0000006D,
+    0x0001000A, 0x00000096, 0x0003005B, (s32)evt_bero_exec_onoff,
+    0x00000000, 0x00000008, 0x00010009, 0x00000002,
+    0x0002005B, (s32)evt_bero_1stcheck, 0xFE363C80, 0x00020018,
+    0xFE363C80, 0x00000001, 0x0001000A, 0x000003E8,
+    0x00000021, 0x0003005B, (s32)evt_bero_mapchange, 0xFE363C8D,
+    0xFE363C8E, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 bero_case_exec_door[89] = {
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000000, 0x0001005E,
+    (s32)&bero_case_init_check, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000001,
+    0x00020018, 0xFE363C80, 0x00000001, 0x00000002,
+    0x00000021, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000000,
+    0x0005005B, (s32)evt_hitobj_attr_onoff, 0x00000000, 0x00000001,
+    0xFE363C83, 0x00800000, 0x0001005B, (s32)evt_bero_mario_go_init,
+    0x0001005C, (s32)&bero_play_out_anime, 0x0000006B, 0x00020032,
+    0xFE363C80, 0xFE363C85, 0x00020037, 0xFE363C80,
+    0x0000002D, 0x0002005B, (s32)evt_mario_set_force_dir, 0xFE363C80,
+    0x0001005B, (s32)evt_mario_wait_landon, 0x0001005B, (s32)evt_bero_mario_go_wait,
+    0x0003005B, (s32)bero_get_position_normal, 0x00000000, 0xF24CD280,
+    0x00020056, 0xFE363C8A, (s32)&BeroEX, 0x00020056,
+    0xFE363C8C, (s32)&BeroEZ, 0x0004005B, (s32)evt_mario_mov_pos2,
+    0xFE363C8A, 0xFE363C8C, 0xF24CD280, 0x0003005B,
+    (s32)evt_bero_exec_onoff, 0x00000000, 0x00010000, 0x0003005B,
+    (s32)evt_bero_exec_onoff, 0x00000001, 0x00000001, 0x0000006D,
+    0x0001005B, (s32)evt_bero_mario_go_wait, 0x0001000A, 0x00000096,
+    0x0003005B, (s32)evt_bero_exec_onoff, 0x00000000, 0x00000008,
+    0x00010009, 0x00000002, 0x0002005B, (s32)evt_bero_1stcheck,
+    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000001,
+    0x0001000A, 0x000003E8, 0x00000021, 0x0003005B,
+    (s32)evt_bero_mapchange, 0xFE363C8D, 0xFE363C8E, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 bero_case_exec_pipe_sub[333] = {
+    0x0000006B, 0x0001005B, (s32)evt_camera_change_event_from_road, 0x0000006D,
+    0x00020018, 0xFE363C8D, 0x00000000, 0x0000006B,
+    0x00020032, 0xFE363C80, 0xFE363C84, 0x0002004E,
+    0xFE363C80, 0x00001000, 0x00020018, 0xFE363C80,
+    0x00000000, 0x00020032, 0xFBD3E280, 0x00000000,
+    0x00000020, 0x00020032, 0xFBD3E280, 0x00000001,
+    0x00000021, 0x0002005B, (s32)evt_bero_get_number, 0xFE363C8E,
+    0x0002005B, (s32)evt_bero_set_now_number, 0xFE363C81, 0x0002005B,
+    (s32)evt_bero_get_info_num, 0xFE363C81, 0x00020032, 0xFE363C80,
+    0xFE363C84, 0x0002004E, 0xFE363C80, 0x00001000,
+    0x00020018, 0xFE363C80, 0x00000000, 0x00020032,
+    0xFBD3E281, 0x00000000, 0x00000020, 0x00020032,
+    0xFBD3E281, 0x00000001, 0x00000021, 0x00020032,
+    0xFBD3E282, 0x00000000, 0x00020018, 0xFBD3E280,
+    0x00000000, 0x00020018, 0xFBD3E281, 0x00000001,
+    0x00020032, 0xFBD3E282, 0x00000001, 0x00000021,
+    0x00000021, 0x00020018, 0xFBD3E282, 0x00000000,
+    0x00020053, 0x00000000, (s32)&BeroCAM, 0x0003005B,
+    (s32)evt_bero_get_info_length, 0xFE363C81, 0xFE363C8A, 0x0003005B,
+    (s32)bero_get_position_pipe2, 0x00000001, 0xFE363C8A, 0x00010005,
+    0x00000000, 0x00020055, 0xFE363C80, (s32)&BeroCAM,
+    0x00020018, 0xFE363C80, 0x00000001, 0x00000007,
+    0x00000021, 0x00010009, 0x00000001, 0x00000006,
+    0x0003005B, (s32)evt_bero_cam3d_change, 0x000001F4, 0x0000000B,
+    0x00000021, 0x0000006D, 0x00000021, 0x0001005B,
+    (s32)evt_bero_disppos_save, 0x0003005B, (s32)evt_bero_get_info_length, 0xFE363C81,
+    0xFE363C8A, 0x0003005B, (s32)bero_get_position_pipe_pure, 0x00000000,
+    0xFE363C8A, 0x0001005B, (s32)bero_set_disp_position_pipe, 0x0005005B,
+    (s32)evt_mario_get_pos, 0x00000000, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_MARIO_DOKAN1",
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
+    0x00010022, 0xFE363C85, 0x00010024, 0x00000006,
+    0x0002005B, (s32)evt_mario_paper_pose_dokan, 0x00000005, 0x0002005B,
+    (s32)evt_bero_move_mario_speed, 0xF24B6A80, 0x00010024, 0x00000002,
+    0x0002005B, (s32)evt_mario_paper_pose_dokan, 0x00000005, 0x0002005B,
+    (s32)evt_bero_move_mario_speed, 0xF24B6A80, 0x00010024, 0x00000008,
+    0x0002005B, (s32)evt_mario_paper_pose_dokan, 0x00000002, 0x0002005B,
+    (s32)evt_bero_move_mario_speed, 0xF24B6A80, 0x00010024, 0x00000009,
+    0x0002005B, (s32)evt_mario_paper_pose_dokan, 0x00000003, 0x0002005B,
+    (s32)evt_bero_move_mario_speed, 0xF24B6A80, 0x00000031, 0x00020053,
+    0x00000001, (s32)&BeroCAM, 0x00020018, 0xFE363C8D,
+    0x00000000, 0x00020032, 0xFE363C80, 0xFE363C84,
+    0x0002004E, 0xFE363C80, 0x00001000, 0x00020018,
+    0xFE363C80, 0x00000000, 0x00020032, 0xFBD3E280,
+    0x00000000, 0x00000020, 0x00020032, 0xFBD3E280,
+    0x00000001, 0x00000021, 0x0001000A, 0x000001F4,
+    0x0002005B, (s32)evt_bero_get_number, 0xFE363C8E, 0x0002005B,
+    (s32)evt_bero_get_info_num, 0xFE363C81, 0x0001005E, 0xFE363C87,
+    0x00020032, 0xFE363C80, 0xFE363C84, 0x0002004E,
+    0xFE363C80, 0x00001000, 0x00020018, 0xFE363C80,
+    0x00000000, 0x00020032, 0xFBD3E281, 0x00000000,
+    0x00000020, 0x00020032, 0xFBD3E281, 0x00000001,
+    0x00000021, 0x0001005B, (s32)evt_bero_disppos_load, 0x0001005B,
+    (s32)evt_mario_paper_pose_off, 0x0001005B, (s32)evt_bero_disppos_save, 0x0002005B,
+    (s32)evt_bero_exec_get, 0xFE363C80, 0x0002001F, 0xFE363C80,
+    0x00000004, 0x0003005B, (s32)evt_bero_exec_onoff, 0x00000000,
+    0x00000002, 0x00000021, 0x0003005B, (s32)evt_bero_get_info_length,
+    0xFE363C81, 0xFE363C8A, 0x0003005B, (s32)bero_get_position_pipe_pure,
+    0x00000001, 0xFE363C8A, 0x0001005B, (s32)bero_set_disp_position_pipe,
+    0x0001000A, 0x000001F4, 0x00020019, 0xFBD3E281,
+    0x00000000, 0x0001005B, (s32)evt_mario_bgmode_on, 0x00000020,
+    0x0001005B, (s32)evt_mario_bgmode_off, 0x00000021, 0x00020056,
+    0xFE363C80, (s32)&BeroEX, 0x00020056, 0xFE363C81,
+    (s32)&BeroEY, 0x00020056, 0xFE363C82, (s32)&BeroEZ,
+    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_MARIO_DOKAN1", 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x00000000, 0x0001005E,
+    (s32)&evt_bero_info_run_pipe_sub00, 0x0002005B, (s32)evt_bero_exec_get, 0xFE363C80,
+    0x0002001F, 0xFE363C80, 0x00000004, 0x0003005B,
+    (s32)evt_bero_exec_onoff, 0x00000001, 0x00000002, 0x00000021,
+    0x0001005B, (s32)evt_bero_disppos_load, 0x0002005B, (s32)evt_mario_cont_onoff,
+    0x00000001, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000001,
+    0x00020032, 0xFE363C80, 0xFE363C83, 0x0001005E,
+    (s32)&bero_case_switch_off, 0x0001005C, (s32)&evt_bero_nonride_check, 0x0001005B,
+    (s32)evt_bero_cam_shift_init, 0x0003005B, (s32)evt_cam3d_evt_off, 0x000001F4,
+    0x0000000B, 0x00000020, 0x0001005B, (s32)evt_bero_disppos_load,
+    0x0001005B, (s32)evt_mario_paper_pose_off, 0x00020032, 0xFE363C80,
+    0xFE363C84, 0x0002004E, 0xFE363C80, 0x00001000,
+    0x00020019, 0xFE363C80, 0x00000000, 0x0001005B,
+    (s32)evt_mario_bgmode_on, 0x00000020, 0x0001005B, (s32)evt_mario_bgmode_off,
+    0x00000021, 0x00000021, 0x0002005B, (s32)evt_npc_change_fbat_mode,
+    0x00000001, 0x0001005B, (s32)evt_npc_start_for_event, 0x0003005B,
+    (s32)evt_bero_exec_onoff, 0x00000000, 0x00010000, 0x0003005B,
+    (s32)evt_bero_exec_onoff, 0x00000001, 0x00000001, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 bero_case_exec_pipe[178] = {
+    0x0002005B, (s32)evt_mario_get_mode, 0xFE363C80, 0x00020019,
+    0xFE363C80, 0x00000000, 0x00000002, 0x00000021,
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000000, 0x0001005E,
+    (s32)&bero_case_init_check, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000001,
+    0x00020018, 0xFE363C80, 0x00000001, 0x00000002,
+    0x00000021, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000000,
+    0x0001005B, (s32)evt_mario_wait_landon, 0x0002005B, (s32)evt_mario_cont_onoff,
+    0x00000000, 0x00020018, 0xFE363C8D, 0x00000000,
+    0x0001005C, (s32)&bero_case_exec_pipe_sub, 0x00000002, 0x00000021,
+    0x0001005B, (s32)evt_mario_cam_off, 0x0005005B, (s32)evt_mario_get_pos,
+    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_MARIO_DOKAN1", 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x00000000, 0x00010022,
+    0xFE363C85, 0x00010024, 0x00000006, 0x0002005B,
+    (s32)evt_mario_paper_pose_dokan, 0x00000005, 0x0002005B, (s32)evt_bero_move_mario_speed,
+    0xF24B6A80, 0x00010024, 0x00000002, 0x0002005B,
+    (s32)evt_mario_paper_pose_dokan, 0x00000005, 0x0002005B, (s32)evt_bero_move_mario_speed,
+    0xF24B6A80, 0x00010024, 0x00000008, 0x0002005B,
+    (s32)evt_mario_paper_pose_dokan, 0x00000002, 0x0002005B, (s32)evt_bero_move_mario_speed,
+    0xF24B6A80, 0x00010024, 0x00000009, 0x0002005B,
+    (s32)evt_mario_paper_pose_dokan, 0x00000003, 0x0002005B, (s32)evt_bero_move_mario_speed,
+    0xF24B6A80, 0x00000031, 0x0002001F, 0xFE363C84,
+    0x00002000, 0x00010022, 0xFE363C85, 0x00010024,
+    0x00000006, 0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000001,
+    0x0000002D, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF,
+    0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000000, 0x0000002D,
+    0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00010024,
+    0x00000002, 0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000001,
+    0x0000002F, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF,
+    0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000000, 0x0000002F,
+    0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00010024,
+    0x00000008, 0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000001,
+    0x00000029, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF,
+    0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000000, 0x00000029,
+    0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00010024,
+    0x00000009, 0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000001,
+    0x0000002B, 0x00000000, 0xFFFFFFFF, 0xFFFFFFFF,
+    0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000000, 0x0000002B,
+    0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000031,
+    0x00000021, 0x0003005B, (s32)evt_bero_exec_onoff, 0x00000000,
+    0x00000008, 0x00010009, 0x00000002, 0x0002005B,
+    (s32)evt_bero_1stcheck, 0xFE363C80, 0x00020018, 0xFE363C80,
+    0x00000001, 0x0001000A, 0x000003E8, 0x00000021,
+    0x0003005B, (s32)evt_bero_mapchange, 0xFE363C8D, 0xFE363C8E,
+    0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 bero_case_exec_gate[45] = {
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000000, 0x0001005E,
+    (s32)&bero_case_init_check, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000001,
+    0x00020018, 0xFE363C80, 0x00000001, 0x00000002,
+    0x00000021, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000000,
+    0x0003005B, (s32)evt_bero_exec_onoff, 0x00000000, 0x00010000,
+    0x0003005B, (s32)evt_bero_exec_onoff, 0x00000001, 0x00000001,
+    0x0003005B, (s32)evt_bero_exec_onoff, 0x00000000, 0x00000008,
+    0x00010009, 0x00000002, 0x0002005B, (s32)evt_bero_1stcheck,
+    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000001,
+    0x0001000A, 0x000003E8, 0x00000021, 0x0003005B,
+    (s32)evt_bero_mapchange, 0xFE363C8D, 0xFE363C8E, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 bero_case_entry[100] = {
+    0x00020055, 0xFE363C82, (s32)&BeroNUM, 0x00020032,
+    0xFE363C81, 0x00000000, 0x00010005, 0x00000000,
+    0x0002005B, (s32)evt_bero_get_info_num, 0xFE363C81, 0x00020018,
+    0xFE363C89, 0xFFFFFFFF, 0x00020032, 0xFE363C80,
+    0xFE363C84, 0x0002004E, 0xFE363C80, 0x00000FFF,
+    0x00010022, 0xFE363C80, 0x00010024, 0x00000F00,
+    0x0007005B, (s32)evt_run_case_evt_bero, 0xFE363C8A, 0x00000001,
+    0xFE363C83, 0x00000000, (s32)&bero_case_exec_none, 0xFE363C8F,
+    0x00010024, 0x00000000, 0x0005005B, (s32)evt_hitobj_attr_onoff,
+    0x00000000, 0x00000001, 0xFE363C83, 0x00800000,
+    0x0007005B, (s32)evt_run_case_evt_bero, 0xFE363C8A, 0x00000001,
+    0xFE363C83, 0x00000000, (s32)&bero_case_exec_road, 0xFE363C8F,
+    0x00010024, 0x00000001, 0x0007005B, (s32)evt_run_case_evt_bero,
+    0xFE363C8A, 0x00000001, 0xFE363C83, 0x00000000,
+    (s32)&bero_case_exec_door, 0xFE363C8F, 0x00010024, 0x00000002,
+    0x0007005B, (s32)evt_run_case_evt_bero, 0xFE363C8A, 0x00000001,
+    0xFE363C83, 0x00000000, (s32)&bero_case_exec_pipe, 0xFE363C8F,
+    0x00010024, 0x00000003, 0x0007005B, (s32)evt_run_case_evt_bero,
+    0xFE363C8A, 0x00000001, 0xFE363C83, 0x00000000,
+    (s32)&bero_case_exec_gate, 0xFE363C8F, 0x00000031, 0x0003005B,
+    (s32)evt_bero_case_id_save, 0xFE363C81, 0xFE363C8F, 0x0000006B,
+    0x0002005B, (s32)evt_bero_switch_on, 0xFE363C81, 0x0000006D,
+    0x00000021, 0x00020035, 0xFE363C81, 0x00000001,
+    0x00020018, 0xFE363C81, 0xFE363C82, 0x00000007,
+    0x00000021, 0x00000006, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 bero_case_entry_sub[71] = {
+    0x00020032, 0xFE363C80, 0xFE363C84, 0x0002004E,
+    0xFE363C80, 0x00000FFF, 0x00010022, 0xFE363C80,
+    0x00010024, 0x00000F00, 0x0007005B, (s32)evt_run_case_evt_bero,
+    0xFE363C8A, 0x00000001, 0xFE363C83, 0x00000000,
+    (s32)&bero_case_exec_none, 0xFE363C8F, 0x00010024, 0x00000000,
+    0x0005005B, (s32)evt_hitobj_attr_onoff, 0x00000000, 0x00000001,
+    0xFE363C83, 0x00800000, 0x0007005B, (s32)evt_run_case_evt_bero,
+    0xFE363C8A, 0x00000001, 0xFE363C83, 0x00000000,
+    (s32)&bero_case_exec_road, 0xFE363C8F, 0x00010024, 0x00000001,
+    0x0007005B, (s32)evt_run_case_evt_bero, 0xFE363C8A, 0x00000001,
+    0xFE363C83, 0x00000000, (s32)&bero_case_exec_door, 0xFE363C8F,
+    0x00010024, 0x00000002, 0x0007005B, (s32)evt_run_case_evt_bero,
+    0xFE363C8A, 0x00000001, 0xFE363C83, 0x00000000,
+    (s32)&bero_case_exec_pipe, 0xFE363C8F, 0x00010024, 0x00000003,
+    0x0007005B, (s32)evt_run_case_evt_bero, 0xFE363C8A, 0x00000001,
+    0xFE363C83, 0x00000000, (s32)&bero_case_exec_gate, 0xFE363C8F,
+    0x00000031, 0x0003005B, (s32)evt_bero_case_id_save, 0xFE363C81,
+    0xFE363C8F, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 bero_case_switch_on[19] = {
+    0x0002005B, (s32)evt_bero_switch_on, 0xFE363C80, 0x0002005B,
+    (s32)evt_bero_get_info_num, 0xFE363C81, 0x00020018, 0xFE363C80,
+    0x00000000, 0x00010071, (s32)"ベロ登録", 0x0001005E,
+    (s32)&bero_case_entry_sub, 0x00000020, 0x00010071, (s32)"ベロの出て行くデータの二重登録防止をしています",
+    0x00000021, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 bero_case_switch_off[31] = {
+    0x0002005B, (s32)evt_bero_switch_off, 0xFE363C80, 0x0002005B,
+    (s32)evt_bero_get_info_num, 0xFE363C81, 0x00020018, 0xFE363C80,
+    0x00000000, 0x00010071, (s32)"ベロ削除しました", 0x0003005B,
+    (s32)evt_bero_case_id_load, 0xFE363C81, 0xFE363C8F, 0x0003005B,
+    (s32)evt_del_case_evt, 0x00000000, 0xFE363C8F, 0x0005005B,
+    (s32)evt_hitobj_attr_onoff, 0x00000000, 0x00000000, 0xFE363C83,
+    0x00800000, 0x00000020, 0x00010071, (s32)"ベロの削除予約もしくはベロの出て行くデータの二重削除防止です",
+    0x00000021, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 evt_bero_info_run_road[41] = {
+    0x00020056, 0xFE363C8D, (s32)&BeroEX, 0x00020056,
+    0xFE363C8E, (s32)&BeroEY, 0x00020056, 0xFE363C8F,
+    (s32)&BeroEZ, 0x0003005B, (s32)evt_party_set_homing_dist, 0x00000000,
+    0xF24ACA80, 0x0003005B, (s32)evt_party_set_homing_dist, 0x00000001,
+    0xF24ACA80, 0x0004005B, (s32)evt_mario_mov_pos2, 0xFE363C8D,
+    0xFE363C8F, 0xF24CD280, 0x0002005B, (s32)evt_mario_key_onoff,
+    0x00000001, 0x0002005B, (s32)evt_party_run, 0x00000000,
+    0x0002005B, (s32)evt_party_run, 0x00000001, 0x0003005B,
+    (s32)evt_party_set_homing_dist, 0x00000000, 0xF24B4280, 0x0003005B,
+    (s32)evt_party_set_homing_dist, 0x00000001, 0xF24B4280, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 evt_bero_info_run_door[47] = {
+    0x0001005B, (s32)evt_bero_mario_go_init, 0x0001005C, (s32)&bero_play_enter_anime,
+    0x0001005B, (s32)evt_bero_mario_go_wait, 0x00020056, 0xFE363C8D,
+    (s32)&BeroEX, 0x00020056, 0xFE363C8E, (s32)&BeroEY,
+    0x00020056, 0xFE363C8F, (s32)&BeroEZ, 0x0003005B,
+    (s32)evt_party_set_homing_dist, 0x00000000, 0xF24ACA80, 0x0003005B,
+    (s32)evt_party_set_homing_dist, 0x00000001, 0xF24ACA80, 0x0004005B,
+    (s32)evt_mario_party_bero_move, 0xFE363C8D, 0xFE363C8F, 0xF24CD280,
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000001, 0x0002005B,
+    (s32)evt_party_run, 0x00000000, 0x0002005B, (s32)evt_party_run,
+    0x00000001, 0x0003005B, (s32)evt_party_set_homing_dist, 0x00000000,
+    0xF24B4280, 0x0003005B, (s32)evt_party_set_homing_dist, 0x00000001,
+    0xF24B4280, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 evt_bero_info_run_pipe_sub00[51] = {
+    0x0002005B, (s32)evt_party_stop, 0x00000000, 0x0002005B,
+    (s32)evt_party_stop, 0x00000001, 0x00010022, 0xFE363C85,
+    0x00010024, 0x00000006, 0x0002005B, (s32)evt_mario_set_dispdir,
+    0x000000B4, 0x0002005B, (s32)evt_mario_paper_pose_dokan, 0x00000004,
+    0x0002005B, (s32)evt_bero_move_mario_speed, 0xF24B6A80, 0x00010024,
+    0x00000002, 0x0002005B, (s32)evt_mario_set_dispdir, 0x00000000,
+    0x0002005B, (s32)evt_mario_paper_pose_dokan, 0x00000004, 0x0002005B,
+    (s32)evt_bero_move_mario_speed, 0xF24B6A80, 0x00010024, 0x00000009,
+    0x0002005B, (s32)evt_mario_paper_pose_dokan, 0x00000001, 0x0002005B,
+    (s32)evt_bero_move_mario_speed, 0xF24B6A80, 0x00010024, 0x00000008,
+    0x0002005B, (s32)evt_mario_paper_pose_dokan, 0x00000000, 0x0002005B,
+    (s32)evt_bero_move_mario_speed, 0xF24B6A80, 0x00000031, 0x0001005B,
+    (s32)evt_mario_dokan_end, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 evt_bero_info_run_pipe[53] = {
+    0x00020056, 0xFE363C80, (s32)&BeroEX, 0x00020056,
+    0xFE363C81, (s32)&BeroEY, 0x00020056, 0xFE363C82,
+    (s32)&BeroEZ, 0x0004005B, (s32)evt_cam_road_reset2, 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x0001005B, (s32)evt_mario_cam_off,
+    0x0002005B, (s32)evt_mario_cont_onoff, 0x00000000, 0x0001005B,
+    (s32)evt_fade_end_wait, 0x0005005B, (s32)evt_mario_get_pos, 0x00000000,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)"SFX_MARIO_DOKAN1", 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x00000000, 0x0001005E, (s32)&evt_bero_info_run_pipe_sub00,
+    0x0002005B, (s32)evt_mario_cont_onoff, 0x00000001, 0x00020032,
+    0xFE363C80, 0xFE363C83, 0x0001005E, (s32)&bero_case_switch_off,
+    0x0001005C, (s32)&evt_bero_nonride_check, 0x0001005B, (s32)evt_mario_cam_on,
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000001, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 evt_bero_info_run[249] = {
+    0x0001005B, (s32)evt_bero_get_into_info, 0x0002005B, (s32)evt_bero_set_now_number,
+    0xFE363C81, 0x0001005B, (s32)evt_bero_read_mario_pera, 0x0002005B,
+    (s32)evt_sub_get_system_flag, 0xFE363C80, 0x0002001E, 0xFE363C80,
+    0x00000001, 0x00010071, (s32)"セーブブロックからのロード時の処理", 0x0003005B,
+    (s32)evt_bero_exec_onoff, 0x00000000, 0x00000001, 0x00010009,
+    0x00000001, 0x0002005B, (s32)evt_bero_exec_get, 0xFE363C80,
+    0x0002001F, 0xFE363C80, 0x00000004, 0x0003005B,
+    (s32)evt_bero_exec_onoff, 0x00000000, 0x00000002, 0x00000021,
+    0x00010009, 0x00000001, 0x0002005B, (s32)evt_bero_exec_get,
+    0xFE363C80, 0x0002001F, 0xFE363C80, 0x00000004,
+    0x0003005B, (s32)evt_bero_exec_onoff, 0x00000001, 0x00000002,
+    0x00000021, 0x0002005B, (s32)evt_npc_change_fbat_mode, 0x00000001,
+    0x0001005B, (s32)evt_npc_start_for_event, 0x0003005B, (s32)evt_bero_exec_onoff,
+    0x00000001, 0x00000001, 0x0003005B, (s32)evt_bero_exec_onoff,
+    0x00000000, 0x00010000, 0x0001005E, (s32)&bero_case_entry,
+    0x00000002, 0x00000021, 0x0002005B, (s32)evt_bero_exec_get,
+    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000001,
+    0x00000002, 0x00000021, 0x0003005B, (s32)evt_bero_exec_onoff,
+    0x00000000, 0x00000001, 0x0002005B, (s32)evt_mario_key_onoff,
+    0x00000000, 0x00020032, 0xFE363C80, 0xFE363C84,
+    0x0002004E, 0xFE363C80, 0x00001000, 0x00020019,
+    0xFE363C80, 0x00000000, 0x00010071, (s32)"背景に入るときのマリオの初期処理",
+    0x0001005B, (s32)evt_mario_bgmode_on, 0x0002005B, (s32)evt_mario_kill_party,
+    0x00000000, 0x0002005B, (s32)evt_mario_kill_party, 0x00000001,
+    0x0001005B, (s32)evt_mario_cam_y_off, 0x00000020, 0x00010071,
+    (s32)"普通に入るときのマリオの初期処理", 0x0001005B, (s32)evt_mario_bgmode_off, 0x00020032,
+    0xFE363C80, 0xFE363C84, 0x0002004E, 0xFE363C80,
+    0x00000FFF, 0x00020018, 0xFE363C80, 0x00000002,
+    0x0002005B, (s32)evt_mario_set_prev_party_dokan, 0x00000000, 0x0002005B,
+    (s32)evt_mario_set_prev_party_dokan, 0x00000001, 0x00000020, 0x0002005B,
+    (s32)evt_mario_set_prev_party, 0x00000000, 0x0002005B, (s32)evt_mario_set_prev_party,
+    0x00000001, 0x00000021, 0x00000021, 0x00020032,
+    0xFE363C80, 0xFE363C84, 0x0002004E, 0xFE363C80,
+    0x00000FFF, 0x00020018, 0xFE363C80, 0x00000002,
+    0x00010022, 0xFE363C85, 0x00010024, 0x00000006,
+    0x0002005B, (s32)evt_mario_dokan_prepare, 0x00000004, 0x00010024,
+    0x00000002, 0x0002005B, (s32)evt_mario_dokan_prepare, 0x00000004,
+    0x00010024, 0x00000009, 0x0002005B, (s32)evt_mario_dokan_prepare,
+    0x00000001, 0x00010024, 0x00000008, 0x0002005B,
+    (s32)evt_mario_dokan_prepare, 0x00000000, 0x00000031, 0x00000021,
+    0x0001005E, (s32)&evt_bero_initial_pos, 0x0002001F, 0xFE363C84,
+    0x00002000, 0x00020032, 0xFE363C80, 0xFE363C84,
+    0x0002004E, 0xFE363C80, 0x00000FFF, 0x00020018,
+    0xFE363C80, 0x00000002, 0x00010022, 0xFE363C85,
+    0x00010024, 0x00000006, 0x0006005B, (s32)evt_fade_set_mapchange_type,
+    0x00000001, 0xFFFFFFFF, 0xFFFFFFFF, 0x0000002E,
+    0x00000000, 0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000000,
+    0xFFFFFFFF, 0xFFFFFFFF, 0x0000002E, 0x00000000,
+    0x00010024, 0x00000002, 0x0006005B, (s32)evt_fade_set_mapchange_type,
+    0x00000001, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000030,
+    0x00000000, 0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000000,
+    0xFFFFFFFF, 0xFFFFFFFF, 0x00000030, 0x00000000,
+    0x00010024, 0x00000008, 0x0006005B, (s32)evt_fade_set_mapchange_type,
+    0x00000001, 0xFFFFFFFF, 0xFFFFFFFF, 0x0000002A,
+    0x00000000, 0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000000,
+    0xFFFFFFFF, 0xFFFFFFFF, 0x0000002A, 0x00000000,
+    0x00010024, 0x00000009, 0x0006005B, (s32)evt_fade_set_mapchange_type,
+    0x00000001, 0xFFFFFFFF, 0xFFFFFFFF, 0x0000002C,
+    0x00000000, 0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000000,
+    0xFFFFFFFF, 0xFFFFFFFF, 0x0000002C, 0x00000000,
+    0x00000031, 0x00000021, 0x00000021, 0x00010071,
+    (s32)"ほかの初期設定開始", 0x0001005C, (s32)&evt_bero_mario_enter, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 evt_bero_initial_pos[158] = {
+    0x0001005B, (s32)evt_bero_get_into_info, 0x00020032, 0xFE363C80,
+    0xFE363C84, 0x0002004E, 0xFE363C80, 0x00000FFF,
+    0x00010022, 0xFE363C80, 0x00010024, 0x00000F00,
+    0x00010024, 0x00000003, 0x0003005B, (s32)bero_get_position_normal,
+    0x00000000, 0xF24A7A80, 0x00020056, 0xFE363C8A,
+    (s32)&BeroSX, 0x00020056, 0xFE363C8B, (s32)&BeroSY,
+    0x00020056, 0xFE363C8C, (s32)&BeroSZ, 0x0004005B,
+    (s32)evt_mario_set_pos, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
+    0x0005005B, (s32)evt_party_set_pos, 0x00000000, 0xFE363C8A,
+    0xFE363C8B, 0xFE363C8C, 0x0005005B, (s32)evt_party_set_pos,
+    0x00000001, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
+    0x0000002E, 0x00010024, 0x00000000, 0x0003005B,
+    (s32)evt_bero_get_info_length, 0xFE363C81, 0xFE363C8A, 0x0003005B,
+    (s32)bero_get_position_normal, 0x00000001, 0xFE363C8A, 0x00020056,
+    0xFE363C8A, (s32)&BeroSX, 0x00020056, 0xFE363C8B,
+    (s32)&BeroSY, 0x00020056, 0xFE363C8C, (s32)&BeroSZ,
+    0x0004005B, (s32)evt_mario_set_pos, 0xFE363C8A, 0xFE363C8B,
+    0xFE363C8C, 0x0005005B, (s32)evt_party_set_pos, 0x00000000,
+    0xFE363C8A, 0xFE363C8B, 0xFE363C8C, 0x0005005B,
+    (s32)evt_party_set_pos, 0x00000001, 0xFE363C8A, 0xFE363C8B,
+    0xFE363C8C, 0x00010024, 0x00000001, 0x0003005B,
+    (s32)evt_bero_get_info_length, 0xFE363C81, 0xFE363C8A, 0x0003005B,
+    (s32)bero_get_position_normal, 0x00000001, 0xFE363C8A, 0x00020056,
+    0xFE363C8A, (s32)&BeroSX, 0x00020056, 0xFE363C8B,
+    (s32)&BeroSY, 0x00020056, 0xFE363C8C, (s32)&BeroSZ,
+    0x0004005B, (s32)evt_mario_set_pos, 0xFE363C8A, 0xFE363C8B,
+    0xFE363C8C, 0x0005005B, (s32)evt_party_set_pos, 0x00000000,
+    0xFE363C8A, 0xFE363C8B, 0xFE363C8C, 0x0005005B,
+    (s32)evt_party_set_pos, 0x00000001, 0xFE363C8A, 0xFE363C8B,
+    0xFE363C8C, 0x00010024, 0x00000002, 0x0003005B,
+    (s32)evt_bero_get_info_length, 0xFE363C81, 0xFE363C8A, 0x0003005B,
+    (s32)bero_get_position_pipe_pure, 0x00000001, 0xFE363C8A, 0x00020056,
+    0xFE363C8A, (s32)&BeroSX, 0x00020056, 0xFE363C8B,
+    (s32)&BeroSY, 0x00020056, 0xFE363C8C, (s32)&BeroSZ,
+    0x0004005B, (s32)evt_mario_set_pos, 0xFE363C8A, 0xFE363C8B,
+    0xFE363C8C, 0x0005005B, (s32)evt_party_set_pos, 0x00000000,
+    0xFE363C8A, 0xFE363C8B, 0xFE363C8C, 0x0005005B,
+    (s32)evt_party_set_pos, 0x00000001, 0xFE363C8A, 0xFE363C8B,
+    0xFE363C8C, 0x00000031, 0x0001005B, (s32)evt_cam_road_reset,
+    0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 evt_bero_mario_enter[95] = {
+    0x0002005B, (s32)evt_seq_wait, 0x00000002, 0x0002005B,
+    (s32)evt_npc_change_fbat_mode, 0x00000007, 0x0001005B, (s32)evt_npc_stop_for_event,
+    0x0001005E, 0xFE363C87, 0x00020018, 0xFE363C80,
+    0x00000001, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000001,
+    0x00010004, 0x00000064, 0x00000021, 0x0002005B,
+    (s32)evt_bero_exec_get, 0xFE363C80, 0x0002001F, 0xFE363C80,
+    0x00000004, 0x0003005B, (s32)evt_bero_exec_onoff, 0x00000000,
+    0x00000002, 0x00000021, 0x0001005B, (s32)evt_bero_get_into_info,
+    0x00020032, 0xFE363C80, 0xFE363C84, 0x0002004E,
+    0xFE363C80, 0x00000FFF, 0x00010022, 0xFE363C80,
+    0x00010024, 0x00000F00, 0x0001005E, (s32)&evt_bero_info_run_none,
+    0x00010024, 0x00000000, 0x0001005E, (s32)&evt_bero_info_run_road,
+    0x00010024, 0x00000001, 0x0001005E, (s32)&evt_bero_info_run_door,
+    0x00010024, 0x00000002, 0x0001005E, (s32)&evt_bero_info_run_pipe,
+    0x00010024, 0x00000003, 0x0001005E, (s32)&evt_bero_info_run_gate,
+    0x0000002A, 0x0002005B, (s32)evt_mario_key_onoff, 0x00000001,
+    0x00000031, 0x0002005B, (s32)evt_bero_exec_get, 0xFE363C80,
+    0x0002001F, 0xFE363C80, 0x00000004, 0x0003005B,
+    (s32)evt_bero_exec_onoff, 0x00000001, 0x00000002, 0x00000021,
+    0x00010003, 0x00000064, 0x0002005B, (s32)evt_npc_change_fbat_mode,
+    0x00000001, 0x0001005B, (s32)evt_npc_start_for_event, 0x0001005E,
+    (s32)&bero_case_entry, 0x0003005B, (s32)evt_bero_exec_onoff, 0x00000001,
+    0x00000001, 0x0003005B, (s32)evt_bero_exec_onoff, 0x00000000,
+    0x00010000, 0x00000002, 0x00000001,
+};
+
+// 4-byte zero word that ends the unit's .data.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_8030DA24_data = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+// TODO: type
+s32 evt_bero_info_run_none[5] = {
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000001, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 evt_bero_info_run_gate[5] = {
+    0x0002005B, (s32)evt_mario_key_onoff, 0x00000001, 0x00000002,
+    0x00000001,
+};
+// clang-format on

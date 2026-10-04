@@ -34,3 +34,4 @@ USER_FUNC(evt_cam_letter_box_wait);
 USER_FUNC(evt_cam_road_reset);
 USER_FUNC(evt_cam_shift_reset);
 USER_FUNC(evt_cam_type_change);
+USER_FUNC(evt_cam_road_reset2);

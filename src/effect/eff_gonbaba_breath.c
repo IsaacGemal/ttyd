@@ -5,7 +5,7 @@
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 
 GXColor col_normal[5] = {
 	{ 0xF2, 0x65, 0x22, 0xFF },
@@ -73,6 +73,14 @@ static GXColor* col_tbl[8] = {
 	col_mini,
 	col_normal,
 };
+
+// .sdata trailing 20 zero bytes (target gap_07_80417E8C_sdata). explicit_zero_data keeps the
+// all-zero object in .sdata and force_active keeps the linker from dropping it.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_80417E8C_sdata[5] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_queen.c).
 inline Vec initializeVec(Vec* input) {
@@ -163,9 +171,16 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		data->position.y = 0.0f;
 		data->position.z = 0.0f;
 
+#ifdef MUST_MATCH
+		// This order makes MWCC pool 0.00761 and 0.16605 before piA, as in the target.
+		f5 = 0.00761f;
+		f4 = 0.16605f;
+		piA = 3.1415927f;
+#else
 		piA = 3.1415927f;
 		f5 = 0.00761f;
 		f4 = 0.16605f;
+#endif
 		f3 = 1.0f;
 		if (f6 <= piA) {
 			f1 = 1.5707964f;
@@ -270,9 +285,16 @@ void init_breath(effGonbabaBreathData* data, s32 index, s32 type) {
 		data->position.y = zero;
 		data->position.z = zero;
 
+#ifdef MUST_MATCH
+		// This order makes MWCC pool 0.00761 and 0.16605 before piC, as in the target.
+		f5 = 0.00761f;
+		f4 = 0.16605f;
+		piC = 3.1415927f;
+#else
 		piC = 3.1415927f;
 		f5 = 0.00761f;
 		f4 = 0.16605f;
+#endif
 		f2 = 1.0f;
 		if (f6 <= piC) {
 			f1 = 1.5707964f;
@@ -395,7 +417,7 @@ EffectEntry* effGonbabaBreathEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, 
 		break;
 	}
 
-	entry->type = "GonbabaBreath";
+	entry->type = "GonbabaBreath\0\0";
 	entry->count = count;
 	data = __memAlloc(HEAP_EFFECT, count * sizeof(effGonbabaBreathData));
 	entry->userdata = data;
@@ -450,15 +472,24 @@ static inline f32 intplGetValueFM(s32 mode, f32 start, f32 end, s32 currStep, s3
 void effGonbabaBreathMain(EffectEntry* effect) {
 	effGonbabaBreathData* data = effect->userdata;
 	Vec position;
+#ifdef MUST_MATCH
+#else
 	Vec disp = { 0 };
+#endif
 	f32 k = 0.25f;
 	f32 k2 = 0.125f;
 	s32 i;
 
+#ifdef MUST_MATCH
+	// Reuse the zero-Vec template initializeVec's body pools at parse time instead of emitting
+	// a second one.
+	position = initializeVec(&data->position);
+#else
 	disp.x = data->position.x;
 	disp.y = data->position.y;
 	disp.z = data->position.z;
 	position = disp;
+#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;

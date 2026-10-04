@@ -81,7 +81,7 @@ const char str_802C5C04[] = "eki_02";
 const char str_802C5C0C[] = "PM_J_1F";
 const char str_802C5C14[] = "PM_J_1G";
 const char str_802C5C1C[] = "PM_J_1H";
-const u32 gap_04_802C5C24_rodata = 0;
+__declspec(section ".rodata") const u32 gap_04_802C5C24_rodata = 0;
 const f64 double_1p5708_802c5c28 = 1.5707963705062866;
 const char str_802C5C30[] = "M_J_1B";
 
@@ -130,19 +130,19 @@ const f32 float_neg190_8041ab60 = -190.0f;
 const f32 float_neg8_8041ab64 = -8.0f;
 const f32 float_4_8041ab68 = 4.0f;
 const f32 float_2_8041ab6c = 2.0f;
-const char str_8041AB70[] = "M_S_1";
+__declspec(section ".sdata2") const char str_8041AB70[8] = "M_S_1";
 const f32 float_0p6_8041ab78 = 0.6f;
 const f32 float_neg0p6_8041ab7c = -0.6f;
 const f32 float_3p1416_8041ab80 = 3.1415927f;
 const f32 float_neg1_8041ab84 = -1.0f;
-const char str_8041AB88[] = "M_S_4";
+__declspec(section ".sdata2") const char str_8041AB88[8] = "M_S_4";
 const f32 float_10_8041ab90 = 10.0f;
 const f32 float_1_8041ab94 = 1.0f;
-const char str_8041AB98[] = "M_W_6";
+__declspec(section ".sdata2") const char str_8041AB98[8] = "M_W_6";
 const f32 float_90_8041aba0 = 90.0f;
 const f32 float_270_8041aba4 = 270.0f;
 const f32 float_neg0p5_8041aba8 = -0.5f;
-const char str_8041ABAC[] = "M_I_Y";
+__declspec(section ".sdata2") const char str_8041ABAC[8] = "M_I_Y";
 const u32 gap_09_8041ABB4_sdata2 = 0;
 
 // Local quake script table (`.sdata`), referenced by mot_jabara.

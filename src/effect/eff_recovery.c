@@ -14,6 +14,9 @@
 #include <string.h>
 #include <stdlib.h>
 
+extern const f32 float_108_8041cafc;
+extern const f32 float_0p5_8041caec;
+
 typedef struct RecoveryMayaAnim {
 	u16 flags;       // 0x00
 	u8 pad_02[2];    // 0x02
@@ -48,41 +51,6 @@ typedef struct RecoveryData {
 	f32 field_40;    // 0x40
 } RecoveryData;
 
-extern const char str_8041CB08[];
-extern const f32 float_deg2rad_8041cad0;
-extern const f32 float_32_8041cad4;
-extern const f32 float_90_8041cad8;
-const f32 float_0_8041cadc = 0.0f;
-const f32 float_1_8041cae0 = 1.0f;
-extern const f32 float_8_8041cae4;
-extern const f32 float_2_8041cae8;
-extern const f32 float_0p5_8041caec;
-extern const f32 float_16_8041caf0;
-extern const f32 float_10_8041caf4;
-extern const f32 float_0p05_8041caf8;
-extern const f32 float_108_8041cafc;
-extern const f32 float_20_8041cb00;
-extern const f32 float_neg20_8041cb04;
-extern const f32 float_0p035_8041cb0c;
-extern const f32 float_24_8041cb10;
-extern const f32 float_0p1_8041cb14;
-extern const f32 float_neg16_8041cb18;
-extern const f32 float_neg6_8041cb1c;
-extern const f32 float_6_8041cb20;
-extern const f32 float_40_8041cb24;
-extern const f32 float_45_8041cb28;
-extern const f32 float_0p95_8041cb2c;
-extern const f32 float_6p2832_8041cb30;
-extern const f32 float_360_8041cb34;
-extern const f32 float_12_8041cb38;
-extern const f32 float_0p7_8041cb3c;
-extern const f32 float_0p99_8041cb40;
-extern const f32 float_30_8041cb44;
-extern const f32 float_neg30_8041cb48;
-extern const f32 float_neg15_8041cb4c;
-extern const f32 float_1p5_8041cb50;
-extern const f32 float_0p3_8041cb54;
-extern const f32 float_1p8_8041cb58;
 extern const u32 dat_8041cac0;
 extern const u32 dat_8041cac4;
 extern const u32 dat_8041cac8;
@@ -147,9 +115,7 @@ static inline Vec recoveryZeroVec6(void) {
 #define str_802F364C "SFX_FP_RECOVER_MID1"
 #define str_802F3660 "SFX_FP_RECOVER_BIG1"
 
-const char str_8041CB08[] = "%d";
-
-// 100%: the colour strings are string literals (not named `const char[]` objects), so MWCC pools
+// 100%: the colour strings are string literals (not named `const char[]` objects), so the compiler pools
 // its own int->float double as the unit's only .rodata constant right after the zero-Vec helpers,
 // at +0x48, ahead of the pooled strings -- exactly the original's layout. `double_to_int_802f3550`
 // is intentionally not defined by name (a named copy would add a second, unused pool entry and push
@@ -201,7 +167,7 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	data->timer = 0;
 	data->timeBase = gp->retraceCount;
 	data->color = 0xFF;
-	data->field_40 = float_neg30_8041cb48;
+	data->field_40 = -30.0f;
 
 	pos = recoveryZeroVec();
 	pos.x = data->x;
@@ -249,39 +215,39 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 	i = 1;
 	n = 8;
 	for (; i < effect->count; i++, ptr++) {
-		ptr->x = float_0_8041cadc;
+		ptr->x = 0.0f;
 		switch (type) {
 		case 4:
 		case 5:
-			ptr->y = (i < 10) ? float_0_8041cadc : float_neg15_8041cb4c;
+			ptr->y = (i < 10) ? 0.0f : -15.0f;
 			break;
 		default:
-			ptr->y = float_0_8041cadc;
+			ptr->y = 0.0f;
 			break;
 		}
-		ptr->z = float_0_8041cadc;
-		ptr->scaleX = float_0_8041cadc;
-		ptr->scaleY = float_0_8041cadc;
-		ptr->scaleZ = float_0_8041cadc;
-		ptr->velX = float_0_8041cadc;
-		ptr->velY = float_0_8041cadc;
-		ptr->velZ = float_0_8041cadc;
+		ptr->z = 0.0f;
+		ptr->scaleX = 0.0f;
+		ptr->scaleY = 0.0f;
+		ptr->scaleZ = 0.0f;
+		ptr->velX = 0.0f;
+		ptr->velY = 0.0f;
+		ptr->velZ = 0.0f;
 		ptr->timer = 0;
 		ptr->state = 0;
 		ptr->color = 0xFF;
-		ptr->angle = float_0_8041cadc;
+		ptr->angle = 0.0f;
 		switch (type) {
 		case 6:
 			if (i == 1) {
-				ptr->scaleZ = float_1p5_8041cb50;
-				ptr->scaleY = float_1p5_8041cb50;
-				ptr->scaleX = float_1p5_8041cb50;
+				ptr->scaleZ = 1.5f;
+				ptr->scaleY = 1.5f;
+				ptr->scaleX = 1.5f;
 				ptr->color = 0;
 				ptr->delay = 0;
 			} else {
-				ptr->scaleZ = float_0p3_8041cb54;
-				ptr->scaleY = float_0p3_8041cb54;
-				ptr->scaleX = float_0p3_8041cb54;
+				ptr->scaleZ = 0.3f;
+				ptr->scaleY = 0.3f;
+				ptr->scaleX = 0.3f;
 				if (i & 1) {
 					angle = irand(0x50);
 				} else {
@@ -289,8 +255,8 @@ EffectEntry* effRecoveryEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 				}
 				angle += 0x5A;
 				ptr->angle = angle;
-				ptr->velX = float_1p8_8041cb58 * (f32)cos(float_6p2832_8041cb30 * ptr->angle / float_360_8041cb34);
-				ptr->velY = float_1p8_8041cb58 * (f32)sin(float_6p2832_8041cb30 * ptr->angle / float_360_8041cb34);
+				ptr->velX = 1.8f * (f32)cos(6.2831855f * ptr->angle / 360.0f);
+				ptr->velY = 1.8f * (f32)sin(6.2831855f * ptr->angle / 360.0f);
 				ptr->color = 0xFF;
 				ptr->delay = n;
 			}
@@ -354,7 +320,7 @@ void effRecoveryMain(EffectEntry* effect) {
 					break;
 				}
 				{
-					f32 ang = ((f32)(i - 1) * 360.0f / (f32)field_1 + 90.0f) * float_6p2832_8041cb30 / 360.0f;
+					f32 ang = ((f32)(i - 1) * 360.0f / (f32)field_1 + 90.0f) * 6.2831855f / 360.0f;
 					ptr->velX = 12.0f * (f32)sin(ang);
 					ptr->velY = 0.0f;
 					{
@@ -396,8 +362,8 @@ void effRecoveryMain(EffectEntry* effect) {
 					t = intplGetValue(0xB, timer, 0x28, 0.0f, 360.0f);
 					{
 						f32 radius = distABf(0.0f, 0.0f, ptr->x, ptr->z);
-						f32 ang = ((f32)(i - 2) * 360.0f / (f32)field_1 + t + 90.0f) * float_6p2832_8041cb30 / 360.0f;
-						radius *= float_0p99_8041cb40;
+						f32 ang = ((f32)(i - 2) * 360.0f / (f32)field_1 + t + 90.0f) * 6.2831855f / 360.0f;
+						radius *= 0.99f;
 						ptr->x = radius * (f32)sin(ang);
 						ptr->z = radius * -(f32)cos(ang);
 					}
@@ -497,7 +463,7 @@ void effRecoveryMain(EffectEntry* effect) {
 }
 
 // The two `volatile` reads are required for the original's instruction order: without
-// them MWCC hoists the vec3_802f3544 loads into the callee-save prologue, ahead of the
+// them the compiler hoists the vec3_802f3544 loads into the callee-save prologue, ahead of the
 // `effect->userdata` load. They emit the same lwz/loads, just ordered (rule 7 trick).
 void effRecoveryMain2(EffectEntry* effect) {
 #ifdef MUST_MATCH
@@ -526,7 +492,7 @@ void effRecoveryMain2(EffectEntry* effect) {
 		ptr->color = ptr->timer * 8;
 	}
 	if (ptr->timer < 0) {
-		effStardustEntry(2, 6, 0x1E, ptr->x, ptr->y, ptr->z, float_40_8041cb24, float_45_8041cb28);
+		effStardustEntry(2, 6, 0x1E, ptr->x, ptr->y, ptr->z, 40.0f, 45.0f);
 		effDelete(effect);
 		return;
 	}
@@ -540,9 +506,9 @@ void effRecoveryMain2(EffectEntry* effect) {
 		ptr->x += ptr->velX;
 		ptr->y += ptr->velY;
 		ptr->z += ptr->velZ;
-		ptr->velX *= float_0p95_8041cb2c;
-		ptr->velY *= float_0p95_8041cb2c;
-		ptr->velZ *= float_0p95_8041cb2c;
+		ptr->velX *= 0.95f;
+		ptr->velY *= 0.95f;
+		ptr->velZ *= 0.95f;
 		if (i == 1) {
 			ptr->color += 5;
 			if (ptr->color > 0x80) {
@@ -551,12 +517,12 @@ void effRecoveryMain2(EffectEntry* effect) {
 		} else {
 			ptr->color -= 8;
 			if (ptr->color < 0) {
-				f32 zero = float_0_8041cadc;
+				f32 zero = 0.0f;
 				ptr->x = zero;
 				ptr->y = zero;
 				ptr->z = zero;
-				ptr->velX = (f32)cos(float_6p2832_8041cb30 * ptr->angle / float_360_8041cb34) * float_2_8041cae8;
-				ptr->velY = (f32)sin(float_6p2832_8041cb30 * ptr->angle / float_360_8041cb34) * float_2_8041cae8;
+				ptr->velX = (f32)cos(6.2831855f * ptr->angle / 360.0f) * 2.0f;
+				ptr->velY = (f32)sin(6.2831855f * ptr->angle / 360.0f) * 2.0f;
 				ptr->color = 0xFF;
 			}
 		}
@@ -565,7 +531,7 @@ void effRecoveryMain2(EffectEntry* effect) {
 	dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effRecoveryDisp4, effect);
 }
 
-// The vertex float literals (-16/16 in the first pass, -6/6/2 in the loop) keep MWCC from
+// The vertex float literals (-16/16 on the leading vertices, -6/6/2 in the loop) keep the compiler from
 // hoisting the shared float constants into callee-saved f29-f31; the named externs hold the same
 // pool values but stay live across the volatile FIFO stores, adding FPR-save prologue bytes.
 void effRecoveryDisp(CameraId camId, void* param) {
@@ -585,7 +551,7 @@ void effRecoveryDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	type = data->type;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	PSMTXRotRad(tmp, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041cad0);
+	PSMTXRotRad(tmp, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, tmp, base);
 	GXSetNumTexGens(2);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
@@ -619,17 +585,17 @@ void effRecoveryDisp(CameraId camId, void* param) {
 	}
 	ptr = entry->userdata;
 	PSMTXTrans(mtx, ptr->x, ptr->y, ptr->z);
-	PSMTXRotRad(tmp, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041cad0);
+	PSMTXRotRad(tmp, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, tmp, mtx);
-	PSMTXScale(scale, float_10_8041caf4, float_10_8041caf4, float_10_8041caf4);
+	PSMTXScale(scale, 10.0f, 10.0f, 10.0f);
 	PSMTXConcat(mtx, scale, mtx);
-	PSMTXTrans(scale, float_0_8041cadc, float_2_8041cae8, float_0_8041cadc);
+	PSMTXTrans(scale, 0.0f, 2.0f, 0.0f);
 	PSMTXConcat(mtx, scale, mtx);
 	if ((u32)type <= 1 || (u32)(type - 7) <= 1 || type == 4 || type == 5) {
 		PSMTXConcat(mtx, ptr->anim->mtx, mtx);
 	}
 	PSMTXConcat(cam->view, mtx, mtx);
-	PSMTXScale(scale, float_0p1_8041cb14, float_0p1_8041cb14, float_0p1_8041cb14);
+	PSMTXScale(scale, 0.1f, 0.1f, 0.1f);
 	PSMTXConcat(mtx, scale, mtx);
 	GXLoadPosMtxImm(mtx, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
@@ -640,14 +606,14 @@ void effRecoveryDisp(CameraId camId, void* param) {
 	GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	GXPosition3f32((-16.0f), (16.0f), float_0_8041cadc);
-	GXTexCoord2f32(float_0_8041cadc, float_0_8041cadc);
-	GXPosition3f32((16.0f), (16.0f), float_0_8041cadc);
-	GXTexCoord2f32(float_1_8041cae0, float_0_8041cadc);
-	GXPosition3f32((16.0f), (-16.0f), float_0_8041cadc);
-	GXTexCoord2f32(float_1_8041cae0, float_1_8041cae0);
-	GXPosition3f32((-16.0f), (-16.0f), float_0_8041cadc);
-	GXTexCoord2f32(float_0_8041cadc, float_1_8041cae0);
+	GXPosition3f32((-16.0f), (16.0f), 0.0f);
+	GXTexCoord2f32(0.0f, 0.0f);
+	GXPosition3f32((16.0f), (16.0f), 0.0f);
+	GXTexCoord2f32(1.0f, 0.0f);
+	GXPosition3f32((16.0f), (-16.0f), 0.0f);
+	GXTexCoord2f32(1.0f, 1.0f);
+	GXPosition3f32((-16.0f), (-16.0f), 0.0f);
+	GXTexCoord2f32(0.0f, 1.0f);
 	if (type == 2 || type == 3) {
 		return;
 	}
@@ -680,14 +646,14 @@ void effRecoveryDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(-6.0f, 6.0f, float_0_8041cadc);
-		GXTexCoord2f32(float_0_8041cadc, float_0_8041cadc);
-		GXPosition3f32(6.0f, 6.0f, float_0_8041cadc);
-		GXTexCoord2f32(2.0f, float_0_8041cadc);
-		GXPosition3f32(6.0f, -6.0f, float_0_8041cadc);
-		GXTexCoord2f32(2.0f, float_1_8041cae0);
-		GXPosition3f32(-6.0f, -6.0f, float_0_8041cadc);
-		GXTexCoord2f32(float_0_8041cadc, float_1_8041cae0);
+		GXPosition3f32(-6.0f, 6.0f, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(6.0f, 6.0f, 0.0f);
+		GXTexCoord2f32(2.0f, 0.0f);
+		GXPosition3f32(6.0f, -6.0f, 0.0f);
+		GXTexCoord2f32(2.0f, 1.0f);
+		GXPosition3f32(-6.0f, -6.0f, 0.0f);
+		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
 
@@ -702,30 +668,34 @@ void effRecoveryDisp2(CameraId camId, void* param) {
 	s32 num;
 	s32 len;
 	f32 transX;
+	f32 k24;
+	f32 k05;
 
 	camGetPtr(camId);
 	num = data->field_1;
 	type = data->type;
-	sprintf(buf, str_8041CB08, num);
+	sprintf(buf, "%d", num);
 	len = strlen(buf);
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041cad0);
+	PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, rot, mtx);
-	PSMTXTrans(tmp, float_0_8041cadc, float_0_8041cadc, float_1_8041cae0);
+	PSMTXTrans(tmp, 0.0f, 0.0f, 1.0f);
 	PSMTXConcat(mtx, tmp, mtx);
-	PSMTXScale(tmp, float_10_8041caf4, float_10_8041caf4, float_10_8041caf4);
+	PSMTXScale(tmp, 10.0f, 10.0f, 10.0f);
 	PSMTXConcat(mtx, tmp, mtx);
-	PSMTXTrans(tmp, float_0_8041cadc, float_2_8041cae8, float_0_8041cadc);
+	PSMTXTrans(tmp, 0.0f, 2.0f, 0.0f);
 	PSMTXConcat(mtx, tmp, mtx);
 	PSMTXConcat(mtx, data->anim->mtx, mtx);
-	PSMTXScale(tmp, float_0p035_8041cb0c, float_0p035_8041cb0c, float_0p035_8041cb0c);
+	PSMTXScale(tmp, 0.035f, 0.035f, 0.035f);
 	PSMTXConcat(mtx, tmp, mtx);
 #ifdef MUST_MATCH
 	// split the x scale into a temp: keeps the int->float conversion and *24 in the original's registers
-	transX = float_24_8041cb10 * (f32)(-(len - 1));
-	PSMTXTrans(tmp, transX * float_0p5_8041caec, float_0_8041cadc, float_0_8041cadc);
+	k24 = 24.0f;
+	k05 = 0.5f;
+	transX = k24 * (f32)(-(len - 1));
+	PSMTXTrans(tmp, transX * k05, 0.0f, 0.0f);
 #else
-	PSMTXTrans(tmp, float_24_8041cb10 * -(len - 1) * float_0p5_8041caec, float_0_8041cadc, float_0_8041cadc);
+	PSMTXTrans(tmp, 24.0f * -(len - 1) * 0.5f, 0.0f, 0.0f);
 #endif
 	PSMTXConcat(mtx, tmp, mtx);
 
@@ -746,9 +716,9 @@ void effRecoveryDisp2(CameraId camId, void* param) {
 // The f27/f28 declarations are reversed so the +-20 pair lands in the target's registers, and the +-20
 // assignments sit inside the loop under MUST_MATCH because above the loop they are hoisted into the preheader
 // and scheduled before the int->float magic load, which the target does not do.
-// The half-size block below is under MUST_MATCH: writing it as one expression makes MWCC load the pool
+// The half-size block below is under MUST_MATCH: writing it as one expression makes the compiler load the pool
 // constant into f2 and negate into f1, swapping the target's f1/f2. Declaring the negated value and giving it
-// a dead use after the fadds extends its live range so MWCC uses the target's f1 (constant) / f2 (negated temp).
+// a dead use after the fadds extends its live range so the compiler uses the target's f1 (constant) / f2 (negated temp).
 // The dead store compiles away, so no extra instruction is emitted.
 void effRecoveryDisp3(CameraId camId, void* param) {
 	EffectEntry* entry = param;
@@ -765,21 +735,24 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	f32 f29;
 	f32 f28;
 	f32 f27;
+	f32 p108;
+	f32 half05;
+	f32 negHalf;
 
 	cam = camGetPtr(camId);
 	type = data->type;
 	PSMTXTrans(mtx, data->x, data->y, data->z);
-	PSMTXRotRad(tmp, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041cad0);
+	PSMTXRotRad(tmp, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, tmp, mtx);
-	PSMTXTrans(tmp2, float_0_8041cadc, float_0_8041cadc, float_1_8041cae0);
+	PSMTXTrans(tmp2, 0.0f, 0.0f, 1.0f);
 	PSMTXConcat(mtx, tmp2, mtx);
-	PSMTXScale(tmp2, float_10_8041caf4, float_10_8041caf4, float_10_8041caf4);
+	PSMTXScale(tmp2, 10.0f, 10.0f, 10.0f);
 	PSMTXConcat(mtx, tmp2, mtx);
-	PSMTXTrans(tmp2, float_0_8041cadc, float_2_8041cae8, float_0_8041cadc);
+	PSMTXTrans(tmp2, 0.0f, 2.0f, 0.0f);
 	PSMTXConcat(mtx, tmp2, mtx);
 	PSMTXConcat(mtx, data->anim->mtx, base);
 	PSMTXConcat(cam->view, base, base);
-	PSMTXScale(tmp2, float_0p05_8041caf8, float_0p05_8041caf8, float_0p05_8041caf8);
+	PSMTXScale(tmp2, 0.05f, 0.05f, 0.05f);
 	PSMTXConcat(base, tmp2, base);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
@@ -799,21 +772,20 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 #ifdef MUST_MATCH
 	{
-		// A dead store after the half-size sum extends the negated value's live range past the fadds;
-		// MWCC then keeps the pool constant in f1 and the negated temp in f2, as in the target. The
-		// store is eliminated, so it emits no instruction; without it only f1/f2 are swapped.
+		// Read the two loop-invariant constants through their named objects so the original's
+		// f1/f0/f2 register assignment comes out; the values are the target's 108 and 0.5.
 		f32 negHalf = -float_108_8041cafc;
 		f30 = negHalf * float_0p5_8041caec;
 		f29 = f30 + float_108_8041cafc;
 		f27 = negHalf;
 	}
 #else
-	f30 = -float_108_8041cafc * float_0p5_8041caec;
-	f29 = f30 + float_108_8041cafc;
+	f30 = -108.0f * 0.5f;
+	f29 = f30 + 108.0f;
 #endif
 #ifndef MUST_MATCH
-	f27 = float_20_8041cb00;
-	f28 = float_neg20_8041cb04;
+	f27 = 20.0f;
+	f28 = -20.0f;
 #endif
 	for (i = 0; i < 2; i++) {
 		if (i == 0) {
@@ -829,7 +801,7 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 				GXSetChanMatColor(GX_COLOR0A0, *(GXColor*)&dat_8041cac8);
 			}
 		}
-		PSMTXTrans(mtx, (f32)((1 - i) * 2), (f32)(-(1 - i) * 2), float_0_8041cadc);
+		PSMTXTrans(mtx, (f32)((1 - i) * 2), (f32)(-(1 - i) * 2), 0.0f);
 		PSMTXConcat(base, mtx, mtx);
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
@@ -837,18 +809,18 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 		// Assigning the loop-invariant +-20 pair inside the loop (not above it) makes the compiler hoist it
 		// together with the int->float magic instead of into the loop preheader, matching the original's
 		// lfd/f27/f28 load order. It changes no value; without it only the load order differs.
-		f27 = float_20_8041cb00;
-		f28 = float_neg20_8041cb04;
+		f27 = 20.0f;
+		f28 = -20.0f;
 #endif
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(f30, f27, float_0_8041cadc);
-		GXTexCoord2f32(float_0_8041cadc, float_0_8041cadc);
-		GXPosition3f32(f29, f27, float_0_8041cadc);
-		GXTexCoord2f32(float_1_8041cae0, float_0_8041cadc);
-		GXPosition3f32(f29, f28, float_0_8041cadc);
-		GXTexCoord2f32(float_1_8041cae0, float_1_8041cae0);
-		GXPosition3f32(f30, f28, float_0_8041cadc);
-		GXTexCoord2f32(float_0_8041cadc, float_1_8041cae0);
+		GXPosition3f32(f30, f27, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(f29, f27, 0.0f);
+		GXTexCoord2f32(1.0f, 0.0f);
+		GXPosition3f32(f29, f28, 0.0f);
+		GXTexCoord2f32(1.0f, 1.0f);
+		GXPosition3f32(f30, f28, 0.0f);
+		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
 
@@ -869,6 +841,7 @@ static inline GXColor rcC(s32 idx, u8 a, GXColor c) {
 }
 #endif
 
+#pragma opt_loop_invariants off // keep `half = y * 0.5f` in the loop so 0.5 pools after the vertex sizes
 void effRecoveryDisp4(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* ptr = entry->userdata;
@@ -889,16 +862,18 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 	f32 y;
 	f32 s;
 	f32 t;
-	f32 one = float_1_8041cae0;
+	f32 one = 1.0f;
 #ifdef MUST_MATCH
-	// Match-only: naming the half-offset keeps MWCC from commuting the fadds that adds it to s.
+	// Match-only: naming the half-offset keeps the compiler from commuting the fadds that adds it to s.
 	f32 half;
+	f32 k05;
+	f32 k16;
 #endif
 
 	cam = camGetPtr(camId);
 	color = ptr->color;
 	PSMTXTrans(mtx, ptr->x, ptr->y, ptr->z);
-	PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041cad0);
+	PSMTXRotRad(rot, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXConcat(mtx, rot, base);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
@@ -913,7 +888,10 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	y = -float_32_8041cad4;
+		{
+		f32 p32 = 32.0f;
+		y = -p32;
+	}
 	i = 1;
 	ptr++;
 	for (; i < entry->count; i++, ptr++) {
@@ -954,9 +932,9 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 		PSMTXTrans(mtx, ptr->x, ptr->y, ptr->z);
 		PSMTXScale(scale, ptr->scaleX, ptr->scaleY, ptr->scaleZ);
 		if (i != 1) {
-			PSMTXRotRad(rot, 'z', (ptr->angle - float_90_8041cad8) * float_deg2rad_8041cad0);
+			PSMTXRotRad(rot, 'z', (ptr->angle - 90.0f) * 0.017453292f);
 		} else {
-			PSMTXRotRad(rot, 'z', float_0_8041cadc);
+			PSMTXRotRad(rot, 'z', 0.0f);
 		}
 		PSMTXConcat(base, mtx, mtx);
 		PSMTXConcat(mtx, scale, mtx);
@@ -965,28 +943,130 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 		GXLoadPosMtxImm(mtx, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		t = float_1_8041cae0;
-		s = float_0_8041cadc;
+		t = 1.0f;
+		s = 0.0f;
 		if (i == 1) {
-			s = float_8_8041cae4;
+			s = 8.0f;
 		}
 		if (i != 1) {
-			t = float_2_8041cae8;
+			t = 2.0f;
 		}
-		GXPosition3f32(y * float_0p5_8041caec, float_16_8041caf0 + s, float_0_8041cadc);
-		GXTexCoord2f32(float_0_8041cadc, float_0_8041cadc);
-		GXPosition3f32(float_16_8041caf0, float_16_8041caf0 + s, float_0_8041cadc);
-		GXTexCoord2f32(t, float_0_8041cadc);
 #ifdef MUST_MATCH
-		half = y * float_0p5_8041caec;
-		GXPosition3f32(float_16_8041caf0, half + s, float_0_8041cadc);
+		k05 = 0.5f;
+		k16 = 16.0f;
+		GXPosition3f32(y * k05, k16 + s, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(k16, k16 + s, 0.0f);
+		GXTexCoord2f32(t, 0.0f);
+		half = y * k05;
+		GXPosition3f32(k16, half + s, 0.0f);
 		GXTexCoord2f32(t, one);
-		GXPosition3f32(y * float_0p5_8041caec, half + s, float_0_8041cadc);
+		GXPosition3f32(half, half + s, 0.0f);
 #else
-		GXPosition3f32(float_16_8041caf0, y * float_0p5_8041caec + s, float_0_8041cadc);
+		GXPosition3f32(y * 0.5f, 16.0f + s, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(16.0f, 16.0f + s, 0.0f);
+		GXTexCoord2f32(t, 0.0f);
+		GXPosition3f32(16.0f, y * 0.5f + s, 0.0f);
 		GXTexCoord2f32(t, one);
-		GXPosition3f32(y * float_0p5_8041caec, y * float_0p5_8041caec + s, float_0_8041cadc);
+		GXPosition3f32(y * 0.5f, y * 0.5f + s, 0.0f);
 #endif
-		GXTexCoord2f32(float_0_8041cadc, one);
+		GXTexCoord2f32(0.0f, one);
 	}
 }
+#pragma opt_loop_invariants reset
+
+// .sdata objects (0x80411BE8..0x80411C60), after the code in the original's address order.
+extern u32 recovery_effHermit_0[445];
+u32 recovery_effFace_pPlane2_q007_0[11] = {
+	0x0004FD00, 0xFD000000, 0x00000200, 0x0300FD00, 0x00000200, 0x02000300, 0x03000000, 0x02000000,
+	0xFD000300, 0x00000000, 0x00000000,
+};
+u32 recovery_effFaceDt_pPlane2_q007[1] = { (u32)recovery_effFace_pPlane2_q007_0 };
+u32 recovery_effAnimRST[4] = {
+	0x0000000A, (u32)recovery_effHermit_0, 0x00000001, (u32)recovery_effFaceDt_pPlane2_q007,
+};
+u32 recovery_effAnimRSTDt[2] = { 0x00000001, (u32)recovery_effAnimRST };
+u32 recovery_effAnimDt[3] = { 0x00000000, 0x429E0000, (u32)recovery_effAnimRSTDt };
+
+// .data animation joint data (0x8036F628..0x8036FD1C).
+u32 recovery_effHermit_0[445] = {
+	0x00000000, 0x00000000, 0x00000140, 0x0000FFDD, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000007, 0x00000000, 0x00000007,
+	0x00000000, 0x00000007, 0x00000000, 0x00000000, 0x0000FFA1, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x0000FFA1, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000009, 0x00000000, 0x00000000, 0x0000FFEA,
+	0xFFEA0000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00400005, 0x00050000, 0x00400002, 0x00020000, 0x00400004, 0x00040000, 0x00000000,
+	0x00000000, 0xFFA10000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFA10000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x000E0000, 0x00000000, 0x00000000, 0x00040004, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000053, 0xFFFFFFFF, 0x00000020,
+	0x00010001, 0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x0000FFA1, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x0000FFA1, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000013, 0x00000000, 0x00000000,
+	0x002C0000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x0033FFFF, 0xFFFF0000, 0x004C0003, 0x00030000, 0x00400000, 0x00000000,
+	0x00000000, 0x00000000, 0xFFA10000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFA10000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00180000, 0x00000000, 0x00000000, 0xFFFDFFFE, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000040, 0x00000000,
+	0x00000040, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x0000FFA1, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x0000FFA1, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000022, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0xFFF50000, 0x00000000, 0x00400000, 0x00000000, 0x00400000, 0x00000000, 0x00400000,
+	0x00000000, 0x00000000, 0x00000000, 0xFFA10000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFFA10000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00310000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000000B, 0x00000000, 0x00000040,
+	0x00000000, 0x00000040, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0x00000000, 0x0000FFA1,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x0000FFA1, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000036,
+	0x00000000, 0x00000000, 0x0000FFFF, 0xFFFF0000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00400000, 0x00000000, 0x0040FFFF, 0xFFFF0000,
+	0x00400000, 0x00000000, 0x00000000, 0x00000000, 0xFFA10000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0xFFA10000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00450000, 0x00000000, 0x0000FFE0, 0x00140014,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x0000004C, 0xFFFEFFFE, 0x00000026, 0x00010001, 0x00000040, 0xFFFEFFFE, 0x00000000, 0x00000000,
+	0x0000FFA1, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000FFA1, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x0000004F, 0x00000000, 0x00000000, 0x02000036, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x0000FFF9, 0x00000000, 0x00600005,
+	0x00000000, 0x0000FFFA, 0x00000000, 0x00000000, 0x00000000, 0xFFA10000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0xFFA10000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+// .sdata2 objects (0x8041CAC0..0x8041CB5C), defined after the code.
+const u32 dat_8041cac0 = 0x000000A0;
+const u32 dat_8041cac4 = 0xF5989DFF;
+const u32 dat_8041cac8 = 0x5DC100FF;
+const u32 dat_8041cacc = 0xFFFFFF00;
+
+#pragma section ".sdata" ".sbss2" // put the two scratch colours in .sbss2
+__declspec(section ".sdata") GXColor unk_80423044; // original is in .sbss2; section redirect above
+__declspec(section ".sdata") GXColor unk_80423040; // declared in the original's reverse address order
+#pragma section ".sdata" ".sbss" // restore .sbss for later zero-initialised objects
+
+// 108 and 0.5 are emitted before the pool; the code reads them by name.
+__declspec(section ".sdata2") const f32 float_108_8041cafc = 108.0f;
+__declspec(section ".sdata2") const f32 float_0p5_8041caec = 0.5f;
+
+// Zero tail words the original section has after its last object (the next unit's first word).
+#pragma explicit_zero_data on // emit the zero-valued objects below
+#pragma force_active on // keep them even though nothing references them
+__declspec(section ".data") static u32 gap_77C_8036FD18_data[1] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset

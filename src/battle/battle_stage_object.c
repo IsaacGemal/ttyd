@@ -1539,70 +1539,54 @@ extern f32 float_85_8041cd20;
 extern f32 float_50_8041cd24;
 extern f32 float_neg50_8041cd28;
 extern f32 float_0p75_8041cd30;
-extern char str_802F3BDC[];
-extern char str_802F3BF8[];
-extern char str_802F3C18[];
 extern Vec vec3_802f3bd0;
 
-// Register allocation only: MWCC gave `event` r31 where the original used r15, so every callee-saved
-// register shifted and the frame is 16 B short (the original spills strTub/strRest/part where we keep
-// them). No op_mismatch remains. The only source lever that moved the score was splitting the four
-// initialised locals into a plain declaration plus an assignment (the scheduler then emits the original's
-// top-of-function schedule exactly) and shuffling the scalar declarations; both are semantically
-// irrelevant and only steer MWCC's register colouring.
+// Register allocation only. Two things got the int->float magic double onto the .rodata pool base
+// (`lfd f1, 0x168(rN)`, matching the original): the three SFX names are string literals pooled with
+// the double (a large enough literal pool makes MWCC open a base register), and `vec` was inlined to
+// `(u8*)vec3_802f3ac8 + 0x108` at its single use so the compiler no longer materialises a second
+// base pointer. What remains is register colouring: the original keeps one `.rodata` base in r30 and
+// `event` in r15; MWCC loads the literal-pool base into r29 and `vec3_802f3ac8` into r30 (two bases
+// for the same address), then colours the other callee-saved locals differently, so the frame is 16 B
+// short (0x1670 vs 0x1660) and many operands are offset. The scalar declaration order below is a
+// permutation-search artefact (the three SFX pointers are part of it) that maximises the match.
 //
-// Root blocker (confirmed this session): the target folds the int->float magic double onto the extern
-// vec3_802f3ac8 rodata base (`lfd f1, 0x168(r30)`); MWCC GC/2.6 pools its own anonymous @1191 double and
-// addresses it with `lis`+`lfd`. A hand-rolled MUST_MATCH i2f that builds the magic by hand and subtracts
-// `*(const f64*)(vec + 0x168)` does produce the base-relative load, but the compiler emits `fsub`+`frsp`
-// instead of the target's fused `fsubs`, and the extra addressing slots shift the frame (94.62%). This is
-// the same limitation recorded on `_set_mobj_rotate_x` above, and it is coupled to the event/wp/vec
-// colouring. Tried: exhaustive adjacent-swap plus 149 random permutations of the scalar declaration order
-// (no change); a pragma sweep (opt_propagation/common_subs/lifetimes/dead_assignments/peephole/
-// strength_reduction/loop_invariants/global_optimizer/optimize_for_size/scheduling -- all neutral or worse);
-// moving the phase-1-only locals into the `if (isFirstCall)` scope (no change); `tools/flag_sweep.py`
-// (-O4,p drops 27 functions; -O4,s is the only no-drop variant); and defining the vec3_802f3ac8 rodata
-// block so the anonymous @1191 lands exactly at +0x168, with `#pragma pool_data on` -- GC/2.6 still emits
-// `lis`+`lfd`, so an anonymous pool at the right offset is not enough. Merging the timer-loop
-// `rand = (s16)(irand(0x16)+rand); rand += 0x14;` pair into the target's combined form scored 95.36%.
-// A compiler-revision sweep (2.0/2.5/2.6/2.7 all 95.57; 3.0a3+ 84.36) rules out a version mismatch.
-// The fold IS reachable in this toolchain when the unit's .rodata is reproduced in-source:
-// `_lvup_spot_on` (battle_seq_end, 100%) has the same `lfd f1, 0x260(r31); fsubs` shape because that
-// file lets MWCC build one large source pool (its `(Vec)` compound literals plus every pooled double),
-// so the compiler opens the pool with a base register and the i2f rides it. Here every rodata object is
-// extern, so the compiler's pool holds only the i2f and it addresses it absolutely; adding one string
-// literal puts the literal and the double in the same 40-byte `...rodata` section but MWCC still uses
-// `lis` for both. The fold therefore needs the pool to be as large as the original's 43 objects -- i.e.
-// porting this unit's .rodata (664 bytes, 0x0..0x298) -- which is a unit-level task. Doing it piecemeal
-// (define vec3 at the right size, pool_data on, string literals, local/volatile (Vec) templates, a
-// defined dummy rodata object) was tried here and still yields `lis`.
-// NONMATCHING (95.57%): see above.
+// Tried and rejected: renaming `gap_802f3ac8_rodata` to `vec3_802f3ac8` (or pointing the spawnPos
+// access at the defined alias) makes the compiler CSE the two bases into r30, so the four `lfd` and
+// the base instructions match, but the surrounding colouring re-schedules and the score falls to
+// 96.37; the rename also drops `_set_mobj_rotate_x` to 97.96. Making the .rodata objects `const`,
+// giving `vec3_802f3ac8` `Vec` type, and `PAD_STACK(16)` all hang MWCC. A `#pragma` sweep and larger
+// declaration permutations were neutral. Merging the timer-loop `rand = (s16)(irand(0x16)+rand);
+// rand += 0x14;` pair scored 95.36%.
+// NONMATCHING (96.82%): see above.
 USER_FUNC(_object_fall_attack) {
 	// Scalar declarations: the order is not semantic. MWCC colours callee-saved registers roughly in
 	// declaration order, so this sequence only decides which register each local lands in.
-	s32 dst;
-	s32 active;
-	u8* vec;
-	u8* typeTable;
-	s32 rand;
-	BattleUnit* unit;
-	s32 outId;
-	f32 f31;
+	s32 off;
+	s32 outPartId;
+	s32 idx;
 	s32 flag;
-	s32 sum;
-	BattleUnitPart* part;
+	BattleWork* wp;
+	f32 f31;
+	s32 check;
+	s32 dst;
 	FallObjectEntry* entry;
+	s32 rand;
+	char* strTub;
+	s32 outId;
+	BattleUnit* unit;
+	BattleUnitPart* part;
+	char* strNormal;
+	s32 sum;
+	char* strRest;
+	s32 m;
+	s32 active;
+	f32 f30;
 	s32 flags;
 	BattleWeapon* weapon;
-	f32 f30;
-	BattleWork* wp;
-	s32 outPartId;
-	s32 check;
-	s32 off;
 	s8* alloc;
 	s32 i;
-	s32 m;
-	s32 idx;
+	u8* typeTable;
 	// Stack objects are declared so MWCC lays them out at the original offsets.
 	u8 samplingA[0xACC];
 	u8 samplingB[0xACC];
@@ -1610,14 +1594,10 @@ USER_FUNC(_object_fall_attack) {
 	Vec spawnPos;
 	Vec hitPos;
 	Vec pos;
-	char* strTub;
-	char* strRest;
-	char* strNormal;
 
 	// `wp` is the BattleWork base; typeTable is its fall-object data table (weights at +0xC0, stats at +0xCC).
 	wp = _battleWorkPointer;
 	typeTable = *(u8**)((u8*)wp + 0x180F8);
-	vec = (u8*)vec3_802f3ac8;
 	dst = *event->args;
 	flag = 0;
 	if (isFirstCall) {
@@ -1750,17 +1730,13 @@ USER_FUNC(_object_fall_attack) {
 		}
 	}
 
+	// The three SFX names are string literals; MWCC pools them with the other
+	// rodata constants, which makes the int->float magic double ride the pool
+	// base register as the original does.
 	alloc = (s8*)event->userdata[0];
-#ifdef MUST_MATCH
-	// The original reaches the three SFX names through this .rodata base (addi rN, r30, 0x114 etc.).
-	strTub = (char*)(vec + 0x114);     // str_802F3BDC
-	strRest = (char*)(vec + 0x150);    // str_802F3C18
-	strNormal = (char*)(vec + 0x130);  // str_802F3BF8
-#else
-	strTub = str_802F3BDC;
-	strRest = str_802F3C18;
-	strNormal = str_802F3BF8;
-#endif
+	strTub = "SFX_BTL_STAGE_DAMAGE_TUB1";
+	strNormal = "SFX_BTL_STAGE_DAMAGE_NORMAL1";
+	strRest = "SFX_REST_CONDITION1";
 	active = 1;
 	for (i = 0; i < (u8)alloc[0]; i++) {
 		entry = (FallObjectEntry*)(alloc + 4 + i * 0xE8);
@@ -1796,7 +1772,7 @@ USER_FUNC(_object_fall_attack) {
 			break;
 		default:
 #ifdef MUST_MATCH
-			spawnPos = *(Vec*)(vec + 0x108); // vec3_802f3bd0, reached through the vec base
+			spawnPos = *(Vec*)(vec3_802f3ac8 + 0x108); // vec3_802f3bd0, reached through the rodata base
 #else
 			spawnPos = vec3_802f3bd0;
 #endif

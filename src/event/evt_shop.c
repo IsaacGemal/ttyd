@@ -22,15 +22,32 @@
 #include "window/win_main.h"
 #include "party.h"
 #include "window/win_mario.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_pouch.h"
+#include "evt/evt_npc.h"
+#include "evt/evt_sub.h"
+#include "evt/evt_window.h"
+#include "matching.h"
+
+// Data objects defined later in this file or in other units, declared before their first use.
+extern u32 first_shopping_evt[];
 
 // this file's own script (its data isn't written as source yet)
 extern u32 buy_evt[];
 
+// The remaining scripts are file-local (their asm `.obj` blocks are `local`).
+static u32 sell_evt[196];
+static u32 keep_evt[148];
+static u32 unkeep_evt[147];
+static u32 point_evt[15];
+
 extern GlobalWork* gp;
 
-//.sbss
-char mapname[16];
+//.sbss (uninitialised globals are laid out last-declared-first)
+u8 gap_08_80418944_sbss[4];
 static evt_shop_work* _wp;
+char mapname[16];
 
 typedef struct ShopWork {
 	u16 flags;              //0x0
@@ -566,7 +583,7 @@ void help_disp(WinMgrEntry* entry) {
 void title_disp(WinMgrEntry* entry) {
 	if (!(entry->flags & 4)) {
 		GXColor color;
-		const char* msg = msgSearch(str_802ECE38);
+		const char* msg = msgSearch("msg_shop_point_list4\0\0\0");
 
 		FontDrawStart();
 		FontDrawEdge();
@@ -608,6 +625,7 @@ void list_disp(WinMgrEntry* entry) {
 	ItemData* item;
 	const char* msg;
 	u32 width;
+	f32 s;
 	char buf[0x100];
 	Mtx mtx;
 	Mtx scale;
@@ -649,7 +667,7 @@ void list_disp(WinMgrEntry* entry) {
 			*(u32*)&color3 = dat_8041bbfc;
 			FontDrawColor(&color3);
 		}
-		sprintf(buf, "%s", winZenkakuStr(shopPointList[i].price));
+		sprintf(buf, str_8041BC28, winZenkakuStr(shopPointList[i].price));
 		width = FontGetMessageWidth(buf);
 		FontDrawMessage(entry->field_0x20 / 2 - (s32)width + entry->field_0x18 - 90, entry->field_0x1C - 20 - i * 26, buf);
 
@@ -663,14 +681,15 @@ void list_disp(WinMgrEntry* entry) {
 			FontDrawColor(&color5);
 		}
 		msg = msgSearch(str_802ECDF8);
-		sprintf(buf, "%s", msg);
+		sprintf(buf, str_8041BC28, msg);
 		width = FontGetMessageWidth(buf);
 		{
 			f32 w = width;
-			w *= 0.6f;
-			PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - w) - 40.0f, entry->field_0x1C - 28 - i * 26, 0.0f);
+			w *= float_0p6_8041bc2c;
+			PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - w) - float_40_8041bc30, entry->field_0x1C - 28 - i * 26, float_0_8041bc34);
 		}
-		PSMTXScale(scale, 0.64f, 0.64f, 0.64f);
+		s = MATCH_F32(float_0p64_8041bc38);
+		PSMTXScale(scale, s, s, s);
 		PSMTXConcat(mtx, scale, mtx);
 		FontDrawMessageMtx(mtx, buf);
 
@@ -762,7 +781,7 @@ void name_disp(WinMgrEntry* entry) {
 		pos.x *= (f32)gp->fbWidth * float_0p5_8041bc5c;
 		pos.y *= (f32)gp->efbHeight * float_0p5_8041bc5c;
 #endif
-		sprintf(buf, "%d", *(s32*)((u8*)wp->field_0x8 + i * 8 + 4));
+		sprintf(buf, str_8041BC60, wp->field_0x8[i * 2 + 1]);
 		PSMTXTrans(mtx, float_12_8041bc64 * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
 		iconNumberDispGx(mtx, *(s32*)((u8*)wp->field_0x8 + i * 8 + 4), 0, *(GXColor*)&dat_8041bbe4);
 	}
@@ -855,3 +874,279 @@ USER_FUNC(evt_shop_setup) {
 	evtRunCaseEntry(9, 1, (s32)str_802ECDE8, 0, (s32*)evt_shoplist, 0);
 	return EVT_RETURN_DONE;
 }
+// ---------------------------------------------------------------------------
+// Data, in the original object's order (build/G8MJ01/asm/event/evt_shop.s).
+// Function code above references the named objects; the constants live here so
+// the deferred compiler emits them, all named, before its own pool entries.
+
+// .rodata
+const char str_802ECD50[16] = "item_first_hit";
+const char str_802ECD60[8] = "mri_07";
+const char str_802ECD68[16] = "stg2_shop_04_1";
+const char str_802ECD78[8] = "usu_01";
+const char str_802ECD80[20] = "usugurashop_04_1";
+const char str_802ECD94[12] = "rsh_03_a";
+const char str_802ECDA0[12] = "rsh_03_b";
+const char str_802ECDAC[12] = "rsh_03_c";
+const char str_802ECDB8[16] = "stg6_shop_04_1";
+const char str_802ECDC8[24] = "<scrl_auto><once_stop>";
+const char str_802ECDE0[8] = "rsh_03";
+const char str_802ECDE8[16] = "a_shop_keihin";
+const char str_802ECDF8[24] = "msg_shop_point_list5";
+const char str_802ECE10[24] = "msg_shop_point_list6";
+
+
+// .sdata2
+__declspec(section ".sdata2") u32 dat_8041bbe0 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbe4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbe8 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbec = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbf0 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbf4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbf8 = 0xF00000FF;
+__declspec(section ".sdata2") u32 dat_8041bbfc = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041bc00 = 0xF00000FF;
+__declspec(section ".sdata2") u32 dat_8041bc04 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041bc08 = 0xF00000FF;
+__declspec(section ".sdata2") u32 dat_8041bc0c = 0x000000FF;
+__declspec(section ".sdata2") const char str_8041BC10[8] = "mario";
+__declspec(section ".sdata2") const char str_8041BC18[4] = "me";
+__declspec(section ".sdata2") const char str_8041BC1C[6] = "shp%d";
+__declspec(section ".sdata2") const f32 float_6_8041bc24 = 6.0f;
+__declspec(section ".sdata2") const char str_8041BC28[4] = "%s";
+__declspec(section ".sdata2") const f32 float_0p6_8041bc2c = 0.6f;
+__declspec(section ".sdata2") const f32 float_40_8041bc30 = 40.0f;
+__declspec(section ".sdata2") const f32 float_0_8041bc34 = 0.0f;
+__declspec(section ".sdata2") const f32 float_0p64_8041bc38 = 0.64f;
+__declspec(section ".sdata2") const f32 float_10_8041bc3c = 10.0f;
+__declspec(section ".sdata2") const f32 float_30_8041bc40 = 30.0f;
+__declspec(section ".sdata2") const f32 float_36_8041bc44 = 36.0f;
+__declspec(section ".sdata2") const f32 float_1p1_8041bc48 = 1.1f;
+__declspec(section ".sdata2") const f32 float_0p8_8041bc4c = 0.8f;
+__declspec(section ".sdata2") const f32 float_124_8041bc50 = 124.0f;
+__declspec(section ".sdata2") const f32 float_38_8041bc54 = 38.0f;
+__declspec(section ".sdata2") const f32 float_108_8041bc58 = 108.0f;
+__declspec(section ".sdata2") const f32 float_0p5_8041bc5c = 0.5f;
+__declspec(section ".sdata2") const char str_8041BC60[4] = "%d";
+__declspec(section ".sdata2") const f32 float_12_8041bc64 = 12.0f;
+
+// .data
+WinMgrDesc window_desc[3] = {
+    { {0, 0, 0, 0, 0, 0, 0, 0}, 8, 0xFFFFFF6A, 0x78, 0x12C, 0x32, {0x2B, 0xA4, 0xFF, 0xFF}, NULL, (void*)name_disp },
+    { {0, 0, 0, 0, 0, 0, 0, 0}, 8, 0xFFFFFF10, 0xFFFFFF7E, 0x1F4, 0x50, {0xF0, 0xF0, 0xF0, 0xFF}, (void*)help_main, (void*)help_disp },
+    { {0, 0, 0, 2, 0, 0, 0, 0}, 8, 0xFFFFFF06, 0xFFFFFF7E, 0x96, 0x2D, {0xF0, 0xF0, 0xF0, 0xFF}, NULL, (void*)point_disp },
+};
+
+ShopPointEntry shopPointList[11] = {
+    { 0x0A, 0x94 }, { 0x14, 0x83 }, { 0x1E, 0x95 }, { 0x32, 0x81 }, { 0x46, 0x82 }, { 0x64, 0x7E },
+    { 0x96, 0x97 }, { 0xC8, 0x96 }, { 0xFA, 0x9C }, { 0x12C, 0x7F }, { -1, -1 },
+};
+
+WinMgrDesc list_desc[3] = {
+    { {0, 0, 0, 0, 0, 0, 0, 0}, 8, 0xFFFFFEE8, 0xA0, 0xD2, 0x50, {0x2B, 0xA4, 0xFF, 0xFF}, NULL, (void*)title_disp },
+    { {0, 0, 0, 0, 0, 0, 0, 3}, 8, 0xFFFFFFC4, 0xA0, 0x154, 0x12C, {0xF0, 0xF0, 0xF0, 0xFF}, NULL, (void*)list_disp },
+    { {0, 0, 0, 2, 0, 0, 0, 0}, 8, 0xFFFFFF06, 0xFFFFFF7E, 0x96, 0x2D, {0xF0, 0xF0, 0xF0, 0xFF}, NULL, (void*)point_disp },
+};
+
+u32 buy_evt[326] = {
+    0x0001005B, (u32)(void*)evt_mario_normalize, 0x00020032, 0xFE363C8A, 0xFE363C80, 0x0002005B, (u32)disp_off, 0xFE363C8A,
+    0x00020018, 0xF8405B80, 0x00000000, 0x00020032, 0xF8405B80, 0x00000001, 0x0001005E, (u32)(void*)first_shopping_evt,
+    0x00000002, 0x00000021, 0x0002005B, (u32)shopper_name, 0xFE363C89, 0x0003005B, (u32)(void*)evt_set_dir_to_target, 0xFE363C89,
+    (u32)(void*)str_8041BC10, 0x0003005B, (u32)(void*)evt_win_coin_on, 0x00000000, 0xFE363C88, 0x0002005B, (u32)point_disp_onoff, 0x00000001,
+    0x0005005B, (u32)get_value, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C, 0xFE363C8D, 0x0004005B, (u32)get_msg,
+    0xFE363C8A, 0x00000000, 0xFE363C8E, 0x0002005B, (u32)(void*)evt_sub_get_language, 0xFE363C80, 0x00020019, 0xFE363C80,
+    0x00000000, 0x0007005B, (u32)(void*)evt_msg_print_insert, 0x00000000, 0xFE363C8E, 0x00000000, 0xFE363C89, 0xFE363C8D,
+    0xFE363C8B, 0x00000020, 0x0007005B, (u32)(void*)evt_msg_print_insert, 0x00000000, 0xFE363C8E, 0x00000000, 0xFE363C89,
+    0xFE363C8B, 0xFE363C8D, 0x00000021, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000018, 0xFE363C8E,
+    0x0003005B, (u32)(void*)evt_msg_select, 0x00000000, 0xFE363C8E, 0x00020018, 0xFE363C80, 0x00000001, 0x0004005B,
+    (u32)get_msg, 0xFE363C8A, 0x00000016, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E,
+    0x0002005B, (u32)(void*)evt_win_coin_off, 0xFE363C88, 0x0002005B, (u32)point_disp_onoff, 0x00000000, 0x00000002, 0x00000021,
+    0x0002005B, (u32)(void*)evt_pouch_get_coin, 0xFE363C80, 0x0002001A, 0xFE363C80, 0xFE363C8D, 0x0004005B, (u32)get_msg,
+    0xFE363C8A, 0x00000001, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x0002005B,
+    (u32)(void*)evt_win_coin_off, 0xFE363C88, 0x0002005B, (u32)point_disp_onoff, 0x00000000, 0x00000002, 0x00000021, 0x0003005B,
+    (u32)(void*)evt_pouch_add_item, 0xFE363C8C, 0xFE363C80, 0x00020018, 0xFE363C80, 0xFFFFFFFF, 0x0004005B, (u32)get_msg,
+    0xFE363C8A, 0x00000002, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x0002005B,
+    (u32)(void*)evt_win_coin_off, 0xFE363C88, 0x0002005B, (u32)point_disp_onoff, 0x00000000, 0x00000002, 0x00000021, 0x0002005B,
+    (u32)set_buy_item_id, 0xFE363C8C, 0x0003005B, (u32)(void*)evt_sub_load_progresstime, 0xF5DE0185, 0xFE363C80, 0x0003005B, (u32)(void*)evt_sub_load_progresstime,
+    0xF5DE018E, 0xFE363C81, 0x0003005B, (u32)(void*)evt_sub_load_progresstime, 0xF5DE0197, 0xFE363C82, 0x0005005B, (u32)add_shop_point,
+    0x00000001, 0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020037, 0xFE363C8D, 0xFFFFFFFF, 0x0002005B,
+    (u32)(void*)evt_pouch_add_coin, 0xFE363C8D, 0x0002005B, (u32)(void*)evt_win_coin_wait, 0xFE363C88, 0x0001005B, (u32)point_wait, 0x0001000A,
+    0x000000C8, 0x0002005B, (u32)(void*)evt_win_coin_off, 0xFE363C88, 0x0002005B, (u32)point_disp_onoff, 0x00000000, 0x0001005B,
+    (u32)(void*)evt_msg_continue, 0x0002005B, (u32)(void*)evt_sub_get_system_flag, 0xFE363C80, 0x0002001F, 0xFE363C80, 0x00001000, 0x00020018,
+    0xF8405C6B, 0x00000000, 0x00020032, 0xF8405C6B, 0x00000001, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000,
+    (u32)(void*)str_802ECD50, 0x00000000, 0x00000000, 0x00000021, 0x00000021, 0x00010005, 0x00000000, 0x0004005B,
+    (u32)chk_shop_point, 0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020018, 0xFE363C80, 0xFFFFFFFF, 0x00010004,
+    0x0000007B, 0x00000002, 0x00000021, 0x00020032, 0xFBD3E280, 0x00000000, 0x0002005B, (u32)get_shop_point,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x0000012C, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x0000001A,
+    0xFE363C8E, 0x0006005B, (u32)(void*)evt_msg_print_insert, 0x00000000, 0xFE363C8E, 0x00000000, 0xFE363C89, 0xFE363C82,
+    0x00000020, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000022, 0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print,
+    0x00000000, 0xFE363C8E, 0x00000000, 0xFE363C89, 0x0003005B, (u32)(void*)evt_win_coin_on, 0x00000000, 0xFE363C88,
+    0x0002005B, (u32)point_disp_onoff, 0x00000001, 0x0001005B, (u32)reset_shop_point, 0x0002005B, (u32)(void*)evt_win_coin_wait, 0xFE363C88,
+    0x0001005B, (u32)point_wait, 0x0001000A, 0x000001F4, 0x0002005B, (u32)(void*)evt_win_coin_off, 0xFE363C88, 0x0002005B,
+    (u32)point_disp_onoff, 0x00000000, 0x00020032, 0xFBD3E280, 0x00000001, 0x00000021, 0x0003005B, (u32)(void*)evt_pouch_add_item,
+    0xFE363C81, 0xFE363C80, 0x00020018, 0xFE363C80, 0xFFFFFFFF, 0x0004005B, (u32)get_msg, 0xFE363C8A,
+    0x0000001B, 0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, 0xFE363C89,
+    0x00020018, 0xFBD3E280, 0x00000001, 0x00020032, 0xF8405B81, 0x00000001, 0x00000021, 0x00010004,
+    0x0000007B, 0x00000002, 0x00000021, 0x0001005B, (u32)exchange_shop_point, 0x00000006, 0x00010003, 0x0000007B,
+    0x0002005B, (u32)get_buy_evt, 0xFE363C81, 0x00020019, 0xFE363C81, 0x00000000, 0x00020032, 0xFE363C80,
+    0xFE363C8C, 0x0001005E, 0xFE363C81, 0x00000021, 0x00000002, 0x00000001,
+};
+
+u32 shopper_talk_evt[352] = {
+    0x0002005B, (u32)(void*)evt_mario_key_onoff, 0x00000000, 0x0002005B, (u32)get_ptr, 0xFE363C8A, 0x00020032, 0xFBD3E28A,
+    0x00000000, 0x0002005B, (u32)get_fook_evt, 0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000, 0x0001005E,
+    0xFE363C80, 0x00020018, 0xFE363C80, 0xFFFFFFFF, 0x0002005B, (u32)(void*)evt_mario_key_onoff, 0x00000001, 0x00000002,
+    0x00000021, 0x00020018, 0xFE363C80, 0xFFFFFF9C, 0x00020032, 0xFBD3E28A, 0x00000001, 0x00000021,
+    0x00000021, 0x00020018, 0xF8405B80, 0x00000000, 0x00020032, 0xF8405B80, 0x00000001, 0x0001005E,
+    (u32)(void*)first_shopping_evt, 0x0002005B, (u32)(void*)evt_mario_key_onoff, 0x00000001, 0x00000002, 0x00000021, 0x00020032, 0xFBD3E280,
+    0x00000000, 0x00010005, 0x00000000, 0x0004005B, (u32)chk_shop_point, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00020018, 0xF8405B81, 0x00000001, 0x00020032, 0xFE363C80, 0x00000000, 0x0004005B, (u32)shop_point_item,
+    0x0000012C, 0xFE363C81, 0xFE363C82, 0x00000021, 0x00020018, 0xFE363C80, 0xFFFFFFFF, 0x00020018,
+    0xFBD3E280, 0x00000001, 0x0002005B, (u32)(void*)evt_mario_key_onoff, 0x00000001, 0x00000002, 0x00000021, 0x00020032,
+    0xFBD3E28B, 0x00000000, 0x0002005B, (u32)(void*)evt_sub_get_mapname, 0xFE363C80, 0x0002000C, 0xFE363C80, (u32)(void*)str_802ECD60,
+    0x00020018, 0xF8405C7A, 0x00000001, 0x0003005B, (u32)(void*)evt_sub_load_progresstime, 0xF5DE0185, 0xFE363C80, 0x0002001A,
+    0xFE363C80, 0x000DBBA0, 0x00020032, 0xFE363C8E, (u32)(void*)str_802ECD68, 0x00020032, 0xFBD3E28B, 0x00000001,
+    0x00000021, 0x00000021, 0x00000021, 0x0002005B, (u32)(void*)evt_sub_get_mapname, 0xFE363C80, 0x0002000C, 0xFE363C80,
+    (u32)(void*)str_802ECD78, 0x00020018, 0xF8405C7B, 0x00000001, 0x0003005B, (u32)(void*)evt_sub_load_progresstime, 0xF5DE018E, 0xFE363C80,
+    0x0002001A, 0xFE363C80, 0x000DBBA0, 0x00020032, 0xFE363C8E, (u32)(void*)str_802ECD80, 0x00020032, 0xFBD3E28B,
+    0x00000001, 0x00000021, 0x00000021, 0x00000021, 0x00020032, 0xFBD3E28C, 0x00000000, 0x0002005B,
+    (u32)(void*)evt_sub_get_mapname, 0xFE363C80, 0x0002000C, 0xFE363C80, (u32)(void*)str_802ECD94, 0x00020032, 0xFBD3E28C, 0x00000001,
+    0x00000021, 0x0002000C, 0xFE363C80, (u32)(void*)str_802ECDA0, 0x00020032, 0xFBD3E28C, 0x00000001, 0x00000021,
+    0x0002000C, 0xFE363C80, (u32)(void*)str_802ECDAC, 0x00020032, 0xFBD3E28C, 0x00000001, 0x00000021, 0x00020018,
+    0xFBD3E28C, 0x00000001, 0x00020018, 0xF8405C7C, 0x00000001, 0x0003005B, (u32)(void*)evt_sub_load_progresstime, 0xF5DE0197,
+    0xFE363C80, 0x0002001A, 0xFE363C80, 0x000DBBA0, 0x00020032, 0xFE363C8E, (u32)(void*)str_802ECDB8, 0x00020032,
+    0xFBD3E28B, 0x00000001, 0x00000021, 0x00000021, 0x00000021, 0x00020018, 0xFBD3E28B, 0x00000000,
+    0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000004, 0xFE363C8E, 0x00000021, 0x00020018, 0xFBD3E28A,
+    0x00000000, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, 0x00000000, 0x00000020,
+    0x00020032, 0xFBD3E28A, 0x00000000, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000001, (u32)(void*)str_802ECDC8, 0x0003005B,
+    (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000021, 0x00000007, 0x00000021, 0x0003005B, (u32)(void*)evt_pouch_add_item,
+    0xFE363C81, 0xFE363C80, 0x00020018, 0xFE363C80, 0xFFFFFFFF, 0x0004005B, (u32)get_msg, 0xFE363C8A,
+    0x0000001D, 0xFE363C8E, 0x00020018, 0xFBD3E28A, 0x00000000, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000,
+    0xFE363C8E, 0x00000000, 0x00000000, 0x00000020, 0x00020032, 0xFBD3E28A, 0x00000000, 0x0003005B,
+    (u32)(void*)evt_msg_print_add, 0x00000001, (u32)(void*)str_802ECDC8, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000021,
+    0x00000007, 0x00000021, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x0000001C, 0xFE363C8E, 0x00020018,
+    0xFBD3E28A, 0x00000000, 0x0006005B, (u32)(void*)evt_msg_print_insert, 0x00000000, 0xFE363C8E, 0x00000000, 0x00000000,
+    0xFE363C82, 0x00000020, 0x00020032, 0xFBD3E28A, 0x00000000, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000001,
+    (u32)(void*)str_802ECDC8, 0x0004005B, (u32)(void*)evt_msg_print_add_insert, 0x00000000, 0xFE363C8E, 0xFE363C82, 0x00000021, 0x00020018,
+    0xF8405B81, 0x00000000, 0x0001005B, (u32)exchange_shop_point, 0x00000021, 0x00020032, 0xFBD3E280, 0x00000001,
+    0x00020018, 0xF8405B81, 0x00000001, 0x00020032, 0xF8405B81, 0x00000000, 0x00000021, 0x00000006,
+    0x0003005B, (u32)shop_flag_onoff, 0x00000001, 0x00004000, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000017,
+    0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_select, 0x00000000, 0xFE363C8E, 0x0003005B, (u32)shop_flag_onoff, 0x00000000,
+    0x00004000, 0x00010022, 0xFE363C80, 0x00010024, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A,
+    0x00000005, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00010024, 0x00000001,
+    0x0001005E, (u32)(void*)sell_evt, 0x00010024, 0x00000002, 0x0001005E, (u32)(void*)keep_evt, 0x00010024, 0x00000003,
+    0x0001005E, (u32)(void*)unkeep_evt, 0x00010024, 0x00000004, 0x0001005E, (u32)(void*)point_evt, 0x00010024, 0x00000005,
+    0x0001005B, (u32)(void*)evt_msg_continue, 0x00000031, 0x0002005B, (u32)(void*)evt_mario_key_onoff, 0x00000001, 0x00000002, 0x00000001,
+};
+
+u32 first_shopping_evt[86] = {
+    0x0002005B, (u32)shopper_name, 0xFE363C89, 0x0003005B, (u32)(void*)evt_set_dir_to_target, 0xFE363C89, (u32)(void*)str_8041BC10, 0x0002005B,
+    (u32)(void*)evt_mario_set_dir_npc, 0xFE363C89, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x0000001E, 0xFE363C8E, 0x00020018,
+    0xFBD3E28A, 0x00000000, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, 0xFE363C89,
+    0x00000020, 0x00020032, 0xFBD3E28A, 0x00000000, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000001, (u32)(void*)str_802ECDC8,
+    0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000021, 0x00010005, 0x00000000, 0x0004005B,
+    (u32)get_msg, 0xFE363C8A, 0x0000001F, 0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E,
+    0x00000000, 0xFE363C89, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000018, 0xFE363C8E, 0x0003005B,
+    (u32)(void*)evt_msg_select, 0x00000000, 0xFE363C8E, 0x00020018, 0xFE363C80, 0x00000000, 0x0004005B, (u32)get_msg,
+    0xFE363C8A, 0x00000020, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000020,
+    0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000021, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000,
+    0xFE363C8E, 0x00000002, 0x00000021, 0x00000006, 0x00000002, 0x00000001,
+};
+
+static u32 sell_evt[196] = {
+    0x0001005B, (u32)sell_pouchcheck_func, 0x00020018, 0xFE363C80, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A,
+    0x00000006, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000002, 0x00000021,
+    0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000007, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000,
+    0xFE363C8E, 0x0003005B, (u32)(void*)evt_win_coin_on, 0x00000000, 0xFE363C88, 0x00010003, 0x00000000, 0x0001005B,
+    (u32)item_data_db_arrange, 0x0005005B, (u32)(void*)evt_win_item_select, 0x00000001, 0x00000003, 0xFE363C81, 0xFE363C84, 0x0001005B,
+    (u32)item_data_db_restore, 0x0002001C, 0xFE363C81, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000016,
+    0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0x0002005B,
+    (u32)(void*)evt_win_coin_off, 0xFE363C88, 0x00000002, 0x00000021, 0x0001005B, (u32)item_data_db_arrange, 0x0004005B, (u32)name_price,
+    0xFE363C81, 0xFE363C82, 0xFE363C83, 0x0001005B, (u32)item_data_db_restore, 0x0004005B, (u32)get_msg, 0xFE363C8A,
+    0x00000008, 0xFE363C8E, 0x0002005B, (u32)(void*)evt_sub_get_language, 0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0007005B, (u32)(void*)evt_msg_print_insert, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0xFE363C83, 0xFE363C82,
+    0x00000020, 0x0007005B, (u32)(void*)evt_msg_print_insert, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0xFE363C82,
+    0xFE363C83, 0x00000021, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000018, 0xFE363C8E, 0x0003005B,
+    (u32)(void*)evt_msg_select, 0x00000000, 0xFE363C8E, 0x00020018, 0xFE363C80, 0x00000001, 0x0004005B, (u32)get_msg,
+    0xFE363C8A, 0x00000009, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00010004,
+    0x00000000, 0x00000021, 0x0004005B, (u32)(void*)N_evt_pouch_remove_item_index, 0xFE363C81, 0xFE363C84, 0xFE363C80, 0x0002005B,
+    (u32)(void*)evt_pouch_add_coin, 0xFE363C83, 0x0002005B, (u32)(void*)evt_win_coin_wait, 0xFE363C88, 0x0001000A, 0x000000C8, 0x0002005B,
+    (u32)(void*)evt_win_coin_off, 0xFE363C88, 0x0001005B, (u32)sell_pouchcheck_func, 0x00020018, 0xFE363C80, 0x00000000, 0x0004005B,
+    (u32)get_msg, 0xFE363C8A, 0x0000000B, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E,
+    0x00000002, 0x00000021, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x0000000A, 0xFE363C8E, 0x0003005B,
+    (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000018, 0xFE363C8E,
+    0x0003005B, (u32)(void*)evt_msg_select, 0x00000000, 0xFE363C8E, 0x00020018, 0xFE363C80, 0x00000001, 0x0004005B,
+    (u32)get_msg, 0xFE363C8A, 0x00000016, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E,
+    0x00000002, 0x00000021, 0x0001005B, (u32)(void*)evt_msg_continue, 0x0003005B, (u32)(void*)evt_win_coin_on, 0x00000000, 0xFE363C88,
+    0x00010004, 0x00000000, 0x00000002, 0x00000001,
+};
+
+static u32 keep_evt[148] = {
+    0x0001005B, (u32)keep_pouchcheck_func, 0x00020018, 0xFE363C80, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A,
+    0x0000000C, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000002, 0x00000021,
+    0x00020018, 0xFE363C81, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x0000000D, 0xFE363C8E,
+    0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000002, 0x00000021, 0x0004005B, (u32)get_msg,
+    0xFE363C8A, 0x0000000E, 0xFE363C8E, 0x0004005B, (u32)(void*)evt_msg_print_add_insert, 0x00000000, 0xFE363C8E, 0xFE363C81,
+    0x00010003, 0x00000000, 0x0005005B, (u32)(void*)evt_win_item_select, 0x00000001, 0x00000004, 0xFE363C81, 0xFE363C84,
+    0x0002001C, 0xFE363C81, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000016, 0xFE363C8E,
+    0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0x00000002, 0x00000021,
+    0x0004005B, (u32)(void*)N_evt_pouch_remove_item_index, 0xFE363C81, 0xFE363C84, 0xFE363C80, 0x0003005B, (u32)(void*)evt_pouch_add_keepitem, 0xFE363C81,
+    0xFE363C80, 0x0001005B, (u32)keep_pouchcheck_func, 0x00020032, 0xFBD3E280, 0x00000000, 0x00020018, 0xFE363C80,
+    0x00000000, 0x00020032, 0xFBD3E280, 0x00000001, 0x00000021, 0x00020018, 0xFE363C81, 0x00000000,
+    0x00020032, 0xFBD3E280, 0x00000001, 0x00000021, 0x00020018, 0xFBD3E280, 0x00000001, 0x0004005B,
+    (u32)get_msg, 0xFE363C8A, 0x0000000F, 0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E,
+    0x00000000, (u32)(void*)str_8041BC18, 0x00000002, 0x00000021, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000010,
+    0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0x0004005B,
+    (u32)get_msg, 0xFE363C8A, 0x00000018, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_select, 0x00000000, 0xFE363C8E,
+    0x00020018, 0xFE363C80, 0x00000001, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000016, 0xFE363C8E,
+    0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000002, 0x00000021, 0x0001005B, (u32)(void*)evt_msg_continue,
+    0x00010004, 0x00000000, 0x00000002, 0x00000001,
+};
+
+static u32 unkeep_evt[147] = {
+    0x0001005B, (u32)unkeep_pouchcheck_func, 0x00020018, 0xFE363C80, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A,
+    0x00000011, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000002, 0x00000021,
+    0x00020018, 0xFE363C81, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000012, 0xFE363C8E,
+    0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000002, 0x00000021, 0x0004005B, (u32)get_msg,
+    0xFE363C8A, 0x00000013, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00010003,
+    0x00000000, 0x0005005B, (u32)(void*)evt_win_item_select, 0x00000001, 0x00000005, 0xFE363C81, 0xFE363C84, 0x0002001C,
+    0xFE363C81, 0x00000000, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000016, 0xFE363C8E, 0x0005005B,
+    (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0x00000002, 0x00000021, 0x0004005B,
+    (u32)(void*)evt_pouch_remove_keepitem, 0xFE363C81, 0xFE363C84, 0xFE363C80, 0x0003005B, (u32)(void*)evt_pouch_add_item, 0xFE363C81, 0xFE363C80,
+    0x0001005B, (u32)unkeep_pouchcheck_func, 0x00020032, 0xFBD3E280, 0x00000000, 0x00020018, 0xFE363C80, 0x00000000,
+    0x00020032, 0xFBD3E280, 0x00000001, 0x00000021, 0x00020018, 0xFE363C81, 0x00000000, 0x00020032,
+    0xFBD3E280, 0x00000001, 0x00000021, 0x00020018, 0xFBD3E280, 0x00000001, 0x0004005B, (u32)get_msg,
+    0xFE363C8A, 0x00000014, 0xFE363C8E, 0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000,
+    (u32)(void*)str_8041BC18, 0x00000002, 0x00000021, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000015, 0xFE363C8E,
+    0x0005005B, (u32)(void*)evt_msg_print, 0x00000000, 0xFE363C8E, 0x00000000, (u32)(void*)str_8041BC18, 0x0004005B, (u32)get_msg,
+    0xFE363C8A, 0x00000018, 0xFE363C8E, 0x0003005B, (u32)(void*)evt_msg_select, 0x00000000, 0xFE363C8E, 0x00020018,
+    0xFE363C80, 0x00000001, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000016, 0xFE363C8E, 0x0003005B,
+    (u32)(void*)evt_msg_print_add, 0x00000000, 0xFE363C8E, 0x00000002, 0x00000021, 0x0001005B, (u32)(void*)evt_msg_continue, 0x00010004,
+    0x00000000, 0x00000002, 0x00000001,
+};
+
+static u32 point_evt[15] = {
+    0x0002005B, (u32)get_shop_point, 0xFE363C80, 0x0004005B, (u32)get_msg, 0xFE363C8A, 0x00000019, 0xFE363C8E,
+    0x0004005B, (u32)(void*)evt_msg_print_add_insert, 0x00000000, 0xFE363C8E, 0xFE363C80, 0x00000002, 0x00000001,
+};
+
+// .sdata
+u32 evt_shoplist[10] = {
+    0x0002005B, (u32)(void*)evt_mario_key_onoff, 0x00000000, 0x0001005B, (u32)disp_list, 0x0002005B, (u32)(void*)evt_mario_key_onoff, 0x00000001,
+    0x00000002, 0x00000001,
+};
+
+u32 main_evt[4] = {
+    0x0001005B, (u32)evt_shop_main_func, 0x00000002, 0x00000001,
+};
+
+
+// Pools the unsigned int->float conversion double (2^52) here, before the deferred
+// functions emit theirs, so the two doubles in .rodata come out mask-then-int like the
+// original. Nothing calls it; the linker strips the body.
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static f32 pool_i2f_mask(u32 v) { return (f32)v; }
+#pragma defer_codegen reset
+#endif
+

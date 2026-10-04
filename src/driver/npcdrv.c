@@ -1185,11 +1185,18 @@ extern const f32 float_360_80419be0;
 #endif
 #define ENC(p, T, off) (*(T*)((u8*)(p) + (off)))
 
-// NONMATCHING (96.19%): same 57 calls and immediates. Remaining: the first/second switch decision trees (the
-// original's root compares 0x100000, i.e. one case value fewer is in play than the eight listed here), the
-// FieldBattleData* register colouring (r26 vs r28) and a few commuted fadds/fmadds operands.
+// Same 57 calls and immediates; no structural difference. The three decision trees match (the first switch carries the empty case 0x10000 the
+// original probes; the side scan is a `switch` on `blocked`), `wk` is the ternary form, the OffChk pair is one
+// `||` test, the first reviseAngle result uses its own local, and `h180` keeps the blocked-loop threshold in
+// the target's f29 (an inline constant put the whole talk-loop FPR set one register low). The `s32 i; s32
+// total;` pair sits right after `NpcWork* wk;` as in the sibling loops. Remaining: the register holding
+// `total` is r26 vs the target's r27 and the first hit block's base r27 vs r26 (which pulls the second block's
+// fb to r26 vs r25); a handful of scratch FPRs in the first block's angle wrap and the dx/dz load slot.
+// NONMATCHING (99.51%): a few callee-saved and scratch registers only.
 void fbatEncountCheck(void) {
     NpcWork* wk;
+    s32 i;
+    s32 total;
     NpcEntry* npc;
     NpcEntry* best;
     NpcEntry* hit;
@@ -1206,18 +1213,15 @@ void fbatEncountCheck(void) {
     f32 dx;
     f32 dz;
     f32 d;
+    f32 diff;
+    f32 h180;
     f32 hitX, hitY, hitZ, hitNX, hitNY, hitNZ;
     f32 vec[3];
-    s32 total;
-    s32 i;
     s32 side;
     s32 found;
     s32 blocked;
 
-    wk = &work.field;
-    if (gp->inBattle != 0) {
-        wk = &work.battle;
-    }
+    wk = gp->inBattle != 0 ? &work.battle : &work.field;
     total = wk->total;
     mario = marioGetPtr();
     wk->field_0x10 = NULL;
@@ -1225,10 +1229,7 @@ void fbatEncountCheck(void) {
         return;
     }
     if (!(wk->flags & 1)) {
-        if (marioKeyOffChk() != 0) {
-            return;
-        }
-        if (marioCtrlOffChk() != 0) {
+        if (marioKeyOffChk() != 0 || marioCtrlOffChk() != 0) {
             return;
         }
     }
@@ -1277,18 +1278,27 @@ void fbatEncountCheck(void) {
                         animPoseSetAnim(hit->poseId, ENC(hit->tribe, const char*, 0x20), 1);
                     }
                     break;
+                case 0x10000:
+                    break;
             }
             pose = animPoseGetAnimPosePtr(hit->poseId);
             ENC(hit, f32, 0x148) = hit->direction;
             hit->direction = angleABf(hit->position.x, hit->position.z, mario->position.x, mario->position.z);
+#ifdef MUST_MATCH
+            {
+                f32 r0 = reviseAngle(-hit->direction);
+                rel = r0 + float_neg90_80419bd8;
+            }
+#else
             rel = reviseAngle(-hit->direction) + float_neg90_80419bd8;
+#endif
             cam = camGetPtr(CAMERA_3D);
             camAngle = reviseAngle(NPC_RAD2DEG((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
             if (camAngle < float_0_80419b9c) {
                 camAngle += float_360_80419be0;
             }
-            d = reviseAngle(camAngle - rel);
-            if ((d > float_90_80419bd0 && d <= float_270_80419be4) || (d < float_neg90_80419bd8 && d >= float_neg270_80419be8)) {
+            diff = reviseAngle(camAngle - rel);
+            if ((diff > float_90_80419bd0 && diff <= float_270_80419be4) || (diff < float_neg90_80419bd8 && diff >= float_neg270_80419be8)) {
                 cam = camGetPtr(CAMERA_3D);
                 camAngle = reviseAngle(NPC_RAD2DEG((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
                 if (camAngle < float_0_80419b9c) {
@@ -1341,7 +1351,7 @@ void fbatEncountCheck(void) {
                     break;
                 case 0x10000000:
                     psndSFXOn_3D(FBAT_SFX_MARIO, &mario->position);
-                    return;
+                    break;
             }
         }
         return;
@@ -1349,8 +1359,9 @@ void fbatEncountCheck(void) {
     nearest = float_1000_80419bc8;
     if (marioChkTalkable() != 0 && *(s8*)((u8*)mario + 0x39) == 0) {
         npc = wk->entries;
+        i = 0;
         best = NULL;
-        for (i = 0; i < total; i++, npc++) {
+        for (; i < total; i++, npc++) {
             if ((npc->flags & 2) && !(npc->flags & 8) && ENC(npc, u32, 0x128) != 0) {
                 found = 0;
                 if (!(npc->position.y > mario->position.y + mario->wPlayerCollisionBox.y) &&
@@ -1365,22 +1376,27 @@ void fbatEncountCheck(void) {
                     side = 0;
                     camAngle = camGetPtr(CAMERA_3D)->viewYaw;
                     rel = reviseAngle(marioGetDispDir() - camAngle);
+                    h180 = float_180_80419bec;
                     for (blocked = 0; blocked < 3; blocked++) {
                         f32 ang;
 
-                        if (blocked == 0) {
-                            ang = reviseAngle(angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
-                        } else if (blocked == 1) {
-                            ang = reviseAngle(angleABf(mario->position.x, mario->position.z, float_0p5_80419ba0 * npc->width + npc->position.x, npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
-                        } else {
-                            ang = reviseAngle(angleABf(mario->position.x, mario->position.z, -(float_0p5_80419ba0 * npc->width - npc->position.x), npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
+                        switch (blocked) {
+                            case 0:
+                                ang = reviseAngle(angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
+                                break;
+                            case 1:
+                                ang = reviseAngle(angleABf(mario->position.x, mario->position.z, float_0p5_80419ba0 * npc->width + npc->position.x, npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
+                                break;
+                            default:
+                                ang = reviseAngle(angleABf(mario->position.x, mario->position.z, -(float_0p5_80419ba0 * npc->width - npc->position.x), npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
+                                break;
                         }
-                        if (ang < float_180_80419bec) {
-                            if (!(rel > float_180_80419bec)) {
+                        if (ang < h180) {
+                            if (!(rel > h180)) {
                                 side = 1;
                                 break;
                             }
-                        } else if (!(rel < float_180_80419bec)) {
+                        } else if (!(rel < h180)) {
                             side = 1;
                             break;
                         }
@@ -1447,13 +1463,16 @@ void fbatEncountCheck(void) {
     if (fb->mode == 1) {
         hit = (NpcEntry*)fbatHitCheck(0x2361, (s32)((u8*)fb + 0x10));
         if (hit != NULL && fb->mode == 1) {
-            FieldBattleData* fb2 = gp->fbatData;
+            s32 fval;
+            FieldBattleData* fb2;
 
+            fval = ENC(fb, s32, 0x10);
+            fb2 = gp->fbatData;
             if (fb2->mode == 1) {
                 fb2->mode = 3;
                 *(s8*)((u8*)fb2 + 2) = 0;
                 *(NpcEntry**)((u8*)fb2 + 4) = hit;
-                ENC(hit, s32, 0x318) = ENC(fb, s32, 0x10);
+                ENC(hit, s32, 0x318) = fval;
             }
             switch (ENC(fb, s32, 0x10)) {
                 case 0x40000:
