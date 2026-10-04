@@ -295,6 +295,13 @@ macOS; needs gdb, cmake, Rust; the clones live in `$MWCCDBG_HOME`, default `~/mw
     git clone https://github.com/encounter/retrowin32 ~/mwccdbg/retrowin32 && cd ~/mwccdbg/retrowin32 && git checkout gdb-stub
     cargo build -p retrowin32 -F x86-unicorn --profile lto                    # about 3 minutes; use nice on a shared machine
 
+**Scheduling-only differences** (same instructions, same registers, a different order inside a block): `tools/sched750.py`
+(tw2004, CC0) replays MWCC 2.6's list scheduler on a dump. `python3 tools/sched750.py predict build/mwccdbg/FUNC B23` prints the model's
+first-pass and last-pass order for block B23 next to the compiler's real one (`validate DIR...` reproduces 94.7% of 3263 integer-only blocks
+across our dumps), and `deadsearch DIR BLOCK target.txt` finds a dead value or extra copy that gives the original's order (confirm with a
+build). Floating-point ops, calls and record forms are not modelled: a block containing an `fmuls` raises KeyError (eff_kiss's effKissDisp
+block B25 and eff_kemutest's FP block are of this kind). Extending it needs the FPU rows of the timing table at 0x5d2c98 in mwcceppc.exe.
+
 The tool needs the repo's build.ninja and `build/G8MJ01/obj` (the original objects); a function's dump is for the source as it is in the
 tree (`--src copy.c` compiles a scratch copy with the unit's flags).
 
