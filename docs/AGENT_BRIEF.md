@@ -110,6 +110,11 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    rest of the machine. The merge lists everything you fetched.
    The MIT/CC0 reference decomps are already on disk, read-only, at ~/ttyd-refs/<project> (ac-decomp, spm-decomp, tp,
    tww, musyx; ~/ttyd-refs/README.md has the commits and licenses): read them there, do not clone them again.
+   Do not read, list or search outside this directory and ~/ttyd-refs (no `find /`, no `ls ~/ttyd-agents`, no other
+   agents' workspaces or bases), and do not fetch from projects without a CC0 or MIT LICENSE file, or from compiler
+   sources: the merge rejects results built on them.
+   **Never kill processes by name** (`pkill -f mwcceppc`, `killall`): stop only what you started, by its own PID
+   (`kill $!`). A stuck compile is stopped for you by the launcher's timeout.
 
 17. **The other wrong code reviews keep finding** in partly matched functions (waves 13-14; add to 9-11). Before
    you stop, go back over your partial functions for these, each checked against the asm:
