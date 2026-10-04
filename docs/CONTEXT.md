@@ -4500,3 +4500,21 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   relocations no longer pair, and `debug$2303` became a file-scope `debug`), fadedrv's link task (.sdata 100 -> 6),
   evt_yuunpc (.data 95.7 -> 81.8), eff_pokopi_thunder_n64 (.rodata 97.8 -> 93.0), animdrv (.sdata2 27.2 -> 24.1),
   win_item (.rodata 99.94 -> 99.92).
+- **Wave 73** (12:53, base on main): the audit arm from tools/imm_value_scan.py (#399), one agent per unit with its
+  flagged rows in the hint (scratch/wave73/mkspec.py drops units whose only hits are a swapped pair), each to fix a
+  flagged immediate only if the function's score rises; plus sac_muki's `weapon` table as data prep. Launched at CAP
+  30 by mistake; Claude #1 asked for CAP 24 from the next launch on, leaving headroom for the permuter's REL queue.
+- **Wave 74** (13:26, base on main; Isaac's go-ahead via Claude #1): finish units one last function at a time from
+  scratch/last_function.txt. Arm L (oneshort into the link pass): the list's units whose data is already at 100%, each
+  with a dossier (the function's differing rows from tools/agent_check.py, its tools/classify.py bucket, a matched
+  sibling from tools/sibling_fns.py when one has sim >= 0.6, earlier agents' notes). Arm D: data prep for the rest,
+  never-ported units first; each goes to arm L once its data merges. The arms are disjoint, since two agents on one
+  file would each return the whole file. Skipped: eff_fire and fadedrv (Codex), fontmgr (Claude #1), the units Claude
+  #3 or the permuter hold. Rule from Isaac: a unit that fails twice goes to Codex, not a third Claude attempt.
+- **Batch 13:** gor_00 linked (wave 74 arm L); marioCheckMenuDisable to 100% (wave 73 audit: its two flagged `li r3`
+  rows were a block-layout swap, pinned with gotos under MUST_MATCH; the natural branch is the plain if/return);
+  bom_01's ext_init_minnnanokoe 90.63 -> 96.86 with the MUST_MATCH args alias replaced by plain C; partyRideMain 97.06
+  -> 97.13; data ports for evt_mobj, nameent and battle_seq_end; tou_02's audit row explained. The audits of
+  sac_zubastar and msgdrv found only misalignment and changed nothing. Rejected: win_mario (doesn't build without
+  MUST_MATCH, and the value gate caught two functions loading an ASCII "-" where the original has the full-width
+  Shift-JIS minus 0x817C), win_log (winLogInit 98.43 -> 98.43, a rounding-level drop).
