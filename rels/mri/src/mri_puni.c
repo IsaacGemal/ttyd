@@ -2657,10 +2657,20 @@ PuniData* puniSearchRandom(s32 start, s32 count) {
 PuniData* puniSearchRandom_Mikata(void) {
     s32 i;
     s32 idx;
+    s32 range;
+    PuniData* base;
     s32 r;
     PuniData* puni;
 
-    r = puniQrnd2(101);
+    range = 101;
+    Punigp->field_0x450 += Punigp->field_0x454 + 0x17340000 - 0x506F;
+    Punigp->field_0x454 += Punigp->field_0x450 + 0x21270000 + 0x3F9C;
+    r = Punigp->field_0x454;
+    if ((s32)(r ^ 0) < 0) {
+        r = -r;
+    }
+    r = r % range;
+    base = Punidat;
     idx = r + 1;
     i = 0;
     while (1) {
@@ -2670,12 +2680,15 @@ PuniData* puniSearchRandom_Mikata(void) {
         if (idx == 103) {
             idx = 1;
         }
-        puni = &Punidat[idx];
-        if ((puni->unk4 & 0x400) != 0 && (puni->unk4 & 0x4000) == 0) {
-            return puni;
+        puni = &base[idx];
+        {
+            s32 flag = puni->unk4;
+            if ((flag & 0x400) != 0 && (flag & 0x4000) == 0) {
+                return puni;
+            }
         }
-        i++;
         idx++;
+        i++;
     }
 }
 
@@ -2684,16 +2697,26 @@ void fn_19_A820(void) {
     (void)0;
 }
 
-// NONMATCHING (95.98%): the LCG/abs and the loop tail match; the loop counter/index
-// registers are still one lower than the target (target i=r5/idx=r4, ours i=r7/idx=r5).
+// NONMATCHING (97.61%): same shape as puniSearchRandom_Mikata; the same two diffs remain
+// (`subf r7` vs target `subf r3`/`addi r4,r3` and the extra trailing epilogue `blr`).
 PuniData* puniSearchRandom_Teki(void) {
-    PuniData* puni;
-    PuniData* base;
     s32 i;
     s32 idx;
+    s32 range;
+    PuniData* base;
+    s32 r;
+    PuniData* puni;
 
-    idx = puniQrnd2(99) + 110;
+    range = 99;
+    Punigp->field_0x450 += Punigp->field_0x454 + 0x17340000 - 0x506F;
+    Punigp->field_0x454 += Punigp->field_0x450 + 0x21270000 + 0x3F9C;
+    r = Punigp->field_0x454;
+    if ((s32)(r ^ 0) < 0) {
+        r = -r;
+    }
+    r = r % range;
     base = Punidat;
+    idx = r + 110;
     i = 0;
     while (1) {
         if (i == 100) {
@@ -2703,11 +2726,14 @@ PuniData* puniSearchRandom_Teki(void) {
             idx = 110;
         }
         puni = &base[idx];
-        if ((puni->unk4 & 0x400) && !(puni->unk4 & 0x4000)) {
-            return puni;
+        {
+            s32 flag = puni->unk4;
+            if ((flag & 0x400) != 0 && (flag & 0x4000) == 0) {
+                return puni;
+            }
         }
-        i++;
         idx++;
+        i++;
     }
 }
 
