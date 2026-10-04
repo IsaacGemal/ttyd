@@ -164,6 +164,12 @@ strings plain literals at their uses, add `#pragma pool_data on`, delete any `do
 (`--apply` does these), then use `--check` to order the literals. Nine of the eleven class-d units were of this kind; ac_signal_timing's
 actionCommandDisp went to 100% this way.
 
+**Classify a stuck pool.** `uv run --with pyelftools python3 tools/sdata2_diff.py UNIT [--literal]` compares our `.sdata2`/`.rodata`
+with the original's by value (names mean nothing: dtk names every stripped entry) and says IDENTICAL / PAD / ORDER / CONTENT; CONTENT
+lists EXTRA, MISSING and duplicate values with the functions that emit them, tagging `neg` (an EXTRA value whose negation the target
+holds: the original negates at runtime, we folded the literal) and `prod` (a MISSING value that is a product or quotient of two we
+hold). `--literal` builds with every float written as a literal first, so what remains is the real gap.
+
 **Conversion double before strings.** If the target's `.rodata` has an int->float double (`double_to_int_*`) ahead of a string that a
 deferred function pools, our build pools the double later, since a deferred unit emits functions in reverse source order and each
 function pools its strings before its own conversion double. Under `#ifdef MUST_MATCH` add an ordinary helper that is generated
