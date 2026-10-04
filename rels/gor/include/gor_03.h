@@ -142,3 +142,10 @@ EVT_DEF(debug_event_mode);
 EVT_DEF(monte_evt_door_close);
 EVT_DEF(monte_evt_door_entry);
 EVT_DEF(gor_03_init_evt);
+// Types of gor_03.c's named data tables.
+typedef struct {
+    f32 v[40];
+} GorFuwafuwaTable;
+typedef struct {
+    u32 v[3];
+} GorSlotIconTable;
