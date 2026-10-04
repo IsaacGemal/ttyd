@@ -4328,7 +4328,16 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   audit, collect or limits files at all. The audit flags a corrupted event log (an agent can append garbage to its
   own pipe through /proc). Slots are one pool for every key, so CAP and QUIET_CAP bound the tower's total. A failed
   reap skips the collect. The hard disk limit (ext4 project quotas or a loop image per workspace) needs sudo and is in
-  the proposal for Isaac. Agent slots are reserved under a flock on the host, shared by every
+  the proposal for Isaac. Round 5 simplified what round 4 added: du's exit status no longer counts (files vanish
+  mid-scan in any build); an unreadable directory is found with `find -type d ! -readable`. The floor no longer stops
+  the slice: the first watchdog to see it creates ~/ttyd-agents-slots/PAUSED (why.txt says what tripped), stops only
+  the scope holding the most deleted-but-open space (`tools/floor_stop.py`), and no launcher starts an agent or a
+  pass until a person removes PAUSED. Collect runs in its own slice. The reaper counts a scope as stopped only if
+  `is-active` says inactive or failed. Slots count active agent scopes, which agents can't create, not `pi`
+  processes. The host appends a marker after every pass, and the audit allows a garbled line only right before the
+  marker of a pass that timed out. The launcher writes LAUNCHED next to its results, so ALLOW_UNAUDITED (now
+  wave/tag) never admits a folder it made. Event and stderr caps cover the agent's whole run. Archive retention stays
+  with the existing prune cron. Agent slots are reserved under a flock on the host, shared by every
   launcher on the key; an unanswered count is no capacity. The prompt forbids background processes and copies
   outside the workspace ("if you want more parallelism, say so in REPORT.md and stop").
 - **Evidence that doesn't parse commands.** The launcher records containers and user units before and after each

@@ -84,13 +84,22 @@ class AgentAudit(unittest.TestCase):
                     "cd ~ && perl -pi -e 's/a/b/' .profile"]:
             self.assertIn("WRITE-OUTSIDE", kinds(ev("bash", command=cmd)), cmd)
         self.assertIn("ASSIGN-OUTSIDE", kinds(ev("bash", command='p=/home/isaac/x; touch "$p"')))
-        self.assertEqual(kinds(ev("bash", command=f"p={WS}/tmp/x; touch \"$p\"")), [])
+        self.assertEqual(kinds(ev("bash", command=f"p={WS}/tmp/x; touch \"$p\""),
+                               ev("bash", command="TTYD_BASE=~/ttyd python3 check.py a/b"),
+                               ev("bash", command="PATH=$HOME/.local/bin:$PATH python3 check.py a/b")), [])
 
     def test_corrupted_event_log(self):
         good = ev("bash", command="ls")
-        self.assertEqual(kinds(good, good, '{"type": "tool_exec'), [])  # a cut-off last line
+        marker = lambda rc: json.dumps({"type": "launcher_pass_end", "step": "run", "rc": rc})
+        # older logs (no markers): one cut-off last line is fine, anything else isn't
+        self.assertEqual(kinds(good, good, '{"type": "tool_exec'), [])
         self.assertIn("EVENTS-CORRUPT", kinds(good, '{"type": "tool_exec', good))
         self.assertIn("EVENTS-CORRUPT", kinds('garbage', good, 'more garbage'))
+        # with markers: only right before the marker of a timed-out pass
+        self.assertEqual(kinds(good, '{"type": "tool_exec', "", marker(124), good, marker(0)), [])
+        self.assertIn("EVENTS-CORRUPT", kinds(good, '{"type": "tool_exec', marker(0)))
+        self.assertIn("EVENTS-CORRUPT", kinds(good, 'garbage', good, marker(124)))
+        self.assertIn("EVENTS-CORRUPT", kinds(good, marker(0), '{"type": "tool_exec'))
 
     def test_running_tools_from_outside(self):
         self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="python3 ~/permuter/permuter.py tmp/perm")))

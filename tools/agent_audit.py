@@ -2,7 +2,7 @@
 """Flag an agent run's tool calls that reach outside its workspace, start processes meant to outlive it, or talk to
 host services.
 
-    python3 tools/agent_audit.py events.jsonl WORKSPACE        exit 1 if anything is flagged
+    python3 tools/agent_audit.py events.jsonl WORKSPACE [BASE]        exit 1 if anything is flagged
 
 Reads the agent's JSON event log (tool_execution_start events: bash commands, and read/write/edit paths) and lists:
   WRITE-OUTSIDE   a write, copy, move, mkdir, rm or redirect whose target is outside WORKSPACE (or a write/edit tool
@@ -11,8 +11,10 @@ Reads the agent's JSON event log (tool_execution_start events: bash commands, an
   BACKGROUND      nohup, setsid, disown, screen, tmux, at/batch/crontab, or a command backgrounded with `&`
   HOST-SERVICE    docker/podman/containerd, systemctl/systemd-run, D-Bus or X clients: ways past the sandbox
   SIGNAL          pkill/killall, `kill $(pgrep ...)`, `pgrep | xargs kill`, kill -1 or a negative pid
-  ASSIGN-OUTSIDE  a shell variable set to a path under /home outside WORKSPACE (a hint: it may be used to write)
-  EVENTS-CORRUPT  more than one unparseable line in the event log, or one that isn't the last
+  EVENTS-CORRUPT  an unparseable line in the event log, except one right before the launcher's marker for a pass that
+                  timed out (cut off mid-write); logs without markers (older launchers) may end in one such line
+  ASSIGN-OUTSIDE  a shell variable set to a path under /home outside WORKSPACE, BASE and the shared read-only paths
+                  (reported, not counted: a hint that it may be used to write)
   READ-OUTSIDE    a read of a path under /home, /root, /etc, /var, /opt, /srv, /mnt, /media or /run outside
                   WORKSPACE (reported, not counted: the sandbox allows reads of what it shows)
 Commands are followed into `bash -c`/`sh -c`/`eval` strings, `$(...)`, `find -exec`, `xargs`, shell heredocs, and
@@ -31,7 +33,7 @@ WRITE_CMDS = {"cp", "mv", "mkdir", "rm", "rmdir", "touch", "tee", "rsync", "ln",
 BG_CMDS = {"nohup", "setsid", "disown", "screen", "tmux", "at", "batch", "crontab", "daemonize", "start-stop-daemon"}
 SERVICE_CMDS = {"docker", "podman", "ctr", "nerdctl", "containerd", "dockerd", "systemctl", "systemd-run", "busctl",
                 "dbus-send", "gdbus", "dbus-monitor", "loginctl", "xdotool", "xdg-open", "xauth", "xinput", "xsel", "xclip"}
-SHELLS = {"bash", "sh", "zsh", "dash"}
+SHELLS = {"bash", "sh", "zsh", "dash", "ash", "ksh", "mksh", "busybox"}
 PYTHONS = re.compile(r"^python(\d+(\.\d+)?)?$")
 # words skipped in front of the real command (with how many arguments each takes, when known)
 PREFIX = {"do", "then", "else", "elif", "if", "while", "until", "{", "(", "!", "time", "sudo", "exec", "command",
@@ -39,6 +41,11 @@ PREFIX = {"do", "then", "else", "elif", "if", "while", "until", "{", "(", "!", "
 READ_ROOTS = ("/home/", "/root", "/etc/", "/var/", "/opt/", "/srv/", "/mnt/", "/media/", "/run/")
 # shared read-only parts of the checkout every workspace links to: running these is ordinary work
 SHARED = (HOME + "/ttyd/build/compilers/", HOME + "/ttyd/.venv/", HOME + "/ttyd/orig/")
+# what the sandbox mounts back read-only under ~ (tools/wave_launch.py HOME_RO, and the checkout itself): a variable
+# pointing there is ordinary setup (TTYD_BASE=~/ttyd, PATH=$HOME/.local/bin:$PATH)
+READONLY = SHARED + (HOME + "/ttyd/", HOME + "/.local/", HOME + "/.nvm/", HOME + "/ttyd-pylib/")
+NOT_COUNTED = ("READ-OUTSIDE", "ASSIGN-OUTSIDE")
+BASE = ""  # set by main() from the optional BASE argument: the agent's base checkout, read-only in the sandbox
 OPS = ["&&", "||", ";;", "|&", "\n", ";", "|", "&"]
 
 
@@ -262,8 +269,9 @@ def audit_shell(cmd, ws, cwd=None, depth=0):
         for w in raw:
             m = re.match(r"^(?:export\s+)?[A-Za-z_]\w*=(.+)$", w)
             if m and m.group(1).startswith(("/home/", "~/", "$HOME/", "${HOME}/")):
-                q = norm(m.group(1), cwd)
-                if outside(q, ws, cwd) and not (q + "/").startswith(SHARED):
+                q = norm(m.group(1).split(":")[0], cwd)
+                if outside(q, ws, cwd) and not (q + "/").startswith(READONLY) \
+                        and not (BASE and (q + "/").startswith(BASE.rstrip("/") + "/")):
                     flags.append(("ASSIGN-OUTSIDE", seg.strip()))
         if op == "&" and words:
             flags.append(("BACKGROUND", seg.strip()))
@@ -354,16 +362,20 @@ def audit(events, ws):
     ws = ws.rstrip("/")
     flags = []
     bad = []  # unparseable lines: the agent can append to its own log, so a garbled line may hide a command
-    last = 0
+    order = []  # non-blank lines in order: ("bad", n) or ("marker", rc) or ("ok", n)
     for n, line in enumerate(events, 1):
-        last = n
         if not line.strip():
             continue
         try:
             e = json.loads(line)
         except ValueError:
             bad.append(n)
+            order.append(("bad", n))
             continue
+        if isinstance(e, dict) and e.get("type") == "launcher_pass_end":
+            order.append(("marker", e.get("rc")))
+            continue
+        order.append(("ok", n))
         if not isinstance(e, dict) or e.get("type") != "tool_execution_start":
             continue
         tool, args = e.get("toolName"), e.get("args") or {}
@@ -388,25 +400,34 @@ def audit(events, ws):
         if "WRITE-OUTSIDE" in kinds and "READ-OUTSIDE" in kinds:
             kinds.remove("READ-OUTSIDE")
         flags += [(k, n, short) for k in kinds]
-    # one unparseable final line is a pass cut off mid-write; anything more is a corrupted log
-    if len(bad) > 1 or (bad and bad[0] != last):
-        flags.append(("EVENTS-CORRUPT", bad[0], f"{len(bad)} unparseable line(s) in the event log (first: {bad[0]})"))
+    if any(k == "marker" for k, _ in order):
+        # the launcher marks every pass's end; a pass killed by its timeout (124, or 137 after -k) may leave one
+        # half-written line right before its marker, and nothing else may be garbled
+        unexplained = [n for i, (k, n) in enumerate(order) if k == "bad"
+                       and not (i + 1 < len(order) and order[i + 1][0] == "marker" and order[i + 1][1] in (124, 137))]
+    else:
+        unexplained = bad if len(bad) > 1 or (bad and order[-1] != ("bad", bad[0])) else []
+    if unexplained:
+        flags.append(("EVENTS-CORRUPT", unexplained[0],
+                      f"{len(unexplained)} unparseable line(s) in the event log (first: line {unexplained[0]})"))
     return flags
 
 
 def main():
-    if len(sys.argv) != 3:
+    global BASE
+    if len(sys.argv) not in (3, 4):
         sys.exit(__doc__)
     ws = sys.argv[2].rstrip("/")
+    BASE = sys.argv[3] if len(sys.argv) == 4 else ""
     flags = audit(open(sys.argv[1], errors="replace"), ws)
-    bad = [f for f in flags if f[0] != "READ-OUTSIDE"]
+    bad = [f for f in flags if f[0] not in NOT_COUNTED]
     seen = set()
     for kind, n, what in flags:
         if (kind, what) in seen:
             continue
         seen.add((kind, what))
         print(f"{kind:13s} event {n}: {what}")
-    print(f"{len(bad)} flagged, {len(flags) - len(bad)} outside reads")
+    print(f"{len(bad)} flagged, {len(flags) - len(bad)} outside reads or hints")
     sys.exit(1 if bad else 0)
 
 

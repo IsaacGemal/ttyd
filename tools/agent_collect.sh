@@ -16,6 +16,7 @@
 set -u
 BASE=$1; WS=$2; OUT=$3; SRC=$4; MODE=${5:-}
 FAIL=0
+: > "$OUT/collect.txt"  # first: a collect killed from here on still leaves its trace (the gate refuses the folder)
 note() { echo "$*" >> "$OUT/collect.txt"; FAIL=1; }
 WS=$(realpath -e -- "$WS") && cd "$WS" || { note "workspace missing"; exit 5; }
 
@@ -48,7 +49,7 @@ grep -q '^diff failed' "$OUT/collect.txt" 2>/dev/null && FAIL=1
 
 python3 "$BASE/tools/provenance.py" "$OUT/events.jsonl" "$WS" > "$OUT/provenance.txt" 2>&1 \
   || { echo 'ERROR tools/provenance.py failed; check events.jsonl by hand' >> "$OUT/provenance.txt"; note "provenance failed"; }
-python3 "$BASE/tools/agent_audit.py" "$OUT/events.jsonl" "$WS" > "$OUT/audit.txt" 2>&1
+python3 "$BASE/tools/agent_audit.py" "$OUT/events.jsonl" "$WS" "$BASE" > "$OUT/audit.txt" 2>&1
 A=$?
 [ $A -ne 0 ] && exit $A
 [ $FAIL -ne 0 ] && exit 5

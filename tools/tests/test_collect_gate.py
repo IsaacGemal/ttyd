@@ -30,7 +30,8 @@ class Gate(unittest.TestCase):
 
     def test_clean_collect_passes(self):
         write_collect(self.d, {"final.c": "int x;\n", "other_changes.txt": ""})
-        open(os.path.join(self.d, "PROMPT.md"), "w").write("local")
+        for f in ("PROMPT.md", "LAUNCHED", "lint.txt", "proto_asm.txt"):  # written on this side
+            open(os.path.join(self.d, f), "w").write("local")
         self.assertIsNone(collect_gate.check(self.d))
 
     def test_changed_missing_or_extra_files_fail(self):
@@ -61,7 +62,13 @@ class Gate(unittest.TestCase):
             with mock.patch.dict(os.environ, {"ALLOW_UNAUDITED": v}):
                 self.assertIsNotNone(collect_gate.check(self.d), v)
         with mock.patch.dict(os.environ, {"ALLOW_UNAUDITED": "battle_x"}):
+            self.assertIsNotNone(collect_gate.check(self.d))  # the wave must be named too
+        wave_tag = os.path.basename(self.tmp.name) + "/battle_x"
+        with mock.patch.dict(os.environ, {"ALLOW_UNAUDITED": wave_tag}):
             self.assertIsNone(collect_gate.check(self.d))
+            open(os.path.join(self.d, "LAUNCHED"), "w").write("run")
+            self.assertIn("never collected", collect_gate.check(self.d))  # a killed collect isn't pre-audit
+            os.remove(os.path.join(self.d, "LAUNCHED"))
             open(os.path.join(self.d, "collect.txt"), "w").write("diff failed")
             self.assertIsNotNone(collect_gate.check(self.d))  # a failed collect is never waved through
 

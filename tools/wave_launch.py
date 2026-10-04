@@ -197,9 +197,9 @@ TASKS_MAX = os.environ.get("TASKS_MAX", "1024")
 # event and stderr pipes are cut at these sizes per pass (the largest event log so far was 85 MB)
 DISK_MB = int(os.environ.get("DISK_MB", 4096))
 DISK_INODES = int(os.environ.get("DISK_INODES", 500000))
-DISK_FLOOR_GB = int(os.environ.get("DISK_FLOOR_GB", 100))  # free space on the home filesystem every agent stops under
+DISK_FLOOR_GB = int(os.environ.get("DISK_FLOOR_GB", 100))  # free space on the home filesystem: under it, launches pause
 INODE_FLOOR = int(os.environ.get("INODE_FLOOR", 10_000_000))
-EVENTS_MAX = 512 * 2**20
+EVENTS_MAX = 512 * 2**20  # per agent, over all its passes
 STDERR_MAX = 64 * 2**20
 TAKE_MAX = "64m"  # largest file copied back from the output dir
 # every sandboxed step's scope name suffix: the reaper stops exactly these
@@ -228,6 +228,10 @@ def rsync(*args, timeout=600):
 
 
 SLOTS = "$HOME/ttyd-agents-slots"
+# Present while the disk floor has tripped: no launcher starts an agent or a pass until a person removes it (why.txt
+# inside says what tripped and which scope the watchdog stopped)
+PAUSED = f"{SLOTS}/PAUSED"
+COLLECT_SLICE = "ttyd-collect.slice"  # collect steps: outside the agents' slice, so nothing aimed at agents stops them
 SLOT_STALE_MIN = 360  # a slot file older than any agent's budget plus its finisher is a dead launcher's
 
 
@@ -243,14 +247,17 @@ def slot_file(tag):
 
 def reserve(tag):
     """Take one of the tower's agent slots, under a lock every launcher shares, so two launchers can't both see a free
-    slot. Running agents without a slot file (an older launcher's) count too. True if taken, False if full or the
-    host didn't answer (no answer is no capacity)."""
+    slot. Agents in progress count by their systemd scopes too. True if taken; False if full, paused (the disk floor)
+    or the host didn't answer (no answer is no capacity)."""
     d = slot_dir()
     try:
-        r = ssh(f"mkdir -p {d} && exec 8>{d}/.lock && flock -w 120 8 || exit 3; "
+        r = ssh(f"[ -e {PAUSED} ] && {{ echo PAUSED; exit 0; }}; "
+                f"mkdir -p {d} && exec 8>{d}/.lock && flock -w 120 8 || exit 3; "
                 f"find {d} -maxdepth 1 -type f -name '*.slot' -mmin +{SLOT_STALE_MIN} -delete; "
                 f"n=$(find {d} -maxdepth 1 -type f -name '*.slot' | wc -l); "
-                f"p=$(for p in $(pgrep -f 'pi --mode json'); do readlink /proc/$p/cwd; done | grep -E 'ttyd-agents/' | sort -u | wc -l); "
+                # agents in progress, counted by their scopes (an agent can't create one); a failed query is no capacity
+                f"u=$(systemctl --user list-units --plain --no-legend 'ttyd-*-run.scope' 'ttyd-*-cont?.scope' 'ttyd-*-finish.scope') || exit 3; "
+                f"p=$(printf '%s' \"$u\" | grep -c .); "
                 f"[ \"$p\" -gt \"$n\" ] && n=$p; "
                 f"if [ \"$n\" -lt {cap_now()} ]; then touch {slot_file(tag)} && echo TAKEN; else echo FULL; fi",
                 timeout=200, check=False)
@@ -308,7 +315,7 @@ def sandbox(tag, step, mode):
     env = {"HOME": "$HOME", "USER": "$USER", "LANG": "C.UTF-8", "TMPDIR": "/tmp", "TTYD_BASE": BASE,
            "PYTHONPATH": "$HOME/ttyd-pylib",
            "PATH": f"$HOME/.local/bin:$HOME/ttyd/.venv/bin:{NODE_BIN}:/usr/local/bin:/usr/bin:/bin"}
-    a = [f"systemd-run --user --scope --quiet --collect --unit={scope(tag, step)} --slice={SLICE}",
+    a = [f"systemd-run --user --scope --quiet --collect --unit={scope(tag, step)} --slice={SLICE if mode == 'agent' else COLLECT_SLICE}",
          f"-p CPUQuota={CPU_QUOTA} -p MemoryMax={MEM_MAX} -p MemoryHigh={MEM_HIGH} -p MemorySwapMax={SWAP_MAX}",
          f"-p TasksMax={TASKS_MAX}",
          "bwrap --die-with-parent --new-session --unshare-pid --unshare-ipc --unshare-uts --clearenv"]
@@ -336,58 +343,77 @@ def bind_check(tag, mode):
 
 
 def watchdog(tag, step):
-    """A host-side loop, started before a sandboxed step and killed after it, every 10 s:
-    - the agent's dirs (workspace, private, output) together over DISK_MB or DISK_INODES, or `du` failing on them
-      (an unreadable directory hides its size): notes it in the output dir's limits.txt and stops the step's scope;
-    - free space or inodes on the home filesystem under DISK_FLOOR_GB / INODE_FLOOR (catches deleted-but-open
-      files du can't see): notes it and stops the whole agents' slice.
-    run() reads limits.txt and starts no later step once it exists."""
+    """A host-side loop beside one sandboxed step, every 10 s, while the step's shell ($$) lives and its scope is active:
+    - the agent's dirs (workspace, private, output) over DISK_MB or DISK_INODES (du's sum; files vanishing mid-scan
+      are normal build churn), or a directory in them it can't read (it would hide its size): notes it in the
+      output dir's limits.txt and stops the step's scope;
+    - the home filesystem under DISK_FLOOR_GB / INODE_FLOOR: the first watchdog to see it creates PAUSED (no launcher
+      starts another agent or pass), stops only the scope holding the most deleted-but-open space
+      (tools/floor_stop.py), and says so in PAUSED/why.txt.
+    run() reads limits.txt and PAUSED, and starts no later step once either exists."""
     ws, out, _, _ = paths(tag)
     dirs = f"{ws} {priv(tag)} {out}"
-    stop = f"systemctl --user stop {scope(tag, step)}.scope"
+    unit = f"{scope(tag, step)}.scope"
     # its own statement (an `&` after `a && b` would background the whole list), no file descriptors of the ssh
-    # session (or ssh would wait for it), its cwd outside the workspace, and it ends by itself once the step's shell
-    # ($$) is gone; the step kills it and all its descendants
-    return (f"( cd / && while kill -0 $$ 2>/dev/null && sleep 10; do "
-            f"m=$(du -smx {dirs} 2>/dev/null | awk '{{s+=$1}} END{{print s+0}}'; exit ${{PIPESTATUS[0]}}) || m=over; "
-            f"i=$(du -sx --inodes {dirs} 2>/dev/null | awk '{{s+=$1}} END{{print s+0}}'; exit ${{PIPESTATUS[0]}}) || i=over; "
-            f"if [ \"$m\" = over ] || [ \"$i\" = over ] || [ \"$m\" -gt {DISK_MB} ] || [ \"$i\" -gt {DISK_INODES} ]; then "
-            f"echo \"{step}: $m MB, $i inodes (limits {DISK_MB} MB, {DISK_INODES}; over = du failed): stopped\" >> {out}/limits.txt; {stop}; break; fi; "
+    # session (or ssh would wait for it), its cwd outside the workspace; the step kills it and all its descendants
+    return (f"( cd / && while kill -0 $$ 2>/dev/null && sleep 10 && kill -0 $$ 2>/dev/null; do "
+            f"[ \"$(systemctl --user is-active {unit} 2>/dev/null)\" = active ] || continue; "
+            f"m=$(du -smx {dirs} 2>/dev/null | awk '{{s+=$1}} END{{print s+0}}'); "
+            f"i=$(du -sx --inodes {dirs} 2>/dev/null | awk '{{s+=$1}} END{{print s+0}}'); "
+            f"x=$(find {dirs} -xdev -type d ! -readable -print -quit 2>/dev/null); "
+            f"if {{ [ -n \"$x\" ] || [ \"$m\" -gt {DISK_MB} ] || [ \"$i\" -gt {DISK_INODES} ]; }} "
+            f"&& [ \"$(systemctl --user is-active {unit} 2>/dev/null)\" = active ]; then "
+            f"echo \"{step}: $m MB, $i inodes (limits {DISK_MB} MB, {DISK_INODES})${{x:+, unreadable $x}}: stopped\" >> {out}/limits.txt; "
+            f"systemctl --user stop {unit}; break; fi; "
             f"set -- $(df -Pk \"$HOME\" | awk 'NR==2{{print $4}}') $(df -Pi \"$HOME\" | awk 'NR==2{{print $4}}'); "
-            f"if [ -z \"$2\" ] || [ \"$1\" -lt {DISK_FLOOR_GB * 1024 * 1024} ] || [ \"$2\" -lt {INODE_FLOOR} ]; then "
-            f"echo \"{step}: home filesystem at $1 KB / $2 inodes free, under the floor: stopped every agent\" >> {out}/limits.txt; "
-            f"{stop}; systemctl --user stop {SLICE}; break; fi; done ) </dev/null >/dev/null 2>&1 & wd=$!; ")
+            f"if [ -n \"$2\" ] && {{ [ \"$1\" -lt {DISK_FLOOR_GB * 1024 * 1024} ] || [ \"$2\" -lt {INODE_FLOOR} ]; }} "
+            f"&& mkdir {PAUSED} 2>/dev/null; then "
+            f"w=$(python3 {BASE}/tools/floor_stop.py {SLICE}); "
+            f"echo \"$(date '+%F %T') home filesystem at $1 KB / $2 inodes free (floor {DISK_FLOOR_GB} GB / {INODE_FLOOR}); "
+            f"stopped: ${{w:-nothing (no scope holds deleted files)}}; remove this directory to resume launches\" > {PAUSED}/why.txt; "
+            f"[ -n \"$w\" ] && systemctl --user stop \"${{w%% *}}\"; fi; done ) </dev/null >/dev/null 2>&1 & wd=$!; ")
 
 
-# kill a process and all its descendants (the watchdog's sleep and du)
-KILL_TREE = "kt() { local c; for c in $(pgrep -P \"$1\"); do kt \"$c\"; done; kill \"$1\" 2>/dev/null; }; "
+# kill a process and all its descendants (the watchdog's sleep and du): stopped first, so it can't start another child
+# between listing its children and being killed
+KILL_TREE = ("kt() { local c; kill -STOP \"$1\" 2>/dev/null; for c in $(pgrep -P \"$1\"); do kt \"$c\"; done; "
+             "kill -KILL \"$1\" 2>/dev/null; }; ")
 
 
-def caps_check(tag, step):
-    """After an agent pass: a pass that filled its event or stderr pipe to the cap is recorded in limits.txt."""
+def step_guard(tag):
+    """First thing in every step: nothing runs once a limit tripped for this agent or launches are paused."""
     _, out, _, _ = paths(tag)
-    return (f"for f in events.jsonl:{EVENTS_MAX}:$eb stderr.log:{STDERR_MAX}:$sb; do IFS=: read n c b <<< \"$f\"; "
-            f"a=$(stat -c %s {out}/$n 2>/dev/null || echo 0); [ $((a - b)) -ge $c ] && "
-            f"echo \"{step}: $n reached its {{c}}-byte cap: cut\" >> {out}/limits.txt; done; ").replace("{c}", "$c")
+    return f"[ -e {out}/limits.txt ] && exit 7; [ -e {PAUSED} ] && exit 8; "
 
 
 def agent_cmd(tag, secs, args, step):
-    """Run the agent CLI in the sandbox for at most secs. Its stdout and stderr go through pipes (cut at EVENTS_MAX
-    and STDERR_MAX, recorded in limits.txt when hit) to files in the output dir, which the sandbox can't reach."""
+    """Run the agent CLI in the sandbox for at most secs. Its stdout and stderr go through pipes to files in the output
+    dir, which the sandbox can't reach, capped over the agent's whole run (EVENTS_MAX, STDERR_MAX; reaching a cap is
+    recorded in limits.txt). After the pass the host appends a marker line with the exit status: the audit tolerates a
+    garbled line only right before a marker of a pass that timed out."""
     ws, out, _, _ = paths(tag)
-    return (f"{KILL_TREE}cd {ws} && {bind_check(tag, 'agent')} || exit 4; "
-            f"eb=$(stat -c %s {out}/events.jsonl 2>/dev/null || echo 0); sb=$(stat -c %s {out}/stderr.log 2>/dev/null || echo 0); "
+    return (f"{KILL_TREE}{step_guard(tag)}cd {ws} && {bind_check(tag, 'agent')} || exit 4; "
+            f"er=$(( {EVENTS_MAX} - $(stat -c %s {out}/events.jsonl 2>/dev/null || echo 0) )); "
+            f"sr=$(( {STDERR_MAX} - $(stat -c %s {out}/stderr.log 2>/dev/null || echo 0) )); "
+            f"[ $er -gt 0 ] && [ $sr -gt 0 ] || {{ echo '{step}: a log was already at its cap' >> {out}/limits.txt; exit 7; }}; "
             f"{watchdog(tag, step)}"
-            f"timeout -k 30 {int(secs)} {sandbox(tag, step, 'agent')} "
-            f"pi --mode json --session-dir {ws}/.pi-sessions --model {MODEL} {args} </dev/null 9<{KEY_FILE} "
-            f"2> >(head -c {STDERR_MAX} >> {out}/stderr.log) | head -c {EVENTS_MAX} >> {out}/events.jsonl; "
-            f"rc=${{PIPESTATUS[0]}}; kt $wd; {caps_check(tag, step)}echo rc=$rc")
+            # stderr into one capped pipe and stdout (through fd 3) into the other: both caps are members of the
+            # pipelines, so the shell waits for them, and the agent's exit status comes out of the inner subshell
+            f"( timeout -k 30 {int(secs)} {sandbox(tag, step, 'agent')} "
+            f"pi --mode json --session-dir {ws}/.pi-sessions --model {MODEL} {args} </dev/null 9<{KEY_FILE} 2>&1 1>&3 3>&- "
+            f"| head -c $sr >> {out}/stderr.log; exit ${{PIPESTATUS[0]}} ) 3>&1 | head -c $er >> {out}/events.jsonl; "
+            f"rc=${{PIPESTATUS[0]}}; kt $wd; "
+            f"printf '\\n{{\"type\":\"launcher_pass_end\",\"step\":\"{step}\",\"rc\":%d}}\\n' $rc >> {out}/events.jsonl; "
+            f"for f in events.jsonl:{EVENTS_MAX} stderr.log:{STDERR_MAX}; do "
+            f"[ $(stat -c %s {out}/${{f%:*}} 2>/dev/null || echo 0) -ge ${{f#*:}} ] && "
+            f"echo \"{step}: ${{f%:*}} reached its ${{f#*:}}-byte cap: cut\" >> {out}/limits.txt; done; "
+            f"echo rc=$rc")
 
 
 def box_cmd(tag, step, cmd, secs=600):
     """A non-agent step on the workspace (check.py, rel_link.py): the same sandbox, since it runs the agent's files."""
     ws, _, _, _ = paths(tag)
-    return (f"{KILL_TREE}cd {ws} && {bind_check(tag, 'agent')} || exit 4; {watchdog(tag, step)}"
+    return (f"{KILL_TREE}{step_guard(tag)}cd {ws} && {bind_check(tag, 'agent')} || exit 4; {watchdog(tag, step)}"
             f"timeout -k 30 {secs} {sandbox(tag, step, 'agent')} /bin/sh -c {shlex.quote(cmd)} 9</dev/null; "
             f"rc=$?; kt $wd; exit $rc")
 
@@ -414,12 +440,13 @@ def reap(tag):
     ws, _, _, _ = paths(tag)
     units = " ".join(f"{scope(tag, st)}.scope" for st in STEPS)
     try:
+        # REAPED only if systemd says every one of the scopes is inactive or failed; no answer is not reaped
         r = ssh(f"for u in {units}; do systemctl --user stop \"$u\" 2>/dev/null; done; ( {reap_script(ws)} ); "
-                f"[ -z \"$(systemctl --user list-units --plain --no-legend --state=active {units} 2>/dev/null)\" ] && echo REAPED",
-                timeout=180, check=False)
+                f"for u in {units}; do case $(systemctl --user is-active \"$u\" 2>/dev/null) in inactive|failed) ;; *) exit 1;; esac; done; "
+                f"echo REAPED", timeout=180, check=False)
     except subprocess.TimeoutExpired:
         return False
-    return "REAPED" in r.stdout
+    return r.returncode == 0 and r.stdout.strip().endswith("REAPED")
 
 
 def host_state():
@@ -465,8 +492,10 @@ def prepare(tag, spec):
         f"&& cp ~/.pi/agent/settings.json ~/.pi/agent/models.json {pv}/pi-agent/")
     p = HERE / tag
     set_aside(tag)  # an earlier run's results, so nothing from it can be merged as this run's
-    RUN_IDS[tag] = time.strftime("%Y%m%d-%H%M%S")
+    RUN_IDS[tag] = time.strftime("%Y%m%d-%H%M%S-") + os.urandom(3).hex()
     p.mkdir(exist_ok=True)
+    # this launcher made the folder: tools/collect_gate.py never admits it as a pre-audit result
+    (p / "LAUNCHED").write_text(RUN_IDS[tag] + "\n")
     if spec["dol"]:
         asm = f"build/G8MJ01/asm/{unit}.s"
         part = "part of the game's main executable"
@@ -632,10 +661,10 @@ def run(tag, unit, src, spec, log):
             timeout=budget + 600, check=False)
     rcs = r.stdout.strip()
     names = {n for n, _, _ in spec["open"]}
-    tripped = lambda: ssh(f"test -e {out}/limits.txt && echo yes", timeout=60, check=False).stdout.strip() == "yes"
+    tripped = lambda: ssh(f"{{ test -e {out}/limits.txt || test -e {PAUSED}; }} && echo yes", timeout=60, check=False).stdout.strip() != ""
     for k in range(3):  # continuation passes, moderate
         if tripped():
-            return rcs + " LIMIT (no further steps; see limits.txt)"
+            return rcs + " LIMIT (no further steps; see limits.txt, or PAUSED on the host)"
         if spec.get("mode") == "link":
             cfg = src[len("src/"):] if spec["dol"] else src.rsplit("/src/", 1)[1]
             linked = ssh(f"[ -f {ws}/configure.py ] && [ ! -L {ws}/configure.py ] && [ $(stat -c %s {ws}/configure.py) -lt 4000000 ] && "
@@ -660,14 +689,14 @@ def run(tag, unit, src, spec, log):
         r2 = ssh(agent_cmd(tag, secs, "-c " + shlex.quote(more), f"cont{k}"), timeout=secs + 600, check=False)
         rcs += " cont" + r2.stdout.strip()
     if tripped():
-        return rcs + " LIMIT (no further steps; see limits.txt)"
+        return rcs + " LIMIT (no further steps; see limits.txt, or PAUSED on the host)"
     done = ssh(f"test -s {ws}/REPORT.md && ! test -L {ws}/REPORT.md && grep -q -- '--final' {out}/events.jsonl && echo yes",
                timeout=60, check=False)
     if done.stdout.strip() != "yes":
         r3 = ssh(agent_cmd(tag, 900, "-c " + shlex.quote(finish), "finish"), timeout=1500, check=False)
         rcs += " finisher" + r3.stdout.strip()
         if tripped():
-            return rcs + " LIMIT (no further steps; see limits.txt)"
+            return rcs + " LIMIT (no further steps; see limits.txt, or PAUSED on the host)"
     ssh(box_cmd(tag, "link", f"python3 tools/rel_link.py {unit} > link.txt 2>&1"), timeout=700, check=False)
     return rcs
 
@@ -714,12 +743,10 @@ def set_aside(tag, keep=2):
     p = HERE / tag
     if not p.exists() or not any(f.name != "PROMPT.md" for f in p.iterdir()):
         return
-    k = 1
-    while (HERE / f"{tag}.prev{k}").exists():
-        k += 1
-    p.rename(HERE / f"{tag}.prev{k}")
-    prevs = sorted((q for q in HERE.glob(f"{tag}.prev*") if re.fullmatch(r"\d+", q.name.rsplit(".prev", 1)[1])),
-                   key=lambda q: int(q.name.rsplit(".prev", 1)[1]))
+    num = lambda q: int(q.name.rsplit(".prev", 1)[1])
+    prevs = sorted((q for q in HERE.glob(f"{tag}.prev*") if re.fullmatch(r"\d+", q.name.rsplit(".prev", 1)[1])), key=num)
+    p.rename(HERE / f"{tag}.prev{(num(prevs[-1]) if prevs else 0) + 1}")  # the newest always has the highest number
+    prevs = sorted((q for q in HERE.glob(f"{tag}.prev*") if re.fullmatch(r"\d+", q.name.rsplit(".prev", 1)[1])), key=num)
     for old in prevs[:-keep]:
         subprocess.run(["trash", str(old)], capture_output=True, timeout=60)
 

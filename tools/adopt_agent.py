@@ -3,7 +3,7 @@
 
     python3 tools/adopt_agent.py SCRATCH_DIR [--keep-pragma]
 
-SCRATCH_DIR must pass tools/collect_gate.py (ALLOW_UNAUDITED=<dir name> admits one folder from before the audit).
+SCRATCH_DIR must pass tools/collect_gate.py (ALLOW_UNAUDITED=<wave>/<dir name> admits one folder from before the audit).
 
 DIR names are <mod>_<unit path with / -> _>; the unit is found in the module's splits.txt. Copies final.c to
 rels/<mod>/src/<unit>.c (and final.h next to it in rels/<mod>/include/), applies include.patch (paths relative to the
@@ -13,7 +13,7 @@ import os, re, subprocess, sys
 
 src = sys.argv[1].rstrip("/")
 keep = "--keep-pragma" in sys.argv
-# only a clean, complete collect (tools/collect_gate.py; ALLOW_UNAUDITED=<dir name> admits one pre-audit folder)
+# only a clean, complete collect (tools/collect_gate.py; ALLOW_UNAUDITED=<wave>/<dir name> admits one pre-audit folder)
 gate = subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "collect_gate.py"), src],
                       capture_output=True, text=True)
 if gate.returncode != 0:

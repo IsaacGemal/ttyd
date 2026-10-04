@@ -9,13 +9,15 @@ events.jsonl.zst); there is no limits.txt; and audit.txt ends with "0 flagged". 
 its size limit) or changed afterwards fails the check.
 
 Results from before the launcher wrote audits have none of audit.txt, collect.txt, limits.txt or COLLECT-OK. They
-pass only when ALLOW_UNAUDITED is set to that folder's own name (one folder at a time, on purpose). A folder with any
-of those files never passes that way: a flagged or failed collect can't be waved through."""
+pass only when ALLOW_UNAUDITED is set to that folder's wave/tag (e.g. wave62/battle_x: one folder at a time, on
+purpose). A folder with any of those files, or the LAUNCHED marker the current launcher writes, never passes that way:
+a flagged, failed or killed collect can't be waved through."""
 import hashlib
 import os
 import sys
 
-LOCAL = {"PROMPT.md", "host_changes.txt", "events.jsonl.zst"}
+# written next to the results on this side: by the launcher, and by tools/merge_agent.sh on an earlier merge attempt
+LOCAL = {"PROMPT.md", "host_changes.txt", "events.jsonl.zst", "LAUNCHED", "lint.txt", "proto_asm.txt"}
 MARKERS = ("audit.txt", "collect.txt", "limits.txt", "COLLECT-OK")
 
 
@@ -30,12 +32,14 @@ def digest(p):
 
 
 def check(d):
-    tag = os.path.basename(os.path.abspath(d))
+    full = os.path.abspath(d)
+    tag = os.path.join(os.path.basename(os.path.dirname(full)), os.path.basename(full))  # wave/tag
     have = {f for f in os.listdir(d) if os.path.isfile(os.path.join(d, f))}
     if not any(m in have for m in MARKERS):
-        if os.environ.get("ALLOW_UNAUDITED", "") == tag:
+        if "LAUNCHED" not in have and os.environ.get("ALLOW_UNAUDITED", "") == tag:
             return None
-        return "no audit, collect or COLLECT-OK file: not gathered by the sandboxed collect"
+        return ("launched by the sandboxed launcher but never collected (killed or failed before the collect)"
+                if "LAUNCHED" in have else "no audit, collect or COLLECT-OK file: not gathered by the sandboxed collect")
     if "limits.txt" in have:
         return "a limit tripped (limits.txt): " + text(os.path.join(d, "limits.txt")).strip()[:300]
     if "COLLECT-OK" not in have:

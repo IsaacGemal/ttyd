@@ -112,27 +112,60 @@ class Remote(unittest.TestCase):
             self.assertTrue(W.reap("t"))
         with self.fake(out=""):
             self.assertFalse(W.reap("t"))
+        with self.fake(out="REAPED", rc=1):
+            self.assertFalse(W.reap("t"))
+        with self.fake():
+            W.reap("t")
+        self.assertIn("inactive|failed) ;; *) exit 1", self.calls[-1][0][-1])
         with self.fake(exc=subprocess.TimeoutExpired("ssh", 180)):
             self.assertFalse(W.reap("t"))
 
     def test_one_slot_pool_for_every_key(self):
         self.assertEqual(W.slot_file("t"), "$HOME/ttyd-agents-slots/all/abc123_wt_t.slot")
+        with self.fake(out="TAKEN"):
+            W.reserve("t")
+        cmd = self.calls[0][0][-1]
+        self.assertIn("'ttyd-*-run.scope'", cmd)  # counted by scopes, which agents can't create
+        self.assertNotIn("pgrep", cmd)
+        with self.fake(out="PAUSED"):
+            self.assertFalse(W.reserve("t"))
+
+    def test_collect_runs_outside_the_agents_slice(self):
+        self.assertIn("--slice=ttyd-collect.slice", W.sandbox("t", "collect", "collect"))
+        self.assertIn("--slice=ttyd-agents.slice", W.sandbox("t", "run", "agent"))
+
+    def test_launched_marker(self):
+        with self.fake(out="rc=0"):
+            W.prepare("t", SPEC)
+        self.assertTrue((Path(self.tmp.name) / "t" / "LAUNCHED").exists())
 
     def test_earlier_results_keep_the_newest_two(self):
         here = Path(self.tmp.name)
-        for k in range(4):
+        bin_ = here / "trashbin"
+        bin_.mkdir()
+
+        def trash(cmd, **kw):  # really move it away, as `trash` does
+            Path(cmd[1]).rename(bin_ / Path(cmd[1]).name)
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+        for k in range(5):
             (here / "t").mkdir()
             (here / "t" / "final.c").write_text(str(k))
-            with mock.patch.object(W.subprocess, "run") as trash:
+            with mock.patch.object(W.subprocess, "run", side_effect=trash):
                 W.set_aside("t")
-        self.assertEqual(sorted(p.name for p in here.glob("t.prev*")), ["t.prev1", "t.prev2", "t.prev3", "t.prev4"])
-        trashed = [c.args[0][1] for c in trash.call_args_list]
-        self.assertEqual([os.path.basename(t) for t in trashed], ["t.prev1", "t.prev2"])
+        kept = sorted(here.glob("t.prev*"), key=lambda p: p.name)
+        self.assertEqual([p.name for p in kept], ["t.prev4", "t.prev5"])
+        self.assertEqual([(p / "final.c").read_text() for p in kept], ["3", "4"])  # the newest two runs
 
-    def test_cap_hits_are_recorded(self):
-        c = W.caps_check("t", "run")
+    def test_caps_markers_and_guards(self):
+        c = W.agent_cmd("t", 100, "x", "run")
         self.assertIn("limits.txt", c)
         self.assertIn(str(W.EVENTS_MAX), c)
+        self.assertIn("launcher_pass_end", c)
+        self.assertNotIn(">(", c)  # no process substitution: the shell can't wait for one reliably
+        for cmd in (c, W.box_cmd("t", "check0", "true")):
+            self.assertTrue(cmd.split("cd $HOME")[0].endswith(W.step_guard("t")))
+            self.assertIn("exit 7", cmd)
+            self.assertIn("ttyd-agents-slots/PAUSED ] && exit 8", cmd)
 
     def test_reap_stops_exact_scopes(self):
         with self.fake():
@@ -155,10 +188,15 @@ class Remote(unittest.TestCase):
         self.assertIn("du -smx", c)
         self.assertIn("--inodes", c)
         self.assertIn("df -Pk", c)
-        self.assertIn("|| m=over", c)
+        self.assertIn("! -readable", c)
+        self.assertNotIn("m=over", c)  # du's exit status (files vanish mid-scan in any build) is not a failure
+        self.assertIn("is-active ttyd-wt_t-run.scope", c)
+        self.assertIn("floor_stop.py", c)
+        self.assertNotIn("stop ttyd-agents.slice", c)
         self.assertIn("sleep 10", c)
-        self.assertIn(f"head -c {W.EVENTS_MAX}", c)
-        self.assertIn(f"head -c {W.STDERR_MAX}", c)
+        self.assertIn(f"er=$(( {W.EVENTS_MAX} - ", c)  # caps over the whole run, not per pass
+        self.assertIn(f"sr=$(( {W.STDERR_MAX} - ", c)
+        self.assertIn("head -c $er", c)
         self.assertIn("kt $wd", c)
         self.assertIn("du -smx", W.box_cmd("t", "check0", "true"))
 
