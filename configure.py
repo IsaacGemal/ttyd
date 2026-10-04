@@ -406,7 +406,7 @@ config.libs = [
             Object(Matching, "battle/ac/ac_signal_timing.c"),
             Object(Matching, "data/battle/battle_audience_kind_data.c"),
             Object(Matching, "battle/ac/ac_gauge_timing.c"),
-            Object(NonMatching, "battle/ac/ac_shot_target.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/ac/ac_shot_target.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/ac/ac_gauge_timing2.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/ac/ac_power_gauge_lv2.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/ac/ac_monosiri_target.c", extra_cflags=["-O4,s"]),
