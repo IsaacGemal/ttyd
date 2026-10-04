@@ -11,6 +11,8 @@ Everything that runs the agent's files (the agent, check.py between passes, rel_
         --bind $WS $WS --bind $WS/tmp /tmp                   writable: its own workspace and a private /tmp
         docker and system bus sockets replaced by /dev/null, a clean environment
         --unshare-pid --unshare-ipc --die-with-parent        everything it starts dies with it
+  pi -e $BASE/tools/pi_netless_bash.ts                 the agent's bash tool runs each command in a nested
+                                                       bwrap --unshare-net: no network but loopback (pi keeps its API)
 The API key reaches the agent CLI through a file on a tmpfs inside the sandbox, never a command line. The agent's
 stdout/stderr go through pipes into ~/ttyd-agents-out/<PFX><tag>, which no sandbox can write. After the agent,
 tools/agent_collect.sh (from the base, never the workspace) gathers the results there in a second sandbox that sees
@@ -386,6 +388,7 @@ def sandbox(tag, step, mode):
     ws, out, _, _ = paths(tag)
     run_user = f"/run/user/{UID}"
     env = {"HOME": "$HOME", "USER": "$USER", "LANG": "C.UTF-8", "TMPDIR": "/tmp", "TTYD_BASE": BASE,
+           "PI_NETLESS_DROP": KEY_ENV,  # tools/pi_netless_bash.ts removes it from the agent's commands' environment
            "PYTHONPATH": "$HOME/ttyd-pylib",
            "PATH": f"$HOME/.local/bin:$HOME/ttyd/.venv/bin:{NODE_BIN}:/usr/local/bin:/usr/bin:/bin"}
     a = [f"systemd-run --user --scope --quiet --collect --unit={scope(tag, step)} --slice={SLICE if mode == 'agent' else COLLECT_SLICE}",
@@ -544,7 +547,7 @@ def agent_cmd(tag, secs, args, step):
             # timeout's own diagnostics go only to a host file. The child forwards its stderr to the capped pipe
             # through fd 4, then closes it before entering the sandbox; an agent exit of 124/137 cannot forge this.
             f"( LC_ALL=C timeout --verbose -k 30 {int(secs)} /bin/sh -c 'exec \"$@\" 2>&4 4>&-' sh {sandbox(tag, step, 'agent')} "
-            f"pi --mode json --session-dir {ws}/.pi-sessions --model {MODEL} {args} </dev/null 9<{KEY_FILE} 4>&1 2>{out}/timeout-{step}.txt 1>&3 3>&- "
+            f"pi --mode json --session-dir {ws}/.pi-sessions --model {MODEL} -e {BASE}/tools/pi_netless_bash.ts {args} </dev/null 9<{KEY_FILE} 4>&1 2>{out}/timeout-{step}.txt 1>&3 3>&- "
             f"| capped_log stderr.log {STDERR_MAX} $sr; exit ${{PIPESTATUS[0]}} ) 3>&1 | capped_log events.jsonl {EVENTS_MAX} $er; "
             f"rc=${{PIPESTATUS[0]}}; {watchdog_teardown(tag, step)}"
             f"timed_out=0; grep -q '^timeout: sending signal .* to command' {out}/timeout-{step}.txt && timed_out=1; "
@@ -621,9 +624,9 @@ def prepare(tag, spec):
     ws, out, rws, _ = paths(tag)
     # Shared, never-modified parts are links, not copies: the disc (orig/), the venv, the compilers and the build
     # tools (~190 MB per workspace otherwise). Build outputs stay per workspace: each agent builds its own code.
-    # No permuter entry points (it was most of the tower's CPU); DOL asm linked from the base.
+    # No permuter entry points (it was most of the tower's CPU), but perm_unit.py, a library tools/mwccdbg.py imports; DOL asm linked from the base.
     ssh(f"mkdir -p ~/ttyd-agents && rsync -a --delete --delete-excluded --exclude orig/ --exclude .venv/ --exclude build/compilers/ "
-        f"--exclude build/tools/ --exclude build/G8MJ01/asm/ --exclude 'tools/perm_*.py' --exclude .git/ {BASE}/ {ws}/ "
+        f"--exclude build/tools/ --exclude build/G8MJ01/asm/ --include tools/perm_unit.py --exclude 'tools/perm_*.py' --exclude .git/ {BASE}/ {ws}/ "
         f"&& ln -sfn {BASE}/build/G8MJ01/asm {ws}/build/G8MJ01/asm && ln -sfn ~/ttyd/orig {ws}/orig && ln -sfn ~/ttyd/.venv {ws}/.venv "
         f"&& ln -sfn ~/ttyd/build/compilers {ws}/build/compilers && ln -sfn {BASE}/build/tools {ws}/build/tools")
     src = spec['src']

@@ -103,16 +103,12 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    case) can still score high. Map each case value to its label in the `.obj jumptable_...` data, and check
    whether each case body ends in a branch or runs on.
 
-16. **Reusing code without saying where it came from.** Other open-source decompilations may already have what
-   you need, and using them is fine if the project's license is CC0 or MIT (check its LICENSE file first; a
-   project with no license is off-limits). Name every project and file you took code from in your report, keep
-   anything you download or clone inside ./tmp in this directory (never /tmp or elsewhere), and don't search the
-   rest of the machine. The merge lists everything you fetched.
-   The MIT/CC0 reference decomps are already on disk, read-only, at ~/ttyd-refs/<project> (ac-decomp, spm-decomp, tp,
-   tww, musyx; ~/ttyd-refs/README.md has the commits and licenses): read them there, do not clone them again.
+16. **Reusing code without saying where it came from.** The network is not available: commands you run have no
+   internet access, so `curl`, `git clone` and package installs fail. The MIT/CC0 reference decomps are on disk,
+   read-only, at ~/ttyd-refs/<project> (ac-decomp, spm-decomp, tp, tww, musyx; ~/ttyd-refs/README.md has the commits
+   and licenses); using their code is fine, and your report names every project and file you took code from.
    Do not read, list or search outside this directory and ~/ttyd-refs (no `find /`, no `ls ~/ttyd-agents`, no other
-   agents' workspaces or bases), and do not fetch from projects without a CC0 or MIT LICENSE file, or from compiler
-   sources: the merge rejects results built on them.
+   agents' workspaces or bases).
    **Never kill processes by name** (`pkill -f mwcceppc`, `killall`): stop only what you started, by its own PID
    (`kill $!`). A stuck compile is stopped for you by the launcher's timeout.
    **No background jobs and no searches of your own** (`nohup ... &`, a cloned decomp-permuter, `-j` above 2): your
@@ -304,8 +300,9 @@ macOS; needs gdb, cmake, Rust; the clones live in `$MWCCDBG_HOME`, default `~/mw
 **Using it (agents).** One function at a time, from the workspace root:
 
 1. `python3 tools/mwccdbg.py UNIT FUNC` (REL units: `MODULE/path`). It compiles the unit as it is now; everything is written under
-   `build/mwccdbg/FUNC/`, never outside the workspace. Runs take turns on a machine-wide lock (a TCP port on 127.0.0.1), so a run may
-   wait a few seconds behind another agent's.
+   `build/mwccdbg/FUNC/`, never outside the workspace. Each of your commands runs in its own network namespace (no network, its own
+   loopback), so the 127.0.0.1:9099 lock no longer serialises runs across agents, and needn't: each namespace also has its own gdb
+   port 9001, so two runs never meet. Don't "fix" the lock.
 2. Read `build/mwccdbg/FUNC/summary.txt`: per allocation pass (only the LAST pass of a class is final), each variable in priority
    order with its register, neighbour count, and `!ORIG rN` where the original has a different register. Named locals show their
    names; `@NNN` are compiler temps; fix the first variable that differs. 0 `!ORIG` lines means the gap is not register colouring.
