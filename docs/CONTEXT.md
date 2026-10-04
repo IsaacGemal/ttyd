@@ -4443,3 +4443,11 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   0% after the port although data_check passes: the section's relocations now name new symbols).
   scratch/wave71/repair_headers.py moves an agent's data externs from headers into its .c (header_patch.py refuses
   them; four agents so far).
+- **Batch 5:** effCloudDisp to 100% and eff_cloud_n64 linked with the agent's configure flip (the one-short arm's
+  seventh; left NonMatching its .rodata scored lower, so merge_agent's ratchet refused it until the flip went in);
+  N__cloud_use 99.75 -> 99.90 (the i2f limit: MWCC's inline conversion reads its own anonymous double, not the named
+  one); data ports for icondrv, mot_jump and eff_particle. mot_jump's .data scored 0% because the agent's trailing
+  .data gap landed at offset 0: the compiler emits a switch jump table after all source data, so a gap object can't
+  follow it; without the gap the section scores right. win_badge lowered mario_change; rejected.
+- **Audit follow-up (#383):** the copy rule checks every operand for any target-directory form (-at, -t/DIR,
+  --target-directory[=]) and treats host:path as outside; installed in both wave 71 bases.
