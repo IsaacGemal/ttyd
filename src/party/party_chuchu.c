@@ -19,6 +19,7 @@
 #include "evt/evt_msg.h"
 #include "party/party_hit.h"
 #include "eff/eff_fukidashi.h"
+#pragma pool_data on // the original addresses its .rodata through one base register
 
 // Local declarations: not yet in a header.
 
@@ -62,22 +63,24 @@ USER_FUNC(search_result) {
     return EVT_RETURN_DONE;
 }
 
-// The .rodata is now the original's: the item/tmp zero vectors are read as whole-Vec copies from the
-// named globals vec3_802f8288 (0x130) and vec3_802f839c (0x244) rather than emitted as anonymous local
-// compound literals, so the rodata offsets in this function match. Only the found/i loop preheader
-// register allocation differs: ours emits `li r24, 0` for `found = FALSE` late (after `mr r26, r31`)
-// and a plain `li r23, 0` for `i = 0`, where the original schedules `li r24, 0` first and reuses its
-// zero for `i` (`mr r23, r24`), also moving the `mr r30, r3` (mobj) result copy by one slot. Statement
-// order, declaration order, types, assignment forms (comma/chain), the loop spelling and
-// opt_*/scheduling/optimize_for_size pragmas all leave the preheader as the compiler chose it.
-// NONMATCHING (98.68%): only the found/i loop preheader register allocation differs (5 instructions).
+// The item/tmp zero vectors are read as whole-Vec copies from the named globals vec3_802f8288
+// (0x130) and vec3_802f839c (0x244) rather than emitted as anonymous local compound literals, so the
+// rodata offsets match. The loop's four variables are held in one ChuchuSearchState aggregate: written
+// as plain locals MWCC folds `i = found` back to a second `li` and schedules it after the entry setup,
+// while the original reuses the `li r24, 0` of `found = FALSE` for `i` (`mr r23, r24`). Reading `found`
+// back through the struct keeps the copy and reproduces the target's preheader; the natural spelling is
+// under #else.
 USER_FUNC(set_msg) {
     MapObjectEntry* mobj;
     ItemEntry* item;
+#ifdef MUST_MATCH
+    ChuchuSearchState search;
+#else
     ChuchuSearchEntry* entry;
     MarioWork* loopPlayer;
     BOOL found;
     u32 i;
+#endif
     MarioWork* player;
     s32 pass;
     s32 result;
@@ -110,6 +113,38 @@ USER_FUNC(set_msg) {
         item = itemNearDistCheck(player->position.x, player->position.y, player->position.z, threshold);
         mobj = mobjNearDistCheck2(player->position.x, player->position.y, player->position.z, threshold,
                                   mobj_list);
+#ifdef MUST_MATCH
+        search.entry = unk_8038bb34;
+        search.loopPlayer = party->playerPtr;
+        search.found = FALSE;
+        minDist = 10000.0f;
+        search.i = search.found;
+        for (; search.i < 0x28; search.i++, search.entry++) {
+            f32 dist;
+            if (strcmp(gp->currentMapName, search.entry->name) != 0) {
+                continue;
+            }
+            if (evtGetValue(NULL, search.entry->evtId) != 0) {
+                continue;
+            }
+            tmp = vec3_802f839c;
+            tmp.x = (f32)search.entry->x;
+            tmp.y = (f32)search.entry->y;
+            tmp.z = (f32)search.entry->z;
+            pos = tmp;
+            dist = PSVECDistance(&search.loopPlayer->position, &pos);
+            if (threshold < dist) {
+                continue;
+            }
+            if (minDist > dist) {
+                minDist = dist;
+                search.found = TRUE;
+                closestPos.x = pos.x;
+                closestPos.y = pos.y;
+                closestPos.z = pos.z;
+            }
+        }
+#else
         found = FALSE;
         loopPlayer = party->playerPtr;
         minDist = 10000.0f;
@@ -139,6 +174,7 @@ USER_FUNC(set_msg) {
                 closestPos.z = pos.z;
             }
         }
+#endif
 
         minDist = 10000.0f;
         if (item != NULL) {
@@ -165,7 +201,11 @@ USER_FUNC(set_msg) {
                 result = 1;
             }
         }
+#ifdef MUST_MATCH
+        if (search.found) {
+#else
         if (found) {
+#endif
             if (minDist > PSVECDistance(&closestPos, &player->position)) {
                 minDist = PSVECDistance(&closestPos, &player->position);
                 direction = revise360(angleABf(party->position.x, party->position.z, closestPos.x,
@@ -431,6 +471,28 @@ char* mobj_list[] = {
     NULL,
 };
 
+u32 msg_evt[] = {
+    0x0001005B,
+    (u32)set_msg,
+    0x0001005B,
+    (u32)search_result,
+    0x00020019,
+    0xFE363C80,
+    0x00000000,
+    0x0005005B,
+    (u32)evt_msg_print,
+    0x00000000,
+    0xFE363C80,
+    0x00000000,
+    (u32)"party",
+    0x00000021,
+    0x0001005B,
+    (u32)post_msg,
+    0x00000002,
+    0x00000001,
+};
+
+
 const Vec vec3_802f8288 = { 0.0f, 0.0f, 0.0f };
 
 ChuchuSearchEntry unk_8038bb34[0x28] = {
@@ -478,23 +540,3 @@ ChuchuSearchEntry unk_8038bb34[0x28] = {
 
 const Vec vec3_802f839c = { 0.0f, 0.0f, 0.0f };
 
-u32 msg_evt[] = {
-    0x0001005B,
-    (u32)set_msg,
-    0x0001005B,
-    (u32)search_result,
-    0x00020019,
-    0xFE363C80,
-    0x00000000,
-    0x0005005B,
-    (u32)evt_msg_print,
-    0x00000000,
-    0xFE363C80,
-    0x00000000,
-    (u32)"party",
-    0x00000021,
-    0x0001005B,
-    (u32)post_msg,
-    0x00000002,
-    0x00000001,
-};
