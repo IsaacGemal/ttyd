@@ -115,6 +115,9 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    sources: the merge rejects results built on them.
    **Never kill processes by name** (`pkill -f mwcceppc`, `killall`): stop only what you started, by its own PID
    (`kill $!`). A stuck compile is stopped for you by the launcher's timeout.
+   **No background jobs and no searches of your own** (`nohup ... &`, a cloned decomp-permuter, `-j` above 2): your
+   slot has a fixed CPU share, and the project runs the permuter in its own lane (tools/perm_run.py). Work in the
+   foreground, one build at a time.
 
 17. **The other wrong code reviews keep finding** in partly matched functions (waves 13-14; add to 9-11). Before
    you stop, go back over your partial functions for these, each checked against the asm:
