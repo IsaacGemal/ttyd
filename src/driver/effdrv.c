@@ -8,6 +8,15 @@
 #include <string.h>
 #include <stdio.h>
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const f32 float_1000_8041a0a8;
+extern const f32 float_0_8041a0ac;
+extern const f32 dat_8041a0b0;
+extern const f32 float_3_8041a0b4;
+extern const f32 float_neg2_8041a0b8;
+extern const f32 float_1_8041a0bc;
+extern const f32 float_2_8041a0c0;
+
 
 extern GlobalWork* gp;
 
@@ -134,7 +143,12 @@ void effTexSetup(void) {
 	wp->texLoaded = FALSE;
 	wp->texture = arcOpen("effect.tpl", 0, 0);
 	if (wp->texture == NULL) {
+#ifdef MUST_MATCH
+		// retail's pooled format string carries a second terminator (a 0x14-byte object)
+		sprintf(path, "%s/e/jp/effect.tpl\0", getMarioStDvdRoot());
+#else
 		sprintf(path, "%s/e/jp/effect.tpl", getMarioStDvdRoot());
+#endif
 		entry = DVDMgrOpen(path, 2, 0);
 		size = OSRoundUp32B(DVDMgrGetLength(entry));
 		wp->texture = __memAlloc(HEAP_DEFAULT, size);
@@ -366,7 +380,7 @@ void effPlayMayaAnim(void* animPtr) {
 	EffectMayaAnim* anim = (EffectMayaAnim*)animPtr;
 
 	anim->startTime = OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
-	anim->field_0x4 = 0.0f;
+	anim->field_0x4 = float_0_8041a0ac;
 	anim->flags |= 1;
 }
 
@@ -381,7 +395,7 @@ void effCalcMayaAnim(void* animPtr) {
 		return;
 	}
 
-	anim->field_0x4 = (f32)(u64)(OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime) - anim->startTime) * gp->framerate / 1000.0f;
+	anim->field_0x4 = (f32)(u64)(OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime) - anim->startTime) * gp->framerate / float_1000_8041a0a8;
 
 	if (anim->field_0x4 >= anim->animData->field_0x4) {
 		anim->field_0x4 = anim->animData->field_0x4;
@@ -417,3 +431,26 @@ void effDrawMayaPoly(void* data_) {
 		}
 	}
 }
+
+// ---- .sdata2 ----
+// All the float words the unit reads by name, in original address order. They are defined
+// after the code so the compiler emits them as objects instead of folding their values.
+#pragma force_active on
+#pragma explicit_zero_data on
+__declspec(section ".sdata2") const f32 float_1000_8041a0a8 = 1000.0f;
+__declspec(section ".sdata2") const f32 float_0_8041a0ac = 0.0f;
+__declspec(section ".sdata2") const f32 dat_8041a0b0 = 0.00000001f;
+__declspec(section ".sdata2") const f32 float_3_8041a0b4 = 3.0f;
+__declspec(section ".sdata2") const f32 float_neg2_8041a0b8 = -2.0f;
+__declspec(section ".sdata2") const f32 float_1_8041a0bc = 1.0f;
+__declspec(section ".sdata2") const f32 float_2_8041a0c0 = 2.0f;
+__declspec(section ".sdata2") u32 gap_09_8041A0C4_sdata2[1] = { 0 };
+#pragma explicit_zero_data reset
+#pragma force_active reset
+
+// trailing alignment bytes of the unit's .sdata (the original keeps them after dummy$824)
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_80410261_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
