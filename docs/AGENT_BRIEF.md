@@ -183,6 +183,27 @@ constants into more FPRs than the original, which costs code score; pool order a
 - Statement order of the preheader assignments does not change pool order (tried all 12 orders); moving a literal's first textual use
   later only helps if the compiler does not hoist it.
 
+**Hoisting: literals vs named constants (measured on minimal repros, MWCC 2.6, deferred flags).** A float *literal* used directly is
+loaded lazily at each use (and reloaded in loops); a named `extern` constant is loaded once into a callee-saved FPR early and kept.
+That is the code-score gap behind most "must be named" units, and it is not a pool problem. Spelling effects:
+
+| spelling | effect |
+|---|---|
+| `x = 1.0f; ... use(x)` (literal, local) | lazy load after the calls; not hoisted |
+| `extern const f32 k; x = k;` | early load into a callee-saved FPR (named symbol, wrong pool) |
+| `extern __declspec(section ".sdata2") f32 k` | same as the const extern |
+| file-scope `static const f32 k = 1.0f;` defined before use | folds to a literal: same as the literal row |
+| `const f32` local | folds like the literal row |
+| literal-initialised locals + `#pragma opt_propagation off` around the function | **early load into callee-saved FPRs, value pooled as an anonymous literal**: the named behaviour with the right pool |
+| table `static const f32 t[]` / volatile read | early load, but through a table symbol (extra object) |
+| `opt_lifetimes`, `opt_loop_invariants`, `opt_common_subs`, `opt_dead_assignments`, `opt_strength_reduction`, `scheduling` off | no effect on the lazy loads |
+
+Use `opt_propagation off` on the one function (`#pragma opt_propagation off` before it, `reset` after) and give each constant the
+original keeps in an FPR its own initialised local, in the original's order. eff_kemuri's `effKemuri2Entry` went 79.8% -> 99.93% this
+way with all constants literal. It is not free: in functions whose loops already have the right hoists (`effKemuriDisp`) the pragma
+cost 3-5 points; there, name only the constants the original keeps (`f32 one = 1.0f;` and pass `one` where the original stores the kept
+register) and leave the pragma off. A negated product (`-one * half`) then stays a runtime multiply.
+
 **Conversion double before strings.** If the target's `.rodata` has an int->float double (`double_to_int_*`) ahead of a string that a
 deferred function pools, our build pools the double later, since a deferred unit emits functions in reverse source order and each
 function pools its strings before its own conversion double. Under `#ifdef MUST_MATCH` add an ordinary helper that is generated
