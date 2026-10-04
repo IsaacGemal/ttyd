@@ -1876,7 +1876,7 @@ config.libs = [
             Object(Matching, "rsh_02.c"),
             Object(Matching, "rsh_03.c"),
             Object(Matching, "rsh.c"),
-            Object(NonMatching, "rsh_00.c"),
+            Object(Matching, "rsh_00.c"),
             Object(NonMatching, "rsh_05.c"),
             Object(NonMatching, "rsh_06.c"),
             Object(NonMatching, "unit/unit_boss_moamoa.c"),
