@@ -368,10 +368,9 @@ def watchdog(tag, step):
             f"set -- $(df -Pk \"$HOME\" | awk 'NR==2{{print $4}}') $(df -Pi \"$HOME\" | awk 'NR==2{{print $4}}'); "
             f"if [ -n \"$2\" ] && {{ [ \"$1\" -lt {DISK_FLOOR_GB * 1024 * 1024} ] || [ \"$2\" -lt {INODE_FLOOR} ]; }} "
             f"&& mkdir {PAUSED} 2>/dev/null; then "
-            f"w=$(python3 {BASE}/tools/floor_stop.py {SLICE}); "
-            f"echo \"$(date '+%F %T') home filesystem at $1 KB / $2 inodes free (floor {DISK_FLOOR_GB} GB / {INODE_FLOOR}); "
-            f"stopped: ${{w:-nothing (no scope holds deleted files)}}; remove this directory to resume launches\" > {PAUSED}/why.txt; "
-            f"[ -n \"$w\" ] && systemctl --user stop \"${{w%% *}}\"; fi; done ) </dev/null >/dev/null 2>&1 & wd=$!; ")
+            f"{{ echo \"$(date '+%F %T') home filesystem at $1 KB / $2 inodes free (floor {DISK_FLOOR_GB} GB / {INODE_FLOOR}); "
+            f"remove this directory to resume launches\"; python3 {BASE}/tools/floor_stop.py --act {SLICE}; }} > {PAUSED}/why.txt; "
+            f"fi; done ) </dev/null >/dev/null 2>&1 & wd=$!; ")
 
 
 # kill a process and all its descendants (the watchdog's sleep and du): stopped first, so it can't start another child
