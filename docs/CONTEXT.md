@@ -4622,3 +4622,12 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   eff_opuku_jetw_n64. No change: mario_pouch's pair (a 3-instruction block layout) and the evt_mobj five (a two-web
   colour tie, now in the permuter's queue q29 and with Claude #3; a fix carries to all five). Arm L's last unit,
   evt_yuuranking, was refused (98.18 -> 98.25 at the cost of its .rodata). Arm L round 1 ends 15 tasks, 7 linked.
+- **Batch 24:** npcSetStayPose and npcSetTalkPose to 100% (a wave 76 follow-up: a MUST_MATCH sign-extend round trip
+  `(const char*)(s64)(s32)name` in the first strcmp leaves a dead value that pins retail's early parameter save
+  `mr r28, r3`, which the group task's `name ? name : name` ternary had pinned at the cost of a dead `cmplwi`; tried and
+  ruled out first: `name + 0`, a u32 cast, `(0, name)`, a local copy). eff_opuku_jetw_n64 linked (wave 76 arm L's
+  first); the mri_puni pair puniSearchRandom_Mikata/_Teki 96.0 -> 97.61 (wave 75's last group task); data ports for
+  eff_starpoint, tou_02, battle_stage and sac_genki. Refused: second data passes on party_yoshi and
+  battle_audience_kinopio. From now on a unit whose data was ported once goes straight to arm L: the leftover gap is
+  usually the unmatched function's pool order and closes with it (Claude #1). Stopping a launcher I started, letting
+  its agents finish, is ordinary wave management; the reaper, its limits, the sandbox and load gates are Isaac's.
