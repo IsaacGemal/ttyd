@@ -31,15 +31,20 @@ f32 jumpheight;
 s32 evt_yoshi_frm;
 f32 evt_yoshi_spd;
 
-// The original .rodata keeps PYS_H_1/PYS_H_2 as separate named strings between
-// the pose names; nothing in the code references them, so the S/R literals carry
-// them here (strcmp stops at the first NUL, so the comparisons are unchanged).
+// The original .rodata keeps PYS_H_1/PYS_H_2 right after PYS_S_2/PYS_R_2, and the
+// code reaches them as the S/R string plus 8. Match-only: the S/R literals carry the
+// H strings (strcmp stops at the first NUL, so the comparisons are unchanged); the
+// natural form names all four.
 #ifdef MUST_MATCH
 #define YOSHI_S_2 "PYS_S_2\0PYS_H_1"
 #define YOSHI_R_2 "PYS_R_2\0PYS_H_2"
+#define YOSHI_H_1 (YOSHI_S_2 + 8)
+#define YOSHI_H_2 (YOSHI_R_2 + 8)
 #else
 #define YOSHI_S_2 "PYS_S_2"
 #define YOSHI_R_2 "PYS_R_2"
+#define YOSHI_H_1 "PYS_H_1"
+#define YOSHI_H_2 "PYS_H_2"
 #endif
 #define YOSHI_F_1 "PYS_F_1"
 
@@ -576,7 +581,7 @@ L_312C:
         /* fallthrough */
     case 0xB:
         marioChgMot(0x1A);
-        partyChgPose(party, YOSHI_S_2 + 8);
+        partyChgPose(party, YOSHI_H_1);
         marioChgPose("M_Y_1");
         party->speed = 0.0f;
         P_F(0x128) = 0.0f;
@@ -723,7 +728,7 @@ L_3588:
         }
         marioChgSmallJumpMotion();
         mario->baseSpeed = 0.0f;
-        partyChgPose(party, YOSHI_R_2 + 8);
+        partyChgPose(party, YOSHI_H_2);
         party->speed = 0.0f;
         party->useMotionId = 0x65;
         if (party->field_138 != NULL) {
