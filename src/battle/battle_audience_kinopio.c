@@ -53,7 +53,85 @@ static f32 audience_pool_i2f(s32 v) {
 #endif
 
 
-extern u8 weapon_teresa_trans[];
+// BattleWeapon table used by BattleCheckDamage in the Teresa transform state machine. Original symbol
+// weapon_teresa_trans (.data:0x0), local; every pointer field is NULL.
+static BattleWeapon weapon_teresa_trans = {
+    NULL,                                     // name
+    0,                                        // icon
+    ITEM_NULL,                                // item
+    NULL,                                     // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    0,                                        // baseSpCost
+    0,                                        // superguardType
+    0.0f,                                     // field_0x14
+    0,                                        // mStylishCommandMultiplier
+    0,                                        // field_0x19
+    0,                                        // mBingoSlotChance
+    0,                                        // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x01100060,                               // targetClassFlags
+    0x20000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    NULL,                                     // acHelpMsg
+    0x00020008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    100,                                      // invisibleChance
+    2,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    NULL,                                     // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+};
 static s32 intrudeSound;
 
 const char str_802F8D68[] = "SFX_AUDIENCE_HEIHO_MOVE1";
@@ -73,68 +151,10 @@ __declspec(section ".rodata") const u32 gap_04_802F8E04_rodata = 0;
 #pragma explicit_zero_data reset
 
 
-// .sdata2 constants referenced by symbol name in the original
-f32 float_270_8041e170 = 270.0f;
-f32 float_90_8041e174 = 90.0f;
-f32 float_0_8041e178 = 0.0f;
-f32 float_6_8041e17c = 6.0f;
-f32 float_neg60_8041e180 = -60.0f;
-f32 float_60_8041e184 = 60.0f;
-f32 float_1_8041e188 = 1.0f;
-f32 float_neg1_8041e18c = -1.0f;
-f32 float_neg100_8041e190 = -100.0f;
-f32 float_0p1_8041e194 = 0.1f;
-f32 float_0p05_8041e198 = 0.05f;
-f32 float_35_8041e19c = 35.0f;
-f32 float_5_8041e1a0 = 5.0f;
-f32 float_neg0p3_8041e1a4 = -0.3f;
-f32 float_100_8041e1a8 = 100.0f;
-f32 float_25_8041e1ac = 25.0f;
-f32 float_110_8041e1b0 = 110.0f;
-f32 float_10_8041e1b4 = 10.0f;
-f32 float_neg0p7_8041e1b8 = -0.7f;
-f32 float_neg1p5_8041e1bc = -1.5f;
-f32 float_300_8041e1c0 = 300.0f;
-f32 float_698_8041e1c4 = 698.0f;
-f32 float_185_8041e1c8 = 185.0f;
-f32 float_20_8041e1cc = 20.0f;
-f32 float_40_8041e1d0 = 40.0f;
-f32 float_80_8041e1d4 = 80.0f;
-f32 float_15_8041e1d8 = 15.0f;
-f32 float_0p0025_8041e1dc = 0.0025f;
-f32 float_45_8041e1e0 = 45.0f;
-f32 float_32767_8041e1e4 = 32767.0f;
-f32 float_neg0p5_8041e1e8 = -0.5f;
-f32 float_2_8041e1ec = 2.0f;
-f32 float_120_8041e1f0 = 120.0f;
-f32 float_8_8041e1f4 = 8.0f;
-f32 float_600_8041e1f8 = 600.0f;
-f32 float_1000_8041e1fc = 1000.0f;
-f32 float_neg0p15_8041e200 = -0.14999999f;
-f32 float_4_8041e204 = 4.0f;
-f32 float_neg0p2_8041e208 = -0.2f;
-f32 float_3p4_8041e20c = 3.4f;
-f32 float_1p5_8041e210 = 1.5f;
-f32 float_12_8041e214 = 12.0f;
-f32 float_0p75_8041e218 = 0.75f;
-f32 float_0p5_8041e21c = 0.5f;
-f32 float_0p25_8041e220 = 0.25f;
-f32 float_1p75_8041e224 = 1.75f;
-f32 float_1p25_8041e228 = 1.25f;
-f32 float_0p005_8041e22c = 0.005f;
-f32 float_188_8041e230 = 188.0f;
-f32 float_16_8041e234 = 16.0f;
-f32 float_24_8041e238 = 24.0f;
-f32 float_32_8041e23c = 32.0f;
-f32 float_36_8041e240 = 36.0f;
-f32 float_17_8041e244 = 17.0f;
-f32 float_0p00175_8041e248 = 0.00175f;
-f32 float_22_8041e24c = 22.0f;
-f32 float_0p00375_8041e250 = 0.00375f;
-f32 float_64_8041e254 = 64.0f;
-f32 float_31_8041e258 = 31.0f;
-f32 float_0p00125_8041e25c = 0.00125f;
-f32 float_6p2832_8041e260 = 6.283184f;
+// The original unit owns 61 float constants in .sdata2 (0x8041E170..0x8041E260). They are written
+// as literals in the functions below, which makes MWCC pool them in the original's order and with
+// the original's values; naming them as globals changes the compiler's scheduling and register
+// choices and drops many functions below 100%.
 
 // Helpers implemented in battle/battle_audience.c and elsewhere (declared locally;
 // these should move to a header).
@@ -215,36 +235,36 @@ void BattleAudienceCtrlProcessKinopio(s32 index) {
 	}
 	{
 	f32 zero = 0.0f;
-	member->position.x += *(f32*)((u8*)member + 0x78);
-	*(f32*)((u8*)member + 0x78) +=
-	    *(f32*)((u8*)member + 0x84);
-	member->position.y += *(f32*)((u8*)member + 0x7c);
-	*(f32*)((u8*)member + 0x7c) +=
-	    *(f32*)((u8*)member + 0x88);
-	member->position.z += *(f32*)((u8*)member + 0x80);
-	*(f32*)((u8*)member + 0x80) +=
-	    *(f32*)((u8*)member + 0x8c);
-	if (*(f32*)((u8*)member + 0x78) > zero) {
-		member->field_0xE8 = float_90_8041e174;
+	member->position.x += *(f32*)(member->field_0x54 + 0x24);
+	*(f32*)(member->field_0x54 + 0x24) +=
+	    *(f32*)(member->field_0x54 + 0x30);
+	member->position.y += *(f32*)(member->field_0x54 + 0x28);
+	*(f32*)(member->field_0x54 + 0x28) +=
+	    *(f32*)(member->field_0x54 + 0x34);
+	member->position.z += *(f32*)(member->field_0x54 + 0x2c);
+	*(f32*)(member->field_0x54 + 0x2c) +=
+	    *(f32*)(member->field_0x54 + 0x38);
+	if (*(f32*)(member->field_0x54 + 0x24) > zero) {
+		member->field_0xE8 = 90.0f;
 	}
-	else if (*(f32*)((u8*)member + 0x78) < zero) {
-		member->field_0xE8 = float_270_8041e170;
+	else if (*(f32*)(member->field_0x54 + 0x24) < zero) {
+		member->field_0xE8 = 270.0f;
 	}
-	if (*(f32*)((u8*)member + 0xd0) < zero) {
-		*(f32*)((u8*)member + 0xd0) = zero;
-		*(f32*)((u8*)member + 0xdc) = zero;
-		*(f32*)((u8*)member + 0xe4) = zero;
+	if (*(f32*)(member->field_0xC0 + 0x10) < zero) {
+		*(f32*)(member->field_0xC0 + 0x10) = zero;
+		*(f32*)(member->field_0xC0 + 0x1c) = zero;
+		*(f32*)(member->field_0xC0 + 0x24) = zero;
 	}
 	if (member->type == AUDIENCE_PIRANHA_PLANT) {
-		*(f32*)((u8*)member + 0xdc) = zero;
-		*(f32*)((u8*)member + 0xd0) = zero;
-		*(f32*)((u8*)member + 0xe4) = zero;
+		*(f32*)(member->field_0xC0 + 0x1c) = zero;
+		*(f32*)(member->field_0xC0 + 0x10) = zero;
+		*(f32*)(member->field_0xC0 + 0x24) = zero;
 	}
 	else {
-		*(f32*)((u8*)member + 0xd0) =
-		    *(f32*)((u8*)member + 0xd0) + *(f32*)((u8*)member + 0xdc);
-		*(f32*)((u8*)member + 0xdc) =
-		    *(f32*)((u8*)member + 0xdc) + *(f32*)((u8*)member + 0xe4);
+		*(f32*)(member->field_0xC0 + 0x10) =
+		    *(f32*)(member->field_0xC0 + 0x10) + *(f32*)(member->field_0xC0 + 0x1c);
+		*(f32*)(member->field_0xC0 + 0x1c) =
+		    *(f32*)(member->field_0xC0 + 0x1c) + *(f32*)(member->field_0xC0 + 0x24);
 	}
 	}
 	if (member->type == 2) {
@@ -256,22 +276,22 @@ void BattleAudienceCtrlProcessKinopio(s32 index) {
 			*(f32*)&member->field_0x12C = *(f32*)&member->field_0x12C - tau;
 		}
 		*(f32*)((u8*)member + 0x130) =
-		    float_5_8041e1a0 * (f32)sin(*(f32*)((u8*)member + 0x12c));
-		*(f32*)((u8*)member + 0xc0) =
-		    member->position.x + *(f32*)((u8*)member + 0xcc);
-		*(f32*)((u8*)member + 0xc4) = member->position.y +
-		                              *(f32*)((u8*)member + 0xd0) +
+		    5.0f * (f32)sin(*(f32*)(&member->field_0x12C));
+		*(f32*)(member->field_0xC0 + 0x0) =
+		    member->position.x + *(f32*)(member->field_0xC0 + 0xc);
+		*(f32*)(member->field_0xC0 + 0x4) = member->position.y +
+		                              *(f32*)(member->field_0xC0 + 0x10) +
 		                              *(f32*)((u8*)member + 0x130);
-		*(f32*)((u8*)member + 0xc8) =
-		    member->position.z + *(f32*)((u8*)member + 0xd4);
+		*(f32*)(member->field_0xC0 + 0x8) =
+		    member->position.z + *(f32*)(member->field_0xC0 + 0x14);
 	}
 	else {
-		*(f32*)((u8*)member + 0xc0) =
-		    member->position.x + *(f32*)((u8*)member + 0xcc);
-		*(f32*)((u8*)member + 0xc4) =
-		    member->position.y + *(f32*)((u8*)member + 0xd0);
-		*(f32*)((u8*)member + 0xc8) =
-		    member->position.z + *(f32*)((u8*)member + 0xd4);
+		*(f32*)(member->field_0xC0 + 0x0) =
+		    member->position.x + *(f32*)(member->field_0xC0 + 0xc);
+		*(f32*)(member->field_0xC0 + 0x4) =
+		    member->position.y + *(f32*)(member->field_0xC0 + 0x10);
+		*(f32*)(member->field_0xC0 + 0x8) =
+		    member->position.z + *(f32*)(member->field_0xC0 + 0x14);
 	}
 }
 
@@ -335,90 +355,90 @@ void BattleAudienceCtrlProcessKinopioWait(s32 index, s32 kind) {
 	}
 	switch (member->type) {
 	case 4:
-		if (*(s32*)((u8*)member + 0x30) > 0xb4) {
-			if (*(s32*)((u8*)member + 0x30) <= 0xbc) {
-				*(f32*)((u8*)member + 0x64) += 0.005f * step;
+		if (*(s32*)(member->field_0x24 + 0xc) > 0xb4) {
+			if (*(s32*)(member->field_0x24 + 0xc) <= 0xbc) {
+				*(f32*)(member->field_0x54 + 0x10) += 0.005f * step;
 			}
-			else if ((f32)(*(s32*)((u8*)member + 0x30)) <=
+			else if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <=
 			         8.0f * level + 188.0f) {
-				*(f32*)((u8*)member + 0x64) -= 0.005f * step;
+				*(f32*)(member->field_0x54 + 0x10) -= 0.005f * step;
 			}
-			else if ((f32)(*(s32*)((u8*)member + 0x30)) <=
+			else if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <=
 			         16.0f * level + 188.0f) {
-				*(f32*)((u8*)member + 0x64) += 0.005f * step;
+				*(f32*)(member->field_0x54 + 0x10) += 0.005f * step;
 			}
-			else if ((f32)(*(s32*)((u8*)member + 0x30)) <=
+			else if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <=
 			         24.0f * level + 188.0f) {
-				*(f32*)((u8*)member + 0x64) -= 0.005f * step;
+				*(f32*)(member->field_0x54 + 0x10) -= 0.005f * step;
 			}
-			else if ((f32)(*(s32*)((u8*)member + 0x30)) <=
+			else if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <=
 			         32.0f * level + 188.0f) {
-				*(f32*)((u8*)member + 0x64) += 0.005f * step;
+				*(f32*)(member->field_0x54 + 0x10) += 0.005f * step;
 			}
-			else if ((f32)(*(s32*)((u8*)member + 0x30)) <=
+			else if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <=
 			         40.0f * level + 188.0f) {
-				*(f32*)((u8*)member + 0x64) -= 0.005f * step;
+				*(f32*)(member->field_0x54 + 0x10) -= 0.005f * step;
 			}
 			else {
-				*(f32*)((u8*)member + 0x64) = 1.0f;
-				*(s32*)((u8*)member + 0x30) = 0;
+				*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+				*(s32*)(member->field_0x24 + 0xc) = 0;
 			}
 		}
-		(*(s32*)((u8*)member + 0x30))++;
+		(*(s32*)(member->field_0x24 + 0xc))++;
 		break;
 	case 6:
-		if ((f32)(*(s32*)((u8*)member + 0x30)) >= 36.0f * level) {
-			*(f32*)((u8*)member + 0x64) = 1.0f;
-			*(s32*)((u8*)member + 0x30) = 0;
+		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) >= 36.0f * level) {
+			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			*(s32*)(member->field_0x24 + 0xc) = 0;
 		}
-		if ((f32)(*(s32*)((u8*)member + 0x30)) <= 17.0f * level) {
-			*(f32*)((u8*)member + 0x64) += 0.00175f * step;
+		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <= 17.0f * level) {
+			*(f32*)(member->field_0x54 + 0x10) += 0.00175f * step;
 		}
 		else {
-			*(f32*)((u8*)member + 0x64) -= 0.00175f * step;
+			*(f32*)(member->field_0x54 + 0x10) -= 0.00175f * step;
 		}
-		(*(s32*)((u8*)member + 0x30))++;
+		(*(s32*)(member->field_0x24 + 0xc))++;
 		break;
 	case 7:
-		if ((f32)(*(s32*)((u8*)member + 0x30)) >= 22.0f * level) {
-			*(f32*)((u8*)member + 0x64) = 1.0f;
-			*(s32*)((u8*)member + 0x30) = 0;
+		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) >= 22.0f * level) {
+			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			*(s32*)(member->field_0x24 + 0xc) = 0;
 		}
-		if ((f32)(*(s32*)((u8*)member + 0x30)) <= 10.0f * level) {
-			*(f32*)((u8*)member + 0x64) += 0.00375f * step;
+		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <= 10.0f * level) {
+			*(f32*)(member->field_0x54 + 0x10) += 0.00375f * step;
 		}
 		else {
-			*(f32*)((u8*)member + 0x64) -= 0.00375f * step;
+			*(f32*)(member->field_0x54 + 0x10) -= 0.00375f * step;
 		}
-		(*(s32*)((u8*)member + 0x30))++;
+		(*(s32*)(member->field_0x24 + 0xc))++;
 		break;
 	case 9:
-		if ((f32)(*(s32*)((u8*)member + 0x30)) >= 64.0f * level) {
-			*(f32*)((u8*)member + 0x64) = 1.0f;
-			*(s32*)((u8*)member + 0x30) = 0;
+		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) >= 64.0f * level) {
+			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			*(s32*)(member->field_0x24 + 0xc) = 0;
 		}
-		if ((f32)(*(s32*)((u8*)member + 0x30)) <= 31.0f * level) {
-			*(f32*)((u8*)member + 0x64) += 0.00125f * step;
+		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <= 31.0f * level) {
+			*(f32*)(member->field_0x54 + 0x10) += 0.00125f * step;
 		}
 		else {
-			*(f32*)((u8*)member + 0x64) -= 0.00125f * step;
+			*(f32*)(member->field_0x54 + 0x10) -= 0.00125f * step;
 		}
-		(*(s32*)((u8*)member + 0x30))++;
+		(*(s32*)(member->field_0x24 + 0xc))++;
 		break;
 	case 2:
 		break;
 	default:
-		if ((f32)(*(s32*)((u8*)member + 0x30)) >= 32.0f * level) {
-			*(f32*)((u8*)member + 0x64) = 1.0f;
-			*(s32*)((u8*)member + 0x30) = 0;
+		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) >= 32.0f * level) {
+			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			*(s32*)(member->field_0x24 + 0xc) = 0;
 		}
-		if ((f32)(*(s32*)((u8*)member + 0x30)) <= 15.0f * level) {
-			*(f32*)((u8*)member + 0x64) += 0.0025f * step;
+		if ((f32)(*(s32*)(member->field_0x24 + 0xc)) <= 15.0f * level) {
+			*(f32*)(member->field_0x54 + 0x10) += 0.0025f * step;
 		}
 		else {
-			*(f32*)((u8*)member + 0x64) -= 0.0025f * step;
+			*(f32*)(member->field_0x54 + 0x10) -= 0.0025f * step;
 		}
-		(*(s32*)((u8*)member + 0x30))++;
+		(*(s32*)(member->field_0x24 + 0xc))++;
 		break;
 	}
 	if (member->flags & 0x40) {
@@ -496,19 +516,19 @@ void BattleAudienceCtrlProcessKinopioWaitHurimuki(s32 index, s32 kind) {
 	else {
 		BattleAudience_SetAnim(index, 1, 0);
 	}
-	if (*(s32*)((u8*)member + 0x30) <= 0xf) {
+	if (*(s32*)(member->field_0x24 + 0xc) <= 0xf) {
 		member->mRotation.y =
-		    float_12_8041e214 * (f32)(*(s32*)((u8*)member + 0x30));
+		    12.0f * (f32)(*(s32*)(member->field_0x24 + 0xc));
 	}
-	if (*(s32*)((u8*)member + 0x30) >= 0x1e) {
+	if (*(s32*)(member->field_0x24 + 0xc) >= 0x1e) {
 		member->mRotation.y =
-		    float_12_8041e214 * (f32)(0x2d - *(s32*)((u8*)member + 0x30));
+		    12.0f * (f32)(0x2d - *(s32*)(member->field_0x24 + 0xc));
 	}
-	if (*(s32*)((u8*)member + 0x30) > 0x2d) {
+	if (*(s32*)(member->field_0x24 + 0xc) > 0x2d) {
 		BattleAudience_ChangeStatus(index, 0);
 	}
 	else {
-		(*(s32*)((u8*)member + 0x30))++;
+		(*(s32*)(member->field_0x24 + 0xc))++;
 	}
 }
 
@@ -521,29 +541,24 @@ void BattleAudienceCtrlProcessKinopioWaitKubiKatamuke(s32 index, s32 kind) {
 	else {
 		BattleAudience_SetAnim(index, 1, 0);
 	}
-	if (*(s32*)((u8*)member + 0x30) >= 0 && *(s32*)((u8*)member + 0x30) <= 0xa) {
-		*(f32*)((u8*)member + 0x6c) =
-		    float_1p5_8041e210 * (f32)(*(s32*)((u8*)member + 0x30));
+	if (*(s32*)(member->field_0x24 + 0xc) >= 0 && *(s32*)(member->field_0x24 + 0xc) <= 0xa) {
+		*(f32*)(member->field_0x54 + 0x18) =
+		    1.5f * (f32)(*(s32*)(member->field_0x24 + 0xc));
 	}
-	if (*(s32*)((u8*)member + 0x30) >= 0x14 && *(s32*)((u8*)member + 0x30) <= 0x28) {
-		*(f32*)((u8*)member + 0x6c) -= float_1p5_8041e210;
+	if (*(s32*)(member->field_0x24 + 0xc) >= 0x14 && *(s32*)(member->field_0x24 + 0xc) <= 0x28) {
+		*(f32*)(member->field_0x54 + 0x18) -= 1.5f;
 	}
-	if (*(s32*)((u8*)member + 0x30) >= 0x32 && *(s32*)((u8*)member + 0x30) <= 0x3c) {
-		*(f32*)((u8*)member + 0x6c) += float_1p5_8041e210;
+	if (*(s32*)(member->field_0x24 + 0xc) >= 0x32 && *(s32*)(member->field_0x24 + 0xc) <= 0x3c) {
+		*(f32*)(member->field_0x54 + 0x18) += 1.5f;
 	}
-	if (*(s32*)((u8*)member + 0x30) > 0x3c) {
+	if (*(s32*)(member->field_0x24 + 0xc) > 0x3c) {
 		BattleAudience_ChangeStatus(index, 0);
 	}
 	else {
-		(*(s32*)((u8*)member + 0x30))++;
+		(*(s32*)(member->field_0x24 + 0xc))++;
 	}
 }
 
-// The original source writes these four constants as literals, which MWCC pools itself. The
-// file's named float globals are non-const (so they live in .sdata and schedule differently),
-// which colours the 0x1c/0x24 pair f0/f1 instead of the target's f1/f0. Under MUST_MATCH the
-// literals reproduce the original pooling; the named-global form (what the file's other
-// functions use) is the #else. Matches at 100%.
 void BattleAudienceCtrlProcessKinopioWaitJump(s32 index, s32 kind) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(index);
 
@@ -565,31 +580,21 @@ void BattleAudienceCtrlProcessKinopioWaitJump(s32 index, s32 kind) {
 		// fallthrough
 	case 1:
 		if (member->type == 7) {
-#ifdef MUST_MATCH
 			f32 v = 5.0f;
 			f32 w = -1.0f;
-#else
-			f32 v = float_5_8041e1a0;
-			f32 w = float_neg1_8041e18c;
-#endif
 			*(f32*)(member->field_0xC0 + 0x1c) = v;
 			*(f32*)(member->field_0xC0 + 0x24) = w;
 		}
 		else {
-#ifdef MUST_MATCH
 			f32 v = 3.4f;
 			f32 w = -0.2f;
-#else
-			f32 v = float_3p4_8041e20c;
-			f32 w = float_neg0p2_8041e208;
-#endif
 			*(f32*)(member->field_0xC0 + 0x1c) = v;
 			*(f32*)(member->field_0xC0 + 0x24) = w;
 		}
 		member->field_0x4++;
 		// fallthrough
 	case 2:
-		if (float_0_8041e178 == *(f32*)((u8*)member + 0xe4)) {
+		if (0.0f == *(f32*)(member->field_0xC0 + 0x24)) {
 			(*(s32*)member->field_0x8)--;
 			if (*(s32*)member->field_0x8 <= 0) {
 				BattleAudience_ChangeStatus(index, 0);
@@ -612,16 +617,15 @@ void BattleAudienceCtrlProcessKinopioJoyRaiseArm(s32 index, s32 kind) {
 	switch (member->field_0x4) {
 	case 0:
 		if (irand(2) == 0) {
-			member->field_0xE8 = float_270_8041e170;
+			member->field_0xE8 = 270.0f;
 		}
 		else {
-			member->field_0xE8 = float_90_8041e174;
+			member->field_0xE8 = 90.0f;
 		}
 		member->field_0x4++;
 		// fallthrough
 	case 1:
-		*(f32*)((u8*)member + 0x70) = intplGetValue(4, ((volatile f32)float_0_8041e178, (volatile f32)float_10_8041e1b4, *(s32*)member->field_0x8), 0xf,
-		    float_0_8041e178, float_10_8041e1b4);
+		*(f32*)(member->field_0x54 + 0x1c) = intplGetValue(4, *(s32*)member->field_0x8, 0xf, 0.0f, 10.0f);
 		(*(s32*)member->field_0x8)++;
 		if (*(s32*)member->field_0x8 > 0x1e) {
 			f32 one = 1.0f;
@@ -654,13 +658,13 @@ void BattleAudienceCtrlProcessKinopioJoyJump(s32 index, s32 kind) {
 		member->field_0x4++;
 		// fallthrough
 	case 1:
-		*(f32*)((u8*)member + 0xdc) =
+		*(f32*)(member->field_0xC0 + 0x1c) =
 		    3.4f + (f32)rand() / 32767.0f;
-		*(f32*)((u8*)member + 0xe4) = -0.2f;
+		*(f32*)(member->field_0xC0 + 0x24) = -0.2f;
 		member->field_0x4++;
 		// fallthrough
 	case 2:
-		if (float_0_8041e178 == *(f32*)((u8*)member + 0xe4)) {
+		if (0.0f == *(f32*)(member->field_0xC0 + 0x24)) {
 			(*(s32*)member->field_0x8)--;
 			if (*(s32*)member->field_0x8 <= 0) {
 				BattleAudience_ChangeStatus(index, 0);
@@ -689,8 +693,8 @@ void BattleAudienceCtrlProcessKinopioJoyJump2(s32 index, s32 kind) {
 		// fallthrough
 	case 1: {
 		f32 neg = -0.2f;
-		*(f32*)((u8*)member + 0xdc) = 4.0f + (f32)rand() / 32767.0f;
-		*(f32*)((u8*)member + 0xe4) = neg;
+		*(f32*)(member->field_0xC0 + 0x1c) = 4.0f + (f32)rand() / 32767.0f;
+		*(f32*)(member->field_0xC0 + 0x24) = neg;
 		member->field_0x4++;
 	}
 		// fallthrough
@@ -698,7 +702,7 @@ void BattleAudienceCtrlProcessKinopioJoyJump2(s32 index, s32 kind) {
 	{
 		f32 zero = 0.0f;
 		member->mRotation.y += 20.0f;
-		if (zero == *(f32*)((u8*)member + 0xe4)) {
+		if (zero == *(f32*)(member->field_0xC0 + 0x24)) {
 			(*(s32*)member->field_0x8)--;
 			if (*(s32*)member->field_0x8 <= 0) {
 				BattleAudience_ChangeStatus(index, 0);
@@ -735,8 +739,8 @@ void BattleAudienceCtrlProcessKinopioItemOn(s32 index, s32 kind) {
 		if (BattleAudienceItemGetPtr(0)->mItemType < 0xec ||
 		    BattleAudienceItemGetPtr(0)->mItemType >= 0xf0) {
 			BattleAudienceAddTargetNum(
-			    float_neg0p15_8041e200 * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
-			    float_0_8041e178);
+			    -0.14999999f * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+			    0.0f);
 		}
 	}
 	else if (!(member->flags & 0x20) && (work->flags & 0x80)) {
@@ -764,8 +768,8 @@ void BattleAudienceCtrlProcessKinopioItemThrow(s32 index) {
 		if (BattleAudienceItemGetPtr(0)->mItemType < 0xec ||
 		    BattleAudienceItemGetPtr(0)->mItemType >= 0xf0) {
 			BattleAudienceAddTargetNum(
-			    float_neg0p15_8041e200 * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
-			    float_0_8041e178);
+			    -0.14999999f * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+			    0.0f);
 		}
 	}
 	else if (member->flags & 0x20) {
@@ -780,16 +784,15 @@ void BattleAudienceCtrlProcessKinopioBooing(s32 index) {
 	switch (member->field_0x4) {
 	case 0:
 		if (irand(2) == 0) {
-			member->field_0xE8 = float_270_8041e170;
+			member->field_0xE8 = 270.0f;
 		}
 		else {
-			member->field_0xE8 = float_90_8041e174;
+			member->field_0xE8 = 90.0f;
 		}
 		member->field_0x4++;
 		// fallthrough
 	case 1:
-		*(f32*)((u8*)member + 0x70) = intplGetValue(4, ((volatile f32)float_0_8041e178, (volatile f32)float_10_8041e1b4, *(s32*)member->field_0x8), 0xf,
-		    float_0_8041e178, float_10_8041e1b4);
+		*(f32*)(member->field_0x54 + 0x1c) = intplGetValue(4, *(s32*)member->field_0x8, 0xf, 0.0f, 10.0f);
 		(*(s32*)member->field_0x8)++;
 		if (*(s32*)member->field_0x8 > 0x1e) {
 			f32 one = 1.0f;
@@ -821,36 +824,36 @@ void BattleAudienceCtrlProcessKinopioDamage(s32 index) {
 	case 0:
 		BattleAudience_SetAnim(index, 9, 0);
 #ifdef MUST_MATCH
-		v = float_8_8041e1f4;
-		w = float_neg1_8041e18c;
-		*(f32*)((u8*)member + 0xdc) = v;
-		a = float_270_8041e170;
-		*(f32*)((u8*)member + 0xe4) = w;
-		*(s32*)((u8*)member + 0x30) = 0;
+		v = 8.0f;
+		w = -1.0f;
+		*(f32*)(member->field_0xC0 + 0x1c) = v;
+		a = 270.0f;
+		*(f32*)(member->field_0xC0 + 0x24) = w;
+		*(s32*)(member->field_0x24 + 0xc) = 0;
 		member->field_0xE8 = a;
 #else
-		*(f32*)((u8*)member + 0xdc) = float_8_8041e1f4;
-		*(f32*)((u8*)member + 0xe4) = float_neg1_8041e18c;
-		*(s32*)((u8*)member + 0x30) = 0;
-		member->field_0xE8 = float_270_8041e170;
+		*(f32*)(member->field_0xC0 + 0x1c) = 8.0f;
+		*(f32*)(member->field_0xC0 + 0x24) = -1.0f;
+		*(s32*)(member->field_0x24 + 0xc) = 0;
+		member->field_0xE8 = 270.0f;
 #endif
 		member->field_0x4++;
 		// fallthrough
 	case 1:
-		if (*(s32*)((u8*)member + 0x30) >= 8) {
-			*(f32*)((u8*)member + 0x64) = float_1_8041e188;
-			*(s32*)((u8*)member + 0x30) = 0;
+		if (*(s32*)(member->field_0x24 + 0xc) >= 8) {
+			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			*(s32*)(member->field_0x24 + 0xc) = 0;
 		}
-		if (*(s32*)((u8*)member + 0x30) <= 4) {
-			*(f32*)((u8*)member + 0x64) -= float_0p1_8041e194;
+		if (*(s32*)(member->field_0x24 + 0xc) <= 4) {
+			*(f32*)(member->field_0x54 + 0x10) -= 0.1f;
 		}
 		else {
-			*(f32*)((u8*)member + 0x64) += float_0p1_8041e194;
+			*(f32*)(member->field_0x54 + 0x10) += 0.1f;
 		}
-		(*(s32*)((u8*)member + 0x30))++;
+		(*(s32*)(member->field_0x24 + 0xc))++;
 		if (BattleAudience_GetAnimEnd(index) == 1) {
-			*(f32*)((u8*)member + 0x64) = float_1_8041e188;
-			*(s32*)((u8*)member + 0x30) = 0;
+			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			*(s32*)(member->field_0x24 + 0xc) = 0;
 			if ((u8)BattleAudience_GetEscapeChangeOK(index) == 1) {
 				BattleAudience_ChangeStatus(index, 0xc);
 				psndSFXOn_3D(str_802F8DE8, &member->position);
@@ -879,9 +882,9 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 			member->position.x = member->mHomePosition.x;
 			member->position.y = -100.0f;
 			member->position.z = member->mHomePosition.z;
-			*(f32*)((u8*)member + 0x78) = zero;
-			*(f32*)((u8*)member + 0x7c) = zero;
-			*(f32*)((u8*)member + 0x80) = zero;
+			*(f32*)(member->field_0x54 + 0x24) = zero;
+			*(f32*)(member->field_0x54 + 0x28) = zero;
+			*(f32*)(member->field_0x54 + 0x2c) = zero;
 			{
 				s32 t = irand(0x3c);
 				t = t + *(s32*)member->field_0x8;
@@ -895,9 +898,9 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 			if (*(s32*)member->field_0x8 <= 0) {
 				f32 one = 1.0f;
 				f32 zero = 0.0f;
-				*(f32*)((u8*)member + 0x78) = zero;
-				*(f32*)((u8*)member + 0x7c) = one;
-				*(f32*)((u8*)member + 0x80) = zero;
+				*(f32*)(member->field_0x54 + 0x24) = zero;
+				*(f32*)(member->field_0x54 + 0x28) = one;
+				*(f32*)(member->field_0x54 + 0x2c) = zero;
 				member->field_0x4++;
 			}
 			break;
@@ -920,9 +923,9 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 			member->position.z = thousand;
 			{
 				f32 zero = 0.0f;
-				*(f32*)((u8*)member + 0x78) = zero;
-				*(f32*)((u8*)member + 0x7c) = zero;
-				*(f32*)((u8*)member + 0x80) = zero;
+				*(f32*)(member->field_0x54 + 0x24) = zero;
+				*(f32*)(member->field_0x54 + 0x28) = zero;
+				*(f32*)(member->field_0x54 + 0x2c) = zero;
 			}
 			{
 				s32 t = irand(0x3c);
@@ -940,18 +943,18 @@ void BattleAudienceCtrlProcessKinopioEnter(s32 index) {
 				f32 len = (f32)sqrt(dx * dx + dz * dz);
 				f32 zero = 0.0f;
 				f32 ten = 10.0f;
-				*(f32*)((u8*)member + 0x78) = ten * (dx / len);
-				*(f32*)((u8*)member + 0x7c) = zero;
-				*(f32*)((u8*)member + 0x80) = ten * (dz / len);
-				*(f32*)((u8*)member + 0xc) = ten;
-				*(f32*)((u8*)member + 0x10) = ten;
-				*(f32*)((u8*)member + 0x14) = len;
+				*(f32*)(member->field_0x54 + 0x24) = ten * (dx / len);
+				*(f32*)(member->field_0x54 + 0x28) = zero;
+				*(f32*)(member->field_0x54 + 0x2c) = ten * (dz / len);
+				*(f32*)(member->field_0x8 + 0x4) = ten;
+				*(f32*)(member->field_0x8 + 0x8) = ten;
+				*(f32*)(member->field_0x8 + 0xc) = len;
 				member->field_0x4++;
 			}
 			break;
 		case 2:
-			*(f32*)((u8*)member + 0xc) += *(f32*)((u8*)member + 0x10);
-			if (*(f32*)((u8*)member + 0xc) >= *(f32*)((u8*)member + 0x14)) {
+			*(f32*)(member->field_0x8 + 0x4) += *(f32*)(member->field_0x8 + 0x8);
+			if (*(f32*)(member->field_0x8 + 0x4) >= *(f32*)(member->field_0x8 + 0xc)) {
 				member->position.x = member->mHomePosition.x;
 				member->position.y = member->mHomePosition.y;
 				member->position.z = member->mHomePosition.z;
@@ -973,14 +976,14 @@ void BattleAudienceCtrlProcessKinopioEscape(s32 index) {
 		case 0:
 			(*(s32*)member->field_0x8)--;
 			if (*(s32*)member->field_0x8 <= 0) {
-				*(f32*)((u8*)member + 0x78) = 0.0f;
-				*(f32*)((u8*)member + 0x7c) = -1.0f;
-				*(f32*)((u8*)member + 0x80) = 0.0f;
+				*(f32*)(member->field_0x54 + 0x24) = 0.0f;
+				*(f32*)(member->field_0x54 + 0x28) = -1.0f;
+				*(f32*)(member->field_0x54 + 0x2c) = 0.0f;
 				member->field_0x4++;
 			}
 			break;
 		case 1:
-			if (member->position.y <= float_neg100_8041e190) {
+			if (member->position.y <= -100.0f) {
 				BattleAudience_Delete(index);
 				member->field_0x4++;
 			}
@@ -1000,23 +1003,23 @@ void BattleAudienceCtrlProcessKinopioEscape(s32 index) {
 					f32 eight = 8.0f;
 					f32 six = 6.0f;
 					f32 neg0p5 = -0.5f;
-					*(f32*)((u8*)member + 0x78) = v;
-					*(f32*)((u8*)member + 0x7c) = zero;
-					*(f32*)((u8*)member + 0x80) = eight;
-					*(f32*)((u8*)member + 0xdc) = six;
-					*(f32*)((u8*)member + 0xe4) = neg0p5;
+					*(f32*)(member->field_0x54 + 0x24) = v;
+					*(f32*)(member->field_0x54 + 0x28) = zero;
+					*(f32*)(member->field_0x54 + 0x2c) = eight;
+					*(f32*)(member->field_0xC0 + 0x1c) = six;
+					*(f32*)(member->field_0xC0 + 0x24) = neg0p5;
 				}
 				member->field_0x4++;
 				psndSFXOn_3D(str_802F8DD4, &member->position);
 			}
 			break;
 		case 1:
-			if (float_0_8041e178 == *(f32*)((u8*)member + 0xe4)) {
+			if (0.0f == *(f32*)(member->field_0xC0 + 0x24)) {
 				member->field_0x4++;
 			}
 			break;
 		case 2:
-			if (member->position.z >= float_600_8041e1f8) {
+			if (member->position.z >= 600.0f) {
 				BattleAudience_Delete(index);
 			}
 			break;
@@ -1036,23 +1039,23 @@ void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind) {
 		else {
 			BattleAudience_SetAnim(index, 0xb, 0);
 		}
-		if (*(s32*)((u8*)member + 0x30) >= 0x140) {
-			*(f32*)((u8*)member + 0x64) = float_1_8041e188;
-			*(s32*)((u8*)member + 0x30) = 0;
+		if (*(s32*)(member->field_0x24 + 0xc) >= 0x140) {
+			*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+			*(s32*)(member->field_0x24 + 0xc) = 0;
 		}
-		if (*(s32*)((u8*)member + 0x30) <= 0xa0) {
-			*(f32*)((u8*)member + 0x64) -= float_0p0025_8041e1dc;
+		if (*(s32*)(member->field_0x24 + 0xc) <= 0xa0) {
+			*(f32*)(member->field_0x54 + 0x10) -= 0.0025f;
 		}
 		else {
-			*(f32*)((u8*)member + 0x64) += float_0p0025_8041e1dc;
+			*(f32*)(member->field_0x54 + 0x10) += 0.0025f;
 		}
-		(*(s32*)((u8*)member + 0x30))++;
-		*(u8*)((u8*)member + 0x43) = *(u8*)((u8*)member + 0x43) + *(u8*)((u8*)member + 0x18);
-		if (*(u8*)((u8*)member + 0x43) >= 0xc8) {
-			*(s8*)((u8*)member + 0x18) = -4;
+		(*(s32*)(member->field_0x24 + 0xc))++;
+		*(u8*)(member->field_0x24 + 0x1f) = *(u8*)(member->field_0x24 + 0x1f) + *(u8*)(member->field_0x8 + 0x10);
+		if (*(u8*)(member->field_0x24 + 0x1f) >= 0xc8) {
+			*(s8*)(member->field_0x8 + 0x10) = -4;
 		}
-		else if (*(u8*)((u8*)member + 0x43) <= 5) {
-			*(u8*)((u8*)member + 0x18) = 4;
+		else if (*(u8*)(member->field_0x24 + 0x1f) <= 5) {
+			*(u8*)(member->field_0x8 + 0x10) = 4;
 		}
 	}
 	switch (member->field_0x4) {
@@ -1062,27 +1065,27 @@ void BattleAudienceCtrlProcessKinopioSleep(s32 index, s32 kind) {
 		// fallthrough
 	case 1:
 		if (irand(0x8ca0) == 0) {
-			effSleepEntry(0, 0xb4, member->position.x, float_25_8041e1ac + member->position.y,
-			    member->position.z, float_1_8041e188, float_45_8041e1e0);
+			effSleepEntry(0, 0xb4, member->position.x, 25.0f + member->position.y,
+			    member->position.z, 1.0f, 45.0f);
 			BattleAudienceSoundZZZ(index);
 		}
 		break;
 	case 2:
-		*(f32*)((u8*)member + 0xdc) =
+		*(f32*)(member->field_0xC0 + 0x1c) =
 		    6.0f + (f32)rand() / 32767.0f;
-		*(f32*)((u8*)member + 0xe4) = -0.5f;
+		*(f32*)(member->field_0xC0 + 0x24) = -0.5f;
 		if ((u8)kind == 1) {
 			BattleAudience_SetAnim(index, 0, 0);
 		}
 		else {
 			BattleAudience_SetAnim(index, 1, 0);
 		}
-		*(f32*)((u8*)member + 0x64) = float_1_8041e188;
-		*(u8*)((u8*)member + 0x43) = 0;
+		*(f32*)(member->field_0x54 + 0x10) = 1.0f;
+		*(u8*)(member->field_0x24 + 0x1f) = 0;
 		member->field_0x4++;
 		// fallthrough
 	case 3:
-		if (float_0_8041e178 == *(f32*)((u8*)member + 0xe4)) {
+		if (0.0f == *(f32*)(member->field_0xC0 + 0x24)) {
 			BattleAudience_ChangeStatus(index, 0);
 		}
 		break;
@@ -1121,10 +1124,10 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 			BattleAudience_SetAnim(index, 7, 0);
 			BtlUnit_GetHitPos(unit, part, &x_873, &y_874, &z_875);
 			if (member->position.x >= x_873) {
-				member->field_0xE8 = float_270_8041e170;
+				member->field_0xE8 = 270.0f;
 			}
 			else {
-				member->field_0xE8 = float_90_8041e174;
+				member->field_0xE8 = 90.0f;
 			}
 			member->field_0x4 = 0xa;
 			*(s32*)member->field_0x8 = 0;
@@ -1148,7 +1151,7 @@ void BattleAudienceCtrlProcessKinopioTransEvt(s32 index) {
 			BtlUnit_GetStatus(unit, 0x12, &turns, &strength);
 			if (turns < 1 && !BtlUnit_CheckShadowGuard(unit)) {
 				BattleCheckDamage(BattleGetSystemPtr(work), unit, part,
-				    (BattleWeapon*)weapon_teresa_trans, 0x100);
+				    (BattleWeapon*)&weapon_teresa_trans, 0x100);
 				BtlUnit_snd_se(unit, str_802F8DB4, -250000000, 0);
 			}
 		}
@@ -1440,9 +1443,9 @@ void BattleAudienceCtrlProcessKinopioSing(s32 index) {
 			f32 y;
 			f32 z;
 			f32 x;
-			z = member->position.z + (f32)irand(0xa) - float_5_8041e1a0;
+			z = member->position.z + (f32)irand(0xa) - 5.0f;
 			y = member->position.y + (f32)irand(0xa);
-			x = member->position.x + (f32)irand(0xc8) - float_100_8041e1a8;
+			x = member->position.x + (f32)irand(0xc8) - 100.0f;
 			effOnpuN64Entry(0, x, y, z);
 		}
 		if (*(s32*)member->field_0x8 <= 0) {
@@ -1502,15 +1505,8 @@ void BattleAudienceCtrlProcessKinopioShell(s32 index) {
 		break;
 	case 2:
 		{
-#ifdef MUST_MATCH
-			// literals so MWCC pools them and assigns f1/f0 like the original; the
-			// named globals make it load them into the opposite registers
 			f32 v = 5.0f;
 			f32 w = -0.3f;
-#else
-			f32 v = float_5_8041e1a0;
-			f32 w = float_neg0p3_8041e1a4;
-#endif
 			*(f32*)(member->field_0xC0 + 0x1c) = v;
 			*(f32*)(member->field_0xC0 + 0x24) = w;
 		}
@@ -1529,15 +1525,8 @@ void BattleAudienceCtrlProcessKinopioShell(s32 index) {
 		break;
 	case 6:
 		{
-#ifdef MUST_MATCH
-			// literals so MWCC pools them and assigns f1/f0 like the original; the
-			// named globals make it load them into the opposite registers
 			f32 v = 5.0f;
 			f32 w = -0.3f;
-#else
-			f32 v = float_5_8041e1a0;
-			f32 w = float_neg0p3_8041e1a4;
-#endif
 			*(f32*)(member->field_0xC0 + 0x1c) = v;
 			*(f32*)(member->field_0xC0 + 0x24) = w;
 		}
@@ -1611,15 +1600,15 @@ void BattleAudienceCtrlProcessKinopioFire(s32 index, s32 kind) {
 	case 1:
 #ifdef MUST_MATCH
 		{
-			f32 v = *(f32*)((u8*)member + 0x60);
-			f32 step = float_0p05_8041e198;
-			*(f32*)((u8*)member + 0x60) = v + step;
-			v = *(f32*)((u8*)member + 0x64);
-			*(f32*)((u8*)member + 0x64) = v + step;
+			f32 v = *(f32*)(member->field_0x54 + 0xc);
+			f32 step = 0.05f;
+			*(f32*)(member->field_0x54 + 0xc) = v + step;
+			v = *(f32*)(member->field_0x54 + 0x10);
+			*(f32*)(member->field_0x54 + 0x10) = v + step;
 		}
 #else
-		*(f32*)((u8*)member + 0x60) += float_0p05_8041e198;
-		*(f32*)((u8*)member + 0x64) += float_0p05_8041e198;
+		*(f32*)(member->field_0x54 + 0xc) += 0.05f;
+		*(f32*)(member->field_0x54 + 0x10) += 0.05f;
 #endif
 		(*(s32*)member->field_0x8)--;
 		if (*(s32*)member->field_0x8 <= 0) {
@@ -1634,10 +1623,10 @@ void BattleAudienceCtrlProcessKinopioFire(s32 index, s32 kind) {
 			BattleAudienceSoundBombFire(index);
 			member->flags &= ~0x4;
 			if (index < 0x3c) {
-				effSandarsEntry(4, member->position.x, float_35_8041e19c + member->position.y,
-				    member->position.z, float_0_8041e178);
+				effSandarsEntry(4, member->position.x, 35.0f + member->position.y,
+				    member->position.z, 0.0f);
 			}
-			btl_camera_shake_h(0, 0x1e, 0, float_5_8041e1a0, float_0_8041e178);
+			btl_camera_shake_h(0, 0x1e, 0, 5.0f, 0.0f);
 			for (i = 0; i < 0x18; i++) {
 				s32 no = BattleAudience_GetAudienceNoFromOffset(
 				    index, offsets[i][0], offsets[i][1]);
@@ -1658,7 +1647,7 @@ void BattleAudienceCtrlProcessKinopioFire(s32 index, s32 kind) {
 		break;
 	case 3:
 		BattleAudience_Delete(index);
-		audience->mTargetAudienceCount -= float_1_8041e188;
+		audience->mTargetAudienceCount -= 1.0f;
 		break;
 	}
 }
@@ -1683,7 +1672,7 @@ void BattleAudienceCtrlProcessKinopioFireSub(s32 index) {
 	}
 	if (member->status != 0x11) {
 		BattleAudience_Delete(index);
-		audience->mTargetAudienceCount -= float_1_8041e188;
+		audience->mTargetAudienceCount -= 1.0f;
 	}
 }
 
@@ -1737,13 +1726,13 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	case 3:
 		target = BattleAudienceGetPtr(*(s16*)(member->field_0xEC + 4));
 		if (member->position.x >= target->position.x) {
-			*(f32*)((u8*)member + 0x6c) -= 6.0f;
+			*(f32*)(member->field_0x54 + 0x18) -= 6.0f;
 		}
 		else {
-			*(f32*)((u8*)member + 0x6c) += 6.0f;
+			*(f32*)(member->field_0x54 + 0x18) += 6.0f;
 		}
-		if (*(f32*)((u8*)member + 0x6c) <= -60.0f ||
-		    *(f32*)((u8*)member + 0x6c) >= 60.0f) {
+		if (*(f32*)(member->field_0x54 + 0x18) <= -60.0f ||
+		    *(f32*)(member->field_0x54 + 0x18) >= 60.0f) {
 			member->field_0x4++;
 		}
 		break;
@@ -1756,15 +1745,15 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 		break;
 	case 5: {
 		f32 zero = 0.0f;
-		if (*(f32*)((u8*)member + 0x6c) > zero) {
-			*(f32*)((u8*)member + 0x6c) -= 6.0f;
-			if (*(f32*)((u8*)member + 0x6c) <= zero) {
+		if (*(f32*)(member->field_0x54 + 0x18) > zero) {
+			*(f32*)(member->field_0x54 + 0x18) -= 6.0f;
+			if (*(f32*)(member->field_0x54 + 0x18) <= zero) {
 				member->field_0x4 = 7;
 			}
 		}
 		else {
-			*(f32*)((u8*)member + 0x6c) += 6.0f;
-			if (*(f32*)((u8*)member + 0x6c) >= zero) {
+			*(f32*)(member->field_0x54 + 0x18) += 6.0f;
+			if (*(f32*)(member->field_0x54 + 0x18) >= zero) {
 				member->field_0x4 = 7;
 			}
 		}
@@ -1796,9 +1785,9 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	case 8: {
 		f32 zero = 0.0f;
 		f32 neg1 = -1.0f;
-		*(f32*)((u8*)member + 0x78) = zero;
-		*(f32*)((u8*)member + 0x7c) = neg1;
-		*(f32*)((u8*)member + 0x80) = zero;
+		*(f32*)(member->field_0x54 + 0x24) = zero;
+		*(f32*)(member->field_0x54 + 0x28) = neg1;
+		*(f32*)(member->field_0x54 + 0x2c) = zero;
 		member->field_0x4++;
 		break;
 	}
@@ -1827,9 +1816,9 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 	case 0xa: {
 		f32 zero = 0.0f;
 		f32 one = 1.0f;
-		*(f32*)((u8*)member + 0x78) = zero;
-		*(f32*)((u8*)member + 0x7c) = one;
-		*(f32*)((u8*)member + 0x80) = zero;
+		*(f32*)(member->field_0x54 + 0x24) = zero;
+		*(f32*)(member->field_0x54 + 0x28) = one;
+		*(f32*)(member->field_0x54 + 0x2c) = zero;
 		member->field_0x4++;
 		break;
 	}
@@ -1839,7 +1828,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 			stageY = *(f32*)((u8*)stage + 0xb34);
 			member->mHomePosition.y = stageY;
 			member->position.y = stageY;
-			*(f32*)((u8*)member + 0x7c) = 0.0f;
+			*(f32*)(member->field_0x54 + 0x28) = 0.0f;
 			member->field_0x4 = 0x63;
 			*(s32*)member->field_0x8 = 0xa;
 			target = BattleAudienceGetPtr(member->field_0x12C);
