@@ -5,7 +5,6 @@ typedef struct WindowEntry WindowEntry;
 typedef struct EventEntry EventEntry;
 #include "memory.h"
 
-extern GXColor unk_80422fe0;
 
 typedef struct MsgDataEntry {
 	u32 field_0x0; //0x0, probably a GXColor?

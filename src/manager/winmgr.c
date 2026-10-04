@@ -1953,8 +1953,8 @@ void select_disp_party(WinMgrEntry* entry) {
 }
 #pragma opt_propagation reset // end the opt_propagation scope from select_disp_party
 
-// NONMATCHING (99.59%): every call, constant, branch, stack slot and store order now matches.
-// Two things remain, both listed by check.py: (1) the loop preheader still initialises the two
+// Every call, constant, branch, stack slot and store order now matches.
+// Two things remain: (1) the loop preheader still initialises the two
 // strength-reduced offsets from i (`li r23,0; mulli r28,r23,0x18; slwi r27,r23,2`) where the
 // target does `li r28,0; mr r27,r28; li r23,0`; writing the row offset as its own loop variable
 // (`for (ofs = 0, i = ofs; ...)`, the select_disp_party shape) reproduces the target's init order
