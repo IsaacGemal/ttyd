@@ -8,8 +8,12 @@
 // inline sqrt/sqrtf carry `static const` locals that land in this unit's .rodata
 // and shift the vec3 pool (see batSpotInit).
 #include "math_ext.h"
+#include "matching.h"
 #include "manager/evtmgr_cmd.h"
 #include <stdlib.h>
+
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const f32 float_neg1_8041c818;
 static void screen_capture(CameraId camId, void* param);  // local to this file in the original
 
 //.sbss
@@ -68,7 +72,6 @@ extern const f32 float_16_8041c808;
 extern const f32 float_6_8041c80c;
 extern const f32 float_100_8041c810;
 extern const f32 float_1000_8041c814;
-extern f32 float_neg1_8041c818;
 extern f32 float_32767_8041c81c;
 extern f32 float_5000_8041c84c;
 extern f32 float_6000_8041c850;
@@ -534,10 +537,8 @@ static void screen_capture(CameraId camId, void* param) {
 	screen_wp->field_0x4 = 1;
 }
 
-// The named float constants are declared extern but never defined in this unit
-// (their data is the original's .sdata2 pool), and going through the names makes
-// MWCC reload/hoist them in a different order. Writing the values as literals lets
-// it pool them as the original does and matches the schedule byte-for-byte.
+// float_neg1 is const so MWCC hoists its single load to the top of the function,
+// where the original loads it, instead of just before the field_0x28 store.
 s32 tou_gamen_screen_tev_init(EventEntry* event) {
 	u32 size;
 
@@ -553,7 +554,7 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 		screen_wp->field_0x1C = float_0_8041c7f0;
 		screen_wp->field_0x18 = float_0_8041c7f0;
 		screen_wp->field_0x20 = 0;
-		screen_wp->field_0x28 = -1.0f;
+		screen_wp->field_0x28 = float_neg1_8041c818;
 	}
 
 	if (evtGetValue(event, GSW(0)) == 0xA3) {
@@ -798,12 +799,15 @@ void BattleStageOffLightEnemyInCommand(void) {
 }
 
 // dont_inline: without it the compiler inlines getSpline into BattleStageMain
+// opt_loop_invariants off: with it on, MWCC hoists float_0 and the int->float
+// conversion constant in the opposite register order (f2/f1 instead of f0/f2).
+#pragma opt_loop_invariants off
 #pragma dont_inline on
 f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) {
 	s32 i;
 
 	for (i = count - 1; i >= 0; i--) {
-		if ((f32)(value - knots[i]) >= 0.0f) {
+		if ((f32)(value - knots[i]) >= float_0_8041c7f0) {
 			break;
 		}
 	}
@@ -814,6 +818,7 @@ f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) 
 	}
 }
 #pragma dont_inline reset
+#pragma opt_loop_invariants reset
 
 // ------------------------------------------------------------ light setters
 #pragma opt_propagation off
@@ -1073,7 +1078,13 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 	GXSetCurrentMtx(0);
 	GXBegin(0xA0, 0, 0x20);
 
-	GXPosition3f32(0.0f, 0.0f, 0.0f);
+#ifdef MUST_MATCH
+	GXWGFifo.f32 = MATCH_F32(float_0_8041c7f0);
+	GXWGFifo.f32 = MATCH_F32(float_0_8041c7f0);
+	GXWGFifo.f32 = MATCH_F32(float_0_8041c7f0);
+#else
+	GXPosition3f32(float_0_8041c7f0, float_0_8041c7f0, float_0_8041c7f0);
+#endif
 	GXColor4u8(0, 0, 0, ((u8*)entry)[0x2B]);
 
 	for (i = 0; i < 0x1F; i++) {
@@ -1088,7 +1099,13 @@ void drawCone(CameraId camId, BattleSpotEntry* entry) {
 		}
 		s = sin(angle);
 		c = cos(angle);
+#ifdef MUST_MATCH
+		GXWGFifo.f32 = c;
+		GXWGFifo.f32 = s;
+		GXWGFifo.f32 = MATCH_F32(float_neg1_8041c818);
+#else
 		GXPosition3f32(c, s, float_neg1_8041c818);
+#endif
 		GXColor4u8(0, 0, 0, ((u8*)entry)[0x2B] / 3);
 	}
 }
@@ -1241,7 +1258,7 @@ __declspec(section ".sdata2") const f32 float_16_8041c808 = 16.0f;
 __declspec(section ".sdata2") const f32 float_6_8041c80c = 6.0f;
 __declspec(section ".sdata2") const f32 float_100_8041c810 = 100.f;
 __declspec(section ".sdata2") const f32 float_1000_8041c814 = 1000.f;
-__declspec(section ".sdata2") f32 float_neg1_8041c818 = -1.0f;
+__declspec(section ".sdata2") const f32 float_neg1_8041c818 = -1.0f;
 __declspec(section ".sdata2") f32 float_32767_8041c81c = 32767.0f;
 __declspec(section ".sdata2") f32 float_deg2rad_8041c820 = 0.017453292f;
 __declspec(section ".sdata2") f32 float_6p2832_8041c824 = 6.2831855f;

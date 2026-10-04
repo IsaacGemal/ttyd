@@ -225,28 +225,30 @@ static inline void effOpukuJetwSetTev0b(s32 field18, s32 field1c, s32 field20, s
 #pragma opt_strength_reduction off // without it MWCC strength-reduces the rowPtr induction and hoists columns*10
 #pragma opt_loop_invariants off // without it the hoisted col*10/rowPtr live across calls and spill half/rowOffset
 // The original's loop shapes: a running counterCurrent (the target computes counter + i*2 once and steps
-// it by 2), rowPtr = &table[rowOffset] built before the two `continue` tests, ptr = &rowPtr[col] sharing
-// one col*10 with colPtr = &table[col], and the second test as `columns - 1 - col > lifetime` off the
-// cached local. With plain -O4 MWCC strength-reduces the rowPtr induction and hoists columns*10; these two
-// pragmas stop that.
+// it by 2), rowPtr = &table[rowOffset] built before the two `continue` tests, one col*10 byte offset
+// shared by ptr = rowPtr + colOffset and colPtr = table + colOffset, and the second test as
+// `columns - 1 - col > lifetime` off the cached local. With plain -O4 MWCC strength-reduces the rowPtr
+// induction and hoists columns*10; these two pragmas stop that.
 // The Mtx declarations keep `scale` before `rot` so the two temporaries land in the original's 0x70/0xa0
 // slots (the allocator places Mtx locals in reverse declaration order), the field assignments load
 // field_0x24 before the other colours as the original does, `dat_ry[(j + i) & 7]` gives the original's
 // operand order in the run-angle sum, and `for (j = 0, rowOffset = 0; ...)` gives its loop-init order.
-// The declaration order below holds the callee-saved GPR map for every other value (counter r14,
-// counterCurrent r18, threshold r17, cam r15, ptr r16, col r21, table r22, rows r23, columns r24,
-// field20 r25, field1c r26, field18 r27, field24 r28, i r29, j r30, lifetime r31).
-// NONMATCHING (99.84%): all instructions, operands and stack slots match; `rowOffset` and `colPtr` are
-// swapped between r15 and r19 (target: rowOffset r19, colPtr r15).
+// `rowOffset` is declared first and `colOffset` after `colPtr`: with the shared `&table[col]` CSE temp
+// MWCC colours that temp above `rowOffset` (col*10/colPtr in r19, rowOffset in r15); naming the byte
+// offset makes it a local ranked after `colPtr`, which frees r19 for `rowOffset` and puts colPtr in r15.
+// The rest of the declaration order holds the callee-saved GPR map (rowOffset r19, counterCurrent r18,
+// threshold r17, ptr r16, colPtr r15, col r21, table r22, rows r23, columns r24, field20 r25,
+// field1c r26, field18 r27, field24 r28, i r29, j r30, lifetime r31; counter reuses r14).
 void effOpukuJetwDisp(CameraId camId, void* param) {
+    s32 rowOffset;
     s32 counter;
     s32 counterCurrent;
     s32 threshold;
     CameraEntry* cam;
     effOpukuJetwPoint* ptr;
     EffectEntry* effect;
-    s32 rowOffset;
     effOpukuJetwPoint* colPtr;
+    s32 colOffset;
     s32 lifetime;
     Mtx trans;
     s32 j;
@@ -339,9 +341,10 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
             if (columns - 1 - col > lifetime) {
                 continue;
             }
-            ptr = &rowPtr[col];
+            colOffset = col * 10;
+            ptr = (effOpukuJetwPoint*)((u8*)rowPtr + colOffset);
             PSMTXTrans(trans, (f32)ptr->field_0x0, 10.f + (f32)ptr->field_0x1, 0.0f);
-            colPtr = &table[col];
+            colPtr = (effOpukuJetwPoint*)((u8*)table + colOffset);
             PSMTXScale(scale, (f32)colPtr->field_0x2 * 0.01f, (f32)colPtr->field_0x4 * 0.01f, 1.0f);
             PSMTXConcat(trans, scale, trans);
             PSMTXRotRad(rot, 'z', 0.017453292f * ((f32)ptr->field_0x6 + (f32)dat_ry[(j + i) & 7]));
