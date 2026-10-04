@@ -357,7 +357,7 @@ config.libs = [
             Object(NonMatching, "battle/battle_seq.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_seq_command.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_sub.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/battle_unit.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/battle_unit.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_unit_event.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_camera.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_item_data.c"),
