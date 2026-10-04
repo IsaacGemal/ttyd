@@ -1,4 +1,5 @@
 """tools/wave_launch.py: the reaper, deadlines on every remote call, slot accounting, and the sandbox command."""
+import json
 import os
 import signal
 import subprocess
@@ -11,6 +12,8 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import wave_launch as W  # noqa: E402
+import agent_audit
+import provenance
 
 SPEC = {"unit": "battle/ac/ac_pendulum_crane_timing", "src": "src/battle/ac/ac_pendulum_crane_timing.c", "tag": "t",
         "mode": "near", "dol": True, "source_order": False, "todo": [], "open": [["_get_angle_rate", 100, 99.2]],
@@ -238,11 +241,12 @@ systemctl() {
       n=$(cat "$HOME/query-count"); n=$((n + 1)); echo "$n" > "$HOME/query-count"
       state=$(sed -n "${n}p" "$HOME/query-states")
       [ ! -e "$HOME/ended" ] || state=inactive
-      case ${state:-active} in
-        active) echo active; return 0;; inactive|failed) echo "$state"; return 3;;
+      state=${state:-active}
+      case $state in
+        active|activating|reloading) echo "$state"; return 0;; deactivating) echo "$state"; return 3;; inactive|failed) echo "$state"; return 3;;
         error) return 1;; bad-active) echo active; return 1;; hung) return 124;;
       esac;;
-    *) echo "$*" >> "$HOME/actions";;
+    *) echo "$*" >> "$HOME/actions"; touch "$HOME/ended";;
   esac
 }
 du() {
@@ -280,11 +284,23 @@ python3() { echo "floor $*" >> "$HOME/actions"; }
 
     def test_du_permission_denied_trips_but_vanished_files_do_not(self):
         for scan in ("blocks", "inodes"):
-            result = self.run_watchdog(du_error="cannot access file: Permission denied", error_scan=scan)
+            result = self.run_watchdog(du_error="cannot access file: Permission denied", error_scan=scan, hidden="blocked")
             self.assertIn("du: Permission denied", result["limits"])
             self.assertIn("stop ttyd-wt_t-run.scope", result["actions"])
         result = self.run_watchdog(du_error="cannot access file: No such file or directory")
         self.assertEqual((result["limits"], result["actions"], result["paused"]), ("", "", False))
+
+    def test_du_denials_must_be_confirmed_by_find(self):
+        for error in ("cannot access file: Permission denied", "Permission denied: No such file or directory"):
+            result = self.run_watchdog(du_error=error)
+            self.assertEqual((result["limits"], result["actions"]), ("", ""))
+
+    def test_transitional_owner_states_are_valid_and_reset_errors(self):
+        result = self.run_watchdog(states=("error", "error", "activating", "deactivating", "reloading", "inactive"))
+        self.assertEqual((result["limits"], result["actions"]), ("", ""))
+        self.assertGreaterEqual(result["queries"], 6)
+        result = self.run_watchdog(states=("deactivating",), hidden="blocked")
+        self.assertIn("inaccessible blocked", result["limits"])
 
     def test_owner_ending_during_du_prevents_limit_and_floor_actions(self):
         result = self.run_watchdog(du_error="Permission denied", end_during="du", floor=True)
@@ -299,7 +315,7 @@ python3() { echo "floor $*" >> "$HOME/actions"; }
             result = self.run_watchdog(states=states)
             self.assertIn("query failed 3 consecutive times", result["limits"])
             self.assertIn("stop ttyd-wt_t-run.scope", result["actions"])
-            self.assertEqual(result["queries"], len(states))
+            self.assertEqual(result["queries"], len(states) + 1)  # stop verification
 
     def test_successful_query_resets_failure_counter(self):
         result = self.run_watchdog(states=("error", "error", "active", "error", "active", "active",
@@ -310,6 +326,50 @@ python3() { echo "floor $*" >> "$HOME/actions"; }
         result = self.run_watchdog(floor=True)
         self.assertTrue(result["paused"])
         self.assertIn("/base/tools/floor_stop.py --act ttyd-agents.slice", result["actions"])
+
+
+class ScopeStop(unittest.TestCase):
+    def test_stop_retries_kills_and_verifies_even_after_errors(self):
+        for mode in ("retry", "kill", "stuck", "query-error"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as home:
+                setup_globals(home)
+                out = Path(home, "ttyd-agents-out/wt_t")
+                out.mkdir(parents=True)
+                stubs = r"""
+sleep() { :; }
+timeout() { shift 3; "$@"; }
+systemctl() {
+  echo "$*" >> "$HOME/actions"
+  case "$*" in
+    *is-active*)
+      [ "$MODE" != query-error ] || return 1
+      if [ -e "$HOME/ended" ]; then echo inactive; return 3; fi
+      echo deactivating; return 3;;
+    *stop*)
+      if [ "$MODE" = retry ] && [ -e "$HOME/stopped-once" ]; then touch "$HOME/ended"; return 0; fi
+      touch "$HOME/stopped-once"; return 1;;
+    *--signal=KILL*)
+      [ "$MODE" != stuck ] || return 1
+      touch "$HOME/ended";;
+  esac
+}
+"""
+                result = subprocess.run(["bash", "-c", stubs + W.scope_stop("t", "run") + "stop_scope"],
+                                        env=dict(os.environ, HOME=home, MODE=mode), capture_output=True, text=True, timeout=5)
+                actions = Path(home, "actions").read_text()
+                limits = (out / "limits.txt").read_text()
+                self.assertIn("scope stop failed", limits)
+                self.assertGreaterEqual(actions.count("--user stop"), 2)
+                self.assertIn("--user is-active", actions)
+                self.assertEqual(result.returncode, int(mode in ("stuck", "query-error")))
+                if mode == "retry":
+                    self.assertNotIn("--signal=KILL", actions)
+                else:
+                    self.assertIn("kill --kill-who=all --signal=KILL ttyd-wt_t-run.scope", actions)
+                if mode in ("stuck", "query-error"):
+                    self.assertIn("could not verify scope inactive", limits)
+                if mode == "stuck":
+                    self.assertIn("scope KILL failed", limits)
 
 
 class PassPipes(unittest.TestCase):
@@ -328,6 +388,10 @@ home = Path(os.environ['HOME'])
 (home / 'producer-pid').write_text(str(os.getpid()))
 signal.signal(signal.SIGTERM, signal.SIG_IGN)
 os.write(int(os.environ.get('CHANNEL', '1')), os.environ['PAYLOAD'].encode())
+os.write(2, os.environ.get('STDERR_PAYLOAD', '').encode())
+if os.environ.get('TIMED_IDLE') == 'yes':
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
+    time.sleep(30)
 if os.environ.get('IDLE') == 'yes':
     time.sleep(1)
     (home / 'continued-unlogged').write_text('ran after cap')
@@ -335,23 +399,28 @@ if os.environ.get('IDLE') == 'yes':
 raise SystemExit(int(os.environ.get('PASS_RC', '0')))
 ''')
         cli.chmod(0o755)
+        systemctl = Path(home, "bin/systemctl")
+        systemctl.write_text('''#!/bin/bash
+echo "$*" >> "$HOME/actions"
+case "$*" in
+  *--signal=KILL*) kill -KILL "$(cat "$HOME/producer-pid")";;
+  *is-active*) echo inactive; exit 3;;
+esac
+''')
+        systemctl.chmod(0o755)
         return dict(os.environ, HOME=home, PATH=f"{home}/bin:" + os.environ["PATH"])
 
-    def run_pass(self, env):
+    def run_pass(self, env, secs=20, event_cap=64):
         # Use the real head/timeout and pipes. Only platform-specific stat and systemd are replaced. The fake scope
         # contains one producer, which ignores SIGTERM and idles after its output, exercising immediate KILL.
         stubs = r'''
 stat() { python3 -c 'import os,sys; print(os.stat(sys.argv[1]).st_size)' "${@: -1}"; }
-systemctl() {
-  echo "$*" >> "$HOME/actions"
-  case "$*" in *--signal=KILL*) kill -KILL "$(cat "$HOME/producer-pid")";; esac
-}
 '''
         with mock.patch.object(W, "sandbox", return_value=""), \
              mock.patch.object(W, "watchdog", return_value='sleep 30 </dev/null >/dev/null 2>&1 & wd=$!; '), \
              mock.patch.object(W, "KILL_TREE", 'kt() { kill "$1" 2>/dev/null; wait "$1" 2>/dev/null; }; '), \
-             mock.patch.object(W, "EVENTS_MAX", 64), mock.patch.object(W, "STDERR_MAX", 48):
-            cmd = W.agent_cmd("t", 20, "", "run")
+             mock.patch.object(W, "EVENTS_MAX", event_cap), mock.patch.object(W, "STDERR_MAX", 48):
+            cmd = W.agent_cmd("t", secs, "", "run")
         try:
             return subprocess.run(["bash", "-c", stubs + cmd], env=env, capture_output=True, text=True, timeout=5)
         except subprocess.TimeoutExpired:
@@ -371,7 +440,7 @@ systemctl() {
                     env = self.prepare_home(home)
                     out = Path(home, "ttyd-agents-out/wt_t")
                     (out / name).write_bytes(b"x" * initial)
-                    env.update(CHANNEL=channel, PAYLOAD="y" * (cap - initial), IDLE="yes")
+                    env.update(CHANNEL=channel, PAYLOAD="y" * (cap - initial - int(channel == "1" and initial > 0)), IDLE="yes")
                     result = self.run_pass(env)
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertFalse(Path(home, "continued-unlogged").exists())
@@ -392,11 +461,58 @@ systemctl() {
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn(f"rc={rc}", result.stdout)
             out = Path(home, "ttyd-agents-out/wt_t")
-            self.assertEqual((out / "events.jsonl").read_bytes(), "".join(pieces).encode())
+            self.assertEqual((out / "events.jsonl").read_bytes(), "\n".join(pieces).encode())
             self.assertEqual((out / "passes.txt").read_text(),
-                             f"{len(pieces[0].encode())} 124\n{len(''.join(pieces).encode())} 0\n")
+                             f"{len(pieces[0].encode())} 124 0\n{len(''.join(pieces).encode()) + 1} 0 0\n")
             self.assertFalse((out / "limits.txt").exists())
 
+    def test_early_timeout_exit_codes_and_stderr_cannot_forge_host_timeout(self):
+        for rc in (124, 137):
+            with self.subTest(rc=rc), tempfile.TemporaryDirectory() as home:
+                env = self.prepare_home(home)
+                partial = '{"type":"message'
+                fake_notice = "timeout: sending signal TERM to command 'pi'\n"
+                env.update(PAYLOAD=partial, PASS_RC=str(rc), STDERR_PAYLOAD=fake_notice)
+                result = self.run_pass(env)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                out = Path(home, "ttyd-agents-out/wt_t")
+                self.assertEqual((out / "passes.txt").read_text(), f"{len(partial)} {rc} 0\n")
+                self.assertEqual((out / "stderr.log").read_text(), fake_notice)
+                self.assertFalse((out / "limits.txt").exists())
+
+    def test_separator_never_exceeds_the_event_cap(self):
+        for initial in (63, 64):
+            with self.subTest(initial=initial), tempfile.TemporaryDirectory() as home:
+                env = self.prepare_home(home)
+                out = Path(home, "ttyd-agents-out/wt_t")
+                (out / "events.jsonl").write_bytes(b"x" * initial)
+                env.update(PAYLOAD="unused")
+                result = self.run_pass(env)
+                self.assertEqual(result.returncode, 7, result.stderr)
+                self.assertEqual((out / "events.jsonl").stat().st_size, initial)
+                self.assertTrue((out / "limits.txt").exists())
+                self.assertFalse(Path(home, "producer-pid").exists())
+
+    def test_only_the_host_timeout_sets_the_flag_and_provenance_survives(self):
+        with tempfile.TemporaryDirectory() as home:
+            env = self.prepare_home(home)
+            out = Path(home, "ttyd-agents-out/wt_t")
+            partial = '{"type":"message","n":0.'
+            env.update(PAYLOAD=partial, TIMED_IDLE="yes")
+            result = self.run_pass(env, secs=1)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("rc=124", result.stdout)
+            self.assertEqual((out / "passes.txt").read_text(), f"{len(partial)} 124 1\n")
+            event = json.dumps({"type": "tool_execution_start", "toolName": "read", "args": {"path": "/opt/reference"}}) + "\n"
+            env.update(PAYLOAD=event, TIMED_IDLE="no")
+            result = self.run_pass(env, event_cap=1000)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(list(provenance.events(str(out / "events.jsonl"))), [("read", {"path": "/opt/reference"})])
+            boundaries = [tuple(map(int, line.split())) for line in (out / "passes.txt").read_text().splitlines()]
+            self.assertEqual(boundaries[-1], ((out / "events.jsonl").stat().st_size, 0, 0))
+            with (out / "events.jsonl").open("rb") as events:
+                self.assertNotIn("EVENTS-CORRUPT", {kind for kind, _, _ in agent_audit.audit(events, home, boundaries)})
+            self.assertFalse((out / "limits.txt").exists())
 
 class Sandbox(unittest.TestCase):
     def setUp(self):

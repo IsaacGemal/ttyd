@@ -12,8 +12,8 @@ Reads the agent's JSON event log (tool_execution_start events: bash commands, an
   HOST-SERVICE    docker/podman/containerd, systemctl/systemd-run, D-Bus or X clients: ways past the sandbox
   SIGNAL          pkill/killall, `kill $(pgrep ...)`, `pgrep | xargs kill`, kill -1 or a negative pid
   EVENTS-CORRUPT  an unparseable line, except one truncated final line at a timeout boundary in the host's sibling
-                  passes.txt (byte offset and exit code). In-stream markers are untrusted. Recovered calls are audited
-                  and malformed lines containing tool_execution_start are always flagged, even at timeout boundaries
+                  passes.txt (byte offset, exit code and host timeout flag). Legacy logs without that file retain marker
+                  tolerance. Recovered calls are audited; malformed actual tool events always fail
   ASSIGN-OUTSIDE  a shell variable set to a path under /home outside WORKSPACE, BASE and the shared read-only paths
                   (reported, not counted: a hint that it may be used to write)
   READ-OUTSIDE    a read of a path under /home, /root, /etc, /var, /opt, /srv, /mnt, /media or /run outside
@@ -385,42 +385,69 @@ def tool_flags(e, ws, n):
     return [(k, n, short) for k in kinds]
 
 
-def truncated_object(line):
-    """Recognize an unfinished JSON object, rather than a complete object followed by junk or invalid syntax."""
-    text = line.strip()
-    if not text.startswith("{"):
-        return False
-    try:
-        json.JSONDecoder().raw_decode(text)
-    except json.JSONDecodeError as e:
-        literals = ("n", "nu", "nul", "t", "tr", "tru", "f", "fa", "fal", "fals", "-")
-        return (e.pos == len(text) or e.msg.startswith("Unterminated string")
-                or (e.msg == "Expecting value" and text[e.pos:] in literals))
-    return False
+# Decode only plausible objects, charging the entire suffix against a linear work budget. A damaged nested
+# prefix can otherwise cause raw_decode to rescan the same megabytes once for every opening brace.
+OBJECT_START = re.compile(r'\{\s*"')
+JSON_STRING = r'"(?:[^"\\]|\\.)*"'
+TYPE_PAIR = re.compile(r'(?:\{|,)\s*(' + JSON_STRING + r')\s*:\s*(' + JSON_STRING + r')')
+
+
+def recover_events(line, ws, n):
+    """Recover calls and identify actual type keys (including JSON escapes), with bounded decode work."""
+    flags, has_tool, capped = [], False, False
+    for pair in TYPE_PAIR.finditer(line):
+        try:
+            if json.loads(pair[1]) == "type" and json.loads(pair[2]) == "tool_execution_start":
+                has_tool = True
+        except ValueError:
+            pass
+    decoder = json.JSONDecoder()
+    budget = 4 * len(line)
+    for start in OBJECT_START.finditer(line):
+        budget -= len(line) - start.start()
+        if budget < 0:
+            capped = True
+            break
+        try:
+            e, _ = decoder.raw_decode(line, start.start())
+        except (ValueError, RecursionError):
+            continue
+        if isinstance(e, dict) and e.get("type") == "tool_execution_start":
+            has_tool = True
+        flags += tool_flags(e, ws, n)
+    return flags, has_tool, capped
 
 
 def audit(events, ws, passes=None):
-    """Read physical lines (bytes or text), splitting at trusted (byte offset, exit code) pass ends.
+    """Read physical lines, splitting at host (byte offset, exit code, timeout fired) pass ends.
 
-    No boundary file means no truncation exemptions. Offsets may repeat for empty passes; they must cover the log.
-    Splitting bytes before decoding handles both a partial UTF-8 character and passes joined without a newline.
+    Two-column boundary files remain readable but cannot prove a timeout. Only logs without passes.txt get the
+    legacy one-garbled-line-before-timeout-marker tolerance. Byte splitting also handles partial UTF-8.
     """
     ws = ws.rstrip("/")
     flags = []
-    boundaries = [] if passes is None else list(passes)
-    if any(type(end) is not int or type(rc) is not int or end < 0 or not 0 <= rc <= 255
-           or (i and end < boundaries[i - 1][0]) for i, (end, rc) in enumerate(boundaries)):
+    boundaries = []
+    try:
+        for p in (() if passes is None else passes):
+            if len(p) not in (2, 3) or any(type(v) is not int for v in p):
+                raise ValueError
+            end, rc = p[:2]
+            fired = p[2] if len(p) == 3 else 0
+            if end < 0 or not 0 <= rc <= 255 or fired not in (0, 1) or (boundaries and end < boundaries[-1][0]):
+                raise ValueError
+            boundaries.append((end, rc, fired))
+    except (ValueError, TypeError):
         flags.append(("EVENTS-CORRUPT", 0, "invalid pass boundaries"))
         boundaries = []  # still recover and audit every event
     offset, pass_index, n = 0, 0, 0
     bad = []
-    decoder = json.JSONDecoder()
+    legacy_pending = None
     for raw in events:
         raw = raw.encode("utf-8") if isinstance(raw, str) else raw
         while raw:
             while pass_index < len(boundaries) and boundaries[pass_index][0] == offset:
                 pass_index += 1  # empty passes (or a boundary consumed by the previous line)
-            end, rc = boundaries[pass_index] if pass_index < len(boundaries) else (offset + len(raw), None)
+            end, rc, fired = boundaries[pass_index] if pass_index < len(boundaries) else (offset + len(raw), None, 0)
             piece, raw = raw[:end - offset], raw[end - offset:]
             offset += len(piece)
             n += 1
@@ -429,21 +456,21 @@ def audit(events, ws, passes=None):
                 continue
             try:
                 e = json.loads(line)
-            except ValueError:
-                # Do not let corruption conceal a complete event embedded after junk, another JSON object, or a
-                # truncated prefix. Try every brace, including nested objects, and audit all recovered calls.
-                for start in re.finditer(r"\{", line):
-                    try:
-                        e, _ = decoder.raw_decode(line, start.start())
-                    except ValueError:
-                        continue
-                    flags += tool_flags(e, ws, n)
-                truncated = (offset == end and rc in (124, 137) and not piece.endswith(b"\n")
-                             and "tool_execution_start" not in line and truncated_object(line))
+            except (ValueError, RecursionError):
+                recovered, has_tool, capped = recover_events(line, ws, n)
+                flags += recovered
+                # Every final-byte cut is possible at a real timeout, including numbers and Unicode escapes.
+                # Actual tool events and exhausted recovery budgets must always fail closed.
+                truncated = offset == end and fired == 1 and not piece.endswith(b"\n") and not (has_tool or capped)
                 if not truncated:
                     bad.append(n)
+                legacy_pending = n if not (has_tool or capped) else None
             else:
                 flags += tool_flags(e, ws, n)
+                if (passes is None and legacy_pending is not None and isinstance(e, dict)
+                        and e.get("type") == "launcher_pass_end" and e.get("rc") in (124, 137)):
+                    bad.remove(legacy_pending)
+                legacy_pending = None
     if passes is not None and (not boundaries or boundaries[-1][0] != offset):
         flags.append(("EVENTS-CORRUPT", n, "pass boundaries do not cover the event log"))
     if bad:
@@ -462,10 +489,10 @@ def main():
     boundary_errors = []
     try:
         passes = [tuple(map(int, line.split())) for line in pass_file.read_text().splitlines()]
-        if any(len(p) != 2 for p in passes):
-            raise ValueError("expected byte offset and exit code")
+        if any(len(p) not in (2, 3) for p in passes):
+            raise ValueError("expected byte offset, exit code and optional timeout flag")
     except FileNotFoundError:
-        passes = None  # older logs remain auditable, with no truncation exemptions
+        passes = None  # older logs retain their in-stream marker tolerance
     except (OSError, ValueError) as e:
         passes = []
         boundary_errors.append(("EVENTS-CORRUPT", 0, f"cannot read pass boundaries: {e}"))

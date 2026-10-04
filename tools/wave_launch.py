@@ -352,6 +352,26 @@ def bind_check(tag, mode):
     return f"{{ {test} || {{ echo 'a bind source is a link or missing' >&2; exit 4; }}; }}"
 
 
+def scope_stop(tag, step):
+    """Bounded stop/retry/KILL with a verified inactive state; every failure survives in limits.txt."""
+    _, out, _, _ = paths(tag)
+    unit = f"{scope(tag, step)}.scope"
+    return (f"scope_inactive() {{ local state rc; "
+            f"state=$(timeout -k 1 5 systemctl --user is-active {unit} 2>/dev/null); rc=$?; "
+            f"case $state:$rc in inactive:3|failed:3|inactive:0|failed:0) return 0;; esac; return 1; }}; "
+            f"stop_scope() {{ local attempt; for attempt in 1 2; do "
+            f"timeout -k 1 5 systemctl --user stop {unit} 2>/dev/null || "
+            f"echo '{step}: scope stop failed' >> {out}/limits.txt; "
+            f"scope_inactive && return 0; done; "
+            f"echo '{step}: scope still owned after stop retries: escalating to KILL' >> {out}/limits.txt; "
+            f"timeout -k 1 5 systemctl --user kill --kill-who=all --signal=KILL {unit} 2>/dev/null || "
+            f"echo '{step}: scope KILL failed' >> {out}/limits.txt; "
+            f"timeout -k 1 5 systemctl --user stop {unit} 2>/dev/null || "
+            f"echo '{step}: scope stop after KILL failed' >> {out}/limits.txt; "
+            f"for attempt in 1 2 3; do scope_inactive && return 0; sleep 1; done; "
+            f"echo '{step}: could not verify scope inactive after KILL' >> {out}/limits.txt; return 1; }}; ")
+
+
 def watchdog(tag, step):
     """A host-side loop beside one sandboxed step, every 10 s, while the step's shell ($$) lives and its scope is active:
     - the agent's dirs (workspace, private, output) over DISK_MB or DISK_INODES (du's sum; files vanishing mid-scan
@@ -369,23 +389,24 @@ def watchdog(tag, step):
     # A failed query is neither proof of an active owner nor proof it ended. Three consecutive failures trip the
     # owning step fail-closed; a successful active/inactive answer resets the counter. Recheck after every scan.
     owner_check = 'wd_owner || { [ "$owner_errors" -ge 3 ] && break; continue; }; '
-    return (f"( cd /; owner_errors=0; wd_owner() {{ local state query_rc; "
+    return (f"( cd /; {scope_stop(tag, step)}owner_errors=0; wd_owner() {{ local state query_rc; "
             f"state=$(timeout -k 1 5 systemctl --user is-active {unit} 2>/dev/null); query_rc=$?; "
-            f"case $state:$query_rc in active:0) owner_errors=0; return 0;; "
+            f"case $state:$query_rc in active:0|activating:0|reloading:0|deactivating:0|activating:3|reloading:3|deactivating:3) owner_errors=0; return 0;; "
             f"inactive:3|failed:3|inactive:0|failed:0) owner_errors=0; return 1;; esac; "
             f"owner_errors=$((owner_errors + 1)); [ $owner_errors -lt 3 ] && return 1; "
-            f"echo '{step}: owner scope query failed 3 consecutive times: stopped' >> {out}/limits.txt; "
-            f"systemctl --user stop {unit}; return 1; }}; "
+            f"echo '{step}: owner scope query failed 3 consecutive times: stopping' >> {out}/limits.txt; "
+            f"stop_scope; return 1; }}; "
             f"while kill -0 $$ 2>/dev/null && sleep 10 && kill -0 $$ 2>/dev/null; do {owner_check}"
             f"dm=$(LC_ALL=C du -smx {dirs} 2>&1); di=$(LC_ALL=C du -sx --inodes {dirs} 2>&1); "
             f"m=$(printf '%s\\n' \"$dm\" | awk '$1 ~ /^[0-9]+$/ {{s+=$1}} END{{print s+0}}'); "
             f"i=$(printf '%s\\n' \"$di\" | awk '$1 ~ /^[0-9]+$/ {{s+=$1}} END{{print s+0}}'); "
-            f"denied=; case $dm$di in *'Permission denied'*) denied=', du: Permission denied';; esac; "
+            f"denied=$(printf '%s\\n' \"$dm\" \"$di\" | awk '/Permission denied/ && !/No such file or directory/ {{print; exit}}'); "
             f"x=$(find {dirs} -xdev -type d \\( ! -readable -o ! -executable \\) -print -quit 2>/dev/null); "
+            f"[ -n \"$x\" ] && [ -n \"$denied\" ] && denied=', du: Permission denied' || denied=; "
             f"{owner_check}"
             f"if [ -n \"$x$denied\" ] || [ \"$m\" -gt {DISK_MB} ] || [ \"$i\" -gt {DISK_INODES} ]; then "
             f"echo \"{step}: $m MB, $i inodes (limits {DISK_MB} MB, {DISK_INODES})${{x:+, inaccessible $x}}$denied: stopped\" >> {out}/limits.txt; "
-            f"systemctl --user stop {unit}; break; fi; "
+            f"stop_scope; break; fi; "
             f"set -- $(df -Pk \"$HOME\" | awk 'NR==2{{print $4}}') $(df -Pi \"$HOME\" | awk 'NR==2{{print $4}}'); "
             f"{owner_check}"
             f"if [ -n \"$2\" ] && {{ [ \"$1\" -lt {DISK_FLOOR_GB * 1024 * 1024} ] || [ \"$2\" -lt {INODE_FLOOR} ]; }} "
@@ -410,28 +431,40 @@ def step_guard(tag):
 def agent_cmd(tag, secs, args, step):
     """Run the agent CLI in the sandbox for at most secs. Its stdout and stderr go through pipes to files in the output
     dir, which the sandbox can't reach, capped over the agent's whole run (EVENTS_MAX, STDERR_MAX; reaching a cap is
-    recorded in limits.txt and stops the scope immediately). After the pass the host records the event byte offset
-    and exit status in passes.txt, outside the agent sandbox: only these boundaries can excuse a truncated line."""
+    recorded in limits.txt and stops the scope immediately). After the pass the host records the event byte offset,
+    exit status and a host timeout flag in passes.txt, outside the agent sandbox: only these boundaries can excuse
+    a truncated line."""
     ws, out, _, _ = paths(tag)
     unit = f"{scope(tag, step)}.scope"
     return (f"{KILL_TREE}{step_guard(tag)}cd {ws} && {bind_check(tag, 'agent')} || exit 4; "
+            f"{scope_stop(tag, step)}"
             f"er=$(( {EVENTS_MAX} - $(stat -c %s {out}/events.jsonl 2>/dev/null || echo 0) )); "
             f"sr=$(( {STDERR_MAX} - $(stat -c %s {out}/stderr.log 2>/dev/null || echo 0) )); "
             f"[ $er -gt 0 ] && [ $sr -gt 0 ] || {{ echo '{step}: a log was already at its cap' >> {out}/limits.txt; exit 7; }}; "
+            # A host-written newline before each continuation keeps provenance's physical lines separate. It belongs
+            # to the next pass; the previous end offset stays at the producer's final byte. Charge it to the log cap.
+            f"if [ -s {out}/events.jsonl ]; then [ $er -gt 1 ] || "
+            f"{{ echo '{step}: no event log room for a pass separator' >> {out}/limits.txt; exit 7; }}; "
+            f"printf '\\n' >> {out}/events.jsonl; er=$((er - 1)); fi; "
             # Each reader acts as soon as head exits at its cap, while the producer may still be running (or asleep).
             # Kill every member first so a process ignoring SIGTERM cannot continue through systemd's stop grace.
             f"capped_log() {{ local file=$1 cap=$2 remaining=$3; head -c \"$remaining\" >> {out}/\"$file\"; "
             f"if [ $(stat -c %s {out}/\"$file\") -ge \"$cap\" ]; then "
             f"echo \"{step}: $file reached its $cap-byte cap: cut\" >> {out}/limits.txt; "
-            f"systemctl --user kill --kill-who=all --signal=KILL {unit}; systemctl --user stop {unit}; fi; }}; "
+            f"timeout -k 1 5 systemctl --user kill --kill-who=all --signal=KILL {unit} 2>/dev/null || "
+            f"echo '{step}: log cap scope KILL failed' >> {out}/limits.txt; stop_scope; fi; }}; "
             f"{watchdog(tag, step)}"
             # stderr into one capped pipe and stdout (through fd 3) into the other: both caps are members of the
             # pipelines, so the shell waits for them, and the agent's exit status comes out of the inner subshell
-            f"( timeout -k 30 {int(secs)} {sandbox(tag, step, 'agent')} "
-            f"pi --mode json --session-dir {ws}/.pi-sessions --model {MODEL} {args} </dev/null 9<{KEY_FILE} 2>&1 1>&3 3>&- "
+            # timeout's own diagnostics go only to a host file. The child forwards its stderr to the capped pipe
+            # through fd 4, then closes it before entering the sandbox; an agent exit of 124/137 cannot forge this.
+            f"( LC_ALL=C timeout --verbose -k 30 {int(secs)} /bin/sh -c 'exec \"$@\" 2>&4 4>&-' sh {sandbox(tag, step, 'agent')} "
+            f"pi --mode json --session-dir {ws}/.pi-sessions --model {MODEL} {args} </dev/null 9<{KEY_FILE} 4>&1 2>{out}/timeout-{step}.txt 1>&3 3>&- "
             f"| capped_log stderr.log {STDERR_MAX} $sr; exit ${{PIPESTATUS[0]}} ) 3>&1 | capped_log events.jsonl {EVENTS_MAX} $er; "
             f"rc=${{PIPESTATUS[0]}}; kt $wd; "
-            f"printf '%s %s\\n' \"$(stat -c %s {out}/events.jsonl)\" \"$rc\" >> {out}/passes.txt; "
+            f"timed_out=0; grep -q '^timeout: sending signal .* to command' {out}/timeout-{step}.txt && timed_out=1; "
+            f"rm -f {out}/timeout-{step}.txt; "
+            f"printf '%s %s %s\\n' \"$(stat -c %s {out}/events.jsonl)\" \"$rc\" \"$timed_out\" >> {out}/passes.txt; "
             f"echo rc=$rc")
 
 
