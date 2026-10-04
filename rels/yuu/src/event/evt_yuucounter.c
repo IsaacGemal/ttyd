@@ -71,24 +71,17 @@ USER_FUNC(unk_yuu_00009d5c) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.21%): every instruction's opcode, operands and scheduling now match; only register
-// allocation differs. The original keeps `work` in r24; MWCC puts it in r31, and the loop webs follow:
-// `&digits` r30 -> target r31, `digit` r29 -> r30, `skip0` r24 -> r25, `xoff0` r25 -> r23,
-// `byteoff0` r23 -> r22, the case-1 float_8 pointer r20 -> r21. Our allocator also reuses r20 for both
-// `time` and the float_8 pointer and r29 for both `seconds` and `digit`, where the target keeps them
-// apart. The case-0 `marioGetPtr()->position.x` temp lands in f2 (target f0), rotating the
-// fadds/fmuls operands (5 instructions).
-// Fixed this session: the digit/icon ids are built with `& 0xFFFF`, not `(u16)` casts; that removed
-// the six `clrlwi r5` scheduler slips and moved the function 96.72 -> 99.21.
-// Tried without reaching 100%: declaration-order permutations (18 lines, every position of `work`),
-// splitting multi-variable declarations, merging/splitting digit/i/xoff/skip (sharing a variable across
-// the case blocks makes mwcceppc loop forever), colour and scale/icon/xbase statement orders,
-// explicit-subtraction forms of the `%` chains, every accumulating/associating form of the case-0 time
-// expression, `register`/`restrict`/`volatile`/inline-helper tricks, and the opt_lifetimes /
-// opt_propagation / opt_common_subs / opt_dead_assignments / global_optimizer / optimize_for_size /
-// optimization_level / scheduling pragma combinations. The 0x140 frame and the r20-r31 save set match;
-// this is the same web-ordering tie the permuter resolves.
-// NONMATCHING (99.21%): only register colouring differs; see the note above.
+// NONMATCHING (99.33%): every opcode, operand and scheduler slot matches; only register numbers
+// differ. The original keeps `work` in r24, the allocator here picks r31, and the loop webs permute
+// with it: `&digits` r30 -> r31 (case 0/2) and r24 -> r22 (case 1), `digit` r29 -> r30, `skip` r24 ->
+// r25/r29, `xoff` r25 -> r23, `byteoff` r23 -> r22, and the case-1 `zero_yuu` pointer r22 -> r31. The
+// case-0 `marioGetPtr()->position.x` value is read through a `MarioWork*` local so the FP add/multiply
+// land in the original's f0/f1/f2 rotation. The 0x140 frame and the r20-r31 save set match; the tie is
+// insensitive to declaration order, statement order, pragmas, flags and compiler version.
+// The two loop increments set the schedule: `for (...; i1++, xoff1 += 30)` (case 1) and
+// `for (...; i3++, xoff3 += 15)` (subsec) emit the xoff add before the loop compare, as the original
+// does; keeping them in the body puts the byteoff add first instead.
+// NONMATCHING (99.33%): only register colouring differs; see the note above.
 void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     s32 digits[4];
     s32 digit0, digit1, digit2;
@@ -116,7 +109,12 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     switch (work->mode) {
     case 0:
         if (!(work->flags2 & 2)) {
+#ifdef MUST_MATCH
+            MarioWork* mario = marioGetPtr();
+            f32 x = mario->position.x;
+#else
             f32 x = marioGetPtr()->position.x;
+#endif
             work->time = (s32)(200.0f * (1300.0f + x));
         }
         scale = 2.5f;
@@ -199,12 +197,11 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
         digits[1] = seconds / 10;
         digits[2] = seconds % 10;
 
-        for (i1 = 0, xoff1 = 0; i1 < 3; i1++) {
+        for (i1 = 0, xoff1 = 0; i1 < 3; i1++, xoff1 += 30) {
             digit1 = digits[i1];
             PSMTXTrans(mtxTemp, xbase + (f32)xoff1 - (f32)((i1 == 0) << 4), 8.0f, 0.0f);
             PSMTXConcat(mtx, mtxTemp, mtxTemp);
             iconDispGxCol(mtxTemp, 0x10, (digit1 + 0x1F7) & 0xFFFF, digitColor);
-            xoff1 += 30;
         }
 
         PSMTXTrans(mtxTemp, 8.0f + xbase, 12.0f, 0.0f);
@@ -252,13 +249,12 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     case 1:
         digits[0] = subsec / 100;
         digits[1] = subsec % 100 / 10;
-        for (i3 = 0, xoff3 = 0; i3 < 2; i3++) {
+        for (i3 = 0, xoff3 = 0; i3 < 2; i3++, xoff3 += 15) {
             PSMTXTrans(mtxTemp, 90.0f + xbase + (f32)xoff3, 8.0f, 0.0f);
             PSMTXScale(mtxScale, 0.5f, 0.5f, 0.5f);
             PSMTXConcat(mtxTemp, mtxScale, mtxTemp);
             PSMTXConcat(mtx, mtxTemp, mtxTemp);
             iconDispGxCol(mtxTemp, 0x10, (digits[i3] + 0x1F7) & 0xFFFF, digitColor);
-            xoff3 += 15;
         }
         break;
     case 2:
