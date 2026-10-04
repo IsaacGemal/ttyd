@@ -4640,3 +4640,14 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   register colouring to the permuter and mwccdbg. eff_kemuri's blocker is pool interleaving (four anonymous literals at
   the .sdata2 tail), a hold after Codex's miss; mot_ship is register class, with Claude #3. Arm D: a unit whose data
   was ported once goes straight to arm L (wave 76: party_yoshi's and kinopio's second passes regressed).
+- **Batch 26:** eff_funemizu, eff_gonbaba_breath and qsort linked (wave 76 arm L: with opuku_jetw and database, five so far;
+  funemizu merged by hand: its match-only FUNEMIZU_DL_LOOP_H was defined only under MUST_MATCH, so the natural build
+  failed; #else now maps it to the plain loop); dai3_butai_main_func matched (wave 77's debugger pilot, though by the
+  brief's rank levers, not the debugger: see below); data ports for eff_ultra_hammer and shadowdrv; eff_nice's comment
+  (acrobatMain 99.85: calls and immediates identical, the rest is pool layout). No change, register class (for the
+  permuter or mwccdbg): tou_03 screen_tev 99.74, usu_00 kpaSen_ext_main 99.55, unit_boss_moamoa 99.90, nameent 99.75,
+  eff_pointget 99.87, eff_kiss 99.95. party_cloud's data prep timed out and its state was refused (.sdata2 55 -> 40).
+  Wave 77 arm R (the debugger pilot, 18:38) never ran the debugger: launchers import wave_launch.py from this checkout,
+  which was on a branch from before #445 (no ~/mwccdbg mount), and the workspace rsync excluded tools/perm_*.py, which
+  includes perm_unit.py that mwccdbg imports (fixed in #446). The pilot reruns after #446 merges; this run is the
+  no-debugger baseline. Rule: before a launch, bring this checkout's tools/ to current main.
