@@ -217,7 +217,13 @@ static u32 ext_moamoa_data[213] = {
     0x00000000,
 };
 
+#ifdef MUST_MATCH
+// As a const object MWCC folds the known contents and hoists the three loads out of
+// the loop; the original reloads them inside the loop.
+__declspec(section ".rodata") Vec vec3_rsh_00013cec = {0.0f, -1000.0f, 0.0f};
+#else
 const Vec vec3_rsh_00013cec = {0.0f, -1000.0f, 0.0f};
+#endif
 // Non-const on purpose: ext_moamoa_init copies all three into wp->vec; as `const` MWCC knows they
 // are equal and reuses the loads, which changes the first copy's schedule (see that function).
 __declspec(section ".rodata") Vec vec3_rsh_00013cf8 = {10.0f, 215.0f, 0.0f};
@@ -242,9 +248,7 @@ static MoamoaGroup group_tbl[11] = {
     {"c_mamab", "G_1"},   {"c_konari", "G_1"},  {"c_n_moa_a", "S_1"},
 };
 
-// TODO: type
-// mt$806 moved into ext_shadow_disp as `static Mtx mt`
-
+Mtx mt = {{8.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 8.0f, 0.0f, 0.5f}, {0.0f, 0.0f, 8.0f, 0.0f}};
 
 // TODO: type
 static u32 sharinDt[116] = {
@@ -801,7 +805,7 @@ static void moamoa_pose_init(void) {
         wp->poses[wp->poseCount].field_0x24 = i - lastAnim + 1;
         wp->poses[wp->poseCount].field_0x1C = data->value;
         wp->poses[wp->poseCount].field_0x18 = 1;
-        if (strncmp(anim, "J", 1) == 0) {
+        if (strncmp(anim, "J\0\0", 1) == 0) {
             wp->poses[wp->poseCount].field_0x18 = 0;
         }
         i++;
@@ -1557,7 +1561,7 @@ void evalOn(void) {
     positions = (Vec*)((smartEntry*)*(void**)((u8*)pose + 0x15C))->address;
     n = *(s32*)((u8*)pose + 0x160);
     for (i = 0; i < n; i++) {
-        positions[i] = (Vec){0.0f, -1000.0f, 0.0f};
+        positions[i] = vec3_rsh_00013cec;
     }
 
     for (i = 0; i < dat_80419a28; i++) {
@@ -1709,7 +1713,6 @@ static void ext_disp(CameraId cameraId, void* param) {
 }
 
 static void ext_shadow_disp(CameraId cameraId, void* param) {
-    static Mtx mt = {{8.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 8.0f, 0.0f, 0.5f}, {0.0f, 0.0f, 8.0f, 0.0f}};
     u16 left, top, right, bottom;
 
     if (cameraId == CAMERA_OFFSCREEN2) {
