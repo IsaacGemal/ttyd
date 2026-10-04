@@ -10,10 +10,13 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "mario/mariost.h"
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 #include "driver/mapdrv.h"
 #include "driver/offscreendrv.h"
+#include "sdk/DEMOInit.h"
+#include "system.h"
+#include "driver/shadowdrv.h"
 
 extern GlobalWork* gp;
 
@@ -93,20 +96,163 @@ static void zFill(void) { //1:1
 	GXSetColorUpdate(GX_TRUE);
 }
 
-// NONMATCHING (0.20%): 490 missing.
+// The second flag argument to animSetPaperTexObj is evaluated before the first in the original;
+// the MUST_MATCH branch spells the flags in the shape that reproduces that evaluation order.
 void imgDisp(CameraId camId, void* param) {
 	ImageEntry* entry = param;
+	ImageShadow* shadow;
+	Mtx mats[3];
+	Mtx mtxT2;
+	Mtx mtxS2;
+	Mtx mtxS;
+	Mtx mtxT;
+	GXTexObj* texObjs[3];
+	void* texDatas[3];
+	f32 (*matPtrs[3])[4];
+	Vec vec;
+	Vec normal;
+	AnimationPoseData* myData;
+	AnimationPoseData* otherData;
+	ImageEntry* other;
+	f32 b;
+	f32 a;
+	f32 d;
+	f32 c;
+	f32 scale, z;
+	f32 y;
+	f32 dist;
+	f32 f26;
+	f32 ra, rb, rc, rd;
 	int i;
+	int index;
 
+	index = -1;
 	for (i = 0; i < 3; i++) {
-
+		shadow = &entry->shadows[i];
+		if (!(shadow->flags & 4)) {
+			texObjs[i] = NULL;
+			texDatas[i] = NULL;
+		} else if (shadow->flags & 0x10) {
+			texObjs[i] = NULL;
+			texDatas[i] = NULL;
+		} else {
+			if (entry->flags & 4) {
+				a = (f32)*(u16*)&shadow->field_0x8[0];
+				b = (f32)*(u16*)&shadow->field_0x8[2];
+				c = (f32)*(u16*)&shadow->field_0x8[4];
+				d = (f32)*(u16*)&shadow->field_0x8[6];
+			} else {
+				a = (f32)shadow->field_0x4;
+				b = (f32)shadow->field_0x6;
+				c = (f32)entry->field_0xE4;
+				d = (f32)entry->field_0xE6;
+			}
+			PSMTXTrans(mtxT,
+			           -((f32)*(u16*)&shadow->field_0x8[0] - a) / (f32)*(u16*)&shadow->field_0x8[4],
+			           -((f32)*(u16*)&shadow->field_0x8[2] - b) / (f32)*(u16*)&shadow->field_0x8[6], 0.0f);
+			PSMTXScale(mtxS, c / (f32)*(u16*)&shadow->field_0x8[4],
+			           d / (f32)*(u16*)&shadow->field_0x8[6], 1.0f);
+			PSMTXConcat(mtxT, mtxS, mats[i]);
+			texObjs[i] = (GXTexObj*)shadow->field_0x1C;
+			texDatas[i] = shadow->field_0x3C;
+		}
+		if (texObjs[i] != NULL) {
+			matPtrs[i] = mats[i];
+			if (index == -1) index = i;
+		} else {
+			matPtrs[i] = NULL;
+		}
 	}
 
+	if (index == -1) {
+		entry->flags |= 0x10000000;
+		return;
+	}
+	entry->flags &= ~0x10000000;
+
+	animSetPaperTexMtx(matPtrs[0], matPtrs[1], matPtrs[2]);
+#ifdef MUST_MATCH
+	animSetPaperTexObj(texObjs[0], texObjs[1], texObjs[2], texDatas[0], texDatas[1], texDatas[2],
+	                   entry->shadows[0].field_0x10 != -1 ? 1 : 0, entry->shadows[1].field_0x10 != -1 ? 1 : 0);
+#else
+	animSetPaperTexObj(texObjs[0], texObjs[1], texObjs[2], texDatas[0], texDatas[1], texDatas[2],
+	                   entry->shadows[0].field_0x10 != -1, entry->shadows[1].field_0x10 != -1);
+#endif
+
+	if (entry->animName != NULL) {
+		animPoseSetAnim(entry->poseId, entry->animName, 0);
+	}
+	animPoseSetStartTime(entry->poseId, *(OSTime*)(entry->field_0x10C + 4)); // 0x110/0x114: pose OSTime inside the 0x10C scratch area
+	animPoseMain(entry->poseId);
+	animPoseSetMaterialLightFlagOn(entry->poseId, 1);
+	entry->field_0x118 = animPoseGetLoopTimes(entry->poseId);
+
+	if (entry->flags & 8) {
+		zFill();
+		scale = 1.0f;
+		z = 0.0f;
+	} else {
+		f26 = 24.0f / (f32)tan(3.141592f * ((camGetPtr(CAMERA_3D)->fovY / 2.0f) / 180.0f));
+		PSVECSubtract(&camGetPtr(CAMERA_3D)->cameraPos, &entry->point, &vec);
+		normal = *(Vec*)camGetPtr(CAMERA_3D)->view[2];
+		PSVECNormalize(&normal, &normal);
+		vec.x = vec.x * normal.x;
+		vec.y = vec.y * normal.y;
+		vec.z = vec.z * normal.z;
+		dist = PSVECMag(&vec);
+		scale = dist / f26;
+		z = f26 - dist;
+	}
+
+	if (entry->flags & 4) {
+		ra = (f32)*(u16*)&entry->shadows[index].field_0x8[0];
+		rb = (f32)*(u16*)&entry->shadows[index].field_0x8[2];
+		rc = (f32)*(u16*)&entry->shadows[index].field_0x8[4];
+		rd = (f32)*(u16*)&entry->shadows[index].field_0x8[6];
+	} else {
+		ra = (f32)entry->shadows[index].field_0x4;
+		rb = (f32)entry->shadows[index].field_0x6;
+		rc = (f32)entry->field_0xE4;
+		rd = (f32)entry->field_0xE6;
+	}
+
+	y = 48.0f * ((-(entry->field_0xEC + rb)) / (f32)DEMOGetRenderModeObj()->efbHeight);
+	PSMTXTrans(mtxT2, 64.0f * ((entry->field_0xE8 + ra) / (f32)DEMOGetRenderModeObj()->fbWidth), y, z);
+	PSMTXTrans(mtxS2, -32.0f, 24.0f, 0.0f);
+	PSMTXConcat(mtxT2, mtxS2, mtxT2);
+
+	PSMTXScale(mtxS2, rc / (f32)DEMOGetRenderModeObj()->fbWidth,
+	           rd / (f32)DEMOGetRenderModeObj()->efbHeight,
+	           rc / (f32)DEMOGetRenderModeObj()->fbWidth);
+	PSMTXConcat(mtxT2, mtxS2, mtxT2);
+	PSMTXTrans(mtxS2, 32.0f, -24.0f, 0.0f);
+	PSMTXConcat(mtxT2, mtxS2, mtxT2);
+	PSMTXConcat(entry->field_0x120, mtxT2, mtxT2);
+
+	animPoseDrawMtx(entry->poseId, mtxT2, 1, 0.0f, scale);
+	animPoseDrawMtx(entry->poseId, mtxT2, 2, 0.0f, scale);
+	animPoseDrawMtx(entry->poseId, mtxT2, 3, 0.0f, scale);
+	animSetPaperTexMtx(NULL, NULL, NULL);
+
+	i = 0;
+	other = wp->entries;
+	for (; i < wp->count; i++, other++) {
+		if ((other->flags & 1) && other->poseId != -1 && !(other->flags & 2)) {
+			if (strcmp(other->name, entry->name) != 0) {
+				myData = animPoseGetAnimBaseDataPtr(entry->poseId);
+				otherData = animPoseGetAnimBaseDataPtr(other->poseId);
+				if (!strcmp(otherData->fileName, myData->fileName)) break;
+			}
+		}
+	}
+
+	if (i < wp->count) {
+		sysWaitDrawSync();
+	}
 }
 
-// .rodata in the original; left extern because <math.h>'s inline sqrt statics already fill this
-// file's .rodata, and defining it here would shift them (see report).
-extern const Vec vec3_802c4808;
+// The unit's first .rodata object (math_ext.h instead of <math.h> keeps the inline sqrt statics out of .rodata).
+const Vec vec3_802c4808 = { 0.0f, 0.0f, 0.0f };
 // Objects the original unit defines in .sdata2/.rodata.
 const GXColor dat_8041a278 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_8041a27c = {0xFF, 0xFF, 0xFF, 0xFF};
@@ -495,8 +641,147 @@ void imgSetShadow(ImageEntry* entry, s32 shadowId) { //1:1
 	entry->shadowId = shadowId;
 }
 
-// NONMATCHING (0.25%): 402 missing.
 void imgShadowDisp(CameraId camId, void* param) {
-	ImageEntry* entry = param;
+	ImageEntry* entry;
+	ImageShadow* shadow;
+	Mtx mtx[3];
+	Mtx mtxTmpB;
+	Mtx mtxTmpA;
+	Mtx mtxScale;
+	Mtx mtxTrans;
+	GXTexObj* texObj[3];
+	void* texData[3];
+	MtxPtr mtxPtr[3];
+	s32 firstShadow;
+	s32 i;
+	f32 v1, v3, v2;
+	f32 w0, w1, w2, w3;
+	f32 o, z;
 
+	entry = param;
+	firstShadow = -1;
+	for (i = 0; i < 3; i++) {
+		shadow = &entry->shadows[i];
+		if (!(shadow->flags & 4)) {
+			texObj[i] = NULL;
+			texData[i] = NULL;
+		}
+		else {
+			if (shadow->flags & 0x10) {
+				texObj[i] = NULL;
+				texData[i] = NULL;
+			}
+			else {
+				f32 v0;
+				if (entry->flags & 4) {
+					v0 = *(u16*)&shadow->field_0x8[0]; // field_0x8 is a byte array but holds four u16
+					v1 = *(u16*)&shadow->field_0x8[2];
+					v2 = *(u16*)&shadow->field_0x8[4];
+					v3 = *(u16*)&shadow->field_0x8[6];
+				}
+				else {
+					v0 = shadow->field_0x4;
+					v1 = shadow->field_0x6;
+					v2 = entry->field_0xE4;
+					v3 = entry->field_0xE6;
+				}
+				PSMTXTrans(mtxTrans,
+					-((f32)*(u16*)&shadow->field_0x8[0] - v0) / (f32)*(u16*)&shadow->field_0x8[4],
+					-((f32)*(u16*)&shadow->field_0x8[2] - v1) / (f32)*(u16*)&shadow->field_0x8[6],
+					0.0f);
+				PSMTXScale(mtxScale, v2 / (f32)*(u16*)&shadow->field_0x8[4], v3 / (f32)*(u16*)&shadow->field_0x8[6], 1.0f);
+				PSMTXConcat(mtxTrans, mtxScale, mtx[i]);
+				texObj[i] = (GXTexObj*)shadow->field_0x1C;
+				texData[i] = shadow->field_0x3C;
+			}
+		}
+		if (texObj[i] != NULL) {
+			mtxPtr[i] = mtx[i];
+			if (firstShadow == -1) {
+				firstShadow = i;
+			}
+		}
+		else {
+			mtxPtr[i] = NULL;
+		}
+	}
+
+	if (firstShadow == -1) {
+		entry->flags |= 0x10000000;
+		return;
+	}
+	entry->flags &= ~0x10000000;
+
+	animSetPaperTexMtx(mtxPtr[0], mtxPtr[1], mtxPtr[2]);
+	// MUST_MATCH: the original materialises each boolean argument through a ?-expression, which
+	// lands the two srwi sign-extractions in the opposite argument registers from the plain
+	// comparison. The natural form is under #else.
+#ifdef MUST_MATCH
+	animSetPaperTexObj(texObj[0], texObj[1], texObj[2], texData[0], texData[1], texData[2],
+		(entry->shadows[0].field_0x10 != -1) ? 1 : 0, (entry->shadows[1].field_0x10 != -1) ? 1 : 0);
+#else
+	animSetPaperTexObj(texObj[0], texObj[1], texObj[2], texData[0], texData[1], texData[2],
+		entry->shadows[0].field_0x10 != -1, entry->shadows[1].field_0x10 != -1);
+#endif
+
+	if (entry->animName != NULL) {
+		animPoseSetAnim(entry->poseId, entry->animName, 0);
+	}
+	animPoseSetStartTime(entry->poseId, *(OSTime*)&entry->field_0x10C[4]); // 0x110, in the field_0x10C byte array
+	animPoseMain(entry->poseId);
+	animPoseSetMaterialLightFlagOn(entry->poseId, 1);
+	entry->field_0x118 = animPoseGetLoopTimes(entry->poseId);
+
+	// MUST_MATCH: the original keeps an if/else on flags bit 3 whose two arms assign the same
+	// constants, and the branch survives in the object; the natural form is under #else.
+#ifdef MUST_MATCH
+	if (entry->flags & 8) {
+		o = 1.0f;
+		z = 0.0f;
+	}
+	else {
+		o = 1.0f;
+		z = 0.0f;
+	}
+#else
+	o = 1.0f;
+	z = 0.0f;
+#endif
+
+	if (entry->flags & 4) {
+		w0 = *(u16*)&entry->shadows[firstShadow].field_0x8[0]; // field_0x8 holds four u16
+		w1 = *(u16*)&entry->shadows[firstShadow].field_0x8[2];
+		w2 = *(u16*)&entry->shadows[firstShadow].field_0x8[4];
+		w3 = *(u16*)&entry->shadows[firstShadow].field_0x8[6];
+	}
+	else {
+		w0 = entry->shadows[firstShadow].field_0x4;
+		w1 = entry->shadows[firstShadow].field_0x6;
+		w2 = entry->field_0xE4;
+		w3 = entry->field_0xE6;
+	}
+
+	w1 = -(entry->field_0xEC + w1) / (f32)DEMOGetRenderModeObj()->efbHeight;
+	w1 = 48.0f * w1;
+	PSMTXTrans(mtxTmpB, 64.0f * ((entry->field_0xE8 + w0) / (f32)DEMOGetRenderModeObj()->fbWidth), w1, z);
+	PSMTXTrans(mtxTmpA, -32.0f, 24.0f, 0.0f);
+	PSMTXConcat(mtxTmpB, mtxTmpA, mtxTmpB);
+	w0 = w2 / (f32)DEMOGetRenderModeObj()->fbWidth;
+	z = w3 / (f32)DEMOGetRenderModeObj()->efbHeight;
+	PSMTXScale(mtxTmpA, w2 / (f32)DEMOGetRenderModeObj()->fbWidth, z, w0);
+	PSMTXConcat(mtxTmpB, mtxTmpA, mtxTmpB);
+	PSMTXTrans(mtxTmpA, 32.0f, -24.0f, 0.0f);
+	PSMTXConcat(mtxTmpB, mtxTmpA, mtxTmpB);
+
+	animPoseDrawMtx(entry->poseId, mtxTmpB, 1, 0.0f, o);
+	animPoseDrawMtx(entry->poseId, mtxTmpB, 2, 0.0f, o);
+
+	switch (entry->shadowId) {
+	case 1:
+		shadowProjShadowDrawCountUp();
+		break;
+	case 2:
+		shadowDepthShadowDrawCountUp();
+		break;
+	}
 }

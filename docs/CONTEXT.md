@@ -4256,3 +4256,22 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   winPartyDisp) have each had two or more agent passes; they go to hand work, and the four links agents couldn't
   get (battle_damage, fadedrv, eff_fire, jin_07) to Claude #3. Wave 71 was not launched; the tower went to the
   permuter (queue 23) overnight.
+
+
+## Hand work on data-blocked functions (2026-10-03 night, Claude Opus 5.5 "TTYD Claude #2")
+
+- **imgdrv**: imgDisp and imgShadowDisp at 100% (16/16), .rodata byte-identical, .sdata2 identical but for one
+  swapped pair. The two salvaged versions came from different agents, each holding the other's old function, so
+  every salvage attempt lowered a section; together the literal pool falls into retail's order (pool entries are
+  generated in reverse source order, imgShadowDisp's first). `math_ext.h` instead of `<math.h>` removes the inline
+  sqrt statics from .rodata (the include alone emits them), and vec3_802c4808 is defined as the first .rodata
+  object. Left: 48/64 at .sdata2+0x10 swapped. Naming 0/1/64 and defining them after the code fixes the pool
+  exactly, but MWCC then keeps the named 0.0 in one register in imgDisp_ProjPlane where retail reloads it per FIFO
+  store (96.85%); volatile and non-const views didn't help.
+- **msgdrv msgWindow_Disp** (not committed): the wave 69 agent version reaches 100%; what it needs for the
+  sections is (1) the two .sbss2 GXColors unk_80422fe4/unk_80422fe0 defined with the `#pragma section ".sdata"
+  ".sbss2"` pattern (.sbss2 66.7 -> 100%), (2) the nine named .sdata2 colours dat_8041a4f0..dat_8041a510 defined
+  after the code (the two `{0xFF,0xFF,0xFF,0}` locals copy dat_8041a510), which moves the first .sdata2 mismatch
+  from +0x40 to +0x80, and (3) the unit's function order, which differs a lot from retail (fn_order_check
+  --write needs the inline helpers msgDrawColor/selectWindowColor moved above their first use, and then <math.h>
+  ordering). With (1)+(2) .sdata2 is 86.28% vs main's 86.45%, so it needs (3) to land.
