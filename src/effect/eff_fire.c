@@ -11,12 +11,12 @@
 #include <dolphin/gx.h>
 #include <stdlib.h>
 
-// .sbss2 zero-init scratch words the original unit defines; the linker script allocates them there.
+// .sbss2 zero-init scratch words, declared in reverse address order because MWCC emits them backwards.
 #pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") u32 unk_80423058;
-__declspec(section ".sdata") u32 unk_8042305c;
-__declspec(section ".sdata") u32 unk_80423060;
 __declspec(section ".sdata") GXColor unk_80423064;
+__declspec(section ".sdata") u32 unk_80423060;
+__declspec(section ".sdata") u32 unk_8042305c;
+__declspec(section ".sdata") u32 unk_80423058;
 #pragma section ".sdata" ".sbss"
 
 #ifdef MUST_MATCH
@@ -38,25 +38,6 @@ __declspec(section ".rodata") Vec vec3_802f8c4c = { 0.0f, 0.0f, 0.0f };
 #else
 const Vec vec3_802f8c4c = { 0.0f, 0.0f, 0.0f };
 #endif
-extern const f32 float_0p0078125_8041e0ec;
-extern const f32 float_1p5_8041e0f0;
-extern const f32 float_0p8_8041e0f4;
-extern const f32 float_deg2rad_8041e0f8;
-extern const f32 float_8_8041e0fc;
-extern const f32 float_1_8041e100;
-extern const f32 float_0p5_8041e104;
-extern const f32 float_0_8041e108;
-extern const f32 float_0p95_8041e10c;
-extern const f32 float_0p99_8041e110;
-extern const f32 float_neg8_8041e114;
-extern const f32 float_1p4_8041e158;
-extern const f32 float_1p2_8041e15c;
-extern const f32 float_10_8041e160;
-extern const f32 float_30_8041e164;
-extern const f32 float_20_8041e13c;
-extern const f32 float_0p03125_8041e14c;
-extern const f32 float_0p01_8041e150;
-extern const f32 float_neg0p01_8041e154;
 extern const u32 dat_8041e0bc;
 extern const u32 dat_8041e0c0;
 extern const u32 dat_8041e0c4;
@@ -69,20 +50,7 @@ extern const u32 dat_8041e0dc;
 extern const u32 dat_8041e0e0;
 extern const u32 dat_8041e0e4;
 extern const u32 dat_8041e0e8;
-extern const f32 float_32_8041e118;
-extern const f32 float_16_8041e12c;
-extern const f32 float_40_8041e130;
-extern const f32 float_24_8041e134;
-extern const f32 float_12_8041e138;
-extern const f32 float_25_8041e140;
-extern const f32 float_0p7854_8041e144;
-extern const f32 float_2_8041e148;
-extern const f32 float_5_8041e11c;
-extern const f32 float_0p6_8041e120;
-extern const f32 float_13p333_8041e124;
-extern const f32 float_0p33333_8041e128;
 extern const u32 dat_8041e0b8;
-const char str_8041E168[]; // tentative definition, completed after the code so it emits last in .sdata2
 
 
 ScaleEntry scale1[13] = {
@@ -136,7 +104,7 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 	Vec position;
 
 	entry = effEntry();
-	entry->type = str_8041E168;
+	entry->type = "Fire";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x8C);
 	entry->userdata = data;
@@ -161,18 +129,18 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 	data->scale = scale;
 	data->lifetime = lifetime;
 	data->counter = 0;
-	data->field_0x78 = float_1_8041e100;
-	data->field_0x7C = float_1_8041e100;
+	data->field_0x78 = 1.0f;
+	data->field_0x7C = 1.0f;
 	data->sparkTimer = 0;
 	data->sparkInterval = rand() % 30 + 30;
 	data->colorIndex1 = 0;
 	data->colorIndex2 = 0;
-	data->field_0x4C = float_0_8041e108;
-	data->field_0x50 = float_0_8041e108;
-	data->field_0x54 = float_0_8041e108;
-	data->field_0x58 = float_0_8041e108;
-	data->field_0x5C = float_0_8041e108;
-	data->field_0x60 = float_0_8041e108;
+	data->field_0x4C = 0.0f;
+	data->field_0x50 = 0.0f;
+	data->field_0x54 = 0.0f;
+	data->field_0x58 = 0.0f;
+	data->field_0x5C = 0.0f;
+	data->field_0x60 = 0.0f;
 
 	switch (type) {
 	case 0:
@@ -206,7 +174,7 @@ EffectEntry* effFireEntry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 scale
 	data->counter = rand() % data->counterMax;
 	data->scaleIndex = 0;
 	data->scaleCounter = 0;
-	data->curScale = float_0_8041e108;
+	data->curScale = 0.0f;
 	data->field_0x80 = 0;
 	data->field_0x84 = 0;
 	data->field_0x88 = 0;
@@ -220,6 +188,14 @@ void effFireMain(EffectEntry* effect) {
 	s32 count;
 	const ScaleEntry* table;
 	f32 factor;
+#ifdef MUST_MATCH
+	// Match-only: Non-const scale factors preserve the original FP register allocation.
+	f32 stretch = 1.4f;
+	f32 widen = 1.2f;
+#else
+	const f32 stretch = 1.4f;
+	const f32 widen = 1.2f;
+#endif
 	EffectEntry* smokeEntry;
 	data = effect->userdata;
 	type = data->type;
@@ -290,8 +266,8 @@ void effFireMain(EffectEntry* effect) {
 			(f32)(table[data->scaleIndex].threshold - table[data->scaleIndex - 1].threshold);
 		data->curScale = (1.0f - factor) * table[data->scaleIndex].scale +
 			factor * table[data->scaleIndex - 1].scale;
-		data->curScale = data->curScale * float_1p4_8041e158;
-		data->curScale = data->curScale * float_1p2_8041e15c;
+		data->curScale = data->curScale * stretch;
+		data->curScale = data->curScale * widen;
 		data->scaleCounter++;
 		break;
 	case 5:
@@ -299,9 +275,9 @@ void effFireMain(EffectEntry* effect) {
 	case 7:
 		data->sparkTimer++;
 		if (data->sparkTimer > data->sparkInterval) {
-			effFireSparkN64Entry(type, 2, 200, data->position.x, data->position.y + float_10_8041e160 * data->scale,
-				data->position.z, float_30_8041e164 * data->field_0x78, float_30_8041e164,
-				data->scale, float_1_8041e100, float_1_8041e100);
+			effFireSparkN64Entry(type, 2, 200, data->position.x, data->position.y + 10.f * data->scale,
+				data->position.z, 30.f * data->field_0x78, 30.f,
+				data->scale, 1.0f, 1.0f);
 			data->sparkTimer = 0;
 			data->sparkInterval = rand() % 30 + 30;
 		}
@@ -319,7 +295,7 @@ void effFireMain(EffectEntry* effect) {
 			f32 pz;
 			f32 sc;
 #else
-			f32 pz = data->position.z - float_5_8041e11c;
+			f32 pz = data->position.z - 5.0f;
 			f32 py = data->position.y + (f32)((u8*)&offsets)[type];
 			f32 px = data->position.x;
 			f32 sc = data->scale;
@@ -327,7 +303,7 @@ void effFireMain(EffectEntry* effect) {
 			Vec smokePos;
 			effFireSmokeData* smoke;
 #ifdef MUST_MATCH
-			pz = data->position.z - float_5_8041e11c;
+			pz = data->position.z - 5.0f;
 			sc = data->scale;
 			px = data->position.x;
 			py = data->position.y + (f32)((u8*)&offsets)[type];
@@ -350,10 +326,10 @@ void effFireMain(EffectEntry* effect) {
 			smoke->scale = sc;
 			smoke->lifetime = 0x3C;
 			smoke->counter = 0;
-			smoke->velocity.x = float_0_8041e108;
-			smoke->velocity.y = float_1_8041e100;
-			smoke->velocity.z = float_0_8041e108;
-			smoke->angleVel = float_neg8_8041e114;
+			smoke->velocity.x = 0.0f;
+			smoke->velocity.y = 1.0f;
+			smoke->velocity.z = 0.0f;
+			smoke->angleVel = -8.0f;
 			smoke->color.r = 0xCF;
 			smoke->color.g = 0x67;
 			smoke->color.b = 0x38;
@@ -441,9 +417,14 @@ void effFireDisp(CameraId camId, void* param) {
 	GXLoadTexMtxImm(mtx, 0x1E, GX_MTX2x4);
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041e0f8);
-	scale = float_20_8041e13c * data->scale;
-	scale = scale * float_0p03125_8041e14c;
+	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
+	scale = 20.f * data->scale;
+#ifdef MUST_MATCH
+	// Match-only: division gives the original multiply operand order after strength reduction.
+	scale = scale / 32.0f;
+#else
+	scale *= 0.03125f;
+#endif
 	PSMTXScale(scaleMtx, scale * data->field_0x78, scale * data->field_0x7C, scale);
 	PSMTXConcat(transMtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
@@ -456,7 +437,7 @@ void effFireDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-	PSMTXTrans(offsetMtx, float_0p01_8041e150, float_neg0p01_8041e154, float_0_8041e108);
+	PSMTXTrans(offsetMtx, 0.01f, -0.01f, 0.0f);
 	PSMTXConcat(mtx, offsetMtx, offsetMtx);
 	GXLoadPosMtxImm(offsetMtx, 0);
 	GXSetNumTevStages(1);
@@ -565,6 +546,22 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXColor k;
 	s32 type;
 	f32 negHalf;
+#ifdef MUST_MATCH
+	// Match-only: Non-const dimensions retain runtime negation and the cached quad coordinates.
+	f32 width = 24.0f;
+	f32 half = 0.5f;
+	f32 twelve = 12.0f;
+	f32 size = 32.0f;
+	f32 height = 40.0f;
+	f32 sixteen = 16.0f;
+#else
+	const f32 width = 24.0f;
+	const f32 half = 0.5f;
+	const f32 twelve = 12.0f;
+	const f32 size = 32.0f;
+	const f32 height = 40.0f;
+	const f32 sixteen = 16.0f;
+#endif
 
 	camera = camGetPtr(camId);
 	type = data->type;
@@ -587,7 +584,7 @@ void effFireDisp2(CameraId camId, void* param) {
 	GXLoadTexMtxImm(transMtx, 0x21, GX_MTX2x4);
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041e0f8);
+	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXScale(scaleMtx, data->scale * data->field_0x78, data->scale * data->field_0x7C, data->scale);
 	PSMTXConcat(transMtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
@@ -650,14 +647,14 @@ void effFireDisp2(CameraId camId, void* param) {
 #endif
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	negHalf = -float_24_8041e134 * float_0p5_8041e104;
-	GXPosition3f32(negHalf, float_40_8041e130, 0.0f);
+	negHalf = -width * half;
+	GXPosition3f32(negHalf, height, 0.0f);
 	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
 	GXTexCoord2f32(0.0f, 0.0f);
-	GXPosition3f32(float_12_8041e138, float_40_8041e130, 0.0f);
+	GXPosition3f32(twelve, height, 0.0f);
 	GXColor4u8(0xFF, 0xFF, 0xFF, 0xFF);
 	GXTexCoord2f32(1.0f, 0.0f);
-	GXPosition3f32(float_12_8041e138, 0.0f, 0.0f);
+	GXPosition3f32(twelve, 0.0f, 0.0f);
 	GXColor4u8(0, 0, 0, 0xFF);
 	GXTexCoord2f32(1.0f, 1.0f);
 	GXPosition3f32(negHalf, 0.0f, 0.0f);
@@ -667,16 +664,16 @@ void effFireDisp2(CameraId camId, void* param) {
 	switch (type) {
 	case 3:
 	case 8:
-		PSMTXTrans(transMtx, 0.0f, float_20_8041e13c, 0.0f);
+		PSMTXTrans(transMtx, 0.0f, 20.f, 0.0f);
 		break;
 	case 4:
-		PSMTXTrans(transMtx, 0.0f, float_25_8041e140, 0.0f);
+		PSMTXTrans(transMtx, 0.0f, 25.0f, 0.0f);
 		break;
 	}
 	PSMTXScale(scaleMtx, data->curScale, data->curScale, data->curScale);
 	PSMTXConcat(transMtx, scaleMtx, transMtx);
 	if (type == 4) {
-		PSMTXRotRad(rotMtx, 'z', float_0p7854_8041e144);
+		PSMTXRotRad(rotMtx, 'z', 0.7853982f);
 		PSMTXConcat(transMtx, rotMtx, transMtx);
 	}
 	PSMTXConcat(mtx, transMtx, transMtx);
@@ -723,18 +720,18 @@ void effFireDisp2(CameraId camId, void* param) {
 		f32 f4;
 		f32 f2;
 		if (type == 3 || type == 8) {
-			f3 = float_2_8041e148;
+			f3 = 2.0f;
 			f4 = 1.0f;
 		} else {
-			f3 = float_2_8041e148;
+			f3 = 2.0f;
 			f4 = f3;
 		}
-		f2 = -float_32_8041e118 * float_0p5_8041e104;
-		GXPosition3f32(f2, float_16_8041e12c, 0.0f);
+		f2 = -size * half;
+		GXPosition3f32(f2, sixteen, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
-		GXPosition3f32(float_16_8041e12c, float_16_8041e12c, 0.0f);
+		GXPosition3f32(sixteen, sixteen, 0.0f);
 		GXTexCoord2f32(f3, 0.0f);
-		GXPosition3f32(float_16_8041e12c, f2, 0.0f);
+		GXPosition3f32(sixteen, f2, 0.0f);
 		GXTexCoord2f32(f3, f4);
 		GXPosition3f32(f2, f2, 0.0f);
 		GXTexCoord2f32(0.0f, f4);
@@ -784,8 +781,18 @@ void effFireDisp3(CameraId camId, void* param) {
 	s32 j;
 	f32 f27;
 	f32 f26;
+#ifdef MUST_MATCH
+	// Match-only: Non-const dimensions retain runtime negation and the original loop FP registers.
+	f32 width = 32.0f;
+	f32 half = 0.5f;
 	f32 third = 0.33333334f;
 	f32 sixteen = 16.0f;
+#else
+	const f32 width = 32.0f;
+	const f32 half = 0.5f;
+	const f32 third = 0.33333334f;
+	const f32 sixteen = 16.0f;
+#endif
 
 	data = effect->userdata;
 	camera = camGetPtr(camId);
@@ -801,18 +808,18 @@ void effFireDisp3(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x1E, GX_FALSE, 0x7D);
 	GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, 0x21, GX_FALSE, 0x7D);
 
-	PSMTXScale(scaleMtx, float_1_8041e100 / (f32)data->frameMax, float_1_8041e100, float_1_8041e100);
-	PSMTXTrans(transMtx, (f32)data->colorIndex1, float_0_8041e108, float_0_8041e108);
+	PSMTXScale(scaleMtx, 1.0f / (f32)data->frameMax, 1.0f, 1.0f);
+	PSMTXTrans(transMtx, (f32)data->colorIndex1, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
 	GXLoadTexMtxImm(transMtx, 0x1E, GX_MTX2x4);
 
-	PSMTXScale(scaleMtx, float_1_8041e100 / (f32)data->frameMax, float_1_8041e100, float_1_8041e100);
-	PSMTXTrans(transMtx, (f32)data->colorIndex2, float_0_8041e108, float_0_8041e108);
+	PSMTXScale(scaleMtx, 1.0f / (f32)data->frameMax, 1.0f, 1.0f);
+	PSMTXTrans(transMtx, (f32)data->colorIndex2, 0.0f, 0.0f);
 	PSMTXConcat(scaleMtx, transMtx, transMtx);
 	GXLoadTexMtxImm(transMtx, 0x21, GX_MTX2x4);
 
 	PSMTXTrans(transMtx, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041e0f8);
+	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
 	PSMTXScale(scaleMtx, data->scale * data->field_0x78, data->scale * data->field_0x7C, data->scale);
 	PSMTXConcat(transMtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
@@ -866,8 +873,8 @@ void effFireDisp3(CameraId camId, void* param) {
 	data->field_0x6C = -0x2710;
 	data->field_0x74 = 0x2710;
 
-	f26 = -float_32_8041e118 * float_0p5_8041e104;
-	f27 = float_13p333_8041e124;
+	f26 = -width * half;
+	f27 = 13.333333f;
 	colEntry = (u8*)col_tbl + (type - 5) * 0x20;
 
 	for (i = 0; i < 2; i++) {
@@ -876,8 +883,8 @@ void effFireDisp3(CameraId camId, void* param) {
 			PSMTXIdentity(scaleMtx);
 			break;
 		case 1:
-			PSMTXTrans(transMtx, float_0_8041e108, float_5_8041e11c, float_1_8041e100);
-			PSMTXScale(scaleMtx, float_0p6_8041e120, float_0p6_8041e120, float_0p6_8041e120);
+			PSMTXTrans(transMtx, 0.0f, 5.0f, 1.0f);
+			PSMTXScale(scaleMtx, 0.6f, 0.6f, 0.6f);
 			PSMTXConcat(transMtx, scaleMtx, scaleMtx);
 			break;
 		}
@@ -913,7 +920,7 @@ void effFireDisp3(CameraId camId, void* param) {
 			tmp = vec3_802f8c1c;
 #endif
 			tmp.x = f26;
-			tmp.y = float_40_8041e130;
+			tmp.y = 40.f;
 			v = tmp;
 		}
 		PSMTXMultVec(mtx80, &v, &v);
@@ -933,7 +940,7 @@ void effFireDisp3(CameraId camId, void* param) {
 			tmp = vec3_802f8c28;
 #endif
 			tmp.x = sixteen;
-			tmp.y = float_40_8041e130;
+			tmp.y = 40.f;
 			v = tmp;
 		}
 		PSMTXMultVec(mtx80, &v, &v);
@@ -995,8 +1002,22 @@ void effFireDisp3(CameraId camId, void* param) {
 	data->field_0x64 = 1;
 }
 
+#ifdef MUST_MATCH
+// Match-only: deferred emission pools the smoke angular velocity after SmokeMain and before Disp3.
+// Main shares this anonymous literal; the linker strips the unused helper body.
+static f32 effFire_pool_smoke_speed(void) {
+	return -8.0f;
+}
+#endif
+
 void effFireSmokeMain(EffectEntry* effect) {
 	effFireSmokeData* data = effect->userdata;
+#ifdef MUST_MATCH
+	// Match-only: The non-const fade factor keeps the conversion double and multiplier in their original registers.
+	f32 fade = 0.99f;
+#else
+	const f32 fade = 0.99f;
+#endif
 
 	if (effect->flags & 4) {
 		effect->flags &= ~4;
@@ -1013,16 +1034,16 @@ void effFireSmokeMain(EffectEntry* effect) {
 		return;
 	}
 	data->counter++;
-	data->velocity.x *= float_0p95_8041e10c;
-	data->velocity.y *= float_0p95_8041e10c;
-	data->velocity.z *= float_0p95_8041e10c;
+	data->velocity.x *= 0.95f;
+	data->velocity.y *= 0.95f;
+	data->velocity.z *= 0.95f;
 	data->position.x += data->velocity.x;
 	data->position.y += data->velocity.y;
 	data->position.z += data->velocity.z;
 	data->angle += data->angleVel;
-	data->color.r = (u8)(data->color.r * float_0p99_8041e110);
-	data->color.g = (u8)(data->color.g * float_0p99_8041e110);
-	data->color.b = (u8)(data->color.b * float_0p99_8041e110);
+	data->color.r = (u8)(data->color.r * fade);
+	data->color.g = (u8)(data->color.g * fade);
+	data->color.b = (u8)(data->color.b * fade);
 	dispEntry(CAMERA_3D, dispCalcZ(&data->position), 2, effFireSmokeDisp, effect);
 }
 
@@ -1054,6 +1075,14 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	f32 scaleY;
 	f32 scale;
 	f32 negHalf;
+#ifdef MUST_MATCH
+	// Match-only: Non-const factors retain the runtime negation and cached half-size coordinate.
+	f32 one = 1.0f;
+	f32 half = 0.5f;
+#else
+	const f32 one = 1.0f;
+	const f32 half = 0.5f;
+#endif
 
 	camera = camGetPtr(camId);
 	if ((u32)data->counter * 2 < 0x3C) {
@@ -1061,12 +1090,12 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 		scaleX = scale_dt[data->counter * 2] / 128.0f;
 		scaleY = scale_dt[data->counter * 2 + 1] / 128.0f;
 #else
-		scaleX = scale_dt[data->counter * 2] * float_0p0078125_8041e0ec;
-		scaleY = scale_dt[data->counter * 2 + 1] * float_0p0078125_8041e0ec;
+		scaleX = scale_dt[data->counter * 2] * 0.0078125f;
+		scaleY = scale_dt[data->counter * 2 + 1] * 0.0078125f;
 #endif
 	} else {
-		scaleX = float_1p5_8041e0f0;
-		scaleY = float_0p8_8041e0f4;
+		scaleX = 1.5f;
+		scaleY = 0.8f;
 	}
 
 	effGetTexObj(0x21, &tex);
@@ -1087,12 +1116,12 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, 0x7D);
 
 	PSMTXTrans(posMtx, data->position.x, data->position.y, data->position.z);
-	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041e0f8);
-	scale = float_8_8041e0fc * data->scale;
+	PSMTXRotRad(rotMtx, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
+	scale = 8.0f * data->scale;
 	PSMTXScale(scaleMtx, scale * scaleX, scale * scaleY, scale);
 	PSMTXConcat(posMtx, rotMtx, mtx);
 	PSMTXConcat(mtx, scaleMtx, mtx);
-	PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e0f8 * data->angle);
+	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->angle);
 	PSMTXConcat(mtx, rotMtx, mtx);
 	PSMTXConcat(camera->view, mtx, mtx);
 	GXLoadPosMtxImm(mtx, 0);
@@ -1106,20 +1135,19 @@ void effFireSmokeDisp(CameraId camId, void* param) {
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 	GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	negHalf = -float_1_8041e100 * float_0p5_8041e104;
-	GXPosition3f32(negHalf, float_0p5_8041e104, 0.0f);
+	negHalf = -one * half;
+	GXPosition3f32(negHalf, half, 0.0f);
 	GXTexCoord2f32(0.0f, 0.0f);
-	GXPosition3f32(float_0p5_8041e104, float_0p5_8041e104, 0.0f);
+	GXPosition3f32(half, half, 0.0f);
 	GXTexCoord2f32(1.0f, 0.0f);
-	GXPosition3f32(float_0p5_8041e104, negHalf, 0.0f);
+	GXPosition3f32(half, negHalf, 0.0f);
 	GXTexCoord2f32(1.0f, 1.0f);
 	GXPosition3f32(negHalf, negHalf, 0.0f);
 	GXTexCoord2f32(0.0f, 1.0f);
 }
 
-// Original .sdata2 data pool, defined after the code (so MWCC keeps them as real objects instead of
-// folding their values into the functions). Values taken word-for-word from the original object; they are
-// the named constants every function in the unit loads.
+// Named color and offset words precede the anonymous float/string pool. Define them after the code
+// so MWCC preserves the objects instead of folding their contents into the functions.
 const u32 dat_8041e0b8 = 0x050A0A0A;
 const u32 dat_8041e0bc = 0xFF0000FF;
 const u32 dat_8041e0c0 = 0x00000064;
@@ -1133,35 +1161,3 @@ const u32 dat_8041e0dc = 0x000000FF;
 const u32 dat_8041e0e0 = 0xFFEA5D4C;
 const u32 dat_8041e0e4 = 0xFFEA5D26;
 const u32 dat_8041e0e8 = 0x0000004C;
-const f32 float_0p0078125_8041e0ec = 0.0078125f;
-const f32 float_1p5_8041e0f0 = 1.5f;
-const f32 float_0p8_8041e0f4 = 0.8f;
-const f32 float_deg2rad_8041e0f8 = 0.017453292f;
-const f32 float_8_8041e0fc = 8.0f;
-const f32 float_1_8041e100 = 1.0f;
-const f32 float_0p5_8041e104 = 0.5f;
-const f32 float_0_8041e108 = 0.0f;
-const f32 float_0p95_8041e10c = 0.95f;
-const f32 float_0p99_8041e110 = 0.99f;
-const f32 float_neg8_8041e114 = -8.0f;
-const f32 float_32_8041e118 = 32.0f;
-const f32 float_5_8041e11c = 5.0f;
-const f32 float_0p6_8041e120 = 0.6f;
-const f32 float_13p333_8041e124 = 13.333333f;
-const f32 float_0p33333_8041e128 = 0.33333334f;
-const f32 float_16_8041e12c = 16.0f;
-const f32 float_40_8041e130 = 40.0f;
-const f32 float_24_8041e134 = 24.0f;
-const f32 float_12_8041e138 = 12.0f;
-const f32 float_20_8041e13c = 20.0f;
-const f32 float_25_8041e140 = 25.0f;
-const f32 float_0p7854_8041e144 = 0.7853982f;
-const f32 float_2_8041e148 = 2.0f;
-const f32 float_0p03125_8041e14c = 0.03125f;
-const f32 float_0p01_8041e150 = 0.01f;
-const f32 float_neg0p01_8041e154 = -0.01f;
-const f32 float_1p4_8041e158 = 1.4f;
-const f32 float_1p2_8041e15c = 1.2f;
-const f32 float_10_8041e160 = 10.0f;
-const f32 float_30_8041e164 = 30.0f;
-const char str_8041E168[] = "Fire";

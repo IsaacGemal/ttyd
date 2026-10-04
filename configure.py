@@ -492,7 +492,7 @@ config.libs = [
             Object(Matching, "effect/eff_miss_star.c"),
             Object(NonMatching, "effect/eff_nice.c"),
             Object(Matching, "effect/eff_breath_fire.c"),
-            Object(NonMatching, "effect/eff_fire.c"),
+            Object(Matching, "effect/eff_fire.c"),
             Object(Matching, "effect/eff_spark.c"),
             Object(Matching, "effect/eff_updown.c"),
             Object(Matching, "effect/eff_charge.c"),
