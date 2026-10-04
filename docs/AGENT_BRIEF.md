@@ -171,6 +171,12 @@ When instructions match and registers or scheduling do not, the source form is u
   swap).  A struct whose address is never taken is scalarised and its fields are numbered by *first write*, not field
   order (`v.z = ..; v.x = ..;` puts `z` in f31); plain scalars follow declaration order. If the target's registers are a rotation of
   yours, permute declaration order first, or replace such a struct with scalars declared in write order.
+- **Pinning an early parameter save (`mr r28, r3` before the first load):** when retail copies a parameter into its
+  callee-saved register at the top and ours does it later, a dead use of the parameter at its first use can pin the
+  copy without adding an instruction: `strcmp((const char*)(s64)(s32)name, ...)` (npcSetStayPose/TalkPose, 98.84 -> 100;
+  the sign-extend round trip leaves a value the scheduler orders against, then the backend folds it away). A ternary
+  (`name ? name : name`) also pins it but leaves a dead `cmplwi`; `name + 0`, a `u32` cast, `(0, name)` and a local copy
+  are folded too early to help. Under MUST_MATCH, with the plain use in `#else`.
 
 - **`int` vs `s32` locals (from tw2004, CC0):** they are different types to the front end. For an `int` local, `n += 3` is folded into every
   later use (`addi r3, rN, 3` at each call and compare); for an `s32`/`long` local it stays one in-place `addi rN, rN, 3` followed by plain
