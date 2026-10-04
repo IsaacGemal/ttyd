@@ -2113,7 +2113,7 @@ config.libs = [
         "yuu",
         [
             Object(Matching, "event/evt_yuuminigame.c"),
-            Object(NonMatching, "yuu_02.c"),
+            Object(Matching, "yuu_02.c"),
             Object(NonMatching, "yuu_03.c"),
             Object(Matching, "yuu.c"),
             Object(Matching, "yuu_00.c"),
