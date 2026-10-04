@@ -343,6 +343,7 @@ The tool needs the repo's build.ninja and `build/G8MJ01/obj` (the original objec
 tree (`--src copy.c` compiles a scratch copy with the unit's flags).
 
 **Levers Codex proved** (full attempt logs, including what failed, in `docs/codex/`; the ledger has the table "Codex's wins, and why each worked"):
+- Place such helpers before EVERY function in the file (or at the very end for the tail-data flush). A helper in the middle generates immediately and so flushes the functions queued before it first, which reverses the text order of those functions (mot_roll: clrRollEvtFlag and its neighbours moved to the front, 32 bytes shifted the whole DOL). Check the symbol order after adding one.
 - Helper functions position pool entries and force tail data in a deferred unit: an unused helper placed between two functions pools its constant at that point; an immediately generated `u32 -> f32` helper at EOF flushes deferred code ahead of `force_active` tail words so they land last ([fadedrv](codex/fadedrv.md), [koopa](codex/koopa.md)).
 - Block-scoped assignment inside the inner loop, just before the use, limits how far MWCC hoists (to the inner-loop preheader only), which also fixes pool order ([eff_kemutest](codex/eff_kemutest.md)).
 - `DUP_OURS` in `sdata2_diff.py` means we pool a value twice that the original merges: remove the duplicate constants and keep runtime products and registers through locals ([eff_fire](codex/eff_fire.md)).
