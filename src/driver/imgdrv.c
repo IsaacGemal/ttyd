@@ -216,8 +216,8 @@ void imgDisp(CameraId camId, void* param) {
 		rd = (f32)entry->field_0xE6;
 	}
 
-	y = 48.0f * ((-(entry->field_0xEC + rb)) / (f32)DEMOGetRenderModeObj()->efbHeight);
-	PSMTXTrans(mtxT2, 64.0f * ((entry->field_0xE8 + ra) / (f32)DEMOGetRenderModeObj()->fbWidth), y, z);
+	PSMTXTrans(mtxT2, 64.0f * ((entry->field_0xE8 + ra) / (f32)DEMOGetRenderModeObj()->fbWidth),
+	           48.0f * ((-(entry->field_0xEC + rb)) / (f32)DEMOGetRenderModeObj()->efbHeight), z);
 	PSMTXTrans(mtxS2, -32.0f, 24.0f, 0.0f);
 	PSMTXConcat(mtxT2, mtxS2, mtxT2);
 
@@ -761,14 +761,13 @@ void imgShadowDisp(CameraId camId, void* param) {
 		w3 = entry->field_0xE6;
 	}
 
-	w1 = -(entry->field_0xEC + w1) / (f32)DEMOGetRenderModeObj()->efbHeight;
-	w1 = 48.0f * w1;
-	PSMTXTrans(mtxTmpB, 64.0f * ((entry->field_0xE8 + w0) / (f32)DEMOGetRenderModeObj()->fbWidth), w1, z);
+	PSMTXTrans(mtxTmpB, 64.0f * ((entry->field_0xE8 + w0) / (f32)DEMOGetRenderModeObj()->fbWidth),
+	           48.0f * (-(entry->field_0xEC + w1) / (f32)DEMOGetRenderModeObj()->efbHeight), z);
 	PSMTXTrans(mtxTmpA, -32.0f, 24.0f, 0.0f);
 	PSMTXConcat(mtxTmpB, mtxTmpA, mtxTmpB);
-	w0 = w2 / (f32)DEMOGetRenderModeObj()->fbWidth;
-	z = w3 / (f32)DEMOGetRenderModeObj()->efbHeight;
-	PSMTXScale(mtxTmpA, w2 / (f32)DEMOGetRenderModeObj()->fbWidth, z, w0);
+	PSMTXScale(mtxTmpA, w2 / (f32)DEMOGetRenderModeObj()->fbWidth,
+	           w3 / (f32)DEMOGetRenderModeObj()->efbHeight,
+	           w2 / (f32)DEMOGetRenderModeObj()->fbWidth);
 	PSMTXConcat(mtxTmpB, mtxTmpA, mtxTmpB);
 	PSMTXTrans(mtxTmpA, 32.0f, -24.0f, 0.0f);
 	PSMTXConcat(mtxTmpB, mtxTmpA, mtxTmpB);
