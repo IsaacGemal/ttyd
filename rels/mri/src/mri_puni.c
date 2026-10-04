@@ -2869,9 +2869,8 @@ void puniParaDamage(PuniData* puni) {
     }
 }
 
-// NONMATCHING (99.20%): control flow matches; only `before` lands in r5 (target r4), and the
-// function-local `.bss` static `debug` / 0.001f literal get a different symbol offset until
-// the sibling compiler-tagged statics (`h0$2954`..`takasa$2947`) and constants are emitted.
+// The compare and the add read field_0x574 again rather than through `before` (found by the permuter): with
+// `before` in both, `before` lands in r5 where the target has r4.
 void puniParaRecover(PuniData* puni) {
     s16 before;
     static u32 debug;
@@ -2888,8 +2887,8 @@ void puniParaRecover(PuniData* puni) {
     }
 
     before = puni->field_0x574;
-    if (before < puni->field_0x576) {
-        puni->field_0x574 = before + puni->field_0x578;
+    if (puni->field_0x574 < puni->field_0x576) {
+        puni->field_0x574 = puni->field_0x574 + puni->field_0x578;
         if (puni->field_0x574 > puni->field_0x576) {
             puni->field_0x574 = puni->field_0x576;
         }
