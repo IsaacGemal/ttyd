@@ -4275,3 +4275,16 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   from +0x40 to +0x80, and (3) the unit's function order, which differs a lot from retail (fn_order_check
   --write needs the inline helpers msgDrawColor/selectWindowColor moved above their first use, and then <math.h>
   ordering). With (1)+(2) .sdata2 is 86.28% vs main's 86.45%, so it needs (3) to land.
+
+## Wave 70 tail collection (2026-10-04, Claude Opus 5.5 "TTYD Claude #2"; agents DeepSeek V4.1 Flash)
+
+- Wave 70's last five agents, collected onto main 365c6ad6. CI 9,356 -> 9,357.
+- **New at 100%:** BattleAudienceApSrcCtrlProcess. It took only the agent's function plus a MUST_MATCH non-const
+  `__declspec(section ".rodata")` definition of vec3_802f9744: MWCC materialises a copy's source address with
+  lis+addi (retail) only for a non-const object. The agent's other changes (vec3_802f9768 the same way, and
+  DispAudience) lowered DispAudience and .sdata2, so they stayed out.
+- **Partial gains:** itemUseDisp 98.84 -> 99.73 (per-block Vec declarations in the original's order, a 10-entry
+  party list; the frame and every stack slot match), battleCameraMain 99.60 -> 99.69 (from the agent that escaped
+  its workspace; the source change is three expression shapes).
+- **Left as on main:** sound's `_sscallback` (99.29 on the agent's base, 97.72 on current main) and mot_ship
+  (unchanged). The agent's winItemMain `list[9] -> list[10]` was unneeded and reverted.

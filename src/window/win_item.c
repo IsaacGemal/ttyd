@@ -1468,16 +1468,16 @@ void winMakeSkipList(WindowWork* work) {
 // copy per by-value `Vec`/`GXColor` argument, which was 30 extra instructions. Calling through a
 // pointer-signature cast reproduces retail's arg addresses without editing the header; the original
 // prototype was almost certainly `void winTexSet(u32, Vec*, Vec*, GXColor*)`
-// What remains is the by-value outgoing area the cast no longer reserves: the frame is 0x400
-// against the target's 0x490, so the locals and the `i`/`ofs` callee-saved colours (target
-// i=r25/ofs=r28, ours reversed) differ. Fixing that needs the header/ABI, outside this file.
+// The frame and every stack slot now match (per-block `tcopy`/`translate`/`scale` declarations in
+// the original's order, a 10-entry party list); what remains is callee-saved colouring: `i` and
+// `ofs` land in r28/r25 where retail has r25/r28.
 // The `(*(s32(*)(void))pouchGetFP)()` cast suppresses an `extsh` the `s16` header prototype
 // would emit before the variadic winFontSetR; retail passes pouchGetFP's sign-extended r3
 // straight through (`mr r7, r3`), and winItemMain already calls it through this cast.
-// NONMATCHING (98.84%): the `winTexSet` by-value ABI and the `i`/`ofs` register colours.
+// NONMATCHING (99.73%): the `i`/`ofs` register colours.
 void itemUseDisp(WinMgrEntry* entry) {
     WindowWork* work = winGetPtr();
-    WindowPartyDt* list[7];
+    WindowPartyDt* list[10];
     WindowPartyDt** lp;
     WindowPartyDt* party;
     GXColor color = dat_8041d480;
@@ -1492,6 +1492,7 @@ void itemUseDisp(WinMgrEntry* entry) {
     const char* name;
     s32 n;
     s32 gray;
+    s32 n2;
     Vec tcopy;
 
     if (winMgrAction(WW_S32(work, 0x1208))) {
@@ -1518,8 +1519,7 @@ void itemUseDisp(WinMgrEntry* entry) {
 
     }
 
-    lp = list;
-    for (i = 0, ofs = 0, ofs2 = 0; i < WW_S32(work, 0x1E0) + 1; ofs += 0x16, lp++, ofs2 += 0x1C, i++) {
+    for (i = 0, lp = list, ofs = i, ofs2 = i; i < WW_S32(work, 0x1E0) + 1; i++, lp++, ofs2 += 0x1C, ofs += 0x16) {
         if (i == 0) {
             f31 = float_0_8041d4ac;
         } else if (i == 1) {
@@ -1551,8 +1551,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
             {
                 GXColor c = iconColor;
-                Vec scale = vec3_802f53a8;
+                Vec tcopy;
                 Vec translate = vec3_802f539c;
+                Vec scale = vec3_802f53a8;
                 translate.x = (f32)(entry->field_0x18 + 0x1E);
                 translate.y = (f32)(entry->field_0x1C - 0x14 - ofs);
 #ifdef MUST_MATCH
@@ -1567,10 +1568,15 @@ void itemUseDisp(WinMgrEntry* entry) {
             GXSetTevAlphaIn(0, 7, 1, 4, 7);
             {
                 GXColor c = dat_8041d490;
-                Vec scale = vec3_802f53c0;
-                Vec translate = vec3_802f53b4;
+                Vec tcopy;
+                Vec translate;
+                Vec scale;
+                f32 p;
+                scale = vec3_802f53c0;
+                translate = vec3_802f53b4;
                 w = (f32)FontGetMessageWidth(str_8041D4BC);
-                translate.x = float_0p9_8041d4b8 * w * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
+                p = float_0p9_8041d4b8 * w;
+                translate.x = p * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
                 translate.y = (f32)(entry->field_0x1C - 0x13 - ofs);
 #ifdef MUST_MATCH
                 tcopy = translate;
@@ -1581,10 +1587,15 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
             {
                 GXColor c = dat_8041d494;
-                Vec scale = vec3_802f53d8;
-                Vec translate = vec3_802f53cc;
+                Vec tcopy;
+                Vec translate;
+                Vec scale;
+                f32 p;
+                scale = vec3_802f53d8;
+                translate = vec3_802f53cc;
                 w = (f32)FontGetMessageWidth(str_8041D4BC);
-                translate.x = float_0p9_8041d4b8 * w * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
+                p = float_0p9_8041d4b8 * w;
+                translate.x = p * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
                 translate.y = (f32)(entry->field_0x1C - 0x13 - (i + 1) * 0x16);
 #ifdef MUST_MATCH
                 tcopy = translate;
@@ -1596,9 +1607,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             winFontInit();
             {
                 GXColor c = color;
-                Vec scale = vec3_802f53f0;
-                Vec translate = vec3_802f53e4;
                 Vec tcopy;
+                Vec translate = vec3_802f53e4;
+                Vec scale = vec3_802f53f0;
                 translate.x = (f32)(entry->field_0x18 + 0x32);
                 translate.y = (f32)(entry->field_0x1C - 8 - ofs);
                 tcopy = translate;
@@ -1606,9 +1617,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
             {
                 GXColor c = color;
-                Vec scale = vec3_802f5408;
-                Vec translate = vec3_802f53fc;
                 Vec tcopy;
+                Vec translate = vec3_802f53fc;
+                Vec scale = vec3_802f5408;
 
                 translate.x = (f32)(entry->field_0x18 + 0xDC);
                 translate.y = (f32)(entry->field_0x1C - 8 - ofs);
@@ -1616,9 +1627,9 @@ void itemUseDisp(WinMgrEntry* entry) {
                 winFontSet(&tcopy, &scale, &c, str_8041D4BC);
             }
             {
-                Vec scale;
-                Vec translate = vec3_802f5414;
                 Vec tcopy;
+                Vec translate = vec3_802f5414;
+                Vec scale;
                 GXColor c = color;
                 scale = vec3_802f5420;
                 translate.x = (f32)(entry->field_0x18 + 0xF5);
@@ -1628,9 +1639,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
             {
                 GXColor c = color;
-                Vec scale = vec3_802f5438;
-                Vec translate = vec3_802f542c;
                 Vec tcopy;
+                Vec translate = vec3_802f542c;
+                Vec scale = vec3_802f5438;
 
                 translate.x = (f32)(entry->field_0x18 + 0x10B);
                 translate.y = (f32)(entry->field_0x1C - 8 - ofs);
@@ -1638,9 +1649,9 @@ void itemUseDisp(WinMgrEntry* entry) {
                 winFontSetR(&tcopy, &scale, &c, str_8041D4C8);
             }
             {
-                Vec scale;
-                Vec translate = vec3_802f5444;
                 Vec tcopy;
+                Vec translate = vec3_802f5444;
+                Vec scale;
                 GXColor c = color;
                 scale = vec3_802f5450;
                 translate.x = (f32)(entry->field_0x18 + 0x136);
@@ -1656,9 +1667,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
             winFontInit();
             {
-                Vec scale;
-                Vec translate = vec3_802f545c;
                 Vec tcopy;
+                Vec translate = vec3_802f545c;
+                Vec scale;
                 GXColor c = color;
                 scale = vec3_802f5468;
                 translate.x = (f32)(entry->field_0x18 + 0xDC);
@@ -1668,9 +1679,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
             {
                 GXColor c = color;
-                Vec scale = vec3_802f5480;
-                Vec translate = vec3_802f5474;
                 Vec tcopy;
+                Vec translate = vec3_802f5474;
+                Vec scale = vec3_802f5480;
 
                 translate.x = (f32)(entry->field_0x18 + 0xF5);
                 translate.y = (f32)(entry->field_0x1C - 8 - (i + 1) * 0x16);
@@ -1678,9 +1689,9 @@ void itemUseDisp(WinMgrEntry* entry) {
                 winFontSetR(&tcopy, &scale, &c, str_8041D4C4, (*(s32(*)(void))pouchGetFP)());
             }
             {
-                Vec scale;
-                Vec translate = vec3_802f548c;
                 Vec tcopy;
+                Vec translate = vec3_802f548c;
+                Vec scale;
                 GXColor c = color;
                 scale = vec3_802f5498;
                 translate.x = (f32)(entry->field_0x18 + 0x10B);
@@ -1690,9 +1701,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
             {
                 GXColor c = color;
-                Vec scale = vec3_802f54b0;
-                Vec translate = vec3_802f54a4;
                 Vec tcopy;
+                Vec translate = vec3_802f54a4;
+                Vec scale = vec3_802f54b0;
 
                 translate.x = (f32)(entry->field_0x18 + 0x136);
                 translate.y = (f32)(entry->field_0x1C - 0xA - (i + 1) * 0x16);
@@ -1716,10 +1727,15 @@ void itemUseDisp(WinMgrEntry* entry) {
             GXSetTevAlphaIn(0, 7, 1, 4, 7);
             {
                 GXColor c = dat_8041d49c;
-                Vec scale = vec3_802f54c8;
-                Vec translate = vec3_802f54bc;
+                Vec tcopy;
+                Vec translate;
+                Vec scale;
+                f32 p;
+                scale = vec3_802f54c8;
+                translate = vec3_802f54bc;
                 w = (f32)FontGetMessageWidth(str_8041D4BC);
-                translate.x = float_0p9_8041d4b8 * w * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
+                p = float_0p9_8041d4b8 * w;
+                translate.x = p * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
                 translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2)) - float_14_8041d4d4;
 #ifdef MUST_MATCH
                 tcopy = translate;
@@ -1735,9 +1751,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
             {
                 GXColor c = iconColor;
-                Vec scale = vec3_802f54e0;
-                Vec translate = vec3_802f54d4;
                 Vec tcopy;
+                Vec translate = vec3_802f54d4;
+                Vec scale = vec3_802f54e0;
                 translate.x = (f32)(entry->field_0x18 + 0x1E);
                 translate.y = f31 + ((f32)(entry->field_0x1C - 0x14 - ofs2));
 #ifdef MUST_MATCH
@@ -1750,10 +1766,11 @@ void itemUseDisp(WinMgrEntry* entry) {
             winFontInit();
             {
                 GXColor c = color;
+                Vec tcopy;
+                Vec translate;
+                Vec cscale;
                 Vec scale = vec3_802f54f8;
                 GXColor* pc = &c;
-                Vec cscale;
-                Vec translate;
                 w = (f32)FontGetMessageWidth(name);
                 if (w < float_160_8041d4dc) {
                     scale.x = float_1_8041d4d8;
@@ -1769,9 +1786,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
             {
                 GXColor c = color;
-                Vec scale = vec3_802f5510;
-                Vec translate = vec3_802f5504;
                 Vec tcopy;
+                Vec translate = vec3_802f5504;
+                Vec scale = vec3_802f5510;
 
                 translate.x = (f32)(entry->field_0x18 + 0xDC);
                 translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2));
@@ -1779,8 +1796,9 @@ void itemUseDisp(WinMgrEntry* entry) {
                 winFontSet(&tcopy, &scale, &c, str_8041D4BC);
             }
             {
-                Vec scale;
+                Vec tcopy;
                 Vec translate = vec3_802f551c;
+                Vec scale;
                 GXColor c = color;
                 scale = vec3_802f5528;
                 translate.x = (f32)(entry->field_0x18 + 0xF5);
@@ -1790,8 +1808,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
             {
                 GXColor c = color;
-                Vec scale = vec3_802f5540;
+                Vec tcopy;
                 Vec translate = vec3_802f5534;
+                Vec scale = vec3_802f5540;
 
                 translate.x = (f32)(entry->field_0x18 + 0x10B);
                 translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2));
@@ -1800,8 +1819,9 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
             {
                 GXColor c = color;
-                Vec scale = vec3_802f5558;
+                Vec tcopy;
                 Vec translate = vec3_802f554c;
+                Vec scale = vec3_802f5558;
 
                 translate.x = (f32)(entry->field_0x18 + 0x136);
                 translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2)) - float_2_8041d4e0;
@@ -1813,19 +1833,22 @@ void itemUseDisp(WinMgrEntry* entry) {
 
     if (WW_S32(work, 0x1E0) > 1) {
         winIconInit();
-        for (n = 2; n < 0x1E; n++) {
+        for (n2 = 2; n2 < 0x1E; n2++) {
             GXColor c = color;
+            Vec tcopy;
+            Vec translate;
+            Vec scale;
 #ifdef MUST_MATCH
             /* Retail reloads these rodata Vecs every iteration instead of hoisting them into
                callee-saved registers; the volatile view keeps the loads in the loop and the
                objects in .rodata. */
-            Vec scale = *(const volatile Vec*)&vec3_802f5570;
-            Vec translate = *(const volatile Vec*)&vec3_802f5564;
+            scale = *(const volatile Vec*)&vec3_802f5570;
+            translate = *(const volatile Vec*)&vec3_802f5564;
 #else
-            Vec scale = vec3_802f5570;
-            Vec translate = vec3_802f5564;
+            scale = vec3_802f5570;
+            translate = vec3_802f5564;
 #endif
-            translate.x = (f32)(entry->field_0x18 + (entry->field_0x20 / 31) * n);
+            translate.x = (f32)(entry->field_0x18 + (entry->field_0x20 / 31) * n2);
             translate.y = (f32)(entry->field_0x1C - 0x54);
 #ifdef MUST_MATCH
             tcopy = translate;
@@ -1837,11 +1860,18 @@ void itemUseDisp(WinMgrEntry* entry) {
     }
     winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
     {
-        Vec scale = *(const volatile Vec*)&vec3_802f5588;
-        Vec translate = *(const volatile Vec*)&vec3_802f557c;
+#ifdef MUST_MATCH
+        GXColor c = *(const volatile GXColor*)&dat_8041d4a0;
+#else
         GXColor c = dat_8041d4a0;
-        translate.y = WW_F32(work, 0x154) - float_2_8041d4e0;
+#endif
+        Vec tcopy;
+        Vec translate;
+        Vec scale;
+        scale = *(const volatile Vec*)&vec3_802f5588;
+        translate = *(const volatile Vec*)&vec3_802f557c;
         translate.x = float_2_8041d4e0 + WW_F32(work, 0x150);
+        translate.y = WW_F32(work, 0x154) - float_2_8041d4e0;
 #ifdef MUST_MATCH
         tcopy = translate;
         ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0, &tcopy, &scale, &c);
@@ -1850,9 +1880,12 @@ void itemUseDisp(WinMgrEntry* entry) {
 #endif
     }
     {
-        Vec scale = *(const volatile Vec*)&vec3_802f55a0;
-        Vec translate = *(const volatile Vec*)&vec3_802f5594;
-        GXColor c = white;
+        GXColor c = *(const volatile GXColor*)&white;
+        Vec tcopy;
+        Vec translate;
+        Vec scale;
+        scale = *(const volatile Vec*)&vec3_802f55a0;
+        translate = *(const volatile Vec*)&vec3_802f5594;
         translate.x = WW_F32(work, 0x150);
         translate.y = WW_F32(work, 0x154);
 #ifdef MUST_MATCH
