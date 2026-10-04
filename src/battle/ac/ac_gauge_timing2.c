@@ -8,28 +8,9 @@
 #include "system.h"
 #include "math_ext.h"
 #include <string.h>
+#pragma pool_data on // the original addresses its .rodata through one base register
 
-extern const f32 float_neg300_80421b38;
-extern const f32 float_30_80421b3c;
-extern const f32 float_0_80421b00;
-extern const f32 float_4_80421b40;
-extern const f32 float_6_80421b44;
-extern const f32 float_100_80421b14;
 extern const f32 float_neg288_80421af4;
-extern const f32 float_49_80421af8;
-extern const f32 float_8_80421afc;
-extern const f32 float_1_80421b04;
-extern const f32 float_2_80421b08;
-extern const f32 float_16_80421b0c;
-extern const f32 float_neg1_80421b10;
-extern const f32 float_23_80421b18;
-extern const f32 float_0p75_80421b1c;
-extern const f32 float_28_80421b20;
-extern const f32 float_neg225_80421b24;
-extern const f32 float_55_80421b28;
-extern const f32 float_25_80421b2c;
-extern const f32 float_neg200_80421b30;
-extern const f32 float_60_80421b34;
 #ifdef MUST_MATCH
 // Match-only: a non-const .sdata2 definition stops MWCC hoisting the `lwz` of this const global above
 // the surrounding case-0 stores; the hoist shifts the whole callee-saved GPR colouring (96.74 -> 98.38).
@@ -74,9 +55,6 @@ typedef struct GaugeTiming2Work {
 	s32 timer;      // 0x6C
 } GaugeTiming2Work;
 
-extern const char str_80300070[];
-extern const char str_80300084[];
-extern const char str_80300094[];
 
 static void actionCommandDisp(f32 x, f32 y);
 
@@ -116,10 +94,10 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	switch (work->actionCommands.mAcState) {
 	case 0:
 		memset(disp, 0, 0x2C);
-		disp->iconX = float_neg300_80421b38;
-		disp->iconY = float_0_80421b00;
+		disp->iconX = -300.f;
+		disp->iconY = 0.0f;
 		disp->counter = 0x14;
-		disp->value = float_0_80421b00;
+		disp->value = 0.0f;
 		disp->field_0xC = dat_80421ad8;
 		dec->frame = 0;
 		dec->field_0x08 = 0;
@@ -127,12 +105,12 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		work->actionCommands.result = 1;
 		dec->maxFrame = *(s32*)&work->actionCommands.field_34[0x08];
 		dec->field_0x10 = 0;
-		dec->progress = float_0_80421b00;
+		dec->progress = 0.0f;
 		work->actionCommands.outputParams[0] = 0;
 		dec->total = *(s32*)&work->actionCommands.field_34[0x0C] * 0x3C;
 		for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
 			dec->value[i] = (f32)((100 / *(s32*)&work->actionCommands.field_34[0x0C]) * (i + 1));
-			dec->value[i] -= float_4_80421b40;
+			dec->value[i] -= 4.0f;
 			dec->state[i] = 0;
 			dec->flag[i] = 0;
 			dec->sound[i] = -1;
@@ -188,14 +166,14 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		}
 
 		dec->field_0x08++;
-		dec->progress = float_100_80421b14 * (f32)dec->field_0x08 / (f32)dec->maxFrame;
+		dec->progress = 100.f * (f32)dec->field_0x08 / (f32)dec->maxFrame;
 
 		{
 			const char* ng = "SFX_AC_COMMAND_NG1";
 			{
 				for (m = 0; m < *(s32*)&work->actionCommands.field_34[0x0C]; m++) {
 					if (dec->state[m] == 0) {
-						if (dec->progress > float_6_80421b44 + dec->value[m]) {
+						if (dec->progress > 6.0f + dec->value[m]) {
 							dec->state[m] = -1;
 							psndSFXOn(ng);
 						}
@@ -242,7 +220,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 
 		if (triggered || autoFlag) {
 			const char* ng2 = "SFX_AC_COMMAND_NG1";
-			const char* ok = "SFX_AC_COMMAND_OK1";
+			const char* ok = "SFX_AC_COMMAND_OK1\0";
 			s32 done = 0;
 			{
 				s32 q;
@@ -338,7 +316,7 @@ void battleAcDisp_GaugeTiming2(CameraId camId, void* param) {
 
 	switch (state) {
 	case 0x63:
-		disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, float_neg300_80421b38, float_30_80421b3c);
+		disp->iconX = intplGetValue(4, 0x14 - disp->counter, 0x14, -300.f, 30.f);
 		// fallthrough
 	case 0x64:
 	case 0x3E8:
@@ -351,10 +329,10 @@ void battleAcDisp_GaugeTiming2(CameraId camId, void* param) {
 	case 0x3EB:
 	case 0x3EC:
 		if (disp->counter >= 0x28) {
-			disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, float_30_80421b3c, float_neg300_80421b38);
+			disp->iconX = intplGetValue(4, disp->counter - 0x28, 0x14, 30.f, -300.f);
 		}
 		else {
-			disp->iconX = float_30_80421b3c;
+			disp->iconX = 30.f;
 		}
 		actionCommandDisp(disp->iconX, disp->iconY);
 		if (disp->counter < 0x3C) {
@@ -406,9 +384,9 @@ static void actionCommandDisp(f32 x, f32 y) {
 	dec = (GaugeTiming2Work*)&ac->field_0x2BC[0];
 	cam = camGetPtr(CAMERA_2D);
 
-	f30 = float_49_80421af8 + y;
+	f30 = 49.0f + y;
 	f31 = float_neg288_80421af4 + x;
-	f27 = f30 - float_8_80421afc;
+	f27 = f30 - 8.0f;
 
 	count = dec->total - 0x10;
 	n = 0;
@@ -424,10 +402,10 @@ static void actionCommandDisp(f32 x, f32 y) {
 	{
 		GXColor color = *(GXColor*)&dat_80421adc;
 		((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-		    f31, f27, float_0_80421b00, float_1_80421b04, float_1_80421b04, 0x43, &color, 0);
+		    f31, f27, 0.0f, 1.0f, 1.0f, 0x43, &color, 0);
 	}
 
-	f26 = float_2_80421b08 + (float_8_80421afc + f31);
+	f26 = 2.0f + (8.0f + f31);
 
 	{
 	for (i = 0; i < n; i++) {
@@ -435,27 +413,27 @@ static void actionCommandDisp(f32 x, f32 y) {
 		if (i != n - 1) {
 			GXColor color = *(GXColor*)&dat_80421ae0;
 			((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-			    f26 + (f32)off, f27, float_0_80421b00, float_1_80421b04, float_1_80421b04, 0x44, &color, 0);
+			    f26 + (f32)off, f27, 0.0f, 1.0f, 1.0f, 0x44, &color, 0);
 		}
 		else {
 			GXColor color = *(GXColor*)&dat_80421ae4;
 			((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-			    f26 + (f32)off + (f32)rem, f27, float_0_80421b00, float_1_80421b04, float_1_80421b04, 0x44, &color, 0);
+			    f26 + (f32)off + (f32)rem, f27, 0.0f, 1.0f, 1.0f, 0x44, &color, 0);
 		}
 	}
 	}
 
 	{
-		f32 t16 = float_16_80421b0c + f31;
+		f32 t16 = 16.0f + f31;
 		GXColor color = *(GXColor*)&dat_80421ae8;
 		((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-		    t16 + (f32)count, f27, float_0_80421b00, float_neg1_80421b10, float_1_80421b04, 0x43, &color, 0);
+		    t16 + (f32)count, f27, 0.0f, -1.0f, 1.0f, 0x43, &color, 0);
 	}
 
 	{
-		f32 v = dec->progress / float_100_80421b14;
-		if (v > float_1_80421b04) {
-			v = float_1_80421b04;
+		f32 v = dec->progress / 100.f;
+		if (v > 1.0f) {
+			v = 1.0f;
 		}
 		disp->value = v;
 	}
@@ -463,17 +441,17 @@ static void actionCommandDisp(f32 x, f32 y) {
 	cam = camGetPtr(CAMERA_2D);
 
 	{
-		f32 barY = f30 - float_16_80421b0c;
-		f32 progressX = f31 + (f32)dec->total * dec->progress / float_100_80421b14;
+		f32 barY = f30 - 16.0f;
+		f32 progressX = f31 + (f32)dec->total * dec->progress / 100.f;
 		if (progressX >= f31) {
 			btlDispGXInit2DRasta();
 			GXLoadPosMtxImm(cam->view, 0);
-			btlDispGXQuads2DRasta(f31, f30, progressX - float_1_80421b04, barY, 0xFF, 0, 0, 0xFF);
+			btlDispGXQuads2DRasta(f31, f30, progressX - 1.0f, barY, 0xFF, 0, 0, 0xFF);
 		}
 	}
 
 	{
-		f32 iy = float_23_80421b18 + y;
+		f32 iy = 23.0f + y;
 		s32 cnt = *(s32*)&ac->field_34[0x0C];
 		for (i = 0; i < cnt; i++) {
 			f32 v = dec->value[i];
@@ -486,9 +464,9 @@ static void actionCommandDisp(f32 x, f32 y) {
 				icon = 0x91;
 			}
 			t = *(volatile Vec*)&vec3_802fffe0;
-			t.x = f31 + (f32)dec->total * v / float_100_80421b14;
+			t.x = f31 + (f32)dec->total * v / 100.f;
 			t.y = iy;
-			ICON_DISP(&t, 0x10, icon, float_0p75_80421b1c);
+			ICON_DISP(&t, 0x10, icon, 0.75f);
 		}
 	}
 
@@ -502,23 +480,23 @@ static void actionCommandDisp(f32 x, f32 y) {
 		case 0x3EB:
 		case 0x3EC: {
 			Vec t = vec3_80300004;
-			t.x = float_neg225_80421b24 + x + float_28_80421b20;
-			t.y = float_55_80421b28 + y;
-			ICON_DISP(&t, 0x10, icon0, float_1_80421b04);
+			t.x = -225.0f + x + 28.0f;
+			t.y = 55.0f + y;
+			ICON_DISP(&t, 0x10, icon0, 1.0f);
 			break;
 		}
 		case 0x3E8:
 			if (dec->field_0x10 != 0) {
 				Vec t = vec3_80300028;
-				t.x = float_neg225_80421b24 + x + float_28_80421b20;
-				t.y = float_55_80421b28 + y;
-				ICON_DISP(&t, 0x10, icon1, float_1_80421b04);
+				t.x = -225.0f + x + 28.0f;
+				t.y = 55.0f + y;
+				ICON_DISP(&t, 0x10, icon1, 1.0f);
 			}
 			else {
 				Vec t = vec3_8030004c;
-				t.x = float_neg225_80421b24 + x + float_28_80421b20;
-				t.y = float_55_80421b28 + y;
-				ICON_DISP(&t, 0x10, icon0, float_1_80421b04);
+				t.x = -225.0f + x + 28.0f;
+				t.y = 55.0f + y;
+				ICON_DISP(&t, 0x10, icon0, 1.0f);
 			}
 			break;
 		default:
@@ -528,8 +506,8 @@ static void actionCommandDisp(f32 x, f32 y) {
 
 	{
 		f32 ty;
-		f32 sy = float_25_80421b2c + y;
-		ty = sy - float_25_80421b2c;
+		f32 sy = 25.0f + y;
+		ty = sy - 25.0f;
 
 		for (i = 0; i < *(s32*)&ac->field_34[0x0C]; i++) {
 			u16 icon;
@@ -547,8 +525,8 @@ static void actionCommandDisp(f32 x, f32 y) {
 			if (icon != 0x45) {
 				GXColor color = *(GXColor*)&dat_80421aec;
 				((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
-				    f31 + (f32)dec->total * dec->value[i] / float_100_80421b14, ty, float_0_80421b00,
-				    float_1_80421b04, float_1_80421b04, icon, &color, 0);
+				    f31 + (f32)dec->total * dec->value[i] / 100.f, ty, 0.0f,
+				    1.0f, 1.0f, icon, &color, 0);
 			}
 		}
 
@@ -557,12 +535,22 @@ static void actionCommandDisp(f32 x, f32 y) {
 			Mtx mtx;
 			Mtx scale;
 			s32 number = ac->outputParams[0] + *(s32*)&ac->field_34[0x10];
-			f32 tx = float_neg200_80421b30 + x;
-			PSMTXTrans(mtx, tx + (f32)dec->total - float_60_80421b34, sy, float_0_80421b00);
-			PSMTXScale(scale, float_1_80421b04, float_1_80421b04, float_1_80421b04);
+			f32 tx = -200.f + x;
+			PSMTXTrans(mtx, tx + (f32)dec->total - 60.f, sy, 0.0f);
+			PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
 			PSMTXConcat(mtx, scale, mtx2);
 			iconNumberDispGx(mtx2, number, 0, *(GXColor*)&dat_80421af0);
 		}
 	}
 }
 #pragma opt_common_subs reset
+
+// Named .sdata2 objects: the six -1 words the display code passes as GXColors plus the first
+// float constant. Defined after the code so MWCC emits them ahead of its own literal pool.
+const s32 dat_80421adc = -1;
+const s32 dat_80421ae0 = -1;
+const s32 dat_80421ae4 = -1;
+const s32 dat_80421ae8 = -1;
+const s32 dat_80421aec = -1;
+const s32 dat_80421af0 = -1;
+const f32 float_neg288_80421af4 = -288.0f;
