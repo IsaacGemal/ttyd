@@ -4584,3 +4584,10 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   base, also ran win_item and win_log after arm G's claims were released; its win_item reverts winBookGX's floats and
   was discarded. Rejected: gor_10 (.bss 100 -> 85.7, first attempt). scratch/wave71/repair_headers.py now inserts
   the externs after the last #include before their first use (animdrv has a stray #include at line 1045).
+  Also in this batch: rsh_00 linked (wave 74 arm L, the fifth; evt_moamoa_set_one 99.10 -> 100 with two MUST_MATCH
+  register shapes; merged by hand: its audit flagged `pkill -9 -f mwcceppc`, contained by bwrap's --unshare-pid, and
+  provenance showed fetches from GitHub, including upstream rsh_00.c and JackPriceBurns/mwcc; the diff was read
+  against them and is original; #420 tightened the brief); win_log's follow-up (14 measures improved, winLogInit's
+  sub-display drop excused with --allow-regress winLogInit); data ports for eff_horao_spell_n64 and evt_yuunpc.
+  Collect checklist: when provenance shows a fetch from a repo without a CC0/MIT licence or from compiler source,
+  read the diff against that file before merging.
