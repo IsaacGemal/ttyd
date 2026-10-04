@@ -32,8 +32,6 @@ s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u
 __declspec(section ".sdata") GXColor unk_80422fc0;
 #pragma section ".sdata" ".sbss"
 
-// Named sdata2 constants from the original .sdata2 pool (see config/G8MJ01/symbols.txt).
-
 // TODO: need to figure out better flags, since I've had to use dont_inline in a couple places, this
 // might just be -inline deferred? No auto
 #pragma pool_data on
