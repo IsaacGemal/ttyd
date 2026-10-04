@@ -55,6 +55,17 @@ class AgentAudit(unittest.TestCase):
                     "touch ~/x", "cd .. && touch x", "cp -a . ../w1", f"cd /home/isaac/par && cp -a {WS}/src w0"]:
             self.assertEqual(kinds(ev("bash", command=cmd)), ["WRITE-OUTSIDE"], cmd)
 
+    def test_quoted_angle_bracket_is_not_a_redirect(self):
+        # the eff_kemuri link agent's command on 2026-10-04: `-> /` inside a quoted sed script
+        cmd = (f"cd {WS} && for pair in \"3.0f:float_3_8041c724\"; do lit=\"${{pair%%:*}}\"; "
+               "ninja build/G8MJ01/src/effect/eff_kemuri.o >/dev/null 2>&1 && python3 check.py effect/eff_kemuri 2>/dev/null "
+               "| head -1 | sed \"s/^/$lit -> /\"; done")
+        self.assertEqual(kinds(ev("bash", command=cmd)), [])
+        self.assertEqual(kinds(ev("bash", command="echo 'a > b' | grep '<x>'")), [])
+        for cmd in ["echo x > /outside", "echo 'x' >/home/isaac/x", 'echo "a>b" > "/home/isaac/x"',
+                    "bash -c 'echo x > /home/isaac/x'", "sh -c \"echo x >> /home/isaac/x\""]:
+            self.assertEqual(kinds(ev("bash", command=cmd)), ["WRITE-OUTSIDE"], cmd)
+
     def test_wrapped_commands(self):
         for cmd in ["timeout -k 10 60 cp a /home/isaac/x", "env A=1 cp a /home/isaac/x", "/bin/cp a /home/isaac/x",
                     "ls | xargs -I{} cp {} /home/isaac/x", "find . -name '*.c' -exec cp {} /home/isaac/x \\;",
