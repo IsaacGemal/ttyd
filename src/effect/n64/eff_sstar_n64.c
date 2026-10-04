@@ -15,9 +15,35 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const u32 dat_8041fd78;
+extern const u32 dat_8041fd7c;
+extern const u32 dat_8041fd80;
+extern const f32 float_deg2rad_8041fd84;
+extern const f32 float_0p015625_8041fd88;
+extern const f32 float_0_8041fd8c;
+extern const f32 float_0p03125_8041fd90;
+extern const f32 float_1_8041fd94;
+extern const f32 float_0p01_8041fd98;
+extern const f32 float_32_8041fd9c;
+extern const f32 lbl_8041FDA0;
+extern const f32 float_neg1_8041fda4;
+extern const f32 float_42_8041fda8;
+extern const f32 float_0p6_8041fdac;
+extern const f32 float_0p7_8041fdb0;
+extern const f32 float_10_8041fdb4;
+extern const f32 float_neg0p5_8041fdb8;
+extern const f32 float_300_8041fdbc;
+extern const f32 float_neg300_8041fdc0;
+extern const f32 float_0p2_8041fdc4;
+extern const f32 float_0p5_8041fdc8;
+extern const f32 float_6p2832_8041fdcc;
+extern const f32 float_360_8041fdd0;
+extern const f32 float_neg20_8041fdd4;
+extern const f32 float_20_8041fdd8;
+
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") f32 lbl_803A5C90[2] = { -1.0f, 1.0f };
-
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
@@ -56,7 +82,7 @@ static inline f32 sqrtf(f32 x) {
     const f64 _half = .5;
     const f64 _three = 3.0;
 
-    if (x > 0.0f) {
+    if (x > float_0_8041fd8c) {
         f64 guess = __frsqrte(x);
         guess = _half * guess * (_three - guess * guess * x);
         guess = _half * guess * (_three - guess * guess * x);
@@ -75,7 +101,7 @@ static inline f32 sqrtf(f32 x) {
 // outgoing copy. Keeping the build and the call together in an inline reproduces that layout
 // (AGENT_BRIEF GXColor quirk); the plain block under #else is the natural form.
 static inline void sstarTev1(s32 r, s32 g, s32 b) {
-    GXColor color = (GXColor){ 0, 0, 0, 0xFF };
+    GXColor color = *(GXColor*)&dat_8041fd78;
     color.r = r;
     color.g = g;
     color.b = b;
@@ -83,12 +109,12 @@ static inline void sstarTev1(s32 r, s32 g, s32 b) {
 }
 
 static inline void sstarTev2(void) {
-    GXColor color = (GXColor){ 0x7F, 0x7F, 0x7F, 0x7F };
+    GXColor color = *(GXColor*)&dat_8041fd7c;
     GXSetTevColor(2, color);
 }
 
 static inline void sstarTev3(void) {
-    GXColor color = (GXColor){ 0x50, 0x50, 0x50, 0x50 };
+    GXColor color = *(GXColor*)&dat_8041fd80;
     GXSetTevColor(3, color);
 }
 #endif
@@ -159,6 +185,162 @@ static inline void sstarSetVtx(s16* dst, Mtx mtx, s16* src) {
     OSf32tos16(&v.z, &dst[2]);
 }
 
+// MWCC's FPR allocation follows the local declaration order: with negSin declared next to
+// negCos (the file's earlier 99.65% shape) negSin lands in f4 and d2 in f5; the order below
+// gives the original's negSin=f5, d2=f4. The two zero tests read the named float_0_8041fd8c so
+// they share the original's constant; opt_common_subs off keeps MWCC from merging the two
+// loads, which is what reproduces the original's `fcmpu f31,f0`/`fcmpo` operand order. Do not
+// reorder/simplify.
+#pragma opt_common_subs off
+EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
+    EffectEntry* effect;
+    SstarWork* data;
+    f32 dx, dy, dz;
+    f32 dist;
+    f32 scale;
+    f32 angle;
+    f32 negCos;
+    f32 c;
+    f32 s;
+    f32 d2;
+    f32 negSin;
+    s32 i;
+
+    effect = effEntry();
+    effect->type = "SstarN64\0\0\0";
+    effect->count = 1;
+    data = __memAlloc(HEAP_EFFECT, sizeof(SstarWork));
+    effect->userdata = data;
+    effect->callback = effSstarMain;
+
+    data->field_0x0 = 1;
+    data->position.x = x;
+    data->position.y = y;
+    data->position.z = z;
+    data->field_0x1C = float_0_8041fd8c;
+    data->field_0x24 = float_0_8041fd8c;
+    data->field_0x28 = float_0_8041fd8c;
+    data->type = type;
+
+    if (type == 3) {
+        data->scale = float_0p2_8041fdc4;
+        data->colR = rand() % 256;
+        data->colG = rand() % (255 - data->colR);
+        data->colB = (255 - data->colR) - data->colG;
+    } else {
+        data->scale = float_0p5_8041fdc8;
+        data->colR = 0xD2;
+        data->colG = 0xBA;
+        data->colB = 0x5A;
+    }
+
+    dx = a5 - x;
+    dy = a6 - y;
+    dz = a7 - z;
+    dist = dx * dx + dy * dy + dz * dz;
+    scale = dist;
+    if (dist != float_0_8041fd8c) {
+        dist = sqrtf(dist);
+        scale = a8 / dist;
+    }
+    data->velX = dx * scale;
+    data->velY = dy * scale;
+    data->velZ = dz * scale;
+
+    angle = (float_6p2832_8041fdcc * camGetPtr(CAMERA_3D)->viewYaw) / float_360_8041fdd0;
+    negCos = -(f32)cos(angle);
+    negSin = -(f32)sin(angle);
+    c = negCos * data->velX;
+    s = negSin * data->velZ;
+    d2 = c * c + s * s;
+    if (d2 != float_0_8041fd8c) {
+        d2 = sqrtf(d2);
+    }
+    if (negCos * data->velX + negSin * data->velZ < float_0_8041fd8c) {
+        d2 = -d2;
+        data->field_0x2C = float_neg20_8041fdd4;
+    } else {
+        data->field_0x2C = float_20_8041fdd8;
+    }
+    negCos = -d2;
+    angle = angleABf(float_0_8041fd8c, float_0_8041fd8c, -data->velY, negCos);
+    data->field_0x24 = angle;
+    data->angle = angle;
+    data->field_0x34 = negCos;
+    data->lifetime = (s32)(dist / a8);
+    for (i = 0; i < 8; i++) {
+        PSMTXTrans(data->mtx[i], data->position.x, data->position.y, data->position.z);
+    }
+    data->field_0x3C = -1;
+    return effect;
+}
+#pragma opt_common_subs reset
+
+// Source order below is Entry, Main, Disp. MWCC emits functions in reverse, so the object's
+// .text comes out Disp, Main, Entry, as in the original. Main must precede Disp in the source
+// because effSstarDisp's s16->f32 conversion emits an extra magic double: with Main after Disp
+// its pool constants and lfd offsets would shift by 8 bytes. Only the source position differs;
+// the code is the original's.
+void effSstarMain(EffectEntry* effect) {
+    SstarWork* data = effect->userdata;
+    MarioWork* mario;
+    Vec position;
+    f32 distance;
+    f32 prevX, prevY, prevZ;
+    f32 hitX, hitZ;
+    f32 hitNX, hitNY, hitNZ;
+
+    mario = marioGetPtr();
+    position = initializeVec(&data->position);
+
+    if (data->type >= 2) {
+        distance = data->velX * data->velX + data->velY * data->velY + data->velZ * data->velZ;
+        if (distance > float_0p01_8041fd98) {
+            distance = float_1_8041fd94 / sqrtf(distance);
+        }
+        prevX = data->position.x - float_32_8041fd9c * (data->velX * distance);
+        prevY = data->position.y - float_32_8041fd9c * (data->velY * distance);
+        prevZ = data->position.z - float_32_8041fd9c * (data->velZ * distance);
+        distance = lbl_8041FDA0;
+        if (data->field_0x0 != 0 && data->velY < float_0_8041fd8c) {
+            if (hitCheckFilter(NULL, &hitX, &hitX, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                    prevX, prevY, prevZ, float_0_8041fd8c, float_neg1_8041fda4, float_0_8041fd8c) != NULL) {
+                if (distance < float_42_8041fda8) {
+                    data->velY = float_0p6_8041fdac * -data->velY;
+                    data->velX *= float_0p7_8041fdb0;
+                    data->field_0x34 *= float_0p7_8041fdb0;
+                    data->field_0x2C *= float_0p7_8041fdb0;
+                    data->field_0x1C += float_1_8041fd94;
+                    data->field_0x0 = 0;
+                    if (data->field_0x1C >= float_10_8041fdb4) {
+                        data->lifetime = -1;
+                    }
+                }
+            }
+        }
+        if (data->field_0x1C != float_0_8041fd8c) {
+            data->velY += float_neg0p5_8041fdb8;
+            data->field_0x24 += data->field_0x2C;
+            data->angle = angleABf(float_0_8041fd8c, float_0_8041fd8c, -data->velY, data->field_0x34);
+        }
+    }
+    if (gp->inBattle == 0) {
+        if (mario->position.y - data->position.y > float_300_8041fdbc) {
+            data->lifetime = -1;
+        }
+    } else if (data->position.y < float_neg300_8041fdc0) {
+        data->lifetime = -1;
+    }
+    data->position.x += data->velX;
+    data->position.y += data->velY;
+    data->position.z += data->velZ;
+    if (data->lifetime < 0) {
+        effDelete(effect);
+    } else {
+        dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSstarDisp, effect);
+    }
+}
+
 // The psq_l/psq_st vertex conversions match: the original calls the SDK OSs16tof32/OSf32tos16
 // fast-cast inlines (libs/dolsdk2004/include/dolphin/os/OSFastCast.h), which MWCC 2.6 lowers to
 // the GQR5 paired-single path instead of lha/fctiwz. The `b = i * 2;` form of the final tri2 loop
@@ -217,11 +399,11 @@ void effSstarDisp(CameraId camId, void* param) {
     colG = data->colG;
     colB = data->colB;
     PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
-    PSMTXRotRad(mtx2, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
+    PSMTXRotRad(mtx2, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041fd84);
     PSMTXConcat(mtx1, mtx2, mtx3);
     PSMTXScale(mtx4, scale, scale, scale);
     PSMTXConcat(mtx3, mtx4, mtx3);
-    PSMTXRotRad(mtx2, 'z', data->field_0x24 * 0.017453292f);
+    PSMTXRotRad(mtx2, 'z', float_deg2rad_8041fd84 * data->field_0x24);
     PSMTXConcat(mtx3, mtx2, mtx3);
 
     GXSetCullMode(GX_CULL_NONE);
@@ -242,7 +424,7 @@ void effSstarDisp(CameraId camId, void* param) {
     GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-    PSMTXScale(mtx4, 0.015625f, 0.015625f, 0.0f);
+    PSMTXScale(mtx4, float_0p015625_8041fd88, float_0p015625_8041fd88, float_0_8041fd8c);
     GXLoadTexMtxImm(mtx4, 0x1E, 1);
     effGetTexObjN64(9, &tex);
     GXLoadTexObj(&tex, 0);
@@ -287,7 +469,7 @@ void effSstarDisp(CameraId camId, void* param) {
     GXSetTevAlphaIn(0, 7, 5, 4, 7);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-    PSMTXScale(mtx4, 0.03125f, 0.03125f, 0.0f);
+    PSMTXScale(mtx4, float_0p03125_8041fd90, float_0p03125_8041fd90, float_0_8041fd8c);
     GXLoadTexMtxImm(mtx4, 0x1E, 1);
     if (type == 3) {
         effGetTexObjN64(0xB, &tex);
@@ -300,14 +482,14 @@ void effSstarDisp(CameraId camId, void* param) {
     if (data->field_0x3C >= 8) {
         data->field_0x3C = 0;
     }
-    if (data->field_0x1C <= 1.0f) {
+    if (data->field_0x1C <= float_1_8041fd94) {
         idx = data->field_0x3C + 5;
         PSMTXTrans(mtx1, data->position.x, data->position.y, data->position.z);
-        PSMTXRotRad(mtx2, 'y', -camGetPtr(camId)->viewYaw * 0.017453292f);
+        PSMTXRotRad(mtx2, 'y', -camGetPtr(camId)->viewYaw * float_deg2rad_8041fd84);
         PSMTXConcat(mtx1, mtx2, mtx1);
         PSMTXScale(mtx4, scale, scale, scale);
         PSMTXConcat(mtx1, mtx4, mtx1);
-        PSMTXRotRad(mtx2, 'z', data->angle * 0.017453292f);
+        PSMTXRotRad(mtx2, 'z', float_deg2rad_8041fd84 * data->angle);
         PSMTXConcat(mtx1, mtx2, data->mtx[data->field_0x3C]);
 
         src = base + 0xC0;
@@ -329,156 +511,55 @@ void effSstarDisp(CameraId camId, void* param) {
     }
 }
 
-// MWCC's FPR allocation follows the local declaration order: with negSin declared next to
-// negCos (the file's earlier 99.65% shape) negSin lands in f4 and d2 in f5; the order below
-// gives the original's negSin=f5, d2=f4. The two `if (x)` truthiness tests (not `x != 0.0f`)
-// are also needed for the original's `fcmpu f31,f0` operand order. Do not reorder/simplify.
-EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8) {
-    EffectEntry* effect;
-    SstarWork* data;
-    f32 dx, dy, dz;
-    f32 dist;
-    f32 scale;
-    f32 angle;
-    f32 negCos;
-    f32 c;
-    f32 s;
-    f32 d2;
-    f32 negSin;
-    s32 i;
+// .sdata2 as in the original object: the three effect colours, then the constants this unit's
+// functions read, the two zero-filled gaps, and the globals referenced by eff_stamp_n64.
+// explicit_zero_data/force_active keep the unreferenced zero entries alive.
+__declspec(section ".sdata2") const u32 dat_8041fd78 = 0x000000FF;
+__declspec(section ".sdata2") const u32 dat_8041fd7c = 0x7F7F7F7F;
+__declspec(section ".sdata2") const u32 dat_8041fd80 = 0x50505050;
 
-    effect = effEntry();
-    effect->type = "SstarN64";
-    effect->count = 1;
-    data = __memAlloc(HEAP_EFFECT, sizeof(SstarWork));
-    effect->userdata = data;
-    effect->callback = effSstarMain;
-
-    data->field_0x0 = 1;
-    data->position.x = x;
-    data->position.y = y;
-    data->position.z = z;
-    data->field_0x1C = 0.0f;
-    data->field_0x24 = 0.0f;
-    data->field_0x28 = 0.0f;
-    data->type = type;
-
-    if (type == 3) {
-        data->scale = 0.2f;
-        data->colR = rand() % 256;
-        data->colG = rand() % (255 - data->colR);
-        data->colB = (255 - data->colR) - data->colG;
-    } else {
-        data->scale = 0.5f;
-        data->colR = 0xD2;
-        data->colG = 0xBA;
-        data->colB = 0x5A;
-    }
-
-    dx = a5 - x;
-    dy = a6 - y;
-    dz = a7 - z;
-    dist = dx * dx + dy * dy + dz * dz;
-    scale = dist;
-    if (dist) {
-        dist = sqrtf(dist);
-        scale = a8 / dist;
-    }
-    data->velX = dx * scale;
-    data->velY = dy * scale;
-    data->velZ = dz * scale;
-
-    angle = (6.2831855f * camGetPtr(CAMERA_3D)->viewYaw) / 360.0f;
-    negCos = -(f32)cos(angle);
-    negSin = -(f32)sin(angle);
-    c = negCos * data->velX;
-    s = negSin * data->velZ;
-    d2 = c * c + s * s;
-    if (d2) {
-        d2 = sqrtf(d2);
-    }
-    if (negCos * data->velX + negSin * data->velZ < 0.0f) {
-        d2 = -d2;
-        data->field_0x2C = -20.0f;
-    } else {
-        data->field_0x2C = 20.0f;
-    }
-    negCos = -d2;
-    angle = angleABf(0.0f, 0.0f, -data->velY, negCos);
-    data->field_0x24 = angle;
-    data->angle = angle;
-    data->field_0x34 = negCos;
-    data->lifetime = (s32)(dist / a8);
-    for (i = 0; i < 8; i++) {
-        PSMTXTrans(data->mtx[i], data->position.x, data->position.y, data->position.z);
-    }
-    data->field_0x3C = -1;
-    return effect;
-}
-
-// Placed last so deferred emission makes this the first function in the object, which puts
-// its sqrtf/pool constants in .rodata immediately after vec3_802fb6b8, before
-// effSstarN64Entry's string. effSstarDisp's nonmatching s16->f32 conversion emits an extra
-// magic double; if Main's pool constants were emitted after it (the original layout, which
-// requires effSstarDisp to match) they would sit 8 bytes off and Main's lfd offsets would
-// not match. Only the source position differs; the code is the original's.
-void effSstarMain(EffectEntry* effect) {
-    SstarWork* data = effect->userdata;
-    MarioWork* mario;
-    Vec position;
-    f32 distance;
-    f32 prevX, prevY, prevZ;
-    f32 hitX, hitZ;
-    f32 hitNX, hitNY, hitNZ;
-
-    mario = marioGetPtr();
-    position = initializeVec(&data->position);
-
-    if (data->type >= 2) {
-        distance = data->velX * data->velX + data->velY * data->velY + data->velZ * data->velZ;
-        if (distance > 0.01f) {
-            distance = 1.0f / sqrtf(distance);
-        }
-        prevX = data->position.x - 32.0f * (data->velX * distance);
-        prevY = data->position.y - 32.0f * (data->velY * distance);
-        prevZ = data->position.z - 32.0f * (data->velZ * distance);
-        distance = 64.0f;
-        if (data->field_0x0 != 0 && data->velY < 0.0f) {
-            if (hitCheckFilter(NULL, &hitX, &hitX, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                    prevX, prevY, prevZ, 0.0f, -1.0f, 0.0f) != NULL) {
-                if (distance < 42.0f) {
-                    data->velY = 0.6f * -data->velY;
-                    data->velX *= 0.7f;
-                    data->field_0x34 *= 0.7f;
-                    data->field_0x2C *= 0.7f;
-                    data->field_0x1C += 1.0f;
-                    data->field_0x0 = 0;
-                    if (data->field_0x1C >= 10.0f) {
-                        data->lifetime = -1;
-                    }
-                }
-            }
-        }
-        if (data->field_0x1C) {
-            data->velY += -0.5f;
-            data->field_0x24 += data->field_0x2C;
-            data->angle = angleABf(0.0f, 0.0f, -data->velY, data->field_0x34);
-        }
-    }
-    if (gp->inBattle == 0) {
-        if (mario->position.y - data->position.y > 300.0f) {
-            data->lifetime = -1;
-        }
-    } else if (data->position.y < -300.0f) {
-        data->lifetime = -1;
-    }
-    data->position.x += data->velX;
-    data->position.y += data->velY;
-    data->position.z += data->velZ;
-    if (data->lifetime < 0) {
-        effDelete(effect);
-    } else {
-        dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effSstarDisp, effect);
-    }
-}
-
+#pragma force_active on
+#pragma explicit_zero_data on
+__declspec(section ".sdata2") const f32 float_deg2rad_8041fd84 = 0.017453292f;
+__declspec(section ".sdata2") const f32 float_0p015625_8041fd88 = 0.015625f;
+__declspec(section ".sdata2") const f32 float_0_8041fd8c = 0.0f;
+__declspec(section ".sdata2") const f32 float_0p03125_8041fd90 = 0.03125f;
+__declspec(section ".sdata2") const f32 float_1_8041fd94 = 1.0f;
+__declspec(section ".sdata2") const f32 float_0p01_8041fd98 = 0.01f;
+__declspec(section ".sdata2") const f32 float_32_8041fd9c = 32.0f;
+__declspec(section ".sdata2") const f32 lbl_8041FDA0 = 64.0f;
+__declspec(section ".sdata2") const f32 float_neg1_8041fda4 = -1.0f;
+__declspec(section ".sdata2") const f32 float_42_8041fda8 = 42.0f;
+__declspec(section ".sdata2") const f32 float_0p6_8041fdac = 0.6f;
+__declspec(section ".sdata2") const f32 float_0p7_8041fdb0 = 0.7f;
+__declspec(section ".sdata2") const f32 float_10_8041fdb4 = 10.0f;
+__declspec(section ".sdata2") const f32 float_neg0p5_8041fdb8 = -0.5f;
+__declspec(section ".sdata2") const f32 float_300_8041fdbc = 300.0f;
+__declspec(section ".sdata2") const f32 float_neg300_8041fdc0 = -300.0f;
+__declspec(section ".sdata2") const f32 float_0p2_8041fdc4 = 0.2f;
+__declspec(section ".sdata2") const f32 float_0p5_8041fdc8 = 0.5f;
+__declspec(section ".sdata2") const f32 float_6p2832_8041fdcc = 6.2831855f;
+__declspec(section ".sdata2") const f32 float_360_8041fdd0 = 360.0f;
+__declspec(section ".sdata2") const f32 float_neg20_8041fdd4 = -20.0f;
+__declspec(section ".sdata2") const f32 float_20_8041fdd8 = 20.0f;
+__declspec(section ".sdata2") const u32 gap_09_8041FDDC_sdata2 = 0;
+__declspec(section ".sdata2") const f32 float_deg2rad_8041fde0 = 0.017453292f;
+__declspec(section ".sdata2") const f32 float_0p03125_8041fde4 = 0.03125f;
+__declspec(section ".sdata2") const f32 float_0_8041fde8 = 0.0f;
+__declspec(section ".sdata2") const f32 float_1_8041fdec = 1.0f;
+__declspec(section ".sdata2") const f32 float_0p9_8041fdf0 = 0.9f;
+__declspec(section ".sdata2") const f32 float_0p1_8041fdf4 = 0.1f;
+__declspec(section ".sdata2") const f32 float_2p4_8041fdf8 = 2.4f;
+__declspec(section ".sdata2") const f32 float_0p2_8041fdfc = 0.2f;
+__declspec(section ".sdata2") const f32 float_0p07_8041fe00 = 0.07f;
+__declspec(section ".sdata2") const f32 float_100_8041fe04 = 100.0f;
+__declspec(section ".sdata2") const f32 float_0p05_8041fe08 = 0.05f;
+__declspec(section ".sdata2") const f32 float_7_8041fe0c = 7.0f;
+__declspec(section ".sdata2") const f32 float_0p6_8041fe10 = 0.6f;
+__declspec(section ".sdata2") const f32 float_10_8041fe14 = 10.0f;
+__declspec(section ".sdata2") const f32 float_6p2832_8041fe18 = 6.2831855f;
+__declspec(section ".sdata2") const f32 float_90_8041fe1c = 90.0f;
+__declspec(section ".sdata2") const f32 float_360_8041fe20 = 360.0f;
+__declspec(section ".sdata2") const u32 gap_09_8041FE24_sdata2 = 0;
+#pragma explicit_zero_data reset
+#pragma force_active reset
