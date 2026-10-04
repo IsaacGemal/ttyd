@@ -98,7 +98,7 @@ EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e) {
 	if (count > 10) {
 		count = 10;
 	}
-	entry->type = "funemizu\0\0\0\0\0\0\0";
+	entry->type = "funemizu\0\0\0";
 	entry->count = count;
 	data = __memAlloc(HEAP_EFFECT, sizeof(EffFunemizuData) * entry->count);
 	entry->userdata = data;
@@ -605,25 +605,25 @@ const Vec vec3_802fe8a0 = { 0.0f, 0.0f, 0.0f };
 u32 lbl_803B0200[2] = {
 	0xBF800000, 0x3F800000,
 };
-__declspec(section ".data") u32 negone_one_374[2] = {
+__declspec(section ".data") static u32 negone_one_374[2] = {
 	0xBF800000, 0x3F800000,
 };
 __declspec(section ".data") u32 lbl_803B0210[2] = {
 	0x3F800000, 0xBF800000,
 };
-__declspec(section ".data") u32 one_negone_373[2] = {
+__declspec(section ".data") static u32 one_negone_373[2] = {
 	0x3F800000, 0xBF800000,
 };
 __declspec(section ".data") u32 lbl_803B0220[2] = {
 	0xBF800000, 0x3F800000,
 };
-__declspec(section ".data") u32 negone_one_360[2] = {
+__declspec(section ".data") static u32 negone_one_360[2] = {
 	0xBF800000, 0x3F800000,
 };
 __declspec(section ".data") u32 lbl_803B0230[2] = {
 	0x3F800000, 0xBF800000,
 };
-__declspec(section ".data") u32 one_negone_359[2] = {
+__declspec(section ".data") static u32 one_negone_359[2] = {
 	0x3F800000, 0xBF800000,
 };
 u32 funemizu_vertex_tbl[48] = {
@@ -713,7 +713,6 @@ FunemizuMapEntry unk_803b0640[32] = {
 	{ str_802FE898, 0x304D5900 },
 };
 __declspec(section ".data") u32 unk_803b0640_end[1] = { 0 };
-__declspec(section ".data") u32 gap_05_803B0744_data[1] = { 0 };
 
 // .sdata: the display-list/colour/normal tables, in the original's address order.
 u8 funemizu_normal_tbl[32] = {

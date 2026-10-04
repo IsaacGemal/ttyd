@@ -1875,7 +1875,7 @@ config.libs = [
             Object(Matching, "data/battle/battle_database_rsh.c"),
             Object(Matching, "rsh_02.c"),
             Object(Matching, "rsh_03.c"),
-            Object(NonMatching, "rsh.c"),
+            Object(Matching, "rsh.c"),
             Object(NonMatching, "rsh_00.c"),
             Object(NonMatching, "rsh_05.c"),
             Object(NonMatching, "rsh_06.c"),
@@ -2113,7 +2113,7 @@ config.libs = [
         "yuu",
         [
             Object(Matching, "event/evt_yuuminigame.c"),
-            Object(NonMatching, "yuu_02.c"),
+            Object(Matching, "yuu_02.c"),
             Object(NonMatching, "yuu_03.c"),
             Object(Matching, "yuu.c"),
             Object(Matching, "yuu_00.c"),

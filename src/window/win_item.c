@@ -34,7 +34,7 @@ extern const char str_802F5638[];
 // The original reaches these through the str_802F4CE8 base register; inline literals pool so that the base folds.
 #define STR_MOCHI_ITEM "msg_menu_mochi_item"
 #define STR_MOCHI_DAIJI "msg_menu_mochi_daiji"
-#define STR_MAIL_TPL "%s/w/jp/mail.tpl"
+#define STR_MAIL_TPL "%s/w/jp/mail.tpl\0\0\0"
 #else
 #define STR_MOCHI_ITEM str_802F560C
 #define STR_MOCHI_DAIJI str_802F5620
@@ -1946,6 +1946,33 @@ void itemUseDisp2(WinMgrEntry* entry) {
     }
 }
 
+// The Luigi book page-pointer tables (.data). Each book lists the 12 page strings plus a
+// terminating NULL; luigi_book_list (.sdata) points at them in order.
+const char* luigi_book_1[13] = {
+    str_802F4CE8, str_802F4D00, str_802F4D18, str_802F4D30, str_802F4D48, str_802F4D60,
+    str_802F4D78, str_802F4D90, str_802F4DA8, str_802F4DC0, str_802F4DD8, str_802F4DF0, NULL,
+};
+
+const char* luigi_book_2[13] = {
+    str_802F4E08, str_802F4E20, str_802F4E38, str_802F4E50, str_802F4E68, str_802F4E80,
+    str_802F4E98, str_802F4EB0, str_802F4EC8, str_802F4EE0, str_802F4EF8, str_802F4F10, NULL,
+};
+
+const char* luigi_book_3[13] = {
+    str_802F4F28, str_802F4F40, str_802F4F58, str_802F4F70, str_802F4F88, str_802F4FA0,
+    str_802F4FB8, str_802F4FD0, str_802F4FE8, str_802F5000, str_802F5018, str_802F5030, NULL,
+};
+
+const char* luigi_book_4[13] = {
+    str_802F5048, str_802F5060, str_802F5078, str_802F5090, str_802F50A8, str_802F50C0,
+    str_802F50D8, str_802F50F0, str_802F5108, str_802F5120, str_802F5138, str_802F5150, NULL,
+};
+
+const char* luigi_book_5[13] = {
+    str_802F5168, str_802F5180, str_802F5198, str_802F51B0, str_802F51C8, str_802F51E0,
+    str_802F51F8, str_802F5210, str_802F5228, str_802F5240, str_802F5258, str_802F5270, NULL,
+};
+
 static WinMgrDesc window_desc[2] = {
     {
         {0},
@@ -1970,3 +1997,228 @@ static WinMgrDesc window_desc[2] = {
         (void*)itemUseDisp2,
     },
 };
+
+// The unit's .sdata/.sdata2 objects and the .data tail. They are defined after the code so
+// MWCC emits real objects instead of folding their values into the functions that read them.
+#pragma explicit_zero_data on
+#pragma force_active on
+
+// .data:0x154 | 0x80374D0C | size 0x4
+__declspec(section ".data") u32 gap_05_80374D0C_data[1] = { 0 };
+
+// .sdata:0x0 | 0x804120D0 | size 0x14
+const char** luigi_book_list[5] = {
+    luigi_book_1,
+    luigi_book_2,
+    luigi_book_3,
+    luigi_book_4,
+    luigi_book_5,
+};
+
+// .sdata:0x14 | 0x804120E4 | size 0x24
+u16 menu_skip_list[18] = {
+    0x0009, 0x000A, 0x000B, 0x0006, 0x0007, 0x0008, 0x0005, 0x0003, 0x0002,
+    0x0004, 0x0032, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077, 0x0078,
+};
+
+// .sdata2:0x0 | 0x8041D468 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d468 = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+// .sdata2:0x4 | 0x8041D46C | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d46c = { 0x00, 0x00, 0x00, 0x80 };
+
+// .sdata2:0x8 | 0x8041D470 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d470 = { 0x80, 0x80, 0x80, 0xFF };
+
+// .sdata2:0xC | 0x8041D474 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d474 = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+// .sdata2:0x10 | 0x8041D478 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d478 = { 0x00, 0x00, 0x00, 0xFF };
+
+// .sdata2:0x14 | 0x8041D47C | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d47c = { 0x80, 0x80, 0x80, 0xFF };
+
+// .sdata2:0x18 | 0x8041D480 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d480 = { 0x00, 0x00, 0x00, 0xFF };
+
+// .sdata2:0x1C | 0x8041D484 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d484 = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+// .sdata2:0x20 | 0x8041D488 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d488 = { 0x00, 0x00, 0x00, 0xFF };
+
+// .sdata2:0x24 | 0x8041D48C | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d48c = { 0x80, 0x80, 0x80, 0xFF };
+
+// .sdata2:0x28 | 0x8041D490 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d490 = { 0xCB, 0x8C, 0xA2, 0xFE };
+
+// .sdata2:0x2C | 0x8041D494 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d494 = { 0xCB, 0xBE, 0x89, 0xFE };
+
+// .sdata2:0x30 | 0x8041D498 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d498 = { 0x00, 0x00, 0x00, 0xFF };
+
+// .sdata2:0x34 | 0x8041D49C | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d49c = { 0xCB, 0x8C, 0xA2, 0xF4 };
+
+// .sdata2:0x38 | 0x8041D4A0 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d4a0 = { 0x00, 0x00, 0x00, 0x80 };
+
+// .sdata2:0x3C | 0x8041D4A4 | size 0x4
+__declspec(section ".sdata2") const GXColor dat_8041d4a4 = { 0x00, 0x00, 0x00, 0xFF };
+
+// .sdata2:0x40 | 0x8041D4A8 | size 0x4
+__declspec(section ".sdata2") const f32 float_0p5_8041d4a8 = 0.5f;
+
+// .sdata2:0x44 | 0x8041D4AC | size 0x4
+__declspec(section ".sdata2") const f32 float_0_8041d4ac = 0.0f;
+
+// .sdata2:0x48 | 0x8041D4B0 | size 0x4
+__declspec(section ".sdata2") const f32 float_neg16_8041d4b0 = -16.0f;
+
+// .sdata2:0x4C | 0x8041D4B4 | size 0x4
+__declspec(section ".sdata2") const f32 float_neg28_8041d4b4 = -28.0f;
+
+// .sdata2:0x50 | 0x8041D4B8 | size 0x4
+__declspec(section ".sdata2") const f32 float_0p9_8041d4b8 = 0.9f;
+
+// .sdata2:0x54 | 0x8041D4BC | size 0x8
+__declspec(section ".sdata2") const char str_8041D4BC[8] = "\202g\202o\000\000\000";
+
+// .sdata2:0x5C | 0x8041D4C4 | size 0x4
+__declspec(section ".sdata2") const char str_8041D4C4[4] = "%d";
+
+// .sdata2:0x60 | 0x8041D4C8 | size 0x4
+__declspec(section ".sdata2") const char str_8041D4C8[4] = "\201^\000";
+
+// .sdata2:0x64 | 0x8041D4CC | size 0x8
+__declspec(section ".sdata2") const char str_8041D4CC[8] = "\202e\202o\000\000\000";
+
+// .sdata2:0x6C | 0x8041D4D4 | size 0x4
+__declspec(section ".sdata2") const f32 float_14_8041d4d4 = 14.0f;
+
+// .sdata2:0x70 | 0x8041D4D8 | size 0x4
+__declspec(section ".sdata2") const f32 float_1_8041d4d8 = 1.0f;
+
+// .sdata2:0x74 | 0x8041D4DC | size 0x4
+__declspec(section ".sdata2") const f32 float_160_8041d4dc = 160.0f;
+
+// .sdata2:0x78 | 0x8041D4E0 | size 0x4
+__declspec(section ".sdata2") const f32 float_2_8041d4e0 = 2.0f;
+
+// .sdata2:0x7C | 0x8041D4E4 | size 0x4
+__declspec(section ".sdata2") const f32 float_100_8041d4e4 = 100.0f;
+
+// .sdata2:0x80 | 0x8041D4E8 | size 0x4
+__declspec(section ".sdata2") const f32 float_20_8041d4e8 = 20.0f;
+
+// .sdata2:0x84 | 0x8041D4EC | size 0x4
+__declspec(section ".sdata2") const f32 float_10_8041d4ec = 10.0f;
+
+// .sdata2:0x88 | 0x8041D4F0 | size 0x4
+__declspec(section ".sdata2") const f32 float_240_8041d4f0 = 240.0f;
+
+// .sdata2:0x8C | 0x8041D4F4 | size 0x4
+__declspec(section ".sdata2") const f32 float_neg240_8041d4f4 = -240.0f;
+
+// .sdata2:0x90 | 0x8041D4F8 | size 0x4
+__declspec(section ".sdata2") const f32 float_125_8041d4f8 = 125.0f;
+
+// .sdata2:0x94 | 0x8041D4FC | size 0x4
+__declspec(section ".sdata2") const f32 float_105_8041d4fc = 105.0f;
+
+// .sdata2:0x98 | 0x8041D500 | size 0x4
+__declspec(section ".sdata2") const f32 float_250_8041d500 = 250.0f;
+
+// .sdata2:0x9C | 0x8041D504 | size 0x4
+__declspec(section ".sdata2") const f32 float_18_8041d504 = 18.0f;
+
+// .sdata2:0xA0 | 0x8041D508 | size 0x4
+__declspec(section ".sdata2") const f32 float_110_8041d508 = 110.0f;
+
+// .sdata2:0xA4 | 0x8041D50C | size 0x4
+__declspec(section ".sdata2") const f32 float_113_8041d50c = 113.0f;
+
+// .sdata2:0xA8 | 0x8041D510 | size 0x4
+__declspec(section ".sdata2") const f32 float_90_8041d510 = 90.0f;
+
+// .sdata2:0xAC | 0x8041D514 | size 0x4
+__declspec(section ".sdata2") const f32 float_15_8041d514 = 15.0f;
+
+// .sdata2:0xB0 | 0x8041D518 | size 0x4
+__declspec(section ".sdata2") const f32 float_0p7_8041d518 = 0.7f;
+
+// .sdata2:0xB4 | 0x8041D51C | size 0x4
+__declspec(section ".sdata2") const f32 float_220_8041d51c = 220.0f;
+
+// .sdata2:0xB8 | 0x8041D520 | size 0x4
+__declspec(section ".sdata2") const f32 float_92_8041d520 = 92.0f;
+
+// .sdata2:0xBC | 0x8041D524 | size 0x4
+__declspec(section ".sdata2") const f32 float_30_8041d524 = 30.0f;
+
+// .sdata2:0xC0 | 0x8041D528 | size 0x4
+__declspec(section ".sdata2") const f32 float_320_8041d528 = 320.0f;
+
+// .sdata2:0xC4 | 0x8041D52C | size 0x4
+__declspec(section ".sdata2") const f32 float_150_8041d52c = 150.0f;
+
+// .sdata2:0xC8 | 0x8041D530 | size 0x4
+__declspec(section ".sdata2") const f32 float_120_8041d530 = 120.0f;
+
+// .sdata2:0xCC | 0x8041D534 | size 0x4
+__declspec(section ".sdata2") const f32 float_415_8041d534 = 415.0f;
+
+// .sdata2:0xD0 | 0x8041D538 | size 0x4
+__declspec(section ".sdata2") const f32 float_210_8041d538 = 210.0f;
+
+// .sdata2:0xD4 | 0x8041D53C | size 0x4
+__declspec(section ".sdata2") const f32 float_215_8041d53c = 215.0f;
+
+// .sdata2:0xD8 | 0x8041D540 | size 0x4
+__declspec(section ".sdata2") const f32 float_4_8041d540 = 4.0f;
+
+// .sdata2:0xDC | 0x8041D544 | size 0x4
+__declspec(section ".sdata2") const f32 float_190_8041d544 = 190.0f;
+
+// .sdata2:0xE0 | 0x8041D548 | size 0x4
+__declspec(section ".sdata2") const f32 float_0p25_8041d548 = 0.25f;
+
+// .sdata2:0xE4 | 0x8041D54C | size 0x4
+__declspec(section ".sdata2") const f32 float_6_8041d54c = 6.0f;
+
+// .sdata2:0xE8 | 0x8041D550 | size 0x4
+__declspec(section ".sdata2") const f32 float_neg310_8041d550 = -310.0f;
+
+// .sdata2:0xEC | 0x8041D554 | size 0x4
+__declspec(section ".sdata2") const f32 float_neg275_8041d554 = -275.0f;
+
+// .sdata2:0xF0 | 0x8041D558 | size 0x4
+__declspec(section ".sdata2") const f32 float_neg170_8041d558 = -170.0f;
+
+// .sdata2:0xF4 | 0x8041D55C | size 0x4
+__declspec(section ".sdata2") const f32 float_neg144_8041d55c = -144.0f;
+
+// .sdata2:0xF8 | 0x8041D560 | size 0x4
+__declspec(section ".sdata2") const f32 float_180_8041d560 = 180.0f;
+
+// .sdata2:0xFC | 0x8041D564 | size 0x4
+__declspec(section ".sdata2") const f32 float_60_8041d564 = 60.0f;
+
+// .sdata2:0x100 | 0x8041D568 | size 0x4
+__declspec(section ".sdata2") const f32 float_neg96_8041d568 = -96.0f;
+
+// .sdata2:0x104 | 0x8041D56C | size 0x4
+__declspec(section ".sdata2") const f32 float_neg80_8041d56c = -80.0f;
+
+// .sdata2:0x108 | 0x8041D570 | size 0x4
+__declspec(section ".sdata2") const f32 float_130_8041d570 = 130.0f;
+
+// .sdata2:0x10C | 0x8041D574 | size 0x4
+__declspec(section ".sdata2") const f32 float_28_8041d574 = 28.0f;
+
+#pragma force_active reset
+#pragma explicit_zero_data reset
+

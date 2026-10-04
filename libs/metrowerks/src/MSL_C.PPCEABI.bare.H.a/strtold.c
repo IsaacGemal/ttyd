@@ -156,7 +156,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
             case nan_state: {
                 int i = 1, j = 0;
                 char model[] = "NAN(";
-                char nan_arg[32] = "";
+                char nan_arg[32]; // write-only, so the original leaves it uninitialised
                 while ((i < 4) && (_toupper(c) == model[i])) {
                     i++;
                     c = fetch();

@@ -1166,15 +1166,13 @@ USER_FUNC(img_wait) {
     return EVT_RETURN_YIELD;
 }
 
-// Logic, coordinate math, GX calls and the .rodata pool all match. Two named temporaries carry the work:
-// `angle` (the half-FOV tangent) fixes the pool order and the int->float schedule; `half` (0.5f, shared by
-// the near multiply and the frustum scale) fixes the whole near block. What is left is register allocation
-// and instruction selection only: the object pointer/flags land in r6/r5 (original r5/r6), one `fmuls`
-// reads constant-first (original variable-first), and ++stage/++texCoord/++texMap write a temp (r0/r3)
-// instead of updating r29/r27/r28 in place.
-// NONMATCHING (99.4%): register allocation / instruction selection only.
+// Match note: `s` groups the object pointer and its flags word in one scalarised struct, which makes MWCC
+// allocate them to r5/r6 (two plain locals come out swapped). The tail increments go through a named
+// pointer to a local (`++*p`) so the compiler keeps the update in the callee-saved register instead of
+// folding it into a temp at the store. The `angle`/`half` temporaries below fix the pool and near block;
+// `fovY / 2.0f` gives the variable-first `fmuls` (not `fovY * 0.5f`). All three are match-only shapes.
 void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
-    MapObject* obj;
+    RshWindowTevObj s;
     s32 stage;
     s32 texMap;
     s32 texCoord;
@@ -1193,37 +1191,39 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     f32 left;
     f32 right;
 
-    obj = param->obj;
+    s.obj = param->obj;
+    s.flags = *(u32*)s.obj->field_0x0;
     stage = param->field_C;
     texMap = param->field_10;
     texCoord = param->field_14;
     field18 = param->field_18;
 
-    if (*(u32*)obj->field_0x0 & 0x20) {
-        while ((obj = obj->parent) != NULL) {
-            if ((*(u32*)obj->field_0x0 & 0x10) == 0) {
+    if (s.flags & 0x20) {
+        while ((s.obj = s.obj->parent) != NULL) {
+            s.flags = *(u32*)s.obj->field_0x0;
+            if ((s.flags & 0x10) == 0) {
                 continue;
             }
-            if ((*(u32*)obj->field_0x0 & 0x20000000) == 0) {
-                *(u32*)obj->field_0x0 |= 0x20000000;
+            if ((s.flags & 0x20000000) == 0) {
+                *(u32*)s.obj->field_0x0 |= 0x20000000;
                 return;
             }
-            x0 = *(u16*)(obj->field_0xEC + 0);
-            y0 = *(u16*)(obj->field_0xEC + 2);
-            x1 = *(u16*)(obj->field_0xEC + 4);
-            y1 = *(u16*)(obj->field_0xEC + 6);
+            x0 = *(u16*)(s.obj->field_0xEC + 0);
+            y0 = *(u16*)(s.obj->field_0xEC + 2);
+            x1 = *(u16*)(s.obj->field_0xEC + 4);
+            y1 = *(u16*)(s.obj->field_0xEC + 6);
             break;
         }
     }
     else {
-        if ((*(u32*)obj->field_0x0 & 0x20000000) == 0) {
-            *(u32*)obj->field_0x0 |= 0x20000000;
+        if ((s.flags & 0x20000000) == 0) {
+            *(u32*)s.obj->field_0x0 |= 0x20000000;
             return;
         }
-        x0 = *(u16*)(obj->field_0xEC + 0);
-        y0 = *(u16*)(obj->field_0xEC + 2);
-        x1 = *(u16*)(obj->field_0xEC + 4);
-        y1 = *(u16*)(obj->field_0xEC + 6);
+        x0 = *(u16*)(s.obj->field_0xEC + 0);
+        y0 = *(u16*)(s.obj->field_0xEC + 2);
+        x1 = *(u16*)(s.obj->field_0xEC + 4);
+        y1 = *(u16*)(s.obj->field_0xEC + 6);
     }
 
     if (x0 == 0x3FF || y0 == 0x3FF || x1 == 0x3FF || y1 == 0x3FF) {
@@ -1260,7 +1260,7 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 
     half = 0.5f;
-    angle = (f32)tan(6.2831855f * (camGetPtr(CAMERA_3D)->fovY * 0.5f) / 360.0f);
+    angle = (f32)tan(6.2831855f * (camGetPtr(CAMERA_3D)->fovY / 2.0f) / 360.0f);
     top = (f32)(gp->efbHeight / 2 - y1);
     bottom = (f32)(gp->efbHeight / 2 - y0);
     left = (f32)(x0 - gp->fbWidth / 2);
@@ -1281,10 +1281,10 @@ void rsh_window_tev(RshWindowTevParam* param, s32 arg1) {
     GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
     GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
     GXSetTevKColorSel(stage, GX_TEV_KCSEL_3_4);
-    param->field_C = ++stage;
-    param->field_14 = ++texCoord;
+    { s32* p = &stage; param->field_C = ++*p; }
+    { s32* p = &texCoord; param->field_14 = ++*p; }
     param->field_18 = field18;
-    param->field_10 = ++texMap;
+    { s32* p = &texMap; param->field_10 = ++*p; }
 }
 
 USER_FUNC(evt_rsh_get_rnd_npc) {

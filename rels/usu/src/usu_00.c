@@ -413,7 +413,7 @@ void kpa_stg5_009_7_cb(s32 type, void* param) {
     switch (type) {
     case 3:
         if (*(u16*)(data + 8) == 1) {
-            psndBGMOn(0x201, "BGM_FF_GET_ITEM1");
+            psndBGMOn(0x201, "BGM_FF_GET_ITEM1\0\0\0");
         }
         break;
     }
@@ -3455,6 +3455,8 @@ EVT_BEGIN(usu_00_init_evt)
     RETURN
 EVT_END()
 
+// The 4 bytes after kpaSen in the target's .bss (gap_05_0000000C_bss).
+static u32 gap_05_0000000C_bss;
 KpaSenEntry* kpaSen;
 
 
