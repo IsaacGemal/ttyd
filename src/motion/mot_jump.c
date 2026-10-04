@@ -43,21 +43,8 @@ extern const f32 float_neg1_8041abf8;
 #define MWS16(m, off) (*(s16*)((u8*)(m) + (off)))
 #define MWF32(m, off) (*(f32*)((u8*)(m) + (off)))
 
-// .rodata
-const Vec vec3_802c5c40 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5c4c = { 0.0f, 0.0f, 0.0f };
 // The "M_J_1B" pose name is written with an explicit trailing NUL at its uses so the pooled
 // literal has the original object's 8 bytes (six characters and two NULs).
-
-// The original addresses these .rodata objects as offsets from one base register (vec3_802c5c40@l);
-// functions that use JUMP_RODATA declare that base with JUMP_RODATA_BASE.
-#ifdef MUST_MATCH
-#define JUMP_RODATA(T, off, name) ((T)(base + (off)))
-#define JUMP_RODATA_BASE const u8* base = (const u8*)&vec3_802c5c40;
-#else
-#define JUMP_RODATA(T, off, name) ((T)&(name))
-#define JUMP_RODATA_BASE
-#endif
 
 // .sdata
 static f32 marioJumpStandData[10] = {
@@ -207,13 +194,11 @@ void mot_jumpStand(void) {
     }
 }
 
-// The int->float magic double sits in its original .rodata slot, but the original reaches it
-// through the unit's base register (`lfd f2, 0x38(r30)`, r30 = vec3_802c5c40) while MWCC addresses
-// its own pool entry with a separate `lis r3, @447@ha`, which also moves the neighbouring loads
-// from r3 to r4.
-// NONMATCHING (99.04%): only the two magic-double references differ.
+// The pose strings and the int->float conversion double are compiler-pooled literals, and
+// `#pragma pool_data on` reaches them all (including the double at 0x38) through one base
+// register: the original's `lfd f2, 0x38(r30)`.  The zero-Vec templates below are copied into a
+// local before their fields are overwritten, as the original does.
 void mot_jumpSw(void) {
-    JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
 
     if (mario->trigFlags & MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION) {
@@ -238,7 +223,7 @@ void mot_jumpSw(void) {
         marioSetJumpPara();
         *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
         if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-            marioChgPose(JUMP_RODATA(const char*, 0x40, "M_J_1B"));
+            marioChgPose("M_J_1B\0");
         }
         if (mario->hitobjJumpFrom != NULL) {
             if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
@@ -248,7 +233,7 @@ void mot_jumpSw(void) {
 
                 MWF32(mario, 0x2B4) = obj->position.x;
                 MWF32(mario, 0x2B8) = obj->position.z;
-                tmp = *JUMP_RODATA(const Vec*, 0x0, vec3_802c5c40);
+                tmp = (Vec){ 0.0f, 0.0f, 0.0f };
                 tmp.x = obj->position.x;
                 tmp.y = obj->position.y + float_0p5_8041abe0 * mario->wPlayerCollisionBox.y;
                 tmp.z = obj->position.z;
@@ -301,7 +286,7 @@ void mot_jumpSw(void) {
             marioMakeJumpPara();
             if (MWF32(mario, 0x7C) <= float_0_8041abb8) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(JUMP_RODATA(const char*, 0x30, "M_J_1C"));
+                    marioChgPose("M_J_1C");
                 }
                 marioSetPeakYpos();
                 MWF32(mario, 0x7C) = marioJumpSwData[4];
@@ -325,11 +310,9 @@ void mot_jumpSw(void) {
     mario->airTimer++;
 }
 
-// NONMATCHING (99.14%): only the two int->float magic-double references differ; MWCC addresses
-// its own pool entry for the double with a separate `lis r3`, where the original reaches it
-// through the vec3_802c5c40 base register (`lfd f2, 0x38(r30)`).
+// Same pool shape as mot_jumpSw: `#pragma pool_data on` puts the i2f double in the .rodata pool
+// and reaches it through the single base register (`lfd f2, 0x38(r30)`).
 void mot_jumpNpc(void) {
-    JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
 
     if (mario->characterId == 2) {
@@ -367,7 +350,7 @@ void mot_jumpNpc(void) {
             MWF32(mario, 0x88) = MATCH_F32(float_neg0p02_8041abdc);
         }
         if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-            marioChgPose(JUMP_RODATA(const char*, 0x40, "M_J_1B"));
+            marioChgPose("M_J_1B\0");
         }
         if (mario->hitobjJumpFrom != NULL) {
             if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
@@ -382,7 +365,7 @@ void mot_jumpNpc(void) {
 
                 MWF32(mario, 0x2B4) = obj->position.x;
                 MWF32(mario, 0x2B8) = obj->position.z;
-                tmp = *JUMP_RODATA(const Vec*, 0xC, vec3_802c5c4c);
+                tmp = (Vec){ 0.0f, 0.0f, 0.0f };
                 tmp.x = obj->position.x;
                 tmp.y = obj->position.y + MATCH_F32(float_0p5_8041abe0) * mario->wPlayerCollisionBox.y;
                 tmp.z = obj->position.z;
@@ -438,7 +421,7 @@ void mot_jumpNpc(void) {
             marioMakeJumpPara();
             if (MWF32(mario, 0x7C) <= MATCH_F32(float_0_8041abb8)) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(JUMP_RODATA(const char*, 0x30, "M_J_1C"));
+                    marioChgPose("M_J_1C");
                 }
                 marioSetPeakYpos();
                 MWF32(mario, 0x7C) = MATCH_F32(float_neg0p03_8041abf0);
