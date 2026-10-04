@@ -35,8 +35,6 @@ extern const f32 float_2_804209f0;
 extern const f32 float_0p03705_804209f4;
 extern const f32 float_0p4967_804209f8;
 extern const f32 float_14_804209fc;
-const f64 double_to_int_802fdbf8 = 4503601774854144.0;
-const char str_802FDBEC[] = "StarPoint";
 
 static inline f32 effStarPointSinf(f32 rad, f32 b, f32 one, f32 pi) {
     f32 v = MATCH_F32(float_0p00761_804209d8);
@@ -137,7 +135,7 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     f32 cPi, c360, c6, c0, cTwo, cOne;
 
     entry = effEntry();
-    entry->type = str_802FDBEC;
+    entry->type = "StarPoint";
     entry->count = count + 1;
     data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(StarPointData));
     entry->userdata = data;
@@ -250,3 +248,20 @@ void effStarPointDisp(CameraId camId, void* param) {
         }
     }
 }
+
+// The named .sdata2 objects, defined after the code so they are emitted before the function
+// literal pool in the original's order.
+const f32 float_deg2rad_804209c8 = 0.017453292f;
+const f32 float_0_804209cc = 0.0f;
+const f32 float_6p2832_804209d0 = 6.2831855f;
+const f32 float_360_804209d4 = 360.0f;
+const f32 float_0p00761_804209d8 = 0.00761f;
+const f32 float_0p16605_804209dc = 0.16605f;
+const f32 float_1_804209e0 = 1.0f;
+const f32 float_3p1416_804209e4 = 3.1415927f;
+const f32 float_1p5708_804209e8 = 1.5707964f;
+const f32 float_4p7124_804209ec = 4.712389f;
+const f32 float_2_804209f0 = 2.0f;
+const f32 float_0p03705_804209f4 = 0.03705f;
+const f32 float_0p4967_804209f8 = 0.4967f;
+const f32 float_14_804209fc = 14.0f;
