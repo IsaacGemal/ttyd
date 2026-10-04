@@ -197,8 +197,34 @@ def strip_prefix(words):
 REDIRECT = re.compile(r"(?<![<&>])(?:\d|&)?>>?\|?\s*(?!&)(['\"]?)([^\s;|&'\"<>()]+)\1")
 
 
+def unquoted(seg):
+    """seg with every `<`/`>` inside quotes blanked: a quoted argument (`sed "s/^/$x -> /"`) holds no redirect. A
+    quoted target (`> "/x"`) keeps its text, since only the operator itself is outside the quotes. Shell -c strings
+    are audited on their own, so their redirects are still seen."""
+    out, q, i = [], None, 0
+    while i < len(seg):
+        c = seg[i]
+        if q == '"' and c == "\\" and i + 1 < len(seg):
+            out += [c, seg[i + 1]]
+            i += 2
+            continue
+        if q is None and c == "\\" and i + 1 < len(seg):
+            out += [c, seg[i + 1]]
+            i += 2
+            continue
+        if c == q:
+            q = None
+        elif q is None and c in "'\"":
+            q = c
+        elif q and c in "<>":
+            c = " "
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
 def redirects(seg):
-    return [m.group(2) for m in REDIRECT.finditer(seg)]
+    return [m.group(2) for m in REDIRECT.finditer(unquoted(seg))]
 
 
 def editor_files(name, args):
