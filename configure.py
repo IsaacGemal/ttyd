@@ -763,7 +763,7 @@ config.libs = [
             Object(Matching, "motion/mot_walk.c"),
             Object(Matching, "motion/mot_hammer.c"),
             Object(NonMatching, "motion/mot_jabara.c"),
-            Object(NonMatching, "motion/mot_jump.c"),
+            Object(Matching, "motion/mot_jump.c"),
             Object(NonMatching, "motion/mot_plane.c"),
             Object(NonMatching, "motion/mot_roll.c"),
             Object(NonMatching, "motion/mot_ship.c"),
