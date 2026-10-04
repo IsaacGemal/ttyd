@@ -8,6 +8,9 @@
 #include <string.h>
 #include "math_ext.h"
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const f32 float_2_8041c450;
+
 
 extern BattleWork *_battleWorkPointer;
 // These four zero vectors are read-only data, but the original's code loads them without hoisting the
@@ -268,12 +271,12 @@ void battleCameraMain(void) {
     }
     // Match-only: one expression with `2.0f * zoom` in a temporary reproduces the original's
     // fnmsubs/register allocation for base.
-    { f32 _t = 2.0f * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
+    { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
     v = (1.0f - t) * base;
     xv = wp->cameraWork.unkC8.x * (1.0f - t);
-    f11 = -v / 10.0f;
     // Match-only: the temporary and operand order match the original fmuls schedule.
     { f32 _t = (vv.y - wp->cameraWork.unkC8.y); f9 = _t * (wp->cameraWork.unkC8.y / 80.0f); }
+    f11 = -v / 10.0f;
     if (f9 > 100.0f) {
       f9 = 100.0f;
     }
@@ -311,7 +314,7 @@ void battleCameraMain(void) {
     if (w < 0.0f) {
       w = 0.0f;
     }
-    base = 2.0f * wp->cameraWork.zoom;
+    base = float_2_8041c450 * wp->cameraWork.zoom;
     base -= 1.5f * w;
     // Retail only writes yc (f31) in the two clamp arms, and nothing on this path set f31 before, so an
     // in-range midpoint reads whatever the caller left in f31. The natural build starts from the midpoint.
@@ -422,12 +425,12 @@ void battleCameraMain(void) {
     }
     // Match-only: one expression with `2.0f * zoom` in a temporary reproduces the original's
     // fnmsubs/register allocation for base.
-    { f32 _t = 2.0f * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
+    { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
     v = (1.0f - t) * base;
     xv = wp->cameraWork.unkC8.x * (1.0f - t);
-    f11 = -v / 10.0f;
     // Match-only: the temporary and operand order match the original fmuls schedule.
     { f32 _t = (vv.y - wp->cameraWork.unkC8.y); f9 = _t * (wp->cameraWork.unkC8.y / 80.0f); }
+    f11 = -v / 10.0f;
     if (f9 > 100.0f) {
       f9 = 100.0f;
     }
@@ -488,7 +491,7 @@ void battleCameraMain(void) {
     // Match-only: splitting the subtraction stops MWCC from introducing an extra temporary.
     cy = vv.y;
     cy = cy - wp->cameraWork.unkBC.y - 100.0f;
-    zz = 2.0f * wp->cameraWork.zoom;
+    zz = float_2_8041c450 * wp->cameraWork.zoom;
     v = wp->cameraWork.unkC8.x * u;
     if (cy > 0.0f) {
       cy = 0.0f;
@@ -593,7 +596,7 @@ void battleCameraMain(void) {
     strcpy(name, "\202\251\202\337\202\347\201@\202\311\202\260\202\304\202\351");
     break;
   default:
-    strcpy(name, "\202\251\202\337\202\347\201@\202\250\202\251\202\265\202\242");
+    strcpy(name, "\202\251\202\337\202\347\201@\202\250\202\251\202\265\202\242\0\0\0");
     break;
   }
 
@@ -697,7 +700,7 @@ void battleCameraMain(void) {
 }
 
 USER_FUNC(evt_btl_camera_wait_move_end) {
-  if (battleCameraGetPosMoveSpeed() >= 2.0f) {
+  if (battleCameraGetPosMoveSpeed() >= float_2_8041c450) {
     return EVT_RETURN_BLOCK;
   }
   return EVT_RETURN_DONE;
@@ -1395,3 +1398,5 @@ USER_FUNC(evt_btl_camera_set_homing_unit_audience) {
 }
 
 #pragma dont_inline reset
+
+const f32 float_2_8041c450 = 2.0f;
