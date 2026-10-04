@@ -36,3 +36,13 @@ def cflags(ninja_text, name):
     if not m:
         raise LookupError(f"{name}: no compile rule in build.ninja")
     return re.sub(r"\s+", " ", re.sub(r"\$\n\s*", "", m.group(1))).strip()
+
+
+def source_hash(unit, root):
+    """First 12 hex digits of the sha1 of the unit's source file ('-' when it cannot be resolved or read): the permuter log
+    records it so a run on source that has since changed no longer counts as the unit's result."""
+    import hashlib
+    try:
+        return hashlib.sha1(open(os.path.join(root, resolve(unit, root)["src"]), "rb").read()).hexdigest()[:12]
+    except (LookupError, OSError):
+        return "-"

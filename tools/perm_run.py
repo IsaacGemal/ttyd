@@ -11,10 +11,11 @@ at 8 (the tower's budget while waves run). Nothing outlives this process:
   - Ctrl-C, SIGTERM or any exit kills every group that is still running;
   - before each launch and every 10 s: stop everything and exit when the load average is above 20 or free disk is below 100 GB.
 One line per finished run goes to the log, tab separated:
-  ISO-time  unit  func  base_score  best_score  runtime_s  exit_reason
+  ISO-time  unit  func  base_score  best_score  runtime_s  exit_reason  source_sha1_prefix
 exit_reason is one of: zero (score 0 reached), finished (permuter ended by itself), timeout, killed-overdue, load, disk,
 prepare-failed, permuter-error, interrupted. best_score is the lowest `output-SCORE-N` directory (none: `-`).
-Wins are in PERM_ROOT/inputs/UNIT__FUNC/output-*/source.c; nothing is applied to the repo.
+The last column is the first 12 hex digits of the sha1 of the unit's source file when the run was logged (perm_loop.py only counts a
+line for the unit's current source; lines from before the column existed have no eighth field). Wins are in PERM_ROOT/inputs/UNIT__FUNC/output-*/source.c; nothing is applied to the repo.
 A file base.c.manual in the input directory replaces the generated base.c after each prepare (manual PERM_* macros)."""
 import argparse
 import atexit
@@ -26,6 +27,9 @@ import signal
 import subprocess
 import sys
 import time
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+import perm_unit  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 PERM_ROOT = os.environ.get("PERM_ROOT", os.path.expanduser("~/permuter"))
@@ -101,7 +105,7 @@ def log(r, reason):
     os.makedirs(os.path.dirname(a.log), exist_ok=True)
     with open(a.log, "a") as f:
         f.write("\t".join([time.strftime("%Y-%m-%dT%H:%M:%S"), r["unit"], r["func"], str(r.get("base", "-")), "-" if best is None else str(best),
-                           str(secs), reason]) + "\n")
+                           str(secs), reason, perm_unit.source_hash(r["unit"], ROOT)]) + "\n")
 
 
 def launch(unit, func, keep_all=False):
