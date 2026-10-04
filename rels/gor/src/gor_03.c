@@ -1,6 +1,7 @@
 #include "gor_03.h"
 #include <dolphin/mtx.h>
-#include <math.h>
+// math.h is deliberately not included: its `extern inline sqrtf`/`sqrt` emit unused
+// _half/_three doubles into .rodata. The compiler intrinsic __fabsf covers the fabs uses.
 #include <stdlib.h>
 #include "driver/animdrv.h"
 #include "driver/camdrv.h"
@@ -53,6 +54,11 @@
 #include "party/party_motion.h"
 #include "pmario_sound.h"
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const GorFuwafuwaTable dat_gor_00019230;
+extern const GorSlotIconTable dat_gor_0001a46c;
+extern const f32 zero_gor_0001b7b4;
+
 #pragma pool_data off
 
 #pragma force_active on
@@ -60,6 +66,13 @@ extern s32 evt_yuuranking_alloc_10_text_A47C[];
 extern s32 evt_yuuranking_free_10_text_A3F8[];
 extern s32 luigi_gor_first_talk[];
 extern s32 yuuranking_wait_button_10_text_A37C[];
+const GorFuwafuwaTable dat_gor_00019230 = {{
+    0.0f, 0.5f, 1.0f, 1.4f, 1.8f, 2.0f, 2.3f, 2.5f,
+    2.6f, 2.7f, 2.7f, 2.7f, 2.6f, 2.5f, 2.3f, 2.0f,
+    1.8f, 1.4f, 1.0f, 0.5f, -0.0f, -0.5f, -1.0f, -1.4f,
+    -1.8f, -2.0f, -2.3f, -2.5f, -2.6f, -2.7f, -2.7f, -2.7f,
+    -2.6f, -2.5f, -2.3f, -2.0f, -1.8f, -1.4f, -1.0f, -0.5f,
+}};
 static USER_FUNC(enzan_lw_load);
 static USER_FUNC(enzan_lw_save);
 static USER_FUNC(viewport);
@@ -2033,9 +2046,6 @@ f32 montemedalzpos[2] = {
     -235.0f, -160.0f,
 };
 
-const Vec vec3_gor_0001a234 = {-113.0f, 70.0f, 0.0f};
-const Vec vec3_gor_0001a240 = {0.0f, 10.0f, 0.0f};
-
 // fall_rtn is 100%. The sfx string initialisers use a comma-fold (MUST_MATCH) so MWCC
 // materialises each address directly instead of via an extra `mr`; see the note in
 // rels/yuu/src/yuu_00.c.
@@ -2110,7 +2120,7 @@ static USER_FUNC(fall_rtn) {
             if (*(f32*)(e + 0x10) <= 0.0f) {
                 *(f32*)(e + 0x10) = 0.0f;
                 psndSFXOn_3D(sfx_leap, (Vec*)(e + 0x0c));
-                if (fabs(*(f32*)(e + 0x44)) <= 4.0) {
+                if (__fabsf(*(f32*)(e + 0x44)) <= 4.0) {
                     *(u8*)(e + 0x01) = *(u8*)(e + 0x01) + 1;
                     *(s16*)(e + 0x04) = 300;
                 } else {
@@ -2294,6 +2304,8 @@ char* drumname[2][17] = {
     "S_srot02_7_02", "S_srot02_m_03", "S_srot02_s_03", "S_srot02_7_03", "neon_04", "neon_06",
     "neon_05",
 };
+
+const GorSlotIconTable dat_gor_0001a46c = {{0x1f3, 0x1f3, 0x1f3}};
 
 // TODO: type
 u32 slotevttbl[2] = {
@@ -3226,24 +3238,110 @@ USER_FUNC(get_mario_dispReqDir) {
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(desk_talk_func) {
-    s32* args = event->args;
-    s32 a = evtGetValue(event, args[0]);
-    s32 b = evtGetValue(event, args[1]);
-    s32 x = evtGetValue(event, args[2]);
-    s32 y = evtGetValue(event, args[3]);
-    s32 z = evtGetValue(event, args[4]);
+// Matching: indexing the u32 table as `&upsidegara[cur * 0x18]` (0x18 elements = 0x60 bytes) gives the
+// original's `add r0,r31,r5` / `add r5,r0,r27` two-step base, and `s8* d` gives the `lbzx r4` byte.
+void slot_neon_sub(void* arg0, u8* data) {
+    s32 i;
+    s32 r;
+    s32 cur;
 
-    if (a == 1 && b == 0) {
-        eff[0] = effMarioBalloonEntry(1, npc[0]);
+    if (*(s32*)(data + 0x58) > 0x4e) {
+        return;
     }
-    if (a == 0 && b == 1) {
-        effDelete(eff[0]);
+    if (*(s32*)(data + 0x58) == 0) {
+        if (irand(0xa) == 0) {
+            *(u32*)data |= 2;
+        }
+        *(u32*)data &= ~2;
     }
-    npc[0]->position.x = (f32)x;
-    npc[0]->position.y = (f32)y;
-    npc[0]->position.z = (f32)z;
-    return EVT_RETURN_DONE;
+    if (*(s32*)(data + 0x58) < 0x1b) {
+        if (*(s32*)(data + 0x58) & 1) {
+            for (i = 0; i < 3; i++) {
+                u8* up;
+                s8* d;
+                r = irand(8);
+                cur = *(s32*)(data + 0x60);
+                up = (u8*)&upsidegara[cur * 0x18] + i * 0x20;
+                d = (s8*)(data + cur * 3 + i + 0x33);
+                while (*(s32*)(up + r * 4) == *d) {
+                    r = (r + 1) & 7;
+                }
+                *d = *(s32*)(up + r * 4);
+                if (*(u32*)data & 2) {
+                    int c = *(s32*)(data + 0x60);
+                    mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
+                    mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
+                    mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
+                } else {
+                    int c = *(s32*)(data + 0x60);
+                    mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
+                    mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
+                    mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
+                }
+            }
+        }
+    } else if (*(s32*)(data + 0x58) == 0x1b) {
+        for (i = 0; i < 3; i++) {
+            s32 c;
+            cur = *(s32*)(data + 0x60);
+            *(u8*)(data + cur * 3 + i + 0x33) = i;
+            c = *(s32*)(data + 0x60);
+            mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
+            mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
+            mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
+        }
+        cur = *(s32*)(data + 0x60);
+        if (*(s8*)(data + cur * 3 + 0x33) == *(s8*)(data + cur * 3 + 0x34) &&
+            *(s8*)(data + cur * 3 + 0x34) == *(s8*)(data + cur * 3 + 0x35)) {
+            *(u32*)data |= 4;
+        }
+        if ((*(u32*)data & 4) && (*(u32*)data & 2)) {
+            *(f32*)(data + 0x2c) = 2.8125f;
+            *(f32*)(data + 0x28) = 2.8125f;
+            *(f32*)(data + 0x24) = 2.8125f;
+        } else {
+            *(f32*)(data + 0x2c) = 11.25f;
+            *(f32*)(data + 0x28) = 11.25f;
+            *(f32*)(data + 0x24) = 11.25f;
+        }
+        *(s8*)(data + 0x32) = 2;
+        *(s8*)(data + 0x31) = 2;
+        *(s8*)(data + 0x30) = 2;
+    } else {
+        if (*(u32*)data & 4) {
+            if (*(s32*)(data + 0x58) == 0x21 || *(s32*)(data + 0x58) == 0x33 || *(s32*)(data + 0x58) == 0x45) {
+                for (i = 0; i < 3; i++) {
+                    cur = *(s32*)(data + 0x60);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
+                }
+            }
+            if (*(s32*)(data + 0x58) == 0x2a || *(s32*)(data + 0x58) == 0x3c || *(s32*)(data + 0x58) == 0x4e) {
+                for (i = 0; i < 3; i++) {
+                    cur = *(s32*)(data + 0x60);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
+                    mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
+                }
+            }
+        }
+    }
+    if (*(u32*)data & 2) {
+        if (*(s32*)(data + 0x58) == 0 || *(s32*)(data + 0x58) == 0xc || *(s32*)(data + 0x58) == 0x18) {
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][14], 0, 0);
+        }
+        if (*(s32*)(data + 0x58) == 6 || *(s32*)(data + 0x58) == 0x12) {
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
+        }
+    } else {
+        if (*(s32*)(data + 0x58) == 0x18) {
+            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][14], 0, 0);
+        }
+    }
+    if (*(s32*)(data + 0x58) <= 0x4e) {
+        *(s32*)(data + 0x58) = *(s32*)(data + 0x58) + 1;
+    }
 }
 
 USER_FUNC(desk_talk_init_func) {
@@ -3809,15 +3907,65 @@ static u32 shopper_data[38] = {
     (u32)"gor_shop2_29", (u32)"gor_shop2_30", (u32)"gor_shop2_31", (u32)"gor_shop2_32",
     (u32)"gor_shop2_33", (u32)"gor_shop2_34",
 };
-USER_FUNC(dummy_shadow) {
-    s32* args = event->args;
-    f32 x = evtGetFloat(event, args[0]);
-    f32 y = evtGetFloat(event, args[1]);
-    f32 z = evtGetFloat(event, args[2]);
-    f32 size = evtGetFloat(event, args[3]);
+// NONMATCHING (98.92%): `data + (sel*0xc + 0xc) + index*4` (not the flat form) and
+// `q = (s32*)((s8*)data) + index` reproduce the original address shape; the last
+// `if (*(s32*)(data + index*4 + 0x3c) == 0)` reuses r3 instead of rematerialising `data + index*4` into r5.
+s32 slot_rotate_sub(void* arg0, u8* data, s32 index) {
+    s32 dir = 0;
+    s32 changed = 0;
+    s32 steps = (s32)((f32)(s32)(*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) / 45.0f);
+    f32 diff;
+    s32 next;
 
-    shadowSetCollision(shadowEntry(x, y, z, 10.0f * size), 0);
-    return EVT_RETURN_BLOCK;
+    if ((*(f32*)(data + index * 4 + 0x24)) > 0.0f) {
+        next = (steps + 1) & 7;
+        diff = 45.0f * (f32)next - (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4));
+        if (diff < 0.0f) {
+            diff += 360.0f;
+        }
+        dir = (diff <= (*(f32*)(data + index * 4 + 0x24))) ? 1 : 0;
+    } else {
+        diff = 45.0f * (f32)steps - (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4));
+        if (diff > 0.0f) {
+            diff -= 360.0f;
+        }
+        dir = (diff > (*(f32*)(data + index * 4 + 0x24))) ? -1 : 0;
+    }
+    if ((((s8*)data)[index + 0x30] == 3 || ((s8*)data)[index + 0x30] == 4) && dir != 0) {
+        if (((s8*)data)[index + 0x39] != 0) {
+            if (((s8*)data)[index + 0x30] == 4) {
+                s32* q = ((s32*)((s8*)data) + index);
+                if (q[0xf] == 0) {
+                    if (q[0x12] != 0) {
+                        q[0x12]--;
+                        q[0xf] = 0;
+                    } else {
+                        q[0xf] = 0x12;
+                    }
+                } else {
+                    q[0xf]--;
+                }
+            }
+            if (*(s32*)(data + index * 4 + 0x3c) == 0) {
+                ((s8*)data)[index + 0x39]--;
+            }
+        } else {
+            ((s8*)data)[index + 0x30] = 0;
+            changed = 1;
+            (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) = 45.0f * (f32)steps;
+            goto done;
+        }
+    }
+    (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) += (*(f32*)(data + index * 4 + 0x24));
+    if ((*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) >= 360.0f) {
+        (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) -= 360.0f;
+    }
+    if ((*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) < 0.0f) {
+        (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) += 360.0f;
+    }
+done:
+    mapObjRotate(drumname[*(s32*)(data + 0x60)][index], 0.0f, 0.0f, (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)));
+    return changed;
 }
 
 EVT_BEGIN(majorin_nusumigiki)
@@ -4405,604 +4553,6 @@ EVT_BEGIN(kuzi_bomb_talk_husei)
     RETURN
 EVT_END()
 
-// Matches: routing the two evtGetValue results through temporaries before the named locals keeps the
-// original's args[0]-then-args[1] call order and still materialises the npcNameToPtr string address
-// with `addi r3`. The plain form (type = evtGetValue(args[0]); state = evtGetValue(args[1]);) compiles
-// to `addi r0, r4, str@l; mr r3, r0` and scores 99.04%.
-USER_FUNC(kuzi_bomb_bomb_eff) {
-    s32* args = event->args;
-#ifdef MUST_MATCH
-    s32 t0 = evtGetValue(event, args[0]);
-    s32 t1 = evtGetValue(event, args[1]);
-    s32 type = t0;
-    s32 state = t1;
-#else
-    s32 type = evtGetValue(event, args[0]);
-    s32 state = evtGetValue(event, args[1]);
-#endif
-    NpcEntry* npc;
-    npc = npcNameToPtr("グルメボム兵");
-
-    if (type == 2 || type == 3) {
-        return EVT_RETURN_DONE;
-    }
-    switch (state) {
-    case 0:
-        if (npc->position.y > 25.0f) {
-            effBombEntry(0, npc->position.x - 30.0f, npc->position.y, npc->position.z, 1.0f);
-            if (type == 0) {
-                state = 1;
-            } else {
-                state = 2;
-            }
-        }
-        break;
-    case 1:
-        if (npc->position.y > 50.0f) {
-            effBombEntry(0, npc->position.x + 30.0f, npc->position.y, npc->position.z, 1.0f);
-            state = 2;
-        }
-        break;
-    case 2:
-        if (npc->position.y > 75.0f) {
-            effBombEntry(0, npc->position.x - 30.0f, npc->position.y, npc->position.z, 1.0f);
-            state = 3;
-        }
-        break;
-    case 3:
-        if (npc->position.y > 100.0f) {
-            effBombEntry(0, npc->position.x + 30.0f, npc->position.y, npc->position.z, 1.0f);
-            state = 4;
-        }
-        break;
-    }
-    evtSetValue(event, args[2], state);
-    return EVT_RETURN_DONE;
-}
-
-EVT_BEGIN(kuzi_bomb_bomb)
-    SET_VALUE(LW(15), LW(0))
-    WAIT_FRAMES(40)
-    CALL(evt_npc_get_position, STRING("グルメボム兵"), LW(0), LW(1), LW(2))
-    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_LOTTERY_BOMB_BURST1"), LW(0), LW(1), LW(2), 0)
-    CALL(evt_npc_set_anim, STRING("グルメボム兵"), STRING("J_1A"))
-    SET_FLOAT_VALUE(LW(0), FLOAT(20.0f))
-    SET_FLOAT_VALUE(LW(1), FLOAT(-0.8f))
-    SET_VALUE(LW(2), 60)
-    CALL(evt_npc_get_position, STRING("グルメボム兵"), LW(3), LW(4), LW(5))
-    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_LOTTERY_BOMB_BURST2"), LW(3), LW(4), LW(5), 0)
-    SET_VALUE(LW(6), 0)
-    LOOP(0)
-        ADD_FLOAT(LW(4), LW(0))
-        ADD_FLOAT(LW(0), LW(1))
-        CALL(evt_npc_set_position, STRING("グルメボム兵"), LW(3), LW(4), LW(5))
-        IF_INT_LESS(LW(0), FLOAT(1.0f))
-            SET_FLOAT_VALUE(LW(0), FLOAT(1.0f))
-            SET_FLOAT_VALUE(LW(1), FLOAT(0.0f))
-        END_IF
-        CALL(kuzi_bomb_bomb_eff, LW(15), LW(6), LW(6))
-        SUBTRACT(LW(2), 1)
-        IF_INT_LESS_OR_EQUAL(LW(2), 0)
-            BREAK_LOOP
-        END_IF
-        WAIT_FRAMES(1)
-    END_LOOP
-    WAIT_FRAMES(20)
-    CALL(evt_npc_set_anim, STRING("グルメボム兵"), STRING("J_1B"))
-    SET_FLOAT_VALUE(LW(0), FLOAT(0.0f))
-    SET_FLOAT_VALUE(LW(1), FLOAT(-1.0f))
-    CALL(evt_npc_get_position, STRING("グルメボム兵"), LW(2), LW(3), LW(4))
-    LOOP(0)
-        ADD_FLOAT(LW(3), LW(0))
-        ADD_FLOAT(LW(0), LW(1))
-        CALL(evt_npc_set_position, STRING("グルメボム兵"), LW(2), LW(3), LW(4))
-        IF_INT_LESS(LW(0), FLOAT(-6.0f))
-            SET_FLOAT_VALUE(LW(0), FLOAT(-6.0f))
-            SET_FLOAT_VALUE(LW(1), FLOAT(0.0f))
-        END_IF
-        IF_INT_LESS_OR_EQUAL(LW(3), FLOAT(0.0f))
-            BREAK_LOOP
-        END_IF
-        WAIT_FRAMES(1)
-    END_LOOP
-    CALL(evt_npc_set_position, STRING("グルメボム兵"), LW(2), FLOAT(0.0f), LW(4))
-    CALL(evt_snd_sfxon_3d, STRING("SFX_PARTY_PBM_DOWN1"), LW(2), 0, LW(4), 0)
-    RETURN
-EVT_END()
-USER_FUNC(kuzi_get_keihin) {
-    s32* args = event->args;
-    s32 type = evtGetValue(event, args[0]);
-    s32 ret;
-
-    switch (type) {
-    case 0:
-        if (evtGetValue(NULL, GSWF(1238)) == 0) {
-            ret = 0x104;
-            evtSetValue(NULL, GSWF(1238), 1);
-        } else {
-            ret = 0xc4;
-        }
-        break;
-    case 1:
-        if (evtGetValue(NULL, GSWF(1239)) == 0) {
-            ret = 0x12f;
-            evtSetValue(NULL, GSWF(1239), 1);
-        } else {
-            ret = 0xc2;
-        }
-        break;
-    case 2:
-        ret = 0x96;
-        break;
-    case 3:
-        ret = 0x97;
-        break;
-    default:
-        ret = 0x94;
-        break;
-    }
-    evtSetValue(event, args[1], ret);
-    return EVT_RETURN_DONE;
-}
-
-EVT_BEGIN(kuzi_keiziban_normal)
-    CALL(evt_mario_key_onoff, 0)
-    CALL(evt_lottery_todaynum, LW(0))
-    CALL(evt_msg_print_insert, 0, STRING("kuji_bomb_023"), 0, 0, LW(0))
-    CALL(evt_pouch_check_item, 106, LW(0))
-    IF_INT_EQUAL(LW(0), 0)
-        CALL(evt_mario_key_onoff, 1)
-        RETURN
-    END_IF
-    CALL(evt_lottery_flag, LW(0))
-    IF_BITS_SET(LW(0), 16)
-        SET_VALUE(LW(0), 0)
-    ELSE
-        SET_VALUE(LW(0), 1)
-    END_IF
-    IF_INT_EQUAL(LW(0), 0)
-        CALL(evt_set_dir_to_target, STRING("グルメボム兵"), STRING("mario"))
-        CALL(evt_mario_set_dir, 270, 300, 0)
-        CALL(evt_lottery_flag, LW(1))
-        SET_VALUE(LW(0), 4)
-        IF_BITS_SET(LW(1), 32768)
-            SET_VALUE(LW(0), 3)
-        END_IF
-        IF_BITS_SET(LW(1), 16384)
-            SET_VALUE(LW(0), 2)
-        END_IF
-        IF_BITS_SET(LW(1), 8192)
-            SET_VALUE(LW(0), 1)
-        END_IF
-        IF_BITS_SET(LW(1), 4096)
-            SET_VALUE(LW(0), 0)
-        END_IF
-        IF_INT_NOT_EQUAL(LW(0), 4)
-            CALL(evt_cam3d_evt_set, -150, 120, 890, -150, 50, 470, 800, 11)
-            WAIT_MS(800)
-            IF_INT_LESS_OR_EQUAL(LW(0), 1)
-                CALL(evt_npc_flag_onoff, 0, STRING("グルメボム兵"), 1536)
-                CALL(evt_npc_set_anim, STRING("グルメボム兵"), STRING("B_1"))
-            END_IF
-            CALL(evt_msg_print, 0, STRING("kuji_bomb_023_1"), 0, STRING("グルメボム兵"))
-            IF_INT_LESS_OR_EQUAL(LW(0), 1)
-                SET_VALUE(GW(0), LW(0))
-                CALL_CHILD(kuzi_bomb_bomb)
-                SET_VALUE(LW(0), GW(0))
-            END_IF
-            CALL(evt_npc_flag_onoff, 1, STRING("グルメボム兵"), 1536)
-            SWITCH(LW(0))
-                CASE_EQUAL(0)
-                SET_VALUE(LW(1), STRING("kuji_bomb_024"))
-                SET_VALUE(LW(2), STRING("M_N_7"))
-                CASE_EQUAL(1)
-                SET_VALUE(LW(1), STRING("kuji_bomb_025"))
-                SET_VALUE(LW(2), STRING("M_N_7"))
-                CASE_EQUAL(2)
-                SET_VALUE(LW(1), STRING("kuji_bomb_026"))
-                SET_VALUE(LW(2), STRING("M_N_5B"))
-                CASE_EQUAL(3)
-                SET_VALUE(LW(1), STRING("kuji_bomb_027"))
-                SET_VALUE(LW(2), STRING("M_N_5B"))
-            END_SWITCH
-            CALL(evt_npc_set_autotalkpose, STRING("グルメボム兵"), STRING("S_2"), STRING("T_2"))
-            CALL(evt_msg_print, 0, LW(1), 0, STRING("グルメボム兵"))
-            BEGIN_INLINE_EVENT
-                CALL(evt_mario_get_pos, 0, LW(1), LW(2), LW(3))
-                SWITCH(LW(0))
-                    CASE_EQUAL(0)
-                    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_SURPRISED2"), LW(1), LW(2), LW(3), 0)
-                    CASE_EQUAL(1)
-                    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_SURPRISED2"), LW(1), LW(2), LW(3), 0)
-                    CASE_EQUAL(2)
-                    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_AWAKE1"), LW(1), LW(2), LW(3), 0)
-                    CASE_EQUAL(3)
-                    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_AWAKE1"), LW(1), LW(2), LW(3), 0)
-                END_SWITCH
-            END_INLINE_EVENT
-            CALL(evt_mario_set_pose, LW(2))
-            WAIT_MS(800)
-            CALL(evt_mario_set_pose, STRING("M_S_1"))
-            CALL(evt_set_dir_to_target, STRING("グルメボム兵"), STRING("mario"))
-            CALL(kuzi_get_keihin, LW(0), LW(1))
-            SET_VALUE(LW(2), LW(0))
-            ADD(LW(2), 1)
-            CALL(evt_msg_print_insert, 0, STRING("kuji_bomb_028"), 0, STRING("グルメボム兵"), LW(2))
-            CALL(evt_mario_mov_pos2, -120, 480, 60)
-            CALL(evt_item_entry, STRING("keihin"), LW(1), 0, -1000, 0, 17, -1, 0)
-            CALL(evt_item_get_item, STRING("keihin"))
-            CALL(evt_item_get_item_end_wait, STRING("keihin"))
-            IF_INT_EQUAL(LW(0), 0)
-                CALL(evt_msg_print, 0, STRING("kuji_bomb_030"), 0, STRING("グルメボム兵"))
-                CALL(evt_pouch_remove_item, 106, LW(0))
-                CALL(evt_lottery_buy, LW(0))
-                CALL(evt_item_entry, STRING("kuzi"), 106, 0, -1000, 0, 17, -1, 0)
-                CALL(evt_item_get_item, STRING("kuzi"))
-                CALL(evt_item_get_item_end_wait, STRING("kuzi"))
-                CALL(evt_msg_print, 0, STRING("kuji_bomb_032"), 0, STRING("グルメボム兵"))
-            ELSE
-                CALL(evt_msg_print, 0, STRING("kuji_bomb_029"), 0, STRING("グルメボム兵"))
-            END_IF
-            CALL(evt_cam3d_evt_off, 500, 11)
-            WAIT_MS(500)
-        ELSE
-            CALL(evt_npc_set_autotalkpose, STRING("グルメボム兵"), STRING("S_1"), STRING("T_1"))
-            CALL(evt_msg_print, 0, STRING("kuji_bomb_033"), 0, STRING("グルメボム兵"))
-            CALL(evt_mario_mov_pos2, -120, 480, 60)
-            CALL(evt_item_entry, STRING("kinoko"), 148, 0, -1000, 0, 17, -1, 0)
-            CALL(evt_item_get_item, STRING("kinoko"))
-            CALL(evt_item_get_item_end_wait, STRING("kinoko"))
-            CALL(evt_npc_set_autotalkpose, STRING("グルメボム兵"), STRING("S_2"), STRING("T_2"))
-            CALL(evt_msg_print, 0, STRING("kuji_bomb_035"), 0, STRING("グルメボム兵"))
-        END_IF
-    END_IF
-    CALL(evt_mario_key_onoff, 1)
-    CALL(evt_npc_set_autotalkpose, STRING("グルメボム兵"), STRING("S_1"), STRING("T_1"))
-    CALL(evt_npc_set_anim, STRING("グルメボム兵"), STRING("S_1"))
-    RETURN
-EVT_END()
-
-EVT_BEGIN(kuzi_keiziban_husei)
-    CALL(evt_mario_key_onoff, 0)
-    CALL(evt_msg_print, 0, STRING("kuji_bomb_036"), 0, 0)
-    CALL(evt_mario_key_onoff, 1)
-    RETURN
-EVT_END()
-
-EVT_BEGIN(kuzi_bomb_talk)
-    CALL(evt_lottery, 0, LW(0), LW(1))
-    IF_BITS_SET(LW(0), 4)
-        CALL_CHILD(kuzi_bomb_talk_husei)
-    ELSE
-        CALL_CHILD(kuzi_bomb_talk_normal)
-    END_IF
-    RETURN
-EVT_END()
-
-EVT_BEGIN(kuzi_keiziban_entry)
-    CALL(evt_unitwin_alloc, 0)
-    CALL(unk_8017524c, 1)
-    CALL(evt_lottery, 1, LW(0), LW(1))
-    IF_BITS_SET(LW(0), 4)
-        CALL_CHILD(kuzi_keiziban_husei)
-    ELSE
-        CALL_CHILD(kuzi_keiziban_normal)
-    END_IF
-    CALL(unk_8017524c, 0)
-    CALL(evt_unitwin_free)
-    RETURN
-EVT_END()
-USER_FUNC(gor_npc_fuwafuwa) {
-    s32* args = event->args;
-    NpcEntry* npc;
-    f32 scale;
-    s32 duration;
-    s32 time;
-    f32 elapsed;
-    u32 idx;
-    f32 v;
-    u32* now;
-    u32* saved;
-    s32 name;
-    f32 base;
-
-    name = evtGetValue(event, args[0]);
-    npc = evtNpcNameToPtr(event, (const char*)name);
-    scale = evtGetFloat(event, args[1]);
-    duration = evtGetValue(event, args[2]);
-    {
-        f32 table[40] = {
-            0.0f, 0.5f, 1.0f, 1.4f, 1.8f, 2.0f, 2.3f, 2.5f,
-            2.6f, 2.7f, 2.7f, 2.7f, 2.6f, 2.5f, 2.3f, 2.0f,
-            1.8f, 1.4f, 1.0f, 0.5f, -0.0f, -0.5f, -1.0f, -1.4f,
-            -1.8f, -2.0f, -2.3f, -2.5f, -2.6f, -2.7f, -2.7f, -2.7f,
-            -2.6f, -2.5f, -2.3f, -2.0f, -1.8f, -1.4f, -1.0f, -0.5f,
-        };
-
-        if (isFirstCall) {
-            event->savedTime = gp->renderTime;
-            event->userdataf[1] = npc->position.x;
-            event->userdataf[2] = npc->position.y;
-            *(f32*)&event->field_84 = npc->position.z;
-        }
-        now = (u32*)&gp->renderTime;
-        saved = (u32*)&event->savedTime;
-        time = (now[1] - saved[1]) / ((*(u32*)0x800000F8 >> 2) / 1000);
-        elapsed = sysMsec2FrameFloat((f32)time);
-        idx = (u32)(s32)((0.5f + elapsed) * scale) % 40;
-        v = event->userdataf[2];
-        v += table[idx];
-        npc->prevPosition.y = v;
-        npc->position.y = v;
-    }
-    if (duration == 0) {
-        return EVT_RETURN_BLOCK;
-    }
-    if (time < duration) {
-        return EVT_RETURN_BLOCK;
-    }
-    v = event->userdataf[2];
-    npc->prevPosition.y = v;
-    npc->position.y = v;
-    return EVT_RETURN_YIELD;
-}
-
-EVT_BEGIN(tenin_fuwafuwa)
-    CALL(gor_npc_fuwafuwa, STRING("店員"), FLOAT(0.5f), 0)
-    RETURN
-EVT_END()
-
-EVT_BEGIN(casino_fuwafuwa)
-    CALL(gor_npc_fuwafuwa, STRING("バニーテレサ"), FLOAT(0.5f), 0)
-    RETURN
-EVT_END()
-
-EVT_BEGIN(debug_event_mode)
-    CALL(evt_bero_get_entername, LW(0))
-    IF_STR_NOT_EQUAL(LW(0), 0)
-        RETURN
-    END_IF
-    SET_VALUE(LF(0), 0)
-    IF_INT_EQUAL(GSW(0), 121)
-        SET_VALUE(LF(0), 1)
-    END_IF
-    IF_INT_EQUAL(GSW(0), 123)
-        SET_VALUE(LF(0), 1)
-    END_IF
-    IF_INT_EQUAL(GSW(0), 124)
-        SET_VALUE(LF(0), 1)
-    END_IF
-    IF_INT_EQUAL(GSW(0), 272)
-        SET_VALUE(LF(0), 1)
-    END_IF
-    IF_INT_EQUAL(GSW(0), 278)
-        SET_VALUE(LF(0), 1)
-    END_IF
-    IF_INT_EQUAL(GSW(0), 279)
-        SET_VALUE(LF(0), 1)
-    END_IF
-    IF_INT_EQUAL(LF(0), 0)
-        RETURN
-    END_IF
-    CALL(evt_sub_get_system_flag, LW(0))
-    IF_BITS_SET(LW(0), 64)
-        CALL(evt_sub_system_flag_onoff, 0, 64)
-        CALL(evt_mario_key_onoff, 0)
-        CALL(evt_mario_cont_onoff, 0)
-        CALL(evt_party_cont_onoff, 0, 0)
-        CALL(evt_mario_set_pos, -327, 155, -432)
-        CALL(evt_party_set_pos, 0, -327, 155, -467)
-        CALL(evt_mario_cont_onoff, 1)
-        CALL(evt_party_cont_onoff, 0, 1)
-        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
-        CALL(evt_cam3d_get_shift, LW(0), LW(1), LW(2), LW(3))
-        CALL(evt_cam_road_reset)
-        CALL(evt_cam3d_event_from_road, LW(0), LW(1), LW(2), LW(3), LW(4), LW(5), LW(6), LW(7), LW(8), LW(9))
-        CALL(evt_cam3d_evt_set, LW(4), LW(5), LW(6), LW(7), LW(8), LW(9), 0, 11)
-        WAIT_FRAMES(1)
-        CALL(evt_cam3d_evt_off, 0, 11)
-        CALL(evt_mario_key_onoff, 1)
-    END_IF
-    RETURN
-EVT_END()
-static USER_FUNC(enzan_lw_load) {
-    s32 i;
-    for (i = 0; i < 16; i++) {
-        event->lwData[i] = xlw[i];
-    }
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(enzan_lw_save) {
-    s32 i;
-    for (i = 0; i < 16; i++) {
-        xlw[i] = event->lwData[i];
-    }
-    return EVT_RETURN_DONE;
-}
-
-EVT_BEGIN(monte_evt_door_close)
-    CALL(enzan_lw_save)
-    CALL(evt_mario_key_onoff, 0)
-    CALL_CHILD(exchange_keep_sub)
-    CALL(evt_mario_key_onoff, 1)
-    CALL(enzan_lw_load)
-    CALL_CHILD(evt_door_close)
-    RETURN
-EVT_END()
-
-EVT_BEGIN(monte_evt_door_entry)
-    CALL(evt_door_param, LW(0), 3, LW(1), LW(2))
-    IF_INT_NOT_EQUAL(LW(1), 0)
-        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 1)
-    END_IF
-    IF_INT_NOT_EQUAL(LW(2), 0)
-        CALL(evt_hitobj_onoff, LW(2), 1, 0)
-    END_IF
-    CALL(evt_door_param, LW(0), 1, LW(1), LW(2), LW(3))
-    IF_INT_NOT_EQUAL(LW(2), 0)
-        SET_VALUE(LW(15), 0)
-        CALL(evt_run_case_evt, 9, 1, LW(2), 0, PTR(monte_evt_door_close), 0)
-    END_IF
-    IF_INT_NOT_EQUAL(LW(3), 0)
-        SET_VALUE(LW(15), 0)
-        CALL(evt_run_case_evt, 9, 1, LW(3), 0, PTR(evt_door_open), 0)
-    END_IF
-    CALL(evt_door_param, LW(0), 9, LW(1))
-    IF_BITS_SET(LW(1), 1)
-    END_IF
-    RETURN
-EVT_END()
-USER_FUNC(evt_goryuugijo_set_caseid) {
-    s32* args = event->args;
-    GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
-    s32* data = (s32*)work->data;
-    s32 index = evtGetValue(event, args[1]);
-    s32 value = evtGetValue(event, args[2]);
-
-    data[index + 0x19] = value;
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(goryuugijo_set_dataadr) {
-    s32* args = event->args;
-    s32 index = evtGetValue(event, args[0]);
-
-    if (index < 8) {
-        dataadr[index] = evtGetValue(event, args[1]);
-    }
-    return EVT_RETURN_DONE;
-}
-
-EVT_BEGIN(gor_03_init_evt)
-    IF_INT_EQUAL(GSWF(1229), 0)
-        CALL(evt_snd_bgmon, 512, STRING("BGM_STG0_GOR1"))
-        CALL(evt_snd_envon, 272, STRING("ENV_STG0_GOR4"))
-    ELSE
-        CALL(evt_snd_bgmoff, 512)
-        CALL(evt_snd_envoff, 512)
-    END_IF
-    IF_INT_NOT_EQUAL(GSWF(1229), 0)
-        CALL(evt_mario_normalize)
-    END_IF
-    CALL_CHILD(gor_03_dokan_init_evt)
-    SET_VALUE(LW(0), PTR(bero_entry_data))
-    CALL(evt_bero_get_info)
-    CALL_CHILD(evt_bero_info_run)
-    CALL(evt_hitobj_attr_onoff, 1, 0, STRING("s_bero"), 4)
-    CALL_CHILD(luigi_npcEnt)
-    CALL(evt_npc_setup, PTR(npcEnt))
-    SWITCH(GSW(0))
-        CASE_BETWEEN(278, 280)
-        CALL(evt_npc_set_tribe, STRING("モニー"), STRING("モニー（指輪）"))
-        CALL(evt_npc_set_tribe, STRING("ピートン"), STRING("ピートン（指輪）"))
-        CASE_GREATER_OR_EQUAL(281)
-        CALL(evt_npc_set_tribe, STRING("モニー"), STRING("モニー（指輪）"))
-        IF_INT_EQUAL(GSWF(5393), 1)
-            CALL(evt_npc_set_tribe, STRING("ピートン"), STRING("ピートン（指輪）"))
-        END_IF
-    END_SWITCH
-    CALL(evt_map_playanim, STRING("mizu"), 1, 0)
-    SET_VALUE(LW(0), PTR(door_data_01_0))
-    CALL_CHILD(evt_door_entry)
-    IF_INT_EQUAL(GSWF(1230), 1)
-        SET_VALUE(LW(0), PTR(door_data_01_1))
-        CALL_CHILD(evt_door_entry)
-    END_IF
-    SET_VALUE(LW(0), PTR(door_data_02_0l))
-    CALL_CHILD(monte_evt_door_entry)
-    SET_VALUE(LW(0), PTR(door_data_02_0r))
-    CALL_CHILD(monte_evt_door_entry)
-    SET_VALUE(LW(0), PTR(door_data_02_1))
-    CALL_CHILD(evt_door_entry)
-    SET_VALUE(LW(0), PTR(door_data_03))
-    CALL_CHILD(evt_door_entry)
-    SET_VALUE(LW(0), PTR(door_data_03_roll))
-    CALL_CHILD(evt_door_03_entry)
-    SET_VALUE(LW(0), PTR(door_data_04))
-    CALL_CHILD(evt_door_entry)
-    SET_VALUE(LW(0), PTR(door_data_04_roll))
-    CALL_CHILD(evt_door_04_entry)
-    SPAWN_EVENT(wall_bomb_init)
-    CALL(evt_run_case_evt, 15, 1, STRING("A_ana_ana"), 0, PTR(wall_bomb), 0)
-    CALL(evt_shop_setup, PTR(obj_list), PTR(goods_list), PTR(shopper_data), PTR(trade_list))
-    CALL(evt_item_entry, STRING("item_00"), 125, 550, 0, 180, 16, GSWF(5580), 0)
-    CALL(evt_item_entry, STRING("item_01"), 125, -585, 0, 220, 16, GSWF(5581), 0)
-    CALL(evt_item_entry, STRING("item_02"), 125, 220, 10, 225, 16, GSWF(5582), 0)
-    CALL(evt_mobj_kururing_floor, STRING("kururin1"), -200, 0, 125, STRING("S_ground_A"), 125, GSWF(5579))
-    CALL(evt_mobj_powerupblk, STRING("pblk1"), 250, 60, -510, 0, GSWF(5527), 90)
-    CALL(evt_mobj_powerupblk, STRING("pblk2"), -563, 0, -150, 0, GSWF(5528), 90)
-    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kou_kusas01"), 1)
-    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kou_kusas02"), 1)
-    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kou_kusas03"), 1)
-    SWITCH(GSW(0))
-        CASE_LESS(56)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas01"), 1)
-        CASE_LESS(112)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas01"), 1)
-        CASE_LESS(164)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas01"), 1)
-        CASE_LESS(215)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas02"), 1)
-        CASE_LESS(261)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas02"), 1)
-        CASE_LESS(339)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas02"), 1)
-        CASE_LESS(373)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas03"), 1)
-        CASE_LESS(401)
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas03"), 1)
-        CASE_DEFAULT
-        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas03"), 1)
-    END_SWITCH
-    SPAWN_EVENT_GET_ID(PTR(desk_talk_check), GW(15))
-    CALL_CHILD(debug_event_mode)
-    CALL(evt_goryuugijo_alloc, LW(0), 0)
-    CALL(goryuugijo_set_dataadr, 0, LW(0))
-    CALL(evt_goryuugijo_alloc, LW(0), 1)
-    CALL(goryuugijo_set_dataadr, 1, LW(0))
-    CALL(evt_run_case_evt, 9, 1, STRING("A_srot01"), 0, PTR(slot1_set), LW(1))
-    CALL(evt_goryuugijo_set_caseid, LW(0), 0, LW(1))
-    CALL(evt_run_case_evt, 9, 1, STRING("A_srot02"), 0, PTR(slot2_set), LW(1))
-    CALL(evt_goryuugijo_set_caseid, LW(0), 1, LW(1))
-    CALL(evt_run_case_evt, 9, 1, STRING("A_gb_a"), 0, PTR(ranking_set), 0)
-    CALL(evt_run_case_evt, 9, 1, STRING("A_mot_a"), 0, PTR(exchange_set), 0)
-    IF_INT_NOT_EQUAL(GSWF(1229), 0)
-        SET_VALUE(GSWF(1229), 0)
-        SPAWN_EVENT(yuureturn_rtn)
-    END_IF
-    IF_INT_EQUAL(GSW(0), 172)
-        SPAWN_EVENT(peach_mail)
-    END_IF
-    SPAWN_EVENT(tenin_fuwafuwa)
-    SPAWN_EVENT(casino_fuwafuwa)
-    SPAWN_EVENT(evt_sub_mail_event)
-    CALL(evt_run_case_evt, 9, 1, STRING("A_kuzi"), 0, PTR(kuzi_keiziban_entry), 0)
-    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_ie_02"), 2)
-    IF_INT_EQUAL(GSW(0), 121)
-        SPAWN_EVENT(maffiaboss_maffiaboss)
-    END_IF
-    IF_INT_EQUAL(GSW(0), 123)
-        IF_INT_EQUAL(GSWF(1236), 0)
-            SPAWN_EVENT(maffiaboss_airship_ticket)
-        END_IF
-    END_IF
-    SWITCH(GSW(0))
-        CASE_LESS(268)
-        CALL(evt_run_case_evt, 9, 0, STRING("A_i02_f2_set00C"), 0, PTR(maffiaboss_desk_talk), 0)
-        CASE_LESS(279)
-        SET_VALUE(LW(15), 1)
-        CALL(evt_run_case_evt, 9, 0, STRING("A_i02_bed_l"), 0, PTR(maffiaboss_desk_talk), GW(12))
-        SET_VALUE(LW(15), 0)
-        CALL(evt_run_case_evt, 9, 0, STRING("A_i02_bed_m"), 0, PTR(maffiaboss_desk_talk), GW(13))
-        CASE_LESS(282)
-        CASE_DEFAULT
-        CALL(evt_run_case_evt, 9, 0, STRING("A_i02_f2_set00C"), 0, PTR(peton_desk_talk), 0)
-    END_SWITCH
-    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kabe"), 2)
-    RETURN
-EVT_END()
-
 // The phase-0x2d block declares `u8* pb = data+i` before `u8* pw = data+i*4`, `s8 s` and indexes `tmp1[j]`
 // (the operand order matters for the register pick); case 11 keeps `CaseSetup* sp = &setup` so the struct
 // address is materialised once (r22) exactly like the original, and case 3's `dir` is a single nested ternary
@@ -5453,9 +5003,546 @@ USER_FUNC(goryuugijo_main_slot) {
     return 0;
 }
 
+EVT_BEGIN(kuzi_bomb_bomb)
+    SET_VALUE(LW(15), LW(0))
+    WAIT_FRAMES(40)
+    CALL(evt_npc_get_position, STRING("グルメボム兵"), LW(0), LW(1), LW(2))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_LOTTERY_BOMB_BURST1"), LW(0), LW(1), LW(2), 0)
+    CALL(evt_npc_set_anim, STRING("グルメボム兵"), STRING("J_1A"))
+    SET_FLOAT_VALUE(LW(0), FLOAT(20.0f))
+    SET_FLOAT_VALUE(LW(1), FLOAT(-0.8f))
+    SET_VALUE(LW(2), 60)
+    CALL(evt_npc_get_position, STRING("グルメボム兵"), LW(3), LW(4), LW(5))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_LOTTERY_BOMB_BURST2"), LW(3), LW(4), LW(5), 0)
+    SET_VALUE(LW(6), 0)
+    LOOP(0)
+        ADD_FLOAT(LW(4), LW(0))
+        ADD_FLOAT(LW(0), LW(1))
+        CALL(evt_npc_set_position, STRING("グルメボム兵"), LW(3), LW(4), LW(5))
+        IF_INT_LESS(LW(0), FLOAT(1.0f))
+            SET_FLOAT_VALUE(LW(0), FLOAT(1.0f))
+            SET_FLOAT_VALUE(LW(1), FLOAT(0.0f))
+        END_IF
+        CALL(kuzi_bomb_bomb_eff, LW(15), LW(6), LW(6))
+        SUBTRACT(LW(2), 1)
+        IF_INT_LESS_OR_EQUAL(LW(2), 0)
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    WAIT_FRAMES(20)
+    CALL(evt_npc_set_anim, STRING("グルメボム兵"), STRING("J_1B"))
+    SET_FLOAT_VALUE(LW(0), FLOAT(0.0f))
+    SET_FLOAT_VALUE(LW(1), FLOAT(-1.0f))
+    CALL(evt_npc_get_position, STRING("グルメボム兵"), LW(2), LW(3), LW(4))
+    LOOP(0)
+        ADD_FLOAT(LW(3), LW(0))
+        ADD_FLOAT(LW(0), LW(1))
+        CALL(evt_npc_set_position, STRING("グルメボム兵"), LW(2), LW(3), LW(4))
+        IF_INT_LESS(LW(0), FLOAT(-6.0f))
+            SET_FLOAT_VALUE(LW(0), FLOAT(-6.0f))
+            SET_FLOAT_VALUE(LW(1), FLOAT(0.0f))
+        END_IF
+        IF_INT_LESS_OR_EQUAL(LW(3), FLOAT(0.0f))
+            BREAK_LOOP
+        END_IF
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(evt_npc_set_position, STRING("グルメボム兵"), LW(2), FLOAT(0.0f), LW(4))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_PARTY_PBM_DOWN1"), LW(2), 0, LW(4), 0)
+    RETURN
+EVT_END()
+USER_FUNC(kuzi_get_keihin) {
+    s32* args = event->args;
+    s32 type = evtGetValue(event, args[0]);
+    s32 ret;
+
+    switch (type) {
+    case 0:
+        if (evtGetValue(NULL, GSWF(1238)) == 0) {
+            ret = 0x104;
+            evtSetValue(NULL, GSWF(1238), 1);
+        } else {
+            ret = 0xc4;
+        }
+        break;
+    case 1:
+        if (evtGetValue(NULL, GSWF(1239)) == 0) {
+            ret = 0x12f;
+            evtSetValue(NULL, GSWF(1239), 1);
+        } else {
+            ret = 0xc2;
+        }
+        break;
+    case 2:
+        ret = 0x96;
+        break;
+    case 3:
+        ret = 0x97;
+        break;
+    default:
+        ret = 0x94;
+        break;
+    }
+    evtSetValue(event, args[1], ret);
+    return EVT_RETURN_DONE;
+}
+
+EVT_BEGIN(kuzi_keiziban_normal)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_lottery_todaynum, LW(0))
+    CALL(evt_msg_print_insert, 0, STRING("kuji_bomb_023"), 0, 0, LW(0))
+    CALL(evt_pouch_check_item, 106, LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        CALL(evt_mario_key_onoff, 1)
+        RETURN
+    END_IF
+    CALL(evt_lottery_flag, LW(0))
+    IF_BITS_SET(LW(0), 16)
+        SET_VALUE(LW(0), 0)
+    ELSE
+        SET_VALUE(LW(0), 1)
+    END_IF
+    IF_INT_EQUAL(LW(0), 0)
+        CALL(evt_set_dir_to_target, STRING("グルメボム兵"), STRING("mario"))
+        CALL(evt_mario_set_dir, 270, 300, 0)
+        CALL(evt_lottery_flag, LW(1))
+        SET_VALUE(LW(0), 4)
+        IF_BITS_SET(LW(1), 32768)
+            SET_VALUE(LW(0), 3)
+        END_IF
+        IF_BITS_SET(LW(1), 16384)
+            SET_VALUE(LW(0), 2)
+        END_IF
+        IF_BITS_SET(LW(1), 8192)
+            SET_VALUE(LW(0), 1)
+        END_IF
+        IF_BITS_SET(LW(1), 4096)
+            SET_VALUE(LW(0), 0)
+        END_IF
+        IF_INT_NOT_EQUAL(LW(0), 4)
+            CALL(evt_cam3d_evt_set, -150, 120, 890, -150, 50, 470, 800, 11)
+            WAIT_MS(800)
+            IF_INT_LESS_OR_EQUAL(LW(0), 1)
+                CALL(evt_npc_flag_onoff, 0, STRING("グルメボム兵"), 1536)
+                CALL(evt_npc_set_anim, STRING("グルメボム兵"), STRING("B_1"))
+            END_IF
+            CALL(evt_msg_print, 0, STRING("kuji_bomb_023_1"), 0, STRING("グルメボム兵"))
+            IF_INT_LESS_OR_EQUAL(LW(0), 1)
+                SET_VALUE(GW(0), LW(0))
+                CALL_CHILD(kuzi_bomb_bomb)
+                SET_VALUE(LW(0), GW(0))
+            END_IF
+            CALL(evt_npc_flag_onoff, 1, STRING("グルメボム兵"), 1536)
+            SWITCH(LW(0))
+                CASE_EQUAL(0)
+                SET_VALUE(LW(1), STRING("kuji_bomb_024"))
+                SET_VALUE(LW(2), STRING("M_N_7"))
+                CASE_EQUAL(1)
+                SET_VALUE(LW(1), STRING("kuji_bomb_025"))
+                SET_VALUE(LW(2), STRING("M_N_7"))
+                CASE_EQUAL(2)
+                SET_VALUE(LW(1), STRING("kuji_bomb_026"))
+                SET_VALUE(LW(2), STRING("M_N_5B"))
+                CASE_EQUAL(3)
+                SET_VALUE(LW(1), STRING("kuji_bomb_027"))
+                SET_VALUE(LW(2), STRING("M_N_5B"))
+            END_SWITCH
+            CALL(evt_npc_set_autotalkpose, STRING("グルメボム兵"), STRING("S_2"), STRING("T_2"))
+            CALL(evt_msg_print, 0, LW(1), 0, STRING("グルメボム兵"))
+            BEGIN_INLINE_EVENT
+                CALL(evt_mario_get_pos, 0, LW(1), LW(2), LW(3))
+                SWITCH(LW(0))
+                    CASE_EQUAL(0)
+                    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_SURPRISED2"), LW(1), LW(2), LW(3), 0)
+                    CASE_EQUAL(1)
+                    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_SURPRISED2"), LW(1), LW(2), LW(3), 0)
+                    CASE_EQUAL(2)
+                    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_AWAKE1"), LW(1), LW(2), LW(3), 0)
+                    CASE_EQUAL(3)
+                    CALL(evt_snd_sfxon_3d, STRING("SFX_VOICE_MARIO_AWAKE1"), LW(1), LW(2), LW(3), 0)
+                END_SWITCH
+            END_INLINE_EVENT
+            CALL(evt_mario_set_pose, LW(2))
+            WAIT_MS(800)
+            CALL(evt_mario_set_pose, STRING("M_S_1"))
+            CALL(evt_set_dir_to_target, STRING("グルメボム兵"), STRING("mario"))
+            CALL(kuzi_get_keihin, LW(0), LW(1))
+            SET_VALUE(LW(2), LW(0))
+            ADD(LW(2), 1)
+            CALL(evt_msg_print_insert, 0, STRING("kuji_bomb_028"), 0, STRING("グルメボム兵"), LW(2))
+            CALL(evt_mario_mov_pos2, -120, 480, 60)
+            CALL(evt_item_entry, STRING("keihin"), LW(1), 0, -1000, 0, 17, -1, 0)
+            CALL(evt_item_get_item, STRING("keihin"))
+            CALL(evt_item_get_item_end_wait, STRING("keihin"))
+            IF_INT_EQUAL(LW(0), 0)
+                CALL(evt_msg_print, 0, STRING("kuji_bomb_030"), 0, STRING("グルメボム兵"))
+                CALL(evt_pouch_remove_item, 106, LW(0))
+                CALL(evt_lottery_buy, LW(0))
+                CALL(evt_item_entry, STRING("kuzi"), 106, 0, -1000, 0, 17, -1, 0)
+                CALL(evt_item_get_item, STRING("kuzi"))
+                CALL(evt_item_get_item_end_wait, STRING("kuzi"))
+                CALL(evt_msg_print, 0, STRING("kuji_bomb_032"), 0, STRING("グルメボム兵"))
+            ELSE
+                CALL(evt_msg_print, 0, STRING("kuji_bomb_029"), 0, STRING("グルメボム兵"))
+            END_IF
+            CALL(evt_cam3d_evt_off, 500, 11)
+            WAIT_MS(500)
+        ELSE
+            CALL(evt_npc_set_autotalkpose, STRING("グルメボム兵"), STRING("S_1"), STRING("T_1"))
+            CALL(evt_msg_print, 0, STRING("kuji_bomb_033"), 0, STRING("グルメボム兵"))
+            CALL(evt_mario_mov_pos2, -120, 480, 60)
+            CALL(evt_item_entry, STRING("kinoko"), 148, 0, -1000, 0, 17, -1, 0)
+            CALL(evt_item_get_item, STRING("kinoko"))
+            CALL(evt_item_get_item_end_wait, STRING("kinoko"))
+            CALL(evt_npc_set_autotalkpose, STRING("グルメボム兵"), STRING("S_2"), STRING("T_2"))
+            CALL(evt_msg_print, 0, STRING("kuji_bomb_035"), 0, STRING("グルメボム兵"))
+        END_IF
+    END_IF
+    CALL(evt_mario_key_onoff, 1)
+    CALL(evt_npc_set_autotalkpose, STRING("グルメボム兵"), STRING("S_1"), STRING("T_1"))
+    CALL(evt_npc_set_anim, STRING("グルメボム兵"), STRING("S_1"))
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kuzi_keiziban_husei)
+    CALL(evt_mario_key_onoff, 0)
+    CALL(evt_msg_print, 0, STRING("kuji_bomb_036"), 0, 0)
+    CALL(evt_mario_key_onoff, 1)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kuzi_bomb_talk)
+    CALL(evt_lottery, 0, LW(0), LW(1))
+    IF_BITS_SET(LW(0), 4)
+        CALL_CHILD(kuzi_bomb_talk_husei)
+    ELSE
+        CALL_CHILD(kuzi_bomb_talk_normal)
+    END_IF
+    RETURN
+EVT_END()
+
+EVT_BEGIN(kuzi_keiziban_entry)
+    CALL(evt_unitwin_alloc, 0)
+    CALL(unk_8017524c, 1)
+    CALL(evt_lottery, 1, LW(0), LW(1))
+    IF_BITS_SET(LW(0), 4)
+        CALL_CHILD(kuzi_keiziban_husei)
+    ELSE
+        CALL_CHILD(kuzi_keiziban_normal)
+    END_IF
+    CALL(unk_8017524c, 0)
+    CALL(evt_unitwin_free)
+    RETURN
+EVT_END()
+USER_FUNC(gor_npc_fuwafuwa) {
+    s32* args = event->args;
+    NpcEntry* npc;
+    f32 scale;
+    s32 duration;
+    s32 time;
+    f32 elapsed;
+    u32 idx;
+    f32 v;
+    u32* now;
+    u32* saved;
+    s32 name;
+    f32 base;
+
+    name = evtGetValue(event, args[0]);
+    npc = evtNpcNameToPtr(event, (const char*)name);
+    scale = evtGetFloat(event, args[1]);
+    duration = evtGetValue(event, args[2]);
+    {
+        GorFuwafuwaTable table = dat_gor_00019230;
+
+        if (isFirstCall) {
+            event->savedTime = gp->renderTime;
+            event->userdataf[1] = npc->position.x;
+            event->userdataf[2] = npc->position.y;
+            *(f32*)&event->field_84 = npc->position.z;
+        }
+        now = (u32*)&gp->renderTime;
+        saved = (u32*)&event->savedTime;
+        time = (now[1] - saved[1]) / ((*(u32*)0x800000F8 >> 2) / 1000);
+        elapsed = sysMsec2FrameFloat((f32)time);
+        idx = (u32)(s32)((0.5f + elapsed) * scale) % 40;
+        v = event->userdataf[2];
+        v += table.v[idx];
+        npc->prevPosition.y = v;
+        npc->position.y = v;
+    }
+    if (duration == 0) {
+        return EVT_RETURN_BLOCK;
+    }
+    if (time < duration) {
+        return EVT_RETURN_BLOCK;
+    }
+    v = event->userdataf[2];
+    npc->prevPosition.y = v;
+    npc->position.y = v;
+    return EVT_RETURN_YIELD;
+}
+
+EVT_BEGIN(tenin_fuwafuwa)
+    CALL(gor_npc_fuwafuwa, STRING("店員"), FLOAT(0.5f), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(casino_fuwafuwa)
+    CALL(gor_npc_fuwafuwa, STRING("バニーテレサ"), FLOAT(0.5f), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(debug_event_mode)
+    CALL(evt_bero_get_entername, LW(0))
+    IF_STR_NOT_EQUAL(LW(0), 0)
+        RETURN
+    END_IF
+    SET_VALUE(LF(0), 0)
+    IF_INT_EQUAL(GSW(0), 121)
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 123)
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 124)
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 272)
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 278)
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 279)
+        SET_VALUE(LF(0), 1)
+    END_IF
+    IF_INT_EQUAL(LF(0), 0)
+        RETURN
+    END_IF
+    CALL(evt_sub_get_system_flag, LW(0))
+    IF_BITS_SET(LW(0), 64)
+        CALL(evt_sub_system_flag_onoff, 0, 64)
+        CALL(evt_mario_key_onoff, 0)
+        CALL(evt_mario_cont_onoff, 0)
+        CALL(evt_party_cont_onoff, 0, 0)
+        CALL(evt_mario_set_pos, -327, 155, -432)
+        CALL(evt_party_set_pos, 0, -327, 155, -467)
+        CALL(evt_mario_cont_onoff, 1)
+        CALL(evt_party_cont_onoff, 0, 1)
+        CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+        CALL(evt_cam3d_get_shift, LW(0), LW(1), LW(2), LW(3))
+        CALL(evt_cam_road_reset)
+        CALL(evt_cam3d_event_from_road, LW(0), LW(1), LW(2), LW(3), LW(4), LW(5), LW(6), LW(7), LW(8), LW(9))
+        CALL(evt_cam3d_evt_set, LW(4), LW(5), LW(6), LW(7), LW(8), LW(9), 0, 11)
+        WAIT_FRAMES(1)
+        CALL(evt_cam3d_evt_off, 0, 11)
+        CALL(evt_mario_key_onoff, 1)
+    END_IF
+    RETURN
+EVT_END()
+static USER_FUNC(enzan_lw_load) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        event->lwData[i] = xlw[i];
+    }
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(enzan_lw_save) {
+    s32 i;
+    for (i = 0; i < 16; i++) {
+        xlw[i] = event->lwData[i];
+    }
+    return EVT_RETURN_DONE;
+}
+
+EVT_BEGIN(monte_evt_door_close)
+    CALL(enzan_lw_save)
+    CALL(evt_mario_key_onoff, 0)
+    CALL_CHILD(exchange_keep_sub)
+    CALL(evt_mario_key_onoff, 1)
+    CALL(enzan_lw_load)
+    CALL_CHILD(evt_door_close)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(monte_evt_door_entry)
+    CALL(evt_door_param, LW(0), 3, LW(1), LW(2))
+    IF_INT_NOT_EQUAL(LW(1), 0)
+        CALL(evt_mapobj_flag_onoff, 1, 1, LW(1), 1)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        CALL(evt_hitobj_onoff, LW(2), 1, 0)
+    END_IF
+    CALL(evt_door_param, LW(0), 1, LW(1), LW(2), LW(3))
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        SET_VALUE(LW(15), 0)
+        CALL(evt_run_case_evt, 9, 1, LW(2), 0, PTR(monte_evt_door_close), 0)
+    END_IF
+    IF_INT_NOT_EQUAL(LW(3), 0)
+        SET_VALUE(LW(15), 0)
+        CALL(evt_run_case_evt, 9, 1, LW(3), 0, PTR(evt_door_open), 0)
+    END_IF
+    CALL(evt_door_param, LW(0), 9, LW(1))
+    IF_BITS_SET(LW(1), 1)
+    END_IF
+    RETURN
+EVT_END()
+USER_FUNC(evt_goryuugijo_set_caseid) {
+    s32* args = event->args;
+    GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
+    s32* data = (s32*)work->data;
+    s32 index = evtGetValue(event, args[1]);
+    s32 value = evtGetValue(event, args[2]);
+
+    data[index + 0x19] = value;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(goryuugijo_set_dataadr) {
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+
+    if (index < 8) {
+        dataadr[index] = evtGetValue(event, args[1]);
+    }
+    return EVT_RETURN_DONE;
+}
+
+EVT_BEGIN(gor_03_init_evt)
+    IF_INT_EQUAL(GSWF(1229), 0)
+        CALL(evt_snd_bgmon, 512, STRING("BGM_STG0_GOR1"))
+        CALL(evt_snd_envon, 272, STRING("ENV_STG0_GOR4"))
+    ELSE
+        CALL(evt_snd_bgmoff, 512)
+        CALL(evt_snd_envoff, 512)
+    END_IF
+    IF_INT_NOT_EQUAL(GSWF(1229), 0)
+        CALL(evt_mario_normalize)
+    END_IF
+    CALL_CHILD(gor_03_dokan_init_evt)
+    SET_VALUE(LW(0), PTR(bero_entry_data))
+    CALL(evt_bero_get_info)
+    CALL_CHILD(evt_bero_info_run)
+    CALL(evt_hitobj_attr_onoff, 1, 0, STRING("s_bero"), 4)
+    CALL_CHILD(luigi_npcEnt)
+    CALL(evt_npc_setup, PTR(npcEnt))
+    SWITCH(GSW(0))
+        CASE_BETWEEN(278, 280)
+        CALL(evt_npc_set_tribe, STRING("モニー"), STRING("モニー（指輪）"))
+        CALL(evt_npc_set_tribe, STRING("ピートン"), STRING("ピートン（指輪）"))
+        CASE_GREATER_OR_EQUAL(281)
+        CALL(evt_npc_set_tribe, STRING("モニー"), STRING("モニー（指輪）"))
+        IF_INT_EQUAL(GSWF(5393), 1)
+            CALL(evt_npc_set_tribe, STRING("ピートン"), STRING("ピートン（指輪）"))
+        END_IF
+    END_SWITCH
+    CALL(evt_map_playanim, STRING("mizu"), 1, 0)
+    SET_VALUE(LW(0), PTR(door_data_01_0))
+    CALL_CHILD(evt_door_entry)
+    IF_INT_EQUAL(GSWF(1230), 1)
+        SET_VALUE(LW(0), PTR(door_data_01_1))
+        CALL_CHILD(evt_door_entry)
+    END_IF
+    SET_VALUE(LW(0), PTR(door_data_02_0l))
+    CALL_CHILD(monte_evt_door_entry)
+    SET_VALUE(LW(0), PTR(door_data_02_0r))
+    CALL_CHILD(monte_evt_door_entry)
+    SET_VALUE(LW(0), PTR(door_data_02_1))
+    CALL_CHILD(evt_door_entry)
+    SET_VALUE(LW(0), PTR(door_data_03))
+    CALL_CHILD(evt_door_entry)
+    SET_VALUE(LW(0), PTR(door_data_03_roll))
+    CALL_CHILD(evt_door_03_entry)
+    SET_VALUE(LW(0), PTR(door_data_04))
+    CALL_CHILD(evt_door_entry)
+    SET_VALUE(LW(0), PTR(door_data_04_roll))
+    CALL_CHILD(evt_door_04_entry)
+    SPAWN_EVENT(wall_bomb_init)
+    CALL(evt_run_case_evt, 15, 1, STRING("A_ana_ana"), 0, PTR(wall_bomb), 0)
+    CALL(evt_shop_setup, PTR(obj_list), PTR(goods_list), PTR(shopper_data), PTR(trade_list))
+    CALL(evt_item_entry, STRING("item_00"), 125, 550, 0, 180, 16, GSWF(5580), 0)
+    CALL(evt_item_entry, STRING("item_01"), 125, -585, 0, 220, 16, GSWF(5581), 0)
+    CALL(evt_item_entry, STRING("item_02"), 125, 220, 10, 225, 16, GSWF(5582), 0)
+    CALL(evt_mobj_kururing_floor, STRING("kururin1"), -200, 0, 125, STRING("S_ground_A"), 125, GSWF(5579))
+    CALL(evt_mobj_powerupblk, STRING("pblk1"), 250, 60, -510, 0, GSWF(5527), 90)
+    CALL(evt_mobj_powerupblk, STRING("pblk2"), -563, 0, -150, 0, GSWF(5528), 90)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kou_kusas01"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kou_kusas02"), 1)
+    CALL(evt_mapobj_flag_onoff, 1, 1, STRING("S_kou_kusas03"), 1)
+    SWITCH(GSW(0))
+        CASE_LESS(56)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas01"), 1)
+        CASE_LESS(112)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas01"), 1)
+        CASE_LESS(164)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas01"), 1)
+        CASE_LESS(215)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas02"), 1)
+        CASE_LESS(261)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas02"), 1)
+        CASE_LESS(339)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas02"), 1)
+        CASE_LESS(373)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas03"), 1)
+        CASE_LESS(401)
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas03"), 1)
+        CASE_DEFAULT
+        CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kusas03"), 1)
+    END_SWITCH
+    SPAWN_EVENT_GET_ID(PTR(desk_talk_check), GW(15))
+    CALL_CHILD(debug_event_mode)
+    CALL(evt_goryuugijo_alloc, LW(0), 0)
+    CALL(goryuugijo_set_dataadr, 0, LW(0))
+    CALL(evt_goryuugijo_alloc, LW(0), 1)
+    CALL(goryuugijo_set_dataadr, 1, LW(0))
+    CALL(evt_run_case_evt, 9, 1, STRING("A_srot01"), 0, PTR(slot1_set), LW(1))
+    CALL(evt_goryuugijo_set_caseid, LW(0), 0, LW(1))
+    CALL(evt_run_case_evt, 9, 1, STRING("A_srot02"), 0, PTR(slot2_set), LW(1))
+    CALL(evt_goryuugijo_set_caseid, LW(0), 1, LW(1))
+    CALL(evt_run_case_evt, 9, 1, STRING("A_gb_a"), 0, PTR(ranking_set), 0)
+    CALL(evt_run_case_evt, 9, 1, STRING("A_mot_a"), 0, PTR(exchange_set), 0)
+    IF_INT_NOT_EQUAL(GSWF(1229), 0)
+        SET_VALUE(GSWF(1229), 0)
+        SPAWN_EVENT(yuureturn_rtn)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 172)
+        SPAWN_EVENT(peach_mail)
+    END_IF
+    SPAWN_EVENT(tenin_fuwafuwa)
+    SPAWN_EVENT(casino_fuwafuwa)
+    SPAWN_EVENT(evt_sub_mail_event)
+    CALL(evt_run_case_evt, 9, 1, STRING("A_kuzi"), 0, PTR(kuzi_keiziban_entry), 0)
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_ie_02"), 2)
+    IF_INT_EQUAL(GSW(0), 121)
+        SPAWN_EVENT(maffiaboss_maffiaboss)
+    END_IF
+    IF_INT_EQUAL(GSW(0), 123)
+        IF_INT_EQUAL(GSWF(1236), 0)
+            SPAWN_EVENT(maffiaboss_airship_ticket)
+        END_IF
+    END_IF
+    SWITCH(GSW(0))
+        CASE_LESS(268)
+        CALL(evt_run_case_evt, 9, 0, STRING("A_i02_f2_set00C"), 0, PTR(maffiaboss_desk_talk), 0)
+        CASE_LESS(279)
+        SET_VALUE(LW(15), 1)
+        CALL(evt_run_case_evt, 9, 0, STRING("A_i02_bed_l"), 0, PTR(maffiaboss_desk_talk), GW(12))
+        SET_VALUE(LW(15), 0)
+        CALL(evt_run_case_evt, 9, 0, STRING("A_i02_bed_m"), 0, PTR(maffiaboss_desk_talk), GW(13))
+        CASE_LESS(282)
+        CASE_DEFAULT
+        CALL(evt_run_case_evt, 9, 0, STRING("A_i02_f2_set00C"), 0, PTR(peton_desk_talk), 0)
+    END_SWITCH
+    CALL(evt_mapobj_flag_onoff, 1, 0, STRING("S_kou_kabe"), 2)
+    RETURN
+EVT_END()
+
 void goryuugijo_disp_slot(CameraId cameraId, void* param) {
     u8* p = (u8*)((void**)param)[7];
-    u32 tbl[3] = {0x1f3, 0x1f3, 0x1f3};
+    GorSlotIconTable tbl = dat_gor_0001a46c;
     Vec pos;
     f32 projv[7];
     f32 viewportv[6];
@@ -5489,192 +5576,103 @@ void goryuugijo_disp_slot(CameraId cameraId, void* param) {
             PSMTXConcat(trans, scale, mtx);
 #ifdef MUST_MATCH
             // iconDispGx2's header says s16 but the original reads a zero-extended u16 (no extsh).
-            ((void (*)(Mtx, s16, u16))iconDispGx2)(mtx, 0x10, (u16)tbl[i]);
+            ((void (*)(Mtx, s16, u16))iconDispGx2)(mtx, 0x10, (u16)tbl.v[i]);
 #else
-            iconDispGx2(mtx, 0x10, (u16)tbl[i]);
+            iconDispGx2(mtx, 0x10, (u16)tbl.v[i]);
 #endif
         }
     }
 }
 
-// NONMATCHING (98.92%): `data + (sel*0xc + 0xc) + index*4` (not the flat form) and
-// `q = (s32*)((s8*)data) + index` reproduce the original address shape; the last
-// `if (*(s32*)(data + index*4 + 0x3c) == 0)` reuses r3 instead of rematerialising `data + index*4` into r5.
-s32 slot_rotate_sub(void* arg0, u8* data, s32 index) {
-    s32 dir = 0;
-    s32 changed = 0;
-    s32 steps = (s32)((f32)(s32)(*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) / 45.0f);
-    f32 diff;
-    s32 next;
+USER_FUNC(desk_talk_func) {
+    s32* args = event->args;
+    s32 a = evtGetValue(event, args[0]);
+    s32 b = evtGetValue(event, args[1]);
+    s32 x = evtGetValue(event, args[2]);
+    s32 y = evtGetValue(event, args[3]);
+    s32 z = evtGetValue(event, args[4]);
 
-    if ((*(f32*)(data + index * 4 + 0x24)) > 0.0f) {
-        next = (steps + 1) & 7;
-        diff = 45.0f * (f32)next - (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4));
-        if (diff < 0.0f) {
-            diff += 360.0f;
-        }
-        dir = (diff <= (*(f32*)(data + index * 4 + 0x24))) ? 1 : 0;
-    } else {
-        diff = 45.0f * (f32)steps - (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4));
-        if (diff > 0.0f) {
-            diff -= 360.0f;
-        }
-        dir = (diff > (*(f32*)(data + index * 4 + 0x24))) ? -1 : 0;
+    if (a == 1 && b == 0) {
+        eff[0] = effMarioBalloonEntry(1, npc[0]);
     }
-    if ((((s8*)data)[index + 0x30] == 3 || ((s8*)data)[index + 0x30] == 4) && dir != 0) {
-        if (((s8*)data)[index + 0x39] != 0) {
-            if (((s8*)data)[index + 0x30] == 4) {
-                s32* q = ((s32*)((s8*)data) + index);
-                if (q[0xf] == 0) {
-                    if (q[0x12] != 0) {
-                        q[0x12]--;
-                        q[0xf] = 0;
-                    } else {
-                        q[0xf] = 0x12;
-                    }
-                } else {
-                    q[0xf]--;
-                }
-            }
-            if (*(s32*)(data + index * 4 + 0x3c) == 0) {
-                ((s8*)data)[index + 0x39]--;
-            }
-        } else {
-            ((s8*)data)[index + 0x30] = 0;
-            changed = 1;
-            (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) = 45.0f * (f32)steps;
-            goto done;
-        }
+    if (a == 0 && b == 1) {
+        effDelete(eff[0]);
     }
-    (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) += (*(f32*)(data + index * 4 + 0x24));
-    if ((*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) >= 360.0f) {
-        (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) -= 360.0f;
-    }
-    if ((*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) < 0.0f) {
-        (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) += 360.0f;
-    }
-done:
-    mapObjRotate(drumname[*(s32*)(data + 0x60)][index], 0.0f, 0.0f, (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)));
-    return changed;
+    npc[0]->position.x = (f32)x;
+    npc[0]->position.y = (f32)y;
+    npc[0]->position.z = (f32)z;
+    return EVT_RETURN_DONE;
 }
 
-// Matching: indexing the u32 table as `&upsidegara[cur * 0x18]` (0x18 elements = 0x60 bytes) gives the
-// original's `add r0,r31,r5` / `add r5,r0,r27` two-step base, and `s8* d` gives the `lbzx r4` byte.
-void slot_neon_sub(void* arg0, u8* data) {
-    s32 i;
-    s32 r;
-    s32 cur;
+USER_FUNC(dummy_shadow) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    f32 size = evtGetFloat(event, args[3]);
 
-    if (*(s32*)(data + 0x58) > 0x4e) {
-        return;
+    shadowSetCollision(shadowEntry(x, y, z, 10.0f * size), 0);
+    return EVT_RETURN_BLOCK;
+}
+
+// Matches: routing the two evtGetValue results through temporaries before the named locals keeps the
+// original's args[0]-then-args[1] call order and still materialises the npcNameToPtr string address
+// with `addi r3`. The plain form (type = evtGetValue(args[0]); state = evtGetValue(args[1]);) compiles
+// to `addi r0, r4, str@l; mr r3, r0` and scores 99.04%.
+USER_FUNC(kuzi_bomb_bomb_eff) {
+    s32* args = event->args;
+#ifdef MUST_MATCH
+    s32 t0 = evtGetValue(event, args[0]);
+    s32 t1 = evtGetValue(event, args[1]);
+    s32 type = t0;
+    s32 state = t1;
+#else
+    s32 type = evtGetValue(event, args[0]);
+    s32 state = evtGetValue(event, args[1]);
+#endif
+    NpcEntry* npc;
+    npc = npcNameToPtr("グルメボム兵");
+
+    if (type == 2 || type == 3) {
+        return EVT_RETURN_DONE;
     }
-    if (*(s32*)(data + 0x58) == 0) {
-        if (irand(0xa) == 0) {
-            *(u32*)data |= 2;
-        }
-        *(u32*)data &= ~2;
-    }
-    if (*(s32*)(data + 0x58) < 0x1b) {
-        if (*(s32*)(data + 0x58) & 1) {
-            for (i = 0; i < 3; i++) {
-                u8* up;
-                s8* d;
-                r = irand(8);
-                cur = *(s32*)(data + 0x60);
-                up = (u8*)&upsidegara[cur * 0x18] + i * 0x20;
-                d = (s8*)(data + cur * 3 + i + 0x33);
-                while (*(s32*)(up + r * 4) == *d) {
-                    r = (r + 1) & 7;
-                }
-                *d = *(s32*)(up + r * 4);
-                if (*(u32*)data & 2) {
-                    int c = *(s32*)(data + 0x60);
-                    mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
-                    mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
-                    mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
-                } else {
-                    int c = *(s32*)(data + 0x60);
-                    mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
-                    mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
-                    mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
-                }
+    switch (state) {
+    case 0:
+        if (npc->position.y > 25.0f) {
+            effBombEntry(0, npc->position.x - 30.0f, npc->position.y, npc->position.z, 1.0f);
+            if (type == 0) {
+                state = 1;
+            } else {
+                state = 2;
             }
         }
-    } else if (*(s32*)(data + 0x58) == 0x1b) {
-        for (i = 0; i < 3; i++) {
-            s32 c;
-            cur = *(s32*)(data + 0x60);
-            *(u8*)(data + cur * 3 + i + 0x33) = i;
-            c = *(s32*)(data + 0x60);
-            mapGrpFlagOn(drumname[c][i * 3 + 5], 1);
-            mapGrpFlagOn(drumname[c][i * 3 + 6], 1);
-            mapGrpFlagOn(drumname[c][i * 3 + 7], 1);
+        break;
+    case 1:
+        if (npc->position.y > 50.0f) {
+            effBombEntry(0, npc->position.x + 30.0f, npc->position.y, npc->position.z, 1.0f);
+            state = 2;
         }
-        cur = *(s32*)(data + 0x60);
-        if (*(s8*)(data + cur * 3 + 0x33) == *(s8*)(data + cur * 3 + 0x34) &&
-            *(s8*)(data + cur * 3 + 0x34) == *(s8*)(data + cur * 3 + 0x35)) {
-            *(u32*)data |= 4;
+        break;
+    case 2:
+        if (npc->position.y > 75.0f) {
+            effBombEntry(0, npc->position.x - 30.0f, npc->position.y, npc->position.z, 1.0f);
+            state = 3;
         }
-        if ((*(u32*)data & 4) && (*(u32*)data & 2)) {
-            *(f32*)(data + 0x2c) = 2.8125f;
-            *(f32*)(data + 0x28) = 2.8125f;
-            *(f32*)(data + 0x24) = 2.8125f;
-        } else {
-            *(f32*)(data + 0x2c) = 11.25f;
-            *(f32*)(data + 0x28) = 11.25f;
-            *(f32*)(data + 0x24) = 11.25f;
+        break;
+    case 3:
+        if (npc->position.y > 100.0f) {
+            effBombEntry(0, npc->position.x + 30.0f, npc->position.y, npc->position.z, 1.0f);
+            state = 4;
         }
-        *(s8*)(data + 0x32) = 2;
-        *(s8*)(data + 0x31) = 2;
-        *(s8*)(data + 0x30) = 2;
-    } else {
-        if (*(u32*)data & 4) {
-            if (*(s32*)(data + 0x58) == 0x21 || *(s32*)(data + 0x58) == 0x33 || *(s32*)(data + 0x58) == 0x45) {
-                for (i = 0; i < 3; i++) {
-                    cur = *(s32*)(data + 0x60);
-                    mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
-                    mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
-                    mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
-                }
-            }
-            if (*(s32*)(data + 0x58) == 0x2a || *(s32*)(data + 0x58) == 0x3c || *(s32*)(data + 0x58) == 0x4e) {
-                for (i = 0; i < 3; i++) {
-                    cur = *(s32*)(data + 0x60);
-                    mapGrpFlagOn(drumname[cur][i * 3 + 5], 1);
-                    mapGrpFlagOn(drumname[cur][i * 3 + 6], 1);
-                    mapGrpFlagOn(drumname[cur][i * 3 + 7], 1);
-                }
-            }
-        }
+        break;
     }
-    if (*(u32*)data & 2) {
-        if (*(s32*)(data + 0x58) == 0 || *(s32*)(data + 0x58) == 0xc || *(s32*)(data + 0x58) == 0x18) {
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][14], 0, 0);
-        }
-        if (*(s32*)(data + 0x58) == 6 || *(s32*)(data + 0x58) == 0x12) {
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
-        }
-    } else {
-        if (*(s32*)(data + 0x58) == 0x18) {
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][14], 0, 0);
-        }
-    }
-    if (*(s32*)(data + 0x58) <= 0x4e) {
-        *(s32*)(data + 0x58) = *(s32*)(data + 0x58) + 1;
-    }
+    evtSetValue(event, args[2], state);
+    return EVT_RETURN_DONE;
 }
 
 // NONMATCHING (99.17%): only the register holding the `zero_gor_0001b7b4` address differs (r3 in the original, r5 here).
-#ifdef MUST_MATCH
-// MUST_MATCH: the unit's shared 0.0f pool constant, defined by no source file yet.
-extern const f32 zero_gor_0001b7b4;
-#endif
 USER_FUNC(goryuugijo_init_slot) {
-#ifdef MUST_MATCH
     f32 zero = zero_gor_0001b7b4;
-#else
-    f32 zero = 0.0f;
-#endif
     u8* data = (u8*)((GoryuugijoWork*)event->lwData[0])->data;
 
     *(s32*)(data + 0x54) = 0;
@@ -5708,7 +5706,7 @@ static void monte_disp(CameraId cameraId, void* param) {
 
 static s32 get_monte_check(Vec* a, Vec* b) {
     if (PSVECDistance(a, b) < 20.0f) {
-        if (fabs(a->y - b->y) < 20.0) {
+        if (__fabsf(a->y - b->y) < 20.0) {
             return 1;
         }
     }
@@ -5762,3 +5760,7 @@ s32 exchange_ret_tbl_no(void) {
     return ret;
 }
 // clang-format on
+
+// Definition of the shared 0.0f object referenced by goryuugijo_init_slot; the extern is in gor_03.h so the
+// function still compiles against an opaque symbol.
+const f32 zero_gor_0001b7b4 = 0.0f;

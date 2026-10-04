@@ -72,7 +72,7 @@ restore() {
 }
 
 FLAGS=""
-bad=$(git diff -U0 "$F" | grep -E '^\+\s*#\s*pragma' | grep -v -E 'pragma\s+(dont_inline|opt_propagation|opt_common_subs|pool_data|explicit_zero_data|force_active|opt_dead_assignments|optimize_for_size|section|inline_depth|push|pop)\b')
+bad=$(git diff -U0 "$F" | grep -E '^\+\s*#\s*pragma' | grep -v -E 'pragma\s+(dont_inline|opt_propagation|opt_common_subs|pool_data|explicit_zero_data|force_active|opt_dead_assignments|optimize_for_size|section|opt_lifetimes|inline_max_total_size|inline_max_size|inline_depth|push|pop)\b')
 [ -n "$bad" ] && { restore; echo "REJECT $TAG: unfamiliar pragma: $bad"; exit 1; }
 git diff -U0 "$F" | grep -q -E '^\+\s*#\s*pragma' && FLAGS="--allow-pragma"
 
@@ -86,6 +86,23 @@ LINT=$(python3 tools/lint_patch.py "$F" 2>&1) || {
 [ -n "$LINT" ] && { echo "$LINT"; echo "$LINT" > "$D/lint.txt"; }
 if [ -n "$HDRS" ]; then  # main reports no problems, so anything here came from this agent's headers; check it in the asm
   PA=$(python3 tools/proto_asm.py) || { echo "WARN $TAG: proto_asm.py findings (check by hand):"; echo "$PA" | tee "$D/proto_asm.txt"; }
+fi
+# objdiff never compares relocation targets by value, so a function can score 100% loading the wrong constant:
+# any `value*` finding in this unit (tools/reloc_value_check.py) refuses the merge; `name` findings are shown only
+RVJ=$(mktemp); python3 tools/reloc_value_check.py "$(basename "$UNIT")" --json "$RVJ" >/dev/null 2>&1
+RV=$(python3 - "$RVJ" "$UNIT" <<'PY'
+import json, sys
+res, unit = json.load(open(sys.argv[1])), sys.argv[2]
+for name, fs in res.items():
+    if name == unit or name.endswith("/" + unit):
+        for x in fs:
+            print(("BLOCK " if x["kind"].startswith("value") else "note  ") + f"{x['fn']} +{x['off']:#x} {x['kind']}: original {x['target']} ours {x['ours']}")
+PY
+); rm -f "$RVJ"
+[ -n "$RV" ] && echo "$RV"
+if echo "$RV" | grep -q '^BLOCK'; then
+  restore
+  echo "REJECT $TAG: loads a wrong constant (tools/reloc_value_check.py):"; echo "$RV" | grep '^BLOCK'; exit 1
 fi
 
 matched() { python3 -c "import json;print(json.load(open('build/ci/accepted.json'))['measures']['matched_functions'])"; }

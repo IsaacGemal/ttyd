@@ -594,58 +594,6 @@ EVT_BEGIN(moamoa_tentacl_on)
     CALL(btlevtcmd_AnimeWaitPlayComplete, LW(6), 1)
     RETURN
 EVT_END()
-USER_FUNC(moamoa_guruguru) {
-    BattleUnit* unit;
-    Vec vec;
-    Mtx mtx;
-    f32 count;
-    f32 angle;
-    s32 i;
-    MoamoaWorkPose* pose;
-    ExtPose* extPose;
-
-    unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
-    *(Vec*)wp->field_0x7A8 = (Vec){ 0.0f, 0.0f, 0.0f };
-
-    extPose = extGetPosePtr();
-    pose = wp->poses;
-    count = 0.0f;
-    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
-        if (*(s32*)pose->field_0x30 != -1) {
-            vec.x = (*extPose->matrix)[0][3];
-            vec.y = (*extPose->matrix)[1][3];
-            vec.z = (*extPose->matrix)[2][3];
-            if (vec.y >= 0.0f) {
-                pose->field_0x0 |= 1;
-                count += 1.0f;
-                PSVECAdd(&vec, (Vec*)wp->field_0x7A8, (Vec*)wp->field_0x7A8);
-            }
-        }
-    }
-    PSVECScale((Vec*)wp->field_0x7A8, (Vec*)wp->field_0x7A8, 1.0f / count);
-    wp->field_0x7B4 = 0.0f;
-    wp->field_0x7B8 = 2.0f;
-
-    extPose = extGetPosePtr();
-    pose = wp->poses;
-    angle = 0.0f;
-    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
-        if (pose->field_0x0 & 1) {
-            pose->field_0x34[0] = (*extPose->matrix)[0][3];
-            pose->field_0x34[1] = (*extPose->matrix)[1][3];
-            pose->field_0x34[2] = (*extPose->matrix)[2][3];
-            *(Vec*)pose->field_0x40 = (Vec){ 0.0f, 1.0f, 0.0f };
-            PSMTXRotRad(mtx, 'Z', angle * 0.017453292f);
-            PSMTXMultVec(mtx, (Vec*)pose->field_0x40, (Vec*)pose->field_0x40);
-            angle += 22.4375f;
-            if (angle >= 360.0f) {
-                angle -= 360.0f;
-            }
-        }
-    }
-    return EVT_RETURN_DONE;
-}
-
 EVT_BEGIN(moamoa_mouth_on)
     CALL(btlevtcmd_snd_se, -2, STRING("SFX_BOSS_MOA_G_ARM_RESTORE2"), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
     WAIT_FRAMES(40)
@@ -852,6 +800,58 @@ static MoamoaAnimData ext_moamoa_data[89] = {
     { 0, 0, 0.0f },
 };
 
+USER_FUNC(moamoa_guruguru) {
+    BattleUnit* unit;
+    Vec vec;
+    Mtx mtx;
+    f32 count;
+    f32 angle;
+    s32 i;
+    MoamoaWorkPose* pose;
+    ExtPose* extPose;
+
+    unit = BattleGetUnitPtr(_battleWorkPointer, wp->mainUnitId);
+    *(Vec*)wp->field_0x7A8 = (Vec){ 0.0f, 0.0f, 0.0f };
+
+    extPose = extGetPosePtr();
+    pose = wp->poses;
+    count = 0.0f;
+    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
+        if (*(s32*)pose->field_0x30 != -1) {
+            vec.x = (*extPose->matrix)[0][3];
+            vec.y = (*extPose->matrix)[1][3];
+            vec.z = (*extPose->matrix)[2][3];
+            if (vec.y >= 0.0f) {
+                pose->field_0x0 |= 1;
+                count += 1.0f;
+                PSVECAdd(&vec, (Vec*)wp->field_0x7A8, (Vec*)wp->field_0x7A8);
+            }
+        }
+    }
+    PSVECScale((Vec*)wp->field_0x7A8, (Vec*)wp->field_0x7A8, 1.0f / count);
+    wp->field_0x7B4 = 0.0f;
+    wp->field_0x7B8 = 2.0f;
+
+    extPose = extGetPosePtr();
+    pose = wp->poses;
+    angle = 0.0f;
+    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
+        if (pose->field_0x0 & 1) {
+            pose->field_0x34[0] = (*extPose->matrix)[0][3];
+            pose->field_0x34[1] = (*extPose->matrix)[1][3];
+            pose->field_0x34[2] = (*extPose->matrix)[2][3];
+            *(Vec*)pose->field_0x40 = (Vec){ 0.0f, 1.0f, 0.0f };
+            PSMTXRotRad(mtx, 'Z', angle * 0.017453292f);
+            PSMTXMultVec(mtx, (Vec*)pose->field_0x40, (Vec*)pose->field_0x40);
+            angle += 22.4375f;
+            if (angle >= 360.0f) {
+                angle -= 360.0f;
+            }
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
 // The retrace loop uses its own pointer (`pose2`) because a shared `pose` makes MWCC colour
 // pose/extPose the other way round (r30/r29 instead of r29/r30); the original keeps them in r29/r30.
 USER_FUNC(moamoa_bomb) {
@@ -1021,48 +1021,6 @@ USER_FUNC(moamoa2_on) {
     return EVT_RETURN_DONE;
 }
 
-static EVT_BEGIN(evt_moamoa)
-    CALL(evt_npc_entry, STRING("moa_a"), STRING("c_n_moa_a"))
-    CALL(evt_npc_entry, STRING("moa_b"), STRING("c_n_moa_b"))
-    CALL(evt_npc_set_position, STRING("moa_a"), 0, -1000, 0)
-    CALL(evt_npc_set_position, STRING("moa_b"), 0, -1000, 0)
-    CALL(evt_npc_entry, STRING("kinopio"), STRING("c_kinodebu"))
-    CALL(evt_npc_entry, STRING("cook"), STRING("c_puku_c"))
-    CALL(evt_npc_entry, STRING("powan"), STRING("c_powan"))
-    CALL(evt_npc_entry, STRING("sarary"), STRING("c_smoko"))
-    CALL(evt_npc_entry, STRING("rose"), STRING("c_rose"))
-    CALL(evt_npc_entry, STRING("papa"), STRING("c_papab"))
-    CALL(evt_npc_entry, STRING("mama"), STRING("c_mamab"))
-    CALL(evt_npc_entry, STRING("konari"), STRING("c_konari"))
-    CALL(evt_npc_set_position, STRING("kinopio"), 0, -1000, 0)
-    CALL(evt_npc_set_position, STRING("cook"), 0, -1000, 0)
-    CALL(evt_npc_set_position, STRING("powan"), 0, -1000, 0)
-    CALL(evt_npc_set_position, STRING("sarary"), 0, -1000, 0)
-    CALL(evt_npc_set_position, STRING("rose"), 0, -1000, 0)
-    CALL(evt_npc_set_position, STRING("papa"), 0, -1000, 0)
-    CALL(evt_npc_set_position, STRING("mama"), 0, -1000, 0)
-    CALL(evt_npc_set_position, STRING("konari"), 0, -1000, 0)
-    CALL(evt_npc_flag_onoff, 1, STRING("kinopio"), 2048)
-    CALL(evt_npc_flag_onoff, 1, STRING("cook"), 2048)
-    CALL(evt_npc_flag_onoff, 1, STRING("powan"), 2048)
-    CALL(evt_npc_flag_onoff, 1, STRING("sarary"), 2048)
-    CALL(evt_npc_flag_onoff, 1, STRING("rose"), 2048)
-    CALL(evt_npc_flag_onoff, 1, STRING("papa"), 2048)
-    CALL(evt_npc_flag_onoff, 1, STRING("mama"), 2048)
-    CALL(evt_npc_flag_onoff, 1, STRING("konari"), 2048)
-    CALL(moamoa_on)
-    CALL(evt_ext_entry, 750, PTR(ext_moamoa_data), PTR(ext_moamoa_init), PTR(ext_moamoa_main), 0)
-    RETURN
-EVT_END()
-
-static u32 group_tbl[22] = {
-    (u32)"c_n_moa_a", (u32)"S_1", (u32)"c_n_moa_b", (u32)"S_1",
-    (u32)"c_kinodebu", (u32)"G_1", (u32)"c_puku_c", (u32)"U_1",
-    (u32)"c_powan", (u32)"R_2", (u32)"c_smoko", (u32)"G_1",
-    (u32)"c_rose", (u32)"G_1", (u32)"c_papab", (u32)"G_1",
-    (u32)"c_mamab", (u32)"G_1", (u32)"c_konari", (u32)"G_1",
-    (u32)"c_n_moa_a", (u32)"S_2",
-};
 USER_FUNC(moamoa_on) {
     s32 i;
     MoamoaWorkPose* pose;
@@ -1189,6 +1147,48 @@ USER_FUNC(moamoa_on) {
     return EVT_RETURN_DONE;
 }
 
+static EVT_BEGIN(evt_moamoa)
+    CALL(evt_npc_entry, STRING("moa_a"), STRING("c_n_moa_a"))
+    CALL(evt_npc_entry, STRING("moa_b"), STRING("c_n_moa_b"))
+    CALL(evt_npc_set_position, STRING("moa_a"), 0, -1000, 0)
+    CALL(evt_npc_set_position, STRING("moa_b"), 0, -1000, 0)
+    CALL(evt_npc_entry, STRING("kinopio"), STRING("c_kinodebu"))
+    CALL(evt_npc_entry, STRING("cook"), STRING("c_puku_c"))
+    CALL(evt_npc_entry, STRING("powan"), STRING("c_powan"))
+    CALL(evt_npc_entry, STRING("sarary"), STRING("c_smoko"))
+    CALL(evt_npc_entry, STRING("rose"), STRING("c_rose"))
+    CALL(evt_npc_entry, STRING("papa"), STRING("c_papab"))
+    CALL(evt_npc_entry, STRING("mama"), STRING("c_mamab"))
+    CALL(evt_npc_entry, STRING("konari"), STRING("c_konari"))
+    CALL(evt_npc_set_position, STRING("kinopio"), 0, -1000, 0)
+    CALL(evt_npc_set_position, STRING("cook"), 0, -1000, 0)
+    CALL(evt_npc_set_position, STRING("powan"), 0, -1000, 0)
+    CALL(evt_npc_set_position, STRING("sarary"), 0, -1000, 0)
+    CALL(evt_npc_set_position, STRING("rose"), 0, -1000, 0)
+    CALL(evt_npc_set_position, STRING("papa"), 0, -1000, 0)
+    CALL(evt_npc_set_position, STRING("mama"), 0, -1000, 0)
+    CALL(evt_npc_set_position, STRING("konari"), 0, -1000, 0)
+    CALL(evt_npc_flag_onoff, 1, STRING("kinopio"), 2048)
+    CALL(evt_npc_flag_onoff, 1, STRING("cook"), 2048)
+    CALL(evt_npc_flag_onoff, 1, STRING("powan"), 2048)
+    CALL(evt_npc_flag_onoff, 1, STRING("sarary"), 2048)
+    CALL(evt_npc_flag_onoff, 1, STRING("rose"), 2048)
+    CALL(evt_npc_flag_onoff, 1, STRING("papa"), 2048)
+    CALL(evt_npc_flag_onoff, 1, STRING("mama"), 2048)
+    CALL(evt_npc_flag_onoff, 1, STRING("konari"), 2048)
+    CALL(moamoa_on)
+    CALL(evt_ext_entry, 750, PTR(ext_moamoa_data), PTR(ext_moamoa_init), PTR(ext_moamoa_main), 0)
+    RETURN
+EVT_END()
+
+static u32 group_tbl[22] = {
+    (u32)"c_n_moa_a", (u32)"S_1", (u32)"c_n_moa_b", (u32)"S_1",
+    (u32)"c_kinodebu", (u32)"G_1", (u32)"c_puku_c", (u32)"U_1",
+    (u32)"c_powan", (u32)"R_2", (u32)"c_smoko", (u32)"G_1",
+    (u32)"c_rose", (u32)"G_1", (u32)"c_papab", (u32)"G_1",
+    (u32)"c_mamab", (u32)"G_1", (u32)"c_konari", (u32)"G_1",
+    (u32)"c_n_moa_a", (u32)"S_2",
+};
 EVT_BEGIN(MOAMOA_SET_BODYSCALE)
     CALL(moamoa_set_bodyScale)
     RETURN
@@ -1420,3 +1420,10 @@ USER_FUNC(moamoa_set_bodyScale) {
     return EVT_RETURN_BLOCK;
 }
 // clang-format on
+
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_04_0001A55C_data = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+

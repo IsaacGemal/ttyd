@@ -4475,3 +4475,11 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   it now refuses such a path. With the right paths eff_kemuri, fadedrv and eff_recovery fail on undefined data objects
   their code reaches by name, mot_plane on the DOL checksum: wave 72 round 2 (12:20) gives each a link task with its
   failure as the hint, plus data prep for the next 12 units by unmatched bytes.
+- **Batch 10:** data ports for gor_03 (.data identical up to its gap word; table types to gor_03.h), eki_00 (.rodata
+  identical), battle_stage_object, unit_boss_moamoa (.data identical) and eff_damage_star. `merge_agent.sh` now runs
+  tools/reloc_value_check.py (#396) on every merged unit and refuses any `value*` finding (a function that scores
+  100% loading the wrong constant); tested on bom_01's pre-#396 version, whose swapped 300/3700 it blocks. That bug
+  was mine: batch 9 checked the named floats against the literals they replaced, which only proves consistency with
+  the old source; the value check compares with the original object. Allowlist: opt_lifetimes (105 uses),
+  inline_max_total_size and inline_max_size. battle_stage_object's natural build redeclared dat_8041ccfc (non-const
+  only under MUST_MATCH); its definition is now guarded the same way.
