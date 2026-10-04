@@ -222,7 +222,9 @@ LINKING: once `{fn}` is at 100%, go on to make the unit link, in the same sessio
 and it stays only if the checksum passes), run `python3 configure.py`, then build: {build}. `python3 tools/link_diag.py
 {unit}` and `python3 tools/rodatalayout.py {unit} SECTION` show what differs; fix it with the brief's linking recipes
 (function order: `python3 tools/fn_order_check.py {unit} {src}`; pools: `python3 tools/pool_plan.py {unit}`; named data
-in the original order). Done when {done}. If it doesn't link, set the line back to `NonMatching` and write in REPORT.md
+in the original order). If the file defines unreferenced `static ... jumptable_*[]` copies of switch tables, delete
+them for the link (docs/AGENT_BRIEF.md "Defined `jumptable_*` copies block the link"); the .data score drop that
+follows is expected when the checksum passes. Done when {done}. If it doesn't link, set the line back to `NonMatching` and write in REPORT.md
 exactly what still differs."""
 
 
