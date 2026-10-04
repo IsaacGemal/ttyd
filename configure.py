@@ -1080,7 +1080,7 @@ config.libs = [
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/direct_io.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/file_io.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/FILE_POS.C"),
-            Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/mbstring.c"),
+            Object(Matching, "MSL_C.PPCEABI.bare.H.a/mbstring.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/mem.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/mem_funcs.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/misc_io.c"),
