@@ -521,7 +521,7 @@ config.libs = [
             Object(Matching, "effect/eff_splash.c"),
             Object(Matching, "effect/eff_treasure_map.c"),
             Object(NonMatching, "effect/eff_kiss.c"),
-            Object(NonMatching, "effect/eff_funemizu.c"),
+            Object(Matching, "effect/eff_funemizu.c"),
             Object(Matching, "effect/eff_mist.c"),
             Object(Matching, "effect/eff_teresa.c"),
             Object(Matching, "effect/eff_sheep.c"),
