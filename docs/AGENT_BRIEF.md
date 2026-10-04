@@ -138,6 +138,48 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 - `lhz`/`lbz` loads mean unsigned (`u16`/`u8`); `lha`/`extsb` mean signed. If the header disagrees, report it.
 - A caller that uses a returned value without `extsh`/`clrlwi` treats it as a full `int`.
 
+## Source shapes that change code (from bfbb, CC0; each marked rule re-measured on GC/2.6 with `-O4,p -inline auto,deferred`)
+
+When instructions match and registers or scheduling do not, the source form is usually the reason. Verified on 2.6:
+
+- **Float tests:** `if (f)` and `if (!f)` emit `fcmpu f, 0` (variable first); `f != 0.0f` and `f == 0.0f` emit `fcmpu 0, f` (zero first).
+  `a <= b` / `a >= b` always go through `fcmpo; cror eq, lt|gt, eq`; `a < b` and `!(a > b)` are a plain `bge`/`bgt`. The branch mnemonic
+  tells you which spelling the author used. `a < b ? a : b` and `a < 0 ? -a : a` stay a compare and `fneg`: no `fsel`/`fabs`; an
+  `fsel`/`fabs` in the target came from a helper or intrinsic.
+- **`switch`:** 6 arms compile to a `cmpwi` tree, 7 or more to a `bctr` jump table, and 7 arms with a hole in the range still table: the
+  arm count decides, not density. A `cmpwi` tree where the target has `bctr` means you are short an arm (possibly an empty `case`).
+- **Loops:** `for (i = 0; i < N; i++)` is `li 0 ... addi / cmpwi N / blt` (body first); `for (i = N; i > 0; i--)` is `subic. / bgt`; `i = N;
+  while (--i)` is `b` to the test, `subic. / bne`, and runs the body N-1 times (the immediate is not the trip count).
+- **Division/modulo by a constant:** the magic number names the divisor and signedness (`lis 0x5555; addi 0x5556; mulhw` is `% 3`,
+  `0x6667 mulhw` is `/ 10`, `0xcccd mulhwu` unsigned `/ 10`, `srawi + addze` is `/ 8` where a bare `srawi` is `>> 3`). `(j + 1) % 3` keeps the
+  `mulhw` and `mulli`; `(j == 2) ? 0 : j + 1` compiles to a branch-free select with no multiply (and frees the callee-saved register that
+  held the magic constant), so pick by what the target contains.
+- **Masks:** `*u16 &= 0xfffd` emits `andi.`; `&= ~0x2` emits `rlwinm 31, 29`.
+- **Small constant-trip fills:** `p[0] = ...; p[1] = ...; p[2] = ...;` lets the optimiser scalarise a local array away (no stack slots, no
+  stores); the same fills in a `for (i = 0; i < 3; i++)` loop are unrolled but keep the array and its stores. A frame that is short by one
+  array-sized chunk with the right instruction count is this.
+- **Register numbering (callee-saved, GPR and FPR):** parameters take the lowest numbers; named locals take higher ones in *declaration*
+  order, the first declared getting r31/f31 (declared `a, b, c` with the parameter in r29, `a` is r31 and `b` r30; declared `c, b, a` they
+  swap).  A struct whose address is never taken is scalarised and its fields are numbered by *first write*, not field
+  order (`v.z = ..; v.x = ..;` puts `z` in f31); plain scalars follow declaration order. If the target's registers are a rotation of
+  yours, permute declaration order first, or replace such a struct with scalars declared in write order.
+
+Reported by bfbb, not re-measured here (all general MWCC; try them when stuck, measure before relying):
+- `x *= k` can survive where `x = x * k` is folded; splitting a fused multiply-add into a named local (`t = a * b; t += c`) blocks `fmadds`
+  and can free a register.
+- `if (a == k) { X } else { Y }` vs `if (a != k) { Y } else { X }`, and an early-out `if (!A || !B) { ...; continue; }` vs `if (A && B) { ... }`,
+  swap which block is physically first; the target's block order tells you which. Collapsing early returns into one `||` condition
+  produces different exit structure.
+- A load that cannot be hoisted above a call has a recoverable source position: if the target loads after a `bl` where you load before,
+  move the expression below the call.
+- Local stack slots go by size descending (ties by declaration order) at descending addresses; permute the declarations when `r1+offset`s
+  are permuted.
+- `char buf[N] = "..."` copies N bytes into the frame (unrolled up to ~64 bytes, an `mtctr`/`lwzu` loop above); `const char* p = "..."` is a
+  pointer load. `volatile` is evidence of the original's source only if it takes the function to byte-exact 100%.
+- Measuring: a whole-function percentage can fall when a hunk is fixed (the tail shifts), so judge the region you touched; a stale `.o`
+  explains more false regressions than any tool difference, so re-run `ninja` to completion before believing a -1; objdiff pairs symbols by
+  name and cannot see definition order, so 100% in objdiff is not byte-exact (the DOL checksums are).
+
 ## Data and pool: run `tools/pool_plan.py` first
 
 If a unit's functions are (nearly) 100% but `.sdata2`/`.rodata` differ, or the unit is fully matched and won't link, run
