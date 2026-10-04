@@ -72,7 +72,7 @@ restore() {
 }
 
 FLAGS=""
-bad=$(git diff -U0 "$F" | grep -E '^\+\s*#\s*pragma' | grep -v -E 'pragma\s+(dont_inline|opt_propagation|opt_common_subs|pool_data|explicit_zero_data|force_active|opt_dead_assignments|optimize_for_size|section|opt_lifetimes|inline_max_total_size|inline_max_size|inline_depth|push|pop)\b')
+bad=$(git diff -U0 "$F" | grep -E '^\+\s*#\s*pragma' | grep -v -E 'pragma\s+(dont_inline|opt_propagation|opt_common_subs|pool_data|explicit_zero_data|force_active|opt_dead_assignments|optimize_for_size|section|opt_lifetimes|inline_max_total_size|inline_max_size|defer_codegen|inline_depth|push|pop)\b')
 [ -n "$bad" ] && { restore; echo "REJECT $TAG: unfamiliar pragma: $bad"; exit 1; }
 git diff -U0 "$F" | grep -q -E '^\+\s*#\s*pragma' && FLAGS="--allow-pragma"
 
