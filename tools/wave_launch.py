@@ -388,6 +388,7 @@ def sandbox(tag, step, mode):
     ws, out, _, _ = paths(tag)
     run_user = f"/run/user/{UID}"
     env = {"HOME": "$HOME", "USER": "$USER", "LANG": "C.UTF-8", "TMPDIR": "/tmp", "TTYD_BASE": BASE,
+           "PI_NETLESS_DROP": KEY_ENV,  # tools/pi_netless_bash.ts removes it from the agent's commands' environment
            "PYTHONPATH": "$HOME/ttyd-pylib",
            "PATH": f"$HOME/.local/bin:$HOME/ttyd/.venv/bin:{NODE_BIN}:/usr/local/bin:/usr/bin:/bin"}
     a = [f"systemd-run --user --scope --quiet --collect --unit={scope(tag, step)} --slice={SLICE if mode == 'agent' else COLLECT_SLICE}",

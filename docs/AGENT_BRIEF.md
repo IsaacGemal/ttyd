@@ -300,8 +300,9 @@ macOS; needs gdb, cmake, Rust; the clones live in `$MWCCDBG_HOME`, default `~/mw
 **Using it (agents).** One function at a time, from the workspace root:
 
 1. `python3 tools/mwccdbg.py UNIT FUNC` (REL units: `MODULE/path`). It compiles the unit as it is now; everything is written under
-   `build/mwccdbg/FUNC/`, never outside the workspace. Runs take turns on a machine-wide lock (a TCP port on 127.0.0.1), so a run may
-   wait a few seconds behind another agent's.
+   `build/mwccdbg/FUNC/`, never outside the workspace. Each of your commands runs in its own network namespace (no network, its own
+   loopback), so the 127.0.0.1:9099 lock no longer serialises runs across agents, and needn't: each namespace also has its own gdb
+   port 9001, so two runs never meet. Don't "fix" the lock.
 2. Read `build/mwccdbg/FUNC/summary.txt`: per allocation pass (only the LAST pass of a class is final), each variable in priority
    order with its register, neighbour count, and `!ORIG rN` where the original has a different register. Named locals show their
    names; `@NNN` are compiler temps; fix the first variable that differs. 0 `!ORIG` lines means the gap is not register colouring.
