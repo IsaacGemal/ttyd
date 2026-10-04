@@ -96,3 +96,8 @@ EVT_DEF(evt_rsh_rnd_npc_init);
 EVT_DEF(evt_rsh_01_rnd_npc_entry);
 EVT_DEF(evt_rsh_03_rnd_npc_entry);
 EVT_DEF(evt_rsh_04_rnd_npc_entry);
+// The original's debug_print_func copies a 256-byte zero template that is kept as a named
+// .rodata object.
+typedef struct {
+    u8 b[256];
+} Zero256;

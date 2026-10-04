@@ -903,8 +903,9 @@ char* rsh_04_rnd_npc_4_list[4] = {
     "５−１", "５−３", "５−４", "５−７",
 };
 
-
-
+#ifdef MUST_MATCH
+static const Zero256 zero_rsh_000103fc = {0};
+#endif
 
 EVT_BEGIN(debug_print_rnd_npc)
     SET_VALUE(LW(0), 0)
@@ -1503,9 +1504,16 @@ USER_FUNC(debug_print_func) {
     s32 index = evtGetValue(event, args[1]);
     s32 npc = evtGetValue(event, args[2]);
     s32 unk = evtGetValue(event, args[3]);
+#ifdef MUST_MATCH
+    char name[256];
+#else
     char name[256] = {0};
+#endif
     char buf[256];
     char** list;
+#ifdef MUST_MATCH
+    *(Zero256*)name = zero_rsh_000103fc;
+#endif
 
     switch (type) {
         case 0:
