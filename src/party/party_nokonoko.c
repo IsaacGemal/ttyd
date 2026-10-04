@@ -96,9 +96,9 @@ void lookupSafetyPosSub(Vec* pos, Vec* out, f32 height, f32 angle) {
     *out = *p;
 }
 
-// NONMATCHING (95.03%): probe values and control flow match; z/baseY/distance land like the original. The
-// remaining diffs are the sin result s (f27 here, f29 in the original), the float_0/pos->z schedule and the
-// tail word copy. Wrapping the x add in an inlined helper (fadd32) steered the baseY/distance colouring.
+// NONMATCHING (95.20%): probe values and control flow match; the product/pos->x pair and z/baseY/distance
+// land like the original. The remaining diffs are the first probe's sin result (f27 here, f29 in the
+// original), the float_0/pos->z schedule and the tail word copy.
 void lookupSafetyPos3(Vec* pos, Vec* out, f32 height) {
     f32 s, c, distance;
     f32 hitX, hitY, hitZ;
@@ -110,36 +110,36 @@ void lookupSafetyPos3(Vec* pos, Vec* out, f32 height) {
     s = sin(MATCH_F32(float_1p5708));
     c = cos(MATCH_F32(float_1p5708));
     baseY = pos->y;
-    s = radius * s;
+    x = radius * s;
 #ifdef MUST_MATCH
-    s = fadd32(s, pos->x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+    x = fadd32(pos->x, x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
 #else
-    s = s + pos->x;
+    x = pos->x + x;
 #endif
     y = pos->y + height;
     t = radius * -c;
     z = pos->z + t;
     distance = float_0p1 + height;
-    if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, s, y, z, float_0, float_neg1, float_0)) {
-        out->x = s;
+    if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
+        out->x = x;
         out->z = z;
         out->y = baseY;
     } else {
         s = sin(MATCH_F32(float_4p7124));
         c = cos(MATCH_F32(float_4p7124));
         baseY = pos->y;
-        s = radius * s;
+        x = radius * s;
 #ifdef MUST_MATCH
-        s = fadd32(s, pos->x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+        x = fadd32(pos->x, x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
 #else
-        s = s + pos->x;
+        x = pos->x + x;
 #endif
         y = pos->y + height;
         t = radius * -c;
         z = pos->z + t;
         distance = float_0p1 + height;
-        if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, s, y, z, float_0, float_neg1, float_0)) {
-            out->x = s;
+        if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
+            out->x = x;
             out->z = z;
             out->y = baseY;
         } else {
