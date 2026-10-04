@@ -11,41 +11,38 @@
 #include "math_ext.h"
 #include <dolphin/mtx.h>
 #include <string.h>
-
-#define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
-#define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
-#define MW_S16(m, off) (*(s16*)((u8*)(m) + (off)))
-#define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
-
-// head_sphere_data: sphere offsets (forward, height, radius) and a facing-condition type per level.
-s32 head_sphere_data_lv0[] = { 1, 10, 15, 6, 0 };
-s32 head_sphere_data_lv1[] = { 3, 32, 55, 24, 0, 26, 30, 16, 2, -10, 44, 25, 1 };
-s32 head_sphere_data_lv2[] = { 3, 45, 75, 34, 0, 36, 30, 16, 2, -15, 59, 36, 1 };
-s32 head_sphere_data_lv3[] = { 4, 100, 162, 80, 0, 90, 75, 30, 2, 50, 40, 30, 3, -43, 142, 74, 1 };
-s32* head_sphere_data[] = { head_sphere_data_lv0, head_sphere_data_lv1, head_sphere_data_lv2,
-                            head_sphere_data_lv3 };
-
-const Vec vec3_802fe320 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fe32c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802fe338 = { 0.0f, 0.0f, 0.0f };
-
-extern const f32 float_50_80420eb0;
-extern const f32 float_deg2rad_80420eb4;
-extern const f32 float_90_80420eb8;
-extern const f32 float_270_80420ebc;
-extern const f32 float_7_80420ec0;
 extern const f32 float_0p5_80420e70;
 extern const f32 float_1000_80420e74;
 extern const f32 float_3p1416_80420e78;
 extern const f32 float_180_80420e7c;
+extern const f32 float_0_80420e80;
 extern const f32 float_neg1_80420e84;
 extern const f32 float_2_80420e88;
+extern const f32 float_35_80420e8c;
+extern const f32 float_10_80420e90;
+extern const f32 float_1_80420e94;
 extern const f32 float_100_80420e98;
 extern const f32 float_0p01_80420e9c;
 extern const f32 float_0p25_80420ea0;
 extern const f32 float_0p6_80420ea4;
 extern const f32 float_3_80420ea8;
 extern const f32 float_0p05_80420eac;
+extern const f32 float_50_80420eb0;
+extern const f32 float_deg2rad_80420eb4;
+extern const f32 float_90_80420eb8;
+extern const f32 float_270_80420ebc;
+extern const f32 float_7_80420ec0;
+
+#define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
+#define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
+#define MW_S16(m, off) (*(s16*)((u8*)(m) + (off)))
+#define MW_U16(m, off) (*(u16*)((u8*)(m) + (off)))
+
+const Vec vec3_802fe320 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802fe32c = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802fe338 = { 0.0f, 0.0f, 0.0f };
+const char str_802FE344[] = "MOBJ_HiddenHatenaBlock";
+const char str_802FE35C[] = "MOBJ_Block";
 
 // Reusing the work pointer as the node cursor (`root++` here and in the for-increment) makes mwcc schedule the
 // preheader `li r29,1` before `addi r30,r30,0x50`; a separate `node` pointer emits them in the opposite order.
@@ -66,7 +63,7 @@ s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     camGetPtr(4);
     v0 = vec3_802fe320;
     v0.x = x;
-    v0.y = 0.5f * a + y;
+    v0.y = float_0p5_80420e70 * a + y;
     v0.z = z;
     pos = v0;
     if (efp == NULL) {
@@ -85,7 +82,7 @@ s32 kpaEnemyFireHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
     PSMTXConcat(m0, m2, m3);
     root++;
     i = 1;
-    threshold = 0.5f * b;
+    threshold = float_0p5_80420e70 * b;
     for (; i < efp->count; i++, root++) {
         f32 mag;
         if (root->unk44 != 0) {
@@ -120,10 +117,10 @@ s32 kpaEnemyHitChk(f32 x, f32 y, f32 z, f32 a, f32 b) {
 #ifdef MUST_MATCH
     mp->position.x = mp->position.x; // retail reloads/stores position.x here (pins the float load order)
 #endif
-    halfH = 0.5f * (mp->wPlayerCollisionBox.y + a);
-    halfW = 0.5f * (mp->wPlayerCollisionBox.x + b);
+    halfH = float_0p5_80420e70 * (mp->wPlayerCollisionBox.y + a);
+    halfW = float_0p5_80420e70 * (mp->wPlayerCollisionBox.x + b);
     dx = __fabsf(mp->position.x - x);
-    dy = __fabsf(mp->position.y + 0.5f * mp->wPlayerCollisionBox.y - y - 0.5f * a);
+    dy = __fabsf(mp->position.y + float_0p5_80420e70 * mp->wPlayerCollisionBox.y - y - float_0p5_80420e70 * a);
     if (dy <= halfH && dx <= halfW) {
         if (mp->flags & 0x20000) {
             if (mp->position.y > y) {
@@ -174,7 +171,7 @@ static inline s32 kpa_fpclassifyf(f32 x) {
 #define isnan(x) (fpclassify(x) == 1)
 
 static inline f32 sqrtf(f32 x) {
-    if (x > 0.0f) {
+    if (x > float_0_80420e80) {
         f64 guess = __frsqrte(x);
         guess = 0.5 * guess * (3.0 - guess * guess * x);
         guess = 0.5 * guess * (3.0 - guess * guess * x);
@@ -191,7 +188,7 @@ static inline f32 sqrtf(f32 x) {
 static inline f32 kpaNrmToAngle(Vec* v) {
     f32 len = sqrtf(v->x * v->x + v->z * v->z);
 
-    return angleABf(0.0f, 0.0f, len, -v->y);
+    return angleABf(float_0_80420e80, float_0_80420e80, len, -v->y);
 }
 
 // Writing the three components through a Vec* (rather than `n.x = x` etc.) makes MWCC emit the component
@@ -203,6 +200,9 @@ static inline void kpaSetVec(Vec* n, f32 x, f32 y, f32 z) {
     n->z = z;
 }
 
+// Common-subexpression elimination merges the loop's `base - off` terms and colours the FPRs differently from
+// the target (f14/f15 for the long-lived locals), so it is disabled for this function only.
+#pragma opt_common_subs off
 void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
     MarioWork* mp;
     s32 i;
@@ -210,7 +210,6 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
     void* hit;
     f32 piAngle;
     f32 off;
-    f32 zero = 0.0f;
     f32 rad2;
     f32 rad3;
     f32 dist;
@@ -225,10 +224,10 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
     void* result;
     mp = marioGetPtr();
     result = NULL;
-    MW_F32(mp, 0x218) = 0.0f;
-    MW_F32(mp, 0x21c) = 0.0f;
-    MW_F32(mp, 0x220) = 0.0f;
-    MW_F32(mp, 0x214) = 0.0f;
+    MW_F32(mp, 0x218) = float_0_80420e80;
+    MW_F32(mp, 0x21c) = float_0_80420e80;
+    MW_F32(mp, 0x220) = float_0_80420e80;
+    MW_F32(mp, 0x214) = float_0_80420e80;
     if (mp->flags & MARIO_FLAG_FORCE_WALL) {
         *a = mp->position.y;
         return NULL;
@@ -268,14 +267,14 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
     dist = height + d;
     piAngle = float_3p1416_80420e78 * angle;
     y = py + height;
-    off = 0.05f;
-    rad2 = float_2_80420e88 * base - off;
+    off = float_0p05_80420eac;
+    rad2 = float_2_80420e88 * base - float_0p05_80420eac;
     rad3 = float_3_80420ea8 * base - off;
     for (i = 0; i < count; i++) {
         switch (i) {
         case 0:
-            dx = 0.0f;
-            dz = 0.0f;
+            dx = float_0_80420e80;
+            dz = float_0_80420e80;
             break;
         case 1: {
             f32 r = piAngle / float_180_80420e7c;
@@ -340,8 +339,8 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
         x = px + dx;
         z = pz + dz;
         distance = dist;
-        hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, 0.0f,
-                             float_neg1_80420e84, 0.0f);
+        hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0_80420e80,
+                             float_neg1_80420e84, float_0_80420e80);
         if (hit != NULL) {
             Vec n;
             MarioWork* m2;
@@ -350,10 +349,10 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
             m2 = marioGetPtr();
             ny100 = float_100_80420e98 * n.y;
             MW_F32(m2, 0x218) =
-                (f32)(s32)(angleABf(0.0f, 0.0f, float_100_80420e98 * n.z, ny100) - float_180_80420e7c);
-            MW_F32(m2, 0x21c) = 0.0f;
+                (f32)(s32)(angleABf(float_0_80420e80, float_0_80420e80, float_100_80420e98 * n.z, ny100) - float_180_80420e7c);
+            MW_F32(m2, 0x21c) = float_0_80420e80;
             MW_F32(m2, 0x220) =
-                (f32)(s32)(angleABf(0.0f, 0.0f, float_100_80420e98 * n.x, ny100) - float_180_80420e7c);
+                (f32)(s32)(angleABf(float_0_80420e80, float_0_80420e80, float_100_80420e98 * n.x, ny100) - float_180_80420e7c);
             if (kpaNrmToAngle(&n) >= float_50_80420eb0) {
                 hit = NULL;
             }
@@ -367,21 +366,21 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
             m2 = marioGetPtr();
             ny100 = float_100_80420e98 * n.y;
             MW_F32(m2, 0x218) =
-                (f32)(s32)(angleABf(0.0f, 0.0f, float_100_80420e98 * n.z, ny100) - float_180_80420e7c);
-            MW_F32(m2, 0x21c) = 0.0f;
+                (f32)(s32)(angleABf(float_0_80420e80, float_0_80420e80, float_100_80420e98 * n.z, ny100) - float_180_80420e7c);
+            MW_F32(m2, 0x21c) = float_0_80420e80;
             MW_F32(m2, 0x220) =
-                (f32)(s32)(angleABf(0.0f, 0.0f, float_100_80420e98 * n.x, ny100) - float_180_80420e7c);
+                (f32)(s32)(angleABf(float_0_80420e80, float_0_80420e80, float_100_80420e98 * n.x, ny100) - float_180_80420e7c);
             MW_F32(mp, 0x214) = kpaNrmToAngle(&n);
             if (hitY < py && __fabsf(hitY - py) >= float_2_80420e88) {
                 *b = py - hitY;
                 *c = angleABf(px, pz, hitX, hitZ);
                 hit = NULL;
             } else {
-                if (hitNX == zero && hitNZ == zero) {
+                if (hitNX == float_0_80420e80 && hitNZ == float_0_80420e80) {
                     hitY = (f32)(s32)(float_100_80420e98 * hitY + float_0p5_80420e70) / float_100_80420e98;
                 }
                 *a = hitY;
-                *b = 0.0f;
+                *b = float_0_80420e80;
                 *c = angleABf(px, pz, hitX, hitZ);
                 result = hit;
             }
@@ -394,12 +393,13 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
 
 
 // The clear loop is the only difference left. Using a separate loop variable `j` (not the main
-// loop's `i`) keeps the clear-loop copy and the `3.1415927f * angle / 180.0f` constants in the
+// loop's `i`) keeps the clear-loop copy and the `float_3p1416_80420e78 * angle / float_180_80420e7c` constants in the
 // original's registers; the counter/offset then sit in r28/r27 where the original has r27/r28, so
 // 7 instructions differ only by that swap. Nothing tried flips it: giving the clear loop its own
 // byte-offset variable fixes the roles but emits `li r28, 0` where the original has `mr r28, r27`
 // (2 opcode diffs, a slightly lower objdiff score), and the struct/bitfield aggregate copies that
 // produce that `mr` are spilled to the stack in this function.
+#pragma opt_common_subs reset
 // NONMATCHING (99.52%): only the clear-loop counter/offset register swap differs.
 void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     // per-head offset tables (forward, height, facing condition)
@@ -431,10 +431,10 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
         angle = toMovedir(mp->unk1A8);
     }
     dist = *outY;
-    *outY = -1.0f;
+    *outY = float_neg1_80420e84;
     for (j = 0; j < 10; j++) {
         KPA(marioGetPtr())->head[j] = NULL;
-        KPA(marioGetPtr())->headDist[j] = 1000.0f;
+        KPA(marioGetPtr())->headDist[j] = float_1000_80420e74;
     }
     entry = headchkofs[kpaGetLevel()];
     count = entry[0];
@@ -442,23 +442,23 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     if (!(mp->flags & 0x10000)) {
         switch (kpaGetLevel()) {
         case 0:
-            dist = 2.0f;
+            dist = float_2_80420e88;
             break;
         case 1:
-            dist = 0.0f;
+            dist = float_0_80420e80;
             break;
         case 2:
-            dist = 0.0f;
+            dist = float_0_80420e80;
             break;
         case 3:
-            dist = 35.0f;
+            dist = float_35_80420e8c;
             break;
         }
     } else {
         switch (kpaGetLevel()) {
         case 0:
             if (mp->currMotionId == 0x25) {
-                dist = 10.0f;
+                dist = float_10_80420e90;
             } else {
                 dist = a;
             }
@@ -468,7 +468,7 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
             break;
         }
     }
-    angle = 3.1415927f * angle / 180.0f;
+    angle = float_3p1416_80420e78 * angle / float_180_80420e7c;
     ofs = 0;
     for (i = 0; i < count; i++, ofs += 4) {
         f32 yo;
@@ -487,14 +487,14 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
         y = mp->position.y + yo;
         z = mp->position.z + sz;
         distance = dist;
-        hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, 0.0f, 1.0f,
-                             0.0f);
+        hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0_80420e80, float_1_80420e94,
+                             float_0_80420e80);
         if (hit == NULL) continue;
-        hitY = (f32)(s32)(100.0f * hitY + 0.5f) / 100.0f;
+        hitY = (f32)(s32)(float_100_80420e98 * hitY + float_0p5_80420e70) / float_100_80420e98;
         if (y + dist >= hitY) {
             pos->y = hitY;
             result = hit;
-            *outY = 0.0f;
+            *outY = float_0_80420e80;
             KPA(marioGetPtr())->head[i] = hit;
         } else {
             *outY = hitY - pos->y - dist;
@@ -502,6 +502,20 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     }
     return result;
 }
+
+// head_sphere_data: sphere offsets (forward, height, radius) and a facing-condition type per level.
+s32 head_sphere_data_lv0[] = { 1, 10, 15, 6, 0 };
+s32 head_sphere_data_lv1[] = { 3, 32, 55, 24, 0, 26, 30, 16, 2, -10, 44, 25, 1 };
+s32 head_sphere_data_lv2[] = { 3, 45, 75, 34, 0, 36, 30, 16, 2, -15, 59, 36, 1 };
+s32 head_sphere_data_lv3[] = { 4, 100, 162, 80, 0, 90, 75, 30, 2, 50, 40, 30, 3, -43, 142, 74, 1 };
+s32* head_sphere_data[] = { head_sphere_data_lv0, head_sphere_data_lv1, head_sphere_data_lv2,
+                            head_sphere_data_lv3 };
+
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") static u32 gap_07_80415B84_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 // The original is a stub that returns NULL (`li r3, 0; blr`); its callers ignore the result.
 void* kpaSearchFrontUnder(void) {
@@ -594,7 +608,7 @@ static inline void kpaClearHeadAll(void) {
     s32 j;
     for (j = 0; j < 10; j++) {
         KPA(marioGetPtr())->head[j] = NULL;
-        KPA(marioGetPtr())->headDist[j] = 1000.0f;
+        KPA(marioGetPtr())->headDist[j] = float_1000_80420e74;
     }
 }
 
@@ -626,8 +640,8 @@ void* kpaHitCheck(void) {
     count = entry[0];
     entry = entry + 1;
     {
-    f32 pi = 3.1415927f;
-    f32 deg = 180.0f;
+    f32 pi = float_3p1416_80420e78;
+    f32 deg = float_180_80420e7c;
     for (i = 0; i < count; i++) {
         f32 x = (f32)entry[0] * (f32)sin(pi * mp->directionView / deg) + mp->position.x;
         f32 z = mp->position.z - (f32)entry[0] * (f32)cos(pi * mp->directionView / deg);
@@ -668,13 +682,45 @@ void* kpaHitCheck(void) {
 
 BOOL kpaFlameHitFilter(HitCheckQuery* query, HitEntry* entry) {
     MapObjectEntry* obj = mobjHitObjPtrToPtr(entry);
-    if (strcmp(obj->animName, "MOBJ_HiddenHatenaBlock") == 0) {
+    if (strcmp(obj->animName, str_802FE344) == 0) {
         return FALSE;
     }
-    return strcmp(obj->animName, "MOBJ_Block") != 0;
+    return strcmp(obj->animName, str_802FE35C) != 0;
 }
 
 void* kpaFlameHitCheck(f32 x, f32 y, f32 z, f32 rad) {
     marioGetPtr();
     return hitCheckSphereFilter(kpaFlameHitFilter, x, y, z, rad);
 }
+
+// .sdata2 constants, in the original address order. Defined after the code so the compiler emits
+// them before it pools anything, matching the original object layout.
+const f32 float_0p5_80420e70 = 0.5f;
+const f32 float_1000_80420e74 = 1000.f;
+const f32 float_3p1416_80420e78 = 3.1415927f;
+const f32 float_180_80420e7c = 180.f;
+const f32 float_0_80420e80 = 0.0f;
+const f32 float_neg1_80420e84 = -1.0f;
+const f32 float_2_80420e88 = 2.0f;
+const f32 float_35_80420e8c = 35.0f;
+const f32 float_10_80420e90 = 10.0f;
+const f32 float_1_80420e94 = 1.0f;
+const f32 float_100_80420e98 = 100.f;
+const f32 float_0p01_80420e9c = 0.01f;
+const f32 float_0p25_80420ea0 = 0.25f;
+const f32 float_0p6_80420ea4 = 0.6f;
+const f32 float_3_80420ea8 = 3.0f;
+const f32 float_0p05_80420eac = 0.05f;
+const f32 float_50_80420eb0 = 50.f;
+const f32 float_deg2rad_80420eb4 = 0.017453292f;
+const f32 float_90_80420eb8 = 90.f;
+const f32 float_270_80420ebc = 270.f;
+const f32 float_7_80420ec0 = 7.0f;
+
+// 4-byte zero word that ends the unit .sdata2; nothing reads it, but naming it keeps the section
+// length identical to the original.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata2") const u32 gap_09_80420EC4_sdata2 = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset

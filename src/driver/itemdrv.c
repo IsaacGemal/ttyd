@@ -139,8 +139,7 @@ const f64 double_20_802cac28 = 20.0;
 // The original reads 20.0 from the named .rodata object, not from a pooled copy of the literal. Reading it through
 // the pointer (rather than the symbol directly) also keeps the optimiser from seeing the value, which is what makes
 // it emit the original `fadd f7, f2, f5` instead of coalescing the sum into 20.0's f2 (7 fewer diffs).
-static const f64* const p_dbl20 = &double_20_802cac28;
-#define MATCH_DBL20 (*(volatile const f64*)p_dbl20)
+#define MATCH_DBL20 (*(volatile const f64*)&double_20_802cac28)
 #else
 #define MATCH_DBL20 double_20_802cac28
 #endif
@@ -2246,3 +2245,25 @@ s32 itemGetCheck(ItemEntry* entry) {
     return 0;
 }
 
+
+// Window descriptions for the item windows. Referenced by name in itemseq_GetItem.
+WinMgrDesc itemdrv_window_desc[] = {
+    { {0, 0}, 8, 0xFFFFFF51, 0x78, 0x15E, 0x2A, {0xE1, 0xD7, 0x9B, 0xFF}, NULL, winNameDisp },
+    { {0, 0}, 8, 0xFFFFFF10, 0xFFFFFF7E, 0x1F4, 0x50, {0xF0, 0xF0, 0xF0, 0xFF}, winHelpMain, winHelpDisp },
+    { {0, 0}, 8, 0xFFFFFF51, 0xC8, 0x15E, 0x4B, {0x2B, 0xA4, 0xFF, 0xFF}, NULL, winFullDisp },
+    { {0, 0}, 8, 0xFFFFFF51, 0x78, 0x15E, 0x2A, {0xE1, 0xD7, 0x9B, 0xFF}, NULL, winNameDisp2 },
+};
+
+// Trailing zero word of the .data section (the next unit's addresses depend on it).
+#ifdef MUST_MATCH
+#pragma force_active on
+#pragma explicit_zero_data on
+__declspec(section ".data") u32 gap_05_803124B4_data[1] = {0};
+#pragma explicit_zero_data reset
+#pragma force_active reset
+#endif
+
+// .sdata2 colour words for the message windows (0x8041af90..0x8041af98; low byte only).
+__declspec(section ".sdata2") u32 dat_8041af90 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041af94 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041af98 = 0xFFFFFFFF;

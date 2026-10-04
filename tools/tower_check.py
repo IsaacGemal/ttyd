@@ -98,7 +98,7 @@ def main():
                 chain.add(p)
                 p = ps[p][0]
     for pid, (ppid, comm, args, cwd, mnt, cg) in ps.items():
-        if ppid in chain and comm in ("cat", "timeout", "bash", "sh"):
+        if ppid in chain and comm in ("cat", "head", "timeout", "bash", "sh"):
             chain.add(pid)
     for pid, (ppid, comm, args, cwd, mnt, cg) in ps.items():
         boxed = mnt != host_mnt
