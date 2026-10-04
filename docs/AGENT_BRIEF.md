@@ -311,6 +311,20 @@ macOS; needs gdb, cmake, Rust; the clones live in `$MWCCDBG_HOME`, default `~/mw
    (`f(x = g())`); moving a block into a `static inline` helper (its locals become `@` objects ranked above named locals);
    `int` vs `s32` for a local; initialiser in the declaration vs a separate assignment.
 
+**How the allocator ranks variables (what a lever has to change).** Variables go on a priority list in "levels": sweep all variables in ascending
+vreg order; one whose remaining neighbours (physical registers always count) are at most 28 is pushed and stops counting as a neighbour; repeat
+from the first vreg. The list is coloured from the LAST pushed, each taking the lowest free volatile register, else the next callee-saved from r31
+down. So (1) within a level the higher vreg wins; (2) a variable with more than 28 neighbours waits for a later level and wins over everything
+in earlier ones; (3) vregs are numbered: parameters (lowest, in order), named locals in reverse declaration order (first declared highest), `@`
+CSE/inline temps, then the backend's objectless temps in initial-code order. A parameter can therefore never outrank a named local by
+declaration order; copies of it (`p = p0`, `m = m + 1`, `register`, an address-taken local, an inline helper's local) were checked on minimal
+repros and all coalesce into the parameter or rank above it. What does move a variable: becoming a different web (a second definition), or
+changing who it overlaps so it drops to an earlier or later level. `python3 tools/rasim.py DUMP neighbors --summary` (or `name=reg ...`) finds the
+single interference edge whose removal or addition gives the original's registers (it reported one for evt_mobj_rideswitch_lightblue, puniModeParentpre
+and puniswSetindex; none for the param-vs-local cases battleSortPhaseMoveTable, btlseqEnd_DispMain, screen_tev). Two webs with equal degree are ordered
+by vreg, i.e. by creation order: evt_mobj_*switch* differ only because our string-address temp (`lis`) is created before the `gp` load temp (the `asyncName`
+assignment comes first in the initial code even when written inside the call as `f(asyncName = str, !!gp->inBattle, NULL)`), where retail created it after. Open: a spelling that makes the `gp->inBattle` load come first without a named local (a named local shifted r27-r31 by 30+ instructions).
+
 **Scheduling-only differences** (same instructions, same registers, a different order inside a block): `tools/sched750.py`
 (tw2004, CC0; extended here to floating point) replays MWCC 2.6's list scheduler on a dump. `python3 tools/sched750.py predict build/mwccdbg/FUNC B23`
 prints the model's first-pass and last-pass order for block B23 next to the compiler's real one (`validate DIR...` reproduces 95.6% of 4129

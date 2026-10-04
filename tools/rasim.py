@@ -3,6 +3,7 @@
 Replay MWCC's register allocator from a mwccdbg dump, and search declaration orders against it.
 
     python3 tools/rasim.py <dump dir> replay [--fpr] [--pass N] [-n 20]
+    python3 tools/rasim.py <dump dir> neighbors [--fpr] [--pass N] [--summary] [name=reg ...]   # one interference edge to add or remove
     python3 tools/rasim.py <dump dir> search <lo> <hi> [--fpr] [--pass N] [--summary] [name=reg ...]
                                 [--iter 3000] [--phantoms r45,r119] [--key r97=66.5 ...]
 
@@ -128,6 +129,53 @@ class Alloc:
         return '%s%d' % (self.c, r) if r is not None else 'none'
 
 
+def targets_of(al, a, fpr):
+    """{vreg: register} from name=reg / rN=reg arguments or --summary (the original's registers from summary.txt)."""
+    target = {}
+    if '--summary' in a:
+        txt = open(os.path.join(a[0], 'summary.txt')).read()
+        sec = [x for x in re.split(r'^== ', txt, flags=re.M) if x.startswith('regalloc-%s-pass-%d-' % ('fpr' if fpr else 'gpr', al.pas))]
+        for m in re.finditer(r'^\s+%s(\d+)\s+-> %s(\d+)\s+!?ORIG %s(\d+)' % ((al.c,) * 3), sec[0] if sec else '', re.M):
+            target[int(m.group(1))] = int(m.group(3))
+    byname = {v: k for k, v in al.name.items() if v}
+    for t in a[2:]:
+        if '=' in t and not t.startswith('-'):
+            k, r = t.split('=')
+            v = int(k[1:]) if re.match(r'[rf]\d+$', k) else byname[k]
+            target[v] = int(r.lstrip('rf'))
+    return target
+
+
+def neighbors(al, a, opt, base, fpr):
+    """What single interference edge, removed or added, gives the original's registers? Each answer names the other variable: shorten
+    or lengthen its live range (or the target variable's) so the two stop or start overlapping."""
+    target = targets_of(al, a, fpr)
+    if not target:
+        sys.exit('no targets: give name=reg pairs or --summary')
+    wrong = lambda: sum(1 for v, r in al.run(base)[1].items() if v in target and r != target[v])
+    print('current: %d of %d targets wrong' % (wrong(), len(target)))
+    hits = []
+    for v in target:
+        for x in base:
+            if x == v:
+                continue
+            had = x in al.nb[v]
+            if had:
+                al.nb[v].discard(x); al.nb[x].discard(v)
+            else:
+                al.nb[v].add(x); al.nb[x].add(v)
+            if wrong() == 0:
+                hits.append(('remove' if had else 'add', v, x))
+            if had:
+                al.nb[v].add(x); al.nb[x].add(v)
+            else:
+                al.nb[v].discard(x); al.nb[x].discard(v)
+    for kind, v, x in hits:
+        print('  %s the edge %s -- %s' % (kind, al.label(v), al.label(x)))
+    if not hits:
+        print('  no single edge edit gives the targets')
+
+
 def main():
     a = sys.argv[1:]
     if len(a) < 2:
@@ -152,6 +200,8 @@ def main():
             print('  %-22s -> %s%s' % (al.label(v), al.reg_s(col[v]),
                                        '' if col[v] == al.reg[v] else '   (dump %s)' % al.reg_s(al.reg[v])))
         return
+    if a[1] == 'neighbors':
+        return neighbors(al, a, opt, base, fpr)
     if a[1] != 'search':
         sys.exit(__doc__)
     lo, hi = int(a[2]), int(a[3])
