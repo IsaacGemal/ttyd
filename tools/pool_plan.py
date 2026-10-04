@@ -379,6 +379,19 @@ def f32_literal(blob):
     return c + "f"
 
 
+def base_mode(tobj):
+    """True when the original reaches most of .rodata through one base register (`#pragma pool_data on`): .text relocations
+    hit only the first .rodata object while many later objects have no relocation at all."""
+    objs = tobj.objects(".rodata")
+    if len(objs) < 4:
+        return False
+    first = objs[0][0]
+    hit = {ta for off, typ, nm, tsec, ta in tobj.relocs(".text") if tsec == ".rodata"}
+    hit |= {ta for ds in (".data", ".sdata") if ds in tobj.sec for off, typ, nm, tsec, ta in tobj.relocs(ds) if tsec == ".rodata"}
+    other = [o for o in objs[1:] if o[2].startswith("str_") and o[0] not in hit]
+    return first in hit and len(other) >= 2
+
+
 def reload_map(tobj):
     """{constant name: {function names where retail loads it twice inside one basic block}} (reload semantics there)."""
     uses, du, funcs = analyse_uses(tobj, None)
@@ -431,10 +444,11 @@ def literalise(text, tobj, keep=(), nonconst=(), reload=None):
     code_syms = {nm for off, typ, nm, tsec, ta in tobj.relocs(".text") if tsec in SECS}
     data_syms = {nm for ds in (".data", ".sdata", ".rodata", ".sdata2") if ds in tobj.sec for off, typ, nm, tsec, ta in tobj.relocs(ds) if tsec in SECS}
     strs = {}
+    basem = base_mode(tobj)
     for sec in SECS:
         d = tobj.sec.get(sec, b"")
         for addr, size, name, _ in tobj.objects(sec):
-            if name.startswith("str_") and name in code_syms and name not in data_syms and name not in keep:
+            if name.startswith("str_") and (name in code_syms or basem) and name not in data_syms and name not in keep:
                 raw = d[addr:addr + size].split(b"\0")[0]
                 strs[name] = '"' + "".join(chr(b) if 32 <= b < 127 and chr(b) not in '"\\' else "\\%03o" % b for b in raw) + '"'
     for name, lit in strs.items():
@@ -499,6 +513,10 @@ def literalise(text, tobj, keep=(), nonconst=(), reload=None):
             incs = [m.end() for m in re.finditer(r"^#include[^\n]*\n", text, re.M)]
             at = incs[-1] if incs else 0
             text = text[:at] + "#ifdef MUST_MATCH\n#define RELOAD_F32(x) (*(const volatile f32*)&(x))\n#else\n#define RELOAD_F32(x) (x)\n#endif\n" + text[at:]
+    if basem and not re.search(r"^#pragma pool_data on", text, re.M):
+        incs = [m.end() for m in re.finditer(r"^#include[^\n]*\n", text, re.M)]
+        at = incs[-1] if incs else 0
+        text = text[:at] + "#pragma pool_data on // the original addresses its .rodata through one base register\n" + text[at:]
     allk = [nm for nm in sorted(keep, key=lambda k: addr_of.get(k, 0)) if nm in names]
     if allk:
         for nm in allk:
@@ -697,6 +715,9 @@ def plan():
         srctext = open(sp).read()
     except OSError:
         srctext = ""
+    bmode = base_mode(tobj)
+    if bmode:
+        print("# BASE-REGISTER unit: the original reaches its .rodata through one base register (pool_data on); strings with no relocation are used by offset, so they are LITERALS (not named objects) and the file needs `#pragma pool_data on` (--apply adds it)\n")
     cmds = []
     needed = list(getattr(plan, "needed", {}).values())
     final_keep = None
@@ -708,7 +729,7 @@ def plan():
             continue
         seq = [e for e in entries if e["kind"] != "gap"]
         for e in seq:
-            e["cls"] = "MAGIC" if e["kind"] == "magic" else ("UNREF" if not e["uses"] and not e["duses"] else ("DATA" if not e["uses"] else "LIT"))
+            e["cls"] = "MAGIC" if e["kind"] == "magic" else (("OFFSET" if bmode and e["kind"] == "str" else "UNREF") if not e["uses"] and not e["duses"] else ("DATA" if not e["uses"] else "LIT"))
         # named region from the probe
         k_f = None
         region = 0

@@ -157,6 +157,13 @@ constant read by name or reloaded, and the traps for that entry. Then:
 3. Finish with `tools/link_diag.py UNIT` and the ci.py checksums. Re-score every function after each change: the plan
    keeps layout right, and a function that drops is listed by name with the constants it uses.
 
+**Base-register units.** If the plan prints `BASE-REGISTER unit`, the original reaches its whole `.rodata` through one base register
+(`#pragma pool_data on`): strings have no relocation of their own (`addi rX, rBase, off`) and the int->float double is `lfd f1, 0x..(rBase)`.
+A named `str_xxxx` object lands before the pooled double, which puts the double at the wrong offset (the `lfd 0x10` vs `0xf8` diffs). Make the
+strings plain literals at their uses, add `#pragma pool_data on`, delete any `double_to_int_*` definition and the MUST_MATCH `base + off` hacks
+(`--apply` does these), then use `--check` to order the literals. Nine of the eleven class-d units were of this kind; ac_signal_timing's
+actionCommandDisp went to 100% this way.
+
 The plan's rules, so you can read its output: pooled entries land in the order the compiler first emits them (text order,
 expression-tree order inside a function); named objects land before the pool in a deferred unit and after it in a nodefer
 unit; a `const` object defined before its use is folded away, so define named objects after the code; the first entry the
