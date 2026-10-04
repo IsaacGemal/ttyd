@@ -1,6 +1,5 @@
 #include "party/party_cloud.h"
 #include "dolphin/types.h"
-#include "musyx/musyx.h"
 #include "party.h"
 #include "mario/mario.h"
 #include "mario/mario_sbr.h"
@@ -14,11 +13,16 @@
 #include "memory.h"
 #include "pmario_sound.h"
 #include "system.h"
-#include <math.h>
+#pragma pool_data on // the original addresses its .rodata through one base register
+#include "math_ext.h"
+#define fabs(x) __fabs(x)
+#define fabsf(x) __fabsf(x)
 #include <string.h>
 
 Vec cloud_at;
-const Vec vec3_802f8120 = {0.0f, 0.0f, 0.0f};
+// Pins the compiler's int->float magic double to .rodata+0x10 (after the vec3 template, before the
+// pooled strings); the inline conversions still emit their own anonymous copy at +0x38 (i2f limit).
+const f64 double_to_int_802f8130;
 
 void cloudGetAt(Vec* position) {
     MarioWork* mario = marioGetPtr();
@@ -241,17 +245,19 @@ static inline f32 s70(void) { return 70.0f; }
 #define RELOAD_MARIO() ((void)0)
 #endif
 
-// The three s32->f32 divisor conversions load the compiler's int->float magic double with a fresh
-// `lis r3, @N@ha` instead of the original's `lfd f3, 0x10(r31)` (r31 = vec3_802f8120); the offset
-// is right, only the base register differs (the strings via base+offset keep the magic at 0x10 but
-// leave it as the only pool entry, so MWCC will not fold it into r31). The symbol itself is
-// unscored; the four `addi rN, r31, 0x18/0x20/0x28/0x30` replaces are only objdiff pairing once
-// the `lis` shifts them by one slot. The 70.0f and the clamp's mario reload are reproduced by the
-// SEVENTY()/RELOAD_MARIO() match-only macros above.
-// NONMATCHING (99.75%): only the int->float magic double's base register differs (fresh `lis` vs r31).
+// The three s32->f32 divisor conversions compile to MWCC's inline int->float sequence, which always
+// reads the compiler's own anonymous copy of the 2^52+2^31 double. That copy pools after the
+// function's string literals, so it lands at .rodata+0x38 while the original reads the unit's named
+// double_to_int_802f8130 at .rodata+0x10 (r31 = the vec3 base). Reading the named double by hand (a
+// union plus a double subtract) drops the anonymous copy but emits fsub+frsp instead of the fused
+// fsubs and grows the frame, so it scores lower; this is the project-wide i2f limit (kpaFireAttack).
+// The 70.0f and the clamp's mario reload are reproduced by the SEVENTY()/RELOAD_MARIO() match-only
+// macros above.
+// NONMATCHING (99.90%): the three i2f `lfd` loads read the anonymous double at +0x38 instead of
+// the named one at +0x10, and the f2/f3 colours that feed fsubs/fadds/fmuls follow from that;
+// the anonymous copy also leaves 8 extra bytes at the end of .rodata.
 void N__cloud_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
-    const u8* base = (const u8*)&vec3_802f8120;
     HitEntry* hit;
     f32 sx, sz, hitNZ, hitNY, hitNX, dist, hitZ, hitY, hitX, cos2, sin2, cos1, sin1;
     f32 angle;
@@ -317,8 +323,8 @@ void N__cloud_use(PartyEntry* party) {
             *(s32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x30) = 0xF5;
         }
         marioChgMot(0x1B);
-        marioChgPose((const char*)(base + 0x18));
-        partyChgPose(party, (char*)(base + 0x20));
+        marioChgPose("M_A_2A");
+        partyChgPose(party, (char*)"PWD_A_5");
         *(s32*)((u8*)party + 0x24) = 0x10;
         party->useMotionId = 0xB;
         mario->dispFlags |= 0x4;
@@ -341,8 +347,8 @@ void N__cloud_use(PartyEntry* party) {
         if (--*(s32*)((u8*)party + 0x24) > 0) {
             break;
         }
-        partyChgPose(party, (char*)(base + 0x28));
-        marioChgPose((const char*)(base + 0x30));
+        partyChgPose(party, (char*)"PWD_A_6");
+        marioChgPose("M_A_2B");
         party->useMotionId = 0xC;
         /* fallthrough */
     case 0xC:
@@ -363,7 +369,7 @@ void N__cloud_use(PartyEntry* party) {
         party->position.x = sx;
         party->position.z = sz;
         party->position.y = mario->position.y + 10.0f;
-        *(Vec*)((u8*)party + 0x7C) = *(const Vec*)base;
+        *(Vec*)party->field_7C = (Vec){0.0f, 0.0f, 0.0f};
         *(f32*)((u8*)cloud + 0x8) += 2.0f;
         RELOAD_MARIO();
 #ifdef MUST_MATCH
@@ -755,3 +761,13 @@ s32 cloudGetHitBreathout(s32 param_1) {
     
     return hitBreathout;
 }
+
+const f64 double_to_int_802f8130 = 4503601774854144.0;
+
+// 4-byte tail of the original .data after the useMotionId jump table (the next unit's object);
+// explicit_zero_data + force_active keep the zero word instead of dropping it.
+#pragma explicit_zero_data on // emit the zero-valued object below
+#pragma force_active on // keep it even though nothing references it
+__declspec(section ".data") static u32 gap_05_8038BAAC_data[1] = {0};
+#pragma force_active reset
+#pragma explicit_zero_data reset

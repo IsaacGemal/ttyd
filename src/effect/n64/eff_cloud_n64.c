@@ -67,7 +67,9 @@ static inline s32 __fpclassifyf(f32 x) {
 #define isnan(x) (fpclassify(x) == FP_NAN)
 
 static inline f32 sqrtf(f32 x) {
-	if (x > 0.0f) {
+	// Poking float_0 through a pointer forces a load distinct from the caller's `dist != float_0`
+	// compare; a plain reference lets MWCC CSE them and moves effCloudMain's accumulator off f1.
+	if (x > *(f32*)&float_0_8041eba0) {
 		f64 guess = __frsqrte(x);
 		guess = 0.5 * guess * (3.0 - guess * guess * x);
 		guess = 0.5 * guess * (3.0 - guess * guess * x);
@@ -87,7 +89,12 @@ EffectEntry* effCloudN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	s32 i;
 
 	effect = effEntry();
+#ifdef MUST_MATCH
+	// original .rodata is a 12-byte "CloudN64" object plus a 4-byte zero gap_04
+	effect->type = "CloudN64\0\0\0\0\0\0\0";
+#else
 	effect->type = "CloudN64";
+#endif
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effCloudData));
 	effect->userdata = data;
@@ -192,10 +199,10 @@ EffectEntry* effCloudN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 s
 	data->field_0x140[0] = z;
 	data->field_0x230[0] = 1;
 	data->field_0x1B8[0] = 0;
-	data->field_0x2AC[0] = 0.0f;
+	data->field_0x2AC[0] = float_0_8041eba0;
 	data->field_0x44 = (f32)(rand() % 30 + 10);
-	data->field_0x48 = 0.0f;
-	data->field_0x4C = 0.0f;
+	data->field_0x48 = float_0_8041eba0;
+	data->field_0x4C = float_0_8041eba0;
 	return effect;
 }
 
@@ -209,9 +216,10 @@ inline Vec makeVec(f32 x, f32 y, f32 z) {
 
 // effCloudDisp is emitted first in the original (last in this file), which seeds the .rodata pool
 // with vec3 then the compiler-generated double_to_int used by both functions' int->float
-// conversions. The outer `if (dist)` (not `dist != 0.0f`) gets MWCC to emit the original's
-// `fcmpu cr0, f4, f0`, and the literal `0.0f` in the inlined sqrtf keeps the original's FPR
-// allocation in the ring-buffer block (px/py/pz f3/f4/f5, dist accumulator f1, zero f0).
+// conversions. `dist != float_0_8041eba0` (rather than the implicit `if (dist)`) keeps every zero
+// reference on the unit's named float_0, so .sdata2 stays the original's 56 bytes; the inlined
+// sqrtf then pokes float_0 through a pointer (see above) to keep the ring-buffer block's FPR
+// allocation (px/py/pz f3/f4/f5, dist accumulator f1, zero f0).
 void effCloudMain(EffectEntry* effect) {
 	effCloudData* data = effect->userdata;
 	Vec position;
@@ -282,7 +290,7 @@ void effCloudMain(EffectEntry* effect) {
 			data->field_0x140[index] = pz;
 			data->field_0x1B8[index] = counter;
 			dist = dx * dx + dy * dy + dz * dz;
-			if (dist) {
+			if (dist != float_0_8041eba0) {
 				dist = sqrtf(dist);
 			}
 			data->field_0x2AC[index] = len + dist;
@@ -318,9 +326,11 @@ static inline void effCloudTevColor2(s32 r, s32 g, s32 b) {
 }
 #endif
 
-// NONMATCHING (99.45%): vtx lands r31 vs the original's r28, rotating the loop-constant trio
-// (0x88888889 / count-1 / 0x4330) one register down; the i*180 strength-reduction increment
-// schedules at the loop end instead of mid-store. (texBase/prev/fade/second loop already fixed.)
+// effCloudDisp's ring loop needed two changes to match: the Vtx pointer is rebuilt per iteration
+// (`((cloudVtx*)base) + i * 2`) instead of being a stepped function-scope pointer, which lands it in
+// r28; and a running `deg` that only counts active entries drives the alpha angle
+// (`(f32)((deg * 180) / (count - 1))`, `deg++` inside the active-entry `if`), which lets MWCC
+// strength-reduce `deg * 180` and schedule `addi r27,r27,0xb4` in the original's mid-store slot.
 void effCloudDisp(CameraId cameraId, void* param) {
 	effCloudData* data;
 	s32 frame;
@@ -361,8 +371,8 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	s32 i;
 	s32 k;
 	s32 v;
-	cloudVtx* vtx;
 	s32 i2;
+	s32 deg;
 	effect = param;
 	cam = camGetPtr(cameraId);
 	data = effect->userdata;
@@ -446,10 +456,11 @@ void effCloudDisp(CameraId cameraId, void* param) {
 	}
 
 	if (count - 1 > 0) {
-		vtx = (cloudVtx*)base;
+		deg = 0;
 		for (i = 0; i < 30; i++) {
+			cloudVtx* vtx = ((cloudVtx*)base) + i * 2;
 			j = (1 + data->field_0x2A8 + i) % 30;
-			alpha = (s32)(float_255_8041ebac * (f32)sin((f32)((i * 180) / (count - 1)) * float_6p2832_8041eba4 / float_360_8041eba8));
+			alpha = (s32)(float_255_8041ebac * (f32)sin((f32)((deg * 180) / (count - 1)) * float_6p2832_8041eba4 / float_360_8041eba8));
 			if (alpha > 200) {
 				alpha = 200;
 			}
@@ -515,6 +526,7 @@ void effCloudDisp(CameraId cameraId, void* param) {
 				angle = float_6p2832_8041eba4 * dir / float_360_8041eba8;
 				sx = width * (f32)sin(angle);
 				cy = width * (f32)cos(angle);
+				deg++;
 
 				vtx[0].x = (s16)(px + sx);
 				vtx[0].y = (s16)(py + cy);
@@ -536,7 +548,6 @@ void effCloudDisp(CameraId cameraId, void* param) {
 				vtx[1].b = fadeB;
 				vtx[1].a = alpha;
 			}
-			vtx += 2;
 		}
 
 		DCFlushRange(base, 0x690);

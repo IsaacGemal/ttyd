@@ -45,10 +45,11 @@ static inline s32 __fpclassifyf(f32 x) {
 // .sdata2 constants. The matching build keeps them writable so the loads reference the
 // original symbols instead of being folded into MWCC's own pool.
 #ifdef MUST_MATCH
-#define SDATA2_CONST
+#define SDATA2_CONST __declspec(section ".sdata2")
 #else
 #define SDATA2_CONST const
 #endif
+#pragma explicit_zero_data on
 
 SDATA2_CONST f32 float_4_80421ce0 = 4.0f;
 SDATA2_CONST f32 float_8_80421ce4 = 8.0f;
@@ -66,6 +67,7 @@ SDATA2_CONST f32 dat_80421d10 = 0.00000000023283064f;
 SDATA2_CONST f32 float_neg2_80421d14 = -2.0f;
 SDATA2_CONST f32 float_0p25_80421d18 = 0.25f;
 SDATA2_CONST f32 float_2p5_80421d1c = 2.5f;
+#pragma explicit_zero_data reset
 
 // .rodata
 // The zero vectors share the sdata2 trick: non-const under MUST_MATCH so the loads reference the
@@ -415,8 +417,8 @@ void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 // __fpclassifyf scratch slots are swapped, and the second loop/post-loop keep dat/float_1 and
 // float_0p5 in the other scratch FPRs.
 void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter* emitter) {
-	static s32 use_last;
 	static f32 y2;
+	static s32 use_last;
 	ParticleWork* work = effect->userdata;
 	f32 random;
 	f32 z;
@@ -473,3 +475,10 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 	PSVECScale(&particle->velocity, &particle->position, float_2p5_80421d1c);
 	PSVECAdd(&emitter->position, &particle->position, &particle->position);
 }
+
+// trailing .sdata gap before the next unit's data
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") static u32 gap_07_80417BC4_sdata = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset

@@ -13,35 +13,19 @@
 #include <stdio.h>
 #include "driver/shadowdrv.h"
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern u32 dat_8041977c;
+
 
 extern GlobalWork* gp;
 
-// .rodata strings and .sdata2 constants this unit references by name in retail
-extern const char str_802C15D8[];
-extern const char str_802C15E4[];
-extern const char str_804197C4[];
-extern const f32 float_deg2rad_804197c0;
-extern const f32 float_1_804197ac;
-extern const f32 float_10_80419794;
-extern const f32 float_8_80419798;
-extern const f32 float_16_804197a4;
-extern const f32 float_20_804197a0;
-extern const f32 float_200_804197c8;
-extern const f32 float_0_8041979c;
-extern const f32 float_neg1_804197a8;
-extern const f32 float_0p5_804197b0;
-extern const f32 float_0p6_804197b4;
-extern const f32 float_0p8_804197b8;
-extern const f32 float_0p9_804197bc;
+// .sdata2 constants this unit references by name in retail
 extern u32 dat_80419780;
 extern u32 dat_80419778;
 extern u32 dat_80419784;
 extern GXColor dat_80419788;
 extern GXColor dat_8041978c;
 extern GXColor dat_80419790;
-extern Vec vec3_802c1598;
-
-static u8 dummy_tex[1] = { 0 };
 
 //.sbss
 TEXPalette* icon_tpl;
@@ -49,10 +33,6 @@ IconBinary* icon_bin;
 BOOL icon_tpl_ok;
 BOOL icon_bin_ok;
 static IconWork work[2];
-
-//.sdata
-u16 suuji[] = { 473, 475, 477, 479, 481, 483, 485, 487, 489, 491 };   // 0-9
-u16 suuji_s[] = { 474, 476, 478, 480, 482, 484, 486, 488, 490, 492 }; // 0-9 small
 
 // local prototypes
 
@@ -121,7 +101,7 @@ void iconInit(void) {
     icon_tpl_ok = FALSE;
     icon_bin_ok = FALSE;
 
-    sprintf(path, str_802C15D8, getMarioStDvdRoot());
+    sprintf(path, "%s/icon.tpl", getMarioStDvdRoot());
     entry = DVDMgrOpen(path, 2, 0);
     if (entry) {
         size = OSRoundUp32B(DVDMgrGetLength(entry));
@@ -130,7 +110,7 @@ void iconInit(void) {
         DVDMgrReadAsync(entry, icon_tpl, size, 0, _callback_tpl);
     }
 
-    sprintf(path, str_802C15E4, getMarioStDvdRoot());
+    sprintf(path, "%s/icon.bin", getMarioStDvdRoot());
     entry = DVDMgrOpen(path, 2, 0);
     if (entry) {
         size = OSRoundUp32B(DVDMgrGetLength(entry));
@@ -200,15 +180,15 @@ void iconMain(void) {
             }
             if (!(entry->flags & 2)) {
                 if (entry->flags & 0x10) {
-                    dispEntry(CAMERA_2D, float_200_804197c8, 1, iconDisp, entry);
+                    dispEntry(CAMERA_2D, 200.0f, 1, iconDisp, entry);
                 } else if (entry->flags & 0x100) {
-                    shadowEntry(entry->position.x, entry->position.y, entry->position.z, float_10_80419794);
+                    shadowEntry(entry->position.x, entry->position.y, entry->position.z, 10.0f);
                     dispEntry(CAMERA_3D_EFFECTA, dispCalcZ(&entry->position), 1, iconDisp, entry);
                 } else if (entry->flags & 0x200) {
-                    shadowEntry(entry->position.x, entry->position.y, entry->position.z, float_10_80419794);
+                    shadowEntry(entry->position.x, entry->position.y, entry->position.z, 10.0f);
                     dispEntry(CAMERA_3D_EFFECTB, dispCalcZ(&entry->position), 1, iconDisp, entry);
                 } else {
-                    shadowEntry(entry->position.x, entry->position.y, entry->position.z, float_10_80419794);
+                    shadowEntry(entry->position.x, entry->position.y, entry->position.z, 10.0f);
                     if (entry->color.a != 0xFF) {
                         dispEntry(CAMERA_3D, dispCalcZ(&entry->position), 2, iconDisp, entry);
                     } else {
@@ -239,8 +219,8 @@ void iconEntry(const char* name, u16 iconId) {
 
     memset(entry, 0, sizeof(IconEntry));
     entry->position = (Vec){ 0.0f, 0.0f, 0.0f };
-    entry->scale = float_1_804197ac;
-    entry->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+    entry->scale = 1.0f;
+    entry->color = *(GXColor*)&dat_80419778;
     strcpy(entry->name, name);
     entry->iconId = iconId;
     {
@@ -294,8 +274,8 @@ void iconEntry2D(const char* name, s16 iconId) {
 
     memset(entry, 0, sizeof(IconEntry));
     entry->position = (Vec){ 0.0f, 0.0f, 0.0f };
-    entry->scale = float_1_804197ac;
-    entry->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+    entry->scale = 1.0f;
+    entry->color = *(GXColor*)&dat_8041977c;
     strcpy(entry->name, name);
     entry->iconId = iconId;
     {
@@ -370,7 +350,7 @@ void iconDisp(CameraId camId, void* param) {
     camera = camGetPtr(camId);
     MTXTrans(trans, entry->position.x, entry->position.y, entry->position.z);
     MTXScale(scale, entry->scale, entry->scale, entry->scale);
-    MTXRotRad(rot, 'y', float_deg2rad_804197c0 * -camera->viewYaw);
+    MTXRotRad(rot, 'y', 0.017453292f * -camera->viewYaw);
     MTXConcat(trans, rot, mtx);
     MTXConcat(mtx, scale, mtx);
     MTXConcat(camera->view, mtx, mtx);
@@ -398,7 +378,7 @@ void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) 
         return;
     MTXTrans(transmtx, position->x, position->y, position->z);
     MTXScale(scalemtx, scale, scale, scale);
-    MTXRotRad(rotmtx, 'y', float_deg2rad_804197c0 * -camera->viewYaw);
+    MTXRotRad(rotmtx, 'y', 0.017453292f * -camera->viewYaw);
     MTXConcat(transmtx, rotmtx, mtx);
     MTXConcat(mtx, scalemtx, mtx);
     MTXConcat(camera->view, mtx, mtx);
@@ -569,13 +549,16 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
 }
 
 // The frame table is reached through a typed accessor: a cast at each use moves `data` into another register.
+// The zero dummy below is a function-local static the original keeps in .sdata (32-aligned), not .sbss.
+#pragma explicit_zero_data on
 void iconGetTexObj(GXTexObj* texObj, u16 iconId) {
     u16 tplId;
     ICON_FRAMES_DECL
     IconBinaryEntry* data;
 
     if (!icon_tpl_ok || !icon_bin_ok) {
-        GXInitTexObj(texObj, dummy_tex, 1, 1, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
+        static char dummy ATTRIBUTE_ALIGN(32) = '\0';
+        GXInitTexObj(texObj, &dummy, 1, 1, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
         return;
     }
     {
@@ -606,9 +589,10 @@ void iconGetTexObj(GXTexObj* texObj, u16 iconId) {
         }
     }
     TEXGetGXTexObjFromPalette(icon_tpl, texObj, tplId);
-    GXInitTexObjLOD(texObj, GX_LINEAR, GX_LINEAR, float_0_8041979c, float_0_8041979c, float_0_8041979c,
+    GXInitTexObjLOD(texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f,
                     GX_FALSE, GX_FALSE, GX_ANISO_1);
 }
+#pragma explicit_zero_data reset
 
 void iconGetWidthHight(u16* width, u16* height, u16 iconId) {
     IconBinaryEntry* entry;
@@ -631,6 +615,8 @@ void iconGetWidthHight(u16* width, u16* height, u16 iconId) {
 
 // dont_inline keeps the iconGX call in iconDisp/iconDispGx2 (retail emits a real `bl`).
 #pragma dont_inline on
+// The zero dummy below is a function-local static the original keeps in .sdata (32-aligned), not .sbss.
+#pragma explicit_zero_data on
 void iconGX(Mtx mtx, IconEntry* entry) {
     Vec position = { 0.0f, 0.0f, 0.0f };
     GXTexObj texObj;
@@ -649,23 +635,24 @@ void iconGX(Mtx mtx, IconEntry* entry) {
     position.x = mtx[0][3];
     position.y = mtx[1][3];
     position.z = mtx[2][3];
-    y = (entry->flags & 8) ? float_neg1_804197a8 : float_1_804197ac;
-    x = (entry->flags & 4) ? float_neg1_804197a8 : float_1_804197ac;
-    PSMTXScale(scale, x, y, float_1_804197ac);
+    y = (entry->flags & 8) ? -1.0f : 1.0f;
+    x = (entry->flags & 4) ? -1.0f : 1.0f;
+    PSMTXScale(scale, x, y, 1.0f);
     PSMTXConcat(mtx, scale, mtx2);
     camera = camGetPtr(8);
     if (camGetCurPtr() != camera && (entry->flags & 0x10)) {
-        PSMTXScale(scale, float_1_804197ac, float_neg1_804197a8, float_1_804197ac);
+        PSMTXScale(scale, 1.0f, -1.0f, 1.0f);
         PSMTXConcat(mtx2, scale, mtx2);
     }
     GXLoadPosMtxImm(mtx2, 0);
     GXSetCurrentMtx(0);
     tplId = entry->tplId;
     if (!icon_tpl_ok || !icon_bin_ok) {
-        GXInitTexObj(&texObj, dummy_tex, 1, 1, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
+        static char dummy ATTRIBUTE_ALIGN(32) = '\0';
+        GXInitTexObj(&texObj, &dummy, 1, 1, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
     } else {
         TEXGetGXTexObjFromPalette(icon_tpl, &texObj, tplId);
-        GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, float_0_8041979c, float_0_8041979c, float_0_8041979c,
+        GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f,
                         GX_FALSE, GX_FALSE, GX_ANISO_1);
     }
     GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -733,7 +720,7 @@ void iconGX(Mtx mtx, IconEntry* entry) {
     if (!(entry->flags & 0x10)) {
         mapSetMaterialFog();
     } else {
-        GXSetFog(0, float_0_8041979c, float_0_8041979c, float_0_8041979c, float_0_8041979c, dat_80419790);
+        GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_80419790);
     }
     if (entry->color.a < 0xFF) {
         GXSetBlendMode(1, 4, 5, 0);
@@ -770,22 +757,30 @@ void iconGX(Mtx mtx, IconEntry* entry) {
     }
     top = height;
     bottom = -height;
-    left = -width * float_0p5_804197b0;
+#ifdef MUST_MATCH
+    // MUST_MATCH: the local pins the 0.5 load and the FP register allocation.
+    {
+        f32 half = 0.5f;
+        left = -width * half;
+    }
+#else
+    left = -width * 0.5f;
+#endif
     if (!(entry->flags & 0x10)) {
-        left *= float_0p6_804197b4;
-        top *= float_0p6_804197b4;
-        width *= float_0p6_804197b4;
-        bottom *= float_0p6_804197b4;
+        left *= 0.6f;
+        top *= 0.6f;
+        width *= 0.6f;
+        bottom *= 0.6f;
         if (entry->iconId == 0x18B) {
-            left *= float_0p8_804197b8;
-            top *= float_0p8_804197b8;
-            width *= float_0p8_804197b8;
-            bottom *= float_0p8_804197b8;
+            left *= 0.8f;
+            top *= 0.8f;
+            width *= 0.8f;
+            bottom *= 0.8f;
         } else if (entry->iconId == 0x18D) {
-            left *= float_0p9_804197bc;
-            top *= float_0p9_804197bc;
-            width *= float_0p9_804197bc;
-            bottom *= float_0p9_804197bc;
+            left *= 0.9f;
+            top *= 0.9f;
+            width *= 0.9f;
+            bottom *= 0.9f;
         }
     }
     GXBegin(0x80, 0, 4);
@@ -803,7 +798,20 @@ void iconGX(Mtx mtx, IconEntry* entry) {
         GXSetTevSwapMode(2, 0, 0);
     }
 }
+#pragma explicit_zero_data reset
 #pragma dont_inline reset
+
+// .sdata digit tables
+static u16 suuji[] = { 473, 475, 477, 479, 481, 483, 485, 487, 489, 491 };   // 0-9
+u16 suuji_s[] = { 474, 476, 478, 480, 482, 484, 486, 488, 490, 492 }; // 0-9 small
+
+// trailing zero word of the unit's .sdata
+// (an all-zero object needs explicit_zero_data to stay in .sdata)
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_8040F3CC_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 IconEntry* iconNameToPtr(const char* name) {
     IconWork* wp = iconGetWork();
@@ -872,7 +880,7 @@ s32 iconNumberDispGx(Mtx mtx, s32 number, BOOL small, GXColor color) {
     f32 spacing;
 
     big = !small;
-    spacing = big ? float_20_804197a0 : float_16_804197a4;
+    spacing = big ? 20.0f : 16.0f;
 
     rem = number % 100000;
     digits[4] = rem / 10000;
@@ -919,7 +927,7 @@ s32 iconNumberDispGx3D(Mtx mtx, s32 number, BOOL small, GXColor color) {
     f32 spacing;
 
     big = !small;
-    spacing = big ? float_10_80419794 : float_8_80419798;
+    spacing = big ? 10.0f : 8.0f;
 
     rem = number % 100000;
     digits[4] = rem / 10000;
@@ -952,3 +960,17 @@ s32 iconNumberDispGx3D(Mtx mtx, s32 number, BOOL small, GXColor color) {
     }
     return width;
 }
+
+// ---- .sdata2 ----
+// Named 0xFFFFFFFF/0xFFFFFF00/colour words the unit reads by name; the float constants are
+// pooled literals emitted in first-use order after these, matching the original's .sdata2.
+// explicit_zero_data keeps the all-zero float_0 word out of .sbss.
+#pragma explicit_zero_data on
+__declspec(section ".sdata2") u32 dat_80419778 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041977c = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_80419780 = 0xFFFFFF00;
+__declspec(section ".sdata2") u32 dat_80419784 = 0xFFFFFFFF;
+__declspec(section ".sdata2") GXColor dat_80419788 = { 0xFF, 0xFF, 0xFF, 0xFF };
+__declspec(section ".sdata2") GXColor dat_8041978c = { 0x55, 0x55, 0x55, 0xFF };
+__declspec(section ".sdata2") GXColor dat_80419790 = { 0xFF, 0xFF, 0xFF, 0xFF };
+#pragma explicit_zero_data reset
