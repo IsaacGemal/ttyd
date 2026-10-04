@@ -293,7 +293,12 @@ class AgentAudit(unittest.TestCase):
         self.assertNotIn("WRITE-OUTSIDE", kinds(ev("bash", command="cp /home/isaac/ttyd-w71base/build/x.o build/x.o")))
         self.assertNotIn("WRITE-OUTSIDE", kinds(ev("bash", command="rsync -a /home/isaac/base/src/ src/")))
         for cmd in ["cp build/x.o /home/isaac/x.o", "cp -t /home/isaac/par a b", "mv /home/isaac/x tmp/x",
-                    "ln -s ../x /home/isaac/y"]:
+                    "ln -s ../x /home/isaac/y",
+                    # target-directory forms: bundled, attached, long with and without =
+                    "cp -at /home/isaac/par a b", "install -Dt /home/isaac/x f", "cp -t/home/isaac/par a b",
+                    "cp --target-directory=/home/isaac/par a b", "cp --target-directory /home/isaac/par a b",
+                    # another host is outside
+                    "rsync -a src/ otherhost:backup/", "scp tmp/x.o host:/tmp/x.o"]:
             self.assertIn("WRITE-OUTSIDE", kinds(ev("bash", command=cmd)), cmd)
 
     def test_running_tools_from_outside(self):

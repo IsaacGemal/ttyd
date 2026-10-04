@@ -348,10 +348,19 @@ def audit_shell(cmd, ws, cwd=None, depth=0):
             if name == "dd":
                 operands = [a[3:] for a in args if a.startswith("of=")]
             if name in ("cp", "rsync", "install", "ln", "scp"):
-                # only the destination is written: `-t DIR`, or the last operand (copying in from outside is a read)
-                t = next((args[i + 1] for i, a in enumerate(args[:-1]) if a in ("-t", "--target-directory")), None)
-                operands = [t] if t else operands[-1:]
-            wrote = any(outside(a, ws, cwd) for a in operands)
+                # Only the destination is written, and copying in from outside is a read; but the destination must be
+                # unambiguous: a plain last operand. Any target-directory form (-t DIR, -t/DIR, a short-flag cluster
+                # holding t, --target-directory[=DIR]) or a host:path operand checks every operand instead.
+                ambiguous = any(a.startswith("--target-directory") or (re.match(r"^-[A-Za-z]+", a) and "t" in a[1:].split("=")[0])
+                                for a in args if a.startswith("-") and not a.startswith("--") or a.startswith("--target-directory"))
+                # a target attached to its flag (-t/DIR, --target-directory=DIR) isn't an operand: add it
+                operands += [m.group(1) for a in args for m in [re.match(r"^(?:-t|--target-directory=)(.+)$", a)] if m]
+                remote = any(":" in a and not a.startswith("/") for a in operands)
+                if remote:
+                    wrote = True  # a copy to or from another host is outside by definition
+                elif not ambiguous:
+                    operands = operands[-1:]
+            wrote = wrote or any(outside(a, ws, cwd) for a in operands)
         # in-place editors: every file operand is written (resolved against the tracked cwd, slash or not)
         if not wrote and name in ("sed", "perl") and any(re.match(r"^-[A-Za-z]*i", a) or a.startswith("--in-place") for a in args):
             wrote = any(outside(f, ws, cwd) for f in editor_files(name, args))
