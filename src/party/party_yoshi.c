@@ -62,10 +62,6 @@ typedef struct PartyYoshiUse {
 
 // Not yet in a header (marioJumpStandData is static in motion/mot_jump.c;
 // the pose-speed tables and the M_Y strings live in party_yoshi's .sdata).
-extern f32 marioJumpStandData[10];
-extern f32 ofs_PYS_S_2[];
-extern f32 ofs_PYS_R_2[10];
-extern f32 ofs_PYS_F_1[10];
 
 typedef struct YoshiZeroVec6 {
     Vec a;
@@ -76,6 +72,37 @@ typedef struct YoshiZeroVec6 {
 const Vec vec3_802cccd0 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cccdc = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802ccce8 = {0.0f, 0.0f, 0.0f};
+
+// .sdata
+static f32 marioJumpStandData[10] = {
+    1.52f, -0.188f, 2.925f, -0.847f, -0.1f,
+    -0.4f, 0.024f, -0.004f, 0.125f, 0.7f,
+};
+f32 ofs_PYS_R_2[10] = {
+    0.0f, 0.0f, 0.3659999966621399f, 0.5550000071525574f, 0.3799999952316284f,
+    0.0f, 0.0f, 0.3659999966621399f, 0.5550000071525574f, 0.3799999952316284f,
+};
+f32 ofs_PYS_F_1[10] = {
+    0.0f, 0.0f, 0.43299999833106995f, 0.5569999814033508f, 0.5120000243186951f,
+    0.0f, 0.0f, 0.43299999833106995f, 0.5569999814033508f, 0.5120000243186951f,
+};
+
+// .data
+f32 ofs_PYS_S_2[52] = {
+    0.0f, -0.010999999940395355f, -0.041999999433755875f, -0.08699999749660492f,
+    -0.1420000046491623f, -0.20200000703334808f, -0.2619999945163727f, -0.31700000166893005f,
+    -0.3619999885559082f, -0.3930000066757202f, -0.40400001406669617f, -0.40400001406669617f,
+    -0.40400001406669617f, -0.40400001406669617f, -0.40400001406669617f, -0.3869999945163727f,
+    -0.3409999907016754f, -0.2759999930858612f, -0.20200000703334808f, -0.12800000607967377f,
+    -0.06300000101327896f, -0.017000000923871994f, 0.0f, 0.0f,
+    0.0f, 0.0f, 0.0f, -0.010999999940395355f,
+    -0.041999999433755875f, -0.08699999749660492f, -0.1420000046491623f, -0.20200000703334808f,
+    -0.2619999945163727f, -0.31700000166893005f, -0.3619999885559082f, -0.3930000066757202f,
+    -0.40400001406669617f, -0.40400001406669617f, -0.40400001406669617f, -0.40400001406669617f,
+    -0.40400001406669617f, -0.3869999945163727f, -0.3409999907016754f, -0.2759999930858612f,
+    -0.20200000703334808f, -0.12800000607967377f, -0.06300000101327896f, -0.017000000923871994f,
+    0.0f, 0.0f, 0.0f, 0.0f,
+};
 
 // The original's .rodata is these three Vecs (0x00), then the compiler's
 // int->float magic double (0x28), then the PYS_* strings (0x30..0x57) and the
@@ -120,81 +147,25 @@ static const f32 float_26 = 26.0f;
 static const f32 float_20 = 20.0f;
 
 
-void yoshi_init(PartyEntry* party) {
-    party->field_33 = 4;
-    party->field_32 = 0;
-    *(f32*)((u8*)party + 0xF0) = float_26;
-    *(f32*)((u8*)party + 0xF4) = float_20;
-    party->yoshiPsndSFXId = -1;
+void evt_set_yoshi_frm(s32 msec) {
+    evt_yoshi_frm = sysMsec2Frame(msec);
 }
 
-s32 yoshiGetStatus(void) {
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
-    s32 status = 5;
-
-    if (party == NULL || party->currentMemberId != PARTY_MEMBER_YOSHI || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
-        return 0;
-    } else if (party->useMotionId >= 0xA && party->useMotionId <= 0xD) {
-        status = 1;
-    } else if (party->useMotionId >= 0x14 && party->useMotionId <= 0x16) {
-        status = 2;
-    } else if (party->useMotionId >= 0x64 && party->useMotionId <= 0x65) {
-        status = 5;
-    } else if (party->useMotionId >= 0x3C && party->useMotionId <= 0x41) {
-        status = 3;
-    } else if (party->useMotionId >= 0x32 && party->useMotionId <= 0x34) {
-        status = 4;
-    }
-    return status;
+void evt_set_yoshi_spd(f32 spd) {
+    evt_yoshi_spd = spd;
 }
 
-// The three early-exit tests must share one `||` (as in yoshiGetStatus): a
-// flat chain keeps them in one condition and makes the flag test emit the
-// original's `bne body; b end` instead of `beq end`.
-void yoshi_jumpStand(void) {
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
-
-    if (party == NULL || party->currentMemberId != PARTY_MEMBER_YOSHI || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
-        return;
-    }
-    if (party->useMotionId < 0x3C || party->useMotionId > 0x42) {
-        party->useMotionId = 0x3C;
-    }
+s32 evt_get_yoshi_frm(void) {
+    return evt_yoshi_frm;
 }
 
-s32 marioGetoffYoshi(void) {
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
+void L_sweatEntry(PartyEntry* party, void* param) {
+    party->field_138 = param;
 
-    if (!(party->flags & PARTY_FLAG_IS_BEING_USED)) {
-        return 0;
-    }
     if (yoshiGetStatus() == 1) {
-        party->useMotionId = 0x64;
-        return 1;
-    }
-    return 0;
-}
-
-void marioRideYoshi(void) {
-    PartyEntry* party = partyGetPtr(marioGetPartyId());
-
-    party->field_8 &= ~0x8;
-    party->field_8 &= ~0x4;
-    party->field_8 &= ~0x2;
-    party->flags |= PARTY_FLAG_IS_BEING_USED;
-    party->field_34 = 3;
-    party->useMotionId = 0xB;
-
-    if (party->useStruct == NULL) {
-        party->useStruct = __memAlloc(HEAP_DEFAULT, 0x18);
-        memset(party->useStruct, 0, 0x18);
-        ((PartyYoshiUse*)party->useStruct)->effect = NULL;
-    }
-
-    {
-        PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
-        if (extra != NULL) {
-            party_force_ride_yoshi(extra);
+        MarioWork* mario = party->playerPtr;
+        if ((mario->flags & 0xF0000) == 0) {
+            mario->hitobjStandOn = param;
         }
     }
 }
@@ -223,52 +194,61 @@ void L_sweatMain(PartyEntry* party) {
     }
 }
 
-void L_sweatEntry(PartyEntry* party, void* param) {
-    party->field_138 = param;
+s32 yoshiGetStatus(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+    s32 status = 5;
 
-    if (yoshiGetStatus() == 1) {
-        MarioWork* mario = party->playerPtr;
-        if ((mario->flags & 0xF0000) == 0) {
-            mario->hitobjStandOn = param;
-        }
+    if (party == NULL || party->currentMemberId != PARTY_MEMBER_YOSHI || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
+        return 0;
+    } else if (party->useMotionId >= 0xA && party->useMotionId <= 0xD) {
+        status = 1;
+    } else if (party->useMotionId >= 0x14 && party->useMotionId <= 0x16) {
+        status = 2;
+    } else if (party->useMotionId >= 0x64 && party->useMotionId <= 0x65) {
+        status = 5;
+    } else if (party->useMotionId >= 0x3C && party->useMotionId <= 0x41) {
+        status = 3;
+    } else if (party->useMotionId >= 0x32 && party->useMotionId <= 0x34) {
+        status = 4;
     }
+    return status;
 }
 
-s32 evt_get_yoshi_frm(void) {
-    return evt_yoshi_frm;
-}
+void marioRideYoshi(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
 
-void evt_set_yoshi_spd(f32 spd) {
-    evt_yoshi_spd = spd;
-}
+    party->field_8 &= ~0x8;
+    party->field_8 &= ~0x4;
+    party->field_8 &= ~0x2;
+    party->flags |= PARTY_FLAG_IS_BEING_USED;
+    party->field_34 = 3;
+    party->useMotionId = 0xB;
 
-void evt_set_yoshi_frm(s32 msec) {
-    evt_yoshi_frm = sysMsec2Frame(msec);
-}
-
-void unk_800b474c(PartyEntry* party) {
-    MarioWork* mario = marioGetPtr();
-
-    party->field_138 = NULL;
-    if (yoshiGetStatus() == 1) {
-        MarioWork* pl = party->playerPtr;
-        if ((pl->flags & 0xF0000) == 0) {
-            pl->hitobjStandOn = NULL;
-        }
+    if (party->useStruct == NULL) {
+        party->useStruct = __memAlloc(HEAP_DEFAULT, 0x18);
+        memset(party->useStruct, 0, 0x18);
+        ((PartyYoshiUse*)party->useStruct)->effect = NULL;
     }
-    marioChgMot(0x20);
-    party->useMotionId = 0xA;
-    partyChgPose(party, YOSHI_S_2);
-    marioChgPose("M_Y_2");
-    *(f32*)((u8*)mario + 0x2B0) = 0.0f;
-    *(f32*)((u8*)mario + 0x2B4) = 0.0f;
-    partyChgRunMode(party, 0xD);
+
     {
         PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
         if (extra != NULL) {
-            partyChgRunMode(extra, 0xD);
+            party_force_ride_yoshi(extra);
         }
     }
+}
+
+s32 marioGetoffYoshi(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+    if (!(party->flags & PARTY_FLAG_IS_BEING_USED)) {
+        return 0;
+    }
+    if (yoshiGetStatus() == 1) {
+        party->useMotionId = 0x64;
+        return 1;
+    }
+    return 0;
 }
 
 // 100%: the volatile reads/writes reproduce the original's non-pipelined
@@ -324,6 +304,23 @@ void marioYoshiForceCancel(void) {
                 partyChgRunMode(party, 2);
                 party->field_3B = 0;
             }
+        }
+    }
+}
+
+void yoshi_bye(PartyEntry* party) {
+    if (party->field_8 & 0x8) {
+        party->field_8 &= ~0x8;
+        partyGoodbyeInit(party);
+    }
+    if (party->flags & PARTY_FLAG_IS_BEING_USED) {
+        if (yoshiGetStatus() == 1) {
+            party->useMotionId = 0x64;
+        }
+        yoshi_use(party);
+    } else {
+        if (partyGoodbyeMain(party)) {
+            partyChgRunMode(party, 0xE);
         }
     }
 }
@@ -388,23 +385,87 @@ void yoshi_exit(PartyEntry* arg) {
     marioChgMot(0);
 }
 
-void yoshi_bye(PartyEntry* party) {
-    if (party->field_8 & 0x8) {
-        party->field_8 &= ~0x8;
-        partyGoodbyeInit(party);
+// The three early-exit tests must share one `||` (as in yoshiGetStatus): a
+// flat chain keeps them in one condition and makes the flag test emit the
+// original's `bne body; b end` instead of `beq end`.
+void yoshi_jumpStand(void) {
+    PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+    if (party == NULL || party->currentMemberId != PARTY_MEMBER_YOSHI || !(party->flags & PARTY_FLAG_IS_BEING_USED)) {
+        return;
     }
-    if (party->flags & PARTY_FLAG_IS_BEING_USED) {
-        if (yoshiGetStatus() == 1) {
-            party->useMotionId = 0x64;
+    if (party->useMotionId < 0x3C || party->useMotionId > 0x42) {
+        party->useMotionId = 0x3C;
+    }
+}
+
+void unk_800b474c(PartyEntry* party) {
+    MarioWork* mario = marioGetPtr();
+
+    party->field_138 = NULL;
+    if (yoshiGetStatus() == 1) {
+        MarioWork* pl = party->playerPtr;
+        if ((pl->flags & 0xF0000) == 0) {
+            pl->hitobjStandOn = NULL;
         }
-        yoshi_use(party);
-    } else {
-        if (partyGoodbyeMain(party)) {
-            partyChgRunMode(party, 0xE);
+    }
+    marioChgMot(0x20);
+    party->useMotionId = 0xA;
+    partyChgPose(party, YOSHI_S_2);
+    marioChgPose("M_Y_2");
+    *(f32*)((u8*)mario + 0x2B0) = 0.0f;
+    *(f32*)((u8*)mario + 0x2B4) = 0.0f;
+    partyChgRunMode(party, 0xD);
+    {
+        PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
+        if (extra != NULL) {
+            partyChgRunMode(extra, 0xD);
         }
     }
 }
 
+// 100%: the compiler pools this function's literals under the vec3_802cccd0
+// anchor with a shared base register (r31), so the string and mask offsets
+// are the original's.  The original .rodata is vec3 (0x00) / double_to_int
+// (0x28) / PYS_S_2 (0x30) / PYS_H_1 (0x38) / PYS_R_2 (0x40) / PYS_H_2 (0x48)
+// / PYS_F_1 (0x50) / mask (0x58).
+void unk_800b45e0(PartyEntry* party) {
+    MarioWork* mario = party->playerPtr;
+
+    if (strcmp(party->field_18, YOSHI_S_2) == 0) {
+        s32 t = *(u16*)&mario->poseTime + 1;
+        *(u16*)&mario->poseTime = t;
+        if ((u16)t >= 0x34) {
+            *(u16*)&mario->poseTime = 0;
+        }
+        party->field_20 = *(u16*)&mario->poseTime;
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
+    } else if (strcmp(party->field_18, YOSHI_R_2) == 0) {
+        s32 t = *(u16*)&mario->poseTime + 1;
+        *(u16*)&mario->poseTime = t;
+        if ((u16)t >= 0xA) {
+            *(u16*)&mario->poseTime = 0;
+        }
+        party->field_20 = *(u16*)&mario->poseTime;
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
+    } else if (strcmp(party->field_18, YOSHI_F_1) == 0) {
+        s32 t = *(u16*)&mario->poseTime + 1;
+        *(u16*)&mario->poseTime = t;
+        if ((u16)t >= 0xA) {
+            *(u16*)&mario->poseTime = 0;
+        }
+        party->field_20 = *(u16*)&mario->poseTime;
+        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
+    }
+}
+
+void yoshi_init(PartyEntry* party) {
+    party->field_33 = 4;
+    party->field_32 = 0;
+    *(f32*)((u8*)party + 0xF0) = float_26;
+    *(f32*)((u8*)party + 0xF4) = float_20;
+    party->yoshiPsndSFXId = -1;
+}
 #define P_F(off) (*(f32*)((u8*)party + (off)))
 #define P_S(off) (*(s32*)((u8*)party + (off)))
 #define P_U16(off) (*(u16*)((u8*)party + (off)))
@@ -1207,19 +1268,22 @@ L_3800:
 #undef M_S
 #undef M_P
 
+
 void L_yoshiFlyMove(PartyEntry* party) {
     MarioWork* mario = marioGetPtr();
     f32 f31;
     f32 f30;
     f32 f29;
     f32 lim;
+    f32 one = 1.0f;
+    f32 zero = 0.0f;
 
     inertia(party);
     f30 = *(f32*)((u8*)mario + 0x2B0);
     f31 = -*(f32*)((u8*)mario + 0x2B4);
 
     f29 = float_0p1 * distABf(0.0f, 0.0f, f30, f31);
-    lim = mario->mBaseDashSpeed * MATCH_F32(float_1);
+    lim = mario->mBaseDashSpeed * one;
     if (f29 >= lim) {
         f29 = lim;
     }
@@ -1230,7 +1294,7 @@ void L_yoshiFlyMove(PartyEntry* party) {
     }
 
     party->speed = f29;
-    if (f29 != MATCH_F32(float_0)) {
+    if (f29 != zero) {
         party->dir = revise360(f31 + *(f32*)((u8*)party + 0xF8));
         party->field_FC = revise360(f31 + *(f32*)((u8*)party + 0xF8));
     }
@@ -1247,6 +1311,8 @@ void inertia(PartyEntry* party) {
     f32 f4 = *(f32*)((u8*)mario + 0x2B0);
     f32 f5 = *(f32*)((u8*)mario + 0x2B4);
     f32 zero = 0.0f;
+    f32 p01 = 0.01f;
+    f32 sixteen = 16.0f;
 
     if (f3 == zero) {
         f32 k = float_neg0p07;
@@ -1255,10 +1321,10 @@ void inertia(PartyEntry* party) {
         }
         f4 = f4 * k + f4;
         f5 = f5 * k + f5;
-        if (__fabsf(f4) < float_0p01) {
+        if (__fabsf(f4) < p01) {
             f4 = 0.0f;
         }
-        if (__fabsf(f5) < float_0p01) {
+        if (__fabsf(f5) < p01) {
             f5 = 0.0f;
         }
     } else {
@@ -1266,117 +1332,36 @@ void inertia(PartyEntry* party) {
 
         if (t <= float_256) {
             s32 v = *(s32*)((u8*)party->useStruct + 4);
-            f4 = f3 * MATCH_F32(float_0p01) + f4;
+            f4 = f3 * p01 + f4;
             if (v > 0 && f4 <= 0.0f) {
                 f4 = 0.0f;
             }
             if (v < 0 && f4 >= 0.0f) {
                 f4 = 0.0f;
             }
-            f5 = f5 - MATCH_F32(float_0);
+            f5 = f5 - zero;
         } else {
             f5 = f5 - zero;
-            f4 = f3 * MATCH_F32(float_0p01) + f4;
+            f4 = f3 * p01 + f4;
             {
-                f32 n = -MATCH_F32(float_16);
+                f32 n = -sixteen;
                 if (f4 < n) {
                     f4 = n;
                 }
-                if (f4 > float_16) {
-                    f4 = float_16;
+                if (f4 > sixteen) {
+                    f4 = sixteen;
                 }
                 if (f5 < n) {
                     f5 = n;
                 }
-                if (f5 > float_16) {
-                    f5 = float_16;
+                if (f5 > sixteen) {
+                    f5 = sixteen;
                 }
             }
         }
     }
     *(f32*)((u8*)mario + 0x2B0) = f4;
     *(f32*)((u8*)mario + 0x2B4) = f5;
-}
-
-void searchGround2(PartyEntry* party) {
-    HitEntry* hit = NULL;
-    MarioWork* mario = party->playerPtr;
-
-    if (!(party->flags & PARTY_FLAG_FORCE_FALL)) {
-        hit = partySearchGround(party, 11.0f, 0.0f);
-    }
-
-    if (hit == NULL) {
-        party->field_138 = hit;
-        if (yoshiGetStatus() == 1) {
-            MarioWork* pl = party->playerPtr;
-            if ((pl->flags & 0xF0000) == 0) {
-                pl->hitobjStandOn = hit;
-            }
-        }
-        return;
-    }
-
-    {
-        s32 attr = hitGetAttr(hit);
-
-    if (attr & 0x200) {
-        Vec pos = party->position;
-
-        marioSetSplash(0, &pos);
-        party->field_138 = NULL;
-        if (yoshiGetStatus() == 1) {
-            MarioWork* pl = party->playerPtr;
-            if ((pl->flags & 0xF0000) == 0) {
-                pl->hitobjStandOn = NULL;
-            }
-        }
-        party->jumpPara3 = -0.4f;
-        *(f32*)((u8*)party + 0x174) = -0.4f;
-        *(f32*)((u8*)party + 0x178) = 0.0f;
-        party->jumpPara2 = 0.0f;
-        *(f32*)((u8*)party + 0x178) = *(f32*)((u8*)party + 0x178) + party->jumpPara2;
-        *(f32*)((u8*)party + 0x174) = *(f32*)((u8*)party + 0x174) + *(f32*)((u8*)party + 0x178);
-        party->jumpPara3 = party->jumpPara3 + *(f32*)((u8*)party + 0x174);
-        if (party->jumpPara3 < -15.0f) {
-            party->jumpPara3 = -15.0f;
-        }
-        party->position.y += party->jumpPara3;
-        party->useMotionId = 0x46;
-        return;
-    }
-
-    if (attr & 0x800) {
-        MarioWork* m = marioGetPtr();
-
-        party->field_138 = NULL;
-        if (yoshiGetStatus() == 1) {
-            MarioWork* pl = party->playerPtr;
-            if ((pl->flags & 0xF0000) == 0) {
-                pl->hitobjStandOn = NULL;
-            }
-        }
-        marioChgMot(0x20);
-        party->useMotionId = 0xA;
-        partyChgPose(party, YOSHI_S_2);
-        marioChgPose("M_Y_2");
-        *(f32*)((u8*)m + 0x2B0) = 0.0f;
-        *(f32*)((u8*)m + 0x2B4) = 0.0f;
-        partyChgRunMode(party, 0xD);
-        {
-            PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
-            if (extra != NULL) {
-                partyChgRunMode(extra, 0xD);
-            }
-        }
-    }
-
-    party->flags |= 0x2;
-    party->jumpPara1 = 0.0f;
-    party->position.y = party->field_E4;
-    party->flags &= ~0x70;
-    mario->flags &= ~0xF0000;
-    }
 }
 
 // 100%: the partyChgPose "PYS_S_2" string is pooled at vec3+0x30, so it is
@@ -1604,6 +1589,98 @@ end: ;
 }
 
 
+void searchGround2(PartyEntry* party) {
+    HitEntry* hit = NULL;
+    MarioWork* mario = party->playerPtr;
+
+    if (!(party->flags & PARTY_FLAG_FORCE_FALL)) {
+        hit = partySearchGround(party, 11.0f, 0.0f);
+    }
+
+    if (hit == NULL) {
+        party->field_138 = hit;
+        if (yoshiGetStatus() == 1) {
+            MarioWork* pl = party->playerPtr;
+            if ((pl->flags & 0xF0000) == 0) {
+                pl->hitobjStandOn = hit;
+            }
+        }
+        return;
+    }
+
+    {
+        s32 attr = hitGetAttr(hit);
+
+    if (attr & 0x200) {
+        Vec pos = party->position;
+
+        marioSetSplash(0, &pos);
+        party->field_138 = NULL;
+        if (yoshiGetStatus() == 1) {
+            MarioWork* pl = party->playerPtr;
+            if ((pl->flags & 0xF0000) == 0) {
+                pl->hitobjStandOn = NULL;
+            }
+        }
+        party->jumpPara3 = -0.4f;
+        *(f32*)((u8*)party + 0x174) = -0.4f;
+        *(f32*)((u8*)party + 0x178) = 0.0f;
+        party->jumpPara2 = 0.0f;
+        *(f32*)((u8*)party + 0x178) = *(f32*)((u8*)party + 0x178) + party->jumpPara2;
+        *(f32*)((u8*)party + 0x174) = *(f32*)((u8*)party + 0x174) + *(f32*)((u8*)party + 0x178);
+        party->jumpPara3 = party->jumpPara3 + *(f32*)((u8*)party + 0x174);
+        if (party->jumpPara3 < -15.0f) {
+            party->jumpPara3 = -15.0f;
+        }
+        party->position.y += party->jumpPara3;
+        party->useMotionId = 0x46;
+        return;
+    }
+
+    if (attr & 0x800) {
+        MarioWork* m = marioGetPtr();
+
+        party->field_138 = NULL;
+        if (yoshiGetStatus() == 1) {
+            MarioWork* pl = party->playerPtr;
+            if ((pl->flags & 0xF0000) == 0) {
+                pl->hitobjStandOn = NULL;
+            }
+        }
+        marioChgMot(0x20);
+        party->useMotionId = 0xA;
+        partyChgPose(party, YOSHI_S_2);
+        marioChgPose("M_Y_2");
+        *(f32*)((u8*)m + 0x2B0) = 0.0f;
+        *(f32*)((u8*)m + 0x2B4) = 0.0f;
+        partyChgRunMode(party, 0xD);
+        {
+            PartyEntry* extra = partyGetPtr(marioGetExtraPartyId());
+            if (extra != NULL) {
+                partyChgRunMode(extra, 0xD);
+            }
+        }
+    }
+
+    party->flags |= 0x2;
+    party->jumpPara1 = 0.0f;
+    party->position.y = party->field_E4;
+    party->flags &= ~0x70;
+    mario->flags &= ~0xF0000;
+    }
+}
+
+// The target's .sdata2 pools the literal 10 right after checkWall's "M_Y_2" (it is only
+// read by yoshi_use, but the original registered it while emitting checkWall). This
+// deferred helper exists only for its pool slot: source order is reversed for codegen, so
+// placed here it is emitted between checkWall and searchGround2, registering 10 there.
+// Nothing calls it and the linker strips the body.
+#ifdef MUST_MATCH
+static f32 ten_pool_helper(void) {
+    return 10.0f;
+}
+#endif
+
 void checkWall(PartyEntry* party, f32 a, f32 b) {
     MarioWork* mario = marioGetPtr();
     Vec pos;
@@ -1754,41 +1831,6 @@ void checkWall(PartyEntry* party, f32 a, f32 b) {
     party->position.z = pos.z;
 
 end: ;
-}
-
-// 100%: the compiler pools this function's literals under the vec3_802cccd0
-// anchor with a shared base register (r31), so the string and mask offsets
-// are the original's.  The original .rodata is vec3 (0x00) / double_to_int
-// (0x28) / PYS_S_2 (0x30) / PYS_H_1 (0x38) / PYS_R_2 (0x40) / PYS_H_2 (0x48)
-// / PYS_F_1 (0x50) / mask (0x58).
-void unk_800b45e0(PartyEntry* party) {
-    MarioWork* mario = party->playerPtr;
-
-    if (strcmp(party->field_18, YOSHI_S_2) == 0) {
-        s32 t = *(u16*)&mario->poseTime + 1;
-        *(u16*)&mario->poseTime = t;
-        if ((u16)t >= 0x34) {
-            *(u16*)&mario->poseTime = 0;
-        }
-        party->field_20 = *(u16*)&mario->poseTime;
-        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
-    } else if (strcmp(party->field_18, YOSHI_R_2) == 0) {
-        s32 t = *(u16*)&mario->poseTime + 1;
-        *(u16*)&mario->poseTime = t;
-        if ((u16)t >= 0xA) {
-            *(u16*)&mario->poseTime = 0;
-        }
-        party->field_20 = *(u16*)&mario->poseTime;
-        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
-    } else if (strcmp(party->field_18, YOSHI_F_1) == 0) {
-        s32 t = *(u16*)&mario->poseTime + 1;
-        *(u16*)&mario->poseTime = t;
-        if ((u16)t >= 0xA) {
-            *(u16*)&mario->poseTime = 0;
-        }
-        party->field_20 = *(u16*)&mario->poseTime;
-        animPoseSetLocalTime(party->paperAnimGroup, (f32)*(u16*)&mario->poseTime);
-    }
 }
 
 
