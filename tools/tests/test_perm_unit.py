@@ -74,6 +74,20 @@ class ResolveTest(unittest.TestCase):
                 perm_unit.resolve("nope", d)
 
 
+class SourceHashTest(unittest.TestCase):
+    def test_hash_changes_with_the_source(self):
+        with tree(["src/x.c"]) as d:
+            a = perm_unit.source_hash("x", d)
+            Path(d, "src/x.c").write_text("int y;")
+            b = perm_unit.source_hash("x", d)
+        self.assertNotEqual(a, b)
+        self.assertEqual(len(a), 12)
+
+    def test_unknown_unit_is_a_dash(self):
+        with tree(["src/x.c"]) as d:
+            self.assertEqual(perm_unit.source_hash("nope", d), "-")
+
+
 class CflagsTest(unittest.TestCase):
     def test_rel_rule_with_continuations(self):
         self.assertEqual(perm_unit.cflags(NINJA, "event/evt_yuucounter"), "-nodefaults -O4,p -i include -i rels/yuu/include -lang=c")
@@ -102,6 +116,14 @@ class LoopTest(unittest.TestCase):
         two = [line("u", "f", "prepare-failed")] * 2
         self.assertEqual(finished_from(two), set())
         self.assertEqual(finished_from(two + [line("u", "f", "prepare-failed")]), {("u", "f")})
+
+    def test_changed_source_requeues(self):
+        old = line("u", "f", "zero") .rstrip("\n") + "\tAAAA\n"
+        self.assertEqual(finished_from([old], lambda u: "AAAA"), {("u", "f")})
+        self.assertEqual(finished_from([old], lambda u: "BBBB"), set())
+
+    def test_line_without_a_hash_does_not_count_when_a_hash_is_required(self):
+        self.assertEqual(finished_from([line("u", "f", "zero")], lambda u: "AAAA"), set())
 
     def test_success_after_failures(self):
         self.assertEqual(finished_from([line("u", "f", "prepare-failed"), line("u", "f", "timeout")]), {("u", "f")})
