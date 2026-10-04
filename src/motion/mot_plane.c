@@ -123,52 +123,8 @@ const Vec vec3_802c5d08 = { 0.0f, 0.0f, 0.0f };
 // .rodata:0x98..0xB8 ("M_J_1B", "PM_P_1A", "PM_P_1B", "M_J_1C"): used as string literals inside mot_plane so
 // MWCC dedups them with marioForcePlaneAnime's "PM_P_1B" and pools them after the magic at 0x98..0xB8.
 
-// .sdata2 constant pool in the original's address order (build/G8MJ01/asm/motion/mot_plane.s:2739),
-// so every `@sda21` offset resolves the same. Read through MATCH_F32 so MWCC does not pool a copy.
-const f32 float_4_8041ac00 = 4.0f;
-const f32 float_90_8041ac04 = 90.0f;
-const f32 float_10_8041ac08 = 10.0f;
-const f32 float_0_8041ac0c = 0.0f;
-const f32 float_10p1_8041ac10 = 10.1f;
-const f32 float_neg1_8041ac14 = -1.0f;
-const f32 float_2_8041ac18 = 2.0f;
-const f32 float_1_8041ac1c = 1.0f;
-const f32 float_270_8041ac20 = 270.0f;
-const f32 float_20_8041ac24 = 20.0f;
-const f32 float_37_8041ac28 = 37.0f;
-const f32 float_60_8041ac2c = 60.0f;
-const f32 float_0p1_8041ac30 = 0.1f;
-const f32 float_150_8041ac34 = 150.0f;
-const f32 float_330_8041ac38 = 330.0f;
-const f32 float_210_8041ac3c = 210.0f;
-const f32 float_3p1416_8041ac40 = 3.1415927f;
-const f32 float_180_8041ac44 = 180.0f;
-const f32 float_neg0p001_8041ac48 = -0.001f;
-const f32 float_0p5_8041ac4c = 0.5f;
-const f32 float_6_8041ac50 = 6.0f;
-const f32 float_neg80_8041ac54 = -80.0f;
-const f32 float_neg22_8041ac58 = -22.0f;
-const f32 float_1000_8041ac5c = 1000.0f;
-const f32 float_0p4_8041ac60 = 0.4f;
-const f32 float_0p01_8041ac64 = 0.01f;
-const f32 float_0p125_8041ac68 = 0.125f;
-const f32 float_30_8041ac6c = 30.0f;
-const f32 float_630_8041ac70 = 630.0f;
-const f32 float_neg630_8041ac74 = -630.0f;
-const char str_8041AC78[] = "M_Z_1";
-const f32 float_1024_8041ac80 = 1024.0f;
-const f32 float_1260_8041ac84 = 1260.0f;
-const f32 float_neg1080_8041ac88 = -1080.0f;
-const f32 float_12p333_8041ac8c = 12.333333f;
-const f32 float_0p02_8041ac90 = 0.02f;
-const f32 float_0p004_8041ac94 = 0.004f;
-const f32 float_70_8041ac98 = 70.0f;
-const f32 float_neg70_8041ac9c = -70.0f;
-const f32 float_100_8041aca0 = 100.0f;
-const f32 float_0p3_8041aca4 = 0.3f;
-const f32 float_28_8041aca8 = 28.0f;
-const f32 float_neg20_8041acac = -20.0f;
-const f32 float_neg2_8041acb0 = -2.0f;
+// Floats and short pose names are compiler-pooled literals. The deferred pool helpers
+// below establish the original first-use order without duplicating named constants.
 
 void marioForcePlaneAnime(void) {
     MarioWork* mario = marioGetPtr();
@@ -177,7 +133,7 @@ void marioForcePlaneAnime(void) {
     marioChgPaper(NULL);
     marioPaperOn(paper_plane[marioGetColor()]);
     marioChgPaper("PM_P_1B");
-    marioChgPose(str_8041AC78);
+    marioChgPose("M_Z_1");
     mario->dispFlags |= 0x8;
 }
 
@@ -188,15 +144,15 @@ static void flyMain(void);
 static inline void planeReset(void) {
 	MarioWork* m = marioGetPtr();
 
-	m->wPlayerCollisionBox.x = MATCH_F32(float_20_8041ac24);
+	m->wPlayerCollisionBox.x = 20.0f;
 #ifdef MUST_MATCH
 	// Volatile store/loads keep the following volatile Vec copies below it, as the original schedules them.
-	*(volatile f32*)&m->wPlayerCollisionBox.y = MATCH_F32(float_37_8041ac28);
+	*(volatile f32*)&m->wPlayerCollisionBox.y = 37.0f;
 	*(volatile Vec*)((u8*)m + 0xBC) = *(volatile Vec*)&vec3_802c5cd8;
 	*(volatile Vec*)((u8*)m + 0xB0) = *(volatile Vec*)&vec3_802c5ce4;
 	*(volatile Vec*)((u8*)m + 0x98) = *(volatile Vec*)&vec3_802c5cf0;
 #else
-	m->wPlayerCollisionBox.y = MATCH_F32(float_37_8041ac28);
+	m->wPlayerCollisionBox.y = 37.0f;
 	MWVEC(m, 0xBC) = vec3_802c5cd8;
 	MWVEC(m, 0xB0) = vec3_802c5ce4;
 	MWVEC(m, 0x98) = vec3_802c5cf0;
@@ -209,27 +165,35 @@ static inline void planeReset(void) {
 	m->dispFlags &= ~0x100;
 }
 
-// Full transcription of the plane state machine. Now byte-identical (100.00%): leaving the int->float
-// "magic double" undefined lets MWCC's pooled anonymous copy land at .rodata+0x90, which is where the
-// original keeps double_to_int_802c5d18; the four plane-name strings then sit at 0x98/0xA0/0xA8/0xB0 as
-// in the original. The named f32 constants float_0p02/float_1/float_2 are referenced by their
-// plain file-scope value (not MATCH_F32) so MWCC constant-folds them and schedules the loads exactly
-// as the original does. Raw offsets used: mario
-// 0x2A4/0x2AC/0x7C/0x80/0x84/0x88/0x18C/0x1F4/0x98/0xB0/0xBC and MotionPlaneData 0x4/0x8/0xC/0x10/0x14/0x2C.
+// Plane state machine. Raw accesses below cover fields that are not named in the headers.
+// Matching local declaration/assignment order preserves the retail register allocation.
+#ifdef MUST_MATCH
+// Keep literal-initialized factors in the original load order and registers.
+#pragma opt_propagation off
+#endif
 void mot_plane(void) {
 	MarioWork* mario = marioGetPtr();
 	s32 wrap;
 
 	if (mario->trigFlags & 1) {
 		MotionPlaneData* data;
+#ifdef MUST_MATCH
+		s32 inactive;
+#endif
 		mario->trigFlags &= ~1;
 		mario->motStruct = __memAlloc(HEAP_DEFAULT, sizeof(MotionPlaneData));
 		memset(mario->motStruct, 0, sizeof(MotionPlaneData));
+#ifdef MUST_MATCH
+		data = marioGetPtr()->motStruct;
+		inactive = -1;
+		data->field_0x28 = inactive;
+#else
 		{
 			MarioWork* m2 = marioGetPtr();
 			data = m2->motStruct;
 		}
 		data->field_0x28 = -1;
+#endif
 		mario->currSubMotionId = 0;
 	}
 
@@ -238,18 +202,23 @@ void mot_plane(void) {
 		MarioWork* m = marioGetPtr();
 		s32 attr;
 
-		m->unk148 = MATCH_F32(float_0p4_8041ac60);
-		m->unk150.z = MATCH_F32(float_0p01_8041ac64);
-		*(volatile f32*)&m->field_68 = float_2_8041ac18;
-		// volatile keeps the store above the copy and the copy as a load-load-store-store pair (original order).
+		m->unk148 = 0.4f;
+		m->unk150.z = 0.01f;
+#ifdef MUST_MATCH
+		// Keep the store above the per-component vector copy, as in the original.
+		*(volatile f32*)&m->field_68 = 2.0f;
 		*(volatile Vec*)&m->field_6C = *(volatile Vec*)&vec3_802c5c9c;
+#else
+		m->field_68 = 2.0f;
+		m->field_6C = vec3_802c5c9c;
+#endif
 		marioPreJump();
 		marioChgPose("M_J_1B");
 		mario->dispFlags |= 0x100;
 		mario->currSubMotionId = 1;
 		mario->airTimer = 0;
 		{
-			f32 zero = MATCH_F32(float_0_8041ac0c);
+			f32 zero = 0.0f;
 			mario->baseSpeed = zero;
 			MF32(mario, 0x2A4) = zero;
 			mario->wCamVal1 = mario->position.y;
@@ -269,20 +238,20 @@ void mot_plane(void) {
 		f32 t;
 
 		marioMakeJumpPara();
-		k = MATCH_F32(float_0p125_8041ac68);
-		m = MATCH_F32(float_30_8041ac6c);
-		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? float_1_8041ac1c : MATCH_F32(float_neg1_8041ac14);
+		k = 0.125f;
+		m = 30.0f;
+		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
 		v = MF32(mario, 0x2A4);
 		t = m * dir;
 		MF32(mario, 0x2A4) = k * (t - v) + v;
 		mario->unk1A8 += MF32(mario, 0x2A4);
 		wrap = 0;
 		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
-			if (mario->unk1A8 >= MATCH_F32(float_630_8041ac70)) {
+			if (mario->unk1A8 >= 630.0f) {
 				wrap = 1;
 			}
 		} else {
-			if (mario->unk1A8 <= MATCH_F32(float_neg630_8041ac74)) {
+			if (mario->unk1A8 <= -630.0f) {
 				wrap = 1;
 			}
 		}
@@ -292,19 +261,19 @@ void mot_plane(void) {
 			mario->multiTimer = 0x14;
 			marioPaperOn(paper_plane[marioGetColor()]);
 			marioChgPaper("PM_P_1A");
-			marioChgPose(str_8041AC78);
+			marioChgPose("M_Z_1");
 			mario->dispFlags |= 0x8;
-			animPoseSetLocalTime(mario->paperPoseId, MATCH_F32(float_0_8041ac0c));
-			animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], MATCH_F32(float_0_8041ac0c));
+			animPoseSetLocalTime(mario->paperPoseId, 0.0f);
+			animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], 0.0f);
 			evt = evtEntry(sound_evt, 0, 0);
 			{
-				f32 sc = MATCH_F32(float_1024_8041ac80);
+				f32 sc = 1024.0f;
 				evt->lwData[0] = (s32)(sc * mario->position.x) - 0x0DB58580;
 				evt->lwData[1] = (s32)(sc * mario->position.y) - 0x0DB58580;
 				evt->lwData[2] = (s32)(sc * mario->position.z) - 0x0DB58580;
 			}
 		}
-		if (MF32(mario, 0x7C) > MATCH_F32(float_0_8041ac0c)) {
+		if (MF32(mario, 0x7C) > 0.0f) {
 			mario->position.y += MF32(mario, 0x7C);
 		}
 		break;
@@ -316,25 +285,41 @@ void mot_plane(void) {
 		f32 m;
 		f32 t;
 
-		animPoseSetLocalTime(mario->paperPoseId, MATCH_F32(float_0_8041ac0c));
-		animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], MATCH_F32(float_0_8041ac0c));
-		k = MATCH_F32(float_0p125_8041ac68);
-		m = MATCH_F32(float_30_8041ac6c);
-		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? float_1_8041ac1c : MATCH_F32(float_neg1_8041ac14);
+		animPoseSetLocalTime(mario->paperPoseId, 0.0f);
+		animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], 0.0f);
+		k = 0.125f;
+		m = 30.0f;
+		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
 		v = MF32(mario, 0x2A4);
 		t = m * dir;
 		MF32(mario, 0x2A4) = k * (t - v) + v;
 		mario->unk1A8 += MF32(mario, 0x2A4);
 		wrap = 0;
 		if (((MotionPlaneData*)mario->motStruct)->flags & 1) {
-			f32 lim = float_1260_8041ac84;
+#ifdef MUST_MATCH
+			f32 lim;
+			f32 value;
+			value = mario->unk1A8;
+			lim = 1260.0f;
+			if (value >= lim) {
+#else
+			f32 lim = 1260.0f;
 			if (mario->unk1A8 >= lim) {
+#endif
 				mario->unk1A8 = lim;
 				wrap = 1;
 			}
 		} else {
-			f32 lim = float_neg1080_8041ac88;
+#ifdef MUST_MATCH
+			f32 lim;
+			f32 value;
+			value = mario->unk1A8;
+			lim = -1080.0f;
+			if (value <= lim) {
+#else
+			f32 lim = -1080.0f;
 			if (mario->unk1A8 <= lim) {
+#endif
 				mario->unk1A8 = lim;
 				wrap = 1;
 			}
@@ -356,10 +341,10 @@ void mot_plane(void) {
 			break;
 		}
 		marioChgPaper("PM_P_1B");
-		MF32(mario->motStruct, 0x8) = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? MATCH_F32(float_90_8041ac04)
-		                                                               : MATCH_F32(float_270_8041ac20);
+		MF32(mario->motStruct, 0x8) = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 90.0f
+		                                                               : 270.0f;
 		{
-			f32 zero = MATCH_F32(float_0_8041ac0c);
+			f32 zero = 0.0f;
 			MF32(mario, 0x2A4) = zero;
 			MF32(mario->motStruct, 0x4) = zero;
 			MF32(mario->motStruct, 0xC) = zero;
@@ -373,21 +358,21 @@ void mot_plane(void) {
 			MF32(mario, 0xB0) = planeData[35];
 			MF32(mario, 0x98) = planeData[36];
 		}
-		mario->wPlayerCollisionBox.x = MATCH_F32(float_20_8041ac24);
-		mario->wPlayerCollisionBox.y = MATCH_F32(float_12p333_8041ac8c);
-		mario->baseSpeed = __fabsf((*(const f32*)&float_0p02_8041ac90) * (f32)(s8)mario->wStickDir1);
+		mario->wPlayerCollisionBox.x = 20.0f;
+		mario->wPlayerCollisionBox.y = 12.333333f;
+		mario->baseSpeed = __fabsf(0.02f * (f32)(s8)mario->wStickDir1);
 		mario->currSubMotionId = 0xC;
-		mario->baseSpeed = float_1_8041ac1c;
-		MF32(mario->motStruct, 0x10) = float_2_8041ac18;
+		mario->baseSpeed = 1.0f;
+		MF32(mario->motStruct, 0x10) = 2.0f;
 		m = marioGetPtr();
-		m->unk148 = MATCH_F32(float_0_8041ac0c);
-		m->unk150.z = MATCH_F32(float_0p004_8041ac94);
+		m->unk148 = 0.0f;
+		m->unk150.z = 0.004f;
 		{
-			f32 k70 = MATCH_F32(float_70_8041ac98);
-			dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? MATCH_F32(float_neg1_8041ac14) : float_1_8041ac1c;
+			f32 k70 = 70.0f;
+			dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? -1.0f : 1.0f;
 			mario->unk138 = k70 * dir;
 		}
-		mario->unk140 = MATCH_F32(float_neg70_8041ac9c);
+		mario->unk140 = -70.0f;
 		break;
 	}
 	default:
@@ -395,7 +380,7 @@ void mot_plane(void) {
 	}
 
 	// Common per-frame tail.
-	if (mario->position.y < MATCH_F32(float_100_8041aca0)) {
+	if (mario->position.y < 100.0f) {
 		mario->unk140 = __fabsf(planeData[38]);
 	}
 	flyMain();
@@ -408,12 +393,12 @@ void mot_plane(void) {
 		MarioWork* m;
 		camFollowYOff();
 		{
-			f32 zero = MATCH_F32(float_0_8041ac0c);
+			f32 zero = 0.0f;
 			mario->unk140 = zero;
 			mario->unk138 = zero;
 		}
 		marioClearJumpPara();
-		mario->baseSpeed = MATCH_F32(float_0_8041ac0c);
+		mario->baseSpeed = 0.0f;
 		m = marioGetPtr();
 		if (m->motStruct != NULL) {
 			if (*(u32*)&((MotionPlaneData*)m->motStruct)->field_0x28 != 0xFFFFFFFFu) {
@@ -449,19 +434,32 @@ void mot_plane(void) {
 	case 0x29:
 		if (--mario->multiTimer <= 0) {
 			f32 t;
+#ifdef MUST_MATCH
+			f32 b;
+			f32 a;
+			f32 one;
+#else
 			f32 a;
 			f32 b;
+#endif
 			planeReset();
 			marioChgPose("M_J_1C");
 			a = MF32(mario, 0x2AC);
-			b = (*(const f32*)&float_37_8041ac28);
+			b = 37.0f;
+#ifdef MUST_MATCH
+			one = 1.0f;
+#endif
 			t = a - b;
-			mario->position.y = t + float_1_8041ac1c;
-			mario->baseSpeed = MATCH_F32(float_0_8041ac0c);
+#ifdef MUST_MATCH
+			mario->position.y = one + t;
+#else
+			mario->position.y = t + 1.0f;
+#endif
+			mario->baseSpeed = 0.0f;
 			marioSetFallPara();
-			MF32(mario, 0x7C) = MATCH_F32(float_0_8041ac0c);
+			MF32(mario, 0x7C) = 0.0f;
 			{
-				f32 half = float_0p5_8041ac4c;
+				f32 half = 0.5f;
 				MF32(mario, 0x80) *= half;
 				MF32(mario, 0x84) *= half;
 				MF32(mario, 0x88) *= half;
@@ -477,7 +475,7 @@ void mot_plane(void) {
 		mario->currSubMotionId = 0x3D;
 		/* fall through */
 	case 0x3D:
-		if (mario->baseSpeed > float_1_8041ac1c) {
+		if (mario->baseSpeed > 1.0f) {
 			mario->currSubMotionId = 0xE;
 			break;
 		}
@@ -513,15 +511,23 @@ void mot_plane(void) {
 		planeReset();
 		mario->dispFlags &= ~0x100;
 		{
-			f32 zero = MATCH_F32(float_0_8041ac0c);
+			f32 zero = 0.0f;
 			mario->baseSpeed = zero;
 			MF32(mario, 0x2A4) = zero;
 		}
-		mario->position.y = float_1_8041ac1c + MF32(mario, 0x2AC);
+		mario->position.y = 1.0f + MF32(mario, 0x2AC);
 		marioPreJump();
 		{
-			f32 half = float_0p5_8041ac4c;
-			MF32(mario, 0x7C) = MF32(mario, 0x7C) * MATCH_F32(float_0p5_8041ac4c);
+#ifdef MUST_MATCH
+			f32 half;
+			f32 value;
+			value = MF32(mario, 0x7C);
+			half = 0.5f;
+			MF32(mario, 0x7C) = value * half;
+#else
+			f32 half = 0.5f;
+			MF32(mario, 0x7C) = MF32(mario, 0x7C) * 0.5f;
+#endif
 		}
 		marioChgPose("M_J_1B");
 		mario->currSubMotionId = 0x50;
@@ -536,20 +542,30 @@ void mot_plane(void) {
 		f32 k28;
 		f32 k3;
 		// Declare in the original's register order (k28=f2, k3=f3) but assign in its load order (k3 first).
-		k3 = MATCH_F32(float_0p3_8041aca4);
-		k28 = MATCH_F32(float_28_8041aca8);
-		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? float_1_8041ac1c : MATCH_F32(float_neg1_8041ac14);
+		k3 = 0.3f;
+		k28 = 28.0f;
+		dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
 		v = MF32(mario, 0x2A4);
 		MF32(mario, 0x2A4) = k3 * (k28 * dir - v) + v;
 		mario->unk1A8 = revise360(mario->unk1A8 + MF32(mario, 0x2A4));
 		marioMakeJumpPara();
 		mario->position.y += MF32(mario, 0x7C);
 		marioChkOverhead();
-		if (MF32(mario, 0x7C) < MATCH_F32(float_0_8041ac0c) || *(void**)((u8*)mario + 0x1F4) != NULL) {
+		if (MF32(mario, 0x7C) < 0.0f || *(void**)((u8*)mario + 0x1F4) != NULL) {
+#ifdef MUST_MATCH
+			f32 value;
+#endif
 			f32 half;
 			marioSetFallPara();
-			half = float_0p5_8041ac4c;
+#ifdef MUST_MATCH
+			value = MF32(mario, 0x7C);
+#endif
+			half = 0.5f;
+#ifdef MUST_MATCH
+			MF32(mario, 0x7C) = value * half;
+#else
 			MF32(mario, 0x7C) *= half;
+#endif
 			MF32(mario, 0x80) *= half;
 			MF32(mario, 0x84) *= half;
 			MF32(mario, 0x88) *= half;
@@ -566,9 +582,9 @@ void mot_plane(void) {
 		if (mario->multiTimer > 0) {
 			f32 k28;
 			f32 k3;
-			k3 = MATCH_F32(float_0p3_8041aca4);
-			k28 = MATCH_F32(float_28_8041aca8);
-			dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? float_1_8041ac1c : MATCH_F32(float_neg1_8041ac14);
+			k3 = 0.3f;
+			k28 = 28.0f;
+			dir = (((MotionPlaneData*)mario->motStruct)->flags & 1) ? 1.0f : -1.0f;
 			v = MF32(mario, 0x2A4);
 			MF32(mario, 0x2A4) = k3 * (k28 * dir - v) + v;
 			mario->unk1A8 = revise360(mario->unk1A8 + MF32(mario, 0x2A4));
@@ -578,8 +594,16 @@ void mot_plane(void) {
 		}
 		marioMakeJumpPara();
 		{
-			f32 neg20 = float_neg20_8041acac;
+#ifdef MUST_MATCH
+			f32 neg20;
+			f32 value;
+			value = MF32(mario, 0x7C);
+			neg20 = -20.0f;
+			if (value <= neg20) {
+#else
+			f32 neg20 = -20.0f;
 			if (MF32(mario, 0x7C) <= neg20) {
+#endif
 				MF32(mario, 0x7C) = neg20;
 			}
 		}
@@ -611,7 +635,7 @@ void mot_plane(void) {
 				mario->motStruct = NULL;
 			}
 			{
-				f32 zero = MATCH_F32(float_0_8041ac0c);
+				f32 zero = 0.0f;
 				mario->unk138 = zero;
 				mario->unk140 = zero;
 			}
@@ -628,8 +652,15 @@ void mot_plane(void) {
 		mario->multiTimer = 0x10;
 		mario->currSubMotionId = 0x47;
 		{
-			f32 neg2 = MATCH_F32(float_neg2_8041acb0);
-			f32 zero = float_0_8041ac0c;
+#ifdef MUST_MATCH
+			f32 zero;
+			f32 neg2;
+			neg2 = -2.0f;
+			zero = 0.0f;
+#else
+			f32 neg2 = -2.0f;
+			f32 zero = 0.0f;
+#endif
 			MF32(mario, 0x7C) = neg2;
 			MF32(mario, 0x80) = zero;
 			MF32(mario, 0x84) = zero;
@@ -640,14 +671,14 @@ void mot_plane(void) {
 	case 0x47:
 		marioMakeJumpPara();
 		mario->position.y += MF32(mario, 0x7C);
-		if (mario->position.y >= MF32(mario, 0x2AC) - MATCH_F32(float_100_8041aca0)) {
+		if (mario->position.y >= MF32(mario, 0x2AC) - 100.0f) {
 			break;
 		}
 		mario->currSubMotionId = 0x48;
 		/* fall through */
 	case 0x48: {
 		MarioWork* m;
-		f32 zero = MATCH_F32(float_0_8041ac0c);
+		f32 zero = 0.0f;
 
 		mario->unk140 = zero;
 		mario->unk138 = zero;
@@ -659,7 +690,7 @@ void mot_plane(void) {
 				((MotionPlaneData*)m->motStruct)->field_0x28 = -1;
 			}
 		}
-		mario->baseSpeed = MATCH_F32(float_0_8041ac0c);
+		mario->baseSpeed = 0.0f;
 		planeReset();
 		allPartyRideOff2();
 		marioSetFallPara();
@@ -674,8 +705,12 @@ void mot_plane(void) {
 	marioUpdateCamCollision(mario->position);
 	MF32(mario, 0x18C) = mario->baseSpeed;
 }
+#ifdef MUST_MATCH
 
-// TEMP-LOCAL: keep flyMain a real bl while it is a stub (retail emits one).
+#pragma opt_propagation reset
+#endif
+
+// Flight physics and collision handling.
 static void flyMain(void) {
 	MarioWork* mario;
 	MarioWork* m;
@@ -697,9 +732,9 @@ static void flyMain(void) {
 			/* fallthrough */
 		case 0xE:
 			if (MF32(mario, 0x9C) > planeData[38]) {
-				MF32(mario, 0x9C) -= float_2_8041ac18;
-				MF32(mario, 0xB4) += float_2_8041ac18;
-				mario->position.y += float_2_8041ac18;
+				MF32(mario, 0x9C) -= 2.0f;
+				MF32(mario, 0xB4) += 2.0f;
+				mario->position.y += 2.0f;
 			} else {
 				mario->currSubMotionId = 0xF;
 			}
@@ -720,18 +755,18 @@ static void flyMain(void) {
 	}
 	MF32(DATA, 0x8) = revise360(MF32(DATA, 0xC) * planeData[14] + MF32(DATA, 0x8));
 	if (DATA->flags & 1) {
-		if (MF32(DATA, 0x8) <= (*(const f32*)&float_60_8041ac2c)) {
-			MF32(DATA, 0x8) = (*(const f32*)&float_0p1_8041ac30) * ((*(const f32*)&float_60_8041ac2c) - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		if (MF32(DATA, 0x8) <= 60.0f) {
+			MF32(DATA, 0x8) = 0.1f * (60.0f - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
 		}
-		if (MF32(DATA, 0x8) >= (*(const f32*)&float_150_8041ac34)) {
-			MF32(DATA, 0x8) = (*(const f32*)&float_0p1_8041ac30) * ((*(const f32*)&float_150_8041ac34) - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		if (MF32(DATA, 0x8) >= 150.0f) {
+			MF32(DATA, 0x8) = 0.1f * (150.0f - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
 		}
 	} else {
-		if (MF32(DATA, 0x8) >= (*(const f32*)&float_330_8041ac38)) {
-			MF32(DATA, 0x8) = (*(const f32*)&float_0p1_8041ac30) * ((*(const f32*)&float_330_8041ac38) - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		if (MF32(DATA, 0x8) >= 330.0f) {
+			MF32(DATA, 0x8) = 0.1f * (330.0f - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
 		}
-		if (MF32(DATA, 0x8) <= (*(const f32*)&float_210_8041ac3c)) {
-			MF32(DATA, 0x8) = (*(const f32*)&float_0p1_8041ac30) * ((*(const f32*)&float_210_8041ac3c) - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		if (MF32(DATA, 0x8) <= 210.0f) {
+			MF32(DATA, 0x8) = 0.1f * (210.0f - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
 		}
 	}
 	{
@@ -739,13 +774,13 @@ static void flyMain(void) {
 		f32 v;
 		s32 flag = 0;
 
-		if (a >= MATCH_F32(float_90_8041ac04) && a <= (*(const f32*)&float_270_8041ac20)) {
+		if (a >= 90.0f && a <= 270.0f) {
 			flag = 1;
 		}
 		if (flag) {
-			v = -a - MATCH_F32(float_90_8041ac04);
+			v = -a - 90.0f;
 		} else {
-			v = (*(const f32*)&float_270_8041ac20) - a;
+			v = 270.0f - a;
 		}
 		mario->unk1A8 = revise360(v);
 	}
@@ -753,52 +788,56 @@ static void flyMain(void) {
 		u8 stick = mario->wStickDir1;
 
 		if ((s8)(stick & 0xff) != 0) {
-			if (mario->baseSpeed != MATCH_F32(float_0_8041ac0c)) {
+#ifdef MUST_MATCH
+			if (mario->baseSpeed) {
+#else
+			if (mario->baseSpeed != 0.0f) {
+#endif
 				f3 = __fabsf((f32)(s8)mario->wStickDir1);
 				if (DATA->flags & 1) {
 					if ((s8)mario->wStickDir1 < 0) {
 						if (MF32(DATA, 0x4) >= planeData[3]) {
-							MF32(DATA, 0x4) = (*(const f32*)&float_0p1_8041ac30) * (planeData[3] - MF32(DATA, 0x4)) + MF32(DATA, 0x4);
+							MF32(DATA, 0x4) = 0.1f * (planeData[3] - MF32(DATA, 0x4)) + MF32(DATA, 0x4);
 						} else {
-							MF32(DATA, 0x4) = (*(const f32*)&float_0p1_8041ac30) * (f3 * planeData[5]) + MF32(DATA, 0x4);
+							MF32(DATA, 0x4) = 0.1f * (f3 * planeData[5]) + MF32(DATA, 0x4);
 						}
 					}
 					if ((s8)mario->wStickDir1 > 0) {
 						if (MF32(DATA, 0x4) <= planeData[4]) {
 							MF32(DATA, 0x4) = planeData[4];
 						} else {
-							MF32(DATA, 0x4) = MF32(DATA, 0x4) - (*(const f32*)&float_0p1_8041ac30) * (f3 * planeData[6]);
+							MF32(DATA, 0x4) = MF32(DATA, 0x4) - 0.1f * (f3 * planeData[6]);
 						}
 					}
 				} else {
 					if ((s8)mario->wStickDir1 > 0) {
 						if (MF32(DATA, 0x4) >= planeData[3]) {
-							MF32(DATA, 0x4) = (*(const f32*)&float_0p1_8041ac30) * (planeData[3] - MF32(DATA, 0x4)) + MF32(DATA, 0x4);
+							MF32(DATA, 0x4) = 0.1f * (planeData[3] - MF32(DATA, 0x4)) + MF32(DATA, 0x4);
 						} else {
-							MF32(DATA, 0x4) = (*(const f32*)&float_0p1_8041ac30) * (f3 * planeData[5]) + MF32(DATA, 0x4);
+							MF32(DATA, 0x4) = 0.1f * (f3 * planeData[5]) + MF32(DATA, 0x4);
 						}
 					}
 					if ((s8)mario->wStickDir1 < 0) {
 						if (MF32(DATA, 0x4) <= planeData[4]) {
 							MF32(DATA, 0x4) = planeData[4];
 						} else {
-							MF32(DATA, 0x4) = MF32(DATA, 0x4) - (*(const f32*)&float_0p1_8041ac30) * (f3 * planeData[6]);
+							MF32(DATA, 0x4) = MF32(DATA, 0x4) - 0.1f * (f3 * planeData[6]);
 						}
 					}
 				}
 			}
 		} else {
-			if (MF32(DATA, 0x4) <= float_0_8041ac0c || MF32(DATA, 0x14) <= float_0_8041ac0c) {
-				if (MF32(DATA, 0x14) > float_0_8041ac0c && MF32(DATA, 0x14) < float_1_8041ac1c) {
+			if (MF32(DATA, 0x4) <= 0.0f || MF32(DATA, 0x14) <= 0.0f) {
+				if (MF32(DATA, 0x14) > 0.0f && MF32(DATA, 0x14) < 1.0f) {
 					MF32(DATA, 0x4) = MATCH_F32(MF32(DATA, 0x4)) + planeData[30];
 				}
 				{
 					f31 = planeData[0] - mario->baseSpeed;
-					if (f31 <= float_0_8041ac0c) {
-						f31 = float_0_8041ac0c;
+					if (f31 <= 0.0f) {
+						f31 = 0.0f;
 					}
-					f31 = f31 * (MATCH_F32(float_90_8041ac04) / planeData[0]);
-					f31 = planeData[27] * (f32)sin((*(const f32*)&float_3p1416_8041ac40) * f31 / (*(const f32*)&float_180_8041ac44));
+					f31 = f31 * (90.0f / planeData[0]);
+					f31 = planeData[27] * (f32)sin(3.1415927f * f31 / 180.0f);
 					if (f31 <= planeData[28]) {
 						f31 = planeData[28];
 					}
@@ -812,18 +851,18 @@ static void flyMain(void) {
 					MF32(DATA, 0x1C) = f31;
 					MF32(DATA, 0x4) = MF32(DATA, 0x4) + MF32(DATA, 0x1C);
 				} else {
-					MF32(DATA, 0x4) += (*(const f32*)&float_neg0p001_8041ac48);
-					mario->baseSpeed += float_0p5_8041ac4c;
-					if (mario->baseSpeed > float_2_8041ac18) {
-						mario->baseSpeed = float_2_8041ac18;
+					MF32(DATA, 0x4) += -0.001f;
+					mario->baseSpeed += 0.5f;
+					if (mario->baseSpeed > 2.0f) {
+						mario->baseSpeed = 2.0f;
 					}
 				}
 			}
 			if (MF32(DATA, 0x4) <= planeData[4]) {
 				MF32(DATA, 0x4) = planeData[4];
 			}
-			if (MF32(DATA, 0x4) >= (*(const f32*)&float_6_8041ac50)) {
-				MF32(DATA, 0x14) = float_0_8041ac0c;
+			if (MF32(DATA, 0x4) >= 6.0f) {
+				MF32(DATA, 0x14) = 0.0f;
 			}
 		}
 	}
@@ -831,10 +870,10 @@ static void flyMain(void) {
 	{
 		MotionPlaneData* dv = DATA;
 
-		if (MF32(dv, 0x4) >= float_0_8041ac0c) {
+		if (MF32(dv, 0x4) >= 0.0f) {
 			dv->flags |= 0x10;
 			{
-				f32 s = sin((*(const f32*)&float_3p1416_8041ac40) * (MF32(DATA, 0x4) * planeData[7]) / (*(const f32*)&float_180_8041ac44));
+				f32 s = sin(3.1415927f * (MF32(DATA, 0x4) * planeData[7]) / 180.0f);
 				f32 x = planeData[8] * s;
 
 				x = mario->baseSpeed * x;
@@ -843,16 +882,16 @@ static void flyMain(void) {
 			if ((s8)mario->wStickDir1 != 0 && MF32(DATA, 0x4) >= planeData[3]) {
 				mario->baseSpeed = mario->baseSpeed + planeData[2];
 			}
-			if (mario->baseSpeed <= float_0_8041ac0c) {
-				mario->baseSpeed = float_0_8041ac0c;
+			if (mario->baseSpeed <= 0.0f) {
+				mario->baseSpeed = 0.0f;
 			}
-			f31 = float_0_8041ac0c;
+			f31 = 0.0f;
 			if ((s8)mario->wStickDir1 == 0) {
 				if (mario->baseSpeed < planeData[20]) {
 					f32 s, a;
 
 					f31 = planeData[0] - mario->baseSpeed;
-					s = sin((*(const f32*)&float_3p1416_8041ac40) * MF32(DATA, 0x4) / (*(const f32*)&float_180_8041ac44));
+					s = sin(3.1415927f * MF32(DATA, 0x4) / 180.0f);
 					a = planeData[21] * s;
 					f31 = f31 * a;
 					f31 = f31 + MF32(DATA, 0x14);
@@ -861,23 +900,23 @@ static void flyMain(void) {
 					MF32(DATA, 0x14) = planeData[22];
 				}
 				MF32(DATA, 0x4) = MF32(DATA, 0x4) + MF32(DATA, 0x14);
-				if (f31 <= float_0_8041ac0c) {
+				if (f31 <= 0.0f) {
 					if (mario->baseSpeed <= planeData[0] * planeData[23]) {
 						f31 = planeData[0] - mario->baseSpeed * planeData[24];
-						if (f31 <= float_0_8041ac0c) {
-							f31 = float_0_8041ac0c;
+						if (f31 <= 0.0f) {
+							f31 = 0.0f;
 						}
-						f31 = f31 * (MATCH_F32(float_90_8041ac04) / planeData[0]);
+						f31 = f31 * (90.0f / planeData[0]);
 						onPlace = 0;
 						m = marioGetPtr();
 						if (*(HitEntry**)((u8*)m + 0x1F8) != NULL && (hitGetAttr(*(HitEntry**)((u8*)m + 0x1F8)) & 0x38) != 0) {
 							onPlace = 1;
 						}
 						if (onPlace == 0) {
-							f32 v = planeData[25] * (f32)sin((*(const f32*)&float_3p1416_8041ac40) * f31 / (*(const f32*)&float_180_8041ac44));
+							f32 v = planeData[25] * (f32)sin(3.1415927f * f31 / 180.0f);
 
 							if (v <= planeData[26]) {
-								v = float_2_8041ac18 * planeData[26];
+								v = 2.0f * planeData[26];
 							}
 							MF32(DATA, 0x1C) = v;
 						}
@@ -889,7 +928,7 @@ static void flyMain(void) {
 				f32 add;
 
 				if ((s8)mario->wStickDir1 != 0) {
-					f32 s = sin((*(const f32*)&float_3p1416_8041ac40) * (planeData[0] - mario->baseSpeed) / (*(const f32*)&float_180_8041ac44));
+					f32 s = sin(3.1415927f * (planeData[0] - mario->baseSpeed) / 180.0f);
 
 					add = planeData[18] * s;
 					MF32(DATA, 0x18) = MF32(DATA, 0x18) + add;
@@ -897,43 +936,43 @@ static void flyMain(void) {
 						MF32(DATA, 0x18) = planeData[19];
 					}
 				} else {
-					add = (*(const f32*)&float_0p1_8041ac30) * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
+					add = 0.1f * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
 					MF32(DATA, 0x18) = add;
 				}
 				MF32(DATA, 0x4) = MF32(DATA, 0x4) + add;
 			}
-		} else if (MF32(dv, 0x4) >= (*(const f32*)&float_neg80_8041ac54)) {
+		} else if (MF32(dv, 0x4) >= -80.0f) {
 			if (dv->flags & 0x10) {
 				dv->flags = dv->flags & ~0x10;
 			}
 			{
-				f32 s = sin((*(const f32*)&float_3p1416_8041ac40) * (planeData[9] * __fabsf(MF32(DATA, 0x4))) / (*(const f32*)&float_180_8041ac44));
+				f32 s = sin(3.1415927f * (planeData[9] * __fabsf(MF32(DATA, 0x4))) / 180.0f);
 
 				MF32(DATA, 0x10) = planeData[10] * s;
 				mario->baseSpeed = mario->baseSpeed + MF32(DATA, 0x10);
 			}
-			f3 = float_0_8041ac0c;
+			f3 = 0.0f;
 			if (MF32(DATA, 0x4) > 0.0f) {
-				f3 = float_0_8041ac0c;
+				f3 = 0.0f;
 			} else {
 				f3 = __fabsf(MF32(DATA, 0x4));
 			}
 			{
 				f32 x, y;
 
-				f31 = sin((*(const f32*)&float_3p1416_8041ac40) * (planeData[12] * f3) / (*(const f32*)&float_180_8041ac44));
-				y = sin((*(const f32*)&float_3p1416_8041ac40) * (mario->baseSpeed * planeData[11]) / (*(const f32*)&float_180_8041ac44));
+				f31 = sin(3.1415927f * (planeData[12] * f3) / 180.0f);
+				y = sin(3.1415927f * (mario->baseSpeed * planeData[11]) / 180.0f);
 				x = planeData[13] * (y * f31);
 				MF32(DATA, 0x14) = MF32(DATA, 0x14) + x;
 			}
 			if ((s8)(mario->wStickDir1 & 0xff) != 0) {
 				if (DATA->flags & 1) {
-					if ((s8)mario->wStickDir1 > 0 && MF32(DATA, 0x14) >= float_1_8041ac1c) {
-						MF32(DATA, 0x14) = float_1_8041ac1c;
+					if ((s8)mario->wStickDir1 > 0 && MF32(DATA, 0x14) >= 1.0f) {
+						MF32(DATA, 0x14) = 1.0f;
 					}
 				} else {
-					if ((s8)mario->wStickDir1 < 0 && MF32(DATA, 0x14) >= float_1_8041ac1c) {
-						MF32(DATA, 0x14) = float_1_8041ac1c;
+					if ((s8)mario->wStickDir1 < 0 && MF32(DATA, 0x14) >= 1.0f) {
+						MF32(DATA, 0x14) = 1.0f;
 					}
 				}
 				onPlace = 0;
@@ -942,9 +981,9 @@ static void flyMain(void) {
 					onPlace = 1;
 				}
 				if (onPlace == 0) {
-					MF32(DATA, 0x1C) += (*(const f32*)&float_0p1_8041ac30) * (float_1_8041ac1c - MF32(DATA, 0x1C));
-					if (MF32(DATA, 0x1C) >= float_0_8041ac0c) {
-						MF32(DATA, 0x1C) = float_0_8041ac0c;
+					MF32(DATA, 0x1C) += 0.1f * (1.0f - MF32(DATA, 0x1C));
+					if (MF32(DATA, 0x1C) >= 0.0f) {
+						MF32(DATA, 0x1C) = 0.0f;
 					}
 				}
 			}
@@ -954,15 +993,15 @@ static void flyMain(void) {
 				onPlace = 1;
 			}
 			if (onPlace != 0) {
-				MF32(DATA, 0x24) = (*(const f32*)&float_neg22_8041ac58);
+				MF32(DATA, 0x24) = -22.0f;
 			} else {
-				MF32(DATA, 0x24) += (*(const f32*)&float_0p1_8041ac30) * (planeData[4] - MF32(DATA, 0x24));
+				MF32(DATA, 0x24) += 0.1f * (planeData[4] - MF32(DATA, 0x24));
 			}
 			MF32(DATA, 0x4) = MF32(DATA, 0x4) + MF32(DATA, 0x14);
 			if (MF32(DATA, 0x4) <= MF32(DATA, 0x24)) {
 				MF32(DATA, 0x4) = MF32(DATA, 0x24);
 			}
-			MF32(DATA, 0x18) = (*(const f32*)&float_0p1_8041ac30) * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
+			MF32(DATA, 0x18) = 0.1f * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
 		}
 	}
 	if (mario->baseSpeed >= planeData[0]) {
@@ -977,15 +1016,15 @@ static void flyMain(void) {
 		mario->directionView = MF32(DATA, 0x8);
 		sincosf(&sin1, &cos1, mario->directionView);
 		MF32(mario, 0x94) = mario->baseSpeed * cos1 + MF32(mario, 0x94);
-		sincosf(&sin2, &cos2, MATCH_F32(float_90_8041ac04) + MF32(DATA, 0x4));
-		MF32(mario, 0x90) = mario->baseSpeed * cos2 * (cos2 >= float_0_8041ac0c ? planeData[31] : planeData[32]) + MF32(mario, 0x90);
+		sincosf(&sin2, &cos2, 90.0f + MF32(DATA, 0x4));
+		MF32(mario, 0x90) = mario->baseSpeed * cos2 * (cos2 >= 0.0f ? planeData[31] : planeData[32]) + MF32(mario, 0x90);
 		MF32(mario, 0x8C) = sin2 * (mario->baseSpeed * sin1) + MF32(mario, 0x8C);
 	}
 	if (mario->baseSpeed <= planeData[16]) {
-		s32 frames = sysMsec2Frame((s32)((*(const f32*)&float_1000_8041ac5c) * planeData[17]));
+		s32 frames = sysMsec2Frame((s32)(1000.0f * planeData[17]));
 
 		if (DATA->flags & 1) {
-			if ((f32)(s8)mario->wStickDir1 < float_0_8041ac0c) {
+			if ((f32)(s8)mario->wStickDir1 < 0.0f) {
 				s32 c = *(s32*)&DATA->field_0x4[0x20 - 0x4] + 1;
 
 				*(s32*)&DATA->field_0x4[0x20 - 0x4] = c;
@@ -996,7 +1035,7 @@ static void flyMain(void) {
 				}
 			}
 		} else {
-			if ((f32)(s8)mario->wStickDir1 > float_0_8041ac0c) {
+			if ((f32)(s8)mario->wStickDir1 > 0.0f) {
 				s32 c = *(s32*)&DATA->field_0x4[0x20 - 0x4] + 1;
 
 				*(s32*)&DATA->field_0x4[0x20 - 0x4] = c;
@@ -1033,7 +1072,7 @@ static void flyMain(void) {
 	}
 }
 
-// Matched at 100%. The MATCH_F32() and volatile accesses below reproduce the original's scheduling:
+// The volatile accesses below reproduce the original's scheduling:
 // the y store must stay volatile so the volatile Vec copies do not hoist above it, and the Vec
 // copies are volatile so each loads/stores as an unscheduled pair.
 void mot_plane_post(void) {
@@ -1051,11 +1090,11 @@ void mot_plane_post(void) {
 	m = marioGetPtr();
 #ifdef MUST_MATCH
 	// Volatile store keeps the following volatile Vec loads below it, as the original schedules them.
-	m->wPlayerCollisionBox.x = MATCH_F32(float_20_8041ac24);
-	*(volatile f32*)&m->wPlayerCollisionBox.y = MATCH_F32(float_37_8041ac28);
+	m->wPlayerCollisionBox.x = 20.0f;
+	*(volatile f32*)&m->wPlayerCollisionBox.y = 37.0f;
 #else
-	m->wPlayerCollisionBox.x = MATCH_F32(float_20_8041ac24);
-	m->wPlayerCollisionBox.y = MATCH_F32(float_37_8041ac28);
+	m->wPlayerCollisionBox.x = 20.0f;
+	m->wPlayerCollisionBox.y = 37.0f;
 #endif
 
 #ifdef MUST_MATCH
@@ -1076,7 +1115,7 @@ void mot_plane_post(void) {
 	m->dispFlags &= ~0x100;
 #ifdef MUST_MATCH
 	{
-		f32 zero = MATCH_F32(float_0_8041ac0c);
+		f32 zero = 0.0f;
 		mario->unk138 = zero;
 		mario->unk140 = zero;
 	}
@@ -1091,10 +1130,14 @@ void mot_plane_post(void) {
 	allPartyRideOff2();
 }
 
-// The v3C block and the five marioHitCheck calls match. Remaining diffs (98.79%) are
-// register/schedule only: the v30.y fmadds result lands in f1 instead of f30, which also
-// puts ten in f3 instead of f7, and the first marioHitCheck hoists dist/a1 before a0/a2.
-// NONMATCHING (98.79%): every constant, call argument and data reference is correct.
+#ifdef MUST_MATCH
+// Deferred generation pools the angle before the collision-box reset constants.
+static f32 planePoolAngle(void) {
+    return 270.0f;
+}
+#endif
+
+// Compute the two plane collision points and test the flight path and ground.
 s32 chkCollision(f32* out) {
 	s32 flag = 0;
 	MarioWork* mario = marioGetPtr();
@@ -1111,7 +1154,7 @@ s32 chkCollision(f32* out) {
 	f32 nx, ny, nz;
 	HitEntry* hit;
 
-	sincosf(&sinA, &cosA, MATCH_F32(float_90_8041ac04) + MF32(DATA, 0x4));
+	sincosf(&sinA, &cosA, 90.0f + MF32(DATA, 0x4));
 	sincosf(&sinC, &cosC, MF32(DATA, 0x8));
 
 	v3C = vec3_802c5cfc;
@@ -1157,7 +1200,7 @@ s32 chkCollision(f32* out) {
 		vx = pd40 * (sinC * -cosA) + vx;
 		vz = pd40 * (cosC * -cosA) + vz;
 		vy = sinA * pd40 + vy;
-		sincosf(&sinA, &cosA, MF32(DATA, 0x4) - MATCH_F32(float_90_8041ac04));
+		sincosf(&sinA, &cosA, MF32(DATA, 0x4) - 90.0f);
 		vx = vx + (planeData[39] * (cosA * sinC) - planeData[39] * (sinR * cosC));
 		vy = vy + planeData[39] * (sinA * cosR);
 		v30 = vec3_802c5d08;
@@ -1203,9 +1246,9 @@ s32 chkCollision(f32* out) {
 		f32 a1 = MF32(DATA, 0x34);
 		f32 a2 = MF32(DATA, 0x38);
 		mario->hitobjStandOn = NULL;
-		dist = (*(const f32*)&float_10p1_8041ac10);
+		dist = 10.1f;
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-		                    a0, a1 + ten, a2, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
+		                    a0, a1 + ten, a2, 0.0f, -1.0f, 0.0f);
 	}
 	if (hit != NULL) {
 		mario->hitobjStandOn = hit;
@@ -1219,9 +1262,9 @@ s32 chkCollision(f32* out) {
 			f32 a1 = MF32(DATA, 0x40);
 			f32 a2 = MF32(DATA, 0x44);
 			mario->hitobjStandOn = NULL;
-			dist = (*(const f32*)&float_10p1_8041ac10);
+			dist = 10.1f;
 			hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-			                    a0, a1 + ten, a2, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
+			                    a0, a1 + ten, a2, 0.0f, -1.0f, 0.0f);
 		}
 		if (hit != NULL) {
 			mario->hitobjStandOn = hit;
@@ -1248,9 +1291,9 @@ s32 chkCollision(f32* out) {
 			f32 a0 = MF32(DATA, 0x30);
 			f32 a1 = MF32(DATA, 0x34);
 			f32 a2 = MF32(DATA, 0x38);
-			dist = float_2_8041ac18;
+			dist = 2.0f;
 			hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
-			                    a0, a1, a2, 0.0f, MATCH_F32(float_1_8041ac1c), 0.0f);
+			                    a0, a1, a2, 0.0f, 1.0f, 0.0f);
 		}
 		if (hit != NULL) {
 			*(HitEntry**)((u8*)mario + 0x1F4) = hit;
@@ -1261,3 +1304,9 @@ s32 chkCollision(f32* out) {
 	return flag;
 }
 
+#ifdef MUST_MATCH
+// This is generated first in the deferred unit, pooling the collision radius before 90.
+static f32 planePoolRadius(void) {
+    return 4.0f;
+}
+#endif
