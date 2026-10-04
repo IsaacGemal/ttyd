@@ -53,6 +53,16 @@
 #include "evt/evt_sub.h"
 
 // Data objects defined later in this file or in other units, declared before their first use.
+extern volatile f32 float_0p5_8041dc98;
+
+#ifdef MUST_MATCH
+// The original evaluates each GXPosition component and stores it immediately, so a
+// component read from memory is reloaded before its store instead of being hoisted.
+#undef GXPosition3f32
+#define GXPosition3f32(x, y, z) ((void)(GXWGFifo.f32 = (x), GXWGFifo.f32 = (y), GXWGFifo.f32 = (z)))
+#endif
+
+// Data objects defined later in this file or in other units, declared before their first use.
 extern const Vec vec3_802f68c0;
 extern const Vec vec3_802f68cc;
 extern const GXColor dat_8041dc00;
@@ -568,7 +578,7 @@ USER_FUNC(itemUseFunc) {
                 break;
             }
             target = (f32*)(*(u8**)((u8*)effRecoveryEntry(0, item->hp_restored, party->position.x, party->position.y + *(f32*)((u8*)party + 0xF0), party->position.z) + 0xC) + 0x40);
-            *target = (-(*(f32*)((u8*)party + 0xF0))) / 2.0f;
+            *target = (-(*(f32*)&party->field_E8[8])) * float_0p5_8041dc98;
             cnt++;
             break;
         }
@@ -806,11 +816,11 @@ void winTexSet(u32 textureId, Vec translate, Vec scale, GXColor color) {
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(-0.5f, -0.5f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(0.5f, -0.5f, 0.0f);
+    GXPosition3f32(float_0p5_8041dc98, -0.5f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(0.5f, 0.5f, 0.0f);
+    GXPosition3f32(float_0p5_8041dc98, float_0p5_8041dc98, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(-0.5f, 0.5f, 0.0f);
+    GXPosition3f32(-0.5f, float_0p5_8041dc98, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXEnd();
 }
@@ -840,11 +850,11 @@ void unk_80177008(u32 textureId, Vec translate, Vec scale, GXColor color) {
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(-0.5f, -0.5f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(0.5f, -0.5f, 0.0f);
+    GXPosition3f32(float_0p5_8041dc98, -0.5f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(0.5f, 0.5f, 0.0f);
+    GXPosition3f32(float_0p5_8041dc98, float_0p5_8041dc98, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(-0.5f, 0.5f, 0.0f);
+    GXPosition3f32(-0.5f, float_0p5_8041dc98, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXEnd();
 }
@@ -885,11 +895,11 @@ void winTexSetRot(u32 textureId, Vec translate, Vec scale, f32 rot, GXColor colo
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(-0.5f, -0.5f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(0.5f, -0.5f, 0.0f);
+    GXPosition3f32(float_0p5_8041dc98, -0.5f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(0.5f, 0.5f, 0.0f);
+    GXPosition3f32(float_0p5_8041dc98, float_0p5_8041dc98, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(-0.5f, 0.5f, 0.0f);
+    GXPosition3f32(-0.5f, float_0p5_8041dc98, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXEnd();
 }
@@ -960,11 +970,11 @@ void winTexSet_x2(u32 textureId, u32 textureId2, Vec translate, Vec scale, GXCol
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(-0.5f, -0.5f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(0.5f, -0.5f, 0.0f);
+    GXPosition3f32(float_0p5_8041dc98, -0.5f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(0.5f, 0.5f, 0.0f);
+    GXPosition3f32(float_0p5_8041dc98, float_0p5_8041dc98, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(-0.5f, 0.5f, 0.0f);
+    GXPosition3f32(-0.5f, float_0p5_8041dc98, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXEnd();
 }
@@ -1083,11 +1093,11 @@ void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(-0.5f, -0.5f, 0.0f);
     GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(0.5f, -0.5f, 0.0f);
+    GXPosition3f32(float_0p5_8041dc98, -0.5f, 0.0f);
     GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(0.5f, 0.5f, 0.0f);
+    GXPosition3f32(float_0p5_8041dc98, float_0p5_8041dc98, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(-0.5f, 0.5f, 0.0f);
+    GXPosition3f32(-0.5f, float_0p5_8041dc98, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXEnd();
     GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
@@ -1430,6 +1440,7 @@ s32 evt_lecture_msg[96] = {
 
 __declspec(section ".sdata2") const GXColor dat_8041dc90 = { 0xFF, 0xFF, 0xFF, 0xFF };
 __declspec(section ".sdata2") const GXColor dat_8041dc94 = { 0x55, 0x55, 0x55, 0xFF };
+__declspec(section ".sdata2") volatile f32 float_0p5_8041dc98 = 0.5f;
 
 #ifdef MUST_MATCH
 // The original pools both int->float conversion doubles ahead of the deferred functions' strings.
