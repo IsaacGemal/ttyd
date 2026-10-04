@@ -2545,7 +2545,6 @@ s32 evt_raster(EventEntry* event, BOOL isFirstCall) {
     return EVT_RETURN_BLOCK;
 }
 
-// NONMATCHING (99.46%): r4/r5 register allocation for enemy_100/npcTribe differs.
 s32 enemy_info(EventEntry* event, BOOL isFirstCall) {
     s32* args;
     s32 index;
@@ -2553,14 +2552,16 @@ s32 enemy_info(EventEntry* event, BOOL isFirstCall) {
     NpcTribeInfo* tribe;
     const char* name;
     s32 found;
+    BattleSetupData* setup;
 
     args = event->args;
     index = evtGetValue(event, args[0]);
     kind = enemy_100[index];
     found = 0;
+    setup = &btlsetup_jon_tbl[kind];
 
     for (tribe = npcTribe; tribe->nameJp != NULL; tribe++) {
-        if (strcmp(tribe->nameJp, btlsetup_jon_tbl[kind].name) == 0) {
+        if (strcmp(tribe->nameJp, setup->name) == 0) {
             found = 1;
             break;
         }
