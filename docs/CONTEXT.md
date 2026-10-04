@@ -4422,3 +4422,15 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   (base-register recipe), the no-messages strings and msgWindowOpen_SE_Data by name, declares .sbss in reverse and
   adds the .sdata gap word. `float_28_8041a550` and `float_6_8041a554` hold 20 and 7 in the original: the names
   are misnomers, not wrong data.
+- **Batch 3:** effBattenMain and effFukidashiEntry to 100%, both units linked (the one-short arm's tally: five
+  units linked). eff_fukidashi's agent found that main's code had `16.0f`/`1.0f` in four GXPosition/GXTexCoord
+  quads where the original has `8.0f`/`2.0f`: a value bug fuzzy scores can't see, fixed, and the linked checksum
+  confirms it. Data ports for itemdrv (without its trailing .sbss gap word, which dropped .sbss 100 -> 66.7) and
+  koopa_hit. las_05's port lowered a function and was rejected; sys and yuu_03 changed nothing; the koopa agent was
+  stopped through limits.txt once Codex's #376 had linked koopa.c. msgdrv follow-ups: opt_dead_assignments back to
+  msgAnalize alone, the section pragmas under MUST_MATCH. `merge_agent.sh` accepts `#pragma section` (81 uses);
+  tower_check no longer flags the launcher's own `head -c` log readers.
+- **Round 2** (10:33, base f5ce612f): 9 more one-short functions with specific hypotheses (five of them the
+  base-register/named-constant pool recipe) and 8 data-prep units. The first start passed BASE=~/... unquoted, so the
+  Mac expanded the tilde and every prepare failed before an agent started (claims released, no slots held); relaunched
+  quoted a minute later.
