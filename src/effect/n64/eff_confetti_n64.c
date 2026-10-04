@@ -37,23 +37,29 @@ extern const f32 float_1_8041ec44;
 extern const f32 float_neg0p02_8041ec48;
 extern const f32 float_0p02_8041ec4c;
 
-// .rodata zero vector this unit's particles are laid out from.
-const Vec vec3_802fa438 = { 0.0f, 0.0f, 0.0f };
 
-// .rodata int->float conversion constant the original references by name.  Kept const: the
-// compiler folds it to an anonymous @NNN pool object, but objdiff's function score ignores the
-// reloc-name difference (only `check.py FUNC`'s instruction listing shows it).
-const f64 double_to_int_802fa448 = 4503601774854144.0;
 
 // .rodata effect name the original stores into EffectEntry::type.
-const char str_802FA450[12] = "ConfettiN64";
 
 // .sbss2 scratch GXColor the original builds its TEV colour from.
 extern GXColor unk_804230c8;
 
 // .sdata tables and .data vertex arrays belonging to this unit.
-extern u8 color_table[36];
-extern u8 anm_seq[8];
+u8 color_table[36] = {
+	0xE8, 0xA0, 0xA8, 0xA8, 0x50, 0x58, 0xA0, 0xA8,
+	0xE8, 0x48, 0x48, 0xE8, 0xA0, 0xE8, 0xA0, 0x60,
+	0xB0, 0x78, 0xE0, 0xE0, 0x58, 0xB0, 0xA0, 0x38,
+	0xE8, 0xA0, 0xE8, 0xB0, 0x40, 0xA0, 0xA0, 0xD8,
+	0xD8, 0x58, 0xA8, 0xA8,
+};
+u8 anm_seq[8] = { 0x00, 0x01, 0x02, 0x03, 0x02, 0x01, 0x00, 0x00 };
+// 4-byte zero word that ends the unit's .sdata: an all-zero object needs explicit_zero_data to be
+// emitted and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") const u32 gap_07_80413874_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 // .data vertex arrays (retail defines both here, before the Entry jump table).
 u32 size6x6_tex16x16_vtx[14] = {
 	0xFFFDFFFD, 0x00000000, 0x0000FFFF, 0xFFFF0003,
@@ -151,7 +157,7 @@ EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f3
 		radius = float_5_8041ec14;
 		break;
 	}
-	effect->type = str_802FA450;
+	effect->type = "ConfettiN64";
 	num = count + 1;
 	effect->count = num;
 	data = __memAlloc(HEAP_EFFECT, num * sizeof(effConfettiN64Data));
@@ -217,8 +223,7 @@ EffectEntry* effConfettiN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f3
 
 // MUST_MATCH: retail builds the position Vec in a scratch slot and copies it into a second local
 // before dispCalcZ.  The inline starts from a literal zero vector: a named zero vector's load is
-// scheduled before the prologue's stmw, which the original does not do.  vec3_802fa438 is still
-// defined above so the unit's .rodata keeps the named object.
+// scheduled before the prologue's stmw, which the original does not do.
 #ifdef MUST_MATCH
 static inline Vec makeConfettiVec(f32 x, f32 y, f32 z) {
 	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -242,7 +247,7 @@ void effConfettiMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	Vec position2 = makeConfettiVec(data->x, data->y, data->z);
 #else
-	Vec position2 = vec3_802fa438;
+	Vec position2;
 	position2.x = data->x;
 	position2.y = data->y;
 	position2.z = data->z;
@@ -351,9 +356,7 @@ static inline void makeConfettiColor1(void) {
 // 0x2AAAAAAB magic of `(seq >> 1) % 6` with that of `i % 12` in the loop, so it is live across the
 // whole loop rather than just the preheader.  The two modulos schedule identically, so it is a pure
 // allocator tie-break.  Declaration-order, load-order, expression-form, pointer/helper, pragma
-// (opt_*/global_optimizer/scheduling/optimization_level), -g and statement-order searches did not move it.  The
-// implicit int->float constant is also emitted as an anonymous @NNN pool object instead of
-// double_to_int_802fa448 (a duplicate of the file's named .rodata copy).
+// (opt_*/global_optimizer/scheduling/optimization_level), -g and statement-order searches did not move it.
 // NONMATCHING (99.86%): only the seq/anm_seq/divisor 3-cycle above differs.
 void effConfettiDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
@@ -446,3 +449,31 @@ void effConfettiDisp(CameraId camId, void* param) {
 		}
 	}
 }
+
+// Named .sdata2 constants, defined after the code so the compiler reads them by name.
+const f32 float_0p011489_8041ebf0 = 0.0114889145f;
+const f32 float_deg2rad_8041ebf4 = 0.017453292f;
+const f32 float_0p0625_8041ebf8 = 0.0625f;
+const f32 float_0p0039062_8041ebfc = 0.00390625f;
+#pragma explicit_zero_data on
+const f32 float_0_8041ec00 = 0.0f;
+#pragma explicit_zero_data reset
+const f32 float_0p1_8041ec04 = 0.1f;
+const f32 float_35_8041ec08 = 35.0f;
+const f32 float_15_8041ec0c = 15.0f;
+const f32 float_0p03_8041ec10 = 0.03f;
+const f32 float_5_8041ec14 = 5.0f;
+const f32 float_neg1p7_8041ec18 = -1.7f;
+const f32 float_0p01_8041ec1c = 0.01f;
+const f32 float_0p05_8041ec20 = 0.05f;
+const f32 float_10_8041ec24 = 10.0f;
+const f32 float_0p98_8041ec28 = 0.98f;
+const f32 float_neg0p5_8041ec2c = -0.5f;
+const f32 float_3_8041ec30 = 3.0f;
+const f32 float_4_8041ec34 = 4.0f;
+const f32 float_0p5_8041ec38 = 0.5f;
+const f32 float_6p2832_8041ec3c = 6.2831855f;
+const f32 float_360_8041ec40 = 360.0f;
+const f32 float_1_8041ec44 = 1.0f;
+const f32 float_neg0p02_8041ec48 = -0.02f;
+const f32 float_0p02_8041ec4c = 0.02f;

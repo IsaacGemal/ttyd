@@ -34,14 +34,18 @@ static void disp_3D(CameraId cameraId, void* param);  // local to this file in t
 // strings. The layout only matters because MWCC folds its anonymous int->float
 // pool double into the section base when a function names several of these
 // objects, so the double must land at vec3_803002b0+0x1B8 (see main_star1).
-const f32 vec3_803002b0[3] = {0.0f, -1000.0f, 0.0f};
-const f32 vec3_803002bc[3] = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") f32 vec3_803002b0[3] = {0.0f, -1000.0f, 0.0f};
+__declspec(section ".rodata") f32 vec3_803002bc[3] = {0.0f, 0.0f, 0.0f};
 const s32 dat_803002c8[3] = {0, 4, 2};
-const f32 vec3_803002d4[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_803002e0[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_803002ec[3] = {0.0f, 180.0f, 0.0f};
-const f32 vec3_803002f8[3] = {0.0f, 0.0f, 0.0f};
-const f32 vec3_80300304[3] = {0.0f, -1000.0f, 0.0f};
+// Match-only: retail defines these five as const. A non-const object stops MWCC's
+// -O4 scheduler from hoisting the named loads above the star stores (the const form
+// drops main_star0 to 88.17%); the section attribute keeps the bytes at their
+// retail .rodata offsets.
+__declspec(section ".rodata") f32 vec3_803002d4[3] = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") f32 vec3_803002e0[3] = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") f32 vec3_803002ec[3] = {0.0f, 180.0f, 0.0f};
+__declspec(section ".rodata") f32 vec3_803002f8[3] = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") f32 vec3_80300304[3] = {0.0f, -1000.0f, 0.0f};
 // Match-only: retail defines these five as const. A non-const object defeats
 // MWCC's load hoisting in main_star1 (a const object is provably stable, so the
 // -O4 scheduler lifts the named loads above the star stores, dropping the
@@ -72,10 +76,6 @@ const char str_8030041C[] = "SFX_BTL_SAC_HEART_SHOOT1";
 const char str_80300438[] = "SFX_HP_RECOVER_SHINE2";
 const char str_80300450[] = "stardust";
 const char str_8030045C[] = "M_C_2C";
-// The int->float magic (0x4330000080000000) sits between the strings as in retail, so str_80300470 lands at
-// +0x1C0 where main_weapon reads it; the compiler still pools its own copy at the end of .rodata.
-const f64 double_to_int_80300468 = 4503601774854144.0;
-const char str_80300470[] = "SFX_BTL_SAC_HEART_SHOOT2";
 
 const f32 float_30_80421d80 = 30.0f;
 const f32 float_1p25_80421d6c = 1.25f;
@@ -83,8 +83,6 @@ const f32 float_360_80421de8 = 360.0f;
 const f32 float_60_80421d50 = 60.0f;
 const f32 float_neg1p25_80421e0c = -1.25f;
 const f32 float_0_80421d84 = 0.0f;
-const char str_8030048C[] = "M_C_2A";
-const char str_80300494[] = "M_C_2B";
 const char str_80421D3C[] = "M_I_Y";
 const char str_80421E10[] = "M_S_1";
 const char str_80421E18[] = "M_D_1";
@@ -409,8 +407,8 @@ static inline Vec _makeTrans1(const f32* vec, f32 x, f32 y, f32 z) {
 // Reading each vector by name (`*(const Vec*)vec3_8030034c`) rather than through a
 // `vec3_803002b0` pointer makes MWCC anchor the whole .rodata section in r30 and copies the
 // trans/scale/rot/tmp locals into the original's slots. The two final quads call btlDispTex4
-// directly. The int->float loads still read the compiler's own pooled copy (+0x1f0) where retail
-// reads double_to_int_80300468 (+0x1b8); objdiff doesn't score that displacement. Under MUST_MATCH the five icon colours are named
+// directly. The int->float loads read the compiler's anonymous pool double, which now lands
+// at vec3_803002b0+0x1B8 just like retail's double_to_int_80300468. Under MUST_MATCH the five icon colours are named
 // locals passed by address, so MWCC allocates them 0x20..0x10 and the final colours 0xc/0x8.
 static void disp_3D(CameraId cameraId, void* param) {
     GenkiObject* obj;
@@ -859,7 +857,7 @@ void main_mario(void) {
             genki->field_44 = 2;
             genki->field_48 = 0;
             genki->field_54 = 10;
-            BtlUnit_SetAnim(parts, str_8030048C);
+            BtlUnit_SetAnim(parts, "M_C_2A");
         }
         break;
     case 2:
@@ -869,7 +867,7 @@ void main_mario(void) {
         } else {
             genki->field_54--;
             if (genki->field_54 == 2) {
-                BtlUnit_SetAnim(parts, str_80300494);
+                BtlUnit_SetAnim(parts, "M_C_2B");
             }
             if (genki->field_54 <= 0 && genki->field_C == 1) {
                 genki->field_54 = 10;
@@ -909,17 +907,17 @@ void main_mario(void) {
     }
 }
 
-// The file's incomplete .rodata pool (same limitation as main_star1) means MWCC does not fold the
-// int->float magic double into the vec3_803002b0 pool base: it emits a fresh `lis`/`lfd` at a
-// separate anonymous `@NNN` pool entry instead of the original's `lfd 0x1b8(r29)`. That `lis`
-// clobbers r3 and drags the surrounding `lwz 0x74/0x78(r30)` register choice with it. The
-// `str_80300470` load is matched with the vec3_803002b0+0x1C0 base (MUST_MATCH below). Both pool
-// offsets only come out once the vec3/string entries from disp_3D are in the unit; the missing
-// 0x180 of other functions' .rodata is what puts the double at vec3+0x1b8. The switch jump tables
-// are anonymous `@...@` too, but those are symbol-only (`~~`) and resolve when the unit links.
-// NONMATCHING (99.27%): only the double's pool base (the fresh `lis @NNN`; 6 instructions).
+// 99.40%: the function names its vec3 objects directly and the SFX sound name is a
+// pooled string literal, so MWCC anchors the .rodata base in r29 and folds the int->float
+// pool double into `lfd 0x1b8(r29)` and the string into `addi r4, r29, 0x1c0`, exactly as
+// retail. The only remaining difference is the effect loop's scratch register: retail
+// uses eff=r5 / field_74=r4 / field_78=r3; we get eff=r4 / field_74=r3 / field_78=r0, a
+// volatile-register tie-break in MWCC's allocator that none of the source spellings tried
+// (separate loop index, pointer forms, function-scope eff, reordered stores, continue/while)
+// moved. The switch jump tables are anonymous `@...@` too, but those are symbol-only (`~~`)
+// and resolve when the unit links.
+// NONMATCHING (99.40%): 11 instructions, all in the effect loop's register allocation.
 void main_weapon(s32 idx) {
-    const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
     GenkiWeapon* weapon = &genki->weapon[idx];
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -934,7 +932,7 @@ void main_weapon(s32 idx) {
 
     switch (weapon->field_0) {
     case 0:
-        weapon->pos[0] = *(const Vec*)&vec[0];
+        weapon->pos[0] = *(const Vec*)vec3_803002b0;
         break;
     case 1:
         weapon->field_4--;
@@ -946,12 +944,7 @@ void main_weapon(s32 idx) {
         weapon->pos[0].x += float_20_80421d78 * mario->mSizeMultiplier;
         weapon->pos[0].y += float_28_80421dec * mario->mSizeMultiplier;
         {
-#ifdef MUST_MATCH
-            // Match-only: retail reads this Vec through the vec3_803002b0 base register.
-            Vec vel = *(const Vec*)&vec[0xC / 4];
-#else
             Vec vel = *(const Vec*)vec3_803002bc;
-#endif
 
             vel.x = float_10_80421d54 * (f32)cos(angle);
             vel.y = float_10_80421d54 * (f32)sin(angle);
@@ -969,12 +962,7 @@ void main_weapon(s32 idx) {
                 break;
             }
         }
-#ifdef MUST_MATCH
-        // Match-only: retail reads the sound name through the vec3_803002b0 base (offset 0x1C0).
-        BtlUnit_snd_se(mario, (const char*)((const u8*)vec + 0x1C0), 0xF1194D80, 0);
-#else
-        BtlUnit_snd_se(mario, str_80300470, 0xF1194D80, 0);
-#endif
+        BtlUnit_snd_se(mario, "SFX_BTL_SAC_HEART_SHOOT2", 0xF1194D80, 0);
         /* fallthrough */
     case 2:
         weapon->pos[0].x += weapon->vel.x;
@@ -1155,9 +1143,9 @@ void main_weapon(s32 idx) {
     }
 }
 
-// Matches. The file's incomplete .rodata pool (see main_weapon) leaves the int->float magic double
-// as an anonymous `@693@` and the 30.0f literal as `@959@` instead of the named
-// `double_to_int_80300468` / `float_30_80421d80`; objdiff does not score those symbol names. The
+// Matches. The int->float loads read the anonymous pool double (now at vec3_803002b0+0x1B8,
+// like retail's double_to_int_80300468) with an absolute `lis`, and the 30.0f literal as
+// `@NNN` instead of the named `float_30_80421d80`; objdiff does not score those symbol names. The
 // `30.0f` literal, rather than the named `float_30_80421d80` (same value), is what makes MWCC emit
 // the original's interleaved `li`/`lfs` argument setup. Keeping `fifteen` in a variable fixed the
 // compare's f1/f2 assignment; the if/else that builds `limit` fixed the case-1 integer register
@@ -1479,21 +1467,15 @@ static void main_base(void) {
     }
 }
 
-// NONMATCHING (91.66%): the int->float magic double is pooled as a local `@712` entry in
-// this object's .rodata (offset 0x48, right after vec3_803002b0) instead of at the
-// original's .rodata+0x1b8, so MWCC cannot fold it into `lfd fX, 0x1b8(r31)` and emits a
-// fresh `lis rN, @712@ha` before every conversion (the file's incomplete .rodata pool is
-// file-wide, so this is left as is). That extra lis shifts the schedule around each
-// conversion. The whole callee-saved map is also rotated by one register relative to the
-// original: here idx=r27, mario=r28, star=r29, vec=r30, genki=r31, where the original has
-// idx=r28, mario=r29, star=r30, vec=r31, genki=r27 (a 5-clique, so the allocator's
-// tie-break picks the rotation). Logic and constants match the assembly. Putting
-// field_58 after field_54/field_3C/field_48 (its original source order) fixed the case-1
-// schedule and was worth +1.4%.
-// NONMATCHING (91.66%): the pooled int->float magic double is not at vec3_803002b0+0x1B8,
-// so its `lis` is emitted and the scheduling plus the rotated callee-saved map differ.
+// 100%: naming the vec3 objects directly (rather than reaching them through a
+// vec3_803002b0 pointer) makes MWCC anchor the .rodata section base in r31, fold the
+// anonymous int->float pool double into `lfd fX, 0x1b8(r31)`, and pick the original's
+// callee-saved map (idx=r28, mario=r29, star=r30, vec=r31, genki=r27). The named
+// objects must be non-const (see the data block at the top): a const object lets the -O4
+// scheduler hoist its loads above the star stores and drops the function to 88%.
+// Putting field_58 after field_54/field_3C/field_48 (its original source order) fixed
+// the case-1 schedule. Logic, schedule and constants match the assembly.
 void main_star0(s32 idx) {
-    const f32* vec = vec3_803002b0;
     GenkiWork* genki = get_ptr();
     GenkiStar* star = &genki->stars[idx];
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -1513,8 +1495,8 @@ void main_star0(s32 idx) {
         *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
         *(Vec*)&star->field_24 = *(Vec*)&star->field_C;
         star->field_28 += 30.0f;
-        *(Vec*)&star->field_3C = *(const Vec*)&vec[0x24 / 4];
-        *(Vec*)&star->field_48 = *(const Vec*)&vec[0x30 / 4];
+        *(Vec*)&star->field_3C = *(const Vec*)vec3_803002d4;
+        *(Vec*)&star->field_48 = *(const Vec*)vec3_803002e0;
         star->field_54 = 0.0f;
         star->field_58 = 6.283184f * (f32)idx / 7.0f;
         star->field_5C = 0.1f;
@@ -1551,11 +1533,11 @@ void main_star0(s32 idx) {
             star->field_0 = 3;
             star->field_4 = 0;
             *(Vec*)&star->field_18 = *(Vec*)&star->field_C;
-            v = *(const Vec*)&vec[0x3C / 4];
+            v = *(const Vec*)vec3_803002ec;
             v.x = 200.0f * (f32)rand() / 32767.0f;
             v.z = star->field_20;
             *(Vec*)&star->field_24 = v;
-            *(Vec*)&star->field_30 = *(const Vec*)&vec[0x48 / 4];
+            *(Vec*)&star->field_30 = *(const Vec*)vec3_803002f8;
             star->field_34 = (2.0f * (star->field_28 - star->field_1C) -
                               (60.0f * (60.0f *
                                (0.2f - 0.01f * (f32)idx)))) /
@@ -1597,7 +1579,7 @@ void main_star0(s32 idx) {
         if (genki->field_40 <= 0) {
             star->field_0 = 5;
             star->field_4 = 0;
-            *(Vec*)&star->field_C = *(const Vec*)&vec[0x54 / 4];
+            *(Vec*)&star->field_C = *(const Vec*)vec3_80300304;
         }
         break;
     case 5:

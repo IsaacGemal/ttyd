@@ -232,6 +232,13 @@ static DispWork* dwp = &disp_work;
 static const char* suuji[] = { "０", "１", "２", "３", "４", "５", "６", "７", "８", "９" };
 // clang-format on
 
+#ifdef MUST_MATCH
+// the original's last .rodata object, the area name, ends four bytes past its NUL: the extra NULs spell the pad out
+#define AREA_TOU "tou\0\0\0\0"
+#else
+#define AREA_TOU "tou"
+#endif
+
 void _prolog(void) {
     voidfunctionptr* ctor;
 
@@ -239,7 +246,7 @@ void _prolog(void) {
         (*ctor)();
     }
     relSetEvtAddr("tou_03", tou_03_init_evt);
-    relSetBtlAddr("tou", btlsetup_tou_tbl, btl_tou_setup_no_tbl);
+    relSetBtlAddr(AREA_TOU, btlsetup_tou_tbl, btl_tou_setup_no_tbl);
     rankingInit();
 }
 
@@ -248,7 +255,7 @@ void _epilog(void) {
 
     rankingExit();
     relSetEvtAddr("tou_03", NULL);
-    relSetBtlAddr("tou", NULL, NULL);
+    relSetBtlAddr(AREA_TOU, NULL, NULL);
     for (dtor = _dtors; *dtor != NULL; dtor++) {
         (*dtor)();
     }
@@ -1033,11 +1040,20 @@ static void disp_proc(CameraId cameraId, void* param) {
 
         FontDrawColor(&color);
     }
-    FontDrawMessage(-i / 2, (s32)(f32){ 135.0f }, "ランキング");
+    // The angles are read from float locals so they pool with disp_proc's other
+    // code constants; as block-scope compound-literal templates they pooled early.
+    {
+        f32 f135 = 135.0f;
+        FontDrawMessage(-i / 2, (s32)f135, "ランキング");
+    }
     c250 = 250.0f;
     scX = (u16)(304.0f + f31);
     scW = (u16)c250;
-    GXSetScissor(scX, (u16)(f32){ 145.0f }, scW, (u16)(f32){ 220.0f });
+    {
+        f32 f145 = 145.0f;
+        f32 f220 = 220.0f;
+        GXSetScissor(scX, (u16)f145, scW, (u16)f220);
+    }
     f28 = 135.0f;
     f30 = 40.0f;
     rank = 0;
@@ -1081,7 +1097,11 @@ static void disp_proc(CameraId cameraId, void* param) {
             y += 0x14;
         }
     }
-    GXSetScissor(scX, (u16)(f32){ 137.0f }, scW, (u16)(f32){ 228.0f });
+    {
+        f32 f137 = 137.0f;
+        f32 f228 = 228.0f;
+        GXSetScissor(scX, (u16)f137, scW, (u16)f228);
+    }
     {
         f32 yv = 95.0f + dwp->field_00;
         Vec pos = { 0.0f, 0.0f, 0.0f };

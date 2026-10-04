@@ -11,6 +11,7 @@
 #include "pmario_sound.h"
 #include "statuswindow.h"
 #include "battle/battle_weapon_power.h"
+#include "battle/battle_message.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include "battle/battle_audience_kinopio.h"
@@ -22,10 +23,85 @@
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_80399940[2] = { 0xBF800000, 0x3F800000 };
 
-extern u8 weapon_data_akikan[];
-extern u8 weapon_data_brick[];
-extern u8 weapon_data_bone[];
-extern u8 weapon_data_hammer[];
+// The original .data opens with four {-1,1} / {1,-1} pairs the throwable-item code walks through; the
+// local ($) halves are declared static and force_active keeps every pair emitted.
+#pragma force_active on
+__declspec(section ".data") static u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_80399950[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 lbl_80399960[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_80399970[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+#pragma force_active reset
+
+// Throwable-item weapon descriptors copied into the audience work area on release.
+#pragma force_active on
+u32 weapon_data_akikan[48] = {
+	0x00000000, 0x00000000, 0x000000EC, 0x00000000,
+	0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+	0x00000001, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x01100060, 0x20000000, 0x00000302,
+	0x00000000, 0x00000048, 0x000007FF, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000064, 0x00000000, 0x00000000,
+};
+u32 weapon_data_brick[48] = {
+	0x00000000, 0x00000000, 0x000000ED, 0x00000000,
+	0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+	0x00000001, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x01100060, 0x20000000, 0x00000302,
+	0x00000000, 0x00000048, 0x000007FF, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000064, 0x00000000, 0x00000000,
+};
+u32 weapon_data_bone[48] = {
+	0x00000000, 0x00000000, 0x000000EE, 0x00000000,
+	0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+	0x00000001, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x01100060, 0x20000000, 0x00000302,
+	0x00000000, 0x00000048, 0x000007FF, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000064, 0x00000000, 0x00000000,
+};
+u32 weapon_data_hammer[48] = {
+	0x00000000, 0x00000000, 0x000000EF, 0x00000000,
+	0x64000002, 0x00000000, 0x00000000, (u32)weaponGetPowerDefault,
+	0x00000002, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x01100060, 0x20000000, 0x00000302,
+	0x00000000, 0x00000048, 0x000007FF, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000000, 0x00000064, 0x00000000, 0x00000000,
+};
+
+// Per-pouch-rank audience counts (indexed by pouch rank; 10 seats per side).
+s32 haiti_data[4][10] = {
+	0x00000012, 0x00000010, 0x00000010, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000012, 0x00000012, 0x00000012, 0x00000010, 0x00000010, 0x0000000E, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+	0x00000014, 0x00000014, 0x00000014, 0x00000014, 0x00000012, 0x00000012, 0x00000012, 0x00000010, 0x00000000, 0x00000000,
+	0x00000014, 0x00000014, 0x00000014, 0x00000014, 0x00000014, 0x00000014, 0x00000014, 0x00000014, 0x00000014, 0x00000014,
+};
+#pragma force_active off
 
 #ifdef MUST_MATCH
 // For the struct-copy that BattleAudience_Case_FallObject_Aud uses to load its two const offset
@@ -54,6 +130,25 @@ const char str_802F9578[] = "btl_msg_audience_puni_escape";
 const char str_802F9598[] = "btl_msg_audience_puni_meeting";
 const char str_802F95B8[] = "btl_msg_audience_pansy_sleep";
 const char str_802F95D8[] = "btl_msg_audience_heavybomb_dynamite";
+
+// Small event scripts that announce an audience reaction; the retail objects sit in .sdata (too large for
+// automatic small-data placement, so the section is requested explicitly).
+__declspec(section ".sdata") s32 msg_puni_all_escape[9] = {
+	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
+	(s32)(void*)str_802F9578, 0x00000078, 0x00000002, 0x00000001,
+};
+__declspec(section ".sdata") s32 msg_puni_all_enter[9] = {
+	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
+	(s32)(void*)str_802F9598, 0x00000078, 0x00000002, 0x00000001,
+};
+__declspec(section ".sdata") s32 msg_pansy_sing[9] = {
+	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
+	(s32)(void*)str_802F95B8, 0x00000078, 0x00000002, 0x00000001,
+};
+__declspec(section ".sdata") s32 msg_heavy_bomb_fire[9] = {
+	0x0006005B, (s32)(void*)btlevtcmd_AnnounceMessage, 0x00000000, 0x00000000, 0xFFFFFF1F,
+	(s32)(void*)str_802F95D8, 0x00000078, 0x00000002, 0x00000001,
+};
 
 const f32 R_audience_delta_multiplier[] = {
 	8.0f, 11.0f, 14.0f, 17.0f, 20.0f, 23.0f, 26.0f, 29.0f, 32.0f, 35.0f, 38.0f, 41.0f, 44.0f,
@@ -87,7 +182,9 @@ const Vec vec3_802f9744 = { 0.9f, 0.9f, 0.9f };
 // Match-only: reading these through a near-data constant lands the loads in the original's
 // registers (a direct `vec3_802f9744` copy compiles to `lwzu`, a pooled zero schedules late, and
 // the pooled 360 in DispAudience lands in a different register).
+#ifndef MUST_MATCH
 static const Vec* const p_vec3_802f9744 = &vec3_802f9744;
+#endif
 static const f32 zero_8041e618 = 0.0f;
 static const f32 f360_8041e6b4 = 360.0f;
 const Vec vec3_802f9750 = { 0.75f, 0.75f, 0.75f };
@@ -165,68 +262,91 @@ const char str_802F9DD4[] = "battle/audience/%s";
 const char str_802F9DE8[] = "battle/audience/audience_normal.tpl";
 const char str_802F9E0C[] = "audience_luigi.tpl";
 
-f32 float_1_8041e620 = 1.0f;
-f32 float_neg1_8041e664 = -1.0f;
-f32 float_0p25_8041e63c = 0.25f;
-f32 float_200_8041e648 = 200.0f;
-f32 float_26_8041e650 = 26.0f;
-f32 float_75_8041e658 = 75.0f;
-f32 float_63_8041e644 = 63.0f;
-f32 float_250_8041e654 = 250.0f;
-f32 float_100_8041e64c = 100.0f;
-f32 float_3_8041e65c = 3.0f;
-f32 float_2_8041e660 = 2.0f;
-f32 float_0_8041e618 = 0.0f;
-f32 float_0p05_8041e624 = 0.049999997f;
-f32 float_0p15_8041e630 = 0.14999999f;
-f32 float_neg0p25_8041e640 = -0.25f;
-f32 float_neg0p05_8041e614 = -0.049999997f;
-f32 float_neg0p1_8041e634 = -0.099999994f;
-f32 float_neg0p2_8041e638 = -0.19999999f;
-f32 float_0p02_8041e61c = 0.02f;
-f32 float_5_8041e62c = 5.0f;
-f32 float_0p01_8041e628 = 0.01f;
-f32 float_1p5_8041e670 = 1.5f;
+__declspec(section ".sdata2") u32 dat_8041e608 = 0xFFFFFF00;
+__declspec(section ".sdata2") u32 dat_8041e60c = 0xFFFFFFCF;
+__declspec(section ".sdata2") u32 dat_8041e610 = 0xFFFFFFFF;
+__declspec(section ".sdata2") f32 float_neg0p05_8041e614 = -0.049999997f;
+// This one is zero, so explicit_zero_data keeps it in .sdata2 instead of .sbss.
+#pragma explicit_zero_data on
+__declspec(section ".sdata2") f32 float_0_8041e618 = 0.0f;
+#pragma explicit_zero_data reset
+__declspec(section ".sdata2") f32 float_0p02_8041e61c = 0.02f;
+__declspec(section ".sdata2") f32 float_1_8041e620 = 1.0f;
+__declspec(section ".sdata2") f32 float_0p05_8041e624 = 0.049999997f;
+__declspec(section ".sdata2") f32 float_0p01_8041e628 = 0.01f;
+__declspec(section ".sdata2") f32 float_5_8041e62c = 5.0f;
+__declspec(section ".sdata2") f32 float_0p15_8041e630 = 0.14999999f;
+__declspec(section ".sdata2") f32 float_neg0p1_8041e634 = -0.099999994f;
+__declspec(section ".sdata2") f32 float_neg0p2_8041e638 = -0.19999999f;
+__declspec(section ".sdata2") f32 float_0p25_8041e63c = 0.25f;
+__declspec(section ".sdata2") f32 float_neg0p25_8041e640 = -0.25f;
+__declspec(section ".sdata2") f32 float_63_8041e644 = 63.0f;
+__declspec(section ".sdata2") f32 float_200_8041e648 = 200.0f;
+__declspec(section ".sdata2") f32 float_100_8041e64c = 100.0f;
+__declspec(section ".sdata2") f32 float_26_8041e650 = 26.0f;
+__declspec(section ".sdata2") f32 float_250_8041e654 = 250.0f;
+__declspec(section ".sdata2") f32 float_75_8041e658 = 75.0f;
+__declspec(section ".sdata2") f32 float_3_8041e65c = 3.0f;
+__declspec(section ".sdata2") f32 float_2_8041e660 = 2.0f;
+__declspec(section ".sdata2") f32 float_neg1_8041e664 = -1.0f;
+__declspec(section ".sdata2") f32 float_neg1000_8041e668 = -1000.0f;
+__declspec(section ".sdata2") f32 float_1000_8041e66c = 1000.0f;
+__declspec(section ".sdata2") f32 float_1p5_8041e670 = 1.5f;
+__declspec(section ".sdata2") f32 float_32767_8041e674 = 32767.0f;
+__declspec(section ".sdata2") f32 float_0p1_8041e678 = 0.1f;
+__declspec(section ".sdata2") f32 float_0p2_8041e67c = 0.2f;
+__declspec(section ".sdata2") f32 float_neg2000_8041e680 = -2000.0f;
+__declspec(section ".sdata2") f32 float_270_8041e684 = 270.0f;
+__declspec(section ".sdata2") f32 float_12p5_8041e688 = 12.5f;
+__declspec(section ".sdata2") f32 float_90_8041e68c = 90.0f;
+__declspec(section ".sdata2") f32 float_40_8041e690 = 40.0f;
+__declspec(section ".sdata2") f32 float_10_8041e694 = 10.0f;
+__declspec(section ".sdata2") f32 float_17_8041e698 = 17.0f;
+__declspec(section ".sdata2") f32 float_0p8_8041e69c = 0.8f;
+__declspec(section ".sdata2") f32 float_neg20_8041e6a0 = -20.0f;
+__declspec(section ".sdata2") f32 float_deg2rad_8041e6a4 = 0.017453292f;
+__declspec(section ".sdata2") f32 float_20_8041e6a8 = 20.0f;
+__declspec(section ".sdata2") f32 float_0p015625_8041e6ac = 0.015625f;
+__declspec(section ".sdata2") f32 float_deg2rad_8041e6b0 = 0.017453289f;
+__declspec(section ".sdata2") f32 float_360_8041e6b4 = 360.0f;
+__declspec(section ".sdata2") f32 float_180_8041e6b8 = 180.0f;
+__declspec(section ".sdata2") f32 float_neg0p1_8041e6bc = -0.1f;
+__declspec(section ".sdata2") f32 float_neg500_8041e6c0 = -500.0f;
+__declspec(section ".sdata2") f32 float_neg280_8041e6c4 = -280.0f;
+__declspec(section ".sdata2") f32 float_neg160_8041e6c8 = -160.0f;
+__declspec(section ".sdata2") f32 float_304_8041e6cc = 304.0f;
+__declspec(section ".sdata2") f32 float_240_8041e6d0 = 240.0f;
+__declspec(section ".sdata2") f32 float_64_8041e6d4 = 64.0f;
+__declspec(section ".sdata2") f32 float_50_8041e6d8 = 50.0f;
+__declspec(section ".sdata2") f32 float_25_8041e6dc = 25.0f;
+__declspec(section ".sdata2") f32 float_0p9_8041e6e0 = 0.9f;
+__declspec(section ".sdata2") f32 float_0p05_8041e6e4 = 0.05f;
+__declspec(section ".sdata2") f32 float_6p2832_8041e6e8 = 6.283184f;
+__declspec(section ".sdata2") f32 float_128_8041e6ec = 128.0f;
+__declspec(section ".sdata2") f32 float_30_8041e6f0 = 30.0f;
+__declspec(section ".sdata2") f32 float_15_8041e6f4 = 15.0f;
+__declspec(section ".sdata2") f32 float_7_8041e6f8 = 7.0f;
+__declspec(section ".sdata2") f32 float_neg10_8041e6fc = -10.0f;
+__declspec(section ".sdata2") f32 float_18_8041e700 = 18.0f;
+__declspec(section ".sdata2") f32 float_neg0p2_8041e704 = -0.2f;
+__declspec(section ".sdata2") f32 float_0p5_8041e708 = 0.5f;
+__declspec(section ".sdata2") f32 float_499_8041e70c = 499.0f;
+__declspec(section ".sdata2") f32 float_neg5_8041e710 = -5.0f;
+__declspec(section ".sdata2") f32 float_neg15_8041e714 = -15.0f;
+__declspec(section ".sdata2") char str_8041E718[] = "%s/%s\000\000";
 
-// These .sdata2/.sdata objects live in this unit but are not defined yet.
-// Declared extern so PerAct/ApSrcCtrlProcess can reference them.
-extern f32 float_neg5_8041e710;
-extern f32 float_25_8041e6dc;
-extern f32 float_40_8041e690;
-extern f32 float_20_8041e6a8;
-extern f32 float_15_8041e6f4;
-extern f32 float_neg15_8041e714;
-extern f32 float_neg20_8041e6a0;
-extern f32 float_neg10_8041e6fc;
-extern f32 float_30_8041e6f0;
-extern f32 float_64_8041e6d4;
-extern f32 float_50_8041e6d8;
-extern f32 float_32767_8041e674;
-extern f32 float_0p9_8041e6e0;
-extern f32 float_0p8_8041e69c;
-extern f32 float_6p2832_8041e6e8;
-extern f32 float_0p2_8041e67c;
-extern f32 float_0p05_8041e6e4;
-extern f32 float_128_8041e6ec;
-extern s32 msg_puni_all_escape[9];
+// Default audience colour scratch word and the section's trailing 4-byte gap. Objects land in
+// reverse declaration order, so the gap is declared before unk_80423080.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_80423084_sbss2[4];
+__declspec(section ".sdata") u32 unk_80423080;
+#pragma section ".sdata" ".sbss"
+
 
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 #define min(a,b) (((a) < (b)) ? (a) : (b))
 
 extern BattleWork* _battleWorkPointer;
-extern f32 float_10_8041e694;
-extern f32 float_7_8041e6f8;
-extern f32 float_18_8041e700;
-extern f32 float_neg0p2_8041e704;
-extern f32 float_0p1_8041e678;
-extern f32 float_neg0p1_8041e6bc;
-extern f32 float_neg500_8041e6c0;
-extern f32 float_neg280_8041e6c4;
-extern f32 float_neg160_8041e6c8;
-extern f32 float_deg2rad_8041e6a4;
-extern u32 dat_8041e608;
-extern f32 float_neg2000_8041e680;
-extern f32 float_270_8041e684;
 
 //local prototypes
 

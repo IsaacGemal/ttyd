@@ -4489,3 +4489,14 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   own workspace, which doesn't exist, so nothing ran), BattleAudienceCtrlProcessKinopioEat 99.67 -> 99.89,
   effStageClearDisp 99.18 -> 99.40, effPointGetDisp 99.79 -> 99.87 with .sdata2/.rodata identical; section gains
   for eff_booboo_n64 and eff_fire. Allowlist: defer_codegen.
+- **Batch 12:** seq_logo linked (its last function); sac_genki +3 functions; data ports for win_main (.data, .sdata
+  identical; its EVT data is raw `s32` arrays, as the agent's scratch dol_gen emitted them without ttydasm, so a
+  macro rewrite is open), battle_audience, sac_deka, eff_confetti_n64, tou2 (.rodata, .data identical), yuu_02 (.data
+  identical) and eff_opuku_jetw_n64. Hand fixes: tou2's padded `"tou\0\0\0\0"` now only under MUST_MATCH; confetti's
+  natural build read a zero vector the agent had deleted; win_main and sac_deka's data externs moved from headers into
+  the .c, and battle_audience's dropped (the file defines it first). REL units need their rels/ path in merge_agent.sh:
+  a bare `tou2/tou2` resolves to a nonexistent src/ file and lint_patch fails to find the unit. Rejected by the
+  ratchet: mri_puni (.data bytes identical, but moving its EVT blocks shifted .rodata strings so three scripts'
+  relocations no longer pair, and `debug$2303` became a file-scope `debug`), fadedrv's link task (.sdata 100 -> 6),
+  evt_yuunpc (.data 95.7 -> 81.8), eff_pokopi_thunder_n64 (.rodata 97.8 -> 93.0), animdrv (.sdata2 27.2 -> 24.1),
+  win_item (.rodata 99.94 -> 99.92).

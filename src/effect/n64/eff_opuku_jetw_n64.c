@@ -178,20 +178,16 @@ void effOpukuJetwMain(EffectEntry* effect) {
 
 // The frame size (0x180), the Mtx slots (work/rot/scale/trans at
 // 0x40/0x70/0xa0/0xd0), the switch layout, the loop's `rowOffset += columns, j++` bottom test and the
-// three GXColor call slots (0x18/0x1c, 0x10/0x14, 0x8/0xc) all match. Only the callee-saved GPR map
-// does not. Seven of the eight probed values land in the original's registers: counter r14,
-// field24 r28, field18 r27, field1c r26, field20 r25, half r14, data r16. The three that do not are
-// the `.data` section base (r31 here, r20 originally), `lifetime` (r15, original r31) and `cam`
-// (r17, original r15). The base is always the first callee-saved value defined and no
-// declaration/assignment permutation, cache form (cache-for-both / reload-for-both / split), cache
-// position, switch-case order, or explicit base local moves it off r31 (adding four extra long-lived
-// locals just spills them); with r31 taken, `lifetime` cannot get it, which in turn keeps `cam` at
-// r17. The declaration order below, the cache-vs-reload split (`lifetime` local for the pre-loop `if`,
-// `data->lifetime` reloaded in the inner loop) and the additive-index `&table[rowOffset + col]` shape
-// were chosen by hill-climbing this file's score. optimize_for_size / opt_lifetimes / opt_propagation
-// / opt_common_subs / opt_strength_reduction / scheduling / peephole / global_optimizer pragmas were
-// also tried; none reach the target rotation. All candidate compilers (GC/1.3..GC/2.7) generate
-// identical code; GC/3.0 is worse.
+// three GXColor call slots (0x18/0x1c, 0x10/0x14, 0x8/0xc) all match, as does every other
+// callee-saved value including the `.data` section base (r20). The one remaining difference is the
+// colouring of `rowOffset` and `colPtr`: the target keeps `rowOffset` in r19 and gives the cam
+// register r15, once cam is dead, to the shared col*10/`colPtr` web; this source does the reverse.
+// Moving either declaration (individually or together), changing their types (u32/s16/void*/s32),
+// splitting `colPtr`/`ptr`/`rowOffset` into per-block or inner-scope copies, reordering the loop
+// statements and comparisons, and opt_lifetimes / opt_propagation / opt_common_subs /
+// opt_dead_assignments / optimize_for_size / peephole / global_optimizer / pool_data pragmas were all
+// tried; each gives the same swap or worse. All candidate compilers (GC/1.3..GC/2.7) generate
+// identical code; GC/3.0 is worse. This is a permuter colouring tie.
 // Building each TEV colour and calling GXSetTevColor inside one inline makes mwcc allocate the
 // colour's build slot and its by-value argument copy together, matching the original's slots.
 static inline void effOpukuJetwSetTev1(effOpukuJetwData* data, s32 field24) {
@@ -232,10 +228,11 @@ static inline void effOpukuJetwSetTev0b(s32 field18, s32 field1c, s32 field20, s
 // slots (the allocator places Mtx locals in reverse declaration order), the field assignments load
 // field_0x24 before the other colours as the original does, `dat_ry[(j + i) & 7]` gives the original's
 // operand order in the run-angle sum, and `for (j = 0, rowOffset = 0; ...)` gives its loop-init order.
-// The declaration order below holds the rest of the callee-saved GPR map (counter r14, cam r15, data r16,
-// counterCurrent r18, rowOffset r19, col r21, table r22, rows r23, columns r24, field20 r25, field1c r26,
-// field18 r27, field24 r28, i r29, j r30, lifetime r31).
-// NONMATCHING (99.84%): all instructions, operands and stack slots match; two callee-saved colouring pairs remain: the compiled `.data` base (r17 here, r20 original) with `threshold` (r20 here, r17 original), and the inner-body col*10 temporary/`colPtr` (r16 here, r15 original) with `ptr` (r15 here, r16 original).
+// The declaration order below holds the callee-saved GPR map for every other value (counter r14,
+// counterCurrent r18, threshold r17, cam r15, ptr r16, col r21, table r22, rows r23, columns r24,
+// field20 r25, field1c r26, field18 r27, field24 r28, i r29, j r30, lifetime r31).
+// NONMATCHING (99.84%): all instructions, operands and stack slots match; `rowOffset` and `colPtr` are
+// swapped between r15 and r19 (target: rowOffset r19, colPtr r15).
 void effOpukuJetwDisp(CameraId camId, void* param) {
     s32 counter;
     s32 counterCurrent;
