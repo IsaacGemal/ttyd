@@ -98,15 +98,15 @@ u32 size6x22_tex32x32_vtx[14] = {
 
 // .sdata
 s32 dat_ry[8] = { 0, 0x28, 0x37, 0xBE, 0x14, 0x82, 0x10E, 0x12C };
-const f32 float_deg2rad_8041f7c0 = 0.017453292f;
-const f32 float_0p03125_8041f7c4 = 0.03125f;
-const f32 float_0_8041f7c8 = 0.0f;
-const f32 float_1_8041f7cc = 1.0f;
-const f32 float_10_8041f7d0 = 10.0f;
-const f32 float_0p01_8041f7d4 = 0.01f;
-GXColor unk_804231c8;
-GXColor unk_804231cc;
-GXColor unk_804231d0;
+
+// .sbss2 zero GXColor scratch objects and the 4-byte section-tail gap. Objects land in reverse
+// declaration order, so the gap is declared before unk_804231d0.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_804231D4_sbss2[4];
+__declspec(section ".sdata") GXColor unk_804231d0;
+__declspec(section ".sdata") GXColor unk_804231cc;
+__declspec(section ".sdata") GXColor unk_804231c8;
+#pragma section ".sdata" ".sbss"
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_kemuri11.c).
 inline Vec initializeVec(Vec* input) {
@@ -121,7 +121,12 @@ EffectEntry* effOpukuJetwN64Entry(s32 type, s32 duration, f32 x, f32 y, f32 z, f
     EffectEntry* effect = effEntry();
     effOpukuJetwData* data;
 
+#ifdef MUST_MATCH
+    // The original's pooled effect-name string is a 16-byte object: "OpukuJetwN64" followed by three NULs.
+    effect->type = "OpukuJetwN64\0\0\0";
+#else
     effect->type = "OpukuJetwN64";
+#endif
     effect->count = 1;
     data = __memAlloc(HEAP_EFFECT, 0x44);
     effect->userdata = data;
@@ -284,7 +289,7 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     }
 
     PSMTXTrans(trans, data->position.x, data->position.y, data->position.z);
-    PSMTXRotRad(rot, 'y', float_deg2rad_8041f7c0 * -camGetPtr(CAMERA_3D)->viewYaw);
+    PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
     PSMTXScale(scale, data->scale, data->scale, data->scale);
     PSMTXConcat(trans, rot, trans);
     PSMTXConcat(trans, scale, work);
@@ -301,12 +306,12 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-    PSMTXScale(scale, float_0p03125_8041f7c4, float_0p03125_8041f7c4, float_0_8041f7c8);
+    PSMTXScale(scale, 0.03125f, 0.03125f, 0.0f);
     GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
     GXSetCullMode(GX_CULL_NONE);
 
-    PSMTXRotRad(rot, 'z', float_deg2rad_8041f7c0 * data->field_0x38);
-    PSMTXScale(scale, data->field_0x3C, data->field_0x40, float_1_8041f7cc);
+    PSMTXRotRad(rot, 'z', 0.017453292f * data->field_0x38);
+    PSMTXScale(scale, data->field_0x3C, data->field_0x40, 1.0f);
     PSMTXConcat(rot, scale, scale);
     PSMTXConcat(work, scale, work);
 
@@ -335,11 +340,11 @@ void effOpukuJetwDisp(CameraId camId, void* param) {
                 continue;
             }
             ptr = &rowPtr[col];
-            PSMTXTrans(trans, (f32)ptr->field_0x0, float_10_8041f7d0 + (f32)ptr->field_0x1, float_0_8041f7c8);
+            PSMTXTrans(trans, (f32)ptr->field_0x0, 10.f + (f32)ptr->field_0x1, 0.0f);
             colPtr = &table[col];
-            PSMTXScale(scale, (f32)colPtr->field_0x2 * float_0p01_8041f7d4, (f32)colPtr->field_0x4 * float_0p01_8041f7d4, float_1_8041f7cc);
+            PSMTXScale(scale, (f32)colPtr->field_0x2 * 0.01f, (f32)colPtr->field_0x4 * 0.01f, 1.0f);
             PSMTXConcat(trans, scale, trans);
-            PSMTXRotRad(rot, 'z', float_deg2rad_8041f7c0 * ((f32)ptr->field_0x6 + (f32)dat_ry[(j + i) & 7]));
+            PSMTXRotRad(rot, 'z', 0.017453292f * ((f32)ptr->field_0x6 + (f32)dat_ry[(j + i) & 7]));
             PSMTXConcat(trans, rot, trans);
             PSMTXConcat(work, trans, trans);
             GXLoadPosMtxImm(trans, 0);

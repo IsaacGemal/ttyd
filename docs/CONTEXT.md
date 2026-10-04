@@ -4614,3 +4614,9 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   99.93), evt_yuucounter (99.33), aji_17 (noiseDisp 99.11) and the evt_mobj group (five switch functions at 99.78,
   register-only; for Claude #3's grind). Arm L: 15 tasks, 7 linked (gor_00, jon, rsh, yuu_02, rsh_00, ac_shot_target,
   mbstring), tou_03 improved, 6 no change, evt_yuuranking still running.
+- **Batch 23:** group tasks (wave 75 arm S) moved three pairs of near-copies together: npcSetStayPose and npcSetTalkPose
+  88.37 -> 98.84 (one dead `cmplwi` left in each), uranaisi_data_make_supercoin and _starpiece 98.81 -> 99.78 (7
+  register diffs), lookupSafetyPos3 95.03 -> 95.20 (its twin unchanged); data ports for shadowdrv and
+  eff_opuku_jetw_n64. No change: mario_pouch's pair (a 3-instruction block layout) and the evt_mobj five (a two-web
+  colour tie, now in the permuter's queue q29 and with Claude #3; a fix carries to all five). Arm L's last unit,
+  evt_yuuranking, was refused (98.18 -> 98.25 at the cost of its .rodata). Arm L round 1 ends 15 tasks, 7 linked.

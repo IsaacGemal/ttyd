@@ -2539,7 +2539,7 @@ void npcBlurOn(const char* name) {
     entry->positionHistory[4] = entry->position;
 }
 
-// NONMATCHING (88.37%): the callee-save block sinks past the `name[0] == 0` check; retail saves in the prologue.
+// NONMATCHING (98.84%): the callee-save prologue now matches; one dead `cmplwi r28, 0` before the first `strcmp` remains.
 void npcSetStayPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
@@ -2549,7 +2549,13 @@ void npcSetStayPose(const char* name) {
     if ((s8)name[0] == 0) {
         return;
     }
+#ifdef MUST_MATCH
+    // No-op ternary: reproduces retail's callee-save prologue (the parameter copy stays before the
+    // `lbz`); the conditional still leaves one dead `cmplwi r28, 0` before the first call.
+    if (!strcmp(name ? name : name, "(^x^)party")) {
+#else
     if (!strcmp(name, "(^x^)party")) {
+#endif
         return;
     }
     if (!strcmp(name, "party")) {
@@ -2586,7 +2592,7 @@ void npcSetStayPose(const char* name) {
     }
 }
 
-// NONMATCHING (88.37%): same prologue save-block scheduling as npcSetStayPose; the partyChgPoseId arg is 7.
+// NONMATCHING (98.84%): same one dead `cmplwi r28, 0`; the partyChgPoseId arg is 7.
 void npcSetTalkPose(const char* name) {
     NpcWork* wp;
     NpcEntry* entry;
@@ -2596,7 +2602,13 @@ void npcSetTalkPose(const char* name) {
     if ((s8)name[0] == 0) {
         return;
     }
+#ifdef MUST_MATCH
+    // No-op ternary: reproduces retail's callee-save prologue (the parameter copy stays before the
+    // `lbz`); the conditional still leaves one dead `cmplwi r28, 0` before the first call.
+    if (!strcmp(name ? name : name, "(^x^)party")) {
+#else
     if (!strcmp(name, "(^x^)party")) {
+#endif
         return;
     }
     if (!strcmp(name, "party")) {
