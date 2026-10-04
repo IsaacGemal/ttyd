@@ -248,7 +248,8 @@ static MoamoaGroup group_tbl[11] = {
     {"c_mamab", "G_1"},   {"c_konari", "G_1"},  {"c_n_moa_a", "S_1"},
 };
 
-Mtx mt = {{8.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 8.0f, 0.0f, 0.5f}, {0.0f, 0.0f, 8.0f, 0.0f}};
+// a function-local static in the original (mt$806); file scope keeps it local and in this .data slot
+static Mtx mt = {{8.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 8.0f, 0.0f, 0.5f}, {0.0f, 0.0f, 8.0f, 0.0f}};
 
 // TODO: type
 static u32 sharinDt[116] = {
@@ -805,7 +806,12 @@ static void moamoa_pose_init(void) {
         wp->poses[wp->poseCount].field_0x24 = i - lastAnim + 1;
         wp->poses[wp->poseCount].field_0x1C = data->value;
         wp->poses[wp->poseCount].field_0x18 = 1;
+#ifdef MUST_MATCH
+        // the original's "J" string object is word padded; the extra NULs spell the pad out
         if (strncmp(anim, "J\0\0", 1) == 0) {
+#else
+        if (strncmp(anim, "J", 1) == 0) {
+#endif
             wp->poses[wp->poseCount].field_0x18 = 0;
         }
         i++;
