@@ -19,7 +19,7 @@
 #include <demo/DEMOPad.h>
 #include <string.h>
 #include <stdarg.h>
-#include <math.h>
+#include "math_ext.h"
 #include "evt/evt_yuugijou.h"
 #include "driver/swdrv.h"
 #include "driver/fadedrv.h"
@@ -37,12 +37,32 @@
 #include "window/win_root.h"
 #include "party/party_motion.h"
 #include <stdio.h>
+#include "battle/ac/ac_table.h"
+#include "battle/battle_ac.h"
+#include "battle/battle_unit.h"
+#include "evt/evt_eff.h"
+#include "evt/evt_env.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_item.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_npc.h"
+#include "evt/evt_party.h"
+#include "evt/evt_seq.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_sub.h"
+
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const Vec vec3_802f68c0;
+extern const Vec vec3_802f68cc;
+extern const GXColor dat_8041dc00;
+extern const GXColor dat_8041dc90;
+extern const GXColor dat_8041dc94;
+extern s32 evt_lecture_msg[];
 
 extern ItemData itemDataTable[];
 
-//.data
-EVT_BEGIN(evt_diary_read)
-EVT_END()
+__declspec(section ".sdata2") const GXColor dat_8041dc00 = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 //.sbss
 static WindowWork* wp;
@@ -68,6 +88,31 @@ TEXPalette* winTexTpl;
 // WindowWork.currentEvent is actually at 0x18; the header wrongly places it
 // at 0x3C (0x14 is a s32 counter used by winLecture*). Use a raw offset.
 #define WP_CURRENT_EVENT(w) (*(EventEntry**)((u8*)(w) + 0x18))
+
+static s32 cam_r(void);
+s32 evt_diary_read[259];
+
+// clang-format off
+
+const Vec vec3_802f68c0 = { 0.0f, 50.0f, 0.0f };
+const Vec vec3_802f68cc = { 1.0f, 1.0f, 1.0f };
+// Building the fog colour in an inlined helper puts the fog by-value temp in the
+// lower stack slot and winTexSet's later colour temp in the higher one; written
+// inline the two temps swap slots.
+#ifdef MUST_MATCH
+static inline void winDispKoopaSetFog(void) {
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041dc90);
+}
+#endif
+
+// Building the fog colour inside an inlined helper gives the fog by-value temp the
+// lower stack slot and the later GXSetTevColor temp the higher one, matching the target;
+// written inline the two temps swap slots.
+#ifdef MUST_MATCH
+static inline void winIconGraySetFog(void) {
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041dc90);
+}
+#endif
 
 WindowWork* winGetPtr(void) {
     return wp;
@@ -429,203 +474,13 @@ void winDisp(CameraId camId, void* param) {
     winRootDisp(camId, wp);
 }
 
-extern s32 evt_lecture_msg[];
-
-// Font drawing helpers defined in manager/fontmgr.c but not declared in a header
-
-void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag) {
-    Mtx mtx1;
-    Mtx mtx2;
-    GXColor c;
-
-    if (tag != NULL) {
-        PSMTXTrans(mtx1, pos->x, pos->y, pos->z);
-        PSMTXScale(mtx2, scale->x, scale->y, scale->z);
-        PSMTXConcat(mtx1, mtx2, mtx1);
-        c = *color;
-        FontDrawColor(&c);
-        FontDrawMessageMtx(mtx1, msgSearch(tag));
-    }
-}
-
-void winFontSetPitch(Vec* pos, Vec scale, GXColor* color, f32 pitch, const char* format, ...) {
-    char buf[0x400];
-    GXColor c;
-    va_list args;
-    Vec scaleCopy;
-
-    va_start(args, format);
-    vsprintf(buf, format, args);
-    va_end(args);
-    c = *color;
-    FontDrawColor(&c);
-    scaleCopy = scale;
-    FontDrawScaleVec(scaleCopy);
-    FontDrawStringVecPitch(pos, buf, pitch);
-}
-
-void winFontSetEdge(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
-    char buf[0x400];
-    Mtx mtx1;
-    Mtx mtx2;
-    GXColor c;
-    va_list args;
-
-    va_start(args, format);
-    vsprintf(buf, format, args);
-    va_end(args);
-    PSMTXTrans(mtx1, pos->x, pos->y, pos->z);
-    PSMTXScale(mtx2, scale->x, scale->y, scale->z);
-    PSMTXConcat(mtx1, mtx2, mtx1);
-    c = *color;
-    FontDrawColor(&c);
-    FontDrawEdge();
-    FontDrawStringMtx(mtx1, buf);
-    FontDrawEdgeOff();
-}
-
-void winFontSetR(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
-    char buf[0x400];
-    Mtx mtx1;
-    Mtx mtx2;
-    GXColor c;
-    s32 diff;
-    va_list args;
-
-    va_start(args, format);
-    vsprintf(buf, format, args);
-    va_end(args);
-    diff = FontGetMessageWidth("\202X\202X\202X") - FontGetMessageWidth(buf);
-    PSMTXTrans(mtx1, pos->x + scale->x * (f32)diff, pos->y, pos->z);
-    PSMTXScale(mtx2, scale->x, scale->y, scale->z);
-    PSMTXConcat(mtx1, mtx2, mtx1);
-    c = *color;
-    FontDrawColor(&c);
-    FontDrawStringMtx(mtx1, buf);
-}
-
-void winFontSet(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
-    char buf[0x400];
-    Mtx mtx1;
-    Mtx mtx2;
-    GXColor c;
-    va_list args;
-
-    va_start(args, format);
-    vsprintf(buf, format, args);
-    va_end(args);
-    PSMTXTrans(mtx1, pos->x, pos->y, pos->z);
-    PSMTXScale(mtx2, scale->x, scale->y, scale->z);
-    PSMTXConcat(mtx1, mtx2, mtx1);
-    c = *color;
-    FontDrawColor(&c);
-    FontDrawMessageMtx(mtx1, buf);
-}
-
-s32 winLectureCheck(void) {
-    if ((wp->flags & 0x1000) && evtCheckID(WP_CURRENT_EVENT(wp)->eventId)) {
-        return 1;
-    }
-    wp->flags &= ~0x1000;
-    return 0;
-}
-
-void winLectureOn(void) {
-    wp->flags |= 0x1000;
-    wp->flags |= 0x800;
-    *(s32*)wp->field_0x14 = 0;
-    WP_CURRENT_EVENT(wp) = evtEntry(evt_lecture_msg, 0, 0);
-}
-
-s32 unk_80175e98(void) {
-    wp->flags &= ~0x800;
-    return 2;
-}
-
-s32 unk_80175eb0(EventEntry* event, BOOL isFirstCall) {
-    s32 value = evtGetValue(event, event->args[0]);
-
-    if (isFirstCall) {
-        wp->flags &= ~0x800;
-    }
-    if (*(s32*)wp->field_0x14 < value) {
-        return 0;
-    }
-    wp->flags |= 0x800;
-    return 2;
-}
-
-s32 unk_80177cf8(void) {
-    allPartyForceSlitOff();
-    return 2;
-}
-
-USER_FUNC(itemUseFunc2) {
-    statusWinForceOff();
-    return EVT_RETURN_DONE;
-}
-
-void winFontInit(void) {
-    FontDrawStart();
-}
-
-s32 winGhostDiaryChk(void) {
-    if (wp->menuState == 301) {
-        return 1;
-    }
-    return seqGetSeq() == SEQ_GAME_OVER;
-}
-
-s32 cam_r(void) {
-    CameraEntry* cam = camGetPtr(CAMERA_3D);
-    Vec v;
-    f32 s;
-
-    cam->rollAngle += 3.0f;
-    s = sin((f32)gp->retraceCount / 10.0f);
-    PSVECSubtract(&cam->cameraAt, &cam->cameraPos, &v);
-    PSVECScale(&v, &v, 0.2f * s);
-    cam->viewOffset.x = v.x;
-    cam->viewOffset.y = v.y;
-    cam->viewOffset.z = v.z;
-    return 0;
-}
-
-USER_FUNC(party_color) {
-    s32* args = event->args;
-    s32 color = pouchGetPartyColor(PARTNER_YOSHI);
-
-    evtSetValue(event, args[0], color);
-    return EVT_RETURN_DONE;
-}
-
-USER_FUNC(famicom_check) {
-    s32* args = event->args;
-
-    if (wp->flags & 0x2000) {
-        evtSetValue(event, args[0], 1);
-    } else {
-        evtSetValue(event, args[0], 0);
-    }
-    return EVT_RETURN_DONE;
-}
-
-// Building the fog colour in an inlined helper puts the fog by-value temp in the
-// lower stack slot and winTexSet's later colour temp in the higher one; written
-// inline the two temps swap slots.
-#ifdef MUST_MATCH
-static inline void winDispKoopaSetFog(void) {
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
-}
-#endif
-
 void winDispKoopa(CameraId camId, void* param) {
     winTexTpl = **(TEXPalette***)(*(u8**)((u8*)wp + 0x28) + 0xA0);
     GXSetCullMode(GX_CULL_NONE);
 #ifdef MUST_MATCH
     winDispKoopaSetFog();
 #else
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041dc90);
 #endif
     GXSetNumChans(0);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
@@ -643,7 +498,7 @@ void winDispKoopa(CameraId camId, void* param) {
     GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-    winTexSet(0xB7, (Vec){ 0.0f, 50.0f, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+    winTexSet(0xB7, vec3_802f68c0, vec3_802f68cc, dat_8041dc00);
 }
 
 USER_FUNC(itemUseFunc) {
@@ -750,145 +605,156 @@ USER_FUNC(itemUseFunc) {
     return 0;
 }
 
-void winIconInit(void) {
-    winTexTpl = NULL;
-    GXSetCullMode(GX_CULL_NONE);
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
-    GXSetNumChans(0);
-    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    GXSetNumTexGens(1u);
-    GXSetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+USER_FUNC(itemUseFunc2) {
+    statusWinForceOff();
+    return EVT_RETURN_DONE;
 }
 
-void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
-    GXTexObj texObj;
+USER_FUNC(famicom_check) {
+    s32* args = event->args;
+
+    if (wp->flags & 0x2000) {
+        evtSetValue(event, args[0], 1);
+    } else {
+        evtSetValue(event, args[0], 0);
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(party_color) {
+    s32* args = event->args;
+    s32 color = pouchGetPartyColor(PARTNER_YOSHI);
+
+    evtSetValue(event, args[0], color);
+    return EVT_RETURN_DONE;
+}
+
+s32 unk_80177cf8(void) {
+    allPartyForceSlitOff();
+    return 2;
+}
+
+s32 cam_r(void) {
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    Vec v;
+    f32 s;
+
+    cam->rollAngle += 3.0f;
+    s = sin((f32)gp->retraceCount / 10.0f);
+    PSVECSubtract(&cam->cameraAt, &cam->cameraPos, &v);
+    PSVECScale(&v, &v, 0.2f * s);
+    cam->viewOffset.x = v.x;
+    cam->viewOffset.y = v.y;
+    cam->viewOffset.z = v.z;
+    return 0;
+}
+
+s32 winGhostDiaryChk(void) {
+    if (wp->menuState == 301) {
+        return 1;
+    }
+    return seqGetSeq() == SEQ_GAME_OVER;
+}
+
+void winFontInit(void) {
+    FontDrawStart();
+}
+
+void winFontSet(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
+    char buf[0x400];
     Mtx mtx1;
     Mtx mtx2;
-    Mtx mtx3;
-    f32 height;
+    GXColor c;
+    va_list args;
 
-    if (iconId == 0x115) {
-        iconId = 0x114;
-    }
-    (*(void(*)(GXTexObj*, u16))iconGetTexObj)(&texObj, iconId);
-    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    GXLoadTexObj(&texObj, GX_TEXMAP0);
-
-    if (color->a != 0xFF) {
-        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-        GXSetZCompLoc(GX_TRUE);
-        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-        GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
-    } else {
-        GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-        GXSetZCompLoc(GX_FALSE);
-        GXSetAlphaCompare(GX_GEQUAL, 0x80, GX_AOP_OR, GX_NEVER, 0);
-        GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
-    }
-
-    GXSetTevColor(GX_TEVREG0, *color);
-    PSMTXTrans(mtx1, translate->x, translate->y, translate->z);
-    height = scale->y * (f32)GXGetTexObjHeight(&texObj);
-    PSMTXScale(mtx2, scale->x * (f32)GXGetTexObjWidth(&texObj), height, scale->z);
-    PSMTXConcat(mtx1, mtx2, mtx3);
-    PSMTXConcat(camGetPtr(CAMERA_2D)->view, mtx3, mtx3);
-    GXLoadPosMtxImm(mtx3, GX_PNMTX0);
-    GXSetCurrentMtx(GX_PNMTX0);
-    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-    GXPosition3f32(-0.5f, -0.5f, 0.0f);
-    GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(0.5f, -0.5f, 0.0f);
-    GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(0.5f, 0.5f, 0.0f);
-    GXTexCoord2f32(1.0f, 0.0f);
-    GXPosition3f32(-0.5f, 0.5f, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXEnd();
-    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    va_start(args, format);
+    vsprintf(buf, format, args);
+    va_end(args);
+    PSMTXTrans(mtx1, pos->x, pos->y, pos->z);
+    PSMTXScale(mtx2, scale->x, scale->y, scale->z);
+    PSMTXConcat(mtx1, mtx2, mtx1);
+    c = *color;
+    FontDrawColor(&c);
+    FontDrawMessageMtx(mtx1, buf);
 }
 
-// Building the fog colour inside an inlined helper gives the fog by-value temp the
-// lower stack slot and the later GXSetTevColor temp the higher one, matching the target;
-// written inline the two temps swap slots.
-#ifdef MUST_MATCH
-static inline void winIconGraySetFog(void) {
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
-}
-#endif
+void winFontSetR(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
+    char buf[0x400];
+    Mtx mtx1;
+    Mtx mtx2;
+    GXColor c;
+    s32 diff;
+    va_list args;
 
-void winIconGrayInit(void) {
-    winTexTpl = NULL;
-    GXSetCullMode(GX_CULL_NONE);
-#ifdef MUST_MATCH
-    winIconGraySetFog();
-#else
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
-#endif
-    GXSetNumChans(0);
-    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C, GX_FALSE, 0x7D);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_ALPHA);
-    GXSetTevSwapModeTable(GX_TEV_SWAP2, GX_CH_GREEN, GX_CH_GREEN, GX_CH_GREEN, GX_CH_ALPHA);
-    GXSetTevSwapModeTable(GX_TEV_SWAP3, GX_CH_BLUE, GX_CH_BLUE, GX_CH_BLUE, GX_CH_ALPHA);
-    GXSetTevColor(GX_TEVREG1, (GXColor){ 0x55, 0x55, 0x55, 0xFF });
-    GXSetNumTevStages(4);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C1, GX_CC_TEXC, GX_CC_ZERO);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP1);
-    GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C1, GX_CC_TEXC, GX_CC_CPREV);
-    GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-    GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP2);
-    GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_C1, GX_CC_TEXC, GX_CC_CPREV);
-    GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-    GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP3);
-    GXSetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE3, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
-    GXSetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
-    GXSetTevSwapMode(GX_TEVSTAGE3, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    va_start(args, format);
+    vsprintf(buf, format, args);
+    va_end(args);
+    diff = FontGetMessageWidth("\202X\202X\202X") - FontGetMessageWidth(buf);
+    PSMTXTrans(mtx1, pos->x + scale->x * (f32)diff, pos->y, pos->z);
+    PSMTXScale(mtx2, scale->x, scale->y, scale->z);
+    PSMTXConcat(mtx1, mtx2, mtx1);
+    c = *color;
+    FontDrawColor(&c);
+    FontDrawStringMtx(mtx1, buf);
+}
+
+void winFontSetEdge(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
+    char buf[0x400];
+    Mtx mtx1;
+    Mtx mtx2;
+    GXColor c;
+    va_list args;
+
+    va_start(args, format);
+    vsprintf(buf, format, args);
+    va_end(args);
+    PSMTXTrans(mtx1, pos->x, pos->y, pos->z);
+    PSMTXScale(mtx2, scale->x, scale->y, scale->z);
+    PSMTXConcat(mtx1, mtx2, mtx1);
+    c = *color;
+    FontDrawColor(&c);
+    FontDrawEdge();
+    FontDrawStringMtx(mtx1, buf);
+    FontDrawEdgeOff();
+}
+
+// Font drawing helpers defined in manager/fontmgr.c but not declared in a header
+
+void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag) {
+    Mtx mtx1;
+    Mtx mtx2;
+    GXColor c;
+
+    if (tag != NULL) {
+        PSMTXTrans(mtx1, pos->x, pos->y, pos->z);
+        PSMTXScale(mtx2, scale->x, scale->y, scale->z);
+        PSMTXConcat(mtx1, mtx2, mtx1);
+        c = *color;
+        FontDrawColor(&c);
+        FontDrawMessageMtx(mtx1, msgSearch(tag));
+    }
+}
+
+void winFontSetPitch(Vec* pos, Vec scale, GXColor* color, f32 pitch, const char* format, ...) {
+    char buf[0x400];
+    GXColor c;
+    va_list args;
+    Vec scaleCopy;
+
+    va_start(args, format);
+    vsprintf(buf, format, args);
+    va_end(args);
+    c = *color;
+    FontDrawColor(&c);
+    scaleCopy = scale;
+    FontDrawScaleVec(scaleCopy);
+    FontDrawStringVecPitch(pos, buf, pitch);
 }
 
 void winTexInit(TEXPalette* texture) {
     winTexTpl = texture;
     GXSetCullMode(GX_CULL_NONE);
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041dc90);
     GXSetNumChans(0);
     GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
     GXSetNumTevStages(1);
@@ -949,7 +815,7 @@ void winTexSet(u32 textureId, Vec translate, Vec scale, GXColor color) {
     GXEnd();
 }
 
-void winTexSet_x2(u32 textureId, u32 textureId2, Vec translate, Vec scale, GXColor color) {
+void unk_80177008(u32 textureId, Vec translate, Vec scale, GXColor color) {
     GXTexObj texObj;
     Mtx mtx1;
     Mtx mtx2;
@@ -963,9 +829,6 @@ void winTexSet_x2(u32 textureId, u32 textureId2, Vec translate, Vec scale, GXCol
     TEXGetGXTexObjFromPalette(winTexTpl, &texObj, textureId);
     GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
-    TEXGetGXTexObjFromPalette(winTexTpl, &texObj, textureId2);
-    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    GXLoadTexObj(&texObj, GX_TEXMAP1);
     GXSetTevColor(GX_TEVREG0, color);
     PSMTXTrans(mtx1, translate.x, translate.y, translate.z);
     height = scale.y * (f32)GXGetTexObjHeight(&texObj);
@@ -984,44 +847,6 @@ void winTexSet_x2(u32 textureId, u32 textureId2, Vec translate, Vec scale, GXCol
     GXPosition3f32(-0.5f, 0.5f, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXEnd();
-}
-
-void winTexInit_x2(TEXPalette* texture) {
-    winTexTpl = texture;
-    GXSetCullMode(GX_CULL_NONE);
-    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
-    GXSetNumChans(0);
-    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    GXSetNumTexGens(1u);
-    GXSetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-    GXSetNumTexGens(2u);
-    GXSetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C);
-    GXSetTexCoordGen(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C);
-    GXSetNumTevStages(2);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
-    GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-    GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
 }
 
 void winTexSetRot(u32 textureId, Vec translate, Vec scale, f32 rot, GXColor color) {
@@ -1069,7 +894,45 @@ void winTexSetRot(u32 textureId, Vec translate, Vec scale, f32 rot, GXColor colo
     GXEnd();
 }
 
-void unk_80177008(u32 textureId, Vec translate, Vec scale, GXColor color) {
+void winTexInit_x2(TEXPalette* texture) {
+    winTexTpl = texture;
+    GXSetCullMode(GX_CULL_NONE);
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041dc90);
+    GXSetNumChans(0);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetNumTexGens(1u);
+    GXSetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GXSetNumTexGens(2u);
+    GXSetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C);
+    GXSetTexCoordGen(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C);
+    GXSetNumTevStages(2);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+}
+
+void winTexSet_x2(u32 textureId, u32 textureId2, Vec translate, Vec scale, GXColor color) {
     GXTexObj texObj;
     Mtx mtx1;
     Mtx mtx2;
@@ -1083,6 +946,9 @@ void unk_80177008(u32 textureId, Vec translate, Vec scale, GXColor color) {
     TEXGetGXTexObjFromPalette(winTexTpl, &texObj, textureId);
     GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
+    TEXGetGXTexObjFromPalette(winTexTpl, &texObj, textureId2);
+    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP1);
     GXSetTevColor(GX_TEVREG0, color);
     PSMTXTrans(mtx1, translate.x, translate.y, translate.z);
     height = scale.y * (f32)GXGetTexObjHeight(&texObj);
@@ -1101,6 +967,150 @@ void unk_80177008(u32 textureId, Vec translate, Vec scale, GXColor color) {
     GXPosition3f32(-0.5f, 0.5f, 0.0f);
     GXTexCoord2f32(0.0f, 0.0f);
     GXEnd();
+}
+
+void winIconInit(void) {
+    winTexTpl = NULL;
+    GXSetCullMode(GX_CULL_NONE);
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041dc90);
+    GXSetNumChans(0);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetNumTexGens(1u);
+    GXSetTexCoordGen(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+}
+
+void winIconGrayInit(void) {
+    winTexTpl = NULL;
+    GXSetCullMode(GX_CULL_NONE);
+#ifdef MUST_MATCH
+    winIconGraySetFog();
+#else
+    GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041dc90);
+#endif
+    GXSetNumChans(0);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, 0x3C, GX_FALSE, 0x7D);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_RED, GX_CH_RED, GX_CH_ALPHA);
+    GXSetTevSwapModeTable(GX_TEV_SWAP2, GX_CH_GREEN, GX_CH_GREEN, GX_CH_GREEN, GX_CH_ALPHA);
+    GXSetTevSwapModeTable(GX_TEV_SWAP3, GX_CH_BLUE, GX_CH_BLUE, GX_CH_BLUE, GX_CH_ALPHA);
+    GXSetTevColor(GX_TEVREG1, dat_8041dc94);
+    GXSetNumTevStages(4);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C1, GX_CC_TEXC, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP1);
+    GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C1, GX_CC_TEXC, GX_CC_CPREV);
+    GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+    GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP2);
+    GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_C1, GX_CC_TEXC, GX_CC_CPREV);
+    GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+    GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP3);
+    GXSetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE3, GX_CC_ZERO, GX_CC_C0, GX_CC_CPREV, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_A0, GX_CA_APREV, GX_CA_ZERO);
+    GXSetTevSwapMode(GX_TEVSTAGE3, GX_TEV_SWAP0, GX_TEV_SWAP0);
+}
+
+void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
+    GXTexObj texObj;
+    Mtx mtx1;
+    Mtx mtx2;
+    Mtx mtx3;
+    f32 height;
+
+    if (iconId == 0x115) {
+        iconId = 0x114;
+    }
+    (*(void(*)(GXTexObj*, u16))iconGetTexObj)(&texObj, iconId);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+
+    if (color->a != 0xFF) {
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+        GXSetZCompLoc(GX_TRUE);
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+        GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
+    } else {
+        GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+        GXSetZCompLoc(GX_FALSE);
+        GXSetAlphaCompare(GX_GEQUAL, 0x80, GX_AOP_OR, GX_NEVER, 0);
+        GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
+    }
+
+    GXSetTevColor(GX_TEVREG0, *color);
+    PSMTXTrans(mtx1, translate->x, translate->y, translate->z);
+    height = scale->y * (f32)GXGetTexObjHeight(&texObj);
+    PSMTXScale(mtx2, scale->x * (f32)GXGetTexObjWidth(&texObj), height, scale->z);
+    PSMTXConcat(mtx1, mtx2, mtx3);
+    PSMTXConcat(camGetPtr(CAMERA_2D)->view, mtx3, mtx3);
+    GXLoadPosMtxImm(mtx3, GX_PNMTX0);
+    GXSetCurrentMtx(GX_PNMTX0);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition3f32(-0.5f, -0.5f, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(0.5f, -0.5f, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(0.5f, 0.5f, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(-0.5f, 0.5f, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXEnd();
+    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+}
+
+s32 unk_80175eb0(EventEntry* event, BOOL isFirstCall) {
+    s32 value = evtGetValue(event, event->args[0]);
+
+    if (isFirstCall) {
+        wp->flags &= ~0x800;
+    }
+    if (*(s32*)wp->field_0x14 < value) {
+        return 0;
+    }
+    wp->flags |= 0x800;
+    return 2;
+}
+
+s32 unk_80175e98(void) {
+    wp->flags &= ~0x800;
+    return 2;
 }
 
 void winLectureKeyMask(void) {
@@ -1162,3 +1172,290 @@ void winLectureKeyMask(void) {
             break;
     }
 }
+
+void winLectureOn(void) {
+    wp->flags |= 0x1000;
+    wp->flags |= 0x800;
+    *(s32*)wp->field_0x14 = 0;
+    WP_CURRENT_EVENT(wp) = evtEntry(evt_lecture_msg, 0, 0);
+}
+
+s32 winLectureCheck(void) {
+    if ((wp->flags & 0x1000) && evtCheckID(WP_CURRENT_EVENT(wp)->eventId)) {
+        return 1;
+    }
+    wp->flags &= ~0x1000;
+    return 0;
+}
+
+// TODO: type
+s32 kime_pose[61] = {
+    0x0003005B, (s32)evt_party_nokotaro_get_status, 0x00000000, 0xFE363C80,
+    0x00020019, 0xFE363C80, 0x00000000, 0x00000002,
+    0x00000021, 0x0002005B, (s32)evt_mario_get_party, 0xFE363C80,
+    0x00010022, 0xFE363C80, 0x00010024, 0x00000000,
+    0x00010024, 0x00000001, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"PKR_I_1", 0x00010024, 0x00000002,
+    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PNK_I_1",
+    0x00010024, 0x00000003, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"I_1", 0x00010024, 0x00000004,
+    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PYS_I_1",
+    0x00010024, 0x00000005, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"PWD_I_1", 0x00010024, 0x00000006,
+    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PTR_I_1",
+    0x00010024, 0x00000007, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"PCH_I_1", 0x00000031, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 kime_pose2[61] = {
+    0x0003005B, (s32)evt_party_nokotaro_get_status, 0x00000000, 0xFE363C80,
+    0x00020019, 0xFE363C80, 0x00000000, 0x00000002,
+    0x00000021, 0x0002005B, (s32)evt_mario_get_party, 0xFE363C80,
+    0x00010022, 0xFE363C80, 0x00010024, 0x00000000,
+    0x00010024, 0x00000001, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"PKR_Y_1", 0x00010024, 0x00000002,
+    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PNK_Y_1",
+    0x00010024, 0x00000003, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"Y_1", 0x00010024, 0x00000004,
+    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PYS_Y_1",
+    0x00010024, 0x00000005, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"PWD_Y_1", 0x00010024, 0x00000006,
+    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"PTR_Y_1",
+    0x00010024, 0x00000007, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"PCH_Y_1", 0x00000031, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 unk_evt_803757f0[15] = {
+    0x0003005B, (s32)evt_party_nokotaro_get_status, 0x00000000, 0xFE363C80,
+    0x00020019, 0xFE363C80, 0x00000000, 0x00000002,
+    0x00000021, 0x0003005B, (s32)evt_party_set_breed_pose, 0x00000000,
+    0x00000001, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 kime_pose_famicom[105] = {
+    0x0003005B, (s32)evt_party_nokotaro_get_status, 0x00000000, 0xFE363C80,
+    0x00020019, 0xFE363C80, 0x00000000, 0x00000002,
+    0x00000021, 0x0002005B, (s32)evt_mario_get_party, 0xFE363C80,
+    0x00010022, 0xFE363C80, 0x00010024, 0x00000000,
+    0x00010024, 0x00000001, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"R_2", 0x00010024, 0x00000002,
+    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"R_3",
+    0x00010024, 0x00000003, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"R_13", 0x00010024, 0x00000004,
+    0x0002005B, (s32)party_color, 0xFE363C80, 0x00010022,
+    0xFE363C80, 0x00010024, 0x00000000, 0x0003005B,
+    (s32)evt_party_set_pose, 0x00000000, (s32)"R_5", 0x00010024,
+    0x00000001, 0x0003005B, (s32)evt_party_set_pose, 0x00000000,
+    (s32)"R_6", 0x00010024, 0x00000002, 0x0003005B,
+    (s32)evt_party_set_pose, 0x00000000, (s32)"R_7", 0x00010024,
+    0x00000003, 0x0003005B, (s32)evt_party_set_pose, 0x00000000,
+    (s32)"R_8", 0x00010024, 0x00000004, 0x0003005B,
+    (s32)evt_party_set_pose, 0x00000000, (s32)"R_9", 0x00010024,
+    0x00000005, 0x0003005B, (s32)evt_party_set_pose, 0x00000000,
+    (s32)"R_10", 0x00010024, 0x00000006, 0x0003005B,
+    (s32)evt_party_set_pose, 0x00000000, (s32)"R_11", 0x00000031,
+    0x00010024, 0x00000005, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"R_4", 0x00010024, 0x00000006,
+    0x0003005B, (s32)evt_party_set_pose, 0x00000000, (s32)"R_12",
+    0x00010024, 0x00000007, 0x0003005B, (s32)evt_party_set_pose,
+    0x00000000, (s32)"R_15", 0x00000031, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 evt_item_use[240] = {
+    0x00010063, 0x00000000, 0x0001005B, (s32)evt_mario_normalize,
+    0x0001005B, (s32)unk_80177cf8, 0x00010009, 0x00000001,
+    0x0001005B, (s32)evt_mario_adjust_dir, 0x0002005B, (s32)evt_mario_set_pose,
+    (s32)"M_S_1", 0x0001005E, (s32)&unk_evt_803757f0, 0x00020018,
+    0xFE363C8B, 0x00000000, 0x0005005B, (s32)evt_mario_get_pos,
+    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00020035, 0xFE363C81, 0x00000032, 0x0009005B,
+    (s32)evt_item_entry, (s32)"menu_dummy", 0xFE363C8A, 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x00000011, 0xFFFFFFFF,
+    0x00000000, 0x00020035, 0xFE363C81, 0x0000000A,
+    0x000F005B, (s32)evt_eff, 0x00000000, (s32)"itemget",
+    0x0000000A, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_ITEM_MARIO_USE1", 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x00000000, 0x0002005B,
+    (s32)evt_mario_set_pose, (s32)"M_I_1", 0x0001000A, 0x000003E8,
+    0x0002005B, (s32)evt_item_delete, (s32)"menu_dummy", 0x0005005B,
+    (s32)evt_mario_get_pos, 0x00000000, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_ITEM_RECOVERY_SHINE1",
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
+    0x000F005B, (s32)evt_eff64, 0x00000000, (s32)"stardust2_n64",
+    0x00000004, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00000028, 0x00000028, 0x0000001E, 0x00000078,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x0001000A, 0x00000578, 0x0002005B, (s32)evt_mario_set_pose,
+    (s32)"M_V_2", 0x0001005B, (s32)itemUseFunc, 0x0001000A,
+    0x000005DC, 0x0001005B, (s32)itemUseFunc2, 0x0001005B,
+    (s32)evt_mario_set_normal_pose, 0x00000002, 0x00000021, 0x0002005B,
+    (s32)evt_mario_get_party, 0xFE363C80, 0x00020018, 0xFE363C80,
+    0xFE363C8B, 0x0005005B, (s32)evt_party_get_pos, 0x00000000,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
+    0xFE363C81, 0x00000032, 0x0009005B, (s32)evt_item_entry,
+    (s32)"menu_dummy", 0xFE363C8A, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x00000011, 0xFFFFFFFF, 0x00000000,
+    0x00020035, 0xFE363C81, 0x0000000A, 0x000F005B,
+    (s32)evt_eff, 0x00000000, (s32)"itemget", 0x0000000A,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x0006005B,
+    (s32)evt_snd_sfxon_3d, (s32)"SFX_ITEM_MARIO_USE1", 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x00000000, 0x0002005B, (s32)famicom_check,
+    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000000,
+    0x0001005E, (s32)&kime_pose, 0x00000020, 0x0001005E,
+    (s32)&kime_pose_famicom, 0x00000021, 0x0001000A, 0x000003E8,
+    0x0002005B, (s32)evt_item_delete, (s32)"menu_dummy", 0x0005005B,
+    (s32)evt_party_get_pos, 0x00000000, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d, (s32)"SFX_ITEM_RECOVERY_SHINE1",
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000000,
+    0x000F005B, (s32)evt_eff64, 0x00000000, (s32)"stardust2_n64",
+    0x00000004, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00000028, 0x00000028, 0x0000001E, 0x00000078,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x0001000A, 0x00000578, 0x0002005B, (s32)famicom_check,
+    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000000,
+    0x0001005E, (s32)&kime_pose2, 0x00000020, 0x0001005E,
+    (s32)&kime_pose_famicom, 0x00000021, 0x0001005B, (s32)itemUseFunc,
+    0x0001000A, 0x000005DC, 0x0001005B, (s32)itemUseFunc2,
+    0x0001005E, (s32)&unk_evt_803757f0, 0x0001005B, (s32)evt_mario_set_normal_pose,
+    0x00000002, 0x00000021, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 evt_diary_read[259] = {
+    0x00010063, 0x00000000, 0x0003005B, (s32)evt_party_cont_onoff,
+    0x00000000, 0x00000001, 0x00010009, 0x00000001,
+    0x0001005B, (s32)evt_mario_normalize, 0x0005005B, (s32)evt_msg_print,
+    0x00000000, (s32)"stg6_rsh_diary_01", 0x00000000, 0x00000000,
+    0x0003005B, (s32)evt_msg_select, 0x00000000, (s32)"stg6_rsh_diary_01_yn",
+    0x00020019, 0xFE363C80, 0x00000000, 0x0001005B,
+    (s32)evt_msg_continue, 0x0003005B, (s32)evt_party_cont_onoff, 0x00000000,
+    0x00000000, 0x00000002, 0x00000021, 0x0003005B,
+    (s32)evt_msg_print_add, 0x00000000, (s32)"stg6_rsh_diary_02", 0x0003005B,
+    (s32)evt_msg_select, 0x00000000, (s32)"stg6_rsh_diary_01_yn", 0x00020019,
+    0xFE363C80, 0x00000000, 0x0001005B, (s32)evt_msg_continue,
+    0x0003005B, (s32)evt_party_cont_onoff, 0x00000000, 0x00000000,
+    0x00000002, 0x00000021, 0x0003005B, (s32)evt_msg_print_add,
+    0x00000000, (s32)"stg6_rsh_diary_03", 0x0003005B, (s32)evt_msg_select,
+    0x00000000, (s32)"stg6_rsh_diary_01_yn", 0x00020019, 0xFE363C80,
+    0x00000000, 0x0001005B, (s32)evt_msg_continue, 0x0003005B,
+    (s32)evt_party_cont_onoff, 0x00000000, 0x00000000, 0x00000002,
+    0x00000021, 0x0001005B, (s32)evt_msg_continue, 0x0003005B,
+    (s32)evt_snd_bgmoff_f, 0x00000200, 0x000007D0, 0x0003005B,
+    (s32)evt_mario_dispflag_onoff, 0x00000001, 0x00000002, 0x0001005B,
+    (s32)evt_mario_adjust_dir, 0x0002005B, (s32)evt_mario_set_pose, (s32)"M_L_2",
+    0x0005005B, (s32)evt_msg_print, 0x00000000, (s32)"stg6_rsh_diary_04",
+    0x00000000, 0x00000000, 0x0002005B, (s32)evt_mario_set_pose,
+    (s32)"M_S_1", 0x0003005B, (s32)evt_npc_check, (s32)"\202\344\202\244\202\352\202\242",
+    0xFE363C80, 0x00020018, 0xFE363C80, 0x00000000,
+    0x0003005B, (s32)evt_npc_entry, (s32)"\202\344\202\244\202\352\202\242", (s32)"c_ghost_k",
+    0x0005005B, (s32)evt_npc_set_position, (s32)"\202\344\202\244\202\352\202\242", 0x00000000,
+    0xFFFFFC18, 0x00000000, 0x0003005B, (s32)evt_npc_set_tribe,
+    (s32)"\202\344\202\244\202\352\202\242", (s32)"\202\344\202\244\202\352\202\242", 0x0003005B, (s32)evt_npc_set_anim,
+    (s32)"\202\344\202\244\202\352\202\242", (s32)"O_1", 0x0004005B, (s32)evt_npc_set_autotalkpose,
+    (s32)"\202\344\202\244\202\352\202\242", (s32)"O_2", (s32)"T_2", 0x00000021,
+    0x0004005B, (s32)evt_npc_flag_onoff, 0x00000001, (s32)"\202\344\202\244\202\352\202\242",
+    0x00040020, 0x0000006B, 0x00010005, 0x00000000,
+    0x0005005B, (s32)evt_sub_intpl_msec_init, 0x0000000B, 0x000000B4,
+    0x00000040, 0x000003E8, 0x00010003, 0x00000001,
+    0x0001005B, (s32)evt_sub_intpl_msec_get_value, 0x0006005B, (s32)evt_npc_set_color,
+    (s32)"\202\344\202\244\202\352\202\242", 0x000000FF, 0x000000FF, 0x000000FF,
+    0xFE363C80, 0x00010009, 0x00000001, 0x00020018,
+    0xFE363C81, 0x00000001, 0x00010004, 0x00000001,
+    0x00000021, 0x0005005B, (s32)evt_sub_intpl_msec_init, 0x0000000B,
+    0x00000040, 0x000000B4, 0x000003E8, 0x00010003,
+    0x00000002, 0x0001005B, (s32)evt_sub_intpl_msec_get_value, 0x0006005B,
+    (s32)evt_npc_set_color, (s32)"\202\344\202\244\202\352\202\242", 0x000000FF, 0x000000FF,
+    0x000000FF, 0xFE363C80, 0x00010009, 0x00000001,
+    0x00020018, 0xFE363C81, 0x00000001, 0x00010004,
+    0x00000002, 0x00000021, 0x00000006, 0x0000006D,
+    0x0003005B, (s32)evt_snd_bgmon, 0x00000200, (s32)"BGM_EVT_STG5_GHOST1",
+    0x0005005B, (s32)evt_mario_get_pos, 0x00000000, 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x00020035, 0xFE363C81,
+    0x00000014, 0x00020035, 0xFE363C82, 0x00000014,
+    0x0005005B, (s32)evt_npc_set_position, (s32)"\202\344\202\244\202\352\202\242", 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x0006005B, (s32)evt_snd_sfxon_3d,
+    0x000206A5, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00000000, 0x0001000A, 0x000000C8, 0x0002005B,
+    (s32)evt_mario_set_pose, (s32)"M_I_O", 0x0005005B, (s32)evt_msg_print,
+    0x00000000, (s32)"stg6_rsh_diary_05", 0x00000000, (s32)"\202\344\202\244\202\352\202\242",
+    0x0001000A, 0x0000012C, 0x0002005B, (s32)evt_snd_bgmoff,
+    0x00000200, 0x0000006B, 0x0003005B, (s32)evt_env_blur_on,
+    0x00000000, 0x00000000, 0x0000006D, 0x0003005B,
+    (s32)evt_snd_sfxon, 0x000206A2, 0xFE363C83, 0x0000006B,
+    0x0001005B, (s32)cam_r, 0x0000006D, 0x0001000A,
+    0x00000FA0, 0x0006005B, (s32)evt_fade_set_mapchange_type, 0x00000001,
+    0xFFFFFFFF, 0x00000258, 0xFFFFFFFF, 0xFFFFFFFF,
+    0x0004005B, (s32)evt_seq_set_seq, 0x00000005, 0x00000000,
+    0x00000000, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 evt_lecture_msg[96] = {
+    0x0001000A, 0x000003E8, 0x0005005B, (s32)evt_msg_print,
+    0x00000000, (s32)"lecture_badge_00", 0x00000000, 0x00000000,
+    0x0002005B, (s32)unk_80175eb0, 0x00000001, 0x0001005B,
+    (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print, 0x00000000,
+    (s32)"lecture_badge_01", 0x00000000, 0x00000000, 0x0002005B,
+    (s32)unk_80175eb0, 0x00000002, 0x0001005B, (s32)evt_msg_continue,
+    0x0005005B, (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_02",
+    0x00000000, 0x00000000, 0x0002005B, (s32)unk_80175eb0,
+    0x00000005, 0x0001005B, (s32)evt_msg_continue, 0x0005005B,
+    (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_03", 0x00000000,
+    0x00000000, 0x0002005B, (s32)unk_80175eb0, 0x00000006,
+    0x0001005B, (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print,
+    0x00000000, (s32)"lecture_badge_04", 0x00000000, 0x00000000,
+    0x0002005B, (s32)unk_80175eb0, 0x00000007, 0x0001005B,
+    (s32)evt_msg_continue, 0x0005005B, (s32)evt_msg_print, 0x00000000,
+    (s32)"lecture_badge_05", 0x00000000, 0x00000000, 0x0002005B,
+    (s32)unk_80175eb0, 0x00000008, 0x0001005B, (s32)evt_msg_continue,
+    0x0005005B, (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_06",
+    0x00000000, 0x00000000, 0x0002005B, (s32)unk_80175eb0,
+    0x00000009, 0x0001005B, (s32)evt_msg_continue, 0x0005005B,
+    (s32)evt_msg_print, 0x00000000, (s32)"lecture_badge_07", 0x00000000,
+    0x00000000, 0x0002005B, (s32)unk_80175eb0, 0x0000000A,
+    0x0001005B, (s32)evt_msg_continue, 0x0001000A, 0x000001F4,
+    0x0001005B, (s32)unk_80175e98, 0x00000002, 0x00000001,
+};
+
+__declspec(section ".sdata2") const GXColor dat_8041dc90 = { 0xFF, 0xFF, 0xFF, 0xFF };
+__declspec(section ".sdata2") const GXColor dat_8041dc94 = { 0x55, 0x55, 0x55, 0xFF };
+
+#ifdef MUST_MATCH
+// The original pools both int->float conversion doubles ahead of the deferred functions' strings.
+#pragma defer_codegen off
+static f32 pool_i2f(s32 v) {
+    return (f32)v;
+}
+static f32 pool_u2f(u32 v) {
+    return (f32)v;
+}
+#pragma defer_codegen reset
+#endif
+// clang-format on
+
+
+// 4-byte zero word that ends the unit's .data: explicit_zero_data + force_active keep the zero
+// word instead of dropping it, and __declspec(section ".data") keeps it out of .bss.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") static u32 gap_05_8037631C_data[1] = {0};
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+// 4-byte zero word that ends the unit's .sdata2 (same treatment as the .data gap).
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata2") static u32 gap_09_8041DCCC_sdata2[1] = {0};
+#pragma force_active reset
+#pragma explicit_zero_data reset
