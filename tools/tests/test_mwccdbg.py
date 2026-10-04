@@ -33,6 +33,35 @@ class ReplayTest(unittest.TestCase):
         self.assertIn("current order: 4 of 47 targets wrong", out)
 
 
+class LockTest(unittest.TestCase):
+    def test_second_holder_waits_for_the_first(self):
+        import socket
+        import threading
+        import time
+        free = socket.socket()
+        free.bind(("127.0.0.1", 0))
+        port = free.getsockname()[1]
+        free.close()
+        old = mwccdbg.LOCK_PORT
+        mwccdbg.LOCK_PORT = port
+        try:
+            events = []
+
+            def second():
+                with mwccdbg.net_lock():
+                    events.append(("second", time.time()))
+
+            with mwccdbg.net_lock():
+                t = threading.Thread(target=second)
+                t.start()
+                time.sleep(2.5)
+                events.append(("first-done", time.time()))
+            t.join(timeout=30)
+        finally:
+            mwccdbg.LOCK_PORT = old
+        self.assertEqual([e[0] for e in events], ["first-done", "second"])
+
+
 class SummaryTest(unittest.TestCase):
     def test_summary_flags_differing_registers(self):
         with tempfile.TemporaryDirectory() as d:

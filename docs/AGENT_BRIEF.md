@@ -295,6 +295,22 @@ macOS; needs gdb, cmake, Rust; the clones live in `$MWCCDBG_HOME`, default `~/mw
     git clone https://github.com/encounter/retrowin32 ~/mwccdbg/retrowin32 && cd ~/mwccdbg/retrowin32 && git checkout gdb-stub
     cargo build -p retrowin32 -F x86-unicorn --profile lto                    # about 3 minutes; use nice on a shared machine
 
+**Using it (agents).** One function at a time, from the workspace root:
+
+1. `python3 tools/mwccdbg.py UNIT FUNC` (REL units: `MODULE/path`). It compiles the unit as it is now; everything is written under
+   `build/mwccdbg/FUNC/`, never outside the workspace. Runs take turns on a machine-wide lock (a TCP port on 127.0.0.1), so a run may
+   wait a few seconds behind another agent's.
+2. Read `build/mwccdbg/FUNC/summary.txt`: per allocation pass (only the LAST pass of a class is final), each variable in priority
+   order with its register, neighbour count, and `!ORIG rN` where the original has a different register. Named locals show their
+   names; `@NNN` are compiler temps; fix the first variable that differs. 0 `!ORIG` lines means the gap is not register colouring.
+3. `python3 tools/rasim.py build/mwccdbg/FUNC replay [--fpr]` must say 0 differences. Then `rasim.py ... search LO HI --summary`
+   (LO..HI = the vreg numbers of the named locals, first declared = highest) prints the declaration order that gives the most of the
+   original's registers: best 0 wrong means writing the declarations in that order is enough. Confirm with a real build.
+4. If search finds nothing, change what creates or ranks the variables (each changes the numbering, then re-dump):
+   declaration order; a temp in or out of a named local (`t = a * b; f(t)` vs `f(a * b)`); assignment-in-argument
+   (`f(x = g())`); moving a block into a `static inline` helper (its locals become `@` objects ranked above named locals);
+   `int` vs `s32` for a local; initialiser in the declaration vs a separate assignment.
+
 **Scheduling-only differences** (same instructions, same registers, a different order inside a block): `tools/sched750.py`
 (tw2004, CC0) replays MWCC 2.6's list scheduler on a dump. `python3 tools/sched750.py predict build/mwccdbg/FUNC B23` prints the model's
 first-pass and last-pass order for block B23 next to the compiler's real one (`validate DIR...` reproduces 94.7% of 3263 integer-only blocks
