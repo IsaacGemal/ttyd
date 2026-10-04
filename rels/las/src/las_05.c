@@ -823,9 +823,11 @@ static inline void senkaron_calc_area(s32 index, f32 x, f32 z) {
 }
 #endif
 
-// NONMATCHING (97.23%): the orientation block, per-range ka checks and the first loop's pose+start base are
-// reconstructed, but MWCC's FPR colouring still differs: the collision half lands in f27 not f29, the
-// sign/x-difference take f29/f30 not f28/f27, and the direction branch uses cror+bne where the original has blt.
+// The orientation comparison, the second loop's entries reload and its counter (shared with start) now
+// match.
+// NONMATCHING (98.37%): pure MWCC register colouring/scheduling. The collision half lands in f27 not
+// f29 and the first loop's mask double in f3 not f2 (retail f29/f2); the setup's string/constant
+// load order and the base pointers also differ. Every call and immediate matches.
 static void senkaron_ext_main(void) {
     ExtPose* pose;
     MarioWork* mario;
@@ -866,10 +868,10 @@ static void senkaron_ext_main(void) {
                 dir = 1;
             } else if (*(f32*)mario->unk1AC == 180.0f) {
                 dir = 2;
-            } else if (mario->unk1A8 >= 90.0f && 270.0f >= mario->unk1A8) {
-                dir = 2;
-            } else {
+            } else if (mario->unk1A8 < 90.0f || 270.0f < mario->unk1A8) {
                 dir = 1;
+            } else {
+                dir = 2;
             }
         }
     }
@@ -893,24 +895,26 @@ static void senkaron_ext_main(void) {
     }
 
     pose = extGetPosePtr() + start;
-    for (j = start; j < end; j++, pose++) {
+    for (; start < end; start++, pose++) {
         MarioWork* m;
         KaronPoseEntry* entry;
         KaronPoseEntry* other;
+        KaronPoseEntry* list;
         ExtPose* nextPose;
         s32 count;
         s32 k;
 
         extGetPosePtr();
         m = marioGetPtr();
-        count = extGetPoseNum() - (j + 1);
-        entry = &entries[j];
+        list = skwp->entries;
+        count = extGetPoseNum() - (start + 1);
+        entry = &list[start];
         if (entry->type != 1) {
             continue;
         }
         nextPose = pose + 1;
-        for (k = j + 1; count != 0; k++, nextPose++, count--) {
-            other = &entries[k];
+        for (k = start + 1; count != 0; k++, nextPose++, count--) {
+            other = &list[k];
             if (other->type == 1 && other->area == entry->area) {
                 f32 px = __fabsf((*pose->matrix)[0][3] - m->position.x);
                 f32 pz = __fabsf((*pose->matrix)[2][3] - m->position.z);
@@ -933,10 +937,10 @@ static void senkaron_ext_main(void) {
 
     skwp->field_C++;
     pose = extGetPosePtr();
-    f30 = 3.0f * f29;
-    f31 = 1.5f * (6.0f * f29);
     sfxLanding = "SFX_STG8_KARON_LANDING1";
+    f31 = 1.5f * (6.0f * f29);
     sfxFly = "SFX_STG8_KARON_FLY1";
+    f30 = 3.0f * f29;
 
     for (i = 0; i < 1000; i++) {
         KaronPoseEntry* p = &entries[i];
@@ -1106,8 +1110,8 @@ static void senkaron_ext_main(void) {
             if (p->field_4 == 0) {
                 f32 d;
 
-                f26 = (*pose->matrix)[2][3] - mario->position.z;
                 f25 = (*pose->matrix)[0][3] - mario->position.x;
+                f26 = (*pose->matrix)[2][3] - mario->position.z;
                 d = 10.0f * (f32)sqrt(f25 * f25 + f26 * f26);
                 hit = rand() % 50;
                 p->field_8 = randf(-0.5f, 0.5f);
@@ -1171,20 +1175,20 @@ static void senkaron_ext_main(void) {
                 (*pose->matrix)[2][3] += p->field_10;
                 p->field_4--;
                 if (p->field_4 % 10 == 0) {
-                    if ((p->field_4 / 5) & 1) {
-                        Vec v = {0.0f, 0.0f, 0.0f};
-
-                        v.x = (*pose->matrix)[0][3];
-                        v.y = (*pose->matrix)[1][3];
-                        v.z = (*pose->matrix)[2][3];
-                        psndSFXOn_3D((const char*)0xAFC, &v);
-                    } else {
+                    if (((p->field_4 / 5) & 1) == 0) {
                         Vec v = {0.0f, 0.0f, 0.0f};
 
                         v.x = (*pose->matrix)[0][3];
                         v.y = (*pose->matrix)[1][3];
                         v.z = (*pose->matrix)[2][3];
                         psndSFXOn_3D((const char*)0xAFB, &v);
+                    } else {
+                        Vec v = {0.0f, 0.0f, 0.0f};
+
+                        v.x = (*pose->matrix)[0][3];
+                        v.y = (*pose->matrix)[1][3];
+                        v.z = (*pose->matrix)[2][3];
+                        psndSFXOn_3D((const char*)0xAFC, &v);
                     }
                 }
             } else {
