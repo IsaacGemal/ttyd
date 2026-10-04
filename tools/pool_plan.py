@@ -668,6 +668,21 @@ def source_state(text, name):
     return "USE"
 
 
+def i2f_swapped(seq, ours):
+    """True when the target pools an int->float double before a string that our build (`ours`: (addr, name, blob) tokens)
+    pools before that double: a string follows the double in the target, in a function we emit earlier."""
+    pos = {}
+    for i, (_, _, blob) in enumerate(ours):
+        pos.setdefault(blob_key(blob), i)
+    for i, m in enumerate(seq):
+        if m["kind"] != "magic" or blob_key(m["data"]) not in pos:
+            continue
+        for s_ in seq[i + 1:]:
+            if s_["kind"] == "str" and blob_key(s_["data"]) in pos and pos[blob_key(s_["data"])] < pos[blob_key(m["data"])]:
+                return True
+    return False
+
+
 def plan():
     tobj = Obj(target_path)
     uses, data_uses, funcs = analyse_uses(tobj, None)
@@ -728,10 +743,8 @@ def plan():
         if not entries:
             continue
         seq = [e for e in entries if e["kind"] != "gap"]
-        if sec == ".rodata" and not bmode:
-            kinds = [e["kind"] for e in seq]
-            if "magic" in kinds and "str" in kinds[kinds.index("magic"):]:
-                print("# I2F HELPER: " + I2F_HELPER_HINT + "\n")
+        if sec == ".rodata" and not bmode and pt and i2f_swapped(seq, pt.get(".rodata", [])):
+            print("# I2F HELPER: " + I2F_HELPER_HINT + "\n")
         for e in seq:
             e["cls"] = "MAGIC" if e["kind"] == "magic" else (("OFFSET" if bmode and e["kind"] == "str" else "UNREF") if not e["uses"] and not e["duses"] else ("DATA" if not e["uses"] else "LIT"))
         # named region from the probe
