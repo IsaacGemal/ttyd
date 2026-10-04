@@ -20,14 +20,37 @@
 static f32 z(void);  // local to this file in the original (fadedrv.s: .fn z, local)
 
 
-u8 i4tex = 0xFF; //TODO: align 32-byte
+u8 i4tex = 0xFF;
+#ifdef MUST_MATCH
+// Preserve the original 32-byte texture storage without aligning a separate byte array to four.
+#pragma explicit_zero_data on // Keep the texture padding in initialized .sdata.
+#pragma force_active on // The original padding is retained despite having no references.
+static u8 i4tex_pad_byte = 0;
+static u16 i4tex_pad_half = 0;
+static u32 i4tex_pad_words[7] = {0};
+#pragma force_active reset
+#pragma explicit_zero_data reset
+#endif
 
 //.data
 static s32 depth_image[32] = {
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
+#ifdef MUST_MATCH
+#pragma force_active on // Retain the original .sbss padding after wp (reverse declaration order).
+static u32 gap_08_80418404_sbss;
+#pragma force_active reset
+#endif
 static FadeWork* wp;
+
+#ifdef MUST_MATCH
+#pragma section ".sdata" ".sbss2" // Reproduce the original read-only zero storage.
+#pragma force_active on // Retain the gap after the compiler-generated zero GXColor template.
+static u32 gap_10_80422F7C_sbss2;
+#pragma force_active reset
+#pragma section ".sdata" ".sbss" // Restore the default uninitialized small-data section.
+#endif
 
 //local prototypes
 static void zFill(void);
@@ -1421,6 +1444,13 @@ void disp_maku(CameraId camId, void* param) {
 	sysWaitDrawSync();
 }
 
+#ifdef MUST_MATCH
+// Emit pi immediately before disp_maku's other literals; the unused body is stripped at link time.
+static f32 fadedrvPoolPi(void) {
+	return 3.141592f;
+}
+#endif
+
 // MUST_MATCH: a by-value GXColor built as `color = (GXColor){0,0,0,0}; color.a = a;` and then passed
 // lands its local at the higher slot (sp+0x14 here) and the argument copy at sp+0x8, the wrong way round.
 // Building the colour in an inline that returns it puts the colour at sp+0x8 and the argument at sp+0xC,
@@ -1594,3 +1624,21 @@ TEXPalette* fadeGetTpl(void) {
 void fadeSetNarrowFast(void) {
 	wp->entries[1].flags |= 8;
 }
+
+#ifdef MUST_MATCH
+// Generating this unused conversion helper flushes the deferred functions before force_active is enabled.
+// This keeps the pool helpers' bodies out of the linked text and places both data tails after the pools.
+#pragma defer_codegen off // Generate the flushing helper immediately; its conversion double is already pooled.
+static f32 fadedrvFlushPools(u32 value) {
+	return (f32)value;
+}
+#pragma explicit_zero_data on // These zero words belong to initialized sections.
+#pragma force_active on // Retain the original section tails.
+__declspec(section ".rodata") const u32 lbl_802C1538 = 0;
+__declspec(section ".data") static u32 fadedrv_data_pad = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+#pragma defer_codegen reset // Restore the default function emission mode.
+#else
+const u32 lbl_802C1538 = 0;
+#endif
