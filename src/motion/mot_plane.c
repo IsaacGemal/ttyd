@@ -375,7 +375,7 @@ void mot_plane(void) {
 		}
 		mario->wPlayerCollisionBox.x = MATCH_F32(float_20_8041ac24);
 		mario->wPlayerCollisionBox.y = MATCH_F32(float_12p333_8041ac8c);
-		mario->baseSpeed = __fabsf(float_0p02_8041ac90 * (f32)(s8)mario->wStickDir1);
+		mario->baseSpeed = __fabsf((*(const f32*)&float_0p02_8041ac90) * (f32)(s8)mario->wStickDir1);
 		mario->currSubMotionId = 0xC;
 		mario->baseSpeed = float_1_8041ac1c;
 		MF32(mario->motStruct, 0x10) = float_2_8041ac18;
@@ -454,7 +454,7 @@ void mot_plane(void) {
 			planeReset();
 			marioChgPose("M_J_1C");
 			a = MF32(mario, 0x2AC);
-			b = float_37_8041ac28;
+			b = (*(const f32*)&float_37_8041ac28);
 			t = a - b;
 			mario->position.y = t + float_1_8041ac1c;
 			mario->baseSpeed = MATCH_F32(float_0_8041ac0c);
@@ -720,18 +720,18 @@ static void flyMain(void) {
 	}
 	MF32(DATA, 0x8) = revise360(MF32(DATA, 0xC) * planeData[14] + MF32(DATA, 0x8));
 	if (DATA->flags & 1) {
-		if (MF32(DATA, 0x8) <= float_60_8041ac2c) {
-			MF32(DATA, 0x8) = float_0p1_8041ac30 * (float_60_8041ac2c - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		if (MF32(DATA, 0x8) <= (*(const f32*)&float_60_8041ac2c)) {
+			MF32(DATA, 0x8) = (*(const f32*)&float_0p1_8041ac30) * ((*(const f32*)&float_60_8041ac2c) - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
 		}
-		if (MF32(DATA, 0x8) >= float_150_8041ac34) {
-			MF32(DATA, 0x8) = float_0p1_8041ac30 * (float_150_8041ac34 - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		if (MF32(DATA, 0x8) >= (*(const f32*)&float_150_8041ac34)) {
+			MF32(DATA, 0x8) = (*(const f32*)&float_0p1_8041ac30) * ((*(const f32*)&float_150_8041ac34) - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
 		}
 	} else {
-		if (MF32(DATA, 0x8) >= float_330_8041ac38) {
-			MF32(DATA, 0x8) = float_0p1_8041ac30 * (float_330_8041ac38 - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		if (MF32(DATA, 0x8) >= (*(const f32*)&float_330_8041ac38)) {
+			MF32(DATA, 0x8) = (*(const f32*)&float_0p1_8041ac30) * ((*(const f32*)&float_330_8041ac38) - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
 		}
-		if (MF32(DATA, 0x8) <= float_210_8041ac3c) {
-			MF32(DATA, 0x8) = float_0p1_8041ac30 * (float_210_8041ac3c - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
+		if (MF32(DATA, 0x8) <= (*(const f32*)&float_210_8041ac3c)) {
+			MF32(DATA, 0x8) = (*(const f32*)&float_0p1_8041ac30) * ((*(const f32*)&float_210_8041ac3c) - MF32(DATA, 0x8)) + MF32(DATA, 0x8);
 		}
 	}
 	{
@@ -739,13 +739,13 @@ static void flyMain(void) {
 		f32 v;
 		s32 flag = 0;
 
-		if (a >= float_90_8041ac04 && a <= float_270_8041ac20) {
+		if (a >= MATCH_F32(float_90_8041ac04) && a <= (*(const f32*)&float_270_8041ac20)) {
 			flag = 1;
 		}
 		if (flag) {
-			v = -a - float_90_8041ac04;
+			v = -a - MATCH_F32(float_90_8041ac04);
 		} else {
-			v = float_270_8041ac20 - a;
+			v = (*(const f32*)&float_270_8041ac20) - a;
 		}
 		mario->unk1A8 = revise360(v);
 	}
@@ -758,31 +758,31 @@ static void flyMain(void) {
 				if (DATA->flags & 1) {
 					if ((s8)mario->wStickDir1 < 0) {
 						if (MF32(DATA, 0x4) >= planeData[3]) {
-							MF32(DATA, 0x4) = float_0p1_8041ac30 * (planeData[3] - MF32(DATA, 0x4)) + MF32(DATA, 0x4);
+							MF32(DATA, 0x4) = (*(const f32*)&float_0p1_8041ac30) * (planeData[3] - MF32(DATA, 0x4)) + MF32(DATA, 0x4);
 						} else {
-							MF32(DATA, 0x4) = float_0p1_8041ac30 * (f3 * planeData[5]) + MF32(DATA, 0x4);
+							MF32(DATA, 0x4) = (*(const f32*)&float_0p1_8041ac30) * (f3 * planeData[5]) + MF32(DATA, 0x4);
 						}
 					}
 					if ((s8)mario->wStickDir1 > 0) {
 						if (MF32(DATA, 0x4) <= planeData[4]) {
 							MF32(DATA, 0x4) = planeData[4];
 						} else {
-							MF32(DATA, 0x4) = MF32(DATA, 0x4) - float_0p1_8041ac30 * (f3 * planeData[6]);
+							MF32(DATA, 0x4) = MF32(DATA, 0x4) - (*(const f32*)&float_0p1_8041ac30) * (f3 * planeData[6]);
 						}
 					}
 				} else {
 					if ((s8)mario->wStickDir1 > 0) {
 						if (MF32(DATA, 0x4) >= planeData[3]) {
-							MF32(DATA, 0x4) = float_0p1_8041ac30 * (planeData[3] - MF32(DATA, 0x4)) + MF32(DATA, 0x4);
+							MF32(DATA, 0x4) = (*(const f32*)&float_0p1_8041ac30) * (planeData[3] - MF32(DATA, 0x4)) + MF32(DATA, 0x4);
 						} else {
-							MF32(DATA, 0x4) = float_0p1_8041ac30 * (f3 * planeData[5]) + MF32(DATA, 0x4);
+							MF32(DATA, 0x4) = (*(const f32*)&float_0p1_8041ac30) * (f3 * planeData[5]) + MF32(DATA, 0x4);
 						}
 					}
 					if ((s8)mario->wStickDir1 < 0) {
 						if (MF32(DATA, 0x4) <= planeData[4]) {
 							MF32(DATA, 0x4) = planeData[4];
 						} else {
-							MF32(DATA, 0x4) = MF32(DATA, 0x4) - float_0p1_8041ac30 * (f3 * planeData[6]);
+							MF32(DATA, 0x4) = MF32(DATA, 0x4) - (*(const f32*)&float_0p1_8041ac30) * (f3 * planeData[6]);
 						}
 					}
 				}
@@ -797,8 +797,8 @@ static void flyMain(void) {
 					if (f31 <= float_0_8041ac0c) {
 						f31 = float_0_8041ac0c;
 					}
-					f31 = f31 * (float_90_8041ac04 / planeData[0]);
-					f31 = planeData[27] * (f32)sin(float_3p1416_8041ac40 * f31 / float_180_8041ac44);
+					f31 = f31 * (MATCH_F32(float_90_8041ac04) / planeData[0]);
+					f31 = planeData[27] * (f32)sin((*(const f32*)&float_3p1416_8041ac40) * f31 / (*(const f32*)&float_180_8041ac44));
 					if (f31 <= planeData[28]) {
 						f31 = planeData[28];
 					}
@@ -812,7 +812,7 @@ static void flyMain(void) {
 					MF32(DATA, 0x1C) = f31;
 					MF32(DATA, 0x4) = MF32(DATA, 0x4) + MF32(DATA, 0x1C);
 				} else {
-					MF32(DATA, 0x4) += float_neg0p001_8041ac48;
+					MF32(DATA, 0x4) += (*(const f32*)&float_neg0p001_8041ac48);
 					mario->baseSpeed += float_0p5_8041ac4c;
 					if (mario->baseSpeed > float_2_8041ac18) {
 						mario->baseSpeed = float_2_8041ac18;
@@ -822,7 +822,7 @@ static void flyMain(void) {
 			if (MF32(DATA, 0x4) <= planeData[4]) {
 				MF32(DATA, 0x4) = planeData[4];
 			}
-			if (MF32(DATA, 0x4) >= float_6_8041ac50) {
+			if (MF32(DATA, 0x4) >= (*(const f32*)&float_6_8041ac50)) {
 				MF32(DATA, 0x14) = float_0_8041ac0c;
 			}
 		}
@@ -834,7 +834,7 @@ static void flyMain(void) {
 		if (MF32(dv, 0x4) >= float_0_8041ac0c) {
 			dv->flags |= 0x10;
 			{
-				f32 s = sin(float_3p1416_8041ac40 * (MF32(DATA, 0x4) * planeData[7]) / float_180_8041ac44);
+				f32 s = sin((*(const f32*)&float_3p1416_8041ac40) * (MF32(DATA, 0x4) * planeData[7]) / (*(const f32*)&float_180_8041ac44));
 				f32 x = planeData[8] * s;
 
 				x = mario->baseSpeed * x;
@@ -852,7 +852,7 @@ static void flyMain(void) {
 					f32 s, a;
 
 					f31 = planeData[0] - mario->baseSpeed;
-					s = sin(float_3p1416_8041ac40 * MF32(DATA, 0x4) / float_180_8041ac44);
+					s = sin((*(const f32*)&float_3p1416_8041ac40) * MF32(DATA, 0x4) / (*(const f32*)&float_180_8041ac44));
 					a = planeData[21] * s;
 					f31 = f31 * a;
 					f31 = f31 + MF32(DATA, 0x14);
@@ -867,14 +867,14 @@ static void flyMain(void) {
 						if (f31 <= float_0_8041ac0c) {
 							f31 = float_0_8041ac0c;
 						}
-						f31 = f31 * (float_90_8041ac04 / planeData[0]);
+						f31 = f31 * (MATCH_F32(float_90_8041ac04) / planeData[0]);
 						onPlace = 0;
 						m = marioGetPtr();
 						if (*(HitEntry**)((u8*)m + 0x1F8) != NULL && (hitGetAttr(*(HitEntry**)((u8*)m + 0x1F8)) & 0x38) != 0) {
 							onPlace = 1;
 						}
 						if (onPlace == 0) {
-							f32 v = planeData[25] * (f32)sin(float_3p1416_8041ac40 * f31 / float_180_8041ac44);
+							f32 v = planeData[25] * (f32)sin((*(const f32*)&float_3p1416_8041ac40) * f31 / (*(const f32*)&float_180_8041ac44));
 
 							if (v <= planeData[26]) {
 								v = float_2_8041ac18 * planeData[26];
@@ -889,7 +889,7 @@ static void flyMain(void) {
 				f32 add;
 
 				if ((s8)mario->wStickDir1 != 0) {
-					f32 s = sin(float_3p1416_8041ac40 * (planeData[0] - mario->baseSpeed) / float_180_8041ac44);
+					f32 s = sin((*(const f32*)&float_3p1416_8041ac40) * (planeData[0] - mario->baseSpeed) / (*(const f32*)&float_180_8041ac44));
 
 					add = planeData[18] * s;
 					MF32(DATA, 0x18) = MF32(DATA, 0x18) + add;
@@ -897,17 +897,17 @@ static void flyMain(void) {
 						MF32(DATA, 0x18) = planeData[19];
 					}
 				} else {
-					add = float_0p1_8041ac30 * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
+					add = (*(const f32*)&float_0p1_8041ac30) * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
 					MF32(DATA, 0x18) = add;
 				}
 				MF32(DATA, 0x4) = MF32(DATA, 0x4) + add;
 			}
-		} else if (MF32(dv, 0x4) >= float_neg80_8041ac54) {
+		} else if (MF32(dv, 0x4) >= (*(const f32*)&float_neg80_8041ac54)) {
 			if (dv->flags & 0x10) {
 				dv->flags = dv->flags & ~0x10;
 			}
 			{
-				f32 s = sin(float_3p1416_8041ac40 * (planeData[9] * __fabsf(MF32(DATA, 0x4))) / float_180_8041ac44);
+				f32 s = sin((*(const f32*)&float_3p1416_8041ac40) * (planeData[9] * __fabsf(MF32(DATA, 0x4))) / (*(const f32*)&float_180_8041ac44));
 
 				MF32(DATA, 0x10) = planeData[10] * s;
 				mario->baseSpeed = mario->baseSpeed + MF32(DATA, 0x10);
@@ -921,8 +921,8 @@ static void flyMain(void) {
 			{
 				f32 x, y;
 
-				f31 = sin(float_3p1416_8041ac40 * (planeData[12] * f3) / float_180_8041ac44);
-				y = sin(float_3p1416_8041ac40 * (mario->baseSpeed * planeData[11]) / float_180_8041ac44);
+				f31 = sin((*(const f32*)&float_3p1416_8041ac40) * (planeData[12] * f3) / (*(const f32*)&float_180_8041ac44));
+				y = sin((*(const f32*)&float_3p1416_8041ac40) * (mario->baseSpeed * planeData[11]) / (*(const f32*)&float_180_8041ac44));
 				x = planeData[13] * (y * f31);
 				MF32(DATA, 0x14) = MF32(DATA, 0x14) + x;
 			}
@@ -942,7 +942,7 @@ static void flyMain(void) {
 					onPlace = 1;
 				}
 				if (onPlace == 0) {
-					MF32(DATA, 0x1C) += float_0p1_8041ac30 * (float_1_8041ac1c - MF32(DATA, 0x1C));
+					MF32(DATA, 0x1C) += (*(const f32*)&float_0p1_8041ac30) * (float_1_8041ac1c - MF32(DATA, 0x1C));
 					if (MF32(DATA, 0x1C) >= float_0_8041ac0c) {
 						MF32(DATA, 0x1C) = float_0_8041ac0c;
 					}
@@ -954,15 +954,15 @@ static void flyMain(void) {
 				onPlace = 1;
 			}
 			if (onPlace != 0) {
-				MF32(DATA, 0x24) = float_neg22_8041ac58;
+				MF32(DATA, 0x24) = (*(const f32*)&float_neg22_8041ac58);
 			} else {
-				MF32(DATA, 0x24) += float_0p1_8041ac30 * (planeData[4] - MF32(DATA, 0x24));
+				MF32(DATA, 0x24) += (*(const f32*)&float_0p1_8041ac30) * (planeData[4] - MF32(DATA, 0x24));
 			}
 			MF32(DATA, 0x4) = MF32(DATA, 0x4) + MF32(DATA, 0x14);
 			if (MF32(DATA, 0x4) <= MF32(DATA, 0x24)) {
 				MF32(DATA, 0x4) = MF32(DATA, 0x24);
 			}
-			MF32(DATA, 0x18) = float_0p1_8041ac30 * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
+			MF32(DATA, 0x18) = (*(const f32*)&float_0p1_8041ac30) * -MF32(DATA, 0x18) + MF32(DATA, 0x18);
 		}
 	}
 	if (mario->baseSpeed >= planeData[0]) {
@@ -977,12 +977,12 @@ static void flyMain(void) {
 		mario->directionView = MF32(DATA, 0x8);
 		sincosf(&sin1, &cos1, mario->directionView);
 		MF32(mario, 0x94) = mario->baseSpeed * cos1 + MF32(mario, 0x94);
-		sincosf(&sin2, &cos2, float_90_8041ac04 + MF32(DATA, 0x4));
+		sincosf(&sin2, &cos2, MATCH_F32(float_90_8041ac04) + MF32(DATA, 0x4));
 		MF32(mario, 0x90) = mario->baseSpeed * cos2 * (cos2 >= float_0_8041ac0c ? planeData[31] : planeData[32]) + MF32(mario, 0x90);
 		MF32(mario, 0x8C) = sin2 * (mario->baseSpeed * sin1) + MF32(mario, 0x8C);
 	}
 	if (mario->baseSpeed <= planeData[16]) {
-		s32 frames = sysMsec2Frame((s32)(float_1000_8041ac5c * planeData[17]));
+		s32 frames = sysMsec2Frame((s32)((*(const f32*)&float_1000_8041ac5c) * planeData[17]));
 
 		if (DATA->flags & 1) {
 			if ((f32)(s8)mario->wStickDir1 < float_0_8041ac0c) {
@@ -1203,7 +1203,7 @@ s32 chkCollision(f32* out) {
 		f32 a1 = MF32(DATA, 0x34);
 		f32 a2 = MF32(DATA, 0x38);
 		mario->hitobjStandOn = NULL;
-		dist = float_10p1_8041ac10;
+		dist = (*(const f32*)&float_10p1_8041ac10);
 		hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
 		                    a0, a1 + ten, a2, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
 	}
@@ -1219,7 +1219,7 @@ s32 chkCollision(f32* out) {
 			f32 a1 = MF32(DATA, 0x40);
 			f32 a2 = MF32(DATA, 0x44);
 			mario->hitobjStandOn = NULL;
-			dist = float_10p1_8041ac10;
+			dist = (*(const f32*)&float_10p1_8041ac10);
 			hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz,
 			                    a0, a1 + ten, a2, 0.0f, MATCH_F32(float_neg1_8041ac14), 0.0f);
 		}

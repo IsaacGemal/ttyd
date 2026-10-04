@@ -4544,3 +4544,17 @@ in `docs/codex/`; read them before retrying a similar unit.
 Pattern: Codex wins by running many cheap build-and-measure experiments against a precise brief (current section
 diff, tools to use, what already failed, MUST_MATCH rule, never regress). Each brief is in the PR's worktree as
 CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-25 minutes, 100-210k tokens.
+- **Batch 14:** jon linked (wave 74 arm L); sac_muki's `weapon` is now the original's initialised 0xC0-byte .data table
+  (wave 73), with its natural build fixed (the BODY SFX strings, defined after the code, are declared in the
+  non-MUST_MATCH branch of the address macro); las_05's audit found two sound blocks in the wrong order (fixed by
+  inverting the branch, 97.23 -> 98.37); data ports for mot_slit (merged by hand: its audit flag was a quoted sed
+  address read as a redirect, fixed in #411), mot_roll, battle_camera and mot_plane. party_nokonoko's and muj_00's
+  audit rows were misalignment. mot_plane still fails the DOL checksum after its link task, a second failure: routed
+  to Codex, as is eff_kemuri's link (all functions 100%; the original reloads 41 named .sdata2 floats that MWCC
+  hoists when named, while literals duplicate or fold). Rejected: npcdrv's audit (.rodata 86.1 -> 82.2). sac_bakugame,
+  sac_deka, sac_scissor and sac_suki declare sac_common's USER_FUNC `sac_ac_help_on` as `extern s32 []`; harmless
+  for the build, open for a tidy-up.
+- **Runbook:** gate every commit on `python3 tools/ci.py ... | grep -q '^PASS'`, never on a grep that also matches
+  FAIL lines: a `grep -E '^PASS|^FAIL'` chain let a lint FAIL commit (#411, re-verified PASS after). Tools-only
+  changes need `--allow-protected`, and a stale build/ci/accepted.json from another branch shows that branch's work
+  as regressions: re-init the baseline (`ci.py --init`) on the clean base first.

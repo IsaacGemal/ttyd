@@ -1724,7 +1724,7 @@ config.libs = [
             Object(Matching, "unit/unit_badge_borodo.c"),
             Object(Matching, "unit/unit_mahorn.c"),
             Object(Matching, "unit/unit_mahorn_custom.c"),
-            Object(NonMatching, "jon.c"),
+            Object(Matching, "jon.c"),
             Object(Matching, "unit/unit_churantalar.c"),
             Object(Matching, "data/battle/battle_database_jon.c"),
         ],

@@ -28,6 +28,9 @@
 #define MW_U32(m, off) (*(u32*)((u8*)(m) + (off)))
 #define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
 
+// .sdata2: the base {0, 0, 0, 255} colour both mapSetPaperAmbColor callers start from.
+__declspec(section ".sdata2") const u32 dat_8041ae80 = 0x000000FF;
+
 // Zero vectors that the unit uses as scratch/base for its pooled string
 // accesses. They must be the first objects in .rodata for the string offsets
 // to match the original.
@@ -39,50 +42,6 @@ const Vec vec3_802c5ea8 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5eb4 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5ec0 = { 0.0f, 0.0f, 0.0f };
 
-void marioClearSlitFloor(void) {
-    MarioWork* mario = marioGetPtr();
-
-    MW_S32(mario, 0x268) = 0;
-}
-
-void motSlitCancel(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->flags & MARIO_FLAG_PAPER_MODE) {
-        MW_S16(mario, 0x2D8) = 100;
-    }
-}
-
-void motSlitCancel3(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->flags & MARIO_FLAG_PAPER_MODE) {
-        MW_S16(mario, 0x2D8) = 120;
-    }
-}
-
-// opt_propagation off keeps the 0x14 local in r31 across the marioGetPtr call;
-// on, MWCC rematerializes it as `li r0` after the call.
-#pragma opt_propagation off
-void motSlitContinue(void) {
-    MarioWork* mario;
-    s16 state;
-
-    marioChgMot2(0x15);
-    state = 0x14;
-    mario = marioGetPtr();
-    MW_S16(mario, 0x2D8) = state;
-}
-#pragma opt_propagation reset
-
-void N_marioSlitSetAfterLand(void) {
-    MarioWork* mario = marioGetPtr();
-
-    marioChgMot2(0x15);
-    mario->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING | MARIO_FLAG_IS_STEPPING |
-                      MARIO_FLAG_HAS_INPUT_JUMP);
-}
-
 void unk_800a4e40(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -92,102 +51,12 @@ void unk_800a4e40(void) {
                       MARIO_FLAG_HAS_INPUT_JUMP);
 }
 
-BOOL marioChkSlitEnd(void) {
+void N_marioSlitSetAfterLand(void) {
     MarioWork* mario = marioGetPtr();
 
-    if (mario->currMotionId != MARIO_MOTION_SLIT) {
-        return FALSE;
-    }
-    return MW_S16(mario, 0x2D8) >= 100;
-}
-
-BOOL marioChkSlitThrouhEnd(void) {
-    MarioWork* mario = marioGetPtr();
-    s32 state;
-
-    if (mario->currMotionId != MARIO_MOTION_SLIT) {
-        return FALSE;
-    }
-    state = MW_S16(mario, 0x2D8);
-    if (state == 0x52 || state == 0x5E) {
-        return TRUE;
-    }
-    return FALSE;
-}
-
-BOOL marioChkSlitThrouh(void) {
-    MarioWork* mario = marioGetPtr();
-    s32 state;
-
-    if (mario->currMotionId != MARIO_MOTION_SLIT) {
-        return FALSE;
-    }
-    state = MW_S16(mario, 0x2D8);
-    if (state >= 0x50 && state <= 0x5E) {
-        return TRUE;
-    }
-    return FALSE;
-}
-
-BOOL marioGetSlitFloorPos(Vec* pos) {
-    MarioWork* mario = marioGetPtr();
-
-    if (MW_S32(mario, 0x268) != 0) {
-        *pos = *(Vec*)((u8*)mario + 0x26C);
-        return TRUE;
-    }
-    return FALSE;
-}
-
-s32 marioGetMotSlitCancel3(void) {
-    MarioWork* mario;
-    s32 ret = 0;
-
-    mario = marioGetPtr();
-    if (mario->currMotionId == MARIO_MOTION_SLIT) {
-        s32 state = MW_S16(mario, 0x2D8);
-        if ((state >= 0x78 && state <= 0x7A) || (state >= 0x6E && state <= 0x70)) {
-            ret = 1;
-        }
-    }
-    return ret;
-}
-
-void marioForceSlitAnime(void) {
-    MarioWork* mario = marioGetPtr();
-
-    marioPaperOff();
-    marioChgPaper(NULL);
-    marioPaperOn("p_slit");
-    marioChgPose("M_S_1");
-    marioChgPaper("PM_S_1A");
-    mario->dispFlags |= 4;
-}
-
-void motSlitCancel2(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->flags & MARIO_FLAG_PAPER_MODE) {
-        allPartyForceSlitOff();
-        MW_S16(mario, 0x2D8) = 0x6E;
-    }
-}
-
-BOOL marioSlitKeyDisable(void) {
-    MarioWork* mario = marioGetPtr();
-    s32 state;
-
-    if (!(mario->flags & MARIO_FLAG_PAPER_MODE)) {
-        return TRUE;
-    }
-    state = MW_S16(mario, 0x2D8);
-    if (state >= 0x50 && state <= 0x52) {
-        return FALSE;
-    }
-    if (state >= 0x5A && state <= 0x5E) {
-        return FALSE;
-    }
-    return TRUE;
+    marioChgMot2(0x15);
+    mario->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING | MARIO_FLAG_IS_STEPPING |
+                      MARIO_FLAG_HAS_INPUT_JUMP);
 }
 
 BOOL marioSlitAbilityChk(void) {
@@ -234,136 +103,21 @@ s32 marioSlitButton(void) {
     }
     return 0;
 }
-
-void marioReInit_slit(void) {
+BOOL marioSlitKeyDisable(void) {
     MarioWork* mario = marioGetPtr();
-    MarioWork* mario2 = marioGetPtr();
-
-    MW_F32(mario2, 0x2A0) = 0.0f;
-    MW_S32(mario2, 0x2A4) = 0;
-    MW_S16(mario2, 0x2B6) = 0;
-    MW_S16(mario2, 0x2B4) = 0;
-    MW_S16(mario2, 0x2BA) = 0;
-    mario2->trigFlags &= ~1u;
-    mario2->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING | MARIO_FLAG_IS_STEPPING |
-                       MARIO_FLAG_HAS_INPUT_JUMP);
-    mario2->dispFlags |= 4;
-    mario2->dispFlags |= 0x01000000;
-    if (mario2->paperPoseId == -1) {
-#ifdef MUST_MATCH
-        GXColor tmp;
-        GXColor color;
-
-        // The original builds the colour in a temporary at +0xC and
-        // word-copies it into the argument at +0x8.
-        tmp = (GXColor){ 0, 0, 0, 255 };
-        tmp.r = 168;
-        tmp.g = 168;
-        tmp.b = 168;
-        color = tmp;
-#else
-        GXColor color = (GXColor){ 168, 168, 168, 255 };
-#endif
-        mapSetPaperAmbColor(&color);
-        marioPaperOn("p_slit");
-    }
-    // A named local makes MWCC load the field into f1 and the pool constant
-    // into f0, matching the original's compare order.
-    {
-        f32 zero = 0.0f;
-        if (mario2->controlStickSensitivity == zero) {
-            marioChgPose("M_S_1");
-        }
-    }
-    marioChgPaper("PM_S_1A");
-    mario->trigFlags &= ~1u;
-    mario->currMotionId = MARIO_MOTION_SLIT;
-    MW_S16(mario, 0x2D8) = 0xA;
-    mario->unk1A8 = 270.0f;
-    MW_F32(mario, 0x1AC) = mario->unk1A8;
-    marioChgPose("M_S_1");
-    marioChgPaper("PM_S_1B");
-    MW_S16(mario, 0x2D8) = 0xA;
-    MW_S16(mario, 0x2B6) = 0;
-    MW_F32(mario, 0x1B4) = 6.0f;
-    mario->flags |= MARIO_FLAG_PAPER_MODE;
-    mario->dispFlags |= 0x01000000;
-    allPartySlitOn();
-}
-
-// mot_slit carries its own inline copy of the continue check (the branches of the final test differ from the
-// standalone U_ function below).
-static inline s32 slitContinueChk(void) {
-    MarioWork* mario = marioGetPtr();
-    MarioWork* mario2 = marioGetPtr();
     s32 state;
 
-#ifdef MUST_MATCH
-    // MUST_MATCH: the original shares a single `state = 0` tail between the
-    // `!dispFlags` branch and the final else, so both jump to a common `zero`
-    // label. Written as the plain nested if/else below, MWCC emits that block
-    // twice (97.03%).
-    if (mario2->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
-        state = 0;
-    } else if (marioKeyOffChk()) {
-        state = 0;
-    } else if (marioBgmodeChk() == 1) {
-        state = 0;
-    } else if (!(mario2->dispFlags & (1 << 24))) {
-        if (MW_U16(mario2, 0x246) & 0x20) {
-            state = 1;
-        } else {
-            goto zero;
-        }
-    } else {
-        if (MW_U16(mario2, 0x246) & 0x20) {
-            state = 2;
-        } else if (MW_U8(mario2, 0x253) >= 0x32) {
-            state = 2;
-        } else {
-            goto zero;
-        }
+    if (!(mario->flags & MARIO_FLAG_PAPER_MODE)) {
+        return TRUE;
     }
-    goto done;
-zero:
-    state = 0;
-done:
-#else
-    if (mario2->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
-        state = 0;
-    } else if (marioKeyOffChk()) {
-        state = 0;
-    } else if (marioBgmodeChk() == 1) {
-        state = 0;
-    } else if (!(mario2->dispFlags & (1 << 24))) {
-        if (MW_U16(mario2, 0x246) & 0x20) {
-            state = 1;
-        } else {
-            state = 0;
-        }
-    } else {
-        if (MW_U16(mario2, 0x246) & 0x20) {
-            state = 2;
-        } else if (MW_U8(mario2, 0x253) >= 0x32) {
-            state = 2;
-        } else {
-            state = 0;
-        }
+    state = MW_S16(mario, 0x2D8);
+    if (state >= 0x50 && state <= 0x52) {
+        return FALSE;
     }
-#endif
-    if (state != 0) {
-        return 1;
+    if (state >= 0x5A && state <= 0x5E) {
+        return FALSE;
     }
-    if (marioSlitChkWallAround()) {
-        return 1;
-    }
-    {
-        Vec pos = mario->position;
-        if (marioCreviceWallChk(&pos) != 0) {
-            return 1;
-        }
-        return 0;
-    }
+    return TRUE;
 }
 
 s32 U_marioSlitContinueChk(void) {
@@ -433,94 +187,6 @@ done:
     {
         Vec pos = mario->position;
         return marioCreviceWallChk(&pos) != 0;
-    }
-}
-
-void mot_slit_post(void) {
-    MarioWork* mario = marioGetPtr();
-
-    // The `id == 8` return is the second operand of a `||`, so MWCC keeps a
-    // separate `b return` after the `bne` it emits for the short-circuit.
-    if (mario->currMotionId == MARIO_MOTION_SLIT) {
-        return;
-    }
-    if ((u16)(mario->currMotionId - 11) <= 1) {
-        return;
-    }
-    if (mario->currMotionId <= 7 || mario->currMotionId == 8) {
-        return;
-    }
-    if (!(mario->flags & MARIO_FLAG_PAPER_MODE)) {
-        if (!(mario->dispFlags & (1 << 24))) {
-            return;
-        }
-    MW_F32(mario, 0x1B4) = 20.0f;
-    if (mario->directionView >= 180.0f) {
-        mario->unk1A8 = 0.0f;
-        MW_F32(mario, 0x1AC) = mario->unk1A8;
-    } else {
-        mario->unk1A8 = 180.0f;
-        MW_F32(mario, 0x1AC) = mario->unk1A8;
-    }
-    mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
-    mario->flags &= ~MARIO_FLAG_GONE_THROUGH_BARS;
-    mario->dispFlags &= 0xFEFFF3FF;
-    mario->dispFlags &= 0xFEFFF3FF;
-    marioPaperOff();
-    mapResetPaperAmbColor();
-    mario->dispFlags &= ~4;
-    marioAdjustMoveDir();
-    allPartyForceSlitOff();
-    } else {
-        if (mario->currMotionId == MARIO_MOTION_FALL) {
-            return;
-        }
-        mario->flags &= ~MARIO_FLAG_PAPER_MODE;
-    MW_F32(mario, 0x1B4) = 20.0f;
-    if (mario->directionView >= 180.0f) {
-        mario->unk1A8 = 0.0f;
-        MW_F32(mario, 0x1AC) = mario->unk1A8;
-    } else {
-        mario->unk1A8 = 180.0f;
-        MW_F32(mario, 0x1AC) = mario->unk1A8;
-    }
-    mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
-    mario->flags &= ~MARIO_FLAG_GONE_THROUGH_BARS;
-    mario->dispFlags &= 0xFEFFF3FF;
-    mario->dispFlags &= 0xFEFFF3FF;
-    marioPaperOff();
-    mapResetPaperAmbColor();
-    mario->dispFlags &= ~4;
-    marioAdjustMoveDir();
-    allPartyForceSlitOff();
-    }
-}
-
-void marioSlitForceCancel(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->flags & MARIO_FLAG_PAPER_MODE) {
-        mario->flags &= ~MARIO_FLAG_PAPER_MODE;
-        if (mario->directionView >= 180.0f) {
-            mario->unk1A8 = 0.0f;
-            MW_F32(mario, 0x1AC) = mario->unk1A8;
-        } else {
-            mario->unk1A8 = 180.0f;
-            MW_F32(mario, 0x1AC) = mario->unk1A8;
-        }
-        mario->dispFlags &= 0xFEFFF3FF;
-        mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
-        mario->flags &= ~MARIO_FLAG_GONE_THROUGH_BARS;
-        mario->wPlayerCollisionBox.x = 10.0f;
-        mario->dispFlags &= 0xFEFFF3FF;
-        marioPaperOff();
-        mapResetPaperAmbColor();
-        mario->dispFlags &= ~4;
-        marioAdjustMoveDir();
-        mario = marioGetPtr();
-        MW_F32(mario, 0x148) = 0.0f;
-        MW_F32(mario, 0x158) = 0.004f;
-        allPartyForceSlitOff();
     }
 }
 
@@ -668,6 +334,343 @@ BOOL marioCreviceWallChk(Vec* pos) {
     return FALSE;
 }
 
+void marioClearSlitFloor(void) {
+    MarioWork* mario = marioGetPtr();
+
+    MW_S32(mario, 0x268) = 0;
+}
+
+BOOL marioGetSlitFloorPos(Vec* pos) {
+    MarioWork* mario = marioGetPtr();
+
+    if (MW_S32(mario, 0x268) != 0) {
+        *pos = *(Vec*)&MW_U8(mario, 0x26C);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+BOOL marioChkSlitThrouh(void) {
+    MarioWork* mario = marioGetPtr();
+    s32 state;
+
+    if (mario->currMotionId != MARIO_MOTION_SLIT) {
+        return FALSE;
+    }
+    state = MW_S16(mario, 0x2D8);
+    if (state >= 0x50 && state <= 0x5E) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+BOOL marioChkSlitThrouhEnd(void) {
+    MarioWork* mario = marioGetPtr();
+    s32 state;
+
+    if (mario->currMotionId != MARIO_MOTION_SLIT) {
+        return FALSE;
+    }
+    state = MW_S16(mario, 0x2D8);
+    if (state == 0x52 || state == 0x5E) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+// opt_propagation off keeps the 0x14 local in r31 across the marioGetPtr call;
+// on, MWCC rematerializes it as `li r0` after the call.
+#pragma opt_propagation off
+void motSlitContinue(void) {
+    MarioWork* mario;
+    s16 state;
+
+    marioChgMot2(0x15);
+    state = 0x14;
+    mario = marioGetPtr();
+    MW_S16(mario, 0x2D8) = state;
+}
+#pragma opt_propagation reset
+
+
+BOOL marioChkSlitEnd(void) {
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->currMotionId != MARIO_MOTION_SLIT) {
+        return FALSE;
+    }
+    return MW_S16(mario, 0x2D8) >= 100;
+}
+
+void motSlitCancel(void) {
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->flags & MARIO_FLAG_PAPER_MODE) {
+        MW_S16(mario, 0x2D8) = 100;
+    }
+}
+
+void motSlitCancel2(void) {
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->flags & MARIO_FLAG_PAPER_MODE) {
+        allPartyForceSlitOff();
+        MW_S16(mario, 0x2D8) = 0x6E;
+    }
+}
+
+void motSlitCancel3(void) {
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->flags & MARIO_FLAG_PAPER_MODE) {
+        MW_S16(mario, 0x2D8) = 120;
+    }
+}
+
+s32 marioGetMotSlitCancel3(void) {
+    MarioWork* mario;
+    s32 ret = 0;
+
+    mario = marioGetPtr();
+    if (mario->currMotionId == MARIO_MOTION_SLIT) {
+        s32 state = MW_S16(mario, 0x2D8);
+        if ((state >= 0x78 && state <= 0x7A) || (state >= 0x6E && state <= 0x70)) {
+            ret = 1;
+        }
+    }
+    return ret;
+}
+
+// mot_slit carries its own inline copy of the continue check (the branches of the final test differ from the
+// standalone U_ function below).
+static inline s32 slitContinueChk(void) {
+    MarioWork* mario = marioGetPtr();
+    MarioWork* mario2 = marioGetPtr();
+    s32 state;
+
+#ifdef MUST_MATCH
+    // MUST_MATCH: the original shares a single `state = 0` tail between the
+    // `!dispFlags` branch and the final else, so both jump to a common `zero`
+    // label. Written as the plain nested if/else below, MWCC emits that block
+    // twice (97.03%).
+    if (mario2->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
+        state = 0;
+    } else if (marioKeyOffChk()) {
+        state = 0;
+    } else if (marioBgmodeChk() == 1) {
+        state = 0;
+    } else if (!(mario2->dispFlags & (1 << 24))) {
+        if (MW_U16(mario2, 0x246) & 0x20) {
+            state = 1;
+        } else {
+            goto zero;
+        }
+    } else {
+        if (MW_U16(mario2, 0x246) & 0x20) {
+            state = 2;
+        } else if (MW_U8(mario2, 0x253) >= 0x32) {
+            state = 2;
+        } else {
+            goto zero;
+        }
+    }
+    goto done;
+zero:
+    state = 0;
+done:
+#else
+    if (mario2->trigFlags & MARIO_TRIG_FLAG_USE_PARTNER) {
+        state = 0;
+    } else if (marioKeyOffChk()) {
+        state = 0;
+    } else if (marioBgmodeChk() == 1) {
+        state = 0;
+    } else if (!(mario2->dispFlags & (1 << 24))) {
+        if (MW_U16(mario2, 0x246) & 0x20) {
+            state = 1;
+        } else {
+            state = 0;
+        }
+    } else {
+        if (MW_U16(mario2, 0x246) & 0x20) {
+            state = 2;
+        } else if (MW_U8(mario2, 0x253) >= 0x32) {
+            state = 2;
+        } else {
+            state = 0;
+        }
+    }
+#endif
+    if (state != 0) {
+        return 1;
+    }
+    if (marioSlitChkWallAround()) {
+        return 1;
+    }
+    {
+        Vec pos = mario->position;
+        if (marioCreviceWallChk(&pos) != 0) {
+            return 1;
+        }
+        return 0;
+    }
+}
+
+void marioSlitForceCancel(void) {
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->flags & MARIO_FLAG_PAPER_MODE) {
+        mario->flags &= ~MARIO_FLAG_PAPER_MODE;
+        if (mario->directionView >= 180.0f) {
+            mario->unk1A8 = 0.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
+        } else {
+            mario->unk1A8 = 180.0f;
+            MW_F32(mario, 0x1AC) = mario->unk1A8;
+        }
+        mario->dispFlags &= 0xFEFFF3FF;
+        mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
+        mario->flags &= ~MARIO_FLAG_GONE_THROUGH_BARS;
+        mario->wPlayerCollisionBox.x = 10.0f;
+        mario->dispFlags &= 0xFEFFF3FF;
+        marioPaperOff();
+        mapResetPaperAmbColor();
+        mario->dispFlags &= ~4;
+        marioAdjustMoveDir();
+        mario = marioGetPtr();
+        MW_F32(mario, 0x148) = 0.0f;
+        MW_F32(mario, 0x158) = 0.004f;
+        allPartyForceSlitOff();
+    }
+}
+
+void mot_slit_post(void) {
+    MarioWork* mario = marioGetPtr();
+
+    // The `id == 8` return is the second operand of a `||`, so MWCC keeps a
+    // separate `b return` after the `bne` it emits for the short-circuit.
+    if (mario->currMotionId == MARIO_MOTION_SLIT) {
+        return;
+    }
+    if ((u16)(mario->currMotionId - 11) <= 1) {
+        return;
+    }
+    if (mario->currMotionId <= 7 || mario->currMotionId == 8) {
+        return;
+    }
+    if (!(mario->flags & MARIO_FLAG_PAPER_MODE)) {
+        if (!(mario->dispFlags & (1 << 24))) {
+            return;
+        }
+    MW_F32(mario, 0x1B4) = 20.0f;
+    if (mario->directionView >= 180.0f) {
+        mario->unk1A8 = 0.0f;
+        MW_F32(mario, 0x1AC) = mario->unk1A8;
+    } else {
+        mario->unk1A8 = 180.0f;
+        MW_F32(mario, 0x1AC) = mario->unk1A8;
+    }
+    mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
+    mario->flags &= ~MARIO_FLAG_GONE_THROUGH_BARS;
+    mario->dispFlags &= 0xFEFFF3FF;
+    mario->dispFlags &= 0xFEFFF3FF;
+    marioPaperOff();
+    mapResetPaperAmbColor();
+    mario->dispFlags &= ~4;
+    marioAdjustMoveDir();
+    allPartyForceSlitOff();
+    } else {
+        if (mario->currMotionId == MARIO_MOTION_FALL) {
+            return;
+        }
+        mario->flags &= ~MARIO_FLAG_PAPER_MODE;
+    MW_F32(mario, 0x1B4) = 20.0f;
+    if (mario->directionView >= 180.0f) {
+        mario->unk1A8 = 0.0f;
+        MW_F32(mario, 0x1AC) = mario->unk1A8;
+    } else {
+        mario->unk1A8 = 180.0f;
+        MW_F32(mario, 0x1AC) = mario->unk1A8;
+    }
+    mario->flags &= ~MARIO_FLAG_PARTY_WALK_DISABLED;
+    mario->flags &= ~MARIO_FLAG_GONE_THROUGH_BARS;
+    mario->dispFlags &= 0xFEFFF3FF;
+    mario->dispFlags &= 0xFEFFF3FF;
+    marioPaperOff();
+    mapResetPaperAmbColor();
+    mario->dispFlags &= ~4;
+    marioAdjustMoveDir();
+    allPartyForceSlitOff();
+    }
+}
+
+void marioForceSlitAnime(void) {
+    MarioWork* mario = marioGetPtr();
+
+    marioPaperOff();
+    marioChgPaper(NULL);
+    marioPaperOn("p_slit");
+    marioChgPose("M_S_1");
+    marioChgPaper("PM_S_1A");
+    mario->dispFlags |= 4;
+}
+
+void marioReInit_slit(void) {
+    MarioWork* mario = marioGetPtr();
+    MarioWork* mario2 = marioGetPtr();
+
+    MW_F32(mario2, 0x2A0) = 0.0f;
+    MW_S32(mario2, 0x2A4) = 0;
+    MW_S16(mario2, 0x2B6) = 0;
+    MW_S16(mario2, 0x2B4) = 0;
+    MW_S16(mario2, 0x2BA) = 0;
+    mario2->trigFlags &= ~1u;
+    mario2->flags &= ~(MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING | MARIO_FLAG_IS_STEPPING |
+                       MARIO_FLAG_HAS_INPUT_JUMP);
+    mario2->dispFlags |= 4;
+    mario2->dispFlags |= 0x01000000;
+    if (mario2->paperPoseId == -1) {
+#ifdef MUST_MATCH
+        GXColor tmp;
+        GXColor color;
+
+        // The original builds the colour in a temporary at +0xC and
+        // word-copies it into the argument at +0x8.
+        tmp = *(GXColor*)&dat_8041ae80;
+        tmp.r = 168;
+        tmp.g = 168;
+        tmp.b = 168;
+        color = tmp;
+#else
+        GXColor color = (GXColor){ 168, 168, 168, 255 };
+#endif
+        mapSetPaperAmbColor(&color);
+        marioPaperOn("p_slit");
+    }
+    // A named local makes MWCC load the field into f1 and the pool constant
+    // into f0, matching the original's compare order.
+    {
+        f32 zero = 0.0f;
+        if (mario2->controlStickSensitivity == zero) {
+            marioChgPose("M_S_1");
+        }
+    }
+    marioChgPaper("PM_S_1A");
+    mario->trigFlags &= ~1u;
+    mario->currMotionId = MARIO_MOTION_SLIT;
+    MW_S16(mario, 0x2D8) = 0xA;
+    mario->unk1A8 = 270.0f;
+    MW_F32(mario, 0x1AC) = mario->unk1A8;
+    marioChgPose("M_S_1");
+    marioChgPaper("PM_S_1B");
+    MW_S16(mario, 0x2D8) = 0xA;
+    MW_S16(mario, 0x2B6) = 0;
+    MW_F32(mario, 0x1B4) = 6.0f;
+    mario->flags |= MARIO_FLAG_PAPER_MODE;
+    mario->dispFlags |= 0x01000000;
+    allPartySlitOn();
+}
+
 // The walk-speed cap the slit's walking states share: once the base speed reaches the dash speed it drops back
 // to the walk speed and the run pose is dropped in (unless a pose change is already queued).
 static inline void slitCapSpeed(MarioWork* mario) {
@@ -757,7 +760,7 @@ void mot_slit(void) {
             GXColor tmp;
             GXColor color;
 
-            tmp = (GXColor){ 0, 0, 0, 255 };
+            tmp = *(GXColor*)&dat_8041ae80;
             tmp.r = 168;
             tmp.g = 168;
             tmp.b = 168;

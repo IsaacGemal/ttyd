@@ -27,3 +27,4 @@ typedef struct MotRoll {
     s32 state;  // 0xC
     f32 unk10;  // 0x10
 } MotRoll;
+void roll_upstairs(void);

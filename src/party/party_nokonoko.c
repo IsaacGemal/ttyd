@@ -327,9 +327,9 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
     return result;
 }
 
-// NONMATCHING (95.83%): early-return four probes; calls, dead pi sin/cos, baseY cache and constants match.
-// Only register allocation differs: the original puts height/radius/distance in f29/f30/f31 (sin reuses
-// f31), ours uses f30/f31/f29 (f26 for sin), shifting the float_0 load and the final pos copy.
+// NONMATCHING (95.87%): early-return four probes; calls, dead pi sin/cos, baseY cache and constants match.
+// The original puts height/radius/distance in f29/f30/f31 (sin reuses f31), ours in f30/f31/f29 (f26 for sin),
+// and the pos copy interleave differs. The third probe's two bare loads are written z-then-x for the score.
 void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
     f32 distance;
     f32 hitX, hitY, hitZ;
@@ -388,8 +388,8 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
 
     s = sin(MATCH_F32(float_3p1416));
     c = cos(MATCH_F32(float_3p1416));
-    x = pos->x;
     z = pos->z;
+    x = pos->x;
     baseY = pos->y;
     y = baseY + height;
     distance = float_0p1 + height;

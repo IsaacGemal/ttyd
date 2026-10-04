@@ -1,9 +1,12 @@
 #include "battle/sac/sac_muki.h"
+#include "battle/sac/sac_common.h"
 
 #include "battle/battle.h"
 #include "battle/battle_database_common.h"
 #include "battle/battle_disp.h"
 #include "battle/battle_audience.h"
+#include "battle/battle_camera.h"
+#include "battle/battle_event_cmd.h"
 #include "battle/battle_unit.h"
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
@@ -14,13 +17,23 @@
 #include "eff/eff_hit.h"
 #include "eff/n64/eff_stamp_n64.h"
 #include "pmario_sound.h"
+#include "party/party_motion.h"
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
+#include "evt/evt_cmd.h"
 #include "system.h"
 #include <string.h>
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 #include "matching.h"
+
+// Data objects defined later in this file or in other units, declared before their first use.
+extern s32 sac_start_camera_evt[];
+extern s32 sac_mario_item_on_evt[];
+extern s32 sac_start_stardust[];
+extern s32 sac_mario_item_on_end_evt[];
+extern s32 sac_mario_back_home[];
+extern s32 marioAttackEvent_Muki[];
 
 // The file's .rodata, in the original order. The strings and vectors occupy 0xB4 bytes; the
 // local tables in disp_3D follow them there, which is why its copies are at str_803006D8+0xB0.
@@ -41,8 +54,13 @@ __declspec(section ".rodata") Vec vec3_80300750 = {0.3f, 0.3f, 0.3f};
 const Vec vec3_80300744 = {0.0f, -1000.0f, 0.0f};
 const Vec vec3_80300750 = {0.3f, 0.3f, 0.3f};
 #endif
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_8030075c = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_80300768 = {0.0f, 0.0f, 0.0f};
+#else
 const Vec vec3_8030075c = {0.0f, 0.0f, 0.0f};
 const Vec vec3_80300768 = {0.0f, 0.0f, 0.0f};
+#endif
 const Vec vec3_80300774 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_80300780 = {0.0f, 0.0f, 0.0f};
 // disp_3D's local tables, placed here to reproduce the original .rodata order.
@@ -55,11 +73,8 @@ const union MukiTable8 dat_803007cc = {{1, 1, -1, 1, -1, -1, 1, -1}};
 const char str_803007EC[] = "SFX_BTL_SAC_START1";
 const char str_80300800[] = "SFX_BTL_SAC_START2";
 const char str_80300814[] = "SFX_BTL_SAC_START3";
+// i2f magic double, between the START and BODY strings in the original .rodata.
 const f64 double_to_int_80300828 = 4503601774854144.0;
-const char str_80300830[] = "SFX_BTL_SAC_BODY6";
-const char str_80300844[] = "SFX_BTL_SAC_BODY4";
-const char str_80300858[] = "SFX_BTL_SAC_BODY5";
-const char str_8030086C[] = "SFX_BTL_SAC_BODY3";
 
 // The Muki action-command work area, at _battleWorkPointer + 0x1F4C. No header declares it.
 typedef struct MukiEntry {
@@ -129,15 +144,88 @@ typedef struct MukiWork {
     u8 weapon[0xC0];                 // 0x408
 } MukiWork;                          // size 0x4C8
 
-static BattleWeapon weapon;
+static BattleWeapon weapon = {
+    str_803006D8,                             // name
+    0x019A,                                   // icon
+    ITEM_NULL,                                // item
+    str_803006F4,                             // description
+    100,                                      // baseAccuracy
+    0,                                        // baseFpCost
+    3,                                        // baseSpCost
+    0,                                        // superguardType
+    1.0f,                                     // field_0x14
+    1,                                        // mStylishCommandMultiplier
+    5,                                        // field_0x19
+    100,                                      // mBingoSlotChance
+    50,                                       // field_0x1B
+    NULL,                                     // hpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // hpDamageWork
+    NULL,                                     // fpDamageFn
+    { 0, 0, 0, 0, 0, 0, 0, 0 },               // fpDamageWork
+    0x02100070,                               // targetClassFlags
+    0x10000000,                               // targetPropertyFlags
+    0,                                        // element
+    0,                                        // field_0x6D
+    3,                                        // actionLevel
+    2,                                        // field_0x6F
+    str_80300708,                             // acHelpMsg
+    0x00020008,                               // special
+    0x000007FF,                               // counterResistanceFlags
+    0,                                        // targetWeightingFlags
+    0,                                        // sleepChance
+    0,                                        // sleepTime
+    0,                                        // stopChance
+    0,                                        // stopTime
+    0,                                        // dizzyChance
+    0,                                        // dizzyTime
+    0,                                        // poisonChance
+    0,                                        // poisonTime
+    0,                                        // poisonStrength
+    0,                                        // confuseChance
+    0,                                        // confuseTime
+    0,                                        // electricChance
+    0,                                        // electricTime
+    0,                                        // dodgyChance
+    0,                                        // dodgyTime
+    0,                                        // burnChance
+    0,                                        // burnTime
+    0,                                        // freezeChance
+    0,                                        // freezeTime
+    0,                                        // sizeChangeChance
+    0,                                        // sizeChangeTime
+    0,                                        // sizeChangeStrength
+    0,                                        // atkChangeChance
+    0,                                        // atkChangeTime
+    0,                                        // atkChangeStrength
+    0,                                        // defChangeChance
+    0,                                        // defChangeTime
+    0,                                        // defChangeStrength
+    0,                                        // allergicChance
+    0,                                        // allergicTime
+    0,                                        // ohkoChance
+    0,                                        // chargeStrength
+    0,                                        // fastChance
+    0,                                        // fastTime
+    0,                                        // slowChance
+    0,                                        // slowTime
+    0,                                        // frightChance
+    0,                                        // galeForceChance
+    0,                                        // paybackTime
+    0,                                        // holdFastTime
+    0,                                        // invisibleChance
+    0,                                        // invisibleTime
+    0,                                        // hpRegenTime
+    0,                                        // hpRegenStrength
+    0,                                        // fpRegenTime
+    0,                                        // fpRegenStrength
+    marioAttackEvent_Muki,                    // mAttackEvtScript
+    { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
+};
 
-
-// The original's .sdata2 defines these as global constants; defining them here (rather
-// than extern) lets MWCC fold their values into the schedules several functions expect.
+// .sdata2 critical constants (base order), defined at the top.
 const f32 float_0_80421fb4 = 0.0f;
 const f32 float_neg1000_80421fe8 = -1000.0f;
 const f32 float_1_80421fc4 = 1.0f;
-extern f32 float_901_80422050;
 const f32 float_2_80421fa4 = 2.0f;
 const f32 float_37_80421fec = 37.0f;
 const f32 float_50_80421ff0 = 50.0f;
@@ -145,22 +233,7 @@ const f32 float_neg1_80421fc8 = -1.0f;
 const f32 float_2160_80421ff4 = 2160.0f;
 const f32 float_300_80421ff8 = 300.0f;
 const f32 float_1p5_80421ffc = 1.5f;
-extern f32 float_180_80422000;
-extern f32 float_1080_80422004;
-extern f32 float_255_80422008;
-extern f32 float_900_8042200c;
 const f32 float_9_80422010 = 9.0f;
-extern f32 float_0p5_80421fd0;
-extern u32 dat_80421f80;
-extern u32 str_80421F84;
-extern u32 dat_80421f88;
-extern u32 float_0p74965_80421f8c;
-extern u32 dat_80421f90;
-extern u32 dat_80421f94;
-extern f32 float_deg2rad_80421fa0;
-extern f32 float_3p1416_80421fa8;
-extern f32 float_360_80421fac;
-extern f32 float_15_80421fb0;
 const f32 float_neg400_8042202c = -400.0f;
 const f32 float_90_80422030 = 90.0f;
 const f32 float_neg120_80422034 = -120.0f;
@@ -172,31 +245,49 @@ const char str_80421F98[] = "M_I_Y";
 const char str_8042201C[] = "M_D_1";
 const f32 float_5_80422014 = 5.0f;
 const f32 float_1_80422018 = 0.25f;
-extern f32 float_20_80422024;
-extern f32 float_10_80422028;
-extern u32 dat_80421f50;
-extern u32 dat_80421f54;
-extern u32 dat_80421f58;
-extern u32 dat_80421f5c;
-extern f32 float_32_80421fb8;
-extern f32 float_8_80421fbc;
-extern f32 float_16_80421fc0;
-extern f32 float_80_80421fcc;
-extern f32 float_30_80421fd4;
-extern f32 float_0p7_80421fd8;
-extern f32 float_35_80421fdc;
-extern f32 float_14_80421fe0;
-extern f32 float_25_80421fe4;
-extern u32 dat_80421f60;
-extern u32 dat_80421f64;
-extern u32 dat_80421f68;
-extern u32 dat_80421f6c;
-extern u32 dat_80421f70;
-extern u32 float_0p74966_80421f74;
-extern u32 dat_80421f78;
-extern u32 dat_80421f7c;
+// non-critical: declared here, defined after the code.
+extern __declspec(section ".sdata2") u32 dat_80421f50;
+extern __declspec(section ".sdata2") u32 dat_80421f54;
+extern __declspec(section ".sdata2") u32 dat_80421f58;
+extern __declspec(section ".sdata2") u32 dat_80421f5c;
+extern __declspec(section ".sdata2") u32 dat_80421f60;
+extern __declspec(section ".sdata2") u32 dat_80421f64;
+extern __declspec(section ".sdata2") u32 dat_80421f68;
+extern __declspec(section ".sdata2") u32 dat_80421f6c;
+extern __declspec(section ".sdata2") u32 dat_80421f70;
+extern const f32 float_0p74966_80421f74;
+extern __declspec(section ".sdata2") u32 dat_80421f78;
+extern __declspec(section ".sdata2") u32 dat_80421f7c;
+extern __declspec(section ".sdata2") u32 dat_80421f80;
+extern __declspec(section ".sdata2") u32 str_80421F84;
+extern __declspec(section ".sdata2") u32 dat_80421f88;
+extern __declspec(section ".sdata2") u32 float_0p74965_80421f8c;
+extern __declspec(section ".sdata2") u32 dat_80421f90;
+extern __declspec(section ".sdata2") u32 dat_80421f94;
+extern const f32 float_deg2rad_80421fa0;
+extern const f32 float_3p1416_80421fa8;
+extern const f32 float_360_80421fac;
+extern const f32 float_15_80421fb0;
+extern const f32 float_32_80421fb8;
+extern const f32 float_8_80421fbc;
+extern const f32 float_16_80421fc0;
+extern const f32 float_80_80421fcc;
+extern const f32 float_0p5_80421fd0;
+extern const f32 float_30_80421fd4;
+extern const f32 float_0p7_80421fd8;
+extern const f32 float_35_80421fdc;
+extern const f32 float_14_80421fe0;
+extern const f32 float_25_80421fe4;
+extern const f32 float_180_80422000;
+extern const f32 float_1080_80422004;
+extern const f32 float_255_80422008;
+extern const f32 float_900_8042200c;
+extern const f32 float_20_80422024;
+extern const f32 float_10_80422028;
+extern const f32 float_901_80422050;
+extern __declspec(section ".sdata2") u32 gap_09_80422054_sdata2;
 
-u32 nice_event_pow[8] = {0x0005005B, 0, 0xFE363C80, 0xFFFFFF9C, 0x000000AF, 0, 2, 1};
+u32 nice_event_pow[8] = {0x0005005B, (u32)btlevtcmd_ACSuccessEffect, 0xFE363C80, 0xFFFFFF9C, 0x000000AF, 0, 2, 1};
 
 static MukiWork* get_ptr(void);
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall);
@@ -208,6 +299,99 @@ static void disp_3D(CameraId cameraId, void* param);
 static void disp_2D(CameraId cameraId, void* param);
 static void main_star(void);
 static void main_base(void);
+
+EVT_BEGIN(marioAttackEvent_Muki)
+    CALL(btlevtcmd_GetUnitId, -4, LW(14))
+    CALL(btlevtcmd_GetBodyId, LW(14), LW(15))
+    CALL(btlevtcmd_CheckStatus, LW(14), 27, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        SET_VALUE(LW(14), -1)
+    END_IF
+    CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
+    IF_INT_EQUAL(LW(3), -1)
+        GOTO(99)
+    END_IF
+    CALL(btlevtcmd_AttackDeclare, -2, LW(3), LW(4))
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_CommandPayWeaponCost, -2)
+    CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(0))
+    CALL(btlevtcmd_WeaponAftereffect, LW(0))
+    CALL(btlevtcmd_reset_move_color_lv_all)
+    BEGIN_SIBLING_EVENT
+        CALL(main_muki, LW(14))
+    END_SIBLING_EVENT
+    CALL_CHILD(sac_start_camera_evt)
+    WAIT_MS(500)
+    CALL(sac_enemy_slide_go)
+    CALL(btlevtcmd_snd_se, -2, STRING((char*)str_803007EC), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL_CHILD(sac_mario_item_on_evt)
+    WAIT_MS(500)
+    CALL(btlevtcmd_snd_se, -2, STRING((char*)str_80300800), EVTDAT_POINTER_MAX, 0, LW(11))
+    CALL(star_stone_appear)
+    BEGIN_SIBLING_EVENT
+        CALL_CHILD(sac_start_stardust)
+    END_SIBLING_EVENT
+    WAIT_FRAMES(100)
+    CALL(btlevtcmd_snd_se, -2, STRING((char*)str_80300814), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(evt_snd_sfxoff, LW(11))
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    WAIT_FRAMES(40)
+    CALL_CHILD(sac_mario_item_on_end_evt)
+    CALL_CHILD(sac_mario_back_home)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING((char*)str_80421F98))
+    WAIT_MS(1000)
+    BEGIN_SIBLING_EVENT
+        CALL(sac_handbeat)
+    END_SIBLING_EVENT
+    CALL(sac_ac_help_on)
+    CALL(start_game)
+    CALL(wait_game_end, LW(0), LW(1))
+    CALL(sac_ac_help_off)
+    CALL(sac_handbeat_end)
+    WAIT_MS(500)
+    SET_VALUE(LW(2), LW(0))
+    ADD(LW(2), LW(1))
+    IF_INT_NOT_EQUAL(LW(2), 0)
+        CALL(evt_btl_camera_set_mode, 0, 7)
+        CALL(evt_btl_camera_set_homing_unit, 0, -2, -1)
+        CALL(evt_btl_camera_set_zoom, 0, 200)
+        CALL(evt_btl_camera_set_moveSpeedLv, 0, 2)
+        CALL(evt_btl_camera_set_zoomSpeedLv, 0, 2)
+        WAIT_MS(1000)
+        CALL(sac_wao)
+        BEGIN_INLINE_EVENT
+            WAIT_MS(1000)
+            CALL(evt_btl_camera_set_mode, 0, 0)
+            CALL(sac_enemy_slide_return)
+            CALL(end_muki)
+        END_INLINE_EVENT
+        BEGIN_INLINE_EVENT
+            WAIT_MS(400)
+            IF_INT_NOT_EQUAL(LW(1), 0)
+                CALL(set_weapon, 1, LW(1), LW(9))
+                IF_INT_NOT_EQUAL(LW(14), -1)
+                    CALL(btlevtcmd_CheckDamage, -2, LW(14), LW(15), LW(9), 256, LW(5))
+                END_IF
+                CALL(btlevtcmd_CheckDamage, -2, -2, 1, LW(9), 256, LW(5))
+            END_IF
+        END_INLINE_EVENT
+        IF_INT_NOT_EQUAL(LW(0), 0)
+            CALL(set_weapon, 0, LW(0), LW(9))
+            IF_INT_NOT_EQUAL(LW(14), -1)
+                CALL(btlevtcmd_CheckDamage, -2, LW(14), LW(15), LW(9), 256, LW(5))
+            END_IF
+            CALL(btlevtcmd_CheckDamage, -2, -2, 1, LW(9), 256, LW(5))
+            RETURN
+        END_IF
+    END_IF
+    CALL(sac_enemy_slide_return)
+    WAIT_MS(1000)
+    CALL(end_muki)
+    WAIT_MS(1000)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
+
 
 // The original never inlines its own helpers: every call to one is a real `bl`.
 #pragma dont_inline on
@@ -496,7 +680,7 @@ static void disp_2D(CameraId cameraId, void* param) {
         btlDispGXInit2DRasta();
         GXLoadPosMtxImm(camGetPtr(8)->view, 0);
         d = work->field_14 - work->field_18;
-        if (d != float_0_80421fb4) {
+        if (float_0_80421fb4 != d) {
             cr = 0xFF;
             cg = 0xB4;
             cb = 0xB4;
@@ -554,7 +738,7 @@ static void disp_2D(CameraId cameraId, void* param) {
         frac = work->field_20 - (f32)(s32)work->field_20;
         btlDispGXInit2DRasta();
         GXLoadPosMtxImm(camGetPtr(8)->view, 0);
-        if (d != float_0_80421fb4) {
+        if (float_0_80421fb4 != d) {
             cr = 0xB4;
             cg = 0xB4;
             cb = 0xFF;
@@ -632,28 +816,24 @@ static void main_star(void) {
         break;
     case 1:
         {
-            f32 zero = 0.0f;
+            f32 zero = float_0_80421fb4;
 
             work->field_3B4 = 2;
             {
-                f32 neg = -1000.0f;
+                f32 neg = float_neg1000_80421fe8;
 
                 work->field_3B8 = 0;
-                {
-                    f32 one = 1.0f;
-
-                    work->starStone = effStarStoneEntry(2, zero, neg, zero, one);
-                }
+                work->starStone = effStarStoneEntry(2, zero, neg, zero, MATCH_F32(float_1_80421fc4));
             }
         }
         BtlUnit_GetPos(mario, &work->posX, &work->posY, &work->posZ);
-        work->posY += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
+        work->posY += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_80421fec;
         *(Vec*)&work->startX = *(Vec*)&work->posX;
         *(Vec*)&work->endX = *(Vec*)&work->posX;
-        work->endY += 50.0f;
-        work->endZ += -1.0f;
-        work->scale = (Vec){ 0.0f, 0.0f, 0.0f };
-        work->scale2 = (Vec){ 0.0f, 0.0f, 0.0f };
+        work->endY += float_50_80421ff0;
+        work->endZ += float_neg1_80421fc8;
+        work->scale = vec3_8030075c;
+        work->scale2 = vec3_80300768;
         /* fallthrough */
     case 2:
         work->field_3B8++;
@@ -661,13 +841,13 @@ static void main_star(void) {
             work->posX = intplGetValue(0, work->field_3B8, 0x64, work->startX, work->endX);
             work->posY = intplGetValue(0, work->field_3B8, 0x64, work->startY, work->endY);
             work->posZ = intplGetValue(0, work->field_3B8, 0x64, work->startZ, work->endZ);
-            f = intplGetValue(0, work->field_3B8, 0x64, 0.0f, 2.0f);
+            f = intplGetValue(0, work->field_3B8, 0x64, MATCH_F32(float_0_80421fb4), float_2_80421fa4);
             work->scale.z = f;
             work->scale.y = f;
             work->scale.x = f;
         }
         else {
-            f32 two = 2.0f;
+            f32 two = float_2_80421fa4;
 
             work->posX = work->endX;
             work->posY = work->endY;
@@ -676,12 +856,12 @@ static void main_star(void) {
             work->scale.y = two;
             work->scale.x = two;
         }
-        work->scale2.y = intplGetValue(4, work->field_3B8, 0x78, 0.0f, 2160.0f);
+        work->scale2.y = intplGetValue(4, work->field_3B8, 0x78, MATCH_F32(float_0_80421fb4), float_2160_80421ff4);
         if (work->field_3B8 >= 0x78) {
             work->field_3B4 = 3;
             work->field_3B8 = 0;
             *(Vec*)&work->startX = *(Vec*)&work->posX;
-            work->endY = 300.0f;
+            work->endY = float_300_80421ff8;
         }
         break;
     case 3:
@@ -698,7 +878,7 @@ static void main_star(void) {
     }
 
     if (work->starStone != NULL) {
-        f32 s = 1.5f;
+        f32 s = float_1p5_80421ffc;
 
         data = work->starStone->userdata;
         data[2] = work->posX;
@@ -739,7 +919,7 @@ void main_icon(s32 index) {
         // MUST_MATCH: the numeric literals give MWCC the original's FP load order around the store
         // (the named constants schedule the second load one slot late); the resulting pool symbols
         // are symbol-only diffs that resolve when the unit links.
-        entry->rot = intplGetValue(4, entry->field_04, 0x1E, 180.0f, 1080.0f);
+        entry->rot = intplGetValue(4, entry->field_04, 0x1E, float_180_80422000, float_1080_80422004);
 #else
         entry->rot = intplGetValue(4, entry->field_04, 0x1E, float_180_80422000, float_1080_80422004);
 #endif
@@ -757,12 +937,12 @@ void main_icon(s32 index) {
         entry->field_04++;
 #ifdef MUST_MATCH
         // MUST_MATCH: as in case 2, the literals reproduce the original's FP load order.
-        entry->rot = intplGetValue(1, entry->field_04, 0x1E, 0.0f, 900.0f);
+        entry->rot = intplGetValue(1, entry->field_04, 0x1E, MATCH_F32(float_0_80421fb4), float_900_8042200c);
 #else
         entry->rot = intplGetValue(1, entry->field_04, 0x1E, MATCH_F32(float_0_80421fb4), float_900_8042200c);
 #endif
 #ifdef MUST_MATCH
-        entry->alpha = (u8)intplGetValue(0, entry->field_04, 0x1E, 255.0f, 0.0f);
+        entry->alpha = (u8)intplGetValue(0, entry->field_04, 0x1E, float_255_80422008, MATCH_F32(float_0_80421fb4));
 #else
         entry->alpha = (u8)intplGetValue(0, entry->field_04, 0x1E, float_255_80422008, MATCH_F32(float_0_80421fb4));
 #endif
@@ -816,6 +996,8 @@ void main_icon(s32 index) {
 #define RO(base, off, sym) ((const char*)(base) + (off))
 #else
 #define RO(base, off, sym) ((const char*)&(sym))
+// the BODY SFX strings are defined after the code
+extern const char str_80300830[], str_80300844[], str_80300858[], str_8030086C[];
 #endif
 
 
@@ -1213,7 +1395,7 @@ static void main_base(void) {
     }
 
     diff = work->field_14 - work->field_18;
-    if (diff != float_0_80421fb4) {
+    if (float_0_80421fb4 != diff) {
         if (diff > float_0_80421fb4) {
             f = float_0p1_80422048;
             {
@@ -1241,7 +1423,7 @@ static void main_base(void) {
     }
 
     diff = work->field_1C - work->field_20;
-    if (diff != float_0_80421fb4) {
+    if (float_0_80421fb4 != diff) {
         if (diff > float_0_80421fb4) {
             f = float_0p1_80422048;
             {
@@ -1279,7 +1461,7 @@ s32 main_muki(EventEntry* event, BOOL isFirstCall) {
         memset(work, 0, 0x4C8);
         work->field_10 = evtGetValue(event, args[0]);
         for (i = 0; i < 9; i++) {
-            f32 zero = float_0_80421fb4;
+            f32 zero = MATCH_F32(float_0_80421fb4);
             work->entries[i].effect = effStarStoneEntry(9, zero, float_neg1000_80421fe8, zero,
                                                         float_1_80421fc4);
         }
@@ -1300,3 +1482,53 @@ s32 main_muki(EventEntry* event, BOOL isFirstCall) {
 }
 
 #pragma dont_inline reset
+
+// .sdata2 remaining constants, in the original address order, defined after the code.
+__declspec(section ".sdata2") u32 dat_80421f50 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_80421f54 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_80421f58 = 0x0000FFFF;
+__declspec(section ".sdata2") u32 dat_80421f5c = 0xFF0000FF;
+__declspec(section ".sdata2") u32 dat_80421f60 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_80421f64 = 0xE94A3FFF;
+__declspec(section ".sdata2") u32 dat_80421f68 = 0xFEE63EFF;
+__declspec(section ".sdata2") u32 dat_80421f6c = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_80421f70 = 0xFFFFFFFF;
+const f32 float_0p74966_80421f74 = 0.74966425f;
+__declspec(section ".sdata2") u32 dat_80421f78 = 0x74C9FFFF;
+__declspec(section ".sdata2") u32 dat_80421f7c = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_80421f80 = 0xDEDEDEFF;
+__declspec(section ".sdata2") u32 str_80421F84 = 0xE94A3F00;
+__declspec(section ".sdata2") u32 dat_80421f88 = 0xFEE63E00;
+__declspec(section ".sdata2") u32 float_0p74965_80421f8c = 0x3F3FE900;
+__declspec(section ".sdata2") u32 dat_80421f90 = 0x74C9FF00;
+__declspec(section ".sdata2") u32 dat_80421f94 = 0xFFFFFF00;
+const f32 float_deg2rad_80421fa0 = 0.017453292f;
+const f32 float_3p1416_80421fa8 = 3.141592f;
+const f32 float_360_80421fac = 360.0f;
+const f32 float_15_80421fb0 = 15.0f;
+const f32 float_32_80421fb8 = 32.0f;
+const f32 float_8_80421fbc = 8.0f;
+const f32 float_16_80421fc0 = 16.0f;
+const f32 float_80_80421fcc = 80.0f;
+const f32 float_0p5_80421fd0 = 0.5f;
+const f32 float_30_80421fd4 = 30.0f;
+const f32 float_0p7_80421fd8 = 0.7f;
+const f32 float_35_80421fdc = 35.0f;
+const f32 float_14_80421fe0 = 14.0f;
+const f32 float_25_80421fe4 = 25.0f;
+const f32 float_180_80422000 = 180.0f;
+const f32 float_1080_80422004 = 1080.0f;
+const f32 float_255_80422008 = 255.0f;
+const f32 float_900_8042200c = 900.0f;
+const f32 float_20_80422024 = 20.0f;
+const f32 float_10_80422028 = 10.0f;
+const f32 float_901_80422050 = 901.0f;
+__declspec(section ".sdata2") u32 gap_09_80422054_sdata2 = 0;
+
+
+// The BODY SFX strings, defined after the code so the compiler's pooled i2f double lands between them and the
+// START strings, matching the original .rodata order.
+const char str_80300830[] = "SFX_BTL_SAC_BODY6";
+const char str_80300844[] = "SFX_BTL_SAC_BODY4";
+const char str_80300858[] = "SFX_BTL_SAC_BODY5";
+const char str_8030086C[] = "SFX_BTL_SAC_BODY3";
