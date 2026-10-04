@@ -247,23 +247,33 @@ def slot_file(tag):
 
 def reserve(tag):
     """Take one of the tower's agent slots, under a lock every launcher shares, so two launchers can't both see a free
-    slot. Agents in progress count by their systemd scopes too. True if taken; False if full, paused (the disk floor)
-    or the host didn't answer (no answer is no capacity)."""
+    slot. Agents in progress are the union of slot files and active agent scopes (an agent can't create a scope).
+    Returns "TAKEN", "FULL" or "PAUSED" (the disk floor; checked inside the lock, so no slot is handed out after a
+    pause); no answer from the host counts as "FULL"."""
     d = slot_dir()
     try:
-        r = ssh(f"[ -e {PAUSED} ] && {{ echo PAUSED; exit 0; }}; "
-                f"mkdir -p {d} && exec 8>{d}/.lock && flock -w 120 8 || exit 3; "
+        r = ssh(f"mkdir -p {d} && exec 8>{d}/.lock && flock -w 120 8 || exit 3; "
+                f"[ -e {PAUSED} ] && {{ echo PAUSED; exit 0; }}; "
                 f"find {d} -maxdepth 1 -type f -name '*.slot' -mmin +{SLOT_STALE_MIN} -delete; "
-                f"n=$(find {d} -maxdepth 1 -type f -name '*.slot' | wc -l); "
-                # agents in progress, counted by their scopes (an agent can't create one); a failed query is no capacity
                 f"u=$(systemctl --user list-units --plain --no-legend 'ttyd-*-run.scope' 'ttyd-*-cont?.scope' 'ttyd-*-finish.scope') || exit 3; "
-                f"p=$(printf '%s' \"$u\" | grep -c .); "
-                f"[ \"$p\" -gt \"$n\" ] && n=$p; "
+                f"n=$({{ find {d} -maxdepth 1 -type f -name '*.slot' -printf '%f\\n' | sed 's/^[^_]*_//; s/[.]slot$//'; "
+                f"printf '%s\\n' \"$u\" | awk '{{print $1}}' | sed -E 's/^ttyd-//; s/-[a-z]+[0-9]?[.]scope$//'; }} | grep . | sort -u | wc -l); "
                 f"if [ \"$n\" -lt {cap_now()} ]; then touch {slot_file(tag)} && echo TAKEN; else echo FULL; fi",
                 timeout=200, check=False)
     except subprocess.TimeoutExpired:
-        return False
-    return r.returncode == 0 and r.stdout.strip() == "TAKEN"
+        return "FULL"
+    out = r.stdout.strip()
+    return out if r.returncode == 0 and out in ("TAKEN", "PAUSED") else "FULL"
+
+
+def paused():
+    """The pause marker's reason, or "" if launches aren't paused (no answer counts as paused)."""
+    try:
+        r = ssh(f"[ -e {PAUSED} ] && {{ cat {PAUSED}/why.txt 2>/dev/null; echo PAUSED; }} || echo RUNNING", timeout=60, check=False)
+    except subprocess.TimeoutExpired:
+        return "the host didn't answer"
+    out = r.stdout.strip()
+    return "" if out == "RUNNING" else (out or "the host didn't answer")
 
 
 def free(tag):
@@ -807,8 +817,10 @@ def main(wave, here, base, model, key_env, model_line, specfile="units.json", re
     for s in SPEC:
         q.put(s)
 
+    stop_all = threading.Event()  # set once launches are paused: every worker stops taking work
+
     def worker():
-        while True:
+        while not stop_all.is_set():
             try:
                 s = q.get_nowait()
             except queue.Empty:
@@ -820,11 +832,21 @@ def main(wave, here, base, model, key_env, model_line, specfile="units.json", re
                     log(f"{tag} skipped: past the deadline")
                     continue
                 with slot_lock:  # one reservation at a time from this launcher; the host's lock covers the others
+                    state = "FULL"
                     while not (DEADLINE and time.time() >= DEADLINE):
-                        if reserve(tag):
+                        state = reserve(tag)
+                        if state == "TAKEN":
                             slot = True  # at once: every path from here frees it
                             break
+                        if state == "PAUSED":
+                            break
                         time.sleep(60)
+                if state == "PAUSED":
+                    if not stop_all.is_set():
+                        stop_all.set()
+                        log(f"LAUNCHES PAUSED on the host ({PAUSED}): the disk floor tripped; starting no more agents. "
+                            "Remove that directory once there is room, then rerun the launcher for what is left.")
+                    return
                 if not slot:
                     log(f"{tag} skipped: past the deadline")
                     continue
@@ -870,6 +892,9 @@ def main(wave, here, base, model, key_env, model_line, specfile="units.json", re
                 if slot:
                     free(tag)
 
+    why = paused()
+    if why:
+        sys.exit(f"launches are paused on the host ({PAUSED}):\n{why}\nRemove that directory once there is room.")
     for s in SPEC:
         set_aside(s["tag"])  # at queue time: no earlier run's results sit where this run's will land
     log(f"{len(SPEC)} files, {WORKERS} at a time")

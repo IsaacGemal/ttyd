@@ -91,13 +91,17 @@ class Remote(unittest.TestCase):
 
     def test_no_answer_is_no_capacity(self):
         with self.fake(rc=255):
-            self.assertFalse(W.reserve("t"))
+            self.assertEqual(W.reserve("t"), "FULL")
         with self.fake(exc=subprocess.TimeoutExpired("ssh", 200)):
-            self.assertFalse(W.reserve("t"))
+            self.assertEqual(W.reserve("t"), "FULL")
         with self.fake(out="FULL"):
-            self.assertFalse(W.reserve("t"))
+            self.assertEqual(W.reserve("t"), "FULL")
         with self.fake(out="TAKEN"):
-            self.assertTrue(W.reserve("t"))
+            self.assertEqual(W.reserve("t"), "TAKEN")
+        with self.fake(out="PAUSED"):
+            self.assertEqual(W.reserve("t"), "PAUSED")
+        with self.fake(out="PAUSED", rc=3):
+            self.assertEqual(W.reserve("t"), "FULL")
 
     def test_an_audit_that_did_not_run_counts_as_flagged(self):
         with self.fake(out="something failed"):
@@ -127,8 +131,13 @@ class Remote(unittest.TestCase):
         cmd = self.calls[0][0][-1]
         self.assertIn("'ttyd-*-run.scope'", cmd)  # counted by scopes, which agents can't create
         self.assertNotIn("pgrep", cmd)
-        with self.fake(out="PAUSED"):
-            self.assertFalse(W.reserve("t"))
+        self.assertLess(cmd.index("flock"), cmd.index("PAUSED"))  # checked inside the lock
+        with self.fake(out="RUNNING"):
+            self.assertEqual(W.paused(), "")
+        with self.fake(out="floor tripped\nPAUSED"):
+            self.assertIn("floor tripped", W.paused())
+        with self.fake(exc=subprocess.TimeoutExpired("ssh", 60)):
+            self.assertTrue(W.paused())
 
     def test_collect_runs_outside_the_agents_slice(self):
         self.assertIn("--slice=ttyd-collect.slice", W.sandbox("t", "collect", "collect"))
