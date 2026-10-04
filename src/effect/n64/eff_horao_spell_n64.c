@@ -16,11 +16,6 @@ extern GXColor unk_80423154;
 extern GXColor unk_80423158;
 extern effHoraoSpellVtx horao_spell_vtx[];
 
-// .rodata
-const Vec vec3_802fa7f8 = { 0.0f, 0.0f, 0.0f };
-const f64 double_to_int_802fa808 = 4503601774854144.0;
-const char str_802FA810[] = "HoraoSpellN64";
-
 // .sdata
 static u8 colr[20] = {
 	0x78, 0x82, 0x8C, 0x96, 0xA0, 0xAA, 0xB4, 0xBE,
@@ -34,6 +29,13 @@ static u8 colb[20] = {
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0,
 };
+// 4-byte zero word that ends the unit's .sdata: an all-zero object needs explicit_zero_data to be
+// emitted and force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_80413A4C_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 // .sdata2
 // Retail reloads this scratch word every outer-loop iteration instead of hoisting it, which only happens
@@ -43,6 +45,15 @@ __declspec(section ".sdata2") u32 dat_8041f158 = 0xFFFFFF00;
 #else
 const u32 dat_8041f158 = 0xFFFFFF00;
 #endif
+
+// .sbss2 zero GXColor scratch the original copies before filling their fields; declared in reverse so
+// the 4-byte gap lands after them.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_8042315C_sbss2;
+__declspec(section ".sdata") GXColor unk_80423158;
+__declspec(section ".sdata") GXColor unk_80423154;
+__declspec(section ".sdata") GXColor unk_80423150;
+#pragma section ".sdata" ".sbss"
 
 // .data: 32 vertices (16 pairs), values read byte-for-byte from the original `.4byte` block.
 effHoraoSpellVtx horao_spell_vtx[32] = {
@@ -80,13 +91,13 @@ effHoraoSpellVtx horao_spell_vtx[32] = {
 	{ { 0, 8, 0 }, { 7680, 1024 }, { 0, 0, 0, 0 } },
 };
 
-// .sbss2 scratch GXColors and the .data vertex table are declared in the unit header.
+// The .sbss2 scratch GXColors are defined above; the .data vertex table is defined just above.
 EffectEntry* effHoraoSpellN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effHoraoSpellData* data;
 
 	effect = effEntry();
-	effect->type = str_802FA810;
+	effect->type = "HoraoSpellN64\0\0";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x3C);
 	effect->userdata = data;
