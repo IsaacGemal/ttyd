@@ -95,79 +95,50 @@ const char str_802F6894[] = "yubicursor_2";
 
 
 extern ItemData itemDataTable[];
-extern f32 float_1000_8041dbe4;
-extern f32 float_6_8041dbe8;
-extern const f32 float_30_8041dbf0;
-extern const f32 float_10_8041dbec;
-extern const f32 float_36_8041db64;
-extern const f32 float_0_8041db00;
-extern const f32 float_1p1_8041db30;
-extern const f32 float_0p8_8041db74;
-extern const f32 float_124_8041dbf4;
-extern const f32 float_38_8041dbf8;
+extern const f32 float_0_8041db00[1];
+extern const f32 float_1p1_8041db30[1];
 extern u32 dat_8041d9bc;
 extern u32 dat_8041d9b4;
 extern u32 dat_8041d9b8;
-extern const f32 float_108_8041dadc;
-extern const f32 float_0p5_8041db60;
-extern const f32 float_12_8041dbfc;
-const char str_8041DBAC[] = "%d";
-const char str_8041DAC0[] = "uwn%d";
+extern const f32 float_108_8041dadc[1];
+extern char str_8041DAC0[];
 
-// Constants and tables evt_unitwin_disp_func reads. They live in this unit's .sdata/.sdata2/.sdata; the
-// originals are named float_<value>_<addr>, dat_<addr> and mario_status_*/party_*_table.
-extern const f32 float_neg150_8041dac8;
-extern const f32 float_120_8041dacc;
-extern const f32 float_300_8041dad0;
-extern const f32 float_50_8041dad4;
-extern const f32 float_20_8041dad8;
-extern const f32 float_neg240_8041dae0;
-extern const f32 float_neg130_8041dae4;
-extern const f32 float_480_8041dae8;
-extern const f32 float_70_8041daec;
-extern const f32 float_8_8041daf0;
-extern const f32 float_neg304_8041daf4;
-extern const f32 float_240_8041daf8;
-extern const f32 float_60_8041dafc;
-extern const f32 float_neg250_8041db04;
-extern const f32 float_neg75_8041db08;
-extern const f32 float_150_8041db0c;
-extern const f32 float_45_8041db10;
-extern const f32 float_neg220_8041db14;
-extern const f32 float_neg113_8041db18;
-extern const f32 float_0p7_8041db1c;
-extern const f32 float_neg192_8041db20;
-extern const f32 float_neg126_8041db24;
-extern const f32 float_neg210_8041db28;
-extern const f32 float_neg166_8041db2c;
-extern const f32 float_neg168_8041db34;
-extern const f32 float_neg172_8041db38;
-extern const f32 float_neg24_8041db44;
-extern const f32 float_100_8041db48;
-extern const f32 float_51_8041db4c;
-extern const f32 float_114_8041db50;
-extern const f32 float_28_8041db54;
-extern const f32 float_81_8041db58;
-extern const f32 float_111_8041db5c;
-extern const f32 float_244_8041db68;
-extern const f32 float_82_8041db6c;
-extern const f32 float_0p6_8041db70;
-extern const f32 float_2_8041db78;
-extern const f32 float_1_8041db80;
-extern const f32 float_71_8041db8c;
-extern const f32 float_16_8041db98;
-extern const f32 float_41_8041db9c;
-extern const f32 float_167_8041dba0;
-extern const f32 float_85_8041dba4;
-extern const f32 float_177_8041dba8;
-extern const f32 float_236_8041dbb0;
-extern const f32 float_221_8041db94;
-extern const f32 float_21_8041dbbc;
-extern const f32 float_206_8041dbd0;
-extern const f32 float_neg280_8041dbd4;
-extern const f32 float_228_8041dbd8;
-extern const f32 float_90_8041dbdc;
-extern const f32 float_66_8041dbe0;
+// The .sdata2 objects the unit names (floats up to the first pooled one, colour words, a few strings) are defined as one-element
+// const arrays and read as name[0] (a plain const f32 would be folded to an anonymous pool entry), in the original's order, in
+// the .sdata2 block below; the flush helpers before each function keep the pooled literals in source order after them.
+extern const f32 float_neg150_8041dac8[1];
+extern const f32 float_120_8041dacc[1];
+extern const f32 float_300_8041dad0[1];
+extern const f32 float_50_8041dad4[1];
+extern const f32 float_20_8041dad8[1];
+extern const f32 float_neg240_8041dae0[1];
+extern const f32 float_neg130_8041dae4[1];
+extern const f32 float_480_8041dae8[1];
+extern const f32 float_70_8041daec[1];
+extern const f32 float_8_8041daf0[1];
+extern const f32 float_neg304_8041daf4[1];
+extern const f32 float_240_8041daf8[1];
+extern const f32 float_60_8041dafc[1];
+extern const f32 float_neg250_8041db04[1];
+extern const f32 float_neg75_8041db08[1];
+extern const f32 float_150_8041db0c[1];
+extern const f32 float_45_8041db10[1];
+extern const f32 float_neg220_8041db14[1];
+extern const f32 float_neg113_8041db18[1];
+extern const f32 float_0p7_8041db1c[1];
+extern const f32 float_neg192_8041db20[1];
+extern const f32 float_neg126_8041db24[1];
+extern const f32 float_neg210_8041db28[1];
+extern const f32 float_neg166_8041db2c[1];
+extern const f32 float_neg168_8041db34[1];
+extern const f32 float_neg172_8041db38[1];
+extern const f32 float_neg24_8041db44[1];
+extern const f32 float_100_8041db48[1];
+extern const f32 float_51_8041db4c[1];
+extern const f32 float_114_8041db50[1];
+extern const f32 float_28_8041db54[1];
+extern const f32 float_81_8041db58[1];
+extern const f32 float_111_8041db5c[1];
 extern u32 dat_8041d9c0;
 extern u32 dat_8041d9c4;
 extern u32 dat_8041d9c8;
@@ -232,14 +203,6 @@ extern u32 dat_8041dab0;
 extern u32 dat_8041dab4;
 extern u32 dat_8041dab8;
 extern u32 dat_8041dabc;
-extern s32 unk_804189fc;
-extern s32 party_id_table[8];
-extern u32 party_icon_table[7];
-extern const char* party_labelname_table[7];
-extern u32 mario_status_icon_table[3];
-extern const char* mario_status_labelname_table[3];
-extern const char* mario_status_name_table[3];
-extern s32 mario_status_henka_table[3];
 extern s32 badge_bottakuru100_table[];
 extern BadgeShopWork* bdsw;
 
@@ -281,11 +244,134 @@ typedef struct UnitWinWork {
 	s32 field_0xE4;             // 0xE4
 } UnitWinWork;
 
-static UnitWinWork* _wp;
-static s16* mario_status_point_table[3];
+static s32 party_id_table[8] = { 1, 2, 5, 4, 6, 3, 7, 0 };
+static u32 party_icon_table[7] = { 0x155, 0x156, 0x15F, 0x158, 0x160, 0x157, 0x161 };
+static const char* party_labelname_table[7] = { "_kur", "_nok", "_win", "_yos", "_viv", "_bom", "_chu" };
+static u32 mario_status_icon_table[3] = { 0x19F, 0x1A0, 0x1A1 };
+static const char* mario_status_labelname_table[3] = { "_hp", "_fp", "_bp" };
+static const char* mario_status_name_table[3] = { "\x82\x67\x82\x6F", "\x82\x65\x82\x6F", "\x82\x61\x82\x6F" };
+static s32 mario_status_henka_table[3] = { 5, 5, 3 };
+extern const char str_8041DB3C[];
 static u32 main_evt[] = { 0x0001005B, (u32)evt_unitwin_main_func, 0x2, 0x1 };
 u32 select_evt[] = { 0x0001005B, (u32)unk_80174e98, 0x2, 0x1 };
-extern WinMgrDesc unk_80375478[];
+WinMgrDesc unk_80375478[3] = {
+	{ { 0 }, 8, -150, 120, 300, 50, { 0x2B, 0xA4, 0xFF, 0xFF }, NULL, unk_8017599c },
+	{ { 0 }, 8, -240, -130, 500, 80, { 0xF0, 0xF0, 0xF0, 0xFF }, unk_8017597c, unk_801758fc },
+	{ { 0, 0, 0, 2 }, 8, -250, -130, 150, 45, { 0xF0, 0xF0, 0xF0, 0xFF }, NULL, unk_80175710 },
+};
+#pragma force_active on
+u32 gap_08_80418A0C_sbss;
+#pragma force_active reset
+static s16* mario_status_point_table[3];
+s32 unk_804189fc;
+static UnitWinWork* _wp;
+
+// .sdata2 objects, in the original's order.
+__declspec(section ".sdata2") u32 dat_8041d9b4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9b8 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9bc = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9c0 = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041d9c4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9c8 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9cc = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9d0 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9d4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9d8 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9dc = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9e0 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9e4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9e8 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9ec = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041d9f0 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9f4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9f8 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041d9fc = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041da00 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da04 = 0xF0F0F0FF;
+__declspec(section ".sdata2") u32 dat_8041da08 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041da0c = 0xA0A0A0FF;
+__declspec(section ".sdata2") u32 dat_8041da10 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da14 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da18 = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041da1c = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da20 = 0xF0F0F0FF;
+__declspec(section ".sdata2") u32 dat_8041da24 = 0xA0A0A0FF;
+__declspec(section ".sdata2") u32 dat_8041da28 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041da2c = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da30 = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041da34 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da38 = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041da3c = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da40 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041da44 = 0xA0A0A0FF;
+__declspec(section ".sdata2") u32 dat_8041da48 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041da4c = 0xA0A0A0FF;
+__declspec(section ".sdata2") u32 dat_8041da50 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041da54 = 0xA0A0A0FF;
+__declspec(section ".sdata2") u32 dat_8041da58 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da5c = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da60 = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041da64 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da68 = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041da6c = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da70 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041da74 = 0xA0A0A0FF;
+__declspec(section ".sdata2") u32 dat_8041da78 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da7c = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da80 = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041da84 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da88 = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041da8c = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da90 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041da94 = 0xA0A0A0FF;
+__declspec(section ".sdata2") u32 dat_8041da98 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041da9c = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041daa0 = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041daa4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041daa8 = 0x2BA4FFFF;
+__declspec(section ".sdata2") u32 dat_8041daac = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041dab0 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041dab4 = 0xA0A0A0FF;
+__declspec(section ".sdata2") u32 dat_8041dab8 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041dabc = 0xFFFFFFFF;
+__declspec(section ".sdata2") char str_8041DAC0[] = "uwn%d";
+__declspec(section ".sdata2") const f32 float_neg150_8041dac8[1] = { -150.0f };
+__declspec(section ".sdata2") const f32 float_120_8041dacc[1] = { 120.0f };
+__declspec(section ".sdata2") const f32 float_300_8041dad0[1] = { 300.0f };
+__declspec(section ".sdata2") const f32 float_50_8041dad4[1] = { 50.0f };
+__declspec(section ".sdata2") const f32 float_20_8041dad8[1] = { 20.0f };
+__declspec(section ".sdata2") const f32 float_108_8041dadc[1] = { 108.0f };
+__declspec(section ".sdata2") const f32 float_neg240_8041dae0[1] = { -240.0f };
+__declspec(section ".sdata2") const f32 float_neg130_8041dae4[1] = { -130.0f };
+__declspec(section ".sdata2") const f32 float_480_8041dae8[1] = { 480.0f };
+__declspec(section ".sdata2") const f32 float_70_8041daec[1] = { 70.0f };
+__declspec(section ".sdata2") const f32 float_8_8041daf0[1] = { 8.0f };
+__declspec(section ".sdata2") const f32 float_neg304_8041daf4[1] = { -304.0f };
+__declspec(section ".sdata2") const f32 float_240_8041daf8[1] = { 240.0f };
+__declspec(section ".sdata2") const f32 float_60_8041dafc[1] = { 60.0f };
+__declspec(section ".sdata2") const f32 float_0_8041db00[1] = { 0.0f };
+__declspec(section ".sdata2") const f32 float_neg250_8041db04[1] = { -250.0f };
+__declspec(section ".sdata2") const f32 float_neg75_8041db08[1] = { -75.0f };
+__declspec(section ".sdata2") const f32 float_150_8041db0c[1] = { 150.0f };
+__declspec(section ".sdata2") const f32 float_45_8041db10[1] = { 45.0f };
+__declspec(section ".sdata2") const f32 float_neg220_8041db14[1] = { -220.0f };
+__declspec(section ".sdata2") const f32 float_neg113_8041db18[1] = { -113.0f };
+__declspec(section ".sdata2") const f32 float_0p7_8041db1c[1] = { 0.699999988079071f };
+__declspec(section ".sdata2") const f32 float_neg192_8041db20[1] = { -192.0f };
+__declspec(section ".sdata2") const f32 float_neg126_8041db24[1] = { -126.0f };
+__declspec(section ".sdata2") const f32 float_neg210_8041db28[1] = { -210.0f };
+__declspec(section ".sdata2") const f32 float_neg166_8041db2c[1] = { -166.0f };
+__declspec(section ".sdata2") const f32 float_1p1_8041db30[1] = { 1.100000023841858f };
+__declspec(section ".sdata2") const f32 float_neg168_8041db34[1] = { -168.0f };
+__declspec(section ".sdata2") const f32 float_neg172_8041db38[1] = { -172.0f };
+__declspec(section ".sdata2") const char str_8041DB3C[] = "%04d";
+__declspec(section ".sdata2") const f32 float_neg24_8041db44[1] = { -24.0f };
+__declspec(section ".sdata2") const f32 float_100_8041db48[1] = { 100.0f };
+__declspec(section ".sdata2") const f32 float_51_8041db4c[1] = { 51.0f };
+__declspec(section ".sdata2") const f32 float_114_8041db50[1] = { 114.0f };
+__declspec(section ".sdata2") const f32 float_28_8041db54[1] = { 28.0f };
+__declspec(section ".sdata2") const f32 float_81_8041db58[1] = { 81.0f };
+__declspec(section ".sdata2") const f32 float_111_8041db5c[1] = { 111.0f };
 
 #pragma pool_data on // the original addresses its .rodata through one base register
 USER_FUNC(unitwin_setmariolevel) {
@@ -401,12 +487,12 @@ USER_FUNC(set_new_goods_list) {
 		{ \
 			Vec ic = vec3_802f6580; \
 			ic.y = wp->field_0x44 + (f32)(0x38 - dispOff) + (f32)blink; \
-			iconDispGxU(&ic, flag | 0x10, arrow, float_0p5_8041db60); \
+			iconDispGxU(&ic, flag | 0x10, arrow, 0.5f); \
 		} \
 		{ \
 			Vec ic = vec3_802f658c; \
 			ic.y = wp->field_0x44 + (f32)(0x38 - dispOff) + (f32)blink; \
-			iconDispGxU(&ic, flag | 0x10, arrow, float_0p5_8041db60); \
+			iconDispGxU(&ic, flag | 0x10, arrow, 0.5f); \
 		} \
 	} else { \
 		numval = mario_status_point_table[row][0] - mario_status_henka_table[row]; \
@@ -419,7 +505,7 @@ USER_FUNC(set_new_goods_list) {
 		{ \
 			Vec ic = vec3_802f6598; \
 			ic.y = wp->field_0x44 + (f32)(0x38 - dispOff) - (f32)blink; \
-			iconDispGxU(&ic, flag | 0x10, arrow, float_0p5_8041db60); \
+			iconDispGxU(&ic, flag | 0x10, arrow, 0.5f); \
 		} \
 	} \
 	if (numval > 0) { \
@@ -428,7 +514,7 @@ USER_FUNC(set_new_goods_list) {
 		sprintf(num, "  \x81H"); \
 	} \
 	FontDrawStart(); \
-	FontDrawString(num, float_206_8041dbd0, wp->field_0x44 + (f32)(0x50 - dispOff));
+	FontDrawString(num, 206.0f, wp->field_0x44 + (f32)(0x50 - dispOff));
 
 #define UST_TAIL_PLUS(wp, levelFmt) \
 	if ((f32)dispCnt == wp->field_0x34) { \
@@ -445,7 +531,7 @@ USER_FUNC(set_new_goods_list) {
 			sprintf(num, "  \x81H"); \
 		} \
 		FontDrawStart(); \
-		FontDrawString(num, float_206_8041dbd0, wp->field_0x44 + (f32)(0x50 - dispOff)); \
+		FontDrawString(num, 206.0f, wp->field_0x44 + (f32)(0x50 - dispOff)); \
 	}
 
 #define UST_TAIL_MINUS(wp, levelFmt) \
@@ -463,7 +549,7 @@ USER_FUNC(set_new_goods_list) {
 			sprintf(num, "  \x81H"); \
 		} \
 		FontDrawStart(); \
-		FontDrawString(num, float_206_8041dbd0, wp->field_0x44 + (f32)(0x50 - dispOff)); \
+		FontDrawString(num, 206.0f, wp->field_0x44 + (f32)(0x50 - dispOff)); \
 	}
 
 #define UST_GUARD_NONE
@@ -527,23 +613,23 @@ USER_FUNC(set_new_goods_list) {
 	*(UstBlk40*)help = *(const UstBlk40*)ZEROBLK; \
 	m8 = 8 - wp->field_0x58; \
 	listOff = ((m8 > 0) ? m8 : 0) * 0x18; \
-	windowDispGX_Waku_col(0, *(GXColor*)&c0, float_neg24_8041db44, float_100_8041db48, float_300_8041dad0, (f32)(0xdc - listOff), \
-	                      float_20_8041dad8); \
-	windowDispGX_Waku_col(0, *(GXColor*)&c1, float_16_8041db98, float_114_8041db50, float_120_8041dacc, float_28_8041db54, \
-	                      float_8_8041daf0); \
+	windowDispGX_Waku_col(0, *(GXColor*)&c0, float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0], (f32)(0xdc - listOff), \
+	                      float_20_8041dad8[0]); \
+	windowDispGX_Waku_col(0, *(GXColor*)&c1, 16.0f, float_114_8041db50[0], float_120_8041dacc[0], float_28_8041db54[0], \
+	                      float_8_8041daf0[0]); \
 	FontDrawStart(); \
 	FontDrawEdge(); \
 	color = *(GXColor*)&c2; \
 	FontDrawColor(&color); \
-	FontDrawString(msgSearch(str_802F6760), float_21_8041dbbc, float_111_8041db5c); \
+	FontDrawString(msgSearch(str_802F6760), 21.0f, float_111_8041db5c[0]); \
 	FontDrawEdgeOff(); \
-	windowDispGX_Waku_col(0, *(GXColor*)&c3, float_167_8041dba0, float_114_8041db50, float_85_8041dba4, float_28_8041db54, \
-	                      float_8_8041daf0); \
+	windowDispGX_Waku_col(0, *(GXColor*)&c3, 167.0f, float_114_8041db50[0], 85.0f, float_28_8041db54[0], \
+	                      float_8_8041daf0[0]); \
 	FontDrawStart(); \
 	FontDrawEdge(); \
 	color = *(GXColor*)&c4; \
 	FontDrawColor(&color); \
-	FontDrawString(msgSearch(str_802F6774), float_177_8041dba8, float_111_8041db5c); \
+	FontDrawString(msgSearch(str_802F6774), 177.0f, float_111_8041db5c[0]); \
 	FontDrawEdgeOff(); \
 	GXGetScissor(&sc[0], &sc[1], &sc[2], &sc[3]); \
 	GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff); \
@@ -562,12 +648,12 @@ USER_FUNC(set_new_goods_list) {
 		{ \
 			Vec pc = POSBLK; \
 			pc.y = wp->field_0x44 + (f32)(0x38 - dispOff); \
-			iconDispGxU(&pc, flag | 0x10, mario_status_icon_table[row], float_0p5_8041db60); \
+			iconDispGxU(&pc, flag | 0x10, mario_status_icon_table[row], 0.5f); \
 		} \
 		FontDrawStart(); \
 		{ GXColor cc = rowColor; FontDrawColor(&cc); } \
 		sprintf(num, "%s%3d", mario_status_name_table[row], mario_status_point_table[row][0]); \
-		FontDrawString(num, float_36_8041db64, wp->field_0x44 + (f32)(0x50 - dispOff)); \
+		FontDrawString(num, 36.0f, wp->field_0x44 + (f32)(0x50 - dispOff)); \
 		blink = ((gp->retraceCount & 0xF) > 7) ? 0 : 2; \
 		TAILBLOCK(wp, levelFmt) \
 		dispOff += 0x18; \
@@ -575,8 +661,8 @@ USER_FUNC(set_new_goods_list) {
 	} \
 	GXSetScissor(sc[0], sc[1], sc[2], sc[3]); \
 	if ((s8)help[0] != 0) { \
-		windowDispGX_Waku_col(0, *(GXColor*)&c7, float_neg240_8041dae0, float_neg130_8041dae4, float_480_8041dae8, float_70_8041daec, \
-		                      float_20_8041dad8); \
+		windowDispGX_Waku_col(0, *(GXColor*)&c7, float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0], float_70_8041daec[0], \
+		                      float_20_8041dad8[0]); \
 		FontDrawStart(); \
 		FontDrawMessage(-220, -138, msgSearch(help)); \
 	} \
@@ -631,17 +717,17 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 		const char* sellDesc = itemDataTable[sellItem].description;
 		const char* sellName = itemDataTable[sellItem].id;
 
-windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_120_8041dacc, float_300_8041dad0, float_50_8041dad4,
-		                      float_20_8041dad8);
+windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8[0], float_120_8041dacc[0], float_300_8041dad0[0], float_50_8041dad4[0],
+		                      float_20_8041dad8[0]);
 		FontDrawStart();
 		FontDrawEdge();
 		color = *(GXColor*)&dat_8041d9c4;
 		FontDrawColor(&color);
 		len = strlen(sellName);
-		FontDrawString(sellName, (f32)(s32)(((len * 0x18) >> 2) * -1), float_108_8041dadc);
+		FontDrawString(sellName, (f32)(s32)(((len * 0x18) >> 2) * -1), float_108_8041dadc[0]);
 		FontDrawEdgeOff();
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c8, float_neg240_8041dae0, float_neg130_8041dae4, float_480_8041dae8, float_70_8041daec,
-		                      float_20_8041dad8);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c8, float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0], float_70_8041daec[0],
+		                      float_20_8041dad8[0]);
 		FontDrawStart();
 		FontDrawMessage(-220, -138, msgSearch(sellDesc));
 
@@ -672,8 +758,8 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 						price = ((ItemDataView*)&itemDataTable[item])->buy_price;
 					}
 				}
-				PSMTXTrans(mtx, float_8_8041daf0 + (float_neg304_8041daf4 + sx),
-				           float_240_8041daf8 - (sy - float_60_8041dafc), float_0_8041db00);
+				PSMTXTrans(mtx, float_8_8041daf0[0] + (float_neg304_8041daf4[0] + sx),
+				           float_240_8041daf8[0] - (sy - float_60_8041dafc[0]), float_0_8041db00[0]);
 				iconNumberDispGx(mtx, price, 1, *(GXColor*)&dat_8041d9cc);
 			}
 		}
@@ -688,10 +774,10 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 		GXColor color;
 		Mtx mtx;
 
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9d0, float_neg250_8041db04, float_neg75_8041db08, float_150_8041db0c, float_45_8041db10,
-		                      float_20_8041dad8);
-		PSMTXTrans(mtx, float_neg220_8041db14, float_neg113_8041db18, float_0_8041db00);
-		PSMTXScale(scale, float_0p7_8041db1c, float_0p7_8041db1c, float_0p7_8041db1c);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9d0, float_neg250_8041db04[0], float_neg75_8041db08[0], float_150_8041db0c[0], float_45_8041db10[0],
+		                      float_20_8041dad8[0]);
+		PSMTXTrans(mtx, float_neg220_8041db14[0], float_neg113_8041db18[0], float_0_8041db00[0]);
+		PSMTXScale(scale, float_0p7_8041db1c[0], float_0p7_8041db1c[0], float_0p7_8041db1c[0]);
 		PSMTXConcat(mtx, scale, mtx);
 		if (wp->flags & 0x1000) {
 			iconDispGx2(mtx, 0x10, 0x18B);
@@ -703,9 +789,9 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 			iconDispGx2(mtx, 0x10, 0x18D);
 			cur = pouchGetStarPiece();
 		}
-		PSMTXTrans(mtx, float_neg192_8041db20, float_neg113_8041db18, float_0_8041db00);
+		PSMTXTrans(mtx, float_neg192_8041db20[0], float_neg113_8041db18[0], float_0_8041db00[0]);
 		iconDispGx2(mtx, 0x10, 0x1D6);
-		PSMTXTrans(mtx, float_neg126_8041db24, float_neg113_8041db18, float_0_8041db00);
+		PSMTXTrans(mtx, float_neg126_8041db24[0], float_neg113_8041db18[0], float_0_8041db00[0]);
 		color = *(GXColor*)&dat_8041d9d4;
 		iconNumberDispGx(mtx, wp->field_0x2C, 0, color);
 		{
@@ -739,13 +825,13 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 		Mtx scale;
 		GXColor color;
 
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9d8, float_neg250_8041db04, float_neg130_8041dae4, float_150_8041db0c, float_45_8041db10,
-		                      float_20_8041dad8);
-		PSMTXTrans(mtx, float_neg210_8041db28, float_neg166_8041db2c, float_0_8041db00);
-		PSMTXScale(scale, float_1p1_8041db30, float_1p1_8041db30, float_1p1_8041db30);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9d8, float_neg250_8041db04[0], float_neg130_8041dae4[0], float_150_8041db0c[0], float_45_8041db10[0],
+		                      float_20_8041dad8[0]);
+		PSMTXTrans(mtx, float_neg210_8041db28[0], float_neg166_8041db2c[0], float_0_8041db00[0]);
+		PSMTXScale(scale, float_1p1_8041db30[0], float_1p1_8041db30[0], float_1p1_8041db30[0]);
 		PSMTXConcat(mtx, scale, mtx);
 		iconDispGx2(mtx, 0x10, 0x1F1);
-		PSMTXTrans(mtx, float_neg126_8041db24, float_neg168_8041db34, float_0_8041db00);
+		PSMTXTrans(mtx, float_neg126_8041db24[0], float_neg168_8041db34[0], float_0_8041db00[0]);
 		color = *(GXColor*)&dat_8041d9dc;
 		iconNumberDispGx(mtx, wp->field_0x30, 0, color);
 		if ((gp->retraceCount & 3) == 0) {
@@ -770,14 +856,14 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 			s32 k;
 			const char* p;
 
-			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9e0, float_neg250_8041db04, float_neg130_8041dae4, float_150_8041db0c, float_45_8041db10,
-			                      float_20_8041dad8);
-			PSMTXTrans(mtx, float_neg220_8041db14, float_neg172_8041db38, float_0_8041db00);
+			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9e0, float_neg250_8041db04[0], float_neg130_8041dae4[0], float_150_8041db0c[0], float_45_8041db10[0],
+			                      float_20_8041dad8[0]);
+			PSMTXTrans(mtx, float_neg220_8041db14[0], float_neg172_8041db38[0], float_0_8041db00[0]);
 			iconDispGx2(mtx, 0x10, 0x140);
-			sprintf(buf, "%04d", *(s16*)&lotteryGetPtr()->field_0x2[0x1E]);
+			sprintf(buf, str_8041DB3C, *(s16*)&lotteryGetPtr()->field_0x2[0x1E]);
 			for (k = 0, p = buf; k < 4; k++, p++) {
-				PSMTXTrans(mtx, float_20_8041dad8 * (f32)k + float_neg126_8041db24 - float_60_8041dafc,
-				           float_neg168_8041db34, float_0_8041db00);
+				PSMTXTrans(mtx, float_20_8041dad8[0] * (f32)k + float_neg126_8041db24[0] - float_60_8041dafc[0],
+				           float_neg168_8041db34[0], float_0_8041db00[0]);
 				color = *(GXColor*)&dat_8041d9e4;
 				iconNumberDispGx(mtx, (s8)*p - '0', 0, color);
 			}
@@ -795,15 +881,15 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 		u32 sc[4];
 
 		cnt = (8 - cnt > 0) ? (8 - pouchGetKeepItemCnt()) : 0;
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9e8, float_neg24_8041db44, float_100_8041db48, float_300_8041dad0, (f32)(0xdc - cnt * 0x18),
-		                      float_20_8041dad8);
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9ec, float_51_8041db4c, float_114_8041db50, float_150_8041db0c, float_28_8041db54,
-		                      float_8_8041daf0);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9e8, float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0], (f32)(0xdc - cnt * 0x18),
+		                      float_20_8041dad8[0]);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9ec, float_51_8041db4c[0], float_114_8041db50[0], float_150_8041db0c[0], float_28_8041db54[0],
+		                      float_8_8041daf0[0]);
 		FontDrawStart();
 		FontDrawEdge();
 		color = *(GXColor*)&dat_8041d9f0;
 		FontDrawColor(&color);
-		FontDrawString(msgSearch(str_802F664C), float_81_8041db58, float_111_8041db5c);
+		FontDrawString(msgSearch(str_802F664C), float_81_8041db58[0], float_111_8041db5c[0]);
 		FontDrawEdgeOff();
 		GXGetScissor(&sc[0], &sc[1], &sc[2], &sc[3]);
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - cnt * 0x18);
@@ -815,9 +901,9 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 				Vec pos = vec3_802f64b8;
 
 				pos.y = wp->field_0x44 + (f32)(0x38 - dispOff);
-				iconDispGxU(&pos, 0x10, ((ItemDataView*)data)->icon_id, float_0p5_8041db60);
+				iconDispGxU(&pos, 0x10, ((ItemDataView*)data)->icon_id, 0.5f);
 				FontDrawStart();
-				FontDrawString(data->id, float_36_8041db64, wp->field_0x44 + (f32)(0x50 - dispOff));
+				FontDrawString(data->id, 36.0f, wp->field_0x44 + (f32)(0x50 - dispOff));
 				if ((f32)dispCnt == wp->field_0x34) {
 					selDesc = data->description;
 				}
@@ -827,8 +913,8 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 		}
 		GXSetScissor(sc[0], sc[1], sc[2], sc[3]);
 		if (selDesc != 0) {
-			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9f4, float_neg240_8041dae0, float_neg130_8041dae4, float_480_8041dae8, float_70_8041daec,
-			                      float_20_8041dad8);
+			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9f4, float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0], float_70_8041daec[0],
+			                      float_20_8041dad8[0]);
 			FontDrawStart();
 			FontDrawMessage(-220, -138, msgSearch(selDesc));
 		}
@@ -897,15 +983,15 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 			xofs = 0x28;
 		}
 
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9f8, float_neg24_8041db44, float_100_8041db48, float_300_8041dad0, (f32)(0xdc - listOff),
-		                      float_20_8041dad8);
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9fc, float_51_8041db4c, float_114_8041db50, float_150_8041db0c, float_28_8041db54,
-		                      float_8_8041daf0);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9f8, float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0], (f32)(0xdc - listOff),
+		                      float_20_8041dad8[0]);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9fc, float_51_8041db4c[0], float_114_8041db50[0], float_150_8041db0c[0], float_28_8041db54[0],
+		                      float_8_8041daf0[0]);
 		FontDrawStart();
 		FontDrawEdge();
 		color = *(GXColor*)&dat_8041da00;
 		FontDrawColor(&color);
-		FontDrawString(title, (f32)(xofs + 0x33), float_111_8041db5c);
+		FontDrawString(title, (f32)(xofs + 0x33), float_111_8041db5c[0]);
 		FontDrawEdgeOff();
 
 		if (wp->field_0x50 != 3) {
@@ -913,8 +999,8 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 			s32 iconId;
 			Mtx mtx;
 
-			PSMTXTrans(mtx, float_244_8041db68, float_82_8041db6c, float_0_8041db00);
-			PSMTXScale(scale, float_0p6_8041db70, float_0p6_8041db70, float_0p6_8041db70);
+			PSMTXTrans(mtx, 244.0f, 82.0f, float_0_8041db00[0]);
+			PSMTXScale(scale, 0.6000000238418579f, 0.6000000238418579f, 0.6000000238418579f);
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGxCol(mtx, 0x10, 0x211, *(GXColor*)&dat_8041da04);
 			if (wp->field_0x50 == 0xD) {
@@ -926,7 +1012,7 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 			}
 			{
 				Vec pos = vec3_802f64c4;
-				iconDispGxU(&pos, 0x10, iconId, float_0p6_8041db70);
+				iconDispGxU(&pos, 0x10, iconId, 0.6000000238418579f);
 			}
 		}
 
@@ -1003,15 +1089,15 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 					Vec pos = vec3_802f64d0;
 
 					pos.y = wp->field_0x44 + (f32)(0x38 - dispOff);
-					iconDispGxU(&pos, (u16)(flag | 0x10), ((ItemDataView*)data)->icon_id, float_0p5_8041db60);
+					iconDispGxU(&pos, (u16)(flag | 0x10), ((ItemDataView*)data)->icon_id, 0.5f);
 				}
 				FontDrawStart();
-				FontDrawScale(float_0p8_8041db74);
+				FontDrawScale(0.800000011920929f);
 				{
 					GXColor cc = icolor;
 					FontDrawColor(&cc);
 				}
-				FontDrawString(data->id, float_36_8041db64, wp->field_0x44 + (f32)(0x50 - dispOff) - float_2_8041db78);
+				FontDrawString(data->id, 36.0f, wp->field_0x44 + (f32)(0x50 - dispOff) - 2.0f);
 				if (wp->field_0x50 != 3) {
 					f32 scale;
 					s32 x;
@@ -1020,34 +1106,34 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 					case 0xE:
 						price = ((ItemDataView*)data)->buy_price * 12 / 10;
 						sprintf(buf, "%2d", price);
-						scale = float_1_8041db80;
+						scale = 1.0f;
 						x = 0;
 						break;
 					case 0xF:
 						price = ((ItemDataView*)data)->buy_price * (evtGetValue(NULL, 0xF5DE06A9) + 11) / 10;
 						sprintf(buf, "%3d", price);
-						scale = float_1_8041db80;
+						scale = 1.0f;
 						x = -0xE;
 						break;
 					case 0x10:
 						price = (((ItemDataView*)data)->buy_price * 2 + 2) / 3;
 						sprintf(buf, "%4d", price);
-						scale = float_0p8_8041db74;
+						scale = 0.800000011920929f;
 						x = -0x14;
 						break;
 					case 0xB:
 						sprintf(buf, "%2d", ((ItemDataView*)data)->buy_price);
-						scale = float_1_8041db80;
+						scale = 1.0f;
 						x = 0;
 						break;
 					case 0xD:
 						sprintf(buf, "%2d", data->star_piece_price);
-						scale = float_1_8041db80;
+						scale = 1.0f;
 						x = 0;
 						break;
 					default:
 						sprintf(buf, "%2d", data->sell_price);
-						scale = float_1_8041db80;
+						scale = 1.0f;
 						x = 0;
 						break;
 					}
@@ -1068,8 +1154,8 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 		}
 		GXSetScissor(sc[0], sc[1], sc[2], sc[3]);
 		if (selDesc != 0) {
-			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da10, float_neg240_8041dae0, float_neg130_8041dae4, float_480_8041dae8, float_70_8041daec,
-			                      float_20_8041dad8);
+			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da10, float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0], float_70_8041daec[0],
+			                      float_20_8041dad8[0]);
 			FontDrawStart();
 			FontDrawMessage(-220, -138, msgSearch(selDesc));
 		}
@@ -1097,28 +1183,28 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 			title = msgSearch(str_802F66B0);
 			prefix = jdt->unk14.unk1A;
 		}
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da14, float_neg24_8041db44, float_100_8041db48, float_300_8041dad0, (f32)(0xdc - listOff),
-		                      float_20_8041dad8);
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da18, float_51_8041db4c, float_114_8041db50, float_150_8041db0c, float_28_8041db54,
-		                      float_8_8041daf0);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da14, float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0], (f32)(0xdc - listOff),
+		                      float_20_8041dad8[0]);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da18, float_51_8041db4c[0], float_114_8041db50[0], float_150_8041db0c[0], float_28_8041db54[0],
+		                      float_8_8041daf0[0]);
 		FontDrawStart();
 		FontDrawEdge();
 		color = *(GXColor*)&dat_8041da1c;
 		FontDrawColor(&color);
-		FontDrawString(title, float_71_8041db8c, float_111_8041db5c);
+		FontDrawString(title, 71.0f, float_111_8041db5c[0]);
 		FontDrawEdgeOff();
 		if (wp->field_0x50 == 0x11) {
 			Mtx mtx;
 			Mtx scale;
 
-			PSMTXTrans(mtx, float_244_8041db68, float_82_8041db6c, float_0_8041db00);
-			PSMTXScale(scale, float_0p6_8041db70, float_0p6_8041db70, float_0p6_8041db70);
+			PSMTXTrans(mtx, 244.0f, 82.0f, float_0_8041db00[0]);
+			PSMTXScale(scale, 0.6000000238418579f, 0.6000000238418579f, 0.6000000238418579f);
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGxCol(mtx, 0x10, 0x211, *(GXColor*)&dat_8041da20);
 			{
 				Vec pos = vec3_802f64dc;
 
-				iconDispGxU(&pos, 0x10, 0x18B, float_0p6_8041db70);
+				iconDispGxU(&pos, 0x10, 0x18B, 0.6000000238418579f);
 			}
 		}
 		GXGetScissor(&sc[0], &sc[1], &sc[2], &sc[3]);
@@ -1144,14 +1230,14 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 			((char*)inf->initEndPos)[inf->tagEndPos] = 0;
 			color = tcolor;
 			FontDrawColor(&color);
-			FontDrawScale(float_0p8_8041db74);
-			FontDrawString((char*)inf->initEndPos, float_1_8041db80, wp->field_0x44 + (f32)(0x50 - dispOff));
+			FontDrawScale(0.800000011920929f);
+			FontDrawString((char*)inf->initEndPos, 1.0f, wp->field_0x44 + (f32)(0x50 - dispOff));
 			((char*)inf->initEndPos)[inf->tagEndPos] = saved;
 			if (wp->field_0x50 == 0x11) {
 				FontDrawStart();
 				color = tcolor;
 				FontDrawColor(&color);
-				FontDrawString(buf, float_221_8041db94, wp->field_0x44 + (f32)(0x50 - dispOff));
+				FontDrawString(buf, 221.0f, wp->field_0x44 + (f32)(0x50 - dispOff));
 			}
 			dispOff += 0x18;
 		}
@@ -1173,23 +1259,23 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 		*(UstBlk40*)help = *(const UstBlk40*)zero_802f64e8;
 		m8 = 8 - wp->field_0x58;
 		listOff = ((m8 > 0) ? m8 : 0) * 0x18;
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da2c, float_neg24_8041db44, float_100_8041db48, float_300_8041dad0, (f32)(0xdc - listOff),
-		                      float_20_8041dad8);
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da30, float_16_8041db98, float_114_8041db50, float_120_8041dacc, float_28_8041db54,
-		                      float_8_8041daf0);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da2c, float_neg24_8041db44[0], float_100_8041db48[0], float_300_8041dad0[0], (f32)(0xdc - listOff),
+		                      float_20_8041dad8[0]);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da30, 16.0f, float_114_8041db50[0], float_120_8041dacc[0], float_28_8041db54[0],
+		                      float_8_8041daf0[0]);
 		FontDrawStart();
 		FontDrawEdge();
 		color = *(GXColor*)&dat_8041da34;
 		FontDrawColor(&color);
-		FontDrawString(msgSearch(str_802F66C4), float_41_8041db9c, float_111_8041db5c);
+		FontDrawString(msgSearch(str_802F66C4), 41.0f, float_111_8041db5c[0]);
 		FontDrawEdgeOff();
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da38, float_167_8041dba0, float_114_8041db50, float_85_8041dba4, float_28_8041db54,
-		                      float_8_8041daf0);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da38, 167.0f, float_114_8041db50[0], 85.0f, float_28_8041db54[0],
+		                      float_8_8041daf0[0]);
 		FontDrawStart();
 		FontDrawEdge();
 		color = *(GXColor*)&dat_8041da3c;
 		FontDrawColor(&color);
-		FontDrawString(msgSearch(str_802F66D8), float_177_8041dba8, float_111_8041db5c);
+		FontDrawString(msgSearch(str_802F66D8), 177.0f, float_111_8041db5c[0]);
 		FontDrawEdgeOff();
 		GXGetScissor(&sc[0], &sc[1], &sc[2], &sc[3]);
 		GXSetScissor(0x120, 0xA2, 0x11C, 0xbe - listOff);
@@ -1260,7 +1346,7 @@ if (wp->field_0x50 == 5 || wp->field_0x50 == 6) {
 					default: iconId = 0x15E; break;
 					}
 				}
-				iconDispGxU(&pos, flag | 0x10, iconId, float_0p5_8041db60);
+				iconDispGxU(&pos, flag | 0x10, iconId, 0.5f);
 			}
 			FontDrawStart();
 			{ GXColor cc = nameColor; FontDrawColor(&cc); }
@@ -1273,10 +1359,10 @@ if (wp->field_0x50 == 5 || wp->field_0x50 == 6) {
 			case 5: name = msgSearch(str_802F671C); break;
 			case 6: name = msgSearch(str_802F6728); break;
 			}
-			FontDrawString(name, float_36_8041db64, wp->field_0x44 + (f32)(0x50 - dispOff));
+			FontDrawString(name, 36.0f, wp->field_0x44 + (f32)(0x50 - dispOff));
 			sprintf(buf, "%d", pouch->partyData[party_id_table[entry]].techLevel);
 			FontDrawStart();
-			FontDrawString(buf, float_236_8041dbb0, wp->field_0x44 + (f32)(0x50 - dispOff));
+			FontDrawString(buf, 236.0f, wp->field_0x44 + (f32)(0x50 - dispOff));
 			if ((f32)dispCnt == wp->field_0x34) {
 				char help2[0x10];
 				char lank[0x10];
@@ -1298,8 +1384,8 @@ if (wp->field_0x50 == 5 || wp->field_0x50 == 6) {
 		}
 		GXSetScissor(sc[0], sc[1], sc[2], sc[3]);
 		if ((s8)help[0] != 0) {
-			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da58, float_neg240_8041dae0, float_neg130_8041dae4, float_480_8041dae8, float_70_8041daec,
-			                      float_20_8041dad8);
+			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041da58, float_neg240_8041dae0[0], float_neg130_8041dae4[0], float_480_8041dae8[0], float_70_8041daec[0],
+			                      float_20_8041dad8[0]);
 			FontDrawStart();
 			FontDrawMessage(-220, -138, msgSearch(help));
 		}
@@ -1359,8 +1445,8 @@ if (wp->field_0x50 == 5 || wp->field_0x50 == 6) {
 				break;
 			}
 		}
-		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041dabc, float_neg280_8041dbd4, float_100_8041db48, float_240_8041daf8,
-		                      (f32)((lines - 1) * 0x18 + 0x2D), float_20_8041dad8);
+		windowDispGX_Waku_col(0, *(GXColor*)&dat_8041dabc, -280.0f, float_100_8041db48[0], float_240_8041daf8[0],
+		                      (f32)((lines - 1) * 0x18 + 0x2D), float_20_8041dad8[0]);
 		FontDrawStart();
 		{
 			s32 w1;
@@ -1382,21 +1468,26 @@ if (wp->field_0x50 == 5 || wp->field_0x50 == 6) {
 			if (w1 <= 0xE4) {
 				w1 = (0xE4 - w1) / 2;
 			} else {
-				FontDrawScale(float_228_8041dbd8 / (f32)w1);
+				FontDrawScale(228.0f / (f32)w1);
 				w1 = 0;
 			}
-			FontDrawString(p, (f32)(w1 - 0x112), float_90_8041dbdc);
+			FontDrawString(p, (f32)(w1 - 0x112), 90.0f);
 			if (second != NULL) {
-				FontDrawString(second, (f32)(w1 - 0x112), float_66_8041dbe0);
+				FontDrawString(second, (f32)(w1 - 0x112), 66.0f);
 			}
 		}
 		iconFlagOff(str_802F6894, 2);
-		iconSetPos(str_802F6894, wp->field_0x3C, wp->field_0x40, float_0_8041db00);
+		iconSetPos(str_802F6894, wp->field_0x3C, wp->field_0x40, float_0_8041db00[0]);
 	} else {
 		iconFlagOn(str_802F6894, 2);
 	}
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush1(void) {}
+#pragma defer_codegen reset
+#endif
 USER_FUNC(evt_unitwin_main_func) {
 	UnitWinWork* wp = (UnitWinWork*)event->lwData[0];
 
@@ -1410,10 +1501,15 @@ USER_FUNC(evt_unitwin_main_func) {
 	} else {
 		wp->flags &= ~1;
 	}
-	dispEntry(8, float_1000_8041dbe4, 0, evt_unitwin_disp_func, wp);
+	dispEntry(8, 1000.0f, 0, evt_unitwin_disp_func, wp);
 	return EVT_RETURN_BLOCK;
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush2(void) {}
+#pragma defer_codegen reset
+#endif
 USER_FUNC(unk_80174e98) {
 	UnitWinWork* wp = (UnitWinWork*)event->lwData[0];
 	s32 selected = 0;
@@ -1535,6 +1631,11 @@ USER_FUNC(unk_80174e98) {
 	return EVT_RETURN_BLOCK;
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush3(void) {}
+#pragma defer_codegen reset
+#endif
 USER_FUNC(unk_801751f8) {
 	s32* args = event->args;
 	UnitWinWork* wp = (UnitWinWork*)evtGetValue(event, args[0]);
@@ -1543,6 +1644,11 @@ USER_FUNC(unk_801751f8) {
 	return EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush4(void) {}
+#pragma defer_codegen reset
+#endif
 USER_FUNC(unk_8017524c) {
 	s32 on = evtGetValue(event, event->args[0]);
 	UnitWinWork* wp = _wp;
@@ -1555,6 +1661,11 @@ USER_FUNC(unk_8017524c) {
 	return EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush5(void) {}
+#pragma defer_codegen reset
+#endif
 USER_FUNC(unitwincoin_wait) {
 	UnitWinWork* wp = _wp;
 	s32 coin;
@@ -1564,6 +1675,11 @@ USER_FUNC(unitwincoin_wait) {
 	return (wp->field_0x2C != coin) ? EVT_RETURN_BLOCK : EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush6(void) {}
+#pragma defer_codegen reset
+#endif
 USER_FUNC(unitwincoin_disp_onoff) {
 	s32 on = evtGetValue(event, event->args[0]);
 	UnitWinWork* wp;
@@ -1583,6 +1699,11 @@ USER_FUNC(unitwincoin_disp_onoff) {
 // The original keeps the byte offset (index*4) in a register across winMgrAction
 // and indexes with lwzx; writing `list[wp->index]` makes the compiler defer the
 // shift past the call, so compute the byte offset explicitly.
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush7(void) {}
+#pragma defer_codegen reset
+#endif
 void unk_801758fc(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
 	s32 offset = wp->index * 4;
@@ -1594,10 +1715,20 @@ void unk_801758fc(WinMgrEntry* entry) {
 	}
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush8(void) {}
+#pragma defer_codegen reset
+#endif
 void unk_8017597c(WinMgrEntry* entry) {
 	winMgrHelpMain(entry);
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush9(void) {}
+#pragma defer_codegen reset
+#endif
 USER_FUNC(evt_unitwin_free) {
 	UnitWinWork* wp = _wp;
 	s32 i;
@@ -1629,6 +1760,11 @@ USER_FUNC(evt_unitwin_free) {
 	return EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush10(void) {}
+#pragma defer_codegen reset
+#endif
 USER_FUNC(evt_unitwin_alloc) {
 	s32 flag = evtGetValue(event, event->args[0]);
 	UnitWinWork* wp = _mapAlloc(0xE8);
@@ -1654,6 +1790,11 @@ USER_FUNC(evt_unitwin_alloc) {
 	return EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush11(void) {}
+#pragma defer_codegen reset
+#endif
 USER_FUNC(evt_unitwin_selltable_setup) {
 	s32* args = event->args;
 	s32 i;
@@ -1679,7 +1820,7 @@ USER_FUNC(evt_unitwin_selltable_setup) {
 #else
 			iconEntry(name, (u16)itemDataTable[wp->field_0x8[i]].icon_id);
 #endif
-			iconSetPos(name, pos.x, float_6_8041dbe8 + pos.y, pos.z);
+			iconSetPos(name, pos.x, 6.0f + pos.y, pos.z);
 			iconFlagOn(name, 0x40);
 		} else {
 			wp->field_0xC[i] |= 1;
@@ -1694,6 +1835,11 @@ USER_FUNC(evt_unitwin_selltable_setup) {
 	return EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush12(void) {}
+#pragma defer_codegen reset
+#endif
 void unk_80175710(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
 	PouchData* pouch = pouchGetPtr();
@@ -1702,17 +1848,17 @@ void unk_80175710(WinMgrEntry* entry) {
 		Mtx mtx;
 		Mtx scale;
 
-		PSMTXTrans(mtx, float_10_8041dbec + (float_30_8041dbf0 + (f32)entry->field_0x18), (f32)entry->field_0x1C - float_36_8041db64, float_0_8041db00);
+		PSMTXTrans(mtx, 10.0f + (30.0f + (f32)entry->field_0x18), (f32)entry->field_0x1C - 36.0f, float_0_8041db00[0]);
 		if ((u32)gp->language == 0) {
-			PSMTXScale(scale, float_1p1_8041db30, float_1p1_8041db30, float_1p1_8041db30);
+			PSMTXScale(scale, float_1p1_8041db30[0], float_1p1_8041db30[0], float_1p1_8041db30[0]);
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGx2(mtx, 0x10, 0x1F1);
 		} else {
-			PSMTXScale(scale, float_0p8_8041db74, float_1p1_8041db30, float_1p1_8041db30);
+			PSMTXScale(scale, 0.800000011920929f, float_1p1_8041db30[0], float_1p1_8041db30[0]);
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGx2(mtx, 0x10, 0x20A);
 		}
-		PSMTXTrans(mtx, float_124_8041dbf4 + (f32)entry->field_0x18, (f32)entry->field_0x1C - float_38_8041dbf8, float_0_8041db00);
+		PSMTXTrans(mtx, 124.0f + (f32)entry->field_0x18, (f32)entry->field_0x1C - 38.0f, float_0_8041db00[0]);
 		iconNumberDispGx(mtx, wp->field_0x30, 0, *(GXColor*)&dat_8041d9bc);
 		{
 			s32 delta = pouch->mShopPoints - wp->field_0x30;
@@ -1728,6 +1874,11 @@ void unk_80175710(WinMgrEntry* entry) {
 	}
 }
 
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush13(void) {}
+#pragma defer_codegen reset
+#endif
 void unk_8017599c(WinMgrEntry* entry) {
 	UnitWinWork* wp = _wp;
 	Mtx mtx;
@@ -1743,7 +1894,7 @@ void unk_8017599c(WinMgrEntry* entry) {
 		FontDrawEdge();
 		*(u32*)&titleColor = dat_8041d9b4;
 		FontDrawColor(&titleColor);
-		FontDrawString(msg, (f32)(-(s32)FontGetMessageWidth(msg) / 2), float_108_8041dadc);
+		FontDrawString(msg, (f32)(-(s32)FontGetMessageWidth(msg) / 2), float_108_8041dadc[0]);
 		FontDrawEdgeOff();
 	}
 	for (i = 0; i < wp->count; i++) {
@@ -1751,7 +1902,7 @@ void unk_8017599c(WinMgrEntry* entry) {
 			continue;
 		}
 		mapObjGetPos(wp->objList[i].name, &pos);
-		pos.y += float_30_8041dbf0;
+		pos.y += 30.0f;
 		PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 		PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
 #ifdef MUST_MATCH
@@ -1763,11 +1914,19 @@ void unk_8017599c(WinMgrEntry* entry) {
 			pos.y *= (f32)gp->efbHeight * half;
 		}
 #else
-		pos.x *= (f32)gp->fbWidth * float_0p5_8041db60;
-		pos.y *= (f32)gp->efbHeight * float_0p5_8041db60;
+		pos.x *= (f32)gp->fbWidth * 0.5f;
+		pos.y *= (f32)gp->efbHeight * 0.5f;
 #endif
-		sprintf(buf, str_8041DBAC, itemDataTable[wp->field_0x8[i]].discount_price);
-		PSMTXTrans(mtx, float_12_8041dbfc * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
+		sprintf(buf, "%d", itemDataTable[wp->field_0x8[i]].discount_price);
+		PSMTXTrans(mtx, 12.0f * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
 		iconNumberDispGx(mtx, itemDataTable[wp->field_0x8[i]].discount_price, 0, *(GXColor*)&dat_8041d9b8);
 	}
 }
+
+
+// 4-byte zero word that ends the unit's .data.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_80375604_data = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
