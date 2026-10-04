@@ -728,6 +728,10 @@ def plan():
         if not entries:
             continue
         seq = [e for e in entries if e["kind"] != "gap"]
+        if sec == ".rodata" and not bmode:
+            kinds = [e["kind"] for e in seq]
+            if "magic" in kinds and "str" in kinds[kinds.index("magic"):]:
+                print("# I2F HELPER: " + I2F_HELPER_HINT + "\n")
         for e in seq:
             e["cls"] = "MAGIC" if e["kind"] == "magic" else (("OFFSET" if bmode and e["kind"] == "str" else "UNREF") if not e["uses"] and not e["duses"] else ("DATA" if not e["uses"] else "LIT"))
         # named region from the probe
@@ -847,6 +851,13 @@ def literal_forms(kind, blob):
     return []
 
 
+I2F_HELPER_HINT = (
+    "an int->float conversion double sits before a string in the target's .rodata but the compiler pools it later. Recipe: under\n"
+    "#ifdef MUST_MATCH add an ordinary helper generated first, `#pragma defer_codegen off` / `static f32 pool_i2f(s32 v) { return (f32)v; }` /\n"
+    "`#pragma defer_codegen reset` (u32 for the `_mask` double; a helper returning a string literal pools a string at that slot too).\n"
+    "It pools the double ahead of the deferred functions' strings; nothing calls it and the linker strips the body (koopa, yoshi).")
+
+
 def diagnose(tobj, sec, o, uses, data_uses, indent="   ", src_lines=None):
     """Compare target objects with `o` (list of (addr, name, blob)); print the first mismatching slot and why. True if identical."""
     import difflib
@@ -876,6 +887,8 @@ def diagnose(tobj, sec, o, uses, data_uses, indent="   ", src_lines=None):
             e = by_addr.get(t[i][0])
             who = e["uses"][0]["fname"] if e and e["uses"] else ("(data) " + e["duses"][0][1] if e and e["duses"] else "none")
             P(f"  WANT  {t[i][1]:<30} {show(e['kind'], e['data']) if e else '':<18} first user: {who}")
+    if tag in ("replace", "insert") and i1 < len(t) and kind_of(sec, t[i1][1], t[i1][2]) == "magic" and j1 < len(o) and kind_of(sec, o[j1][1], o[j1][2]) == "str":
+        P("  HINT  " + I2F_HELPER_HINT.replace("\n", "\n" + indent + "        "))
     if tag in ("replace", "insert"):
         for j in range(j1, min(j2, j1 + 4)):
             kd = kind_of(sec, o[j][1], o[j][2])

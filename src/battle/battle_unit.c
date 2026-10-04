@@ -2294,7 +2294,7 @@ void BtlUnit_PoseSoundInit(BattleUnitPart* part) {
 
 
 // `opt_propagation off` keeps the 0x7F -> double conversion at runtime (`lis 0x4330` +
-// double_to_int_mask_802efac8, `fsub`, `fmul`) instead of folding 127 * 0.7 at compile time. The
+// an int-to-float conversion double, `fsub`, `fmul`) instead of folding 127 * 0.7 at compile time. The
 // `vol` temp pins that conversion before the second psndSFX_vol call.
 #pragma opt_propagation off
 void BtlUnit_ControlPoseSoundMain(BattleUnitPart* part) {

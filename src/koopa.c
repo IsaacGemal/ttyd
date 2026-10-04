@@ -47,6 +47,7 @@ const Vec vec3_802fc920 = {0.0f, 0.0f, 0.0f};
 // Defined after the code: these follow the breath helpers' eight pooled floats,
 // before the remaining deferred functions' literals. Early helper references need
 // the section declared here, too, or MWCC places their constants in .sdata.
+#ifdef MUST_MATCH
 __declspec(section ".sdata2") extern const f32 float_deg2rad_804203d8;
 __declspec(section ".sdata2") extern const f32 float_7_804203dc;
 __declspec(section ".sdata2") extern const f32 float_0p4_804203e0;
@@ -61,6 +62,22 @@ __declspec(section ".sdata2") extern const f32 float_neg0p1_80420400;
 __declspec(section ".sdata2") extern const f32 float_neg0p2_80420404;
 __declspec(section ".sdata2") extern const f32 float_neg0p024_80420408;
 __declspec(section ".sdata2") extern const f32 float_neg0p01_8042040c;
+#else
+#define float_deg2rad_804203d8 0.017453292f
+#define float_7_804203dc 7.0f
+#define float_0p4_804203e0 0.4f
+#define float_0p3_804203e4 0.3f
+#define float_1p4_804203e8 1.4f
+#define float_1p5_804203ec 1.5f
+#define float_neg0p05_804203f0 -0.05f
+#define float_neg0p08_804203f4 -0.08f
+#define float_neg0p006_804203f8 -0.006f
+#define float_neg0p002_804203fc -0.002f
+#define float_neg0p1_80420400 -0.1f
+#define float_neg0p2_80420404 -0.2f
+#define float_neg0p024_80420408 -0.024f
+#define float_neg0p01_8042040c -0.01f
+#endif
 
 // The original inlines this breath spawn into kpaFireAttack's four breath states; keep it one helper so the four
 // copies share a body. `unk1AC` is only named as bytes in mario.h but the original reads it as a float here.
@@ -187,7 +204,7 @@ static inline void kpaFireBreath2(MarioWork* mp, Vec* pos) {
 #endif
 
 #ifdef MUST_MATCH
-#pragma defer_codegen on // Restore reverse-source emission for the public functions.
+#pragma defer_codegen reset // Restore reverse-source emission for the public functions.
 #endif
 
 void* getKoopaFireEfp(void) {
@@ -1099,6 +1116,7 @@ void kpaPauseSE2(void) {
     psndSFXOn((const char*)(kpaPauseSeTable[irand(0x1C)] | 0x20000));
 }
 
+#ifdef MUST_MATCH
 __declspec(section ".sdata2") const f32 float_deg2rad_804203d8 = 0.017453292f;
 __declspec(section ".sdata2") const f32 float_7_804203dc = 7.0f;
 __declspec(section ".sdata2") const f32 float_0p4_804203e0 = 0.4f;
@@ -1113,3 +1131,4 @@ __declspec(section ".sdata2") const f32 float_neg0p1_80420400 = -0.1f;
 __declspec(section ".sdata2") const f32 float_neg0p2_80420404 = -0.2f;
 __declspec(section ".sdata2") const f32 float_neg0p024_80420408 = -0.024f;
 __declspec(section ".sdata2") const f32 float_neg0p01_8042040c = -0.01f;
+#endif

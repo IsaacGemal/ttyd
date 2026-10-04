@@ -164,6 +164,14 @@ strings plain literals at their uses, add `#pragma pool_data on`, delete any `do
 (`--apply` does these), then use `--check` to order the literals. Nine of the eleven class-d units were of this kind; ac_signal_timing's
 actionCommandDisp went to 100% this way.
 
+**Conversion double before strings.** If the target's `.rodata` has an int->float double (`double_to_int_*`) ahead of a string that a
+deferred function pools, our build pools the double later, since a deferred unit emits functions in reverse source order and each
+function pools its strings before its own conversion double. Under `#ifdef MUST_MATCH` add an ordinary helper that is generated
+immediately, wrapped in `#pragma defer_codegen off` ... `#pragma defer_codegen reset`:
+`static f32 pool_i2f(s32 v) { return (f32)v; }` (`u32` for the `_mask` double; a second helper returning a string literal pools
+that string at its slot too). Nothing calls it and the linker strips the body. Reference: `kpaFireBreath` in `src/koopa.c`,
+`yoshi_pool_i2f` in `unit_party_yoshi.c`. `pool_plan.py` prints an `I2F HELPER` note when it sees the pattern.
+
 The plan's rules, so you can read its output: pooled entries land in the order the compiler first emits them (text order,
 expression-tree order inside a function); named objects land before the pool in a deferred unit and after it in a nodefer
 unit; a `const` object defined before its use is folded away, so define named objects after the code; the first entry the
