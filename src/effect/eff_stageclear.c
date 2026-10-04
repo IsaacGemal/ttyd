@@ -44,9 +44,19 @@ const Vec vec3_802fe3d8 = { 0.0f, 1.0f, 0.0f };
 const Vec vec3_802fe3e4 = { 0.0f, 0.0f, 0.0f };
 #endif
 const f64 double_0p21817_802fe3f0 = 0.21816615760326385;
-const f64 double_to_int_802fe3f8 = 4503601774854144.0;
-const f64 double_to_int_mask_802fe400 = 4503599627370496.0;
-const char str_802FE408[] = "StageClear";
+
+#ifdef MUST_MATCH
+// Immediately generated helpers pool the int->float conversion doubles ahead of the deferred functions'
+// "StageClear" string; nothing calls them and the linker strips the bodies.
+#pragma defer_codegen off // Pool the conversion doubles before the deferred functions' string literals.
+static f32 pool_i2f(s32 v) {
+	f32 a = (f32)v;
+	f32 b = (f32)(u32)v;
+
+	return a + b;
+}
+#pragma defer_codegen reset
+#endif
 
 // .data
 static u32 tex_us[13] = {
@@ -62,12 +72,19 @@ u32 tex_shadow_jp[8] = { 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9, 0xAA, 0xAB };
 static u32* texid_tbl[4] = { tex_jp, tex_shadow_jp, tex_us, tex_shadow_us };
 static u32 niji_tbl[2] = { 0xAC, 0xB0 };
 
-// .sdata
+// .sdata: shake_dt/shake_dt2 come before scale_dt, matching the original's address order
+s32 shake_dt[5] = { 2, 6, 2, 0, -1 };
+s32 shake_dt2[5] = { 0xC, 0x24, 0xC, 0, -1 };
 static u8 scale_dt[12] = {
 	0x00, 0x00, 0x16, 0x2E, 0x47, 0x5D, 0x6E, 0x78, 0x77, 0x6E, 0x66, 0x00,
 };
-s32 shake_dt[5] = { 2, 6, 2, 0, -1 };
-s32 shake_dt2[5] = { 0xC, 0x24, 0xC, 0, -1 };
+// The .sdata trailing 12 zero bytes (target gap_07_80415C34_sdata): explicit_zero_data keeps the
+// all-zero object in .sdata and force_active keeps the linker from dropping it.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_80415C34_sdata[3] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 // .data
 static s32 evt_shake[] = {
@@ -80,30 +97,156 @@ static s32 evt_shake[] = {
 	OPCODE_END_SCRIPT
 };
 
-BOOL effStageClearEndChk(EffectEntry* effect) {
+// The .data trailing 12 zero bytes (target gap_05_803ADD14_data), same recipe as above.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_803ADD14_data[3] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+EffectEntry* effStageClearEntry(s32 type, f32 x, f32 y, f32 z) {
+	EffectEntry* entry;
+	effStageClearWork* data;
+	s32 count = 9;
+	s32 i;
+
+	if (type == 1 && (u32)gp->language != 0) {
+		return effMiniGameEntry(1, x, y, z);
+	}
+	entry = effEntry();
+	if ((u32)gp->language != 0) {
+		count = 0xE;
+	}
+	if (type % 10 == 1) {
+		count = 7;
+	}
+	entry->type = "StageClear";
+	entry->count = count;
+	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(effStageClearWork));
+	entry->userdata = data;
+	entry->callback = effStageClearMain;
+	data->type = type;
+	data->x = x;
+	data->y = y;
+	data->z = z;
+	data->scale = float_1_80420f2c;
+	data->timer = 0;
+	data->field_0x1C = 0;
+	data->count = irand(5) + 1;
+	data->done = 0;
+	for (i = 1; i < entry->count; i++) {
+		effStageClearWork* work = &data[i];
+
+		work->x = (f32)((i - 1) * 0x26 - (entry->count - 1) * 0x26 / 2 + 0x14);
+		work->y = float_0_80420f28;
+		work->z = float_0_80420f28;
+		work->scale = float_0_80420f28;
+		work->timer = (s32)((f32)i * (float_0p2_80420f44 * gp->framerate));
+		work->field_0x1C = 0;
+		work->evt = NULL;
+	}
+	return entry;
+}
+
+static inline Vec initializeStageClearVec(Vec* input) {
+	Vec temp = vec3_802fe3c0;
+	temp.x = input->x;
+	temp.y = input->y;
+	temp.z = input->z;
+	return temp;
+}
+
+void effStageClearMain(EffectEntry* effect) {
 	effStageClearWork* data = effect->userdata;
-	return data->done != 0;
+	Vec disp = initializeStageClearVec((Vec*)&data->x);
+	s32 i;
+	s32 type = data->type;
+	s32 retired = 0;
+
+	data->field_0x1C++;
+	data++;
+	for (i = 1; i < effect->count; i++, data++) {
+		if (data->timer != 0) {
+			data->timer--;
+			if (data->timer == 0) {
+				psndSFXOn((const char*)(type == 0 ? 0x29B : 0x82E));
+			}
+		} else {
+			if ((u32)data->field_0x1C < 0xB) {
+				data->scale = (f32)scale_dt[data->field_0x1C] / float_100_80420f40;
+			}
+			data->field_0x1C++;
+			if (data->scale > float_0p9_80420f18) {
+				if (data->evt == NULL) {
+					s32* dt;
+
+					data->evt = evtEntry(evt_shake, 0, 0);
+					if (i == effect->count - 1) {
+						dt = shake_dt2;
+					} else {
+						dt = shake_dt;
+					}
+					data->evt->lwData[0] = (s32)dt;
+					data->evt->lwData[1] = (i == effect->count - 1) ? 1 : 0;
+				}
+				retired++;
+			}
+		}
+	}
+	if (retired >= effect->count - 1) {
+		data = effect->userdata;
+		data->done = 1;
+	}
+	if (type % 10 == 1 && retired >= effect->count - 1) {
+		if (gp->retraceCount % 0x3C == 0) {
+			data = effect->userdata;
+			if (data->count > 0) {
+				f32 x;
+				f32 y;
+
+				y = disp.y + (f32)(100 - irand(200));
+				x = disp.x + (f32)(200 - irand(400));
+				effConfettiEntry(rand() % 3 + 0x18, 0x3C, x, y, disp.z);
+				psndSFXOn((const char*)0x82F);
+				data->count--;
+			}
+		}
+	}
+	if (type < 10) {
+		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effStageClearDisp, effect);
+	} else {
+		dispEntry(CAMERA_3D_EFFECTA, dispCalcZ(&disp), 8, effStageClearDisp, effect);
+	}
 }
 
 static inline Vec getStageClearCamPos(void) {
 	Vec temp = vec3_802fe3cc;
+#ifdef MUST_MATCH
+	// Read the named double so the load comes off the base register instead of a pooled copy of it.
+	temp.z = float_1_80420f2c / (f32)tan(*(volatile const f64*)&double_0p21817_802fe3f0);
+#else
 	temp.z = float_1_80420f2c / (f32)tan(double_0p21817_802fe3f0);
+#endif
 	return temp;
 }
 
 #pragma opt_common_subs off // without it MWCC CSEs the repeated float_0 pool loads in the GX vertex block
-// Frame, Vec copies, matrices and GX state match. What still differs is register colouring only: the
-// long-lived FP values land in f28/f30/f29/f31 where the target has f30/f29/f31/f28 for the
-// int->float magic / -24 / 1 / 24, and the GX vertex block's interleaved float_0 reloads follow from
-// it. Declaring `i, j` before `type` (the order below) puts `type` in the target's r22; i/work stay in
-// r23/r21 rather than r21/r23 under every declaration/statement order and loop shape tried.
-// The anonymous int->float magic also pools at 0x58/0x68 instead of the named slots at 0x38/0x30 (the
-// compiler does not anchor the conversions to the named `double_to_int_*` objects; see win_item.c /
-// party_yoshi.c). The FP colouring did not move under any permutation of the f32 declarations,
-// opt_lifetimes/opt_dead_assignments/opt_propagation/scheduling/global_optimizer off, or
-// optimization_level 1-3, so it is left for the permuter.
-// NONMATCHING (99.18%): FP register colouring, the i/work GPR swap, and the anonymous int->float
-// magic / 0.2181 pool slots differ.
+// Register colouring only, no structural or pool difference left. The long-lived
+// FP values land in f31 (int->float magic), f30 (24), f29 (-24) and f28 (1) where the target has f30
+// (magic), f31 (1), f29 (-24) and f28 (24); the target reuses f28 from the free `scale` for 24, and the
+// two uncached float_1 texcoords follow from it. The outer loop counter/work pointers also land in
+// r23/r21 where the target has r21/r23. Computing the inner `work` pointer in place (load userdata
+// into work, then work++) instead of through &(...)[1] fixed the last scratch-register diffs; no
+// declaration or statement order, loop shape, or pragma (opt_lifetimes, opt_dead_assignments,
+// opt_propagation, scheduling, global_optimizer, optimization_level 0-4) moved the rest. The int->float
+// magic and 0.2181 double pool at the target's 0x38/0x30 slots via the helper above and the named
+// double. Also rejected (fresh scores, none above 99.40%): a K&R definition, defining the named floats
+// so they fold, ~8000 random combinations of the texcoord MATCH mask, the constant hoist points, the
+// declaration/assignment orders and every other work-pointer form, and compiling the unit with
+// GC/1.3.2-2.7 (all six give this exact colouring; 3.0a3+ reorders everything). The target's four
+// texcoords all reload float_1 while ours keep it in a register for the last two, so the target's 1.0
+// is live only to the fdiv.
+// NONMATCHING (99.40%): FP/GPR colouring only; the permuter is needed.
 void effStageClearDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effStageClearWork* data = effect->userdata;
@@ -164,7 +307,8 @@ void effStageClearDisp(CameraId camId, void* param) {
 	// inner loop makes MWCC hoist them together with the int->float magic, reproducing the target's FP
 	// load order; the natural form is the #else arm (same values, just outside the loop)
 	for (i = 1; i >= 0; i--) {
-		effStageClearWork* work = &((effStageClearWork*)effect->userdata)[1];
+		effStageClearWork* work = (effStageClearWork*)effect->userdata;
+		work++;
 
 		for (j = 1; j < effect->count; j++, work++) {
 			f27 = (f32)(i * 4);
@@ -281,117 +425,24 @@ void effStageClearDisp(CameraId camId, void* param) {
 
 #pragma opt_common_subs reset
 
-static inline Vec initializeStageClearVec(Vec* input) {
-	Vec temp = vec3_802fe3c0;
-	temp.x = input->x;
-	temp.y = input->y;
-	temp.z = input->z;
-	return temp;
-}
-
-void effStageClearMain(EffectEntry* effect) {
+BOOL effStageClearEndChk(EffectEntry* effect) {
 	effStageClearWork* data = effect->userdata;
-	Vec disp = initializeStageClearVec((Vec*)&data->x);
-	s32 i;
-	s32 type = data->type;
-	s32 retired = 0;
-
-	data->field_0x1C++;
-	data++;
-	for (i = 1; i < effect->count; i++, data++) {
-		if (data->timer != 0) {
-			data->timer--;
-			if (data->timer == 0) {
-				psndSFXOn((const char*)(type == 0 ? 0x29B : 0x82E));
-			}
-		} else {
-			if ((u32)data->field_0x1C < 0xB) {
-				data->scale = (f32)scale_dt[data->field_0x1C] / float_100_80420f40;
-			}
-			data->field_0x1C++;
-			if (data->scale > float_0p9_80420f18) {
-				if (data->evt == NULL) {
-					s32* dt;
-
-					data->evt = evtEntry(evt_shake, 0, 0);
-					if (i == effect->count - 1) {
-						dt = shake_dt2;
-					} else {
-						dt = shake_dt;
-					}
-					data->evt->lwData[0] = (s32)dt;
-					data->evt->lwData[1] = (i == effect->count - 1) ? 1 : 0;
-				}
-				retired++;
-			}
-		}
-	}
-	if (retired >= effect->count - 1) {
-		data = effect->userdata;
-		data->done = 1;
-	}
-	if (type % 10 == 1 && retired >= effect->count - 1) {
-		if (gp->retraceCount % 0x3C == 0) {
-			data = effect->userdata;
-			if (data->count > 0) {
-				f32 x;
-				f32 y;
-
-				y = disp.y + (f32)(100 - irand(200));
-				x = disp.x + (f32)(200 - irand(400));
-				effConfettiEntry(rand() % 3 + 0x18, 0x3C, x, y, disp.z);
-				psndSFXOn((const char*)0x82F);
-				data->count--;
-			}
-		}
-	}
-	if (type < 10) {
-		dispEntry(CAMERA_3D, dispCalcZ(&disp), 2, effStageClearDisp, effect);
-	} else {
-		dispEntry(CAMERA_3D_EFFECTA, dispCalcZ(&disp), 8, effStageClearDisp, effect);
-	}
+	return data->done != 0;
 }
 
-EffectEntry* effStageClearEntry(s32 type, f32 x, f32 y, f32 z) {
-	EffectEntry* entry;
-	effStageClearWork* data;
-	s32 count = 9;
-	s32 i;
-
-	if (type == 1 && (u32)gp->language != 0) {
-		return effMiniGameEntry(1, x, y, z);
-	}
-	entry = effEntry();
-	if ((u32)gp->language != 0) {
-		count = 0xE;
-	}
-	if (type % 10 == 1) {
-		count = 7;
-	}
-	entry->type = str_802FE408;
-	entry->count = count;
-	data = __memAlloc(HEAP_EFFECT, entry->count * sizeof(effStageClearWork));
-	entry->userdata = data;
-	entry->callback = effStageClearMain;
-	data->type = type;
-	data->x = x;
-	data->y = y;
-	data->z = z;
-	data->scale = float_1_80420f2c;
-	data->timer = 0;
-	data->field_0x1C = 0;
-	data->count = irand(5) + 1;
-	data->done = 0;
-	for (i = 1; i < entry->count; i++) {
-		effStageClearWork* work = &data[i];
-
-		work->x = (f32)((i - 1) * 0x26 - (entry->count - 1) * 0x26 / 2 + 0x14);
-		work->y = float_0_80420f28;
-		work->z = float_0_80420f28;
-		work->scale = float_0_80420f28;
-		work->timer = (s32)((f32)i * (float_0p2_80420f44 * gp->framerate));
-		work->field_0x1C = 0;
-		work->evt = NULL;
-	}
-	return entry;
-}
+// .sdata2: the two GXColor words and the float constants, defined after the code so MWCC keeps them as
+// real objects rather than folding them into the function's literal pool.
+const u32 dat_80420f10 = 0x00000080;
+const u32 dat_80420f14 = 0x363636ff;
+const f32 float_0p9_80420f18 = 0.9f;
+const f32 float_1p7_80420f1c = 1.7f;
+const f32 float_0p6_80420f20 = 0.6f;
+const f32 float_48_80420f24 = 48.0f;
+const f32 float_0_80420f28 = 0.0f;
+const f32 float_1_80420f2c = 1.0f;
+const f32 float_25_80420f30 = 25.0f;
+const f32 float_640_80420f34 = 640.0f;
+const f32 float_0p5_80420f38 = 0.5f;
+const f32 float_24_80420f3c = 24.0f;
+const f32 float_100_80420f40 = 100.0f;
+const f32 float_0p2_80420f44 = 0.2f;
