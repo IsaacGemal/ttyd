@@ -290,6 +290,14 @@ macOS; needs gdb, cmake, Rust; the clones live in `$MWCCDBG_HOME`, default `~/mw
 The tool needs the repo's build.ninja and `build/G8MJ01/obj` (the original objects); a function's dump is for the source as it is in the
 tree (`--src copy.c` compiles a scratch copy with the unit's flags).
 
+**Levers Codex proved** (full attempt logs, including what failed, in `docs/codex/`; the ledger has the table "Codex's wins, and why each worked"):
+- Helper functions position pool entries and force tail data in a deferred unit: an unused helper placed between two functions pools its constant at that point; an immediately generated `u32 -> f32` helper at EOF flushes deferred code ahead of `force_active` tail words so they land last ([fadedrv](codex/fadedrv.md), [koopa](codex/koopa.md)).
+- Block-scoped assignment inside the inner loop, just before the use, limits how far MWCC hoists (to the inner-loop preheader only), which also fixes pool order ([eff_kemutest](codex/eff_kemutest.md)).
+- `DUP_OURS` in `sdata2_diff.py` means we pool a value twice that the original merges: remove the duplicate constants and keep runtime products and registers through locals ([eff_fire](codex/eff_fire.md)).
+- `.sbss`/`.sbss2` scratch declarations are often in reversed order, and a trailing gap word may be needed ([windowdrv](codex/windowdrv.md), eff_fire).
+- Assignment-in-argument (`__memAlloc(HEAP_DEFAULT, rounded = OSRoundUp32B(size))`) and moving a block scan into a `static inline` helper change web ranks where declaration order cannot: inline-expansion objects are numbered differently from the function's own locals ([fontmgr](codex/fontmgr.md)). Checked with `mwccdbg.py`: the helper's `ptr` and `i` become `@` objects numbered above `dvd`, `rounded` and the other named locals, so they colour later and take the low volatile registers (r6, r7) while the loaded header temp gets r8; as plain locals they were named webs ranked by declaration. To lower or raise a variable's rank, move it into (or out of) an inlined helper or an argument expression.
+- A wrong value can hide behind a "fix" (battle_unit's sentinel): checksum it ([battle_unit](codex/battle_unit.md)).
+
 **Conversion double before strings.** If the target's `.rodata` has an int->float double (`double_to_int_*`) ahead of a string that a
 deferred function pools, our build pools the double later, since a deferred unit emits functions in reverse source order and each
 function pools its strings before its own conversion double. Under `#ifdef MUST_MATCH` add an ordinary helper that is generated
