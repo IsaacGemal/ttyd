@@ -393,21 +393,24 @@ void moamoa_main(void) {
 void moamoa_dispent(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, (DispCallback)ext_disp, NULL);
 }
-// MWCC normally folds the single global read of `wp` into the displacement
-// (`lwz rD, wp@l(rB)`) where the original materialises the address
-// (`addi rB, rB, wp@l; lwz rD, 0(rB)`). Under MUST_MATCH a one-iteration loop keeps the address
-// materialised (LICM hoists `&wp` out of the loop before unrolling it).
-// NONMATCHING (99.10%): register colouring of `event` and `id` differs. The original has
-// `event`/`entry` in r31 and `id` in r30; ours has `event`/`entry` in r30 and `id` in r31, and
-// these 15 instructions are the only difference. The one-iteration loop below reproduces the
-// original's `addi;lwz` materialisation of `wp`. Declaring `id` as `s16` makes the allocator pick
-// the original's registers exactly (99.28%) but adds an `extsh` retail lacks, and it truncates
-// negative ids, so `id` stays s32.
+// MWCC folds the single global read of `wp` into the displacement (`lwz rD, wp@l(rB)`) where the
+// original materialises the address (`addi rB, rB, wp@l; lwz rD, 0(rB)`). Under MUST_MATCH a
+// one-iteration loop keeps the address materialised (LICM hoists `&wp` out before unrolling it).
+//
+// The allocator also puts `event`/`entry` in r31 and `id` in r30; the plain declaration numbers
+// `id` above `event` and swaps the two. Writing `id` as `(dm = evtGetValue(...)) | dm` keeps one
+// more temporary in the band retail uses, without an instruction (the self-OR assembles to `mr`).
+// Both workarounds are match-only; the `#else` branches hold the natural code.
 USER_FUNC(evt_moamoa_set_one) {
     ExtPose* pose;
     MoamoaEntry* entry;
     s32* args = event->args;
+#ifdef MUST_MATCH
+    s32 dm;
+    s32 id = (dm = evtGetValue(event, args[0])) | dm;
+#else
     s32 id = evtGetValue(event, args[0]);
+#endif
     f32 x = evtGetFloat(event, args[1]);
     f32 y = evtGetFloat(event, args[2]);
     f32 z = evtGetFloat(event, args[3]);
