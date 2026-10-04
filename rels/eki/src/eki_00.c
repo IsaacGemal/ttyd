@@ -1711,9 +1711,9 @@ static inline f32 ekiCosfM(f32 rad) {
 }
 
 #define MOA_TARGET(i) ((&wp->field_0x14)[(i) % 3])
-// NONMATCHING (96.85%): FPR/GPR colouring and scheduling in the inlined ekiSinf/ekiCosf/randf bodies. Hoisting the
-// inlined randf and rad additions, spelling the case 0x2 angle's randf as the explicit `randf` expansion, picking
-// which randf of each moamoa_jump pair is hoisted, and the case 0x34 branch temp all match retail.
+// NONMATCHING (97.01%): calls, immediates and pool match; 256 `!!` are register colouring and scheduling in the
+// inlined ekiSinf/ekiCosf/randf bodies, plus `handled` in r24 / `voiceSfx` in r25 (retail swaps them and
+// materialises the string address straight into r24; ours goes through r0 and an extra `mr`). Case 0x1B's `rad` is block-local (volatile FPR like retail).
 static void ext_moamoa_main(void) {
     MarioWork* mario;
     PartyEntry* party;
@@ -2112,7 +2112,7 @@ static void ext_moamoa_main(void) {
             }
             break;
         case 0x1B: {
-            f32 ;
+            f32 rad;
 
             if (__fabsf(ep->matrix[0][0][3]) < 300.0 && __fabsf(ep->matrix[0][2][3]) < 300.0) {
                 r1 = (f32)rand() / 32767.0f;
@@ -2124,11 +2124,7 @@ static void ext_moamoa_main(void) {
                 }
                 tx = 15.0f * ekiSinfM(rad) + ep->matrix[0][0][3];
                 tz = -(15.0f * ekiCosfM(rad) - ep->matrix[0][2][3]);
-                {
-                    f32 b = randf(1.0f, 1.0f);
-
-                    moamoa_jump(ep, pose, pose->field_0x02, 1, tx, 0.0f, tz, 3.0f * randf(1.0f, 1.0f), b);
-                }
+                moamoa_jump(ep, pose, pose->field_0x02, 1, tx, 0.0f, tz, 3.0f * randf(1.0f, 1.0f), randf(1.0f, 1.0f));
             } else {
                 pose->field_0x02 = 0x3E;
             }
