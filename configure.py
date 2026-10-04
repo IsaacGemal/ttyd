@@ -685,7 +685,7 @@ config.libs = [
             Object(Matching, "event/evt_hit.c"),
             Object(NonMatching, "event/evt_bero.c"),
             Object(NonMatching, "event/evt_cam.c"),
-            Object(NonMatching, "event/evt_item.c"),
+            Object(Matching, "event/evt_item.c"),
             Object(Matching, "event/evt_msg.c"),
             Object(Matching, "event/evt_ext.c"),
             Object(Matching, "event/evt_mario.c"),
