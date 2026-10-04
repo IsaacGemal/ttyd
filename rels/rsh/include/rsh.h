@@ -101,3 +101,10 @@ EVT_DEF(evt_rsh_04_rnd_npc_entry);
 typedef struct {
     u8 b[256];
 } Zero256;
+struct MapObject;
+// Match-only pair used by rsh_window_tev: keeping the object pointer and its flags word in one
+// scalarised struct makes MWCC allocate them to r5/r6 (two plain locals come out swapped).
+typedef struct RshWindowTevObj {
+    struct MapObject* obj; // 0x0, param->obj
+    u32 flags;             // 0x0, *(u32*)obj->field_0x0
+} RshWindowTevObj;
