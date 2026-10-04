@@ -1688,15 +1688,13 @@ u8 _yoshig_tpl_no_tbl[8] = { 0x46, 0x49, 0x47, 0x46, 0x4A, 0x48, 0x00, 0x00 };
 static f32 yoshi_pool_i2f(s32 v) {
     return (f32)v;
 }
-#pragma defer_codegen on
+#pragma defer_codegen reset
 #endif
 
 // Reusing one variable for both evtGetValue and BattleTransID (`id = evtGetValue(...);
 // id = BattleTransID(event, id);`) removed the extra `mr r0` the two-variable form emitted.
-// The pool base register is r5/r6 as the original only with the pragma below (with propagation on
-// MWCC puts the string-pool base in r6 and event->args in r5); the only differences left are the
-// six string pool offsets and the .data jump-table symbol, both from the unit's not-yet-written data.
-#pragma opt_propagation off // with propagation on MWCC puts the string-pool base in r6 and event->args in r5 (original: r5/r6)
+// With propagation on MWCC puts the string-pool base in r6 and event->args in r5 (original: r5/r6).
+#pragma opt_propagation off
 USER_FUNC(yoshi_original_color_anim_set) {
     s32 id;
     const char* name;
@@ -1823,11 +1821,6 @@ typedef struct YoshiGundanArea {
     u8 pad_0x4[0x3008 - 0x4]; // 0x4
     f32 field_0x3008;         // 0x3008
 } YoshiGundanArea;
-
-// The two differences left are the string pool offsets and the .data jump-table symbol:
-// NONMATCHING (99.93%): the six string pool offsets (0x4F8.. vs 0x20..) and the .data jump-table
-// symbol (`jumptable_8037EBF4` vs `@471`) differ; both come from the rodata/.data that precede them
-// (pose tables at .rodata:0x0..0x4D8; .data objects before .data:0x51F4) and are not written yet.
 
 USER_FUNC(btl_yoshi_yoroyoro_jump_calc_param) {
     BattleWork* work;
