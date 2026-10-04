@@ -13,19 +13,29 @@
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 
-extern u32 unk_80422ff8;
-extern u32 unk_80422ffc;
-extern u32 unk_80423000;
-extern u32 unk_80423004;
-extern u32 unk_80423008;
+// pool_data: the original reaches this unit's .rodata (the sfx Vecs and strings) through one base
+// register seeded from vec3_802f3048, so let MWCC pool it instead of rematerialising lis/addi.
+#pragma pool_data on
 
-__declspec(section ".data") u8 lbl_8036BEA0[8] = {
+// .sbss2 scratch colours referenced by effFukidashiDisp. The default .sbss2 only holds
+// compiler-generated pool templates, so pair it with the small-data section and place the objects by
+// hand; they land in reverse declaration order, so the 4-byte section-tail gap is declared first.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") u8 gap_10_8042300C_sbss2[4];
+__declspec(section ".sdata") u32 unk_80423008;
+__declspec(section ".sdata") u32 unk_80423004;
+__declspec(section ".sdata") u32 unk_80423000;
+__declspec(section ".sdata") u32 unk_80422ffc;
+__declspec(section ".sdata") u32 unk_80422ff8;
+#pragma section ".sdata" ".sbss"
+
+__declspec(section ".data") u8 lbl_8036BEA0[8] ATTRIBUTE_ALIGN(16) = {
 	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
 };
 
-__declspec(section ".data") u8 negone_one_374[8] = {
+__declspec(section ".data") static u8 negone_one_374[8] = {
 	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
 };
 
@@ -33,7 +43,7 @@ __declspec(section ".data") u8 lbl_8036BEB0[8] = {
 	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
 };
 
-__declspec(section ".data") u8 one_negone_373[8] = {
+__declspec(section ".data") static u8 one_negone_373[8] = {
 	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
 };
 
@@ -41,7 +51,7 @@ __declspec(section ".data") u8 lbl_8036BEC0[8] = {
 	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
 };
 
-__declspec(section ".data") u8 negone_one_360[8] = {
+__declspec(section ".data") static u8 negone_one_360[8] = {
 	0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
 };
 
@@ -49,7 +59,7 @@ __declspec(section ".data") u8 lbl_8036BED0[8] = {
 	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
 };
 
-__declspec(section ".data") u8 one_negone_359[8] = {
+__declspec(section ".data") static u8 one_negone_359[8] = {
 	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
 };
 
@@ -91,10 +101,7 @@ u32 anim_data_tenten_2[] = {
 void* anim_data_table_2[] = {
 	anim_data_bikkuri_2, anim_data_hatena_2, anim_data_bikkuri_2, anim_data_loop,
 	anim_data_tenten_2, anim_data_moja, anim_data_loop,
-};
-
-__declspec(section ".sdata") u8 gap_07_804114D4_sdata[12] = {
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	NULL, NULL, NULL,
 };
 
 __declspec(section ".sdata") u32 moja_model_color0_tbl[8] = {
@@ -102,140 +109,140 @@ __declspec(section ".sdata") u32 moja_model_color0_tbl[8] = {
 	0x00000000, 0x00000000,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_1[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_1[32] = {
 	0x98, 0x00, 0x05, 0x1B, 0x0D, 0x00, 0x1A, 0x0D,
 	0x00, 0x18, 0x0C, 0x00, 0x19, 0x0C, 0x00, 0x12,
 	0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_2[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_2[32] = {
 	0x98, 0x00, 0x04, 0x1C, 0x0E, 0x00, 0x1A, 0x0D,
 	0x00, 0x20, 0x0E, 0x00, 0x1B, 0x0D, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_3[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_3[32] = {
 	0x98, 0x00, 0x04, 0x1D, 0x0F, 0x00, 0x1C, 0x0E,
 	0x00, 0x21, 0x0F, 0x00, 0x20, 0x0E, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_4[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_4[32] = {
 	0x98, 0x00, 0x04, 0x1E, 0x10, 0x00, 0x1D, 0x0F,
 	0x00, 0x22, 0x10, 0x00, 0x21, 0x0F, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_5[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_5[32] = {
 	0x98, 0x00, 0x04, 0x1F, 0x06, 0x00, 0x1E, 0x10,
 	0x00, 0x23, 0x06, 0x00, 0x22, 0x10, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_6[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_6[32] = {
 	0x98, 0x00, 0x04, 0x24, 0x11, 0x00, 0x1F, 0x06,
 	0x00, 0x29, 0x11, 0x00, 0x23, 0x06, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_7[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_7[32] = {
 	0x98, 0x00, 0x04, 0x25, 0x12, 0x00, 0x24, 0x11,
 	0x00, 0x2A, 0x12, 0x00, 0x29, 0x11, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_8[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_8[32] = {
 	0x98, 0x00, 0x04, 0x26, 0x13, 0x00, 0x25, 0x12,
 	0x00, 0x2B, 0x13, 0x00, 0x2A, 0x12, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_9[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_9[32] = {
 	0x98, 0x00, 0x04, 0x27, 0x14, 0x00, 0x26, 0x13,
 	0x00, 0x2C, 0x14, 0x00, 0x2B, 0x13, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_10[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_10[32] = {
 	0x98, 0x00, 0x04, 0x28, 0x15, 0x00, 0x27, 0x14,
 	0x00, 0x2D, 0x15, 0x00, 0x2C, 0x14, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_11[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_11[32] = {
 	0x98, 0x00, 0x04, 0x2E, 0x0D, 0x00, 0x28, 0x15,
 	0x00, 0x33, 0x0D, 0x00, 0x2D, 0x15, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_12[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_12[32] = {
 	0x98, 0x00, 0x04, 0x2F, 0x0E, 0x00, 0x2E, 0x0D,
 	0x00, 0x34, 0x0E, 0x00, 0x33, 0x0D, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_13[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_13[32] = {
 	0x98, 0x00, 0x04, 0x30, 0x0F, 0x00, 0x2F, 0x0E,
 	0x00, 0x35, 0x0F, 0x00, 0x34, 0x0E, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_14[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_14[32] = {
 	0x98, 0x00, 0x04, 0x31, 0x10, 0x00, 0x30, 0x0F,
 	0x00, 0x36, 0x10, 0x00, 0x35, 0x0F, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_15[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_15[32] = {
 	0x98, 0x00, 0x04, 0x32, 0x06, 0x00, 0x31, 0x10,
 	0x00, 0x37, 0x06, 0x00, 0x36, 0x10, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_16[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_16[32] = {
 	0x98, 0x00, 0x04, 0x38, 0x11, 0x00, 0x32, 0x06,
 	0x00, 0x3D, 0x11, 0x00, 0x37, 0x06, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_17[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_17[32] = {
 	0x98, 0x00, 0x04, 0x39, 0x12, 0x00, 0x38, 0x11,
 	0x00, 0x3E, 0x12, 0x00, 0x3D, 0x11, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_18[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_18[32] = {
 	0x98, 0x00, 0x04, 0x3A, 0x13, 0x00, 0x39, 0x12,
 	0x00, 0x3F, 0x13, 0x00, 0x3E, 0x12, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_19[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_19[32] = {
 	0x98, 0x00, 0x04, 0x3B, 0x14, 0x00, 0x3A, 0x13,
 	0x00, 0x40, 0x14, 0x00, 0x3F, 0x13, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 };
 
-__declspec(section ".sdata") u8 moja_model_dl_0_20[32] ATTRIBUTE_ALIGN(32) = {
+__declspec(section ".sdata") u8 moja_model_dl_0_20[32] = {
 	0x98, 0x00, 0x04, 0x3C, 0x16, 0x00, 0x3B, 0x14,
 	0x00, 0x41, 0x16, 0x00, 0x40, 0x14, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -324,8 +331,6 @@ const Vec vec3_802f3054 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f3060 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f306C = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802f3078 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3084 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f3090 = { 0.0f, 0.0f, 0.0f };
 
 const u32 dat_8041c5b0 = 0xFFFFFF00;
 const u32 dat_8041c5b4 = 0xA0A0A000;
@@ -400,57 +405,26 @@ end:
 	data->field_0x2C = 0.5f * (data->field_0x20 / 12.0f) + 0.5f;
 }
 
-// The original reaches this unit's first .rodata object (vec3_802f3048) once into r31 and then
-// addresses the sfx Vecs (+0x0c..+0x38) and strings (+0x68..+0x90) from it. Naming the separate
-// objects makes the compiler emit one lis/addi per object and shifts every callee-saved register;
-// without a local base pointer it rematerialises lis/addi per branch instead of keeping r31.
-#ifdef MUST_MATCH
-#define FB(off, sym) (fbase + (off))
-#define FV(off, sym) (*(const Vec*)(fbase + (off)))
+// This unit is built with pool_data on: MWCC reaches all of its .rodata through one base register
+// (vec3_802f3048). Copying the zero sfx Vecs as `Vec vec = vec3_...;` makes effFukidashiEntry seed
+// that base once and read the vectors base+offset, as retail does; a base+offset pointer copy
+// interleaves the loads and stores and a direct (Vec){0,0,0} template pools an eighth object that
+// shifts the strings. effFukidashiMain/effFukidashiDisp likewise read their zero Vecs through
+// pooled templates so only the five named Vecs sit before the pool.
+//
 // The original compares the c==-2/-3 fallthrough as unsigned (cmplwi); `c != 0` emits cmpwi.
+#ifdef MUST_MATCH
 #define FUKI_C_NONZERO(x) ((u32)(x) != 0)
-// MUST_MATCH: retail copies each zero sfx Vec as a batched load-all/store-all (lwz x,y,z into
-// r6,r5,r0 then stw). A plain base+offset aggregate copy interleaves and reuses r0 (95.61%).
-// Three things together reproduce retail:
-//  - a *non-volatile* `const u32*` source. A `volatile const u32*` source also batches but then
-//    MWCC colours the function's callee-saved registers the other way (a=r31/fbase=r30/entry=r29,
-//    99.30%); the non-volatile source keeps retail's a=r29/fbase=r31/entry=r30. Any
-//    volatile on the source pointer is the trigger, regardless of its element type.
-//  - the volatile *destination* pins the load-all/store-all order.
-//  - the temp declaration order and store order give retail's load colouring x->r6, y->r5, z->r0.
-//    MWCC assigns the first-stored temp to r0, so with this store order the emitted stores are
-//    z->0x2c, y->0x30, x->0x34: word0/word2 are swapped versus retail. That is harmless here (all
-//    three source words are zero and the vector is overwritten immediately after).
-#define FV_COPY(vec, off, sym) do { \
-	const u32* fv_sp = (const u32*)(fbase + (off)); \
-	volatile u32* fv_dp = (volatile u32*)&(vec); \
-	s32 fv_1, fv_0, fv_2; \
-	fv_0 = fv_sp[0]; fv_1 = fv_sp[1]; fv_2 = fv_sp[2]; \
-	fv_dp[0] = fv_2; fv_dp[1] = fv_1; fv_dp[2] = fv_0; \
-} while (0)
 #else
-#define FB(off, sym) (sym)
-#define FV(off, sym) (sym)
 #define FUKI_C_NONZERO(x) ((x) != 0)
-#define FV_COPY(vec, off, sym) ((vec) = (sym))
 #endif
 
-// NONMATCHING (99.58%): every instruction matches except 8 store-register swaps in the four
-// zero-Vec copies (retail stw r6,0x2c / stw r0,0x34; ours stw r0,0x2c / stw r6,0x34 -- see FV_COPY
-// above) and 4 scheduling swaps of the two `addi` that set up psndSFXOn_3D's r3/r4 in the two
-// string cases. The callee-saved allocation (a=r29, entry=r30, fbase=r31) now matches. The store
-// swap is what remains of MWCC's "first-stored temp takes r0" behaviour; declaration-order
-// permutations, `register`, and the opt_*/scheduling/optimize_for_size pragma set do not change it.
-// Remaining work is register/schedule colouring for the permuter.
 EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, f32 h, f32 i) {
 	EffectEntry* entry;
 	effFukidashiData* data;
-#ifdef MUST_MATCH
-	const char* fbase = (const char*)&vec3_802f3048;
-#endif
 
 	entry = effEntry();
-	entry->type = FB(0x68, "Fukidashi");
+	entry->type = "Fukidashi";
 	entry->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effFukidashiData));
 	entry->userdata = data;
@@ -510,8 +484,7 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 	if (c == -2 || c == -3) {
 		switch (a) {
 		case 0: {
-			Vec vec;
-			FV_COPY(vec, 0x0C, vec3_802f3054);
+			Vec vec = vec3_802f3054;
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
@@ -519,8 +492,7 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 			break;
 		}
 		case 1: {
-			Vec vec;
-			FV_COPY(vec, 0x18, vec3_802f3060);
+			Vec vec = vec3_802f3060;
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
@@ -531,21 +503,19 @@ EffectEntry* effFukidashiEntry(s32 a, s32 b, s32 c, s32 d, f32 e, f32 f, f32 g, 
 	} else if (FUKI_C_NONZERO(c) && c != -1) {
 		switch (a) {
 		case 0: {
-			Vec vec;
-			FV_COPY(vec, 0x24, vec3_802f306C);
+			Vec vec = vec3_802f306C;
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
-			psndSFXOn_3D(FB(0x74, "SFX_EVT_NPC_BIKKURI_MARK1"), &vec);
+			psndSFXOn_3D("SFX_EVT_NPC_BIKKURI_MARK1", &vec);
 			break;
 		}
 		case 1: {
-			Vec vec;
-			FV_COPY(vec, 0x30, vec3_802f3078);
+			Vec vec = vec3_802f3078;
 			vec.x = e;
 			vec.y = f;
 			vec.z = g;
-			psndSFXOn_3D(FB(0x90, "SFX_EVT_NPC_QUESTION_MARK1"), &vec);
+			psndSFXOn_3D("SFX_EVT_NPC_QUESTION_MARK1", &vec);
 			break;
 		}
 		}
@@ -825,9 +795,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-8.0f, 16.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
-					GXPosition3f32(16.0f, 16.0f, 0.0f);
+					GXPosition3f32(8.0f, 16.0f, 0.0f);
 					GXTexCoord2f32(1.0f, 0.0f);
-					GXPosition3f32(16.0f, -8.0f, 0.0f);
+					GXPosition3f32(8.0f, -8.0f, 0.0f);
 					GXTexCoord2f32(1.0f, 1.0f);
 					GXPosition3f32(-8.0f, -8.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 1.0f);
@@ -852,9 +822,9 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-8.0f, 16.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
-					GXPosition3f32(16.0f, 16.0f, 0.0f);
+					GXPosition3f32(8.0f, 16.0f, 0.0f);
 					GXTexCoord2f32(1.0f, 0.0f);
-					GXPosition3f32(16.0f, -8.0f, 0.0f);
+					GXPosition3f32(8.0f, -8.0f, 0.0f);
 					GXTexCoord2f32(1.0f, 1.0f);
 					GXPosition3f32(-8.0f, -8.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 1.0f);
@@ -871,7 +841,7 @@ void effFukidashiDisp(CameraId camId, void* param) {
 				GXSetNumChans(1);
 				GXSetChanCtrl(4, GX_TRUE, GX_SRC_REG, GX_SRC_VTX, 1, 2, 2);
 				GXSetChanAmbColor(GX_COLOR0A0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5c0));
-				v2 = *(Vec*)&vec3_802f3090;
+				v2 = (Vec){ 0.0f, 0.0f, 0.0f };
 				v2.x = data->position.x + 10.0f * (f32)cos((f32)gp->retraceCount / 10.0f);
 				v2.y = data->position.y;
 				v2.z = data->position.z - 10.0f * (f32)sin((f32)gp->retraceCount / 10.0f);
@@ -1012,12 +982,12 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-8.0f, 16.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
-					GXPosition3f32(16.0f, 16.0f, 0.0f);
-					GXTexCoord2f32(1.0f, 0.0f);
-					GXPosition3f32(16.0f, -8.0f, 0.0f);
-					GXTexCoord2f32(2.0f, 1.0f);
+					GXPosition3f32(8.0f, 16.0f, 0.0f);
+					GXTexCoord2f32(2.0f, 0.0f);
+					GXPosition3f32(8.0f, -8.0f, 0.0f);
+					GXTexCoord2f32(2.0f, 2.0f);
 					GXPosition3f32(-8.0f, -8.0f, 0.0f);
-					GXTexCoord2f32(0.0f, 1.0f);
+					GXTexCoord2f32(0.0f, 2.0f);
 					if (i == 0) {
 						GXSetTevColor(GX_TEVREG0, fukidashiColor(alphaB, *(GXColor*)&dat_8041c5d0));
 					} else {
@@ -1028,15 +998,17 @@ void effFukidashiDisp(CameraId camId, void* param) {
 					GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 					GXPosition3f32(-8.0f, 16.0f, 0.0f);
 					GXTexCoord2f32(0.0f, 0.0f);
-					GXPosition3f32(16.0f, 16.0f, 0.0f);
-					GXTexCoord2f32(1.0f, 0.0f);
-					GXPosition3f32(16.0f, -8.0f, 0.0f);
-					GXTexCoord2f32(2.0f, 1.0f);
+					GXPosition3f32(8.0f, 16.0f, 0.0f);
+					GXTexCoord2f32(2.0f, 0.0f);
+					GXPosition3f32(8.0f, -8.0f, 0.0f);
+					GXTexCoord2f32(2.0f, 2.0f);
 					GXPosition3f32(-8.0f, -8.0f, 0.0f);
-					GXTexCoord2f32(0.0f, 1.0f);
+					GXTexCoord2f32(0.0f, 2.0f);
 				}
 				break;
 		}
 	}
 }
 
+// .rodata tail gap: the original's last 4-byte zero word, after the three strings.
+__declspec(section ".rodata") const u32 gap_04_802F30F4_rodata = 0;
