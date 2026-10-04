@@ -4500,3 +4500,7 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   relocations no longer pair, and `debug$2303` became a file-scope `debug`), fadedrv's link task (.sdata 100 -> 6),
   evt_yuunpc (.data 95.7 -> 81.8), eff_pokopi_thunder_n64 (.rodata 97.8 -> 93.0), animdrv (.sdata2 27.2 -> 24.1),
   win_item (.rodata 99.94 -> 99.92).
+
+## fadedrv linked (2026-10-04, Codex)
+
+`driver/fadedrv.c` now links with all 27 functions at 100% and all 32 checksums passing. A deferred unused pi helper between `disp_maku` and `disp_tec` pools pi before half/180 without changing instructions. At EOF, an immediately generated u32-to-f32 helper flushes deferred code before `force_active` and the `.rodata`/`.data` tail words; the linker strips both helper bodies. The const `lbl_802C1538` then lands at exactly 0x802C1538. Texture padding uses u8/u16/u32[7] to avoid introducing alignment; `.sbss` and `.sbss2` each need one gap word (the first `.sbss2` word is already a compiler-generated zero GXColor). All data section bytes/sizes match; `.sdata` and `.sbss2` objdiff scores are imperfect because their source objects partition the padding differently.
