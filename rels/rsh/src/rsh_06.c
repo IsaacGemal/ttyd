@@ -2036,28 +2036,32 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
 #pragma opt_propagation off
 // Keeps the inlined sin/cos argument in a callee-saved FPR instead of rematerialising it per branch.
 #pragma opt_lifetimes off
-// NONMATCHING (89.38%): calls and immediates match, the frame (0x150) and the saved register sets
-// (r17..r31, f31..f26) match, and stack traffic is identical (103 stores / 57 loads), but our body is
-// 12368 B vs the target's 12252 B (+29 instructions, mostly extra `addi`/`lis` address materialisation
-// in the inlined sin/cos/randf). Five structural findings were load-bearing: (1) the case-0x2F voice
-// vector must be built in place (`v4 = vec3_rsh_00013da0` then lane stores), not via
-// `v4 = moamoa_vec(...)`, because retail emits no return-temp copy there; (2) naming the voice string
-// (`char* sv; ... sv = "SFX_STG6_MOAMOA_VOICE1";` at the top of the entry loop) makes it live across
-// the loop body, which is what gets it hoisted into a callee-saved register and brings the saved GPR
-// set back to r17..r31; (3) the four Vec use sites (main voice, case 0x2F, case 0xF, case 0x3D) need
-// four distinct function-scope Vecs to force the target's 5 Vec stack slots and the 0x150 frame;
-// (4) the scalar float temps (`dist`, `f`, `rad`, `tx`, `ty`, `tz`) are NOT function-scope: the target
-// declares them per switch-case / per if-body (in `{ }`), so the body reads them in caller-saved FPRs
-// rather than holding them live across the whole function with `opt_lifetimes off`. Cases 0x0, 0xF,
-// 0x1, 0x2, 0x3, 0x24/0x25/0x26, 0x2F, 0x33/0x34, 0x3F, the cloud-breath setup, the res==3 hit-check
-// arm and the two camera-clamp tails each declare their own block-local copy; making them
-// function-scope kept the inlined sine argument in f29 and cost >0.4%. Together these took the
-// function from 88.26% to 89.38%. Remaining: `push` is f30 (retail f31), `handled`/`voicePlayed` are
-// r26/r25 (retail r25/r26), the cloud/res==3 sine arguments land in f6 (retail f5/f2), and the
-// inliner schedules the constant loads and `fmadds` differently. Rest is permuter work.
+// NONMATCHING (90.50%): calls and immediates match, the frame (0x150) and the saved register sets
+// (r17..r31, f31..f26) match, and stack traffic is identical, but our body is 12272 B vs the target's
+// 12252 B (+5 instructions, leftover `addi`/`lis` address materialisation in the inlined sin/cos/randf);
+// the rest is register colouring and scheduling. The structural findings that were load-bearing:
+// (1) the case-0x2F voice vector must be built in place (`v4 = vec3_rsh_00013da0` then lane stores),
+// not via `v4 = moamoa_vec(...)`, because retail emits no return-temp copy there; (2) naming the voice
+// string (`char* sv; ... sv = "SFX_STG6_MOAMOA_VOICE1";` at the top of the entry loop) makes it live
+// across the loop body, which gets it hoisted into a callee-saved register and brings the saved GPR set
+// back to r17..r31; (3) the four Vec use sites (main voice, case 0x2F, case 0xF, case 0x3D) need four
+// distinct function-scope Vecs to force the target's 5 Vec stack slots and the 0x150 frame; (4) the
+// scalar float temps (`dist`, `f`, `rad`, `tx`, `ty`, `tz`) are NOT function-scope: the target declares
+// them per switch-case / per if-body (in `{ }`), so the body reads them in caller-saved FPRs rather than
+// holding them live across the whole function with `opt_lifetimes off`; (5) the cloud-breath angle and
+// the case 0x1/0x2 angles keep the `wp->field_0x550 + ...` / `angleABf(...) + ...` intermediate in a
+// named `rr` block-local, and the res==3 case wraps the two flag stores plus
+// `t = wp->field_0x550 + wp->field_0x55C; f3 = 0.5f * t;` in their own block (with `f3`/`dist3`/`rad3`
+// still block-local); (6) the four camera-clamp tails write `randf(0.0f, 5.0f)` out as
+// `(f32)rand() / 32767.0f * 5.0f`, which drops the extra `addi` the inlined min/max otherwise need;
+// (7) a handful of operand-order / `a += b` vs `a = a + b` / `6.2831855f * X / 360.0f` vs
+// `X / 360.0f * 6.2831855f` shapes change the inliner's schedule (the last two sites score +0.14%).
+// Remaining: `push` is f30 (retail f31), `handled`/`voicePlayed` are r26/r25 (retail r25/r26), the two
+// anonymous Vec temps at {0x20..0x28}/{0x2c..0x34} are swapped, and a handful of constant loads
+// materialise their address instead of using `@l`. Rest is permuter work.
 #define MOA_TARGET(i) (wp->vec[(i) % 3])
 // Per-frame update of every moamoa (the Great Moamoa variant: a follower pulls the swarm to a joint of "base").
-// NONMATCHING (89.38%): register/scheduling colouring only; see the block above for the full breakdown.
+// NONMATCHING (90.50%): register/scheduling colouring only; see the block above for the full breakdown.
 static void ext_moamoa_main(void) {
     MarioWork* mario;
     PartyEntry* party;
@@ -2098,15 +2102,12 @@ static void ext_moamoa_main(void) {
     wp->field_0x55C = -1.0f;
     wp->field_0x560 = -1.0f;
     if (party->currentMemberId == 5 && (party->flags & 0x100)) {
-        f32 rdx;
-
         wp->field_0x55C = cloudGetBreathDir();
         wp->field_0x560 = cloudGetBreathDist();
-        rdx = 6.2831855f * wp->field_0x55C / 360.0f;
-        wp->field_0x564.x = wp->field_0x560 * moamoa_sin(rdx) + party->position.x;
+        wp->field_0x564.x =
+            wp->field_0x560 * moamoa_sin(6.2831855f * wp->field_0x55C / 360.0f) + party->position.x;
         wp->field_0x564.y = party->position.y;
-        rdx = 6.2831855f * wp->field_0x55C / 360.0f;
-        wp->field_0x564.z = -(wp->field_0x560 * moamoa_cos(rdx) - party->position.z);
+        wp->field_0x564.z = -(wp->field_0x560 * moamoa_cos(6.2831855f * wp->field_0x55C / 360.0f) - party->position.z);
     }
     ep = extGetPosePtr();
     voicePlayed = 0;
@@ -2116,7 +2117,7 @@ static void ext_moamoa_main(void) {
         wp->field_0x550 = angleABf(mario->position.x, mario->position.z, (*ep->matrix)[0][3], (*ep->matrix)[2][3]);
         wp->field_0x554 = distABf(mario->position.x, mario->position.z, (*ep->matrix)[0][3], (*ep->matrix)[2][3]);
         if (!(entry->flags & 0x154) && mario->position.y > 200.0f && wp->field_0x554 < 30.0f) {
-            push += 1.0f;
+            push = push + 1.0f;
         }
         if ((wp->flags & 0x1) && !(wp->flags & 0x4) && marioKeyOffChk() == 0 && marioCtrlOffChk() == 0
             && handled == 0 && !(entry->flags & 0x154)) {
@@ -2138,9 +2139,13 @@ static void ext_moamoa_main(void) {
             } else if (res == 3) {
                 f32 f3, dist3, rad3;
 
-                entry->flags |= 0x84;
-                entry->field_0x2 = 0x30;
-                f3 = (wp->field_0x55C + wp->field_0x550) * 0.5f;
+                {
+                    f32 t = wp->field_0x550 + wp->field_0x55C;
+
+                    entry->flags |= 0x84;
+                    entry->field_0x2 = 0x30;
+                    f3 = t * 0.5f;
+                }
                 entry->field_0x8 = vec3_rsh_00013d88;
                 dist3 = randf(0.1f, 0.2f);
                 rad3 = 6.2831855f * f3 / 360.0f;
@@ -2255,7 +2260,7 @@ static void ext_moamoa_main(void) {
             tx33 = MOA_TARGET(i).x;
             ty33 = MOA_TARGET(i).y;
             tz33 = MOA_TARGET(i).z;
-            dist33 = entry->field_0x20 * (f32)sin((f32)(i + gp->retraceCount) * 0.25f);
+            dist33 = (f32)sin((f32)(i + gp->retraceCount) * 0.25f) * entry->field_0x20;
             ty33 = entry->field_0x1C * f33 + ty33;
             tx33 = f33 * dist33 + tx33;
             tz33 = f33 * (-entry->field_0x20 * (f32)cos((f32)(i + gp->retraceCount) * 0.25f)) + tz33;
@@ -2268,11 +2273,15 @@ static void ext_moamoa_main(void) {
         case 0x1: {
             f32 dist1, rad1, tx1, ty1, tz1;
 
-            dist1 = wp->field_0x554;
-            rad1 = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f)) / 360.0f;
+            {
+                f32 rr = wp->field_0x550 + randf(-45.0f, 45.0f);
+
+                rad1 = 6.2831855f * rr / 360.0f;
+            }
             tx1 = 15.0f * moamoa_sin(rad1) + (*ep->matrix)[0][3];
             ty1 = (*ep->matrix)[1][3];
             tz1 = -(15.0f * moamoa_cos(rad1) - (*ep->matrix)[2][3]);
+            dist1 = wp->field_0x554;
             moamoa_jump(ep, entry, (dist1 < 100.0f) ? entry->field_0x2 : 0, 0, tx1, ty1, tz1, randf(1.0f, 1.0f),
                         randf(0.4f, 0.4f));
             break;
@@ -2280,8 +2289,12 @@ static void ext_moamoa_main(void) {
         case 0x2: {
             f32 dist2, rad2, tx2, ty2, tz2;
 
+            {
+                f32 rr = wp->field_0x550 + randf(-45.0f, 45.0f) + 180.0f;
+
+                rad2 = rr / 360.0f * 6.2831855f;
+            }
             dist2 = wp->field_0x554;
-            rad2 = 6.2831855f * (wp->field_0x550 + randf(-45.0f, 45.0f) + 180.0f) / 360.0f;
             ty2 = (*ep->matrix)[1][3];
             tx2 = 30.0f * moamoa_sin(rad2) + (*ep->matrix)[0][3];
             tz2 = (*ep->matrix)[2][3];
@@ -2346,7 +2359,7 @@ static void ext_moamoa_main(void) {
         case 0x2F: {
             f32 rad2f, dist2f, tx2f, tz2f, f2f, ty2f;
 
-            rad2f = 6.2831855f * randf(135.0f, 225.0f) / 360.0f;
+            rad2f = randf(135.0f, 225.0f) / 360.0f * 6.2831855f;
             dist2f = randf(300.0f, 500.0f);
             tx2f = dist2f * moamoa_sin(rad2f) + (*ep->matrix)[0][3];
             tz2f = -(dist2f * moamoa_cos(rad2f) - (*ep->matrix)[2][3]);
@@ -2365,9 +2378,9 @@ static void ext_moamoa_main(void) {
         }
         case 0x30:
             if (--entry->field_0x18 > 0) {
-                entry->field_0x8.x += entry->field_0x14;
-                entry->field_0x8.y += entry->field_0x1C;
-                entry->field_0x8.z += entry->field_0x20;
+                entry->field_0x8.x = entry->field_0x8.x + entry->field_0x14;
+                entry->field_0x8.y = entry->field_0x1C + entry->field_0x8.y;
+                entry->field_0x8.z = entry->field_0x8.z + entry->field_0x20;
                 (*ep->matrix)[0][3] += entry->field_0x8.x;
                 (*ep->matrix)[1][3] += entry->field_0x8.y;
                 (*ep->matrix)[2][3] += entry->field_0x8.z;
@@ -2454,17 +2467,17 @@ static void ext_moamoa_main(void) {
         }
         if (!(entry->flags & 0x588)) {
             if ((*ep->matrix)[0][3] > 100.0f) {
-                (*ep->matrix)[0][3] = 100.0f + randf(0.0f, 5.0f);
+                (*ep->matrix)[0][3] = 100.0f + (f32)rand() / 32767.0f * 5.0f;
             }
             if ((*ep->matrix)[0][3] < -1870.0f) {
-                (*ep->matrix)[0][3] = -1870.0f + randf(0.0f, 5.0f);
+                (*ep->matrix)[0][3] = -1870.0f + (f32)rand() / 32767.0f * 5.0f;
             }
             if (!(entry->flags & 0x40)) {
                 if ((*ep->matrix)[2][3] > 45.0f) {
-                    (*ep->matrix)[2][3] = 45.0f + randf(0.0f, 5.0f);
+                    (*ep->matrix)[2][3] = 45.0f + (f32)rand() / 32767.0f * 5.0f;
                 }
                 if ((*ep->matrix)[2][3] < -45.0f) {
-                    (*ep->matrix)[2][3] = -45.0f + randf(0.0f, 5.0f);
+                    (*ep->matrix)[2][3] = -45.0f + (f32)rand() / 32767.0f * 5.0f;
                 }
             }
         }
