@@ -1,4 +1,8 @@
-"""Adapted from tw2004's tools/matching/sched750.py (CC0).
+"""Adapted from tw2004's tools/matching/sched750.py (CC0), extended to floating point for this project (2026-10-04): the FPU rows of the
+timing table (unit 5, rows at 0x5d2c98 of mwcceppc.exe 2.6), every opcode's byte-9 tie-break from the exe's opcode table, a two-stage FPU
+in the machine model, and the no-alias rule for loads from the anonymous literal pool. `validate` on 134 of our dumps reproduces
+3949 of 4129 blocks (95.6%), 1128 of 1223 (92.2%) of those with floating-point ops. Known misses: an op the real scheduler issues
+late where the model issues it in an idle cycle (`li` after two `fmuls`), and `lis` pairs.
 
 Simulate MWCC's instruction scheduler (GC/2.6, -proc gekko = the PPC750 model) on a mwccdbg dump:
 predict a block's order before and after register allocation, and search for the one dead value
@@ -44,15 +48,14 @@ timing table 0x5d2c98 (7 bytes per opcode: unit, latency, cycles in the first an
   where the input had `mr r45,r39; cmpl r45`); the model does the same before scheduling.
 Validation: 2146 of 2240 integer-only blocks of the round-5 batch dumps (both passes; `validate`
 on the main checkout's build/mwccdbg/*/) reproduced exactly; fn_800949D0's block B23 in both
-passes; deadsearch on its old dump finds the one lever that closed it (a dead srawi of n). FPU pipelines, calls and record forms are not
-modelled (such blocks are skipped). Found: fn_800949D0 exact from the deadsearch lead (a dead
+passes; deadsearch on its old dump finds the one lever that closed it (a dead srawi of n). Calls and record forms are not modelled (such blocks are skipped). Found: fn_800949D0 exact from the deadsearch lead (a dead
 srawi of n moved the whole first pass; docs/compiler/decomp-notes.md "New from round 7")."""
 import itertools, os, re, sys
 
 # opcode -> (unit, latency, cycles in stage 1, cycles in stage 2); unit 0 BPU, 1 IU1, 2 any IU, 3 LSU
 T = {}
-LOADS = {'lhz', 'lwz', 'lwzx', 'lbz', 'lha', 'lhzx', 'lbzx', 'lhax', 'lfs', 'lfd', 'lfsx', 'lfdx', 'lwzu'}
-STORES = {'stw', 'sth', 'stb', 'stwx', 'sthx', 'stbx', 'stfs', 'stfd'}
+LOADS = {'lhz', 'lwz', 'lwzx', 'lbz', 'lha', 'lhzx', 'lbzx', 'lhax', 'lfs', 'lfd', 'lfsx', 'lfdx', 'lwzu', 'lfsu'}
+STORES = {'stw', 'sth', 'stb', 'stwx', 'sthx', 'stbx', 'stfs', 'stfd', 'stfsx', 'stfdx', 'stfsu'}
 BRANCH = {'bt', 'bf', 'b', 'blr', 'bctr'}
 for _op in LOADS | STORES:
     T[_op] = (3, 2, 1, 1)
@@ -68,10 +71,32 @@ for _op in ('mulhw', 'mullw'):
 T['mulhwu'] = (1, 6, 5, 0)
 for _op in BRANCH:
     T[_op] = (0, 0, 0, 0)
-# opcode-info byte 9 (first-pass tie-break)
-PROP = {'lhz': 3, 'lwz': 3, 'lwzx': 3, 'lbz': 3, 'lha': 3, 'rlwinm': 2, 'mulli': 2, 'add': 2, 'subf': 2,
-        'cmp': 1, 'cmpl': 1, 'cmpi': 1, 'cmpli': 1, 'mr': 0, 'srawi': 2, 'li': 4, 'addi': 2, 'extsh': 2,
-        'extsb': 2, 'mulhw': 2, 'mullw': 2, 'mulhwu': 2, 'bt': 0, 'bf': 0}
+# Floating point (unit 5, the FPU), rows read from the timing table at 0x5d2c98 of mwcceppc.exe 2.6 (opcode ids as in tools/opmap): fadds/fsubs/
+# fmuls/fmadds-family (single) latency 3, one cycle in each of the two stages; fmul/fmadd (double) two cycles in the first stage; fdivs 17 and fdiv
+# 31 cycles in the first stage only (not pipelined); fres 10. Loads and stores of FP registers are LSU rows like the integer ones.
+for _op in ('fabs', 'fadd', 'fadds', 'fcmpo', 'fcmpu', 'fctiw', 'fctiwz', 'fmr', 'fnabs', 'fneg', 'frsp', 'frsqrte', 'fsel', 'fsub',
+            'fsubs', 'mffs', 'mtfsf', 'fmuls', 'fmadds', 'fmsubs', 'fnmadds', 'fnmsubs'):
+    T[_op] = (5, 3, 1, 1)
+for _op in ('fmul', 'fmadd', 'fmsub', 'fnmadd', 'fnmsub'):
+    T[_op] = (5, 4, 2, 1)
+T['fdivs'] = (5, 17, 17, 0)
+T['fdiv'] = (5, 31, 31, 0)
+T['fres'] = (5, 10, 10, 0)
+T['fsqrt'] = T['fsqrts'] = (5, 1, 1, 0)
+for _op in ('lfsu', 'stfsx', 'stfdx', 'stfsu'):
+    T[_op] = (3, 2, 1, 1)
+# opcode-info byte 9 for every modelled opcode, read from the opcode table of mwcceppc.exe 2.6 (18 bytes per opcode, file offset 1825704)
+PROP = {'add': 2, 'addc': 2, 'adde': 2, 'addi': 2, 'addic': 2, 'addis': 2, 'addze': 2, 'and': 2, 'b': 0, 'bctr': 0, 'bf': 0,
+        'blr': 0, 'bt': 0, 'cmp': 1, 'cmpi': 1, 'cmpl': 1, 'cmpli': 1, 'cntlzw': 2, 'extsb': 2, 'extsh': 2, 'fabs': 2, 'fadd': 2,
+        'fadds': 2, 'fcmpo': 1, 'fcmpu': 1, 'fctiw': 2, 'fctiwz': 2, 'fdiv': 2, 'fdivs': 2, 'fmadd': 2, 'fmadds': 2, 'fmr': 0, 'fmsub':
+        2, 'fmsubs': 2, 'fmul': 2, 'fmuls': 2, 'fnabs': 2, 'fneg': 2, 'fnmadd': 2, 'fnmadds': 2, 'fnmsub': 2, 'fnmsubs': 2, 'fres': 2,
+        'frsp': 2, 'frsqrte': 2, 'fsel': 2, 'fsqrt': 2, 'fsqrts': 2, 'fsub': 2, 'fsubs': 2, 'lbz': 3, 'lbzx': 3, 'lfd': 3, 'lfdx': 3,
+        'lfs': 3, 'lfsu': 3, 'lfsx': 3, 'lha': 3, 'lhax': 3, 'lhz': 3, 'lhzx': 3, 'li': 4, 'lis': 4, 'lwz': 3, 'lwzu': 3, 'lwzx': 3,
+        'mffs': 4, 'mr': 0, 'mtfsf': 1, 'mulhw': 2, 'mulhwu': 2, 'mulli': 2, 'mullw': 2, 'neg': 2, 'nor': 2, 'or': 2, 'ori': 2,
+        'rlwimi': 2, 'rlwinm': 2, 'slw': 2, 'sraw': 2, 'srawi': 2, 'srw': 2, 'stb': 1, 'stbx': 1, 'stfd': 1, 'stfdx': 1, 'stfs': 1,
+        'stfsu': 2, 'stfsx': 1, 'sth': 1, 'sthx': 1, 'stw': 1, 'stwx': 1, 'subf': 2, 'subfc': 2, 'subfe': 2, 'subfic': 2, 'xor': 2}
+for _op in STORES:
+    PROP.pop(_op, None)  # unlisted opcodes compare as 9 (stores lose to loads in the real tie-break)
 CQ = 6
 
 
@@ -98,6 +123,24 @@ def operands(op, args):
 
 class Node:
     pass
+
+
+def addr(x):
+    """(base register, offset text) of a load/store in the dumps' `op reg,base,offset` notation, or None."""
+    parts = [p.strip() for p in x.args.split('(')[0].split(',')]
+    return (parts[1], parts[2]) if len(parts) >= 3 else None
+
+
+def independent(x, y):
+    """Memory operations the compiler knows cannot alias: a load from the anonymous literal pool (`r0,0(@N)`) and any store. (Treating two
+    accesses off the same base register at different offsets as independent too lowers the match rate: 3579 vs 3949 of 4129.)"""
+    if x.op in LOADS and y.op in LOADS:
+        return False
+    ax, ay = addr(x), addr(y)
+    for q, a in ((x, ax), (y, ay)):
+        if q.op in LOADS and a and a[0] == 'r0' and '(@' in q.args:
+            return True
+    return False
 
 
 def build(ins):
@@ -137,11 +180,13 @@ def build(ins):
                 uses.setdefault(r, []).insert(0, x)
         if x.op in LOADS:
             for y in stores:
-                edge(x, y, True)
+                if not independent(x, y):
+                    edge(x, y, True)
             loads.insert(0, x)
         elif x.op in STORES:
             for y in loads + stores:
-                edge(x, y, True)
+                if not independent(x, y):
+                    edge(x, y, True)
             stores.insert(0, x)
         if not x.succ and branch is not None:
             edge(x, branch, False)
@@ -195,7 +240,7 @@ class M750:
         for _ in range(2):
             if s.cq and s.cq[0][1]:
                 s.cq.pop(0)
-        for k in (1, 4, 0, 2):
+        for k in (1, 4, 6, 0, 2):
             if k in s.st and s.st[k][1] == 0:
                 x = s.st.pop(k)[0]
                 for e in s.cq:
@@ -208,6 +253,17 @@ class M750:
         if 3 in s.st and s.st[3][1] == 0 and 4 not in s.st:
             x = s.st.pop(3)[0]
             s.st[4] = [x, T[x.op][3]]
+        # the FPU: unit 5 is its first stage (an fdiv stays there for all its cycles), unit 6 the second
+        if 5 in s.st and s.st[5][1] == 0:
+            x = s.st[5][0]
+            if T[x.op][3] == 0:
+                s.st.pop(5)
+                for e in s.cq:
+                    if e[0] is x:
+                        e[1] = True
+            elif 6 not in s.st:
+                s.st.pop(5)
+                s.st[6] = [x, T[x.op][3]]
 
 
 def schedule(ins, first_pass=False):
@@ -363,8 +419,12 @@ def deadsearch(d, b, target_file, two=False):
     print(hits, 'variant(s); registers were held fixed: confirm with a build (and tools/rasim.py)')
 
 
+def is_fp(ins):
+    return any(T[op][0] == 5 or re.match(r'^f', args.split(',')[0]) for op, args in ins)
+
+
 def validate(dirs):
-    tot = ok = 0
+    tot = ok = ftot = fok = 0
     for d in dirs:
         try:
             f0, f1, fb, fa, l0, l1 = dumps(d)
@@ -381,8 +441,14 @@ def validate(dirs):
                     continue
                 tot += 1
                 got = [ins[k] for k in schedule(ins, first)]
-                ok += [(g[0], g[1].split(',')[0]) for g in got] == [(w[0], w[1].split(',')[0]) for w in bo[b]]
+                hit = [(g[0], g[1].split(',')[0]) for g in got] == [(w[0], w[1].split(',')[0]) for w in bo[b]]
+                ok += hit
+                if is_fp(ins):
+                    ftot += 1
+                    fok += hit
     print('%d of %d blocks reproduced' % (ok, tot))
+    if ftot:
+        print('  of which %d of %d blocks with floating-point ops' % (fok, ftot))
 
 
 if __name__ == '__main__':
