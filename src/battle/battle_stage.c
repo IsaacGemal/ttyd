@@ -575,73 +575,113 @@ typedef struct ScreenTevParam {
 	s32 field_14; // 0x14
 } ScreenTevParam;
 
-// opt_propagation off: with propagation on the second loop folds col into a buf+col pointer.
-#pragma opt_propagation off
-// The original keeps i/4 (r31) and i%4 (r30) live across the rand() calls and
-// recomputes the scaled terms in each inner loop. The second loop's `sgrow`/`sgcol`
-// are precomputed with shifts before the count loop so they land in the callee-saved
-// registers the original uses. The first loop hoists `base = (i/4)*0x100` and
-// `c = (i%4)*8` into named locals and accumulates into `idx`; that is what puts the
-// i&1 mask and the base/col terms in the registers the original uses (r9 and the
-// 0xff constant). `buf` is declared first for the same reason. The clamp declares
-// `x` before `ratio` (so the two FPRs colour as the original: x f0, ratio f1) and
-// assigns `ratio = (x > ratio) ? ratio : x;`, the same value as the original's
-// two-branch select.
-// Many variants were tried (explicit `base`/`col` locals, shifts vs multiplies,
-// sgrow/sgcol declaration order, opt_lifetimes off, pragma sweeps, reordering the
-// local declarations) and none beat this: the allocator's colouring of the
-// {param, sgrow, sgcol} clique could not be steered from C.
-// NONMATCHING (99.46%): integer register colouring and one schedule swap only. `tev`/`param` lands in r25 (original r27) and the second loop's `sgrow` in r27 (original r25); the first loop's base/col terms sit in r7/r8 and the 0xff constant in r4 (original r4/r3 and r5); the first loop's (j%8) is scheduled after (j/8)*0x20 where the original does it before. The instructions and block structure are otherwise identical.
+// The original keeps i/4 (r31) and i%4 (r30) live across the rand() calls. The
+// second loop's `sgrow`/`sgcol` are precomputed with shifts before the count loop so
+// they land in the callee-saved registers the original uses. In the first loop
+// `base`/`col` are split out the same way and `mask` (the (i&1) select) is a
+// function-scope temp assigned between the `base` and `(j%8)` additions: both shape
+// the first loop's schedule and registers. With opt_propagation off the base/col add
+// into the byte index as the original does instead of folding into a buf+col pointer.
+// The min-clamp's `x = (x > ratio) ? ratio : x;` reproduces the original's
+// two-branch select. The MUST_MATCH blocks are allocator levers: the `zero` alias
+// and the function-scope counters fix the pointer web's vreg, and the split idx2
+// temporaries keep the running index in its own web; compiled as the natural form
+// the body is 99.46%.
+// NONMATCHING (99.62%): the first loop's integer register allocation and schedule only; base/col sit in r7/r8 (original r4/r3), the 0xff select in r4 (original r5) and (j%8) is scheduled after (j/8)*0x20 (reversed here); everything else, including the second loop and the pointer/alias web, matches.
+#pragma opt_propagation off // needed: with propagation on the second loop folds col into a buf+col pointer (see above)
 void tou_gamen_screen_tev(void* param) {
 	int mask;
 	GXTexObj texObj;
 	Mtx mtx;
 	Mtx mtxScale;
 	Mtx mtxTrans;
+#ifdef MUST_MATCH
+	// MUST_MATCH: hoisting the first loop's counters at function scope makes the
+	// alias web below the vreg where the original's parameter (r27) sits, and the
+	// `+ zero` keeps that alias alive so it colours as a named web instead of folding
+	// back into the parameter.
+	u8* buf;
+	s32 i;
+	s32 j;
+	s32 k;
+	s32 zero = 0;
+	ScreenTevParam* tev = (ScreenTevParam*)((u8*)param + zero);
+#else
+	// Natural form: the counters live in the block that uses them and the pointer is
+	// the parameter itself.
 	ScreenTevParam* tev = (ScreenTevParam*)param;
+#endif
 
 	if (screen_wp->field_0x4 == 0) {
 		return;
 	}
 
 	if (screen_wp->field_0x24 != 0) {
+#ifdef MUST_MATCH
+		buf = (u8*)screen_wp->field_0x0;
+#else
 		u8* buf = (u8*)screen_wp->field_0x0;
 		s32 i;
 		s32 j;
 		s32 k;
+#endif
 
 		for (i = 0; i < 0x40; i++) {
 			for (j = 0; j < 0x40; j++) {
 				int base = (i / 4) * 0x100;
-				int c = (i % 4) * 8;
-				int idx = base + (j / 8) * 0x20;
+				int col = (i % 4) * 8;
 #ifdef MUST_MATCH
-				// the named temp and its position between the two index additions are what
-				// colour the first loop as the original (see the comment above).
+				// MUST_MATCH: the separate idx2 web keeps the (j%8) add out of the base
+				// register, matching the original's running index.
+				int idx;
+				int idx2;
+				idx = (j / 8) * 0x20 + base;
+				mask = (i & 1) ? 0xFF : 0;
+				idx2 = idx + (j % 8);
+				buf[idx2 + col] = mask;
+#else
+				int idx = (j / 8) * 0x20 + base;
 				mask = (i & 1) ? 0xFF : 0;
 				idx += (j % 8);
-				idx += c;
-				buf[idx] = mask;
-#else
-				idx += (j % 8);
-				idx += c;
-				buf[idx] = (i & 1) ? 0xFF : 0;
+				buf[idx + col] = mask;
 #endif
 			}
 			{
 				s32 count = 100 + rand() % 100;
+#ifdef MUST_MATCH
+				// MUST_MATCH: sgcol is declared before sgrow but assigned after it, giving
+				// sgcol the higher vreg the original uses while sgrow is still computed
+				// first in program order.
+				s32 sgcol;
+				s32 sgrow;
+				sgrow = (i / 4) << 8;
+				sgcol = (i % 4) << 3;
+#else
 				s32 sgrow = (i / 4) << 8;
 				s32 sgcol = (i % 4) << 3;
+#endif
 				for (k = 0; k < count; k++) {
 					s32 len = rand() % 4 + 2;
 					s32 start = rand() % (0x41 - len);
 					u8 val = rand() % 0x100;
 					for (j = start; j < start + len; j++) {
+#ifdef MUST_MATCH
+						// MUST_MATCH: same split idx2 lever as the first loop.
+						s32 idx;
+						s32 col;
+						s32 idx2;
+						idx = (j / 8) * 0x20;
+						col = sgcol;
+						idx += sgrow;
+						idx2 = idx + (j % 8);
+						buf[idx2 + col] = val;
+#else
 						s32 idx = (j / 8) * 0x20;
 						s32 col = sgcol;
 						idx += sgrow;
 						idx += (j % 8);
 						buf[idx + col] = val;
+#endif
 					}
 				}
 			}
@@ -697,9 +737,11 @@ void tou_gamen_screen_tev(void* param) {
 			if (y > ratio) {
 				y = ratio;
 			}
-			x = screen_wp->field_0x10;
-			ratio = (x > ratio) ? ratio : x;
-			PSMTXTrans(mtxTrans, ratio, y, float_0_8041c7f0);
+			{
+				x = screen_wp->field_0x10;
+				x = (x > ratio) ? ratio : x;
+				PSMTXTrans(mtxTrans, x, y, float_0_8041c7f0);
+			}
 		}
 		PSMTXConcat(mtxScale, mtxTrans, mtx);
 	} else {
