@@ -207,15 +207,16 @@ driver/npcdrv.c:
 
 event/evt_npc.c:
 	.text       start:0x8004C574 end:0x80052AFC
-	.rodata     start:0x802C31E8 end:0x802C3610
-	.data       start:0x80305440 end:0x803054A0
-	.sdata      start:0x80410158 end:0x80410178
+	.rodata     start:0x802C31E8 end:0x802C32B8
+	.data       start:0x80305440 end:0x8030549C
+	.sdata      start:0x80410158 end:0x80410174
 	.sbss       start:0x804186C8 end:0x804186D0
 	.sdata2     start:0x80419CA8 end:0x80419D38
 	.sbss2      start:0x80422FC0 end:0x80422FC8
 
 event/evt_sub.c:
 	.text       start:0x80052AFC end:0x800553AC
+	.rodata     start:0x802C32B8 end:0x802C3610
 	.data       start:0x803054A0 end:0x803080D0
 	.sdata      start:0x80410178 end:0x804101F0
 	.sbss       start:0x804186D0 end:0x804186D8
