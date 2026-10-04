@@ -1515,6 +1515,8 @@ EVT_BEGIN(tou_02_init_evt)
     RETURN
 EVT_END()
 
+// The 4 bytes after fan_wp in the target's .bss (gap_05_00000024_bss).
+static u32 gap_05_00000024_bss;
 ExtFanWork* fan_wp;
 static void pose_init(void) {
     ExtFanData* data = (ExtFanData*)ext_fan_data;
@@ -1646,7 +1648,7 @@ void ext_fan_init(void) {
     }
     {
         Vec pos = vec3_tou_0000d040;
-        fan_wp->sfxId = psndSFXOn_3D("SFX_STG3_AUDIENCE_FAN1", &pos);
+        fan_wp->sfxId = psndSFXOn_3D("SFX_STG3_AUDIENCE_FAN1\0", &pos);
         fan_wp->volume = psndSFX_get_vol(fan_wp->sfxId);
     }
 }
@@ -2105,8 +2107,13 @@ s32 check_hammer(FanPose* pose) {
         return 0;
     }
     if (mario->currMotionId == 0x12 && fan_wp->field_0x50C > 10) {
+#ifdef MUST_MATCH
+        // one expression: the original pools TWO_PI before 90.0f
+        rad = TWO_PI * reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(4)->viewYaw) / 360.0f;
+#else
         ang = reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(4)->viewYaw);
         rad = TWO_PI * ang / 360.0f;
+#endif
         s = fanSinf(rad);
         x = 35.0f * s + mario->position.x;
         c = fanCosf(rad);
