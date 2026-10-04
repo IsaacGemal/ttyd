@@ -51,6 +51,29 @@ extern int __float_nan[];
 // locals for symbols with no home header
 extern s32 roll_flyout_flag2;
 
+#ifdef MUST_MATCH
+// An ordinary, immediately generated function pools these constants first and in this order (the original's first 14 .sdata2 entries);
+// the deferred functions below then reuse them. Nothing calls it and the linker strips the body.
+#pragma defer_codegen off
+static void pollPoolPrefix(f32* o) {
+    o[0] = 100.0f;
+    o[1] = 0.0f;
+    o[2] = 0.5f;
+    o[3] = 3.1415927f;
+    o[4] = 180.0f;
+    o[5] = 6.0f;
+    o[6] = 5.0f;
+    o[7] = -4.0f;
+    o[8] = 90.0f;
+    o[9] = 270.0f;
+    o[10] = 360.0f;
+    o[11] = 10.0f;
+    o[12] = 135.0f;
+    o[13] = 1.2f;
+}
+#pragma defer_codegen reset
+#endif
+
 void marioRollFixOn(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -509,6 +532,11 @@ static inline float mot_roll_sqrtf(float x) {
 // NONMATCHING (98.53%): all calls and immediates match; remaining diffs are MWCC register colouring (velocity
 // X/Y f27<->f29 swap), scheduler ordering of the float loads / i2f sequence, and an extra anonymous i2f pool copy.
 // MotRoll userdata is allocated here (0x14 bytes).
+// Link status (2026-10-04): with the pool prefix helper and the .sdata2 flush helper the .rodata/.sdata/.sdata2 sections link byte-identical.
+// The text is 635 bytes off, all inside mot_roll: (1) FP colouring: our named `f29` gets f27 and two hoisted temps get f29 where the original
+// has the reverse (rasim FPR replay is exact; no declaration-order permutation of f26..fqm helped); (2) the final block keeps `s`/`co`
+// as address-taken locals shared by both branches (declare them above the `if (ab < dbl_45)`, `tmp = 5.0f * s; ... -4.0f + 5.0f * co;`):
+// that makes mot_roll 8084 bytes like the original, but the objdiff score drops 98.53 -> 98.38 until (1) is fixed, so it is not applied.
 void mot_roll(void) {
 #define vec vec3_802c5d40
     MarioWork* mario = marioGetPtr();
@@ -1394,8 +1422,16 @@ s32 roll_flyout_flag2;
 
 
 // 4-byte zero word that ends the unit's .sdata2.
+#ifdef MUST_MATCH
+// An unused function generated immediately flushes the deferred functions, so the force_active word below lands after their pool.
+#pragma defer_codegen off
+static void rollFlushPools(void) {}
+#endif
 #pragma explicit_zero_data on
 #pragma force_active on
 __declspec(section ".sdata2") static u32 gap_09_8041AD94_sdata2[1] = { 0 };
 #pragma force_active reset
 #pragma explicit_zero_data reset
+#ifdef MUST_MATCH
+#pragma defer_codegen reset
+#endif
