@@ -1,0 +1,136 @@
+:{0005}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B0: Successors = { B1 }  Predecessors = { }  Labels = { L0 }
+
+:{000c}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B1: Successors = { B3 B4 }  Predecessors = { B0 }  Labels = { L1 }
+   424  lwz      r6,r0,0(bdsw)
+   424  addi     r0,r6,0x4b
+   424  cmpl     cr0,r3,r0
+   424  bt       cr0,2,B4
+
+:{000c}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B3: Successors = { B4 B5 }  Predecessors = { B1 }  Labels = { L15 }
+   424  addi     r0,r6,0xa0
+   424  cmpl     cr0,r3,r0
+   424  bf       cr0,2,B5
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B4: Successors = { B6 }  Predecessors = { B3 B1 }  Labels = { L3 L16 }
+   425  li       r6,1
+   426  b        B6
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B5: Successors = { B6 }  Predecessors = { B3 }  Labels = { L4 }
+   428  li       r6,0xf0
+
+:{000c}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B6: Successors = { B7 B8 }  Predecessors = { B5 B4 }  Labels = { L5 }
+   430  extsh    r0,r4
+   430  cmp      cr0,r0,r6
+   430  bt       cr0,0,B8
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B7: Successors = { B8 B9 }  Predecessors = { B6 }  Labels = { L17 }
+   430  cmpi     cr0,r0,0x153
+   430  bt       cr0,0,B9
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B8: Successors = { B25 }  Predecessors = { B7 B6 }  Labels = { L6 L18 }
+   430  li       r3,0
+   430  b        B25
+
+:{000c}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B9: Successors = { B10 B18 }  Predecessors = { B7 }  Labels = { L7 }
+   432  subf     r0,r6,r0
+   432  extsh    r4,r0
+   432  rlwinm   r0,r4,0,0x1e,0x1f
+   432  cmpi     cr0,r0,2
+   432  bt       cr0,2,B18
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B10: Successors = { B11 B14 }  Predecessors = { B9 }  Labels = { L20 }
+   432  bf       cr0,0,B14
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B11: Successors = { B12 B16 }  Predecessors = { B10 }  Labels = { L22 }
+   432  cmpi     cr0,r0,0
+   432  bt       cr0,2,B16
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B12: Successors = { B13 B17 }  Predecessors = { B11 }  Labels = { L23 }
+   432  bf       cr0,0,B17
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B13: Successors = { B20 }  Predecessors = { B12 }  Labels = { L24 }
+   432  b        B20
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B14: Successors = { B15 B20 }  Predecessors = { B10 }  Labels = { L21 }
+   432  cmpi     cr0,r0,4
+   432  bf       cr0,0,B20
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B15: Successors = { B19 }  Predecessors = { B14 }  Labels = { L25 }
+   432  b        B19
+
+:{000c}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B16: Successors = { B20 }  Predecessors = { B11 }  Labels = { L8 }
+   434  li       r7,0xfc
+   435  li       r8,0
+   436  b        B20
+
+:{000c}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B17: Successors = { B20 }  Predecessors = { B12 }  Labels = { L9 }
+   438  li       r7,0xf3
+   439  li       r8,2
+   440  b        B20
+
+:{000c}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B18: Successors = { B20 }  Predecessors = { B9 }  Labels = { L10 }
+   442  li       r7,0xcf
+   443  li       r8,4
+   444  b        B20
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B19: Successors = { B20 }  Predecessors = { B15 }  Labels = { L11 }
+   446  li       r7,0x3f
+   447  li       r8,6
+
+:{000c}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B20: Successors = { B21 B22 }  Predecessors = { B19 B18 B17 B16 B14 B13 }  Labels = { L12 }
+   451  extsh    r0,r5,cr0
+   450  srawi    r0,r4,2,zero
+   450  addze    r6,r0,zero
+   451  bf       cr0,0,B22
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B21: Successors = { B24 }  Predecessors = { B20 }  Labels = { L26 }
+   452  li       r5,0
+   453  b        B24
+
+:{000c}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B22: Successors = { B23 B24 }  Predecessors = { B20 }  Labels = { L13 }
+   454  extsh    r0,r5
+   454  cmpi     cr0,r0,3
+   454  bf       cr0,1,B24
+
+:{0004}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B23: Successors = { B24 }  Predecessors = { B22 }  Labels = { L27 }
+   455  li       r5,3
+
+:{000c}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B24: Successors = { B25 }  Predecessors = { B23 B22 B21 }  Labels = { L14 }
+   457  lbzx     r4,r3,r6
+   457  extsh    r5,r5
+   457  slw      r0,r5,r8
+   457  and      r4,r7,r4
+   457  rlwinm   r4,r4,0,0x18,0x1f
+   457  rlwinm   r0,r0,0,0x18,0x1f
+   457  add      r0,r4,r0
+   457  stbx     r0,r3,r6
+   461  mr       r3,r5
+
+:{0006}::::::::::::::::::::::::::::::::::::::::LOOPWEIGHT=1
+B25: Successors = { }  Predecessors = { B24 B8 }  Labels = { L19 }
+   461  blr      ctr
+
