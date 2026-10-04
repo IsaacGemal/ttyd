@@ -8,16 +8,6 @@
 extern BattleWork* _battleWorkPointer;
 extern GXColor dat_804221e8;
 extern GXColor dat_804221ec;
-extern f32 float_0p8_8042221c;
-extern f32 float_neg0p8_80422220;
-extern f32 float_deg2rad_80422224;
-extern f32 float_21p6_80422228;
-extern f32 float_16_8042222c;
-extern f32 float_13p44_80422230;
-extern f32 float_25p6_80422234;
-extern f32 float_19p2_80422238;
-extern f32 float_901_8042223c;
-extern f32 float_0_80422214;
 extern s32 dat_80422200;
 extern s32 dat_80422204;
 extern f32 float_0p10207_80422208;
@@ -51,10 +41,29 @@ const Vec vec3_80301290 = {0.8f, 0.8f, 1.0f};
 const Vec vec3_8030129c = {0.0f, 0.0f, 0.0f};
 const Vec vec3_803012a8 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_803012b4 = {0.0f, 0.0f, 0.0f};
+// The four Vecs _bsi_regeneration copies. Non-const and pinned to .rodata under MUST_MATCH so MWCC
+// reaches them (and the u8->f32 mask) through the .rodata base register; see the note above the
+// function. Defined const otherwise.
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_803012c0 = {1.0f, 1.0f, 1.0f};
+#else
 const Vec vec3_803012c0 = {1.0f, 1.0f, 1.0f};
+#endif
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_803012cc = {0.0f, 0.0f, 0.0f};
+#else
 const Vec vec3_803012cc = {0.0f, 0.0f, 0.0f};
+#endif
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_803012d8 = {0.0f, 0.0f, 0.0f};
+#else
 const Vec vec3_803012d8 = {0.0f, 0.0f, 0.0f};
+#endif
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_803012e4 = {0.0f, 0.0f, 0.0f};
+#else
 const Vec vec3_803012e4 = {0.0f, 0.0f, 0.0f};
+#endif
 
 IconDispTableEntry _disp_table[] = {
 	{1, _bsi_default_turn, 15, 1},
@@ -168,17 +177,17 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 			if (!(icon->mFlags & 1)) {
 #ifdef MUST_MATCH
 				((void (*)(u32, GXColor, f32, f32, f32, f32, f32, s32))btlDispTexPlane)(
-				    0x23, color, pos.x, pos.y, pos.z, float_0p8_8042221c, float_0p8_8042221c, 0);
+				    0x23, color, pos.x, pos.y, pos.z, 0.8f, 0.8f, 0);
 #else
-				btlDispTexPlane(0x23, color, pos.x, pos.y, pos.z, float_0p8_8042221c, float_0p8_8042221c);
+				btlDispTexPlane(0x23, color, pos.x, pos.y, pos.z, 0.8f, 0.8f);
 #endif
 			}
 			else {
 #ifdef MUST_MATCH
 				((void (*)(u32, GXColor, f32, f32, f32, f32, f32, s32))btlDispTexPlane)(
-				    0x23, color, pos.x, pos.y, pos.z, float_0p8_8042221c, float_neg0p8_80422220, 0);
+				    0x23, color, pos.x, pos.y, pos.z, 0.8f, -0.8f, 0);
 #else
-				btlDispTexPlane(0x23, color, pos.x, pos.y, pos.z, float_0p8_8042221c, float_neg0p8_80422220);
+				btlDispTexPlane(0x23, color, pos.x, pos.y, pos.z, 0.8f, -0.8f);
 #endif
 			}
 		}
@@ -188,8 +197,8 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 				PSMTXTrans(mtxPos, pos.x + *(f32*)((u8*)entry + 0x30),
 				           pos.y + *(f32*)((u8*)entry + 0x34),
 				           pos.z + *(f32*)((u8*)entry + 0x38));
-				PSMTXScale(mtxScale, float_0p8_8042221c * *(f32*)((u8*)entry + 0xC),
-				           float_0p8_8042221c * *(f32*)((u8*)entry + 0x10),
+				PSMTXScale(mtxScale, 0.8f * *(f32*)(entry->field_0x0 + 0xC),
+				           0.8f * *(f32*)(entry->field_0x0 + 0x10),
 				           *(f32*)((u8*)entry + 0x14));
 				PSMTXTrans(mtxTransNeg, -*(f32*)((u8*)entry + 0x18),
 				           -*(f32*)((u8*)entry + 0x1C),
@@ -197,9 +206,9 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 				PSMTXTrans(mtxTransPos, *(f32*)((u8*)entry + 0x18),
 				           *(f32*)((u8*)entry + 0x1C),
 				           *(f32*)((u8*)entry + 0x20));
-				PSMTXRotRad(mtxRotX, 'x', float_deg2rad_80422224 * *(f32*)((u8*)entry + 0x24));
-				PSMTXRotRad(mtxRotY, 'y', float_deg2rad_80422224 * *(f32*)((u8*)entry + 0x28));
-				PSMTXRotRad(mtxRotZ, 'z', float_deg2rad_80422224 * *(f32*)((u8*)entry + 0x2C));
+				PSMTXRotRad(mtxRotX, 'x', 0.017453292f * *(f32*)(entry->field_0x0 + 0x24));
+				PSMTXRotRad(mtxRotY, 'y', 0.017453292f * *(f32*)(entry->field_0x0 + 0x28));
+				PSMTXRotRad(mtxRotZ, 'z', 0.017453292f * *(f32*)(entry->field_0x0 + 0x2C));
 				PSMTXIdentity(mtx);
 				PSMTXConcat(mtxRotZ, mtxScale, mtx);
 				PSMTXConcat(mtxTransNeg, mtx, mtx);
@@ -212,8 +221,8 @@ void BattleStatusIconDisp(CameraId camId, void* param) {
 			}
 			if (*(s32*)((u8*)entry + 0x4) != 0) {
 				pos2 = pos;
-				pos2.x += float_21p6_80422228;
-				pos2.y -= float_16_8042222c;
+				pos2.x += 21.6f;
+				pos2.y -= 16.0f;
 				PSMTXIdentity(mtx2);
 				PSMTXTrans(mtxPos, pos2.x, pos2.y, pos2.z);
 				PSMTXConcat(mtxPos, mtx2, mtx2);
@@ -230,8 +239,6 @@ extern s32 dat_804221fc;
 extern s32 dat_804221f8;
 extern s32 dat_804221f4;
 extern s32 dat_804221f0;
-extern f32 float_0_80422214;
-extern f32 float_4_80422218;
 
 BOOL _bsi_default_turn(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
 	const Vec* vec = &vec3_803011e8;
@@ -305,11 +312,11 @@ BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 #else
 	if (!BtlUnit_CheckStatus(unit, type)) {
 #endif
-		*counter = float_0_80422214;
+		*counter = 0.0f;
 		return FALSE;
 	}
 
-	*counter += float_4_80422218;
+	*counter += 4.0f;
 #ifdef MUST_MATCH
 	((void(*)(BattleUnit*, s8, s8*, s8*))BtlUnit_GetStatus)(unit, type, &turns, &strength);
 #else
@@ -337,7 +344,7 @@ BOOL _bsi_guruguru(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	*(Vec*)((u8*)entry + 0x24) = tmp;
 #else
 	*(Vec*)((u8*)entry + 0x24) = vec[6];
-	*(f32*)((u8*)entry + 0x2C) = *counter;
+	*(f32*)(entry->field_0x0 + 0x2C) = *counter;
 #endif
 	*(s32*)((u8*)entry + 0x3C) = dat_804221f4;
 	*(s32*)((u8*)entry + 0x40) = disp->something2;
@@ -474,30 +481,19 @@ BOOL _bsi_biribiri(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusI
 	return TRUE;
 }
 
-// The u8->f32 argument conversions still use the compiler's 2^52 mask. MWCC only folds it to the
-// vec3 .rodata base (`lfd f2, 0x108(r31)`) once the function references some named vec3s; here
-// vec[18]/vec[19] are read by name (the rest through the pointer, as the file's other _bsi_* do).
-// That makes the mask base relative to the pooled base but costs one extra callee-saved register
-// for the `vec` pointer (r28 = pool base), so the entry/disp/unit registers shift by one and the
-// first block of Vec copies schedules differently from the target. The named reads below are the
-// match-only part (natural vec[18]/vec[19] under #else).
+// The original copies four Vecs straight out of .rodata (vec3_803012c0..vec3_803012e4) and reads
+// the u8->f32 mask as `lfd f2, 0x108(r31)`, i.e. through the .rodata base register r31 that also
+// serves the copies. A const source lets MWCC fold the copy to an absolute relocation and pool its
+// own copy of the mask instead, so the four objects below are non-const and pinned to .rodata under
+// MUST_MATCH (like itemdrv's vec3_802cac1c): that makes the compiler materialise each copy's source
+// address from the .rodata base and reuse it for the mask, and keeps the target's load/store
+// interleaving. The values and therefore the .rodata bytes are unchanged.
 #pragma optimize_for_size on // the target's modulo/division by 0x2d0 is a real divw, not the magic-multiply form
-#ifdef MUST_MATCH
-#define REGEN_VEC18 vec3_803012c0
-#define REGEN_VEC19 vec3_803012cc
-#else
-#define REGEN_VEC18 vec[18]
-#define REGEN_VEC19 vec[19]
-#endif
-// NONMATCHING (90.14%): the u8->f32 mask now folds to 0x108(r31) but the extra `vec` register
-// shifts r25-r31 and batches the first three Vec copies; the target keeps one register for both
-// the pointer and the pool base.
 BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkStatusIconEntry* entry) {
 	s32 type = disp->id;
 	s16* counter;
 	s32 turnCount;
 	s32 offset;
-	const Vec* vec = &vec3_803011e8;
 	s8 turns;
 	s8 strength;
 	GXColor startColor;
@@ -548,18 +544,31 @@ BOOL _bsi_regeneration(BattleUnit* unit, IconDispTableEntry* disp, BattleWorkSta
 #endif
 	*(s32*)((u8*)entry + 0x4) = turnCount;
 	*(s32*)((u8*)entry + 0x8) = disp->something;
-	*(Vec*)(entry->field_0x0 + 0xC) = REGEN_VEC18;
-	*(Vec*)(entry->field_0x0 + 0x18) = REGEN_VEC19;
-	*(Vec*)((u8*)entry + 0x24) = vec[20];
+	*(Vec*)(entry->field_0x0 + 0xC) = vec3_803012c0;
+	*(Vec*)(entry->field_0x0 + 0x18) = vec3_803012cc;
+	*(Vec*)(entry->field_0x0 + 0x24) = vec3_803012d8;
 	color = *(GXColor*)&dat_80422210;
 	color.r = intplGetValue(0xb, offset, 0x168, (f32)startColor.r, (f32)endColor.r);
 	color.g = intplGetValue(0xb, offset, 0x168, (f32)startColor.g, (f32)endColor.g);
 	color.b = intplGetValue(0xb, offset, 0x168, (f32)startColor.b, (f32)endColor.b);
 	*(GXColor*)((u8*)entry + 0x3C) = color;
 	*(s32*)((u8*)entry + 0x40) = disp->something2;
-	*(Vec*)((u8*)entry + 0x30) = vec[21];
+	*(Vec*)(entry->field_0x0 + 0x30) = vec3_803012e4;
 	return TRUE;
 }
-#undef REGEN_VEC18
-#undef REGEN_VEC19
 #pragma optimize_for_size reset
+
+// .sdata2 named objects this unit owns, in the original's address order.
+#pragma force_active on
+__declspec(section ".sdata2") GXColor dat_804221e8 = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") GXColor dat_804221ec = { 0xff, 0xff, 0xff, 0xff };
+__declspec(section ".sdata2") s32 dat_804221f0 = 0xffffffff;
+__declspec(section ".sdata2") s32 dat_804221f4 = 0xffffffff;
+__declspec(section ".sdata2") s32 dat_804221f8 = 0xffffffff;
+__declspec(section ".sdata2") s32 dat_804221fc = 0xffffffff;
+__declspec(section ".sdata2") s32 dat_80422200 = 0xed145bff;
+__declspec(section ".sdata2") s32 dat_80422204 = 0xffea05ff;
+__declspec(section ".sdata2") f32 float_0p10207_80422208 = 0.10206984728574753f;
+__declspec(section ".sdata2") s32 dat_8042220c = 0x61e9e7ff;
+__declspec(section ".sdata2") s32 dat_80422210 = 0x000000ff;
+#pragma force_active reset
