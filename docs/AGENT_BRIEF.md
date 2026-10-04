@@ -138,6 +138,32 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 - `lhz`/`lbz` loads mean unsigned (`u16`/`u8`); `lha`/`extsb` mean signed. If the header disagrees, report it.
 - A caller that uses a returned value without `extsh`/`clrlwi` treats it as a full `int`.
 
+## Data and pool: run `tools/pool_plan.py` first
+
+If a unit's functions are (nearly) 100% but `.sdata2`/`.rodata` differ, or the unit is fully matched and won't link, run
+`uv run --with pyelftools python3 tools/pool_plan.py UNIT` before touching the source, and follow what it prints literally.
+It builds the unit once with all floats as literals (your source is restored afterwards), compares the compiler's pool with
+the original's, and prints per slot whether the entry must be a **named object** (a prefix of the section in a deferred
+unit, a suffix in a nodefer one, plus anything unreferenced) or a **literal** the compiler pools, which functions need a
+constant read by name or reloaded, and the traps for that entry. Then:
+
+1. `... pool_plan.py UNIT --apply` writes the float part of the plan (literals, the kept named objects defined after the
+   code, `RELOAD_F32` at the reload sites) and rebuilds. Strings, `Vec` templates, `dat_*` words and the `.sbss2`/gap
+   objects are listed under ACTIONS: do those by hand (recipes below and in the ledger).
+2. `... pool_plan.py UNIT --check` rebuilds and reports the first mismatching slot with a diagnosis: a swapped pair, an extra
+   entry (a literal where the target loads the named object, or a product/negation the compiler folded) or a missing one.
+   Fix that slot only, rebuild, `--check` again. Don't guess ahead of the first mismatch: one fix usually moves every later
+   slot.
+3. Finish with `tools/link_diag.py UNIT` and the ci.py checksums. Re-score every function after each change: the plan
+   keeps layout right, and a function that drops is listed by name with the constants it uses.
+
+The plan's rules, so you can read its output: pooled entries land in the order the compiler first emits them (text order,
+expression-tree order inside a function); named objects land before the pool in a deferred unit and after it in a nodefer
+unit; a `const` object defined before its use is folded away, so define named objects after the code; the first entry the
+all-literal build gets wrong is where the named prefix has to end. It cannot see why a function's *code* needs a constant
+by name beyond the per-constant builds, and it does not plan strings or templates that data initialisers pool at parse
+time (it lists their owners in the order the source must define them).
+
 ## Code shapes that fixed near-misses
 
 - Linking a fully matched unit that still says `NonMatching`: run `python3 tools/autolink.py UNIT.c` first (REL units that are byte-identical just link). If the checksum fails, `python3 tools/rel_cmp.py MOD UNIT` (REL) or a `doldiff` of the dol names the section: a `.bss` offset shift means the uninitialised globals are declared in the wrong order (MWCC lays them out last-declared-first; declare them in the reverse of the original's address order, and a global the original has in `.bss` must be uninitialised); a short data section needs its trailing `gap_*` object when the next unit's addresses shift (`#pragma explicit_zero_data on` + `force_active on` + `__declspec(section ".sdata") static u32 gap[N] = {0};`); data tables nothing references by name need `#pragma force_active on` around them or the linker drops them (the dol comes out 512 bytes short).
