@@ -791,7 +791,7 @@ config.libs = [
             Object(NonMatching, "party/party_motion.c"),
             Object(Matching, "party/party_vivian.c"),
             Object(NonMatching, "party/party_cloud.c"),
-            Object(NonMatching, "party/party_chuchu.c"),
+            Object(Matching, "party/party_chuchu.c"),
         ],
     },
     {
