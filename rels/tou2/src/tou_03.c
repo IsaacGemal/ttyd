@@ -34,7 +34,11 @@
 #include "memory.h"
 #include "driver/dispdrv.h"
 #include "pmario_sound.h"
-#include <math.h>
+#include "math_ext.h"
+// math.h's extern inline sqrtf/sqrt would emit their local statics into this
+// unit's .rodata; the originals live in .data and are declared here by extend_data.
+#define fabsf(x) __fabsf(x)
+#define fabs(x) __fabs(x)
 #include <stdlib.h>
 #include <string.h>
 #include <dolphin/os.h>
@@ -210,6 +214,12 @@ ExtKyakuData ext_kyaku_data[51] = {
     { NULL, NULL, 0.0f },
 };
 
+// Zero vector template the original pools at this point in .rodata; it is the
+// `(Vec){0,0,0}` source of the copy in ext_kyaku_init.
+static inline Vec zeroVec(void) {
+    return (Vec){ 0.0f, 0.0f, 0.0f };
+}
+
 EVT_BEGIN(x)
 EVT_END()
 s32 _firstattack_setting(EventEntry* event, BOOL isFirstCall) {
@@ -323,6 +333,10 @@ EVT_BEGIN(evt_kyaku)
 EVT_END()
 
 // TODO: type
+// Gap between evt_kyaku's data and inta_tex in the original object.
+#pragma explicit_zero_data on
+__declspec(section ".data") u32 gap_04_000004F0_data[4] = {0};
+#pragma explicit_zero_data reset
 static u32 inta_tex[8] = {
     0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
     0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, 0x00000000,
@@ -2812,7 +2826,7 @@ void ext_kyaku_init(void) {
         if ((*pose->matrix)[1][3] != 0.0f) {
             state->field_0x0 |= 1;
         }
-        pos = (Vec){0.0f, 0.0f, 0.0f};
+        pos = zeroVec();
         pos.x = (*pose->matrix)[0][3];
         pos.y = (*pose->matrix)[1][3];
         pos.z = (*pose->matrix)[2][3];
@@ -3085,6 +3099,13 @@ EVT_BEGIN(evt_champion2)
     RETURN
 EVT_END()
 
+// Zero-vector template the original pools at this point in .rodata, plus an unused
+// copy; item_jump copies the template into its position vector.
+const Vec vec3_tou2_0000a6c0 = { 0.0f, 0.0f, 0.0f };
+static inline Vec zeroVecItem(void) {
+    return (Vec){ 0.0f, 0.0f, 0.0f };
+}
+
 char* block_data[9] = {
     "block_1", "block_2", "block_3", "block_4", "block_5", "block_6", "block_7", "block_8",
     "block_9",
@@ -3135,6 +3156,16 @@ EVT_BEGIN(evt_boss_stone)
     END_LOOP
     RETURN
 EVT_END()
+
+// The {0xFF,0xFF,0xFF,0} constant is pooled here, between the evt_boss_stone and
+// evt_boss data, where the original keeps dat_tou2_0000a738; callback builds it
+// from this literal.
+static inline GXColor gansColor(u8 a) {
+    GXColor c = {0xFF, 0xFF, 0xFF, 0};
+    c.a = a;
+    return c;
+}
+
 void ext_kyaku_main(void) {
     pose_main();
 }
@@ -4404,7 +4435,7 @@ s32 item_jump(EventEntry* event, BOOL isFirstCall) {
         item->position.x = x;
         item->position.y = y;
         item->position.z = z;
-        pos = (Vec){0.0f, 0.0f, 0.0f};
+        pos = zeroVecItem();
         pos.x = item->position.x;
         pos.y = item->position.y;
         pos.z = item->position.z;
@@ -4477,14 +4508,6 @@ s32 eff_pos(EventEntry* event, BOOL isFirstCall) {
 }
 
 
-
-// NONMATCHING: the constant {0xFF,0xFF,0xFF,0} lands at .rodata 6220 anonymously instead of retail's named
-// `dat_tou2_0000a738` at 4424.
-static inline GXColor gansColor(u8 a) {
-    GXColor c = {0xFF, 0xFF, 0xFF, 0};
-    c.a = a;
-    return c;
-}
 
 static void callback(TevCallbackParam* param) {
     s32 stage = param->field_C;

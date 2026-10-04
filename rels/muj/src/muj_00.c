@@ -34,7 +34,12 @@
 #include "party.h"
 #include "party/party_motion.h"
 #include "system.h"
-#include <math.h>
+#include "math_ext.h"
+
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const Vec vec3_muj_0000e4cc;
+extern const Vec vec3_muj_0000e4d8;
+extern const Vec vec3_muj_0000e4e4;
 
 #pragma pool_data off
 
@@ -71,6 +76,8 @@ extend_data(5,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
+
+const GXColor zero_muj_0000db40 = {0, 0, 0, 0};
 
 // TODO: type
 static u32 ext_entry_data[177] = {
@@ -493,12 +500,28 @@ EVT_BEGIN(koburon_talk)
     RETURN
 EVT_END()
 
+#ifdef MUST_MATCH
+static inline GXColor alphaColor(u8 a) {
+    GXColor c = zero_muj_0000db40;
+
+    c.a = a;
+    return c;
+}
+#endif
+
 static void alpha_tev(TevCallbackParam* param) {
     s32 stage = param->field_C;
     u8* ap = _ap;
+    GXColor color;
 
     GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    GXSetTevColor(GX_TEVREG0, (GXColor){0, 0, 0, *ap});
+#ifdef MUST_MATCH
+    color = alphaColor(*ap);
+#else
+    color = zero_muj_0000db40;
+    color.a = *ap;
+#endif
+    GXSetTevColor(GX_TEVREG0, color);
     GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
@@ -1016,13 +1039,28 @@ static USER_FUNC(scale_func) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party0 = partyGetPtr(0);
     PartyEntry* party1 = partyGetPtr(1);
+    Vec v0;
+    Vec v1;
+    Vec v2;
 
-    mario->scale = (Vec){scale, scale, scale};
+    v0 = vec3_muj_0000e4cc;
+    v0.x = scale;
+    v0.y = scale;
+    v0.z = scale;
+    mario->scale = v0;
     if (party0 != NULL) {
-        party0->field_70 = (Vec){scale, scale, scale};
+        v1 = vec3_muj_0000e4d8;
+        v1.x = scale;
+        v1.y = scale;
+        v1.z = scale;
+        party0->field_70 = v1;
     }
     if (party1 != NULL) {
-        party1->field_70 = (Vec){scale, scale, scale};
+        v2 = vec3_muj_0000e4e4;
+        v2.x = scale;
+        v2.y = scale;
+        v2.z = scale;
+        party1->field_70 = v2;
     }
     return EVT_RETURN_DONE;
 }
@@ -3346,6 +3384,9 @@ static EVT_BEGIN(ship_pera)
     RETURN
 EVT_END()
 
+const Vec vec3_muj_0000e4cc = {0.0f, 0.0f, 0.0f};
+const Vec vec3_muj_0000e4d8 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_muj_0000e4e4 = {0.0f, 0.0f, 0.0f};
 
 EVT_BEGIN(muj_gor_ship_start)
     CALL(evt_snd_bgmon, 512, STRING("BGM_EVT_STG5_GHOST_SHIP1"))

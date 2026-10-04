@@ -18,59 +18,82 @@
 #include "system.h"
 #include "math_ext.h"
 #include "battle/sac/sac_scissor.h"
+#include "battle/battle_camera.h"
+#include "battle/battle_database_common.h"
+#include "battle/battle_event_cmd.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_img.h"
+#include "evt/evt_offscreen.h"
+#include "evt/evt_paper.h"
+#include "evt/evt_snd.h"
+#include "party/party_motion.h"
+
+extern const f32 float_0_80421734;
+extern const f32 float_neg240_80421738;
+extern const f32 float_240_8042173c;
+extern const f32 float_neg304_80421740;
+extern const f32 float_304_80421744;
+extern const f32 float_0p5_80421748;
+extern const f32 float_255_8042174c;
+extern const f32 float_neg1_80421750;
+extern f32 float_1_80421754;
+extern const f32 float_9_80421758;
+extern const f32 float_100_8042175c;
+extern const f32 float_0p3_80421760;
+extern const f32 float_0p6_80421764;
+extern const f32 float_0p9_80421768;
+extern const f32 float_42_8042176c;
+extern const f32 float_50_80421770;
+extern const f32 float_0p86_80421774;
+extern const f32 float_neg300_80421778;
+extern const f32 float_300_8042177c;
+extern const f32 float_neg200_80421780;
+extern const f32 float_200_80421784;
+extern const f32 float_320_80421788;
+extern const f32 float_185_8042178c;
+extern const f32 float_120_80421790;
+extern const f32 float_20_80421794;
+extern const f32 float_deg2rad_80421798;
+extern const f32 float_neg1000_8042179c;
+extern const f32 float_37_804217a0;
+extern const f32 float_2_804217a4;
+extern const f32 float_2160_804217a8;
+extern const f32 float_1p5_804217ac;
+extern const f32 float_1000_804217b0;
+extern const f32 float_1Eneg06_804217b4;
+#ifdef MUST_MATCH
+#define RELOAD_F32(x) (*(const volatile f32*)&(x))
+#else
+#define RELOAD_F32(x) (x)
+#endif
 
 
 extern BattleWork* _battleWorkPointer;
 
+// Data objects defined at the end of this file and scripts owned by sac_common.
+extern u32 marioAttackEvent_Scissor[];
+extern s32 sac_start_camera_evt[];
+extern s32 sac_mario_item_on_evt[];
+extern s32 sac_mario_item_on_end_evt[];
+extern s32 sac_mario_back_home[];
+extern s32 sac_start_stardust[];
+extern s32 sac_cheer[];
+extern s32 sac_cheer_end[];
+extern s32 sac_ac_help_on[];
+extern s32 sac_ac_help_off[];
+
 // Named .sdata2 constants (the original references these symbols, not anonymous literals).
-extern f32 float_0_80421734;
-extern f32 float_20_80421794;
-extern f32 float_120_80421790;
-extern f32 float_185_8042178c;
-extern f32 float_320_80421788;
-extern f32 float_deg2rad_80421798;
-extern f32 float_255_8042174c;
-extern f32 float_neg240_80421738;
-extern f32 float_240_8042173c;
-extern f32 float_neg304_80421740;
-extern f32 float_304_80421744;
-extern f32 float_0p5_80421748;
-extern f32 float_1_80421754;
-extern f32 float_1Eneg06_804217b4;
-extern f32 float_neg1_80421750;
-extern f32 float_9_80421758;
-extern f32 float_100_8042175c;
-extern f32 float_0p3_80421760;
-extern f32 float_0p6_80421764;
-extern f32 float_0p9_80421768;
-extern f32 float_1000_804217b0;
-extern f32 float_neg1000_8042179c;
-extern f32 float_42_8042176c;
-extern f32 float_50_80421770;
-extern f32 float_0p86_80421774;
-extern f32 float_neg300_80421778;
-extern f32 float_300_8042177c;
-extern f32 float_neg200_80421780;
-extern f32 float_200_80421784;
-extern f32 float_37_804217a0;
-extern f32 float_2_804217a4;
-extern f32 float_2160_804217a8;
-extern f32 float_1p5_804217ac;
 extern const Vec vec3_802ff59c;
 extern const Vec vec3_802ff5a8;
 extern const Vec vec3_802ff5b4;
 extern const Vec vec3_802ff5c0;
 extern const Vec vec3_802ff5cc;
-extern char str_802FF648[];
 extern u32 dat_80421718;
 extern u32 dat_8042171c;
 extern char str_80421728[4];
-extern BattleWeapon weapon_scissor;
+extern u32 weapon_scissor[];
 
 // Double constants emitted in this translation unit's .sdata2.
-const f64 double_to_int_802ff638 = 4503601774854144.0;
-const f64 double_5_802ff640 = 5.0;
-const f64 double_to_int_mask_802ff660 = 4503599627370496.0;
 
 // A 2D point in the scissor polygon buffers (8 bytes, copied by value in tess).
 typedef struct ScissorPoint {
@@ -193,8 +216,8 @@ s32 scissor_init(void) {
     work->field_0x104 = 0x3BF;
     work->field_0x114 = BattleAlloc(0x1000);
     work->field_0x118 = BattleAlloc(0x3000);
-    work->field_0xB4 = 0.0f;
-    work->field_0xB8 = 0.0f;
+    work->field_0xB4 = float_0_80421734;
+    work->field_0xB8 = float_0_80421734;
     work->field_0x0C = 0;
     work->field_0x98 = 0;
     return 2;
@@ -259,7 +282,7 @@ void scissor_disp_region(CameraId cameraId, void* param) {
 s32 scissor_offscreen(void) {
     ScissorWork* work = GetScissorPtr();
 
-    dispEntry(CAMERA_OFFSCREEN2, 0.0f, 1, scissor_disp_region, NULL);
+    dispEntry(CAMERA_OFFSCREEN2, float_0_80421734, 1, scissor_disp_region, NULL);
     return 2;
 }
 
@@ -281,9 +304,9 @@ void scissor_disp_control(CameraId cameraId, void* param) {
         work->field_0x10 -= 0x3C;
     }
     if (work->field_0x10 <= 0x1D) {
-        intplGetValue(0, work->field_0x10, 0x1D, 0.0f, float_255_8042174c);
+        intplGetValue(0, work->field_0x10, 0x1D, RELOAD_F32(float_0_80421734), float_255_8042174c);
     } else {
-        intplGetValue(0, work->field_0x10 - 0x1E, 0x3B, float_255_8042174c, 0.0f);
+        intplGetValue(0, work->field_0x10 - 0x1E, 0x3B, float_255_8042174c, float_0_80421734);
     }
     GXSetCullMode(GX_CULL_NONE);
     GXClearVtxDesc();
@@ -344,7 +367,7 @@ s32 scissor_ofscreen_ok(EventEntry* event, BOOL isFirstCall) {
 // temporaries as the original does; caching them in locals rotated py/ny/min.
 // Leaving the loop bound as work->field_0x14 (no `count` local) is what steers the
 // bound to r9 and the &tri[j] temp to r10.  The 0.0f literal pools as a local symbol
-// instead of the original's float_0_80421734, which objdiff does not score.
+// instead of the original's float_0_80421734, which is not scored as a mismatch.
 s32 scissor_damage_sub2(const Vec* point) {
     ScissorWork* work = GetScissorPtr();
     f32 cross[3];
@@ -426,7 +449,7 @@ void scissor_damage_sub(BattleUnit* unit, s32* out) {
             }
         }
     }
-    ratio = (f32)hits / 100.0f;
+    ratio = (f32)hits / float_100_8042175c;
     *out = 0;
     if (ratio >= float_0p3_80421760) {
         *out = 1;
@@ -507,7 +530,7 @@ s32 scissor_damage(EventEntry* event, s32 unused) {
         }
         target = BattleGetUnitPtr(battleWork, work->field_0x18[i]);
         part = BtlUnit_GetPartsPtr(target, BtlUnit_GetBodyPartsId(target));
-        BattleCheckDamage(mario, target, part, &weapon_scissor, 0);
+        BattleCheckDamage(mario, target, part, (BattleWeapon*)weapon_scissor, 0);
         damage = 1;
     }
     if (allHit == 1) {
@@ -562,13 +585,13 @@ s32 scissor_control(s32 unused, s32 reset) {
 
     if (reset != 0) {
         work->field_0x9C = 0;
-        work->field_0xA8 = 0.0f;
-        work->field_0xA4 = 0.0f;
-        work->field_0xB0 = 0.0f;
-        work->field_0xAC = 0.0f;
+        work->field_0xA8 = float_0_80421734;
+        work->field_0xA4 = float_0_80421734;
+        work->field_0xB0 = float_0_80421734;
+        work->field_0xAC = float_0_80421734;
         work->field_0xA0 = 0;
-        work->field_0xD4 = 0.0f;
-        work->field_0xD8 = 0.0f;
+        work->field_0xD4 = float_0_80421734;
+        work->field_0xD8 = float_0_80421734;
         memset(points, 0, 0x1000);
         work->flags &= ~1;
     }
@@ -580,13 +603,12 @@ s32 scissor_control(s32 unused, s32 reset) {
         f32 mag = (f32)sqrt(work->field_0xA4 * work->field_0xA4 + work->field_0xA8 * work->field_0xA8);
         mag = (f32)sqrt(work->field_0xAC * work->field_0xAC + work->field_0xB0 * work->field_0xB0);
         if (mag > float_42_8042176c) {
-            f32 k = 50.0f;
-            work->field_0xD4 += work->field_0xAC / k;
-            work->field_0xD8 += work->field_0xB0 / k;
+            work->field_0xD4 += work->field_0xAC / float_50_80421770;
+            work->field_0xD8 += work->field_0xB0 / float_50_80421770;
         }
     }
-    work->field_0xD4 *= 0.86f;
-    work->field_0xD8 *= 0.86f;
+    work->field_0xD4 *= float_0p86_80421774;
+    work->field_0xD8 *= float_0p86_80421774;
     work->field_0xB4 += work->field_0xD4;
     work->field_0xB8 += work->field_0xD8;
     if (work->field_0xB4 < -300.0f) {
@@ -608,8 +630,8 @@ s32 scissor_control(s32 unused, s32 reset) {
     if (gp->retraceCount % 6 == 0) {
         if (work->field_0x9C < 0x200) {
             if (work->field_0xBC != work->field_0xB4 || work->field_0xC0 != work->field_0xB8) {
-                if (__fabs(work->field_0xB4 - work->field_0xBC) >= double_5_802ff640 || __fabs(work->field_0xB8 - work->field_0xC0) >= double_5_802ff640) {
-                    psndSFXOn(str_802FF648);
+                if (__fabs(work->field_0xB4 - work->field_0xBC) >= 5.0 || __fabs(work->field_0xB8 - work->field_0xC0) >= 5.0) {
+                    psndSFXOn("SFX_BTL_SAC_KAKONDEPON1");
                 }
                 points[work->field_0x9C].x = work->field_0xB4;
                 points[work->field_0x9C].y = work->field_0xB8;
@@ -640,12 +662,12 @@ s32 scissor_control(s32 unused, s32 reset) {
                     work->field_0x170 = NULL;
                 }
                 work->field_0x170 = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, 4, 0, 0), 1);
-                dispEntry(8, 0.0f, 0, (DispCallback)scissor_capture, 0);
+                dispEntry(8, float_0_80421734, 0, (DispCallback)scissor_capture, 0);
                 return 2;
             }
         }
     }
-    dispEntry(8, 0.0f, 0, (DispCallback)scissor_disp_control, 0);
+    dispEntry(8, float_0_80421734, 0, (DispCallback)scissor_disp_control, 0);
     return 0;
 }
 
@@ -655,14 +677,14 @@ s32 scissor_timer_main(void) {
     switch (work->field_0xFC) {
         case 0:
         {
-            work->field_0x108 = 320.0f;
-            work->field_0x10C = 185.0f;
+            work->field_0x108 = float_320_80421788;
+            work->field_0x10C = float_185_8042178c;
             work->field_0xFC = 5;
             work->field_0x100 = 0;
         }
             // fallthrough
         case 5:
-            work->field_0x108 = intplGetValue(4, work->field_0x100, 0xF, float_320_80421788, float_120_80421790);
+            work->field_0x108 = intplGetValue(4, work->field_0x100, 0xF, RELOAD_F32(float_320_80421788), float_120_80421790);
             work->field_0x100++;
             if (work->field_0x100 > 0xF) {
                 work->field_0xFC = 10;
@@ -733,9 +755,9 @@ void star_disp2D_sub(s32 index, s32 alpha) {
             work->field_0x120 = 0x1E;
         }
 #ifdef MUST_MATCH
-        alpha = (s32)intplGetValue(0, (step = work->field_0x120, step), 0x1E, (start = (f32)(u8)alpha, start), float_0_80421734);
+        alpha = (s32)intplGetValue(0, (step = work->field_0x120, step), 0x1E, (start = (f32)(u32)(u8)alpha, start), float_0_80421734);
 #else
-        alpha = (s32)intplGetValue(0, work->field_0x120, 0x1E, (f32)(u8)alpha, float_0_80421734);
+        alpha = (s32)intplGetValue(0, work->field_0x120, 0x1E, (f32)(u32)(u8)alpha, float_0_80421734);
 #endif
     }
     *(u32*)&color = dat_80421718;
@@ -778,7 +800,7 @@ void star_disp2D(void) {
 // common base, str_802FF570 (held in r30); without the base MWCC emits a separate lis/addi per
 // vector and the FP allocation through case 1 shifts. MUST_MATCH reads them through the base;
 // the natural named-symbol form is under #else. MWCC still pools the int->float magic double as
-// an anonymous @NNN slot (project-wide limitation) instead of the named double_to_int_802ff638
+// an anonymous @NNN slot (project-wide limitation) instead of the named 4503601774854144.0
 // at base+0xC8.
 #ifdef MUST_MATCH
 #define SCVEC(off, sym) (*(const Vec*)(base + (off)))
@@ -787,7 +809,7 @@ void star_disp2D(void) {
 #endif
 // With the base pointer the vector accesses and the FP allocation through case 1 line up; what
 // remains is register/schedule colouring. The int->float magic double is the biggest piece (MWCC
-// pools an anonymous @NNN slot instead of the named double_to_int_802ff638 at base+0xC8, which
+// pools an anonymous @NNN slot instead of the named 4503601774854144.0 at base+0xC8, which
 // shifts one GPR and the whole FP block f0-f5); the effStarStoneEntry argument stores, the
 // work->field_0x140/0x144 adds and the case-2 else/trail-loop constants are scheduled a few
 // instructions later than the original. A hand-written i2f (union + base+0xC8) recovered the
@@ -1256,15 +1278,15 @@ s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx,
 #ifdef MUST_MATCH
                 // MUST_MATCH: the named temp makes MWCC load 1.0 into f3 and reuse it
                 // for both the compare and the subtraction, as the original does.
-                f32 one = 1.0f;
+                f32 one = float_1_80421754;
                 m2 = d2x / d2y;
                 if (m1 * m2 != one) {
                     den = one - m1 * m2;
                 } else {
 #else
                 m2 = d2x / d2y;
-                if (m1 * m2 != 1.0f) {
-                    den = 1.0f - m1 * m2;
+                if (m1 * m2 != float_1_80421754) {
+                    den = float_1_80421754 - m1 * m2;
                 } else {
 #endif
                     den = float_1Eneg06_804217b4;
@@ -1277,15 +1299,15 @@ s32 scissor_intersection(f32 ax, f32 ay, f32 bx, f32 by, f32 cx, f32 cy, f32 dx,
             if (scissor_abs(d2x) > scissor_abs(d2y)) {
 #ifdef MUST_MATCH
                 // MUST_MATCH: named temp for the same reason as the branch above.
-                f32 one = 1.0f;
+                f32 one = float_1_80421754;
                 m2 = d2y / d2x;
                 if (m1 * m2 != one) {
                     den = one - m1 * m2;
                 } else {
 #else
                 m2 = d2y / d2x;
-                if (m1 * m2 != 1.0f) {
-                    den = 1.0f - m1 * m2;
+                if (m1 * m2 != float_1_80421754) {
+                    den = float_1_80421754 - m1 * m2;
                 } else {
 #endif
                     den = float_1Eneg06_804217b4;
@@ -1390,3 +1412,189 @@ ScissorWork* GetScissorPtr(void) {
     return (ScissorWork*)((u8*)_battleWorkPointer + 0x1F4C);
 }
 #pragma dont_inline reset
+
+// ---------------------------------------------------------------------------
+// Ported data for this unit. All objects are defined after the code, in the
+// original section and address order, so MWCC emits the named objects ahead of
+// its own literal pool.
+// ---------------------------------------------------------------------------
+
+// .rodata:0x0..0xC8 (own strings and the vectors scissor_disp_region reads)
+__declspec(section ".rodata") char str_802FF570[20] = "btl_wn_sac_scissor";
+const char str_802FF584[12] = "msg_scissor";
+const char str_802FF590[12] = "msg_sac_5";
+#pragma force_active on
+const Vec vec3_802ff59c = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802ff5a8 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802ff5b4 = { 0.0f, 300.0f, 0.0f };
+const Vec vec3_802ff5c0 = { 1.0f, 1.0f, 1.0f };
+const Vec vec3_802ff5cc = { 0.0f, 0.0f, 0.0f };
+#pragma force_active reset
+const char str_802FF5D8[20] = "SFX_BTL_SAC_START1";
+const char str_802FF5EC[20] = "SFX_BTL_SAC_START2";
+const char str_802FF600[20] = "SFX_BTL_SAC_START3";
+const char str_802FF614[12] = "OFF_d_bom";
+const char str_802FF620[24] = "SFX_BTL_SAC_KAKONDEPON2";
+
+// .sdata2:0x0..0x1C (colour words and short strings)
+__declspec(section ".sdata2") u32 dat_80421718 = 0xFFFFFF00;
+__declspec(section ".sdata2") u32 dat_8042171c = 0x00FFFFFF;
+__declspec(section ".sdata2") char str_80421720[8] = "M_I_Y";
+__declspec(section ".sdata2") char str_80421728[4] = "ofs";
+__declspec(section ".sdata2") char str_8042172C[4] = "img";
+__declspec(section ".sdata2") char str_80421730[4] = "A_1";
+
+// .sdata2:0x1C..0xA0 (the unit's named float constants)
+#pragma explicit_zero_data on
+const f32 float_0_80421734 = 0.0f;
+#pragma explicit_zero_data reset
+const f32 float_neg240_80421738 = -240.f;
+const f32 float_240_8042173c = 240.f;
+const f32 float_neg304_80421740 = -304.0f;
+const f32 float_304_80421744 = 304.0f;
+const f32 float_0p5_80421748 = 0.5f;
+const f32 float_255_8042174c = 255.0f;
+const f32 float_neg1_80421750 = -1.0f;
+__declspec(section ".sdata2") f32 float_1_80421754 = 1.0f;
+const f32 float_9_80421758 = 9.0f;
+const f32 float_100_8042175c = 100.f;
+const f32 float_0p3_80421760 = 0.3f;
+const f32 float_0p6_80421764 = 0.6f;
+const f32 float_0p9_80421768 = 0.9f;
+const f32 float_42_8042176c = 42.0f;
+const f32 float_50_80421770 = 50.f;
+const f32 float_0p86_80421774 = 0.86f;
+const f32 float_neg300_80421778 = -300.f;
+const f32 float_300_8042177c = 300.f;
+const f32 float_neg200_80421780 = -200.f;
+const f32 float_200_80421784 = 200.f;
+const f32 float_320_80421788 = 320.f;
+const f32 float_185_8042178c = 185.0f;
+const f32 float_120_80421790 = 120.f;
+const f32 float_20_80421794 = 20.f;
+const f32 float_deg2rad_80421798 = 0.017453292f;
+const f32 float_neg1000_8042179c = -1000.f;
+const f32 float_37_804217a0 = 37.0f;
+const f32 float_2_804217a4 = 2.0f;
+const f32 float_2160_804217a8 = 2160.f;
+const f32 float_1p5_804217ac = 1.5f;
+const f32 float_1000_804217b0 = 1000.f;
+const f32 float_1Eneg06_804217b4 = 0.000001f;
+
+// .data:0x0..0xC0
+u32 weapon_scissor[48] = {
+    (u32)(void*)str_802FF570, 0x019C0000, 0x00000000, (u32)(void*)str_802FF584,
+    0x64000400, 0x3F800000, 0x01056432, (u32)(void*)&weaponGetPower_Scissor,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000,
+    0x02101260, 0x20000000, 0x00000302, (u32)(void*)str_802FF590,
+    0x000200C8, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    (u32)(void*)marioAttackEvent_Scissor, 0x00000064, 0x00000000, 0x00000000,
+};
+
+// .data:0xC0..0x180
+u32 weapon_scissor_finish[48] = {
+    (u32)(void*)str_802FF570, 0x00000000, 0x00000000, 0x00000000,
+    0x64000000, 0x3F800000, 0x01056432, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000,
+    0x02101260, 0x20000000, 0x001B0302, 0x00000000,
+    0x00020088, 0x000007FF, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00000064, 0x00000000, 0x00000000,
+};
+
+// .data:0x180..0x630
+u32 marioAttackEvent_Scissor[300] = {
+    0x0001005B, (u32)(void*)&scissor_init, 0x0000006E, 0x0001005B,
+    (u32)(void*)&star_control, 0x00000070, 0x0001005E, (u32)(void*)&sac_start_camera_evt,
+    0x0001000A, 0x000001F4, 0x0006005B, (u32)(void*)&btlevtcmd_snd_se,
+    0xFFFFFFFE, (u32)(void*)str_802FF5D8, 0xF1194D80, 0x00000000,
+    0xF1194D80, 0x0001005E, (u32)(void*)&sac_mario_item_on_evt, 0x0001000A,
+    0x000001F4, 0x0006005B, (u32)(void*)&btlevtcmd_snd_se, 0xFFFFFFFE,
+    (u32)(void*)str_802FF5EC, 0xF1194D80, 0x00000000, 0xFE363C8B,
+    0x0001005B, (u32)(void*)&star_stone_appear, 0x0000006E, 0x0001005E,
+    (u32)(void*)&sac_start_stardust, 0x00000070, 0x00010009, 0x00000064,
+    0x0006005B, (u32)(void*)&btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)str_802FF600,
+    0xF1194D80, 0x00000000, 0xF1194D80, 0x0002005B,
+    (u32)(void*)&evt_snd_sfxoff, 0xFE363C8B, 0x0003005B, (u32)(void*)&evt_btl_camera_set_mode,
+    0x00000000, 0x00000000, 0x00010009, 0x00000028,
+    0x0001005E, (u32)(void*)&sac_mario_item_on_end_evt, 0x0001005E, (u32)(void*)&sac_mario_back_home,
+    0x0004005B, (u32)(void*)&btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001,
+    (u32)(void*)str_80421720, 0x0000006E, 0x00010009, 0x0000001E,
+    0x0003005B, (u32)(void*)&evt_btl_camera_set_mode, 0x00000000, 0x00000003,
+    0x000A005B, (u32)(void*)&evt_btl_camera_set_moveto, 0x00000000, 0x0000004B,
+    0x00000069, 0x00000258, 0x0000004B, 0x00000037,
+    0x00000000, 0x0000001E, 0x00000000, 0x00000070,
+    0x0001005B, (u32)(void*)&wait_star_standby, 0x0000006E, 0x0001005B,
+    (u32)(void*)&scissor_timer_main, 0x00000070, 0x0000006E, 0x0002005B,
+    (u32)(void*)&sac_cheer, 0x00000001, 0x00000070, 0x0001005B,
+    (u32)(void*)&sac_ac_help_on, 0x00010005, 0x00000000, 0x00020032,
+    0xFE363C8A, (u32)(void*)str_802FF614, 0x0002005B, (u32)(void*)&evt_paper_entry,
+    0xFE363C8A, 0x0002005B, (u32)(void*)&evt_offscreen_entry, (u32)(void*)str_80421728,
+    0x0002005B, (u32)(void*)&evt_img_entry, (u32)(void*)str_8042172C, 0x0003005B,
+    (u32)(void*)&evt_img_set_paper, (u32)(void*)str_8042172C, 0xFE363C8A, 0x0003005B,
+    (u32)(void*)&evt_img_onoff, (u32)(void*)str_8042172C, 0x00000000, 0x0001005B,
+    (u32)(void*)&scissor_control, 0x0002005B, (u32)(void*)&scissor_timer_get, 0xFE363C80,
+    0x0002001C, 0xFE363C80, 0x0000003B, 0x0003005B,
+    (u32)(void*)&evt_img_onoff, (u32)(void*)str_8042172C, 0x00000000, 0x0003005B,
+    (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_8042172C, 0x00000000, 0x0002005B,
+    (u32)(void*)&evt_img_release, (u32)(void*)str_8042172C, 0x0002005B, (u32)(void*)&evt_offscreen_delete,
+    (u32)(void*)str_80421728, 0x0002005B, (u32)(void*)&evt_paper_delete, 0xFE363C8A,
+    0x00010004, 0x0000005A, 0x00000021, 0x00010009,
+    0x00000001, 0x0001005B, (u32)(void*)&scissor_tess, 0x00010009,
+    0x00000001, 0x0001005B, (u32)(void*)&scissor_offscreen, 0x0009005B,
+    (u32)(void*)&evt_img_alloc_capture, (u32)(void*)str_8042172C, 0x00000000, (u32)(void*)str_80421728,
+    0x00000001, 0x00000000, 0x00000000, 0x00000000,
+    0x00000000, 0x00010009, 0x00000001, 0x0002005B,
+    (u32)(void*)&scissor_ofscreen_ok, 0xFE363C80, 0x00020019, 0xFE363C80,
+    0x00000000, 0x0003005B, (u32)(void*)&evt_snd_sfxon, (u32)(void*)str_802FF620,
+    0x00000000, 0x0003005B, (u32)(void*)&evt_img_onoff, (u32)(void*)str_8042172C,
+    0x00000001, 0x0003005B, (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_8042172C,
+    0x00000002, 0x0002005B, (u32)(void*)&scissor_damage, 0xFE363C80,
+    0x0002001D, 0xFE363C80, 0x00000002, 0x0005005B,
+    (u32)(void*)&btlevtcmd_ACSuccessEffect, 0xFE363C80, 0x0000004B, 0x00000064,
+    0xFFFFFF9C, 0x00000021, 0x0003005B, (u32)(void*)&evt_img_set_paper_anim,
+    (u32)(void*)str_8042172C, (u32)(void*)str_80421730, 0x0002005B, (u32)(void*)&evt_img_clear_virtual_point,
+    (u32)(void*)str_8042172C, 0x00010009, 0x0000003C, 0x00000021,
+    0x0003005B, (u32)(void*)&evt_img_onoff, (u32)(void*)str_8042172C, 0x00000000,
+    0x0003005B, (u32)(void*)&evt_img_set_shadow, (u32)(void*)str_8042172C, 0x00000000,
+    0x0002005B, (u32)(void*)&evt_img_release, (u32)(void*)str_8042172C, 0x0002005B,
+    (u32)(void*)&evt_offscreen_delete, (u32)(void*)str_80421728, 0x0002005B, (u32)(void*)&evt_paper_delete,
+    0xFE363C8A, 0x0002005B, (u32)(void*)&scissor_timer_get, 0xFE363C80,
+    0x0002001C, 0xFE363C80, 0x0000003B, 0x00010004,
+    0x0000005A, 0x00000021, 0x00000006, 0x00010003,
+    0x0000005A, 0x0001005B, (u32)(void*)&sac_ac_help_off, 0x0001005B,
+    (u32)(void*)&sac_cheer_end, 0x0003005B, (u32)(void*)&btlevtcmd_GetSelectEnemy, 0xFE363C83,
+    0xFE363C84, 0x0001005B, (u32)(void*)&btlevtcmd_WaitGuardMove, 0x0002005B,
+    (u32)(void*)&btlevtcmd_CommandPayWeaponCost, 0xFFFFFFFE, 0x0003005B, (u32)(void*)&btlevtcmd_CommandGetWeaponAddress,
+    0xFFFFFFFE, 0xFE363C80, 0x0002005B, (u32)(void*)&btlevtcmd_WeaponAftereffect,
+    0xFE363C80, 0x00010003, 0x0000005F, 0x00020018,
+    0xFE363C83, 0xFFFFFFFF, 0x00010004, 0x00000061,
+    0x00000021, 0x0003005B, (u32)(void*)&btlevtcmd_GetTotalDamage, 0xFE363C83,
+    0xFE363C80, 0x0002001D, 0xFE363C80, 0x00000001,
+    0x0007005B, (u32)(void*)&btlevtcmd_CheckDamage, 0xFFFFFFFE, 0xFE363C83,
+    0xFE363C84, (u32)(void*)weapon_scissor_finish, 0x00000100, 0xFE363C85,
+    0x00000021, 0x0003005B, (u32)(void*)&btlevtcmd_GetSelectNextEnemy, 0xFE363C83,
+    0xFE363C84, 0x00010004, 0x0000005F, 0x00010003,
+    0x00000061, 0x0003005B, (u32)(void*)&evt_btl_camera_set_mode, 0x00000000,
+    0x00000000, 0x0001000A, 0x000003E8, 0x0001005B,
+    (u32)(void*)&scissor_end, 0x00010003, 0x00000063, 0x0002005B,
+    (u32)(void*)&btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002, 0x00000001,
+};
+
+// .data:0x684 (trailing zero word before the next split's data)
+#pragma force_active on
+__declspec(section ".data") s32 gap_05_803B24BC_data[1] = { 0x00000000 };
+#pragma force_active reset

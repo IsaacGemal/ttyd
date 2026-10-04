@@ -4463,3 +4463,9 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   more functions match with the data in place (9,371 -> 9,374).
 - **Wave 72** (11:42, base on main): arm P, 13 pool tasks from Claude #3's w72_queue (near/link prompts with each
   unit's sdata2_diff classes as a hint); arm D, 12 data-prep units ranked by unmatched data bytes.
+- **Batch 8:** eff_kemuri 6/6 functions at 100% (wave 72 pool arm; better than the hand version Claude #3 left
+  at 99.93/99.84/99.89, which it handed over); data ports with whole sections byte-identical for tou_03 (51 KB
+  .data, .rodata), muj_00 (40 KB .data, .rodata), eff_funemizu (.data, .sdata, .rodata) and sac_scissor (.data);
+  effStarPointEntry 97.39 -> 97.96. eff_funemizu's agent also dropped matching.h's trailing newline by accident;
+  that hunk was left out. Unchanged: ac_pendulum's _get_angle_rate (99.20), magic_horao (99.86; its collect was
+  flagged for a `pkill -9 -f mwcceppc` inside its sandbox).

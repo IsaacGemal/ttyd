@@ -137,16 +137,18 @@ EffectEntry* effKemuriEntry(s32 int2, f32 float3, f32 float4, f32 float5, f32 fl
 	return entry;
 }
 
-// NONMATCHING (99.93%): only the viewYaw load/add differ -- retail coalesces sinVal, viewYaw and one
-// into f26, ours gives viewYaw f28; the two-variable (angle/angle2) shape and declaration order below
-// fix every other register (angle f24, cosVal/z f25, sinVal/one f26, p7 f27, neg20 f28, zero f31).
+// The viewYaw and a2 (the second angleABf result) temps are ordinary locals; declaring them in this
+// order and computing them before the sum is what makes MWCC reuse f26 for the value live across the
+// call (sinVal, viewYaw and one share f26) and keeps the other registers as retail.
 EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 float6, f32 float7) {
 	EffectEntry* entry = effEntry();
 	effKemuri2Data* data;
-	f32 neg20;
 	f32 zero;
+	f32 neg20;
 	f32 p7;
 	f32 one;
+	f32 viewYaw;
+	f32 a2;
 	f32 sinVal;
 	f32 z;
 	f32 angle2;
@@ -163,7 +165,9 @@ EffectEntry* effKemuri2Entry(s32 int2, f32 float3, f32 float4, f32 float5, f32 f
 	sinVal = float_1000_8041c710 * float6;
 	cosVal = float_1000_8041c710 * float7;
 	angle = float_360_8041c70c * angleABf(float_0_8041c6bc, float_0_8041c6bc, sinVal, cosVal) / float_6p2832_8041c714;
-	data->field_0x78 = reviseAngle(float_360_8041c70c * angleABf(float_0_8041c6bc, float_0_8041c6bc, sinVal, cosVal) / float_6p2832_8041c714 + camGetPtr(CAMERA_3D)->viewYaw);
+	viewYaw = camGetPtr(CAMERA_3D)->viewYaw;
+	a2 = float_360_8041c70c * angleABf(float_0_8041c6bc, float_0_8041c6bc, sinVal, cosVal) / float_6p2832_8041c714;
+	data->field_0x78 = reviseAngle(a2 + viewYaw);
 	angle2 = float_6p2832_8041c714 * (f32)(s32)angle / float_360_8041c70c;
 	z = float_5_8041c718 + float5;
 	data->counter = 0;

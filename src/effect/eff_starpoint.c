@@ -38,12 +38,11 @@ extern const f32 float_14_804209fc;
 const f64 double_to_int_802fdbf8 = 4503601774854144.0;
 const char str_802FDBEC[] = "StarPoint";
 
-static inline f32 effStarPointSinf(f32 rad, f32 b) {
+static inline f32 effStarPointSinf(f32 rad, f32 b, f32 one, f32 pi) {
     f32 v = MATCH_F32(float_0p00761_804209d8);
-    f32 one = float_1_804209e0;
-    f32 t, u;
+        f32 t, u;
 
-    if (rad <= float_3p1416_804209e4) {
+    if (rad <= pi) {
         if (rad <= float_1p5708_804209e8) {
             t = rad * rad;
             v = v * t - b;
@@ -58,7 +57,7 @@ static inline f32 effStarPointSinf(f32 rad, f32 b) {
             v = v * u;
         }
     } else if (rad < float_4p7124_804209ec) {
-        t = rad - float_3p1416_804209e4;
+        t = rad - pi;
         u = t * t;
         v = v * u - b;
         v = v * u + one;
@@ -76,13 +75,11 @@ static inline f32 effStarPointSinf(f32 rad, f32 b) {
     return v;
 }
 
-static inline f32 effStarPointCosf(f32 rad) {
+static inline f32 effStarPointCosf(f32 rad, f32 b, f32 one, f32 pi) {
     f32 v = MATCH_F32(float_0p03705_804209f4);
-    f32 b = float_0p4967_804209f8;
-    f32 one = float_1_804209e0;
-    f32 t, u;
+            f32 t, u;
 
-    if (rad <= float_3p1416_804209e4) {
+    if (rad <= pi) {
         if (rad <= float_1p5708_804209e8) {
             t = rad * rad;
             v = v * t - b;
@@ -96,7 +93,7 @@ static inline f32 effStarPointCosf(f32 rad) {
             v = -v;
         }
     } else if (rad < float_4p7124_804209ec) {
-        t = rad - float_3p1416_804209e4;
+        t = rad - pi;
         t = t * t;
         v = v * t - b;
         v = v * t + one;
@@ -117,30 +114,27 @@ static inline f32 effStarPointCosf(f32 rad) {
 // opt_lifetimes off: the default lifetime analysis schedules the seed/temp FPRs differently
 // (0.00761 lands in f4 vs f2); this recovers the target's instruction scheduling.
 #pragma opt_lifetimes off
-// The sin/cos polynomial is written as the two static inline helpers above (the eff_damage_star
-// shape). Expanding it there instead of inline keeps the target's seed/temp/rad registers (0.00761
-// in f2, rad in f3) and raises the score; written inline the same maths loses those. Passing the
-// sin helper's first coefficient (`b`) as an argument is load-bearing for the FPR colouring
-// (this shape vs the one that reads it inside).
-// What remains is only FPR colouring of the ten loop-invariant floats live across `bl rand`:
-// target f22..f31 = c14, cCos1, cSin1, cOne, magic(i2f), c0, c6, c360, cPi, cTwo;
-// ours = cPi, c14, cSin1, c6, cTwo, c0, c360, cCos1, cOne, magic (cSin1 in f24 matches).
-// In the target these are ordered inner-first, then the i2f magic, then the preheader constants
-// (f22..f25, f26, f27..f31); here the magic is pinned to an end (f31 with opt_common_subs off,
-// f22 with it on) and never lands at f26. Passing cPi into the helpers, giving the inner
-// coefficients loop-local declarations, an explicit two-helper `logI2F` cast, an `angleF` temp,
-// and all 120 preheader-assignment / 120 outer-declaration / 24 in-loop-declaration permutations
-// all leave that colouring unchanged or worse; the target's per-statement `f32 c14 = ...;` shape
-// and loop-local coefficient declarations make mwcceppc 2.6 loop forever here. A permuter job is
-// the remaining route. `i = 1` before `lowAlpha = 4` matches the target's init order.
-// NONMATCHING (97.39%): only the loop-invariant FPR colouring differs; no instruction differs for a
-// logic reason.
+// The sin/cos polynomial is written as the two static inline helpers above; expanding it inline
+// loses the target's seed/temp/rad registers (0.00761 in f2, rad in f3). Passing the sin helper's
+// first coefficient (`b`) plus `one` and `pi` as arguments is what places the loop-invariant
+// constants in the target's callee-saved registers. The preheader assignment order
+// (cPi, c0, c6, c360, cTwo, cOne) is load-bearing for the schedule of the pool loads (it is worth
+// two instructions); `i = 1` before `lowAlpha = 4` matches the target's init order. Only FPR
+// colouring differs: the ten loop-invariant values match except that the compiler's i2f magic and
+// cTwo are swapped (target magic=f26/two=f31, ours two=f26/magic=f31), and the inlined polynomial's
+// volatile `1.5707964` scratch is in f0 instead of f1, which cascades through the sin/cos branches.
+// Across every named/literal subset of the nine constants (2^9), every caller-local declaration and
+// assignment permutation (720 each), a 13k-iteration random walk, mwcceppc 1.3-2.7 and every
+// optimization-flag combination the magic only ever lands in f22/f23/f24/f25/f31, never f26; the
+// fused `fsubs` can only be produced by the compiler's own int->float idiom, so a named double
+// cannot steer its register. This is allocator luck; a permuter job is the remaining route.
+// NONMATCHING (97.96%): the i2f magic/cTwo f26/f31 swap and the polynomial's f0/f1 scratch.
 EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     s32 lowAlpha;
     EffectEntry* entry;
     StarPointData* data;
     s32 i;
-    f32 cPi, c360, c0, cTwo, c6;
+    f32 cPi, c360, c6, c0, cTwo, cOne;
 
     entry = effEntry();
     entry->type = str_802FDBEC;
@@ -155,11 +149,12 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     data->field_0x04 = 60;
     data->field_0x08 = 0;
 
+    cPi = float_3p1416_804209e4;
     c0 = float_0_804209cc;
     c6 = float_6p2832_804209d0;
     c360 = float_360_804209d4;
-    cPi = float_3p1416_804209e4;
     cTwo = float_2_804209f0;
+    cOne = float_1_804209e0;
 
     i = 1;
     lowAlpha = 4;
@@ -168,15 +163,16 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
         s32 angle = rand() % 360;
         f32 rad = (c6 * (f32)angle) / c360;
         f32 cSin1 = float_0p16605_804209dc;
+        f32 cCos1 = float_0p4967_804209f8;
 
         data->position.x = c0;
         data->position.y = c0;
         data->position.z = c0;
 
-        data->field_0x18 = cTwo * effStarPointSinf(rad, cSin1);
+        data->field_0x18 = cTwo * effStarPointSinf(rad, cSin1, cOne, cPi);
 
         // cos approximation
-        data->field_0x1C = cTwo * effStarPointCosf(rad);
+        data->field_0x1C = cTwo * effStarPointCosf(rad, cCos1, cOne, cPi);
 
         data->field_0x20 = float_14_804209fc;
         data->field_0x24 = cTwo;
