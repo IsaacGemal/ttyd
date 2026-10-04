@@ -173,20 +173,27 @@ __declspec(section ".data") u8 vertex_tbl[720] = {
     0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
     0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
 };
-extern const Vec vec3_802c1a90;
-extern const Vec vec3_802c1a9c;
-extern const Vec vec3_802c1aa8;
-extern const Vec vec3_802c1ab4;
-extern const Vec vec3_802c1acc;
-extern const Vec vec3_802c1ae4;
+__declspec(section ".rodata") const Vec vec3_802c1a90 = {0.0f, -1.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_802c1a9c = {0.0f, 1000.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_802c1aa8 = {0.0f, 0.0f, -1.0f};
+__declspec(section ".rodata") const Vec vec3_802c1ab4 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_802c1ac0 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_802c1acc = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_802c1ad8 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_802c1ae4 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const Vec vec3_802c1af0 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") const char str_802C1AFC[] = "result scene (8bit depth)";
+__declspec(section ".rodata") const char str_802C1B18[] = "actual depth from the light (8bit depth)";
+__declspec(section ".rodata") const char str_802C1B44[] = "projected shadow depth map (8bit depth)";
+__declspec(section ".rodata") const char str_802C1B6C[] = "result scene (16bit depth)";
+__declspec(section ".rodata") const char str_802C1B88[] = "actual depth from the light (16bit depth)";
+__declspec(section ".rodata") const char str_802C1BB4[] = "projected shadow depth map (16bit depth)";
 extern GXColor dat_804198e4;
 extern GXColor dat_804198e8;
 extern GXColor unk_80422f98;
 extern GXColor unk_80422f9c;
 extern GXColor unk_80422fa0;
 extern GXColor unk_80422fa4;
-extern u8 cube_dl_bottom[0x20];
-extern u8 cube_dl_side[0x20];
 extern const f32 float_1000_8041992c;
 extern const f32 float_0_804198f4;
 extern const f32 float_0p5_804198f8;
@@ -234,6 +241,23 @@ GXTexObj rampTex8;
 GXTexObj rampTex16;
 
 //.sdata
+CharShadowWork* cswp = &char_shadow_work;
+ProjShadowWork* pswp = &proj_shadow_work;
+DepthShadowWork* dswp = &depth_shadow_work;
+u16 ShadowSizeTbl[4] = {0x190, 0x100, 0x80, 0x40};
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u8 gap_07_8040F414_sdata[0xC] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
+u8 cube_dl_bottom[0x20] = {
+    0x80, 0x00, 0x04, 0x38, 0x01, 0x39, 0x01, 0x3A, 0x01, 0x3B, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+u8 cube_dl_side[0x20] = {
+    0x98, 0x00, 0x0A, 0x35, 0x02, 0x38, 0x01, 0x36, 0x02, 0x39, 0x01, 0x37, 0x02, 0x3A, 0x01, 0x38,
+    0x02, 0x3B, 0x01, 0x39, 0x02, 0x38, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
 static GXColor color_tbl[8] = {
     {0, 0, 0, 0x6E}, {0, 0, 0, 0}, {0, 0, 0, 0x16}, {0, 0, 0, 0},
     {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0},
@@ -245,10 +269,11 @@ GXColor color_tbl_nodecay[8] = {
 GXColor color_tbl_cube[3] = {
     {0, 0, 0, 0x8E}, {0, 0, 0, 0}, {0, 0, 0, 0x16},
 };
-u16 ShadowSizeTbl[4] = {0x190, 0x100, 0x80, 0x40};
-DepthShadowWork* dswp = &depth_shadow_work;
-ProjShadowWork* pswp = &proj_shadow_work;
-CharShadowWork* cswp = &char_shadow_work;
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u8 gap_07_8040F4AC_sdata[4] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 // Data references use the original symbols, not pool constants.
 // MUST_MATCH: declaring the two GXGetTexBufferSize results `unsigned long long` (with the calls written
@@ -927,29 +952,27 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
 }
 
 #ifdef MUST_MATCH
-// MUST_MATCH: retail builds the modified GXColor in one scratch slot and then copies it to the argument
-// slot; returning it from an inline reproduces that instead of writing the channels in place.
-static inline GXColor shadowProjColor(u8 v) {
-    GXColor c = dat_804198e8;
-
-    c.r = c.g = c.b = v;
-    return c;
-}
+// MUST_MATCH: retail passes each by-value GXColor through one of the function's fixed outgoing-argument
+// slots (r1+0x8 mat, r1+0xc fog, r1+0x18 battle, and the r1+0x10 scratch/r1+0x14 argument pair for the
+// else path). Declaring the colours as function-scope locals and passing their addresses through a
+// GXColor*-taking function-pointer cast -- MWCC passes a by-value 4-byte GXColor as a pointer either way --
+// makes the register allocator lay those locals out in exactly those slots. The plain by-value calls are
+// under #else.
+#define SHADOW_MAT_COLOR(chan, var, col) (var = (col), ((void (*)(s32, GXColor*))GXSetChanMatColor)((chan), &(var)))
+#define SHADOW_FOG_COLOR(var, col)                                                                                                                                       \
+    (var = (col),                                                                                                                                                        \
+     ((void (*)(s32, f32, f32, f32, f32, GXColor*))GXSetFog)(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, &(var)))
 #endif
 
-// Body, control flow and the work/config register pair (r29/r30) match. MUST_MATCH allocation choices:
-// `work` is `void*` with `(CharShadowWork*)` casts at each use (the natural `CharShadowWork* work`
-// makes MWCC pick r30/r29 and drops to 96.80%); and the C_MTXLookAt sources are copied through nine
-// explicit u32 temps, which is what makes MWCC batch them as "load all nine words, then store all
-// nine" like retail instead of interleaving (that alone is +2.3%). The two .sdata2 `~~` pool labels
-// vanish when the unit links. Still differs only in MWCC allocation/scheduling: inside that batched
-// Vec copy MWCC drops the nine loads in a different order from retail (ours v7,v6,...,v1,v8,v0 vs
-// retail v0..v8) and allocates v0/v8 to r0/r27 rather than retail's r27/r0 (v1..v7 already match
-// retail's r26,r12..r7), the GXColor argument scratch slots are permuted (ours
-// 0x18/0x14/0x10/0x8/0xc vs retail 0x8/0xc/0x18/0x10/0x14), and one `fsubs f3,f2,f29` is
-// scheduled one slot later. Declaring the temps in the reversed order below is a MUST_MATCH-only
-// nudge (+0.06%) that lines up more of the nine stores; the natural order is under #else.
-// NONMATCHING (99.33%): register/stack-slot allocation and one scheduler slot, as detailed above.
+// Body, control flow and the work/config register pair (r29/r30) match. The five GXColor outgoing-argument
+// slots (the macros above), the nine-word camera-basis copy and the vertex block are reproduced under
+// MUST_MATCH. `work` is `void*` with `(CharShadowWork*)` casts at each use (the natural
+// `CharShadowWork* work` makes MWCC pick r30/r29 and drops to 96.80%). The camera-basis copy reads the
+// source through a `volatile` pointer so the nine loads come out in retail's ascending order and v0/v8 get
+// r27/r0; a plain read loads them v7..v0,v8 with v0/v8 in r0/r27. The two .sdata2 `~~` pool labels vanish
+// when the unit links.
+// NONMATCHING (99.52%): one `fsubs f3,f2,f29` (the `(float_0 + w) - we` term shared by the last two
+// vertices) is scheduled one slot later than retail; every other instruction matches.
 void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     ShadowConfigFields* config;
     void* work;
@@ -965,12 +988,14 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     Vec camPos;
     Vec camUp;
     Vec camTarget;
-    f32 zero;
     f32 w;
     f32 d;
     f32 we;
     f32 de;
     s32 i;
+#ifdef MUST_MATCH
+    GXColor pBattleColor, pArgColor, pProjColor, pFogColor, pMatColor;
+#endif
 
     (void)camId;
     (void)param;
@@ -985,7 +1010,11 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
 
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+#ifdef MUST_MATCH
+    SHADOW_MAT_COLOR(4, pMatColor, cswp->unk100);
+#else
     GXSetChanMatColor(4, cswp->unk100);
+#endif
     GXSetNumTexGens(0);
     GXSetNumTevStages(1);
     GXSetTevOrder(0, 0xFF, 0xFF, 4);
@@ -993,7 +1022,11 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
     GXSetTevAlphaIn(0, 7, 1, 5, 7);
+#ifdef MUST_MATCH
+    SHADOW_FOG_COLOR(pFogColor, unk_80422f98);
+#else
     GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f98);
+#endif
     GXSetBlendMode(1, 4, 5, 0);
     GXSetZMode(1, 3, 0);
     GXSetZCompLoc(1);
@@ -1006,11 +1039,20 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetBlendMode(0, 4, 5, 0);
     if (gp->inBattle != 0) {
+#ifdef MUST_MATCH
+        SHADOW_MAT_COLOR(4, pBattleColor, dat_804198e4);
+#else
         GXSetChanMatColor(4, dat_804198e4);
+#endif
     }
     else {
 #ifdef MUST_MATCH
-        GXSetChanMatColor(4, shadowProjColor(alpha));
+        pProjColor = dat_804198e8;
+        pProjColor.r = alpha;
+        pProjColor.g = alpha;
+        pProjColor.b = alpha;
+        pArgColor = pProjColor;
+        ((void (*)(s32, GXColor*))GXSetChanMatColor)(4, &pArgColor);
 #else
         GXColor color = dat_804198e8;
 
@@ -1052,16 +1094,19 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
 #ifdef MUST_MATCH
         {
-            /* Copy the three camera basis vectors through explicit word temps: this forces MWCC to
-               emit retail's "nine loads, then nine stores" instead of interleaving load/store. */
-            const u32* vp = (const u32*)(vecs + 0xC);
-            s32 v7 = vp[7]; s32 v6 = vp[6]; s32 v5 = vp[5];
-            s32 v4 = vp[4]; s32 v3 = vp[3]; s32 v2 = vp[2];
-            s32 v1 = vp[1]; s32 v0 = vp[0]; s32 v8 = vp[8];
+            /* Read the three camera basis vectors through explicit ascending word temps to force
+               MWCC's "nine loads, then nine stores" shape; the volatile source keeps the loads in
+               retail's v0..v8 order. */
+            const volatile u32* vp = (const volatile u32*)(vecs + 0xC);
+            s32 t0, t1, t2, t3, t4, t5, t6, t7, t8;
 
-            ((u32*)&camPos)[0] = v0; ((u32*)&camPos)[1] = v1; ((u32*)&camPos)[2] = v2;
-            ((u32*)&camUp)[0] = v3; ((u32*)&camUp)[1] = v4; ((u32*)&camUp)[2] = v5;
-            ((u32*)&camTarget)[0] = v6; ((u32*)&camTarget)[1] = v7; ((u32*)&camTarget)[2] = v8;
+            t8 = vp[0]; t7 = vp[1]; t6 = vp[2];
+            t5 = vp[3]; t4 = vp[4]; t3 = vp[5];
+            t2 = vp[6]; t1 = vp[7]; t0 = vp[8];
+
+            ((u32*)&camPos)[0] = t8; ((u32*)&camPos)[1] = t7; ((u32*)&camPos)[2] = t6;
+            ((u32*)&camUp)[0] = t5; ((u32*)&camUp)[1] = t4; ((u32*)&camUp)[2] = t3;
+            ((u32*)&camTarget)[0] = t2; ((u32*)&camTarget)[1] = t1; ((u32*)&camTarget)[2] = t0;
         }
 #else
         camPos = vec3_802c1a9c;

@@ -4451,3 +4451,8 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   follow it; without the gap the section scores right. win_badge lowered mario_change; rejected.
 - **Audit follow-up (#383):** the copy rule checks every operand for any target-directory form (-at, -t/DIR,
   --target-directory[=]) and treats host:path as outside; installed in both wave 71 bases.
+- **Batch 6:** data ports for pmario_sound (two sections identical; `psbgmlist` defined here, which splits.txt puts
+  at the start of this unit's .data, so the old "defined in another unit" note was wrong) and shadowdrv
+  (shadowCharShadowDisp_Projection 99.33 -> 99.52); evt_yuucounter_disp_func 99.21 -> 99.33 (loop increments in
+  the for-header). AGENT_BRIEF gets the jump-table exception to the trailing-gap rule. Round 3 (11:25, base on
+  main): data prep for evt_bero, eff_funemizu and sac_scissor, whose strings are owned by their .data.

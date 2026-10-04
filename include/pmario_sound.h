@@ -166,3 +166,10 @@ void psndENV_stop(u32 id);
 s32 psndBGMPlayTime(s32 id);
 BOOL psndBGMChk(s32 id);
 BOOL psndBGMChkSilent(s32 id);
+// 16-byte BGM table entry: two name/flag pairs (main BGM name and stream path).
+typedef struct BGMListEntry {
+    const char* field_0x0; // 0x0
+    u32 field_0x4;         // 0x4
+    const char* field_0x8; // 0x8
+    u32 field_0xC;         // 0xC
+} BGMListEntry;
