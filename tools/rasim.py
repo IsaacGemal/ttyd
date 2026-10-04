@@ -148,7 +148,11 @@ def targets_of(al, a, fpr):
 
 def neighbors(al, a, opt, base, fpr):
     """What single interference edge, removed or added, gives the original's registers? Each answer names the other variable: shorten
-    or lengthen its live range (or the target variable's) so the two stop or start overlapping."""
+    or lengthen its live range (or the target variable's) so the two stop or start overlapping.
+
+    A hit is only a lead if the two webs can really stop overlapping in source. When both feed the same instruction, or the original
+    plainly keeps both live (two different registers across the same code), the edge is an artifact of the model: the targets constrain
+    only the variables you name, so removing an edge lets one of them take the register trivially."""
     target = targets_of(al, a, fpr)
     if not target:
         sys.exit('no targets: give name=reg pairs or --summary')

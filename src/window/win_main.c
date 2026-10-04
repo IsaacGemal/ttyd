@@ -178,11 +178,11 @@ extern PartyData partyDataTbl[];
 // evt_eff*); it is not defined in C yet.
 extern s32 evt_item_use[];
 
-// NONMATCHING (94.29%): calls and immediates match; the open-menu goto layout, the final characterId branches, and the pooled-string/names-table base register differ.
+// NONMATCHING (99.06%): the code matches except the string-pool offsets in the fileAsyncf/fileAllocf format strings (the unit's unported .data order), the
+// `characterId` branch layout at the end (the original tests <0, then >1 before <3), and wp landing in r5 instead of r4 in case 0xC8.
 void winMain(void) {
     MarioWork* mario;
     WindowPartyDt* list[7];
-    const char* names[2] = {"jp", "us"};
 
     mario = marioGetPtr();
     if (!(wp->flags & 1) && seqGetSeq() == SEQ_GAME && !seqCheckSeq()) {
@@ -249,9 +249,10 @@ void winMain(void) {
                                 if (wp->buttonTrg & 4) {
                                     WM_S32(0x1C) = 4;
                                 check_open:
-                                    if (!(keyGetButton(0) & 0x40)) {
-                                        goto open_menu;
+                                    if (keyGetButton(0) & 0x40) {
+                                        break;
                                     }
+                                    goto open_menu;
                                 }
                             }
                         }
@@ -311,13 +312,14 @@ void winMain(void) {
 
             case 1:
                 {
+                    const char* names[2] = {"jp", "us"};
                     s32 done;
 
                     if ((u32)fileAsyncf(4, 0, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]) == 0) {
                         done = 0;
                     } else {
-                        done = 1;
                         WM_PTR(0x28) = fileAllocf(4, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]);
+                        done = 1;
                     }
                     if (done != 0) {
                         wp->menuState += 1;
@@ -402,7 +404,7 @@ void winMain(void) {
 
             case 0xC8: {
                 s32 party;
-                s32 cnt = 0;
+                s32 cnt;
                 s32 i;
 
                 if (marioBgmodeChk() == 0) {
@@ -410,6 +412,7 @@ void winMain(void) {
                 } else {
                     party = marioGetPtr()->prevPartyMemberId[0];
                 }
+                cnt = 0;
                 for (i = 0; i < 7; i++) {
                     if (party == winPartyDt[i].field_0x0) {
                         list[cnt++] = &winPartyDt[i];
@@ -422,7 +425,7 @@ void winMain(void) {
                 }
                 wp->currentEvent = evtEntryType(&evt_item_use, 0, 0, 0);
                 *(s32*)((u8*)wp->currentEvent + 0xC4) = WM_S32(0x2D4);
-                *(s32*)((u8*)wp->currentEvent + 0xC8) = (WM_S32(0x2DC) == 0) ? 0 : (*(s32**)&(list - 1)[WM_S32(0x2DC)])[0];
+                *(s32*)((u8*)wp->currentEvent + 0xC8) = (WM_S32(0x2DC) == 0) ? 0 : (list - 1)[WM_S32(0x2DC)]->field_0x0;
                 psndClearFlag(0x80);
                 wp->menuState += 1;
                 pouchRemoveItemIndex(WM_S32(0x2D4), WM_S32(0x2D8));
