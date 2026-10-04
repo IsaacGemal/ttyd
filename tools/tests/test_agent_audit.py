@@ -97,7 +97,9 @@ class AgentAudit(unittest.TestCase):
         good = ev("bash", command="ls")
         marker = lambda rc: json.dumps({"type": "launcher_pass_end", "step": "run", "rc": rc})
         # Legacy logs retain one damaged line immediately before a timeout marker.
-        self.assertIn("EVENTS-CORRUPT", kinds(good, good, '{"type": "tool_exec'))
+        self.assertEqual(kinds(good, good, '{"type": "tool_exec'), [])
+        self.assertEqual(kinds(good, 'garbage', '', '  '), [])
+        self.assertIn("EVENTS-CORRUPT", kinds(good, ev("bash", command="ls") + 'garbage'))
         self.assertIn("EVENTS-CORRUPT", kinds(good, '{"type": "tool_exec', good))
         self.assertIn("EVENTS-CORRUPT", kinds('garbage', good, 'more garbage'))
         self.assertEqual(kinds(good, '{"type": "tool_exec', "", marker(124), good, marker(0)), [])
@@ -178,6 +180,8 @@ class AgentAudit(unittest.TestCase):
             for value in ('tool_execution_start', r'tool_execution_\u0073tart'):
                 partial = '{"' + key + '":"' + value + '","args":'
                 self.assertIn("EVENTS-CORRUPT", self.pass_kinds((partial, 124, 1)), partial)
+        for partial in ('{"type":"tool_execution_start', r'{"\u0074ype":"tool_execution_\u0073tart'):
+            self.assertIn("EVENTS-CORRUPT", self.pass_kinds((partial, 124, 1)), partial)
         call = ev("write", path="/home/isaac/x").replace('tool_execution_start', r'tool_execution_\u0073tart')
         found = self.pass_kinds(("junk " + call, 124, 1))
         self.assertIn("WRITE-OUTSIDE", found)
@@ -192,7 +196,73 @@ class AgentAudit(unittest.TestCase):
                 work = sum(len(line) - call.args[1] for call in decode.call_args_list)
                 self.assertLessEqual(work, 4 * len(line))
                 if line.startswith('{"'):
-                    self.assertIn("EVENTS-CORRUPT", found)  # budget hit cannot get a timeout exemption
+                    self.assertEqual(found, [])  # a valid nested prefix remains exempt even when recovery is capped
+                else:
+                    self.assertIn("EVENTS-CORRUPT", found)
+
+    def test_realistic_nested_pi_events_at_many_timeout_cuts(self):
+        # Pi's end events repeat complete messages, content blocks, usage and model metadata. Even a normal
+        # dozen-message agent_end exhausts suffix-charged recovery long before the end of the first message.
+        usage = {"input": 41082, "output": 234, "cacheRead": 39555, "cacheWrite": 0,
+                 "totalTokens": 41316, "cost": {"input": 0.123, "output": 0.004, "total": 0.127}}
+        assistant = {"role": "assistant", "content": [
+            {"type": "thinking", "thinking": "Inspect nested events and then run the checks. " * 12,
+             "thinkingSignature": "signature"},
+            {"type": "toolCall", "id": "call_01", "name": "bash", "arguments": {"command": "ls tools"}},
+            {"type": "text", "text": "Nested objects, Unicode é, and JSON escapes \\u0074. " * 12}],
+            "api": "anthropic-messages", "provider": "anthropic", "model": "claude-sonnet-4-5",
+            "usage": usage, "stopReason": "toolUse", "timestamp": 1791012345678}
+        result = {"role": "toolResult", "toolCallId": "call_01", "toolName": "bash", "content": [
+            {"type": "text", "text": "a.py\nb.py\nc.py\n" * 80}], "details": {"exitCode": 0},
+            "isError": False, "timestamp": 1791012346000}
+        events = [{"type": "agent_end", "messages": [assistant, result] * 6},
+                  {"type": "turn_end", "message": assistant, "toolResults": [result]},
+                  {"type": "message_end", "message": assistant}]
+        for event in events:
+            line = json.dumps(event, ensure_ascii=True, separators=(",", ":"))
+            cuts = set(range(1, len(line), max(1, len(line) // 160)))
+            cuts.update(i for i, c in enumerate(line) if c in '{}[],:')
+            cuts.update(range(len(line) - 12, len(line)))
+            for cut in sorted(cuts - {0}):
+                partial = line[:cut]
+                with self.subTest(event=event["type"], cut=cut):
+                    self.assertEqual(self.pass_kinds((partial, 124, 1)), [])
+            # Demonstrate that this exercises the old recovery-budget failure, rather than only small prefixes.
+            self.assertTrue(agent_audit.recover_events(line[:-1], WS, 1)[2])
+
+    def test_host_timeout_rejects_non_prefix_corruption(self):
+        corrupt = ['{}garbage', '{"type":bad}', '{"type":bad', '{"a":trueX', '{"a":falsee',
+                   '{"a":nulX', '{"a":01', '{"a":1.e', '{"a":--1', '{"a":+1', '{"a":1,}',
+                   '{"a":[1,]', '{"a" 1', '{"a":}', '{"a":[}', '{"a":"bad\\q',
+                   '{"a":"bad\\u00Z', '{"a":"raw\t', 'garbage', '[1,']
+        for line in corrupt:
+            with self.subTest(line=line):
+                self.assertIn("EVENTS-CORRUPT", self.pass_kinds((line, 124, 1)))
+
+    def test_unquoted_and_escaped_tool_types_never_get_legacy_or_timeout_tolerance(self):
+        for key in ('"type"', 'type', r'"\u0074ype"', r'\u0074ype'):
+            for value in ('"tool_execution_start"', 'tool_execution_start',
+                          r'"tool_execution_\u0073tart"', r'tool_execution_\u0073tart'):
+                line = '{' + key + ':' + value + ',"args":'
+                with self.subTest(line=line):
+                    self.assertTrue(agent_audit.recover_events(line, WS, 1)[1])
+                    self.assertIn("EVENTS-CORRUPT", self.pass_kinds((line, 124, 1)))
+                    self.assertIn("EVENTS-CORRUPT", kinds(line))
+                    self.assertIn("EVENTS-CORRUPT", kinds(line, '{"type":"launcher_pass_end","rc":124}'))
+
+    def test_tool_type_scan_survives_exhausted_recovery_budget(self):
+        line = '{"nested":' * 100 + '{"type":"tool_execution_start","args":'
+        self.assertTrue(agent_audit.recover_events(line, WS, 1)[2])
+        self.assertIn("EVENTS-CORRUPT", self.pass_kinds((line, 124, 1)))
+
+    def test_marker_free_legacy_tolerance_requires_one_final_non_tool_bad_line(self):
+        good = '{"type":"message_end"}'
+        self.assertEqual(kinds(good, 'garbage'), [])
+        self.assertEqual(kinds(good, '{"type":"message_end",', '', '  '), [])
+        for lines in [('garbage', good), ('garbage', good, 'more garbage'),
+                      (good, '{"type":"launcher_pass_end","rc":0}', 'garbage')]:
+            self.assertIn("EVENTS-CORRUPT", kinds(*lines))
+        self.assertIn("EVENTS-CORRUPT", self.pass_kinds((good + '\ngarbage', 124, 1)))
 
     def test_boundary_metadata_must_be_ordered_and_cover_the_log(self):
         data = (ev("write", path="/home/isaac/x") + "\n").encode()
@@ -208,7 +278,7 @@ class AgentAudit(unittest.TestCase):
             event_file = Path(d) / "events.jsonl"
             event_file.write_bytes(b'{"type":"message')
             command = [sys.executable, agent_audit.__file__, str(event_file), WS]
-            self.assertEqual(subprocess.run(command, capture_output=True, timeout=5).returncode, 1)
+            self.assertEqual(subprocess.run(command, capture_output=True, timeout=5).returncode, 0)
             boundary_file = Path(d) / "passes.txt"
             boundary_file.write_text(f"{event_file.stat().st_size} 124 1\n")
             result = subprocess.run(command, capture_output=True, text=True, timeout=5)

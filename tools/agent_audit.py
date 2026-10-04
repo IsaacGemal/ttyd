@@ -13,7 +13,7 @@ Reads the agent's JSON event log (tool_execution_start events: bash commands, an
   SIGNAL          pkill/killall, `kill $(pgrep ...)`, `pgrep | xargs kill`, kill -1 or a negative pid
   EVENTS-CORRUPT  an unparseable line, except one truncated final line at a timeout boundary in the host's sibling
                   passes.txt (byte offset, exit code and host timeout flag). Legacy logs without that file retain marker
-                  tolerance. Recovered calls are audited; malformed actual tool events always fail
+                  and marker-free final-line tolerance. Recovered calls are audited; malformed actual tool events always fail
   ASSIGN-OUTSIDE  a shell variable set to a path under /home outside WORKSPACE, BASE and the shared read-only paths
                   (reported, not counted: a hint that it may be used to write)
   READ-OUTSIDE    a read of a path under /home, /root, /etc, /var, /opt, /srv, /mnt, /media or /run outside
@@ -389,7 +389,99 @@ def tool_flags(e, ws, n):
 # prefix can otherwise cause raw_decode to rescan the same megabytes once for every opening brace.
 OBJECT_START = re.compile(r'\{\s*"')
 JSON_STRING = r'"(?:[^"\\]|\\.)*"'
-TYPE_PAIR = re.compile(r'(?:\{|,)\s*(' + JSON_STRING + r')\s*:\s*(' + JSON_STRING + r')')
+TYPE_ATOM = JSON_STRING + r'|(?:[A-Za-z0-9_]|\\u[0-9a-fA-F]{4})+'
+TYPE_VALUE = TYPE_ATOM + r'|"(?:[^"\\]|\\.)*$'
+TYPE_PAIR = re.compile(r'(?:\{|,)\s*(' + TYPE_ATOM + r')\s*:\s*(' + TYPE_VALUE + r')')
+NUMBER = r'-?(?:0|[1-9][0-9]*)'
+JSON_NUMBER = re.compile(NUMBER + r'(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?')
+NUMBER_PREFIX = re.compile(r'-|' + NUMBER + r'\.[0-9]*|' + NUMBER + r'(?:\.[0-9]+)?[eE][+-]?[0-9]*')
+
+
+def json_object_prefix(line):
+    """Recognize an unfinished prefix of a JSON object in linear time, without recursive decoding."""
+    i, size = 0, len(line)
+    stack = []
+    while i < size and line[i] in ' \t\r\n':
+        i += 1
+    if i == size or line[i] != '{':
+        return False
+    stack.append('key_or_end')
+    i += 1
+    while True:
+        while i < size and line[i] in ' \t\r\n':
+            i += 1
+        if i == size:
+            return bool(stack)
+        if not stack:
+            return False  # a complete object followed by garbage cannot be a timeout cut
+        state, char = stack[-1], line[i]
+        if state in ('key_or_end', 'array_value_or_end', 'object_comma', 'array_comma'):
+            end = '}' if state in ('key_or_end', 'object_comma') else ']'
+            if char == end:
+                stack.pop()
+                i += 1
+                continue
+        if state in ('object_comma', 'array_comma'):
+            if char != ',':
+                return False
+            stack[-1] = 'key' if state == 'object_comma' else 'array_value'
+            i += 1
+            continue
+        if state == 'colon':
+            if char != ':':
+                return False
+            stack[-1] = 'object_value'
+            i += 1
+            continue
+        key = state in ('key', 'key_or_end')
+        stack[-1] = 'colon' if key else ('object_comma' if state == 'object_value' else 'array_comma')
+        if char == '"':
+            i += 1
+            while i < size:
+                char = line[i]
+                i += 1
+                if char == '"':
+                    break
+                if ord(char) < 32:
+                    return False
+                if char == '\\':
+                    if i == size:
+                        return True
+                    escape = line[i]
+                    i += 1
+                    if escape == 'u':
+                        for _ in range(4):
+                            if i == size:
+                                return True
+                            if line[i] not in '0123456789abcdefABCDEF':
+                                return False
+                            i += 1
+                    elif escape not in '"\\/bfnrt':
+                        return False
+            else:
+                return True
+            continue
+        if key:
+            return False
+        if char in '{[':
+            stack.append('key_or_end' if char == '{' else 'array_value_or_end')
+            i += 1
+            continue
+        if char in '-0123456789':
+            start = i
+            while i < size and line[i] in '-+0123456789.eE':
+                i += 1
+            token = line[start:i]
+            if JSON_NUMBER.fullmatch(token):
+                continue
+            return i == size and NUMBER_PREFIX.fullmatch(token) is not None
+        literal = {'t': 'true', 'f': 'false', 'n': 'null'}.get(char)
+        if literal is None:
+            return False
+        remaining = line[i:i + len(literal)]
+        if remaining != literal:
+            return i + len(remaining) == size and literal.startswith(remaining)
+        i += len(literal)
 
 
 def recover_events(line, ws, n):
@@ -397,7 +489,12 @@ def recover_events(line, ws, n):
     flags, has_tool, capped = [], False, False
     for pair in TYPE_PAIR.finditer(line):
         try:
-            if json.loads(pair[1]) == "type" and json.loads(pair[2]) == "tool_execution_start":
+            atoms = [atom if atom.startswith('"') else '"' + atom + '"' for atom in pair.groups()]
+            # A cut immediately after the complete tool type's text still identifies a tool event.
+            if not atoms[1].endswith('"'):
+                atoms[1] += '"'
+            key, value = map(json.loads, atoms)
+            if key == "type" and value == "tool_execution_start":
                 has_tool = True
         except ValueError:
             pass
@@ -422,7 +519,7 @@ def audit(events, ws, passes=None):
     """Read physical lines, splitting at host (byte offset, exit code, timeout fired) pass ends.
 
     Two-column boundary files remain readable but cannot prove a timeout. Only logs without passes.txt get the
-    legacy one-garbled-line-before-timeout-marker tolerance. Byte splitting also handles partial UTF-8.
+    legacy timeout-marker and single marker-free final-garbled-line tolerances. Byte splitting also handles partial UTF-8.
     """
     ws = ws.rstrip("/")
     flags = []
@@ -442,6 +539,7 @@ def audit(events, ws, passes=None):
     offset, pass_index, n = 0, 0, 0
     bad = []
     legacy_pending = None
+    legacy_marker = False
     for raw in events:
         raw = raw.encode("utf-8") if isinstance(raw, str) else raw
         while raw:
@@ -457,22 +555,25 @@ def audit(events, ws, passes=None):
             try:
                 e = json.loads(line)
             except (ValueError, RecursionError):
-                recovered, has_tool, capped = recover_events(line, ws, n)
+                recovered, has_tool, _ = recover_events(line, ws, n)
                 flags += recovered
-                # Every final-byte cut is possible at a real timeout, including numbers and Unicode escapes.
-                # Actual tool events and exhausted recovery budgets must always fail closed.
-                truncated = offset == end and fired == 1 and not piece.endswith(b"\n") and not (has_tool or capped)
+                # Recovery's work cap does not change whether a non-tool line is a legitimate timeout cut.
+                truncated = (offset == end and fired == 1 and not piece.endswith(b"\n")
+                             and not has_tool and json_object_prefix(line))
                 if not truncated:
                     bad.append(n)
-                legacy_pending = n if not (has_tool or capped) else None
+                legacy_pending = n if not has_tool else None
             else:
                 flags += tool_flags(e, ws, n)
-                if (passes is None and legacy_pending is not None and isinstance(e, dict)
-                        and e.get("type") == "launcher_pass_end" and e.get("rc") in (124, 137)):
-                    bad.remove(legacy_pending)
+                if passes is None and isinstance(e, dict) and e.get("type") == "launcher_pass_end":
+                    legacy_marker = True
+                    if legacy_pending is not None and e.get("rc") in (124, 137):
+                        bad.remove(legacy_pending)
                 legacy_pending = None
     if passes is not None and (not boundaries or boundaries[-1][0] != offset):
         flags.append(("EVENTS-CORRUPT", n, "pass boundaries do not cover the event log"))
+    if passes is None and not legacy_marker and len(bad) == 1 and legacy_pending == bad[0]:
+        bad.clear()
     if bad:
         flags.append(("EVENTS-CORRUPT", bad[0],
                       f"{len(bad)} unparseable line(s) in the event log (first: line {bad[0]})"))

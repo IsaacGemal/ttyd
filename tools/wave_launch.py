@@ -389,14 +389,17 @@ def watchdog(tag, step):
     # A failed query is neither proof of an active owner nor proof it ended. Three consecutive failures trip the
     # owning step fail-closed; a successful active/inactive answer resets the counter. Recheck after every scan.
     owner_check = 'wd_owner || { [ "$owner_errors" -ge 3 ] && break; continue; }; '
-    return (f"( cd /; {scope_stop(tag, step)}owner_errors=0; wd_owner() {{ local state query_rc; "
+    busy, done = f"{out}/watchdog-{step}.busy", f"{out}/watchdog-{step}.done"
+    # Teardown freezes the watchdog before checking this flag, so it cannot race with entering an action.
+    # It requests loop exit before resuming an action, then waits for that action to finish.
+    return (f"rm -f {busy} {done}; ( cd /; {scope_stop(tag, step)}owner_errors=0; wd_owner() {{ local state query_rc; "
             f"state=$(timeout -k 1 5 systemctl --user is-active {unit} 2>/dev/null); query_rc=$?; "
             f"case $state:$query_rc in active:0|activating:0|reloading:0|deactivating:0|activating:3|reloading:3|deactivating:3) owner_errors=0; return 0;; "
             f"inactive:3|failed:3|inactive:0|failed:0) owner_errors=0; return 1;; esac; "
             f"owner_errors=$((owner_errors + 1)); [ $owner_errors -lt 3 ] && return 1; "
-            f"echo '{step}: owner scope query failed 3 consecutive times: stopping' >> {out}/limits.txt; "
+            f"touch {busy}; echo '{step}: owner scope query failed 3 consecutive times: stopping' >> {out}/limits.txt; "
             f"stop_scope; return 1; }}; "
-            f"while kill -0 $$ 2>/dev/null && sleep 10 && kill -0 $$ 2>/dev/null; do {owner_check}"
+            f"while [ ! -e {done} ] && kill -0 $$ 2>/dev/null && sleep 10 && kill -0 $$ 2>/dev/null; do {owner_check}"
             f"dm=$(LC_ALL=C du -smx {dirs} 2>&1); di=$(LC_ALL=C du -sx --inodes {dirs} 2>&1); "
             f"m=$(printf '%s\\n' \"$dm\" | awk '$1 ~ /^[0-9]+$/ {{s+=$1}} END{{print s+0}}'); "
             f"i=$(printf '%s\\n' \"$di\" | awk '$1 ~ /^[0-9]+$/ {{s+=$1}} END{{print s+0}}'); "
@@ -405,15 +408,34 @@ def watchdog(tag, step):
             f"[ -n \"$x\" ] && [ -n \"$denied\" ] && denied=', du: Permission denied' || denied=; "
             f"{owner_check}"
             f"if [ -n \"$x$denied\" ] || [ \"$m\" -gt {DISK_MB} ] || [ \"$i\" -gt {DISK_INODES} ]; then "
-            f"echo \"{step}: $m MB, $i inodes (limits {DISK_MB} MB, {DISK_INODES})${{x:+, inaccessible $x}}$denied: stopped\" >> {out}/limits.txt; "
+            f"touch {busy}; echo \"{step}: $m MB, $i inodes (limits {DISK_MB} MB, {DISK_INODES})${{x:+, inaccessible $x}}$denied: stopped\" >> {out}/limits.txt; "
             f"stop_scope; break; fi; "
             f"set -- $(df -Pk \"$HOME\" | awk 'NR==2{{print $4}}') $(df -Pi \"$HOME\" | awk 'NR==2{{print $4}}'); "
             f"{owner_check}"
             f"if [ -n \"$2\" ] && {{ [ \"$1\" -lt {DISK_FLOOR_GB * 1024 * 1024} ] || [ \"$2\" -lt {INODE_FLOOR} ]; }} "
             f"&& mkdir {PAUSED} 2>/dev/null; then "
-            f"{{ echo \"$(date '+%F %T') home filesystem at $1 KB / $2 inodes free (floor {DISK_FLOOR_GB} GB / {INODE_FLOOR}); "
+            f"touch {busy}; {{ echo \"$(date '+%F %T') home filesystem at $1 KB / $2 inodes free (floor {DISK_FLOOR_GB} GB / {INODE_FLOOR}); "
             f"remove this directory to resume launches\"; python3 {BASE}/tools/floor_stop.py --act {SLICE}; }} > {PAUSED}/why.txt; "
-            f"fi; done ) </dev/null >/dev/null 2>&1 & wd=$!; ")
+            f"rm -f {busy}; fi; done ) </dev/null >/dev/null 2>&1 & wd=$!; ")
+
+
+def watchdog_teardown(tag, step):
+    """Freeze before testing the action flag; finish any stop escalation before killing the tree.
+
+    scope_stop's timeouts total at most 57 seconds. Allow 90 seconds, logging a failure if the host cannot
+    finish in that bound. The same protection lets an in-progress disk-floor action finish and log its result.
+    """
+    _, out, _, _ = paths(tag)
+    busy, done = f"{out}/watchdog-{step}.busy", f"{out}/watchdog-{step}.done"
+    return (f'kill -STOP "$wd" 2>/dev/null; '
+            f'for wd_freeze in {{1..100}}; do wd_state=$(ps -o stat= -p "$wd"); '
+            f'case "$wd_state" in *T*|"") break;; esac; sleep 0.01; done; '
+            f'if [ -e {busy} ]; then '
+            f'touch {done}; kill -CONT "$wd" 2>/dev/null; '
+            f'for wd_wait in {{1..90}}; do kill -0 "$wd" 2>/dev/null || break; sleep 1; done; '
+            f'kill -0 "$wd" 2>/dev/null && '
+            f"echo '{step}: watchdog action did not finish within 90 seconds' >> {out}/limits.txt; fi; "
+            f'kt $wd; wait "$wd" 2>/dev/null; rm -f {busy} {done}; ')
 
 
 # kill a process and all its descendants (the watchdog's sleep and du): stopped first, so it can't start another child
@@ -461,7 +483,7 @@ def agent_cmd(tag, secs, args, step):
             f"( LC_ALL=C timeout --verbose -k 30 {int(secs)} /bin/sh -c 'exec \"$@\" 2>&4 4>&-' sh {sandbox(tag, step, 'agent')} "
             f"pi --mode json --session-dir {ws}/.pi-sessions --model {MODEL} {args} </dev/null 9<{KEY_FILE} 4>&1 2>{out}/timeout-{step}.txt 1>&3 3>&- "
             f"| capped_log stderr.log {STDERR_MAX} $sr; exit ${{PIPESTATUS[0]}} ) 3>&1 | capped_log events.jsonl {EVENTS_MAX} $er; "
-            f"rc=${{PIPESTATUS[0]}}; kt $wd; "
+            f"rc=${{PIPESTATUS[0]}}; {watchdog_teardown(tag, step)}"
             f"timed_out=0; grep -q '^timeout: sending signal .* to command' {out}/timeout-{step}.txt && timed_out=1; "
             f"rm -f {out}/timeout-{step}.txt; "
             f"printf '%s %s %s\\n' \"$(stat -c %s {out}/events.jsonl)\" \"$rc\" \"$timed_out\" >> {out}/passes.txt; "
@@ -473,7 +495,7 @@ def box_cmd(tag, step, cmd, secs=600):
     ws, _, _, _ = paths(tag)
     return (f"{KILL_TREE}{step_guard(tag)}cd {ws} && {bind_check(tag, 'agent')} || exit 4; {watchdog(tag, step)}"
             f"timeout -k 30 {secs} {sandbox(tag, step, 'agent')} /bin/sh -c {shlex.quote(cmd)} 9</dev/null; "
-            f"rc=$?; kt $wd; exit $rc")
+            f"rc=$?; {watchdog_teardown(tag, step)}exit $rc")
 
 
 # Programs the reaper kills in a workspace: a person's shell that happens to sit there is left alone.

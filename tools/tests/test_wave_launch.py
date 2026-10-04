@@ -326,6 +326,109 @@ python3() { echo "floor $*" >> "$HOME/actions"; }
         result = self.run_watchdog(floor=True)
         self.assertTrue(result["paused"])
         self.assertIn("/base/tools/floor_stop.py --act ttyd-agents.slice", result["actions"])
+        self.assertGreater(result["queries"], 3)  # floor action must not disable later per-agent scans
+
+    def test_teardown_finishes_and_logs_in_progress_floor_action(self):
+        with tempfile.TemporaryDirectory() as home:
+            setup_globals(home)
+            for directory in ("ttyd-agents/wt_t", "ttyd-agents-out/wt_t", "ttyd-agents-priv/wt_t", "ttyd-agents-slots"):
+                Path(home, directory).mkdir(parents=True)
+            stubs = r'''
+timeout() { shift 3; "$@"; }
+systemctl() { echo active; }
+du() { echo '1 directory'; }
+find() { :; }
+df() { echo header; echo 'home 100 99 1 99% /home'; }
+python3() { touch "$HOME/floor-started"; sleep 0.2; echo 'floor action finished'; }
+'''
+            watchdog = W.watchdog("t", "run").replace('sleep 10', 'sleep 0.01')
+            cmd = (stubs + W.KILL_TREE + watchdog +
+                   'until [ -e "$HOME/floor-started" ]; do sleep 0.01; done; ' + W.watchdog_teardown("t", "run"))
+            result = subprocess.run(["bash", "-c", cmd], env=dict(os.environ, HOME=home),
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("floor action finished", Path(home, "ttyd-agents-slots/PAUSED/why.txt").read_text())
+            self.assertFalse(Path(home, "ttyd-agents-out/wt_t/limits.txt").exists())
+
+    def test_teardown_wait_is_bounded_and_failure_is_logged(self):
+        with tempfile.TemporaryDirectory() as home:
+            setup_globals(home)
+            out = Path(home, "ttyd-agents-out/wt_t")
+            out.mkdir(parents=True)
+            # Shorten polling intervals, retaining the real stop, process-state check and tree teardown.
+            cmd = (W.KILL_TREE +
+                   '( touch "$HOME/ttyd-agents-out/wt_t/watchdog-run.busy"; '
+                   'while :; do sleep 1; done ) </dev/null >/dev/null 2>&1 & wd=$!; '
+                   'until [ -e "$HOME/ttyd-agents-out/wt_t/watchdog-run.busy" ]; do sleep 0.01; done; '
+                   'sleep() { command sleep 0.001; }; ' + W.watchdog_teardown("t", "run"))
+            result = subprocess.run(["bash", "-c", cmd], env=dict(os.environ, HOME=home),
+                                    capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("watchdog action did not finish within 90 seconds", (out / "limits.txt").read_text())
+            self.assertFalse((out / "watchdog-run.busy").exists())
+            self.assertFalse((out / "watchdog-run.done").exists())
+
+    def test_finishing_steps_wait_for_in_progress_stop_escalation(self):
+        for mode in ("agent", "box"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as home:
+                setup_globals(home)
+                for directory in ("ttyd-agents/wt_t", "ttyd-agents-out/wt_t", "ttyd-agents-priv/wt_t/tmp",
+                                  "ttyd-agents-priv/wt_t/pi-agent", "bin"):
+                    Path(home, directory).mkdir(parents=True)
+                out = Path(home, "ttyd-agents-out/wt_t")
+                Path(home, "key").write_text("test")
+                W.KEY_FILE = "$HOME/key"
+                # The first stop lets the foreground step exit immediately, then delays and fails. Teardown
+                # must let this watchdog retry, KILL, stop again, and verify inactive before removing it.
+                systemctl = Path(home, "bin/systemctl")
+                systemctl.write_text('''#!/bin/bash
+echo "$*" >> "$HOME/actions"
+case "$*" in
+  *is-active*)
+    if [ -e "$HOME/scope-inactive" ]; then echo inactive; exit 3; fi
+    echo active; exit 0;;
+  *stop*)
+    touch "$HOME/step-ended"
+    sleep 0.2
+    exit 1;;
+  *--signal=KILL*) touch "$HOME/scope-inactive";;
+esac
+''')
+                systemctl.chmod(0o755)
+                foreground = 'while [ ! -e "$HOME/step-ended" ]; do sleep 0.01; done; exit 23'
+                cli = Path(home, "bin/pi")
+                cli.write_text('#!/bin/bash\n' + foreground + '\n')
+                cli.chmod(0o755)
+                stubs = r'''
+stat() { python3 -c 'import os,sys; print(os.stat(sys.argv[1]).st_size)' "${@: -1}"; }
+du() { echo '1 directory'; }
+find() { :; }
+'''
+                real_watchdog = W.watchdog
+
+                def fast_watchdog(tag, step):
+                    return real_watchdog(tag, step).replace('sleep 10', 'sleep 0.01')
+                with mock.patch.object(W, "sandbox", return_value=""), \
+                     mock.patch.object(W, "watchdog", side_effect=fast_watchdog), \
+                     mock.patch.object(W, "DISK_MB", 0):
+                    cmd = (W.agent_cmd("t", 5, "", "run") if mode == "agent"
+                           else W.box_cmd("t", "run", foreground, secs=5))
+                result = subprocess.run(["bash", "-c", stubs + cmd],
+                                        env=dict(os.environ, HOME=home, PATH=f"{home}/bin:" + os.environ["PATH"]),
+                                        capture_output=True, text=True, timeout=8)
+                self.assertEqual(result.returncode, 0 if mode == "agent" else 23, result.stderr)
+                actions = Path(home, "actions").read_text().splitlines()
+                self.assertEqual(sum('--user stop' in action for action in actions), 3)
+                self.assertEqual(sum('--signal=KILL' in action for action in actions), 1)
+                self.assertIn('is-active', actions[-1])
+                self.assertTrue(Path(home, "scope-inactive").exists())
+                limits = (out / "limits.txt").read_text()
+                self.assertIn("scope still owned after stop retries: escalating to KILL", limits)
+                self.assertIn("scope stop after KILL failed", limits)
+                self.assertNotIn("watchdog action did not finish", limits)
+                self.assertFalse((out / "watchdog-run.busy").exists())
+                if mode == "agent":
+                    self.assertEqual((out / "passes.txt").read_text(), "0 23 0\n")
 
 
 class ScopeStop(unittest.TestCase):
