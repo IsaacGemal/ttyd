@@ -2795,9 +2795,9 @@ void yuunpc_pose_change2(YuunpcEntry* entry, const char* name, const char* anim,
     }
 }
 
-// NONMATCHING (99.95%): logic complete. Writing the `b == a` guard as `if (b != a) { ratio } else
-// return;` reproduces the original's block layout (no dead branch). The only remaining diff is the
-// `srwi` destination in the oldflags&4 ratio (original r6, ours r5); the constant-pool labels differ.
+// Writing the `b == a` guard as `if (entry->field_64 != a) { ratio } else return;` reproduces the original's
+// block layout; comparing field_64 again rather than `b` (found by the permuter) puts the oldflags&4 ratio's
+// `srwi` in r6 as the original does.
 void yuunpc_pose_change(YuunpcEntry* entry, s16 animIndex, f32 a, f32 b) {
     YuunpcPoseEntry* cur = &yuunpc_wp->poseEntries[entry->field_54];
     YuunpcPoseEntry* pe = &yuunpc_wp->poseEntries[animIndex];
@@ -2816,7 +2816,7 @@ void yuunpc_pose_change(YuunpcEntry* entry, s16 animIndex, f32 a, f32 b) {
         entry->flags &= ~4;
         if (entry->field_54 == animIndex) {
             b = entry->field_64;
-            if (b != a) {
+            if (entry->field_64 != a) {
                 if (oldflags & 4) {
                     u32 ticks = (*(u32*)0x800000F8 >> 2) / 1000;
                     f32 oldb = b;
