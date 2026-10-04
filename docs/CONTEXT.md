@@ -4191,3 +4191,61 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   (`scratch/wave69/review1.md`) found no HIGH or MEDIUM: the first data-port batch under the new rule to come back
   clean. One agent's include.patch changed winBookGX's existing prototype and broke win_item/win_log; only its five
   new prototypes were kept. Wave 70 (20:50, 30 near-miss agents) runs alongside wave 69's last agents.
+
+## The day in review: lost work, unwritten functions, and what reviews catch (2026-10-03, Claude Opus 5.5 orchestrator)
+
+**Numbers.** From 23:45 Oct 2 to 21:35 Oct 3: functions 9,118 -> 9,353 (of 9,770), code matched 70.68 -> 78.4%,
+code fuzzy -> 97.1%, **code linked 36.35 -> 48.85%**, data linked 72.91 -> 82.03%. Units fully matched but unlinked: 38
+-> 4. The 0% band went from 64 functions (211 KB) to a handful.
+
+**The 0% tail was lost work, not hard work.** 58 of the 64 functions at 0% had no definition in the source. Agents had
+in fact written many of them (wave 59: winMailGX 99.4%, winWazaGX 99.4%, the mario_hit collision family 85-90%), but
+collection dropped the work: one failing check reverted the whole file, conflicts between groups in the same file were
+resolved to one agent's side, and the spec builders listed unwritten functions as ordinary 0% functions. The audit of
+every archived output since wave 50 found 158 functions where an archived version beat main (46 at 100%). Fixes:
+per-function collection (`scratch/salvage/insert.py`, then `merge3.py` as fallback), seeded salvage waves, and m2c-draft
+waves for whatever had no archived version. A "stuck after two waves" counter is wrong for anything at 0% when the gain
+was reverted at collection.
+
+**Bug classes reviews caught that scores cannot see** (about 30 HIGH/MED before merge, many in functions above 95%):
+- flipped compares (`cror eq,gt,eq` is `>=`, `cror eq,lt,eq` is `<=`; m2c and agents get these backwards);
+- a read before the call that sets it, and a store on the wrong side of a `continue`/`break`;
+- a missing `break` (winHakoGX drew every later page);
+- wrong store targets (homing_walk wrote `position` where retail writes the jump target at +0x94) and wrong
+  constants (float_1000 for float_100);
+- data VALUES: byte-reversed GXColors, x/y swaps, template Vecs off by one (objdiff does not compare data values);
+- statement reorders that break data flow (winMarioDisp: a tag read before it was set, overwritten temporaries);
+- undefined externs and definitions under the wrong name (a NonMatching unit links the original object, so nothing
+  fails until it is flipped);
+- a natural `#else` reading a stale register the way retail does: keep the MUST_MATCH form, give the `#else` a defined
+  value and a note.
+
+**Rules that came out of it, now in the agent prompts:** hand-check every compare and every read-before-write against
+the asm; for every store in a written function, name the offset the asm writes and confirm the C writes the same field;
+for every float constant, confirm the symbol or address the asm loads; byte-check new data with `tools/rodatalayout.py`
+(agents have no `.git`, so `data_check.py` can't find touched objects there). The first data-port batch under the
+store/constant rule (wave 69 batch 1) came back with zero bugs.
+
+**Older bugs on main fixed today** (each verified against the asm): barriern satellite alpha (aStart), usu_00 yami_view
+camera/target swap, tou_03 screen_tev NaN clamp, animdrv PSMTXConcat, mapdrv makeDisplayList material, mot_ship case 32
+break, eki_00 moamoa_hit_check position source, evt_yuunpc signed conversion, extLoadShadowTev alpha byte, bakuGameMain
+home position (GetHomePos into px/py/pz) and case 22 order, evt_unitwin_disp_func party-stats row counter, las_04 firebar
+descriptors (every firebar used element 0), eff_mahorn2 and muj_20 2-pi constants, majo_disp_on dividing by 100 where
+retail divides by 10, sac_genki's sound-name string at base+0x1C0.
+
+**Linking.** The swarm can link: link arms got 5/9 (wave 63), 8/11 (wave 65), 17/21 (wave 67), 4/7 (wave 69), using
+the AGENT_BRIEF recipes. Three of Claude #3's links were only function order (`tools/fn_order_check.py`); `--write`
+breaks builds when a reordered body calls a function before its declaration (forward declarations needed). evt_npc
+needed a splits fix: its `.rodata` tail belonged to evt_sub. Keep dtk-symbolised relocations in linked data even when
+they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's data score from 100% to 5%).
+
+**Process lessons.**
+- `while pgrep -f queueN.txt` waiters match their own command line and never fire; chain queues in one script.
+- The snood reaper caps `permuter.py` at 900 s, so permuter runs are 14 minutes; waves keep tower load above the
+  permuter's gate, so it finds almost nothing while waves run.
+- Keep one accepted baseline (`/tmp/claude-501/accepted_main.json`), refreshed after every merge; a stale local
+  baseline produced ten false regressions.
+- GitHub can report a stacked PR as conflicting after its base merges; a local merge of main settles it.
+- Codex reviews today (run as one whole-batch `codex exec` at the default medium effort) caught 1 HIGH, missed about 9
+  that Claude reviewers found, and raised 2 false positives. The setup, not the model, is the first suspect: see the
+  private ledger.
