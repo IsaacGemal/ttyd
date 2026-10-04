@@ -27,6 +27,21 @@
 #include "eff/n64/eff_stardust_n64.h"
 #include "eff/eff_hit.h"
 #include "pmario_sound.h"
+#include "battle/battle_event_cmd.h"
+#include "battle/battle_camera.h"
+#include "battle/sac/sac_common.h"
+#include "evt/evt_eff.h"
+#include "party/party_motion.h"
+
+// Data objects defined later in this file or in other units, declared before their first use.
+extern s32 sac_start_camera_evt[];
+extern s32 sac_mario_item_on_evt[];
+extern s32 sac_mario_item_on_end_evt[];
+extern s32 sac_start_stardust[];
+extern s32 status_recover_evt[];
+static void disp_2D(CameraId camera, void* param);
+static void disp_3D_alpha(CameraId camera, void* param);
+static void main_star(void);
 static void main_base(void);  // local to this file in the original
 static void disp_3D(CameraId cameraId, void* param);  // local to this file in the original
 // This unit's .rodata, in retail order: the vec3_803002b0...vec3_803003e8
@@ -77,24 +92,11 @@ const char str_80300438[] = "SFX_HP_RECOVER_SHINE2";
 const char str_80300450[] = "stardust";
 const char str_8030045C[] = "M_C_2C";
 
-const f32 float_30_80421d80 = 30.0f;
-const f32 float_1p25_80421d6c = 1.25f;
-const f32 float_360_80421de8 = 360.0f;
-const f32 float_60_80421d50 = 60.0f;
-const f32 float_neg1p25_80421e0c = -1.25f;
-const f32 float_0_80421d84 = 0.0f;
-const char str_80421D3C[] = "M_I_Y";
-const char str_80421E10[] = "M_S_1";
-const char str_80421E18[] = "M_D_1";
-const char str_80421E20[] = "M_X_1";
-const f32 float_20_80421d78 = 20.0f;
-const f32 float_10_80421d54 = 10.0f;
-const f32 float_5_80421d58 = 5.0f;
-const f32 float_6_80421d5c = 6.0f;
-const f32 float_8_80421d60 = 8.0f;
-const f32 float_0p5_80421d64 = 0.5f;
-const f32 float_90_80421d68 = 90.0f;
-const f32 float_85_80421d7c = 85.0f;
+// .sdata2 objects, in the original's address order. Only the seven icon colours, the
+// M_I_Y animation name and the .data-referenced zero are real objects; the float
+// constants are file-scope so the functions can name them, and MWCC folds each one
+// into its literal pool (the static definitions vanish, leaving the pooled words in
+// the original's order).
 const GXColor dat_80421d20 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_80421d24 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_80421d28 = {0xFF, 0xFF, 0xFF, 0xFF};
@@ -102,43 +104,59 @@ const GXColor dat_80421d2c = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_80421d30 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_80421d34 = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_80421d38 = {0xFF, 0xFF, 0xFF, 0xFF};
-const f32 float_1p32_80421ddc = 1.32f;
-const f32 float_1p98_80421de0 = 1.98f;
-const f32 float_15_80421de4 = 15.0f;
-const f32 float_neg1000_80421d88 = -1000.0f;
-const f32 float_1_80421d74 = 1.0f;
-const f32 float_901_80421e28 = 901.0f;
-const f32 float_37_80421d8c = 37.0f;
-const f32 float_50_80421d90 = 50.0f;
-const f32 float_neg1_80421d94 = -1.0f;
-const f32 float_2160_80421d98 = 2160.0f;
-const f32 float_200_80421d9c = 200.0f;
-const f32 float_32767_80421da0 = 32767.0f;
-const f32 float_720_80421da4 = 720.0f;
-const f32 float_120_80421da8 = 120.0f;
-const f32 float_0p2_80421dac = 0.2f;
-const f32 float_neg2_80421db0 = -2.0f;
-const f32 float_3_80421db4 = 3.0f;
-const f32 float_neg3_80421db8 = -3.0f;
-const f32 float_0p1_80421dbc = 0.1f;
-const f32 float_6p2832_80421dc0 = 6.283184f;
-const f32 float_1p5_80421dc4 = 1.5f;
-const f32 float_180_80421d4c = 180.0f;
-const f32 float_2_80421d70 = 2.0f;
-const f32 float_7_80421dc8 = 7.0f;
-const f32 float_40_80421dcc = 40.0f;
-const f32 float_0p75_80421dd0 = 0.75f;
-const f32 float_0p01_80421dd4 = 0.01f;
-const f32 float_0p05_80421dd8 = 0.05f;
-const f32 float_3p1416_80421d48 = 3.141592f;
-const f32 float_28_80421dec = 28.0f;
-const f32 float_0p15_80421df0 = 0.15f;
-const f32 float_250_80421df4 = 250.0f;
-const f32 float_1E07_80421df8 = 10000000.0f;
-const f32 float_344_80421dfc = 344.0f;
-const f32 float_576_80421e00 = 576.0f;
-const f32 float_1296_80421e04 = 1296.0f;
-const f32 float_1p125_80421e08 = 1.125f;
+const char str_80421D3C[] = "M_I_Y";
+const f32 float_0_80421d44 = 0.0f;
+static const f32 float_3p1416_80421d48 = 3.141592f;
+static const f32 float_180_80421d4c = 180.0f;
+static const f32 float_60_80421d50 = 60.0f;
+static const f32 float_10_80421d54 = 10.0f;
+static const f32 float_5_80421d58 = 5.0f;
+static const f32 float_6_80421d5c = 6.0f;
+static const f32 float_8_80421d60 = 8.0f;
+static const f32 float_0p5_80421d64 = 0.5f;
+static const f32 float_90_80421d68 = 90.0f;
+static const f32 float_1p25_80421d6c = 1.25f;
+static const f32 float_2_80421d70 = 2.0f;
+static const f32 float_1_80421d74 = 1.0f;
+static const f32 float_20_80421d78 = 20.0f;
+static const f32 float_85_80421d7c = 85.0f;
+static const f32 float_30_80421d80 = 30.0f;
+static const f32 float_0_80421d84 = 0.0f;
+static const f32 float_neg1000_80421d88 = -1000.0f;
+static const f32 float_37_80421d8c = 37.0f;
+static const f32 float_50_80421d90 = 50.0f;
+static const f32 float_neg1_80421d94 = -1.0f;
+static const f32 float_2160_80421d98 = 2160.0f;
+static const f32 float_200_80421d9c = 200.0f;
+static const f32 float_32767_80421da0 = 32767.0f;
+static const f32 float_720_80421da4 = 720.0f;
+static const f32 float_120_80421da8 = 120.0f;
+static const f32 float_0p2_80421dac = 0.2f;
+static const f32 float_neg2_80421db0 = -2.0f;
+static const f32 float_3_80421db4 = 3.0f;
+static const f32 float_neg3_80421db8 = -3.0f;
+static const f32 float_0p1_80421dbc = 0.1f;
+static const f32 float_6p2832_80421dc0 = 6.283184f;
+static const f32 float_1p5_80421dc4 = 1.5f;
+static const f32 float_7_80421dc8 = 7.0f;
+static const f32 float_40_80421dcc = 40.0f;
+static const f32 float_0p75_80421dd0 = 0.75f;
+static const f32 float_0p01_80421dd4 = 0.01f;
+static const f32 float_0p05_80421dd8 = 0.05f;
+static const f32 float_1p32_80421ddc = 1.32f;
+static const f32 float_1p98_80421de0 = 1.98f;
+static const f32 float_15_80421de4 = 15.0f;
+static const f32 float_360_80421de8 = 360.0f;
+static const f32 float_28_80421dec = 28.0f;
+static const f32 float_0p15_80421df0 = 0.15f;
+static const f32 float_250_80421df4 = 250.0f;
+static const f32 float_1E07_80421df8 = 10000000.0f;
+static const f32 float_344_80421dfc = 344.0f;
+static const f32 float_576_80421e00 = 576.0f;
+static const f32 float_1296_80421e04 = 1296.0f;
+static const f32 float_1p125_80421e08 = 1.125f;
+static const f32 float_neg1p25_80421e0c = -1.25f;
+
 
 
 
@@ -245,556 +263,289 @@ typedef struct GenkiWork {
 
 static GenkiWork* get_ptr(void);
 
-USER_FUNC(recover_cmd_disable) {
-    u32* p = (u32*)((u8*)_battleWorkPointer + 0x19038);
-
-    p[0] = 0;
-    p[1] = 0;
-    p[2] = 0;
-    p[3] = 0;
-    p[4] = 0;
-    return 2;
-}
-
-USER_FUNC(star_stone_appear) {
-    GenkiWork* genki = get_ptr();
-
-    genki->stars[0].field_0 = 1;
-    genki->stars[0].field_8 = 1;
-    return 2;
-}
-
-USER_FUNC(star_appear) {
+// Matches: the original schedules each effRecoveryEntry's argument setup the way mwcc does for
+// known constants (x and the count are hoisted above the previous call's result store). It only
+// does that when it can treat the values as literals, so the MUST_MATCH branch passes the two
+// values inline (identical to float_0_80421d84 / float_neg1000_80421d88); the natural extern
+// form is under #else.
+s32 main_genki(EventEntry* event, BOOL isFirstCall) {
     GenkiWork* genki = get_ptr();
     s32 i;
+    s32 j;
+    s32* args;
 
-    for (i = 0; i < 7; i++) {
-        GenkiStar* star = &genki->stars[i];
+    if (isFirstCall) {
+        args = event->args;
+        memset(genki, 0, 0x7CC);
+        genki->field_50 = evtGetValue(event, args[0]);
+        genki->field_C = evtGetValue(event, args[1]);
+        {
+            f32 zero = float_0_80421d84;
 
-        star->field_0 = 1;
-        star->field_8 = 0;
-    }
-    return 2;
-}
-
-USER_FUNC(status_on) {
-    statusWinOpen();
-    return 2;
-}
-
-USER_FUNC(get_score) {
-    GenkiWork* genki = get_ptr();
-    s32* args = event->args;
-
-    evtSetValue(event, args[0], genki->score[0]);
-    evtSetValue(event, args[1], genki->score[1]);
-    evtSetValue(event, args[2], genki->score[2]);
-    return 2;
-}
-
-USER_FUNC(wait_game_end) {
-    GenkiWork* genki = get_ptr();
-
-    return (genki->field_4 == 3) ? 2 : 0;
-}
-
-USER_FUNC(start_game) {
-    GenkiWork* genki = get_ptr();
-
-    genki->field_4 = 1;
-    return 2;
-}
-
-s32 object_get_num(void) {
-    GenkiWork* genki = get_ptr();
-    s32 i = 0;
-    s32 count = 0;
-
-    for (; i < 10; i++) {
-        if (genki->objects[i].field_0 == 2) {
-            count++;
+            genki->field_40 = 0x384;
+            genki->score[2] = 0;
+            genki->score[1] = 0;
+            genki->score[0] = 0;
+            genki->field_24 = zero;
+            genki->field_20 = zero;
+            genki->field_1C = zero;
+        }
+        if (genki->field_C == 0) {
+            genki->field_58 = 3;
+        } else {
+            genki->field_58 = 7;
+        }
+        if (genki->field_C == 0) {
+            genki->field_5C = (s32*)BattleAlloc(0x64);
+        } else {
+            genki->field_5C = (s32*)BattleAlloc(0xC8);
+        }
+#ifdef MUST_MATCH
+        genki->field_34 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
+        genki->field_38 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
+        genki->field_3C = effRecoveryEntry(3, 0, 0.0f, -1000.0f, 0.0f);
+#else
+        genki->field_34 = effRecoveryEntry(2, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
+        genki->field_38 = effRecoveryEntry(2, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
+        genki->field_3C = effRecoveryEntry(3, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
+#endif
+        for (i = 0; i < 7; i++) {
+            genki->weapon[i].field_44 = effStarStoneEntry(i, float_0_80421d84, float_neg1000_80421d88,
+                                                          float_0_80421d84, float_1_80421d74);
+            for (j = 0; j < 3; j++) {
+                genki->weapon[i].field_48[j] = effStarStoneEntry(i + 7, float_0_80421d84,
+                                                                 float_neg1000_80421d88,
+                                                                 float_0_80421d84, float_1_80421d74);
+            }
         }
     }
-    return count;
-}
-
-void object_entry(void) {
-    GenkiWork* genki = get_ptr();
-    s32 i;
-
+    main_base();
+    main_mario();
+    main_target();
+    for (i = 0; i < genki->field_58; i++) {
+        main_weapon(i);
+    }
     for (i = 0; i < 10; i++) {
-        GenkiObject* obj = &genki->objects[i];
-
-        if (obj->field_0 == 0) {
-            obj->field_0 = 1;
-            break;
-        }
+        main_object(i);
     }
+    main_star();
+    dispEntry(8, 901.0f, 1, disp_2D, NULL);
+    dispEntry(4, float_0_80421d84, 1, disp_3D, NULL);
+    dispEntry(4, float_0_80421d84, 2, disp_3D_alpha, NULL);
+    return 0;
 }
 
-// The trailing block scope puts mario/parts in r31 and genki in r29, matching the original;
-// at function scope MWCC cycles those two callee-saved registers.
-void weapon_entry(void) {
+static void main_base(void) {
     GenkiWork* genki = get_ptr();
-    s32 offsets[10];
-    s32 found = 0;
     s32 i;
-    s32 idx;
-    s32 count;
+    s32 a;
+    s32 b;
+    s32 t;
+    s32 k;
 
-    {
-        BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
-        BattleUnitPart* parts = BtlUnit_GetPartsPtr(mario, BtlUnit_GetBodyPartsId(mario));
-
-        count = genki->field_58;
-        for (i = 0; i < count; i++) {
-            if (genki->weapon[i].field_0 == 0) {
-                offsets[found++] = i;
-            }
-        }
-        if (found >= 1) {
-            idx = offsets[irand(found)];
-            {
-                GenkiWeapon* wep = &genki->weapon[idx];
-
-                wep->field_0 = 1;
-                wep->field_4 = 7;
-            }
-            BtlUnit_SetAnim(parts, str_8030045C);
-        }
+    if (genki->field_1C > (f32)genki->score[0]) {
+        genki->field_1C -= float_1_80421d74;
+        genki->field_28 = 0x3C;
     }
-}
+    if (genki->field_1C < (f32)genki->score[0]) {
+        genki->field_1C += float_1_80421d74;
+        genki->field_28 = 0x3C;
+    }
+    if (genki->field_20 > (f32)genki->score[1]) {
+        genki->field_20 -= float_1_80421d74;
+        genki->field_2C = 0x3C;
+    }
+    if (genki->field_20 < (f32)genki->score[1]) {
+        genki->field_20 += float_1_80421d74;
+        genki->field_2C = 0x3C;
+    }
+    if (genki->field_24 > (f32)genki->score[2]) {
+        genki->field_24 -= float_1_80421d74;
+        genki->field_30 = 0x3C;
+    }
+    if (genki->field_24 < (f32)genki->score[2]) {
+        genki->field_24 += float_1_80421d74;
+        genki->field_30 = 0x3C;
+    }
+    if (genki->field_28 > 0) {
+        genki->field_28--;
+    }
+    if (genki->field_2C > 0) {
+        genki->field_2C--;
+    }
+    if (genki->field_30 > 0) {
+        genki->field_30--;
+    }
 
-static GenkiWork* get_ptr(void) {
-    return (GenkiWork*)((u8*)_battleWorkPointer + 0x1F4C);
-}
-
-static void disp_3D_alpha(CameraId camera, void* param) {
-}
-
-static inline void _drawGenkiTex(s32 id, GXColor color, Vec trans, Vec rot, Vec scale) {
-    btlDispTex4(id, &trans, &scale, &rot, &color);
-}
-static inline void _drawGenkiTex2(s32 id, Vec scale, Vec rot, Vec trans, GXColor color) {
-    btlDispTex4(id, &trans, &scale, &rot, &color);
-}
-
-static inline Vec _makeRot2(const f32* vec, f32 z) {
-    Vec v = *(const Vec*)&vec[0x138 / 4];
-    v.z = z;
-    return v;
-}
-static inline Vec _makeTrans2(const f32* vec, f32 x, f32 y, f32 z) {
-    Vec v = *(const Vec*)&vec[0x120 / 4];
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
-}
-static inline Vec _makeRot1(const f32* vec, f32 z) {
-    Vec v = *(const Vec*)&vec[0x114 / 4];
-    v.z = z;
-    return v;
-}
-static inline Vec _makeTrans1(const f32* vec, f32 x, f32 y, f32 z) {
-    Vec v = *(const Vec*)&vec[0xFC / 4];
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
-}
-
-// Reading each vector by name (`*(const Vec*)vec3_8030034c`) rather than through a
-// `vec3_803002b0` pointer makes MWCC anchor the whole .rodata section in r30 and copies the
-// trans/scale/rot/tmp locals into the original's slots. The two final quads call btlDispTex4
-// directly. The int->float loads read the compiler's anonymous pool double, which now lands
-// at vec3_803002b0+0x1B8 just like retail's double_to_int_80300468. Under MUST_MATCH the five icon colours are named
-// locals passed by address, so MWCC allocates them 0x20..0x10 and the final colours 0xc/0x8.
-static void disp_3D(CameraId cameraId, void* param) {
-    GenkiObject* obj;
-    GenkiWork* genki = get_ptr();
-    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
-    BattleUnit* party = BattleGetPartyPtr(_battleWorkPointer);
-    f32 angle = float_3p1416_80421d48 * genki->field_6C / float_180_80421d4c;
-    Mtx mtx;
-    Vec pos;
-    Vec pos2;
-    f32 x, y, z;
-    f32 px, py, pz;
-    u16 flags;
-    s32 i;
-#ifdef MUST_MATCH
-    // Match-only: the original allocates the five icon colours 0x20..0x10 in declaration
-    // order, then the two final colours at 0xc/0x8. That needs each colour to be a named
-    // local whose address is passed, instead of the anonymous by-value temp MWCC makes for
-    // the natural call. The #else forms below use the natural by-value calls.
-    GXColor iconC1;
-    GXColor iconC2;
-    GXColor iconC3;
-    GXColor iconC4;
-    GXColor iconC5;
-#endif
-
-    if (genki->field_4 != 0) {
-        BtlUnit_GetHomePos(mario, &x, &y, &z);
-        y += float_60_80421d50;
-        {
-            f32* ud = (f32*)genki->field_34->userdata;
-            ud[2] = x;
-            ud[3] = y - float_10_80421d54;
-            ud[4] = z + float_5_80421d58;
-        }
-        {
-            s32 frame;
-            if (genki->field_1C >= float_10_80421d54) {
-                Vec v = *(const Vec*)vec3_8030034c;
-                v.x = x + float_6_80421d5c;
-                v.y = y;
-                v.z = z + float_8_80421d60;
-                pos = v;
-            } else {
-                Vec v = *(const Vec*)vec3_80300358;
-                v.x = x;
-                v.y = y;
-                v.z = z + float_8_80421d60;
-                pos = v;
+    switch (genki->field_4) {
+    case 0:
+        break;
+    case 1:
+        genki->field_4 = 2;
+        genki->field_44 = 1;
+        genki->field_64 = 1;
+        genki->field_60 = 0;
+        if (genki->field_C == 0) {
+            k = 0;
+            for (i = 0; i < 7; i++) {
+                genki->field_5C[k++] = 0;
             }
-            PSMTXTrans(mtx, pos.x, pos.y, pos.z);
-            frame = genki->field_28 % 12;
-            if (frame >= 0 && frame <= 5) {
-#ifdef MUST_MATCH
-                iconC1 = *(GXColor*)&dat_80421d20;
-                ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_1C, 0, &iconC1);
-#else
-                iconNumberDispGx3D(mtx, (s32)genki->field_1C, 0, *(GXColor*)&dat_80421d20);
-#endif
-
+            for (i = 0; i < 7; i++) {
+                genki->field_5C[k++] = 2;
             }
-        }
-        if (genki->field_50 != -1) {
-            BtlUnit_GetHomePos(party, &px, &py, &pz);
-            py += float_60_80421d50;
-            {
-                f32* ud = (f32*)genki->field_38->userdata;
-                ud[2] = px;
-                ud[3] = py - float_10_80421d54;
-                ud[4] = pz + float_5_80421d58;
+            for (i = 0; i < 8; i++) {
+                genki->field_5C[k++] = 4;
             }
-            {
-                s32 frame;
-                if (genki->field_20 >= float_10_80421d54) {
-                    Vec v = *(const Vec*)vec3_80300364;
-                    v.x = px + float_6_80421d5c;
-                    v.y = py;
-                    v.z = pz + float_8_80421d60;
-                    pos2 = v;
-                } else {
-                    Vec v = *(const Vec*)vec3_80300370;
-                    v.x = px;
-                    v.y = py;
-                    v.z = pz + float_8_80421d60;
-                    pos2 = v;
-                }
-                PSMTXTrans(mtx, pos2.x, pos2.y, pos2.z);
-                frame = genki->field_2C % 12;
-                if (frame >= 0 && frame <= 5) {
-#ifdef MUST_MATCH
-                    iconC2 = *(GXColor*)&dat_80421d24;
-                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_20, 0, &iconC2);
-#else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_20, 0, *(GXColor*)&dat_80421d24);
-#endif
-
-                }
+            for (i = 0; i < 3; i++) {
+                genki->field_5C[k++] = 6;
             }
-            BtlUnit_GetHomePos(mario, &x, &y, &z);
-            BtlUnit_GetHomePos(party, &px, &py, &pz);
-            x = float_0p5_80421d64 * (x + px);
-            y += float_90_80421d68;
-            {
-                f32* ud = (f32*)genki->field_3C->userdata;
-                ud[2] = x;
-                ud[3] = y - float_10_80421d54;
-                ud[4] = z + float_5_80421d58;
-            }
-            {
-                s32 frame;
-                if (genki->field_24 >= float_10_80421d54) {
-                    Vec v = *(const Vec*)vec3_8030037c;
-                    v.x = x + float_6_80421d5c;
-                    v.y = y;
-                    v.z = z + float_8_80421d60;
-                    pos = v;
-                } else {
-                    Vec v = *(const Vec*)vec3_80300388;
-                    v.x = x;
-                    v.y = y;
-                    v.z = z + float_8_80421d60;
-                    pos = v;
-                }
-                PSMTXTrans(mtx, pos.x, pos.y, pos.z);
-                frame = genki->field_30 % 12;
-                if (frame >= 0 && frame <= 5) {
-#ifdef MUST_MATCH
-                    iconC3 = *(GXColor*)&dat_80421d28;
-                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC3);
-#else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d28);
-#endif
-
-                }
+            for (i = 0; i < 200; i++) {
+                a = irand(25);
+                b = irand(25);
+                t = genki->field_5C[a];
+                genki->field_5C[a] = genki->field_5C[b];
+                genki->field_5C[b] = t;
             }
         } else {
-            BtlUnit_GetHomePos(mario, &x, &y, &z);
-            y += float_90_80421d68;
-            {
-                f32* ud = (f32*)genki->field_3C->userdata;
-                ud[2] = x;
-                ud[3] = y - float_10_80421d54;
-                ud[4] = z + float_5_80421d58;
+            k = 0;
+            for (i = 0; i < 12; i++) {
+                genki->field_5C[k++] = 0;
             }
-            {
-                s32 frame;
-                if (genki->field_24 >= float_10_80421d54) {
-                    Vec v = *(const Vec*)vec3_80300394;
-                    v.x = x + float_6_80421d5c;
-                    v.y = y;
-                    v.z = z + float_8_80421d60;
-                    pos = v;
+            for (i = 0; i < 4; i++) {
+                genki->field_5C[k++] = 1;
+            }
+            for (i = 0; i < 12; i++) {
+                genki->field_5C[k++] = 2;
+            }
+            for (i = 0; i < 4; i++) {
+                genki->field_5C[k++] = 3;
+            }
+            for (i = 0; i < 12; i++) {
+                genki->field_5C[k++] = 4;
+            }
+            for (i = 0; i < 4; i++) {
+                genki->field_5C[k++] = 5;
+            }
+            for (i = 0; i < 2; i++) {
+                genki->field_5C[k++] = 6;
+            }
+            for (i = 0; i < 200; i++) {
+                a = irand(50);
+                b = irand(50);
+                t = genki->field_5C[a];
+                genki->field_5C[a] = genki->field_5C[b];
+                genki->field_5C[b] = t;
+            }
+        }
+        /* fallthrough */
+    case 2:
+        genki->field_4C--;
+        if (genki->field_4C <= 0) {
+            if (genki->field_C == 0) {
+                genki->field_4C = 0x25;
+            } else {
+                genki->field_4C = 0x12;
+            }
+            if (genki->field_40 > 0) {
+                object_entry();
+            }
+        }
+        if (genki->field_40 <= 0) {
+            s32 ocount;
+            s32 wcount = 0;
+            for (i = 0; i < genki->field_58; i++) {
+                if (genki->weapon[i].field_0 == 0) {
+                    wcount++;
                 } else {
-                    Vec v = *(const Vec*)vec3_803003a0;
-                    v.x = x;
-                    v.y = y;
-                    v.z = z + float_8_80421d60;
-                    pos = v;
-                }
-                PSMTXTrans(mtx, pos.x, pos.y, pos.z);
-                frame = genki->field_30 % 12;
-                if (frame >= 0 && frame <= 5) {
-#ifdef MUST_MATCH
-                    iconC4 = *(GXColor*)&dat_80421d2c;
-                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC4);
-#else
-                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d2c);
-#endif
-
+                    break;
                 }
             }
-        }
-    }
-
-    for (i = 0; i < 10; i++) {
-        obj = &genki->objects[i];
-
-        if (obj->field_0 != 2) {
-            continue;
-        }
-        flags = 0;
-        {
-            f32 scale = float_1p25_80421d6c;
-            s32 icon;
-            s32 frame;
-
-            switch (obj->field_8) {
-            case 0:
-            case 1:
-                icon = 0x1A3;
-                if (obj->field_8 == 1) {
-                    scale = float_2_80421d70;
-                    frame = obj->field_4 % 12;
-                    if (frame >= 0 && frame <= 5) {
-                        flags |= 0x20;
-                    }
-                }
-                break;
-            case 2:
-            case 3:
-                switch (party->currentKind - 0xE0) {
-                case 0:
-                    icon = 0x1A4;
-                    break;
-                case 1:
-                    icon = 0x1A5;
-                    break;
-                case 3:
-                    icon = 0x1AE;
-                    break;
-                case 2:
-                    switch (pouchGetPartyColor(4)) {
-                    case 1:
-                        icon = 0x1A8;
-                        break;
-                    case 2:
-                        icon = 0x1A9;
-                        break;
-                    case 3:
-                        icon = 0x1AA;
-                        break;
-                    case 4:
-                        icon = 0x1AB;
-                        break;
-                    case 5:
-                        icon = 0x1AC;
-                        break;
-                    case 6:
-                        icon = 0x1AD;
-                        break;
-                    case 0:
-                        icon = 0x1A7;
-                        break;
-                    }
-                    break;
-                case 4:
-                    icon = 0x1AF;
-                    break;
-                case 5:
-                    icon = 0x1A6;
-                    break;
-                case 6:
-                    icon = 0x1B0;
-                    break;
-                default:
-                    icon = 0;
+            ocount = 0;
+            for (i = 0; i < 10; i++) {
+                if (genki->objects[i].field_0 == 0) {
+                    ocount++;
+                } else {
                     break;
                 }
-                if (obj->field_8 == 3) {
-                    scale = float_2_80421d70;
-                    frame = obj->field_4 % 12;
-                    if (frame >= 0 && frame <= 5) {
-                        flags |= 0x20;
-                    }
-                }
-                break;
-            case 4:
-            case 5:
-                icon = 0x1B1;
-                if (obj->field_8 == 5) {
-                    scale = float_2_80421d70;
-                    frame = obj->field_4 % 12;
-                    if (frame >= 0 && frame <= 5) {
-                        flags |= 0x20;
-                    }
-                }
-                break;
-            case 6:
-                icon = 0x143;
-                break;
             }
-            PSMTXScale(mtx, scale, scale, float_1_80421d74);
-            PSMTXTransApply(mtx, mtx, obj->field_C,
-                            obj->field_10 - float_20_80421d78 * scale, obj->field_14);
-#ifdef MUST_MATCH
-            // The original passes `flags` without a sign extension; with the header's s16
-            // parameter MWCC emits `extsh`, so call it through a u16 prototype. The named
-            // `iconC5` address (not a by-value temp) gives it the original's 0x10 slot.
-            iconC5 = *(GXColor*)&dat_80421d30;
-            ((void (*)(Mtx, u16, s32, GXColor*))iconDispGxCol)(mtx, flags, icon, &iconC5);
-#else
-            iconDispGxCol(mtx, flags, icon, *(GXColor*)&dat_80421d30);
-#endif
+            if (wcount == genki->field_58 && ocount == 10) {
+                genki->field_4 = 3;
+            }
+        } else {
+            genki->field_40--;
         }
-    }
-
-    if (genki->field_64 >= 2 && genki->field_64 <= 3) {
-        Mtx mtx2;
-
-        PSMTXScale(mtx2, float_0p5_80421d64, float_0p5_80421d64, float_0p5_80421d64);
-        BtlUnit_GetPos(mario, &x, &y, &z);
-        x += float_85_80421d7c * (f32)cos(angle);
-        y += float_85_80421d7c * (f32)sin(angle);
-        {
-            Vec trans;
-            Vec pos;
-            Vec scale;
-            Vec rot;
-            Vec tmp;
-            GXColor color;
-
-            x += float_10_80421d54;
-            y += float_30_80421d80;
-            z += float_10_80421d54;
-            color = *(GXColor*)&dat_80421d34;
-            tmp = *(const Vec*)vec3_803003c4;
-            tmp.z = float_6_80421d5c * (f32)genki->field_68;
-            rot = tmp;
-            scale = *(const Vec*)vec3_803003b8;
-            pos = *(const Vec*)vec3_803003ac;
-            pos.x = x;
-            pos.y = y;
-            pos.z = z;
-            trans = pos;
-            btlDispTex4(0x41, &trans, &scale, &rot, &color);
-        }
-        {
-            Vec trans;
-            Vec pos;
-            Vec scale;
-            Vec rot;
-            Vec tmp;
-            GXColor color;
-
-            color = *(GXColor*)&dat_80421d38;
-            tmp = *(const Vec*)vec3_803003e8;
-            tmp.z = float_6_80421d5c * -(f32)genki->field_68;
-            rot = tmp;
-            scale = *(const Vec*)vec3_803003dc;
-            pos = *(const Vec*)vec3_803003d0;
-            pos.x = x;
-            pos.y = y;
-            pos.z = z;
-            trans = pos;
-            btlDispTex4(0x42, &trans, &scale, &rot, &color);
-        }
+        break;
+    case 3:
+        break;
     }
 }
 
-static void disp_2D(CameraId camera, void* param) {
-}
-
-// The target's `offset`/`woffset` are MWCC's strength-reduced induction variables for
-// `&genki->stars[i]`/`&genki->weapon[i]`; no explicit offset locals.
-USER_FUNC(end_genki) {
-    GenkiWeapon* weapon;
-    s32 i;
+void main_mario(void) {
     GenkiWork* genki = get_ptr();
-    GenkiStar* star;
-    s32 j;
+    s32 stickX = (s8)keyGetStickX(0);
+    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+    BattleUnitPart* parts = BtlUnit_GetPartsPtr(mario, BtlUnit_GetBodyPartsId(mario));
 
-    for (i = 0; i < 7; i++) {
-        star = &genki->stars[i];
-        if (star->field_60 != NULL) {
-            effDelete(*(EffectEntry**)((u8*)star->field_60->userdata + 0x34));
-            effDelete(star->field_60);
-        }
+    if (genki->field_44 >= 1 && genki->field_44 <= 4 && genki->field_40 <= 0 && object_get_num() == 0) {
+        genki->field_44 = 5;
+        genki->field_64 = 4;
+        BtlUnit_SetAnim(parts, "M_S_1");
     }
-    for (i = 0; i < 7; i++) {
-        weapon = &genki->weapon[i];
-        if (weapon->field_44 != NULL) {
-            effDelete(*(EffectEntry**)((u8*)weapon->field_44->userdata + 0x34));
-            effDelete(weapon->field_44);
-            for (j = 0; j < 3; j++) {
-                effDelete(*(EffectEntry**)((u8*)weapon->field_48[j]->userdata + 0x34));
-                effDelete(weapon->field_48[j]);
+    switch (genki->field_44) {
+    case 0:
+        break;
+    case 1:
+        if (stickX < -0x28) {
+            genki->field_44 = 2;
+            genki->field_48 = 0;
+            genki->field_54 = 10;
+            BtlUnit_SetAnim(parts, "M_C_2A");
+        }
+        break;
+    case 2:
+        if (stickX > -0x14) {
+            genki->field_44 = 1;
+            weapon_entry();
+        } else {
+            genki->field_54--;
+            if (genki->field_54 == 2) {
+                BtlUnit_SetAnim(parts, "M_C_2B");
+            }
+            if (genki->field_54 <= 0 && genki->field_C == 1) {
+                genki->field_54 = 10;
+                weapon_entry();
             }
         }
-    }
-    effDelete(genki->field_34);
-    effDelete(genki->field_38);
-    effDelete(genki->field_3C);
-    BattleFree(genki->field_5C);
-    return 2;
-}
-
-static void main_star(void) {
-    GenkiWork* genki = get_ptr();
-    s32 i;
-
-    if (genki->field_C == 0) {
-        for (i = 0; i < 7; i++) {
-            main_star0(i);
+        break;
+    case 3:
+        genki->field_44 = 4;
+        genki->field_48 = 0;
+        BtlUnit_SetAnim(parts, "M_D_1");
+        {
+            f32 x, y, z;
+            EffectEntry* eff;
+            BtlUnit_GetPos(mario, &x, &y, &z);
+            eff = effStampN64Entry(2, x, float_20_80421d78 + y, float_10_80421d54 + z);
+            ((u8*)eff->userdata)[0x38] = 0;
+            ((u8*)eff->userdata)[0x39] = 0xC8;
+            ((u8*)eff->userdata)[0x3A] = 0;
+            ((u8*)eff->userdata)[0x3B] = 0;
+            ((u8*)eff->userdata)[0x3C] = 0xA;
+            ((u8*)eff->userdata)[0x3D] = 0;
         }
-    } else {
-        main_star1();
+    case 4:
+        genki->field_48++;
+        if (genki->field_48 == 0x1E) {
+            BtlUnit_SetAnim(parts, "M_X_1");
+        }
+        if (genki->field_48 == 0xB4) {
+            BtlUnit_SetAnim(parts, str_80421D3C);
+            genki->field_44 = 1;
+            genki->field_48 = 0;
+        }
+        break;
+    case 5:
+        break;
     }
 }
 
@@ -834,75 +585,6 @@ void main_target(void) {
         }
         break;
     case 4:
-        break;
-    }
-}
-
-void main_mario(void) {
-    GenkiWork* genki = get_ptr();
-    s32 stickX = (s8)keyGetStickX(0);
-    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
-    BattleUnitPart* parts = BtlUnit_GetPartsPtr(mario, BtlUnit_GetBodyPartsId(mario));
-
-    if (genki->field_44 >= 1 && genki->field_44 <= 4 && genki->field_40 <= 0 && object_get_num() == 0) {
-        genki->field_44 = 5;
-        genki->field_64 = 4;
-        BtlUnit_SetAnim(parts, str_80421E10);
-    }
-    switch (genki->field_44) {
-    case 0:
-        break;
-    case 1:
-        if (stickX < -0x28) {
-            genki->field_44 = 2;
-            genki->field_48 = 0;
-            genki->field_54 = 10;
-            BtlUnit_SetAnim(parts, "M_C_2A");
-        }
-        break;
-    case 2:
-        if (stickX > -0x14) {
-            genki->field_44 = 1;
-            weapon_entry();
-        } else {
-            genki->field_54--;
-            if (genki->field_54 == 2) {
-                BtlUnit_SetAnim(parts, "M_C_2B");
-            }
-            if (genki->field_54 <= 0 && genki->field_C == 1) {
-                genki->field_54 = 10;
-                weapon_entry();
-            }
-        }
-        break;
-    case 3:
-        genki->field_44 = 4;
-        genki->field_48 = 0;
-        BtlUnit_SetAnim(parts, str_80421E18);
-        {
-            f32 x, y, z;
-            EffectEntry* eff;
-            BtlUnit_GetPos(mario, &x, &y, &z);
-            eff = effStampN64Entry(2, x, float_20_80421d78 + y, float_10_80421d54 + z);
-            ((u8*)eff->userdata)[0x38] = 0;
-            ((u8*)eff->userdata)[0x39] = 0xC8;
-            ((u8*)eff->userdata)[0x3A] = 0;
-            ((u8*)eff->userdata)[0x3B] = 0;
-            ((u8*)eff->userdata)[0x3C] = 0xA;
-            ((u8*)eff->userdata)[0x3D] = 0;
-        }
-    case 4:
-        genki->field_48++;
-        if (genki->field_48 == 0x1E) {
-            BtlUnit_SetAnim(parts, str_80421E20);
-        }
-        if (genki->field_48 == 0xB4) {
-            BtlUnit_SetAnim(parts, str_80421D3C);
-            genki->field_44 = 1;
-            genki->field_48 = 0;
-        }
-        break;
-    case 5:
         break;
     }
 }
@@ -1250,220 +932,16 @@ void main_object(s32 idx) {
     }
 }
 
-// Matches: the original schedules each effRecoveryEntry's argument setup the way mwcc does for
-// known constants (x and the count are hoisted above the previous call's result store). It only
-// does that when it can treat the values as literals, so the MUST_MATCH branch passes the two
-// values inline (identical to float_0_80421d84 / float_neg1000_80421d88); the natural extern
-// form is under #else.
-s32 main_genki(EventEntry* event, BOOL isFirstCall) {
+static void main_star(void) {
     GenkiWork* genki = get_ptr();
     s32 i;
-    s32 j;
-    s32* args;
 
-    if (isFirstCall) {
-        args = event->args;
-        memset(genki, 0, 0x7CC);
-        genki->field_50 = evtGetValue(event, args[0]);
-        genki->field_C = evtGetValue(event, args[1]);
-        {
-            f32 zero = float_0_80421d84;
-
-            genki->field_40 = 0x384;
-            genki->score[2] = 0;
-            genki->score[1] = 0;
-            genki->score[0] = 0;
-            genki->field_24 = zero;
-            genki->field_20 = zero;
-            genki->field_1C = zero;
-        }
-        if (genki->field_C == 0) {
-            genki->field_58 = 3;
-        } else {
-            genki->field_58 = 7;
-        }
-        if (genki->field_C == 0) {
-            genki->field_5C = (s32*)BattleAlloc(0x64);
-        } else {
-            genki->field_5C = (s32*)BattleAlloc(0xC8);
-        }
-#ifdef MUST_MATCH
-        genki->field_34 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
-        genki->field_38 = effRecoveryEntry(2, 0, 0.0f, -1000.0f, 0.0f);
-        genki->field_3C = effRecoveryEntry(3, 0, 0.0f, -1000.0f, 0.0f);
-#else
-        genki->field_34 = effRecoveryEntry(2, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
-        genki->field_38 = effRecoveryEntry(2, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
-        genki->field_3C = effRecoveryEntry(3, 0, float_0_80421d84, float_neg1000_80421d88, float_0_80421d84);
-#endif
+    if (genki->field_C == 0) {
         for (i = 0; i < 7; i++) {
-            genki->weapon[i].field_44 = effStarStoneEntry(i, float_0_80421d84, float_neg1000_80421d88,
-                                                          float_0_80421d84, float_1_80421d74);
-            for (j = 0; j < 3; j++) {
-                genki->weapon[i].field_48[j] = effStarStoneEntry(i + 7, float_0_80421d84,
-                                                                 float_neg1000_80421d88,
-                                                                 float_0_80421d84, float_1_80421d74);
-            }
+            main_star0(i);
         }
-    }
-    main_base();
-    main_mario();
-    main_target();
-    for (i = 0; i < genki->field_58; i++) {
-        main_weapon(i);
-    }
-    for (i = 0; i < 10; i++) {
-        main_object(i);
-    }
-    main_star();
-    dispEntry(8, float_901_80421e28, 1, disp_2D, NULL);
-    dispEntry(4, float_0_80421d84, 1, disp_3D, NULL);
-    dispEntry(4, float_0_80421d84, 2, disp_3D_alpha, NULL);
-    return 0;
-}
-
-static void main_base(void) {
-    GenkiWork* genki = get_ptr();
-    s32 i;
-    s32 a;
-    s32 b;
-    s32 t;
-    s32 k;
-
-    if (genki->field_1C > (f32)genki->score[0]) {
-        genki->field_1C -= float_1_80421d74;
-        genki->field_28 = 0x3C;
-    }
-    if (genki->field_1C < (f32)genki->score[0]) {
-        genki->field_1C += float_1_80421d74;
-        genki->field_28 = 0x3C;
-    }
-    if (genki->field_20 > (f32)genki->score[1]) {
-        genki->field_20 -= float_1_80421d74;
-        genki->field_2C = 0x3C;
-    }
-    if (genki->field_20 < (f32)genki->score[1]) {
-        genki->field_20 += float_1_80421d74;
-        genki->field_2C = 0x3C;
-    }
-    if (genki->field_24 > (f32)genki->score[2]) {
-        genki->field_24 -= float_1_80421d74;
-        genki->field_30 = 0x3C;
-    }
-    if (genki->field_24 < (f32)genki->score[2]) {
-        genki->field_24 += float_1_80421d74;
-        genki->field_30 = 0x3C;
-    }
-    if (genki->field_28 > 0) {
-        genki->field_28--;
-    }
-    if (genki->field_2C > 0) {
-        genki->field_2C--;
-    }
-    if (genki->field_30 > 0) {
-        genki->field_30--;
-    }
-
-    switch (genki->field_4) {
-    case 0:
-        break;
-    case 1:
-        genki->field_4 = 2;
-        genki->field_44 = 1;
-        genki->field_64 = 1;
-        genki->field_60 = 0;
-        if (genki->field_C == 0) {
-            k = 0;
-            for (i = 0; i < 7; i++) {
-                genki->field_5C[k++] = 0;
-            }
-            for (i = 0; i < 7; i++) {
-                genki->field_5C[k++] = 2;
-            }
-            for (i = 0; i < 8; i++) {
-                genki->field_5C[k++] = 4;
-            }
-            for (i = 0; i < 3; i++) {
-                genki->field_5C[k++] = 6;
-            }
-            for (i = 0; i < 200; i++) {
-                a = irand(25);
-                b = irand(25);
-                t = genki->field_5C[a];
-                genki->field_5C[a] = genki->field_5C[b];
-                genki->field_5C[b] = t;
-            }
-        } else {
-            k = 0;
-            for (i = 0; i < 12; i++) {
-                genki->field_5C[k++] = 0;
-            }
-            for (i = 0; i < 4; i++) {
-                genki->field_5C[k++] = 1;
-            }
-            for (i = 0; i < 12; i++) {
-                genki->field_5C[k++] = 2;
-            }
-            for (i = 0; i < 4; i++) {
-                genki->field_5C[k++] = 3;
-            }
-            for (i = 0; i < 12; i++) {
-                genki->field_5C[k++] = 4;
-            }
-            for (i = 0; i < 4; i++) {
-                genki->field_5C[k++] = 5;
-            }
-            for (i = 0; i < 2; i++) {
-                genki->field_5C[k++] = 6;
-            }
-            for (i = 0; i < 200; i++) {
-                a = irand(50);
-                b = irand(50);
-                t = genki->field_5C[a];
-                genki->field_5C[a] = genki->field_5C[b];
-                genki->field_5C[b] = t;
-            }
-        }
-        /* fallthrough */
-    case 2:
-        genki->field_4C--;
-        if (genki->field_4C <= 0) {
-            if (genki->field_C == 0) {
-                genki->field_4C = 0x25;
-            } else {
-                genki->field_4C = 0x12;
-            }
-            if (genki->field_40 > 0) {
-                object_entry();
-            }
-        }
-        if (genki->field_40 <= 0) {
-            s32 ocount;
-            s32 wcount = 0;
-            for (i = 0; i < genki->field_58; i++) {
-                if (genki->weapon[i].field_0 == 0) {
-                    wcount++;
-                } else {
-                    break;
-                }
-            }
-            ocount = 0;
-            for (i = 0; i < 10; i++) {
-                if (genki->objects[i].field_0 == 0) {
-                    ocount++;
-                } else {
-                    break;
-                }
-            }
-            if (wcount == genki->field_58 && ocount == 10) {
-                genki->field_4 = 3;
-            }
-        } else {
-            genki->field_40--;
-        }
-        break;
-    case 3:
-        break;
+    } else {
+        main_star1();
     }
 }
 
@@ -1714,4 +1192,699 @@ void main_star1(void) {
         p[0x14 / 4] = float_1p5_80421dc4 * star->field_3C;
     }
 }
+
+// The target's `offset`/`woffset` are MWCC's strength-reduced induction variables for
+// `&genki->stars[i]`/`&genki->weapon[i]`; no explicit offset locals.
+USER_FUNC(end_genki) {
+    GenkiWeapon* weapon;
+    s32 i;
+    GenkiWork* genki = get_ptr();
+    GenkiStar* star;
+    s32 j;
+
+    for (i = 0; i < 7; i++) {
+        star = &genki->stars[i];
+        if (star->field_60 != NULL) {
+            effDelete(*(EffectEntry**)((u8*)star->field_60->userdata + 0x34));
+            effDelete(star->field_60);
+        }
+    }
+    for (i = 0; i < 7; i++) {
+        weapon = &genki->weapon[i];
+        if (weapon->field_44 != NULL) {
+            effDelete(*(EffectEntry**)((u8*)weapon->field_44->userdata + 0x34));
+            effDelete(weapon->field_44);
+            for (j = 0; j < 3; j++) {
+                effDelete(*(EffectEntry**)((u8*)weapon->field_48[j]->userdata + 0x34));
+                effDelete(weapon->field_48[j]);
+            }
+        }
+    }
+    effDelete(genki->field_34);
+    effDelete(genki->field_38);
+    effDelete(genki->field_3C);
+    BattleFree(genki->field_5C);
+    return 2;
+}
+
+static void disp_2D(CameraId camera, void* param) {
+}
+
+// Reading each vector by name (`*(const Vec*)vec3_8030034c`) rather than through a
+// `vec3_803002b0` pointer makes MWCC anchor the whole .rodata section in r30 and copies the
+// trans/scale/rot/tmp locals into the original's slots. The two final quads call btlDispTex4
+// directly. The int->float loads read the compiler's anonymous pool double, which now lands
+// at vec3_803002b0+0x1B8 just like retail's double_to_int_80300468. Under MUST_MATCH the five icon colours are named
+// locals passed by address, so MWCC allocates them 0x20..0x10 and the final colours 0xc/0x8.
+static void disp_3D(CameraId cameraId, void* param) {
+    GenkiObject* obj;
+    GenkiWork* genki = get_ptr();
+    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+    BattleUnit* party = BattleGetPartyPtr(_battleWorkPointer);
+    f32 angle = float_3p1416_80421d48 * genki->field_6C / float_180_80421d4c;
+    Mtx mtx;
+    Vec pos;
+    Vec pos2;
+    f32 x, y, z;
+    f32 px, py, pz;
+    u16 flags;
+    s32 i;
+#ifdef MUST_MATCH
+    // Match-only: the original allocates the five icon colours 0x20..0x10 in declaration
+    // order, then the two final colours at 0xc/0x8. That needs each colour to be a named
+    // local whose address is passed, instead of the anonymous by-value temp MWCC makes for
+    // the natural call. The #else forms below use the natural by-value calls.
+    GXColor iconC1;
+    GXColor iconC2;
+    GXColor iconC3;
+    GXColor iconC4;
+    GXColor iconC5;
+#endif
+
+    if (genki->field_4 != 0) {
+        BtlUnit_GetHomePos(mario, &x, &y, &z);
+        y += float_60_80421d50;
+        {
+            f32* ud = (f32*)genki->field_34->userdata;
+            ud[2] = x;
+            ud[3] = y - float_10_80421d54;
+            ud[4] = z + float_5_80421d58;
+        }
+        {
+            s32 frame;
+            if (genki->field_1C >= float_10_80421d54) {
+                Vec v = *(const Vec*)vec3_8030034c;
+                v.x = x + float_6_80421d5c;
+                v.y = y;
+                v.z = z + float_8_80421d60;
+                pos = v;
+            } else {
+                Vec v = *(const Vec*)vec3_80300358;
+                v.x = x;
+                v.y = y;
+                v.z = z + float_8_80421d60;
+                pos = v;
+            }
+            PSMTXTrans(mtx, pos.x, pos.y, pos.z);
+            frame = genki->field_28 % 12;
+            if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                iconC1 = *(GXColor*)&dat_80421d20;
+                ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_1C, 0, &iconC1);
+#else
+                iconNumberDispGx3D(mtx, (s32)genki->field_1C, 0, *(GXColor*)&dat_80421d20);
+#endif
+
+            }
+        }
+        if (genki->field_50 != -1) {
+            BtlUnit_GetHomePos(party, &px, &py, &pz);
+            py += float_60_80421d50;
+            {
+                f32* ud = (f32*)genki->field_38->userdata;
+                ud[2] = px;
+                ud[3] = py - float_10_80421d54;
+                ud[4] = pz + float_5_80421d58;
+            }
+            {
+                s32 frame;
+                if (genki->field_20 >= float_10_80421d54) {
+                    Vec v = *(const Vec*)vec3_80300364;
+                    v.x = px + float_6_80421d5c;
+                    v.y = py;
+                    v.z = pz + float_8_80421d60;
+                    pos2 = v;
+                } else {
+                    Vec v = *(const Vec*)vec3_80300370;
+                    v.x = px;
+                    v.y = py;
+                    v.z = pz + float_8_80421d60;
+                    pos2 = v;
+                }
+                PSMTXTrans(mtx, pos2.x, pos2.y, pos2.z);
+                frame = genki->field_2C % 12;
+                if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                    iconC2 = *(GXColor*)&dat_80421d24;
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_20, 0, &iconC2);
+#else
+                    iconNumberDispGx3D(mtx, (s32)genki->field_20, 0, *(GXColor*)&dat_80421d24);
+#endif
+
+                }
+            }
+            BtlUnit_GetHomePos(mario, &x, &y, &z);
+            BtlUnit_GetHomePos(party, &px, &py, &pz);
+            x = float_0p5_80421d64 * (x + px);
+            y += float_90_80421d68;
+            {
+                f32* ud = (f32*)genki->field_3C->userdata;
+                ud[2] = x;
+                ud[3] = y - float_10_80421d54;
+                ud[4] = z + float_5_80421d58;
+            }
+            {
+                s32 frame;
+                if (genki->field_24 >= float_10_80421d54) {
+                    Vec v = *(const Vec*)vec3_8030037c;
+                    v.x = x + float_6_80421d5c;
+                    v.y = y;
+                    v.z = z + float_8_80421d60;
+                    pos = v;
+                } else {
+                    Vec v = *(const Vec*)vec3_80300388;
+                    v.x = x;
+                    v.y = y;
+                    v.z = z + float_8_80421d60;
+                    pos = v;
+                }
+                PSMTXTrans(mtx, pos.x, pos.y, pos.z);
+                frame = genki->field_30 % 12;
+                if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                    iconC3 = *(GXColor*)&dat_80421d28;
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC3);
+#else
+                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d28);
+#endif
+
+                }
+            }
+        } else {
+            BtlUnit_GetHomePos(mario, &x, &y, &z);
+            y += float_90_80421d68;
+            {
+                f32* ud = (f32*)genki->field_3C->userdata;
+                ud[2] = x;
+                ud[3] = y - float_10_80421d54;
+                ud[4] = z + float_5_80421d58;
+            }
+            {
+                s32 frame;
+                if (genki->field_24 >= float_10_80421d54) {
+                    Vec v = *(const Vec*)vec3_80300394;
+                    v.x = x + float_6_80421d5c;
+                    v.y = y;
+                    v.z = z + float_8_80421d60;
+                    pos = v;
+                } else {
+                    Vec v = *(const Vec*)vec3_803003a0;
+                    v.x = x;
+                    v.y = y;
+                    v.z = z + float_8_80421d60;
+                    pos = v;
+                }
+                PSMTXTrans(mtx, pos.x, pos.y, pos.z);
+                frame = genki->field_30 % 12;
+                if (frame >= 0 && frame <= 5) {
+#ifdef MUST_MATCH
+                    iconC4 = *(GXColor*)&dat_80421d2c;
+                    ((void (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx3D)(mtx, (s32)genki->field_24, 0, &iconC4);
+#else
+                    iconNumberDispGx3D(mtx, (s32)genki->field_24, 0, *(GXColor*)&dat_80421d2c);
+#endif
+
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < 10; i++) {
+        obj = &genki->objects[i];
+
+        if (obj->field_0 != 2) {
+            continue;
+        }
+        flags = 0;
+        {
+            f32 scale = float_1p25_80421d6c;
+            s32 icon;
+            s32 frame;
+
+            switch (obj->field_8) {
+            case 0:
+            case 1:
+                icon = 0x1A3;
+                if (obj->field_8 == 1) {
+                    scale = float_2_80421d70;
+                    frame = obj->field_4 % 12;
+                    if (frame >= 0 && frame <= 5) {
+                        flags |= 0x20;
+                    }
+                }
+                break;
+            case 2:
+            case 3:
+                switch (party->currentKind - 0xE0) {
+                case 0:
+                    icon = 0x1A4;
+                    break;
+                case 1:
+                    icon = 0x1A5;
+                    break;
+                case 3:
+                    icon = 0x1AE;
+                    break;
+                case 2:
+                    switch (pouchGetPartyColor(4)) {
+                    case 1:
+                        icon = 0x1A8;
+                        break;
+                    case 2:
+                        icon = 0x1A9;
+                        break;
+                    case 3:
+                        icon = 0x1AA;
+                        break;
+                    case 4:
+                        icon = 0x1AB;
+                        break;
+                    case 5:
+                        icon = 0x1AC;
+                        break;
+                    case 6:
+                        icon = 0x1AD;
+                        break;
+                    case 0:
+                        icon = 0x1A7;
+                        break;
+                    }
+                    break;
+                case 4:
+                    icon = 0x1AF;
+                    break;
+                case 5:
+                    icon = 0x1A6;
+                    break;
+                case 6:
+                    icon = 0x1B0;
+                    break;
+                default:
+                    icon = 0;
+                    break;
+                }
+                if (obj->field_8 == 3) {
+                    scale = float_2_80421d70;
+                    frame = obj->field_4 % 12;
+                    if (frame >= 0 && frame <= 5) {
+                        flags |= 0x20;
+                    }
+                }
+                break;
+            case 4:
+            case 5:
+                icon = 0x1B1;
+                if (obj->field_8 == 5) {
+                    scale = float_2_80421d70;
+                    frame = obj->field_4 % 12;
+                    if (frame >= 0 && frame <= 5) {
+                        flags |= 0x20;
+                    }
+                }
+                break;
+            case 6:
+                icon = 0x143;
+                break;
+            }
+            PSMTXScale(mtx, scale, scale, float_1_80421d74);
+            PSMTXTransApply(mtx, mtx, obj->field_C,
+                            obj->field_10 - float_20_80421d78 * scale, obj->field_14);
+#ifdef MUST_MATCH
+            // The original passes `flags` without a sign extension; with the header's s16
+            // parameter MWCC emits `extsh`, so call it through a u16 prototype. The named
+            // `iconC5` address (not a by-value temp) gives it the original's 0x10 slot.
+            iconC5 = *(GXColor*)&dat_80421d30;
+            ((void (*)(Mtx, u16, s32, GXColor*))iconDispGxCol)(mtx, flags, icon, &iconC5);
+#else
+            iconDispGxCol(mtx, flags, icon, *(GXColor*)&dat_80421d30);
+#endif
+        }
+    }
+
+    if (genki->field_64 >= 2 && genki->field_64 <= 3) {
+        Mtx mtx2;
+
+        PSMTXScale(mtx2, float_0p5_80421d64, float_0p5_80421d64, float_0p5_80421d64);
+        BtlUnit_GetPos(mario, &x, &y, &z);
+        x += float_85_80421d7c * (f32)cos(angle);
+        y += float_85_80421d7c * (f32)sin(angle);
+        {
+            Vec trans;
+            Vec pos;
+            Vec scale;
+            Vec rot;
+            Vec tmp;
+            GXColor color;
+
+            x += float_10_80421d54;
+            y += float_30_80421d80;
+            z += float_10_80421d54;
+            color = *(GXColor*)&dat_80421d34;
+            tmp = *(const Vec*)vec3_803003c4;
+            tmp.z = float_6_80421d5c * (f32)genki->field_68;
+            rot = tmp;
+            scale = *(const Vec*)vec3_803003b8;
+            pos = *(const Vec*)vec3_803003ac;
+            pos.x = x;
+            pos.y = y;
+            pos.z = z;
+            trans = pos;
+            btlDispTex4(0x41, &trans, &scale, &rot, &color);
+        }
+        {
+            Vec trans;
+            Vec pos;
+            Vec scale;
+            Vec rot;
+            Vec tmp;
+            GXColor color;
+
+            color = *(GXColor*)&dat_80421d38;
+            tmp = *(const Vec*)vec3_803003e8;
+            tmp.z = float_6_80421d5c * -(f32)genki->field_68;
+            rot = tmp;
+            scale = *(const Vec*)vec3_803003dc;
+            pos = *(const Vec*)vec3_803003d0;
+            pos.x = x;
+            pos.y = y;
+            pos.z = z;
+            trans = pos;
+            btlDispTex4(0x42, &trans, &scale, &rot, &color);
+        }
+    }
+}
+
+static inline void _drawGenkiTex(s32 id, GXColor color, Vec trans, Vec rot, Vec scale) {
+    btlDispTex4(id, &trans, &scale, &rot, &color);
+}
+static inline void _drawGenkiTex2(s32 id, Vec scale, Vec rot, Vec trans, GXColor color) {
+    btlDispTex4(id, &trans, &scale, &rot, &color);
+}
+
+static inline Vec _makeRot2(const f32* vec, f32 z) {
+    Vec v = *(const Vec*)&vec[0x138 / 4];
+    v.z = z;
+    return v;
+}
+static inline Vec _makeTrans2(const f32* vec, f32 x, f32 y, f32 z) {
+    Vec v = *(const Vec*)&vec[0x120 / 4];
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+static inline Vec _makeRot1(const f32* vec, f32 z) {
+    Vec v = *(const Vec*)&vec[0x114 / 4];
+    v.z = z;
+    return v;
+}
+static inline Vec _makeTrans1(const f32* vec, f32 x, f32 y, f32 z) {
+    Vec v = *(const Vec*)&vec[0xFC / 4];
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+
+static void disp_3D_alpha(CameraId camera, void* param) {
+}
+
+static GenkiWork* get_ptr(void) {
+    return (GenkiWork*)((u8*)_battleWorkPointer + 0x1F4C);
+}
+
+// The trailing block scope puts mario/parts in r31 and genki in r29, matching the original;
+// at function scope MWCC cycles those two callee-saved registers.
+void weapon_entry(void) {
+    GenkiWork* genki = get_ptr();
+    s32 offsets[10];
+    s32 found = 0;
+    s32 i;
+    s32 idx;
+    s32 count;
+
+    {
+        BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+        BattleUnitPart* parts = BtlUnit_GetPartsPtr(mario, BtlUnit_GetBodyPartsId(mario));
+
+        count = genki->field_58;
+        for (i = 0; i < count; i++) {
+            if (genki->weapon[i].field_0 == 0) {
+                offsets[found++] = i;
+            }
+        }
+        if (found >= 1) {
+            idx = offsets[irand(found)];
+            {
+                GenkiWeapon* wep = &genki->weapon[idx];
+
+                wep->field_0 = 1;
+                wep->field_4 = 7;
+            }
+            BtlUnit_SetAnim(parts, str_8030045C);
+        }
+    }
+}
+
+void object_entry(void) {
+    GenkiWork* genki = get_ptr();
+    s32 i;
+
+    for (i = 0; i < 10; i++) {
+        GenkiObject* obj = &genki->objects[i];
+
+        if (obj->field_0 == 0) {
+            obj->field_0 = 1;
+            break;
+        }
+    }
+}
+
+s32 object_get_num(void) {
+    GenkiWork* genki = get_ptr();
+    s32 i = 0;
+    s32 count = 0;
+
+    for (; i < 10; i++) {
+        if (genki->objects[i].field_0 == 2) {
+            count++;
+        }
+    }
+    return count;
+}
+
+USER_FUNC(start_game) {
+    GenkiWork* genki = get_ptr();
+
+    genki->field_4 = 1;
+    return 2;
+}
+
+USER_FUNC(wait_game_end) {
+    GenkiWork* genki = get_ptr();
+
+    return (genki->field_4 == 3) ? 2 : 0;
+}
+
+USER_FUNC(get_score) {
+    GenkiWork* genki = get_ptr();
+    s32* args = event->args;
+
+    evtSetValue(event, args[0], genki->score[0]);
+    evtSetValue(event, args[1], genki->score[1]);
+    evtSetValue(event, args[2], genki->score[2]);
+    return 2;
+}
+
+USER_FUNC(status_on) {
+    statusWinOpen();
+    return 2;
+}
+
+USER_FUNC(star_appear) {
+    GenkiWork* genki = get_ptr();
+    s32 i;
+
+    for (i = 0; i < 7; i++) {
+        GenkiStar* star = &genki->stars[i];
+
+        star->field_0 = 1;
+        star->field_8 = 0;
+    }
+    return 2;
+}
+
+USER_FUNC(star_stone_appear) {
+    GenkiWork* genki = get_ptr();
+
+    genki->stars[0].field_0 = 1;
+    genki->stars[0].field_8 = 1;
+    return 2;
+}
+
+USER_FUNC(recover_cmd_disable) {
+    u32* p = (u32*)((u8*)_battleWorkPointer + 0x19038);
+
+    p[0] = 0;
+    p[1] = 0;
+    p[2] = 0;
+    p[3] = 0;
+    p[4] = 0;
+    return 2;
+}
+
+
+
+
+// TODO: type
+s32 genki_evt_common[345] = {
+    0x0003005B, (s32)(void*)btlevtcmd_GetUnitId, 0xFFFFFFFC, 0xFE363C8D,
+    0x0003005B, (s32)(void*)btlevtcmd_GetBodyId, 0xFE363C8D, 0xFE363C8E,
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C8D, 0x0000001B,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x00020032, 0xFE363C8D, 0xFFFFFFFF, 0x00000021,
+    0x0001005B, (s32)(void*)btlevtcmd_reset_move_color_lv_all, 0x0002005B, (s32)(void*)btlevtcmd_CommandPayWeaponCost,
+    0xFFFFFFFE, 0x0000006E, 0x0003005B, (s32)(void*)main_genki,
+    0xFE363C8D, 0xFE363C8F, 0x00000070, 0x0001005E,
+    (s32)(void*)sac_start_camera_evt, 0x0001000A, 0x000001F4, 0x0001005B,
+    (s32)(void*)sac_enemy_slide_go, 0x0006005B, (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE,
+    (s32)(void*)str_803003F4, 0xF1194D80, 0x00000000, 0xF1194D80,
+    0x0001005E, (s32)(void*)sac_mario_item_on_evt, 0x0001000A, 0x000001F4,
+    0x0006005B, (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)str_80300408,
+    0xF1194D80, 0x00000000, 0xFE363C8B, 0x00020018,
+    0xFE363C8F, 0x00000000, 0x0001005B, (s32)(void*)star_appear,
+    0x00000020, 0x0001005B, (s32)(void*)star_stone_appear, 0x00000021,
+    0x0000006E, 0x0001005E, (s32)(void*)sac_start_stardust, 0x00000070,
+    0x00010009, 0x00000064, 0x0006005B, (s32)(void*)btlevtcmd_snd_se,
+    0xFFFFFFFE, (s32)(void*)str_8030041C, 0xF1194D80, 0x00000000,
+    0xFE363C8A, 0x0002005B, (s32)(void*)evt_snd_sfxoff, 0xFE363C8B,
+    0x0003005B, (s32)(void*)evt_btl_camera_set_mode, 0x00000000, 0x00000000,
+    0x00010009, 0x00000028, 0x0001005E, (s32)(void*)sac_mario_item_on_end_evt,
+    0x0004005B, (s32)(void*)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE, 0x00000001,
+    0x0000002A, 0x0003005B, (s32)(void*)btlevtcmd_SetMoveSpeed, 0xFFFFFFFE,
+    0xF24A8680, 0x0005005B, (s32)(void*)btlevtcmd_GetPos, 0xFFFFFFFE,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0008005B,
+    (s32)(void*)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFFFFFFB5, 0xFE363C81,
+    0xFE363C82, 0x00000000, 0xFFFFFFFF, 0x00000000,
+    0x0004005B, (s32)(void*)btlevtcmd_AnimeChangePose, 0xFFFFFFFE, 0x00000001,
+    (s32)(void*)str_80421D3C, 0x00010009, 0x00000028, 0x0002005B,
+    (s32)(void*)evt_snd_sfxoff, 0xFE363C8A, 0x0001005B, (s32)(void*)sac_ac_help_on,
+    0x0001005B, (s32)(void*)start_game, 0x0001005B, (s32)(void*)wait_game_end,
+    0x0001005B, (s32)(void*)sac_ac_help_off, 0x0004005B, (s32)(void*)get_score,
+    0xFE363C8A, 0xFE363C8B, 0xFE363C8C, 0x00010009,
+    0x00000046, 0x0004005B, (s32)(void*)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE,
+    0x00000001, 0x0000002A, 0x0005005B, (s32)(void*)btlevtcmd_GetHomePos,
+    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0003005B, (s32)(void*)btlevtcmd_SetMoveSpeed, 0xFFFFFFFE, 0xF24A8680,
+    0x0008005B, (s32)(void*)btlevtcmd_MovePosition, 0xFFFFFFFE, 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x00000000, 0xFFFFFFFF,
+    0x00000000, 0x0004005B, (s32)(void*)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE,
+    0x00000001, 0x00000028, 0x0001005B, (s32)(void*)status_on,
+    0x0003005B, (s32)(void*)evt_btl_camera_set_mode, 0x00000000, 0x00000007,
+    0x0004005B, (s32)(void*)evt_btl_camera_set_homing_unit, 0x00000000, 0xFFFFFFFE,
+    0xFFFFFFFF, 0x0003005B, (s32)(void*)evt_btl_camera_set_zoom, 0x00000000,
+    0x000000C8, 0x0003005B, (s32)(void*)evt_btl_camera_set_moveSpeedLv, 0x00000000,
+    0x00000002, 0x0003005B, (s32)(void*)evt_btl_camera_set_zoomSpeedLv, 0x00000000,
+    0x00000002, 0x00020032, 0xFE363C8F, 0xFE363C8A,
+    0x00020035, 0xFE363C8F, 0xFE363C8B, 0x00020035,
+    0xFE363C8F, 0xFE363C8C, 0x0002001D, 0xFE363C8F,
+    0x00000001, 0x0001005B, (s32)(void*)sac_wao, 0x00000021,
+    0x00020019, 0xFE363C8D, 0xFFFFFFFF, 0x0003005B,
+    (s32)(void*)evt_snd_sfxon, (s32)(void*)str_80300438, 0x00000000, 0x00020032,
+    0xFE363C89, 0xFFFFFFFE, 0x0001005E, (s32)(void*)status_recover_evt,
+    0x0004005B, (s32)(void*)btlevtcmd_RecoverHp, 0xFFFFFFFE, 0x00000001,
+    0xFE363C8A, 0x0005005B, (s32)(void*)btlevtcmd_GetPos, 0xFFFFFFFE,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x000F005B,
+    (s32)(void*)evt_eff, (s32)(void*)&float_0_80421d44, (s32)(void*)str_80300450, 0x00000002,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000032,
+    0x00000032, 0x00000032, 0x00000064, 0x00000000,
+    0x00000000, 0x00000000, 0x00000000, 0x00020032,
+    0xFE363C89, 0xFE363C8D, 0x0001005E, (s32)(void*)status_recover_evt,
+    0x0002005B, (s32)(void*)btlevtcmd_StartWaitEvent, 0xFE363C8D, 0x0004005B,
+    (s32)(void*)btlevtcmd_RecoverHp, 0xFE363C8D, 0xFE363C8E, 0xFE363C8B,
+    0x0005005B, (s32)(void*)btlevtcmd_GetPos, 0xFE363C8D, 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x000F005B, (s32)(void*)evt_eff,
+    (s32)(void*)&float_0_80421d44, (s32)(void*)str_80300450, 0x00000002, 0xFE363C80,
+    0xFE363C81, 0xFE363C82, 0x00000032, 0x00000032,
+    0x00000032, 0x00000064, 0x00000000, 0x00000000,
+    0x00000000, 0x00000000, 0x0004005B, (s32)(void*)btlevtcmd_RecoverFp,
+    0xFFFFFFFE, 0x00000001, 0xFE363C8C, 0x00000020,
+    0x0003005B, (s32)(void*)evt_snd_sfxon, (s32)(void*)str_80300438, 0x00000000,
+    0x00020032, 0xFE363C89, 0xFFFFFFFE, 0x0001005E,
+    (s32)(void*)status_recover_evt, 0x0004005B, (s32)(void*)btlevtcmd_RecoverHp, 0xFFFFFFFE,
+    0x00000001, 0xFE363C8A, 0x0005005B, (s32)(void*)btlevtcmd_GetPos,
+    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x000F005B, (s32)(void*)evt_eff, (s32)(void*)&float_0_80421d44, (s32)(void*)str_80300450,
+    0x00000002, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00000032, 0x00000032, 0x00000032, 0x00000064,
+    0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    0x0004005B, (s32)(void*)btlevtcmd_RecoverFp, 0xFFFFFFFE, 0x00000001,
+    0xFE363C8C, 0x00000021, 0x0001000A, 0x000003E8,
+    0x0001005B, (s32)(void*)sac_enemy_slide_return, 0x0001000A, 0x000003E8,
+    0x0003005B, (s32)(void*)evt_btl_camera_set_mode, 0x00000000, 0x00000000,
+    0x0001000A, 0x000003E8, 0x0001005B, (s32)(void*)end_genki,
+    0x0002005B, (s32)(void*)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002,
+    0x00000001,
+};
+
+// TODO: type
+s32 status_recover_evt[180] = {
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000001,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000001,
+    0x00000000, 0x00000000, 0x00000000, 0x00000021,
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000002,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000002,
+    0x00000000, 0x00000000, 0x00000000, 0x00000021,
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000003,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000003,
+    0x00000000, 0x00000000, 0x00000000, 0x00000021,
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000004,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000004,
+    0x00000000, 0x00000000, 0x00000000, 0x00000021,
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000005,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000005,
+    0x00000000, 0x00000000, 0x00000000, 0x00000021,
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000008,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000008,
+    0x00000000, 0x00000000, 0x00000000, 0x00000021,
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000009,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000009,
+    0x00000000, 0x00000000, 0x00000000, 0x00000021,
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x0000000D,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x0000000D,
+    0x00000000, 0x00000000, 0x00000000, 0x00000021,
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x0000000B,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x0000000B,
+    0x00000000, 0x00000000, 0x00000000, 0x00000021,
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x0000000F,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x0000000F,
+    0x00000000, 0x00000000, 0x00000000, 0x00000021,
+    0x0004005B, (s32)(void*)btlevtcmd_CheckStatus, 0xFE363C89, 0x00000014,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0006005B, (s32)(void*)btlevtcmd_OnOffStatus, 0xFE363C89, 0x00000014,
+    0x00000000, 0x00000000, 0x00000000, 0x00000021,
+    0x0001005B, (s32)(void*)recover_cmd_disable, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 marioAttackEvent_Genki0[7] = {
+    0x00020032, 0xFE363C8F, 0x00000000, 0x0001005E,
+    (s32)(void*)genki_evt_common, 0x00000002, 0x00000001,
+};
+
+// TODO: type
+s32 marioAttackEvent_Genki1[7] = {
+    0x00020032, 0xFE363C8F, 0x00000001, 0x0001005E,
+    (s32)(void*)genki_evt_common, 0x00000002, 0x00000001,
+};
 
