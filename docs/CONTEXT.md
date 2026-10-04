@@ -4652,3 +4652,12 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   which was on a branch from before #445 (no ~/mwccdbg mount), and the workspace rsync excluded tools/perm_*.py, which
   includes perm_unit.py that mwccdbg imports (fixed in #446). The pilot reruns after #446 merges; this run is the
   no-debugger baseline. Rule: before a launch, bring this checkout's tools/ to current main.
+- **Batch 27:** kpaHitCheck matched (99.76 -> 100: each sin/cos result named, the 180 literal divided directly; from the
+  debugger pilot's A arm, which could not run the debugger); battleCameraMain 99.71 -> 99.88 (61 -> 29 diffs) and
+  tou_gamen_screen_tev 99.39 -> 99.46; rsh_06's ext_moamoa_main 89.38 -> 90.50 (the carry-over of five shapes from
+  eki_00's structurally correct copy; the rest is colouring, scheduling and five instructions of constant-address
+  materialisation); eff_opuku_wcurtain_n64 partial. No change: eff_confetti_n64 (99.86), eff_sstar_n64 (99.52, a CSE temp
+  outranking a named web), evt_bero (99.83), all register class. Debugger pilot: wave 77 (A, no debugger: perm_unit
+  missing and no ~/mwccdbg mount) and wave 78 (B, 18:52, with mwccdbg mounted and netless bash, verified live) run the
+  same five functions from the same scores; scratch/wave78/AB.tsv records per function whether the debugger ran and
+  helped.
