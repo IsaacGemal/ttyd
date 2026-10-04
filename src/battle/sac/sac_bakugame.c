@@ -1936,6 +1936,8 @@ const f32 float_20_8042161c = 20.0f;
 const f32 float_100_80421620 = 100.0f;
 const f32 float_90_80421624 = 90.0f;
 const f32 float_270_80421628 = 270.0f;
+// The 6-byte script-name strings are 8-byte objects in the original (the text plus padding); sized to the
+// text they stay in .sdata2 instead of being 8-byte aligned into .data, and the padding comes out the same.
 const char str_8042162C[6] = "M_N_7";
 const f32 float_neg2_80421634 = -2.0f;
 const f32 float_5_80421638 = 5.0f;
