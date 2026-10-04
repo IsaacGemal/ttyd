@@ -18,13 +18,27 @@
 #include <string.h>
 #include "math_ext.h"
 #include "pmario_sound.h"
+#include "party/party_motion.h"
 #include "eff/eff_starstone.h"
 #include "eff/eff_small_star.h"
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/sac/sac_deka.h"
+#include "battle/sac/sac_common.h"
 #include "battle/sac/sac_genki.h"
 #include <stdlib.h>
+
+// Data objects defined later in this file or in other units, declared before their first use.
+extern s32 sac_start_camera_evt[];
+extern s32 sac_mario_item_on_evt[];
+extern s32 sac_mario_item_on_end_evt[];
+extern s32 sac_mario_back_home[];
+extern s32 sac_start_stardust[];
+extern s32 sac_cheer[];
+extern s32 sac_cheer_end[];
+extern s32 sac_ac_help_on[];
+extern s32 sac_ac_help_off[];
+extern u32 dmg_evt[];
 #pragma pool_data on
 static struct DekaWork* get_ptr(void);
 static void disp_2D(CameraId cameraId, void* param);  // local to this file in the original
@@ -159,15 +173,16 @@ static s32 nice_event[8] = { 0x0005005B, (s32)btlevtcmd_ACSuccessEffect, 0xFE363
 // main_star's .rodata objects (not in a header yet).
 
 const GXColor dat_80421e40 = { 0xFF, 0xFF, 0xFF, 0x00 };
-GXColor dat_80421e44 = { 0xFF, 0xFF, 0xFF, 0x00 };
+__declspec(section ".sdata2") GXColor dat_80421e44 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const GXColor dat_80421e48 = { 0xFF, 0xFF, 0xFF, 0x00 };
+__declspec(section ".sdata2") const char str_80421E4C[8] = "M_I_Y";
 
 // .sdata2 constants (names from the original object; used by name so the relocations match)
-f32 float_0p5_80421e54 = 0.5f;
-f32 float_0p25_80421e58 = 0.25f;
-f32 float_64_80421e5c = 64.0f;
-f32 float_5_80421e60 = 5.0f;
-f32 float_4_80421e64 = 4.0f;
+__declspec(section ".sdata2") f32 float_0p5_80421e54 = 0.5f;
+__declspec(section ".sdata2") f32 float_0p25_80421e58 = 0.25f;
+__declspec(section ".sdata2") f32 float_64_80421e5c = 64.0f;
+__declspec(section ".sdata2") f32 float_5_80421e60 = 5.0f;
+__declspec(section ".sdata2") f32 float_4_80421e64 = 4.0f;
 extern const f32 float_40_80421e68;
 extern const f32 float_32767_80421e6c;
 extern const f32 float_30_80421e70;
@@ -1702,6 +1717,148 @@ s32 get_result(EventEntry* event) {
     evtSetValue(event, event->args[0], p->combo);
     return 2;
 }
+
+
+// ---- EVT scripts (.data, parsed before the code's jump tables) ----
+
+// .data | .obj marioAttackEvent_Deka
+u32 marioAttackEvent_Deka[396] = {
+    0x0003005B, (u32)(void*)btlevtcmd_GetUnitId, 0xFFFFFFFC, 0xFE363C8E,
+    0x0003005B, (u32)(void*)btlevtcmd_GetBodyId, 0xFE363C8E, 0xFE363C8F,
+    0x0003005B, (u32)(void*)btlevtcmd_CheckActStatus, 0xFE363C8E, 0xFE363C80,
+    0x00020018, 0xFE363C80, 0x00000000, 0x00020032,
+    0xFE363C8E, 0xFFFFFFFF, 0x00000021, 0x0003005B,
+    (u32)(void*)btlevtcmd_GetSelectEnemy, 0xFE363C83, 0xFE363C84, 0x00020018,
+    0xFE363C83, 0xFFFFFFFF, 0x00010004, 0x00000063,
+    0x00000021, 0x0004005B, (u32)(void*)btlevtcmd_AttackDeclare, 0xFFFFFFFE,
+    0xFE363C83, 0xFE363C84, 0x0001005B, (u32)(void*)btlevtcmd_WaitGuardMove,
+    0x0002005B, (u32)(void*)btlevtcmd_CommandPayWeaponCost, 0xFFFFFFFE, 0x0003005B,
+    (u32)(void*)btlevtcmd_CommandGetWeaponAddress, 0xFFFFFFFE, 0xFE363C80, 0x0002005B,
+    (u32)(void*)btlevtcmd_WeaponAftereffect, 0xFE363C80, 0x0001005B, (u32)(void*)btlevtcmd_reset_move_color_lv_all,
+    0x0000006E, 0x0002005B, (u32)(void*)main_deka, 0xFE363C8E,
+    0x00000070, 0x0001005E, (u32)(void*)sac_start_camera_evt, 0x0001000A,
+    0x000001F4, 0x0006005B, (u32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE,
+    (u32)(void*)str_803005EC, 0xF1194D80, 0x00000000, 0xF1194D80,
+    0x0001005E, (u32)(void*)sac_mario_item_on_evt, 0x0001000A, 0x000001F4,
+    0x0006005B, (u32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)str_80300600,
+    0xF1194D80, 0x00000000, 0xFE363C8B, 0x0001005B,
+    (u32)(void*)star_stone_appear, 0x0000006E, 0x0001005E, (u32)(void*)sac_start_stardust,
+    0x00000070, 0x00010009, 0x00000064, 0x0006005B,
+    (u32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (u32)(void*)str_80300614, 0xF1194D80,
+    0x00000000, 0xF1194D80, 0x0002005B, (u32)(void*)evt_snd_sfxoff,
+    0xFE363C8B, 0x0003005B, (u32)(void*)evt_btl_camera_set_mode, 0x00000000,
+    0x00000000, 0x00010009, 0x00000028, 0x0001005E,
+    (u32)(void*)sac_mario_item_on_end_evt, 0x0002005B, (u32)(void*)btlevtcmd_SacBgsetMove, 0x00000000,
+    0x0001005E, (u32)(void*)sac_mario_back_home, 0x0001005B, (u32)(void*)wait_star_stone_take_on,
+    0x0000006E, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE,
+    0x00000001, 0x0000002C, 0x0005005B, (u32)(void*)get_ride_pos,
+    0x00000000, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0005005B, (u32)(void*)btlevtcmd_JumpSetting, 0xFFFFFFFE, 0x0000001E,
+    0x00000000, 0xF24A7C19, 0x0007005B, (u32)(void*)btlevtcmd_JumpPosition,
+    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0000001E, 0xFFFFFFFF, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePose,
+    0xFFFFFFFE, 0x00000001, (u32)(void*)str_80421E4C, 0x00000070,
+    0x0000006E, 0x00020019, 0xFE363C8E, 0xFFFFFFFF,
+    0x0003005B, (u32)(void*)btlevtcmd_GetUnitKind, 0xFFFFFFFC, 0xFE363C80,
+    0x00020018, 0xFE363C80, 0x000000E4, 0x00010005,
+    0x00000000, 0x0004005B, (u32)(void*)btlevtcmd_SetUnitWork, 0xFE363C8E,
+    0x00000003, 0x00000001, 0x0005005B, (u32)(void*)btlevtcmd_GetPos,
+    0xFE363C8E, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0004005B, (u32)(void*)btlevtcmd_SetUnitWork, 0xFE363C8E, 0x00000000,
+    0xFE363C80, 0x0004005B, (u32)(void*)btlevtcmd_SetUnitWork, 0xFE363C8E,
+    0x00000001, 0xFE363C81, 0x0004005B, (u32)(void*)btlevtcmd_SetUnitWork,
+    0xFE363C8E, 0x00000002, 0xFE363C82, 0x00010009,
+    0x00000001, 0x00000006, 0x00000021, 0x00000021,
+    0x00000070, 0x0000006E, 0x00020019, 0xFE363C8E,
+    0xFFFFFFFF, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePoseType, 0xFE363C8E,
+    0xFE363C8F, 0x0000002C, 0x0005005B, (u32)(void*)get_ride_pos,
+    0x00000001, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0005005B, (u32)(void*)btlevtcmd_JumpSetting, 0xFE363C8E, 0x0000001E,
+    0x00000000, 0xF24A7C19, 0x0007005B, (u32)(void*)btlevtcmd_JumpPosition,
+    0xFE363C8E, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0000001E, 0xFFFFFFFF, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePoseType,
+    0xFE363C8E, 0xFE363C8F, 0x0000002B, 0x00000021,
+    0x00000070, 0x00010009, 0x0000001E, 0x0001006F,
+    0xFE363C8D, 0x00010005, 0x00000000, 0x00010009,
+    0x00000001, 0x0005005B, (u32)(void*)get_ride_pos, 0x00000000,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00020035,
+    0xFE363C82, 0xF24A8E80, 0x0005005B, (u32)(void*)btlevtcmd_SetPos,
+    0xFFFFFFFE, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x00020019, 0xFE363C8E, 0xFFFFFFFF, 0x0005005B,
+    (u32)(void*)get_ride_pos, 0x00000001, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x0005005B, (u32)(void*)btlevtcmd_SetPos, 0xFE363C8E,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000021,
+    0x00000006, 0x00000070, 0x0000006E, 0x0002005B,
+    (u32)(void*)sac_cheer, 0x00000000, 0x00000070, 0x0001005B,
+    (u32)(void*)sac_ac_help_on, 0x0001005B, (u32)(void*)start_game, 0x0001005B,
+    (u32)(void*)wait_game_end, 0x0001005B, (u32)(void*)sac_ac_help_off, 0x0001005B,
+    (u32)(void*)sac_cheer_end, 0x0001000A, 0x000003E8, 0x0001005B,
+    (u32)(void*)star_stone_attack, 0x00010003, 0x0000005A, 0x0001005F,
+    0xFE363C8D, 0x0000006B, 0x0001000A, 0x000003E8,
+    0x0001005E, (u32)(void*)dmg_evt, 0x0000006D, 0x0001000A,
+    0x000001F4, 0x0000006E, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePoseType,
+    0xFFFFFFFE, 0x00000001, 0x0000002C, 0x0005005B,
+    (u32)(void*)btlevtcmd_GetHomePos, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x0005005B, (u32)(void*)btlevtcmd_JumpSetting, 0xFFFFFFFE,
+    0x0000001E, 0x00000000, 0xF24A7C19, 0x0007005B,
+    (u32)(void*)btlevtcmd_JumpPosition, 0xFFFFFFFE, 0xFE363C80, 0xFE363C81,
+    0xFE363C82, 0x0000001E, 0xFFFFFFFF, 0x0004005B,
+    (u32)(void*)btlevtcmd_AnimeChangePoseType, 0xFFFFFFFE, 0x00000001, 0x0000002B,
+    0x00000070, 0x0000006E, 0x00020019, 0xFE363C8E,
+    0xFFFFFFFF, 0x0004005B, (u32)(void*)btlevtcmd_AnimeChangePoseType, 0xFE363C8E,
+    0xFE363C8F, 0x0000002C, 0x0005005B, (u32)(void*)btlevtcmd_GetHomePos,
+    0xFE363C8E, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0005005B, (u32)(void*)btlevtcmd_JumpSetting, 0xFE363C8E, 0x0000001E,
+    0x00000000, 0xF24A7C19, 0x0007005B, (u32)(void*)btlevtcmd_JumpPosition,
+    0xFE363C8E, 0xFE363C80, 0xFE363C81, 0xFE363C82,
+    0x0000001E, 0xFFFFFFFF, 0x0002005B, (u32)(void*)btlevtcmd_StartWaitEvent,
+    0xFE363C8E, 0x00000021, 0x00000070, 0x00010009,
+    0x0000001E, 0x0003005B, (u32)(void*)evt_btl_camera_set_mode, 0x00000000,
+    0x00000000, 0x0002005B, (u32)(void*)btlevtcmd_SacBgsetMove, 0x00000001,
+    0x00020019, 0xFE363C8E, 0xFFFFFFFF, 0x0003005B,
+    (u32)(void*)btlevtcmd_GetUnitKind, 0xFFFFFFFC, 0xFE363C80, 0x00020018,
+    0xFE363C80, 0x000000E4, 0x0004005B, (u32)(void*)btlevtcmd_SetUnitWork,
+    0xFE363C8E, 0x00000003, 0x00000000, 0x00000021,
+    0x00000021, 0x0001005B, (u32)(void*)yuka_end, 0x0001005B,
+    (u32)(void*)end_deka, 0x00010003, 0x00000063, 0x0002005B,
+    (u32)(void*)btlevtcmd_StartWaitEvent, 0xFFFFFFFE, 0x00000002, 0x00000001,
+};
+
+// .data | .obj dmg_evt
+u32 dmg_evt[100] = {
+    0x0002005B, (u32)(void*)get_result, 0xFE363C8A, 0x0003005B,
+    (u32)(void*)btlevtcmd_GetSelectEnemy, 0xFE363C83, 0xFE363C84, 0x00010003,
+    0x0000000A, 0x00020018, 0xFE363C83, 0xFFFFFFFF,
+    0x00000002, 0x00000021, 0x0002001C, 0xFE363C8A,
+    0x00000001, 0x0004005B, (u32)(void*)btlevtcmd_CheckAttribute, 0xFE363C83,
+    0x00000002, 0xFE363C80, 0x00020019, 0xFE363C80,
+    0x00000000, 0x00010004, 0x0000001E, 0x00000021,
+    0x0004005B, (u32)(void*)btlevtcmd_CheckAttribute, 0xFE363C83, 0x00000004,
+    0xFE363C80, 0x00020019, 0xFE363C80, 0x00000000,
+    0x0005005B, (u32)(void*)btlevtcmd_CheckPartsAttribute, 0xFE363C83, 0xFE363C84,
+    0x00200000, 0xFE363C80, 0x00020019, 0xFE363C80,
+    0x00000000, 0x00010004, 0x0000001E, 0x00000021,
+    0x00000021, 0x00010004, 0x00000014, 0x00000021,
+    0x0002001C, 0xFE363C8A, 0x00000003, 0x0004005B,
+    (u32)(void*)btlevtcmd_CheckAttribute, 0xFE363C83, 0x00000002, 0xFE363C80,
+    0x00020019, 0xFE363C80, 0x00000000, 0x00010004,
+    0x0000001E, 0x00000021, 0x00010004, 0x00000014,
+    0x00000021, 0x00010004, 0x00000014, 0x00010003,
+    0x00000014, 0x0005005B, (u32)(void*)btlevtcmd_CheckPartsAttribute, 0xFE363C83,
+    0xFE363C84, 0x00004000, 0xFE363C80, 0x00020018,
+    0xFE363C80, 0x00000000, 0x0006005B, (u32)(void*)btlevtcmd_CommandCheckDamage,
+    0xFFFFFFFD, 0xFE363C83, 0xFE363C84, 0x00000100,
+    0xFE363C85, 0x00000021, 0x00010003, 0x0000001E,
+    0x0003005B, (u32)(void*)btlevtcmd_GetSelectNextEnemy, 0xFE363C83, 0xFE363C84,
+    0x00010004, 0x0000000A, 0x00000002, 0x00000001,
+};
+
+// Trailing section gap (all zero).
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") static u32 gap_05_803B4844_data[7] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 
 // ---- constant definitions (at end so uses emit symbol relocs) ----
