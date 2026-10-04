@@ -198,6 +198,12 @@ That is the code-score gap behind most "must be named" units, and it is not a po
 | table `static const f32 t[]` / volatile read | early load, but through a table symbol (extra object) |
 | `opt_lifetimes`, `opt_loop_invariants`, `opt_common_subs`, `opt_dead_assignments`, `opt_strength_reduction`, `scheduling` off | no effect on the lazy loads |
 
+Loop-invariant hoisting is the other lever: a value computed in a loop body from loop-invariant inputs (`dsize_half = dsize * 0.5f`,
+a kept `size = 16.0f`) is hoisted all the way to the function preheader, while the original often computes it where it is written
+(eff_kemutest's `effKemuTestDisp`: 98.1% -> 100% with `#pragma opt_loop_invariants off` on that function). Pool order follows
+instruction emission, and hoisted instructions pool after the loop body's own literals, so the pragma also changes which literal
+pools first; check `sdata2_diff.py` after adding it.
+
 Use `opt_propagation off` on the one function (`#pragma opt_propagation off` before it, `reset` after) and give each constant the
 original keeps in an FPR its own initialised local, in the original's order. eff_kemuri's `effKemuri2Entry` went 79.8% -> 99.93% this
 way with all constants literal. It is not free: in functions whose loops already have the right hoists (`effKemuriDisp`) the pragma
