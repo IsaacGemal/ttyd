@@ -2227,7 +2227,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
     char buf[0x20];
     char buf2[0x20];
 
-    winBookGX(work, 1);
+    winBookGX(work, 1, x, y);
     winKirinukiGX(work, 0, x - float_110_8041d820, y - float_160_8041d7d8, float_100_8041d824, float_50_8041d828);
     {
         const char* pmsg = msgSearch(RO(base, 0x468, str_802F6320));

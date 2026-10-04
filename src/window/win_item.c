@@ -1312,7 +1312,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     }
 
     if (WW_F32(work, 0x234) < float_320_8041d528 && WW_F32(work, 0x23C) > float_neg240_8041d4f4) {
-        winBookGX(work, 0);
+        winBookGX(work, 0, WW_F32(work, 0x234), WW_F32(work, 0x23C));
     }
 }
 
