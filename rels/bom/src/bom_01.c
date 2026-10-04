@@ -64,6 +64,10 @@ static void pose_change(s32 index, const char* name);
 static void pose_main(void);  // TODO: real signature
 static void pose_init(void);
 
+__declspec(section ".rodata") GXColor dat_bom_00006360 = {0xff, 0xff, 0xff, 0xff};
+__declspec(section ".rodata") Vec vec3_bom_00006364 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_bom_00006370 = {0.0f, 0.0f, 0.0f};
+
 // clang-format off
 extend_data(8,
      u64, negone_one, 0xBF8000003F800000,
@@ -2208,9 +2212,45 @@ static void pose_main(void) {
 // TODO: write disp_sight (global, 0x16fc bytes) here:
 // its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
-// TODO: write drawNum (global, 0x224 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+extern const f32 float_2_bom_0000704c;
 
+// Vec build helpers: keep the base Vec's z / overwrite all three, the original's vec3 -> local
+// -> field copy.
+static inline Vec numTranslate(Vec base, f32 x, f32 y) {
+    base.x = x;
+    base.y = y;
+    return base;
+}
+
+static inline Vec numScale(Vec base, f32 s) {
+    base.x = s;
+    base.y = s;
+    base.z = s;
+    return base;
+}
+
+// drawNum(): draw the last `count` decimal digits of |num|, least significant at index count-1.
+void drawNum(s32 num, s32 count, f32 a, f32 b, f32 c) {
+    s32 i;
+    GXTexObj texObj;
+    GXColor color = *(GXColor*)&dat_bom_00006360;
+    s32 n = num < 0 ? -num : num;
+
+    winTexInit(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0));
+    for (i = 0; i < count; i++) {
+        s32 texId = n % 10 + 0xd;
+        u16 w;
+        f32 step;
+
+        TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0), &texObj, texId);
+        w = GXGetTexObjWidth(&texObj);
+        step = c * (f32)w;
+        step += float_2_bom_0000704c;
+        winTexSet(texId, numTranslate(vec3_bom_00006364, step * (f32)(count - i - 1) + a, b),
+                  numScale(vec3_bom_00006370, c), color);
+        n /= 10;
+    }
+}
 
 extern const f32 float_deg2rad_bom_000070d4;
 

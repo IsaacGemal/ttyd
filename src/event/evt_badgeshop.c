@@ -154,7 +154,15 @@ s32 bottakuruComp(const void** sortA, const void** sortB) {
 // `[0]` through base+scaled-index (`stwx r24, r28, r25`), so it keeps a row pointer AND an
 // integer offset; ours strength-reduces `table[dobreak][0]` to the same pointer and drops
 // the offset register. An explicit `u32 off`/`(u8*)table + off` is folded into `p` too.
-// NONMATCHING (97.14%): target keeps base+scaled-index for the `[0]` store; regalloc.
+// The fill loop's `[0]` store now reaches the target's base+scaled-index form (`stwx
+// base,offset`) once the table is read through a row pointer and the index is kept signed
+// (the cast is a MUST_MATCH device: with a plain `dobreak` MWCC folds the index into a row
+// pointer instead of keeping an offset register). What is left is a two-register swap in
+// that loop: the target keeps `count` in r21 and the `[1]` pointer copy in r23, this build
+// puts the copy in r21 and `count` in r23. That swaps the `extsh`/`mr`/`stw`/`cmpw` operands
+// and the last loop's base/bp register choice, and shifts the branch offsets. Declaration
+// order, the increment order of `p`/`bp`, count types and the relevant pragmas were tried.
+// NONMATCHING (97.97%): remaining diff is the r21/r23 count-vs-`bp` swap above.
 void badgeShop_bottakuruGeneration(void) {
 	s32 table[0x11][2];
 	s16 count;
@@ -162,6 +170,7 @@ void badgeShop_bottakuruGeneration(void) {
 	u32 k;
 	s32* bp;
 	s32* p;
+	s32 (*base)[2];
 	s32 i;
 	u32 dobreak;
 	u32 m;
@@ -171,14 +180,23 @@ void badgeShop_bottakuruGeneration(void) {
 	}
 
 	dobreak = 0;
+	base = table;
 	p = (s32*)table;
 	for (i = 0; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
 		count = badgeShop_get(bdsw->bottakuru_table, (s16)(i + KEY_ITEM_MIN)); //inline
+		bp = p;
 		for (j = 0; j < count; j++) {
-			p[1] = irand(100);
-			table[dobreak][0] = i + KEY_ITEM_MIN;
+			bp[1] = irand(100);
+#ifdef MUST_MATCH
+			// `(s32)dobreak` is a no-op for the 0..15 index; it only tells MWCC to keep the
+			// index as a signed value so it strength-reduces to the target's byte-offset IV.
+			base[(s32)dobreak][0] = i + KEY_ITEM_MIN;
+#else
+			base[dobreak][0] = i + KEY_ITEM_MIN;
+#endif
 			dobreak += 1;
 			p += 2;
+			bp += 2;
 			if (dobreak >= 0x10) break;
 		}
 		if (dobreak >= 0x10) break;
@@ -189,7 +207,7 @@ void badgeShop_bottakuruGeneration(void) {
 	for (i = 0; i < 4; i++) { //only 4 slots
 		bp = badge_bottakuru_table;
 		for (m = 0; m < 0x11; m++) {
-			if (table[i][0] == *bp) {
+			if (base[i][0] == *bp) {
 				evtSetValue(NULL, i + GSW(118), m);
 			}
 			bp++;

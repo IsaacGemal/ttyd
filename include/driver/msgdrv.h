@@ -5,6 +5,7 @@ typedef struct WindowEntry WindowEntry;
 typedef struct EventEntry EventEntry;
 #include "memory.h"
 
+
 typedef struct MsgDataEntry {
 	u32 field_0x0; //0x0, probably a GXColor?
 	u16 glyph; //0x4

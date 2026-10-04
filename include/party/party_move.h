@@ -19,6 +19,7 @@ f32 unk_800c92c4(PartyEntry* party);
 void N_partyPlaySfxPartyLanding1(PartyEntry* party);
 s32 unk_800c8dd0(HitEntry* hit);
 void partyChkWall(PartyEntry* party);
+s32 partyMarioHosei(PartyEntry* party);
 void unk_800c9044(PartyEntry* party);
 void partyMove(PartyEntry* party);
 f32 unk_800c9398(PartyEntry* party, f32 value);

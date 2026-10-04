@@ -4183,3 +4183,11 @@ Code linked had sat at ~36% for days while matching ran ahead. One evening moved
   msgWindow_Disp, winRootMain, winBookGX, nameMain, select_disp_mario, bom_01 x3 and others) and 25 near-miss
   agents. The data-port prompt adds Claude #1's rule: name the field offset of every store and the symbol of every
   float constant the asm uses, and confirm the C matches; fuzzy scores see neither.
+- **Wave 69, batch 1** (onto main a72d61b2): code linked -> 48.85%, 9,348 -> 9,353. Links: eff_kumokumo_n64,
+  eff_ripple_n64, party_move, party_vivian (battle_damage and fadedrv didn't). Data-port, with the store-offset /
+  float-constant rule in the prompt: BattleActionCommandCheckDefence 34.6 -> 100%, nameMain and bom_01 drawNum
+  0 -> 100%, party_motion_homing_walk 0 -> 99.6% (the review confirmed all three earlier traps and the guards
+  fixed), select_disp_mario 0 -> 99.6%, ext_yuunpc_minigame4_init_sub and winRootMain 0 -> 97%. The review
+  (`scratch/wave69/review1.md`) found no HIGH or MEDIUM: the first data-port batch under the new rule to come back
+  clean. One agent's include.patch changed winBookGX's existing prototype and broke win_item/win_log; only its five
+  new prototypes were kept. Wave 70 (20:50, 30 near-miss agents) runs alongside wave 69's last agents.

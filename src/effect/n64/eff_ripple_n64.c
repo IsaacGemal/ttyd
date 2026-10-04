@@ -22,8 +22,11 @@ const f32 float_1p05_8041fbb4;
 const f32 float_0p1_8041fbb8;
 const f32 float_0p6_8041fbbc;
 const f32 float_10_8041fbc0;
-// .sbss2 TEV colour base (zero-initialised).
-const GXColor unk_80423248;
+// .sbss2 TEV colour base (zero-initialised). The .sdata/.sbss2 pragma pair puts the object in
+// .sbss2; a plain tentative const definition would land in .sbss.
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80423248;
+#pragma section ".sdata" ".sbss"
 // .data vertex array for effRippleDisp (0x38 bytes).
 u32 size16x16_tex32x32_0_vtx[14] = {
 	0xFFF80000, 0xFFF80000, 0x00000000, 0x00FF0008, 0x0000FFF8, 0x04000000, 0x000000FF,
@@ -49,25 +52,25 @@ EffectEntry* effRippleN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	data->z = z;
 	data->field_0x18 = 0;
 	data->field_0x20 = 0;
-	data->rx = 0.0f;
-	data->rz = 0.0f;
-	data->field_0x14 = 1.0f;
+	data->rx = float_0_8041fba0;
+	data->rz = float_0_8041fba0;
+	data->field_0x14 = float_1_8041fbac;
 	data->camId = 4;
 	switch (type) {
 		case 1:
 		case 10:
-			data->field_0x10 = 0.6f;
+			data->field_0x10 = float_0p6_8041fbbc;
 			break;
 		case 2:
 		case 20:
-			data->field_0x10 = 10.0f;
+			data->field_0x10 = float_10_8041fbc0;
 			break;
 		case 3:
 		case 30:
-			data->field_0x10 = 10.0f;
+			data->field_0x10 = float_10_8041fbc0;
 			break;
 		default:
-			data->field_0x10 = 1.0f;
+			data->field_0x10 = float_1_8041fbac;
 			break;
 	}
 	data->field_0x1C = 0x20;

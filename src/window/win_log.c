@@ -1958,12 +1958,16 @@ extern const f32 float_neg148_8041d898;
 // `GXColor cc = c0` copy) with the `Vec` arguments left as inline `logMkVec`/`LV` expressions fixed the
 // by-value temp region; the two pragmas below give the original's FPR/GPR colouring. Both pragmas are
 // load-bearing: loop-only 94.35%, common-only 93.80%, neither 92.86%.
-// Remaining (94.84%): behaviour complete; register colouring, the int->float magic read at base+0x420 vs our
+// Later fixes: the 0xBC lane sums `(float_220 + x) + d` through a named `bx` so MWCC keeps the original's
+// `fadds f0, f0, f30` operand order; the bounce `__fabs` result is held in an explicit f64 temp so it stays
+// in f0 (`fabs f0, f0; frsp f29, f0`); and the icon `cc` copy is made after `winIconInit()` in a nested block,
+// which is where the original loads the colour from the c1 slot.
+// Remaining (95.47%): behaviour complete; register colouring, the int->float magic read at base+0x420 vs our
 // anonymous @N pool entry, the `extrwi.`-branch texture id (ours computes 0xBA-((count>>4)&1) branchless),
-// and the low by-value colour region (ours sits 4 bytes below the original, which keeps a dead colour slot at 0x8).
+// and the dead third-colour slot (original 0x8, ours 0x38) that shifts the by-value temp region.
 // opt_loop_invariants off: the target recomputes the vec3/colour loads inside the tubuDt loop, not hoisted.
 // opt_common_subs off: needed for the original's FPR/GPR colouring and by-value temp layout.
-// NONMATCHING (94.85%): behaviour complete; only register/allocation and the rodata-base conversion differ.
+// NONMATCHING (95.47%): behaviour complete; only register/allocation and the rodata-base conversion differ.
 #pragma opt_loop_invariants off
 #pragma opt_common_subs off
 void mapGX(WindowWork* work, f32 x, f32 y) {
@@ -2035,10 +2039,22 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 k = 6;
             }
             if (icon != -1) {
+#ifdef MUST_MATCH
+                // Match-only: the original loads the colour copy from the `c1`
+                // slot after `winIconInit()`; declaring `cc` before the call
+                // makes MWCC read the live `c2` slot first and shifts the
+                // by-value temp region down 8 bytes.
+                winIconInit();
+                {
+                    GXColor cc = c2;
+                    logIconSet(icon, &cc, logMkVec(LV(0x188, vec3_802f6040), tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1])), LV(0x194, vec3_802f604c));
+                }
+#else
                 GXColor cc = c2;
 
                 winIconInit();
                 logIconSet(icon, &cc, logMkVec(LV(0x188, vec3_802f6040), tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1])), LV(0x194, vec3_802f604c));
+#endif
             }
         }
         if (w->pose != -1) {
@@ -2067,7 +2083,18 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         winTexSet(0xBF, logMkVec(LV(0x1B8, vec3_802f6070), float_4_8041d88c + (float_230_8041d878 + x), y), LV(0x1C4, vec3_802f607c), c1);
         winTexSet(0xBF, logMkVec(LV(0x1D0, vec3_802f6088), x, float_4_8041d88c + top), LV(0x1DC, vec3_802f6094), c1);
         winTexSet(0xBF, logMkVec(LV(0x1E8, vec3_802f60a0), x, (y - float_120_8041d870) - float_4_8041d88c), LV(0x1F4, vec3_802f60ac), c1);
+#ifdef MUST_MATCH
+        // Match-only: keep __fabs's double result in f0 (the original does
+        // `fabs f0, f0; frsp f29, f0`); without the explicit f64 temp MWCC
+        // folds the abs into the callee-saved f29 (`fabs f29, f0`).
+        {
+            f32 b = float_2_8041d87c * (f32)sin((f32)gp->retraceCount * float_0p125_8041d890);
+            f64 c = __fabs((f64)b);
+            bounce = (f32)c;
+        }
+#else
         bounce = (f32)__fabs(float_2_8041d87c * (f32)sin((f32)gp->retraceCount * float_0p125_8041d890));
+#endif
         winTexInit(LOG_TEXPAL());
         if (float_neg240_8041d894 == w->mapScrollY) {
             d = float_0_8041d7bc;
@@ -2081,7 +2108,16 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
             d = bounce;
         }
         winTexInit(LOG_TEXPAL());
+#ifdef MUST_MATCH
+        // Match-only: hoist the `float_220 + x` lane subexpression so MWCC keeps
+        // the original `fadds f0, f0, f30` operand order instead of commuting it.
+        {
+            f32 bx = float_220_8041d868 + x;
+            winTexSet(0xBC, logMkVec(LV(0x218, vec3_802f60d0), bx + d, y), LV(0x224, vec3_802f60dc), c1);
+        }
+#else
         winTexSet(0xBC, logMkVec(LV(0x218, vec3_802f60d0), float_220_8041d868 + x + d, y), LV(0x224, vec3_802f60dc), c1);
+#endif
         if (float_0_8041d7bc == w->mapScrollY) {
             d = float_0_8041d7bc;
         } else {
