@@ -35,120 +35,258 @@ __declspec(section ".rodata") f64 dbl_0p5 = 0.5;
 __declspec(section ".rodata") f64 dbl_3 = 3.0;
 __declspec(section ".rodata") f64 dbl_0 = 0.0;
 __declspec(section ".rodata") f64 dbl_45 = 45.0;
-__declspec(section ".rodata") f64 dbl_toint = 4503601774854144.0;
 
 
 // Include this after the prefix: <math.h> would emit its extern-inline sqrtf/sqrt weak-local _half/_three
 // doubles ahead of the pooled constants and shift them off the target offsets. math_ext.h declares the
 // same MSL ABI without those bodies; fabsf is kept as the __fabsf (fabs) intrinsic, as <math.h> defines it.
 #include "math_ext.h"
+
+// Data objects defined later in this file or in other units, declared before their first use.
+extern f32 rollData[];
 #define fabsf(x) __fabsf(x)
 
 // MSL quiet-NaN bit pattern, used by the inlined sqrtf negative/NaN paths (headers disagree on its type).
 extern int __float_nan[];
 // locals for symbols with no home header
 extern s32 roll_flyout_flag2;
-extern f32 rollData;
 
-void mot_fall_roll(void) {
+void marioRollFixOn(void) {
     MarioWork* mario = marioGetPtr();
-    f32 spd = marioGetFallSpd();
-    f32 y;
-    void* hit;
 
-    if (spd < -10.0f) {
-        spd = -10.0f;
-    }
-    hit = marioChkLandon(&y, spd);
-    if (hit != NULL) {
-        mario->position.y = y;
-        mario->hitobjStandOn = hit;
-        mario->hitobjJumpFrom = NULL;
-    } else {
-        mario->position.y += spd;
-    }
-    if (mario->hitobjStandOn != NULL) {
-        marioLandOn();
-        roll_flyout_flag2 = 0;
+    if (mario->currMotionId == 0x16) {
+        *(u32*)((u8*)mario + 0x2A4) |= 0x200;
     }
 }
 
-// dont_inline: original keeps roll_upstairs as a real call (bl roll_upstairs) from mot_roll;
-// MWCC's -inline auto would otherwise inline this small function.
-#pragma dont_inline on
-void roll_upstairs(void) {
+BOOL unk_8009fcbc(void) {
     MarioWork* mario = marioGetPtr();
 
-    mario->position.y += *(f32*)((u8*)mario + 0x7C);
-    if ((s32)--mario->multiTimer <= 0) {
-        mario->flags &= ~0x80;
-        mario->flags &= ~0x40;
-        mario->flags &= ~0x40000;
+    if (*(u32*)((u8*)mario + 0x2A4) & 0x200) {
+        return TRUE;
+    }
+    if (mario->flags & 0x08000000) {
+        return TRUE;
+    }
+    if (mario->hitobjStandOn == NULL) {
+        return TRUE;
+    }
+    return marioSlitChkWallAround() != 0;
+}
+
+BOOL marioRollKeyDisable(void) {
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->currMotionId != 0x16) {
+        return TRUE;
+    }
+    if ((s32)mario->currSubMotionId >= 0 && (s32)mario->currSubMotionId <= 1) {
+        return FALSE;
+    }
+    if ((s32)mario->currSubMotionId >= 0x14 && (s32)mario->currSubMotionId <= 0x16) {
+        return FALSE;
+    }
+    return TRUE;
+}
+
+void setRollEvtFlag(void) {
+    MarioWork* mario = marioGetPtr();
+
+    *(u32*)((u8*)mario + 0x2A4) |= 0x100;
+}
+
+void clrRollEvtFlag(void) {
+    MarioWork* mario = marioGetPtr();
+
+    *(u32*)((u8*)mario + 0x2A4) &= ~0x100;
+}
+
+BOOL getRollEvtFlag(void) {
+    BOOL r = FALSE;
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->flags & 0x01000000) {
+        if (*(u32*)((u8*)mario + 0x2A4) & 0x100) {
+            r = TRUE;
+        }
+    }
+    return r;
+}
+
+void marioResetRollSpd(void) {
+    MarioWork* mario = marioGetPtr();
+    f32 zero;
+
+    if (mario->currMotionId == 0x16) {
+        if (marioGetPtr()->motStruct != NULL) {
+            zero = 0.0f;
+            *(f32*)((u8*)marioGetPtr()->motStruct + 0x0) = zero;
+            zero = 0.0f;
+            *(f32*)((u8*)marioGetPtr()->motStruct + 0x4) = zero;
+        }
+        mario->baseSpeed = 0.0f;
     }
 }
 
-#pragma dont_inline off
-void roll_upstairs_on(void) {
+void marioForceRollAnime(void) {
     MarioWork* mario = marioGetPtr();
 
-    mario->flags |= 0x40000;
-    mario->flags |= 0x80;
-    marioClearJumpPara();
-    mario->multiTimer = 3;
-    {
-        u32 t = mario->multiTimer;
-        *(f32*)((u8*)mario + 0x7C) =
-            (*(f32*)((u8*)mario + 0x1C4) - mario->position.y) / (f32)(s32)t;
-    }
-    *(f32*)((u8*)mario + 0x7C) = 4.0f;
-    *(f32*)((u8*)mario + 0x80) = -0.42f;
-    *(f32*)((u8*)mario + 0x84) = 0.04f;
-    *(f32*)((u8*)mario + 0x88) = -0.01f;
-}
-void marioReInit_roll(void) {
-    MarioWork* mario = marioGetPtr();
-    void* mem;
-
-    mem = __memAlloc(HEAP_DEFAULT, 0x14);
-    marioGetPtr()->motStruct = mem;
-    memset(marioGetPtr()->motStruct, 0, 0x14);
-    {
-        MarioWork* m = marioGetPtr();
-        *(s32*)((u8*)m + 0x2A8) = -1;
-    }
-    mario->trigFlags &= ~1;
-    mario->currMotionId = 0x16;
-    mario->flags |= 0x01000000;
-    mario->field_0x8 = 0x10;
+    marioPaperOff();
+    marioChgPaper(NULL);
     marioPaperOn("p_roll");
     marioChgPose("M_I_U");
     marioChgPaper("PM_R_1B");
     mario->dispFlags |= 0x8;
     mario->dispFlags |= 0x100;
-    mario->currSubMotionId = 0x1E;
-    mario = marioGetPtr();
-    mario->wPlayerCollisionBox.x = 14.8f;
-    mario->wPlayerCollisionBox.y = 14.8f;
-    mario->mBaseDashSpeed = rollData;
-    *(f32*)((u8*)marioGetPtr()->motStruct + 0x0) = 0.0f;
-    *(f32*)((u8*)marioGetPtr()->motStruct + 0x4) = 0.0f;
-    *(f32*)((u8*)mario + 0xB0) = -6.0f;
-    *(f32*)((u8*)mario + 0xB4) = 6.0f;
-    *(f32*)((u8*)mario + 0x98) = 6.0f;
-    *(f32*)((u8*)mario + 0x9C) = 0.0f;
-    mario->scale.x = 1.0f;
-    mario->scale.y = 1.0f;
-    mario->scale.z = 1.0f;
-    *(f32*)((u8*)mario + 0x130) = 1.0f;
-    allPartyForceRideOn();
 }
 
-void rollEvtJumpSetup(void) {
+BOOL unk_8009f9c8(void) {
+    BOOL res = FALSE;
+    MarioWork* mario = marioGetPtr();
+    MarioWork* m2;
+    s32 cond = 0;
+
+    if (!(mario->flags & 0x01000000)) {
+        return FALSE;
+    }
+    if (*(u32*)((u8*)mario + 0x2A4) & 0x200) {
+        return FALSE;
+    }
+    m2 = marioGetPtr();
+    if ((*(u32*)((u8*)m2 + 0x2A4) & 0x200) != 0) {
+        cond = 1;
+    } else if ((m2->flags & 0x08000000) != 0) {
+        cond = 1;
+    } else if (m2->hitobjStandOn == NULL) {
+        cond = 1;
+    } else if (marioSlitChkWallAround()) {
+        cond = 1;
+    } else {
+        cond = 0;
+    }
+    if (cond == 0) {
+        mario->currSubMotionId = 0x14;
+        res = TRUE;
+        camGetPtr(CAMERA_2D)->flags |= 0x200;
+    }
+    return res;
+}
+
+BOOL marioRollCancel(void) {
     MarioWork* mario = marioGetPtr();
 
-    camFollowYOff();
-    mario->flags |= 0x10000;
-    mario->airTimer = 1;
+    if (!(mario->flags & 0x01000000)) {
+        return FALSE;
+    }
+    if (*(u32*)((u8*)mario + 0x2A4) & 0x200) {
+        return FALSE;
+    }
+    mario->currSubMotionId = 0x14;
+    camGetPtr(CAMERA_2D)->flags |= 0x200;
+    return TRUE;
+}
+
+// 100%: same fix as marioRollForceCancel - the source pointer must not be `const`.
+void mot_roll_post(void) {
+    Vec* vec = vec3_802c5d40;
+    MarioWork* mario = marioGetPtr();
+    MarioWork* m2 = marioGetPtr();
+
+    if (*(u32*)((u8*)m2 + 0x2A8) != 0xFFFFFFFF) {
+        psndSFXOff(*(s32*)((u8*)m2 + 0x2A8));
+        *(s32*)((u8*)m2 + 0x2A8) = -1;
+    }
+    {
+        MarioWork* m3 = marioGetPtr();
+        m3->unk148 = 0.0f;
+        m3->unk150.z = 0.004f;
+    }
+    if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
+        mario->unk1A8 = 0.0f;
+        *(f32*)((u8*)mario + 0x1AC) = 0.0f;
+        *(f32*)((u8*)mario + 0x19C) = 270.0f;
+        mario->directionView = 270.0f;
+    } else {
+        mario->unk1A8 = 180.0f;
+        *(f32*)((u8*)mario + 0x1AC) = 180.0f;
+        *(f32*)((u8*)mario + 0x19C) = 90.0f;
+        mario->directionView = 90.0f;
+    }
+    marioSetSpec();
+    mario->field_0x8 = 0;
+    {
+        Vec* dst = (Vec*)((u8*)mario + 0xB0);
+        *dst = vec[1];
+    }
+    {
+        Vec* dst = (Vec*)((u8*)mario + 0x98);
+        *dst = vec[2];
+    }
+    {
+        Vec* dst = (Vec*)((u8*)mario + 0xBC);
+        *dst = vec[3];
+    }
+    mario->dispFlags &= ~0x100;
+    mario->dispFlags &= ~0x8;
+    mario->flags &= ~0x01000000;
+    marioPaperOff();
+    marioAdjustMoveDir();
+    marioChgPose("M_S_1");
+    if (marioGetPtr()->motStruct != NULL) {
+        __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
+        marioGetPtr()->motStruct = NULL;
+    }
+    allPartyRideOff();
+}
+
+// 100%: the source array must be reached through a non-const pointer. A `const Vec*`
+// made MWCC software-pipeline the three Vec copies (load/store interleaved, r0/r3
+// swapped) instead of the original's load,load,store,store,load,store grouping.
+void marioRollForceCancel(void) {
+    Vec* vec = vec3_802c5d40;
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->currMotionId == 0x16) {
+        MarioWork* m2 = marioGetPtr();
+
+        if (*(u32*)((u8*)m2 + 0x2A8) != 0xFFFFFFFF) {
+            psndSFXOff(*(s32*)((u8*)m2 + 0x2A8));
+            *(s32*)((u8*)m2 + 0x2A8) = -1;
+        }
+        {
+            MarioWork* m3 = marioGetPtr();
+            m3->unk148 = 0.0f;
+            m3->unk150.z = 0.004f;
+        }
+        if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
+            mario->unk1A8 = 0.0f;
+            *(f32*)((u8*)mario + 0x1AC) = 0.0f;
+            *(f32*)((u8*)mario + 0x19C) = 270.0f;
+            mario->directionView = 270.0f;
+        } else {
+            mario->unk1A8 = 180.0f;
+            *(f32*)((u8*)mario + 0x1AC) = 180.0f;
+            *(f32*)((u8*)mario + 0x19C) = 90.0f;
+            mario->directionView = 90.0f;
+        }
+        marioSetSpec();
+        mario->field_0x8 = 0;
+        *(Vec*)((u8*)mario + 0xB0) = vec[4];
+        *(Vec*)((u8*)mario + 0x98) = vec[5];
+        *(Vec*)((u8*)mario + 0xBC) = vec[6];
+        mario->dispFlags &= ~0x100;
+        mario->dispFlags &= ~0x8;
+        mario->flags &= ~0x01000000;
+        marioPaperOff();
+        marioAdjustMoveDir();
+        marioChgPose("M_S_1");
+        if (marioGetPtr()->motStruct != NULL) {
+            __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
+            marioGetPtr()->motStruct = NULL;
+        }
+        allPartyRideOff();
+        marioChgMotSub(0, 0);
+    }
 }
 
 // helper inlined by MWCC into marioSetRollDispDir (100%); `hi` must be computed after the
@@ -277,244 +415,52 @@ void marioSetRollDispDir(void) {
     }
 }
 
-extern f32 rollData;
 
-// 100%: the source array must be reached through a non-const pointer. A `const Vec*`
-// made MWCC software-pipeline the three Vec copies (load/store interleaved, r0/r3
-// swapped) instead of the original's load,load,store,store,load,store grouping.
-void marioRollForceCancel(void) {
-    Vec* vec = vec3_802c5d40;
+
+void rollEvtJumpSetup(void) {
     MarioWork* mario = marioGetPtr();
 
-    if (mario->currMotionId == 0x16) {
-        MarioWork* m2 = marioGetPtr();
-
-        if (*(u32*)((u8*)m2 + 0x2A8) != 0xFFFFFFFF) {
-            psndSFXOff(*(s32*)((u8*)m2 + 0x2A8));
-            *(s32*)((u8*)m2 + 0x2A8) = -1;
-        }
-        {
-            MarioWork* m3 = marioGetPtr();
-            m3->unk148 = 0.0f;
-            m3->unk150.z = 0.004f;
-        }
-        if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
-            mario->unk1A8 = 0.0f;
-            *(f32*)((u8*)mario + 0x1AC) = 0.0f;
-            *(f32*)((u8*)mario + 0x19C) = 270.0f;
-            mario->directionView = 270.0f;
-        } else {
-            mario->unk1A8 = 180.0f;
-            *(f32*)((u8*)mario + 0x1AC) = 180.0f;
-            *(f32*)((u8*)mario + 0x19C) = 90.0f;
-            mario->directionView = 90.0f;
-        }
-        marioSetSpec();
-        mario->field_0x8 = 0;
-        *(Vec*)((u8*)mario + 0xB0) = vec[4];
-        *(Vec*)((u8*)mario + 0x98) = vec[5];
-        *(Vec*)((u8*)mario + 0xBC) = vec[6];
-        mario->dispFlags &= ~0x100;
-        mario->dispFlags &= ~0x8;
-        mario->flags &= ~0x01000000;
-        marioPaperOff();
-        marioAdjustMoveDir();
-        marioChgPose("M_S_1");
-        if (marioGetPtr()->motStruct != NULL) {
-            __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
-            marioGetPtr()->motStruct = NULL;
-        }
-        allPartyRideOff();
-        marioChgMotSub(0, 0);
-    }
+    camFollowYOff();
+    mario->flags |= 0x10000;
+    mario->airTimer = 1;
 }
 
-// 100%: same fix as marioRollForceCancel - the source pointer must not be `const`.
-void mot_roll_post(void) {
-    Vec* vec = vec3_802c5d40;
+void marioReInit_roll(void) {
     MarioWork* mario = marioGetPtr();
-    MarioWork* m2 = marioGetPtr();
+    void* mem;
 
-    if (*(u32*)((u8*)m2 + 0x2A8) != 0xFFFFFFFF) {
-        psndSFXOff(*(s32*)((u8*)m2 + 0x2A8));
-        *(s32*)((u8*)m2 + 0x2A8) = -1;
-    }
+    mem = __memAlloc(HEAP_DEFAULT, 0x14);
+    marioGetPtr()->motStruct = mem;
+    memset(marioGetPtr()->motStruct, 0, 0x14);
     {
-        MarioWork* m3 = marioGetPtr();
-        m3->unk148 = 0.0f;
-        m3->unk150.z = 0.004f;
+        MarioWork* m = marioGetPtr();
+        *(s32*)((u8*)m + 0x2A8) = -1;
     }
-    if (revise360(mario->directionView - mario->targetYaw) >= 180.0f) {
-        mario->unk1A8 = 0.0f;
-        *(f32*)((u8*)mario + 0x1AC) = 0.0f;
-        *(f32*)((u8*)mario + 0x19C) = 270.0f;
-        mario->directionView = 270.0f;
-    } else {
-        mario->unk1A8 = 180.0f;
-        *(f32*)((u8*)mario + 0x1AC) = 180.0f;
-        *(f32*)((u8*)mario + 0x19C) = 90.0f;
-        mario->directionView = 90.0f;
-    }
-    marioSetSpec();
-    mario->field_0x8 = 0;
-    {
-        Vec* dst = (Vec*)((u8*)mario + 0xB0);
-        *dst = vec[1];
-    }
-    {
-        Vec* dst = (Vec*)((u8*)mario + 0x98);
-        *dst = vec[2];
-    }
-    {
-        Vec* dst = (Vec*)((u8*)mario + 0xBC);
-        *dst = vec[3];
-    }
-    mario->dispFlags &= ~0x100;
-    mario->dispFlags &= ~0x8;
-    mario->flags &= ~0x01000000;
-    marioPaperOff();
-    marioAdjustMoveDir();
-    marioChgPose("M_S_1");
-    if (marioGetPtr()->motStruct != NULL) {
-        __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
-        marioGetPtr()->motStruct = NULL;
-    }
-    allPartyRideOff();
-}
-
-BOOL marioRollCancel(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (!(mario->flags & 0x01000000)) {
-        return FALSE;
-    }
-    if (*(u32*)((u8*)mario + 0x2A4) & 0x200) {
-        return FALSE;
-    }
-    mario->currSubMotionId = 0x14;
-    camGetPtr(CAMERA_2D)->flags |= 0x200;
-    return TRUE;
-}
-
-BOOL unk_8009f9c8(void) {
-    BOOL res = FALSE;
-    MarioWork* mario = marioGetPtr();
-    MarioWork* m2;
-    s32 cond = 0;
-
-    if (!(mario->flags & 0x01000000)) {
-        return FALSE;
-    }
-    if (*(u32*)((u8*)mario + 0x2A4) & 0x200) {
-        return FALSE;
-    }
-    m2 = marioGetPtr();
-    if ((*(u32*)((u8*)m2 + 0x2A4) & 0x200) != 0) {
-        cond = 1;
-    } else if ((m2->flags & 0x08000000) != 0) {
-        cond = 1;
-    } else if (m2->hitobjStandOn == NULL) {
-        cond = 1;
-    } else if (marioSlitChkWallAround()) {
-        cond = 1;
-    } else {
-        cond = 0;
-    }
-    if (cond == 0) {
-        mario->currSubMotionId = 0x14;
-        res = TRUE;
-        camGetPtr(CAMERA_2D)->flags |= 0x200;
-    }
-    return res;
-}
-
-void marioForceRollAnime(void) {
-    MarioWork* mario = marioGetPtr();
-
-    marioPaperOff();
-    marioChgPaper(NULL);
+    mario->trigFlags &= ~1;
+    mario->currMotionId = 0x16;
+    mario->flags |= 0x01000000;
+    mario->field_0x8 = 0x10;
     marioPaperOn("p_roll");
     marioChgPose("M_I_U");
     marioChgPaper("PM_R_1B");
     mario->dispFlags |= 0x8;
     mario->dispFlags |= 0x100;
-}
-
-void marioResetRollSpd(void) {
-    MarioWork* mario = marioGetPtr();
-    f32 zero;
-
-    if (mario->currMotionId == 0x16) {
-        if (marioGetPtr()->motStruct != NULL) {
-            zero = 0.0f;
-            *(f32*)((u8*)marioGetPtr()->motStruct + 0x0) = zero;
-            zero = 0.0f;
-            *(f32*)((u8*)marioGetPtr()->motStruct + 0x4) = zero;
-        }
-        mario->baseSpeed = 0.0f;
-    }
-}
-
-BOOL getRollEvtFlag(void) {
-    BOOL r = FALSE;
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->flags & 0x01000000) {
-        if (*(u32*)((u8*)mario + 0x2A4) & 0x100) {
-            r = TRUE;
-        }
-    }
-    return r;
-}
-
-void clrRollEvtFlag(void) {
-    MarioWork* mario = marioGetPtr();
-
-    *(u32*)((u8*)mario + 0x2A4) &= ~0x100;
-}
-
-void setRollEvtFlag(void) {
-    MarioWork* mario = marioGetPtr();
-
-    *(u32*)((u8*)mario + 0x2A4) |= 0x100;
-}
-
-BOOL marioRollKeyDisable(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->currMotionId != 0x16) {
-        return TRUE;
-    }
-    if ((s32)mario->currSubMotionId >= 0 && (s32)mario->currSubMotionId <= 1) {
-        return FALSE;
-    }
-    if ((s32)mario->currSubMotionId >= 0x14 && (s32)mario->currSubMotionId <= 0x16) {
-        return FALSE;
-    }
-    return TRUE;
-}
-
-BOOL unk_8009fcbc(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (*(u32*)((u8*)mario + 0x2A4) & 0x200) {
-        return TRUE;
-    }
-    if (mario->flags & 0x08000000) {
-        return TRUE;
-    }
-    if (mario->hitobjStandOn == NULL) {
-        return TRUE;
-    }
-    return marioSlitChkWallAround() != 0;
-}
-
-void marioRollFixOn(void) {
-    MarioWork* mario = marioGetPtr();
-
-    if (mario->currMotionId == 0x16) {
-        *(u32*)((u8*)mario + 0x2A4) |= 0x200;
-    }
+    mario->currSubMotionId = 0x1E;
+    mario = marioGetPtr();
+    mario->wPlayerCollisionBox.x = 14.8f;
+    mario->wPlayerCollisionBox.y = 14.8f;
+    mario->mBaseDashSpeed = rollData[0];
+    *(f32*)((u8*)marioGetPtr()->motStruct + 0x0) = 0.0f;
+    *(f32*)((u8*)marioGetPtr()->motStruct + 0x4) = 0.0f;
+    *(f32*)((u8*)mario + 0xB0) = -6.0f;
+    *(f32*)((u8*)mario + 0xB4) = 6.0f;
+    *(f32*)((u8*)mario + 0x98) = 6.0f;
+    *(f32*)((u8*)mario + 0x9C) = 0.0f;
+    mario->scale.x = 1.0f;
+    mario->scale.y = 1.0f;
+    mario->scale.z = 1.0f;
+    *(f32*)((u8*)mario + 0x130) = 1.0f;
+    allPartyForceRideOn();
 }
 
 // MSL's __fpclassifyf (float.h) inlined locally: the original sqrtf uses it for the
@@ -814,7 +760,7 @@ void mot_roll(void) {
     case 1:
         if (f26 < 1.4f) {
             f32 k = 1.0f;
-            f26 = k * (1.45f - f26) + f26;
+            f26 = k * (1.4499999f - f26) + f26;
             if (f26 >= 1.4f) {
                 f26 = 1.4f;
             }
@@ -865,7 +811,7 @@ void mot_roll(void) {
     if (mario->hitobjStandOn != NULL) {
         if (!(hitGetAttr(mario->hitobjStandOn) & 0xA00) && mario->airTimer == 0 &&
             (*(u16*)((u8*)mario + 0x248) & 0x100) &&
-            (strcmp(gp->currentMapName, "eki_04") != 0 ||
+            (strcmp(gp->currentMapName, "eki_04\0") != 0 ||
              !(fabsf(*(f32*)((u8*)mario + 0x214)) >= 40.0f))) {
             MarioWork* m = marioGetPtr();
 
@@ -1370,3 +1316,86 @@ roll_tail:
 }
 #undef vec
 
+
+void roll_upstairs_on(void) {
+    MarioWork* mario = marioGetPtr();
+
+    mario->flags |= 0x40000;
+    mario->flags |= 0x80;
+    marioClearJumpPara();
+    mario->multiTimer = 3;
+    {
+        u32 t = mario->multiTimer;
+        *(f32*)((u8*)mario + 0x7C) =
+            (*(f32*)((u8*)mario + 0x1C4) - mario->position.y) / (f32)(s32)t;
+    }
+    *(f32*)((u8*)mario + 0x7C) = 4.0f;
+    *(f32*)((u8*)mario + 0x80) = -0.42f;
+    *(f32*)((u8*)mario + 0x84) = 0.04f;
+    *(f32*)((u8*)mario + 0x88) = -0.01f;
+}
+// dont_inline: original keeps roll_upstairs as a real call (bl roll_upstairs) from mot_roll;
+// MWCC's -inline auto would otherwise inline this small function.
+#pragma dont_inline on
+void roll_upstairs(void) {
+    MarioWork* mario = marioGetPtr();
+
+    mario->position.y += *(f32*)((u8*)mario + 0x7C);
+    if ((s32)--mario->multiTimer <= 0) {
+        mario->flags &= ~0x80;
+        mario->flags &= ~0x40;
+        mario->flags &= ~0x40000;
+    }
+}
+#pragma dont_inline reset
+void mot_fall_roll(void) {
+    MarioWork* mario = marioGetPtr();
+    f32 spd = marioGetFallSpd();
+    f32 y;
+    void* hit;
+
+    if (spd < -10.0f) {
+        spd = -10.0f;
+    }
+    hit = marioChkLandon(&y, spd);
+    if (hit != NULL) {
+        mario->position.y = y;
+        mario->hitobjStandOn = hit;
+        mario->hitobjJumpFrom = NULL;
+    } else {
+        mario->position.y += spd;
+    }
+    if (mario->hitobjStandOn != NULL) {
+        marioLandOn();
+        roll_flyout_flag2 = 0;
+    }
+}
+
+// .sdata: the roll-motion physics table (11 floats).
+f32 rollData[11] = {
+    3.0f, -0.05f, -0.5f, 0.5f, 7.0f, 180.0f, 140.0f, 10.0f, 1.2f, 2.0f, 0.8f,
+};
+
+// 4-byte zero word that ends the unit's .sdata.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_07_80410554_sdata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+// .sbss: uninitialised globals land in reverse declaration order, so the trailing gap is
+// declared first. roll_flyout_flag2 starts the section, then roll_grz, roll_grx.
+#pragma force_active on
+u8 gap_08_8041888C_sbss[4];
+#pragma force_active reset
+f32 roll_grx;
+f32 roll_grz;
+s32 roll_flyout_flag2;
+
+
+// 4-byte zero word that ends the unit's .sdata2.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata2") static u32 gap_09_8041AD94_sdata2[1] = { 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
