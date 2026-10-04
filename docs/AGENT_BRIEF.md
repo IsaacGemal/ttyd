@@ -164,6 +164,16 @@ When instructions match and registers or scheduling do not, the source form is u
   order (`v.z = ..; v.x = ..;` puts `z` in f31); plain scalars follow declaration order. If the target's registers are a rotation of
   yours, permute declaration order first, or replace such a struct with scalars declared in write order.
 
+- **`int` vs `s32` locals (from tw2004, CC0):** they are different types to the front end. For an `int` local, `n += 3` is folded into every
+  later use (`addi r3, rN, 3` at each call and compare); for an `s32`/`long` local it stays one in-place `addi rN, rN, 3` followed by plain
+  uses. When a `+= const` is folded in your build and in place in the original (or the reverse), try the other type before restructuring.
+  The same choice moves loop hoisting and unroll guards (an `s32` counter keeps the `li 0; cmpwi; bge` guard that `int` folds away).
+- **Two-value choices:** `h = (n == 2) ? 6 : 7` compiles branch-free (`subi/nor/srawi`); `h = 7; if (n == 2) h = 6;` compiles to `cmpwi / li /
+  bnelr / li`. A `li; bne; li` in the target is the second form.
+- **Evaluation order:** on 2.6 the right operand of a comparison or an addition, and the last argument of a call, is evaluated first
+  (`f(0) < f(1)` and `f(0) + f(1)` call `f(1)` first; `use(g(), h())` calls `h()` first). The call order in the target tells you how the
+  expression was written; m2c's `t = f(1); if (f(0) < t)` is the source `f(0) < f(1)`.
+
 Reported by bfbb, not re-measured here (all general MWCC; try them when stuck, measure before relying):
 - `x *= k` can survive where `x = x * k` is folded; splitting a fused multiply-add into a named local (`t = a * b; t += c`) blocks `fmadds`
   and can free a register.
@@ -176,6 +186,11 @@ Reported by bfbb, not re-measured here (all general MWCC; try them when stuck, m
   are permuted.
 - `char buf[N] = "..."` copies N bytes into the frame (unrolled up to ~64 bytes, an `mtctr`/`lwzu` loop above); `const char* p = "..."` is a
   pointer load. `volatile` is evidence of the original's source only if it takes the function to byte-exact 100%.
+- (tw2004, not re-measured) A value computed before a call and kept in a saved register needs its own local (`s32 paid = money * 2;`, not
+  `money *= 2;` which sinks the shift below the call). Passing the expression (`f(x + n)`) vs the variable just stored (`p = x + n; f(p)`)
+  changes which register holds it. An initialiser in the declaration (`f32* p = &x;`) can give a different callee-saved number from
+  declaring bare and assigning on the next line. `a[0] = a[1] = a[2] = 0` stores 2, 1, 0. `if (A) { if (B) x = 1; }` and `if (A && B) x = 1;`
+  allocate different saved registers. A one-case `switch` with `default: return` gives `bne/beq next; b end`.
 - Measuring: a whole-function percentage can fall when a hunk is fixed (the tail shifts), so judge the region you touched; a stale `.o`
   explains more false regressions than any tool difference, so re-run `ninja` to completion before believing a -1; objdiff pairs symbols by
   name and cannot see definition order, so 100% in objdiff is not byte-exact (the DOL checksums are).
