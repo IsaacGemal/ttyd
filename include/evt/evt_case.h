@@ -9,3 +9,4 @@ USER_FUNC(evt_del_case_evt);
 USER_FUNC(evt_exit_case_evt);
 USER_FUNC(evt_run_case_evt);
 USER_FUNC(evt_set_case_wrk);
+USER_FUNC(evt_run_case_evt_bero);
