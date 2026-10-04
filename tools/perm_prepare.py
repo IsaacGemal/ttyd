@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Create a decomp-permuter input directory for one function of a dol or REL unit.
 
-    python3 tools/perm_prepare.py UNIT FUNC [OUTDIR] [--keep-all]       e.g. effect/eff_hibashira effHibashiraMain; REL: yuu/event/evt_yuucounter FUNC (see tools/perm_unit.py)
+    python3 tools/perm_prepare.py UNIT FUNC [OUTDIR] [--keep-all] [--no-check]       e.g. effect/eff_hibashira effHibashiraMain; REL: yuu/event/evt_yuucounter FUNC (see tools/perm_unit.py)
 
 Writes OUTDIR (default $PERM_ROOT/inputs/UNIT__FUNC, PERM_ROOT default ~/permuter) with
   base.c         the unit's source, preprocessed with the unit's flags, every other function reduced to a prototype
@@ -88,4 +88,17 @@ open(os.path.join(out, "compile.sh"), "w").write(compile_sh)
 os.chmod(os.path.join(out, "compile.sh"), 0o755)
 open(os.path.join(out, "settings.toml"), "w").write(
     f'func_name = "{func}"\ncompiler_type = "mwcc"\nobjdump_command = "env PERM_FUNC={func} {sys.executable} {ROOT}/tools/perm_objdump.py"\n')
+if "--no-check" not in sys.argv:
+    import perm_check
+    base_c = os.path.join(out, "base.c")
+    args_ = (os.path.join(out, "compile.sh"), base_c, os.path.join(out, "target.o"), func, os.path.join(ROOT, "tools/perm_objdump.py"))
+    why = perm_check.check(*args_)
+    if why and not KEEP_ALL:
+        # a stripped `static inline` helper is the usual cause: keep every function and look again
+        open(base_c, "w").write(text)
+        why = perm_check.check(*args_)
+        if not why:
+            print("note: base.c kept every function (the stripped form did not compile like the target)", file=sys.stderr)
+    if why:
+        sys.exit(f"{unit} {func}: {why}")
 print(out)
