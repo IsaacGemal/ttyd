@@ -84,27 +84,20 @@ extern const f32 float_10_80421940;
 static void actionCommandDisp(f32 x, f32 y);
 static void _ac_disp_init(BattleWork* work);
 
-// Every instruction, constant and memory access matches except the colouring of two callee-saved
-// registers: the original keeps rumbleType in r24 and sfx in r28, MWCC here gives rumbleType r28
-// and sfx r24 (7 objdiff `!!` lines: the two preheader loads and five `mr r3` argument setups).
-// Tried with the dont_inline fix in place: declaration order (all permutations of the scalars, plus
-// hit/unit/part/ac/st placements), assignment order and position, types (s32/u32/int/long for
-// rumbleType; const char*/char*/u8*/s8*/const void*/int*/u32/s32/ulong for sfx), `register`/
-// `volatile`, per-block copies, the ac_shot comma hack, extra no-op uses, every relevant opt_*/
-// peephole/scheduling/global_optimizer/optimize_for_size/optimization_level pragma (single, pairs
-// and triples, on and off), MWCC versions 1.0-3.0, case-0 statement order, and 4000+ random source
-// mutations; none moves the swap.
+// 100%: the whole callee-saved GPR colouring turns on the declaration order and on `rumbleType`
+// being `u32`, not `s32`. Retail keeps `rumbleType` in r24 and `sfx` in r28; with `s32` (and any
+// other scalar order) MWCC gives `rumbleType` r28 and `sfx` r24. `sfx` must be declared first,
+// then `ac`, `st`, `cont`, `smooth`, `u32 rumbleType`, `hit`, `unit`, `part` (the order below).
 // The `ac->`-qualified work-area access is required: without it st folds into work (18%).
-// NONMATCHING (99.90%): rumbleType/sfx are coloured swapped (target r24/r28, ours r28/r24).
 // The `#pragma dont_inline on` above `_ac_rumble_param_set` is required: without it MWCC inlines
 // the whole body at all four call sites and the function drops to 19.82%.
 s32 battleAcMain_ShotTarget(BattleWork* work) {
+    const char* sfx;
     BattleActions* ac = &work->actionCommands;
     ShotTargetWork* st = (ShotTargetWork*)&ac->field_0x2BC[0];
-    s32 rumbleType;
     s32 cont;
     s32 smooth = 0;
-    const char* sfx;
+    u32 rumbleType;
     Vec hit;
     BattleUnit* unit;
     BattleUnitPart* part;
