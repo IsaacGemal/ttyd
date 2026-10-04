@@ -92,9 +92,6 @@ const char str_802F6850[] = "msg_window_select_12";
 const char str_802F6868[] = "msg_window_select_9";
 const char str_802F687C[] = "msg_window_select_9_1";
 const char str_802F6894[] = "yubicursor_2";
-const f64 double_to_int_802f68a8 = 4503601774854144.0;
-const char str_802F68B0[] = "%s_%04d";
-const f64 double_to_int_mask_802f68b8 = 4503599627370496.0;
 
 
 extern ItemData itemDataTable[];
@@ -290,6 +287,7 @@ static u32 main_evt[] = { 0x0001005B, (u32)evt_unitwin_main_func, 0x2, 0x1 };
 u32 select_evt[] = { 0x0001005B, (u32)unk_80174e98, 0x2, 0x1 };
 extern WinMgrDesc unk_80375478[];
 
+#pragma pool_data on // the original addresses its .rodata through one base register
 USER_FUNC(unitwin_setmariolevel) {
 	s32* args = event->args;
 	PouchData* pouch = pouchGetPtr();
@@ -592,26 +590,34 @@ USER_FUNC(set_new_goods_list) {
 // call); the common-tail buffer check keeps the base pointer in a `char*` variable used by the loop, so
 // `p != NULL` compiles to `cmplwi` on a register; the first block's price reads `wp->field_0x8[i]`
 // through one `s32 item` local (the target loads it once); `dispCnt`, `color` (the status macro's),
-// `xofs` and `dispOff` are declared once for the whole function instead of per case, which moves
-// MWCC's callee-saved colouring. The int->float magic is the compiler's own pool
-// entry, so the named double_to_int_802f68a8 / double_to_int_mask_802f68b8 definitions in this file are
-// duplicates: every i2f conversion loads 0x408(r30) instead of the target's 0x3f0(r30). This is the
-// project-wide double_to_int limitation (win_log.c, win_item.c, win_badge.c: the original pool entry is
-// named by symbols.txt; defining/removing the doubles only moves the anonymous copy). The case
-// 17/18 `info` pointer is loaded just before its loop (as the target does); it still lands in r14
-// instead of the target's r17. Every immediate, call and case body matches. The frame now matches
-// the target's 0x780 (the status macro's `help2` is `[0x8]`, not `[0x10]`; at `[0x10]`
-// `stmw r14` sat at 0x718 and the frame was 0x7a0).
-// MWCC's callee-saved colouring is still one register low in places (the first block's
-// `wp->field_0x8[i]`/`wp->objList[i]` use r16/r17 instead of the target's r17/r18 and `sellDesc`
-// gets r16 instead of r18, because the target keeps r16 reserved from entry by a value we cannot
-// see in the asm), plus the 37 i2f `lfd` sites that load the pooled double at 0x408(r30) instead
-// of the target's 0x3f0 and MWCC instruction-scheduling moves in the case 4/5-7 and macro loops.
-// NONMATCHING (96.51%): only callee-saved colouring, scheduling and those i2f offsets differ.
+// `xofs` and `dispCnt` are declared once for the whole function instead of per case, which moves
+// MWCC's callee-saved colouring. The unit reaches its .rodata through one base register, so the
+// int->float magic is the compiler's own pool entry: the named double_to_int_802f68a8 /
+// double_to_int_mask_802f68b8 / str_802F68B0 definitions are duplicates that push the magic to
+// 0x408(r30) and shift every later .rodata offset, so the helpers below pool those three entries at
+// the target's slots instead. The .rodata is now byte-identical to the target's (1032 bytes, 53
+// objects, same order). The case 17/18 `info` pointer is loaded just before its loop (as the target
+// does); it still lands in r14 instead of the target's r17.
+// The frame matches the target's 0x780 (the status macro's `help2` is `[0x8]`, not `[0x10]`; at
+// `[0x10]` `stmw r14` sat at 0x718 and the frame was 0x7a0) but the compiler's i2f temporary sits at
+// 0x6c8(r1) instead of the target's 0x6d8(r1). MWCC's callee-saved colouring is still low in places
+// (`pouch` is r16 instead of the target's r14, and the first block's `wp->field_0x8[i]`/`wp->objList[i]`
+// use r16/r17 instead of r17/r18), plus MWCC instruction-scheduling moves in the case 4/5-7 and macro
+// loops. `dispOff` is initialised once after the `flags & 1` block instead of at function entry, so
+// the target's r20/r14 entry colouring comes out; every case that reads it first reassigns it.
+#ifdef MUST_MATCH
+#pragma defer_codegen off // pool the i2f double, the unreferenced "%s_%04d" string and the mask at the target's slots
+static f32 pool_i2f(s32 v) { return (f32)v; }
+static const char* pool_str(void) { return "%s_%04d"; }
+static f32 pool_u2f(u32 v) { return (f32)v; }
+#pragma defer_codegen reset
+#endif
+
+// NONMATCHING (96.53%): callee-saved colouring, scheduling and the i2f temporary's stack slot differ.
 void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 	UnitWinWork* wp = (UnitWinWork*)param;
 	PouchData* pouch = pouchGetPtr();
-	s32 dispOff = 0;
+	s32 dispOff;
 	s32 dispCnt;
 	GXColor color;
 	s32 xofs;
@@ -672,6 +678,8 @@ windowDispGX_Waku_col(0, *(GXColor*)&dat_8041d9c0, float_neg150_8041dac8, float_
 			}
 		}
 	}
+
+	dispOff = 0;
 
 	// --- flags & 0xD000: coin / super coin / star piece window ---
 	if (wp->flags & 0xD000) {
