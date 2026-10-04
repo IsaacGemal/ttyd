@@ -323,7 +323,7 @@ changing who it overlaps so it drops to an earlier or later level. `python3 tool
 single interference edge whose removal or addition gives the original's registers (it reported one for evt_mobj_rideswitch_lightblue, puniModeParentpre
 and puniswSetindex; none for the param-vs-local cases battleSortPhaseMoveTable, btlseqEnd_DispMain, screen_tev). Two webs with equal degree are ordered
 by vreg, i.e. by creation order: evt_mobj_*switch* differ only because our string-address temp (`lis`) is created before the `gp` load temp (the `asyncName`
-assignment comes first in the initial code even when written inside the call: arguments are evaluated left to right), where retail created it after.
+assignment comes first in the initial code even when written inside the call as `f(asyncName = str, !!gp->inBattle, NULL)`), where retail created it after. Open: a spelling that makes the `gp->inBattle` load come first without a named local (a named local shifted r27-r31 by 30+ instructions).
 
 **Scheduling-only differences** (same instructions, same registers, a different order inside a block): `tools/sched750.py`
 (tw2004, CC0; extended here to floating point) replays MWCC 2.6's list scheduler on a dump. `python3 tools/sched750.py predict build/mwccdbg/FUNC B23`

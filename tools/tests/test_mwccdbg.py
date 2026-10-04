@@ -33,6 +33,13 @@ class ReplayTest(unittest.TestCase):
         self.assertIn("current order: 4 of 47 targets wrong", out)
 
 
+class NeighborsTest(unittest.TestCase):
+    def test_neighbors_reports_when_no_single_edge_helps(self):
+        out = rasim("neighbors", "--summary")
+        self.assertIn("current: 4 of 47 targets wrong", out)
+        self.assertIn("no single edge edit gives the targets", out)
+
+
 class LockTest(unittest.TestCase):
     def test_second_holder_waits_for_the_first(self):
         import socket
