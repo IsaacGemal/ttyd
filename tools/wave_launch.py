@@ -355,7 +355,7 @@ def bind_check(tag, mode):
 def watchdog(tag, step):
     """A host-side loop beside one sandboxed step, every 10 s, while the step's shell ($$) lives and its scope is active:
     - the agent's dirs (workspace, private, output) over DISK_MB or DISK_INODES (du's sum; files vanishing mid-scan
-      are normal build churn), or a directory in them it can't read (it would hide its size): notes it in the
+      are normal build churn), or a directory in them it can't read or search (it would hide its size): notes it in the
       output dir's limits.txt and stops the step's scope;
     - the home filesystem under DISK_FLOOR_GB / INODE_FLOOR: the first watchdog to see it creates PAUSED (no launcher
       starts another agent or pass), stops only the scope holding the most deleted-but-open space
@@ -366,16 +366,28 @@ def watchdog(tag, step):
     unit = f"{scope(tag, step)}.scope"
     # its own statement (an `&` after `a && b` would background the whole list), no file descriptors of the ssh
     # session (or ssh would wait for it), its cwd outside the workspace; the step kills it and all its descendants
-    return (f"( cd / && while kill -0 $$ 2>/dev/null && sleep 10 && kill -0 $$ 2>/dev/null; do "
-            f"[ \"$(systemctl --user is-active {unit} 2>/dev/null)\" = active ] || continue; "
-            f"m=$(du -smx {dirs} 2>/dev/null | awk '{{s+=$1}} END{{print s+0}}'); "
-            f"i=$(du -sx --inodes {dirs} 2>/dev/null | awk '{{s+=$1}} END{{print s+0}}'); "
-            f"x=$(find {dirs} -xdev -type d ! -readable -print -quit 2>/dev/null); "
-            f"if {{ [ -n \"$x\" ] || [ \"$m\" -gt {DISK_MB} ] || [ \"$i\" -gt {DISK_INODES} ]; }} "
-            f"&& [ \"$(systemctl --user is-active {unit} 2>/dev/null)\" = active ]; then "
-            f"echo \"{step}: $m MB, $i inodes (limits {DISK_MB} MB, {DISK_INODES})${{x:+, unreadable $x}}: stopped\" >> {out}/limits.txt; "
+    # A failed query is neither proof of an active owner nor proof it ended. Three consecutive failures trip the
+    # owning step fail-closed; a successful active/inactive answer resets the counter. Recheck after every scan.
+    owner_check = 'wd_owner || { [ "$owner_errors" -ge 3 ] && break; continue; }; '
+    return (f"( cd /; owner_errors=0; wd_owner() {{ local state query_rc; "
+            f"state=$(timeout -k 1 5 systemctl --user is-active {unit} 2>/dev/null); query_rc=$?; "
+            f"case $state:$query_rc in active:0) owner_errors=0; return 0;; "
+            f"inactive:3|failed:3|inactive:0|failed:0) owner_errors=0; return 1;; esac; "
+            f"owner_errors=$((owner_errors + 1)); [ $owner_errors -lt 3 ] && return 1; "
+            f"echo '{step}: owner scope query failed 3 consecutive times: stopped' >> {out}/limits.txt; "
+            f"systemctl --user stop {unit}; return 1; }}; "
+            f"while kill -0 $$ 2>/dev/null && sleep 10 && kill -0 $$ 2>/dev/null; do {owner_check}"
+            f"dm=$(LC_ALL=C du -smx {dirs} 2>&1); di=$(LC_ALL=C du -sx --inodes {dirs} 2>&1); "
+            f"m=$(printf '%s\\n' \"$dm\" | awk '$1 ~ /^[0-9]+$/ {{s+=$1}} END{{print s+0}}'); "
+            f"i=$(printf '%s\\n' \"$di\" | awk '$1 ~ /^[0-9]+$/ {{s+=$1}} END{{print s+0}}'); "
+            f"denied=; case $dm$di in *'Permission denied'*) denied=', du: Permission denied';; esac; "
+            f"x=$(find {dirs} -xdev -type d \\( ! -readable -o ! -executable \\) -print -quit 2>/dev/null); "
+            f"{owner_check}"
+            f"if [ -n \"$x$denied\" ] || [ \"$m\" -gt {DISK_MB} ] || [ \"$i\" -gt {DISK_INODES} ]; then "
+            f"echo \"{step}: $m MB, $i inodes (limits {DISK_MB} MB, {DISK_INODES})${{x:+, inaccessible $x}}$denied: stopped\" >> {out}/limits.txt; "
             f"systemctl --user stop {unit}; break; fi; "
             f"set -- $(df -Pk \"$HOME\" | awk 'NR==2{{print $4}}') $(df -Pi \"$HOME\" | awk 'NR==2{{print $4}}'); "
+            f"{owner_check}"
             f"if [ -n \"$2\" ] && {{ [ \"$1\" -lt {DISK_FLOOR_GB * 1024 * 1024} ] || [ \"$2\" -lt {INODE_FLOOR} ]; }} "
             f"&& mkdir {PAUSED} 2>/dev/null; then "
             f"{{ echo \"$(date '+%F %T') home filesystem at $1 KB / $2 inodes free (floor {DISK_FLOOR_GB} GB / {INODE_FLOOR}); "
@@ -398,24 +410,28 @@ def step_guard(tag):
 def agent_cmd(tag, secs, args, step):
     """Run the agent CLI in the sandbox for at most secs. Its stdout and stderr go through pipes to files in the output
     dir, which the sandbox can't reach, capped over the agent's whole run (EVENTS_MAX, STDERR_MAX; reaching a cap is
-    recorded in limits.txt). After the pass the host appends a marker line with the exit status: the audit tolerates a
-    garbled line only right before a marker of a pass that timed out."""
+    recorded in limits.txt and stops the scope immediately). After the pass the host records the event byte offset
+    and exit status in passes.txt, outside the agent sandbox: only these boundaries can excuse a truncated line."""
     ws, out, _, _ = paths(tag)
+    unit = f"{scope(tag, step)}.scope"
     return (f"{KILL_TREE}{step_guard(tag)}cd {ws} && {bind_check(tag, 'agent')} || exit 4; "
             f"er=$(( {EVENTS_MAX} - $(stat -c %s {out}/events.jsonl 2>/dev/null || echo 0) )); "
             f"sr=$(( {STDERR_MAX} - $(stat -c %s {out}/stderr.log 2>/dev/null || echo 0) )); "
             f"[ $er -gt 0 ] && [ $sr -gt 0 ] || {{ echo '{step}: a log was already at its cap' >> {out}/limits.txt; exit 7; }}; "
+            # Each reader acts as soon as head exits at its cap, while the producer may still be running (or asleep).
+            # Kill every member first so a process ignoring SIGTERM cannot continue through systemd's stop grace.
+            f"capped_log() {{ local file=$1 cap=$2 remaining=$3; head -c \"$remaining\" >> {out}/\"$file\"; "
+            f"if [ $(stat -c %s {out}/\"$file\") -ge \"$cap\" ]; then "
+            f"echo \"{step}: $file reached its $cap-byte cap: cut\" >> {out}/limits.txt; "
+            f"systemctl --user kill --kill-who=all --signal=KILL {unit}; systemctl --user stop {unit}; fi; }}; "
             f"{watchdog(tag, step)}"
             # stderr into one capped pipe and stdout (through fd 3) into the other: both caps are members of the
             # pipelines, so the shell waits for them, and the agent's exit status comes out of the inner subshell
             f"( timeout -k 30 {int(secs)} {sandbox(tag, step, 'agent')} "
             f"pi --mode json --session-dir {ws}/.pi-sessions --model {MODEL} {args} </dev/null 9<{KEY_FILE} 2>&1 1>&3 3>&- "
-            f"| head -c $sr >> {out}/stderr.log; exit ${{PIPESTATUS[0]}} ) 3>&1 | head -c $er >> {out}/events.jsonl; "
+            f"| capped_log stderr.log {STDERR_MAX} $sr; exit ${{PIPESTATUS[0]}} ) 3>&1 | capped_log events.jsonl {EVENTS_MAX} $er; "
             f"rc=${{PIPESTATUS[0]}}; kt $wd; "
-            f"printf '\\n{{\"type\":\"launcher_pass_end\",\"step\":\"{step}\",\"rc\":%d}}\\n' $rc >> {out}/events.jsonl; "
-            f"for f in events.jsonl:{EVENTS_MAX} stderr.log:{STDERR_MAX}; do "
-            f"[ $(stat -c %s {out}/${{f%:*}} 2>/dev/null || echo 0) -ge ${{f#*:}} ] && "
-            f"echo \"{step}: ${{f%:*}} reached its ${{f#*:}}-byte cap: cut\" >> {out}/limits.txt; done; "
+            f"printf '%s %s\\n' \"$(stat -c %s {out}/events.jsonl)\" \"$rc\" >> {out}/passes.txt; "
             f"echo rc=$rc")
 
 
@@ -721,7 +737,8 @@ def collect(tag, spec):
     c = ssh(f"cd {out} && {bind_check(tag, 'collect')} && timeout -k 30 600 {sandbox(tag, 'collect', 'collect')} "
             f"bash {BASE}/tools/agent_collect.sh {BASE} {ws} {out} {spec['src']} {spec.get('mode', '')}; echo audit=$?; "
             f"[ -f {out}/events.jsonl ] && [ ! -L {out}/events.jsonl ] && mkdir -p \"{arch}\" && "
-            f"zstd -q -3 -f {out}/events.jsonl -o \"{arch}/events.jsonl.zst\"",
+            f"zstd -q -3 -f {out}/events.jsonl -o \"{arch}/events.jsonl.zst\" && "
+            f"{{ [ ! -f {out}/passes.txt ] || cp {out}/passes.txt \"{arch}/passes.txt\"; }}",
             timeout=900, check=False)
     # the manifest last, after everything it lists (tools/collect_gate.py checks the files against it)
     rsync("--no-links", f"--max-size={TAKE_MAX}", "--exclude", "events.jsonl", "--exclude", "COLLECT-OK*",

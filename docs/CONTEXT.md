@@ -4361,12 +4361,14 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   home-filesystem blocks, each file once, a scope stopped only above 1 GB and its results marked so the gate refuses
   them) and PAUSED as its own state (checked inside the slot lock and at launcher start; every launcher stops taking
   work once paused). #367 stays open for Isaac; the swarm stays frozen until he decides.
-  - **Open, blocked (owner decision):** (1) the disk watchdog can miss space hidden in directories it can't enter;
-    (3) the audit's tolerance for a garbled event line can be abused, and a garbled line may hide a tool call;
-    (6) the watchdog can act on a step that has just ended, and doesn't treat repeated failed scope queries as a trip;
-    (7) work can continue briefly after an event or stderr log hits its cap. Writing these fixes was repeatedly
-    stopped by a safety classifier on the orchestrator's side, so they weren't attempted further or handed to
-    another session.
+  - **Follow-up items done (2026-10-04):** (1) the disk watchdog checks directories for both read and search
+    permission, and trips on du's "Permission denied" stderr while allowing vanished files; (3) pass byte offsets
+    and exit codes live in host-only passes.txt, and the audit recovers embedded tool calls from malformed lines,
+    flags malformed lines containing tool_execution_start, and allows only one truncated final line per timed-out
+    pass; (6) the watchdog rechecks its owner after scans, before marking a limit or taking floor action, and trips
+    after three consecutive failed scope queries; (7) either output reader reaching its cap immediately kills and
+    stops the agent's scope and records limits.txt. These close the four soft-containment follow-ups; the hard disk
+    quota proposal below remains separate.
   - **Accepted residual risk:** the audit is a hint and the sandbox is the barrier; outside paths held in variables
     or in attached sed expressions may evade the audit; the gate proves the copied-back files are consistent with
     their manifest, not who wrote it (the agent can't write the local results folder); one agent can pause every

@@ -8,7 +8,7 @@
 # here treats WS as untrusted: files are copied only if they are regular files whose real path is inside WS and no
 # larger than 16 MB, and diffs never follow links. Writes REPORT.md, final.c, lastgood.c, link.txt,
 # other_changes.txt, include.patch, configure.patch, provenance.txt and audit.txt to OUT (events.jsonl and
-# stderr.log are already there: the launcher's pipes wrote them), problems to collect.txt, and COLLECT-OK last if
+# stderr.log and passes.txt are already there: the host wrote them), problems to collect.txt, and COLLECT-OK last if
 # every step worked and no limit tripped (no limits.txt): a manifest (sha256, size, name) of every file the launcher
 # copies back, which tools/collect_gate.py checks before a merge. MODE link or dataport: the agent may flip its unit in configure.py (configure.patch carries
 # it), so configure.py isn't listed as another file changed.
@@ -49,6 +49,7 @@ grep -q '^diff failed' "$OUT/collect.txt" 2>/dev/null && FAIL=1
 
 python3 "$BASE/tools/provenance.py" "$OUT/events.jsonl" "$WS" > "$OUT/provenance.txt" 2>&1 \
   || { echo 'ERROR tools/provenance.py failed; check events.jsonl by hand' >> "$OUT/provenance.txt"; note "provenance failed"; }
+# The audit reads the host's sibling passes.txt; the agent's stream cannot supply trusted pass boundaries.
 python3 "$BASE/tools/agent_audit.py" "$OUT/events.jsonl" "$WS" "$BASE" > "$OUT/audit.txt" 2>&1
 A=$?
 [ $A -ne 0 ] && exit $A

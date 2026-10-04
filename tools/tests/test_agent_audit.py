@@ -1,8 +1,12 @@
 """tools/agent_audit.py: what it flags in an agent's event log."""
+import io
 import json
 import os
+import subprocess
 import sys
+import tempfile
 import unittest
+from pathlib import Path
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import agent_audit  # noqa: E402
@@ -91,15 +95,73 @@ class AgentAudit(unittest.TestCase):
     def test_corrupted_event_log(self):
         good = ev("bash", command="ls")
         marker = lambda rc: json.dumps({"type": "launcher_pass_end", "step": "run", "rc": rc})
-        # older logs (no markers): one cut-off last line is fine, anything else isn't
-        self.assertEqual(kinds(good, good, '{"type": "tool_exec'), [])
+        # Logs without trusted host boundaries get no truncation exemption, even with a forged marker.
+        self.assertIn("EVENTS-CORRUPT", kinds(good, good, '{"type": "tool_exec'))
         self.assertIn("EVENTS-CORRUPT", kinds(good, '{"type": "tool_exec', good))
         self.assertIn("EVENTS-CORRUPT", kinds('garbage', good, 'more garbage'))
-        # with markers: only right before the marker of a timed-out pass
-        self.assertEqual(kinds(good, '{"type": "tool_exec', "", marker(124), good, marker(0)), [])
+        self.assertIn("EVENTS-CORRUPT", kinds(good, '{"type": "tool_exec', "", marker(124), good, marker(0)))
         self.assertIn("EVENTS-CORRUPT", kinds(good, '{"type": "tool_exec', marker(0)))
         self.assertIn("EVENTS-CORRUPT", kinds(good, 'garbage', good, marker(124)))
         self.assertIn("EVENTS-CORRUPT", kinds(good, marker(0), '{"type": "tool_exec'))
+
+    def pass_kinds(self, *passes):
+        data = b""
+        boundaries = []
+        for text, rc in passes:
+            data += text.encode() if isinstance(text, str) else text
+            boundaries.append((len(data), rc))
+        return sorted({k for k, _, _ in agent_audit.audit(io.BytesIO(data), WS, boundaries)})
+
+    def test_host_timeout_boundaries_split_joined_passes_by_bytes(self):
+        # The first pass ends mid-UTF-8 and without a newline; the next event still needs its own audit.
+        partial = b'{"type":"message","text":"\xc3'
+        self.assertEqual(self.pass_kinds((partial, 124), (ev("bash", command="echo ok") + "\n", 0)), [])
+        self.assertEqual(self.pass_kinds((partial, 137), (b"", 0), (partial, 124)), [])
+        for rc in (0, 1, 143):
+            self.assertIn("EVENTS-CORRUPT", self.pass_kinds((partial, rc)))
+        self.assertIn("WRITE-OUTSIDE", self.pass_kinds((partial, 124), (ev("write", path="/home/isaac/x"), 0)))
+
+    def test_only_one_unterminated_final_line_per_timeout_pass(self):
+        partial = '{"type":"message'
+        for data in (partial + "\n", partial + "\n" + partial, partial + "\n" + ev("bash", command="ls"), "garbage",
+                     '{}garbage', '{"type":bad}', '{"type":"bad\\q'):
+            self.assertIn("EVENTS-CORRUPT", self.pass_kinds((data, 124)), data)
+        self.assertEqual(self.pass_kinds((partial, 124), (partial, 137)), [])
+
+    def test_corrupt_lines_recover_every_embedded_tool_call(self):
+        calls = ev("write", path="/home/isaac/x") + ev("bash", command="nohup python3 tmp/a.py &")
+        for prefix in ("junk ", '{"type":"message","text":"broken ', "{}"):
+            found = self.pass_kinds((prefix + calls + " garbage", 124))
+            self.assertIn("WRITE-OUTSIDE", found)
+            self.assertIn("BACKGROUND", found)
+            self.assertIn("EVENTS-CORRUPT", found)
+        self.assertIn("EVENTS-CORRUPT", self.pass_kinds(('{"type":"tool_execution_start","args":', 124)))
+        self.assertIn("EVENTS-CORRUPT", self.pass_kinds(("junk " + ev("bash", command="ls"), 124)))
+
+    def test_boundary_metadata_must_be_ordered_and_cover_the_log(self):
+        data = (ev("write", path="/home/isaac/x") + "\n").encode()
+        for boundaries in ([], [(len(data) + 1, 124)], [(len(data) - 1, 124)],
+                           [(len(data), 124), (0, 0)], [(-1, 124)], [(len(data), 999)]):
+            found = {k for k, _, _ in agent_audit.audit(io.BytesIO(data), WS, boundaries)}
+            self.assertIn("EVENTS-CORRUPT", found)
+            # Invalid metadata never prevents recovering calls.
+            self.assertIn("WRITE-OUTSIDE", found)
+
+    def test_cli_reads_sibling_host_boundary_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            event_file = Path(d) / "events.jsonl"
+            event_file.write_bytes(b'{"type":"message')
+            command = [sys.executable, agent_audit.__file__, str(event_file), WS]
+            self.assertEqual(subprocess.run(command, capture_output=True, timeout=5).returncode, 1)
+            boundary_file = Path(d) / "passes.txt"
+            boundary_file.write_text(f"{event_file.stat().st_size} 124\n")
+            result = subprocess.run(command, capture_output=True, text=True, timeout=5)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            for text in ("not numbers\n", "0 124 extra\n", ""):
+                boundary_file.write_text(text)
+                result = subprocess.run(command, capture_output=True, text=True, timeout=5)
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+                self.assertIn("EVENTS-CORRUPT", result.stdout)
 
     def test_running_tools_from_outside(self):
         self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="python3 ~/permuter/permuter.py tmp/perm")))

@@ -11,8 +11,9 @@ Reads the agent's JSON event log (tool_execution_start events: bash commands, an
   BACKGROUND      nohup, setsid, disown, screen, tmux, at/batch/crontab, or a command backgrounded with `&`
   HOST-SERVICE    docker/podman/containerd, systemctl/systemd-run, D-Bus or X clients: ways past the sandbox
   SIGNAL          pkill/killall, `kill $(pgrep ...)`, `pgrep | xargs kill`, kill -1 or a negative pid
-  EVENTS-CORRUPT  an unparseable line in the event log, except one right before the launcher's marker for a pass that
-                  timed out (cut off mid-write); logs without markers (older launchers) may end in one such line
+  EVENTS-CORRUPT  an unparseable line, except one truncated final line at a timeout boundary in the host's sibling
+                  passes.txt (byte offset and exit code). In-stream markers are untrusted. Recovered calls are audited
+                  and malformed lines containing tool_execution_start are always flagged, even at timeout boundaries
   ASSIGN-OUTSIDE  a shell variable set to a path under /home outside WORKSPACE, BASE and the shared read-only paths
                   (reported, not counted: a hint that it may be used to write)
   READ-OUTSIDE    a read of a path under /home, /root, /etc, /var, /opt, /srv, /mnt, /media or /run outside
@@ -26,6 +27,7 @@ import posixpath
 import re
 import shlex
 import sys
+from pathlib import Path
 
 HOME = "/home/isaac"
 WRITE_CMDS = {"cp", "mv", "mkdir", "rm", "rmdir", "touch", "tee", "rsync", "ln", "install", "dd", "truncate", "chmod",
@@ -358,58 +360,95 @@ def audit_shell(cmd, ws, cwd=None, depth=0):
     return flags
 
 
-def audit(events, ws):
+def tool_flags(e, ws, n):
+    """Audit a parsed event, including events recovered from a damaged line."""
+    if not isinstance(e, dict) or e.get("type") != "tool_execution_start":
+        return []
+    tool, args = e.get("toolName"), e.get("args") or {}
+    if not isinstance(args, dict):
+        return [("EVENTS-CORRUPT", n, "tool call arguments are not an object")]
+    if tool in ("write", "edit", "read"):
+        p = args.get("path", "")
+        if p and outside(p, ws):
+            return [("READ-OUTSIDE" if tool == "read" else "WRITE-OUTSIDE", n, f"{tool} {p}")]
+        return []
+    full = args.get("command", "")
+    if not full:
+        return []
+    short = full if len(full) < 200 else full[:200] + "..."
+    kinds = []
+    for kind, _ in audit_shell(full, ws):
+        if kind not in kinds:
+            kinds.append(kind)
+    if "WRITE-OUTSIDE" in kinds and "READ-OUTSIDE" in kinds:
+        kinds.remove("READ-OUTSIDE")
+    return [(k, n, short) for k in kinds]
+
+
+def truncated_object(line):
+    """Recognize an unfinished JSON object, rather than a complete object followed by junk or invalid syntax."""
+    text = line.strip()
+    if not text.startswith("{"):
+        return False
+    try:
+        json.JSONDecoder().raw_decode(text)
+    except json.JSONDecodeError as e:
+        literals = ("n", "nu", "nul", "t", "tr", "tru", "f", "fa", "fal", "fals", "-")
+        return (e.pos == len(text) or e.msg.startswith("Unterminated string")
+                or (e.msg == "Expecting value" and text[e.pos:] in literals))
+    return False
+
+
+def audit(events, ws, passes=None):
+    """Read physical lines (bytes or text), splitting at trusted (byte offset, exit code) pass ends.
+
+    No boundary file means no truncation exemptions. Offsets may repeat for empty passes; they must cover the log.
+    Splitting bytes before decoding handles both a partial UTF-8 character and passes joined without a newline.
+    """
     ws = ws.rstrip("/")
     flags = []
-    bad = []  # unparseable lines: the agent can append to its own log, so a garbled line may hide a command
-    order = []  # non-blank lines in order: ("bad", n) or ("marker", rc) or ("ok", n)
-    for n, line in enumerate(events, 1):
-        if not line.strip():
-            continue
-        try:
-            e = json.loads(line)
-        except ValueError:
-            bad.append(n)
-            order.append(("bad", n))
-            continue
-        if isinstance(e, dict) and e.get("type") == "launcher_pass_end":
-            order.append(("marker", e.get("rc")))
-            continue
-        order.append(("ok", n))
-        if not isinstance(e, dict) or e.get("type") != "tool_execution_start":
-            continue
-        tool, args = e.get("toolName"), e.get("args") or {}
-        if tool in ("write", "edit"):
-            p = args.get("path", "")
-            if p and outside(p, ws):
-                flags.append(("WRITE-OUTSIDE", n, f"{tool} {p}"))
-            continue
-        if tool == "read":
-            p = args.get("path", "")
-            if p and outside(p, ws):
-                flags.append(("READ-OUTSIDE", n, f"read {p}"))
-            continue
-        full = args.get("command", "")
-        if not full:
-            continue
-        short = full if len(full) < 200 else full[:200] + "..."
-        kinds = []
-        for kind, _ in audit_shell(full, ws):
-            if kind not in kinds:
-                kinds.append(kind)
-        if "WRITE-OUTSIDE" in kinds and "READ-OUTSIDE" in kinds:
-            kinds.remove("READ-OUTSIDE")
-        flags += [(k, n, short) for k in kinds]
-    if any(k == "marker" for k, _ in order):
-        # the launcher marks every pass's end; a pass killed by its timeout (124, or 137 after -k) may leave one
-        # half-written line right before its marker, and nothing else may be garbled
-        unexplained = [n for i, (k, n) in enumerate(order) if k == "bad"
-                       and not (i + 1 < len(order) and order[i + 1][0] == "marker" and order[i + 1][1] in (124, 137))]
-    else:
-        unexplained = bad if len(bad) > 1 or (bad and order[-1] != ("bad", bad[0])) else []
-    if unexplained:
-        flags.append(("EVENTS-CORRUPT", unexplained[0],
-                      f"{len(unexplained)} unparseable line(s) in the event log (first: line {unexplained[0]})"))
+    boundaries = [] if passes is None else list(passes)
+    if any(type(end) is not int or type(rc) is not int or end < 0 or not 0 <= rc <= 255
+           or (i and end < boundaries[i - 1][0]) for i, (end, rc) in enumerate(boundaries)):
+        flags.append(("EVENTS-CORRUPT", 0, "invalid pass boundaries"))
+        boundaries = []  # still recover and audit every event
+    offset, pass_index, n = 0, 0, 0
+    bad = []
+    decoder = json.JSONDecoder()
+    for raw in events:
+        raw = raw.encode("utf-8") if isinstance(raw, str) else raw
+        while raw:
+            while pass_index < len(boundaries) and boundaries[pass_index][0] == offset:
+                pass_index += 1  # empty passes (or a boundary consumed by the previous line)
+            end, rc = boundaries[pass_index] if pass_index < len(boundaries) else (offset + len(raw), None)
+            piece, raw = raw[:end - offset], raw[end - offset:]
+            offset += len(piece)
+            n += 1
+            line = piece.decode("utf-8", errors="replace")
+            if not line.strip():
+                continue
+            try:
+                e = json.loads(line)
+            except ValueError:
+                # Do not let corruption conceal a complete event embedded after junk, another JSON object, or a
+                # truncated prefix. Try every brace, including nested objects, and audit all recovered calls.
+                for start in re.finditer(r"\{", line):
+                    try:
+                        e, _ = decoder.raw_decode(line, start.start())
+                    except ValueError:
+                        continue
+                    flags += tool_flags(e, ws, n)
+                truncated = (offset == end and rc in (124, 137) and not piece.endswith(b"\n")
+                             and "tool_execution_start" not in line and truncated_object(line))
+                if not truncated:
+                    bad.append(n)
+            else:
+                flags += tool_flags(e, ws, n)
+    if passes is not None and (not boundaries or boundaries[-1][0] != offset):
+        flags.append(("EVENTS-CORRUPT", n, "pass boundaries do not cover the event log"))
+    if bad:
+        flags.append(("EVENTS-CORRUPT", bad[0],
+                      f"{len(bad)} unparseable line(s) in the event log (first: line {bad[0]})"))
     return flags
 
 
@@ -419,7 +458,19 @@ def main():
         sys.exit(__doc__)
     ws = sys.argv[2].rstrip("/")
     BASE = sys.argv[3] if len(sys.argv) == 4 else ""
-    flags = audit(open(sys.argv[1], errors="replace"), ws)
+    pass_file = Path(sys.argv[1]).with_name("passes.txt")
+    boundary_errors = []
+    try:
+        passes = [tuple(map(int, line.split())) for line in pass_file.read_text().splitlines()]
+        if any(len(p) != 2 for p in passes):
+            raise ValueError("expected byte offset and exit code")
+    except FileNotFoundError:
+        passes = None  # older logs remain auditable, with no truncation exemptions
+    except (OSError, ValueError) as e:
+        passes = []
+        boundary_errors.append(("EVENTS-CORRUPT", 0, f"cannot read pass boundaries: {e}"))
+    with open(sys.argv[1], "rb") as events:
+        flags = boundary_errors + audit(events, ws, passes)
     bad = [f for f in flags if f[0] not in NOT_COUNTED]
     seen = set()
     for kind, n, what in flags:
