@@ -15,7 +15,6 @@
 #include <stdlib.h>
 
 extern const f32 float_108_8041cafc;
-extern const f32 float_0p5_8041caec;
 
 typedef struct RecoveryMayaAnim {
 	u16 flags;       // 0x00
@@ -62,6 +61,32 @@ static u8 color_rotation_data[] = {
 	0xB4, 0xB4, 0xFE, 0xB4, 0xDD, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5,
 	0xB4, 0xFE, 0xB4, 0xD5, 0xFE, 0xB4, 0xFE, 0xFE, 0xB4, 0xFE, 0xD5, 0xAC,
 };
+
+// The colour words precede the immediately generated literal prefix in .sdata2.
+const u32 dat_8041cac0 = 0x000000A0;
+const u32 dat_8041cac4 = 0xF5989DFF;
+const u32 dat_8041cac8 = 0x5DC100FF;
+const u32 dat_8041cacc = 0xFFFFFF00;
+
+#ifdef MUST_MATCH
+// Match-only: emit the shared literal prefix before the named 108 object. Keeping 108 opaque
+// preserves Disp3's f1/f0/f2 allocation. The linker strips this unused helper body.
+#pragma defer_codegen off
+static void recoveryPoolPrefix(f32* values) {
+	values[0] = 0.017453292f;
+	values[1] = 32.0f;
+	values[2] = 90.0f;
+	values[3] = 0.0f;
+	values[4] = 1.0f;
+	values[5] = 8.0f;
+	values[6] = 2.0f;
+	values[7] = 0.5f;
+	values[8] = 16.0f;
+	values[9] = 10.0f;
+	values[10] = 0.05f;
+}
+#pragma defer_codegen reset
+#endif
 
 // Match-only: helper's anonymous literal is the unit's zero-vector .rodata object; building the
 // temp from it keeps the copy's loads late (see entry).
@@ -772,10 +797,11 @@ void effRecoveryDisp3(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 #ifdef MUST_MATCH
 	{
-		// Read the two loop-invariant constants through their named objects so the original's
-		// f1/f0/f2 register assignment comes out; the values are the target's 108 and 0.5.
+		// The opaque width and local half preserve the original f1/f0/f2 allocation.
+		// The half shares the anonymous pool entry used by Disp4 and Disp2.
 		f32 negHalf = -float_108_8041cafc;
-		f30 = negHalf * float_0p5_8041caec;
+		f32 half = 0.5f;
+		f30 = negHalf * half;
 		f29 = f30 + float_108_8041cafc;
 		f27 = negHalf;
 	}
@@ -841,7 +867,9 @@ static inline GXColor rcC(s32 idx, u8 a, GXColor c) {
 }
 #endif
 
+#ifdef MUST_MATCH
 #pragma opt_loop_invariants off // keep `half = y * 0.5f` in the loop so 0.5 pools after the vertex sizes
+#endif
 void effRecoveryDisp4(CameraId camId, void* param) {
 	EffectEntry* entry = param;
 	RecoveryData* ptr = entry->userdata;
@@ -974,7 +1002,9 @@ void effRecoveryDisp4(CameraId camId, void* param) {
 		GXTexCoord2f32(0.0f, one);
 	}
 }
+#ifdef MUST_MATCH
 #pragma opt_loop_invariants reset
+#endif
 
 // .sdata objects (0x80411BE8..0x80411C60), after the code in the original's address order.
 extern u32 recovery_effHermit_0[445];
@@ -1049,24 +1079,14 @@ u32 recovery_effHermit_0[445] = {
 	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
 
-// .sdata2 objects (0x8041CAC0..0x8041CB5C), defined after the code.
-const u32 dat_8041cac0 = 0x000000A0;
-const u32 dat_8041cac4 = 0xF5989DFF;
-const u32 dat_8041cac8 = 0x5DC100FF;
-const u32 dat_8041cacc = 0xFFFFFF00;
-
 #pragma section ".sdata" ".sbss2" // put the two scratch colours in .sbss2
 __declspec(section ".sdata") GXColor unk_80423044; // original is in .sbss2; section redirect above
 __declspec(section ".sdata") GXColor unk_80423040; // declared in the original's reverse address order
 #pragma section ".sdata" ".sbss" // restore .sbss for later zero-initialised objects
 
-// 108 and 0.5 are emitted before the pool; the code reads them by name.
+// Deferred functions are emitted after this opaque width object. The early helper has already
+// pooled its prefix, so 108 lands between 0.05 and 20 at the original .sdata2 address.
 __declspec(section ".sdata2") const f32 float_108_8041cafc = 108.0f;
-__declspec(section ".sdata2") const f32 float_0p5_8041caec = 0.5f;
 
-// Zero tail words the original section has after its last object (the next unit's first word).
-#pragma explicit_zero_data on // emit the zero-valued objects below
-#pragma force_active on // keep them even though nothing references them
-__declspec(section ".data") static u32 gap_77C_8036FD18_data[1] = { 0 };
-#pragma force_active reset
-#pragma explicit_zero_data reset
+// The compiler emits the four switch tables after the animation data. Linker alignment supplies
+// the final zero word; a source-level gap here would precede and shift those tables.

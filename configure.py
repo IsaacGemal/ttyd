@@ -488,7 +488,7 @@ config.libs = [
             Object(Matching, "effect/eff_small_star.c"),
             Object(Matching, "effect/eff_mugi.c"),
             Object(Matching, "effect/eff_stardust.c"),
-            Object(NonMatching, "effect/eff_recovery.c"),
+            Object(Matching, "effect/eff_recovery.c"),
             Object(Matching, "effect/eff_miss_star.c"),
             Object(NonMatching, "effect/eff_nice.c"),
             Object(Matching, "effect/eff_breath_fire.c"),
