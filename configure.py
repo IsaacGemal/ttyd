@@ -550,7 +550,7 @@ config.libs = [
             Object(Matching, "effect/eff_nokotarou.c"),
             Object(Matching, "effect/eff_queen.c"),
             Object(Matching, "effect/eff_queen2.c"),
-            Object(NonMatching, "effect/eff_gonbaba_breath.c"),
+            Object(Matching, "effect/eff_gonbaba_breath.c"),
             Object(Matching, "effect/eff_majinai.c"),
             Object(Matching, "effect/eff_mahorn2.c"),
             Object(NonMatching, "effect/eff_ultra_hammer.c"),
