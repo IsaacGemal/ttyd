@@ -4567,3 +4567,12 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   second failed link: for Codex. Rejected: mot_ship (data port regressed .data 100 -> 57.6 on an unchanged file; queued
   for a follow-up). Open: proto_asm reports winBookGX (win_root.h) as 2 int parameters where the original reads 2 int
   and 2 float, so its win_item/win_log callers may be passing too few arguments.
+- **Batch 16 (#415):** winBookGX takes the two floats its callers pass (proto_asm: the original reads f1/f2; win_item
+  passes the window's 0x234/0x23C floats it has just bounds-checked, win_log's monoshiriGX its own x/y). A runtime bug,
+  done by hand since header_patch refuses a changed prototype.
+- **Batch 17:** rsh and yuu_02 linked (wave 74 arm L, with gor_00 and jon four so far); data ports for usu_00, eff_kiss,
+  strtold, eff_funemizu and win_item (follow-up on the #415 base); mri_puni's follow-up kept `debug` function-local and
+  passed, but .data is still 4404 vs 3832 bytes, its second data attempt (a third goes to Codex); evt_win's audit row
+  was misalignment. Launcher note: set_aside moves `<tag>` to `<tag>.prevN` when the task starts, so a follow-up's spec
+  `files` must not point into its own results folder (mot_ship's first relaunch failed in prepare); they live under
+  scratch/wave74/prev/.
