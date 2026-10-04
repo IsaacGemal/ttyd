@@ -267,6 +267,29 @@ way with all constants literal. It is not free: in functions whose loops already
 cost 3-5 points; there, name only the constants the original keeps (`f32 one = 1.0f;` and pass `one` where the original stores the kept
 register) and leave the pragma off. A negated product (`-one * half`) then stays a runtime multiply.
 
+**mwcc-debugger: see why a register differs** (`tools/mwccdbg.py`, `tools/rasim.py`; adapted from tw2004, CC0). It runs MWCC 2.6 (our compiler)
+under retrowin32's x86 emulator and dumps the PCode between backend passes and the register allocator's priority list: each variable, its
+register, its neighbour count, and the register the original has where ours differs (`!ORIG`). About 7 s per function:
+
+    python3 tools/mwccdbg.py effect/n64/eff_timestamp_n64 effTimestampDisp          # dumps in build/mwccdbg/FUNC, summary.txt
+    python3 tools/rasim.py build/mwccdbg/FUNC replay [--fpr]                         # rebuilds the colouring; must report 0 differ
+    python3 tools/rasim.py build/mwccdbg/FUNC search 39 48 --summary                 # best declaration order of vregs 39..48
+
+`replay` reproduces the compiler's colours exactly (0 differences on effTimestampDisp, GPR and FPR); `search` permutes the named locals'
+vregs (declaration order, first declared = highest number; `@N` CSE temps sit above them) for the original's registers, thousands of
+orders a second with no compile. If even a wider range finds nothing (effTimestampDisp: still 3 of 47 wrong), the original has different
+live ranges, not a different declaration order: change what creates the temps (one value more or fewer in a register, a reused local).
+Variables with more than 28 neighbours jump to the top of the priority list and take r31/f31. Setup, once per machine, no sudo (Linux or
+macOS; needs gdb, cmake, Rust; the clones live in `$MWCCDBG_HOME`, default `~/mwccdbg`):
+
+    micromamba create -p ~/mwccdbg/env -c conda-forge gdb cmake git          # gdb on PATH (or MWCCDBG_PATH)
+    git clone https://github.com/cadmic/mwcc-debugger ~/mwccdbg/mwcc-debugger  # no licence: run it, never copy it into the repo
+    git clone https://github.com/encounter/retrowin32 ~/mwccdbg/retrowin32 && cd ~/mwccdbg/retrowin32 && git checkout gdb-stub
+    cargo build -p retrowin32 -F x86-unicorn --profile lto                    # about 3 minutes; use nice on a shared machine
+
+The tool needs the repo's build.ninja and `build/G8MJ01/obj` (the original objects); a function's dump is for the source as it is in the
+tree (`--src copy.c` compiles a scratch copy with the unit's flags).
+
 **Conversion double before strings.** If the target's `.rodata` has an int->float double (`double_to_int_*`) ahead of a string that a
 deferred function pools, our build pools the double later, since a deferred unit emits functions in reverse source order and each
 function pools its strings before its own conversion double. Under `#ifdef MUST_MATCH` add an ordinary helper that is generated

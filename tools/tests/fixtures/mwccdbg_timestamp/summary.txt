@@ -1,0 +1,65 @@
+== regalloc-fpr-pass-1-assigned.txt
+  f65   -> f31   ORIG f31   22 nb  
+  f62   -> f30   ORIG f30   22 nb  
+  f61   -> f29   ORIG f29   22 nb  
+  f57   -> f29   ORIG f29   32 nb  
+  f49   -> f1    ORIG f1     8 nb  
+  f48   -> f1    ORIG f1     8 nb  
+  f47   -> f1    ORIG f1     7 nb  
+  f46   -> f30   ORIG f30   32 nb  
+  f44   -> f31   ORIG f31   32 nb  
+  f40   -> f28   ORIG f28   32 nb  
+  f39   -> f27   ORIG f27   32 nb  
+  f36   -> f1    ORIG f1     1 nb  
+  f35   -> f1    ORIG f1     1 nb  
+  f33   -> f26   ORIG f26   30 nb  fieldScale
+  f32   -> f0    ORIG f0     6 nb  s
+== regalloc-gpr-pass-1-assigned.txt
+  r97   -> r31   ORIG r31   40 nb  
+  r56   -> r30  !ORIG r29   41 nb  @250
+  r55   -> r29   ORIG r29   40 nb  @251
+  r54   -> r28  !ORIG r26   40 nb  @252
+  r53   -> r27   ORIG r27   40 nb  @253
+  r48   -> r26   ORIG r26   58 nb  i
+  r47   -> r25   ORIG r25   68 nb  counter
+  r45   -> r27   ORIG r27   33 nb  angleA
+  r44   -> r28  !ORIG r26   41 nb  data
+  r43   -> r29   ORIG r29   33 nb  offset
+  r42   -> r30  !ORIG r29   31 nb  angleB
+  r41   -> r31   ORIG r31   31 nb  vtx
+  r40   -> r24   ORIG r24   33 nb  base
+  r39   -> r23   ORIG r23   31 nb  v
+  r108  -> r3    ORIG r3     7 nb  
+  r104  -> r5    ORIG r5    12 nb  
+  r103  -> r23   ORIG r23   40 nb  
+  r102  -> r5    ORIG r5    14 nb  
+  r101  -> r6    ORIG r6    15 nb  
+  r100  -> r7    ORIG r7    15 nb  
+  r99   -> r5    ORIG r5    15 nb  
+  r98   -> r6    ORIG r6    14 nb  
+  r96   -> r4    ORIG r4     5 nb  
+  r95   -> r4    ORIG r4     5 nb  
+  r93   -> r4    ORIG r4    15 nb  
+  r90   -> r3    ORIG r3    13 nb  
+  r80   -> r3    ORIG r3    17 nb  
+  r77   -> r4    ORIG r4    16 nb  
+  r75   -> r5    ORIG r5    14 nb  
+  r74   -> r5    ORIG r5    17 nb  
+  r67   -> r22   ORIG r22   31 nb  
+  r65   -> r3    ORIG r3     7 nb  
+  r64   -> r4    ORIG r4     8 nb  
+  r59   -> r5    ORIG r5     7 nb  
+  r57   -> r22   ORIG r22   15 nb  
+  r52   -> r0    ORIG r0     0 nb  @254
+  r51   -> r0    ORIG r0     0 nb  @255
+  r50   -> r0    ORIG r0     0 nb  @256
+  r49   -> r0    ORIG r0     0 nb  cam
+  r46   -> r23   ORIG r23   18 nb  timer
+  r38   -> r0    ORIG r0     0 nb  entry
+  r37   -> r22   ORIG r22   21 nb  j
+  r36   -> r24   ORIG r24   21 nb  k
+  r35   -> r21   ORIG r21   24 nb  valA
+  r34   -> r6    ORIG r6    15 nb  valB
+  r33   -> r21   ORIG r21   12 nb  param
+  r32   -> r0    ORIG r0     0 nb  camId
+dumps in /home/isaac/mwccdbg/ttyd/build/mwccdbg/effTimestampDisp
