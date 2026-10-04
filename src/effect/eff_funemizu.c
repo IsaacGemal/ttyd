@@ -7,11 +7,18 @@
 #include "system.h"
 #include <dolphin/mtx.h>
 #include <dolphin/gx.h>
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const Vec vec3_802fe8a0;
+extern u32 funemizu_vertex_tbl[];
+extern u32 funemizu_texcoord0_tbl[];
+extern u32 gor_fune_vertex_tbl[];
+extern u32 gor_fune_texcoord0_tbl[];
+
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
-__declspec(section ".data") u32 lbl_803B0200[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") extern u32 lbl_803B0200[2];
 
 // MUST_MATCH: the original reaches the unit's .data tables off one base register (&lbl_803B0200); the natural
 // build names them.
@@ -26,7 +33,6 @@ typedef struct FunemizuMapEntry {
 	u32 value;
 } FunemizuMapEntry;
 
-const Vec vec3_802fe8a0 = {0.0f, 0.0f, 0.0f};
 extern const f32 float_deg2rad_80421470;
 extern const f32 float_3_80421474;
 extern const f32 float_0_80421478;
@@ -44,15 +50,8 @@ extern const f32 float_14_804214a4;
 extern const f32 float_100_804214a8;
 extern const s32 dat_80421468;
 extern const u32 dat_8042146c;
-extern const char str_802FE8B8[];
 
 extern FunemizuMapEntry unk_803b0640[];
-extern u8 funemizu_vertex_tbl[];
-extern u8 funemizu_texcoord0_tbl[];
-extern u8 gor_fune_vertex_tbl[];
-extern u8 gor_fune_texcoord0_tbl[];
-
-const f64 double_to_int_802fe8b0 = 4503601774854144.0;
 
 u32 unk_80224298(void) {
 	FunemizuMapEntry* p;
@@ -99,7 +98,7 @@ EffectEntry* effFunemizuEntry(s32 type, f32 a, f32 b, f32 c, f32 d, f32 e) {
 	if (count > 10) {
 		count = 10;
 	}
-	entry->type = str_802FE8B8;
+	entry->type = "funemizu\0\0\0\0\0\0\0";
 	entry->count = count;
 	data = __memAlloc(HEAP_EFFECT, sizeof(EffFunemizuData) * entry->count);
 	entry->userdata = data;
@@ -381,7 +380,7 @@ found:
 		else {
 			GXSetCullMode(GX_CULL_FRONT);
 		}
-		scale = 1.0f - 2.0f * (f32)i;
+		scale = 1.0f - float_2_8042148c * (f32)i;
 		PSMTXTrans(mtxC0, 0.0f, 0.0f, scale);
 		PSMTXConcat(mtx30, mtxC0, mtxC0);
 		PSMTXScale(mtx90, 1.0f, 1.0f, scale);
@@ -557,3 +556,249 @@ void effFunemizuShibukiDisp(CameraId camId, void* param) {
 		GXEnd();
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Data ported from the original unit's .data/.sdata/.rodata/.sdata2.
+// The map-lookup strings are .rodata objects referenced by unk_803b0640, so
+// they are named here rather than left as string literals in that table.
+// ---------------------------------------------------------------------------
+
+// .rodata: the map-name strings, in the original's address order.
+const char str_802FE7A0[8] = "dou_02";
+const char str_802FE7A8[8] = "dou_03";
+const char str_802FE7B0[8] = "dou_04";
+const char str_802FE7B8[8] = "dou_05";
+const char str_802FE7C0[8] = "dou_07";
+const char str_802FE7C8[8] = "dou_08";
+const char str_802FE7D0[8] = "dou_09";
+const char str_802FE7D8[8] = "dou_10";
+const char str_802FE7E0[8] = "dou_11";
+const char str_802FE7E8[8] = "dou_12";
+const char str_802FE7F0[8] = "gon_01";
+const char str_802FE7F8[8] = "gor_00";
+const char str_802FE800[8] = "gor_02";
+const char str_802FE808[8] = "hei_01";
+const char str_802FE810[8] = "las_04";
+const char str_802FE818[8] = "las_09";
+const char str_802FE820[8] = "mri_16";
+const char str_802FE828[8] = "muj_00";
+const char str_802FE830[8] = "muj_02";
+const char str_802FE838[8] = "muj_04";
+const char str_802FE840[8] = "muj_10";
+const char str_802FE848[8] = "nok_00";
+const char str_802FE850[8] = "nok_01";
+const char str_802FE858[8] = "pik_00";
+const char str_802FE860[8] = "pik_01";
+const char str_802FE868[8] = "pik_04";
+const char str_802FE870[8] = "tik_02";
+const char str_802FE878[8] = "tik_15";
+const char str_802FE880[8] = "tik_16";
+const char str_802FE888[8] = "tik_17";
+const char str_802FE890[8] = "tik_18";
+const char str_802FE898[8] = "tik_20";
+const Vec vec3_802fe8a0 = { 0.0f, 0.0f, 0.0f };
+
+#pragma force_active on
+#pragma explicit_zero_data on
+
+// .data: the tables reached through lbl_803B0200, in the original's address order.
+u32 lbl_803B0200[2] = {
+	0xBF800000, 0x3F800000,
+};
+__declspec(section ".data") u32 negone_one_374[2] = {
+	0xBF800000, 0x3F800000,
+};
+__declspec(section ".data") u32 lbl_803B0210[2] = {
+	0x3F800000, 0xBF800000,
+};
+__declspec(section ".data") u32 one_negone_373[2] = {
+	0x3F800000, 0xBF800000,
+};
+__declspec(section ".data") u32 lbl_803B0220[2] = {
+	0xBF800000, 0x3F800000,
+};
+__declspec(section ".data") u32 negone_one_360[2] = {
+	0xBF800000, 0x3F800000,
+};
+__declspec(section ".data") u32 lbl_803B0230[2] = {
+	0x3F800000, 0xBF800000,
+};
+__declspec(section ".data") u32 one_negone_359[2] = {
+	0x3F800000, 0xBF800000,
+};
+u32 funemizu_vertex_tbl[48] = {
+	0x4E6FFD84, 0x000035C6, 0x00000000, 0x22C60000, 0x000015C6, 0x00000000, 0x00000000, 0x000035C6,
+	0x06000000, 0x22C60A00, 0x000015C6, 0x0A000000, 0x02000000, 0x000046EA, 0x03830000, 0x35C60D00,
+	0x000022C6, 0x15000000, 0x15C61570, 0x000008C6, 0x0BA60000, 0x38CEFE74, 0x04E12720, 0x000004E1,
+	0x19800000, 0x04E1102E, 0x000004E1, 0x02000000, 0x04E12720, 0x03BD04E1, 0x1980063C, 0x04E1102E,
+	0x063C04E1, 0x33690230, 0x04E12720, 0x081A04E1, 0x19800D17, 0x04E1102E, 0x0D5E04E1, 0x06DB0743,
+	0x04E10000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+u32 funemizu_texcoord0_tbl[32] = {
+	0x04001000, 0x04000800, 0x00000C00, 0x08001000, 0x08000800, 0x0C001000, 0x0C000800, 0x10001000,
+	0x10000800, 0x04000100, 0x00000100, 0x08000100, 0x0C000100, 0x10000100, 0xB4001000, 0xB4000800,
+	0xB0000C00, 0xB8001000, 0xB8000800, 0xBC001000, 0xBC000800, 0xC0000C00, 0xB4000100, 0xB0000100,
+	0xB8000100, 0xBC000100, 0xC0000100, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+u32 funemizu_dl_0_0[16] = {
+	0x98000A09, 0x00010A00, 0x0000020A, 0x00010905, 0x0001010B, 0x00010B06, 0x0001040C, 0x00010C07,
+	0x0001060D, 0x00010D08, 0x00000800, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+u32 funemizu_dl_1_0[16] = {
+	0x98000A16, 0x0001170E, 0x00001017, 0x00011613, 0x00010F18, 0x00011814, 0x00011219, 0x00011915,
+	0x0001141A, 0x00011A12, 0x00001500, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+u32 gor_fune_vertex_tbl[56] = {
+	0x5C350000, 0x00003FF0, 0x00000000, 0x2F310000, 0x00001FF8, 0x00000000, 0x10BF0000, 0x00000000,
+	0x00000000, 0x5E86014D, 0x0000455A, 0x0CDB0000, 0x363E19A5, 0x00002853, 0x23400000, 0x18FE2462,
+	0x00000000, 0x00000000, 0x5E4B0800, 0x0000470E, 0x12390000, 0x388320CD, 0x00002AE1, 0x2B4C0000,
+	0x1BD42D53, 0x000008AF, 0x262E0000, 0x5C350000, 0x00003FF0, 0x00000000, 0x2F310000, 0x00001FF8,
+	0x00000000, 0x10BF0000, 0x00000000, 0x00000000, 0x5E8600C8, 0x0000455A, 0x07B60000, 0x363E11C9,
+	0x00002853, 0x19260000, 0x18FE19D4, 0x00000000, 0x00000000, 0x5E4B04CD, 0x0000470E, 0x0AEF0000,
+	0x38831614, 0x00002AE1, 0x1DFA0000, 0x1BD41F32, 0x00000B96, 0x19160000, 0x00000000, 0x00000000,
+};
+u32 gor_fune_texcoord0_tbl[24] = {
+	0xF3034000, 0xF3031884, 0xD5041884, 0xD5044000, 0x11004000, 0x11001884, 0x2EFF4000, 0x2EFF1884,
+	0x4CFD4000, 0x4CFD1884, 0x6AFC4000, 0x6AFC1884, 0xF3030400, 0xD5040200, 0x11000400, 0x2EFF0400,
+	0x4CFD0400, 0x6AFC0200, 0xF3033CCC, 0xD5043CCC, 0x11003CCC, 0x2EFF3CCC, 0x4CFD3CCC, 0x6AFC3CCC,
+};
+u32 gor_fune_dl_0_0[16] = {
+	0x98000C0C, 0x00010D06, 0x0000020D, 0x00010C07, 0x0001010E, 0x00010E08, 0x0001050F, 0x00010F09,
+	0x00010710, 0x0001100A, 0x00010911, 0x0001110B, 0x00000B00, 0x00000000, 0x00000000, 0x00000000,
+};
+u32 gor_fune_dl_0_1[16] = {
+	0x98000C05, 0x00000A0B, 0x00000B04, 0x0000080A, 0x00010903, 0x00000609, 0x00010702, 0x00000408,
+	0x00010501, 0x00000007, 0x00010100, 0x00000306, 0x00000200, 0x00000000, 0x00000000, 0x00000000,
+};
+u32 gor_fune_dl_1_0[16] = {
+	0x98000C1E, 0x00010D18, 0x0000021F, 0x00010C19, 0x00010120, 0x00010E1A, 0x00010521, 0x00010F1B,
+	0x00010722, 0x0001101C, 0x00010923, 0x0001111D, 0x00000B00, 0x00000000, 0x00000000, 0x00000000,
+};
+u32 gor_fune_dl_1_1[16] = {
+	0x98000C17, 0x0000171D, 0x00000B16, 0x0000161C, 0x00010915, 0x0000151B, 0x00010714, 0x0000141A,
+	0x00010513, 0x00001219, 0x00010112, 0x00001318, 0x00000200, 0x00000000, 0x00000000, 0x00000000,
+};
+FunemizuMapEntry unk_803b0640[32] = {
+	{ str_802FE7A0, 0x0E2CA200 },
+	{ str_802FE7A8, 0x0E2CA200 },
+	{ str_802FE7B0, 0x0E2CA200 },
+	{ str_802FE7B8, 0x0E2CA200 },
+	{ str_802FE7C0, 0x0E2CA200 },
+	{ str_802FE7C8, 0x0E2CA200 },
+	{ str_802FE7D0, 0x0E2CA200 },
+	{ str_802FE7D8, 0x0E2CA200 },
+	{ str_802FE7E0, 0x0E2CA200 },
+	{ str_802FE7E8, 0x0E2CA200 },
+	{ str_802FE7F0, 0x00614900 },
+	{ str_802FE7F8, 0x00306500 },
+	{ str_802FE800, 0x00306500 },
+	{ str_802FE808, 0x51C3CB00 },
+	{ str_802FE810, 0x081C2C00 },
+	{ str_802FE818, 0x45798E00 },
+	{ str_802FE820, 0x00A6FF00 },
+	{ str_802FE828, 0x0E2CA200 },
+	{ str_802FE830, 0x20305D00 },
+	{ str_802FE838, 0x0E2CA200 },
+	{ str_802FE840, 0x0E2CA200 },
+	{ str_802FE848, 0x69C3D700 },
+	{ str_802FE850, 0x69C3D700 },
+	{ str_802FE858, 0x82E3DF00 },
+	{ str_802FE860, 0x6DCBFF00 },
+	{ str_802FE868, 0x6DCBFF00 },
+	{ str_802FE870, 0x042C5100 },
+	{ str_802FE878, 0x304D5900 },
+	{ str_802FE880, 0x304D5900 },
+	{ str_802FE888, 0x304D5900 },
+	{ str_802FE890, 0x304D5900 },
+	{ str_802FE898, 0x304D5900 },
+};
+__declspec(section ".data") u32 unk_803b0640_end[1] = { 0 };
+__declspec(section ".data") u32 gap_05_803B0744_data[1] = { 0 };
+
+// .sdata: the display-list/colour/normal tables, in the original's address order.
+u8 funemizu_normal_tbl[32] = {
+	0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+__declspec(section ".sdata") u8 funemizu_color0_tbl[32] = {
+	0, 0, 0, 255, 255, 255, 255, 255,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+};
+__declspec(section ".sdata") u32 funemizu_dl_0_1[8] = {
+	0x98000704, 0x00000708, 0x00000803, 0x00000507, 0x00010602, 0x00000306, 0x00010401, 0x00000000,
+};
+__declspec(section ".sdata") u32 funemizu_dl_0_2[8] = {
+	0x98000400, 0x00000201, 0x00000005, 0x00010106, 0x00010400, 0x00000000, 0x00000000, 0x00000000,
+};
+__declspec(section ".sdata") u8* funemizu_dl_0_tbl[3] = {
+	(u8*)funemizu_dl_0_0, (u8*)funemizu_dl_0_1, (u8*)funemizu_dl_0_2,
+};
+__declspec(section ".sdata") u8 funemizu_dl_0_size_tbl[4] = {
+	2, 1, 1, 0,
+};
+__declspec(section ".sdata") u32 gap_07_804162F0_sdata[4] = { 0, 0, 0, 0 };
+__declspec(section ".sdata") u32 funemizu_dl_1_1[8] = {
+	0x98000412, 0x00001515, 0x00011411, 0x00001310, 0x00001100, 0x00000000, 0x00000000, 0x00000000,
+};
+__declspec(section ".sdata") u32 funemizu_dl_1_2[8] = {
+	0x9800040E, 0x0000100F, 0x00000E13, 0x00010F14, 0x00011200, 0x00000000, 0x00000000, 0x00000000,
+};
+__declspec(section ".sdata") u32 funemizu_dl_1_3[8] = {
+	0x98000415, 0x00011414, 0x00011210, 0x0000110F, 0x00000E00, 0x00000000, 0x00000000, 0x00000000,
+};
+__declspec(section ".sdata") u8* funemizu_dl_1_tbl[4] = {
+	(u8*)funemizu_dl_1_0, (u8*)funemizu_dl_1_1, (u8*)funemizu_dl_1_2, (u8*)funemizu_dl_1_3,
+};
+__declspec(section ".sdata") u8 funemizu_dl_1_size_tbl[4] = {
+	2, 1, 1, 1,
+};
+__declspec(section ".sdata") u32 gap_07_80416374_sdata[3] = { 0, 0, 0 };
+u8 gor_fune_normal_tbl[32] = {
+	0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+__declspec(section ".sdata") u8 gor_fune_color0_tbl[8] = {
+	0, 0, 0, 255, 255, 255, 255, 255,
+};
+__declspec(section ".sdata") u8* gor_fune_dl_0_tbl[2] = {
+	(u8*)gor_fune_dl_0_0, (u8*)gor_fune_dl_0_1,
+};
+__declspec(section ".sdata") u8 gor_fune_dl_0_size_tbl[4] = {
+	2, 2, 0, 0,
+};
+__declspec(section ".sdata") u8* gor_fune_dl_1_tbl[2] = {
+	(u8*)gor_fune_dl_1_0, (u8*)gor_fune_dl_1_1,
+};
+__declspec(section ".sdata") u8 gor_fune_dl_1_size_tbl[4] = {
+	2, 2, 0, 0,
+};
+
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+// .sdata2: the named float/word constants, in the original's address order.
+const s32 dat_80421468 = -1;
+const u32 dat_8042146c = 0xFFFFFF00;
+const f32 float_deg2rad_80421470 = 0.017453292f;
+const f32 float_3_80421474 = 3.0f;
+const f32 float_0_80421478 = 0.0f;
+const f32 float_0p5_8042147c = 0.5f;
+const f32 float_1p5_80421480 = 1.5f;
+const f32 float_1_80421484 = 1.0f;
+const f32 float_neg15_80421488 = -15.0f;
+const f32 float_2_8042148c = 2.0f;
+const f32 float_10_80421490 = 10.0f;
+const f32 float_0p05_80421494 = 0.05f;
+const f32 float_0p1_80421498 = 0.1f;
+const f32 float_6p2832_8042149c = 6.2831855f;
+const f32 float_360_804214a0 = 360.0f;
+const f32 float_14_804214a4 = 14.0f;
+const f32 float_100_804214a8 = 100.0f;
+
+

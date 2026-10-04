@@ -43,3 +43,4 @@ typedef struct EffFunemizuData {
 	f32 field_0x44; // 0x44
 	s32 field_0x48; // 0x48
 } EffFunemizuData;
+#include <dolphin/mtx.h>
