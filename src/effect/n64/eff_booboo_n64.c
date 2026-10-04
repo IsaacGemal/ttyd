@@ -5,16 +5,35 @@
 #include "eff/eff_n64.h"
 
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_8039A9E0[2] = { 0xBF800000, 0x3F800000 };
 
+#ifdef MUST_MATCH
+// An immediately generated helper pools the int->float double before the deferred functions' strings.
+#pragma defer_codegen off
+static f32 booboo_pool_i2f(s32 v) {
+	return (f32)v;
+}
+#pragma defer_codegen reset
+#endif
+
 // .rodata
 const char str_802FA2E0[12] = "BoobooN64";
 
-// .sbss2
-GXColor unk_804230a8;
+// 4-byte zero word ending the unit's .rodata
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".rodata") const u32 gap_04_802FA2EC_rodata = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
+
+// .sbss2 zero GXColor scratch (declared in reverse so the 4-byte gap lands after it)
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor gap_10_804230AC_sbss2;
+__declspec(section ".sdata") GXColor unk_804230a8;
+#pragma section ".sdata" ".sbss"
 
 // .data
 __declspec(section ".data") u32 negone_one_374[2] ATTRIBUTE_ALIGN(8) = {
@@ -650,71 +669,242 @@ static inline GXColor boobooColor(u8 v) {
 }
 #endif
 
-// effBoobooDisp: every instruction is byte-identical except the callee-saved colouring of the four
-// loop-carried values effect/camera/word/byte. Building the GXColor with separate .r/.g/.b statements
-// fixed the by-value store order (99.30% -> 99.42%). Storing the sin result in `f32 s` first pools
-// 6.2832/360 before 63.0 as the original's .sdata2 does (no instruction changes). Using `param`
-// directly instead of the local `effect` puts effect/camera in r29/r28 but swaps the word/byte
-// induction pointers to r27/r26 (99.29%), so the local `effect` is kept.
-// Declaration-order (perm_decls over all 10 locals), opt_lifetimes/opt_propagation/opt_common_subs/
-// optimize_for_size/scheduling/global_optimizer/optimization_level pragma and random source-shape
-// searches were all tried; none reach the target rotation. The int->float magic is emitted as an
-// anonymous @NNN label instead of the named double_to_int_802fa2d8 (a project-wide folded-pool issue
-// that objdiff scores as equal).
-// NONMATCHING (99.42%): target effect r29/camera r28/word r26/byte r27; ours effect r26/camera r29/word r28/byte r27.
-void effBoobooDisp(CameraId camId, void* param) {
-	EffectEntry* effect = param;
-	CameraEntry* camera;
-	s32 phase;
-	s32 poly;
+void boo_polygon_0(void) {
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0xE);
+	GXSetArray(GX_VA_POS, boo_vertex_tbl, 6);
+	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+	GXSetArray(GX_VA_NRM, boo_normal_tbl, 3);
+	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXSetArray(GX_VA_CLR0, boo_color0_tbl, 4);
+	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
+	GXSetArray(GX_VA_TEX0, boo_texcoord0_tbl, 4);
+	GXCallDisplayList(boo_dl_0_0, 0x40);
+	GXCallDisplayList(boo_dl_0_1, 0x40);
+	GXCallDisplayList(boo_dl_0_2, 0x40);
+	GXCallDisplayList(boo_dl_0_3, 0x40);
+	GXCallDisplayList(boo_dl_0_4, 0x20);
+	GXCallDisplayList(boo_dl_0_5, 0x20);
+	GXCallDisplayList(boo_dl_0_6, 0x20);
+	GXCallDisplayList(boo_dl_0_7, 0x20);
+	GXCallDisplayList(boo_dl_0_8, 0x20);
+	GXCallDisplayList(boo_dl_0_9, 0x20);
+	GXCallDisplayList(boo_dl_0_10, 0x20);
+	GXCallDisplayList(boo_dl_0_11, 0x20);
+	GXCallDisplayList(boo_dl_0_12, 0x20);
+	GXCallDisplayList(boo_dl_0_13, 0x20);
+	GXCallDisplayList(boo_dl_0_14, 0x20);
+	GXCallDisplayList(boo_dl_0_15, 0x20);
+	GXCallDisplayList(boo_dl_0_16, 0x20);
+	GXCallDisplayList(boo_dl_0_17, 0x20);
+	GXCallDisplayList(boo_dl_0_18, 0x20);
+	GXCallDisplayList(boo_dl_0_19, 0x20);
+	GXCallDisplayList(boo_dl_0_20, 0x20);
+	GXCallDisplayList(boo_dl_0_21, 0x20);
+	GXCallDisplayList(boo_dl_0_22, 0x20);
+	GXCallDisplayList(boo_dl_0_23, 0x20);
+	GXCallDisplayList(boo_dl_0_24, 0x20);
+	GXCallDisplayList(boo_dl_0_25, 0x20);
+	GXCallDisplayList(boo_dl_0_26, 0x20);
+	GXCallDisplayList(boo_dl_0_27, 0x20);
+	GXCallDisplayList(boo_dl_0_28, 0x20);
+	GXCallDisplayList(boo_dl_0_29, 0x20);
+	GXCallDisplayList(boo_dl_0_30, 0x20);
+	GXCallDisplayList(boo_dl_0_31, 0x20);
+}
+
+void boo_polygon_1(void) {
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0xE);
+	GXSetArray(GX_VA_POS, boo_vertex_tbl, 6);
+	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+	GXSetArray(GX_VA_NRM, boo_normal_tbl, 3);
+	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXSetArray(GX_VA_CLR0, boo_color0_tbl, 4);
+	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
+	GXSetArray(GX_VA_TEX0, boo_texcoord0_tbl, 4);
+	GXCallDisplayList(boo_dl_1_0, 0x40);
+	GXCallDisplayList(boo_dl_1_1, 0x40);
+	GXCallDisplayList(boo_dl_1_2, 0x40);
+	GXCallDisplayList(boo_dl_1_3, 0x40);
+	GXCallDisplayList(boo_dl_1_4, 0x20);
+	GXCallDisplayList(boo_dl_1_5, 0x20);
+	GXCallDisplayList(boo_dl_1_6, 0x20);
+	GXCallDisplayList(boo_dl_1_7, 0x20);
+	GXCallDisplayList(boo_dl_1_8, 0x20);
+	GXCallDisplayList(boo_dl_1_9, 0x20);
+	GXCallDisplayList(boo_dl_1_10, 0x20);
+	GXCallDisplayList(boo_dl_1_11, 0x20);
+	GXCallDisplayList(boo_dl_1_12, 0x20);
+	GXCallDisplayList(boo_dl_1_13, 0x20);
+	GXCallDisplayList(boo_dl_1_14, 0x20);
+	GXCallDisplayList(boo_dl_1_15, 0x20);
+	GXCallDisplayList(boo_dl_1_16, 0x20);
+	GXCallDisplayList(boo_dl_1_17, 0x20);
+	GXCallDisplayList(boo_dl_1_18, 0x20);
+	GXCallDisplayList(boo_dl_1_19, 0x20);
+	GXCallDisplayList(boo_dl_1_20, 0x20);
+	GXCallDisplayList(boo_dl_1_21, 0x20);
+	GXCallDisplayList(boo_dl_1_22, 0x20);
+	GXCallDisplayList(boo_dl_1_23, 0x20);
+	GXCallDisplayList(boo_dl_1_24, 0x20);
+	GXCallDisplayList(boo_dl_1_25, 0x20);
+	GXCallDisplayList(boo_dl_1_26, 0x20);
+	GXCallDisplayList(boo_dl_1_27, 0x20);
+	GXCallDisplayList(boo_dl_1_28, 0x20);
+	GXCallDisplayList(boo_dl_1_29, 0x20);
+	GXCallDisplayList(boo_dl_1_30, 0x20);
+	GXCallDisplayList(boo_dl_1_31, 0x20);
+}
+
+void boo_polygon_2(void) {
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0xE);
+	GXSetArray(GX_VA_POS, boo_vertex_tbl, 6);
+	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+	GXSetArray(GX_VA_NRM, boo_normal_tbl, 3);
+	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+	GXSetArray(GX_VA_CLR0, boo_color0_tbl, 4);
+	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
+	GXSetArray(GX_VA_TEX0, boo_texcoord0_tbl, 4);
+	GXCallDisplayList(boo_dl_2_0, 0x40);
+	GXCallDisplayList(boo_dl_2_1, 0x40);
+	GXCallDisplayList(boo_dl_2_2, 0x40);
+	GXCallDisplayList(boo_dl_2_3, 0x40);
+	GXCallDisplayList(boo_dl_2_4, 0x20);
+	GXCallDisplayList(boo_dl_2_5, 0x20);
+	GXCallDisplayList(boo_dl_2_6, 0x20);
+	GXCallDisplayList(boo_dl_2_7, 0x20);
+	GXCallDisplayList(boo_dl_2_8, 0x20);
+	GXCallDisplayList(boo_dl_2_9, 0x20);
+	GXCallDisplayList(boo_dl_2_10, 0x20);
+	GXCallDisplayList(boo_dl_2_11, 0x20);
+	GXCallDisplayList(boo_dl_2_12, 0x20);
+	GXCallDisplayList(boo_dl_2_13, 0x20);
+	GXCallDisplayList(boo_dl_2_14, 0x20);
+	GXCallDisplayList(boo_dl_2_15, 0x20);
+	GXCallDisplayList(boo_dl_2_16, 0x20);
+	GXCallDisplayList(boo_dl_2_17, 0x20);
+	GXCallDisplayList(boo_dl_2_18, 0x20);
+	GXCallDisplayList(boo_dl_2_19, 0x20);
+	GXCallDisplayList(boo_dl_2_20, 0x20);
+	GXCallDisplayList(boo_dl_2_21, 0x20);
+	GXCallDisplayList(boo_dl_2_22, 0x20);
+	GXCallDisplayList(boo_dl_2_23, 0x20);
+	GXCallDisplayList(boo_dl_2_24, 0x20);
+	GXCallDisplayList(boo_dl_2_25, 0x20);
+	GXCallDisplayList(boo_dl_2_26, 0x20);
+	GXCallDisplayList(boo_dl_2_27, 0x20);
+	GXCallDisplayList(boo_dl_2_28, 0x20);
+	GXCallDisplayList(boo_dl_2_29, 0x20);
+	GXCallDisplayList(boo_dl_2_30, 0x20);
+	GXCallDisplayList(boo_dl_2_31, 0x20);
+}
+
+EffectEntry* effBoobooN64Entry(void) {
+	EffectEntry* effect;
 	BoobooData* data;
 	s32 i;
-	Mtx mtx;
-	Mtx scaleMtx;
-	Mtx rotMtx;
-	GXColor color;
 
-	camera = camGetPtr(camId);
+	effect = effEntry();
+	effect->type = str_802FA2E0;
+	effect->count = 1;
+	data = __memAlloc(HEAP_EFFECT, 0x148);
+	effect->userdata = data;
+	effect->callback = effBoobooMain;
+	data->timer = 0;
+	data->field_0x0 = 1000;
+	for (i = 0; i < 11; i++) {
+		data->x[i] = 0.0f;
+		data->y[i] = 0.0f;
+		data->z[i] = 0.0f;
+		data->rot[i] = 0.0f;
+		data->flags[i] = 0;
+		data->state[i] = 1;
+		data->poly[i] = 1;
+		data->bob[i] = 0.0f;
+		data->counter[i] = 0;
+	}
+	return effect;
+}
+
+void effBoobooMain(EffectEntry* effect) {
+	BoobooData* data;
+	s32 i;
+	BOOL disp;
+	s32 counter;
+
 	data = effect->userdata;
-	phase = data->timer * 30;
-	for (i = 0; i < 11; i++, phase += 20) {
-		if (data->flags[i] & 1) {
-			PSMTXTrans(mtx, data->x[i], data->y[i] + data->bob[i], data->z[i]);
-			PSMTXRotRad(rotMtx, 'y', 0.017453292f * (180.0f - data->rot[i]));
-			PSMTXConcat(mtx, rotMtx, mtx);
-			PSMTXScale(scaleMtx, 10.0f, 10.0f, 10.0f);
-			PSMTXConcat(mtx, scaleMtx, mtx);
-			PSMTXConcat(camera->view, mtx, mtx);
-			GXLoadPosMtxImm(mtx, GX_PNMTX0);
-			GXSetCurrentMtx(GX_PNMTX0);
-			if (!texture_dl(effect, i, data->tex[i])) {
-				if (data->tex[i] == 8 || data->tex[i] == 9) {
-					f32 s = (f32)sin(6.2831855f * phase / 360.0f);
-					u8 bright = (u8)(63.0f + 63.0f * s);
-#ifdef MUST_MATCH
-					color = boobooColor(bright);
-#else
-					color = unk_804230a8;
-					color.r = color.g = color.b = bright;
-#endif
-					GXSetTevColor(GX_TEVREG0, color);
-				}
-				poly = data->poly[i];
-				GXSetCullMode(GX_CULL_BACK);
-				switch (poly) {
-				case 0:
-					boo_polygon_0();
-					break;
-				case 1:
-					boo_polygon_1();
-					break;
-				case 2:
-					boo_polygon_2();
-					break;
-				}
+	data->timer++;
+	for (i = 0; i < 11; i++) {
+		counter = data->counter[i];
+		disp = FALSE;
+		switch (data->state[i]) {
+		case 0:
+			disp = TRUE;
+			break;
+		case 1:
+			data->poly[i] = 1;
+			disp = TRUE;
+			break;
+		case 3:
+			data->poly[i] = anime_data_walk[counter % 8];
+			data->rot[i] += (f32)sin(6.2831855f * (counter * 10) / 360.0f);
+			if (counter >= 36) {
+				data->counter[i] = 0;
+				disp = TRUE;
 			}
+			break;
+		case 2:
+			data->poly[i] = anime_data_walk[counter % 8];
+			data->bob[i] = 2.0f * (f32)sin(6.2831855f * (counter * 20) / 360.0f);
+			disp = TRUE;
+			if (counter >= 9) {
+				data->bob[i] = 0.0f;
+				data->counter[i] = 0;
+				disp = TRUE;
+			}
+			break;
+		case 4:
+			data->poly[i] = anime_data_walk[counter % 8];
+			data->bob[i] = 4.0f * (f32)sin(6.2831855f * (counter * 20) / 360.0f);
+			if (counter >= 9) {
+				data->bob[i] = 0.0f;
+				data->counter[i] = 0;
+				disp = TRUE;
+			}
+			break;
+		default:
+		case 5:
+			data->poly[i] = anime_data_walk[counter % 8];
+			data->bob[i] = 12.0f * (f32)sin(6.2831855f * (counter * 5) / 360.0f);
+			if (counter >= 36) {
+				data->bob[i] = 0.0f;
+				data->counter[i] = 0;
+				disp = TRUE;
+			}
+			break;
+		}
+		data->counter[i]++;
+		if (disp && (data->flags[i] & 2)) {
+			data->flags[i] &= ~2;
+			data->state[i] = data->restore[i];
+			data->counter[i] = 0;
 		}
 	}
+	dispEntry(CAMERA_3D, 0.0f, 0, effBoobooDisp, effect);
 }
 
 BOOL texture_dl(EffectEntry* effect, s32 index, u32 tex) {
@@ -862,240 +1052,70 @@ BOOL texture_dl(EffectEntry* effect, s32 index, u32 tex) {
 	return FALSE;
 }
 
-void effBoobooMain(EffectEntry* effect) {
+// effBoobooDisp: every instruction is byte-identical except the callee-saved colouring of the four
+// loop-carried values effect/camera/word/byte. Building the GXColor with separate .r/.g/.b statements
+// fixed the by-value store order (99.30% -> 99.42%). Storing the sin result in `f32 s` first pools
+// 6.2832/360 before 63.0 as the original's .sdata2 does (no instruction changes). Using `param`
+// directly instead of the local `effect` puts effect/camera in r29/r28 but swaps the word/byte
+// induction pointers to r27/r26 (99.29%), so the local `effect` is kept.
+// Declaration-order (perm_decls over all 10 locals), opt_lifetimes/opt_propagation/opt_common_subs/
+// optimize_for_size/scheduling/global_optimizer/optimization_level pragma and random source-shape
+// searches were all tried; none reach the target rotation. The int->float magic is emitted as an
+// anonymous @NNN label instead of the named double_to_int_802fa2d8; the word itself pools at the
+// original's slot (the file-local i2f helper above), so only the symbol name differs and the unit's
+// data sections are byte-identical.
+// NONMATCHING (99.42%): target effect r29/camera r28/word r26/byte r27; ours effect r26/camera r29/word r28/byte r27.
+void effBoobooDisp(CameraId camId, void* param) {
+	EffectEntry* effect = param;
+	CameraEntry* camera;
+	s32 phase;
+	s32 poly;
 	BoobooData* data;
 	s32 i;
-	BOOL disp;
-	s32 counter;
+	Mtx mtx;
+	Mtx scaleMtx;
+	Mtx rotMtx;
+	GXColor color;
 
+	camera = camGetPtr(camId);
 	data = effect->userdata;
-	data->timer++;
-	for (i = 0; i < 11; i++) {
-		counter = data->counter[i];
-		disp = FALSE;
-		switch (data->state[i]) {
-		case 0:
-			disp = TRUE;
-			break;
-		case 1:
-			data->poly[i] = 1;
-			disp = TRUE;
-			break;
-		case 3:
-			data->poly[i] = anime_data_walk[counter % 8];
-			data->rot[i] += (f32)sin(6.2831855f * (counter * 10) / 360.0f);
-			if (counter >= 36) {
-				data->counter[i] = 0;
-				disp = TRUE;
+	phase = data->timer * 30;
+	for (i = 0; i < 11; i++, phase += 20) {
+		if (data->flags[i] & 1) {
+			PSMTXTrans(mtx, data->x[i], data->y[i] + data->bob[i], data->z[i]);
+			PSMTXRotRad(rotMtx, 'y', 0.017453292f * (180.0f - data->rot[i]));
+			PSMTXConcat(mtx, rotMtx, mtx);
+			PSMTXScale(scaleMtx, 10.0f, 10.0f, 10.0f);
+			PSMTXConcat(mtx, scaleMtx, mtx);
+			PSMTXConcat(camera->view, mtx, mtx);
+			GXLoadPosMtxImm(mtx, GX_PNMTX0);
+			GXSetCurrentMtx(GX_PNMTX0);
+			if (!texture_dl(effect, i, data->tex[i])) {
+				if (data->tex[i] == 8 || data->tex[i] == 9) {
+					f32 s = (f32)sin(6.2831855f * phase / 360.0f);
+					u8 bright = (u8)(63.0f + 63.0f * s);
+#ifdef MUST_MATCH
+					color = boobooColor(bright);
+#else
+					color = unk_804230a8;
+					color.r = color.g = color.b = bright;
+#endif
+					GXSetTevColor(GX_TEVREG0, color);
+				}
+				poly = data->poly[i];
+				GXSetCullMode(GX_CULL_BACK);
+				switch (poly) {
+				case 0:
+					boo_polygon_0();
+					break;
+				case 1:
+					boo_polygon_1();
+					break;
+				case 2:
+					boo_polygon_2();
+					break;
+				}
 			}
-			break;
-		case 2:
-			data->poly[i] = anime_data_walk[counter % 8];
-			data->bob[i] = 2.0f * (f32)sin(6.2831855f * (counter * 20) / 360.0f);
-			disp = TRUE;
-			if (counter >= 9) {
-				data->bob[i] = 0.0f;
-				data->counter[i] = 0;
-				disp = TRUE;
-			}
-			break;
-		case 4:
-			data->poly[i] = anime_data_walk[counter % 8];
-			data->bob[i] = 4.0f * (f32)sin(6.2831855f * (counter * 20) / 360.0f);
-			if (counter >= 9) {
-				data->bob[i] = 0.0f;
-				data->counter[i] = 0;
-				disp = TRUE;
-			}
-			break;
-		default:
-		case 5:
-			data->poly[i] = anime_data_walk[counter % 8];
-			data->bob[i] = 12.0f * (f32)sin(6.2831855f * (counter * 5) / 360.0f);
-			if (counter >= 36) {
-				data->bob[i] = 0.0f;
-				data->counter[i] = 0;
-				disp = TRUE;
-			}
-			break;
-		}
-		data->counter[i]++;
-		if (disp && (data->flags[i] & 2)) {
-			data->flags[i] &= ~2;
-			data->state[i] = data->restore[i];
-			data->counter[i] = 0;
 		}
 	}
-	dispEntry(CAMERA_3D, 0.0f, 0, effBoobooDisp, effect);
-}
-
-EffectEntry* effBoobooN64Entry(void) {
-	EffectEntry* effect;
-	BoobooData* data;
-	s32 i;
-
-	effect = effEntry();
-	effect->type = str_802FA2E0;
-	effect->count = 1;
-	data = __memAlloc(HEAP_EFFECT, 0x148);
-	effect->userdata = data;
-	effect->callback = effBoobooMain;
-	data->timer = 0;
-	data->field_0x0 = 1000;
-	for (i = 0; i < 11; i++) {
-		data->x[i] = 0.0f;
-		data->y[i] = 0.0f;
-		data->z[i] = 0.0f;
-		data->rot[i] = 0.0f;
-		data->flags[i] = 0;
-		data->state[i] = 1;
-		data->poly[i] = 1;
-		data->bob[i] = 0.0f;
-		data->counter[i] = 0;
-	}
-	return effect;
-}
-
-void boo_polygon_2(void) {
-	GXClearVtxDesc();
-	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0xE);
-	GXSetArray(GX_VA_POS, boo_vertex_tbl, 6);
-	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
-	GXSetArray(GX_VA_NRM, boo_normal_tbl, 3);
-	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GXSetArray(GX_VA_CLR0, boo_color0_tbl, 4);
-	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
-	GXSetArray(GX_VA_TEX0, boo_texcoord0_tbl, 4);
-	GXCallDisplayList(boo_dl_2_0, 0x40);
-	GXCallDisplayList(boo_dl_2_1, 0x40);
-	GXCallDisplayList(boo_dl_2_2, 0x40);
-	GXCallDisplayList(boo_dl_2_3, 0x40);
-	GXCallDisplayList(boo_dl_2_4, 0x20);
-	GXCallDisplayList(boo_dl_2_5, 0x20);
-	GXCallDisplayList(boo_dl_2_6, 0x20);
-	GXCallDisplayList(boo_dl_2_7, 0x20);
-	GXCallDisplayList(boo_dl_2_8, 0x20);
-	GXCallDisplayList(boo_dl_2_9, 0x20);
-	GXCallDisplayList(boo_dl_2_10, 0x20);
-	GXCallDisplayList(boo_dl_2_11, 0x20);
-	GXCallDisplayList(boo_dl_2_12, 0x20);
-	GXCallDisplayList(boo_dl_2_13, 0x20);
-	GXCallDisplayList(boo_dl_2_14, 0x20);
-	GXCallDisplayList(boo_dl_2_15, 0x20);
-	GXCallDisplayList(boo_dl_2_16, 0x20);
-	GXCallDisplayList(boo_dl_2_17, 0x20);
-	GXCallDisplayList(boo_dl_2_18, 0x20);
-	GXCallDisplayList(boo_dl_2_19, 0x20);
-	GXCallDisplayList(boo_dl_2_20, 0x20);
-	GXCallDisplayList(boo_dl_2_21, 0x20);
-	GXCallDisplayList(boo_dl_2_22, 0x20);
-	GXCallDisplayList(boo_dl_2_23, 0x20);
-	GXCallDisplayList(boo_dl_2_24, 0x20);
-	GXCallDisplayList(boo_dl_2_25, 0x20);
-	GXCallDisplayList(boo_dl_2_26, 0x20);
-	GXCallDisplayList(boo_dl_2_27, 0x20);
-	GXCallDisplayList(boo_dl_2_28, 0x20);
-	GXCallDisplayList(boo_dl_2_29, 0x20);
-	GXCallDisplayList(boo_dl_2_30, 0x20);
-	GXCallDisplayList(boo_dl_2_31, 0x20);
-}
-
-void boo_polygon_1(void) {
-	GXClearVtxDesc();
-	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0xE);
-	GXSetArray(GX_VA_POS, boo_vertex_tbl, 6);
-	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
-	GXSetArray(GX_VA_NRM, boo_normal_tbl, 3);
-	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GXSetArray(GX_VA_CLR0, boo_color0_tbl, 4);
-	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
-	GXSetArray(GX_VA_TEX0, boo_texcoord0_tbl, 4);
-	GXCallDisplayList(boo_dl_1_0, 0x40);
-	GXCallDisplayList(boo_dl_1_1, 0x40);
-	GXCallDisplayList(boo_dl_1_2, 0x40);
-	GXCallDisplayList(boo_dl_1_3, 0x40);
-	GXCallDisplayList(boo_dl_1_4, 0x20);
-	GXCallDisplayList(boo_dl_1_5, 0x20);
-	GXCallDisplayList(boo_dl_1_6, 0x20);
-	GXCallDisplayList(boo_dl_1_7, 0x20);
-	GXCallDisplayList(boo_dl_1_8, 0x20);
-	GXCallDisplayList(boo_dl_1_9, 0x20);
-	GXCallDisplayList(boo_dl_1_10, 0x20);
-	GXCallDisplayList(boo_dl_1_11, 0x20);
-	GXCallDisplayList(boo_dl_1_12, 0x20);
-	GXCallDisplayList(boo_dl_1_13, 0x20);
-	GXCallDisplayList(boo_dl_1_14, 0x20);
-	GXCallDisplayList(boo_dl_1_15, 0x20);
-	GXCallDisplayList(boo_dl_1_16, 0x20);
-	GXCallDisplayList(boo_dl_1_17, 0x20);
-	GXCallDisplayList(boo_dl_1_18, 0x20);
-	GXCallDisplayList(boo_dl_1_19, 0x20);
-	GXCallDisplayList(boo_dl_1_20, 0x20);
-	GXCallDisplayList(boo_dl_1_21, 0x20);
-	GXCallDisplayList(boo_dl_1_22, 0x20);
-	GXCallDisplayList(boo_dl_1_23, 0x20);
-	GXCallDisplayList(boo_dl_1_24, 0x20);
-	GXCallDisplayList(boo_dl_1_25, 0x20);
-	GXCallDisplayList(boo_dl_1_26, 0x20);
-	GXCallDisplayList(boo_dl_1_27, 0x20);
-	GXCallDisplayList(boo_dl_1_28, 0x20);
-	GXCallDisplayList(boo_dl_1_29, 0x20);
-	GXCallDisplayList(boo_dl_1_30, 0x20);
-	GXCallDisplayList(boo_dl_1_31, 0x20);
-}
-
-void boo_polygon_0(void) {
-	GXClearVtxDesc();
-	GXSetVtxDesc(GX_VA_POS, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, 0xE);
-	GXSetArray(GX_VA_POS, boo_vertex_tbl, 6);
-	GXSetVtxDesc(GX_VA_NRM, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
-	GXSetArray(GX_VA_NRM, boo_normal_tbl, 3);
-	GXSetVtxDesc(GX_VA_CLR0, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-	GXSetArray(GX_VA_CLR0, boo_color0_tbl, 4);
-	GXSetVtxDesc(GX_VA_TEX0, GX_INDEX8);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_S16, 0xE);
-	GXSetArray(GX_VA_TEX0, boo_texcoord0_tbl, 4);
-	GXCallDisplayList(boo_dl_0_0, 0x40);
-	GXCallDisplayList(boo_dl_0_1, 0x40);
-	GXCallDisplayList(boo_dl_0_2, 0x40);
-	GXCallDisplayList(boo_dl_0_3, 0x40);
-	GXCallDisplayList(boo_dl_0_4, 0x20);
-	GXCallDisplayList(boo_dl_0_5, 0x20);
-	GXCallDisplayList(boo_dl_0_6, 0x20);
-	GXCallDisplayList(boo_dl_0_7, 0x20);
-	GXCallDisplayList(boo_dl_0_8, 0x20);
-	GXCallDisplayList(boo_dl_0_9, 0x20);
-	GXCallDisplayList(boo_dl_0_10, 0x20);
-	GXCallDisplayList(boo_dl_0_11, 0x20);
-	GXCallDisplayList(boo_dl_0_12, 0x20);
-	GXCallDisplayList(boo_dl_0_13, 0x20);
-	GXCallDisplayList(boo_dl_0_14, 0x20);
-	GXCallDisplayList(boo_dl_0_15, 0x20);
-	GXCallDisplayList(boo_dl_0_16, 0x20);
-	GXCallDisplayList(boo_dl_0_17, 0x20);
-	GXCallDisplayList(boo_dl_0_18, 0x20);
-	GXCallDisplayList(boo_dl_0_19, 0x20);
-	GXCallDisplayList(boo_dl_0_20, 0x20);
-	GXCallDisplayList(boo_dl_0_21, 0x20);
-	GXCallDisplayList(boo_dl_0_22, 0x20);
-	GXCallDisplayList(boo_dl_0_23, 0x20);
-	GXCallDisplayList(boo_dl_0_24, 0x20);
-	GXCallDisplayList(boo_dl_0_25, 0x20);
-	GXCallDisplayList(boo_dl_0_26, 0x20);
-	GXCallDisplayList(boo_dl_0_27, 0x20);
-	GXCallDisplayList(boo_dl_0_28, 0x20);
-	GXCallDisplayList(boo_dl_0_29, 0x20);
-	GXCallDisplayList(boo_dl_0_30, 0x20);
-	GXCallDisplayList(boo_dl_0_31, 0x20);
 }
