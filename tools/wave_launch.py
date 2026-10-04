@@ -267,9 +267,10 @@ TAKE_MAX = "64m"  # largest file copied back from the output dir
 # every sandboxed step's scope name suffix: the reaper stops exactly these
 STEPS = ["run", "cont0", "cont1", "cont2", "check0", "check1", "check2", "finish", "link", "collect"]
 # What the sandbox shows of $HOME (everything else under it is an empty tmpfs): the agent CLI and node, the venv's
-# python, and the shared read-only parts of the checkout the workspaces link to. No credentials live in any of these.
+# python, the shared read-only parts of the checkout the workspaces link to, and ~/mwccdbg (gdb, the emulator and mwcc-debugger for
+# tools/mwccdbg.py; its dumps go to the workspace). No credentials live in any of these.
 HOME_RO = [".local/bin", ".local/lib/node_modules", ".local/share/uv/python", ".nvm/versions/node",
-           "ttyd/orig", "ttyd/.venv", "ttyd/build/compilers", "ttyd-pylib"]
+           "ttyd/orig", "ttyd/.venv", "ttyd/build/compilers", "ttyd-pylib", "mwccdbg"]
 # Host sockets the sandbox replaces with /dev/null: docker (the docker group is root), the system bus. The user bus,
 # systemd's private socket and any X/ICE authority are under /run/user/<uid>, which becomes an empty tmpfs.
 HIDE_SOCKETS = ["/run/docker.sock", "/run/dbus/system_bus_socket"]
