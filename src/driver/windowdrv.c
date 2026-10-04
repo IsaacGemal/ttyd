@@ -6,17 +6,31 @@
 #include "memory.h"
 #include "system.h"
 #include "sdk/texPalette.h"
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 #include <stdio.h>
 
+#ifdef __MWERKS__
+// Keep the SDK fabsf intrinsic without its unused sqrt inline constants.
+#define fabsf(x) __fabsf(x)
+#endif
+
+
+static const GXColor dat_8041a430 = {0xFF, 0xFF, 0xFF, 0xFF};
 
 //.sbss
-static TEXPalette* winTpl; //new in retail
-static BOOL unk_804187fc; //new in retail
-f32 scrl;
-GXTexObj* wakuTexObj;
+// MUST_MATCH: MWCC emits uninitialised globals in reverse declaration order.
+#ifdef MUST_MATCH
+// Keep the original section tail even though no code references it.
+#pragma force_active on
+static u32 gap_08_8041880C_sbss;
+#pragma force_active reset
+#endif
 WindowEntry* WinObjects;
+GXTexObj* wakuTexObj;
+f32 scrl;
+static BOOL unk_804187fc; //new in retail
+static TEXPalette* winTpl; //new in retail
 
 //local prototypes
 
@@ -175,7 +189,7 @@ void windowDispGX_Kanban(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
 	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 	GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
-	fogColor = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+	fogColor = dat_8041a430;
 #ifdef MUST_MATCH
 	kanbanSetFog(fogColor);
 #else
@@ -419,9 +433,6 @@ static inline void windowSetFog(GXColor color) {
 }
 #endif
 
-// NONMATCHING (99.97%): 6 instructions differ, all in block 2 (bottom-left). The y3/y4 scratch
-// registers come out rotated (target f1=32/f2=0/f0=temp; ours f2/f0/f1) while the operation sequence
-// (fsubs -> fneg -> fsubs) is identical. The callee-saved FP allocation already matches.
 void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width) {
 	CameraEntry* camera;
 #ifdef MUST_MATCH
@@ -449,9 +460,9 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 	GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
 #ifdef MUST_MATCH
-	windowSetFog((GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+	windowSetFog(dat_8041a430);
 #else
-	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041a430);
 #endif
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
@@ -569,10 +580,19 @@ void windowDispGX_System(s32 type, u8 alpha, f32 x, f32 y, f32 height, f32 width
 	GXLoadTexMtxImm(scale2, 0x21, GX_MTX2x4);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 
+#ifdef MUST_MATCH
+	// MUST_MATCH: interleave vertex setup with FIFO writes to reproduce the original scratch FPRs.
+	GXWGFifo.f32 = 0.0f;
+	y3 = -(width - 32.0f);
+	GXWGFifo.f32 = y3;
+	y4 = y3 - 32.0f;
+	GXWGFifo.f32 = 0.0f;
+#else
 	y3 = -(width - 32.0f);
 	y4 = y3 - 32.0f;
 
-	GXPosition3f32(0.0f, y3, 0.0f); //f27 = y3, neg(width - 32.0f)
+	GXPosition3f32(0.0f, y3, 0.0f);
+#endif
 	GXTexCoord2f32(0.0f, 0.0f);
 
 	GXPosition3f32(x2, y3, 0.0f);
@@ -1129,7 +1149,7 @@ void windowDispGX_Message(s32 type, s32 a2, u8 alpha, f32 x, f32 y, f32 height, 
 	GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
 	GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 	GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
-	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041a430);
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -1181,9 +1201,9 @@ void windowDispGX_Waku_col(u16 gxTexMapID, GXColor color, f32 x, f32 y, f32 widt
 		GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 		GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
 #ifdef MUST_MATCH
-		wakuSetFog((GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+		wakuSetFog(dat_8041a430);
 #else
-		GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+		GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041a430);
 #endif
 		GXClearVtxDesc();
 		GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
@@ -1360,9 +1380,9 @@ void windowDispGX2_Waku_col(Mtx mtx, u16 gxTexMapID, GXColor color, f32 x, f32 y
 		GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_OR);
 		GXSetZMode(GX_TRUE, GX_ALWAYS, GX_FALSE);
 #ifdef MUST_MATCH
-		wakuSetFog((GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+		wakuSetFog(dat_8041a430);
 #else
-		GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor) { 0xFF, 0xFF, 0xFF, 0xFF });
+		GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041a430);
 #endif
 		GXClearVtxDesc();
 		GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
