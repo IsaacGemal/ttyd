@@ -575,30 +575,23 @@ typedef struct ScreenTevParam {
 	s32 field_14; // 0x14
 } ScreenTevParam;
 
+// opt_propagation off: with propagation on the second loop folds col into a buf+col pointer.
+#pragma opt_propagation off
 // The original keeps i/4 (r31) and i%4 (r30) live across the rand() calls and
 // recomputes the scaled terms in each inner loop. The second loop's `sgrow`/`sgcol`
 // are precomputed with shifts before the count loop so they land in the callee-saved
-// registers the original uses; the first loop keeps the `(i/4)*0x100`/`(i%4)*8`
-// multiplies (using shifts there rotates the whole loop's register assignment) and
-// accumulates into `idx` (`idx = (i/4)*0x100; idx += (j/8)*0x20; ...`) which is what
-// makes the first loop's schedule/registers come out. `buf` is declared first for the
-// same reason. With opt_propagation off the base/col add into the byte index as the
-// original does instead of folding into a buf+col pointer. The min-clamp's `x =
-// (ratio > x) ? x : ratio;` reproduces the original's two-branch select. The remaining
-// differences are only integer and float register allocation: param lands in r25
-// (original r27), the second loop's scaled row in r27 (original r25), the first
-// loop's base/col in r7/r8 (original r4/r3), the first loop schedules its (j%8)
-// before (j/8)*0x20 in the target (reversed here), and the clamp ratio sits in f0
-// (original f1); instructions and structure are otherwise identical. Many variants
-// were tried (explicit `base`/`col` locals, shifts vs multiplies, sgrow/sgcol
-// declaration order, opt_lifetimes off, pragma sweeps, reordering the local
-// declarations) and none beat this: the allocator's colouring of the {param, sgrow,
-// sgcol} clique could not be steered from C.
-// MATCH-ONLY TRICK: moving the `buf[idx]` ternary into a function-scope `mask` temp
-// assigned between the `(j/8)*0x20` and `(j%8)` additions nudged the first loop's
-// colouring (99.36% -> 99.39%; found by the decomp-permuter).
-// NONMATCHING (99.39%): integer and float register allocation only.
-#pragma opt_propagation off // needed: with propagation on the second loop folds col into a buf+col pointer (see above)
+// registers the original uses. The first loop hoists `base = (i/4)*0x100` and
+// `c = (i%4)*8` into named locals and accumulates into `idx`; that is what puts the
+// i&1 mask and the base/col terms in the registers the original uses (r9 and the
+// 0xff constant). `buf` is declared first for the same reason. The clamp declares
+// `x` before `ratio` (so the two FPRs colour as the original: x f0, ratio f1) and
+// assigns `ratio = (x > ratio) ? ratio : x;`, the same value as the original's
+// two-branch select.
+// Many variants were tried (explicit `base`/`col` locals, shifts vs multiplies,
+// sgrow/sgcol declaration order, opt_lifetimes off, pragma sweeps, reordering the
+// local declarations) and none beat this: the allocator's colouring of the
+// {param, sgrow, sgcol} clique could not be steered from C.
+// NONMATCHING (99.46%): integer register colouring and one schedule swap only. `tev`/`param` lands in r25 (original r27) and the second loop's `sgrow` in r27 (original r25); the first loop's base/col terms sit in r7/r8 and the 0xff constant in r4 (original r4/r3 and r5); the first loop's (j%8) is scheduled after (j/8)*0x20 where the original does it before. The instructions and block structure are otherwise identical.
 void tou_gamen_screen_tev(void* param) {
 	int mask;
 	GXTexObj texObj;
@@ -619,12 +612,21 @@ void tou_gamen_screen_tev(void* param) {
 
 		for (i = 0; i < 0x40; i++) {
 			for (j = 0; j < 0x40; j++) {
-				int idx = (i / 4) * 0x100;
-				idx += (j / 8) * 0x20;
+				int base = (i / 4) * 0x100;
+				int c = (i % 4) * 8;
+				int idx = base + (j / 8) * 0x20;
+#ifdef MUST_MATCH
+				// the named temp and its position between the two index additions are what
+				// colour the first loop as the original (see the comment above).
 				mask = (i & 1) ? 0xFF : 0;
 				idx += (j % 8);
-				idx += (i % 4) * 8;
+				idx += c;
 				buf[idx] = mask;
+#else
+				idx += (j % 8);
+				idx += c;
+				buf[idx] = (i & 1) ? 0xFF : 0;
+#endif
 			}
 			{
 				s32 count = 100 + rand() % 100;
@@ -689,16 +691,15 @@ void tou_gamen_screen_tev(void* param) {
 		screen_wp->field_0x18 += (screen_wp->field_0x1C - screen_wp->field_0x18) / float_60_8041c7fc;
 		PSMTXScale(mtxScale, screen_wp->field_0x8, screen_wp->field_0x8, float_1_8041c7f4);
 		{
+			f32 x;
 			f32 ratio = (float_1_8041c7f4 - screen_wp->field_0x8) / screen_wp->field_0x8;
 			f32 y = screen_wp->field_0x18;
 			if (y > ratio) {
 				y = ratio;
 			}
-			{
-				f32 x = screen_wp->field_0x10;
-				x = (ratio > x) ? x : ratio;
-				PSMTXTrans(mtxTrans, x, y, float_0_8041c7f0);
-			}
+			x = screen_wp->field_0x10;
+			ratio = (x > ratio) ? ratio : x;
+			PSMTXTrans(mtxTrans, ratio, y, float_0_8041c7f0);
 		}
 		PSMTXConcat(mtxScale, mtxTrans, mtx);
 	} else {
