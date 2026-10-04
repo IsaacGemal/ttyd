@@ -67,7 +67,7 @@ class Remote(unittest.TestCase):
         return mock.patch.object(W.subprocess, "run", side_effect=run)
 
     def test_every_remote_call_has_a_deadline(self):
-        with self.fake(out="rc=0 audit=0 TAKEN 100.00%"), mock.patch.object(W.time, "sleep"):
+        with self.fake(out="rc=0 audit=0 TAKEN REAPED 100.00%"), mock.patch.object(W.time, "sleep"):
             W.install_key(KEY)
             W.reserve("t")
             W.free("t")
@@ -107,6 +107,33 @@ class Remote(unittest.TestCase):
         with self.fake(out="audit=0"):
             self.assertEqual(W.collect("t", SPEC), 0)
 
+    def test_reap_reports_whether_it_worked(self):
+        with self.fake(out="REAPED"):
+            self.assertTrue(W.reap("t"))
+        with self.fake(out=""):
+            self.assertFalse(W.reap("t"))
+        with self.fake(exc=subprocess.TimeoutExpired("ssh", 180)):
+            self.assertFalse(W.reap("t"))
+
+    def test_one_slot_pool_for_every_key(self):
+        self.assertEqual(W.slot_file("t"), "$HOME/ttyd-agents-slots/all/abc123_wt_t.slot")
+
+    def test_earlier_results_keep_the_newest_two(self):
+        here = Path(self.tmp.name)
+        for k in range(4):
+            (here / "t").mkdir()
+            (here / "t" / "final.c").write_text(str(k))
+            with mock.patch.object(W.subprocess, "run") as trash:
+                W.set_aside("t")
+        self.assertEqual(sorted(p.name for p in here.glob("t.prev*")), ["t.prev1", "t.prev2", "t.prev3", "t.prev4"])
+        trashed = [c.args[0][1] for c in trash.call_args_list]
+        self.assertEqual([os.path.basename(t) for t in trashed], ["t.prev1", "t.prev2"])
+
+    def test_cap_hits_are_recorded(self):
+        c = W.caps_check("t", "run")
+        self.assertIn("limits.txt", c)
+        self.assertIn(str(W.EVENTS_MAX), c)
+
     def test_reap_stops_exact_scopes(self):
         with self.fake():
             W.reap("t")
@@ -126,9 +153,13 @@ class Remote(unittest.TestCase):
     def test_agent_steps_have_disk_and_log_caps(self):
         c = W.agent_cmd("t", 100, "x", "run")
         self.assertIn("du -smx", c)
+        self.assertIn("--inodes", c)
+        self.assertIn("df -Pk", c)
+        self.assertIn("|| m=over", c)
+        self.assertIn("sleep 10", c)
         self.assertIn(f"head -c {W.EVENTS_MAX}", c)
         self.assertIn(f"head -c {W.STDERR_MAX}", c)
-        self.assertIn("kill $wd", c)
+        self.assertIn("kt $wd", c)
         self.assertIn("du -smx", W.box_cmd("t", "check0", "true"))
 
     def test_hung_ssh_raises_instead_of_waiting(self):

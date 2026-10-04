@@ -77,6 +77,21 @@ class AgentAudit(unittest.TestCase):
         self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="cd /home/isaac/par && python3 worker.py w0")))
         self.assertEqual(kinds(ev("bash", command="command -v nohup; sed -i 's/a/b/' src/a.c; python3 -m json.tool tmp/x.json")), [])
 
+    def test_round_four(self):
+        self.assertEqual(kinds(ev("bash", command="sed -i '/^#/d' src/a.c"), ev("bash", command="sed -i -e 's/a/b/' src/a.c"),
+                               ev("bash", command="perl -pi -e 's/a/b/' src/a.c")), [])
+        for cmd in ["bash -c 'echo hi' > /home/isaac/x", "command -v x > /home/isaac/y", "cd /home/isaac; sed -i 's/a/b/' .bashrc",
+                    "cd ~ && perl -pi -e 's/a/b/' .profile"]:
+            self.assertIn("WRITE-OUTSIDE", kinds(ev("bash", command=cmd)), cmd)
+        self.assertIn("ASSIGN-OUTSIDE", kinds(ev("bash", command='p=/home/isaac/x; touch "$p"')))
+        self.assertEqual(kinds(ev("bash", command=f"p={WS}/tmp/x; touch \"$p\"")), [])
+
+    def test_corrupted_event_log(self):
+        good = ev("bash", command="ls")
+        self.assertEqual(kinds(good, good, '{"type": "tool_exec'), [])  # a cut-off last line
+        self.assertIn("EVENTS-CORRUPT", kinds(good, '{"type": "tool_exec', good))
+        self.assertIn("EVENTS-CORRUPT", kinds('garbage', good, 'more garbage'))
+
     def test_running_tools_from_outside(self):
         self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="python3 ~/permuter/permuter.py tmp/perm")))
         self.assertIn("EXEC-OUTSIDE", kinds(ev("bash", command="/home/isaac/permuter/import.py src/x.c")))

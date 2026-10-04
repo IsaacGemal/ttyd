@@ -4318,7 +4318,17 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   most 16 MB. Memory: MemoryHigh and MemorySwapMax besides MemoryMax (the tower doesn't delegate the io
   controller, so no IO weight). An earlier run's local results are moved to <tag>.prevN before a rerun. Every
   ssh/rsync has a deadline; the reaper stops the agent's scopes by exact name and kills only the known build
-  programs in an existing workspace. Agent slots are reserved under a flock on the host, shared by every
+  programs in an existing workspace. Round 4: the disk watchdog polls every 10 s and also counts inodes; a failing
+  `du` (an unreadable directory hides its size) counts as over; free space or inodes on the home filesystem under
+  100 GB / 10 M stops the whole slice (deleted-but-open files don't show in du); once limits.txt exists no later step
+  starts. An event or stderr pipe that hits its cap is recorded there too. COLLECT-OK is a manifest (sha256, size,
+  name) of every file copied back, copied back last; `tools/collect_gate.py` checks a results folder against it (no
+  limits.txt, a clean audit, nothing missing, changed or extra) and both `tools/merge_agent.sh` and
+  `tools/adopt_agent.py` refuse what it refuses. ALLOW_UNAUDITED must name the folder and admits only one with no
+  audit, collect or limits files at all. The audit flags a corrupted event log (an agent can append garbage to its
+  own pipe through /proc). Slots are one pool for every key, so CAP and QUIET_CAP bound the tower's total. A failed
+  reap skips the collect. The hard disk limit (ext4 project quotas or a loop image per workspace) needs sudo and is in
+  the proposal for Isaac. Agent slots are reserved under a flock on the host, shared by every
   launcher on the key; an unanswered count is no capacity. The prompt forbids background processes and copies
   outside the workspace ("if you want more parallelism, say so in REPORT.md and stop").
 - **Evidence that doesn't parse commands.** The launcher records containers and user units before and after each

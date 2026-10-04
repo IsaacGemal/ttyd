@@ -9,9 +9,10 @@
 # larger than 16 MB, and diffs never follow links. Writes REPORT.md, final.c, lastgood.c, link.txt,
 # other_changes.txt, include.patch, configure.patch, provenance.txt and audit.txt to OUT (events.jsonl and
 # stderr.log are already there: the launcher's pipes wrote them), problems to collect.txt, and COLLECT-OK last if
-# every step worked. MODE link or dataport: the agent may flip its unit in configure.py (configure.patch carries
+# every step worked and no limit tripped (no limits.txt): a manifest (sha256, size, name) of every file the launcher
+# copies back, which tools/collect_gate.py checks before a merge. MODE link or dataport: the agent may flip its unit in configure.py (configure.patch carries
 # it), so configure.py isn't listed as another file changed.
-# Exit status: the audit's if it flagged (or failed), else 5 if a collect step failed, else 0.
+# Exit status: the audit's if it flagged (or failed), else 5 if a collect step failed, 6 if a limit tripped, else 0.
 set -u
 BASE=$1; WS=$2; OUT=$3; SRC=$4; MODE=${5:-}
 FAIL=0
@@ -41,7 +42,8 @@ run_diff() { "$@"; [ $? -le 1 ] || note "diff failed: $*"; }
 run_diff $D -u "$BASE/configure.py" configure.py > "$OUT/configure.patch"
 # header additions (include/ and each REL's rels/<mod>/include/) as one patch (a/... -> b/...) for tools/merge_agent.sh
 { run_diff $D -ruN "$BASE/include" include; for d in rels/*/include; do [ -d "$d" ] && run_diff $D -ruN "$BASE/$d" "$d"; done; } \
-  | sed -e "s#^--- $BASE/#--- a/#" -e 's#^+++ include/#+++ b/include/#' -e 's#^+++ rels/#+++ b/rels/#' > "$OUT/include.patch"
+  | sed -e "s#^--- $BASE/#--- a/#" -e 's#^+++ include/#+++ b/include/#' -e 's#^+++ rels/#+++ b/rels/#' > "$OUT/include.patch" \
+  || note "include.patch: sed failed"
 grep -q '^diff failed' "$OUT/collect.txt" 2>/dev/null && FAIL=1
 
 python3 "$BASE/tools/provenance.py" "$OUT/events.jsonl" "$WS" > "$OUT/provenance.txt" 2>&1 \
@@ -50,5 +52,13 @@ python3 "$BASE/tools/agent_audit.py" "$OUT/events.jsonl" "$WS" > "$OUT/audit.txt
 A=$?
 [ $A -ne 0 ] && exit $A
 [ $FAIL -ne 0 ] && exit 5
-echo ok > "$OUT/COLLECT-OK"
+[ -e "$OUT/limits.txt" ] && exit 6
+# the manifest, written last: every file the launcher copies back (all but events.jsonl), with its hash and size
+cd "$OUT" || exit 5
+for f in *; do
+  case $f in events.jsonl|COLLECT-OK*) continue;; esac
+  [ -f "$f" ] && [ ! -L "$f" ] || { note "$f: not a regular file in the output dir"; exit 5; }
+  echo "$(sha256sum < "$f" | cut -d' ' -f1) $(stat -c %s -- "$f") $f"
+done > COLLECT-OK.tmp || exit 5
+mv COLLECT-OK.tmp COLLECT-OK
 exit 0
