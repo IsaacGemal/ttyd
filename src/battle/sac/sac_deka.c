@@ -24,7 +24,6 @@
 #include "battle/battle_camera.h"
 #include "battle/battle_event_cmd.h"
 #include "battle/sac/sac_deka.h"
-#include "battle/sac/sac_common.h"
 #include "battle/sac/sac_genki.h"
 #include <stdlib.h>
 
