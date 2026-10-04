@@ -4410,3 +4410,10 @@ they look like flag values (`(u32)lbl_80003500` -> `0x80003500` drops objdiff's 
   +4 into the relocation); data ports for end_unknown, eff_radiation_n64, eff_fall and tou (data matched +0.52
   points; tou's header patch only added data externs that the file doesn't need and was left out). sys's agent
   changed nothing: its last 33 .rodata bytes come from the two unmatched functions.
+- **Batch 2:** set_msg (party_chuchu) and battleAcMain_SignalTiming (ac_signal_timing) to 100%, both units linked
+  (the one-short arm has now linked three units: battle_attack_audience, party_chuchu, ac_signal_timing); data
+  ports for ac_gauge_timing2, win_party and sac_bakugame. Agents keep putting data externs in headers (four party
+  unit headers for win_party), which tools/header_patch.py refuses: they are moved into the .c, prototypes still go
+  to headers. Two agents spelled a string's word padding out as `"...\0"` without a guard; my review put both under
+  MUST_MATCH. `merge_agent.sh` now also accepts `opt_dead_assignments` (28 uses in the tree). msgdrv's data port
+  (a function move plus `#pragma section` and an unguarded padded string) waits for a separate review.

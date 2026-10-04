@@ -70,13 +70,26 @@ s32 _get_ok_frame_range(s32 idx) {
 // `unique = 1` after the `irand` call, the `switch`es for the range and in-window tests, the
 // `field_34[4] + field_34[0x1C]` association, and reading `bd->field_0x08` directly at each
 // `bd->states[...]` index (a cached `idx` makes MWCC keep it in a register and miss).
-#pragma optimize_for_size on // needed for the original's callee-saved register assignment
+#pragma optimize_for_size on
+#ifdef MUST_MATCH
+// The target's string pool is PI,PONE,OK,NG while its four address loads in the entry block run
+// NG,PI,PONE,OK. Reassigning after the initializers gives that emission order; the initializers
+// keep the pool entries in the target's order, which needs the dead-store elimination off.
+#pragma opt_dead_assignments off
+#endif
 s32 battleAcMain_SignalTiming(BattleWork* work) {
     BattleActions* ac = &work->actionCommands;
+#ifdef MUST_MATCH
+    const char* sfxPi1 = "SFX_AC_PI1";
+    const char* sfxPone1 = "SFX_AC_PONE1";
+    const char* sfxOk = "SFX_AC_COMMAND_OK1";
+    const char* sfxNg = "SFX_AC_COMMAND_NG1";
+#else
     const char* sfxPi1;
     const char* sfxPone1;
     const char* sfxOk;
     const char* sfxNg;
+#endif
     s32 pressed;
     AcSignalTimingWork* bd;
     BattleACDispParams* disp;
@@ -88,10 +101,17 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
     if (ac->mAcUnit->badgesEquipped.AutoCommand != 0) {
         autoCommand = 1;
     }
+#ifdef MUST_MATCH
+    sfxNg = "SFX_AC_COMMAND_NG1";
+    sfxPi1 = "SFX_AC_PI1";
+    sfxPone1 = "SFX_AC_PONE1";
+    sfxOk = "SFX_AC_COMMAND_OK1";
+#else
     sfxPi1 = "SFX_AC_PI1";
     sfxPone1 = "SFX_AC_PONE1";
     sfxOk = "SFX_AC_COMMAND_OK1";
     sfxNg = "SFX_AC_COMMAND_NG1";
+#endif
     do {
         cont = 0;
         pressed = 0;
@@ -336,6 +356,9 @@ s32 battleAcMain_SignalTiming(BattleWork* work) {
 
     return 1;
 }
+#ifdef MUST_MATCH
+#pragma opt_dead_assignments reset
+#endif
 #pragma optimize_for_size reset
 s32 battleAcResult_SignalTiming(BattleWork* work) {
     return work->actionCommands.result;
@@ -417,14 +440,10 @@ void battleAcDelete_SignalTiming(BattleWork* work) {
 //  - `field * 32` (not `field << 5`) lands the Mtx-block temporaries in the target's registers;
 //  - the t0 loops' `s32 t0 = (i, i + field)` comma nudge (MUST_MATCH; natural form below) colours
 //    t0 in r4 and fixes ~16 diffs; `(i, i + field)` and `i + field` compile identically otherwise;
-//  - the int->float magic double is the compiler's own anonymous pool entry (@NNN at +0xf8,
-//    reached as `lfd fN, 0xf8(r30)`) where the target loads the named double from the
-//    zero-vector base (`lfd fN, 0xa8(r30)`); defining the double as a source object does not make
-//    MWCC use it for `(f32)int`, so the extra pool entry shifts the load. ~15 instructions;
-//  - the `0x92 + i` icon block's store/conversion schedule still differs (the target delays the
-//    `lis 0x4330` store and the magic load; ours hoists them).
-// NONMATCHING (99.98%): the remaining diffs are the magic-double load above and that block's
-// scheduling; the notes above list them.
+//  - the int->float magic double has to stay the compiler's own anonymous pool entry, which this
+//    all-literal form places at +0xa8 and actionCommandDisp loads as `lfd fN, 0xa8(r30)`;
+//    defining the double as a source object does not make MWCC use it for `(f32)int` and shifts
+//    the load off +0xa8.
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work;
     BattleActions* ac;

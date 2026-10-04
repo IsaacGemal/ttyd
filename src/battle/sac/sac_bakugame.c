@@ -1,4 +1,8 @@
 #include "battle/sac/sac_bakugame.h"
+#include "battle/battle_event_cmd.h"
+#include "battle/battle_camera.h"
+#include "party/party_motion.h"
+#include "evt/evt_audience.h"
 #include "battle/battle.h"
 #include "battle/battle_sub.h"
 #include "battle/battle_unit.h"
@@ -20,6 +24,26 @@
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <string.h>
+
+// Data objects defined later in this file, declared before their first use.
+extern const char str_8042162C[6];
+extern const char str_8042166C[4];
+extern const char str_80421670[4];
+extern const char str_80421674[4];
+extern const char str_8042169C[6];
+extern const char str_804216A4[6];
+extern const char str_804216B8[6];
+extern const char str_804216C4[4];
+extern s32 hitCheck_MarioTeam[];
+extern s32 hitCheck_EnemyTeam[];
+extern s32 hitCheck_AudienceTeam[];
+extern s32 sac_start_camera_evt[];
+extern s32 sac_mario_item_on_evt[];
+extern s32 sac_mario_item_on_end_evt[];
+extern s32 sac_mario_back_home[];
+extern s32 sac_start_stardust[];
+extern s32 sac_ac_help_on[];
+extern s32 sac_ac_help_off[];
 
 extern BattleWork* _battleWorkPointer;
 
@@ -143,7 +167,7 @@ const Vec vec3_802fed8c = { 0.0f, 0.0f, 0.0f };
 const char str_802FED98[20] = "SFX_BTL_SAC_TIME5\000\000";
 const f64 double_to_int_802fedb0 = 4503601774854144;
 const char str_802FEDB8[12] = "c_star_bom\000";
-const u32 gap_04_802FEDC4_rodata[] = { 0x00000000 };
+__declspec(section ".rodata") const u32 gap_04_802FEDC4_rodata[] = { 0x00000000 };
 
 // Original .sdata2 layout for this translation unit. The scalars are only declared here and defined at the
 // bottom of the file, so MWCC references the named symbols instead of folding the values.
@@ -166,7 +190,6 @@ extern const f32 float_20_8042161c;
 extern const f32 float_100_80421620;
 extern const f32 float_90_80421624;
 extern const f32 float_270_80421628;
-const char str_8042162C[6] = "M_N_7";
 extern const f32 float_neg2_80421634;
 extern const f32 float_5_80421638;
 extern const f32 float_33_8042163c;
@@ -181,9 +204,6 @@ extern const f32 float_2_8042165c;
 extern const f32 float_3_80421660;
 extern const f32 float_4_80421664;
 extern const f32 float_6_80421668;
-const char str_8042166C[4] = "S_1";
-const char str_80421670[4] = "S_2";
-const char str_80421674[4] = "S_3";
 extern const f32 float_50_80421678;
 extern const f32 float_neg1000_8042167c;
 extern const f32 float_neg800_80421680;
@@ -193,15 +213,10 @@ extern const f32 float_70_8042168c;
 extern const f32 float_neg200_80421690;
 extern const f32 float_0p1_80421694;
 extern const f32 float_7_80421698;
-// Declared 6 bytes so MWCC puts these in .sdata2 (the original sizes are 8 with 8-byte alignment padding).
-const char str_8042169C[6] = "M_W_1";
-const char str_804216A4[6] = "M_U_2";
 extern const f32 float_30_804216ac;
 extern const f32 float_neg100_804216b0;
 extern const f32 float_26_804216b4;
-const char str_804216B8[6] = "M_C_1";
 extern const f32 float_900_804216c0;
-const char str_804216C4[4] = "Z_1";
 extern const f32 float_37_804216c8;
 extern const f32 float_2160_804216cc;
 
@@ -607,6 +622,118 @@ static void* weapon[0xC0 / 4] = {
     (void*)marioAttackEvent_BakuGame, (void*)0x00000064, NULL, NULL,
 };
 
+// Forward declarations for the static script entry points and the team scripts the attack-event table names.
+static s32 main_star(EventEntry* event, BOOL isFirstCall);
+static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall);
+
+// marioAttackEvent_BakuGame: 476 bytes
+s32 marioAttackEvent_BakuGame[119] = {
+    0x0001005B, (s32)(void*)btlevtcmd_WaitGuardMove, 0x0002005B, (s32)(void*)btlevtcmd_CommandPayWeaponCost,
+    0xFFFFFFFE, 0x0003005B, (s32)(void*)btlevtcmd_CommandGetWeaponAddress, 0xFFFFFFFE,
+    0xFE363C80, 0x0002005B, (s32)(void*)btlevtcmd_WeaponAftereffect, 0xFE363C80,
+    0x0001005B, (s32)(void*)btlevtcmd_reset_move_color_lv_all, 0x0001005B, (s32)(void*)init_bakugame,
+    0x0000006E, 0x0001005B, (s32)(void*)main_star, 0x00000070,
+    0x0001005E, (s32)(void*)sac_start_camera_evt, 0x0001000A, 0x000001F4,
+    0x0006005B, (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)str_802FECA8,
+    0xF1194D80, 0x00000000, 0xF1194D80, 0x0001005E,
+    (s32)(void*)sac_mario_item_on_evt, 0x0001000A, 0x000001F4, 0x0006005B,
+    (s32)(void*)btlevtcmd_snd_se, 0xFFFFFFFE, (s32)(void*)str_802FECBC, 0xF1194D80,
+    0x00000000, 0xFE363C8B, 0x0001005B, (s32)(void*)star_stone_appear,
+    0x0000006E, 0x0001005E, (s32)(void*)sac_start_stardust, 0x00000070,
+    0x00010009, 0x00000064, 0x0006005B, (s32)(void*)btlevtcmd_snd_se,
+    0xFFFFFFFE, (s32)(void*)str_802FECD0, 0xF1194D80, 0x00000000,
+    0xF1194D80, 0x0002005B, (s32)(void*)evt_snd_sfxoff, 0xFE363C8B,
+    0x0003005B, (s32)(void*)evt_btl_camera_set_mode, 0x00000000, 0x00000000,
+    0x00010009, 0x00000028, 0x0001005E, (s32)(void*)sac_mario_item_on_end_evt,
+    0x0001005E, (s32)(void*)sac_mario_back_home, 0x0001005B, (s32)(void*)bakuGameBombEntry,
+    0x0001005B, (s32)(void*)sac_ac_help_on, 0x0004005B, (s32)(void*)bakuGameMain,
+    0xFE363C80, 0xFE363C81, 0xFE363C82, 0x0001005B,
+    (s32)(void*)sac_ac_help_off, 0x0001005B, (s32)(void*)end_bakugame, 0x0000006B,
+    0x0001005B, (s32)(void*)bakuGameHeihoReturn, 0x0000006D, 0x0004005B,
+    (s32)(void*)bakuGameDecideWeapon, 0xFE363C81, 0xFE363C82, 0xFE363C89,
+    0x00010009, 0x00000005, 0x00010022, 0xFE363C80,
+    0x00010024, 0x00000000, 0x0001005E, (s32)(void*)hitCheck_MarioTeam,
+    0x0000002E, 0x00010024, 0x00000001, 0x0001005E,
+    (s32)(void*)hitCheck_EnemyTeam, 0x0000002E, 0x00010024, 0x00000002,
+    0x0001005E, (s32)(void*)hitCheck_AudienceTeam, 0x0000002E, 0x00000031,
+    0x00010003, 0x00000063, 0x0002005B, (s32)(void*)btlevtcmd_StartWaitEvent,
+    0xFFFFFFFE, 0x00000002, 0x00000001,
+};
+
+// hitCheck_MarioTeam: 584 bytes
+s32 hitCheck_MarioTeam[146] = {
+    0x0003005B, (s32)(void*)btlevtcmd_GetUnitId, 0xFFFFFFFC, 0xFE363C83,
+    0x00020018, 0xFE363C83, 0xFFFFFFFF, 0x00010004,
+    0x00000032, 0x00000021, 0x0004005B, (s32)(void*)btlevtcmd_CheckStatus,
+    0xFE363C83, 0x0000001B, 0xFE363C80, 0x00020019,
+    0xFE363C80, 0x00000000, 0x00010004, 0x00000032,
+    0x00000021, 0x0003005B, (s32)(void*)btlevtcmd_GetBodyId, 0xFE363C83,
+    0xFE363C84, 0x0006005B, (s32)(void*)btlevtcmd_GetHitPos, 0xFE363C83,
+    0xFE363C84, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
+    0x0005005B, (s32)(void*)btlevtcmd_ACSuccessEffect, 0xFE363C82, 0xFE363C8A,
+    0xFE363C8B, 0xFE363C8C, 0x0007005B, (s32)(void*)btlevtcmd_CheckDamage,
+    0xFFFFFFFE, 0xFE363C83, 0xFE363C84, 0xFE363C89,
+    0x00000100, 0xFE363C85, 0x00010003, 0x00000032,
+    0x0003005B, (s32)(void*)btlevtcmd_GetUnitId, 0xFFFFFFFD, 0xFE363C83,
+    0x00020018, 0xFE363C83, 0xFFFFFFFF, 0x00010004,
+    0x00000063, 0x00000021, 0x0004005B, (s32)(void*)btlevtcmd_CheckStatus,
+    0xFE363C83, 0x0000001B, 0xFE363C80, 0x00020019,
+    0xFE363C80, 0x00000000, 0x00010004, 0x00000063,
+    0x00000021, 0x0003005B, (s32)(void*)btlevtcmd_GetBodyId, 0xFE363C83,
+    0xFE363C84, 0x0003005B, (s32)(void*)btlevtcmd_GetFaceDirection, 0xFE363C83,
+    0xFE363C80, 0x00020018, 0xFE363C80, 0xFFFFFFFF,
+    0x00010005, 0x00000005, 0x0005005B, (s32)(void*)btlevtcmd_AddRotate,
+    0xFE363C83, 0x00000000, 0x00000012, 0x00000000,
+    0x00010009, 0x00000001, 0x00000006, 0x0004005B,
+    (s32)(void*)btlevtcmd_AnimeChangePoseType, 0xFE363C83, 0xFE363C84, 0x00000027,
+    0x00010005, 0x00000005, 0x0005005B, (s32)(void*)btlevtcmd_AddRotate,
+    0xFE363C83, 0x00000000, 0x00000012, 0x00000000,
+    0x00010009, 0x00000001, 0x00000006, 0x0002005B,
+    (s32)(void*)btlevtcmd_ResetFaceDirection, 0xFE363C83, 0x0005005B, (s32)(void*)btlevtcmd_SetRotate,
+    0xFE363C83, 0x00000000, 0x00000000, 0x00000000,
+    0x00000021, 0x0006005B, (s32)(void*)btlevtcmd_GetHitPos, 0xFE363C83,
+    0xFE363C84, 0xFE363C8A, 0xFE363C8B, 0xFE363C8C,
+    0x00020019, 0xFE363C82, 0xFFFFFFFF, 0x0005005B,
+    (s32)(void*)btlevtcmd_ACSuccessEffect, 0xFE363C82, 0xFE363C8A, 0xFE363C8B,
+    0xFE363C8C, 0x00000021, 0x0007005B, (s32)(void*)btlevtcmd_CheckDamage,
+    0xFFFFFFFE, 0xFE363C83, 0xFE363C84, 0xFE363C89,
+    0x00000100, 0xFE363C85, 0x00010003, 0x00000063,
+    0x00000002, 0x00000001,
+};
+
+// hitCheck_EnemyTeam: 212 bytes
+s32 hitCheck_EnemyTeam[53] = {
+    0x0003005B, (s32)(void*)btlevtcmd_GetSelectEnemy, 0xFE363C83, 0xFE363C84,
+    0x00010003, 0x0000000A, 0x0006005B, (s32)(void*)btlevtcmd_GetHitPos,
+    0xFE363C83, 0xFE363C84, 0xFE363C8A, 0xFE363C8B,
+    0xFE363C8C, 0x0005005B, (s32)(void*)btlevtcmd_CheckPartsAttribute, 0xFE363C83,
+    0xFE363C84, 0x00004000, 0xFE363C80, 0x00020018,
+    0xFE363C80, 0x00000000, 0x00020019, 0xFE363C82,
+    0xFFFFFFFF, 0x0005005B, (s32)(void*)btlevtcmd_ACSuccessEffect, 0xFE363C82,
+    0xFE363C8A, 0xFE363C8B, 0xFE363C8C, 0x00000021,
+    0x0007005B, (s32)(void*)btlevtcmd_CheckDamage, 0xFFFFFFFE, 0xFE363C83,
+    0xFE363C84, 0xFE363C89, 0x00000100, 0xFE363C85,
+    0x00000021, 0x0003005B, (s32)(void*)btlevtcmd_GetSelectNextEnemy, 0xFE363C83,
+    0xFE363C84, 0x00020019, 0xFE363C83, 0xFFFFFFFF,
+    0x00010004, 0x0000000A, 0x00000021, 0x00000002,
+    0x00000001,
+};
+
+// hitCheck_AudienceTeam: 60 bytes
+s32 hitCheck_AudienceTeam[15] = {
+    0x0002005B, (s32)(void*)evt_audience_abnormal_natural_all, 0x00000064, 0x00020019,
+    0xFE363C82, 0xFFFFFFFF, 0x0005005B, (s32)(void*)btlevtcmd_ACSuccessEffect,
+    0xFE363C82, 0x00000000, 0x00000064, 0x00000000,
+    0x00000021, 0x00000002, 0x00000001,
+};
+
+// gap_05_803B108C_data: 4 bytes
+#pragma force_active on
+__declspec(section ".data") s32 gap_05_803B108C_data[1] = {
+    0x00000000,
+};
+#pragma force_active reset
+
 // psndSFX_pit has no shared prototype; this file passes a full-width pitch (fctiwz result).
 extern s32 psndSFX_pit(s32 id, s32 pit);
 
@@ -667,7 +794,7 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
         for (i = 0; i < 3; i++) {
             BakuGameWorkEntry* entry = &baku->entries[i];
             entry->type = tbl[i];
-            *(f32*)&entry->field_0x10[0] = 100.0f;
+            *(f32*)&entry->field_0x10[0] = float_100_80421620;
             entry->field_0x20 = 0.0f;
         }
         memcpy(&baku->weapon, &weapon, 0xC0);
@@ -676,7 +803,7 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
         for (i = 0; i < 64; i++) {
             BattleUnit* unit = BattleGetUnitPtr(wp, i);
             if (unit != NULL && unit->mAlliance == 1) {
-                if ((f32)unit->mWidth >= 100.0f) {
+                if ((f32)unit->mWidth >= float_100_80421620) {
                     flag = 1;
                     break;
                 }
@@ -766,7 +893,7 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
                     for (i = 0; i < 3; i++) {
                         BakuGameWorkEntry* entry = &baku->entries[i];
                         if (entry->index == sel) {
-                            *(f32*)&entry->field_0x10[0] -= 5.0f;
+                            *(f32*)&entry->field_0x10[0] -= float_5_80421638;
                         }
                     }
                 }
@@ -829,7 +956,7 @@ first_done:
                 break;
             case 15:
                 if ((keyGetButtonTrg(0) & e->type) != 0 && baku->field_0xF4 == 0) {
-                    *(f32*)&e->field_0x10[0] -= 100.0f;
+                    *(f32*)&e->field_0x10[0] -= float_100_80421620;
                 }
                 break;
             case 20:
@@ -1790,7 +1917,8 @@ BakuGameWork* GetBakuGamePtr(void) {
 }
 #pragma dont_inline reset
 
-// Original .sdata2 scalar definitions for this translation unit (declared extern at the top).
+// Original .sdata2 scalar/string definitions for this translation unit (declared extern at the top). The
+// definitions sit in the original's declaration order so the section comes out in address order.
 const f32 float_neg1_80421604 = -1.0f;
 const f32 float_1_80421608 = 1.0f;
 const f32 float_180_8042160c = 180.0f;
@@ -1808,6 +1936,7 @@ const f32 float_20_8042161c = 20.0f;
 const f32 float_100_80421620 = 100.0f;
 const f32 float_90_80421624 = 90.0f;
 const f32 float_270_80421628 = 270.0f;
+const char str_8042162C[6] = "M_N_7";
 const f32 float_neg2_80421634 = -2.0f;
 const f32 float_5_80421638 = 5.0f;
 const f32 float_33_8042163c = 33.0f;
@@ -1822,6 +1951,9 @@ const f32 float_2_8042165c = 2.0f;
 const f32 float_3_80421660 = 3.0f;
 const f32 float_4_80421664 = 4.0f;
 const f32 float_6_80421668 = 6.0f;
+const char str_8042166C[4] = "S_1";
+const char str_80421670[4] = "S_2";
+const char str_80421674[4] = "S_3";
 const f32 float_50_80421678 = 50.0f;
 const f32 float_neg1000_8042167c = -1000.0f;
 const f32 float_neg800_80421680 = -800.0f;
@@ -1831,9 +1963,13 @@ const f32 float_70_8042168c = 70.0f;
 const f32 float_neg200_80421690 = -200.0f;
 const f32 float_0p1_80421694 = 0.1f;
 const f32 float_7_80421698 = 7.0f;
+const char str_8042169C[6] = "M_W_1";
+const char str_804216A4[6] = "M_U_2";
 const f32 float_30_804216ac = 30.0f;
 const f32 float_neg100_804216b0 = -100.0f;
 const f32 float_26_804216b4 = 26.0f;
+const char str_804216B8[6] = "M_C_1";
 const f32 float_900_804216c0 = 900.0f;
+const char str_804216C4[4] = "Z_1";
 const f32 float_37_804216c8 = 37.0f;
 const f32 float_2160_804216cc = 2160.0f;
