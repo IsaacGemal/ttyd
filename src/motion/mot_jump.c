@@ -17,6 +17,26 @@
 #include "system.h"
 #include "matching.h"
 
+// Data objects defined later in this file or in other units, declared before their first use.
+extern const f32 float_0_8041abb8;
+extern const f32 float_0p1_8041abbc;
+extern const f32 float_0p8_8041abc0;
+extern const f32 float_2p6_8041abc4;
+extern const f32 float_neg0p06_8041abc8;
+extern const f32 float_neg0p01_8041abcc;
+extern const f32 float_neg0p002_8041abd0;
+extern const f32 float_1_8041abd4;
+extern const f32 float_neg0p04_8041abd8;
+extern const f32 float_neg0p02_8041abdc;
+extern const f32 float_0p5_8041abe0;
+extern const f32 float_5_8041abe4;
+extern const f32 float_30_8041abe8;
+extern const f32 float_180_8041abec;
+extern const f32 float_neg0p03_8041abf0;
+extern const f32 float_0p04_8041abf4;
+extern const f32 float_neg1_8041abf8;
+#pragma pool_data on // the original addresses its .rodata through one base register
+
 // Raw accessors for MarioWork fields not named in include/mario/mario.h.
 #define MW(m, off) (*(u32*)((u8*)(m) + (off)))
 #define MWS32(m, off) (*(s32*)((u8*)(m) + (off)))
@@ -26,11 +46,8 @@
 // .rodata
 const Vec vec3_802c5c40 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802c5c4c = { 0.0f, 0.0f, 0.0f };
-const char str_802C5C58[] = "KPA_J_1B";
-const char str_802C5C64[] = "KPA2_J_1B";
-const char str_802C5C70[] = "M_J_1C";
-const f64 double_to_int_802c5c78 = 4503601774854144.0;
-const char str_802C5C80[] = "M_J_1B";
+// The "M_J_1B" pose name is written with an explicit trailing NUL at its uses so the pooled
+// literal has the original object's 8 bytes (six characters and two NULs).
 
 // The original addresses these .rodata objects as offsets from one base register (vec3_802c5c40@l);
 // functions that use JUMP_RODATA declare that base with JUMP_RODATA_BASE.
@@ -50,24 +67,6 @@ f32 marioJumpSwData[8] = {
     2.5f, -0.1f, 0.02f, -0.01f, -0.08f, -0.4f, 0.0f, -0.002f
 };
 
-// .sdata2
-const f32 float_0_8041abb8 = 0.0f;
-const f32 float_0p1_8041abbc = 0.1f;
-const f32 float_0p8_8041abc0 = 0.8f;
-const f32 float_2p6_8041abc4 = 2.6f;
-const f32 float_neg0p06_8041abc8 = -0.06f;
-const f32 float_neg0p01_8041abcc = -0.01f;
-const f32 float_neg0p002_8041abd0 = -0.002f;
-const f32 float_1_8041abd4 = 1.0f;
-const f32 float_neg0p04_8041abd8 = -0.04f;
-const f32 float_neg0p02_8041abdc = -0.02f;
-const f32 float_0p5_8041abe0 = 0.5f;
-const f32 float_5_8041abe4 = 5.0f;
-const f32 float_30_8041abe8 = 30.0f;
-const f32 float_180_8041abec = 180.0f;
-const f32 float_neg0p03_8041abf0 = -0.03f;
-const f32 float_0p04_8041abf4 = 0.04f;
-const f32 float_neg1_8041abf8 = -1.0f;
 
 void marioPreJump(void) {
     MarioWork* mario = marioGetPtr();
@@ -95,7 +94,7 @@ void mot_jumpStand(void) {
         MarioWork* mario2;
 
         mario->trigFlags &= ~MARIO_TRIG_FLAG_IS_STARTING_NEW_MOTION;
-        mario->baseSpeed = 0.0f;
+        mario->baseSpeed = float_0_8041abb8;
         mario2 = marioGetPtr();
         mario2->flags &= ~0x20000;
         mario2->flags |= 0x10000;
@@ -105,7 +104,7 @@ void mot_jumpStand(void) {
         clear_hitobj_ride();
         marioSetJumpPara();
         *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
-        MWF32(mario, 0x2B0) = 0.0f;
+        MWF32(mario, 0x2B0) = float_0_8041abb8;
         mario->currSubMotionId = 0;
         mario->multiTimer = 0;
     }
@@ -119,7 +118,7 @@ void mot_jumpStand(void) {
                 MWF32(mario, 0x84) = marioJumpStandData[2];
                 MWF32(mario, 0x88) = marioJumpStandData[3];
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(str_802C5C80);
+                    marioChgPose("M_J_1B\0");
                 }
             }
             break;
@@ -140,7 +139,7 @@ void mot_jumpStand(void) {
             if (MWF32(mario, 0x2B0) >= MWF32(mario, 0x2B8) * marioJumpStandData[9]) {
                 mario->currSubMotionId = 8;
             }
-            if (MWF32(mario, 0x7C) <= 0.0f) {
+            if (MWF32(mario, 0x7C) <= float_0_8041abb8) {
                 mario->currSubMotionId = 8;
             }
             break;
@@ -162,10 +161,10 @@ void mot_jumpStand(void) {
 #endif
             mario->position.y += MWF32(mario, 0x7C);
             MWF32(mario, 0x2B0) += MWF32(mario, 0x7C);
-            if (MWF32(mario, 0x7C) <= 0.0f) {
+            if (MWF32(mario, 0x7C) <= float_0_8041abb8) {
                 mario->currSubMotionId = 10;
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(str_802C5C70);
+                    marioChgPose("M_J_1C");
                 }
                 marioSetPeakYpos();
                 MWF32(mario, 0x7C) = marioJumpStandData[4];
@@ -179,9 +178,9 @@ void mot_jumpStand(void) {
             break;
         case 10:
             marioMakeJumpPara();
-            if (MWF32(mario, 0x7C) <= 0.0f) {
+            if (MWF32(mario, 0x7C) <= float_0_8041abb8) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(str_802C5C70);
+                    marioChgPose("M_J_1C");
                 }
                 marioSetPeakYpos();
                 MWF32(mario, 0x7C) = marioJumpStandData[4];
@@ -196,7 +195,7 @@ void mot_jumpStand(void) {
             break;
         case 20:
             if ((s32)--mario->multiTimer <= 0) {
-                mario->baseSpeed = 0.0f;
+                mario->baseSpeed = float_0_8041abb8;
                 mario->currSubMotionId = 0x1E;
             }
             break;
@@ -208,13 +207,11 @@ void mot_jumpStand(void) {
     }
 }
 
-// The two int->float conversions: the original folds the magic double into the unit's rodata pool
-// and loads it as `lfd f2, 0x38(r30)` (r30 is the vec3_802c5c40 base); MWCC always emits its own
-// anonymous @446 pool entry and addresses it with its own `lis r3`, so the load and the
-// r3-vs-r4/0x30-vs-0x38 knock-ons differ. Defining double_to_int_802c5c78 by name does not help
-// (the compiler still emits a second anonymous copy); the documented project-wide int->float pool
-// limitation, same as mot_jumpNpc.
-// NONMATCHING (99.04%): only the two int->float magic-double references differ.
+// The int->float magic double sits in its original .rodata slot, but the original reaches it
+// through the unit's base register (`lfd f2, 0x38(r30)`, r30 = vec3_802c5c40) while MWCC addresses
+// its own pool entry with a separate `lis r3, @447@ha`, which also moves the neighbouring loads
+// from r3 to r4.
+// NONMATCHING (99.04%): only the two magic-double references differ.
 void mot_jumpSw(void) {
     JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
@@ -241,7 +238,7 @@ void mot_jumpSw(void) {
         marioSetJumpPara();
         *(Vec*)((u8*)mario2 + 0x11C) = mario2->position;
         if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-            marioChgPose(JUMP_RODATA(const char*, 0x40, str_802C5C80));
+            marioChgPose(JUMP_RODATA(const char*, 0x40, "M_J_1B"));
         }
         if (mario->hitobjJumpFrom != NULL) {
             if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
@@ -253,14 +250,14 @@ void mot_jumpSw(void) {
                 MWF32(mario, 0x2B8) = obj->position.z;
                 tmp = *JUMP_RODATA(const Vec*, 0x0, vec3_802c5c40);
                 tmp.x = obj->position.x;
-                tmp.y = obj->position.y + 0.5f * mario->wPlayerCollisionBox.y;
+                tmp.y = obj->position.y + float_0p5_8041abe0 * mario->wPlayerCollisionBox.y;
                 tmp.z = obj->position.z;
                 pos = tmp;
                 if (marioChkFront(&dist, &pos, mario->directionView,
-                                  5.0f * mario->wPlayerCollisionBox.x)) {
-                    if (dist >= 0.0f
-                        && dist <= 0.5f * mario->wPlayerCollisionBox.x + 30.0f) {
-                        f32 d = revise360(180.0f + mario->directionView);
+                                  float_5_8041abe4 * mario->wPlayerCollisionBox.x)) {
+                    if (dist >= float_0_8041abb8
+                        && dist <= float_0p5_8041abe0 * mario->wPlayerCollisionBox.x + float_30_8041abe8) {
+                        f32 d = revise360(float_180_8041abec + mario->directionView);
 
                         mario->directionView = d;
                         *(f32*)mario->unk19C = d;
@@ -268,7 +265,7 @@ void mot_jumpSw(void) {
                 }
                 sincosf(&sinv, &cosv, mario->directionView);
                 {
-                    f32 c30 = 30.0f;
+                    f32 c30 = float_30_8041abe8;
 
                     x = c30 * sinv + obj->position.x;
                     z = c30 * cosv + obj->position.z;
@@ -281,10 +278,10 @@ void mot_jumpSw(void) {
         } else {
             f32 dir;
 
-            dir = revise360(180.0f + mario->directionView);
+            dir = revise360(float_180_8041abec + mario->directionView);
             sincosf(&sinv, &cosv, dir);
             {
-                f32 c30 = 30.0f;
+                f32 c30 = float_30_8041abe8;
 
                 x = c30 * sinv + mario->position.x;
                 z = c30 * cosv + mario->position.z;
@@ -302,9 +299,9 @@ void mot_jumpSw(void) {
         case 0:
             mario->multiTimer--;
             marioMakeJumpPara();
-            if (MWF32(mario, 0x7C) <= 0.0f) {
+            if (MWF32(mario, 0x7C) <= float_0_8041abb8) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(JUMP_RODATA(const char*, 0x30, str_802C5C70));
+                    marioChgPose(JUMP_RODATA(const char*, 0x30, "M_J_1C"));
                 }
                 marioSetPeakYpos();
                 MWF32(mario, 0x7C) = marioJumpSwData[4];
@@ -319,7 +316,7 @@ void mot_jumpSw(void) {
             break;
         case 10:
             if ((s32)--mario->multiTimer <= 0) {
-                mario->baseSpeed = 0.0f;
+                mario->baseSpeed = float_0_8041abb8;
                 mario->currSubMotionId = 0x14;
             }
             break;
@@ -328,9 +325,9 @@ void mot_jumpSw(void) {
     mario->airTimer++;
 }
 
-// NONMATCHING (99.14%): the two int->float magic doubles are the only diff; the original folds the
-// constant into the vec3_802c5c40 rodata pool (`lfd f2, 0x38(r30)`) but MWCC emits an anonymous @446
-// literal with its own lis (fixing needs the whole unit's rodata pooled, out of function scope).
+// NONMATCHING (99.14%): only the two int->float magic-double references differ; MWCC addresses
+// its own pool entry for the double with a separate `lis r3`, where the original reaches it
+// through the vec3_802c5c40 base register (`lfd f2, 0x38(r30)`).
 void mot_jumpNpc(void) {
     JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
@@ -370,7 +367,7 @@ void mot_jumpNpc(void) {
             MWF32(mario, 0x88) = MATCH_F32(float_neg0p02_8041abdc);
         }
         if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-            marioChgPose(JUMP_RODATA(const char*, 0x40, str_802C5C80));
+            marioChgPose(JUMP_RODATA(const char*, 0x40, "M_J_1B"));
         }
         if (mario->hitobjJumpFrom != NULL) {
             if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
@@ -441,7 +438,7 @@ void mot_jumpNpc(void) {
             marioMakeJumpPara();
             if (MWF32(mario, 0x7C) <= MATCH_F32(float_0_8041abb8)) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(JUMP_RODATA(const char*, 0x30, str_802C5C70));
+                    marioChgPose(JUMP_RODATA(const char*, 0x30, "M_J_1C"));
                 }
                 marioSetPeakYpos();
                 MWF32(mario, 0x7C) = MATCH_F32(float_neg0p03_8041abf0);
@@ -496,7 +493,7 @@ void mot_jump(void) {
             camFollowYOff();
         }
         if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-            marioChgPose(str_802C5C80);
+            marioChgPose("M_J_1B\0");
         }
         if (mario->currMotionId != 8) {
             s32 r = irand(0x2710);
@@ -526,7 +523,7 @@ void mot_jump(void) {
         case 0:
             if ((s32)--mario->multiTimer <= 0) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(str_802C5C80);
+                    marioChgPose("M_J_1B\0");
                 }
                 mario->currSubMotionId = 0xA;
             }
@@ -565,7 +562,7 @@ void mot_jumpSmall(void) {
             camFollowYOff();
         }
         if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-            marioChgPose(str_802C5C80);
+            marioChgPose("M_J_1B\0");
         }
         if (mario->currMotionId != 8) {
             s32 r = irand(0x2710);
@@ -595,7 +592,7 @@ void mot_jumpSmall(void) {
         case 0:
             if ((s32)--mario->multiTimer <= 0) {
                 if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                    marioChgPose(str_802C5C80);
+                    marioChgPose("M_J_1B\0");
                 }
                 mario->currSubMotionId = 0xA;
             }
@@ -639,7 +636,6 @@ void mot_upstairs(void) {
 }
 
 void mot_fall(void) {
-    JUMP_RODATA_BASE
     MarioWork* mario = marioGetPtr();
 
     if (mario->characterId == 2) {
@@ -659,9 +655,9 @@ void mot_fall(void) {
         mario->currSubMotionId = 0;
         if (mario->currMotionId != 0xB) {
             if (mario->characterId == 2) {
-                kpaChgPose(JUMP_RODATA(char*, 0x18, str_802C5C58), JUMP_RODATA(char*, 0x24, str_802C5C64));
+                kpaChgPose("KPA_J_1B", "KPA2_J_1B");
             } else if (!(mario->flags & 0x2000) && mario->characterId == 0) {
-                marioChgPose(JUMP_RODATA(char*, 0x30, str_802C5C70));
+                marioChgPose("M_J_1C");
             }
         } else {
             mario->flags |= 0x80;
@@ -687,10 +683,17 @@ void mot_fall(void) {
         f32 rate;
 
         rate = marioGetCamFollowRate();
+#ifdef MUST_MATCH
+        rate += MATCH_F32(float_0p1_8041abbc);
+        if (rate >= float_0p8_8041abc0) {
+            rate = *(const f32*)((const u8*)&float_0p8_8041abc0);
+        }
+#else
         rate += float_0p1_8041abbc;
         if (rate >= float_0p8_8041abc0) {
             rate = float_0p8_8041abc0;
         }
+#endif
         marioSetCamFollowRate(rate);
     }
 }
@@ -737,3 +740,29 @@ void mot_land(void) {
             break;
     }
 }
+
+// .sdata2
+const f32 float_0_8041abb8 = 0.0f;
+const f32 float_0p1_8041abbc = 0.1f;
+const f32 float_0p8_8041abc0 = 0.8f;
+const f32 float_2p6_8041abc4 = 2.6f;
+const f32 float_neg0p06_8041abc8 = -0.06f;
+const f32 float_neg0p01_8041abcc = -0.01f;
+const f32 float_neg0p002_8041abd0 = -0.002f;
+const f32 float_1_8041abd4 = 1.0f;
+const f32 float_neg0p04_8041abd8 = -0.04f;
+const f32 float_neg0p02_8041abdc = -0.02f;
+const f32 float_0p5_8041abe0 = 0.5f;
+const f32 float_5_8041abe4 = 5.0f;
+const f32 float_30_8041abe8 = 30.0f;
+const f32 float_180_8041abec = 180.0f;
+const f32 float_neg0p03_8041abf0 = -0.03f;
+const f32 float_0p04_8041abf4 = 0.04f;
+const f32 float_neg1_8041abf8 = -1.0f;
+
+// Trailing zero word at the end of the .sdata2 section.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata2") u32 gap_09_8041ABFC_sdata2 = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
