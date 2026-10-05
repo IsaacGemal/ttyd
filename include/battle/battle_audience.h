@@ -347,3 +347,4 @@ void BattleAudience_Case_FinalAttack();
 extern s32 msg_puni_all_enter[9];
 extern s32 msg_pansy_sing[9];
 extern s32 msg_heavy_bomb_fire[9];
+s32 BattleAudienceSound0(const char* name);
