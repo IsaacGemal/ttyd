@@ -169,6 +169,33 @@ When instructions match and registers or scheduling do not, the source form is u
   swap).  A struct whose address is never taken is scalarised and its fields are numbered by *first write*, not field
   order (`v.z = ..; v.x = ..;` puts `z` in f31); plain scalars follow declaration order. If the target's registers are a rotation of
   yours, permute declaration order first, or replace such a struct with scalars declared in write order.
+- **Allocator model and levers (from MarkMcCaskey/decomp-scripts `mwcc-compiler-notes.md`, MIT; written for GC/1.2.5, checked on GC/2.6
+  with small repros and mwccdbg/rasim):** the allocator is Chaitin with Briggs-style optimistic colouring, per class in the order
+  vector, GPR, FPR. Copy coalescing is aggressive and the LOWER-numbered web survives; liveness and dead-definition elimination run
+  before it, so a copy that is dead never becomes a candidate. Simplify removes any node below K neighbours, then the lowest
+  cost/degree; select pops in reverse, takes the lowest free bit of the volatile set, else claims r31, r30, ... on demand (f31... for FPRs),
+  so a callee-saved register's identity is a function of select order. Our rasim replays this exactly (0 of 260 differ on
+  nameKirinukiGX). A swap that survives every source experiment is often a coalescing-root or rank difference.
+  *Holds on 2.6:* declaration order of long-lived locals (first declared gets r31; `a,b,c` vs `c,b,a` swaps them); a parameter that
+  lives across calls colours after every named local (`int L1(int p)` with locals a, b: a r31, b r30, p r29); an alias that is a real
+  computation (`a2 = a + z`) is a new web and costs one more callee-saved register.
+  *Did not move anything in a minimal repro on 2.6:* a plain copy local (`T* q = p;`, `int a2 = a;`, declared before or after, with
+  or without an initialiser: identical code to the uncopied form, the copy is propagated away before allocation); declaration with
+  initialiser vs separate assignment; splitting a reused local when the two lives do not overlap. His "initialiser-bearing pointer
+  local" lever therefore needs a copy that survives propagation (a loop-carried pointer, an address used by several blocks, or a
+  `+ zero` alias as in tou_gamen_screen_tev); try it on the real function and check mwccdbg for the vreg, not the register.
+  `int` vs `u16` changes emitted code (a `clrlwi`), so it is a lowering lever, not a pure allocator one. Wrapping a local in a
+  one-field struct memory-homes it (stack slot) and was not tried as a pure allocator lever.
+  *Classes that source edits do not reach* (his three, which match our NO-SOURCE-LEVER stops): (1) terminal callee-saved permutations
+  over compiler-materialised webs (`@N` CSE temps, the i2f magic, global-address webs) that no nameable local owns; (2) one extra
+  callee-saved register at peak pressure, hundreds of downstream diffs from one frontend lowering difference (the `stmw`/FPR-save
+  start differs); (3) many-to-many reallocations. rasim's `search` over the `@` temps of nameKirinukiGX reaches 1-2 wrong, which says the
+  creation order of the frontend temps is the whole difference, and that order is fixed by the expression order.
+  *Stage cheat-sheet:* expression shape or folded/propagated values -> frontend optimizer (IRO_*); missing/extra CSE, hoisted loop
+  values -> backend pass sequence; instruction order only -> scheduling or peephole; register identity only -> coalescing roots or select
+  order; stack offsets and frame size -> aggregates and addressed locals; `stmw rN` / FPR save count -> lowest claimed callee-saved
+  register (select order or peak pressure). Addressed locals take stack slots in reverse declaration order (inferred), so a wrapper
+  struct declared before one can fill an existing hole without moving the rest.
 - **Pinning an early parameter save (`mr r28, r3` before the first load):** when retail copies a parameter into its
   callee-saved register at the top and ours does it later, a dead use of the parameter at its first use can pin the
   copy without adding an instruction: `strcmp((const char*)(s64)(s32)name, ...)` (npcSetStayPose/TalkPose, 98.84 -> 100;
