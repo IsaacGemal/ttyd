@@ -1835,7 +1835,7 @@ static inline void hakoQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f3
 // initialised to 0 here; the only observable difference is page 0's visibility
 // test on the very first call, and the instruction count is unchanged (MWCC
 // still keeps it in a register and emits the `mulli`).
-// NONMATCHING: register colouring inside the many inlined quads and the
+// NONMATCHING (87.89%): register colouring inside the many inlined quads and the
 // anonymous .rodata pool offsets (the unit's base object is not defined here).
 void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     f32 scroll;
@@ -1850,7 +1850,6 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     s32 ofs;
     s32 t7e, t7f, t84, t80, t87, t82, t81, t85, t86, t7d, t7b, t83;
     f32 f24;
-    f32 f25;
     f32 f26;
 
     if (type == 0) {
@@ -1897,6 +1896,8 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     t83 = texBase + 0x83;
     t87 = texBase + 0x87;
     t82 = texBase + 0x82;
+    f24 = float_392_8041d110 + x;
+    f26 = (y - float_224_8041d10c) + scroll;
     ofs = 0;
     for (page = 0; page < pageCount; ofs += 0xE8, page++) {
         f32 vis = (scroll + (y - (f32)(row * 0x38))) - (f32)ofs;
@@ -1924,9 +1925,6 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                                  56.0f, 56.0f);
                     }
                 }
-                f24 = float_392_8041d110 + x;
-                f26 = (y - float_224_8041d10c) + scroll;
-                f25 = f24 + 8.0f;
                 f23 = f26 - (f32)ofs;
                 f22 = f23 - 8.0f;
                 for (i = 0; i < 7; i++) {
@@ -3153,7 +3151,7 @@ void winBgGX(WindowWork* work, s32 type, f32 x, f32 y) {
 extern const GXColor dat_8041cf5c;
 #ifdef MUST_MATCH
 // MUST_MATCH: retail reads these doubles through the str_802F3FE8 base register.
-#define HB_DBL(off, sym, val) (*(const f64*)((const u8*)&str_802F3FE8 + (off)))
+#define HB_DBL(off, sym, val) (*(const f64*)(rodata + (off)))
 #else
 #define HB_DBL(off, sym, val) (val)
 #endif
@@ -3334,8 +3332,11 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
     }
 }
 
-// NONMATCHING (95.25%): register allocation/scheduling only.
+// NONMATCHING (95.34%): register allocation/scheduling only.
 void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
+#ifdef MUST_MATCH
+    const u8* rodata = (const u8*)&str_802F3FE8;
+#endif
     f32 x8;
     f32 x16;
     f32 x32;
