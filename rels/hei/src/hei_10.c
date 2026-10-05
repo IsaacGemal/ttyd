@@ -556,7 +556,8 @@ USER_FUNC(evt_chorobon_wait) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (92.18%): frame is 0xb0 vs 0x90 (compound-literal temps for the three vec3 templates) and the
+// NONMATCHING (92.18%): frame is 0xc0 vs 0x90 (compound-literal temps for the three vec3 templates; declaration
+// initialisers fix the frame and leave only 3 anonymous GPR copy temps, but objdiff scores that lower) and the
 // i2f magic/float pool loads are anonymous where the target reads named objects.
 #pragma inline_max_size(1000)
 #pragma opt_lifetimes off
