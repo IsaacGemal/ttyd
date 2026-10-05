@@ -78,9 +78,22 @@ def _braces(line, state):
 
 
 def body_end(lines, k):
-    """Index of the line that closes the function whose header ends (with `{`) on line k."""
-    st, depth = {}, 0
+    """Index of the line that closes the function whose header ends (with `{`) on line k. Inside an #if/#else, only the
+    first branch's braces count (MUST_MATCH and natural forms often each open the same block)."""
+    st, depth, pp = {}, 0, []   # pp: per open #if, True while in a later (#else/#elif) branch
     for j in range(k, len(lines)):
+        t = lines[j].strip()
+        if re.match(r"#\s*if", t):
+            pp.append(False)
+            continue
+        if re.match(r"#\s*(else|elif)\b", t) and pp:
+            pp[-1] = True
+            continue
+        if re.match(r"#\s*endif\b", t) and pp:
+            pp.pop()
+            continue
+        if any(pp):
+            continue
         depth += _braces(lines[j], st)
         if depth == 0 and j >= k:
             return j
@@ -92,8 +105,14 @@ def functions(lines):
     run over several lines (wrapped parameters, or the `{` on the next line)."""
     out = []
     i = 0
+    in_c = False
     while i < len(lines):
         l = lines[i]
+        if in_c or l.lstrip().startswith("/*"):   # skip block comments (commented-out functions)
+            body = l if in_c else l[l.index("/*") + 2:]
+            in_c = "*/" not in body
+            i += 1
+            continue
         if re.match(r"(static\s+)?(inline\s+)?(USER_FUNC\(|[A-Za-z_])", l) and "(" in l and not l.rstrip().endswith(";") \
                 and not re.match(r"\s*(typedef|struct|enum|union|if|for|while|switch|return|else|extern)\b", l) \
                 and "=" not in l.split("(")[0]:
@@ -164,14 +183,18 @@ def gap_items(gap, blocks=()):
         if re.match(r"(extern\b|typedef\b|EVT_BEGIN\(|(static\s+)?(const\s+)?[\w\s\*]+\[?[^(]*=|[A-Za-z_][\w\s\*]*\b\w+\s*\([^)]*\)\s*;)", t) \
                 and not t.startswith("#") and not re.match(r"(static\s+)?inline\b", t):
             j, depth = i, 0
-            while True:
-                depth += gap[j].count("{") - gap[j].count("}")
-                if (depth == 0 and gap[j].rstrip().endswith(";")) or gap[j].strip().startswith("EVT_END()"):
+            while j < len(gap):
+                code = gap[j].split("//")[0].rstrip()
+                depth += code.count("{") - code.count("}")
+                if (depth == 0 and code.endswith(";")) or gap[j].strip().startswith("EVT_END()"):
                     break
                 j += 1
-            items.append(("hoist", gap[i:j + 1]))
-            i = j + 1
-            continue
+            if j < len(gap):
+                items.append(("hoist", gap[i:j + 1]))
+                i = j + 1
+                continue
+        if False:
+            pass
         items.append(("lead", [gap[i]]))
         i += 1
     return items
@@ -272,7 +295,8 @@ def reorder(text, want):
     prev_end, prev = first - 1, None
     for s, e, name, _ in fns:
         lead = []
-        helpers = [(a - prev_end - 1, b - prev_end - 1) for a, b, _, inl in functions(L) if inl and prev_end < a and b < s]
+        helpers = [(a - prev_end - 1, b - prev_end - 1) for a, b, nm, inl in functions(L)
+                   if (inl or nm not in want) and prev_end < a and b < s]
         for kind, ls in gap_items(L[prev_end + 1:s], helpers):
             if kind in ("define", "ifblock"):
                 names = re.findall(r"#\s*define\s+(\w+)", "\n".join(ls))
@@ -322,7 +346,7 @@ def reorder(text, want):
         for kind in ("pragma", "macro"):
             a, b = state_at(orig, head(orig, n), kind), state_at(out, head(out, n), kind)
             if kind == "macro":
-                body = "\n".join(chunks[n])
+                body = re.sub(r"//[^\n]*|/\*.*?\*/", "", "\n".join(chunks[n]), flags=re.S)
                 a = {k for k in a if re.search(rf"\b{k}\b", body)}
                 b = {k for k in b if re.search(rf"\b{k}\b", body)}
             if a != b:

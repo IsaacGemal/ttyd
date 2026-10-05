@@ -89,6 +89,21 @@ class Reorder(unittest.TestCase):
             i = out.index(name)
             self.assertIn("#pragma dont_inline on", out[max(0, i - 3):i])
 
+    def test_if_branches_and_comments(self):
+        src = ("void a(void) {\n#ifdef MUST_MATCH\n    if (x) {\n#else\n    if (y) {\n#endif\n        q();\n    }\n}\n"
+               "/*\nvoid old(void) {\n}\n*/\n"
+               "s32 table[2]; // a declaration with a trailing comment\n"
+               "void skipped(void) {\n    r();\n}\n"
+               "void b(void) {\n    // uses NAME only in a comment\n}\n")
+        names = [f[2] for f in fn_order.functions(src.split("\n"))]
+        # the #else branch's `{` does not count, and the commented-out function is not one
+        self.assertEqual(names, ["a", "skipped", "b"])
+        out = fn_order.reorder(src, ["b", "a"]).split("\n")
+        # `skipped` (not emitted by the original) travels whole with the function below it
+        self.assertEqual(out[out.index("void skipped(void) {") + 1], "    r();")
+        self.assertLess(out.index("s32 table[2]; // a declaration with a trailing comment"), out.index("void b(void) {"))
+        self.assertEqual(sorted(l for l in out if l.strip()), sorted(l for l in src.split("\n") if l.strip()))
+
 
 if __name__ == "__main__":
     unittest.main()
