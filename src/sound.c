@@ -22,6 +22,8 @@ static char str[0x100];
 //.sbss
 u32 aramMemArray[8];
 
+s16 dtbl[16] = {1, 7, 24, 59, 83, 111, 236, 555, 742, 885, 1052, 2221, 3285, 4432, 6962, 9300};
+
 // local prototypes
 
 
@@ -1482,8 +1484,6 @@ void _ssDVDReadAsync_cache_next(s32 result, DVDFileInfo* fileInfo) {
     }
 }
 
-s16 dtbl[16] = {1, 7, 24, 59, 83, 111, 236, 555, 742, 885, 1052, 2221, 3285, 4432, 6962, 9300};
-
 // NONMATCHING (99.92%): the else nibble is now in r9 like the original, but its sign-extension
 // before the <<4 is fused into the shift destination (extsb r0,r9; slwi r0,r0,4) where the target
 // extends in place (extsb r9,r9; slwi r0,r9,4); only those 2 operands differ
@@ -1770,10 +1770,14 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
     }
     return *(u32*)(stream->unk1C + 8);
 }
-
 #undef SS_CB_LOOP
 #undef SS_CB_COPY
 #pragma opt_propagation reset
+
+void SoundSSPlayCh(s32 chan, u32 a2) {
+    SoundSSPlayChEx(chan, a2, 0);
+}
+
 // Returns void: the original never writes r3, and an s32 definition (or header prototype!) shifts the tail to r4.
 #ifdef MUST_MATCH
 // Forces MWCC to materialise str's address into path's home register (r27) before the copy to r3;
@@ -2052,63 +2056,30 @@ void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
     }
 }
 
-s32 SoundSSCheck(s32 chan) {
-    return sound.streams[chan].flags;
-}
-
-void SoundSSSetPlayFreqCh(s32 chan, u16 freq) {
+void SoundSSStopCh(s32 chan) {
     SoundStream* stream = &sound.streams[chan];
 
     if (!stream->flags) {
-        return;
-    }
-    stream->freq = freq;
-    if (!(stream->flags & 8)) {
         return;
     }
     if (!sound.unk20C) {
         sound.interrupts = OSDisableInterrupts();
     }
     sound.unk20C++;
-    sndStreamFrq(stream->entries[0].streamId, stream->freq);
+    if (stream->flags & 0x400) {
+        sound.unk226[stream->unk2] = 0;
+    }
+    stream->flags = 0;
+    DVDMgrClose(stream->entries[0].dvd);
+    DVDMgrClose(stream->entries[1].dvd);
+    sndStreamFree(stream->entries[0].streamId);
     if (stream->count == 2) {
-        sndStreamFrq(stream->entries[1].streamId, stream->freq);
+        sndStreamFree(stream->entries[1].streamId);
     }
     if (sound.unk20C && !--sound.unk20C) {
         OSRestoreInterrupts(sound.interrupts);
     }
-}
-
-void SoundSSPlayCh(s32 chan, u32 a2) {
-    SoundSSPlayChEx(chan, a2, 0);
-}
-
-void SoundSSMuteOn(s32 chan) {
-    SoundStream* stream;
-    u32 idx = chan;
-    stream = &sound.streams[idx];
-    if (stream->flags) {
-        stream->flags |= 2;
-    }
-}
-
-void SoundSSMuteOff(s32 chan) {
-    SoundStream* stream;
-    u32 idx = chan;
-    stream = &sound.streams[idx];
-    if (stream->flags) {
-        stream->flags &= ~2;
-    }
-}
-
-void SoundSSContinueCh(s32 chan) {
-    SoundStream* stream = &sound.streams[chan];
-
-    if (stream->flags) {
-        stream->flags &= ~2;
-        stream->unk14 = stream->vol;
-        stream->flags |= 0x10;
-    }
+    sound.unk104 = -1;
 }
 
 void SoundSSFadeoutCh(s32 chan) {
@@ -2125,14 +2096,13 @@ void SoundSSFadeoutCh(s32 chan) {
     }
 }
 
-s32 SoundSSGetVolCh(s32 chan) {
-    SoundStream* stream;
+void SoundSSContinueCh(s32 chan) {
+    SoundStream* stream = &sound.streams[chan];
 
-    stream = &sound.streams[chan];
     if (stream->flags) {
-        return (s32)stream->vol;
-    } else {
-        return 0;
+        stream->flags &= ~2;
+        stream->unk14 = stream->vol;
+        stream->flags |= 0x10;
     }
 }
 
@@ -2163,19 +2133,6 @@ void SoundSSSetPanCh(s32 chan, u8 pan) {
     }
 }
 
-void SoundSSSetSrndPanCh(s32 chan, u8 span) {
-    SoundStream* stream = &sound.streams[chan];
-
-    if (!stream->flags) {
-        return;
-    }
-    stream->span = span;
-    if (!(stream->flags & 8)) {
-        return;
-    }
-    SoundSSSetPanCh(chan, (u8)stream->pan);
-}
-
 // The index helper is an inline so the stream pointer's live range matches the original's
 // register allocation (without it MWCC colors the index/pointer as r6/r7 instead of r7/r6).
 static inline SoundStream* SoundSSGetStream(s32 chan) {
@@ -2198,30 +2155,73 @@ void SoundSSSetVolCh(s32 chan, u8 vol) {
     SoundSSSetPanCh(chan, (u8)stream->pan);
 }
 
-void SoundSSStopCh(s32 chan) {
+s32 SoundSSGetVolCh(s32 chan) {
+    SoundStream* stream;
+
+    stream = &sound.streams[chan];
+    if (stream->flags) {
+        return (s32)stream->vol;
+    } else {
+        return 0;
+    }
+}
+
+void SoundSSSetSrndPanCh(s32 chan, u8 span) {
     SoundStream* stream = &sound.streams[chan];
 
     if (!stream->flags) {
+        return;
+    }
+    stream->span = span;
+    if (!(stream->flags & 8)) {
+        return;
+    }
+    SoundSSSetPanCh(chan, (u8)stream->pan);
+}
+
+void SoundSSSetPlayFreqCh(s32 chan, u16 freq) {
+    SoundStream* stream = &sound.streams[chan];
+
+    if (!stream->flags) {
+        return;
+    }
+    stream->freq = freq;
+    if (!(stream->flags & 8)) {
         return;
     }
     if (!sound.unk20C) {
         sound.interrupts = OSDisableInterrupts();
     }
     sound.unk20C++;
-    if (stream->flags & 0x400) {
-        sound.unk226[stream->unk2] = 0;
-    }
-    stream->flags = 0;
-    DVDMgrClose(stream->entries[0].dvd);
-    DVDMgrClose(stream->entries[1].dvd);
-    sndStreamFree(stream->entries[0].streamId);
+    sndStreamFrq(stream->entries[0].streamId, stream->freq);
     if (stream->count == 2) {
-        sndStreamFree(stream->entries[1].streamId);
+        sndStreamFrq(stream->entries[1].streamId, stream->freq);
     }
     if (sound.unk20C && !--sound.unk20C) {
         OSRestoreInterrupts(sound.interrupts);
     }
-    sound.unk104 = -1;
+}
+
+s32 SoundSSCheck(s32 chan) {
+    return sound.streams[chan].flags;
+}
+
+void SoundSSMuteOn(s32 chan) {
+    SoundStream* stream;
+    u32 idx = chan;
+    stream = &sound.streams[idx];
+    if (stream->flags) {
+        stream->flags |= 2;
+    }
+}
+
+void SoundSSMuteOff(s32 chan) {
+    SoundStream* stream;
+    u32 idx = chan;
+    stream = &sound.streams[idx];
+    if (stream->flags) {
+        stream->flags &= ~2;
+    }
 }
 
 // The original allocates the inlined helpers' stream offset to r26 and the loop counter to r28; this build
