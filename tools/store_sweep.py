@@ -10,7 +10,10 @@ This found npcEntry's missing `field_110 = -1` and __psndSFXOn's float-wise Vec 
 words). Stack stores (r1) are skipped because frame layout moves them; relocated `li`s (sda21 symbols) are skipped
 because tools/reloc_value_check.py covers them. A function whose findings pair up one-for-one at a constant offset
 delta (every original offset X matched by X+d in ours) is a systematic layout shift, reported once as SHIFT.
-A lone `li 0` on either side is usually the allocator materialising a zero twice, so `li 0` is ignored unless --all."""
+A lone `li 0` on either side is usually the allocator materialising a zero twice, so `li 0` is ignored unless --all.
+Loads are reported only when the same offset is read with a different width or signedness on each side (`lha` vs
+`lhz` is an s16/u16 field or cast, `lwz` vs `lfs` an int/float type), since load counts move with scheduling; loads at
+offset 0 are skipped (mostly a pool constant read through a materialised address)."""
 import collections
 import json
 import os
@@ -22,6 +25,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, "build", "G8MJ01")
 OBJDIFF = os.path.join(BUILD, "..", "tools", "objdiff-cli")
 STORE = re.compile(r"^(stw|sth|stb|stfs|stfd)u?$")
+LOAD = re.compile(r"^(lwz|lhz|lha|lbz|lfs|lfd)u?$")
 
 
 def objects(name):
@@ -51,14 +55,23 @@ def key(ins):
         return ("store", mn.rstrip("u"), imms[0])
     if mn == "li" and imms:
         return ("li", imms[0])
+    if LOAD.match(mn) and len(regs) >= 2 and imms and imms[0] and regs[-1] != "r1":
+        return ("load", mn.rstrip("u"), imms[0])
     return None
+
+
+def widths(oa, ob):
+    """Offsets loaded with a different width or signedness on each side (`lha` vs `lhz`, `lwz` vs `lfs`)."""
+    a = {k[2]: k[1] for k in oa if k[0] == "load"}
+    b = {k[2]: k[1] for k in ob if k[0] == "load"}
+    return sorted((off, a[off], b[off]) for off in a if off in b and a[off] != b[off])
 
 
 def compare(orig, ours, zeros=False):
     """(only_in_original, only_in_ours, shift) from two lists of key() results."""
     keep = lambda k: k and (zeros or k != ("li", 0))
-    a = collections.Counter(k for k in orig if keep(k))
-    b = collections.Counter(k for k in ours if keep(k))
+    a = collections.Counter(k for k in orig if keep(k) and k[0] != "load")
+    b = collections.Counter(k for k in ours if keep(k) and k[0] != "load")
     oa, ob = a - b, b - a
     shift = None
     sa = sorted(k for k in oa.elements() if k[0] == "store")
@@ -86,8 +99,11 @@ def scan(name, fns, zeros=False):
         orig = [key(i["instruction"]) for i in s.get("instructions", []) if "instruction" in i]
         ours = [key(i["instruction"]) for i in right[s["name"]].get("instructions", []) if "instruction" in i]
         oa, ob, shift = compare(orig, ours, zeros)
-        if oa or ob:
-            out.append((s["name"], oa, ob, shift))
+        la = collections.Counter(k for k in orig if k and k[0] == "load")
+        lb = collections.Counter(k for k in ours if k and k[0] == "load")
+        w = widths(la - lb, lb - la)
+        if oa or ob or w:
+            out.append((s["name"], oa, ob, shift, w))
     return out
 
 
@@ -109,7 +125,11 @@ def main(argv):
         hits = scan(u["name"], fns, "--all" in argv)
         if hits:
             print(u["name"])
-            for fn, oa, ob, shift in hits:
+            for fn, oa, ob, shift, w in hits:
+                for off, x, y in w:
+                    print(f"  {fn}: load +{off:#x} is `{x}` in the original, `{y}` in ours")
+                if not (oa or ob):
+                    continue
                 if shift is not None and not any(k[0] == "li" for k in list(oa) + list(ob)):
                     print(f"  {fn}: SHIFT {shift:+#x} ({len(oa)} store(s))")
                     continue

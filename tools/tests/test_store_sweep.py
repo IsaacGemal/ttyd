@@ -26,7 +26,8 @@ class StoreSweep(unittest.TestCase):
         self.assertIsNone(store_sweep.key(ins("stw", "r0", 0x8, "r1")))  # stack slot
         self.assertEqual(store_sweep.key(ins("li", "r4", -1)), ("li", -1))
         self.assertIsNone(store_sweep.key(ins("li", "r3", "RELOC")))  # sda21 symbol address
-        self.assertIsNone(store_sweep.key(ins("lwz", "r3", 0x4, "r5")))
+        self.assertEqual(store_sweep.key(ins("lwz", "r3", 0x4, "r5")), ("load", "lwz", 0x4))
+        self.assertIsNone(store_sweep.key(ins("lfd", "f2", 0x0, "r5")))  # pool constant via an address
 
     def test_missing_store_is_reported(self):
         orig = [("store", "stw", 0x108), ("store", "stw", 0x110), ("li", -1)]
@@ -44,6 +45,12 @@ class StoreSweep(unittest.TestCase):
         orig = [("store", "sth", 0x1E0), ("store", "sth", 0x1E2)]
         ours = [("store", "sth", 0x2), ("store", "sth", 0x4)]
         self.assertEqual(store_sweep.compare(orig, ours)[2], -0x1DE)
+
+    def test_load_signedness_is_reported(self):
+        a = [("load", "lhz", 0x20), ("load", "lwz", 0x4)]
+        b = [("load", "lha", 0x20), ("load", "lwz", 0x8)]
+        self.assertEqual(store_sweep.widths(a, b), [(0x20, "lhz", "lha")])
+        self.assertEqual(store_sweep.key(ins("lha", "r5", 0x20, "r4")), ("load", "lha", 0x20))
 
     def test_lone_zero_ignored_unless_asked(self):
         self.assertEqual(store_sweep.compare([], [("li", 0)])[:2], ({}, {}))
