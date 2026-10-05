@@ -31,18 +31,18 @@ extern const f32 float_1000_8041a7a0;
 extern const f32 float_1_8041a7bc;
 extern const f32 float_11_8041a7ac;
 extern const f32 float_13_8041a7b0;
-extern const Vec vec3_802c5754;
+static const Vec vec3_802c5754;
 extern const f32 float_neg3000_8041a870;
-extern const Vec vec3_802c5760;
-extern const Vec vec3_802c576c;
+static const Vec vec3_802c5760;
+static const Vec vec3_802c576c;
 extern const f32 float_37_8041a86c;
 extern const f32 float_1037_8041a888;
-extern const Vec vec3_802c5880;
-extern const Vec vec3_802c588c;
-extern const Vec vec3_802c5898;
-extern const Vec vec3_802c58a4;
-extern const Vec vec3_802c58b0;
-extern const Vec vec3_802c58bc;
+static const Vec vec3_802c5880;
+static const Vec vec3_802c588c;
+static const Vec vec3_802c5898;
+static const Vec vec3_802c58a4;
+static const Vec vec3_802c58b0;
+static const Vec vec3_802c58bc;
 extern const f32 float_5_8041a7b8;
 extern const f32 float_10_8041a7fc;
 extern const f32 float_neg0p4_8041a878;
@@ -77,38 +77,38 @@ extern const f32 float_18_8041a850;
 extern const f32 float_0p25_8041a7d4;
 extern const f32 float_0p75_8041a7d8;
 extern const f32 float_0p05_8041a848;
-extern const Vec vec3_802c57f0;
-extern const Vec vec3_802c57fc;
+static const Vec vec3_802c57f0;
+static const Vec vec3_802c57fc;
 extern const f32 float_9_8041a83c;
-extern const Vec vec3_802c5808;
-extern const Vec vec3_802c5814;
-extern const Vec vec3_802c5820;
+static const Vec vec3_802c5808;
+static const Vec vec3_802c5814;
+static const Vec vec3_802c5820;
 extern const f32 float_neg23p7_8041a834;
 extern const f32 float_5p8_8041a838;
 extern const f32 float_16p8_8041a830;
-extern const Vec vec3_802c582c;
+static const Vec vec3_802c582c;
 extern const f32 float_4_8041a7a8;
 extern const f32 float_40_8041a800;
-extern const Vec vec3_802c5838;
+static const Vec vec3_802c5838;
 extern const f32 float_27p75_8041a820;
 extern const f32 float_12_8041a824;
 extern const f32 float_7_8041a828;
-extern const Vec vec3_802c5844;
-extern const Vec vec3_802c5850;
-extern const Vec vec3_802c585c;
-extern const Vec vec3_802c5874;
+static const Vec vec3_802c5844;
+static const Vec vec3_802c5850;
+static const Vec vec3_802c585c;
+static const Vec vec3_802c5874;
 extern const f32 float_60_8041a808;
 extern const f32 float_0p8_8041a80c;
 extern const f32 float_20_8041a810;
 extern const f32 float_8_8041a814;
 extern const f32 float_270_8041a818;
-extern const Vec vec3_802c5868;
+static const Vec vec3_802c5868;
 extern const f32 float_360_8041a7c0;
 extern const f32 float_0p125_8041a7d0;
-extern const Vec vec3_802c58c8;
-extern const Vec vec3_802c58d4;
-extern const Vec vec3_802c58e0;
-extern const Vec vec3_802c58ec;
+static const Vec vec3_802c58c8;
+static const Vec vec3_802c58d4;
+static const Vec vec3_802c58e0;
+static const Vec vec3_802c58ec;
 
 // The original addresses these .rodata objects as offsets from one base symbol.
 #ifdef MUST_MATCH
@@ -119,18 +119,21 @@ extern const Vec vec3_802c58ec;
 #define ROS(base, off, str) (str)
 #endif
 
-// Match-only: a volatile read makes MWCC reload the constant per use, as the original does in a few places.
+// Match-only: a volatile read makes MWCC reload the constant per use (and keeps a Vec template copy inside its
+// loop), as the original does in a few places.
 #ifdef MUST_MATCH
 #define RELOAD_F32(x) (*(const volatile f32*)&(x))
+#define RELOAD_VEC(x) (*(const volatile Vec*)&(x))
 #else
 #define RELOAD_F32(x) (x)
+#define RELOAD_VEC(x) (x)
 #endif
 
 //.rodata
-const Vec vec3_802c5730 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c573c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5748 = { 0.0f, -1.0f, 0.0f };
-const Vec vec3_802c5754 = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c5730 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c573c = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c5748 = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c5754 = { 0.0f, -1.0f, 0.0f };
 
 #define FP_NAN 1
 #define FP_INFINITE 2
@@ -801,27 +804,26 @@ s32 searchUnder2(Vec* out, f32 x, f32 y, f32 z) {
     out->x = (hit != NULL) ? hitPos.y : float_neg1_8041a7dc;
     return (s32)hit;
 }
-const Vec vec3_802c5778 = { 0.0f, -1.0f, 0.0f };
-const Vec vec3_802c5784 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5790 = { 0.0f, -1.0f, 0.0f };
-const Vec vec3_802c579c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c57a8 = { 0.0f, -1.0f, 0.0f };
-const Vec vec3_802c57b4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c57c0 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c57cc = { 0.0f, -1.0f, 0.0f };
-const Vec vec3_802c57d8 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c57e4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c57f0 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c57fc = { 0.0f, 1.0f, 0.0f };
-const Vec vec3_802c5808 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c5778 = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c5784 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c5790 = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c579c = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c57a8 = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c57b4 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c57c0 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c57cc = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c57d8 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c57e4 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c57f0 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c57fc = { 0.0f, 1.0f, 0.0f };
+static const Vec vec3_802c5808 = { 0.0f, 0.0f, 0.0f };
 
 static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
 #define GND_PTR(wp, type, off) (*(type*)((u8*)(wp) + (off)))
 
-// NONMATCHING (94.74%): same 56 calls and immediates as the original. Remaining: the frame is 0x1c0 against 0x1b0
+// NONMATCHING (95.34%): same 56 calls and immediates as the original. Remaining: the frame is 0x1c0 against 0x1b0
 // with f27-f29 also saved: the three inlined marioHitCheckVecOut copies keep more FPR temps than the original's two (f30/f31).
 void marioChkGnd(void) {
-    const char* base = (const char*)&vec3_802c5730;
     MarioWork* wp = marioGetPtr();
     MarioWork* m;
     HitEntry* hit;
@@ -852,7 +854,7 @@ void marioChkGnd(void) {
         }
         p = m->position;
         p.y += h;
-        dir = *(const Vec*)(base + 0x24);
+        dir = vec3_802c5754;
         dist = float_1000_8041a7a0;
         hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
         GND_PTR(m, f32, 0x1C0) = hit != NULL ? hitPos.y : float_neg3000_8041a870;
@@ -870,7 +872,7 @@ void marioChkGnd(void) {
     }
     p = m->position;
     p.y += h;
-    dir = *(const Vec*)(base + 0x24);
+    dir = vec3_802c5754;
     dist = float_1000_8041a7a0;
     hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
     GND_PTR(m, f32, 0x1C0) = hit != NULL ? hitPos.y : float_neg3000_8041a870;
@@ -985,7 +987,7 @@ void marioChkGnd(void) {
                 GND_PTR(wp, f32, 0x164) = GND_PTR(wp, f32, 0x114) - wp->position.y;
                 p = wp->position;
                 p.y += float_10_8041a7fc;
-                dir = *(const Vec*)(base + 0x18);
+                dir = vec3_802c5748;
                 dist = float_47_8041a84c;
                 hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
                 if (hit != NULL) {
@@ -1080,10 +1082,9 @@ void marioChkGnd2(void) {
 static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
 #define GND_CENTI(v) ((f32)(s32)(float_100_8041a7f8 * (v) + float_0p5_8041a7c4) / float_100_8041a7f8)
 
-// NONMATCHING (91.21%): same 25 calls and immediates as the original; the frame is 0x210 against 0x1e0 (three more
+// NONMATCHING (92.20%): same 25 calls and immediates as the original; the frame is 0x210 against 0x1e0 (three more
 // 12-byte vec temps than the original keeps).
 HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
-    const char* base = (const char*)&vec3_802c5730;
     MarioWork* wp = marioGetPtr();
     Vec p;
     Vec up;
@@ -1145,7 +1146,7 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     pz = wp->position.z;
     result = NULL;
     bestY = float_neg10000_8041a858;
-    up = *(const Vec*)(base + 0x48);
+    up = RELOAD_VEC(vec3_802c5778);
     for (i = 0; i < 5; i++) {
         if (i == 0) {
             ox = float_0_8041a7a4;
@@ -1163,7 +1164,7 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
             ox = -f24;
             oz = -f23;
         }
-        p = *(const Vec*)(base + 0x54);
+        p = RELOAD_VEC(vec3_802c5784);
         p.x = px + ox;
         p.y = py + fb;
         p.z = pz + oz;
@@ -1491,10 +1492,9 @@ static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32*
 
 // Older landing check (the Koopa-aware ground probe): same five-sample ring as marioChkLandon2 but the ray points
 // down from 0.75 * height and the accepted hit y is returned rounded to 0.01.
-// NONMATCHING (85.06%): same 15 calls; remaining: frame size/FPR colouring and the inlined sqrt's classification
+// NONMATCHING (85.73%): same 15 calls; remaining: frame size/FPR colouring and the inlined sqrt's classification
 // switch (cmpwi 1/3). Compares: fabs(...) < 0.1 and the rounding tests (cror eq,gt -> >=) checked against the asm.
 void* marioLandonChk_old(f32* pos, f32 spd) {
-    const char* base = (const char*)&vec3_802c5730;
     MarioWork* wp = marioGetPtr();
     Vec p;
     Vec dir;
@@ -1569,8 +1569,8 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
             ox = -f20;
             oz = -f19;
         }
-        p = *(const Vec*)(base + 0);
-        dir = *(const Vec*)(base + 0xC);
+        p = RELOAD_VEC(vec3_802c5730);
+        dir = RELOAD_VEC(vec3_802c573c);
         p.x = px + ox;
         p.y = yy;
         p.z = pz + oz;
@@ -1597,10 +1597,9 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
 }
 
 // The hit sample ring of marioChkLandon, with the ground y returned through *out.
-// NONMATCHING (88.82%): same 13 calls; the inlined sqrt's classification switch (cmpwi 1/3) is missing from ours and the
+// NONMATCHING (89.47%): same 13 calls; the inlined sqrt's classification switch (cmpwi 1/3) is missing from ours and the
 // frame is 0x1c0 vs 0x1a0. fabs() is __fabsf (f32 add, no frsp) as in the original; the compare `fabs(...) < 0.1` is plain.
 void* marioChkLandon2(f32* out, f32 a, f32 b) {
-    const char* base = (const char*)&vec3_802c5730;
     MarioWork* wp = marioGetPtr();
     Vec p;
     Vec up;
@@ -1644,7 +1643,7 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
     }
     rad = float_3p1416_8041a7e0 * angle / float_180_8041a7cc;
     f27 = float_0p25_8041a7d4 * (*(f32*)((u8*)wp + 0x1B4) * (f32)sin(rad));
-    up = *(const Vec*)(base + 0x78);
+    up = RELOAD_VEC(vec3_802c57a8);
     d0 = h + fa;
     yy = wp->position.y + b + h;
     f26 = float_0p25_8041a7d4 * (*(f32*)((u8*)wp + 0x1B4) * -(f32)cos(rad));
@@ -1667,7 +1666,7 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
             ox = -f27;
             oz = -f26;
         }
-        p = *(const Vec*)(base + 0x84);
+        p = RELOAD_VEC(vec3_802c57b4);
         p.x = px + ox;
         p.y = yy;
         p.z = pz + oz;
@@ -1880,10 +1879,9 @@ f32 marioChkOverheadJabara(s32* out, f32* outF) {
 // Only FPR colouring remains -- the original keeps a=f22/rad-y0=f23, temps f24-f28,
 // nz/ny/nx=f29-f31, ox/oz=f21/f20; ours shares a's f19 with ny100, so the temps land in
 // f26-f31 and the normals in f20-f22.
-// NONMATCHING (93.09%): only FPR colouring remains (the loop-body ox/oz take f31/f30 and rotate
+// NONMATCHING (93.59%): only FPR colouring remains (the loop-body ox/oz take f31/f30 and rotate
 // the whole long-lived set). Reordering declarations and extending `a`'s live range were tried.
 void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
-    const char* base = (const char*)&vec3_802c5730;
     MarioWork* wp = marioGetPtr();
     Vec p;
     Vec up;
@@ -1945,12 +1943,12 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
             oz = f28;
         }
         dist = f22;
-        t = *(const volatile Vec*)(RO(base, 0xC0, vec3_802c57f0));
+        t = RELOAD_VEC(vec3_802c57f0);
         t.x = pos->x + ox;
         t.y = pos->y + f26;
         t.z = pos->z + oz;
         p = t;
-        up = *(const volatile Vec*)(RO(base, 0xCC, vec3_802c57fc));
+        up = RELOAD_VEC(vec3_802c57fc);
         hit = marioHitCheck2(&p, &up, &hitPos, &normal, &dist);
         if (hit != NULL) {
             MarioWork* wp2;
@@ -2090,7 +2088,7 @@ void* marioSearchHead_roll(Vec* pos, f32* outY, f32 a) {
             break;
         }
 #ifdef MUST_MATCH
-        p = *(const volatile Vec*)&vec3_802c5808;
+        p = RELOAD_VEC(vec3_802c5808);
         dir = (Vec){ 0.0f, 1.0f, 0.0f };
 #else
         p = vec3_802c5808;
@@ -2225,26 +2223,26 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
     }
     return NULL;
 }
-const Vec vec3_802c582c = { 0.0f, 1.0f, 0.0f };
-const Vec vec3_802c5838 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5844 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5850 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c585c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5868 = { 0.0f, -1.0f, 0.0f };
-const Vec vec3_802c5874 = { 0.0f, -1.0f, 0.0f };
-const Vec vec3_802c5880 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c588c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5898 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c58a4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c58b0 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c58bc = { 0.0f, -1.0f, 0.0f };
-const Vec vec3_802c58c8 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c58d4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c58e0 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c58ec = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c58f8 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5904 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5910 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c582c = { 0.0f, 1.0f, 0.0f };
+static const Vec vec3_802c5838 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c5844 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c5850 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c585c = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c5868 = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c5874 = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c5880 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c588c = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c5898 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c58a4 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c58b0 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c58bc = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c58c8 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c58d4 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c58e0 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c58ec = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c58f8 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c5904 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c5910 = { 0.0f, 0.0f, 0.0f };
 
 // prototypes for in-file functions
 
@@ -2610,9 +2608,8 @@ void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist) {
     return NULL;
 }
 
-// NONMATCHING (86.00%): the three passes build a `HitCheckQuery` local and call `marioHitCheckVecRound` (the caller-built shape `marioChkFront` uses), which reproduces the 3 query slots and the distance/hitPos/normal rounding; calls and control flow match. The pass-2 direction is built through `makeDirVec` (a by-value inline that starts from the named rodata vec) so MWCC materialises the original's built-then-copied `Vec` slot. What remains is register colouring, a 0x10 frame gap (0x240 vs 0x250 - the original keeps a second dead `Vec` copy in pass 1 that the inliner drops).
+// NONMATCHING (90.57%): the three passes build a `HitCheckQuery` local and call `marioHitCheckVecRound` (the caller-built shape `marioChkFront` uses), which reproduces the 3 query slots and the distance/hitPos/normal rounding; calls and control flow match. The pass-2 direction is built through `makeDirVec` (a by-value inline that starts from the named rodata vec) so MWCC materialises the original's built-then-copied `Vec` slot. What remains is register colouring, a 0x10 frame gap (0x240 vs 0x250 - the original keeps a second dead `Vec` copy in pass 1 that the inliner drops).
 HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
-    const char* base = (const char*)&vec3_802c5730;
     MarioWork* wp = marioGetPtr();
     HitCheckQuery query;
     HitCheckQuery query2;
@@ -2697,7 +2694,7 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     }
     dist = float_0p5_8041a7c4 * c;
     p = *pos;
-    dir = *(const Vec*)RO(base, 0x114, vec3_802c5844);
+    dir = vec3_802c5844;
     dir.x = sin;
     dir.z = cos;
     curDist = dist + a;
@@ -2733,10 +2730,10 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     }
     sincosf(&sin2, &cos2, float_45_8041a7b4 + b);
 #ifdef MUST_MATCH
-    dtmp2 = makeDirVec((const Vec*)RO(base, 0x120, vec3_802c5850), sin2, cos2);
+    dtmp2 = makeDirVec(&vec3_802c5850, sin2, cos2);
     dir2 = dtmp2;
 #else
-    dir2 = *(const Vec*)RO(base, 0x120, vec3_802c5850);
+    dir2 = vec3_802c5850;
     dir2.x = sin2;
     dir2.z = cos2;
 #endif
@@ -2755,7 +2752,7 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     }
     if (hit2 != NULL) {
         sincosf(&sin2, &cos2, b - float_45_8041a7b4);
-        dir3 = *(const Vec*)RO(base, 0x12C, vec3_802c585c);
+        dir3 = vec3_802c585c;
         dir3.x = sin2;
         dir3.z = cos2;
         hit2 = NULL;
@@ -2990,10 +2987,9 @@ HitEntry* N_dou10_yoko_yari3(void) {
 // the base, so the hit test is `cmplwi r30` instead of the original's `mr r29,r3`); and the
 // ROUND_CENTI float_100 loads are hoisted into f31/f30 (callee-saved) instead of the
 // original's volatile f7/f5 reloads, which costs `h` its f31.
-// NONMATCHING (87.28%): only the GPR/FPR colouring above remains.
+// NONMATCHING (90.22%): only the GPR/FPR colouring above remains.
 HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
 #ifdef MUST_MATCH
-    const u8* base = (const u8*)&vec3_802c5730;
 #endif
     MarioWork* wp = marioGetPtr();
     MarioWork* wp2;
@@ -3041,7 +3037,7 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
     px = wp->position.x;
     py = wp->position.y;
 #ifdef MUST_MATCH
-    v = *(const Vec*)(base + 0x180);
+    v = vec3_802c58b0;
 #else
     v = vec3_802c58b0;
 #endif
@@ -3055,7 +3051,7 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
     }
     query.targetPos = v;
 #ifdef MUST_MATCH
-    query.targetDir = *(const Vec*)(base + 0x18c);
+    query.targetDir = vec3_802c58bc;
 #else
     query.targetDir = vec3_802c58bc;
 #endif
@@ -3107,9 +3103,8 @@ HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
 
 
 
-// NONMATCHING (91.98%): each sweep builds `pHigh`/`pLow` copies of `position` (this fixes the original's yTop/yBot GPR-bit handling and was worth +7%) and calls `marioHitCheckVecRound` with caller-built queries (NULL hitPos/normal, so only targetDistance rounds). Both sweeps build `dir` through `makeDirVec` (a by-value inline starting from the named rodata vec) so MWCC emits the original's built-then-copied `Vec` slots (first-sweep copy at 0x6c, second at 0x18); that closed the frame gap (now 0x260, matching). Remaining: register colouring, 3 extra saved GPRs (r16-r31 vs r19-r31, costs exactly the 4 extra insns of the i2f pool workaround). Named args: f1 (`a`) is unused, f24=f2 `b`, f25=f3 `c`, f26=f4 `d`.
+// NONMATCHING (92.21%): each sweep builds `pHigh`/`pLow` copies of `position` (this fixes the original's yTop/yBot GPR-bit handling and was worth +7%) and calls `marioHitCheckVecRound` with caller-built queries (NULL hitPos/normal, so only targetDistance rounds). Both sweeps build `dir` through `makeDirVec` (a by-value inline starting from the named rodata vec) so MWCC emits the original's built-then-copied `Vec` slots (first-sweep copy at 0x6c, second at 0x18); that closed the frame gap (now 0x260, matching). Remaining: register colouring, 3 extra saved GPRs (r16-r31 vs r19-r31, costs exactly the 4 extra insns of the i2f pool workaround). Named args: f1 (`a`) is unused, f24=f2 `b`, f25=f3 `c`, f26=f4 `d`.
 s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
-    const char* base = (const char*)&vec3_802c5730;
     HitEntry* hit;
     HitEntry* hit2;
     HitCheckQuery query1;
@@ -3149,7 +3144,7 @@ s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
     angle = b;
     step = float_360_8041a7c0 / (f32)n;
     dist = float_0p5_8041a7c4 * c;
-    disp = *(const Vec*)RO(base, 0x198, vec3_802c58c8);
+    disp = vec3_802c58c8;
     yTop = position->y + float_11_8041a7ac;
     yBot = position->y + (d - float_1_8041a7bc);
     p = *position;
@@ -3160,10 +3155,10 @@ s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
     for (i = 0; i < n; i++) {
         sincosf(&sin, &cos, angle);
 #ifdef MUST_MATCH
-        dtmpW2 = makeDirVec((const Vec*)RO(base, 0x1A4, vec3_802c58d4), sin, cos);
+        dtmpW2 = makeDirVec(&vec3_802c58d4, sin, cos);
         dir = dtmpW2;
 #else
-        dir = *(const Vec*)RO(base, 0x1A4, vec3_802c58d4);
+        dir = vec3_802c58d4;
         dir.x = sin;
         dir.z = cos;
 #endif
@@ -3224,7 +3219,7 @@ s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
     }
     PSVECAdd(position, &disp, position);
     angle = b;
-    disp = *(const Vec*)RO(base, 0x1B0, vec3_802c58e0);
+    disp = vec3_802c58e0;
     yTop = position->y + float_11_8041a7ac;
     yBot = position->y + (d - float_1_8041a7bc);
     p = *position;
@@ -3235,10 +3230,10 @@ s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
     for (i = 0; i < n; i++) {
         sincosf(&sin, &cos, angle);
 #ifdef MUST_MATCH
-        dtmpW = makeDirVec((const Vec*)RO(base, 0x1BC, vec3_802c58ec), sin, cos);
+        dtmpW = makeDirVec(&vec3_802c58ec, sin, cos);
         dir = dtmpW;
 #else
-        dir = *(const Vec*)RO(base, 0x1BC, vec3_802c58ec);
+        dir = vec3_802c58ec;
         dir.x = sin;
         dir.z = cos;
 #endif
@@ -3548,10 +3543,10 @@ void marioCheckWallShip(f32 a, f32 b) {
 
 #ifndef MUST_MATCH
 // The match build gets these three from compound-literal templates; the natural build names them.
-const Vec vec3_802c5760 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c576c = { 0.0f, -1.0f, 0.0f };
-const Vec vec3_802c5814 = { 0.0f, 1.0f, 0.0f };
-const Vec vec3_802c5820 = { 0.0f, 1.0f, 0.0f };
+static const Vec vec3_802c5760 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c576c = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c5814 = { 0.0f, 1.0f, 0.0f };
+static const Vec vec3_802c5820 = { 0.0f, 1.0f, 0.0f };
 #endif
 
 // 4-byte zero word that ends the unit's .data: all-zero objects need explicit_zero_data to be emitted and force_active to survive the linker.
