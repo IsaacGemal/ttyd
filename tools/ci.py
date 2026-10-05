@@ -132,6 +132,11 @@ def lint(base, allow_pragma, allow_protected, allow_configure, allow_asm=False):
                                " (game code: only functions listed in tools/asm_exceptions.json, with Isaac's approval)"))
         if PRAGMA_RE.search(code) and not allow_pragma:
             problems.append(f"{current}: new #pragma (pass --allow-pragma if intended): {added.strip()[:100]}")
+    sys.path.insert(0, str(ROOT / "tools"))
+    import fncast_lint
+    new, _ = fncast_lint.check(fncast_lint.find_all(), fncast_lint.load_allowlist())
+    problems += [f"{f}:{n}: function-pointer cast outside #ifdef MUST_MATCH (undefined behaviour in the natural build;"
+                 f" guard it with a plain C #else, see tools/fncast_lint.py): {ctx[:100]}" for f, n, ctx in new]
     if problems:
         fail("lint", "\n  " + "\n  ".join(problems))
     print(f"ok   [lint] {len(names)} changed file(s) vs {base}")
