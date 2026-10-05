@@ -2545,7 +2545,9 @@ static inline void* winMsgDispField(WindowWork* work, s32 off) {
     return *(void**)((u8*)work + off);
 }
 
-// NONMATCHING (94.26%): calls, branches and stack layout match. Left: the draw templates and the u16 -> f32
+// The 10/40/120/240/250 constants are literals: MWCC CSEs the repeated position sums with them, as the original
+// does, and not with reads of the named float objects.
+// NONMATCHING (96.42%): calls, branches and stack layout match. Left: the draw templates and the u16 -> f32
 // constant come from this file's own .rodata where retail reaches the unit's pool at str_802F3FE8, so those
 // offsets differ, and the label block's scheduling around the lottery/label positions.
 void winMsgDisp(WindowWork* work, f32 x, f32 y) {
@@ -2554,11 +2556,11 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     GXColor fontColor = dat_8041cf2c;
 #ifdef MUST_MATCH
     // Semantically x - 250.0f; the original computes it as +10 then -10 (MUST_MATCH codegen shaping).
-    f32 fx = (float_10_8041d1a0 + (x - float_250_8041d1a4)) - float_10_8041d1a0;
-    f32 fy = float_40_8041d0e8 + y;
+    f32 fx = (10.0f + (x - 250.0f)) - 10.0f;
+    f32 fy = 40.0f + y;
 #else
-    f32 fx = x - float_250_8041d1a4;
-    f32 fy = float_40_8041d0e8 + y;
+    f32 fx = x - 250.0f;
+    f32 fy = 40.0f + y;
 #endif
 
     windowDispGX_Waku_col(0, dat_8041cf30, fx, fy, float_500_8041d1a8, float_80_8041d0b0, float_20_8041d0c0);
@@ -2580,22 +2582,22 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         msg = msgSearch((const char*)WW_PTR(work, 0x140));
         width = FontGetMessageWidth(msg);
         ty = float_8_8041d0a0 + (float_16_8041d0e4 + fy);
-        winNameGX(work, 1, (x - float_120_8041d09c) + edge, ty, float_240_8041d0ac, float_32_8041d0a4);
+        winNameGX(work, 1, (x - 120.0f) + edge, ty, 240.0f, float_32_8041d0a4);
         winFontInit();
-        winMsgEdgeV((Vec){ edge + ((float_240_8041d0ac - width) * float_0p5_8041d06c + (x - float_120_8041d09c)), ty - float_4_8041d07c, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor, msg);
+        winMsgEdgeV((Vec){ edge + ((240.0f - width) * float_0p5_8041d06c + (x - 120.0f)), ty - float_4_8041d07c, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor, msg);
     }
 
     if (WW_U32(work, 0x13C) != 0) {
         fy -= float_14_8041d180;
-        GXSetScissor(0, (u32)(float_240_8041d0ac - fy), 0x260, 0x38);
+        GXSetScissor(0, (u32)(240.0f - fy), 0x260, 0x38);
         if (strcmp((const char*)WW_PTR(work, 0x13C), "msg_lottery_number") == 0) {
             // lottery_info has no declared field at 0x20; the original loads an s16 there.
             sprintf(buf, msgSearch((const char*)WW_PTR(work, 0x13C)), *(s16*)((u8*)lotteryGetPtr() + 0x20));
             winFontInit();
-            winMsgFontV((Vec){ (float_40_8041d0e8 + (x - float_250_8041d1a4)) - float_10_8041d1a0, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
+            winMsgFontV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
         } else {
             winFontInit();
-            winMailLabelV((Vec){ (float_40_8041d0e8 + (x - float_250_8041d1a4)) - float_10_8041d1a0, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, (const char*)winMsgDispField(work, 0x13C));
+            winMailLabelV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, (const char*)winMsgDispField(work, 0x13C));
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
     }
@@ -2606,14 +2608,14 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         winIconInit();
         i = WW_S32(work, 0x148);
         if (i == 0) {
-            if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B6, (Vec){ (float_250_8041d1a4 + x) - float_10_8041d1a0, (float_40_8041d0e8 + (y - float_40_8041d0e8)) - float_24_8041d0c8, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf34);
+            if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B6, (Vec){ (250.0f + x) - 10.0f, (40.0f + (y - 40.0f)) - float_24_8041d0c8, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf34);
         } else if (i / 2 == (WW_S32(work, 0x14C) + 1) / 2 - 1) {
-            if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B5, (Vec){ (float_250_8041d1a4 + x) - float_10_8041d1a0, float_24_8041d0c8 + (float_40_8041d0e8 + (y - float_40_8041d0e8)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf38);
+            if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B5, (Vec){ (250.0f + x) - 10.0f, float_24_8041d0c8 + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf38);
         } else if ((gp->retraceCount & 0x1F) < 0x14) {
-            winMailIconV(0x1B5, (Vec){ (float_250_8041d1a4 + x) - float_10_8041d1a0, float_24_8041d0c8 + (float_40_8041d0e8 + (y - float_40_8041d0e8)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf3c);
-            winMailIconV(0x1B6, (Vec){ (float_250_8041d1a4 + x) - float_10_8041d1a0, (float_40_8041d0e8 + (y - float_40_8041d0e8)) - float_24_8041d0c8, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf40);
+            winMailIconV(0x1B5, (Vec){ (250.0f + x) - 10.0f, float_24_8041d0c8 + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf3c);
+            winMailIconV(0x1B6, (Vec){ (250.0f + x) - 10.0f, (40.0f + (y - 40.0f)) - float_24_8041d0c8, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf40);
         }
-        winMailIconV(0x70, (Vec){ (float_250_8041d1a4 + x) - float_10_8041d1a0, float_40_8041d0e8 + (y - float_40_8041d0e8), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf44);
+        winMailIconV(0x70, (Vec){ (250.0f + x) - 10.0f, 40.0f + (y - 40.0f), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf44);
     }
 }
 
