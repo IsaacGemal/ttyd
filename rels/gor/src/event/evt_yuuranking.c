@@ -804,20 +804,31 @@ static s32 yuu_kesan(s32 type, s32 value, s32 bonus, s32 mult, s32 max) {
 }
 
 // A dead copy of the checked entry above (yuu_kesan_chk): the original object carries it between
-// evt_yuuranking_alloc and yuu_kesan, unreferenced, as `cmpwi r4,0 / bge yuu_kesan / li r3,0 / blr`, a frameless tail
-// branch into yuu_kesan. GC/2.6 never emits one from C (every `return f(...)` gets a frame), and no available
-// compiler version or pragma produces it (swept: GC/1.0-3.0a5, linkage keywords, the inline and opt pragmas), so
-// this C copy keeps the symbol's place and cannot match.
-// NONMATCHING
-#pragma push
-#pragma dont_inline on // keep yuu_kesan out of line here, as the original's branch is
+// evt_yuuranking_alloc and yuu_kesan, unreferenced (nothing in gor branches to or points at it), as
+// `cmpwi r4,0 / bge yuu_kesan / li r3,0 / blr`, a frameless tail branch into yuu_kesan that the original compiler
+// emitted on its own. GC/2.6 never emits a frameless tail branch from C (every `return f(...)` gets a frame), and no
+// available compiler version or pragma produces it (swept: GC/1.0-1.3.2r, 2.0-2.7, 3.0a3-3.0a5, linkage keywords,
+// force_active, the inline and opt_* pragmas). So under MUST_MATCH it is an asm function: a narrow exception Isaac
+// approved on 2026-10-04, listed in tools/asm_exceptions.json (docs/CONTEXT.md, "Inline asm in game code: the
+// exception policy"). The natural build keeps the C form.
+#ifdef MUST_MATCH
+// clang-format off
+static asm s32 yuu_kesan_chk_copy(s32 type, s32 value, s32 bonus, s32 mult, s32 max) {
+    nofralloc
+    cmpwi r4, 0
+    bge yuu_kesan
+    li r3, 0
+    blr
+}
+// clang-format on
+#else
 static s32 yuu_kesan_chk_copy(s32 type, s32 value, s32 bonus, s32 mult, s32 max) {
     if (value < 0) {
         return 0;
     }
     return yuu_kesan(type, value, bonus, mult, max);
 }
-#pragma pop
+#endif
 
 #define YBASE_A ((s32(*)[6])((u8*)yuwp + 0x14))
 #define YBASE_B ((s32(*)[6])((u8*)yuwp + 0x74))

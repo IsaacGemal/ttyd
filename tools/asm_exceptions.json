@@ -1,0 +1,18 @@
+[
+  {
+    "file": "src/system.c",
+    "function": "memcpy_as4",
+    "class": "original-asm",
+    "reason": "Hand-written word-copy loop in the original (nofralloc, an asm routine in the shipped code); listed so every asm function in game code is in one place.",
+    "approved_by": "pre-existing (before the exception policy)",
+    "date": "2026-10-04"
+  },
+  {
+    "file": "rels/gor/src/event/evt_yuuranking.c",
+    "function": "yuu_kesan_chk_copy",
+    "class": "compiler-artifact",
+    "reason": "Unreferenced compiler-emitted checked entry ahead of yuu_kesan (cmpwi r4,0 / bge yuu_kesan / li r3,0 / blr): a frameless tail branch GC/2.6 cannot emit from C; no compiler version or pragma in GC/1.0-3.0a5 produces it. MUST_MATCH only; the natural build keeps a C form.",
+    "approved_by": "Isaac (relayed by Claude #1)",
+    "date": "2026-10-04"
+  }
+]

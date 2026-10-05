@@ -4719,3 +4719,21 @@ permuter instead of another agent attempt.
   debugger re-run (wave 79, scratch/wave79/AB2.tsv) ends 5 of 5 triaged correctly: 2 FIXABLE and linked (evt_bero,
   confetti, the debugger leading to each fix), 1 FIXABLE partial (pointget), 2 NO-SOURCE-LEVER stopped early
   (unit_boss_moamoa, nameent: frontend temps outranking named locals, Claude #3's temp-rank class).
+
+## Inline asm in game code: the exception policy (2026-10-04, Isaac)
+
+Game code is C everywhere, with two listed exception classes. An asm function is allowed only when
+`tools/asm_exceptions.json` lists it (file, function, `class`, reason with the evidence, approval, date); `tools/ci.py`'s
+lint refuses new asm anywhere else in game code (`--allow-asm` stays limited to the ported libraries under
+libs/metrowerks/src), and tools/tests/test_asm_exceptions.py checks every entry is complete and really is asm in its file.
+- **`compiler-artifact`:** bytes the original compiler emitted on its own that GC/2.6 provably cannot produce from C. Under
+  MUST_MATCH, with a C form in `#else` so the natural build stays C.
+- **`original-asm`:** code that was hand-written asm in the original, shown by the asm itself (instructions C can't
+  express, or dead loads no compiler would emit). Approved by Isaac as "fine for now, tidy later".
+Current entries:
+- `src/system.c` `memcpy_as4` (original-asm): the original's hand-written word-copy loop.
+- `rels/gor/src/event/evt_yuuranking.c` `yuu_kesan_chk_copy` (compiler-artifact): an unreferenced checked entry ahead of
+  yuu_kesan (`cmpwi r4,0 / bge yuu_kesan / li r3,0 / blr`); GC/2.6 never emits a frameless tail branch from C and no version or
+  pragma in GC/1.0-3.0a5 produces it. Split out of evt_yuuranking_alloc's symbol in #456; the asm form brings it to 100%.
+- To come (original-asm): effdrv `effCalcMayaAnimMatrix` (Claude #4): a computed-GQR5 quantiser and psq_l loads, including a
+  dead load, which shows it was asm in the original; its PR adds the entry.
