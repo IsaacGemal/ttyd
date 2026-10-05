@@ -65,6 +65,9 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    real logic to the next reader. Anything defined under MUST_MATCH and used outside it (a helper, a macro, a
    local) needs an `#else` form too, even if that is a `#define` to the plain version: the merge compiles the
    file without MUST_MATCH, and `check.py --final` now runs that compile too (a `NATURAL` line).
+   A call through a function-pointer cast (`((void (*)(Vec, Vec, GXColor))winIconSet)(...)`, to pass by value or
+   against the header's prototype) is undefined behaviour, so it is always MUST_MATCH-only; `tools/ci.py` fails new
+   unguarded ones (`tools/fncast_lint.py`).
 8. **Pragmas that aren't needed.** Every `#pragma` needs a one-line reason, and must be needed: if the function
    still matches without it, remove it. Never write `#pragma scheduling <cpu number>` (`601`, `801`, ...): it
    makes this compiler loop forever, and check.py refuses it. `scheduling off` / `reset` are fine.
