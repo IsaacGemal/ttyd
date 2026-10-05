@@ -1499,12 +1499,16 @@ static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32*
 
 // Older landing check (the Koopa-aware ground probe): same five-sample ring as marioChkLandon2 but the ray points
 // down from 0.75 * height and the accepted hit y is returned rounded to 0.01.
-// NONMATCHING (85.73%): same 15 calls; remaining: frame size/FPR colouring and the inlined sqrt's classification
-// switch (cmpwi 1/3). Compares: fabs(...) < 0.1 and the rounding tests (cror eq,gt -> >=) checked against the asm.
+// The hit's y and normal are read into locals straight after the probe, before the NULL test: the original loads all
+// four into saved FPRs there and reuses 100 * ny across both angleABf calls.
+// NONMATCHING (94.76%): same 15 calls; the original reloads the 100.0 constant after each call where ours keeps it
+// in a saved FPR, so ours needs one more FPR (frame 0x210 vs 0x200) and spills the -1.0 of dir. A literal 100.0f, a
+// non-const view of float_100 and an explicit ny100 local were tried. Compares: fabs(...) < 0.1 and the rounding
+// tests (cror eq,gt -> >=) checked against the asm.
 void* marioLandonChk_old(f32* pos, f32 spd) {
     MarioWork* wp = marioGetPtr();
-    Vec p;
     Vec dir;
+    Vec p;
     Vec hitPos;
     Vec normal;
     HitEntry* hit;
@@ -1525,6 +1529,11 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
     f32 gy;
     f32 gx;
     f32 gz;
+    f32 nx;
+    f32 ny;
+    f32 nz;
+    f32 hy;
+    f32 py;
     s32 i;
     void* r;
 
@@ -1549,20 +1558,21 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
     }
     rad = float_3p1416_8041a7e0 * angle / float_180_8041a7cc;
     f20 = float_0p25_8041a7d4 * (*(f32*)((u8*)wp + 0x1B4) * (f32)sin(rad));
-    px = wp->position.x;
-    pz = wp->position.z;
     f19 = float_0p25_8041a7d4 * (*(f32*)((u8*)wp + 0x1B4) * -(f32)cos(rad));
+    px = wp->position.x;
+    py = wp->position.y;
+    pz = wp->position.z;
     if (wp->characterId == 2) {
         r = kpaSearchGround(&gy, &gx, &gz, float_11_8041a7ac);
         *pos = gy;
         return r;
     }
     d0 = h + fa;
-    yy = wp->position.y + h;
+    yy = py + h;
     for (i = 0; i < 5; i++) {
         if (i == 0) {
             ox = float_0_8041a7a4;
-            oz = float_0_8041a7a4;
+            oz = ox;
         } else if (i == 1) {
             ox = f20;
             oz = f19;
@@ -1586,16 +1596,20 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
         dir.z = float_0_8041a7a4;
         dist = d0;
         hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
+        hy = hitPos.y;
+        nx = normal.x;
+        ny = normal.y;
+        nz = normal.z;
         if (hit != NULL) {
             MarioWork* wp2 = marioGetPtr();
 
-            *(f32*)((u8*)wp2 + 0x218) = LND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.z, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
+            *(f32*)((u8*)wp2 + 0x218) = LND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * nz, float_100_8041a7f8 * ny) - float_180_8041a7cc);
             *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
-            *(f32*)((u8*)wp2 + 0x220) = LND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.x, float_100_8041a7f8 * normal.y) - float_180_8041a7cc);
-            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
+            *(f32*)((u8*)wp2 + 0x220) = LND_CENTI(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * nx, float_100_8041a7f8 * ny) - float_180_8041a7cc);
+            ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(nx * nx + nz * nz), -ny);
             *(f32*)((u8*)wp + 0x214) = ang;
-            if (__fabsf(LND_CENTI((yy - hitPos.y) - dist)) < float_0p1_8041a7e4) {
-                *pos = LND_CENTI(hitPos.y);
+            if (__fabsf(LND_CENTI((yy - hy) - dist)) < float_0p1_8041a7e4) {
+                *pos = LND_CENTI(hy);
                 return hit;
             }
         }
@@ -1659,7 +1673,7 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
     for (i = 0; i < 5; i++) {
         if (i == 0) {
             ox = float_0_8041a7a4;
-            oz = float_0_8041a7a4;
+            oz = ox;
         } else if (i == 1) {
             ox = f27;
             oz = f26;
