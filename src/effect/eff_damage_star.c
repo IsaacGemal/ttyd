@@ -259,13 +259,16 @@ static inline f32 damageStarCosf(f32 angle) {
 // The loop-invariant constants are all live across the loop, so they form a clique and any FPR
 // permutation is a legal colouring; only the colour choice differs. Target value->FPR: 30->f6,
 // 0.0->f12, 6.28->f11, 360->f10, .166->f2, 1.0->f1, pi->f9, 1.5->f8, .4967->f3, .2->f5, magic->f0,
-// 30-count->f4, seed->f13; ours: 30->f6, 0.0->f1, 6.28->f3, 360->f2, .166->f8, 1.0->f12, pi->f11,
-// 1.5->f7, .4967->f0, .2->f5, magic->f9, 30-count->f4, seed->f13. Permuting the outer locals' and
+// 30-count->f4, seed->f13; ours: 30->f6, 0.0->f8, 6.28->f1, 360->f2, .166->f12, 1.0->f11, pi->f7,
+// 1.5->f3, .4967->f0, .2->f5, magic->f9, 30-count->f4, seed->f13. (check.py pairs the two columns
+// by position, so reading our registers off its rows mislabels them; this map comes from the built
+// object's @NNN relocations against rodatalayout.) Permuting the outer locals' and
 // the helpers' internals' declarations/assignments, parameterising or inlining the polynomial,
 // const locals, and opt_common_subs/global_optimizer/scheduling/fp_contract/optimization_level/
 // optimize_for_size/pool_data variants all leave >=68 differing instructions (or make it worse);
 // it is allocator luck.
-// NONMATCHING (97.66%): only the loop-invariant constants' FPR colouring differs (allocator luck; a permuter job should finish it).
+// NONMATCHING (97.66%): only the FPR colouring of the loop-invariant constants (and the compiler's
+// i2f magic double / the 1.5708 scratch) differs (allocator luck; a permuter job should finish it).
 #pragma opt_propagation off
 #pragma opt_lifetimes off
 EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 speed, f32 angle) {

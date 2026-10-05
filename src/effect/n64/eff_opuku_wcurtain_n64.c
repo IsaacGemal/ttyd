@@ -119,19 +119,22 @@ static inline GXColor opukuWcurtainColor(s32 r, s32 g, s32 b, s32 a) {
 // The packed s16<->f32 vertex conversions are psq_l/psq_st (GQR5) and match through the SDK
 // OSs16tof32/OSf32tos16 fast-cast inlines; the colour local/outgoing copies now land in the original's
 // slots through the opukuWcurtainColor inline above, and the transform loop, GX/TEV setup, matrix math and
-// draw loop are instruction-for-instruction identical. What is left is one allocator permutation: the
-// vertex-building loop's volatile registers are rotated. The original colours texS r4, x r5, fctiwz temp
-// r6, 0xff r7, 0 r8, field_0x2C pointer r9, i*20 r10, alpha r11 and the walking vtx cursor r12; ours gives
-// the temp r4, 0xff r5, 0 r6, i*20 r7, cursor r8, the pointer r9 (matches), texS r10, x r11, alpha r12.
-// Every opcode and operand matches; only these 8 registers differ. Tried without moving the allocation:
-// declaration order (all permutations, comma forms, `a` at function scope), use order, pointer vs indexing
-// (`vtx[2*i]`, `p->`, `p[i]`, `p+=2`, two `p++`, save-base forms), named fctiwz/accumulator temps, named
-// field_0x2C pointer, every integer type for i/texS/x/a, while/for control shape, arithmetic spellings of
-// the alpha and field index, moving the x/texS increments, opt_lifetimes/opt_propagation/opt_common_subs/
-// opt_dead_assignments/opt_loop_invariants/global_optimizer/fp_contract/scheduling and every -O level, and
-// compiler versions GC/1.3..2.7 (all still 33 diffs or worse). The nine volatile registers r4-r12 are all
-// live in the loop, so this is a packed allocation permutation (permuter work).
-// NONMATCHING (98.97%): vertex-building loop's volatile register colouring only.
+// draw loop are instruction-for-instruction identical. What is left is one allocator 2-cycle: in the
+// vertex-building loop texS and x are swapped. The original colours texS r4, x r5, fctiwz temp r6, 0xff
+// r7, 0 r8, field_0x2C pointer r9, i*20 r10, alpha r11 and the walking vtx cursor r12; ours gives x r4 and
+// texS r5, with everything else already matching. x is written as `10 * (i * 5 - 30)` and s as
+// `(counter + i * 4) << 5` so the optimiser strength-reduces both to the same walking induction temps the
+// original uses; only the order the two temps are created differs. The winning shape also puts
+// `a = 0xFF - i * 20` just before the `vtx[0].a` store and uses a block-local `s32 x = j * 2;` in the
+// triangle loop (that keeps the callee-saved r27/r30 assignment). Tried without moving the allocation:
+// ~30 x spellings and ~30 s spellings (and their pairs), inline helpers for x/s/both, declaration-order
+// sweeps (720 + 5040), `a` at every statement position, zero-valued chain terms, intermediate field
+// temporaries, one named + one inline store, reusing the function-scope triangle x, every integer type,
+// opt_*/schedule/peephole/pointer-analysis/global_optimizer/register-allocation pragmas (single and
+// pairs) and every -O level; all still 8 diffs or worse. x's induction priority is either at the very
+// top (r4) or below the loop constants (r8+), never between texS and them, so this is a two-value
+// allocation tie (permuter work).
+// NONMATCHING (99.82%): vertex-building loop's texS/x register 2-cycle only.
 void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -147,7 +150,9 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	s32 j;
 	s32 texS;
 	s32 x;
+	s32 a;
 	OpukuWcurtainVtx* vtx;
+	OpukuWcurtainVtx* base;
 	s32 counter = data->counter;
 
 	scale = 0.1f * data->scale;
@@ -179,30 +184,29 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 
 	entry = smartAlloc(0x2A0, HEAP_EFFECT);
 	vtx = (OpukuWcurtainVtx*)entry->address;
+	base = vtx;
 	texS = counter << 5;
 	for (i = 0, x = -300; i < 12; i++) {
-		s32 a = 0xFF - i * 20;
-
-		vtx[2 * i].x = x;
-		vtx[2 * i].y = 600;
-		vtx[2 * i].z = 0;
-		vtx[2 * i].s = texS;
-		vtx[2 * i].t = (s32)data->field_0x2C[i] << 5;
-		vtx[2 * i].r = 0xFF;
-		vtx[2 * i].g = 0xFF;
-		vtx[2 * i].b = 0xFF;
-		vtx[2 * i].a = a;
-		vtx[2 * i + 1].x = x;
-		x += 50;
-		vtx[2 * i + 1].y = (s32)(10.0f * (60.0f + data->field_0x2C[i]));
-		vtx[2 * i + 1].z = 0;
-		vtx[2 * i + 1].s = texS;
-		texS += 0x80;
-		vtx[2 * i + 1].t = 0x400;
-		vtx[2 * i + 1].r = 0xFF;
-		vtx[2 * i + 1].g = 0xFF;
-		vtx[2 * i + 1].b = 0xFF;
-		vtx[2 * i + 1].a = a;
+		vtx[0].x = 10 * (i * 5 - 30);
+		vtx[0].y = 600;
+		vtx[0].z = 0;
+		vtx[0].s = (counter + i * 4) << 5;
+		vtx[0].t = (s32)data->field_0x2C[i] << 5;
+		vtx[0].r = 0xFF;
+		vtx[0].g = 0xFF;
+		vtx[0].b = 0xFF;
+		a = 0xFF - i * 20;
+		vtx[0].a = a;
+		vtx[1].x = 10 * (i * 5 - 30);
+		vtx[1].y = (s32)(10.0f * (60.0f + data->field_0x2C[i]));
+		vtx[1].z = 0;
+		vtx[1].s = (counter + i * 4) << 5;
+		vtx[1].t = 0x400;
+		vtx[1].r = 0xFF;
+		vtx[1].g = 0xFF;
+		vtx[1].b = 0xFF;
+		vtx[1].a = a;
+		vtx += 2;
 	}
 
 	PSMTXTrans(transMtx, data->x, data->y, data->z);
@@ -211,23 +215,24 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 
 	for (j = 0; j < i * 2; j++) {
 		OSInitFastCast();
-		OSs16tof32(&vtx[j].x, &v.x);
-		OSs16tof32(&vtx[j].y, &v.y);
-		OSs16tof32(&vtx[j].z, &v.z);
+		OSs16tof32(&base[j].x, &v.x);
+		OSs16tof32(&base[j].y, &v.y);
+		OSs16tof32(&base[j].z, &v.z);
 		PSMTXMultVec(transMtx, &v, &v);
 		OSInitFastCast();
-		OSf32tos16(&v.x, &vtx[j].x);
-		OSf32tos16(&v.y, &vtx[j].y);
-		OSf32tos16(&v.z, &vtx[j].z);
+		OSf32tos16(&v.x, &base[j].x);
+		OSf32tos16(&v.y, &base[j].y);
+		OSf32tos16(&v.z, &base[j].z);
 	}
 
-	DCFlushRange(vtx, 0x2A0);
+	DCFlushRange(base, 0x2A0);
 	GXInvalidateVtxCache();
-	effSetVtxDescN64((effVtxArray*)vtx);
+	effSetVtxDescN64((effVtxArray*)base);
 	GXLoadPosMtxImm(cam->view, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 
-	for (j = 0, x = 0; j < i - 1; x += 2, j++) {
+	for (j = 0; j < i - 1; j++) {
+		s32 x = j * 2;
 		GXBegin(GX_TRIANGLES, GX_VTXFMT0, 6);
 		tri2(x, x + 2, x + 1, x, x + 1, x + 2, x + 3, x);
 	}

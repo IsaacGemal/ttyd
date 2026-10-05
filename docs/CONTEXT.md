@@ -4652,3 +4652,22 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   which was on a branch from before #445 (no ~/mwccdbg mount), and the workspace rsync excluded tools/perm_*.py, which
   includes perm_unit.py that mwccdbg imports (fixed in #446). The pilot reruns after #446 merges; this run is the
   no-debugger baseline. Rule: before a launch, bring this checkout's tools/ to current main.
+- **Batch 27:** kpaHitCheck matched (99.76 -> 100: each sin/cos result named, the 180 literal divided directly; from the
+  debugger pilot's A arm, which could not run the debugger); battleCameraMain 99.71 -> 99.88 (61 -> 29 diffs) and
+  tou_gamen_screen_tev 99.39 -> 99.46; rsh_06's ext_moamoa_main 89.38 -> 90.50 (the carry-over of five shapes from
+  eki_00's structurally correct copy; the rest is colouring, scheduling and five instructions of constant-address
+  materialisation); eff_opuku_wcurtain_n64 partial. No change: eff_confetti_n64 (99.86), eff_sstar_n64 (99.52, a CSE temp
+  outranking a named web), evt_bero (99.83), all register class. Debugger pilot: wave 77 (A, no debugger: perm_unit
+  missing and no ~/mwccdbg mount) and wave 78 (B, 18:52, with mwccdbg mounted and netless bash, verified live) run the
+  same five functions from the same scores; scratch/wave78/AB.tsv records per function whether the debugger ran and
+  helped.
+- **Batch 28:** eff_horao_spell_n64 linked (effHoraoSpellDisp 96.31 -> 100; merged by hand: a match-only helper defined
+  only under MUST_MATCH and called unconditionally, the second such case today, which #452 now catches in
+  `check.py --final`) and eff_nice linked (acrobatMain 99.85 -> 100 by the debugger pilot's A arm: the ramp values as
+  the loop counter's expressions `i*4` / `i*0xC`; the afternoon's "pool layout" read was wrong, it was colouring).
+  ext_moamoa_main: rsh_05's copy 86.65 -> 95.00 by the carry-over from eki_00 (merged by hand: the agent's operand swap
+  in the shared moamoa_sin inline dropped the matched moamoa_hit_check, so that one edit was reverted; the struct
+  retyping stays). All three copies are now structurally (nearly) right: eki_00 97.01, rsh_05 95.00, rsh_06 90.50,
+  register colouring left (Claude #3 / mwccdbg). eff_damage_star partial. A wave 76 agent (pendulum) tried to install
+  mwccdbg from the internet into the sandbox's tmpfs home before #446 (contained; #453 tells agents not to). Also
+  merged today: #446 netless bash, #450 perm_objdump in workspaces, #451 the 01:00-07:00 window at 8, #452.

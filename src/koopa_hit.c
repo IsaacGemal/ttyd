@@ -612,14 +612,9 @@ static inline void kpaClearHeadAll(void) {
     }
 }
 
-#pragma opt_dead_assignments off // keeps the target's register colouring this close (see NONMATCHING below)
-// The `pi` constant sits in f30 and the compiler's int->float magic double in f31; the original has them
-// swapped (pi f31, double f30). Declaration placement/order for pi/deg, the named constants used directly,
-// pointer/struct setter helpers, `register`, `MATCH_F32`, and every opt_*/global_optimizer/scheduling/
-// optimization_level pragma tried all leave the double in f31. Everything else, including the clear loop
-// (whose counter/offset zero-init now comes out as `mr r27,r26`/`mr r28,r26` because the loop lives in the
-// kpaClearHeadAll helper above), is byte-identical.
-// NONMATCHING (99.76%): only the pi/double FPR swap differs.
+// Holding each sin/cos result in a named local and dividing by the `float_180_80420e7c` literal directly
+// (no `deg` local) gives the original's FPR colouring: `pi` in f31 and the int->float magic double in f30.
+// The clear loop stays in the kpaClearHeadAll helper above for its counter/offset zero-init.
 void* kpaHitCheck(void) {
     s32* entry;
     s32 i;
@@ -641,10 +636,11 @@ void* kpaHitCheck(void) {
     entry = entry + 1;
     {
     f32 pi = float_3p1416_80420e78;
-    f32 deg = float_180_80420e7c;
     for (i = 0; i < count; i++) {
-        f32 x = (f32)entry[0] * (f32)sin(pi * mp->directionView / deg) + mp->position.x;
-        f32 z = mp->position.z - (f32)entry[0] * (f32)cos(pi * mp->directionView / deg);
+        f32 sn = (f32)sin(pi * mp->directionView / float_180_80420e7c);
+        f32 x = (f32)entry[0] * sn + mp->position.x;
+        f32 cs = (f32)cos(pi * mp->directionView / float_180_80420e7c);
+        f32 z = mp->position.z - (f32)entry[0] * cs;
         f32 y = mp->position.y + (f32)entry[1];
         f32 c = (f32)entry[2];
         s32 type = entry[3];
@@ -678,7 +674,6 @@ void* kpaHitCheck(void) {
     KPA(mp)->unk1C = result;
     return result;
 }
-#pragma opt_dead_assignments reset
 
 BOOL kpaFlameHitFilter(HitCheckQuery* query, HitEntry* entry) {
     MapObjectEntry* obj = mobjHitObjPtrToPtr(entry);
