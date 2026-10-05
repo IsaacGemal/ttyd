@@ -4671,3 +4671,12 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   register colouring left (Claude #3 / mwccdbg). eff_damage_star partial. A wave 76 agent (pendulum) tried to install
   mwccdbg from the internet into the sandbox's tmpfs home before #446 (contained; #453 tells agents not to). Also
   merged today: #446 netless bash, #450 perm_objdump in workspaces, #451 the 01:00-07:00 window at 8, #452.
+- **Batch 29:** evt_shop's list_disp 97.52 -> 99.07, effPokopiThunderDisp 97.23 -> 97.29, eff_kemuri5_n64's data port
+  (collected late: its 15:15 finish was missed). Wave 76 arm L ended 23 tasks, 6 linked (opuku_jetw, database,
+  funemizu, gonbaba_breath, qsort, horao_spell). The debugger pilot's A/B is in scratch/wave78/AB.tsv: A (no debugger)
+  matched kpaHitCheck and acrobatMain; B (mwccdbg) beat A on tou_gamen_screen_tev (99.62 vs 99.46) and explained
+  kpaHitCheck (the i2f magic double is a backend temp ranked above every named local); on screen_tev it proved the gap
+  is the param-vs-local rank limit; its effPointGetDisp gain (99.92) moved a pool constant and was refused. Every B
+  agent used the debugger heavily (8-61 mwccdbg runs). Decision (Claude #1): register-class tasks start with an mwccdbg
+  triage (fixable vs a known no-source-lever class) and stop early if not fixable; a clean B re-run follows on a base
+  with #450.
