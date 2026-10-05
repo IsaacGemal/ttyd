@@ -293,6 +293,16 @@ def split_regions(L, movable):
         L = out
 
 
+def _opens(chunk, name):
+    """Unclosed `#pragma name value` pushes in a chunk of lines."""
+    n = 0
+    for l in chunk:
+        m = PRAGMA.match(l)
+        if m and m.group(1) == name:
+            n += -1 if m.group(2).split("//")[0].strip().startswith("reset") else 1
+    return n
+
+
 def reorder(text, want):
     """New source text with the emitted functions in `want` order (source order), or raise ValueError saying why not."""
     orig = text.split("\n")
@@ -302,10 +312,25 @@ def reorder(text, want):
         raise ValueError("no functions to move")
     first = fns[0][0]
 
+    first_end = fns[0][1]
+
     def regional(i):
+        """A pragma that wraps exactly the first function: its stack-matched reset is the first line after it."""
         m = PRAGMA.match(L[i])
-        return m and any(PRAGMA.match(x) and PRAGMA.match(x).group(1) == m.group(1)
-                         and PRAGMA.match(x).group(2).strip().startswith("reset") for x in L[i + 1:])
+        if not m or m.group(2).split("//")[0].strip().startswith("reset"):
+            return False
+        depth = 0
+        for j in range(i + 1, len(L)):
+            pm = PRAGMA.match(L[j])
+            if pm and pm.group(1) == m.group(1):
+                if pm.group(2).split("//")[0].strip().startswith("reset"):
+                    if depth == 0:
+                        nxt = next((k for k in range(first_end + 1, len(L)) if L[k].strip()), None)
+                        return j == nxt
+                    depth -= 1
+                else:
+                    depth += 1
+        return False
     k = first
     while k > 0 and (L[k - 1].startswith("//") or not L[k - 1].strip() or regional(k - 1)):
         k -= 1
@@ -327,8 +352,10 @@ def reorder(text, want):
                     kind = "hoist"
                 else:
                     kind = "lead"
-            if kind == "reset" and prev:
+            if kind == "reset" and prev and (not PRAGMA.match(ls[0]) or _opens(chunks[prev], PRAGMA.match(ls[0]).group(1)) > 0):
                 chunks[prev] += ls
+            elif kind == "reset":
+                lead += ls
             elif kind == "hoist":
                 hoist += ls
             elif kind != "blank" or lead:
@@ -337,7 +364,8 @@ def reorder(text, want):
         prev_end, prev = e, name
     tail = L[prev_end + 1:]
     k = 0
-    while k < len(tail) and (not tail[k].strip() or (PRAGMA.match(tail[k]) and PRAGMA.match(tail[k]).group(2).startswith("reset"))
+    while k < len(tail) and (not tail[k].strip() or (PRAGMA.match(tail[k]) and PRAGMA.match(tail[k]).group(2).startswith("reset")
+                                                     and _opens(chunks[prev], PRAGMA.match(tail[k]).group(1)) > 0)
                              or tail[k].strip().startswith("#undef")):
         if tail[k].strip():
             chunks[prev].append(tail[k])
