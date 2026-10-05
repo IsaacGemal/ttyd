@@ -119,13 +119,10 @@ static const Vec vec3_802c58ec;
 #define ROS(base, off, str) (str)
 #endif
 
-// Match-only: a volatile read makes MWCC reload the constant per use (and keeps a Vec template copy inside its
-// loop), as the original does in a few places.
+// Match-only: a volatile read keeps a Vec template copy inside its loop, as the original does in a few places.
 #ifdef MUST_MATCH
-#define RELOAD_F32(x) (*(const volatile f32*)&(x))
 #define RELOAD_VEC(x) (*(const volatile Vec*)&(x))
 #else
-#define RELOAD_F32(x) (x)
 #define RELOAD_VEC(x) (x)
 #endif
 
@@ -1915,7 +1912,8 @@ f32 marioChkOverheadJabara(s32* out, f32* outF) {
 // Only FPR colouring remains -- the original keeps a=f22/rad-y0=f23, temps f24-f28,
 // nz/ny/nx=f29-f31, ox/oz=f21/f20; ours shares a's f19 with ny100, so the temps land in
 // f26-f31 and the normals in f20-f22.
-// NONMATCHING (93.59%): only FPR colouring remains (the loop-body ox/oz take f31/f30 and rotate
+// The slope angles round through gndCenti.
+// NONMATCHING (93.74%): only FPR colouring remains (the loop-body ox/oz take f31/f30 and rotate
 // the whole long-lived set). Reordering declarations and extending `a`'s live range were tried.
 void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
     MarioWork* wp = marioGetPtr();
@@ -1998,20 +1996,10 @@ void* marioSearchHead(Vec* pos, f32* outY, f32 a) {
             ny100 = float_100_8041a7f8 * ny;
 
             *(f32*)&wp2->field_0x1F0[0x28] =
-                (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
-                                                            float_100_8041a7f8 * nz,
-                                                            ny100) -
-                                                  float_180_8041a7cc) +
-                          float_0p5_8041a7c4) /
-                RELOAD_F32(float_100_8041a7f8);
+                gndCenti(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * nz, ny100) - float_180_8041a7cc);
             *(f32*)&wp2->field_0x1F0[0x2C] = float_0_8041a7a4;
             *(f32*)&wp2->field_0x1F0[0x30] =
-                (f32)(s32)(RELOAD_F32(float_100_8041a7f8) * (angleABf(float_0_8041a7a4, float_0_8041a7a4,
-                                                            float_100_8041a7f8 * nx,
-                                                            ny100) -
-                                                  float_180_8041a7cc) +
-                          float_0p5_8041a7c4) /
-                float_100_8041a7f8;
+                gndCenti(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * nx, ny100) - float_180_8041a7cc);
             ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(nx * nx + nz * nz), -ny);
             if (!(wp->flags & 0x1000000)) {
                 f32 lim = (wp->dispFlags & 0x1000000) ? float_75_8041a840 : float_50_8041a844;
