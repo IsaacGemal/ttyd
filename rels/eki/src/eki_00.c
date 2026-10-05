@@ -1787,8 +1787,9 @@ static inline f32 ekiCosfM(f32 rad) {
 }
 
 #define MOA_TARGET(i) ((&wp->field_0x14)[(i) % 3])
-// NONMATCHING (97.29%): 204 instruction differences remain in the half-angle setup and state-machine
-// float registers, operand order and random-range scheduling. Sound Vec setup and the rider-vector tail match.
+// NONMATCHING (97.298%): the half-angle setup still hoists the vector address and delays the multiply;
+// state-machine float registers, operand order and random-range scheduling also differ.
+// Sound Vec setup and the rider-vector tail match.
 // voiceSfx is a union under MUST_MATCH so it is not copy-propagated (as yuu_01 fall_rtn): that puts it in r24 and `handled` in r25.
 static void ext_moamoa_main(void) {
     MarioWork* mario;
@@ -1896,15 +1897,19 @@ static void ext_moamoa_main(void) {
                 }
             } else if (res == 3) {
                 {
-                    f32 t = wp->field_0x550 + wp->field_0x55C;
 #ifdef MUST_MATCH
-                    // A local literal retains lis/addi/lfs while sharing the existing half pool entry.
+                    // Keep the sum in f1, half in f0, and load the breath angle first.
                     f32 half = 0.5f;
+                    f32 breath = wp->field_0x55C;
+                    f32 angle = wp->field_0x550;
+                    f32 t = breath + angle;
+#else
+                    f32 t = wp->field_0x550 + wp->field_0x55C;
 #endif
 
                     pose->flags |= 0x84;
                     pose->field_0x02 = 0x30;
-                    #ifdef MUST_MATCH
+#ifdef MUST_MATCH
                     f = t * half;
 #else
                     f = t * 0.5f;
