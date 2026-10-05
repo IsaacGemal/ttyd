@@ -2629,7 +2629,7 @@ void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist) {
     return NULL;
 }
 
-// NONMATCHING (90.57%): the three passes build a `HitCheckQuery` local and call `marioHitCheckVecRound` (the caller-built shape `marioChkFront` uses), which reproduces the 3 query slots and the distance/hitPos/normal rounding; calls and control flow match. The pass-2 direction is built through `makeDirVec` (a by-value inline that starts from the named rodata vec) so MWCC materialises the original's built-then-copied `Vec` slot. What remains is register colouring, a 0x10 frame gap (0x240 vs 0x250 - the original keeps a second dead `Vec` copy in pass 1 that the inliner drops).
+// NONMATCHING (91.56%): the three passes build a `HitCheckQuery` local and call `marioHitCheckVecRound` (the caller-built shape `marioChkFront` uses), which reproduces the 3 query slots and the distance/hitPos/normal rounding; calls and control flow match. Both directions are built through `makeDirVec` (a by-value inline that starts from the named rodata vec) so MWCC materialises the original's built-then-copied `Vec` slots, and the pass-1 best-hit update is two branches (the original duplicates the copy for `best == NULL` and for a closer hit). The frame matches; what remains is stack slot placement (declaration order does not move it) and register colouring.
 HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     MarioWork* wp = marioGetPtr();
     HitCheckQuery query;
@@ -2715,9 +2715,14 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     }
     dist = float_0p5_8041a7c4 * c;
     p = *pos;
+#ifdef MUST_MATCH
+    dtmp = makeDirVec(&vec3_802c5844, sin, cos);
+    dir = dtmp;
+#else
     dir = vec3_802c5844;
     dir.x = sin;
     dir.z = cos;
+#endif
     curDist = dist + a;
     bestDist = curDist;
     best = NULL;
@@ -2732,7 +2737,13 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
             if (chkBalloon(hit) != 0) {
                 *(void**)((u8*)wp + 0x20C) = hit;
             }
-            if (best == NULL || curDist < bestDist) {
+            if (best != NULL) {
+                if (curDist < bestDist) {
+                    bestDist = curDist;
+                    best = hit;
+                    bestNorm = norm;
+                }
+            } else {
                 bestDist = curDist;
                 best = hit;
                 bestNorm = norm;
