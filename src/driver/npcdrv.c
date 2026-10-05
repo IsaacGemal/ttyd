@@ -3259,10 +3259,9 @@ void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
 // Solved by using the declared `field_9C` for the 0xB0 roll store (MWCC then leaves it
 // indexed with `stbx` while the heldItems loop strength-reduces, as retail does) and by declaring `i` before
 // `u8* p`. The first roll loop now matches. Also: declaring `num` before `enemy` puts the heldItems loop's
-// num/enemy/walk in r27/r26/r30 (retail r30/r26/r27, still swapped) and the level test as `<= 0 || >= 3`.
-// Left: the level test's block layout (retail `beq/blt; cmpwi 3; bge roll; b body`; ours `ble; cmpwi 3;
-// blt body`) and the num/walk register pairing.
-// NONMATCHING (93.73%): roll loops match; level-branch layout and second-half regs differ.
+// num/enemy/walk in r27/r26/r30 (retail r30/r26/r27, still swapped). The level test is a switch (levels 1 and 2
+// skip the roll; 0 and everything else roll), whose lowering is retail's `beq/blt; cmpwi 3; bge roll; b body`.
+// NONMATCHING (95.48%): the heldItems loop's num/walk register pairing and its increment-block placement.
 void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     s32 i;
     u8* p;
@@ -3286,12 +3285,17 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
         return;
     }
     *(s32*)&info->field_9C[0x10] = setup->field_0x1C;
-    if (*(s32*)&info->field_9C[0x10] <= 0 || *(s32*)&info->field_9C[0x10] >= 3) {
-        p = (u8*)setup;
-        for (i = 0; i < 0x10; i++) {
+    switch (*(s32*)&info->field_9C[0x10]) {
+    case 1:
+    case 2:
+        break;
+    case 0:
+    default:
+        for (i = 0, p = (u8*)setup; i < 0x10; i++) {
             info->field_9C[0x14 + i] = p[0x20] + irand((s8)p[0x21] - (s8)p[0x20] + 1);
             p += 2;
         }
+        break;
     }
     info->field_4 = setup->field_0x18;
     *(s32*)info->field_8 = setup->field_0x8;
