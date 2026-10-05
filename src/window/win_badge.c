@@ -147,15 +147,113 @@ const char str_8041D454[4] = "W_1";
 const char str_8041D458[6] = "M_S_1";
 const char str_8041D460[6] = "M_W_1";
 
-// 136 B
-void winBadgeMain2(WindowWork* work) {
-    WW_F32(work, 0x3FC) = float_184_8041d418 * (f32)WW_S32(work, 0x3EC);
-    WW_F32(work, 0x3F4) += (WW_F32(work, 0x3FC) - WW_F32(work, 0x3F4)) / 4.0f;
-    WW_F32(work, 0x400) = float_184_8041d418 * (f32)WW_S32(work, 0x3F0);
-    WW_F32(work, 0x3F8) += (WW_F32(work, 0x400) - WW_F32(work, 0x3F8)) / 4.0f;
+extern ItemData itemDataTable[];
+
+// 288 B
+void winMakeEquipList(WindowWork* work) {
+    s32 count = 0;
+    PouchData* pouch = pouchGetPtr();
+    u8* entry = (u8*)work;
+    s32 i;
+
+    for (i = 0; i < MAX_BADGES; i++) {
+        if (pouch->equippedBadges[i] != 0) {
+            *(s32*)(entry + 0x404) = 1;
+            count++;
+            *(s32*)(entry + 0x408) = i;
+            *(s32*)(entry + 0x40C) = pouch->equippedBadges[i];
+            entry += 0xC;
+        }
+    }
+    WW_S32(work, 0xD64) = count;
 }
 
-extern ItemData itemDataTable[];
+// 312 B
+void winBadgeInit(WindowWork* work) {
+    WW_S32(work, 0x3DC) = 0;
+    WW_S32(work, 0x3E0) = 0;
+    WW_S32(work, 0x3E4) = 0;
+    WW_S32(work, 0x3EC) = 0;
+    WW_S32(work, 0x3E8) = 0;
+    WW_S32(work, 0x3F0) = 0;
+    winMakeEquipList(work);
+}
+
+// 464 B
+void winBadgeInit2(WindowWork* work) {
+    WW_F32(work, 0x158) = float_neg270_8041d424;
+    WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x3E0) * 0x28);
+    WW_F32(work, 0x3F4) = WW_F32(work, 0x3FC) = float_184_8041d418 * (f32)WW_S32(work, 0x3EC);
+    WW_F32(work, 0x3F8) = WW_F32(work, 0x400) = float_184_8041d418 * (f32)WW_S32(work, 0x3F0);
+    winMsgEntry(work, 0, WW_S32(work, 0x3E0) == 0 ? str_802F4C88 : str_802F4C9C, 0);
+    winMakeEquipList(work);
+}
+
+// 4 B
+void winBadgeExit(void) {
+}
+
+// 516 B
+void mario_change(WindowWork* work, s32 badgeId) {
+    const char* anim;
+    const char* s1;
+    const char* s2;
+    s32 badge147;
+    s32 badge148;
+
+    badge147 = pouchEquipCheckBadge(0x147);
+    badge148 = pouchEquipCheckBadge(0x148);
+
+    if (work->flags & 0x2000) {
+        if (badge147 && !badge148) {
+            s1 = str_8041D42C;
+            s2 = str_8041D430;
+        } else if (!badge147 && badge148) {
+            s1 = str_8041D438;
+            s2 = str_8041D43C;
+        } else if (badge147 && badge148) {
+            s1 = str_8041D444;
+            s2 = str_8041D448;
+        } else {
+            s1 = str_8041D450;
+            s2 = str_8041D454;
+        }
+        if (WW_S32(work, 0x188) != -1) {
+            animPoseRelease(WW_S32(work, 0x188));
+            WW_S32(work, 0x188) = animPoseEntry(str_802F4CB4, 0);
+            animPoseSetAnim(WW_S32(work, 0x188), s1, 1);
+            animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0x1800);
+        }
+        if (WW_S32(work, 0xE1C) != -1) {
+            animPoseRelease(WW_S32(work, 0xE1C));
+            WW_S32(work, 0xE1C) = animPoseEntry(str_802F4CB4, 0);
+            animPoseSetAnim(WW_S32(work, 0xE1C), s2, 1);
+            animPoseSetMaterialFlagOn(WW_S32(work, 0xE1C), 0x1800);
+        }
+    } else {
+        if (badge147 && !badge148) {
+            anim = str_802F4CBC;
+        } else if (!badge147 && badge148) {
+            anim = str_802F4CC8;
+        } else if (badge147 && badge148) {
+            anim = str_802F4CD4;
+        } else {
+            anim = str_802F4CE0;
+        }
+        if (WW_S32(work, 0x188) != -1) {
+            animPoseRelease(WW_S32(work, 0x188));
+            WW_S32(work, 0x188) = animPoseEntry(anim, 0);
+            animPoseSetAnim(WW_S32(work, 0x188), str_8041D458, 1);
+            animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0x1800);
+        }
+        if (WW_S32(work, 0xE1C) != -1) {
+            animPoseRelease(WW_S32(work, 0xE1C));
+            WW_S32(work, 0xE1C) = animPoseEntry(anim, 0);
+            animPoseSetAnim(WW_S32(work, 0xE1C), str_8041D460, 1);
+            animPoseSetMaterialFlagOn(WW_S32(work, 0xE1C), 0x1800);
+        }
+    }
+}
 
 // 1752 B
 // 100%. Two shapes are needed to reproduce the original's register allocation/scheduling:
@@ -344,110 +442,12 @@ end:
     return 0;
 }
 
-// 516 B
-void mario_change(WindowWork* work, s32 badgeId) {
-    const char* anim;
-    const char* s1;
-    const char* s2;
-    s32 badge147;
-    s32 badge148;
-
-    badge147 = pouchEquipCheckBadge(0x147);
-    badge148 = pouchEquipCheckBadge(0x148);
-
-    if (work->flags & 0x2000) {
-        if (badge147 && !badge148) {
-            s1 = str_8041D42C;
-            s2 = str_8041D430;
-        } else if (!badge147 && badge148) {
-            s1 = str_8041D438;
-            s2 = str_8041D43C;
-        } else if (badge147 && badge148) {
-            s1 = str_8041D444;
-            s2 = str_8041D448;
-        } else {
-            s1 = str_8041D450;
-            s2 = str_8041D454;
-        }
-        if (WW_S32(work, 0x188) != -1) {
-            animPoseRelease(WW_S32(work, 0x188));
-            WW_S32(work, 0x188) = animPoseEntry(str_802F4CB4, 0);
-            animPoseSetAnim(WW_S32(work, 0x188), s1, 1);
-            animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0x1800);
-        }
-        if (WW_S32(work, 0xE1C) != -1) {
-            animPoseRelease(WW_S32(work, 0xE1C));
-            WW_S32(work, 0xE1C) = animPoseEntry(str_802F4CB4, 0);
-            animPoseSetAnim(WW_S32(work, 0xE1C), s2, 1);
-            animPoseSetMaterialFlagOn(WW_S32(work, 0xE1C), 0x1800);
-        }
-    } else {
-        if (badge147 && !badge148) {
-            anim = str_802F4CBC;
-        } else if (!badge147 && badge148) {
-            anim = str_802F4CC8;
-        } else if (badge147 && badge148) {
-            anim = str_802F4CD4;
-        } else {
-            anim = str_802F4CE0;
-        }
-        if (WW_S32(work, 0x188) != -1) {
-            animPoseRelease(WW_S32(work, 0x188));
-            WW_S32(work, 0x188) = animPoseEntry(anim, 0);
-            animPoseSetAnim(WW_S32(work, 0x188), str_8041D458, 1);
-            animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0x1800);
-        }
-        if (WW_S32(work, 0xE1C) != -1) {
-            animPoseRelease(WW_S32(work, 0xE1C));
-            WW_S32(work, 0xE1C) = animPoseEntry(anim, 0);
-            animPoseSetAnim(WW_S32(work, 0xE1C), str_8041D460, 1);
-            animPoseSetMaterialFlagOn(WW_S32(work, 0xE1C), 0x1800);
-        }
-    }
-}
-
-// 4 B
-void winBadgeExit(void) {
-}
-
-// 464 B
-void winBadgeInit2(WindowWork* work) {
-    WW_F32(work, 0x158) = float_neg270_8041d424;
-    WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x3E0) * 0x28);
-    WW_F32(work, 0x3F4) = WW_F32(work, 0x3FC) = float_184_8041d418 * (f32)WW_S32(work, 0x3EC);
-    WW_F32(work, 0x3F8) = WW_F32(work, 0x400) = float_184_8041d418 * (f32)WW_S32(work, 0x3F0);
-    winMsgEntry(work, 0, WW_S32(work, 0x3E0) == 0 ? str_802F4C88 : str_802F4C9C, 0);
-    winMakeEquipList(work);
-}
-
-// 312 B
-void winBadgeInit(WindowWork* work) {
-    WW_S32(work, 0x3DC) = 0;
-    WW_S32(work, 0x3E0) = 0;
-    WW_S32(work, 0x3E4) = 0;
-    WW_S32(work, 0x3EC) = 0;
-    WW_S32(work, 0x3E8) = 0;
-    WW_S32(work, 0x3F0) = 0;
-    winMakeEquipList(work);
-}
-
-// 288 B
-void winMakeEquipList(WindowWork* work) {
-    s32 count = 0;
-    PouchData* pouch = pouchGetPtr();
-    u8* entry = (u8*)work;
-    s32 i;
-
-    for (i = 0; i < MAX_BADGES; i++) {
-        if (pouch->equippedBadges[i] != 0) {
-            *(s32*)(entry + 0x404) = 1;
-            count++;
-            *(s32*)(entry + 0x408) = i;
-            *(s32*)(entry + 0x40C) = pouch->equippedBadges[i];
-            entry += 0xC;
-        }
-    }
-    WW_S32(work, 0xD64) = count;
+// 136 B
+void winBadgeMain2(WindowWork* work) {
+    WW_F32(work, 0x3FC) = float_184_8041d418 * (f32)WW_S32(work, 0x3EC);
+    WW_F32(work, 0x3F4) += (WW_F32(work, 0x3FC) - WW_F32(work, 0x3F4)) / 4.0f;
+    WW_F32(work, 0x400) = float_184_8041d418 * (f32)WW_S32(work, 0x3F0);
+    WW_F32(work, 0x3F8) += (WW_F32(work, 0x400) - WW_F32(work, 0x3F8)) / 4.0f;
 }
 
 #ifdef MUST_MATCH
