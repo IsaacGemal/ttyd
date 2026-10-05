@@ -40,8 +40,8 @@ __declspec(section ".rodata") const char* jumptable_802C4970[8] = {"n_", "ne_", 
 extern GlobalWork* gp;
 
 //.bss
-s32 BeroSW[16]; //switches
 BeroEntry* BeroINFOARR[16];
+s32 BeroSW[16]; //switches
 s32 BeroID[16];
 
 s32 bero_null[15] = {
@@ -1956,3 +1956,27 @@ s32 evt_bero_info_run_gate[5] = {
     0x00000001,
 };
 // clang-format on
+
+
+#ifdef MUST_MATCH
+// An immediately-generated helper flushes the deferred functions' pooled .sdata2 entries ahead of
+// the force_active tail gap below, so the gap lands at the end of the section. Generating a helper
+// also makes MWCC lay out .bss by first reference, so the body names the three .bss globals in the
+// original's address order (BeroID, BeroSW, BeroINFOARR); a plain body would instead use the code's
+// reference order. An integer body avoids adding a conversion double to .rodata.
+#pragma defer_codegen off
+static s32 flush_pools(s32 v) {
+    if (v) {
+        BeroID[0] = BeroSW[0] = (s32)BeroINFOARR[0];
+    }
+    return v + 1;
+}
+#pragma defer_codegen reset
+#endif
+
+// 4-byte zero word that ends the unit's .sdata2.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata2") static u32 gap_09_8041A42C_sdata2[1] = {0};
+#pragma force_active reset
+#pragma explicit_zero_data reset
