@@ -4736,5 +4736,10 @@ Current entries:
 - `rels/gor/src/event/evt_yuuranking.c` `yuu_kesan_chk_copy` (compiler-artifact): an unreferenced checked entry ahead of
   yuu_kesan (`cmpwi r4,0 / bge yuu_kesan / li r3,0 / blr`); GC/2.6 never emits a frameless tail branch from C and no version or
   pragma in GC/1.0-3.0a5 produces it. Split out of evt_yuuranking_alloc's symbol in #456; the asm form brings it to 100%.
-- To come (original-asm): effdrv `effCalcMayaAnimMatrix` (Claude #4): a computed-GQR5 quantiser and psq_l loads, including a
-  dead load, which shows it was asm in the original; its PR adds the entry.
+- `src/driver/effdrv.c` `effMayaSetGQR5`, `effMayaAnimInterp` (original-asm, Claude #4, #473): a computed-GQR5 quantiser
+  and psq_l loads, including a dead load, which shows they were asm in the original.
+
+Library `.s` files (outside the game-code policy): MetroTRK's `__exception.s` (the interrupt vector table, which opens with
+the "Metrowerks Target Resident Kernel for PowerPC" banner) and `targsupp.s` (four `twui`/`blr` file-I/O traps) were asm in
+the original kit and stay `.s` in libs/metrowerks/src/TRK_MINNOW_DOLPHIN.a. They are linked from dtk's disassembly as is
+(8020 bytes, code linked 55.43% -> 55.64%); naming the vector entries after MetroTRK's source is tidy-up for later.
