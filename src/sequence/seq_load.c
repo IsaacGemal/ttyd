@@ -1293,15 +1293,21 @@ void loadDraw(void) {
         if (i == 5 && (wp->field_0x0 & 0x20)) {
             color = grey80;
         }
-        if (wd->unk10 < 0xe && wd->unk10 >= 0xa) {
+        switch (wd->unk10) {
+        case 0xa:
+        case 0xb:
+        case 0xc:
+        case 0xd:
             color.a = 0xFE;
             winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
             winTexSet(0xe, loadDrawVec((const Vec*)RO(base, 0x0, vec3_802ed670), wd->x, wd->y), vec3_802ed67c, color);
             winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
             winTexSet(wd->unk10, loadDrawVec(&vec3_802ed688, wd->x, wd->y + 60.0f), vec3_802ed694, color);
-        } else {
+            break;
+        default:
             winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
             winTexSet_x2(wd->unk10, wd->unk14, loadDrawVec(&vec3_802ed6a0, wd->x, wd->y), vec3_802ed6ac, color);
+            break;
         }
     }
 
