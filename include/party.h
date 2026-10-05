@@ -253,3 +253,4 @@ void partyRideMain(PartyEntry* party);
 void L_allPartyRideOn(void);
 extern const Vec vec3_802cce2c;
 extern const Vec vec3_802cce38;
+s32 partyGetNum(void);
