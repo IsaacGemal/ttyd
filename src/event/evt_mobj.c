@@ -164,16 +164,19 @@ __declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
 #define IB_VEC(off, sym, val) (val)
 #define IB_F64(off, sym, val) (val)
 #endif
+// .rodata (part A)
+#pragma force_active on
+// vec3_802c3dc8: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec gap_vec3_802c3dc8_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+// vec3_802c3dd4: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec gap_vec3_802c3dd4_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+#pragma force_active reset
 const char str_802C3DE0[0x18] = "MOBJ_BlueTimerSwitch";
 const char str_802C3DF8[0x14] = "MOBJ_RedTimerSwitch";
 static u32 evt_shake[] = {
     0x0005005B, (u32)evt_cam_shake, 0x00000004, 0xF24A7A80,
     0xF24A7A8A, 0x000000C8, 0x00000002, 0x00000001,
 };
-const char str_802C3E68[0x14] = "MOBJ_RedJumpStand";
-const char str_802C3E7C[0x14] = "MOBJ_RedJumpStand2";
-const char str_802C3E98[0x14] = "MOBJ_BlueJumpStand";
-const char str_802C3EAC[0x14] = "MOBJ_BlueJumpStand2";
 extern s32 mobj_save_blk_sysevt[];
 extern Vec vec3_802c40a0[];
 extern Vec vec3_802c3ef4[];
@@ -941,14 +944,6 @@ s32 mobj_timerswitch(MapObjectEntry* obj) {
     return 0;
 }
 
-// .rodata (part A)
-#pragma force_active on
-// vec3_802c3dc8: placeholder for the object the code copies (defining it hangs MWCC)
-__declspec(section ".rodata") Vec gap_vec3_802c3dc8_rodata[1] = {{0.0f, 0.0f, 0.0f}};
-// vec3_802c3dd4: placeholder for the object the code copies (defining it hangs MWCC)
-__declspec(section ".rodata") Vec gap_vec3_802c3dd4_rodata[1] = {{0.0f, 0.0f, 0.0f}};
-#pragma force_active reset
-
 s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -1229,6 +1224,15 @@ s32 mobj_jumpstand_red(MapObjectEntry* obj) {
 
 // .rodata (part C)
 #pragma force_active on
+__declspec(section ".rodata") Vec vec3_802c3e14[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e20[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e2c[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e38[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e44[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e50[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec vec3_802c3e5c[1] = {{0.0f, 0.0f, 0.0f}};
+const char str_802C3E68[0x14] = "MOBJ_RedJumpStand";
+const char str_802C3E7C[0x14] = "MOBJ_RedJumpStand2";
 #pragma force_active reset
 
 s32 evt_mobj_jumpstand_red(EventEntry* event, BOOL isFirstCall) {
@@ -1332,13 +1336,8 @@ s32 mobj_jumpstand_blue(MapObjectEntry* obj) {
 
 // .rodata (part B)
 #pragma force_active on
-__declspec(section ".rodata") Vec vec3_802c3e14[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") Vec vec3_802c3e20[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") Vec vec3_802c3e2c[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") Vec vec3_802c3e38[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") Vec vec3_802c3e44[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") Vec vec3_802c3e50[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") Vec vec3_802c3e5c[1] = {{0.0f, 0.0f, 0.0f}};
+const char str_802C3E98[0x14] = "MOBJ_BlueJumpStand";
+const char str_802C3EAC[0x14] = "MOBJ_BlueJumpStand2";
 #pragma force_active reset
 
 s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
