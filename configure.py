@@ -883,7 +883,7 @@ config.libs = [
             Object(Matching, "gxsub.c"),
             Object(Matching, "himo.c"),
             Object(Matching, "koopa.c"),
-            Object(NonMatching, "koopa_hit.c"),
+            Object(Matching, "koopa_hit.c"),
             Object(Matching, "koopa_motion.c"),
             Object(Matching, "kpa_act.c"),
             Object(Matching, "main.c"),

@@ -479,9 +479,9 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
-// NONMATCHING (98.20%): the fabs of `deg` lands in f4 instead of f3, which cascades through the
-// maxVal/diff/cand blocks and leaves `dist` in f3 instead of f6; `d`/`node` are swapped (r5/r6);
-// the sqrtf x==0 return block is inline (bne + b) instead of a `beq` to a block at the end.
+// NONMATCHING (98.92%): the `maxVal` product lands in f5 instead of f3, the `node`/`range`/`abs(d)`
+// GPRs are assigned differently, and the `dist`/sqrtf tail is f3 instead of f6. Every opcode and
+// immediate matches; only these compiler-temp register choices differ.
 u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     u32 flags = 0;
     CamRoadNode* node;
@@ -554,24 +554,33 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     if (deg > float_180_80419588) {
         deg = float_360_80419584 - deg;
     }
-    maxVal = float_6p2832_80419574 * cur->unk_40 * deg / float_360_80419584 * wp->unk_1B4;
+    maxVal = float_6p2832_80419574 * cur->unk_40;
+    maxVal = maxVal * deg / float_360_80419584;
+    maxVal = maxVal * wp->unk_1B4;
     diff = __fabsf(cur->unk_44 - prev->unk_44);
     if (diff > float_180_80419588) {
         diff = float_360_80419584 - diff;
     }
-    cand = float_6p2832_80419574 * cur->unk_40 * diff / float_360_80419584 * wp->unk_1B8;
+    cand = float_6p2832_80419574 * cur->unk_40;
+    cand = cand * diff / float_360_80419584;
+    cand = cand * wp->unk_1B8;
     if (cand > maxVal) {
         maxVal = cand;
     }
-    diff = __fabsf(cur->unk_48 - prev->unk_48);
-    if (diff > float_180_80419588) {
-        diff = float_360_80419584 - diff;
+    {
+        f32 d2 = __fabsf(cur->unk_48 - prev->unk_48);
+        if (d2 > float_180_80419588) {
+            d2 = float_360_80419584 - d2;
+        }
+        cand = float_6p2832_80419574 * cur->unk_40;
+        cand = cand * d2 / float_360_80419584;
+        cand = cand * wp->unk_1BC;
     }
-    cand = float_6p2832_80419574 * cur->unk_40 * diff / float_360_80419584 * wp->unk_1BC;
     if (cand > maxVal) {
         maxVal = cand;
     }
-    cand = __fabsf(cur->unk_40 - prev->unk_40) * wp->unk_1C0;
+    cand = __fabsf(cur->unk_40 - prev->unk_40);
+    cand = cand * wp->unk_1C0;
     if (cand > maxVal) {
         maxVal = cand;
     }
@@ -591,7 +600,7 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
         d2 = dxx;
         d2 = d2 + dyy;
         d2 = d2 + dzz;
-        if (d2 != 0.0f) {
+        if (d2) {
             d2 = sqrtf(d2);
         } else {
             d2 = 0.0f;
@@ -625,7 +634,7 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
 // Finds the camera road under the player (ray tests down the road triangles, the curve collision) and eases the
 // look-at point along it. The seventh float arg (f7) is the bank.
 // collisionCurve/collisionTri_simple take their Vec arguments by value (the caller makes the stack copies).
-// NONMATCHING (80.7%): 19 calls and every immediate identical; the original keeps x..az in f16..f21 (one FPR higher
+// NONMATCHING (81.4%): 19 calls and every immediate identical; the original keeps x..az in f16..f21 (one FPR higher
 // than here) and spills `b` to the stack, and the doubles load through the unported rodata base.
 void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank) {
     s32 m;
@@ -661,8 +670,6 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
     f32 f24;
     f32 rad;
     f32 f31;
-    f32 gx;
-    f32 gz;
     f32 s1B0;
     f32 s1AC;
     f32 s1A8;
@@ -830,6 +837,8 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
             Vec w2;
             Vec t1;
             Vec t2;
+            f32 gx;
+            f32 gz;
 
             c1 = (f32)cos(rad);
             s1 = (f32)sin(rad);
@@ -837,7 +846,10 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
             t1.x = pos.x;
             t1.z = pos.z;
             bk = CAMROAD_BANK(b);
-            k1 = (float_640_804195ac * ((f24 * s1) / c1)) / float_480_804195b0;
+            k1 = f24 * s1;
+            k1 = k1 / c1;
+            k1 = float_640_804195ac * k1;
+            k1 = k1 / float_480_804195b0;
             h2.unk_08 = float_neg1E06_804195a0;
             t1.y = pos.y;
             h2.unk_18 = float_0_8041954c;
@@ -1015,7 +1027,7 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
 // scratch FPRs and spill slots (0x18/0x1c vs 0x24/0x28) still differ, and this compiler folds the
 // dead `if (f28 < -1e-7)` compare. Declaration order, statement order and the mode-block order were
 // searched extensively (f0-before-f1 and the mode0/mode1 reorders recovered 95.90 -> 96.52).
-// NONMATCHING (96.52%): register/encoding only; see notes above.
+// NONMATCHING (96.84%): register/encoding only; see notes above.
 BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit* out) {
     f32 f0, f1, f2, f3, f4, f5, f6, f7, f8, f10, f9;
     f32 f31, f30, f29, f28, f27, f26, f25, f24, f23, f22, f21, f20, f19, f18, f17, f16, f15, f14;

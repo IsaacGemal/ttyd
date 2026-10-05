@@ -1,3 +1,8 @@
+// sound.h -> musyx.h includes the SDK <math.h>, whose `extern inline` sqrtf/sqrt emit four 0.5/3.0
+// localstatics into .rodata that the original unit does not have (shifting every string by 0x20).
+// Suppress it and take the out-of-line MSL math ABI from math_ext.h instead.
+#define _MATH_H_
+#include "math_ext.h"
 #include "sequence/seq_load.h"
 #include "driver/camdrv.h"
 #include "driver/icondrv.h"
@@ -28,7 +33,10 @@
 #include <dolphin/gx.h>
 #include <dolphin/os.h>
 #include <string.h>
-#include <math.h>
+
+// The original reaches its whole .rodata region through one base register (r30 = &vec3_802ed670);
+// this puts the pooled strings and the int->float conversion double at the target's base+offset sites.
+#pragma pool_data on
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") f32 lbl_80349DE8[2] = { -1.0f, 1.0f };
@@ -75,6 +83,14 @@ struct LoadAngleTable
 {
     f32 v[16];
 };
+
+// The target folds the byte offset as (field_0x30 << 4) + (field_0x34 << 2); the plain element
+// expression makes MWCC scale the flattened index by four instead.
+#ifdef MUST_MATCH
+#define ANGLES_AT(a, w) (*(const f32*)((const u8*)(a).v + (w)->field_0x30 * 0x10 + (w)->field_0x34 * 4))
+#else
+#define ANGLES_AT(a, w) ((a).v[(w)->field_0x30 * 4 + (w)->field_0x34])
+#endif
 
 #ifdef MUST_MATCH
 // loadMain reaches the three window tables from one base (the object before them, lbl_80349DE8, plus 0x40/0x13c/0x200),
@@ -272,13 +288,6 @@ const char str_802ED998[] = "\203\214\203x\203\213\201@%s\000";
 const char str_802ED9A4[] = "\203v\203\214\203C\202\266\202\251\202\361\201@\000";
 const u32 gap_04_802ED9B4_rodata[] = {0x00000000};
 const f64 double_90_802ed9b8 = 90;
-const f64 double_to_int_mask_802ed9c0 = 4503599627370496;
-const f64 double_to_int_802ed9c8 = 4503601774854144;
-const char str_802ED9D0[] = "msg_savefile_select";
-const char str_802ED9E4[] = "msg_savefile_delete_select\000";
-const char str_802EDA00[] = "msg_savefile_copy_select\000\000\000";
-const char str_802EDA1C[] = "msg_savefile_copy_point";
-const char str_802EDA34[] = "%s/w/jp/name.tpl\000\000\000";
 const char str_8041BDDC[] = "next";
 const f32 float_30_8041be3c = 30.0f;
 const f32 float_50_8041be6c = 50.0f;
@@ -307,7 +316,7 @@ EVT_END()
 
 // The original addresses these .rodata objects as offsets from one base symbol.
 #ifdef MUST_MATCH
-#define RO(base, off, sym) ((const char*)(base) + (off))
+#define RO(base, off, sym) ((const char*)&(sym))
 #else
 #define RO(base, off, sym) ((const char*)&(sym))
 #endif
@@ -470,8 +479,8 @@ void seq_loadMain(SequenceWork* workArg) {
     switch (workArg->state) {
         case 0: {
             BOOL result;
-            if (fileAsyncf(4, 0, str_802EDA34, getMarioStDvdRoot()) != 0U) {
-                wp->file = fileAllocf(4, str_802EDA34, getMarioStDvdRoot());
+            if (fileAsyncf(4, 0, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot()) != 0U) {
+                wp->file = fileAllocf(4, "%s/w/jp/name.tpl\0\0\0", getMarioStDvdRoot());
                 result = TRUE;
             } else {
                 result = FALSE;
@@ -622,7 +631,7 @@ void loadMain(SequenceWork* workArg) {
             wp->field_0x18++;
             /* fallthrough */
         case 1:
-            wp->field_0x38 = (s32)msgSearch(RO(base, 0x360, str_802ED9D0));
+            wp->field_0x38 = (s32)msgSearch("msg_savefile_select");
             sel = wp->field_0x20;
 
             if (dir & 0x1000) {
@@ -844,7 +853,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x28:
-            wp->field_0x38 = (s32)msgSearch(RO(base, 0x374, str_802ED9E4));
+            wp->field_0x38 = (s32)msgSearch("msg_savefile_delete_select");
             sel = wp->field_0x20;
 
             if (dir & 0x1000) {
@@ -907,7 +916,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x32:
-            wp->field_0x38 = (s32)msgSearch(RO(base, 0x390, str_802EDA00));
+            wp->field_0x38 = (s32)msgSearch("msg_savefile_copy_select");
             sel = wp->field_0x20;
 
             if (dir & 0x1000) {
@@ -950,7 +959,7 @@ void loadMain(SequenceWork* workArg) {
             break;
 
         case 0x33:
-            wp->field_0x38 = (s32)msgSearch(RO(base, 0x3ac, str_802EDA1C));
+            wp->field_0x38 = (s32)msgSearch("msg_savefile_copy_point");
             sel = wp->field_0x20;
 
             if (dir & 0x1000) {
@@ -1121,16 +1130,16 @@ void loadMain(SequenceWork* workArg) {
 
     wp->field_0x8 += (wp->field_0x10 - wp->field_0x8) * float_0p25_8041be7c;
     wp->field_0xC += (wp->field_0x14 - wp->field_0xC) * float_0p25_8041be7c;
-    wp->field_0x8 += fabsf(float_2_8041be70 * (f32)sin((f32)gp->retraceCount * float_0p125_8041be80));
+    wp->field_0x8 += __fabsf(float_2_8041be70 * (f32)sin((f32)gp->retraceCount * float_0p125_8041be80));
     dispEntry(4, float_1000_8041be84, 0, (DispCallback)loadDraw, NULL);
 }
 #pragma opt_propagation reset
 
-// NONMATCHING (81.66%): complete reconstruction of the save-file load screen. Every call, loop bound,
+// NONMATCHING (93.24%): complete reconstruction of the save-file load screen. Every call, loop bound,
 // rodata object, table read and branch is present and semantically correct. The remaining diffs are
 // compiler only: MWCC's register colouring (several loop variables sit in adjacent registers to the
-// target), the int->float magic-mask loads (the target reads the named double through the rodata base,
-// MWCC emits an anonymous pooled copy with lis/addi), and a handful of scheduling differences.
+// target, a systematic callee-saved off-by-one) and a few scheduling/stack-slot placements; every
+// rodata object now lands at its target offset and the i2f double is read base-relative at +0x350.
 // The whole stack frame now matches the target: the frame is 0x890, the named aggregates sit at
 // nameBuf 0x310 / projection 0x330 / viewport 0x34c / timeBuf 0x494, the quads and angle table at
 // 0x364..0x434 and the icon matrices at 0x434/0x464. That was reproduced by declaring the aggregates in
@@ -1211,8 +1220,9 @@ static inline void loadDrawColor(GXColor color) {
     FontDrawColor(&color);
 }
 
-// NONMATCHING (81.66%): see the full note above the helpers; stack-slot placement and the
-// callee-saved register colouring differ; all calls, loops and rodata are present.
+// NONMATCHING (93.24%): see the full note above the helpers; the callee-saved register colouring is a
+// systematic off-by-one (base r31 vs r30, i/j/flags r22 vs r23, ...) and a few scheduling/stack-slot
+// placements. All calls, loops, rodata and pool offsets are present.
 void loadDraw(void) {
 #ifdef MUST_MATCH
     const char* base = (const char*)&vec3_802ed670;
@@ -1283,7 +1293,7 @@ void loadDraw(void) {
         if (i == 5 && (wp->field_0x0 & 0x20)) {
             color = grey80;
         }
-        if ((u32)(wd->unk10 - 0xa) < 4) {
+        if (wd->unk10 < 0xe && wd->unk10 >= 0xa) {
             color.a = 0xFE;
             winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
             winTexSet(0xe, loadDrawVec((const Vec*)RO(base, 0x0, vec3_802ed670), wd->x, wd->y), vec3_802ed67c, color);
@@ -1435,10 +1445,10 @@ void loadDraw(void) {
                 winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
                 winTexSet(0x33, loadDrawVecY(&vec3_802ed6e8, (f32)(0x32 - j * 0x32)), *(const Vec*)RO(base, 0x84, vec3_802ed6f4), *(GXColor*)&dat_8041bdb4);
                 winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
-                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY(&vec3_802ed700, (f32)(0x36 - j * 0x32)), vec3_802ed70c, white);
+                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY(&vec3_802ed700, (f32)(0x36 - j * 0x32)), vec3_802ed70c, *(GXColor*)&dat_8041bdb8);
             } else {
                 winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
-                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY(&vec3_802ed718, (f32)(0x32 - j * 0x32)), vec3_802ed724, white);
+                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY(&vec3_802ed718, (f32)(0x32 - j * 0x32)), vec3_802ed724, *(GXColor*)&dat_8041bdbc);
             }
         }
     }
@@ -1454,28 +1464,28 @@ void loadDraw(void) {
                 winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
                 winTexSet(0x33, loadDrawVecY(&vec3_802ed760, (f32)(0x1e - j * 0x32)), vec3_802ed76c, *(GXColor*)&dat_8041bdc8);
                 winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
-                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY(&vec3_802ed778, (f32)(0x22 - j * 0x32)), vec3_802ed784, white);
+                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY(&vec3_802ed778, (f32)(0x22 - j * 0x32)), vec3_802ed784, *(GXColor*)&dat_8041bdcc);
             } else {
                 winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
-                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY(&vec3_802ed790, (f32)(0x1e - j * 0x32)), vec3_802ed79c, white);
+                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY(&vec3_802ed790, (f32)(0x1e - j * 0x32)), vec3_802ed79c, *(GXColor*)&dat_8041bdd0);
             }
         }
     }
 
     if (wp->field_0x18 == 0x33 && wp->field_0x34 < 4) {
         struct LoadAngleTable angles = *(struct LoadAngleTable*)RO(base, 0x138, dat_802ed7a8);
-        f32 angle = angles.v[wp->field_0x30 * 4 + wp->field_0x34];
         f32 f30;
         f32 f29;
 
-        if ((f32)fmod(angle, *(const f64*)RO(base, 0x348, double_90_802ed9b8)) == 0.0f) {
+        if (!(f32)fmod(ANGLES_AT(angles, wp), *(const f64*)RO(base, 0x348, double_90_802ed9b8))) {
             f32 fa = (f32)(wp->field_0x30 / 2);
             f32 fb = (f32)(wp->field_0x34 / 2);
+            f32 mod = (f32)(wp->field_0x30 % 2);
             if (fa == fb) {
                 f29 = 0.0f;
                 f30 = 120.0f - 140.0f * fa;
             } else {
-                f29 = 300.0f * (f32)(wp->field_0x30 % 2) - 150.0f;
+                f29 = 300.0f * mod + float_neg150_8041be64;
                 f30 = 50.0f;
             }
         } else {
@@ -1488,8 +1498,8 @@ void loadDraw(void) {
             Mtx mtx;
 
             winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
-            winTexSetRot(0x1d, loadDrawVec(&vec3_802ed7e8, 2.0f + f29, f30 - 2.0f), vec3_802ed7f4, angle, *(GXColor*)&dat_8041bdd4);
-            winTexSetRot(0x1d, loadDrawVec(&vec3_802ed800, f29, f30), vec3_802ed80c, angle, white);
+            winTexSetRot(0x1d, loadDrawVec(&vec3_802ed7e8, 2.0f + f29, f30 - 2.0f), vec3_802ed7f4, ANGLES_AT(angles, wp), *(GXColor*)&dat_8041bdd4);
+            winTexSetRot(0x1d, loadDrawVec(&vec3_802ed800, f29, f30), vec3_802ed80c, ANGLES_AT(angles, wp), white);
             (void)mtx;
         }
     }

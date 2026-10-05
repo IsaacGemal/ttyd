@@ -975,40 +975,45 @@ static inline Vec winItemMkVec(Vec base, f32 x, f32 y) {
 
 // The original reaches the six Vecs and the int->float double through one base register
 // (r31 = str_802F4CE8) plus displacements; defining win_item's .rodata in this unit is what
-// makes MWCC pool them that way.
-// State: every instruction now matches except the callee-saved GPR colouring:
-// `work` lands in r28 (target r29) and the loop counter `i` in r29 (target r28); the FP
-// scratch f0/f1 in the a/b/c block is swapped with it. Returning the modified Vec from an
-// inline (winItemMkVec, below) gives the three translate temporaries the original's stack
-// slots and lifted 96.78% -> 97.46% (the plain local-Vec form leaves them at 0x54 etc.).
-// Exhausted on top of that: declaration-order permutations, every loop shape and increment
-// order, splitting work/i/ofs per block, alias pointers, register/volatile qualifiers, a/b/c
-// statement reorders, local float constants, and every relevant pragma; a full compile-line
-// sweep (all -O levels x inline modes) finds no better flag set. Sibling winItemInit settled
-// the same kind of colouring with a pointer/loop-index increment order.
-// NONMATCHING (97.46%): only register colours differ - `work` lands in r28 (target r29) and the
-// loop counter `i` in r29 (target r28); every instruction, operand and stack slot otherwise matches.
+// makes MWCC pool them that way. The body reads the work pointer through a local `w` whose
+// identity cast keeps it a separate web (the original colours it and the loop counter
+// independently).
+// NONMATCHING (99.73%): only the FP scratch colouring in the a/b/c block differs (the
+// float_105 temp is f1 where the original has f0, and float_215/float_4 swap with it), plus
+// one `add` operand order in the x/y address (`work + ofs` in the original).
 void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
     GXColor color = dat_8041d468;
+    s32 ofs;
+#ifdef MUST_MATCH
+    // The original keeps a distinct callee-saved web for the work pointer; the identity
+    // cast stops the optimizer from folding it back into the parameter.
+    WindowWork* w = (WindowWork*)((u8*)work + 0);
+#else
+    WindowWork* w = work;
+#endif
     f32 c;
     f32 b;
     f32 a;
-    f32 x = WW_F32(work, idx * 0x14 + 0xC4);
-    f32 y = WW_F32(work, idx * 0x14 + 0xC8);
-    s32 ofs;
+    f32 x = WW_F32(w, idx * 0x14 + 0xC4);
+    f32 y = WW_F32(w, idx * 0x14 + 0xC8);
+    f32 k105, k215, k4;
+
     s32 i;
 
-    winBgGX(work, 2, x, y);
-    winKirinukiGX(work, 0, x - float_150_8041d52c, float_20_8041d4e8 + (float_120_8041d530 + y), float_415_8041d534,
+    winBgGX(w, 2, x, y);
+    winKirinukiGX(w, 0, x - float_150_8041d52c, float_20_8041d4e8 + (float_120_8041d530 + y), float_415_8041d534,
                   float_210_8041d538);
 
-    a = float_105_8041d4fc + y;
-    b = float_4_8041d540 + a;
-    c = (x - float_215_8041d53c) - float_4_8041d540;
+    k215 = float_215_8041d53c;
+    k105 = float_105_8041d4fc;
+    k4 = float_4_8041d540;
+    a = k105 + y;
+    b = k4 + a;
+    c = (x - k215) - k4;
 
     for (i = 0, ofs = 0; i < 2; i++, ofs += 0x28) {
-        if (i == WW_S32(work, 0x210)) {
-            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        if (i == WW_S32(w, 0x210)) {
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)w + 0x28) + 0xA0));
 #ifdef MUST_MATCH
             winTexSet(0xB3, winItemMkVec(vec3_802f5288, x - float_215_8041d53c, float_20_8041d4e8 + (a - (f32)ofs)), vec3_802f5294, dat_8041d46c);
 #else
@@ -1020,7 +1025,7 @@ void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
                 winTexSet(0xB3, translate, vec3_802f5294, dat_8041d46c);
             }
 #endif
-            winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)w + 0x28) + 0xA0));
 #ifdef MUST_MATCH
             winTexSet_x2(i + 0x18, 0xB3, winItemMkVec(vec3_802f52a0, c, float_20_8041d4e8 + (b - (f32)ofs)), vec3_802f52ac, color);
 #else
@@ -1033,7 +1038,7 @@ void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
             }
 #endif
         } else {
-            winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+            winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)w + 0x28) + 0xA0));
 #ifdef MUST_MATCH
             winTexSet_x2(i + 0x18, 0xB3, winItemMkVec(vec3_802f52b8, x - float_215_8041d53c, float_20_8041d4e8 + (a - (f32)ofs)), vec3_802f52c4, dat_8041d470);
 #else
@@ -1048,7 +1053,7 @@ void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
         }
     }
 
-    item_disp(work, x, y);
+    item_disp(w, x, y);
 }
 
 // Draws the item window: the held/key-item grid, the selected item's large
@@ -1081,8 +1086,8 @@ void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
 // 0x38 (loop), as the original does). 95.27% -> 95.29%: declaring `entry` before `i` and putting
 // `entry += 2` before `i++` in the for-increment matches the original's two `addi` order and removes
 // two operand diffs (the remaining 228 are the allocator's colours and stack offsets).
-// NONMATCHING (95.29%): integer register colours and the loop's stack-slot order; the target keeps
-// two per-branch `scale` temps our compiler coalesces (2 `addi` short).
+// NONMATCHING (95.41%): integer register colours and the loop's stack-slot order; `work` spills to
+// a volatile register because the shared i2f `0x4330` temp colours first (target keeps it in r30).
 void item_disp(WindowWork* work, f32 x, f32 y) {
     GXColor white = dat_8041d474;
     GXColor dark = dat_8041d478;
@@ -1099,9 +1104,14 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     f32 f22;
     f32 f26;
     f32 f25;
+    s32 half;
     u8* entry;
+    s32 grayFlag;
+    s32 item;
+    s32 parity;
     s32 i;
     s32 count;
+    s32 colored;
 
     if (WW_S32(work, 0x210) == 0) {
         count = pouchGetHaveItemCnt();
@@ -1114,11 +1124,8 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     base = float_100_8041d4e4 + y;
 
     for (i = 0, entry = (u8*)work; i < count; entry += 2, i++) {
-        s32 item;
-        s32 parity = i % 2;
-        s32 half = i / 2;
-        s32 colored;
-        s32 grayFlag;
+        parity = i % 2;
+        half = i / 2;
 
         if (WW_S32(work, 0x210) == 0) {
             item = pouchHaveItem(i);

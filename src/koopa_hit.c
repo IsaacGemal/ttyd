@@ -392,15 +392,18 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
 }
 
 
-// The clear loop is the only difference left. Using a separate loop variable `j` (not the main
-// loop's `i`) keeps the clear-loop copy and the `float_3p1416_80420e78 * angle / float_180_80420e7c` constants in the
-// original's registers; the counter/offset then sit in r28/r27 where the original has r27/r28, so
-// 7 instructions differ only by that swap. Nothing tried flips it: giving the clear loop its own
-// byte-offset variable fixes the roles but emits `li r28, 0` where the original has `mr r28, r27`
-// (2 opcode diffs, a slightly lower objdiff score), and the struct/bitfield aggregate copies that
-// produce that `mr` are spilled to the stack in this function.
 #pragma opt_common_subs reset
-// NONMATCHING (99.52%): only the clear-loop counter/offset register swap differs.
+// The original clears the head/headDist arrays from an inlined loop: its counter lands in r27 and
+// the byte-offset induction variable in r28, which only comes out when the loop is expanded as an
+// inline helper's body (its locals rank above the function's own names in the allocator).
+static inline void kpaClearSearchHeads(void) {
+    s32 n;
+    for (n = 0; n < 10; n++) {
+        KPA(marioGetPtr())->head[n] = NULL;
+        KPA(marioGetPtr())->headDist[n] = float_1000_80420e74;
+    }
+}
+
 void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     // per-head offset tables (forward, height, facing condition)
     static s32 _ofs0[] = { 3, 12, 16, 1, 0, 16, 0, -9, 16, 0 };
@@ -418,7 +421,6 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     s32* entry;
     void* result;
     s32 ofs;
-    s32 j;
 
     mp = marioGetPtr();
     if (mp->flags & 0x20000) {
@@ -432,10 +434,7 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
     }
     dist = *outY;
     *outY = float_neg1_80420e84;
-    for (j = 0; j < 10; j++) {
-        KPA(marioGetPtr())->head[j] = NULL;
-        KPA(marioGetPtr())->headDist[j] = float_1000_80420e74;
-    }
+    kpaClearSearchHeads();
     entry = headchkofs[kpaGetLevel()];
     count = entry[0];
     entry = entry + 1;
