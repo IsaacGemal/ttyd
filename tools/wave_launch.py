@@ -231,9 +231,9 @@ exactly what still differs."""
 
 
 CAP = int(os.environ.get("CAP", 24))
-QUIET_FROM = os.environ.get("QUIET_FROM", "23:00")
-QUIET_TO = os.environ.get("QUIET_TO", "05:00")
-QUIET_CAP = int(os.environ.get("QUIET_CAP", 6))
+QUIET_FROM = os.environ.get("QUIET_FROM", "01:00")
+QUIET_TO = os.environ.get("QUIET_TO", "07:00")
+QUIET_CAP = int(os.environ.get("QUIET_CAP", 8))  # the nightly permuter window (Isaac, 2026-10-04)
 START_STAGGER = float(os.environ.get("START_STAGGER", 2))
 
 
