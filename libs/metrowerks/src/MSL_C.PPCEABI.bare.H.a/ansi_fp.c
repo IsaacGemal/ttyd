@@ -567,8 +567,6 @@ void __num2dec(const decform* form, double x, decimal* d) {
 
 extern unsigned long __double_max[];
 
-// NONMATCHING (99.98%): one register choice in the NaN payload digit conversion (retail puts each arm of the
-// digit/letter ternary straight into the result register).
 double __dec2num(const decimal* d) {
     if (d->sig.length <= 0) {
         return copysign(0.0, d->sign == 0 ? 1.0 : -1.0);
@@ -600,9 +598,9 @@ double __dec2num(const decimal* d) {
                     ndig = 14;
 
                 for (i = 1; i < ndig; i++) {
-                    unsigned char n = _isdigit(d->sig.text[i]) ? d->sig.text[i] - '0' : (unsigned char)(_tolower(d->sig.text[i]) - 'a' + 10);
+                    int n = _isdigit(d->sig.text[i]) ? d->sig.text[i] - '0' : (unsigned char)(_tolower(d->sig.text[i]) - 'a' + 10);
 
-                    if (n)
+                    if ((unsigned char)n)
                         nonzero = 1;
 
                     if (high) {

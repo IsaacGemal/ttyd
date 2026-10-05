@@ -1072,7 +1072,7 @@ config.libs = [
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/alloc.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/errno.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/ansi_files.c"),
-            Object(NonMatching, "MSL_C.PPCEABI.bare.H.a/ansi_fp.c"),
+            Object(Matching, "MSL_C.PPCEABI.bare.H.a/ansi_fp.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/buffer_io.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/critical_regions.gamecube.c"),
             Object(Matching, "MSL_C.PPCEABI.bare.H.a/ctype.c"),
