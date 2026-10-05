@@ -32,15 +32,32 @@
 #include "pmario_sound.h"
 #include "eff/n64/eff_pokopi_pcharge_n64.h"
 #include <stdio.h>
+#include "evt/evt_cmd.h"
+#include "evt/evt_batstage.h"
+#include "evt/evt_fade.h"
+#include "evt/evt_sub.h"
+#include "evt/evt_snd.h"
+#include "evt/evt_eff.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_audience.h"
+#include "battle/battle_event_cmd.h"
+#include "battle/battle_camera.h"
+#include "battle/battle_message.h"
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_803ACB10[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_803ACB20[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 lbl_803ACB30[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_803ACB40[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
 static s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 
 // Prototypes for functions that are not declared in a shared header.
 
 
-extern s32 btlevtcmd_RunDataEventChild[];
 
 // .sdata2 constants this file loads by name.
 extern const f32 float_3_80420c6c;
@@ -92,6 +109,12 @@ RankUpData _rank_up_data[] = {
 };
 
 
+
+// .sdata2 objects defined at the end of the file that the event scripts reference.
+extern const f32 float_0_80420c1c;
+extern const char str_80420C20[8];
+extern s32 _confetti_control_event[];
+
 const char str_802FDE74[] = "btl_msg_mj_last";
 const Vec vec3_802fde84 = {0.0f, 0.0f, 0.0f};
 const char str_802FDE90[] = "nozzle_l";
@@ -108,6 +131,248 @@ const char str_802FDF40[] = "SFX_BTL_LVUP_BLOCK_MOVE1";
 const char str_802FDF5C[] = "SFX_BTL_LVUP_BLOCK_HIT1";
 const char str_802FDF74[] = "SFX_BTL_LVUP_CURSOR1";
 
+// clang-format off
+EVT_BEGIN(_curtain_close_event)
+    BEGIN_SIBLING_EVENT
+        CALL(evt_batstage_set_stg_dark, 80, 30, 0)
+        CALL(evt_batstage_set_stg_dark_base, 80, 30, 0)
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        CALL(evt_fade_entry, 24, 1000, 0, 0, 0)
+        CALL(evt_fade_set_anim_ofs_pos, 0, 130)
+        CALL(evt_fade_set_anim_virtual_pos, 0, 0, 80)
+        CALL(evt_fade_end_wait)
+    END_SIBLING_EVENT
+    CALL(btlevtcmd_check_battleflag, LW(0), 256)
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        BEGIN_SIBLING_EVENT
+            CALL(btlevtcmd_AnimeChangePoseType, -3, 1, 42)
+            CALL(btlevtcmd_GetPos, -3, LW(0), LW(1), LW(2))
+            CALL(btlevtcmd_MovePosition, -3, -300, LW(1), LW(2), 120, -1, 0)
+        END_SIBLING_EVENT
+        CALL(btlevtcmd_GetUnitId, -4, LW(3))
+        IF_INT_NOT_EQUAL(LW(3), -1)
+            BEGIN_SIBLING_EVENT
+                CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+                CALL(btlevtcmd_AnimeChangePoseType, LW(3), LW(4), 42)
+                CALL(btlevtcmd_GetPos, LW(3), LW(0), LW(1), LW(2))
+                CALL(btlevtcmd_MovePosition, LW(3), -330, LW(1), LW(2), 120, -1, 0)
+            END_SIBLING_EVENT
+        END_IF
+    END_IF
+    BEGIN_SIBLING_EVENT
+        CALL(evt_sub_intpl_init_float, 0, 0, FLOAT(-40.0f), 29)
+        LOOP(30)
+            CALL(evt_sub_intpl_get_float, LW(0), EVTDAT_POINTER_MAX)
+            CALL(_nozzle_set_offset, STRING((char*)str_802FDE90), LW(0))
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        CALL(evt_sub_intpl_init_float, 0, 0, FLOAT(-40.0f), 29)
+        LOOP(30)
+            CALL(evt_sub_intpl_get_float, LW(0), EVTDAT_POINTER_MAX)
+            CALL(_nozzle_set_offset, STRING((char*)str_802FDE9C), LW(0))
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        CALL(evt_sub_intpl_init_float, 0, 0, FLOAT(-40.0f), 29)
+        LOOP(30)
+            CALL(evt_sub_intpl_get_float, LW(0), EVTDAT_POINTER_MAX)
+            CALL(_nozzle_set_offset, STRING((char*)str_802FDEA8), LW(0))
+            WAIT_FRAMES(1)
+        END_LOOP
+    END_SIBLING_EVENT
+    CALL(btlevtcmd_onoff_battleflag, 0, 256)
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    CALL(evt_btl_camera_set_moveSpeedLv, 0, 1)
+    WAIT_MS(1500)
+    BEGIN_SIBLING_EVENT
+        LOOP(6)
+            CALL(evt_eff, STRING((char*)&float_0_80420c1c), STRING((char*)str_802FDEB4), 13, 0, 300, 95, 180, 0, 0, 0, 0, 0, 0, 0)
+            WAIT_FRAMES(20)
+        END_LOOP
+    END_SIBLING_EVENT
+    SPAWN_EVENT_GET_ID(PTR(_confetti_control_event), LW(0))
+    CALL(_set_confetti_control_evtid, LW(0))
+    CALL(evt_eff, STRING((char*)&float_0_80420c1c), STRING((char*)str_802FDEC0), 0, 0, 50, 100, 60, 0, 0, 0, 0, 0, 0, 0)
+    WAIT_FRAMES(48)
+    CALL(_lvup_ap_recover_full)
+    WAIT_MS(1000)
+    BEGIN_SIBLING_EVENT_GET_ID(LW(15))
+        WAIT_FRAMES(2)
+        CALL(_lvup_spot_on, 0)
+        CALL(_lvup_spot_move, 0)
+    END_SIBLING_EVENT
+    CALL(_disable_enemy_unit_disp)
+    BEGIN_SIBLING_EVENT
+        CALL(btlevtcmd_GetUnitId, -4, LW(3))
+        IF_INT_NOT_EQUAL(LW(3), -1)
+            CALL(btlevtcmd_SetPos, LW(3), -230, 0, 90)
+            CALL(btlevtcmd_ClearAllStatus, LW(3))
+            CALL(btlevtcmd_GetBodyId, LW(3), LW(4))
+            CALL(btlevtcmd_AnimeChangePoseType, LW(3), LW(4), 40)
+            SET_VALUE(LW(0), -155)
+            SET_VALUE(LW(1), 0)
+            SET_VALUE(LW(2), 90)
+            SET_VALUE(LW(6), 28)
+            CALL(btlevtcmd_GetUnitKind, LW(3), LW(5))
+            SWITCH(LW(5))
+                CASE_OR_EQUAL(224)
+                CASE_OR_EQUAL(225)
+                CALL(btlevtcmd_SetMoveSoundDataWork, LW(3), STRING((char*)str_802FDEC8), STRING((char*)str_802FDEE4), 6, 12, 16, 0, 0)
+                CALL(btlevtcmd_MovePosition, LW(3), LW(0), LW(1), LW(2), LW(6), -2, 1)
+                CASE_END
+                CASE_EQUAL(226)
+                CALL(btlevtcmd_SetMoveSoundDataWork, LW(3), STRING((char*)str_802FDEC8), STRING((char*)str_802FDEE4), 0, 6, 6, 0, 0)
+                CALL(btlevtcmd_MovePosition, LW(3), LW(0), LW(1), LW(2), LW(6), -2, 1)
+                CASE_EQUAL(227)
+                CALL(btlevtcmd_SetMoveSoundDataWork, LW(3), STRING((char*)str_802FDF00), STRING((char*)str_802FDF00), 6, 12, 16, 0, 0)
+                CALL(btlevtcmd_MovePosition, LW(3), LW(0), LW(1), LW(2), LW(6), -2, 1)
+                CASE_EQUAL(228)
+                CALL(btlevtcmd_SetMoveSoundDataWork, LW(3), STRING((char*)str_802FDF00), STRING((char*)str_802FDF00), 0, 15, 13, 0, 0)
+                CALL(btlevtcmd_MovePosition, LW(3), LW(0), LW(1), LW(2), LW(6), -2, 1)
+                CASE_EQUAL(229)
+                CALL(btlevtcmd_SetMoveSoundDataWork, LW(3), STRING((char*)str_802FDEC8), STRING((char*)str_802FDEE4), 0, 18, 18, 0, 0)
+                CALL(btlevtcmd_MovePosition, LW(3), LW(0), LW(1), LW(2), LW(6), -2, 1)
+                CASE_EQUAL(230)
+                CALL(btlevtcmd_SetMoveSoundDataWork, LW(3), STRING((char*)str_802FDEC8), STRING((char*)str_802FDEE4), 0, 15, 13, 0, 0)
+                CALL(btlevtcmd_MovePosition, LW(3), LW(0), LW(1), LW(2), LW(6), -2, 1)
+            END_SWITCH
+            CALL(btlevtcmd_AnimeChangePoseType, LW(3), LW(4), 43)
+        END_IF
+    END_SIBLING_EVENT
+    CALL(btlevtcmd_SetPos, -3, -200, 0, 90)
+    CALL(btlevtcmd_ClearAllStatus, -3)
+    CALL(btlevtcmd_AnimeChangePoseType, -3, 1, 40)
+    CALL(btlevtcmd_MovePosition, -3, 0, 0, 90, 75, -1, 0)
+    CALL(btlevtcmd_snd_se, -3, STRING((char*)str_802FDF1C), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_AnimeChangePose, -3, 1, STRING((char*)str_80420C20))
+    CALL(evt_audience_sound_cheer, 180, 40)
+    WAIT_MS(1000)
+    CALL(_lvup_select_object_init)
+    BEGIN_SIBLING_EVENT
+        CALL(_lvup_spot_off, 30)
+    END_SIBLING_EVENT
+    BEGIN_SIBLING_EVENT
+        CALL(evt_batstage_set_stg_dark, 0, 30, 0)
+        CALL(evt_batstage_set_stg_dark_base, 0, 30, 0)
+        CALL(btlevtcmd_BtlStageObjFlagOnOff, STRING((char*)str_802FDF34), 1, 0)
+        CALL(_lvup_obj_set_color, 0, 100, 128, 128, 255)
+        CALL(_lvup_obj_set_color, 1, 100, 128, 128, 255)
+        CALL(_lvup_obj_set_color, 2, 100, 128, 128, 255)
+        CALL(evt_batstage_set_aud_dark, 0, 60, 0)
+        CALL(evt_fade_entry, 25, 1000, 0, 0, 0)
+        CALL(evt_fade_set_anim_ofs_pos, 0, 130)
+        CALL(evt_fade_set_anim_virtual_pos, 0, 0, 80)
+        CALL(evt_fade_end_wait)
+    END_SIBLING_EVENT
+    WAIT_MS(1000)
+    BEGIN_SIBLING_EVENT_GET_ID(LW(0))
+        CALL(_lvup_obj_set_color, 1, 255, 255, 255, 255)
+        CALL(_lvup_disp_flag_onoff, 1, 32)
+        CALL(_lvup_select_obj_disp_on)
+    END_SIBLING_EVENT
+    CALL(btlevtcmd_WaitEventEnd, LW(0))
+    CALL(_lvup_select_obj_lvup_param_disp)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(_confetti_control_event)
+    SET_VALUE(LW(0), 1)
+    SET_VALUE(LW(5), 5)
+    LOOP(LW(5))
+        SUBTRACT(LW(0), 1)
+        IF_INT_LESS_OR_EQUAL(LW(0), 0)
+            SET_VALUE(LW(0), 20)
+            CALL(evt_eff, STRING((char*)&float_0_80420c1c), STRING((char*)str_802FDEB4), 3, 0, 300, 5, 180, 0, 0, 0, 0, 0, 0, 0)
+        END_IF
+        WAIT_FRAMES(1)
+        SET_VALUE(LW(5), 5)
+    END_LOOP
+    RETURN
+EVT_END()
+
+EVT_BEGIN(_jump_event)
+    BEGIN_SIBLING_EVENT
+        CALL(_lvup_object_noselect_delete)
+    END_SIBLING_EVENT
+    CALL(evt_snd_sfxon_3d, STRING((char*)str_802FDF40), 0, 125, 0, 0)
+    CALL(_lvup_object_select_move)
+    CALL(btlevtcmd_GetPos, -3, LW(0), LW(1), LW(2))
+    CALL(btlevtcmd_AnimeChangePoseType, -3, 1, 44)
+    BEGIN_INLINE_EVENT
+        WAIT_FRAMES(10)
+        CALL(evt_snd_sfxon_3d, STRING((char*)str_802FDF5C), 0, 125, 0, 0)
+        CALL(evt_btl_camera_shake_h, 0, 6, 0, 20, 13)
+        CALL(_lvup_object_decide_bound)
+    END_INLINE_EVENT
+    CALL(btlevtcmd_SetFallAccel, -3, FLOAT(0.4f))
+    CALL(btlevtcmd_JumpPosition, -3, LW(0), LW(1), LW(2), 30, -1)
+    CALL(btlevtcmd_snd_se, -3, STRING((char*)str_802FDF1C), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(btlevtcmd_AnimeChangePose, -3, 1, STRING((char*)str_80420C20))
+    CALL(evt_audience_sound_cheer, 180, 40)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(_move_to_heart_event)
+    CALL(evt_snd_sfxon_3d, STRING((char*)str_802FDF74), 0, 125, 0, 0)
+    CALL(_lvup_obj_set_color, 0, 100, 128, 128, 255)
+    CALL(_lvup_obj_set_color, 1, 100, 128, 128, 255)
+    CALL(_lvup_obj_set_color, 2, 100, 128, 128, 255)
+    CALL(_lvup_disp_flag_onoff, 0, 32)
+    CALL(evt_sub_intpl_init, 5, 0, -30, 10)
+    LOOP(11)
+        CALL(evt_sub_intpl_get_value)
+        CALL(btlevtcmd_BtlStageObjSetRotate, STRING((char*)str_802FDF34), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(btlevtcmd_BtlStageObjSetRotate, STRING((char*)str_802FDF34), 0, 0, -30)
+    CALL(_lvup_obj_set_color, 0, 255, 255, 255, 255)
+    CALL(_lvup_disp_flag_onoff, 1, 32)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(_move_to_flower_event)
+    CALL(evt_snd_sfxon_3d, STRING((char*)str_802FDF74), 0, 125, 0, 0)
+    CALL(_lvup_obj_set_color, 0, 100, 128, 128, 255)
+    CALL(_lvup_obj_set_color, 1, 100, 128, 128, 255)
+    CALL(_lvup_obj_set_color, 2, 100, 128, 128, 255)
+    CALL(_lvup_disp_flag_onoff, 0, 32)
+    CALL(btlevtcmd_BtlStageObjGetRotate, STRING((char*)str_802FDF34), EVTDAT_POINTER_MAX, EVTDAT_POINTER_MAX, LW(5))
+    CALL(evt_sub_intpl_init, 5, LW(5), 0, 10)
+    LOOP(11)
+        CALL(evt_sub_intpl_get_value)
+        CALL(btlevtcmd_BtlStageObjSetRotate, STRING((char*)str_802FDF34), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(btlevtcmd_BtlStageObjSetRotate, STRING((char*)str_802FDF34), 0, 0, 0)
+    CALL(_lvup_obj_set_color, 1, 255, 255, 255, 255)
+    CALL(_lvup_disp_flag_onoff, 1, 32)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(_move_to_badge_point_event)
+    CALL(evt_snd_sfxon_3d, STRING((char*)str_802FDF74), 0, 125, 0, 0)
+    CALL(_lvup_obj_set_color, 0, 100, 128, 128, 255)
+    CALL(_lvup_obj_set_color, 1, 100, 128, 128, 255)
+    CALL(_lvup_obj_set_color, 2, 100, 128, 128, 255)
+    CALL(_lvup_disp_flag_onoff, 0, 32)
+    CALL(evt_sub_intpl_init, 5, 0, 30, 10)
+    LOOP(11)
+        CALL(evt_sub_intpl_get_value)
+        CALL(btlevtcmd_BtlStageObjSetRotate, STRING((char*)str_802FDF34), 0, 0, LW(0))
+        WAIT_FRAMES(1)
+    END_LOOP
+    CALL(btlevtcmd_BtlStageObjSetRotate, STRING((char*)str_802FDF34), 0, 0, 30)
+    CALL(_lvup_obj_set_color, 2, 255, 255, 255, 255)
+    CALL(_lvup_disp_flag_onoff, 1, 32)
+    RETURN
+EVT_END()
+
+// clang-format on
+
 s32 _koura_delete_event[] = {
     0x0003005B, (s32)_check_guard_koura, 0xFFFFFFFD, 0xFE363C8A,
     0x00020019, 0xFE363C8A, 0xFFFFFFFF, 0x0003005B,
@@ -115,24 +380,24 @@ s32 _koura_delete_event[] = {
     0x00000021, 0x00000002, 0x00000001,
 };
 
-__declspec(section ".data") u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
-__declspec(section ".data") u32 lbl_803ACB20[2] = { 0x3F800000, 0xBF800000 };
-__declspec(section ".data") u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
-__declspec(section ".data") u32 lbl_803ACB30[2] = { 0xBF800000, 0x3F800000 };
-__declspec(section ".data") u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
-__declspec(section ".data") u32 lbl_803ACB40[2] = { 0x3F800000, 0xBF800000 };
-__declspec(section ".data") u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+// clang-format off
+__declspec(section ".sdata") EVT_BEGIN(_event_MajinaiEnd)
+    CALL(btlevtcmd_AnnounceMessage, 0, 0, -36, STRING((char*)str_802FDE74), 60)
+    WAIT_FRAMES(60)
+    RETURN
+EVT_END()
+
+__declspec(section ".sdata") EVT_BEGIN(_rank_up_event)
+    CALL(_get_rank_up_msg, LW(0))
+    CALL(evt_msg_print, 0, LW(0), 0, 0)
+    RETURN
+EVT_END()
+// clang-format on
+
 
 extern const char str_802FDDF0[];
 extern const GXColor dat_80420c00;
 extern const GXColor dat_80420c04;
-extern __declspec(section ".sdata") s32 _event_MajinaiEnd[];
-extern __declspec(section ".sdata") s32 _rank_up_event[];
-extern s32 _curtain_close_event[];
-extern s32 _move_to_heart_event[];
-extern s32 _move_to_flower_event[];
-extern s32 _move_to_badge_point_event[];
-extern s32 _jump_event[];
 extern s32 marioAttackEvent_MajinaiExpUp[];
 extern BattleDispPose pose_table_nokotarou_stay[];
 typedef struct LvupSelectObj {
@@ -196,10 +461,6 @@ const char* BattleGetRankNameLabel(s32 level) {
 void btlseqEnd(BattleWork* wp) {
     BattleSeqEndWork* work;
     FieldBattleInfo* info;
-#ifdef MUST_MATCH
-    u8* data;
-#endif
-    const char* str;
     PouchData* pouch;
     BattleSeqEndWork* newWork;
     BattleUnit* unit;
@@ -217,10 +478,6 @@ void btlseqEnd(BattleWork* wp) {
 
     work = wp->seqEndWork;
     info = wp->fbatInfo;
-#ifdef MUST_MATCH
-    data = (u8*)lbl_803ACB10;
-#endif
-    str = str_802FDDF0;
     pouch = pouchGetPtr();
 
     _audience_Whistle_control();
@@ -432,10 +689,10 @@ void btlseqEnd(BattleWork* wp) {
         }
         if (flag == 0) {
             psndBGMOff(0x400);
-            psndBGMOn(1, (char*)(str + 0x340));
+            psndBGMOn(1, "BGM_BATTLE_WIN1");
         } else {
             psndBGMOff(0x400);
-            psndBGMOn(1, (char*)(str + 0x350));
+            psndBGMOn(1, "BGM_BATTLE_WIN2");
         }
         /* fallthrough */
     case 0x07000009:
@@ -492,7 +749,7 @@ void btlseqEnd(BattleWork* wp) {
                 (*(s16*)((u8*)work + 0xA))--;
                 pouch->mStarPoints++;
                 if ((*(s32*)((u8*)work + 0x4) & 7) == 0) {
-                    psndSFXOn(str + 0x360);
+                    psndSFXOn("SFX_STAR_POINT_GET1");
                 }
             }
             if (pouch->mStarPoints >= 0x64) {
@@ -579,15 +836,11 @@ void btlseqEnd(BattleWork* wp) {
 
     case 0x07000011:
         if (*(s32*)((u8*)work + 0x4) == 0) {
-#ifdef MUST_MATCH
-            event = evtEntry(data + 0x7C, 0xA, 0);
-#else
             event = evtEntry(_curtain_close_event, 0xA, 0);
-#endif
             *(s32*)((u8*)work + 0x1FC) = event->eventId;
             BattleStatusWindowSystemOff();
             psndBGMOff(0x400);
-            psndBGMOn(1, (char*)(str + 0x374));
+            psndBGMOn(1, "BGM_BATTLE_WIN3");
         }
         (*(s32*)((u8*)work + 0x4))++;
         if (evtCheckID(*(s32*)((u8*)work + 0x1FC))) {
@@ -620,21 +873,9 @@ void btlseqEnd(BattleWork* wp) {
         if (*(s32*)((u8*)work + 0x10) != flag) {
             event = NULL;
             switch (*(s32*)((u8*)work + 0x10)) {
-#ifdef MUST_MATCH
-            case 0: event = evtEntry(data + 0xAEC, 0xA, 0); break;
-#else
             case 0: event = evtEntry(_move_to_heart_event, 0xA, 0); break;
-#endif
-#ifdef MUST_MATCH
-            case 1: event = evtEntry(data + 0xC04, 0xA, 0); break;
-#else
             case 1: event = evtEntry(_move_to_flower_event, 0xA, 0); break;
-#endif
-#ifdef MUST_MATCH
-            case 2: event = evtEntry(data + 0xD34, 0xA, 0); break;
-#else
             case 2: event = evtEntry(_move_to_badge_point_event, 0xA, 0); break;
-#endif
             }
             if (event != NULL) {
                 *(s32*)((u8*)work + 0x1FC) = event->eventId;
@@ -654,11 +895,7 @@ void btlseqEnd(BattleWork* wp) {
                 *(s32*)((u8*)work + 0x2C) = 2;
                 *(u32*)((u8*)work + 0x30) &= ~0x20;
                 BattleSetSeq(wp, SEQ_END, 0x07000014);
-#ifdef MUST_MATCH
-                event = evtEntry(data + 0x9C4, 0xA, 0);
-#else
                 event = evtEntry(_jump_event, 0xA, 0);
-#endif
                 *(s32*)((u8*)work + 0x1FC) = event->eventId;
             }
         }
@@ -741,9 +978,9 @@ void btlseqEnd(BattleWork* wp) {
             }
             if (flag != 0) {
                 if (su->field_4 & 0x20000000) {
-                    BtlUnit_snd_se(uu, str + 0x384, 0xF1194D80, 0);
+                    BtlUnit_snd_se(uu, "SFX_VOICE_MARIO_PAUSE3", 0xF1194D80, 0);
                 } else {
-                    BtlUnit_snd_se(uu, str + 0x39C, 0xF1194D80, 0);
+                    BtlUnit_snd_se(uu, "SFX_VOICE_MARIO_PAUSE1", 0xF1194D80, 0);
                 }
             }
         }
@@ -816,9 +1053,9 @@ void btlseqEnd(BattleWork* wp) {
             }
             if (flag == 0) {
                 if (su->field_4 & 0x20000000) {
-                    BtlUnit_snd_se(uu, str + 0x3B4, 0xF1194D80, 0);
+                    BtlUnit_snd_se(uu, "SFX_VOICE_MARIO_RELIEF1", 0xF1194D80, 0);
                 } else {
-                    BtlUnit_snd_se(uu, str + 0x3CC, 0xF1194D80, 0);
+                    BtlUnit_snd_se(uu, "SFX_VOICE_MARIO_RELIEF2", 0xF1194D80, 0);
                 }
             }
         }

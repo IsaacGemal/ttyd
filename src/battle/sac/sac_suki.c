@@ -57,7 +57,6 @@ s32 flash_evt[182];
 s32 flash_main_evt[52];
 s32 flash_cancel_evt[194];
 extern s32 evt_batstage_return_stg_dark_base[];
-extern s32 evt_batstage_set_stg_dark[];
 extern s32 sac_ac_help_off[];
 extern s32 sac_ac_help_on[];
 extern s32 sac_cheer[];

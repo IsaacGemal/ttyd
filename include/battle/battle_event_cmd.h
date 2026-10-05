@@ -333,3 +333,4 @@ USER_FUNC(btlevtcmd_SetPartsRunSound);
 USER_FUNC(btlevtcmd_SetPartsWalkSound);
 USER_FUNC(btlevtcmd_GetACPossibility);
 USER_FUNC(btlevtcmd_SacBgsetMove);
+USER_FUNC(btlevtcmd_BtlStageObjFlagOnOff);
