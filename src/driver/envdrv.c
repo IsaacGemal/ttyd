@@ -33,6 +33,27 @@ extern const f32 float_0p15_8041e564;
 extern const f32 float_0p3_8041e56c;
 extern const f32 float_90_8041e568;
 
+// Texture-matrix ids and the five vectors the matrix cases rotate against (target .rodata at 0x802f9338).
+const EnvTevMtxData dat_802f9338 = {
+    { 30, 33, 36, 39, 42, 45, 48, 51, 54, 57 },
+    { 0.0f, 0.0f, -1.0f },
+    { 0.0f, 0.0f, 1.0f },
+    { 0.0f, 100.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, -1.0f },
+};
+
+#ifdef MUST_MATCH
+// An ordinary, immediately generated helper pools the signed int->float conversion double just after
+// dat_802f9338, so .rodata's double order matches the original. Nothing calls it; the linker strips
+// the body.
+#pragma defer_codegen off
+static f32 envdrv_pool_i2f(s32 v) {
+    return (f32)v;
+}
+#pragma defer_codegen reset
+#endif
+
 // .sdata2
 const GXColor dat_8041e510 = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_8041e514 = { 0xFF, 0xFF, 0xFF, 0x00 };
@@ -294,7 +315,9 @@ s32 texmtx_tbl[] = {30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 4, 5, 6, 14, 0, 1, 2
 // was found by search. Four later edits raised the score to 96.21% (119 real diffs):
 // block 2's `v34` uses the if/else form, block 1's coefficients are ordered v24,v26,v27,v28,v25, the
 // `f32 half` local in the two `GXBegin` runs is gone (the 0.5f factor is a literal in each GXPosition3f32),
-// and block 2 reaches the matrix table through its own `mtx2` pointer. What remains is integer register
+// and block 2 reaches the matrix table through its own `mtx2` pointer. Both `mtx` and `mtx2` now point
+// at `dat_802f9338` (the target's object, via a cast), which removes the old `texmtx_tbl` symbol diff.
+// What remains is integer register
 // colouring (the loop-base addi uses an r0 scratch, and the target's mtx/tevStage/magic regs differ) and
 // block 2's magic/0.25 FPR swap. Renaming block 2's `tevStage` (or any coefficient) makes MWCC loop forever,
 // so those cannot be separated; the rest needs the permuter.
@@ -351,7 +374,7 @@ void envDisp_DepthOfField(void) {
     GXSetCullMode(0);
 
     if ((u->unk0 & 1) && (u->unk4)) {
-        mtx = texmtx_tbl;
+        mtx = (s32*)dat_802f9338.tbl;
         texCoord = 0;
         tevStage = 0;
         for (i = 0; i < 4; i++) {
@@ -493,7 +516,7 @@ void envDisp_DepthOfField(void) {
 
     if ((u->unk0 & 2) && (u->unk8)) {
         v28 = TWO_PI;
-        mtx2 = texmtx_tbl;
+        mtx2 = (s32*)dat_802f9338.tbl;
         v31 = PI;
         i = 0;
         texCoord = 0;
@@ -759,29 +782,36 @@ void envDisp_Blur(void) {
 }
 
 
-// The map-object flag logic now matches the target's block layout: `flags` is a local and the entry
-// tests `flags & 0x20`, branching into the loop (`while ((obj = obj->parent) != NULL)`), with the
-// set-flag path in the else arm. The initial `flags` load must be written through
-// `((MapObject*)yami->unk0)` rather than `obj`, or MWCC does not spill `yami` first (the spill order
-// and the `lwz r3, 0x0(r3)` obj load then match the target). What still differs is global register
-// allocation: the target keeps the map object in r3 and its flags in r4, mine keeps obj in r4 and
-// copies from r3 (`mr r4, r3`) with flags in r5, so the bbox lands in r21-r18 (mine r24-r21) and the
-// loop counters/base/fp constants shift by a few registers (i: r23/r19, j: r22/r18, base r24/r20).
-// Constant-pool symbols show as @NNN.
-// NONMATCHING (92.99%): mostly the obj/flags register swap and its cascade.
+// The map-object flag logic matches the target's block layout: `flags` is a local, the entry tests
+// `flags & 0x20` and branches into the loop (`while ((obj = obj->parent) != NULL)`), with the
+// set-flag path in the else arm. The bbox `lhz` loads sit in both arms (inside the walk before the
+// `break`, and in the else), as in the original, so the walk running out falls through to the flag
+// comparisons with whatever those registers hold. The initial `flags` load is written through
+// `((MapObject*)yami->unk0)` rather than `obj`; that makes MWCC spill `yami` first (`mr r17, r3`)
+// and load obj with `lwz r3, 0x0(r3)` as the target does.
+#pragma opt_propagation off // stops MWCC re-evaluating yami->unk0, so obj/flags colour as the target
+#pragma opt_lifetimes off
+// NONMATCHING (95.83%): register allocation only (water/height and the i-division temp colour one register off).
 void envSetWater(s32 arg0, void* arg1) {
     EnvironmentYami* yami = (EnvironmentYami*)arg0;
-    MapObject* obj;
     s32 tevStage;
-    u32 flags;
     s32 texMap;
+    void* capture;
     s32 texCoord;
     s32 unk18;
-    s32 x0, y0, x1, y1;
-    s32 width, height;
-    u32 size;
-    void* capture;
     u8* water;
+    MapObject* obj;
+    u32 size;
+    s32 height;
+    u32 flags;
+    s32 i;
+    s32 width;
+    s32 j;
+    u8* p;
+    s32 x0;
+    s32 y0;
+    s32 x1;
+    s32 y1;
     GXTexObj captureObj;
     GXTexObj waterObj;
     Vec pos;
@@ -789,11 +819,13 @@ void envSetWater(s32 arg0, void* arg1) {
     f32 indMtx[2][3];
     f32 dist;
     f32 scale;
-    s32 i, j;
+#ifndef MUST_MATCH
+    x0 = y0 = x1 = y1 = 0;
+#endif
 
     obj = (MapObject*)yami->unk0;
-    flags = *(u32*)((MapObject*)yami->unk0)->field_0x0;
     tevStage = yami->tevStage;
+    flags = *(u32*)((MapObject*)yami->unk0)->field_0x0;
     texMap = yami->texMap;
     texCoord = yami->texCoord;
     unk18 = yami->unk18;
@@ -808,6 +840,10 @@ void envSetWater(s32 arg0, void* arg1) {
                 *(u32*)obj->field_0x0 = flags | 0x20000000;
                 return;
             }
+            x0 = *(u16*)(obj->field_0xEC + 0);
+            y0 = *(u16*)(obj->field_0xEC + 2);
+            x1 = *(u16*)(obj->field_0xEC + 4);
+            y1 = *(u16*)(obj->field_0xEC + 6);
             break;
         }
     }
@@ -816,19 +852,11 @@ void envSetWater(s32 arg0, void* arg1) {
             *(u32*)obj->field_0x0 = flags | 0x20000000;
             return;
         }
+        x0 = *(u16*)(obj->field_0xEC + 0);
+        y0 = *(u16*)(obj->field_0xEC + 2);
+        x1 = *(u16*)(obj->field_0xEC + 4);
+        y1 = *(u16*)(obj->field_0xEC + 6);
     }
-
-#ifndef MUST_MATCH
-    // Retail doesn't check: when the parent walk runs out it skips these loads and tests whatever the four
-    // registers still hold against 0x3FF. The natural build stops there instead of dereferencing NULL.
-    if (obj == NULL) {
-        return;
-    }
-#endif
-    x0 = *(u16*)(obj->field_0xEC + 0);
-    y0 = *(u16*)(obj->field_0xEC + 2);
-    x1 = *(u16*)(obj->field_0xEC + 4);
-    y1 = *(u16*)(obj->field_0xEC + 6);
 
     if (x0 == 0x3FF || y0 == 0x3FF || x1 == 0x3FF || y1 == 0x3FF) {
         return;
@@ -883,7 +911,7 @@ void envSetWater(s32 arg0, void* arg1) {
         for (j = 0; j < 0x40; j++) {
             f32 s = (f32)sin(float_18p85_8041e548 * (f32)j * float_0p015625_8041e54c + (f32)gp->retraceCount / float_10_8041e524);
             s32 v = (s32)(float_0p6_8041e550 + (scale * s + float_128_8041e554));
-            u8* p = &water[((i % 4) + (j % 4) * 4) * 2 + (i / 4) * 32 + (j / 4) * 512];
+            p = &water[((i % 4) + (j % 4) * 4) * 2 + (i / 4) * 32 + (j / 4) * 512];
 
             p[0] = v;
             p[1] = 0x80;
@@ -905,8 +933,8 @@ void envSetWater(s32 arg0, void* arg1) {
     PSMTXConcat(mtx, camGetCurPtr()->view, mtx);
     PSMTXConcat(mtx, yami->unk4, mtx);
 
-    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
-    GXLoadTexMtxImm(mtx, texmtx_tbl[texMap], GX_MTX3x4);
+    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+    GXLoadTexMtxImm(mtx, dat_802f9338.tbl[texMap], GX_MTX3x4);
     GXLoadTexObj(&captureObj, texMap);
     GXLoadTexObj(&waterObj, texMap + 1);
     GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
@@ -938,6 +966,9 @@ void envSetWater(s32 arg0, void* arg1) {
 
 #pragma opt_common_subs off // MWCC otherwise CSE-hoists tevStage-1/+1/+2 across the GX calls into callee-saved regs
 #pragma opt_propagation off  // keep texMap*4 and the loop counters in the target's callee-saved colouring
+#pragma opt_lifetimes reset
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
 void envSetYami(EnvironmentYami* yami) {
     GlobalWork* g = gp;
     EnvironmentWork* wp = g->inBattle ? &work[1] : &work[0];
@@ -1141,15 +1172,8 @@ static inline f32 envFF_Sqrtf(f32 x) {
 // compare (the envDisp_DepthOfField shape); that is what puts it in f1 as the target does.
 // The two `angle * angle` squares are written inline so MWCC keeps them in f0. The tail
 // uses `v / 2.0f + 0.5f` (not `v * 0.5f`) so the fused fmadds takes the variable as its
-// first operand. All of this is needed. The only remaining diff is the order of the compiler's
-// own .rodata double pool, which is emitted [mask, .5, 3.0, 0.0, int->float] while the target has
-// [int->float, mask, .5, 3.0, 0.0] -- a one-slot rotation of the same five objects, so every lfd
-// is at a different offset. envDisp_FF is the only function in the unit that pools these doubles;
-// naming them (extern/tentative definitions, referencing them in envFF_Sqrtf) puts them at the
-// target's slots but makes MWCC emit dead anonymous duplicates that shift the env.tpl strings, and
-// the int->float offset still differs. Declaration order, a local zero, an s32-arg inline and a
-// `s32` cast on the argument all leave the rotation unchanged.
-// NONMATCHING (99.99%): only the compiler's .rodata double-pool rotation differs, no instruction diff.
+// first operand. All of this is needed. The .rodata double pool is emitted signed, mask, 0.5, 3.0, 0.0
+// by the immediately generated `envdrv_pool_i2f` helper above (see its comment).
 void envDisp_FF(void) {
     EnvironmentWork* wp = envGetWork();
     CameraEntry* cam;
@@ -1269,28 +1293,6 @@ void envDisp_FF(void) {
 }
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
-
-// The texture-matrix data the original keeps in .rodata at dat_802f9338: ten texture-matrix ids followed
-// by five vectors. The target accesses the vectors as dat_802f9338+0x28..+0x60, so model the whole blob
-// as one object (the header has no name for it).
-typedef struct EnvTevMtxData {
-    s32 tbl[10]; // 0x00
-    Vec vec28;   // 0x28
-    Vec vec34;   // 0x34
-    Vec vec40;   // 0x40
-    Vec vec4C;   // 0x4C
-    Vec vec58;   // 0x58
-} EnvTevMtxData;
-
-// Texture-matrix ids and the five vectors the matrix cases rotate against (target .rodata at 0x802f9338).
-const EnvTevMtxData dat_802f9338 = {
-    { 30, 33, 36, 39, 42, 45, 48, 51, 54, 57 },
-    { 0.0f, 0.0f, -1.0f },
-    { 0.0f, 0.0f, 1.0f },
-    { 0.0f, 100.0f, 0.0f },
-    { 0.0f, 0.0f, 0.0f },
-    { 0.0f, 0.0f, -1.0f },
-};
 
 // 100% (0 instruction diffs): frame/local order matters (frustumE must be Mtx44 to leave the 0x10 gap the
 // target has before scaleD), and the case-2 angle/scale temporaries need the target's declaration order.

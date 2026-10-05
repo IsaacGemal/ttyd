@@ -95,3 +95,13 @@ void envSetWater(s32 arg0, void* arg1);
 void envAddTev(s32 type, void* param);
 void envTevLoadTexMtxImm(s32 type, u32 texMtx, u32 texMtx2, GXTexMtxType mtxType);
 void envSetYami(EnvironmentYami* yami);
+// The texture-matrix data the original keeps in .rodata at dat_802f9338: ten texture-matrix ids
+// followed by five vectors.
+typedef struct EnvTevMtxData {
+    s32 tbl[10]; // 0x00
+    Vec vec28;   // 0x28
+    Vec vec34;   // 0x34
+    Vec vec40;   // 0x40
+    Vec vec4C;   // 0x4C
+    Vec vec58;   // 0x58
+} EnvTevMtxData;
