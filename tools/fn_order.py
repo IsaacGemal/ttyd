@@ -161,6 +161,13 @@ def gap_items(gap, blocks=()):
             items.append(("reset", [gap[i]]))
             i += 1
             continue
+        if t.startswith("/*") and "*/" not in t:   # a multi-line block comment stays one item
+            j = i
+            while j + 1 < len(gap) and "*/" not in gap[j]:
+                j += 1
+            items.append(("lead", gap[i:j + 1]))
+            i = j + 1
+            continue
         if re.match(r"#\s*define\b", t):   # one item, with its continuation lines
             j = i
             while gap[j].rstrip().endswith("\\") and j + 1 < len(gap):
@@ -432,7 +439,7 @@ def main(argv):
         new = reorder(text, want)
     except ValueError as e:
         sys.exit(f"{unit}: {e}")
-    refs = forward_refs(new, want)
+    refs = forward_refs(new, [f[2] for f in functions(new.split("\n"))])
     if refs:
         headers = [open(h, errors="replace").read() for h in glob.glob("include/**/*.h", recursive=True)]
         own = f"include/{unit}.h"

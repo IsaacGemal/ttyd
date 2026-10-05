@@ -111,6 +111,18 @@ class Reorder(unittest.TestCase):
         self.assertLess(out.index("void c(void) { /* 1:1 */"), out.index("void b(void) {}"))
         self.assertLess(out.index("void b(void) {}"), out.index("BOOL a(u32 r3) { // probably an id"))
 
+    def test_block_comment_in_gap_and_inlined_forward_ref(self):
+        src = ("void a(void) {\n    h();\n}\n/*\ntypedef struct T {\n    s32 x;\n} T;\n*/\n"
+               "static void h(void) {\n}\nvoid b(void) {\n}\n")
+        out = fn_order.reorder(src, ["b", "a"])
+        L = out.split("\n")
+        # the commented-out typedef stays inside its comment
+        self.assertEqual(L[L.index("typedef struct T {") - 1], "/*")
+        # h (not emitted by the original) now follows its caller a? then it needs a prototype
+        refs = fn_order.forward_refs(out, [f[2] for f in fn_order.functions(L)])
+        if L.index("static void h(void) {") > L.index("void a(void) {"):
+            self.assertEqual(refs.get("h"), "static void h(void);")
+
 
 if __name__ == "__main__":
     unittest.main()
