@@ -265,8 +265,8 @@ static inline f32 heiDeg2Rad(f32 deg) {
 //  - case 0's `a` is `aR * 0.19999999f + 0.3f` for float_0p2_hei_00007bec,
 //    and case 1's field_0x1C uses 0.20000005f (float_0p2_hei_00007c08);
 //    plain 0.2f shifts .rodata;
-//  - `Vec pos = { 0 }` (case 0 and case 1) and `Vec sfxPos = { 0 }` must all
-//    keep their initialiser so the six vec3 zero templates are emitted; the
+//  - case 1's `Vec pos = { 0 }` and `Vec sfxPos = { 0 }` keep their initialisers (case 0's
+//    does not) so the six vec3 zero templates are emitted with npc_jump's three; the
 //    case-1 copy must sit in its own `{ }` block or MWCC sinks it;
 //  - case 1's `field_0x20 = zero * b + 0.8f` needs a block-local `zero` so the
 //    original's zero_hei_00007b88 load and fmadds survive (a literal folds);
@@ -286,6 +286,38 @@ static inline f32 heiDeg2Rad(f32 deg) {
 // with its operands the other way round, and spills the sfx address through r0
 // (`mr r28, r0`). Allocator work, no source-shape fix left.
 // NONMATCHING (93.67%): MWCC FPR/GPR allocation and instruction scheduling.
+static inline f32 heiSin2(f32 angle) {
+    f32 v = 0.00761f;
+    f32 b = 0.16605f;
+    f32 one = 1.0f;
+    f32 u;
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) { u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; }
+        else { angle = 1.5707964f - (angle - 1.5707964f); u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; }
+    } else if (angle < 4.712389f) {
+        angle = angle - 3.1415927f; u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; v = -v;
+    } else {
+        angle = 1.5707964f - (angle - 4.712389f); u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; v = -v;
+    }
+    return v;
+}
+
+static inline f32 heiCos2(f32 angle) {
+    f32 v = 0.03705f;
+    f32 b = 0.4967f;
+    f32 one = 1.0f;
+    f32 u;
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) { u = angle * angle; v = v * u - b; v = v * u + one; }
+        else { angle = 1.5707964f - (angle - 1.5707964f); u = angle * angle; v = v * u - b; v = v * u + one; v = -v; }
+    } else if (angle < 4.712389f) {
+        angle = angle - 3.1415927f; u = angle * angle; v = v * u - b; v = v * u + one; v = -v;
+    } else {
+        angle = 1.5707964f - (angle - 4.712389f); u = angle * angle; v = v * u - b; v = v * u + one;
+    }
+    return v;
+}
+
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
 static void ext_main(void) {
     s16 oldState;
@@ -330,7 +362,7 @@ static void ext_main(void) {
             f32 a = randf(0.3f, 0.5f);
             f32 b = randf(0.5f, 0.8f);
 #endif
-            Vec pos = { 0 };
+            Vec pos;
             f32 dy;
             f32 dist;
             s32 frames;
@@ -524,98 +556,74 @@ USER_FUNC(evt_chorobon_wait) {
     return EVT_RETURN_DONE;
 }
 
-// Frame (0x90, f28-f31) and prologue match, as do the b/speed branch
-// (b == 0 ? b = dist/speed : speed = dist/b) and the sin/cos polynomials.
-// What is left: because "volatile" puts b/speed at 0xc/0x8 where the original
-// has them at 0xc/0x10 (the userdataf[1] temp owns 0x8 there), the whole
-// stack layout is four bytes low, and the FPR allocator starts at f0 instead
-// of f1 (original rad=f5, c0..c2=f4..f2, pi=f1).
-// NONMATCHING (74.60%): volatile stack slot placement + FPR base register.
+// NONMATCHING (92.18%): frame is 0xb0 vs 0x90 (compound-literal temps for the three vec3 templates) and the
+// i2f magic/float pool loads are anonymous where the target reads named objects.
+#pragma inline_max_size(1000)
+#pragma opt_lifetimes off
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
 static USER_FUNC(npc_jump) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
-    f32 tx = evtGetFloat(event, args[1]);
-    f32 ty = evtGetFloat(event, args[2]);
-    f32 tz = evtGetFloat(event, args[3]);
-#ifdef MUST_MATCH
-    // volatile keeps b/speed in stack slots as in the original (otherwise they
-    // live in f26/f27 and the frame is 0x20 larger).
-    volatile f32 speed = evtGetFloat(event, args[4]);
-#else
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
     f32 speed = evtGetFloat(event, args[4]);
-#endif
-    f32 scale = evtGetFloat(event, args[5]);
-#ifdef MUST_MATCH
-    volatile f32 b = (f32)evtGetValue(event, args[6]) * 60.0f / 1000.0f;
-#else
-    f32 b = (f32)evtGetValue(event, args[6]) * 60.0f / 1000.0f;
-#endif
+    f32 grav = evtGetFloat(event, args[5]);
+    f32 frames = 60.0f * (f32)evtGetValue(event, args[6]) / 1000.0f;
     NpcEntry* npc = npcNameToPtr(name);
+    f32 vy;
+    f32 rad;
 
-    Vec pos;
     if (isFirstCall) {
-        Vec start = { 0 };
-        Vec target = { 0 };
+        Vec to;
+        Vec from;
         f32 dist;
         f32 dy;
 
-        start.x = npc->position.x;
-        start.y = 0.0f;
-        start.z = npc->position.z;
-        target.x = tx;
-        target.y = 0.0f;
-        target.z = tz;
-        dist = PSVECDistance(&target, &start);
-        dy = ty - npc->position.y;
-        if (b == 0.0f) {
-            b = dist / speed;
+        from = (Vec){ 0.0f, 0.0f, 0.0f };
+        from.x = npc->position.x;
+        from.z = npc->position.z;
+        to = (Vec){ 0.0f, 0.0f, 0.0f };
+        to.x = x;
+        to.z = z;
+        dist = PSVECDistance(&from, &to);
+        dy = y - npc->position.y;
+        if (0.0f == frames) {
+            frames = dist / speed;
         } else {
-            speed = dist / b;
+            speed = dist / frames;
         }
-#ifdef MUST_MATCH
-        // Force the userdataf[1] result through a 4-byte stack temp at 0x8, as
-        // the original does; this shifts b/speed to 0xc/0x10 to match.
-        {
-            f32 tmp = scale * b * 0.5f + dy / b;
-            event->userdataf[0] = b;
-            event->userdataf[1] = tmp;
-            event->userdataf[2] = speed;
-        }
-#else
-        event->userdataf[0] = b;
-        event->userdataf[1] = scale * b * 0.5f + dy / b;
-        event->userdataf[2] = speed;
-#endif
+        event->userdata[0] = *(s32*)&frames;
+        vy = dy / frames + grav * frames * 0.5f;
+        event->userdata[1] = *(s32*)&vy;
+        event->userdata[2] = *(s32*)&speed;
     }
-    {
-        f32 angle = angleABf(npc->position.x, npc->position.z, tx, tz);
-        f32 rad = 6.2831855f * angle / 360.0f;
-        f32 sinv;
-        f32 cosv;
-        f32 counter;
-        f32 vel;
+    frames = event->userdataf[0];
+    vy = event->userdataf[1];
+    speed = event->userdataf[2];
+    rad = 6.2831855f * angleABf(npc->position.x, npc->position.z, x, z) / 360.0f;
+    npc->position.x = speed * heiSin2(rad) + npc->position.x;
+    npc->position.z = -(speed * heiCos2(rad) - npc->position.z);
+    vy -= grav;
+    npc->position.y += event->userdataf[1];
+    frames -= 1.0f;
+    if (frames < 0.0f) {
+        Vec land;
 
-        sinv = heiSinf(rad);
-        npc->position.x += event->userdataf[2] * sinv;
-        cosv = heiCosf(rad);
-        npc->position.z -= event->userdataf[2] * cosv;
-        vel = event->userdataf[1] - scale;
-        npc->position.y += event->userdataf[1];
-        counter = event->userdataf[0] - 1.0f;
-        if (counter < 0.0f) {
-            pos.x = tx;
-            pos.y = ty;
-            pos.z = tz;
-            npc->position = pos;
-            return EVT_RETURN_YIELD;
-        }
-        event->userdataf[0] = counter;
-        event->userdataf[1] = vel;
+        land = (Vec){ 0.0f, 0.0f, 0.0f };
+        land.x = x;
+        land.y = y;
+        land.z = z;
+        npc->position = land;
+        return EVT_RETURN_YIELD;
     }
+    event->userdata[0] = *(s32*)&frames;
+    event->userdata[1] = *(s32*)&vy;
     return EVT_RETURN_BLOCK;
 }
 #pragma opt_propagation reset
+#pragma opt_lifetimes reset
+#pragma inline_max_size reset
 USER_FUNC(wait_anim_frame) {
     f32 frame = evtGetFloat(event, event->args[0]);
     AnimationPose* pose = animPoseGetAnimPosePtr(npcNameToPtr("ゴールドチョロボン")->poseId);
