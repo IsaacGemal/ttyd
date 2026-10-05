@@ -1150,7 +1150,7 @@ static inline BOOL npcBlown(NpcEntry* entry) {
     return FALSE;
 }
 
-// NONMATCHING (98.23%): every call, branch and constant matches. Left: the loop hoists the "kpa_03" address into
+// NONMATCHING (98.31%): every call, branch and constant matches. Left: the loop hoists the "kpa_03" address into
 // a callee-saved register as well as the SFX name (retail hoists only the SFX name, so one more GPR is saved), the
 // find check's dx*dx + dz*dz has a dead compare against 0 before PSVECSubtract in retail, and some FPR colouring.
 // Per frame for each live npc: advance its clocks, apply its movement and walk/run animation, raise its event's
@@ -1410,10 +1410,10 @@ void npcMain(void) {
                                     if (NPCMAIN_SQRTF(dx * dx + dz * dz) > NPCMAIN_0P75 * entry->territoryHoming.x) {
                                         hit = FALSE;
                                     }
-                                } else if (entry->position.x < entry->territoryBase.x - float_0p75_80419bf4 * entry->territoryHoming.x ||
-                                           entry->position.x > entry->territoryBase.x + float_0p75_80419bf4 * entry->territoryHoming.x ||
-                                           entry->position.z < entry->territoryBase.z - float_0p75_80419bf4 * entry->territoryHoming.z ||
-                                           entry->position.z > entry->territoryBase.z + float_0p75_80419bf4 * entry->territoryHoming.z) {
+                                } else if (entry->position.x < entry->territoryBase.x - 0.75f * entry->territoryHoming.x ||
+                                           entry->position.x > entry->territoryBase.x + 0.75f * entry->territoryHoming.x ||
+                                           entry->position.z < entry->territoryBase.z - 0.75f * entry->territoryHoming.z ||
+                                           entry->position.z > entry->territoryBase.z + 0.75f * entry->territoryHoming.z) {
                                     hit = FALSE;
                                 }
                             }
@@ -1479,7 +1479,7 @@ void npcMain(void) {
                                 }
                                 shadowId = shadowEntry(shadow.x, shadow.y, shadow.z,
                                                   float_1p33_80419c8c * (entry->field_154 *
-                                                                         (entry->width / float_3_80419c08 * entry->scale.x)));
+                                                                         (entry->width / 3.0f * entry->scale.x)));
                                 if (entry->flags & 0x80000) {
                                     shadowSetCollision(shadowId, 0);
                                 }
@@ -1496,7 +1496,7 @@ void npcMain(void) {
                             }
                             animPoseVivianMain(entry->poseId, &feet);
                             shadowId = shadowEntry(entry->position.x, entry->position.y, entry->position.z,
-                                              entry->field_154 * (entry->width / float_3_80419c08 * entry->scale.x));
+                                              entry->field_154 * (entry->width / 3.0f * entry->scale.x));
                             if (entry->flags & 0x80000) {
                                 shadowSetCollision(shadowId, 0);
                             }
