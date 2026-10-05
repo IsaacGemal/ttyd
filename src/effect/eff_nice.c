@@ -46,7 +46,7 @@ const char* anim_us[] = {
 	NULL,
 	"EFF_lucky_us"
 };
-const char** anim_tbl[2] = { anim_jp, anim_us };
+static const char** anim_tbl[2] = { anim_jp, anim_us };
 s32 acrobat_jp[] = {179, 180, 181, 182, 183, 184, 185};
 s32 acrobat_us[] = {183, 184, 185, 186, 187, 188}; //includes nonexistant textures
 s32* acrobat_tbl[2] = { acrobat_jp, acrobat_us };
@@ -326,26 +326,14 @@ void effNiceDisp(CameraId camId, void* param) {
 	animPoseDrawMtx(data->poseId, mtxFinal, 3, 0.0f, 1.0f);
 }
 
-// The control flow, values and jump table all match. The int->float magic in case 2 now lands in
-// f2, the lfs loads are in the original order (the 1.0f start constant is a literal, as in the
-// original, instead of a non-const named load — MWCC schedules a non-const load after the const
-// ones), and the prologue li order (i, x, y) is reproduced by initialising them in the for-clause.
-// The comma in the `sfx` initialiser is the `ac_button_down` allocator nudge: it makes MWCC
-// materialise the string address directly (`addi rN, r3, @l`) instead of through a scratch
-// (`addi r0, r3, @l; mr rN, r0`). It also makes the address temp take r31, so retail's x=r31/y=r30
-// become x=r30/y=r29 and sfx=r31 instead of r29; all 10 remaining `!!` are that one
-// register-colouring shift. Without the comma the address is copied through r0 and the third word of
-// the zero Vec loads into r3 (5 `!!`).
-// Declaring y before x (with the comma nudge below) makes MWCC colour y=r30 and leaves only the
-// x/sfx pair swapped: retail wants x=r31, sfx=r29, ours is x=r29, sfx=r31; the other 5 diffs are
-// uses of those two. The plain (no-comma) form gets x=r31/y=r30/sfx=r29 exactly right and only
-// pays the `addi r0`/`mr r29` scratch, but scores lower (5 real diffs, 98.86%), and the comma only
-// ever colours the nudged local last. This is a pure register-permutation, so a permuter job.
-// A base+offset initialiser (`(const char*)&vec3_802f3754 + 0xC`) drops the scratch and keeps
-// x=r31/y=r30/sfx=r29, but MWCC splits the symbol add into two addis
-// (`addi r3, r3, vec3@l; addi r29, r3, 0xC`) where retail folds it (`addi r29, r3, str@l`); the same
-// split leaves eff_fall's effFallEntry at 99.22%, so the fold is not reachable with this compiler.
-// NONMATCHING (99.85%): x and sfx are swapped (r29/r31); all other registers match.
+// The control flow, values and jump table all match. The int->float magic in case 2 lands in f2 and
+// the lfs loads are in the original order.
+// The two ramp values are written as the loop counter's own `i * 4` / `i * 0xC` (4 at i == 1, then
+// +4 / +0xC per step: the same progression as the named `x`/`y` locals the disassembly suggests).
+// As expressions MWCC keeps them in strength-reduced compiler temps, which is what colours them
+// r31/r30. The `s32` round trip on the string at its only use pins the address materialisation into
+// the string's own callee-saved register (`addi r29, r3, str_802F3760@l`); a plain use leaves an
+// `addi r0`/`mr r29` scratch copy, and the comma form that removes that copy colours the string r31.
 void acrobatMain(EffectEntry* effect) {
 #ifdef MUST_MATCH
 	/* MUST_MATCH: retail builds the Vec in a scratch and copies it into a second local
@@ -353,14 +341,7 @@ void acrobatMain(EffectEntry* effect) {
 	Vec position;
 #endif
 	Vec disp = { 0 };
-	s32 y;
-	s32 x;
-#ifdef MUST_MATCH
-	// MUST_MATCH: allocator nudge (see above); the natural form is under #else.
-	const char* sfx = (0, "SFX_SYSTEM_ACROBAT1");
-#else
 	const char* sfx = "SFX_SYSTEM_ACROBAT1";
-#endif
 	NiceEffectWork* data = effect->userdata;
 	s32 i;
 	s32 done = 0;
@@ -373,13 +354,18 @@ void acrobatMain(EffectEntry* effect) {
 #endif
 
 	data++;
-	for (i = 1, x = 4, y = 0xC; i < effect->count; x += 4, y += 0xC, i++, data++) {
+	for (i = 1; i < effect->count; i++, data++) {
 		switch (data->field_0x28) {
 		case 0:
-			data->field_0x20 = x;
+			data->field_0x20 = i * 4;
 			data->field_0x28++;
 			if (i == 1) {
+#ifdef MUST_MATCH
+				// MUST_MATCH: the s32 round trip pins the direct address materialisation (see above).
+				psndSFXOn((const char*)(s32)sfx);
+#else
 				psndSFXOn(sfx);
+#endif
 			}
 			break;
 		case 1:
@@ -391,7 +377,7 @@ void acrobatMain(EffectEntry* effect) {
 			break;
 		case 2:
 			data->field_0x20++;
-			data->position.x = intplGetValue(0xC, data->field_0x20, 0x1E, 500.f, (f32)x);
+			data->position.x = intplGetValue(0xC, data->field_0x20, 0x1E, 500.f, (f32)(i * 4));
 			if (data->field_0x20 >= 0x1E) {
 				data->field_0x20 = 0;
 				data->field_0x28++;
@@ -415,7 +401,7 @@ void acrobatMain(EffectEntry* effect) {
 			break;
 		case 5:
 			data->field_0x20++;
-			data->position.x = intplGetValue(8, data->field_0x20, 0x1E, (f32)x, (f32)y);
+			data->position.x = intplGetValue(8, data->field_0x20, 0x1E, (f32)(i * 4), (f32)(i * 0xC));
 			data->field_0x10 = intplGetValue(0xC, data->field_0x20, 0x1E, 0.2f, 1.0f);
 			data->field_0x14 = intplGetValue(0xC, data->field_0x20, 0x1E, 1.5f, 1.0f);
 			if (data->field_0x20 >= 0x1E) {
