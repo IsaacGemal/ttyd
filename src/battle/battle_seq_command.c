@@ -222,17 +222,10 @@ void BattleCommandInit(BattleWork* wp) {
 }
 
 
-// NONMATCHING (99.98%): the instruction stream is byte-for-byte right; the only
-// diffs are the seven `addi r3, r29, <str>` immediates. Six of them are +4 here
-// (e.g. "btl_cmd_act_jump" at r29+0x3e0 vs the target's +0x3dc) because our
-// `.rodata` has 4 extra bytes before this function's string block, and
-// "btl_cmd_act_item" is -0x80 (+0x250 vs +0x2d0): the 0x80-byte
-// i2f/SFX_NOT_CHOICE1/SFX_BTL_CURSOR_MOVE1/2/btl_msg_multi_item_cancel_check block
-// owned by BattleCommandDisplay_WeaponMultiItemCancelCheckDisp is emitted after
-// _btlcmd_MakeMultiItemTable's block here but before it in the target. Function-body
-// strings pool in `.text` emission order, and the unit's functions are not yet in the
-// target's (reverse-.text-source) order, so this cannot be fixed from this function;
-// it resolves when the whole unit links with the functions reordered.
+// Source position matters: the compiler emits functions in reverse source order, so among
+// the table builders this one is emitted last and its `.rodata` strings pool last; the
+// shared int->float/SFX block from the later BattleCommandDisplay_* functions pools first.
+// Keep it ahead of _btlcmd_MakeOperationTable/_btlcmd_MakeMultiItemTable in the source.
 void _btlcmd_MakeActClassTable(BattleWork* wp) {
 	BattleUnit* mario = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleCommand* cmd = &wp->commandMenu;
@@ -431,6 +424,216 @@ void _btlcmd_MakeActClassTable(BattleWork* wp) {
 
 
 #pragma dont_inline on
+// Source position matters: emitted after _btlcmd_MakeMultiItemTable and before
+// _btlcmd_MakeActClassTable, so the "btl_cmd_op_*" strings pool between their blocks.
+void _btlcmd_MakeOperationTable(BattleWork* wp) {
+	BattleWeapon* weapon;
+	NpcBattleInfo* setup;
+	BattleUnit* mario;
+	BattleCommand* cmd;
+	PouchData* pouch;
+	BattleWorkCommand* wcmd;
+	BattleCursor* cursor;
+	BattleUnit* party;
+	u32 count;
+	s32 escapeIdx;
+
+	mario = BattleGetUnitPtr(wp, wp->activeUnitId);
+	cmd = &wp->commandMenu;
+	setup = wp->fbatInfo->setup;
+	pouch = pouchGetPtr();
+	wcmd = (BattleWorkCommand*)cmd;
+
+	if (cmd == NULL) {
+		return;
+	}
+	_btlcmd_GetCursorPtr(cmd, 5, &cursor);
+	count = 0;
+	if (_btlcmd_MakePartyTable(wp) >= 2) {
+		wcmd->mOperationTable[0].mType = 0;
+		if (mario->flippedTurns) {
+			wcmd->mOperationTable[0].mEnabled = 0;
+			wcmd->mOperationTable[0].field_0x8 = 3;
+		} else {
+			wcmd->mOperationTable[0].mEnabled = 1;
+			wcmd->mOperationTable[0].field_0x8 = 0;
+		}
+		wcmd->mOperationTable[0].mName = (char*)msgSearch("btl_cmd_op_chg_party");
+		party = mario;
+		if (!(mario->currentKind >= 0xE0 && mario->currentKind < 0xE7)) {
+			party = BattleGetPartnerPtr(wp, mario);
+		}
+		BtlUnit_CanActStatus(party);
+		wcmd->mOperationTable[0].mIcon = _battleGetPartyIcon(party->currentKind);
+		wcmd->mOperationTable[0].mDescription = "btl_hlp_cmd_operation_changeparty";
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mOperationTable[0].mEnabled = 0;
+			wcmd->mOperationTable[0].field_0x8 = 3;
+		}
+		if (setup->field_4 & 0x04000000) {
+			wcmd->mOperationTable[0].mEnabled = 0;
+			wcmd->mOperationTable[0].field_0x8 = 3;
+		}
+		wcmd->mOperationTable[0].mWeaponCost = 0;
+		count = 1;
+	}
+	if (pouch->mStarPowersObtained != 0) {
+		wcmd->mOperationTable[count].mType = 5;
+		wcmd->mOperationTable[count].mEnabled = 1;
+		wcmd->mOperationTable[count].mName = (char*)msgSearch("btl_cmd_op_appeal");
+		wcmd->mOperationTable[count].mIcon = 0x164;
+		wcmd->mOperationTable[count].field_0x8 = 0;
+		wcmd->mOperationTable[count].mWeaponCost = 0;
+		wcmd->mOperationTable[count].mDescription = "btl_hlp_cmd_operation_appeal";
+		count++;
+	}
+	if (mario->badgesEquipped.Charge) {
+		weapon = mario->currentKind == 0xDE ? &badgeWeapon_Charge : &badgeWeapon_ChargeP;
+		wcmd->mOperationTable[count].mType = 1;
+		wcmd->mOperationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
+		wcmd->mOperationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
+		if (wcmd->mOperationTable[count].mEnabled != 0) {
+			wcmd->mOperationTable[count].field_0x8 = 0;
+		} else {
+			wcmd->mOperationTable[count].field_0x8 = 1;
+		}
+		wcmd->mOperationTable[count].mName = (char*)msgSearch(weapon->name);
+		wcmd->mOperationTable[count].mIcon = 0x166;
+		wcmd->mOperationTable[count].mDescription = (char*)weapon->description;
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mOperationTable[count].mEnabled = 0;
+			wcmd->mOperationTable[count].field_0x8 = 3;
+		}
+		count++;
+	}
+	if (mario->badgesEquipped.SuperCharge) {
+		weapon = mario->currentKind == 0xDE ? &badgeWeapon_SuperCharge : &badgeWeapon_SuperChargeP;
+		wcmd->mOperationTable[count].mType = 2;
+		wcmd->mOperationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
+		wcmd->mOperationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
+		if (wcmd->mOperationTable[count].mEnabled != 0) {
+			wcmd->mOperationTable[count].field_0x8 = 0;
+		} else {
+			wcmd->mOperationTable[count].field_0x8 = 1;
+		}
+		wcmd->mOperationTable[count].mName = (char*)msgSearch(weapon->name);
+		wcmd->mOperationTable[count].mIcon = 0x167;
+		wcmd->mOperationTable[count].mDescription = (char*)weapon->description;
+		if (mario->mAttributeFlags & 0x10) {
+			wcmd->mOperationTable[count].mEnabled = 0;
+			wcmd->mOperationTable[count].field_0x8 = 3;
+		}
+		count++;
+	}
+	wcmd->mOperationTable[count].mType = 6;
+	wcmd->mOperationTable[count].mEnabled = 1;
+	wcmd->mOperationTable[count].mName = (char*)msgSearch("btl_cmd_op_defend");
+	wcmd->mOperationTable[count].mIcon = 0x165;
+	wcmd->mOperationTable[count].field_0x8 = 0;
+	wcmd->mOperationTable[count].mWeaponCost = 0;
+	wcmd->mOperationTable[count].mDescription = "btl_hlp_cmd_operation_defend";
+	if (mario->mAttributeFlags & 0x10) {
+		wcmd->mOperationTable[count].mEnabled = 0;
+		wcmd->mOperationTable[count].field_0x8 = 3;
+	}
+	escapeIdx = count + 1;
+	wcmd->mOperationTable[escapeIdx].mType = 3;
+	wcmd->mOperationTable[escapeIdx].mEnabled = BtlUnit_CanActStatus(mario);
+	wcmd->mOperationTable[escapeIdx].mName = (char*)msgSearch("btl_cmd_op_escape");
+	wcmd->mOperationTable[escapeIdx].mIcon = 0x163;
+	wcmd->mOperationTable[escapeIdx].mWeaponCost = 0;
+	if (wcmd->mOperationTable[escapeIdx].mEnabled != 0) {
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 0;
+	} else {
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 1;
+	}
+	wcmd->mOperationTable[escapeIdx].mDescription = "btl_hlp_cmd_operation_escape";
+	if (mario->mAttributeFlags & 0x10) {
+		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
+	}
+	if (wp->fbatInfo->setup->field_4 & 0x10) {
+		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
+		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
+	}
+	cursor->unk8 = count + 2;
+	if (cursor->field_0 >= cursor->unk8) {
+		cursor->field_0 = cursor->unk8 - 1;
+	}
+}
+
+// Source position matters: emitted before _btlcmd_MakeOperationTable and after the later
+// BattleCommandDisplay_* menu functions, so "btl_cmd_act_item"/"in_3kai_item_p"/
+// "msg_3kai_item_p" pool after the shared int->float/SFX block and before the
+// "btl_cmd_op_*" strings. `count = 0; ...; count++` keeps the `mulli` alive.
+void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
+	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
+	BattleCommand* cmd;
+	u32 count;
+
+	if ((cmd = &wp->commandMenu)) {
+		BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
+		BattleCursor* cursor;
+		_btlcmd_GetCursorPtr(cmd, 3, &cursor);
+		count = 0;
+		wcmd->mMultiItemTable[count].pad_0xE[0] = 1;
+		wcmd->mMultiItemTable[count].mEnabled = 1;
+		wcmd->mMultiItemTable[count].mName = (char*)msgSearch("btl_cmd_act_item");
+		wcmd->mMultiItemTable[count].mIcon = 0x14C;
+		wcmd->mMultiItemTable[count].mDescription = NULL;
+		wcmd->mMultiItemTable[count].mWeaponCost = 0;
+		count++;
+		if (unit->badgesEquipped.DoubleDip) {
+			wcmd->mMultiItemTable[count].pad_0xE[0] = 2;
+			if (unit->currentKind == UNIT_MARIO) {
+				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_2KaiItem);
+				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[254].name);
+				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[254].icon_id;
+				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[254].description;
+				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_2KaiItem);
+			} else {
+				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_2KaiItem);
+				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[255].name);
+				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[255].icon_id;
+				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[255].description;
+				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_2KaiItem);
+			}
+			if (wcmd->mMultiItemTable[count].mEnabled == 0) {
+				wcmd->mMultiItemTable[count].field_0x14 = 1;
+			} else {
+				wcmd->mMultiItemTable[count].field_0x14 = 0;
+			}
+			count = 2;
+		}
+		if (unit->badgesEquipped.TripleDip) {
+			wcmd->mMultiItemTable[count].pad_0xE[0] = 3;
+			if (unit->currentKind == UNIT_MARIO) {
+				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_3KaiItem);
+				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[329].name);
+				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[329].icon_id;
+				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[329].description;
+				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_3KaiItem);
+			} else {
+				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_3KaiItem);
+				wcmd->mMultiItemTable[count].mName = (char*)msgSearch("in_3kai_item_p");
+				wcmd->mMultiItemTable[count].mIcon = 0x62;
+				wcmd->mMultiItemTable[count].mDescription = "msg_3kai_item_p";
+				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_3KaiItem);
+			}
+			if (wcmd->mMultiItemTable[count].mEnabled == 0) {
+				wcmd->mMultiItemTable[count].field_0x14 = 1;
+			} else {
+				wcmd->mMultiItemTable[count].field_0x14 = 0;
+			}
+			count++;
+		}
+		cursor->unk8 = count;
+		if (cursor->field_0 >= cursor->unk8) {
+			cursor->field_0 = cursor->unk8 - 1;
+		}
+	}
+}
+
 void BattleCommandDisplay_AllEnd(BattleWork* wp) {
 	wp->commandMenu.field_4 &= ~0x111111;
 }
@@ -1136,9 +1339,12 @@ void BattleCommandDisplay_ChangePartySelectMenuDisp(CameraId camId, BattleWork* 
 
 __declspec(section ".sdata") s32 _jump_badge_table[8] = {0xF0, 0xF1, 0xF4, 0xF5, 0xF6, 0xF3, 0xF2, 0x14C};
 __declspec(section ".sdata") s32 _hammer_badge_table[9] = {0xF7, 0xFA, 0xF9, 0xFB, 0xFD, 0xFC, 0xF8, 0x14D, 0x14E};
-// NONMATCHING (99.77%): only the arg/wp save pair differs (20 rows). Retail saves arg=r31/wp=r30
-// (arg is a real s32 parameter); the header types it `void*`, so ours is a local and swaps them.
-// Typing it `s32` in the header gives 100% byte-for-byte. All loops/cases match.
+// NONMATCHING (99.77%): only the arg/wp save pair differs (20 rows). Retail saves
+// arg in r31 and wp in r30 because the original's second parameter is a real s32
+// (`cmpwi r31, ...` on it). The header types it `void*`, so our `arg` is a separate
+// named local instead of the parameter web: it colours r30 while wp takes r31, and an
+// extra `mr r0, r4` appears. A cast to s32 in the definition cannot coalesce through the
+// pointer type; the declaration has to carry the s32 type. All loops and cases match.
 s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 	static BattleWeapon defaultWeapon_Dummy_NoItem = {
 		"btl_wn_dummy_noitem",
@@ -2851,223 +3057,9 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	return 0;
 }
 
-// NONMATCHING (99.97%): the code is byte-for-byte right; all eight pooled string offsets
-// are 0xa8 short of the target (this function's literals land at .rodata+0x25c instead of
-// +0x304, e.g. "btl_cmd_op_chg_party"). 0x28 of that is "btl_wn_dummy_noitem"/
-// "msg_dummy_noitem", allocated by the local static defaultWeapon_Dummy_NoItem$743 in the
-// not-yet-written _btlcmd_MakeSelectWeaponTable; the other 0x80 is the double/SFX pool
-// entries the functions around this one (BattleDrawEnemyHP, the display functions) allocate
-// first, which currently land after this function instead of before it. Both depend on
-// functions outside this one, so they can't be fixed here.
-void _btlcmd_MakeOperationTable(BattleWork* wp) {
-	BattleWeapon* weapon;
-	NpcBattleInfo* setup;
-	BattleUnit* mario;
-	BattleCommand* cmd;
-	PouchData* pouch;
-	BattleWorkCommand* wcmd;
-	BattleCursor* cursor;
-	BattleUnit* party;
-	u32 count;
-	s32 escapeIdx;
 
-	mario = BattleGetUnitPtr(wp, wp->activeUnitId);
-	cmd = &wp->commandMenu;
-	setup = wp->fbatInfo->setup;
-	pouch = pouchGetPtr();
-	wcmd = (BattleWorkCommand*)cmd;
 
-	if (cmd == NULL) {
-		return;
-	}
-	_btlcmd_GetCursorPtr(cmd, 5, &cursor);
-	count = 0;
-	if (_btlcmd_MakePartyTable(wp) >= 2) {
-		wcmd->mOperationTable[0].mType = 0;
-		if (mario->flippedTurns) {
-			wcmd->mOperationTable[0].mEnabled = 0;
-			wcmd->mOperationTable[0].field_0x8 = 3;
-		} else {
-			wcmd->mOperationTable[0].mEnabled = 1;
-			wcmd->mOperationTable[0].field_0x8 = 0;
-		}
-		wcmd->mOperationTable[0].mName = (char*)msgSearch("btl_cmd_op_chg_party");
-		party = mario;
-		if (!(mario->currentKind >= 0xE0 && mario->currentKind < 0xE7)) {
-			party = BattleGetPartnerPtr(wp, mario);
-		}
-		BtlUnit_CanActStatus(party);
-		wcmd->mOperationTable[0].mIcon = _battleGetPartyIcon(party->currentKind);
-		wcmd->mOperationTable[0].mDescription = "btl_hlp_cmd_operation_changeparty";
-		if (mario->mAttributeFlags & 0x10) {
-			wcmd->mOperationTable[0].mEnabled = 0;
-			wcmd->mOperationTable[0].field_0x8 = 3;
-		}
-		if (setup->field_4 & 0x04000000) {
-			wcmd->mOperationTable[0].mEnabled = 0;
-			wcmd->mOperationTable[0].field_0x8 = 3;
-		}
-		wcmd->mOperationTable[0].mWeaponCost = 0;
-		count = 1;
-	}
-	if (pouch->mStarPowersObtained != 0) {
-		wcmd->mOperationTable[count].mType = 5;
-		wcmd->mOperationTable[count].mEnabled = 1;
-		wcmd->mOperationTable[count].mName = (char*)msgSearch("btl_cmd_op_appeal");
-		wcmd->mOperationTable[count].mIcon = 0x164;
-		wcmd->mOperationTable[count].field_0x8 = 0;
-		wcmd->mOperationTable[count].mWeaponCost = 0;
-		wcmd->mOperationTable[count].mDescription = "btl_hlp_cmd_operation_appeal";
-		count++;
-	}
-	if (mario->badgesEquipped.Charge) {
-		weapon = mario->currentKind == 0xDE ? &badgeWeapon_Charge : &badgeWeapon_ChargeP;
-		wcmd->mOperationTable[count].mType = 1;
-		wcmd->mOperationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
-		wcmd->mOperationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
-		if (wcmd->mOperationTable[count].mEnabled != 0) {
-			wcmd->mOperationTable[count].field_0x8 = 0;
-		} else {
-			wcmd->mOperationTable[count].field_0x8 = 1;
-		}
-		wcmd->mOperationTable[count].mName = (char*)msgSearch(weapon->name);
-		wcmd->mOperationTable[count].mIcon = 0x166;
-		wcmd->mOperationTable[count].mDescription = (char*)weapon->description;
-		if (mario->mAttributeFlags & 0x10) {
-			wcmd->mOperationTable[count].mEnabled = 0;
-			wcmd->mOperationTable[count].field_0x8 = 3;
-		}
-		count++;
-	}
-	if (mario->badgesEquipped.SuperCharge) {
-		weapon = mario->currentKind == 0xDE ? &badgeWeapon_SuperCharge : &badgeWeapon_SuperChargeP;
-		wcmd->mOperationTable[count].mType = 2;
-		wcmd->mOperationTable[count].mEnabled = BtlUnit_CheckWeaponCost(mario, weapon);
-		wcmd->mOperationTable[count].mWeaponCost = BtlUnit_GetWeaponCost(mario, weapon);
-		if (wcmd->mOperationTable[count].mEnabled != 0) {
-			wcmd->mOperationTable[count].field_0x8 = 0;
-		} else {
-			wcmd->mOperationTable[count].field_0x8 = 1;
-		}
-		wcmd->mOperationTable[count].mName = (char*)msgSearch(weapon->name);
-		wcmd->mOperationTable[count].mIcon = 0x167;
-		wcmd->mOperationTable[count].mDescription = (char*)weapon->description;
-		if (mario->mAttributeFlags & 0x10) {
-			wcmd->mOperationTable[count].mEnabled = 0;
-			wcmd->mOperationTable[count].field_0x8 = 3;
-		}
-		count++;
-	}
-	wcmd->mOperationTable[count].mType = 6;
-	wcmd->mOperationTable[count].mEnabled = 1;
-	wcmd->mOperationTable[count].mName = (char*)msgSearch("btl_cmd_op_defend");
-	wcmd->mOperationTable[count].mIcon = 0x165;
-	wcmd->mOperationTable[count].field_0x8 = 0;
-	wcmd->mOperationTable[count].mWeaponCost = 0;
-	wcmd->mOperationTable[count].mDescription = "btl_hlp_cmd_operation_defend";
-	if (mario->mAttributeFlags & 0x10) {
-		wcmd->mOperationTable[count].mEnabled = 0;
-		wcmd->mOperationTable[count].field_0x8 = 3;
-	}
-	escapeIdx = count + 1;
-	wcmd->mOperationTable[escapeIdx].mType = 3;
-	wcmd->mOperationTable[escapeIdx].mEnabled = BtlUnit_CanActStatus(mario);
-	wcmd->mOperationTable[escapeIdx].mName = (char*)msgSearch("btl_cmd_op_escape");
-	wcmd->mOperationTable[escapeIdx].mIcon = 0x163;
-	wcmd->mOperationTable[escapeIdx].mWeaponCost = 0;
-	if (wcmd->mOperationTable[escapeIdx].mEnabled != 0) {
-		wcmd->mOperationTable[escapeIdx].field_0x8 = 0;
-	} else {
-		wcmd->mOperationTable[escapeIdx].field_0x8 = 1;
-	}
-	wcmd->mOperationTable[escapeIdx].mDescription = "btl_hlp_cmd_operation_escape";
-	if (mario->mAttributeFlags & 0x10) {
-		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
-		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
-	}
-	if (wp->fbatInfo->setup->field_4 & 0x10) {
-		wcmd->mOperationTable[escapeIdx].mEnabled = 0;
-		wcmd->mOperationTable[escapeIdx].field_0x8 = 3;
-	}
-	cursor->unk8 = count + 2;
-	if (cursor->field_0 >= cursor->unk8) {
-		cursor->field_0 = cursor->unk8 - 1;
-	}
-}
 
-// NONMATCHING (99.98%): the instruction stream matches; only the pooled string base differs. The 0x80-byte
-// `SFX_NOT_CHOICE1`/`SFX_BTL_CURSOR_MOVE1/2`/`btl_msg_multi_item_cancel_check` block from
-// BattleCommandDisplay_WeaponMultiItemCancelCheckDisp lands before "btl_cmd_act_item" in the original pool
-// but after it here, so "btl_cmd_act_item"/"in_3kai_item_p"/"msg_3kai_item_p" are +0x250/+0x264/+0x274 here
-// vs +0x2d0/+0x2e4/+0x2f4 in the target. The pool order follows the TU's function-emission order, so this
-// resolves once the unit links. `count = 0; ...; count++` keeps the `mulli` alive.
-void _btlcmd_MakeMultiItemTable(BattleWork* wp) {
-	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
-	BattleCommand* cmd;
-	u32 count;
-
-	if ((cmd = &wp->commandMenu)) {
-		BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
-		BattleCursor* cursor;
-		_btlcmd_GetCursorPtr(cmd, 3, &cursor);
-		count = 0;
-		wcmd->mMultiItemTable[count].pad_0xE[0] = 1;
-		wcmd->mMultiItemTable[count].mEnabled = 1;
-		wcmd->mMultiItemTable[count].mName = (char*)msgSearch("btl_cmd_act_item");
-		wcmd->mMultiItemTable[count].mIcon = 0x14C;
-		wcmd->mMultiItemTable[count].mDescription = NULL;
-		wcmd->mMultiItemTable[count].mWeaponCost = 0;
-		count++;
-		if (unit->badgesEquipped.DoubleDip) {
-			wcmd->mMultiItemTable[count].pad_0xE[0] = 2;
-			if (unit->currentKind == UNIT_MARIO) {
-				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_2KaiItem);
-				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[254].name);
-				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[254].icon_id;
-				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[254].description;
-				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_2KaiItem);
-			} else {
-				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_2KaiItem);
-				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[255].name);
-				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[255].icon_id;
-				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[255].description;
-				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_2KaiItem);
-			}
-			if (wcmd->mMultiItemTable[count].mEnabled == 0) {
-				wcmd->mMultiItemTable[count].field_0x14 = 1;
-			} else {
-				wcmd->mMultiItemTable[count].field_0x14 = 0;
-			}
-			count = 2;
-		}
-		if (unit->badgesEquipped.TripleDip) {
-			wcmd->mMultiItemTable[count].pad_0xE[0] = 3;
-			if (unit->currentKind == UNIT_MARIO) {
-				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_3KaiItem);
-				wcmd->mMultiItemTable[count].mName = (char*)msgSearch(itemDataTable[329].name);
-				wcmd->mMultiItemTable[count].mIcon = *(u16*)&itemDataTable[329].icon_id;
-				wcmd->mMultiItemTable[count].mDescription = (char*)itemDataTable[329].description;
-				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_3KaiItem);
-			} else {
-				wcmd->mMultiItemTable[count].mEnabled = BtlUnit_CheckWeaponCost(unit, &badgeWeapon_3KaiItem);
-				wcmd->mMultiItemTable[count].mName = (char*)msgSearch("in_3kai_item_p");
-				wcmd->mMultiItemTable[count].mIcon = 0x62;
-				wcmd->mMultiItemTable[count].mDescription = "msg_3kai_item_p";
-				wcmd->mMultiItemTable[count].mWeaponCost = (u8)BtlUnit_GetWeaponCost(unit, &badgeWeapon_3KaiItem);
-			}
-			if (wcmd->mMultiItemTable[count].mEnabled == 0) {
-				wcmd->mMultiItemTable[count].field_0x14 = 1;
-			} else {
-				wcmd->mMultiItemTable[count].field_0x14 = 0;
-			}
-			count++;
-		}
-		cursor->unk8 = count;
-		if (cursor->field_0 >= cursor->unk8) {
-			cursor->field_0 = cursor->unk8 - 1;
-		}
-	}
-}
 
 // Declaration order is significant here: it fixes the callee-saved register
 // allocation (entry must be declared before the others to land in r26).

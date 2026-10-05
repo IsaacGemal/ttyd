@@ -4705,3 +4705,11 @@ reproduced the allocator exactly. Its consistent value is diagnosis: naming the 
 proving the cases with no source lever (a parameter that must outrank a named local; a backend temp ranked above all
 named locals). Since then register-class tasks start with a debugger triage, and NO-SOURCE-LEVER functions go to the
 permuter instead of another agent attempt.
+- **Batch 30:** evt_bero linked (52 functions; evt_bero_move_mario_speed 99.83 -> 100 from the clean debugger re-run,
+  wave 79: mwccdbg showed the named locals were right and the wrong colours were backend temps, `rasim neighbors` said
+  BeroSX must interfere with a later temp, `search` gave the order, and MUST_MATCH `bsx`/`bsy` locals implement it;
+  merged as the function fix first, then the agent's link preparation through scratch/wave74/link_regress.sh). Wave 80
+  group tasks: winmgr +4 (the select_disp family; 36/37, select_main 99.71 left), battle_seq_command +3 (the
+  _btlcmd_Make*Table family; SelectWeaponTable's gap is the param-vs-local class), zubastar_bomb/main 99.99 (left: pool
+  offsets); win_root no change (pool displacements, a link-pass question). Wave 79 triage: unit_boss_moamoa and nameent
+  classified NO-SOURCE-LEVER (frontend temps outranking named locals) and stopped early, as designed.

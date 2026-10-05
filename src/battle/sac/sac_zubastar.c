@@ -22,6 +22,19 @@
 
 extern BattleWork* _battleWorkPointer;
 
+#pragma pool_data on // the original addresses its .rodata through one base register
+
+#pragma force_active on // the original keeps these .rodata objects; nothing in the code references
+                       // them yet, so the linker would otherwise drop them
+const char str_802FF668[] = "btl_wn_sac_zubastar";
+const char str_802FF67C[] = "msg_zubastar";
+const char str_802FF68C[] = "msg_sac_8";
+const Vec vec3_802ff6a4 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802ff6b0 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802ff6bc = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802ff6c8 = { 0.0f, 0.0f, 0.0f };
+#pragma force_active reset
+
 // .sdata2 constants referenced by this file's original.
 extern f32 float_200_804217c8;
 extern f32 float_60_804217cc;
