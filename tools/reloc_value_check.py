@@ -1,6 +1,6 @@
 """Find functions that load the WRONG constant: a blind spot of objdiff's fuzzy score.
 
-    python3 tools/reloc_value_check.py [UNIT-FRAGMENT ...] [--all] [--json OUT]
+    python3 tools/reloc_value_check.py [UNIT-FRAGMENT ...] [--all] [--partial] [--json OUT]
 
 objdiff does not compare relocation targets by value, so a function can score 100% while it loads `40.0f` where the
 original loads `60.0f` (eff_fukidashi's 16.0f/1.0f, fixed in #381, was this class). For every function present in both
@@ -8,6 +8,12 @@ the original object and ours whose instruction encodings are identical once each
 resolves both sides' relocation targets to the bytes the instruction actually reads (width from the opcode: lbz 1,
 lhz 2, lwz/lfs 4, lfd 8) and reports any pair whose bytes differ. Address-forming relocations (lis/addi/ori, bl) are
 compared by the target symbol's own bytes over the shorter of the two sizes, or by name when either side is undefined.
+
+--partial also checks functions that are NOT instruction-identical (the near-misses): it compares the SET of constant
+values each side's relocated loads (lfs/lfd/lwz/lhz/lbz...) read, and reports values only one side loads. Order-free,
+so scheduling and pool order add no noise. Only small two-sided exchanges are reported (at most 3 values missing AND at
+most 3 extra): one-sided gaps are base-register addressing or computed constants. Read each hit against the source. Idea from Claude #4 (bom_01's
+disp_sight draft loaded 1.0 where the original loads 0.6, invisible to the fuzzy score).
 
 Linked (Matching) units are skipped unless --all: the checksum already covers them, and running them is a control
 (it should report nothing). Idea and method from zcanann/SFA-Decomp tools/sda_reloc_check.py and reloc_width_check.py
@@ -80,13 +86,63 @@ def normalise(code, rel):
     return bytes(out)
 
 
-def check_unit(tpath, opath):
+def loaded_values(obj, code, rel):
+    """{(width, bytes): label} for every relocated load (lfs/lfd/lwz/lhz/lbz...) in one function."""
+    out = {}
+    for off, (typ, sym, add) in rel.items():
+        if typ in (R_PPC_REL24, R_PPC_REL14):
+            continue
+        w = off - off % 4
+        width = WIDTH.get(int.from_bytes(code[w:w + 4], "big") >> 26)
+        if width is None:
+            continue
+        label, data = obj.target(sym, add, width)
+        if data is not None:
+            out.setdefault((width, data), label)
+    return out
+
+
+def structural(key):
+    """A loaded value that is not a source literal: int->float conversion doubles (0x4330...), colour/mask words (a
+    4-byte value whose float exponent is all zeros or all ones, i.e. not a normal float)."""
+    width, data = key
+    if width == 8:
+        return data[:4] in (b"\x43\x30\x00\x00", b"\x43\x30\x00\x00")
+    if width == 4:
+        exp = (int.from_bytes(data, "big") >> 23) & 0xFF
+        return data != b"\0\0\0\0" and exp in (0, 0xFF)
+    return True
+
+
+def check_partial(t, o, name, tc, tr, oc, orr):
+    """Value hits for one non-identical function: constants one side loads and the other never does. Order-free, so
+    scheduling and pool-order differences in a near-miss add no noise; a wrong literal shows up as one value on each side."""
+    tv, ov = loaded_values(t, tc, tr), loaded_values(o, oc, orr)
+    only_t = {k for k in set(tv) - set(ov) if not structural(k)}
+    only_o = {k for k in set(ov) - set(tv) if not structural(k)}
+    # one-sided differences are how base-register addressing (lis base; lfs off(base)) and computed constants look;
+    # a wrong literal is a small exchange: values missing on one side AND extra on the other
+    if not only_t or not only_o or len(only_t) > 3 or len(only_o) > 3:
+        return []
+    hits = []
+    for key in sorted(only_t):
+        hits.append(dict(fn=name, off=0, kind=f"partial{key[0]}", target=tv[key], ours="(never loaded)",
+                         tbytes=key[1].hex(), obytes=""))
+    for key in sorted(only_o):
+        hits.append(dict(fn=name, off=0, kind=f"partial{key[0]}", target="(never loaded)", ours=ov[key],
+                         tbytes="", obytes=key[1].hex()))
+    return hits
+
+
+def check_unit(tpath, opath, partial=False):
     t, o = Obj(tpath), Obj(opath)
     findings = []
     for name in sorted(set(t.funcs) & set(o.funcs)):
         tc, tr = t.func(name)
         oc, orr = o.func(name)
         if len(tc) != len(oc) or set(tr) != set(orr) or normalise(tc, tr) != normalise(oc, orr):
+            if partial:
+                findings.extend(check_partial(t, o, name, tc, tr, oc, orr))
             continue
         for off in sorted(tr):
             w = off - off % 4
@@ -132,12 +188,13 @@ def units(report, frags, everything):
 
 def main(argv):
     everything = "--all" in argv
+    partial = "--partial" in argv
     out = argv[argv.index("--json") + 1] if "--json" in argv else None
     frags = [a for a in argv if not a.startswith("--") and a != out]
     results = {}
     for name, tpath, opath, linked in units(os.path.join(BUILD, "report.json"), frags, everything):
         try:
-            f = check_unit(tpath, opath)
+            f = check_unit(tpath, opath, partial)
         except Exception as e:  # a malformed or missing object is a note, not a finding
             print(f"skip {name}: {e}", file=sys.stderr)
             continue
