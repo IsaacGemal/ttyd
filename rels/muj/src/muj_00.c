@@ -1002,11 +1002,19 @@ USER_FUNC(cam_test_init_func) {
 // spelling tried (`args++`, `args = args + 1`, an explicit `argp = args + 1`);
 // `optimization_level 1` keeps two bases but changes the FPRs and schedule. Declaring
 // `s`/`c` before `rad` is what puts angle/radius/rad in f30/f31/f29.
-// NONMATCHING (96.02%): only the second `args+1` base differs.
+// NONMATCHING (98.16%): the original keeps a second pointer base (`mr r30,r31; addi r31,r31,4`) and reads args[3]
+// and args[1] through args+1. Reading the two floats through a post-incremented pointer (`*p++`, MUST_MATCH) is the
+// only spelling found that MWCC does not fold back into plain offsets; it gets the second base, but at args+3.
 USER_FUNC(cam_test_func) {
     s32* args = event->args;
+#ifdef MUST_MATCH
+    s32* p = args + 2;
+    f32 angle = evtGetFloat(event, *p++);
+    f32 radius = evtGetFloat(event, *p);
+#else
     f32 angle = evtGetFloat(event, args[2]);
     f32 radius = evtGetFloat(event, args[3]);
+#endif
     f32 s;
     f32 c;
     f32 rad = angle * 6.2831855f / 360.0f;
