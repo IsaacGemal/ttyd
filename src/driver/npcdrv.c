@@ -68,6 +68,7 @@ extern const f32 float_3p1416_80419c44;
 extern const f32 float_1p5708_80419c48;
 extern const f32 float_4p7124_80419c4c;
 extern const f32 float_1_80419bb4;
+extern const f32 float_0_80419b9c;
 extern u32 dat_80419b88;
 extern const f32 float_0p03705_80419c50;
 extern const f32 float_0p4967_80419c54;
@@ -79,6 +80,7 @@ extern const f32 float_0p4967_80419c54;
 #define NPC_F_HALFPI float_1p5708_80419c48
 #define NPC_F_THREEHALVES float_4p7124_80419c4c
 #define NPC_F_ONE float_1_80419bb4
+#define NPC_F_ZERO float_0_80419b9c
 #define NPC_COLOR_DAT dat_80419b88
 #else
 #define NPC_F_SIN0 0.00761f
@@ -89,6 +91,7 @@ extern const f32 float_0p4967_80419c54;
 #define NPC_F_HALFPI 1.5707964f
 #define NPC_F_THREEHALVES 4.712389f
 #define NPC_F_ONE 1.0f
+#define NPC_F_ZERO 0.0f
 #define NPC_COLOR_DAT 0xFFFFFF00u
 #endif
 
@@ -882,7 +885,7 @@ s32 npcGetReactionOfLivingBody(BOOL inBattle) {
 
 // TODO: fix entry->position delayed set-Vec with r6/r30
 // TODO: a1 is desc/ription?
-// NONMATCHING (81.76%): the two search loops use a cached `total` and an incrementing `entry` pointer,
+// NONMATCHING (93.21%): the two search loops use a cached `total` and an incrementing `entry` pointer,
 // and the position/scale zero/one vectors are this file's rodata vec3_802c2f78/vec3_802c2f84.  Still register
 // rotation (a1 in r26 vs r25, so `stmw r26` instead of `stmw r25`) and the vec3 base is scheduled later.
 s32 npcEntry(const char* a1, const char* animName) {
@@ -903,11 +906,9 @@ s32 npcEntry(const char* a1, const char* animName) {
     }
     // unused ------------------------------------------------
 
-    if (total > 0) {
-        for (i = 0, entry = wp->entries; i < total; i++, entry++) {
-            if (!(entry->flags & 1)) {
-                break; // unused entry
-            }
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        if (!(entry->flags & 1)) {
+            break; // unused entry
         }
     }
     memset(entry, 0, sizeof(NpcEntry));
@@ -927,9 +928,7 @@ s32 npcEntry(const char* a1, const char* animName) {
     entry->position.y = 0.0f;
     entry->position.z = 0.0f;
 #endif
-    entry->prevPosition.x = entry->position.x;
-    entry->prevPosition.y = entry->position.y;
-    entry->prevPosition.z = entry->position.z;
+    entry->prevPosition = entry->position;
     entry->width = animPoseGetHeight(entry->poseId);
     entry->height = animPoseGetRadius(entry->poseId);
 #ifdef MUST_MATCH
@@ -939,14 +938,15 @@ s32 npcEntry(const char* a1, const char* animName) {
     entry->scale.y = 1.0f;
     entry->scale.z = 1.0f;
 #endif
-    entry->field_154 = 1.0f;
+    entry->field_154 = NPC_F_ONE;
     entry->field_108 = 0;
     entry->field_10C = "M_I_2";
     entry->field_198 = gp->renderTime;
     entry->field_188 = 0;
-    entry->jumpGravity = 1.0f;
-    entry->field_1D0 = 0.0f;
-    entry->jumpYScale = 1.0f;
+    entry->jumpGravity = NPC_F_ONE;
+    entry->field_1D0 = NPC_F_ZERO;
+    entry->jumpYScale = NPC_F_ONE;
+    entry->field_110 = -1;
     entry->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     entry->cameraId = CAMERA_3D;
     entry->field_2F8 = 0;
