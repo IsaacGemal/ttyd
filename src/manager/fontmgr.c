@@ -1240,15 +1240,21 @@ static inline void FontDrawMessage_Edge(u16 glyph, s32 x, s32 yy) {
 	sy = yy;
 	_JUTFont_DrawPos(glyph, sx - 2, sy);
 	_JUTFont_DrawPos(glyph, sx + 2, sy);
-	_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy - 2));
-	_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy + 2));
+	{
+		s16 sx2 = x;
+		s16 sy2 = yy;
+		_JUTFont_DrawPos(glyph, sx2, sy2 - 2);
+		_JUTFont_DrawPos(glyph, sx2, sy2 + 2);
+	}
 	c2 = saved;
 	FontDrawMessage_ColorA(c2);
 }
 #endif
 
-// NONMATCHING (99.42%): FontDrawMessage_Edge puts the edge c/saved/c2 after the inlined FontDrawStart_alpha
-// `start`; the colour branches' GXSetTevColor argument copies are 0x14 low and the unit sda21 pool labels differ.
+// FontDrawMessage_Edge's second pair (the vertical offsets) narrows x and yy into fresh s16 locals in its own block:
+// the original sign-extends x again there and reuses the narrowed y.
+// NONMATCHING (99.91%): the instructions match; the colour branches' GXSetTevColor argument copies are 0x14 low of
+// the edge c/saved/c2 and the inlined start (retail has them above), and the unit sda21 pool labels differ.
 
 void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 	s32 x = x0;
