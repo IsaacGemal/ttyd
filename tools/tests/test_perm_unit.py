@@ -47,6 +47,13 @@ class ResolveTest(unittest.TestCase):
         self.assertEqual((r["src"], r["name"], r["target"], r["mod"]),
                          ("src/event/evt_bero.c", "event/evt_bero", "build/G8MJ01/obj/event/evt_bero.o", None))
 
+    def test_library_unit(self):
+        with tree(["libs/metrowerks/src/MSL_C.PPCEABI.bare.H.a/strtold.c"]) as d:
+            r = perm_unit.resolve("MSL_C.PPCEABI.bare.H.a/strtold", d)
+        self.assertEqual((r["src"], r["target"], r["mod"]),
+                         ("libs/metrowerks/src/MSL_C.PPCEABI.bare.H.a/strtold.c",
+                          "build/G8MJ01/obj/MSL_C.PPCEABI.bare.H.a/strtold.o", None))
+
     def test_rel_unit_with_module(self):
         with tree(["rels/yuu/src/event/evt_yuucounter.c"]) as d:
             r = perm_unit.resolve("yuu/event/evt_yuucounter", d)
