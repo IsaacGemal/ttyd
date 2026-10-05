@@ -509,6 +509,11 @@ When the instructions match but the stack slots, register allocation or scheduli
   that loads it once via MATCH_F32 into a local (mario_hit's gndCenti/gndAngle); a non-const view `*(f32*)&x` does
   nothing and a literal is worse (#519, Claude #4: marioSearchGround 92.20 -> 96.71, marioChkLandon2 89.70 -> 92.94,
   both frames now retail's). Check `__fabs` vs `__fabsf` while there: the double one adds an frsp.
+- **A conditional branch straight into an unconditional `b` (`bcc body; b skip`) where ours has one inverted branch** has
+  two known sources: a `switch` whose run of case labels shares one body (MWCC lowers it to range tests no if/else
+  reproduces; list the labels, since `case A ... B:` is rejected), or an early `return` inside an inline helper (the
+  inline's return is that `b`). #529 _audience_Whistle_control 96.45 -> 100, #530 winMain 99.06 -> 99.99, #531
+  animPoseSetEffect 98.27 -> 99.34, #532 npcSetupBattleInfo 93.73 -> 95.48 (Claude #4). Count bcc->b pairs, orig vs ours.
 - **`if (best == NULL || d < bestD) { copy }` can be the copy written twice in the original,** one branch per
   condition: a duplicated block gives retail's frame where the combined condition does not (searchFrontWall #518,
   marioChkGnd #513).
