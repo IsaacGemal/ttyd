@@ -303,6 +303,24 @@ def _opens(chunk, name):
     return n
 
 
+POOLING = re.compile(r"\(\s*[A-Za-z_]\w*\s*\)\s*\{|^\s*(?:const\s+)?[A-Za-z_]\w*\s+\w+(?:\[[^\]]*\])*\s*=\s*\{", re.M)
+DATA_DEF = re.compile(r"\b(\w+)\s*(?:\[[^\]]*\])*\s*=")
+
+
+def pools(chunk):
+    """True when a function body pools a constant at parse time: a compound literal `(Vec){ ... }` or a local
+    aggregate initializer `Vec v = { ... }`. The compiler places those in .rodata/.sdata2 at the function's position
+    in the source, between the named data defined around it."""
+    body = re.sub(r"//[^\n]*|/\*.*?\*/", "", "\n".join(chunk), flags=re.S)
+    return bool(POOLING.search(body[body.find("{") + 1:]))
+
+
+def is_data(lines):
+    """A hoisted item that defines data (not an extern, typedef, prototype or event script)."""
+    t = lines[0].strip()
+    return not re.match(r"(extern|typedef)\b", t) and not t.startswith("EVT_BEGIN(") and "=" in " ".join(lines)
+
+
 def reorder(text, want):
     """New source text with the emitted functions in `want` order (source order), or raise ValueError saying why not."""
     orig = text.split("\n")
@@ -337,6 +355,8 @@ def reorder(text, want):
         if L[k].startswith("//") or regional(k):
             first = k
     prefix, chunks, hoist = L[:first], {}, []
+    anchored = []   # (data lines, the pooling functions that came before it in the source)
+    seen = []
     prev_end, prev = first - 1, None
     for s, e, name, _ in fns:
         lead = []
@@ -356,11 +376,14 @@ def reorder(text, want):
                 chunks[prev] += ls
             elif kind == "reset":
                 lead += ls
+            elif kind == "hoist" and is_data(ls) and any(pools(chunks[n]) for n in seen):
+                anchored.append((ls, [n for n in seen if pools(chunks[n])]))
             elif kind == "hoist":
                 hoist += ls
             elif kind != "blank" or lead:
                 lead += ls
         chunks[name] = lead + L[s:e + 1]
+        seen.append(name)
         prev_end, prev = e, name
     tail = L[prev_end + 1:]
     k = 0
@@ -374,14 +397,34 @@ def reorder(text, want):
     for n, c in chunks.items():
         if not balanced_if(c):
             raise ValueError(f"an #if block straddles {n}: move it by hand")
+    # data defined after a function that pools a literal must stay after it (and before the poolers that followed it)
+    order = [n for n in want if n in chunks]
+    after = collections.defaultdict(list)
+    last = -1
+    for ls, before in anchored:
+        anchor = max(before, key=order.index)
+        if order.index(anchor) < last:
+            raise ValueError(f"data `{ls[0].strip()}` would move ahead of data defined before it: move it by hand")
+        last = order.index(anchor)
+        later = [n for n in order if n not in before and pools(chunks[n]) and order.index(n) < order.index(anchor)]
+        if later:
+            raise ValueError(f"data `{ls[0].strip()}` sits between {before[-1]} and {later[0]}, whose pooled literals "
+                             "would change order: move it by hand")
+        declared = "\n".join(prefix + hoist)
+        for nm in DATA_DEF.findall(ls[0]):
+            used = [n for n in order[:order.index(anchor) + 1]
+                    if n not in before and re.search(rf"\b{nm}\b", "\n".join(chunks[n]))]
+            if used and not re.search(rf"\b{nm}\b", declared):
+                raise ValueError(f"{used[0]} would use {nm} before its definition: move it by hand")
+        after[anchor] += ls
     out = prefix + hoist + [""]
-    pos = {}
-    for n in want:
-        if n in chunks:
-            c = chunks[n]
-            while c and not c[-1].strip():
-                c = c[:-1]
-            out += c + [""]
+    for n in order:
+        c = chunks[n]
+        while c and not c[-1].strip():
+            c = c[:-1]
+        out += c + [""]
+        if after[n]:
+            out += after[n] + [""]
     out += tail
     old = collections.Counter(l for l in orig if l.strip()) + collections.Counter(added)
     new = collections.Counter(l for l in out if l.strip())
