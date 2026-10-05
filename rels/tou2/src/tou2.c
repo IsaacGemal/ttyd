@@ -1204,9 +1204,9 @@ static f32 camGetRy(void) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (99.11%): `event`/`npc` callee-saved swap (original event=r31, npc=r30; ours reversed),
-// which cascades into every `0x104/0x78/0xc` access; plus the first angle branch picks f1 for the
-// `angle + viewYaw` sum where the original used f0. Both are allocator tie-breaks we couldn't steer.
+// NONMATCHING (99.85%): only the `8.0f - (angle + cam->viewYaw)` branch differs: the original keeps the sum in f1
+// and loads 8.0f into f0; ours swaps them (operand-order and temp spellings tried). Reusing `&handle->userdata`
+// (permuter, 2026-10-05) fixed the event/npc callee-saved swap.
 USER_FUNC(tou_champion_belt_28_text_2A10) {
     AnimationPose* pose;
     NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
@@ -1215,6 +1215,7 @@ USER_FUNC(tou_champion_belt_28_text_2A10) {
     CameraEntry* cam;
     EffectEntry* handle;
     f32 angle;
+    void** ud;
 
     if (isFirstCall) {
         f32 zero = 0.0f;
@@ -1229,25 +1230,26 @@ USER_FUNC(tou_champion_belt_28_text_2A10) {
     group = animPoseGetGroupIdx(npc->poseId, "locator8");
     angle = reviseAngle(camGetRy() - pose->rotationY);
     handle = (EffectEntry*)event->userdata[0];
-    ((BeltData*)handle->userdata)->pos.x = loc[group].x;
-    ((BeltData*)handle->userdata)->pos.y = loc[group].y;
-    ((BeltData*)handle->userdata)->pos.z = loc[group].z;
+    ud = &handle->userdata;
+    ((BeltData*)*ud)->pos.x = loc[group].x;
+    ((BeltData*)*ud)->pos.y = loc[group].y;
+    ((BeltData*)*ud)->pos.z = loc[group].z;
     if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
         cam = camGetPtr(CAMERA_3D);
-        ((BeltData*)handle->userdata)->field_1C = 8.0f - (angle + cam->viewYaw);
+        ((BeltData*)*ud)->field_1C = 8.0f - (angle + cam->viewYaw);
     } else {
         cam = camGetPtr(CAMERA_3D);
-        ((BeltData*)handle->userdata)->field_1C = -(angle + cam->viewYaw) - 8.0f;
+        ((BeltData*)*ud)->field_1C = -(angle + cam->viewYaw) - 8.0f;
     }
     if (npc->position.y <= -1000.0f) {
-        ((BeltData*)handle->userdata)->pos.x = 0.0f;
-        ((BeltData*)handle->userdata)->pos.y = -1000.0f;
-        ((BeltData*)handle->userdata)->pos.z = 0.0f;
+        ((BeltData*)*ud)->pos.x = 0.0f;
+        ((BeltData*)*ud)->pos.y = -1000.0f;
+        ((BeltData*)*ud)->pos.z = 0.0f;
     }
     if (champion_belt_onoff != 0) {
-        ((BeltData*)handle->userdata)->pos.x = 0.0f;
-        ((BeltData*)handle->userdata)->pos.y = -1000.0f;
-        ((BeltData*)handle->userdata)->pos.z = 0.0f;
+        ((BeltData*)*ud)->pos.x = 0.0f;
+        ((BeltData*)*ud)->pos.y = -1000.0f;
+        ((BeltData*)*ud)->pos.z = 0.0f;
     }
     return EVT_RETURN_BLOCK;
 }
