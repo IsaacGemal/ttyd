@@ -46,7 +46,12 @@ class AsmException(unittest.TestCase):
                 self.assertTrue(e.get(k), (e, k))
             self.assertIn(e["class"], ("compiler-artifact", "original-asm"), e)
             text = (ci.ROOT / e["file"]).read_text(errors="replace")
-            self.assertRegex(text, r"\basm\b[^(\n]*\b" + re.escape(e["function"]) + r"\s*\(", e)
+            lines = text.splitlines()
+            # either an asm function declaration, or an asm block inside the listed function
+            decl = re.search(r"\basm\b[^(\n]*\b" + re.escape(e["function"]) + r"\s*\(", text)
+            block = any(ci.ASM_RE.search(l.split("//", 1)[0]) and ci.enclosing_function(lines, i) == e["function"]
+                        for i, l in enumerate(lines))
+            self.assertTrue(decl or block, e)
 
 
 if __name__ == "__main__":
