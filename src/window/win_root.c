@@ -1,6 +1,7 @@
 #include "pmario_sound.h"
 #include "win/win_main.h"
 #include "data/item_data.h"
+#include "driver/animdrv.h"
 #include "driver/camdrv.h"
 #include "driver/msgdrv.h"
 #include "driver/swdrv.h"
@@ -3163,6 +3164,154 @@ static inline void winHalfBookPage(void* pal, s32 texId, f64 numY, f64 numX,
     GXPosition3f32(x1, y0, 0.0f);
     GXTexCoord2f32(1.0f, 0.0f);
 }
+#define WIN_BOOK_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
+extern const GXColor dat_8041cf50;
+extern const char** luigi_book_list[5];
+// winFontSetLabel takes its Vec and GXColor arguments by value (each call copies them); win_main.h declares
+// pointers, which compiles to the same callee.
+#define winFontSetLabelV ((void (*)(Vec, Vec, GXColor, const char*))winFontSetLabel)
+
+// NONMATCHING (89.35%): calls, branches and the per-page code shape match; FPR colouring differs (retail keeps
+// two more callee-saved values, f16/f17 for each page's spans) and the u16->f32 conversion double is our own
+// pool entry, not double_to_int_mask_802f44c8 (a pool-order question for the unit's link).
+// The book frame and pages (type 0: Luigi's book, with the open page's two labels and Luigi reading; type 1:
+// a 2x4 grid of frames, 32 lower).
+// One textured quad of the book. A macro, not an inline function: each argument is evaluated where it is used,
+// after the texture setup, as in the original.
+#define WIN_BOOK_PAGE(pal, texId, numY, numX, x0, y0, x1, y1)                       \
+    {                                                                              \
+        GXTexObj texObj;                                                           \
+        Mtx mtx;                                                                   \
+        f64 sy;                                                                    \
+        f64 sx;                                                                    \
+                                                                                   \
+        TEXGetGXTexObjFromPalette((TEXPalette*)(pal), &texObj, (texId));           \
+        GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);                \
+        GXLoadTexObj(&texObj, 0);                                                  \
+        GXSetNumTexGens(1);                                                        \
+        GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);                                 \
+        sy = __fabs(numY);                                                         \
+        sx = __fabs(numX);                                                         \
+        sy = (f32)sy / (f32)GXGetTexObjHeight(&texObj);                            \
+        sx = (f32)sx / (f32)GXGetTexObjWidth(&texObj);                             \
+        PSMTXScale(mtx, (f32)sx, (f32)sy, float_1_8041d070);                       \
+        GXLoadTexMtxImm(mtx, 0x1E, 1);                                             \
+        GXBegin(0x80, 0, 4);                                                       \
+        GXPosition3f32((x0), (y0), 0.0f);                                          \
+        GXTexCoord2f32(0.0f, 0.0f);                                                \
+        GXPosition3f32((x0), (y1), 0.0f);                                          \
+        GXTexCoord2f32(0.0f, 1.0f);                                                \
+        GXPosition3f32((x1), (y1), 0.0f);                                          \
+        GXTexCoord2f32(1.0f, 1.0f);                                                \
+        GXPosition3f32((x1), (y0), 0.0f);                                          \
+        GXTexCoord2f32(1.0f, 0.0f);                                                \
+    }
+
+#ifdef MUST_MATCH
+// retail reads the book's doubles through the str_802F3FE8 base, held in a register for the whole function
+#define BK_DBL(off, sym, val) (*(const f64*)(rodata + (off)))
+#else
+#define BK_DBL(off, sym, val) (val)
+#endif
+void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
+#ifdef MUST_MATCH
+    const u8* rodata = (const u8*)&str_802F3FE8;
+#endif
+    f32 yofs;
+    s32 i;
+
+    GXSetBlendMode(0, 1, 0, 0);
+    GXSetZCompLoc(0);
+    GXSetAlphaCompare(6, 0x80, 1, 0, 0);
+    GXSetZMode(0, 7, 0);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041cf50);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+    GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
+    GXSetCurrentMtx(0);
+
+    yofs = type == 0 ? 0.0f : 32.0f;
+
+    // the page area and the top edge
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x33, 256.0f - yofs, BK_DBL(0x5A8, double_432_802f4590, 432.0),
+                  8.0f + x, y - 8.0f, (8.0f + x) + 432.0f, ((y - 8.0f) - (256.0f - yofs)))
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x28, BK_DBL(0x548, double_8_802f4530, 8.0), BK_DBL(0x500, double_16_802f44e8, 16.0),
+                  x, y, x + 16.0f, y - 8.0f)
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2C, BK_DBL(0x548, double_8_802f4530, 8.0), BK_DBL(0x5B0, double_184_802f4598, 184.0),
+                  (16.0f + x), y, (16.0f + x) + 184.0f, y - 8.0f)
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x26, BK_DBL(0x500, double_16_802f44e8, 16.0), BK_DBL(0x558, double_48_802f4540, 48.0),
+                  (184.0f + (16.0f + x)), y, (184.0f + (16.0f + x)) + 48.0f, y - 16.0f)
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2D, BK_DBL(0x548, double_8_802f4530, 8.0), BK_DBL(0x5B0, double_184_802f4598, 184.0),
+                  (48.0f + (184.0f + (16.0f + x))), y, (48.0f + (184.0f + (16.0f + x))) + 184.0f, y - 8.0f)
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2A, BK_DBL(0x548, double_8_802f4530, 8.0), BK_DBL(0x500, double_16_802f44e8, 16.0),
+                  (184.0f + (48.0f + (184.0f + (16.0f + x)))), y, (184.0f + (48.0f + (184.0f + (16.0f + x)))) + 16.0f, y - 8.0f)
+
+    // the sides and the spine
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x30, 256.0f - yofs, BK_DBL(0x548, double_8_802f4530, 8.0),
+                  x, y - 8.0f, x + 8.0f, ((y - 8.0f) - (256.0f - yofs)))
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x32, 248.0f - yofs, BK_DBL(0x500, double_16_802f44e8, 16.0),
+                  8.0f + (184.0f + (16.0f + x)), y - 16.0f, (8.0f + (184.0f + (16.0f + x))) + 16.0f, (y - 16.0f) - (248.0f - yofs))
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x31, 256.0f - yofs, BK_DBL(0x548, double_8_802f4530, 8.0),
+                  8.0f + (184.0f + (48.0f + (184.0f + (16.0f + x)))), y - 8.0f, (8.0f + (184.0f + (48.0f + (184.0f + (16.0f + x))))) + 8.0f, ((y - 8.0f) - (256.0f - yofs)))
+
+    // the bottom edge
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x29, BK_DBL(0x500, double_16_802f44e8, 16.0), BK_DBL(0x500, double_16_802f44e8, 16.0),
+                  x, (((y - 8.0f) - 256.0f) + yofs), x + 16.0f, (((y - 8.0f) - 256.0f) + yofs) - 16.0f)
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2E, BK_DBL(0x500, double_16_802f44e8, 16.0), BK_DBL(0x5B0, double_184_802f4598, 184.0),
+                  (16.0f + x), (((y - 8.0f) - 256.0f) + yofs), (16.0f + x) + 184.0f, (((y - 8.0f) - 256.0f) + yofs) - 16.0f)
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x27, BK_DBL(0x4F0, double_24_802f44d8, 24.0), BK_DBL(0x558, double_48_802f4540, 48.0),
+                  (184.0f + (16.0f + x)), (((y - 8.0f) - 256.0f) + yofs), (184.0f + (16.0f + x)) + 48.0f, (((y - 8.0f) - 256.0f) + yofs) - 24.0f)
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2F, BK_DBL(0x500, double_16_802f44e8, 16.0), BK_DBL(0x5B0, double_184_802f4598, 184.0),
+                  (48.0f + (184.0f + (16.0f + x))), (((y - 8.0f) - 256.0f) + yofs), (48.0f + (184.0f + (16.0f + x))) + 184.0f, (((y - 8.0f) - 256.0f) + yofs) - 16.0f)
+    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2B, BK_DBL(0x500, double_16_802f44e8, 16.0), BK_DBL(0x500, double_16_802f44e8, 16.0),
+                  (184.0f + (48.0f + (184.0f + (16.0f + x)))), (((y - 8.0f) - 256.0f) + yofs), (184.0f + (48.0f + (184.0f + (16.0f + x)))) + 16.0f, (((y - 8.0f) - 256.0f) + yofs) - 16.0f)
+
+    if (type == 1) {
+        for (i = 0; i < 8; i++) {
+            f32 cx = (16.0f + x) + (f32)((i % 2) * 216);
+            f32 cy = (y - 32.0f) - (f32)((i / 2) * 48);
+
+            WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x34, BK_DBL(0x540, double_32_802f4528, 32.0),
+                            BK_DBL(0x5B8, double_192_802f45a0, 192.0), cx, cy, cx + 192.0f, cy - 32.0f)
+        }
+    }
+
+    if (type == 0) {
+        s32 pose;
+        AnimData* anim;
+        f32 labelX;
+
+        winFontInit();
+        labelX = 20.0f + x;
+        winFontSetLabelV((Vec){labelX, y - 14.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0x00, 0x00, 0x00, 0xFF},
+                         luigi_book_list[WW_S32(work, 0x2C8)][WW_S32(work, 0x2D0) * 2]);
+        winFontSetLabelV((Vec){220.0f + labelX, y - 14.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f},
+                         (GXColor){0x00, 0x00, 0x00, 0xFF},
+                         luigi_book_list[WW_S32(work, 0x2C8)][WW_S32(work, 0x2D0) * 2 + 1]);
+
+        // Luigi, reading: the closing pose on the last page
+        pose = L_msgGetWork()->poseId;
+        anim = animPoseGetAnimDataPtr(pose);
+        if (WW_S32(work, 0x2D0) < WW_S32(work, 0x2CC) - 1) {
+            animPoseSetAnim(pose, "HOS_C_1", 0);
+        } else {
+            animPoseSetAnim(pose, "HOS_E_1", 0);
+        }
+        animPoseSetLocalTime(pose, gp->retraceCount % (s32)*(f32*)(*(u8**)((u8*)anim + 0x24) + 0x8));
+        animPoseMain(pose);
+        animPoseDraw(pose, 425.0f + x, y - 275.0f, 0.0f, 180.0f, 5.0f, 2);
+    }
+}
+
 // NONMATCHING (95.25%): register allocation/scheduling only.
 void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
     f32 x8;
