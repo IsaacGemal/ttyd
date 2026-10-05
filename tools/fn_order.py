@@ -216,16 +216,22 @@ def gap_items(gap, blocks=()):
 
 def state_at(lines, upto, kind):
     """Active pragma settings (kind 'pragma') or #define names (kind 'macro') before line index `upto`."""
-    st = {}
+    st, stacks = {}, {}
     for l in lines[:upto]:
-        if kind == "pragma":
+        if kind == "pragma":   # MWCC keeps a stack per pragma: `reset` restores the previous value
             m = PRAGMA.match(l)
             if m and m.group(1) not in ("once",):
                 arg = m.group(2).split("//")[0].strip()
+                stk = stacks.setdefault(m.group(1), [])
                 if arg.startswith("reset"):
-                    st.pop(m.group(1), None)
+                    if stk:
+                        stk.pop()
                 elif arg:
-                    st[m.group(1)] = arg
+                    stk.append(arg)
+                if stk:
+                    st[m.group(1)] = stk[-1]
+                else:
+                    st.pop(m.group(1), None)
         else:
             m = re.match(r"\s*#\s*(define|undef)\s+(\w+)", l)
             if m:

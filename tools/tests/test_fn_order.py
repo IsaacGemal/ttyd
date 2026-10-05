@@ -123,6 +123,15 @@ class Reorder(unittest.TestCase):
         if L.index("static void h(void) {") > L.index("void a(void) {"):
             self.assertEqual(refs.get("h"), "static void h(void);")
 
+    def test_pragma_stack(self):
+        src = ("#pragma dont_inline on\n\n#pragma dont_inline on\nvoid a(void) {\n}\n#pragma dont_inline reset\n\n"
+               "void b(void) {\n}\nvoid c(void) {\n}\n#pragma dont_inline reset\n")
+        L = src.split("\n")
+        # after a's own pair, the file-wide `on` is back in force (reset pops, it does not clear)
+        self.assertEqual(fn_order.state_at(L, L.index("void b(void) {"), "pragma"), {"dont_inline": "on"})
+        out = fn_order.reorder(src, ["c", "b", "a"])
+        self.assertIn("void a(void) {", out)
+
 
 if __name__ == "__main__":
     unittest.main()
