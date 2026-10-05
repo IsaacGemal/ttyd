@@ -46,5 +46,13 @@
     "reason": "the six psq_l loads of effCalcMayaAnimMatrix (a static inline helper, as retail's register ranks require). Original hand-written asm: retail writes GQR5 from a computed value (lis/addi 0x06070607: s16, load scale 6, i.e. /64) that no SDK inline (OSFastCast.h) writes, and loads all six keyframe s16s with psq_l through it, two into f1 back to back with the first never read, which the compiler never emits. Precedent: TP/TWW d_a_movie_player write GQR setup and psq_l as asm in game code. MUST_MATCH only; the natural build has the same maths in C.",
     "approved_by": "Isaac (relayed by the orchestrator)",
     "date": "2026-10-04"
+  },
+  {
+    "file": "src/driver/hitdrv.c",
+    "function": "hitSetGQR5",
+    "class": "original-asm",
+    "reason": "the mtspr GQR5 of hitCalcVtxPosition (a static inline helper). Original hand-written asm: before each packed vertex's psq_lx reads, retail programs GQR5 from the map file's vertex fraction shift (slwi 8 / ori 7 / slwi 16 / or / mtspr GQR5); MWCC 2.6 has no mtspr intrinsic and no SDK inline writes a computed GQR. Same pattern as effMayaSetGQR5. MUST_MATCH only; the natural build scales the s16 positions by 2^-shift in C.",
+    "approved_by": "Isaac (standing policy, 2026-10-04)",
+    "date": "2026-10-05"
   }
 ]
