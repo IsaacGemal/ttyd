@@ -6,13 +6,11 @@
 
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-#include <math.h>
+#include "math_ext.h"
 #include <stdlib.h>
 
-// .rodata constants defined by this unit (order matches the original).
-const Vec vec3_802fa918 = { 0.0f, 0.0f, 0.0f };
-const char str_802FA924[] = "Kemuri5N64";
-const f64 double_to_int_802fa930 = 4503601774854144.0;
+// The zero Vec, the "Kemuri5N64" string and the int->float conversion double are pooled by the
+// compiler from the compound literal, the string literal and the (f32) conversion below.
 
 // .sdata2 float constants (named after their original addresses).
 extern const f32 float_12_8041f368;
@@ -152,6 +150,7 @@ static inline Vec initializeVec(Vec* input) {
 // diff (register names -> f#/r#) shows the emitted Entry stream is instruction-for-instruction
 // identical to the target apart from the register numbers, so the seam is a pure allocator tie-break
 // on an identical IR and has resisted every source-level lever.
+// NONMATCHING (99.59%): only the callee-saved FPR colouring of the args/reset constants differs.
 EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
     EffectEntry* effect;
     effKemuri5Data* data;
@@ -167,7 +166,7 @@ EffectEntry* effKemuri5N64Entry(f32 x, f32 y, f32 z, f32 a4) {
 #endif
 
     effect = effEntry();
-    effect->type = str_802FA924;
+    effect->type = "Kemuri5N64";
     effect->count = 8;
     data = __memAlloc(HEAP_EFFECT, sizeof(effKemuri5Data) * 8);
     effect->userdata = data;
@@ -315,3 +314,25 @@ void effKemuri5Disp(CameraId camId, void* param) {
         tri2(0, 3, 1, 0, 0, 2, 3, 0);
     }
 }
+
+// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+const volatile u32 dat_8041f358 = 0x70601800;
+const f32 float_0p0625_8041f35c = 0.0625f;
+const f32 float_0_8041f360 = 0.0f;
+const f32 float_deg2rad_8041f364 = 0.017453292f;
+const f32 float_12_8041f368 = 12.0f;
+const f32 float_6p2832_8041f36c = 6.2831855f;
+const f32 float_360_8041f370 = 360.0f;
+const f32 float_0p1_8041f374 = 0.1f;
+const f32 float_0p83_8041f378 = 0.83f;
+const f32 float_0p006_8041f37c = 0.006f;
+const f32 float_7p5_8041f380 = 7.5f;
+const f32 float_0p98_8041f384 = 0.98f;
+const f32 float_0p9_8041f388 = 0.9f;
+const f32 float_1_8041f38c = 1.0f;
+const f32 float_0p03_8041f390 = 0.03f;
+const f32 float_1p7_8041f394 = 1.7f;
+const f32 float_0p5_8041f398 = 0.5f;
+const f32 float_neg0p02_8041f39c = -0.02f;
+const f32 float_5Eneg05_8041f3a0 = 0.00005f;
+const f32 float_neg3p9_8041f3a4 = -3.9f;

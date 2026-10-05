@@ -323,17 +323,17 @@ static inline void effPokopiThunderSetColor2(EffPokopiThunderData* data) {
 }
 #endif
 
-// NONMATCHING (97.23% / 63 differing insns): logic, constants, data, the prologue, the colour stack slots
-// (built by the two void inlines above) and loop-2's FP constant registers all match; what is left is
-// mwcc's register colouring/scheduling of the two particle loops. In loop 1 our `p` cursor takes r27 where
-// the target uses r29 (and the `tbl+i` temp the reverse); loop 2's counter takes r30 instead of r26 (so
-// `uoff` and the `cr`/`cg`/`cb` zero-init shift too, and the trailing tri2 loop's bound follows `i`); and
-// the amp's `8.0f * scale` is hoisted to the loop-2 preheader instead of being rematerialised in the branch
-// as the target does. Declaration order (all 630 pairwise swaps), every loop-1 statement permutation, the
-// loop-2 statement order, the p[] assignment order and the loop init shapes were tried and none beat this;
-// the angle average is `/ 2.0f` (strength-reduced to the 0.5 pool multiply) as in effPokopiThunderMain.
+// NONMATCHING (97.29% / 57 differing insns): logic, constants, data, the prologue and the colour stack
+// slots (built by the two void inlines above) match. Loop 2's amplitude/sin/cos are computed in the
+// target's registers; the remaining differences are mwcc's register colouring. In loop 1 our `p` cursor
+// takes r27 where the target uses r29 (and the reverse for the `tbl+i` temp), which also shuffles the
+// volatile FP temporaries of the loop-1 body. Loop 2's counter takes r30 instead of r26 (so `uoff` and
+// the `cr`/`cg`/`cb` zero-init shift too, and the trailing tri2 loop's bound follows `i`), and the amp's
+// `8.0f * scale` is folded and hoisted to the loop-2 preheader instead of being rematerialised in each
+// branch as the target does. The angle average is `/ 2.0f` (strength-reduced to the 0.5 pool multiply)
+// as in effPokopiThunderMain.
 //
-// NONMATCHING (97.23%): 63 instructions differ only in mwcc register colouring/scheduling (see above).
+// NONMATCHING (97.29%): 57 instructions differ only in mwcc register colouring/scheduling (see above).
 void effPokopiThunderDisp(CameraId camId, void* param) {
 	s32 t1;
 	GXTexObj texObj;
@@ -361,6 +361,8 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	GXColor color2;
 	smartEntry* entry;
 	f32 f6;
+	f32 ct;
+	f32 s2;
 	EffPokopiThunderData* data;
 	f32 ang;
 	s32 cb;
@@ -500,18 +502,18 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 		u = (0x80 - uoff) << 5;
 		f20 = 8.0f * scale * p[56];
 		ang = 6.2831855f * ang / 360.0f;
-		f6 = f20 * (f32)sin(ang);
-		f20 = f20 * (f32)cos(ang);
-		v[0].pos[0] = (s16)(10.0f * (p[20] + f6));
-		v[0].pos[1] = (s16)(10.0f * (p[32] + f20));
+		s2 = f20 * (f32)sin(ang);
+		ct = f20 * (f32)cos(ang);
+		v[0].pos[0] = (s16)(10.0f * (p[20] + s2));
+		v[0].pos[1] = (s16)(10.0f * (p[32] + ct));
 		v[0].pos[2] = (s16)(10.0f * (p[44] + zero));
 		v[0].tex0[0] = u;
 		v[0].tex0[1] = 0;
 		v[0].clr[0] = cr;
 		v[0].clr[1] = cg;
 		v[0].clr[2] = cb;
-		v[1].pos[0] = (s16)(10.0f * (p[20] - f6));
-		v[1].pos[1] = (s16)(10.0f * (p[32] - f20));
+		v[1].pos[0] = (s16)(10.0f * (p[20] - s2));
+		v[1].pos[1] = (s16)(10.0f * (p[32] - ct));
 		v[1].pos[2] = (s16)(10.0f * (p[44] + zero));
 		v[1].tex0[0] = u;
 		v[1].tex0[1] = 0x400;

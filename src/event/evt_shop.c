@@ -594,23 +594,21 @@ void title_disp(WinMgrEntry* entry) {
 	}
 }
 
-// list_disp: every call and immediate matches (tools/diff_shape.py: calls same 38 38), so the
-// remaining diffs are register allocation/scheduling. `i = 0` is emitted just before the loop
-// preheader, not back after `bl pouchGetPtr`, and the two header x-sums and the loop's price x-sum
-// keep their last intermediate in r3 where the original uses r0.
-// The int->float block: splitting the price-width product into two statements
-// `f32 w = width; w *= 0.6f;` (rather than `f32 w = 0.6f * width;`, and rather than the original
-// inline `0.6f * width`) makes the compiler lay the block out the way the original does: the
-// unsigned `width` conversion is met first, so `f28` is the mask (2^52, the original's
-// `double_to_int_mask_802ece28`) and `width`'s stack slot is 0x188. It also moves `li r23, 0`
-// next to `bl pouchGetPtr`. 95.80 -> 97.19. The original's y argument is
-// `field_0x1C - 28 - i*26`, not `field_0x1C - i*26 - 28`.
-// What is left is that the two statements keep the product materialised (`fmuls`+`fsubs`) where
-// the original fuses it into one `fnmsubs`; inlining the product back folds the conversion and
-// reverts f28 to the signed double, so the two cannot both be had from source. Changing the
-// unit's .rodata order, `pool_data`/`global_optimizer`/`dont_inline`/`opt_*` pragmas, and the
-// function order do not change it: the pool order is internal to this function's codegen.
-// NONMATCHING (97.19%): register allocation/scheduling only; see above.
+// list_disp: every call and immediate matches; the remaining diffs are register allocation and
+// scheduling. `i = 0` is emitted just before the loop preheader, and the two header x-sums and the
+// loop's price x-sum keep their last intermediate in r3 where the original uses r0.
+//
+// The int->float block: the price-width product and the additions are written as statements
+// (`f32 w = width;`, `f32 x = f20/2 - w * 0.6f;`, `x = f18 + x;`, `x -= 40.0f;`) rather than the
+// original's inline expression. That makes the compiler meet the unsigned `width` conversion
+// first, so `f28` is the 2^52 mask (`double_to_int_mask_802ece28`) and `width` lands at stack slot
+// 0x188, and it fuses the product into one `fnmsubs` like the original. What still differs is the
+// `fnmsubs` operand order: `w * 0.6f` puts `w` first where the original's `0.6f * width` puts the
+// constant first; writing `0.6f * w` fixes the operand order but reverts the compiler's
+// loop-invariant constant order (0.6 goes to `f28`), which costs more.
+
+// NONMATCHING (99.07%): the `fnmsubs` operand order is `(w, 0.6f)` instead of `(0.6f, w)`, and
+// the two header x-sums, the price x-sum and `i = 0` use r3 where the original uses r0 (see above).
 void list_disp(WinMgrEntry* entry) {
 	PouchData* pouch;
 	GXColor color0;
@@ -684,9 +682,17 @@ void list_disp(WinMgrEntry* entry) {
 		sprintf(buf, str_8041BC28, msg);
 		width = FontGetMessageWidth(buf);
 		{
+#ifdef MUST_MATCH
+			f32 w = width;
+			f32 x = (f32)(entry->field_0x20 / 2) - w * float_0p6_8041bc2c;
+			x = (f32)entry->field_0x18 + x;
+			x -= float_40_8041bc30;
+			PSMTXTrans(mtx, x, entry->field_0x1C - 28 - i * 26, float_0_8041bc34);
+#else
 			f32 w = width;
 			w *= float_0p6_8041bc2c;
 			PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - w) - float_40_8041bc30, entry->field_0x1C - 28 - i * 26, float_0_8041bc34);
+#endif
 		}
 		s = MATCH_F32(float_0p64_8041bc38);
 		PSMTXScale(scale, s, s, s);
