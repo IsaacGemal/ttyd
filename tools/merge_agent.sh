@@ -132,6 +132,9 @@ fi
 # --partial). Advisory only: a legitimately computed or folded value (x - 150.0f vs x + -150.0f) is flagged too.
 PV=$(timeout 300 python3 tools/reloc_value_check.py --partial "$(basename "$UNIT")" 2>/dev/null | grep -E '^\s+\S+ \+0x' | head -8)
 if [ -n "$PV" ]; then echo "NOTE  $TAG: partial-function constant differences (advisory; check each is a spelling, not a wrong value):"; echo "$PV"; fi
+# near-miss functions: struct stores and li constants only one side has, alignment-free (tools/store_sweep.py). Advisory.
+SV=$(timeout 120 python3 tools/store_sweep.py "/$UNIT" 2>/dev/null | grep -E '^  \S+: ' | head -8)
+if [ -n "$SV" ]; then echo "NOTE  $TAG: partial-function store/constant differences (advisory; a field the C never writes, or a wrong width or literal):"; echo "$SV"; fi
 
 matched() { python3 -c "import json;print(json.load(open('build/ci/accepted.json'))['measures']['matched_functions'])"; }
 n0=$(matched); python3 tools/ci.py --accept $FLAGS >/dev/null 2>&1; n1=$(matched)
