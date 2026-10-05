@@ -2452,15 +2452,24 @@ extern const f32 float_220_8041d868;
 extern const GXColor dat_8041d7a4;
 extern const GXColor dat_8041d7a8;
 
+// The original passes these draw arguments by value: an inline's by-value parameters give the same caller copies.
+static inline void monoFontV(Vec pos, Vec scale, GXColor color, const char* msg) {
+    winFontSet(&pos, &scale, &color, msg);
+}
+static inline void monoIconV(s32 id, Vec pos, Vec scale, GXColor color) {
+    winIconSet(id, &pos, &scale, &color);
+}
 #pragma opt_loop_invariants off // needed: the target reloads the vec3 tables and address offsets inside the loop
 // Behaviour complete, checked against the asm. Declaring the shared rodata base non-const and
 // disabling loop-invariant motion stopped MWCC hoisting the vec3 loads; keeping the int->float
-// offsets as integer temps (`xoff`) and inlining the float positions (`xo`/`yo`, `ax`/`ay`)
-// made the allocator rematerialise them exactly as the original does. Tattle/msg coalescing and the
-// i2f pool doubles still differ.
-// NONMATCHING (91.54%): the allocator keeps tattle in one more callee-saved GPR than the original
-// (9: r23-r31 vs 8: r24-r31) and pools the two int->float doubles anonymously instead of reading
-// them at base+0x420/0x428, which offsets the loop colouring. All 33 calls and every immediate match.
+// offsets as integer temps (`xoff`) and inlining the float positions made the allocator rematerialise
+// them as the original does. The five winFontSet and three winIconSet calls take their Vec/Vec/GXColor
+// by value (the monoFontV/monoIconV inlines, arguments passed straight in), which is where most of the
+// original's larger frame comes from.
+// NONMATCHING (96.89%): stack-slot placement (the frame is 0x2c0 against 0x390; the int->float
+// temporaries sit higher in the original), the int->float doubles read from the anonymous pool
+// instead of base+0x420/0x428, and the tattle/msg register colouring. All 33 calls and every
+// immediate match.
 void monoshiriGX(WindowWork* work, f32 x, f32 y) {
     LogWin* w = (LogWin*)work;
     char* base = (char*)str_802F5EB8;
@@ -2484,23 +2493,15 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(pmsg));
         winFontInit();
         {
-            Vec scale = LV(0x26C, vec3_802f6124);
-            Vec pos = logMkVec(LV(0x260, vec3_802f6118), (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
-                               y - float_166_8041d830);
-            GXColor c = c8b;
-
-            winFontSet(&pos, &scale, &c, pmsg);
+            monoFontV(logMkVec(LV(0x260, vec3_802f6118), (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
+                               y - float_166_8041d830), LV(0x26C, vec3_802f6124), c8b, pmsg);
         }
     }
     sprintf(buf, RO(base, 0x480, "%d\201^%d"), w->seenCnt, w->charCnt);
     wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf));
     {
-        Vec scale = LV(0x284, vec3_802f613c);
-        Vec pos = logMkVec(LV(0x278, vec3_802f6130), (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
-                           y - float_184_8041d834);
-        GXColor c = c8b;
-
-        winFontSet(&pos, &scale, &c, buf);
+        monoFontV(logMkVec(LV(0x278, vec3_802f6130), (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
+                           y - float_184_8041d834), LV(0x284, vec3_802f613c), c8b, buf);
     }
     winFontInit();
     fx = (float_24_8041d838 + x) - float_5_8041d83c;
@@ -2530,18 +2531,10 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         sprintf(buf2, "%d\x81\x44", (s32)enemy_monoshiri_sort_table[id]);
         xoff = (i / 8) * 0xD8;
         {
-            Vec scale = LV(0x29C, vec3_802f6154);
-            Vec pos = logMkVec(LV(0x290, vec3_802f6148), fx + (f32)xoff, fy - (f32)((i % 8) * 0x18));
-            GXColor c = c8c;
-
-            winFontSet(&pos, &scale, &c, buf2);
+            monoFontV(logMkVec(LV(0x290, vec3_802f6148), fx + (f32)xoff, fy - (f32)((i % 8) * 0x18)), LV(0x29C, vec3_802f6154), c8c, buf2);
         }
         {
-            Vec scale = LV(0x2B4, vec3_802f616c);
-            Vec pos = logMkVec(LV(0x2A8, vec3_802f6160), xr + (f32)xoff, fy - (f32)((i % 8) * 0x18));
-            GXColor c = c8c;
-
-            winFontSet(&pos, &scale, &c, msg);
+            monoFontV(logMkVec(LV(0x2A8, vec3_802f6160), xr + (f32)xoff, fy - (f32)((i % 8) * 0x18)), LV(0x2B4, vec3_802f616c), c8c, msg);
         }
     }
     if (w->charPage > 0) {
@@ -2549,10 +2542,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         winTexSet(0x17, logMkVec(LV(0x2C0, vec3_802f6178), float_440_8041d84c + x, float_18_8041d850 + y), LV(0x2CC, vec3_802f6184), c4);
         winIconInit();
         {
-            Vec scale = LV(0x2E4, vec3_802f619c);
-            Vec pos = logMkVec(LV(0x2D8, vec3_802f6190), float_440_8041d84c + x, y);
-
-            winIconSet(0x7E, &pos, &scale, &c4);
+            monoIconV(0x7E, logMkVec(LV(0x2D8, vec3_802f6190), float_440_8041d84c + x, y), LV(0x2E4, vec3_802f619c), c4);
         }
     }
     if (w->charPage < (w->charCnt + 0xF) / 16 - 1) {
@@ -2560,10 +2550,7 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         winTexSet(0x17, logMkVec(LV(0x2F0, vec3_802f61a8), float_440_8041d84c + x, (y - float_15_8041d854) - float_240_8041d858), LV(0x2FC, vec3_802f61b4), c4);
         winIconInit();
         {
-            Vec scale = LV(0x314, vec3_802f61cc);
-            Vec pos = logMkVec(LV(0x308, vec3_802f61c0), float_440_8041d84c + x, y - float_240_8041d858);
-
-            winIconSet(0x80, &pos, &scale, &c4);
+            monoIconV(0x80, logMkVec(LV(0x308, vec3_802f61c0), float_440_8041d84c + x, y - float_240_8041d858), LV(0x314, vec3_802f61cc), c4);
         }
     }
     msg = msgSearch(RO(base, 0x490, "msg_menu_sort_narabikae"));
@@ -2574,18 +2561,11 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         winFontInit();
         ox = x + (float_420_8041d860 - fw);
         {
-            Vec scale = LV(0x32C, vec3_802f61e4);
-            Vec pos = logMkVec(LV(0x320, vec3_802f61d8), ox, y - float_210_8041d7f0);
-            GXColor c = c8;
-
-            winFontSet(&pos, &scale, &c, msg);
+            monoFontV(logMkVec(LV(0x320, vec3_802f61d8), ox, y - float_210_8041d7f0), LV(0x32C, vec3_802f61e4), c8, msg);
         }
         winIconInit();
         {
-            Vec scale = LV(0x344, vec3_802f61fc);
-            Vec pos = logMkVec(LV(0x338, vec3_802f61f0), ox - float_30_8041d864, y - float_220_8041d868);
-
-            winIconSet(0x217, &pos, &scale, &c4);
+            monoIconV(0x217, logMkVec(LV(0x338, vec3_802f61f0), ox - float_30_8041d864, y - float_220_8041d868), LV(0x344, vec3_802f61fc), c4);
         }
     }
 }
