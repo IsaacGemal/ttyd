@@ -942,21 +942,26 @@ static s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (96.45%): the inner `if (x >= 0x07000007)` comes out as `blt end` where the
-// original has `bge body; b end`; tried nested / && / negated / else-return forms, all identical.
+// A switch over the sequence states 0x07000007..0x0700001B: MWCC lowers the run of labels to the original's
+// range test (`bge end`, `bge body; b end`), which no if/else form reproduces.
 void _audience_Whistle_control(void) {
     BattleSeqEndWork* work = _battleWorkPointer->seqEndWork;
 
     if (work == NULL) {
         return;
     }
-    if (*(s32*)((u8*)work + 0x0) < 0x0700001C) {
-        if (*(s32*)((u8*)work + 0x0) >= 0x07000007) {
-            if (--*(s32*)((u8*)work + 0x2A0) < 0) {
-                *(s32*)((u8*)work + 0x2A0) = irand(0x78) + 0x3C;
-                BattleAudienceSoundWhistle();
-            }
+    switch (*(s32*)((u8*)work + 0x0)) {
+    case 0x07000007: case 0x07000008: case 0x07000009: case 0x0700000A:
+    case 0x0700000B: case 0x0700000C: case 0x0700000D: case 0x0700000E:
+    case 0x0700000F: case 0x07000010: case 0x07000011: case 0x07000012:
+    case 0x07000013: case 0x07000014: case 0x07000015: case 0x07000016:
+    case 0x07000017: case 0x07000018: case 0x07000019: case 0x0700001A:
+    case 0x0700001B:
+        if (--*(s32*)((u8*)work + 0x2A0) < 0) {
+            *(s32*)((u8*)work + 0x2A0) = irand(0x78) + 0x3C;
+            BattleAudienceSoundWhistle();
         }
+        break;
     }
 }
 
