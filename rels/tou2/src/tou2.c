@@ -1204,9 +1204,8 @@ static f32 camGetRy(void) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (99.85%): only the `8.0f - (angle + cam->viewYaw)` branch differs: the original keeps the sum in f1
-// and loads 8.0f into f0; ours swaps them (operand-order and temp spellings tried). Reusing `&handle->userdata`
-// (permuter, 2026-10-05) fixed the event/npc callee-saved swap.
+// 100%: reusing `&handle->userdata` fixes the event/npc callee-saved swap, and the first branch reads the camera
+// straight from camGetPtr (no `cam` local) so the sum lands in f1 as in the original (permuter, 2026-10-05).
 USER_FUNC(tou_champion_belt_28_text_2A10) {
     AnimationPose* pose;
     NpcEntry* npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
@@ -1235,8 +1234,7 @@ USER_FUNC(tou_champion_belt_28_text_2A10) {
     ((BeltData*)*ud)->pos.y = loc[group].y;
     ((BeltData*)*ud)->pos.z = loc[group].z;
     if ((angle > 90.0f && angle <= 270.0f) || (angle < -90.0f && angle >= -270.0f)) {
-        cam = camGetPtr(CAMERA_3D);
-        ((BeltData*)*ud)->field_1C = 8.0f - (angle + cam->viewYaw);
+        ((BeltData*)*ud)->field_1C = 8.0f - (angle + camGetPtr(CAMERA_3D)->viewYaw);
     } else {
         cam = camGetPtr(CAMERA_3D);
         ((BeltData*)*ud)->field_1C = -(angle + cam->viewYaw) - 8.0f;
