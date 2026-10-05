@@ -43,6 +43,16 @@ OBJDIFF = ROOT / "build" / "tools" / "objdiff-cli"
 PROTECTED = ("config/", "orig/", "tools/", ".github/", "libs/", "assets/")
 UNPROTECTED = ("libs/metrowerks/src/",)  # the runtime libraries ported here are ours to decompile (their headers aren't)
 ASM_RE = re.compile(r"(^|[^\w])(asm|__asm__|__asm)\b")
+ASM_EXCEPTIONS = ROOT / "tools" / "asm_exceptions.json"  # the only game-code functions that may be asm (docs/CONTEXT.md)
+
+
+def asm_exception(path, code, exceptions=None):
+    """True when a new line mentioning asm declares a function tools/asm_exceptions.json lists for that file."""
+    import json
+    if exceptions is None:
+        exceptions = json.loads(ASM_EXCEPTIONS.read_text()) if ASM_EXCEPTIONS.exists() else []
+    m = re.search(r"\basm\b[^(]*?\b(\w+)\s*\(", code)
+    return bool(m) and any(e["file"] == path and e["function"] == m.group(1) for e in exceptions)
 PRAGMA_RE = re.compile(r"^\s*#\s*pragma\b(?!\s+once\b)")
 UNIT_KEYS = ["fuzzy_match_percent", "matched_code_percent", "matched_data_percent",
              "complete_code_percent", "complete_data_percent"]
@@ -85,10 +95,11 @@ def lint(base, allow_pragma, allow_protected, allow_configure, allow_asm=False):
                 problems.append(f"configure.py: only Object(...) lines may change (pass --allow-configure if intended): {added.strip()[:100]}")
             continue
         code = added.split("//", 1)[0]
-        if ASM_RE.search(code) and not (allow_asm and current.startswith(UNPROTECTED)):
+        if ASM_RE.search(code) and not (allow_asm and current.startswith(UNPROTECTED)) and not asm_exception(current, code):
             problems.append(f"{current}: new inline asm: {added.strip()[:100]}"
                             + (" (--allow-asm: only for the ported libraries' hand-written assembly, checked against"
-                               " the reference projects)" if current.startswith(UNPROTECTED) else ""))
+                               " the reference projects)" if current.startswith(UNPROTECTED) else
+                               " (game code: only functions listed in tools/asm_exceptions.json, with Isaac's approval)"))
         if PRAGMA_RE.search(code) and not allow_pragma:
             problems.append(f"{current}: new #pragma (pass --allow-pragma if intended): {added.strip()[:100]}")
     if problems:
