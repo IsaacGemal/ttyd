@@ -24,184 +24,281 @@ Vec cloud_at;
 // pooled strings); the inline conversions still emit their own anonymous copy at +0x38 (i2f limit).
 const f64 double_to_int_802f8130;
 
-void cloudGetAt(Vec* position) {
+
+void mot_cloud() {
+    MarioWork* mario = marioGetPtr();
+    
+    if((mario->trigFlags & 0x1) != 0) {
+        mario->trigFlags &= ~0x1;
+        mario->flags &= ~(MARIO_FLAG_HAS_INPUT_JUMP|MARIO_FLAG_IS_STEPPING|MARIO_FLAG_IS_FALLING|MARIO_FLAG_IS_JUMPING);
+        mario->multiTimer = 0;
+        mario->airTimer = 0;
+        mario->currSubMotionId = 0;
+    }
+}
+
+void cloudResetAt() {
     MarioWork* mario = marioGetPtr();
     u32 partyId = marioGetPartyId();
     PartyEntry* party = partyGetPtr(partyId);
 
-    if (party == NULL || (party->currentMemberId == PARTY_MEMBER_FLURRIE && (party->flags & PARTY_FLAG_IS_BEING_USED) == 0)) {
-        return;
+    if(party != NULL && party->currentMemberId == PARTY_MEMBER_FLURRIE) {
+        cloud_at.x = camGetPtr(CAMERA_3D)->cameraAt.x;
+        cloud_at.y = camGetPtr(CAMERA_3D)->cameraAt.y;
+        cloud_at.z = camGetPtr(CAMERA_3D)->cameraAt.z;
+
+        marioCamZoomOffReq2(600);
     }
 
-    if ((mario->dispFlags & (1 << 20)) == 0) {
-        CameraEntry* camera = camGetPtr(CAMERA_3D);
-
-        if(camera->stateA == 0) {
-            cloud_at = *position;
-        }
-        else {
-            *position = cloud_at;
-        }
-    }
-}
-
-#define cloud ((PartyCloud*)party->useStruct)
-#ifdef MUST_MATCH
-// Match-only: reading the mode through an inline gives the original's register allocation
-// (cloud in r4, mode in r3); the plain dereference in the #else compiles the same but swaps them.
-static inline s16 getHitBreatheout2_mode(PartyEntry* party) {
-    return *(s16*)((u8*)((PartyCloud*)party->useStruct) + 0x38);
-}
-#endif
-
-void getHitBreatheout2(PartyEntry* party, f32 angle) {
-    MarioWork* mario;
-    HitEntry* hit;
-    f32 sin2, cos2, sin1, cos1;
-    f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
-#ifdef MUST_MATCH
-    f32 dz, dx; // reversed declaration order puts dx/dz in the original's stack slots
-#else
-    f32 dx, dz;
-#endif
-    f32 f31;
-    f32 dir;
-    f32 f30;
-    s16 mode;
-
-#ifdef MUST_MATCH
-    mode = getHitBreatheout2_mode(party);
-#else
-    mode = *(s16*)((u8*)cloud + 0x38);
-#endif
-    mario = party->playerPtr;
-    if (mode == 0) {
-        f30 = 8.0f;
-    } else if (mode == 1) {
-        f30 = 20.0f;
-    } else if (mode == 2) {
-        f30 = 40.0f;
-    }
-
-    if (cloud->unk8 >= *(f32*)((u8*)cloud + 0xC)) {
-        cloud->unk8 = *(f32*)((u8*)cloud + 0xC);
-    }
-
-    sincosf(&sin1, &cos1, angle);
-    f31 = toMovedir(cloud->unk4);
-    sincosf(&sin2, &cos2, f31);
-
-    distance = cloud->unk8;
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                         party->position.x, mario->position.y + f30, party->position.z,
-                         sin2, sin1, cos2);
-    if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
-        hit = NULL;
-    }
-    cloud->unk20 = (s32)hit;
-
-    dx = 0.0f;
-    dz = 0.0f;
-    if (*(void**)((u8*)party + 0x178) != NULL) {
-        movePos(&dx, &dz, 24.0f, f31);
-        *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x4) = party->position.x + dx;
-        *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x8) = 18.0f + party->position.y;
-        *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0xC) = party->position.z + dz;
-        *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x5C) =
-            0.6f * (cloud->unk8 / *(f32*)((u8*)cloud + 0xC));
-
-        if (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) {
-            *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x58) = -25.0f;
-        } else {
-            *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x58) = 205.0f;
-        }
-    }
-
-    if (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) {
-        f31 = 1.0f;
-    } else {
-        f31 = -1.0f;
-    }
-
-    if (*(s32*)((u8*)cloud + 0x14) == 0) {
-        *(f32*)((u8*)cloud + 0x10) += 1.0f;
-        if (*(f32*)((u8*)cloud + 0x10) >= 20.0f) {
-            *(f32*)((u8*)cloud + 0x10) = 20.0f;
-            *(s32*)((u8*)cloud + 0x14) = 1;
-        }
-    } else {
-        *(f32*)((u8*)cloud + 0x10) -= 1.0f;
-        if (*(f32*)((u8*)cloud + 0x10) <= -20.0f) {
-            *(f32*)((u8*)cloud + 0x10) = -20.0f;
-            *(s32*)((u8*)cloud + 0x14) = 0;
-        }
-    }
-
-    dir = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x10) * f31);
-    sincosf(&sin2, &cos2, dir);
-    distance = cloud->unk8;
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                         party->position.x, mario->position.y + f30, party->position.z,
-                         sin2, sin1, cos2);
-    if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
-        hit = NULL;
-    }
-    cloud->unk28 = (s32)hit;
-
-    if (*(s32*)((u8*)cloud + 0x1C) == 0) {
-        *(f32*)((u8*)cloud + 0x18) += 1.0f;
-        if (*(f32*)((u8*)cloud + 0x18) >= 20.0f) {
-            *(f32*)((u8*)cloud + 0x18) = 20.0f;
-            *(s32*)((u8*)cloud + 0x1C) = 1;
-        }
-    } else {
-        *(f32*)((u8*)cloud + 0x18) -= 1.0f;
-        if (*(f32*)((u8*)cloud + 0x18) <= -20.0f) {
-            *(f32*)((u8*)cloud + 0x18) = -20.0f;
-            *(s32*)((u8*)cloud + 0x1C) = 0;
-        }
-    }
-
-    dir = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x18) * f31);
-    sincosf(&sin2, &cos2, dir);
-    distance = cloud->unk8;
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                         party->position.x, mario->position.y + f30, party->position.z,
-                         sin2, sin1, cos2);
-    if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
-        hit = NULL;
-    }
-    cloud->unk2C = (s32)hit;
-}
-#undef cloud
-
-void cloud_exit(PartyEntry* party) {
-    MarioWork* mario = party->playerPtr;
-
-    if (party->useStruct != NULL) {
-        if (*(u32*)((u8*)party->useStruct + 0x34) != 0xFFFFFFFFu) {
-            psndSFXOff(*(s32*)((u8*)party->useStruct + 0x34));
-            *(u32*)((u8*)party->useStruct + 0x34) = 0xFFFFFFFFu;
-        }
-    }
-
-    if (*(void**)((u8*)party + 0x178) != NULL) {
-        effSoftDelete((EffectEntry*)*(void**)((u8*)party + 0x178));
-        *(void**)((u8*)party + 0x178) = NULL;
-    }
-
-    if (party->useStruct != NULL) {
-        __memFree(HEAP_DEFAULT, party->useStruct);
-        party->useStruct = NULL;
-    }
-
-    mario->dispFlags &= ~(1 << 8);
-    mario->dispFlags &= ~(1 << 2);
+    mario->dispFlags &= ~(1 << 8); //kDisableMakeDispDir
+    mario->dispFlags &= ~(1 << 2); //kForceFrontPose
     marioAdjustMoveDir();
-    marioChgMot(0);
     mario->unk150.x = 0.01f;
     mario->unk138 = 0.0f;
 }
+
+u8 cloudGetStatus() {
+    u32 partyId = marioGetPartyId();
+    PartyEntry* party = partyGetPtr(partyId);
+    u8 status = 2;
+
+    if (party == NULL || (party->currentMemberId == PARTY_MEMBER_FLURRIE && (party->flags & PARTY_FLAG_IS_BEING_USED) == 0)) {
+        status = 0;
+        return status;
+    }
+    else if (party->useMotionId == 10 && party->useMotionId < 20) {
+        status = 1;
+    }
+
+    return status;
+}
+
+f32 cloudGetBreathDir() {
+    PartyEntry* party = partyGetPtr(PARTY_SLOT_PARTY);
+    f32 breathDir;
+
+    if (party == NULL) {
+        return 0.0f;
+    }
+
+    if ((party->flags & PARTY_FLAG_IS_BEING_USED) != 0 && (party->useMotionId < MARIO_MOTION_FALL)){
+        breathDir = -1.0f;
+    }
+    else if (party->useStruct == NULL) {
+        breathDir = 0.0f;
+    }
+    else {
+        PartyCloud* cloud = (PartyCloud*)party->useStruct;
+        breathDir = toMovedir(cloud->unk4);
+    }
+    
+    return breathDir;
+}
+
+f32 cloudGetBreathPower(f32 param_1, Vec* param_2) {
+    PartyEntry* party = partyGetPtr(PARTY_SLOT_PARTY);
+    f32 breathPower;
+    f32 dist;
+    f32 angle;
+    f32 unk8;
+    f32 val;
+
+    breathPower = 0.0f;
+    if (party == NULL)  {
+        return breathPower;
+    }
+
+    val = 10.0f;
+    if(
+        party->currentMemberId == PARTY_MEMBER_FLURRIE 
+        && (party->flags & PARTY_FLAG_IS_BEING_USED) != 0 
+        && party->useMotionId >= MARIO_MOTION_FALL
+        && ((fabs(party->position.y - param_2->y - 18.0f)) <= val)
+    ) {
+        PartyCloud* cloud = (PartyCloud*)party->useStruct;
+        unk8 = cloud->unk8;
+        if (-((0.5f * param_1) - distABf(party->position.x, party->position.z, param_2->x, param_2->z)) <= unk8) {
+            PartyCloud* cloud = (PartyCloud*)party->useStruct;
+            dist = toMovedir(cloud->unk4);
+            angle = angleABf(party->position.x, party->position.z, param_2->x, param_2->z);
+            dist = revise360(angle - dist);
+            
+            if (dist <= 30.0f || dist >= 330.0f) {
+                breathPower = cos((3.1415927f * dist) / 180.0f);
+                val = 100.0f;
+                breathPower = val * fabsf(breathPower);
+            }
+        }
+    }
+
+    return breathPower;
+}
+
+s32 cloudGetHitBreathout(s32 param_1) {
+    u32 partyId = marioGetPartyId();
+    PartyEntry* party = partyGetPtr(partyId);
+    s32 hitBreathout;
+
+    if (party == NULL) {
+        return 0;
+    }
+
+    if (
+        party->currentMemberId != PARTY_MEMBER_FLURRIE 
+        || (party->flags & PARTY_FLAG_IS_BEING_USED) == 0
+        || party->useMotionId < MARIO_MOTION_FALL
+    ){
+            return 0;
+    }
+
+    hitBreathout = 0;
+    if (param_1 == 0) {
+        hitBreathout = ((PartyCloud*)party->useStruct)->unk20;
+    }
+    else if (param_1 == 1) { 
+        hitBreathout = ((PartyCloud*)party->useStruct)->unk24;
+    }
+    else if (param_1 == 2) {
+        hitBreathout = ((PartyCloud*)party->useStruct)->unk28;
+    }
+    else if (param_1 == 3) { 
+        hitBreathout = ((PartyCloud*)party->useStruct)->unk2C;
+    }
+    
+    return hitBreathout;
+}
+
+f32 cloudGetBreathDist() {
+    u32 partyId = marioGetPartyId();
+    PartyEntry* party = partyGetPtr(partyId);
+    f32 breathDist;
+
+    if (party == NULL) {
+        breathDist = 0.0f;
+        return breathDist;
+    }
+
+    if ((party->currentMemberId != PARTY_MEMBER_FLURRIE || (party->flags & PARTY_FLAG_IS_BEING_USED) == 0) || party->useMotionId < MARIO_MOTION_FALL) {
+        breathDist = 0.0f;
+    }
+    else {
+        PartyCloud* cloud = (PartyCloud*)party->useStruct;
+        breathDist = cloud->unk8;
+    }
+
+    return breathDist;
+}
+
+void unk_801820d0(PartyEntry* party) {
+    *(f32*)((u8*)party + 0x17C) = 0.0f;
+    *(f32*)((u8*)party + 0x180) = 4.25f;
+}
+
+void unk_8018206c(PartyEntry* party) {
+    *(f32*)((u8*)party + 0x17C) = revise360(*(f32*)((u8*)party + 0x17C) - *(f32*)((u8*)party + 0x180));
+    *(f32*)((u8*)party + 0x80) = 3.0f + 3.0f * (f32)sin((3.1415927f * *(f32*)((u8*)party + 0x17C)) / 180.0f);
+}
+
+void cloud_move(PartyEntry* party) {
+    if ((party->field_8 & 0x8) != 0) {
+        party->field_8 &= ~0x8;
+        partyMoveFlyInit(party, 1);
+        *(f32*)((u8*)party + 0x17C) = 0.0f;
+        *(f32*)((u8*)party + 0x180) = 4.25f;
+    }
+
+    partyFlyMain(party);
+
+    *(f32*)((u8*)party + 0x17C) = revise360(*(f32*)((u8*)party + 0x17C) - *(f32*)((u8*)party + 0x180));
+    *(f32*)((u8*)party + 0x80) = 3.0f + 3.0f * (f32)sin((3.1415927f * *(f32*)((u8*)party + 0x17C)) / 180.0f);
+
+    if (party->field_3B != 2) {
+        party->field_8 &= ~0x40000;
+    }
+}
+
+void cloud_init(PartyEntry* party) {
+    party->field_33 = 5;
+    party->field_32 = 1;
+    *(f32*)((u8*)party + 0xF0) = 38.0f;
+    *(f32*)((u8*)party + 0xF4) = 24.0f;
+    *(s32*)((u8*)party + 0x174) = 0;
+    *(s32*)((u8*)party + 0x178) = 0;
+    *(s32*)((u8*)party + 0x17C) = 0;
+    *(s32*)((u8*)party + 0x180) = 0;
+    *(s32*)((u8*)party + 0x170) = 0;
+    *(s32*)((u8*)party + 0x178) = 0;
+}
+
+// `opt_common_subs off`: with CSE on MWCC hoists party+0x94 across movePos into a
+// callee-saved register (r29 + a 0x20 frame). Writing the flag as `pf = (...)` rather
+// than `if (...) pf = 1;` gives the original's r0 allocation for pf.
+#pragma opt_common_subs off // without it MWCC CSEs party+0x94 across movePos into a callee-saved register (r29)
+static inline void cloudMoveToMario(PartyEntry* party) {
+    MarioWork* pm = party->playerPtr;
+    f32 pa;
+    s32 pf;
+    *(Vec*)((u8*)party + 0x94) = pm->position;
+    pa = *(f32*)pm->unk1AC;
+    pf = (pa < 90.0f || pa >= 270.0f);
+    pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
+    movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
+    *(f32*)((u8*)party + 0x98) += 10.0f;
+    party->position = *(Vec*)((u8*)party + 0x94);
+}
+
+// The original spells the last two guards as one `mot <= 1 || mot == 2` condition; MWCC then
+// keeps the `mot == 2` arm out of line (`bne body; b end`). The braces below just keep the
+// cleanup body in its own scope (and unchanged from the base).
+void cloud_use(PartyEntry* party) {
+    MarioWork* mario = party->playerPtr;
+    u16 mot;
+
+    N__cloud_use(party);
+
+    mot = *(u16*)((u8*)mario + 0x2E);
+    if (mot == 0x1B) {
+        return;
+    }
+    if (mot <= 1 || mot == 2) {
+        return;
+    }
+    {
+        party->flags &= ~(1 << 8);
+
+        if (party->useStruct != NULL) {
+            if (*(u32*)((u8*)party->useStruct + 0x34) != 0xFFFFFFFFu) {
+                psndSFXOff(*(s32*)((u8*)party->useStruct + 0x34));
+                *(u32*)((u8*)party->useStruct + 0x34) = 0xFFFFFFFFu;
+            }
+        }
+
+        if (*(void**)((u8*)party + 0x178) != NULL) {
+            effSoftDelete((EffectEntry*)*(void**)((u8*)party + 0x178));
+            *(void**)((u8*)party + 0x178) = NULL;
+        }
+
+        cloudMoveToMario(party);
+
+        party->flags2 |= 0x10;
+        party->flags &= 0x7FFFFFFF;
+
+        if (party->useStruct != NULL) {
+            __memFree(HEAP_DEFAULT, party->useStruct);
+            party->useStruct = NULL;
+        }
+
+        mot = *(u16*)((u8*)mario + 0x2E);
+        if (mot == 0x1F || mot == 0x20) {
+            partyChgRunMode(party, 0x0D);
+        } else {
+            partyChgPose(party, partyChgPoseId(party, 1));
+            partyChgRunMode(party, 2);
+            partyChgMot(party, 0);
+        }
+    }
+}
+#pragma opt_common_subs reset
 
 #define cloud ((PartyCloud*)party->useStruct)
 
@@ -486,281 +583,185 @@ void N__cloud_use(PartyEntry* party) {
 #endif
 #undef MOVE_TO_MARIO
 
-// `opt_common_subs off`: with CSE on MWCC hoists party+0x94 across movePos into a
-// callee-saved register (r29 + a 0x20 frame). Writing the flag as `pf = (...)` rather
-// than `if (...) pf = 1;` gives the original's r0 allocation for pf.
-#pragma opt_common_subs off // without it MWCC CSEs party+0x94 across movePos into a callee-saved register (r29)
-static inline void cloudMoveToMario(PartyEntry* party) {
-    MarioWork* pm = party->playerPtr;
-    f32 pa;
-    s32 pf;
-    *(Vec*)((u8*)party + 0x94) = pm->position;
-    pa = *(f32*)pm->unk1AC;
-    pf = (pa < 90.0f || pa >= 270.0f);
-    pa = toMovedir(pa + (pf != 0 ? -90.0f : 90.0f));
-    movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa);
-    *(f32*)((u8*)party + 0x98) += 10.0f;
-    party->position = *(Vec*)((u8*)party + 0x94);
-}
-
-// The original spells the last two guards as one `mot <= 1 || mot == 2` condition; MWCC then
-// keeps the `mot == 2` arm out of line (`bne body; b end`). The braces below just keep the
-// cleanup body in its own scope (and unchanged from the base).
-void cloud_use(PartyEntry* party) {
+void cloud_exit(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
-    u16 mot;
 
-    N__cloud_use(party);
-
-    mot = *(u16*)((u8*)mario + 0x2E);
-    if (mot == 0x1B) {
-        return;
-    }
-    if (mot <= 1 || mot == 2) {
-        return;
-    }
-    {
-        party->flags &= ~(1 << 8);
-
-        if (party->useStruct != NULL) {
-            if (*(u32*)((u8*)party->useStruct + 0x34) != 0xFFFFFFFFu) {
-                psndSFXOff(*(s32*)((u8*)party->useStruct + 0x34));
-                *(u32*)((u8*)party->useStruct + 0x34) = 0xFFFFFFFFu;
-            }
-        }
-
-        if (*(void**)((u8*)party + 0x178) != NULL) {
-            effSoftDelete((EffectEntry*)*(void**)((u8*)party + 0x178));
-            *(void**)((u8*)party + 0x178) = NULL;
-        }
-
-        cloudMoveToMario(party);
-
-        party->flags2 |= 0x10;
-        party->flags &= 0x7FFFFFFF;
-
-        if (party->useStruct != NULL) {
-            __memFree(HEAP_DEFAULT, party->useStruct);
-            party->useStruct = NULL;
-        }
-
-        mot = *(u16*)((u8*)mario + 0x2E);
-        if (mot == 0x1F || mot == 0x20) {
-            partyChgRunMode(party, 0x0D);
-        } else {
-            partyChgPose(party, partyChgPoseId(party, 1));
-            partyChgRunMode(party, 2);
-            partyChgMot(party, 0);
+    if (party->useStruct != NULL) {
+        if (*(u32*)((u8*)party->useStruct + 0x34) != 0xFFFFFFFFu) {
+            psndSFXOff(*(s32*)((u8*)party->useStruct + 0x34));
+            *(u32*)((u8*)party->useStruct + 0x34) = 0xFFFFFFFFu;
         }
     }
-}
-#pragma opt_common_subs reset
 
-void unk_801820d0(PartyEntry* party) {
-    *(f32*)((u8*)party + 0x17C) = 0.0f;
-    *(f32*)((u8*)party + 0x180) = 4.25f;
-}
-
-void cloud_init(PartyEntry* party) {
-    party->field_33 = 5;
-    party->field_32 = 1;
-    *(f32*)((u8*)party + 0xF0) = 38.0f;
-    *(f32*)((u8*)party + 0xF4) = 24.0f;
-    *(s32*)((u8*)party + 0x174) = 0;
-    *(s32*)((u8*)party + 0x178) = 0;
-    *(s32*)((u8*)party + 0x17C) = 0;
-    *(s32*)((u8*)party + 0x180) = 0;
-    *(s32*)((u8*)party + 0x170) = 0;
-    *(s32*)((u8*)party + 0x178) = 0;
-}
-
-void cloud_move(PartyEntry* party) {
-    if ((party->field_8 & 0x8) != 0) {
-        party->field_8 &= ~0x8;
-        partyMoveFlyInit(party, 1);
-        *(f32*)((u8*)party + 0x17C) = 0.0f;
-        *(f32*)((u8*)party + 0x180) = 4.25f;
+    if (*(void**)((u8*)party + 0x178) != NULL) {
+        effSoftDelete((EffectEntry*)*(void**)((u8*)party + 0x178));
+        *(void**)((u8*)party + 0x178) = NULL;
     }
 
-    partyFlyMain(party);
-
-    *(f32*)((u8*)party + 0x17C) = revise360(*(f32*)((u8*)party + 0x17C) - *(f32*)((u8*)party + 0x180));
-    *(f32*)((u8*)party + 0x80) = 3.0f + 3.0f * (f32)sin((3.1415927f * *(f32*)((u8*)party + 0x17C)) / 180.0f);
-
-    if (party->field_3B != 2) {
-        party->field_8 &= ~0x40000;
-    }
-}
-
-void unk_8018206c(PartyEntry* party) {
-    *(f32*)((u8*)party + 0x17C) = revise360(*(f32*)((u8*)party + 0x17C) - *(f32*)((u8*)party + 0x180));
-    *(f32*)((u8*)party + 0x80) = 3.0f + 3.0f * (f32)sin((3.1415927f * *(f32*)((u8*)party + 0x17C)) / 180.0f);
-}
-
-void cloudResetAt() {
-    MarioWork* mario = marioGetPtr();
-    u32 partyId = marioGetPartyId();
-    PartyEntry* party = partyGetPtr(partyId);
-
-    if(party != NULL && party->currentMemberId == PARTY_MEMBER_FLURRIE) {
-        cloud_at.x = camGetPtr(CAMERA_3D)->cameraAt.x;
-        cloud_at.y = camGetPtr(CAMERA_3D)->cameraAt.y;
-        cloud_at.z = camGetPtr(CAMERA_3D)->cameraAt.z;
-
-        marioCamZoomOffReq2(600);
+    if (party->useStruct != NULL) {
+        __memFree(HEAP_DEFAULT, party->useStruct);
+        party->useStruct = NULL;
     }
 
-    mario->dispFlags &= ~(1 << 8); //kDisableMakeDispDir
-    mario->dispFlags &= ~(1 << 2); //kForceFrontPose
+    mario->dispFlags &= ~(1 << 8);
+    mario->dispFlags &= ~(1 << 2);
     marioAdjustMoveDir();
+    marioChgMot(0);
     mario->unk150.x = 0.01f;
     mario->unk138 = 0.0f;
 }
 
-u8 cloudGetStatus() {
-    u32 partyId = marioGetPartyId();
-    PartyEntry* party = partyGetPtr(partyId);
-    u8 status = 2;
-
-    if (party == NULL || (party->currentMemberId == PARTY_MEMBER_FLURRIE && (party->flags & PARTY_FLAG_IS_BEING_USED) == 0)) {
-        status = 0;
-        return status;
-    }
-    else if (party->useMotionId == 10 && party->useMotionId < 20) {
-        status = 1;
-    }
-
-    return status;
+#define cloud ((PartyCloud*)party->useStruct)
+#ifdef MUST_MATCH
+// Match-only: reading the mode through an inline gives the original's register allocation
+// (cloud in r4, mode in r3); the plain dereference in the #else compiles the same but swaps them.
+static inline s16 getHitBreatheout2_mode(PartyEntry* party) {
+    return *(s16*)((u8*)((PartyCloud*)party->useStruct) + 0x38);
 }
+#endif
 
-void mot_cloud() {
-    MarioWork* mario = marioGetPtr();
-    
-    if((mario->trigFlags & 0x1) != 0) {
-        mario->trigFlags &= ~0x1;
-        mario->flags &= ~(MARIO_FLAG_HAS_INPUT_JUMP|MARIO_FLAG_IS_STEPPING|MARIO_FLAG_IS_FALLING|MARIO_FLAG_IS_JUMPING);
-        mario->multiTimer = 0;
-        mario->airTimer = 0;
-        mario->currSubMotionId = 0;
-    }
-}
+void getHitBreatheout2(PartyEntry* party, f32 angle) {
+    MarioWork* mario;
+    HitEntry* hit;
+    f32 sin2, cos2, sin1, cos1;
+    f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
+#ifdef MUST_MATCH
+    f32 dz, dx; // reversed declaration order puts dx/dz in the original's stack slots
+#else
+    f32 dx, dz;
+#endif
+    f32 f31;
+    f32 dir;
+    f32 f30;
+    s16 mode;
 
-f32 cloudGetBreathDir() {
-    PartyEntry* party = partyGetPtr(PARTY_SLOT_PARTY);
-    f32 breathDir;
-
-    if (party == NULL) {
-        return 0.0f;
-    }
-
-    if ((party->flags & PARTY_FLAG_IS_BEING_USED) != 0 && (party->useMotionId < MARIO_MOTION_FALL)){
-        breathDir = -1.0f;
-    }
-    else if (party->useStruct == NULL) {
-        breathDir = 0.0f;
-    }
-    else {
-        PartyCloud* cloud = (PartyCloud*)party->useStruct;
-        breathDir = toMovedir(cloud->unk4);
-    }
-    
-    return breathDir;
-}
-
-f32 cloudGetBreathDist() {
-    u32 partyId = marioGetPartyId();
-    PartyEntry* party = partyGetPtr(partyId);
-    f32 breathDist;
-
-    if (party == NULL) {
-        breathDist = 0.0f;
-        return breathDist;
+#ifdef MUST_MATCH
+    mode = getHitBreatheout2_mode(party);
+#else
+    mode = *(s16*)((u8*)cloud + 0x38);
+#endif
+    mario = party->playerPtr;
+    if (mode == 0) {
+        f30 = 8.0f;
+    } else if (mode == 1) {
+        f30 = 20.0f;
+    } else if (mode == 2) {
+        f30 = 40.0f;
     }
 
-    if ((party->currentMemberId != PARTY_MEMBER_FLURRIE || (party->flags & PARTY_FLAG_IS_BEING_USED) == 0) || party->useMotionId < MARIO_MOTION_FALL) {
-        breathDist = 0.0f;
-    }
-    else {
-        PartyCloud* cloud = (PartyCloud*)party->useStruct;
-        breathDist = cloud->unk8;
+    if (cloud->unk8 >= *(f32*)((u8*)cloud + 0xC)) {
+        cloud->unk8 = *(f32*)((u8*)cloud + 0xC);
     }
 
-    return breathDist;
-}
+    sincosf(&sin1, &cos1, angle);
+    f31 = toMovedir(cloud->unk4);
+    sincosf(&sin2, &cos2, f31);
 
-f32 cloudGetBreathPower(f32 param_1, Vec* param_2) {
-    PartyEntry* party = partyGetPtr(PARTY_SLOT_PARTY);
-    f32 breathPower;
-    f32 dist;
-    f32 angle;
-    f32 unk8;
-    f32 val;
-
-    breathPower = 0.0f;
-    if (party == NULL)  {
-        return breathPower;
+    distance = cloud->unk8;
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                         party->position.x, mario->position.y + f30, party->position.z,
+                         sin2, sin1, cos2);
+    if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
+        hit = NULL;
     }
+    cloud->unk20 = (s32)hit;
 
-    val = 10.0f;
-    if(
-        party->currentMemberId == PARTY_MEMBER_FLURRIE 
-        && (party->flags & PARTY_FLAG_IS_BEING_USED) != 0 
-        && party->useMotionId >= MARIO_MOTION_FALL
-        && ((fabs(party->position.y - param_2->y - 18.0f)) <= val)
-    ) {
-        PartyCloud* cloud = (PartyCloud*)party->useStruct;
-        unk8 = cloud->unk8;
-        if (-((0.5f * param_1) - distABf(party->position.x, party->position.z, param_2->x, param_2->z)) <= unk8) {
-            PartyCloud* cloud = (PartyCloud*)party->useStruct;
-            dist = toMovedir(cloud->unk4);
-            angle = angleABf(party->position.x, party->position.z, param_2->x, param_2->z);
-            dist = revise360(angle - dist);
-            
-            if (dist <= 30.0f || dist >= 330.0f) {
-                breathPower = cos((3.1415927f * dist) / 180.0f);
-                val = 100.0f;
-                breathPower = val * fabsf(breathPower);
-            }
+    dx = 0.0f;
+    dz = 0.0f;
+    if (*(void**)((u8*)party + 0x178) != NULL) {
+        movePos(&dx, &dz, 24.0f, f31);
+        *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x4) = party->position.x + dx;
+        *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x8) = 18.0f + party->position.y;
+        *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0xC) = party->position.z + dz;
+        *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x5C) =
+            0.6f * (cloud->unk8 / *(f32*)((u8*)cloud + 0xC));
+
+        if (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) {
+            *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x58) = -25.0f;
+        } else {
+            *(f32*)((u8*)((EffectEntry*)*(void**)((u8*)party + 0x178))->userdata + 0x58) = 205.0f;
         }
     }
 
-    return breathPower;
+    if (cloud->unk4 >= 90.0f && cloud->unk4 <= 270.0f) {
+        f31 = 1.0f;
+    } else {
+        f31 = -1.0f;
+    }
+
+    if (*(s32*)((u8*)cloud + 0x14) == 0) {
+        *(f32*)((u8*)cloud + 0x10) += 1.0f;
+        if (*(f32*)((u8*)cloud + 0x10) >= 20.0f) {
+            *(f32*)((u8*)cloud + 0x10) = 20.0f;
+            *(s32*)((u8*)cloud + 0x14) = 1;
+        }
+    } else {
+        *(f32*)((u8*)cloud + 0x10) -= 1.0f;
+        if (*(f32*)((u8*)cloud + 0x10) <= -20.0f) {
+            *(f32*)((u8*)cloud + 0x10) = -20.0f;
+            *(s32*)((u8*)cloud + 0x14) = 0;
+        }
+    }
+
+    dir = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x10) * f31);
+    sincosf(&sin2, &cos2, dir);
+    distance = cloud->unk8;
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                         party->position.x, mario->position.y + f30, party->position.z,
+                         sin2, sin1, cos2);
+    if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
+        hit = NULL;
+    }
+    cloud->unk28 = (s32)hit;
+
+    if (*(s32*)((u8*)cloud + 0x1C) == 0) {
+        *(f32*)((u8*)cloud + 0x18) += 1.0f;
+        if (*(f32*)((u8*)cloud + 0x18) >= 20.0f) {
+            *(f32*)((u8*)cloud + 0x18) = 20.0f;
+            *(s32*)((u8*)cloud + 0x1C) = 1;
+        }
+    } else {
+        *(f32*)((u8*)cloud + 0x18) -= 1.0f;
+        if (*(f32*)((u8*)cloud + 0x18) <= -20.0f) {
+            *(f32*)((u8*)cloud + 0x18) = -20.0f;
+            *(s32*)((u8*)cloud + 0x1C) = 0;
+        }
+    }
+
+    dir = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x18) * f31);
+    sincosf(&sin2, &cos2, dir);
+    distance = cloud->unk8;
+    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
+                         party->position.x, mario->position.y + f30, party->position.z,
+                         sin2, sin1, cos2);
+    if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
+        hit = NULL;
+    }
+    cloud->unk2C = (s32)hit;
 }
+#undef cloud
 
-
-s32 cloudGetHitBreathout(s32 param_1) {
+void cloudGetAt(Vec* position) {
+    MarioWork* mario = marioGetPtr();
     u32 partyId = marioGetPartyId();
     PartyEntry* party = partyGetPtr(partyId);
-    s32 hitBreathout;
 
-    if (party == NULL) {
-        return 0;
-    }
-
-    if (
-        party->currentMemberId != PARTY_MEMBER_FLURRIE 
-        || (party->flags & PARTY_FLAG_IS_BEING_USED) == 0
-        || party->useMotionId < MARIO_MOTION_FALL
-    ){
-            return 0;
+    if (party == NULL || (party->currentMemberId == PARTY_MEMBER_FLURRIE && (party->flags & PARTY_FLAG_IS_BEING_USED) == 0)) {
+        return;
     }
 
-    hitBreathout = 0;
-    if (param_1 == 0) {
-        hitBreathout = ((PartyCloud*)party->useStruct)->unk20;
+    if ((mario->dispFlags & (1 << 20)) == 0) {
+        CameraEntry* camera = camGetPtr(CAMERA_3D);
+
+        if(camera->stateA == 0) {
+            cloud_at = *position;
+        }
+        else {
+            *position = cloud_at;
+        }
     }
-    else if (param_1 == 1) { 
-        hitBreathout = ((PartyCloud*)party->useStruct)->unk24;
-    }
-    else if (param_1 == 2) {
-        hitBreathout = ((PartyCloud*)party->useStruct)->unk28;
-    }
-    else if (param_1 == 3) { 
-        hitBreathout = ((PartyCloud*)party->useStruct)->unk2C;
-    }
-    
-    return hitBreathout;
 }
+
 
 const f64 double_to_int_802f8130 = 4503601774854144.0;
 
