@@ -634,7 +634,8 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
 // Finds the camera road under the player (ray tests down the road triangles, the curve collision) and eases the
 // look-at point along it. The seventh float arg (f7) is the bank.
 // collisionCurve/collisionTri_simple take their Vec arguments by value (the caller makes the stack copies).
-// NONMATCHING (81.4%): 19 calls and every immediate identical; the original keeps x..az in f16..f21 (one FPR higher
+// t1/t2 start as struct copies of pos (the original copies words, then overwrites y).
+// NONMATCHING (81.88%): 19 calls and every immediate identical; the original keeps x..az in f16..f21 (one FPR higher
 // than here) and spills `b` to the stack, and the doubles load through the unported rodata base.
 void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank) {
     s32 m;
@@ -843,15 +844,13 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
             c1 = (f32)cos(rad);
             s1 = (f32)sin(rad);
             nzv = -f29;
-            t1.x = pos.x;
-            t1.z = pos.z;
+            t1 = pos;
             bk = CAMROAD_BANK(b);
             k1 = f24 * s1;
             k1 = k1 / c1;
             k1 = float_640_804195ac * k1;
             k1 = k1 / float_480_804195b0;
             h2.unk_08 = float_neg1E06_804195a0;
-            t1.y = pos.y;
             h2.unk_18 = float_0_8041954c;
             t1.y = float_1E06_804195b4;
             h2.unk_1C = float_0_8041954c;
@@ -883,13 +882,11 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
                 gz = pz;
             }
 
-            t2.x = pos.x;
-            t2.z = pos.z;
+            t2 = pos;
             found2 = 0;
             flags = 0;
             k1 = (float_640_804195ac * ((f24 * (f32)sin(rad)) / (f32)cos(rad))) / float_480_804195b0;
             h3.unk_08 = float_neg1E06_804195a0;
-            t2.y = pos.y;
             h3.unk_18 = float_0_8041954c;
             h3.unk_1C = float_0_8041954c;
             h3.unk_20 = float_0_8041954c;
