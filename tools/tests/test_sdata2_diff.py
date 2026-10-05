@@ -28,6 +28,16 @@ class ClassifyTest(unittest.TestCase):
     def test_identical(self):
         self.assertEqual(classify([f(1), f(2)], [f(1), f(2)])["verdict"], "IDENTICAL")
 
+    def test_layout_when_a_gap_object_moves_the_entries(self):
+        t = [dict(f(1), addr=0), dict(f(2), addr=4)]
+        o = [dict(f(1), addr=4), dict(f(2), addr=8)]
+        r = classify(t, o, (12, 12))
+        self.assertEqual((r["verdict"], r["first"], r["target_addr"], r["ours_addr"]), ("LAYOUT", 0, 0, 4))
+
+    def test_tail_size_alone_is_not_layout(self):
+        t = [dict(f(1), addr=0)]
+        self.assertEqual(classify(t, [dict(f(1), addr=0)], (8, 4))["verdict"], "IDENTICAL")
+
     def test_pad_tail(self):
         t = [f(1), dict(f(0), blob=b"\0\0\0\0", key=b"\0\0\0\0")]
         self.assertEqual(classify(t, [f(1)])["verdict"], "PAD")
