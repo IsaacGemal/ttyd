@@ -1051,14 +1051,11 @@ USER_FUNC(evt_bero_disppos_load) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.83%): only a scratch-register swap around the int->double conversion:
-// the original keeps sec*cs in f2 (double const f1, BeroSX f2), ours uses f1 for the
-// product (const f2, BeroSX f1); rad/dist callee-saved maps all match.
 USER_FUNC(evt_bero_move_mario_speed) {
 	f32 speed = evtGetFloat(event, event->args[0]);
 	OSTime now = gp->inBattle ? gp->renderTime : gp->renderFieldTime;
 	MarioWork* mario;
-	f32 sec, sn, cs, rad, dist, dx, dy, vx, vy;
+	f32 sec, sn, cs, rad, dist, dx, dy, vx, vy, bsx, bsy;
 	s32 frames;
 	BOOL reachedX, reachedY;
 
@@ -1075,8 +1072,17 @@ USER_FUNC(evt_bero_move_mario_speed) {
 	dist = sec * (f32)frames;
 	dx = sn * dist;
 	dy = -(cs * dist);
+#ifdef MUST_MATCH
+	// MUST_MATCH: loading BeroSX/BeroSY into locals here extends their scratch webs so the
+	// allocator keeps the int->double magic in f1 and the products in f2, retail's colours.
+	bsx = BeroSX;
+	marioGetPtr()->position.x = bsx + dx;
+	bsy = BeroSY;
+	marioGetPtr()->position.y = bsy + dy;
+#else
 	marioGetPtr()->position.x = BeroSX + dx;
 	marioGetPtr()->position.y = BeroSY + dy;
+#endif
 	marioGetPtr()->position.z = BeroSZ;
 	reachedX = 0;
 	if (vx >= 0 && BeroEX <= marioGetPtr()->position.x) {
