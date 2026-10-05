@@ -858,9 +858,23 @@ static inline void animPoseReleasePaper(AnimationPose* paper) {
     }
 }
 
-// NONMATCHING (98.27%): the paper-release block is now the shared inline animPoseReleasePaper above; the
-// instruction stream matches, so only the callee-saved colouring is left (target pose r31/someflag r29/
-// file r28/paper r27; here file r31/pose r29/paper r28/someflag r27).
+// The effect pose's own entry, inlined: its early return for a failed entry is the original's `bne; b` layout.
+static inline s32 animEffectPoseEntry(const char* animName, s32 type) {
+    s32 id = animPoseEntry(animName, type);
+    AnimationPose* p;
+
+    if (id == -2) {
+        return id;
+    }
+    p = &wp->poses[id];
+    p->typeFlags = 1;
+    p->references = 0;
+    p->flags |= 1;
+    return id;
+}
+
+// NONMATCHING (99.34%): the paper-release block is the shared inline animPoseReleasePaper above and the new pose's
+// entry is animEffectPoseEntry; only the pose/poseOffset callee-saved pair is swapped (target pose r31, offset r30).
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
     AnimationPose* pose = &wp->poses[poseId];
     s32 poseOffset;
@@ -889,18 +903,7 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
         ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag &= ~1;
         return;
     }
-    {
-        s32 id = animPoseEntry(animName, pose->type);
-
-        if (id != -2) {
-            AnimationPose* p = &wp->poses[id];
-
-            p->typeFlags = 1;
-            p->references = 0;
-            p->flags |= 1;
-        }
-        pose->paperId = id;
-    }
+    pose->paperId = animEffectPoseEntry(animName, pose->type);
     *(s32*)((u8*)pose + 0x94) = -1;
     pose->mLocalTimeInit = animTimeGetTime(pose->type);
     if (someflag) {
