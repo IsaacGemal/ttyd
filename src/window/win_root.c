@@ -1835,7 +1835,8 @@ static inline void hakoQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f3
 // initialised to 0 here; the only observable difference is page 0's visibility
 // test on the very first call, and the instruction count is unchanged (MWCC
 // still keeps it in a register and emits the `mulli`).
-// NONMATCHING (87.89%): register colouring inside the many inlined quads and the
+// The four winIconSet calls take Vec/Vec/GXColor by value (winMailIconV), which gives the original 0x720 frame.
+// NONMATCHING (89.17%): register colouring inside the many inlined quads and the
 // anonymous .rodata pool offsets (the unit's base object is not defined here).
 void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     f32 scroll;
@@ -2011,7 +2012,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                     color = dat_8041cf74;
                     translate.x = ((x + (f32)(col * 0x38)) + float_24_8041d0c8) + float_4_8041d07c;
                     translate.y = ty;
-                    winIconSet(iconId, &translate, &scale, &color);
+                    winMailIconV(iconId, translate, scale, color);
                 }
             }
         }
@@ -2042,7 +2043,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
         icolor = dat_8041cf7c;
         itranslate.x = bx;
         itranslate.y = y;
-        winIconSet(0x7E, &itranslate, &iscale, &icolor);
+        winMailIconV(0x7E, itranslate, iscale, icolor);
     }
     if (count > cursor * 0x1C + 0x1C) {
         Vec translate;
@@ -2067,7 +2068,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
         icolor = dat_8041cf84;
         itranslate.x = bx;
         itranslate.y = y - float_220_8041d130;
-        winIconSet(0x80, &itranslate, &iscale, &icolor);
+        winMailIconV(0x80, itranslate, iscale, icolor);
     }
     {
         const char* msg;
@@ -2096,7 +2097,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
         icolor = dat_8041cf8c;
         ipos.x = (x + fx) - float_30_8041d100;
         ipos.y = y - float_237_8041d140;
-        winIconSet(0x217, &ipos, &iscale, &icolor);
+        winMailIconV(0x217, ipos, iscale, icolor);
     }
 }
 
