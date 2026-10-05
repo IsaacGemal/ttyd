@@ -16,3 +16,7 @@ typedef struct ScissorWork ScissorWork;
 ScissorWork* GetScissorPtr(void);
 extern char str_802FF570[];
 void star_disp2D(void);
+void scissor_damage_sub(BattleUnit* unit, s32* out);
+s32 scissor_damage_sub2(const Vec* point);
+void scissor_capture(void);
+void scissor_disp_control(CameraId cameraId, void* param);
