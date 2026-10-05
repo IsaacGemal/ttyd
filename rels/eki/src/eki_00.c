@@ -1453,185 +1453,239 @@ static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, s32 b, s32 c, f32 f1, f32
 
 #pragma dont_inline reset
 
-#pragma opt_propagation off // required: without it this body collapses to 67%
-// Local copies of ekiSinf/ekiCosf for moamoa_hit_check only (the shared inlines feed the other open
-// functions). ekiSinf2 uses the envdrv.c spelling; ekiCosf2 uses the tou_02.c `fanCosf` spelling
-// (halfpi - (rad - halfpi), and (rad - pi) * (rad - pi)). The mixed spelling reproduces the retail
-// constant/scratch registers much more closely than the shared inlines do.
-static inline f32 ekiCosf2(f32 rad) {
-    f32 f0, cosv = 0.03705f;
-    f32 c1 = 0.4967f;
-    f32 c2 = 1.0f;
-    if (rad <= 3.1415927f) {
-        if (rad <= 1.5707964f) {
-            cosv = cosv * (rad * rad) - c1;
-            cosv = cosv * (rad * rad) + c2;
-        } else {
-            f0 = 1.5707964f - (rad - 1.5707964f);
-            f0 = f0 * f0;
-            cosv = cosv * f0 - c1;
-            cosv = cosv * f0 + c2;
-            cosv = -cosv;
-        }
-    } else if (rad < 4.712389f) {
-        f0 = (rad - 3.1415927f) * (rad - 3.1415927f);
-        cosv = cosv * f0 - c1;
-        cosv = cosv * f0 + c2;
-        cosv = -cosv;
+
+
+// Inline sine/cosine approximations (the polynomials shared by the NPC blur path).
+static inline f32 moaSin(f32 angle) {
+    f32 v = 0.00761f;
+    f32 b = 0.16605f;
+    f32 one = 1.0f;
+    f32 u;
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) { u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; }
+        else { angle = 1.5707964f - (angle - 1.5707964f); u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; }
+    } else if (angle < 4.712389f) {
+        angle = angle - 3.1415927f; u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; v = -v;
     } else {
-        f0 = 1.5707964f - (rad - 4.712389f);
-        f0 = f0 * f0;
-        cosv = cosv * f0 - c1;
-        cosv = cosv * f0 + c2;
+        angle = 1.5707964f - (angle - 4.712389f); u = angle * angle; v = v * u - b; v = v * u + one; v = v * angle; v = -v;
     }
-    return cosv;
+    return v;
 }
 
-static inline f32 ekiSinf2(f32 rad) {
-    f32 f0, f1, sinv = 0.00761f;
-    f32 c1 = 0.16605f, one = 1.0f;
-    if (rad <= 3.1415927f) {
-        f1 = 1.5707964f;
-        if (rad <= f1) {
-            sinv = sinv * (rad * rad) - c1;
-            sinv = sinv * (rad * rad) + one;
-            sinv = sinv * rad;
-        } else {
-            f0 = rad - f1;
-            f1 = f1 - f0;
-            f0 = f1 * f1;
-            sinv = sinv * f0 - c1;
-            sinv = sinv * f0 + one;
-            sinv = sinv * f1;
-        }
-    } else if (rad < 4.712389f) {
-        f1 = rad - 3.1415927f;
-        f0 = f1 * f1;
-        sinv = sinv * f0 - c1;
-        sinv = sinv * f0 + one;
-        sinv = sinv * f1;
-        sinv = -sinv;
+static inline f32 moaCos(f32 angle) {
+    f32 v = 0.03705f;
+    f32 b = 0.4967f;
+    f32 one = 1.0f;
+    f32 u;
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) { u = angle * angle; v = v * u - b; v = v * u + one; }
+        else { angle = 1.5707964f - (angle - 1.5707964f); u = angle * angle; v = v * u - b; v = v * u + one; v = -v; }
+    } else if (angle < 4.712389f) {
+        angle = angle - 3.1415927f; u = angle * angle; v = v * u - b; v = v * u + one; v = -v;
     } else {
-        f0 = rad - 4.712389f;
-        f1 = 1.5707964f;
-        f1 = f1 - f0;
-        f0 = f1 * f1;
-        sinv = sinv * f0 - c1;
-        sinv = sinv * f0 + one;
-        sinv = sinv * f1;
-        sinv = -sinv;
+        angle = 1.5707964f - (angle - 4.712389f); u = angle * angle; v = v * u - b; v = v * u + one;
     }
-    return sinv;
+    return v;
 }
 
-// NONMATCHING (97.25%): FPR colouring in the inlined trig bodies (retail keeps the sin/cos
-// accumulator in place across fmsubs/fmadds, ours chains it through fresh registers) and the
-// second vc build's base-vector load, which the scheduler hoists above the two matrix stores.
+// The original builds each temporary Vec from a named zero vector and passes it by
+// value through an inline; MWCC keeps the inline's return temp alongside the local.
+static inline Vec moaVec(f32 x, f32 y, f32 z, const Vec* base) {
+    Vec v = *base;
+
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+
+#ifdef MUST_MATCH
+// Match-only: the volatile copy stops MWCC hoisting the base vector's lane loads above the two
+// `pose->matrix` stores in the pvec rebuild (retail keeps each 12-byte copy serialized); the plain
+// copy is `moaVec`.
+static inline Vec moaVecV(f32 x, f32 y, f32 z, const Vec* base) {
+    Vec v = *(volatile Vec*)base;
+
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+#endif
+
+#pragma inline_max_size(1000)
+#pragma opt_lifetimes off // keeps the sin/cos coefficients in the target's FPRs
+#pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
 static s32 moamoa_hit_check(ExtPose* ep, MoamoaPose* pose) {
     MarioWork* mario = marioGetPtr();
-    Vec vh;   // hammer_2 case
-    Vec v55;  // field_0x55C case
-    Vec vn;   // nokonoko case
-    Vec vp;   // party case
-    Vec va;   // final main check
-    Vec vc;   // final main check
-    f32 dist;
-    f32 thresh;
-    f32 angle;
-    f32 diff;
-    f32 rad;
-    f32 t;
+    Vec v65, v55c, vnoko, vparty, mpos, pvec;
+    PartyEntry* party;
+    f32 f29, f30, f31;
 
-    if (mario->position.y > ep->matrix[0][1][3] + 20.0f) {
+    if (mario->position.y > 20.0f + (*ep->matrix)[1][3])
         return 0;
-    }
-    if (ep->matrix[0][1][3] > mario->position.y + mario->wPlayerCollisionBox.y) {
+    if ((*ep->matrix)[1][3] > mario->position.y + mario->wPlayerCollisionBox.y)
         return 0;
-    }
-    dist = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], mario->position.x, mario->position.z);
-    if (dist < (20.0f + mario->wPlayerCollisionBox.x) / 2.0f) {
-        if (mario->position.y > ep->matrix[0][1][3] + 10.0f && (mario->flags & MARIO_FLAG_IS_FALLING)
-            && !(mario->flags & MARIO_FLAG_IS_JUMPING) && wp->field_0x558 < 2) {
-            if (mario->currMotionId != MARIO_MOTION_ROLL && mario->currMotionId != MARIO_MOTION_YOSHI) {
-                marioChgMot(MARIO_MOTION_JUMP_SW);
+
+    {
+        f32 d = distABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], mario->position.x, mario->position.z);
+
+#ifdef MUST_MATCH
+        // (x + 20) / 2 folds to the same * 0.5 but colours the operands like retail.
+        if (d < (mario->wPlayerCollisionBox.x + 20.0f) / 2.0f) {
+#else
+        if (d < (20.0f + mario->wPlayerCollisionBox.x) * 0.5f) {
+#endif
+            if (mario->position.y > 10.0f + (*ep->matrix)[1][3] && (mario->flags & 0x20000) &&
+                !(mario->flags & 0x10000) && wp->field_0x558 < 2) {
+                if (mario->currMotionId != 0x16 && mario->currMotionId != 0x1A)
+                    marioChgMot(5);
+                wp->field_0x558++;
+                return 1;
             }
-            wp->field_0x558++;
-            return 1;
         }
     }
-    if (!(mario->flags & (MARIO_FLAG_IS_JUMPING | MARIO_FLAG_IS_FALLING))) {
+
+    if ((mario->flags & 0x30000) == 0)
         wp->field_0x558 = 0;
-    }
-    if (mario->currMotionId == MARIO_MOTION_HAMMER && wp->field_0x40 > 10) {
+
+    if (mario->currMotionId == 0x12 && wp->field_0x40 > 10) {
+        f32 ang;
+        f32 rad;
         f32 s;
         f32 c;
-        angle = reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(CAMERA_3D)->viewYaw);
-        rad = angle * 6.2831855f / 360.0f;
-        s = ekiSinf2(rad);
-        t = 35.0f * s + mario->position.x;
-        c = ekiCosf2(rad);
-        diff = mario->position.z - 35.0f * c;
-        if (distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], t, diff) < 35.0f) {
+        f32 x;
+        f32 z;
+
+        ang = reviseAngle(mario->unk1A8 - 90.0f + camGetPtr(4)->viewYaw);
+        rad = 6.2831855f * ang / 360.0f;
+        s = moaSin(rad);
+        x = 35.0f * s + mario->position.x;
+        c = moaCos(rad);
+        z = mario->position.z - 35.0f * c;
+        if (distABf((*ep->matrix)[0][3], (*ep->matrix)[2][3], x, z) < 35.0f)
             return 2;
-        }
     }
-    if (mario->currMotionId == MARIO_MOTION_HAMMER_2 && (s32)mario->currSubMotionId == 0x14) {
-        vh = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088b4);
-        if (PSVECDistance(&mario->position, &vh) < 65.0f) {
+
+    if (mario->currMotionId == 0x13 && (s32)mario->currSubMotionId == 0x14) {
+        v65 = moaVec((*ep->matrix)[0][3], (*ep->matrix)[1][3], (*ep->matrix)[2][3],
+                             &vec3_eki_000088b4);
+
+        if (PSVECDistance(&mario->position, &v65) < 65.0f)
             return 2;
-        }
     }
+
     if (wp->field_0x55C >= 0.0f) {
-        v55 = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088c0);
-        if (PSVECDistance(&wp->field_0x564, &v55) < 30.0f) {
+        v55c = moaVec((*ep->matrix)[0][3], (*ep->matrix)[1][3], (*ep->matrix)[2][3],
+                              &vec3_eki_000088c0);
+
+        if (PSVECDistance(&wp->field_0x564, &v55c) < 30.0f)
             return 3;
-        }
     }
-    if (nokonokoGetStatus(partyGetPtr(0)) == 2) {
-        vn = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088cc);
-        if (PSVECDistance(&partyGetPtr(0)->position, &vn) < 30.0f) {
+
+    party = partyGetPtr(0);
+    if (nokonokoGetStatus(party) == 2) {
+        vnoko = moaVec((*ep->matrix)[0][3], (*ep->matrix)[1][3], (*ep->matrix)[2][3],
+                               &vec3_eki_000088cc);
+
+        if (PSVECDistance(&partyGetPtr(0)->position, &vnoko) < 30.0f)
             return 2;
-        }
     }
-    if (partyGetPtr(0)->currentMemberId == 3 && partyGetPtr(0)->useMotionId == 0x46) {
-        vp = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088d8);
-        if (PSVECDistance(&partyGetPtr(0)->position, &vp) < 50.0f) {
+
+    party = partyGetPtr(0);
+    if (party->currentMemberId == 3 && partyGetPtr(0)->useMotionId == 0x46) {
+        vparty = moaVec((*ep->matrix)[0][3], (*ep->matrix)[1][3], (*ep->matrix)[2][3],
+                                &vec3_eki_000088d8);
+
+        if (PSVECDistance(&partyGetPtr(0)->position, &vparty) < 50.0f)
             return 4;
-        }
     }
-    va = ekiVec3(mario->position.x, ep->matrix[0][1][3], mario->position.z, &vec3_eki_000088e4);
-    vc = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088f0);
-    thresh = (20.0f + mario->wPlayerCollisionBox.x) / 2.0f;
-    if (PSVECDistance(&va, &vc) < thresh) {
-        ep->matrix[0][0][3] = pose->field_0x28.x;
-        ep->matrix[0][2][3] = pose->field_0x28.y;
-        vc = ekiVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_eki_000088fc);
-        dist = PSVECDistance(&va, &vc);
-        if (dist < thresh) {
-            angle = angleABf(mario->position.x, mario->position.z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
-            diff = compAngle(angle, mario->directionView);
-            if (__fabsf(diff) < 40.0f) {
-                f32 s;
-                f32 c;
-                s = ekiSinf2(mario->directionView * 6.2831855f / 360.0f);
-                t = thresh - dist;
-                mario->riderDelta.x = -(t * s);
-                c = ekiCosf2(mario->directionView * 6.2831855f / 360.0f);
-                mario->riderDelta.z = t * c;
-            } else {
-                f32 s;
-                f32 c;
-                rad = angle * 6.2831855f / 360.0f;
-                s = ekiSinf2(rad);
-                mario->riderDelta.x = (ep->matrix[0][0][3] - thresh * s) - mario->position.x;
-                c = ekiCosf2(rad);
-                mario->riderDelta.z = (thresh * c + ep->matrix[0][2][3]) - mario->position.z;
+
+    {
+        mpos = moaVec(mario->position.x, (*ep->matrix)[1][3], mario->position.z,
+                              &vec3_eki_000088e4);
+#ifdef MUST_MATCH
+        {
+            // Matching temp: giving the pvec's x lane a name pins the mpos/pvec lane registers
+            // (retail pose.x -> f3, pose.z -> f1; without it MWCC loads them the other way round).
+            f32 px = (*ep->matrix)[0][3];
+            pvec = moaVec(px, (*ep->matrix)[1][3], (*ep->matrix)[2][3], &vec3_eki_000088f0);
+        }
+#else
+        pvec = moaVec((*ep->matrix)[0][3], (*ep->matrix)[1][3], (*ep->matrix)[2][3],
+                              &vec3_eki_000088f0);
+#endif
+
+#ifdef MUST_MATCH
+        f31 = (mario->wPlayerCollisionBox.x + 20.0f) / 2.0f;
+#else
+        f31 = (20.0f + mario->wPlayerCollisionBox.x) * 0.5f;
+#endif
+        if (PSVECDistance(&mpos, &pvec) < f31) {
+#ifdef MUST_MATCH
+            // Match-only volatile accesses: they keep the pvec base copy below the two matrix
+            // stores, the order the target has.
+            *(volatile f32*)&(*ep->matrix)[0][3] = pose->field_0x28.x;
+            *(volatile f32*)&(*ep->matrix)[2][3] = pose->field_0x28.y;
+            {
+                Mtx* pm = *(Mtx* volatile*)&ep->matrix;
+
+                pvec = moaVecV((*pm)[0][3], (*pm)[1][3], (*pm)[2][3], &vec3_eki_000088fc);
+
+                f29 = PSVECDistance(&mpos, &pvec);
+            }
+#else
+            (*ep->matrix)[0][3] = pose->field_0x28.x;
+            (*ep->matrix)[2][3] = pose->field_0x28.y;
+            {
+                pvec = moaVec((*ep->matrix)[0][3], (*ep->matrix)[1][3], (*ep->matrix)[2][3],
+                                  &vec3_eki_000088fc);
+
+                f29 = PSVECDistance(&mpos, &pvec);
+            }
+#endif
+            if (f29 < f31) {
+                f30 = angleABf(mario->position.x, mario->position.z, (*ep->matrix)[0][3],
+                               (*ep->matrix)[2][3]);
+                if (__fabsf(compAngle(f30, mario->directionView)) < 40.0f) {
+#ifdef MUST_MATCH
+                    // Matching shapes: inlining the sine argument (no `rad` local) lets the reduced
+                    // angle coalesce into the argument FPR, and naming the box delta once fixes the
+                    // operand order of the two `d * s` / `d * c` fmuls.
+                    f32 s, c, d;
+
+                    s = moaSin(6.2831855f * mario->directionView / 360.0f);
+                    d = f31 - f29;
+                    mario->riderDelta.x = -(d * s);
+                    c = moaCos(6.2831855f * mario->directionView / 360.0f);
+                    mario->riderDelta.z = d * c;
+#else
+                    f32 rad, s, c;
+
+                    rad = 6.2831855f * mario->directionView / 360.0f;
+                    s = moaSin(rad);
+                    mario->riderDelta.x = -((f31 - f29) * s);
+                    c = moaCos(6.2831855f * mario->directionView / 360.0f);
+                    mario->riderDelta.z = (f31 - f29) * c;
+#endif
+                } else {
+                    f32 rad, s, c;
+
+                    rad = 6.2831855f * f30 / 360.0f;
+                    s = moaSin(rad);
+                    mario->riderDelta.x = ((*ep->matrix)[0][3] - f31 * s) - mario->position.x;
+                    c = moaCos(rad);
+                    mario->riderDelta.z = ((*ep->matrix)[2][3] + f31 * c) - mario->position.z;
+                }
             }
         }
     }
+
     return 0;
 }
 
+#pragma inline_max_size reset
+#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 
 // Load the matrix inside the inline to retain retail's matrix/base register order.
