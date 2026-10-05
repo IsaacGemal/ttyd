@@ -956,7 +956,9 @@ void marioInit(void) {
 // scale/bottomlessReset Vec word copies are scheduled slightly differently. All calls, constants and
 // the rest of the body match; reordering the declarations, the snapshot loads and the restore stores
 // (all tried) did not move the registers.
-// NONMATCHING (93.47%): register/scheduling permutation of the snapshot and the Vec copies.
+// prevParty0/1 are s8 locals: the original copies prevPartyMemberId back without the extsb it does for the
+// other byte snapshots.
+// NONMATCHING (95.87%): register/scheduling permutation of the snapshot and the Vec copies.
 void marioReInit(void) {
 	s32 animGroup1;
 	s32 animGroup2;
@@ -971,8 +973,8 @@ void marioReInit(void) {
 	s32 characterId;
 	s32 highFlag;
 	s32 paperPoseId;
-	s32 prevParty0;
-	s32 prevParty1;
+	s8 prevParty0;
+	s8 prevParty1;
 	s32 field28C;
 	f32 unk1A8;
 	f32 unk1AC;
