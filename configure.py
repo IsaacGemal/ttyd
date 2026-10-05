@@ -2137,7 +2137,7 @@ config.libs = [
     Rel(
         "end",
         [
-            Object(NonMatching, "end_unknown.c"),
+            Object(Matching, "end_unknown.c"),
         ],
     ),
     Rel(
