@@ -4294,6 +4294,200 @@ void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
 	GXSetTevKColor(GX_KCOLOR0, color);
 }
 
+typedef struct MapMatTexRef {
+	void* field_0x0;  // 0x0, points at the texture name/info block
+	u8 field_0x4[4];  // 0x4
+	u8 wrapS;         // 0x8
+	u8 wrapT;         // 0x9
+} MapMatTexRef;
+
+// material layout (MapMaterialTex only covers 0xB/0x2C onwards)
+typedef struct MapMaterial {
+	u8 field_0x0[4];              // 0x0
+	GXColor color;                // 0x4
+	u8 field_0x8;                 // 0x8
+	u8 field_0x9[2];              // 0x9
+	u8 texCount;                  // 0xB
+	MapMatTexRef* texRefs[8];    // 0xC
+	u8 field_0x2C[0x110 - 0x2C];  // 0x2C
+	u8* field_0x110;              // 0x110
+} MapMaterial;
+
+// The original reaches texwrap_tbl, lightid_tbl and the default light direction (vec3_802c181c) through the
+// unit's .rodata base vec3_802c16d8.
+#ifdef MUST_MATCH
+#define MAPMAT_DEFAULT_DIR (*(Vec*)(base + 0x144))
+#define MAPMAT_TEXWRAP(i) (wrapTbl[i])
+#else
+extern u32 texwrap_tbl[];
+#define MAPMAT_DEFAULT_DIR ((Vec){ 0.0f, 0.0f, -1.0f })
+#define MAPMAT_TEXWRAP(i) ((s32)texwrap_tbl[i])
+#endif
+
+// The index of the texture called `name` in a map's texture name table (a count, then the names), or -1.
+static inline s32 mapMatSearchTex(s32* table, const char* name) {
+	s32 i;
+
+	for (i = 0; i < table[0]; i++) {
+		if (strcmp(((char**)table)[i + 1], name) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+// NONMATCHING (95.07%): every call and branch matches but one. Left: the u8 -> f32 LOD conversions use a pooled
+// int->double mask where the original loads it from the unit's .rodata base (+0x2C8), the texture search's found
+// exit is a beq where retail branches around a b, and some callee-saved register colouring.
+// Loads the map object's lights into GX light slots (point, spot and directional), sets the colour channel from
+// the material, loads each of the material's textures by name from the map's TPL, then sets up TEV.
+void mapSetMaterial(MapObject* obj, void* materialPtr) {
+	s32 i;
+	s32 texMap;
+	MapMaterial* mat;
+	GXLightObj lightObj;
+	Mtx mtxX;
+	Mtx mtxY;
+	Mtx mtxZ;
+	LightEntry* lights[8];
+	GXTexObj texObj;
+	Vec pos;
+	Vec defaultDir;
+	GXColor ambient;
+	GXColor defaultAmbient;
+#ifdef MUST_MATCH
+	u8* base;
+	s32* wrapTbl;
+#endif
+	s32* lightId;
+	u32 lightMask;
+	s32 attn;
+	s32 count;
+
+	mat = materialPtr;
+#ifdef MUST_MATCH
+	base = vec3_802c16d8;
+	lightId = (s32*)(base + 0x100);
+#else
+	lightId = (s32*)lightid_tbl;
+#endif
+	texMap = 0;
+	attn = 2;
+	defaultAmbient = dat_80419828;
+	count = mapSetLight(obj, lights);
+	lightMask = 0;
+
+	for (i = 0; i < count; i++) {
+
+		defaultDir = MAPMAT_DEFAULT_DIR;
+		if (lights[i]->flags & LIGHT_POINT) {
+			CameraEntry* cam = camGetCurPtr();
+
+			PSMTXMultVec(cam->view, &lights[i]->position, &pos);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+			                lights[i]->attenDistCoef.x, lights[i]->attenDistCoef.y, lights[i]->attenDistCoef.z);
+			GXLoadLightObjImm(&lightObj, lightId[i]);
+			attn = 1;
+		}
+		else if (lights[i]->flags & LIGHT_SPOT) {
+			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
+			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
+			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXConcat(mtxZ, mtxY, mtxY);
+			PSMTXConcat(mtxY, mtxX, mtxX);
+			PSMTXMultVec(mtxX, &defaultDir, &defaultDir);
+			PSVECScale(&defaultDir, &defaultDir, float_neg1p0486E06_80419870);
+			PSVECAdd(&lights[i]->position, &defaultDir, &pos);
+			{
+				CameraEntry* cam = camGetCurPtr();
+
+				PSMTXMultVec(cam->view, &pos, &pos);
+			}
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+			                float_0_80419850, float_0_80419850, float_1_80419860);
+			GXLoadLightObjImm(&lightObj, lightId[i]);
+		}
+		else if (lights[i]->flags & LIGHT_DIRECTIONAL) {
+			CameraEntry* cam = camGetCurPtr();
+
+			PSMTXMultVec(cam->view, &lights[i]->position, &pos);
+			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
+			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
+			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXConcat(mtxZ, mtxY, mtxY);
+			PSMTXConcat(mtxY, mtxX, mtxX);
+			PSMTXMultVec(mtxX, &defaultDir, &defaultDir);
+			cam = camGetCurPtr();
+			PSMTXMultVecSR(cam->view, &defaultDir, &defaultDir);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightDir(&lightObj, defaultDir.x, defaultDir.y, defaultDir.z);
+			GXInitLightSpot(&lightObj, lights[i]->spotAngle * float_0p5_80419854, GX_SP_SHARP);
+			GXInitLightDistAttn(&lightObj, float_1000_80419874, float_0p5_80419854, GX_DA_OFF);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXLoadLightObjImm(&lightObj, lightId[i]);
+			attn = 1;
+		}
+		lightMask |= lightId[i];
+	}
+
+	{
+		LightEntry* amb = lightGetAmbient();
+
+		if (amb != NULL) {
+			ambient = amb->color;
+		}
+		else {
+			ambient = defaultAmbient;
+		}
+	}
+	GXSetNumChans(1);
+	GXSetChanAmbColor(GX_COLOR0A0, ambient);
+	GXSetChanMatColor(GX_COLOR0A0, mat->color);
+
+	switch (mat->field_0x8) {
+	case 0:
+		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_REG, lightMask, GX_DF_CLAMP, attn);
+		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+		break;
+	case 1:
+		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_VTX, lightMask, GX_DF_CLAMP, attn);
+		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+		break;
+	}
+
+	texMap = 0;
+#ifdef MUST_MATCH
+	wrapTbl = (s32*)(base + 0xEC);
+#endif
+	for (i = mat->texCount - 1; i >= 0; i--) {
+		MapWork* wp = &mapWork[activeGroup];
+		MapMatTexRef* ref = mat->texRefs[i];
+		TEXDescriptor* desc;
+
+		desc = TEXGet(wp->entries[*(s16*)(obj->field_0xDC + 2)].tpl,
+		              mapMatSearchTex(*(s32**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 8),
+		                              *(const char**)ref->field_0x0));
+		GXInitTexObj(&texObj, desc->textureHeader->data, desc->textureHeader->width, desc->textureHeader->height,
+		             desc->textureHeader->format, MAPMAT_TEXWRAP(ref->wrapS), MAPMAT_TEXWRAP(ref->wrapT),
+		             desc->textureHeader->minLOD != desc->textureHeader->maxLOD ? GX_TRUE : GX_FALSE);
+		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, (f32)desc->textureHeader->minLOD,
+		                (f32)desc->textureHeader->maxLOD, desc->textureHeader->LODBias, GX_DISABLE,
+		                desc->textureHeader->edgeLODEnable, GX_ANISO_1);
+		GXLoadTexObj(&texObj, texMap);
+		texMap++;
+	}
+
+	{
+		u8* drawMode = mat->field_0x110;
+
+		mapSetMaterialTev(mat->texCount, drawMode ? drawMode[0] : 0, *(s32*)obj->field_0x0, obj->modelWorldMtx);
+	}
+}
+
 void mapSetTextureMatrix(MapMaterialTex* mat) {
 	s32 tc = 0;
 	s32 j = 0;
