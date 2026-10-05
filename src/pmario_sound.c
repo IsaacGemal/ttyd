@@ -6914,9 +6914,9 @@ void psndSFXOnVol(s32 a, s32 b) {
 	__psndSFXOn(a, b, 0xFF, 0, 0, 0, 0x10, 0);
 }
 
-// NONMATCHING (95.24%): logic and constants match. `name`/priority is in r20 instead of r26, which
+// NONMATCHING (98.22%): logic and constants match. `name`/priority is in r20 instead of r26, which
 // rotates the r20-r26 argument block and adds a clrlwi+move; the int->float magic doubles are
-// anonymous, the Vec is copied float-wise not word-wise, and the final `or` writes r3 not r27.
+// anonymous, and the final `or` writes r3 not r27.
 s32 __psndSFXOn(s32 name, s32 vol, s32 pan, s32 pitch, Vec* position, s32 a6, s32 flags, s32 a8) {
     s32 sfxid;
     s32 index;
@@ -7019,9 +7019,7 @@ s32 __psndSFXOn(s32 name, s32 vol, s32 pan, s32 pitch, Vec* position, s32 a6, s3
     *(u16*)((u8*)slot + 0xC) = entry->field_0x10;
     *(s16*)((u8*)slot + 0x14) = *(s16*)((u8*)entry + 0x12);
     if (position != 0) {
-        *(f32*)((u8*)slot + 0x1C) = position->x;
-        *(f32*)((u8*)slot + 0x20) = position->y;
-        *(f32*)((u8*)slot + 0x24) = position->z;
+        *(Vec*)((u8*)slot + 0x1C) = *position;
         if ((u32)a6 == 0) {
             *(u16*)&slot->unk6 |= 2;
         } else {
