@@ -501,6 +501,10 @@ When the instructions match but the stack slots, register allocation or scheduli
 - **A variable that must outrank the function's frontend temps goes in a `static inline` helper.** Inline-expansion
   objects get vreg numbers above the frontend temps, which no declaration order can reach: effCalcMayaAnimMatrix's
   `frame` in f0 and its GQR value in r9 matched only once the channel loop and the GQR write were inline helpers.
+- **A repeated block whose operands the original evaluates at the point of use is a macro, not an inline function.**
+  An inline call evaluates its arguments up front; a macro leaves each expression where it is written. winBookGX's
+  textured quad computes each coordinate at its vertex write and `|span|` right after GXSetTexCoordGen2: 82% as an
+  inline helper, 89% as a macro (#478, Claude #4). If the calls match but the arithmetic sits ahead of them, try a macro.
 - **Rodata `vec3_*`/`jumptable_*`/`dat_*` objects holding zeros where the code stores a computed value are the
   compiler's templates for local initialisers.** Write the local, not the object: `(Vec){x, y - 4.0f, 0.0f}` (non-constant
   compound literals compile in C mode; `Vec v = {x, ...}` does not), `const char* names[2] = {"a", "b"};`,
