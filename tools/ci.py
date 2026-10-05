@@ -46,13 +46,34 @@ ASM_RE = re.compile(r"(^|[^\w])(asm|__asm__|__asm)\b")
 ASM_EXCEPTIONS = ROOT / "tools" / "asm_exceptions.json"  # the only game-code functions that may be asm (docs/CONTEXT.md)
 
 
-def asm_exception(path, code, exceptions=None):
-    """True when a new line mentioning asm declares a function tools/asm_exceptions.json lists for that file."""
+FN_HEAD_RE = re.compile(r"^(?![\s#}/])(?!(?:typedef|struct|union|enum|return|if|for|while|switch)\b)[^;=]*?\b([A-Za-z_]\w*)\s*\([^;]*$")
+
+
+def enclosing_function(lines, idx):
+    """The function whose body holds lines[idx] (0-based): the nearest column-0 function header at or above it, or None if
+    a column-0 `}` (the end of an earlier function) comes first, i.e. the line is at file scope."""
+    for i in range(idx, -1, -1):
+        line = lines[i]
+        if line.startswith("}"):
+            return None
+        m = FN_HEAD_RE.match(line)
+        if m:
+            return m.group(1)
+    return None
+
+
+def asm_exception(path, code, exceptions=None, func=None):
+    """True when a new line mentioning asm is allowed by tools/asm_exceptions.json for that file: it declares a listed asm
+    function (`asm static s32 f(`), or it sits inside a listed function (`func`, e.g. an `asm { ... }` block in an
+    ordinary C function, the original-asm style of TP/TWW)."""
     import json
     if exceptions is None:
         exceptions = json.loads(ASM_EXCEPTIONS.read_text()) if ASM_EXCEPTIONS.exists() else []
     m = re.search(r"\basm\b[^(]*?\b(\w+)\s*\(", code)
-    return bool(m) and any(e["file"] == path and e["function"] == m.group(1) for e in exceptions)
+    names = {n for n in (m.group(1) if m else None, func) if n}
+    return any(e["file"] == path and e["function"] in names for e in exceptions)
+
+
 PRAGMA_RE = re.compile(r"^\s*#\s*pragma\b(?!\s+once\b)")
 UNIT_KEYS = ["fuzzy_match_percent", "matched_code_percent", "matched_data_percent",
              "complete_code_percent", "complete_data_percent"]
@@ -83,19 +104,28 @@ def lint(base, allow_pragma, allow_protected, allow_configure, allow_asm=False):
     for path in run(["git", "ls-files", "--others", "--exclude-standard", *scanned]).stdout.split():
         diff += f"+++ b/{path}\n" + "".join("+" + l for l in (ROOT / path).read_text(errors="replace").splitlines(True))
     current = None
+    post, lineno = [], 0  # the changed file as it is now, and the post-image line number of the next added line
     for line in diff.splitlines():
         if line.startswith("+++ "):
             current = line[6:] if line.startswith("+++ b/") else None
+            post = (ROOT / current).read_text(errors="replace").splitlines() if current and (ROOT / current).is_file() else []
+            lineno = 1
+            continue
+        if line.startswith("@@"):
+            hm = re.search(r"\+(\d+)", line)
+            lineno = int(hm.group(1)) if hm else lineno
             continue
         if not line.startswith("+") or current is None:
             continue
         added = line[1:]
+        lineno += 1
         if current == "configure.py":
             if added.strip() and "Object(" not in added and not allow_configure:
                 problems.append(f"configure.py: only Object(...) lines may change (pass --allow-configure if intended): {added.strip()[:100]}")
             continue
         code = added.split("//", 1)[0]
-        if ASM_RE.search(code) and not (allow_asm and current.startswith(UNPROTECTED)) and not asm_exception(current, code):
+        if ASM_RE.search(code) and not (allow_asm and current.startswith(UNPROTECTED)) \
+                and not asm_exception(current, code, func=enclosing_function(post, lineno - 2) if post else None):
             problems.append(f"{current}: new inline asm: {added.strip()[:100]}"
                             + (" (--allow-asm: only for the ported libraries' hand-written assembly, checked against"
                                " the reference projects)" if current.startswith(UNPROTECTED) else

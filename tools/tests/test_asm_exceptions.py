@@ -21,6 +21,24 @@ class AsmException(unittest.TestCase):
         self.assertFalse(ci.asm_exception("src/mario.c", "static asm s32 yuu_kesan_chk_copy(void) {", LIST))
         self.assertFalse(ci.asm_exception("rels/gor/src/event/evt_yuuranking.c", "asm { nop }", LIST))
 
+    def test_asm_block_inside_a_listed_function(self):
+        lines = ["static void other(void) {", "    x = 1;", "}", "",
+                 "s32 effCalcMayaAnimMatrix(Mtx m, f32 t) {", "    f32 q;", "    asm {", "        mtspr GQR5, r0", "    }", "}"]
+        self.assertEqual(ci.enclosing_function(lines, 6), "effCalcMayaAnimMatrix")
+        listed = [{"file": "src/driver/effdrv.c", "function": "effCalcMayaAnimMatrix"}]
+        self.assertTrue(ci.asm_exception("src/driver/effdrv.c", "    asm {", listed, func="effCalcMayaAnimMatrix"))
+
+    def test_asm_block_inside_an_unlisted_function_refused(self):
+        lines = ["s32 effSomethingElse(void) {", "    asm {", "        nop", "    }", "}"]
+        func = ci.enclosing_function(lines, 1)
+        self.assertEqual(func, "effSomethingElse")
+        listed = [{"file": "src/driver/effdrv.c", "function": "effCalcMayaAnimMatrix"}]
+        self.assertFalse(ci.asm_exception("src/driver/effdrv.c", "    asm {", listed, func=func))
+
+    def test_file_scope_asm_has_no_enclosing_function(self):
+        lines = ["void f(void) {", "}", "asm {", "}"]
+        self.assertIsNone(ci.enclosing_function(lines, 2))
+
     def test_the_list_is_complete_and_true(self):
         entries = json.load(open(ci.ASM_EXCEPTIONS))
         for e in entries:
