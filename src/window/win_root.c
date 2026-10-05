@@ -998,6 +998,157 @@ static inline Vec mail_vec(const Vec* base, f32 x, f32 y) {
     return v;
 }
 
+// A mail entry as winMailDisp reads it (mail_data.h returns it untyped).
+typedef struct WinMailEntry {
+    u16 flags;           // 0x0: 1/2/4 pick the envelope colour, 0x1000 has a picture
+    u8 field_0x2[0x6];   // 0x2
+    const char* name;    // 0x8
+    const char* body;    // 0xC
+    s32 picture;         // 0x10
+} WinMailEntry;
+
+// winFontSetLabel and winIconSet take their Vec and GXColor arguments by value (each call copies them);
+// win_main.h declares pointers, which compiles to the same callee.
+#define winMailLabelV ((void (*)(Vec, Vec, GXColor, const char*))winFontSetLabel)
+#define winMailIconV ((void (*)(s32, Vec, Vec, GXColor))winIconSet)
+#define WIN_MAIL_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
+
+// NONMATCHING (99.13%): the Vec templates sit at other .rodata offsets until the unit's pool is ported (the
+// original's are 0x32C-0x4D0 past str_802F3FE8), and the read/unread icon id compiles to a branch-free select
+// where retail branches.
+// The mail window: the list of letters (an envelope in the mail's colour, a read/unread mark, the two-digit
+// number and the title per row), or with one open (state 0xCA) its header, the scrolling body with its
+// picture, and the scroll arrows.
+void winMailDisp(WindowWork* work) {
+    s32 i;
+
+    if (WW_F32(work, 0x244) < float_320_8041d074 && WW_F32(work, 0x24C) > float_neg240_8041d078) {
+    winMailGX(work, WW_F32(work, 0x244), WW_F32(work, 0x24C));
+
+    if (WW_S32(work, 0x20C) != 0xCA) {
+        for (i = 0; i < WW_S32(work, 0x254); i++) {
+            s32 id = *((u8*)work + 0x26F + i * 2);
+            s32 num = *((u8*)work + 0x26E + i * 2);
+            WinMailEntry* mail = mailGetPtr(id);
+            GXColor color;
+            GXColor black = {0x00, 0x00, 0x00, 0xFF};
+            GXColor white;
+
+            if (mail->flags & 1) {
+                color = (GXColor){0xD7, 0xAC, 0xBC, 0xFF};
+            } else if (mail->flags & 2) {
+                color = (GXColor){0xD3, 0xD7, 0xAC, 0xFF};
+            } else if (mail->flags & 4) {
+                color = (GXColor){0xAC, 0xC2, 0xD7, 0xFF};
+            } else {
+                color = (GXColor){0xE1, 0xE1, 0xE1, 0xFF};
+            }
+            winTexInit(WIN_MAIL_TEX(work));
+            winTexSet(0x77,
+                      (Vec){float_4_8041d07c + (float_208_8041d080 + WW_F32(work, 0x244)), WW_F32(work, 0x260) + ((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)(i * 40)), 0.0f},
+                      (Vec){1.0f, 1.0f, 1.0f}, color);
+            white = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+            winTexSet((s32)pouchCheckMail(id) == 2 ? 0x5E : 0x5D,
+                      (Vec){float_72_8041d088 + WW_F32(work, 0x244), WW_F32(work, 0x260) + (((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)(i * 40)) - float_3_8041d08c), 0.0f},
+                      (Vec){1.0f, 1.0f, 1.0f}, white);
+            winTexSet((num + 1) / 10 + 0x65,
+                      (Vec){float_2_8041d090 + (float_88_8041d094 + WW_F32(work, 0x244)), WW_F32(work, 0x260) + (((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)(i * 40)) - float_3_8041d08c), 0.0f},
+                      (Vec){1.0f, 1.0f, 1.0f}, white);
+            winTexSet((num + 1) % 10 + 0x65,
+                      (Vec){float_2_8041d090 + (float_104_8041d098 + WW_F32(work, 0x244)), WW_F32(work, 0x260) + (((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)(i * 40)) - float_3_8041d08c), 0.0f},
+                      (Vec){1.0f, 1.0f, 1.0f}, white);
+            winFontInit();
+            winMailLabelV((Vec){float_120_8041d09c + WW_F32(work, 0x244), WW_F32(work, 0x260) + (float_8_8041d0a0 + ((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)(i * 40))), 0.0f},
+                          (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
+        }
+        GXSetScissor(0, 0, 0x260, 0x1E0);
+    } else {
+        s32 sel = WW_S32(work, 0x258);
+        GXColor white = {0xFF, 0xFF, 0xFF, 0xFF};
+        GXColor black = {0x00, 0x00, 0x00, 0xFF};
+        s32 num = *((u8*)work + 0x26E + sel * 2);
+        WinMailEntry* mail = mailGetPtr(*((u8*)work + 0x26F + sel * 2));
+        GXColor color;
+        u32 top;
+
+        if (mail->flags & 1) {
+            color = (GXColor){0xD7, 0xAC, 0xBC, 0xFF};
+        } else if (mail->flags & 2) {
+            color = (GXColor){0xD3, 0xD7, 0xAC, 0xFF};
+        } else if (mail->flags & 4) {
+            color = (GXColor){0xAC, 0xC2, 0xD7, 0xFF};
+        } else {
+            color = (GXColor){0xE1, 0xE1, 0xE1, 0xFF};
+        }
+
+        // the header: envelope, opened mark, number and title
+        winTexInit(WIN_MAIL_TEX(work));
+        winTexSet(0x77,
+                  (Vec){float_4_8041d07c + (float_208_8041d080 + WW_F32(work, 0x244)), WW_F32(work, 0x24C) - float_56_8041d084, 0.0f},
+                  (Vec){1.0f, 1.0f, 1.0f}, color);
+        winTexSet(0x5E,
+                  (Vec){float_72_8041d088 + WW_F32(work, 0x244), WW_F32(work, 0x24C) - float_56_8041d084, 0.0f},
+                  (Vec){1.0f, 1.0f, 1.0f}, white);
+        winTexSet((num + 1) / 10 + 0x65,
+                  (Vec){float_2_8041d090 + (float_88_8041d094 + WW_F32(work, 0x244)), (WW_F32(work, 0x24C) - float_56_8041d084) - float_3_8041d08c, 0.0f},
+                  (Vec){1.0f, 1.0f, 1.0f}, white);
+        winTexSet((num + 1) % 10 + 0x65,
+                  (Vec){float_2_8041d090 + (float_104_8041d098 + WW_F32(work, 0x244)), (WW_F32(work, 0x24C) - float_56_8041d084) - float_3_8041d08c, 0.0f},
+                  (Vec){1.0f, 1.0f, 1.0f}, white);
+        winFontInit();
+        winMailLabelV((Vec){float_120_8041d09c + WW_F32(work, 0x244), float_8_8041d0a0 + (WW_F32(work, 0x24C) - float_56_8041d084), 0.0f},
+                      (Vec){0.75f, 0.75f, 0.75f}, black, mail->name);
+
+        // the body, clipped to the page and scrolled by whole lines
+        top = float_72_8041d088 + (float_240_8041d0ac - WW_F32(work, 0x24C));
+        GXSetScissor(float_32_8041d0a4 + (float_304_8041d0a8 + WW_F32(work, 0x244)), top, 0x158, 0xB1);
+        winTexInit(WIN_MAIL_TEX(work));
+        winTexSet(0x77,
+                  (Vec){float_4_8041d07c + (float_208_8041d080 + WW_F32(work, 0x244)), (WW_F32(work, 0x24C) - float_56_8041d084) - float_80_8041d0b0, 0.0f},
+                  (Vec){1.0f, 7.5f, 1.0f}, color);
+        winFontInit();
+        winMailLabelV((Vec){float_80_8041d0b0 + WW_F32(work, 0x244), (WW_F32(work, 0x24C) - float_80_8041d0b0) + (f32)(WW_S32(work, 0x268) * 21), 0.0f},
+                      (Vec){0.75f, 0.75f, 0.75f}, (GXColor){0x00, 0x00, 0x00, 0xFF}, mail->body);
+        if (mail->flags & 0x1000) {
+            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x2C) + 0xA0));
+            winTexSet(mail->picture,
+                      (Vec){float_210_8041d0b4 + WW_F32(work, 0x244), float_7_8041d0b8 + ((WW_F32(work, 0x24C) - (f32)((*(u16*)((u8*)work + 0x26C) - 1) * 21))
+                                                   + (f32)(WW_S32(work, 0x268) * 21)), 0.0f},
+                      (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+        }
+        GXSetScissor(0, 0, 0x260, 0x1E0);
+
+        // scroll arrows (blinking) and the scroll bar, when the body is longer than a page
+        if (*(u16*)((u8*)work + 0x26C) > 8) {
+            winIconInit();
+            if (WW_S32(work, 0x268) == 0) {
+                if ((gp->retraceCount & 0x1F) < 20) {
+                    winMailIconV(0x1B6,
+                                 (Vec){float_360_8041d0bc + WW_F32(work, 0x244), (float_20_8041d0c0 + (WW_F32(work, 0x24C) - float_230_8041d0c4)) - float_24_8041d0c8, 0.0f},
+                                 (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                }
+            } else if (WW_S32(work, 0x268) + 6 == *(u16*)((u8*)work + 0x26C)) {
+                if ((gp->retraceCount & 0x1F) < 20) {
+                    winMailIconV(0x1B5,
+                                 (Vec){float_360_8041d0bc + WW_F32(work, 0x244), float_24_8041d0c8 + (float_20_8041d0c0 + (WW_F32(work, 0x24C) - float_230_8041d0c4)), 0.0f},
+                                 (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                }
+            } else if ((gp->retraceCount & 0x1F) < 20) {
+                winMailIconV(0x1B5,
+                             (Vec){float_360_8041d0bc + WW_F32(work, 0x244), float_24_8041d0c8 + (float_20_8041d0c0 + (WW_F32(work, 0x24C) - float_230_8041d0c4)), 0.0f},
+                             (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                winMailIconV(0x1B6,
+                             (Vec){float_360_8041d0bc + WW_F32(work, 0x244), (float_20_8041d0c0 + (WW_F32(work, 0x24C) - float_230_8041d0c4)) - float_24_8041d0c8, 0.0f},
+                             (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+            }
+            winMailIconV(0x70,
+                         (Vec){float_360_8041d0bc + WW_F32(work, 0x244), float_20_8041d0c0 + (WW_F32(work, 0x24C) - float_230_8041d0c4), 0.0f},
+                         (Vec){0.6f, 0.6f, 0.6f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+        }
+    }    }
+}
+
+
 
 int compare_func1(void* a, void* b) {
     if (*(u8*)a > *(u8*)b) {
