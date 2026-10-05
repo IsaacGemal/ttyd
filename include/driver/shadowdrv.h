@@ -91,3 +91,8 @@ GXColor shadowGetProjShadowColor(void);
 void* shadowGetProjShadowConfig(void);
 GXTexObj* shadowGetRamp8TexObj(void);
 GXTexObj* shadowGetRamp16TexObj(void);
+void shadowCharShadowDisp_Collision(CameraId cameraId, void* param);
+void shadowCharShadowDisp_Polygon(CameraId camId, void* param);
+void shadowCharShadowDisp_Texture(CameraId camId, void* param);
+void cylinder(ShadowEntry* entry);
+void projShadowEnd(s32 arg0, ProjShadowWork* work);
