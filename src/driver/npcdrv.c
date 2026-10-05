@@ -39,6 +39,9 @@
 #include "motion/mot_jabara.h"
 #include "party/party_nokonoko.h"
 #include "party/party_vivian.h"
+#include "driver/hitdrv.h"
+#include "battle/battle_sub.h"
+#include "driver/shadowdrv.h"
 
 // This file's radians-to-degrees factor is 180/3.141592 (0x42652EE4), not the SDK's 57.29577951f.
 #define NPC_RAD2DEG(r) ((r) * (180.0f / 3.141592f))
@@ -1034,59 +1037,578 @@ void _npcDeleteGroup(NpcEntry* entry) { // recursively inlined, warning
     npcDelete(entry);
 }
 
-// NONMATCHING (12.08%): 8 instructions differ, 1395 missing, 3 extra, plus register differences.
+extern const f32 float_365_80419ba8;
+extern const f32 float_0_80419b9c;
+extern const f32 float_0p5_80419ba0;
+extern const f32 float_180_80419bec;
+extern const f32 float_90_80419bd0;
+extern const f32 float_270_80419be4;
+extern const f32 float_0p75_80419bf4;
+extern const f32 float_neg1_80419bf8;
+extern const f32 float_1_80419bb4;
+extern const f32 float_100_80419c18;
+extern const f32 float_0p1_80419bfc;
+extern const f32 float_0p05_80419c78;
+extern const f32 float_0p25_80419c7c;
+extern const f32 float_neg2_80419c80;
+extern const f32 float_2_80419c5c;
+extern const f32 float_5000_80419c84;
+extern const f32 float_10000_80419c88;
+extern const f32 float_3_80419c08;
+extern const f32 float_1p33_80419c8c;
+extern const f32 float_neg600_80419c0c;
+extern const f32 float_600_80419c10;
+extern const f32 float_60_80419ba4;
+
+#ifdef MUST_MATCH
+// The original reaches these strings and the 0.75 double through the sqrtf double pool (vec3_802c2f78 + 0x1c0), one
+// register for all of them: "kpa_03" and the SFX name sit just before the pool, 0.75 at +0xa0.
+#define NPCMAIN_STR_KPA03 ((char*)pool - 0x34)
+#define NPCMAIN_STR_FALL ((char*)pool - 0x2c)
+#define NPCMAIN_SQRTF(x) npcMain_sqrtf((x), pool)
+#define NPCMAIN_0P75 (pool[20])
+#else
+#define NPCMAIN_STR_KPA03 "kpa_03"
+#define NPCMAIN_STR_FALL "SFX_KUPPA_3RD_WATER_FALL1"
+#define NPCMAIN_SQRTF(x) sqrtf(x)
+#define NPCMAIN_0P75 0.75
+#endif
+
+#ifdef MUST_MATCH
+static inline f32 npcMain_sqrtf(f32 x, const f64* pool) {
+    if (x > float_0_80419b9c) {
+        f64 guess = __frsqrte(x);
+        f64 half = pool[0];
+        f64 three = pool[1];
+        guess = half * guess * (three - guess * guess * x);
+        guess = half * guess * (three - guess * guess * x);
+        guess = half * guess * (three - guess * guess * x);
+        return x * guess;
+    } else if (x < pool[2]) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
+#endif
+
+// Mario can be noticed by a field npc: not in a cutscene, menu or talk, and not hidden by Vivian.
+static inline BOOL npcMarioNoticeable(void) {
+    MarioWork* mario = marioGetPtr();
+
+    if (mario->flags & 0x82000000) {
+        return FALSE;
+    }
+    if (mario->flags & 0xA) {
+        return FALSE;
+    }
+    if ((s32)gp->field_0x164 != 0) {
+        return FALSE;
+    }
+    if (seqGetSeq() != 2) {
+        return FALSE;
+    }
+    if (mario->currMotionId == 0x19) {
+        return FALSE;
+    }
+    if (vivianGetStatus() == 0 || vivianGetStatus() == 1) {
+    } else {
+        return FALSE;
+    }
+    return TRUE;
+}
+
+// Flurrie's breath reaches the npc at its feet, middle or head.
+static inline BOOL npcBlown(NpcEntry* entry) {
+    Vec pos;
+    Vec at;
+
+    if (entry->flags & 0x20000000) {
+        return FALSE;
+    }
+    if (entry->flags & 0x20) {
+        return FALSE;
+    }
+    pos = entry->position;
+    at = pos;
+    if (cloudGetBreathPower(entry->width, &at) > float_0_80419b9c) {
+        return TRUE;
+    }
+    pos = entry->position;
+    pos.y -= entry->height * float_0p5_80419ba0;
+    at = pos;
+    if (cloudGetBreathPower(entry->width, &at) > float_0_80419b9c) {
+        return TRUE;
+    }
+    pos = entry->position;
+    pos.y -= entry->height;
+    at = pos;
+    if (cloudGetBreathPower(entry->width, &at) > float_0_80419b9c) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+// NONMATCHING (98.23%): every call, branch and constant matches. Left: the loop hoists the "kpa_03" address into
+// a callee-saved register as well as the SFX name (retail hoists only the SFX name, so one more GPR is saved), the
+// find check's dx*dx + dz*dz has a dead compare against 0 before PSVECSubtract in retail, and some FPR colouring.
+// Per frame for each live npc: advance its clocks, apply its movement and walk/run animation, raise its event's
+// reactions (interrupt flags: 1 found Mario, 2 lost him, 4 left its territory, 8 blown by Flurrie), and queue its
+// draw, shadow and offscreen passes; then run the first strike banner and the field battle mode.
 void npcMain(void) {
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+#endif
     NpcWork* npcwork;
     NpcEntry* entry;
-    int i;
+    FieldBattleData* fbat;
+    FirstStrikeInfo* strike;
+    EventEntry* evt;
+    MarioWork* mario;
+    s32 total;
+    s32 i;
+    s32 state;
+    BOOL hit;
+    s32 shadowId;
+    f32 dx, dy, dz;
+    f32 dist;
+    f32 dir;
+    f32 runScale;
+    f32 angle;
+    f32 z;
+    Vec v;
+    Vec back;
+    Vec moved;
+    Vec shadow;
+    Vec feet;
 
     npcwork = gp->inBattle ? &work.battle : &work.field;
-    // npcwork = npcGetWorkPtr();
     marioGetPtr()->field_0x1D8 = 0;
+    total = npcwork->total;
     npcMainCount++;
 
-    for (i = 0; i < npcwork->total; i++) {
-        entry = &npcwork->entries[i];
-        if (entry->flags & 1 && entry->flags & 2) {
-            if (entry->flags & 0x8000) {
-                animPoseGetAnimPosePtr(entry->poseId)->flags |= 0x100;
+    for (i = 0, entry = npcwork->entries; i < total; i++, entry++) {
+        if (!(entry->flags & 1) || !(entry->flags & 2)) {
+            continue;
+        }
+        if (entry->flags & 0x8000) {
+            animPoseGetAnimPosePtr(entry->poseId)->flags |= 0x100;
+        } else {
+            animPoseGetAnimPosePtr(entry->poseId)->flags &= ~0x100;
+        }
+        if (!(entry->flags & 0x100000)) {
+            entry->jumpFlags |= 0x10;
+        }
+        if (entry->jumpFlags & 0x10000) {
+            entry->jumpFlags &= ~0x10;
+        }
+        if (*(u16*)&entry->wFbatHitCheckRelated) {
+            (*(u16*)&entry->wFbatHitCheckRelated)--;
+        }
+
+        if (entry->jumpFlags & 0x10) {
+            entry->field_190 = gp->renderTime - entry->field_198;
+            if (OSTicksToMilliseconds(entry->field_190) > 500) {
+                entry->field_190 = OSMillisecondsToTicks(16);
+            }
+            if (entry->flags & 0x20000) {
+                entry->field_178 += entry->field_190;
             } else {
-                animPoseGetAnimPosePtr(entry->poseId)->flags &= ~0x100;
+                entry->field_178 = 0;
             }
+            entry->field_188 += entry->field_190;
+            entry->field_198 = gp->renderTime;
+            entry->field_1A0 = (f32)(OSTicksToMicroseconds(entry->field_188)) / 1000000.0f;
+            entry->field_180 = (f32)(OSTicksToMicroseconds(entry->field_178)) / 1000000.0f;
+            entry->moveDt = (f32)(OSTicksToMicroseconds(entry->field_190)) / 1000000.0f;
+            entry->field_1A8 = (f32)(OSTicksToMicroseconds(entry->field_198)) / 1000000.0f;
+        } else {
+            entry->field_198 = gp->renderTime;
+        }
 
-            if (!(entry->flags & 0x100000)) {
-                entry->jumpFlags |= 0x10;
+        if (entry->flags & 2) {
+            // In Bowser's water level: splash on entering the water and move at half speed while in it.
+            if (entry->jumpFlags & 0x100000) {
+                entry->jumpFlags |= 0x200000;
+            } else {
+                entry->jumpFlags &= ~0x200000;
             }
-            if (entry->jumpFlags & 0x10000) {
-                entry->jumpFlags &= ~0x10;
+            entry->jumpFlags &= ~0x100000;
+            if (!strcmp(gp->currentMapName, NPCMAIN_STR_KPA03) && !(entry->position.y > float_365_80419ba8)) {
+                entry->jumpFlags |= 0x100000;
+                if (!(entry->jumpFlags & 0x200000) && (entry->jumpFlags & 0x100000)) {
+                    psndSFXOn_3D(NPCMAIN_STR_FALL, &entry->position);
+                }
             }
-
-            if (entry->wFbatHitCheckRelated) {
-                entry->wFbatHitCheckRelated--;
+            if ((entry->jumpFlags & 0x100000) && !(entry->jumpFlags & 0x10000000)) {
+                entry->field_1D0 = float_100_80419c18;
+                runScale = float_0p5_80419ba0;
+            } else {
+                runScale = float_1_80419bb4;
+            }
+            if (entry->jumpFlags & 0x100000) {
+                *(u16*)entry->field_31E |= 1;
             }
 
             if (entry->jumpFlags & 0x10) {
-                entry->field_190 = gp->renderTime - entry->field_198;
-                if (OSTicksToMilliseconds(entry->field_190) > 500) {
-                    entry->field_190 = OSMillisecondsToTicks(16);
-                }
-                if (entry->flags & 0x20000) {
-                    entry->field_178 += entry->field_190;
-                } else {
-                    entry->field_178 = 0;
-                }
-                entry->field_188 += entry->field_190;
-                entry->field_198 = gp->renderTime;
-                entry->field_1A0 = (f32)(OSTicksToMicroseconds(entry->field_188)) / 1000000.0f;
-                entry->field_180 = (f32)(OSTicksToMicroseconds(entry->field_178)) / 1000000.0f;
-                entry->moveDt = (f32)(OSTicksToMicroseconds(entry->field_190)) / 1000000.0f;
-                entry->field_1A8 = (f32)(OSTicksToMicroseconds(entry->field_198)) / 1000000.0f;
+                if (entry->moveDt > float_0_80419b9c) {
+                    f32 mx = entry->moveOffset.x;
+                    f32 mz = entry->moveOffset.z;
 
-            } else {
-                entry->field_198 = gp->renderTime;
+                    if ((entry->jumpFlags & 0x100000) && !(entry->jumpFlags & 0x10000000)) {
+                        mx *= float_0p5_80419ba0;
+                        mz *= float_0p5_80419ba0;
+                    }
+                    if (entry->flags & 0x08000000) {
+                        mz = float_0_80419b9c;
+                    }
+                    if (entry->flags & 0x40000000) {
+                        entry->position.x += mx;
+                        entry->position.z += mz;
+                    } else {
+                        entry->field_2FC = (u32)npcHitCheckSide(entry, &entry->position.x, &entry->position.z,
+                                                                &entry->moveDir, mx, mz);
+                    }
+                    entry->moveOffset.x = float_0_80419b9c;
+                    entry->moveOffset.z = float_0_80419b9c;
+                    npcMoveG(entry);
+                }
+                if (!(entry->flags & 8) && !(entry->flags & 0x20) && !(entry->flags & 0x4000)) {
+                    npcCheckHitMarioSide(entry);
+                }
+
+                // Pick the stay/walk/run animation from the distance moved this frame.
+                PSVECSubtract(&entry->position, &entry->prevPosition, &v);
+                if ((entry->flags & 0x400) && entry->moveDt > float_0_80419b9c) {
+                    f32 speed = NPCMAIN_SQRTF(v.x * v.x + v.z * v.z) / entry->moveDt;
+
+                    if (speed < float_0p1_80419bfc) {
+                        if (entry->field_108 != 1) {
+                            animPoseSetAnim(entry->poseId, entry->tribe->stayAnim, 1);
+                            entry->field_108 = 1;
+                        }
+                    } else if (speed < entry->tribe->runStartSpeed * runScale) {
+                        if (entry->field_108 != 2) {
+                            animPoseSetAnim(entry->poseId, entry->tribe->walkAnimation, 1);
+                            entry->field_108 = 2;
+                        }
+                    } else if (entry->field_108 != 3) {
+                        animPoseSetAnim(entry->poseId, entry->tribe->runAnimation, 1);
+                        entry->field_108 = 3;
+                    }
+                }
+            }
+
+            // Raise the npc's reactions for its event: blown (8), out of its territory (4), lost Mario (2),
+            // found Mario (1).
+            if (entry->regularEvtId != 0) {
+                evt = evtGetPtrID(entry->regularEvtId);
+                if (evt != NULL && !(evt->flags & 2)) {
+                    state = evt->wNpcEventType;
+                    if (entry->blowEvent != NULL && state != 5 && state != 8 && npcBlown(entry)) {
+                        *(s32*)entry->field_140 |= 8;
+                        goto interrupt;
+                    }
+
+                    if (entry->territoryType != NPC_TERRITORY_TYPE_NOTHING && (state == 1 || state == 2)) {
+                        hit = FALSE;
+                        if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
+                            dx = entry->territoryBase.x - entry->position.x;
+                            dz = entry->territoryBase.z - entry->position.z;
+                            dist = NPCMAIN_SQRTF(dx * dx + dz * dz);
+                            if (dist > (state == 2 ? entry->territoryHoming.x : entry->territoryHoming.x)) {
+                                hit = TRUE;
+                            }
+                        } else if (entry->territoryType == NPC_TERRITORY_TYPE_SQUARE) {
+                            if (state == 2) {
+                                if (entry->position.x < entry->territoryBase.x - entry->territoryHoming.x ||
+                                    entry->position.x > entry->territoryBase.x + entry->territoryHoming.x ||
+                                    entry->position.z < entry->territoryBase.z - entry->territoryHoming.z ||
+                                    entry->position.z > entry->territoryBase.z + entry->territoryHoming.z) {
+                                    hit = TRUE;
+                                }
+                            } else if (entry->position.x < entry->territoryBase.x - entry->territoryLoiter.x ||
+                                       entry->position.x > entry->territoryBase.x + entry->territoryLoiter.x ||
+                                       entry->position.z < entry->territoryBase.z - entry->territoryLoiter.z ||
+                                       entry->position.z > entry->territoryBase.z + entry->territoryLoiter.z) {
+                                hit = TRUE;
+                            }
+                        }
+                        if (hit) {
+                            *(s32*)entry->field_140 |= 4;
+                            goto interrupt;
+                        }
+                    }
+
+                    if (state == 2) {
+                        mario = marioGetPtr();
+                        dx = mario->position.x - entry->position.x;
+                        dy = mario->position.y - entry->position.y;
+                        dz = mario->position.z - entry->position.z;
+                        PSVECSubtract(&entry->prevPosition, &entry->position, &moved);
+                        dir = entry->direction;
+                        if ((entry->jumpFlags & 2) && NPCMAIN_SQRTF(moved.x * moved.x + moved.z * moved.z) > float_0p05_80419c78) {
+                            dir = entry->moveDir;
+                        }
+                        hit = FALSE;
+                        if (!npcMarioNoticeable()) {
+                            hit = TRUE;
+                        } else {
+                            dist = NPCMAIN_SQRTF(dx * dx + dz * dz);
+                            if (dist > float_0p25_80419c7c * entry->homingRange) {
+                                if (dy > entry->territoryLoiter.y) {
+                                    hit = TRUE;
+                                } else if (-dy > entry->territoryHoming.y) {
+                                    hit = TRUE;
+                                } else if (dist > entry->homingRange) {
+                                    hit = TRUE;
+                                } else if (angle = angleABf(float_0_80419b9c, float_0_80419b9c, dx, dz),
+                                           __fabsf(compAngle(dir, angle)) > float_0p5_80419ba0 * entry->homingAngle) {
+                                    hit = TRUE;
+                                }
+                            }
+                        }
+                        if (hit) {
+                            *(s32*)entry->field_140 |= 2;
+                            goto interrupt;
+                        }
+                    }
+
+                    if (state == 1 || state == 4) {
+                        mario = marioGetPtr();
+                        dz = mario->position.z - entry->position.z;
+                        dx = mario->position.x - entry->position.x;
+                        dy = mario->position.y - entry->position.y;
+                        dist = dx * dx + dz * dz;
+                        PSVECSubtract(&entry->prevPosition, &entry->position, &back);
+                        dir = reviseAngle(entry->direction) < float_180_80419bec ? float_90_80419bd0 : float_270_80419be4;
+                        hit = TRUE;
+                        if (!npcMarioNoticeable()) {
+                            hit = FALSE;
+                        } else {
+                            dist = NPCMAIN_SQRTF(dist);
+                            if (dist > float_0p25_80419c7c * entry->searchRange) {
+                                if (dist > entry->searchRange) {
+                                    hit = FALSE;
+                                    goto found;
+                                }
+                                angle = angleABf(float_0_80419b9c, float_0_80419b9c, dx, dz);
+                                if (__fabsf(compAngle(dir, angle)) > float_0p5_80419ba0 * entry->searchAngle) {
+                                    hit = FALSE;
+                                    goto found;
+                                }
+                            }
+                            if (dy > entry->territoryLoiter.y) {
+                                hit = FALSE;
+                            } else if (-dy > entry->territoryHoming.y) {
+                                hit = FALSE;
+                            } else if (state == 4) {
+                                if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
+                                    dx = entry->territoryBase.x - entry->position.x;
+                                    dz = entry->territoryBase.z - entry->position.z;
+                                    if (NPCMAIN_SQRTF(dx * dx + dz * dz) > NPCMAIN_0P75 * entry->territoryHoming.x) {
+                                        hit = FALSE;
+                                    }
+                                } else if (entry->position.x < entry->territoryBase.x - float_0p75_80419bf4 * entry->territoryHoming.x ||
+                                           entry->position.x > entry->territoryBase.x + float_0p75_80419bf4 * entry->territoryHoming.x ||
+                                           entry->position.z < entry->territoryBase.z - float_0p75_80419bf4 * entry->territoryHoming.z ||
+                                           entry->position.z > entry->territoryBase.z + float_0p75_80419bf4 * entry->territoryHoming.z) {
+                                    hit = FALSE;
+                                }
+                            }
+                        }
+                    found:
+                        if (hit) {
+                            *(s32*)entry->field_140 |= 1;
+                        }
+                    }
+                }
+            interrupt:
+                npcCheckInterrupt(entry);
+            }
+
+            // Draw only what is inside the view volume (flag 0x40 draws regardless).
+            if (!(entry->flags & 0x800)) {
+                PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &entry->position, &v);
+                PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &v, &v);
+                if ((v.z > float_neg1_80419bf8 && v.z < float_0_80419b9c && v.x >= float_neg2_80419c80 &&
+                     v.x <= float_2_80419c5c && v.y >= float_neg2_80419c80 && v.y <= float_2_80419c5c) ||
+                    (entry->flags & 0x40)) {
+                    if (entry->color.r != 0xFF || entry->color.g != 0xFF || entry->color.b != 0xFF ||
+                        entry->color.a != 0xFF) {
+                        animPoseSetMaterialFlagOn(entry->poseId, 0x40);
+                        {
+                            GXColor color = entry->color;
+
+                            animPoseSetMaterialEvtColor(entry->poseId, color);
+                        }
+                    } else {
+                        animPoseSetMaterialFlagOff(entry->poseId, 0x40);
+                    }
+
+                    z = float_5000_80419c84 * v.z + float_5000_80419c84;
+                    if (z < float_0_80419b9c) {
+                        z = float_0_80419b9c;
+                    } else if (z > float_10000_80419c88) {
+                        z = float_10000_80419c88;
+                    }
+                    z *= float_neg1_80419bf8;
+
+                    if (!(entry->flags & 0x80) &&
+                        (!(*(u16*)&entry->wFbatHitCheckRelated & 2) || (entry->jumpFlags & 0x10000))) {
+                        if (entry->color.a != 0xFF) {
+                            dispEntry(entry->cameraId, z, 2, npcDisp_xlu, entry);
+                        } else {
+                            dispEntry(entry->cameraId, z, 0, npcDisp, entry);
+                            dispEntry(entry->cameraId, z, 1, npcDisp, entry);
+                            dispEntry(entry->cameraId, z, 2, npcDisp, entry);
+                        }
+
+                        if (!(entry->flags & 0x04000000)) {
+                            if (!(entry->flags & 0x40000)) {
+                                shadow = entry->position;
+                                if (entry->tribe != NULL) {
+                                    f32 side = sinfd(reviseAngle(entry->direction) < float_180_80419bec
+                                                         ? float_90_80419bd0
+                                                         : float_270_80419be4);
+
+                                    shadow.x += entry->tribe->shadowOffsetX * entry->scale.x * side;
+                                    shadow.y += entry->tribe->shadowOffsetY * entry->scale.y;
+                                    shadow.z += entry->tribe->shadowOffsetZ * entry->scale.z;
+                                }
+                                shadowId = shadowEntry(shadow.x, shadow.y, shadow.z,
+                                                  float_1p33_80419c8c * (entry->field_154 *
+                                                                         (entry->width / float_3_80419c08 * entry->scale.x)));
+                                if (entry->flags & 0x80000) {
+                                    shadowSetCollision(shadowId, 0);
+                                }
+                            }
+                        } else {
+                            f32 hx, hy, hz, hdist, nx, ny, nz;
+
+                            feet = entry->position;
+                            hdist = float_100_80419c18;
+                            if (hitCheckFilter(NULL, &hx, &hy, &hz, &hdist, &nx, &ny, &nz, feet.x,
+                                               float_1_80419bb4 + feet.y, feet.z, float_0_80419b9c,
+                                               float_neg1_80419bf8, float_0_80419b9c) != NULL) {
+                                feet.y = hy;
+                            }
+                            animPoseVivianMain(entry->poseId, &feet);
+                            shadowId = shadowEntry(entry->position.x, entry->position.y, entry->position.z,
+                                              entry->field_154 * (entry->width / float_3_80419c08 * entry->scale.x));
+                            if (entry->flags & 0x80000) {
+                                shadowSetCollision(shadowId, 0);
+                            }
+                        }
+
+                        if (entry->flags & 0x100) {
+                            dispEntry(entry->cameraId, z, 2, npcDisp_blur, entry);
+                        }
+                    }
+
+                    if (entry->field_110 != -1) {
+                        if (entry->color.a != 0xFF) {
+                            dispEntry(CAMERA_OFFSCREEN2, z, 2, npcDisp_offscreen_xlu, entry);
+                        } else {
+                            dispEntry(CAMERA_OFFSCREEN2, z, 0, npcDisp_offscreen, entry);
+                            dispEntry(CAMERA_OFFSCREEN2, z, 1, npcDisp_offscreen, entry);
+                            dispEntry(CAMERA_OFFSCREEN2, z, 2, npcDisp_offscreen, entry);
+                        }
+                    }
+                }
+            }
+
+            entry->prevPosition = entry->position;
+            if ((entry->flags & 0x100) && !(npcMainCount & 1)) {
+                entry->positionHistory[4] = entry->positionHistory[3];
+                entry->positionHistory[3] = entry->positionHistory[2];
+                entry->positionHistory[2] = entry->positionHistory[1];
+                entry->positionHistory[1] = entry->positionHistory[0];
+                entry->positionHistory[0] = entry->position;
             }
         }
+        entry->jumpFlags &= ~0x10;
     }
+
+    // The first strike announcement: slide in, hold, slide out (type 2); or a fixed 60-frame banner (type 1).
+    fbat = gp->fbatData;
+    strike = &fbat->firstStrike;
+    if (strike->enabled) {
+        switch (strike->type) {
+            case 2:
+                strike->field_0xC++;
+                if ((s32)strike->field_0xC < 20) {
+                    strike->field_0x10 = intplGetValue(5, strike->field_0xC, 20, float_neg600_80419c0c, float_0_80419b9c);
+                } else if ((s32)strike->field_0xC < 80) {
+                    strike->field_0x10 = float_0_80419b9c;
+                } else if ((s32)strike->field_0xC < 100) {
+                    strike->field_0x10 =
+                        intplGetValue(1, strike->field_0xC - 80, 20, float_0_80419b9c, float_600_80419c10);
+                } else {
+                    strike->field_0x4 = 0;
+                    break;
+                }
+                strike->field_0x14 = float_0_80419b9c;
+                dispEntry(CAMERA_FADE, float_0_80419b9c, 2, _fbatFirstAttackAnnouceDisp, strike);
+                break;
+            case 1:
+                strike->field_0xC++;
+                if ((s32)strike->field_0xC > 60) {
+                    strike->field_0x4 = 0;
+                } else {
+                    strike->field_0x10 = float_0_80419b9c;
+                    strike->field_0x14 = float_0_80419b9c;
+                    dispEntry(CAMERA_FADE, float_0_80419b9c, 2, _fbatFirstAttackAnnouceDisp, strike);
+                }
+                break;
+        }
+    }
+
+    switch (fbat->mode) {
+        case 1: {
+            FieldBattleData* data;
+            s32 jump;
+            s32 fire;
+
+            fbatEncountCheck();
+            data = gp->fbatData;
+            mario = marioGetPtr();
+            fire = jump = 0;
+            if (mario->characterId == 2) {
+                jump = kpaJumpChk();
+            }
+            if (mario->characterId == 2) {
+                fire = kpaFireAttackCheck();
+            }
+            if (jump) {
+                if (data->field_57C > 0 && data->field_578 >= 2) {
+                    Vec pos = mario->position;
+
+                    pos.y += float_60_80419ba4;
+                    kpaAddScorePos(data->field_57C, &pos);
+                }
+                data->field_578 = 0;
+                data->field_57C = 0;
+            }
+            if (!fire) {
+                data->field_574 = 0;
+            }
+            break;
+        }
+        case 2:
+        case 3:
+            fbatTalkMode();
+            break;
+        case 4:
+            break;
+        case 5:
+            fbatBattleMode();
+            break;
+        case 6:
+            break;
+    }
+    fbat->field_54C[1] = 0;
 }
 
 NpcEntry* npcNameToPtr(const char* name) {
@@ -1174,6 +1696,7 @@ extern const f32 float_neg270_80419be8;
 extern const f32 float_90_80419bd0;
 extern const f32 float_0p75_80419bf4;
 extern const f32 float_neg1_80419bf8;
+extern const f32 float_1_80419bb4;
 extern const f32 float_1000_80419bc8;
 extern const f32 float_10_80419bb8;
 extern const f32 float_0p5_80419ba0;
