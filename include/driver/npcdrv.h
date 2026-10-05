@@ -227,7 +227,10 @@ typedef struct FieldBattleData {
     NpcDeadInfo deadInfo[64];    // 0x4C
     u8 field_54C[0x550 - 0x54C]; // 0x54C
     FirstStrikeInfo firstStrike; // 0x550
-    u8 field_570[0x580 - 0x570]; // 0x570
+    u8 field_570[0x574 - 0x570]; // 0x570
+    s32 field_574;               // 0x574
+    s32 field_578;               // 0x578
+    s32 field_57C;               // 0x57C
 } FieldBattleData;
 
 NpcWork* npcGetWorkPtr(void);
