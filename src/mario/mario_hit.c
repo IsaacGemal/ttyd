@@ -1491,7 +1491,7 @@ static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32*
 
 // Older landing check (the Koopa-aware ground probe): same five-sample ring as marioChkLandon2 but the ray points
 // down from 0.75 * height and the accepted hit y is returned rounded to 0.01.
-// NONMATCHING (81.67%): same 15 calls; remaining: frame size/FPR colouring and the inlined sqrt's classification
+// NONMATCHING (85.06%): same 15 calls; remaining: frame size/FPR colouring and the inlined sqrt's classification
 // switch (cmpwi 1/3). Compares: fabs(...) < 0.1 and the rounding tests (cror eq,gt -> >=) checked against the asm.
 void* marioLandonChk_old(f32* pos, f32 spd) {
     const char* base = (const char*)&vec3_802c5730;
@@ -1553,27 +1553,21 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
     d0 = h + fa;
     yy = wp->position.y + h;
     for (i = 0; i < 5; i++) {
-        switch (i) {
-        case 0:
+        if (i == 0) {
             ox = float_0_8041a7a4;
             oz = float_0_8041a7a4;
-            break;
-        case 1:
+        } else if (i == 1) {
             ox = f20;
             oz = f19;
-            break;
-        case 2:
+        } else if (i == 2) {
             ox = -f19;
             oz = f19;
-            break;
-        case 3:
+        } else if (i == 3) {
             ox = f19;
             oz = -f20;
-            break;
-        case 4:
+        } else if (i == 4) {
             ox = -f20;
             oz = -f19;
-            break;
         }
         p = *(const Vec*)(base + 0);
         dir = *(const Vec*)(base + 0xC);
@@ -1603,7 +1597,7 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
 }
 
 // The hit sample ring of marioChkLandon, with the ground y returned through *out.
-// NONMATCHING (85.03%): same 13 calls; the inlined sqrt's classification switch (cmpwi 1/3) is missing from ours and the
+// NONMATCHING (88.82%): same 13 calls; the inlined sqrt's classification switch (cmpwi 1/3) is missing from ours and the
 // frame is 0x1c0 vs 0x1a0. fabs() is __fabsf (f32 add, no frsp) as in the original; the compare `fabs(...) < 0.1` is plain.
 void* marioChkLandon2(f32* out, f32 a, f32 b) {
     const char* base = (const char*)&vec3_802c5730;
@@ -1657,27 +1651,21 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
     px = wp->position.x;
     pz = wp->position.z;
     for (i = 0; i < 5; i++) {
-        switch (i) {
-        case 0:
+        if (i == 0) {
             ox = float_0_8041a7a4;
             oz = float_0_8041a7a4;
-            break;
-        case 1:
+        } else if (i == 1) {
             ox = f27;
             oz = f26;
-            break;
-        case 2:
+        } else if (i == 2) {
             ox = -f26;
             oz = f26;
-            break;
-        case 3:
+        } else if (i == 3) {
             ox = f26;
             oz = -f27;
-            break;
-        case 4:
+        } else if (i == 4) {
             ox = -f27;
             oz = -f26;
-            break;
         }
         p = *(const Vec*)(base + 0x84);
         p.x = px + ox;
