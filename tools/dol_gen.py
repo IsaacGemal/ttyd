@@ -125,6 +125,14 @@ def wrap_ptr(line):
     return re.sub(r'\b(CALL_CHILD|SPAWN_EVENT)\(PTR\((\w+)\)\)', r'\1(\2)', s)
 
 
+def join_halves(halves):
+    """One `.4byte`-style word from two consecutive `.2byte` values (big-endian), as the words list wants it."""
+    hi, lo = (int(h, 0) for h in halves)
+    if not (0 <= hi <= 0xFFFF and 0 <= lo <= 0xFFFF):
+        raise ValueError(f"not a halfword: {halves}")
+    return '0x%04X%04X' % (hi, lo)
+
+
 def render(o):
     """Source text of one data object, and the strings (contents, in order of use) it introduces."""
     st = '' if o['scope'] == 'global' else 'static '
@@ -153,9 +161,17 @@ def render(o):
         return f"// TODO: type\n{st}u8 {o['name']}[{len(vals)}] = {{\n    " + \
             ',\n    '.join(', '.join(vals[j:j + 8]) for j in range(0, len(vals), 8)) + ",\n};", used
     words = []
+    half = []   # a pending `.2byte`: two of them make one word (a struct's s16 pair, as in battle_seq_end's _rank_up_data)
     for m in re.finditer(r'^\s*\.(4byte|float|string|byte|2byte|double|rel|skip) (.*)$', o['body'], re.M):
         k, v = m.group(1), m.group(2).strip()
-        if k == '4byte':
+        if half and k != '2byte':
+            sys.exit(f"{o['name']}: a lone .2byte before .{k}")
+        if k == '2byte':
+            half.append(v)
+            if len(half) == 2:
+                words.append(join_halves(half))
+                half = []
+        elif k == '4byte':
             if v.startswith('0x'):
                 words.append(v)
             elif v in strings:
@@ -175,6 +191,8 @@ def render(o):
             words.append(f'(u32)((u8*)&{sym} + {int(lbl[3:], 16) - tgt[0]["addr"]:#x})')
         else:
             sys.exit(f"{o['name']}: unsupported .{k}")
+    if half:
+        sys.exit(f"{o['name']}: a lone .2byte at the end")
     if len(words) * 4 != o['size']:
         sys.exit(f"{o['name']}: {len(words) * 4} bytes vs {o['size']}")
     _t = 's32' if (o['name'] in NOTSCRIPT or re.search(rf'EVT_DEF\({re.escape(o["name"])}\)', ' '.join(hdrtext.values()))) else 'u32'
