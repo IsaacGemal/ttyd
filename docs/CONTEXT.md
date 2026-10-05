@@ -4713,3 +4713,9 @@ permuter instead of another agent attempt.
   _btlcmd_Make*Table family; SelectWeaponTable's gap is the param-vs-local class), zubastar_bomb/main 99.99 (left: pool
   offsets); win_root no change (pool displacements, a link-pass question). Wave 79 triage: unit_boss_moamoa and nameent
   classified NO-SOURCE-LEVER (frontend temps outranking named locals) and stopped early, as designed.
+- **Batch 31:** eff_confetti_n64 linked (effConfettiDisp 99.86 -> 100: mwccdbg named a 3-cycle of named/temp GPRs, rasim
+  showed no declaration order fixes it, sched750 pointed at hoisting the type modulo, and that shape is the fix);
+  effPointGetDisp 99.87 -> 99.92 (the same gain wave 78 found, now with .sdata2 kept identical, so it merged). The clean
+  debugger re-run (wave 79, scratch/wave79/AB2.tsv) ends 5 of 5 triaged correctly: 2 FIXABLE and linked (evt_bero,
+  confetti, the debugger leading to each fix), 1 FIXABLE partial (pointget), 2 NO-SOURCE-LEVER stopped early
+  (unit_boss_moamoa, nameent: frontend temps outranking named locals, Claude #3's temp-rank class).
