@@ -7536,9 +7536,12 @@ USER_FUNC(evt_puni_setup) {
     return 2;
 }
 
-// NONMATCHING (99.78%): writing the bounds inline in the loop instead of precomputing xlo/xhi/zlo/zhi
-// fixed the constant pool and most of the rotation. What remains is x/xrange/zrange/rx inside
-// f21-f23: ours x=f22, xrange=f23, zrange=f22, rx=f21; target x=f21, xrange=f22, zrange=f21, rx=f23.
+static inline f32 puniRandUnit(void) {
+    return (f32)rand() / 32767.0f;
+}
+
+// 100%: the bounds written inline in the loop fix the constant pool; the two random draws through an inline helper
+// and `zhi` as a named temp give x/xrange/zrange/rx the original's f21-f23 (permuter, 2026-10-05).
 USER_FUNC(evt_toge_setup) {
     s32 i;
     s32 count = 1;
@@ -7565,8 +7568,8 @@ USER_FUNC(evt_toge_setup) {
     for (i = 110; i < count; i++) {
         PuniData* p = &Punidat[i];
 
-        f32 rx = (f32)rand() / 32767.0f;
-        f32 rz = (f32)rand() / 32767.0f;
+        f32 rx = puniRandUnit();
+        f32 rz = puniRandUnit();
 
         p->unk4 |= 0x10;
         p->unkC = 0;
@@ -7576,7 +7579,8 @@ USER_FUNC(evt_toge_setup) {
         p->field_0x11E = 1000;
         p->field_0x12C.x = (x - 50.0f) + rx * ((x + 50.0f) - (x - 50.0f));
         p->field_0x12C.y = y;
-        p->field_0x12C.z = (z - 120.0f) + rz * ((z + 120.0f) - (z - 120.0f));
+        zhi = z + 120.0f;
+        p->field_0x12C.z = (z - 120.0f) + rz * (zhi - (z - 120.0f));
         *(Vec*)&p->field_0x138 = p->field_0x12C;
         p->field_0x190 = 6.0f;
         p->field_0x194 = 2.0f;
