@@ -174,6 +174,8 @@ void __str2dec(decimal* d, const char* s, short exp) {
     if (*s != 0) {
         if (*s < 5)
             return;
+        if (*s > 5)
+            goto round;
 
         {
             const char* p = s + 1;
@@ -191,7 +193,6 @@ void __str2dec(decimal* d, const char* s, short exp) {
     }
 }
 
-// NONMATCHING (97.70%): 14 instructions differ, 23 missing, 9 extra, plus register differences.
 void __two_exp(decimal* result, long exp) {
     switch (exp) {
     case -64:
@@ -566,7 +567,8 @@ void __num2dec(const decform* form, double x, decimal* d) {
 
 extern unsigned long __double_max[];
 
-// NONMATCHING (91.83%): calls and immediates match; the original keeps only r29-r31 callee-saved with a 0x1f0 frame, this build uses r18-r31 with 0x210.
+// NONMATCHING (99.98%): one register choice in the NaN payload digit conversion (retail puts each arm of the
+// digit/letter ternary straight into the result register).
 double __dec2num(const decimal* d) {
     if (d->sig.length <= 0) {
         return copysign(0.0, d->sign == 0 ? 1.0 : -1.0);
@@ -588,18 +590,17 @@ double __dec2num(const decimal* d) {
             if (d->sig.length == 1) {
                 *ll |= 0x8000000000000;
             } else {
-                int i;
                 int ndig = d->sig.length;
                 unsigned char* p = (unsigned char*)ll + 1;
                 int nonzero = 0;
                 int high = 1;
+                int i;
 
                 if (ndig > 14)
                     ndig = 14;
 
                 for (i = 1; i < ndig; i++) {
-                    unsigned char c = d->sig.text[i];
-                    unsigned char n = _isdigit(c) ? c - '0' : _tolower(c) - 'a' + 10;
+                    unsigned char n = _isdigit(d->sig.text[i]) ? d->sig.text[i] - '0' : (unsigned char)(_tolower(d->sig.text[i]) - 'a' + 10);
 
                     if (n)
                         nonzero = 1;
@@ -681,18 +682,17 @@ double __dec2num(const decimal* d) {
 
         {
             decimal feedback1;
-            double next_guess;
-            unsigned long long* ull = (unsigned long long*)&next_guess;
 
             __num2dec_internal(&feedback1, first_guess);
 
             if (__equals_dec(&feedback1, &dec)) {
                 goto done;
             }
-            next_guess = first_guess;
 
             if (__less_dec(&feedback1, &dec)) {
                 decimal feedback2, difflow, diffhigh;
+                double next_guess = first_guess;
+                unsigned long long* ull = (unsigned long long*)&next_guess;
 
                 ++*ull;
                 if (fpclassify(next_guess) == 2) {
@@ -722,6 +722,8 @@ double __dec2num(const decimal* d) {
                 }
             } else {
                 decimal feedback2, difflow, diffhigh;
+                double next_guess = first_guess;
+                unsigned long long* ull = (unsigned long long*)&next_guess;
 
                 --*ull;
                 __num2dec_internal(&feedback2, next_guess);
@@ -731,22 +733,14 @@ double __dec2num(const decimal* d) {
                     --*ull;
                     __num2dec_internal(&feedback2, next_guess);
                 }
-                difflow = feedback1;
-                feedback1 = feedback2;
-                feedback2 = difflow;
-                {
-                    double temp = first_guess;
-                    first_guess = next_guess;
-                    next_guess = temp;
-                }
-                __minus_dec(&difflow, &dec, &feedback1);
-                __minus_dec(&diffhigh, &feedback2, &dec);
+                __minus_dec(&difflow, &dec, &feedback2);
+                __minus_dec(&diffhigh, &feedback1, &dec);
 
                 if (__equals_dec(&difflow, &diffhigh)) {
                     if (*(unsigned long long*)&first_guess & 1) {
                         first_guess = next_guess;
                     }
-                } else if (!__less_dec(&difflow, &diffhigh)) {
+                } else if (__less_dec(&difflow, &diffhigh)) {
                     first_guess = next_guess;
                 }
             }
