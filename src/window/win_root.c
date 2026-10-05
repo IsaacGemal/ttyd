@@ -674,46 +674,25 @@ static inline void winKirinukiQuad(f32 x, f32 y, f32 w, f32 h) {
     GXTexCoord2f32(1.0f, 0.0f);
 }
 
-// NONMATCHING (95.77%): the 9920-byte body reconstructed from the asm. The call
-// sequence, every immediate and every FP operation match; the only remaining
-// `!!` rows are float register names, scheduling moves and the anonymous
-// `double_to_int_mask` relocation. The frame (0x8b0, saving f19..f31) matches.
-// The target keeps the x/y/w/h parameters in f28..f31 and the shared geometry
-// live in f19..f27; our allocator instead puts x/y in f31/f30 (reversed), so the
-// residue is a register-colouring tie-break. Two things landed while
-// reconstructing this:
-//  * The else-branch 7th quad's width is w-8 (single fsubs), not w-16, and the
-//    else-branch texture ids at quads 11/12 are C then 8 (the salvaged version
-//    had that 0x8/0xC pair swapped). Fixing both took 95.07 -> 95.20.
-//  * The scale macro's W/H arguments are evaluated inline at each scale call
-//    (`w-8`, `w-8-8`, `h-8-8`) even where a local holds the same value for the
-//    quads; inlining the scale-3 H and scale-4 W arguments while the quads keep
-//    using `kh16`/`kw8` took 95.32 -> 95.76 (95.77 without any lifetimes pragma). Every texture id (if0
-//    B,9,D,A,8,C,8,E; else B,9,D,A,8,C,8,F,8,A,8,C,8,E), every scale W/H and
-//    every quad rectangle was checked against the asm / the m2c draft.
-//  * `winKirinukiQuad` must be inlined at all 20 call sites (the inline_max
-//    pragmas below); without them MWCC outlines it and the function drops to
-//    61.68%. The four kh16/kxw74/kxw82/kw8 locals are assigned after
-//    `GXSetCurrentMtx` (worth +0.01 over the initialiser form). Adding any
-//    further named local, or turning the kxw74/kxw82 or kh16 assignments into
-//    assignment expressions, makes mwcceppc loop forever.
-//  * No `opt_lifetimes` pragma is best now (off is 95.76, on is neutral);
-//    `opt_propagation` / `opt_dead_assignments` / `opt_loop_invariants` /
-//    `opt_strength_reduction` off are all neutral. On the earlier 95.20 shape,
-//    `optimize_for_size on` (94.96), `opt_common_subs off` (94.29) and
-//    `scheduling off` (69.31) were worse.
-//  * This is a register-colouring tie-break, not a flag or source-shape bug: the
-//    same macro/quad shape in nameent.c's nameKirinukiGX stops at 99.75% on the
-//    identical FPR wall. A decomp-permuter job.
+// The 9920-byte body reconstructed from the asm; the frame (0x8b0, saving f19..f31) matches.
+//  * The 8.0 and 16.0 are literals, as in nameent.c's nameKirinukiGX: MWCC CSEs `w - 8.0f - 8.0f` and the
+//    like across the GX calls (the original computes each once and reuses it for the scale and the quad),
+//    which it does not do for reads of the named float_8/float_16 objects. 90.0 and 74.0 stay named reads
+//    (as literals both score lower). The quads use the `w - 8`/`h - 8 - 8` expressions directly, and kxw74/
+//    kxw82 are assigned just before their first use in the else branch; 95.77 -> 98.40 in all.
+//  * The else-branch 7th quad's width is w-8 (single fsubs), not w-16, and the else-branch texture ids at
+//    quads 11/12 are C then 8. Every texture id (if0 B,9,D,A,8,C,8,E; else B,9,D,A,8,C,8,F,8,A,8,C,8,E),
+//    every scale W/H and every quad rectangle was checked against the asm.
+//  * `winKirinukiQuad` must be inlined at all 20 call sites (the inline_max pragmas below); without them
+//    MWCC outlines it and the function drops to 61.68%. Turning the kxw74/kxw82 assignments into
+//    assignment expressions has made mwcceppc loop forever.
 #pragma inline_max_total_size(60000) // keep the 20 winKirinukiQuad instances inlined
 #pragma inline_max_size(1000)
-// NONMATCHING (95.77%): remaining diff is MWCC float register colouring / scheduling only (see above).
+// NONMATCHING (98.40%): FPR colouring and a few scheduling moves (see above).
 void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
     f32 yscale;
-    f32 kh16;
     f32 kxw74;
     f32 kxw82;
-    f32 kw8;
 
     GXSetBlendMode(0, 1, 0, 0);
     GXSetZCompLoc(0);
@@ -735,70 +714,65 @@ void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
     GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
     GXSetCurrentMtx(0);
 
-    kh16 = h - float_8_8041d0a0 - float_8_8041d0a0;
-    kw8 = w - float_8_8041d0a0;
-
     if (type == 0) {
-        kxw74 = x + w - float_90_8041d194 + float_16_8041d0e4;
-        kxw82 = x + w - float_90_8041d194 + float_8_8041d0a0;
         WIN_KIRINUKI_SCALE(0xB, double_8_802f4530, double_8_802f4530);
-        winKirinukiQuad(x, y, float_8_8041d0a0, float_8_8041d0a0);
-        WIN_KIRINUKI_SCALE(0x9, w - float_8_8041d0a0 - float_8_8041d0a0, double_8_802f4530);
-        winKirinukiQuad(x + float_8_8041d0a0, y, w - float_8_8041d0a0 - float_8_8041d0a0, float_8_8041d0a0);
+        winKirinukiQuad(x, y, 8.0f, 8.0f);
+        WIN_KIRINUKI_SCALE(0x9, w - 8.0f - 8.0f, double_8_802f4530);
+        winKirinukiQuad(x + 8.0f, y, w - 8.0f - 8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0xD, double_8_802f4530, double_8_802f4530);
-        winKirinukiQuad(x + kw8, y, float_8_8041d0a0, float_8_8041d0a0);
-        WIN_KIRINUKI_SCALE(0xA, double_8_802f4530, h - float_8_8041d0a0 - float_8_8041d0a0);
-        winKirinukiQuad(x, y - float_8_8041d0a0, float_8_8041d0a0, kh16);
-        WIN_KIRINUKI_SCALE(0x8, w - float_8_8041d0a0, kh16);
-        winKirinukiQuad(x + float_8_8041d0a0, y - float_8_8041d0a0, kw8,
-                        kh16);
+        winKirinukiQuad(x + (w - 8.0f), y, 8.0f, 8.0f);
+        WIN_KIRINUKI_SCALE(0xA, double_8_802f4530, h - 8.0f - 8.0f);
+        winKirinukiQuad(x, y - 8.0f, 8.0f, (h - 8.0f - 8.0f));
+        WIN_KIRINUKI_SCALE(0x8, w - 8.0f, (h - 8.0f - 8.0f));
+        winKirinukiQuad(x + 8.0f, y - 8.0f, (w - 8.0f),
+                        (h - 8.0f - 8.0f));
         WIN_KIRINUKI_SCALE(0xC, double_8_802f4530, double_8_802f4530);
-        winKirinukiQuad(x, y - (h - float_8_8041d0a0), float_8_8041d0a0, float_8_8041d0a0);
-        WIN_KIRINUKI_SCALE(0x8, w - float_8_8041d0a0 - float_8_8041d0a0, double_8_802f4530);
-        winKirinukiQuad(x + float_8_8041d0a0, y - (h - float_8_8041d0a0),
-                        w - float_8_8041d0a0 - float_8_8041d0a0, float_8_8041d0a0);
+        winKirinukiQuad(x, y - (h - 8.0f), 8.0f, 8.0f);
+        WIN_KIRINUKI_SCALE(0x8, w - 8.0f - 8.0f, double_8_802f4530);
+        winKirinukiQuad(x + 8.0f, y - (h - 8.0f),
+                        w - 8.0f - 8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0xE, double_8_802f4530, double_8_802f4530);
-        winKirinukiQuad(x + kw8, y - (h - float_8_8041d0a0), float_8_8041d0a0,
-                        float_8_8041d0a0);
+        winKirinukiQuad(x + (w - 8.0f), y - (h - 8.0f), 8.0f,
+                        8.0f);
     } else {
-        kxw74 = x + w - float_90_8041d194 + float_16_8041d0e4;
-        kxw82 = x + w - float_90_8041d194 + float_8_8041d0a0;
         WIN_KIRINUKI_SCALE(0xB, double_8_802f4530, double_8_802f4530);
-        winKirinukiQuad(x, y, float_8_8041d0a0, float_8_8041d0a0);
-        WIN_KIRINUKI_SCALE(0x9, w - float_8_8041d0a0 - float_8_8041d0a0, double_8_802f4530);
-        winKirinukiQuad(x + float_8_8041d0a0, y, w - float_8_8041d0a0 - float_8_8041d0a0, float_8_8041d0a0);
+        winKirinukiQuad(x, y, 8.0f, 8.0f);
+        WIN_KIRINUKI_SCALE(0x9, w - 8.0f - 8.0f, double_8_802f4530);
+        winKirinukiQuad(x + 8.0f, y, w - 8.0f - 8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0xD, double_8_802f4530, double_8_802f4530);
-        winKirinukiQuad(x + kw8, y, float_8_8041d0a0, float_8_8041d0a0);
-        WIN_KIRINUKI_SCALE(0xA, double_8_802f4530, h - float_8_8041d0a0 - float_8_8041d0a0);
-        winKirinukiQuad(x, y - float_8_8041d0a0, float_8_8041d0a0, kh16);
-        WIN_KIRINUKI_SCALE(0x8, w - float_8_8041d0a0, kh16);
-        winKirinukiQuad(x + float_8_8041d0a0, y - float_8_8041d0a0, kw8,
-                        kh16);
+        winKirinukiQuad(x + (w - 8.0f), y, 8.0f, 8.0f);
+        WIN_KIRINUKI_SCALE(0xA, double_8_802f4530, h - 8.0f - 8.0f);
+        winKirinukiQuad(x, y - 8.0f, 8.0f, (h - 8.0f - 8.0f));
+        WIN_KIRINUKI_SCALE(0x8, w - 8.0f, (h - 8.0f - 8.0f));
+        winKirinukiQuad(x + 8.0f, y - 8.0f, (w - 8.0f),
+                        (h - 8.0f - 8.0f));
         WIN_KIRINUKI_SCALE(0xC, double_8_802f4530, double_8_802f4530);
-        winKirinukiQuad(x, y - (h - float_8_8041d0a0), float_8_8041d0a0, float_8_8041d0a0);
-        WIN_KIRINUKI_SCALE(0x8, w - float_8_8041d0a0, double_8_802f4530);
-        winKirinukiQuad(x + float_8_8041d0a0, y - (h - float_8_8041d0a0),
-                        w - float_8_8041d0a0, float_8_8041d0a0);
+        winKirinukiQuad(x, y - (h - 8.0f), 8.0f, 8.0f);
+        WIN_KIRINUKI_SCALE(0x8, w - 8.0f, double_8_802f4530);
+        winKirinukiQuad(x + 8.0f, y - (h - 8.0f),
+                        w - 8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0xF, double_16_802f44e8, double_8_802f4530);
-        winKirinukiQuad(x + w - float_90_8041d194, y - h, float_16_8041d0e4, float_8_8041d0a0);
+        winKirinukiQuad(x + w - float_90_8041d194, y - h, 16.0f, 8.0f);
+        kxw74 = x + w - float_90_8041d194 + 16.0f;
+        kxw82 = x + w - float_90_8041d194 + 8.0f;
         WIN_KIRINUKI_SCALE(0x8, float_74_8041d198, double_8_802f4530);
         winKirinukiQuad(kxw74, y - h, float_74_8041d198,
-                        float_8_8041d0a0);
+                        8.0f);
         WIN_KIRINUKI_SCALE(0xA, double_8_802f4530, double_8_802f4530);
-        winKirinukiQuad(kxw82, y - h - float_8_8041d0a0,
-                        float_8_8041d0a0, float_8_8041d0a0);
+        winKirinukiQuad(kxw82, y - h - 8.0f,
+                        8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0x8, float_74_8041d198, double_8_802f4530);
-        winKirinukiQuad(kxw74, y - h - float_8_8041d0a0,
-                        float_74_8041d198, float_8_8041d0a0);
+        winKirinukiQuad(kxw74, y - h - 8.0f,
+                        float_74_8041d198, 8.0f);
         WIN_KIRINUKI_SCALE(0xC, double_8_802f4530, double_8_802f4530);
-        winKirinukiQuad(kxw82, y - h - float_16_8041d0e4,
-                        float_8_8041d0a0, float_8_8041d0a0);
+        winKirinukiQuad(kxw82, y - h - 16.0f,
+                        8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0x8, float_66_8041d19c, double_8_802f4530);
-        winKirinukiQuad(kxw74, y - h - float_16_8041d0e4,
-                        float_66_8041d19c, float_8_8041d0a0);
+        winKirinukiQuad(kxw74, y - h - 16.0f,
+                        float_66_8041d19c, 8.0f);
         WIN_KIRINUKI_SCALE(0xE, double_8_802f4530, double_8_802f4530);
-        winKirinukiQuad(x + kw8, y - h - float_16_8041d0e4, float_8_8041d0a0,
-                        float_8_8041d0a0);
+        winKirinukiQuad(x + (w - 8.0f), y - h - 16.0f, 8.0f,
+                        8.0f);
     }
 }
 #pragma inline_max_total_size reset
