@@ -21,12 +21,15 @@ def resolve(unit, root):
         return dict(src=f"rels/{first}/src/{rest}.c", name=rest, target=f"{BUILD}/{first}/obj/{rest}.o", mod=first)
     if os.path.exists(os.path.join(root, "src", unit + ".c")):
         return dict(src=f"src/{unit}.c", name=unit, target=f"{BUILD}/obj/{unit}.o", mod=None)
+    libs = [p for p in sorted(glob.glob(os.path.join(root, "libs", "*", "src", unit + ".c")))]
+    if len(libs) == 1:  # a ported library (libs/metrowerks, libs/dolsdk2004, libs/musyx): a DOL unit
+        return dict(src=os.path.relpath(libs[0], root), name=unit, target=f"{BUILD}/obj/{unit}.o", mod=None)
     hits = [m for m in sorted(rels) if os.path.exists(os.path.join(root, "rels", m, "src", unit + ".c"))]
     if len(hits) == 1:
         return dict(src=f"rels/{hits[0]}/src/{unit}.c", name=unit, target=f"{BUILD}/{hits[0]}/obj/{unit}.o", mod=hits[0])
     if len(hits) > 1:
         raise LookupError(f"{unit}: in several RELs ({', '.join(hits)}); write MODULE/{unit}")
-    raise LookupError(f"{unit}: no src/{unit}.c and no rels/*/src/{unit}.c")
+    raise LookupError(f"{unit}: no src/{unit}.c, libs/*/src/{unit}.c or rels/*/src/{unit}.c")
 
 
 def cflags(ninja_text, name):
