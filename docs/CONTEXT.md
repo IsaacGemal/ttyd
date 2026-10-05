@@ -4681,3 +4681,27 @@ CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-2
   agent used the debugger heavily (8-61 mwccdbg runs). Decision (Claude #1): register-class tasks start with an mwccdbg
   triage (fixable vs a known no-source-lever class) and stop early if not fixable; a clean B re-run follows on a base
   with #450.
+
+## The compiler debugger's first direct win: evt_bero linked (2026-10-04)
+
+`tools/mwccdbg.py` (cadmic/mwcc-debugger run in place on the tower; our wrapper and `tools/rasim.py` adapted from
+mitsevox/tw2004, CC0) dumps GC/2.6's internal state for one function, and `rasim.py` replays its register allocator
+exactly. Today it went from Claude #3's tool to something the swarm agents use inside the sandbox (~/mwccdbg
+read-only, #445; dumps in the workspace; network off, #446).
+
+**The win.** Wave 79 (the clean re-run of the debugger pilot) took evt_bero_move_mario_speed from 99.83% to 100%, and
+evt_bero, 52 functions, linked. The tool chain led straight to the fix:
+1. `mwccdbg.py` summary: every named local already had retail's register; the wrong colours were three backend temps
+   (f49, f50, f53). Triage verdict FIXABLE.
+2. `rasim.py neighbors --fpr f49=f2 f50=f1 f53=f2`: BeroSX's web must interfere with a later Bero/Y temp.
+3. `rasim.py search 49 53`: the order that gives retail's registers puts BeroSX's web before the conversion.
+4. Fix (MUST_MATCH, natural form in #else): copy BeroSX/BeroSY into locals `bsx`/`bsy` at the point the search named.
+The link itself also needed the pool/data recipe: a `defer_codegen off` helper flushing .sdata2 before its tail gap,
+the .bss order (BeroID, BeroSW, BeroINFOARR) and a .sdata2 tail gap word.
+
+**The pilot behind it (n = 5 each arm, wave 77/78):** agents with the debugger matched 1 and improved 1 (tou_gamen
+99.39 -> 99.62); agents without it matched 2 by trial. Every debugger agent used it heavily (8-61 runs) and it always
+reproduced the allocator exactly. Its consistent value is diagnosis: naming the variables and the reason, including
+proving the cases with no source lever (a parameter that must outrank a named local; a backend temp ranked above all
+named locals). Since then register-class tasks start with a debugger triage, and NO-SOURCE-LEVER functions go to the
+permuter instead of another agent attempt.
