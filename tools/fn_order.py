@@ -113,16 +113,23 @@ def functions(lines):
             in_c = "*/" not in body
             i += 1
             continue
+        l = re.sub(r"\s*(//.*|/\*.*?\*/\s*)$", "", l)   # a trailing comment on the header line
         if re.match(r"(static\s+)?(inline\s+)?(USER_FUNC\(|[A-Za-z_])", l) and "(" in l and not l.rstrip().endswith(";") \
                 and not re.match(r"\s*(typedef|struct|enum|union|if|for|while|switch|return|else|extern)\b", l) \
                 and "=" not in l.split("(")[0]:
             k, joined = i, l
-            while not joined.rstrip().endswith(("{", ";")) and k + 1 < len(lines) and k - i < 8:
-                nxt = lines[k + 1].strip()
+            while not joined.rstrip().endswith(("{", ";", "}")) and k + 1 < len(lines) and k - i < 8:
+                nxt = re.sub(r"\s*(//.*|/\*.*?\*/\s*)$", "", lines[k + 1].strip())
                 if not nxt or nxt.startswith(("#", "//", "/*")) or (")" in joined and nxt != "{" and not joined.rstrip().endswith(",")):
                     break
                 k += 1
                 joined += " " + nxt
+            one = re.match(r"^(.*\))\s*\{[^{}]*\}\s*$", joined)   # a one-line body: `void f(void) {}`
+            if one and FUNC_HEAD.match(one.group(1) + " {"):
+                m1 = FUNC_HEAD.match(one.group(1) + " {")
+                out.append((i, k, m1.group(1) or m1.group(2), bool(re.match(r"\s*(static\s+)?inline\b", l))))
+                i = k + 1
+                continue
             m = FUNC_HEAD.match(joined)
             if joined.rstrip().endswith("{") and m:
                 j = body_end(lines, k)
