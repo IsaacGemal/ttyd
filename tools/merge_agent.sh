@@ -143,12 +143,17 @@ elif [ $n1 = $n0 ]; then SUBJECT="$(basename $UNIT): changes toward linking, no 
 else SUBJECT="$(basename $UNIT): match $((n1-n0)) more functions"; fi
 PROV=""  # what the agent fetched or looked at outside its workspace (tools/provenance.py, run by the launcher)
 # WARN on network evidence and reads outside the workspace; NOTE for the reference decomps (reading is allowed, copying
-# is not). The sandbox's /tmp and ~/.cache are its own, and an area that isn't a real top-level folder is a sed or grep
-# pattern provenance.py took for a path.
-provclass() { awk '/^(fetch|clone) /{print "W " $0; next}
+# is not). The sandbox's /tmp and ~/.cache are its own, installed Python packages (~/.local/lib/python*/site-packages)
+# are benign, and an area that isn't a real top-level folder is a sed or grep pattern provenance.py took for a path.
+provclass() { awk 'function sitepkgs(l,  n, i, ps) {  # every listed path is installed Python packages, none elided
+    sub(/^[^:]*: /, "", l); if (l ~ /, \+[0-9]+ more$/) return 0; n = split(l, ps, ", ")
+    for (i = 1; i <= n; i++) if (ps[i] !~ /^\/home\/[^\/]+\/\.local\/lib\/python[^\/]*\/site-packages(\/|$)/) return 0
+    return 1 }
+  /^(fetch|clone) /{print "W " $0; next}
   /^path /{a=$0; sub(/^path +/, "", a); sub(/: .*/, "", a)
     if (a ~ /^\/home\/[^\/]+\/ttyd-refs(\/|$)/) print "N " $0
     else if (a == "/tmp" || a ~ /^\/home\/[^\/]+\/\.cache(\/|$)/) next
+    else if (a ~ /^\/home\/[^\/]+\/\.local$/ && sitepkgs($0)) next
     else if (a ~ /^\/(home|mnt|srv|opt|media|root|data|var|etc)(\/|$)/) print "W " $0}' "$1"; }
 if [ ! -f "$D/provenance.txt" ]; then echo "WARN $TAG: no provenance.txt; run tools/provenance.py on its events.jsonl by hand"
 else PW=$(provclass "$D/provenance.txt" | sed -n 's/^W //p'); PN=$(provclass "$D/provenance.txt" | sed -n 's/^N //p')
