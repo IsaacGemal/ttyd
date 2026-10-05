@@ -234,6 +234,26 @@ def natural(base):
     print(f"ok   [natural] {len(names)} changed C file(s) compile without MUST_MATCH")
 
 
+def moved_functions(worse, report):
+    """The `worse` entries that are a function moved between units: it scores 0 under its old unit (gone from it) and
+    another unit of the current report has a function of the same name scoring at least the old score. Returns
+    [(entry, new_unit, new_score)]."""
+    scores = {}
+    for u in report.get("units") or []:
+        for f in u.get("functions") or []:
+            scores.setdefault(f["name"], []).append((u["name"], f.get("fuzzy_match_percent") or 0.0))
+    out = []
+    for w in worse:
+        name, key, a, b = w
+        if key != "fuzzy_match_percent" or ":" not in name or b != 0:
+            continue
+        unit, fn = name.split(":", 1)
+        best = max(((u, sc) for u, sc in scores.get(fn, []) if u != unit and sc >= a), key=lambda x: x[1], default=None)
+        if best:
+            out.append((w, best[0], best[1]))
+    return out
+
+
 def ratchet(allowed=()):
     current = BUILD / "report.json"
     changes = CI_DIR / "changes.json"
@@ -274,6 +294,9 @@ def ratchet(allowed=()):
             continue  # unit linked, removed or new: the checksum and the unit measures cover it
         a, b = before.get(key, 0.0), after.get(key, 0.0)
         (worse if b < a else better if b > a else []).append((f"{key[0]}[{key[1]}]", "fuzzy_match_percent", a, b))
+    for w, unit, score in moved_functions(worse, json.loads(current.read_text())):
+        print(f"     moved: {w[0].split(':', 1)[1]} {w[0].split(':', 1)[0]} -> {unit} ({w[2]:.2f} -> {score:.2f})")
+        worse.remove(w)
     if allowed:
         # A name is a function (its fuzzy drop, while below 100%, excuses its unit's and the total's fuzzy drop)
         # or a unit path such as MarioSt/event/evt_eff (any of its measures, and the total's same measure).

@@ -24,7 +24,7 @@
     "date": "2026-10-04"
   },
   {
-    "file": "src/effect/eff_ultra_hammer.c",
+    "file": "src/unk_0x8025de70.c",
     "function": "N_systemErrorHandler",
     "class": "original-asm",
     "reason": "The same inline MSR block as systemErrorHandler (mfmsr/ori 0x8000/ori 2/mtmsr/isync); MWCC 2.6 has no mfmsr/mtmsr intrinsic (a scan of its builtin table finds none). MUST_MATCH only; the natural build calls PPCMtmsr(PPCMfmsr() | 0x8002).",
