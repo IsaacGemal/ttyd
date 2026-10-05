@@ -47,6 +47,46 @@ def text_order(path):
     return [n for _, n in sorted(out)]
 
 
+def _braces(line, state):
+    """Net `{`/`}` count of one line outside strings, char literals and comments; state carries an open /* comment."""
+    n, i, in_c = 0, 0, state.get("c", False)
+    while i < len(line):
+        two = line[i:i + 2]
+        if in_c:
+            if two == "*/":
+                in_c, i = False, i + 2
+                continue
+            i += 1
+            continue
+        if two == "//":
+            break
+        if two == "/*":
+            in_c, i = True, i + 2
+            continue
+        c = line[i]
+        if c in "\"'":
+            j = i + 1
+            while j < len(line) and line[j] != c:
+                j += 2 if line[j] == "\\" else 1
+            i = j + 1
+            continue
+        n += c == "{"
+        n -= c == "}"
+        i += 1
+    state["c"] = in_c
+    return n
+
+
+def body_end(lines, k):
+    """Index of the line that closes the function whose header ends (with `{`) on line k."""
+    st, depth = {}, 0
+    for j in range(k, len(lines)):
+        depth += _braces(lines[j], st)
+        if depth == 0 and j >= k:
+            return j
+    raise ValueError(f"unbalanced braces after line {k + 1}")
+
+
 def functions(lines):
     """[(header line, closing-brace line, name, is_static_inline)] for top-level function definitions; a header may
     run over several lines (wrapped parameters, or the `{` on the next line)."""
@@ -59,13 +99,14 @@ def functions(lines):
                 and "=" not in l.split("(")[0]:
             k, joined = i, l
             while not joined.rstrip().endswith(("{", ";")) and k + 1 < len(lines) and k - i < 8:
+                nxt = lines[k + 1].strip()
+                if not nxt or nxt.startswith(("#", "//", "/*")) or (")" in joined and nxt != "{" and not joined.rstrip().endswith(",")):
+                    break
                 k += 1
-                joined += " " + lines[k].strip()
+                joined += " " + nxt
             m = FUNC_HEAD.match(joined)
             if joined.rstrip().endswith("{") and m:
-                j = k
-                while lines[j] != "}":
-                    j += 1
+                j = body_end(lines, k)
                 out.append((i, j, m.group(1) or m.group(2), bool(re.match(r"\s*(static\s+)?inline\b", l))))
                 i = j + 1
                 continue
@@ -73,11 +114,17 @@ def functions(lines):
     return out
 
 
-def gap_items(gap):
+def gap_items(gap, blocks=()):
     """Split the lines between two functions into items: (kind, lines). kind is 'reset' (belongs to the function above),
-    'hoist' (declaration or data: moves before all functions) or 'lead' (goes with the function below)."""
+    'hoist' (declaration or data: moves before all functions) or 'lead' (goes with the function below). `blocks` are
+    (start, end) index ranges in `gap` (inline helper definitions) that stay whole and go with the function below."""
     items, i = [], 0
+    starts = dict(blocks)
     while i < len(gap):
+        if i in starts:
+            items.append(("lead", gap[i:starts[i] + 1]))
+            i = starts[i] + 1
+            continue
         t = gap[i].strip()
         if not t:
             items.append(("blank", [gap[i]]))
@@ -196,7 +243,8 @@ def reorder(text, want):
     prev_end, prev = first - 1, None
     for s, e, name, _ in fns:
         lead = []
-        for kind, ls in gap_items(L[prev_end + 1:s]):
+        helpers = [(a - prev_end - 1, b - prev_end - 1) for a, b, _, inl in functions(L) if inl and prev_end < a and b < s]
+        for kind, ls in gap_items(L[prev_end + 1:s], helpers):
             if kind == "reset" and prev:
                 chunks[prev] += ls
             elif kind == "hoist":
