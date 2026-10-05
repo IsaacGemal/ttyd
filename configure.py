@@ -553,7 +553,7 @@ config.libs = [
             Object(Matching, "effect/eff_gonbaba_breath.c"),
             Object(Matching, "effect/eff_majinai.c"),
             Object(Matching, "effect/eff_mahorn2.c"),
-            Object(NonMatching, "effect/eff_ultra_hammer.c"),
+            Object(Matching, "effect/eff_ultra_hammer.c"),
         ],
     },
     {
@@ -901,7 +901,7 @@ config.libs = [
             Object(Matching, "data/database.c"),
             Object(Matching, "data/battle/battle_item_data.c"),
             Object(Matching, "system.c"),
-            Object(Matching, "unk_0x8025de70.c"),
+            Object(NonMatching, "unk_0x8025de70.c"),
         ],
     },
     DolphinLib(
