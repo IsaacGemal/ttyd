@@ -132,6 +132,30 @@ class Reorder(unittest.TestCase):
         out = fn_order.reorder(src, ["c", "b", "a"])
         self.assertIn("void a(void) {", out)
 
+    def test_data_after_a_pooling_function_stays_after_it(self):
+        # a's compound literal is pooled at a's position; D was defined after a, so it must not be hoisted above it
+        src = ("void a(void) {\n    g((Vec){ 0.0f, 1.0f, 0.0f });\n}\n"
+               "static const Vec D = { 0.0f, -1.0f, 0.0f };\n"
+               "void b(void) {\n    h(&D);\n}\n"
+               "void c(void) {\n}\n")
+        out = fn_order.reorder(src, ["c", "a", "b"])
+        L = out.split("\n")
+        self.assertLess(L.index("void a(void) {"), L.index("static const Vec D = { 0.0f, -1.0f, 0.0f };"))
+        self.assertLess(L.index("static const Vec D = { 0.0f, -1.0f, 0.0f };"), L.index("void b(void) {"))
+
+    def test_data_between_two_poolers_that_swap_is_refused(self):
+        src = ("void a(void) {\n    g((Vec){ 0.0f, 1.0f, 0.0f });\n}\n"
+               "static const Vec D = { 0.0f, -1.0f, 0.0f };\n"
+               "void b(void) {\n    Vec v = { 1.0f, 0.0f, 0.0f };\n    h(&v);\n}\n")
+        with self.assertRaises(ValueError):
+            fn_order.reorder(src, ["b", "a"])
+
+    def test_data_with_no_pooler_before_it_is_still_hoisted(self):
+        src = ("void a(void) {\n}\nstatic const Vec D = { 0.0f, -1.0f, 0.0f };\nvoid b(void) {\n    h(&D);\n}\n")
+        out = fn_order.reorder(src, ["b", "a"])
+        L = out.split("\n")
+        self.assertLess(L.index("static const Vec D = { 0.0f, -1.0f, 0.0f };"), L.index("void b(void) {"))
+
 
 if __name__ == "__main__":
     unittest.main()
