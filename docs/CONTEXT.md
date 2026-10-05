@@ -4738,6 +4738,9 @@ Current entries:
   pragma in GC/1.0-3.0a5 produces it. Split out of evt_yuuranking_alloc's symbol in #456; the asm form brings it to 100%.
 - `src/driver/effdrv.c` `effMayaSetGQR5`, `effMayaAnimInterp` (original-asm, Claude #4, #473): a computed-GQR5 quantiser
   and psq_l loads, including a dead load, which shows they were asm in the original.
+- `src/driver/hitdrv.c` `hitSetGQR5` (original-asm, Claude #4, #505): hitCalcVtxPosition programs GQR5 from the map
+  file's vertex fraction shift before each packed vertex's psq_lx reads; MWCC has no mtspr intrinsic. The natural build
+  scales by 2^-shift in C (it skipped the scale before).
 
 Library `.s` files (outside the game-code policy): MetroTRK's `__exception.s` (the interrupt vector table, which opens with
 the "Metrowerks Target Resident Kernel for PowerPC" banner) and `targsupp.s` (four `twui`/`blr` file-I/O traps) were asm in
