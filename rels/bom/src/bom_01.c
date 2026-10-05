@@ -2234,8 +2234,176 @@ static void pose_main(void) {
     }
 }
 
-// TODO: write disp_sight (global, 0x16fc bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
+// The SoundWork fields disp_sight reads (sound.h conflicts with this unit's headers): the playing channel, the
+// per-channel s16 sample rings and the write position.
+typedef struct BomSoundView {
+    u8 field_0x0[0x330];                // 0x0
+    u16 unk330;                         // 0x330, channel
+    u8 field_0x332[0x5C0 - 0x332];      // 0x332
+    s16 unk5C0[2][0x400];               // 0x5C0, sample rings
+    s32 unk15C0;                        // 0x15C0, write position
+} BomSoundView;
+extern BomSoundView sound;
+
+extern const f32 float_0p6_bom_0000712c;
+extern const f32 float_0p8_bom_00007148;
+extern const f32 float_110_bom_00007140;
+extern const f32 float_120_bom_0000713c;
+extern const f32 float_126_bom_00007134;
+extern const f32 float_150_bom_000070b0;
+extern const f32 float_162_bom_00007138;
+extern const f32 float_16_bom_0000715c;
+extern const f32 float_180_bom_000070c8;
+extern const f32 float_200_bom_0000716c;
+extern const f32 float_20_bom_000070d8;
+extern const f32 float_230_bom_0000714c;
+extern const f32 float_2_bom_0000704c;
+extern const f32 float_90_bom_00007130;
+extern const f32 float_neg100_bom_00007124;
+extern const f32 float_neg160_bom_00007144;
+extern const f32 float_neg16_bom_00007160;
+extern const f32 float_neg170_bom_00007150;
+extern const f32 float_neg180_bom_00007164;
+extern const f32 float_neg190_bom_00007158;
+extern const f32 float_neg1_bom_00007120;
+extern const f32 float_neg220_bom_00007168;
+extern const f32 float_neg240_bom_00007154;
+extern const f32 float_neg60_bom_00007128;
+
+// SightWork's word at 0x18 is the sight's rotation, an f32 (bom_01.h declares it as field_4[5]).
+#define SIGHT_ROT(wp) (*(f32*)&(wp)->field_4[5])
+
+// NONMATCHING (97.17%): every call, branch and constant matches (checked by value); callee-saved register
+// colouring in the inlined drawNum blocks and the hoisting of the named float constants differ.
+void disp_sight(CameraId cameraId, void* param) {
+    GXColor colorA = *(GXColor*)&dat_bom_0000637c;
+    GXColor colorB = *(GXColor*)&dat_bom_00006380;
+    s32 i;
+
+    drawBG(0, zero_bom_00007004, zero_bom_00007004, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
+    drawBG(0, zero_bom_00007004, zero_bom_00007004, float_neg1_bom_00007120, float_1_bom_00006ffc, zero_bom_00007004);
+    drawBG(0, zero_bom_00007004, zero_bom_00007004, float_1_bom_00006ffc, float_neg1_bom_00007120, zero_bom_00007004);
+    drawBG(0, zero_bom_00007004, zero_bom_00007004, float_neg1_bom_00007120, float_neg1_bom_00007120, zero_bom_00007004);
+    drawBG(1, zero_bom_00007004, zero_bom_00007004, float_1_bom_00006ffc, float_1_bom_00006ffc, SIGHT_ROT(sight_wp));
+    drawBG(1, zero_bom_00007004, zero_bom_00007004, float_neg1_bom_00007120, float_1_bom_00006ffc, -SIGHT_ROT(sight_wp));
+    drawBG(1, zero_bom_00007004, zero_bom_00007004, float_1_bom_00006ffc, float_neg1_bom_00007120, -SIGHT_ROT(sight_wp));
+    drawBG(1, zero_bom_00007004, zero_bom_00007004, float_neg1_bom_00007120, float_neg1_bom_00007120, SIGHT_ROT(sight_wp));
+
+    if (sight_wp->state == 2) {
+        SIGHT_ROT(sight_wp) += float_2_bom_0000704c;
+    } else if (sight_wp->state == 3) {
+        SIGHT_ROT(sight_wp) -= float_2_bom_0000704c;
+    } else if (sight_wp->state == 0) {
+        SIGHT_ROT(sight_wp) -= float_2_bom_0000704c;
+    } else {
+        SIGHT_ROT(sight_wp) += float_1_bom_00006ffc;
+    }
+
+    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
+    winTexSet(5, vec3_bom_00006384, vec3_bom_00006390, colorB);
+
+    for (i = 0; i < 3; i++) {
+        s32 sel = ((s32)(gp->retraceCount % 30)) / 10;
+
+        if (sel != i) {
+            drawBG(4 - i, float_100_bom_00007000, float_60_bom_000070dc, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
+            drawBG(4 - i, float_neg100_bom_00007124, float_60_bom_000070dc, float_neg1_bom_00007120, float_1_bom_00006ffc, zero_bom_00007004);
+            drawBG(4 - i, float_100_bom_00007000, float_neg60_bom_00007128, float_1_bom_00006ffc, float_neg1_bom_00007120, zero_bom_00007004);
+            drawBG(4 - i, float_neg100_bom_00007124, float_neg60_bom_00007128, float_neg1_bom_00007120, float_neg1_bom_00007120, zero_bom_00007004);
+        }
+    }
+
+    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
+    winTexSet(0x17, vec3_bom_0000639c, vec3_bom_000063a8, colorA);
+
+    drawNum((s32)(gp->renderTime / 100 / 1000), 10, float_90_bom_00007130, float_180_bom_000070c8, float_0p6_bom_0000712c);
+    drawNum((s32)(gp->renderTime / 200 / 1000), 8, float_126_bom_00007134, float_150_bom_000070b0, float_0p6_bom_0000712c);
+    drawNum((s32)(gp->renderTime / 300 / 1000), 6, float_162_bom_00007138, float_120_bom_0000713c, float_0p6_bom_0000712c);
+    drawNum((s32)(gp->renderTime / 400 / 1000), 6, float_162_bom_00007138, float_90_bom_00007130, float_0p6_bom_0000712c);
+    drawNum((s32)((u32)gp->retraceCount >> 2), 4, float_110_bom_00007140, float_neg160_bom_00007144, float_1_bom_00006ffc);
+    drawNum((s32)((u32)gp->retraceCount >> 3), 2, float_230_bom_0000714c, float_neg170_bom_00007150, float_0p8_bom_00007148);
+
+    winTexSet(8, vec3_bom_000063b4, vec3_bom_000063c0, colorA);
+
+    if ((gp->retraceCount & 3) == 0) {
+        for (i = 0; i < 4; i++) {
+            sight_wp->field_4[i] = sight_wp->field_4[i + 1];
+        }
+        // the newest sample of the playing channel's ring buffer (an s16 stream per channel)
+        sight_wp->field_4[4] = abs(sound.unk5C0[sound.unk330][sound.unk15C0]);
+    }
+
+    for (i = 0; i < 5; i++) {
+        s32 v = sight_wp->field_4[i] / 300;
+        s32 j;
+
+        if (v > 7) {
+            v = 7;
+        }
+        {
+            f32 x = float_20_bom_000070d8 * (f32)i + float_neg240_bom_00007154;
+
+            for (j = 0; j < v; j++) {
+                f32 y = float_16_bom_0000715c * (f32)j + float_neg190_bom_00007158;
+
+                if (j == 6) {
+                    drawBG(10, x, y, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
+                } else {
+                    drawBG(9, x, y, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
+                }
+            }
+            for (j = v; j < 7; j++) {
+                f32 y = float_16_bom_0000715c * (f32)j + float_neg190_bom_00007158;
+
+                if (j == 6) {
+                    drawBG(12, x, y, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
+                } else {
+                    drawBG(11, x, y, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
+                }
+            }
+        }
+    }
+
+    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
+    for (i = 0; i < 4; i++) {
+        s32 flag = ((gp->retraceCount % 20) > 6 && i == sight_wp->state) ? 1 : 0;
+        s32 id = 7;
+
+        if (flag) {
+            id = 6;
+        }
+
+        if (sight_wp->state == 4) {
+            flag = 0;
+            id = 7;
+        }
+
+        switch (i) {
+        case 0:
+            drawBG(id, float_16_bom_0000715c, float_180_bom_000070c8, float_1_bom_00006ffc, float_1_bom_00006ffc, float_90_bom_00007130);
+            break;
+        case 1:
+            drawBG(id, float_neg16_bom_00007160, float_neg180_bom_00007164, float_1_bom_00006ffc, float_1_bom_00006ffc, float_270_bom_0000703c);
+            break;
+        case 2:
+            drawBG(id, float_neg180_bom_00007164, float_16_bom_0000715c, float_1_bom_00006ffc, float_1_bom_00006ffc, float_180_bom_000070c8);
+            if (flag != 0 && (gp->retraceCount & 3) == 0) {
+                sight_wp->field_20++;
+            }
+            break;
+        case 3:
+            drawBG(id, float_180_bom_000070c8, float_neg16_bom_00007160, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
+            if (flag != 0 && (gp->retraceCount & 3) == 0) {
+                sight_wp->field_24++;
+            }
+            break;
+        }
+    }
+
+    drawNum(sight_wp->field_20, 2, float_neg220_bom_00007168, zero_bom_00007004, float_0p8_bom_00007148);
+    drawNum(sight_wp->field_24, 2, float_200_bom_0000716c, zero_bom_00007004, float_0p8_bom_00007148);
+}
+
 
 extern const f32 float_2_bom_0000704c;
 
