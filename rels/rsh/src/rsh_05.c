@@ -1553,13 +1553,30 @@ static void ext_moamoa_main(void) {
                 }
             } else if (res == 3) {
                 {
+#ifdef MUST_MATCH
+                    // Match eki_00's half-angle lifetimes and breath-first load order.
+                    f32 half = 0.5f;
+                    f32 breath = wp->field_0x55C;
+                    f32 angle = wp->field_0x550;
+                    f32 t = breath + angle;
+#else
                     f32 t = wp->field_0x550 + wp->field_0x55C;
+#endif
 
                     entry->flags |= 0x84;
                     entry->field_0x2 = 0x30;
+#ifdef MUST_MATCH
+                    f = t * half;
+#else
                     f = t * 0.5f;
+#endif
                 }
+#ifdef MUST_MATCH
+                // Preserve the retail load/load/store/store/load/store copy order.
+                *(volatile Vec*)&entry->field_0x8 = *(const volatile Vec*)&vec3_rsh_00013740;
+#else
                 entry->field_0x8 = vec3_rsh_00013740;
+#endif
                 dist = randf(0.1f, 0.2f);
                 rad = 6.2831855f * f / 360.0f;
                 entry->field_0x14 = dist * moamoa_sin(rad);
