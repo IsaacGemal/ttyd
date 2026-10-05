@@ -718,7 +718,7 @@ static inline Vec effFallMakePos(f32 x, f32 y, f32 z) {
 // FB/local/named mode; the declaration order is MWCC's default. Earlier fixes: block-scoping the type-7
 // sine/cosine locals (one per branch; p00761/p16605 and p03705/p4967 in their own blocks), the effFallMakePos
 // temp, and the do-while type-2 countdown (94.29% -> 96.37%).
-// NONMATCHING (98.24%): every call/constant/switch body is byte-identical; the rest is register
+// NONMATCHING (98.19%): every call/constant/switch body is byte-identical; the rest is register
 // colouring (ours saves r14, target starts at r15, driven by the duplicate i2f pool base), the
 // `subic.`/`bdnz` countdown and a handful of schedule slots.
 void effFallMain(EffectEntry* effect) {
@@ -813,9 +813,9 @@ void effFallMain(EffectEntry* effect) {
 			case 2:
 				elem->y += elem->unk34;
 				elem->unk34 -= elem->unk30;
-				f26 = float_6p2832_80420fa4 * angleABf(float_0_80420f84, float_0_80420f84, elem->x, elem->z) / 360.0f;
+				f26 = float_6p2832_80420fa4 * angleABf(float_0_80420f84, float_0_80420f84, elem->x, elem->z) / float_360_80420fa8;
 				if (i == 1) {
-					f26 = f30 / 360.0f;
+					f26 = f30 / float_360_80420fa8;
 				}
 				elem->x += float_0p5_80420f7c * (f32)sin(f26);
 				elem->z += float_0p5_80420f7c * -(f32)cos(f26);
@@ -997,9 +997,9 @@ void effFallMain(EffectEntry* effect) {
 			case 2:
 				elem->y += elem->unk34;
 				elem->unk34 -= elem->unk30;
-				f26 = float_6p2832_80420fa4 * angleABf(float_0_80420f84, float_0_80420f84, elem->x, elem->z) / 360.0f;
+				f26 = float_6p2832_80420fa4 * angleABf(float_0_80420f84, float_0_80420f84, elem->x, elem->z) / float_360_80420fa8;
 				if (i == 1) {
-					f26 = f30 / 360.0f;
+					f26 = f30 / float_360_80420fa8;
 				}
 				elem->x += float_2_80420f88 * (f32)sin(f26);
 				elem->z += float_2_80420f88 * -(f32)cos(f26);
@@ -1035,7 +1035,7 @@ void effFallMain(EffectEntry* effect) {
 			switch (type) {
 			case 4:
 				if (elem->unk38 > 1) {
-					elem->unk48 += (360.0f - elem->unk48) / float_10_80420fb0;
+					elem->unk48 += (float_360_80420fa8 - elem->unk48) / float_10_80420fb0;
 				}
 				break;
 			case 5:
@@ -1159,7 +1159,7 @@ void effFallMain(EffectEntry* effect) {
 				{
 				f32 p00761 = float_0p00761_80421034, p16605 = float_0p16605_80421038;
 				f32 one = float_1_80420f80;
-				t = float_6p2832_80420fa4 * elem->unk18 / 360.0f;
+				t = float_6p2832_80420fa4 * elem->unk18 / float_360_80420fa8;
 				if (t <= float_3p1416_8042103c) {
 					if (t <= float_1p5708_80421040) {
 						t2 = t * t;
@@ -1193,7 +1193,7 @@ void effFallMain(EffectEntry* effect) {
 				{
 				f32 p03705 = float_0p03705_80421048, p4967 = float_0p4967_8042104c;
 				f32 one = float_1_80420f80;
-				t = elem->unk18 * float_6p2832_80420fa4 / 360.0f;
+				t = elem->unk18 * float_6p2832_80420fa4 / float_360_80420fa8;
 				if (t <= float_3p1416_8042103c) {
 					if (t <= float_1p5708_80421040) {
 						t2 = t * t;
@@ -1234,7 +1234,7 @@ void effFallMain(EffectEntry* effect) {
 						evtEntry(evt_shake, 0, 0);
 					}
 				}
-				elem->unk48 += (360.0f - elem->unk48) / float_30_80420fe0;
+				elem->unk48 += (float_360_80420fa8 - elem->unk48) / float_30_80420fe0;
 				break;
 			}
 			case 8:
