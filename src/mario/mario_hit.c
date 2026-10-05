@@ -821,8 +821,35 @@ static const Vec vec3_802c5808 = { 0.0f, 0.0f, 0.0f };
 static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
 #define GND_PTR(wp, type, off) (*(type*)((u8*)(wp) + (off)))
 
-// NONMATCHING (95.34%): same 56 calls and immediates as the original. Remaining: the frame is 0x1c0 against 0x1b0
-// with f27-f29 also saved: the three inlined marioHitCheckVecOut copies keep more FPR temps than the original's two (f30/f31).
+// The ground-height probe under Mario, inlined twice into marioChkGnd (each copy keeps its own Vec slots).
+static inline void marioChkGndHeight(MarioWork* wp) {
+    MarioWork* m;
+    HitEntry* hit;
+    Vec p;
+    Vec dir;
+    Vec hitPos;
+    Vec normal;
+    f32 dist;
+    f32 h;
+
+    m = marioGetPtr();
+    h = GND_PTR(m, f32, 0x1B8);
+    if (m->flags & 0x1000000) {
+        h *= float_0p5_8041a7c4;
+    }
+    p = m->position;
+    p.y += h;
+    dir = vec3_802c5754;
+    dist = float_1000_8041a7a0;
+    hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
+    GND_PTR(m, f32, 0x1C0) = hit != NULL ? hitPos.y : float_neg3000_8041a870;
+    GND_PTR(wp, HitEntry*, 0x1F8) = hit;
+}
+
+// NONMATCHING (95.15%): same 56 calls and immediates as the original, and the same 0x1b0 frame (the ground-height
+// probe is one inline expanded twice, each copy with its own Vec slots; the rolling branch re-tests `hit` before
+// storing roll_grx/roll_grz). Remaining: stack-slot placement inside the inlined marioHitCheckVecOut copies and FPR
+// colouring.
 void marioChkGnd(void) {
     MarioWork* wp = marioGetPtr();
     MarioWork* m;
@@ -847,36 +874,14 @@ void marioChkGnd(void) {
 
     if (vivianGetStatus() == 2 || vivianGetStatus() == 1 || vivianGetStatus() == 3) {
         GND_PTR(wp, HitEntry*, 0x1E4) = (HitEntry*)marioSearchGround(&gy, &gx, &gz, float_37_8041a86c, float_0_8041a7a4);
-        m = marioGetPtr();
-        h = GND_PTR(m, f32, 0x1B8);
-        if (m->flags & 0x1000000) {
-            h *= float_0p5_8041a7c4;
-        }
-        p = m->position;
-        p.y += h;
-        dir = vec3_802c5754;
-        dist = float_1000_8041a7a0;
-        hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
-        GND_PTR(m, f32, 0x1C0) = hit != NULL ? hitPos.y : float_neg3000_8041a870;
-        GND_PTR(wp, HitEntry*, 0x1F8) = hit;
+        marioChkGndHeight(wp);
         return;
     }
     GND_PTR(wp, HitEntry*, 0x1E4) = NULL;
     if (wp->characterId == 2) {
         kpaClearHitobjRide();
     }
-    m = marioGetPtr();
-    h = GND_PTR(m, f32, 0x1B8);
-    if (m->flags & 0x1000000) {
-        h *= float_0p5_8041a7c4;
-    }
-    p = m->position;
-    p.y += h;
-    dir = vec3_802c5754;
-    dist = float_1000_8041a7a0;
-    hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
-    GND_PTR(m, f32, 0x1C0) = hit != NULL ? hitPos.y : float_neg3000_8041a870;
-    GND_PTR(wp, HitEntry*, 0x1F8) = hit;
+    marioChkGndHeight(wp);
     if (wp->flags & 0x30000) {
         return;
     }
@@ -994,8 +999,10 @@ void marioChkGnd(void) {
                     grx = (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.z, float_100_8041a7f8 * normal.y) - float_180_8041a7cc) + float_0p5_8041a7c4) / float_100_8041a7f8;
                     grz = (f32)(s32)(float_100_8041a7f8 * (angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * normal.x, float_100_8041a7f8 * normal.y) - float_180_8041a7cc) + float_0p5_8041a7c4) / float_100_8041a7f8;
                     angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
-                    roll_grx = grx;
-                    roll_grz = grz;
+                    if (hit != NULL) {
+                        roll_grx = grx;
+                        roll_grz = grz;
+                    }
                 }
             }
         } else {
