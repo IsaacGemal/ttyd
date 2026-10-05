@@ -504,6 +504,14 @@ When the instructions match but the stack slots, register allocation or scheduli
 - **A variable that must outrank the function's frontend temps goes in a `static inline` helper.** Inline-expansion
   objects get vreg numbers above the frontend temps, which no declaration order can reach: effCalcMayaAnimMatrix's
   `frame` in f0 and its GQR value in r9 matched only once the channel loop and the GQR write were inline helpers.
+- **A named `extern const f32` that MWCC hoists into a saved FPR, where the original reloads it per statement,** shows
+  as a bigger frame with more psq_st saves and the constant parked in f14-f31. Read it through a small inline helper
+  that loads it once via MATCH_F32 into a local (mario_hit's gndCenti/gndAngle); a non-const view `*(f32*)&x` does
+  nothing and a literal is worse (#519, Claude #4: marioSearchGround 92.20 -> 96.71, marioChkLandon2 89.70 -> 92.94,
+  both frames now retail's). Check `__fabs` vs `__fabsf` while there: the double one adds an frsp.
+- **`if (best == NULL || d < bestD) { copy }` can be the copy written twice in the original,** one branch per
+  condition: a duplicated block gives retail's frame where the combined condition does not (searchFrontWall #518,
+  marioChkGnd #513).
 - **A repeated block whose operands the original evaluates at the point of use is a macro, not an inline function.**
   An inline call evaluates its arguments up front; a macro leaves each expression where it is written. winBookGX's
   textured quad computes each coordinate at its vertex write and `|span|` right after GXSetTexCoordGen2: 82% as an
