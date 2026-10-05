@@ -142,11 +142,21 @@ if [ $NEW = 1 ]; then SUBJECT="$(basename $UNIT): new file, $((n1-n0)) functions
 elif [ $n1 = $n0 ]; then SUBJECT="$(basename $UNIT): changes toward linking, no change in functions matched"
 else SUBJECT="$(basename $UNIT): match $((n1-n0)) more functions"; fi
 PROV=""  # what the agent fetched or looked at outside its workspace (tools/provenance.py, run by the launcher)
+# WARN on network evidence and reads outside the workspace; NOTE for the reference decomps (reading is allowed, copying
+# is not). The sandbox's /tmp and ~/.cache are its own, and an area that isn't a real top-level folder is a sed or grep
+# pattern provenance.py took for a path.
+provclass() { awk '/^(fetch|clone) /{print "W " $0; next}
+  /^path /{a=$0; sub(/^path +/, "", a); sub(/: .*/, "", a)
+    if (a ~ /^\/home\/[^\/]+\/ttyd-refs(\/|$)/) print "N " $0
+    else if (a == "/tmp" || a ~ /^\/home\/[^\/]+\/\.cache(\/|$)/) next
+    else if (a ~ /^\/(home|mnt|srv|opt|media|root|data|var|etc)(\/|$)/) print "W " $0}' "$1"; }
 if [ ! -f "$D/provenance.txt" ]; then echo "WARN $TAG: no provenance.txt; run tools/provenance.py on its events.jsonl by hand"
-elif [ -s "$D/provenance.txt" ]; then echo "WARN $TAG: fetched or looked outside its workspace (check licenses):"; cat "$D/provenance.txt"
-  PROV="Outside its workspace (tools/provenance.py):
-$(head -40 "$D/provenance.txt")"; [ $(grep -c . "$D/provenance.txt") -gt 40 ] && PROV="$PROV
-... $(( $(grep -c . "$D/provenance.txt") - 40 )) more lines"; fi
+else PW=$(provclass "$D/provenance.txt" | sed -n 's/^W //p'); PN=$(provclass "$D/provenance.txt" | sed -n 's/^N //p')
+  [ -n "$PW" ] && { echo "WARN $TAG: fetched or looked outside its workspace (check licenses):"; echo "$PW"; }
+  [ -n "$PN" ] && { echo "NOTE  $TAG: read the reference decomps (fine; check nothing was copied):"; echo "$PN"; }
+  PV2=$(printf '%s\n%s' "$PW" "$PN" | grep . | head -40)
+  [ -n "$PV2" ] && PROV="Outside its workspace (tools/provenance.py):
+$PV2"; fi
 HDRNOTE=""
 [ -n "$HDRS" ] && HDRNOTE="Header additions (tools/header_patch.py: declarations and type definitions): $HDRLINES lines."
 git add "$F" $HDRS && git commit -q -F - <<MSG
