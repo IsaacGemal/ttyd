@@ -348,6 +348,31 @@ __declspec(section ".sdata") u32 unk_80423080;
 
 extern BattleWork* _battleWorkPointer;
 
+#ifdef MUST_MATCH
+#define INIT_EXIST_ARG(i) ((u32)(i))
+#else
+#define INIT_EXIST_ARG(i) (i)
+#endif
+extern f32 float_0p015625_8041e6ac;
+extern f32 float_deg2rad_8041e6b0;
+extern f32 float_360_8041e6b4;
+extern f32 float_180_8041e6b8;
+extern u32 unk_80423080;
+typedef struct BattleAudienceTexCoords {
+	f32 v[32];
+} BattleAudienceTexCoords;
+#define AUD_SOUND_HEAD(sound) \
+	*(s32*)((u8*)(sound)) |= 1; \
+	*(s32*)((u8*)(sound) + 0xC) = -1; \
+	(sound)->mFadeoutTime = 0
+#define AUD_SOUND_TAIL(sound, vol) \
+	(sound)->mCurrentBaseSfxVolume = (vol); \
+	(sound)->mBaseSfxVolume = (vol); \
+	(sound)->mForceFadeLength = 0; \
+	(sound)->mForceFadeTimer = 0; \
+	(sound)->mVolumeMultiplier = 100
+#define AUD_SOUND_ID(sound) (*(s32*)((u8*)(sound) + 4))
+
 //local prototypes
 
 
@@ -355,34 +380,39 @@ extern BattleWork* _battleWorkPointer;
 FileEntry* tplRead(const char* path) {
 	return fileAllocf(4, "%s/%s", getMarioStDvdRoot(), path);
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 BattleAudience* BattleAudienceBaseGetPtr(void) {
 	return &_battleWorkPointer->audience;
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 BattleAudienceMember* BattleAudienceGetPtr(s32 id) {
 	return &BattleAudienceBaseGetPtr()->members[id];
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 BattleAudienceItem* BattleAudienceItemGetPtr(s32 id) {
 	return &BattleAudienceBaseGetPtr()->items[id];
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 BattleAudienceWindow* BattleAudienceWinGetPtr(void) {
 	return &BattleAudienceBaseGetPtr()->window;
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 BattleAudienceSound* BattleAudienceSoundGetPtr(s32 id) {
 	return &BattleAudienceBaseGetPtr()->sounds[id];
 }
 #pragma dont_inline reset
 
 // MUST_MATCH: the retail Init passes an unsigned index to GetExist (same asm, different scheduling).
-#ifdef MUST_MATCH
-#define INIT_EXIST_ARG(i) ((u32)(i))
-#else
-#define INIT_EXIST_ARG(i) (i)
-#endif
 void BattleAudience_Init(void) {
 	BattleAudience* audience;
 	BattleAudienceWindow* window;
@@ -1846,7 +1876,9 @@ BOOL BattleAudienceItemOn(s32 index, u16 itemId, s32 numItems) {
 	}
 	return FALSE;
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 void BattleAudienceSetThrowItemMax(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 r = irand(100);
@@ -1865,7 +1897,9 @@ void BattleAudienceSetThrowItemMax(void) {
 	*(s32*)((u8*)audience + 0x137F0) = 0;
 	*(s32*)((u8*)audience + 0x137F8) = 0;
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 BattleUnit* BattleAudienceDetectTargetAll(void) {
 	s32 ids[64];
 	s32 offset;
@@ -1895,7 +1929,9 @@ BattleUnit* BattleAudienceDetectTargetAll(void) {
 	sel = irand(count);
 	return BattleGetUnitPtr(wp, ids[sel]);
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 	s32 ids[64];
 	s32 offset;
@@ -1925,6 +1961,7 @@ BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 	sel = irand(count);
 	return BattleGetUnitPtr(wp, ids[sel]);
 }
+#pragma dont_inline reset
 
 // The weight-count loop is written as `for (;;) { if (type == 0) break; ... }` so MWCC does not rotate it (a
 // `while`/`for` rotated the condition to the bottom). What got it to 98.46%:
@@ -1946,6 +1983,7 @@ BattleUnit* BattleAudienceDetectTargetPlayer(void) {
 //  - the deactivate path reuses `member` for the second `BattleAudienceGetPtr` call, which is what the
 //    original did (it materialises -1 in r0, not r22).
 // 100%: every call, immediate, value, branch and the case-0 scheduling match.
+#pragma dont_inline on
 void BattleAudienceItemCtrlProcess(void) {
 #ifdef MUST_MATCH
 	u8* tbl = (u8*)lbl_80399940;
@@ -2280,6 +2318,7 @@ void BattleAudienceItemCtrlProcess(void) {
 		}
 	}
 }
+#pragma dont_inline reset
 
 // `opt_common_subs off` is load-bearing: with CSE on the active count lands in r29 (retail r28) and
 // the whole first block shifts. Storing rand()'s result in a local `rv` before the case-0 conversion
@@ -2289,6 +2328,7 @@ void BattleAudienceItemCtrlProcess(void) {
 // The vec3_802f9744 copy emits retail's lis+addi only when the object is non-const (see its
 // MUST_MATCH definition).
 #pragma opt_common_subs off // needed: with CSE on the active count lands in r29 and the int->float mask in f3
+#pragma dont_inline on
 void BattleAudienceApSrcCtrlProcess(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	u8* star;
@@ -2445,8 +2485,8 @@ void BattleAudienceApSrcCtrlProcess(void) {
 		}
 	}
 }
+#pragma dont_inline reset
 #pragma opt_common_subs reset
-
 
 // hoisting `z0 = float_0` before the multiplies (88.93 -> 91.21); writing the position adds with the
 // literal constants instead of `k1`/`k20` temporaries lets the scheduler interleave the constant loads
@@ -2456,6 +2496,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 // NONMATCHING (94.97%): what remains is the anonymous-i2f double's FP register, the zero-init order of
 // `idx`/`count`/`offset`, the position-add constant load scheduling, and the post-matrix and second-rand
 // FP register colouring.
+#pragma dont_inline on
 BOOL BattleAudienceApSrcEntry(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -2537,6 +2578,7 @@ BOOL BattleAudienceApSrcEntry(void) {
 #endif
 	return TRUE;
 }
+#pragma dont_inline reset
 
 // The target colours the first cast's 0.0f constant f0 (window->count f1, cast temp f2, diff f3); MWCC colours
 // ours f3 instead, shifting the first block and both step clamps up a register, which also turns the positive
@@ -2554,6 +2596,7 @@ BOOL BattleAudienceApSrcEntry(void) {
 // NONMATCHING (96.32%): the positive clamp is a ternary (`step = step < float_0p1 ? float_0p1 : step;`)
 // and the two final stores go through locals; the rest is FP register colouring (the first cast's
 // zero lands in f3 instead of f0, rotating both clamps).
+#pragma dont_inline on
 void BattleAudienceWinCtrlProcess(void) {
 	BattleAudience* audience;
 	BattleAudienceWindow* window;
@@ -2617,8 +2660,10 @@ void BattleAudienceWinCtrlProcess(void) {
 		*(f32*)(win + 0x10) = b;
 	}
 }
+#pragma dont_inline reset
 #undef BA_ZERO
 
+#pragma dont_inline on
 void BattleAudienceGXInit(void) {
 	BattleAudienceBaseGetPtr();
 	GXSetCullMode(0);
@@ -2640,10 +2685,12 @@ void BattleAudienceGXInit(void) {
 	GXSetTevAlphaIn(0, 7, 5, 4, 7);
 	GXSetTevOrder(0, 0, 0, 4);
 }
+#pragma dont_inline reset
 
 // Runs each active member's animation command script. Opcodes are negative words; the script
 // base is 0x24, the current command 0x28, the wait timer 0x2C, and 0x34/0x40 are a 3-deep
 // loop-counter stack and its depth (none of these have named struct fields yet).
+#pragma dont_inline on
 void BattleAudienceAnimProcess(void) {
 	BattleAudienceMember* member;
 	s32 cmd;
@@ -2718,15 +2765,7 @@ void BattleAudienceAnimProcess(void) {
 		}
 	}
 }
-
-extern f32 float_0p015625_8041e6ac;
-extern f32 float_deg2rad_8041e6b0;
-extern f32 float_360_8041e6b4;
-extern f32 float_180_8041e6b8;
-extern u32 unk_80423080;
-typedef struct BattleAudienceTexCoords {
-	f32 v[32];
-} BattleAudienceTexCoords;
+#pragma dont_inline reset
 
 #ifdef MUST_MATCH
 // Same idea as BattleAudienceDispApSrc_color below: routing the colour through an inline puts the
@@ -2745,6 +2784,7 @@ static inline GXColor BattleAudienceDispAudience_color(u8 r, u8 g, u8 b, u8 a) {
 // NONMATCHING (95.98%): functionally complete. The angle wrap now fuses and the texture scale uses
 // explicit k/s locals in the MUST_MATCH arm; what still differs is FP scheduling and register
 // allocation in the matrix build (including the trig call order) and the GX texcoord output.
+#pragma dont_inline on
 void BattleAudienceDispAudience(CameraId camId, void* param) {
 	BattleAudience* audience;
 	CameraEntry* cam;
@@ -3021,7 +3061,9 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		GXTexCoord2f32(texCoords.v[(texBase + 3) * 2], texCoords.v[(texBase + 3) * 2 + 1]);
 	}
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 void BattleAudienceDispItem(CameraId camId, void* param) {
 	BattleAudienceItem* item;
 	Mtx mtx;
@@ -3055,6 +3097,7 @@ void BattleAudienceDispItem(CameraId camId, void* param) {
 #endif
 	}
 }
+#pragma dont_inline reset
 
 // The inline's returned colour lands where the original keeps it: the named local at r1+0x8,
 // the hidden by-value copy at r1+0xc. The plain assignment (the #else arm) puts them the other way round.
@@ -3066,6 +3109,7 @@ static inline GXColor BattleAudienceDispApSrc_color(u8 alpha) {
 }
 #endif
 
+#pragma dont_inline on
 void BattleAudienceDispApSrc(CameraId camId, void* param) {
 	BattleAudience* audience;
 	u8* star;
@@ -3102,7 +3146,9 @@ void BattleAudienceDispApSrc(CameraId camId, void* param) {
 		star += 0x60;
 	}
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 void BattleAudienceDispWin(CameraId camId, void* param) {
 	BattleAudienceWindow* win;
 	GXColor color;
@@ -3132,10 +3178,12 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 	numberColor = *(GXColor*)&dat_8041e610;
 	iconNumberDispGx(mtx, (s32)win->count, FALSE, numberColor);
 }
+#pragma dont_inline reset
 
 // NONMATCHING (99.91%): `audience_kind[type]` (no `(u8)` cast) is required so MWCC uses the
 // parameter directly, and `m * 0x19 - 0xeb + r` (not `m * 0x19 + r - 0xeb`) is required so `r`
 // lands in r6. The only remaining diff is one commuted `fadds` in the second branch.
+#pragma dont_inline on
 BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 	BattleAudienceMember* member;
 	f32 f;
@@ -3180,11 +3228,13 @@ BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 	}
 	return TRUE;
 }
+#pragma dont_inline reset
 
 #pragma opt_dead_assignments off // needed: stops MWCC folding col/row back together so the divide lands in the original's register
 // NONMATCHING (90.35%): the i2f magic pools an @N double instead of double_to_int_802f9a00, so its `lis r3`
 // steals the register the original puts `col = index / 20` in and the early block + seven Vec copies rotate.
 // Writing `row` as `index - col * 20` (== `index % 20`) and this pragma lifted it 88.54 -> 90.22 -> 90.35.
+#pragma dont_inline on
 void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	BattleAudienceMember* member;
 	BattleStage* stage;
@@ -3263,8 +3313,10 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 		member->flags |= 8;
 	}
 }
+#pragma dont_inline reset
 #pragma opt_dead_assignments reset
 
+#pragma dont_inline on
 void BattleAudience_Delete(s32 index) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
@@ -3274,7 +3326,9 @@ void BattleAudience_Delete(s32 index) {
 	}
 	member->flags = 0;
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 void BattleAudience_SetAnim(s32 id, s32 animId, BOOL force) {
 	BattleAudienceMember* member;
 	s32* anim;
@@ -3538,6 +3592,7 @@ void BattleAudience_ChangeStatus(s32 index, s32 status) {
 	}
 }
 #pragma dont_inline reset
+
 //breaks -inline auto,deferred
 /*
 BOOL BattleAudience_GetExist(s32 id) {
@@ -3558,7 +3613,9 @@ BOOL BattleAudience_GetExist(s32 id) {
 	}
 	return !(member->flags & 2);
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 BOOL BattleAudience_GetSysCtrl(s32 index) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
@@ -3568,7 +3625,9 @@ BOOL BattleAudience_GetSysCtrl(s32 index) {
 	}
 	return !(member->flags & 0x10);
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 BOOL BattleAudience_GetWaiting(s32 index) {
 	BattleAudienceMember* member;
 	BattleAudienceBaseGetPtr();
@@ -3581,7 +3640,9 @@ BOOL BattleAudience_GetWaiting(s32 index) {
 	}
 	return (u8)(member->status <= 3);
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 BOOL BattleAudience_GetEscapeChangeOK(s32 index) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
@@ -3659,7 +3720,9 @@ s32 BattleAudience_HaitiRandForFallObject(void) {
 	}
 	return ret + r * 20;
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 s32 BattleAudience_NoUsedHaitiRand(void) {
 	s32 stack[200];
 	s32* haiti;
@@ -3691,7 +3754,9 @@ s32 BattleAudience_NoUsedHaitiRand(void) {
 	}
 	return -1;
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 s32 BattleAudience_NoUsedFCHaitiRand(void) {
 	s32 rate[10];
 	s32 offset[20];
@@ -3804,11 +3869,15 @@ s32 BattleAudience_GetPPAudienceNumKind(s32 type) {
 s32 BattleAudience_GetPPAudienceNum_R(void) {
 	return BattleAudience_GetPPAudienceNum_RL_Sub(10);
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 s32 BattleAudience_GetPPAudienceNum_L(void) {
 	return BattleAudience_GetPPAudienceNum_RL_Sub(0);
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 s32 BattleAudience_GetPPAudienceNum_RL_Sub(s32 offset) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	s32 akk;
@@ -3831,7 +3900,9 @@ s32 BattleAudience_GetPPAudienceNum_RL_Sub(s32 offset) {
 	}
 	return count;
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on
 BOOL BattleAudience_GetPPAudienceNum_Sub(s32 id) {
 	BattleAudienceMember* member = BattleAudienceGetPtr(id);
 
@@ -3848,410 +3919,6 @@ BOOL BattleAudience_GetPPAudienceNum_Sub(s32 id) {
 	}
 
 	return member->status != 12;
-}
-#pragma dont_inline reset
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// NONMATCHING (98.94%): register allocation only; the outer counter and the inner weighted-pick accumulator
-// land in r26/r25 instead of r25/r26, shifting the rest of the body. Declaring the negative branch's
-// `count` at function scope (instead of inside the `else`) moves it to r26 and lifts this 98.72 -> 98.94.
-s32 BattleAudienceAddAudienceNum(s32 num) {
-	BattleWork* wp = _battleWorkPointer;
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 sum;
-	s32 total = 0;
-	u8 type;
-	s32 result = 0;
-	s32 count;
-	s32 j;
-	s32 i;
-	s32 id;
-	s32 waitlist[200];
-
-	if (pouchGetPtr()->mStarPowersObtained == 0) {
-		return 0;
-	}
-	if (num == 0) {
-		return 0;
-	}
-	if (wp->flags & 0x100) {
-		return 0;
-	}
-	if (num > 0) {
-		for (i = 0; i < 12; i++) {
-			total += *(s32*)((u8*)audience + 0x13794 + i * 4);
-		}
-		for (j = 0; j < num; j++) {
-			sum = 0;
-			id = irand(total);
-			for (i = 0; i < 12; i++) {
-				sum += *(s32*)((u8*)audience + 0x13794 + i * 4);
-				if (id < sum) {
-					type = (u8)i;
-					break;
-				}
-			}
-			id = BattleAudience_NoUsedFCHaitiRand();
-			if (id == -1) {
-				break;
-			}
-			if (BattleAudience_Entry(id, type, 0xb) == 1) {
-				result++;
-				*(s32*)((u8*)BattleAudienceGetPtr(id) + 0x8) = result;
-			}
-		}
-	}
-	else {
-		count = 0;
-		for (; count > num; count--) {
-			s32 n = 0;
-			for (i = 0; i < 200; i++) {
-				if ((u8)BattleAudience_GetEscapeChangeOK(i)) {
-					waitlist[n++] = i;
-				}
-			}
-			if (n >= 1) {
-				id = waitlist[irand(n)];
-				BattleAudience_ChangeStatus(id, 0xc);
-				result--;
-				*(s32*)((u8*)BattleAudienceGetPtr(id) + 0x8) = -result;
-			}
-		}
-	}
-	return result;
-}
-
-//1:1
-// keep AddTargetNumSub out of AddTargetNum (original has a `bl`)
-#pragma dont_inline on
-void BattleAudienceAddTargetNumSub(f32 value) {
-	f32 subtract;
-	s32 skew;
-
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	while (1) {
-		if (value == 0.0f) return;
-		if (value > 0.0f) { //positive
-			subtract = min(value, 1.0f);
-			value -= subtract;
-			if (value < 0.0f) {
-				value = 0.0f;
-			}
-		}
-		if (value < 0.0f) { //negative
-			subtract = max(value, -1.0f);
-			value -= subtract;
-			if (value > 0.0f) {
-				value = 0.0f;
-			}
-		}
-		if (subtract > 0.0f) {
-			skew = (s32)(((audience->mTargetAudienceCount / audience->mAudienceDeltaMultiplier) - 1.0f) / 0.25f);
-			if (skew >= 1) {
-				audience->mTargetAudienceCount += subtract / (skew + 1);
-				continue;
-			}
-		}
-		if (subtract < 0.0f) {
-			skew = (s32)(((audience->mTargetAudienceCount / audience->mAudienceDeltaMultiplier) - 1.0f) / 0.25f);
-			if (skew <= -1) {
-				audience->mTargetAudienceCount -= subtract / (skew - 1);
-				continue;
-			}
-		}
-		audience->mTargetAudienceCount += subtract;
-	}
-}
-
-void BattleAudienceAddTargetNum(f32 value, f32 delta) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-
-	audience->mAddedAudienceCount += delta;
-	if (audience->mAddedAudienceCount > 0.0f && value < 0.0f) {
-		audience->mAddedAudienceCount += value;
-		if (audience->mAddedAudienceCount < 0.0f) {
-			value = audience->mAddedAudienceCount;
-			audience->mAddedAudienceCount = 0.0f;
-		}
-		else {
-			value = 0.0f;
-		}
-	}
-	else if (audience->mAddedAudienceCount < 0.0f && value > 0.0f) {
-		audience->mAddedAudienceCount += value;
-		if (audience->mAddedAudienceCount > 0.0f) {
-			value = audience->mAddedAudienceCount;
-			audience->mAddedAudienceCount = 0.0f;
-		}
-		else {
-			value = 0.0f;
-		}
-	}
-	BattleAudienceAddTargetNumSub(value);
-	if (audience->mTargetAudienceCount < 0.0f) {
-		audience->mTargetAudienceCount = 0.0f;
-	}
-	if (audience->mTargetAudienceCount > (f32)audience->mMaxAudience) {
-		audience->mTargetAudienceCount = (f32)audience->mMaxAudience;
-	}
-	if (audience->mAddedAudienceCount < -1000.0f) {
-		audience->mAddedAudienceCount = -1000.0f;
-	}
-	if (audience->mAddedAudienceCount > 1000.0f) {
-		audience->mAddedAudienceCount = 1000.0f;
-	}
-}
-#pragma dont_inline reset
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void BattleAudienceNoiseMain(void) {
-	BattleWork* wp = _battleWorkPointer;
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(2);
-	s32 pp = BattleAudience_GetPPAudienceNum();
-
-	if (!(audience->flags & 0x10000) && (wp->flags & 0x80)) {
-		BattleAudienceSoundSetVol(2, 0x3C, 0x50);
-	}
-	if ((audience->flags & 0x10000) && !(wp->flags & 0x80)) {
-		BattleAudienceSoundSetVol(2, 0, 0x50);
-	}
-	if (pp == 0 && *(u8*)((u8*)sound + 8) != 0) {
-		psndSFXOff(*(s32*)((u8*)sound + 4));
-		*(u8*)((u8*)sound + 8) = 0;
-	}
-	if (pp >= 1 && pp <= 0x31 && *(u8*)((u8*)sound + 8) != 1) {
-		BattleAudienceSoundNoiseAlways();
-		*(u8*)((u8*)sound + 8) = 1;
-	}
-	if (pp >= 0x32 && pp <= 0x63 && *(u8*)((u8*)sound + 8) != 2) {
-		BattleAudienceSoundNoiseAlways();
-		*(u8*)((u8*)sound + 8) = 2;
-	}
-	if (pp >= 0x64 && pp <= 0x95 && *(u8*)((u8*)sound + 8) != 3) {
-		BattleAudienceSoundNoiseAlways();
-		*(u8*)((u8*)sound + 8) = 3;
-	}
-	if (pp >= 0x96 && pp <= 0xC8 && *(u8*)((u8*)sound + 8) != 4) {
-		BattleAudienceSoundNoiseAlways();
-		*(u8*)((u8*)sound + 8) = 4;
-	}
-	if (!(audience->flags & 0x2000)) {
-		sound->mCurrentBaseSfxVolume = 0;
-	}
-	else if (pp == 0) {
-		sound->mCurrentBaseSfxVolume = 0;
-	}
-	else {
-		sound->mCurrentBaseSfxVolume = (s32)(float_63_8041e644 + float_63_8041e644 * (f32)pp / float_200_8041e648);
-	}
-}
-
-// Keep the call out of line: the original emits `bl BattleAudienceSoundMain` in BattleAudience_Main.
-#pragma dont_inline on
-void BattleAudienceSoundMain(void) {
-	BattleAudienceSound* sound;
-	s32 i;
-
-	BattleAudienceBaseGetPtr();
-	BattleAudienceNoiseMain();
-	i = 0;
-	sound = BattleAudienceSoundGetPtr(0);
-	for (; i < 0x18; i++, sound++) {
-		if (psndSFXChk(*(s32*)((u8*)sound + 4)) == -1) {
-			*(s32*)sound &= ~1;
-		}
-		else if (*(s32*)((u8*)sound + 0xC) == 0) {
-			psndSFXOff(*(s32*)((u8*)sound + 4));
-			*(s32*)sound &= ~1;
-		}
-		else {
-			if (sound->mForceFadeLength > 0) {
-				sound->mForceFadeTimer++;
-				sound->mVolumeMultiplier = (u8)intplGetValue(0, sound->mForceFadeTimer, sound->mForceFadeLength, (f32)sound->mFadeStartVolumeMultiplier, (f32)sound->mFadeEndVolumeMultiplier);
-				psndSFX_vol(*(s32*)((u8*)sound + 4), (u8)((sound->mCurrentBaseSfxVolume * sound->mVolumeMultiplier) / 100));
-				if (sound->mForceFadeTimer >= sound->mForceFadeLength) {
-					sound->mForceFadeLength = 0;
-				}
-			}
-			if (*(s32*)((u8*)sound + 0xC) > 0) {
-				if (*(s32*)((u8*)sound + 0xC) == sound->mFadeoutTime) {
-					sound->mFadeStartVolumeMultiplier = sound->mVolumeMultiplier;
-					sound->mFadeEndVolumeMultiplier = 0;
-				}
-				if (*(s32*)((u8*)sound + 0xC) <= sound->mFadeoutTime) {
-					sound->mVolumeMultiplier = (u8)intplGetValue(0, sound->mFadeoutTime - *(s32*)((u8*)sound + 0xC), sound->mFadeoutTime, (f32)sound->mFadeStartVolumeMultiplier, (f32)sound->mFadeEndVolumeMultiplier);
-					psndSFX_vol(*(s32*)((u8*)sound + 4), (u8)((sound->mCurrentBaseSfxVolume * sound->mVolumeMultiplier) / 100));
-				}
-				*(s32*)((u8*)sound + 0xC) -= 1;
-			}
-		}
-	}
-}
-#pragma dont_inline reset
-
-
-// Keep the call out of line: the original emits `bl BattleAudienceSoundNoiseAlways` in
-// BattleAudienceNoiseMain and BattleAudience_Init.
-#pragma dont_inline on
-void BattleAudienceSoundNoiseAlways(void) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(2);
-	s32 r;
-	s32 l;
-	s32 total;
-	s32 vol;
-	char name[0x40];
-
-	r = BattleAudience_GetPPAudienceNum_R();
-	l = BattleAudience_GetPPAudienceNum_L();
-	total = r + l;
-	if (!(*(s32*)sound->field_0x0 & 1)) {
-		if (total == 0) {
-			sound->field_0x0[8] = 0;
-		}
-		if (total >= 1 && total <= 0x31) {
-			strcpy(name, str_802F9C4C);
-			sound->field_0x0[8] = 1;
-		}
-		if (total >= 0x32 && total <= 0x63) {
-			strcpy(name, str_802F9C60);
-			sound->field_0x0[8] = 2;
-		}
-		if (total >= 0x64 && total <= 0x95) {
-			strcpy(name, str_802F9C74);
-			sound->field_0x0[8] = 3;
-		}
-		if (total >= 0x96) {
-			strcpy(name, str_802F9C88);
-			sound->field_0x0[8] = 4;
-		}
-		*(s32*)(sound->field_0x0 + 4) = BattleAudienceSound1(name, r, l);
-		if (*(s32*)(sound->field_0x0 + 4) != -1) {
-			*(s32*)sound->field_0x0 |= 1;
-			*(s32*)(sound->field_0x0 + 0xC) = -1;
-			sound->mFadeoutTime = 0;
-			vol = psndSFX_get_vol(*(s32*)(sound->field_0x0 + 4));
-			sound->mCurrentBaseSfxVolume = vol;
-			sound->mBaseSfxVolume = vol;
-			sound->mForceFadeLength = 0;
-			sound->mForceFadeTimer = 0;
-			sound->mVolumeMultiplier = 100;
-			audience->flags |= 0x2000;
-		}
-	}
-}
-#pragma dont_inline reset
-
-#pragma dont_inline on
-void BattleAudienceSoundSetVol(s32 index, u8 a2, s32 a3) {
-	BattleAudienceSound* sound;
-
-	sound = BattleAudienceSoundGetPtr(index);
-	sound->mFadeStartVolumeMultiplier = sound->mVolumeMultiplier;
-	sound->mFadeEndVolumeMultiplier = a2;
-	sound->mForceFadeTimer = 0;
-	sound->mForceFadeLength = a3;
-	sound->mFadeoutTime = 0;
-}
-#pragma dont_inline reset
-
-// Keep BattleAudienceNumToTarget as an out-of-line `bl`: both original callers (Main,
-// Case_TurnEnd) call it, and MWCC would otherwise inline it into them.
-#pragma dont_inline on
-void BattleAudienceNumToTarget(void) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 target;
-	if (!(audience->flags & 0x40000)) {
-		target = (s32)(audience->mTargetAudienceCount + audience->mAddedAudienceCount);
-		if (target < 0) {
-			target = 0;
-		}
-		if (target > audience->mMaxAudience) {
-			target = audience->mMaxAudience;
-		}
-		BattleAudienceAddAudienceNum(target - BattleAudienceNumToTargetSub());
-	}
-}
-#pragma dont_inline reset
-
-// Keep BattleAudience_WinSetActive out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-void BattleAudience_WinSetActive(u8 active) {
-	BattleAudienceWinGetPtr()->mActive = active;
 }
 #pragma dont_inline reset
 
@@ -4348,195 +4015,638 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 }
 #pragma opt_lifetimes reset
 
-void BattleAudience_Case_JumpNewRecord(void) {
-}
-
-void BattleAudience_Case_FinalAttack(void) {
-}
-
-void BattleAudience_Case_Escape(void) {
-}
-
-// The assignment's operand order is load-bearing: MWCC emits the target's
-// `fmuls f0, f1, f0` (converted value first) only when the int->float conversion is
-// held in a named temp, and only keeps the audience field in r0 and writes the
-// result back through r0 when the sum is written as `(v + 0x19) + field`. The
-// natural compound assignment is the #else arm.
-void BattleAudience_Case_Appeal(BattleUnit* unit) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-
-	if ((f32)BattleAudience_GetPPAudienceNum() > float_0_8041e618) {
-#ifdef MUST_MATCH
-		f32 num = (f32)BattleAudience_GetPPAudienceNum();
-		s32 v = (s32)(num * float_0p25_8041e63c);
-		*(s32*)((u8*)audience + 0x137C4) = (v + 0x19) + *(s32*)((u8*)audience + 0x137C4);
-#else
-		*(s32*)((u8*)audience + 0x137C4) += (s32)(float_0p25_8041e63c * (f32)BattleAudience_GetPPAudienceNum()) + 0x19;
-#endif
-		if (unit->badgesEquipped.SuperAppeal != 0) {
-			*(s32*)((u8*)audience + 0x137C4) += unit->badgesEquipped.SuperAppeal * 0x19;
-		}
-		BattleAudienceSoundCheer(0xB4, 0x3C);
-		BattleAudienceSoundClap(0xB4, 0x3C);
-		BattleAudienceJoy(0);
-	}
-	BattleAudienceAddTargetNum(float_0p05_8041e624 * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
-	                           float_0_8041e618);
-}
-
-void BattleAudience_Case_TurnEnd(void) {
-	BattleWork* wp = _battleWorkPointer;
-	BattleUnit* mario = BattleGetMarioPtr(wp);
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 expected;
-	BattleGroupSetup* setup;
-	BattleUnitSetup* enemy;
-	s32 i;
-
-	pouchGetPtr();
-	expected = 0;
-	setup = wp->fbatInfo->setup->groupSetup;
-	enemy = setup->enemyData;
-	if (!(audience->flags & 0x40000)) {
-		audience->mTurnEndPhaseEventChance += 3;
-		if (audience->mTurnEndPhaseEventChance > 100) {
-			audience->mTurnEndPhaseEventChance = 100;
-		}
-		for (i = 0; i < setup->numEnemies; i++) {
-			expected += enemy->mUnitKindParams->mLevel;
-			enemy++;
-		}
-		expected = (expected * 2) / mario->mLevel;
-		if (expected < 5) {
-			expected = 5;
-		}
-		if (wp->turnCount >= expected) {
-			BattleAudienceAddTargetNum(float_neg0p05_8041e614 * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
-			                           float_0_8041e618);
-		}
-		if (wp->turnCount == expected) {
-			BattleAudienceAddPhaseEvtList(6);
-		}
-		if (irand(100) < audience->mTurnEndPhaseEventChance) {
-			if (wp->turnCount >= expected) {
-				BattleAudienceAddPhaseEvtList(1);
-			}
-			BattleAudienceAddPhaseEvtList(4);
-			BattleAudienceAddPhaseEvtList(9);
-			BattleAudienceAddPhaseEvtList(10);
-			BattleAudienceAddPhaseEvtList(11);
-			BattleAudienceAddPhaseEvtList(12);
-			BattleAudienceAddPhaseEvtList(13);
-			audience->mTurnEndPhaseEventChance = 0;
-		}
-		BattleAudienceNumToTarget();
-	}
-}
-
+// Keep BattleAudience_WinSetActive out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-s32 BattleAudienceSound0(const char* name) {
-	return psndSFXOn(name);
+void BattleAudience_WinSetActive(u8 active) {
+	BattleAudienceWinGetPtr()->mActive = active;
 }
 #pragma dont_inline reset
 
-void BattleAudience_Case_AcrobatNoTry(void) {
+// Keep BattleAudienceNumToTarget as an out-of-line `bl`: both original callers (Main,
+// Case_TurnEnd) call it, and MWCC would otherwise inline it into them.
+#pragma dont_inline on
+void BattleAudienceNumToTarget(void) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 target;
+	if (!(audience->flags & 0x40000)) {
+		target = (s32)(audience->mTargetAudienceCount + audience->mAddedAudienceCount);
+		if (target < 0) {
+			target = 0;
+		}
+		if (target > audience->mMaxAudience) {
+			target = audience->mMaxAudience;
+		}
+		BattleAudienceAddAudienceNum(target - BattleAudienceNumToTargetSub());
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+s32 BattleAudienceNumToTargetSub(void) {
+	s32 i;
+	s32 count;
+
 	BattleAudienceBaseGetPtr();
+	count = 0;
+	for (i = 0; i < 200; i++) {
+		if ((u8)BattleAudience_GetExist(i) == 1) {
+			if (BattleAudienceGetPtr(i)->status != 12) {
+				count++;
+			}
+		}
+	}
+	return count;
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceAddTargetNum(f32 value, f32 delta) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+
+	audience->mAddedAudienceCount += delta;
+	if (audience->mAddedAudienceCount > 0.0f && value < 0.0f) {
+		audience->mAddedAudienceCount += value;
+		if (audience->mAddedAudienceCount < 0.0f) {
+			value = audience->mAddedAudienceCount;
+			audience->mAddedAudienceCount = 0.0f;
+		}
+		else {
+			value = 0.0f;
+		}
+	}
+	else if (audience->mAddedAudienceCount < 0.0f && value > 0.0f) {
+		audience->mAddedAudienceCount += value;
+		if (audience->mAddedAudienceCount > 0.0f) {
+			value = audience->mAddedAudienceCount;
+			audience->mAddedAudienceCount = 0.0f;
+		}
+		else {
+			value = 0.0f;
+		}
+	}
+	BattleAudienceAddTargetNumSub(value);
+	if (audience->mTargetAudienceCount < 0.0f) {
+		audience->mTargetAudienceCount = 0.0f;
+	}
+	if (audience->mTargetAudienceCount > (f32)audience->mMaxAudience) {
+		audience->mTargetAudienceCount = (f32)audience->mMaxAudience;
+	}
+	if (audience->mAddedAudienceCount < -1000.0f) {
+		audience->mAddedAudienceCount = -1000.0f;
+	}
+	if (audience->mAddedAudienceCount > 1000.0f) {
+		audience->mAddedAudienceCount = 1000.0f;
+	}
+}
+#pragma dont_inline reset
+
+//1:1
+// keep AddTargetNumSub out of AddTargetNum (original has a `bl`)
+#pragma dont_inline on
+void BattleAudienceAddTargetNumSub(f32 value) {
+	f32 subtract;
+	s32 skew;
+
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	while (1) {
+		if (value == 0.0f) return;
+		if (value > 0.0f) { //positive
+			subtract = min(value, 1.0f);
+			value -= subtract;
+			if (value < 0.0f) {
+				value = 0.0f;
+			}
+		}
+		if (value < 0.0f) { //negative
+			subtract = max(value, -1.0f);
+			value -= subtract;
+			if (value > 0.0f) {
+				value = 0.0f;
+			}
+		}
+		if (subtract > 0.0f) {
+			skew = (s32)(((audience->mTargetAudienceCount / audience->mAudienceDeltaMultiplier) - 1.0f) / 0.25f);
+			if (skew >= 1) {
+				audience->mTargetAudienceCount += subtract / (skew + 1);
+				continue;
+			}
+		}
+		if (subtract < 0.0f) {
+			skew = (s32)(((audience->mTargetAudienceCount / audience->mAudienceDeltaMultiplier) - 1.0f) / 0.25f);
+			if (skew <= -1) {
+				audience->mTargetAudienceCount -= subtract / (skew - 1);
+				continue;
+			}
+		}
+		audience->mTargetAudienceCount += subtract;
+	}
+}
+#pragma dont_inline reset
+
+// NONMATCHING (98.94%): register allocation only; the outer counter and the inner weighted-pick accumulator
+// land in r26/r25 instead of r25/r26, shifting the rest of the body. Declaring the negative branch's
+// `count` at function scope (instead of inside the `else`) moves it to r26 and lifts this 98.72 -> 98.94.
+s32 BattleAudienceAddAudienceNum(s32 num) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 sum;
+	s32 total = 0;
+	u8 type;
+	s32 result = 0;
+	s32 count;
+	s32 j;
+	s32 i;
+	s32 id;
+	s32 waitlist[200];
+
+	if (pouchGetPtr()->mStarPowersObtained == 0) {
+		return 0;
+	}
+	if (num == 0) {
+		return 0;
+	}
+	if (wp->flags & 0x100) {
+		return 0;
+	}
+	if (num > 0) {
+		for (i = 0; i < 12; i++) {
+			total += *(s32*)((u8*)audience + 0x13794 + i * 4);
+		}
+		for (j = 0; j < num; j++) {
+			sum = 0;
+			id = irand(total);
+			for (i = 0; i < 12; i++) {
+				sum += *(s32*)((u8*)audience + 0x13794 + i * 4);
+				if (id < sum) {
+					type = (u8)i;
+					break;
+				}
+			}
+			id = BattleAudience_NoUsedFCHaitiRand();
+			if (id == -1) {
+				break;
+			}
+			if (BattleAudience_Entry(id, type, 0xb) == 1) {
+				result++;
+				*(s32*)((u8*)BattleAudienceGetPtr(id) + 0x8) = result;
+			}
+		}
+	}
+	else {
+		count = 0;
+		for (; count > num; count--) {
+			s32 n = 0;
+			for (i = 0; i < 200; i++) {
+				if ((u8)BattleAudience_GetEscapeChangeOK(i)) {
+					waitlist[n++] = i;
+				}
+			}
+			if (n >= 1) {
+				id = waitlist[irand(n)];
+				BattleAudience_ChangeStatus(id, 0xc);
+				result--;
+				*(s32*)((u8*)BattleAudienceGetPtr(id) + 0x8) = -result;
+			}
+		}
+	}
+	return result;
 }
 
-void BattleAudience_Case_MarioBigDamage(void) {
-	BattleAudienceBaseGetPtr();
+#pragma dont_inline on
+void BattleAudiencePuniAllEscape(void) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	f32 one = float_1_8041e620;
+	s32 i;
+	s32 count = 0;
+	for (i = 0; i < 200; i++) {
+		BattleAudienceMember* member = BattleAudienceGetPtr(i);
+		if ((u8)BattleAudience_GetEscapeChangeOK(i)) {
+			if (member->type == AUDIENCE_PUNI) {
+				BattleAudience_ChangeStatus(i, 12);
+				count++;
+				audience->mAddedAudienceCount -= one;
+			}
+		}
+	}
+	if (count >= 1) {
+		audience->flags |= 0x8000;
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceAddPuni(s32 num) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 i;
+	if (pouchGetPtr()->mStarPowersObtained != 0 && *(s32*)((u8*)audience + 0x137B0) > 0 &&
+			num > 0 && !(wp->flags & 0x100)) {
+		f32 one = float_1_8041e620;
+		for (i = 0; i < num; i++) {
+			s32 idx = BattleAudience_NoUsedFCHaitiRand();
+			if (idx == -1) {
+				return;
+			}
+			if (BattleAudience_Entry(idx, AUDIENCE_PUNI, 0xb) == 1) {
+				audience->mAddedAudienceCount += one;
+			}
+		}
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceAddPhaseEvtList(s32 evtId) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 count = *(s32*)((u8*)audience + 0x13904);
+	s32 i = 0;
+	for (; i < count; i++) {
+		if (*(s32*)((u8*)audience + 0x138CC + i * 4) == evtId) {
+			return;
+		}
+	}
+	*((s32*)((u8*)audience + 0x138CC) + count) = evtId;
+	*(s32*)(audience->field_138CC + 0x38) = *(s32*)(audience->field_138CC + 0x38) + 1;
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceCheer(s32 a) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	if (*(s32*)(audience->field_13794 + 0x30) > 0x320) {
+		*(s32*)(audience->field_13794 + 0x30) = 0x320;
+	}
+	if (*(s32*)(audience->field_13794 + 0x30) > 0) {
+		if (pouchGetPtr()->maximumSP == 0) {
+			*(s32*)(audience->field_13794 + 0x30) = 0;
+		}
+		else {
+			audience->flags |= 2;
+		}
+		BattleAudienceJoy(a);
+		if (*(s32*)(audience->field_13794 + 0x30) != 0) {
+			BattleStatusWindowAPRecoveryOn();
+		}
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceJoy(s32 a) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	switch (a) {
+		case 0:
+			BattleAudienceJoy_Sub(0x64, 0, 0, a);
+			break;
+		case 1:
+			BattleAudienceJoy_Sub(0, 0x64, 0, a);
+			break;
+		case 2:
+			BattleAudienceJoy_Sub(0x46, 0x1e, 0, a);
+			break;
+		case 3:
+		switch (*(s32*)audience->field_1390C) {
+			case 0:
+				BattleAudienceJoy_Sub(0x32, 0x28, 0xa, a);
+				break;
+			case 1:
+				BattleAudienceJoy_Sub(0x28, 0x28, 0x14, a);
+				break;
+			case 2:
+				BattleAudienceJoy_Sub(0x1e, 0x28, 0x1e, a);
+				break;
+			case 3:
+				BattleAudienceJoy_Sub(0x14, 0x28, 0x28, a);
+				break;
+			case 4:
+				BattleAudienceJoy_Sub(0xa, 0x28, 0x32, a);
+				break;
+			default:
+				BattleAudienceJoy_Sub(0x32, 0x28, 0xa, a);
+				break;
+		}
+		(*(s32*)audience->field_1390C)++;
+		if (*(s32*)audience->field_1390C > 4) {
+			*(s32*)audience->field_1390C = 4;
+		}
+			break;
+	}
+}
+#pragma dont_inline reset
+
+void BattleAudienceJoySACLecture(void) {
+	BattleAudienceSoundCheer(0x78, 0x3c);
+	BattleAudienceJoy(2);
 }
 
 void BattleAudienceJoyEnding(void) {
 	BattleAudienceJoy(3);
 }
 
-BOOL BattleAudienceSoundCheck(s32 index) {
-	return *(s32*)BattleAudienceSoundGetPtr(index) & 1;
+#ifdef MUST_MATCH
+// Match-only: the third bound's `(a + b) + c` must keep its operands in that order; written
+// directly MWCC commutes the final add to `c + (a + b)`. The inlined add leaves the tree alone.
+static inline s32 BattleAudienceJoyAdd2(s32 x, s32 y) {
+	return x + y;
 }
+#else
+#define BattleAudienceJoyAdd2(x, y) ((x) + (y))
+#endif
 
-// Keep these accessors out of line: BattleAudienceItemCtrlProcess emits a bl to each.
+#pragma opt_loop_invariants off // needed: keep a,b,c,d live and recompute the branch bounds each iteration
+
+// The frame, prologue and every call now match. The third branch bound's commuted `add` is fixed by
+// routing it through the inlined BattleAudienceJoyAdd2 helper above. One commuted `add` remains: the
+// second sum add (`add r29, r29, r25` where the original has `add r29, r25, r29`). `sum = b + c;
+// sum += a;` is required (writing `a + sum` makes MWCC reassociate the first add and recolour the
+// callee-saved set). The declaration order member/i/sum is load-bearing: MWCC colours the
+// callee-saved locals in declaration order (member r31, i r30, sum r29); any other order rotates them.
+// NONMATCHING (99.86%): one commuted `add` operand on the loop-invariant sum.
 #pragma dont_inline on
-s32 BattleAudience_GetPresentItemNo(void) {
-	return *(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E4);
+void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
+	BattleAudienceMember* member;
+	s32 i;
+	s32 sum;
+	BattleAudience* audience;
+	s32 r;
+	audience = BattleAudienceBaseGetPtr();
+	sum = b + c;
+	sum += a;
+	i = 0;
+	member = BattleAudienceGetPtr(0);
+	for (; i < 200; i++, member++) {
+		if ((u8)BattleAudience_GetWaiting(i)) {
+			if (member->type == AUDIENCE_PIRANHA_PLANT) {
+				BattleAudience_ChangeStatus(i, 4);
+				if (d == 3) {
+					*(f32*)((u8*)member + 0xc) = float_3_8041e65c;
+				}
+				else {
+					*(f32*)((u8*)member + 0xc) = float_2_8041e660;
+				}
+			}
+			else {
+				r = irand(sum);
+				if (r < a) {
+					BattleAudience_ChangeStatus(i, 4);
+					if (d == 3) {
+						*(f32*)((u8*)member + 0xc) = float_3_8041e65c;
+					}
+					else {
+						*(f32*)((u8*)member + 0xc) = float_2_8041e660;
+					}
+				}
+				else if (r < a + b) {
+					BattleAudience_ChangeStatus(i, 5);
+				}
+				else if (r < BattleAudienceJoyAdd2(a + b, c)) {
+					BattleAudience_ChangeStatus(i, 6);
+				}
+			}
+		}
+	}
 }
+#pragma dont_inline reset
+#pragma opt_loop_invariants reset
 
-s32 BattleAudience_GetPresentTargetUnitId(void) {
-	return *(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137EC);
-}
-
-s32 BattleAudience_GetPresentItemType(void) {
-	return *(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E8);
-}
-
-void BattleAudience_SetPresentItemNo(s32 value) {
-	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E4) = value;
-}
-
-void BattleAudience_SetPresentTargetUnitId(s32 value) {
-	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137EC) = value;
-}
-
-void BattleAudience_SetPresentItemType(s32 value) {
-	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E8) = value;
+#pragma dont_inline on
+s32 BattleAudienceDetectPakkunEatTargetSub2(s32 a, s32 b) {
+	s32 no;
+	BattleAudienceBaseGetPtr();
+	no = BattleAudience_GetAudienceNoFromOffset(a, b, 0);
+	if (no == -1) {
+		return -1;
+	}
+	BattleAudienceGetPtr(no);
+	if ((u8)BattleAudience_GetSysCtrl(no) != 1) {
+		return -1;
+	}
+	return no;
 }
 #pragma dont_inline reset
 
-void BattleAudienceSoundWhistleKind(s32 kind) {
-	s32 waiting[200];
-	s32 i;
-	s32 vol;
-	s32 member;
-	s32 kindIdx;
-	s32 count = 0;
-	Vec pos;
-	BattleAudienceSound* sound;
+#pragma dont_inline on
+s32 BattleAudienceDetectPakkunEatTargetSub(s32 a, s32 b, s32 c) {
+	s32 x = BattleAudienceDetectPakkunEatTargetSub2(a, b);
+	s32 y = BattleAudienceDetectPakkunEatTargetSub2(a, c);
+	if (x != -1) {
+		return x;
+	}
+	if (y == -1) {
+		return -1;
+	}
+	return y;
+}
+#pragma dont_inline reset
 
-	for (i = 0; i < 200; i++) {
-		if ((u8)BattleAudience_GetWaiting(i) == 1) {
-			waiting[count++] = i;
+#pragma dont_inline on
+s32 BattleAudienceDetectPakkunEatTarget(s32 a) {
+	if (irand(2) == 0) {
+		return BattleAudienceDetectPakkunEatTargetSub(a, -1, 1);
+	}
+	return BattleAudienceDetectPakkunEatTargetSub(a, 1, -1);
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundBooing(void) {
+	s32 kind;
+	s32 l;
+	s32 r;
+	s32 count;
+	BattleAudienceBaseGetPtr();
+	kind = 0;
+	l = BattleAudience_GetPPAudienceNum_L();
+	r = BattleAudience_GetPPAudienceNum_R();
+	count = r + l;
+	if (count >= 0 && count <= 0x31) {
+		kind = 1;
+	}
+	if (count >= 0x32 && count <= 0x63) {
+		kind = 2;
+	}
+	if (count >= 0x64 && count <= 0x95) {
+		kind = 3;
+	}
+	if (count >= 0x96) {
+		kind = 4;
+	}
+	BattleAudienceSoundBooingKind(kind);
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundBooingKind(s32 kind) {
+	BattleAudienceSound* sound;
+	s32 r;
+	s32 l;
+	s32 vol;
+	char name[0x34];
+	BattleAudienceBaseGetPtr();
+	sound = BattleAudienceSoundGetPtr(0);
+	r = BattleAudience_GetPPAudienceNum_R();
+	l = BattleAudience_GetPPAudienceNum_L();
+	BattleAudienceSoundStop(0);
+	if (kind == 1) {
+		strcpy(name, str_802F9CFC);
+		*(u8*)((u8*)sound + 8) = 1;
+	}
+	if (kind == 2) {
+		strcpy(name, str_802F9D14);
+		*(u8*)((u8*)sound + 8) = 2;
+	}
+	if (kind == 3) {
+		strcpy(name, str_802F9D2C);
+		*(u8*)((u8*)sound + 8) = 3;
+	}
+	if (kind == 4) {
+		strcpy(name, str_802F9D44);
+		*(u8*)((u8*)sound + 8) = 4;
+	}
+	if (kind == 5) {
+		strcpy(name, str_802F9D5C);
+		*(u8*)((u8*)sound + 8) = 5;
+	}
+	if (kind == 6) {
+		strcpy(name, str_802F9D74);
+		*(u8*)((u8*)sound + 8) = 6;
+	}
+	if (kind == 7) {
+		strcpy(name, str_802F9D8C);
+		*(u8*)((u8*)sound + 8) = 7;
+	}
+	if (kind == 8) {
+		strcpy(name, str_802F9DA4);
+		*(u8*)((u8*)sound + 8) = 8;
+	}
+	AUD_SOUND_ID(sound) = BattleAudienceSound1(name, r, l);
+	if (AUD_SOUND_ID(sound) != -1) {
+		AUD_SOUND_HEAD(sound);
+		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+		AUD_SOUND_TAIL(sound, vol);
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundClap(s32 a, s32 b) {
+	BattleAudienceSound* sound;
+	s32 r;
+	s32 l;
+	s32 total;
+	s32 vol;
+	char name[0x3c];
+	BattleAudienceBaseGetPtr();
+	sound = BattleAudienceSoundGetPtr(1);
+	r = BattleAudience_GetPPAudienceNum_R();
+	l = BattleAudience_GetPPAudienceNum_L();
+	total = r + l;
+	BattleAudienceSoundStop(1);
+	if (total >= 1 && total <= 0x31) {
+		strcpy(name, str_802F9C9C);
+		*(u8*)((u8*)sound + 8) = 1;
+	}
+	if (total >= 0x32 && total <= 0x63) {
+		strcpy(name, str_802F9CB4);
+		*(u8*)((u8*)sound + 8) = 2;
+	}
+	if (total >= 0x64 && total <= 0x95) {
+		strcpy(name, str_802F9CCC);
+		*(u8*)((u8*)sound + 8) = 3;
+	}
+	if (total >= 0x96) {
+		strcpy(name, str_802F9CE4);
+		*(u8*)((u8*)sound + 8) = 4;
+	}
+	AUD_SOUND_ID(sound) = BattleAudienceSound1(name, r, l);
+	if (AUD_SOUND_ID(sound) != -1) {
+		*(s32*)((u8*)sound) |= 1;
+		*(s32*)((u8*)sound + 0xC) = a + b;
+		sound->mFadeoutTime = b;
+		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+		AUD_SOUND_TAIL(sound, vol);
+	}
+}
+#pragma dont_inline reset
+
+// Keep the call out of line: the original emits `bl BattleAudienceSoundNoiseAlways` in
+// BattleAudienceNoiseMain and BattleAudience_Init.
+#pragma dont_inline on
+void BattleAudienceSoundNoiseAlways(void) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(2);
+	s32 r;
+	s32 l;
+	s32 total;
+	s32 vol;
+	char name[0x40];
+
+	r = BattleAudience_GetPPAudienceNum_R();
+	l = BattleAudience_GetPPAudienceNum_L();
+	total = r + l;
+	if (!(*(s32*)sound->field_0x0 & 1)) {
+		if (total == 0) {
+			sound->field_0x0[8] = 0;
+		}
+		if (total >= 1 && total <= 0x31) {
+			strcpy(name, str_802F9C4C);
+			sound->field_0x0[8] = 1;
+		}
+		if (total >= 0x32 && total <= 0x63) {
+			strcpy(name, str_802F9C60);
+			sound->field_0x0[8] = 2;
+		}
+		if (total >= 0x64 && total <= 0x95) {
+			strcpy(name, str_802F9C74);
+			sound->field_0x0[8] = 3;
+		}
+		if (total >= 0x96) {
+			strcpy(name, str_802F9C88);
+			sound->field_0x0[8] = 4;
+		}
+		*(s32*)(sound->field_0x0 + 4) = BattleAudienceSound1(name, r, l);
+		if (*(s32*)(sound->field_0x0 + 4) != -1) {
+			*(s32*)sound->field_0x0 |= 1;
+			*(s32*)(sound->field_0x0 + 0xC) = -1;
+			sound->mFadeoutTime = 0;
+			vol = psndSFX_get_vol(*(s32*)(sound->field_0x0 + 4));
+			sound->mCurrentBaseSfxVolume = vol;
+			sound->mBaseSfxVolume = vol;
+			sound->mForceFadeLength = 0;
+			sound->mForceFadeTimer = 0;
+			sound->mVolumeMultiplier = 100;
+			audience->flags |= 0x2000;
 		}
 	}
-	if (count == 0) {
-		return;
-	}
-	member = waiting[irand(count)];
-	BattleAudienceSoundGetInfo2(member, &pos);
-	if (pos.x <= float_0_8041e618) {
-		kindIdx = 6;
-	}
-	else {
-		kindIdx = 7;
-	}
-	sound = BattleAudienceSoundGetPtr(kindIdx);
-	BattleAudienceSoundStop(kindIdx);
-	switch (kind) {
-	case 1:
-		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9B94, member);
-		break;
-	case 2:
-		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9BAC, member);
-		break;
-	case 3:
-		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9BC4, member);
-		break;
-	}
-	if (*(s32*)((u8*)sound + 4) != -1) {
-		*(s32*)sound |= 1;
-		*(s32*)((u8*)sound + 0xC) = -1;
-		sound->mFadeoutTime = 0;
-		vol = psndSFX_get_vol(*(s32*)((u8*)sound + 4));
-		sound->mCurrentBaseSfxVolume = vol;
-		sound->mBaseSfxVolume = vol;
-		sound->mForceFadeLength = 0;
-		sound->mForceFadeTimer = 0;
-		sound->mVolumeMultiplier = 100;
-	}
 }
+#pragma dont_inline reset
 
-void BattleAudienceSoundWhistle(void) {
-	BattleAudienceSoundWhistleKind(irand(3) + 1);
+#pragma dont_inline on
+void BattleAudienceSoundCheer(s32 a, s32 b) {
+	s32 kind;
+	s32 l;
+	s32 r;
+	s32 count;
+	BattleAudienceBaseGetPtr();
+	kind = 0;
+	l = BattleAudience_GetPPAudienceNum_L();
+	r = BattleAudience_GetPPAudienceNum_R();
+	count = r + l;
+	if (count >= 1 && count <= 0x31) {
+		kind = 1;
+	}
+	if (count >= 0x32 && count <= 0x63) {
+		kind = 2;
+	}
+	if (count >= 0x64 && count <= 0x95) {
+		kind = 3;
+	}
+	if (count >= 0x96) {
+		kind = 4;
+	}
+	BattleAudienceSoundCheerKind(kind, a, b);
 }
+#pragma dont_inline reset
 
 void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b) {
 	BattleAudienceSound* sound;
@@ -4611,9 +4721,552 @@ void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b) {
 	}
 }
 
+void BattleAudienceSoundWhistle(void) {
+	BattleAudienceSoundWhistleKind(irand(3) + 1);
+}
+
+void BattleAudienceSoundWhistleKind(s32 kind) {
+	s32 waiting[200];
+	s32 i;
+	s32 vol;
+	s32 member;
+	s32 kindIdx;
+	s32 count = 0;
+	Vec pos;
+	BattleAudienceSound* sound;
+
+	for (i = 0; i < 200; i++) {
+		if ((u8)BattleAudience_GetWaiting(i) == 1) {
+			waiting[count++] = i;
+		}
+	}
+	if (count == 0) {
+		return;
+	}
+	member = waiting[irand(count)];
+	BattleAudienceSoundGetInfo2(member, &pos);
+	if (pos.x <= float_0_8041e618) {
+		kindIdx = 6;
+	}
+	else {
+		kindIdx = 7;
+	}
+	sound = BattleAudienceSoundGetPtr(kindIdx);
+	BattleAudienceSoundStop(kindIdx);
+	switch (kind) {
+	case 1:
+		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9B94, member);
+		break;
+	case 2:
+		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9BAC, member);
+		break;
+	case 3:
+		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9BC4, member);
+		break;
+	}
+	if (*(s32*)((u8*)sound + 4) != -1) {
+		*(s32*)sound |= 1;
+		*(s32*)((u8*)sound + 0xC) = -1;
+		sound->mFadeoutTime = 0;
+		vol = psndSFX_get_vol(*(s32*)((u8*)sound + 4));
+		sound->mCurrentBaseSfxVolume = vol;
+		sound->mBaseSfxVolume = vol;
+		sound->mForceFadeLength = 0;
+		sound->mForceFadeTimer = 0;
+		sound->mVolumeMultiplier = 100;
+	}
+}
+
+#pragma dont_inline on
+void BattleAudienceSoundCallKind(s32 kind) {
+	BattleAudienceSound* sound;
+	s32 r;
+	s32 l;
+	s32 vol;
+	BattleAudienceBaseGetPtr();
+	sound = BattleAudienceSoundGetPtr(8);
+	r = BattleAudience_GetPPAudienceNum_R();
+	l = BattleAudience_GetPPAudienceNum_L();
+	BattleAudienceSoundStop(8);
+	switch (kind) {
+	case 1:
+		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B64, r, l);
+		break;
+	case 2:
+		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B7C, r, l);
+		break;
+	}
+	if (AUD_SOUND_ID(sound) != -1) {
+		AUD_SOUND_HEAD(sound);
+		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+		AUD_SOUND_TAIL(sound, vol);
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundHandBeat(void) {
+	BattleAudienceSound* sound;
+	s32 r;
+	s32 l;
+	s32 total;
+	s32 vol;
+	BattleAudienceBaseGetPtr();
+	sound = BattleAudienceSoundGetPtr(9);
+	r = BattleAudience_GetPPAudienceNum_R();
+	l = BattleAudience_GetPPAudienceNum_L();
+	total = r + l;
+	BattleAudienceSoundStop(9);
+	AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B4C, r, l);
+	if (AUD_SOUND_ID(sound) != -1) {
+		*(s32*)((u8*)sound) |= 1;
+		*(s32*)((u8*)sound + 0xC) = -1;
+		sound->mFadeoutTime = 0;
+		sound->mForceFadeLength = 0;
+		sound->mForceFadeTimer = 0;
+		vol = 0;
+// MUST_MATCH: writing the guard as total==0 (else compute) is what makes MWCC lay the
+// compute block out-of-line (bne+b); the equivalent total!=0 form picks the beq layout.
+#ifdef MUST_MATCH
+		if (total == 0) {
+			vol = 0;
+		}
+		else {
+			vol = (s32)(float_75_8041e658 + ((f32)total * (float_26_8041e650 + (f32)irand(26))) / float_200_8041e648);
+		}
+#else
+		if (total != 0) {
+			vol = (s32)(float_75_8041e658 + ((f32)total * (float_26_8041e650 + (f32)irand(26))) / float_200_8041e648);
+		}
+#endif
+		psndSFX_vol(AUD_SOUND_ID(sound), vol);
+		sound->mCurrentBaseSfxVolume = vol;
+		sound->mBaseSfxVolume = vol;
+		sound->mVolumeMultiplier = 100;
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundItemThrow(s32 kind, s32 index) {
+	Vec pos;
+	BattleAudienceSound* sound;
+	s32 idx;
+	BattleAudienceSoundGetInfo2(index, &pos);
+	if (pos.x <= float_0_8041e618) {
+		idx = 0xa;
+	}
+	else {
+		idx = 0xb;
+	}
+	sound = BattleAudienceSoundGetPtr(idx);
+	{
+		s32 vol;
+		BattleAudienceSoundStop(idx);
+		switch (kind) {
+			case 0:
+				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9B14, index);
+				break;
+			default:
+				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9B30, index);
+				break;
+		}
+		if (AUD_SOUND_ID(sound) != -1) {
+			AUD_SOUND_HEAD(sound);
+			vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+			AUD_SOUND_TAIL(sound, vol);
+		}
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundRun(s32 kind) {
+	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0xd);
+	s32 vol;
+	BattleAudienceSoundStop(0xd);
+	switch (kind) {
+		case 0:
+			AUD_SOUND_ID(sound) = BattleAudienceSound0(str_802F9AEC);
+			break;
+		case 1:
+			AUD_SOUND_ID(sound) = BattleAudienceSound0(str_802F9B00);
+			break;
+	}
+	if (AUD_SOUND_ID(sound) != -1) {
+		AUD_SOUND_HEAD(sound);
+		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+		AUD_SOUND_TAIL(sound, vol);
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundSleep(s32 index) {
+	Vec pos;
+	BattleAudienceSound* sound;
+	s32 idx;
+	BattleAudienceSoundGetInfo2(index, &pos);
+	if (pos.x <= float_0_8041e618) {
+		idx = 0xe;
+	}
+	else {
+		idx = 0xf;
+	}
+	sound = BattleAudienceSoundGetPtr(idx);
+	{
+		s32 vol;
+		BattleAudienceSoundStop(idx);
+		switch (irand(3)) {
+			case 0:
+				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9AB0, index);
+				break;
+			case 1:
+				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9AC4, index);
+				break;
+			case 2:
+				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9AD8, index);
+				break;
+		}
+		if (AUD_SOUND_ID(sound) != -1) {
+			AUD_SOUND_HEAD(sound);
+			vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+			AUD_SOUND_TAIL(sound, vol);
+		}
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundZZZ(s32 index) {
+	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x10);
+	s32 vol;
+	BattleAudienceSoundStop(0x10);
+	BattleAudienceSound2(str_802F9A9C, index);
+	if (AUD_SOUND_ID(sound) != -1) {
+		AUD_SOUND_HEAD(sound);
+		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+		AUD_SOUND_TAIL(sound, vol);
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundSing(s32 index) {
+	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x11);
+	s32 vol;
+	BattleAudienceSoundStop(0x11);
+	AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A80, index);
+	if (AUD_SOUND_ID(sound) != -1) {
+		AUD_SOUND_HEAD(sound);
+		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+		AUD_SOUND_TAIL(sound, vol);
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundShell(s32 index) {
+	Vec pos;
+	BattleAudienceSound* sound;
+	s32 idx;
+	BattleAudienceSoundGetInfo2(index, &pos);
+	if (pos.x <= float_0_8041e618) {
+		idx = 0x12;
+	}
+	else {
+		idx = 0x13;
+	}
+	sound = BattleAudienceSoundGetPtr(idx);
+	{
+		s32 vol;
+		BattleAudienceSoundStop(idx);
+		AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A60, index);
+		if (AUD_SOUND_ID(sound) != -1) {
+			AUD_SOUND_HEAD(sound);
+			vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+			AUD_SOUND_TAIL(sound, vol);
+		}
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundBombIgnite(s32 index, s32 a, s32 b) {
+	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x14);
+	s32 vol;
+	BattleAudienceSoundStop(0x14);
+	AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A44, index);
+	if (AUD_SOUND_ID(sound) != -1) {
+		*(s32*)((u8*)sound) |= 1;
+		*(s32*)((u8*)sound + 0xC) = a + b;
+		sound->mFadeoutTime = b;
+		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+		AUD_SOUND_TAIL(sound, vol);
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundBombFire(s32 index) {
+	Vec pos;
+	BattleAudienceSound* sound;
+	s32 idx;
+	BattleAudienceSoundGetInfo2(index, &pos);
+	if (pos.x <= float_0_8041e618) {
+		idx = 0x15;
+	}
+	else {
+		idx = 0x16;
+	}
+	sound = BattleAudienceSoundGetPtr(idx);
+	{
+		s32 vol;
+		BattleAudienceSoundStop(idx);
+		AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A28, index);
+		if (AUD_SOUND_ID(sound) != -1) {
+			AUD_SOUND_HEAD(sound);
+			vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+			AUD_SOUND_TAIL(sound, vol);
+		}
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundPakkunEat(s32 index) {
+	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x17);
+	s32 vol;
+	BattleAudienceSoundStop(0x17);
+	AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A10, index);
+	if (AUD_SOUND_ID(sound) != -1) {
+		AUD_SOUND_HEAD(sound);
+		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
+		AUD_SOUND_TAIL(sound, vol);
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundSetVol(s32 index, u8 a2, s32 a3) {
+	BattleAudienceSound* sound;
+
+	sound = BattleAudienceSoundGetPtr(index);
+	sound->mFadeStartVolumeMultiplier = sound->mVolumeMultiplier;
+	sound->mFadeEndVolumeMultiplier = a2;
+	sound->mForceFadeTimer = 0;
+	sound->mForceFadeLength = a3;
+	sound->mFadeoutTime = 0;
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundSetVolAll(u8 a2, s32 a3) {
+	s32 i;
+	for (i = 0; i < 24; i++) {
+		BattleAudienceSoundSetVol(i, a2, a3);
+	}
+}
+#pragma dont_inline reset
+
+BOOL BattleAudienceSoundCheck(s32 index) {
+	return *(s32*)BattleAudienceSoundGetPtr(index) & 1;
+}
+
+#pragma dont_inline on
+void BattleAudienceSoundStop(s32 index) {
+	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(index);
+	if (*(s32*)sound & 1) {
+		psndSFXOff(*(s32*)((u8*)sound + 4));
+		*(s32*)sound &= ~1;
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+s32 BattleAudienceSound0(const char* name) {
+	return psndSFXOn(name);
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+s32 BattleAudienceSound1(const char* name, s32 a, s32 b) {
+	u8 vol;
+	Vec pos;
+	s32 handle;
+	BattleAudienceSoundGetInfo1(a, b, &vol, &pos);
+	handle = psndSFXOn_3D(name, &pos);
+	psndSFX_vol(handle, vol);
+	return handle;
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundGetInfo1(s32 a, s32 b, u8* c, Vec* d) {
+	s32 sum = a + b;
+
+	if (sum == 0) {
+		*c = 0;
+	}
+	else {
+		*c = (u8)(s32)(float_100_8041e64c + float_26_8041e650 * (f32)sum / float_200_8041e648);
+	}
+	if (b == 0 || sum == 0) {
+		d->x = float_250_8041e654;
+	}
+	else {
+		d->x = (f32)(u8)(s32)((f32)(a - b) * float_250_8041e654 / (f32)sum);
+	}
+	d->y = 0.0f;
+	d->z = 0.0f;
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+s32 BattleAudienceSound2(const char* name, s32 index) {
+	Vec pos;
+	BattleAudienceSoundGetInfo2(index, &pos);
+	return psndSFXOn_3D(name, &pos);
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudienceSoundGetInfo2(s32 index, Vec* pos) {
+	BattleAudienceMember* member = BattleAudienceGetPtr(index);
+	pos->x = member->position.x;
+	pos->y = member->position.y;
+	pos->z = member->position.z;
+}
+#pragma dont_inline reset
+
+// Keep the call out of line: the original emits `bl BattleAudienceSoundMain` in BattleAudience_Main.
+#pragma dont_inline on
+void BattleAudienceSoundMain(void) {
+	BattleAudienceSound* sound;
+	s32 i;
+
+	BattleAudienceBaseGetPtr();
+	BattleAudienceNoiseMain();
+	i = 0;
+	sound = BattleAudienceSoundGetPtr(0);
+	for (; i < 0x18; i++, sound++) {
+		if (psndSFXChk(*(s32*)((u8*)sound + 4)) == -1) {
+			*(s32*)sound &= ~1;
+		}
+		else if (*(s32*)((u8*)sound + 0xC) == 0) {
+			psndSFXOff(*(s32*)((u8*)sound + 4));
+			*(s32*)sound &= ~1;
+		}
+		else {
+			if (sound->mForceFadeLength > 0) {
+				sound->mForceFadeTimer++;
+				sound->mVolumeMultiplier = (u8)intplGetValue(0, sound->mForceFadeTimer, sound->mForceFadeLength, (f32)sound->mFadeStartVolumeMultiplier, (f32)sound->mFadeEndVolumeMultiplier);
+				psndSFX_vol(*(s32*)((u8*)sound + 4), (u8)((sound->mCurrentBaseSfxVolume * sound->mVolumeMultiplier) / 100));
+				if (sound->mForceFadeTimer >= sound->mForceFadeLength) {
+					sound->mForceFadeLength = 0;
+				}
+			}
+			if (*(s32*)((u8*)sound + 0xC) > 0) {
+				if (*(s32*)((u8*)sound + 0xC) == sound->mFadeoutTime) {
+					sound->mFadeStartVolumeMultiplier = sound->mVolumeMultiplier;
+					sound->mFadeEndVolumeMultiplier = 0;
+				}
+				if (*(s32*)((u8*)sound + 0xC) <= sound->mFadeoutTime) {
+					sound->mVolumeMultiplier = (u8)intplGetValue(0, sound->mFadeoutTime - *(s32*)((u8*)sound + 0xC), sound->mFadeoutTime, (f32)sound->mFadeStartVolumeMultiplier, (f32)sound->mFadeEndVolumeMultiplier);
+					psndSFX_vol(*(s32*)((u8*)sound + 4), (u8)((sound->mCurrentBaseSfxVolume * sound->mVolumeMultiplier) / 100));
+				}
+				*(s32*)((u8*)sound + 0xC) -= 1;
+			}
+		}
+	}
+}
+#pragma dont_inline reset
+
+void BattleAudienceNoiseMain(void) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(2);
+	s32 pp = BattleAudience_GetPPAudienceNum();
+
+	if (!(audience->flags & 0x10000) && (wp->flags & 0x80)) {
+		BattleAudienceSoundSetVol(2, 0x3C, 0x50);
+	}
+	if ((audience->flags & 0x10000) && !(wp->flags & 0x80)) {
+		BattleAudienceSoundSetVol(2, 0, 0x50);
+	}
+	if (pp == 0 && *(u8*)((u8*)sound + 8) != 0) {
+		psndSFXOff(*(s32*)((u8*)sound + 4));
+		*(u8*)((u8*)sound + 8) = 0;
+	}
+	if (pp >= 1 && pp <= 0x31 && *(u8*)((u8*)sound + 8) != 1) {
+		BattleAudienceSoundNoiseAlways();
+		*(u8*)((u8*)sound + 8) = 1;
+	}
+	if (pp >= 0x32 && pp <= 0x63 && *(u8*)((u8*)sound + 8) != 2) {
+		BattleAudienceSoundNoiseAlways();
+		*(u8*)((u8*)sound + 8) = 2;
+	}
+	if (pp >= 0x64 && pp <= 0x95 && *(u8*)((u8*)sound + 8) != 3) {
+		BattleAudienceSoundNoiseAlways();
+		*(u8*)((u8*)sound + 8) = 3;
+	}
+	if (pp >= 0x96 && pp <= 0xC8 && *(u8*)((u8*)sound + 8) != 4) {
+		BattleAudienceSoundNoiseAlways();
+		*(u8*)((u8*)sound + 8) = 4;
+	}
+	if (!(audience->flags & 0x2000)) {
+		sound->mCurrentBaseSfxVolume = 0;
+	}
+	else if (pp == 0) {
+		sound->mCurrentBaseSfxVolume = 0;
+	}
+	else {
+		sound->mCurrentBaseSfxVolume = (s32)(float_63_8041e644 + float_63_8041e644 * (f32)pp / float_200_8041e648);
+	}
+}
+
 void BattleAudience_Case_KillEnemy(void) {
 	BattleAudienceBaseGetPtr()->flags |= 0x1000;
 }
+
+#pragma dont_inline on
+void BattleAudience_Case_ActionCommandGood(void) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 i;
+	s32 count = 0;
+	for (i = 0; i < 200; i++) {
+		if ((u8)BattleAudience_GetWaiting(i) == 1) {
+			count++;
+		}
+	}
+	if (count != 0) {
+		BattleAudienceSoundCheer(0xb4, 0x78);
+		BattleAudienceJoy(0);
+	}
+	audience->flags |= 0x10;
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudience_Case_ActionCommandBad(void* arg) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 count = 0;
+	s32 i;
+	for (i = 0; i < 200; i++) {
+		if ((u8)BattleAudience_GetWaiting(i) == 1) {
+			count++;
+		}
+	}
+	if (count != 0) {
+		BattleAudienceSoundBooing();
+		BattleAudienceJoy(0);
+		if (*(u32*)((u8*)arg + 0x1c) == (u32)weaponGetPowerFromMarioHammerLv) {
+			BattleAudienceAddPhaseEvtList(7);
+		}
+	}
+	audience->flags |= 0x20;
+}
+#pragma dont_inline reset
 
 void BattleAudience_Case_GuardGood(void) {
 	BattleAudienceBaseGetPtr()->flags |= 0x40;
@@ -4623,17 +5276,53 @@ void BattleAudience_Case_GuardBad(void) {
 	BattleAudienceBaseGetPtr()->flags |= 0x80;
 }
 
-void BattleAudience_Case_EnemyDamage(void) {
-	BattleAudienceBaseGetPtr()->flags |= 0x400;
+#pragma dont_inline on
+void BattleAudience_Case_AcrobatGood(void) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 count = 0;
+	s32 i;
+	for (i = 0; i < 200; i++) {
+		if ((u8)BattleAudience_GetWaiting(i) == 1) {
+			count++;
+		}
+	}
+	if (count >= 1) {
+		BattleAudienceSoundCheer(0xb4, 0x78);
+		BattleAudienceSoundClap(0xb4, 0x78);
+		BattleAudienceJoy(1);
+	}
+	audience->mNumStylishCommandsThisAttack++;
+	if (audience->mNumStylishCommandsThisAttack > 5) {
+		audience->mNumStylishCommandsThisAttack = 5;
+	}
+	audience->flags |= 0x100;
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on
+void BattleAudience_Case_AcrobatBad(void) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 count = 0;
+	s32 i;
+	for (i = 0; i < 200; i++) {
+		if ((u8)BattleAudience_GetWaiting(i) == 1) {
+			count++;
+		}
+	}
+	if (count >= 1) {
+		BattleAudienceSoundBooing();
+		BattleAudienceJoy(0);
+	}
+	audience->flags |= 0x200;
+}
+#pragma dont_inline reset
+
+void BattleAudience_Case_AcrobatNoTry(void) {
+	BattleAudienceBaseGetPtr();
 }
 
-void BattleAudience_Case_EnemyNoDamage(void) {
-	BattleAudienceBaseGetPtr()->flags |= 0x800;
-}
-
-void BattleAudienceJoySACLecture(void) {
-	BattleAudienceSoundCheer(0x78, 0x3c);
-	BattleAudienceJoy(2);
+void BattleAudience_Case_MarioBigDamage(void) {
+	BattleAudienceBaseGetPtr();
 }
 
 void BattleAudience_Case_MarioPinch(void) {
@@ -4657,6 +5346,124 @@ void BattleAudience_Case_PartyDown(void) {
 	BattleAudienceAddTargetNum(delta, float_0_8041e618);
 }
 
+void BattleAudience_Case_JumpNewRecord(void) {
+}
+
+void BattleAudience_Case_FinalAttack(void) {
+}
+
+void BattleAudience_Case_TurnEnd(void) {
+	BattleWork* wp = _battleWorkPointer;
+	BattleUnit* mario = BattleGetMarioPtr(wp);
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	s32 expected;
+	BattleGroupSetup* setup;
+	BattleUnitSetup* enemy;
+	s32 i;
+
+	pouchGetPtr();
+	expected = 0;
+	setup = wp->fbatInfo->setup->groupSetup;
+	enemy = setup->enemyData;
+	if (!(audience->flags & 0x40000)) {
+		audience->mTurnEndPhaseEventChance += 3;
+		if (audience->mTurnEndPhaseEventChance > 100) {
+			audience->mTurnEndPhaseEventChance = 100;
+		}
+		for (i = 0; i < setup->numEnemies; i++) {
+			expected += enemy->mUnitKindParams->mLevel;
+			enemy++;
+		}
+		expected = (expected * 2) / mario->mLevel;
+		if (expected < 5) {
+			expected = 5;
+		}
+		if (wp->turnCount >= expected) {
+			BattleAudienceAddTargetNum(float_neg0p05_8041e614 * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+			                           float_0_8041e618);
+		}
+		if (wp->turnCount == expected) {
+			BattleAudienceAddPhaseEvtList(6);
+		}
+		if (irand(100) < audience->mTurnEndPhaseEventChance) {
+			if (wp->turnCount >= expected) {
+				BattleAudienceAddPhaseEvtList(1);
+			}
+			BattleAudienceAddPhaseEvtList(4);
+			BattleAudienceAddPhaseEvtList(9);
+			BattleAudienceAddPhaseEvtList(10);
+			BattleAudienceAddPhaseEvtList(11);
+			BattleAudienceAddPhaseEvtList(12);
+			BattleAudienceAddPhaseEvtList(13);
+			audience->mTurnEndPhaseEventChance = 0;
+		}
+		BattleAudienceNumToTarget();
+	}
+}
+
+// The assignment's operand order is load-bearing: MWCC emits the target's
+// `fmuls f0, f1, f0` (converted value first) only when the int->float conversion is
+// held in a named temp, and only keeps the audience field in r0 and writes the
+// result back through r0 when the sum is written as `(v + 0x19) + field`. The
+// natural compound assignment is the #else arm.
+void BattleAudience_Case_Appeal(BattleUnit* unit) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+
+	if ((f32)BattleAudience_GetPPAudienceNum() > float_0_8041e618) {
+#ifdef MUST_MATCH
+		f32 num = (f32)BattleAudience_GetPPAudienceNum();
+		s32 v = (s32)(num * float_0p25_8041e63c);
+		*(s32*)((u8*)audience + 0x137C4) = (v + 0x19) + *(s32*)((u8*)audience + 0x137C4);
+#else
+		*(s32*)((u8*)audience + 0x137C4) += (s32)(float_0p25_8041e63c * (f32)BattleAudience_GetPPAudienceNum()) + 0x19;
+#endif
+		if (unit->badgesEquipped.SuperAppeal != 0) {
+			*(s32*)((u8*)audience + 0x137C4) += unit->badgesEquipped.SuperAppeal * 0x19;
+		}
+		BattleAudienceSoundCheer(0xB4, 0x3C);
+		BattleAudienceSoundClap(0xB4, 0x3C);
+		BattleAudienceJoy(0);
+	}
+	BattleAudienceAddTargetNum(float_0p05_8041e624 * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+	                           float_0_8041e618);
+}
+
+void BattleAudience_Case_Escape(void) {
+}
+
+void BattleAudience_Case_Escape_Good(void) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	f32 delta = audience->mAudienceDeltaMultiplier;
+	delta = float_neg0p1_8041e634 * delta;
+	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	BattleAudienceSoundSetVol(2, 100, 30);
+	BattleAudienceSoundBooing();
+}
+
+void BattleAudience_Case_Escape_Bad(void) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	f32 delta = audience->mAudienceDeltaMultiplier;
+	delta = float_neg0p2_8041e638 * delta;
+	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	BattleAudienceSoundBooing();
+}
+
+void BattleAudience_Case_EnemyDamage(void) {
+	BattleAudienceBaseGetPtr()->flags |= 0x400;
+}
+
+void BattleAudience_Case_EnemyNoDamage(void) {
+	BattleAudienceBaseGetPtr()->flags |= 0x800;
+}
+
+void BattleAudience_Case_Countered(void) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	f32 delta = audience->mAudienceDeltaMultiplier;
+	delta = float_neg0p1_8041e634 * delta;
+	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	BattleAudienceAddPhaseEvtList(5);
+}
+
 void BattleAudience_Case_HaikeiSet(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
@@ -4668,6 +5475,19 @@ void BattleAudience_Case_GreatVictory(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
 	delta = float_0p15_8041e630 * delta;
+	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+}
+
+void BattleAudience_Case_FastVictory(f32 value) {
+	BattleAudienceAddTargetNum(
+	    float_0p01_8041e628 * (float_5_8041e62c * value) * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+	    float_0_8041e618);
+}
+
+void BattleAudience_Case_FallObject_Stage(void) {
+	BattleAudience* audience = BattleAudienceBaseGetPtr();
+	f32 delta = audience->mAudienceDeltaMultiplier;
+	delta = float_0p05_8041e624 * delta;
 	BattleAudienceAddTargetNum(delta, float_0_8041e618);
 }
 
@@ -4752,13 +5572,6 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 	BattleAudiencePuniAllEscape();
 }
 
-void BattleAudience_Case_FallObject_Stage(void) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_0p05_8041e624 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
-}
-
 void BattleAudience_Case_FirstAttack_Good(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
@@ -4773,793 +5586,39 @@ void BattleAudience_Case_FirstAttack_Bad(void) {
 	BattleAudienceAddTargetNum(delta, float_0_8041e618);
 }
 
-void BattleAudience_Case_Escape_Bad(void) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_neg0p2_8041e638 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
-	BattleAudienceSoundBooing();
+#pragma dont_inline on
+void BattleAudience_SetPresentItemNo(s32 value) {
+	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E4) = value;
 }
+#pragma dont_inline reset
 
-void BattleAudience_Case_Countered(void) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_neg0p1_8041e634 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
-	BattleAudienceAddPhaseEvtList(5);
+// Keep these accessors out of line: BattleAudienceItemCtrlProcess emits a bl to each.
+#pragma dont_inline on
+s32 BattleAudience_GetPresentItemNo(void) {
+	return *(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E4);
 }
-
-void BattleAudience_Case_Escape_Good(void) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_neg0p1_8041e634 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
-	BattleAudienceSoundSetVol(2, 100, 30);
-	BattleAudienceSoundBooing();
-}
-
-void BattleAudience_Case_FastVictory(f32 value) {
-	BattleAudienceAddTargetNum(
-	    float_0p01_8041e628 * (float_5_8041e62c * value) * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
-	    float_0_8041e618);
-}
+#pragma dont_inline reset
 
 #pragma dont_inline on
-void BattleAudienceSoundGetInfo2(s32 index, Vec* pos) {
-	BattleAudienceMember* member = BattleAudienceGetPtr(index);
-	pos->x = member->position.x;
-	pos->y = member->position.y;
-	pos->z = member->position.z;
+void BattleAudience_SetPresentTargetUnitId(s32 value) {
+	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137EC) = value;
 }
+#pragma dont_inline reset
 
-void BattleAudienceSoundGetInfo1(s32 a, s32 b, u8* c, Vec* d) {
-	s32 sum = a + b;
-
-	if (sum == 0) {
-		*c = 0;
-	}
-	else {
-		*c = (u8)(s32)(float_100_8041e64c + float_26_8041e650 * (f32)sum / float_200_8041e648);
-	}
-	if (b == 0 || sum == 0) {
-		d->x = float_250_8041e654;
-	}
-	else {
-		d->x = (f32)(u8)(s32)((f32)(a - b) * float_250_8041e654 / (f32)sum);
-	}
-	d->y = 0.0f;
-	d->z = 0.0f;
+#pragma dont_inline on
+s32 BattleAudience_GetPresentTargetUnitId(void) {
+	return *(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137EC);
 }
+#pragma dont_inline reset
 
-void BattleAudienceSoundSetVolAll(u8 a2, s32 a3) {
-	s32 i;
-	for (i = 0; i < 24; i++) {
-		BattleAudienceSoundSetVol(i, a2, a3);
-	}
+#pragma dont_inline on
+void BattleAudience_SetPresentItemType(s32 value) {
+	*(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E8) = value;
 }
+#pragma dont_inline reset
 
-void BattleAudienceSoundStop(s32 index) {
-	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(index);
-	if (*(s32*)sound & 1) {
-		psndSFXOff(*(s32*)((u8*)sound + 4));
-		*(s32*)sound &= ~1;
-	}
+#pragma dont_inline on
+s32 BattleAudience_GetPresentItemType(void) {
+	return *(s32*)((u8*)BattleAudienceBaseGetPtr() + 0x137E8);
 }
-
-s32 BattleAudienceSound2(const char* name, s32 index) {
-	Vec pos;
-	BattleAudienceSoundGetInfo2(index, &pos);
-	return psndSFXOn_3D(name, &pos);
-}
-
-s32 BattleAudienceSound1(const char* name, s32 a, s32 b) {
-	u8 vol;
-	Vec pos;
-	s32 handle;
-	BattleAudienceSoundGetInfo1(a, b, &vol, &pos);
-	handle = psndSFXOn_3D(name, &pos);
-	psndSFX_vol(handle, vol);
-	return handle;
-}
-
-
-#define AUD_SOUND_HEAD(sound) \
-	*(s32*)((u8*)(sound)) |= 1; \
-	*(s32*)((u8*)(sound) + 0xC) = -1; \
-	(sound)->mFadeoutTime = 0
-
-#define AUD_SOUND_TAIL(sound, vol) \
-	(sound)->mCurrentBaseSfxVolume = (vol); \
-	(sound)->mBaseSfxVolume = (vol); \
-	(sound)->mForceFadeLength = 0; \
-	(sound)->mForceFadeTimer = 0; \
-	(sound)->mVolumeMultiplier = 100
-
-#define AUD_SOUND_ID(sound) (*(s32*)((u8*)(sound) + 4))
-
-void BattleAudienceSoundZZZ(s32 index) {
-	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x10);
-	s32 vol;
-	BattleAudienceSoundStop(0x10);
-	BattleAudienceSound2(str_802F9A9C, index);
-	if (AUD_SOUND_ID(sound) != -1) {
-		AUD_SOUND_HEAD(sound);
-		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-		AUD_SOUND_TAIL(sound, vol);
-	}
-}
-
-void BattleAudienceSoundSing(s32 index) {
-	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x11);
-	s32 vol;
-	BattleAudienceSoundStop(0x11);
-	AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A80, index);
-	if (AUD_SOUND_ID(sound) != -1) {
-		AUD_SOUND_HEAD(sound);
-		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-		AUD_SOUND_TAIL(sound, vol);
-	}
-}
-
-void BattleAudienceSoundPakkunEat(s32 index) {
-	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x17);
-	s32 vol;
-	BattleAudienceSoundStop(0x17);
-	AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A10, index);
-	if (AUD_SOUND_ID(sound) != -1) {
-		AUD_SOUND_HEAD(sound);
-		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-		AUD_SOUND_TAIL(sound, vol);
-	}
-}
-
-void BattleAudienceSoundRun(s32 kind) {
-	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0xd);
-	s32 vol;
-	BattleAudienceSoundStop(0xd);
-	switch (kind) {
-		case 0:
-			AUD_SOUND_ID(sound) = BattleAudienceSound0(str_802F9AEC);
-			break;
-		case 1:
-			AUD_SOUND_ID(sound) = BattleAudienceSound0(str_802F9B00);
-			break;
-	}
-	if (AUD_SOUND_ID(sound) != -1) {
-		AUD_SOUND_HEAD(sound);
-		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-		AUD_SOUND_TAIL(sound, vol);
-	}
-}
-
-void BattleAudienceSoundShell(s32 index) {
-	Vec pos;
-	BattleAudienceSound* sound;
-	s32 idx;
-	BattleAudienceSoundGetInfo2(index, &pos);
-	if (pos.x <= float_0_8041e618) {
-		idx = 0x12;
-	}
-	else {
-		idx = 0x13;
-	}
-	sound = BattleAudienceSoundGetPtr(idx);
-	{
-		s32 vol;
-		BattleAudienceSoundStop(idx);
-		AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A60, index);
-		if (AUD_SOUND_ID(sound) != -1) {
-			AUD_SOUND_HEAD(sound);
-			vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-			AUD_SOUND_TAIL(sound, vol);
-		}
-	}
-}
-
-void BattleAudienceSoundBombFire(s32 index) {
-	Vec pos;
-	BattleAudienceSound* sound;
-	s32 idx;
-	BattleAudienceSoundGetInfo2(index, &pos);
-	if (pos.x <= float_0_8041e618) {
-		idx = 0x15;
-	}
-	else {
-		idx = 0x16;
-	}
-	sound = BattleAudienceSoundGetPtr(idx);
-	{
-		s32 vol;
-		BattleAudienceSoundStop(idx);
-		AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A28, index);
-		if (AUD_SOUND_ID(sound) != -1) {
-			AUD_SOUND_HEAD(sound);
-			vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-			AUD_SOUND_TAIL(sound, vol);
-		}
-	}
-}
-
-void BattleAudienceSoundBombIgnite(s32 index, s32 a, s32 b) {
-	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x14);
-	s32 vol;
-	BattleAudienceSoundStop(0x14);
-	AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A44, index);
-	if (AUD_SOUND_ID(sound) != -1) {
-		*(s32*)((u8*)sound) |= 1;
-		*(s32*)((u8*)sound + 0xC) = a + b;
-		sound->mFadeoutTime = b;
-		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-		AUD_SOUND_TAIL(sound, vol);
-	}
-}
-
-void BattleAudienceSoundItemThrow(s32 kind, s32 index) {
-	Vec pos;
-	BattleAudienceSound* sound;
-	s32 idx;
-	BattleAudienceSoundGetInfo2(index, &pos);
-	if (pos.x <= float_0_8041e618) {
-		idx = 0xa;
-	}
-	else {
-		idx = 0xb;
-	}
-	sound = BattleAudienceSoundGetPtr(idx);
-	{
-		s32 vol;
-		BattleAudienceSoundStop(idx);
-		switch (kind) {
-			case 0:
-				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9B14, index);
-				break;
-			default:
-				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9B30, index);
-				break;
-		}
-		if (AUD_SOUND_ID(sound) != -1) {
-			AUD_SOUND_HEAD(sound);
-			vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-			AUD_SOUND_TAIL(sound, vol);
-		}
-	}
-}
-
-void BattleAudienceSoundSleep(s32 index) {
-	Vec pos;
-	BattleAudienceSound* sound;
-	s32 idx;
-	BattleAudienceSoundGetInfo2(index, &pos);
-	if (pos.x <= float_0_8041e618) {
-		idx = 0xe;
-	}
-	else {
-		idx = 0xf;
-	}
-	sound = BattleAudienceSoundGetPtr(idx);
-	{
-		s32 vol;
-		BattleAudienceSoundStop(idx);
-		switch (irand(3)) {
-			case 0:
-				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9AB0, index);
-				break;
-			case 1:
-				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9AC4, index);
-				break;
-			case 2:
-				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9AD8, index);
-				break;
-		}
-		if (AUD_SOUND_ID(sound) != -1) {
-			AUD_SOUND_HEAD(sound);
-			vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-			AUD_SOUND_TAIL(sound, vol);
-		}
-	}
-}
-
-s32 BattleAudienceNumToTargetSub(void) {
-	s32 i;
-	s32 count;
-
-	BattleAudienceBaseGetPtr();
-	count = 0;
-	for (i = 0; i < 200; i++) {
-		if ((u8)BattleAudience_GetExist(i) == 1) {
-			if (BattleAudienceGetPtr(i)->status != 12) {
-				count++;
-			}
-		}
-	}
-	return count;
-}
-
-void BattleAudience_Case_AcrobatBad(void) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 count = 0;
-	s32 i;
-	for (i = 0; i < 200; i++) {
-		if ((u8)BattleAudience_GetWaiting(i) == 1) {
-			count++;
-		}
-	}
-	if (count >= 1) {
-		BattleAudienceSoundBooing();
-		BattleAudienceJoy(0);
-	}
-	audience->flags |= 0x200;
-}
-
-void BattleAudience_Case_AcrobatGood(void) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 count = 0;
-	s32 i;
-	for (i = 0; i < 200; i++) {
-		if ((u8)BattleAudience_GetWaiting(i) == 1) {
-			count++;
-		}
-	}
-	if (count >= 1) {
-		BattleAudienceSoundCheer(0xb4, 0x78);
-		BattleAudienceSoundClap(0xb4, 0x78);
-		BattleAudienceJoy(1);
-	}
-	audience->mNumStylishCommandsThisAttack++;
-	if (audience->mNumStylishCommandsThisAttack > 5) {
-		audience->mNumStylishCommandsThisAttack = 5;
-	}
-	audience->flags |= 0x100;
-}
-
-void BattleAudience_Case_ActionCommandGood(void) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 i;
-	s32 count = 0;
-	for (i = 0; i < 200; i++) {
-		if ((u8)BattleAudience_GetWaiting(i) == 1) {
-			count++;
-		}
-	}
-	if (count != 0) {
-		BattleAudienceSoundCheer(0xb4, 0x78);
-		BattleAudienceJoy(0);
-	}
-	audience->flags |= 0x10;
-}
-
-void BattleAudience_Case_ActionCommandBad(void* arg) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 count = 0;
-	s32 i;
-	for (i = 0; i < 200; i++) {
-		if ((u8)BattleAudience_GetWaiting(i) == 1) {
-			count++;
-		}
-	}
-	if (count != 0) {
-		BattleAudienceSoundBooing();
-		BattleAudienceJoy(0);
-		if (*(u32*)((u8*)arg + 0x1c) == (u32)weaponGetPowerFromMarioHammerLv) {
-			BattleAudienceAddPhaseEvtList(7);
-		}
-	}
-	audience->flags |= 0x20;
-}
-
-void BattleAudienceCheer(s32 a) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	if (*(s32*)(audience->field_13794 + 0x30) > 0x320) {
-		*(s32*)(audience->field_13794 + 0x30) = 0x320;
-	}
-	if (*(s32*)(audience->field_13794 + 0x30) > 0) {
-		if (pouchGetPtr()->maximumSP == 0) {
-			*(s32*)(audience->field_13794 + 0x30) = 0;
-		}
-		else {
-			audience->flags |= 2;
-		}
-		BattleAudienceJoy(a);
-		if (*(s32*)(audience->field_13794 + 0x30) != 0) {
-			BattleStatusWindowAPRecoveryOn();
-		}
-	}
-}
-
-void BattleAudiencePuniAllEscape(void) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	f32 one = float_1_8041e620;
-	s32 i;
-	s32 count = 0;
-	for (i = 0; i < 200; i++) {
-		BattleAudienceMember* member = BattleAudienceGetPtr(i);
-		if ((u8)BattleAudience_GetEscapeChangeOK(i)) {
-			if (member->type == AUDIENCE_PUNI) {
-				BattleAudience_ChangeStatus(i, 12);
-				count++;
-				audience->mAddedAudienceCount -= one;
-			}
-		}
-	}
-	if (count >= 1) {
-		audience->flags |= 0x8000;
-	}
-}
-
-void BattleAudienceSoundBooing(void) {
-	s32 kind;
-	s32 l;
-	s32 r;
-	s32 count;
-	BattleAudienceBaseGetPtr();
-	kind = 0;
-	l = BattleAudience_GetPPAudienceNum_L();
-	r = BattleAudience_GetPPAudienceNum_R();
-	count = r + l;
-	if (count >= 0 && count <= 0x31) {
-		kind = 1;
-	}
-	if (count >= 0x32 && count <= 0x63) {
-		kind = 2;
-	}
-	if (count >= 0x64 && count <= 0x95) {
-		kind = 3;
-	}
-	if (count >= 0x96) {
-		kind = 4;
-	}
-	BattleAudienceSoundBooingKind(kind);
-}
-
-void BattleAudienceSoundCheer(s32 a, s32 b) {
-	s32 kind;
-	s32 l;
-	s32 r;
-	s32 count;
-	BattleAudienceBaseGetPtr();
-	kind = 0;
-	l = BattleAudience_GetPPAudienceNum_L();
-	r = BattleAudience_GetPPAudienceNum_R();
-	count = r + l;
-	if (count >= 1 && count <= 0x31) {
-		kind = 1;
-	}
-	if (count >= 0x32 && count <= 0x63) {
-		kind = 2;
-	}
-	if (count >= 0x64 && count <= 0x95) {
-		kind = 3;
-	}
-	if (count >= 0x96) {
-		kind = 4;
-	}
-	BattleAudienceSoundCheerKind(kind, a, b);
-}
-
-void BattleAudienceSoundCallKind(s32 kind) {
-	BattleAudienceSound* sound;
-	s32 r;
-	s32 l;
-	s32 vol;
-	BattleAudienceBaseGetPtr();
-	sound = BattleAudienceSoundGetPtr(8);
-	r = BattleAudience_GetPPAudienceNum_R();
-	l = BattleAudience_GetPPAudienceNum_L();
-	BattleAudienceSoundStop(8);
-	switch (kind) {
-	case 1:
-		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B64, r, l);
-		break;
-	case 2:
-		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B7C, r, l);
-		break;
-	}
-	if (AUD_SOUND_ID(sound) != -1) {
-		AUD_SOUND_HEAD(sound);
-		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-		AUD_SOUND_TAIL(sound, vol);
-	}
-}
-
-void BattleAudienceSoundHandBeat(void) {
-	BattleAudienceSound* sound;
-	s32 r;
-	s32 l;
-	s32 total;
-	s32 vol;
-	BattleAudienceBaseGetPtr();
-	sound = BattleAudienceSoundGetPtr(9);
-	r = BattleAudience_GetPPAudienceNum_R();
-	l = BattleAudience_GetPPAudienceNum_L();
-	total = r + l;
-	BattleAudienceSoundStop(9);
-	AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B4C, r, l);
-	if (AUD_SOUND_ID(sound) != -1) {
-		*(s32*)((u8*)sound) |= 1;
-		*(s32*)((u8*)sound + 0xC) = -1;
-		sound->mFadeoutTime = 0;
-		sound->mForceFadeLength = 0;
-		sound->mForceFadeTimer = 0;
-		vol = 0;
-// MUST_MATCH: writing the guard as total==0 (else compute) is what makes MWCC lay the
-// compute block out-of-line (bne+b); the equivalent total!=0 form picks the beq layout.
-#ifdef MUST_MATCH
-		if (total == 0) {
-			vol = 0;
-		}
-		else {
-			vol = (s32)(float_75_8041e658 + ((f32)total * (float_26_8041e650 + (f32)irand(26))) / float_200_8041e648);
-		}
-#else
-		if (total != 0) {
-			vol = (s32)(float_75_8041e658 + ((f32)total * (float_26_8041e650 + (f32)irand(26))) / float_200_8041e648);
-		}
-#endif
-		psndSFX_vol(AUD_SOUND_ID(sound), vol);
-		sound->mCurrentBaseSfxVolume = vol;
-		sound->mBaseSfxVolume = vol;
-		sound->mVolumeMultiplier = 100;
-	}
-}
-
-void BattleAudienceAddPhaseEvtList(s32 evtId) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 count = *(s32*)((u8*)audience + 0x13904);
-	s32 i = 0;
-	for (; i < count; i++) {
-		if (*(s32*)((u8*)audience + 0x138CC + i * 4) == evtId) {
-			return;
-		}
-	}
-	*((s32*)((u8*)audience + 0x138CC) + count) = evtId;
-	*(s32*)(audience->field_138CC + 0x38) = *(s32*)(audience->field_138CC + 0x38) + 1;
-}
-
-s32 BattleAudienceDetectPakkunEatTargetSub2(s32 a, s32 b) {
-	s32 no;
-	BattleAudienceBaseGetPtr();
-	no = BattleAudience_GetAudienceNoFromOffset(a, b, 0);
-	if (no == -1) {
-		return -1;
-	}
-	BattleAudienceGetPtr(no);
-	if ((u8)BattleAudience_GetSysCtrl(no) != 1) {
-		return -1;
-	}
-	return no;
-}
-
-s32 BattleAudienceDetectPakkunEatTargetSub(s32 a, s32 b, s32 c) {
-	s32 x = BattleAudienceDetectPakkunEatTargetSub2(a, b);
-	s32 y = BattleAudienceDetectPakkunEatTargetSub2(a, c);
-	if (x != -1) {
-		return x;
-	}
-	if (y == -1) {
-		return -1;
-	}
-	return y;
-}
-
-s32 BattleAudienceDetectPakkunEatTarget(s32 a) {
-	if (irand(2) == 0) {
-		return BattleAudienceDetectPakkunEatTargetSub(a, -1, 1);
-	}
-	return BattleAudienceDetectPakkunEatTargetSub(a, 1, -1);
-}
-
-void BattleAudienceAddPuni(s32 num) {
-	BattleWork* wp = _battleWorkPointer;
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 i;
-	if (pouchGetPtr()->mStarPowersObtained != 0 && *(s32*)((u8*)audience + 0x137B0) > 0 &&
-			num > 0 && !(wp->flags & 0x100)) {
-		f32 one = float_1_8041e620;
-		for (i = 0; i < num; i++) {
-			s32 idx = BattleAudience_NoUsedFCHaitiRand();
-			if (idx == -1) {
-				return;
-			}
-			if (BattleAudience_Entry(idx, AUDIENCE_PUNI, 0xb) == 1) {
-				audience->mAddedAudienceCount += one;
-			}
-		}
-	}
-}
-
-void BattleAudienceSoundClap(s32 a, s32 b) {
-	BattleAudienceSound* sound;
-	s32 r;
-	s32 l;
-	s32 total;
-	s32 vol;
-	char name[0x3c];
-	BattleAudienceBaseGetPtr();
-	sound = BattleAudienceSoundGetPtr(1);
-	r = BattleAudience_GetPPAudienceNum_R();
-	l = BattleAudience_GetPPAudienceNum_L();
-	total = r + l;
-	BattleAudienceSoundStop(1);
-	if (total >= 1 && total <= 0x31) {
-		strcpy(name, str_802F9C9C);
-		*(u8*)((u8*)sound + 8) = 1;
-	}
-	if (total >= 0x32 && total <= 0x63) {
-		strcpy(name, str_802F9CB4);
-		*(u8*)((u8*)sound + 8) = 2;
-	}
-	if (total >= 0x64 && total <= 0x95) {
-		strcpy(name, str_802F9CCC);
-		*(u8*)((u8*)sound + 8) = 3;
-	}
-	if (total >= 0x96) {
-		strcpy(name, str_802F9CE4);
-		*(u8*)((u8*)sound + 8) = 4;
-	}
-	AUD_SOUND_ID(sound) = BattleAudienceSound1(name, r, l);
-	if (AUD_SOUND_ID(sound) != -1) {
-		*(s32*)((u8*)sound) |= 1;
-		*(s32*)((u8*)sound + 0xC) = a + b;
-		sound->mFadeoutTime = b;
-		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-		AUD_SOUND_TAIL(sound, vol);
-	}
-}
-
-void BattleAudienceSoundBooingKind(s32 kind) {
-	BattleAudienceSound* sound;
-	s32 r;
-	s32 l;
-	s32 vol;
-	char name[0x34];
-	BattleAudienceBaseGetPtr();
-	sound = BattleAudienceSoundGetPtr(0);
-	r = BattleAudience_GetPPAudienceNum_R();
-	l = BattleAudience_GetPPAudienceNum_L();
-	BattleAudienceSoundStop(0);
-	if (kind == 1) {
-		strcpy(name, str_802F9CFC);
-		*(u8*)((u8*)sound + 8) = 1;
-	}
-	if (kind == 2) {
-		strcpy(name, str_802F9D14);
-		*(u8*)((u8*)sound + 8) = 2;
-	}
-	if (kind == 3) {
-		strcpy(name, str_802F9D2C);
-		*(u8*)((u8*)sound + 8) = 3;
-	}
-	if (kind == 4) {
-		strcpy(name, str_802F9D44);
-		*(u8*)((u8*)sound + 8) = 4;
-	}
-	if (kind == 5) {
-		strcpy(name, str_802F9D5C);
-		*(u8*)((u8*)sound + 8) = 5;
-	}
-	if (kind == 6) {
-		strcpy(name, str_802F9D74);
-		*(u8*)((u8*)sound + 8) = 6;
-	}
-	if (kind == 7) {
-		strcpy(name, str_802F9D8C);
-		*(u8*)((u8*)sound + 8) = 7;
-	}
-	if (kind == 8) {
-		strcpy(name, str_802F9DA4);
-		*(u8*)((u8*)sound + 8) = 8;
-	}
-	AUD_SOUND_ID(sound) = BattleAudienceSound1(name, r, l);
-	if (AUD_SOUND_ID(sound) != -1) {
-		AUD_SOUND_HEAD(sound);
-		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
-		AUD_SOUND_TAIL(sound, vol);
-	}
-}
-
-#ifdef MUST_MATCH
-// Match-only: the third bound's `(a + b) + c` must keep its operands in that order; written
-// directly MWCC commutes the final add to `c + (a + b)`. The inlined add leaves the tree alone.
-static inline s32 BattleAudienceJoyAdd2(s32 x, s32 y) {
-	return x + y;
-}
-#else
-#define BattleAudienceJoyAdd2(x, y) ((x) + (y))
-#endif
-
-#pragma opt_loop_invariants off // needed: keep a,b,c,d live and recompute the branch bounds each iteration
-
-// The frame, prologue and every call now match. The third branch bound's commuted `add` is fixed by
-// routing it through the inlined BattleAudienceJoyAdd2 helper above. One commuted `add` remains: the
-// second sum add (`add r29, r29, r25` where the original has `add r29, r25, r29`). `sum = b + c;
-// sum += a;` is required (writing `a + sum` makes MWCC reassociate the first add and recolour the
-// callee-saved set). The declaration order member/i/sum is load-bearing: MWCC colours the
-// callee-saved locals in declaration order (member r31, i r30, sum r29); any other order rotates them.
-// NONMATCHING (99.86%): one commuted `add` operand on the loop-invariant sum.
-void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
-	BattleAudienceMember* member;
-	s32 i;
-	s32 sum;
-	BattleAudience* audience;
-	s32 r;
-	audience = BattleAudienceBaseGetPtr();
-	sum = b + c;
-	sum += a;
-	i = 0;
-	member = BattleAudienceGetPtr(0);
-	for (; i < 200; i++, member++) {
-		if ((u8)BattleAudience_GetWaiting(i)) {
-			if (member->type == AUDIENCE_PIRANHA_PLANT) {
-				BattleAudience_ChangeStatus(i, 4);
-				if (d == 3) {
-					*(f32*)((u8*)member + 0xc) = float_3_8041e65c;
-				}
-				else {
-					*(f32*)((u8*)member + 0xc) = float_2_8041e660;
-				}
-			}
-			else {
-				r = irand(sum);
-				if (r < a) {
-					BattleAudience_ChangeStatus(i, 4);
-					if (d == 3) {
-						*(f32*)((u8*)member + 0xc) = float_3_8041e65c;
-					}
-					else {
-						*(f32*)((u8*)member + 0xc) = float_2_8041e660;
-					}
-				}
-				else if (r < a + b) {
-					BattleAudience_ChangeStatus(i, 5);
-				}
-				else if (r < BattleAudienceJoyAdd2(a + b, c)) {
-					BattleAudience_ChangeStatus(i, 6);
-				}
-			}
-		}
-	}
-}
-#pragma opt_loop_invariants reset
-
-void BattleAudienceJoy(s32 a) {
-	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	switch (a) {
-		case 0:
-			BattleAudienceJoy_Sub(0x64, 0, 0, a);
-			break;
-		case 1:
-			BattleAudienceJoy_Sub(0, 0x64, 0, a);
-			break;
-		case 2:
-			BattleAudienceJoy_Sub(0x46, 0x1e, 0, a);
-			break;
-		case 3:
-		switch (*(s32*)audience->field_1390C) {
-			case 0:
-				BattleAudienceJoy_Sub(0x32, 0x28, 0xa, a);
-				break;
-			case 1:
-				BattleAudienceJoy_Sub(0x28, 0x28, 0x14, a);
-				break;
-			case 2:
-				BattleAudienceJoy_Sub(0x1e, 0x28, 0x1e, a);
-				break;
-			case 3:
-				BattleAudienceJoy_Sub(0x14, 0x28, 0x28, a);
-				break;
-			case 4:
-				BattleAudienceJoy_Sub(0xa, 0x28, 0x32, a);
-				break;
-			default:
-				BattleAudienceJoy_Sub(0x32, 0x28, 0xa, a);
-				break;
-		}
-		(*(s32*)audience->field_1390C)++;
-		if (*(s32*)audience->field_1390C > 4) {
-			*(s32*)audience->field_1390C = 4;
-		}
-			break;
-	}
-}
-
 #pragma dont_inline reset
