@@ -3206,6 +3206,159 @@ extern const char str_802C41F0[];
 
 
 
+// mobj_lv_blk_evt reads the unit's rodata pool through vec3_802c3dc8 (retail's base register r31):
+// "P_box_y", the six MOBJ_Lv*Block anim-name strings, the "o_"/"i_" name templates and the
+// position vec3_802c3ee8. The MUST_MATCH macros select that retail base+offset form; the natural
+// named-object form is under #else. The offsets are the named objects' real addresses in the pool.
+#ifdef MUST_MATCH
+#define LVB_STR(off, sym) ((const char*)(base + (off)))
+#define LVB_VEC(off, sym) (*(const Vec*)((const u8*)base + (off)))
+#define LVB_TEMPLATE(dst, off, str)               \
+    do {                                          \
+        ((u32*)(dst))[0] = ((u32*)(base + (off)))[0]; \
+        ((u32*)(dst))[1] = ((u32*)(base + (off)))[1]; \
+        ((u32*)(dst))[2] = ((u32*)(base + (off)))[2]; \
+        ((u32*)(dst))[3] = ((u32*)(base + (off)))[3]; \
+    } while (0)
+#else
+#define LVB_STR(off, sym) (sym)
+#define LVB_VEC(off, sym) (sym[0])
+#define LVB_TEMPLATE(dst, off, str) strcpy((dst), (str))
+#endif
+
+s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
+#ifdef MUST_MATCH
+    u8* base = (u8*)vec3_802c3dc8;
+#endif
+    char offName[16];
+    char imgName[16];
+    ImageEntry* img;
+    MarioWork* mario;
+    BOOL inBattle;
+
+    LVB_TEMPLATE(offName, 0x100, "o_");
+    LVB_TEMPLATE(imgName, 0x110, "i_");
+    inBattle = gp->inBattle != 0;
+    mario = marioGetPtr();
+    strcat(offName, obj->name);
+    strcat(imgName, obj->name);
+    switch (obj->unk1DC) {
+        case 0:
+            animGroupBaseAsync(LVB_STR(0x5c0, "P_box_y"), inBattle, NULL);
+            if (obj->flags & 8) {
+                if (strcmp(obj->animName, LVB_STR(0x8ac, str_802C4674)) == 0 ||
+                    strcmp(obj->animName, LVB_STR(0x8bc, str_802C4684)) == 0) {
+                    goto run_event;
+                }
+                if (strcmp(obj->animName, LVB_STR(0x8d0, str_802C4698)) == 0) {
+                    if (pouchGetHammerLv() >= 2 && mario->currMotionId == MARIO_MOTION_HAMMER_2) {
+                        goto run_event;
+                    }
+                    obj->flags &= ~8;
+                    break;
+                }
+                if (strcmp(obj->animName, LVB_STR(0x8e4, str_802C46AC)) == 0 ||
+                    strcmp(obj->animName, LVB_STR(0x8f4, str_802C46BC)) == 0) {
+                    if (pouchGetHammerLv() >= 3) {
+                        goto run_event;
+                    }
+                    obj->flags &= ~8;
+                    break;
+                }
+                if (strcmp(obj->animName, LVB_STR(0x908, str_802C46D0)) == 0) {
+                    if (pouchGetHammerLv() >= 3 && mario->currMotionId == MARIO_MOTION_HAMMER_2) {
+                        goto run_event;
+                    }
+                    obj->flags &= ~8;
+                    break;
+                }
+                obj->flags &= ~8;
+                break;
+            run_event:
+                mobjRunEvent(obj, obj->unk1D4);
+                evtSetValue(NULL, obj->unk1E4, 1);
+                obj->unk1DC = 0xa;
+            }
+            break;
+        case 0xa: {
+            s32 captureArgs1[10];
+            EventEntry tmpEvent1;
+            s32 captureArgs2[10];
+            EventEntry tmpEvent2;
+
+            animPaperPoseEntry(LVB_STR(0x5c0, "P_box_y"), inBattle);
+            offscreenEntry(offName);
+            imgEntry(imgName, inBattle);
+            obj->offscreenId = offscreenNameToId(offName);
+            tmpEvent1.args = captureArgs1;
+            captureArgs1[0] = (s32)imgName;
+            captureArgs1[1] = 0;
+            captureArgs1[2] = (s32)offName;
+            captureArgs1[3] = 1;
+            captureArgs1[4] = 0;
+            captureArgs1[5] = 0;
+            captureArgs1[6] = 0;
+            captureArgs1[7] = 0;
+            evt_img_alloc_capture(&tmpEvent1, 1);
+            tmpEvent2.args = captureArgs2;
+            captureArgs2[0] = (s32)imgName;
+            captureArgs2[1] = 1;
+            captureArgs2[2] = (s32)offName;
+            captureArgs2[3] = 1;
+            captureArgs2[4] = 0;
+            captureArgs2[5] = 0;
+            captureArgs2[6] = 0;
+            captureArgs2[7] = 0;
+            evt_img_alloc_capture(&tmpEvent2, 1);
+            img = imgNameToPtr(imgName, inBattle);
+            img->poseId = animPaperPoseGetId(LVB_STR(0x5c0, "P_box_y"), inBattle);
+            img->animName = str_8041A118;
+            // ImageEntry declares no field at 0x110 (it falls 4 bytes into the field_0x10C padding,
+            // 0x10C..0x118); the same location is written by evt_img.c, evt_cloud.c and fadedrv.c.
+            *(OSTime*)(img->field_0x10C + 4) = animTimeGetTime(inBattle);
+            imgSetShadow(img, 2);
+            if (strcmp(obj->animName, LVB_STR(0x8ac, str_802C4674)) == 0 ||
+                strcmp(obj->animName, LVB_STR(0x8e4, str_802C46AC)) == 0) {
+                psndSFXOn_3D((const char*)0x1C7, &obj->position);
+            } else if (strcmp(obj->animName, LVB_STR(0x8bc, str_802C4684)) == 0 ||
+                       strcmp(obj->animName, LVB_STR(0x8f4, str_802C46BC)) == 0) {
+                psndSFXOn_3D((const char*)0x1C8, &obj->position);
+            } else if (strcmp(obj->animName, LVB_STR(0x8d0, str_802C4698)) == 0 ||
+                       strcmp(obj->animName, LVB_STR(0x908, str_802C46D0)) == 0) {
+                psndSFXOn_3D((const char*)0x1C9, &obj->position);
+            }
+            obj->unk1DC = 0xb;
+            break;
+        }
+        case 0xb:
+            img = imgNameToPtr(imgName, inBattle);
+            if (img->field_0x118 >= float_1_8041a160) {
+                obj->unk1DC = 0xc;
+            }
+            if (img->flags & 0x10000000) {
+                obj->unk1DC = 0xc;
+            }
+            obj->position = LVB_VEC(0x120, vec3_802c3ee8);
+            obj->flags |= 4;
+            obj->flags |= 8;
+            break;
+        case 0xc:
+            img = imgNameToPtr(imgName, inBattle);
+            imgFreeCapture(img, 0);
+            imgFreeCapture(img, 1);
+            imgSetShadow(img, 0);
+            imgRelease(img, inBattle);
+            offscreenDelete(offName);
+            obj->offscreenId = -1;
+            obj->unk1DC = 0x63;
+            break;
+        case 0x63:
+            mobjDelete(obj->name);
+            break;
+    }
+    return 0;
+}
+
 s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
