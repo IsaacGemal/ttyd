@@ -94,7 +94,12 @@ void hitReInit(void) {
 }
 
 // This function is cursed, managed to hit 99% - https://decomp.me/scratch/FjwSA
-// NONMATCHING (98.76%): same instructions; only register numbers or operands differ.
+// NONMATCHING (98.76%): 44 instructions differ, all in the packed-display-list loop. The two
+// unrolled loops are exclusive, so our allocator reuses the normal loop's volatile registers
+// (count r5, index r7, temps r11/r10/r12) for the packed loop, while retail keeps the packed
+// count in r11 / index in r12 and reuses r5/r7/r30 for its pointer temps. Structure and calls
+// match (diff_shape); declaration-order variants (j/k/numVectors permutations, int/u32/register,
+// scoping) all score lower.
 HitEntry* _hitEnt(MapFileJoint* joint, HitEntry* parent, Mtx parentMtx, s32 mapIndex) {
     MapWork* wp = mapGetWork();
     HitEntry* hit = wp->entries[mapIndex].hitEntries;
@@ -300,19 +305,50 @@ void hitDelete(const char* name) {
     }
 }
 
-// Main animation pass. The active-list zero-init split and the inner-loop `p += 4, k++` order are
-// retail's. Local declaration order is tuned to get as close as the allocator allows: 17
-// instructions differ, all register colouring (wp r25 vs retail r23, i r23 vs r20, and the
-// inlined hitNameToPtr's map/found r27/r26 vs retail r26/r27).
-// NONMATCHING (99.32%): register colouring only.
-void hitMain(void) {
-    MapWork* wp = mapGetWork();
+#ifdef MUST_MATCH
+// The element pointer goes in as void* and the name is loaded inside the inlined search. Handing the
+// name straight to the search leaves the inlined body's name/map temporaries in r26/r27 where retail
+// has r27/r26; the extra indirection gives the name local the higher web. The natural form below
+// passes the dereferenced name to hitNameToPtr.
+static inline HitEntry* hitFindElem(void* elem) {
     MapEntry* map;
-    HitEntry* found;
-    s32 i, j, k;
+    const char* name = *(char**)elem;
+    MapWork* wp = mapGetWork();
+    int j;
+    MapEntry* new_var;
+    MapEntry* new_var2;
+    int i;
+    HitEntry* hit;
+
+    if (name == NULL) {
+        return NULL;
+    }
+    map = wp->entries;
+    new_var = map;
+    new_var2 = new_var;
+    for (i = 0; i < new_var2->count; map++, i++) {
+        hit = map->hitEntries;
+        for (j = 0; j < map->hitNumJoints; j++, hit++) {
+            if (!(hit->flags & 0x80) && !strcmp(hit->joint->name, name)) {
+                return hit;
+            }
+        }
+    }
+    return NULL;
+}
+#endif
+
+// Main animation pass. The active-list zero-init split and the inner-loop `p += 4, k++` order are
+// retail's. The declaration order below (p, map, wp, j, k, i, anim, anyScale, then found/mtx) is what
+// puts wp/i/p on retail's r23/r20/r25.
+void hitMain(void) {
     u8* p;
+    MapEntry* map;
+    MapWork* wp = mapGetWork();
+    s32 j, k, i;
     u8* anim;
     s32 anyScale;
+    HitEntry* found;
     Mtx mtx;
 
     hitUpdateActiveList();
@@ -329,7 +365,11 @@ void hitMain(void) {
             if ((animFlags & 1) && !((animFlags & 2) && (animFlags & 0x1000)) && childList != NULL) {
                 p = childList;
                 for (k = 0; k < *(s32*)childList; p += 4, k++) {
+#ifdef MUST_MATCH
+                    found = hitFindElem(*(void**)(p + 4));
+#else
                     found = hitNameToPtr(*(char**)(*(void**)(p + 4)));
+#endif
                     if (found != NULL) {
                         mapCalcAnimMatrix(found->unk6C, found->localMtx, (MapEntryAnimData*)anim, *(void**)(p + 4));
                         anyScale = 1;
@@ -608,9 +648,9 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
 
                     for (triIndex = 0; triIndex < triCount; triIndex++, byteOffset += stride) {
                         s16* vtx = (s16*)(((u32*)mesh->vcdTableOffset)[0] + 4);
-                        s32 i0 = *(u16*)(list + byteOffset + 3);
-                        s32 i1 = *(u16*)(list + (triIndex + 1) * stride + 3);
-                        s32 i2 = *(u16*)(list + (triIndex + 2) * stride + 3);
+                        s32 i0 = *(u16*)(list + (byteOffset + 3));
+                        s32 i1 = *(u16*)(list + ((triIndex + 1) * stride + 3));
+                        s32 i2 = *(u16*)(list + ((triIndex + 2) * stride + 3));
                         s32 v1i;
                         s32 v2i;
                         Vec v0;

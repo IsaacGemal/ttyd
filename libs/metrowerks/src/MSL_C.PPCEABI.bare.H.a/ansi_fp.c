@@ -758,3 +758,19 @@ double __dec2num(const decimal* d) {
         return first_guess;
     }
 }
+
+// The compiler emits the __two_exp switch table after the source-level data, so the unit's four-byte zero tail has
+// to be flushed past it. Generating this unused helper with deferred code generation off flushes the deferred
+// functions first; the linker strips the helper body.
+#pragma defer_codegen off
+static void ansi_fp_flush_pool(void) {
+}
+// The original .rodata is padded to eight bytes with three zeroes after the string pool. This unused helper's
+// three-byte all-zero literal supplies that tail; the linker strips the helper body.
+static const char* ansi_fp_rodata_tail(void) {
+    return "\0\0";
+}
+#pragma force_active on // Keep the .data tail, which nothing references.
+__declspec(section ".data") unsigned int gap_05_803B7744_data[1] = {0};
+#pragma force_active reset
+#pragma defer_codegen reset // Restore the default function emission mode.

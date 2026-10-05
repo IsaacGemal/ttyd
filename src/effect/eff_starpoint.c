@@ -38,35 +38,34 @@ extern const f32 float_14_804209fc;
 
 static inline f32 effStarPointSinf(f32 rad, f32 b, f32 one, f32 pi) {
     f32 v = MATCH_F32(float_0p00761_804209d8);
-        f32 t, u;
 
     if (rad <= pi) {
         if (rad <= float_1p5708_804209e8) {
-            t = rad * rad;
+            f32 t = rad * rad;
             v = v * t - b;
             v = v * t + one;
             v = v * rad;
         } else {
-            t = rad - float_1p5708_804209e8;
-            u = float_1p5708_804209e8 - t;
-            t = u * u;
-            v = v * t - b;
-            v = v * t + one;
+            f32 t = rad - float_1p5708_804209e8;
+            f32 u = float_1p5708_804209e8 - t;
+            f32 s = u * u;
+            v = v * s - b;
+            v = v * s + one;
             v = v * u;
         }
     } else if (rad < float_4p7124_804209ec) {
-        t = rad - pi;
-        u = t * t;
+        f32 t = rad - pi;
+        f32 u = t * t;
         v = v * u - b;
         v = v * u + one;
         v = v * t;
         v = -v;
     } else {
-        t = rad - float_4p7124_804209ec;
-        u = float_1p5708_804209e8 - t;
-        t = u * u;
-        v = v * t - b;
-        v = v * t + one;
+        f32 t = rad - float_4p7124_804209ec;
+        f32 u = float_1p5708_804209e8 - t;
+        f32 s = u * u;
+        v = v * s - b;
+        v = v * s + one;
         v = v * u;
         v = -v;
     }
@@ -75,58 +74,57 @@ static inline f32 effStarPointSinf(f32 rad, f32 b, f32 one, f32 pi) {
 
 static inline f32 effStarPointCosf(f32 rad, f32 b, f32 one, f32 pi) {
     f32 v = MATCH_F32(float_0p03705_804209f4);
-            f32 t, u;
 
     if (rad <= pi) {
         if (rad <= float_1p5708_804209e8) {
-            t = rad * rad;
+            f32 t = rad * rad;
             v = v * t - b;
             v = v * t + one;
         } else {
-            t = rad - float_1p5708_804209e8;
-            u = float_1p5708_804209e8 - t;
-            t = u * u;
-            v = v * t - b;
-            v = v * t + one;
+            f32 t = rad - float_1p5708_804209e8;
+            f32 u = float_1p5708_804209e8 - t;
+            f32 s = u * u;
+            v = v * s - b;
+            v = v * s + one;
             v = -v;
         }
     } else if (rad < float_4p7124_804209ec) {
-        t = rad - pi;
-        t = t * t;
-        v = v * t - b;
-        v = v * t + one;
+        f32 t = rad - pi;
+        f32 s = t * t;
+        v = v * s - b;
+        v = v * s + one;
         v = -v;
     } else {
-        t = rad - float_4p7124_804209ec;
-        u = float_1p5708_804209e8 - t;
-        t = u * u;
-        v = v * t - b;
-        v = v * t + one;
+        f32 t = rad - float_4p7124_804209ec;
+        f32 u = float_1p5708_804209e8 - t;
+        f32 s = u * u;
+        v = v * s - b;
+        v = v * s + one;
     }
     return v;
 }
 
-// opt_common_subs off: with CSE on MWCC merges the loop-invariant float pool loads, which
-// shifts the loop constants (k16605/cOne/k4967/14) one FPR too high versus the target.
-#pragma opt_common_subs off
 // opt_lifetimes off: the default lifetime analysis schedules the seed/temp FPRs differently
-// (0.00761 lands in f4 vs f2); this recovers the target's instruction scheduling.
+// (0.00761 lands in f3 vs f2, rad in f0 vs f3); this recovers the target's instruction scheduling.
 #pragma opt_lifetimes off
-// The sin/cos polynomial is written as the two static inline helpers above; expanding it inline
-// loses the target's seed/temp/rad registers (0.00761 in f2, rad in f3). Passing the sin helper's
-// first coefficient (`b`) plus `one` and `pi` as arguments is what places the loop-invariant
-// constants in the target's callee-saved registers. The preheader assignment order
-// (cPi, c0, c6, c360, cTwo, cOne) is load-bearing for the schedule of the pool loads (it is worth
-// two instructions); `i = 1` before `lowAlpha = 4` matches the target's init order. Only FPR
-// colouring differs: the ten loop-invariant values match except that the compiler's i2f magic and
-// cTwo are swapped (target magic=f26/two=f31, ours two=f26/magic=f31), and the inlined polynomial's
-// volatile `1.5707964` scratch is in f0 instead of f1, which cascades through the sin/cos branches.
-// Across every named/literal subset of the nine constants (2^9), every caller-local declaration and
-// assignment permutation (720 each), a 13k-iteration random walk, mwcceppc 1.3-2.7 and every
-// optimization-flag combination the magic only ever lands in f22/f23/f24/f25/f31, never f26; the
-// fused `fsubs` can only be produced by the compiler's own int->float idiom, so a named double
-// cannot steer its register. This is allocator luck; a permuter job is the remaining route.
-// NONMATCHING (97.96%): the i2f magic/cTwo f26/f31 swap and the polynomial's f0/f1 scratch.
+// The sin/cos polynomial is written as the two static inline helpers above. Block-scoping each
+// branch's transformed-angle and square temps is load-bearing: declared at helper scope the
+// polynomial's volatile f0/f1 work registers came out swapped in all four branches, while a
+// per-branch scope reproduces the target's register for every one of them. Passing the helper's
+// first coefficient (`b`) plus `one` and `pi` as arguments places the loop-invariant constants in
+// the target's callee-saved registers; the preheader assignment order and `i = 1` before
+// `lowAlpha = 4` match the target's init order.
+// NONMATCHING (99.25%): the compiler's own int->float magic double (double_to_int_802fdbf8) and
+// the named cTwo (2.0f) hold swapped callee-saved FPRs (target magic=f26/cTwo=f31, ours
+// magic=f31/cTwo=f26). The replay model shows the whole gap is exactly this vreg swap: moving the
+// magic's sweep slot between cOne and c0 and cTwo's above cPi reproduces every target register.
+// The magic is a backend-materialised web, so a named local cannot outrank it. Rewriting the
+// conversion with the unit's manual-union idiom (win_log.c) does reference a named double, but MWCC
+// emits fsub+frsp instead of the fused fsubs the original has, and every arrangement that puts the
+// f64 local below the constants makes mwcceppc loop forever. Making the constants literals lets
+// their temps interleave with the magic by first-use order and pushes it all the way down to f28
+// (cPi/c0/c360 land above it), but cTwo then drops to f22-f26 instead of rising to f31 and the
+// exact order never co-occurs. Allocator luck; a permuter route.
 EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     s32 lowAlpha;
     EffectEntry* entry;
@@ -183,7 +181,6 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 }
 
 #pragma opt_lifetimes reset
-#pragma opt_common_subs reset
 
 void effStarPointMain(EffectEntry* effect) {
     Vec position;
