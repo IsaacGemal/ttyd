@@ -106,27 +106,32 @@ def math_ext():
     open(src, "w").write(t.replace("#include <math.h>", '#include "math_ext.h"'))
 
 
-def literal_strings():
-    """Named string objects (`const char str_X[] = "..."`) and extern declarations of strings this unit defines (its
-    disassembly has the text) become literals at their uses: the compiler pools them itself, in first-use order."""
-    t = open(src).read()
-    asm = open(f"build/G8MJ01/asm/{unit}.s", errors="replace").read()
-    text_of = {n: v.split("\\000")[0] for n, v in re.findall(r'^\.obj (str_\w+), \w+\n\s*\.string "((?:[^"\\]|\\.)*)"', asm, re.M)}
-    changed = False
-    for name, lit in re.findall(r'^const char (str_\w+)\[\d*\] = ("(?:[^"\\]|\\.)*");\n', t, re.M):
-        t = re.sub(rf'^const char {name}\[\d*\] = {re.escape(lit)};\n', "", t, flags=re.M)
+def to_literals(t, text_of):
+    """`t` with its named string objects (`const char str_X[] = "..."`, any array size, decimal or hex) and the extern
+    declarations of strings `text_of` knows (name -> text) turned into literals at their uses. A string the file still
+    defines some other way (a `__declspec` object) keeps its name."""
+    for name, lit in re.findall(r'^const char (str_\w+)\[(?:0x[0-9A-Fa-f]+|\d*)\] = ("(?:[^"\\]|\\.)*");\n', t, re.M):
+        t = re.sub(rf'^const char {name}\[(?:0x[0-9A-Fa-f]+|\d*)\] = {re.escape(lit)};\n', "", t, flags=re.M)
         t = re.sub(rf'^extern const char {name}\[\];\n', "", t, flags=re.M)
         t = re.sub(rf"\b{name}\b", lit.replace("\\", "\\\\"), t)
-        changed = True
     for name in re.findall(r'^extern const char (str_\w+)\[\];\n', t, re.M):
-        if name in text_of:
+        if name in text_of and not re.search(rf'^[^\n]*\b{name}\[[^\]]*\] =', t, re.M):
             lit = '"' + text_of[name] + '"'
             t = re.sub(rf'^extern const char {name}\[\];\n', "", t, flags=re.M)
             t = re.sub(rf"\b{name}\b", lit.replace("\\", "\\\\"), t)
-            changed = True
-    if not changed:
+    return t
+
+
+def literal_strings():
+    """Named string objects and extern declarations of strings this unit defines (its disassembly has the text) become
+    literals at their uses: the compiler pools them itself, in first-use order."""
+    t = open(src).read()
+    asm = open(f"build/G8MJ01/asm/{unit}.s", errors="replace").read()
+    text_of = {n: v.split("\\000")[0] for n, v in re.findall(r'^\.obj (str_\w+), \w+\n\s*\.string "((?:[^"\\]|\\.)*)"', asm, re.M)}
+    n = to_literals(t, text_of)
+    if n == t:
         return False
-    open(src, "w").write(t)
+    open(src, "w").write(n)
 
 
 def drop_int_double():
