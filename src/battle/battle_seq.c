@@ -76,23 +76,24 @@ f32 float_0p75_8041c2b8 = 0.75f;
 const char str_802EF61C[] = "SFX_BTL_DANGER1";
 const char str_802EF62C[] = "SFX_BTL_PINCH1";
 
-//local prototypes
-
-// Needed: without dont_inline the compiler inlines this loop into its caller
-// _set_haikei_entry_scale, which the original calls.
-#pragma dont_inline on
-void _mapobj_data_touch_scale(s32 kind) { //1:1
-	BattleWork* wp = _battleWorkPointer;
-	s32 i;
-
-	for (i = 0; i < 32; i++) {
-		BattleStageObject* obj = &wp->stageObjects[i];
-		if (obj->id > 0 && *(u16*)((u8*)obj->data + 6) == kind) {
-			obj->mFlags |= 2;
-		}
-	}
-}
-#pragma dont_inline reset
+extern BattleWeapon marioDefaultWeapon_Jump;
+extern BattleWeapon marioWeapon_KururinJump;
+extern BattleWeapon marioDefaultWeapon_Hammer;
+extern BattleWeapon marioDefaultWeapon_FirstAttackKaitenHammer;
+extern BattleWeapon marioDefaultWeapon_FirstAttackUltraHammer;
+extern BattleWeapon partyWeapon_NokotarouFirstAttack;
+extern BattleWeapon partyWeapon_SandersFirstAttack;
+extern GXColor dat_8041c268;
+extern const char str_802EF5DC[];
+extern __declspec(section ".sdata") u32 nanika_luck_event[];
+extern __declspec(section ".sdata") u32 _default_haikei_set_entry_event[];
+extern const char str_802EF5C8[];
+extern GXColor dat_8041c26c;
+extern f32 lbl_80360FE0[];
+typedef struct PhaseEvtEntry {
+	s32 unitIndex; //0x0
+	s32 value;     //0x4
+} PhaseEvtEntry;
 
 void BattleSequenceManager(void) { //1:1
 	BattleWork* wp = _battleWorkPointer;
@@ -246,14 +247,6 @@ void btlseqInit(BattleWork* wp) {
 	}
 }
 
-extern BattleWeapon marioDefaultWeapon_Jump;
-extern BattleWeapon marioWeapon_KururinJump;
-extern BattleWeapon marioDefaultWeapon_Hammer;
-extern BattleWeapon marioDefaultWeapon_FirstAttackKaitenHammer;
-extern BattleWeapon marioDefaultWeapon_FirstAttackUltraHammer;
-extern BattleWeapon partyWeapon_NokotarouFirstAttack;
-extern BattleWeapon partyWeapon_SandersFirstAttack;
-
 BattleWeapon* _GetFirstAttackWeapon(s32 id) { //1:1
 	switch (id) {
 		case 1:
@@ -275,11 +268,6 @@ BattleWeapon* _GetFirstAttackWeapon(s32 id) { //1:1
 	}
 	return NULL;
 }
-
-extern GXColor dat_8041c268;
-extern const char str_802EF5DC[];
-extern __declspec(section ".sdata") u32 nanika_luck_event[];
-extern __declspec(section ".sdata") u32 _default_haikei_set_entry_event[];
 
 void btlseqFirstAct(BattleWork* wp) {
 	FieldBattleInfo* info = wp->fbatInfo;
@@ -590,8 +578,6 @@ void btlseqFirstAct(BattleWork* wp) {
 		break;
 	}
 }
-
-extern const char str_802EF5C8[];
 
 // _set_effect_luck is an EVT command (nanika_luck_event) returning 2. The four comma initializers are
 // match-only: `(0, x)` computes the same value as `x`, but it makes MWCC assign the callee-saved
@@ -1809,8 +1795,6 @@ void btlseqTurn(BattleWork* wp) {
 // double_to_int_802ef590 because this file's other int->float users are not written yet (MWCC then
 // pools a local constant), and it lands at a different .rodata offset because the rule-message
 // strings are also not in the file.
-extern GXColor dat_8041c26c;
-extern f32 lbl_80360FE0[];
 
 // `#pragma opt_propagation off` is required: with propagation on, MWCC folds each branch's
 // `tbl = (const char**)(base + 0x150); tbl[i]` into `add base,i*4; lwz 0x150(base)`, where the
@@ -1858,28 +1842,6 @@ void _rule_disp(void) {
 	FontDrawMessage((s32)x, (s32)float_120_8041c2a8 - 29, buf);
 }
 #pragma opt_propagation reset
-
-BOOL BattlePhaseEndCheck(void) { //1:1
-	BattleWork* wp = _battleWorkPointer;
-	BattleUnit* unit;
-	s32 i;
-
-	for (i = 0; i < 64; i++) {
-		s32 id = *(s32*)((u8*)wp + 0x120 + i * 4);
-		if (id != -1) {
-			unit = BattleGetUnitPtr(wp, id);
-			if (unit != NULL && unit->moveState != 10 && unit->movesRemaining > 0 &&
-				!BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL))
-			{
-				break;
-			}
-		}
-	}
-	if (i >= 64) {
-		return TRUE;
-	}
-	return FALSE;
-}
 
 void btlseqPhase(BattleWork* wp) { //1:1
 	switch (BattleGetSeq(wp, SEQ_PHASE)) {
@@ -2147,6 +2109,28 @@ void btlseqMove(BattleWork* wp) {
 			break;
 		}
 	} while (changed);
+}
+
+BOOL BattlePhaseEndCheck(void) { //1:1
+	BattleWork* wp = _battleWorkPointer;
+	BattleUnit* unit;
+	s32 i;
+
+	for (i = 0; i < 64; i++) {
+		s32 id = *(s32*)((u8*)wp + 0x120 + i * 4);
+		if (id != -1) {
+			unit = BattleGetUnitPtr(wp, id);
+			if (unit != NULL && unit->moveState != 10 && unit->movesRemaining > 0 &&
+				!BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL))
+			{
+				break;
+			}
+		}
+	}
+	if (i >= 64) {
+		return TRUE;
+	}
+	return FALSE;
 }
 
 // Raw offsets (fields that battle_unit.h leaves in padding, so no named member exists):
@@ -2474,6 +2458,185 @@ void btlseqTurnFirstProcess(BattleWork* wp) { //1:1
 	BattleFogEndCheck();
 }
 
+void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
+	BattleUnit* unit;
+	BattleUnitPart* part;
+	s32 count;
+	s32 i;
+
+	*(s32*)((u8*)wp + 0x1C70) = 0;
+	*(u8*)((u8*)wp + 0x1C74) = 0;
+	for (i = 0; i < 64; i++) {
+		*(s32*)((u8*)wp + 0x120 + i * 4) = -1;
+	}
+	count = 0;
+	for (i = 0; i < 64; i++) {
+		unit = BattleGetUnitPtr(wp, i);
+		if (unit) {
+			unit->mMoveColorLv = 0xFF;
+			if (unit->moveState == 10) {
+				if (!BtlUnit_CheckStatus(unit, STATUS_SLOW)) {
+					continue;
+				}
+			}
+			if (*(s32*)((u8*)unit + 0x2C) != BattleGetSeq(wp, SEQ_PHASE)) {
+				continue;
+			}
+			if (unit->mAttributeFlags & 0x80000) {
+				continue;
+			}
+			*(s32*)((u8*)wp + 0x120 + count * 4) = unit->unitId;
+			unit->protectId = -1;
+			part = unit->mParts;
+			while (part) {
+				if (*(s32*)((u8*)part + 0x1C0) != -1) {
+					*(u8*)((u8*)part + 0x4E4) = 1;
+				}
+				part = part->mNextPart;
+			}
+			count++;
+		}
+	}
+	battleSortPhaseMoveTable(wp, count);
+	battleMakePhaseEvtTable(wp);
+}
+
+// NONMATCHING (99.19%): all instructions match except the count/wp callee-saved pair is swapped
+// (target count r30/wp r31, compiler picks count r31/wp r30). Declaration order, raw vs header-field
+// offsets, 128 pragma combos, compilers 1.3-2.7, inline helpers, f32/Vec/array temps and loop forms tried.
+// Rechecked: every GC compiler 1.3-2.7, optimization_level 0-4, opt_lifetimes/opt_loop_invariants/
+// peephole/scheduling pairs, wp/count aliases (u8* casts, selective per-loop use, 1-6 deep), extra locals,
+// algebraic rewrites, inline swap/count helpers, function reordering and -fp_contract off all keep the
+// same swap; the generated instruction sequence is otherwise byte-for-byte identical.
+void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
+	s32 count = mode;
+	s32 i;
+	s32 j;
+	BattleUnit* a;
+	BattleUnit* b;
+
+	if (count <= 0) {
+		count = 0;
+		for (i = 0; i < 64; i++) {
+			if (*(s32*)(wp->field_120 + i * 4) == -1) {
+				break;
+			}
+			count++;
+		}
+	}
+
+	for (i = 0; i < count - 1; i++) {
+		for (j = 0; j < count - i - 1; j++) {
+			f32 ax, ay, az;
+			f32 bx, by, bz;
+			a = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4));
+			b = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4 + 4));
+			BtlUnit_GetHomePos(a, &ax, &ay, &az);
+			BtlUnit_GetHomePos(b, &bx, &by, &bz);
+			if (fabs(ax) > fabs(bx)) {
+				s32 tmp = *(s32*)(wp->field_120 + j * 4);
+				*(s32*)(wp->field_120 + j * 4) = *(s32*)(wp->field_120 + j * 4 + 4);
+				*(s32*)(wp->field_120 + j * 4 + 4) = tmp;
+			}
+		}
+	}
+	for (i = 0; i < count - 1; i++) {
+		for (j = 0; j < count - i - 1; j++) {
+			a = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4));
+			b = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4 + 4));
+			if (*(s32*)(a->field_0x27 + 1) < *(s32*)(b->field_0x27 + 1)) {
+				s32 tmp = *(s32*)(wp->field_120 + j * 4);
+				*(s32*)(wp->field_120 + j * 4) = *(s32*)(wp->field_120 + j * 4 + 4);
+				*(s32*)(wp->field_120 + j * 4 + 4) = tmp;
+			}
+		}
+	}
+}
+
+void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
+	PhaseEvtEntry* table = (PhaseEvtEntry*)((u8*)wp + 0x220);
+	BattleUnit* unit;
+	s32 count;
+	s32 i;
+	s32 j;
+
+	for (i = 0; i < 64; i++) {
+		table[i].unitIndex = -1;
+		table[i].value = 0;
+	}
+	count = 0;
+	for (i = 0; i < 64; i++) {
+		unit = BattleGetUnitPtr(wp, i);
+		if (!unit) {
+			continue;
+		}
+		if (unit->mAttributeFlags & 0x80000) {
+			continue;
+		}
+		table[count].unitIndex = i;
+		{
+			f32 x, y, z;
+			BtlUnit_GetHomePos(unit, &x, &y, &z);
+			if (x >= float_0_8041c280) {
+				table[count].value = (s32)(float_1000_8041c298 + x);
+			}
+			else {
+				table[count].value = (s32)fabs(x);
+			}
+		}
+		count++;
+	}
+	for (i = 0; i < count - 1; i++) {
+		for (j = 0; j < count - i - 1; j++) {
+			if (table[j].value > table[j + 1].value) {
+				PhaseEvtEntry tmp = table[j];
+				table[j] = table[j + 1];
+				table[j + 1] = tmp;
+			}
+		}
+	}
+}
+
+BOOL BattleWaitAllActiveEvtEnd(BattleWork* wp) { //1:1
+	u8* p = (u8*)wp + 0x20000;
+	s32 ret = BattleWaitAllActiveEvtEnd_NoBgSetEndWait(wp);
+
+	if (!ret) {
+		return ret;
+	}
+	if (*(s32*)(p - 0x7d68)) {
+		if (evtCheckID(*(s32*)(p - 0x7d68))) {
+			return FALSE;
+		}
+		*(s32*)(p - 0x7d68) = 0;
+	}
+	if (*(s32*)(p - 0x7d58)) {
+		if (evtCheckID(*(s32*)(p - 0x7d58))) {
+			return FALSE;
+		}
+		*(s32*)(p - 0x7d58) = 0;
+	}
+	if (*(s32*)(p - 0x7f20)) {
+		if (evtCheckID(*(s32*)(p - 0x7f20))) {
+			return FALSE;
+		}
+		*(s32*)(p - 0x7f20) = 0;
+	}
+	if (*(s32*)(p - 0x7d54)) {
+		if (evtCheckID(*(s32*)(p - 0x7d54))) {
+			return FALSE;
+		}
+		*(s32*)(p - 0x7d54) = 0;
+	}
+	if (*(s32*)(p - 0x7d5c)) {
+		if (evtCheckID(*(s32*)(p - 0x7d5c))) {
+			return FALSE;
+		}
+		*(s32*)(p - 0x7d5c) = 0;
+	}
+	return TRUE;
+}
+
 // NONMATCHING (99.55%): the four event-id guards use while(...){...;break;} for the original's check-after-body
 // layout, and the local `void* p` (copied from wp before the loop) fixes the prologue scheduling. Only the
 // wp/i callee-saved pair is still swapped (we get wp r28/i r30; the original has wp r30/i r28).
@@ -2532,190 +2695,6 @@ s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
 		result = FALSE;
 	}
 	return result;
-}
-
-BOOL BattleWaitAllActiveEvtEnd(BattleWork* wp) { //1:1
-	u8* p = (u8*)wp + 0x20000;
-	s32 ret = BattleWaitAllActiveEvtEnd_NoBgSetEndWait(wp);
-
-	if (!ret) {
-		return ret;
-	}
-	if (*(s32*)(p - 0x7d68)) {
-		if (evtCheckID(*(s32*)(p - 0x7d68))) {
-			return FALSE;
-		}
-		*(s32*)(p - 0x7d68) = 0;
-	}
-	if (*(s32*)(p - 0x7d58)) {
-		if (evtCheckID(*(s32*)(p - 0x7d58))) {
-			return FALSE;
-		}
-		*(s32*)(p - 0x7d58) = 0;
-	}
-	if (*(s32*)(p - 0x7f20)) {
-		if (evtCheckID(*(s32*)(p - 0x7f20))) {
-			return FALSE;
-		}
-		*(s32*)(p - 0x7f20) = 0;
-	}
-	if (*(s32*)(p - 0x7d54)) {
-		if (evtCheckID(*(s32*)(p - 0x7d54))) {
-			return FALSE;
-		}
-		*(s32*)(p - 0x7d54) = 0;
-	}
-	if (*(s32*)(p - 0x7d5c)) {
-		if (evtCheckID(*(s32*)(p - 0x7d5c))) {
-			return FALSE;
-		}
-		*(s32*)(p - 0x7d5c) = 0;
-	}
-	return TRUE;
-}
-
-void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
-	BattleUnit* unit;
-	BattleUnitPart* part;
-	s32 count;
-	s32 i;
-
-	*(s32*)((u8*)wp + 0x1C70) = 0;
-	*(u8*)((u8*)wp + 0x1C74) = 0;
-	for (i = 0; i < 64; i++) {
-		*(s32*)((u8*)wp + 0x120 + i * 4) = -1;
-	}
-	count = 0;
-	for (i = 0; i < 64; i++) {
-		unit = BattleGetUnitPtr(wp, i);
-		if (unit) {
-			unit->mMoveColorLv = 0xFF;
-			if (unit->moveState == 10) {
-				if (!BtlUnit_CheckStatus(unit, STATUS_SLOW)) {
-					continue;
-				}
-			}
-			if (*(s32*)((u8*)unit + 0x2C) != BattleGetSeq(wp, SEQ_PHASE)) {
-				continue;
-			}
-			if (unit->mAttributeFlags & 0x80000) {
-				continue;
-			}
-			*(s32*)((u8*)wp + 0x120 + count * 4) = unit->unitId;
-			unit->protectId = -1;
-			part = unit->mParts;
-			while (part) {
-				if (*(s32*)((u8*)part + 0x1C0) != -1) {
-					*(u8*)((u8*)part + 0x4E4) = 1;
-				}
-				part = part->mNextPart;
-			}
-			count++;
-		}
-	}
-	battleSortPhaseMoveTable(wp, count);
-	battleMakePhaseEvtTable(wp);
-}
-
-typedef struct PhaseEvtEntry {
-	s32 unitIndex; //0x0
-	s32 value;     //0x4
-} PhaseEvtEntry;
-
-void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
-	PhaseEvtEntry* table = (PhaseEvtEntry*)((u8*)wp + 0x220);
-	BattleUnit* unit;
-	s32 count;
-	s32 i;
-	s32 j;
-
-	for (i = 0; i < 64; i++) {
-		table[i].unitIndex = -1;
-		table[i].value = 0;
-	}
-	count = 0;
-	for (i = 0; i < 64; i++) {
-		unit = BattleGetUnitPtr(wp, i);
-		if (!unit) {
-			continue;
-		}
-		if (unit->mAttributeFlags & 0x80000) {
-			continue;
-		}
-		table[count].unitIndex = i;
-		{
-			f32 x, y, z;
-			BtlUnit_GetHomePos(unit, &x, &y, &z);
-			if (x >= float_0_8041c280) {
-				table[count].value = (s32)(float_1000_8041c298 + x);
-			}
-			else {
-				table[count].value = (s32)fabs(x);
-			}
-		}
-		count++;
-	}
-	for (i = 0; i < count - 1; i++) {
-		for (j = 0; j < count - i - 1; j++) {
-			if (table[j].value > table[j + 1].value) {
-				PhaseEvtEntry tmp = table[j];
-				table[j] = table[j + 1];
-				table[j + 1] = tmp;
-			}
-		}
-	}
-}
-
-// NONMATCHING (99.19%): all instructions match except the count/wp callee-saved pair is swapped
-// (target count r30/wp r31, compiler picks count r31/wp r30). Declaration order, raw vs header-field
-// offsets, 128 pragma combos, compilers 1.3-2.7, inline helpers, f32/Vec/array temps and loop forms tried.
-// Rechecked: every GC compiler 1.3-2.7, optimization_level 0-4, opt_lifetimes/opt_loop_invariants/
-// peephole/scheduling pairs, wp/count aliases (u8* casts, selective per-loop use, 1-6 deep), extra locals,
-// algebraic rewrites, inline swap/count helpers, function reordering and -fp_contract off all keep the
-// same swap; the generated instruction sequence is otherwise byte-for-byte identical.
-void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
-	s32 count = mode;
-	s32 i;
-	s32 j;
-	BattleUnit* a;
-	BattleUnit* b;
-
-	if (count <= 0) {
-		count = 0;
-		for (i = 0; i < 64; i++) {
-			if (*(s32*)(wp->field_120 + i * 4) == -1) {
-				break;
-			}
-			count++;
-		}
-	}
-
-	for (i = 0; i < count - 1; i++) {
-		for (j = 0; j < count - i - 1; j++) {
-			f32 ax, ay, az;
-			f32 bx, by, bz;
-			a = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4));
-			b = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4 + 4));
-			BtlUnit_GetHomePos(a, &ax, &ay, &az);
-			BtlUnit_GetHomePos(b, &bx, &by, &bz);
-			if (fabs(ax) > fabs(bx)) {
-				s32 tmp = *(s32*)(wp->field_120 + j * 4);
-				*(s32*)(wp->field_120 + j * 4) = *(s32*)(wp->field_120 + j * 4 + 4);
-				*(s32*)(wp->field_120 + j * 4 + 4) = tmp;
-			}
-		}
-	}
-	for (i = 0; i < count - 1; i++) {
-		for (j = 0; j < count - i - 1; j++) {
-			a = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4));
-			b = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4 + 4));
-			if (*(s32*)(a->field_0x27 + 1) < *(s32*)(b->field_0x27 + 1)) {
-				s32 tmp = *(s32*)(wp->field_120 + j * 4);
-				*(s32*)(wp->field_120 + j * 4) = *(s32*)(wp->field_120 + j * 4 + 4);
-				*(s32*)(wp->field_120 + j * 4 + 4) = tmp;
-			}
-		}
-	}
 }
 
 // The field order in this declaration list is deliberate: it drives MWCC's callee-saved register
@@ -2791,6 +2770,24 @@ BOOL BattleCheckConcluded(BattleWork* wp) { //1:1
 	}
 	return (wp->flags & 0x30) != 0;
 }
+
+//local prototypes
+
+// Needed: without dont_inline the compiler inlines this loop into its caller
+// _set_haikei_entry_scale, which the original calls.
+#pragma dont_inline on
+void _mapobj_data_touch_scale(s32 kind) { //1:1
+	BattleWork* wp = _battleWorkPointer;
+	s32 i;
+
+	for (i = 0; i < 32; i++) {
+		BattleStageObject* obj = &wp->stageObjects[i];
+		if (obj->id > 0 && *(u16*)((u8*)obj->data + 6) == kind) {
+			obj->mFlags |= 2;
+		}
+	}
+}
+#pragma dont_inline reset
 
 // EVT command (default_haikei_set_entry_event): 60-frame delay, then animates the A1/A2
 // background objects in over 15/20 frames. Returns 2 once both have finished (0 while animating).
@@ -2918,5 +2915,4 @@ s32 _set_haikei_entry_scale(EventEntry* event, BOOL isFirstCall) {
 	}
 	return ret ? 0 : 2;
 }
-
 #pragma dont_inline reset
