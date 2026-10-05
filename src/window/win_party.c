@@ -13,6 +13,7 @@
 #include "win/win_main.h"
 #include "window/win_mario.h"
 #include <stdio.h>
+#include <stdarg.h>
 
 
 // The waza tables below relocate against these units' weapon data.
@@ -340,11 +341,49 @@ void winPartyMain2(WindowWork* work) {
 
 // The window draw functions take their Vec and GXColor arguments by value: every caller here copies them into
 // fresh stack slots. win_main.h declares them with pointers, which compiles to the same callee.
+#ifdef MUST_MATCH
+// Match-only: called through by-value casts (caller copies plus a pointer, ABI-identical to the real prototypes).
 #define winFontSetV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSet)
 #define winFontSetRV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetR)
 #define winFontSetEdgeV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetEdge)
 #define winFontSetLabelV ((void (*)(Vec, Vec, GXColor, const char*))winFontSetLabel)
 #define winIconSetV ((void (*)(s32, Vec, Vec, GXColor))winIconSet)
+#else
+static void winPartyFontV(void (*fn)(Vec*, Vec*, GXColor*, const char*, ...), Vec pos, Vec scale, GXColor color,
+                          const char* format, va_list args) {
+    char text[0x200];
+
+    vsprintf(text, format, args);
+    fn(&pos, &scale, &color, "%s", text);
+}
+static void winFontSetV(Vec pos, Vec scale, GXColor color, const char* format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    winPartyFontV(winFontSet, pos, scale, color, format, args);
+    va_end(args);
+}
+static void winFontSetRV(Vec pos, Vec scale, GXColor color, const char* format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    winPartyFontV(winFontSetR, pos, scale, color, format, args);
+    va_end(args);
+}
+static void winFontSetEdgeV(Vec pos, Vec scale, GXColor color, const char* format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    winPartyFontV(winFontSetEdge, pos, scale, color, format, args);
+    va_end(args);
+}
+static inline void winFontSetLabelV(Vec pos, Vec scale, GXColor color, const char* tag) {
+    winFontSetLabel(&pos, &scale, &color, tag);
+}
+static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
+    winIconSet(id, &pos, &scale, &color);
+}
+#endif
 
 #define WIN_PARTY_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
 // the party member shown in pose slot n, and its animation pose
