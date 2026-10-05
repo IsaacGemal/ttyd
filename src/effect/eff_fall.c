@@ -222,296 +222,6 @@ const char str_802FE56C[] = "EFF_inseki";
 const char str_802FE578[] = "EFF_light";
 const char str_802FE584[] = "SFX_BTL_STAGE_FALL_WATER1";
 
-s32 effFallCheckHit(EffectEntry* effect) {
-	FallWork* work = effect->userdata;
-
-	switch (work->type) {
-	case 0:
-	case 1:
-	case 4:
-	case 5:
-		if (work[1].unk38 >= 2) {
-			return 1;
-		}
-		break;
-	case 2:
-	case 3:
-		if (work[1].unk38 >= 1) {
-			return 1;
-		}
-		break;
-	case 6:
-		if (work[1].unk38 < 2) {
-			if (work[1].unk38 != 1) {
-				break;
-			}
-			if (work[1].unk24 <= 90) {
-				break;
-			}
-		}
-		return 1;
-	case 7:
-		if (work[1].unk38 >= 4) {
-			return 1;
-		}
-		break;
-	case 8:
-		if (work[1].unk38 >= 3) {
-			return 1;
-		}
-		break;
-	}
-	return 0;
-}
-
-// Full GX state, quad display list and both shibuki splash passes. The quad uses float literals and the
-// splash pointer is re-read from effect->userdata. `rad`/`nf31`/`half` and the effFallCol68 inline are
-// match-only spellings for the register-allocation clusters. `half` is deliberately non-const: a
-// literal folds and the compiler commutes `x * 0.5f` to `0.5f * x`, breaking the quad's operand order.
-#ifdef MUST_MATCH
-static inline GXColor effFallCol68(GXColor c, u8 a) { c.a = a; return c; }
-#endif
-
-void effFallDispWater(CameraId cameraId, void* param) {
-	EffectEntry* effect = param;
-	FallWork* work = effect->userdata;
-	CameraEntry* cam;
-	CameraEntry* camView;
-	GXColor color;
-	GXTexObj texObj;
-	Mtx mtxPos, mtxScale, mtxRot, mtxView;
-	u8* base;
-	u16 height;
-	f32 f31;
-	f32 f30;
-#ifdef MUST_MATCH
-	f32 rad;
-	f32 nf31;
-	f32 half;
-#endif
-	base = lbl_803ADD20;
-	camView = camGetPtr(cameraId);
-	PSMTXTrans(mtxPos, work->x, work->y, work->z);
-	cam = camGetPtr(cameraId);
-#ifdef MUST_MATCH
-	rad = -cam->viewYaw;
-	rad = float_deg2rad_80420f70 * rad;
-	PSMTXRotRad(mtxRot, 'y', rad);
-#else
-	PSMTXRotRad(mtxRot, 'y', -cam->viewYaw * float_deg2rad_80420f70);
-#endif
-	PSMTXConcat(mtxPos, mtxRot, mtxView);
-	PSMTXConcat(camView->view, mtxView, mtxView);
-
-	GXSetNumTevStages(2);
-	GXSetTevOrder(0, 0, 0, 4);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevOp(0, 0);
-	GXSetTevOrder(1, 0xff, 0xff, 0xff);
-	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
-	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
-	GXSetTevAlphaIn(1, 7, 1, 0, 7);
-	GXSetNumTexGens(1);
-	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
-	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
-	GXSetCullMode(2);
-	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xb, 1);
-	GXSetVtxDesc(0xd, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
-	GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
-	effGetTexObj(0x35, &texObj);
-	GXLoadTexObj(&texObj, 0);
-
-	f31 = float_64_80420f74;
-	f30 = float_704_80420f78;
-	f31 = f31 * float_0p5_80420f7c;
-	f30 = f30 * float_0p5_80420f7c;
-	PSMTXTrans(mtxPos, work[1].unk50, work[1].unk54, work[1].unk58);
-#ifdef MUST_MATCH
-	PSMTXScale(mtxScale, float_1_80420f80, f30 / (f32)GXGetTexObjHeight(&texObj), float_1_80420f80);
-#else
-	height = GXGetTexObjHeight(&texObj);
-	PSMTXScale(mtxScale, float_1_80420f80, f30 / (f32)height, float_1_80420f80);
-#endif
-	PSMTXConcat(mtxPos, mtxScale, mtxPos);
-	GXLoadTexMtxImm(mtxPos, 0x1e, 1);
-	PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
-	PSMTXScale(mtxScale, work[1].unk2C, float_1_80420f80, float_1_80420f80);
-	PSMTXConcat(mtxPos, mtxScale, mtxPos);
-	PSMTXConcat(mtxView, mtxPos, mtxPos);
-	GXLoadPosMtxImm(mtxPos, 0);
-	GXSetTevColor(1, dat_80420f64);
-#ifdef MUST_MATCH
-	nf31 = -f31;
-	half = 0.5f;
-#endif
-	GXBegin(0x80, 0, 4);
-#ifdef MUST_MATCH
-	GXPosition3f32(nf31 * half, f30, 0.0f);
-#else
-	GXPosition3f32(0.5f * -f31, f30, 0.0f);
-#endif
-	GXColor4u8(0xff, 0xff, 0xff, 0xff);
-	GXTexCoord2f32(0.0f, 0.0f);
-#ifdef MUST_MATCH
-	GXPosition3f32(f31 * half, f30, 0.0f);
-#else
-	GXPosition3f32(f31 * 0.5f, f30, 0.0f);
-#endif
-	GXColor4u8(0xff, 0xff, 0xff, 0xff);
-	GXTexCoord2f32(2.0f, 0.0f);
-#ifdef MUST_MATCH
-	GXPosition3f32(f31 * half, 0.0f, 0.0f);
-#else
-	GXPosition3f32(f31 * 0.5f, 0.0f, 0.0f);
-#endif
-	GXColor4u8(0xff, 0xff, 0xff, 0x00);
-	GXTexCoord2f32(2.0f, 1.0f);
-	GXPosition3f32(0.5f * -f31, 0.0f, 0.0f);
-	GXColor4u8(0xff, 0xff, 0xff, 0x00);
-	GXTexCoord2f32(0.0f, 1.0f);
-
-	work = effect->userdata;
-	if (work[1].unk38 > 0) {
-		PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
-		PSMTXScale(mtxScale, float_0p56_80420f8c, float_0p4_80420f90, float_0p8_80420f94);
-		PSMTXConcat(mtxView, mtxPos, mtxPos);
-		PSMTXConcat(mtxPos, mtxScale, mtxPos);
-		GXLoadPosMtxImm(mtxPos, 0);
-		PSMTXTrans(mtxPos, work[1].unk54 * float_0p125_80420f98, float_0_80420f84, float_0_80420f84);
-		GXLoadTexMtxImm(mtxPos, 0x1e, 1);
-#ifdef MUST_MATCH
-		GXSetTevColor(1, effFallCol68(dat_80420f68, work[1].unk3C));
-#else
-		color = dat_80420f68;
-		color.a = work[1].unk3C;
-		GXSetTevColor(1, color);
-#endif
-		effGetTexObj(0x37, &texObj);
-		GXLoadTexObj(&texObj, 0);
-		GXClearVtxDesc();
-		GXSetVtxDesc(9, 2);
-		GXSetVtxAttrFmt(0, 9, 1, 3, 8);
-		GXSetArray(9, base + 0x40, 6);
-		GXSetVtxDesc(0xa, 2);
-		GXSetVtxAttrFmt(0, 0xa, 0, 1, 6);
-		GXSetArray(0xa, shibuki_normal_tbl, 3);
-		GXSetVtxDesc(0xb, 2);
-		GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
-		GXSetArray(0xb, shibuki_color0_tbl, 4);
-		GXSetVtxDesc(0xd, 2);
-		GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
-		GXSetArray(0xd, base + 0x140, 4);
-		GXCallDisplayList(shibuki_dl_1_0, 0x20);
-		GXCallDisplayList(shibuki_dl_1_1, 0x20);
-		GXCallDisplayList(shibuki_dl_1_2, 0x20);
-		GXCallDisplayList(shibuki_dl_1_3, 0x20);
-		PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
-		PSMTXScale(mtxScale, float_0p7_80420f9c * (work[1].unk2C * float_0p8_80420f94), float_0p5_80420f7c * (work[1].unk2C * float_0p8_80420f94), work[1].unk2C * float_0p8_80420f94);
-		PSMTXConcat(mtxView, mtxPos, mtxPos);
-		PSMTXConcat(mtxPos, mtxScale, mtxPos);
-		GXLoadPosMtxImm(mtxPos, 0);
-		PSMTXTrans(mtxPos, float_0_80420f84, -work[1].unk54 * float_0p25_80420fa0, float_0_80420f84);
-		GXLoadTexMtxImm(mtxPos, 0x1e, 1);
-		GXSetTevColor(1, dat_80420f6c);
-		effGetTexObj(0x36, &texObj);
-		GXLoadTexObj(&texObj, 0);
-		GXClearVtxDesc();
-		GXSetVtxDesc(9, 2);
-		GXSetVtxAttrFmt(0, 9, 1, 3, 8);
-		GXSetArray(9, base + 0x40, 6);
-		GXSetVtxDesc(0xa, 2);
-		GXSetVtxAttrFmt(0, 0xa, 0, 1, 6);
-		GXSetArray(0xa, shibuki_normal_tbl, 3);
-		GXSetVtxDesc(0xb, 2);
-		GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
-		GXSetArray(0xb, shibuki_color0_tbl, 4);
-		GXSetVtxDesc(0xd, 2);
-		GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
-		GXSetArray(0xd, base + 0x140, 4);
-		GXCallDisplayList(base + 0x1e0, 0x40);
-		GXCallDisplayList(base + 0x220, 0x40);
-		GXCallDisplayList(base + 0x260, 0x40);
-		GXCallDisplayList(base + 0x2a0, 0x40);
-	}
-}
-
-void effFallDispInseki(CameraId cameraId, void* param) {
-#ifdef MUST_MATCH
-	f32 rad;
-#endif
-	EffectEntry* effect = param;
-	FallWork* work = effect->userdata;
-	CameraEntry* cam;
-	Mtx mtxA, mtxD, mtxB, mtxC;
-	Vec axis;
-	GXColor color;
-	s32 i;
-
-	camGetPtr(cameraId);
-	PSMTXTrans(mtxA, work->x, work->y, work->z);
-	cam = camGetPtr(cameraId);
-#ifdef MUST_MATCH
-	rad = -cam->viewYaw;
-	rad = float_deg2rad_80420f70 * rad;
-	PSMTXRotRad(mtxB, 'y', rad);
-#else
-	PSMTXRotRad(mtxB, 'y', -cam->viewYaw * float_deg2rad_80420f70);
-#endif
-	PSMTXConcat(mtxA, mtxB, mtxC);
-
-	if (work[1].unk5C != -1 && work[1].unk60 != -1) {
-		Vec tmpAxis;
-		tmpAxis = vec3_802fe46c;
-		tmpAxis.x = (f32)cos(float_6p2832_80420fa4 * work[1].unk18 / float_360_80420fa8);
-		tmpAxis.z = (f32)sin(float_6p2832_80420fa4 * work[1].unk18 / float_360_80420fa8);
-		axis = tmpAxis;
-
-		for (i = 0; i < 2; i++) {
-			if (i == 0) {
-				PSMTXTrans(mtxA, work[1].x, work[1].y, work[1].z);
-				PSMTXRotAxisRad(mtxB, &axis, float_deg2rad_80420f70 * -work[1].unk48);
-				PSMTXScale(mtxD, float_2p05_80420fac * work[1].unk2C, float_2p05_80420fac * work[1].unk2C,
-				           float_2p05_80420fac * work[1].unk2C);
-				PSMTXConcat(mtxC, mtxA, mtxA);
-				PSMTXConcat(mtxA, mtxB, mtxA);
-				PSMTXConcat(mtxA, mtxD, mtxA);
-				animPoseSetMaterialFlagOn(work[1].unk5C, 0x40);
-				color = dat_80420f5c;
-				animPoseSetMaterialEvtColor(work[1].unk5C, color);
-			} else {
-				PSMTXTrans(mtxA, work[1].x, work[1].y, work[1].z);
-				PSMTXRotAxisRad(mtxB, &axis, float_deg2rad_80420f70 * -work[1].unk48);
-				PSMTXScale(mtxD, float_2_80420f88 * work[1].unk2C, float_2_80420f88 * work[1].unk2C,
-				           float_2_80420f88 * work[1].unk2C);
-				PSMTXConcat(mtxC, mtxA, mtxA);
-				PSMTXConcat(mtxA, mtxB, mtxA);
-				PSMTXConcat(mtxA, mtxD, mtxA);
-				animPoseSetMaterialFlagOn(work[1].unk5C, 0x40);
-				color = dat_80420f60;
-				animPoseSetMaterialEvtColor(work[1].unk5C, color);
-			}
-			animPoseDrawMtx(work[1].unk5C, mtxA, 1, float_0_80420f84, float_10_80420fb0);
-			animPoseDrawMtx(work[1].unk5C, mtxA, 2, float_0_80420f84, float_10_80420fb0);
-			animPoseDrawMtx(work[1].unk5C, mtxA, 3, float_0_80420f84, float_10_80420fb0);
-		}
-
-		PSMTXTrans(mtxA, work[1].x, work[1].y, work[1].z);
-		PSMTXScale(mtxD, float_2p1_80420fb4 * work[1].unk2C, float_2p1_80420fb4 * work[1].unk2C,
-		           float_2p1_80420fb4 * work[1].unk2C);
-		PSMTXConcat(mtxC, mtxA, mtxA);
-		PSMTXConcat(mtxA, mtxD, mtxA);
-		animPoseDrawMtx(work[1].unk60, mtxA, 1, float_0_80420f84, float_10_80420fb0);
-		animPoseDrawMtx(work[1].unk60, mtxA, 2, float_0_80420f84, float_10_80420fb0);
-		animPoseDrawMtx(work[1].unk60, mtxA, 3, float_0_80420f84, float_10_80420fb0);
-	}
-}
 
 // Full element-0 init, particle loop, and the type 0-8 switch bodies are reconstructed. The ternary is the
 // `irand(100) > 50 ? 0 : 180` form (writing `<= 50 ? 180 : 0` compiles to a different select idiom), the vec
@@ -1627,6 +1337,297 @@ void effFallDisp(CameraId cameraId, void* param) {
 		}
 		}
 	}
+}
+
+void effFallDispInseki(CameraId cameraId, void* param) {
+#ifdef MUST_MATCH
+	f32 rad;
+#endif
+	EffectEntry* effect = param;
+	FallWork* work = effect->userdata;
+	CameraEntry* cam;
+	Mtx mtxA, mtxD, mtxB, mtxC;
+	Vec axis;
+	GXColor color;
+	s32 i;
+
+	camGetPtr(cameraId);
+	PSMTXTrans(mtxA, work->x, work->y, work->z);
+	cam = camGetPtr(cameraId);
+#ifdef MUST_MATCH
+	rad = -cam->viewYaw;
+	rad = float_deg2rad_80420f70 * rad;
+	PSMTXRotRad(mtxB, 'y', rad);
+#else
+	PSMTXRotRad(mtxB, 'y', -cam->viewYaw * float_deg2rad_80420f70);
+#endif
+	PSMTXConcat(mtxA, mtxB, mtxC);
+
+	if (work[1].unk5C != -1 && work[1].unk60 != -1) {
+		Vec tmpAxis;
+		tmpAxis = vec3_802fe46c;
+		tmpAxis.x = (f32)cos(float_6p2832_80420fa4 * work[1].unk18 / float_360_80420fa8);
+		tmpAxis.z = (f32)sin(float_6p2832_80420fa4 * work[1].unk18 / float_360_80420fa8);
+		axis = tmpAxis;
+
+		for (i = 0; i < 2; i++) {
+			if (i == 0) {
+				PSMTXTrans(mtxA, work[1].x, work[1].y, work[1].z);
+				PSMTXRotAxisRad(mtxB, &axis, float_deg2rad_80420f70 * -work[1].unk48);
+				PSMTXScale(mtxD, float_2p05_80420fac * work[1].unk2C, float_2p05_80420fac * work[1].unk2C,
+				           float_2p05_80420fac * work[1].unk2C);
+				PSMTXConcat(mtxC, mtxA, mtxA);
+				PSMTXConcat(mtxA, mtxB, mtxA);
+				PSMTXConcat(mtxA, mtxD, mtxA);
+				animPoseSetMaterialFlagOn(work[1].unk5C, 0x40);
+				color = dat_80420f5c;
+				animPoseSetMaterialEvtColor(work[1].unk5C, color);
+			} else {
+				PSMTXTrans(mtxA, work[1].x, work[1].y, work[1].z);
+				PSMTXRotAxisRad(mtxB, &axis, float_deg2rad_80420f70 * -work[1].unk48);
+				PSMTXScale(mtxD, float_2_80420f88 * work[1].unk2C, float_2_80420f88 * work[1].unk2C,
+				           float_2_80420f88 * work[1].unk2C);
+				PSMTXConcat(mtxC, mtxA, mtxA);
+				PSMTXConcat(mtxA, mtxB, mtxA);
+				PSMTXConcat(mtxA, mtxD, mtxA);
+				animPoseSetMaterialFlagOn(work[1].unk5C, 0x40);
+				color = dat_80420f60;
+				animPoseSetMaterialEvtColor(work[1].unk5C, color);
+			}
+			animPoseDrawMtx(work[1].unk5C, mtxA, 1, float_0_80420f84, float_10_80420fb0);
+			animPoseDrawMtx(work[1].unk5C, mtxA, 2, float_0_80420f84, float_10_80420fb0);
+			animPoseDrawMtx(work[1].unk5C, mtxA, 3, float_0_80420f84, float_10_80420fb0);
+		}
+
+		PSMTXTrans(mtxA, work[1].x, work[1].y, work[1].z);
+		PSMTXScale(mtxD, float_2p1_80420fb4 * work[1].unk2C, float_2p1_80420fb4 * work[1].unk2C,
+		           float_2p1_80420fb4 * work[1].unk2C);
+		PSMTXConcat(mtxC, mtxA, mtxA);
+		PSMTXConcat(mtxA, mtxD, mtxA);
+		animPoseDrawMtx(work[1].unk60, mtxA, 1, float_0_80420f84, float_10_80420fb0);
+		animPoseDrawMtx(work[1].unk60, mtxA, 2, float_0_80420f84, float_10_80420fb0);
+		animPoseDrawMtx(work[1].unk60, mtxA, 3, float_0_80420f84, float_10_80420fb0);
+	}
+}
+
+// Full GX state, quad display list and both shibuki splash passes. The quad uses float literals and the
+// splash pointer is re-read from effect->userdata. `rad`/`nf31`/`half` and the effFallCol68 inline are
+// match-only spellings for the register-allocation clusters. `half` is deliberately non-const: a
+// literal folds and the compiler commutes `x * 0.5f` to `0.5f * x`, breaking the quad's operand order.
+#ifdef MUST_MATCH
+static inline GXColor effFallCol68(GXColor c, u8 a) { c.a = a; return c; }
+#endif
+
+void effFallDispWater(CameraId cameraId, void* param) {
+	EffectEntry* effect = param;
+	FallWork* work = effect->userdata;
+	CameraEntry* cam;
+	CameraEntry* camView;
+	GXColor color;
+	GXTexObj texObj;
+	Mtx mtxPos, mtxScale, mtxRot, mtxView;
+	u8* base;
+	u16 height;
+	f32 f31;
+	f32 f30;
+#ifdef MUST_MATCH
+	f32 rad;
+	f32 nf31;
+	f32 half;
+#endif
+	base = lbl_803ADD20;
+	camView = camGetPtr(cameraId);
+	PSMTXTrans(mtxPos, work->x, work->y, work->z);
+	cam = camGetPtr(cameraId);
+#ifdef MUST_MATCH
+	rad = -cam->viewYaw;
+	rad = float_deg2rad_80420f70 * rad;
+	PSMTXRotRad(mtxRot, 'y', rad);
+#else
+	PSMTXRotRad(mtxRot, 'y', -cam->viewYaw * float_deg2rad_80420f70);
+#endif
+	PSMTXConcat(mtxPos, mtxRot, mtxView);
+	PSMTXConcat(camView->view, mtxView, mtxView);
+
+	GXSetNumTevStages(2);
+	GXSetTevOrder(0, 0, 0, 4);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevOp(0, 0);
+	GXSetTevOrder(1, 0xff, 0xff, 0xff);
+	GXSetTevColorOp(1, 0, 0, 0, 1, 0);
+	GXSetTevAlphaOp(1, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(1, 0xf, 2, 0, 0xf);
+	GXSetTevAlphaIn(1, 7, 1, 0, 7);
+	GXSetNumTexGens(1);
+	GXSetTexCoordGen2(0, 1, 4, 0x1e, 0, 0x7d);
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+	GXSetCullMode(2);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xb, 1);
+	GXSetVtxDesc(0xd, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
+	GXSetVtxAttrFmt(0, 0xd, 1, 4, 0);
+	effGetTexObj(0x35, &texObj);
+	GXLoadTexObj(&texObj, 0);
+
+	f31 = float_64_80420f74;
+	f30 = float_704_80420f78;
+	f31 = f31 * float_0p5_80420f7c;
+	f30 = f30 * float_0p5_80420f7c;
+	PSMTXTrans(mtxPos, work[1].unk50, work[1].unk54, work[1].unk58);
+#ifdef MUST_MATCH
+	PSMTXScale(mtxScale, float_1_80420f80, f30 / (f32)GXGetTexObjHeight(&texObj), float_1_80420f80);
+#else
+	height = GXGetTexObjHeight(&texObj);
+	PSMTXScale(mtxScale, float_1_80420f80, f30 / (f32)height, float_1_80420f80);
+#endif
+	PSMTXConcat(mtxPos, mtxScale, mtxPos);
+	GXLoadTexMtxImm(mtxPos, 0x1e, 1);
+	PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
+	PSMTXScale(mtxScale, work[1].unk2C, float_1_80420f80, float_1_80420f80);
+	PSMTXConcat(mtxPos, mtxScale, mtxPos);
+	PSMTXConcat(mtxView, mtxPos, mtxPos);
+	GXLoadPosMtxImm(mtxPos, 0);
+	GXSetTevColor(1, dat_80420f64);
+#ifdef MUST_MATCH
+	nf31 = -f31;
+	half = 0.5f;
+#endif
+	GXBegin(0x80, 0, 4);
+#ifdef MUST_MATCH
+	GXPosition3f32(nf31 * half, f30, 0.0f);
+#else
+	GXPosition3f32(0.5f * -f31, f30, 0.0f);
+#endif
+	GXColor4u8(0xff, 0xff, 0xff, 0xff);
+	GXTexCoord2f32(0.0f, 0.0f);
+#ifdef MUST_MATCH
+	GXPosition3f32(f31 * half, f30, 0.0f);
+#else
+	GXPosition3f32(f31 * 0.5f, f30, 0.0f);
+#endif
+	GXColor4u8(0xff, 0xff, 0xff, 0xff);
+	GXTexCoord2f32(2.0f, 0.0f);
+#ifdef MUST_MATCH
+	GXPosition3f32(f31 * half, 0.0f, 0.0f);
+#else
+	GXPosition3f32(f31 * 0.5f, 0.0f, 0.0f);
+#endif
+	GXColor4u8(0xff, 0xff, 0xff, 0x00);
+	GXTexCoord2f32(2.0f, 1.0f);
+	GXPosition3f32(0.5f * -f31, 0.0f, 0.0f);
+	GXColor4u8(0xff, 0xff, 0xff, 0x00);
+	GXTexCoord2f32(0.0f, 1.0f);
+
+	work = effect->userdata;
+	if (work[1].unk38 > 0) {
+		PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
+		PSMTXScale(mtxScale, float_0p56_80420f8c, float_0p4_80420f90, float_0p8_80420f94);
+		PSMTXConcat(mtxView, mtxPos, mtxPos);
+		PSMTXConcat(mtxPos, mtxScale, mtxPos);
+		GXLoadPosMtxImm(mtxPos, 0);
+		PSMTXTrans(mtxPos, work[1].unk54 * float_0p125_80420f98, float_0_80420f84, float_0_80420f84);
+		GXLoadTexMtxImm(mtxPos, 0x1e, 1);
+#ifdef MUST_MATCH
+		GXSetTevColor(1, effFallCol68(dat_80420f68, work[1].unk3C));
+#else
+		color = dat_80420f68;
+		color.a = work[1].unk3C;
+		GXSetTevColor(1, color);
+#endif
+		effGetTexObj(0x37, &texObj);
+		GXLoadTexObj(&texObj, 0);
+		GXClearVtxDesc();
+		GXSetVtxDesc(9, 2);
+		GXSetVtxAttrFmt(0, 9, 1, 3, 8);
+		GXSetArray(9, base + 0x40, 6);
+		GXSetVtxDesc(0xa, 2);
+		GXSetVtxAttrFmt(0, 0xa, 0, 1, 6);
+		GXSetArray(0xa, shibuki_normal_tbl, 3);
+		GXSetVtxDesc(0xb, 2);
+		GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
+		GXSetArray(0xb, shibuki_color0_tbl, 4);
+		GXSetVtxDesc(0xd, 2);
+		GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
+		GXSetArray(0xd, base + 0x140, 4);
+		GXCallDisplayList(shibuki_dl_1_0, 0x20);
+		GXCallDisplayList(shibuki_dl_1_1, 0x20);
+		GXCallDisplayList(shibuki_dl_1_2, 0x20);
+		GXCallDisplayList(shibuki_dl_1_3, 0x20);
+		PSMTXTrans(mtxPos, work[1].x, work[1].y, work[1].z);
+		PSMTXScale(mtxScale, float_0p7_80420f9c * (work[1].unk2C * float_0p8_80420f94), float_0p5_80420f7c * (work[1].unk2C * float_0p8_80420f94), work[1].unk2C * float_0p8_80420f94);
+		PSMTXConcat(mtxView, mtxPos, mtxPos);
+		PSMTXConcat(mtxPos, mtxScale, mtxPos);
+		GXLoadPosMtxImm(mtxPos, 0);
+		PSMTXTrans(mtxPos, float_0_80420f84, -work[1].unk54 * float_0p25_80420fa0, float_0_80420f84);
+		GXLoadTexMtxImm(mtxPos, 0x1e, 1);
+		GXSetTevColor(1, dat_80420f6c);
+		effGetTexObj(0x36, &texObj);
+		GXLoadTexObj(&texObj, 0);
+		GXClearVtxDesc();
+		GXSetVtxDesc(9, 2);
+		GXSetVtxAttrFmt(0, 9, 1, 3, 8);
+		GXSetArray(9, base + 0x40, 6);
+		GXSetVtxDesc(0xa, 2);
+		GXSetVtxAttrFmt(0, 0xa, 0, 1, 6);
+		GXSetArray(0xa, shibuki_normal_tbl, 3);
+		GXSetVtxDesc(0xb, 2);
+		GXSetVtxAttrFmt(0, 0xb, 1, 5, 0);
+		GXSetArray(0xb, shibuki_color0_tbl, 4);
+		GXSetVtxDesc(0xd, 2);
+		GXSetVtxAttrFmt(0, 0xd, 1, 3, 0xe);
+		GXSetArray(0xd, base + 0x140, 4);
+		GXCallDisplayList(base + 0x1e0, 0x40);
+		GXCallDisplayList(base + 0x220, 0x40);
+		GXCallDisplayList(base + 0x260, 0x40);
+		GXCallDisplayList(base + 0x2a0, 0x40);
+	}
+}
+
+s32 effFallCheckHit(EffectEntry* effect) {
+	FallWork* work = effect->userdata;
+
+	switch (work->type) {
+	case 0:
+	case 1:
+	case 4:
+	case 5:
+		if (work[1].unk38 >= 2) {
+			return 1;
+		}
+		break;
+	case 2:
+	case 3:
+		if (work[1].unk38 >= 1) {
+			return 1;
+		}
+		break;
+	case 6:
+		if (work[1].unk38 < 2) {
+			if (work[1].unk38 != 1) {
+				break;
+			}
+			if (work[1].unk24 <= 90) {
+				break;
+			}
+		}
+		return 1;
+	case 7:
+		if (work[1].unk38 >= 4) {
+			return 1;
+		}
+		break;
+	case 8:
+		if (work[1].unk38 >= 3) {
+			return 1;
+		}
+		break;
+	}
+	return 0;
 }
 
 // 4-byte zero word that ends the unit's .data (after the compiler's switch jump tables): an all-zero
