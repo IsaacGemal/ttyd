@@ -28,7 +28,6 @@ USER_FUNC(unk_end_000022e8);
 void unk_end_000023ac(CameraId cameraId, void* param);
 void unk_end_00002494(s32 wXluStage);
 void unk_end_00002508(TevCallbackParam* param);
-void gap_00_00002520_text(void);  // TODO: real signature
 EVT_DEF(unk_evt_end_00004044);
 EVT_DEF(unk_end_0000410c);
 EVT_DEF(unk_evt_end_000042e0);
