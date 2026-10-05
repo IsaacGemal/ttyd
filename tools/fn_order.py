@@ -47,6 +47,46 @@ def text_order(path):
     return [n for _, n in sorted(out)]
 
 
+def _braces(line, state):
+    """Net `{`/`}` count of one line outside strings, char literals and comments; state carries an open /* comment."""
+    n, i, in_c = 0, 0, state.get("c", False)
+    while i < len(line):
+        two = line[i:i + 2]
+        if in_c:
+            if two == "*/":
+                in_c, i = False, i + 2
+                continue
+            i += 1
+            continue
+        if two == "//":
+            break
+        if two == "/*":
+            in_c, i = True, i + 2
+            continue
+        c = line[i]
+        if c in "\"'":
+            j = i + 1
+            while j < len(line) and line[j] != c:
+                j += 2 if line[j] == "\\" else 1
+            i = j + 1
+            continue
+        n += c == "{"
+        n -= c == "}"
+        i += 1
+    state["c"] = in_c
+    return n
+
+
+def body_end(lines, k):
+    """Index of the line that closes the function whose header ends (with `{`) on line k."""
+    st, depth = {}, 0
+    for j in range(k, len(lines)):
+        depth += _braces(lines[j], st)
+        if depth == 0 and j >= k:
+            return j
+    raise ValueError(f"unbalanced braces after line {k + 1}")
+
+
 def functions(lines):
     """[(header line, closing-brace line, name, is_static_inline)] for top-level function definitions; a header may
     run over several lines (wrapped parameters, or the `{` on the next line)."""
@@ -59,13 +99,14 @@ def functions(lines):
                 and "=" not in l.split("(")[0]:
             k, joined = i, l
             while not joined.rstrip().endswith(("{", ";")) and k + 1 < len(lines) and k - i < 8:
+                nxt = lines[k + 1].strip()
+                if not nxt or nxt.startswith(("#", "//", "/*")) or (")" in joined and nxt != "{" and not joined.rstrip().endswith(",")):
+                    break
                 k += 1
-                joined += " " + lines[k].strip()
+                joined += " " + nxt
             m = FUNC_HEAD.match(joined)
             if joined.rstrip().endswith("{") and m:
-                j = k
-                while lines[j] != "}":
-                    j += 1
+                j = body_end(lines, k)
                 out.append((i, j, m.group(1) or m.group(2), bool(re.match(r"\s*(static\s+)?inline\b", l))))
                 i = j + 1
                 continue
@@ -73,11 +114,17 @@ def functions(lines):
     return out
 
 
-def gap_items(gap):
+def gap_items(gap, blocks=()):
     """Split the lines between two functions into items: (kind, lines). kind is 'reset' (belongs to the function above),
-    'hoist' (declaration or data: moves before all functions) or 'lead' (goes with the function below)."""
+    'hoist' (declaration or data: moves before all functions) or 'lead' (goes with the function below). `blocks` are
+    (start, end) index ranges in `gap` (inline helper definitions) that stay whole and go with the function below."""
     items, i = [], 0
+    starts = dict(blocks)
     while i < len(gap):
+        if i in starts:
+            items.append(("lead", gap[i:starts[i] + 1]))
+            i = starts[i] + 1
+            continue
         t = gap[i].strip()
         if not t:
             items.append(("blank", [gap[i]]))
@@ -88,6 +135,27 @@ def gap_items(gap):
             items.append(("reset", [gap[i]]))
             i += 1
             continue
+        if re.match(r"#\s*define\b", t):   # one item, with its continuation lines
+            j = i
+            while gap[j].rstrip().endswith("\\") and j + 1 < len(gap):
+                j += 1
+            items.append(("define", gap[i:j + 1]))
+            i = j + 1
+            continue
+        if re.match(r"#\s*if", t):   # a complete #if ... #endif block is one item
+            j, d = i, 0
+            while j < len(gap):
+                if re.match(r"\s*#\s*if", gap[j]):
+                    d += 1
+                elif re.match(r"\s*#\s*endif", gap[j]):
+                    d -= 1
+                    if d == 0:
+                        break
+                j += 1
+            if j < len(gap):
+                items.append(("ifblock", gap[i:j + 1]))
+                i = j + 1
+                continue
         if t.startswith("#undef") and all(k in ("reset", "blank") for k, _ in items):
             items.append(("reset", [gap[i]]))
             i += 1
@@ -190,13 +258,31 @@ def reorder(text, want):
     if not fns:
         raise ValueError("no functions to move")
     first = fns[0][0]
-    while first > 0 and (L[first - 1].startswith("//") or PRAGMA.match(L[first - 1])):
-        first -= 1
+
+    def regional(i):
+        m = PRAGMA.match(L[i])
+        return m and any(PRAGMA.match(x) and PRAGMA.match(x).group(1) == m.group(1)
+                         and PRAGMA.match(x).group(2).strip().startswith("reset") for x in L[i + 1:])
+    k = first
+    while k > 0 and (L[k - 1].startswith("//") or not L[k - 1].strip() or regional(k - 1)):
+        k -= 1
+        if L[k].startswith("//") or regional(k):
+            first = k
     prefix, chunks, hoist = L[:first], {}, []
     prev_end, prev = first - 1, None
     for s, e, name, _ in fns:
         lead = []
-        for kind, ls in gap_items(L[prev_end + 1:s]):
+        helpers = [(a - prev_end - 1, b - prev_end - 1) for a, b, _, inl in functions(L) if inl and prev_end < a and b < s]
+        for kind, ls in gap_items(L[prev_end + 1:s], helpers):
+            if kind in ("define", "ifblock"):
+                names = re.findall(r"#\s*define\s+(\w+)", "\n".join(ls))
+                code = [x for x in ls if x.strip() and not re.match(r"\s*(#|//|/\*|\*)", x)
+                        and not x.rstrip().endswith("\\") and not (ls.index(x) > 0 and ls[ls.index(x) - 1].rstrip().endswith("\\"))]
+                plain = kind == "define" or all(re.match(r"\s*(extern\b|[\w\s\*]+\[?\]?[^(]*;$)", x) for x in code)
+                if names and plain and not any(re.search(rf"#\s*undef\s+{n}\b", text) for n in names):
+                    kind = "hoist"
+                else:
+                    kind = "lead"
             if kind == "reset" and prev:
                 chunks[prev] += ls
             elif kind == "hoist":

@@ -77,6 +77,18 @@ class Reorder(unittest.TestCase):
         src = "void a(void) {\n    b(1);\n}\nstatic void b(s32 x) {\n}\n"
         self.assertEqual(fn_order.forward_refs(src, ["a", "b"]), {"b": "static void b(s32 x);"})
 
+    def test_shared_macro_hoisted(self):
+        src = ("#pragma dont_inline on\n\n// first\nvoid a(void) {\n}\n\n#ifdef MUST_MATCH\n#define RO(o) (base + (o))\n#else\n"
+               "#define RO(o) (sym + (o))\n#endif\nvoid b(void) {\n    RO(1);\n}\nvoid c(void) {\n    RO(2);\n}\n"
+               "#pragma dont_inline reset\n")
+        out = fn_order.reorder(src, ["c", "b", "a"]).split("\n")
+        # the macro block is used by two functions and never #undef'd: it moves ahead of all of them
+        self.assertLess(out.index("#define RO(o) (base + (o))"), out.index("void c(void) {"))
+        # the dont_inline region (with a blank line above the first function) now wraps each function
+        for name in ("void a(void) {", "void b(void) {", "void c(void) {"):
+            i = out.index(name)
+            self.assertIn("#pragma dont_inline on", out[max(0, i - 3):i])
+
 
 if __name__ == "__main__":
     unittest.main()
