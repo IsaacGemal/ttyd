@@ -387,7 +387,7 @@ void animPoseBattleInit(void) {
     animPoseRefresh();
 }
 
-// NONMATCHING (94.61%): 13 instructions differ, 2 missing, 7 extra, plus register differences.
+// NONMATCHING (98.09%): register differences, and the free-slot loops' found-exit layout (retail `bne next; b found`).
 s32 animPoseEntry(const char* animName, s32 type) {
     AnimationPose *pose, *temp;
     AnimationPoseFile *file, *tempfile;
@@ -426,7 +426,7 @@ label_1:
     check = wp->totalFiles;
     for (i = 0; i < check; i++) {
         file = &wp->files[i];
-        if (!file->active) {
+        if (file->active) {
             data = *file->handle->data;
             if (!strcmp(data->fileName, animName)) {
                 file->references++;
@@ -449,7 +449,7 @@ label_2:
     file->references++;
     file->handle = fileAllocf(5, str_80419A54, str_80419A5C, animName);
 
-    if (file->handle) {
+    if (!file->handle) {
         fileId = -2;
         file->active = FALSE;
         file->references--;
