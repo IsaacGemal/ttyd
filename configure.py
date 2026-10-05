@@ -1458,7 +1458,7 @@ config.libs = [
     Rel(
         "tou2",
         [
-            Object(NonMatching, "tou2.c"),
+            Object(Matching, "tou2.c"),
             Object(Matching, "unit/unit_boomerang_bros.c"),
             Object(Matching, "unit/unit_hyper_sinnosuke.c"),
             Object(Matching, "unit/unit_nokonoko_fighter.c"),
