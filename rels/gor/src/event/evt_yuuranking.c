@@ -803,6 +803,22 @@ static s32 yuu_kesan(s32 type, s32 value, s32 bonus, s32 mult, s32 max) {
     return total;
 }
 
+// A dead copy of the checked entry above (yuu_kesan_chk): the original object carries it between
+// evt_yuuranking_alloc and yuu_kesan, unreferenced, as `cmpwi r4,0 / bge yuu_kesan / li r3,0 / blr`, a frameless tail
+// branch into yuu_kesan. GC/2.6 never emits one from C (every `return f(...)` gets a frame), and no available
+// compiler version or pragma produces it (swept: GC/1.0-3.0a5, linkage keywords, the inline and opt pragmas), so
+// this C copy keeps the symbol's place and cannot match.
+// NONMATCHING
+#pragma push
+#pragma dont_inline on // keep yuu_kesan out of line here, as the original's branch is
+static s32 yuu_kesan_chk_copy(s32 type, s32 value, s32 bonus, s32 mult, s32 max) {
+    if (value < 0) {
+        return 0;
+    }
+    return yuu_kesan(type, value, bonus, mult, max);
+}
+#pragma pop
+
 #define YBASE_A ((s32(*)[6])((u8*)yuwp + 0x14))
 #define YBASE_B ((s32(*)[6])((u8*)yuwp + 0x74))
 #define YBASE_C ((s32(*)[6])((u8*)yuwp + 0xd4))
@@ -863,21 +879,6 @@ static s32 yuu_kesan(s32 type, s32 value, s32 bonus, s32 mult, s32 max) {
 // The slot-search/insert bookkeeping, per-mode constants, call sequence and the shift-loop addressing all match.
 // The two `>= 0` case-0/2/3 OUTER tests are written `0 <= work->field_1C` (reversed operands) to pin field_1C
 // into r8 like the target, and the shift-loop copies use the A14L/A74L/AD4L forms above.
-// Still differs: the original has an out-of-line thin copy of the checked yuu_kesan entry
-// (cmpwi r4,0 / bge yuu_kesan / li r3,0 / blr) right after the epilogue. The retail gor source pulled the
-// `value < 0` check out of yuu_kesan into a separate yuu_kesan_chk helper, and the retail compiler emitted
-// that helper's out-of-line copy as a direct sibling-call thunk. The available compiler (GC/2.6, retail
-// objects carry .comment 0204020101020016) does not do sibling calls at -O4,s: `int f(int a){return ext(a);}`
-// always gets a frame (stwu/mflr/stw/bl/lwz/mtlr/addi/blr), so the `bge yuu_kesan` cannot be produced. A
-// `static yuu_kesan_chk` next to yuu_kesan gives a 200-byte copy (yuu_kesan inlined); with
-// `#pragma inline_max_size(100)` a 48-byte framed `bl yuu_kesan` (and the call sites stop inlining yuu_kesan);
-// `static inline` drops the copy. Swept GC/1.0-1.3.2r, 2.0-2.7, 3.0a3-3.0a5, linkage keywords
-// (inline/extern inline/__inline), force_active, dont_inline/always_inline combos, noreturn (unsupported) and
-// the pragmas optimization_level/optimize_for_size/defer_codegen/global_optimizer/inline/inline_max_size/
-// inline_max_total_size/nosyminline/inline_depth/inline_bottom_up/scheduling/opt_*: only GC/3.0a3+ emits a
-// copy (24 bytes, check + a separate `b yuu_kesan` stub, no merge) and it changes every function
-// (alloc 0x8f0 vs 0xddc). No available compiler merges the tail branch into `bge yuu_kesan`.
-// NONMATCHING (99.55%)
 USER_FUNC(evt_yuuranking_alloc_10_text_A47C) {
     s32* args = event->args;
     YuRankWork* work = _mapAlloc(sizeof(YuRankWork));
