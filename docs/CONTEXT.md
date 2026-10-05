@@ -4781,3 +4781,25 @@ the original kit and stay `.s` in libs/metrowerks/src/TRK_MINNOW_DOLPHIN.a. They
   NOTE. Tonight's 13 results: 1 WARN, 4 NOTE, where all 13 warned before. Night slots (01:00-07:00 cap 8): 8 in use
   01:12-02:22, then 4 -> 1 as waves 82-83 (6 and 8 units) ran out of tasks before the 05:00 deadline; never over 8.
   The tower check was clean after both waves.
+
+## Overnight 2026-10-05: unit boundaries, text order, and what not to retry
+
+- **A stuck near-miss can be in the wrong unit.** eff_ultra_hammer's N_systemErrorHandler sat at 96-97.5% through
+  30 Codex experiments (docs/codex/eff_ultra_hammer.md) because its literal pool and base register belonged to the
+  data-only orphan `unk_0x8025de70`: retail addresses the handler's strings from that unit's section start. Splitting
+  the two handlers into the orphan (#573, Claude #4) linked eff_ultra_hammer and put the handler at 98.96 in plain C.
+  When a function's pool is exactly an orphan data unit's contents, check splits.txt before tuning code. ci.py now
+  reports a function that changes unit at an equal or higher score as `moved`, not as a regression.
+- **Function order is a link blocker the scores don't show.** About 40 unlinked units had .text out of order
+  (`-inline deferred` emits in reverse source order). tools/fn_order.py was rewritten (#543, #545, #562, #566, #568,
+  #570) and reordered ~25 units overnight; `fn_order.py --all` lists what is left. Order also moves the literal pool
+  (win_mario's .sdata2 99.33 -> 92.19 with identical function scores), so a reorder is gated on full ci.py. Units
+  with match-only `defer_codegen off` pool helpers (evt_win, winmgr, evt_shop, ac_pendulum_crane_timing,
+  eff_particle) cannot reach retail order by reordering alone.
+- **Dead ends tried overnight (don't retry without a new idea):** marioCreviceWallChk; effPokopiThunderDisp;
+  renderProc index form; msgAnalize var[] promotion; winBookGX named constants; winHakoGX base-relative templates;
+  win_mario's i2f pool (needs a rodata port); mapMain's 8 inverted diamonds (MWCC canonicalises them); winMailDisp's
+  li 0x5d/0x5e (MWCC is always branchless); winHalfBookGX (hoisted setup is scheduling); bom_01's literal pool port
+  (unsettles 5-6 tuned functions); win_log literals (add DUP_OURS); mot_jabara base indexing; partyRideMain's
+  switch pivot; the permuter's `if ((gp && gp) && gp) {}` evt_mobj "wins" (99.95 in the real build).
+
