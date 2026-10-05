@@ -19,13 +19,13 @@ __declspec(section ".data") u8 lbl_803B70C0[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F,
 // The compiler emitted four { -1.0f, 1.0f } / { 1.0f, -1.0f } pairs between the anchor and
 // wakka_vertex_tbl (the local names drop the compiler's $); the code reaches the tables that
 // follow through lbl_803B70C0, so the pairs are what puts wakka_vertex_tbl at +0x40.
-__declspec(section ".data") u8 negone_one_374[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+__declspec(section ".data") static u8 negone_one_374[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 __declspec(section ".data") u8 lbl_803B70D0[8] = { 0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00 };
-__declspec(section ".data") u8 one_negone_373[8] = { 0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00 };
+__declspec(section ".data") static u8 one_negone_373[8] = { 0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00 };
 __declspec(section ".data") u8 lbl_803B70E0[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
-__declspec(section ".data") u8 negone_one_360[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
+__declspec(section ".data") static u8 negone_one_360[8] = { 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00 };
 __declspec(section ".data") u8 lbl_803B70F0[8] = { 0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00 };
-__declspec(section ".data") u8 one_negone_359[8] = { 0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00 };
+__declspec(section ".data") static u8 one_negone_359[8] = { 0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00 };
 #pragma force_active reset
 
 // MUST_MATCH: the original reaches every message through one base register (str_803019E0); the natural build
@@ -61,35 +61,45 @@ void N_setupErrorHandler(void) {
 	OSSetErrorHandler(OS_ERROR_PROGRAM, (OSErrorHandler)N_systemErrorHandler);
 }
 
-// NONMATCHING (95.39%): the gpr dump loop now has the original's indexed form (`add r3,base,off; lwzx`),
-// the font MTXScale conversion keeps the compiler's native i2f shape (temps at 0x14e0/0x14e8, where the
-// original's are, and fused `fsubs`) by casting the u16 to s32, which reuses this unit's existing signed 2^52
-// double at .rodata+0x28 so the unit's .rodata stays 48 bytes; the original instead used the unsigned mask
-// at str_803019E0+0x190 (unk_0x8025de70.c), so ours emits two extra `xoris` and a `lis`-based mask load.
-//  - register colouring: the original keeps error/context/dsisr/dar in r23/r26/r25/r24, the string base in
-//    r29 and a separate hoisted &print_buffer in r31, saving r23..r31; ours lands the three later args in
-//    r29/r28/r27/r26 and saves r24..r31. `base` (a hoisted &print_buffer) is what gets the score here.
+// NONMATCHING (97.53%): explicit unsigned conversion reads the original mask through
+// str_803019E0+0x190 without enlarging this unit's 48-byte .rodata. MWCC emits fsub/frsp
+// instead of native fsubs, places the conversion unions at 0x20/0x28 (shifting matrices
+// and text buffers by 0x10), and still differs in address copies, clear-colour stack
+// order, and the print-buffer/retrace r30/r31 assignments.
 // opt_common_subs off: needed for the target's register colouring (93.99% without it).
 // opt_strength_reduction off: keeps the gpr dump loop's separate offset counter instead of a pointer walk.
 // opt_loop_invariants off: needed with the other two for the gpr loop's indexed form (94.29% without it).
 #pragma opt_common_subs off
 #pragma opt_strength_reduction off
 #pragma opt_loop_invariants off
-// NONMATCHING (95.39%): the conversion pool and register colouring (see above).
+// NONMATCHING (97.53%): conversion instructions, stack placement, and address/register copies (see above).
 void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
-	//registers
+	// MUST_MATCH: local order gives the original argument/font/dimension/loop registers.
+#ifdef MUST_MATCH
+	s8* base;
+	u32 count;
+	const char* strings = (const char*)str_803019E0;
+	int i;
+	OSFontHeader* fontHeader;
+	s32 width2, height2;
+	s8* loop_zero;
+	s8* loop_newline;
+	u32 stack;
+	u16 w1, w2, h1, h2, x1, x2, y1, y2;
+#else
 	OSFontHeader* fontHeader;
 	s8* loop_newline;
 	s8* loop_zero;
 	s32 width2, height2;
 	int i;
 	u32 count, stack;
-#ifdef MUST_MATCH
-	const char* strings = (const char*)str_803019E0;
-#endif
 	u16 w1, w2, h1, h2, x1, x2, y1, y2;
 	s8* base;
+#endif
 	//stack vars
+#ifdef MUST_MATCH
+	union { f64 value; u32 words[2]; } fontHeight, fontWidth;
+#endif
 	char print_buffer2[0x400]; // 0x10E0
 	char print_buffer[0x1000]; // 0xE0
 	Mtx44 projection; // 0xA0
@@ -223,11 +233,17 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 					(GXTexFmt)fontHeader->sheetFormat, GX_CLAMP, GX_CLAMP, GX_FALSE);
 				GXLoadTexObj(&texObj, GX_TEXMAP0);
 #ifdef MUST_MATCH
-				// The original uses the unsigned conversion (no xoris, mask at str_803019E0+0x190, which
-				// lives in unk_0x8025de70.c); our unsigned pool would add an 8-byte double to this unit's
-				// .rodata (48 -> 56), so cast to s32, which reuses this unit's existing signed 2^52 double
-				// at .rodata+0x28 and costs two xoris. Both give the same value for a u16.
-				MTXScale(matrix2, float_1_80422614 / (s32)fontHeader->sheetWidth, float_1_80422614 / (s32)fontHeader->sheetHeight, float_1_80422614);
+				// Build the unsigned conversion explicitly so the existing shared mask is reused.
+				// A native u32 cast emits an extra mask in this unit's .rodata; the natural build
+				// below uses ordinary casts. Both dimensions are u16 and convert exactly.
+				fontWidth.words[0] = 0x43300000;
+				fontWidth.words[1] = fontHeader->sheetWidth;
+				fontHeight.words[0] = 0x43300000;
+				fontHeight.words[1] = fontHeader->sheetHeight;
+				MTXScale(matrix2,
+					float_1_80422614 / (f32)(fontWidth.value - *(const f64*)(strings + 0x190)),
+					float_1_80422614 / (f32)(fontHeight.value - *(const f64*)(strings + 0x190)),
+					float_1_80422614);
 #else
 				MTXScale(matrix2, float_1_80422614 / fontHeader->sheetWidth, float_1_80422614 / fontHeader->sheetHeight, float_1_80422614);
 #endif
