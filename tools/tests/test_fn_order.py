@@ -104,6 +104,13 @@ class Reorder(unittest.TestCase):
         self.assertLess(out.index("s32 table[2]; // a declaration with a trailing comment"), out.index("void b(void) {"))
         self.assertEqual(sorted(l for l in out if l.strip()), sorted(l for l in src.split("\n") if l.strip()))
 
+    def test_header_comment_and_one_line_body(self):
+        src = "BOOL a(u32 r3) { // probably an id\n    return r3;\n}\nvoid b(void) {}\nvoid c(void) { /* 1:1 */\n}\n"
+        self.assertEqual([f[2] for f in fn_order.functions(src.split("\n"))], ["a", "b", "c"])
+        out = fn_order.reorder(src, ["c", "b", "a"]).split("\n")
+        self.assertLess(out.index("void c(void) { /* 1:1 */"), out.index("void b(void) {}"))
+        self.assertLess(out.index("void b(void) {}"), out.index("BOOL a(u32 r3) { // probably an id"))
+
 
 if __name__ == "__main__":
     unittest.main()
