@@ -79,8 +79,6 @@ __declspec(section ".rodata") Vec vec3_8030026c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_80300260 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_8030026c = { 0.0f, 0.0f, 0.0f };
 #endif
-const f64 double_to_int_mask_80300278 = 4503599627370496.0;
-const char str_80300280[12] = "Particle";
 
 // .data. Each entry is one packed GXColor (r, g, b, a).
 u32 hibana_col[] = {
@@ -220,6 +218,11 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
 // The two-slot position Vec matches because `vec3_8030026c` is non-const under MUST_MATCH (see the
 // declaration above): a const zero vector lets MWCC fold the copy and hoist `lwz r4,0x0(r5)` above
 // the userdata load; the non-const global keeps the copy and the load stays put.
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush1(void) {}
+#pragma defer_codegen reset
+#endif
 void effParticleMain(EffectEntry* effect) {
 	ParticleWork* work = effect->userdata;
 	Vec position;
@@ -283,13 +286,13 @@ static inline Vec makeVec2(f32 x, f32 y, f32 z) {
 // reproduces the target's f3/f2/f1/f0 colouring and its 0/5/125/25 load order). `scale`/`field_0xAC` written
 // as 1.0f/4.0f literals, the literal 0.0f/1000.0f arguments to the second angleABf, and the literal
 // 0.017453292f to the first PSMTXRotRad are all required for the target's register colouring and load
-// scheduling; `entry->type` uses the file's named `str_80300280` so the literal is not pooled into .rodata.
+// scheduling; `entry->type` uses the file's named `"Particle"` so the literal is not pooled into .rodata.
 EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 velX, f32 velY, f32 velZ) {
 	EffectEntry* entry = effEntry();
 	ParticleWork* work;
 	s32 i;
 
-	entry->type = str_80300280;
+	entry->type = "Particle";
 	entry->count = 1;
 	work = __memAlloc(HEAP_EFFECT, entry->count * 0xB0 + (count + 2) * sizeof(ParticleEntry));
 	entry->userdata = work;
@@ -416,6 +419,11 @@ void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 // NONMATCHING (93.13%): the u32->f32 2^52 pool double is at .rodata+0x48 not +0x18, the inlined
 // __fpclassifyf scratch slots are swapped, and the second loop/post-loop keep dat/float_1 and
 // float_0p5 in the other scratch FPRs.
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static void pool_flush4(void) {}
+#pragma defer_codegen reset
+#endif
 void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter* emitter) {
 	static f32 y2;
 	static s32 use_last;
@@ -475,6 +483,16 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 	PSVECScale(&particle->velocity, &particle->position, float_2p5_80421d1c);
 	PSVECAdd(&emitter->position, &particle->position, &particle->position);
 }
+
+#ifdef MUST_MATCH
+// The original's pool also holds the s32->f32 magic double after ParticleEmit's constants.
+#pragma defer_codegen off
+static void pool_flush5(void) {}
+#pragma defer_codegen reset
+#pragma defer_codegen off
+static f32 pool_s2f(s32 v) { return (f32)v; }
+#pragma defer_codegen reset
+#endif
 
 // trailing .sdata gap before the next unit's data
 #pragma explicit_zero_data on
