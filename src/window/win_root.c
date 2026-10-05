@@ -1009,8 +1009,18 @@ typedef struct WinMailEntry {
 
 // winFontSetLabel and winIconSet take their Vec and GXColor arguments by value (each call copies them);
 // win_main.h declares pointers, which compiles to the same callee.
+// winFontSetLabel takes its Vecs and colour by pointer; the original passes them by value here (caller copies plus a
+// pointer, ABI-identical), and only the cast reproduces its argument scheduling.
+#ifdef MUST_MATCH
 #define winMailLabelV ((void (*)(Vec, Vec, GXColor, const char*))winFontSetLabel)
-#define winMailIconV ((void (*)(s32, Vec, Vec, GXColor))winIconSet)
+#else
+static inline void winMailLabelV(Vec pos, Vec scale, GXColor color, const char* msg) {
+    winFontSetLabel(&pos, &scale, &color, msg);
+}
+#endif
+static inline void winMailIconV(s32 id, Vec pos, Vec scale, GXColor color) {
+    winIconSet(id, &pos, &scale, &color);
+}
 #define WIN_MAIL_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
 
 // NONMATCHING (99.13%): the Vec templates sit at other .rodata offsets until the unit's pool is ported (the
@@ -2550,8 +2560,12 @@ extern const GXColor dat_8041cf3c;
 extern const GXColor dat_8041cf40;
 extern const GXColor dat_8041cf44;
 
-#define winMsgEdgeV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetEdge)
-#define winMsgFontV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSet)
+static inline void winMsgEdgeV(Vec pos, Vec scale, GXColor color, const char* msg) {
+    winFontSetEdge(&pos, &scale, &color, msg);
+}
+static inline void winMsgFontV(Vec pos, Vec scale, GXColor color, const char* msg) {
+    winFontSet(&pos, &scale, &color, msg);
+}
 
 static inline void* winMsgDispField(WindowWork* work, s32 off) {
     return *(void**)((u8*)work + off);
@@ -3190,7 +3204,15 @@ extern const GXColor dat_8041cf50;
 extern const char** luigi_book_list[5];
 // winFontSetLabel takes its Vec and GXColor arguments by value (each call copies them); win_main.h declares
 // pointers, which compiles to the same callee.
+// winFontSetLabel takes its Vecs and colour by pointer; the original passes them by value here (caller copies plus a
+// pointer, ABI-identical), and only the cast reproduces its argument scheduling.
+#ifdef MUST_MATCH
 #define winFontSetLabelV ((void (*)(Vec, Vec, GXColor, const char*))winFontSetLabel)
+#else
+static inline void winFontSetLabelV(Vec pos, Vec scale, GXColor color, const char* msg) {
+    winFontSetLabel(&pos, &scale, &color, msg);
+}
+#endif
 
 // NONMATCHING (89.35%): calls, branches and the per-page code shape match; FPR colouring differs (retail keeps
 // two more callee-saved values, f16/f17 for each page's spans) and the u16->f32 conversion double is our own
