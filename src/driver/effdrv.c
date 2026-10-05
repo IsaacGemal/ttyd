@@ -8,16 +8,6 @@
 #include <string.h>
 #include <stdio.h>
 
-// Data objects defined later in this file or in other units, declared before their first use.
-extern const f32 float_1000_8041a0a8;
-extern const f32 float_0_8041a0ac;
-extern const f32 dat_8041a0b0;
-extern const f32 float_3_8041a0b4;
-extern const f32 float_neg2_8041a0b8;
-extern const f32 float_1_8041a0bc;
-extern const f32 float_2_8041a0c0;
-
-
 extern GlobalWork* gp;
 
 //.data
@@ -363,6 +353,154 @@ typedef struct EffectMayaPolyList {
 	EffectMayaPoly** polys; // 0xC
 } EffectMayaPolyList;
 
+// One animated channel of a Maya keyframe: the value and its tangents, in 1/64 units.
+typedef struct EffectMayaKeyChannel {
+	s16 value;      // 0x0
+	s16 inTangent;  // 0x2
+	s16 outTangent; // 0x4
+	u8 field_0x6;   // 0x6
+	s8 step;        // 0x7, hold the value until the next key
+} EffectMayaKeyChannel;
+
+// Channels: translate (0-2), rotate in radians (3-5), scale (6-8), rotate pivot (9-11), rotate pivot
+// translate (12-14), scale pivot (15-17), scale pivot translate (18-20), alpha (21).
+typedef struct EffectMayaKey {
+	s16 frame;                       // 0x0
+	EffectMayaKeyChannel ch[22];     // 0x2
+} EffectMayaKey;
+
+typedef struct EffectMayaTrack {
+	s32 count;           // 0x0
+	EffectMayaKey* keys; // 0x4
+	u8 field_0x8[0x8];   // 0x8
+} EffectMayaTrack;
+
+// Original hand-written asm; approved by Isaac 2026-10-04; see docs/CONTEXT.md 'Inline asm in game code: the
+// exception policy'. Retail sets GQR5 to a computed quantiser (0x06070607: s16, scale 6, i.e. value / 64), which no
+// SDK inline writes, and loads every keyframe s16 through it with psq_l, two of them into f1 back to back with the
+// first never read, which only asm does. The finished decomps write the same pattern as asm in game code (TP's
+// d_a_movie_player). Both blocks sit in inline helpers as retail's register ranks require; the #else versions
+// are the same maths in C.
+#ifdef MUST_MATCH
+static inline void effMayaSetGQR5(void) {
+	register u32 gqr = 0x06070607;
+	asm { mtspr GQR5, gqr }
+}
+#endif
+
+// Evaluates every channel at `frame` between two keys: Hermite interpolation, or the earlier key's value
+// for a stepped channel.
+static inline void effMayaAnimInterp(EffectMayaKey* prev, EffectMayaKey* cur, f32 frame, f32* out) {
+	s32 j;
+#ifdef MUST_MATCH
+	// key pointers stepped 8 bytes per channel: the asm addresses each channel's s16s as 2/4/6 past them
+	register s16* pb;
+	register s16* pa;
+
+	pa = (s16*)prev;
+	pb = (s16*)cur;
+#else
+	EffectMayaKeyChannel* ca = prev->ch;
+	EffectMayaKeyChannel* cb = cur->ch;
+#endif
+
+	for (j = 0; j < 22; j++) {
+#ifdef MUST_MATCH
+		// original hand-written asm (see effMayaSetGQR5): all six s16s load whether used or not
+		register f32 ob, ib, vb, oa, ia, va;
+		asm {
+			psq_l va, 2(pa), 1, 5
+			psq_l ia, 4(pa), 1, 5
+			psq_l oa, 6(pa), 1, 5
+			psq_l vb, 2(pb), 1, 5
+			psq_l ib, 4(pb), 1, 5
+			psq_l ob, 6(pb), 1, 5
+		}
+		if (((s8*)pa)[9]) {
+#else
+		f32 va = ca->value / 64.0f;
+		f32 oa = ca->outTangent / 64.0f;
+		f32 vb = cb->value / 64.0f;
+		f32 ib = cb->inTangent / 64.0f;
+		if (ca->step) {
+#endif
+			*out = va;
+		} else {
+			f32 dt, t, t2, t3;
+			f32 start = prev->frame;
+			dt = cur->frame - prev->frame;
+			t = (frame - start) / (!dt ? 1e-8f : dt);
+			t2 = t * t;
+			t3 = t2 * t;
+			*out = va * (1.0f + (2.0f * t3 - 3.0f * t2)) + oa * (dt * (t + (t3 - 2.0f * t2)))
+			     + vb * (-2.0f * t3 + 3.0f * t2) + ib * (dt * (t3 - t2));
+		}
+#ifdef MUST_MATCH
+		pa += 4;
+		pb += 4;
+#else
+		ca++;
+		cb++;
+#endif
+		out++;
+	}
+}
+
+void effCalcMayaAnimMatrix(void* animPtr, void* trackPtr, void* matrix, void* alpha) {
+	EffectMayaAnim* anim = (EffectMayaAnim*)animPtr;
+	EffectMayaTrack* track = (EffectMayaTrack*)trackPtr;
+	f32 v[22];
+	Mtx tr, s, tmp2, scPiv, scPivInv, scPivT, rotPiv, rotPivInv, rotPivT, rx, ry, rz, tmp;
+	EffectMayaKey* prev;
+	EffectMayaKey* cur;
+	f32 frame;
+	s32 i;
+
+	for (i = 1; i < track->count; i++) {
+		prev = &track->keys[i - 1];
+		cur = &track->keys[i];
+#ifdef MUST_MATCH
+		effMayaSetGQR5();
+#endif
+		if (anim->field_0x4 <= cur->frame) {
+			frame = anim->field_0x4;
+		} else if (i == track->count - 1) {
+			frame = cur->frame;
+		} else {
+			continue;
+		}
+		effMayaAnimInterp(prev, cur, frame, v);
+
+		PSMTXTrans(tr, v[0], v[1], v[2]);
+		PSMTXRotRad(rx, 'x', v[3]);
+		PSMTXRotRad(ry, 'y', v[4]);
+		PSMTXRotRad(rz, 'z', v[5]);
+		PSMTXScale(s, v[6], v[7], v[8]);
+		PSMTXTrans(rotPiv, v[9], v[10], v[11]);
+		PSMTXTrans(rotPivInv, -v[9], -v[10], -v[11]);
+		PSMTXTrans(rotPivT, v[12], v[13], v[14]);
+		PSMTXTrans(scPiv, v[15], v[16], v[17]);
+		PSMTXTrans(scPivInv, -v[15], -v[16], -v[17]);
+		PSMTXTrans(scPivT, v[18], v[19], v[20]);
+
+		// Maya's transform order:
+		// translate * (rotPivT * rotPiv * rz * ry * rx * rotPiv^-1) * (scPivT * scPiv * s * scPiv^-1)
+		PSMTXConcat(scPivT, scPiv, tmp);
+		PSMTXConcat(tmp, s, tmp);
+		PSMTXConcat(tmp, scPivInv, s);
+		PSMTXConcat(rotPivT, rotPiv, tmp);
+		PSMTXConcat(tmp, rz, tmp);
+		PSMTXConcat(tmp, ry, tmp);
+		PSMTXConcat(tmp, rx, tmp);
+		PSMTXConcat(tmp, rotPivInv, tmp2);
+		PSMTXConcat(tr, tmp2, tmp);
+		PSMTXConcat(tmp, s, matrix);
+
+		*(f32*)alpha = v[21] > 1.0f ? 1.0f : (v[21] < 0.0f ? 0.0f : v[21]);
+		break;
+	}
+}
+
 void* effMayaAnimAlloc(void* animData) {
 	u32 size = *((EffectMayaAnimData*)animData)->count * 0x34 + 0x18;
 	EffectMayaAnim* anim = __memAlloc(HEAP_EFFECT, size);
@@ -380,7 +518,7 @@ void effPlayMayaAnim(void* animPtr) {
 	EffectMayaAnim* anim = (EffectMayaAnim*)animPtr;
 
 	anim->startTime = OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime);
-	anim->field_0x4 = float_0_8041a0ac;
+	anim->field_0x4 = 0.0f;
 	anim->flags |= 1;
 }
 
@@ -395,7 +533,7 @@ void effCalcMayaAnim(void* animPtr) {
 		return;
 	}
 
-	anim->field_0x4 = (f32)(u64)(OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime) - anim->startTime) * gp->framerate / float_1000_8041a0a8;
+	anim->field_0x4 = (f32)(u64)(OSTicksToMilliseconds(gp->inBattle ? gp->renderTime : gp->renderFieldTime) - anim->startTime) * gp->framerate / 1000.0f;
 
 	if (anim->field_0x4 >= anim->animData->field_0x4) {
 		anim->field_0x4 = anim->animData->field_0x4;
@@ -433,21 +571,6 @@ void effDrawMayaPoly(void* data_) {
 }
 
 // ---- .sdata2 ----
-// All the float words the unit reads by name, in original address order. They are defined
-// after the code so the compiler emits them as objects instead of folding their values.
-#pragma force_active on
-#pragma explicit_zero_data on
-__declspec(section ".sdata2") const f32 float_1000_8041a0a8 = 1000.0f;
-__declspec(section ".sdata2") const f32 float_0_8041a0ac = 0.0f;
-__declspec(section ".sdata2") const f32 dat_8041a0b0 = 0.00000001f;
-__declspec(section ".sdata2") const f32 float_3_8041a0b4 = 3.0f;
-__declspec(section ".sdata2") const f32 float_neg2_8041a0b8 = -2.0f;
-__declspec(section ".sdata2") const f32 float_1_8041a0bc = 1.0f;
-__declspec(section ".sdata2") const f32 float_2_8041a0c0 = 2.0f;
-__declspec(section ".sdata2") u32 gap_09_8041A0C4_sdata2[1] = { 0 };
-#pragma explicit_zero_data reset
-#pragma force_active reset
-
 // trailing alignment bytes of the unit's .sdata (the original keeps them after dummy$824)
 #pragma explicit_zero_data on
 #pragma force_active on
