@@ -1684,22 +1684,29 @@ void fan_disp(void) {
 // A sixth: the fly SFX pointer is held in two callee-saved registers (r30 and r29); the
 // single-variable form lets MWCC colour the switch loop's `&fan_wp` r30 instead of retail's
 // r26, which broke the first normalize loop's registers. 98.20 -> 98.27.
-// What is still different (122 instruction diffs, most of them one register name):
-//  - the last loop: our MWCC hoists `&query.hitNormal` (r1+0x5c) into r30 across the loop, so the
-//    loop's fan/i land in r28/r27 where retail has r30/r28 (retail computes the address inline).
+// The display loop matches (pose/fan/i = r29/r30/r28) and the early loops nearly do. Load-bearing
+// edits for the allocator, all local to this function:
+//  - `opt_loop_invariants off` stops `&query.hitNormal` being hoisted into r30 before the display loop;
+//  - `fan` is declared before `pose` at the top, and each loop that owns its own `fan`/`fan`+`i` pair
+//    declares `FanPose* fan` before `s32 i` (the else loop uses `fane`/`posee` declared before
+//    `found`/`i`, the pair loop `fanp`/`ip`, the switch loop `fan` before `i`);
+//  - the case-10/20 counters use `s16 v = field; field = --v;` (the `v - 1` form colours r0/r3 wrong).
+// Together 98.27 -> 98.86 and one instruction. What is still different (45 instruction diffs):
+//  - the switch-loop preheader: the string address is materialised in r0 and copied to the two
+//    fly-SFX pointers, where retail writes it straight into r30 (`addi r30` + one `mr`), one extra
+//    `mr`. Same for the `vec3_tou_0000d064`/`0.5` schedule in case 2 (loads before the stores).
 //  - case 1's angle `a` lands in f31 where retail has f30; this cascades through the inlined
-//    fanSinf/fanCosf branches.
-//  - case 2's `fan->target = vec3_tou_0000d064` / `ang = (ang + breath) / 2.0f` scheduling: retail
-//    loads the vector and 0.5 after the stores, ours before.
-//  - one `fcmpu cr0, f0, f1` where retail has the operands the other way round.
+//    fanSinf/fanCosf branches (the `fdivs f30` in retail).
+//  - a handful of residual register names in the else loop and one `fcmpu` operand order.
 static inline f32 fanAngle(f32 rf, f32 min, f32 span) {
     return (rf * span + min) * TWO_PI / 360.0f;
 }
-// NONMATCHING (98.27%): the above register/scheduling clusters; no logic differs.
+// NONMATCHING (98.86%): the above register/scheduling clusters; no logic differs.
+#pragma opt_loop_invariants off // stops `&query.hitNormal` being hoisted into r30 before the loop
 void ext_fan_main(void) {
     MarioWork* mario = marioGetPtr();
-    ExtPose* pose;
     FanPose* fan;
+    ExtPose* pose;
     Vec d;
     Vec vec = vec3_tou_0000d04c;
     s32 i;
@@ -1729,25 +1736,27 @@ void ext_fan_main(void) {
             n--;
         }
     } else {
+        FanPose* fane;
+        ExtPose* posee;
         s32 found = 0;
         s32 i;
-        pose = extGetPosePtr();
-        fan = fan_wp->poses;
-        for (i = 0; i < fan_wp->poseNum; i++, fan++, pose++) {
-            if (fan->field_0x2 != 0) {
+        posee = extGetPosePtr();
+        fane = fan_wp->poses;
+        for (i = 0; i < fan_wp->poseNum; i++, fane++, posee++) {
+            if (fane->field_0x2 != 0) {
                 continue;
             }
             if (found == 0) {
                 found = 1;
-                fan->position = mario->position;
-                pose->flags &= ~1;
-                fan->flags |= 1;
+                fane->position = mario->position;
+                posee->flags &= ~1;
+                fane->flags |= 1;
             } else {
                 NpcEntry* npc = npcNameToPtr("\x83\x60\x83\x83\x83\x93\x83\x73\x83\x87\x83\x93");
-                fan->position = npc->position;
-                vec = fan->position;
-                pose->flags &= ~1;
-                fan->flags |= 1;
+                fane->position = npc->position;
+                vec = fane->position;
+                posee->flags &= ~1;
+                fane->flags |= 1;
                 break;
             }
         }
@@ -1771,9 +1780,11 @@ void ext_fan_main(void) {
     }
     }
 
-    fan = fan_wp->poses;
-    for (i = 0; i < fan_wp->poseNum; i++, fan++) {
-        if (fan->field_0x2 != 0) {
+    {
+    FanPose* fanp = fan_wp->poses;
+    s32 ip;
+    for (ip = 0; ip < fan_wp->poseNum; ip++, fanp++) {
+        if (fanp->field_0x2 != 0) {
             continue;
         }
         {
@@ -1782,23 +1793,23 @@ void ext_fan_main(void) {
                 if (other->field_0x2 != 0) {
                     continue;
                 }
-                if (i == j) {
+                if (ip == j) {
                     continue;
                 }
-                if (PSVECSquareDistance(&fan->position, &other->position) < 900.0f) {
-                    PSVECSubtract(&fan->position, &other->position, &d);
+                if (PSVECSquareDistance(&fanp->position, &other->position) < 900.0f) {
+                    PSVECSubtract(&fanp->position, &other->position, &d);
                     d.y = 0.0f;
                     PSVECNormalize(&d, &d);
                     PSVECScale(&d, &d, 5.0f);
-                    PSVECAdd(&fan->velocity, &d, &fan->velocity);
+                    PSVECAdd(&fanp->velocity, &d, &fanp->velocity);
                     PSVECSubtract(&other->velocity, &d, &other->velocity);
                 }
             }
         }
     }
+    }
 
     {
-        s32 i;
         FanPose* fan = fan_wp->poses;
 #ifdef MUST_MATCH
         // The original holds the fly SFX pointer in two callee-saved registers (r30 and
@@ -1809,6 +1820,7 @@ void ext_fan_main(void) {
 #else
         const char* flySfx = "SFX_STG3_AUDIENCE_FAN_FLY1";
 #endif
+        s32 i;
 
         for (i = 0; i < fan_wp->poseNum; i++, fan++) {
         if (fan->field_0x2 != 0) {
@@ -1939,9 +1951,9 @@ void ext_fan_main(void) {
                 fan->position.z += fan->field_0x3C * -c;
             }
             {
-                s16 v = fan->field_0x44 - 1;
+                s16 v = fan->field_0x44;
 
-                fan->field_0x44 = v;
+                fan->field_0x44 = --v;
                 if (v < 0) {
                     fan->field_0x2 = 100;
                 }
@@ -1949,9 +1961,9 @@ void ext_fan_main(void) {
             break;
         case 20:
             {
-                s16 v = fan->field_0x44 - 1;
+                s16 v = fan->field_0x44;
 
-                fan->field_0x44 = v;
+                fan->field_0x44 = --v;
                 if (v > 0) {
                     fan->target.x += fan->field_0x38;
                     fan->target.y += fan->field_0x3C;
@@ -1985,6 +1997,7 @@ void ext_fan_main(void) {
     psndSFX_pos(fan_wp->sfxId, &vec);
     psndSFX_vol(fan_wp->sfxId, (u8)(fan_wp->volume * fan_wp->field_0x510 / fan_wp->poseNum));
 }
+#pragma opt_loop_invariants reset
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
 void ext_fan_dispent(void) {
