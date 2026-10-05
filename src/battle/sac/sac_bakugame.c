@@ -220,392 +220,6 @@ extern const f32 float_900_804216c0;
 extern const f32 float_37_804216c8;
 extern const f32 float_2160_804216cc;
 
-void bakuGameDispStar(CameraId camId, void* param) {
-}
-
-void bakuGameDisp3D(CameraId camId, void* param) {
-    BakuGameWork* baku = GetBakuGamePtr();
-    CameraEntry* cam = camGetPtr(4);
-    Mtx scale;
-    Mtx trans;
-    Mtx mtx;
-    GXTexObj texObj;
-    s32 idx;
-
-    PSMTXScale(scale, float_neg1_80421604, float_1_80421608, float_1_80421608);
-    PSMTXTrans(trans, baku->position.x, baku->position.y, baku->position.z);
-    PSMTXConcat(trans, scale, mtx);
-    if (baku->field_0xEC != -1) {
-        animPoseDrawMtx(baku->field_0xEC, mtx, 2, float_180_8042160c, baku->field_0xC4);
-    }
-    if (baku->flags & 1) {
-        void* file;
-        TEXPalette* pal;
-
-        GXSetCullMode(0);
-        GXClearVtxDesc();
-        GXSetVtxDesc(9, 1);
-        GXSetVtxDesc(0xD, 1);
-        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-        GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
-        GXSetNumChans(1);
-        GXSetChanCtrl(4, 0, 1, 0, 0, 2, 2);
-        GXSetChanMatColor(4, *(GXColor*)&dat_80421600);
-        GXSetNumTexGens(1);
-        GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-        GXSetNumTevStages(1);
-        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(0, 0xF, 0xC, 8, 0xA);
-        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-        GXSetTevAlphaIn(0, 7, 5, 4, 7);
-        GXSetTevOrder(0, 0, 0, 4);
-        file = BattleAudienceBaseGetPtr()->normalTex;
-        pal = *(TEXPalette**)(*(u8**)((u8*)file + 0xA0));
-        TEXGetGXTexObjFromPalette(pal, &texObj, baku->field_0x200);
-        GXLoadTexObj(&texObj, 0);
-        PSMTXTrans(trans, baku->field_0x1D0.x, baku->field_0x1D0.y, baku->field_0x1D0.z);
-        PSMTXConcat(cam->view, trans, mtx);
-        GXLoadPosMtxImm(mtx, 0);
-        {
-            f32 texCoords[16] = {
-                0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
-                1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-            };
-
-            idx = (baku->field_0x1CC == 1) ? 4 : 0;
-            GXBegin(0x80, 0, 4);
-            GXPosition3f32(float_neg20_80421610, float_40_80421614, float_0_80421618);
-            GXTexCoord2f32(texCoords[(idx + 0) * 2], texCoords[(idx + 0) * 2 + 1]);
-            GXPosition3f32(float_20_8042161c, float_40_80421614, float_0_80421618);
-            GXTexCoord2f32(texCoords[(idx + 1) * 2], texCoords[(idx + 1) * 2 + 1]);
-            GXPosition3f32(float_20_8042161c, float_0_80421618, float_0_80421618);
-            GXTexCoord2f32(texCoords[(idx + 2) * 2], texCoords[(idx + 2) * 2 + 1]);
-            GXPosition3f32(float_neg20_80421610, float_0_80421618, float_0_80421618);
-            GXTexCoord2f32(texCoords[(idx + 3) * 2], texCoords[(idx + 3) * 2 + 1]);
-            GXEnd();
-        }
-    }
-}
-
-// Taking the entry through this accessor is what gets bakuGameDisp2D's loads in the original's order (permuter).
-static inline BakuGameWorkEntry* bakuGameEntry(BakuGameWork* work, s32 i) {
-    return &work->entries[i];
-}
-
-void bakuGameDisp2D(void) {
-    BattleWork* wp;
-    BakuGameWork* baku;
-    s32 i;
-    s32 flag;
-
-    baku = GetBakuGamePtr();
-    wp = _battleWorkPointer;
-#ifdef MUST_MATCH
-    // Match-only round trip (net value unchanged): forces MWCC to keep wp in r31 so baku lands in r30.
-    wp = (BattleWork*)((u32)wp + 0x1F2C);
-    wp = (BattleWork*)((u32)wp - 0x1F2C);
-#endif
-    for (i = 0; i < 3; i++) {
-        BakuGameWorkEntry* entry = bakuGameEntry(baku, i);
-        s16 icon;
-
-        switch (entry->type) {
-            case 0x100:
-                icon = 0x64;
-                break;
-            case 0x200:
-                icon = 0x66;
-                break;
-            case 0x400:
-                icon = 0x68;
-                break;
-            default:
-                icon = 0;
-                break;
-        }
-        if ((u16)icon != 0) {
-            Vec screen;
-
-            btlGetScreenPoint(&entry->pos, &screen);
-            iconDispGx(&screen, 0x10, icon, entry->field_0x20);
-        }
-    }
-    flag = 0;
-    if (baku->field_0xD0 >= float_100_80421620) {
-        BakuGameBouncePos* p = (BakuGameBouncePos*)((u8*)wp + 0x1F2C);
-
-        flag = 1;
-        p->field_0x0 = 0;
-        p->field_0x3 = 0xFF;
-        p->field_0x1 += p->field_0x5;
-        p->field_0x2 += p->field_0x6;
-        if (p->field_0x1 <= 0x80 && p->field_0x5 <= 0) {
-            p->field_0x6 = 0x10;
-            p->field_0x5 = 0x10;
-        }
-        if (p->field_0x1 >= 0xF5 && p->field_0x5 >= 0) {
-            p->field_0x6 = -0x10;
-            p->field_0x5 = -0x10;
-        }
-    }
-    BattleAcDrawGauge((s32)baku->field_0xDC, (s32)baku->field_0xE0, 0xB1, 3, 0x21, 0x42, 0x64, flag, baku->field_0xE8);
-}
-
-// Keep bakuGameAudienceSurprise out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
-void bakuGameAudienceSurprise(void) {
-    s32 i;
-
-    for (i = 0; i < 200; i++) {
-        BattleAudienceMember* member = BattleAudienceGetPtr(i);
-
-        if ((u8)BattleAudience_GetWaiting(i)) {
-            member->flags |= 0x10;
-            memset(&member->interpFramesLeft, 0, 0x34);
-            if (!bakuGameAudienceCanThrowPos(i)) {
-                BattleAudience_SetAnim(i, 7, 0);
-                if (irand(2) == 0) {
-                    member->field_0xE8 = float_90_80421624;
-                } else {
-                    member->field_0xE8 = float_270_80421628;
-                }
-            } else {
-                BattleAudience_SetAnim(i, 3, 0);
-            }
-        }
-    }
-}
-
-#pragma dont_inline reset
-
-// Keep bakuGameEnemySurprise out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
-void bakuGameEnemySurprise(void) {
-    s32 i;
-    BattleWork* wp = _battleWorkPointer;
-
-    for (i = 0; i < 64; i++) {
-        BattleUnit* unit = BattleGetUnitPtr(wp, i);
-
-        if (unit != NULL && unit->mAlliance == 1 && !(unit->mAttributeFlags & 0x20000) &&
-            !BtlUnit_CheckStatus(unit, 0x1B)) {
-            BtlUnit_SetBodyAnimType(unit, 0x27);
-        }
-    }
-}
-
-#pragma dont_inline reset
-
-// Matches only because str_8042162C is declared 6 bytes (so it lands in .sdata2 and MWCC emits
-// li r4, str_8042162C@sda21 and can anchor the PKR strings off str_802FEA98); with 8 bytes it was in .rodata.
-// Keep bakuGameMarioSurprise out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
-void bakuGameMarioSurprise(BattleUnit* unit, BattleUnit* party) {
-    BtlUnit_SetBodyAnim(unit, str_8042162C);
-    if (bakuGamePartyExist(party)) {
-        switch (party->initialKind) {
-            case 0xE0:
-                BtlUnit_SetBodyAnim(party, str_802FECE4);
-                break;
-            case 0xE1:
-                BtlUnit_SetBodyAnim(party, str_802FECEC);
-                break;
-            case 0xE3:
-                BtlUnit_SetBodyAnim(party, str_802FECF4);
-                break;
-            case 0xE2:
-                BtlUnit_SetBodyAnim(party, str_802FECFC);
-                break;
-            case 0xE4:
-                BtlUnit_SetBodyAnim(party, str_802FED04);
-                break;
-            case 0xE5:
-                BtlUnit_SetBodyAnim(party, str_802FED0C);
-                break;
-            case 0xE6:
-                BtlUnit_SetBodyAnim(party, str_802FED14);
-                break;
-        }
-    }
-}
-
-#pragma dont_inline reset
-
-// Keep bakuGameAudienceSurpriseReset out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
-void bakuGameAudienceSurpriseReset(void) {
-    s32 i;
-
-    for (i = 0; i < 200; i++) {
-        if ((u8)BattleAudience_GetExist(i)) {
-            BattleAudienceMember* member = BattleAudienceGetPtr(i);
-
-            member->field_0xE8 = float_90_80421624;
-            if (!bakuGameAudienceCanThrowPos(i)) {
-                member->flags &= ~0x10;
-            }
-        }
-    }
-}
-
-#pragma dont_inline reset
-
-// Keep bakuGameEnemySurpriseReset out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
-void bakuGameEnemySurpriseReset(void) {
-    s32 i;
-    BattleWork* wp = _battleWorkPointer;
-
-    for (i = 0; i < 64; i++) {
-        BattleUnit* unit = BattleGetUnitPtr(wp, i);
-
-        if (unit != NULL && unit->mAlliance == 1 && !(unit->mAttributeFlags & 0x20000) &&
-            !BtlUnit_CheckStatus(unit, 0x1B)) {
-            btlDispPoseAnime(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)));
-        }
-    }
-}
-
-#pragma dont_inline reset
-
-// Keep bakuGameMarioSurpriseReset out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
-void bakuGameMarioSurpriseReset(BattleUnit* unit, BattleUnit* party) {
-    btlDispPoseAnime(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)));
-    if (bakuGamePartyExist(party)) {
-        btlDispPoseAnime(BtlUnit_GetPartsPtr(party, BtlUnit_GetBodyPartsId(party)));
-    }
-}
-#pragma dont_inline reset
-
-// Keep bakuGameAudienceCanThrowPos out of line: callers emit bl instead of inlining the loop.
-#pragma dont_inline on
-s32 bakuGameAudienceCanThrowPos(s32 id) {
-    s32 i;
-    s32 ofs = 0;
-
-    for (i = 0; i < 3; i++) {
-        if (id >= ofs + 8 && id <= ofs + 0xB) {
-            return 1;
-        }
-        ofs += 0x14;
-    }
-    return 0;
-}
-#pragma dont_inline reset
-
-// Keep bakuGamePartyExist out of line: callers emit bl instead of inlining the status checks.
-#pragma dont_inline on
-BOOL bakuGamePartyExist(BattleUnit* unit) {
-    if (unit == NULL) {
-        return 0;
-    }
-    if (BtlUnit_CheckStatus(unit, 0x1B)) {
-        return 0;
-    }
-    return BtlUnit_CanActStatus(unit) != 0;
-}
-#pragma dont_inline reset
-
-// Keep bakuGameDecideButton out of line: bakuGameMain calls it three times and the original issues bl each time.
-#pragma dont_inline on
-// Matches by copying the two tables from the named .rodata objects (the brace-list form made anonymous
-// templates) and by binding entry = &baku->entries[i] so the loop index/entry registers land as in the original.
-void bakuGameDecideButton(s32 arg) {
-    BakuGameWork* baku = GetBakuGamePtr();
-    BakuGamePositions positions;
-    BakuGamePerms perms;
-    BakuGamePositions* posSrc = (BakuGamePositions*)dat_802febfc;
-    BakuGamePerms* permSrc = (BakuGamePerms*)dat_802fec20;
-    s32 rnd;
-    s32 i;
-
-    positions = *posSrc;
-    perms = *permSrc;
-    rnd = irand(6);
-
-    for (i = 0; i < 3; i++) {
-        BakuGameWorkEntry* entry = &baku->entries[i];
-        entry->index = perms.v[rnd][i];
-        entry->pos = positions.v[perms.v[rnd][i]];
-    }
-    if (arg == 0) {
-        baku->field_0xF4 = 0x3C;
-    }
-}
-#pragma dont_inline reset
-
-// NONMATCHING (99.34%): case-0 stores the zero constant from f1 where the original uses f0; case-5 loads the
-// three vec words x,y,z where the original does z,x,y; case-10 loads the int args before the float args.
-s32 bakuGameHeihoReturn(EventEntry* event, BOOL isFirstCall) {
-    BakuGameWork* baku = GetBakuGamePtr();
-    f32 zero;
-
-    if (!(baku->flags & 1)) {
-        return 2;
-    }
-    if (isFirstCall) {
-        baku->field_0x1C0 = 0;
-    }
-    switch (baku->field_0x1C0) {
-        case 0:
-            if (float_0_80421618 != baku->field_0x1D0.y) {
-                baku->field_0x1D0.y += baku->field_0x1F8;
-                baku->field_0x1F8 += float_neg2_80421634;
-            }
-            if (baku->field_0x1D0.y <= (zero = float_0_80421618)) {
-                baku->field_0x1D0.y = zero;
-                baku->field_0x1C0 = 5;
-            }
-            break;
-        case 5: {
-            Vec v;
-
-            baku->field_0x1C0 = 10;
-            baku->field_0x1CC = 1;
-#ifdef MUST_MATCH
-            // volatile keeps the 1DC struct copy ahead of the vec read and forces the vec words through memory,
-            // which is the only way MWCC reproduces the original's copy scheduling.
-            *(volatile Vec*)&baku->field_0x1DC = baku->field_0x1D0;
-            v = *(volatile Vec*)&vec3_802febf0;
-#else
-            baku->field_0x1DC = baku->field_0x1D0;
-            v = vec3_802febf0;
-#endif
-            v.z = baku->field_0x1D0.z;
-            baku->field_0x1E8 = v;
-            baku->field_0x1C4 = 0;
-            baku->field_0x1C8 = 0x1E;
-            // fall through
-        }
-        case 10: {
-            s32 m;
-
-            baku->field_0x1D0.x = intplGetValue(0, baku->field_0x1C4, baku->field_0x1C8, baku->field_0x1DC.x,
-                                                baku->field_0x1E8.x);
-            m = baku->field_0x1C4 % 12;
-            if (m >= 0 && m <= 3) {
-                baku->field_0x200 = 0x5A;
-            }
-            if (m >= 4 && m <= 7) {
-                baku->field_0x200 = 0x5B;
-            }
-            if (m >= 8 && m <= 0xB) {
-                baku->field_0x200 = 0x5C;
-            }
-            baku->field_0x1C4++;
-            if (baku->field_0x1C4 > baku->field_0x1C8) {
-                return 2;
-            }
-            break;
-        }
-    }
-    dispEntry(4, float_0_80421618, 1, bakuGameDisp3D, NULL);
-    return 0;
-}
-
-// The weapon bakuGameDecideWeapon copies into the work (0xC0 bytes, a BattleWeapon): name, message, stats and
-// the attack event script. Written as words because BattleWeapon's header leaves most of its fields unnamed.
 extern s32 marioAttackEvent_BakuGame[];
 static void* weapon[0xC0 / 4] = {
     (void*)str_802FEA98, (void*)0x01980000, NULL, (void*)str_802FEAAC,
@@ -621,12 +235,8 @@ static void* weapon[0xC0 / 4] = {
     NULL, NULL, NULL, NULL,
     (void*)marioAttackEvent_BakuGame, (void*)0x00000064, NULL, NULL,
 };
-
-// Forward declarations for the static script entry points and the team scripts the attack-event table names.
 static s32 main_star(EventEntry* event, BOOL isFirstCall);
 static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall);
-
-// marioAttackEvent_BakuGame: 476 bytes
 s32 marioAttackEvent_BakuGame[119] = {
     0x0001005B, (s32)(void*)btlevtcmd_WaitGuardMove, 0x0002005B, (s32)(void*)btlevtcmd_CommandPayWeaponCost,
     0xFFFFFFFE, 0x0003005B, (s32)(void*)btlevtcmd_CommandGetWeaponAddress, 0xFFFFFFFE,
@@ -659,8 +269,6 @@ s32 marioAttackEvent_BakuGame[119] = {
     0x00010003, 0x00000063, 0x0002005B, (s32)(void*)btlevtcmd_StartWaitEvent,
     0xFFFFFFFE, 0x00000002, 0x00000001,
 };
-
-// hitCheck_MarioTeam: 584 bytes
 s32 hitCheck_MarioTeam[146] = {
     0x0003005B, (s32)(void*)btlevtcmd_GetUnitId, 0xFFFFFFFC, 0xFE363C83,
     0x00020018, 0xFE363C83, 0xFFFFFFFF, 0x00010004,
@@ -700,8 +308,6 @@ s32 hitCheck_MarioTeam[146] = {
     0x00000100, 0xFE363C85, 0x00010003, 0x00000063,
     0x00000002, 0x00000001,
 };
-
-// hitCheck_EnemyTeam: 212 bytes
 s32 hitCheck_EnemyTeam[53] = {
     0x0003005B, (s32)(void*)btlevtcmd_GetSelectEnemy, 0xFE363C83, 0xFE363C84,
     0x00010003, 0x0000000A, 0x0006005B, (s32)(void*)btlevtcmd_GetHitPos,
@@ -718,14 +324,214 @@ s32 hitCheck_EnemyTeam[53] = {
     0x00010004, 0x0000000A, 0x00000021, 0x00000002,
     0x00000001,
 };
-
-// hitCheck_AudienceTeam: 60 bytes
 s32 hitCheck_AudienceTeam[15] = {
     0x0002005B, (s32)(void*)evt_audience_abnormal_natural_all, 0x00000064, 0x00020019,
     0xFE363C82, 0xFFFFFFFF, 0x0005005B, (s32)(void*)btlevtcmd_ACSuccessEffect,
     0xFE363C82, 0x00000000, 0x00000064, 0x00000000,
     0x00000021, 0x00000002, 0x00000001,
 };
+extern s32 psndSFX_pit(s32 id, s32 pit);
+
+// Keep GetBakuGamePtr out of line: every caller emits bl GetBakuGamePtr as in the original.
+#pragma dont_inline on
+// Prototypes for the forward references the original function order needs.
+static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall);
+static USER_FUNC(main_star);
+
+BakuGameWork* GetBakuGamePtr(void) {
+    return (BakuGameWork*)((u8*)_battleWorkPointer + 0x1F4C);
+}
+#pragma dont_inline reset
+
+static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall) {
+    BakuGameWork* baku = GetBakuGamePtr();
+
+    baku->state = 1;
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(main_star) {
+    BakuGameWork* baku = GetBakuGamePtr();
+    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+    f32 scale;
+
+    switch (baku->state) {
+        case 0:
+        case 4:
+            break;
+        case 1: {
+            baku->state = 2;
+            baku->frame = 0;
+            {
+                f32 zero = float_0_80421618;
+
+                baku->starStone = effStarStoneEntry(1, zero, float_neg1000_8042167c, zero, float_1_80421608);
+            }
+            BtlUnit_GetPos(mario, &baku->field_0x20C.x, &baku->field_0x20C.y, &baku->field_0x20C.z);
+#ifdef MUST_MATCH
+            baku->field_0x20C.y += mario->mSizeMultiplier * (f32)mario->mHeight + *(volatile const f32*)&float_37_804216c8;
+#else
+            baku->field_0x20C.y += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804216c8;
+#endif
+#ifdef MUST_MATCH
+            // volatile destinations keep the zero-Vec source loads below these struct copies.
+            *(volatile Vec*)&baku->field_0x218 = baku->field_0x20C;
+            *(volatile Vec*)&baku->field_0x224 = baku->field_0x20C;
+#else
+            baku->field_0x218 = baku->field_0x20C;
+            baku->field_0x224 = baku->field_0x20C;
+#endif
+#ifdef MUST_MATCH
+            // volatile field updates anchor the zero-Vec source loads below them.
+            *(volatile f32*)&baku->field_0x224.y += float_50_80421678;
+            *(volatile f32*)&baku->field_0x224.z += float_neg1_80421604;
+#else
+            baku->field_0x224.y += float_50_80421678;
+            baku->field_0x224.z += float_neg1_80421604;
+#endif
+#ifdef MUST_MATCH
+            // volatile destination stops MWCC hoisting the zero-Vec source words above the y/z updates.
+            *(volatile Vec*)&baku->field_0x23C = vec3_802feac8;
+            *(volatile Vec*)&baku->field_0x248 = vec3_802fead4;
+#else
+            baku->field_0x23C = vec3_802feac8;
+            baku->field_0x248 = vec3_802fead4;
+#endif
+        }
+            // fall through
+        case 2:
+            baku->frame++;
+            if (baku->frame <= 100) {
+                baku->field_0x20C.x = intplGetValue(0, baku->frame, 100, baku->field_0x218.x, baku->field_0x224.x);
+                baku->field_0x20C.y = intplGetValue(0, baku->frame, 100, baku->field_0x218.y, baku->field_0x224.y);
+                baku->field_0x20C.z = intplGetValue(0, baku->frame, 100, baku->field_0x218.z, baku->field_0x224.z);
+                scale = intplGetValue(0, baku->frame, 100, float_0_80421618, float_2_8042165c);
+                baku->field_0x23C.z = scale;
+                baku->field_0x23C.y = scale;
+                baku->field_0x23C.x = scale;
+            } else {
+                baku->field_0x20C.x = baku->field_0x224.x;
+                baku->field_0x20C.y = baku->field_0x224.y;
+                baku->field_0x20C.z = baku->field_0x224.z;
+                baku->field_0x23C.z = float_2_8042165c;
+                baku->field_0x23C.y = float_2_8042165c;
+                baku->field_0x23C.x = float_2_8042165c;
+            }
+            baku->field_0x248.y = intplGetValue(4, baku->frame, 0x78, float_0_80421618, float_2160_804216cc);
+            if (baku->frame >= 0x78) {
+                baku->state = 3;
+                baku->frame = 0;
+                baku->field_0x218 = baku->field_0x20C;
+                baku->field_0x224.y = float_300_80421644;
+            }
+            break;
+        case 3:
+            baku->frame++;
+            baku->field_0x20C.y = intplGetValue(1, baku->frame, 0x3C, baku->field_0x218.y, baku->field_0x224.y);
+            if (baku->frame >= 0x3C) {
+                baku->state = 4;
+                baku->frame = 0;
+            }
+            break;
+    }
+    if (baku->starStone != NULL) {
+        f32* e = baku->starStone->userdata;
+
+        e[2] = baku->field_0x20C.x;
+        e[3] = baku->field_0x20C.y;
+        e[4] = baku->field_0x20C.z;
+        e[6] = baku->field_0x248.x;
+        e[7] = baku->field_0x248.y;
+        e[8] = baku->field_0x248.z;
+        e[5] = float_1p5_80421648 * baku->field_0x23C.x;
+    }
+    dispEntry(4, float_0_80421618, 2, bakuGameDispStar, NULL);
+    return EVT_RETURN_BLOCK;
+}
+
+s32 init_bakugame(EventEntry* event, BOOL isFirstCall) {
+    memset(GetBakuGamePtr(), 0, 0x2B8);
+    return EVT_RETURN_DONE;
+}
+
+s32 end_bakugame(EventEntry* event, BOOL isFirstCall) {
+    BakuGameWork* baku = GetBakuGamePtr();
+    void* q = baku->starStone->userdata;
+    effDelete(*(EffectEntry**)((u8*)q + 0x34));
+    effDelete(baku->starStone);
+    return EVT_RETURN_DONE;
+}
+
+s32 bakuGameDecideWeapon(EventEntry* event, BOOL isFirstCall) {
+    s32* args = event->args;
+    s32 v;
+    BakuGameWork* baku;
+    s8* p;
+#ifdef MUST_MATCH
+    s32 weaponArg;
+#endif
+
+    evtGetFloat(event, event->args[0]);
+    v = evtGetValue(event, args[1]);
+    baku = GetBakuGamePtr();
+#ifdef MUST_MATCH
+    // The +0x80/-0x80 round trip forces MWCC to keep the interior pointer in a register across the memcpy
+    // instead of folding it into each store offset; net value is unchanged.
+    p = (s8*)&baku->weapon.sleepChance;
+    p = (s8*)((u32)p + 0x80);
+    p = (s8*)((u32)p - 0x80);
+#else
+    p = (s8*)&baku->weapon.sleepChance;
+#endif
+    memcpy(&baku->weapon, &weapon, sizeof(BattleWeapon));
+    p[2] = 100;
+    if (v != -1) {
+        if (baku->field_0xD0 >= float_100_80421620) {
+            p[2] = 0x7F;
+        } else {
+            p[2] = 100;
+        }
+        p[3] = v - 1;
+#ifdef MUST_MATCH
+        // MUST_MATCH: an empty test of `baku` and the temporary below give retail's register use (permuter).
+        if (baku) {
+        }
+#endif
+    } else {
+        p[2] = 0;
+        p[3] = 0;
+    }
+#ifdef MUST_MATCH
+    evtSetValue(event, args[2], weaponArg = (s32)&baku->weapon);
+#else
+    evtSetValue(event, args[2], (s32)&baku->weapon);
+#endif
+    return EVT_RETURN_DONE;
+}
+
+s32 bakuGameBombEntry(EventEntry* event, BOOL isFirstCall) {
+    BakuGameWork* baku = GetBakuGamePtr();
+
+    if (animGroupBaseAsync(str_802FEDB8, 2, 0) == 0) {
+        return 0;
+    }
+    baku->field_0xEC = animPoseEntry(str_802FEDB8, 2);
+    animPoseSetAnim(baku->field_0xEC, str_804216C4, 1);
+    return 2;
+}
+
+// The weapon bakuGameDecideWeapon copies into the work (0xC0 bytes, a BattleWeapon): name, message, stats and
+// the attack event script. Written as words because BattleWeapon's header leaves most of its fields unnamed.
+
+// Forward declarations for the static script entry points and the team scripts the attack-event table names.
+
+// marioAttackEvent_BakuGame: 476 bytes
+
+// hitCheck_MarioTeam: 584 bytes
+
+// hitCheck_EnemyTeam: 212 bytes
+
+// hitCheck_AudienceTeam: 60 bytes
 
 // gap_05_803B108C_data: 4 bytes
 #pragma force_active on
@@ -735,7 +541,6 @@ __declspec(section ".data") s32 gap_05_803B108C_data[1] = {
 #pragma force_active reset
 
 // psndSFX_pit has no shared prototype; this file passes a full-width pitch (fctiwz result).
-extern s32 psndSFX_pit(s32 id, s32 pit);
 
 // The whole body is reconstructed; what is left is MWCC global register coloring (event,
 // _battleWorkPointer, party, args and mario land in different callee-saved registers, so most operands differ
@@ -1733,189 +1538,384 @@ state_done:
     return 0;
 }
 
-s32 bakuGameBombEntry(EventEntry* event, BOOL isFirstCall) {
+// NONMATCHING (99.34%): case-0 stores the zero constant from f1 where the original uses f0; case-5 loads the
+// three vec words x,y,z where the original does z,x,y; case-10 loads the int args before the float args.
+s32 bakuGameHeihoReturn(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
+    f32 zero;
 
-    if (animGroupBaseAsync(str_802FEDB8, 2, 0) == 0) {
-        return 0;
+    if (!(baku->flags & 1)) {
+        return 2;
     }
-    baku->field_0xEC = animPoseEntry(str_802FEDB8, 2);
-    animPoseSetAnim(baku->field_0xEC, str_804216C4, 1);
-    return 2;
-}
-
-s32 bakuGameDecideWeapon(EventEntry* event, BOOL isFirstCall) {
-    s32* args = event->args;
-    s32 v;
-    BakuGameWork* baku;
-    s8* p;
-#ifdef MUST_MATCH
-    s32 weaponArg;
-#endif
-
-    evtGetFloat(event, event->args[0]);
-    v = evtGetValue(event, args[1]);
-    baku = GetBakuGamePtr();
-#ifdef MUST_MATCH
-    // The +0x80/-0x80 round trip forces MWCC to keep the interior pointer in a register across the memcpy
-    // instead of folding it into each store offset; net value is unchanged.
-    p = (s8*)&baku->weapon.sleepChance;
-    p = (s8*)((u32)p + 0x80);
-    p = (s8*)((u32)p - 0x80);
-#else
-    p = (s8*)&baku->weapon.sleepChance;
-#endif
-    memcpy(&baku->weapon, &weapon, sizeof(BattleWeapon));
-    p[2] = 100;
-    if (v != -1) {
-        if (baku->field_0xD0 >= float_100_80421620) {
-            p[2] = 0x7F;
-        } else {
-            p[2] = 100;
-        }
-        p[3] = v - 1;
-#ifdef MUST_MATCH
-        // MUST_MATCH: an empty test of `baku` and the temporary below give retail's register use (permuter).
-        if (baku) {
-        }
-#endif
-    } else {
-        p[2] = 0;
-        p[3] = 0;
+    if (isFirstCall) {
+        baku->field_0x1C0 = 0;
     }
-#ifdef MUST_MATCH
-    evtSetValue(event, args[2], weaponArg = (s32)&baku->weapon);
-#else
-    evtSetValue(event, args[2], (s32)&baku->weapon);
-#endif
-    return EVT_RETURN_DONE;
-}
-
-s32 end_bakugame(EventEntry* event, BOOL isFirstCall) {
-    BakuGameWork* baku = GetBakuGamePtr();
-    void* q = baku->starStone->userdata;
-    effDelete(*(EffectEntry**)((u8*)q + 0x34));
-    effDelete(baku->starStone);
-    return EVT_RETURN_DONE;
-}
-
-s32 init_bakugame(EventEntry* event, BOOL isFirstCall) {
-    memset(GetBakuGamePtr(), 0, 0x2B8);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(main_star) {
-    BakuGameWork* baku = GetBakuGamePtr();
-    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
-    f32 scale;
-
-    switch (baku->state) {
+    switch (baku->field_0x1C0) {
         case 0:
-        case 4:
-            break;
-        case 1: {
-            baku->state = 2;
-            baku->frame = 0;
-            {
-                f32 zero = float_0_80421618;
-
-                baku->starStone = effStarStoneEntry(1, zero, float_neg1000_8042167c, zero, float_1_80421608);
+            if (float_0_80421618 != baku->field_0x1D0.y) {
+                baku->field_0x1D0.y += baku->field_0x1F8;
+                baku->field_0x1F8 += float_neg2_80421634;
             }
-            BtlUnit_GetPos(mario, &baku->field_0x20C.x, &baku->field_0x20C.y, &baku->field_0x20C.z);
+            if (baku->field_0x1D0.y <= (zero = float_0_80421618)) {
+                baku->field_0x1D0.y = zero;
+                baku->field_0x1C0 = 5;
+            }
+            break;
+        case 5: {
+            Vec v;
+
+            baku->field_0x1C0 = 10;
+            baku->field_0x1CC = 1;
 #ifdef MUST_MATCH
-            baku->field_0x20C.y += mario->mSizeMultiplier * (f32)mario->mHeight + *(volatile const f32*)&float_37_804216c8;
+            // volatile keeps the 1DC struct copy ahead of the vec read and forces the vec words through memory,
+            // which is the only way MWCC reproduces the original's copy scheduling.
+            *(volatile Vec*)&baku->field_0x1DC = baku->field_0x1D0;
+            v = *(volatile Vec*)&vec3_802febf0;
 #else
-            baku->field_0x20C.y += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804216c8;
+            baku->field_0x1DC = baku->field_0x1D0;
+            v = vec3_802febf0;
 #endif
-#ifdef MUST_MATCH
-            // volatile destinations keep the zero-Vec source loads below these struct copies.
-            *(volatile Vec*)&baku->field_0x218 = baku->field_0x20C;
-            *(volatile Vec*)&baku->field_0x224 = baku->field_0x20C;
-#else
-            baku->field_0x218 = baku->field_0x20C;
-            baku->field_0x224 = baku->field_0x20C;
-#endif
-#ifdef MUST_MATCH
-            // volatile field updates anchor the zero-Vec source loads below them.
-            *(volatile f32*)&baku->field_0x224.y += float_50_80421678;
-            *(volatile f32*)&baku->field_0x224.z += float_neg1_80421604;
-#else
-            baku->field_0x224.y += float_50_80421678;
-            baku->field_0x224.z += float_neg1_80421604;
-#endif
-#ifdef MUST_MATCH
-            // volatile destination stops MWCC hoisting the zero-Vec source words above the y/z updates.
-            *(volatile Vec*)&baku->field_0x23C = vec3_802feac8;
-            *(volatile Vec*)&baku->field_0x248 = vec3_802fead4;
-#else
-            baku->field_0x23C = vec3_802feac8;
-            baku->field_0x248 = vec3_802fead4;
-#endif
-        }
+            v.z = baku->field_0x1D0.z;
+            baku->field_0x1E8 = v;
+            baku->field_0x1C4 = 0;
+            baku->field_0x1C8 = 0x1E;
             // fall through
-        case 2:
-            baku->frame++;
-            if (baku->frame <= 100) {
-                baku->field_0x20C.x = intplGetValue(0, baku->frame, 100, baku->field_0x218.x, baku->field_0x224.x);
-                baku->field_0x20C.y = intplGetValue(0, baku->frame, 100, baku->field_0x218.y, baku->field_0x224.y);
-                baku->field_0x20C.z = intplGetValue(0, baku->frame, 100, baku->field_0x218.z, baku->field_0x224.z);
-                scale = intplGetValue(0, baku->frame, 100, float_0_80421618, float_2_8042165c);
-                baku->field_0x23C.z = scale;
-                baku->field_0x23C.y = scale;
-                baku->field_0x23C.x = scale;
-            } else {
-                baku->field_0x20C.x = baku->field_0x224.x;
-                baku->field_0x20C.y = baku->field_0x224.y;
-                baku->field_0x20C.z = baku->field_0x224.z;
-                baku->field_0x23C.z = float_2_8042165c;
-                baku->field_0x23C.y = float_2_8042165c;
-                baku->field_0x23C.x = float_2_8042165c;
+        }
+        case 10: {
+            s32 m;
+
+            baku->field_0x1D0.x = intplGetValue(0, baku->field_0x1C4, baku->field_0x1C8, baku->field_0x1DC.x,
+                                                baku->field_0x1E8.x);
+            m = baku->field_0x1C4 % 12;
+            if (m >= 0 && m <= 3) {
+                baku->field_0x200 = 0x5A;
             }
-            baku->field_0x248.y = intplGetValue(4, baku->frame, 0x78, float_0_80421618, float_2160_804216cc);
-            if (baku->frame >= 0x78) {
-                baku->state = 3;
-                baku->frame = 0;
-                baku->field_0x218 = baku->field_0x20C;
-                baku->field_0x224.y = float_300_80421644;
+            if (m >= 4 && m <= 7) {
+                baku->field_0x200 = 0x5B;
+            }
+            if (m >= 8 && m <= 0xB) {
+                baku->field_0x200 = 0x5C;
+            }
+            baku->field_0x1C4++;
+            if (baku->field_0x1C4 > baku->field_0x1C8) {
+                return 2;
             }
             break;
-        case 3:
-            baku->frame++;
-            baku->field_0x20C.y = intplGetValue(1, baku->frame, 0x3C, baku->field_0x218.y, baku->field_0x224.y);
-            if (baku->frame >= 0x3C) {
-                baku->state = 4;
-                baku->frame = 0;
-            }
-            break;
+        }
     }
-    if (baku->starStone != NULL) {
-        f32* e = baku->starStone->userdata;
-
-        e[2] = baku->field_0x20C.x;
-        e[3] = baku->field_0x20C.y;
-        e[4] = baku->field_0x20C.z;
-        e[6] = baku->field_0x248.x;
-        e[7] = baku->field_0x248.y;
-        e[8] = baku->field_0x248.z;
-        e[5] = float_1p5_80421648 * baku->field_0x23C.x;
-    }
-    dispEntry(4, float_0_80421618, 2, bakuGameDispStar, NULL);
-    return EVT_RETURN_BLOCK;
+    dispEntry(4, float_0_80421618, 1, bakuGameDisp3D, NULL);
+    return 0;
 }
 
-static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall) {
-    BakuGameWork* baku = GetBakuGamePtr();
-
-    baku->state = 1;
-    return EVT_RETURN_DONE;
-}
-
-// Keep GetBakuGamePtr out of line: every caller emits bl GetBakuGamePtr as in the original.
+// Keep bakuGameDecideButton out of line: bakuGameMain calls it three times and the original issues bl each time.
 #pragma dont_inline on
-BakuGameWork* GetBakuGamePtr(void) {
-    return (BakuGameWork*)((u8*)_battleWorkPointer + 0x1F4C);
+// Matches by copying the two tables from the named .rodata objects (the brace-list form made anonymous
+// templates) and by binding entry = &baku->entries[i] so the loop index/entry registers land as in the original.
+void bakuGameDecideButton(s32 arg) {
+    BakuGameWork* baku = GetBakuGamePtr();
+    BakuGamePositions positions;
+    BakuGamePerms perms;
+    BakuGamePositions* posSrc = (BakuGamePositions*)dat_802febfc;
+    BakuGamePerms* permSrc = (BakuGamePerms*)dat_802fec20;
+    s32 rnd;
+    s32 i;
+
+    positions = *posSrc;
+    perms = *permSrc;
+    rnd = irand(6);
+
+    for (i = 0; i < 3; i++) {
+        BakuGameWorkEntry* entry = &baku->entries[i];
+        entry->index = perms.v[rnd][i];
+        entry->pos = positions.v[perms.v[rnd][i]];
+    }
+    if (arg == 0) {
+        baku->field_0xF4 = 0x3C;
+    }
 }
 #pragma dont_inline reset
+
+// Keep bakuGamePartyExist out of line: callers emit bl instead of inlining the status checks.
+#pragma dont_inline on
+BOOL bakuGamePartyExist(BattleUnit* unit) {
+    if (unit == NULL) {
+        return 0;
+    }
+    if (BtlUnit_CheckStatus(unit, 0x1B)) {
+        return 0;
+    }
+    return BtlUnit_CanActStatus(unit) != 0;
+}
+#pragma dont_inline reset
+
+// Keep bakuGameAudienceCanThrowPos out of line: callers emit bl instead of inlining the loop.
+#pragma dont_inline on
+s32 bakuGameAudienceCanThrowPos(s32 id) {
+    s32 i;
+    s32 ofs = 0;
+
+    for (i = 0; i < 3; i++) {
+        if (id >= ofs + 8 && id <= ofs + 0xB) {
+            return 1;
+        }
+        ofs += 0x14;
+    }
+    return 0;
+}
+#pragma dont_inline reset
+
+// Keep bakuGameMarioSurpriseReset out of line: the original issues a call (bl) to it.
+#pragma dont_inline on
+void bakuGameMarioSurpriseReset(BattleUnit* unit, BattleUnit* party) {
+    btlDispPoseAnime(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)));
+    if (bakuGamePartyExist(party)) {
+        btlDispPoseAnime(BtlUnit_GetPartsPtr(party, BtlUnit_GetBodyPartsId(party)));
+    }
+}
+#pragma dont_inline reset
+
+// Keep bakuGameEnemySurpriseReset out of line: the original issues a call (bl) to it.
+#pragma dont_inline on
+void bakuGameEnemySurpriseReset(void) {
+    s32 i;
+    BattleWork* wp = _battleWorkPointer;
+
+    for (i = 0; i < 64; i++) {
+        BattleUnit* unit = BattleGetUnitPtr(wp, i);
+
+        if (unit != NULL && unit->mAlliance == 1 && !(unit->mAttributeFlags & 0x20000) &&
+            !BtlUnit_CheckStatus(unit, 0x1B)) {
+            btlDispPoseAnime(BtlUnit_GetPartsPtr(unit, BtlUnit_GetBodyPartsId(unit)));
+        }
+    }
+}
+#pragma dont_inline reset
+
+// Keep bakuGameAudienceSurpriseReset out of line: the original issues a call (bl) to it.
+#pragma dont_inline on
+void bakuGameAudienceSurpriseReset(void) {
+    s32 i;
+
+    for (i = 0; i < 200; i++) {
+        if ((u8)BattleAudience_GetExist(i)) {
+            BattleAudienceMember* member = BattleAudienceGetPtr(i);
+
+            member->field_0xE8 = float_90_80421624;
+            if (!bakuGameAudienceCanThrowPos(i)) {
+                member->flags &= ~0x10;
+            }
+        }
+    }
+}
+#pragma dont_inline reset
+
+// Matches only because str_8042162C is declared 6 bytes (so it lands in .sdata2 and MWCC emits
+// li r4, str_8042162C@sda21 and can anchor the PKR strings off str_802FEA98); with 8 bytes it was in .rodata.
+// Keep bakuGameMarioSurprise out of line: the original issues a call (bl) to it.
+#pragma dont_inline on
+void bakuGameMarioSurprise(BattleUnit* unit, BattleUnit* party) {
+    BtlUnit_SetBodyAnim(unit, str_8042162C);
+    if (bakuGamePartyExist(party)) {
+        switch (party->initialKind) {
+            case 0xE0:
+                BtlUnit_SetBodyAnim(party, str_802FECE4);
+                break;
+            case 0xE1:
+                BtlUnit_SetBodyAnim(party, str_802FECEC);
+                break;
+            case 0xE3:
+                BtlUnit_SetBodyAnim(party, str_802FECF4);
+                break;
+            case 0xE2:
+                BtlUnit_SetBodyAnim(party, str_802FECFC);
+                break;
+            case 0xE4:
+                BtlUnit_SetBodyAnim(party, str_802FED04);
+                break;
+            case 0xE5:
+                BtlUnit_SetBodyAnim(party, str_802FED0C);
+                break;
+            case 0xE6:
+                BtlUnit_SetBodyAnim(party, str_802FED14);
+                break;
+        }
+    }
+}
+#pragma dont_inline reset
+
+// Keep bakuGameEnemySurprise out of line: the original issues a call (bl) to it.
+#pragma dont_inline on
+void bakuGameEnemySurprise(void) {
+    s32 i;
+    BattleWork* wp = _battleWorkPointer;
+
+    for (i = 0; i < 64; i++) {
+        BattleUnit* unit = BattleGetUnitPtr(wp, i);
+
+        if (unit != NULL && unit->mAlliance == 1 && !(unit->mAttributeFlags & 0x20000) &&
+            !BtlUnit_CheckStatus(unit, 0x1B)) {
+            BtlUnit_SetBodyAnimType(unit, 0x27);
+        }
+    }
+}
+#pragma dont_inline reset
+
+// Keep bakuGameAudienceSurprise out of line: the original issues a call (bl) to it.
+#pragma dont_inline on
+void bakuGameAudienceSurprise(void) {
+    s32 i;
+
+    for (i = 0; i < 200; i++) {
+        BattleAudienceMember* member = BattleAudienceGetPtr(i);
+
+        if ((u8)BattleAudience_GetWaiting(i)) {
+            member->flags |= 0x10;
+            memset(&member->interpFramesLeft, 0, 0x34);
+            if (!bakuGameAudienceCanThrowPos(i)) {
+                BattleAudience_SetAnim(i, 7, 0);
+                if (irand(2) == 0) {
+                    member->field_0xE8 = float_90_80421624;
+                } else {
+                    member->field_0xE8 = float_270_80421628;
+                }
+            } else {
+                BattleAudience_SetAnim(i, 3, 0);
+            }
+        }
+    }
+}
+#pragma dont_inline reset
+
+// Taking the entry through this accessor is what gets bakuGameDisp2D's loads in the original's order (permuter).
+static inline BakuGameWorkEntry* bakuGameEntry(BakuGameWork* work, s32 i) {
+    return &work->entries[i];
+}
+
+void bakuGameDisp2D(void) {
+    BattleWork* wp;
+    BakuGameWork* baku;
+    s32 i;
+    s32 flag;
+
+    baku = GetBakuGamePtr();
+    wp = _battleWorkPointer;
+#ifdef MUST_MATCH
+    // Match-only round trip (net value unchanged): forces MWCC to keep wp in r31 so baku lands in r30.
+    wp = (BattleWork*)((u32)wp + 0x1F2C);
+    wp = (BattleWork*)((u32)wp - 0x1F2C);
+#endif
+    for (i = 0; i < 3; i++) {
+        BakuGameWorkEntry* entry = bakuGameEntry(baku, i);
+        s16 icon;
+
+        switch (entry->type) {
+            case 0x100:
+                icon = 0x64;
+                break;
+            case 0x200:
+                icon = 0x66;
+                break;
+            case 0x400:
+                icon = 0x68;
+                break;
+            default:
+                icon = 0;
+                break;
+        }
+        if ((u16)icon != 0) {
+            Vec screen;
+
+            btlGetScreenPoint(&entry->pos, &screen);
+            iconDispGx(&screen, 0x10, icon, entry->field_0x20);
+        }
+    }
+    flag = 0;
+    if (baku->field_0xD0 >= float_100_80421620) {
+        BakuGameBouncePos* p = (BakuGameBouncePos*)((u8*)wp + 0x1F2C);
+
+        flag = 1;
+        p->field_0x0 = 0;
+        p->field_0x3 = 0xFF;
+        p->field_0x1 += p->field_0x5;
+        p->field_0x2 += p->field_0x6;
+        if (p->field_0x1 <= 0x80 && p->field_0x5 <= 0) {
+            p->field_0x6 = 0x10;
+            p->field_0x5 = 0x10;
+        }
+        if (p->field_0x1 >= 0xF5 && p->field_0x5 >= 0) {
+            p->field_0x6 = -0x10;
+            p->field_0x5 = -0x10;
+        }
+    }
+    BattleAcDrawGauge((s32)baku->field_0xDC, (s32)baku->field_0xE0, 0xB1, 3, 0x21, 0x42, 0x64, flag, baku->field_0xE8);
+}
+
+void bakuGameDisp3D(CameraId camId, void* param) {
+    BakuGameWork* baku = GetBakuGamePtr();
+    CameraEntry* cam = camGetPtr(4);
+    Mtx scale;
+    Mtx trans;
+    Mtx mtx;
+    GXTexObj texObj;
+    s32 idx;
+
+    PSMTXScale(scale, float_neg1_80421604, float_1_80421608, float_1_80421608);
+    PSMTXTrans(trans, baku->position.x, baku->position.y, baku->position.z);
+    PSMTXConcat(trans, scale, mtx);
+    if (baku->field_0xEC != -1) {
+        animPoseDrawMtx(baku->field_0xEC, mtx, 2, float_180_8042160c, baku->field_0xC4);
+    }
+    if (baku->flags & 1) {
+        void* file;
+        TEXPalette* pal;
+
+        GXSetCullMode(0);
+        GXClearVtxDesc();
+        GXSetVtxDesc(9, 1);
+        GXSetVtxDesc(0xD, 1);
+        GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+        GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+        GXSetNumChans(1);
+        GXSetChanCtrl(4, 0, 1, 0, 0, 2, 2);
+        GXSetChanMatColor(4, *(GXColor*)&dat_80421600);
+        GXSetNumTexGens(1);
+        GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+        GXSetNumTevStages(1);
+        GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(0, 0xF, 0xC, 8, 0xA);
+        GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+        GXSetTevAlphaIn(0, 7, 5, 4, 7);
+        GXSetTevOrder(0, 0, 0, 4);
+        file = BattleAudienceBaseGetPtr()->normalTex;
+        pal = *(TEXPalette**)(*(u8**)((u8*)file + 0xA0));
+        TEXGetGXTexObjFromPalette(pal, &texObj, baku->field_0x200);
+        GXLoadTexObj(&texObj, 0);
+        PSMTXTrans(trans, baku->field_0x1D0.x, baku->field_0x1D0.y, baku->field_0x1D0.z);
+        PSMTXConcat(cam->view, trans, mtx);
+        GXLoadPosMtxImm(mtx, 0);
+        {
+            f32 texCoords[16] = {
+                0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+                1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
+            };
+
+            idx = (baku->field_0x1CC == 1) ? 4 : 0;
+            GXBegin(0x80, 0, 4);
+            GXPosition3f32(float_neg20_80421610, float_40_80421614, float_0_80421618);
+            GXTexCoord2f32(texCoords[(idx + 0) * 2], texCoords[(idx + 0) * 2 + 1]);
+            GXPosition3f32(float_20_8042161c, float_40_80421614, float_0_80421618);
+            GXTexCoord2f32(texCoords[(idx + 1) * 2], texCoords[(idx + 1) * 2 + 1]);
+            GXPosition3f32(float_20_8042161c, float_0_80421618, float_0_80421618);
+            GXTexCoord2f32(texCoords[(idx + 2) * 2], texCoords[(idx + 2) * 2 + 1]);
+            GXPosition3f32(float_neg20_80421610, float_0_80421618, float_0_80421618);
+            GXTexCoord2f32(texCoords[(idx + 3) * 2], texCoords[(idx + 3) * 2 + 1]);
+            GXEnd();
+        }
+    }
+}
+
+void bakuGameDispStar(CameraId camId, void* param) {
+}
 
 // Original .sdata2 scalar/string definitions for this translation unit (declared extern at the top). The
 // definitions sit in the original's declaration order so the section comes out in address order.
