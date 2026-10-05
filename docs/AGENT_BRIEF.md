@@ -509,6 +509,8 @@ When the instructions match but the stack slots, register allocation or scheduli
   `static const` and read them by name.** MWCC then addresses them off the section base as the original did, with
   the bytes and order unchanged: mario_hit's 41 vec3 templates gained 8 functions with .rodata/.sdata2 still
   IDENTICAL (#498, Claude #4). Try this before a literal pool port, which can unsettle tuned functions (bom_01).
+  Not for strings the original reaches through the same base: MWCC addresses static strings absolutely (sac_deka's
+  yuka_init fell 98 -> 73).
 - **Rodata `vec3_*`/`jumptable_*`/`dat_*` objects holding zeros where the code stores a computed value are the
   compiler's templates for local initialisers.** Write the local, not the object: `(Vec){x, y - 4.0f, 0.0f}` (non-constant
   compound literals compile in C mode; `Vec v = {x, ...}` does not), `const char* names[2] = {"a", "b"};`,
