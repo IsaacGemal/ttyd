@@ -135,6 +135,27 @@ def gap_items(gap, blocks=()):
             items.append(("reset", [gap[i]]))
             i += 1
             continue
+        if re.match(r"#\s*define\b", t):   # one item, with its continuation lines
+            j = i
+            while gap[j].rstrip().endswith("\\") and j + 1 < len(gap):
+                j += 1
+            items.append(("define", gap[i:j + 1]))
+            i = j + 1
+            continue
+        if re.match(r"#\s*if", t):   # a complete #if ... #endif block is one item
+            j, d = i, 0
+            while j < len(gap):
+                if re.match(r"\s*#\s*if", gap[j]):
+                    d += 1
+                elif re.match(r"\s*#\s*endif", gap[j]):
+                    d -= 1
+                    if d == 0:
+                        break
+                j += 1
+            if j < len(gap):
+                items.append(("ifblock", gap[i:j + 1]))
+                i = j + 1
+                continue
         if t.startswith("#undef") and all(k in ("reset", "blank") for k, _ in items):
             items.append(("reset", [gap[i]]))
             i += 1
@@ -237,14 +258,31 @@ def reorder(text, want):
     if not fns:
         raise ValueError("no functions to move")
     first = fns[0][0]
-    while first > 0 and (L[first - 1].startswith("//") or PRAGMA.match(L[first - 1])):
-        first -= 1
+
+    def regional(i):
+        m = PRAGMA.match(L[i])
+        return m and any(PRAGMA.match(x) and PRAGMA.match(x).group(1) == m.group(1)
+                         and PRAGMA.match(x).group(2).strip().startswith("reset") for x in L[i + 1:])
+    k = first
+    while k > 0 and (L[k - 1].startswith("//") or not L[k - 1].strip() or regional(k - 1)):
+        k -= 1
+        if L[k].startswith("//") or regional(k):
+            first = k
     prefix, chunks, hoist = L[:first], {}, []
     prev_end, prev = first - 1, None
     for s, e, name, _ in fns:
         lead = []
         helpers = [(a - prev_end - 1, b - prev_end - 1) for a, b, _, inl in functions(L) if inl and prev_end < a and b < s]
         for kind, ls in gap_items(L[prev_end + 1:s], helpers):
+            if kind in ("define", "ifblock"):
+                names = re.findall(r"#\s*define\s+(\w+)", "\n".join(ls))
+                code = [x for x in ls if x.strip() and not re.match(r"\s*(#|//|/\*|\*)", x)
+                        and not x.rstrip().endswith("\\") and not (ls.index(x) > 0 and ls[ls.index(x) - 1].rstrip().endswith("\\"))]
+                plain = kind == "define" or all(re.match(r"\s*(extern\b|[\w\s\*]+\[?\]?[^(]*;$)", x) for x in code)
+                if names and plain and not any(re.search(rf"#\s*undef\s+{n}\b", text) for n in names):
+                    kind = "hoist"
+                else:
+                    kind = "lead"
             if kind == "reset" and prev:
                 chunks[prev] += ls
             elif kind == "hoist":
