@@ -41,6 +41,13 @@ extern char str_802F3B94[];
 extern char str_802F3BA0[];
 extern char str_802F3BAC[];
 extern char str_802F3BB8[];
+extern s32 battle_stage_nozzle_data[];
+extern s32 battle_stage_fall_object_data[];
+extern s32 _object_nozzle_data[];
+extern s32 _object_wall_data[];
+extern s32 _object_spot_light_data[];
+extern s32 _entry_tree_data[];
+extern s32 _entry_switch_data[];
 extern BattleUnitKind unit_object_tree;
 extern BattleUnitKind unit_object_switch;
 #pragma pool_data on // the original addresses its .rodata through one base register
@@ -1348,9 +1355,283 @@ BattleStageObject* BattleSearchObjectPtr(const char* name) {
 	return NULL; //if name not found
 }
 
-// NONMATCHING (0.18%): 564 missing.
-void BattleStageObjectInit(void) {
+// BattleWork fields past stageObjects (inside field_180C0, no names yet) and the stage data's tail.
+#define BSO_WP_U8(wp, off) (*(u8*)((u8*)(wp) + (off)))
+#define BSO_WP_S8(wp, off) (*(s8*)((u8*)(wp) + (off)))
+#define BSO_WP_S32(wp, off) (*(s32*)((u8*)(wp) + (off)))
+#define BSO_WP_PTR(wp, off) (*(void**)((u8*)(wp) + (off)))
+#define BSO_STAGE_EVT(stage, off) (*(void**)((u8*)(stage) + (off)))
+#define BSO_STAGE_S8(stage, off) (*(s8*)((u8*)(stage) + (off)))
 
+#ifdef MUST_MATCH
+// The unit's data still defines named copies of objects the original pools from literals: the 16
+// (Vec){999, 999, 999} "unset" templates from vec3_802f3ac8 on, and these strings. Read those until the
+// unit's pool is ported, so the literals don't add second copies.
+#define BSO_UNSET(n) (*(Vec*)(rodata + (n) * 0xC))
+#define BSO_STR_DEN str_8041CD78
+#define BSO_STR_A1 str_8041CD68
+#define BSO_STR_A2 str_8041CD6C
+#define BSO_STR_B str_8041CD70
+#define BSO_STR_C str_8041CD74
+#define BSO_STR_ESCAPE_WALL (rodata + 0xE4) // str_802F3BAC
+#define BSO_STR_IF_BODY (rodata + 0x1B4) // str_802F3C7C
+#define BSO_STR_IF_WIRE (rodata + 0x28C) // str_802F3D54
+#else
+#define BSO_UNSET(n) ((Vec){999.0f, 999.0f, 999.0f})
+#define BSO_STR_DEN "den"
+#define BSO_STR_A1 "A1"
+#define BSO_STR_A2 "A2"
+#define BSO_STR_B "B"
+#define BSO_STR_C "C"
+#define BSO_STR_ESCAPE_WALL "escape_wall"
+#define BSO_STR_IF_BODY "if_body"
+#define BSO_STR_IF_WIRE "if_wire"
+#endif
+
+// NONMATCHING (98.29%): calls, branches and immediates match; the original computes wp + 0x20000 once into
+// r20 for the BattleWork stores at 0x180F4-0x182A0, where this recomputes it per store.
+void BattleStageObjectInit(void) {
+	BattleUnit* unit;
+	BattleStageData* stage;
+	BattleStageObjectData* nozzle;
+	s32 count;
+	BattleStageObjectData* data;
+	s32 id;
+#ifdef MUST_MATCH
+	char* rodata = vec3_802f3ac8;
+#endif
+	s32 layer0 = 0;
+	s32 i;
+	s32 layer1 = 0;
+	BattleWork* wp;
+	s32 layer2 = 0;
+	s32 layer3 = 0;
+	s32 k;
+	BattleStageObject* obj;
+	BattleStageObjectData* light;
+	BOOL hasLayer6 = FALSE;
+
+	wp = _battleWorkPointer;
+	stage = *(BattleStageData**)wp->fbatInfo->setup;
+	count = stage->mNumObjects;
+	data = stage->mObjects;
+	memset(wp->stageObjects, 0, sizeof(wp->stageObjects));
+
+	switch (pouchGetPtr()->rank) {
+	case 1:
+	case 2:
+	case 3:
+		mapPlayAnimationLv(BSO_STR_DEN, 1, 0);
+		break;
+	}
+	switch (pouchGetPtr()->rank) {
+	case 1:
+	case 2:
+	case 3:
+		BSO_WP_PTR(wp, 0x180F4) = (u8*)battle_stage_nozzle_data + pouchGetPtr()->rank * 0x310;
+		break;
+	default:
+		BSO_WP_PTR(wp, 0x180F4) = NULL;
+		break;
+	}
+	BSO_WP_PTR(wp, 0x180F8) = (u8*)battle_stage_fall_object_data + pouchGetPtr()->rank * 0x78C;
+	BSO_WP_S8(wp, 0x1828A) = -1;
+	BSO_WP_S32(wp, 0x1829C) = 0;
+	BSO_WP_S32(wp, 0x182A0) = 0;
+
+	mapGrpFlagOff(mapGetWork()->entries[0].rootMapObj->joints->name, 2);
+	if (mapGetMapObj(BSO_STR_A1) != NULL) {
+		mapGrpFlagOn(BSO_STR_A1, 1);
+		mapGrpFlagOff(BSO_STR_A1, 2);
+	}
+	if (mapGetMapObj(BSO_STR_A2) != NULL) {
+		mapGrpFlagOn(BSO_STR_A2, 1);
+		mapGrpFlagOff(BSO_STR_A2, 2);
+	}
+	if (mapGetMapObj(BSO_STR_B) != NULL) {
+		mapGrpFlagOn(BSO_STR_B, 1);
+		mapGrpFlagOff(BSO_STR_B, 2);
+	}
+	if (mapGetMapObj(BSO_STR_C) != NULL) {
+		mapGrpFlagOn(BSO_STR_C, 1);
+		mapGrpFlagOff(BSO_STR_C, 2);
+	}
+	mapGrpFlagOn(BSO_STR_ESCAPE_WALL, 1);
+
+	// the stage's own objects
+	id = 1;
+	if (data != NULL) {
+		for (; count != 0; id++, count--, data++) {
+			for (i = 0; i < 32; i++) {
+				obj = &wp->stageObjects[i];
+				if (obj->id <= 0) {
+					break;
+				}
+			}
+			if (i >= 32) {
+				break;
+			}
+			obj->data = data;
+			obj->id = id;
+			obj->mBattleUnitIdx = -1;
+			switch (obj->data->mLayer) {
+			case 0: layer0++; break;
+			case 1: layer1++; break;
+			case 2: layer2++; break;
+			case 3: layer3++; break;
+			case 6: hasLayer6 = TRUE; break;
+			}
+			switch (obj->data->mLayer) {
+			case 0:
+			case 1:
+			case 6:
+			case 7:
+				obj->mPosition = data->mPosition;
+				break;
+			case 2:
+			case 3:
+				obj->mPosition = data->mPosition;
+				break;
+			}
+			obj->mRotation.x = obj->mRotation.y = obj->mRotation.z = 0.0f;
+			obj->field_0x34 = BSO_UNSET(0);
+			obj->field_0x40 = BSO_UNSET(1);
+			obj->field_0x4C = BSO_UNSET(2);
+			obj->field_0x58 = BSO_UNSET(3);
+			mapGrpFlagOff(obj->data->name, 1);
+			switch (data->mSpawnSpecialUnitType) {
+			case 0:
+				unit = BtlUnit_Entry((BattleUnitSetup*)_entry_tree_data);
+				*(s32*)((u8*)unit + 0xB2C) = obj->id;
+				obj->mBattleUnitIdx = unit->unitId;
+				BtlUnit_SetPos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
+				BtlUnit_SetHomePos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
+				break;
+			case 1:
+				unit = BtlUnit_Entry((BattleUnitSetup*)_entry_switch_data);
+				*(s32*)((u8*)unit + 0xB2C) = obj->id;
+				obj->mBattleUnitIdx = unit->unitId;
+				BtlUnit_SetPos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
+				BtlUnit_SetHomePos(unit, obj->mPosition.x, obj->mPosition.y, obj->mPosition.z);
+				break;
+			case 2:
+				break;
+			}
+		}
+	}
+
+	// the rank's three nozzles
+	if (pouchGetPtr()->rank > 0) {
+		nozzle = (BattleStageObjectData*)_object_nozzle_data;
+		for (k = 0; k < 3; k++, id++, nozzle++) {
+			for (i = 0; i < 32; i++) {
+				obj = &wp->stageObjects[i];
+				if (obj->id <= 0) {
+					break;
+				}
+			}
+			if (i >= 32) {
+				break;
+			}
+			obj->data = nozzle;
+			obj->id = id;
+			obj->mBattleUnitIdx = -1;
+			obj->mPosition = nozzle->mPosition;
+			obj->mRotation.x = obj->mRotation.y = obj->mRotation.z = 0.0f;
+			obj->field_0x34 = BSO_UNSET(4);
+			obj->field_0x40 = BSO_UNSET(5);
+			obj->field_0x4C = BSO_UNSET(6);
+			obj->field_0x58 = BSO_UNSET(7);
+			mapGrpFlagOff(obj->data->name, 1);
+		}
+	}
+
+	// the escape wall, at the stage's wall height
+	data = (BattleStageObjectData*)_object_wall_data;
+	for (i = 0; i < 32; i++) {
+		obj = &wp->stageObjects[i];
+		if (obj->id <= 0) {
+			break;
+		}
+	}
+	obj->data = data;
+	obj->id = id;
+	obj->mBattleUnitIdx = -1;
+	obj->mPosition = data->mPosition;
+	obj->mPosition.y = *(f32*)((u8*)BattleStageGetPtr() + 0xB28);
+	obj->mRotation.x = obj->mRotation.y = obj->mRotation.z = 0.0f;
+	obj->field_0x34 = BSO_UNSET(8);
+	obj->field_0x40 = BSO_UNSET(9);
+	obj->field_0x4C = BSO_UNSET(10);
+	obj->field_0x58 = BSO_UNSET(11);
+	mapGrpFlagOn(obj->data->name, 1);
+	obj->mFlags |= 1;
+	id++;
+
+	// the spotlights, up to the entry with no name
+	for (k = 0;; id++, k++) {
+		light = &((BattleStageObjectData*)_object_spot_light_data)[k];
+		if (light->name == NULL) {
+			break;
+		}
+		for (i = 0; i < 32; i++) {
+			obj = &wp->stageObjects[i];
+			if (obj->id <= 0) {
+				break;
+			}
+		}
+		obj->data = light;
+		obj->id = id;
+		obj->mBattleUnitIdx = -1;
+		obj->mPosition = light->mPosition;
+		obj->mRotation.x = obj->mRotation.y = obj->mRotation.z = 0.0f;
+		obj->field_0x34 = BSO_UNSET(12);
+		obj->field_0x40 = BSO_UNSET(13);
+		obj->field_0x4C = BSO_UNSET(14);
+		obj->field_0x58 = BSO_UNSET(15);
+		mapGrpFlagOn(obj->data->name, 1);
+		obj->mFlags |= 1;
+	}
+
+	// the stage's events; each layer with objects gets its own
+	if (BSO_STAGE_EVT(stage, 0x190) != NULL) {
+		evtEntry(BSO_STAGE_EVT(stage, 0x190), 10, 0);
+	}
+	if (layer0 != 0 && BSO_STAGE_EVT(stage, 0x1A0) != NULL) {
+		BSO_WP_S32(wp, 0x180E4) = evtEntry(BSO_STAGE_EVT(stage, 0x1A0), 10, 0)->eventId;
+	}
+	if (layer1 != 0 && BSO_STAGE_EVT(stage, 0x1A4) != NULL) {
+		BSO_WP_S32(wp, 0x180E8) = evtEntry(BSO_STAGE_EVT(stage, 0x1A4), 10, 0)->eventId;
+	}
+	if (layer2 != 0 && BSO_STAGE_EVT(stage, 0x1A8) != NULL) {
+		BSO_WP_S32(wp, 0x180EC) = evtEntry(BSO_STAGE_EVT(stage, 0x1A8), 10, 0)->eventId;
+	}
+	if (layer3 != 0 && BSO_STAGE_EVT(stage, 0x1AC) != NULL) {
+		BSO_WP_S32(wp, 0x180F0) = evtEntry(BSO_STAGE_EVT(stage, 0x1AC), 10, 0)->eventId;
+	}
+	if (layer0 == 0) {
+		BSO_WP_U8(wp, 0x180DC) |= 2;
+	}
+	if (layer1 == 0) {
+		BSO_WP_U8(wp, 0x180DC) |= 4;
+	}
+	if (layer2 == 0) {
+		BSO_WP_U8(wp, 0x180DC) |= 8;
+	}
+	if (BSO_STAGE_S8(stage, 0x1B1)) {
+		BSO_WP_U8(wp, 0x180DC) |= 2;
+	}
+	if (BSO_STAGE_S8(stage, 0x1B2)) {
+		BSO_WP_U8(wp, 0x180DC) |= 4;
+	}
+	if (BSO_STAGE_S8(stage, 0x1B3)) {
+		BSO_WP_U8(wp, 0x180DC) |= 8;
+	}
+	if (!hasLayer6) {
+		BSO_WP_U8(wp, 0x180DC) |= 0x20;
+		mapGrpFlagOn(BSO_STR_IF_BODY, 1);
+		mapGrpFlagOn(BSO_STR_IF_WIRE, 1);
+	}
 }
 
 
