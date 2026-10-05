@@ -118,388 +118,67 @@ extern u8 texture_0[];
 #define TEXMTX(i) texmtx_tbl[i]
 #endif
 
-void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
-	GXColor c;
-	GXColor color;
-
-	color = *(GXColor*)&unk_80422f90;
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	c = color;
-	mapGrpSetColor(name, &c);
-	mapGrpFlagOff(name, 0x40);
-}
-
-// NONMATCHING (98.89%): only the second inlined mapGetMapObjSub search's registers differ
-// (target wp=r27/entry=r26/object=r28/i=r29/j=r30); the first search and the error body match.
-void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
-	GXColor color;
-	MapObject* obj;
-
-	color = *(GXColor*)&unk_80422f8c;
-	color.r = r;
-	color.g = g;
-	color.b = b;
-	color.a = a;
-	obj = mapGetMapObjSub(name);
-	if (obj) {
-		*(u32*)obj->field_0xC = *(u32*)&color;
-		*(u32*)obj->field_0x0 |= 0x40;
-	}
-	mapObjFlagOff(name, 0x40);
-}
-
-void* mapSearchDmdJoint(void* a, s8* b) {
-	if (*b != 0x7C) {
-		return mapSearchDmdJointSub(a, b);
-	}
-	else {
-		return mapSearchDmdJointSub2(a, b, "|");
-	}
-}
-
-void mapDispMapGrp_bbox(MapObject* obj, MapEntry* entry) {
-	sysWaitDrawSync();
-	GXClearBoundingBox();
-	_mapDispMapGrp_NoMaterial(obj, entry);
-	sysWaitDrawSync();
-	GXReadBoundingBox((u16*)((u8*)entry + 0xEC), (u16*)((u8*)entry + 0xEE), (u16*)((u8*)entry + 0xF0), (u16*)((u8*)entry + 0xF2));
-}
-
-// NONMATCHING (99.12%): loop counter i/offset register swap only (target i=r31, off=r30 with an
-// `mr r30,r31` init; ours i=r30, off=r31). The `(u32)(off >> 3)` index is match-only.
-void mapDispMapObj_bbox(s32 camId, MapObject* obj) {
-	Mtx invMtx;
-	Mtx mtx;
-	s32 i;
-	s32 off;
-	GXColor color;
-
-	sysWaitDrawSync();
-	GXClearBoundingBox();
-	PSMTXConcat(camGetPtr(camId)->view, obj->modelWorldMtx, mtx);
-	GXLoadPosMtxImm(mtx, GX_PNMTX0);
-	PSMTXInvXpose(mtx, invMtx);
-	GXLoadNrmMtxImm(invMtx, GX_PNMTX0);
-	GXSetCurrentMtx(GX_PNMTX0);
-	GXSetCullMode(GX_CULL_ALL);
-	GXSetNumChans(1);
-	color = unk_80422f84;
-	GXSetChanMatColor(GX_COLOR0A0, color);
-	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-	GXSetNumTexGens(0);
-	GXSetNumTevStages(1);
-	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+extern int __float_nan[];
+#define SPLINE_NAN (*(f32*)__float_nan)
+extern const char float_0_804198cc[4];
+extern GXColor dat_8041981c;
+typedef struct MapAnimChannel {
+	f32 value;  // 0x0
+	f32 unk4;   // 0x4
+	f32 unk8;   // 0x8
+	f32 unkC;   // 0xC
+	s32 flag;   // 0x10
+} MapAnimChannel;
+typedef struct MapAnimKey {
+	f32 time;                 // 0x0
+	MapAnimChannel chan[9];   // 0x4
+	u8 unk[0xF0];            // 0xB8
+} MapAnimKey;
+typedef struct MapAnimData {
+	u8 unk0[0x4];   // 0x0
+	f32 base[6];    // 0x4
+	f32 div[3];     // 0x1C
+	u8 unk28[0x30]; // 0x28
+	s32 count;      // 0x58
+	MapAnimKey key[]; // 0x5C
+} MapAnimData;
+typedef struct MapMatTexRef {
+	void* field_0x0;  // 0x0, points at the texture name/info block
+	u8 field_0x4[4];  // 0x4
+	u8 wrapS;         // 0x8
+	u8 wrapT;         // 0x9
+} MapMatTexRef;
+typedef struct MapMaterial {
+	u8 field_0x0[4];              // 0x0
+	GXColor color;                // 0x4
+	u8 field_0x8;                 // 0x8
+	u8 field_0x9[2];              // 0x9
+	u8 texCount;                  // 0xB
+	MapMatTexRef* texRefs[8];    // 0xC
+	u8 field_0x2C[0x110 - 0x2C];  // 0x2C
+	u8* field_0x110;              // 0x110
+} MapMaterial;
 #ifdef MUST_MATCH
-	// MUST_MATCH: the explicit off induction variable and the (u32) index cast are what put the
-	// counter in r31/off in r30 (98.84% -> 99.12%); the natural indexed loop is under #else.
-	i = 0;
-	off = i;
-	for (; i < obj->joints->partCount; i++, off += 8) {
-		mapSetPolygon(obj, obj->joints->parts[(u32)(off >> 3)].mesh);
-	}
+#define MAPMAT_DEFAULT_DIR (*(Vec*)(base + 0x144))
+#define MAPMAT_TEXWRAP(i) (wrapTbl[i])
 #else
-	for (i = 0; i < obj->joints->partCount; i++) {
-		mapSetPolygon(obj, obj->joints->parts[i].mesh);
-	}
+extern u32 texwrap_tbl[];
+#define MAPMAT_DEFAULT_DIR ((Vec){ 0.0f, 0.0f, -1.0f })
+#define MAPMAT_TEXWRAP(i) ((s32)texwrap_tbl[i])
 #endif
-	sysWaitDrawSync();
-	GXReadBoundingBox((u16*)((u8*)obj + 0xEC), (u16*)((u8*)obj + 0xEE), (u16*)((u8*)obj + 0xF0), (u16*)((u8*)obj + 0xF2));
-}
-
-void mapObjGetPos(const char* name, Vec* pos) {
-	Vec pos2;
-	s32 scale;
-	MapObject* obj;
-
-	scale = 0;
-	pos2 = vec3_802c18f4[0];
-	obj = mapGetMapObjSub(name);
-
-	if (obj == NULL) {
-		*pos = vec3_802c1900[0];
-	}
-	else {
-		mapObjGetPosSub(obj, &pos2, &scale, NULL);
-		PSVECScale(&pos2, pos, float_1_80419860 / (f32)scale);
-	}
-}
-
-void _mapDispMapObj_NoMaterial(s32 camId, MapObject* obj) {
-	Mtx mtx;
-	Mtx invMtx;
-	GXColor color;
-	s32 i;
-
-	PSMTXConcat(camGetPtr(camId)->view, obj->modelWorldMtx, mtx);
-	GXLoadPosMtxImm(mtx, GX_PNMTX0);
-	PSMTXInvXpose(mtx, invMtx);
-	GXLoadNrmMtxImm(invMtx, GX_PNMTX0);
-	GXSetCurrentMtx(GX_PNMTX0);
-	GXSetCullMode(GX_CULL_ALL);
-	GXSetNumChans(1);
-	color = unk_80422f84;
-	GXSetChanMatColor(GX_COLOR0A0, color);
-	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-	GXSetNumTexGens(0);
-	GXSetNumTevStages(1);
-	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
-	for (i = 0; i < obj->joints->partCount; i++) {
-		mapSetPolygon(obj, obj->joints->parts[i].mesh);
-	}
-}
-
-static MapObject* mapGetMapObjSub(const char* name) {
-	MapEntry* entry;
-	MapWork *wp;
-	int j;
-	int i;
-	MapObject *object;
-
-	wp = &mapWork[activeGroup];
-	if (!name) {
-		return 0;
-	}
-	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		object = entry->objects;
-		for (j = 0; j < entry->numJoints; j++, object++) {
-			if (!strcmp(object->joints->name, name)) {
-				return object;
-			}
-		}
-	}
-	return 0;
-}
-
-// Keep mapGrpSetColor out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-// NONMATCHING (94.47%): *color load is scheduled after the inlined mapGetMapObjSub search
-void mapGrpSetColor(const char* name, GXColor* color) {
-	GXColor c = *color;
-
-	setColor(mapGetMapObjSub(name), &c, 0);
-}
-#pragma dont_inline reset
-
-void mapObjSetColor(const char* name, GXColor* color) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	if (obj) {
-		*(u32*)((u8*)obj + 0xC) = *(u32*)color;
-		*(u32*)obj->field_0x0 |= 0x40;
-	}
-}
-
-void mapGrpClearOffScreen(const char* name) {
-	_setOffScrnId(mapGetMapObjSub(name), -1, 0);
-}
-
-void mapObjClearOffScreen(const char* name) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	*(s16*)obj->field_0xDC = -1;
-	*(u32*)obj->field_0x0 &= ~0x80;
-}
-
-void mapGrpSetOffScreen(const char* name, const char* offName) {
-	MapObject* obj = mapGetMapObjSub(name);
-	s32 id = offscreenNameToId(offName);
-
-	_setOffScrnId(obj, id, 0);
-}
-
-void mapObjSetOffScreen(const char* name, const char* offName) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	*(s16*)obj->field_0xDC = offscreenNameToId(offName);
-	*(u32*)obj->field_0x0 |= 0x80;
-}
-
-void mapObjScale(const char* name, f32 x, f32 y, f32 z) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	if (obj) {
-		Mtx m;
-		u32* flags = (u32*)obj->field_0x0;
-
-		if (!(*flags & 0x200)) {
-			PSMTXIdentity(obj->unkAC);
-		}
-		PSMTXScale(m, x, y, z);
-		PSMTXConcat(obj->unkAC, m, obj->unkAC);
-		*flags |= 0x200000;
-		*flags |= 0x200;
-	}
-}
-
-void mapObjTranslate(const char* name, f32 x, f32 y, f32 z) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	if (obj) {
-		Mtx m;
-		u32* flags = (u32*)obj->field_0x0;
-
-		if (!(*flags & 0x200)) {
-			PSMTXIdentity(obj->unkAC);
-		}
-		PSMTXTrans(m, x / float_10_80419864, y / float_10_80419864, z / float_10_80419864);
-		PSMTXConcat(obj->unkAC, m, obj->unkAC);
-		*flags |= 0x200000;
-		*flags |= 0x200;
-	}
-}
-
-void mapObjRotate(const char* name, f32 x, f32 y, f32 z) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	if (obj) {
-		Mtx mx;
-		Mtx my;
-		Mtx mz;
-		u32* flags = (u32*)obj->field_0x0;
-
-		if (!(*flags & 0x200)) {
-			PSMTXIdentity(obj->unkAC);
-		}
-		PSMTXRotRad(mx, 'x', float_deg2rad_80419868 * x);
-		PSMTXRotRad(my, 'y', float_deg2rad_80419868 * y);
-		PSMTXRotRad(mz, 'z', float_deg2rad_80419868 * z);
-		PSMTXConcat(obj->unkAC, mz, obj->unkAC);
-		PSMTXConcat(obj->unkAC, my, obj->unkAC);
-		PSMTXConcat(obj->unkAC, mx, obj->unkAC);
-		*flags |= 0x200000;
-		*flags |= 0x200;
-	}
-}
-
-void mapObjGetFlushColor(const char* name, u8* r, u8* g, u8* b, u8* a) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	if (!obj) {
-		mapErrorEntry(0, name);
-		return;
-	}
-	*r = *(u8*)((u8*)obj + 0xC);
-	*g = *(u8*)((u8*)obj + 0xD);
-	*b = *(u8*)((u8*)obj + 0xE);
-	*a = *(u8*)((u8*)obj + 0xF);
-}
-
-void test_kururing_mapdisp(CameraId camId) {
-	MapWork* wp = &mapWork[activeGroup];
-	MapEntry* entry = &wp->entries[0];
-	u32 flags;
-	s32 j;
-	s32 i;
-	MapObject* obj;
-
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		obj = entry->objects;
-		for (j = 0; j < entry->numJoints; j++, obj++) {
-			flags = *(u32*)obj->field_0x0;
-			if (flags & 0x400000) {
-				*(u32*)obj->field_0x0 = flags & ~0x2;
-				_mapDispMapObj(camId, obj);
-				*(u32*)obj->field_0x0 = flags;
-			}
-		}
-	}
-}
-
-void mapPauseAnimationAll(void) {
-	MapWork* wp = &mapWork[activeGroup];
-	MapEntry* entry = &wp->entries[0];
-	s32 j;
-	s32 i;
-
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		MapEntryAnimData* anim = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
-			*(u16*)anim |= 0x10;
-		}
-	}
-}
-
-void mapReStartAnimationAll(void) {
-	MapWork* wp = &mapWork[activeGroup];
-	MapEntry* entry = &wp->entries[0];
-	s32 j;
-	s32 i;
-
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		MapEntryAnimData* anim = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
-			*(u16*)anim |= 0x20;
-		}
-	}
-}
-
-#ifdef MUST_MATCH
-// Inline copy of mapSearchAnmObj with `entry` declared before `wp`: the inliner allocates the helper's
-// locals in declaration order, and that order puts wp in the higher register (r28) as in the target.
-// Natural form: `found = mapSearchAnmObj(name);`.
-static inline MapEntryAnimData* mapFindAnm(const char* animName) {
-	MapEntry* entry;
-	MapWork* wp;
-	s32 j;
-	s32 i;
-
-	wp = &mapWork[activeGroup];
-	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		MapEntryAnimData* anim = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
-			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
-				return anim;
-			}
-		}
-	}
-	return NULL;
-}
-#endif
-
-void mapPauseAnimation(const char* name) {
-#ifdef MUST_MATCH
-	MapEntryAnimData* found = mapFindAnm(name);
-#else
-	MapEntryAnimData* found = mapSearchAnmObj(name);
-#endif
-
-	if (found) {
-		*(u16*)found |= 0x10;
-	}
-}
-
-// Matches via mapFindAnm: the inline copy's `entry`-before-`wp` declaration order puts wp in r28
-// (the higher register) in the target; inlining mapSearchAnmObj directly colors them the other way.
-void mapReStartAnimation(const char* name) {
-#ifdef MUST_MATCH
-	MapEntryAnimData* found = mapFindAnm(name);
-#else
-	MapEntryAnimData* found = mapSearchAnmObj(name);
-#endif
-
-	if (found) {
-		*(u16*)found |= 0x20;
-	}
-}
-
-void mapSetPlayRate(const char* name, f32 rate) {
-#ifdef MUST_MATCH
-	MapEntryAnimData* found = mapFindAnm(name);
-#else
-	MapEntryAnimData* found = mapSearchAnmObj(name);
-#endif
-
-	if (found) {
-		*(f32*)((u8*)found + 0x14) = rate;
-	}
-}
+typedef struct MapVtx {
+	u32 field_0x0;   // 0x0
+	s16 x;           // 0x4
+	s16 y;           // 0x6
+	s16 z;           // 0x8
+	s16 field_0xA;   // 0xA
+	s16 tex[8];      // 0xC
+} MapVtx;
+typedef struct MapVtxFmt {
+	u8 field_0x0[0x44]; // 0x0
+	u32 field_0x44;     // 0x44
+	u32 field_0x48[8];  // 0x48
+} MapVtxFmt;
 
 //local prototypes
 //anim functions?
@@ -533,472 +212,6 @@ MapWork* mapGetWork(void) {
 s32 mapGetActiveGroup(void) {
 	return activeGroup;
 }
-
-void mapResetPaperAmbColor(void) {
-	paper_ambient = dat_8041982c;
-}
-
-void mapSetPaperAmbColor(GXColor* color) {
-	paper_ambient = *color;
-}
-
-void mapSetTevCallback(s32 idx, void* cb) {
-	u8* base = (u8*)mapWork + activeGroup * 0x2F4 + 0x110;
-
-	*(void**)(base + idx * 4) = cb;
-}
-
-void mapSetProjMtx(Mtx mtx) {
-	PSMTXCopy(mtx, projMtx);
-}
-
-void mapSetProjTexObj(GXTexObj* obj, void* imgRef) {
-	projTexObj = *obj;
-	projTexImgRef = imgRef;
-}
-
-void mapBlendOff2(void) {
-	*(u16*)((u8*)mapWork + activeGroup * 0x2F4 + 0x4) &= ~0x4;
-}
-
-void mapBlendOff(void) {
-	*(u16*)((u8*)mapWork + activeGroup * 0x2F4 + 0x4) &= ~0x2;
-}
-
-void mapGetBlend2(GXColor* out) {
-	MapEntry* entry = &mapWork[activeGroup].entries[0];
-
-	if (entry->flags & 0x4) {
-		*out = *(GXColor*)((u8*)entry + 0x1A);
-	}
-	else {
-		*out = dat_80419844;
-	}
-}
-
-void mapGetBlend(GXColor* out) {
-	MapEntry* entry = &mapWork[activeGroup].entries[0];
-
-	if (entry->flags & 0x2) {
-		*out = *(GXColor*)((u8*)entry + 0x16);
-	}
-	else {
-		*out = dat_80419840;
-	}
-}
-
-void mapSetBlend2(GXColor* color) {
-	MapEntry* entry = &mapWork[activeGroup].entries[0];
-
-	*(GXColor*)((u8*)entry + 0x1A) = *color;
-	entry->flags |= 0x4;
-}
-
-void mapSetBlend(GXColor* color) {
-	MapEntry* entry = &mapWork[activeGroup].entries[0];
-
-	*(GXColor*)((u8*)entry + 0x16) = *color;
-	entry->flags |= 0x2;
-}
-
-void mapFogOff(void) {
-	*(u16*)((u8*)mapWork + activeGroup * 0x2F4 + 0x4) &= ~0x1;
-}
-
-void mapFogOn(void) {
-	*(u16*)((u8*)mapWork + activeGroup * 0x2F4 + 0x4) |= 0x1;
-}
-
-void mapGetFog(u32* c, f32* near, f32* far, u32* c2) {
-	MapEntry* entry = &mapWork[activeGroup].entries[0];
-
-	*c = *(u32*)((u8*)entry + 0x28);
-	*near = *(f32*)((u8*)entry + 0x2C);
-	*far = *(f32*)((u8*)entry + 0x30);
-	*c2 = *(u32*)((u8*)entry + 0x34);
-}
-
-// NONMATCHING (97.00%): register allocation of the inlined mapWork/activeGroup address computation
-void mapSetFog(u32 color, f32 near, f32 far, u32* color2) {
-	MapEntry* entry = &mapWork[activeGroup].entries[0];
-	u32 c2;
-
-	c2 = *color2;
-	*(u32*)((u8*)entry + 0x28) = color;
-	*(f32*)((u8*)entry + 0x2C) = near;
-	*(f32*)((u8*)entry + 0x30) = far;
-	*(u32*)((u8*)entry + 0x34) = c2;
-}
-
-void mapGrpFlushOff(const char* name) {
-	mapGrpFlagOff(name, 0x100000);
-}
-
-void mapGrpFlushOn(const char* name) {
-	mapGrpFlagOn(name, 0x100000);
-}
-
-// Keep mapGrpFlagOff, mapGrpFlagOn out of line: the original calls them rather than inlining.
-#pragma dont_inline on
-void mapGrpFlagOff(const char* name, u32 flag) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	if (obj == NULL) {
-		mapErrorEntry(0, name);
-	}
-	else {
-		mapFlgOff(obj, flag, 0);
-	}
-}
-
-void mapGrpFlagOn(const char* name, u32 flag) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	if (obj == NULL) {
-		mapErrorEntry(0, name);
-	}
-	else {
-		mapFlgOn(obj, flag, 0);
-	}
-}
-#pragma dont_inline reset
-
-void mapObjFlagOff(const char* name, u32 flag) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	if (obj == NULL) {
-		mapErrorEntry(0, name);
-	}
-	else {
-		*(u32*)obj->field_0x0 &= ~flag;
-	}
-}
-
-void mapObjFlagOn(const char* name, u32 flag) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	if (obj == NULL) {
-		mapErrorEntry(0, name);
-	}
-	else if (!(flag & 0x100) || *(void**)((u8*)obj + 0x114)) {
-		*(u32*)obj->field_0x0 |= flag;
-	}
-}
-
-void mapObjFlushOff(const char* name) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	if (obj == NULL) {
-		mapErrorEntry(0, name);
-	}
-	else {
-		*(u32*)obj->field_0x0 &= ~0x100000;
-	}
-}
-
-void mapObjFlushOn(const char* name) {
-	MapObject* obj = mapGetMapObjSub(name);
-
-	if (obj == NULL) {
-		mapErrorEntry(0, name);
-	}
-	else {
-		*(u32*)obj->field_0x0 |= 0x100000;
-	}
-}
-
-void mapDispMapGrp(CameraId camId, MapObject* obj) {
-	_mapDispMapGrp(camId, obj);
-}
-
-void mapDispMapObj(CameraId camId, MapObject* obj) {
-	_mapDispMapObj(camId, obj);
-}
-
-void mapDispMapGrp_off(CameraId camId, MapObject* obj) {
-	u16 v0;
-	u16 v1;
-	u16 v2;
-	u16 v3;
-
-	sysWaitDrawSync();
-	GXClearBoundingBox();
-	_mapDispMapGrp(camId, obj);
-	sysWaitDrawSync();
-	GXReadBoundingBox(&v0, &v1, &v2, &v3);
-	offscreenAddBoundingBox(*(s16*)((u8*)obj + 0xDC), v0, v1, v2, v3);
-}
-
-void mapDispMapObj_off(CameraId camId, MapObject* obj) {
-	u16 v0;
-	u16 v1;
-	u16 v2;
-	u16 v3;
-
-	sysWaitDrawSync();
-	GXClearBoundingBox();
-	_mapDispMapObj(camId, obj);
-	sysWaitDrawSync();
-	GXReadBoundingBox(&v0, &v1, &v2, &v3);
-	offscreenAddBoundingBox(*(s16*)obj->field_0xDC, v0, v1, v2, v3);
-}
-
-BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b) {
-	if ((flags & 0x40) && a->a != 0xFF) {
-		return TRUE;
-	}
-	if (b->a != 0xFF) {
-		return TRUE;
-	}
-	if (!(flags & 0x800) && (mapWork[activeGroup].entries[0].flags & 0x2) && mapWork[activeGroup].entries[0].field_0x16[3] != 0xFF) {
-		return TRUE;
-	}
-	if (!(flags & 0x1000) && (mapWork[activeGroup].entries[0].flags & 0x4) && mapWork[activeGroup].entries[0].field_0x16[7] != 0xFF) {
-		return TRUE;
-	}
-	return FALSE;
-}
-
-extern int __float_nan[];
-#define SPLINE_NAN (*(f32*)__float_nan)
-
-static inline s32 spline_fpclassifyf(f32 x) {
-	switch (*(s32*)&x & 0x7F800000) {
-		case 0x7F800000:
-			if (*(s32*)&x & 0x007FFFFF) {
-				return FP_NAN;
-			} else {
-				return FP_INFINITE;
-			}
-			break;
-		case 0:
-			if (*(s32*)&x & 0x007FFFFF) {
-				return FP_SUBNORMAL;
-			} else {
-				return FP_ZERO;
-			}
-			break;
-		default:
-			return FP_NORMAL;
-	}
-}
-
-static inline f32 spline_sqrtf(f32 x, const f64* c) {
-	if (x > float_0_80419850) {
-		f64 guess = __frsqrte(x);
-		f64 half = c[0];
-		f64 three = c[1];
-
-		guess = half * guess * (three - guess * guess * x);
-		guess = half * guess * (three - guess * guess * x);
-		guess = half * guess * (three - guess * guess * x);
-		return x * guess;
-	} else if (x < c[2]) {
-		return SPLINE_NAN;
-	} else if (spline_fpclassifyf(x) == FP_NAN) {
-		return SPLINE_NAN;
-	}
-	return x;
-}
-
-// NONMATCHING (99.31%): only a rotation of the backward-substitution loop pointers differs (target
-// tangents=r6,dt=r7,mat=r8,temp=r9; ours tangents=r7,dt=r9,mat=r8,temp=r6). Pinned with `((Vec*)a)`
-// in the dt/mat loop, `((f32*)b)` in the dt loop, `f64 three, half` + `f32 knprev` at fn scope.
-void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
-	Vec* points = (Vec*)a;
-	f32* knots = (f32*)b;
-	Vec* tangents = (Vec*)c;
-	const f64* cf = (const f64*)(vec3_802c16d8 + 0x2A8);
-	f32* dt = (f32*)_mapAlloc(count * sizeof(f32));
-	Vec* mat = (Vec*)_mapAlloc(count * sizeof(Vec));
-	s32 i;
-	f64 three, half;
-	f32 knprev;
-
-	knots[0] = 0.0f;
-	for (i = 1; i < count; i++) {
-		f32 dx = points[i].x - points[i - 1].x;
-		f32 dy = points[i].y - points[i - 1].y;
-		f32 dz = points[i].z - points[i - 1].z;
-
-		f32 sq = dx * dx + dy * dy + dz * dz;
-#ifdef MUST_MATCH
-		// match-only: writing the Newton result back into sq reuses x's FPR (the target overwrites f5);
-		// calling spline_sqrtf forces the f32 return register f1 and leaves an extra `fmr f1,f5`
-		if (sq > float_0_80419850) {
-			f64 guess = __frsqrte(sq);
-			half = cf[0];
-			three = cf[1];
-			guess = half * guess * (three - guess * guess * sq);
-			guess = half * guess * (three - guess * guess * sq);
-			guess = half * guess * (three - guess * guess * sq);
-			sq = sq * guess;
-		} else if (sq < cf[2]) {
-			sq = SPLINE_NAN;
-		} else if (spline_fpclassifyf(sq) == FP_NAN) {
-			sq = SPLINE_NAN;
-		}
-#else
-		sq = spline_sqrtf(sq, cf);
-#endif
-		knprev = knots[i - 1];
-		knots[i] = knprev + sq;
-	}
-
-	for (i = 1; i < count; i++) {
-		knots[i] = knots[i] / knots[count - 1];
-	}
-
-	tangents[0].x = 0.0f;
-	tangents[0].y = 0.0f;
-	tangents[0].z = 0.0f;
-	tangents[count - 1].x = 0.0f;
-	tangents[count - 1].y = 0.0f;
-	tangents[count - 1].z = 0.0f;
-	for (i = 0; i < count - 1; i++) {
-		dt[i] = ((f32*)b)[i + 1] - ((f32*)b)[i];
-		if (dt[i] == 0.0f) {
-			dt[i] = float_0p0001_8041985c;
-		}
-		mat[i + 1].x = (((Vec*)a)[i + 1].x - ((Vec*)a)[i].x) / dt[i];
-		mat[i + 1].y = (((Vec*)a)[i + 1].y - ((Vec*)a)[i].y) / dt[i];
-		mat[i + 1].z = (((Vec*)a)[i + 1].z - ((Vec*)a)[i].z) / dt[i];
-	}
-
-	tangents[1].x = mat[2].x - mat[1].x;
-	tangents[1].y = mat[2].y - mat[1].y;
-	tangents[1].z = mat[2].z - mat[1].z;
-	mat[1].x = 2.0f * (knots[2] - knots[0]);
-	mat[1].y = 2.0f * (knots[2] - knots[0]);
-	mat[1].z = 2.0f * (knots[2] - knots[0]);
-
-	for (i = 1; i < count - 2; i++) {
-		f32 wx = dt[i] / mat[i].x;
-		f32 wy = dt[i] / mat[i].y;
-		f32 wz = dt[i] / mat[i].z;
-
-		tangents[i + 1].x = (mat[i + 2].x - mat[i + 1].x) - wx * tangents[i].x;
-		tangents[i + 1].y = (mat[i + 2].y - mat[i + 1].y) - wy * tangents[i].y;
-		tangents[i + 1].z = (mat[i + 2].z - mat[i + 1].z) - wz * tangents[i].z;
-		mat[i + 1].x = 2.0f * (knots[i + 2] - knots[i]) - wx * dt[i];
-		mat[i + 1].y = 2.0f * (knots[i + 2] - knots[i]) - wy * dt[i];
-		mat[i + 1].z = 2.0f * (knots[i + 2] - knots[i]) - wz * dt[i];
-	}
-
-	tangents[count - 2].x = tangents[count - 2].x - dt[count - 2] * tangents[count - 1].x;
-	tangents[count - 2].y = tangents[count - 2].y - dt[count - 2] * tangents[count - 1].y;
-	tangents[count - 2].z = tangents[count - 2].z - dt[count - 2] * tangents[count - 1].z;
-
-	{
-		Vec* mp = &mat[count - 2];
-		f32* dp = &dt[count - 2];
-		Vec* tp = &tangents[count - 2];
-		for (i = count - 2; i > 0; i--) {
-			tp->x = (tp->x - *dp * tp[1].x) / mp->x;
-			tp->y = (tp->y - *dp * tp[1].y) / mp->y;
-			tp->z = (tp->z - *dp * tp[1].z) / mp->z;
-			tp--;
-			dp--;
-			mp--;
-		}
-	}
-
-	_mapFree(mat);
-	_mapFree(dt);
-}
-
-#pragma opt_lifetimes off // MUST_MATCH: target FP live ranges need lifetime analysis off
-// Arithmetic, control flow and the instruction sequence match; MWCC's FPR colouring differs
-// (target keeps dt in f1, 2.0 in f6, 3.0 in f0; ours dt in f8, 2.0 in f0, 3.0 in f1) and the
-// r9/r0 tangent-base offset. `#pragma opt_lifetimes off` is required (94.57% without).
-// NONMATCHING (97.29%): FP colouring + tangent-base offset only
-void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
-	f32* points = (f32*)a;
-	f32* knots = (f32*)b;
-	f32* tangents = (f32*)c;
-	s32 lo;
-	s32 hi;
-	s32 mid;
-	f32 f2, f3, f4, f0, f6, f5, f8, f7;
-
-	if (type == 2) {
-		out[0] = t * (points[3] - points[0]) + points[0];
-		out[1] = t * (points[4] - points[1]) + points[1];
-		out[2] = t * (points[5] - points[2]) + points[2];
-		return;
-	}
-
-	lo = 0;
-	hi = type - 1;
-	while (lo < hi) {
-		mid = (lo + hi) / 2;
-		if (knots[mid] < t) {
-			lo = mid + 1;
-		}
-		else {
-			hi = mid;
-		}
-	}
-	if (lo > 0) {
-		lo--;
-	}
-
-	f2 = knots[lo];
-	f6 = float_2_80419858;
-	f7 = tangents[lo * 3 + 0];
-	f4 = tangents[lo * 3 + 3];
-	t = t - f2;
-	f0 = knots[lo + 1];
-	f5 = f4 - f7;
-	f8 = points[lo * 3 + 0];
-	f3 = points[lo * 3 + 3];
-	f2 = f0 - f2;
-	f4 = f6 * f7 + f4;
-	f0 = float_3_8041984c;
-	f5 = t * f5;
-	f3 = f3 - f8;
-	f5 = f5 / f2;
-	f3 = f3 / f2;
-	f5 = f0 * f7 + f5;
-	f3 = f3 - f2 * f4;
-	f3 = t * f5 + f3;
-	f3 = t * f3 + f8;
-	out[0] = f3;
-
-	f7 = tangents[lo * 3 + 1];
-	f4 = tangents[lo * 3 + 4];
-	f5 = f4 - f7;
-	f8 = points[lo * 3 + 1];
-	f3 = points[lo * 3 + 4];
-	f4 = f6 * f7 + f4;
-	f5 = t * f5;
-	f3 = f3 - f8;
-	f5 = f5 / f2;
-	f3 = f3 / f2;
-	f5 = f0 * f7 + f5;
-	f3 = f3 - f2 * f4;
-	f3 = t * f5 + f3;
-	f3 = t * f3 + f8;
-	out[1] = f3;
-
-	f7 = tangents[lo * 3 + 2];
-	f4 = tangents[lo * 3 + 5];
-	f5 = f4 - f7;
-	f8 = points[lo * 3 + 2];
-	f3 = points[lo * 3 + 5];
-	f4 = f6 * f7 + f4;
-	f5 = t * f5;
-	f3 = f3 - f8;
-	f5 = f5 / f2;
-	f3 = f3 / f2;
-	f5 = f0 * f7 + f5;
-	f3 = f3 - f2 * f4;
-	f3 = t * f5 + f3;
-	f3 = t * f3 + f8;
-	out[2] = f3;
-}
-#pragma opt_lifetimes reset
-
 
 //heavily inlined
 void mapGetJointsSub(MapFileJoint* joint, s32* numJoints) { //1:1
@@ -1445,6 +658,52 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 	return NULL;
 }
 
+// The search loop is inlined here instead of calling mapSearchAnmObj: MWCC's deferred inliner colors
+// the inlined wp/entry pair the other way when it inlines that function itself (99.47%). This copy,
+// with the loop pointer declared at function scope and j declared before i, reproduces the target's
+// registers. Natural form: `found = mapSearchAnmObj(animName);`.
+#ifdef MUST_MATCH
+static inline MapEntryAnimData* mapCheckAnimationSearch(const char* animName) {
+	MapEntry* entry;
+	MapWork* wp;
+	MapEntryAnimData* anim;
+	s32 j;
+	s32 i;
+
+	wp = &mapWork[activeGroup];
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		anim = entry->animData;
+		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
+			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
+				return anim;
+			}
+		}
+	}
+	return NULL;
+}
+#endif
+
+void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
+#ifdef MUST_MATCH
+	MapEntryAnimData* found = mapCheckAnimationSearch(animName);
+#else
+	MapEntryAnimData* found = mapSearchAnmObj(animName);
+#endif
+
+	*valid = FALSE;
+	*a3 = float_0_80419850;
+	if (found) {
+		if (*(u16*)found & 0x2) {
+			*valid = TRUE;
+		}
+		*a3 = 1000.0f * (*(f32*)(*(u8**)((u8*)found + 0x18) + 8) - *(f32*)((u8*)found + 0x10)) / (f32)gp->framerate;
+	}
+	else {
+		*valid = TRUE;
+	}
+}
+
 // the 1.0f/1000.0f literals must be the named .sdata2 externs, and float_0/float_1 must be
 // declared `const` (they are read-only in the original) so the compiler hoists both loads ahead of
 // the stores and assigns f1=float_0, f0=float_1. objdiff still prints an arg_mismatch for the
@@ -1530,22 +789,20 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	}
 }
 
-// The search loop is inlined here instead of calling mapSearchAnmObj: MWCC's deferred inliner colors
-// the inlined wp/entry pair the other way when it inlines that function itself (99.47%). This copy,
-// with the loop pointer declared at function scope and j declared before i, reproduces the target's
-// registers. Natural form: `found = mapSearchAnmObj(animName);`.
 #ifdef MUST_MATCH
-static inline MapEntryAnimData* mapCheckAnimationSearch(const char* animName) {
+// Inline copy of mapSearchAnmObj with `entry` declared before `wp`: the inliner allocates the helper's
+// locals in declaration order, and that order puts wp in the higher register (r28) as in the target.
+// Natural form: `found = mapSearchAnmObj(name);`.
+static inline MapEntryAnimData* mapFindAnm(const char* animName) {
 	MapEntry* entry;
 	MapWork* wp;
-	MapEntryAnimData* anim;
 	s32 j;
 	s32 i;
 
 	wp = &mapWork[activeGroup];
 	entry = &wp->entries[0];
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		anim = entry->animData;
+		MapEntryAnimData* anim = entry->animData;
 		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
 			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
 				return anim;
@@ -1556,23 +813,69 @@ static inline MapEntryAnimData* mapCheckAnimationSearch(const char* animName) {
 }
 #endif
 
-void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
+void mapPauseAnimation(const char* name) {
 #ifdef MUST_MATCH
-	MapEntryAnimData* found = mapCheckAnimationSearch(animName);
+	MapEntryAnimData* found = mapFindAnm(name);
 #else
-	MapEntryAnimData* found = mapSearchAnmObj(animName);
+	MapEntryAnimData* found = mapSearchAnmObj(name);
 #endif
 
-	*valid = FALSE;
-	*a3 = float_0_80419850;
 	if (found) {
-		if (*(u16*)found & 0x2) {
-			*valid = TRUE;
-		}
-		*a3 = 1000.0f * (*(f32*)(*(u8**)((u8*)found + 0x18) + 8) - *(f32*)((u8*)found + 0x10)) / (f32)gp->framerate;
+		*(u16*)found |= 0x10;
 	}
-	else {
-		*valid = TRUE;
+}
+
+// Matches via mapFindAnm: the inline copy's `entry`-before-`wp` declaration order puts wp in r28
+// (the higher register) in the target; inlining mapSearchAnmObj directly colors them the other way.
+void mapReStartAnimation(const char* name) {
+#ifdef MUST_MATCH
+	MapEntryAnimData* found = mapFindAnm(name);
+#else
+	MapEntryAnimData* found = mapSearchAnmObj(name);
+#endif
+
+	if (found) {
+		*(u16*)found |= 0x20;
+	}
+}
+
+void mapPauseAnimationAll(void) {
+	MapWork* wp = &mapWork[activeGroup];
+	MapEntry* entry = &wp->entries[0];
+	s32 j;
+	s32 i;
+
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		MapEntryAnimData* anim = entry->animData;
+		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
+			*(u16*)anim |= 0x10;
+		}
+	}
+}
+
+void mapReStartAnimationAll(void) {
+	MapWork* wp = &mapWork[activeGroup];
+	MapEntry* entry = &wp->entries[0];
+	s32 j;
+	s32 i;
+
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		MapEntryAnimData* anim = entry->animData;
+		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
+			*(u16*)anim |= 0x20;
+		}
+	}
+}
+
+void mapSetPlayRate(const char* name, f32 rate) {
+#ifdef MUST_MATCH
+	MapEntryAnimData* found = mapFindAnm(name);
+#else
+	MapEntryAnimData* found = mapSearchAnmObj(name);
+#endif
+
+	if (found) {
+		*(f32*)((u8*)found + 0x14) = rate;
 	}
 }
 
@@ -1922,8 +1225,6 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 #undef ML_STR_C
 
 // An empty string; symbols.txt names it as a float.
-extern const char float_0_804198cc[4];
-extern GXColor dat_8041981c;
 
 // `i = 0; activeGroup = i;` plus `opt_propagation off` matched this; the pragma keeps the assignment
 // from constant-folding to a fresh r0 so i keeps r30.
@@ -2009,30 +1310,146 @@ void mapLoad(const char* map) {
 	wp->entries[0].count = 1;
 }
 
+// NONMATCHING (99.62%): only the third loop's counter/base registers differ (target i=r31,
+// mapWork=r30; ours i=r30, mapWork=r31). The first two loops match after `i = 0;` was hoisted
+// before `wp`/`entry`, and `memset(wp, ...)` reuses wp instead of recomputing &mapWork[1].
+void bmapUnLoad(void) {
+	MapWork* wp;
+	MapEntry* entry;
+	s32 i;
+
+	sysWaitDrawSync();
+	activeGroup = 1;
+	i = 0;
+	wp = &mapWork[1];
+	entry = &wp->entries[0];
+	for (; i < wp->entries[0].count; entry++, i++) {
+		if (entry->objects) {
+			_mapFree(entry->objects);
+			entry->numJoints = 0;
+			entry->objects = NULL;
+		}
+		if (entry->animData) {
+			_mapFree(entry->animData);
+			*(s32*)entry->field_0x160 = 0;
+			entry->animData = NULL;
+		}
+		if (*(void**)((u8*)entry + 0x16C)) {
+			_mapFree(*(void**)((u8*)entry + 0x16C));
+			*(void**)((u8*)entry + 0x16C) = NULL;
+			*(void**)((u8*)entry + 0x168) = NULL;
+		}
+	}
+	unk_80418458 = 0;
+	hitReInit();
+	lightReInit();
+	envReInit();
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		if (entry->dat) {
+			if (!arcDataCheck(entry->dat)) {
+				_mapFree(entry->dat);
+			}
+			entry->dat = NULL;
+		}
+		if (entry->tpl) {
+			if (!arcDataCheck(entry->tpl)) {
+				_mapFree(entry->tpl);
+			}
+			entry->tpl = NULL;
+		}
+		if (*(void**)entry->field_0x8C) {
+			_mapFree(*(void**)entry->field_0x8C);
+			*(void**)entry->field_0x8C = NULL;
+		}
+		strncpy(entry->name, float_0_804198cc, 0x10);
+	}
+	arcDelete(1);
+	arcDelete(2);
+	memset(wp, 0, 0x2F4);
+
+	activeGroup = 0;
+	wp = mapWork;
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		if (*(void**)((u8*)entry + 0x170)) {
+			entry->dat = _mapAllocTail(entry->datSize);
+			entry->tpl = _mapAllocTail(entry->tplSize);
+			aramMgrToMram(*(void**)((u8*)entry + 0x170), entry->dat);
+			aramMgrToMram(*(void**)((u8*)entry + 0x178), entry->tpl);
+			*(void**)((u8*)entry + 0x170) = NULL;
+			*(void**)((u8*)entry + 0x178) = NULL;
+		}
+		else {
+			*(void**)entry->field_0x8C = _mapAllocTail(*(u32*)(entry->field_0x8C + 4));
+			aramMgrToMram(*(void**)(entry->field_0x168 + 0xC), *(void**)entry->field_0x8C);
+			*(void**)(entry->field_0x168 + 0xC) = NULL;
+		}
+		makeDisplayList(i);
+	}
+	if (*(void**)wp->entries[0].field_0x8C) {
+		arcEntry(1, *(void**)wp->entries[0].field_0x8C, *(u32*)(wp->entries[0].field_0x8C + 4));
+	}
+}
+
+// NONMATCHING (96.59%): opening constant/pointer setup order; target reuses r28 for activeGroup=0, MWCC uses r0.
+// `i = 0;` is hoisted before `offset = 0;` because it scores marginally better (96.59 vs 96.54).
+void bmapLoad(const char* map1, const char* map2) {
+	s32 offset;
+	u8* p;
+	MapEntry* entry;
+	s32 i;
+	MapWork* wp;
+
+	sysWaitDrawSync();
+	i = 0;
+	offset = 0;
+	wp = mapWork;
+	activeGroup = 0;
+	p = (u8*)wp;
+	for (; i < wp->entries[0].count; i++) {
+		entry = (MapEntry*)((u8*)mapWork + activeGroup * 0x2F4 + offset);
+		if (*(void**)((u8*)entry + 0x16C)) {
+			_mapFree(*(void**)((u8*)entry + 0x16C));
+		}
+		*(s32*)((u8*)entry + 0x168) = 0;
+		*(s32*)((u8*)entry + 0x16C) = 0;
+		*(s32*)(p + 0x170) = 0;
+		*(s32*)(p + 0x178) = 0;
+		*(s32*)(p + 0x174) = 0;
+		if (((MapEntry*)p)->dat) {
+			if (!arcDataCheck(((MapEntry*)p)->dat)) {
+				*(void**)(p + 0x170) = aramMgrToAram(((MapEntry*)p)->dat, ((MapEntry*)p)->datSize);
+				*(void**)(p + 0x178) = aramMgrToAram(((MapEntry*)p)->tpl, ((MapEntry*)p)->tplSize);
+				_mapFree(((MapEntry*)p)->tpl);
+				_mapFree(((MapEntry*)p)->dat);
+				((MapEntry*)p)->tpl = NULL;
+				((MapEntry*)p)->dat = NULL;
+			}
+			else {
+				*(void**)(p + 0x174) = aramMgrToAram(*(void**)(p + 0x8C), *(u32*)(p + 0x90));
+				_mapFree(*(void**)(p + 0x8C));
+				*(void**)(p + 0x8C) = NULL;
+			}
+		}
+		offset += 0x178;
+		p += 0x178;
+	}
+	activeGroup = 1;
+	entry = (MapEntry*)((u8*)mapWork + 0x2F4);
+	memset(entry, 0, 0x2F4);
+	_mapLoad((MapWork*)entry, 0, map1);
+	entry->count = 1;
+	if (map2) {
+		_mapLoad((MapWork*)entry, 1, map2);
+		entry->count = 2;
+	}
+}
+
 // in-file layout for the animation key records mapCalcAnimMatrix walks
 // (the joint pointer passed by hitdrv.c points at an array of these)
-typedef struct MapAnimChannel {
-	f32 value;  // 0x0
-	f32 unk4;   // 0x4
-	f32 unk8;   // 0x8
-	f32 unkC;   // 0xC
-	s32 flag;   // 0x10
-} MapAnimChannel;
 
-typedef struct MapAnimKey {
-	f32 time;                 // 0x0
-	MapAnimChannel chan[9];   // 0x4
-	u8 unk[0xF0];            // 0xB8
-} MapAnimKey;
 
-typedef struct MapAnimData {
-	u8 unk0[0x4];   // 0x0
-	f32 base[6];    // 0x4
-	f32 div[3];     // 0x1C
-	u8 unk28[0x30]; // 0x28
-	s32 count;      // 0x58
-	MapAnimKey key[]; // 0x5C
-} MapAnimData;
 
 // NONMATCHING (99.29%): spline math, constants, the d==0 boolean (cntlzw/srwi) and the inner-loop
 // GPRs (ch=r3, out=r4, chn=r5) now match. What differs is FPR colouring: the key-select time t is f13
@@ -2176,899 +1593,6 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 		break;
 	}
 }
-
-// NONMATCHING (96.59%): opening constant/pointer setup order; target reuses r28 for activeGroup=0, MWCC uses r0.
-// `i = 0;` is hoisted before `offset = 0;` because it scores marginally better (96.59 vs 96.54).
-void bmapLoad(const char* map1, const char* map2) {
-	s32 offset;
-	u8* p;
-	MapEntry* entry;
-	s32 i;
-	MapWork* wp;
-
-	sysWaitDrawSync();
-	i = 0;
-	offset = 0;
-	wp = mapWork;
-	activeGroup = 0;
-	p = (u8*)wp;
-	for (; i < wp->entries[0].count; i++) {
-		entry = (MapEntry*)((u8*)mapWork + activeGroup * 0x2F4 + offset);
-		if (*(void**)((u8*)entry + 0x16C)) {
-			_mapFree(*(void**)((u8*)entry + 0x16C));
-		}
-		*(s32*)((u8*)entry + 0x168) = 0;
-		*(s32*)((u8*)entry + 0x16C) = 0;
-		*(s32*)(p + 0x170) = 0;
-		*(s32*)(p + 0x178) = 0;
-		*(s32*)(p + 0x174) = 0;
-		if (((MapEntry*)p)->dat) {
-			if (!arcDataCheck(((MapEntry*)p)->dat)) {
-				*(void**)(p + 0x170) = aramMgrToAram(((MapEntry*)p)->dat, ((MapEntry*)p)->datSize);
-				*(void**)(p + 0x178) = aramMgrToAram(((MapEntry*)p)->tpl, ((MapEntry*)p)->tplSize);
-				_mapFree(((MapEntry*)p)->tpl);
-				_mapFree(((MapEntry*)p)->dat);
-				((MapEntry*)p)->tpl = NULL;
-				((MapEntry*)p)->dat = NULL;
-			}
-			else {
-				*(void**)(p + 0x174) = aramMgrToAram(*(void**)(p + 0x8C), *(u32*)(p + 0x90));
-				_mapFree(*(void**)(p + 0x8C));
-				*(void**)(p + 0x8C) = NULL;
-			}
-		}
-		offset += 0x178;
-		p += 0x178;
-	}
-	activeGroup = 1;
-	entry = (MapEntry*)((u8*)mapWork + 0x2F4);
-	memset(entry, 0, 0x2F4);
-	_mapLoad((MapWork*)entry, 0, map1);
-	entry->count = 1;
-	if (map2) {
-		_mapLoad((MapWork*)entry, 1, map2);
-		entry->count = 2;
-	}
-}
-
-// NONMATCHING (99.62%): only the third loop's counter/base registers differ (target i=r31,
-// mapWork=r30; ours i=r30, mapWork=r31). The first two loops match after `i = 0;` was hoisted
-// before `wp`/`entry`, and `memset(wp, ...)` reuses wp instead of recomputing &mapWork[1].
-void bmapUnLoad(void) {
-	MapWork* wp;
-	MapEntry* entry;
-	s32 i;
-
-	sysWaitDrawSync();
-	activeGroup = 1;
-	i = 0;
-	wp = &mapWork[1];
-	entry = &wp->entries[0];
-	for (; i < wp->entries[0].count; entry++, i++) {
-		if (entry->objects) {
-			_mapFree(entry->objects);
-			entry->numJoints = 0;
-			entry->objects = NULL;
-		}
-		if (entry->animData) {
-			_mapFree(entry->animData);
-			*(s32*)entry->field_0x160 = 0;
-			entry->animData = NULL;
-		}
-		if (*(void**)((u8*)entry + 0x16C)) {
-			_mapFree(*(void**)((u8*)entry + 0x16C));
-			*(void**)((u8*)entry + 0x16C) = NULL;
-			*(void**)((u8*)entry + 0x168) = NULL;
-		}
-	}
-	unk_80418458 = 0;
-	hitReInit();
-	lightReInit();
-	envReInit();
-	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		if (entry->dat) {
-			if (!arcDataCheck(entry->dat)) {
-				_mapFree(entry->dat);
-			}
-			entry->dat = NULL;
-		}
-		if (entry->tpl) {
-			if (!arcDataCheck(entry->tpl)) {
-				_mapFree(entry->tpl);
-			}
-			entry->tpl = NULL;
-		}
-		if (*(void**)entry->field_0x8C) {
-			_mapFree(*(void**)entry->field_0x8C);
-			*(void**)entry->field_0x8C = NULL;
-		}
-		strncpy(entry->name, float_0_804198cc, 0x10);
-	}
-	arcDelete(1);
-	arcDelete(2);
-	memset(wp, 0, 0x2F4);
-
-	activeGroup = 0;
-	wp = mapWork;
-	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		if (*(void**)((u8*)entry + 0x170)) {
-			entry->dat = _mapAllocTail(entry->datSize);
-			entry->tpl = _mapAllocTail(entry->tplSize);
-			aramMgrToMram(*(void**)((u8*)entry + 0x170), entry->dat);
-			aramMgrToMram(*(void**)((u8*)entry + 0x178), entry->tpl);
-			*(void**)((u8*)entry + 0x170) = NULL;
-			*(void**)((u8*)entry + 0x178) = NULL;
-		}
-		else {
-			*(void**)entry->field_0x8C = _mapAllocTail(*(u32*)(entry->field_0x8C + 4));
-			aramMgrToMram(*(void**)(entry->field_0x168 + 0xC), *(void**)entry->field_0x8C);
-			*(void**)(entry->field_0x168 + 0xC) = NULL;
-		}
-		makeDisplayList(i);
-	}
-	if (*(void**)wp->entries[0].field_0x8C) {
-		arcEntry(1, *(void**)wp->entries[0].field_0x8C, *(u32*)(wp->entries[0].field_0x8C + 4));
-	}
-}
-
-#pragma opt_lifetimes off // needed: default lifetime analysis colours 15 more instructions wrong (243 -> 228 diffs)
-// Register colouring/scheduling only (228 real instruction diffs, 21 symbol-only). The unit's .rodata
-// (vec3_802c16d8, double_to_int_mask_802c19a0, ...) is not defined here yet, so MWCC addresses the pooled
-// i2f double absolutely (lis/lfd) instead of `lfd f2, 0x2c8(r28)`, and TEXMTX uses add+lwzu (16 sites).
-// NONMATCHING (96.99%): the identity casts on the texMap/texCoord init below removed 14 diffs; the
-// else-branch constant order in the flags&0x80100000 block was reordered for the same reason.
-void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
-	u8* base;
-	s32 texMap;
-	s32 texCoord;
-	GXTevStageID tevStage;
-	s32 numIndStages;
-	Mtx queen_mtx;
-
-	base = vec3_802c16d8;
-#ifdef MUST_MATCH
-	// Identity casts break MWCC's coalescing of texMap with texCount and texCoord with texMap; without
-	// them the allocator parks texCount in r21, rematerialises texMap from it at every TEXMTX site, and
-	// turns the table loads into add+lwzu (240 -> 228 diffs).
-	texMap = (s32)texCount;
-	texCoord = (s32)texMap;
-#else
-	texMap = texCount;
-	texCoord = texCount;
-#endif
-	numIndStages = 0;
-	
-	if (texCount > 0) {
-		switch (drawMode) {
-			case 0:
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-				GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE1;
-				break;
-
-			case 1:
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXA, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE3;
-				break;
-
-			case 2:
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXA, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_TEXA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE3;
-				break;
-
-			case 12:
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
-				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE3;
-				break;
-
-			case 3:
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_ZERO, GX_CC_TEXA, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_ZERO, GX_CA_TEXA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE3;
-				break;
-
-			case 4:
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_TEXA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_TEXC, GX_CC_CPREV, GX_CC_APREV, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE3;
-				break;
-
-			case 5:
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
-				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
-				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD2, GX_TEXMAP2, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_C0, GX_CC_C1, GX_CC_TEXA, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_A0, GX_CA_A1, GX_CA_TEXA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-				GXSetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE3, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE3, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE4;
-				break;
-
-			case 6:
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_APREV, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_TEXA, GX_CA_APREV, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE3;
-				break;
-
-			case 7:
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXA, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_ZERO, GX_CA_TEXA, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE3;
-				break;
-
-			case 8: {
-				GXColor color = *(GXColor*)&unk_80422f88;
-
-				color.g = (u8)((127.0f * (f32)sin((TWO_PI * (f32)(2 * gp->retraceCount)) / 360.0f)) + 127.0f);
-				GXSetTevColor(GX_TEVREG0, color);
-			}
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_RASC, GX_CC_TEXC, GX_CC_C0);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_A0);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE1;
-				break;
-
-			case 9: {
-				f32* p = scrl_uv;
-				f32* q = queen_uv;
-				s32 i;
-				for (i = 0; i < 4; i++) {
-					p[i] += q[i];
-					if (p[i] > 100.0f) {
-						p[i] -= 100.0f;
-					}
-					if (p[i] < -100.0f) {
-						p[i] += 100.0f;
-					}
-				}
-			}
-				MTXTrans(queen_mtx, scrl_uv[0], scrl_uv[1], 0.0f);
-				GXLoadTexMtxImm(queen_mtx, 0x1E, GX_MTX2x4);
-				GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
-				MTXTrans(queen_mtx, scrl_uv[2], scrl_uv[3], 0.0f);
-				GXLoadTexMtxImm(queen_mtx, 0x21, GX_MTX2x4);
-				GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX1, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
-				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXA, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_ZERO, GX_CA_TEXA, GX_CA_TEXA);
-				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE3;
-				break;
-
-			default:
-				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
-				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_RASC, GX_CC_TEXC, GX_CC_ZERO);
-				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO);
-				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage = GX_TEVSTAGE1;
-				break;
-		}
-	}
-	else {
-		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-		GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
-		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
-		GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-		tevStage = GX_TEVSTAGE1;
-	}
-
-	if (!(flags & 0x10000000)) {
-		GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K0);
-		GXSetTevKAlphaSel(tevStage, GX_TEV_KASEL_K0_A);
-		GXSetTevOrder(tevStage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
-		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_KONST, GX_CC_ZERO);
-		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_APREV, GX_CA_KONST, GX_CA_ZERO);
-		GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-		tevStage++;
-	}
-
-	if (flags & 0x4) {
-		if (shadowGetCharShadowProjection() != 0) {
-			if (shadowGetCharShadowTexObj() != NULL) {
-				Mtx mtx2;
-				GXColor color = shadowGetCharShadowColor();
-
-				PSMTXConcat(shadowGetCharShadowProjTexMtx(), mtx, mtx2);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				GXLoadTexObj(shadowGetCharShadowTexObj(), texMap);
-				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_KONST, GX_CC_TEXC, GX_CC_ZERO);
-				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevKColor(GX_KCOLOR1, color);
-				GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
-				tevStage++;
-				texMap++;
-				texCoord++;
-			}
-		}
-	}
-
-	if (flags & 0x400) {
-		Mtx mtx2;
-		GXTevStageID stage;
-		GXColor color;
-
-		GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-		GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-		PSMTXConcat(projMtx, mtx, mtx2);
-		GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-		GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-		GXLoadTexObj(smartTexObj(&projTexObj, (void**)projTexImgRef), texMap);
-		GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_2, GX_TRUE, GX_TEVPREV);
-		GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C1);
-		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-		GXSetTevSwapMode(tevStage, GX_TEV_SWAP3, GX_TEV_SWAP3);
-		GXSetTevSwapModeTable(GX_TEV_SWAP3, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_RED);
-		color = *(GXColor*)&dat_80419800;
-		GXSetTevColor(GX_TEVREG1, color);
-		stage = tevStage + 1;
-		texMap++;
-		texCoord++;
-		GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
-		GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevColorIn(stage, GX_CC_C0, GX_CC_CPREV, GX_CC_APREV, GX_CC_ZERO);
-		GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
-		GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-		tevStage += 2;
-	}
-
-	if (flags & 0x10000) {
-		if (shadowGetDepthShadowTexObj() != NULL) {
-			GXTexObj* depthTex = shadowGetDepthShadowTexObj();
-			void* depthMtx = shadowGetDepthShadowDepthMtx();
-			void* depthProjMtx = shadowGetDepthShadowProjTexMtx();
-			GXColor color = shadowGetDepthShadowColor();
-			void* config = shadowGetDepthShadowConfig();
-			Mtx mtx2;
-			GXTevStageID stage;
-			s32 coord;
-
-			switch (*(s32*)((u8*)config + 0x3C)) {
-			case 0:
-				GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-				GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(shadowGetRamp8TexObj(), texMap);
-				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				stage = tevStage + 1;
-				coord = texCoord + 1;
-				texMap++;
-				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
-				GXSetTevColorOp(stage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(depthTex, texMap);
-				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				texMap++;
-				texCoord += 2;
-				stage = tevStage + 2;
-				GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
-				GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_KONST, GX_CC_CPREV, GX_CC_C0);
-				GXSetTevColorOp(stage, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevKColor(GX_KCOLOR1, color);
-				GXSetTevKColorSel(stage, GX_TEV_KCSEL_K1);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage += 3;
-				break;
-			case 1:
-				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_80419804);
-				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
-				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(shadowGetRamp8TexObj(), texMap);
-				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				tevStage++;
-				texMap++;
-				texCoord++;
-				break;
-			case 2:
-				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_80419808);
-				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
-				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(depthTex, texMap);
-				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				tevStage++;
-				texMap++;
-				texCoord++;
-				break;
-			case 3:
-				GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-				GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-				GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_ALPHA, GX_CH_BLUE, GX_CH_ALPHA);
-				GXSetTevSwapModeTable(GX_TEV_SWAP2, GX_CH_ALPHA, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
-				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(shadowGetRamp16TexObj(), texMap);
-				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				stage = tevStage + 1;
-				coord = texCoord + 1;
-				texMap++;
-				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
-				GXSetTevColorOp(stage, GX_TEV_COMP_GR16_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP2);
-				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(depthTex, texMap);
-				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				texMap++;
-				texCoord += 2;
-				stage = tevStage + 2;
-				GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-				GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_KONST, GX_CC_CPREV, GX_CC_C0);
-				GXSetTevColorOp(stage, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevKColor(GX_KCOLOR1, color);
-				GXSetTevKColorSel(stage, GX_TEV_KCSEL_K1);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				tevStage += 3;
-				break;
-			case 4:
-				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041980c);
-				GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_ALPHA, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
-				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
-				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(shadowGetRamp16TexObj(), texMap);
-				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				tevStage++;
-				texMap++;
-				texCoord++;
-				break;
-			case 5:
-				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_80419810);
-				GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_ALPHA, GX_CH_BLUE, GX_CH_ALPHA);
-				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
-				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(depthTex, texMap);
-				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				tevStage++;
-				texMap++;
-				texCoord++;
-				break;
-			}
-		}
-	}
-
-	if (flags & 0x20000) {
-		if (shadowGetProjShadowTexObj() != NULL) {
-			GXTexObj* projTex = shadowGetProjShadowTexObj();
-			void* projShadowMtx = shadowGetProjShadowProjTexMtx();
-			GXColor color = shadowGetProjShadowColor();
-			Mtx mtx2;
-
-			shadowGetProjShadowConfig();
-			GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-			GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_KONST, GX_CC_TEXA, GX_CC_ZERO);
-			GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-			GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_KONST, GX_CA_TEXA, GX_CA_APREV);
-			GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-			GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-			GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-			GXLoadTexObj(projTex, texMap);
-			PSMTXConcat(projShadowMtx, mtx, mtx2);
-			GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-			GXSetTevKColor(GX_KCOLOR1, color);
-			GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
-			GXSetTevKAlphaSel(tevStage, GX_TEV_KASEL_K1_A);
-			tevStage++;
-			texMap++;
-			texCoord++;
-		}
-	}
-
-	if (flags & 0x40000) {
-		if (shadowGetDepthShadowTexObj() != NULL) {
-			GXTexObj* depthTex = shadowGetDepthShadowTexObj();
-			void* depthMtx = shadowGetDepthShadowDepthMtx();
-			void* depthProjMtx = shadowGetDepthShadowProjTexMtx();
-			GXColor color = shadowGetDepthShadowColor();
-			void* config = shadowGetDepthShadowConfig();
-			Mtx mtx2;
-			GXTevStageID stage;
-			s32 coord;
-
-			switch (*(s32*)((u8*)config + 0x3C)) {
-			case 0:
-				GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-				GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(shadowGetRamp8TexObj(), texMap);
-				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				stage = tevStage + 1;
-				coord = texCoord + 1;
-				texMap++;
-				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
-				GXSetTevColorOp(stage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(depthTex, texMap);
-				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				texMap++;
-				texCoord += 2;
-				stage = tevStage + 2;
-				GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-				GXSetTevColorIn(stage, GX_CC_C0, GX_CC_KONST, GX_CC_CPREV, GX_CC_ZERO);
-				GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ONE);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevKColor(GX_KCOLOR1, color);
-				GXSetTevKColorSel(stage, GX_TEV_KCSEL_K1);
-				GXSetTevKAlphaSel(stage, GX_TEV_KASEL_K1_A);
-				tevStage += 3;
-				break;
-			case 3:
-				GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-				GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-				GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_ALPHA, GX_CH_BLUE, GX_CH_ALPHA);
-				GXSetTevSwapModeTable(GX_TEV_SWAP2, GX_CH_ALPHA, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
-				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(shadowGetRamp16TexObj(), texMap);
-				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				stage = tevStage + 1;
-				coord = texCoord + 1;
-				texMap++;
-				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
-				GXSetTevColorOp(stage, GX_TEV_COMP_GR16_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP2);
-				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(depthTex, texMap);
-				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
-				texMap++;
-				texCoord += 2;
-				stage = tevStage + 2;
-				GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-				GXSetTevColorIn(stage, GX_CC_C0, GX_CC_KONST, GX_CC_CPREV, GX_CC_ZERO);
-				GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ONE);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTevKColor(GX_KCOLOR1, color);
-				GXSetTevKColorSel(stage, GX_TEV_KCSEL_K1);
-				GXSetTevKAlphaSel(stage, GX_TEV_KASEL_K1_A);
-				tevStage += 3;
-				break;
-			}
-		}
-	}
-
-	if (flags & 0x80100000) {
-		s32 r19;
-		s32 r21;
-		s32 r22;
-		s32 r20;
-
-		if (flags & 0x100000) {
-			r19 = current_mp->field_0xC[0];
-			r21 = current_mp->field_0xC[1];
-			r22 = current_mp->field_0xC[2];
-			r20 = current_mp->field_0xC[3];
-		}
-		else {
-			r21 = 0xF0;
-			r22 = 0x64;
-			r19 = 0xF0;
-			r20 = (u8)(64.0f * (1.0f - (f32)cos(1.5707964f * (f32)gp->retraceCount / 20.0f)) * 0.5f + 64.0f);
-		}
-		GXSetTevOrder(tevStage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
-		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_KONST);
-		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-		GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-		{
-			GXColor color = *(GXColor*)&dat_80419814;
-			color.r = r19 * r20 / 255;
-			color.g = r21 * r20 / 255;
-			color.b = r22 * r20 / 255;
-			GXSetTevKColor(GX_KCOLOR1, color);
-		}
-		GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
-		tevStage++;
-	}
-
-	if (flags & 0x800000) {
-		GXTexObj texObj;
-		Mtx orthoMtx;
-		Mtx lookAtMtx;
-		Vec camPos;
-		Vec up;
-		Vec target;
-		s32 v;
-
-		camPos = *(Vec*)(base + 0x120);
-		up = *(Vec*)(base + 0x12c);
-		target = *(Vec*)(base + 0x138);
-		v = (s32)(127.0f * (1.0f - (f32)cos(1.5707964f * (f32)gp->retraceCount / 30.0f)) * 0.5f + 128.0f);
-		GXInitTexObj(&texObj, texture_0, 4, 0x40, GX_TF_CMPR, GX_CLAMP, GX_REPEAT, GX_FALSE);
-		GXLoadTexObj(&texObj, texMap);
-		C_MTXLightOrtho(orthoMtx, -2.0f, 2.0f, -2.0f, 2.0f, 0.5f, 0.5f, 0.5f, (f32)gp->retraceCount / 50.0f);
-		C_MTXLookAt(lookAtMtx, &camPos, &up, &target);
-		PSMTXConcat(orthoMtx, lookAtMtx, orthoMtx);
-		GXLoadTexMtxImm(orthoMtx, TEXMTX(texMap), GX_MTX3x4);
-		GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-		GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevColorIn(tevStage, GX_CC_TEXC, GX_CC_CPREV, GX_CC_KONST, GX_CC_ZERO);
-		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-		GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-		{
-			GXColor color = *(GXColor*)&dat_80419818;
-			color.r = v;
-			color.g = v;
-			color.b = v;
-			GXSetTevKColor(GX_KCOLOR1, color);
-		}
-		GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
-		tevStage++;
-		texMap++;
-		texCoord++;
-	}
-
-	if (flags & 0xF000000) {
-		MapTevCallback work;
-		MapTevCallback* workPtr = &work;
-		void (*callback)(MapTevCallback*);
-		u32 cbIndex;
-		u8* cbBase;
-
-		workPtr->obj = current_mp;
-		workPtr->mtx = mtx;
-		workPtr->drawMode = drawMode;
-		workPtr->tevStage = tevStage;
-		workPtr->texMap = texMap;
-		workPtr->texCoord = texCoord;
-		workPtr->numIndStage = 0;
-		cbIndex = (u32)(flags & 0xF000000) >> 22 & 0x3FC;
-		cbBase = (u8*)&mapWork[activeGroup].entries[0] + 0x110;
-		callback = *(void**)(cbBase + cbIndex);
-		if (callback != NULL) {
-			callback(workPtr);
-		}
-		tevStage = work.tevStage;
-		texCoord = work.texCoord;
-		numIndStages = work.numIndStage;
-	}
-
-	GXSetNumTexGens((u8)texCoord);
-	GXSetNumTevStages((u8)tevStage);
-	GXSetNumIndStages((u8)numIndStages);
-}
-
-#pragma opt_lifetimes reset
 
 static BOOL mapReCalcMatrixCheck(BOOL force, u32 flags) {
 	BOOL recalc;
@@ -3950,802 +2474,6 @@ void mapMain(void) {
 #pragma opt_common_subs reset
 #pragma opt_loop_invariants reset
 
-// 1:1
-void mapDisp(void) {
-	MapWork* wp;
-	MapEntry* entry;
-	MapObject* obj;
-	CameraEntry* cam;
-	MapFileJoint* joint;
-	Vec clipPos;
-	Vec dispPos;
-	Mtx scale;
-	Mtx mtx;
-	s32 j;
-	s32 i;
-	s32 id;
-	BOOL clip;
-	GXColor color;
-	GXColor matColor;
-	f32 order;
-	f32 clipV;
-
-	wp = &mapWork[activeGroup];
-	cam = camGetPtr(CAMERA_3D);
-#ifdef MUST_MATCH
-	/* the original emits cmpwi, i.e. it treats unk_80418458 as signed */
-	if ((s32)unk_80418458 != 0) {
-#else
-	if (unk_80418458 != 0) {
-#endif
-		return;
-	}
-	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
-		if (entry->rootMapObj != NULL) {
-			PSMTXScale(scale, float_10_80419864, float_10_80419864, float_10_80419864);
-			mapReCalcMatrix(entry->rootMapObj, scale, 0);
-		}
-		obj = entry->objects;
-		for (j = 0; j < entry->numJoints; j++, obj++) {
-#define OBJ_FLAGS (*(u32*)obj->field_0x0)
-			if (OBJ_FLAGS & 0x4000) continue;
-			if ((OBJ_FLAGS & 0x1) && !(OBJ_FLAGS & 0x80)) continue;
-			if (OBJ_FLAGS & 0x40) {
-				if (obj->field_0xC[3] == 0) continue;
-			}
-			if (OBJ_FLAGS & 0x20000000) {
-				*(u16*)(obj->field_0xEC + 4) = 0;
-				*(u16*)(obj->field_0xEC + 6) = 0;
-				*(u16*)(obj->field_0xEC + 0) = 0;
-				*(u16*)(obj->field_0xEC + 2) = 0;
-			}
-			if (OBJ_FLAGS & 0x20) continue;
-			if (!(OBJ_FLAGS & 0x10)) {
-				if (obj->joints->partCount < 1) continue;
-			}
-			if (!(OBJ_FLAGS & 0x800)) {
-				if ((entry->flags & 2) && entry->field_0x16[3] == 0) continue;
-			}
-			if (!(OBJ_FLAGS & 0x1000)) {
-				if ((entry->flags & 4) && entry->field_0x16[7] == 0) continue;
-			}
-			PSMTXConcat(cam->view, obj->modelWorldMtx, mtx);
-			if ((OBJ_FLAGS & 0x2) && !mapClipOffFlag) {
-				joint = obj->joints;
-#define CLIP_TEST(cx, cy, cz) \
-	clipPos.x = (cx); \
-	clipPos.y = (cy); \
-	clipPos.z = (cz); \
-	PSMTXMultVec(mtx, &clipPos, &clipPos); \
-	PSMTX44MultVec(cam->projection, &clipPos, &clipPos); \
-	clipV = clipPos.z; \
-	if (clipV > float_neg1_804198a8 && clipV < float_0_80419850) { \
-		clipV = clipPos.x; \
-		if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) { \
-			clipV = clipPos.y; \
-			if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) goto visible; \
-		} \
-	}
-				clip = FALSE;
-				CLIP_TEST(joint->bboxMax.x, joint->bboxMax.y, joint->bboxMax.z)
-				CLIP_TEST(joint->bboxMin.x, joint->bboxMin.y, joint->bboxMin.z)
-				CLIP_TEST(joint->bboxMin.x, joint->bboxMax.y, joint->bboxMax.z)
-				CLIP_TEST(joint->bboxMax.x, joint->bboxMin.y, joint->bboxMax.z)
-				/* the original transforms this corner through the model matrix twice (a bug kept as is) */
-				clipPos.x = joint->bboxMax.x;
-				clipPos.y = joint->bboxMax.y;
-				clipPos.z = joint->bboxMin.z;
-				PSMTXMultVec(mtx, &clipPos, &clipPos);
-				PSMTXMultVec(mtx, &clipPos, &clipPos);
-				PSMTX44MultVec(cam->projection, &clipPos, &clipPos);
-				clipV = clipPos.z;
-				if (clipV > float_neg1_804198a8 && clipV < float_0_80419850) {
-					clipV = clipPos.x;
-					if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) {
-						clipV = clipPos.y;
-						if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) goto visible;
-					}
-				}
-				CLIP_TEST(joint->bboxMin.x, joint->bboxMin.y, joint->bboxMax.z)
-				CLIP_TEST(joint->bboxMax.x, joint->bboxMin.y, joint->bboxMin.z)
-				CLIP_TEST(joint->bboxMin.x, joint->bboxMax.y, joint->bboxMin.z)
-#undef CLIP_TEST
-				clip = TRUE;
-			visible:
-				if (clip) continue;
-			}
-#undef OBJ_FLAGS
-			PSMTXMultVec(mtx, (Vec*)(obj->field_0xC + 4), &dispPos);
-			PSMTX44MultVec(cam->projection, &dispPos, &dispPos);
-			order = 5000.0f * dispPos.z + 5000.0f;
-			if (order < float_0_80419850) {
-				order = float_0_80419850;
-			}
-			else if (order > float_10000_804198b0) {
-				order = float_10000_804198b0;
-			}
-			order *= float_neg1_804198a8;
-			id = obj->field_0x0[4];
-			if (obj->joints->partCount > 0) {
-				color = *(GXColor*)obj->field_0xC;
-				matColor = *(GXColor*)((u8*)obj->joints->parts[0].material + 0x10C);
-				if (mapTestXLU(*(u32*)obj->field_0x0, &color, &matColor)) {
-					id = 2;
-				}
-			}
-			if (*(u32*)obj->field_0x0 & 0x20000000) {
-				dispEntry(CAMERA_OFFSCREEN2, float_5000_804198ac, 3, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj_bbox : (DispCallback)mapDispMapGrp_bbox, obj);
-			}
-			if (*(u32*)obj->field_0x0 & 0x80) {
-				dispEntry(CAMERA_OFFSCREEN2, order, id, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj_off : (DispCallback)mapDispMapGrp_off, obj);
-			}
-			if (!(*(u32*)obj->field_0x0 & 0x1)) {
-				dispEntry(obj->field_0x0[5], order, id, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj : (DispCallback)mapDispMapGrp, obj);
-			}
-		}
-	}
-}
-
-MapObject* mapGetMapObj(const char *name) { // 1:1
-    MapWork *wp;
-    MapEntry* entry;
-    int j;
-    int i;
-    MapObject *object;
-    
-    wp = &mapWork[activeGroup];
-    if (!name) {
-        return 0;
-    }
-    entry = &wp->entries[0];
-    for (i = 0; i < wp->entries[0].count; entry++, i++) {
-        object = entry->objects;
-        for (j = 0; j < entry->numJoints; j++, object++) {
-            if (!strcmp(object->joints->name, name)) {
-                return object;
-            }
-        }
-    }
-    return 0;
-}
-
-// material layout (MapMaterialTex only covers 0xB/0x2C onwards)
-
-
-// 1:1
-void mapSetMaterialLight(s32 flags, Vec position) {
-	LightEntry* lights[8];
-	LightEntry* light;
-	LightEntry* ambient;
-	CameraEntry* cam;
-	GXLightObj lightObj;
-	GXColor fogColor;
-	GXColor ambColor;
-	GXColor chanAmbColor;
-	Vec pos;
-	Vec dir;
-	Mtx rotX, rotY, rotZ;
-#ifdef MUST_MATCH
-	f32 spotAngle; /* keeps the 0.5f constant in f0 and the field in f1, as the target does */
-#endif
-	s32 count = 0;
-	u32 lightMask;
-	s32 attn = 2;
-	s32 i;
-
-	fogColor = dat_80419834;
-	ambColor = dat_80419838;
-
-	if ((u32)flags & 1) {
-		lights[0] = lightGetPaper();
-		count = 1;
-	}
-	if ((u32)flags & 8) {
-		lights[count++] = lightGetPaperCraft();
-	}
-	if ((u32)flags & 0x10) {
-		lights[count++] = lightGetPaper();
-	}
-	if ((u32)flags & 2) {
-		if (lightCheckCharaLight() && count < 8) {
-			count += LIGHT_GET_NEAR(&position, &lights[count], 8 - count, LIGHT_CHARA);
-		}
-	}
-	if ((u32)flags & 0x19) {
-		if (count == 1) {
-			if ((u32)flags & 1) {
-				ambColor = paper_ambient;
-			}
-			else if ((u32)flags & 8) {
-				ambColor = paperCraft_ambient;
-			}
-			else {
-				ambColor = dat_8041983c;
-			}
-		}
-		else {
-			count = LIGHT_GET_NEAR(&position, lights, 8, LIGHT_CHARA);
-		}
-	}
-
-	lightMask = 0;
-	for (i = 0; i < count; i++) {
-		/* The target keeps lights[i] in a callee-saved register for the flags test, the point
-		   position and the first spot rotation, but re-materializes it from the array for the
-		   remaining fields.  The light/lights[i] mix below reproduces that allocation; both
-		   forms are semantically identical. */
-		dir = vec3_802c1828[0];
-		light = lights[i];
-
-		if (light->flags & LIGHT_POINT) {
-			cam = camGetCurPtr();
-			PSMTXMultVec(cam->view, &light->position, &pos);
-			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
-			GXInitLightColor(&lightObj, lights[i]->color);
-			if (lights[i]->flags & LIGHT_NO_DIST_ATTEN) {
-				GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
-				                float_1_80419860, float_0_80419850, float_0_80419850);
-			}
-			else {
-				GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
-				                lights[i]->attenDistCoef.x, lights[i]->attenDistCoef.y, lights[i]->attenDistCoef.z);
-				attn = 1;
-			}
-			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
-		}
-		else if (light->flags & LIGHT_SPOT) {
-			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * light->rotation.x);
-			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
-			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
-			PSMTXConcat(rotZ, rotY, rotY);
-			PSMTXConcat(rotY, rotX, rotX);
-			PSMTXMultVec(rotX, &dir, &dir);
-			PSVECScale(&dir, &dir, float_neg1p0486E06_80419870);
-			PSVECAdd(&lights[i]->position, &dir, &pos);
-			cam = camGetCurPtr();
-			PSMTXMultVec(cam->view, &pos, &pos);
-			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
-			GXInitLightColor(&lightObj, lights[i]->color);
-			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
-		}
-		else if (lights[i]->flags & LIGHT_DIRECTIONAL) {
-			cam = camGetCurPtr();
-			PSMTXMultVec(cam->view, &light->position, &pos);
-			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
-			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
-			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
-			PSMTXConcat(rotZ, rotY, rotY);
-			PSMTXConcat(rotY, rotX, rotX);
-			PSMTXMultVec(rotX, &dir, &dir);
-			cam = camGetCurPtr();
-			PSMTXMultVecSR(cam->view, &dir, &dir);
-			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
-			GXInitLightDir(&lightObj, dir.x, dir.y, dir.z);
-#ifdef MUST_MATCH
-			/* split out so the field lands in f1 and 0.5f in f0, as the target does */
-			spotAngle = lights[i]->spotAngle;
-			GXInitLightSpot(&lightObj, spotAngle * float_0p5_80419854, 4);
-#else
-			GXInitLightSpot(&lightObj, lights[i]->spotAngle * float_0p5_80419854, 4);
-#endif
-			GXInitLightDistAttn(&lightObj, float_1000_80419874, float_0p5_80419854, 0);
-			GXInitLightColor(&lightObj, lights[i]->color);
-			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
-			attn = 1;
-		}
-		lightMask |= lightid_tbl[i];
-	}
-
-	ambient = lightGetCharaAmbient();
-	if (ambient != NULL) {
-		chanAmbColor = ambient->color;
-	}
-	else {
-		chanAmbColor = ambColor;
-	}
-
-	GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, fogColor);
-	GXSetNumChans(1);
-	GXSetChanAmbColor(GX_COLOR0A0, chanAmbColor);
-
-	if ((u32)flags & 4) {
-		GXSetChanMatColor(GX_COLOR0A0, fogColor);
-		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_REG, lightMask, GX_DF_CLAMP, attn);
-		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
-	}
-	else {
-		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_VTX, lightMask, GX_DF_CLAMP, attn);
-		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_CLAMP, GX_AF_NONE);
-	}
-}
-
-void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
-	MapWork* wp = &mapWork[activeGroup];
-	GXColor color = dat_8041981c;
-
-	if (flags & 0x40) {
-		color.r = color.r * color1.r / 255;
-		color.g = color.g * color1.g / 255;
-		color.b = color.b * color1.b / 255;
-		color.a = color.a * color1.a / 255;
-	}
-	if (color2.r != 0xFF) {
-		color.a = color.a * color2.r / 255;
-	}
-	if ((wp->entries[0].flags & 0x2) && !(flags & 0x800)) {
-		color.r = color.r * wp->entries[0].field_0x16[0] / 255;
-		color.g = color.g * wp->entries[0].field_0x16[1] / 255;
-		color.b = color.b * wp->entries[0].field_0x16[2] / 255;
-		color.a = color.a * wp->entries[0].field_0x16[3] / 255;
-	}
-	if ((wp->entries[0].flags & 0x4) && !(flags & 0x1000)) {
-		color.r = color.r * wp->entries[0].field_0x16[4] / 255;
-		color.g = color.g * wp->entries[0].field_0x16[5] / 255;
-		color.b = color.b * wp->entries[0].field_0x16[6] / 255;
-		color.a = color.a * wp->entries[0].field_0x16[7] / 255;
-	}
-	if ((wp->entries[0].flags & 0x8) && !(flags & 0x800)) {
-		color.r = color.r * wp->entries[0].field_0x16[8] / 255;
-		color.g = color.g * wp->entries[0].field_0x16[9] / 255;
-		color.b = color.b * wp->entries[0].field_0x16[10] / 255;
-		color.a = color.a * wp->entries[0].field_0x16[11] / 255;
-	}
-	GXSetTevKColor(GX_KCOLOR0, color);
-}
-
-typedef struct MapMatTexRef {
-	void* field_0x0;  // 0x0, points at the texture name/info block
-	u8 field_0x4[4];  // 0x4
-	u8 wrapS;         // 0x8
-	u8 wrapT;         // 0x9
-} MapMatTexRef;
-
-// material layout (MapMaterialTex only covers 0xB/0x2C onwards)
-typedef struct MapMaterial {
-	u8 field_0x0[4];              // 0x0
-	GXColor color;                // 0x4
-	u8 field_0x8;                 // 0x8
-	u8 field_0x9[2];              // 0x9
-	u8 texCount;                  // 0xB
-	MapMatTexRef* texRefs[8];    // 0xC
-	u8 field_0x2C[0x110 - 0x2C];  // 0x2C
-	u8* field_0x110;              // 0x110
-} MapMaterial;
-
-// The original reaches texwrap_tbl, lightid_tbl and the default light direction (vec3_802c181c) through the
-// unit's .rodata base vec3_802c16d8.
-#ifdef MUST_MATCH
-#define MAPMAT_DEFAULT_DIR (*(Vec*)(base + 0x144))
-#define MAPMAT_TEXWRAP(i) (wrapTbl[i])
-#else
-extern u32 texwrap_tbl[];
-#define MAPMAT_DEFAULT_DIR ((Vec){ 0.0f, 0.0f, -1.0f })
-#define MAPMAT_TEXWRAP(i) ((s32)texwrap_tbl[i])
-#endif
-
-// The index of the texture called `name` in a map's texture name table (a count, then the names), or -1.
-static inline s32 mapMatSearchTex(s32* table, const char* name) {
-	s32 i;
-
-	for (i = 0; i < table[0]; i++) {
-		if (strcmp(((char**)table)[i + 1], name) == 0) {
-			return i;
-		}
-	}
-	return -1;
-}
-
-// NONMATCHING (95.09%): every call and branch matches but one. Left: the u8 -> f32 LOD conversions use a pooled
-// int->double mask where the original loads it from the unit's .rodata base (+0x2C8), the texture search's found
-// exit is a beq where retail branches around a b, and some callee-saved register colouring.
-// Loads the map object's lights into GX light slots (point, spot and directional), sets the colour channel from
-// the material, loads each of the material's textures by name from the map's TPL, then sets up TEV.
-void mapSetMaterial(MapObject* obj, void* materialPtr) {
-	s32 i;
-	s32 texMap;
-	MapMaterial* mat;
-	GXLightObj lightObj;
-	Mtx mtxX;
-	Mtx mtxY;
-	Mtx mtxZ;
-	LightEntry* lights[8];
-	GXTexObj texObj;
-	Vec pos;
-	Vec defaultDir;
-	GXColor ambient;
-	GXColor defaultAmbient;
-#ifdef MUST_MATCH
-	u8* base;
-	s32* wrapTbl;
-#endif
-	s32* lightId;
-	u32 lightMask;
-	s32 attn;
-	s32 count;
-
-	mat = materialPtr;
-#ifdef MUST_MATCH
-	base = vec3_802c16d8;
-	lightId = (s32*)(base + 0x100);
-#else
-	lightId = (s32*)lightid_tbl;
-#endif
-	texMap = 0;
-	attn = 2;
-	defaultAmbient = dat_80419828;
-	count = mapSetLight(obj, lights);
-	lightMask = 0;
-
-	for (i = 0; i < count; i++) {
-
-		defaultDir = MAPMAT_DEFAULT_DIR;
-		if (lights[i]->flags & LIGHT_POINT) {
-			CameraEntry* cam = camGetCurPtr();
-
-			PSMTXMultVec(cam->view, &lights[i]->position, &pos);
-			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
-			GXInitLightColor(&lightObj, lights[i]->color);
-			GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
-			                lights[i]->attenDistCoef.x, lights[i]->attenDistCoef.y, lights[i]->attenDistCoef.z);
-			GXLoadLightObjImm(&lightObj, lightId[i]);
-			attn = 1;
-		}
-		else if (lights[i]->flags & LIGHT_SPOT) {
-			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
-			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
-			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
-			PSMTXConcat(mtxZ, mtxY, mtxY);
-			PSMTXConcat(mtxY, mtxX, mtxX);
-			PSMTXMultVec(mtxX, &defaultDir, &defaultDir);
-			PSVECScale(&defaultDir, &defaultDir, float_neg1p0486E06_80419870);
-			PSVECAdd(&lights[i]->position, &defaultDir, &pos);
-			{
-				CameraEntry* cam = camGetCurPtr();
-
-				PSMTXMultVec(cam->view, &pos, &pos);
-			}
-			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
-			GXInitLightColor(&lightObj, lights[i]->color);
-			GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
-			                float_0_80419850, float_0_80419850, float_1_80419860);
-			GXLoadLightObjImm(&lightObj, lightId[i]);
-		}
-		else if (lights[i]->flags & LIGHT_DIRECTIONAL) {
-			CameraEntry* cam = camGetCurPtr();
-
-			PSMTXMultVec(cam->view, &lights[i]->position, &pos);
-			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
-			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
-			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
-			PSMTXConcat(mtxZ, mtxY, mtxY);
-			PSMTXConcat(mtxY, mtxX, mtxX);
-			PSMTXMultVec(mtxX, &defaultDir, &defaultDir);
-			cam = camGetCurPtr();
-			PSMTXMultVecSR(cam->view, &defaultDir, &defaultDir);
-			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
-			GXInitLightDir(&lightObj, defaultDir.x, defaultDir.y, defaultDir.z);
-			GXInitLightSpot(&lightObj, lights[i]->spotAngle * float_0p5_80419854, GX_SP_SHARP);
-			GXInitLightDistAttn(&lightObj, float_1000_80419874, float_0p5_80419854, GX_DA_OFF);
-			GXInitLightColor(&lightObj, lights[i]->color);
-			GXLoadLightObjImm(&lightObj, lightId[i]);
-			attn = 1;
-		}
-		lightMask |= lightId[i];
-	}
-
-	{
-		LightEntry* amb = lightGetAmbient();
-
-		if (amb != NULL) {
-			ambient = amb->color;
-		}
-		else {
-			ambient = defaultAmbient;
-		}
-	}
-	GXSetNumChans(1);
-	GXSetChanAmbColor(GX_COLOR0A0, ambient);
-	GXSetChanMatColor(GX_COLOR0A0, mat->color);
-
-	switch (mat->field_0x8) {
-	case 0:
-		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_REG, lightMask, GX_DF_CLAMP, attn);
-		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-		break;
-	case 1:
-		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_VTX, lightMask, GX_DF_CLAMP, attn);
-		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-		break;
-	}
-
-	texMap = 0;
-#ifdef MUST_MATCH
-	wrapTbl = (s32*)(base + 0xEC);
-#endif
-	for (i = mat->texCount - 1; i >= 0; i--) {
-		MapWork* wp = &mapWork[activeGroup];
-		MapMatTexRef* ref = mat->texRefs[i];
-		TEXDescriptor* desc;
-
-		desc = TEXGet(wp->entries[*(s16*)(obj->field_0xDC + 2)].tpl,
-		              mapMatSearchTex(*(s32**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 8),
-		                              *(const char**)ref->field_0x0));
-		GXInitTexObj(&texObj, desc->textureHeader->data, desc->textureHeader->width, desc->textureHeader->height,
-		             desc->textureHeader->format, MAPMAT_TEXWRAP(ref->wrapS), MAPMAT_TEXWRAP(ref->wrapT),
-		             desc->textureHeader->minLOD == desc->textureHeader->maxLOD ? GX_FALSE : GX_TRUE);
-		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, (f32)desc->textureHeader->minLOD,
-		                (f32)desc->textureHeader->maxLOD, desc->textureHeader->LODBias, GX_DISABLE,
-		                desc->textureHeader->edgeLODEnable, GX_ANISO_1);
-		GXLoadTexObj(&texObj, texMap);
-		texMap++;
-	}
-
-	{
-		u8* drawMode = mat->field_0x110;
-
-		mapSetMaterialTev(mat->texCount, drawMode ? drawMode[0] : 0, *(s32*)obj->field_0x0, obj->modelWorldMtx);
-	}
-}
-
-void mapSetTextureMatrix(MapMaterialTex* mat) {
-	s32 tc = 0;
-	s32 j = 0;
-	s32 i = mat->field_0xB - 1;
-	Mtx mtx, mtx3, mtx5, mtx2, mtx4;
-
-	for (; i >= 0; tc++, j++, i--) {
-		f32 f1 = mat->entries[i].field_0x10;
-		f32 rots = -f1;
-		f32 f5 = mat->entries[i].field_0x8;
-		f32 sx = f5;
-		f32 f6 = mat->entries[i].field_0xC;
-		f32 sy = f6;
-		f32 tx = mat->entries[i].field_0x0;
-		f32 f0 = mat->entries[i].field_0x4;
-		f32 zero = 0.0f;
-		f32 ty = -f0;
-
-		if (mat->entries[i].field_0x8 != 1.0f || mat->entries[i].field_0xC != 1.0f || tx != 0.0f || ty != 0.0f || rots != 0.0f) {
-			if (rots != zero) {
-				f32 f25 = 0.5f * mat->entries[i].field_0x14 * mat->entries[i].field_0x8;
-				f32 f24 = (1.0f - 0.5f * mat->entries[i].field_0x18) * mat->entries[i].field_0xC;
-				PSMTXTrans(mtx, f25, f24, 0.0f);
-				PSMTXRotRad(mtx2, 'z', float_deg2rad_80419868 * rots);
-				PSMTXTrans(mtx3, -f25, -f24, 0.0f);
-				PSMTXConcat(mtx, mtx2, mtx2);
-				PSMTXConcat(mtx2, mtx3, mtx2);
-			}
-			if (sx != zero || sy != zero) {
-				PSMTXScale(mtx4, sx, sy, 1.0f);
-			}
-			if (tx != zero || ty != zero) {
-				PSMTXTrans(mtx5, tx, ty, 0.0f);
-			}
-			if (rots != zero) {
-				if (sx != zero || sy != zero) {
-					PSMTXConcat(mtx2, mtx4, mtx);
-					if (tx != zero || ty != zero) {
-						PSMTXConcat(mtx, mtx5, mtx);
-					}
-				}
-				else {
-					if (tx != zero || ty != zero) {
-						PSMTXConcat(mtx2, mtx5, mtx);
-					}
-					else {
-						PSMTXCopy(mtx2, mtx);
-					}
-				}
-			}
-			else {
-				if (sx != zero || sy != zero) {
-					if (tx != zero || ty != zero) {
-						PSMTXConcat(mtx4, mtx5, mtx);
-					}
-					else {
-						PSMTXCopy(mtx4, mtx);
-					}
-				}
-				else {
-					if (tx != zero || ty != zero) {
-						PSMTXCopy(mtx5, mtx);
-					}
-				}
-			}
-			GXLoadTexMtxImm(mtx, texmtx_tbl[i], 1);
-			GXSetTexCoordGen2(tc, 1, mat->field_0xB + 3 - j, texmtx_tbl[i], 0, 0x7D);
-		}
-		else {
-			GXSetTexCoordGen2(tc, 1, mat->field_0xB + 3 - j, GX_IDENTITY, 0, 0x7D);
-		}
-	}
-}
-
-void mapSetMaterialFog(void) {
-	CameraEntry* cam = camGetCurPtr();
-	MapEntry* entry = &mapWork[activeGroup].entries[0];
-
-	if (entry->flags & 0x1) {
-		GXColor color = *(GXColor*)((u8*)entry + 0x34);
-		GXSetFog(fog_type[*(s32*)((u8*)entry + 0x28)], *(f32*)((u8*)entry + 0x2C), *(f32*)((u8*)entry + 0x30), *(f32*)((u8*)cam + 0x30), *(f32*)((u8*)cam + 0x34), color);
-	}
-	else {
-		GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, dat_80419820);
-	}
-}
-
-// vertex layout of an unpacked display list (stride 0x18)
-typedef struct MapVtx {
-	u32 field_0x0;   // 0x0
-	s16 x;           // 0x4
-	s16 y;           // 0x6
-	s16 z;           // 0x8
-	s16 field_0xA;   // 0xA
-	s16 tex[8];      // 0xC
-} MapVtx;
-
-// per-mesh vtx-format block (the value at entry->field_0x8C + 0x18)
-typedef struct MapVtxFmt {
-	u8 field_0x0[0x44]; // 0x0
-	u32 field_0x44;     // 0x44
-	u32 field_0x48[8];  // 0x48
-} MapVtxFmt;
-
-#pragma opt_common_subs off // MUST_MATCH: stop MWCC CSEing a shared base into the wp/nrm/pos slots
-// NONMATCHING (99.93%): 3 insns differ, all one register: the final GXCallDisplayList loop counter lands in
-// r25 (the freed colour-loop `i`) instead of the target's r28 (the freed `mask`); only the `li`/`addi`/`cmpw`
-// names differ. The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
-void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
-	MapWork* wp = mapGetWork();
-	u32* vcd = (u32*)mesh->vcdTableOffset;
-	void* pos = (void*)(vcd[0] + 4);
-	void* nrm = (void*)(vcd[1] + 4);
-	s32 texCount = vcd[5];
-	s32 i;
-	s32 j;
-	u8* p;
-
-	GXSetCullMode(culling[obj->joints->drawMode->cullMode]);
-
-	if (!(wp->entries[*(s16*)(obj->field_0xDC + 2)].flags & 0x8000)) {
-		GXClearVtxDesc();
-		GXSetVtxAttrFmtv(GX_VTXFMT0, (const GXVtxAttrFmtList*)attr_fmt);
-		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
-		GXSetArray(GX_VA_POS, pos, 0xc);
-		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
-		GXSetArray(GX_VA_NRM, nrm, 0xc);
-		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
-		GXSetArray(GX_VA_CLR0, (void*)(((u32*)mesh->vcdTableOffset)[3] + 4), 4);
-
-		for (i = 0; i < texCount; i++) {
-			GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
-			GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 8);
-		}
-
-		{
-			MapVtx* v;
-			MapVtx* vp;
-			s16 t;
-			s32 n;
-			u8* dp = (u8*)mesh;
-
-			for (i = 0; i < mesh->displayListCount; i++) {
-				v = (MapVtx*)*(u32*)(dp + 0x10);
-
-				GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, (u16)v->field_0x0);
-				vp = v;
-				for (n = 0; n < (s32)v->field_0x0; n++) {
-					s32 k;
-					s16* p = &vp->x;
-
-					GXWGFifo.s16 = vp->x;
-					GXWGFifo.s16 = vp->y;
-					GXWGFifo.s16 = p[2];
-					for (k = 0; k < texCount; k++) {
-						t = p[k + 4];
-						GXWGFifo.u16 = (t != -1) ? (u16)t : 0;
-					}
-					vp = (MapVtx*)((u8*)vp + 0x18);
-				}
-				dp += 4;
-			}
-		}
-	}
-	else {
-		u32 mask = mesh->elementMask;
-		MapVtxFmt* fmt;
-
-		GXClearVtxDesc();
-		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
-		{
-			u8* base = (u8*)wp + 0xA4;
-			fmt = (MapVtxFmt*)*(void**)(base + *(s16*)(obj->field_0xDC + 2) * 0x178);
-		}
-		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)fmt->field_0x44);
-		GXSetArray(GX_VA_POS, pos, 6);
-		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
-		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
-		GXSetArray(GX_VA_NRM, nrm, 3);
-
-		for (i = 0; i < 2; i++) {
-			if (!(mask & (1 << (i + 2)))) break;
-			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
-			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-			GXSetArray(GX_VA_CLR0, (void*)(((u32*)mesh->vcdTableOffset)[3 + i] + 4), 4);
-		}
-
-		for (i = 0; i < 8; i++) {
-			if (!(mask & (1 << (i + 4)))) break;
-			GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
-			fmt = (MapVtxFmt*)*(void**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
-			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)fmt->field_0x48[i]);
-			GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
-		}
-
-		{
-			u8* dp = (u8*)mesh;
-
-			for (j = 0; j < mesh->displayListCount; j++) {
-				GXCallDisplayList((void*)*(u32*)(dp + 0x10), *(u32*)(dp + 0x14));
-				dp += 8;
-			}
-		}
-	}
-}
-#pragma opt_common_subs reset
-
-
-#pragma opt_common_subs off // MUST_MATCH: keep GX_VA_TEX0+i from being CSE-hoisted
-// GX setup order/constants and addressing match; the only remaining diff is the operand order of the
-// first material's `add r7, wp, idx` (target puts wp first, MWCC puts the index first). `wp=mapGetWork()`,
-// the `vcd` pointer local, the pos/nrm declaration order and the opt_common_subs pragma are all
-// match-only improvements over the 95.93% baseline.
-// NONMATCHING (99.91%): `add r7, r31, r0` (target) vs `add r7, r0, r31` (the single differing insn)
-void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
-	MapWork* wp;
-	void* pos;
-	void* nrm;
-	u32 mask;
-	u32* vcd;
-	s32 i;
-	u8* material;
-	wp = mapGetWork();
-	vcd = (u32*)mesh->vcdTableOffset;
-	pos = (void*)(vcd[0] + 4);
-	nrm = (void*)(vcd[1] + 4);
-	mask = mesh->elementMask;
-
-	GXClearVtxDesc();
-	GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
-	material = *(u8**)((u8*)wp->entries + (*(s16*)(obj->field_0xDC + 2) * 0x178 + 0xA4));
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)*(u32*)(material + 0x44));
-	GXSetArray(GX_VA_POS, pos, 6);
-	GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
-	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
-	GXSetArray(GX_VA_NRM, nrm, 3);
-
-	for (i = 0; i < 2; i++) {
-		if (!(mask & (1 << (i + 2)))) {
-			break;
-		}
-		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
-		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
-		GXSetArray(GX_VA_CLR0, (void*)(((u32*)mesh->vcdTableOffset)[3 + i] + 4), 4);
-	}
-
-	for (i = 0; i < 8; i++) {
-		if (!(mask & (1 << (i + 4)))) {
-			break;
-		}
-		GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
-		material = *(u8**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
-		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)*(u32*)(material + 0x48 + i * 4));
-		GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
-	}
-}
-#pragma opt_common_subs reset
-
 // Routing the inlined mapSetMaterialLastStageBlend through this wrapper reproduces the
 // original's register allocation (flags in r3, activeGroup in r4) and blend temp layout.
 static inline void mapBlendSet(s32 flags, MapObject* obj, MapMaterialTex* material) {
@@ -4925,10 +2653,93 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 		GXSetNumIndStages(0);
 	}
 }
+
 void _mapDispMapGrp(CameraId camId, MapObject* obj) {
 	_mapDispMapObj(camId, obj);
 	if (obj->child) _mapDispMapGrp(camId, obj->child);
 	if ((*(u32*)obj->field_0x0 & 0x20) && obj->next) _mapDispMapGrp(camId, obj->next);
+}
+
+void mapDispMapObj(CameraId camId, MapObject* obj) {
+	_mapDispMapObj(camId, obj);
+}
+
+void mapDispMapGrp(CameraId camId, MapObject* obj) {
+	_mapDispMapGrp(camId, obj);
+}
+
+void mapDispMapObj_off(CameraId camId, MapObject* obj) {
+	u16 v0;
+	u16 v1;
+	u16 v2;
+	u16 v3;
+
+	sysWaitDrawSync();
+	GXClearBoundingBox();
+	_mapDispMapObj(camId, obj);
+	sysWaitDrawSync();
+	GXReadBoundingBox(&v0, &v1, &v2, &v3);
+	offscreenAddBoundingBox(*(s16*)obj->field_0xDC, v0, v1, v2, v3);
+}
+
+void mapDispMapGrp_off(CameraId camId, MapObject* obj) {
+	u16 v0;
+	u16 v1;
+	u16 v2;
+	u16 v3;
+
+	sysWaitDrawSync();
+	GXClearBoundingBox();
+	_mapDispMapGrp(camId, obj);
+	sysWaitDrawSync();
+	GXReadBoundingBox(&v0, &v1, &v2, &v3);
+	offscreenAddBoundingBox(*(s16*)((u8*)obj + 0xDC), v0, v1, v2, v3);
+}
+
+void test_kururing_mapdisp(CameraId camId) {
+	MapWork* wp = &mapWork[activeGroup];
+	MapEntry* entry = &wp->entries[0];
+	u32 flags;
+	s32 j;
+	s32 i;
+	MapObject* obj;
+
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		obj = entry->objects;
+		for (j = 0; j < entry->numJoints; j++, obj++) {
+			flags = *(u32*)obj->field_0x0;
+			if (flags & 0x400000) {
+				*(u32*)obj->field_0x0 = flags & ~0x2;
+				_mapDispMapObj(camId, obj);
+				*(u32*)obj->field_0x0 = flags;
+			}
+		}
+	}
+}
+
+void _mapDispMapObj_NoMaterial(s32 camId, MapObject* obj) {
+	Mtx mtx;
+	Mtx invMtx;
+	GXColor color;
+	s32 i;
+
+	PSMTXConcat(camGetPtr(camId)->view, obj->modelWorldMtx, mtx);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	PSMTXInvXpose(mtx, invMtx);
+	GXLoadNrmMtxImm(invMtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	GXSetCullMode(GX_CULL_ALL);
+	GXSetNumChans(1);
+	color = unk_80422f84;
+	GXSetChanMatColor(GX_COLOR0A0, color);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTexGens(0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+	for (i = 0; i < obj->joints->partCount; i++) {
+		mapSetPolygon(obj, obj->joints->parts[i].mesh);
+	}
 }
 
 void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2) {
@@ -4950,57 +2761,191 @@ void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2) {
 #endif
 }
 
-void mapFlgOff(MapObject* obj, u32 flag, s32 a3) {
-	*(u32*)obj->field_0x0 &= ~flag;
-	if (obj->child) mapFlgOff(obj->child, flag, 1);
-	if (a3 && obj->next) mapFlgOff(obj->next, flag, 1);
+// NONMATCHING (99.12%): loop counter i/offset register swap only (target i=r31, off=r30 with an
+// `mr r30,r31` init; ours i=r30, off=r31). The `(u32)(off >> 3)` index is match-only.
+void mapDispMapObj_bbox(s32 camId, MapObject* obj) {
+	Mtx invMtx;
+	Mtx mtx;
+	s32 i;
+	s32 off;
+	GXColor color;
+
+	sysWaitDrawSync();
+	GXClearBoundingBox();
+	PSMTXConcat(camGetPtr(camId)->view, obj->modelWorldMtx, mtx);
+	GXLoadPosMtxImm(mtx, GX_PNMTX0);
+	PSMTXInvXpose(mtx, invMtx);
+	GXLoadNrmMtxImm(invMtx, GX_PNMTX0);
+	GXSetCurrentMtx(GX_PNMTX0);
+	GXSetCullMode(GX_CULL_ALL);
+	GXSetNumChans(1);
+	color = unk_80422f84;
+	GXSetChanMatColor(GX_COLOR0A0, color);
+	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+	GXSetNumTexGens(0);
+	GXSetNumTevStages(1);
+	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+#ifdef MUST_MATCH
+	// MUST_MATCH: the explicit off induction variable and the (u32) index cast are what put the
+	// counter in r31/off in r30 (98.84% -> 99.12%); the natural indexed loop is under #else.
+	i = 0;
+	off = i;
+	for (; i < obj->joints->partCount; i++, off += 8) {
+		mapSetPolygon(obj, obj->joints->parts[(u32)(off >> 3)].mesh);
+	}
+#else
+	for (i = 0; i < obj->joints->partCount; i++) {
+		mapSetPolygon(obj, obj->joints->parts[i].mesh);
+	}
+#endif
+	sysWaitDrawSync();
+	GXReadBoundingBox((u16*)((u8*)obj + 0xEC), (u16*)((u8*)obj + 0xEE), (u16*)((u8*)obj + 0xF0), (u16*)((u8*)obj + 0xF2));
 }
 
-void mapFlgOn(MapObject* obj, u32 flag, s32 a3) {
-	if (!(flag & 0x100) || *(void**)((u8*)obj + 0x114)) {
-		*(u32*)obj->field_0x0 |= flag;
-	}
-	if (obj->child) mapFlgOn(obj->child, flag, 1);
-	if (a3 && obj->next) mapFlgOn(obj->next, flag, 1);
+void mapDispMapGrp_bbox(MapObject* obj, MapEntry* entry) {
+	sysWaitDrawSync();
+	GXClearBoundingBox();
+	_mapDispMapGrp_NoMaterial(obj, entry);
+	sysWaitDrawSync();
+	GXReadBoundingBox((u16*)((u8*)entry + 0xEC), (u16*)((u8*)entry + 0xEE), (u16*)((u8*)entry + 0xF0), (u16*)((u8*)entry + 0xF2));
 }
 
-void _setOffScrnId(MapObject* obj, s32 id, s32 a3) {
-	*(s16*)obj->field_0xDC = id;
-	if (id != -1) {
-		*(u32*)obj->field_0x0 |= 0x80;
-	}
-	else {
-		*(u32*)obj->field_0x0 &= ~0x80;
-	}
-	if (obj->child) _setOffScrnId(obj->child, id, 1);
-	if (a3 && obj->next) _setOffScrnId(obj->next, id, 1);
-}
+// 1:1
+void mapDisp(void) {
+	MapWork* wp;
+	MapEntry* entry;
+	MapObject* obj;
+	CameraEntry* cam;
+	MapFileJoint* joint;
+	Vec clipPos;
+	Vec dispPos;
+	Mtx scale;
+	Mtx mtx;
+	s32 j;
+	s32 i;
+	s32 id;
+	BOOL clip;
+	GXColor color;
+	GXColor matColor;
+	f32 order;
+	f32 clipV;
 
-// NONMATCHING (99.60%): the target keeps the first `*color` load in r3 and reuses it for the inlined child
-// call (spilling it to 0x4c); ours loads it into r0 for the field write then reloads *color into r3 in the
-// child block. A function-scope `c` removes the reload but makes MWCC spill it before the flag (90.01%).
-void setColor(MapObject* obj, GXColor* color, s32 a3) {
-	if (obj == 0) return;
-	*(GXColor*)&obj->field_0xC = *color;
-	*(u32*)obj->field_0x0 |= 0x40;
-	if (obj->child) {
-		GXColor c = *color;
-		setColor(obj->child, &c, 1);
+	wp = &mapWork[activeGroup];
+	cam = camGetPtr(CAMERA_3D);
+#ifdef MUST_MATCH
+	/* the original emits cmpwi, i.e. it treats unk_80418458 as signed */
+	if ((s32)unk_80418458 != 0) {
+#else
+	if (unk_80418458 != 0) {
+#endif
+		return;
 	}
-	if (a3 && obj->next) {
-		GXColor d = *color;
-		setColor(obj->next, &d, 1);
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		if (entry->rootMapObj != NULL) {
+			PSMTXScale(scale, float_10_80419864, float_10_80419864, float_10_80419864);
+			mapReCalcMatrix(entry->rootMapObj, scale, 0);
+		}
+		obj = entry->objects;
+		for (j = 0; j < entry->numJoints; j++, obj++) {
+#define OBJ_FLAGS (*(u32*)obj->field_0x0)
+			if (OBJ_FLAGS & 0x4000) continue;
+			if ((OBJ_FLAGS & 0x1) && !(OBJ_FLAGS & 0x80)) continue;
+			if (OBJ_FLAGS & 0x40) {
+				if (obj->field_0xC[3] == 0) continue;
+			}
+			if (OBJ_FLAGS & 0x20000000) {
+				*(u16*)(obj->field_0xEC + 4) = 0;
+				*(u16*)(obj->field_0xEC + 6) = 0;
+				*(u16*)(obj->field_0xEC + 0) = 0;
+				*(u16*)(obj->field_0xEC + 2) = 0;
+			}
+			if (OBJ_FLAGS & 0x20) continue;
+			if (!(OBJ_FLAGS & 0x10)) {
+				if (obj->joints->partCount < 1) continue;
+			}
+			if (!(OBJ_FLAGS & 0x800)) {
+				if ((entry->flags & 2) && entry->field_0x16[3] == 0) continue;
+			}
+			if (!(OBJ_FLAGS & 0x1000)) {
+				if ((entry->flags & 4) && entry->field_0x16[7] == 0) continue;
+			}
+			PSMTXConcat(cam->view, obj->modelWorldMtx, mtx);
+			if ((OBJ_FLAGS & 0x2) && !mapClipOffFlag) {
+				joint = obj->joints;
+#define CLIP_TEST(cx, cy, cz) \
+	clipPos.x = (cx); \
+	clipPos.y = (cy); \
+	clipPos.z = (cz); \
+	PSMTXMultVec(mtx, &clipPos, &clipPos); \
+	PSMTX44MultVec(cam->projection, &clipPos, &clipPos); \
+	clipV = clipPos.z; \
+	if (clipV > float_neg1_804198a8 && clipV < float_0_80419850) { \
+		clipV = clipPos.x; \
+		if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) { \
+			clipV = clipPos.y; \
+			if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) goto visible; \
+		} \
 	}
-}
-
-void* mapSearchDmdJointSub(void* a, void* b) {
-	MapFileJoint* joint = (MapFileJoint*)a;
-	void* result;
-
-	if (!strcmp(joint->name, (const char*)b)) return joint;
-	if (joint->child && (result = mapSearchDmdJointSub(joint->child, b))) return result;
-	if (joint->next && (result = mapSearchDmdJointSub(joint->next, b))) return result;
-	return NULL;
+				clip = FALSE;
+				CLIP_TEST(joint->bboxMax.x, joint->bboxMax.y, joint->bboxMax.z)
+				CLIP_TEST(joint->bboxMin.x, joint->bboxMin.y, joint->bboxMin.z)
+				CLIP_TEST(joint->bboxMin.x, joint->bboxMax.y, joint->bboxMax.z)
+				CLIP_TEST(joint->bboxMax.x, joint->bboxMin.y, joint->bboxMax.z)
+				/* the original transforms this corner through the model matrix twice (a bug kept as is) */
+				clipPos.x = joint->bboxMax.x;
+				clipPos.y = joint->bboxMax.y;
+				clipPos.z = joint->bboxMin.z;
+				PSMTXMultVec(mtx, &clipPos, &clipPos);
+				PSMTXMultVec(mtx, &clipPos, &clipPos);
+				PSMTX44MultVec(cam->projection, &clipPos, &clipPos);
+				clipV = clipPos.z;
+				if (clipV > float_neg1_804198a8 && clipV < float_0_80419850) {
+					clipV = clipPos.x;
+					if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) {
+						clipV = clipPos.y;
+						if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) goto visible;
+					}
+				}
+				CLIP_TEST(joint->bboxMin.x, joint->bboxMin.y, joint->bboxMax.z)
+				CLIP_TEST(joint->bboxMax.x, joint->bboxMin.y, joint->bboxMin.z)
+				CLIP_TEST(joint->bboxMin.x, joint->bboxMax.y, joint->bboxMin.z)
+#undef CLIP_TEST
+				clip = TRUE;
+			visible:
+				if (clip) continue;
+			}
+#undef OBJ_FLAGS
+			PSMTXMultVec(mtx, (Vec*)(obj->field_0xC + 4), &dispPos);
+			PSMTX44MultVec(cam->projection, &dispPos, &dispPos);
+			order = 5000.0f * dispPos.z + 5000.0f;
+			if (order < float_0_80419850) {
+				order = float_0_80419850;
+			}
+			else if (order > float_10000_804198b0) {
+				order = float_10000_804198b0;
+			}
+			order *= float_neg1_804198a8;
+			id = obj->field_0x0[4];
+			if (obj->joints->partCount > 0) {
+				color = *(GXColor*)obj->field_0xC;
+				matColor = *(GXColor*)((u8*)obj->joints->parts[0].material + 0x10C);
+				if (mapTestXLU(*(u32*)obj->field_0x0, &color, &matColor)) {
+					id = 2;
+				}
+			}
+			if (*(u32*)obj->field_0x0 & 0x20000000) {
+				dispEntry(CAMERA_OFFSCREEN2, float_5000_804198ac, 3, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj_bbox : (DispCallback)mapDispMapGrp_bbox, obj);
+			}
+			if (*(u32*)obj->field_0x0 & 0x80) {
+				dispEntry(CAMERA_OFFSCREEN2, order, id, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj_off : (DispCallback)mapDispMapGrp_off, obj);
+			}
+			if (!(*(u32*)obj->field_0x0 & 0x1)) {
+				dispEntry(obj->field_0x0[5], order, id, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj : (DispCallback)mapDispMapGrp, obj);
+			}
+		}
+	}
 }
 
 s32 mapSetLight(MapObject* obj, LightEntry** entries) {
@@ -5054,20 +2999,1375 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 	return count;
 }
 
-void mapObjGetPosSub(MapObject* obj, Vec* pos, s32* count, void* a4) {
-	if (obj->child) {
-		mapObjGetPosSub(obj->child, pos, count, (void*)1);
+#pragma opt_lifetimes off // needed: default lifetime analysis colours 15 more instructions wrong (243 -> 228 diffs)
+// Register colouring/scheduling only (228 real instruction diffs, 21 symbol-only). The unit's .rodata
+// (vec3_802c16d8, double_to_int_mask_802c19a0, ...) is not defined here yet, so MWCC addresses the pooled
+// i2f double absolutely (lis/lfd) instead of `lfd f2, 0x2c8(r28)`, and TEXMTX uses add+lwzu (16 sites).
+// NONMATCHING (96.99%): the identity casts on the texMap/texCoord init below removed 14 diffs; the
+// else-branch constant order in the flags&0x80100000 block was reordered for the same reason.
+void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
+	u8* base;
+	s32 texMap;
+	s32 texCoord;
+	GXTevStageID tevStage;
+	s32 numIndStages;
+	Mtx queen_mtx;
+
+	base = vec3_802c16d8;
+#ifdef MUST_MATCH
+	// Identity casts break MWCC's coalescing of texMap with texCount and texCoord with texMap; without
+	// them the allocator parks texCount in r21, rematerialises texMap from it at every TEXMTX site, and
+	// turns the table loads into add+lwzu (240 -> 228 diffs).
+	texMap = (s32)texCount;
+	texCoord = (s32)texMap;
+#else
+	texMap = texCount;
+	texCoord = texCount;
+#endif
+	numIndStages = 0;
+	
+	if (texCount > 0) {
+		switch (drawMode) {
+			case 0:
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+				GXSetTevOp(GX_TEVSTAGE0, GX_MODULATE);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE1;
+				break;
+
+			case 1:
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXA, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE3;
+				break;
+
+			case 2:
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXA, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_TEXA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE3;
+				break;
+
+			case 12:
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE3;
+				break;
+
+			case 3:
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_ZERO, GX_CC_TEXA, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_ZERO, GX_CA_TEXA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE3;
+				break;
+
+			case 4:
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_APREV, GX_CA_TEXA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_TEXC, GX_CC_CPREV, GX_CC_APREV, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE3;
+				break;
+
+			case 5:
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
+				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
+				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD2, GX_TEXMAP2, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_C0, GX_CC_C1, GX_CC_TEXA, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_A0, GX_CA_A1, GX_CA_TEXA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE3, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GXSetTevColorOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE3, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE3, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE3, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE3, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE4;
+				break;
+
+			case 6:
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_APREV, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_TEXA, GX_CA_APREV, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE3;
+				break;
+
+			case 7:
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXA, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_ZERO, GX_CA_TEXA, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE3;
+				break;
+
+			case 8: {
+				GXColor color = *(GXColor*)&unk_80422f88;
+
+				color.g = (u8)((127.0f * (f32)sin((TWO_PI * (f32)(2 * gp->retraceCount)) / 360.0f)) + 127.0f);
+				GXSetTevColor(GX_TEVREG0, color);
+			}
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_RASC, GX_CC_TEXC, GX_CC_C0);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_A0);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE1;
+				break;
+
+			case 9: {
+				f32* p = scrl_uv;
+				f32* q = queen_uv;
+				s32 i;
+				for (i = 0; i < 4; i++) {
+					p[i] += q[i];
+					if (p[i] > 100.0f) {
+						p[i] -= 100.0f;
+					}
+					if (p[i] < -100.0f) {
+						p[i] += 100.0f;
+					}
+				}
+			}
+				MTXTrans(queen_mtx, scrl_uv[0], scrl_uv[1], 0.0f);
+				GXLoadTexMtxImm(queen_mtx, 0x1E, GX_MTX2x4);
+				GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
+				MTXTrans(queen_mtx, scrl_uv[2], scrl_uv[3], 0.0f);
+				GXLoadTexMtxImm(queen_mtx, 0x21, GX_MTX2x4);
+				GXSetTexCoordGen2(GX_TEXCOORD1, GX_TG_MTX2x4, GX_TG_TEX1, GX_TEXMTX1, GX_FALSE, GX_PTIDENTITY);
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+				GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXA, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_APREV, GX_CA_ZERO, GX_CA_TEXA, GX_CA_TEXA);
+				GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevOrder(GX_TEVSTAGE2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GXSetTevColorOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE2, GX_CC_ZERO, GX_CC_CPREV, GX_CC_RASC, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE2, GX_CA_ZERO, GX_CA_APREV, GX_CA_RASA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE3;
+				break;
+
+			default:
+				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
+				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_RASC, GX_CC_TEXC, GX_CC_ZERO);
+				GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_RASA, GX_CA_TEXA, GX_CA_ZERO);
+				GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage = GX_TEVSTAGE1;
+				break;
+		}
 	}
 	else {
-		Vec v;
+		GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+		GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_RASC);
+		GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_RASA);
+		GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+		tevStage = GX_TEVSTAGE1;
+	}
 
-		PSMTXMultVec(obj->modelWorldMtx, (Vec*)(obj->field_0xC + 4), &v);
-		PSVECAdd(pos, &v, pos);
-		(*count)++;
+	if (!(flags & 0x10000000)) {
+		GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K0);
+		GXSetTevKAlphaSel(tevStage, GX_TEV_KASEL_K0_A);
+		GXSetTevOrder(tevStage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_KONST, GX_CC_ZERO);
+		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_APREV, GX_CA_KONST, GX_CA_ZERO);
+		GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+		tevStage++;
 	}
-	if ((s32)a4 && obj->next) {
-		mapObjGetPosSub(obj->next, pos, count, (void*)1);
+
+	if (flags & 0x4) {
+		if (shadowGetCharShadowProjection() != 0) {
+			if (shadowGetCharShadowTexObj() != NULL) {
+				Mtx mtx2;
+				GXColor color = shadowGetCharShadowColor();
+
+				PSMTXConcat(shadowGetCharShadowProjTexMtx(), mtx, mtx2);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				GXLoadTexObj(shadowGetCharShadowTexObj(), texMap);
+				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_KONST, GX_CC_TEXC, GX_CC_ZERO);
+				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevKColor(GX_KCOLOR1, color);
+				GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
+				tevStage++;
+				texMap++;
+				texCoord++;
+			}
+		}
 	}
+
+	if (flags & 0x400) {
+		Mtx mtx2;
+		GXTevStageID stage;
+		GXColor color;
+
+		GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+		GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+		PSMTXConcat(projMtx, mtx, mtx2);
+		GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+		GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+		GXLoadTexObj(smartTexObj(&projTexObj, (void**)projTexImgRef), texMap);
+		GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_2, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C1);
+		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+		GXSetTevSwapMode(tevStage, GX_TEV_SWAP3, GX_TEV_SWAP3);
+		GXSetTevSwapModeTable(GX_TEV_SWAP3, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_RED);
+		color = *(GXColor*)&dat_80419800;
+		GXSetTevColor(GX_TEVREG1, color);
+		stage = tevStage + 1;
+		texMap++;
+		texCoord++;
+		GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+		GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(stage, GX_CC_C0, GX_CC_CPREV, GX_CC_APREV, GX_CC_ZERO);
+		GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+		GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+		tevStage += 2;
+	}
+
+	if (flags & 0x10000) {
+		if (shadowGetDepthShadowTexObj() != NULL) {
+			GXTexObj* depthTex = shadowGetDepthShadowTexObj();
+			void* depthMtx = shadowGetDepthShadowDepthMtx();
+			void* depthProjMtx = shadowGetDepthShadowProjTexMtx();
+			GXColor color = shadowGetDepthShadowColor();
+			void* config = shadowGetDepthShadowConfig();
+			Mtx mtx2;
+			GXTevStageID stage;
+			s32 coord;
+
+			switch (*(s32*)((u8*)config + 0x3C)) {
+			case 0:
+				GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+				GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(shadowGetRamp8TexObj(), texMap);
+				PSMTXConcat(depthMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				stage = tevStage + 1;
+				coord = texCoord + 1;
+				texMap++;
+				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
+				GXSetTevColorOp(stage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(depthTex, texMap);
+				PSMTXConcat(depthProjMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				texMap++;
+				texCoord += 2;
+				stage = tevStage + 2;
+				GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+				GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_KONST, GX_CC_CPREV, GX_CC_C0);
+				GXSetTevColorOp(stage, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevKColor(GX_KCOLOR1, color);
+				GXSetTevKColorSel(stage, GX_TEV_KCSEL_K1);
+				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage += 3;
+				break;
+			case 1:
+				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_80419804);
+				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
+				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(shadowGetRamp8TexObj(), texMap);
+				PSMTXConcat(depthMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				tevStage++;
+				texMap++;
+				texCoord++;
+				break;
+			case 2:
+				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_80419808);
+				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
+				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(depthTex, texMap);
+				PSMTXConcat(depthProjMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				tevStage++;
+				texMap++;
+				texCoord++;
+				break;
+			case 3:
+				GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+				GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+				GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_ALPHA, GX_CH_BLUE, GX_CH_ALPHA);
+				GXSetTevSwapModeTable(GX_TEV_SWAP2, GX_CH_ALPHA, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(shadowGetRamp16TexObj(), texMap);
+				PSMTXConcat(depthMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				stage = tevStage + 1;
+				coord = texCoord + 1;
+				texMap++;
+				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
+				GXSetTevColorOp(stage, GX_TEV_COMP_GR16_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP2);
+				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(depthTex, texMap);
+				PSMTXConcat(depthProjMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				texMap++;
+				texCoord += 2;
+				stage = tevStage + 2;
+				GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GXSetTevColorIn(stage, GX_CC_ZERO, GX_CC_KONST, GX_CC_CPREV, GX_CC_C0);
+				GXSetTevColorOp(stage, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevKColor(GX_KCOLOR1, color);
+				GXSetTevKColorSel(stage, GX_TEV_KCSEL_K1);
+				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				tevStage += 3;
+				break;
+			case 4:
+				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041980c);
+				GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_ALPHA, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
+				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(shadowGetRamp16TexObj(), texMap);
+				PSMTXConcat(depthMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				tevStage++;
+				texMap++;
+				texCoord++;
+				break;
+			case 5:
+				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_80419810);
+				GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_ALPHA, GX_CH_BLUE, GX_CH_ALPHA);
+				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
+				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(depthTex, texMap);
+				PSMTXConcat(depthProjMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				tevStage++;
+				texMap++;
+				texCoord++;
+				break;
+			}
+		}
+	}
+
+	if (flags & 0x20000) {
+		if (shadowGetProjShadowTexObj() != NULL) {
+			GXTexObj* projTex = shadowGetProjShadowTexObj();
+			void* projShadowMtx = shadowGetProjShadowProjTexMtx();
+			GXColor color = shadowGetProjShadowColor();
+			Mtx mtx2;
+
+			shadowGetProjShadowConfig();
+			GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+			GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_KONST, GX_CC_TEXA, GX_CC_ZERO);
+			GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+			GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_KONST, GX_CA_TEXA, GX_CA_APREV);
+			GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+			GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+			GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+			GXLoadTexObj(projTex, texMap);
+			PSMTXConcat(projShadowMtx, mtx, mtx2);
+			GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+			GXSetTevKColor(GX_KCOLOR1, color);
+			GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
+			GXSetTevKAlphaSel(tevStage, GX_TEV_KASEL_K1_A);
+			tevStage++;
+			texMap++;
+			texCoord++;
+		}
+	}
+
+	if (flags & 0x40000) {
+		if (shadowGetDepthShadowTexObj() != NULL) {
+			GXTexObj* depthTex = shadowGetDepthShadowTexObj();
+			void* depthMtx = shadowGetDepthShadowDepthMtx();
+			void* depthProjMtx = shadowGetDepthShadowProjTexMtx();
+			GXColor color = shadowGetDepthShadowColor();
+			void* config = shadowGetDepthShadowConfig();
+			Mtx mtx2;
+			GXTevStageID stage;
+			s32 coord;
+
+			switch (*(s32*)((u8*)config + 0x3C)) {
+			case 0:
+				GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+				GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(shadowGetRamp8TexObj(), texMap);
+				PSMTXConcat(depthMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				stage = tevStage + 1;
+				coord = texCoord + 1;
+				texMap++;
+				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
+				GXSetTevColorOp(stage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(depthTex, texMap);
+				PSMTXConcat(depthProjMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				texMap++;
+				texCoord += 2;
+				stage = tevStage + 2;
+				GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GXSetTevColorIn(stage, GX_CC_C0, GX_CC_KONST, GX_CC_CPREV, GX_CC_ZERO);
+				GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ONE);
+				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevKColor(GX_KCOLOR1, color);
+				GXSetTevKColorSel(stage, GX_TEV_KCSEL_K1);
+				GXSetTevKAlphaSel(stage, GX_TEV_KASEL_K1_A);
+				tevStage += 3;
+				break;
+			case 3:
+				GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+				GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+				GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_ALPHA, GX_CH_BLUE, GX_CH_ALPHA);
+				GXSetTevSwapModeTable(GX_TEV_SWAP2, GX_CH_ALPHA, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
+				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(shadowGetRamp16TexObj(), texMap);
+				PSMTXConcat(depthMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				stage = tevStage + 1;
+				coord = texCoord + 1;
+				texMap++;
+				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
+				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
+				GXSetTevColorOp(stage, GX_TEV_COMP_GR16_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP2);
+				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexObj(depthTex, texMap);
+				PSMTXConcat(depthProjMtx, mtx, mtx2);
+				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				texMap++;
+				texCoord += 2;
+				stage = tevStage + 2;
+				GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+				GXSetTevColorIn(stage, GX_CC_C0, GX_CC_KONST, GX_CC_CPREV, GX_CC_ZERO);
+				GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ONE);
+				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+				GXSetTevKColor(GX_KCOLOR1, color);
+				GXSetTevKColorSel(stage, GX_TEV_KCSEL_K1);
+				GXSetTevKAlphaSel(stage, GX_TEV_KASEL_K1_A);
+				tevStage += 3;
+				break;
+			}
+		}
+	}
+
+	if (flags & 0x80100000) {
+		s32 r19;
+		s32 r21;
+		s32 r22;
+		s32 r20;
+
+		if (flags & 0x100000) {
+			r19 = current_mp->field_0xC[0];
+			r21 = current_mp->field_0xC[1];
+			r22 = current_mp->field_0xC[2];
+			r20 = current_mp->field_0xC[3];
+		}
+		else {
+			r21 = 0xF0;
+			r22 = 0x64;
+			r19 = 0xF0;
+			r20 = (u8)(64.0f * (1.0f - (f32)cos(1.5707964f * (f32)gp->retraceCount / 20.0f)) * 0.5f + 64.0f);
+		}
+		GXSetTevOrder(tevStage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_KONST);
+		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+		GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+		{
+			GXColor color = *(GXColor*)&dat_80419814;
+			color.r = r19 * r20 / 255;
+			color.g = r21 * r20 / 255;
+			color.b = r22 * r20 / 255;
+			GXSetTevKColor(GX_KCOLOR1, color);
+		}
+		GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
+		tevStage++;
+	}
+
+	if (flags & 0x800000) {
+		GXTexObj texObj;
+		Mtx orthoMtx;
+		Mtx lookAtMtx;
+		Vec camPos;
+		Vec up;
+		Vec target;
+		s32 v;
+
+		camPos = *(Vec*)(base + 0x120);
+		up = *(Vec*)(base + 0x12c);
+		target = *(Vec*)(base + 0x138);
+		v = (s32)(127.0f * (1.0f - (f32)cos(1.5707964f * (f32)gp->retraceCount / 30.0f)) * 0.5f + 128.0f);
+		GXInitTexObj(&texObj, texture_0, 4, 0x40, GX_TF_CMPR, GX_CLAMP, GX_REPEAT, GX_FALSE);
+		GXLoadTexObj(&texObj, texMap);
+		C_MTXLightOrtho(orthoMtx, -2.0f, 2.0f, -2.0f, 2.0f, 0.5f, 0.5f, 0.5f, (f32)gp->retraceCount / 50.0f);
+		C_MTXLookAt(lookAtMtx, &camPos, &up, &target);
+		PSMTXConcat(orthoMtx, lookAtMtx, orthoMtx);
+		GXLoadTexMtxImm(orthoMtx, TEXMTX(texMap), GX_MTX3x4);
+		GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+		GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(tevStage, GX_CC_TEXC, GX_CC_CPREV, GX_CC_KONST, GX_CC_ZERO);
+		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+		GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+		{
+			GXColor color = *(GXColor*)&dat_80419818;
+			color.r = v;
+			color.g = v;
+			color.b = v;
+			GXSetTevKColor(GX_KCOLOR1, color);
+		}
+		GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
+		tevStage++;
+		texMap++;
+		texCoord++;
+	}
+
+	if (flags & 0xF000000) {
+		MapTevCallback work;
+		MapTevCallback* workPtr = &work;
+		void (*callback)(MapTevCallback*);
+		u32 cbIndex;
+		u8* cbBase;
+
+		workPtr->obj = current_mp;
+		workPtr->mtx = mtx;
+		workPtr->drawMode = drawMode;
+		workPtr->tevStage = tevStage;
+		workPtr->texMap = texMap;
+		workPtr->texCoord = texCoord;
+		workPtr->numIndStage = 0;
+		cbIndex = (u32)(flags & 0xF000000) >> 22 & 0x3FC;
+		cbBase = (u8*)&mapWork[activeGroup].entries[0] + 0x110;
+		callback = *(void**)(cbBase + cbIndex);
+		if (callback != NULL) {
+			callback(workPtr);
+		}
+		tevStage = work.tevStage;
+		texCoord = work.texCoord;
+		numIndStages = work.numIndStage;
+	}
+
+	GXSetNumTexGens((u8)texCoord);
+	GXSetNumTevStages((u8)tevStage);
+	GXSetNumIndStages((u8)numIndStages);
+}
+#pragma opt_lifetimes reset
+
+void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
+	MapWork* wp = &mapWork[activeGroup];
+	GXColor color = dat_8041981c;
+
+	if (flags & 0x40) {
+		color.r = color.r * color1.r / 255;
+		color.g = color.g * color1.g / 255;
+		color.b = color.b * color1.b / 255;
+		color.a = color.a * color1.a / 255;
+	}
+	if (color2.r != 0xFF) {
+		color.a = color.a * color2.r / 255;
+	}
+	if ((wp->entries[0].flags & 0x2) && !(flags & 0x800)) {
+		color.r = color.r * wp->entries[0].field_0x16[0] / 255;
+		color.g = color.g * wp->entries[0].field_0x16[1] / 255;
+		color.b = color.b * wp->entries[0].field_0x16[2] / 255;
+		color.a = color.a * wp->entries[0].field_0x16[3] / 255;
+	}
+	if ((wp->entries[0].flags & 0x4) && !(flags & 0x1000)) {
+		color.r = color.r * wp->entries[0].field_0x16[4] / 255;
+		color.g = color.g * wp->entries[0].field_0x16[5] / 255;
+		color.b = color.b * wp->entries[0].field_0x16[6] / 255;
+		color.a = color.a * wp->entries[0].field_0x16[7] / 255;
+	}
+	if ((wp->entries[0].flags & 0x8) && !(flags & 0x800)) {
+		color.r = color.r * wp->entries[0].field_0x16[8] / 255;
+		color.g = color.g * wp->entries[0].field_0x16[9] / 255;
+		color.b = color.b * wp->entries[0].field_0x16[10] / 255;
+		color.a = color.a * wp->entries[0].field_0x16[11] / 255;
+	}
+	GXSetTevKColor(GX_KCOLOR0, color);
+}
+
+void mapSetMaterialFog(void) {
+	CameraEntry* cam = camGetCurPtr();
+	MapEntry* entry = &mapWork[activeGroup].entries[0];
+
+	if (entry->flags & 0x1) {
+		GXColor color = *(GXColor*)((u8*)entry + 0x34);
+		GXSetFog(fog_type[*(s32*)((u8*)entry + 0x28)], *(f32*)((u8*)entry + 0x2C), *(f32*)((u8*)entry + 0x30), *(f32*)((u8*)cam + 0x30), *(f32*)((u8*)cam + 0x34), color);
+	}
+	else {
+		GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, dat_80419820);
+	}
+}
+
+void mapSetTextureMatrix(MapMaterialTex* mat) {
+	s32 tc = 0;
+	s32 j = 0;
+	s32 i = mat->field_0xB - 1;
+	Mtx mtx, mtx3, mtx5, mtx2, mtx4;
+
+	for (; i >= 0; tc++, j++, i--) {
+		f32 f1 = mat->entries[i].field_0x10;
+		f32 rots = -f1;
+		f32 f5 = mat->entries[i].field_0x8;
+		f32 sx = f5;
+		f32 f6 = mat->entries[i].field_0xC;
+		f32 sy = f6;
+		f32 tx = mat->entries[i].field_0x0;
+		f32 f0 = mat->entries[i].field_0x4;
+		f32 zero = 0.0f;
+		f32 ty = -f0;
+
+		if (mat->entries[i].field_0x8 != 1.0f || mat->entries[i].field_0xC != 1.0f || tx != 0.0f || ty != 0.0f || rots != 0.0f) {
+			if (rots != zero) {
+				f32 f25 = 0.5f * mat->entries[i].field_0x14 * mat->entries[i].field_0x8;
+				f32 f24 = (1.0f - 0.5f * mat->entries[i].field_0x18) * mat->entries[i].field_0xC;
+				PSMTXTrans(mtx, f25, f24, 0.0f);
+				PSMTXRotRad(mtx2, 'z', float_deg2rad_80419868 * rots);
+				PSMTXTrans(mtx3, -f25, -f24, 0.0f);
+				PSMTXConcat(mtx, mtx2, mtx2);
+				PSMTXConcat(mtx2, mtx3, mtx2);
+			}
+			if (sx != zero || sy != zero) {
+				PSMTXScale(mtx4, sx, sy, 1.0f);
+			}
+			if (tx != zero || ty != zero) {
+				PSMTXTrans(mtx5, tx, ty, 0.0f);
+			}
+			if (rots != zero) {
+				if (sx != zero || sy != zero) {
+					PSMTXConcat(mtx2, mtx4, mtx);
+					if (tx != zero || ty != zero) {
+						PSMTXConcat(mtx, mtx5, mtx);
+					}
+				}
+				else {
+					if (tx != zero || ty != zero) {
+						PSMTXConcat(mtx2, mtx5, mtx);
+					}
+					else {
+						PSMTXCopy(mtx2, mtx);
+					}
+				}
+			}
+			else {
+				if (sx != zero || sy != zero) {
+					if (tx != zero || ty != zero) {
+						PSMTXConcat(mtx4, mtx5, mtx);
+					}
+					else {
+						PSMTXCopy(mtx4, mtx);
+					}
+				}
+				else {
+					if (tx != zero || ty != zero) {
+						PSMTXCopy(mtx5, mtx);
+					}
+				}
+			}
+			GXLoadTexMtxImm(mtx, texmtx_tbl[i], 1);
+			GXSetTexCoordGen2(tc, 1, mat->field_0xB + 3 - j, texmtx_tbl[i], 0, 0x7D);
+		}
+		else {
+			GXSetTexCoordGen2(tc, 1, mat->field_0xB + 3 - j, GX_IDENTITY, 0, 0x7D);
+		}
+	}
+}
+
+// material layout (MapMaterialTex only covers 0xB/0x2C onwards)
+
+// The original reaches texwrap_tbl, lightid_tbl and the default light direction (vec3_802c181c) through the
+// unit's .rodata base vec3_802c16d8.
+
+// The index of the texture called `name` in a map's texture name table (a count, then the names), or -1.
+static inline s32 mapMatSearchTex(s32* table, const char* name) {
+	s32 i;
+
+	for (i = 0; i < table[0]; i++) {
+		if (strcmp(((char**)table)[i + 1], name) == 0) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+// NONMATCHING (95.09%): every call and branch matches but one. Left: the u8 -> f32 LOD conversions use a pooled
+// int->double mask where the original loads it from the unit's .rodata base (+0x2C8), the texture search's found
+// exit is a beq where retail branches around a b, and some callee-saved register colouring.
+// Loads the map object's lights into GX light slots (point, spot and directional), sets the colour channel from
+// the material, loads each of the material's textures by name from the map's TPL, then sets up TEV.
+void mapSetMaterial(MapObject* obj, void* materialPtr) {
+	s32 i;
+	s32 texMap;
+	MapMaterial* mat;
+	GXLightObj lightObj;
+	Mtx mtxX;
+	Mtx mtxY;
+	Mtx mtxZ;
+	LightEntry* lights[8];
+	GXTexObj texObj;
+	Vec pos;
+	Vec defaultDir;
+	GXColor ambient;
+	GXColor defaultAmbient;
+#ifdef MUST_MATCH
+	u8* base;
+	s32* wrapTbl;
+#endif
+	s32* lightId;
+	u32 lightMask;
+	s32 attn;
+	s32 count;
+
+	mat = materialPtr;
+#ifdef MUST_MATCH
+	base = vec3_802c16d8;
+	lightId = (s32*)(base + 0x100);
+#else
+	lightId = (s32*)lightid_tbl;
+#endif
+	texMap = 0;
+	attn = 2;
+	defaultAmbient = dat_80419828;
+	count = mapSetLight(obj, lights);
+	lightMask = 0;
+
+	for (i = 0; i < count; i++) {
+
+		defaultDir = MAPMAT_DEFAULT_DIR;
+		if (lights[i]->flags & LIGHT_POINT) {
+			CameraEntry* cam = camGetCurPtr();
+
+			PSMTXMultVec(cam->view, &lights[i]->position, &pos);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+			                lights[i]->attenDistCoef.x, lights[i]->attenDistCoef.y, lights[i]->attenDistCoef.z);
+			GXLoadLightObjImm(&lightObj, lightId[i]);
+			attn = 1;
+		}
+		else if (lights[i]->flags & LIGHT_SPOT) {
+			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
+			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
+			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXConcat(mtxZ, mtxY, mtxY);
+			PSMTXConcat(mtxY, mtxX, mtxX);
+			PSMTXMultVec(mtxX, &defaultDir, &defaultDir);
+			PSVECScale(&defaultDir, &defaultDir, float_neg1p0486E06_80419870);
+			PSVECAdd(&lights[i]->position, &defaultDir, &pos);
+			{
+				CameraEntry* cam = camGetCurPtr();
+
+				PSMTXMultVec(cam->view, &pos, &pos);
+			}
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+			                float_0_80419850, float_0_80419850, float_1_80419860);
+			GXLoadLightObjImm(&lightObj, lightId[i]);
+		}
+		else if (lights[i]->flags & LIGHT_DIRECTIONAL) {
+			CameraEntry* cam = camGetCurPtr();
+
+			PSMTXMultVec(cam->view, &lights[i]->position, &pos);
+			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
+			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
+			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXConcat(mtxZ, mtxY, mtxY);
+			PSMTXConcat(mtxY, mtxX, mtxX);
+			PSMTXMultVec(mtxX, &defaultDir, &defaultDir);
+			cam = camGetCurPtr();
+			PSMTXMultVecSR(cam->view, &defaultDir, &defaultDir);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightDir(&lightObj, defaultDir.x, defaultDir.y, defaultDir.z);
+			GXInitLightSpot(&lightObj, lights[i]->spotAngle * float_0p5_80419854, GX_SP_SHARP);
+			GXInitLightDistAttn(&lightObj, float_1000_80419874, float_0p5_80419854, GX_DA_OFF);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXLoadLightObjImm(&lightObj, lightId[i]);
+			attn = 1;
+		}
+		lightMask |= lightId[i];
+	}
+
+	{
+		LightEntry* amb = lightGetAmbient();
+
+		if (amb != NULL) {
+			ambient = amb->color;
+		}
+		else {
+			ambient = defaultAmbient;
+		}
+	}
+	GXSetNumChans(1);
+	GXSetChanAmbColor(GX_COLOR0A0, ambient);
+	GXSetChanMatColor(GX_COLOR0A0, mat->color);
+
+	switch (mat->field_0x8) {
+	case 0:
+		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_REG, lightMask, GX_DF_CLAMP, attn);
+		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+		break;
+	case 1:
+		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_VTX, lightMask, GX_DF_CLAMP, attn);
+		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
+		break;
+	}
+
+	texMap = 0;
+#ifdef MUST_MATCH
+	wrapTbl = (s32*)(base + 0xEC);
+#endif
+	for (i = mat->texCount - 1; i >= 0; i--) {
+		MapWork* wp = &mapWork[activeGroup];
+		MapMatTexRef* ref = mat->texRefs[i];
+		TEXDescriptor* desc;
+
+		desc = TEXGet(wp->entries[*(s16*)(obj->field_0xDC + 2)].tpl,
+		              mapMatSearchTex(*(s32**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 8),
+		                              *(const char**)ref->field_0x0));
+		GXInitTexObj(&texObj, desc->textureHeader->data, desc->textureHeader->width, desc->textureHeader->height,
+		             desc->textureHeader->format, MAPMAT_TEXWRAP(ref->wrapS), MAPMAT_TEXWRAP(ref->wrapT),
+		             desc->textureHeader->minLOD == desc->textureHeader->maxLOD ? GX_FALSE : GX_TRUE);
+		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, (f32)desc->textureHeader->minLOD,
+		                (f32)desc->textureHeader->maxLOD, desc->textureHeader->LODBias, GX_DISABLE,
+		                desc->textureHeader->edgeLODEnable, GX_ANISO_1);
+		GXLoadTexObj(&texObj, texMap);
+		texMap++;
+	}
+
+	{
+		u8* drawMode = mat->field_0x110;
+
+		mapSetMaterialTev(mat->texCount, drawMode ? drawMode[0] : 0, *(s32*)obj->field_0x0, obj->modelWorldMtx);
+	}
+}
+
+void mapSetPaperAmbColor(GXColor* color) {
+	paper_ambient = *color;
+}
+
+void mapResetPaperAmbColor(void) {
+	paper_ambient = dat_8041982c;
+}
+
+// material layout (MapMaterialTex only covers 0xB/0x2C onwards)
+
+
+// 1:1
+void mapSetMaterialLight(s32 flags, Vec position) {
+	LightEntry* lights[8];
+	LightEntry* light;
+	LightEntry* ambient;
+	CameraEntry* cam;
+	GXLightObj lightObj;
+	GXColor fogColor;
+	GXColor ambColor;
+	GXColor chanAmbColor;
+	Vec pos;
+	Vec dir;
+	Mtx rotX, rotY, rotZ;
+#ifdef MUST_MATCH
+	f32 spotAngle; /* keeps the 0.5f constant in f0 and the field in f1, as the target does */
+#endif
+	s32 count = 0;
+	u32 lightMask;
+	s32 attn = 2;
+	s32 i;
+
+	fogColor = dat_80419834;
+	ambColor = dat_80419838;
+
+	if ((u32)flags & 1) {
+		lights[0] = lightGetPaper();
+		count = 1;
+	}
+	if ((u32)flags & 8) {
+		lights[count++] = lightGetPaperCraft();
+	}
+	if ((u32)flags & 0x10) {
+		lights[count++] = lightGetPaper();
+	}
+	if ((u32)flags & 2) {
+		if (lightCheckCharaLight() && count < 8) {
+			count += LIGHT_GET_NEAR(&position, &lights[count], 8 - count, LIGHT_CHARA);
+		}
+	}
+	if ((u32)flags & 0x19) {
+		if (count == 1) {
+			if ((u32)flags & 1) {
+				ambColor = paper_ambient;
+			}
+			else if ((u32)flags & 8) {
+				ambColor = paperCraft_ambient;
+			}
+			else {
+				ambColor = dat_8041983c;
+			}
+		}
+		else {
+			count = LIGHT_GET_NEAR(&position, lights, 8, LIGHT_CHARA);
+		}
+	}
+
+	lightMask = 0;
+	for (i = 0; i < count; i++) {
+		/* The target keeps lights[i] in a callee-saved register for the flags test, the point
+		   position and the first spot rotation, but re-materializes it from the array for the
+		   remaining fields.  The light/lights[i] mix below reproduces that allocation; both
+		   forms are semantically identical. */
+		dir = vec3_802c1828[0];
+		light = lights[i];
+
+		if (light->flags & LIGHT_POINT) {
+			cam = camGetCurPtr();
+			PSMTXMultVec(cam->view, &light->position, &pos);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			if (lights[i]->flags & LIGHT_NO_DIST_ATTEN) {
+				GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+				                float_1_80419860, float_0_80419850, float_0_80419850);
+			}
+			else {
+				GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+				                lights[i]->attenDistCoef.x, lights[i]->attenDistCoef.y, lights[i]->attenDistCoef.z);
+				attn = 1;
+			}
+			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
+		}
+		else if (light->flags & LIGHT_SPOT) {
+			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * light->rotation.x);
+			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
+			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXConcat(rotZ, rotY, rotY);
+			PSMTXConcat(rotY, rotX, rotX);
+			PSMTXMultVec(rotX, &dir, &dir);
+			PSVECScale(&dir, &dir, float_neg1p0486E06_80419870);
+			PSVECAdd(&lights[i]->position, &dir, &pos);
+			cam = camGetCurPtr();
+			PSMTXMultVec(cam->view, &pos, &pos);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
+		}
+		else if (lights[i]->flags & LIGHT_DIRECTIONAL) {
+			cam = camGetCurPtr();
+			PSMTXMultVec(cam->view, &light->position, &pos);
+			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
+			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
+			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXConcat(rotZ, rotY, rotY);
+			PSMTXConcat(rotY, rotX, rotX);
+			PSMTXMultVec(rotX, &dir, &dir);
+			cam = camGetCurPtr();
+			PSMTXMultVecSR(cam->view, &dir, &dir);
+			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
+			GXInitLightDir(&lightObj, dir.x, dir.y, dir.z);
+#ifdef MUST_MATCH
+			/* split out so the field lands in f1 and 0.5f in f0, as the target does */
+			spotAngle = lights[i]->spotAngle;
+			GXInitLightSpot(&lightObj, spotAngle * float_0p5_80419854, 4);
+#else
+			GXInitLightSpot(&lightObj, lights[i]->spotAngle * float_0p5_80419854, 4);
+#endif
+			GXInitLightDistAttn(&lightObj, float_1000_80419874, float_0p5_80419854, 0);
+			GXInitLightColor(&lightObj, lights[i]->color);
+			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
+			attn = 1;
+		}
+		lightMask |= lightid_tbl[i];
+	}
+
+	ambient = lightGetCharaAmbient();
+	if (ambient != NULL) {
+		chanAmbColor = ambient->color;
+	}
+	else {
+		chanAmbColor = ambColor;
+	}
+
+	GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, fogColor);
+	GXSetNumChans(1);
+	GXSetChanAmbColor(GX_COLOR0A0, chanAmbColor);
+
+	if ((u32)flags & 4) {
+		GXSetChanMatColor(GX_COLOR0A0, fogColor);
+		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_REG, lightMask, GX_DF_CLAMP, attn);
+		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
+	}
+	else {
+		GXSetChanCtrl(GX_COLOR0, count > 0, GX_SRC_REG, GX_SRC_VTX, lightMask, GX_DF_CLAMP, attn);
+		GXSetChanCtrl(GX_ALPHA0, GX_FALSE, GX_SRC_REG, GX_SRC_VTX, 0, GX_DF_CLAMP, GX_AF_NONE);
+	}
+}
+
+// vertex layout of an unpacked display list (stride 0x18)
+
+// per-mesh vtx-format block (the value at entry->field_0x8C + 0x18)
+
+#pragma opt_common_subs off // MUST_MATCH: stop MWCC CSEing a shared base into the wp/nrm/pos slots
+// NONMATCHING (99.93%): 3 insns differ, all one register: the final GXCallDisplayList loop counter lands in
+// r25 (the freed colour-loop `i`) instead of the target's r28 (the freed `mask`); only the `li`/`addi`/`cmpw`
+// names differ. The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
+void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
+	MapWork* wp = mapGetWork();
+	u32* vcd = (u32*)mesh->vcdTableOffset;
+	void* pos = (void*)(vcd[0] + 4);
+	void* nrm = (void*)(vcd[1] + 4);
+	s32 texCount = vcd[5];
+	s32 i;
+	s32 j;
+	u8* p;
+
+	GXSetCullMode(culling[obj->joints->drawMode->cullMode]);
+
+	if (!(wp->entries[*(s16*)(obj->field_0xDC + 2)].flags & 0x8000)) {
+		GXClearVtxDesc();
+		GXSetVtxAttrFmtv(GX_VTXFMT0, (const GXVtxAttrFmtList*)attr_fmt);
+		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+		GXSetArray(GX_VA_POS, pos, 0xc);
+		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
+		GXSetArray(GX_VA_NRM, nrm, 0xc);
+		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+		GXSetArray(GX_VA_CLR0, (void*)(((u32*)mesh->vcdTableOffset)[3] + 4), 4);
+
+		for (i = 0; i < texCount; i++) {
+			GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
+			GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 8);
+		}
+
+		{
+			MapVtx* v;
+			MapVtx* vp;
+			s16 t;
+			s32 n;
+			u8* dp = (u8*)mesh;
+
+			for (i = 0; i < mesh->displayListCount; i++) {
+				v = (MapVtx*)*(u32*)(dp + 0x10);
+
+				GXBegin(GX_TRIANGLESTRIP, GX_VTXFMT0, (u16)v->field_0x0);
+				vp = v;
+				for (n = 0; n < (s32)v->field_0x0; n++) {
+					s32 k;
+					s16* p = &vp->x;
+
+					GXWGFifo.s16 = vp->x;
+					GXWGFifo.s16 = vp->y;
+					GXWGFifo.s16 = p[2];
+					for (k = 0; k < texCount; k++) {
+						t = p[k + 4];
+						GXWGFifo.u16 = (t != -1) ? (u16)t : 0;
+					}
+					vp = (MapVtx*)((u8*)vp + 0x18);
+				}
+				dp += 4;
+			}
+		}
+	}
+	else {
+		u32 mask = mesh->elementMask;
+		MapVtxFmt* fmt;
+
+		GXClearVtxDesc();
+		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+		{
+			u8* base = (u8*)wp + 0xA4;
+			fmt = (MapVtxFmt*)*(void**)(base + *(s16*)(obj->field_0xDC + 2) * 0x178);
+		}
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)fmt->field_0x44);
+		GXSetArray(GX_VA_POS, pos, 6);
+		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+		GXSetArray(GX_VA_NRM, nrm, 3);
+
+		for (i = 0; i < 2; i++) {
+			if (!(mask & (1 << (i + 2)))) break;
+			GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+			GXSetArray(GX_VA_CLR0, (void*)(((u32*)mesh->vcdTableOffset)[3 + i] + 4), 4);
+		}
+
+		for (i = 0; i < 8; i++) {
+			if (!(mask & (1 << (i + 4)))) break;
+			GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
+			fmt = (MapVtxFmt*)*(void**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
+			GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)fmt->field_0x48[i]);
+			GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
+		}
+
+		{
+			u8* dp = (u8*)mesh;
+
+			for (j = 0; j < mesh->displayListCount; j++) {
+				GXCallDisplayList((void*)*(u32*)(dp + 0x10), *(u32*)(dp + 0x14));
+				dp += 8;
+			}
+		}
+	}
+}
+#pragma opt_common_subs reset
+
+#pragma opt_common_subs off // MUST_MATCH: keep GX_VA_TEX0+i from being CSE-hoisted
+// GX setup order/constants and addressing match; the only remaining diff is the operand order of the
+// first material's `add r7, wp, idx` (target puts wp first, MWCC puts the index first). `wp=mapGetWork()`,
+// the `vcd` pointer local, the pos/nrm declaration order and the opt_common_subs pragma are all
+// match-only improvements over the 95.93% baseline.
+// NONMATCHING (99.91%): `add r7, r31, r0` (target) vs `add r7, r0, r31` (the single differing insn)
+void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
+	MapWork* wp;
+	void* pos;
+	void* nrm;
+	u32 mask;
+	u32* vcd;
+	s32 i;
+	u8* material;
+	wp = mapGetWork();
+	vcd = (u32*)mesh->vcdTableOffset;
+	pos = (void*)(vcd[0] + 4);
+	nrm = (void*)(vcd[1] + 4);
+	mask = mesh->elementMask;
+
+	GXClearVtxDesc();
+	GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
+	material = *(u8**)((u8*)wp->entries + (*(s16*)(obj->field_0xDC + 2) * 0x178 + 0xA4));
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)*(u32*)(material + 0x44));
+	GXSetArray(GX_VA_POS, pos, 6);
+	GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
+	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_NRM, GX_NRM_XYZ, GX_S8, 6);
+	GXSetArray(GX_VA_NRM, nrm, 3);
+
+	for (i = 0; i < 2; i++) {
+		if (!(mask & (1 << (i + 2)))) {
+			break;
+		}
+		GXSetVtxDesc(GX_VA_CLR0, GX_INDEX16);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0);
+		GXSetArray(GX_VA_CLR0, (void*)(((u32*)mesh->vcdTableOffset)[3 + i] + 4), 4);
+	}
+
+	for (i = 0; i < 8; i++) {
+		if (!(mask & (1 << (i + 4)))) {
+			break;
+		}
+		GXSetVtxDesc(GX_VA_TEX0 + i, GX_INDEX16);
+		material = *(u8**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 0x18);
+		GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0 + i, GX_TEX_ST, GX_S16, (u8)*(u32*)(material + 0x48 + i * 4));
+		GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
+	}
+}
+#pragma opt_common_subs reset
+
+void* mapSearchDmdJointSub(void* a, void* b) {
+	MapFileJoint* joint = (MapFileJoint*)a;
+	void* result;
+
+	if (!strcmp(joint->name, (const char*)b)) return joint;
+	if (joint->child && (result = mapSearchDmdJointSub(joint->child, b))) return result;
+	if (joint->next && (result = mapSearchDmdJointSub(joint->next, b))) return result;
+	return NULL;
 }
 
 #pragma opt_lifetimes off // target assigns a->r29/c->r30; default lifetime analysis swaps them
@@ -5095,3 +4395,701 @@ void* mapSearchDmdJointSub2(void* a, void* b, const char* c) {
 }
 #pragma opt_lifetimes reset
 
+void* mapSearchDmdJoint(void* a, s8* b) {
+	if (*b != 0x7C) {
+		return mapSearchDmdJointSub(a, b);
+	}
+	else {
+		return mapSearchDmdJointSub2(a, b, "|");
+	}
+}
+
+MapObject* mapGetMapObj(const char *name) { // 1:1
+    MapWork *wp;
+    MapEntry* entry;
+    int j;
+    int i;
+    MapObject *object;
+    
+    wp = &mapWork[activeGroup];
+    if (!name) {
+        return 0;
+    }
+    entry = &wp->entries[0];
+    for (i = 0; i < wp->entries[0].count; entry++, i++) {
+        object = entry->objects;
+        for (j = 0; j < entry->numJoints; j++, object++) {
+            if (!strcmp(object->joints->name, name)) {
+                return object;
+            }
+        }
+    }
+    return 0;
+}
+
+void mapObjFlagOn(const char* name, u32 flag) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else if (!(flag & 0x100) || *(void**)((u8*)obj + 0x114)) {
+		*(u32*)obj->field_0x0 |= flag;
+	}
+}
+
+void mapObjFlagOff(const char* name, u32 flag) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else {
+		*(u32*)obj->field_0x0 &= ~flag;
+	}
+}
+
+void mapFlgOn(MapObject* obj, u32 flag, s32 a3) {
+	if (!(flag & 0x100) || *(void**)((u8*)obj + 0x114)) {
+		*(u32*)obj->field_0x0 |= flag;
+	}
+	if (obj->child) mapFlgOn(obj->child, flag, 1);
+	if (a3 && obj->next) mapFlgOn(obj->next, flag, 1);
+}
+
+void mapFlgOff(MapObject* obj, u32 flag, s32 a3) {
+	*(u32*)obj->field_0x0 &= ~flag;
+	if (obj->child) mapFlgOff(obj->child, flag, 1);
+	if (a3 && obj->next) mapFlgOff(obj->next, flag, 1);
+}
+
+#pragma dont_inline on
+void mapGrpFlagOn(const char* name, u32 flag) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else {
+		mapFlgOn(obj, flag, 0);
+	}
+}
+#pragma dont_inline reset
+
+// Keep mapGrpFlagOff, mapGrpFlagOn out of line: the original calls them rather than inlining.
+#pragma dont_inline on
+void mapGrpFlagOff(const char* name, u32 flag) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else {
+		mapFlgOff(obj, flag, 0);
+	}
+}
+#pragma dont_inline reset
+
+void _setOffScrnId(MapObject* obj, s32 id, s32 a3) {
+	*(s16*)obj->field_0xDC = id;
+	if (id != -1) {
+		*(u32*)obj->field_0x0 |= 0x80;
+	}
+	else {
+		*(u32*)obj->field_0x0 &= ~0x80;
+	}
+	if (obj->child) _setOffScrnId(obj->child, id, 1);
+	if (a3 && obj->next) _setOffScrnId(obj->next, id, 1);
+}
+
+void mapObjSetOffScreen(const char* name, const char* offName) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	*(s16*)obj->field_0xDC = offscreenNameToId(offName);
+	*(u32*)obj->field_0x0 |= 0x80;
+}
+
+void mapGrpSetOffScreen(const char* name, const char* offName) {
+	MapObject* obj = mapGetMapObjSub(name);
+	s32 id = offscreenNameToId(offName);
+
+	_setOffScrnId(obj, id, 0);
+}
+
+void mapObjClearOffScreen(const char* name) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	*(s16*)obj->field_0xDC = -1;
+	*(u32*)obj->field_0x0 &= ~0x80;
+}
+
+void mapGrpClearOffScreen(const char* name) {
+	_setOffScrnId(mapGetMapObjSub(name), -1, 0);
+}
+
+void mapObjRotate(const char* name, f32 x, f32 y, f32 z) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj) {
+		Mtx mx;
+		Mtx my;
+		Mtx mz;
+		u32* flags = (u32*)obj->field_0x0;
+
+		if (!(*flags & 0x200)) {
+			PSMTXIdentity(obj->unkAC);
+		}
+		PSMTXRotRad(mx, 'x', float_deg2rad_80419868 * x);
+		PSMTXRotRad(my, 'y', float_deg2rad_80419868 * y);
+		PSMTXRotRad(mz, 'z', float_deg2rad_80419868 * z);
+		PSMTXConcat(obj->unkAC, mz, obj->unkAC);
+		PSMTXConcat(obj->unkAC, my, obj->unkAC);
+		PSMTXConcat(obj->unkAC, mx, obj->unkAC);
+		*flags |= 0x200000;
+		*flags |= 0x200;
+	}
+}
+
+void mapObjTranslate(const char* name, f32 x, f32 y, f32 z) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj) {
+		Mtx m;
+		u32* flags = (u32*)obj->field_0x0;
+
+		if (!(*flags & 0x200)) {
+			PSMTXIdentity(obj->unkAC);
+		}
+		PSMTXTrans(m, x / float_10_80419864, y / float_10_80419864, z / float_10_80419864);
+		PSMTXConcat(obj->unkAC, m, obj->unkAC);
+		*flags |= 0x200000;
+		*flags |= 0x200;
+	}
+}
+
+void mapObjScale(const char* name, f32 x, f32 y, f32 z) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj) {
+		Mtx m;
+		u32* flags = (u32*)obj->field_0x0;
+
+		if (!(*flags & 0x200)) {
+			PSMTXIdentity(obj->unkAC);
+		}
+		PSMTXScale(m, x, y, z);
+		PSMTXConcat(obj->unkAC, m, obj->unkAC);
+		*flags |= 0x200000;
+		*flags |= 0x200;
+	}
+}
+
+void mapObjGetPosSub(MapObject* obj, Vec* pos, s32* count, void* a4) {
+	if (obj->child) {
+		mapObjGetPosSub(obj->child, pos, count, (void*)1);
+	}
+	else {
+		Vec v;
+
+		PSMTXMultVec(obj->modelWorldMtx, (Vec*)(obj->field_0xC + 4), &v);
+		PSVECAdd(pos, &v, pos);
+		(*count)++;
+	}
+	if ((s32)a4 && obj->next) {
+		mapObjGetPosSub(obj->next, pos, count, (void*)1);
+	}
+}
+
+void mapObjGetPos(const char* name, Vec* pos) {
+	Vec pos2;
+	s32 scale;
+	MapObject* obj;
+
+	scale = 0;
+	pos2 = vec3_802c18f4[0];
+	obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		*pos = vec3_802c1900[0];
+	}
+	else {
+		mapObjGetPosSub(obj, &pos2, &scale, NULL);
+		PSVECScale(&pos2, pos, float_1_80419860 / (f32)scale);
+	}
+}
+
+// NONMATCHING (97.00%): register allocation of the inlined mapWork/activeGroup address computation
+void mapSetFog(u32 color, f32 near, f32 far, u32* color2) {
+	MapEntry* entry = &mapWork[activeGroup].entries[0];
+	u32 c2;
+
+	c2 = *color2;
+	*(u32*)((u8*)entry + 0x28) = color;
+	*(f32*)((u8*)entry + 0x2C) = near;
+	*(f32*)((u8*)entry + 0x30) = far;
+	*(u32*)((u8*)entry + 0x34) = c2;
+}
+
+void mapGetFog(u32* c, f32* near, f32* far, u32* c2) {
+	MapEntry* entry = &mapWork[activeGroup].entries[0];
+
+	*c = *(u32*)((u8*)entry + 0x28);
+	*near = *(f32*)((u8*)entry + 0x2C);
+	*far = *(f32*)((u8*)entry + 0x30);
+	*c2 = *(u32*)((u8*)entry + 0x34);
+}
+
+void mapFogOn(void) {
+	*(u16*)((u8*)mapWork + activeGroup * 0x2F4 + 0x4) |= 0x1;
+}
+
+void mapFogOff(void) {
+	*(u16*)((u8*)mapWork + activeGroup * 0x2F4 + 0x4) &= ~0x1;
+}
+
+void mapSetBlend(GXColor* color) {
+	MapEntry* entry = &mapWork[activeGroup].entries[0];
+
+	*(GXColor*)((u8*)entry + 0x16) = *color;
+	entry->flags |= 0x2;
+}
+
+void mapSetBlend2(GXColor* color) {
+	MapEntry* entry = &mapWork[activeGroup].entries[0];
+
+	*(GXColor*)((u8*)entry + 0x1A) = *color;
+	entry->flags |= 0x4;
+}
+
+void mapGetBlend(GXColor* out) {
+	MapEntry* entry = &mapWork[activeGroup].entries[0];
+
+	if (entry->flags & 0x2) {
+		*out = *(GXColor*)((u8*)entry + 0x16);
+	}
+	else {
+		*out = dat_80419840;
+	}
+}
+
+void mapGetBlend2(GXColor* out) {
+	MapEntry* entry = &mapWork[activeGroup].entries[0];
+
+	if (entry->flags & 0x4) {
+		*out = *(GXColor*)((u8*)entry + 0x1A);
+	}
+	else {
+		*out = dat_80419844;
+	}
+}
+
+void mapBlendOff(void) {
+	*(u16*)((u8*)mapWork + activeGroup * 0x2F4 + 0x4) &= ~0x2;
+}
+
+void mapBlendOff2(void) {
+	*(u16*)((u8*)mapWork + activeGroup * 0x2F4 + 0x4) &= ~0x4;
+}
+
+void mapObjSetColor(const char* name, GXColor* color) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj) {
+		*(u32*)((u8*)obj + 0xC) = *(u32*)color;
+		*(u32*)obj->field_0x0 |= 0x40;
+	}
+}
+
+// NONMATCHING (99.60%): the target keeps the first `*color` load in r3 and reuses it for the inlined child
+// call (spilling it to 0x4c); ours loads it into r0 for the field write then reloads *color into r3 in the
+// child block. A function-scope `c` removes the reload but makes MWCC spill it before the flag (90.01%).
+void setColor(MapObject* obj, GXColor* color, s32 a3) {
+	if (obj == 0) return;
+	*(GXColor*)&obj->field_0xC = *color;
+	*(u32*)obj->field_0x0 |= 0x40;
+	if (obj->child) {
+		GXColor c = *color;
+		setColor(obj->child, &c, 1);
+	}
+	if (a3 && obj->next) {
+		GXColor d = *color;
+		setColor(obj->next, &d, 1);
+	}
+}
+
+static MapObject* mapGetMapObjSub(const char* name) {
+	MapEntry* entry;
+	MapWork *wp;
+	int j;
+	int i;
+	MapObject *object;
+
+	wp = &mapWork[activeGroup];
+	if (!name) {
+		return 0;
+	}
+	entry = &wp->entries[0];
+	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+		object = entry->objects;
+		for (j = 0; j < entry->numJoints; j++, object++) {
+			if (!strcmp(object->joints->name, name)) {
+				return object;
+			}
+		}
+	}
+	return 0;
+}
+
+// Keep mapGrpSetColor out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+// NONMATCHING (94.47%): *color load is scheduled after the inlined mapGetMapObjSub search
+void mapGrpSetColor(const char* name, GXColor* color) {
+	GXColor c = *color;
+
+	setColor(mapGetMapObjSub(name), &c, 0);
+}
+#pragma dont_inline reset
+
+void mapSetProjTexObj(GXTexObj* obj, void* imgRef) {
+	projTexObj = *obj;
+	projTexImgRef = imgRef;
+}
+
+void mapSetProjMtx(Mtx mtx) {
+	PSMTXCopy(mtx, projMtx);
+}
+
+static inline s32 spline_fpclassifyf(f32 x) {
+	switch (*(s32*)&x & 0x7F800000) {
+		case 0x7F800000:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_NAN;
+			} else {
+				return FP_INFINITE;
+			}
+			break;
+		case 0:
+			if (*(s32*)&x & 0x007FFFFF) {
+				return FP_SUBNORMAL;
+			} else {
+				return FP_ZERO;
+			}
+			break;
+		default:
+			return FP_NORMAL;
+	}
+}
+
+static inline f32 spline_sqrtf(f32 x, const f64* c) {
+	if (x > float_0_80419850) {
+		f64 guess = __frsqrte(x);
+		f64 half = c[0];
+		f64 three = c[1];
+
+		guess = half * guess * (three - guess * guess * x);
+		guess = half * guess * (three - guess * guess * x);
+		guess = half * guess * (three - guess * guess * x);
+		return x * guess;
+	} else if (x < c[2]) {
+		return SPLINE_NAN;
+	} else if (spline_fpclassifyf(x) == FP_NAN) {
+		return SPLINE_NAN;
+	}
+	return x;
+}
+
+// NONMATCHING (99.31%): only a rotation of the backward-substitution loop pointers differs (target
+// tangents=r6,dt=r7,mat=r8,temp=r9; ours tangents=r7,dt=r9,mat=r8,temp=r6). Pinned with `((Vec*)a)`
+// in the dt/mat loop, `((f32*)b)` in the dt loop, `f64 three, half` + `f32 knprev` at fn scope.
+void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
+	Vec* points = (Vec*)a;
+	f32* knots = (f32*)b;
+	Vec* tangents = (Vec*)c;
+	const f64* cf = (const f64*)(vec3_802c16d8 + 0x2A8);
+	f32* dt = (f32*)_mapAlloc(count * sizeof(f32));
+	Vec* mat = (Vec*)_mapAlloc(count * sizeof(Vec));
+	s32 i;
+	f64 three, half;
+	f32 knprev;
+
+	knots[0] = 0.0f;
+	for (i = 1; i < count; i++) {
+		f32 dx = points[i].x - points[i - 1].x;
+		f32 dy = points[i].y - points[i - 1].y;
+		f32 dz = points[i].z - points[i - 1].z;
+
+		f32 sq = dx * dx + dy * dy + dz * dz;
+#ifdef MUST_MATCH
+		// match-only: writing the Newton result back into sq reuses x's FPR (the target overwrites f5);
+		// calling spline_sqrtf forces the f32 return register f1 and leaves an extra `fmr f1,f5`
+		if (sq > float_0_80419850) {
+			f64 guess = __frsqrte(sq);
+			half = cf[0];
+			three = cf[1];
+			guess = half * guess * (three - guess * guess * sq);
+			guess = half * guess * (three - guess * guess * sq);
+			guess = half * guess * (three - guess * guess * sq);
+			sq = sq * guess;
+		} else if (sq < cf[2]) {
+			sq = SPLINE_NAN;
+		} else if (spline_fpclassifyf(sq) == FP_NAN) {
+			sq = SPLINE_NAN;
+		}
+#else
+		sq = spline_sqrtf(sq, cf);
+#endif
+		knprev = knots[i - 1];
+		knots[i] = knprev + sq;
+	}
+
+	for (i = 1; i < count; i++) {
+		knots[i] = knots[i] / knots[count - 1];
+	}
+
+	tangents[0].x = 0.0f;
+	tangents[0].y = 0.0f;
+	tangents[0].z = 0.0f;
+	tangents[count - 1].x = 0.0f;
+	tangents[count - 1].y = 0.0f;
+	tangents[count - 1].z = 0.0f;
+	for (i = 0; i < count - 1; i++) {
+		dt[i] = ((f32*)b)[i + 1] - ((f32*)b)[i];
+		if (dt[i] == 0.0f) {
+			dt[i] = float_0p0001_8041985c;
+		}
+		mat[i + 1].x = (((Vec*)a)[i + 1].x - ((Vec*)a)[i].x) / dt[i];
+		mat[i + 1].y = (((Vec*)a)[i + 1].y - ((Vec*)a)[i].y) / dt[i];
+		mat[i + 1].z = (((Vec*)a)[i + 1].z - ((Vec*)a)[i].z) / dt[i];
+	}
+
+	tangents[1].x = mat[2].x - mat[1].x;
+	tangents[1].y = mat[2].y - mat[1].y;
+	tangents[1].z = mat[2].z - mat[1].z;
+	mat[1].x = 2.0f * (knots[2] - knots[0]);
+	mat[1].y = 2.0f * (knots[2] - knots[0]);
+	mat[1].z = 2.0f * (knots[2] - knots[0]);
+
+	for (i = 1; i < count - 2; i++) {
+		f32 wx = dt[i] / mat[i].x;
+		f32 wy = dt[i] / mat[i].y;
+		f32 wz = dt[i] / mat[i].z;
+
+		tangents[i + 1].x = (mat[i + 2].x - mat[i + 1].x) - wx * tangents[i].x;
+		tangents[i + 1].y = (mat[i + 2].y - mat[i + 1].y) - wy * tangents[i].y;
+		tangents[i + 1].z = (mat[i + 2].z - mat[i + 1].z) - wz * tangents[i].z;
+		mat[i + 1].x = 2.0f * (knots[i + 2] - knots[i]) - wx * dt[i];
+		mat[i + 1].y = 2.0f * (knots[i + 2] - knots[i]) - wy * dt[i];
+		mat[i + 1].z = 2.0f * (knots[i + 2] - knots[i]) - wz * dt[i];
+	}
+
+	tangents[count - 2].x = tangents[count - 2].x - dt[count - 2] * tangents[count - 1].x;
+	tangents[count - 2].y = tangents[count - 2].y - dt[count - 2] * tangents[count - 1].y;
+	tangents[count - 2].z = tangents[count - 2].z - dt[count - 2] * tangents[count - 1].z;
+
+	{
+		Vec* mp = &mat[count - 2];
+		f32* dp = &dt[count - 2];
+		Vec* tp = &tangents[count - 2];
+		for (i = count - 2; i > 0; i--) {
+			tp->x = (tp->x - *dp * tp[1].x) / mp->x;
+			tp->y = (tp->y - *dp * tp[1].y) / mp->y;
+			tp->z = (tp->z - *dp * tp[1].z) / mp->z;
+			tp--;
+			dp--;
+			mp--;
+		}
+	}
+
+	_mapFree(mat);
+	_mapFree(dt);
+}
+
+#pragma opt_lifetimes off // MUST_MATCH: target FP live ranges need lifetime analysis off
+// Arithmetic, control flow and the instruction sequence match; MWCC's FPR colouring differs
+// (target keeps dt in f1, 2.0 in f6, 3.0 in f0; ours dt in f8, 2.0 in f0, 3.0 in f1) and the
+// r9/r0 tangent-base offset. `#pragma opt_lifetimes off` is required (94.57% without).
+// NONMATCHING (97.29%): FP colouring + tangent-base offset only
+void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
+	f32* points = (f32*)a;
+	f32* knots = (f32*)b;
+	f32* tangents = (f32*)c;
+	s32 lo;
+	s32 hi;
+	s32 mid;
+	f32 f2, f3, f4, f0, f6, f5, f8, f7;
+
+	if (type == 2) {
+		out[0] = t * (points[3] - points[0]) + points[0];
+		out[1] = t * (points[4] - points[1]) + points[1];
+		out[2] = t * (points[5] - points[2]) + points[2];
+		return;
+	}
+
+	lo = 0;
+	hi = type - 1;
+	while (lo < hi) {
+		mid = (lo + hi) / 2;
+		if (knots[mid] < t) {
+			lo = mid + 1;
+		}
+		else {
+			hi = mid;
+		}
+	}
+	if (lo > 0) {
+		lo--;
+	}
+
+	f2 = knots[lo];
+	f6 = float_2_80419858;
+	f7 = tangents[lo * 3 + 0];
+	f4 = tangents[lo * 3 + 3];
+	t = t - f2;
+	f0 = knots[lo + 1];
+	f5 = f4 - f7;
+	f8 = points[lo * 3 + 0];
+	f3 = points[lo * 3 + 3];
+	f2 = f0 - f2;
+	f4 = f6 * f7 + f4;
+	f0 = float_3_8041984c;
+	f5 = t * f5;
+	f3 = f3 - f8;
+	f5 = f5 / f2;
+	f3 = f3 / f2;
+	f5 = f0 * f7 + f5;
+	f3 = f3 - f2 * f4;
+	f3 = t * f5 + f3;
+	f3 = t * f3 + f8;
+	out[0] = f3;
+
+	f7 = tangents[lo * 3 + 1];
+	f4 = tangents[lo * 3 + 4];
+	f5 = f4 - f7;
+	f8 = points[lo * 3 + 1];
+	f3 = points[lo * 3 + 4];
+	f4 = f6 * f7 + f4;
+	f5 = t * f5;
+	f3 = f3 - f8;
+	f5 = f5 / f2;
+	f3 = f3 / f2;
+	f5 = f0 * f7 + f5;
+	f3 = f3 - f2 * f4;
+	f3 = t * f5 + f3;
+	f3 = t * f3 + f8;
+	out[1] = f3;
+
+	f7 = tangents[lo * 3 + 2];
+	f4 = tangents[lo * 3 + 5];
+	f5 = f4 - f7;
+	f8 = points[lo * 3 + 2];
+	f3 = points[lo * 3 + 5];
+	f4 = f6 * f7 + f4;
+	f5 = t * f5;
+	f3 = f3 - f8;
+	f5 = f5 / f2;
+	f3 = f3 / f2;
+	f5 = f0 * f7 + f5;
+	f3 = f3 - f2 * f4;
+	f3 = t * f5 + f3;
+	f3 = t * f3 + f8;
+	out[2] = f3;
+}
+#pragma opt_lifetimes reset
+
+BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b) {
+	if ((flags & 0x40) && a->a != 0xFF) {
+		return TRUE;
+	}
+	if (b->a != 0xFF) {
+		return TRUE;
+	}
+	if (!(flags & 0x800) && (mapWork[activeGroup].entries[0].flags & 0x2) && mapWork[activeGroup].entries[0].field_0x16[3] != 0xFF) {
+		return TRUE;
+	}
+	if (!(flags & 0x1000) && (mapWork[activeGroup].entries[0].flags & 0x4) && mapWork[activeGroup].entries[0].field_0x16[7] != 0xFF) {
+		return TRUE;
+	}
+	return FALSE;
+}
+
+void mapSetTevCallback(s32 idx, void* cb) {
+	u8* base = (u8*)mapWork + activeGroup * 0x2F4 + 0x110;
+
+	*(void**)(base + idx * 4) = cb;
+}
+
+void mapObjFlushOn(const char* name) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else {
+		*(u32*)obj->field_0x0 |= 0x100000;
+	}
+}
+
+void mapObjFlushOff(const char* name) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (obj == NULL) {
+		mapErrorEntry(0, name);
+	}
+	else {
+		*(u32*)obj->field_0x0 &= ~0x100000;
+	}
+}
+
+void mapGrpFlushOn(const char* name) {
+	mapGrpFlagOn(name, 0x100000);
+}
+
+void mapGrpFlushOff(const char* name) {
+	mapGrpFlagOff(name, 0x100000);
+}
+
+// NONMATCHING (98.89%): only the second inlined mapGetMapObjSub search's registers differ
+// (target wp=r27/entry=r26/object=r28/i=r29/j=r30); the first search and the error body match.
+void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
+	GXColor color;
+	MapObject* obj;
+
+	color = *(GXColor*)&unk_80422f8c;
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	obj = mapGetMapObjSub(name);
+	if (obj) {
+		*(u32*)obj->field_0xC = *(u32*)&color;
+		*(u32*)obj->field_0x0 |= 0x40;
+	}
+	mapObjFlagOff(name, 0x40);
+}
+
+void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
+	GXColor c;
+	GXColor color;
+
+	color = *(GXColor*)&unk_80422f90;
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	c = color;
+	mapGrpSetColor(name, &c);
+	mapGrpFlagOff(name, 0x40);
+}
+
+void mapObjGetFlushColor(const char* name, u8* r, u8* g, u8* b, u8* a) {
+	MapObject* obj = mapGetMapObjSub(name);
+
+	if (!obj) {
+		mapErrorEntry(0, name);
+		return;
+	}
+	*r = *(u8*)((u8*)obj + 0xC);
+	*g = *(u8*)((u8*)obj + 0xD);
+	*b = *(u8*)((u8*)obj + 0xE);
+	*a = *(u8*)((u8*)obj + 0xF);
+}
