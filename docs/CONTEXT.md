@@ -4769,3 +4769,15 @@ the original kit and stay `.s` in libs/metrowerks/src/TRK_MINNOW_DOLPHIN.a. They
   functions up a little. Refused: mot_jabara (99.77 bought by moving .rodata's Vec pool) and evt_yuunpc (timed out; its
   last state moved .data/.rodata). NO-SOURCE-LEVER stops (to the permuter): kemuri5, booboo and cam_road's residues,
   envSetWater, hei_10, strtold. merge_agent now prints --partial findings as advisory notes (#485).
+- **Batch 34 (overnight tail, waves 82-83):** end_unknown linked (unk_end_00000bc8 99.10 -> 100 over five source
+  levers; an earlier NO-SOURCE-LEVER verdict on it was wrong) and eff_opuku_wcurtain_n64 linked (effOpukuWcurtainDisp
+  99.82 -> 100: a register-only 2-cycle fixed by the order the loop body's two expressions are written, which sets
+  their frontend temps' order). ext_fan_main 98.27 -> 98.86 (`opt_loop_invariants off`, declaration order);
+  effPokopiThunderDisp 97.29 -> 97.33 (loop-tail increment order) then NO-SOURCE-LEVER with rasim replay exact, so q32;
+  sac_scissor's three open functions up (99.97 / 98.93 / 97.23). evt_shop's second attempt: NO-SOURCE-LEVER, no change.
+  merge_agent: tools/store_sweep.py findings as advisory notes next to --partial's; the provenance WARN now fires only
+  on fetches, clones and reads of real folders outside the workspace (the sandbox's /tmp, ~/.cache and installed
+  Python packages are skipped, as are sed/grep patterns provenance.py took for paths), and ~/ttyd-refs reads are a
+  NOTE. Tonight's 13 results: 1 WARN, 4 NOTE, where all 13 warned before. Night slots (01:00-07:00 cap 8): 8 in use
+  01:12-02:22, then 4 -> 1 as waves 82-83 (6 and 8 units) ran out of tasks before the 05:00 deadline; never over 8.
+  The tower check was clean after both waves.

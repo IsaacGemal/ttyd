@@ -626,7 +626,7 @@ config.libs = [
             Object(Matching, "effect/n64/eff_onpu_n64.c"),
             Object(Matching, "effect/n64/eff_opuku_jetw_n64.c"),
             Object(Matching, "effect/n64/eff_opuku_jetwrain_n64.c"),
-            Object(NonMatching, "effect/n64/eff_opuku_wcurtain_n64.c"),
+            Object(Matching, "effect/n64/eff_opuku_wcurtain_n64.c"),
             Object(Matching, "effect/n64/eff_opuku_wgun_n64.c"),
             Object(Matching, "effect/n64/eff_opuku_wprotect_n64.c"),
             Object(Matching, "effect/n64/eff_packn_bfire_n64.c"),
@@ -2137,7 +2137,7 @@ config.libs = [
     Rel(
         "end",
         [
-            Object(NonMatching, "end_unknown.c"),
+            Object(Matching, "end_unknown.c"),
         ],
     ),
     Rel(

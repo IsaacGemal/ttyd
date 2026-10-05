@@ -132,6 +132,9 @@ fi
 # --partial). Advisory only: a legitimately computed or folded value (x - 150.0f vs x + -150.0f) is flagged too.
 PV=$(timeout 300 python3 tools/reloc_value_check.py --partial "$(basename "$UNIT")" 2>/dev/null | grep -E '^\s+\S+ \+0x' | head -8)
 if [ -n "$PV" ]; then echo "NOTE  $TAG: partial-function constant differences (advisory; check each is a spelling, not a wrong value):"; echo "$PV"; fi
+# near-miss functions: struct stores and li constants only one side has, alignment-free (tools/store_sweep.py). Advisory.
+SV=$(timeout 120 python3 tools/store_sweep.py "/$UNIT" 2>/dev/null | grep -E '^  \S+: ' | head -8)
+if [ -n "$SV" ]; then echo "NOTE  $TAG: partial-function store/constant differences (advisory; a field the C never writes, or a wrong width or literal):"; echo "$SV"; fi
 
 matched() { python3 -c "import json;print(json.load(open('build/ci/accepted.json'))['measures']['matched_functions'])"; }
 n0=$(matched); python3 tools/ci.py --accept $FLAGS >/dev/null 2>&1; n1=$(matched)
@@ -139,11 +142,26 @@ if [ $NEW = 1 ]; then SUBJECT="$(basename $UNIT): new file, $((n1-n0)) functions
 elif [ $n1 = $n0 ]; then SUBJECT="$(basename $UNIT): changes toward linking, no change in functions matched"
 else SUBJECT="$(basename $UNIT): match $((n1-n0)) more functions"; fi
 PROV=""  # what the agent fetched or looked at outside its workspace (tools/provenance.py, run by the launcher)
+# WARN on network evidence and reads outside the workspace; NOTE for the reference decomps (reading is allowed, copying
+# is not). The sandbox's /tmp and ~/.cache are its own, installed Python packages (~/.local/lib/python*/site-packages)
+# are benign, and an area that isn't a real top-level folder is a sed or grep pattern provenance.py took for a path.
+provclass() { awk 'function sitepkgs(l,  n, i, ps) {  # every listed path is installed Python packages, none elided
+    sub(/^[^:]*: /, "", l); if (l ~ /, \+[0-9]+ more$/) return 0; n = split(l, ps, ", ")
+    for (i = 1; i <= n; i++) if (ps[i] !~ /^\/home\/[^\/]+\/\.local\/lib\/python[^\/]*\/site-packages(\/|$)/) return 0
+    return 1 }
+  /^(fetch|clone) /{print "W " $0; next}
+  /^path /{a=$0; sub(/^path +/, "", a); sub(/: .*/, "", a)
+    if (a ~ /^\/home\/[^\/]+\/ttyd-refs(\/|$)/) print "N " $0
+    else if (a == "/tmp" || a ~ /^\/home\/[^\/]+\/\.cache(\/|$)/) next
+    else if (a ~ /^\/home\/[^\/]+\/\.local$/ && sitepkgs($0)) next
+    else if (a ~ /^\/(home|mnt|srv|opt|media|root|data|var|etc)(\/|$)/) print "W " $0}' "$1"; }
 if [ ! -f "$D/provenance.txt" ]; then echo "WARN $TAG: no provenance.txt; run tools/provenance.py on its events.jsonl by hand"
-elif [ -s "$D/provenance.txt" ]; then echo "WARN $TAG: fetched or looked outside its workspace (check licenses):"; cat "$D/provenance.txt"
-  PROV="Outside its workspace (tools/provenance.py):
-$(head -40 "$D/provenance.txt")"; [ $(grep -c . "$D/provenance.txt") -gt 40 ] && PROV="$PROV
-... $(( $(grep -c . "$D/provenance.txt") - 40 )) more lines"; fi
+else PW=$(provclass "$D/provenance.txt" | sed -n 's/^W //p'); PN=$(provclass "$D/provenance.txt" | sed -n 's/^N //p')
+  [ -n "$PW" ] && { echo "WARN $TAG: fetched or looked outside its workspace (check licenses):"; echo "$PW"; }
+  [ -n "$PN" ] && { echo "NOTE  $TAG: read the reference decomps (fine; check nothing was copied):"; echo "$PN"; }
+  PV2=$(printf '%s\n%s' "$PW" "$PN" | grep . | head -40)
+  [ -n "$PV2" ] && PROV="Outside its workspace (tools/provenance.py):
+$PV2"; fi
 HDRNOTE=""
 [ -n "$HDRS" ] && HDRNOTE="Header additions (tools/header_patch.py: declarations and type definitions): $HDRLINES lines."
 git add "$F" $HDRS && git commit -q -F - <<MSG

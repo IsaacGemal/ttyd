@@ -954,27 +954,29 @@ typedef struct CreditsEndingRecord {
 // r29/r24/r23). The lwzu and the rematerialised record base now match; the two `#ifdef MUST_MATCH` tricks
 // below break the pEntry/rec CSE that otherwise merges the two pointers.
 s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
+    s32 state = event->userdata[0];
+    s32 index = event->userdata[1];
     s32* pEntry;
-    CreditsEndingRecord* rec;
     s32 i;
+    s32 k;
+    s32 n;
     s32 offset;
     s32 x;
     s32 y;
     char bufA[0x400];
     char bufB[0x400];
-    s32 state = event->userdata[0];
-    s32 index = event->userdata[1];
 
+    EventEntry* ev = (EventEntry*)((u32)event);
     if (isFirstCall) {
         state = 0;
         index = 0;
-        for (i = 0; i < 3; i++) {
-            ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i] = -1;
+        for (n = 0; n < 3; n++) {
+            ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[n] = -1;
         }
-        for (i = 0; i < 3; i++) {
-            ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i] = -1;
+        for (n = 0; n < 3; n++) {
+            ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[n] = -1;
         }
-        evtSetValue(event, GW(10), 0);
+        evtSetValue(ev, GW(10), 0);
         ((CreditsWork*)dat_ptr_end_00003218[0])->eventId = (s32)evtEntry(unk_evt_end_000042e0, 0, 0);
     }
 #ifdef MUST_MATCH
@@ -1013,9 +1015,8 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
     }
     switch (state) {
         case 0:
-            rec = (CreditsEndingRecord*)((u8*)unk_end_0000321c + offset);
             for (i = 0; i < 3; i++) {
-                const char* key = rec->msgA[i];
+                const char* key = ((CreditsEndingRecord*)((u8*)unk_end_0000321c + offset))->msgA[i];
 
                 if (key != NULL) {
                     const char* msg = msgSearch(key);
@@ -1027,55 +1028,62 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
 #ifdef MUST_MATCH
                         // The original's .rodata pools 0.8 before 0.5; splitting the product into a local reproduces that order.
                         f32 fw = (f32)FontGetMessageWidth(msg) * 0.8f;
-                        xoff = (s32)((f32)x - fw * 0.5f);
+                        f32 half = 0.5f;
+                        xoff = (s32)((f32)x - fw * half);
 #else
                         xoff = (s32)((f32)x - 0.8f * (f32)FontGetMessageWidth(msg) * 0.5f);
 #endif
                     } else if (x > 0) {
                         xoff = (s32)((f32)x - 0.8f * (f32)FontGetMessageWidth(msg));
                     }
-                    sprintf(bufA, "<clear><dkey><wpos %d %d 400 200><col f0f0f0ff><speed 0><scale 0.8>%s</scale></speed></col><wait 500></dkey><once_stop>", xpos, xoff - 0x3E, msg);
+                    sprintf(bufA, "<clear><dkey><wpos %d %d 400 200><col f0f0f0ff><speed 0><scale 0.8>%s</scale></speed></col><wait 500></dkey><once_stop>", xoff - 0x3E, xpos, msg);
                     ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i] = msgWindow_Entry(bufA, 0, 0);
                 }
             }
-            for (i = 0; i < 3; i++) {
-                const char* key = rec->msgB[i];
+            for (k = 0; k < 3; k++) {
+                const char* key = ((CreditsEndingRecord*)((u8*)unk_end_0000321c + offset))->msgB[k];
 
                 if (key != NULL) {
-                    const char* msg = msgSearch(key);
-                    s32 ypos = y - i * 0x18;
-                    s32 xpos = ypos - 0x32;
-                    s32 xoff = x;
+                    s32 ypos;
+                    s32 xpos;
+                    const char* msg;
+                    s32 xoff;
+                    msg = msgSearch(key);
+                    ypos = y - k * 0x18;
+                    xpos = ypos - 0x32;
+                    xoff = x;
 
                     if (x == 0) {
-                        xoff = (s32)((f32)x - 0.5f * (f32)FontGetMessageWidth(msg));
+                        f32 w = (f32)FontGetMessageWidth(msg);
+                        f32 half = 0.5f;
+                        xoff = (s32)((f32)x - w * half);
                     } else if (x > 0) {
                         xoff = x - FontGetMessageWidth(msg);
                     }
-                    sprintf(bufB, "<clear><dkey><wpos %d %d 400 200><col f0f0f0ff><speed 0>%s</speed></col><wait 5200></dkey><once_stop>", xpos, xoff - 0x3E, msg);
-                    ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i] = msgWindow_Entry(bufB, 0, 0);
+                    sprintf(bufB, "<clear><dkey><wpos %d %d 400 200><col f0f0f0ff><speed 0>%s</speed></col><wait 5200></dkey><once_stop>", xoff - 0x3E, xpos, msg);
+                    ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[k] = msgWindow_Entry(bufB, 0, 0);
                 } else {
-                    ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i] = -1;
+                    ((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[k] = -1;
                 }
             }
-            evtSetValue(event, GW(10), 1);
-            evtSetValue(event, GW(11), ((CreditsEndingRecord*)((u8*)unk_end_0000321c + index * 0x24))->field_8);
-            evtSetValue(event, GW(12), *pEntry);
+            evtSetValue(ev, GW(10), 1);
+            evtSetValue(ev, GW(11), ((CreditsEndingRecord*)((u8*)unk_end_0000321c + index * 0x24))->field_8);
+            evtSetValue(ev, GW(12), *pEntry);
             state++;
             break;
         case 1:
-            for (i = 0; i < 3; i++) {
-                if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i] != -1 && windowCheckID(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i]) != 0) {
+            for (n = 0; n < 3; n++) {
+                if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[n] != -1 && windowCheckID(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[n]) != 0) {
                     break;
                 }
             }
-            if (i >= 3) {
-                for (i = 0; i < 3; i++) {
-                    if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i] != -1 && windowCheckID(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i]) != 0) {
+            if (n >= 3) {
+                for (n = 0; n < 3; n++) {
+                    if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[n] != -1 && windowCheckID(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[n]) != 0) {
                         break;
                     }
                 }
-                if (i >= 3) {
+                if (n >= 3) {
                     state++;
                 }
             }
@@ -1083,14 +1091,15 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
         case 2:
             {
                 s32 next = index + 1;
+                CreditsEndingRecord* nextRec;
                 s32 nulls;
 
                 if ((u32)next < 0x32) {
-                    CreditsEndingRecord* nextRec = (CreditsEndingRecord*)((u8*)unk_end_0000321c + next * 0x24);
+                    nextRec = (CreditsEndingRecord*)((u8*)unk_end_0000321c + next * 0x24);
 
                     nulls = 0;
-                    for (i = 0; i < 3; i++) {
-                        if (nextRec->msgA[i] != NULL) {
+                    for (n = 0; n < 3; n++) {
+                        if (nextRec->msgA[n] != NULL) {
                             break;
                         }
                         nulls++;
@@ -1099,18 +1108,18 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
                     nulls = 0;
                 }
                 if (nulls < 3) {
-                    for (i = 0; i < 3; i++) {
-                        if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i] != -1) {
-                            msgWindow_Continue(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[i]);
+                    for (n = 0; n < 3; n++) {
+                        if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[n] != -1) {
+                            msgWindow_Continue(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdA[n]);
                         }
                     }
                 }
-                for (i = 0; i < 3; i++) {
-                    if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i] != -1) {
-                        msgWindow_Continue(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[i]);
+                for (n = 0; n < 3; n++) {
+                    if (((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[n] != -1) {
+                        msgWindow_Continue(((CreditsWork*)dat_ptr_end_00003218[0])->windowIdB[n]);
                     }
                 }
-                evtSetValue(event, GW(10), 2);
+                evtSetValue(ev, GW(10), 2);
                 if ((u32)next < 0x32) {
                     state++;
                 } else {
@@ -1119,7 +1128,7 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
             }
             break;
         case 3:
-            if (evtGetValue(event, GW(10)) == 0) {
+            if (evtGetValue(ev, GW(10)) == 0) {
                 state = 0;
                 index++;
             }
@@ -1127,8 +1136,8 @@ s32 unk_end_00000bc8(EventEntry* event, BOOL isFirstCall) {
         case 4:
             return EVT_RETURN_DONE;
     }
-    event->userdata[0] = state;
-    event->userdata[1] = index;
+    ev->userdata[0] = state;
+    ev->userdata[1] = index;
     return EVT_RETURN_BLOCK;
 }
 

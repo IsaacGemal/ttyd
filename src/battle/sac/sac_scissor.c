@@ -286,13 +286,26 @@ s32 scissor_offscreen(void) {
     return 2;
 }
 
-// NONMATCHING (99.27%): the GXColor/hsv stack layout differs. The original keeps hsv at
-// r1+0x8 and HSV2RGB's result at r1+0xC (passed by address); ours spills the result to
-// r1+0x14 and makes one extra 4-byte copy to r1+0x8. The hsvTmp copy is the closest form.
+#ifdef MUST_MATCH
+#define SCISSOR_HSV2RGB(h) ((GXColor (*)(GXColor*))HSV2RGB)(h)
+#else
+static inline GXColor SCISSOR_HSV2RGB(GXColor* h) {
+    GXColor c;
+
+    *(u32*)&c = HSV2RGB(h);
+    return c;
+}
+#endif
+// The original keeps the built HSV colour at r1+0x8 and GXSetChanMatColor's outgoing
+// argument at r1+0xC; ours has the argument at r1+0x8 and the colour at r1+0xC (same
+// instructions, same frame). The original materialises HSV2RGB's result directly in the
+// argument slot; calling it through a GXColor-returning pointer removes the extra copy
+// the u32 return type would add. The hsvTmp copy reproduces the original's
+// build-in-a-temp then copy-into-the-local shape.
+// NONMATCHING (99.97%): the two stack slots are swapped (see above).
 void scissor_disp_control(CameraId cameraId, void* param) {
     ScissorWork* work = GetScissorPtr();
     f32* points = work->field_0x114;
-    GXColor color;
     GXColor hsv;
 #ifdef MUST_MATCH
     GXColor hsvTmp;
@@ -328,11 +341,10 @@ void scissor_disp_control(CameraId cameraId, void* param) {
         hsv.r = (u8)(((gp->retraceCount + i * 2) % 0x7F) << 1);
 #ifdef MUST_MATCH
         hsvTmp = hsv;
-        *(u32*)&color = HSV2RGB(&hsvTmp);
+        GXSetChanMatColor(GX_COLOR0A0, SCISSOR_HSV2RGB(&hsvTmp));
 #else
-        *(u32*)&color = HSV2RGB(&hsv);
+        GXSetChanMatColor(GX_COLOR0A0, SCISSOR_HSV2RGB(&hsv));
 #endif
-        GXSetChanMatColor(GX_COLOR0A0, color);
         GXBegin(GX_LINES, GX_VTXFMT0, 2);
         GXPosition3f32(points[i * 2], points[i * 2 + 1], 0.0f);
         GXPosition3f32(points[i * 2 + 2], points[i * 2 + 3], 0.0f);
@@ -408,9 +420,12 @@ s32 scissor_damage_sub2(const Vec* point) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (97.18%): remaining diffs are all FP register colouring (original
-// sign=f27/width=f29/height=f28/halfH=f30/halfW=f31/nine=f24/rowBase=f25; ours sign=f31
-// and rotated). FP/int declaration order was hill-climbed for score
+// Remaining diffs are the unnamed expression webs (`@NNN`) wanting f0 but coloured f1; the named
+// locals now match (halfH=f30, width=f29, height=f28, halfW=f31, nine=f24, rowBase=f25, sign=f27,
+// mult=f4). `mult` reproduces the original's reload of `mSizeMultiplier` into f4 after
+// BtlUnit_GetPos. Declaration order was hill-climbed (`rasim.py search 32 42 --fpr`) and
+// `neighbors` finds no single edge to fix; NO-SOURCE-LEVER: permuter case.
+// NONMATCHING (97.23%): unnamed expression webs want f0 but are coloured f1.
 void scissor_damage_sub(BattleUnit* unit, s32* out) {
     Vec pos;
     Vec point;
@@ -434,8 +449,11 @@ void scissor_damage_sub(BattleUnit* unit, s32* out) {
     halfH = float_0p5_80421748 * -height;
     halfW = float_0p5_80421748 * width;
     nine = float_9_80421758;
-    pos.x += unit->cutBaseOffset.x * unit->mSizeMultiplier;
-    pos.y += sign * (unit->cutBaseOffset.y * unit->mSizeMultiplier);
+    {
+        f32 mult = RELOAD_F32(unit->mSizeMultiplier);
+        pos.x += unit->cutBaseOffset.x * mult;
+        pos.y += sign * (unit->cutBaseOffset.y * mult);
+    }
     for (i = 0; i < 10; i++) {
         rowBase = ((f32)i * width) / nine;
         for (j = 0; j < 10; j++) {
@@ -807,15 +825,14 @@ void star_disp2D(void) {
 #else
 #define SCVEC(off, sym) (sym)
 #endif
-// With the base pointer the vector accesses and the FP allocation through case 1 line up; what
-// remains is register/schedule colouring. The int->float magic double is the biggest piece (MWCC
-// pools an anonymous @NNN slot instead of the named 4503601774854144.0 at base+0xC8, which
-// shifts one GPR and the whole FP block f0-f5); the effStarStoneEntry argument stores, the
-// work->field_0x140/0x144 adds and the case-2 else/trail-loop constants are scheduled a few
-// instructions later than the original. A hand-written i2f (union + base+0xC8) recovered the
-// magic load but emitted `fsub`+`frsp` instead of `fsubs` and scored 1 diff worse, so it is not
-// kept.
-// NONMATCHING (92.32%): FP register and schedule colouring only (see above).
+// With the base pointer the vector accesses line up and the remaining differences are two
+// scheduling/colouring sites: the int->float magic double is loaded through an anonymous @NNN
+// slot instead of the original's `lfd f1, 0xc8(r30)` (MWCC emits the i2f constant itself, never
+// define it), which costs one `lis`/`lha` register; and the `work->state = 2` store in case 1 is
+// scheduled one instruction before the effStarStoneEntry constant load. A hand-written i2f
+// (union + base+0xC8) recovered the magic load but emitted `fsub`+`frsp` instead of `fsubs` and
+// scored worse, so it is not kept.
+// NONMATCHING (98.93%): the i2f double load and one case-1 store schedule differ (see above).
 s32 star_control(void) {
     const u8* base = (const u8*)&str_802FF570;
     ScissorWork* work = GetScissorPtr();
@@ -836,15 +853,9 @@ s32 star_control(void) {
     }
     switch (work->state) {
     case 1:
-        {
-            f32 zero = float_0_80421734;
-            f32 neg = float_neg1000_8042179c;
-            f32 one = float_1_80421754;
-
-            work->state = 2;
-            work->field_0x120 = 0;
-            work->field_0x16C = effStarStoneEntry(3, zero, neg, zero, one);
-        }
+        work->state = 2;
+        work->field_0x120 = 0;
+        work->field_0x16C = effStarStoneEntry(3, float_0_80421734, float_neg1000_8042179c, float_0_80421734, float_1_80421754);
         BtlUnit_GetPos(mario, &work->field_0x124, &work->field_0x128, &work->field_0x12C);
         work->field_0x128 += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_804217a0;
         *(Vec*)&work->field_0x130 = *(Vec*)&work->field_0x124;
@@ -865,14 +876,12 @@ s32 star_control(void) {
             work->field_0x158 = f;
             work->field_0x154 = f;
         } else {
-            f32 two = float_2_804217a4;
-
             work->field_0x124 = work->field_0x13C;
             work->field_0x128 = work->field_0x140;
             work->field_0x12C = work->field_0x144;
-            work->field_0x15C = two;
-            work->field_0x158 = two;
-            work->field_0x154 = two;
+            work->field_0x15C = float_2_804217a4;
+            work->field_0x158 = float_2_804217a4;
+            work->field_0x154 = float_2_804217a4;
         }
         work->field_0x164 = intplGetValue(4, work->field_0x120, 0x78, float_0_80421734, float_2160_804217a8);
         if (work->field_0x120 >= 0x78) {
@@ -889,19 +898,16 @@ s32 star_control(void) {
             work->state = 4;
             work->field_0x120 = 0;
             {
-                f32 neg = float_neg1000_8042179c;
-                f32 zero = float_0_80421734;
-
                 *(Vec*)&work->field_0x124 = SCVEC(0x44, vec3_802ff5b4);
                 *(Vec*)&work->field_0x154 = SCVEC(0x50, vec3_802ff5c0);
                 *(Vec*)&work->field_0x160 = SCVEC(0x5C, vec3_802ff5cc);
                 work->field_0x134 = work->field_0x128;
-                work->field_0x140 = zero;
+                work->field_0x140 = float_0_80421734;
                 star->velX = work->field_0x124;
                 star->velY = work->field_0x128;
                 for (i = 0; i < 4; i++) {
-                    star->trailX[i] = zero;
-                    star->trailY[i] = neg;
+                    star->trailX[i] = float_0_80421734;
+                    star->trailY[i] = float_neg1000_8042179c;
                 }
             }
         }

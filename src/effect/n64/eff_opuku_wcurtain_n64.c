@@ -116,25 +116,10 @@ static inline GXColor opukuWcurtainColor(s32 r, s32 g, s32 b, s32 a) {
 }
 #endif
 
-// The packed s16<->f32 vertex conversions are psq_l/psq_st (GQR5) and match through the SDK
-// OSs16tof32/OSf32tos16 fast-cast inlines; the colour local/outgoing copies now land in the original's
-// slots through the opukuWcurtainColor inline above, and the transform loop, GX/TEV setup, matrix math and
-// draw loop are instruction-for-instruction identical. What is left is one allocator 2-cycle: in the
-// vertex-building loop texS and x are swapped. The original colours texS r4, x r5, fctiwz temp r6, 0xff
-// r7, 0 r8, field_0x2C pointer r9, i*20 r10, alpha r11 and the walking vtx cursor r12; ours gives x r4 and
-// texS r5, with everything else already matching. x is written as `10 * (i * 5 - 30)` and s as
-// `(counter + i * 4) << 5` so the optimiser strength-reduces both to the same walking induction temps the
-// original uses; only the order the two temps are created differs. The winning shape also puts
-// `a = 0xFF - i * 20` just before the `vtx[0].a` store and uses a block-local `s32 x = j * 2;` in the
-// triangle loop (that keeps the callee-saved r27/r30 assignment). Tried without moving the allocation:
-// ~30 x spellings and ~30 s spellings (and their pairs), inline helpers for x/s/both, declaration-order
-// sweeps (720 + 5040), `a` at every statement position, zero-valued chain terms, intermediate field
-// temporaries, one named + one inline store, reusing the function-scope triangle x, every integer type,
-// opt_*/schedule/peephole/pointer-analysis/global_optimizer/register-allocation pragmas (single and
-// pairs) and every -O level; all still 8 diffs or worse. x's induction priority is either at the very
-// top (r4) or below the loop constants (r8+), never between texS and them, so this is a two-value
-// allocation tie (permuter work).
-// NONMATCHING (99.82%): vertex-building loop's texS/x register 2-cycle only.
+// Builds the curtain's 24 vertices (two per column), transforms them through the effect's matrix with the
+// packed s16<->f32 fast casts, and draws them as triangle strips through effSetVtxDescN64. The s texture
+// coordinate is computed once per column so the compiler strength-reduces it into the same walking
+// induction variable the original uses.
 void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	CameraEntry* cam = camGetPtr(camId);
@@ -149,7 +134,6 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	s32 i;
 	s32 j;
 	s32 texS;
-	s32 x;
 	s32 a;
 	OpukuWcurtainVtx* vtx;
 	OpukuWcurtainVtx* base;
@@ -185,12 +169,12 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 	entry = smartAlloc(0x2A0, HEAP_EFFECT);
 	vtx = (OpukuWcurtainVtx*)entry->address;
 	base = vtx;
-	texS = counter << 5;
-	for (i = 0, x = -300; i < 12; i++) {
+	for (i = 0; i < 12; i++) {
+		texS = (counter + i * 4) << 5;
 		vtx[0].x = 10 * (i * 5 - 30);
 		vtx[0].y = 600;
 		vtx[0].z = 0;
-		vtx[0].s = (counter + i * 4) << 5;
+		vtx[0].s = texS;
 		vtx[0].t = (s32)data->field_0x2C[i] << 5;
 		vtx[0].r = 0xFF;
 		vtx[0].g = 0xFF;
@@ -200,7 +184,7 @@ void effOpukuWcurtainDisp(CameraId camId, void* param) {
 		vtx[1].x = 10 * (i * 5 - 30);
 		vtx[1].y = (s32)(10.0f * (60.0f + data->field_0x2C[i]));
 		vtx[1].z = 0;
-		vtx[1].s = (counter + i * 4) << 5;
+		vtx[1].s = texS;
 		vtx[1].t = 0x400;
 		vtx[1].r = 0xFF;
 		vtx[1].g = 0xFF;

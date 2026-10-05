@@ -323,7 +323,7 @@ static inline void effPokopiThunderSetColor2(EffPokopiThunderData* data) {
 }
 #endif
 
-// NONMATCHING (97.29% / 57 differing insns): logic, constants, data, the prologue and the colour stack
+// NONMATCHING (97.33% / 55 differing insns): logic, constants, data, the prologue and the colour stack
 // slots (built by the two void inlines above) match. Loop 2's amplitude/sin/cos are computed in the
 // target's registers; the remaining differences are mwcc's register colouring. In loop 1 our `p` cursor
 // takes r27 where the target uses r29 (and the reverse for the `tbl+i` temp), which also shuffles the
@@ -333,7 +333,7 @@ static inline void effPokopiThunderSetColor2(EffPokopiThunderData* data) {
 // branch as the target does. The angle average is `/ 2.0f` (strength-reduced to the 0.5 pool multiply)
 // as in effPokopiThunderMain.
 //
-// NONMATCHING (97.29%): 57 instructions differ only in mwcc register colouring/scheduling (see above).
+// NONMATCHING (97.33%): 55 instructions differ only in mwcc register colouring/scheduling (see above).
 void effPokopiThunderDisp(CameraId camId, void* param) {
 	s32 t1;
 	GXTexObj texObj;
@@ -484,7 +484,7 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	cr = 0;
 	cg = 0;
 	cb = 0;
-	for (i = 0; i < 12; i++, p++, v += 2) {
+	for (i = 0; i < 12; i++, p++) {
 		if (i == 0) {
 			ang = -angleABf(p[33], -p[21], p[32], -p[20]);
 		} else if (i == 11) {
@@ -522,6 +522,7 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 		v[1].clr[2] = cb;
 		cr += 50;
 		cg += 120;
+		v += 2;
 		cb += 30;
 		uoff += 12;
 	}
