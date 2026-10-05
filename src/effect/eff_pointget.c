@@ -12,6 +12,7 @@
 const char str_80420ED8[];
 const f32 float_32_80420edc;
 const f32 float_362_80420ee0;
+const f32 float_48_80420ee4;
 
 // .sdata2 explicit color globals
 const GXColor dat_80420ec8 = { 0x00, 0x00, 0x00, 0x80 };
@@ -106,16 +107,16 @@ void effPointGetMain(EffectEntry* effect) {
 	dispEntry(8, dispCalcZ(&position), 2, effPointGetDisp, effect);
 }
 
-// The frame (0x1e0), the callee-saved set (f19-f31/r26-r31), the order of the constant
-// loads and the mtx offsets (0xb8/0x88/0x58) all match. Only three callee-saved FP registers
-// are permuted: the precomputed basehalf (base * 0.5) lands in f23 where the original holds 48,
-// 48 lands in f25 where the original holds the conversion double, and the conversion double
-// (double_to_int_802fe3a8) lands in f27 where the original holds basehalf. 32/f24, 0.5/f26,
-// base/f22, ox/f20 and nx-on-f19 (reusing the dead scale register) all match. Writing part2's
-// `base / 2.0f` as a division stops the compiler CSEing it with the precomputed basehalf,
-// which keeps the 13-register frame.
-// The @NNN vs named double_to_int_* pool labels are benign (see window/win_mario.c).
-// NONMATCHING (99.87%): three callee-saved FP registers are cycled (basehalf/48/dconst over f23/f25/f27).
+// basehalf (target f27) and the double_to_int conversion double
+// (target f25) are swapped; the frontend hoists basehalf to a lower vreg than the loop's
+// conversion temp. All other FPRs match, as do the 0x1e0 frame, the callee-saved set
+// (f19-f31/r26-r31), the constant loads and the mtx offsets (0xb8/0x88/0x58).
+// basehalf is written inline (`f24 * (f32)j + f22 * f26`) so the optimizer hoists it;
+// naming float_48_80420ee4 fixes the 48<->32 assignment. Writing part2's
+// `base / 2.0f` as a division stops the compiler CSEing it with basehalf, keeping the
+// 13-register frame. The @NNN vs named double_to_int_* pool labels are benign
+// (see window/win_mario.c).
+// NONMATCHING (99.92%): basehalf (f27) and the conversion double (f25) are swapped.
 void effPointGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	PointGetWork* work = effect->userdata;
@@ -126,14 +127,13 @@ void effPointGetDisp(CameraId camId, void* param) {
 	Mtx mtx58;
 	char buf[32];
 	f32 f24;
+	f32 f23;
 	f32 scale;
 	f32 f26;
-	f32 f27;
 	f32 f22;
 	f32 f30;
 	f32 f21;
 	f32 ox;
-	f32 f23;
 	f32 nx;
 	f32 f28;
 	f32 f31;
@@ -169,11 +169,10 @@ void effPointGetDisp(CameraId camId, void* param) {
 	f26 = 0.5f;
 	f28 = 24.0f;
 	f24 = float_32_80420edc;
-	f23 = 48.0f;
+	f23 = float_48_80420ee4;
 	f21 = -f23 * f26;
 	f22 = -(float_362_80420ee0 + f20);
 	f31 = 352.0f;
-	f27 = f22 * f26;
 
 	for (i = 1; i >= 0; i--) {
 		s32 ofs = i * 4;
@@ -195,7 +194,7 @@ void effPointGetDisp(CameraId camId, void* param) {
 
 			for (j = 0; j < strlen(buf); j++) {
 			{
-				f32 t = f24 * (f32)j + f27;
+				f32 t = f24 * (f32)j + f22 * f26;
 				PSMTXTrans(mtxB8, ox + t, nx, 0.0f);
 			}
 				PSMTXConcat(mtx58, mtxB8, mtxB8);
@@ -254,3 +253,4 @@ void effPointGetDisp(CameraId camId, void* param) {
 const char str_80420ED8[] = "%d";
 const f32 float_32_80420edc = 32.0f;
 const f32 float_362_80420ee0 = 362.0f;
+const f32 float_48_80420ee4 = 48.0f;
