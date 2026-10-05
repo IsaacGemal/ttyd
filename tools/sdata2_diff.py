@@ -7,7 +7,9 @@ UNIT is the source path without src/ and .c (effect/eff_fire). Compares our obje
 (not by name: dtk names every stripped pool entry, so a name says nothing about how the original wrote it) and prints per
 section one verdict and the entries behind it:
 
-  IDENTICAL   same entries, same order
+  IDENTICAL   same entries, same order, same offsets and section size
+  LAYOUT      same entries in the same order, but at different offsets: a gap_/pad_ object is in the wrong place
+              (often one our source defines that the original only has as tail alignment), so the unit cannot link
   PAD         identical except zero bytes at the section tail (a size-only difference)
   ORDER       same multiset of values, different sequence (the first displaced entries and who emits them)
   CONTENT     values differ; the classes below say how
@@ -60,11 +62,17 @@ def entries_of(obj, sec):
     return ents
 
 
-def classify(target, ours):
-    """Pure comparison of two entry lists (dicts with key, name, users). Returns a dict with verdict and details."""
+def classify(target, ours, sizes=None):
+    """Pure comparison of two entry lists (dicts with key, name, users, optional addr). sizes: optional (target, ours)
+    section sizes. Returns a dict with verdict and details."""
     tk = [e["key"] for e in target]
     ok = [e["key"] for e in ours]
     if tk == ok:
+        moved = [i for i, (a, b) in enumerate(zip(target, ours)) if a.get("addr") != b.get("addr")]
+        if moved:  # a size-only difference at the tail is alignment the linker supplies (linked units show it too)
+            i = moved[0]
+            return dict(verdict="LAYOUT", sizes=sizes, first=i, target_addr=target[i].get("addr"),
+                        ours_addr=ours[i].get("addr"))
         return dict(verdict="IDENTICAL")
     if _strip_tail(tk) == _strip_tail(ok):
         return dict(verdict="PAD", tail=len(tk) - len(ok))
@@ -136,7 +144,10 @@ def _row(e):
 def report(sec, res):
     print(f"== {sec}: {res['verdict']}")
     v = res["verdict"]
-    if v == "PAD":
+    if v == "LAYOUT":
+        print(f"   same entries, but entry {res['first']} sits at {res['target_addr']:#x} in the target and "
+              f"{res['ours_addr']:#x} in ours: check the gap_/pad_ objects")
+    elif v == "PAD":
         print(f"   target is {res['tail']} bytes longer: zero bytes at the section tail")
     elif v == "ORDER":
         print(f"   first displaced entry {res['first']}: target {res['target']['value']} ({', '.join(res['target']['users'])}) "
@@ -169,7 +180,8 @@ def main():
             sys.exit("build failed:\n" + "\n".join(r.stdout.splitlines()[-10:]))
     try:
         tobj, ours = pp.Obj(pp.target_path), pp.Obj(pp.ours_path)
-        out = {sec: classify(entries_of(tobj, sec), entries_of(ours, sec)) for sec in SECTIONS}
+        out = {sec: classify(entries_of(tobj, sec), entries_of(ours, sec),
+                             (len(tobj.sec.get(sec, b"")), len(ours.sec.get(sec, b"")))) for sec in SECTIONS}
     finally:
         if restore:
             open(restore[0], "w").write(restore[1])
