@@ -491,6 +491,28 @@ When the instructions match but the stack slots, register allocation or scheduli
 - **s16 `psq_l`/`psq_st` with GQR5 in the target is the SDK's `OSs16tof32`/`OSf32tos16` after `OSInitFastCast()`,** never a cast (`libs/dolsdk2004/include/dolphin/os/OSFastCast.h`; `effFlameDisp` 55 to 96). The header's `__OSf32tos16` temporary is an `f32` so the inlined temps sit 4 bytes apart; the old `f32 v[4]` Vec padding is not needed. A target that writes GQR5 from a computed value (hitdrv) is inline asm and out of scope.
 - **A target compare chain `cmpwi 1; beq; bge; cmpwi 0; bge` on a value you computed with `& 1` is a `switch`,** not an if/else chain on the masked value (gor_03 slot).
 
+- **A bool materialised with `mfcr; extrwi; xori; cntlzw; srwi.` around a float compare is `!x`,** not `x == 0.0f`
+  (which branches directly): `(!dt ? eps : dt)` matched effCalcMayaAnimMatrix's zero-interval guard.
+- **`Mtx` locals sit on the stack in reverse declaration order** (the last declared at the lowest offset): read the
+  target's `addi r3, r1, off` per call and declare the matrices from the highest offset down (effdrv).
+- **mwccdbg's summary.txt can name the wrong original register.** Its ORIG column maps through the final object and
+  once reported "0 wrong" while three GPRs differed. Read the real colouring in `backend-19-after-regalloc.txt` and
+  give rasim the targets explicitly (`rasim.py DIR search LO HI r37=r9 r53=r10 ...`).
+- **A variable that must outrank the function's frontend temps goes in a `static inline` helper.** Inline-expansion
+  objects get vreg numbers above the frontend temps, which no declaration order can reach: effCalcMayaAnimMatrix's
+  `frame` in f0 and its GQR value in r9 matched only once the channel loop and the GQR write were inline helpers.
+- **Rodata `vec3_*`/`jumptable_*`/`dat_*` objects holding zeros where the code stores a computed value are the
+  compiler's templates for local initialisers.** Write the local, not the object: `(Vec){x, y - 4.0f, 0.0f}` (non-constant
+  compound literals compile in C mode; `Vec v = {x, ...}` does not), `const char* names[2] = {"a", "b"};`,
+  `GXColor cols[2] = {...};` inside the loop that re-copies them. Templates pool at parse time in source order, so
+  the unit's .rodata then falls into place (win_party: .rodata and .sdata2 byte-identical once the named copies went).
+- **The window draw functions take `Vec`/`GXColor` by value:** callers copy each argument into a fresh stack slot
+  (`winFontSet`, `winFontSetR/Edge/Label`, `winIconSet`, `winTexSet`). win_main.h declares pointers, which compiles to
+  the same callee, so call through a by-value cast at the call site (win_party's `winFontSetV`) instead of hand copies.
+- **Several stack slots initialised from one .sdata2 colour word are locals copied from one file-scope
+  `static const GXColor`,** not separate literal initialisers (those pool one template each) and not copies of one
+  local (copy propagation merges those into one slot).
+
 ## Partial functions
 
 A function you write or change that doesn't reach 100% needs a comment directly above it:
