@@ -20,9 +20,11 @@ extern GlobalWork* gp;
 #ifdef MUST_MATCH
 // .sbss2: the default .sbss2 is only used for compiler-generated pool templates.
 #pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_80422fe0;
 __declspec(section ".sdata") GXColor unk_80422fe4;
 #pragma section ".sdata" ".sbss"
 #else
+GXColor unk_80422fe0;
 GXColor unk_80422fe4;
 #endif
 extern GXColor dat_8041a4f0;
@@ -1997,24 +1999,113 @@ void msgWindow_Clear_Main(WindowEntry* window) {
 }
 
 
-// NONMATCHING (3.56%): 2 instructions differ, 422 missing, plus register differences.
+// NONMATCHING (99.31%): FPR colouring of the last two intplGetValue results (width in f2 vs f0) in the two fly-in cases.
 void msgWindow_Disp(CameraId camId, void* param) {
-	WindowEntry* window = param; //cast to correct type
+	WindowEntry* window = param;
 	CameraEntry* camera = camGetCurPtr();
-	s32 type;
+	BOOL drawn = FALSE;
+	Vec pos;
 
-	GXSetFog(GX_FOG_NONE, float_0_8041a514, float_0_8041a514, float_0_8041a514, float_0_8041a514, (GXColor){0, 0, 0, 0});
-	type = window->type;
+	GXSetFog(GX_FOG_NONE, float_0_8041a514, float_0_8041a514, float_0_8041a514, float_0_8041a514, unk_80422fe0);
 
-	switch (type) {
+	switch (window->type) {
 	case 0:
 	case 1:
 	case 6:
 	case 8:
 	case 9:
+		if (window->field_0x2C != 0) {
+		if (window->field_0x2C & 0x10) {
+			pos = window->anchor;
+		} else {
+			getScreenPoint(&window->anchor, &pos);
+		}
+		switch (window->type) {
+		case 0:
+		case 6:
+		case 8:
+		case 9: {
+			f32 px, py, h, w;
+
+			px = intplGetValue(0, window->alpha, 0xFF, pos.x, window->x + window->height * float_0p5_8041a534);
+			py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width * float_0p5_8041a534);
+			h = intplGetValue(0, window->alpha, 0xFF, float_10_8041a538, window->height);
+			w = intplGetValue(0, window->alpha, 0xFF, float_10_8041a538, window->width);
+			windowDispGX_Message(window->type, window->field_0x2C, (u8)window->alpha, px - h * float_0p5_8041a534, py + w * float_0p5_8041a534, h, w, pos.x, pos.y);
+			if (window->alpha == 0xFF) {
+				GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540)), camera->scissor[2], 100);
+				drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
+			}
+			break;
+		}
+		case 1: {
+			f32 px, py, h, w;
+			s32 top;
+
+			window->x = pos.x - window->height * float_0p5_8041a534;
+			if (window->field_0x2C & 8) {
+				window->y = pos.y - float_80_8041a548;
+			} else {
+				window->y = float_60_8041a54c + pos.y;
+			}
+			px = intplGetValue(0, window->alpha, 0xFF, pos.x, window->x + window->height * float_0p5_8041a534);
+			py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width * float_0p5_8041a534);
+			h = intplGetValue(0, window->alpha, 0xFF, float_10_8041a538, window->height);
+			w = intplGetValue(0, window->alpha, 0xFF, float_10_8041a538, window->width);
+			windowDispGX_Message(window->type, window->field_0x2C, (u8)window->alpha, px - h * float_0p5_8041a534, py + w * float_0p5_8041a534, h, w, pos.x, pos.y);
+			if (window->alpha == 0xFF) {
+				top = 0xF0 - ((s32)window->y - 10);
+				if (top < 0) {
+					top = 0;
+				}
+				if (top > 0x1E0) {
+					top = 0x1E0;
+				}
+				GXSetScissor(camera->scissor[0], top, camera->scissor[2], 0x7E);
+				msgDisp(window->userdata, (u8)window->alpha, float_28_8041a550 + window->x, window->y - float_6_8041a554);
+			}
+			break;
+		}
+		}
+		} else {
+			windowDispGX_Message(window->type, 0, (u8)window->alpha, window->x, window->y, window->height, window->width, float_0_8041a514, float_0_8041a514);
+			GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540) - float_8_8041a558), camera->scissor[2], 0x7E);
+			drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
+		}
+		break;
+	case 2:
+	case 4:
+	case 10:
+		windowDispGX_Kanban(window->type, (u8)window->alpha, window->x, window->y, window->height, window->width);
+		GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540) - float_2_8041a524), camera->scissor[2], 0x68);
+		drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
+		break;
+	case 7:
+		windowDispGX_Kanban(window->type, (u8)window->alpha, window->x, window->y, window->height, window->width);
+		GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540) - float_8_8041a558), camera->scissor[2], 0x7E);
+		drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
+		break;
+	case 3:
+		windowDispGX_System(window->type, (u8)window->alpha, window->x, window->y, window->height, window->width);
+		drawn = (u32)(window->width - float_50_8041a55c);
+		GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540) - float_8_8041a558), camera->scissor[2], drawn);
+		drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
+		break;
+	case 11:
+		drawn = (u32)(window->width - float_50_8041a55c);
+		GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540) - float_8_8041a558), camera->scissor[2], drawn);
+		drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
 		break;
 	}
 
+	GXSetScissor(camera->scissor[0], camera->scissor[1], camera->scissor[2], camera->scissor[3]);
+	if (drawn) {
+		if (active == 0) {
+			active = 1;
+		}
+		animPoseMain(msgw->poseId);
+		animPoseDraw(msgw->poseId, window->x + window->height - float_52_8041a560, float_31_8041a564 + (window->y - window->width), float_0_8041a514, float_180_8041a568, float_5_8041a56c, 2);
+	}
 }
 
 
