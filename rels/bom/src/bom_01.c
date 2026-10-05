@@ -253,8 +253,6 @@ __declspec(section ".rodata") const Vec vec3_bom_000064d8 = {0.0f, 0.0f, 0.0f};
 
 static ExtTableEntry ext_data[31] = {0};
 
-// TODO: write ext_main (static, 0x1494 bytes) here:
-// its asm is in build/G8MJ01/bom/asm/bom_01.s; this is where the original has it, just before the first script that uses it
 
 extern const f32 float_6p2832_bom_00007060;
 extern const f32 float_0p00761_bom_00007068;
@@ -270,6 +268,308 @@ extern const f32 float_500_bom_000070e8;
 extern const f32 float_1_bom_00006ffc;
 extern const f32 zero_bom_00007004;
 extern u32 lp[1];
+
+extern const f32 float_0p1_bom_00007008;
+extern const f32 float_0p5_bom_0000700c;
+extern const f32 float_1000_bom_0000705c;
+extern const f32 float_100_bom_00007000;
+extern const f32 float_10_bom_00007010;
+extern const f32 float_150_bom_000070b0;
+extern const f32 float_180_bom_000070c8;
+extern const f32 float_20_bom_000070d8;
+extern const f32 float_280_bom_000070a4;
+extern const f32 float_2_bom_0000704c;
+extern const f32 float_30_bom_000070b4;
+extern const f32 float_3_bom_000070a8;
+extern const f32 float_50_bom_000070b8;
+extern const f32 float_60_bom_000070dc;
+extern const f32 float_70_bom_000070c0;
+extern const f32 float_deg2rad_bom_000070d4;
+extern const f32 float_neg1000_bom_000070cc;
+extern const f32 float_neg20_bom_000070d0;
+extern const char str_00000DDC[];
+extern const f32 float_350_bom_000070c4;
+extern const char str_00000E58[];
+// Inline helpers defined later in the file (ext_main is emitted before them).
+static inline Vec bomVec3(f32 x, f32 y, f32 z, const Vec* base);
+static inline Vec bomVec3v(f32 x, f32 y, f32 z, const Vec* base);
+static inline f32 bomSinApprox(f32 angle);
+static inline f32 bomCosApprox(f32 angle);
+
+// extJump(): the inlined body of jump(), taking the SFX name as an argument so that the
+// ext_main copies use their cached local string pointer.
+static inline void extJump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q, const char* sfx) {
+PoseData* pd = ((PoseRoot*)lp[0])->data;
+ExtPose* ep = &extGetPosePtr()[index];
+Vec pos;
+Vec pos2;
+f32 d;
+f32 dy;
+
+pos = bomVec3(x, y, z, &vec3_bom_0000649c);
+pd->states[index].field_4 = pos;
+pd->states[index].field_10 = p;
+pd->states[index].field_14 = q;
+dy = y - ep->matrix[0][1][3];
+d = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
+angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
+pd->states[index].field_18 = d / pd->states[index].field_10;
+{
+    f32 m = pd->states[index].field_14 * (f32)pd->states[index].field_18;
+
+    pd->states[index].field_1C = m * float_0p5_bom_0000700c + dy / (f32)pd->states[index].field_18;
+}
+pd->states[index].field_1 = a;
+pd->states[index].field_0 = 100;
+ep->field_0x4 = angleABf(x, z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
+if (index % 20 == 0 && !(pd->flags & 1)) {
+    pos2 = bomVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3],
+                   &vec3_bom_000064a8);
+
+    psndSFXOn_3D(sfx, &pos2);
+}
+}
+
+#ifdef MUST_MATCH
+// Volatile base read keeps the per-iteration Vec load that retail has; without it MWCC hoists
+// the base word into the prologue and the frame/saved set no longer match (see NONMATCHING).
+static inline Vec bomVec3v(f32 x, f32 y, f32 z, const Vec* base) {
+    Vec v = *(volatile const Vec*)base;
+
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+#else
+static inline Vec bomVec3v(f32 x, f32 y, f32 z, const Vec* base) {
+    return bomVec3(x, y, z, base);
+}
+#endif
+
+// opt_lifetimes off: the default lifetime pass colours the prologue GPRs and the polynomial FPRs further from
+// retail (91.26% against 92.60% with it off).
+#pragma opt_lifetimes off
+
+// EXTCOS/EXTSIN expand the same polynomials as bomCosApprox/bomSinApprox but textually; the
+// local declaration order is what reproduces retail's coefficient colouring.
+#define EXTCOS(dst, ang) do { \
+    f32 _ca = (ang), _cv = float_0p03705_bom_0000707c, _cone = float_1_bom_00006ffc, \
+         _cb = float_0p4967_bom_00007080, _cu; \
+    if (_ca <= float_3p1416_bom_00007070) { \
+        if (_ca <= float_1p5708_bom_00007074) { \
+            _cu = _ca * _ca; _cv = _cv * _cu - _cb; _cv = _cv * _cu + _cone; \
+        } else { \
+            _cu = float_1p5708_bom_00007074 - (_ca - float_1p5708_bom_00007074); \
+            _cu = _cu * _cu; _cv = _cv * _cu - _cb; _cv = _cv * _cu + _cone; _cv = -_cv; \
+        } \
+    } else if (_ca < float_4p7124_bom_00007078) { \
+        _cu = _ca - float_3p1416_bom_00007070; _cu = _cu * _cu; \
+        _cv = _cv * _cu - _cb; _cv = _cv * _cu + _cone; _cv = -_cv; \
+    } else { \
+        _cu = float_1p5708_bom_00007074 - (_ca - float_4p7124_bom_00007078); \
+        _cu = _cu * _cu; _cv = _cv * _cu - _cb; _cv = _cv * _cu + _cone; \
+    } \
+    (dst) = _cv; \
+} while (0)
+#define EXTSIN(dst, ang) do { \
+    f32 _sa = (ang), _sone = float_1_bom_00006ffc, _sv = float_0p00761_bom_00007068, \
+         _sb = float_0p16605_bom_0000706c, _su, _st; \
+    if (_sa <= float_3p1416_bom_00007070) { \
+        if (_sa <= float_1p5708_bom_00007074) { \
+            _su = _sa * _sa; _sv = _sv * _su - _sb; _sv = _sv * _su + _sone; _sv = _sv * _sa; \
+        } else { \
+            _st = float_1p5708_bom_00007074 - (_sa - float_1p5708_bom_00007074); \
+            _su = _st * _st; _sv = _sv * _su - _sb; _sv = _sv * _su + _sone; _sv = _sv * _st; \
+        } \
+    } else if (_sa < float_4p7124_bom_00007078) { \
+        _st = _sa - float_3p1416_bom_00007070; _su = _st * _st; \
+        _sv = _sv * _su - _sb; _sv = _sv * _su + _sone; _sv = _sv * _st; _sv = -_sv; \
+    } else { \
+        _st = float_1p5708_bom_00007074 - (_sa - float_4p7124_bom_00007078); \
+        _su = _st * _st; _sv = _sv * _su - _sb; _sv = _sv * _su + _sone; _sv = _sv * _st; _sv = -_sv; \
+    } \
+    (dst) = _sv; \
+} while (0)
+// The sin/cos polynomials are expanded by the EXTCOS/EXTSIN macros above rather than called
+// through bomSinApprox/bomCosApprox: same instructions, but the inlined form colours the
+// seed/numerator/denominator FPRs as retail while the static-inline helpers do not. Still
+// differs: the polynomial b/one constants in f5/f3 instead of f3/f2 (the 4th rand() result
+// takes f1 instead of f2), the extJump/inline Vec temps at 0x44/0x20/0x5c(r1) instead of
+// 0x5c/0x44/0x8(r1), and two extra `mr`s in the prologue string setup.
+// NONMATCHING (92.60%): every call and immediate matches and the constants were checked by value; the frame is
+// 0x230 (retail 0x220), and register colouring, stack slots and the hoisting of the named float constants differ:
+// the unit's .rodata still defines its floats as named objects, not the literals the original pools (the
+// literal form reaches 96.56% but adds second copies to .rodata).
+static void ext_main(void) {
+    const char *sfxDDC, *sfxDDC2, *sfxDDC3, *sfxFall;
+    s32 i;
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    ExtPose* pose = extGetPosePtr();
+    sfxDDC = str_00000DDC;
+    sfxDDC2 = str_00000DDC;
+    sfxDDC3 = str_00000DDC;
+    sfxFall = str_00000E58;
+
+    for (i = 0; i < *(s32*)((u8*)pd + 0x4); i++, pose++) {  // 0x4 of PoseData is the pose count
+        Vec zero1 = *(volatile const Vec*)&vec3_bom_000064b4;
+        Vec pos = bomVec3v(pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3],
+                           &vec3_bom_000064c0);
+        Vec zero2 = *(volatile const Vec*)&vec3_bom_000064cc;
+
+        switch ((s8)pd->states[i].field_0) {
+        case 0:
+            if (PSVECDistance(&zero1, &pos) > float_280_bom_000070a4) {
+                Vec dir;
+
+                PSVECSubtract(&zero1, &pos, &dir);
+                PSVECNormalize(&dir, &dir);
+                PSVECScale(&dir, &zero2, float_3_bom_000070a8);
+                PSVECAdd(&pos, &zero2, &pos);
+                pose->matrix[0][0][3] = pos.x;
+                pose->matrix[0][1][3] = pos.y;
+                pose->matrix[0][2][3] = pos.z;
+                pose->field_0x4 = angleABf(zero_bom_00007004, zero_bom_00007004, pos.x, pos.z);
+            } else {
+                pd->states[i].field_0++;
+            }
+            break;
+        case 1: {
+            f32 x;
+            f32 z;
+            f32 p;
+            f32 q;
+            f32 radius;
+            f32 angle;
+
+            angle = (f32)rand() * float_6p2832_bom_00007060 / float_32767_bom_000070ac;
+            radius = (f32)rand() * float_30_bom_000070b4 / float_32767_bom_000070ac + float_150_bom_000070b0;
+            q = (f32)rand() * float_0p1_bom_00007008 / float_32767_bom_000070ac + float_0p1_bom_00007008;
+            p = (f32)rand() / float_32767_bom_000070ac + float_3_bom_000070a8;
+
+            EXTCOS(z, angle);
+            z = radius * -z;
+            EXTSIN(x, angle);
+            x = radius * x;
+
+            extJump(i, 2, x, float_150_bom_000070b0, z, p, q, sfxDDC);
+            break;
+        }
+        case 2: {
+            f32 angle = (f32)rand() * float_6p2832_bom_00007060 / float_32767_bom_000070ac;
+            f32 radius =
+                (f32)rand() * float_30_bom_000070b4 / float_32767_bom_000070ac + float_50_bom_000070b8;
+            f32 q = (f32)rand() * float_0p1_bom_00007008 / float_32767_bom_000070ac + float_0p1_bom_00007008;
+            f32 p = (f32)rand() / float_32767_bom_000070ac + float_3_bom_000070a8;
+            f32 z;
+            f32 x;
+
+            EXTCOS(z, angle);
+            z = radius * -z;
+            EXTSIN(x, angle);
+            x = radius * x;
+
+            extJump(i, 3, x, float_400_bom_000070bc, z, p, q, sfxDDC2);
+            break;
+        }
+        case 3: {
+            f32 angle = (f32)rand() * float_6p2832_bom_00007060 / float_32767_bom_000070ac;
+            f32 radius = (f32)rand() * float_70_bom_000070c0 / float_32767_bom_000070ac;
+            f32 cosv;
+            f32 sinv;
+            f32 z;
+            f32 x;
+
+            const f32 cp = float_3_bom_000070a8;
+            const f32 cq = float_0p1_bom_00007008;
+            rand();
+            rand();
+            EXTCOS(cosv, angle);
+            z = radius * -cosv;
+            EXTSIN(sinv, angle);
+            x = radius * sinv + (float_100_bom_00007000 + (f32)(i % 100));
+            extJump(i, 4, x, (f32)(i % 150) + float_350_bom_000070c4, z, cp, cq, sfxDDC3);
+            break;
+        }
+        case 4:
+            pd->states[i].field_0++;
+            break;
+        case 5:
+            break;
+        case 0x64: {
+            f32 angle;
+            f32 rad;
+            f32 sinv;
+            f32 cosv;
+
+            pose->matrix[0][1][3] += pd->states[i].field_1C;
+            pd->states[i].field_1C -= pd->states[i].field_14;
+            angle = angleABf(pose->matrix[0][0][3], pose->matrix[0][2][3], pd->states[i].field_4.x,
+                             pd->states[i].field_4.z);
+            rad = float_3p1416_bom_00007070 * angle / float_180_bom_000070c8;
+            EXTSIN(sinv, rad);
+            pose->matrix[0][0][3] += pd->states[i].field_10 * sinv;
+            EXTCOS(cosv, rad);
+            pose->matrix[0][2][3] += pd->states[i].field_10 * -cosv;
+            if (--pd->states[i].field_18 < 0) {
+                pose->matrix[0][0][3] = pd->states[i].field_4.x;
+                pose->matrix[0][1][3] = pd->states[i].field_4.y;
+                pose->matrix[0][2][3] = pd->states[i].field_4.z;
+                pd->states[i].field_0 = pd->states[i].field_1;
+            }
+            break;
+        }
+        case 0x7f:
+            if (pose->matrix[0][1][3] > float_neg1000_bom_000070cc) {
+                Mtx a;
+                Mtx b;
+                Mtx c;
+                f32 v;
+                Vec casePos2;
+
+                pose->matrix[0][1][3] -= float_2_bom_0000704c;
+                pose->flags &= ~2u;
+                PSMTXTrans(a, zero_bom_00007004, float_neg20_bom_000070d0, zero_bom_00007004);
+                v = sin((f32)(i + gp->retraceCount) / float_100_bom_00007000);
+                PSMTXRotRad(b, 'z', float_deg2rad_bom_000070d4 * (float_10_bom_00007010 * v));
+                PSMTXTrans(c, zero_bom_00007004, float_20_bom_000070d8, zero_bom_00007004);
+                PSMTXConcat(a, b, b);
+                PSMTXConcat(b, c, c);
+                PSMTXTrans(a, pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]);
+                PSMTXConcat(a, c, pose->matrix[0]);
+                if (irand(100) == 0) {
+                    casePos2 = bomVec3(pose->matrix[0][0][3], pose->matrix[0][1][3],
+                                       pose->matrix[0][2][3], &vec3_bom_000064d8);
+
+                    psndSFXOn_3D(sfxFall, &casePos2);
+                }
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
+    {
+        PoseData* pd2 = ((PoseRoot*)lp[0])->data;
+        ExtPose* pose2 = extGetPosePtr();
+        s32 i2;
+
+        for (i2 = 0; i2 < *(s32*)((u8*)pd2 + 0x4); i2++, pose2++) {  // 0x4 of PoseData is the pose count
+            PoseEntry* e = &pd2->entries[pd2->states[i2].field_20];
+            f32 t = (f32)((gp->renderTime - pd2->states[i2].time) / (OS_TIMER_CLOCK / 1000));
+
+            t = float_60_bom_000070dc * t / float_1000_bom_0000705c / e->field_8;
+            if (t >= float_1_bom_00006ffc) {
+                pd2->states[i2].time = gp->renderTime;
+                t = zero_bom_00007004;
+            }
+            pose2->field_0x10 = e->field_C + (s32)((e->field_10 - 1) * t);
+        }
+    }
+}
+
+#pragma opt_lifetimes reset
 
 // The instruction sequence and frame layout (0x120) match. Declaring `i`/`j` first
 // reproduces the outer-loop integer colouring and re-deriving `pd` inside the entry-match
