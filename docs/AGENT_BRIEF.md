@@ -62,7 +62,9 @@ Each of these compiled to the right bytes, or looked close enough, and was still
 7. **Match-only tricks left unmarked.** Code that exists only to reproduce the original bytes (a fake cast or
    temporary, an odd expression order, stack padding) goes inside `#ifdef MUST_MATCH`, with the natural form
    under `#else` where there is one; use `PAD_STACK(n)` from `matching.h` for padding. Unmarked tricks look like
-   real logic to the next reader.
+   real logic to the next reader. Anything defined under MUST_MATCH and used outside it (a helper, a macro, a
+   local) needs an `#else` form too, even if that is a `#define` to the plain version: the merge compiles the
+   file without MUST_MATCH, and `check.py --final` now runs that compile too (a `NATURAL` line).
 8. **Pragmas that aren't needed.** Every `#pragma` needs a one-line reason, and must be needed: if the function
    still matches without it, remove it. Never write `#pragma scheduling <cpu number>` (`601`, `801`, ...): it
    makes this compiler loop forever, and check.py refuses it. `scheduling off` / `reset` are fine.

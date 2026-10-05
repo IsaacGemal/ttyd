@@ -98,6 +98,25 @@ else:
 u = next((x for x in report["units"] if x["name"] == unit), None)
 if u is None:
     sys.exit(f"unit {unit} not in report")
+def natural_problem(target):
+    """The merge also compiles the file without -DMUST_MATCH (tools/ci.py's [natural] step): the same command, into a
+    temporary directory. Returns the compiler's last lines if that fails, else None."""
+    import tempfile
+    if not target:
+        return None
+    cmds = subprocess.run(["ninja", "-t", "commands", target], capture_output=True, text=True).stdout.strip().splitlines()
+    if not cmds:
+        return None
+    with tempfile.TemporaryDirectory() as tmp:
+        cmd = cmds[-1].split(" && ")[0].replace(" -DMUST_MATCH", "")
+        cmd = cmd.replace(" -o " + target.rsplit("/", 1)[0], " -o " + tmp).replace(" -MMD", "")
+        r = subprocess.run(cmd, shell=True, text=True, capture_output=True)
+    if r.returncode == 0:
+        return None
+    lines = [l for l in (r.stdout + r.stderr).splitlines() if l.strip() and not l.startswith(("sjiswrap", "User break"))]
+    return "\n".join(lines[-6:])
+
+
 fns = {f["name"]: f for f in u.get("functions", [])}
 if FINAL:
     # The same checks the merge runs (tools/lint_patch.py), against the clean copy of the file this workspace was
@@ -122,6 +141,11 @@ if FINAL:
     done = sum(1 for f in fns if f.get("fuzzy_match_percent", 0) >= 100)
     print(f"{unit}: builds; {done}/{len(fns)} functions at 100%.")
     todo = [l for l in lint.stdout.splitlines() if l.strip()]
+    nat = natural_problem(target)
+    if nat:
+        todo.append("NATURAL  the file doesn't compile without MUST_MATCH, which the merge requires: everything defined "
+                    "under `#ifdef MUST_MATCH` and used outside it needs an `#else` form (the plain code, or a #define to "
+                    "it). The compiler says:\n      " + nat.replace("\n", "\n      "))
     if linked is not None:
         print(linked)
         if not linked.startswith("LINKED"):
