@@ -34,6 +34,11 @@
 #include "mario/mario_motion.h"
 #include "battle/battle.h"
 #include "driver/seqdrv.h"
+#include "mario/mario_pouch.h"
+#include "motion/mot_hammer.h"
+#include "motion/mot_jabara.h"
+#include "party/party_nokonoko.h"
+#include "party/party_vivian.h"
 
 // This file's radians-to-degrees factor is 180/3.141592 (0x42652EE4), not the SDK's 57.29577951f.
 #define NPC_RAD2DEG(r) ((r) * (180.0f / 3.141592f))
@@ -1770,6 +1775,563 @@ void fbatHitCheckAll(void) {
     fbatHitCheck(0x13F1, 0);
 }
 
+// What fbatHitCheck reports through its second argument (fbatEncountCheck reads it at fbatData + 0x10).
+typedef struct FbatHitInfo {
+    s32 kind;           // 0x0, the attack (the fbatSetAttackAnnounce code)
+    s32 field_0x4;      // 0x4, the npc's field_2F8, for a stomp that becomes the enemy's first strike
+    f32 dist;           // 0x8, to the nearest npc hit so far
+    u32 flags;          // 0xC, 1: only a test (no attack announce)
+} FbatHitInfo;
+
+extern const f32 float_11_80419bbc;
+extern const f32 float_12_80419bc0;
+extern const f32 float_15_80419bc4;
+extern const f32 float_1p5_80419bcc;
+extern const f32 float_30_80419bd4;
+
+// Mario can attack a field npc: not in a cutscene, menu or talk, not riding Vivian's shadow or a pipe.
+static inline BOOL fbatAttackEnabled(NpcEntry* npc) {
+    MarioWork* mario = marioGetPtr();
+    NpcWork* npcWork = npcGetWorkPtrInline();
+
+    if (mario->flags & 0x82000000) {
+        return FALSE;
+    }
+    if (!(npcWork->flags & 1) && (mario->flags & 0xA)) {
+        return FALSE;
+    }
+    if ((s32)gp->field_0x164 != 0) {
+        return FALSE;
+    }
+    if (seqGetSeq() != 2) {
+        return FALSE;
+    }
+    if (mario->currMotionId == 0x19) {
+        return FALSE;
+    }
+    if (vivianGetStatus() != 0) {
+        return FALSE;
+    }
+    if (mario->currMotionId == 0x1F || mario->currMotionId == 0x20) {
+        return FALSE;
+    }
+    if (*(u16*)&npc->wFbatHitCheckRelated != 0) {
+        return FALSE;
+    }
+    return TRUE;
+}
+
+// The hammer's elevation per swing frame, in degrees.
+typedef struct FbatAngleTable {
+    s32 deg[11];
+} FbatAngleTable;
+
+// The npc's own event has reached state 5.
+static inline BOOL fbatNpcEventDone(NpcEntry* npc) {
+    if (evtGetPtrID(npc->regularEvtId) != NULL) {
+        return evtGetPtrID(npc->regularEvtId)->wNpcEventType == 5;
+    }
+    return FALSE;
+}
+
+// NONMATCHING (98.38%): every call, branch and constant matches; GPR/FPR colouring differs, the two spin-hammer
+// kind stores are merged into one (retail stores in each arm), and the hammer's angle table is copied through a
+// second base register.
+// Finds the nearest field npc Mario's attacks hit, for each kind of attack `flags` enables in turn: jumps
+// (0x30), the hammer (0x40), the spin hammer (0x80), Koops' shell (0x100) and partner 3 (0x200). Flag 0x2000
+// only tests (no attack announce); 0x1000 looks at npcs with flag 8 instead of the others.
+void* fbatHitCheck(s32 flags, s32 out) {
+    NpcEntry* hit = NULL;
+    NpcEntry* npc = NULL;
+    NpcWork* npcWork = npcGetWorkPtrInline();
+    MarioWork* mario;
+    FbatHitInfo info;
+    u32 dryRun;
+    s32 count;
+    s32 i;
+    f32 dist;
+
+    mario = marioGetPtr();
+    info.dist = float_1000_80419bc8;
+    info.kind = 0;
+    info.flags &= ~1;
+    dryRun = flags & 0x2000;
+    if (dryRun) {
+        info.flags |= 1;
+    }
+
+    // jumps: the npc under Mario's feet
+    if (flags & 0x30) {
+        u32 stomp = flags & 0x10;
+
+        count = npcWork->total; // retail reads the total here, and only here
+        npc = npcWork->entries;
+        if (!(stomp && mario->unk4C > 0) && fbatAttackEnabled(npc)) {
+            u32 flag8 = flags & 0x1000;
+            u32 jump = flags & 0x20;
+
+            for (i = 0; i < count; i++, npc++) {
+                if (npc == NULL || !(npc->flags & 2)) {
+                    continue;
+                }
+                if (flag8) {
+                    if (!(npc->flags & 8)) {
+                        continue;
+                    }
+                } else if (npc->flags & 8) {
+                    continue;
+                }
+                if (dryRun && !(npc->reactionFlags & 1)) {
+                    continue;
+                }
+                if ((npc->flags & 0x20) || (npc->jumpFlags & 4) || (npc->flags & 0x08000000)) {
+                    continue;
+                }
+                if (mario->position.y >= npc->position.y + npc->height) {
+                    continue;
+                }
+                if (mario->position.y + mario->wPlayerCollisionBox.y <= npc->position.y) {
+                    continue;
+                }
+                {
+                    f32 dz = mario->position.z - npc->position.z;
+                    f32 dx = mario->position.x - npc->position.x;
+
+                    dist = sqrtf(dx * dx + dz * dz);
+                }
+                if (dist > float_0p5_80419ba0 * (mario->wPlayerCollisionBox.x + npc->width)) {
+                    continue;
+                }
+                if (dist >= info.dist) {
+                    continue;
+                }
+                if (stomp && !(npc->jumpFlags & 0x10000) && mario->unk4C <= 0) {
+                    if (npc->field_2F8 == 0 || fbatNpcEventDone(npc)) {
+                        if (npc->flags & 0x20000000) {
+                            continue;
+                        }
+                        info.kind = 0x10000;
+                        hit = npc;
+                        info.dist = dist;
+                        if (!dryRun) {
+                            fbatSetAttackAnnounce(info.kind);
+                        }
+                    } else if (pouchEquipCheckBadge(0x140)) {
+                        // Spike Shield: the stomp lands anyway
+                        info.kind = 0x10000;
+                        hit = npc;
+                        info.dist = dist;
+                        if (!dryRun) {
+                            fbatSetAttackAnnounce(info.kind);
+                        }
+                    } else {
+                        // a spiked enemy: it strikes first
+                        info.kind = 0x10000000;
+                        hit = npc;
+                        info.dist = dist;
+                        if (!dryRun) {
+                            fbatSetAttackAnnounce(info.kind);
+                        }
+                        info.field_0x4 = npc->field_2F8;
+                    }
+                }
+                if (!jump) {
+                    continue;
+                }
+                if ((mario->flags & 0x20000) && !(mario->flags & 0x10000) && !(npc->flags & 0x20000000)) {
+                    hit = npc;
+                    info.dist = dist;
+                    if (marioGetJabaraState() == 6) {
+                        info.kind = 0x20000;
+                        if (!dryRun) {
+                            fbatSetAttackAnnounce(info.kind);
+                        }
+                    } else if (mario->currMotionId == 0x10) {
+                        info.kind = 0x40000;
+                        if (!dryRun) {
+                            fbatSetAttackAnnounce(info.kind);
+                        }
+                    } else {
+                        info.kind = 0x20000;
+                        if (!dryRun) {
+                            fbatSetAttackAnnounce(info.kind);
+                        }
+                    }
+                } else if (marioGetJabaraState() == 6 && !(npc->flags & 0x20000000)) {
+                    hit = npc;
+                    info.dist = dist;
+                    info.kind = 0x20000;
+                    if (!dryRun) {
+                        fbatSetAttackAnnounce(info.kind);
+                    }
+                }
+            }
+        }
+    }
+
+    // the hammer
+    if (flags & 0x40) {
+        while (hit == NULL) {
+            if ((flags & 0x10) && mario->unk4C > 0) {
+                break;
+            }
+            if (!fbatAttackEnabled(npc)) {
+                break;
+            }
+            if (flags & 1) {
+                f32 radius;
+                f32 angle;
+                f32 frame;
+                f32 s, c, s2, c2;
+                f32 x, y, z;
+                s32 frameNo;
+                u32 flag8;
+                MarioWork* pose;
+
+                if (mario->currMotionId != 0x12) {
+                    break;
+                }
+                radius = float_1p5_80419bcc * mario->wPlayerCollisionBox.x;
+                angle = reviseAngle((mario->unk1A8 - float_90_80419bd0) + camGetPtr(CAMERA_3D)->viewYaw);
+                pose = marioGetPtr();
+                animPoseGetAnimPosePtr(pose->paperAnimGroupId[marioAnimeId()]);
+                frameNo = pose->multiTimer;
+                if (frameNo > 20) {
+                    frameNo = 10;
+                }
+                frame = frameNo;
+                pose = marioGetPtr();
+                {
+#ifdef MUST_MATCH
+                    // The original has one copy of this table (dat_802c2f9c), shared with
+                    // _npcHitCheckHammerAllMotion's (whose initialiser is where it pools); read it through the
+                    // unit's rodata base.
+                    FbatAngleTable frameAngle = *(FbatAngleTable*)((u8*)vec3_802c2f78 + 0x24); // dat_802c2f9c
+#else
+                    FbatAngleTable frameAngle = {{0, 0, 0, 0, 45, 60, 90, 100, 101, 101, 101}};
+#endif
+
+                    if (frame < float_0_80419b9c) {
+                        frame = float_0_80419b9c;
+                    }
+                    if (frame >= float_11_80419bbc) {
+                        frame = float_10_80419bb8;
+                    }
+                    sincosf(&s, &c, angle);
+                    sincosf(&s2, &c2, frameAngle.deg[(s32)frame]);
+                }
+                x = s2 * (s * radius) + pose->position.x;
+                z = s2 * (c * radius) + pose->position.z;
+                y = radius * c2 + pose->position.y;
+                flag8 = flags & 0x1000;
+                npc = npcWork->entries;
+                for (i = 0; i < count; i++, npc++) {
+                    if (npc == NULL || !(npc->flags & 2)) {
+                        continue;
+                    }
+                    if (flag8) {
+                        if (!(npc->flags & 8)) {
+                            continue;
+                        }
+                    } else if (npc->flags & 8) {
+                        continue;
+                    }
+                    if (dryRun && !(npc->reactionFlags & 2)) {
+                        continue;
+                    }
+                    if ((npc->flags & 0x20000000) || (npc->flags & 0x20) || (npc->flags & 0x08000000)
+                        || (npc->jumpFlags & 4)) {
+                        continue;
+                    }
+                    if (_npcHitCheckSphere(npc, &dist, x, y, z, float_12_80419bc0) == NULL || dist >= info.dist) {
+                        continue;
+                    }
+                    info.dist = dist;
+                    hit = npc;
+                    info.kind = 0x100000;
+                    if (!dryRun) {
+                        fbatSetAttackAnnounce(info.kind);
+                    }
+                    break;
+                }
+            } else {
+                f32 radius = float_1p5_80419bcc * mario->wPlayerCollisionBox.x;
+                f32 angle = reviseAngle((mario->unk1A8 - float_90_80419bd0) + camGetPtr(CAMERA_3D)->viewYaw);
+                u32 flag8 = flags & 0x1000;
+
+                npc = npcWork->entries;
+                for (i = 0; i < count; i++, npc++) {
+                    if (npc == NULL || !(npc->flags & 2)) {
+                        continue;
+                    }
+                    if (flag8) {
+                        if (!(npc->flags & 8)) {
+                            continue;
+                        }
+                    } else if (npc->flags & 8) {
+                        continue;
+                    }
+                    if (dryRun && !(npc->reactionFlags & 2)) {
+                        continue;
+                    }
+                    if ((npc->flags & 0x20000000) || (npc->flags & 0x20) || (npc->jumpFlags & 4)
+                        || (npc->flags & 0x08000000)) {
+                        continue;
+                    }
+                    if (_npcHitCheckHammerAllMotion(npc, &dist, radius, angle) == NULL || dist >= info.dist) {
+                        continue;
+                    }
+                    info.dist = dist;
+                    hit = npc;
+                    info.kind = 0x100000;
+                    if (!dryRun) {
+                        fbatSetAttackAnnounce(info.kind);
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
+    // the spin hammer
+    if (flags & 0x80) {
+        while (hit == NULL) {
+            if ((flags & 0x10) && mario->unk4C > 0) {
+                break;
+            }
+            if (!fbatAttackEnabled(npc)) {
+                break;
+            }
+            if (flags & 1) {
+                f32 angle;
+                f32 radius;
+                f32 s, c;
+                f32 x, y, z;
+                u32 flag8;
+                MarioWork* m;
+
+                if (mario->currMotionId != 0x13) {
+                    break;
+                }
+                angle = marioGetAngleKaitenHammer();
+                if (angle < float_0_80419b9c) {
+                    break;
+                }
+                radius = float_1p5_80419bcc * mario->wPlayerCollisionBox.x;
+                m = marioGetPtr();
+                sincosf(&s, &c, angle);
+                flag8 = flags & 0x1000;
+                x = s * radius + m->position.x;
+                z = c * radius + m->position.z;
+                y = float_15_80419bc4 + m->position.y;
+                npc = npcWork->entries;
+                for (i = 0; i < count; i++, npc++) {
+                    if (npc == NULL || !(npc->flags & 2)) {
+                        continue;
+                    }
+                    if (flag8) {
+                        if (!(npc->flags & 8)) {
+                            continue;
+                        }
+                    } else if (npc->flags & 8) {
+                        continue;
+                    }
+                    if (dryRun && !(npc->reactionFlags & 2)) {
+                        continue;
+                    }
+                    if ((npc->flags & 0x20000000) || (npc->flags & 0x20) || (npc->jumpFlags & 4)
+                        || (npc->flags & 0x08000000)) {
+                        continue;
+                    }
+                    if (_npcHitCheckSphere(npc, &dist, x, y, z, float_12_80419bc0) == NULL || dist >= info.dist) {
+                        continue;
+                    }
+                    info.dist = dist;
+                    hit = npc;
+                    if (pouchGetHammerLv() < 3) {
+                        info.kind = 0x200000;
+                    } else {
+                        info.kind = 0x400000;
+                    }
+                    if (!dryRun) {
+                        fbatSetAttackAnnounce(info.kind);
+                    }
+                    break;
+                }
+            } else {
+                f32 radius = float_1p5_80419bcc * mario->wPlayerCollisionBox.x;
+                f32 angle = reviseAngle((mario->unk1A8 - float_90_80419bd0) + camGetPtr(CAMERA_3D)->viewYaw);
+                u32 flag8 = flags & 0x1000;
+
+                npc = npcWork->entries;
+                for (i = 0; i < count; i++, npc++) {
+                    if (npc == NULL || !(npc->flags & 2)) {
+                        continue;
+                    }
+                    if (flag8) {
+                        if (!(npc->flags & 8)) {
+                            continue;
+                        }
+                    } else if (npc->flags & 8) {
+                        continue;
+                    }
+                    if (dryRun && !(npc->reactionFlags & 2)) {
+                        continue;
+                    }
+                    if ((npc->flags & 0x20000000) || (npc->flags & 0x20) || (npc->jumpFlags & 4)
+                        || (npc->flags & 0x08000000)) {
+                        continue;
+                    }
+                    if (_npcHitCheckHammerAllMotion(npc, &dist, radius, angle) == NULL || dist >= info.dist) {
+                        continue;
+                    }
+                    info.dist = dist;
+                    hit = npc;
+                    if (pouchGetHammerLv() < 3) {
+                        info.kind = 0x200000;
+                    } else {
+                        info.kind = 0x400000;
+                    }
+                    if (!dryRun) {
+                        fbatSetAttackAnnounce(info.kind);
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
+    // Koops' shell
+    if (flags & 0x100) {
+        PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+        while (hit == NULL) {
+            u32 attack;
+
+            if ((flags & 0x10) && mario->unk4C > 0) {
+                break;
+            }
+            if (!fbatAttackEnabled(npc)) {
+                break;
+            }
+            attack = flags & 1;
+            if (attack) {
+                s32 status;
+
+                if (party == NULL || party->field_33 != 2 || !(party->flags & 0x100)) {
+                    break;
+                }
+                status = nokonokoGetStatus(party);
+                if (status < 2 || status > 5) {
+                    break;
+                }
+            }
+            if (attack) {
+                f32 radius = float_0p5_80419ba0 * party->field_F4;
+                f32 y = float_0p5_80419ba0 * *(f32*)((u8*)party + 0xF0) + party->position.y; // 0xF0: the shell's height
+                f32 x = party->position.x;
+                f32 z = party->position.z;
+                u32 flag8 = flags & 0x1000;
+
+                npc = npcWork->entries;
+                for (i = 0; i < count; i++, npc++) {
+                    if (npc == NULL || !(npc->flags & 2)) {
+                        continue;
+                    }
+                    if (flag8) {
+                        if (!(npc->flags & 8)) {
+                            continue;
+                        }
+                    } else if (npc->flags & 8) {
+                        continue;
+                    }
+                    if (dryRun && !(npc->reactionFlags & 4)) {
+                        continue;
+                    }
+                    if ((npc->flags & 0x20000000) || (npc->flags & 0x20) || (npc->jumpFlags & 4)
+                        || (npc->flags & 0x08000000)) {
+                        continue;
+                    }
+                    if (_npcHitCheckSphere(npc, &dist, x, y, z, radius) == NULL || dist >= info.dist) {
+                        continue;
+                    }
+                    info.dist = dist;
+                    hit = npc;
+                    info.kind = 0x800000;
+                    if (!dryRun) {
+                        fbatSetAttackAnnounce(info.kind);
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
+    // partner 3
+    if (flags & 0x200) {
+        PartyEntry* party = partyGetPtr(marioGetPartyId());
+
+        while (hit == NULL) {
+            NpcEntry* other;
+            u32 flag8;
+
+            if ((flags & 0x10) && mario->unk4C > 0) {
+                break;
+            }
+            if (!fbatAttackEnabled(npc)) {
+                break;
+            }
+            if (!(flags & 1) || party == NULL || party->field_33 != 3
+                || *((u8*)gp->fbatData + 0x54D) == 0) { // fbatData 0x54D: no name yet
+                break;
+            }
+            flag8 = flags & 0x1000;
+            other = npcWork->entries;
+            for (i = 0; i < count; i++, other++) {
+                if (other == NULL || !(other->flags & 2)) {
+                    continue;
+                }
+                if (flag8) {
+                    if (!(other->flags & 8)) {
+                        continue;
+                    }
+                } else if (other->flags & 8) {
+                    continue;
+                }
+                if (dryRun && !(other->reactionFlags & 8)) {
+                    continue;
+                }
+                if ((other->flags & 0x20000000) || (other->flags & 0x20) || (other->jumpFlags & 4)
+                    || (other->flags & 0x08000000)) {
+                    continue;
+                }
+                if (_npcHitCheckSphere(other, &dist, party->position.x,
+                                       float_0p5_80419ba0 * *(f32*)((u8*)party + 0xF0) + party->position.y, party->position.z,
+                                       float_30_80419bd4) == NULL
+                    || dist >= info.dist) {
+                    continue;
+                }
+                info.dist = dist;
+                hit = other;
+                info.kind = 0x1000000;
+                if (!dryRun) {
+                    fbatSetAttackAnnounce(info.kind);
+                }
+                break;
+            }
+            break;
+        }
+    }
+
+    if ((FbatHitInfo*)out != NULL) {
+        *(FbatHitInfo*)out = info;
+    }
+    return hit;
+}
+
 // The first-strike banner: a frame jittered by up to 4 units, with the message drawn inside it.
 void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
     FirstStrikeInfo* firstStrike = param;
@@ -2784,6 +3346,8 @@ static inline f32 npcHitCheckSphere_sqrtf(f32 x, const f64* pool) {
 }
 #endif
 
+// dont_inline: retail calls _npcHitCheckSphere from fbatHitCheck (4 sites) instead of inlining it.
+#pragma dont_inline on
 NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius) {
 #ifdef MUST_MATCH
     const f64* pool = (const f64*)((u8*)vec3_802c2f78 + 0x1c0);
@@ -2809,6 +3373,7 @@ NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z,
     }
     return NULL;
 }
+#pragma dont_inline reset
 
 // The original evaluates `dx2 + dy*dy + dz2 > 0.0f` into a dead `fcmpo` (no branch); a discarded
 // `sqrtf(dx2 + dy*dy + dz2)` statement reproduces that, and declaring dy after dx2/dz2 gets dx2/dz2/dy
