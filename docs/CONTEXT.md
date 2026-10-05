@@ -4743,3 +4743,11 @@ Library `.s` files (outside the game-code policy): MetroTRK's `__exception.s` (t
 the "Metrowerks Target Resident Kernel for PowerPC" banner) and `targsupp.s` (four `twui`/`blr` file-I/O traps) were asm in
 the original kit and stay `.s` in libs/metrowerks/src/TRK_MINNOW_DOLPHIN.a. They are linked from dtk's disassembly as is
 (8020 bytes, code linked 55.43% -> 55.64%); naming the vector entries after MetroTRK's source is tidy-up for later.
+- **Batch 32 (overnight, waves 81-82):** hitdrv's hitMain 99.32 -> 100; effStarPointEntry 97.96 -> 99.25; ansi_fp's data port
+  (first ever); strtold and hei_10 small changes. NO-SOURCE-LEVER stops (to the permuter): strtold's __strtold, hei_10's
+  ext_main and npc_jump (the latter a twin of rsh_05's), eff_starpoint's last 8 instructions; eff_ultra_hammer's
+  N_systemErrorHandler stopped on the original's inline MSR asm, then taken by hand under the original-asm exception (#472,
+  96.75; the rest is the i2f pool, a data-class gap for Codex). Wave 81 (23:22): 8 untried 1-2-function units at CAP 8;
+  wave 82: 3-function units refilling freed slots, none started after 05:00 (DEADLINE). #471 lets the asm allowlist cover
+  `asm { }` blocks inside a listed function (the TP/TWW original-asm style); the list now has two classes
+  (compiler-artifact, original-asm) and four entries.
