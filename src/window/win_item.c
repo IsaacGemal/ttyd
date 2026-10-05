@@ -423,6 +423,148 @@ static WinMgrDesc window_desc[2];
 // original sequence.
 static inline u16* winItemMailLine(void* w) { return (u16*)((u8*)w + 0x26C); }
 
+
+void winMakeSkipList(WindowWork* work) {
+    s32 i;
+    s32 j;
+
+    WW_S16(work, 0x3DA) = 0;
+    for (i = 0; i < 0x79; i++) {
+        u16 item = pouchKeyItem(i);
+
+        if (item == 0) {
+            continue;
+        }
+        for (j = 0; j < 0x12; j++) {
+            if (item == menu_skip_list[j]) {
+                break;
+            }
+        }
+        if ((u32)j >= 0x12) {
+            ItemWorkTail* w = (ItemWorkTail*)work;
+            w->skipList[w->count] = item;
+            w->count++;
+        }
+    }
+}
+
+// The key-list scan walks the skip table with both an index and a pointer; the
+// original increments the pointer before the index, which is what settles MWCC's
+// register choice (pointer r5, index r3).
+void winItemInit(WindowWork* work) {
+    u8* p;
+    s32 i;
+    u16 item;
+    s32 j;
+
+    WW_S32(work, 0x20C) = 0;
+    WW_S32(work, 0x210) = 0;
+    WW_S32(work, 0x214) = 0;
+    WW_S32(work, 0x21C) = 0;
+    WW_S32(work, 0x218) = 0;
+    WW_S32(work, 0x220) = 0;
+    WW_F32(work, 0x238) = float_320_8041d528;
+    WW_F32(work, 0x234) = float_320_8041d528;
+    WW_F32(work, 0x240) = float_neg240_8041d4f4;
+    WW_F32(work, 0x23C) = float_neg240_8041d4f4;
+    WW_F32(work, 0x248) = float_320_8041d528;
+    WW_F32(work, 0x244) = float_320_8041d528;
+    WW_F32(work, 0x250) = float_neg240_8041d4f4;
+    WW_F32(work, 0x24C) = float_neg240_8041d4f4;
+
+    if ((s32)pouchCheckItem(0x36) == 0) {
+        pouchGetItem(0x36);
+    }
+    WW_S32(work, 0x254) = pouchReceiveMailCount();
+
+    WW_S32(work, 0x258) = 0;
+    WW_S32(work, 0x25C) = 0;
+    WW_F32(work, 0x264) = float_0_8041d4ac;
+    WW_F32(work, 0x260) = float_0_8041d4ac;
+
+    {
+        p = (u8*)work;
+        for (i = 0; i < WW_S32(work, 0x254); i++) {
+            u8* pouch;
+            s32 off;
+            p[0x26E] = WW_S32(work, 0x254) - i - 1;
+            pouch = (u8*)pouchGetPtr();
+            off = 0x519 + (WW_S32(work, 0x254) - i);
+            p[0x26F] = pouch[off];
+            p += 2;
+        }
+    }
+
+    WW_S32(work, 0x2D4) = 0;
+    WW_S16(work, 0x3DA) = 0;
+    for (i = 0; i < 0x79; i++) {
+        item = pouchKeyItem(i);
+
+        if (item == 0) {
+            continue;
+        }
+        {
+            u16* list;
+            j = 0;
+            list = menu_skip_list;
+            while (j < 0x12) {
+                if (item == *list) {
+                    break;
+                }
+                list++;
+                j++;
+            }
+        }
+        if ((u32)j >= 0x12) {
+            ItemWorkTail* w = (ItemWorkTail*)work;
+            w->skipList[w->count] = item;
+            w->count++;
+        }
+    }
+
+    WW_S32(work, 0x1208) = winMgrEntry(&window_desc[0]);
+    WW_S32(work, 0x120C) = winMgrEntry(&window_desc[1]);
+    winMgrSetPriority(WW_S32(work, 0x1208), -0xC8);
+    winMgrSetPriority(WW_S32(work, 0x120C), -0x64);
+    fileAsyncf(4, NULL, str_802F5638, getMarioStDvdRoot());
+}
+
+void winItemInit2(WindowWork* work) {
+    f32 t;
+
+    WW_F32(work, 0x158) = float_neg275_8041d554;
+    WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
+
+    t = float_190_8041d544 * (f32)WW_S32(work, 0x21C);
+    WW_F32(work, 0x22C) = t;
+    WW_F32(work, 0x224) = t;
+
+    t = float_190_8041d544 * (f32)WW_S32(work, 0x220);
+    WW_F32(work, 0x230) = t;
+    WW_F32(work, 0x228) = t;
+
+    WW_F32(work, 0x238) = float_320_8041d528;
+    WW_F32(work, 0x234) = float_320_8041d528;
+    WW_F32(work, 0x240) = float_neg240_8041d4f4;
+    WW_F32(work, 0x23C) = float_neg240_8041d4f4;
+    WW_F32(work, 0x248) = float_320_8041d528;
+    WW_F32(work, 0x244) = float_320_8041d528;
+    WW_F32(work, 0x250) = float_neg240_8041d4f4;
+    WW_F32(work, 0x24C) = float_neg240_8041d4f4;
+
+    t = (f32)(WW_S32(work, 0x258) * 0xC8);
+    WW_F32(work, 0x264) = t;
+    WW_F32(work, 0x260) = t;
+
+    winMsgEntry(work, 0, WW_S32(work, 0x210) == 0 ? str_802F560C : str_802F5620, 0);
+    WW_S32(work, 0x2D4) = 0;
+}
+
+void winItemExit(WindowWork* work) {
+    winMgrDelete(WW_S32(work, 0x1208));
+    winMgrDelete(WW_S32(work, 0x120C));
+}
+
 // 100%: every call, branch, constant, store and control-flow edge matches.
 s32 winItemMain(WindowWork* work) {
     s32 sel;
@@ -1320,147 +1462,6 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
 
     if (WW_F32(work, 0x234) < float_320_8041d528 && WW_F32(work, 0x23C) > float_neg240_8041d4f4) {
         winBookGX(work, 0, WW_F32(work, 0x234), WW_F32(work, 0x23C));
-    }
-}
-
-void winItemExit(WindowWork* work) {
-    winMgrDelete(WW_S32(work, 0x1208));
-    winMgrDelete(WW_S32(work, 0x120C));
-}
-
-void winItemInit2(WindowWork* work) {
-    f32 t;
-
-    WW_F32(work, 0x158) = float_neg275_8041d554;
-    WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
-
-    t = float_190_8041d544 * (f32)WW_S32(work, 0x21C);
-    WW_F32(work, 0x22C) = t;
-    WW_F32(work, 0x224) = t;
-
-    t = float_190_8041d544 * (f32)WW_S32(work, 0x220);
-    WW_F32(work, 0x230) = t;
-    WW_F32(work, 0x228) = t;
-
-    WW_F32(work, 0x238) = float_320_8041d528;
-    WW_F32(work, 0x234) = float_320_8041d528;
-    WW_F32(work, 0x240) = float_neg240_8041d4f4;
-    WW_F32(work, 0x23C) = float_neg240_8041d4f4;
-    WW_F32(work, 0x248) = float_320_8041d528;
-    WW_F32(work, 0x244) = float_320_8041d528;
-    WW_F32(work, 0x250) = float_neg240_8041d4f4;
-    WW_F32(work, 0x24C) = float_neg240_8041d4f4;
-
-    t = (f32)(WW_S32(work, 0x258) * 0xC8);
-    WW_F32(work, 0x264) = t;
-    WW_F32(work, 0x260) = t;
-
-    winMsgEntry(work, 0, WW_S32(work, 0x210) == 0 ? str_802F560C : str_802F5620, 0);
-    WW_S32(work, 0x2D4) = 0;
-}
-
-// The key-list scan walks the skip table with both an index and a pointer; the
-// original increments the pointer before the index, which is what settles MWCC's
-// register choice (pointer r5, index r3).
-void winItemInit(WindowWork* work) {
-    u8* p;
-    s32 i;
-    u16 item;
-    s32 j;
-
-    WW_S32(work, 0x20C) = 0;
-    WW_S32(work, 0x210) = 0;
-    WW_S32(work, 0x214) = 0;
-    WW_S32(work, 0x21C) = 0;
-    WW_S32(work, 0x218) = 0;
-    WW_S32(work, 0x220) = 0;
-    WW_F32(work, 0x238) = float_320_8041d528;
-    WW_F32(work, 0x234) = float_320_8041d528;
-    WW_F32(work, 0x240) = float_neg240_8041d4f4;
-    WW_F32(work, 0x23C) = float_neg240_8041d4f4;
-    WW_F32(work, 0x248) = float_320_8041d528;
-    WW_F32(work, 0x244) = float_320_8041d528;
-    WW_F32(work, 0x250) = float_neg240_8041d4f4;
-    WW_F32(work, 0x24C) = float_neg240_8041d4f4;
-
-    if ((s32)pouchCheckItem(0x36) == 0) {
-        pouchGetItem(0x36);
-    }
-    WW_S32(work, 0x254) = pouchReceiveMailCount();
-
-    WW_S32(work, 0x258) = 0;
-    WW_S32(work, 0x25C) = 0;
-    WW_F32(work, 0x264) = float_0_8041d4ac;
-    WW_F32(work, 0x260) = float_0_8041d4ac;
-
-    {
-        p = (u8*)work;
-        for (i = 0; i < WW_S32(work, 0x254); i++) {
-            u8* pouch;
-            s32 off;
-            p[0x26E] = WW_S32(work, 0x254) - i - 1;
-            pouch = (u8*)pouchGetPtr();
-            off = 0x519 + (WW_S32(work, 0x254) - i);
-            p[0x26F] = pouch[off];
-            p += 2;
-        }
-    }
-
-    WW_S32(work, 0x2D4) = 0;
-    WW_S16(work, 0x3DA) = 0;
-    for (i = 0; i < 0x79; i++) {
-        item = pouchKeyItem(i);
-
-        if (item == 0) {
-            continue;
-        }
-        {
-            u16* list;
-            j = 0;
-            list = menu_skip_list;
-            while (j < 0x12) {
-                if (item == *list) {
-                    break;
-                }
-                list++;
-                j++;
-            }
-        }
-        if ((u32)j >= 0x12) {
-            ItemWorkTail* w = (ItemWorkTail*)work;
-            w->skipList[w->count] = item;
-            w->count++;
-        }
-    }
-
-    WW_S32(work, 0x1208) = winMgrEntry(&window_desc[0]);
-    WW_S32(work, 0x120C) = winMgrEntry(&window_desc[1]);
-    winMgrSetPriority(WW_S32(work, 0x1208), -0xC8);
-    winMgrSetPriority(WW_S32(work, 0x120C), -0x64);
-    fileAsyncf(4, NULL, str_802F5638, getMarioStDvdRoot());
-}
-
-void winMakeSkipList(WindowWork* work) {
-    s32 i;
-    s32 j;
-
-    WW_S16(work, 0x3DA) = 0;
-    for (i = 0; i < 0x79; i++) {
-        u16 item = pouchKeyItem(i);
-
-        if (item == 0) {
-            continue;
-        }
-        for (j = 0; j < 0x12; j++) {
-            if (item == menu_skip_list[j]) {
-                break;
-            }
-        }
-        if ((u32)j >= 0x12) {
-            ItemWorkTail* w = (ItemWorkTail*)work;
-            w->skipList[w->count] = item;
-            w->count++;
-        }
     }
 }
 
