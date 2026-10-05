@@ -2551,94 +2551,18 @@ extern const GXColor dat_8041cf3c;
 extern const GXColor dat_8041cf40;
 extern const GXColor dat_8041cf44;
 
-static inline void winMsgDispIcon(s32 iconId, Vec translate, Vec* scale, GXColor color) {
-    winIconSet(iconId, &translate, scale, &color);
-}
-
-static inline void winMsgDispTex(Vec translate, Vec scale, GXColor color) {
-    winTexSet(0x25, translate, scale, color);
-}
-
-static inline void winMsgDispEdge(Vec pos, Vec* scale, GXColor color, const char* msg) {
-    winFontSetEdge(&pos, scale, &color, msg);
-}
-
-static inline void winMsgDispFont(Vec pos, Vec* scale, GXColor color, const char* msg) {
-    winFontSet(&pos, scale, &color, msg);
-}
-
-static inline void winMsgDispLabel(Vec pos, Vec* scale, GXColor color, const char* tag) {
-    winFontSetLabel(&pos, scale, &color, tag);
-}
+#define winMsgEdgeV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetEdge)
+#define winMsgFontV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSet)
 
 static inline void* winMsgDispField(WindowWork* work, s32 off) {
     return *(void**)((u8*)work + off);
 }
 
-#ifdef MUST_MATCH
-// winMsgDisp's .rodata objects are addressed by the original as offsets from the
-// unit's first rodata symbol (str_802F3FE8), read through one base register
-// (r31). MUST_MATCH codegen shaping: the natural form names each object (the
-// externs are declared under #else below).
-#define FV(off, sym) (*(const Vec*)((const char*)base + (off)))
-#define FS(off, sym) ((const char*)base + (off))
-#else
-#define FV(off, sym) (sym)
-extern const Vec vec3_802f4084;
-extern const Vec vec3_802f4090;
-extern const Vec vec3_802f409c;
-extern const Vec vec3_802f40a8;
-extern const Vec vec3_802f40b4;
-extern const Vec vec3_802f40c0;
-extern const Vec vec3_802f40cc;
-extern const Vec vec3_802f40d8;
-extern const Vec vec3_802f40e4;
-extern const Vec vec3_802f40f0;
-extern const Vec vec3_802f40fc;
-extern const Vec vec3_802f4108;
-extern const Vec vec3_802f4114;
-extern const Vec vec3_802f4120;
-extern const Vec vec3_802f412c;
-extern const Vec vec3_802f4138;
-extern const Vec vec3_802f4144;
-extern const Vec vec3_802f4150;
-extern const Vec vec3_802f415c;
-extern const Vec vec3_802f4168;
-#define FS(off, sym) (sym)
-extern const char str_802F45B8[];
-#endif
-
-
-
-// Logic, calls and immediates match. Every draw call goes through a by-value helper
-// (winMsgDispTex/Icon/Edge/Font/Label) and every block's Vec is a distinct function-scope
-// local, which reproduces the original's distinct per-block slots and the 0x620 frame.
-// What still differs: the by-value parameter copies land low in our frame where the
-// original interleaves them with each block's local, so a few dozen stack offsets and the
-// register colouring/scheduling that follows are still off.
-// NONMATCHING (74.25%): by-value parameter-copy placement and register colouring/scheduling.
+// NONMATCHING (94.26%): calls, branches and stack layout match. Left: the draw templates and the u16 -> f32
+// constant come from this file's own .rodata where retail reaches the unit's pool at str_802F3FE8, so those
+// offsets differ, and the label block's scheduling around the lottery/label positions.
 void winMsgDisp(WindowWork* work, f32 x, f32 y) {
-    const char* base = (const char*)&str_802F3FE8;
     char buf[0x400];
-    Vec texTranslate;
-    Vec texScale;
-    Vec iconTranslate;
-    Vec edgePos;
-    Vec edgeScale;
-    Vec lotPos;
-    Vec lotScale;
-    Vec labelPos;
-    Vec labelScale;
-    Vec e1Translate;
-    Vec e1Scale;
-    Vec e2Translate;
-    Vec e2Scale;
-    Vec e3Translate;
-    Vec e3Scale;
-    Vec e3bTranslate;
-    Vec e3bScale;
-    Vec tailTranslate;
-    Vec tailScale;
     GXColor iconColor = dat_8041cf28;
     GXColor fontColor = dat_8041cf2c;
 #ifdef MUST_MATCH
@@ -2653,20 +2577,10 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     windowDispGX_Waku_col(0, dat_8041cf30, fx, fy, float_500_8041d1a8, float_80_8041d0b0, float_20_8041d0c0);
 
     if (WW_S32(work, 0x138) != 0 && WW_S32(work, 0x138) > 0) {
-        u16 iconId;
-
         winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-        texTranslate = FV(0x9C, vec3_802f4084);
-        texTranslate.x = fx;
-        texTranslate.y = fy;
-        texScale = FV(0xA8, vec3_802f4090);
-        winMsgDispTex(texTranslate, texScale, iconColor);
+        winTexSet(0x25, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
         winIconInit();
-        iconTranslate = FV(0xB4, vec3_802f409c);
-        iconTranslate.x = fx;
-        iconTranslate.y = fy;
-        e3bTranslate = FV(0xC0, vec3_802f40a8);
-        winMsgDispIcon(((0, (ItemDataView*)itemDataTable)[WW_S32(work, 0x138)]).icon_id, iconTranslate, &e3bTranslate, iconColor); // original loads icon_id with lhz (unsigned)
+        winMailIconV(((0, (ItemDataView*)itemDataTable)[WW_S32(work, 0x138)]).icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
     }
 
     if (WW_U32(work, 0x140) != 0) {
@@ -2681,39 +2595,20 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         ty = float_8_8041d0a0 + (float_16_8041d0e4 + fy);
         winNameGX(work, 1, (x - float_120_8041d09c) + edge, ty, float_240_8041d0ac, float_32_8041d0a4);
         winFontInit();
-        {
-            f32 w = float_240_8041d0ac - width;
-
-            edgePos = FV(0xCC, vec3_802f40b4);
-            edgeScale = FV(0xD8, vec3_802f40c0);
-            edgePos.x = w;
-            edgePos.x = edge + (edgePos.x * float_0p5_8041d06c + (x - float_120_8041d09c));
-            edgePos.y = ty - float_4_8041d07c;
-            winMsgDispEdge(edgePos, &edgeScale, iconColor, msg);
-        }
+        winMsgEdgeV((Vec){ edge + ((float_240_8041d0ac - width) * float_0p5_8041d06c + (x - float_120_8041d09c)), ty - float_4_8041d07c, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor, msg);
     }
 
     if (WW_U32(work, 0x13C) != 0) {
-        f32 sy = fy - float_14_8041d180;
-
-        GXSetScissor(0, (u32)(float_240_8041d0ac - sy), 0x260, 0x38);
-        if (strcmp((const char*)WW_PTR(work, 0x13C), FS(0x5D0, str_802F45B8)) == 0) {
+        fy -= float_14_8041d180;
+        GXSetScissor(0, (u32)(float_240_8041d0ac - fy), 0x260, 0x38);
+        if (strcmp((const char*)WW_PTR(work, 0x13C), "msg_lottery_number") == 0) {
             // lottery_info has no declared field at 0x20; the original loads an s16 there.
             sprintf(buf, msgSearch((const char*)WW_PTR(work, 0x13C)), *(s16*)((u8*)lotteryGetPtr() + 0x20));
             winFontInit();
-            lotPos = FV(0xE4, vec3_802f40cc);
-            lotScale = FV(0xF0, vec3_802f40d8);
-            lotPos.x = (float_40_8041d0e8 + (x - float_250_8041d1a4)) - float_10_8041d1a0;
-            lotPos.y = sy;
-            lotPos.y += (f32)(WW_S32(work, 0x148) * 0x1C);
-            winMsgDispFont(lotPos, &lotScale, fontColor, buf);
+            winMsgFontV((Vec){ (float_40_8041d0e8 + (x - float_250_8041d1a4)) - float_10_8041d1a0, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
         } else {
             winFontInit();
-            labelPos = FV(0xFC, vec3_802f40e4);
-            labelScale = FV(0x108, vec3_802f40f0);
-            labelPos.x = (float_40_8041d0e8 + (x - float_250_8041d1a4)) - float_10_8041d1a0;
-            labelPos.y = sy + (f32)(WW_S32(work, 0x148) * 0x1C);
-            winMsgDispLabel(labelPos, &labelScale, fontColor, (const char*)winMsgDispField(work, 0x13C));
+            winMailLabelV((Vec){ (float_40_8041d0e8 + (x - float_250_8041d1a4)) - float_10_8041d1a0, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, (const char*)winMsgDispField(work, 0x13C));
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
     }
@@ -2724,38 +2619,14 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         winIconInit();
         i = WW_S32(work, 0x148);
         if (i == 0) {
-            if ((gp->retraceCount & 0x1F) < 0x14) {
-                e1Translate = FV(0x114, vec3_802f40fc);
-                e1Scale = FV(0x120, vec3_802f4108);
-                e1Translate.x = (float_250_8041d1a4 + x) - float_10_8041d1a0;
-                e1Translate.y = (float_40_8041d0e8 + (y - float_40_8041d0e8)) - float_24_8041d0c8;
-                winMsgDispIcon(0x1B6, e1Translate, &e1Scale, dat_8041cf34);
-            }
+            if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B6, (Vec){ (float_250_8041d1a4 + x) - float_10_8041d1a0, (float_40_8041d0e8 + (y - float_40_8041d0e8)) - float_24_8041d0c8, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf34);
         } else if (i / 2 == (WW_S32(work, 0x14C) + 1) / 2 - 1) {
-            if ((gp->retraceCount & 0x1F) < 0x14) {
-                e2Translate = FV(0x12C, vec3_802f4114);
-                e2Scale = FV(0x138, vec3_802f4120);
-                e2Translate.x = (float_250_8041d1a4 + x) - float_10_8041d1a0;
-                e2Translate.y = float_24_8041d0c8 + (float_40_8041d0e8 + (y - float_40_8041d0e8));
-                winMsgDispIcon(0x1B5, e2Translate, &e2Scale, dat_8041cf38);
-            }
+            if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B5, (Vec){ (float_250_8041d1a4 + x) - float_10_8041d1a0, float_24_8041d0c8 + (float_40_8041d0e8 + (y - float_40_8041d0e8)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf38);
         } else if ((gp->retraceCount & 0x1F) < 0x14) {
-            e3Translate = FV(0x144, vec3_802f412c);
-            e3Scale = FV(0x150, vec3_802f4138);
-            e3Translate.x = (float_250_8041d1a4 + x) - float_10_8041d1a0;
-            e3Translate.y = float_24_8041d0c8 + (float_40_8041d0e8 + (y - float_40_8041d0e8));
-            winMsgDispIcon(0x1B5, e3Translate, &e3Scale, dat_8041cf3c);
-            e3bTranslate = FV(0x15C, vec3_802f4144);
-            e3bScale = FV(0x168, vec3_802f4150);
-            e3bTranslate.x = (float_250_8041d1a4 + x) - float_10_8041d1a0;
-            e3bTranslate.y = (float_40_8041d0e8 + (y - float_40_8041d0e8)) - float_24_8041d0c8;
-            winMsgDispIcon(0x1B6, e3bTranslate, &e3bScale, dat_8041cf40);
+            winMailIconV(0x1B5, (Vec){ (float_250_8041d1a4 + x) - float_10_8041d1a0, float_24_8041d0c8 + (float_40_8041d0e8 + (y - float_40_8041d0e8)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf3c);
+            winMailIconV(0x1B6, (Vec){ (float_250_8041d1a4 + x) - float_10_8041d1a0, (float_40_8041d0e8 + (y - float_40_8041d0e8)) - float_24_8041d0c8, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf40);
         }
-        tailTranslate = FV(0x174, vec3_802f415c);
-        tailScale = FV(0x180, vec3_802f4168);
-        tailTranslate.x = (float_250_8041d1a4 + x) - float_10_8041d1a0;
-        tailTranslate.y = float_40_8041d0e8 + (y - float_40_8041d0e8);
-        winMsgDispIcon(0x70, tailTranslate, &tailScale, dat_8041cf44);
+        winMailIconV(0x70, (Vec){ (float_250_8041d1a4 + x) - float_10_8041d1a0, float_40_8041d0e8 + (y - float_40_8041d0e8), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf44);
     }
 }
 
