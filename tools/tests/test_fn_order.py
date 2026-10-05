@@ -77,6 +77,19 @@ class Reorder(unittest.TestCase):
         src = "void a(void) {\n    b(1);\n}\nstatic void b(s32 x) {\n}\n"
         self.assertEqual(fn_order.forward_refs(src, ["a", "b"]), {"b": "static void b(s32 x);"})
 
+    def test_inline_helper_and_column0_brace(self):
+        src = ("static inline Vec mk(f32 x) {\n    Vec v = zero;\n    v.x = x;\n    return v;\n}\n"
+               "void a(void) {\n#ifdef X\n    if (y) {\n}\n#endif\n    q();\n}\n"
+               "#ifdef MUST_MATCH\nstatic void pad(void) {}\n#endif\n"
+               "void b(void) {\n    Vec w = mk(1.0f);\n}\n")
+        names = [(f[2], f[3]) for f in fn_order.functions(src.split("\n"))]
+        self.assertEqual(names, [("mk", True), ("a", False), ("b", False)])
+        out = fn_order.reorder(src, ["b", "a"]).split("\n")
+        # the helper stays whole (its `Vec v = zero;` is not hoisted as data) and a's body is intact
+        self.assertEqual(out[out.index("static inline Vec mk(f32 x) {") + 1], "    Vec v = zero;")
+        self.assertLess(out.index("void b(void) {"), out.index("void a(void) {"))
+        self.assertEqual(out[out.index("void a(void) {") + 5], "    q();")
+
 
 if __name__ == "__main__":
     unittest.main()
