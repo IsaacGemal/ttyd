@@ -532,6 +532,9 @@ original"). Keep it updated when the score changes.
 Before you report a partial function, run `python3 tools/reloc_value_check.py --partial UNIT`: it lists constants the
 original loads that yours never does and the reverse (a rounded `1.5708f` for pi/2, a `1.0f` that should be `0.6f`),
 which the fuzzy score cannot see. Fix every hit or say in the comment why it is not a wrong value.
+Then run `python3 tools/store_sweep.py UNIT`: it lists struct stores and `li` constants only one side has (a field
+the C never writes, a store of the wrong width, a constant computed differently). Fix those before calling a
+function register-only; a SHIFT line is a layout offset, not a missing store.
 
 ## Your report
 
