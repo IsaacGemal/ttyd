@@ -3907,34 +3907,39 @@ static u32 shopper_data[38] = {
     (u32)"gor_shop2_29", (u32)"gor_shop2_30", (u32)"gor_shop2_31", (u32)"gor_shop2_32",
     (u32)"gor_shop2_33", (u32)"gor_shop2_34",
 };
-// NONMATCHING (98.92%): `data + (sel*0xc + 0xc) + index*4` (not the flat form) and
-// `q = (s32*)((s8*)data) + index` reproduce the original address shape; the last
-// `if (*(s32*)(data + index*4 + 0x3c) == 0)` reuses r3 instead of rematerialising `data + index*4` into r5.
+// The angle table is three floats per slot starting at 0xc, so it is read as a `f32[][3]` view of the
+// data. The `sdata` alias gives the byte-array accesses a signed pointer type: written as `(s8*)data`
+// casts at every use, MWCC emits the `data + index` add with the operands swapped.
+// The if-branch updates `steps` in place: the original reuses the steps register for `(steps + 1) & 7`
+// and the later `45.0f * (f32)steps` reads that updated value on the shared path.
+// NONMATCHING (99.41%): only the `if (*(s32*)(data + index*4 + 0x3c) == 0)` address remains; the original
+// rematerialises `data + index*4` into r5 (`add r5, r4, r0`), ours reuses the r3 live across the 0x24 uses,
+// so the preceding `add r5, r4, r0` is missing and the branch target shifts by one instruction.
 s32 slot_rotate_sub(void* arg0, u8* data, s32 index) {
     s32 dir = 0;
     s32 changed = 0;
-    s32 steps = (s32)((f32)(s32)(*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) / 45.0f);
+    s32 steps = (s32)((f32)(s32)(((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) / 45.0f);
+    s8* sdata = (s8*)data;
     f32 diff;
-    s32 next;
 
     if ((*(f32*)(data + index * 4 + 0x24)) > 0.0f) {
-        next = (steps + 1) & 7;
-        diff = 45.0f * (f32)next - (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4));
+        steps = (steps + 1) & 7;
+        diff = 45.0f * (f32)steps - (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]);
         if (diff < 0.0f) {
             diff += 360.0f;
         }
         dir = (diff <= (*(f32*)(data + index * 4 + 0x24))) ? 1 : 0;
     } else {
-        diff = 45.0f * (f32)steps - (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4));
+        diff = 45.0f * (f32)steps - (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]);
         if (diff > 0.0f) {
             diff -= 360.0f;
         }
         dir = (diff > (*(f32*)(data + index * 4 + 0x24))) ? -1 : 0;
     }
-    if ((((s8*)data)[index + 0x30] == 3 || ((s8*)data)[index + 0x30] == 4) && dir != 0) {
-        if (((s8*)data)[index + 0x39] != 0) {
-            if (((s8*)data)[index + 0x30] == 4) {
-                s32* q = ((s32*)((s8*)data) + index);
+    if ((sdata[index + 0x30] == 3 || sdata[index + 0x30] == 4) && dir != 0) {
+        if (sdata[index + 0x39] != 0) {
+            if (sdata[index + 0x30] == 4) {
+                s32* q = ((s32*)sdata + index);
                 if (q[0xf] == 0) {
                     if (q[0x12] != 0) {
                         q[0x12]--;
@@ -3947,24 +3952,24 @@ s32 slot_rotate_sub(void* arg0, u8* data, s32 index) {
                 }
             }
             if (*(s32*)(data + index * 4 + 0x3c) == 0) {
-                ((s8*)data)[index + 0x39]--;
+                sdata[index + 0x39]--;
             }
         } else {
-            ((s8*)data)[index + 0x30] = 0;
+            sdata[index + 0x30] = 0;
             changed = 1;
-            (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) = 45.0f * (f32)steps;
+            (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) = 45.0f * (f32)steps;
             goto done;
         }
     }
-    (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) += (*(f32*)(data + index * 4 + 0x24));
-    if ((*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) >= 360.0f) {
-        (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) -= 360.0f;
+    (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) += (*(f32*)(data + index * 4 + 0x24));
+    if ((((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) >= 360.0f) {
+        (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) -= 360.0f;
     }
-    if ((*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) < 0.0f) {
-        (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)) += 360.0f;
+    if ((((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) < 0.0f) {
+        (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) += 360.0f;
     }
 done:
-    mapObjRotate(drumname[*(s32*)(data + 0x60)][index], 0.0f, 0.0f, (*(f32*)(data + (*(s32*)(data + 0x60) * 0xc + 0xc) + index * 4)));
+    mapObjRotate(drumname[*(s32*)(data + 0x60)][index], 0.0f, 0.0f, (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]));
     return changed;
 }
 
