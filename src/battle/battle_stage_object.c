@@ -391,28 +391,28 @@ void BattleStageObjectInit(void) {
 #pragma dont_inline reset
 
 #pragma force_active on
-__declspec(section ".data") s32 lbl_80371490[2] = {
+__declspec(section ".data") static s32 lbl_80371490[2] = {
     0xBF800000, 0x3F800000,
 };
-__declspec(section ".data") s32 negone_one_374[2] = {
+__declspec(section ".data") static s32 negone_one_374[2] = {
     0xBF800000, 0x3F800000,
 };
-__declspec(section ".data") s32 lbl_803714A0[2] = {
+__declspec(section ".data") static s32 lbl_803714A0[2] = {
     0x3F800000, 0xBF800000,
 };
-__declspec(section ".data") s32 one_negone_373[2] = {
+__declspec(section ".data") static s32 one_negone_373[2] = {
     0x3F800000, 0xBF800000,
 };
-__declspec(section ".data") s32 lbl_803714B0[2] = {
+__declspec(section ".data") static s32 lbl_803714B0[2] = {
     0xBF800000, 0x3F800000,
 };
-__declspec(section ".data") s32 negone_one_360[2] = {
+__declspec(section ".data") static s32 negone_one_360[2] = {
     0xBF800000, 0x3F800000,
 };
-__declspec(section ".data") s32 lbl_803714C0[2] = {
+__declspec(section ".data") static s32 lbl_803714C0[2] = {
     0x3F800000, 0xBF800000,
 };
-__declspec(section ".data") s32 one_negone_359[2] = {
+__declspec(section ".data") static s32 one_negone_359[2] = {
     0x3F800000, 0xBF800000,
 };
 __declspec(section ".data") u8 _nozzle_at_base_mario[192] = {
@@ -1267,12 +1267,6 @@ __declspec(section ".data") s32 _object_fall_event[13] = {
     0x0001000A, 0x000003E8, 0x00000021, 0x00000002,
     0x00000001,
 };
-__declspec(section ".data") s32 jumptable_80374848[9] = {
-    (s32)&_object_fall_attack, (s32)&_object_fall_attack, (s32)&_object_fall_attack, (s32)&_object_fall_attack,
-    (s32)&_object_fall_attack, (s32)&_object_fall_attack, (s32)&_object_fall_attack, (s32)&_object_fall_attack,
-    (s32)&_object_fall_attack,
-};
-__declspec(section ".data") static u32 gap_05_8037486C_data[1] = { 0x00000000 };
 #pragma force_active off
 
 // .sdata: small-data tables and event scripts, in the original order.
@@ -1326,18 +1320,6 @@ __declspec(section ".sdata") s32 _nozzle_work_event_1[7] = {
 __declspec(section ".sdata") static u32 gap_07_80411F3C_sdata[1] = { 0x00000000 };
 #pragma force_active off
 
-// .rodata: vectors and strings, in the original order.
-#pragma force_active on
-#pragma force_active off
-
-// .sdata2: colour words, float constants and short strings, in the original order.
-#pragma force_active on
-#ifdef MUST_MATCH
-#else
-const u32 dat_8041ccfc = 0xFFFFFF00;
-#endif
-__declspec(section ".sdata2") static u32 gap_09_8041CD7C_sdata2[1] = { 0x00000000 };
-#pragma force_active off
 
 
 // BattleStageObjectMain: per-object transform bookkeeping.
@@ -2634,24 +2616,10 @@ s32 _object_fall_wait(void) {
 	return 2;
 }
 
-// Register allocation only. Two things got the int->float magic double onto the .rodata pool base
-// (`lfd f1, 0x168(rN)`, matching the original): the three SFX names are string literals pooled with
-// the double (a large enough literal pool makes MWCC open a base register), and `vec` was inlined to
-// `(u8*)vec3_802f3ac8 + 0x108` at its single use so the compiler no longer materialises a second
-// base pointer. What remains is register colouring: the original keeps one `.rodata` base in r30 and
-// `event` in r15; MWCC loads the literal-pool base into r29 and `vec3_802f3ac8` into r30 (two bases
-// for the same address), then colours the other callee-saved locals differently, so the frame is 16 B
-// short (0x1670 vs 0x1660) and many operands are offset. The scalar declaration order below is a
-// permutation-search artefact (the three SFX pointers are part of it) that maximises the match.
-//
-// Tried and rejected: renaming `gap_802f3ac8_rodata` to `vec3_802f3ac8` (or pointing the spawnPos
-// access at the defined alias) makes the compiler CSE the two bases into r30, so the four `lfd` and
-// the base instructions match, but the surrounding colouring re-schedules and the score falls to
-// 96.37; the rename also drops `_set_mobj_rotate_x` to 97.96. Making the .rodata objects `const`,
-// giving `vec3_802f3ac8` `Vec` type, and `PAD_STACK(16)` all hang MWCC. A `#pragma` sweep and larger
-// declaration permutations were neutral. Merging the timer-loop `rand = (s16)(irand(0x16)+rand);
-// rand += 0x14;` pair scored 95.36%.
-// NONMATCHING (96.82%): see above.
+// NONMATCHING (97.10%): calls, branches, constants and data match (the unit's pool is ported). What remains is
+// GPR allocation: retail keeps strNormal in r14 and spills strTub, strRest and part to 0x15F0-0x15F8, which
+// makes its frame 0x1670 against our 0x1660, so every frame offset differs by 0x10. The scalar declaration
+// order below is a search artefact.
 USER_FUNC(_object_fall_attack) {
 	// Scalar declarations: the order is not semantic. MWCC colours callee-saved registers roughly in
 	// declaration order, so this sequence only decides which register each local lands in.
@@ -2664,7 +2632,7 @@ USER_FUNC(_object_fall_attack) {
 	s32 check;
 	s32 dst;
 	FallObjectEntry* entry;
-	s32 rand;
+	s16 rand;
 	char* strTub;
 	s32 outId;
 	BattleUnit* unit;
@@ -2753,7 +2721,7 @@ USER_FUNC(_object_fall_attack) {
 			if (pouchGetPtr()->mStarPowersObtained != 0
 			    && (BattleAudienceBaseGetPtr()->flags & 0x4000) == 0
 			    && entry->type != 6 && entry->type != 7
-			    && ((*(u32*)((u8*)wp + 0x19068) & 2) != 0 || irand(100) < 10)) {
+			    && ((*(u32*)&wp->field_19064[4] & 2) != 0 || irand(100) < 10)) {
 				// BattleWork.field_19064 padding: a BattleWork flag word.
 				entry->mode = 1;
 				entry->partId = -1;
@@ -2807,13 +2775,12 @@ USER_FUNC(_object_fall_attack) {
 			unit = BattleGetUnitPtr(wp, entry->unitId);
 			entry->index = BattlePreCheckDamage(BattleGetSystemPtr(wp), unit, part, weapon, flags);
 			if (entry->index == 1 && entry->flag14 == 0) {
-				rand = (s16)irand(0);
+				rand = irand(0);
 				for (m = 0; m < i; m++) {
 					FallObjectEntry* prev = (FallObjectEntry*)(alloc + 4 + m * 0xE8);
-					if (prev->unitId == entry->unitId) {
-						prev->timer = (s16)rand;
-						rand = (s16)(irand(0x16) + rand);
-						rand += 0x14;
+					if (entry->unitId == prev->unitId) {
+						prev->timer = rand;
+						rand = (s16)((s32)irand(0x16) + (s32)rand + 0x14);
 						if (prev->flag14 != 0) {
 							prev->flag15 = 1;
 						}
