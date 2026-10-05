@@ -598,14 +598,34 @@ fail:
     return 0;
 }
 
-// The algorithm and stack frame match exactly (0x1b0 frame, all 14 callee-saved floats f18-f31). Giving the
-// first hitCheckVecFilter result its own variable (h2) and copying it into `hit` after the test removes the
-// r27/r3 live-range split. Loading px before the offCos/targetDist statements fixes the px/pz load order.
+// The ground probe's filter dispatch and hit read: the early return on a miss is the original's `bne; b` layout.
+static inline HitEntry* partyGroundHit(PartyEntry* party, HitCheckQuery* query, f32* hitY, Vec* n) {
+    HitEntry* h;
+
+    if (yoshiGetStatus() != 0) {
+        h = hitCheckVecFilter(query, chkfilterYoshi);
+    } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
+        h = hitCheckVecFilter(query, chkfilterNokotaro);
+    } else {
+        h = hitCheckVecFilter(query, chkfilter);
+    }
+    if (h == NULL) {
+        return h;
+    }
+    *hitY = ROUND_MILLI(query->hitPos.y);
+    n->x = query->hitNormal.x;
+    n->y = query->hitNormal.y;
+    n->z = query->hitNormal.z;
+    return h;
+}
+
+// The algorithm and stack frame match exactly (0x1b0 frame, all 14 callee-saved floats f18-f31). The filter
+// dispatch and hit read are the partyGroundHit inline, whose early return on a miss is the original's `bne; b`. Loading px before the offCos/targetDist statements fixes the px/pz load order.
 // Splitting the f32 declarations and reordering them (hitY early, bestY/targetDist/offSin moved) cut the
 // diffs to 44. The rest is FP register colouring: original has py=f21, targetDist=f26, offCos=f23,
 // noCos=f28, off=f22 while ours has py=f28 (f30 with some declaration orders), targetDist=f21,
 // offCos=f26, noCos=f23, off=f21.
-// NONMATCHING (98.80%): FP register colouring
+// NONMATCHING (99.04%): FP register colouring
 HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     HitCheckQuery query;
     Vec targetPos;
@@ -630,7 +650,6 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     f32 bestY;
     f32 targetDist;
     f32 offSin;
-    HitEntry* h2;
     f32 h;
     f32 dx;
     f32 px;
@@ -700,20 +719,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
         query.targetDir = dir;
         query.targetDistance = targetDist;
 
-        if (yoshiGetStatus() != 0) {
-            h2 = hitCheckVecFilter(&query, chkfilterYoshi);
-        } else if (party->currentMemberId == PARTY_MEMBER_KOOPS && (party->flags & 0x100)) {
-            h2 = hitCheckVecFilter(&query, chkfilterNokotaro);
-        } else {
-            h2 = hitCheckVecFilter(&query, chkfilter);
-        }
-        if (h2 != NULL) {
-            hitY = ROUND_MILLI(query.hitPos.y);
-            n.x = query.hitNormal.x;
-            n.y = query.hitNormal.y;
-            n.z = query.hitNormal.z;
-        }
-        hit = h2;
+        hit = partyGroundHit(party, &query, &hitY, &n);
         if (hit != NULL) {
             tmpA = n;
             *(f32*)(party->field_C4 + 0x00) = (f32)(s32)(angleABf(float_0_8041b3ec, float_0_8041b3ec,
