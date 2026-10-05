@@ -128,6 +128,10 @@ if echo "$RV" | grep -q '^BLOCK'; then
   restore
   echo "REJECT $TAG: loads a wrong constant (tools/reloc_value_check.py):"; echo "$RV" | grep '^BLOCK'; exit 1
 fi
+# near-miss functions: constants the original loads that ours never does, and the reverse (tools/reloc_value_check.py
+# --partial). Advisory only: a legitimately computed or folded value (x - 150.0f vs x + -150.0f) is flagged too.
+PV=$(timeout 300 python3 tools/reloc_value_check.py --partial "$(basename "$UNIT")" 2>/dev/null | grep -E '^\s+\S+ \+0x' | head -8)
+if [ -n "$PV" ]; then echo "NOTE  $TAG: partial-function constant differences (advisory; check each is a spelling, not a wrong value):"; echo "$PV"; fi
 
 matched() { python3 -c "import json;print(json.load(open('build/ci/accepted.json'))['measures']['matched_functions'])"; }
 n0=$(matched); python3 tools/ci.py --accept $FLAGS >/dev/null 2>&1; n1=$(matched)
