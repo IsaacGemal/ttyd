@@ -4548,6 +4548,14 @@ in `docs/codex/`; read them before retrying a similar unit.
 | ext_moamoa_main x3, res==3 block (partial) | ? | ~10 instructions of scheduling at the res==3 block top; Claude #3's 2 attempts failed | named angle inputs and an earlier `half` initialisation fix load order and float registers in all three copies: eki_00 97.293 -> 97.298, rsh_05 95.00 -> 95.20, rsh_06 90.50 -> 90.71; the vec3 address hoist, the breath input register and a delayed multiply remain (25/25 experiments) | one copyable shape moved all three copies |
 | eff_ultra_hammer N_systemErrorHandler (partial) | 197k | error-handler registers, frame and unsigned conversions; earlier run 96.75% | 96.75 -> 97.53: explicit unsigned conversion reusing the existing mask at str_803019E0+0x190 and reordered match-only locals recover most registers and the frame; fsub+frsp vs fsubs, conversion slot placement (0x20 vs 0x14e0) and an r30/r31 swap remain; native literal pooling reached 98.92% but added 408 bytes of .rodata, so it was rejected (30/30 experiments) | a higher function score that costs data bytes is not progress toward a link |
 
+eff_kemuri, later finding (2026-10-05, Claude #4, nothing committed): the .sdata2 ORDER is fixable. Define the four tail
+literals (20, 0.5, 6.4, 0.0078125) as `const f32` objects in their retail slots among the other 41 definitions at the end of
+the file, drop the header's extern for float_0p0078125 (only kemuri.c uses it), and have the code read them by name: .sdata2
+and .rodata both read IDENTICAL. The cost is FPR ranking in three functions (effKemuriMain 99.64, effKemuriDisp 99.84,
+effKemuri2Disp 99.85): a literal-initialised local outranks the hoisted int->double magic (which then gets f29, as in retail),
+a named-const load does not (the magic takes f31), and a function-local `static const` folds back to a literal. The open
+question is a spelling that makes a named-load local outrank a hoisted compiler temp: a mwccdbg/permuter job.
+
 Pattern: Codex wins by running many cheap build-and-measure experiments against a precise brief (current section
 diff, tools to use, what already failed, MUST_MATCH rule, never regress). Each brief is in the PR's worktree as
 CODEX_TASK.md; the template lives in the orchestrator's notes. Typical run: 12-25 minutes, 100-210k tokens.
