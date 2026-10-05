@@ -291,8 +291,10 @@ register, its neighbour count, and the register the original has where ours diff
 vregs (declaration order, first declared = highest number; `@N` CSE temps sit above them) for the original's registers, thousands of
 orders a second with no compile. If even a wider range finds nothing (effTimestampDisp: still 3 of 47 wrong), the original has different
 live ranges, not a different declaration order: change what creates the temps (one value more or fewer in a register, a reused local).
-Variables with more than 28 neighbours jump to the top of the priority list and take r31/f31. Setup, once per machine, no sudo (Linux or
-macOS; needs gdb, cmake, Rust; the clones live in `$MWCCDBG_HOME`, default `~/mwccdbg`):
+Variables with more than 28 neighbours jump to the top of the priority list and take r31/f31. **Agents: never install, clone or build
+any of this yourself** (it is already set up and mounted read-only for you; if `tools/mwccdbg.py` fails, say so in your report and
+carry on with the brief's levers). Setup, done once per machine by a person, no sudo (Linux or macOS; needs gdb, cmake, Rust; the
+clones live in `$MWCCDBG_HOME`, default `~/mwccdbg`):
 
     micromamba create -p ~/mwccdbg/env -c conda-forge gdb cmake git          # gdb on PATH (or MWCCDBG_PATH)
     git clone https://github.com/cadmic/mwcc-debugger ~/mwccdbg/mwcc-debugger  # no licence: run it, never copy it into the repo
