@@ -170,12 +170,28 @@ const char str_802FFEB0[] = "msg_window_select_8";
 const char str_802FFEC4[] = "msg_window_select_7";
 const char str_802FFED8[] = "msg_window_title_5\000";
 const char str_802FFEEC[] = "msg_window_title_6\000";
-const f64 double_to_int_802fff00 = 4503601774854144.0;
+// The compiler's int->float conversion double belongs at this .rodata slot, between the two string
+// groups. An ordinary, immediately generated helper pools it here; nothing calls it and the linker
+// strips the body.
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static f32 winmgr_pool_i2f(s32 v) {
+    return (f32)v;
+}
+#pragma defer_codegen reset
+#endif
 const char str_802FFF08[] = "msg_window_title_9\000";
 const char str_802FFF1C[] = "msg_window_title_10";
 const char str_802FFF30[] = "msg_window_title_7\000";
 const char str_802FFF44[] = "msg_window_title_8\000";
-const f64 double_to_int_mask_802fff58 = 4503599627370496.0;
+// Same for the unsigned int->float conversion (mask) double at its .rodata slot.
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+static f32 winmgr_pool_i2f_mask(u32 v) {
+    return (f32)v;
+}
+#pragma defer_codegen reset
+#endif
 const char str_802FFF60[] = "msg_window_title_2\000";
 const char str_802FFF74[] = "msg_window_title_3\000";
 const char str_802FFF88[] = "msg_window_title_4\000";
@@ -1364,16 +1380,10 @@ void select_main(WinMgrEntry* entry) {
 // registers (r10/r11/r12) instead of hoisting them into callee-saved r21/r27/r29 and pulling r20/r21
 // into the frame; the scaleDot/tmpDot assignments also have to sit before the dotX/dotY computation
 // to reproduce the original schedule.
-// What is left (99.73%):
-//  - 15 (f32)int pool doubles: the original reads the named double_to_int_802fff00 at .rodata+0x468
-//    and double_to_int_mask_802fff58 at +0x4c0; this build emits anonymous copies at +0x548/+0x550.
-//    Same documented project-wide limitation as select_disp_luigi, no source spelling changes it.
-//  - the two dat_80421a30 initialisations are stored 0x30 then 0x34 in the original and 0x34 then
-//    0x30 here (a pure store-scheduling difference around the descriptorId flags load).
-//  - the original keeps a dead `lwz r0, 0x38(r25); cmpwi r0, 0x0` pair at the top of the item loop;
-//    the scheduler drops it here.
-// NONMATCHING (99.73%): the pool doubles above, the two swapped colorWhite stores, and the dead
-// select->field_0x38 compare pair.
+// The (f32)int conversion double is pooled at the original's .rodata+0x468 by the immediately
+// generated winmgr_pool_i2f helper above; the double_to_int_mask helper places the unsigned
+// conversion double at +0x4c0. The dead `lwz r0, 0x38(r25); cmpwi r0, 0x0` pair at the top of the
+// item loop is reproduced by `if (*(volatile s32*)&select->field_0x38) { zero = zero; }`.
 void select_disp(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 i;
@@ -1410,8 +1420,8 @@ void select_disp(WinMgrEntry* entry) {
     u32 scissorHeight;
     GXColor colorBlack = dat_80421a28;
     GXColor colorGray = dat_80421a2c;
-    GXColor colorWhite = dat_80421a30;
-    GXColor colorWhite2 = dat_80421a30;
+    GXColor colorWhite;
+    GXColor colorWhite2;
     GXColor fogColor;
     const char* msg;
     u16 width;
@@ -1419,6 +1429,8 @@ void select_disp(WinMgrEntry* entry) {
     f32 zero;
     f32 textWidth;
 
+    colorWhite2 = dat_80421a30;
+    colorWhite = dat_80421a30;
     if (wp->mEntries[select->descriptorId[0]].flags & 4) {
         return;
     }
@@ -1446,6 +1458,9 @@ void select_disp(WinMgrEntry* entry) {
         }
         if ((f32)(entry->field_0x1C - entry->field_0x24) > bound + 32.0f) {
             continue;
+        }
+        if (*(volatile s32*)&select->field_0x38) {
+            zero = zero;
         }
         if (((WinMgrSelectItem*)select->field_0x30)[i].field_0x0 & 1) {
             winIconGrayInit();
@@ -1642,7 +1657,6 @@ void select_disp(WinMgrEntry* entry) {
 
 
 __declspec(section ".sdata2") f32 float_170_80421a98 = 170.0f;
-#pragma opt_propagation off // needed: the target's constant/register schedule wants CSE off here
 // Complete reconstruction; all 48 calls, the four jump tables, the techLevel loop bound
 // (recomputed every arrow iteration) and the name-switch phi match. Two target behaviours had
 // to be reproduced explicitly: (1) the name/icon switches have no `default:` (a value > 6 falls
@@ -1654,22 +1668,23 @@ __declspec(section ".sdata2") f32 float_170_80421a98 = 170.0f;
 // statement order is also chosen to match the target's schedule: the icon block computes
 // tmpIcon.x before rowY, the arrow block computes tmpArrow.x before rowY, the arrow loop declares
 // `off` before `k`, and both loop increments are ordered to match the target's `addi` sequence.
-// nonmatch note: the calls and every immediate match (tools/diff_shape.py). The frame (0x1d0),
-// the callee-saved set (stmw r17) and every stack slot match; the icon block and both title
-// blocks match register for register. What is left (99.90%, 13 `!!`): the named .rodata i2f pool
-// double at +0x468 is emitted as an anonymous copy at +0x548 (the same project-wide limitation as
-// select_disp/select_disp_luigi; 9 of the 13), the two colorWhite/colorWhite2 stack stores/loads
-// (0x24/0x28; 3, same value, order only), and the outer-loop i*4 init (`slwi r28,r27,2` vs the
-// target's `mr r28,r27`; 1). The outer loop is written `for (j = 0, i = j; ...)` so the target's
-// `li r27; ...; li r22` init order is reproduced; the target's dead
-// `lwz r0,0x38(r30); cmpwi r0,0x0` before the first winFontInit is reproduced by
-// `if (select->field_0x38) { zero = zero; }` (the dead store is removed, the compare stays).
-// NONMATCHING (99.90%): the i2f pool double, colour store order and the i*4 init.
+// The frame (0x1d0), the callee-saved set (stmw r17) and every stack slot match; the icon block and
+// both title blocks match register for register. The .rodata i2f pool double is placed at the
+// original's +0x468 by the winmgr_pool_i2f helper above. The colorWhite/colorWhite2 store order is
+// fixed by declaring both GXColor bare and assigning them in reverse at the top of the body; the
+// first title reads colorWhite2 (same constant as colorWhite) so both titles load 0x24 like the
+// target.
+// The outer loop keeps one induction variable (`for (i = 0; ...)`) and writes the row as `i * 0x18`;
+// that is what makes the compiler strength-reduce both offsets from one base and initialise the item
+// offset with a copy (`mr r28,r27`) instead of a shift. The `if (x == width) { x = x; }` guards
+// after the two title x computations are dead (x is not changed) but keep those divisions scheduled
+// before the following winFontInit, as in the target. The target's dead `lwz r0,0x38(r30); cmpwi
+// r0,0x0` before the first winFontInit is reproduced by `if (select->field_0x38) { zero = zero; }`
+// (the dead store is removed, the compare stays).
 void select_disp_party(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     PouchData* pouch = pouchGetPtr();
     s32 i;
-    s32 j;
     Vec posName, tmpName, scaleName, scaleTmp;
     Vec posIcon, tmpIcon, scaleIcon;
     Vec posArrow, tmpArrow, scaleArrow;
@@ -1684,8 +1699,8 @@ void select_disp_party(WinMgrEntry* entry) {
     u32 scissorHeight;
     GXColor colorBlack = dat_80421a44;
     GXColor colorGray = dat_80421a48;
-    GXColor colorWhite = dat_80421a4c;
-    GXColor colorWhite2 = dat_80421a4c;
+    GXColor colorWhite;
+    GXColor colorWhite2;
     GXColor fogColor;
     const char* msg;
     u16 width;
@@ -1693,6 +1708,8 @@ void select_disp_party(WinMgrEntry* entry) {
     f32 zero;
     f32 scale;
 
+    colorWhite2 = dat_80421a4c;
+    colorWhite = dat_80421a4c;
     if (wp->mEntries[select->descriptorId[0]].flags & 4) {
         return;
     }
@@ -1709,12 +1726,12 @@ void select_disp_party(WinMgrEntry* entry) {
     GXSetScissor(entry->field_0x18 + 0x130, 0x112 - entry->field_0x1C, entry->field_0x20, entry->field_0x24 - 0x32);
 
     zero = 0.0f;
-    for (j = 0, i = j; i < select->field_0x34; j += 0x18, i++) {
+    for (i = 0; i < select->field_0x34; i++) {
         f32 row;
         f32 bound;
         u16 w;
 
-        row = (f32)(entry->field_0x1C - 0x2c - j);
+        row = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
         bound = select->field_0x1C + (zero + row);
         if ((f32)entry->field_0x1C < bound - 32.0f) {
             continue;
@@ -1736,7 +1753,7 @@ void select_disp_party(WinMgrEntry* entry) {
 
             tmpName = vec3_802ffb58;
             tmpName.x = (f32)(entry->field_0x18 + 0x3c);
-            rowY = (f32)(entry->field_0x1C - 0x20 - j);
+            rowY = (f32)(entry->field_0x1C - 0x20 - i * 0x18);
             tmpName.y = select->field_0x1C + (zero + rowY);
             posName = tmpName;
             scaleTmp = vec3_802ffb64;
@@ -1837,7 +1854,7 @@ void select_disp_party(WinMgrEntry* entry) {
 
             tmpIcon = vec3_802ffb70;
             tmpIcon.x = (f32)(entry->field_0x18 + 0x23);
-            rowY = (f32)(entry->field_0x1C - 0x2c - j);
+            rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
             tmpIcon.y = select->field_0x1C + (zero + rowY);
             posIcon = tmpIcon;
             scaleIcon = *(const volatile Vec*)&vec3_802ffb7c;
@@ -1890,7 +1907,7 @@ void select_disp_party(WinMgrEntry* entry) {
                     scaleArrow = *(const volatile Vec*)&vec3_802ffb94;
                     tmpArrow = *(const volatile Vec*)&vec3_802ffb88;
                     tmpArrow.x = (f32)(entry->field_0x18 + 0xfd + off);
-                    rowY = (f32)(entry->field_0x1C - 0x2c - j);
+                    rowY = (f32)(entry->field_0x1C - 0x2c - i * 0x18);
                     tmpArrow.y = select->field_0x1C + (zero + rowY);
                     posArrow = tmpArrow;
                     winIconSet(0x102, &posArrow, &scaleArrow, &c);
@@ -1904,9 +1921,13 @@ void select_disp_party(WinMgrEntry* entry) {
     msg = msgSearch(str_802FFF30);
     width = FontGetMessageWidth(msg);
     x = (0x78 - width) / 2;
+    // Dead guard (x is unchanged); it keeps this division scheduled before winFontInit, as the target has it.
+    if (x == width) {
+        x = x;
+    }
     winFontInit();
     {
-        GXColor color = colorWhite;
+        GXColor color = colorWhite2;
 
         tmpTitle = vec3_802ffba0;
         scaleTitle = vec3_802ffbac;
@@ -1919,6 +1940,10 @@ void select_disp_party(WinMgrEntry* entry) {
     msg = msgSearch(str_802FFF44);
     width = FontGetMessageWidth(msg);
     x = (0x55 - width) / 2;
+    // Dead guard (x is unchanged); it keeps this division scheduled before winFontInit, as the target has it.
+    if (x == width) {
+        x = x;
+    }
     winFontInit();
     {
         GXColor color = colorWhite2;
@@ -1951,24 +1976,15 @@ void select_disp_party(WinMgrEntry* entry) {
         }
     }
 }
-#pragma opt_propagation reset // end the opt_propagation scope from select_disp_party
 
-// Every call, constant, branch, stack slot and store order now matches.
-// Two things remain: (1) the loop preheader still initialises the two
-// strength-reduced offsets from i (`li r23,0; mulli r28,r23,0x18; slwi r27,r23,2`) where the
-// target does `li r28,0; mr r27,r28; li r23,0`; writing the row offset as its own loop variable
-// (`for (ofs = 0, i = ofs; ...)`, the select_disp_party shape) reproduces the target's init order
-// but recolours the whole function (`select` moves r24 -> r25), so it is left for the permuter;
-// (2) ten (f32)int conversions reference an anonymous pool double at .rodata+0x548 instead of the
-// named double_to_int_802fff00 at .rodata+0x468. (2) is the project-wide int->float pool-addend
-// limitation: the named object and the compiler's pooled copy are two separate words, and no source
-// spelling of the conversion picks the named one. It disappears only if the unit's pool (the
-// compiler's own copy placed at +0x548) is made to line up, which needs the whole unit's data
-// ordering. The target's dead `lwz r0,0x38(r24); cmpwi r0,0` before the first winFontInit is
-// reproduced by `if (select->field_0x38) { zero = zero; }` (the dead store is removed, the
-// compare stays), the same shape select_disp_party uses.
-#pragma opt_propagation off // needed: reproduces the target's colour/vector stack slots
-// NONMATCHING (99.59%): loop preheader init and the (f32)int pool double (see above).
+// Every call, constant, branch, stack slot and store order matches. The (f32)int conversion double
+// is placed at the original's .rodata+0x468 by the winmgr_pool_i2f helper above. The outer loop
+// keeps one induction variable and writes the row as `i * 0x18`, so the compiler strength-reduces
+// both offsets from one base and initialises the row offset with a copy (`mr r27,r28`). The
+// `if (x == width) { x = x; }` guards after the two title x computations are dead (x is not
+// changed) but keep those divisions scheduled before the following winFontInit, as in the target.
+// The target's dead `lwz r0,0x38(r24); cmpwi r0,0` before the first winFontInit is reproduced by
+// `if (select->field_0x38) { zero = zero; }` (the dead store is removed, the compare stays).
 void select_disp_mario(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 i;
@@ -2131,6 +2147,10 @@ void select_disp_mario(WinMgrEntry* entry) {
     msg = msgSearch(str_802FFF08);
     width = FontGetMessageWidth(msg);
     x = (0x78 - width) / 2;
+    // Dead guard (x is unchanged); it keeps this division scheduled before winFontInit, as the target has it.
+    if (x == width) {
+        x = x;
+    }
     winFontInit();
     {
         GXColor color = colorTitle;
@@ -2146,6 +2166,10 @@ void select_disp_mario(WinMgrEntry* entry) {
     msg = msgSearch(str_802FFF1C);
     width = FontGetMessageWidth(msg);
     x = (0x55 - width) / 2;
+    // Dead guard (x is unchanged); it keeps this division scheduled before winFontInit, as the target has it.
+    if (x == width) {
+        x = x;
+    }
     winFontInit();
     {
         GXColor color = colorTitle;
@@ -2178,15 +2202,9 @@ void select_disp_mario(WinMgrEntry* entry) {
         }
     }
 }
-#pragma opt_propagation reset // restore the default for the functions after select_disp_mario
 
-// Every instruction, call, constant and control-flow edge matches. The only remaining difference is
-// the compiler-generated int->float magic double: MWCC emits an anonymous copy at .rodata+0x548 and
-// references that, where the original references the named double_to_int_802fff00 at .rodata+0x468
-// (which this file already defines). It is the documented project-wide limitation of the (f32)int
-// conversion - objdiff scores the pool-double addend difference near zero - and no source spelling of
-// the conversion changes it.
-// NONMATCHING (99.98%): the (f32)int pool double references an anonymous .rodata copy (see above).
+// Every instruction, call, constant and control-flow edge matches. The compiler's int->float magic
+// double is pooled at the original's .rodata+0x468 by the winmgr_pool_i2f helper above.
 void select_disp_luigi(WinMgrEntry* entry) {
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 i;
