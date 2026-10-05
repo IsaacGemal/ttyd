@@ -53,3 +53,5 @@ USER_FUNC(evt_snd_sfxon_);
 USER_FUNC(evt_snd_sfxon_3d_ex);
 USER_FUNC(evt_snd_sfxon__);
 USER_FUNC(unk_8014cc24);
+void unk_8014ba3c(PartyEntry* party);
+void partyChgMotSlitFloor(PartyEntry* party);
