@@ -82,7 +82,7 @@ void hitBindMapObj(const char* hitName, const char* mapobjName);
 void hitDelete(const char* name);
 void hitReInit(void);
 void hitBindUpdate(const char* name);
-s16 hitCalcVtxPosition(HitEntry* hit);
+s32 hitCalcVtxPosition(HitEntry* hit);
 inline BOOL tempfunc(HitCheckQuery* query, HitVector* vector);
 inline BOOL tempfunc2(HitCheckQuery* query, HitVector* vector);
 inline BOOL tempfunc3(HitCheckQuery* query, HitVector* vector);

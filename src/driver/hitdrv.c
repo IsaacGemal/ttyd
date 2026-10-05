@@ -566,25 +566,29 @@ void hitReCalcMatrix2(HitEntry* hit, Mtx mtx, BOOL recursion) {
 // dont_inline keeps hitCalcVtxPosition a real `bl` from _hitEnt/hitReCalcMatrix as in retail.
 #pragma dont_inline on
 
-// The packed s16 vertex reads use the SDK __OSs16tof32 fast-cast inline, so they lower to retail's
-// psq_lx through GQR5. Retail programs GQR5 from the per-map vertex fraction before each packed read
-// (mtspr with mapGetWork()->entries[hit->mapIndex].field_0x8C + 0x18 -> +0x44); that computation is
-// inline asm, which this project forbids, so its instructions are missing (the mapGetWork call, the
-// table walk, the shift packing and the mtspr) and the round-to-GQR5 scale is dropped. Because those
-// instructions sit in the packed branch, MWCC's register allocation over the whole function differs
-// (retail keeps mapGetWork live in r26 and colours numVectors r30 / mesh r29 / hit r27). The rest of
-// the packed and unpacked structure reproduces retail instruction for instruction: the unpacked
-// even/odd pick is `!(triIndex & 1)` narrowed to s16 after the first PSMTXMultVec, the packed index is
-// computed once per vertex before the fast-cast reads, and the element stride is the popcount of the
-// low 12 bits of elementMask times two (`for (s = 0; 12 > s; s++)`). Declaring the `HitVector* vector`
-// local before `Vec* vtx` (and the packed index loads after `vtx`) is what fixes the two loops'
-// schedule/colouring.
-// include/driver/hitdrv.h declares the function s16, but retail leaves numVectors in r3 with no extsh,
-// so it returns s32.
-// NONMATCHING (84.36%): the packed GQR5 setup is inline asm and cannot be emitted from C, so the packed
-// vertices are not scaled by the map file's fraction shift (wrong whenever that shift is nonzero) and
-// the register colouring caused by its absence differs through the whole function.
-s16 hitCalcVtxPosition(HitEntry* hit) {
+#ifdef MUST_MATCH
+// Original hand-written GQR5 setup: before each packed vertex's psq_lx reads, retail loads the map file's
+// fraction shift and programs GQR5 with it (slwi 8 / ori 7 / slwi 16 / or / mtspr GQR5), so the s16
+// positions dequantize by 2^-shift. MWCC 2.6 has no mtspr intrinsic. Approved by Isaac 2026-10-04; see
+// docs/CONTEXT.md 'Inline asm in game code: the exception policy'. The natural build scales in C.
+static inline void hitSetGQR5(u32 shift) {
+    register u32 type = (shift << 8) | 7;
+    register u32 gqr = (type << 16) | type;
+    asm { mtspr GQR5, gqr }
+}
+#endif
+
+// The map file's vertex fraction shift for this hit's map.
+#define HIT_VTX_FRAC(mw, hit) (*(u32*)(*(u8**)((mw)->entries[(hit)->mapIndex].field_0x8C + 0x18) + 0x44))
+
+// The packed s16 vertex reads use the SDK __OSs16tof32 fast-cast inline, so they lower to retail's psq_lx
+// through GQR5, which retail reprograms per vertex from the map file's fraction shift (hitSetGQR5, MUST_MATCH;
+// the natural build scales in C). The unpacked even/odd pick is `!(triIndex & 1)` narrowed to s16 after the
+// first PSMTXMultVec; the packed pick is u16. The element stride is the popcount of the low 12 bits of
+// elementMask times two. Retail returns numVectors in r3 without an extsh, so the function returns s32.
+// NONMATCHING (88.09%): callee-saved colouring through the packed loop (retail keeps mapGetWork() in r26,
+// numVectors r30, mesh r29, hit r27) and the order of the index loads around it.
+s32 hitCalcVtxPosition(HitEntry* hit) {
     s32 numVectors = 0;
     s32 partIndex;
     s32 dlIndex;
@@ -627,6 +631,7 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                 }
             }
         } else {
+            MapWork* mw = mapGetWork();
             u32 mask = mesh->elementMask;
             s32 stride = 0;
             s32 s;
@@ -649,10 +654,10 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                     for (triIndex = 0; triIndex < triCount; triIndex++, byteOffset += stride) {
                         s16* vtx = (s16*)(((u32*)mesh->vcdTableOffset)[0] + 4);
                         s32 i0 = *(u16*)(list + (byteOffset + 3));
-                        s32 i1 = *(u16*)(list + ((triIndex + 1) * stride + 3));
-                        s32 i2 = *(u16*)(list + ((triIndex + 2) * stride + 3));
-                        s32 v1i;
-                        s32 v2i;
+                        s32 i1 = *(u16*)(list + (stride * (triIndex + 1) + 3));
+                        s32 i2 = *(u16*)(list + (stride * (triIndex + 2) + 3));
+                        u16 v1i;
+                        u16 v2i;
                         Vec v0;
                         Vec v1;
                         Vec v2;
@@ -666,6 +671,8 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                             s32 o0 = i0 * 3;
                             s32 o1 = v1i * 3;
                             s32 o2 = v2i * 3;
+#ifdef MUST_MATCH
+                            hitSetGQR5(HIT_VTX_FRAC(mw, hit));
                             v0.x = __OSs16tof32(&vtx[o0 + 0]);
                             v0.y = __OSs16tof32(&vtx[o0 + 1]);
                             v0.z = __OSs16tof32(&vtx[o0 + 2]);
@@ -675,6 +682,19 @@ s16 hitCalcVtxPosition(HitEntry* hit) {
                             v2.x = __OSs16tof32(&vtx[o2 + 0]);
                             v2.y = __OSs16tof32(&vtx[o2 + 1]);
                             v2.z = __OSs16tof32(&vtx[o2 + 2]);
+#else
+                            f32 scale = 1.0f / (f32)(1 << HIT_VTX_FRAC(mw, hit));
+
+                            v0.x = vtx[o0 + 0] * scale;
+                            v0.y = vtx[o0 + 1] * scale;
+                            v0.z = vtx[o0 + 2] * scale;
+                            v1.x = vtx[o1 + 0] * scale;
+                            v1.y = vtx[o1 + 1] * scale;
+                            v1.z = vtx[o1 + 2] * scale;
+                            v2.x = vtx[o2 + 0] * scale;
+                            v2.y = vtx[o2 + 1] * scale;
+                            v2.z = vtx[o2 + 2] * scale;
+#endif
                         }
 
                         PSMTXMultVec(hit->worldMtx, &v0, &vector->v0);
