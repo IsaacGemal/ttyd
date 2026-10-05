@@ -351,22 +351,17 @@ static inline void makeConfettiColor1(void) {
 }
 #endif
 
-// The instructions, stack slots, GXColor temporaries and the frame/loop register (r26) now all
-// match.  Reading the frame into `seq` (then `seq = (seq >> 1) % 6`) rather than into `i` is what
-// lets the allocator keep `i` in r26.  The only remaining difference is the colouring of the
-// three loop-carried values: the target uses anm_seq r29, divisor r30, seq r31; this build uses
-// seq r29, anm_seq r30, divisor r31 (a 3-cycle).  The divisor matters because MWCC CSEs the
-// 0x2AAAAAAB magic of `(seq >> 1) % 6` with that of `i % 12` in the loop, so it is live across the
-// whole loop rather than just the preheader.  The two modulos schedule identically, so it is a pure
-// allocator tie-break.  Declaration-order, load-order, expression-form, pointer/helper, pragma
-// (opt_*/global_optimizer/scheduling/optimization_level), -g and statement-order searches did not move it.
-// NONMATCHING (99.86%): only the seq/anm_seq/divisor 3-cycle above differs.
+// Reading the frame into `seq` rather than into `i` leaves `i` free for the loop counter, and
+// computing the animation index into `seq2` keeps the modulo out of the counter's live range.
+// `type % 10` is folded into the switch below; both loop-invariant expressions are hoisted into
+// the preheader by the compiler.
 void effConfettiDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	s32 type;
 	effConfettiN64Data* data;
 	s32 i;
 	s32 seq;
+	s32 seq2;
 	s32 alpha;
 	s32 count;
 	s32 idx2;
@@ -403,8 +398,7 @@ void effConfettiDisp(CameraId camId, void* param) {
 	GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, 0x7D);
-	seq = (seq >> 1) % 6;
-	type %= 10;
+	seq2 = (seq >> 1) % 6;
 	i = 0;
 	for (; i < count; i++, data++) {
 		clr = &color_table[(i % 12) * 3];
@@ -430,12 +424,12 @@ void effConfettiDisp(CameraId camId, void* param) {
 #else
 		GXSetTevColor(GX_TEVREG1, *(GXColor*)&float_0p011489_8041ebf0);
 #endif
-		idx2 = ((i + anm_seq[seq]) & 0xF) << 6;
+		idx2 = ((i + anm_seq[seq2]) & 0xF) << 6;
 		PSMTXScale(scaleMtx, float_0p0625_8041ebf8, float_0p0039062_8041ebfc, float_0_8041ec00);
 		PSMTXTrans(mtx0, float_0_8041ec00, (f32)idx2, float_0_8041ec00);
 		PSMTXConcat(scaleMtx, mtx0, scaleMtx);
 		GXLoadTexMtxImm(scaleMtx, GX_TEXMTX0, GX_MTX2x4);
-		switch (type) {
+		switch (type % 10) {
 		case 3:
 			effSetVtxDescN64((effVtxArray*)size6x6_tex16x16_2_vtx);
 			GXBegin(GX_TRIANGLES, GX_VTXFMT0, 0x18);
