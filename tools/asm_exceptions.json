@@ -30,5 +30,21 @@
     "reason": "The same inline MSR block as systemErrorHandler (mfmsr/ori 0x8000/ori 2/mtmsr/isync); MWCC 2.6 has no mfmsr/mtmsr intrinsic (a scan of its builtin table finds none). MUST_MATCH only; the natural build calls PPCMtmsr(PPCMfmsr() | 0x8002).",
     "approved_by": "Isaac (relayed by the orchestrator)",
     "date": "2026-10-04"
+  },
+  {
+    "file": "src/driver/effdrv.c",
+    "function": "effMayaSetGQR5",
+    "class": "original-asm",
+    "reason": "the mtspr GQR5 of effCalcMayaAnimMatrix (a static inline helper, as retail's register ranks require). Original hand-written asm: retail writes GQR5 from a computed value (lis/addi 0x06070607: s16, load scale 6, i.e. /64) that no SDK inline (OSFastCast.h) writes, and loads all six keyframe s16s with psq_l through it, two into f1 back to back with the first never read, which the compiler never emits. Precedent: TP/TWW d_a_movie_player write GQR setup and psq_l as asm in game code. MUST_MATCH only; the natural build has the same maths in C.",
+    "approved_by": "Isaac (relayed by the orchestrator)",
+    "date": "2026-10-04"
+  },
+  {
+    "file": "src/driver/effdrv.c",
+    "function": "effMayaAnimInterp",
+    "class": "original-asm",
+    "reason": "the six psq_l loads of effCalcMayaAnimMatrix (a static inline helper, as retail's register ranks require). Original hand-written asm: retail writes GQR5 from a computed value (lis/addi 0x06070607: s16, load scale 6, i.e. /64) that no SDK inline (OSFastCast.h) writes, and loads all six keyframe s16s with psq_l through it, two into f1 back to back with the first never read, which the compiler never emits. Precedent: TP/TWW d_a_movie_player write GQR setup and psq_l as asm in game code. MUST_MATCH only; the natural build has the same maths in C.",
+    "approved_by": "Isaac (relayed by the orchestrator)",
+    "date": "2026-10-04"
   }
 ]
