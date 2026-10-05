@@ -66,8 +66,6 @@ void N_setupErrorHandler(void) {
 // original's are, and fused `fsubs`) by casting the u16 to s32, which reuses this unit's existing signed 2^52
 // double at .rodata+0x28 so the unit's .rodata stays 48 bytes; the original instead used the unsigned mask
 // at str_803019E0+0x190 (unk_0x8025de70.c), so ours emits two extra `xoris` and a `lis`-based mask load.
-//  - the interrupt restore after OSFillFPUContext: the original is inline mfmsr/ori 0x8000/ori 2/mtmsr/isync,
-//    but inline asm is not allowed, so this calls PPCMtmsr(PPCMfmsr() | 0x8002);
 //  - register colouring: the original keeps error/context/dsisr/dar in r23/r26/r25/r24, the string base in
 //    r29 and a separate hoisted &print_buffer in r31, saving r23..r31; ours lands the three later args in
 //    r29/r28/r27/r26 and saves r24..r31. `base` (a hoisted &print_buffer) is what gets the score here.
@@ -77,7 +75,7 @@ void N_setupErrorHandler(void) {
 #pragma opt_common_subs off
 #pragma opt_strength_reduction off
 #pragma opt_loop_invariants off
-// NONMATCHING (95.39%): the conversion pool, the inline-msr restore and register colouring (see above).
+// NONMATCHING (95.39%): the conversion pool and register colouring (see above).
 void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 	//registers
 	OSFontHeader* fontHeader;
@@ -152,7 +150,20 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	strcat(print_buffer, print_buffer2);
 	psndExit();
 	OSFillFPUContext(context);
+	// The original re-enables FP and recoverable interrupts here with an inline asm block (the same one
+	// src/error_handler.c's systemErrorHandler has); MWCC 2.6 has no mfmsr/mtmsr intrinsic, so the matching
+	// build keeps the asm (tools/asm_exceptions.json, original-asm) and the natural build the equivalent call.
+#ifdef MUST_MATCH
+	asm {
+		mfmsr	r5
+		ori		r5, r5, 0x8000
+		ori		r5, r5, 2
+		mtmsr	r5
+		isync
+	};
+#else
 	PPCMtmsr(PPCMfmsr() | 0x8002);
+#endif
 	L_smartReInit();
 	if (OSGetFontEncode() == OS_FONT_ENCODE_SJIS) {
 		fontHeader = smartAlloc(OS_FONT_SIZE_SJIS, 0)->address;

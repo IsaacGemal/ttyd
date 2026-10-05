@@ -14,5 +14,21 @@
     "reason": "Unreferenced compiler-emitted checked entry ahead of yuu_kesan (cmpwi r4,0 / bge yuu_kesan / li r3,0 / blr): a frameless tail branch GC/2.6 cannot emit from C; no compiler version or pragma in GC/1.0-3.0a5 produces it. MUST_MATCH only; the natural build keeps a C form.",
     "approved_by": "Isaac (relayed by Claude #1)",
     "date": "2026-10-04"
+  },
+  {
+    "file": "src/error_handler.c",
+    "function": "systemErrorHandler",
+    "class": "original-asm",
+    "reason": "The SDK error screen's inline MSR block (mfmsr/ori 0x8000/ori 2/mtmsr/isync) re-enabling FP and recoverable interrupts; MWCC 2.6 has no mfmsr/mtmsr intrinsic.",
+    "approved_by": "pre-existing (before the exception policy)",
+    "date": "2026-10-04"
+  },
+  {
+    "file": "src/effect/eff_ultra_hammer.c",
+    "function": "N_systemErrorHandler",
+    "class": "original-asm",
+    "reason": "The same inline MSR block as systemErrorHandler (mfmsr/ori 0x8000/ori 2/mtmsr/isync); MWCC 2.6 has no mfmsr/mtmsr intrinsic (a scan of its builtin table finds none). MUST_MATCH only; the natural build calls PPCMtmsr(PPCMfmsr() | 0x8002).",
+    "approved_by": "Isaac (relayed by the orchestrator)",
+    "date": "2026-10-04"
   }
 ]
