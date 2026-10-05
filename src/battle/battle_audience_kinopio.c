@@ -1804,8 +1804,7 @@ void BattleAudienceCtrlProcessKinopioEat(s32 index) {
 			col = id / 0x14;
 			row = id % 0x14;
 			x = (f32)(row * 0x19 - 0xeb + r);
-			member->position.x = x;
-			member->mHomePosition.x = x;
+			member->mHomePosition.x = (member->position.x = x);
 			member->mHomePosition.y = *(f32*)((u8*)stage + 0xb34);
 			z = 0.1f * (f32)row + (f32)(col * 0x1e + 0x73);
 			member->position.z = z;
