@@ -178,8 +178,9 @@ extern PartyData partyDataTbl[];
 // evt_eff*); it is not defined in C yet.
 extern s32 evt_item_use[];
 
-// NONMATCHING (99.06%): the code matches except the string-pool offsets in the fileAsyncf/fileAllocf format strings (the unit's unported .data order), the
-// `characterId` branch layout at the end (the original tests <0, then >1 before <3), and wp landing in r5 instead of r4 in case 0xC8.
+// The display hook at the end is a switch on characterId (MWCC's three-case lowering is the original's branch layout).
+// NONMATCHING (99.99%): the code matches except the string-pool offsets in the fileAsyncf/fileAllocf format strings
+// (the unit's unported .data order).
 void winMain(void) {
     MarioWork* mario;
     WindowPartyDt* list[7];
@@ -462,23 +463,19 @@ void winMain(void) {
         }
 
         if (wp->menuState == 2) {
-            u8 cid = marioGetPtr()->characterId;
-            s8 characterId = cid;
-            if (characterId != 1) {
-                if (characterId < 1) {
-                    if (characterId < 0) {
-                        return;
-                    }
+            switch (marioGetPtr()->characterId) {
+                case 0:
                     if (!(wp->flags & 0x1000)) {
                         dispEntry(CAMERA_2D, 250.0f, 0, winDisp, NULL);
                     } else {
                         dispEntry(CAMERA_2D, 500.0f, 0, winDisp, NULL);
                     }
-                    return;
-                }
-                if (characterId < 3) {
+                    break;
+                case 1:
+                    break;
+                case 2:
                     dispEntry(CAMERA_2D, 250.0f, 0, winDispKoopa, NULL);
-                }
+                    break;
             }
         }
     }
