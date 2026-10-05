@@ -63,7 +63,12 @@ enum hex_scan_states {
 #define fetch() (count++, (*ReadProc)(ReadProcArg, 0, __GetAChar))
 #define unfetch(c) (*ReadProc)(ReadProcArg, c, __UngetAChar)
 
-// NONMATCHING (96.06%): calls and immediates match; the rest is register allocation and scheduling.
+// NONMATCHING (99.24%): the call sequence and all immediates match. Every named local lands in the
+// original's register and mwccdbg pass-2 replay reports 0 of 414 registers differ. The 30 residual
+// instructions are scheduler/peephole output over compiler materialized webs: the hex digit loops
+// coalesce the `_toupper` index and value into one register (we use r5, original r3), and the hex
+// exponent normalization keeps the short->int promotion and a two-instruction bit insert (see
+// REPORT.md). The `num` union keeps `result`/`mantissa` in the original's aliased 0x18(r1) slot.
 long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* ReadProcArg, int* chars_scanned,
                       int* overflow) {
     int scan_state = start;
@@ -76,21 +81,25 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
     int exp_negative = 0;
     long exp_value = 0;
     int exp_adjust = 0;
-    register long double result = 0.0;
     int sign_detected = 0;
-    int radix_marker = *(unsigned char*)(__lconv).decimal_point;
-
-    unsigned char* chptr;
-    unsigned char mantissa[TARGET_FLOAT_BYTES];
-    unsigned mantissa_digits;
-    unsigned long exponent = 0;
-
-    int ui;
-    unsigned char uch, uch1;
-    int NibbleIndex;
     int expsign = 0;
+
+    union {
+        long double result;
+        unsigned char mantissa[TARGET_FLOAT_BYTES];
+    } num;
+#define result num.result
+#define mantissa num.mantissa
+    unsigned char* chptr = mantissa;
+    int NibbleIndex;
     int exp_digits = 0;
     unsigned intdigits = 0;
+    short exponent = 0;
+    int radix_marker = *(unsigned char*)(__lconv).decimal_point;
+
+    unsigned mantissa_digits;
+    long ui;
+    unsigned char uch, uch1;
 
     *overflow = 0;
     c = fetch();
@@ -168,7 +177,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
 
                 if ((i == 3) || (i == 4)) {
                     if (i == 4) {
-                        while ((j < 32) && (_isdigit(c) || _isalpha(c) || (c == radix_marker))) {
+                        while ((j < 32) && (_isdigit(c) || _isalpha(c))) {
                             nan_arg[j++] = (char)c;
                             c = fetch();
                         }
@@ -335,7 +344,6 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
             case hex_state: {
                 switch (hex_scan_state) {
                     case hex_start:
-                        chptr = mantissa;
                         mantissa[0] = 0;
                         mantissa[1] = 0;
                         mantissa[2] = 0;
@@ -378,7 +386,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
                             if ((NibbleIndex % 2) != 0) {
                                 uch |= uch1;
                             } else {
-                                uch |= (unsigned char)(uch1 << 4);
+                                uch |= uch1 << 4;
                             }
                             *(chptr + NibbleIndex++ / 2) = uch;
                             c = fetch();
@@ -402,7 +410,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
                             if ((NibbleIndex % 2) != 0) {
                                 uch |= uch1;
                             } else {
-                                uch |= (unsigned char)(uch1 << 4);
+                                uch |= uch1 << 4;
                             }
                             *(chptr + NibbleIndex++ / 2) = uch;
                             c = fetch();
@@ -449,7 +457,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
                         if (!_isdigit(c)) {
                             scan_state = finished;
                         } else {
-                            exponent = c + exponent * 10 - '0';
+                            exponent = exponent * 10 + (c - '0');
                             if (exp_value > SHRT_MAX) {
                                 *overflow = 1;
                             }
@@ -465,7 +473,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
     if (!success(scan_state)) {
         *chars_scanned = 0;
     } else {
-        *chars_scanned = (count + spaces) - 1;
+        *chars_scanned = count - 1 + spaces;
     }
 
     unfetch(c);
@@ -525,7 +533,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
     } else {
         double* dbl = (double*)mantissa;
 
-        if (*dbl != 0.0) {
+        if (*dbl) {
             if (expsign) {
                 exponent = -exponent;
             }
@@ -536,7 +544,8 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
             }
 
             *(short*)mantissa = *(short*)mantissa & 0xF;
-            *(short*)mantissa = (short)((*(short*)mantissa & ~0xFFF0) | (((short)(exponent + (intdigits - 1) * 4) + 0x3FF) << 4));
+            exponent = (short)(exponent + (intdigits - 1) * 4);
+            *(short*)mantissa = (short)((*(short*)mantissa & ~0xFFF0) | ((exponent + 0x3FF) << 4));
             *chars_scanned = spaces + (sign_detected + NibbleIndex + 1 + exp_digits);
 
             if (*dbl != 0.0 && *dbl < *(double*)__extended_min) {
@@ -557,6 +566,8 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
         return *dbl;
     }
 }
+#undef result
+#undef mantissa
 
 // The "INFINITY" string literal, emitted as a 12-byte .rodata object.
 #pragma force_active on
