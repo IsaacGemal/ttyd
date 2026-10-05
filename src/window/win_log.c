@@ -2452,14 +2452,19 @@ extern const f32 float_220_8041d868;
 extern const GXColor dat_8041d7a4;
 extern const GXColor dat_8041d7a8;
 
-#define monoFontV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSet)
-#define monoIconV ((void (*)(s32, Vec, Vec, GXColor))winIconSet)
+// The original passes these draw arguments by value: an inline's by-value parameters give the same caller copies.
+static inline void monoFontV(Vec pos, Vec scale, GXColor color, const char* msg) {
+    winFontSet(&pos, &scale, &color, msg);
+}
+static inline void monoIconV(s32 id, Vec pos, Vec scale, GXColor color) {
+    winIconSet(id, &pos, &scale, &color);
+}
 #pragma opt_loop_invariants off // needed: the target reloads the vec3 tables and address offsets inside the loop
 // Behaviour complete, checked against the asm. Declaring the shared rodata base non-const and
 // disabling loop-invariant motion stopped MWCC hoisting the vec3 loads; keeping the int->float
 // offsets as integer temps (`xoff`) and inlining the float positions made the allocator rematerialise
 // them as the original does. The five winFontSet and three winIconSet calls take their Vec/Vec/GXColor
-// by value (monoFontV/monoIconV casts, arguments passed straight in), which is where most of the
+// by value (the monoFontV/monoIconV inlines, arguments passed straight in), which is where most of the
 // original's larger frame comes from.
 // NONMATCHING (96.89%): stack-slot placement (the frame is 0x2c0 against 0x390; the int->float
 // temporaries sit higher in the original), the int->float doubles read from the anonymous pool
