@@ -73,6 +73,15 @@ Tools (run from this directory, each call rebuilds incrementally in a few second
 - `python3 check.py {unit} NAME` shows the original instructions (left) next to yours (right); `!!` marks
   differences. `python3 check.py {unit}` lists the file's functions with their match %.
 
+Register-only differences: when `python3 tools/diff_shape.py {unit} NAME` reports the same calls and no missing
+immediates, start with the debugger triage before changing source: `python3 tools/mwccdbg.py {unit} NAME`, read
+build/mwccdbg/NAME/summary.txt (`!ORIG rN` is the original's register where ours differs), check
+`python3 tools/rasim.py build/mwccdbg/NAME replay` reports 0 differences, then `rasim.py ... search` / `neighbors`.
+Classify it in REPORT.md under `## Triage`: FIXABLE (an order or a brief lever exists: apply it, confirm with a
+rebuild) or NO-SOURCE-LEVER (a parameter or a compiler temp would have to outrank a named local). If NO-SOURCE-LEVER,
+say why in two lines and stop: the permuter takes those. If tools/mwccdbg.py fails, say so and carry on; never
+install it. docs/AGENT_BRIEF.md's "mwcc-debugger" block has the details.
+
 Work in small steps: write a first version, run the check, fix, repeat. Keep the file building: a build error
 fails every function in it. Never lower a score: if nothing you try beats a function's starting %, restore its version from ./orig_file.c
 (the file as you got it) and say what you tried. Keep every `// NONMATCHING` comment accurate. Check each function you
@@ -218,6 +227,10 @@ BEFORE YOU STOP: run `python3 check.py --final {unit}` and fix everything it lis
 ONESHORT_NOTE = """
 THIS UNIT IS ONE FUNCTION AWAY FROM LINKING: `{fn}` is the only function below 100%. ./DOSSIER.md has its differing
 instructions (original | ours) and what earlier agents tried; the hypothesis to test first: {hyp}
+If its differences are register-only (`python3 tools/diff_shape.py {unit} {fn}`: same calls, no missing immediates),
+run the debugger triage first (`python3 tools/mwccdbg.py {unit} {fn}`, rasim replay/search/neighbors) and classify it
+under `## Triage` in REPORT.md: FIXABLE (apply the order or lever) or NO-SOURCE-LEVER (a parameter or compiler temp
+would have to outrank a named local: say why and stop; the permuter takes it).
 Linking prerequisites still open (the unit's data sections below 100%): {secs}.
 LINKING: once `{fn}` is at 100%, go on to make the unit link, in the same session. In configure.py change
 `Object(NonMatching, "{cfg}")` to `Object(Matching, "{cfg}")` (that one line is the only configure.py change allowed,
