@@ -2980,7 +2980,7 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 			r21 = 0xF0;
 			r22 = 0x64;
 			r19 = 0xF0;
-			r20 = (u8)(64.0f * (1.0f - (f32)cos(1.5708f * (f32)gp->retraceCount / 20.0f)) * 0.5f + 64.0f);
+			r20 = (u8)(64.0f * (1.0f - (f32)cos(1.5707964f * (f32)gp->retraceCount / 20.0f)) * 0.5f + 64.0f);
 		}
 		GXSetTevOrder(tevStage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
 		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -3011,7 +3011,7 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 		camPos = *(Vec*)(base + 0x120);
 		up = *(Vec*)(base + 0x12c);
 		target = *(Vec*)(base + 0x138);
-		v = (s32)(127.0f * (1.0f - (f32)cos(1.5708f * (f32)gp->retraceCount / 30.0f)) * 0.5f + 128.0f);
+		v = (s32)(127.0f * (1.0f - (f32)cos(1.5707964f * (f32)gp->retraceCount / 30.0f)) * 0.5f + 128.0f);
 		GXInitTexObj(&texObj, texture_0, 4, 0x40, GX_TF_CMPR, GX_CLAMP, GX_REPEAT, GX_FALSE);
 		GXLoadTexObj(&texObj, texMap);
 		C_MTXLightOrtho(orthoMtx, -2.0f, 2.0f, -2.0f, 2.0f, 0.5f, 0.5f, 0.5f, (f32)gp->retraceCount / 50.0f);

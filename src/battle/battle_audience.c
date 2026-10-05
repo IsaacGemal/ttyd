@@ -4433,9 +4433,11 @@ void BattleAudience_Case_TurnEnd(void) {
 	}
 }
 
+#pragma dont_inline on
 s32 BattleAudienceSound0(const char* name) {
 	return psndSFXOn(name);
 }
+#pragma dont_inline reset
 
 void BattleAudience_Case_AcrobatNoTry(void) {
 	BattleAudienceBaseGetPtr();

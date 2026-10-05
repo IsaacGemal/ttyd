@@ -523,6 +523,10 @@ A function you write or change that doesn't reach 100% needs a comment directly 
 `// NONMATCHING (NN%): what still differs`. Be specific ("r29/r30 swapped", "the loop counts down in the
 original"). Keep it updated when the score changes.
 
+Before you report a partial function, run `python3 tools/reloc_value_check.py --partial UNIT`: it lists constants the
+original loads that yours never does and the reverse (a rounded `1.5708f` for pi/2, a `1.0f` that should be `0.6f`),
+which the fuzzy score cannot see. Fix every hit or say in the comment why it is not a wrong value.
+
 ## Your report
 
 Update `REPORT.md` after every function (you can be stopped at any time). One line per function: name, size,
