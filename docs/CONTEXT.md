@@ -4751,3 +4751,10 @@ the original kit and stay `.s` in libs/metrowerks/src/TRK_MINNOW_DOLPHIN.a. They
   wave 82: 3-function units refilling freed slots, none started after 05:00 (DEADLINE). #471 lets the asm allowlist cover
   `asm { }` blocks inside a listed function (the TP/TWW original-asm style); the list now has two classes
   (compiler-artifact, original-asm) and four entries.
+- **Batch 33 (overnight, waves 81-83):** koopa_hit linked (kpaSearchHead 99.52 -> 100, wave 83 from
+  scratch/ONE_FUNCTION_LEFT.md); envDisp_FF 99.99 -> 100 (envdrv 20/22); seq_load's loadDraw 81.66 -> 93.26 and loadMain
+  98.49 -> 98.76 with .rodata byte-identical (its -150 now added through float_neg150_8041be64, so --partial reports
+  nothing); winItemDisp 97.46 -> 99.73; slot_rotate_sub 98.92 -> 99.41; effBoobooDisp 99.42 -> 99.58; cam_road's two
+  functions up a little. Refused: mot_jabara (99.77 bought by moving .rodata's Vec pool) and evt_yuunpc (timed out; its
+  last state moved .data/.rodata). NO-SOURCE-LEVER stops (to the permuter): kemuri5, booboo and cam_road's residues,
+  envSetWater, hei_10, strtold. merge_agent now prints --partial findings as advisory notes (#485).
