@@ -347,10 +347,6 @@ u32 R_credits_npc_info[456] = {
     0x00000000, (u32)"c_peach", (u32)"P_W_1", 0x00000000,
 };
 
-// NONMATCHING (80.00%): the compiled bytes of this function are identical to the original's; the score is short only
-// because config/G8MJ01/end/symbols.txt gives _prolog size 0x50 while the function is 0x60, splitting its last four
-// epilogue instructions off into gap_00_00002520_text. No C source can end a function mid-epilogue, so this is a
-// symbols.txt size to correct (config change), not a source fix.
 void _prolog(void) {
     voidfunctionptr* ctor;
 
@@ -1667,6 +1663,4 @@ extend_data(5,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
 
-// TODO: write gap_00_00002520_text (global, 0x10 bytes) here:
-// its asm is in build/G8MJ01/end/asm/end_unknown.s; this is where the original has it
 // clang-format on
