@@ -4336,7 +4336,7 @@ static inline s32 mapMatSearchTex(s32* table, const char* name) {
 	return -1;
 }
 
-// NONMATCHING (95.07%): every call and branch matches but one. Left: the u8 -> f32 LOD conversions use a pooled
+// NONMATCHING (95.09%): every call and branch matches but one. Left: the u8 -> f32 LOD conversions use a pooled
 // int->double mask where the original loads it from the unit's .rodata base (+0x2C8), the texture search's found
 // exit is a beq where retail branches around a b, and some callee-saved register colouring.
 // Loads the map object's lights into GX light slots (point, spot and directional), sets the colour channel from
@@ -4473,7 +4473,7 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 		                              *(const char**)ref->field_0x0));
 		GXInitTexObj(&texObj, desc->textureHeader->data, desc->textureHeader->width, desc->textureHeader->height,
 		             desc->textureHeader->format, MAPMAT_TEXWRAP(ref->wrapS), MAPMAT_TEXWRAP(ref->wrapT),
-		             desc->textureHeader->minLOD != desc->textureHeader->maxLOD ? GX_TRUE : GX_FALSE);
+		             desc->textureHeader->minLOD == desc->textureHeader->maxLOD ? GX_FALSE : GX_TRUE);
 		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, (f32)desc->textureHeader->minLOD,
 		                (f32)desc->textureHeader->maxLOD, desc->textureHeader->LODBias, GX_DISABLE,
 		                desc->textureHeader->edgeLODEnable, GX_ANISO_1);
