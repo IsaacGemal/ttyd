@@ -546,6 +546,8 @@ which the fuzzy score cannot see. Fix every hit or say in the comment why it is 
 Then run `python3 tools/store_sweep.py UNIT`: it lists struct stores and `li` constants only one side has (a field
 the C never writes, a store of the wrong width, a constant computed differently). Fix those before calling a
 function register-only; a SHIFT line is a layout offset, not a missing store.
+`python3 tools/insn_delta.py UNIT` lists functions whose instruction count differs from the original's, with the
+opcodes that differ (`+28 fsubs`): a count gap is a source shape, not colouring; its docstring lists the usual causes.
 
 ## Your report
 
