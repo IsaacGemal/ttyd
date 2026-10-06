@@ -720,7 +720,7 @@ void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
         WIN_KIRINUKI_SCALE(0x9, w - 8.0f - 8.0f, double_8_802f4530);
         winKirinukiQuad(x + 8.0f, y, w - 8.0f - 8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0xD, double_8_802f4530, double_8_802f4530);
-        winKirinukiQuad(x + (w - 8.0f), y, 8.0f, 8.0f);
+        winKirinukiQuad(x + (w - 8.0f), y, 8.0f, float_8_8041d0a0);
         WIN_KIRINUKI_SCALE(0xA, double_8_802f4530, h - 8.0f - 8.0f);
         winKirinukiQuad(x, y - 8.0f, 8.0f, (h - 8.0f - 8.0f));
         WIN_KIRINUKI_SCALE(0x8, w - 8.0f, (h - 8.0f - 8.0f));
@@ -1893,7 +1893,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
         if ((texBase != 0 && page == 2) || (texBase != 1 && page == 3)) {
                 hakoQuad(work, t7b, x, (y + scroll) - (f32)(page * 0xE8), 56.0f, 56.0f);
                 hakoQuad(work, t7d, x, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
-                hakoQuad(work, t7e, x + 8.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 48.0f, 8.0f);
+                hakoQuad(work, t7e, x + 8.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), float_48_8041d11c, 8.0f);
                 hakoQuad(work, t85, x + 56.0f, (y + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
                 hakoQuad(work, t84, x + 56.0f, ((y - 8.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 48.0f);
                 hakoQuad(work, t81, x + 56.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
@@ -3264,13 +3264,13 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
     WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x33, 256.0f - yofs, BK_DBL(0x5A8, double_432_802f4590, 432.0),
                   8.0f + x, y - 8.0f, (8.0f + x) + 432.0f, ((y - 8.0f) - (256.0f - yofs)))
     WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x28, BK_DBL(0x548, double_8_802f4530, 8.0), BK_DBL(0x500, double_16_802f44e8, 16.0),
-                  x, y, x + 16.0f, y - 8.0f)
+                  x, y, x + float_16_8041d0e4, y - float_8_8041d0a0)
     WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2C, BK_DBL(0x548, double_8_802f4530, 8.0), BK_DBL(0x5B0, double_184_802f4598, 184.0),
-                  (16.0f + x), y, (16.0f + x) + 184.0f, y - 8.0f)
+                  (16.0f + x), y, (float_16_8041d0e4 + x) + 184.0f, y - 8.0f)
     WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x26, BK_DBL(0x500, double_16_802f44e8, 16.0), BK_DBL(0x558, double_48_802f4540, 48.0),
-                  (184.0f + (16.0f + x)), y, (184.0f + (16.0f + x)) + 48.0f, y - 16.0f)
+                  (184.0f + (16.0f + x)), y, (184.0f + (float_16_8041d0e4 + x)) + 48.0f, y - 16.0f)
     WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2D, BK_DBL(0x548, double_8_802f4530, 8.0), BK_DBL(0x5B0, double_184_802f4598, 184.0),
-                  (48.0f + (184.0f + (16.0f + x))), y, (48.0f + (184.0f + (16.0f + x))) + 184.0f, y - 8.0f)
+                  (48.0f + (184.0f + (16.0f + x))), y, (float_48_8041d11c + (184.0f + (16.0f + x))) + 184.0f, y - 8.0f)
     WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2A, BK_DBL(0x548, double_8_802f4530, 8.0), BK_DBL(0x500, double_16_802f44e8, 16.0),
                   (184.0f + (48.0f + (184.0f + (16.0f + x)))), y, (184.0f + (48.0f + (184.0f + (16.0f + x)))) + 16.0f, y - 8.0f)
 
@@ -3284,7 +3284,7 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
 
     // the bottom edge
     WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x29, BK_DBL(0x500, double_16_802f44e8, 16.0), BK_DBL(0x500, double_16_802f44e8, 16.0),
-                  x, (((y - 8.0f) - 256.0f) + yofs), x + 16.0f, (((y - 8.0f) - 256.0f) + yofs) - 16.0f)
+                  x, (((y - 8.0f) - 256.0f) + yofs), x + float_16_8041d0e4, (((y - 8.0f) - 256.0f) + yofs) - 16.0f)
     WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2E, BK_DBL(0x500, double_16_802f44e8, 16.0), BK_DBL(0x5B0, double_184_802f4598, 184.0),
                   (16.0f + x), (((y - 8.0f) - 256.0f) + yofs), (16.0f + x) + 184.0f, (((y - 8.0f) - 256.0f) + yofs) - 16.0f)
     WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x27, BK_DBL(0x4F0, double_24_802f44d8, 24.0), BK_DBL(0x558, double_48_802f4540, 48.0),
@@ -3296,7 +3296,7 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
 
     if (type == 1) {
         for (i = 0; i < 8; i++) {
-            f32 cx = (16.0f + x) + (f32)((i % 2) * 216);
+            f32 cx = (float_16_8041d0e4 + x) + (f32)((i % 2) * 216);
             f32 cy = (y - 32.0f) - (f32)((i / 2) * 48);
 
             WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x34, BK_DBL(0x540, double_32_802f4528, 32.0),
@@ -3380,7 +3380,7 @@ void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
     y256 = y - 256.0f;
     y264 = y256 - 8.0f;
     x8 = x + 8.0f;
-    x16 = x + 16.0f;
+    x16 = x + float_16_8041d0e4;
     x32 = x + 32.0f;
     x264 = x16 + 248.0f;
     x312 = x264 + 48.0f;
@@ -3429,7 +3429,7 @@ void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
         winHalfBookPage(pal, 0x38, s8,   sn16, x32,          y256, x32 + -16.0f,              y264);
         winHalfBookPage(pal, 0x38, s8,   s240, x32,          y256, x32 + 240.0f,             y264);
         winHalfBookPage(pal, 0x39, s8,   s16,  x + 272.0f,   y256, (x + 272.0f) + 16.0f,     y264);
-        winHalfBookPage(pal, 0x38, s8,   s16,  x + 288.0f,   y256, (x + 288.0f) + 16.0f,     y264);
+        winHalfBookPage(pal, 0x38, s8,   s16,  x + float_288_8041d16c,   y256, (x + 288.0f) + 16.0f,     y264);
         winHalfBookPage(pal, 0x38, s8,   sn16, x320,         y256, x320 + -16.0f,             y264);
         winHalfBookPage(pal, 0x38, s8,   s16,  x320,         y256, x320 + 16.0f,             y264);
         winHalfBookPage(pal, 0x3C, s240, s8,   x + 328.0f,   y16,  (x + 328.0f) + 8.0f,      y16 - 240.0f);
