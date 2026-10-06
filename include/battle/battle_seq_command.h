@@ -72,3 +72,21 @@ void BattleCommandDisplay_ProtectPartnerSelectMenuSetup(BattleWork* wp);
 void BattleCommandDisplay_ProtectPartnerSelectMenuEnd(BattleWork* wp);
 void _commandRestoreRec(void);
 s32 _check_present_item(void);
+typedef struct CheckPartyTable {
+    s32 kind;    // 0x0
+    char* name;  // 0x4
+    u16 icon;    // 0x8
+    u16 pad;     // 0xA
+    char* help;  // 0xC
+} CheckPartyTable;
+void BattleCommandDisplay_AllEnd(BattleWork* wp);
+void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleWork* wp);
+void BattleCommandDisplay_WeaponSelectMenuEnd(BattleWork* wp);
+void BattleCommandDisplay_OperationMenuEnd(BattleWork* wp);
+void BattleCommandDisplay_MultiItemMenuEnd(BattleWork* wp);
+void BattleCommandDisplay_ChangePartySelectMenuEnd(BattleWork* wp);
+void BattleCommandDisplay_WeaponSelectMenuDisp(CameraId camId, BattleWork* wp);
+void BattleCommandDisplay_OperationMenuDisp(CameraId camId, BattleWork* wp);
+void BattleCommandDisplay_MultiItemMenuDisp(CameraId camId, BattleWork* wp);
+void BattleCommandDisplay_ChangePartySelectMenuDisp(CameraId camId, BattleWork* wp);
+void BattleCommandDisplay_ActMenuDisp(CameraId camId, void* param);
