@@ -33,7 +33,7 @@
 // Data objects defined later in this file or in other units, declared before their first use.
 extern u32 first_shopping_evt[];
 
-// this file's own script (its data isn't written as source yet)
+// This file's own script, defined below.
 extern u32 buy_evt[];
 
 // The remaining scripts are file-local (their asm `.obj` blocks are `local`).
@@ -126,6 +126,82 @@ extern u32 dat_8041bc0c;
 extern const f32 float_0p6_8041bc2c;
 extern const f32 float_40_8041bc30;
 extern const f32 float_0p64_8041bc38;
+
+// Data, in the original object's order (build/G8MJ01/asm/event/evt_shop.s).
+// Named objects precede the real functions so immediate generation preserves their storage.
+
+// .rodata
+const char str_802ECD50[16] = "item_first_hit";
+const char str_802ECD60[8] = "mri_07";
+const char str_802ECD68[16] = "stg2_shop_04_1";
+const char str_802ECD78[8] = "usu_01";
+const char str_802ECD80[20] = "usugurashop_04_1";
+const char str_802ECD94[12] = "rsh_03_a";
+const char str_802ECDA0[12] = "rsh_03_b";
+const char str_802ECDAC[12] = "rsh_03_c";
+const char str_802ECDB8[16] = "stg6_shop_04_1";
+const char str_802ECDC8[24] = "<scrl_auto><once_stop>";
+const char str_802ECDE0[8] = "rsh_03";
+const char str_802ECDE8[16] = "a_shop_keihin";
+const char str_802ECDF8[24] = "msg_shop_point_list5";
+const char str_802ECE10[24] = "msg_shop_point_list6";
+
+// .sdata2
+__declspec(section ".sdata2") u32 dat_8041bbe0 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbe4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbe8 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbec = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbf0 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbf4 = 0xFFFFFFFF;
+__declspec(section ".sdata2") u32 dat_8041bbf8 = 0xF00000FF;
+__declspec(section ".sdata2") u32 dat_8041bbfc = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041bc00 = 0xF00000FF;
+__declspec(section ".sdata2") u32 dat_8041bc04 = 0x000000FF;
+__declspec(section ".sdata2") u32 dat_8041bc08 = 0xF00000FF;
+__declspec(section ".sdata2") u32 dat_8041bc0c = 0x000000FF;
+__declspec(section ".sdata2") const char str_8041BC10[8] = "mario";
+__declspec(section ".sdata2") const char str_8041BC18[4] = "me";
+__declspec(section ".sdata2") const char str_8041BC1C[6] = "shp%d";
+__declspec(section ".sdata2") const f32 float_6_8041bc24 = 6.0f;
+__declspec(section ".sdata2") const char str_8041BC28[4] = "%s";
+__declspec(section ".sdata2") const f32 float_0p6_8041bc2c = 0.6f;
+__declspec(section ".sdata2") const f32 float_40_8041bc30 = 40.0f;
+__declspec(section ".sdata2") const f32 float_0_8041bc34 = 0.0f;
+__declspec(section ".sdata2") const f32 float_0p64_8041bc38 = 0.64f;
+__declspec(section ".sdata2") const f32 float_10_8041bc3c = 10.0f;
+__declspec(section ".sdata2") const f32 float_30_8041bc40 = 30.0f;
+__declspec(section ".sdata2") const f32 float_36_8041bc44 = 36.0f;
+__declspec(section ".sdata2") const f32 float_1p1_8041bc48 = 1.1f;
+__declspec(section ".sdata2") const f32 float_0p8_8041bc4c = 0.8f;
+__declspec(section ".sdata2") const f32 float_124_8041bc50 = 124.0f;
+__declspec(section ".sdata2") const f32 float_38_8041bc54 = 38.0f;
+__declspec(section ".sdata2") const f32 float_108_8041bc58 = 108.0f;
+__declspec(section ".sdata2") const f32 float_0p5_8041bc5c = 0.5f;
+__declspec(section ".sdata2") const char str_8041BC60[4] = "%d";
+__declspec(section ".sdata2") const f32 float_12_8041bc64 = 12.0f;
+
+// Keep named scalar loads when definitions precede immediate code generation.
+#ifdef MUST_MATCH
+#define SHOP_F32(value) (*(f32*)&(value))
+#else
+#define SHOP_F32(value) (value)
+#endif
+
+// Emit real functions in retail order; list_disp pools the native unsigned conversion first.
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+#endif
+
+s32 evtShopIsActive(void) {
+	s32 active;
+
+	if (strcmp(gp->currentMapName, mapname) == 0 && ((ShopWork*)_wp)->flags != 0) {
+		active = 1;
+	} else {
+		active = 0;
+	}
+	return active;
+}
 
 USER_FUNC(evt_shop_main_func) {
 	ShopWork* wp = (ShopWork*)event->lwData[0];
@@ -266,17 +342,6 @@ USER_FUNC(evt_shop_main_func) {
 	return 0;
 }
 
-s32 evtShopIsActive(void) {
-	s32 active;
-
-	if (strcmp(gp->currentMapName, mapname) == 0 && ((ShopWork*)_wp)->flags != 0) {
-		active = 1;
-	} else {
-		active = 0;
-	}
-	return active;
-}
-
 USER_FUNC(unkeep_pouchcheck_func) {
 	pouchGetPtr();
 	event->lwData[0] = pouchGetKeepItemCnt();
@@ -288,12 +353,6 @@ USER_FUNC(keep_pouchcheck_func) {
 	pouchGetPtr();
 	event->lwData[0] = pouchGetHaveItemCnt();
 	event->lwData[1] = pouchGetEmptyKeepItemCnt();
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(sell_pouchcheck_func) {
-	pouchGetPtr();
-	event->lwData[0] = pouchGetHaveItemCnt();
 	return EVT_RETURN_DONE;
 }
 
@@ -324,20 +383,18 @@ s32 item_data_db_arrange(void) {
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(get_ptr) {
-	evtSetValue(event, event->args[0], (s32)_wp);
+USER_FUNC(sell_pouchcheck_func) {
+	pouchGetPtr();
+	event->lwData[0] = pouchGetHaveItemCnt();
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(disp_off) {
-	ShopWork* wp = (ShopWork*)evtGetValue(event, event->args[0]);
+USER_FUNC(name_price) {
+	s32* args = event->args;
+	s32 id = evtGetValue(event, args[0]);
 
-	wp->flags &= ~1;
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(shopper_name) {
-	evtSetValue(event, event->args[0], *(s32*)((u8*)((ShopWork*)_wp)->field_0xC + 0x0));
+	evtSetValue(event, args[1], (s32)msgSearch(itemDataTable[id].name));
+	evtSetValue(event, args[2], *(u16*)&itemDataTable[id].sell_price);
 	return EVT_RETURN_DONE;
 }
 
@@ -346,13 +403,18 @@ USER_FUNC(get_fook_evt) {
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(get_buy_evt) {
-	evtSetValue(event, event->args[0], *(s32*)((u8*)((ShopWork*)_wp)->field_0xC + 0x8));
+USER_FUNC(get_ptr) {
+	evtSetValue(event, event->args[0], (s32)_wp);
 	return EVT_RETURN_DONE;
 }
 
 USER_FUNC(set_buy_item_id) {
 	((ShopWork*)_wp)->field_0xD4 = evtGetValue(event, event->args[0]);
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(get_buy_evt) {
+	evtSetValue(event, event->args[0], *(s32*)((u8*)((ShopWork*)_wp)->field_0xC + 0x8));
 	return EVT_RETURN_DONE;
 }
 
@@ -380,69 +442,15 @@ USER_FUNC(get_value) {
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(name_price) {
-	s32* args = event->args;
-	s32 id = evtGetValue(event, args[0]);
+USER_FUNC(disp_off) {
+	ShopWork* wp = (ShopWork*)evtGetValue(event, event->args[0]);
 
-	evtSetValue(event, args[1], (s32)msgSearch(itemDataTable[id].name));
-	evtSetValue(event, args[2], *(u16*)&itemDataTable[id].sell_price);
+	wp->flags &= ~1;
 	return EVT_RETURN_DONE;
 }
 
-USER_FUNC(get_shop_point) {
-	s32* args = event->args;
-	PouchData* pouch = pouchGetPtr();
-
-	evtSetValue(event, args[0], pouch->mShopPoints);
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(reset_shop_point) {
-	PouchData* pouch = pouchGetPtr();
-
-	pouch->mShopPoints = 0;
-	pouch->field_0x5B4 = 0;
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(point_wait) {
-	ShopWork* wp = (ShopWork*)_wp;
-	PouchData* pouch = pouchGetPtr();
-
-	if (wp->field_0x38 != pouch->mShopPoints) {
-		psndSFXOn((const char*)0x8CA);
-		return EVT_RETURN_BLOCK;
-	}
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(point_disp_onoff) {
-	s32 value = evtGetValue(event, event->args[0]);
-	PouchData* pouch = pouchGetPtr();
-	ShopWork* wp = (ShopWork*)_wp;
-
-	wp->field_0x38 = pouch->mShopPoints;
-	if (value != 0) {
-		winMgrOpen(wp->field_0x58);
-	}
-	else {
-		winMgrClose(wp->field_0x58);
-	}
-	return EVT_RETURN_DONE;
-}
-
-USER_FUNC(shop_flag_onoff) {
-	s32* args = event->args;
-	s32 a = evtGetValue(event, args[0]);
-	s32 b = evtGetValue(event, args[1]);
-	ShopWork* wp = (ShopWork*)_wp;
-
-	if (a != 0) {
-		wp->flags |= b;
-	}
-	else {
-		wp->flags &= ~b;
-	}
+USER_FUNC(shopper_name) {
+	evtSetValue(event, event->args[0], *(s32*)((u8*)((ShopWork*)_wp)->field_0xC + 0x0));
 	return EVT_RETURN_DONE;
 }
 
@@ -521,6 +529,14 @@ USER_FUNC(chk_shop_point) {
 	return EVT_RETURN_DONE;
 }
 
+USER_FUNC(reset_shop_point) {
+	PouchData* pouch = pouchGetPtr();
+
+	pouch->mShopPoints = 0;
+	pouch->field_0x5B4 = 0;
+	return EVT_RETURN_DONE;
+}
+
 USER_FUNC(add_shop_point) {
 #ifdef MUST_MATCH
 	// MUST_MATCH: holding the string base as an integer reproduces the original's base+offset
@@ -564,51 +580,147 @@ USER_FUNC(add_shop_point) {
 	return EVT_RETURN_DONE;
 }
 
-void help_main(WinMgrEntry* entry) {
-	winMgrHelpMain(entry);
+USER_FUNC(get_shop_point) {
+	s32* args = event->args;
+	PouchData* pouch = pouchGetPtr();
+
+	evtSetValue(event, args[0], pouch->mShopPoints);
+	return EVT_RETURN_DONE;
 }
 
-void help_disp(WinMgrEntry* entry) {
+USER_FUNC(shop_flag_onoff) {
+	s32* args = event->args;
+	s32 a = evtGetValue(event, args[0]);
+	s32 b = evtGetValue(event, args[1]);
 	ShopWork* wp = (ShopWork*)_wp;
-	s32 offset = wp->field_0x2C * 8;
-	s32* items = wp->field_0x8;
 
-	if (!winMgrAction(wp->field_0x54)) {
-		s32 item = *(s32*)((u8*)items + offset);
-		entry->field_0x34 = (s32)msgSearch(itemDataTable[item].description);
-		winMgrHelpDraw(entry);
+	if (a != 0) {
+		wp->flags |= b;
 	}
+	else {
+		wp->flags &= ~b;
+	}
+	return EVT_RETURN_DONE;
 }
 
-void title_disp(WinMgrEntry* entry) {
-	if (!(entry->flags & 4)) {
-		GXColor color;
-		const char* msg = msgSearch("msg_shop_point_list4\0\0\0");
+USER_FUNC(point_wait) {
+	ShopWork* wp = (ShopWork*)_wp;
+	PouchData* pouch = pouchGetPtr();
 
-		FontDrawStart();
-		FontDrawEdge();
-		*(u32*)&color = dat_8041bbec;
-		FontDrawColor(&color);
-		FontDrawMessage(entry->field_0x18 + (entry->field_0x20 - FontGetMessageWidth(msg)) / 2, entry->field_0x1C - 12, msg);
-		FontDrawEdgeOff();
+	if (wp->field_0x38 != pouch->mShopPoints) {
+		psndSFXOn((const char*)0x8CA);
+		return EVT_RETURN_BLOCK;
 	}
+	return EVT_RETURN_DONE;
 }
 
-// list_disp: every call and immediate matches; the remaining diffs are register allocation and
-// scheduling. `i = 0` is emitted just before the loop preheader, and the two header x-sums and the
-// loop's price x-sum keep their last intermediate in r3 where the original uses r0.
-//
-// The int->float block: the price-width product and the additions are written as statements
-// (`f32 w = width;`, `f32 x = f20/2 - w * 0.6f;`, `x = f18 + x;`, `x -= 40.0f;`) rather than the
-// original's inline expression. That makes the compiler meet the unsigned `width` conversion
-// first, so `f28` is the 2^52 mask (`double_to_int_mask_802ece28`) and `width` lands at stack slot
-// 0x188, and it fuses the product into one `fnmsubs` like the original. What still differs is the
-// `fnmsubs` operand order: `w * 0.6f` puts `w` first where the original's `0.6f * width` puts the
-// constant first; writing `0.6f * w` fixes the operand order but reverts the compiler's
-// loop-invariant constant order (0.6 goes to `f28`), which costs more.
+USER_FUNC(point_disp_onoff) {
+	s32 value = evtGetValue(event, event->args[0]);
+	PouchData* pouch = pouchGetPtr();
+	ShopWork* wp = (ShopWork*)_wp;
 
-// NONMATCHING (99.07%): the `fnmsubs` operand order is `(w, 0.6f)` instead of `(0.6f, w)`, and
-// the two header x-sums, the price x-sum and `i = 0` use r3 where the original uses r0 (see above).
+	wp->field_0x38 = pouch->mShopPoints;
+	if (value != 0) {
+		winMgrOpen(wp->field_0x58);
+	}
+	else {
+		winMgrClose(wp->field_0x58);
+	}
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_shop_setup) {
+	s32* args;
+	s32 v0;
+	s32 v1;
+	s32 v2;
+	s32 v3;
+	NpcEntry* npc;
+	s32 i;
+	ShopWork* wp;
+
+	args = event->args;
+	v0 = evtGetValue(event, args[0]);
+	v1 = evtGetValue(event, args[1]);
+	v2 = evtGetValue(event, args[2]);
+	v3 = evtGetValue(event, args[3]);
+
+	wp = (ShopWork*)_mapAlloc(0xD8);
+	memset(wp, 0, 0xD8);
+	_wp = (evt_shop_work*)wp;
+	strncpy(mapname, gp->currentMapName, 15);
+	wp->field_0x4 = (void*)v0;
+	wp->field_0x8 = (s32*)v1;
+	wp->field_0xC = (void*)v2;
+	wp->field_0x10 = (void*)v3;
+	wp->field_0x20 = 6;
+
+	for (i = 0; i < wp->field_0x20; i++) {
+		Vec pos;
+		char buf[0x20];
+
+		mapObjGetPos(*(const char**)((u8*)wp->field_0x4 + i * 8), &pos);
+		mapObjFlagOn(*(const char**)((u8*)wp->field_0x4 + i * 8), 0x4000);
+		sprintf(buf, str_8041BC1C, i);
+		iconEntry(buf, *(u16*)&itemDataTable[wp->field_0x8[i * 2]].icon_id);
+		iconSetPos(buf, pos.x, SHOP_F32(float_6_8041bc24) + pos.y, pos.z);
+		iconFlagOn(buf, 0x40);
+		wp->field_0x14[i] = 0;
+		if (wp->field_0x8[i * 2] == 0x33 && (s32)pouchCheckItem(0x33) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x37 && (s32)pouchCheckItem(0x37) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x38 && (s32)pouchCheckItem(0x38) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x39 && (s32)pouchCheckItem(0x39) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x3A && (s32)pouchCheckItem(0x3A) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+		if (wp->field_0x8[i * 2] == 0x3B && (s32)pouchCheckItem(0x3B) != 0) {
+			wp->field_0x14[i] |= 1;
+		}
+	}
+	npc = npcNameToPtr(*(const char**)v2);
+	npc->talkEvt = shopper_talk_evt;
+	wp->field_0x24 = evtEntryType(main_evt, 0, 0x20, 0);
+	wp->field_0x24->lwData[0] = (s32)wp;
+	for (i = 0; i < 3; i++) {
+		(&wp->field_0x50)[i] = winMgrEntry(&window_desc[i]);
+	}
+	wp->field_0xD0 = -1;
+	evtRunCaseEntry(9, 1, (s32)str_802ECDE8, 0, (s32*)evt_shoplist, 0);
+	return EVT_RETURN_DONE;
+}
+
+USER_FUNC(disp_list) {
+	if (isFirstCall) {
+		event->userdata[0] = winMgrEntry(&list_desc[0]);
+		event->userdata[1] = winMgrEntry(&list_desc[1]);
+		event->userdata[2] = winMgrEntry(&list_desc[2]);
+		winMgrOpen(event->userdata[0]);
+		winMgrOpen(event->userdata[1]);
+		winMgrOpen(event->userdata[2]);
+		psndSFXOn((const char*)0x2A);
+	}
+	if (keyGetButtonTrg(0) & 0x200) {
+		winMgrCloseAutoDelete(event->userdata[0]);
+		winMgrCloseAutoDelete(event->userdata[1]);
+		winMgrCloseAutoDelete(event->userdata[2]);
+		psndSFXOn((const char*)0x2B);
+		return 1;
+	}
+	return 0;
+}
+
+// NONMATCHING (99.07%): the row index initializes at the loop preheader instead of
+// before the first msgSearch. The second heading and price x sums use r3 for their
+// last intermediate instead of r0. The fnmsubs width/factor operands are reversed;
+// swapping them in C also swaps the conversion-mask/factor FPR allocation.
 void list_disp(WinMgrEntry* entry) {
 	PouchData* pouch;
 	GXColor color0;
@@ -684,14 +796,14 @@ void list_disp(WinMgrEntry* entry) {
 		{
 #ifdef MUST_MATCH
 			f32 w = width;
-			f32 x = (f32)(entry->field_0x20 / 2) - w * float_0p6_8041bc2c;
+			f32 x = (f32)(entry->field_0x20 / 2) - w * SHOP_F32(float_0p6_8041bc2c);
 			x = (f32)entry->field_0x18 + x;
-			x -= float_40_8041bc30;
-			PSMTXTrans(mtx, x, entry->field_0x1C - 28 - i * 26, float_0_8041bc34);
+			x -= SHOP_F32(float_40_8041bc30);
+			PSMTXTrans(mtx, x, entry->field_0x1C - 28 - i * 26, SHOP_F32(float_0_8041bc34));
 #else
 			f32 w = width;
-			w *= float_0p6_8041bc2c;
-			PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - w) - float_40_8041bc30, entry->field_0x1C - 28 - i * 26, float_0_8041bc34);
+			w *= SHOP_F32(float_0p6_8041bc2c);
+			PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - w) - SHOP_F32(float_40_8041bc30), entry->field_0x1C - 28 - i * 26, SHOP_F32(float_0_8041bc34));
 #endif
 		}
 		s = MATCH_F32(float_0p64_8041bc38);
@@ -713,6 +825,20 @@ void list_disp(WinMgrEntry* entry) {
 	}
 }
 
+void title_disp(WinMgrEntry* entry) {
+	if (!(entry->flags & 4)) {
+		GXColor color;
+		const char* msg = msgSearch("msg_shop_point_list4\0\0\0");
+
+		FontDrawStart();
+		FontDrawEdge();
+		*(u32*)&color = dat_8041bbec;
+		FontDrawColor(&color);
+		FontDrawMessage(entry->field_0x18 + (entry->field_0x20 - FontGetMessageWidth(msg)) / 2, entry->field_0x1C - 12, msg);
+		FontDrawEdgeOff();
+	}
+}
+
 void point_disp(WinMgrEntry* entry) {
 	ShopWork* wp = (ShopWork*)_wp;
 	PouchData* pouch = pouchGetPtr();
@@ -722,18 +848,18 @@ void point_disp(WinMgrEntry* entry) {
 		Mtx scale;
 		s32 delta;
 
-		PSMTXTrans(mtx, float_10_8041bc3c + (float_30_8041bc40 + (f32)entry->field_0x18), (f32)entry->field_0x1C - float_36_8041bc44, float_0_8041bc34);
+		PSMTXTrans(mtx, SHOP_F32(float_10_8041bc3c) + (SHOP_F32(float_30_8041bc40) + (f32)entry->field_0x18), (f32)entry->field_0x1C - SHOP_F32(float_36_8041bc44), SHOP_F32(float_0_8041bc34));
 		if ((u32)gp->language == 0) {
-			PSMTXScale(scale, float_1p1_8041bc48, float_1p1_8041bc48, float_1p1_8041bc48);
+			PSMTXScale(scale, SHOP_F32(float_1p1_8041bc48), SHOP_F32(float_1p1_8041bc48), SHOP_F32(float_1p1_8041bc48));
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGx2(mtx, 0x10, 0x1F1);
 		}
 		else {
-			PSMTXScale(scale, float_0p8_8041bc4c, float_1p1_8041bc48, float_1p1_8041bc48);
+			PSMTXScale(scale, SHOP_F32(float_0p8_8041bc4c), SHOP_F32(float_1p1_8041bc48), SHOP_F32(float_1p1_8041bc48));
 			PSMTXConcat(mtx, scale, mtx);
 			iconDispGx2(mtx, 0x10, 0x20A);
 		}
-		PSMTXTrans(mtx, float_124_8041bc50 + (f32)entry->field_0x18, (f32)entry->field_0x1C - float_38_8041bc54, float_0_8041bc34);
+		PSMTXTrans(mtx, SHOP_F32(float_124_8041bc50) + (f32)entry->field_0x18, (f32)entry->field_0x1C - SHOP_F32(float_38_8041bc54), SHOP_F32(float_0_8041bc34));
 		iconNumberDispGx(mtx, wp->field_0x38, 0, *(GXColor*)&dat_8041bbe8);
 		delta = pouch->mShopPoints - wp->field_0x38;
 		if (delta != 0) {
@@ -744,6 +870,22 @@ void point_disp(WinMgrEntry* entry) {
 			wp->field_0x38 += delta;
 		}
 	}
+}
+
+void help_disp(WinMgrEntry* entry) {
+	ShopWork* wp = (ShopWork*)_wp;
+	s32 offset = wp->field_0x2C * 8;
+	s32* items = wp->field_0x8;
+
+	if (!winMgrAction(wp->field_0x54)) {
+		s32 item = *(s32*)((u8*)items + offset);
+		entry->field_0x34 = (s32)msgSearch(itemDataTable[item].description);
+		winMgrHelpDraw(entry);
+	}
+}
+
+void help_main(WinMgrEntry* entry) {
+	winMgrHelpMain(entry);
 }
 
 void name_disp(WinMgrEntry* entry) {
@@ -767,7 +909,7 @@ void name_disp(WinMgrEntry* entry) {
 		FontDrawEdge();
 		*(u32*)&titleColor = dat_8041bbe0;
 		FontDrawColor(&titleColor);
-		FontDrawString(msg, (f32)(-(s32)FontGetMessageWidth(msg) / 2), float_108_8041bc58);
+		FontDrawString(msg, (f32)(-(s32)FontGetMessageWidth(msg) / 2), SHOP_F32(float_108_8041bc58));
 		FontDrawEdgeOff();
 	}
 	for (i = 0; i < wp->field_0x20; i++) {
@@ -775,166 +917,25 @@ void name_disp(WinMgrEntry* entry) {
 			continue;
 		}
 		mapObjGetPos(*(const char**)((u8*)wp->field_0x4 + i * 8), &pos);
-		pos.y += float_30_8041bc40;
+		pos.y += SHOP_F32(float_30_8041bc40);
 		PSMTXMultVec(camGetPtr(4)->view, &pos, &pos);
 		PSMTX44MultVec(camGetPtr(4)->projection, &pos, &pos);
 #ifdef MUST_MATCH
 		// MUST_MATCH: the array form makes the scheduler emit the x scale before the y one,
 		// which is the original's order; the named-field form emits y first.
-		((f32*)&pos)[0] *= (f32)gp->fbWidth * float_0p5_8041bc5c;
-		((f32*)&pos)[1] *= (f32)gp->efbHeight * float_0p5_8041bc5c;
+		((f32*)&pos)[0] *= (f32)gp->fbWidth * SHOP_F32(float_0p5_8041bc5c);
+		((f32*)&pos)[1] *= (f32)gp->efbHeight * SHOP_F32(float_0p5_8041bc5c);
 #else
-		pos.x *= (f32)gp->fbWidth * float_0p5_8041bc5c;
-		pos.y *= (f32)gp->efbHeight * float_0p5_8041bc5c;
+		pos.x *= (f32)gp->fbWidth * SHOP_F32(float_0p5_8041bc5c);
+		pos.y *= (f32)gp->efbHeight * SHOP_F32(float_0p5_8041bc5c);
 #endif
 		sprintf(buf, str_8041BC60, wp->field_0x8[i * 2 + 1]);
-		PSMTXTrans(mtx, float_12_8041bc64 * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
+		PSMTXTrans(mtx, SHOP_F32(float_12_8041bc64) * (f32)(strlen(buf) - 1) + pos.x, pos.y, pos.z);
 		iconNumberDispGx(mtx, *(s32*)((u8*)wp->field_0x8 + i * 8 + 4), 0, *(GXColor*)&dat_8041bbe4);
 	}
 }
 
-USER_FUNC(disp_list) {
-	if (isFirstCall) {
-		event->userdata[0] = winMgrEntry(&list_desc[0]);
-		event->userdata[1] = winMgrEntry(&list_desc[1]);
-		event->userdata[2] = winMgrEntry(&list_desc[2]);
-		winMgrOpen(event->userdata[0]);
-		winMgrOpen(event->userdata[1]);
-		winMgrOpen(event->userdata[2]);
-		psndSFXOn((const char*)0x2A);
-	}
-	if (keyGetButtonTrg(0) & 0x200) {
-		winMgrCloseAutoDelete(event->userdata[0]);
-		winMgrCloseAutoDelete(event->userdata[1]);
-		winMgrCloseAutoDelete(event->userdata[2]);
-		psndSFXOn((const char*)0x2B);
-		return 1;
-	}
-	return 0;
-}
-
-USER_FUNC(evt_shop_setup) {
-	s32* args;
-	s32 v0;
-	s32 v1;
-	s32 v2;
-	s32 v3;
-	NpcEntry* npc;
-	s32 i;
-	ShopWork* wp;
-
-	args = event->args;
-	v0 = evtGetValue(event, args[0]);
-	v1 = evtGetValue(event, args[1]);
-	v2 = evtGetValue(event, args[2]);
-	v3 = evtGetValue(event, args[3]);
-
-	wp = (ShopWork*)_mapAlloc(0xD8);
-	memset(wp, 0, 0xD8);
-	_wp = (evt_shop_work*)wp;
-	strncpy(mapname, gp->currentMapName, 15);
-	wp->field_0x4 = (void*)v0;
-	wp->field_0x8 = (s32*)v1;
-	wp->field_0xC = (void*)v2;
-	wp->field_0x10 = (void*)v3;
-	wp->field_0x20 = 6;
-
-	for (i = 0; i < wp->field_0x20; i++) {
-		Vec pos;
-		char buf[0x20];
-
-		mapObjGetPos(*(const char**)((u8*)wp->field_0x4 + i * 8), &pos);
-		mapObjFlagOn(*(const char**)((u8*)wp->field_0x4 + i * 8), 0x4000);
-		sprintf(buf, str_8041BC1C, i);
-		iconEntry(buf, *(u16*)&itemDataTable[wp->field_0x8[i * 2]].icon_id);
-		iconSetPos(buf, pos.x, float_6_8041bc24 + pos.y, pos.z);
-		iconFlagOn(buf, 0x40);
-		wp->field_0x14[i] = 0;
-		if (wp->field_0x8[i * 2] == 0x33 && (s32)pouchCheckItem(0x33) != 0) {
-			wp->field_0x14[i] |= 1;
-		}
-		if (wp->field_0x8[i * 2] == 0x37 && (s32)pouchCheckItem(0x37) != 0) {
-			wp->field_0x14[i] |= 1;
-		}
-		if (wp->field_0x8[i * 2] == 0x38 && (s32)pouchCheckItem(0x38) != 0) {
-			wp->field_0x14[i] |= 1;
-		}
-		if (wp->field_0x8[i * 2] == 0x39 && (s32)pouchCheckItem(0x39) != 0) {
-			wp->field_0x14[i] |= 1;
-		}
-		if (wp->field_0x8[i * 2] == 0x3A && (s32)pouchCheckItem(0x3A) != 0) {
-			wp->field_0x14[i] |= 1;
-		}
-		if (wp->field_0x8[i * 2] == 0x3B && (s32)pouchCheckItem(0x3B) != 0) {
-			wp->field_0x14[i] |= 1;
-		}
-	}
-	npc = npcNameToPtr(*(const char**)v2);
-	npc->talkEvt = shopper_talk_evt;
-	wp->field_0x24 = evtEntryType(main_evt, 0, 0x20, 0);
-	wp->field_0x24->lwData[0] = (s32)wp;
-	for (i = 0; i < 3; i++) {
-		(&wp->field_0x50)[i] = winMgrEntry(&window_desc[i]);
-	}
-	wp->field_0xD0 = -1;
-	evtRunCaseEntry(9, 1, (s32)str_802ECDE8, 0, (s32*)evt_shoplist, 0);
-	return EVT_RETURN_DONE;
-}
-// ---------------------------------------------------------------------------
-// Data, in the original object's order (build/G8MJ01/asm/event/evt_shop.s).
-// Function code above references the named objects; the constants live here so
-// the deferred compiler emits them, all named, before its own pool entries.
-
-// .rodata
-const char str_802ECD50[16] = "item_first_hit";
-const char str_802ECD60[8] = "mri_07";
-const char str_802ECD68[16] = "stg2_shop_04_1";
-const char str_802ECD78[8] = "usu_01";
-const char str_802ECD80[20] = "usugurashop_04_1";
-const char str_802ECD94[12] = "rsh_03_a";
-const char str_802ECDA0[12] = "rsh_03_b";
-const char str_802ECDAC[12] = "rsh_03_c";
-const char str_802ECDB8[16] = "stg6_shop_04_1";
-const char str_802ECDC8[24] = "<scrl_auto><once_stop>";
-const char str_802ECDE0[8] = "rsh_03";
-const char str_802ECDE8[16] = "a_shop_keihin";
-const char str_802ECDF8[24] = "msg_shop_point_list5";
-const char str_802ECE10[24] = "msg_shop_point_list6";
-
-
-// .sdata2
-__declspec(section ".sdata2") u32 dat_8041bbe0 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041bbe4 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041bbe8 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041bbec = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041bbf0 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041bbf4 = 0xFFFFFFFF;
-__declspec(section ".sdata2") u32 dat_8041bbf8 = 0xF00000FF;
-__declspec(section ".sdata2") u32 dat_8041bbfc = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041bc00 = 0xF00000FF;
-__declspec(section ".sdata2") u32 dat_8041bc04 = 0x000000FF;
-__declspec(section ".sdata2") u32 dat_8041bc08 = 0xF00000FF;
-__declspec(section ".sdata2") u32 dat_8041bc0c = 0x000000FF;
-__declspec(section ".sdata2") const char str_8041BC10[8] = "mario";
-__declspec(section ".sdata2") const char str_8041BC18[4] = "me";
-__declspec(section ".sdata2") const char str_8041BC1C[6] = "shp%d";
-__declspec(section ".sdata2") const f32 float_6_8041bc24 = 6.0f;
-__declspec(section ".sdata2") const char str_8041BC28[4] = "%s";
-__declspec(section ".sdata2") const f32 float_0p6_8041bc2c = 0.6f;
-__declspec(section ".sdata2") const f32 float_40_8041bc30 = 40.0f;
-__declspec(section ".sdata2") const f32 float_0_8041bc34 = 0.0f;
-__declspec(section ".sdata2") const f32 float_0p64_8041bc38 = 0.64f;
-__declspec(section ".sdata2") const f32 float_10_8041bc3c = 10.0f;
-__declspec(section ".sdata2") const f32 float_30_8041bc40 = 30.0f;
-__declspec(section ".sdata2") const f32 float_36_8041bc44 = 36.0f;
-__declspec(section ".sdata2") const f32 float_1p1_8041bc48 = 1.1f;
-__declspec(section ".sdata2") const f32 float_0p8_8041bc4c = 0.8f;
-__declspec(section ".sdata2") const f32 float_124_8041bc50 = 124.0f;
-__declspec(section ".sdata2") const f32 float_38_8041bc54 = 38.0f;
-__declspec(section ".sdata2") const f32 float_108_8041bc58 = 108.0f;
-__declspec(section ".sdata2") const f32 float_0p5_8041bc5c = 0.5f;
-__declspec(section ".sdata2") const char str_8041BC60[4] = "%d";
-__declspec(section ".sdata2") const f32 float_12_8041bc64 = 12.0f;
+#undef SHOP_F32
 
 // .data
 WinMgrDesc window_desc[3] = {
@@ -1145,14 +1146,3 @@ u32 evt_shoplist[10] = {
 u32 main_evt[4] = {
     0x0001005B, (u32)evt_shop_main_func, 0x00000002, 0x00000001,
 };
-
-
-// Pools the unsigned int->float conversion double (2^52) here, before the deferred
-// functions emit theirs, so the two doubles in .rodata come out mask-then-int like the
-// original. Nothing calls it; the linker strips the body.
-#ifdef MUST_MATCH
-#pragma defer_codegen off
-static f32 pool_i2f_mask(u32 v) { return (f32)v; }
-#pragma defer_codegen reset
-#endif
-
