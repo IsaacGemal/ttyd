@@ -224,6 +224,60 @@ sections and on the functions' scores, and what still differs.
 BEFORE YOU STOP: run `python3 check.py --final {unit}` and fix everything it lists."""
 
 # one-short tasks: the agent goes on to link the unit once its last function matches
+ORDER_PROMPT = """You are one of several agents working on a matching decompilation of Paper Mario: The Thousand-Year Door
+(GameCube, PowerPC, Metrowerks C compiler).
+
+YOUR TASK: PUT {src} (unit {unit}, {part}) IN THE ORIGINAL'S FUNCTION ORDER. Its functions compile to (nearly) the
+original bytes, but the built .text has them in a different order than the original, which keeps the unit from
+linking. This compiler emits a file's functions in REVERSE source order, so the source must list them from the
+highest original address to the lowest. Function bodies don't change in this task. SUCCESS MEANS
+`python3 tools/fn_order_check.py {unit}` prints `order matches` after a build, with no function scoring lower than it
+does now and no data section scoring lower or holding different bytes than now. Scores now:
+{funcs}
+Data sections below 100% now: {secs}.
+
+Steps:
+1. `cp {src} tmp/start.c` first, so you can always go back. Run `ninja`, then `python3 check.py {unit}` and note every
+   function's score; `python3 tools/link_diag.py {unit}` and note each data section's state.
+2. `python3 tools/fn_order.py {unit}` prints the order the file has and the order it needs. `--write` rewrites the
+   file when it can; when it refuses it says why, and nothing is written. Fix the cause by hand, then run it again:
+   - "X would use Y before its definition": add a declaration of Y above the first function (a prototype for a
+     function: `static` ones in this file, global ones in the unit's header, lines added only; an `extern` for a data
+     object). Never move a data definition: the data order is what the original has.
+   - a `#pragma` or `#define` region spanning several functions: give each function its own pragma pair with the same
+     settings (`#pragma X on` before it, `#pragma X reset` after it), so the functions can move separately.
+   - an `#if` block straddling functions: split it so each function sits in its own complete block.
+   If `fn_order.py` can't parse the file at all, `python3 tools/fn_order_check.py {unit} {src} --write` permutes the
+   function bodies among their slots instead.
+3. Rebuild (`ninja`) and check: `python3 tools/fn_order_check.py {unit}` (order), `python3 check.py {unit}` (no
+   function below its score in step 1), `python3 tools/link_diag.py {unit}` and `python3 tools/rodatalayout.py {unit}
+   .sdata2` (also .rodata): function order moves the compiler's literal pool, so a section can get worse with every
+   function unchanged.
+4. If a pool moved, fix it with the brief's pool recipes (docs/AGENT_BRIEF.md: "Pool recipes", "Where pool entries
+   come from", "Pool and string order") without changing what any function computes. If it can't be made at least as
+   good as in step 1, don't force it: copy tmp/start.c back to {src}, rebuild, and report REFUSED with what moved.
+5. Done when the order matches and nothing scores lower. Report the final state: ORDER MATCHES, or REFUSED and why.
+
+Only this file may change, with one exception: function prototypes go in headers (add lines only; never change or
+remove existing ones). Don't edit configure.py, config/ or other source files.
+
+Hard rules:
+- No network: don't fetch, search or clone anything from the web.
+- Stay inside this directory: don't read or list anything outside it (not ~/ttyd, not other agents' workspaces).
+  Scratch files go in ./tmp.
+- Start no background or detached processes (no `&`, nohup, setsid, screen, tmux, disown) and make no copies of this
+  workspace elsewhere; `ninja -j` at most 2. The sandbox ends every process when you stop.
+- Never `#pragma scheduling <cpu number>` (e.g. 601, 801): it sends the compiler into an endless loop.
+- No inline `asm` and no changes to compiler flags.
+- Source comments describe the code and the original, nothing else: no model, tool or agent names, no
+  "pass"/"wave"/"attempt" history, no references to REPORT.md or this prompt (put those in REPORT.md).
+- Never delete, rename or change what an existing function does.{hint}
+
+Write REPORT.md in this directory and update it as you go (you can be stopped at any moment). First line
+exactly: `@@MODEL_LINE@@`. Then: what fn_order.py said, each change and its effect, and the final state.
+
+BEFORE YOU STOP: run `python3 check.py --final {unit}` and fix everything it lists."""
+
 ONESHORT_NOTE = """
 THIS UNIT IS ONE FUNCTION AWAY FROM LINKING: `{fn}` is the only function below 100%. ./DOSSIER.md has its differing
 instructions (original | ours) and what earlier agents tried; the hypothesis to test first: {hyp}
@@ -686,6 +740,13 @@ def prepare(tag, spec):
                                                                        funcs=funcs, secs=secs, hint=hint)) + "\n")
         rsync(str(p / "PROMPT.md"), f"{HOST}:{rws}/PROMPT.md")
         return
+    if spec.get("mode") == "order":  # text order only: fn_order.py's refusals fixed by hand, nothing scoring lower
+        hint = ("\n- HINT for this file: " + HINTS[unit]) if unit in HINTS else ""
+        funcs = ", ".join(f"`{n}` {sc:.2f}%" for n, _, sc in spec["open"]) or "every function at 100%"
+        (p / "PROMPT.md").write_text(MODEL_LINE_FIX(ORDER_PROMPT.format(src=src, unit=unit, part=part, funcs=funcs, secs=secs,
+                                                                        hint=hint)) + "\n")
+        rsync(str(p / "PROMPT.md"), f"{HOST}:{rws}/PROMPT.md")
+        return
     if spec.get("mode") == "link":
         why = next((v for k, v in WHY.items() if src.endswith("/" + k) or src == k), "checksum mismatch")
         hint = ("\n- HINT for this file: " + HINTS[unit]) if unit in HINTS else ""
@@ -814,7 +875,7 @@ def prepare(tag, spec):
 def limit(spec):
     if spec.get("mode") in ("link", "oneshort"):  # a one-short task may go on to link its unit
         return 10800
-    if spec.get("mode") == "dataprep":
+    if spec.get("mode") in ("dataprep", "order"):
         return 7200
     if spec.get("draft"):
         return 14400 if spec["open"][0][1] >= 6000 else 10800 if spec["open"][0][1] >= 2500 else 7200
@@ -843,8 +904,8 @@ def run(tag, unit, src, spec, log):
     for k in range(3):  # continuation passes, moderate
         if tripped():
             return rcs + " LIMIT (no further steps; see limits.txt, or PAUSED on the host)"
-        if spec.get("mode") == "dataprep":
-            break  # one pass: porting a unit's data has no per-function list to continue on
+        if spec.get("mode") in ("dataprep", "order"):
+            break  # one pass: porting data or reordering a unit has no per-function list to continue on
         if spec.get("mode") == "link":
             if is_linked() or left() < 1800 or k >= 2:
                 break
