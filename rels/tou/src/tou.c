@@ -1415,7 +1415,7 @@ static void rankingControll(void) {
     swByteSet(0x244, rank);
 }
 
-static USER_FUNC(evt_tou_get_ranking_27_text_1ED4) {
+USER_FUNC(evt_tou_get_ranking_27_text_1ED4) {
     RankWork* rw = (RankWork*)rank_wp[0];
     s32* args = event->args;
     s32 count = 0;
@@ -1600,7 +1600,7 @@ EVT_BEGIN(evt_tou_match_make_default_sub)
     END_IF
     RETURN
 EVT_END()
-static USER_FUNC(evt_tou_get_fighter_info_27_text_1CB8) {
+USER_FUNC(evt_tou_get_fighter_info_27_text_1CB8) {
     s32* args = event->args;
     s32 idx = evtGetValue(event, args[0]);
     FighterEntry* dt;
