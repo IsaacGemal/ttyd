@@ -4803,3 +4803,9 @@ the original kit and stay `.s` in libs/metrowerks/src/TRK_MINNOW_DOLPHIN.a. They
   (unsettles 5-6 tuned functions); win_log literals (add DUP_OURS); mot_jabara base indexing; partyRideMain's
   switch pivot; the permuter's `if ((gp && gp) && gp) {}` evt_mobj "wins" (99.95 in the real build).
 
+
+## win_mario bounded pool attempt (2026-10-06, Codex GPT-6)
+
+Thirty source-build experiments in the win_mario task checkout found no version satisfying the requested native pool-base conversion addressing, IDENTICAL pool checks, and no score regressions together. The source was restored exactly. Fresh baseline/final: winMarioDisp 96.15% (task/comment's 93.90% is stale for this check), other eight functions 100%; natural compile passes, relocation-value check reports 0, existing function-order mismatch unchanged. Details are in CODEX_ATTEMPTS.md and REPORT.md in that checkout.
+
+The reported .rodata DUP_OURS zero Vec is an entry-boundary artifact: retail has one 80-byte digit-table symbol, ours has two 40-byte templates; sdata2_diff strips all-zero entries to empty keys and reports the last zero Vec as the extra one. All overlapping baseline .rodata bytes match; the original has five extra zero tail-alignment bytes. A genuine shared digit-table object makes the checker report .rodata IDENTICAL but changes the two public number functions' prologue load scheduling. Native pool ports did load both conversion doubles at pool+0x820/+0x828, but regressed winMarioDisp through table-address webs/hoisting and register allocation. This bounded failure is not a proof that no C solution exists.
