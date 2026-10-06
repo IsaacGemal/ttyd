@@ -12,6 +12,8 @@ anything worth keeping into a chapter here.
 
 ## Current state (rewrite this section as things change)
 
+- **tou/tou linked (2026-10-06, Codex GPT-6).** 36/36 functions at 100%; both pools IDENTICAL, original function order, natural compile passes, all 32 build checksums pass. See the dated chapter below and CODEX_ATTEMPTS.md.
+
 - **⚠️ Ledger audit planned (Isaac, Oct 2).** This ledger has drifted: some entries are outdated, and some claims were wrong when written. Later, go through it step by step, check each claim against the repo, the build and the git history, and correct or remove what's wrong. Until then, treat any number or claim here as a lead to verify, not a fact. (This section itself still describes Sep 29.)
 - New orchestrator session? Read "The orchestrator's role: how to pick this up" (near the end) first, then the
   chapters after it; the newest chapters (Sep 28-29: the REL chapters, waves 17 and 18, Claude #3's grind rounds)
@@ -4838,3 +4840,9 @@ The reported .rodata DUP_OURS zero Vec is an entry-boundary artifact: retail has
   - Slots (01:00-07:00 cap 8, q36's 2 jobs alongside): 8 agents 00:40-01:10 while both waves ran, then 5-7 until wave
     85's queue ran dry after 05:00, 1 at 05:40; never over 8. Load ran 8-11.4, with two single samples above 12
     (12.7 at 00:30 while the waves started, 13.6 at 02:40); the 5-minute average stayed under 12 all night.
+
+## tou native pool and link completion (2026-10-06, Codex GPT-6)
+
+Linked rels/tou/src/tou.c in 26 bounded build experiments, recorded in CODEX_ATTEMPTS.md. The final source emits the real functions in retail order under MUST_MATCH, with the named scalar groups interleaved at their original pool positions. The belt/viewport constants use native literals, and the compiler generates the conversion double itself; no pool helper or new section-placement trick was added. TOU_F32 suppresses folding of the remaining named scalars through ordinary f32 pointer reads under MUST_MATCH, with direct named reads in the natural build. Swapping the tentative rank_work/disp_work declaration order restores the original BSS offsets; explicit zero initializers were rejected because this compiler placed them in .data.
+
+Verified 36/36 functions at 100%, .sdata2/.rodata IDENTICAL, original function order, zero relocation-value findings, natural compilation without MUST_MATCH, and the full linked build/checksum (`32 files OK`). configure.py retains Object(Matching, "tou.c"). Default configure/Ninja attempted a redundant tool download in the offline checkout; the successful full build used explicit paths to the already installed tools with identical compiler/link flags. Changes remain uncommitted.
