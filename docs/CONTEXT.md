@@ -4823,16 +4823,18 @@ The reported .rodata DUP_OURS zero Vec is an entry-boundary artifact: retail has
     MUST_MATCH `defer_codegen off` i2f helper in `__declspec(section ".init")`, which only hides the extra function
     from fn_order_check (.init is not stripped), and without it .rodata fell 100 -> 51.5.
   - Functions (wave 85, 20 units, the 2026-10-05 brief levers): to 100% effRadiationN64Entry, tou's
-    champion_belt_27_text_34 and rankingControll (tou 36/36; one duplicated i2f .rodata entry keeps it from
-    linking), parseGet1Next, sac_muki's disp_3D, L__LvupParamHelpMsgDisp. Up: GaugeTiming2 main 99.09 -> 99.67,
-    winBadgeDisp 99.37 -> 99.73, loadDraw 99.23 -> 99.54, mario_main_func 99.52 -> 99.68, bakugame's two,
-    evt_nannpc_entry 97.13 -> 97.75, badgeshop's bottakuru 97.97 -> 98.00. Refused: sys display 100 via a `360.0f`
-    literal that adds a .rodata pool entry; eff_fall's +0.06 through `defer_codegen off` helpers in .text; win_item (item_disp 95.41 -> 94.90 in the real
-    build). No source lever (to the permuter): battle_detect, evt_uranaisi, sys display_func, seq_load loadMain,
-    las_05, parsePush, badge_disp, nanNPCOption, mario_pouch. gor_03's goryuugijo_init_slot matches only as `void`;
-    it is an evt USER_FUNC, so that is a type-mismatch question, left open.
+    champion_belt_27_text_34 and rankingControll (tou 36/36; one duplicated i2f .rodata entry keeps it from linking),
+    parseGet1Next, L__LvupParamHelpMsgDisp. Up: GaugeTiming2 main 99.09 -> 99.67, winBadgeDisp 99.37 -> 99.73, loadDraw
+    99.23 -> 99.54, mario_main_func 99.52 -> 99.68, bakugame's two, evt_nannpc_entry 97.13 -> 97.75, badgeshop's
+    bottakuru 97.97 -> 98.00. Refused: sys display 100 via a `360.0f` literal that adds a .rodata pool entry; eff_fall's
+    +0.06 through `defer_codegen off` helpers in .text; win_item (item_disp 95.41 -> 94.90 in the real build); sac_muki
+    (disp_3D's 100 came from a `defer_codegen off` pool_i2f helper in .text; Codex has its pools). No source lever (to
+    the permuter): battle_detect, evt_uranaisi, sys display_func, seq_load loadMain, las_05, parsePush, badge_disp,
+    nanNPCOption, mario_pouch. gor_03's goryuugijo_init_slot matches only as `void`; it is an evt USER_FUNC, so that is
+    a type-mismatch question, left open.
   - Agents keep looking for the permuter outside their workspace (ls ~/, find ~/ttyd, ls ../), read-only each time;
     muj_00's agent found mwccdbg's ORIG column disagreeing with objdiff on mario_main_func's FPRs.
+    wave_launch.py's prompts now say the permuter isn't the agent's to run or look for.
   - Slots (01:00-07:00 cap 8, q36's 2 jobs alongside): 8 agents 00:40-01:10 while both waves ran, then 5-7 until wave
     85's queue ran dry after 05:00, 1 at 05:40; never over 8. Load ran 8-11.4, with two single samples above 12
     (12.7 at 00:30 while the waves started, 13.6 at 02:40); the 5-minute average stayed under 12 all night.
