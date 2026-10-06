@@ -20,25 +20,13 @@ inline Vec initializeVec(Vec* input) {
 	return temp;
 }
 
-// .rodata
-const f64 double_to_int_802faba0 = 4503601774854144.0;
-const char str_802FABA8[16] = "MagicHoraoN64";
-
-// .sdata2 owned by this unit; the zero Vec for initializeVec and the int->float
-// magic are left to the compiler's constant pool (@NNN), which objdiff folds back
-// to the original vec3_802fab90 / double_to_int_802faba0 symbols. Defining
-// double_to_int_802faba0 before the string puts the .rodata copy where retail has it.
-extern const f32 float_0p02_8041f77c;
-extern const f32 float_5_8041f784;
-extern const f32 float_0p05_8041f788;
-
 
 EffectEntry* effMagicHoraoN64Entry(s32 type, s32 a1, s32 a2, s32 life, f32 x, f32 y, f32 z, f32 a4, f32 a5, f32 a6) {
 	EffectEntry* effect;
 	effMagicHoraoData* data;
 
 	effect = effEntry();
-	effect->type = str_802FABA8;
+	effect->type = "MagicHoraoN64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, 0x48);
 	effect->userdata = data;
@@ -52,13 +40,13 @@ EffectEntry* effMagicHoraoN64Entry(s32 type, s32 a1, s32 a2, s32 life, f32 x, f3
 	data->field_0x1C = a1;
 	data->field_0x18 = a5;
 	data->field_0x20 = a2;
-	data->alpha = float_1_8041f780;
+	data->alpha = 1.0f;
 	data->field_0x38 = rand() % 360;
 	data->life = life;
 	data->field_0x44 = 0;
 	data->field_0x3C = a1;
 	data->field_0x24 = a4;
-	data->field_0x10 = float_0_8041f770;
+	data->field_0x10 = 0.0f;
 	data->state = 0;
 	return effect;
 }
@@ -79,7 +67,7 @@ void effMagicHoraoMain(EffectEntry* effect) {
 	case 0:
 		data->field_0x24 += data->field_0x28 * (data->field_0x18 - data->field_0x24);
 		data->field_0x3C = (s32)(data->field_0x28 * (f32)(data->field_0x20 - data->field_0x3C) + (f32)data->field_0x3C);
-		data->alpha -= float_0p02_8041f77c;
+		data->alpha -= 0.02f;
 		if (data->alpha < 0.0f) {
 			data->alpha = 0.0f;
 			data->field_0x10 = 0.0f;
@@ -101,12 +89,12 @@ void effMagicHoraoMain(EffectEntry* effect) {
 		}
 		break;
 	case 3:
-		data->field_0x10 -= float_1_8041f780;
+		data->field_0x10 -= 1.0f;
 		data->y += data->field_0x10;
 		if (data->y < 0.0f) {
 			data->y = 0.0f;
-			effHokoriN64Entry(2, 30, float_5_8041f784 + data->x, data->y, data->z);
-			effHokoriN64Entry(2, 30, data->x - float_5_8041f784, data->y, data->z);
+			effHokoriN64Entry(2, 30, 5.0f + data->x, data->y, data->z);
+			effHokoriN64Entry(2, 30, data->x - 5.0f, data->y, data->z);
 			data->state = 4;
 			data->field_0x30 = 20;
 		}
@@ -121,7 +109,7 @@ void effMagicHoraoMain(EffectEntry* effect) {
 		if (data->life < 10) {
 			data->field_0x3C = data->life * 25;
 		}
-		data->alpha -= float_0p05_8041f788;
+		data->alpha -= 0.05f;
 		break;
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effMagicHoraoDisp, effect);
@@ -152,17 +140,7 @@ typedef struct MagicHoraoVtx {
 } MagicHoraoVtx;
 
 // .sdata2 / .sbss2 scratch colours the original builds its TEV colours from.
-extern GXColor dat_8041f750;
 extern GXColor unk_804231b8;
-extern const f32 float_0p01_8041f754;
-extern const f32 float_100_8041f758;
-extern const f32 float_6p2832_8041f75c;
-extern const f32 float_360_8041f760;
-extern const f32 float_225_8041f764;
-extern const f32 float_25_8041f768;
-extern const f32 float_0p015625_8041f76c;
-extern const f32 float_500_8041f774;
-extern const f32 float_200_8041f778;
 
 // MUST_MATCH: building colour2 in an inline that returns it keeps its by-value temporary in the
 // original's stack slot (the plain field-by-field form below puts the local in the temporary's slot).
@@ -174,9 +152,9 @@ static inline GXColor makeHoraoColor2(u8 a) {
 }
 
 static inline GXColor makeHoraoColor(GXColor c, s32 counter, u8 a) {
-	f32 angle = (float_6p2832_8041f75c * (f32)(counter * 30)) / float_360_8041f760;
-	c.r = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
-	c.g = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
+	f32 angle = (6.2831855f * (f32)(counter * 30)) / 360.0f;
+	c.r = (s32)(25.0f * (f32)sin(angle) + 225.0f);
+	c.g = (s32)(25.0f * (f32)sin(angle) + 225.0f);
 	c.a = a;
 	return c;
 }
@@ -223,8 +201,8 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	colorAlpha = data->field_0x3C;
 	counter = data->field_0x44;
 
-	PSMTXScale(mtx2, float_0p01_8041f754, float_0p01_8041f754, float_0p01_8041f754);
-	PSMTXTrans(mtx1, float_100_8041f758 * data->x, float_100_8041f758 * data->y, float_100_8041f758 * data->z);
+	PSMTXScale(mtx2, 0.01f, 0.01f, 0.01f);
+	PSMTXTrans(mtx1, 100.0f * data->x, 100.0f * data->y, 100.0f * data->z);
 	PSMTXConcat(mtx2, mtx1, mtx1);
 	PSMTXScale(mtx2, data->field_0x24, data->field_0x24, data->field_0x24);
 	PSMTXConcat(mtx1, mtx2, mtx1);
@@ -233,12 +211,12 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	GXSetCurrentMtx(0);
 
 #ifdef MUST_MATCH
-	GXSetTevColor(1, makeHoraoColor(dat_8041f750, counter, colorAlpha));
+	GXSetTevColor(1, makeHoraoColor(((GXColor){ 0x00, 0x00, 0xFF, 0x00 }), counter, colorAlpha));
 #else
-	angle = (float_6p2832_8041f75c * (f32)(counter * 30)) / float_360_8041f760;
-	color = dat_8041f750;
-	color.r = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
-	color.g = (s32)(float_25_8041f768 * (f32)sin(angle) + float_225_8041f764);
+	angle = (6.2831855f * (f32)(counter * 30)) / 360.0f;
+	color = ((GXColor){ 0x00, 0x00, 0xFF, 0x00 });
+	color.r = (s32)(25.0f * (f32)sin(angle) + 225.0f);
+	color.g = (s32)(25.0f * (f32)sin(angle) + 225.0f);
 	color.a = colorAlpha;
 	GXSetTevColor(1, color);
 #endif
@@ -246,7 +224,7 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	GXSetNumChans(0);
 	GXSetNumTexGens(1);
 	GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-	PSMTXScale(mtx2, float_0p015625_8041f76c, float_0p015625_8041f76c, float_0_8041f770);
+	PSMTXScale(mtx2, 0.015625f, 0.015625f, 0.0f);
 	GXLoadTexMtxImm(mtx2, 0x1E, 1);
 	effSetVtxDescN64((effVtxArray*)size64x64_tex64x64_vtx);
 
@@ -316,13 +294,13 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 // makes MWCC put alpha in f31 and the loop's constants in f26-f30, as the original does.
 #ifdef MUST_MATCH
 			f32 s;
-			s = (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off1)) / float_360_8041f760);
-			a = (s32)(float_500_8041f774 * s * alpha);
-			s = (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off2)) / float_360_8041f760);
-			b = (s32)(float_200_8041f778 * s * alpha);
+			s = (f32)sin((6.2831855f * (f32)(angleBase + off1)) / 360.0f);
+			a = (s32)(alpha * (500.0f * s));
+			s = (f32)sin((6.2831855f * (f32)(angleBase + off2)) / 360.0f);
+			b = (s32)(alpha * (200.0f * s));
 #else
-			a = (s32)(float_500_8041f774 * (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off1)) / float_360_8041f760) * alpha);
-			b = (s32)(float_200_8041f778 * (f32)sin((float_6p2832_8041f75c * (f32)(angleBase + off2)) / float_360_8041f760) * alpha);
+			a = (s32)(500.0f * (f32)sin((6.2831855f * (f32)(angleBase + off1)) / 360.0f) * alpha);
+			b = (s32)(200.0f * (f32)sin((6.2831855f * (f32)(angleBase + off2)) / 360.0f) * alpha);
 #endif
 #ifdef MUST_MATCH
 			vp->x = a - 0xC80;
