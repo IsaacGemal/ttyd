@@ -1247,9 +1247,11 @@ WinMgrSelect* winMgrSelectEntry(s32 a1, s32 a2, BOOL a3) {
 // qqsort callback, sub_802379E4
 
 #pragma opt_common_subs off // needed: with CSE on the int->float mask lands in f2, not f4
-// NONMATCHING (99.71%): same instructions; only the case-0 loop's GPR allocation differs
-// (target: 1 in r3, 0 in r0, the descriptor id in r4; ours: 1 in r4, 0 in r3, id in r0).
+// NONMATCHING (99.97%): instructions and registers match; only two float relocations differ (the original reads
+// named float_24/float_6 objects, ours anonymous pool entries) until winmgr's data is ported. Caching the descriptor
+// count in the case-0 loop condition fixed the loop's GPR allocation (permuter, 2026-10-06).
 void select_main(WinMgrEntry* entry) {
+    s32 count;
     WinMgrSelect* select = (WinMgrSelect*)entry->param;
     s32 newIndex;
     s32 off;
@@ -1257,7 +1259,7 @@ void select_main(WinMgrEntry* entry) {
 
     switch ((*(s32*)select->field_0x8)) {
     case 0:
-        for (i = 0; i < select->numDescriptors; i++) {
+        for (i = 0; i < (count = select->numDescriptors); i++) {
             WinMgrEntry* e = &wp->mEntries[select->descriptorId[i]];
 
             if (e->flags & 1) {
@@ -1268,7 +1270,7 @@ void select_main(WinMgrEntry* entry) {
                 e->field_0x34 = 0;
             }
         }
-        if (select->numDescriptors >= 3) {
+        if (count >= 3) {
             WinMgrEntry* e = &wp->mEntries[select->descriptorId[2]];
 
             e->field_0x38 = 0;
