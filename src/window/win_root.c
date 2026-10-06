@@ -398,7 +398,7 @@ s32 winRootMain(WindowWork* work) {
             WW_F32(work, 0x158) = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
             WW_F32(work, 0x15C) = float_185_8041d1e4;
             WW_S32(work, 0x24) = 0xA;
-            str = WROOT(work)->tabs[WW_S32(work, 0x40)].str;
+            str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->str;
             if (str != NULL) {
                 winMsgEntry(work, 0, str, 0);
             }
