@@ -22,6 +22,7 @@
 // nokonoko_use sound effect handle (sbss).
 u32 nokoSe;
 
+#pragma pool_data on
 static const f32 float_37 = 37.0f;
 static const f32 float_24 = 24.0f;
 
@@ -31,18 +32,13 @@ static const f32 float_0p1 = 0.1f;
 static const f32 float_0 = 0.0f;
 static const f32 float_neg1 = -1.0f;
 
-const Vec vec3_802ce138 = {0.0f, 0.0f, 0.0f};
-const double double_to_int_802ce148 = 4503601774854144.0;
-const char str_802CE150[] = "PNK_K_2";
-const char str_802CE158[] = "PNK_A_1";
-const double double_180_802ce160 = 180.0;
 #ifdef MUST_MATCH
 // MUST_MATCH: nokonoko_use reads the pose names (str_802CE150/158) as offsets from this first .rodata object.
-#define NK_STR(off, lit) ((char*)vec + (off))
+#define NK_STR(off, lit) (lit)
 #else
 #define NK_STR(off, lit) (lit)
 #endif
-#define NKF_180 double_180_802ce160
+#define NKF_180 180.0
 
 static const f32 float_1p5708 = 1.5707964f;
 static const f32 float_4p7124 = 4.712389f;
@@ -214,7 +210,6 @@ void nokonoko_use_post(PartyEntry* party) {
 // NONMATCHING (99.73%): register colouring and stack-slot placement only.
 void nokonoko_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
-    const Vec* vec = &vec3_802ce138;
     HitEntry* hit;
     u32 res;
     Vec out;
@@ -1440,8 +1435,7 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
         return;
     }
 
-    s = sin(MATCH_F32(float_3p1416));
-    c = cos(MATCH_F32(float_3p1416));
+    { f32 pia = 3.1415927f; s = sin(pia); c = cos(pia); }
     z = pos->z;
     x = pos->x;
     baseY = pos->y;
@@ -1454,8 +1448,7 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
         return;
     }
 
-    s = sin(MATCH_F32(float_0));
-    c = cos(MATCH_F32(float_0));
+    { f32 za = 0.0f; s = sin(za); c = cos(za); }
     baseY = pos->y;
     t = radius * s;
 #ifdef MUST_MATCH
@@ -1572,7 +1565,7 @@ void lookupSafetyPosSub(Vec* pos, Vec* out, f32 height, f32 angle) {
     z = pos->z + radius * -c;
     distance = float_0p1 + height;
     if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
-        sp = vec3_802ce138;
+        sp = (Vec){ 0.0f, 0.0f, 0.0f };
         sp.x = x;
         sp.y = y;
         sp.z = z;
