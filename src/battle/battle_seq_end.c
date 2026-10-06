@@ -1256,9 +1256,7 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     iconDispGx(&pos, 0x10, 0x18C, 1.0f);
 }
 
-// NONMATCHING (99.54%): `lines++` before the window call with window y `((u16)lines - 1) * 29` and
-// height `lines * 29 + 1` reuses the truncated `lines+1`; `s32 width` keeps clrlwi + srawi/addze, and
-// `(s32)float_neg148_80420cfc` keeps the fctiwz. 17 left: .rodata string/mask offsets + their registers.
+// The window y/height reuse the truncated `lines + 1` and the width keeps a clrlwi plus srawi/addze.
 void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
@@ -1266,7 +1264,6 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     const char* msg;
     u16 lines;
     s32 width;
-    f32 x;
     f32 zero = 0.0f;
 
     pouch = pouchGetPtr();
@@ -1291,12 +1288,11 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
         break;
     }
     width = FontGetMessageWidthLine(msg, &lines);
-    x = zero - (f32)(width / 2);
     lines++;
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, x - 20.0f, -145.0f + (f32)(((u16)lines - 1) * 29),
+    windowDispGX_Waku_col(0, dat_80420c14, zero - (f32)(width / 2) - 20.0f, -145.0f + (f32)(((u16)lines - 1) * 29),
                           (f32)(width + 40), (f32)(lines * 29 + 1), 10.0f);
     FontDrawStart_alpha(0xFF);
-    FontDrawMessage((s32)x, (s32)float_neg148_80420cfc + (lines - 1) * 29, msg);
+    FontDrawMessage((s32)(zero - (f32)(width / 2)), (s32)float_neg148_80420cfc + (lines - 1) * 29, msg);
 }
 
 void _GetExpIcon_Init(BattleSeqEndWork* arg) {

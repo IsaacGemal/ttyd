@@ -104,6 +104,9 @@ int __float_nan[];
 #define FP_NORMAL 4
 #define FP_SUBNORMAL 5
 
+// Prototypes for the forward references the original function order needs.
+static inline f32 npcMain_sqrtf(f32 x, const f64* pool);
+
 static inline s32 __fpclassifyf(f32 x) {
     switch (*(s32*)&x & 0x7F800000) {
         case 0x7F800000:
@@ -168,6 +171,81 @@ static NpcWork2 work;
 #define npcGetWorkPtr2(inBattle) ((inBattle) ? &work.battle : &work.field)
 // TODO: inlining?
 #define npcGetWorkPtrInline() (gp->inBattle ? &work.battle : &work.field)
+
+extern const f32 float_365_80419ba8;
+extern const f32 float_0_80419b9c;
+extern const char str_802C30FC[];
+extern const char str_802C3128[];
+extern const f32 float_0p5_80419ba0;
+extern const f32 float_180_80419bec;
+extern const f32 float_90_80419bd0;
+extern const f32 float_270_80419be4;
+extern const f32 float_0p75_80419bf4;
+extern const f32 float_neg1_80419bf8;
+extern const f32 float_1_80419bb4;
+extern const f32 float_100_80419c18;
+extern const f32 float_0p1_80419bfc;
+extern const f32 float_0p05_80419c78;
+extern const f32 float_0p25_80419c7c;
+extern const f32 float_neg2_80419c80;
+extern const f32 float_2_80419c5c;
+extern const f32 float_5000_80419c84;
+extern const f32 float_10000_80419c88;
+extern const f32 float_3_80419c08;
+extern const f32 float_1p33_80419c8c;
+extern const f32 float_neg600_80419c0c;
+extern const f32 float_600_80419c10;
+extern const f32 float_60_80419ba4;
+#ifdef MUST_MATCH
+// The original reaches these strings and the 0.75 double through the sqrtf double pool (vec3_802c2f78 + 0x1c0), one
+// register for all of them: "kpa_03" and the SFX name sit just before the pool, 0.75 at +0xa0.
+#define NPCMAIN_STR_KPA03 ((char*)pool - 0x34)
+#define NPCMAIN_STR_FALL ((char*)pool - 0x2c)
+#define NPCMAIN_SQRTF(x) npcMain_sqrtf((x), pool)
+#define NPCMAIN_0P75 (pool[20])
+#else
+#define NPCMAIN_STR_KPA03 "kpa_03"
+#define NPCMAIN_STR_FALL "SFX_KUPPA_3RD_WATER_FALL1"
+#define NPCMAIN_SQRTF(x) sqrtf(x)
+#define NPCMAIN_0P75 0.75
+#endif
+extern const f32 float_neg90_80419bd8;
+extern const f32 float_neg180_80419bf0;
+extern const f32 float_270_80419be4;
+extern const f32 float_neg270_80419be8;
+extern const f32 float_90_80419bd0;
+extern const f32 float_0p75_80419bf4;
+extern const f32 float_neg1_80419bf8;
+extern const f32 float_1_80419bb4;
+extern const f32 float_1000_80419bc8;
+extern const f32 float_10_80419bb8;
+extern const f32 float_0p5_80419ba0;
+extern const f32 float_0_80419b9c;
+extern const f32 float_180_80419bec;
+extern const f32 float_360_80419be0;
+#ifdef MUST_MATCH
+// The original reaches these two strings from the unit's rodata anchor.
+#define FBAT_SFX_ENEMY ((char*)vec3_802c2f78 + 0x204)
+#define FBAT_SFX_MARIO ((char*)vec3_802c2f78 + 0x220)
+#else
+#define FBAT_SFX_ENEMY "SFX_BTL_FLD_ENEMY_DAMAGED1"
+#define FBAT_SFX_MARIO "SFX_BTL_FLD_MARIO_DAMAGED1"
+#endif
+#define ENC(p, T, off) (*(T*)((u8*)(p) + (off)))
+typedef struct FbatHitInfo {
+    s32 kind;           // 0x0, the attack (the fbatSetAttackAnnounce code)
+    s32 field_0x4;      // 0x4, the npc's field_2F8, for a stomp that becomes the enemy's first strike
+    f32 dist;           // 0x8, to the nearest npc hit so far
+    u32 flags;          // 0xC, 1: only a test (no attack announce)
+} FbatHitInfo;
+extern const f32 float_11_80419bbc;
+extern const f32 float_12_80419bc0;
+extern const f32 float_15_80419bc4;
+extern const f32 float_1p5_80419bcc;
+extern const f32 float_30_80419bd4;
+typedef struct FbatAngleTable {
+    s32 deg[11];
+} FbatAngleTable;
 
 // TODO: inlining?
 NpcWork* npcGetWorkPtr(void) {
@@ -294,7 +372,6 @@ void mtx_setup(NpcEntry* entry, Mtx mtx, s32 history) {
                       entry->positionHistory[history].z);
     }
 }
-
 
 #ifdef MUST_MATCH
 // MUST_MATCH: the original does the colour + billboard work through an inlined helper. Inlining the
@@ -556,7 +633,6 @@ void npcDisp(CameraId camId, void* param) {
             break;
     }
 }
-
 
 // 1:1: npcDisp_xlu with a sysWaitDrawSync/GXClearBoundingBox prologue and a
 // GXReadBoundingBox + offscreenAddBoundingBox(entry->field_110, ...) epilogue.
@@ -1004,16 +1080,6 @@ void npcDelete(NpcEntry* entry) {
     npcGetWorkPtrInline()->count--;
 }
 
-void npcDeleteGroup(NpcEntry* entry) {
-    if (entry->master) {
-        entry = entry->master;
-    }
-    while (entry->prev) {
-        entry = entry->prev;
-    }
-    _npcDeleteGroup(entry);
-}
-
 // Every instruction matches. A `NpcEntry* slave` local (used for both the condition and the npcDelete
 // argument) recovers the entry/next r27/r31 colouring and the first inlined npcDelete; the second slave
 // loop still has the inlined npcDelete's hoisted work pointer in r30 and the slave in r29 (target r29/r30),
@@ -1037,42 +1103,15 @@ void _npcDeleteGroup(NpcEntry* entry) { // recursively inlined, warning
     npcDelete(entry);
 }
 
-extern const f32 float_365_80419ba8;
-extern const f32 float_0_80419b9c;
-extern const f32 float_0p5_80419ba0;
-extern const f32 float_180_80419bec;
-extern const f32 float_90_80419bd0;
-extern const f32 float_270_80419be4;
-extern const f32 float_0p75_80419bf4;
-extern const f32 float_neg1_80419bf8;
-extern const f32 float_1_80419bb4;
-extern const f32 float_100_80419c18;
-extern const f32 float_0p1_80419bfc;
-extern const f32 float_0p05_80419c78;
-extern const f32 float_0p25_80419c7c;
-extern const f32 float_neg2_80419c80;
-extern const f32 float_2_80419c5c;
-extern const f32 float_5000_80419c84;
-extern const f32 float_10000_80419c88;
-extern const f32 float_3_80419c08;
-extern const f32 float_1p33_80419c8c;
-extern const f32 float_neg600_80419c0c;
-extern const f32 float_600_80419c10;
-extern const f32 float_60_80419ba4;
-
-#ifdef MUST_MATCH
-// The original reaches these strings and the 0.75 double through the sqrtf double pool (vec3_802c2f78 + 0x1c0), one
-// register for all of them: "kpa_03" and the SFX name sit just before the pool, 0.75 at +0xa0.
-#define NPCMAIN_STR_KPA03 ((char*)pool - 0x34)
-#define NPCMAIN_STR_FALL ((char*)pool - 0x2c)
-#define NPCMAIN_SQRTF(x) npcMain_sqrtf((x), pool)
-#define NPCMAIN_0P75 (pool[20])
-#else
-#define NPCMAIN_STR_KPA03 "kpa_03"
-#define NPCMAIN_STR_FALL "SFX_KUPPA_3RD_WATER_FALL1"
-#define NPCMAIN_SQRTF(x) sqrtf(x)
-#define NPCMAIN_0P75 0.75
-#endif
+void npcDeleteGroup(NpcEntry* entry) {
+    if (entry->master) {
+        entry = entry->master;
+    }
+    while (entry->prev) {
+        entry = entry->prev;
+    }
+    _npcDeleteGroup(entry);
+}
 
 #ifdef MUST_MATCH
 static inline f32 npcMain_sqrtf(f32 x, const f64* pool) {
@@ -1645,6 +1684,608 @@ NpcEntry* npcNameToPtr_NoAssert(const char* name) {
     }
 }
 
+void npcSetMarioAutoTalkPose(const char* stayPose, const char* talkPose) {
+    strcpy(MarioStayPose, stayPose);
+    strcpy(MarioTalkPose, talkPose);
+}
+
+void npcSetTalkPose(const char* name) {
+    NpcWork* wp;
+    NpcEntry* entry;
+    s32 total;
+    int i;
+
+    if ((s8)name[0] == 0) {
+        return;
+    }
+#ifdef MUST_MATCH
+    // The sign-extend round trip on the argument leaves the dead value that pins retail's parameter
+    // save (`mr r28, r3`) before the `name[0]` load; the backend folds it away.
+    if (!strcmp((const char*)(s64)(s32)name, "(^x^)party")) {
+#else
+    if (!strcmp(name, "(^x^)party")) {
+#endif
+        return;
+    }
+    if (!strcmp(name, "party")) {
+        PartyEntry* party = partyGetPtr(marioGetPartyId());
+        if (party == NULL) {
+            return;
+        }
+        partyChgPoseId(party, 7);
+        return;
+    }
+    if (!strcmp(name, "extparty")) {
+        PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
+        if (party == NULL) {
+            return;
+        }
+        partyChgPoseId(party, 7);
+        return;
+    }
+    if (!strcmp(name, "mario")) {
+        marioChgPose(MarioTalkPose);
+        return;
+    }
+
+    wp = gp->inBattle ? &work.battle : &work.field;
+    total = wp->total;
+    entry = wp->entries;
+    for (i = 0; i < total; i++, entry++) {
+        if (entry->flags & 1 && !strcmp(entry->description, name)) {
+            break;
+        }
+    }
+    if (entry->flags & 0x200) {
+        animPoseSetAnim(entry->poseId, entry->talkAnim, TRUE);
+    }
+}
+
+void npcSetStayPose(const char* name) {
+    NpcWork* wp;
+    NpcEntry* entry;
+    s32 total;
+    int i;
+
+    if ((s8)name[0] == 0) {
+        return;
+    }
+#ifdef MUST_MATCH
+    // The sign-extend round trip on the argument leaves the dead value that pins retail's parameter
+    // save (`mr r28, r3`) before the `name[0]` load; the backend folds it away.
+    if (!strcmp((const char*)(s64)(s32)name, "(^x^)party")) {
+#else
+    if (!strcmp(name, "(^x^)party")) {
+#endif
+        return;
+    }
+    if (!strcmp(name, "party")) {
+        PartyEntry* party = partyGetPtr(marioGetPartyId());
+        if (party == NULL) {
+            return;
+        }
+        partyChgPoseId(party, 1);
+        return;
+    }
+    if (!strcmp(name, "extparty")) {
+        PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
+        if (party == NULL) {
+            return;
+        }
+        partyChgPoseId(party, 1);
+        return;
+    }
+    if (!strcmp(name, "mario")) {
+        marioChgPose(MarioStayPose);
+        return;
+    }
+
+    wp = gp->inBattle ? &work.battle : &work.field;
+    total = wp->total;
+    entry = wp->entries;
+    for (i = 0; i < total; i++, entry++) {
+        if (entry->flags & 1 && !strcmp(entry->description, name)) {
+            break;
+        }
+    }
+    if (entry->flags & 0x200) {
+        animPoseSetAnim(entry->poseId, entry->stayAnim, TRUE);
+    }
+}
+
+// Inline degree/radian sine and cosine approximations (same polynomials as the npc blur path).
+// Assigning the coefficients to non-const locals first stops MWCC rematerialising them in every
+// branch, which recovers the target's early coefficient loads.
+static inline f32 npcSideSinf(f32 rad) {
+    f32 sinv;
+    f32 f0, f1;
+    f32 c0, c1, c2, pi;
+
+    c0 = 0.00761f;
+    c1 = 0.16605f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
+    if (rad <= pi) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            sinv = c0 * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * rad;
+        } else {
+            f0 = rad - 1.5707964f;
+            f1 = 1.5707964f - f0;
+            f0 = f1 * f1;
+            sinv = c0 * f0 - c1;
+            sinv = sinv * f0 + c2;
+            sinv = sinv * f1;
+        }
+    } else if (rad < 4.712389f) {
+        f1 = rad - pi;
+        f0 = f1 * f1;
+        sinv = c0 * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    } else {
+        f0 = rad - 4.712389f;
+        f1 = 1.5707964f - f0;
+        f0 = f1 * f1;
+        sinv = c0 * f0 - c1;
+        sinv = sinv * f0 + c2;
+        sinv = sinv * f1;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+static inline f32 npcSideCosf(f32 rad) {
+    f32 cosv;
+    f32 f0;
+    f32 c0, c1, c2, pi;
+
+    c0 = 0.03705f;
+    c1 = 0.4967f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
+    if (rad <= pi) {
+        if (rad <= 1.5707964f) {
+            f0 = rad * rad;
+            cosv = c0 * f0 - c1;
+            cosv = cosv * f0 + c2;
+        } else {
+            f0 = rad - 1.5707964f;
+            f0 = 1.5707964f - f0;
+            f0 = f0 * f0;
+            cosv = c0 * f0 - c1;
+            cosv = cosv * f0 + c2;
+            cosv = -cosv;
+        }
+    } else if (rad < 4.712389f) {
+        f0 = rad - pi;
+        f0 = f0 * f0;
+        cosv = c0 * f0 - c1;
+        cosv = cosv * f0 + c2;
+        cosv = -cosv;
+    } else {
+        f0 = rad - 4.712389f;
+        f0 = 1.5707964f - f0;
+        f0 = f0 * f0;
+        cosv = c0 * f0 - c1;
+        cosv = cosv * f0 + c2;
+    }
+    return cosv;
+}
+
+static inline f32 npcHitSideSinf(f32 rad) {
+    f32 f0, f1;
+    f32 sinv;
+    f32 c1, c2, pi;
+
+    sinv = 0.00761f;
+    c1 = 0.16605f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
+    if (rad <= pi) {
+        pi = 1.5707964f;
+        if (rad <= pi) {
+            f1 = rad * rad;
+            sinv = sinv * f1 - c1;
+            sinv = sinv * f1 + c2;
+            sinv = sinv * rad;
+        } else {
+            f1 = rad - pi;
+            f0 = pi - f1;
+            f1 = f0 * f0;
+            sinv = sinv * f1 - c1;
+            sinv = sinv * f1 + c2;
+            sinv = sinv * f0;
+        }
+    } else if (rad < 4.712389f) {
+        f0 = rad - pi;
+        f1 = f0 * f0;
+        sinv = sinv * f1 - c1;
+        sinv = sinv * f1 + c2;
+        sinv = sinv * f0;
+        sinv = -sinv;
+    } else {
+        f1 = rad - 4.712389f;
+        pi = 1.5707964f;
+        f0 = pi - f1;
+        f1 = f0 * f0;
+        sinv = sinv * f1 - c1;
+        sinv = sinv * f1 + c2;
+        sinv = sinv * f0;
+        sinv = -sinv;
+    }
+    return sinv;
+}
+
+static inline f32 npcHitSideCosf(f32 rad) {
+    f32 cosv;
+    f32 f0;
+    f32 c1, c2, pi;
+
+    cosv = 0.03705f;
+    c1 = 0.4967f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
+    if (rad <= pi) {
+        pi = 1.5707964f;
+        if (rad <= pi) {
+            f0 = rad * rad;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+        } else {
+            f0 = rad - pi;
+            f0 = pi - f0;
+            f0 = f0 * f0;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+            cosv = -cosv;
+        }
+    } else if (rad < 4.712389f) {
+        f0 = rad - pi;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+        cosv = -cosv;
+    } else {
+        f0 = rad - 4.712389f;
+        pi = 1.5707964f;
+        f0 = pi - f0;
+        f0 = f0 * f0;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+    }
+    return cosv;
+}
+
+// Match-only shape: folding the radius product through this one-line inline makes MWCC keep the
+// `box.x + width + 5.0f` accumulator in the target's f2 instead of f0. The natural `* 0.5f` is under
+// the #else at the call site (rule 7).
+#ifdef MUST_MATCH
+static inline f32 npcHitSideMul(f32 a, f32 b) {
+    return a * b;
+}
+#endif
+
+// `opt_propagation off` stops MWCC rematerialising the sin/cos coefficients into every branch;
+// `opt_lifetimes off` is what puts the accumulator/pivot/scratch in the target's FPRs.
+#pragma opt_propagation off
+#pragma opt_lifetimes off
+// NONMATCHING (99.59%): the sin/cos blocks and the radius match; only `offZ` (target f4, ours f6) and the
+// inlined sqrtf expression that reads it (target f6, ours f5) still colour into the other scratch FPR.
+// The remaining symbol-only pool displacements resolve when the unit links.
+s32 npcCheckHitMarioSide(NpcEntry* entry) {
+    MarioWork* mario = marioGetPtr();
+    Vec pos;
+    f32 d1, d2;
+    f32 radius;
+    f32 angle;
+    f32 offX, offZ;
+    f32 rad;
+    f32 dist;
+
+    if (entry->position.y > mario->position.y + mario->wPlayerCollisionBox.y) {
+        return 0;
+    }
+    if (mario->position.y > entry->position.y + entry->height) {
+        return 0;
+    }
+    pos.x = mario->position.x;
+    pos.z = mario->position.z;
+    pos.y = entry->position.y;
+    d1 = PSVECDistance(&pos, &entry->position);
+#ifdef MUST_MATCH
+    radius = npcHitSideMul(mario->wPlayerCollisionBox.x + entry->width + 5.0f, 0.5f);
+#else
+    radius = (mario->wPlayerCollisionBox.x + entry->width + 5.0f) * 0.5f;
+#endif
+    if (d1 > radius) {
+        return 0;
+    }
+    entry->position.x = entry->prevPosition.x;
+    entry->position.z = entry->prevPosition.z;
+    d2 = PSVECDistance(&pos, &entry->position);
+    if (d2 > radius) {
+        return 0;
+    }
+    mario->field_0x1D8 = (s32)entry;
+    angle = angleABf(mario->position.x, mario->position.z, entry->position.x, entry->position.z);
+    if (__fabsf(compAngle(angle, mario->directionView)) < 40.0f) {
+        {
+            f32 t = 6.2831855f * mario->directionView;
+            offX = (radius - d2) * -npcHitSideSinf(t / 360.0f);
+            offZ = (radius - d2) * npcHitSideCosf(t / 360.0f);
+        }
+    } else {
+        {
+            f32 t = 6.2831855f * angle;
+            offX = (entry->position.x - radius * npcHitSideSinf(t / 360.0f)) - mario->position.x;
+            offZ = (entry->position.z + radius * npcHitSideCosf(t / 360.0f)) - mario->position.z;
+        }
+    }
+    dist = sqrtf(offX * offX + offZ * offZ);
+    {
+        f32 limit = mario->wPlayerCollisionBox.z > 4.0f ? 3.0f : 1.5f;
+        if (dist > limit) {
+            f32 scale = 2.0f / dist;
+            offX *= scale;
+            offZ *= scale;
+        }
+    }
+    mario->position.x += offX;
+    mario->position.z += offZ;
+    marioChkWallAround(&mario->position, 0, 0.0f, 160.0f + angle, 20.0f, mario->wPlayerCollisionBox.y);
+    return 1;
+}
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
+
+// 100%: testing `unkFlag` directly (not `jflags & 0x100000`) recovers the jflags/unkFlag colouring. In the
+// jump branch, declaring `f64 dabs` for `__fabs(moveY)` and casting `(f32)dabs` into `absY` makes MWCC round
+// out-of-place (`frsp f0, f2`) instead of in place, and declaring `absY` before `yOffset` gets f3=yOffset.
+void npcMoveG(NpcEntry* entry) {
+    f32 moveY;
+    f32 force;
+    u32 jflags;
+    u32 unkFlag;
+    u32 flags;
+
+    moveY = entry->moveOffset.y;
+    entry->moveOffset.y = 0.0f;
+    jflags = entry->jumpFlags;
+    unkFlag = jflags & 0x100000;
+    if (unkFlag && !(jflags & 0x10000000)) {
+        moveY *= 0.5f;
+    }
+    force = 0.0f;
+    flags = entry->flags;
+    if (flags & 0x20000) {
+        f32 d = entry->field_180 - entry->moveDt;
+        if (unkFlag == 0 || (jflags & 0x10000000)) {
+            force = entry->jumpVelY * entry->moveDt +
+                    (-980.0f * entry->jumpGravity) * (entry->field_180 * entry->field_180 - d * d);
+        } else {
+            force = 0.4f * (entry->jumpVelY * entry->moveDt) +
+                    (0.15f * (-980.0f * entry->jumpGravity)) * (entry->field_180 * entry->field_180 - d * d);
+        }
+        force *= entry->jumpYScale;
+        if (entry->field_1D0 > 0.0f) {
+            f32 limit;
+            if (unkFlag != 0) {
+                limit = 0.5f * (-entry->field_1D0 * entry->moveDt);
+            } else {
+                limit = -entry->field_1D0 * entry->moveDt;
+            }
+            if (force < limit) {
+                force = limit;
+            }
+        }
+    }
+    moveY += force;
+    if (!(flags & 0x10)) {
+        entry->position.y += moveY;
+        if (entry->position.y < -1000.0f) {
+            entry->position.y = -1000.0f;
+        }
+    } else if (moveY != 0.0f) {
+        if (moveY > 0.0f) {
+            entry->jumpFlags |= 1;
+            entry->position.y += moveY;
+        } else {
+            f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
+            f64 dabs;
+            f32 absY;
+            f32 yOffset = 0.8f * entry->height;
+            HitEntry* hit;
+
+            dabs = __fabs(moveY);
+            absY = (f32)dabs;
+            distance = yOffset + absY;
+            hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, entry->position.x,
+                                 entry->position.y + yOffset, entry->position.z, 0.0f, -1.0f, 0.0f);
+            *(HitEntry**)entry->field_300 = hit;
+            if (hit == NULL) {
+                entry->jumpFlags |= 1;
+                entry->position.y += moveY;
+            } else {
+                entry->jumpFlags &= ~1;
+                entry->position.y = hitY;
+                entry->field_178 = 0;
+            }
+        }
+    }
+}
+
+void npcTuningRy(NpcEntry* npc, f32 angle) {
+    npc->direction = reviseAngle(angle);
+}
+
+f32 npcTransRytoFaceDir(NpcEntry* npc) {
+    if (reviseAngle(npc->direction) < 180.0f) {
+        return 90.0f;
+    }
+    return 270.0f;
+}
+
+// The unit's .rodata head is defined above (vec3 blob and the SFX/msg string objects). Their
+// presence places MWCC's generated sqrtf (0.5/3.0/0.0) and int->float 2^52 double pool at
+// vec3_802c2f78 + 0x1c0, where this function's target reads it; without them the pool landed at
+// ...rodata.0 + 0x30. Note `a_magu`/`mjef_coinup` also have a later codegen copy from the
+// functions that still use the bare literals; that tail is a separate function-order issue.
+HitEntry* npcHitCheckSide(NpcEntry* entry, f32* outX, f32* outZ, f32* outAngle, f32 dx, f32 dz) {
+    HitEntry* hit;
+    f32 hx, hy, hz, d, nx, ny, nz;
+    f32 sinv, cosv;
+    f32 dist2;
+    f32 y, dot, ox, oz;
+    f32 angA, angB, ndist;
+
+    *outX = entry->position.x;
+    *outZ = entry->position.z;
+    if (dx == 0.0f && dz == 0.0f) {
+        return NULL;
+    }
+    sincosf(&sinv, &cosv, angleABf(0.0f, 0.0f, dx, dz));
+    dist2 = dx * dx + dz * dz;
+
+    d = 0.75f * entry->width + sqrtf(dx * dx + dz * dz);
+    y = 0.2f * entry->height;
+    if (y > 10.0f) {
+        y = 10.0f;
+    }
+    if (entry->flags & 0x2000) {
+        hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                           entry->position.z, sinv, 0.0f, cosv);
+    } else {
+        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                             entry->position.z, sinv, 0.0f, cosv);
+    }
+    if (hit != NULL) {
+        dot = dx * nx + dz * nz;
+        ox = 0.5f * (dx - dot * nx);
+        oz = 0.5f * (dz - dot * nz);
+        *outX += ox;
+        *outZ += oz;
+        if (entry->flags & 0x10000) {
+            angA = reviseAngle(180.0f + *outAngle);
+            angB = reviseAngle(angleABf(0.0f, 0.0f, 100.0f * nx, 100.0f * nz));
+            *outAngle = (s32)reviseAngle(angB + reviseAngle(angB - angA));
+        }
+        return hit;
+    }
+
+    d = 0.75f * entry->width + sqrtf(dx * dx + dz * dz);
+    y = 0.4f * entry->height;
+    if (entry->flags & 0x2000) {
+        hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                           entry->position.z, sinv, 0.0f, cosv);
+    } else {
+        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                             entry->position.z, sinv, 0.0f, cosv);
+    }
+    if (hit != NULL) {
+        ndist = sqrtf(nx * nx + nz * nz);
+        if (angleABf(0.0f, 0.0f, ndist, 0.0f - ny) >= 45.0f) {
+            dot = dx * nx + dz * nz;
+            ox = 0.5f * (dx - dot * nx);
+            oz = 0.5f * (dz - dot * nz);
+            *outX += ox;
+            *outZ += oz;
+            if (entry->flags & 0x10000) {
+                angA = reviseAngle(180.0f + *outAngle);
+                angB = reviseAngle(angleABf(0.0f, 0.0f, 100.0f * nx, 100.0f * nz));
+                *outAngle = (s32)reviseAngle(angB + reviseAngle(angB - angA));
+            }
+            return hit;
+        }
+    }
+
+    dist2 = sqrtf(dx * dx + dz * dz);
+    d = 0.75f * entry->width + dist2;
+    y = 0.75f * entry->height;
+    if (entry->flags & 0x2000) {
+        hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                           entry->position.z, sinv, 0.0f, cosv);
+    } else {
+        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
+                             entry->position.z, sinv, 0.0f, cosv);
+    }
+    if (hit != NULL) {
+        dot = dx * nx + dz * nz;
+        ox = 0.5f * (dx - dot * nx);
+        oz = 0.5f * (dz - dot * nz);
+        *outX += ox;
+        *outZ += oz;
+        if (entry->flags & 0x10000) {
+            angA = reviseAngle(180.0f + *outAngle);
+            angB = reviseAngle(angleABf(0.0f, 0.0f, 100.0f * nx, 100.0f * nz));
+            *outAngle = (s32)reviseAngle(angB + reviseAngle(angB - angA));
+        }
+        return hit;
+    }
+    *outX += dx;
+    *outZ += dz;
+    return NULL;
+}
+
+// The original evaluates `dx2 + dy*dy + dz2 > 0.0f` into a dead `fcmpo` (no branch); a discarded
+// `sqrtf(dx2 + dy*dy + dz2)` statement reproduces that, and declaring dy after dx2/dz2 gets dx2/dz2/dy
+// into f9/f10/f11.
+// 100%: the inline sqrtf's double pool is at vec3_802c2f78+0x1c0, so the MUST_MATCH helper reads the
+// doubles through the unit's base register (0x1c0/0x1c8/0x1d0) and declares `half`/`three` inside the
+// `x > 0.0f` branch after `frsqrte` so the loads schedule where the target has them.
+#ifdef MUST_MATCH
+static inline f32 npcNearDistCheck_sqrtf(f32 x, const f64* pool) {
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        f64 half = pool[0];
+        f64 three = pool[1];
+        guess = half * guess * (three - guess * guess * x);
+        guess = half * guess * (three - guess * guess * x);
+        guess = half * guess * (three - guess * guess * x);
+        return x * guess;
+    } else if (x < pool[2]) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
+#endif
+
+NpcEntry* npcNearDistCheck(f32 x, f32 y, f32 z, f32 radius) {
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+#endif
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    NpcEntry* entry;
+    NpcEntry* found = NULL;
+    s32 total = wp->total;
+    s32 i;
+
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        if (entry->flags & 1) {
+            f32 dx = x - entry->position.x;
+            f32 dz = z - entry->position.z;
+            f32 dx2 = dx * dx;
+            f32 dz2 = dz * dz;
+            f32 dy = y - entry->position.y;
+#ifdef MUST_MATCH
+            f32 dist = npcNearDistCheck_sqrtf(dx2 + dz2, pool);
+#else
+            f32 dist = sqrtf(dx2 + dz2);
+#endif
+            sqrtf(dx2 + dy * dy + dz2);
+            if (dist < radius) {
+                found = entry;
+            }
+        }
+    }
+    return found;
+}
+
 FieldBattleData* fbatGetPointer(void) {
     return gp->fbatData;
 }
@@ -1687,31 +2328,51 @@ void fbatSetAttackAnnounceEnable(void) {
     gp->fbatData->firstStrike.enabled = TRUE;
 }
 
+// The first-strike banner: a frame jittered by up to 4 units, with the message drawn inside it.
+void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
+    FirstStrikeInfo* firstStrike = param;
+    const char* message;
+    f32 x;
+    f32 y;
+    f32 width;
+    f32 frameX;
+    f32 frameY;
+#ifdef MUST_MATCH
+    // MWCC canonicalises `value * 0.1f` to `0.1f * value`; a named temp keeps the original's
+    // value-first operand order, and `width / 2.0f` does the same for the 0.5 multiply.
+    f32 k;
+#endif
+
+#ifdef MUST_MATCH
+    k = 0.1f;
+#endif
+    message = msgSearch(firstStrike->msg_tag);
+    x = firstStrike->field_0x10;
+    y = firstStrike->field_0x14;
+    width = FontGetMessageWidth(message);
+    frameX = x + (f32)(irand(10000) % 5);
+    frameY = y + (f32)(irand(10000) % 5);
+#ifdef MUST_MATCH
+    windowDispGX_Waku_col(0, firstStrike->color, 0.1f * (frameX - 10.0f - width / 2.0f), frameY * k,
+                          (20.0f + width) * k, 3.2f, 1.0f);
+#else
+    windowDispGX_Waku_col(0, firstStrike->color, 0.1f * (frameX - 10.0f - width * 0.5f), frameY * 0.1f,
+                          (20.0f + width) * 0.1f, 3.2f, 1.0f);
+#endif
+    FontDrawStart();
+    FontDrawEdge();
+    // Passing the colour as a compound literal makes MWCC place it in the original's stack slot.
+    FontDrawColor(&(GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+    FontDrawScale(0.1f);
+#ifdef MUST_MATCH
+    FontDrawStringShake(message, 0.1f * (x - width / 2.0f), (y - 3.0f) * k);
+#else
+    FontDrawStringShake(message, 0.1f * (x - width * 0.5f), 0.1f * (y - 3.0f));
+#endif
+}
+
 // 100%: control flow and the `mode == 3` test match. The two `regularEvtId` reads go through a fresh
 // `*(NpcEntry**)(fbatData->field_2 + 2)` load (as in the original), which also fixes `entry`/`mario` to r30/r29.
-extern const f32 float_neg90_80419bd8;
-extern const f32 float_neg180_80419bf0;
-extern const f32 float_270_80419be4;
-extern const f32 float_neg270_80419be8;
-extern const f32 float_90_80419bd0;
-extern const f32 float_0p75_80419bf4;
-extern const f32 float_neg1_80419bf8;
-extern const f32 float_1_80419bb4;
-extern const f32 float_1000_80419bc8;
-extern const f32 float_10_80419bb8;
-extern const f32 float_0p5_80419ba0;
-extern const f32 float_0_80419b9c;
-extern const f32 float_180_80419bec;
-extern const f32 float_360_80419be0;
-#ifdef MUST_MATCH
-// The original reaches these two strings from the unit's rodata anchor.
-#define FBAT_SFX_ENEMY ((char*)vec3_802c2f78 + 0x204)
-#define FBAT_SFX_MARIO ((char*)vec3_802c2f78 + 0x220)
-#else
-#define FBAT_SFX_ENEMY "SFX_BTL_FLD_ENEMY_DAMAGED1"
-#define FBAT_SFX_MARIO "SFX_BTL_FLD_MARIO_DAMAGED1"
-#endif
-#define ENC(p, T, off) (*(T*)((u8*)(p) + (off)))
 
 // Same 57 calls and immediates; no structural difference. The three decision trees match (the first switch carries the empty case 0x10000 the
 // original probes; the side scan is a `switch` on `blocked`), `wk` is the ternary form, the OffChk pair is one
@@ -2294,23 +2955,67 @@ void fbatBattleMode(void) {
     }
 }
 
+void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
+    *(s32*)entry->field_140 |= 0x10;
+    entry->jumpFlags |= 4;
+    entry->koopaEncounterType = koopaEncounterType;
+    if (entry->flags & 4) {
+        fbatGetPointer()->deadInfo[0].mask |= (1 << entry->field_314);
+    }
+}
+
+// The walk, the recursive inlining depth and the inlined _npcDead copies all match; the only diffs
+// are the deepest slave loop's callee-saved registers. The original keeps the shift's `1` in r27
+// (loaded slave in r24, array pointer in r25, counter in r26); ours lets the deepest copy
+// rematerialise `1` into a volatile, so slave/pointer/counter land in r25/r26/r27 and the prologue
+// is `stmw r25` instead of `stmw r24`. This requires _npcDead to call fbatGetPointer(), which is
+// what makes the deepest inlined copy emit a real `bl fbatGetPointer`.
+// NONMATCHING (97.46%): deepest slave-loop register allocation (see above).
+void _npcGroupDead(NpcEntry* entry, s32 type) {
+    int i;
+
+    if (entry->next) {
+        _npcGroupDead(entry->next, type);
+    }
+    for (i = 0; i < 4; i++) {
+        if (entry->slaves[i]) {
+            _npcDead(entry->slaves[i], type);
+        }
+    }
+    _npcDead(entry, type);
+}
+
+// dont_inline keeps npcGroupDead out of line: the original bot callers emit a real `bl npcGroupDead`.
+#pragma dont_inline on
+void npcGroupDead(NpcEntry* entry, s32 type) {
+    if (entry->master) {
+        entry = entry->master;
+    }
+    while (entry->prev) {
+        entry = entry->prev;
+    }
+    _npcGroupDead(entry, type);
+}
+#pragma dont_inline reset
+
+NpcEntry* fbatNpcTalkCheck(void) {
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+#endif
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+
+    if (wp->field_0x10 && marioChkTalkable()) {
+        return wp->field_0x10;
+    }
+    return NULL;
+}
+
 void fbatHitCheckAll(void) {
     fbatHitCheck(0x13F1, 0);
 }
 
 // What fbatHitCheck reports through its second argument (fbatEncountCheck reads it at fbatData + 0x10).
-typedef struct FbatHitInfo {
-    s32 kind;           // 0x0, the attack (the fbatSetAttackAnnounce code)
-    s32 field_0x4;      // 0x4, the npc's field_2F8, for a stomp that becomes the enemy's first strike
-    f32 dist;           // 0x8, to the nearest npc hit so far
-    u32 flags;          // 0xC, 1: only a test (no attack announce)
-} FbatHitInfo;
 
-extern const f32 float_11_80419bbc;
-extern const f32 float_12_80419bc0;
-extern const f32 float_15_80419bc4;
-extern const f32 float_1p5_80419bcc;
-extern const f32 float_30_80419bd4;
 
 // Mario can attack a field npc: not in a cutscene, menu or talk, not riding Vivian's shadow or a pipe.
 static inline BOOL fbatAttackEnabled(NpcEntry* npc) {
@@ -2345,9 +3050,6 @@ static inline BOOL fbatAttackEnabled(NpcEntry* npc) {
 }
 
 // The hammer's elevation per swing frame, in degrees.
-typedef struct FbatAngleTable {
-    s32 deg[11];
-} FbatAngleTable;
 
 // The npc's own event has reached state 5.
 static inline BOOL fbatNpcEventDone(NpcEntry* npc) {
@@ -2855,405 +3557,173 @@ void* fbatHitCheck(s32 flags, s32 out) {
     return hit;
 }
 
-// The first-strike banner: a frame jittered by up to 4 units, with the message drawn inside it.
-void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
-    FirstStrikeInfo* firstStrike = param;
-    const char* message;
-    f32 x;
-    f32 y;
-    f32 width;
-    f32 frameX;
-    f32 frameY;
+#pragma force_active on
+#pragma force_active reset
+
+// Match-only sqrtf for _npcHitCheckSphere: the original reaches the shared sqrtf double pool
+// (0.5 / 3.0 / 0.0 at vec3_802c2f78 + 0x1c0) with vec3_802c2f78 as the base register, so reproduce
+// that access instead of letting the compiler emit its own .rodata pool (rule 7).
 #ifdef MUST_MATCH
-    // MWCC canonicalises `value * 0.1f` to `0.1f * value`; a named temp keeps the original's
-    // value-first operand order, and `width / 2.0f` does the same for the 0.5 multiply.
-    f32 k;
+static inline f32 npcHitCheckSphere_sqrtf(f32 x, const f64* pool) {
+    if (x > 0.0f) {
+        f64 guess = __frsqrte(x);
+        f64 half = pool[0];
+        f64 three = pool[1];
+        guess = half * guess * (three - guess * guess * x);
+        guess = half * guess * (three - guess * guess * x);
+        guess = half * guess * (three - guess * guess * x);
+        return x * guess;
+    } else if (x < pool[2]) {
+        return NAN;
+    } else if (isnan(x)) {
+        return NAN;
+    }
+    return x;
+}
 #endif
 
+// dont_inline: retail calls _npcHitCheckSphere from fbatHitCheck (4 sites) instead of inlining it.
+#pragma dont_inline on
+NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius) {
 #ifdef MUST_MATCH
-    k = 0.1f;
+    const f64* pool = (const f64*)((u8*)vec3_802c2f78 + 0x1c0);
 #endif
-    message = msgSearch(firstStrike->msg_tag);
-    x = firstStrike->field_0x10;
-    y = firstStrike->field_0x14;
-    width = FontGetMessageWidth(message);
-    frameX = x + (f32)(irand(10000) % 5);
-    frameY = y + (f32)(irand(10000) % 5);
+    f32 dx = x - entry->position.x;
+    f32 dy = y - entry->position.y;
+    f32 dz = z - entry->position.z;
+
+    if (y != entry->position.y) {
+        if (y >= entry->position.y && y <= entry->position.y + entry->height) {
+            dy = 0.0f;
+        } else if (y > entry->position.y + entry->height) {
+            dy = y - (entry->position.y + entry->height);
+        }
+    }
 #ifdef MUST_MATCH
-    windowDispGX_Waku_col(0, firstStrike->color, 0.1f * (frameX - 10.0f - width / 2.0f), frameY * k,
-                          (20.0f + width) * k, 3.2f, 1.0f);
+    *outDist = npcHitCheckSphere_sqrtf(dx * dx + dy * dy + dz * dz, pool);
 #else
-    windowDispGX_Waku_col(0, firstStrike->color, 0.1f * (frameX - 10.0f - width * 0.5f), frameY * 0.1f,
-                          (20.0f + width) * 0.1f, 3.2f, 1.0f);
+    *outDist = sqrtf(dx * dx + dy * dy + dz * dz);
 #endif
-    FontDrawStart();
-    FontDrawEdge();
-    // Passing the colour as a compound literal makes MWCC place it in the original's stack slot.
-    FontDrawColor(&(GXColor){0xFF, 0xFF, 0xFF, 0xFF});
-    FontDrawScale(0.1f);
-#ifdef MUST_MATCH
-    FontDrawStringShake(message, 0.1f * (x - width / 2.0f), (y - 3.0f) * k);
-#else
-    FontDrawStringShake(message, 0.1f * (x - width * 0.5f), 0.1f * (y - 3.0f));
-#endif
-}
-
-void npcSetSlave(NpcEntry* npc, NpcEntry* slave, s32 id) {
-    slave->master = npc;
-    npc->slaves[id] = slave;
-}
-
-void npcSetLink(NpcEntry* npc, NpcEntry* link) {
-    npc->next = link;
-    link->prev = npc;
-}
-
-void npcSetBtlSetupWork(NpcEntry* npc, s32 index, void* work) {
-    ((void**)((u8*)npc + 0x2CC))[index] = work;
-}
-
-void* npcGetBtlSetupWork(NpcEntry* npc, s32 index) {
-    return ((void**)((u8*)npc + 0x2CC))[index];
-}
-
-void fbatSandersBombTriggerOn(void) {
-    gp->fbatData->field_54C[1] = TRUE;
-}
-
-void npcClearDeadInfo(void) {
-    memset(gp->fbatData->deadInfo, 0, 0x500);
-}
-
-s32 N_fbatPreventMarioEventChk(void) {
-    s32 mode = gp->fbatData->mode;
-
-    if (mode != 0 && mode != 1 && mode != 8) {
-        return TRUE;
-    }
-    return FALSE;
-}
-
-void npcTuningRy(NpcEntry* npc, f32 angle) {
-    npc->direction = reviseAngle(angle);
-}
-
-// 100%: testing `unkFlag` directly (not `jflags & 0x100000`) recovers the jflags/unkFlag colouring. In the
-// jump branch, declaring `f64 dabs` for `__fabs(moveY)` and casting `(f32)dabs` into `absY` makes MWCC round
-// out-of-place (`frsp f0, f2`) instead of in place, and declaring `absY` before `yOffset` gets f3=yOffset.
-void npcMoveG(NpcEntry* entry) {
-    f32 moveY;
-    f32 force;
-    u32 jflags;
-    u32 unkFlag;
-    u32 flags;
-
-    moveY = entry->moveOffset.y;
-    entry->moveOffset.y = 0.0f;
-    jflags = entry->jumpFlags;
-    unkFlag = jflags & 0x100000;
-    if (unkFlag && !(jflags & 0x10000000)) {
-        moveY *= 0.5f;
-    }
-    force = 0.0f;
-    flags = entry->flags;
-    if (flags & 0x20000) {
-        f32 d = entry->field_180 - entry->moveDt;
-        if (unkFlag == 0 || (jflags & 0x10000000)) {
-            force = entry->jumpVelY * entry->moveDt +
-                    (-980.0f * entry->jumpGravity) * (entry->field_180 * entry->field_180 - d * d);
-        } else {
-            force = 0.4f * (entry->jumpVelY * entry->moveDt) +
-                    (0.15f * (-980.0f * entry->jumpGravity)) * (entry->field_180 * entry->field_180 - d * d);
-        }
-        force *= entry->jumpYScale;
-        if (entry->field_1D0 > 0.0f) {
-            f32 limit;
-            if (unkFlag != 0) {
-                limit = 0.5f * (-entry->field_1D0 * entry->moveDt);
-            } else {
-                limit = -entry->field_1D0 * entry->moveDt;
-            }
-            if (force < limit) {
-                force = limit;
-            }
-        }
-    }
-    moveY += force;
-    if (!(flags & 0x10)) {
-        entry->position.y += moveY;
-        if (entry->position.y < -1000.0f) {
-            entry->position.y = -1000.0f;
-        }
-    } else if (moveY != 0.0f) {
-        if (moveY > 0.0f) {
-            entry->jumpFlags |= 1;
-            entry->position.y += moveY;
-        } else {
-            f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
-            f64 dabs;
-            f32 absY;
-            f32 yOffset = 0.8f * entry->height;
-            HitEntry* hit;
-
-            dabs = __fabs(moveY);
-            absY = (f32)dabs;
-            distance = yOffset + absY;
-            hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, entry->position.x,
-                                 entry->position.y + yOffset, entry->position.z, 0.0f, -1.0f, 0.0f);
-            *(HitEntry**)entry->field_300 = hit;
-            if (hit == NULL) {
-                entry->jumpFlags |= 1;
-                entry->position.y += moveY;
-            } else {
-                entry->jumpFlags &= ~1;
-                entry->position.y = hitY;
-                entry->field_178 = 0;
-            }
-        }
-    }
-}
-
-f32 npcTransRytoFaceDir(NpcEntry* npc) {
-    if (reviseAngle(npc->direction) < 180.0f) {
-        return 90.0f;
-    }
-    return 270.0f;
-}
-
-void npcSetMarioAutoTalkPose(const char* stayPose, const char* talkPose) {
-    strcpy(MarioStayPose, stayPose);
-    strcpy(MarioTalkPose, talkPose);
-}
-
-void npcSetColor(const char* name, GXColor* color) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
-    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
-    NpcEntry* entry;
-    s32 total;
-    s32 i;
-
-    total = wp->total;
-    entry = wp->entries;
-    for (i = 0; i < total; i++, entry++) {
-        if (entry->flags & 1 && !strcmp(entry->description, name)) {
-            break;
-        }
-    }
-    entry->color = *color;
-}
-
-void npcStartForOneEvent(NpcEntry* entry) {
-    if (entry && (entry->flags & 2) && (entry->flags & 0x10000000) && (entry->jumpFlags & 0x10000)) {
-        entry->jumpFlags &= ~0x10000;
-        evtStartID(entry->regularEvtId);
-        animPoseSetLocalTimeRate(entry->poseId, 1.0f);
-    }
-}
-
-void npcStopForOneEvent(NpcEntry* entry) {
-    if (entry && (entry->flags & 2) && (entry->flags & 0x10000000)) {
-        entry->jumpFlags |= 0x10000;
-        evtStopID(entry->regularEvtId);
-        animPoseSetLocalTimeRate(entry->poseId, 0.0f);
-    }
-}
-
-void npcStartForEvent(void) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
-    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
-    int i;
-    s32 total;
-    NpcEntry* entry;
-
-    total = wp->total;
-    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
-        npcStartForOneEvent(entry);
-    }
-}
-
-void npcStopForEvent(void) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
-    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
-    int i;
-    s32 total;
-    NpcEntry* entry;
-
-    total = wp->total;
-    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
-        npcStopForOneEvent(entry);
-    }
-}
-
-NpcEntry* fbatNpcTalkCheck(void) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
-    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
-
-    if (wp->field_0x10 && marioChkTalkable()) {
-        return wp->field_0x10;
+    if (*outDist < radius + entry->width * 0.5f) {
+        return entry;
     }
     return NULL;
 }
-
-s32 _check(EventEntry* evt) {
-    s32* args = evt->args;
-    s32 arg0 = args[0];
-
-    if (pouchGetPtr()->mMerleeCurseUsesRemaining) {
-        evtSetValue(evt, arg0, 0);
-    } else {
-        evtSetValue(evt, arg0, 1);
-    }
-    return 2;
-}
-
-s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
-    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
-    int i;
-    s32 total;
-    NpcEntry* entry;
-    s32 count = 0;
-    total = wp->total;
-    if (mobj == NULL) {
-        return 0;
-    }
-    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
-        if (entry != NULL && (entry->flags & 1) && (entry->flags & 0x8000000) && !(entry->jumpFlags & 4) &&
-            !(*(u16*)entry->field_31E & 8) && *(u32*)entry->field_300 == (u32)mobj) {
-            npcGroupDead(entry, 8);
-            count++;
-        }
-    }
-    return count;
-}
-
-void npcKoopaModeEncountCheck(void) {
-    FieldBattleData* fbat = gp->fbatData;
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
-    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
-    s32 i;
-    s32 total;
-    NpcEntry* entry;
-
-    total = wp->total;
-    if (fbat->mode != 1) {
-        return;
-    }
-    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
-        if (entry != NULL && (entry->flags & 1) && (entry->flags & 0x8000000) && !(entry->jumpFlags & 4)) {
-            switch (kpaEnemyHitChk(entry->position.x, entry->position.y, entry->position.z, entry->height,
-                                   entry->width)) {
-                case 1:
-                    if (!(*(u16*)entry->field_31E & 1)) {
-                        npcGroupDead(entry, 1);
-                    }
-                    break;
-                case 2:
-                    if (!(*(u16*)entry->field_31E & 2)) {
-                        npcGroupDead(entry, 2);
-                    }
-                    break;
-                case 3:
-                    if (!(*(u16*)entry->field_31E & 4)) {
-                        npcGroupDead(entry, 4);
-                    }
-                    break;
-                case 4:
-                    kpaPowDown();
-                    break;
-                default:
-                    if (!(*(u16*)entry->field_31E & 0x10) && *(u32*)entry->field_300 != 0 &&
-                        !strcmp(hitGetName((HitEntry*)(*(u32*)entry->field_300)), "a_magu")) {
-                        npcGroupDead(entry, 0x10);
-                    }
-                    break;
-            }
-        }
-    }
-}
-
-// dont_inline keeps npcGroupDead out of line: the original bot callers emit a real `bl npcGroupDead`.
-#pragma dont_inline on
-void npcGroupDead(NpcEntry* entry, s32 type) {
-    if (entry->master) {
-        entry = entry->master;
-    }
-    while (entry->prev) {
-        entry = entry->prev;
-    }
-    _npcGroupDead(entry, type);
-}
 #pragma dont_inline reset
 
-// The walk, the recursive inlining depth and the inlined _npcDead copies all match; the only diffs
-// are the deepest slave loop's callee-saved registers. The original keeps the shift's `1` in r27
-// (loaded slave in r24, array pointer in r25, counter in r26); ours lets the deepest copy
-// rematerialise `1` into a volatile, so slave/pointer/counter land in r25/r26/r27 and the prologue
-// is `stmw r25` instead of `stmw r24`. This requires _npcDead to call fbatGetPointer(), which is
-// what makes the deepest inlined copy emit a real `bl fbatGetPointer`.
-// NONMATCHING (97.46%): deepest slave-loop register allocation (see above).
-void _npcGroupDead(NpcEntry* entry, s32 type) {
-    int i;
+// Hammer sweep over 12 elevation angles placing a point radius from Mario along (sin/cos of angle,
+// elevation from the shared table), then the _npcHitCheckSphere test. The local angle table
+// materialises as a per-iteration stack copy (correct) but from this unit's own `.rodata` template
+// instead of dat_802c2f9c (vec3_802c2f78 + 0x24), and the compiler's double pool (int->float 2^52,
+// sqrtf 0.5/3.0) lands at 0x48 instead of vec3_802c2f78 + 0x1d8/0x1c0, because this unit's rodata
+// data is not written yet.
+// Calling marioGetPtr() before the angle-table declaration (which needs a nested block, declarations
+// precede statements) and declaring c2,s2,c1,s1 reproduces the target's call order and stack slots.
+// Removing the `dist`/`npc` initialisers (the loop always assigns them) and declaring dx/dy/dz as dy,dx,dz
+// recovered the prologue; computing the point into a `Vec pos` (pos.x, pos.z, pos.y) and copying to px/pz/py
+// gets the target's px,pz,py FP order (was py,px,pz). The angle-table and sqrtf double-pool offsets resolve
+// once the other agents finish the unit's rodata.
+// NONMATCHING (99.27%): the final py fmadds lands in f3 instead of f6 (target px f5, py f6, dx f3), plus
+// the pending unit-rodata pool offsets.
+NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle) {
+    MarioWork* mario;
+    f32 i = 0.0f;
+    f32 dist;
+    NpcEntry* npc;
 
-    if (entry->next) {
-        _npcGroupDead(entry->next, type);
-    }
-    for (i = 0; i < 4; i++) {
-        if (entry->slaves[i]) {
-            _npcDead(entry->slaves[i], type);
+    for (; i <= 11.0f; i += 1.0f) {
+        f32 idx = i;
+        f32 c2, s2, c1, s1;
+        Vec pos;
+        f32 px, py, pz;
+        f32 dy, dx, dz;
+
+        mario = marioGetPtr();
+        {
+        s32 angles[] = { 0, 0, 0, 0, 45, 60, 90, 100, 101, 101, 101 };
+
+        if (i < 0.0f) {
+            idx = 0.0f;
+        }
+        if (idx >= 11.0f) {
+            idx = 10.0f;
+        }
+        sincosf(&s1, &c1, angle);
+        sincosf(&s2, &c2, (f32)angles[(s32)idx]);
+        pos.x = s2 * (s1 * radius) + mario->position.x;
+        pos.z = s2 * (c1 * radius) + mario->position.z;
+        pos.y = radius * c2 + mario->position.y;
+        px = pos.x;
+        pz = pos.z;
+        py = pos.y;
+        dx = px - entry->position.x;
+        dy = py - entry->position.y;
+        dz = pz - entry->position.z;
+        if (py != entry->position.y) {
+            if (py >= entry->position.y && py <= entry->position.y + entry->height) {
+                dy = 0.0f;
+            } else if (py > entry->position.y + entry->height) {
+                dy = py - (entry->position.y + entry->height);
+            }
+        }
+        dist = sqrtf(dx * dx + dy * dy + dz * dz);
+        npc = (dist < entry->width * 0.5f + 12.0f) ? entry : NULL;
+        if (npc != NULL) {
+            break;
+        }
         }
     }
-    _npcDead(entry, type);
+    *outDist = dist;
+    return npc;
 }
 
-void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
-    *(s32*)entry->field_140 |= 0x10;
-    entry->jumpFlags |= 4;
-    entry->koopaEncounterType = koopaEncounterType;
-    if (entry->flags & 4) {
-        fbatGetPointer()->deadInfo[0].mask |= (1 << entry->field_314);
-    }
-}
+BOOL npcCheckInterrupt(NpcEntry* npc) {
+    EventEntry* evt;
 
-void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
-    BattleSetupData* setup;
-    s32 i;
-
-    if (battleInfoId == -1) {
-        setup = NULL;
-    } else {
-        char areaName[4];
-        AreaData* area;
-
-        areaName[0] = gp->currentMapName[0];
-        areaName[1] = gp->currentMapName[1];
-        areaName[2] = gp->currentMapName[2];
-        areaName[3] = 0;
-        area = areaDataPtr(areaName);
-        setup = (BattleSetupData*)area->field_8;
-        while (battleInfoId > 0) {
-            setup++;
-            battleInfoId--;
+    evtGetPtrID(npc->regularEvtId);
+    if (*(s32*)npc->field_140 & ~0xF00) {
+        evt = NULL;
+        if ((*(s32*)npc->field_140 & 0x10) && npc->deadEvent) {
+            evt = evtEntry(npc->deadEvent, 0, 0x20);
+            evt->wNpcEventType = 8;
+            evt->ownerNPC = npc;
+        } else if ((*(s32*)npc->field_140 & 0x10000000) && npc->moveEvent) {
+            evt = evtEntry(npc->moveEvent, 0, 0x20);
+            evt->wNpcEventType = 1;
+            evt->ownerNPC = npc;
+        } else if ((*(s32*)npc->field_140 & 0x8) && npc->blowEvent) {
+            evt = evtEntry(npc->blowEvent, 0, 0x20);
+            evt->wNpcEventType = 5;
+            evt->ownerNPC = npc;
+        } else if ((*(s32*)npc->field_140 & 1) && npc->findEvent && !(npc->jumpFlags & 0x1000) &&
+                   !(npc->flags & 0x200000) && !(*(s32*)npc->field_140 & 0x100)) {
+            evt = evtEntry(npc->findEvent, 0, 0x20);
+            evt->wNpcEventType = 2;
+            evt->ownerNPC = npc;
+        } else if ((*(s32*)npc->field_140 & 2) && npc->lostEvent && !(npc->jumpFlags & 0x1000) &&
+                   !(npc->flags & 0x200000)) {
+            evt = evtEntry(npc->lostEvent, 0, 0x20);
+            evt->wNpcEventType = 3;
+            evt->ownerNPC = npc;
+        } else if ((*(s32*)npc->field_140 & 4) && npc->returnEvent && !(npc->jumpFlags & 0x1000) &&
+                   !(npc->flags & 0x200000)) {
+            evt = evtEntry(npc->returnEvent, 0, 0x20);
+            evt->wNpcEventType = 4;
+            evt->ownerNPC = npc;
+        }
+        if (evt != NULL) {
+            evtDeleteID(npc->regularEvtId);
+            npc->regularEvtId = evt->eventId;
+            *(s32*)npc->field_140 &= 0xF00;
+            npc->jumpFlags &= ~0x1000;
+            npc->field_188 = 0;
+            npc->moveSpeed = 0.0f;
+            return TRUE;
         }
     }
-    npcSetupBattleInfo(npc, setup);
-    for (i = 0; i < 4; i++) {
-        if (npc->slaves[i] != NULL) {
-            npc->slaves[i]->battleInfo = npc->battleInfo;
-        }
-    }
+    *(s32*)npc->field_140 &= 0xF00;
+    npc->jumpFlags &= ~0x1000;
+    return FALSE;
 }
 
 // Solved by using the declared `field_9C` for the 0xB0 roll store (MWCC then leaves it
@@ -3365,84 +3835,122 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     npc->flags |= 0x10000000;
 }
 
-BOOL npcCheckInterrupt(NpcEntry* npc) {
-    EventEntry* evt;
-
-    evtGetPtrID(npc->regularEvtId);
-    if (*(s32*)npc->field_140 & ~0xF00) {
-        evt = NULL;
-        if ((*(s32*)npc->field_140 & 0x10) && npc->deadEvent) {
-            evt = evtEntry(npc->deadEvent, 0, 0x20);
-            evt->wNpcEventType = 8;
-            evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 0x10000000) && npc->moveEvent) {
-            evt = evtEntry(npc->moveEvent, 0, 0x20);
-            evt->wNpcEventType = 1;
-            evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 0x8) && npc->blowEvent) {
-            evt = evtEntry(npc->blowEvent, 0, 0x20);
-            evt->wNpcEventType = 5;
-            evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 1) && npc->findEvent && !(npc->jumpFlags & 0x1000) &&
-                   !(npc->flags & 0x200000) && !(*(s32*)npc->field_140 & 0x100)) {
-            evt = evtEntry(npc->findEvent, 0, 0x20);
-            evt->wNpcEventType = 2;
-            evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 2) && npc->lostEvent && !(npc->jumpFlags & 0x1000) &&
-                   !(npc->flags & 0x200000)) {
-            evt = evtEntry(npc->lostEvent, 0, 0x20);
-            evt->wNpcEventType = 3;
-            evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 4) && npc->returnEvent && !(npc->jumpFlags & 0x1000) &&
-                   !(npc->flags & 0x200000)) {
-            evt = evtEntry(npc->returnEvent, 0, 0x20);
-            evt->wNpcEventType = 4;
-            evt->ownerNPC = npc;
-        }
-        if (evt != NULL) {
-            evtDeleteID(npc->regularEvtId);
-            npc->regularEvtId = evt->eventId;
-            *(s32*)npc->field_140 &= 0xF00;
-            npc->jumpFlags &= ~0x1000;
-            npc->field_188 = 0;
-            npc->moveSpeed = 0.0f;
-            return TRUE;
-        }
-    }
-    *(s32*)npc->field_140 &= 0xF00;
-    npc->jumpFlags &= ~0x1000;
-    return FALSE;
-}
-
-NpcTerritoryType dbGetDefData(NpcTerritoryInfo* info, const char* description) {
-    NpcTerritoryType type;
-
-    type = NPC_TERRITORY_TYPE_NOTHING;
-    for (;;) {
-        if (info->description == NULL) {
-            break;
-        }
-        if (strcmp(info->description, description) == 0) {
-            type = info->type;
-            break;
-        }
-        info++;
-    }
-    return type;
-}
-
-void npcGetBackItemEntry(NpcEntry* entry) {
-    NpcBattleInfo* info = &entry->battleInfo;
+void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
+    BattleSetupData* setup;
     s32 i;
 
-    for (i = 0; i < 8; i++) {
-        ItemType item = info->recoveredItems[i];
-        if (item) {
-            ItemEntry* itemEntryPtr = itemEntry(NULL, item, 0xB, -1, 0, entry->position.x, entry->position.y, entry->position.z);
-            itemFlagOn(itemEntryPtr, 0x100);
-            info->recoveredItems[i] = 0;
+    if (battleInfoId == -1) {
+        setup = NULL;
+    } else {
+        char areaName[4];
+        AreaData* area;
+
+        areaName[0] = gp->currentMapName[0];
+        areaName[1] = gp->currentMapName[1];
+        areaName[2] = gp->currentMapName[2];
+        areaName[3] = 0;
+        area = areaDataPtr(areaName);
+        setup = (BattleSetupData*)area->field_8;
+        while (battleInfoId > 0) {
+            setup++;
+            battleInfoId--;
         }
     }
+    npcSetupBattleInfo(npc, setup);
+    for (i = 0; i < 4; i++) {
+        if (npc->slaves[i] != NULL) {
+            npc->slaves[i]->battleInfo = npc->battleInfo;
+        }
+    }
+}
+
+void npcStopForEvent(void) {
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+#endif
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    int i;
+    s32 total;
+    NpcEntry* entry;
+
+    total = wp->total;
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        npcStopForOneEvent(entry);
+    }
+}
+
+void npcStopForOneEvent(NpcEntry* entry) {
+    if (entry && (entry->flags & 2) && (entry->flags & 0x10000000)) {
+        entry->jumpFlags |= 0x10000;
+        evtStopID(entry->regularEvtId);
+        animPoseSetLocalTimeRate(entry->poseId, 0.0f);
+    }
+}
+
+void npcStartForEvent(void) {
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+#endif
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    int i;
+    s32 total;
+    NpcEntry* entry;
+
+    total = wp->total;
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        npcStartForOneEvent(entry);
+    }
+}
+
+void npcStartForOneEvent(NpcEntry* entry) {
+    if (entry && (entry->flags & 2) && (entry->flags & 0x10000000) && (entry->jumpFlags & 0x10000)) {
+        entry->jumpFlags &= ~0x10000;
+        evtStartID(entry->regularEvtId);
+        animPoseSetLocalTimeRate(entry->poseId, 1.0f);
+    }
+}
+
+void npcSetColor(const char* name, GXColor* color) {
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+#endif
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    NpcEntry* entry;
+    s32 total;
+    s32 i;
+
+    total = wp->total;
+    entry = wp->entries;
+    for (i = 0; i < total; i++, entry++) {
+        if (entry->flags & 1 && !strcmp(entry->description, name)) {
+            break;
+        }
+    }
+    entry->color = *color;
+}
+
+void npcBlurOn(const char* name) {
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+#endif
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    NpcEntry* entry;
+    s32 total;
+    int i;
+
+    total = wp->total;
+    entry = wp->entries;
+    for (i = 0; i < total; i++, entry++) {
+        if (entry->flags & 1 && !strcmp(entry->description, name)) {
+            break;
+        }
+    }
+    entry->flags |= 0x100;
+    entry->positionHistory[0] = entry->position;
+    entry->positionHistory[1] = entry->position;
+    entry->positionHistory[2] = entry->position;
+    entry->positionHistory[3] = entry->position;
+    entry->positionHistory[4] = entry->position;
 }
 
 void npcBlurOff(const char* name) {
@@ -3464,52 +3972,39 @@ void npcBlurOff(const char* name) {
     entry->flags &= ~0x100;
 }
 
-// 100%: scoping the effect->userdata deref to a block lets the string argument materialise as
-// `lis r3, str@ha; addi r4, r3, str@l`, and the reload of evt->userdata[0] for effSetName matches.
-s32 _majinai_effect(EventEntry* evt, s32 a2) {
-    MarioWork* mario = marioGetPtr();
-
-    if (a2 != 0) {
-        EffectEntry* effect;
-
-        effect = effMajinaiEntry(0, mario->position.x,
-                                 mario->position.y + mario->wPlayerCollisionBox.y + 16.0f, mario->position.z);
-        evt->userdata[0] = (s32)effect;
-        {
-        EffectEntry* e = (EffectEntry*)evt->userdata[0];
-        ((MajinaiWork*)e->userdata)->field_0x10 = 0.8f;
-        }
-        effSetName((EffectEntry*)evt->userdata[0], "mjef_coinup");
-    }
-    if (evt->userdata[0] != 0 && effNameToPtr("mjef_coinup") != NULL) {
-        return 0;
-    }
-    return 2;
+void* npcGetBtlSetupWork(NpcEntry* npc, s32 index) {
+    return ((void**)((u8*)npc + 0x2CC))[index];
 }
 
-void npcExecAllReglEvt(void) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
-    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
-    int i;
-    s32 total;
-    NpcEntry* entry;
+void npcSetBtlSetupWork(NpcEntry* npc, s32 index, void* work) {
+    ((void**)((u8*)npc + 0x2CC))[index] = work;
+}
 
-    total = wp->total;
-    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
-        if (entry != NULL && (entry->flags & 1) && entry->moveEvent) {
-            EventEntry* evt;
+void npcSetSlave(NpcEntry* npc, NpcEntry* slave, s32 id) {
+    slave->master = npc;
+    npc->slaves[id] = slave;
+}
 
-            if (entry->regularEvtId) {
-                evtDeleteID(entry->regularEvtId);
-            }
-            evt = evtEntry(entry->moveEvent, 0, 0x20);
-            evt->wNpcEventType = 1;
-            evt->ownerNPC = entry;
-            entry->regularEvtId = evt->eventId;
+void npcSetLink(NpcEntry* npc, NpcEntry* link) {
+    npc->next = link;
+    link->prev = npc;
+}
+
+NpcTerritoryType dbGetDefData(NpcTerritoryInfo* info, const char* description) {
+    NpcTerritoryType type;
+
+    type = NPC_TERRITORY_TYPE_NOTHING;
+    for (;;) {
+        if (info->description == NULL) {
+            break;
         }
+        if (strcmp(info->description, description) == 0) {
+            type = info->type;
+            break;
+        }
+        info++;
     }
+    return type;
 }
 
 void npcExecAllInitEvt(void) {
@@ -3568,6 +4063,174 @@ BOOL npcWaitAllInitEvtEnd(void) {
     return result;
 }
 
+void npcExecAllReglEvt(void) {
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+#endif
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    int i;
+    s32 total;
+    NpcEntry* entry;
+
+    total = wp->total;
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        if (entry != NULL && (entry->flags & 1) && entry->moveEvent) {
+            EventEntry* evt;
+
+            if (entry->regularEvtId) {
+                evtDeleteID(entry->regularEvtId);
+            }
+            evt = evtEntry(entry->moveEvent, 0, 0x20);
+            evt->wNpcEventType = 1;
+            evt->ownerNPC = entry;
+            entry->regularEvtId = evt->eventId;
+        }
+    }
+}
+
+s32 _check(EventEntry* evt) {
+    s32* args = evt->args;
+    s32 arg0 = args[0];
+
+    if (pouchGetPtr()->mMerleeCurseUsesRemaining) {
+        evtSetValue(evt, arg0, 0);
+    } else {
+        evtSetValue(evt, arg0, 1);
+    }
+    return 2;
+}
+
+// 100%: scoping the effect->userdata deref to a block lets the string argument materialise as
+// `lis r3, str@ha; addi r4, r3, str@l`, and the reload of evt->userdata[0] for effSetName matches.
+s32 _majinai_effect(EventEntry* evt, s32 a2) {
+    MarioWork* mario = marioGetPtr();
+
+    if (a2 != 0) {
+        EffectEntry* effect;
+
+        effect = effMajinaiEntry(0, mario->position.x,
+                                 mario->position.y + mario->wPlayerCollisionBox.y + 16.0f, mario->position.z);
+        evt->userdata[0] = (s32)effect;
+        {
+        EffectEntry* e = (EffectEntry*)evt->userdata[0];
+        ((MajinaiWork*)e->userdata)->field_0x10 = 0.8f;
+        }
+        effSetName((EffectEntry*)evt->userdata[0], str_802C3128);
+    }
+    if (evt->userdata[0] != 0 && effNameToPtr(str_802C3128) != NULL) {
+        return 0;
+    }
+    return 2;
+}
+
+void npcGetBackItemEntry(NpcEntry* entry) {
+    NpcBattleInfo* info = &entry->battleInfo;
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        ItemType item = info->recoveredItems[i];
+        if (item) {
+            ItemEntry* itemEntryPtr = itemEntry(NULL, item, 0xB, -1, 0, entry->position.x, entry->position.y, entry->position.z);
+            itemFlagOn(itemEntryPtr, 0x100);
+            info->recoveredItems[i] = 0;
+        }
+    }
+}
+
+const char str_802C2FC8[] = "SFX_EVT_FLD_INCANT_CUBE1";
+const char str_802C2FE4[] = "SFX_EVT_FLD_INCANT_CUBE2";
+const char str_802C3000[] = "SFX_EVT_FLD_INCANT_CUBE3";
+const char str_802C301C[] = "SFX_EVT_FLD_INCANT_CUBE4";
+const char str_802C3038[] = "SFX_EVT_FLD_INCANT_CUBE5";
+const char str_802C3054[] = "SFX_EVT_BTL_INCANT_CUBE1";
+const char str_802C3070[] = "SFX_EVT_BTL_INCANT_CUBE2";
+const char str_802C308C[] = "SFX_EVT_BTL_INCANT_CUBE3";
+const char str_802C30A8[] = "SFX_EVT_BTL_INCANT_CUBE4";
+const char str_802C30C4[] = "SFX_EVT_BTL_INCANT_CUBE5";
+const char str_802C30E0[] = "msg_mj_coin_up";
+const char str_802C30F0[] = "msg_mj_last";
+const char str_802C30FC[] = "a_magu";
+const char str_802C3104[] = "kpa_03";
+const char str_802C310C[] = "SFX_KUPPA_3RD_WATER_FALL1";
+const char str_802C3128[] = "mjef_coinup";
+
+void npcClearDeadInfo(void) {
+    memset(gp->fbatData->deadInfo, 0, 0x500);
+}
+
+void npcKoopaModeEncountCheck(void) {
+    FieldBattleData* fbat = gp->fbatData;
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+#endif
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    s32 i;
+    s32 total;
+    NpcEntry* entry;
+
+    total = wp->total;
+    if (fbat->mode != 1) {
+        return;
+    }
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        if (entry != NULL && (entry->flags & 1) && (entry->flags & 0x8000000) && !(entry->jumpFlags & 4)) {
+            switch (kpaEnemyHitChk(entry->position.x, entry->position.y, entry->position.z, entry->height,
+                                   entry->width)) {
+                case 1:
+                    if (!(*(u16*)entry->field_31E & 1)) {
+                        npcGroupDead(entry, 1);
+                    }
+                    break;
+                case 2:
+                    if (!(*(u16*)entry->field_31E & 2)) {
+                        npcGroupDead(entry, 2);
+                    }
+                    break;
+                case 3:
+                    if (!(*(u16*)entry->field_31E & 4)) {
+                        npcGroupDead(entry, 4);
+                    }
+                    break;
+                case 4:
+                    kpaPowDown();
+                    break;
+                default:
+                    if (!(*(u16*)entry->field_31E & 0x10) && *(u32*)entry->field_300 != 0 &&
+                        !strcmp(hitGetName((HitEntry*)(*(u32*)entry->field_300)), str_802C30FC)) {
+                        npcGroupDead(entry, 0x10);
+                    }
+                    break;
+            }
+        }
+    }
+}
+
+s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+#endif
+    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
+    int i;
+    s32 total;
+    NpcEntry* entry;
+    s32 count = 0;
+    total = wp->total;
+    if (mobj == NULL) {
+        return 0;
+    }
+    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
+        if (entry != NULL && (entry->flags & 1) && (entry->flags & 0x8000000) && !(entry->jumpFlags & 4) &&
+            !(*(u16*)entry->field_31E & 8) && *(u32*)entry->field_300 == (u32)mobj) {
+            npcGroupDead(entry, 8);
+            count++;
+        }
+    }
+    return count;
+}
+
+void fbatSandersBombTriggerOn(void) {
+    gp->fbatData->field_54C[1] = TRUE;
+}
 
 s32 npcCalcScore(NpcEntry* entry) {
     FieldBattleData* fbatData = gp->fbatData;
@@ -3604,134 +4267,6 @@ s32 npcCalcScore(NpcEntry* entry) {
     return score;
 }
 
-void npcBlurOn(const char* name) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
-    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
-    NpcEntry* entry;
-    s32 total;
-    int i;
-
-    total = wp->total;
-    entry = wp->entries;
-    for (i = 0; i < total; i++, entry++) {
-        if (entry->flags & 1 && !strcmp(entry->description, name)) {
-            break;
-        }
-    }
-    entry->flags |= 0x100;
-    entry->positionHistory[0] = entry->position;
-    entry->positionHistory[1] = entry->position;
-    entry->positionHistory[2] = entry->position;
-    entry->positionHistory[3] = entry->position;
-    entry->positionHistory[4] = entry->position;
-}
-
-void npcSetStayPose(const char* name) {
-    NpcWork* wp;
-    NpcEntry* entry;
-    s32 total;
-    int i;
-
-    if ((s8)name[0] == 0) {
-        return;
-    }
-#ifdef MUST_MATCH
-    // The sign-extend round trip on the argument leaves the dead value that pins retail's parameter
-    // save (`mr r28, r3`) before the `name[0]` load; the backend folds it away.
-    if (!strcmp((const char*)(s64)(s32)name, "(^x^)party")) {
-#else
-    if (!strcmp(name, "(^x^)party")) {
-#endif
-        return;
-    }
-    if (!strcmp(name, "party")) {
-        PartyEntry* party = partyGetPtr(marioGetPartyId());
-        if (party == NULL) {
-            return;
-        }
-        partyChgPoseId(party, 1);
-        return;
-    }
-    if (!strcmp(name, "extparty")) {
-        PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
-        if (party == NULL) {
-            return;
-        }
-        partyChgPoseId(party, 1);
-        return;
-    }
-    if (!strcmp(name, "mario")) {
-        marioChgPose(MarioStayPose);
-        return;
-    }
-
-    wp = gp->inBattle ? &work.battle : &work.field;
-    total = wp->total;
-    entry = wp->entries;
-    for (i = 0; i < total; i++, entry++) {
-        if (entry->flags & 1 && !strcmp(entry->description, name)) {
-            break;
-        }
-    }
-    if (entry->flags & 0x200) {
-        animPoseSetAnim(entry->poseId, entry->stayAnim, TRUE);
-    }
-}
-
-void npcSetTalkPose(const char* name) {
-    NpcWork* wp;
-    NpcEntry* entry;
-    s32 total;
-    int i;
-
-    if ((s8)name[0] == 0) {
-        return;
-    }
-#ifdef MUST_MATCH
-    // The sign-extend round trip on the argument leaves the dead value that pins retail's parameter
-    // save (`mr r28, r3`) before the `name[0]` load; the backend folds it away.
-    if (!strcmp((const char*)(s64)(s32)name, "(^x^)party")) {
-#else
-    if (!strcmp(name, "(^x^)party")) {
-#endif
-        return;
-    }
-    if (!strcmp(name, "party")) {
-        PartyEntry* party = partyGetPtr(marioGetPartyId());
-        if (party == NULL) {
-            return;
-        }
-        partyChgPoseId(party, 7);
-        return;
-    }
-    if (!strcmp(name, "extparty")) {
-        PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
-        if (party == NULL) {
-            return;
-        }
-        partyChgPoseId(party, 7);
-        return;
-    }
-    if (!strcmp(name, "mario")) {
-        marioChgPose(MarioTalkPose);
-        return;
-    }
-
-    wp = gp->inBattle ? &work.battle : &work.field;
-    total = wp->total;
-    entry = wp->entries;
-    for (i = 0; i < total; i++, entry++) {
-        if (entry->flags & 1 && !strcmp(entry->description, name)) {
-            break;
-        }
-    }
-    if (entry->flags & 0x200) {
-        animPoseSetAnim(entry->poseId, entry->talkAnim, TRUE);
-    }
-}
-
 // The original copies entry->position into a shared `position` temp and from there into one Vec per
 // cloudGetBreathPower call (the temp sits at 0x2C, the call Vecs at 0x20/0x14/0x8); writing the copies
 // this way is what reproduces those stack slots. `half` keeps the fnmsubs operands (f2=height, f1=0.5).
@@ -3766,544 +4301,11 @@ s32 npcCheckBlow(NpcEntry* entry) {
     return cloudGetBreathPower(entry->width, &pos3) > 0.0f;
 }
 
-// Hammer sweep over 12 elevation angles placing a point radius from Mario along (sin/cos of angle,
-// elevation from the shared table), then the _npcHitCheckSphere test. The local angle table
-// materialises as a per-iteration stack copy (correct) but from this unit's own `.rodata` template
-// instead of dat_802c2f9c (vec3_802c2f78 + 0x24), and the compiler's double pool (int->float 2^52,
-// sqrtf 0.5/3.0) lands at 0x48 instead of vec3_802c2f78 + 0x1d8/0x1c0, because this unit's rodata
-// data is not written yet.
-// Calling marioGetPtr() before the angle-table declaration (which needs a nested block, declarations
-// precede statements) and declaring c2,s2,c1,s1 reproduces the target's call order and stack slots.
-// Removing the `dist`/`npc` initialisers (the loop always assigns them) and declaring dx/dy/dz as dy,dx,dz
-// recovered the prologue; computing the point into a `Vec pos` (pos.x, pos.z, pos.y) and copying to px/pz/py
-// gets the target's px,pz,py FP order (was py,px,pz). The angle-table and sqrtf double-pool offsets resolve
-// once the other agents finish the unit's rodata.
-// NONMATCHING (99.27%): the final py fmadds lands in f3 instead of f6 (target px f5, py f6, dx f3), plus
-// the pending unit-rodata pool offsets.
-NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle) {
-    MarioWork* mario;
-    f32 i = 0.0f;
-    f32 dist;
-    NpcEntry* npc;
+s32 N_fbatPreventMarioEventChk(void) {
+    s32 mode = gp->fbatData->mode;
 
-    for (; i <= 11.0f; i += 1.0f) {
-        f32 idx = i;
-        f32 c2, s2, c1, s1;
-        Vec pos;
-        f32 px, py, pz;
-        f32 dy, dx, dz;
-
-        mario = marioGetPtr();
-        {
-        s32 angles[] = { 0, 0, 0, 0, 45, 60, 90, 100, 101, 101, 101 };
-
-        if (i < 0.0f) {
-            idx = 0.0f;
-        }
-        if (idx >= 11.0f) {
-            idx = 10.0f;
-        }
-        sincosf(&s1, &c1, angle);
-        sincosf(&s2, &c2, (f32)angles[(s32)idx]);
-        pos.x = s2 * (s1 * radius) + mario->position.x;
-        pos.z = s2 * (c1 * radius) + mario->position.z;
-        pos.y = radius * c2 + mario->position.y;
-        px = pos.x;
-        pz = pos.z;
-        py = pos.y;
-        dx = px - entry->position.x;
-        dy = py - entry->position.y;
-        dz = pz - entry->position.z;
-        if (py != entry->position.y) {
-            if (py >= entry->position.y && py <= entry->position.y + entry->height) {
-                dy = 0.0f;
-            } else if (py > entry->position.y + entry->height) {
-                dy = py - (entry->position.y + entry->height);
-            }
-        }
-        dist = sqrtf(dx * dx + dy * dy + dz * dz);
-        npc = (dist < entry->width * 0.5f + 12.0f) ? entry : NULL;
-        if (npc != NULL) {
-            break;
-        }
-        }
+    if (mode != 0 && mode != 1 && mode != 8) {
+        return TRUE;
     }
-    *outDist = dist;
-    return npc;
-}
-
-#pragma force_active on
-const char str_802C2FC8[] = "SFX_EVT_FLD_INCANT_CUBE1";
-const char str_802C2FE4[] = "SFX_EVT_FLD_INCANT_CUBE2";
-const char str_802C3000[] = "SFX_EVT_FLD_INCANT_CUBE3";
-const char str_802C301C[] = "SFX_EVT_FLD_INCANT_CUBE4";
-const char str_802C3038[] = "SFX_EVT_FLD_INCANT_CUBE5";
-const char str_802C3054[] = "SFX_EVT_BTL_INCANT_CUBE1";
-const char str_802C3070[] = "SFX_EVT_BTL_INCANT_CUBE2";
-const char str_802C308C[] = "SFX_EVT_BTL_INCANT_CUBE3";
-const char str_802C30A8[] = "SFX_EVT_BTL_INCANT_CUBE4";
-const char str_802C30C4[] = "SFX_EVT_BTL_INCANT_CUBE5";
-const char str_802C30E0[] = "msg_mj_coin_up";
-const char str_802C30F0[] = "msg_mj_last";
-const char str_802C30FC[] = "a_magu";
-const char str_802C3104[] = "kpa_03";
-const char str_802C310C[] = "SFX_KUPPA_3RD_WATER_FALL1";
-const char str_802C3128[] = "mjef_coinup";
-#pragma force_active reset
-
-// Match-only sqrtf for _npcHitCheckSphere: the original reaches the shared sqrtf double pool
-// (0.5 / 3.0 / 0.0 at vec3_802c2f78 + 0x1c0) with vec3_802c2f78 as the base register, so reproduce
-// that access instead of letting the compiler emit its own .rodata pool (rule 7).
-#ifdef MUST_MATCH
-static inline f32 npcHitCheckSphere_sqrtf(f32 x, const f64* pool) {
-    if (x > 0.0f) {
-        f64 guess = __frsqrte(x);
-        f64 half = pool[0];
-        f64 three = pool[1];
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        return x * guess;
-    } else if (x < pool[2]) {
-        return NAN;
-    } else if (isnan(x)) {
-        return NAN;
-    }
-    return x;
-}
-#endif
-
-// dont_inline: retail calls _npcHitCheckSphere from fbatHitCheck (4 sites) instead of inlining it.
-#pragma dont_inline on
-NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((u8*)vec3_802c2f78 + 0x1c0);
-#endif
-    f32 dx = x - entry->position.x;
-    f32 dy = y - entry->position.y;
-    f32 dz = z - entry->position.z;
-
-    if (y != entry->position.y) {
-        if (y >= entry->position.y && y <= entry->position.y + entry->height) {
-            dy = 0.0f;
-        } else if (y > entry->position.y + entry->height) {
-            dy = y - (entry->position.y + entry->height);
-        }
-    }
-#ifdef MUST_MATCH
-    *outDist = npcHitCheckSphere_sqrtf(dx * dx + dy * dy + dz * dz, pool);
-#else
-    *outDist = sqrtf(dx * dx + dy * dy + dz * dz);
-#endif
-    if (*outDist < radius + entry->width * 0.5f) {
-        return entry;
-    }
-    return NULL;
-}
-#pragma dont_inline reset
-
-// The original evaluates `dx2 + dy*dy + dz2 > 0.0f` into a dead `fcmpo` (no branch); a discarded
-// `sqrtf(dx2 + dy*dy + dz2)` statement reproduces that, and declaring dy after dx2/dz2 gets dx2/dz2/dy
-// into f9/f10/f11.
-// 100%: the inline sqrtf's double pool is at vec3_802c2f78+0x1c0, so the MUST_MATCH helper reads the
-// doubles through the unit's base register (0x1c0/0x1c8/0x1d0) and declares `half`/`three` inside the
-// `x > 0.0f` branch after `frsqrte` so the loads schedule where the target has them.
-#ifdef MUST_MATCH
-static inline f32 npcNearDistCheck_sqrtf(f32 x, const f64* pool) {
-    if (x > 0.0f) {
-        f64 guess = __frsqrte(x);
-        f64 half = pool[0];
-        f64 three = pool[1];
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        return x * guess;
-    } else if (x < pool[2]) {
-        return NAN;
-    } else if (isnan(x)) {
-        return NAN;
-    }
-    return x;
-}
-#endif
-
-NpcEntry* npcNearDistCheck(f32 x, f32 y, f32 z, f32 radius) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
-    NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
-    NpcEntry* entry;
-    NpcEntry* found = NULL;
-    s32 total = wp->total;
-    s32 i;
-
-    for (i = 0, entry = wp->entries; i < total; i++, entry++) {
-        if (entry->flags & 1) {
-            f32 dx = x - entry->position.x;
-            f32 dz = z - entry->position.z;
-            f32 dx2 = dx * dx;
-            f32 dz2 = dz * dz;
-            f32 dy = y - entry->position.y;
-#ifdef MUST_MATCH
-            f32 dist = npcNearDistCheck_sqrtf(dx2 + dz2, pool);
-#else
-            f32 dist = sqrtf(dx2 + dz2);
-#endif
-            sqrtf(dx2 + dy * dy + dz2);
-            if (dist < radius) {
-                found = entry;
-            }
-        }
-    }
-    return found;
-}
-
-// Inline degree/radian sine and cosine approximations (same polynomials as the npc blur path).
-// Assigning the coefficients to non-const locals first stops MWCC rematerialising them in every
-// branch, which recovers the target's early coefficient loads.
-static inline f32 npcSideSinf(f32 rad) {
-    f32 sinv;
-    f32 f0, f1;
-    f32 c0, c1, c2, pi;
-
-    c0 = 0.00761f;
-    c1 = 0.16605f;
-    c2 = 1.0f;
-    pi = 3.1415927f;
-    if (rad <= pi) {
-        if (rad <= 1.5707964f) {
-            f0 = rad * rad;
-            sinv = c0 * f0 - c1;
-            sinv = sinv * f0 + c2;
-            sinv = sinv * rad;
-        } else {
-            f0 = rad - 1.5707964f;
-            f1 = 1.5707964f - f0;
-            f0 = f1 * f1;
-            sinv = c0 * f0 - c1;
-            sinv = sinv * f0 + c2;
-            sinv = sinv * f1;
-        }
-    } else if (rad < 4.712389f) {
-        f1 = rad - pi;
-        f0 = f1 * f1;
-        sinv = c0 * f0 - c1;
-        sinv = sinv * f0 + c2;
-        sinv = sinv * f1;
-        sinv = -sinv;
-    } else {
-        f0 = rad - 4.712389f;
-        f1 = 1.5707964f - f0;
-        f0 = f1 * f1;
-        sinv = c0 * f0 - c1;
-        sinv = sinv * f0 + c2;
-        sinv = sinv * f1;
-        sinv = -sinv;
-    }
-    return sinv;
-}
-
-static inline f32 npcSideCosf(f32 rad) {
-    f32 cosv;
-    f32 f0;
-    f32 c0, c1, c2, pi;
-
-    c0 = 0.03705f;
-    c1 = 0.4967f;
-    c2 = 1.0f;
-    pi = 3.1415927f;
-    if (rad <= pi) {
-        if (rad <= 1.5707964f) {
-            f0 = rad * rad;
-            cosv = c0 * f0 - c1;
-            cosv = cosv * f0 + c2;
-        } else {
-            f0 = rad - 1.5707964f;
-            f0 = 1.5707964f - f0;
-            f0 = f0 * f0;
-            cosv = c0 * f0 - c1;
-            cosv = cosv * f0 + c2;
-            cosv = -cosv;
-        }
-    } else if (rad < 4.712389f) {
-        f0 = rad - pi;
-        f0 = f0 * f0;
-        cosv = c0 * f0 - c1;
-        cosv = cosv * f0 + c2;
-        cosv = -cosv;
-    } else {
-        f0 = rad - 4.712389f;
-        f0 = 1.5707964f - f0;
-        f0 = f0 * f0;
-        cosv = c0 * f0 - c1;
-        cosv = cosv * f0 + c2;
-    }
-    return cosv;
-}
-
-static inline f32 npcHitSideSinf(f32 rad) {
-    f32 f0, f1;
-    f32 sinv;
-    f32 c1, c2, pi;
-
-    sinv = 0.00761f;
-    c1 = 0.16605f;
-    c2 = 1.0f;
-    pi = 3.1415927f;
-    if (rad <= pi) {
-        pi = 1.5707964f;
-        if (rad <= pi) {
-            f1 = rad * rad;
-            sinv = sinv * f1 - c1;
-            sinv = sinv * f1 + c2;
-            sinv = sinv * rad;
-        } else {
-            f1 = rad - pi;
-            f0 = pi - f1;
-            f1 = f0 * f0;
-            sinv = sinv * f1 - c1;
-            sinv = sinv * f1 + c2;
-            sinv = sinv * f0;
-        }
-    } else if (rad < 4.712389f) {
-        f0 = rad - pi;
-        f1 = f0 * f0;
-        sinv = sinv * f1 - c1;
-        sinv = sinv * f1 + c2;
-        sinv = sinv * f0;
-        sinv = -sinv;
-    } else {
-        f1 = rad - 4.712389f;
-        pi = 1.5707964f;
-        f0 = pi - f1;
-        f1 = f0 * f0;
-        sinv = sinv * f1 - c1;
-        sinv = sinv * f1 + c2;
-        sinv = sinv * f0;
-        sinv = -sinv;
-    }
-    return sinv;
-}
-
-static inline f32 npcHitSideCosf(f32 rad) {
-    f32 cosv;
-    f32 f0;
-    f32 c1, c2, pi;
-
-    cosv = 0.03705f;
-    c1 = 0.4967f;
-    c2 = 1.0f;
-    pi = 3.1415927f;
-    if (rad <= pi) {
-        pi = 1.5707964f;
-        if (rad <= pi) {
-            f0 = rad * rad;
-            cosv = cosv * f0 - c1;
-            cosv = cosv * f0 + c2;
-        } else {
-            f0 = rad - pi;
-            f0 = pi - f0;
-            f0 = f0 * f0;
-            cosv = cosv * f0 - c1;
-            cosv = cosv * f0 + c2;
-            cosv = -cosv;
-        }
-    } else if (rad < 4.712389f) {
-        f0 = rad - pi;
-        f0 = f0 * f0;
-        cosv = cosv * f0 - c1;
-        cosv = cosv * f0 + c2;
-        cosv = -cosv;
-    } else {
-        f0 = rad - 4.712389f;
-        pi = 1.5707964f;
-        f0 = pi - f0;
-        f0 = f0 * f0;
-        cosv = cosv * f0 - c1;
-        cosv = cosv * f0 + c2;
-    }
-    return cosv;
-}
-
-// Match-only shape: folding the radius product through this one-line inline makes MWCC keep the
-// `box.x + width + 5.0f` accumulator in the target's f2 instead of f0. The natural `* 0.5f` is under
-// the #else at the call site (rule 7).
-#ifdef MUST_MATCH
-static inline f32 npcHitSideMul(f32 a, f32 b) {
-    return a * b;
-}
-#endif
-
-// `opt_propagation off` stops MWCC rematerialising the sin/cos coefficients into every branch;
-// `opt_lifetimes off` is what puts the accumulator/pivot/scratch in the target's FPRs.
-#pragma opt_propagation off
-#pragma opt_lifetimes off
-// NONMATCHING (99.59%): the sin/cos blocks and the radius match; only `offZ` (target f4, ours f6) and the
-// inlined sqrtf expression that reads it (target f6, ours f5) still colour into the other scratch FPR.
-// The remaining symbol-only pool displacements resolve when the unit links.
-s32 npcCheckHitMarioSide(NpcEntry* entry) {
-    MarioWork* mario = marioGetPtr();
-    Vec pos;
-    f32 d1, d2;
-    f32 radius;
-    f32 angle;
-    f32 offX, offZ;
-    f32 rad;
-    f32 dist;
-
-    if (entry->position.y > mario->position.y + mario->wPlayerCollisionBox.y) {
-        return 0;
-    }
-    if (mario->position.y > entry->position.y + entry->height) {
-        return 0;
-    }
-    pos.x = mario->position.x;
-    pos.z = mario->position.z;
-    pos.y = entry->position.y;
-    d1 = PSVECDistance(&pos, &entry->position);
-#ifdef MUST_MATCH
-    radius = npcHitSideMul(mario->wPlayerCollisionBox.x + entry->width + 5.0f, 0.5f);
-#else
-    radius = (mario->wPlayerCollisionBox.x + entry->width + 5.0f) * 0.5f;
-#endif
-    if (d1 > radius) {
-        return 0;
-    }
-    entry->position.x = entry->prevPosition.x;
-    entry->position.z = entry->prevPosition.z;
-    d2 = PSVECDistance(&pos, &entry->position);
-    if (d2 > radius) {
-        return 0;
-    }
-    mario->field_0x1D8 = (s32)entry;
-    angle = angleABf(mario->position.x, mario->position.z, entry->position.x, entry->position.z);
-    if (__fabsf(compAngle(angle, mario->directionView)) < 40.0f) {
-        {
-            f32 t = 6.2831855f * mario->directionView;
-            offX = (radius - d2) * -npcHitSideSinf(t / 360.0f);
-            offZ = (radius - d2) * npcHitSideCosf(t / 360.0f);
-        }
-    } else {
-        {
-            f32 t = 6.2831855f * angle;
-            offX = (entry->position.x - radius * npcHitSideSinf(t / 360.0f)) - mario->position.x;
-            offZ = (entry->position.z + radius * npcHitSideCosf(t / 360.0f)) - mario->position.z;
-        }
-    }
-    dist = sqrtf(offX * offX + offZ * offZ);
-    {
-        f32 limit = mario->wPlayerCollisionBox.z > 4.0f ? 3.0f : 1.5f;
-        if (dist > limit) {
-            f32 scale = 2.0f / dist;
-            offX *= scale;
-            offZ *= scale;
-        }
-    }
-    mario->position.x += offX;
-    mario->position.z += offZ;
-    marioChkWallAround(&mario->position, 0, 0.0f, 160.0f + angle, 20.0f, mario->wPlayerCollisionBox.y);
-    return 1;
-}
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
-
-// The unit's .rodata head is defined above (vec3 blob and the SFX/msg string objects). Their
-// presence places MWCC's generated sqrtf (0.5/3.0/0.0) and int->float 2^52 double pool at
-// vec3_802c2f78 + 0x1c0, where this function's target reads it; without them the pool landed at
-// ...rodata.0 + 0x30. Note `a_magu`/`mjef_coinup` also have a later codegen copy from the
-// functions that still use the bare literals; that tail is a separate function-order issue.
-HitEntry* npcHitCheckSide(NpcEntry* entry, f32* outX, f32* outZ, f32* outAngle, f32 dx, f32 dz) {
-    HitEntry* hit;
-    f32 hx, hy, hz, d, nx, ny, nz;
-    f32 sinv, cosv;
-    f32 dist2;
-    f32 y, dot, ox, oz;
-    f32 angA, angB, ndist;
-
-    *outX = entry->position.x;
-    *outZ = entry->position.z;
-    if (dx == 0.0f && dz == 0.0f) {
-        return NULL;
-    }
-    sincosf(&sinv, &cosv, angleABf(0.0f, 0.0f, dx, dz));
-    dist2 = dx * dx + dz * dz;
-
-    d = 0.75f * entry->width + sqrtf(dx * dx + dz * dz);
-    y = 0.2f * entry->height;
-    if (y > 10.0f) {
-        y = 10.0f;
-    }
-    if (entry->flags & 0x2000) {
-        hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
-                           entry->position.z, sinv, 0.0f, cosv);
-    } else {
-        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
-                             entry->position.z, sinv, 0.0f, cosv);
-    }
-    if (hit != NULL) {
-        dot = dx * nx + dz * nz;
-        ox = 0.5f * (dx - dot * nx);
-        oz = 0.5f * (dz - dot * nz);
-        *outX += ox;
-        *outZ += oz;
-        if (entry->flags & 0x10000) {
-            angA = reviseAngle(180.0f + *outAngle);
-            angB = reviseAngle(angleABf(0.0f, 0.0f, 100.0f * nx, 100.0f * nz));
-            *outAngle = (s32)reviseAngle(angB + reviseAngle(angB - angA));
-        }
-        return hit;
-    }
-
-    d = 0.75f * entry->width + sqrtf(dx * dx + dz * dz);
-    y = 0.4f * entry->height;
-    if (entry->flags & 0x2000) {
-        hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
-                           entry->position.z, sinv, 0.0f, cosv);
-    } else {
-        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
-                             entry->position.z, sinv, 0.0f, cosv);
-    }
-    if (hit != NULL) {
-        ndist = sqrtf(nx * nx + nz * nz);
-        if (angleABf(0.0f, 0.0f, ndist, 0.0f - ny) >= 45.0f) {
-            dot = dx * nx + dz * nz;
-            ox = 0.5f * (dx - dot * nx);
-            oz = 0.5f * (dz - dot * nz);
-            *outX += ox;
-            *outZ += oz;
-            if (entry->flags & 0x10000) {
-                angA = reviseAngle(180.0f + *outAngle);
-                angB = reviseAngle(angleABf(0.0f, 0.0f, 100.0f * nx, 100.0f * nz));
-                *outAngle = (s32)reviseAngle(angB + reviseAngle(angB - angA));
-            }
-            return hit;
-        }
-    }
-
-    dist2 = sqrtf(dx * dx + dz * dz);
-    d = 0.75f * entry->width + dist2;
-    y = 0.75f * entry->height;
-    if (entry->flags & 0x2000) {
-        hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
-                           entry->position.z, sinv, 0.0f, cosv);
-    } else {
-        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
-                             entry->position.z, sinv, 0.0f, cosv);
-    }
-    if (hit != NULL) {
-        dot = dx * nx + dz * nz;
-        ox = 0.5f * (dx - dot * nx);
-        oz = 0.5f * (dz - dot * nz);
-        *outX += ox;
-        *outZ += oz;
-        if (entry->flags & 0x10000) {
-            angA = reviseAngle(180.0f + *outAngle);
-            angB = reviseAngle(angleABf(0.0f, 0.0f, 100.0f * nx, 100.0f * nz));
-            *outAngle = (s32)reviseAngle(angB + reviseAngle(angB - angA));
-        }
-        return hit;
-    }
-    *outX += dx;
-    *outZ += dz;
-    return NULL;
+    return FALSE;
 }

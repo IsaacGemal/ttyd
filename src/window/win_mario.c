@@ -93,65 +93,137 @@ const char str_802F57C8[12] = "msg_boots_3\x00";
 const char* hammer_help[4] = { NULL, str_802F5780, str_802F5790, str_802F57A0 };
 const char* boots_help[4] = { NULL, str_802F57B0, str_802F57BC, str_802F57C8 };
 
-char* unk_8016af5c(s32 num, s32 width) {
-    signed char buf[0x100];
-    const char* tbl[10] = {
-        "\x82\x4F", "\x82\x50", "\x82\x51", "\x82\x52", "\x82\x53",
-        "\x82\x54", "\x82\x55", "\x82\x56", "\x82\x57", "\x82\x58",
-    };
-    s32 i;
+#ifdef MUST_MATCH
+#define FUKI_VEC(off, sym) (*(Vec*)(vp + (off)))
+#else
+#define FUKI_VEC(off, sym) sym
+#endif
+#ifdef MUST_MATCH
+#define WM_BASE_PARAMS const u8* base, s32 off,
+#else
+#define WM_BASE_PARAMS
+#endif
 
-    if (num < 0) {
-        strcpy(unk_803dfbf8, "\x81\x7C");
-        num = -num;
+// The five anim-name strings live in .rodata past the unit's msg tables; the
+// target reaches them through the r30 rodata base (`addi rN, r30, 0x830..0x858`).
+// Named literals pool at the section start instead, so the matching build reads
+// them through `vp` (same base winMarioDisp uses) and the natural form under #else.
+// Prototypes for the forward references the original function order needs.
+static inline char* wmDispZenkaku(WM_BASE_PARAMS s32 num);
+static inline char* wmDispNum(WM_BASE_PARAMS s32 width, s32 num);
+
+void winMarioInit(WindowWork* work) {
+#ifdef MUST_MATCH
+    const u8* vp = (const u8*)&str_802F5650;
+#endif
+    PouchData* pouch = pouchGetPtr();
+    const char* anim;
+    s32 i;
+#ifdef MUST_MATCH
+#define D_MARIO "d_mario"
+#define A_MARIO "a_mario"
+#define A_MARIO_L "a_mario_l"
+#define A_MARIO_W "a_mario_w"
+#define A_MARIO_WL "a_mario_wl"
+#else
+#define D_MARIO "d_mario"
+#define A_MARIO "a_mario"
+#define A_MARIO_L "a_mario_l"
+#define A_MARIO_W "a_mario_w"
+#define A_MARIO_WL "a_mario_wl"
+#endif
+
+    if (work->flags & 0x2000) {
+        anim = str_8041D580;
+        switch (marioGetColor()) {
+        case 0:
+            anim = str_8041D580;
+            break;
+        case 1:
+            anim = "S_2";
+            break;
+        case 2:
+            anim = "S_3";
+            break;
+        case 3:
+            anim = "S_4";
+            break;
+        }
+        WW_S32(work, 0x188) = animPoseEntry(D_MARIO, 0);
+        animPoseSetAnim(WW_S32(work, 0x188), anim, 1);
     } else {
-        strcpy(unk_803dfbf8, "");
+        anim = A_MARIO;
+        switch (marioGetColor()) {
+        case 0:
+            anim = A_MARIO;
+            break;
+        case 1:
+            anim = A_MARIO_L;
+            break;
+        case 2:
+            anim = A_MARIO_W;
+            break;
+        case 3:
+            anim = A_MARIO_WL;
+            break;
+        }
+        WW_S32(work, 0x188) = animPoseEntry(anim, 0);
+        animPoseSetAnim(WW_S32(work, 0x188), str_8041D578, 1);
     }
-    sprintf((char*)buf, "%d", num);
-    for (i = 0; i < width; i++) {
-        if (i < width - strlen((char*)buf)) {
-            strcat(unk_803dfbf8, "\x82\x4F");
-        } else {
-            strcat(unk_803dfbf8, tbl[buf[i - (width - (s32)strlen((char*)buf))] - 0x30]);
+#undef D_MARIO
+#undef A_MARIO
+#undef A_MARIO_L
+#undef A_MARIO_W
+#undef A_MARIO_WL
+
+    animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0x1800);
+    if (marioGetPtr()->flags & 0x40000000) {
+        animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0xA000000);
+    }
+
+    WW_S32(work, 0x18C) = 0;
+    WW_S32(work, 0x190) = 0;
+    WW_S32(work, 0x194) = 0;
+    WW_S32(work, 0x198) = 0;
+
+    for (i = 0; i < 8; i++) {
+        if (pouch->mStarPowersObtained & (1 << i)) {
+            WW_S32(work, 0x198) += 1;
         }
     }
-    return unk_803dfbf8;
 }
 
-char* winZenkakuStr(s32 num) {
-    signed char buf[0x100];
-    const char* tbl[10] = {
-        "\x82\x4F", "\x82\x50", "\x82\x51", "\x82\x52", "\x82\x53",
-        "\x82\x54", "\x82\x55", "\x82\x56", "\x82\x57", "\x82\x58",
-    };
-    static char tmp2[0x100];
-    u32 i;
+void winMarioInit2(WindowWork* work) {
+    f32 x;
+    f32 y;
 
-    if (num < 0) {
-        strcpy(tmp2, "\x81\x7C");
-        num = -num;
-    } else {
-        strcpy(tmp2, "");
+    WW_S32(work, 0x160) = 0;
+    x = (f32)linkDt[WW_S32(work, 0x160)].field_0;
+    WW_F32(work, 0x158) = x;
+    WW_F32(work, 0x158) = x;
+    y = (f32)linkDt[WW_S32(work, 0x160)].field_2;
+    WW_F32(work, 0x15C) = y;
+    WW_F32(work, 0x15C) = y;
+
+    switch (WW_S32(work, 0x160)) {
+    case 2:
+        winMsgEntry(work, 0, hammer_help[pouchGetHammerLv()], 0);
+        break;
+    case 3:
+        winMsgEntry(work, 0, boots_help[pouchGetJumpLv()], 0);
+        break;
+    default:
+        winMsgEntry(work, 0, linkDt[WW_S32(work, 0x160)].field_14, 0);
+        break;
     }
-    sprintf((char*)buf, "%d", num);
-    for (i = 0; i < strlen((char*)buf); i++) {
-        strcat(tmp2, tbl[buf[i] - 0x30]);
-    }
-    return tmp2;
+
+    WW_S32(work, 0x18C) = 0;
+    WW_S32(work, 0x190) = 0;
+    WW_S32(work, 0x194) = 0;
 }
 
-// .sdata2 colour constants (referenced by fukidashi/winMarioDisp)
-const GXColor dat_8041d5d0 = { 0x00, 0x00, 0x00, 0x80 };
-const GXColor dat_8041d5d4 = { 0xE1, 0xE1, 0xE1, 0xFE };
-const GXColor dat_8041d5d8 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_8041d5dc = { 0x00, 0x00, 0x00, 0x80 };
-const GXColor dat_8041d5e0 = { 0xE1, 0xE1, 0xE1, 0xFE };
-const GXColor dat_8041d5e4 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_8041d5e8 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_8041d5ec = { 0x00, 0x00, 0x00, 0xFF };
-
-void winMarioMain2(WindowWork* work) {
-    (void)work;
+void winMarioExit(WindowWork* work) {
+    animPoseRelease(WW_S32(work, 0x188));
 }
 
 // The tail walks its own link pointer (`d2`) so MWCC colours it in r30 and the tail
@@ -412,132 +484,70 @@ s32 winMarioMain(WindowWork* work) {
     return 0;
 }
 
-void winMarioExit(WindowWork* work) {
-    animPoseRelease(WW_S32(work, 0x188));
+// .sdata2 colour constants (referenced by fukidashi/winMarioDisp)
+
+void winMarioMain2(WindowWork* work) {
+    (void)work;
 }
 
-void winMarioInit2(WindowWork* work) {
-    f32 x;
-    f32 y;
+char* winZenkakuStr(s32 num) {
+    signed char buf[0x100];
+    const char* tbl[10] = {
+        "\x82\x4F", "\x82\x50", "\x82\x51", "\x82\x52", "\x82\x53",
+        "\x82\x54", "\x82\x55", "\x82\x56", "\x82\x57", "\x82\x58",
+    };
+    static char tmp2[0x100];
+    u32 i;
 
-    WW_S32(work, 0x160) = 0;
-    x = (f32)linkDt[WW_S32(work, 0x160)].field_0;
-    WW_F32(work, 0x158) = x;
-    WW_F32(work, 0x158) = x;
-    y = (f32)linkDt[WW_S32(work, 0x160)].field_2;
-    WW_F32(work, 0x15C) = y;
-    WW_F32(work, 0x15C) = y;
-
-    switch (WW_S32(work, 0x160)) {
-    case 2:
-        winMsgEntry(work, 0, hammer_help[pouchGetHammerLv()], 0);
-        break;
-    case 3:
-        winMsgEntry(work, 0, boots_help[pouchGetJumpLv()], 0);
-        break;
-    default:
-        winMsgEntry(work, 0, linkDt[WW_S32(work, 0x160)].field_14, 0);
-        break;
-    }
-
-    WW_S32(work, 0x18C) = 0;
-    WW_S32(work, 0x190) = 0;
-    WW_S32(work, 0x194) = 0;
-}
-
-
-// The five anim-name strings live in .rodata past the unit's msg tables; the
-// target reaches them through the r30 rodata base (`addi rN, r30, 0x830..0x858`).
-// Named literals pool at the section start instead, so the matching build reads
-// them through `vp` (same base winMarioDisp uses) and the natural form under #else.
-void winMarioInit(WindowWork* work) {
-#ifdef MUST_MATCH
-    const u8* vp = (const u8*)&str_802F5650;
-#endif
-    PouchData* pouch = pouchGetPtr();
-    const char* anim;
-    s32 i;
-#ifdef MUST_MATCH
-#define D_MARIO "d_mario"
-#define A_MARIO "a_mario"
-#define A_MARIO_L "a_mario_l"
-#define A_MARIO_W "a_mario_w"
-#define A_MARIO_WL "a_mario_wl"
-#else
-#define D_MARIO "d_mario"
-#define A_MARIO "a_mario"
-#define A_MARIO_L "a_mario_l"
-#define A_MARIO_W "a_mario_w"
-#define A_MARIO_WL "a_mario_wl"
-#endif
-
-    if (work->flags & 0x2000) {
-        anim = str_8041D580;
-        switch (marioGetColor()) {
-        case 0:
-            anim = str_8041D580;
-            break;
-        case 1:
-            anim = "S_2";
-            break;
-        case 2:
-            anim = "S_3";
-            break;
-        case 3:
-            anim = "S_4";
-            break;
-        }
-        WW_S32(work, 0x188) = animPoseEntry(D_MARIO, 0);
-        animPoseSetAnim(WW_S32(work, 0x188), anim, 1);
+    if (num < 0) {
+        strcpy(tmp2, "\x81\x7C");
+        num = -num;
     } else {
-        anim = A_MARIO;
-        switch (marioGetColor()) {
-        case 0:
-            anim = A_MARIO;
-            break;
-        case 1:
-            anim = A_MARIO_L;
-            break;
-        case 2:
-            anim = A_MARIO_W;
-            break;
-        case 3:
-            anim = A_MARIO_WL;
-            break;
-        }
-        WW_S32(work, 0x188) = animPoseEntry(anim, 0);
-        animPoseSetAnim(WW_S32(work, 0x188), str_8041D578, 1);
+        strcpy(tmp2, "");
     }
-#undef D_MARIO
-#undef A_MARIO
-#undef A_MARIO_L
-#undef A_MARIO_W
-#undef A_MARIO_WL
-
-    animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0x1800);
-    if (marioGetPtr()->flags & 0x40000000) {
-        animPoseSetMaterialFlagOn(WW_S32(work, 0x188), 0xA000000);
+    sprintf((char*)buf, "%d", num);
+    for (i = 0; i < strlen((char*)buf); i++) {
+        strcat(tmp2, tbl[buf[i] - 0x30]);
     }
-
-    WW_S32(work, 0x18C) = 0;
-    WW_S32(work, 0x190) = 0;
-    WW_S32(work, 0x194) = 0;
-    WW_S32(work, 0x198) = 0;
-
-    for (i = 0; i < 8; i++) {
-        if (pouch->mStarPowersObtained & (1 << i)) {
-            WW_S32(work, 0x198) += 1;
-        }
-    }
+    return tmp2;
 }
+
+char* unk_8016af5c(s32 num, s32 width) {
+    signed char buf[0x100];
+    const char* tbl[10] = {
+        "\x82\x4F", "\x82\x50", "\x82\x51", "\x82\x52", "\x82\x53",
+        "\x82\x54", "\x82\x55", "\x82\x56", "\x82\x57", "\x82\x58",
+    };
+    s32 i;
+
+    if (num < 0) {
+        strcpy(unk_803dfbf8, "\x81\x7C");
+        num = -num;
+    } else {
+        strcpy(unk_803dfbf8, "");
+    }
+    sprintf((char*)buf, "%d", num);
+    for (i = 0; i < width; i++) {
+        if (i < width - strlen((char*)buf)) {
+            strcat(unk_803dfbf8, "\x82\x4F");
+        } else {
+            strcat(unk_803dfbf8, tbl[buf[i - (width - (s32)strlen((char*)buf))] - 0x30]);
+        }
+    }
+    return unk_803dfbf8;
+}
+
+const GXColor dat_8041d5d0 = { 0x00, 0x00, 0x00, 0x80 };
+const GXColor dat_8041d5d4 = { 0xE1, 0xE1, 0xE1, 0xFE };
+const GXColor dat_8041d5d8 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_8041d5dc = { 0x00, 0x00, 0x00, 0x80 };
+const GXColor dat_8041d5e0 = { 0xE1, 0xE1, 0xE1, 0xFE };
+const GXColor dat_8041d5e4 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_8041d5e8 = { 0xFF, 0xFF, 0xFF, 0xFF };
+const GXColor dat_8041d5ec = { 0x00, 0x00, 0x00, 0xFF };
 
 // The two bubble shapes fukidashi draws: the three texture/icon positions are read from
 // the unit's shared rodata vectors through one base (vp), as winMarioDisp does.
-#ifdef MUST_MATCH
-#define FUKI_VEC(off, sym) (*(Vec*)(vp + (off)))
-#else
-#define FUKI_VEC(off, sym) sym
-#endif
 // Match shape: the original calls winTexSet (declared by value) in a way that gives one
 // contiguous 0x6c Vec block per switch case. MWCC passes a by-value Vec/GXColor by
 // invisible reference (a pointer), so calling the real function through a pointer-parameter
@@ -1009,11 +1019,6 @@ extern const char str_802F5998[];
 // Same body as winZenkakuStr. Under MUST_MATCH the digit table is read through the panel's
 // rodata base (`base + off`) so MWCC folds it into the existing `r31` displacement
 // instead of reloading a separate symbol for the local table template.
-#ifdef MUST_MATCH
-#define WM_BASE_PARAMS const u8* base, s32 off,
-#else
-#define WM_BASE_PARAMS
-#endif
 static inline char* wmDispZenkaku(WM_BASE_PARAMS s32 num) {
     signed char buf[0x100];
     const char* tbl[10];
@@ -1843,6 +1848,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
 #undef GXC_AT
 #undef VEC_AT
 }
+
 #ifndef MUST_MATCH
 #undef c1
 #undef c2

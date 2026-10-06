@@ -43,17 +43,6 @@ const EnvTevMtxData dat_802f9338 = {
     { 0.0f, 0.0f, -1.0f },
 };
 
-#ifdef MUST_MATCH
-// An ordinary, immediately generated helper pools the signed int->float conversion double just after
-// dat_802f9338, so .rodata's double order matches the original. Nothing calls it; the linker strips
-// the body.
-#pragma defer_codegen off
-static f32 envdrv_pool_i2f(s32 v) {
-    return (f32)v;
-}
-#pragma defer_codegen reset
-#endif
-
 // .sdata2
 const GXColor dat_8041e510 = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_8041e514 = { 0xFF, 0xFF, 0xFF, 0x00 };
@@ -124,6 +113,17 @@ s32 v_count;
 
 //there is no function so we'll make a macro
 #define envGetWork() (gp->inBattle ? &work[1] : &work[0])
+
+#define PI 3.141592653589793f
+#define TWO_PI 6.283185307179586f
+s32 texmtx_tbl[] = {30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 4, 5, 6, 14, 0, 1, 2, 3, 8, 9, 10}; //TODO: put in right spot
+#define NAN (*(f32*)__float_nan)
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+#define fpclassify(x) __fpclassifyf(x)
 
 static void _callback(s32 result, DVDFileInfo* fileInfo) {
     DVDEntry* handle = fileInfo->cb.userData;
@@ -291,16 +291,6 @@ void envMain(void) {
     dispEntry(CAMERA_3D, 0.0f, 7, envCapture2, NULL);
     dispEntry(CAMERA_3D, 5000.0f, 8, envDisp2, NULL);
 }
-
-
-
-
-
-
-
-#define PI 3.141592653589793f
-#define TWO_PI 6.283185307179586f
-s32 texmtx_tbl[] = {30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 4, 5, 6, 14, 0, 1, 2, 3, 8, 9, 10}; //TODO: put in right spot
 
 // `opt_propagation off` stops MWCC rematerialising the polynomial coefficients into every branch
 // (same as envDisp_FF/evt_sub); `opt_lifetimes off` keeps the 0.00761/0.03705 seed loads inside the loop.
@@ -781,298 +771,237 @@ void envDisp_Blur(void) {
     }
 }
 
+#define isnan(x) (fpclassify(x) == FP_NAN)
 
-// The map-object flag logic matches the target's block layout: `flags` is a local, the entry tests
-// `flags & 0x20` and branches into the loop (`while ((obj = obj->parent) != NULL)`), with the
-// set-flag path in the else arm. The bbox `lhz` loads sit in both arms (inside the walk before the
-// `break`, and in the else), as in the original, so the walk running out falls through to the flag
-// comparisons with whatever those registers hold. The initial `flags` load is written through
-// `((MapObject*)yami->unk0)` rather than `obj`; that makes MWCC spill `yami` first (`mr r17, r3`)
-// and load obj with `lwz r3, 0x0(r3)` as the target does.
-#pragma opt_propagation off // stops MWCC re-evaluating yami->unk0, so obj/flags colour as the target
-#pragma opt_lifetimes off
-// NONMATCHING (95.83%): register allocation only (water/height and the i-division temp colour one register off).
-void envSetWater(s32 arg0, void* arg1) {
-    EnvironmentYami* yami = (EnvironmentYami*)arg0;
-    s32 tevStage;
-    s32 texMap;
-    void* capture;
-    s32 texCoord;
-    s32 unk18;
-    u8* water;
-    MapObject* obj;
-    u32 size;
-    s32 height;
-    u32 flags;
-    s32 i;
-    s32 width;
-    s32 j;
-    u8* p;
-    s32 x0;
-    s32 y0;
-    s32 x1;
-    s32 y1;
-    GXTexObj captureObj;
-    GXTexObj waterObj;
-    Vec pos;
-    Mtx mtx;
-    f32 indMtx[2][3];
-    f32 dist;
-    f32 scale;
-#ifndef MUST_MATCH
-    x0 = y0 = x1 = y1 = 0;
-#endif
+void envBlurOn(s32 flag, s32 value) {
+    EnvironmentWork* wp = envGetWork();
+    EnvironmentBlur* blur = (EnvironmentBlur*)&wp->unk98;
 
-    obj = (MapObject*)yami->unk0;
-    tevStage = yami->tevStage;
-    flags = *(u32*)((MapObject*)yami->unk0)->field_0x0;
-    texMap = yami->texMap;
-    texCoord = yami->texCoord;
-    unk18 = yami->unk18;
-
-    if (flags & 0x20) {
-        while ((obj = obj->parent) != NULL) {
-            flags = *(u32*)obj->field_0x0;
-            if ((flags & 0x10) == 0) {
-                continue;
-            }
-            if ((flags & 0x20000000) == 0) {
-                *(u32*)obj->field_0x0 = flags | 0x20000000;
-                return;
-            }
-            x0 = *(u16*)(obj->field_0xEC + 0);
-            y0 = *(u16*)(obj->field_0xEC + 2);
-            x1 = *(u16*)(obj->field_0xEC + 4);
-            y1 = *(u16*)(obj->field_0xEC + 6);
-            break;
-        }
+    wp->flags |= 0x40000000;
+    wp->flags |= 4;
+    wp->flags &= ~8;
+    memset(blur, 0, sizeof(EnvironmentBlur));
+    blur->renderTime = gp->renderTime;
+    blur->unk10 = value;
+    if (flag != 0) {
+        blur->flags |= 1;
     }
-    else {
-        if ((flags & 0x20000000) == 0) {
-            *(u32*)obj->field_0x0 = flags | 0x20000000;
-            return;
-        }
-        x0 = *(u16*)(obj->field_0xEC + 0);
-        y0 = *(u16*)(obj->field_0xEC + 2);
-        x1 = *(u16*)(obj->field_0xEC + 4);
-        y1 = *(u16*)(obj->field_0xEC + 6);
-    }
-
-    if (x0 == 0x3FF || y0 == 0x3FF || x1 == 0x3FF || y1 == 0x3FF) {
-        return;
-    }
-    if (x0 == 0 && y0 == 0 && x1 == 0 && y1 == 0) {
-        return;
-    }
-
-    x0 -= x0 & 1;
-    y0 -= y0 & 1;
-    x1 += x1 & 1;
-    y1 += y1 & 1;
-    if (x0 < 0) {
-        x0 = 0;
-    }
-    if (y0 < 0) {
-        y0 = 0;
-    }
-    if (x1 > gp->fbWidth) {
-        x1 = gp->fbWidth;
-    }
-    if (y1 > gp->efbHeight) {
-        y1 = gp->efbHeight;
-    }
-
-    width = x1 - x0;
-    height = y1 - y0;
-
-    size = GXGetTexBufferSize((u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_FALSE, 0);
-    capture = smartAlloc(size, HEAP_EFFECT)->address;
-    GXSetTexCopySrc((u16)x0, (u16)y0, (u16)width, (u16)height);
-    GXSetTexCopyDst((u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_TRUE);
-    GXCopyTex(capture, GX_FALSE);
-    GXPixModeSync();
-    GXTexModeSync();
-    GXInitTexObj(&captureObj, capture, (u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GXInitTexObjLOD(&captureObj, GX_NEAR, GX_NEAR, float_0_8041e53c, float_0_8041e53c, float_0_8041e53c, GX_FALSE, GX_FALSE, GX_ANISO_1);
-
-    PSMTXMultVec(yami->unk4, (Vec*)(((MapObject*)yami->unk0)->field_0xC + 4), &pos);
-    scale = float_1000_8041e540 / PSVECDistance(&camGetCurPtr()->cameraPos, &pos);
-    if (scale < float_0_8041e53c) {
-        scale = float_0_8041e53c;
-    }
-    if (scale > float_127_8041e544) {
-        scale = float_127_8041e544;
-    }
-
-    size = GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, 0);
-    water = smartAlloc(size, HEAP_EFFECT)->address;
-
-    for (i = 0; i < 0x40; i++) {
-        for (j = 0; j < 0x40; j++) {
-            f32 s = (f32)sin(float_18p85_8041e548 * (f32)j * float_0p015625_8041e54c + (f32)gp->retraceCount / float_10_8041e524);
-            s32 v = (s32)(float_0p6_8041e550 + (scale * s + float_128_8041e554));
-            p = &water[((i % 4) + (j % 4) * 4) * 2 + (i / 4) * 32 + (j / 4) * 512];
-
-            p[0] = v;
-            p[1] = 0x80;
-        }
-    }
-
-    DCFlushRange(water, 0x2000);
-    GXInitTexObj(&waterObj, water, 0x40, 0x40, GX_TF_IA8, GX_REPEAT, GX_REPEAT, GX_FALSE);
-    GXInitTexObjLOD(&waterObj, GX_LINEAR, GX_LINEAR, float_0_8041e53c, float_0_8041e53c, float_0_8041e53c, GX_FALSE, GX_FALSE, GX_ANISO_1);
-
-    dist = (f32)gp->efbHeight * float_0p5_8041e538 / (f32)tan(float_6p2832_8041e558 * (camGetPtr(CAMERA_3D)->fovY * float_0p5_8041e538) / float_360_8041e55c);
-    C_MTXLightFrustum(mtx,
-        (f32)(gp->efbHeight / 2 - y1),
-        (f32)(gp->efbHeight / 2 - y0),
-        (f32)(x0 - gp->fbWidth / 2),
-        (f32)(x1 - gp->fbWidth / 2),
-        dist,
-        float_0p5_8041e538, float_0p5_8041e538, float_0p5_8041e538, float_0p5_8041e538);
-    PSMTXConcat(mtx, camGetCurPtr()->view, mtx);
-    PSMTXConcat(mtx, yami->unk4, mtx);
-
-    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
-    GXLoadTexMtxImm(mtx, dat_802f9338.tbl[texMap], GX_MTX3x4);
-    GXLoadTexObj(&captureObj, texMap);
-    GXLoadTexObj(&waterObj, texMap + 1);
-    GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-    GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(tevStage, GX_CC_TEXC, GX_CC_CPREV, GX_CC_APREV, GX_CC_ZERO);
-    GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-    GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    indMtx[0][0] = float_0p5_8041e538;
-    indMtx[0][1] = float_0_8041e53c;
-    indMtx[0][2] = float_0_8041e53c;
-    indMtx[1][0] = float_0_8041e53c;
-    indMtx[1][1] = float_0p5_8041e538;
-    indMtx[1][2] = float_0_8041e53c;
-    GXSetIndTexMtx(GX_ITM_0, indMtx, 1);
-    GXSetIndTexOrder(unk18, texCoord, texMap + 1);
-    GXSetIndTexCoordScale(unk18, GX_ITS_1, GX_ITS_1);
-    GXSetTevIndWarp(tevStage, unk18, GX_TRUE, GX_FALSE, GX_ITM_0);
-
-    tevStage += 1;
-    texCoord += 1;
-    yami->tevStage = tevStage;
-    unk18 += 1;
-    texMap += 2;
-    yami->texCoord = texCoord;
-    yami->unk18 = unk18;
-    yami->texMap = texMap;
+    wp->envBlur = _mapAlloc(GXGetTexBufferSize((u16)(gp->fbWidth / 2), (u16)(gp->efbHeight / 2), GX_TF_RGB565, GX_FALSE, 0));
 }
 
-#pragma opt_common_subs off // MWCC otherwise CSE-hoists tevStage-1/+1/+2 across the GX calls into callee-saved regs
-#pragma opt_propagation off  // keep texMap*4 and the loop counters in the target's callee-saved colouring
-#pragma opt_lifetimes reset
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
-void envSetYami(EnvironmentYami* yami) {
-    GlobalWork* g = gp;
-    EnvironmentWork* wp = g->inBattle ? &work[1] : &work[0];
-#ifdef MUST_MATCH
-    u8* texMtx;
-    // texMap*4 kept in a callee-saved register (r29); declared before the counters so it colours after them.
-    s32 texMtxOff;
-#else
-    s32* texMtx;
-#endif
-    s32 tevStage = yami->tevStage;
-    s32 texMap = yami->texMap;
-    s32 texCoord = yami->texCoord;
-    s32 unk18 = yami->unk18;
-    Mtx mtx;
-    GXTexObj texObj;
-
-    u32 oldCount = v_count;
-    u32 newCount = g->retraceCount;
-    if (oldCount != newCount) {
-        v_count = newCount;
-
-        u1 = u1 + float_0p004_8041e520;
-        u2 = u2 - float_0p004_8041e520;
-        if (u1 > 10.0f) {
-            u1 -= 10.0f;
-        }
-        if (u2 < 10.0f) {
-            u2 += 10.0f;
-        }
-    }
-
-    GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-    GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
-
-    C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u1, 0.5f);
-    PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
-    PSMTXConcat(mtx, yami->unk4, mtx);
-#ifdef MUST_MATCH
-    texMtx = (u8*)texmtx_tbl;
-    texMtxOff = texMap * 4;
-    GXLoadTexMtxImm(mtx, *(s32*)(texMtx + texMtxOff), GX_MTX3x4);
-    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, *(s32*)(texMtx + texMtxOff), GX_FALSE, GX_PTIDENTITY);
-#else
-    texMtx = texmtx_tbl;
-    GXLoadTexMtxImm(mtx, texMtx[texMap], GX_MTX3x4);
-    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texMtx[texMap], GX_FALSE, GX_PTIDENTITY);
-#endif
-
-    C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u2, 0.5f);
-    PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
-    PSMTXConcat(mtx, yami->unk4, mtx);
-#ifdef MUST_MATCH
-    {
-        s32* p = (s32*)((u8*)texmtx_tbl + texMtxOff);
-        GXLoadTexMtxImm(mtx, *++p, GX_MTX3x4);
-        GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, *p, GX_FALSE, GX_PTIDENTITY);
-    }
-#else
-    GXLoadTexMtxImm(mtx, texMtx[texMap + 1], GX_MTX3x4);
-    GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, texMtx[texMap + 1], GX_FALSE, GX_PTIDENTITY);
-#endif
-
-    TEXGetGXTexObjFromPalette(env_tpl, &texObj, 9);
-    GXLoadTexObj(&texObj, texMap);
-    TEXGetGXTexObjFromPalette(env_tpl, &texObj, 10);
-    GXLoadTexObj(&texObj, texMap + 1);
-
-    GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
-    GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-    GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
-    GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-
-    GXSetTevOrder(tevStage + 1, texCoord + 1, texMap + 1, GX_COLOR_NULL);
-    GXSetTevColorOp(tevStage + 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(tevStage + 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(tevStage + 1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXA, GX_CC_ZERO);
-    GXSetTevAlphaIn(tevStage + 1, GX_CA_ZERO, GX_CA_APREV, GX_CA_TEXA, GX_CA_ZERO);
-    GXSetTevSwapMode(tevStage + 1, GX_TEV_SWAP0, GX_TEV_SWAP0);
-
-    GXSetTevOrder(tevStage + 2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
-    GXSetTevColorOp(tevStage + 2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(tevStage + 2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(tevStage + 2, GX_CC_C0, GX_CC_ZERO, GX_CC_APREV, GX_CC_ZERO);
-    GXSetTevAlphaIn(tevStage + 2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
-    GXSetTevSwapMode(tevStage + 2, GX_TEV_SWAP0, GX_TEV_SWAP0);
-
-    tevStage += 3;
-    texCoord += 2;
-    yami->tevStage = tevStage;
-    texMap += 2;
-    yami->texCoord = texCoord;
-    yami->unk18 = unk18;
-    yami->texMap = texMap;
-}
-#pragma opt_common_subs reset
-#pragma opt_propagation reset
-
-void envSetYamiView(Mtx mtx) {
+void envBlurOff(void) {
     EnvironmentWork* wp = envGetWork();
 
-    PSMTXCopy(mtx, (MtxPtr)wp->unkC0);
+    wp->flags &= ~4;
+    wp->flags &= ~0x40000000;
+    _mapFree(wp->envBlur);
+}
+
+// envGlare was matched with opt_lifetimes off (needed: its register colouring regresses with the default pass)
+#pragma opt_lifetimes off
+void envGlare(EnvironmentGlare* glare) {
+    GXTevStageID var_r23;
+    u16 temp_r8;
+    GXTexObj sp8;
+    GXTevStageID var_r22;
+    u32 var_r22_2;
+    Mtx44 sp88;
+    EnvironmentGlareFilter* temp_r30;
+    EnvironmentWork* var_r4 = envGetWork();
+    s32 temp_r30_2;
+    GXTevKColorSel temp_r21_2;
+    EnvironmentGlare* var_r21;
+    GXTevKColorSel temp_r20_2;
+#ifdef MUST_MATCH
+    // The target keeps the sign-extended filter x0 in r20 and the texture-matrix index in r23;
+    // caching the cast in x0s and declaring var_r22_3 ahead of var_r23_2 gives those colours
+    // (the natural inline cast and late declaration are under #else).
+    s16 x0s;
+    EnvironmentGlare* var_r22_3;
+#endif
+    s32 temp_r29;
+    s32 var_r28;
+    u32 var_r23_2;
+    u16 temp_r27;
+    s32 temp_r31;
+    u32 temp_r20;
+    u32 temp_r21;
+    u32 size;
+    u16 temp_r26;
+#ifndef MUST_MATCH
+    EnvironmentGlare* var_r22_3;
+#endif
+    Mtx sp58;
+    Mtx sp28;
+    s32 var_r19_3;
+    void* temp_r19;
+    int i;
+    u16 temp_r0;
+
+    frame_cnt += 1.0f;
+    temp_r30 = &var_r4->filter;
+    temp_r27 = var_r4->filter.y0;
+    temp_r26 = var_r4->filter.x0;
+    temp_r8 = (u16)(var_r4->filter.x1 - temp_r26);
+    temp_r0 = (u16)(var_r4->filter.y1 - temp_r27);
+    temp_r21 = (u32)temp_r8 / 2;
+    temp_r20 = (u32)temp_r0 / 2;
+    size = GXGetTexBufferSize((u16)temp_r21, (u16)temp_r20, GX_TF_RGB565, GX_FALSE, 0);
+    temp_r19 = smartAlloc(size, 3)->address;
+    GXSetTexCopySrc(temp_r26, temp_r27, temp_r8, temp_r0);
+    GXSetTexCopyDst((u16)temp_r21, (u16)temp_r20, GX_TF_RGB565, GX_TRUE);
+    GXCopyTex(temp_r19, GX_FALSE);
+    GXPixModeSync();
+    GXInitTexObj(&sp8, temp_r19, (u16)temp_r21, (u16)temp_r20, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&sp8, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&sp8, GX_TEXMAP0);
+    temp_r29 = glare->count;
+    var_r28 = 0;
+    temp_r20_2 = glare->unkC;
+    temp_r21_2 = glare->unk10;
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_KONST, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+    GXSetTevKColorSel(GX_TEVSTAGE0, temp_r20_2);
+    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C1, GX_CC_KONST, GX_CC_ZERO);
+    GXSetTevKColorSel(GX_TEVSTAGE1, temp_r21_2);
+    GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
+    i = 0;
+    var_r23 = 2;
+    var_r22 = 3;
+    for (; i < 7; i++) {
+        GXSetTevOrder(var_r23, i + 1, 0, 0xFF);
+        GXSetTevColorOp(var_r23, 1, 0, 0, 1, 2);
+        GXSetTevColorIn(var_r23, 0xE, 0xF, 0xF, 8);
+        GXSetTevKColorSel(var_r23, temp_r20_2);
+        GXSetTevSwapMode(var_r23, 0, 0);
+        GXSetTevOrder(var_r22, 0xFF, 0xFF, 0xFF);
+        GXSetTevColorOp(var_r22, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(var_r22, 0xF, 4, 0xE, 0);
+        GXSetTevKColorSel(var_r22, temp_r21_2);
+        GXSetTevSwapMode(var_r22, 0, 0);
+        var_r23 += 2;
+        var_r22 += 2;
+    }
+
+    for (i = 0, var_r22_2 = GX_TEXMTX0; i < 8; i++, var_r22_2 += 3) {
+        GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0, var_r22_2);
+    }
+
+    if (temp_r30->flags & 1) {
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+    } else {
+        GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
+    }
+    GXSetBlendMode(glare->mode, glare->srcFactor, glare->dstFactor, GX_LO_CLEAR);
+    GXSetNumChans(0);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
+    GXSetViewport(0.0f, 0.0f, (f32)gp->fbWidth, (f32)gp->efbHeight, 0.0f, 1.0f);
+    GXSetScissor(0, 0, gp->fbWidth, gp->efbHeight);
+    MTXOrtho(sp88, 0.0f, (f32)gp->efbHeight, 0.0f, (f32)gp->fbWidth, 0.0f, -32767.0f);
+    GXSetProjection(sp88, GX_ORTHOGRAPHIC);
+    PSMTXIdentity(sp58);
+    GXLoadPosMtxImm(sp58, 0);
+    GXSetCurrentMtx(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT7, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT7, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
+    GXSetCullMode(GX_CULL_BACK);
+    GXSetZScaleOffset(1.0f, temp_r30->zscale);
+    temp_r30_2 = temp_r27 + temp_r0;
+    temp_r31 = temp_r26 + temp_r8;
+    var_r21 = glare;
+#ifdef MUST_MATCH
+    x0s = (s16)temp_r26;
+#endif
+    while (var_r28 < temp_r29) {
+        var_r22_3 = var_r21;
+        var_r19_3 = 0;
+        var_r23_2 = 0x1E;
+        while ((var_r19_3 < 8) && (var_r28 < temp_r29)) {
+            MTXTrans(sp28, (glare->unk14 * var_r22_3->coords[0].unk0) / (f32) gp->fbWidth, (glare->unk14 * var_r22_3->coords[0].unk4) / (f32) gp->efbHeight, 0.0f); //temp_r4, temp_r5_3, as 2 3 and temp_f4 as last
+            GXLoadTexMtxImm(sp28, var_r23_2, 1);
+            var_r23_2 += 3;
+            var_r19_3 += 1;
+            var_r22_3 = (void*)((u32)var_r22_3 + 8);
+            var_r21 = (void*)((u32)var_r21 + 8);
+            var_r28 += 1;
+        }
+        GXSetNumTevStages((u8)(var_r19_3 * 2));
+        GXSetNumTexGens((u8)var_r19_3);
+        GXBegin(GX_QUADS, GX_VTXFMT7, 4);
+#ifdef MUST_MATCH
+        GXPosition3s16(x0s, (s16)temp_r27, 0);
+#else
+        GXPosition3s16((s16)temp_r26, (s16)temp_r27, 0);
+#endif
+        GXTexCoord2u16(0, 0);
+        GXPosition3s16((s16)temp_r31, (s16)temp_r27, 0);
+        GXTexCoord2u16(1, 0);
+        GXPosition3s16((s16)temp_r31, (s16)temp_r30_2, 0);
+        GXTexCoord2u16(1, 1);
+#ifdef MUST_MATCH
+        GXPosition3s16(x0s, (s16)temp_r30_2, 0);
+#else
+        GXPosition3s16((s16)temp_r26, (s16)temp_r30_2, 0);
+#endif
+        GXTexCoord2u16(0, 1);
+    }
+}
+#pragma opt_lifetimes reset
+
+// 100%: the type store must follow the clamps (stores the type only after the sign/clamp checks) and
+// the four s16 temps need the original's declaration order for the register allocation to line up.
+void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
+    EnvironmentWork* wp = envGetWork();
+    EnvironmentGlareFilter* filter = &wp->filter;
+
+    if (type == 0) {
+        filter->type = 0;
+        filter->x1 = 0;
+        filter->y1 = 0;
+        filter->x0 = 0;
+        filter->y0 = 0;
+        wp->flags &= ~0x20000000;
+    }
+    else {
+#ifdef MUST_MATCH
+        s16 tx1, ty1, tx0, ty0; // declaration order controls the register allocation of the four temps
+#else
+        s16 tx0, ty0, tx1, ty1;
+#endif
+
+        tx0 = x0 - (x0 & 1);
+        ty0 = y0 - (y0 & 1);
+        tx1 = x1 + (x1 & 1);
+        ty1 = y1 + (y1 & 1);
+        if (tx0 < 0) {
+            tx0 = 0;
+        }
+        if (ty0 < 0) {
+            ty0 = 0;
+        }
+        if (tx1 > gp->fbWidth) {
+            tx1 = gp->fbWidth;
+        }
+        if (ty1 > gp->efbHeight) {
+            ty1 = gp->efbHeight;
+        }
+        filter->type = type;
+        filter->y0 = ty0;
+        filter->x0 = tx0;
+        filter->y1 = ty1;
+        filter->x1 = tx1;
+        filter->zscale = 0.0f;
+        filter->flags &= ~1;
+        wp->flags |= 0x20000000;
+    }
 }
 
 void envGlareFilterZ(f32 z) {
@@ -1084,13 +1013,7 @@ void envGlareFilterZ(f32 z) {
 }
 
 int __float_nan[];
-#define NAN (*(f32*)__float_nan)
 
-#define FP_NAN 1
-#define FP_INFINITE 2
-#define FP_ZERO 3
-#define FP_NORMAL 4
-#define FP_SUBNORMAL 5
 
 static inline s32 __fpclassifyf(f32 x) {
     switch (*(s32*)&x & 0x7F800000) {
@@ -1113,8 +1036,6 @@ static inline s32 __fpclassifyf(f32 x) {
     }
 }
 
-#define fpclassify(x) __fpclassifyf(x)
-#define isnan(x) (fpclassify(x) == FP_NAN)
 
 static inline f32 sqrtf(f32 x) {
     const f64 _half = .5;
@@ -1678,235 +1599,294 @@ void envAddTev(s32 type, void* param) {
     }
 }
 
+// The map-object flag logic matches the target's block layout: `flags` is a local, the entry tests
+// `flags & 0x20` and branches into the loop (`while ((obj = obj->parent) != NULL)`), with the
+// set-flag path in the else arm. The bbox `lhz` loads sit in both arms (inside the walk before the
+// `break`, and in the else), as in the original, so the walk running out falls through to the flag
+// comparisons with whatever those registers hold. The initial `flags` load is written through
+// `((MapObject*)yami->unk0)` rather than `obj`; that makes MWCC spill `yami` first (`mr r17, r3`)
+// and load obj with `lwz r3, 0x0(r3)` as the target does.
+#pragma opt_propagation off // stops MWCC re-evaluating yami->unk0, so obj/flags colour as the target
+#pragma opt_lifetimes off
+// NONMATCHING (95.83%): register allocation only (water/height and the i-division temp colour one register off).
+void envSetWater(s32 arg0, void* arg1) {
+    EnvironmentYami* yami = (EnvironmentYami*)arg0;
+    s32 tevStage;
+    s32 texMap;
+    void* capture;
+    s32 texCoord;
+    s32 unk18;
+    u8* water;
+    MapObject* obj;
+    u32 size;
+    s32 height;
+    u32 flags;
+    s32 i;
+    s32 width;
+    s32 j;
+    u8* p;
+    s32 x0;
+    s32 y0;
+    s32 x1;
+    s32 y1;
+    GXTexObj captureObj;
+    GXTexObj waterObj;
+    Vec pos;
+    Mtx mtx;
+    f32 indMtx[2][3];
+    f32 dist;
+    f32 scale;
+#ifndef MUST_MATCH
+    x0 = y0 = x1 = y1 = 0;
+#endif
 
+    obj = (MapObject*)yami->unk0;
+    tevStage = yami->tevStage;
+    flags = *(u32*)((MapObject*)yami->unk0)->field_0x0;
+    texMap = yami->texMap;
+    texCoord = yami->texCoord;
+    unk18 = yami->unk18;
 
-// 100%: the type store must follow the clamps (stores the type only after the sign/clamp checks) and
-// the four s16 temps need the original's declaration order for the register allocation to line up.
-void envGlareFilter(s32 type, s32 y0, s32 x0, s32 y1, s32 x1) {
-    EnvironmentWork* wp = envGetWork();
-    EnvironmentGlareFilter* filter = &wp->filter;
-
-    if (type == 0) {
-        filter->type = 0;
-        filter->x1 = 0;
-        filter->y1 = 0;
-        filter->x0 = 0;
-        filter->y0 = 0;
-        wp->flags &= ~0x20000000;
+    if (flags & 0x20) {
+        while ((obj = obj->parent) != NULL) {
+            flags = *(u32*)obj->field_0x0;
+            if ((flags & 0x10) == 0) {
+                continue;
+            }
+            if ((flags & 0x20000000) == 0) {
+                *(u32*)obj->field_0x0 = flags | 0x20000000;
+                return;
+            }
+            x0 = *(u16*)(obj->field_0xEC + 0);
+            y0 = *(u16*)(obj->field_0xEC + 2);
+            x1 = *(u16*)(obj->field_0xEC + 4);
+            y1 = *(u16*)(obj->field_0xEC + 6);
+            break;
+        }
     }
     else {
-#ifdef MUST_MATCH
-        s16 tx1, ty1, tx0, ty0; // declaration order controls the register allocation of the four temps
-#else
-        s16 tx0, ty0, tx1, ty1;
-#endif
-
-        tx0 = x0 - (x0 & 1);
-        ty0 = y0 - (y0 & 1);
-        tx1 = x1 + (x1 & 1);
-        ty1 = y1 + (y1 & 1);
-        if (tx0 < 0) {
-            tx0 = 0;
+        if ((flags & 0x20000000) == 0) {
+            *(u32*)obj->field_0x0 = flags | 0x20000000;
+            return;
         }
-        if (ty0 < 0) {
-            ty0 = 0;
-        }
-        if (tx1 > gp->fbWidth) {
-            tx1 = gp->fbWidth;
-        }
-        if (ty1 > gp->efbHeight) {
-            ty1 = gp->efbHeight;
-        }
-        filter->type = type;
-        filter->y0 = ty0;
-        filter->x0 = tx0;
-        filter->y1 = ty1;
-        filter->x1 = tx1;
-        filter->zscale = 0.0f;
-        filter->flags &= ~1;
-        wp->flags |= 0x20000000;
+        x0 = *(u16*)(obj->field_0xEC + 0);
+        y0 = *(u16*)(obj->field_0xEC + 2);
+        x1 = *(u16*)(obj->field_0xEC + 4);
+        y1 = *(u16*)(obj->field_0xEC + 6);
     }
-}
 
-// envGlare was matched with opt_lifetimes off (needed: its register colouring regresses with the default pass)
-#pragma opt_lifetimes off
-void envGlare(EnvironmentGlare* glare) {
-    GXTevStageID var_r23;
-    u16 temp_r8;
-    GXTexObj sp8;
-    GXTevStageID var_r22;
-    u32 var_r22_2;
-    Mtx44 sp88;
-    EnvironmentGlareFilter* temp_r30;
-    EnvironmentWork* var_r4 = envGetWork();
-    s32 temp_r30_2;
-    GXTevKColorSel temp_r21_2;
-    EnvironmentGlare* var_r21;
-    GXTevKColorSel temp_r20_2;
-#ifdef MUST_MATCH
-    // The target keeps the sign-extended filter x0 in r20 and the texture-matrix index in r23;
-    // caching the cast in x0s and declaring var_r22_3 ahead of var_r23_2 gives those colours
-    // (the natural inline cast and late declaration are under #else).
-    s16 x0s;
-    EnvironmentGlare* var_r22_3;
-#endif
-    s32 temp_r29;
-    s32 var_r28;
-    u32 var_r23_2;
-    u16 temp_r27;
-    s32 temp_r31;
-    u32 temp_r20;
-    u32 temp_r21;
-    u32 size;
-    u16 temp_r26;
-#ifndef MUST_MATCH
-    EnvironmentGlare* var_r22_3;
-#endif
-    Mtx sp58;
-    Mtx sp28;
-    s32 var_r19_3;
-    void* temp_r19;
-    int i;
-    u16 temp_r0;
+    if (x0 == 0x3FF || y0 == 0x3FF || x1 == 0x3FF || y1 == 0x3FF) {
+        return;
+    }
+    if (x0 == 0 && y0 == 0 && x1 == 0 && y1 == 0) {
+        return;
+    }
 
-    frame_cnt += 1.0f;
-    temp_r30 = &var_r4->filter;
-    temp_r27 = var_r4->filter.y0;
-    temp_r26 = var_r4->filter.x0;
-    temp_r8 = (u16)(var_r4->filter.x1 - temp_r26);
-    temp_r0 = (u16)(var_r4->filter.y1 - temp_r27);
-    temp_r21 = (u32)temp_r8 / 2;
-    temp_r20 = (u32)temp_r0 / 2;
-    size = GXGetTexBufferSize((u16)temp_r21, (u16)temp_r20, GX_TF_RGB565, GX_FALSE, 0);
-    temp_r19 = smartAlloc(size, 3)->address;
-    GXSetTexCopySrc(temp_r26, temp_r27, temp_r8, temp_r0);
-    GXSetTexCopyDst((u16)temp_r21, (u16)temp_r20, GX_TF_RGB565, GX_TRUE);
-    GXCopyTex(temp_r19, GX_FALSE);
+    x0 -= x0 & 1;
+    y0 -= y0 & 1;
+    x1 += x1 & 1;
+    y1 += y1 & 1;
+    if (x0 < 0) {
+        x0 = 0;
+    }
+    if (y0 < 0) {
+        y0 = 0;
+    }
+    if (x1 > gp->fbWidth) {
+        x1 = gp->fbWidth;
+    }
+    if (y1 > gp->efbHeight) {
+        y1 = gp->efbHeight;
+    }
+
+    width = x1 - x0;
+    height = y1 - y0;
+
+    size = GXGetTexBufferSize((u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_FALSE, 0);
+    capture = smartAlloc(size, HEAP_EFFECT)->address;
+    GXSetTexCopySrc((u16)x0, (u16)y0, (u16)width, (u16)height);
+    GXSetTexCopyDst((u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_TRUE);
+    GXCopyTex(capture, GX_FALSE);
     GXPixModeSync();
-    GXInitTexObj(&sp8, temp_r19, (u16)temp_r21, (u16)temp_r20, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GXInitTexObjLOD(&sp8, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    GXLoadTexObj(&sp8, GX_TEXMAP0);
-    temp_r29 = glare->count;
-    var_r28 = 0;
-    temp_r20_2 = glare->unkC;
-    temp_r21_2 = glare->unk10;
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_SUB, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG1);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_KONST, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-    GXSetTevKColorSel(GX_TEVSTAGE0, temp_r20_2);
-    GXSetTevSwapMode(GX_TEVSTAGE0, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_C1, GX_CC_KONST, GX_CC_ZERO);
-    GXSetTevKColorSel(GX_TEVSTAGE1, temp_r21_2);
-    GXSetTevSwapMode(GX_TEVSTAGE1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    GXTexModeSync();
+    GXInitTexObj(&captureObj, capture, (u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&captureObj, GX_NEAR, GX_NEAR, float_0_8041e53c, float_0_8041e53c, float_0_8041e53c, GX_FALSE, GX_FALSE, GX_ANISO_1);
 
-    i = 0;
-    var_r23 = 2;
-    var_r22 = 3;
-    for (; i < 7; i++) {
-        GXSetTevOrder(var_r23, i + 1, 0, 0xFF);
-        GXSetTevColorOp(var_r23, 1, 0, 0, 1, 2);
-        GXSetTevColorIn(var_r23, 0xE, 0xF, 0xF, 8);
-        GXSetTevKColorSel(var_r23, temp_r20_2);
-        GXSetTevSwapMode(var_r23, 0, 0);
-        GXSetTevOrder(var_r22, 0xFF, 0xFF, 0xFF);
-        GXSetTevColorOp(var_r22, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(var_r22, 0xF, 4, 0xE, 0);
-        GXSetTevKColorSel(var_r22, temp_r21_2);
-        GXSetTevSwapMode(var_r22, 0, 0);
-        var_r23 += 2;
-        var_r22 += 2;
+    PSMTXMultVec(yami->unk4, (Vec*)(((MapObject*)yami->unk0)->field_0xC + 4), &pos);
+    scale = float_1000_8041e540 / PSVECDistance(&camGetCurPtr()->cameraPos, &pos);
+    if (scale < float_0_8041e53c) {
+        scale = float_0_8041e53c;
+    }
+    if (scale > float_127_8041e544) {
+        scale = float_127_8041e544;
     }
 
-    for (i = 0, var_r22_2 = GX_TEXMTX0; i < 8; i++, var_r22_2 += 3) {
-        GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0, var_r22_2);
-    }
+    size = GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, 0);
+    water = smartAlloc(size, HEAP_EFFECT)->address;
 
-    if (temp_r30->flags & 1) {
-        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
-    } else {
-        GXSetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
-    }
-    GXSetBlendMode(glare->mode, glare->srcFactor, glare->dstFactor, GX_LO_CLEAR);
-    GXSetNumChans(0);
-    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_CLAMP, GX_AF_NONE);
-    GXSetViewport(0.0f, 0.0f, (f32)gp->fbWidth, (f32)gp->efbHeight, 0.0f, 1.0f);
-    GXSetScissor(0, 0, gp->fbWidth, gp->efbHeight);
-    MTXOrtho(sp88, 0.0f, (f32)gp->efbHeight, 0.0f, (f32)gp->fbWidth, 0.0f, -32767.0f);
-    GXSetProjection(sp88, GX_ORTHOGRAPHIC);
-    PSMTXIdentity(sp58);
-    GXLoadPosMtxImm(sp58, 0);
-    GXSetCurrentMtx(0);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT7, GX_VA_POS, GX_POS_XYZ, GX_S16, 0);
-    GXSetVtxAttrFmt(GX_VTXFMT7, GX_VA_TEX0, GX_TEX_ST, GX_U16, 0);
-    GXSetCullMode(GX_CULL_BACK);
-    GXSetZScaleOffset(1.0f, temp_r30->zscale);
-    temp_r30_2 = temp_r27 + temp_r0;
-    temp_r31 = temp_r26 + temp_r8;
-    var_r21 = glare;
-#ifdef MUST_MATCH
-    x0s = (s16)temp_r26;
-#endif
-    while (var_r28 < temp_r29) {
-        var_r22_3 = var_r21;
-        var_r19_3 = 0;
-        var_r23_2 = 0x1E;
-        while ((var_r19_3 < 8) && (var_r28 < temp_r29)) {
-            MTXTrans(sp28, (glare->unk14 * var_r22_3->coords[0].unk0) / (f32) gp->fbWidth, (glare->unk14 * var_r22_3->coords[0].unk4) / (f32) gp->efbHeight, 0.0f); //temp_r4, temp_r5_3, as 2 3 and temp_f4 as last
-            GXLoadTexMtxImm(sp28, var_r23_2, 1);
-            var_r23_2 += 3;
-            var_r19_3 += 1;
-            var_r22_3 = (void*)((u32)var_r22_3 + 8);
-            var_r21 = (void*)((u32)var_r21 + 8);
-            var_r28 += 1;
+    for (i = 0; i < 0x40; i++) {
+        for (j = 0; j < 0x40; j++) {
+            f32 s = (f32)sin(float_18p85_8041e548 * (f32)j * float_0p015625_8041e54c + (f32)gp->retraceCount / float_10_8041e524);
+            s32 v = (s32)(float_0p6_8041e550 + (scale * s + float_128_8041e554));
+            p = &water[((i % 4) + (j % 4) * 4) * 2 + (i / 4) * 32 + (j / 4) * 512];
+
+            p[0] = v;
+            p[1] = 0x80;
         }
-        GXSetNumTevStages((u8)(var_r19_3 * 2));
-        GXSetNumTexGens((u8)var_r19_3);
-        GXBegin(GX_QUADS, GX_VTXFMT7, 4);
-#ifdef MUST_MATCH
-        GXPosition3s16(x0s, (s16)temp_r27, 0);
-#else
-        GXPosition3s16((s16)temp_r26, (s16)temp_r27, 0);
-#endif
-        GXTexCoord2u16(0, 0);
-        GXPosition3s16((s16)temp_r31, (s16)temp_r27, 0);
-        GXTexCoord2u16(1, 0);
-        GXPosition3s16((s16)temp_r31, (s16)temp_r30_2, 0);
-        GXTexCoord2u16(1, 1);
-#ifdef MUST_MATCH
-        GXPosition3s16(x0s, (s16)temp_r30_2, 0);
-#else
-        GXPosition3s16((s16)temp_r26, (s16)temp_r30_2, 0);
-#endif
-        GXTexCoord2u16(0, 1);
     }
+
+    DCFlushRange(water, 0x2000);
+    GXInitTexObj(&waterObj, water, 0x40, 0x40, GX_TF_IA8, GX_REPEAT, GX_REPEAT, GX_FALSE);
+    GXInitTexObjLOD(&waterObj, GX_LINEAR, GX_LINEAR, float_0_8041e53c, float_0_8041e53c, float_0_8041e53c, GX_FALSE, GX_FALSE, GX_ANISO_1);
+
+    dist = (f32)gp->efbHeight * float_0p5_8041e538 / (f32)tan(float_6p2832_8041e558 * (camGetPtr(CAMERA_3D)->fovY * float_0p5_8041e538) / float_360_8041e55c);
+    C_MTXLightFrustum(mtx,
+        (f32)(gp->efbHeight / 2 - y1),
+        (f32)(gp->efbHeight / 2 - y0),
+        (f32)(x0 - gp->fbWidth / 2),
+        (f32)(x1 - gp->fbWidth / 2),
+        dist,
+        float_0p5_8041e538, float_0p5_8041e538, float_0p5_8041e538, float_0p5_8041e538);
+    PSMTXConcat(mtx, camGetCurPtr()->view, mtx);
+    PSMTXConcat(mtx, yami->unk4, mtx);
+
+    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+    GXLoadTexMtxImm(mtx, dat_802f9338.tbl[texMap], GX_MTX3x4);
+    GXLoadTexObj(&captureObj, texMap);
+    GXLoadTexObj(&waterObj, texMap + 1);
+    GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+    GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(tevStage, GX_CC_TEXC, GX_CC_CPREV, GX_CC_APREV, GX_CC_ZERO);
+    GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+    GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    indMtx[0][0] = float_0p5_8041e538;
+    indMtx[0][1] = float_0_8041e53c;
+    indMtx[0][2] = float_0_8041e53c;
+    indMtx[1][0] = float_0_8041e53c;
+    indMtx[1][1] = float_0p5_8041e538;
+    indMtx[1][2] = float_0_8041e53c;
+    GXSetIndTexMtx(GX_ITM_0, indMtx, 1);
+    GXSetIndTexOrder(unk18, texCoord, texMap + 1);
+    GXSetIndTexCoordScale(unk18, GX_ITS_1, GX_ITS_1);
+    GXSetTevIndWarp(tevStage, unk18, GX_TRUE, GX_FALSE, GX_ITM_0);
+
+    tevStage += 1;
+    texCoord += 1;
+    yami->tevStage = tevStage;
+    unk18 += 1;
+    texMap += 2;
+    yami->texCoord = texCoord;
+    yami->unk18 = unk18;
+    yami->texMap = texMap;
 }
 #pragma opt_lifetimes reset
+#pragma opt_propagation reset
 
-void envBlurOff(void) {
+void envSetYamiView(Mtx mtx) {
     EnvironmentWork* wp = envGetWork();
 
-    wp->flags &= ~4;
-    wp->flags &= ~0x40000000;
-    _mapFree(wp->envBlur);
+    PSMTXCopy(mtx, (MtxPtr)wp->unkC0);
 }
 
-void envBlurOn(s32 flag, s32 value) {
-    EnvironmentWork* wp = envGetWork();
-    EnvironmentBlur* blur = (EnvironmentBlur*)&wp->unk98;
+#pragma opt_common_subs off // MWCC otherwise CSE-hoists tevStage-1/+1/+2 across the GX calls into callee-saved regs
+#pragma opt_propagation off  // keep texMap*4 and the loop counters in the target's callee-saved colouring
+void envSetYami(EnvironmentYami* yami) {
+    GlobalWork* g = gp;
+    EnvironmentWork* wp = g->inBattle ? &work[1] : &work[0];
+#ifdef MUST_MATCH
+    u8* texMtx;
+    // texMap*4 kept in a callee-saved register (r29); declared before the counters so it colours after them.
+    s32 texMtxOff;
+#else
+    s32* texMtx;
+#endif
+    s32 tevStage = yami->tevStage;
+    s32 texMap = yami->texMap;
+    s32 texCoord = yami->texCoord;
+    s32 unk18 = yami->unk18;
+    Mtx mtx;
+    GXTexObj texObj;
 
-    wp->flags |= 0x40000000;
-    wp->flags |= 4;
-    wp->flags &= ~8;
-    memset(blur, 0, sizeof(EnvironmentBlur));
-    blur->renderTime = gp->renderTime;
-    blur->unk10 = value;
-    if (flag != 0) {
-        blur->flags |= 1;
+    u32 oldCount = v_count;
+    u32 newCount = g->retraceCount;
+    if (oldCount != newCount) {
+        v_count = newCount;
+
+        u1 = u1 + float_0p004_8041e520;
+        u2 = u2 - float_0p004_8041e520;
+        if (u1 > 10.0f) {
+            u1 -= 10.0f;
+        }
+        if (u2 < 10.0f) {
+            u2 += 10.0f;
+        }
     }
-    wp->envBlur = _mapAlloc(GXGetTexBufferSize((u16)(gp->fbWidth / 2), (u16)(gp->efbHeight / 2), GX_TF_RGB565, GX_FALSE, 0));
+
+    GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+    GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
+
+    C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u1, 0.5f);
+    PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
+    PSMTXConcat(mtx, yami->unk4, mtx);
+#ifdef MUST_MATCH
+    texMtx = (u8*)texmtx_tbl;
+    texMtxOff = texMap * 4;
+    GXLoadTexMtxImm(mtx, *(s32*)(texMtx + texMtxOff), GX_MTX3x4);
+    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, *(s32*)(texMtx + texMtxOff), GX_FALSE, GX_PTIDENTITY);
+#else
+    texMtx = texmtx_tbl;
+    GXLoadTexMtxImm(mtx, texMtx[texMap], GX_MTX3x4);
+    GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texMtx[texMap], GX_FALSE, GX_PTIDENTITY);
+#endif
+
+    C_MTXLightOrtho(mtx, 72.0f, -72.0f, -96.0f, 96.0f, 0.5f, 0.5f, u2, 0.5f);
+    PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
+    PSMTXConcat(mtx, yami->unk4, mtx);
+#ifdef MUST_MATCH
+    {
+        s32* p = (s32*)((u8*)texmtx_tbl + texMtxOff);
+        GXLoadTexMtxImm(mtx, *++p, GX_MTX3x4);
+        GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, *p, GX_FALSE, GX_PTIDENTITY);
+    }
+#else
+    GXLoadTexMtxImm(mtx, texMtx[texMap + 1], GX_MTX3x4);
+    GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, texMtx[texMap + 1], GX_FALSE, GX_PTIDENTITY);
+#endif
+
+    TEXGetGXTexObjFromPalette(env_tpl, &texObj, 9);
+    GXLoadTexObj(&texObj, texMap);
+    TEXGetGXTexObjFromPalette(env_tpl, &texObj, 10);
+    GXLoadTexObj(&texObj, texMap + 1);
+
+    GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
+    GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+    GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
+    GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
+    GXSetTevOrder(tevStage + 1, texCoord + 1, texMap + 1, GX_COLOR_NULL);
+    GXSetTevColorOp(tevStage + 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(tevStage + 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(tevStage + 1, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXA, GX_CC_ZERO);
+    GXSetTevAlphaIn(tevStage + 1, GX_CA_ZERO, GX_CA_APREV, GX_CA_TEXA, GX_CA_ZERO);
+    GXSetTevSwapMode(tevStage + 1, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
+    GXSetTevOrder(tevStage + 2, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+    GXSetTevColorOp(tevStage + 2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(tevStage + 2, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(tevStage + 2, GX_CC_C0, GX_CC_ZERO, GX_CC_APREV, GX_CC_ZERO);
+    GXSetTevAlphaIn(tevStage + 2, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+    GXSetTevSwapMode(tevStage + 2, GX_TEV_SWAP0, GX_TEV_SWAP0);
+
+    tevStage += 3;
+    texCoord += 2;
+    yami->tevStage = tevStage;
+    texMap += 2;
+    yami->texCoord = texCoord;
+    yami->unk18 = unk18;
+    yami->texMap = texMap;
 }
+#pragma opt_common_subs reset
+#pragma opt_propagation reset

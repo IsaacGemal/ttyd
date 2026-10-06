@@ -99,6 +99,11 @@ extern const f32 float_neg200_8041d8d4;
 extern const f32 float_60_8041d8d8;
 extern const f32 float_neg128_8041d8dc;
 extern const f32 float_10000_8041d904;
+extern const char str_8041D8E0[];
+extern const char str_8041D8E4[];
+extern const char str_8041D8EC[];
+extern const char str_8041D8F4[];
+extern const char str_8041D8FC[];
 extern const f32 float_neg230_8041d908;
 extern const f32 float_neg120_8041d90c;
 extern const f32 float_neg8_8041d910;
@@ -277,209 +282,11 @@ const char str_802F62B8[28] = "menu_monosiri_derutokoro";
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
 #define WW_PTR(w, off) (*(void**)((u8*)(w) + (off)))
 
-void monosiriExit(void* work) {
-    MonosiriWork* w = work;
-
-    if (w != NULL) {
-        if (w->file1 != NULL) {
-            fileFree(w->file1);
-            w->file1 = NULL;
-        }
-        if (w->file2 != NULL) {
-            fileFree(w->file2);
-            w->file2 = NULL;
-        }
-        if (w->poseId != -1) {
-            animPoseRelease(w->poseId);
-            w->poseId = -1;
-        }
-        if (w->poseId2 != -1) {
-            animPoseRelease(w->poseId2);
-            w->poseId2 = -1;
-        }
-        if (w->alloc != NULL) {
-            smartFree(w->alloc);
-            w->alloc = NULL;
-        }
-        _mapFree(w);
-    }
-}
-
-BOOL monosiriCloseWait(void* work) {
-    MonosiriWork* w = work;
-
-    if (w == NULL) {
-        return TRUE;
-    }
-    if (w->x > float_500_8041d808 && w->y < float_neg300_8041d80c) {
-        return TRUE;
-    }
-    return FALSE;
-}
-
-void monosiriClose(void* work) {
-    MonosiriWork* w = work;
-
-    if (w != NULL) {
-        w->state = 2;
-    }
-}
-
-// The original addresses these .rodata objects as offsets from one base symbol.
 #ifdef MUST_MATCH
 #define RO(base, off, sym) ((const char*)(base) + (off))
 #else
 #define RO(base, off, sym) ((const char*)&(sym))
 #endif
-
-
-// 100%: matches through the unit's rodata base. The {jp, us} language table
-// lives at str_802F5EB8+0x350; reading it through `base` (instead of a local
-// initialiser) makes the compiler emit the original's `lwz r3, 0x350(r31)`.
-// `inBattle` is computed before the two table reads and as `!(x == 0)` so the
-// boolean lands in r3 and is copied to r28 exactly as the original does
-// (semantically identical to `x != 0`, just different MWCC colouring).
-// `opt_common_subs off` stops MWCC hoisting `base+0x438`/`base+0x448` into
-// registers once, which the original rematerialises per use.
-#pragma opt_common_subs off
-void monosiriMain(void* work) {
-    MonosiriWork* w = work;
-    TattleEntry* tattle;
-    const char* base = str_802F5EB8;
-    GlobalWork* g = gp;
-    const char* lang[2];
-    s32 inBattle;
-    GXTexObj texObj;
-    s32 size;
-
-    // Raw offsets 0x350/0x354: the original's `jumptable_802F6208` (a local 2-entry
-    // const char* table) sits there in .rodata; no header names it.
-    inBattle = !(g->inBattle == 0);
-    lang[0] = *(const char**)(base + 0x350);
-    lang[1] = *(const char**)(base + 0x354);
-
-    if (w == NULL) {
-        return;
-    }
-
-    switch (w->state) {
-    case 0:
-        if ((u32)fileAsyncf(4, NULL, RO(base, 0x438, "%s/w/%s/win.tpl"), getMarioStDvdRoot(), lang[g->language]) != 0) {
-            if ((u32)fileAsyncf(0, NULL, RO(base, 0x448, "%s/w/jp/mono.dat"), getMarioStDvdRoot()) != 0) {
-                w->file1 = fileAllocf(4, RO(base, 0x438, "%s/w/%s/win.tpl"), getMarioStDvdRoot(), lang[gp->language]);
-                w->file2 = fileAllocf(0, RO(base, 0x448, "%s/w/jp/mono.dat"), getMarioStDvdRoot());
-                w->state++;
-                TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &texObj, 0x37);
-                size = GXGetTexBufferSize(GXGetTexObjWidth(&texObj), GXGetTexObjHeight(&texObj), 5, 0, 0);
-                w->alloc = smartAlloc(size, 0);
-            }
-        }
-        break;
-    case 1:
-        tattle = battleGetUnitMonosiriPtr(w->unitKind);
-        if (animGroupBaseAsync(tattle->modelName, inBattle, NULL)) {
-            if (w->unitKind != 0x6B || animGroupBaseAsync(RO(base, 0x45C, "c_n_moa_a"), inBattle, NULL)) {
-                w->alpha += 0x14;
-                if (w->alpha > 0xFF) {
-                    w->alpha = 0xFF;
-                }
-                if (w->poseId == -1) {
-                    if (w->unitKind == 0x6B) {
-                        w->poseId = animPoseEntry(tattle->modelName, inBattle);
-                        animPoseSetAnim(w->poseId, tattle->poseName, TRUE);
-                        animPoseWorldPositionEvalOn(w->poseId);
-                        animPoseMain(w->poseId);
-                        w->poseId2 = animPoseEntry(RO(base, 0x45C, "c_n_moa_a"), inBattle);
-                        animPoseSetAnim(w->poseId2, str_8041D810, TRUE);
-                        animPoseMain(w->poseId2);
-                    } else {
-                        w->poseId = animPoseEntry(tattle->modelName, inBattle);
-                        animPoseSetAnim(w->poseId, tattle->poseName, TRUE);
-                        animPoseMain(w->poseId);
-                    }
-                    dispEntry(2, float_0_8041d7bc, 6, capture, w);
-                }
-            }
-        }
-        break;
-    case 2:
-        w->targetX = float_600_8041d814;
-        w->targetY = float_neg400_8041d818;
-        break;
-    }
-
-    w->x += (w->targetX - w->x) / float_6_8041d81c;
-    w->y += (w->targetY - w->y) / float_6_8041d81c;
-    if (w->state > 0) {
-        dispEntry(8, float_0_8041d7bc, 0, monosiri_disp, w);
-    }
-}
-
-
-#pragma opt_common_subs reset
-void* monosiriInit(BattleUnitType kind, f32 x, f32 y) {
-    MonosiriWork* w = _mapAlloc(sizeof(MonosiriWork));
-
-    memset(w, 0, sizeof(MonosiriWork));
-    w->state = 0;
-    w->unitKind = kind;
-    w->targetX = x;
-    w->targetY = y;
-    w->x = float_500_8041d808;
-    w->y = float_neg300_8041d80c;
-    w->alpha = 0;
-    w->poseId = -1;
-    w->poseId2 = -1;
-    return w;
-}
-
-// The last arm's original codegen keeps swByteGet's result in r3 and computes
-// the `>= 0x15C` value before the branch, so the C default-result/override
-// ordering below is needed to reproduce it (see rule 7).
-const char* winGetMapTplName(void) {
-    const char* base = str_802F5EB8;
-
-    if (swByteGet(0) < 0x13) {
-        return RO(base, 0x4A8, "map0.tpl");
-    }
-    if (swByteGet(0) < 0x41) {
-        return RO(base, 0x4B4, "map1.tpl");
-    }
-    if (swByteGet(0) < 0x79) {
-        return RO(base, 0x4C0, "map2.tpl");
-    }
-    if (swByteGet(0) < 0xAF) {
-        return RO(base, 0x4CC, "map3.tpl");
-    }
-    if (swByteGet(0) < 0xDE) {
-        return RO(base, 0x4D8, "map4.tpl");
-    }
-    if (swByteGet(0) < 0x110) {
-        return RO(base, 0x4E4, "map5.tpl");
-    }
-    {
-#ifdef MUST_MATCH
-        // Default to the `>= 0x15C` template, then override it on the `<` path;
-        // the original compares r3 before overwriting it and branches on that
-        // earlier compare (rule 7).
-        const char* result;
-        s32 v = swByteGet(0);
-
-        result = RO(base, 0x4FC, "map7.tpl");
-        if (v < 0x15C) {
-            result = RO(base, 0x4F0, "map6.tpl");
-        }
-        return result;
-#else
-        if (swByteGet(0) >= 0x15C) {
-            return RO(base, 0x4FC, "map7.tpl");
-        }
-        return RO(base, 0x4F0, "map6.tpl");
-#endif
-    }
-}
-
-// A single tattle-log row inside WindowWork, at 0xD78 with stride 0x20.
 typedef struct WinLogEntry {
     f32 curX;             // 0xD78
     f32 curY;             // 0xD7C
@@ -490,7 +297,6 @@ typedef struct WinLogEntry {
     const char* name;     // 0xD90
     u32 unk_0x1C;         // 0xD94
 } WinLogEntry;
-
 typedef struct WinLogWork {
     u8 pad_0[0xD6C];
     s32 sel;              // 0xD6C
@@ -498,177 +304,7 @@ typedef struct WinLogWork {
     u8 pad_74[4];         // 0xD74
     WinLogEntry entries[1]; // 0xD78
 } WinLogWork;
-
-// 100%: advances the tattle-log rows (state machine) and eases the panel
-// springs. The original's int->float conversions reference
-// 4503601774854144.0; our object emits an anonymous @271 literal instead,
-// which does not affect the match (same as winBadgeInit2). The per-block `dN`
-// temps give the diff-first fmadd operand order; `ep` steps the entry base so
-// the prologue copy lands first. The MUST_MATCH `new_var` alias is scheduling
-// shaping only (see its comment).
-void winLogMain2(WindowWork* work) {
-    WinLogWork* w = (WinLogWork*)work;
-    u8* ep = (u8*)work;
-#ifdef MUST_MATCH
-    // Match-only second base alias: with one `work` base MWCC hoists the
-    // second int->float fudge store (`stw r0, 0x8(r1)`) one /6 block early;
-    // the natural single-base form is under #else (99.22%).
-    u8* new_var;
-#endif
-    s32 i;
-#ifdef MUST_MATCH
-    new_var = (u8*)work;
-#endif
-
-    for (i = 0; i < w->count; i++, ep += 0x20) {
-        WinLogEntry* e = (WinLogEntry*)(ep + 0xD78);
-
-        switch (e->state) {
-#ifdef MUST_MATCH
-        // Empty low/high cases force the jump table to span 0..0x29 (indexed
-        // from 0), as in the original; both fall through to the loop tail.
-        case 0:
-            break;
-#endif
-        case 10:
-            e->targetX = float_0_8041d7bc;
-            e->targetY = float_140_8041d8c0;
-            e->timer = 0;
-            e->state++;
-            break;
-        case 11:
-            if (++e->timer > 8) {
-                e->targetX = float_neg160_8041d8c4;
-                e->targetY = float_140_8041d8c0;
-                e->timer = 0;
-                e->state++;
-            }
-            break;
-        case 20:
-            e->targetX = float_0_8041d7bc;
-            e->targetY = float_140_8041d8c0;
-            e->timer = 0;
-            e->state++;
-            break;
-        case 21:
-            if (++e->timer > 8) {
-                e->targetX = float_0_8041d7bc;
-                {
-                    f32 prod = float_45_8041d880 * (f32)w->count;
-                    e->targetY = prod * float_0p5_8041d7c8 - float_45_8041d880 * (f32)i;
-                }
-                e->timer = 0;
-                e->state++;
-            }
-            break;
-        case 30:
-            e->targetX = float_0_8041d7bc;
-            e->targetY = float_neg160_8041d8c4;
-            e->timer = 0;
-            e->state++;
-            break;
-        case 40:
-            e->targetX = float_0_8041d7bc;
-            {
-                f32 prod = float_45_8041d880 * (f32)w->count;
-                e->targetY = prod * float_0p5_8041d7c8 - float_45_8041d880 * (f32)i;
-            }
-            e->timer = 0;
-            e->state++;
-            break;
-#ifdef MUST_MATCH
-        case 41:
-            break;
-#endif
-        }
-        {
-            f32 dx, dy;
-            dx = e->targetX - e->curX;
-            e->curX += dx * float_0p125_8041d890;
-            dy = e->targetY - e->curY;
-            e->curY += dy * float_0p125_8041d890;
-        }
-    }
-
-#ifdef MUST_MATCH
-    {
-        f32 d1 = WW_F32(new_var, 0xE28) - WW_F32(new_var, 0xE2C);
-        WW_F32(work, 0xE2C) += d1 * double_0p125_802f63c0;
-    }
-    {
-        f32 d2 = WW_F32(new_var, 0xE30) - WW_F32(work, 0xE34);
-        WW_F32(new_var, 0xE34) += d2 * double_0p125_802f63c0;
-    }
-    {
-        f32 d3 = WW_F32(work, 0xE64) - WW_F32(work, 0xE68);
-        WW_F32(new_var, 0xE68) += d3 * double_0p125_802f63c0;
-    }
-    {
-        f32 d4 = WW_F32(work, 0xE6C) - WW_F32(work, 0xE70);
-        WW_F32(new_var, 0xE70) += d4 * double_0p125_802f63c0;
-    }
-    {
-        f32 d5 = WW_F32(new_var, 0xE74) - WW_F32(work, 0xE78);
-        WW_F32(work, 0xE78) += d5 * double_0p125_802f63c0;
-    }
-    {
-        f32 d6 = WW_F32(work, 0xE7C) - WW_F32(new_var, 0xE80);
-        WW_F32(new_var, 0xE80) += d6 * float_0p25_8041d8c8;
-    }
-    WW_F32(work, 0xEA4) = (f32)(WW_S32(work, 0xE9C) * 0xE8);
-    WW_F32(work, 0xEA0) += (WW_F32(new_var, 0xEA4) - WW_F32(new_var, 0xEA0)) / float_6_8041d81c;
-    WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(new_var, 0xE84)) / float_6_8041d81c;
-    WW_F32(new_var, 0xE8C) += (WW_F32(work, 0xE90) - WW_F32(new_var, 0xE8C)) / float_6_8041d81c;
-    WW_F32(work, 0xEA8) += (WW_F32(work, 0xEAC) - WW_F32(new_var, 0xEA8)) / float_6_8041d81c;
-    WW_F32(new_var, 0xEB0) += (WW_F32(work, 0xEB4) - WW_F32(work, 0xEB0)) / float_6_8041d81c;
-    WW_F32(work, 0xFA0) = (f32)(WW_S32(new_var, 0xF98) * 0xE8);
-    WW_F32(work, 0xF9C) += (WW_F32(work, 0xFA0) - WW_F32(new_var, 0xF9C)) / float_6_8041d81c;
-    WW_F32(new_var, 0xF80) += (WW_F32(new_var, 0xF84) - WW_F32(new_var, 0xF80)) / float_6_8041d81c;
-    WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(new_var, 0xF88)) / float_6_8041d81c;
-    WW_F32(new_var, 0xFA4) += (WW_F32(new_var, 0xFA8) - WW_F32(new_var, 0xFA4)) / float_6_8041d81c;
-    WW_F32(work, 0xFAC) += (WW_F32(new_var, 0xFB0) - WW_F32(work, 0xFAC)) / float_6_8041d81c;
-#else
-    {
-        f32 d1 = WW_F32(work, 0xE28) - WW_F32(work, 0xE2C);
-        WW_F32(work, 0xE2C) += d1 * double_0p125_802f63c0;
-    }
-    {
-        f32 d2 = WW_F32(work, 0xE30) - WW_F32(work, 0xE34);
-        WW_F32(work, 0xE34) += d2 * double_0p125_802f63c0;
-    }
-    {
-        f32 d3 = WW_F32(work, 0xE64) - WW_F32(work, 0xE68);
-        WW_F32(work, 0xE68) += d3 * double_0p125_802f63c0;
-    }
-    {
-        f32 d4 = WW_F32(work, 0xE6C) - WW_F32(work, 0xE70);
-        WW_F32(work, 0xE70) += d4 * double_0p125_802f63c0;
-    }
-    {
-        f32 d5 = WW_F32(work, 0xE74) - WW_F32(work, 0xE78);
-        WW_F32(work, 0xE78) += d5 * double_0p125_802f63c0;
-    }
-    {
-        f32 d6 = WW_F32(work, 0xE7C) - WW_F32(work, 0xE80);
-        WW_F32(work, 0xE80) += d6 * float_0p25_8041d8c8;
-    }
-    WW_F32(work, 0xEA4) = (f32)(WW_S32(work, 0xE9C) * 0xE8);
-    WW_F32(work, 0xEA0) += (WW_F32(work, 0xEA4) - WW_F32(work, 0xEA0)) / float_6_8041d81c;
-    WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(work, 0xE84)) / float_6_8041d81c;
-    WW_F32(work, 0xE8C) += (WW_F32(work, 0xE90) - WW_F32(work, 0xE8C)) / float_6_8041d81c;
-    WW_F32(work, 0xEA8) += (WW_F32(work, 0xEAC) - WW_F32(work, 0xEA8)) / float_6_8041d81c;
-    WW_F32(work, 0xEB0) += (WW_F32(work, 0xEB4) - WW_F32(work, 0xEB0)) / float_6_8041d81c;
-    WW_F32(work, 0xFA0) = (f32)(WW_S32(work, 0xF98) * 0xE8);
-    WW_F32(work, 0xF9C) += (WW_F32(work, 0xFA0) - WW_F32(work, 0xF9C)) / float_6_8041d81c;
-    WW_F32(work, 0xF80) += (WW_F32(work, 0xF84) - WW_F32(work, 0xF80)) / float_6_8041d81c;
-    WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(work, 0xF88)) / float_6_8041d81c;
-    WW_F32(work, 0xFA4) += (WW_F32(work, 0xFA8) - WW_F32(work, 0xFA4)) / float_6_8041d81c;
-    WW_F32(work, 0xFAC) += (WW_F32(work, 0xFB0) - WW_F32(work, 0xFAC)) / float_6_8041d81c;
-#endif
-}
-
 #define SFX(id) psndSFXOn((const char*)(id))
-
 typedef struct TubuDt {
     s16 x;           // 0x0
     s16 y;           // 0x2
@@ -677,9 +313,6 @@ typedef struct TubuDt {
     u16 minProgress; // 0x6
     const char* id;  // 0x8
 } TubuDt;
-
-
-// winGetMapTplName as the compiler inlined it into winLogMain, sharing the caller's string base register.
 #ifdef MUST_MATCH
 #define MAP_TPL_NAME(dst, base)                                       \
     if (swByteGet(0) < 0x13) {                                        \
@@ -702,7 +335,6 @@ typedef struct TubuDt {
 #else
 #define MAP_TPL_NAME(dst, base) dst = winGetMapTplName()
 #endif
-
 typedef struct LogRow {
     s32 type;         // 0x00
     f32 curX;         // 0x04
@@ -713,13 +345,10 @@ typedef struct LogRow {
     s32 timer;        // 0x18
     const char* name; // 0x1C
 } LogRow;
-
 typedef struct LogChar {
     u8 pad;
     u8 id;
 } LogChar;
-
-// The fields of WindowWork that winLogMain touches (win_main.h only declares the first 0x1210 bytes).
 typedef struct LogWin {
     u16 flags; // 0x0
     u8 pad_2[0x2];
@@ -803,16 +432,7 @@ typedef struct LogWin {
     void* mono; // 0x1200
     u8 pad_1204[0xC];
 } LogWin;
-
 #define LOGWIN_CHECK(field, off) typedef char logwin_##field##_check[(offsetof(LogWin, field) == (off)) ? 1 : -1]
-LOGWIN_CHECK(rows, 0xD74);
-LOGWIN_CHECK(mapSel, 0xE14);
-LOGWIN_CHECK(f84, 0xF84);
-LOGWIN_CHECK(badgeIcon, 0xFB4);
-LOGWIN_CHECK(charCnt, 0x1038);
-LOGWIN_CHECK(chars, 0x1050);
-LOGWIN_CHECK(mono, 0x1200);
-
 extern TubuDt tubuDt[0x5D];
 extern s32 stone_tbl[7];
 extern const f32 float_20_8041d8ac;
@@ -848,10 +468,6 @@ extern const f32 float_neg250_8041d93c;
 extern const f32 float_neg310_8041d940;
 extern const f32 float_neg60_8041d944;
 extern const f32 float_neg8_8041d910;
-
-
-// The map table: one entry per "tubu" map region. The id field points into
-// the .sdata2 region-name pool; entry order is the original's address order.
 TubuDt tubuDt[0x5D] = {
     { 14, -34, 0x01, 0x00, 0x0003, "gor" },
     { -4, -31, 0x00, 0x02, 0x000C, "gor" },
@@ -946,8 +562,569 @@ TubuDt tubuDt[0x5D] = {
     { -33, -50, 0x00, 0x00, 0x017E, "gor" },
     { -33, -62, 0x00, 0x00, 0x017E, "gor" },
     { -33, -74, 0x01, 0x00, 0x017E, "las" },};
-
 s32 stone_tbl[7] = {0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78};
+extern const u8 enemy_monoshiri_sort_table[];
+extern const f32 float_2_8041d87c;
+#define LOG_ADD_TAB(w, tabType, msg)                                                  \
+    do {                                                                              \
+        LogRow* r_ = &(w)->rows[(w)->count];                                          \
+        r_->type = (tabType);                                                         \
+        r_->timer = 0;                                                                \
+        r_->phase = 0;                                                                \
+        r_->name = (msg);                                                             \
+        (w)->count++;                                                                 \
+        for (k_ = 0; k_ < (w)->count; k_++) {                                         \
+            (w)->rows[k_].curX = float_0_8041d7bc;                                    \
+            (w)->rows[k_].targetX = float_0_8041d7bc;                                 \
+            {                                                                         \
+                f32 a_ = float_45_8041d880 * winLogI2F((w)->count, base, &e7cScratch);   \
+                f32 b_ = float_45_8041d880 * winLogI2F(k_, base, &macScratch);           \
+                f32 y_ = a_ * float_0p5_8041d7c8 - b_;                                \
+                (w)->rows[k_].curY = y_;                                              \
+                (w)->rows[k_].targetY = y_;                                           \
+            }                                                                         \
+        }                                                                             \
+    } while (0)
+#ifdef MUST_MATCH
+// Match-only: tab 0's conversion keeps the compiler's native i2f, which emits the single fused
+// `fsubs` the original has; the winLogI2F helper's C double subtract can only produce `fsub`+`frsp`.
+// Using the helper for tab 0 scores lower, so this one call site stays native.
+#define LOG_ADD_TAB_0(w, tabType, msg)                                               \
+    do {                                                                              \
+        LogRow* r_ = &(w)->rows[(w)->count];                                          \
+        r_->type = (tabType);                                                         \
+        r_->timer = 0;                                                                \
+        r_->phase = 0;                                                                \
+        r_->name = (msg);                                                             \
+        (w)->count++;                                                                 \
+        for (k_ = 0; k_ < (w)->count; k_++) {                                         \
+            (w)->rows[k_].curX = float_0_8041d7bc;                                    \
+            (w)->rows[k_].targetX = float_0_8041d7bc;                                 \
+            {                                                                         \
+                f32 a_ = float_45_8041d880 * ((f32)(w)->count);                       \
+                f32 b_ = float_45_8041d880 * ((f32)k_);                               \
+                f32 y_ = a_ * float_0p5_8041d7c8 - b_;                                \
+                (w)->rows[k_].curY = y_;                                              \
+                (w)->rows[k_].targetY = y_;                                           \
+            }                                                                         \
+        }                                                                             \
+    } while (0)
+#else
+#define LOG_ADD_TAB_0(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
+#endif
+extern char vec3_802f5f2c[];
+extern char vec3_802f5f38[];
+extern char vec3_802f5f44[];
+extern char vec3_802f5f50[];
+extern char vec3_802f5f5c[];
+extern char vec3_802f5f68[];
+extern char vec3_802f5f74[];
+extern char vec3_802f5f80[];
+extern char vec3_802f5f8c[];
+extern char vec3_802f5f98[];
+extern char vec3_802f5fa4[];
+extern char vec3_802f5fb0[];
+extern char vec3_802f5fbc[];
+extern char vec3_802f5fc8[];
+extern char vec3_802f5fd4[];
+extern char vec3_802f5fe0[];
+extern char vec3_802f5fec[];
+extern const GXColor dat_8041d78c;
+extern const GXColor dat_8041d790;
+extern const GXColor dat_8041d794;
+extern const GXColor dat_8041d798;
+extern const GXColor dat_8041d79c;
+extern const f32 float_0p017453_8041d8a4;
+extern const f32 float_0p43633_8041d8a0;
+extern const f32 float_30_8041d864;
+extern const f32 float_4_8041d88c;
+extern const f32 float_10_8041d8b4;
+extern const f32 float_170_8041d8b8;
+extern const f32 float_130_8041d8bc;
+extern const f32 float_1_8041d7c0;
+#ifdef MUST_MATCH
+#define LV(off, sym) (*(const Vec*)(sym))
+// Volatile variant: forces the load to be repeated each loop iteration instead
+// of being hoisted into a callee-saved register, as the original does for the
+// per-stone Vec with the same address (MUST_MATCH codegen shaping).
+#define LVV(off, sym) (*(volatile const Vec*)(sym))
+// Volatile read of the per-stone shadow colour: the original reloads it from
+// the data symbol each loop iteration rather than hoisting it into a
+// callee-saved register (MUST_MATCH codegen shaping).
+#define VCOL(sym) (*(volatile const GXColor*)&(sym))
+#else
+#define LV(off, sym) (*(const Vec*)(sym))
+#define LVV(off, sym) (*(volatile const Vec*)(sym))
+#define VCOL(sym) (*(volatile const GXColor*)&(sym))
+#endif
+#define LOG_TEXPAL() (**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0))
+extern char vec3_802f5ff8[];
+extern char vec3_802f6004[];
+extern char vec3_802f6010[];
+extern char vec3_802f601c[];
+extern char vec3_802f6028[];
+extern char vec3_802f6034[];
+extern char vec3_802f6040[];
+extern char vec3_802f604c[];
+extern char vec3_802f6058[];
+extern char vec3_802f6064[];
+extern char vec3_802f6070[];
+extern char vec3_802f607c[];
+extern char vec3_802f6088[];
+extern char vec3_802f6094[];
+extern char vec3_802f60a0[];
+extern char vec3_802f60ac[];
+extern char vec3_802f60b8[];
+extern char vec3_802f60c4[];
+extern char vec3_802f60d0[];
+extern char vec3_802f60dc[];
+extern char vec3_802f60e8[];
+extern char vec3_802f60f4[];
+extern char vec3_802f6100[];
+extern char vec3_802f610c[];
+extern const GXColor dat_8041d7a0;
+extern const f32 float_74_8041d86c;
+extern const f32 float_120_8041d870;
+extern const f32 float_304_8041d874;
+extern const f32 float_230_8041d878;
+extern const f32 float_240_8041d858;
+extern const f32 float_220_8041d868;
+extern const f32 float_1p5_8041d884;
+extern const f32 float_3_8041d888;
+extern const f32 float_0p125_8041d890;
+extern const f32 float_neg148_8041d898;
+extern char vec3_802f6118[];
+extern char vec3_802f6124[];
+extern char vec3_802f6130[];
+extern char vec3_802f613c[];
+extern char vec3_802f6148[];
+extern char vec3_802f6154[];
+extern char vec3_802f6160[];
+extern char vec3_802f616c[];
+extern char vec3_802f6178[];
+extern char vec3_802f6184[];
+extern char vec3_802f6190[];
+extern char vec3_802f619c[];
+extern char vec3_802f61a8[];
+extern char vec3_802f61b4[];
+extern char vec3_802f61c0[];
+extern char vec3_802f61cc[];
+extern char vec3_802f61d8[];
+extern char vec3_802f61e4[];
+extern char vec3_802f61f0[];
+extern char vec3_802f61fc[];
+extern const f32 float_110_8041d820;
+extern const f32 float_160_8041d7d8;
+extern const f32 float_100_8041d824;
+extern const f32 float_50_8041d828;
+extern const f32 float_0p75_8041d7e0;
+extern const f32 float_108_8041d82c;
+extern const f32 float_166_8041d830;
+extern const f32 float_184_8041d834;
+extern const f32 float_56_8041d840;
+extern const f32 float_24_8041d838;
+extern const f32 float_5_8041d83c;
+extern const f32 float_16_8041d7e4;
+extern const f32 float_440_8041d84c;
+extern const f32 float_18_8041d850;
+extern const f32 float_15_8041d854;
+extern const f32 float_240_8041d858;
+extern const f32 float_0p7_8041d85c;
+extern const f32 float_420_8041d860;
+extern const f32 float_210_8041d7f0;
+extern const f32 float_30_8041d864;
+extern const f32 float_220_8041d868;
+extern const GXColor dat_8041d7a4;
+extern const GXColor dat_8041d7a8;
+extern char vec3_802f6258[];
+extern char vec3_802f6264[];
+extern char vec3_802f6270[];
+extern char vec3_802f627c[];
+extern const GXColor dat_8041d7b4;
+extern const GXColor dat_8041d7b8;
+extern const GXColor unk_80423050;
+extern const f32 float_0p04_8041d7c4;
+extern const f32 float_neg0p5_8041d7cc;
+extern const f32 float_32_8041d7d0;
+extern const f32 float_216_8041d7dc;
+extern const f32 float_248_8041d7e8;
+extern const f32 float_180_8041d7ec;
+extern const f32 float_160_8041d7d8;
+extern const f32 float_210_8041d7f0;
+extern const f32 float_16_8041d7e4;
+extern const f32 float_25_8041d7f4;
+extern const f32 float_1p2667_8041d7f8;
+extern const f32 float_1000_8041d7fc;
+extern const f32 float_608_8041d800;
+extern const f32 float_480_8041d804;
+extern char vec3_802f6228[];
+extern char vec3_802f6234[];
+extern char vec3_802f6240[];
+extern char vec3_802f624c[];
+#ifdef MUST_MATCH
+#define HALF_FOV_TAN double_0p21817_802f62e8
+#else
+#define HALF_FOV_TAN 0.21816615760326385
+#endif
+typedef struct TattleCamEntry {
+    s32 kind;
+    f32 x;
+    f32 y;
+    f32 scale;
+} TattleCamEntry;
+
+// Appends a tab to the menu and re-centres every tab row.
+
+
+// All five tab i2f sites and the map/e7c sites now use the compiler's native
+// `(f32)` cast.  The padding object above makes the compiler's pooled magic
+// land at .rodata+0x420, so the compiler emits the original's fused `fsubs`
+// with a base-relative `lfd f3, 0x420(r31)` (r31 = the unit's rodata base)
+// instead of an anonymous lis/addi pool.  Remaining diffs are register
+// colouring and scheduling only (the loop counter lands in r7 instead of r5,
+// and the base/magic hoist a few instructions earlier)
+
+#ifdef MUST_MATCH
+// The native cast is what emits `fsubs`; no helper is needed now that the pool
+// entry lands at base+0x420.
+// Prototypes for the forward references the original function order needs.
+static inline f32 winLogI2F(s32 v, const char* base, f64* scratch);
+
+static inline f32 winLogI2F(s32 v, const char* base, f64* scratch) {
+    return (f32)v;
+}
+#else
+#define winLogI2F(v, base, scratch) ((f32)(v))
+#endif
+
+#pragma opt_common_subs off // keeps MWCC from CSE-ing the map/base addresses across the load loops
+// NONMATCHING (98.43%): the i2f now matches (native `fsubs` plus base-relative
+// `lfd f3, 0x420(r31)`); what is left is register colouring/scheduling (the tab
+// loop counter in r7 vs r5, and the base/magic hoisting a few instructions).
+void winLogInit(WindowWork* work) {
+    LogWin* w = (LogWin*)work;
+    static const char* msg_help[5] = {str_802F5EB8, str_802F5ECC, str_802F5EE4, str_802F5EFC, str_802F5F14};
+    const char* base = str_802F5EB8;
+    const char* area;
+    s32 i;
+    s32 k_;
+    f64 e7cScratch;
+    f64 macScratch;
+
+    w->state = 0;
+    w->sel = 0;
+    w->count = 0;
+    LOG_ADD_TAB_0(w, 0, msg_help[0]);
+    if (swByteGet(0) >= 0x13) {
+        LOG_ADD_TAB(w, 1, msg_help[1]);
+    }
+    if (swByteGet(0) >= 7) {
+        LOG_ADD_TAB(w, 4, msg_help[4]);
+    }
+    if (swByteGet(0) >= 0x14) {
+        LOG_ADD_TAB(w, 2, msg_help[2]);
+    }
+    if (swGet(0x40) != 0) {
+        LOG_ADD_TAB(w, 3, msg_help[3]);
+    }
+    w->stoneNum = 0;
+    for (i = 0; i < 7; i++) {
+        if ((s32)pouchCheckItem(stone_tbl[i]) != 0) {
+            w->stoneNum++;
+        }
+    }
+    for (i = 0; i < 7; i++) {
+        EffectEntry* e;
+
+        if (i < w->stoneNum) {
+            e = w->stones[i] =
+                effStarStoneEntry(i, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc, float_2_8041d87c);
+        } else {
+            e = w->stones[i] = effStarStoneEntry(i + 7, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc,
+                                                 float_2_8041d87c);
+            ((u8*)e->userdata)[0x5C] = 0x20;
+            ((u8*)e->userdata)[0x5D] = 0x20;
+            ((u8*)e->userdata)[0x5E] = 0x20;
+        }
+        *(s32*)((u8*)e->userdata + 0x38) = 8;
+        *(u16*)((u8*)e->userdata + 4) &= ~4;
+        *(u16*)((u8*)e->userdata + 4) |= 0x20;
+    }
+    w->file = NULL;
+    w->pose = -1;
+    w->mapSel = -1;
+    w->mapPick = 0;
+    w->mapCy = float_0_8041d7bc;
+    w->mapCx = float_0_8041d7bc;
+    w->e2c = float_0_8041d7bc;
+    w->e28 = float_0_8041d7bc;
+    w->e34 = float_neg480_8041d89c;
+    w->e30 = float_neg480_8041d89c;
+    w->mapScrollY = float_0_8041d7bc;
+    w->mapScrollX = float_0_8041d7bc;
+    area = gp->currentAreaName;
+    if (strcmp(gp->currentMapName, "pik_02") == 0
+        || strcmp(gp->currentMapName, "pik_03") == 0) {
+        area = "sin";
+    }
+    if (strcmp(gp->currentMapName, "win_04") == 0
+        || strcmp(gp->currentMapName, "win_05") == 0) {
+        area = "hou";
+    }
+    if (strncmp(gp->currentMapName, "rsh", 3) == 0) {
+        if (swByteGet(0) < 0x136) {
+            area = "gor";
+        } else if (swByteGet(0) < 0x14E || swGet(0xDFB) != 0) {
+            area = "eki";
+        } else if (swGet(0xDFC) != 0) {
+            area = "pik";
+        } else {
+            switch (swByteGet(0x366)) {
+            case 0:
+                area = "gor";
+                break;
+            case 1:
+                area = "eki";
+                break;
+            case 2:
+                area = "pik";
+                break;
+            case 3:
+                area = "gor";
+                break;
+            }
+        }
+    }
+    if (strncmp(gp->currentMapName, "hom", 3) == 0) {
+        area = "eki";
+    }
+    if (strncmp(gp->currentMapName, "jon", 3) == 0) {
+        area = "tik";
+    }
+    if (strcmp(gp->currentMapName, "gra_06") == 0) {
+        area = "jin";
+    }
+    if (strcmp(gp->currentMapName, "muj_10") == 0
+        || strcmp(gp->currentMapName, "muj_11") == 0
+        || strcmp(gp->currentMapName, "muj_12") == 0) {
+        area = "dou";
+    }
+    for (i = 0; (u32)i < 0x5D; i++) {
+        if (area != NULL && strcmp(area, tubuDt[i].id) == 0) {
+            break;
+        }
+    }
+    if ((u32)i < 0x5D) {
+        w->mapPick = i;
+    }
+    w->mapCx = float_304_8041d874 + (f32)tubuDt[w->mapPick].x;
+    w->mapCy = float_240_8041d858 + (f32)tubuDt[w->mapPick].y;
+    {
+        f32 sx = (w->mapCx + w->mapScrollX) - float_230_8041d878;
+        f32 sy = (w->mapCy + w->mapScrollY) - float_120_8041d870;
+
+        w->mapScrollX = w->mapScrollX - (f32)(s32)sx;
+        w->mapScrollY = w->mapScrollY - (f32)(s32)sy;
+    }
+    if (w->mapScrollX > float_0_8041d7bc) {
+        w->mapScrollX = float_0_8041d7bc;
+    }
+    if (w->mapScrollY > float_0_8041d7bc) {
+        w->mapScrollY = float_0_8041d7bc;
+    }
+    if (w->mapScrollX < float_neg148_8041d898) {
+        w->mapScrollX = float_neg148_8041d898;
+    }
+    if (w->mapScrollY < float_neg240_8041d894) {
+        w->mapScrollY = float_neg240_8041d894;
+    }
+    w->stoneSel = 0;
+    {
+        f32 e7c = float_51p429_8041d8a8 * winLogI2F(w->stoneSel, base, &e7cScratch);
+        w->e7c = e7c;
+        w->e80 = e7c;
+    }
+    w->e68 = float_0_8041d7bc;
+    w->e64 = float_0_8041d7bc;
+    w->e70 = float_neg480_8041d89c;
+    w->e6c = float_neg480_8041d89c;
+    w->e78 = float_0_8041d7bc;
+    w->e74 = float_0_8041d7bc;
+    w->cardCnt = 0;
+    for (i = 0xF0; i < 0xF0 + 0x63; i++) {
+        if (itemDataTable[i].type_sort_order != -1) {
+            w->cardIcon[w->cardCnt++] = i - 0xF0;
+        }
+    }
+    qqsort(w->cardIcon, w->cardCnt, 2, compare_func5_2);
+    w->cardSel = 0;
+    w->e88 = float_320_8041d8b0;
+    w->e84 = float_320_8041d8b0;
+    w->e90 = float_neg240_8041d894;
+    w->e8c = float_neg240_8041d894;
+    w->cardPage = 0;
+    w->ea4 = float_0_8041d7bc;
+    w->ea0 = float_0_8041d7bc;
+    w->eac = float_neg200_8041d8d4;
+    w->ea8 = float_neg200_8041d8d4;
+    w->eb4 = float_neg300_8041d80c;
+    w->eb0 = float_neg300_8041d80c;
+    w->badgeCnt = 0;
+    for (i = 0xB3; i < 0xB3 + 0x39; i++) {
+        if (itemDataTable[i].type_sort_order != -1) {
+            w->badgeIcon[w->badgeCnt++] = i - 0xB3;
+        }
+    }
+    qqsort(w->badgeIcon, w->badgeCnt, 2, compare_func6_2);
+    w->badgeSel = 0;
+    w->f84 = float_320_8041d8b0;
+    w->f80 = float_320_8041d8b0;
+    w->f8c = float_neg240_8041d894;
+    w->f88 = float_neg240_8041d894;
+    w->badgePage = 0;
+    w->fa0 = float_0_8041d7bc;
+    w->f9c = float_0_8041d7bc;
+    w->fa8 = float_neg200_8041d8d4;
+    w->fa4 = float_neg200_8041d8d4;
+    w->fb0 = float_neg300_8041d80c;
+    w->fac = float_neg300_8041d80c;
+    w->charCnt = 0;
+    for (i = 1; i < 0xD8; i++) {
+        if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL) {
+            if (evtGetValue(NULL, GSW(0)) < 0x187) {
+                if ((u32)(i - 0x85) <= 1 || i == 0x87) {
+                    continue;
+                }
+            } else {
+                if ((u32)(i - 0x1F) <= 1 || i == 0x4D) {
+                    continue;
+                }
+            }
+            if (evtGetValue(NULL, GSW(0)) < 0x190) {
+                if (i == 0x90) {
+                    continue;
+                }
+            } else {
+                if (i == 0x3F) {
+                    continue;
+                }
+            }
+            w->chars[w->charCnt].pad = enemy_monoshiri_sort_table[i];
+            w->chars[w->charCnt++].id = i;
+        }
+    }
+    {
+        s32 a;
+        s32 b;
+
+        for (a = 0; a < w->charCnt - 1; a++) {
+            for (b = a + 1; b < w->charCnt; b++) {
+                if (w->chars[a].pad > w->chars[b].pad) {
+                    LogChar t = w->chars[a];
+                    w->chars[a] = w->chars[b];
+                    w->chars[b] = t;
+                }
+            }
+        }
+    }
+    w->charSel = 0;
+    w->x102c = float_0_8041d7bc;
+    w->x1028 = float_0_8041d7bc;
+    w->x1034 = float_0_8041d7bc;
+    w->x1030 = float_0_8041d7bc;
+    w->charPage = 0;
+    w->x104c = float_0_8041d7bc;
+    w->x1048 = float_0_8041d7bc;
+    w->seenCnt = 0;
+    for (i = 1; i < 0xD8; i++) {
+        if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL && (u32)(i - 0x1F) > 1 && i != 0x4D && i != 0x3F
+            && swGet(i + 0x117A) != 0) {
+            w->seenCnt++;
+        }
+    }
+}
+#pragma opt_common_subs reset
+
+// 100%: the 45.0f * (f32)a product is held in a named temp so MWCC colors the
+// long-lived int->float conversion double f7 (as the original does) instead of
+// f6; the entry address is formed with real WinLogEntry pointer indexing, which
+// makes the compiler emit `add rWork, rIndex` in the original's operand order.
+// The conversion double still pools as an anonymous @271 literal instead of the
+// named 4503601774854144.0 (project-wide limitation, not scored).
+void winLogInit2(WindowWork* work) {
+    f32 v;
+    const char* name;
+    s32 a;
+    s32 b;
+
+    WW_F32(work, 0x158) = float_neg128_8041d8dc;
+    a = WW_S32(work, 0xD70);
+    b = WW_S32(work, 0xD6C);
+    {
+        f32 t = float_45_8041d880 * (f32)a;
+        WW_F32(work, 0x15C) = float_8_8041d7d4 + (t * float_0p5_8041d7c8 - float_45_8041d880 * (f32)b);
+    }
+    WW_F32(work, 0xE88) = float_320_8041d8b0;
+    WW_F32(work, 0xE84) = float_320_8041d8b0;
+    WW_F32(work, 0xE90) = float_neg240_8041d894;
+    WW_F32(work, 0xE8C) = float_neg240_8041d894;
+    v = WW_S32(work, 0xE9C) * 0xE8;
+    WW_F32(work, 0xEA4) = v;
+    WW_F32(work, 0xEA0) = v;
+    WW_F32(work, 0xEAC) = float_neg200_8041d8d4;
+    WW_F32(work, 0xEA8) = float_neg200_8041d8d4;
+    WW_F32(work, 0xEB4) = float_neg300_8041d80c;
+    WW_F32(work, 0xEB0) = float_neg300_8041d80c;
+    WW_F32(work, 0xF84) = float_320_8041d8b0;
+    WW_F32(work, 0xF80) = float_320_8041d8b0;
+    WW_F32(work, 0xF8C) = float_neg240_8041d894;
+    WW_F32(work, 0xF88) = float_neg240_8041d894;
+    v = WW_S32(work, 0xF98) * 0xE8;
+    WW_F32(work, 0xFA0) = v;
+    WW_F32(work, 0xF9C) = v;
+    WW_F32(work, 0xFA8) = float_neg200_8041d8d4;
+    WW_F32(work, 0xFA4) = float_neg200_8041d8d4;
+    WW_F32(work, 0xFB0) = float_neg300_8041d80c;
+    WW_F32(work, 0xFAC) = float_neg300_8041d80c;
+    name = ((WinLogEntry*)((u8*)work + 0xD78))[WW_S32(work, 0xD6C)].name;
+    winMsgEntry(work, 0, name, 0);
+}
+
+void winLogExit(WindowWork* work) {
+    s32 i;
+
+    if (WW_PTR(work, 0x30) != NULL) {
+        fileFree(WW_PTR(work, 0x30));
+        WW_PTR(work, 0x30) = NULL;
+    }
+    if (WW_S32(work, 0xE1C) != -1) {
+        animPoseRelease(WW_S32(work, 0xE1C));
+        WW_S32(work, 0xE1C) = -1;
+    }
+    for (i = 0; i < 7; i++) {
+        effSoftDelete(*(EffectEntry**)((u8*)work + 0xE44 + i * 4));
+    }
+}
+
+// winGetMapTplName as the compiler inlined it into winLogMain, sharing the caller's string base register.
+
+
+
+// The fields of WindowWork that winLogMain touches (win_main.h only declares the first 0x1210 bytes).
+
+LOGWIN_CHECK(rows, 0xD74);
+LOGWIN_CHECK(mapSel, 0xE14);
+LOGWIN_CHECK(f84, 0xF84);
+LOGWIN_CHECK(badgeIcon, 0xFB4);
+LOGWIN_CHECK(charCnt, 0x1038);
+LOGWIN_CHECK(chars, 0x1050);
+LOGWIN_CHECK(mono, 0x1200);
+
+
+
+// The map table: one entry per "tubu" map region. The id field points into
+// the .sdata2 region-name pool; entry order is the original's address order.
+
 
 static inline BOOL tubuUnlocked(TubuDt* t) {
     switch (t->flagIdx) {
@@ -1107,20 +1284,20 @@ s32 winLogMain(WindowWork* work) {
                 }
                 if (w->pose == -1) {
                     if (w->flags & 0x2000) {
-                        const char* anim = "W_1";
+                        const char* anim = str_8041D8E0;
                         w->pose = animPoseEntry(RO(base, 0x51C, "d_mario"), 0);
                         switch (marioGetColor()) {
                         case 0:
-                            anim = "W_1";
+                            anim = str_8041D8E0;
                             break;
                         case 1:
-                            anim = "W_15";
+                            anim = str_8041D8E4;
                             break;
                         case 2:
-                            anim = "W_17";
+                            anim = str_8041D8EC;
                             break;
                         case 3:
-                            anim = "W_18";
+                            anim = str_8041D8F4;
                             break;
                         }
                         animPoseSetAnim(w->pose, anim, 1);
@@ -1140,7 +1317,7 @@ s32 winLogMain(WindowWork* work) {
                             break;
                         }
                         w->pose = animPoseEntry(model, 0);
-                        animPoseSetAnim(w->pose, "M_W_1", 1);
+                        animPoseSetAnim(w->pose, str_8041D8FC, 1);
                     }
                     animPoseSetMaterialFlagOn(w->pose, 0x1800);
                 }
@@ -1628,432 +1805,177 @@ s32 winLogMain(WindowWork* work) {
     return 0;
 }
 
-void winLogExit(WindowWork* work) {
-    s32 i;
+// A single tattle-log row inside WindowWork, at 0xD78 with stride 0x20.
 
-    if (WW_PTR(work, 0x30) != NULL) {
-        fileFree(WW_PTR(work, 0x30));
-        WW_PTR(work, 0x30) = NULL;
-    }
-    if (WW_S32(work, 0xE1C) != -1) {
-        animPoseRelease(WW_S32(work, 0xE1C));
-        WW_S32(work, 0xE1C) = -1;
-    }
-    for (i = 0; i < 7; i++) {
-        effSoftDelete(*(EffectEntry**)((u8*)work + 0xE44 + i * 4));
-    }
-}
 
-// 100%: the 45.0f * (f32)a product is held in a named temp so MWCC colors the
-// long-lived int->float conversion double f7 (as the original does) instead of
-// f6; the entry address is formed with real WinLogEntry pointer indexing, which
-// makes the compiler emit `add rWork, rIndex` in the original's operand order.
-// The conversion double still pools as an anonymous @271 literal instead of the
-// named 4503601774854144.0 (project-wide limitation, not scored).
-void winLogInit2(WindowWork* work) {
-    f32 v;
-    const char* name;
-    s32 a;
-    s32 b;
-
-    WW_F32(work, 0x158) = float_neg128_8041d8dc;
-    a = WW_S32(work, 0xD70);
-    b = WW_S32(work, 0xD6C);
-    {
-        f32 t = float_45_8041d880 * (f32)a;
-        WW_F32(work, 0x15C) = float_8_8041d7d4 + (t * float_0p5_8041d7c8 - float_45_8041d880 * (f32)b);
-    }
-    WW_F32(work, 0xE88) = float_320_8041d8b0;
-    WW_F32(work, 0xE84) = float_320_8041d8b0;
-    WW_F32(work, 0xE90) = float_neg240_8041d894;
-    WW_F32(work, 0xE8C) = float_neg240_8041d894;
-    v = WW_S32(work, 0xE9C) * 0xE8;
-    WW_F32(work, 0xEA4) = v;
-    WW_F32(work, 0xEA0) = v;
-    WW_F32(work, 0xEAC) = float_neg200_8041d8d4;
-    WW_F32(work, 0xEA8) = float_neg200_8041d8d4;
-    WW_F32(work, 0xEB4) = float_neg300_8041d80c;
-    WW_F32(work, 0xEB0) = float_neg300_8041d80c;
-    WW_F32(work, 0xF84) = float_320_8041d8b0;
-    WW_F32(work, 0xF80) = float_320_8041d8b0;
-    WW_F32(work, 0xF8C) = float_neg240_8041d894;
-    WW_F32(work, 0xF88) = float_neg240_8041d894;
-    v = WW_S32(work, 0xF98) * 0xE8;
-    WW_F32(work, 0xFA0) = v;
-    WW_F32(work, 0xF9C) = v;
-    WW_F32(work, 0xFA8) = float_neg200_8041d8d4;
-    WW_F32(work, 0xFA4) = float_neg200_8041d8d4;
-    WW_F32(work, 0xFB0) = float_neg300_8041d80c;
-    WW_F32(work, 0xFAC) = float_neg300_8041d80c;
-    name = ((WinLogEntry*)((u8*)work + 0xD78))[WW_S32(work, 0xD6C)].name;
-    winMsgEntry(work, 0, name, 0);
-}
-
-extern const u8 enemy_monoshiri_sort_table[];
-extern const f32 float_2_8041d87c;
-
-// Appends a tab to the menu and re-centres every tab row.
-#define LOG_ADD_TAB(w, tabType, msg)                                                  \
-    do {                                                                              \
-        LogRow* r_ = &(w)->rows[(w)->count];                                          \
-        r_->type = (tabType);                                                         \
-        r_->timer = 0;                                                                \
-        r_->phase = 0;                                                                \
-        r_->name = (msg);                                                             \
-        (w)->count++;                                                                 \
-        for (k_ = 0; k_ < (w)->count; k_++) {                                         \
-            (w)->rows[k_].curX = float_0_8041d7bc;                                    \
-            (w)->rows[k_].targetX = float_0_8041d7bc;                                 \
-            {                                                                         \
-                f32 a_ = float_45_8041d880 * winLogI2F((w)->count, base, &e7cScratch);   \
-                f32 b_ = float_45_8041d880 * winLogI2F(k_, base, &macScratch);           \
-                f32 y_ = a_ * float_0p5_8041d7c8 - b_;                                \
-                (w)->rows[k_].curY = y_;                                              \
-                (w)->rows[k_].targetY = y_;                                           \
-            }                                                                         \
-        }                                                                             \
-    } while (0)
-
+// 100%: advances the tattle-log rows (state machine) and eases the panel
+// springs. The original's int->float conversions reference
+// 4503601774854144.0; our object emits an anonymous @271 literal instead,
+// which does not affect the match (same as winBadgeInit2). The per-block `dN`
+// temps give the diff-first fmadd operand order; `ep` steps the entry base so
+// the prologue copy lands first. The MUST_MATCH `new_var` alias is scheduling
+// shaping only (see its comment).
+void winLogMain2(WindowWork* work) {
+    WinLogWork* w = (WinLogWork*)work;
+    u8* ep = (u8*)work;
 #ifdef MUST_MATCH
-// Match-only: tab 0's conversion keeps the compiler's native i2f, which emits the single fused
-// `fsubs` the original has; the winLogI2F helper's C double subtract can only produce `fsub`+`frsp`.
-// Using the helper for tab 0 scores lower, so this one call site stays native.
-#define LOG_ADD_TAB_0(w, tabType, msg)                                               \
-    do {                                                                              \
-        LogRow* r_ = &(w)->rows[(w)->count];                                          \
-        r_->type = (tabType);                                                         \
-        r_->timer = 0;                                                                \
-        r_->phase = 0;                                                                \
-        r_->name = (msg);                                                             \
-        (w)->count++;                                                                 \
-        for (k_ = 0; k_ < (w)->count; k_++) {                                         \
-            (w)->rows[k_].curX = float_0_8041d7bc;                                    \
-            (w)->rows[k_].targetX = float_0_8041d7bc;                                 \
-            {                                                                         \
-                f32 a_ = float_45_8041d880 * ((f32)(w)->count);                       \
-                f32 b_ = float_45_8041d880 * ((f32)k_);                               \
-                f32 y_ = a_ * float_0p5_8041d7c8 - b_;                                \
-                (w)->rows[k_].curY = y_;                                              \
-                (w)->rows[k_].targetY = y_;                                           \
-            }                                                                         \
-        }                                                                             \
-    } while (0)
-#else
-#define LOG_ADD_TAB_0(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
+    // Match-only second base alias: with one `work` base MWCC hoists the
+    // second int->float fudge store (`stw r0, 0x8(r1)`) one /6 block early;
+    // the natural single-base form is under #else (99.22%).
+    u8* new_var;
+#endif
+    s32 i;
+#ifdef MUST_MATCH
+    new_var = (u8*)work;
 #endif
 
-// All five tab i2f sites and the map/e7c sites now use the compiler's native
-// `(f32)` cast.  The padding object above makes the compiler's pooled magic
-// land at .rodata+0x420, so the compiler emits the original's fused `fsubs`
-// with a base-relative `lfd f3, 0x420(r31)` (r31 = the unit's rodata base)
-// instead of an anonymous lis/addi pool.  Remaining diffs are register
-// colouring and scheduling only (the loop counter lands in r7 instead of r5,
-// and the base/magic hoist a few instructions earlier)
+    for (i = 0; i < w->count; i++, ep += 0x20) {
+        WinLogEntry* e = (WinLogEntry*)(ep + 0xD78);
 
+        switch (e->state) {
 #ifdef MUST_MATCH
-// The native cast is what emits `fsubs`; no helper is needed now that the pool
-// entry lands at base+0x420.
-static inline f32 winLogI2F(s32 v, const char* base, f64* scratch) {
-    return (f32)v;
-}
-#else
-#define winLogI2F(v, base, scratch) ((f32)(v))
-#endif
-
-#pragma opt_common_subs off // keeps MWCC from CSE-ing the map/base addresses across the load loops
-// NONMATCHING (98.43%): the i2f now matches (native `fsubs` plus base-relative
-// `lfd f3, 0x420(r31)`); what is left is register colouring/scheduling (the tab
-// loop counter in r7 vs r5, and the base/magic hoisting a few instructions).
-void winLogInit(WindowWork* work) {
-    LogWin* w = (LogWin*)work;
-    static const char* msg_help[5] = {str_802F5EB8, str_802F5ECC, str_802F5EE4, str_802F5EFC, str_802F5F14};
-    const char* base = str_802F5EB8;
-    const char* area;
-    s32 i;
-    s32 k_;
-    f64 e7cScratch;
-    f64 macScratch;
-
-    w->state = 0;
-    w->sel = 0;
-    w->count = 0;
-    LOG_ADD_TAB_0(w, 0, msg_help[0]);
-    if (swByteGet(0) >= 0x13) {
-        LOG_ADD_TAB(w, 1, msg_help[1]);
-    }
-    if (swByteGet(0) >= 7) {
-        LOG_ADD_TAB(w, 4, msg_help[4]);
-    }
-    if (swByteGet(0) >= 0x14) {
-        LOG_ADD_TAB(w, 2, msg_help[2]);
-    }
-    if (swGet(0x40) != 0) {
-        LOG_ADD_TAB(w, 3, msg_help[3]);
-    }
-    w->stoneNum = 0;
-    for (i = 0; i < 7; i++) {
-        if ((s32)pouchCheckItem(stone_tbl[i]) != 0) {
-            w->stoneNum++;
-        }
-    }
-    for (i = 0; i < 7; i++) {
-        EffectEntry* e;
-
-        if (i < w->stoneNum) {
-            e = w->stones[i] =
-                effStarStoneEntry(i, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc, float_2_8041d87c);
-        } else {
-            e = w->stones[i] = effStarStoneEntry(i + 7, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc,
-                                                 float_2_8041d87c);
-            ((u8*)e->userdata)[0x5C] = 0x20;
-            ((u8*)e->userdata)[0x5D] = 0x20;
-            ((u8*)e->userdata)[0x5E] = 0x20;
-        }
-        *(s32*)((u8*)e->userdata + 0x38) = 8;
-        *(u16*)((u8*)e->userdata + 4) &= ~4;
-        *(u16*)((u8*)e->userdata + 4) |= 0x20;
-    }
-    w->file = NULL;
-    w->pose = -1;
-    w->mapSel = -1;
-    w->mapPick = 0;
-    w->mapCy = float_0_8041d7bc;
-    w->mapCx = float_0_8041d7bc;
-    w->e2c = float_0_8041d7bc;
-    w->e28 = float_0_8041d7bc;
-    w->e34 = float_neg480_8041d89c;
-    w->e30 = float_neg480_8041d89c;
-    w->mapScrollY = float_0_8041d7bc;
-    w->mapScrollX = float_0_8041d7bc;
-    area = gp->currentAreaName;
-    if (strcmp(gp->currentMapName, "pik_02") == 0
-        || strcmp(gp->currentMapName, "pik_03") == 0) {
-        area = "sin";
-    }
-    if (strcmp(gp->currentMapName, "win_04") == 0
-        || strcmp(gp->currentMapName, "win_05") == 0) {
-        area = "hou";
-    }
-    if (strncmp(gp->currentMapName, "rsh", 3) == 0) {
-        if (swByteGet(0) < 0x136) {
-            area = "gor";
-        } else if (swByteGet(0) < 0x14E || swGet(0xDFB) != 0) {
-            area = "eki";
-        } else if (swGet(0xDFC) != 0) {
-            area = "pik";
-        } else {
-            switch (swByteGet(0x366)) {
-            case 0:
-                area = "gor";
-                break;
-            case 1:
-                area = "eki";
-                break;
-            case 2:
-                area = "pik";
-                break;
-            case 3:
-                area = "gor";
-                break;
-            }
-        }
-    }
-    if (strncmp(gp->currentMapName, "hom", 3) == 0) {
-        area = "eki";
-    }
-    if (strncmp(gp->currentMapName, "jon", 3) == 0) {
-        area = "tik";
-    }
-    if (strcmp(gp->currentMapName, "gra_06") == 0) {
-        area = "jin";
-    }
-    if (strcmp(gp->currentMapName, "muj_10") == 0
-        || strcmp(gp->currentMapName, "muj_11") == 0
-        || strcmp(gp->currentMapName, "muj_12") == 0) {
-        area = "dou";
-    }
-    for (i = 0; (u32)i < 0x5D; i++) {
-        if (area != NULL && strcmp(area, tubuDt[i].id) == 0) {
+        // Empty low/high cases force the jump table to span 0..0x29 (indexed
+        // from 0), as in the original; both fall through to the loop tail.
+        case 0:
             break;
-        }
-    }
-    if ((u32)i < 0x5D) {
-        w->mapPick = i;
-    }
-    w->mapCx = float_304_8041d874 + (f32)tubuDt[w->mapPick].x;
-    w->mapCy = float_240_8041d858 + (f32)tubuDt[w->mapPick].y;
-    {
-        f32 sx = (w->mapCx + w->mapScrollX) - float_230_8041d878;
-        f32 sy = (w->mapCy + w->mapScrollY) - float_120_8041d870;
-
-        w->mapScrollX = w->mapScrollX - (f32)(s32)sx;
-        w->mapScrollY = w->mapScrollY - (f32)(s32)sy;
-    }
-    if (w->mapScrollX > float_0_8041d7bc) {
-        w->mapScrollX = float_0_8041d7bc;
-    }
-    if (w->mapScrollY > float_0_8041d7bc) {
-        w->mapScrollY = float_0_8041d7bc;
-    }
-    if (w->mapScrollX < float_neg148_8041d898) {
-        w->mapScrollX = float_neg148_8041d898;
-    }
-    if (w->mapScrollY < float_neg240_8041d894) {
-        w->mapScrollY = float_neg240_8041d894;
-    }
-    w->stoneSel = 0;
-    {
-        f32 e7c = float_51p429_8041d8a8 * winLogI2F(w->stoneSel, base, &e7cScratch);
-        w->e7c = e7c;
-        w->e80 = e7c;
-    }
-    w->e68 = float_0_8041d7bc;
-    w->e64 = float_0_8041d7bc;
-    w->e70 = float_neg480_8041d89c;
-    w->e6c = float_neg480_8041d89c;
-    w->e78 = float_0_8041d7bc;
-    w->e74 = float_0_8041d7bc;
-    w->cardCnt = 0;
-    for (i = 0xF0; i < 0xF0 + 0x63; i++) {
-        if (itemDataTable[i].type_sort_order != -1) {
-            w->cardIcon[w->cardCnt++] = i - 0xF0;
-        }
-    }
-    qqsort(w->cardIcon, w->cardCnt, 2, compare_func5_2);
-    w->cardSel = 0;
-    w->e88 = float_320_8041d8b0;
-    w->e84 = float_320_8041d8b0;
-    w->e90 = float_neg240_8041d894;
-    w->e8c = float_neg240_8041d894;
-    w->cardPage = 0;
-    w->ea4 = float_0_8041d7bc;
-    w->ea0 = float_0_8041d7bc;
-    w->eac = float_neg200_8041d8d4;
-    w->ea8 = float_neg200_8041d8d4;
-    w->eb4 = float_neg300_8041d80c;
-    w->eb0 = float_neg300_8041d80c;
-    w->badgeCnt = 0;
-    for (i = 0xB3; i < 0xB3 + 0x39; i++) {
-        if (itemDataTable[i].type_sort_order != -1) {
-            w->badgeIcon[w->badgeCnt++] = i - 0xB3;
-        }
-    }
-    qqsort(w->badgeIcon, w->badgeCnt, 2, compare_func6_2);
-    w->badgeSel = 0;
-    w->f84 = float_320_8041d8b0;
-    w->f80 = float_320_8041d8b0;
-    w->f8c = float_neg240_8041d894;
-    w->f88 = float_neg240_8041d894;
-    w->badgePage = 0;
-    w->fa0 = float_0_8041d7bc;
-    w->f9c = float_0_8041d7bc;
-    w->fa8 = float_neg200_8041d8d4;
-    w->fa4 = float_neg200_8041d8d4;
-    w->fb0 = float_neg300_8041d80c;
-    w->fac = float_neg300_8041d80c;
-    w->charCnt = 0;
-    for (i = 1; i < 0xD8; i++) {
-        if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL) {
-            if (evtGetValue(NULL, GSW(0)) < 0x187) {
-                if ((u32)(i - 0x85) <= 1 || i == 0x87) {
-                    continue;
-                }
-            } else {
-                if ((u32)(i - 0x1F) <= 1 || i == 0x4D) {
-                    continue;
-                }
+#endif
+        case 10:
+            e->targetX = float_0_8041d7bc;
+            e->targetY = float_140_8041d8c0;
+            e->timer = 0;
+            e->state++;
+            break;
+        case 11:
+            if (++e->timer > 8) {
+                e->targetX = float_neg160_8041d8c4;
+                e->targetY = float_140_8041d8c0;
+                e->timer = 0;
+                e->state++;
             }
-            if (evtGetValue(NULL, GSW(0)) < 0x190) {
-                if (i == 0x90) {
-                    continue;
+            break;
+        case 20:
+            e->targetX = float_0_8041d7bc;
+            e->targetY = float_140_8041d8c0;
+            e->timer = 0;
+            e->state++;
+            break;
+        case 21:
+            if (++e->timer > 8) {
+                e->targetX = float_0_8041d7bc;
+                {
+                    f32 prod = float_45_8041d880 * (f32)w->count;
+                    e->targetY = prod * float_0p5_8041d7c8 - float_45_8041d880 * (f32)i;
                 }
-            } else {
-                if (i == 0x3F) {
-                    continue;
-                }
+                e->timer = 0;
+                e->state++;
             }
-            w->chars[w->charCnt].pad = enemy_monoshiri_sort_table[i];
-            w->chars[w->charCnt++].id = i;
-        }
-    }
-    {
-        s32 a;
-        s32 b;
-
-        for (a = 0; a < w->charCnt - 1; a++) {
-            for (b = a + 1; b < w->charCnt; b++) {
-                if (w->chars[a].pad > w->chars[b].pad) {
-                    LogChar t = w->chars[a];
-                    w->chars[a] = w->chars[b];
-                    w->chars[b] = t;
-                }
+            break;
+        case 30:
+            e->targetX = float_0_8041d7bc;
+            e->targetY = float_neg160_8041d8c4;
+            e->timer = 0;
+            e->state++;
+            break;
+        case 40:
+            e->targetX = float_0_8041d7bc;
+            {
+                f32 prod = float_45_8041d880 * (f32)w->count;
+                e->targetY = prod * float_0p5_8041d7c8 - float_45_8041d880 * (f32)i;
             }
+            e->timer = 0;
+            e->state++;
+            break;
+#ifdef MUST_MATCH
+        case 41:
+            break;
+#endif
+        }
+        {
+            f32 dx, dy;
+            dx = e->targetX - e->curX;
+            e->curX += dx * float_0p125_8041d890;
+            dy = e->targetY - e->curY;
+            e->curY += dy * float_0p125_8041d890;
         }
     }
-    w->charSel = 0;
-    w->x102c = float_0_8041d7bc;
-    w->x1028 = float_0_8041d7bc;
-    w->x1034 = float_0_8041d7bc;
-    w->x1030 = float_0_8041d7bc;
-    w->charPage = 0;
-    w->x104c = float_0_8041d7bc;
-    w->x1048 = float_0_8041d7bc;
-    w->seenCnt = 0;
-    for (i = 1; i < 0xD8; i++) {
-        if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL && (u32)(i - 0x1F) > 1 && i != 0x4D && i != 0x3F
-            && swGet(i + 0x117A) != 0) {
-            w->seenCnt++;
-        }
-    }
-}
-
-#pragma opt_common_subs reset
-extern char vec3_802f5f2c[];
-extern char vec3_802f5f38[];
-extern char vec3_802f5f44[];
-extern char vec3_802f5f50[];
-extern char vec3_802f5f5c[];
-extern char vec3_802f5f68[];
-extern char vec3_802f5f74[];
-extern char vec3_802f5f80[];
-extern char vec3_802f5f8c[];
-extern char vec3_802f5f98[];
-extern char vec3_802f5fa4[];
-extern char vec3_802f5fb0[];
-extern char vec3_802f5fbc[];
-extern char vec3_802f5fc8[];
-extern char vec3_802f5fd4[];
-extern char vec3_802f5fe0[];
-extern char vec3_802f5fec[];
-extern const GXColor dat_8041d78c;
-extern const GXColor dat_8041d790;
-extern const GXColor dat_8041d794;
-extern const GXColor dat_8041d798;
-extern const GXColor dat_8041d79c;
-extern const f32 float_0p017453_8041d8a4;
-extern const f32 float_0p43633_8041d8a0;
-extern const f32 float_30_8041d864;
-extern const f32 float_4_8041d88c;
-extern const f32 float_10_8041d8b4;
-extern const f32 float_170_8041d8b8;
-extern const f32 float_130_8041d8bc;
-extern const f32 float_1_8041d7c0;
 
 #ifdef MUST_MATCH
-#define LV(off, sym) (*(const Vec*)(sym))
-// Volatile variant: forces the load to be repeated each loop iteration instead
-// of being hoisted into a callee-saved register, as the original does for the
-// per-stone Vec with the same address (MUST_MATCH codegen shaping).
-#define LVV(off, sym) (*(volatile const Vec*)(sym))
-// Volatile read of the per-stone shadow colour: the original reloads it from
-// the data symbol each loop iteration rather than hoisting it into a
-// callee-saved register (MUST_MATCH codegen shaping).
-#define VCOL(sym) (*(volatile const GXColor*)&(sym))
+    {
+        f32 d1 = WW_F32(new_var, 0xE28) - WW_F32(new_var, 0xE2C);
+        WW_F32(work, 0xE2C) += d1 * double_0p125_802f63c0;
+    }
+    {
+        f32 d2 = WW_F32(new_var, 0xE30) - WW_F32(work, 0xE34);
+        WW_F32(new_var, 0xE34) += d2 * double_0p125_802f63c0;
+    }
+    {
+        f32 d3 = WW_F32(work, 0xE64) - WW_F32(work, 0xE68);
+        WW_F32(new_var, 0xE68) += d3 * double_0p125_802f63c0;
+    }
+    {
+        f32 d4 = WW_F32(work, 0xE6C) - WW_F32(work, 0xE70);
+        WW_F32(new_var, 0xE70) += d4 * double_0p125_802f63c0;
+    }
+    {
+        f32 d5 = WW_F32(new_var, 0xE74) - WW_F32(work, 0xE78);
+        WW_F32(work, 0xE78) += d5 * double_0p125_802f63c0;
+    }
+    {
+        f32 d6 = WW_F32(work, 0xE7C) - WW_F32(new_var, 0xE80);
+        WW_F32(new_var, 0xE80) += d6 * float_0p25_8041d8c8;
+    }
+    WW_F32(work, 0xEA4) = (f32)(WW_S32(work, 0xE9C) * 0xE8);
+    WW_F32(work, 0xEA0) += (WW_F32(new_var, 0xEA4) - WW_F32(new_var, 0xEA0)) / float_6_8041d81c;
+    WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(new_var, 0xE84)) / float_6_8041d81c;
+    WW_F32(new_var, 0xE8C) += (WW_F32(work, 0xE90) - WW_F32(new_var, 0xE8C)) / float_6_8041d81c;
+    WW_F32(work, 0xEA8) += (WW_F32(work, 0xEAC) - WW_F32(new_var, 0xEA8)) / float_6_8041d81c;
+    WW_F32(new_var, 0xEB0) += (WW_F32(work, 0xEB4) - WW_F32(work, 0xEB0)) / float_6_8041d81c;
+    WW_F32(work, 0xFA0) = (f32)(WW_S32(new_var, 0xF98) * 0xE8);
+    WW_F32(work, 0xF9C) += (WW_F32(work, 0xFA0) - WW_F32(new_var, 0xF9C)) / float_6_8041d81c;
+    WW_F32(new_var, 0xF80) += (WW_F32(new_var, 0xF84) - WW_F32(new_var, 0xF80)) / float_6_8041d81c;
+    WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(new_var, 0xF88)) / float_6_8041d81c;
+    WW_F32(new_var, 0xFA4) += (WW_F32(new_var, 0xFA8) - WW_F32(new_var, 0xFA4)) / float_6_8041d81c;
+    WW_F32(work, 0xFAC) += (WW_F32(new_var, 0xFB0) - WW_F32(work, 0xFAC)) / float_6_8041d81c;
 #else
-#define LV(off, sym) (*(const Vec*)(sym))
-#define LVV(off, sym) (*(volatile const Vec*)(sym))
-#define VCOL(sym) (*(volatile const GXColor*)&(sym))
+    {
+        f32 d1 = WW_F32(work, 0xE28) - WW_F32(work, 0xE2C);
+        WW_F32(work, 0xE2C) += d1 * double_0p125_802f63c0;
+    }
+    {
+        f32 d2 = WW_F32(work, 0xE30) - WW_F32(work, 0xE34);
+        WW_F32(work, 0xE34) += d2 * double_0p125_802f63c0;
+    }
+    {
+        f32 d3 = WW_F32(work, 0xE64) - WW_F32(work, 0xE68);
+        WW_F32(work, 0xE68) += d3 * double_0p125_802f63c0;
+    }
+    {
+        f32 d4 = WW_F32(work, 0xE6C) - WW_F32(work, 0xE70);
+        WW_F32(work, 0xE70) += d4 * double_0p125_802f63c0;
+    }
+    {
+        f32 d5 = WW_F32(work, 0xE74) - WW_F32(work, 0xE78);
+        WW_F32(work, 0xE78) += d5 * double_0p125_802f63c0;
+    }
+    {
+        f32 d6 = WW_F32(work, 0xE7C) - WW_F32(work, 0xE80);
+        WW_F32(work, 0xE80) += d6 * float_0p25_8041d8c8;
+    }
+    WW_F32(work, 0xEA4) = (f32)(WW_S32(work, 0xE9C) * 0xE8);
+    WW_F32(work, 0xEA0) += (WW_F32(work, 0xEA4) - WW_F32(work, 0xEA0)) / float_6_8041d81c;
+    WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(work, 0xE84)) / float_6_8041d81c;
+    WW_F32(work, 0xE8C) += (WW_F32(work, 0xE90) - WW_F32(work, 0xE8C)) / float_6_8041d81c;
+    WW_F32(work, 0xEA8) += (WW_F32(work, 0xEAC) - WW_F32(work, 0xEA8)) / float_6_8041d81c;
+    WW_F32(work, 0xEB0) += (WW_F32(work, 0xEB4) - WW_F32(work, 0xEB0)) / float_6_8041d81c;
+    WW_F32(work, 0xFA0) = (f32)(WW_S32(work, 0xF98) * 0xE8);
+    WW_F32(work, 0xF9C) += (WW_F32(work, 0xFA0) - WW_F32(work, 0xF9C)) / float_6_8041d81c;
+    WW_F32(work, 0xF80) += (WW_F32(work, 0xF84) - WW_F32(work, 0xF80)) / float_6_8041d81c;
+    WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(work, 0xF88)) / float_6_8041d81c;
+    WW_F32(work, 0xFA4) += (WW_F32(work, 0xFA8) - WW_F32(work, 0xFA4)) / float_6_8041d81c;
+    WW_F32(work, 0xFAC) += (WW_F32(work, 0xFB0) - WW_F32(work, 0xFAC)) / float_6_8041d81c;
 #endif
+}
+
 static inline void logIconSet(u32 id, GXColor* c, Vec translate, Vec scale) {
     winIconSet(id, &translate, &scale, c);
 }
@@ -2074,7 +1996,6 @@ static inline f32 logI2F(const char* base, s32 i, Mtx* cvp) {
 }
 #endif
 
-#define LOG_TEXPAL() (**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0))
 
 // Draws one page of the log window: map, crystal stars, cards, badges, the tattle viewer and the tab strip.
 // The int->float magic loads through the rodata base (base+0x420) but MWCC emits
@@ -2185,42 +2106,52 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
         }
     }
 }
-extern char vec3_802f5ff8[];
-extern char vec3_802f6004[];
-extern char vec3_802f6010[];
-extern char vec3_802f601c[];
-extern char vec3_802f6028[];
-extern char vec3_802f6034[];
-extern char vec3_802f6040[];
-extern char vec3_802f604c[];
-extern char vec3_802f6058[];
-extern char vec3_802f6064[];
-extern char vec3_802f6070[];
-extern char vec3_802f607c[];
-extern char vec3_802f6088[];
-extern char vec3_802f6094[];
-extern char vec3_802f60a0[];
-extern char vec3_802f60ac[];
-extern char vec3_802f60b8[];
-extern char vec3_802f60c4[];
-extern char vec3_802f60d0[];
-extern char vec3_802f60dc[];
-extern char vec3_802f60e8[];
-extern char vec3_802f60f4[];
-extern char vec3_802f6100[];
-extern char vec3_802f610c[];
 
-extern const GXColor dat_8041d7a0;
-extern const f32 float_74_8041d86c;
-extern const f32 float_120_8041d870;
-extern const f32 float_304_8041d874;
-extern const f32 float_230_8041d878;
-extern const f32 float_240_8041d858;
-extern const f32 float_220_8041d868;
-extern const f32 float_1p5_8041d884;
-extern const f32 float_3_8041d888;
-extern const f32 float_0p125_8041d890;
-extern const f32 float_neg148_8041d898;
+// The last arm's original codegen keeps swByteGet's result in r3 and computes
+// the `>= 0x15C` value before the branch, so the C default-result/override
+// ordering below is needed to reproduce it (see rule 7).
+const char* winGetMapTplName(void) {
+    const char* base = str_802F5EB8;
+
+    if (swByteGet(0) < 0x13) {
+        return RO(base, 0x4A8, "map0.tpl");
+    }
+    if (swByteGet(0) < 0x41) {
+        return RO(base, 0x4B4, "map1.tpl");
+    }
+    if (swByteGet(0) < 0x79) {
+        return RO(base, 0x4C0, "map2.tpl");
+    }
+    if (swByteGet(0) < 0xAF) {
+        return RO(base, 0x4CC, "map3.tpl");
+    }
+    if (swByteGet(0) < 0xDE) {
+        return RO(base, 0x4D8, "map4.tpl");
+    }
+    if (swByteGet(0) < 0x110) {
+        return RO(base, 0x4E4, "map5.tpl");
+    }
+    {
+#ifdef MUST_MATCH
+        // Default to the `>= 0x15C` template, then override it on the `<` path;
+        // the original compares r3 before overwriting it and branches on that
+        // earlier compare (rule 7).
+        const char* result;
+        s32 v = swByteGet(0);
+
+        result = RO(base, 0x4FC, "map7.tpl");
+        if (v < 0x15C) {
+            result = RO(base, 0x4F0, "map6.tpl");
+        }
+        return result;
+#else
+        if (swByteGet(0) >= 0x15C) {
+            return RO(base, 0x4FC, "map7.tpl");
+        }
+        return RO(base, 0x4F0, "map6.tpl");
+#endif
+    }
+}
 
 // Fixes that got here: the tail bounce ternaries computed into a local `d` before winTexInit (0xBC/0xBE/0xBB)
 // and the mapSel/visible selection written as an argument-level ternary both stop mwcc hoisting the argument
@@ -2407,50 +2338,6 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
 }
 #pragma opt_loop_invariants reset
 #pragma opt_common_subs reset
-extern char vec3_802f6118[];
-extern char vec3_802f6124[];
-extern char vec3_802f6130[];
-extern char vec3_802f613c[];
-extern char vec3_802f6148[];
-extern char vec3_802f6154[];
-extern char vec3_802f6160[];
-extern char vec3_802f616c[];
-extern char vec3_802f6178[];
-extern char vec3_802f6184[];
-extern char vec3_802f6190[];
-extern char vec3_802f619c[];
-extern char vec3_802f61a8[];
-extern char vec3_802f61b4[];
-extern char vec3_802f61c0[];
-extern char vec3_802f61cc[];
-extern char vec3_802f61d8[];
-extern char vec3_802f61e4[];
-extern char vec3_802f61f0[];
-extern char vec3_802f61fc[];
-extern const f32 float_110_8041d820;
-extern const f32 float_160_8041d7d8;
-extern const f32 float_100_8041d824;
-extern const f32 float_50_8041d828;
-extern const f32 float_0p75_8041d7e0;
-extern const f32 float_108_8041d82c;
-extern const f32 float_166_8041d830;
-extern const f32 float_184_8041d834;
-extern const f32 float_56_8041d840;
-extern const f32 float_24_8041d838;
-extern const f32 float_5_8041d83c;
-extern const f32 float_16_8041d7e4;
-extern const f32 float_440_8041d84c;
-extern const f32 float_18_8041d850;
-extern const f32 float_15_8041d854;
-extern const f32 float_240_8041d858;
-extern const f32 float_0p7_8041d85c;
-extern const f32 float_420_8041d860;
-extern const f32 float_210_8041d7f0;
-extern const f32 float_30_8041d864;
-extern const f32 float_220_8041d868;
-
-extern const GXColor dat_8041d7a4;
-extern const GXColor dat_8041d7a8;
 
 // The original passes these draw arguments by value: an inline's by-value parameters give the same caller copies.
 static inline void monoFontV(Vec pos, Vec scale, GXColor color, const char* msg) {
@@ -2570,217 +2457,156 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
     }
 }
 #pragma opt_loop_invariants reset
-extern char vec3_802f6258[];
-extern char vec3_802f6264[];
-extern char vec3_802f6270[];
-extern char vec3_802f627c[];
 
-extern const GXColor dat_8041d7b4;
-extern const GXColor dat_8041d7b8;
-extern const GXColor unk_80423050;
-extern const f32 float_0p04_8041d7c4;
-extern const f32 float_neg0p5_8041d7cc;
-extern const f32 float_32_8041d7d0;
-extern const f32 float_216_8041d7dc;
-extern const f32 float_248_8041d7e8;
-extern const f32 float_180_8041d7ec;
-extern const f32 float_160_8041d7d8;
-extern const f32 float_210_8041d7f0;
-extern const f32 float_16_8041d7e4;
+void* monosiriInit(BattleUnitType kind, f32 x, f32 y) {
+    MonosiriWork* w = _mapAlloc(sizeof(MonosiriWork));
 
-// NONMATCHING (96.98%): behaviour complete; call sequence and immediates match and both winFontSet Vec layouts match
-// exactly. The vertex emission uses literal 0.0f/1.0f now (mwcc pools and reloads them like the original) instead of
-// MATCH_F32. What remains is register colouring/small-temp slots and a few font-setup/texgen scheduler choices.
-void monosiri_disp(CameraId camId, void* param) {
-    MonosiriWork* w = param;
+    memset(w, 0, sizeof(MonosiriWork));
+    w->state = 0;
+    w->unitKind = kind;
+    w->targetX = x;
+    w->targetY = y;
+    w->x = float_500_8041d808;
+    w->y = float_neg300_8041d80c;
+    w->alpha = 0;
+    w->poseId = -1;
+    w->poseId2 = -1;
+    return w;
+}
+
+// The original addresses these .rodata objects as offsets from one base symbol.
+
+
+// 100%: matches through the unit's rodata base. The {jp, us} language table
+// lives at str_802F5EB8+0x350; reading it through `base` (instead of a local
+// initialiser) makes the compiler emit the original's `lwz r3, 0x350(r31)`.
+// `inBattle` is computed before the two table reads and as `!(x == 0)` so the
+// boolean lands in r3 and is copied to r28 exactly as the original does
+// (semantically identical to `x != 0`, just different MWCC colouring).
+// `opt_common_subs off` stops MWCC hoisting `base+0x438`/`base+0x448` into
+// registers once, which the original rematerialises per use.
+#pragma opt_common_subs off
+void monosiriMain(void* work) {
+    MonosiriWork* w = work;
+    TattleEntry* tattle;
     const char* base = str_802F5EB8;
-    GXColor c = dat_8041d7b4;
-    f32 x = w->x;
-    f32 y = w->y;
+    GlobalWork* g = gp;
+    const char* lang[2];
+    s32 inBattle;
+    GXTexObj texObj;
+    s32 size;
 
-    if (w->file1 != NULL) {
-        GXTexObj obj;
-        Mtx m1;
-        Mtx m2;
-        Mtx m3;
-        s32 i;
-        f32 x1;
-        f32 y1;
-        f32 x0;
-        f32 y0;
-        const TattleEntry* tattle;
-        char buf[0x100];
-        f32 wdt;
-        f32 tx;
-        f32 bw;
-        const char* loc;
-        s32 unitKind;
+    // Raw offsets 0x350/0x354: the original's `jumptable_802F6208` (a local 2-entry
+    // const char* table) sits there in .rodata; no header names it.
+    inBattle = !(g->inBattle == 0);
+    lang[0] = *(const char**)(base + 0x350);
+    lang[1] = *(const char**)(base + 0x354);
 
-        winHalfBookGX((void*)w->file1->data[0], x, y, 0);
-        {
-            u16 tw;
-            u16 th;
+    if (w == NULL) {
+        return;
+    }
 
-            TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
-            tw = GXGetTexObjWidth(&obj);
-            th = GXGetTexObjHeight(&obj);
-            TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
-            GXInitTexObjLOD(&obj, 1, 1, float_0_8041d7bc, float_0_8041d7bc, float_0_8041d7bc, 0, 0, 0);
-            GXLoadTexObj(&obj, 0);
-            GXInitTexObj(&obj, *(void**)w->alloc, tw, th, 5, 0, 0, 0);
-        }
-        GXInitTexObjLOD(&obj, 1, 1, float_0_8041d7bc, float_0_8041d7bc, float_0_8041d7bc, 0, 0, 0);
-        GXLoadTexObj(&obj, 1);
-        GXSetNumTexGens(8);
-        for (i = 0; i < 8; i++) {
-            f32 s = -((float_0p04_8041d7c4 * (f32)(7 - i)) - float_1_8041d7c0);
-            f32 half = MATCH_F32(float_0p5_8041d7c8);
-
-            PSMTXTrans(m1, half, half, float_0_8041d7bc);
-            PSMTXScale(m2, s, s, s);
-            {
-                f32 nhalf = MATCH_F32(float_neg0p5_8041d7cc);
-
-                PSMTXTrans(m3, nhalf, nhalf, float_0_8041d7bc);
+    switch (w->state) {
+    case 0:
+        if ((u32)fileAsyncf(4, NULL, RO(base, 0x438, "%s/w/%s/win.tpl"), getMarioStDvdRoot(), lang[g->language]) != 0) {
+            if ((u32)fileAsyncf(0, NULL, RO(base, 0x448, "%s/w/jp/mono.dat"), getMarioStDvdRoot()) != 0) {
+                w->file1 = fileAllocf(4, RO(base, 0x438, "%s/w/%s/win.tpl"), getMarioStDvdRoot(), lang[gp->language]);
+                w->file2 = fileAllocf(0, RO(base, 0x448, "%s/w/jp/mono.dat"), getMarioStDvdRoot());
+                w->state++;
+                TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &texObj, 0x37);
+                size = GXGetTexBufferSize(GXGetTexObjWidth(&texObj), GXGetTexObjHeight(&texObj), 5, 0, 0);
+                w->alloc = smartAlloc(size, 0);
             }
-            PSMTXConcat(m1, m2, m1);
-            PSMTXConcat(m1, m3, m1);
-            GXLoadTexMtxImm(m1, 0x1E + i * 3, 1);
-            GXSetTexCoordGen2(i, 1, 4, 0x1E + i * 3, 0, 0x7D);
         }
-        {
-            GXColor reg0 = dat_8041d7b8;
-
-            GXSetTevColor(1, reg0);
-        }
-        {
-            GXColor reg1 = unk_80423050;
-
-            reg1.a = (s8)w->alpha;
-            GXSetTevColor(2, reg1);
-        }
-        GXSetNumTevStages(0xC);
-        for (i = 0; i < 8; i++) {
-            GXSetTevOrder(i, i, 1, 0xFF);
-            GXSetTevColorOp(i, 0, 0, 0, 1, 0);
-            GXSetTevAlphaOp(i, 0, 0, 0, 1, 0);
-            GXSetTevColorIn(i, 0xF, 0xF, 0xF, 2);
-            {
-                s32 a = 0;
-                if (i == 0) {
-                    a = 7;
+        break;
+    case 1:
+        tattle = battleGetUnitMonosiriPtr(w->unitKind);
+        if (animGroupBaseAsync(tattle->modelName, inBattle, NULL)) {
+            if (w->unitKind != 0x6B || animGroupBaseAsync(RO(base, 0x45C, "c_n_moa_a"), inBattle, NULL)) {
+                w->alpha += 0x14;
+                if (w->alpha > 0xFF) {
+                    w->alpha = 0xFF;
                 }
-                GXSetTevAlphaIn(i, 7, 4, 6, a);
+                if (w->poseId == -1) {
+                    if (w->unitKind == 0x6B) {
+                        w->poseId = animPoseEntry(tattle->modelName, inBattle);
+                        animPoseSetAnim(w->poseId, tattle->poseName, TRUE);
+                        animPoseWorldPositionEvalOn(w->poseId);
+                        animPoseMain(w->poseId);
+                        w->poseId2 = animPoseEntry(RO(base, 0x45C, "c_n_moa_a"), inBattle);
+                        animPoseSetAnim(w->poseId2, str_8041D810, TRUE);
+                        animPoseMain(w->poseId2);
+                    } else {
+                        w->poseId = animPoseEntry(tattle->modelName, inBattle);
+                        animPoseSetAnim(w->poseId, tattle->poseName, TRUE);
+                        animPoseMain(w->poseId);
+                    }
+                    dispEntry(2, float_0_8041d7bc, 6, capture, w);
+                }
             }
-            GXSetTevKAlphaSel(i, 7);
         }
-        GXSetTevOrder(8, 7, 1, 0xFF);
-        GXSetTevColorOp(8, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(8, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(8, 0, 8, 9, 0xF);
-        GXSetTevAlphaIn(8, 0, 7, 4, 4);
-        GXSetTevOrder(9, 0xFF, 0xFF, 0xFF);
-        GXSetTevColorOp(9, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(9, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(9, 0xF, 0xF, 0xF, 0);
-        GXSetTevAlphaIn(9, 7, 0, 2, 7);
-        GXSetTevOrder(0xA, 7, 0, 0xFF);
-        GXSetTevColorOp(0xA, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(0xA, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(0xA, 0xF, 8, 0, 0xF);
-        GXSetTevAlphaIn(0xA, 7, 7, 7, 0);
-        GXSetTevOrder(0xB, 7, 0, 0xFF);
-        GXSetTevColorOp(0xB, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(0xB, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(0xB, 8, 0, 1, 0xF);
-        GXSetTevAlphaIn(0xB, 7, 7, 7, 4);
-        GXBegin(0x80, 0, 4);
-        x0 = float_32_8041d7d0 + x;
-        y0 = y - float_8_8041d7d4;
-        y1 = y0 - float_160_8041d7d8;
-        x1 = x0 + float_216_8041d7dc;
-        GXPosition3f32(x0, y0, 0.0f);
-        GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(x0, y1, 0.0f);
-        GXTexCoord2f32(0.0f, 1.0f);
-        GXPosition3f32(x1, y1, 0.0f);
-        GXTexCoord2f32(1.0f, 1.0f);
-        GXPosition3f32(x1, y0, 0.0f);
-        GXTexCoord2f32(1.0f, 0.0f);
-        unitKind = w->unitKind;
-        tattle = battleGetUnitMonosiriPtr(unitKind);
-        if (unitKind == 0x4D || unitKind == 0x87) {
-            if (evtGetValue(NULL, GSW(0)) < 0xD2) {
-                sprintf(buf, RO(base, 0x3D0, "%d\201D%s"), enemy_monoshiri_sort_table[unitKind],
-                        msgSearch(RO(base, 0x3D8, "btl_un_hatena")));
-            } else {
-                sprintf(buf, RO(base, 0x3D0, "%d\201D%s"), enemy_monoshiri_sort_table[unitKind],
-                        msgSearch(RO(base, 0x3E8, "btl_un_rampell")));
-            }
-        } else {
-            sprintf(buf, RO(base, 0x3D0, "%d\201D%s"), enemy_monoshiri_sort_table[unitKind],
-                    msgSearch(tattle->enemyTag));
-        }
-        wdt = float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
-        winFontInit();
-        bw = float_248_8041d7e8 - wdt;
-        tx = float_16_8041d7e4 + x;
-        {
-            GXColor cc = c;
-            Vec pos;
-            Vec tmp;
-            Vec scale;
+        break;
+    case 2:
+        w->targetX = float_600_8041d814;
+        w->targetY = float_neg400_8041d818;
+        break;
+    }
 
-            scale = LV(0x3AC, vec3_802f6264);
-            tmp = LV(0x3A0, vec3_802f6258);
-            tmp.x = bw * float_0p5_8041d7c8 + tx;
-            tmp.y = y - float_180_8041d7ec;
-            pos = tmp;
-            winFontSet(&pos, &scale, &cc, buf);
-        }
-        loc = msgSearch(tattle->locationTag);
-        sprintf(buf, RO(base, 0x3F8, "%s\201@%s"), msgSearch(RO(base, 0x400, "menu_monosiri_derutokoro")), loc);
-        wdt = float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
-        wdt = float_248_8041d7e8 - wdt;
-        {
-            GXColor cc = c;
-            Vec pos;
-            Vec tmp;
-            Vec scale;
+    w->x += (w->targetX - w->x) / float_6_8041d81c;
+    w->y += (w->targetY - w->y) / float_6_8041d81c;
+    if (w->state > 0) {
+        dispEntry(8, float_0_8041d7bc, 0, monosiri_disp, w);
+    }
+}
+#pragma opt_common_subs reset
 
-            scale = LV(0x3C4, vec3_802f627c);
-            tmp = LV(0x3B8, vec3_802f6270);
-            tmp.x = float_1_8041d7c0 + (wdt * float_0p5_8041d7c8 + tx);
-            tmp.y = y - float_210_8041d7f0;
-            pos = tmp;
-            winFontSet(&pos, &scale, &cc, buf);
-        }
+void monosiriClose(void* work) {
+    MonosiriWork* w = work;
+
+    if (w != NULL) {
+        w->state = 2;
     }
 }
 
-extern const f32 float_25_8041d7f4;
-extern const f32 float_1p2667_8041d7f8;
-extern const f32 float_1000_8041d7fc;
-extern const f32 float_608_8041d800;
-extern const f32 float_480_8041d804;
+BOOL monosiriCloseWait(void* work) {
+    MonosiriWork* w = work;
 
-extern char vec3_802f6228[];
-extern char vec3_802f6234[];
-extern char vec3_802f6240[];
-extern char vec3_802f624c[];
+    if (w == NULL) {
+        return TRUE;
+    }
+    if (w->x > float_500_8041d808 && w->y < float_neg300_8041d80c) {
+        return TRUE;
+    }
+    return FALSE;
+}
 
-#ifdef MUST_MATCH
-#define HALF_FOV_TAN double_0p21817_802f62e8
-#else
-#define HALF_FOV_TAN 0.21816615760326385
-#endif
+void monosiriExit(void* work) {
+    MonosiriWork* w = work;
 
-typedef struct TattleCamEntry {
-    s32 kind;
-    f32 x;
-    f32 y;
-    f32 scale;
-} TattleCamEntry;
+    if (w != NULL) {
+        if (w->file1 != NULL) {
+            fileFree(w->file1);
+            w->file1 = NULL;
+        }
+        if (w->file2 != NULL) {
+            fileFree(w->file2);
+            w->file2 = NULL;
+        }
+        if (w->poseId != -1) {
+            animPoseRelease(w->poseId);
+            w->poseId = -1;
+        }
+        if (w->poseId2 != -1) {
+            animPoseRelease(w->poseId2);
+            w->poseId2 = -1;
+        }
+        if (w->alloc != NULL) {
+            smartFree(w->alloc);
+            w->alloc = NULL;
+        }
+        _mapFree(w);
+    }
+}
 
 // Renders a tattle model into the viewer's texture: frames the model's bounding box, draws the pose (and the swarm
 // for the moamoa tattle) and copies the EFB into the viewer's image.
@@ -2973,6 +2799,176 @@ void capture(CameraId camId, void* param) {
     GXSetScissor(sl, st, sw, sh);
 }
 
+// NONMATCHING (96.98%): behaviour complete; call sequence and immediates match and both winFontSet Vec layouts match
+// exactly. The vertex emission uses literal 0.0f/1.0f now (mwcc pools and reloads them like the original) instead of
+// MATCH_F32. What remains is register colouring/small-temp slots and a few font-setup/texgen scheduler choices.
+void monosiri_disp(CameraId camId, void* param) {
+    MonosiriWork* w = param;
+    const char* base = str_802F5EB8;
+    GXColor c = dat_8041d7b4;
+    f32 x = w->x;
+    f32 y = w->y;
+
+    if (w->file1 != NULL) {
+        GXTexObj obj;
+        Mtx m1;
+        Mtx m2;
+        Mtx m3;
+        s32 i;
+        f32 x1;
+        f32 y1;
+        f32 x0;
+        f32 y0;
+        const TattleEntry* tattle;
+        char buf[0x100];
+        f32 wdt;
+        f32 tx;
+        f32 bw;
+        const char* loc;
+        s32 unitKind;
+
+        winHalfBookGX((void*)w->file1->data[0], x, y, 0);
+        {
+            u16 tw;
+            u16 th;
+
+            TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
+            tw = GXGetTexObjWidth(&obj);
+            th = GXGetTexObjHeight(&obj);
+            TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
+            GXInitTexObjLOD(&obj, 1, 1, float_0_8041d7bc, float_0_8041d7bc, float_0_8041d7bc, 0, 0, 0);
+            GXLoadTexObj(&obj, 0);
+            GXInitTexObj(&obj, *(void**)w->alloc, tw, th, 5, 0, 0, 0);
+        }
+        GXInitTexObjLOD(&obj, 1, 1, float_0_8041d7bc, float_0_8041d7bc, float_0_8041d7bc, 0, 0, 0);
+        GXLoadTexObj(&obj, 1);
+        GXSetNumTexGens(8);
+        for (i = 0; i < 8; i++) {
+            f32 s = -((float_0p04_8041d7c4 * (f32)(7 - i)) - float_1_8041d7c0);
+            f32 half = MATCH_F32(float_0p5_8041d7c8);
+
+            PSMTXTrans(m1, half, half, float_0_8041d7bc);
+            PSMTXScale(m2, s, s, s);
+            {
+                f32 nhalf = MATCH_F32(float_neg0p5_8041d7cc);
+
+                PSMTXTrans(m3, nhalf, nhalf, float_0_8041d7bc);
+            }
+            PSMTXConcat(m1, m2, m1);
+            PSMTXConcat(m1, m3, m1);
+            GXLoadTexMtxImm(m1, 0x1E + i * 3, 1);
+            GXSetTexCoordGen2(i, 1, 4, 0x1E + i * 3, 0, 0x7D);
+        }
+        {
+            GXColor reg0 = dat_8041d7b8;
+
+            GXSetTevColor(1, reg0);
+        }
+        {
+            GXColor reg1 = unk_80423050;
+
+            reg1.a = (s8)w->alpha;
+            GXSetTevColor(2, reg1);
+        }
+        GXSetNumTevStages(0xC);
+        for (i = 0; i < 8; i++) {
+            GXSetTevOrder(i, i, 1, 0xFF);
+            GXSetTevColorOp(i, 0, 0, 0, 1, 0);
+            GXSetTevAlphaOp(i, 0, 0, 0, 1, 0);
+            GXSetTevColorIn(i, 0xF, 0xF, 0xF, 2);
+            {
+                s32 a = 0;
+                if (i == 0) {
+                    a = 7;
+                }
+                GXSetTevAlphaIn(i, 7, 4, 6, a);
+            }
+            GXSetTevKAlphaSel(i, 7);
+        }
+        GXSetTevOrder(8, 7, 1, 0xFF);
+        GXSetTevColorOp(8, 0, 0, 0, 1, 0);
+        GXSetTevAlphaOp(8, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(8, 0, 8, 9, 0xF);
+        GXSetTevAlphaIn(8, 0, 7, 4, 4);
+        GXSetTevOrder(9, 0xFF, 0xFF, 0xFF);
+        GXSetTevColorOp(9, 0, 0, 0, 1, 0);
+        GXSetTevAlphaOp(9, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(9, 0xF, 0xF, 0xF, 0);
+        GXSetTevAlphaIn(9, 7, 0, 2, 7);
+        GXSetTevOrder(0xA, 7, 0, 0xFF);
+        GXSetTevColorOp(0xA, 0, 0, 0, 1, 0);
+        GXSetTevAlphaOp(0xA, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(0xA, 0xF, 8, 0, 0xF);
+        GXSetTevAlphaIn(0xA, 7, 7, 7, 0);
+        GXSetTevOrder(0xB, 7, 0, 0xFF);
+        GXSetTevColorOp(0xB, 0, 0, 0, 1, 0);
+        GXSetTevAlphaOp(0xB, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(0xB, 8, 0, 1, 0xF);
+        GXSetTevAlphaIn(0xB, 7, 7, 7, 4);
+        GXBegin(0x80, 0, 4);
+        x0 = float_32_8041d7d0 + x;
+        y0 = y - float_8_8041d7d4;
+        y1 = y0 - float_160_8041d7d8;
+        x1 = x0 + float_216_8041d7dc;
+        GXPosition3f32(x0, y0, 0.0f);
+        GXTexCoord2f32(0.0f, 0.0f);
+        GXPosition3f32(x0, y1, 0.0f);
+        GXTexCoord2f32(0.0f, 1.0f);
+        GXPosition3f32(x1, y1, 0.0f);
+        GXTexCoord2f32(1.0f, 1.0f);
+        GXPosition3f32(x1, y0, 0.0f);
+        GXTexCoord2f32(1.0f, 0.0f);
+        unitKind = w->unitKind;
+        tattle = battleGetUnitMonosiriPtr(unitKind);
+        if (unitKind == 0x4D || unitKind == 0x87) {
+            if (evtGetValue(NULL, GSW(0)) < 0xD2) {
+                sprintf(buf, RO(base, 0x3D0, "%d\201D%s"), enemy_monoshiri_sort_table[unitKind],
+                        msgSearch(RO(base, 0x3D8, "btl_un_hatena")));
+            } else {
+                sprintf(buf, RO(base, 0x3D0, "%d\201D%s"), enemy_monoshiri_sort_table[unitKind],
+                        msgSearch(RO(base, 0x3E8, "btl_un_rampell")));
+            }
+        } else {
+            sprintf(buf, RO(base, 0x3D0, "%d\201D%s"), enemy_monoshiri_sort_table[unitKind],
+                    msgSearch(tattle->enemyTag));
+        }
+        wdt = float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
+        winFontInit();
+        bw = float_248_8041d7e8 - wdt;
+        tx = float_16_8041d7e4 + x;
+        {
+            GXColor cc = c;
+            Vec pos;
+            Vec tmp;
+            Vec scale;
+
+            scale = LV(0x3AC, vec3_802f6264);
+            tmp = LV(0x3A0, vec3_802f6258);
+            tmp.x = bw * float_0p5_8041d7c8 + tx;
+            tmp.y = y - float_180_8041d7ec;
+            pos = tmp;
+            winFontSet(&pos, &scale, &cc, buf);
+        }
+        loc = msgSearch(tattle->locationTag);
+        sprintf(buf, RO(base, 0x3F8, "%s\201@%s"), msgSearch(RO(base, 0x400, "menu_monosiri_derutokoro")), loc);
+        wdt = float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
+        wdt = float_248_8041d7e8 - wdt;
+        {
+            GXColor cc = c;
+            Vec pos;
+            Vec tmp;
+            Vec scale;
+
+            scale = LV(0x3C4, vec3_802f627c);
+            tmp = LV(0x3B8, vec3_802f6270);
+            tmp.x = float_1_8041d7c0 + (wdt * float_0p5_8041d7c8 + tx);
+            tmp.y = y - float_210_8041d7f0;
+            pos = tmp;
+            winFontSet(&pos, &scale, &cc, buf);
+        }
+    }
+}
+
 const f64 double_to_int_802f62d8 = 4503601774854144.0;
 const f64 double_to_int_mask_802f62e0 = 4503599627370496.0;
 const f64 double_0p21817_802f62e8 = 0.21816615760326385;
@@ -3079,6 +3075,11 @@ const f32 float_neg130_8041d8d0 = -130.f;
 const f32 float_neg200_8041d8d4 = -200.f;
 const f32 float_60_8041d8d8 = 60.f;
 const f32 float_neg128_8041d8dc = -128.0f;
+const char str_8041D8E0[4] = "W_1";
+const char str_8041D8E4[5] = "W_15";
+const char str_8041D8EC[5] = "W_17";
+const char str_8041D8F4[5] = "W_18";
+const char str_8041D8FC[6] = "M_W_1";
 const f32 float_10000_8041d904 = 10000.f;
 const f32 float_neg230_8041d908 = -230.f;
 const f32 float_neg120_8041d90c = -120.f;

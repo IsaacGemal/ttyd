@@ -148,21 +148,20 @@ s32 bottakuruComp(const void** sortA, const void** sortB) {
 
 // `s16 count`, `s32 j`, `u32 k`, `u32 dobreak`, `s32 i`, a `s32* p` row pointer for the
 // `[1]` store and a separate `u32 m` counter for the last loop get most compares and the
-// inline `badgeShop_get` (r30/r31) right. Declaring `i` before `dobreak` (instead of after)
-// reduced the diff count from 29 to 24 (96.89% to 97.14%). What is left: the target stores
-// `[1]` through a pointer and
+// inline `badgeShop_get` (r30/r31) right. What is left: the target stores `[1]` through a
+// pointer and
 // `[0]` through base+scaled-index (`stwx r24, r28, r25`), so it keeps a row pointer AND an
 // integer offset; ours strength-reduces `table[dobreak][0]` to the same pointer and drops
-// the offset register. An explicit `u32 off`/`(u8*)table + off` is folded into `p` too.
-// The fill loop's `[0]` store now reaches the target's base+scaled-index form (`stwx
-// base,offset`) once the table is read through a row pointer and the index is kept signed
-// (the cast is a MUST_MATCH device: with a plain `dobreak` MWCC folds the index into a row
-// pointer instead of keeping an offset register). What is left is a two-register swap in
-// that loop: the target keeps `count` in r21 and the `[1]` pointer copy in r23, this build
-// puts the copy in r21 and `count` in r23. That swaps the `extsh`/`mr`/`stw`/`cmpw` operands
-// and the last loop's base/bp register choice, and shifts the branch offsets. Declaration
-// order, the increment order of `p`/`bp`, count types and the relevant pragmas were tried.
-// NONMATCHING (97.97%): remaining diff is the r21/r23 count-vs-`bp` swap above.
+// the offset register. The fill loop's `[0]` store reaches the target's base+scaled-index
+// form (`stwx base,offset`) once the table is read through a row pointer and the index is
+// kept signed (the cast is a MUST_MATCH device: with a plain `dobreak` MWCC folds the index
+// into a row pointer instead of keeping an offset register). The remaining diff is a
+// two-register swap in that loop: the target keeps `count` in r21 and the `[1]` pointer
+// copy in r23, this build puts the copy in r21 and `count` in r23 (the inline `badgeShop_get`
+// result is a compiler temp, so no named local can outrank it). That swaps the
+// `extsh`/`mr`/`stw`/`cmpw` operands and the last loop's base/bp register choice, and shifts
+// the branch offsets.
+// NONMATCHING (98.00%): remaining diff is the r21/r23 count-vs-`bp` swap above.
 void badgeShop_bottakuruGeneration(void) {
 	s32 table[0x11][2];
 	s16 count;
@@ -179,10 +178,11 @@ void badgeShop_bottakuruGeneration(void) {
 		table[k][0] = 0;
 	}
 
+	i = 0;
 	dobreak = 0;
 	base = table;
 	p = (s32*)table;
-	for (i = 0; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
+	for (; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
 		count = badgeShop_get(bdsw->bottakuru_table, (s16)(i + KEY_ITEM_MIN)); //inline
 		bp = p;
 		for (j = 0; j < count; j++) {

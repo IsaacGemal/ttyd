@@ -44,7 +44,8 @@
 #pragma force_active on
 
 typedef struct FighterEntry {
-    u32 flags;         // 0x00
+    u16 flags;         // 0x00
+    u16 pad_02;        // 0x02
     const char* name;  // 0x04
     const char* name2; // 0x08
     s32 field_0C;      // 0x0C
@@ -1168,12 +1169,31 @@ static void insert(s32* arr, s32 unused, s32 from, s32 to) {
     }
 }
 
-// NONMATCHING (99.08%): logic is right; only register allocation differs. The below flag sort's outer
-// counter is r29 (retail r27; its inner is now r28), the scaled `idx` flag test rebases fighterDt instead
-// of folding to `mulli 0x1c; lhzx`, and the inlined `insert` bodies keep the base where retail loads `val`.
+static inline void doInsert(s32* arr, s32 n, s32 from, s32 to) {
+    s32 i;
+
+    if (from < to) {
+        s32 tmp = arr[from];
+
+        for (i = from; i < to; i++) {
+            arr[i] = arr[i + 1];
+        }
+        arr[to] = tmp;
+    } else {
+        s32 tmp = arr[from];
+
+        for (i = from; i > to; i--) {
+            arr[i] = arr[i - 1];
+        }
+        arr[to] = tmp;
+    }
+}
+
 static void rankingControll(void) {
     s32 above[32];
     s32 below[32];
+    s32 bi2;
+    s32 bi;
     s32 nAbove;
     s32 nBelow;
     s32 i;
@@ -1217,16 +1237,9 @@ static void rankingControll(void) {
 
         for (m = 0; m < nAbove - 1; m++) {
             for (n = m + 1; n < nAbove; n++) {
-#ifdef MUST_MATCH
-                // MUST_MATCH: holding both ids in locals makes MWCC hoist the right operand's id past the
-                // short-circuit branch the way retail does (see the NONMATCHING note above the function).
-                idx2 = ((RankWork*)rank_wp[0])->entries[above[n]].id;
-                idx = ((RankWork*)rank_wp[0])->entries[above[m]].id * 14;
-                if ((((u16*)fighterDt)[idx2 * 14] & 5) && (((u16*)fighterDt)[idx] & 2)) {
-#else
-                if ((((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[n]].id * 14] & 5) &&
-                    (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[m]].id * 14] & 2)) {
-#endif
+                FighterEntry* fj = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[n]].id];
+                FighterEntry* fi = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[above[m]].id];
+                if ((fj->flags & 5) && (fi->flags & 2)) {
                     tmp = above[m];
                     above[m] = above[n];
                     above[n] = tmp;
@@ -1241,7 +1254,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                insert(above, nAbove, idx, 0);
+                doInsert(above, nAbove, idx, 0);
             }
         }
 
@@ -1252,7 +1265,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                insert(above, nAbove, idx, 1);
+                doInsert(above, nAbove, idx, 1);
             }
         }
 
@@ -1263,7 +1276,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                insert(above, nAbove, idx, 10);
+                doInsert(above, nAbove, idx, 10);
             }
         }
 
@@ -1274,7 +1287,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                insert(above, nAbove, idx, 18);
+                doInsert(above, nAbove, idx, 18);
             }
         }
 
@@ -1285,7 +1298,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                insert(above, nAbove, idx, 19);
+                doInsert(above, nAbove, idx, 19);
             }
         }
 
@@ -1296,7 +1309,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                insert(above, nAbove, idx, 14);
+                doInsert(above, nAbove, idx, 14);
             }
         }
 
@@ -1307,7 +1320,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nAbove) {
-                insert(above, nAbove, idx, nAbove - 1);
+                doInsert(above, nAbove, idx, nAbove - 1);
             }
         }
     }
@@ -1323,20 +1336,14 @@ static void rankingControll(void) {
             }
         }
 
-        for (j = 0; j < nBelow - 1; j++) {
-            for (i = j + 1; i < nBelow; i++) {
-#ifdef MUST_MATCH
-                // MUST_MATCH: same eager-id shape as the above pass (see the NONMATCHING note above).
-                idx2 = ((RankWork*)rank_wp[0])->entries[below[i]].id;
-                idx = ((RankWork*)rank_wp[0])->entries[below[j]].id * 14;
-                if ((((u16*)fighterDt)[idx2 * 14] & 5) && (((u16*)fighterDt)[idx] & 2)) {
-#else
-                if ((((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[i]].id * 14] & 5) &&
-                    (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[j]].id * 14] & 2)) {
-#endif
-                    tmp = below[j];
-                    below[j] = below[i];
-                    below[i] = tmp;
+        for (p = 0; p < nBelow - 1; p++) {
+            for (q = p + 1; q < nBelow; q++) {
+                FighterEntry* fj = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[q]].id];
+                FighterEntry* fi = &((FighterEntry*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[p]].id];
+                if ((fj->flags & 5) && (fi->flags & 2)) {
+                    tmp = below[p];
+                    below[p] = below[q];
+                    below[q] = tmp;
                 }
             }
         }
@@ -1348,24 +1355,24 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nBelow) {
-                insert(below, nBelow, idx, 0);
+                doInsert(below, nBelow, idx, 0);
             }
         }
 
         if (nBelow > 0) {
-            for (idx = 0; idx < nBelow; idx++) {
-                if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[idx]].id * 14] & 0x800) {
+            for (bi = 0; bi < nBelow; bi++) {
+                if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[bi]].id * 14] & 0x800) {
                     break;
                 }
             }
-            if (idx < nBelow) {
-                for (idx2 = 0; idx2 < nBelow; idx2++) {
-                    if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[idx2]].id * 14] & 2) {
+            if (bi < nBelow) {
+                for (bi2 = 0; bi2 < nBelow; bi2++) {
+                    if (((u16*)fighterDt)[((RankWork*)rank_wp[0])->entries[below[bi2]].id * 14] & 2) {
                         break;
                     }
                 }
-                if (idx2 < nBelow && idx2 > 0) {
-                    insert(below, nBelow, idx, idx2 - 1);
+                if (bi2 < nBelow && bi2 > 0) {
+                    doInsert(below, nBelow, bi, bi2 - 1);
                 }
             }
         }
@@ -1377,7 +1384,7 @@ static void rankingControll(void) {
                 }
             }
             if (idx < nBelow) {
-                insert(below, nBelow, idx, 0);
+                doInsert(below, nBelow, idx, 0);
             }
         }
     }
@@ -1390,7 +1397,7 @@ static void rankingControll(void) {
     entry[nAbove].id = 0x14;
     entry[nAbove].score = 0;
     for (i = 0; i < nBelow; i++) {
-        j = nAbove + (i + 1);
+        j = 1 + nAbove + i;
         entry[j] = ((RankWork*)rank_wp[0])->entries[below[i]];
     }
     memcpy(((RankWork*)rank_wp[0])->entries, entry, sizeof(RankEntry) * ((RankWork*)rank_wp[0])->count);
@@ -3810,8 +3817,6 @@ static f32 camGetRy(void) {
     return ry;
 }
 
-// NONMATCHING (99.24%): event/npc callee-saved regs (r30/r31) swapped, cascading the whole body;
-// the case1 fadds/fsubs land in f0/f1 instead of f1/f0
 USER_FUNC(tou_champion_belt_27_text_34) {
     NpcEntry* npc;
     AnimationPose* pose;
@@ -3820,6 +3825,7 @@ USER_FUNC(tou_champion_belt_27_text_34) {
     CameraEntry* cam;
     EffectEntry* handle;
     f32 angle;
+    void** ud;
 
     npc = npcNameToPtr((const char*)evtGetValue(event, event->args[0]));
 
@@ -3842,26 +3848,26 @@ USER_FUNC(tou_champion_belt_27_text_34) {
     }
     angle = reviseAngle(angle - pose->rotationY);
     handle = (EffectEntry*)event->userdata[0];
-    ((BeltData*)handle->userdata)->pos.x = loc[group].x;
-    ((BeltData*)handle->userdata)->pos.y = loc[group].y;
-    ((BeltData*)handle->userdata)->pos.z = loc[group].z;
+    ud = &handle->userdata;
+    ((BeltData*)*ud)->pos.x = loc[group].x;
+    ((BeltData*)*ud)->pos.y = loc[group].y;
+    ((BeltData*)*ud)->pos.z = loc[group].z;
     if ((angle > float_90_tou_0000a848 && angle <= float_270_tou_0000a84c) ||
         (angle < float_neg90_tou_0000a850 && angle >= float_neg270_tou_0000a854)) {
-        cam = camGetPtr(CAMERA_3D);
-        ((BeltData*)handle->userdata)->field_1C = float_8_tou_0000a858 - (angle + cam->viewYaw);
+        ((BeltData*)*ud)->field_1C = float_8_tou_0000a858 - (angle + camGetPtr(CAMERA_3D)->viewYaw);
     } else {
         cam = camGetPtr(CAMERA_3D);
-        ((BeltData*)handle->userdata)->field_1C = -(angle + cam->viewYaw) - float_8_tou_0000a858;
+        ((BeltData*)*ud)->field_1C = -(angle + cam->viewYaw) - float_8_tou_0000a858;
     }
     if (npc->position.y <= float_neg1000_tou_0000a85c) {
-        ((BeltData*)handle->userdata)->pos.x = zero_tou_0000a82c;
-        ((BeltData*)handle->userdata)->pos.y = float_neg1000_tou_0000a85c;
-        ((BeltData*)handle->userdata)->pos.z = zero_tou_0000a82c;
+        ((BeltData*)*ud)->pos.x = zero_tou_0000a82c;
+        ((BeltData*)*ud)->pos.y = float_neg1000_tou_0000a85c;
+        ((BeltData*)*ud)->pos.z = zero_tou_0000a82c;
     }
     if (champion_belt_onoff[0] != 0) {
-        ((BeltData*)handle->userdata)->pos.x = zero_tou_0000a82c;
-        ((BeltData*)handle->userdata)->pos.y = float_neg1000_tou_0000a85c;
-        ((BeltData*)handle->userdata)->pos.z = zero_tou_0000a82c;
+        ((BeltData*)*ud)->pos.x = zero_tou_0000a82c;
+        ((BeltData*)*ud)->pos.y = float_neg1000_tou_0000a85c;
+        ((BeltData*)*ud)->pos.z = zero_tou_0000a82c;
     }
     return EVT_RETURN_BLOCK;
 }

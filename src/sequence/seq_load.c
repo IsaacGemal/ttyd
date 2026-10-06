@@ -408,9 +408,13 @@ void seq_loadMain(SequenceWork* workArg) {
 // Materialise win_dt/win_dt2/win_dt3 as base2+0x40/0x13c/0x200 with a separate addi, as the original does,
 // instead of letting the compiler fold those displacements into the load.
 #pragma opt_propagation off
-// NONMATCHING (98.49%): full reconstruction. Remaining diffs are register colouring (sel in r30 vs the
-// original's r31, wp/wd in r4/r3 vs r3/r4) and the s32->f32 magic double, where the compiler emits an
-// anonymous literal instead of the existing double_to_int_802ed9c8 object (folding float_4/float_30 too).
+// NONMATCHING (99.21%): full reconstruction. The only diffs are three register colours: the two
+// compiler-materialised base registers are swapped (our data base lbl_80349DE8 in r30 and the .rodata
+// pool base in r29, the original the other way round) and the derived temp @1527 follows the data base
+// from r30 to r29. Both bases are objectless global-address webs created at function entry; declaration
+// order, bare assignment, inline helpers and moving the WDT macros all leave their priority order
+// unchanged, so this is a permuter job (rasim reproduces the colouring and no single interference edge
+// fixes it).
 void loadMain(SequenceWork* workArg) {
 #ifdef MUST_MATCH
     const char* base2 = (const char*)&lbl_80349DE8;
@@ -984,12 +988,12 @@ void loadMain(SequenceWork* workArg) {
 }
 #pragma opt_propagation reset
 
-// NONMATCHING (93.24%): complete reconstruction of the save-file load screen. Every call, loop bound,
+// NONMATCHING (99.54%): complete reconstruction of the save-file load screen. Every call, loop bound,
 // rodata object, table read and branch is present and semantically correct. The remaining diffs are
-// compiler only: MWCC's register colouring (several loop variables sit in adjacent registers to the
-// target, a systematic callee-saved off-by-one) and a few scheduling/stack-slot placements; every
+// compiler only: five callee-saved colours (field28 and four time-formatting temps sit one register off
+// the target) and the stack slots of the by-value Vec/GXColor call temps in the nine-window loop; every
 // rodata object now lands at its target offset and the i2f double is read base-relative at +0x350.
-// The whole stack frame now matches the target: the frame is 0x890, the named aggregates sit at
+// The frame is 0x890, the named aggregates sit at
 // nameBuf 0x310 / projection 0x330 / viewport 0x34c / timeBuf 0x494, the quads and angle table at
 // 0x364..0x434 and the icon matrices at 0x434/0x464. That was reproduced by declaring the aggregates in
 // the reverse of the target's slot order (viewport, projection, nameBuf[0x20], timeBuf[0x100]) and by
@@ -1013,8 +1017,10 @@ void loadMain(SequenceWork* workArg) {
 // The angle table is copied on the stack through a struct assignment (the target does a 16-word block
 // copy before indexing); the name width is halved with `>> 1`, which is what makes MWCC fold the shift
 // and mask into the target's `extrwi`; the texture-strip scale uses the double __fabs idiom shared with
-// win_root.c's winNameQuad. Raw offsets used for undeclared CardSaveSlot fields are listed in REPORT.md.
-#pragma opt_loop_invariants off // with the lifetime pass off, keeping the target's loop-invariant codegen
+// win_root.c's winNameQuad. The stone loop reads wd->y through a preheader pointer so MWCC emits the
+// target's `addi r23,r28,0x4` + `lfs 0(r23)` instead of folding it into `lfs 4(r28)`; the time-block and
+// save-file-slot locals are declared in the order that reproduces the target's colours. Raw offsets used
+// for undeclared CardSaveSlot fields are listed in REPORT.md.
 // A textured strip quad, the same form as win_root.c's winNameQuad but sourced from the global
 // LoadWork. The two f64 scales are read from the named pool entries through the unit's rodata base so
 // the target's `lfd` + `fabs` pair is reproduced instead of a folded anonymous pool copy.
@@ -1069,9 +1075,9 @@ static inline void loadDrawColor(GXColor color) {
     FontDrawColor(&color);
 }
 
-// NONMATCHING (93.24%): see the full note above the helpers; the callee-saved register colouring is a
-// systematic off-by-one (base r31 vs r30, i/j/flags r22 vs r23, ...) and a few scheduling/stack-slot
-// placements. All calls, loops, rodata and pool offsets are present.
+// NONMATCHING (99.54%): see the full note above the helpers; the callee-saved register colouring still
+// puts field28 and four time temps one register away from the target, and the by-value call temps in the
+// nine-window loop use different stack slots. All calls, loops, rodata and pool offsets are present.
 void loadDraw(void) {
 #ifdef MUST_MATCH
     const char* base = (const char*)&vec3_802ed670;
@@ -1170,10 +1176,10 @@ void loadDraw(void) {
 
     // The four save files.
     for (i = 0; i < 4; i++) {
-        u16 flags;
         u16 mask;
         s32 level;
         s32 field28;
+        u16 flags;
         u32 field2c;
         s32 field17c;
         const char* name;
@@ -1221,13 +1227,13 @@ void loadDraw(void) {
                 FontDrawString(name, wd->x - (f32)(FontGetMessageWidth(name) >> 1), 70.0f + wd->y);
             }
         } else {
-            s64 ticks = ((s64)field28 << 32) | field2c;
-            u64 secs;
             u32 hours;
             u32 mins;
+            u64 secs;
             f32 half;
-            f32 half2;
+            s64 ticks = ((s64)field28 << 32) | field2c;
             Mtx mtx;
+            f32 half2;
 
             FontGetMessageWidth(str_8041BE34);
             secs = (u64)(ticks / (s64)(*(volatile u32*)0x800000F8 >> 2));
@@ -1264,14 +1270,17 @@ void loadDraw(void) {
                 iconDispGxCol(mtx, 0, 0x201, c);
             }
 
+            {
+            f32* wdY = &wd->y;
             for (j = 0; j < 7; j++) {
                 if (mask & (1 << (j + 1))) {
                     GXColor c;
 
-                    PSMTXTrans(mtx, wd->x - 106.0f + (f32)(j * 0x20), wd->y - 52.0f, 0.0f);
+                    PSMTXTrans(mtx, wd->x - 106.0f + (f32)(j * 0x20), *wdY - 52.0f, 0.0f);
                     c = (i == wp->field_0x20) ? white : greyA0;
                     iconDispGxCol(mtx, 0, stone_id[j] & 0xFFFF, c);
                 }
+            }
             }
         }
     }
@@ -1369,7 +1378,6 @@ void loadDraw(void) {
     GXSetProjectionv(projection);
     *camGetCurPtr() = saved;
 }
-#pragma opt_loop_invariants reset
 
 void continueGame(void) {
     MarioWork* mario;

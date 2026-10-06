@@ -59,33 +59,28 @@ typedef struct GaugeTiming2Work {
 static void actionCommandDisp(f32 x, f32 y);
 
 // Defining dat_80421ad8 non-const (see the .sdata2 definition at the top) stops MWCC hoisting its
-// `lwz` above the case-0 stores and fixes the case-0 schedule. Reading
-// `autoFlag` into a `doCheck` temp before zeroing it (`s32 doCheck = autoFlag; autoFlag = 0; if
-// (doCheck)`) pins the auto-command probe's `li <flag>,0` before its `beq`, which the scheduler only
-// did in the original, and lifts the function to 98.73 (#ifdef-free source change: the temp is
-// coalesced away by the allocator). Giving the ng loop's counter function scope (`s32 m;` at the top,
-// `for (m = 0; ...)` in the loop) instead of a block `{ s32 m; ... }` is what nudges the allocator:
-// 99.03 -> 99.09 (the ng/big counters land in the original's r28). The auto-command probe's `p` and
-// the big SFX loop's `q` must stay block-scoped (function scope costs 0.1-0.2). The original still
-// packs the long-lived webs low (autoFlag=r26, dec=r27) and the later ones high (triggered=r29,
-// sfx pointers=r30), while ours keeps dec=r29, autoFlag=r30, triggered=r27, ng/pone strings=r26/r28;
-// `add r28, r27, r24` (target) vs `add r23, r29, r24` (ours) shows the pone value-pointer/string
-// pair still lands in swapped free registers. Calls, constants, memory accesses and byte size 1628
-// all match. This is a pure allocator tie-break, not a source bug: the 6! permutation sweep of the
-// function-level declarations, every relevant pragma (opt_lifetimes/opt_propagation/
-// opt_common_subs/opt_dead_assignments/global_optimizer/peephole/opt_loop_invariants/
-// opt_strength_reduction/optimize_for_size/scheduling/optimization_level/defer_codegen), an `ac`
-// intermediate for dec/disp/unit, `&actionCommands.field_0x2BC[0]`, const/volatile/`char*` string
-// locals, inlining the SFX string literals, `register`/`volatile` locals, and making the individual
-// float_* externs non-const all leave it (or worsen it). Queued for the permuter.
-// NONMATCHING (99.09%): callee-saved GPR colouring only (same registers, permuted).
+// `lwz` above the case-0 stores and fixes the case-0 schedule. Reading `autoFlag` into a `doCheck`
+// temp before zeroing it (`s32 doCheck = autoFlag; autoFlag = 0; if (doCheck)`) pins the
+// auto-command probe's `li <flag>,0` before its `beq` the way the original scheduler did. The
+// original's callee-saved allocation is ng=r30, triggered=r29, m=r28, dec=r27, autoFlag=r26; it is
+// reached by declaring `ng`, `triggered` and `m` at function scope before `dec` (their vregs
+// outrank `dec` because the allocator numbers named locals in reverse declaration order). The ng
+// loop's counter must be the function-scope `m`; the auto probe's `p` and the final SFX loop's `q`
+// stay block-scoped. Calls, constants, memory accesses and byte size 1628 all match.
+// The remaining difference is the register reuse of the block-scoped webs; the pone loop's
+// counter/string land in r28/r30 where the original has r30/r23, and the final block's ng2/ok/q land
+// in r26/r28/r29 where the original has r29/r30/r28; the post-zero autoFlag web also stays in r30
+// instead of joining autoFlag's r26.
+// NONMATCHING (99.67%): pure allocator tie-break, so the permuter's.
 s32 battleAcMain_GaugeTiming2(BattleWork* work) {
+	const char* ng;
+	s32 triggered;
+	s32 m;
 	GaugeTiming2Work* dec = (GaugeTiming2Work*)((u8*)work + 0x1F4C);
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
 	BattleUnit* unit = work->actionCommands.mAcUnit;
 	s32 autoFlag = 0;
 	s32 i;
-	s32 m;
 
 	if (unit->badgesEquipped.AutoCommand != 0) {
 		autoFlag = 1;
@@ -137,9 +132,9 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		// fallthrough
 	case 0x3E8: {
 		s32 p;
-		s32 triggered = 0;
 		s32 allSet;
 
+		triggered = 0;
 		dec->frame++;
 		if (BattlePadCheckTrigger(dec->buttonMask) != 0) {
 			triggered = 1;
@@ -169,7 +164,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		dec->progress = 100.f * (f32)dec->field_0x08 / (f32)dec->maxFrame;
 
 		{
-			const char* ng = "SFX_AC_COMMAND_NG1";
+			ng = "SFX_AC_COMMAND_NG1";
 			{
 				for (m = 0; m < *(s32*)&work->actionCommands.field_34[0x0C]; m++) {
 					if (dec->state[m] == 0) {
