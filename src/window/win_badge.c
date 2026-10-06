@@ -656,7 +656,7 @@ void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
             }
 #endif
         }
-        for (; i < pouch->maximumBP; i++) {
+        for (i = pouch->availableBP; i < pouch->maximumBP; i++) {
 #ifdef MUST_MATCH
             winTexSet(0x1D, (Vec){ (x - float_242_8041d414) + (f32)((i % 10) * 0xD), float_20_8041d39c + (ry - (f32)((i / 10) * 0xD)) - float_18_8041d3a0, 0.0f }, *(volatile Vec*)&vec3_802f4b04, white);
 #else
