@@ -27,6 +27,7 @@ What it does
 Traps it flags per entry are the ones in docs/AGENT_BRIEF.md ("Data and pool"): cos() arguments fold to lfd doubles,
 templates in inline bodies pool when the inline is defined, literal negations fold, named const objects are CSE-folded."""
 import glob
+import os
 import re
 import struct
 import subprocess
@@ -52,8 +53,11 @@ def obj_paths():
         tp = glob.glob(f"build/G8MJ01/{mod}/obj/{rest}.o") + tp
     if not tp:
         sys.exit(f"no target object for {unit}")
-    base = unit.split("/", 1)[1] if unit.split("/")[0] in REL_MODS else unit
-    return tp[0], f"build/G8MJ01/src/{base}.o"
+    if unit.split("/")[0] in REL_MODS:
+        mod, rest = unit.split("/", 1)
+        modular = f"build/G8MJ01/src/rel/{mod}/{rest}.o"  # RELs that repeat a unit name build per module
+        return tp[0], modular if os.path.exists(modular) or not os.path.exists(f"build/G8MJ01/src/{rest}.o") else f"build/G8MJ01/src/{rest}.o"
+    return tp[0], f"build/G8MJ01/src/{unit}.o"
 
 
 REL_MODS = {p.split("/")[-1] for p in glob.glob("rels/*")}
