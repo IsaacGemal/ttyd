@@ -1933,7 +1933,7 @@ config.libs = [
             Object(Matching, "tou_06.c"),
             Object(Matching, "tou_00.c"),
             Object(Matching, "tou_10.c"),
-            Object(NonMatching, "tou.c"),
+            Object(Matching, "tou.c"),
             Object(Matching, "tou_01.c"),
             Object(NonMatching, "tou_02.c"),
             Object(Matching, "event/evt_lect_tou.c"),
