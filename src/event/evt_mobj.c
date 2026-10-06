@@ -1,3 +1,8 @@
+#ifdef MUST_MATCH
+// Retail pools function literals relative to the unit read-only data base.
+#pragma pool_data on
+#endif
+
 #include "mario/mario_motion.h"
 #include "math_ext.h"
 #include "party.h"
@@ -46,6 +51,25 @@
 #include "party/party_motion.h"
 #include <dolphin/mtx.h>
 
+extern Vec mobj_vec3_802c4050_template[];
+extern Vec mobj_vec3_802c405c_template[];
+extern Vec mobj_vec3_802c40b8_template[];
+static const Vec vec3_802c3fd8[1];
+static const Vec vec3_802c3fe4[1];
+extern Vec vec3_802c4020[];
+extern Vec vec3_802c402c[];
+extern Vec vec3_802c4038[];
+extern Vec vec3_802c4044[];
+extern const char str_802C3EC8[];
+extern const char str_802C3ED8[];
+#ifdef MUST_MATCH
+// A typed aggregate copy emits the original four word loads and stores.
+typedef struct MobjNameTemplate {
+    u32 words[4];
+} MobjNameTemplate;
+#endif
+extern Vec lv_block_position[];
+
 // Data objects defined later in this file or in other units, declared before their first use.
 extern const char str_802C3DE0[];
 extern const char str_802C3DF8[];
@@ -53,21 +77,6 @@ extern const char str_802C3E68[];
 extern const char str_802C3E7C[];
 extern const char str_802C3E98[];
 extern const char str_802C3EAC[];
-extern const char str_802C4218[];
-extern const char str_802C4388[];
-extern const char str_802C4390[];
-extern const char str_802C43A0[];
-extern const char str_802C43DC[];
-extern const char str_802C43EC[];
-extern const char str_802C43FC[];
-extern const char str_802C4410[];
-extern const char str_802C44E0[];
-extern const char str_802C44F8[];
-extern const char str_802C4514[];
-extern const char str_802C4530[];
-extern const char str_802C454C[];
-extern const char str_802C474C[];
-extern const char str_802C475C[];
 
 // Prototypes for functions in other, not-yet-decompiled units (koopa / hit / etc.)
 
@@ -84,7 +93,6 @@ extern f32 float_0p99_8041a1b8;
 extern const f32 float_1p4_8041a208;
 extern const f32 float_1p2_8041a20c;
 extern f32 float_5_8041a210;
-extern const char str_802C46E4[];
 extern Vec vec3_802c3dc8[];
 extern Vec vec3_802c3dd4[];
 extern Vec vec3_802c40ac[];
@@ -92,9 +100,6 @@ extern Vec vec3_802c40b8[];
 extern Vec vec3_802c40c4[];
 extern Vec vec3_802c4050[];
 extern Vec vec3_802c405c[];
-extern const char str_802C41D0[];
-extern const char str_802C42E8[];
-extern const char str_802C42FC[];
 extern u32 dat_8041a134;
 extern u32 dat_8041a130;
 extern f32 float_0p45_8041a1c4;
@@ -106,7 +111,6 @@ extern f32 float_7p5_8041a1bc;
 extern f32 float_40_8041a1ec;
 extern f32 float_32767_8041a1e4;
 
-extern const char str_802C44EC[];
 extern const char str_8041A12C[4];
 extern s32 evt_lock_sound[];
 extern f32 float_1024_8041a1a0;
@@ -167,9 +171,9 @@ __declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
 // .rodata (part A)
 #pragma force_active on
 // vec3_802c3dc8: placeholder for the object the code copies (defining it hangs MWCC)
-__declspec(section ".rodata") Vec gap_vec3_802c3dc8_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec mobj_vec3_802c3dc8_template[1] = {{0.0f, 0.0f, 0.0f}};
 // vec3_802c3dd4: placeholder for the object the code copies (defining it hangs MWCC)
-__declspec(section ".rodata") Vec gap_vec3_802c3dd4_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec mobj_vec3_802c3dd4_template[1] = {{0.0f, 0.0f, 0.0f}};
 #pragma force_active reset
 const char str_802C3DE0[0x18] = "MOBJ_BlueTimerSwitch";
 const char str_802C3DF8[0x14] = "MOBJ_RedTimerSwitch";
@@ -180,22 +184,11 @@ static u32 evt_shake[] = {
 extern s32 mobj_save_blk_sysevt[];
 extern Vec vec3_802c40a0[];
 extern Vec vec3_802c3ef4[];
-extern const char str_802C41DC[];
-extern const char str_802C41F0[];
 #ifdef MUST_MATCH
-#define LVB_STR(off, sym) ((const char*)(base + (off)))
-#define LVB_VEC(off, sym) (*(const Vec*)((const u8*)base + (off)))
-#define LVB_TEMPLATE(dst, off, str)               \
-    do {                                          \
-        ((u32*)(dst))[0] = ((u32*)(base + (off)))[0]; \
-        ((u32*)(dst))[1] = ((u32*)(base + (off)))[1]; \
-        ((u32*)(dst))[2] = ((u32*)(base + (off)))[2]; \
-        ((u32*)(dst))[3] = ((u32*)(base + (off)))[3]; \
-    } while (0)
+// Copy all 16 template bytes; strcpy is sufficient in the natural build.
+#define LVB_TEMPLATE(dst, src) (*(MobjNameTemplate*)(dst) = *(const MobjNameTemplate*)(src))
 #else
-#define LVB_STR(off, sym) (sym)
-#define LVB_VEC(off, sym) (sym[0])
-#define LVB_TEMPLATE(dst, off, str) strcpy((dst), (str))
+#define LVB_TEMPLATE(dst, src) strcpy((dst), (src))
 #endif
 extern const char str_8041A11C[4];
 s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
@@ -604,9 +597,6 @@ s32 mobj_switch_blue(MapObjectEntry* obj) {
 }
 
 s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
-#ifdef MUST_MATCH
-    u8* base = (u8*)vec3_802c3dc8;
-#endif
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
@@ -621,23 +611,16 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
 
     switch (type) {
         case 0:
-#ifdef MUST_MATCH
-            asyncName = (const char*)(base + 0x9d8);
-#else
             asyncName = "MOBJ_BlueSwitch";
-#endif
             break;
         case 1:
-#ifdef MUST_MATCH
-            asyncName = (const char*)(base + 0x9e8);
-#else
             asyncName = "MOBJ_BlackSwitch";
-#endif
             break;
         case 2:
         default:
 #ifdef MUST_MATCH
-            asyncName = (const char*)(base + 0x9fc);
+            // Include the original section's four trailing alignment bytes in its final literal.
+            asyncName = "HOBJ_BlueSwitch\0\0\0\0";
 #else
             asyncName = "HOBJ_BlueSwitch";
 #endif
@@ -685,7 +668,7 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     z = evtGetFloat(event, args[4]);
     unk1D4 = evtGetValue(event, args[5]);
     unk1E4 = args[6];
-    asyncName = str_802C4788;
+    asyncName = "MOBJ_BlueSwitchBlock";
     if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
         return 0;
     }
@@ -725,7 +708,7 @@ s32 evt_mobj_tornadoswitch_blue(EventEntry* event, BOOL isFirstCall) {
     z = evtGetFloat(event, args[4]);
     unk1D4 = evtGetValue(event, args[5]);
     unk1E4 = args[6];
-    asyncName = str_802C4770;
+    asyncName = "MOBJ_BlueTornadoSwitch";
     if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
         return 0;
     }
@@ -795,17 +778,17 @@ s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
 #ifdef MUST_MATCH
     switch (type) {
         case 0:
-            asyncName = str_802C474C;
+            asyncName = "MOBJ_RedSwitch";
             break;
         case 1:
         default:
-            asyncName = str_802C475C;
+            asyncName = "MOBJ_WhiteSwitch";
             break;
     }
 #else
-    asyncName = str_802C475C;
+    asyncName = "MOBJ_WhiteSwitch";
     if (type == 0) {
-        asyncName = str_802C474C;
+        asyncName = "MOBJ_RedSwitch";
     }
 #endif
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
@@ -844,7 +827,7 @@ s32 evt_mobj_floatswitch_red(EventEntry* event, BOOL isFirstCall) {
     z = evtGetFloat(event, args[4]);
     unk1D4 = evtGetValue(event, args[5]);
     unk1E4 = args[6];
-    asyncName = str_802C4738;
+    asyncName = "MOBJ_RedSwitchBlock";
     if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
         return 0;
     }
@@ -863,6 +846,11 @@ s32 evt_mobj_floatswitch_red(EventEntry* event, BOOL isFirstCall) {
     mobjCalcMtx(obj);
     return 2;
 }
+
+#ifdef MUST_MATCH
+// Retail retains these unused animation names between function literal pools.
+static const char* pool_redTornado(void) { return "MOBJ_RedTornadoSwitch"; }
+#endif
 
 s32 mobj_timerswitch(MapObjectEntry* obj) {
     MapObjectEntry* child = mobjNameToPtr((char*)((u8*)obj + 0x1B8));
@@ -1104,6 +1092,12 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
     return 0;
 }
 
+#ifdef MUST_MATCH
+// Retail retains these unused animation names between function literal pools.
+static const char* pool_rideA(void) { return "MOBJ_RideSwitchA"; }
+static const char* pool_rideB(void) { return "MOBJ_RideSwitchB"; }
+#endif
+
 // NONMATCHING (99.79%): only the gp/string-address temp colouring is swapped (retail gp=r5/str=r4,
 // ours gp=r4/str=r5); `!!gp->inBattle` fixed the scheduling.
 s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
@@ -1124,7 +1118,7 @@ s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     f29 = evtGetFloat(event, args[3]);
     unk1D4 = evtGetValue(event, args[4]);
     unk1D8 = evtGetValue(event, args[5]);
-    asyncName = str_802C46E4;
+    asyncName = "MOBJ_RideSwitchC";
     unk1E4 = args[6];
     if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
         return 0;
@@ -1380,51 +1374,44 @@ s32 evt_mobj_jumpstand_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// mobj_lv_blk_evt reads the unit's rodata pool through vec3_802c3dc8 (retail's base register r31):
-// "P_box_y", the six MOBJ_Lv*Block anim-name strings, the "o_"/"i_" name templates and the
-// position vec3_802c3ee8. The MUST_MATCH macros select that retail base+offset form; the natural
-// named-object form is under #else. The offsets are the named objects' real addresses in the pool.
-
+// Level-block callback: literal animation names share the compiler's read-only pool base.
 s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
-#ifdef MUST_MATCH
-    u8* base = (u8*)vec3_802c3dc8;
-#endif
     char offName[16];
     char imgName[16];
     ImageEntry* img;
     MarioWork* mario;
     BOOL inBattle;
 
-    LVB_TEMPLATE(offName, 0x100, "o_");
-    LVB_TEMPLATE(imgName, 0x110, "i_");
+    LVB_TEMPLATE(offName, str_802C3EC8);
+    LVB_TEMPLATE(imgName, str_802C3ED8);
     inBattle = gp->inBattle != 0;
     mario = marioGetPtr();
     strcat(offName, obj->name);
     strcat(imgName, obj->name);
     switch (obj->unk1DC) {
         case 0:
-            animGroupBaseAsync(LVB_STR(0x5c0, "P_box_y"), inBattle, NULL);
+            animGroupBaseAsync("P_box_y", inBattle, NULL);
             if (obj->flags & 8) {
-                if (strcmp(obj->animName, LVB_STR(0x8ac, str_802C4674)) == 0 ||
-                    strcmp(obj->animName, LVB_STR(0x8bc, str_802C4684)) == 0) {
+                if (strcmp(obj->animName, "MOBJ_Lv1Block") == 0 ||
+                    strcmp(obj->animName, "MOBJ_Lv1BigBlock") == 0) {
                     goto run_event;
                 }
-                if (strcmp(obj->animName, LVB_STR(0x8d0, str_802C4698)) == 0) {
+                if (strcmp(obj->animName, "MOBJ_Lv1BigBigBlock") == 0) {
                     if (pouchGetHammerLv() >= 2 && mario->currMotionId == MARIO_MOTION_HAMMER_2) {
                         goto run_event;
                     }
                     obj->flags &= ~8;
                     break;
                 }
-                if (strcmp(obj->animName, LVB_STR(0x8e4, str_802C46AC)) == 0 ||
-                    strcmp(obj->animName, LVB_STR(0x8f4, str_802C46BC)) == 0) {
+                if (strcmp(obj->animName, "MOBJ_Lv2Block") == 0 ||
+                    strcmp(obj->animName, "MOBJ_Lv2BigBlock") == 0) {
                     if (pouchGetHammerLv() >= 3) {
                         goto run_event;
                     }
                     obj->flags &= ~8;
                     break;
                 }
-                if (strcmp(obj->animName, LVB_STR(0x908, str_802C46D0)) == 0) {
+                if (strcmp(obj->animName, "MOBJ_Lv2BigBigBlock") == 0) {
                     if (pouchGetHammerLv() >= 3 && mario->currMotionId == MARIO_MOTION_HAMMER_2) {
                         goto run_event;
                     }
@@ -1445,7 +1432,7 @@ s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
             s32 captureArgs2[10];
             EventEntry tmpEvent2;
 
-            animPaperPoseEntry(LVB_STR(0x5c0, "P_box_y"), inBattle);
+            animPaperPoseEntry("P_box_y", inBattle);
             offscreenEntry(offName);
             imgEntry(imgName, inBattle);
             obj->offscreenId = offscreenNameToId(offName);
@@ -1470,20 +1457,20 @@ s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
             captureArgs2[7] = 0;
             evt_img_alloc_capture(&tmpEvent2, 1);
             img = imgNameToPtr(imgName, inBattle);
-            img->poseId = animPaperPoseGetId(LVB_STR(0x5c0, "P_box_y"), inBattle);
+            img->poseId = animPaperPoseGetId("P_box_y", inBattle);
             img->animName = str_8041A118;
             // ImageEntry declares no field at 0x110 (it falls 4 bytes into the field_0x10C padding,
             // 0x10C..0x118); the same location is written by evt_img.c, evt_cloud.c and fadedrv.c.
             *(OSTime*)(img->field_0x10C + 4) = animTimeGetTime(inBattle);
             imgSetShadow(img, 2);
-            if (strcmp(obj->animName, LVB_STR(0x8ac, str_802C4674)) == 0 ||
-                strcmp(obj->animName, LVB_STR(0x8e4, str_802C46AC)) == 0) {
+            if (strcmp(obj->animName, "MOBJ_Lv1Block") == 0 ||
+                strcmp(obj->animName, "MOBJ_Lv2Block") == 0) {
                 psndSFXOn_3D((const char*)0x1C7, &obj->position);
-            } else if (strcmp(obj->animName, LVB_STR(0x8bc, str_802C4684)) == 0 ||
-                       strcmp(obj->animName, LVB_STR(0x8f4, str_802C46BC)) == 0) {
+            } else if (strcmp(obj->animName, "MOBJ_Lv1BigBlock") == 0 ||
+                       strcmp(obj->animName, "MOBJ_Lv2BigBlock") == 0) {
                 psndSFXOn_3D((const char*)0x1C8, &obj->position);
-            } else if (strcmp(obj->animName, LVB_STR(0x8d0, str_802C4698)) == 0 ||
-                       strcmp(obj->animName, LVB_STR(0x908, str_802C46D0)) == 0) {
+            } else if (strcmp(obj->animName, "MOBJ_Lv1BigBigBlock") == 0 ||
+                       strcmp(obj->animName, "MOBJ_Lv2BigBigBlock") == 0) {
                 psndSFXOn_3D((const char*)0x1C9, &obj->position);
             }
             obj->unk1DC = 0xb;
@@ -1497,7 +1484,7 @@ s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
             if (img->flags & 0x10000000) {
                 obj->unk1DC = 0xc;
             }
-            obj->position = LVB_VEC(0x120, vec3_802c3ee8);
+            obj->position = lv_block_position[0];
             obj->flags |= 4;
             obj->flags |= 8;
             break;
@@ -1537,7 +1524,7 @@ s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
-    if (!animGroupBaseAsync(str_802C4388, inBattle, NULL)) {
+    if (!animGroupBaseAsync("P_box_y", inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -1591,20 +1578,8 @@ s32 mobj_float_blk(MapObjectEntry* obj) {
     return 0;
 }
 
-// MUST_MATCH: retail reaches the anim-name strings from vec3_802c3dc8+0x7a0..0x890 (the unit's rodata
-// pool base); this file doesn't define that data yet, so plain literals land on an anonymous symbol
-// and a different base register. FB_NAME selects the retail base+offset form; the natural literal form
-// is under #else.
-#ifdef MUST_MATCH
-#define FB_NAME(off, lit) ((const char*)(base + (off)))
-#else
-#define FB_NAME(off, lit) (lit)
-#endif
 s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
-#ifdef MUST_MATCH
-    u8* base = (u8*)vec3_802c3dc8;
-#endif
     const char* name = (const char*)evtGetValue(event, args[0]);
     f32 f31 = evtGetFloat(event, args[1]);
     f32 f30 = evtGetFloat(event, args[2]);
@@ -1622,41 +1597,41 @@ s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
     switch (type) {
         case 0:
             if (sub == 0) {
-                asyncName = FB_NAME(0x7a0, "MOBJ_green_FlowBlock");
+                asyncName = "MOBJ_green_FlowBlock";
             } else if (sub == 1) {
-                asyncName = FB_NAME(0x7b8, "MOBJ_green_big_FlowBlock");
+                asyncName = "MOBJ_green_big_FlowBlock";
             } else {
-                asyncName = FB_NAME(0x7d4, "MOBJ_green_big02_FlowBlock");
+                asyncName = "MOBJ_green_big02_FlowBlock";
             }
             break;
         case 1:
             if (sub == 0) {
-                asyncName = FB_NAME(0x7f0, "MOBJ_purple_FlowBlock");
+                asyncName = "MOBJ_purple_FlowBlock";
             } else if (sub == 1) {
-                asyncName = FB_NAME(0x808, "MOBJ_purple_big_FlowBlock");
+                asyncName = "MOBJ_purple_big_FlowBlock";
             } else {
-                asyncName = FB_NAME(0x824, "MOBJ_purple_big02_FlowBlock");
+                asyncName = "MOBJ_purple_big02_FlowBlock";
             }
             break;
         case 2:
             if (sub == 0) {
-                asyncName = FB_NAME(0x840, "MOBJ_orange_FlowBlock");
+                asyncName = "MOBJ_orange_FlowBlock";
             } else if (sub == 1) {
-                asyncName = FB_NAME(0x858, "MOBJ_orange_big_FlowBlock");
+                asyncName = "MOBJ_orange_big_FlowBlock";
             } else {
-                asyncName = FB_NAME(0x874, "MOBJ_orange_big02_FlowBlock");
+                asyncName = "MOBJ_orange_big02_FlowBlock";
             }
             break;
         case 3:
-            asyncName = FB_NAME(0x890, "MOBJ_red_big02_FlowBlock");
+            asyncName = "MOBJ_red_big02_FlowBlock";
             break;
         default:
             if (sub == 0) {
-                asyncName = FB_NAME(0x7a0, "MOBJ_green_FlowBlock");
+                asyncName = "MOBJ_green_FlowBlock";
             } else if (sub == 1) {
-                asyncName = FB_NAME(0x7b8, "MOBJ_green_big_FlowBlock");
+                asyncName = "MOBJ_green_big_FlowBlock";
             } else {
-                asyncName = FB_NAME(0x7d4, "MOBJ_green_big02_FlowBlock");
+                asyncName = "MOBJ_green_big02_FlowBlock";
             }
             break;
     }
@@ -1686,7 +1661,6 @@ s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
-#undef FB_NAME
 
 // Data for mobj_switch_float_blk only (unit .rodata).
 
@@ -1930,10 +1904,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
 }
 #pragma opt_common_subs reset
 
-// The 0x1B8/0x1B0 accesses use the declared unk1A0[] array field and the name test uses `*(s8*)...`, so
-// they match; the only diff is the four "MOBJ_*_FlowBlockSwitch" strings pooled at base+0x94 vs retail's
-// base+0x730 (unit .rodata layout, not reproducible per-function).
-// NONMATCHING (99.97%)
+// The float-block switch animation names pool in their original codegen order.
 s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -1950,19 +1921,19 @@ s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
 
     switch (type) {
         case 0:
-            asyncName = str_802C44F8;
+            asyncName = "MOBJ_green_FlowBlockSwitch";
             break;
         case 1:
-            asyncName = str_802C4514;
+            asyncName = "MOBJ_purple_FlowBlockSwitch";
             break;
         case 2:
-            asyncName = str_802C4530;
+            asyncName = "MOBJ_orange_FlowBlockSwitch";
             break;
         case 3:
-            asyncName = str_802C454C;
+            asyncName = "MOBJ_red_FlowBlockSwitch";
             break;
         default:
-            asyncName = str_802C44F8;
+            asyncName = "MOBJ_green_FlowBlockSwitch";
             break;
     }
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
@@ -2003,7 +1974,7 @@ s32 evt_mobj_lock_unlock(EventEntry* event, BOOL isFirstCall) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);
     MapObjectEntry* obj = mobjNameToPtr(name);
 
-    if (strcmp(obj->animName, str_802C44E0) != 0) {
+    if (strcmp(obj->animName, "MOBJ_Lock") != 0) {
         return 2;
     }
     if (obj->unk1D0 == NULL) {
@@ -2075,7 +2046,7 @@ s32 mobj_lock(MapObjectEntry* obj) {
                 pouchRemoveItem(item);
                 obj->unk1DC++;
             } else {
-                *(s32*)&obj->unk1A0[8] = msgWindow_Entry(msgSearch(str_802C44EC), 0, 0);
+                *(s32*)&obj->unk1A0[8] = msgWindow_Entry(msgSearch("sys_no_key"), 0, 0);
                 obj->unk1DC = 0xa;
             }
             break;
@@ -2171,7 +2142,7 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
     s32 unk1E4 = args[8];
     BOOL inBattle = gp->inBattle != 0;
     MapObjectEntry* obj;
-    const char* asyncName = str_802C44E0;
+    const char* asyncName = "MOBJ_Lock";
 
     if (evtGetValue(event, unk1E4) != 0) {
         return 2;
@@ -2198,10 +2169,15 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
 }
 
 // Itembox per-frame update callback (obj->unk1D0). Installed by evt_mobj_itembox.
+// MUST_MATCH: the named rodata base keeps the object in r31 and the pool in r30.
+// The literal form alone swaps those registers (97.58%). All addressed strings and
+// the double are now compiler-owned literals, first pooled by evt_mobj_itembox;
+// IB_* selects their natural values without MUST_MATCH.
 s32 mobj_itembox(MapObjectEntry* obj) {
 #ifdef MUST_MATCH
     u8* dbase = (u8*)negone_one_374;
     u8* rbase = (u8*)vec3_802c3dc8;
+
 #endif
     switch (obj->unk1DC) {
         case 0:
@@ -2313,7 +2289,7 @@ s32 mobj_itembox(MapObjectEntry* obj) {
 }
 
 s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
-    u8* base = (u8*)vec3_802c3dc8;
+
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     f32 f31 = evtGetFloat(event, args[1]);
@@ -2329,20 +2305,20 @@ s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
 
     switch (type) {
         case 0:
-            modelName = (const char*)(base + 0x6A0);
+            modelName = "MOBJ_TreasureBox";
             break;
         case 1:
-            modelName = (const char*)(base + 0x6B4);
+            modelName = "MOBJ_BigTreasureBox";
             break;
         case 2:
-            modelName = (const char*)(base + 0x6C8);
+            modelName = "MOBJ_GrayTreasureBox";
             break;
         case 3:
-            modelName = (const char*)(base + 0x6E0);
+            modelName = "MOBJ_BlackTreasureBox";
             break;
         case 4:
         default:
-            modelName = (const char*)(base + 0x6F8);
+            modelName = "MOBJ_GoldenTreasureBox";
             break;
     }
     if (!animGroupBaseAsync(modelName, inBattle, NULL)) {
@@ -2367,17 +2343,17 @@ s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
         Vec bboxMax;
         Vec bboxMin;
 
-        minTmp = *(Vec*)(base + 0x210);
+        minTmp = vec3_802c3fd8[0];
         minTmp.x = animData->bboxMin.x;
         minTmp.y = animData->bboxMin.y;
         minTmp.z = animData->bboxMin.z;
         bboxMin = minTmp;
-        maxTmp = *(Vec*)(base + 0x21C);
+        maxTmp = vec3_802c3fe4[0];
         maxTmp.x = animData->bboxMax.x;
         maxTmp.y = animData->bboxMax.y;
         maxTmp.z = animData->bboxMax.z;
         bboxMax = maxTmp;
-        bboxMin.z = bboxMin.z - *(f64*)(base + 0x710) * __fabsf(bboxMax.y - bboxMin.y);
+        bboxMin.z = bboxMin.z - (f64)0.2f * __fabsf(bboxMax.y - bboxMin.y);
         PSVECAdd(&bboxMax, &bboxMin, &obj->translation);
         PSVECScale(&obj->translation, &obj->translation, float_0p5_8041a15c);
         PSVECScale(&obj->translation, &obj->translation, float_10_8041a1a4);
@@ -2446,7 +2422,7 @@ s32 evt_mobj_signboard(EventEntry* event, BOOL isFirstCall) {
     f2 = evtGetFloat(event, args[2]);
     f3 = evtGetFloat(event, args[3]);
     unk1D4 = evtGetValue(event, args[4]);
-    asyncName = str_802C4458;
+    asyncName = "MOBJ_Signboard";
     unk1E4 = args[5];
     if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
         return 0;
@@ -2462,6 +2438,11 @@ s32 evt_mobj_signboard(EventEntry* event, BOOL isFirstCall) {
     obj->unk1DC = 0;
     return 2;
 }
+
+#ifdef MUST_MATCH
+// Retail retains these unused animation names between function literal pools.
+static const char* pool_arrow(void) { return "MOBJ_Arrow"; }
+#endif
 
 // Recovery block (heart / coin-taken). MapObjectEntry does not declare the fields this object stores in
 // its 0x1A0 padding, so they are read/written through the declared array: *(s32*)&obj->unk1A0[4] (0x1A4
@@ -2609,7 +2590,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             obj->unk1DC = 0;
             break;
         case 10:
-            *(s32*)((u8*)obj + 0x1A8) = msgWindow_Entry(msgSearch(str_802C442C), 0, 0);
+            *(s32*)((u8*)obj + 0x1A8) = msgWindow_Entry(msgSearch("sys_no_coin"), 0, 0);
             obj->unk1DC++;
             break;
         case 11:
@@ -2621,7 +2602,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             }
             break;
         case 20:
-            *(s32*)((u8*)obj + 0x1A8) = msgWindow_Entry(msgSearch(str_802C4438), 0, 0);
+            *(s32*)((u8*)obj + 0x1A8) = msgWindow_Entry(msgSearch("kaifuku_first_hit"), 0, 0);
             obj->unk1DC++;
             break;
         case 21:
@@ -2651,7 +2632,7 @@ s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     evtGetValue(event, args[5]);
     unk1E4 = args[6];
     inBattle = gp->inBattle != 0;
-    asyncName = (type == 0) ? str_802C43FC : str_802C4410;
+    asyncName = (type == 0) ? "MOBJ_RecoveryBlock" : "MOBJ_CoinTakenRecoveryBlock";
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
@@ -2731,7 +2712,7 @@ s32 evt_mobj_save_blk(EventEntry* event, BOOL isFirstCall) {
     f32 f29 = evtGetFloat(event, args[3]);
     s32 unk1D4 = evtGetValue(event, args[4]);
     s32 unk1E4 = args[5];
-    const char* asyncName = str_802C43EC;
+    const char* asyncName = "MOBJ_SaveBlock";
     MapObjectEntry* obj;
     BOOL inBattle = gp->inBattle != 0;
 
@@ -2767,14 +2748,14 @@ s32 evt_mobj_save_blk(EventEntry* event, BOOL isFirstCall) {
 // schedule). Same known-hard load-hoist class as _hammer_star_effect (battle_mario.c) and
 // DrawSubMenuCommonProcess (battle_menu_disp.c).
 s32 mobj_badgeblk(MapObjectEntry* obj) {
-    u8* base = (u8*)vec3_802c3dc8;
+
 
     switch (obj->unk1DC) {
         case 0:
             if (obj->flags & 8) {
-                if (strcmp(obj->animName, (const char*)(base + 0x614)) == 0 ||
-                    strcmp(obj->animName, (const char*)(base + 0x564)) == 0 ||
-                    strcmp(obj->animName, (const char*)(base + 0x590)) == 0) {
+                if (strcmp(obj->animName, "MOBJ_BadgeBlock") == 0 ||
+                    strcmp(obj->animName, "MOBJ_BrickBadgeBlock") == 0 ||
+                    strcmp(obj->animName, "MOBJ_HiddenBadgeBlock") == 0) {
                     psndSFXOn_3D((const char*)0x1BB, &obj->position);
                 } else {
                     psndSFXOn_3D((const char*)0x1BA, &obj->position);
@@ -2821,12 +2802,12 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
             animPoseSetAnim(obj->poseId, "S_2", 1);
             obj->flags &= ~8;
             obj->unk1DC = 0x5a;
-            if (strcmp(obj->animName, (const char*)(base + 0x474)) == 0 ||
-                strcmp(obj->animName, (const char*)(base + 0x54C)) == 0 ||
-                strcmp(obj->animName, (const char*)(base + 0x45C)) == 0) {
-                strcpy(obj->animName, (const char*)(base + 0x450));
+            if (strcmp(obj->animName, "MOBJ_HatenaBlock") == 0 ||
+                strcmp(obj->animName, "MOBJ_BrickHatenaBlock") == 0 ||
+                strcmp(obj->animName, "MOBJ_HiddenHatenaBlock") == 0) {
+                strcpy(obj->animName, "MOBJ_Block");
             } else {
-                strcpy(obj->animName, (const char*)(base + 0x5C8));
+                strcpy(obj->animName, "MOBJ_PinkBlock");
             }
             break;
         case 0x5a:
@@ -2853,9 +2834,6 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (99.96%): the registers and schedule now match; the only diff is the pooled-string
-// offsets (retail uses vec3_802c3dc8+0x450/0x474/0x5c8/0x614, our unit's .rodata has them at
-// +0x124/0x1ec/0x200/0x1dc), i.e. the unit-wide .rodata base/layout is not reconstructed.
 s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -2871,7 +2849,7 @@ s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
 
     inBattle = gp->inBattle != 0;
-    asyncName = (var != 0) ? str_802C43DC : str_802C423C;
+    asyncName = (var != 0) ? "MOBJ_BadgeBlock" : "MOBJ_HatenaBlock";
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
@@ -2890,27 +2868,17 @@ s32 evt_mobj_badgeblk(EventEntry* event, BOOL isFirstCall) {
     if (evtGetValue(event, unk1E4) != 0) {
         obj->unk1DC = 0x5a;
         animPoseSetAnim(obj->poseId, "S_2", 1);
-        strcpy(obj->animName, (var != 0) ? str_802C4390 : str_802C4218);
+        strcpy(obj->animName, (var != 0) ? "MOBJ_PinkBlock" : "MOBJ_Block");
     }
     return 2;
 }
 
 s32 mobj_powerupblk(MapObjectEntry* obj) {
-#ifdef MUST_MATCH
-    // Match only: the five strings are addressed as `base + offset` to reach the original's .rodata layout.
-    u8* base = (u8*)vec3_802c3dc8;
-#define PB_DOU02 ((const char*)(base + 0x5EC))
-#define PB_DOU05 ((const char*)(base + 0x5F4))
-#define PB_DOU10 ((const char*)(base + 0x5FC))
-#define PB_BLK1 ((const char*)(base + 0x604))
-#define PB_BLK2 ((const char*)(base + 0x60C))
-#else
 #define PB_DOU02 "dou_02"
 #define PB_DOU05 "dou_05"
 #define PB_DOU10 "dou_10"
 #define PB_BLK1 "pwrblk1"
 #define PB_BLK2 "pwrblk2"
-#endif
 
     switch (obj->unk1DC) {
         case 0:
@@ -2986,7 +2954,7 @@ s32 evt_mobj_powerupblk(EventEntry* event, BOOL isFirstCall) {
     s32 unk1D4 = evtGetValue(event, args[4]);
     s32 unk1E4 = args[5];
     f32 f31 = evtGetFloat(event, args[6]);
-    const char* asyncName = str_802C43A0;
+    const char* asyncName = "MOBJ_PowerUpBlock";
     MapObjectEntry* obj;
 
     if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
@@ -3011,41 +2979,41 @@ s32 evt_mobj_powerupblk(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// Matched with a MUST_MATCH copy from retail's "o_"/"i_" templates (see inside the function).
+// The name-buffer initializers emit their templates here, after save_first_hit.
+// Prefix data precedes the following callback's compiler-generated name buffers.
+#pragma force_active on
+const char str_802C3EC8[0x10] = "o_";
+const char str_802C3ED8[0x10] = "i_";
+__declspec(section ".rodata") Vec lv_block_position[1] = {{0.0f, -2000.0f, 0.0f}};
+// vec3_802c3ef4: placeholder for the object the code copies (defining it hangs MWCC)
+__declspec(section ".rodata") Vec mobj_vec3_802c3ef4_template[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") char str_802C3F00[0x18] = "SFX_MOBJ_LOCK_SWING1";
+__declspec(section ".rodata") char str_802C3F18[0x14] = "SFX_MOBJ_UNLOCK1";
+__declspec(section ".rodata") char str_802C3F2C[0x20] = "SFX_MOBJ_TREASURE_BOX_SWING1";
+__declspec(section ".rodata") char str_802C3F4C[0x1C] = "SFX_MOBJ_TREASURE_BOX_OPEN1";
+__declspec(section ".rodata") char str_802C3F68[0x20] = "SFX_MOBJ_TREASURE_BOX_SWING2";
+__declspec(section ".rodata") char str_802C3F88[0x1C] = "SFX_MOBJ_TREASURE_BOX_OPEN2";
+__declspec(section ".rodata") char str_802C3FA4[0x1C] = "SFX_MOBJ_BLACKBOX_SWING1";
+__declspec(section ".rodata") char str_802C3FC0[0x18] = "SFX_MOBJ_BLACKBOX_OPEN1";
+__declspec(section ".rodata") static const Vec vec3_802c3fd8[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") static const Vec vec3_802c3fe4[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") char str_802C3FF0[0x10] = "save_first_hit";
+#pragma force_active reset
+
 s32 mobj_brickblk(MapObjectEntry* obj) {
-    u8* base = (u8*)vec3_802c3dc8;
-#ifdef MUST_MATCH
-    // MUST_MATCH: retail's "o_"/"i_" 16-byte templates live at vec3_802c3dc8+0x238/+0x248, so the
-    // target copies them from `base`. The natural initializer form (under #else) makes MWCC emit its
-    // own anonymous template and a separate base register; copying from `base` reproduces the target
-    // and is behaviourally identical. `inBattle` must be assigned after the copies (not in its
-    // declaration) or MWCC hoists the gp load above them.
-    char offName[16];
-    char imgName[16];
+
+    char offName[16] = "o_";
+    char imgName[16] = "i_";
     BOOL inBattle;
     ImageEntry* img;
 
-    ((u32*)offName)[0] = ((u32*)(base + 0x238))[0];
-    ((u32*)offName)[1] = ((u32*)(base + 0x238))[1];
-    ((u32*)offName)[2] = ((u32*)(base + 0x238))[2];
-    ((u32*)offName)[3] = ((u32*)(base + 0x238))[3];
-    ((u32*)imgName)[0] = ((u32*)(base + 0x248))[0];
-    ((u32*)imgName)[1] = ((u32*)(base + 0x248))[1];
-    ((u32*)imgName)[2] = ((u32*)(base + 0x248))[2];
-    ((u32*)imgName)[3] = ((u32*)(base + 0x248))[3];
     inBattle = gp->inBattle != 0;
-#else
-    char offName[16] = "o_";
-    char imgName[16] = "i_";
-    BOOL inBattle = gp->inBattle != 0;
-    ImageEntry* img;
-#endif
 
     strcat(offName, obj->name);
     strcat(imgName, obj->name);
     switch (obj->unk1DC) {
         case 0:
-            animGroupBaseAsync((const char*)(base + 0x5C0), inBattle, NULL);
+            animGroupBaseAsync("P_box_y", inBattle, NULL);
             if (obj->flags & 8) {
                 mobjRunEvent(obj, obj->unk1D4);
                 evtSetValue(NULL, obj->unk1E4, 1);
@@ -3058,7 +3026,7 @@ s32 mobj_brickblk(MapObjectEntry* obj) {
             s32 captureArgs2[10];
             EventEntry tmpEvent2;
 
-            animPaperPoseEntry((const char*)(base + 0x5C0), inBattle);
+            animPaperPoseEntry("P_box_y", inBattle);
             offscreenEntry(offName);
             imgEntry(imgName, inBattle);
             *(s32*)((u8*)obj + 0x19C) = offscreenNameToId(offName);
@@ -3083,7 +3051,7 @@ s32 mobj_brickblk(MapObjectEntry* obj) {
             captureArgs2[7] = 0;
             evt_img_alloc_capture(&tmpEvent2, 1);
             img = imgNameToPtr(imgName, inBattle);
-            img->poseId = animPaperPoseGetId((const char*)(base + 0x5C0), inBattle);
+            img->poseId = animPaperPoseGetId("P_box_y", inBattle);
             img->animName = "A_1";
             *(OSTime*)((u8*)img + 0x110) = animTimeGetTime(inBattle);
             imgSetShadow(img, 2);
@@ -3099,7 +3067,7 @@ s32 mobj_brickblk(MapObjectEntry* obj) {
             if (img->flags & 0x10000000) {
                 obj->unk1DC = 0xc;
             }
-            obj->position = *(Vec*)(base + 0x258);
+            obj->position = vec3_802c4020[0];
             obj->flags |= 4;
             obj->flags |= 8;
             break;
@@ -3126,7 +3094,7 @@ s32 mobj_10countblk(MapObjectEntry* obj) {
             if (obj->flags & 8) {
                 if (obj->flags & 0x800) {
                     obj->flags &= ~0x800;
-                    strcpy(obj->animName, str_802C4218);
+                    strcpy(obj->animName, "MOBJ_Block");
                 }
                 animPoseSetAnim(obj->poseId, "A_1", 1);
                 psndSFXOn_3D((const char*)0x1BE, &obj->position);
@@ -3150,7 +3118,7 @@ s32 mobj_10countblk(MapObjectEntry* obj) {
             if (*(s32*)((u8*)obj + 0x1B0) <= 0) {
                 obj->unk1DC = 0x5a;
                 animPoseSetAnim(obj->poseId, "S_2", 1);
-                strcpy(obj->animName, str_802C4218);
+                strcpy(obj->animName, "MOBJ_Block");
             } else if (obj->flags & 8) {
                 psndSFXOn_3D((const char*)0x1BF, &obj->position);
                 pouchAddCoin(1);
@@ -3185,7 +3153,7 @@ s32 mobj_10countblk(MapObjectEntry* obj) {
 }
 
 s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
-    u8* base = (u8*)vec3_802c3dc8;
+
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
     f32 x = evtGetFloat(event, args[1]);
@@ -3201,34 +3169,34 @@ s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
 
     switch (type) {
         case 0:
-            animName = (const char*)(base + 0x488);
+            animName = "MOBJ_FlowBrickBlock";
             break;
         case 1:
-            animName = (const char*)(base + 0x54C);
+            animName = "MOBJ_BrickHatenaBlock";
             break;
         case 2:
-            animName = (const char*)(base + 0x564);
+            animName = "MOBJ_BrickBadgeBlock";
             break;
         case 3:
-            animName = (const char*)(base + 0x57C);
+            animName = "MOBJ_10CountBlock";
             break;
         case 0xa:
-            animName = (const char*)(base + 0x45C);
+            animName = "MOBJ_HiddenHatenaBlock";
             break;
         case 0xb:
-            animName = (const char*)(base + 0x45C);
+            animName = "MOBJ_HiddenHatenaBlock";
             break;
         case 0xc:
-            animName = (const char*)(base + 0x590);
+            animName = "MOBJ_HiddenBadgeBlock";
             break;
         case 0xd:
-            animName = (const char*)(base + 0x5A8);
+            animName = "MOBJ_Hidden10CountBlock";
             break;
     }
     if (!animGroupBaseAsync(animName, inBattle, NULL)) {
         return 0;
     }
-    if (!animGroupBaseAsync((const char*)(base + 0x5C0), inBattle, NULL)) {
+    if (!animGroupBaseAsync("P_box_y", inBattle, NULL)) {
         return 0;
     }
     mobjEntry((const char*)name, animName);
@@ -3282,19 +3250,19 @@ s32 evt_mobj_brick(EventEntry* event, BOOL isFirstCall) {
             case 0xb:
                 animPoseSetAnim(obj->poseId, "S_2", 1);
                 obj->unk1DC = 0x5a;
-                newName = (const char*)(base + 0x450);
+                newName = "MOBJ_Block";
                 break;
             case 2:
             case 0xc:
                 animPoseSetAnim(obj->poseId, "S_2", 1);
                 obj->unk1DC = 0x5a;
-                newName = (const char*)(base + 0x5C8);
+                newName = "MOBJ_PinkBlock";
                 break;
             case 3:
             case 0xd:
                 animPoseSetAnim(obj->poseId, "S_2", 1);
                 obj->unk1DC = 0x5a;
-                newName = (const char*)(base + 0x450);
+                newName = "MOBJ_Block";
                 break;
         }
         if (newName != NULL) {
@@ -3370,13 +3338,13 @@ s32 evt_mobj_breaking_floor(EventEntry* event, BOOL isFirstCall) {
 
     switch (type) {
         case 0:
-            strcpy(animName, str_802C42E8);
+            strcpy(animName, "MOBJ_BreakingFloor");
             break;
         case 1:
-            strcpy(animName, str_802C42FC);
+            strcpy(animName, "MOBJ_BlackBreakingFloor");
             break;
         default:
-            strcpy(animName, str_802C42E8);
+            strcpy(animName, "MOBJ_BreakingFloor");
             break;
     }
     if (!animGroupBaseAsync(animName, inBattle, NULL)) {
@@ -3400,19 +3368,11 @@ s32 evt_mobj_breaking_floor(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// The 4-Vec bbox construction (minTmp/maxTmp -> bboxMin/bboxMax, the itembox pattern), the tex size
-// rounding and every call now match. The residue is the compiler's int->float magic doubles: the target
-// reads them base-relative -- lfd f2,0x518(r30) / lfd f2,0x400(r30), r30=vec3_802c3dc8 -- because the
-// original unit defines those doubles in .rodata next to vec3_802c3dc8. Our unlinked object does not
-// define this unit's .rodata, so mwcc pools its own @2190/@2192 copies in .rodata and reloads them with a
-// fresh lis/addi (3 instructions instead of 1), which also shifts the FP schedule around them. Defining
-// the doubles in the source does not help (mwcc still emits its own copy). Only other diff: the tan
-// argument lfd is scheduled one instruction later than the target; every constant, type and argument
-// order is verified against the asm.
-// NONMATCHING (87.36%): the int->float magic-double masks are not base-relative (see above).
+// NONMATCHING (90.09%): the compiler now shares both conversion doubles with the
+// read-only pool; floating-point register allocation and scheduling still differ.
 void kururing_capture(CameraId cameraId, void* param) {
     MapObjectEntry* obj = param;
-    u8* base = (u8*)vec3_802c3dc8;
+
     CameraEntry save;
     CameraEntry* cam;
     AnimationPoseData* animData;
@@ -3427,12 +3387,12 @@ void kururing_capture(CameraId cameraId, void* param) {
 
     memcpy(&save, camGetPtr(cameraId), 0x260);
     animData = animPoseGetAnimBaseDataPtr(obj->poseId);
-    minTmp = *(Vec*)(base + 0x264);
+    minTmp = vec3_802c402c[0];
     minTmp.x = animData->bboxMin.x;
     minTmp.y = animData->bboxMin.y;
     minTmp.z = animData->bboxMin.z;
     bboxMin = minTmp;
-    maxTmp = *(Vec*)(base + 0x270);
+    maxTmp = vec3_802c4038[0];
     maxTmp.x = animData->bboxMax.x;
     maxTmp.y = animData->bboxMax.y;
     maxTmp.z = animData->bboxMax.z;
@@ -3442,10 +3402,10 @@ void kururing_capture(CameraId cameraId, void* param) {
     cam = camGetPtr(cameraId);
     texWidth = (texWidth + 1) & ~1;
     texHeight = (texHeight + 1) & ~1;
-    cam->cameraUp = *(Vec*)(base + 0x27C);
+    cam->cameraUp = vec3_802c4044[0];
     cam->cameraAt = obj->position;
     cam->cameraPos = obj->position;
-    t = (f32)tan(*(f64*)(base + 0x510));
+    t = (f32)tan(0.21816615760326385);
     cam->cameraPos.y += 0.5f * (f32)texHeight / t;
     C_MTXPerspective(cam->projection, float_25_8041a140, (f32)(texWidth / texHeight),
                      float_1_8041a160, float_32767_8041a1e4);
@@ -3654,9 +3614,6 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
 }
 
 s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
-#ifdef MUST_MATCH
-    u8* base = (u8*)vec3_802c3dc8;
-#endif
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     f32 f29 = evtGetFloat(event, args[1]);
@@ -3670,11 +3627,7 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     const char* asyncName;
 
     evtGetValue(event, args[5]);
-#ifdef MUST_MATCH
-    asyncName = (const char*)(base + 0x4fc);
-#else
     asyncName = "MOBJ_KururinFloor";
-#endif
     unk1E4 = args[6];
     if (!animGroupBaseAsync(asyncName, gp->inBattle != 0, NULL)) {
         return 0;
@@ -3682,7 +3635,7 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
 #ifdef MUST_MATCH
-    pos = *(Vec*)(base + 0x288);
+    pos = mobj_vec3_802c4050_template[0];
 #else
     pos = vec3_802c4050[0];
 #endif
@@ -3697,7 +3650,7 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= 2;
     mobjCalcMtx(obj);
 #ifdef MUST_MATCH
-    scale = *(Vec*)(base + 0x294);
+    scale = mobj_vec3_802c405c_template[0];
 #else
     scale = vec3_802c405c[0];
 #endif
@@ -3709,6 +3662,13 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     animPoseWorldPositionEvalOn(obj->poseId);
     return 2;
 }
+
+#ifdef MUST_MATCH
+// Retail retains these unused animation names between function literal pools.
+static const char* pool_trap(void) { return "MOBJ_trap"; }
+static const char* pool_offBomb(void) { return "OFF_d_bom"; }
+static const char* pool_bombRock(void) { return "MOBJ_BombRock"; }
+#endif
 
 s32 kpa_powerup(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -3868,7 +3828,7 @@ s32 evt_mobj_koopa_stone_blk(EventEntry* event, BOOL isFirstCall) {
 
 s32 mobj_koopa_brickblk(MapObjectEntry* obj) {
     BOOL flag = FALSE;
-    u8* base = (u8*)vec3_802c3dc8;
+
 
     switch (obj->unk1DC) {
         case 0:
@@ -3918,16 +3878,16 @@ s32 mobj_koopa_brickblk(MapObjectEntry* obj) {
             break;
         case 0xa:
             psndSFXOn_3D((const char*)0x1B8, &obj->position);
-            if (strcmp(obj->animName, (const char*)(base + 0x488)) == 0) {
+            if (strcmp(obj->animName, "MOBJ_FlowBrickBlock") == 0) {
                 effMObjBrokenEntry(0, obj->position.x, obj->position.y + 12.5f,
                                    obj->position.z + 12.5f);
-            } else if (strcmp(obj->animName, (const char*)(base + 0x49C)) == 0) {
+            } else if (strcmp(obj->animName, "MOBJ_block_ky") == 0) {
                 effMObjBrokenEntry(1, obj->position.x, obj->position.y + 12.5f,
                                    obj->position.z + 12.5f);
-            } else if (strcmp(obj->animName, (const char*)(base + 0x4AC)) == 0) {
+            } else if (strcmp(obj->animName, "MOBJ_bigblock_01") == 0) {
                 effMObjBrokenEntry(3, obj->position.x, obj->position.y + 25.0f,
                                    obj->position.z + 25.0f);
-            } else if (strcmp(obj->animName, (const char*)(base + 0x4C0)) == 0) {
+            } else if (strcmp(obj->animName, "MOBJ_bigblock_02") == 0) {
                 effMObjBrokenEntry(4, obj->position.x, obj->position.y + 25.0f,
                                    obj->position.z + 25.0f);
             }
@@ -3958,9 +3918,6 @@ s32 mobj_koopa_brickblk(MapObjectEntry* obj) {
 }
 
 s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
-#ifdef MUST_MATCH
-    u8* base = (u8*)vec3_802c3dc8;
-#endif
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     f32 f31 = evtGetFloat(event, args[1]);
@@ -3976,33 +3933,17 @@ s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
 
     switch (type) {
         case 0:
-#ifdef MUST_MATCH
-            asyncName = (const char*)(base + 0x488);
-#else
             asyncName = "MOBJ_FlowBrickBlock";
-#endif
             break;
         case 1:
-#ifdef MUST_MATCH
-            asyncName = (const char*)(base + 0x49C);
-#else
             asyncName = "MOBJ_block_ky";
-#endif
             break;
         case 2:
-#ifdef MUST_MATCH
-            asyncName = (const char*)(base + 0x4AC);
-#else
             asyncName = "MOBJ_bigblock_01";
-#endif
             break;
         case 3:
         default:
-#ifdef MUST_MATCH
-            asyncName = (const char*)(base + 0x4C0);
-#else
             asyncName = "MOBJ_bigblock_02";
-#endif
             break;
     }
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
@@ -4092,7 +4033,7 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
             animPoseSetAnim(obj->poseId, "S_2", 1);
             obj->flags &= ~8;
             obj->unk1DC = 0x5a;
-            strcpy(obj->animName, str_802C4218);
+            strcpy(obj->animName, "MOBJ_Block");
             break;
         case 0x5a:
             if (obj->flags & 8) {
@@ -4149,7 +4090,7 @@ s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
     s32 unk1A0 = evtGetValue(event, args[4]);
     s32 unk1D4 = evtGetValue(event, args[5]);
     s32 unk1E4 = args[6];
-    const char* asyncName = str_802C423C;
+    const char* asyncName = "MOBJ_HatenaBlock";
     MapObjectEntry* obj;
 
     if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
@@ -4185,7 +4126,7 @@ s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     s32 unk1A0 = evtGetValue(event, args[4]);
     s32 unk1D4 = evtGetValue(event, args[6]);
     s32 unk1E4 = args[7];
-    const char* asyncName = str_802C4224;
+    const char* asyncName = "MOBJ_HiddenHatenaBlock";
     MapObjectEntry* obj;
 
     if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
@@ -4272,10 +4213,10 @@ s32 evt_mobj_koopa_blk(EventEntry* event, BOOL isFirstCall) {
     s32 unk1E4 = args[6];
     MapObjectEntry* obj;
 
-    if (!animGroupBaseAsync(str_802C4218, gp->inBattle != 0, NULL)) {
+    if (!animGroupBaseAsync("MOBJ_Block", gp->inBattle != 0, NULL)) {
         return 0;
     }
-    mobjEntry(name, str_802C4218);
+    mobjEntry(name, "MOBJ_Block");
     obj = mobjNameToPtr(name);
     mobjSetPosition(name, f31, f30, f29);
     obj->unk1D0 = mobj_koopa_blk;
@@ -4329,10 +4270,10 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
             }
             break;
         case 0xa:
-            if (strcmp(obj->animName, str_802C41DC) == 0) {
+            if (strcmp(obj->animName, "MOBJ_GreenPipe_ks") == 0) {
                 effMObjBrokenEntry(6, obj->position.x, float_25_8041a140 + obj->position.y,
                                    float_25_8041a140 + obj->position.z);
-            } else if (strcmp(obj->animName, str_802C41F0) == 0) {
+            } else if (strcmp(obj->animName, "MOBJ_GreenPipe_kl") == 0) {
                 effMObjBrokenEntry(6, obj->position.x,
                                    float_7p5_8041a1bc + (float_25_8041a140 + obj->position.y),
                                    float_25_8041a140 + obj->position.z);
@@ -4352,12 +4293,10 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
 }
 #pragma opt_common_subs reset
 
-// 100%: the pipe-name strings and the position Vec are read from the unit rodata base `vec3_802c3dc8`
-// (`+0x414/0x428/0x43c` and `+0x2F0`), which reproduces the base register and the whole allocation.
+// Pipe model names are literals; the position retains its prefix Vec template.
 s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
 #ifdef MUST_MATCH
-    // The original reaches the pipe-name strings from the unit's rodata base, vec3_802c3dc8.
-    u8* base = (u8*)vec3_802c3dc8;
+
 #endif
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -4374,25 +4313,13 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
 
     switch (type) {
         case 0:
-#ifdef MUST_MATCH
-            asyncName = (const char*)(base + 0x414);
-#else
             asyncName = "MOBJ_GreenPipe_ks";
-#endif
             break;
         case 1:
-#ifdef MUST_MATCH
-            asyncName = (const char*)(base + 0x428);
-#else
             asyncName = "MOBJ_GreenPipe_kl";
-#endif
             break;
         case 2:
-#ifdef MUST_MATCH
-            asyncName = (const char*)(base + 0x43C);
-#else
             asyncName = "MOBJ_GreenPipe_ky";
-#endif
             break;
     }
     if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
@@ -4403,7 +4330,7 @@ s32 evt_mobj_koopa_dokan(EventEntry* event, BOOL isFirstCall) {
     obj->flags |= 6;
 #ifdef MUST_MATCH
     // The original addresses vec3_802c40b8 from the vec3_802c3dc8 base.
-    pos = *(Vec*)(base + 0x2F0);
+    pos = mobj_vec3_802c40b8_template[0];
 #else
     pos = vec3_802c40b8[0];
 #endif
@@ -4549,10 +4476,10 @@ s32 evt_mobj_koopa_sango(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
     Vec pos;
 
-    if (!animGroupBaseAsync(str_802C41D0, gp->inBattle != 0, NULL)) {
+    if (!animGroupBaseAsync("MOBJ_sango", gp->inBattle != 0, NULL)) {
         return 0;
     }
-    mobjEntry(name, str_802C41D0);
+    mobjEntry(name, "MOBJ_sango");
     obj = mobjNameToPtr(name);
     obj->flags |= 0x84;
     pos = vec3_802c40c4[0];
@@ -5201,44 +5128,26 @@ __declspec(section ".sdata") u32 gap_07_80410304_sdata = 0;
 
 // .rodata (part D)
 #pragma force_active on
-const char str_802C3EC8[0x10] = "o_";
-const char str_802C3ED8[0x10] = "i_";
-__declspec(section ".rodata") Vec vec3_802c3ee8[1] = {{0.0f, -2000.0f, 0.0f}};
-// vec3_802c3ef4: placeholder for the object the code copies (defining it hangs MWCC)
-__declspec(section ".rodata") Vec gap_vec3_802c3ef4_rodata[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") char str_802C3F00[0x18] = "SFX_MOBJ_LOCK_SWING1";
-__declspec(section ".rodata") char str_802C3F18[0x14] = "SFX_MOBJ_UNLOCK1";
-__declspec(section ".rodata") char str_802C3F2C[0x20] = "SFX_MOBJ_TREASURE_BOX_SWING1";
-__declspec(section ".rodata") char str_802C3F4C[0x1C] = "SFX_MOBJ_TREASURE_BOX_OPEN1";
-__declspec(section ".rodata") char str_802C3F68[0x20] = "SFX_MOBJ_TREASURE_BOX_SWING2";
-__declspec(section ".rodata") char str_802C3F88[0x1C] = "SFX_MOBJ_TREASURE_BOX_OPEN2";
-__declspec(section ".rodata") char str_802C3FA4[0x1C] = "SFX_MOBJ_BLACKBOX_SWING1";
-__declspec(section ".rodata") char str_802C3FC0[0x18] = "SFX_MOBJ_BLACKBOX_OPEN1";
-__declspec(section ".rodata") Vec vec3_802c3fd8[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") Vec vec3_802c3fe4[1] = {{0.0f, 0.0f, 0.0f}};
-__declspec(section ".rodata") char str_802C3FF0[0x10] = "save_first_hit";
-const char str_802C4000[0x10] = "o_";
-const char str_802C4010[0x10] = "i_";
 __declspec(section ".rodata") Vec vec3_802c4020[1] = {{0.0f, -2000.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c402c[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c4038[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c4044[1] = {{0.0f, 0.0f, -1.0f}};
 // vec3_802c4050: placeholder for the object the code copies (defining it hangs MWCC)
-__declspec(section ".rodata") Vec gap_vec3_802c4050_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec mobj_vec3_802c4050_template[1] = {{0.0f, 0.0f, 0.0f}};
 // vec3_802c405c: placeholder for the object the code copies (defining it hangs MWCC)
-__declspec(section ".rodata") Vec gap_vec3_802c405c_rodata[1] = {{200.0f, 0.0f, 200.0f}};
+__declspec(section ".rodata") Vec mobj_vec3_802c405c_template[1] = {{200.0f, 0.0f, 200.0f}};
 __declspec(section ".rodata") Vec vec3_802c4068[1] = {{0.0f, 0.0f, 0.0f}};
 const char str_802C4074[0x10] = "o_";
 const char str_802C4084[0x10] = "i_";
 __declspec(section ".rodata") Vec vec3_802c4094[1] = {{0.0f, -2000.0f, 0.0f}};
 // vec3_802c40a0: placeholder for the object the code copies (defining it hangs MWCC)
-__declspec(section ".rodata") Vec gap_vec3_802c40a0_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec mobj_vec3_802c40a0_template[1] = {{0.0f, 0.0f, 0.0f}};
 // vec3_802c40ac: placeholder for the object the code copies (defining it hangs MWCC)
-__declspec(section ".rodata") Vec gap_vec3_802c40ac_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec mobj_vec3_802c40ac_template[1] = {{0.0f, 0.0f, 0.0f}};
 // vec3_802c40b8: placeholder for the object the code copies (defining it hangs MWCC)
-__declspec(section ".rodata") Vec gap_vec3_802c40b8_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec mobj_vec3_802c40b8_template[1] = {{0.0f, 0.0f, 0.0f}};
 // vec3_802c40c4: placeholder for the object the code copies (defining it hangs MWCC)
-__declspec(section ".rodata") Vec gap_vec3_802c40c4_rodata[1] = {{0.0f, 0.0f, 0.0f}};
+__declspec(section ".rodata") Vec mobj_vec3_802c40c4_template[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") Vec vec3_802c40d0[1] = {{0.0f, 0.0f, 0.0f}};
 __declspec(section ".rodata") char str_802C40DC[0xC] = "KPA2_G_1";
 __declspec(section ".rodata") char str_802C40E8[0x18] = "SFX_KUPPA_POST_JUMP1";
@@ -5257,86 +5166,7 @@ const char str_802C41A0[0x10] = "MOBJ_fire_dodai";
 const char str_802C41B0[0xC] = "c_fireber";
 const char str_802C41BC[0x8] = "FRB_S_1";
 // double_to_int_802c41c8: compiler int->float conversion constant, emitted at the first conversion
-const char str_802C41D0[0xC] = "MOBJ_sango";
-const char str_802C41DC[0x14] = "MOBJ_GreenPipe_ks";
-const char str_802C41F0[0x14] = "MOBJ_GreenPipe_kl";
-const char str_802C4204[0x14] = "MOBJ_GreenPipe_ky";
-const char str_802C4218[0xC] = "MOBJ_Block";
-const char str_802C4224[0x18] = "MOBJ_HiddenHatenaBlock";
-const char str_802C423C[0x14] = "MOBJ_HatenaBlock";
-const char str_802C4250[0x14] = "MOBJ_FlowBrickBlock";
-const char str_802C4264[0x10] = "MOBJ_block_ky";
-const char str_802C4274[0x14] = "MOBJ_bigblock_01";
-const char str_802C4288[0x14] = "MOBJ_bigblock_02";
-const char str_802C429C[0x10] = "MOBJ_BombRock";
-const char str_802C42AC[0xC] = "OFF_d_bom";
-const char str_802C42B8[0xC] = "MOBJ_trap";
-const char str_802C42C4[0x14] = "MOBJ_KururinFloor";
-const f64 double_0p21817_802c42d8 = 0.21816615760326385;
 // double_to_int_mask_802c42e0: compiler int->float conversion constant, emitted at the first conversion
-const char str_802C42E8[0x14] = "MOBJ_BreakingFloor";
-const char str_802C42FC[0x18] = "MOBJ_BlackBreakingFloor";
-const char str_802C4314[0x18] = "MOBJ_BrickHatenaBlock";
-const char str_802C432C[0x18] = "MOBJ_BrickBadgeBlock";
-const char str_802C4344[0x14] = "MOBJ_10CountBlock";
-const char str_802C4358[0x18] = "MOBJ_HiddenBadgeBlock";
-const char str_802C4370[0x18] = "MOBJ_Hidden10CountBlock";
-const char str_802C4388[0x8] = "P_box_y";
-const char str_802C4390[0x10] = "MOBJ_PinkBlock";
-const char str_802C43A0[0x14] = "MOBJ_PowerUpBlock";
-const char str_802C43B4[0x8] = "dou_02";
-const char str_802C43BC[0x8] = "dou_05";
-const char str_802C43C4[0x8] = "dou_10";
-const char str_802C43CC[0x8] = "pwrblk1";
-const char str_802C43D4[0x8] = "pwrblk2";
-const char str_802C43DC[0x10] = "MOBJ_BadgeBlock";
-const char str_802C43EC[0x10] = "MOBJ_SaveBlock";
-const char str_802C43FC[0x14] = "MOBJ_RecoveryBlock";
-const char str_802C4410[0x1C] = "MOBJ_CoinTakenRecoveryBlock";
-const char str_802C442C[0xC] = "sys_no_coin";
-const char str_802C4438[0x14] = "kaifuku_first_hit";
-const char str_802C444C[0xC] = "MOBJ_Arrow";
-const char str_802C4458[0x10] = "MOBJ_Signboard";
-const char str_802C4468[0x14] = "MOBJ_TreasureBox";
-const char str_802C447C[0x14] = "MOBJ_BigTreasureBox";
-const char str_802C4490[0x18] = "MOBJ_GrayTreasureBox";
-const char str_802C44A8[0x18] = "MOBJ_BlackTreasureBox";
-const char str_802C44C0[0x18] = "MOBJ_GoldenTreasureBox";
-const f64 double_0p2_802c44d8 = 0.20000000298023224;
-const char str_802C44E0[0xC] = "MOBJ_Lock";
-const char str_802C44EC[0xC] = "sys_no_key";
-const char str_802C44F8[0x1C] = "MOBJ_green_FlowBlockSwitch";
-const char str_802C4514[0x1C] = "MOBJ_purple_FlowBlockSwitch";
-const char str_802C4530[0x1C] = "MOBJ_orange_FlowBlockSwitch";
-const char str_802C454C[0x1C] = "MOBJ_red_FlowBlockSwitch";
-const char str_802C4568[0x18] = "MOBJ_green_FlowBlock";
-const char str_802C4580[0x1C] = "MOBJ_green_big_FlowBlock";
-const char str_802C459C[0x1C] = "MOBJ_green_big02_FlowBlock";
-const char str_802C45B8[0x18] = "MOBJ_purple_FlowBlock";
-const char str_802C45D0[0x1C] = "MOBJ_purple_big_FlowBlock";
-const char str_802C45EC[0x1C] = "MOBJ_purple_big02_FlowBlock";
-const char str_802C4608[0x18] = "MOBJ_orange_FlowBlock";
-const char str_802C4620[0x1C] = "MOBJ_orange_big_FlowBlock";
-const char str_802C463C[0x1C] = "MOBJ_orange_big02_FlowBlock";
-const char str_802C4658[0x1C] = "MOBJ_red_big02_FlowBlock";
-const char str_802C4674[0x10] = "MOBJ_Lv1Block";
-const char str_802C4684[0x14] = "MOBJ_Lv1BigBlock";
-const char str_802C4698[0x14] = "MOBJ_Lv1BigBigBlock";
-const char str_802C46AC[0x10] = "MOBJ_Lv2Block";
-const char str_802C46BC[0x14] = "MOBJ_Lv2BigBlock";
-const char str_802C46D0[0x14] = "MOBJ_Lv2BigBigBlock";
-const char str_802C46E4[0x14] = "MOBJ_RideSwitchC";
-const char str_802C46F8[0x14] = "MOBJ_RideSwitchB";
-const char str_802C470C[0x14] = "MOBJ_RideSwitchA";
-const char str_802C4720[0x18] = "MOBJ_RedTornadoSwitch";
-const char str_802C4738[0x14] = "MOBJ_RedSwitchBlock";
-const char str_802C474C[0x10] = "MOBJ_RedSwitch";
-const char str_802C475C[0x14] = "MOBJ_WhiteSwitch";
-const char str_802C4770[0x18] = "MOBJ_BlueTornadoSwitch";
-const char str_802C4788[0x18] = "MOBJ_BlueSwitchBlock";
-const char str_802C47A0[0x10] = "MOBJ_BlueSwitch";
-const char str_802C47B0[0x14] = "MOBJ_BlackSwitch";
-const char str_802C47C4[0x10] = "HOBJ_BlueSwitch";
 #pragma force_active reset
 
 // .data
