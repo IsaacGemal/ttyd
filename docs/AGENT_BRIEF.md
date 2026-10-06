@@ -517,6 +517,12 @@ When the instructions match but the stack slots, register allocation or scheduli
 - **`if (best == NULL || d < bestD) { copy }` can be the copy written twice in the original,** one branch per
   condition: a duplicated block gives retail's frame where the combined condition does not (searchFrontWall #518,
   marioChkGnd #513).
+- **Never add pool helper functions (`defer_codegen off` pool_i2f/pool_flush/pool_str, `static ... pool_x(void)`,
+  section tricks): they put .text in the unit that the original doesn't have, so it can never link.** To get the
+  original's pool order instead, put `#ifdef MUST_MATCH` / `#pragma defer_codegen off` / `#endif` over the REAL
+  functions so they emit in source order, and let native int->float conversions and literals pool the magic and
+  constants themselves. That linked tou (#593) and winmgr (#594, which also removed two existing helpers) on
+  2026-10-06 (Codex). Check with sdata2_diff, fn_order_check, and the flip's `32 files OK`.
 - **A repeated block whose operands the original evaluates at the point of use is a macro, not an inline function.**
   An inline call evaluates its arguments up front; a macro leaves each expression where it is written. winBookGX's
   textured quad computes each coordinate at its vertex write and `|span|` right after GXSetTexCoordGen2: 82% as an
