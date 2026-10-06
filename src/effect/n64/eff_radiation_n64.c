@@ -65,15 +65,16 @@ inline Vec initializeVec(Vec* input) {
 // `row += 2` / separate row4 temp / byte-pointer index, all declaration and update orders, the
 // GC/1.3 1.3.2 2.0 2.5 2.6 2.7 compilers and every opt_* pragma combination were tried; the
 // 1.2.5-family compilers cannot parse the file. Available compiler gets no closer.
+#pragma opt_dead_assignments off
 // NONMATCHING (99.16%): default loop's 4th table load folded into the 3rd load's scaled index;
 // row/i land in r4/r8 instead of r8/r10.
 EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;
 	EffRadiationData* data;
-	s32* rd;
 	s32 row;
 	s32 n;
 	s32 i;
+	s32 k;
 	s32 flag;
 	s32 count;
 
@@ -117,13 +118,13 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	case 0:
 	case 1:
 		data++;
-		for (i = 1; i < effect->count; i++, data++) {
-			data->field_0x68 = (f32)((i - 1) * 30 / (count - 1) - 10);
-			data->field_0x7C = 50 - (i - 1) * 20 / (count - 1);
+		for (k = 1; k < effect->count; k++, data++) {
+			data->field_0x68 = (f32)((k - 1) * 30 / (count - 1) - 10);
+			data->field_0x7C = 50 - (k - 1) * 20 / (count - 1);
 			data->field_0x6C = 2.5f + 25.0f / (f32)data->field_0x7C;
-			data->field_0x70 = (f32)(s32)effTblRandN64(180, i * 3);
-			data->field_0x74 = (f32)(s32)effTblRandN64(180, i * 3 + 1);
-			data->field_0x78 = (f32)(s32)effTblRandN64(180, i * 3 + 2);
+			data->field_0x70 = (f32)(s32)effTblRandN64(180, k * 3);
+			data->field_0x74 = (f32)(s32)effTblRandN64(180, k * 3 + 1);
+			data->field_0x78 = (f32)(s32)effTblRandN64(180, k * 3 + 2);
 			data->field_0x58 = data->field_0x68;
 			data->field_0x28 = data->field_0x7C;
 			data->field_0x8C = data->field_0x6C;
@@ -136,14 +137,13 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 		break;
 	default:
 		data++;
-		rd = r_data;
 		for (i = 1, n = 32; i < effect->count; n += 2, i++, data++) {
 			data->field_0x58 = 0.0f;
 			data->field_0x28 = n;
 			row = (i - 1) * 5;
-			data->field_0x5C = (f32)rd[row];
-			data->field_0x60 = (f32)rd[++row];
-			data->field_0x64 = (f32)rd[++row];
+			data->field_0x5C = (f32)r_data[row++];
+			data->field_0x60 = (f32)r_data[row++];
+			data->field_0x64 = (f32)r_data[row++];
 			data->field_0x24 = 0;
 			data->field_0x2C = 0;
 			data->field_0x38 = 0.0f;
@@ -156,7 +156,7 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 			data->field_0x54 = 0.6f;
 			data->field_0x80 = 0.0f;
 			data->field_0x84 = 0.0f;
-			data->field_0x88 = (f32)rd[row + 2] * 0.1f;
+			data->field_0x88 = (f32)r_data[++row] * 0.1f;
 			data->field_0x90 = 0;
 		}
 		break;
@@ -164,6 +164,7 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 
 	return effect;
 }
+#pragma opt_dead_assignments reset
 
 // The prologue is matched by starting the Vec temp from the anonymous zero literal (a named
 // zero vector makes MWCC hoist its loads above `data = effect->userdata`), which is why the
