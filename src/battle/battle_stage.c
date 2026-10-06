@@ -165,6 +165,26 @@ typedef struct BattleStageWork {
 	f32 field_B38;               //0xB38
 } BattleStageWork;
 
+typedef struct ScreenWork {
+	void* field_0x0;   //0x0 tex buffer
+	s32 field_0x4;     //0x4
+	f32 field_0x8;     //0x8
+	f32 field_0xC;     //0xC
+	f32 field_0x10;    //0x10
+	f32 field_0x14;    //0x14
+	f32 field_0x18;    //0x18
+	f32 field_0x1C;    //0x1C
+	s32 field_0x20;    //0x20
+	s32 field_0x24;    //0x24
+	f32 field_0x28;    //0x28
+} ScreenWork;
+typedef struct ScreenTevParam {
+	u8 pad[0xC];
+	s32 field_C;  // 0xC
+	s32 field_10; // 0x10
+	s32 field_14; // 0x14
+} ScreenTevParam;
+
 // forward declarations
 
 BattleStage* BattleStageGetPtr(void) {
@@ -370,6 +390,474 @@ void BattleStageEnd(void) {
 	}
 }
 
+void BattleStageDisp(void) {
+	BattleGetUnitPtr(_battleWorkPointer, _battleWorkPointer->activeUnitId);
+	dispEntry(4, float_5000_8041c84c, 2, BattleStageDispDark, NULL);
+	dispEntry(4, float_6000_8041c850, 2, BattleStageDispLight, NULL);
+}
+
+#pragma dont_inline on // keep DarkByPoint out of line: the original calls it.
+void DarkByPoint(u8 color, f32 x, f32 y, f32 z) {
+	GXPosition3f32(x, y, z);
+	GXColor4u8(0, 0, 0, color);
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on // keep DarkBySquare out of line: the original calls it.
+// The original declares the colour last (its caller evaluates it after the
+// floats); the ABI is identical, so this compiles to the same body either way.
+void DarkBySquare(f32 a, f32 b, f32 c, f32 d, f32 z, u8 color) {
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	DarkByPoint(color, a, b, z);
+	DarkByPoint(color, c, b, z);
+	DarkByPoint(color, c, d, z);
+	DarkByPoint(color, a, d, z);
+}
+#pragma dont_inline reset
+
+// opt_common_subs off: with common subexpression elimination on, MWCC loads the
+// shared float constants in the reverse order (f2 before f1). DarkBySquare's
+// prototype is (f32..., u8 color) in the original, so the colour argument is
+// evaluated last; see the note on its definition.
+#pragma opt_common_subs off
+void BattleStageDispDark(CameraId camId, void* param) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	CameraEntry* cam = camGetPtr(4);
+
+	GXSetCullMode(2);
+	GXSetZCompLoc(1);
+	GXSetAlphaCompare(7, 0, 0, 7, 0);
+	GXSetBlendMode(1, 4, 5, 5);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xB, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+	GXSetNumChans(1);
+	GXSetChanCtrl(4, 0, 1, 1, 0, 2, 2);
+	GXSetNumTexGens(0);
+	GXLoadPosMtxImm(cam->view, 0);
+	GXSetNumTevStages(1);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaIn(0, 7, 7, 7, 5);
+	GXSetTevOrder(0, 0xFF, 0xFF, 4);
+	{
+		BattleStageDark* audDark = &stage->audDark;
+		GXSetZMode(1, 6, 0);
+		DarkBySquare(float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848, audDark->field_4);
+		GXSetZMode(1, 1, 0);
+		DarkBySquare(float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_neg640_8041c840, float_105_8041c848, audDark->field_4);
+	}
+	GXSetZMode(1, 1, 0);
+	DarkBySquare(float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848, stage->stgDark.field_4);
+}
+#pragma opt_common_subs reset
+
+void BattleStageDispLight(CameraId camId, void* param) {
+	s32 i;
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	CameraEntry* cam = camGetPtr(4);
+
+	GXSetCullMode(2);
+	GXSetZCompLoc(1);
+	GXSetAlphaCompare(7, 0, 0, 7, 0);
+	GXSetBlendMode(1, 2, 1, 5);
+	GXSetZMode(1, 3, 0);
+	GXClearVtxDesc();
+	GXSetVtxDesc(9, 1);
+	GXSetVtxDesc(0xB, 1);
+	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+	GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+	GXSetNumChans(1);
+	GXSetChanCtrl(2, 0, 1, 1, 0, 2, 2);
+	GXSetNumTexGens(0);
+	GXSetNumTevStages(1);
+	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
+	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
+	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
+	GXSetTevAlphaIn(0, 7, 7, 7, 7);
+	GXSetTevOrder(0, 0, 0, 4);
+	GXLoadPosMtxImm(cam->view, 0);
+
+	for (i = 0; i < 12; i++) {
+		if (stage->lights[i].flags & 1) {
+			Mtx mtx;
+			Vec up;
+			Vec axis;
+			Vec dir;
+			Vec base;
+			Vec p1;
+			Vec p2;
+			f32 width;
+			f32 two;
+			s32 j;
+			u8 r, g, b;
+
+			dir = vec3_802f31a8[0];
+			dir.x = stage->lights[i].targetCur.x - stage->lights[i].posCur.x;
+			dir.y = stage->lights[i].targetCur.y - stage->lights[i].posCur.y;
+			dir.z = stage->lights[i].targetCur.z - stage->lights[i].posCur.z;
+			axis = dir;
+			width = stage->lights[i].widthCur;
+			up = stage->lights[i].upCur;
+			two = float_2_8041c838;
+
+			for (j = 0; j < 18; j++) {
+				f32 px = stage->lights[i].posCur.x;
+				f32 py = stage->lights[i].posCur.y;
+				f32 pz = stage->lights[i].posCur.z;
+				f32 tx = stage->lights[i].targetCur.x;
+				f32 ty = stage->lights[i].targetCur.y;
+				f32 tz = stage->lights[i].targetCur.z;
+
+				base.x = px + two * (tx - px);
+				base.y = py + two * (ty - py);
+				base.z = pz + two * (tz - pz);
+
+				p1.x = base.x + up.x * width;
+				p1.y = base.y + up.y * width;
+				p1.z = base.z + up.z * width;
+
+				PSMTXRotAxisRad(mtx, &axis, float_0p34907_8041c83c);
+				PSMTXMultVec(mtx, &up, &up);
+				PSVECNormalize(&up, &up);
+
+				p2.x = base.x + up.x * width;
+				p2.y = base.y + up.y * width;
+				p2.z = base.z + up.z * width;
+
+				r = stage->lights[i].colorCur.r;
+				g = stage->lights[i].colorCur.g;
+				b = stage->lights[i].colorCur.b;
+
+				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);
+				GXPosition3f32(px, py, pz);
+				GXColor4u8(r, g, b, 0);
+				GXPosition3f32(p1.x, p1.y, p1.z);
+				GXColor4u8(r, g, b, 0);
+				GXPosition3f32(p2.x, p2.y, p2.z);
+				GXColor4u8(r, g, b, 0);
+			}
+		}
+	}
+}
+
+void BattleStageOnLightInCommand(void) {
+}
+
+void BattleStageOffLightInCommand(s32 arg0, s32 arg1) {
+}
+
+void BattleStageOnLightFriendInCommand(void) {
+}
+
+void BattleStageOffLightFriendInCommand(void) {
+}
+
+void BattleStageOnLightEnemyInCommand(void) {
+}
+
+void BattleStageOffLightEnemyInCommand(void) {
+}
+
+s32 BattleStageGetLightNumberByName(const char* name) {
+	s32 offset;
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	s32 i;
+
+	i = 0;
+	offset = 0;
+	for (; i < 12; i++) {
+		u8* p = (u8*)stage + offset;
+		BattleStageLight* light = (BattleStageLight*)(p + 4);
+		if ((light->flags & 1) && strcmp(light->name, name) == 0) {
+			return i;
+		}
+		offset += 0xe8;
+	}
+
+	return -1;
+}
+
+s32 BattleStageSysLightEntry(const char* name) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	s32 i;
+
+	for (i = 0; i <= 6; i++) {
+		BattleStageLight* light = &stage->lights[i];
+		if (light->flags & 1) {
+			strcmp(light->name, name);
+		}
+	}
+
+	i = 0;
+	for (; i < 7; i++) {
+		BattleStageLight* light = &stage->lights[i];
+		if (!(light->flags & 1)) {
+			light->flags = 1;
+			strcpy(light->name, name);
+			break;
+		}
+	}
+
+	return i;
+}
+
+// Copy propagation off: without it BattleStageLightRelease stops matching.
+#pragma opt_propagation off
+#pragma dont_inline on
+void BattleStageLightRelease(s32 idx, s32 frames, u8 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageLight* light = &stage->lights[idx];
+
+	if (light->flags & 1) {
+		if (frames == 0) {
+			light->flags = 0;
+		} else {
+			light->flags |= 2;
+			{
+				BattleStageColor c = *(BattleStageColor*)&unk_80423018;
+				c.r = light->colorCur.r;
+				c.g = light->colorCur.g;
+				c.b = light->colorCur.b;
+				light->colorFrom = c;
+			}
+			light->colorTo = *(BattleStageColor*)&unk_8042301c;
+			light->colorFrames = frames;
+			light->colorFramesTotal = frames;
+			light->colorEase = ease;
+		}
+	}
+}
+#pragma dont_inline reset
+#pragma opt_propagation reset
+
+// Copy propagation off: without it BattleStageLightSetLightColor stops matching.
+#pragma opt_propagation off
+#pragma dont_inline on
+void BattleStageLightSetLightColor(s32 idx, u8 r, u8 g, u8 b, s32 frames, u8 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageLight* light = &stage->lights[idx];
+
+	{
+		BattleStageColor c = *(BattleStageColor*)&unk_80423020;
+		c.r = light->colorCur.r;
+		c.g = light->colorCur.g;
+		c.b = light->colorCur.b;
+		light->colorFrom = c;
+	}
+	{
+		BattleStageColor c = *(BattleStageColor*)&unk_80423024;
+		c.r = r;
+		c.g = g;
+		c.b = b;
+		light->colorTo = c;
+	}
+	light->colorFrames = frames;
+	light->colorFramesTotal = frames;
+	light->colorEase = ease;
+	if (frames == 0) {
+		light->colorCur = (BattleStageColor){light->colorCur.r, light->colorCur.g, light->colorCur.b, 0xFF};
+	}
+}
+#pragma dont_inline reset
+#pragma opt_propagation reset
+
+// Copy propagation off: without it BattleStageLightSetWidth stops matching.
+#pragma opt_propagation off
+#pragma dont_inline on
+void BattleStageLightSetWidth(s32 idx, s32 width, s32 frames, u8 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageLight* light = &stage->lights[idx];
+
+	light->widthFrom = light->widthCur;
+	light->widthTo = (f32)width;
+	light->widthFrames = frames;
+	light->widthFramesTotal = frames;
+	light->widthEase = ease;
+	if (frames == 0) {
+		light->widthCur = (f32)width;
+	}
+}
+#pragma dont_inline reset
+#pragma opt_propagation reset
+
+// Copy propagation off: without it BattleStageLightSetPosition stops matching.
+#pragma opt_propagation off
+#pragma dont_inline on
+void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageLight* light = &stage->lights[idx];
+
+	light->posFrom.x = light->posCur.x;
+	light->posFrom.y = light->posCur.y;
+	light->posFrom.z = light->posCur.z;
+	light->posTo.x = x;
+	light->posTo.y = y;
+	light->posTo.z = z;
+	light->posFrames = frames;
+	light->posFramesTotal = frames;
+	light->posEase = ease;
+	if (frames == 0) {
+		Vec tmp = vec3_802f31b4[0];
+		tmp.x = x;
+		tmp.y = y;
+		tmp.z = z;
+		light->posCur = tmp;
+	}
+}
+#pragma dont_inline reset
+#pragma opt_propagation reset
+
+// Copy propagation off: without it BattleStageLightSetTarget stops matching.
+#pragma opt_propagation off
+#pragma dont_inline on
+void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageLight* light = &stage->lights[idx];
+
+	light->targetFrom.x = light->targetCur.x;
+	light->targetFrom.y = light->targetCur.y;
+	light->targetFrom.z = light->targetCur.z;
+	light->targetTo.x = x;
+	light->targetTo.y = y;
+	light->targetTo.z = z;
+	light->targetFrames = frames;
+	light->targetFramesTotal = frames;
+	light->targetEase = ease;
+	light->flags &= ~4;
+	if (frames == 0) {
+		Vec tmp = vec3_802f31c0[0];
+		tmp.x = x;
+		tmp.y = y;
+		tmp.z = z;
+		light->targetCur = tmp;
+	}
+}
+#pragma dont_inline reset
+#pragma opt_propagation reset
+
+#pragma dont_inline on // keep the unit lookup out of its callers.
+void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s32 frames, u8 ease) {
+	BattleUnit* unit;
+	f32 ux, uy, uz;
+
+	unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
+	BtlUnit_GetPos(unit, &ux, &uy, &uz);
+	ux = ux + x;
+	uy = uy + y;
+	uz = uz + z;
+	BattleStageLightSetTarget(idx, frames, ux, uy, uz, ease);
+}
+#pragma dont_inline reset
+
+// ------------------------------------------------------------ light setters
+#pragma opt_propagation off
+void BattleStageLightSetUpVec(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageLight* light = &stage->lights[idx];
+
+	light->upFrom.x = light->upCur.x;
+	light->upFrom.y = light->upCur.y;
+	light->upFrom.z = light->upCur.z;
+	light->upTo.x = x;
+	light->upTo.y = y;
+	light->upTo.z = z;
+	light->upFrames = frames;
+	light->upFramesTotal = frames;
+	light->upEase = ease;
+	if (frames == 0) {
+		Vec tmp = vec3_802f31cc[0];
+		tmp.x = x;
+		tmp.y = y;
+		tmp.z = z;
+		light->upCur = tmp;
+	}
+}
+#pragma opt_propagation reset
+
+#pragma dont_inline on // keep SetDark out of line: the wrappers call it.
+void BattleStageSetDark(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
+	dark->field_6 = dark->field_4;
+	dark->field_8 = a;
+	dark->field_C = frames;
+	dark->field_14 = frames;
+	dark->field_1C = ease;
+	if (frames == 0) {
+		dark->field_4 = a;
+	}
+}
+#pragma dont_inline reset
+
+#pragma dont_inline on // keep SetDarkBase out of line: the wrappers call it.
+void BattleStageSetDarkBase(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
+	dark->field_7 = dark->field_5;
+	dark->field_9 = a;
+	dark->field_10 = frames;
+	dark->field_18 = frames;
+	dark->field_1D = ease;
+	if (frames == 0) {
+		dark->field_5 = a;
+	}
+}
+#pragma dont_inline reset
+
+void BattleStageSetStgDark(u8 a, s32 frames, s32 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageSetDark(&stage->stgDark, a, frames, ease);
+}
+
+void BattleStageSetStgDarkBase(u8 a, s32 frames, s32 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageSetDarkBase(&stage->stgDark, a, frames, ease);
+}
+
+void BattleStageReturnStgDarkBase(s32 frames, s32 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageDark* dark = &stage->stgDark;
+	BattleStageSetDark(dark, dark->field_5, frames, ease);
+}
+
+void BattleStageSetAudDark(u8 a, s32 frames, s32 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageSetDark(&stage->audDark, a, frames, ease);
+}
+
+void BattleStageSetAudDarkBase(u8 a, s32 frames, s32 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageSetDarkBase(&stage->audDark, a, frames, ease);
+}
+
+void BattleStageReturnAudDarkBase(s32 frames, s32 ease) {
+	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
+	BattleStageDark* dark = &stage->audDark;
+	BattleStageSetDark(dark, dark->field_5, frames, ease);
+}
+
+// dont_inline: without it the compiler inlines getSpline into BattleStageMain
+// opt_loop_invariants off: with it on, MWCC hoists float_0 and the int->float
+// conversion constant in the opposite register order (f2/f1 instead of f0/f2).
+#pragma opt_loop_invariants off
+#pragma dont_inline on
+f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) {
+	s32 i;
+
+	for (i = count - 1; i >= 0; i--) {
+		if ((f32)(value - knots[i]) >= float_0_8041c7f0) {
+			break;
+		}
+	}
+
+	{
+		f32 t = (f32)(value - knots[i]);
+		return a[i] + t * (b[i] + t * (c[i] + t * d[i]));
+	}
+}
+#pragma dont_inline reset
+#pragma opt_loop_invariants reset
+
 BattleSpotWork* BatSpotGetPtr(void) {
     return wp;
 }
@@ -401,6 +889,7 @@ void batSpotInit(void) {
 		entry->field_28 = dat_8041c7ec;
 	}
 }
+#pragma dont_inline reset
 
 // Defined here (not at the top) so the compound-literal templates batSpotInit
 // pools land at +0x30 before these named vectors; the original's .rodata is
@@ -409,6 +898,7 @@ const Vec vec3_802f31fc[] = {{0.0f, 0.0f, 0.0f}};
 const Vec vec3_802f3208[] = {{1.0f, 1.0f, 1.0f}};
 const Vec vec3_802f3214[] = {{0.0f, 0.0f, 0.0f}};
 
+#pragma dont_inline on // keep batSpotMain out of line: BattleStageMain calls it.
 void batSpotMain() {
     s32 count = wp->count;
 
@@ -417,7 +907,9 @@ void batSpotMain() {
         dispEntry(CAMERA_3D_IMAGE, float_neg1000_8041c82c, 0, batSpotDisp, NULL);
     }
 }
+#pragma dont_inline reset
 
+#pragma dont_inline on // keep batSpotDisp out of line: batSpotMain and batSpotEntry use its address.
 void batSpotDisp(CameraId camId, void* param) {
 	s32 i;
 	BattleSpotEntry* entry;
@@ -469,10 +961,71 @@ void batSpotDisp(CameraId camId, void* param) {
 		}
 	}
 }
+#pragma dont_inline reset
+
+// Keep drawCone out of line: the original calls it rather than inlining.
+#pragma dont_inline on
+void drawCone(CameraId camId, BattleSpotEntry* entry) {
+	CameraEntry* cam = camGetPtr(camId);
+	Mtx mTrans;
+	Mtx mScale;
+	Mtx mTmp;
+	Mtx mRotX;
+	Mtx mRotY;
+	Mtx mRotZ;
+	s32 i;
+
+	PSMTXTrans(mTrans, entry->field_4.x, entry->field_4.y, entry->field_4.z);
+	PSMTXScale(mScale, entry->field_1C.x, entry->field_1C.y, entry->field_1C.z);
+	PSMTXRotRad(mRotX, 'x', float_deg2rad_8041c820 * entry->field_10.x);
+	PSMTXRotRad(mRotY, 'y', float_deg2rad_8041c820 * entry->field_10.y);
+	PSMTXRotRad(mRotZ, 'z', float_deg2rad_8041c820 * entry->field_10.z);
+	PSMTXConcat(mRotZ, mRotY, mRotY);
+	PSMTXConcat(mRotY, mRotX, mTmp);
+	PSMTXConcat(cam->view, mTrans, mTrans);
+	PSMTXConcat(mTrans, mTmp, mTmp);
+	PSMTXConcat(mTmp, mScale, mTmp);
+	GXLoadPosMtxImm(mTmp, 0);
+	GXSetCurrentMtx(0);
+	GXBegin(0xA0, 0, 0x20);
+
+#ifdef MUST_MATCH
+	GXWGFifo.f32 = MATCH_F32(float_0_8041c7f0);
+	GXWGFifo.f32 = MATCH_F32(float_0_8041c7f0);
+	GXWGFifo.f32 = MATCH_F32(float_0_8041c7f0);
+#else
+	GXPosition3f32(float_0_8041c7f0, float_0_8041c7f0, float_0_8041c7f0);
+#endif
+	GXColor4u8(0, 0, 0, ((u8*)entry)[0x2B]);
+
+	for (i = 0; i < 0x1F; i++) {
+		f32 angle;
+		f32 c;
+		f32 s;
+
+		if (i == 0x1E) {
+			angle = float_0_8041c7f0;
+		} else {
+			angle = float_6p2832_8041c824 * (f32)(-i) / float_30_8041c828;
+		}
+		s = sin(angle);
+		c = cos(angle);
+#ifdef MUST_MATCH
+		GXWGFifo.f32 = c;
+		GXWGFifo.f32 = s;
+		GXWGFifo.f32 = MATCH_F32(float_neg1_8041c818);
+#else
+		GXPosition3f32(c, s, float_neg1_8041c818);
+#endif
+		GXColor4u8(0, 0, 0, ((u8*)entry)[0x2B] / 3);
+	}
+}
+#pragma dont_inline reset
 
 //drawCone
 
 // TODO: get this to not inline into batSpotInit
+#pragma dont_inline on
 BattleSpotEntry* batSpotEntry(void) {
 	int i;
 	BattleSpotEntry* entry = wp->entries;
@@ -498,19 +1051,6 @@ BattleSpotEntry* batSpotEntry(void) {
 // New work appended below.
 // =====================================================================
 
-typedef struct ScreenWork {
-	void* field_0x0;   //0x0 tex buffer
-	s32 field_0x4;     //0x4
-	f32 field_0x8;     //0x8
-	f32 field_0xC;     //0xC
-	f32 field_0x10;    //0x10
-	f32 field_0x14;    //0x14
-	f32 field_0x18;    //0x18
-	f32 field_0x1C;    //0x1C
-	s32 field_0x20;    //0x20
-	s32 field_0x24;    //0x24
-	f32 field_0x28;    //0x28
-} ScreenWork;
 
 static ScreenWork* screen_wp;
 
@@ -524,17 +1064,17 @@ f32 randf(f32 min, f32 max) {
 }
 #pragma dont_inline reset
 
-s32 screen_evt_func(void) {
-	dispEntry(8, float_1000_8041c814, 0, screen_capture, NULL);
-	return 0;
-}
-
 static void screen_capture(CameraId camId, void* param) {
 	GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
 	GXSetTexCopyDst(0x130, 0xF0, 4, 1);
 	GXCopyTex(screen_wp->field_0x0, 0);
 	GXPixModeSync();
 	screen_wp->field_0x4 = 1;
+}
+
+s32 screen_evt_func(void) {
+	dispEntry(8, float_1000_8041c814, 0, screen_capture, NULL);
+	return 0;
 }
 
 // float_neg1 is const so MWCC hoists its single load to the top of the function,
@@ -568,12 +1108,6 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 // Event param struct: the original passes the event pointer as a typed struct
 // with 32-bit fields at 0xC/0x10/0x14 (same shape as battle/sac/sac_suki.c's
 // SukiTevParam).
-typedef struct ScreenTevParam {
-	u8 pad[0xC];
-	s32 field_C;  // 0xC
-	s32 field_10; // 0x10
-	s32 field_14; // 0x14
-} ScreenTevParam;
 
 // The original keeps i/4 (r31) and i%4 (r30) live across the rand() calls. The
 // second loop's `sgrow`/`sgcol` are precomputed with shifts before the count loop so
@@ -762,527 +1296,6 @@ void tou_gamen_screen_tev(void* param) {
 	tev->field_10 = 2;
 }
 #pragma opt_propagation reset
-
-
-
-
-
-#pragma dont_inline on
-void BattleStageSetDark(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
-	dark->field_6 = dark->field_4;
-	dark->field_8 = a;
-	dark->field_C = frames;
-	dark->field_14 = frames;
-	dark->field_1C = ease;
-	if (frames == 0) {
-		dark->field_4 = a;
-	}
-}
-
-void BattleStageSetDarkBase(BattleStageDark* dark, u8 a, s32 frames, s32 ease) {
-	dark->field_7 = dark->field_5;
-	dark->field_9 = a;
-	dark->field_10 = frames;
-	dark->field_18 = frames;
-	dark->field_1D = ease;
-	if (frames == 0) {
-		dark->field_5 = a;
-	}
-}
-#pragma dont_inline reset
-
-void BattleStageSetStgDark(u8 a, s32 frames, s32 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageSetDark(&stage->stgDark, a, frames, ease);
-}
-
-void BattleStageSetStgDarkBase(u8 a, s32 frames, s32 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageSetDarkBase(&stage->stgDark, a, frames, ease);
-}
-
-void BattleStageSetAudDark(u8 a, s32 frames, s32 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageSetDark(&stage->audDark, a, frames, ease);
-}
-
-void BattleStageSetAudDarkBase(u8 a, s32 frames, s32 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageSetDarkBase(&stage->audDark, a, frames, ease);
-}
-
-void BattleStageReturnStgDarkBase(s32 frames, s32 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageDark* dark = &stage->stgDark;
-	BattleStageSetDark(dark, dark->field_5, frames, ease);
-}
-
-void BattleStageReturnAudDarkBase(s32 frames, s32 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageDark* dark = &stage->audDark;
-	BattleStageSetDark(dark, dark->field_5, frames, ease);
-}
-
-void BattleStageOnLightInCommand(void) {
-}
-
-void BattleStageOffLightInCommand(s32 arg0, s32 arg1) {
-}
-
-void BattleStageOnLightFriendInCommand(void) {
-}
-
-void BattleStageOffLightFriendInCommand(void) {
-}
-
-void BattleStageOnLightEnemyInCommand(void) {
-}
-
-void BattleStageOffLightEnemyInCommand(void) {
-}
-
-// dont_inline: without it the compiler inlines getSpline into BattleStageMain
-// opt_loop_invariants off: with it on, MWCC hoists float_0 and the int->float
-// conversion constant in the opposite register order (f2/f1 instead of f0/f2).
-#pragma opt_loop_invariants off
-#pragma dont_inline on
-f32 getSpline(f32* a, f32* b, f32* c, f32* d, s32* knots, s32 count, s32 value) {
-	s32 i;
-
-	for (i = count - 1; i >= 0; i--) {
-		if ((f32)(value - knots[i]) >= float_0_8041c7f0) {
-			break;
-		}
-	}
-
-	{
-		f32 t = (f32)(value - knots[i]);
-		return a[i] + t * (b[i] + t * (c[i] + t * d[i]));
-	}
-}
-#pragma dont_inline reset
-#pragma opt_loop_invariants reset
-
-// ------------------------------------------------------------ light setters
-#pragma opt_propagation off
-void BattleStageLightSetUpVec(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageLight* light = &stage->lights[idx];
-
-	light->upFrom.x = light->upCur.x;
-	light->upFrom.y = light->upCur.y;
-	light->upFrom.z = light->upCur.z;
-	light->upTo.x = x;
-	light->upTo.y = y;
-	light->upTo.z = z;
-	light->upFrames = frames;
-	light->upFramesTotal = frames;
-	light->upEase = ease;
-	if (frames == 0) {
-		Vec tmp = vec3_802f31cc[0];
-		tmp.x = x;
-		tmp.y = y;
-		tmp.z = z;
-		light->upCur = tmp;
-	}
-}
-#pragma opt_propagation on
-
-// Copy propagation off: without it BattleStageLightSetTarget stops matching.
-#pragma opt_propagation off
-#pragma dont_inline on
-void BattleStageLightSetTarget(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageLight* light = &stage->lights[idx];
-
-	light->targetFrom.x = light->targetCur.x;
-	light->targetFrom.y = light->targetCur.y;
-	light->targetFrom.z = light->targetCur.z;
-	light->targetTo.x = x;
-	light->targetTo.y = y;
-	light->targetTo.z = z;
-	light->targetFrames = frames;
-	light->targetFramesTotal = frames;
-	light->targetEase = ease;
-	light->flags &= ~4;
-	if (frames == 0) {
-		Vec tmp = vec3_802f31c0[0];
-		tmp.x = x;
-		tmp.y = y;
-		tmp.z = z;
-		light->targetCur = tmp;
-	}
-}
-#pragma opt_propagation on
-
-// Copy propagation off: without it BattleStageLightSetPosition stops matching.
-#pragma opt_propagation off
-void BattleStageLightSetPosition(s32 idx, s32 frames, f32 x, f32 y, f32 z, u8 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageLight* light = &stage->lights[idx];
-
-	light->posFrom.x = light->posCur.x;
-	light->posFrom.y = light->posCur.y;
-	light->posFrom.z = light->posCur.z;
-	light->posTo.x = x;
-	light->posTo.y = y;
-	light->posTo.z = z;
-	light->posFrames = frames;
-	light->posFramesTotal = frames;
-	light->posEase = ease;
-	if (frames == 0) {
-		Vec tmp = vec3_802f31b4[0];
-		tmp.x = x;
-		tmp.y = y;
-		tmp.z = z;
-		light->posCur = tmp;
-	}
-}
-#pragma opt_propagation on
-
-// Copy propagation off: without it BattleStageLightSetWidth stops matching.
-#pragma opt_propagation off
-void BattleStageLightSetWidth(s32 idx, s32 width, s32 frames, u8 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageLight* light = &stage->lights[idx];
-
-	light->widthFrom = light->widthCur;
-	light->widthTo = (f32)width;
-	light->widthFrames = frames;
-	light->widthFramesTotal = frames;
-	light->widthEase = ease;
-	if (frames == 0) {
-		light->widthCur = (f32)width;
-	}
-}
-#pragma opt_propagation on
-
-// Copy propagation off: without it BattleStageLightSetLightColor stops matching.
-#pragma opt_propagation off
-void BattleStageLightSetLightColor(s32 idx, u8 r, u8 g, u8 b, s32 frames, u8 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageLight* light = &stage->lights[idx];
-
-	{
-		BattleStageColor c = *(BattleStageColor*)&unk_80423020;
-		c.r = light->colorCur.r;
-		c.g = light->colorCur.g;
-		c.b = light->colorCur.b;
-		light->colorFrom = c;
-	}
-	{
-		BattleStageColor c = *(BattleStageColor*)&unk_80423024;
-		c.r = r;
-		c.g = g;
-		c.b = b;
-		light->colorTo = c;
-	}
-	light->colorFrames = frames;
-	light->colorFramesTotal = frames;
-	light->colorEase = ease;
-	if (frames == 0) {
-		light->colorCur = (BattleStageColor){light->colorCur.r, light->colorCur.g, light->colorCur.b, 0xFF};
-	}
-}
-#pragma opt_propagation on
-
-// Copy propagation off: without it BattleStageLightRelease stops matching.
-#pragma opt_propagation off
-void BattleStageLightRelease(s32 idx, s32 frames, u8 ease) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	BattleStageLight* light = &stage->lights[idx];
-
-	if (light->flags & 1) {
-		if (frames == 0) {
-			light->flags = 0;
-		} else {
-			light->flags |= 2;
-			{
-				BattleStageColor c = *(BattleStageColor*)&unk_80423018;
-				c.r = light->colorCur.r;
-				c.g = light->colorCur.g;
-				c.b = light->colorCur.b;
-				light->colorFrom = c;
-			}
-			light->colorTo = *(BattleStageColor*)&unk_8042301c;
-			light->colorFrames = frames;
-			light->colorFramesTotal = frames;
-			light->colorEase = ease;
-		}
-	}
-}
-#pragma opt_propagation on
-
-void BattleStageLightSetTargetByUnit(s32 idx, s32 unitId, f32 x, f32 y, f32 z, s32 frames, u8 ease) {
-	BattleUnit* unit;
-	f32 ux, uy, uz;
-
-	unit = BattleGetUnitPtr(_battleWorkPointer, unitId);
-	BtlUnit_GetPos(unit, &ux, &uy, &uz);
-	ux = ux + x;
-	uy = uy + y;
-	uz = uz + z;
-	BattleStageLightSetTarget(idx, frames, ux, uy, uz, ease);
-}
-#pragma dont_inline reset
-
-s32 BattleStageSysLightEntry(const char* name) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	s32 i;
-
-	for (i = 0; i <= 6; i++) {
-		BattleStageLight* light = &stage->lights[i];
-		if (light->flags & 1) {
-			strcmp(light->name, name);
-		}
-	}
-
-	i = 0;
-	for (; i < 7; i++) {
-		BattleStageLight* light = &stage->lights[i];
-		if (!(light->flags & 1)) {
-			light->flags = 1;
-			strcpy(light->name, name);
-			break;
-		}
-	}
-
-	return i;
-}
-
-s32 BattleStageGetLightNumberByName(const char* name) {
-	s32 offset;
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	s32 i;
-
-	i = 0;
-	offset = 0;
-	for (; i < 12; i++) {
-		u8* p = (u8*)stage + offset;
-		BattleStageLight* light = (BattleStageLight*)(p + 4);
-		if ((light->flags & 1) && strcmp(light->name, name) == 0) {
-			return i;
-		}
-		offset += 0xe8;
-	}
-
-	return -1;
-}
-
-
-#pragma dont_inline on
-void DarkByPoint(u8 color, f32 x, f32 y, f32 z) {
-	GXPosition3f32(x, y, z);
-	GXColor4u8(0, 0, 0, color);
-}
-#pragma dont_inline reset
-
-#pragma dont_inline on
-// The original declares the colour last (its caller evaluates it after the
-// floats); the ABI is identical, so this compiles to the same body either way.
-void DarkBySquare(f32 a, f32 b, f32 c, f32 d, f32 z, u8 color) {
-	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	DarkByPoint(color, a, b, z);
-	DarkByPoint(color, c, b, z);
-	DarkByPoint(color, c, d, z);
-	DarkByPoint(color, a, d, z);
-}
-#pragma dont_inline reset
-
-void BattleStageDisp(void) {
-	BattleGetUnitPtr(_battleWorkPointer, _battleWorkPointer->activeUnitId);
-	dispEntry(4, float_5000_8041c84c, 2, BattleStageDispDark, NULL);
-	dispEntry(4, float_6000_8041c850, 2, BattleStageDispLight, NULL);
-}
-
-// Keep drawCone out of line: the original calls it rather than inlining.
-#pragma dont_inline on
-void drawCone(CameraId camId, BattleSpotEntry* entry) {
-	CameraEntry* cam = camGetPtr(camId);
-	Mtx mTrans;
-	Mtx mScale;
-	Mtx mTmp;
-	Mtx mRotX;
-	Mtx mRotY;
-	Mtx mRotZ;
-	s32 i;
-
-	PSMTXTrans(mTrans, entry->field_4.x, entry->field_4.y, entry->field_4.z);
-	PSMTXScale(mScale, entry->field_1C.x, entry->field_1C.y, entry->field_1C.z);
-	PSMTXRotRad(mRotX, 'x', float_deg2rad_8041c820 * entry->field_10.x);
-	PSMTXRotRad(mRotY, 'y', float_deg2rad_8041c820 * entry->field_10.y);
-	PSMTXRotRad(mRotZ, 'z', float_deg2rad_8041c820 * entry->field_10.z);
-	PSMTXConcat(mRotZ, mRotY, mRotY);
-	PSMTXConcat(mRotY, mRotX, mTmp);
-	PSMTXConcat(cam->view, mTrans, mTrans);
-	PSMTXConcat(mTrans, mTmp, mTmp);
-	PSMTXConcat(mTmp, mScale, mTmp);
-	GXLoadPosMtxImm(mTmp, 0);
-	GXSetCurrentMtx(0);
-	GXBegin(0xA0, 0, 0x20);
-
-#ifdef MUST_MATCH
-	GXWGFifo.f32 = MATCH_F32(float_0_8041c7f0);
-	GXWGFifo.f32 = MATCH_F32(float_0_8041c7f0);
-	GXWGFifo.f32 = MATCH_F32(float_0_8041c7f0);
-#else
-	GXPosition3f32(float_0_8041c7f0, float_0_8041c7f0, float_0_8041c7f0);
-#endif
-	GXColor4u8(0, 0, 0, ((u8*)entry)[0x2B]);
-
-	for (i = 0; i < 0x1F; i++) {
-		f32 angle;
-		f32 c;
-		f32 s;
-
-		if (i == 0x1E) {
-			angle = float_0_8041c7f0;
-		} else {
-			angle = float_6p2832_8041c824 * (f32)(-i) / float_30_8041c828;
-		}
-		s = sin(angle);
-		c = cos(angle);
-#ifdef MUST_MATCH
-		GXWGFifo.f32 = c;
-		GXWGFifo.f32 = s;
-		GXWGFifo.f32 = MATCH_F32(float_neg1_8041c818);
-#else
-		GXPosition3f32(c, s, float_neg1_8041c818);
-#endif
-		GXColor4u8(0, 0, 0, ((u8*)entry)[0x2B] / 3);
-	}
-}
-#pragma dont_inline off
-
-// opt_common_subs off: with common subexpression elimination on, MWCC loads the
-// shared float constants in the reverse order (f2 before f1). DarkBySquare's
-// prototype is (f32..., u8 color) in the original, so the colour argument is
-// evaluated last; see the note on its definition.
-#pragma opt_common_subs off
-void BattleStageDispDark(CameraId camId, void* param) {
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	CameraEntry* cam = camGetPtr(4);
-
-	GXSetCullMode(2);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetBlendMode(1, 4, 5, 5);
-	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xB, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
-	GXSetNumChans(1);
-	GXSetChanCtrl(4, 0, 1, 1, 0, 2, 2);
-	GXSetNumTexGens(0);
-	GXLoadPosMtxImm(cam->view, 0);
-	GXSetNumTevStages(1);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaIn(0, 7, 7, 7, 5);
-	GXSetTevOrder(0, 0xFF, 0xFF, 4);
-	{
-		BattleStageDark* audDark = &stage->audDark;
-		GXSetZMode(1, 6, 0);
-		DarkBySquare(float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848, audDark->field_4);
-		GXSetZMode(1, 1, 0);
-		DarkBySquare(float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_neg640_8041c840, float_105_8041c848, audDark->field_4);
-	}
-	GXSetZMode(1, 1, 0);
-	DarkBySquare(float_neg640_8041c840, float_640_8041c844, float_640_8041c844, float_neg640_8041c840, float_105_8041c848, stage->stgDark.field_4);
-}
-
-#pragma opt_common_subs reset
-void BattleStageDispLight(CameraId camId, void* param) {
-	s32 i;
-	BattleStageWork* stage = (BattleStageWork*)&_battleWorkPointer->stage;
-	CameraEntry* cam = camGetPtr(4);
-
-	GXSetCullMode(2);
-	GXSetZCompLoc(1);
-	GXSetAlphaCompare(7, 0, 0, 7, 0);
-	GXSetBlendMode(1, 2, 1, 5);
-	GXSetZMode(1, 3, 0);
-	GXClearVtxDesc();
-	GXSetVtxDesc(9, 1);
-	GXSetVtxDesc(0xB, 1);
-	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
-	GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
-	GXSetNumChans(1);
-	GXSetChanCtrl(2, 0, 1, 1, 0, 2, 2);
-	GXSetNumTexGens(0);
-	GXSetNumTevStages(1);
-	GXSetTevColorOp(0, 0, 0, 0, 1, 0);
-	GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
-	GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
-	GXSetTevAlphaIn(0, 7, 7, 7, 7);
-	GXSetTevOrder(0, 0, 0, 4);
-	GXLoadPosMtxImm(cam->view, 0);
-
-	for (i = 0; i < 12; i++) {
-		if (stage->lights[i].flags & 1) {
-			Mtx mtx;
-			Vec up;
-			Vec axis;
-			Vec dir;
-			Vec base;
-			Vec p1;
-			Vec p2;
-			f32 width;
-			f32 two;
-			s32 j;
-			u8 r, g, b;
-
-			dir = vec3_802f31a8[0];
-			dir.x = stage->lights[i].targetCur.x - stage->lights[i].posCur.x;
-			dir.y = stage->lights[i].targetCur.y - stage->lights[i].posCur.y;
-			dir.z = stage->lights[i].targetCur.z - stage->lights[i].posCur.z;
-			axis = dir;
-			width = stage->lights[i].widthCur;
-			up = stage->lights[i].upCur;
-			two = float_2_8041c838;
-
-			for (j = 0; j < 18; j++) {
-				f32 px = stage->lights[i].posCur.x;
-				f32 py = stage->lights[i].posCur.y;
-				f32 pz = stage->lights[i].posCur.z;
-				f32 tx = stage->lights[i].targetCur.x;
-				f32 ty = stage->lights[i].targetCur.y;
-				f32 tz = stage->lights[i].targetCur.z;
-
-				base.x = px + two * (tx - px);
-				base.y = py + two * (ty - py);
-				base.z = pz + two * (tz - pz);
-
-				p1.x = base.x + up.x * width;
-				p1.y = base.y + up.y * width;
-				p1.z = base.z + up.z * width;
-
-				PSMTXRotAxisRad(mtx, &axis, float_0p34907_8041c83c);
-				PSMTXMultVec(mtx, &up, &up);
-				PSVECNormalize(&up, &up);
-
-				p2.x = base.x + up.x * width;
-				p2.y = base.y + up.y * width;
-				p2.z = base.z + up.z * width;
-
-				r = stage->lights[i].colorCur.r;
-				g = stage->lights[i].colorCur.g;
-				b = stage->lights[i].colorCur.b;
-
-				GXBegin(GX_TRIANGLES, GX_VTXFMT0, 3);
-				GXPosition3f32(px, py, pz);
-				GXColor4u8(r, g, b, 0);
-				GXPosition3f32(p1.x, p1.y, p1.z);
-				GXColor4u8(r, g, b, 0);
-				GXPosition3f32(p2.x, p2.y, p2.z);
-				GXColor4u8(r, g, b, 0);
-			}
-		}
-	}
-}
-
 
 // .sdata2 objects owned by this unit, in the original's order. Defined after the
 // code so MWCC emits them before its own pooled literals. dat_8041c7e8's 0xFF
