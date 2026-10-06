@@ -16,9 +16,6 @@
 #include <string.h>
 
 extern const f32 float_1000_gor_0001cd80;
-extern const f32 zero_gor_0001cdd4;
-extern const f64 double_to_int_mask_gor_0001d038;
-extern const f64 double_to_int_gor_0001d040;
 extern const u32 dat_gor_0001cd30;
 extern const u32 dat_gor_0001cd34;
 extern const u32 dat_gor_0001cd38;
@@ -122,7 +119,7 @@ void unk_gor_0000dfc4(const char* msg, s32 width, f32 x, f32 y, f32 z) {
     Mtx out;
     f32 f;
 
-    PSMTXTrans(trans, x, y, zero_gor_0001cdd4);
+    PSMTXTrans(trans, x, y, 0.0f);
     if ((u16)FontGetMessageWidth(msg) > width) {
         f = (f32)width * z / (f32)(u16)FontGetMessageWidth(msg);
     } else {
@@ -189,6 +186,33 @@ static inline s32 fontlenpitch_inl(s8* text, s32 pitch) {
 // What is left is pure register allocation: the inlined fontlenpitch copies `buf` with `mr` where the target
 // re-materialises it with `addi`, and the rank loop's strength-reduced offset starts with `mr` instead of `li`.
 // NONMATCHING (98.02%): see the notes above; what remains is MWCC register allocation only.
+#ifdef MUST_MATCH
+// Match-only: taking each by-value colour's address keeps all 20 GXColor locals in one contiguous stack block,
+// the same address the by-value GC ABI passes in the argument register.
+#define WAKU_COL(c, x, y, w, h, curve) \
+    ((void (*)(u16, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &(c), (x), (y), (w), (h), (curve))
+#define ICON_COL(mtx, flags, id, c) ((void (*)(Mtx, s16, s32, GXColor*))iconDispGxCol)((mtx), (flags), (id), &(c))
+#define ICON_NUM(mtx, num, small, c) ((s32 (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx)((mtx), (num), (small), &(c))
+// Match-only: retail evaluates the title frame's lower edge as k + (field_10 + 128); the natural order gives a
+// different fadds operand order.
+#define WAKU_BOTTOM (k + work->field_10 + 128.0f)
+#else
+#define WAKU_COL(c, x, y, w, h, curve) windowDispGX_Waku_col(0, (c), (x), (y), (w), (h), (curve))
+#define ICON_COL(mtx, flags, id, c) iconDispGxCol((mtx), (flags), (id), (c))
+#define ICON_NUM(mtx, num, small, c) iconNumberDispGx((mtx), (num), (small), (c))
+#define WAKU_BOTTOM (work->field_10 + 128.0f + k)
+#endif
+
+// The top waku/FontDrawMessage maths (a non-const `k=1.0f` keeps the `fnmadds` that negates the sum, integer-negated
+// width), the signed `cmpwi` menu test and the `A74(i)/1000` recompute now match. Passing the by-value colours by
+// address (WAKU_COL/ICON_COL/ICON_NUM) puts all 20 GXColor locals in the target's contiguous 0x54..0x08 block, and
+// nesting the case-0 `menu_decimal_point` and the rank `menu_subtitle5_rank`/`menu_subtitle1_monte` msgSearch
+// results into their calls emits the format string and the 80.0f/75.2f literals in the target's `.rodata` order.
+// Giving the top case-2/3 subtitle its own `msg2` local matches the target's r27 for that group, but the title
+// (r28), the case-0/case-1/end/rank `msg` groups and the rank case-2/3 subtitles stay in r28 where the target
+// uses r24/r27; the second Waku block's FP temporaries keep a different colouring, and the fontlenpitch buffer
+// rematerialises with `mr r25,r24` where the target computes `addi r25,r1,0x78`.
+// NONMATCHING (98.18%): MWCC register allocation only.
 static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     YuRankWork* work = param;
     const char* titleTbl[4] = {
@@ -204,6 +228,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     char buf[32];
     const char* bp;
     const char* msg;
+    const char* msg2;
     s32 i;
     s32 j;
     f32 w;
@@ -231,7 +256,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     GXColor c19;
 
     c0 = *(GXColor*)&dat_gor_0001cd30;
-    ((void (*)(u16, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &c0, work->field_0C + -196.0f, work->field_10 + 112.0f, 392.0f, 224.0f, 20.0f);
+    WAKU_COL(c0, work->field_0C + -196.0f, work->field_10 + 112.0f, 392.0f, 224.0f, 20.0f);
     switch (work->field_18) {
     case 0:
         msg = msgSearch(scoreTbl[work->field_14]);
@@ -247,7 +272,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         w = (f32)FontGetMessageWidth(msg);
         sc = k * w + 50.0f;
         w = (f32)FontGetMessageWidth(msg);
-        { f32 t = -(k * w + 50.0f); ((void (*)(u16, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &c1, work->field_0C + t * 0.5f, k + (work->field_10 + 128.0f), sc, 28.0f, 8.0f); }
+        { f32 t = -(k * w + 50.0f); WAKU_COL(c1, work->field_0C + t * 0.5f, WAKU_BOTTOM, sc, 28.0f, 8.0f); }
         FontDrawStart();
         FontDrawScale(1.0f);
         c2 = *(GXColor*)&dat_gor_0001cd38;
@@ -269,8 +294,7 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         msg = msgSearch("menu_subtitle1_minigame1");
         unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
         if (work->field_38 >= 0) {
-            msg = msgSearch("menu_decimal_point");
-            sprintf(buf, "%3d%s%02d", work->field_38 / 1000, msg, (work->field_38 % 1000) / 10);
+            sprintf(buf, "%3d%s%02d", work->field_38 / 1000, msgSearch("menu_decimal_point"), (work->field_38 % 1000) / 10);
             bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
             if (work->field_30 >= 4) {
                 FontDrawStart();
@@ -321,13 +345,13 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         FontDrawColor(&c7);
         switch (work->field_14) {
         case 3:
-            msg = msgSearch("menu_subtitle1_minigame2");
+            msg2 = msgSearch("menu_subtitle1_minigame2");
             break;
         case 2:
-            msg = msgSearch("menu_subtitle1_minigame3");
+            msg2 = msgSearch("menu_subtitle1_minigame3");
             break;
         }
-        unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
+        unk_gor_0000dfc4(msg2, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
         FontDrawScale(1.0f);
         if (work->field_38 >= 0) {
             s32 v = work->field_38;
@@ -458,20 +482,18 @@ end:
 
         PSMTXTrans(m, (f32)(ix - 10), (f32)(iy + 2), 0.0f);
         c15 = *(GXColor*)&dat_gor_0001cd6c;
-        ((void (*)(Mtx, s16, s32, GXColor*))iconDispGxCol)(m, 16, 0x13f, &c15);
+        ICON_COL(m, 16, 0x13f, c15);
         PSMTXTrans(m, (f32)(ix + 60), (f32)(iy + 2), 0.0f);
         c16 = *(GXColor*)&dat_gor_0001cd70;
-        ((s32 (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx)(m, work->field_34, 0, &c16);
+        ICON_NUM(m, work->field_34, 0, c16);
     }
     goto finish;
 
 rank:
     FontDrawStart();
     FontDrawScale(1.0f);
-    msg = msgSearch("menu_subtitle5_rank");
-    FontDrawMessage((s32)(work->field_0C + -150.4f), (s32)(work->field_10 + 80.0f), msg);
-    msg = msgSearch("menu_subtitle1_monte");
-    FontDrawMessage((s32)(work->field_0C + 75.19998f), (s32)(work->field_10 + 80.0f), msg);
+    FontDrawMessage((s32)(work->field_0C + -150.4f), (s32)(work->field_10 + 80.0f), msgSearch("menu_subtitle5_rank"));
+    FontDrawMessage((s32)(work->field_0C + 75.19998f), (s32)(work->field_10 + 80.0f), msgSearch("menu_subtitle1_monte"));
     c17 = *(GXColor*)&dat_gor_0001cd74;
     FontDrawColor(&c17);
     switch (work->field_14) {
@@ -1028,7 +1050,4 @@ const u32 dat_gor_0001cd74 = 0x000000FF;
 const u32 dat_gor_0001cd78 = 0x000000FF;
 const u32 dat_gor_0001cd7c = 0xFF3F3FFF;
 const f32 float_1000_gor_0001cd80 = 1000.0f;
-const f32 zero_gor_0001cdd4 = 0.0f;
-const f64 double_to_int_mask_gor_0001d038 = 4503599627370496.0;
-const f64 double_to_int_gor_0001d040 = 4503601774854144.0;
 // clang-format on
