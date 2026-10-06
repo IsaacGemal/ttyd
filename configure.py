@@ -733,7 +733,7 @@ config.libs = [
             Object(Matching, "manager/dvdmgr.c"),
             Object(Matching, "manager/arammgr.c"),
             Object(Matching, "manager/filemgr.c"),
-            Object(NonMatching, "manager/winmgr.c"),
+            Object(Matching, "manager/winmgr.c"),
         ],
     },
     {

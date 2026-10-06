@@ -20,6 +20,7 @@
 #include "evt/evt_window.h"
 #include "forcedata.h"
 #include "manager/evtmgr_cmd.h"
+#include "manager/winmgr.h"
 #include "mario/mariost.h"
 #include "party/party_motion.h"
 #include "pmario_sound.h"
@@ -27,7 +28,6 @@
 #pragma pool_data off
 
 #pragma force_active on
-extern s32 unk_802399f8[];
 static USER_FUNC(bgm_start_wait);
 static USER_FUNC(bgScrollControll);
 static USER_FUNC(enzan_lw_load);
