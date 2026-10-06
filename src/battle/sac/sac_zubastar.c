@@ -29,10 +29,6 @@ extern BattleWork* _battleWorkPointer;
 const char str_802FF668[] = "btl_wn_sac_zubastar";
 const char str_802FF67C[] = "msg_zubastar";
 const char str_802FF68C[] = "msg_sac_8";
-const Vec vec3_802ff6a4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802ff6b0 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802ff6bc = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802ff6c8 = { 0.0f, 0.0f, 0.0f };
 #pragma force_active reset
 
 // .sdata2 constants referenced by this file's original.
@@ -166,235 +162,399 @@ struct ZubaStarWork {
     EffectEntry* effect;           // 0x5DC
 };
 
-// .text:0x0 | 0x8022E590 | size: 0x368
-// The original holds work+0x18 in r30 and reaches field_0x018, field_0x020 and field_0x02C
-// through it (the compiler CSEs the base). MWCC here does not, so under MUST_MATCH a local
-// u8* b18 = (u8*)work + 0x18 with Z18/Z20/Z2C(i) forces the same base; the natural struct-field
-// accesses are under #else. All of disp2D's named float constants are now literals (200.0f, 60.0f, ...),
-// which gives MWCC their known values and recovers the original's scheduling; the original TU defined
-// them, so its loads use their names and ours use anonymous pooled entries (arg_mismatch only). Same for
-// the `pos`/vertex zeros.
-void zubastar_disp2D(CameraId cameraId, void* param) {
+// .text:0x23FC | 0x8023098C | size: 0x2C
+static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
-#ifdef MUST_MATCH
-    u8* b18 = (u8*)work + 0x18;
-#define Z18 (*(s32*)b18)
-#define Z20 ((Vec*)(b18 + 8))
-#define Z2C(i) (((Vec*)(b18 + 0x14)) + (i))
-#else
-#define Z18 (work->field_0x018)
-#define Z20 (&work->field_0x020)
-#define Z2C(i) (&work->field_0x02C[i])
-#endif
-    ZubaStarStar* star;
-    s32 i;
-    s32 alpha;
-    Vec pos;
 
-    if (work->field_0x07C >= 5) {
-        s32 icon;
+    work->starState = 1;
+    return 2;
+}
 
-        icon = (work->field_0x0A1 <= 3) ? 0x64 : 0x65;
-        pos = (Vec){ 0.0f, 0.0f, 0.0f };
-        pos.x = work->field_0x094.x - 200.0f;
-        pos.y = 60.0f + work->field_0x094.y;
-#ifdef MUST_MATCH
-        // Cast only to drop the s32->s16 `extsh` the original does not emit: the id is 0x64/0x65,
-        // so the upper bits are already clear. The natural declared call is under #else.
-        ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&pos, 0x10, icon, 1.0f);
-#else
-        iconDispGx(&pos, 0x10, icon, 1.0f);
-#endif
-        BattleAcDrawGauge((s32)work->field_0x094.x, (s32)work->field_0x094.y, 0xB1, 4, 0x1A, 0x34, 0x4E,
-                          0, 0.01f * work->field_0x084);
-    }
-    GXSetCullMode(GX_CULL_NONE);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-    GXSetNumChans(1);
-    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
-    GXSetNumTexGens(0);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
-    GXSetCurrentMtx(0);
-    GXLoadPosMtxImm(camGetPtr(cameraId)->view, 0);
-    GXSetLineWidth(0x18, 0);
-    for (i = 0; i < 0x10; i++) {
-        star = &work->stars[i];
-        if (star->timer <= 0x1E) {
-            alpha = (s32)intplGetValue(0, star->timer, 0x1E, 128.0f,
-                                       255.0f);
+// .text:0x23C4 | 0x80230954 | size: 0x38
+s32 wait_star_stone_up(EventEntry* event, BOOL isFirstCall) {
+    ZubaStarWork* work = GetZubaStarPtr();
+
+    return (work->starState == 4) ? 2 : 0;
+}
+
+static s32 main_star(EventEntry* event, BOOL isFirstCall) {
+    ZubaStarWork* work = GetZubaStarPtr();
+    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
+    f32 scale;
+
+    switch (work->starState) {
+    case 0:
+        break;
+    case 1:
+        {
+            f32 zero = 0.0f;
+
+            work->starState = 2;
+            {
+                f32 neg = -1000.0f;
+
+                work->starCounter = 0;
+                {
+                    f32 one = 1.0f;
+
+                    work->effect = effStarStoneEntry(6, zero, neg, zero, one);
+                }
+            }
+        }
+        BtlUnit_GetPos(mario, &work->starCur.x, &work->starCur.y, &work->starCur.z);
+        work->starCur.y += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
+        work->starStart = work->starCur;
+        work->starEnd = work->starCur;
+        work->starEnd.y += 50.0f;
+        work->starEnd.z += -1.0f;
+        work->scale1 = (Vec){ 0.0f, 0.0f, 0.0f };
+        work->scale2 = (Vec){ 0.0f, 0.0f, 0.0f };
+        // fallthrough
+    case 2:
+        work->starCounter++;
+        if (work->starCounter <= 0x64) {
+            work->starCur.x = intplGetValue(0, work->starCounter, 0x64, work->starStart.x, work->starEnd.x);
+            work->starCur.y = intplGetValue(0, work->starCounter, 0x64, work->starStart.y, work->starEnd.y);
+            work->starCur.z = intplGetValue(0, work->starCounter, 0x64, work->starStart.z, work->starEnd.z);
+            scale = intplGetValue(0, work->starCounter, 0x64, 0.0f, 2.0f);
+            work->scale1.z = scale;
+            work->scale1.y = scale;
+            work->scale1.x = scale;
         } else {
-            alpha = (s32)intplGetValue(0, star->timer - 0x1E, 0x1E, 255.0f,
-                                       128.0f);
-        }
-        if (star->state == 5) {
-            {
-#ifdef MUST_MATCH
-                GXSetChanMatColor(GX_COLOR0A0, (GXColor){ alpha, alpha, alpha, 0xFF });
-#else
-                GXColor c = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
+            f32 two = 2.0f;
 
-                c.r = alpha;
-                c.g = alpha;
-                c.b = alpha;
-                GXSetChanMatColor(GX_COLOR0A0, c);
-#endif
-            }
-            GXBegin(0xA8, 0, 2);
-#ifdef MUST_MATCH
-            // Two separate 0.0f literals: the original reloads float_0_804217e0 for each vertex
-            // (its compiler did not CSE across the GX fifo stores); naming the symbol makes ours
-            // fold the two reads into one.
-            GXPosition3f32(star->x0, star->y0, 0.0f);
-            GXPosition3f32(star->x1, star->y1, 0.0f);
-#else
-            GXPosition3f32(star->x0, star->y0, float_0_804217e0);
-            GXPosition3f32(star->x1, star->y1, float_0_804217e0);
-#endif
+            work->starCur.x = work->starEnd.x;
+            work->starCur.y = work->starEnd.y;
+            work->starCur.z = work->starEnd.z;
+            work->scale1.z = two;
+            work->scale1.y = two;
+            work->scale1.x = two;
         }
+        work->scale2.y = intplGetValue(4, work->starCounter, 0x78, 0.0f, 2160.0f);
+        if (work->starCounter >= 0x78) {
+            work->starState = 3;
+            work->starCounter = 0;
+            work->starStart = work->starCur;
+            work->starEnd.y = 300.0f;
+        }
+        break;
+    case 3:
+        work->starCounter++;
+        work->starCur.y = intplGetValue(1, work->starCounter, 0x3C, work->starStart.y, work->starEnd.y);
+        if (work->starCounter >= 0x3C) {
+            work->starState = 4;
+            work->starCounter = 0;
+        }
+        break;
+    case 4:
+        break;
     }
-    iconDispGx(Z20, 0x10, 0x19D, 1.0f);
-    if (Z18 >= 0x19 && Z18 < 0x1E) {
-        f32 yoffset = 20.0f;
+    if (work->effect != NULL) {
+        effStarStoneData* data = work->effect->userdata;
+        f32 s = 1.5f;
 
-        for (i = 0; i < 4; i++) {
-            Mtx mtx;
-
-            PSMTXTrans(mtx, Z2C(i)->x, Z2C(i)->y - yoffset, 0.0f);
-#ifdef MUST_MATCH
-            iconDispGxCol(mtx, 0x10, 0x19D, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF - (i + 1) * 0x32 });
-#else
-            {
-                GXColor color = { 0xFF, 0xFF, 0xFF, 0x00 };
-
-                color.a = 0xFF - (i + 1) * 0x32;
-                iconDispGxCol(mtx, 0x10, 0x19D, color);
-            }
-#endif
-        }
+        data->field_0x8 = work->starCur.x;
+        data->field_0xC = work->starCur.y;
+        data->field_0x10 = work->starCur.z;
+        data->field_0x18 = work->scale2.x;
+        data->field_0x1C = work->scale2.y;
+        data->field_0x20 = work->scale2.z;
+        data->field_0x14 = s * work->scale1.x;
     }
+    dispEntry(4, 0.0f, 2, zubaStarDispStar, NULL);
+    return 0;
 }
-#undef Z18
-#undef Z20
-#undef Z2C
 
-// .text:0x368 | 0x8022E8F8 | size: 0x35C
-// Constant-register mapping, Mtx slots and both loops match; loading p->x/p->y into locals fixes the inner
-// vertex reloads, and indexing bomb->points[j] directly (no local Vec*) gives the original's r5 inner
-// counter. The inner loop computes both full texcoords before the position call (that is what gives the
-// target's f0/f3 colouring and the interleaved stores).
-#pragma opt_propagation off // needed: without it MWCC hoists the t numerator and colours the s/t chain f1/f0 (98.88%)
-void zubastar_disp_bomb(CameraId cameraId, void* param) {
+// .text:0x2084 | 0x80230614 | size: 0x4
+// The original body is a no-op; this exists only as a dispEntry callback.
+void zubaStarDispStar(CameraId cameraId, void* param) {
+    (void)cameraId;
+    (void)param;
+}
+
+// .text:0x2078 | 0x80230608 | size: 0xC
+// Keep GetZubaStarPtr out of line: the original issues a call (bl) to it.
+#pragma dont_inline on
+ZubaStarWork* GetZubaStarPtr(void) {
+    return (ZubaStarWork*)((u8*)_battleWorkPointer + 0x1F4C);
+}
+#pragma dont_inline reset
+
+// .text:0x203C | 0x802305CC | size: 0x3C
+s32 weaponGetPower_ZubaStar(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2,
+                            BattleUnitPart* part) {
     ZubaStarWork* work = GetZubaStarPtr();
-    CameraEntry* cam = camGetPtr(8);
-    GXTexObj texObj;
-    Mtx m1;
-    Mtx m2;
-    Mtx m4;
-    Mtx m3;
-    Mtx mtx;
+
+    return weapon->hpDamageWork[work->field_0x010];
+}
+
+const Vec vec3_802ff6b0 = { 0.0f, 0.0f, 0.0f };
+
+// .text:0x1F58 | 0x802304E8 | size: 0xE4
+// A volatile struct copy reproduces the original's load/store interleave for vec3_802ff6b0. A volatile
+// store to bomb->count is needed too: it stops the scheduler hoisting the copy's first load above the
+// count store (the natural form is under #else).
+// dont_inline: the original calls zubastar_create_takaku from zubastar_main with `bl`.
+#pragma dont_inline on
+void zubastar_create_takaku(s32 count, Vec* points) {
+    ZubaStarWork* work = GetZubaStarPtr();
     ZubaStarBomb* bomb;
+    s32 i;
+
+    work->bombs[work->bombCount] = BattleAlloc(0x50);
+    bomb = work->bombs[work->bombCount];
+    bomb->points = BattleAlloc(count * 0xC);
+    bomb->state = 0;
+#ifdef MUST_MATCH
+    // Volatile count store: a volatile access cannot move across the volatile struct copy below,
+    // which keeps the count store before the copy's first load as the original schedules it.
+    *(volatile s32*)&bomb->count = count;
+    *(volatile Vec*)&bomb->field_0x0C = *(const volatile Vec*)&vec3_802ff6b0;
+#else
+    bomb->count = count;
+    bomb->field_0x0C = vec3_802ff6b0;
+#endif
+    bomb->timer = 0;
+    bomb->maxTimer = 1;
+    for (i = 0; i < count; i++) {
+        bomb->points[i] = points[i];
+    }
+    work->bombCount++;
+}
+#pragma dont_inline reset
+
+const Vec vec3_802ff6bc = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802ff6c8 = { 0.0f, 0.0f, 0.0f };
+
+// .text:0x1A90 | 0x80230020 | size: 0x4C8
+// The instruction stream is complete and in order. What still differs is the callee-saved register
+// colouring throughout (this compiler gives a/b r30/r31 and bombCount r23; the original has a/b
+// r29/r30 and bombCount r31, so the whole colouring is permuted) and the schedule of the two Vec
+// copies that initialise bomb1/bomb2. Recovered from the original: the first bomb1->points copy loop
+// uses a separate source/dest index pair (two strength-reduced offsets plus a counter), the
+// found-point stores use post-increment so MWCC reuses the copy-loop counter for index[0]+1/+2 and k,
+// and bomb1->count is written in the original's +2-then-+j order.
+// The original's callee-saved order is bombCount,b,a,i*4,n,j,used,work,i*4+0xa8,bomb,i,j*0xc; this
+// compiler produces b,a,i*4,j,n,work,offset,bombCount,i,bomb,used,j*0xc. Nudging `bombCount` to the
+// front of that order is the whole remaining difference and no declaration order, statement order, alias,
+// scope or pragma tried moves it. Declaring the per-iteration scratch (`used`/`index`/`point`/`n`/out1/
+// out2) at function scope before i/j/k is the one source shape that moves `n` into the original's r27
+// (94.51 -> 94.64); everything else stays permuted. Kept from the recovered shapes: `used` base held in a
+// pointer just for the zeroing loop (the original keeps it in a callee-saved register and recomputes
+// r1+0x18 for the dedupe loop), the dedupe comparison inlines the (s32)out1/out2 casts (the original CSEs
+// them into r6/r7), the two point stores go through a `j1` temp (the original computes j+1 and adds 2 to
+// j), and the bomb1/bomb2 field order below is the one whose schedule matches. The natural forms are
+// under #else.
+// NONMATCHING (94.64%): register colouring (callee-saved + caller-saved argument mismatches);
+// the insert/delete/replace lines are the bomb1/bomb2 setup and the points[0]/[1] schedule.
+void zubastar_bunkatu(Vec* a, Vec* b) {
+    ZubaStarWork* work = GetZubaStarPtr();
+    s32 bombCount = work->bombCount;
+    s32 used[2];
+    s32 index[2];
+    Vec point[2];
+    s32 n;
+    f32 out1;
+    f32 out2;
+    s32 i;
     s32 j;
-    s32 i;
-    f32 c480;
-    f32 c240;
-    f32 c400;
-    f32 c96;
-    f32 cdeg;
+    s32 k;
 
-    GXSetCullMode(GX_CULL_NONE);
-    GXSetZCompLoc(GX_FALSE);
-    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_OR, GX_NEVER, 0);
-    GXClearVtxDesc();
-    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
-    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
-    GXSetNumChans(0);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX3x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
-    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
-    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ONE);
-    GXInitTexObj(&texObj, work->tex->address, 0x190, 0x1E0, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, 0);
-    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, float_0_804217e0, float_0_804217e0,
-                    float_0_804217e0, 0, 0, 0);
-    GXLoadTexObj(&texObj, GX_TEXMAP0);
-    c96 = float_96_804217ec;
-    c400 = float_400_804217f0;
-    c240 = float_240_804217f4;
-    c480 = float_480_804217f8;
-    cdeg = float_deg2rad_804217e8;
-    for (i = 0; i < work->bombCount; i++) {
-        bomb = work->bombs[i];
+    for (i = 0; i < bombCount; i++) {
+        ZubaStarBomb* bomb = work->bombs[i];
 
-        PSMTXTrans(m1, bomb->field_0x18.x, bomb->field_0x18.y, bomb->field_0x18.z);
-        PSMTXTrans(m2, -bomb->field_0x18.x, -bomb->field_0x18.y, -bomb->field_0x18.z);
-        PSMTXTrans(m3, bomb->field_0x0C.x, bomb->field_0x0C.y, bomb->field_0x0C.z);
-        PSMTXRotRad(m4, 'z', cdeg * bomb->field_0x3C);
-        PSMTXConcat(m4, m2, mtx);
-        PSMTXConcat(m1, mtx, mtx);
-        PSMTXConcat(m3, mtx, mtx);
-        PSMTXConcat(cam->view, mtx, mtx);
-        GXLoadPosMtxImm(mtx, 0);
-        GXBegin(GX_TRIANGLEFAN, GX_VTXFMT0, bomb->count);
-        for (j = 0; j < bomb->count; j++) {
-            f32 y = bomb->points[j].y;
-            f32 x = bomb->points[j].x;
-            f32 s = (c96 + x) / c400;
-            f32 t = (c240 - y) / c480;
+        n = 0;
+        {
+            s32* usedp = used;
 
-            GXPosition3f32(x, y, 0.0f);
-            GXTexCoord2f32(s, t);
-        }
-    }
-}
-#pragma opt_propagation reset
-
-// .text:0x6C4 | 0x8022EC54 | size: 0x68
-void zubastar_capture(CameraId cameraId, void* param) {
-    ZubaStarWork* work = GetZubaStarPtr();
-
-    GXSetTexCopySrc(0xD0, 0, 0x190, 0x1E0);
-    GXSetTexCopyDst(0x190, 0x1E0, 4, 0);
-    GXCopyTex(work->tex->address, 0);
-    GXPixModeSync();
-}
-
-// .text:0x72C | 0x8022ECBC | size: 0xA4
-s32 zubastar_end(EventEntry* event, BOOL isFirstCall) {
-    ZubaStarWork* work = GetZubaStarPtr();
-    s32 i;
-
-    effDelete(*(EffectEntry**)((u8*)work->effect->userdata + 0x34));
-    effDelete(work->effect);
-    for (i = 0; i < 0xC8; i++) {
-        if (work->bombs[i] != NULL) {
-            if (work->bombs[i]->points != NULL) {
-                BattleFree(work->bombs[i]->points);
-                work->bombs[i]->points = NULL;
+            for (k = 0; k < 2; k++) {
+                usedp[k] = 0;
             }
+        }
+        for (j = 0; j < bomb->count; j++) {
+#ifdef MUST_MATCH
+            // The original compares the dedupe points against the CSE'd casts, not against stores of
+            // nx/ny; inlining them lets MWCC reuse r6/r7 exactly as the target does.
+#else
+            s32 nx;
+            s32 ny;
+#endif
+
+            if (n == 2) {
+                break;
+            }
+            if (zubastar_get_kouten(a->x, a->y, b->x, b->y, bomb->points[j].x, bomb->points[j].y,
+                                    bomb->points[(j + 1) % bomb->count].x,
+                                    bomb->points[(j + 1) % bomb->count].y, &out1, &out2)) {
+#ifndef MUST_MATCH
+                nx = (s32)out1;
+                ny = (s32)out2;
+#endif
+                for (k = 0; k < n; k++) {
+#ifdef MUST_MATCH
+                    if (used[k] == 1 && (s32)point[k].x == (s32)out1 && (s32)point[k].y == (s32)out2) {
+#else
+                    if (used[k] == 1 && (s32)point[k].x == nx && (s32)point[k].y == ny) {
+#endif
+                        break;
+                    }
+                }
+                if (k == n) {
+                    point[k].x = out1;
+                    point[k].y = out2;
+                    point[k].z = float_0_804217e0;
+                    used[k] = 1;
+                    index[k] = j;
+                    n++;
+                }
+            }
+        }
+        if (n == 2) {
+            ZubaStarBomb* bomb1;
+            ZubaStarBomb* bomb2;
+
+            bomb1 = BattleAlloc(0x50);
+            bomb2 = BattleAlloc(0x50);
+            for (j = 0; j < bomb->count; j++) {
+                if (j == index[0]) {
+                    bomb1->count = bomb->count - index[1] + 2 + j;
+                    bomb2->count = index[1] - index[0] + 2;
+                }
+            }
+            bomb1->points = BattleAlloc(bomb1->count * 0xC);
+            bomb2->points = BattleAlloc(bomb2->count * 0xC);
+            {
+                s32 k;
+
+                for (j = 0, k = 0; j <= index[0]; j++, k++) {
+                    bomb1->points[k] = bomb->points[j];
+                }
+            }
+#ifdef MUST_MATCH
+            // Storing through j++ twice makes MWCC emit two `addi j,1`; the target computes j+1 into a
+            // second register and adds 2 to j, so the stores use j and j+1 and j advances by two.
+            {
+                s32 j1 = j + 1;
+
+                bomb1->points[j] = point[0];
+                bomb1->points[j1] = point[1];
+                j = j1 + 1;
+            }
+#else
+            bomb1->points[j++] = point[0];
+            bomb1->points[j++] = point[1];
+#endif
+            {
+                s32 k = j;
+
+                for (j = index[1] + 1; j < bomb->count; j++, k++) {
+                    bomb1->points[k] = bomb->points[j];
+                }
+            }
+            for (j = 0; j < bomb->count; j++) {
+                if (j == index[0]) {
+                    s32 m;
+
+                    bomb2->points[0] = point[0];
+                    for (m = 1; m <= bomb2->count - 2; m++) {
+                        bomb2->points[m] = bomb->points[j + m];
+                    }
+                    bomb2->points[bomb2->count - 1] = point[1];
+                }
+            }
+#ifdef MUST_MATCH
+            // Statement order only: it is what makes the target's schedule of the two vec3 loads, the state
+            // stores and the two irand calls come out (the state store of bomb1 lands before the vec3 load).
+            bomb1->timer = irand(0x80);
+            bomb1->field_0x0C = vec3_802ff6bc;
+            bomb1->maxTimer = irand(5) + 1;
+            bomb1->state = 0;
+            bomb2->field_0x0C = vec3_802ff6c8;
+            bomb2->state = 0;
+            bomb2->timer = irand(0x80);
+            bomb2->maxTimer = irand(5) + 1;
+#else
+            bomb1->state = 0;
+            bomb1->field_0x0C = vec3_802ff6bc;
+            bomb1->timer = irand(0x80);
+            bomb1->maxTimer = irand(5) + 1;
+            bomb2->state = 0;
+            bomb2->field_0x0C = vec3_802ff6c8;
+            bomb2->timer = irand(0x80);
+            bomb2->maxTimer = irand(5) + 1;
+#endif
+            BattleFree(work->bombs[i]->points);
             BattleFree(work->bombs[i]);
-            work->bombs[i] = NULL;
+            work->bombs[i] = bomb1;
+            work->bombs[work->bombCount] = bomb2;
+            work->bombCount++;
         }
     }
-    smartFree(work->tex);
-    return 2;
 }
 
-// .text:0x7D0 | 0x8022ED60 | size: 0x30
-s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
-    memset(GetZubaStarPtr(), 0, 0x5E0);
-    return 2;
+// .text:0x1990 | 0x8022FF20 | size: 0x100
+// Kept out of line: the original's zubastar_bunkatu calls it (bl) instead of inlining it.
+// `opt_lifetimes off` + `opt_propagation off` (reset after the function) give the original's float
+// colouring: the first value (`a`) in f9, the first select result (`b`) in f10, the second select
+// result (`c`) in f11, and the `ct` temp in f3. The zero compares must stay `0.0f` literals, not the
+// named `float_0_804217e0` object: with the named object MWCC CSEs the zero reloads away, while the
+// literal (whose pooled word the file already has) forces the original's reloads. The 1e-05 fallback
+// is the named `float_1Eneg05_80421860` because a literal would add a new `.sdata2` word and shift the
+// section. The reused `ct`/`dt` temps and the separate `e`/`f` locals land in the original's registers.
+#pragma dont_inline on
+#pragma opt_lifetimes off // keep the select results and the ct temp in f9/f10/f11/f3
+#pragma opt_propagation off // ditto for the rest of the float web
+s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, f32 f8, f32* out1,
+                        f32* out2) {
+    f32 a = f3 - f1;
+    f32 b;
+    f32 c;
+    f32 d;
+    f32 e;
+    f32 f;
+
+    if (a == 0.0f && f7 - f5 == 0.0f) {
+        return 0;
+    }
+    b = (a != 0.0f) ? a : float_1Eneg05_80421860;
+    {
+        // Named temps: MWCC keeps the differences in f3 and the selected results in their own
+        // registers with a copy, like the original (see the comment above the function).
+        f32 ct = f7 - f5;
+        f32 c2 = (ct != 0.0f) ? ct : float_1Eneg05_80421860;
+
+        c = c2;
+    }
+    {
+        f32 dt = f4 - f2;
+
+        d = dt;
+    }
+    e = f8 - f6;
+    f = d / b;
+    b = e / c;
+    d = f - b;
+    if (d == 0.0f) {
+        return 0;
+    }
+    *out1 = ((f6 - f2) + (f * f1 - b * f5)) / d;
+    if (a != 0.0f) {
+        *out2 = f * (*out1 - f1) + f2;
+    } else {
+        *out2 = b * (*out1 - f5) + f6;
+    }
+    {
+        f32 sl = (*out1 - f5) / c;
+
+        if (sl >= 0.0f && sl <= 1.0f) {
+            return 1;
+        }
+    }
+    return 0;
 }
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
+#pragma dont_inline reset
 
 // MUST_MATCH: MWCC emits the original's inline 6-iteration copy loop only when `points` is copied
 // from a named 48-byte template. A `ZubaStarPoints4` local initializer (or an unused file-scope one)
@@ -416,14 +576,11 @@ static const Vec zubastar_points_init[4] = {
 // switch on work->field_0x004, work->field_0x018 and work->field_0x07C. Case 0x19 of the first
 // gathers the star endpoints, sorts them, finds the widest gap on each edge and randomly places a
 // split point in it before calling zubastar_bunkatu.
-// The instruction stream is complete; every remaining diff is the unit's
-// `.rodata` pool being short. `zubastar_points_init` sits at r29+0xc where the original's
-// dat_802ff6d4 is at r29+0x6c: the 0x60 missing bytes are the unit's not-yet-ported data strings
-// (str_802FF668/67C/68C from weapon_zubastar / marioAttackEvent_ZubaStar) and the five zero vec3_* 
-// objects. The double/string reads are a further 0x30 off because the original pools zubastar_bomb's
-// str_802FF80C and the STAR1/2/3 event strings before the i2f double while this build pools them
-// after. Both are unit pool layout, not this function.
-// NONMATCHING (99.95%): remaining diffs are unit .rodata pool offsets (details above).
+// The instruction stream is complete. The remaining difference is the unit's .rodata still being
+// 0x40 bytes short of the original: the tail this file does not yet define (str_802FF7D0/7E4/7F8/80C,
+// the i2f double_to_int_802ff828 and str_802FF830/848) sits before the conversion double and the
+// STAR1/2/3 string reads, so those read early (0x180/0x188/0x1a0 instead of 0x1c0/0x1c8/0x1e0).
+// NONMATCHING (99.99%): six .rodata offsets of the unported tail (details above).
 s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
 #ifdef MUST_MATCH
@@ -917,12 +1074,10 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
 // the known values and recovers the schedule. Two structural details matter (both under MUST_MATCH below):
 // a single-case `switch` instead of `if` for the early-out guard, which makes MWCC emit `beq body;
 // b main_loop` like the original, and hoisting the SFX string into a loop-lived local to fix the
-// callee-saved colouring. The only remaining diffs are 9 rodata reads: the pool base symbol is
-// `...rodata.0` here vs `str_802FF668` in the original, so the two vectors and the i2f double read at
-// offsets 0xb4/0xc0/0xe8 instead of 0x144/0x158/0x1c0. The missing bytes are the .rodata prefix of
-// the not-yet-written zubastar_main (the three `str_802FF6*` strings, five zero `vec3_*`s and the
-// `dat_802ff6d4` point table, plus `str_802FF7D0/E4/F8/80C`), so this is not local to this function.
-// NONMATCHING (99.96%): 9 rodata offsets (unit pool layout; depends on zubastar_main).
+// callee-saved colouring. The remaining diffs are three .rodata reads: the SFX string at 0x168
+// instead of the original's 0x1a4 and the i2f double at 0x180 instead of 0x1c0, both shifted by the
+// not-yet-ported .rodata tail (str_802FF7D0/E4/F8/80C, double_to_int_802ff828 and str_802FF830/848).
+// NONMATCHING (99.99%): 3 rodata offsets (unported unit .rodata tail).
 s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 i;
@@ -1032,404 +1187,232 @@ s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
     return 0;
 }
 
-// .text:0x1A90 | 0x80230020 | size: 0x4C8
-// The instruction stream is complete and in order. What still differs is the callee-saved register
-// colouring throughout (this compiler gives a/b r30/r31 and bombCount r23; the original has a/b
-// r29/r30 and bombCount r31, so the whole colouring is permuted) and the schedule of the two Vec
-// copies that initialise bomb1/bomb2. Recovered from the original: the first bomb1->points copy loop
-// uses a separate source/dest index pair (two strength-reduced offsets plus a counter), the
-// found-point stores use post-increment so MWCC reuses the copy-loop counter for index[0]+1/+2 and k,
-// and bomb1->count is written in the original's +2-then-+j order.
-// The original's callee-saved order is bombCount,b,a,i*4,n,j,used,work,i*4+0xa8,bomb,i,j*0xc; this
-// compiler produces b,a,i*4,j,n,work,offset,bombCount,i,bomb,used,j*0xc. Nudging `bombCount` to the
-// front of that order is the whole remaining difference and no declaration order, statement order, alias,
-// scope or pragma tried moves it. Declaring the per-iteration scratch (`used`/`index`/`point`/`n`/out1/
-// out2) at function scope before i/j/k is the one source shape that moves `n` into the original's r27
-// (94.51 -> 94.64); everything else stays permuted. Kept from the recovered shapes: `used` base held in a
-// pointer just for the zeroing loop (the original keeps it in a callee-saved register and recomputes
-// r1+0x18 for the dedupe loop), the dedupe comparison inlines the (s32)out1/out2 casts (the original CSEs
-// them into r6/r7), the two point stores go through a `j1` temp (the original computes j+1 and adds 2 to
-// j), and the bomb1/bomb2 field order below is the one whose schedule matches. The natural forms are
-// under #else.
-// NONMATCHING (94.64%): register colouring (callee-saved + caller-saved argument mismatches);
-// the insert/delete/replace lines are the bomb1/bomb2 setup and the points[0]/[1] schedule.
-void zubastar_bunkatu(Vec* a, Vec* b) {
-    ZubaStarWork* work = GetZubaStarPtr();
-    s32 bombCount = work->bombCount;
-    s32 used[2];
-    s32 index[2];
-    Vec point[2];
-    s32 n;
-    f32 out1;
-    f32 out2;
-    s32 i;
-    s32 j;
-    s32 k;
-
-    for (i = 0; i < bombCount; i++) {
-        ZubaStarBomb* bomb = work->bombs[i];
-
-        n = 0;
-        {
-            s32* usedp = used;
-
-            for (k = 0; k < 2; k++) {
-                usedp[k] = 0;
-            }
-        }
-        for (j = 0; j < bomb->count; j++) {
-#ifdef MUST_MATCH
-            // The original compares the dedupe points against the CSE'd casts, not against stores of
-            // nx/ny; inlining them lets MWCC reuse r6/r7 exactly as the target does.
-#else
-            s32 nx;
-            s32 ny;
-#endif
-
-            if (n == 2) {
-                break;
-            }
-            if (zubastar_get_kouten(a->x, a->y, b->x, b->y, bomb->points[j].x, bomb->points[j].y,
-                                    bomb->points[(j + 1) % bomb->count].x,
-                                    bomb->points[(j + 1) % bomb->count].y, &out1, &out2)) {
-#ifndef MUST_MATCH
-                nx = (s32)out1;
-                ny = (s32)out2;
-#endif
-                for (k = 0; k < n; k++) {
-#ifdef MUST_MATCH
-                    if (used[k] == 1 && (s32)point[k].x == (s32)out1 && (s32)point[k].y == (s32)out2) {
-#else
-                    if (used[k] == 1 && (s32)point[k].x == nx && (s32)point[k].y == ny) {
-#endif
-                        break;
-                    }
-                }
-                if (k == n) {
-                    point[k].x = out1;
-                    point[k].y = out2;
-                    point[k].z = float_0_804217e0;
-                    used[k] = 1;
-                    index[k] = j;
-                    n++;
-                }
-            }
-        }
-        if (n == 2) {
-            ZubaStarBomb* bomb1;
-            ZubaStarBomb* bomb2;
-
-            bomb1 = BattleAlloc(0x50);
-            bomb2 = BattleAlloc(0x50);
-            for (j = 0; j < bomb->count; j++) {
-                if (j == index[0]) {
-                    bomb1->count = bomb->count - index[1] + 2 + j;
-                    bomb2->count = index[1] - index[0] + 2;
-                }
-            }
-            bomb1->points = BattleAlloc(bomb1->count * 0xC);
-            bomb2->points = BattleAlloc(bomb2->count * 0xC);
-            {
-                s32 k;
-
-                for (j = 0, k = 0; j <= index[0]; j++, k++) {
-                    bomb1->points[k] = bomb->points[j];
-                }
-            }
-#ifdef MUST_MATCH
-            // Storing through j++ twice makes MWCC emit two `addi j,1`; the target computes j+1 into a
-            // second register and adds 2 to j, so the stores use j and j+1 and j advances by two.
-            {
-                s32 j1 = j + 1;
-
-                bomb1->points[j] = point[0];
-                bomb1->points[j1] = point[1];
-                j = j1 + 1;
-            }
-#else
-            bomb1->points[j++] = point[0];
-            bomb1->points[j++] = point[1];
-#endif
-            {
-                s32 k = j;
-
-                for (j = index[1] + 1; j < bomb->count; j++, k++) {
-                    bomb1->points[k] = bomb->points[j];
-                }
-            }
-            for (j = 0; j < bomb->count; j++) {
-                if (j == index[0]) {
-                    s32 m;
-
-                    bomb2->points[0] = point[0];
-                    for (m = 1; m <= bomb2->count - 2; m++) {
-                        bomb2->points[m] = bomb->points[j + m];
-                    }
-                    bomb2->points[bomb2->count - 1] = point[1];
-                }
-            }
-#ifdef MUST_MATCH
-            // Statement order only: it is what makes the target's schedule of the two vec3 loads, the state
-            // stores and the two irand calls come out (the state store of bomb1 lands before the vec3 load).
-            bomb1->timer = irand(0x80);
-            bomb1->field_0x0C = vec3_802ff6bc;
-            bomb1->maxTimer = irand(5) + 1;
-            bomb1->state = 0;
-            bomb2->field_0x0C = vec3_802ff6c8;
-            bomb2->state = 0;
-            bomb2->timer = irand(0x80);
-            bomb2->maxTimer = irand(5) + 1;
-#else
-            bomb1->state = 0;
-            bomb1->field_0x0C = vec3_802ff6bc;
-            bomb1->timer = irand(0x80);
-            bomb1->maxTimer = irand(5) + 1;
-            bomb2->state = 0;
-            bomb2->field_0x0C = vec3_802ff6c8;
-            bomb2->timer = irand(0x80);
-            bomb2->maxTimer = irand(5) + 1;
-#endif
-            BattleFree(work->bombs[i]->points);
-            BattleFree(work->bombs[i]);
-            work->bombs[i] = bomb1;
-            work->bombs[work->bombCount] = bomb2;
-            work->bombCount++;
-        }
-    }
-}
-
-// .text:0x1990 | 0x8022FF20 | size: 0x100
-// Kept out of line: the original's zubastar_bunkatu calls it (bl) instead of inlining it.
-// `opt_lifetimes off` + `opt_propagation off` (reset after the function) give the original's float
-// colouring: the first value (`a`) in f9, the first select result (`b`) in f10, the second select
-// result (`c`) in f11, and the `ct` temp in f3. The zero compares must stay `0.0f` literals, not the
-// named `float_0_804217e0` object: with the named object MWCC CSEs the zero reloads away, while the
-// literal (whose pooled word the file already has) forces the original's reloads. The 1e-05 fallback
-// is the named `float_1Eneg05_80421860` because a literal would add a new `.sdata2` word and shift the
-// section. The reused `ct`/`dt` temps and the separate `e`/`f` locals land in the original's registers.
-#pragma dont_inline on
-#pragma opt_lifetimes off // keep the select results and the ct temp in f9/f10/f11/f3
-#pragma opt_propagation off // ditto for the rest of the float web
-s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, f32 f8, f32* out1,
-                        f32* out2) {
-    f32 a = f3 - f1;
-    f32 b;
-    f32 c;
-    f32 d;
-    f32 e;
-    f32 f;
-
-    if (a == 0.0f && f7 - f5 == 0.0f) {
-        return 0;
-    }
-    b = (a != 0.0f) ? a : float_1Eneg05_80421860;
-    {
-        // Named temps: MWCC keeps the differences in f3 and the selected results in their own
-        // registers with a copy, like the original (see the comment above the function).
-        f32 ct = f7 - f5;
-        f32 c2 = (ct != 0.0f) ? ct : float_1Eneg05_80421860;
-
-        c = c2;
-    }
-    {
-        f32 dt = f4 - f2;
-
-        d = dt;
-    }
-    e = f8 - f6;
-    f = d / b;
-    b = e / c;
-    d = f - b;
-    if (d == 0.0f) {
-        return 0;
-    }
-    *out1 = ((f6 - f2) + (f * f1 - b * f5)) / d;
-    if (a != 0.0f) {
-        *out2 = f * (*out1 - f1) + f2;
-    } else {
-        *out2 = b * (*out1 - f5) + f6;
-    }
-    {
-        f32 sl = (*out1 - f5) / c;
-
-        if (sl >= 0.0f && sl <= 1.0f) {
-            return 1;
-        }
-    }
-    return 0;
-}
-#pragma opt_lifetimes reset
-#pragma opt_propagation reset
-#pragma dont_inline reset
-
-
-// .text:0x1F58 | 0x802304E8 | size: 0xE4
-// A volatile struct copy reproduces the original's load/store interleave for vec3_802ff6b0. A volatile
-// store to bomb->count is needed too: it stops the scheduler hoisting the copy's first load above the
-// count store (the natural form is under #else).
-// dont_inline: the original calls zubastar_create_takaku from zubastar_main with `bl`.
-#pragma dont_inline on
-void zubastar_create_takaku(s32 count, Vec* points) {
-    ZubaStarWork* work = GetZubaStarPtr();
-    ZubaStarBomb* bomb;
-    s32 i;
-
-    work->bombs[work->bombCount] = BattleAlloc(0x50);
-    bomb = work->bombs[work->bombCount];
-    bomb->points = BattleAlloc(count * 0xC);
-    bomb->state = 0;
-#ifdef MUST_MATCH
-    // Volatile count store: a volatile access cannot move across the volatile struct copy below,
-    // which keeps the count store before the copy's first load as the original schedules it.
-    *(volatile s32*)&bomb->count = count;
-    *(volatile Vec*)&bomb->field_0x0C = *(const volatile Vec*)&vec3_802ff6b0;
-#else
-    bomb->count = count;
-    bomb->field_0x0C = vec3_802ff6b0;
-#endif
-    bomb->timer = 0;
-    bomb->maxTimer = 1;
-    for (i = 0; i < count; i++) {
-        bomb->points[i] = points[i];
-    }
-    work->bombCount++;
-}
-#pragma dont_inline reset
-
-// .text:0x203C | 0x802305CC | size: 0x3C
-s32 weaponGetPower_ZubaStar(BattleUnit* unit1, BattleWeapon* weapon, BattleUnit* unit2,
-                            BattleUnitPart* part) {
-    ZubaStarWork* work = GetZubaStarPtr();
-
-    return weapon->hpDamageWork[work->field_0x010];
-}
-
-// .text:0x2078 | 0x80230608 | size: 0xC
-// Keep GetZubaStarPtr out of line: the original issues a call (bl) to it.
-#pragma dont_inline on
-ZubaStarWork* GetZubaStarPtr(void) {
-    return (ZubaStarWork*)((u8*)_battleWorkPointer + 0x1F4C);
-}
-#pragma dont_inline reset
-
-// .text:0x2084 | 0x80230614 | size: 0x4
-// The original body is a no-op; this exists only as a dispEntry callback.
-void zubaStarDispStar(CameraId cameraId, void* param) {
-    (void)cameraId;
-    (void)param;
-}
-
-// Star-stone effect userdata fields touched by main_star (no header declares this struct).
-typedef struct ZubaStarEffectData {
-    u8 field_0x00[0x8];  // 0x00
-    f32 positionX;       // 0x08
-    f32 positionY;       // 0x0C
-    f32 positionZ;       // 0x10
-    f32 scale;           // 0x14
-    f32 scaleX;          // 0x18
-    f32 scaleY;          // 0x1C
-    f32 scaleZ;          // 0x20
-} ZubaStarEffectData;
-
-static s32 main_star(EventEntry* event, BOOL isFirstCall) {
-    ZubaStarWork* work = GetZubaStarPtr();
-    BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
-    f32 scale;
-
-    switch (work->starState) {
-    case 0:
-        break;
-    case 1:
-        {
-            f32 zero = 0.0f;
-
-            work->starState = 2;
-            {
-                f32 neg = -1000.0f;
-
-                work->starCounter = 0;
-                {
-                    f32 one = 1.0f;
-
-                    work->effect = effStarStoneEntry(6, zero, neg, zero, one);
-                }
-            }
-        }
-        BtlUnit_GetPos(mario, &work->starCur.x, &work->starCur.y, &work->starCur.z);
-        work->starCur.y += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
-        work->starStart = work->starCur;
-        work->starEnd = work->starCur;
-        work->starEnd.y += 50.0f;
-        work->starEnd.z += -1.0f;
-        work->scale1 = (Vec){ 0.0f, 0.0f, 0.0f };
-        work->scale2 = (Vec){ 0.0f, 0.0f, 0.0f };
-        // fallthrough
-    case 2:
-        work->starCounter++;
-        if (work->starCounter <= 0x64) {
-            work->starCur.x = intplGetValue(0, work->starCounter, 0x64, work->starStart.x, work->starEnd.x);
-            work->starCur.y = intplGetValue(0, work->starCounter, 0x64, work->starStart.y, work->starEnd.y);
-            work->starCur.z = intplGetValue(0, work->starCounter, 0x64, work->starStart.z, work->starEnd.z);
-            scale = intplGetValue(0, work->starCounter, 0x64, 0.0f, 2.0f);
-            work->scale1.z = scale;
-            work->scale1.y = scale;
-            work->scale1.x = scale;
-        } else {
-            f32 two = 2.0f;
-
-            work->starCur.x = work->starEnd.x;
-            work->starCur.y = work->starEnd.y;
-            work->starCur.z = work->starEnd.z;
-            work->scale1.z = two;
-            work->scale1.y = two;
-            work->scale1.x = two;
-        }
-        work->scale2.y = intplGetValue(4, work->starCounter, 0x78, 0.0f, 2160.0f);
-        if (work->starCounter >= 0x78) {
-            work->starState = 3;
-            work->starCounter = 0;
-            work->starStart = work->starCur;
-            work->starEnd.y = 300.0f;
-        }
-        break;
-    case 3:
-        work->starCounter++;
-        work->starCur.y = intplGetValue(1, work->starCounter, 0x3C, work->starStart.y, work->starEnd.y);
-        if (work->starCounter >= 0x3C) {
-            work->starState = 4;
-            work->starCounter = 0;
-        }
-        break;
-    case 4:
-        break;
-    }
-    if (work->effect != NULL) {
-        ZubaStarEffectData* data = work->effect->userdata;
-        f32 s = 1.5f;
-
-        data->positionX = work->starCur.x;
-        data->positionY = work->starCur.y;
-        data->positionZ = work->starCur.z;
-        data->scaleX = work->scale2.x;
-        data->scaleY = work->scale2.y;
-        data->scaleZ = work->scale2.z;
-        data->scale = s * work->scale1.x;
-    }
-    dispEntry(4, 0.0f, 2, zubaStarDispStar, NULL);
-    return 0;
-}
-
-// .text:0x23C4 | 0x80230954 | size: 0x38
-s32 wait_star_stone_up(EventEntry* event, BOOL isFirstCall) {
-    ZubaStarWork* work = GetZubaStarPtr();
-
-    return (work->starState == 4) ? 2 : 0;
-}
-
-// .text:0x23FC | 0x8023098C | size: 0x2C
-static s32 star_stone_appear(EventEntry* event, BOOL isFirstCall) {
-    ZubaStarWork* work = GetZubaStarPtr();
-
-    work->starState = 1;
+// .text:0x7D0 | 0x8022ED60 | size: 0x30
+s32 zubastar_init(EventEntry* event, BOOL isFirstCall) {
+    memset(GetZubaStarPtr(), 0, 0x5E0);
     return 2;
 }
+
+// .text:0x72C | 0x8022ECBC | size: 0xA4
+s32 zubastar_end(EventEntry* event, BOOL isFirstCall) {
+    ZubaStarWork* work = GetZubaStarPtr();
+    s32 i;
+
+    effDelete(*(EffectEntry**)((u8*)work->effect->userdata + 0x34));
+    effDelete(work->effect);
+    for (i = 0; i < 0xC8; i++) {
+        if (work->bombs[i] != NULL) {
+            if (work->bombs[i]->points != NULL) {
+                BattleFree(work->bombs[i]->points);
+                work->bombs[i]->points = NULL;
+            }
+            BattleFree(work->bombs[i]);
+            work->bombs[i] = NULL;
+        }
+    }
+    smartFree(work->tex);
+    return 2;
+}
+
+// .text:0x6C4 | 0x8022EC54 | size: 0x68
+void zubastar_capture(CameraId cameraId, void* param) {
+    ZubaStarWork* work = GetZubaStarPtr();
+
+    GXSetTexCopySrc(0xD0, 0, 0x190, 0x1E0);
+    GXSetTexCopyDst(0x190, 0x1E0, 4, 0);
+    GXCopyTex(work->tex->address, 0);
+    GXPixModeSync();
+}
+
+// .text:0x368 | 0x8022E8F8 | size: 0x35C
+// Constant-register mapping, Mtx slots and both loops match; loading p->x/p->y into locals fixes the inner
+// vertex reloads, and indexing bomb->points[j] directly (no local Vec*) gives the original's r5 inner
+// counter. The inner loop computes both full texcoords before the position call (that is what gives the
+// target's f0/f3 colouring and the interleaved stores).
+#pragma opt_propagation off // needed: without it MWCC hoists the t numerator and colours the s/t chain f1/f0 (98.88%)
+void zubastar_disp_bomb(CameraId cameraId, void* param) {
+    ZubaStarWork* work = GetZubaStarPtr();
+    CameraEntry* cam = camGetPtr(8);
+    GXTexObj texObj;
+    Mtx m1;
+    Mtx m2;
+    Mtx m4;
+    Mtx m3;
+    Mtx mtx;
+    ZubaStarBomb* bomb;
+    s32 j;
+    s32 i;
+    f32 c480;
+    f32 c240;
+    f32 c400;
+    f32 c96;
+    f32 cdeg;
+
+    GXSetCullMode(GX_CULL_NONE);
+    GXSetZCompLoc(GX_FALSE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_OR, GX_NEVER, 0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX3x4, GX_TG_TEX0, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ONE);
+    GXInitTexObj(&texObj, work->tex->address, 0x190, 0x1E0, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, 0);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, float_0_804217e0, float_0_804217e0,
+                    float_0_804217e0, 0, 0, 0);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    c96 = float_96_804217ec;
+    c400 = float_400_804217f0;
+    c240 = float_240_804217f4;
+    c480 = float_480_804217f8;
+    cdeg = float_deg2rad_804217e8;
+    for (i = 0; i < work->bombCount; i++) {
+        bomb = work->bombs[i];
+
+        PSMTXTrans(m1, bomb->field_0x18.x, bomb->field_0x18.y, bomb->field_0x18.z);
+        PSMTXTrans(m2, -bomb->field_0x18.x, -bomb->field_0x18.y, -bomb->field_0x18.z);
+        PSMTXTrans(m3, bomb->field_0x0C.x, bomb->field_0x0C.y, bomb->field_0x0C.z);
+        PSMTXRotRad(m4, 'z', cdeg * bomb->field_0x3C);
+        PSMTXConcat(m4, m2, mtx);
+        PSMTXConcat(m1, mtx, mtx);
+        PSMTXConcat(m3, mtx, mtx);
+        PSMTXConcat(cam->view, mtx, mtx);
+        GXLoadPosMtxImm(mtx, 0);
+        GXBegin(GX_TRIANGLEFAN, GX_VTXFMT0, bomb->count);
+        for (j = 0; j < bomb->count; j++) {
+            f32 y = bomb->points[j].y;
+            f32 x = bomb->points[j].x;
+            f32 s = (c96 + x) / c400;
+            f32 t = (c240 - y) / c480;
+
+            GXPosition3f32(x, y, 0.0f);
+            GXTexCoord2f32(s, t);
+        }
+    }
+}
+#pragma opt_propagation reset
+
+// .text:0x0 | 0x8022E590 | size: 0x368
+// The original holds work+0x18 in r30 and reaches field_0x018, field_0x020 and field_0x02C
+// through it (the compiler CSEs the base). MWCC here does not, so under MUST_MATCH a local
+// u8* b18 = (u8*)work + 0x18 with Z18/Z20/Z2C(i) forces the same base; the natural struct-field
+// accesses are under #else. All of disp2D's named float constants are now literals (200.0f, 60.0f, ...),
+// which gives MWCC their known values and recovers the original's scheduling; the original TU defined
+// them, so its loads use their names and ours use anonymous pooled entries (arg_mismatch only). Same for
+// the `pos`/vertex zeros.
+void zubastar_disp2D(CameraId cameraId, void* param) {
+    ZubaStarWork* work = GetZubaStarPtr();
+#ifdef MUST_MATCH
+    u8* b18 = (u8*)work + 0x18;
+#define Z18 (*(s32*)b18)
+#define Z20 ((Vec*)(b18 + 8))
+#define Z2C(i) (((Vec*)(b18 + 0x14)) + (i))
+#else
+#define Z18 (work->field_0x018)
+#define Z20 (&work->field_0x020)
+#define Z2C(i) (&work->field_0x02C[i])
+#endif
+    ZubaStarStar* star;
+    s32 i;
+    s32 alpha;
+    Vec pos;
+
+    if (work->field_0x07C >= 5) {
+        s32 icon;
+
+        icon = (work->field_0x0A1 <= 3) ? 0x64 : 0x65;
+        pos = (Vec){ 0.0f, 0.0f, 0.0f };
+        pos.x = work->field_0x094.x - 200.0f;
+        pos.y = 60.0f + work->field_0x094.y;
+#ifdef MUST_MATCH
+        // Cast only to drop the s32->s16 `extsh` the original does not emit: the id is 0x64/0x65,
+        // so the upper bits are already clear. The natural declared call is under #else.
+        ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&pos, 0x10, icon, 1.0f);
+#else
+        iconDispGx(&pos, 0x10, icon, 1.0f);
+#endif
+        BattleAcDrawGauge((s32)work->field_0x094.x, (s32)work->field_0x094.y, 0xB1, 4, 0x1A, 0x34, 0x4E,
+                          0, 0.01f * work->field_0x084);
+    }
+    GXSetCullMode(GX_CULL_NONE);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetNumChans(1);
+    GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, 0, GX_DF_NONE, GX_AF_NONE);
+    GXSetNumTexGens(0);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+    GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
+    GXSetCurrentMtx(0);
+    GXLoadPosMtxImm(camGetPtr(cameraId)->view, 0);
+    GXSetLineWidth(0x18, 0);
+    for (i = 0; i < 0x10; i++) {
+        star = &work->stars[i];
+        if (star->timer <= 0x1E) {
+            alpha = (s32)intplGetValue(0, star->timer, 0x1E, 128.0f,
+                                       255.0f);
+        } else {
+            alpha = (s32)intplGetValue(0, star->timer - 0x1E, 0x1E, 255.0f,
+                                       128.0f);
+        }
+        if (star->state == 5) {
+            {
+#ifdef MUST_MATCH
+                GXSetChanMatColor(GX_COLOR0A0, (GXColor){ alpha, alpha, alpha, 0xFF });
+#else
+                GXColor c = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
+
+                c.r = alpha;
+                c.g = alpha;
+                c.b = alpha;
+                GXSetChanMatColor(GX_COLOR0A0, c);
+#endif
+            }
+            GXBegin(0xA8, 0, 2);
+#ifdef MUST_MATCH
+            // Two separate 0.0f literals: the original reloads float_0_804217e0 for each vertex
+            // (its compiler did not CSE across the GX fifo stores); naming the symbol makes ours
+            // fold the two reads into one.
+            GXPosition3f32(star->x0, star->y0, 0.0f);
+            GXPosition3f32(star->x1, star->y1, 0.0f);
+#else
+            GXPosition3f32(star->x0, star->y0, float_0_804217e0);
+            GXPosition3f32(star->x1, star->y1, float_0_804217e0);
+#endif
+        }
+    }
+    iconDispGx(Z20, 0x10, 0x19D, 1.0f);
+    if (Z18 >= 0x19 && Z18 < 0x1E) {
+        f32 yoffset = 20.0f;
+
+        for (i = 0; i < 4; i++) {
+            Mtx mtx;
+
+            PSMTXTrans(mtx, Z2C(i)->x, Z2C(i)->y - yoffset, 0.0f);
+#ifdef MUST_MATCH
+            iconDispGxCol(mtx, 0x10, 0x19D, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF - (i + 1) * 0x32 });
+#else
+            {
+                GXColor color = { 0xFF, 0xFF, 0xFF, 0x00 };
+
+                color.a = 0xFF - (i + 1) * 0x32;
+                iconDispGxCol(mtx, 0x10, 0x19D, color);
+            }
+#endif
+        }
+    }
+}
+#undef Z18
+#undef Z20
+#undef Z2C
