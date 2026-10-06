@@ -16,55 +16,10 @@
 
 extern BattleWork* _battleWorkPointer;
 extern ItemData itemDataTable[];
-extern const GXColor dat_8041c118;
-extern const GXColor dat_8041c11c;
-extern const GXColor dat_8041c120;
-extern const GXColor dat_8041c140;
-extern const f32 float_neg200_8041c17c;
-extern const f32 float_neg100_8041c180;
-extern const f32 float_neg60_8041c16c;
-extern const f32 float_55_8041c170;
-extern const f32 float_neg40_8041c184;
-extern const f32 float_3p1416_8041c14c;
-extern const f32 float_0p1_8041c174;
 
 
 extern const f32 float_0_8041c144;
-extern const f32 float_10_8041c15c;
-extern const f32 float_15_8041c18c;
-extern const f32 float_155_8041c188;
-extern const f32 float_0p75_8041c190;
-extern const f32 float_20_8041c168;
-extern const f32 float_164_8041c194;
-extern const f32 float_24_8041c198;
-extern const f32 float_1_8041c178;
 // Constants used by DrawSubIconSub (declared here so the symbols are emitted).
-extern const f32 float_255_8041c1cc;
-extern const f32 float_144_8041c1d0;
-extern const f32 float_neg152_8041c1d4;
-extern const f32 float_neg136_8041c1d8;
-extern const f32 float_152_8041c1dc;
-extern const f32 float_136_8041c1e0;
-extern const f32 float_neg119_8041c1e4;
-extern const f32 float_2_8041c1e8;
-extern const f32 float_0p5_8041c1c8;
-extern const f32 float_neg104_8041c1ec;
-extern const f32 float_22_8041c1f0;
-extern const f32 float_120_8041c1f4;
-extern const f32 float_72_8041c1f8;
-extern const f32 float_25_8041c1fc;
-extern const f32 float_30_8041c200;
-extern const f32 float_26_8041c204;
-extern const f32 float_92_8041c208;
-extern const f32 float_100_8041c20c;
-extern const f32 float_76_8041c210;
-extern const f32 float_78_8041c214;
-extern const f32 float_4_8041c1a8;
-extern const f32 float_0p8_8041c1a4;
-extern const f32 float_28_8041c1ac;
-extern const f32 float_3p0039_8041c138;
-extern const GXColor dat_8041c130;
-extern const GXColor dat_8041c134;
 extern GXColor unk_80422ff0;
 
 // Layout of the battle menu scratch buffer allocated by
@@ -143,11 +98,7 @@ typedef struct BattleMenuWeaponEntry {
 
 extern BattleWeapon ItemWeaponData_CookingItem;
 
-extern const Vec vec3_802ef168;
-extern const Vec vec3_802ef174;
 // In .rodata: `const` makes MWCC emit lis/addi instead of @sda21 loads.
-extern const Vec vec3_802ef180;
-extern const Vec vec3_802ef18c;
 
 // Stack scratch block shared by the battle-menu draw workers. The original
 // build keeps these arrays in one contiguous frame region; listing them as
@@ -167,12 +118,6 @@ typedef struct BattleMenuDispScratch {
     Mtx rot[7];     // 0x1D4
 } BattleMenuDispScratch;
 
-extern const f32 float_0p2_8041c148;
-extern const f32 float_180_8041c150;
-extern const f32 float_270_8041c154;
-extern const f32 float_90_8041c158;
-extern const f32 float_360_8041c160;
-extern const f32 float_0p017453_8041c164;
 typedef struct MainIconCirclePoint {
     f32 x;
     f32 y;
@@ -180,11 +125,6 @@ typedef struct MainIconCirclePoint {
 typedef struct MainIconCircleTable {
     MainIconCirclePoint v[4][4];
 } MainIconCircleTable;
-extern const MainIconCircleTable dat_802ef068;
-extern const MainIconCircleTable dat_802ef0e8;
-extern const GXColor dat_8041c124;
-extern const GXColor dat_8041c128;
-extern const GXColor dat_8041c12c;
 
 void SelectedItemCoordinateColorUpDate(void) {
     switch (seq) {
@@ -248,7 +188,7 @@ void GetRingCenter(Vec* out) {
     btlGetScreenPoint(&unit->mPosition, out);
     out->x += 22.5f;
     out->y += 105.0f;
-    out->z = 0.0f;
+    out->z = float_0_8041c144;
     if (out->x <= -180.0f) {
         out->x = -180.0f;
     }
@@ -329,7 +269,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     const char* msg;
 
     btlDispGXInit2D();
-    GXSetTevColor(1, dat_8041c118);
+    GXSetTevColor(1, ((GXColor){ 0xE1,0xE1,0xE1,0xFF }));
     GXSetNumTevStages(1);
     GXSetTevColorOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 0xF, 0xA, 2, 0xF);
@@ -337,7 +277,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     GXSetTevAlphaIn(0, 7, 5, 4, 7);
     GXSetTevOrder(0, 0, 0, 4);
     PSMTXScale(scaleMtx, 1.0f, 1.0f, 1.0f);
-    PSMTXTrans(transMtx, 0.0f, -5.0f, 0.0f);
+    PSMTXTrans(transMtx, float_0_8041c144, -5.0f, float_0_8041c144);
     f31 = 0.017453292f * scale;
     PSMTXRotRad(rotMtx, 'y', f31);
     PSMTXConcat(*mtx, rotMtx, resultMtx);
@@ -348,7 +288,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, 1);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
 
-    if (scale >= 0.0f && scale <= 180.0f) {
+    if (scale >= float_0_8041c144 && scale <= 180.0f) {
         f30 = 4.0f - 8.0f * scale / 180.0f;
     }
     if (scale >= 180.0f && scale <= 360.0f) {
@@ -357,13 +297,13 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
 
     if (window->field_0x1C == 0) {
         btlDispGXQuads2D(64.0f + f30, 76.0f, -64.0f + f30, -4.0f, 0, 0, 0, 0x80);
-        btlDispGXQuads2D(64.0f, 80.0f, -64.0f, 0.0f, 0xFF, 0xFF, 0xFF, 0xFF);
+        btlDispGXQuads2D(64.0f, 80.0f, -64.0f, float_0_8041c144, 0xFF, 0xFF, 0xFF, 0xFF);
     } else {
         btlDispGXQuads2D(-64.0f + f30, 76.0f, 64.0f + f30, -4.0f, 0, 0, 0, 0x80);
-        btlDispGXQuads2D(-64.0f, 80.0f, 64.0f, 0.0f, 0xFF, 0xFF, 0xFF, 0xFF);
+        btlDispGXQuads2D(-64.0f, 80.0f, 64.0f, float_0_8041c144, 0xFF, 0xFF, 0xFF, 0xFF);
     }
 
-    PSMTXTrans(transMtx, -67.0f, 20.0f, 0.0f);
+    PSMTXTrans(transMtx, -67.0f, 20.0f, float_0_8041c144);
     PSMTXScale(scaleMtx, 1.0f, 1.0f, 1.0f);
     PSMTXRotRad(rotMtx, 'y', f31);
     PSMTXConcat(*mtx, rotMtx, resultMtx);
@@ -389,7 +329,7 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     }
 
     msg = (const char*)entry->field_0x8;
-    PSMTXTrans(transMtx, 0.0f, 52.5f, 0.0f);
+    PSMTXTrans(transMtx, float_0_8041c144, 52.5f, float_0_8041c144);
     PSMTXScale(scaleMtx, 0.9f, 0.9f, 0.9f);
     PSMTXRotRad(rotMtx, 'y', f31);
     PSMTXConcat(*mtx, rotMtx, resultMtx);
@@ -397,9 +337,9 @@ void DrawMainIconHukidasi(BattleMenuWork* window, void* entryPtr, Mtx* mtx, f32 
     PSMTXConcat(resultMtx, scaleMtx, resultMtx);
     FontDrawStart();
     if (entry->field_0x4 == 1) {
-        color = dat_8041c11c;
+        color = ((GXColor){ 0x00,0x00,0x00,0xFF });
     } else {
-        color = dat_8041c120;
+        color = ((GXColor){ 0x80,0x80,0x80,0xFF });
     }
 #ifdef MUST_MATCH
     // FontDrawColor's header says GXColor* but the original takes GXColor by value (which MWCC
@@ -449,7 +389,7 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
     cam = camGetPtr(8);
     alpha = (u8)(0xC0 - (s32)(1.5f * pos->z));
     btlDispGXInit2D();
-    GXSetTevColor(1, dat_8041c124);
+    GXSetTevColor(1, ((GXColor){ 0xE1,0xE1,0xE1,0xFF }));
     GXSetNumTevStages(1);
     GXSetTevColorOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 0xF, 0xA, 2, 0xF);
@@ -466,14 +406,14 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
     GXLoadPosMtxImm(resultMtx, 0);
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, 0);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
-    if (scale >= 0.0f && scale <= 180.0f) {
+    if (scale >= float_0_8041c144 && scale <= 180.0f) {
         offset = (4.0f - 8.0f * scale / 180.0f) / 1.3f;
     }
     if (scale >= 180.0f && scale <= 360.0f) {
         offset = (-4.0f + 8.0f * (scale - 180.0f) / 180.0f) / 1.3f;
     }
-    posTable = dat_802ef068;
-    texCoord = dat_802ef0e8;
+    posTable = (MainIconCircleTable){ { { { -20.0f, 40.0f }, { 0.0f, 40.0f }, { 0.0f, 20.0f }, { -20.0f, 20.0f } }, { { 20.0f, 40.0f }, { 20.0f, 20.0f }, { 0.0f, 20.0f }, { 0.0f, 40.0f } }, { { -20.0f, 20.0f }, { 0.0f, 20.0f }, { 0.0f, 0.0f }, { -20.0f, 0.0f } }, { { 0.0f, 20.0f }, { 20.0f, 20.0f }, { 20.0f, 0.0f }, { 0.0f, 0.0f } } } };
+    texCoord = (MainIconCircleTable){ { { { 0.0f, 0.0f }, { 1.0f, 0.0f }, { 1.0f, 1.0f }, { 0.0f, 1.0f } }, { { 0.0f, 0.0f }, { 0.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f } }, { { 0.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 0.0f, 0.0f } }, { { 1.0f, 1.0f }, { 0.0f, 1.0f }, { 0.0f, 0.0f }, { 1.0f, 0.0f } } } };
     shadowY = -3.0769231f;
     for (i = 0; i < 4; i++) {
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
@@ -489,7 +429,7 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
                              ((f32*)texCoord.v[i])[j], ((f32*)texCoord.v[i])[j + 1]);
         }
     }
-    PSMTXTrans(transMtx, 0.0f, 7.5f, 0.0f);
+    PSMTXTrans(transMtx, float_0_8041c144, 7.5f, float_0_8041c144);
     size = 0.66f * (1.3f - 0.005f * pos->z);
     PSMTXScale(scaleMtx, size, size, 1.0f);
     PSMTXRotRad(rotMtx, 'y', radians);
@@ -503,9 +443,9 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
     }
     if (entry->field_0x4 == 1) {
 #ifdef MUST_MATCH
-        iconDispGxCol(resultMtx, 0x10, iconId, MainIconCircleColor(dat_8041c128, alpha));
+        iconDispGxCol(resultMtx, 0x10, iconId, MainIconCircleColor(((GXColor){ 0x00,0x00,0x00,0xFF }), alpha));
 #else
-        GXColor color = dat_8041c128;
+        GXColor color = ((GXColor){ 0x00,0x00,0x00,0xFF });
         color.r = alpha;
         color.g = alpha;
         color.b = alpha;
@@ -513,9 +453,9 @@ void DrawMainIconCircle(BattleMenuWork* window, void* entryPtr, Mtx* mtx, Vec* p
 #endif
     } else {
 #ifdef MUST_MATCH
-        iconDispGxCol(resultMtx, 0x30, iconId, MainIconCircleColor(dat_8041c12c, alpha));
+        iconDispGxCol(resultMtx, 0x30, iconId, MainIconCircleColor(((GXColor){ 0x00,0x00,0x00,0xFF }), alpha));
 #else
-        GXColor color = dat_8041c12c;
+        GXColor color = ((GXColor){ 0x00,0x00,0x00,0xFF });
         color.r = alpha;
         color.g = alpha;
         color.b = alpha;
@@ -542,7 +482,7 @@ void DrawSubIcon(BattleMenuWork* window, Mtx* mtxBase, s32* a, u16* b, s32* c, s
         s32 idx = (s32)window->field_0x98 + i;
         if (idx < cursor->unk8) {
             if (window->field_0xA4[i] & 1) {
-                PSMTXTrans(mtx, 100.0f, 35.0f - 24.0f * (f32)i + f31, 0.0f);
+                PSMTXTrans(mtx, 100.0f, 35.0f - 24.0f * (f32)i + f31, float_0_8041c144);
                 PSMTXConcat(mtx, mtxBase[i], result[i]);
                 DrawSubIconSub(window, i, result[i], a[i], b[i], c[i], d[i], e[i], table, flag);
             }
@@ -557,17 +497,9 @@ static inline GXColor SubIconFontColor(GXColor c, s32 alpha) {
     return c;
 }
 
-// NONMATCHING (99.94%): the instruction sequence matches; every remaining diff is the compiler's .rodata
-// pool anchor. The original bases the ABI-pool at dat_802ef068 (the unit's first .rodata object) and reaches
-// the i2f doubles at +0x130/+0x1b8 and the four msgSearch strings at +0x170/+0x184/+0x198/+0x1a4; our pool
-// anchors the anonymous ...rodata.0 and its order/content differs, so those offsets differ. That is file-wide:
-// dat_802ef068/dat_802ef0e8/the four vec3_802ef1xx are still extern here, and this file's source is in the
-// .fn/asm order while the compiler emits the reverse, so the pool order only lines up once the functions are
-// reordered (fn_order.py) and the unit data is defined. The other 6 diffs are register/stack allocation: the
+// NONMATCHING (99.96%): the instruction sequence matches; the remaining diffs are register/stack allocation: the
 // i2f int temp in r4 instead of r3, the cursor->field_0 compare in r3/r0 instead of r0/r3, and the
-// SubIconFontColor GXColor temp/color stack slots 0x30/0x14 swapped. The s32->u8/u16 arg masks were removed
-// via MUST_MATCH casts. Verified: no symbol-only `~~` diff, so every float_/GXColor constant used here is the
-// original's; the field/struct reads match.
+// SubIconFontColor GXColor temp/color stack slots 0x30/0x14 swapped.
 #pragma dont_inline on
 void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s32 c, s32 d, s32 e, void* table,
                     s32 flag) {
@@ -599,10 +531,10 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     frac = window->field_0x98 - (f32)(s32)window->field_0x98;
     alpha = 0xFF;
     if (index == 0) {
-        alpha = (s32)(float_255_8041c1cc * (float_1_8041c178 - frac));
+        alpha = (s32)(255.0f * (1.0f - frac));
     }
     if (index == 6) {
-        alpha = (s32)(float_255_8041c1cc * frac);
+        alpha = (s32)(255.0f * frac);
     }
     if ((s32)window->field_0x98 + index == cursor->field_0) {
         cr = seleItemCoordCol.r;
@@ -613,7 +545,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
         cb = 0xFF;
         cg = 0xFF;
         cr = 0xFF;
-        ca = (s32)(float_144_8041c1d0 * (f32)(u8)alpha / float_255_8041c1cc);
+        ca = (s32)(144.0f * (f32)(u8)alpha / 255.0f);
     }
     btlDispGXInit2D();
     PSMTXConcat(cam->view, mtx, mtxOut);
@@ -624,26 +556,26 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     // btlDispGXQuads2D's header declares its alpha as u8, but the original passes a 32-bit value
     // with no truncation; casting `a` to s32 restores that ABI.
     ((void (*)(f32, f32, f32, f32, u8, u8, u8, s32))btlDispGXQuads2D)(
-        float_neg152_8041c1d4, float_24_8041c198, float_neg136_8041c1d8, float_0_8041c144, cr, cg, cb, ca);
+        (-152.0f), 24.0f, (-136.0f), float_0_8041c144, cr, cg, cb, ca);
     ((void (*)(f32, f32, f32, f32, u8, u8, u8, s32))btlDispGXQuads2D)(
-        float_152_8041c1dc, float_24_8041c198, float_136_8041c1e0, float_0_8041c144, cr, cg, cb, ca);
+        152.0f, 24.0f, 136.0f, float_0_8041c144, cr, cg, cb, ca);
 #else
-    btlDispGXQuads2D(float_neg152_8041c1d4, float_24_8041c198, float_neg136_8041c1d8, float_0_8041c144, cr,
+    btlDispGXQuads2D((-152.0f), 24.0f, (-136.0f), float_0_8041c144, cr,
                      cg, cb, ca);
-    btlDispGXQuads2D(float_152_8041c1dc, float_24_8041c198, float_136_8041c1e0, float_0_8041c144, cr, cg, cb,
+    btlDispGXQuads2D(152.0f, 24.0f, 136.0f, float_0_8041c144, cr, cg, cb,
                      ca);
 #endif
     TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, 3);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
 #ifdef MUST_MATCH
     ((void (*)(f32, f32, f32, f32, u8, u8, u8, s32))btlDispGXQuads2D)(
-        float_neg136_8041c1d8, float_24_8041c198, float_136_8041c1e0, float_0_8041c144, cr, cg, cb, ca);
+        (-136.0f), 24.0f, 136.0f, float_0_8041c144, cr, cg, cb, ca);
 #else
-    btlDispGXQuads2D(float_neg136_8041c1d8, float_24_8041c198, float_136_8041c1e0, float_0_8041c144, cr, cg, cb,
+    btlDispGXQuads2D((-136.0f), 24.0f, 136.0f, float_0_8041c144, cr, cg, cb,
                      ca);
 #endif
-    PSMTXTrans(mtxTrans, float_neg119_8041c1e4, float_2_8041c1e8, float_0_8041c144);
-    PSMTXScale(mtxScale, float_0p5_8041c1c8, float_0p5_8041c1c8, float_1_8041c178);
+    PSMTXTrans(mtxTrans, (-119.0f), 2.0f, float_0_8041c144);
+    PSMTXScale(mtxScale, 0.5f, 0.5f, 1.0f);
     PSMTXConcat(mtx, mtxTrans, mtxOut);
     PSMTXConcat(mtxOut, mtxScale, mtxOut);
     if (b == 0) {
@@ -654,35 +586,35 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
         // iconDispGxCol's header declares iconId as s32, but the original passes the u16 `b` with no
         // zero-extension; casting iconId to u16 restores that.
         ((void (*)(Mtx, s16, u16, GXColor))iconDispGxCol)(mtxOut, 0x10, b,
-                                                          SubIconFontColor(dat_8041c130, alpha));
+                                                          SubIconFontColor(((GXColor){ 0xFF,0xFF,0xFF,0x00 }), alpha));
 #else
-        iconDispGxCol(mtxOut, 0x10, b, SubIconFontColor(dat_8041c130, alpha));
+        iconDispGxCol(mtxOut, 0x10, b, SubIconFontColor(((GXColor){ 0xFF,0xFF,0xFF,0x00 }), alpha));
 #endif
     } else {
 #ifdef MUST_MATCH
         ((void (*)(Mtx, s16, u16, GXColor))iconDispGxCol)(mtxOut, 0x30, b,
-                                                          SubIconFontColor(dat_8041c134, alpha));
+                                                          SubIconFontColor(((GXColor){ 0xFF,0xFF,0xFF,0x00 }), alpha));
 #else
-        iconDispGxCol(mtxOut, 0x30, b, SubIconFontColor(dat_8041c134, alpha));
+        iconDispGxCol(mtxOut, 0x30, b, SubIconFontColor(((GXColor){ 0xFF,0xFF,0xFF,0x00 }), alpha));
 #endif
     }
     FontDrawStart();
     {
         GXColor color = (a == 1) ? SubIconFontColor(unk_80422ff0, alpha)
-                                 : SubIconFontColor(*(GXColor*)&float_3p0039_8041c138, alpha);
+                                 : SubIconFontColor(((GXColor){ 0x40, 0x40, 0x40, 0x00 }), alpha);
         FontDrawColor(&color);
     }
-    PSMTXTrans(mtxTrans, float_neg104_8041c1ec, float_22_8041c1f0, float_0_8041c144);
+    PSMTXTrans(mtxTrans, (-104.0f), 22.0f, float_0_8041c144);
     if (flag == 1) {
         f32 scale;
         if (FontGetMessageWidth((char*)c) > 0x96) {
-            scale = float_120_8041c1f4 / (f32)FontGetMessageWidth((char*)c);
+            scale = 120.0f / (f32)FontGetMessageWidth((char*)c);
         } else {
-            scale = float_0p8_8041c1a4;
+            scale = 0.8f;
         }
-        PSMTXScale(mtxScale, scale, float_0p8_8041c1a4, float_0p8_8041c1a4);
+        PSMTXScale(mtxScale, scale, 0.8f, 0.8f);
     } else {
-        PSMTXScale(mtxScale, float_0p8_8041c1a4, float_0p8_8041c1a4, float_0p8_8041c1a4);
+        PSMTXScale(mtxScale, 0.8f, 0.8f, 0.8f);
     }
     PSMTXConcat(mtx, mtxTrans, mtxOut);
     PSMTXConcat(mtxOut, mtxScale, mtxOut);
@@ -715,18 +647,18 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
             posD[2] = 0;
             count = 1;
         }
-        PSMTXScale(mtxScale, float_1_8041c178, float_1_8041c178, float_1_8041c178);
+        PSMTXScale(mtxScale, 1.0f, 1.0f, 1.0f);
         for (i = 0; i < count; i++) {
             textD[0] = (char)(digitsD[i] + 0x30);
             textD[1] = 0;
-            PSMTXTrans(mtxTrans, float_4_8041c1a8 + (float_72_8041c1f8 + (f32)posD[i]), float_25_8041c1fc,
+            PSMTXTrans(mtxTrans, 4.0f + (72.0f + (f32)posD[i]), 25.0f,
                        float_0_8041c144);
             PSMTXConcat(mtx, mtxTrans, mtxOut);
             PSMTXConcat(mtxOut, mtxScale, mtxOut);
             FontDrawStringMtx(mtxOut, textD);
         }
-        PSMTXTrans(mtxTrans, float_120_8041c1f4, float_22_8041c1f0, float_0_8041c144);
-        PSMTXScale(mtxScale, float_0p8_8041c1a4, float_0p8_8041c1a4, float_0p8_8041c1a4);
+        PSMTXTrans(mtxTrans, 120.0f, 22.0f, float_0_8041c144);
+        PSMTXScale(mtxScale, 0.8f, 0.8f, 0.8f);
         PSMTXConcat(mtx, mtxTrans, mtxOut);
         PSMTXConcat(mtxOut, mtxScale, mtxOut);
         FontDrawStringMtx(mtxOut, msgSearch("btl_cost_disp_FP"));
@@ -759,18 +691,18 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
             posE[2] = 0;
             count = 1;
         }
-        PSMTXScale(mtxScale, float_1_8041c178, float_1_8041c178, float_1_8041c178);
+        PSMTXScale(mtxScale, 1.0f, 1.0f, 1.0f);
         for (i = 0; i < count; i++) {
             textE[0] = (char)(digitsE[i] + 0x30);
             textE[1] = 0;
-            PSMTXTrans(mtxTrans, float_4_8041c1a8 + (float_72_8041c1f8 + (f32)posE[i]), float_25_8041c1fc,
+            PSMTXTrans(mtxTrans, 4.0f + (72.0f + (f32)posE[i]), 25.0f,
                        float_0_8041c144);
             PSMTXConcat(mtx, mtxTrans, mtxOut);
             PSMTXConcat(mtxOut, mtxScale, mtxOut);
             FontDrawStringMtx(mtxOut, textE);
         }
-        PSMTXTrans(mtxTrans, float_120_8041c1f4, float_22_8041c1f0, float_0_8041c144);
-        PSMTXScale(mtxScale, float_0p8_8041c1a4, float_0p8_8041c1a4, float_0p8_8041c1a4);
+        PSMTXTrans(mtxTrans, 120.0f, 22.0f, float_0_8041c144);
+        PSMTXScale(mtxScale, 0.8f, 0.8f, 0.8f);
         PSMTXConcat(mtx, mtxTrans, mtxOut);
         PSMTXConcat(mtxOut, mtxScale, mtxOut);
         FontDrawStringMtx(mtxOut, msgSearch("btl_cost_disp_AP"));
@@ -797,8 +729,8 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
             hp = halves[10];
             maxHp = halves[11];
         }
-        PSMTXTrans(mtxTrans, float_30_8041c200, float_22_8041c1f0, float_0_8041c144);
-        PSMTXScale(mtxScale, float_0p8_8041c1a4, float_0p8_8041c1a4, float_0p8_8041c1a4);
+        PSMTXTrans(mtxTrans, 30.0f, 22.0f, float_0_8041c144);
+        PSMTXScale(mtxScale, 0.8f, 0.8f, 0.8f);
         PSMTXConcat(mtx, mtxTrans, mtxOut);
         PSMTXConcat(mtxOut, mtxScale, mtxOut);
         FontDrawStringMtx(mtxOut, msgSearch("btl_disp_HP"));
@@ -825,15 +757,15 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
             posH[2] = 0;
             count2 = 1;
         }
-        PSMTXScale(mtxScale, float_1_8041c178, float_1_8041c178, float_1_8041c178);
+        PSMTXScale(mtxScale, 1.0f, 1.0f, 1.0f);
         for (i = 0; i < count2; i++) {
             textH[0] = (char)(digitsH[i] + 0x30);
             textH[1] = 0;
             if ((u32)gp->language == 0) {
-                PSMTXTrans(mtxTrans, float_26_8041c204 + (float_30_8041c200 + (f32)posH[i]), float_25_8041c1fc,
+                PSMTXTrans(mtxTrans, 26.0f + (30.0f + (f32)posH[i]), 25.0f,
                            float_0_8041c144);
             } else {
-                PSMTXTrans(mtxTrans, float_28_8041c1ac + (float_30_8041c200 + (f32)posH[i]), float_25_8041c1fc,
+                PSMTXTrans(mtxTrans, 28.0f + (30.0f + (f32)posH[i]), 25.0f,
                            float_0_8041c144);
             }
             PSMTXConcat(mtx, mtxTrans, mtxOut);
@@ -841,11 +773,11 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
             FontDrawStringMtx(mtxOut, textH);
         }
         if ((u32)gp->language == 0) {
-            PSMTXTrans(mtxTrans, float_92_8041c208, float_22_8041c1f0, float_0_8041c144);
+            PSMTXTrans(mtxTrans, 92.0f, 22.0f, float_0_8041c144);
         } else {
-            PSMTXTrans(mtxTrans, float_100_8041c20c, float_22_8041c1f0, float_0_8041c144);
+            PSMTXTrans(mtxTrans, 100.0f, 22.0f, float_0_8041c144);
         }
-        PSMTXScale(mtxScale, float_0p8_8041c1a4, float_0p8_8041c1a4, float_0p8_8041c1a4);
+        PSMTXScale(mtxScale, 0.8f, 0.8f, 0.8f);
         PSMTXConcat(mtx, mtxTrans, mtxOut);
         PSMTXConcat(mtxOut, mtxScale, mtxOut);
         FontDrawStringMtx(mtxOut, msgSearch("btl_disp_slash"));
@@ -872,15 +804,15 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
             posH[2] = 0;
             count2 = 1;
         }
-        PSMTXScale(mtxScale, float_1_8041c178, float_1_8041c178, float_1_8041c178);
+        PSMTXScale(mtxScale, 1.0f, 1.0f, 1.0f);
         for (i = 0; i < count2; i++) {
             textH[0] = (char)(digitsH[i] + 0x30);
             textH[1] = 0;
             if ((u32)gp->language == 0) {
-                PSMTXTrans(mtxTrans, float_76_8041c210 + (float_30_8041c200 + (f32)posH[i]), float_25_8041c1fc,
+                PSMTXTrans(mtxTrans, 76.0f + (30.0f + (f32)posH[i]), 25.0f,
                            float_0_8041c144);
             } else {
-                PSMTXTrans(mtxTrans, float_78_8041c214 + (float_30_8041c200 + (f32)posH[i]), float_25_8041c1fc,
+                PSMTXTrans(mtxTrans, 78.0f + (30.0f + (f32)posH[i]), 25.0f,
                            float_0_8041c144);
             }
             PSMTXConcat(mtx, mtxTrans, mtxOut);
@@ -911,10 +843,10 @@ void DrawMenuPartyChangeButton(void) {
     if (party == 0) {
         BattleAudience_GetItemOn(&memberId, &itemX, &itemY, &itemZ, 0);
         if (memberId != -1) {
-            if (window->field_0x120 > 0.0f) {
+            if (window->field_0x120 > float_0_8041c144) {
                 window->field_0x120 -= 5.0f;
             } else {
-                window->field_0x120 = 0.0f;
+                window->field_0x120 = float_0_8041c144;
             }
             btlGetScreenPoint(&mario->mPosition, &screen1);
             DrawMenuPartyChangeButton_Sub(5, screen1.x, screen1.y - 20.0f, window->field_0x120);
@@ -931,16 +863,16 @@ void DrawMenuPartyChangeButton(void) {
             if (window->field_0x120 == 90.0f) {
                 psndSFXOn("SFX_BTL_SYS_CAUTION_THROW1");
             }
-            if (window->field_0x120 > 0.0f) {
+            if (window->field_0x120 > float_0_8041c144) {
                 window->field_0x120 -= 5.0f;
             } else {
-                window->field_0x120 = 0.0f;
+                window->field_0x120 = float_0_8041c144;
             }
             DrawMenuPartyChangeButton_Sub(5, f31, f30 - 20.0f, window->field_0x120);
         } else {
             window->field_0x120 = 90.0f;
             if (BattleCommandCheckChangePositionEnable(wp)) {
-                DrawMenuPartyChangeButton_Sub(4, f31, f30 - 20.0f, 0.0f);
+                DrawMenuPartyChangeButton_Sub(4, f31, f30 - 20.0f, float_0_8041c144);
             }
         }
     }
@@ -952,7 +884,7 @@ void DrawMenuPartyChangeButton_Sub(u32 tex, f32 x, f32 y, f32 angle) {
     Mtx mtx;
 
     PSMTXRotRad(mtx, 'y', 0.017453292f * angle);
-    PSMTXTransApply(mtx, mtx, x, y, 0.0f);
+    PSMTXTransApply(mtx, mtx, x, y, float_0_8041c144);
     {
         GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
         btlDispTexPlane2(mtx, tex, color, 0);
@@ -991,7 +923,7 @@ void DrawMenuPinchMark(void) {
         TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, id);
         GXLoadTexObj(&texObj, GX_TEXMAP0);
         btlGetScreenPoint(&unit->mPosition, &pos);
-        PSMTXTrans(mtx1, pos.x - 20.0f, 60.0f + pos.y, 0.0f);
+        PSMTXTrans(mtx1, pos.x - 20.0f, 60.0f + pos.y, float_0_8041c144);
         PSMTXConcat(cam->view, mtx1, mtx2);
         GXLoadPosMtxImm(mtx2, 0);
         btlDispGXQuads2D(-28.0f, 12.0f, 28.0f, -12.0f, cr, cg, cb, ca);
@@ -1013,7 +945,7 @@ void DrawMenuPinchMark(void) {
         TEXGetGXTexObjFromPalette((TEXPalette*)wp->menuTex->data[0], &texObj, id);
         GXLoadTexObj(&texObj, GX_TEXMAP0);
         btlGetScreenPoint(&unit->mPosition, &pos);
-        PSMTXTrans(mtx1, pos.x - 20.0f, 60.0f + pos.y, 0.0f);
+        PSMTXTrans(mtx1, pos.x - 20.0f, 60.0f + pos.y, float_0_8041c144);
         PSMTXConcat(cam->view, mtx1, mtx2);
         GXLoadPosMtxImm(mtx2, 0);
         btlDispGXQuads2D(-28.0f, 12.0f, 28.0f, -12.0f, cr, cg, cb, ca);
@@ -1025,7 +957,7 @@ void DrawMenuPinchMark(void) {
 // allocation, and the copy loop needs `*dp = *p; p++; dp++;` for the p/dp
 // increment order.
 void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
-    GXColor color = dat_8041c140;
+    GXColor color = ((GXColor){ 0xFF,0xFF,0xFF,0xCF });
     s8 text[4][0x30];
     s8* p;
     s8* dp;
@@ -1122,7 +1054,7 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
     f32 f31;
     s32 n;
 
-    f31 = intplGetValue(4, window->field_0x11C, 6, float_0_8041c144, float_10_8041c15c);
+    f31 = intplGetValue(4, window->field_0x11C, 6, float_0_8041c144, 10.0f);
     window->field_0x11C++;
     if (window->field_0x11C >= 12) {
         window->field_0x11C = 0;
@@ -1130,22 +1062,22 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
     if (cursor->field_4 > 0) {
         f32 ysum;
         f32 xsum;
-        ysum = float_15_8041c18c;
-        ysum += pos->y;
-        xsum = float_155_8041c188;
+        xsum = 155.0f;
         xsum += pos->x;
+        ysum = 15.0f;
+        ysum += pos->y;
         vec.y = ysum + f31;
         vec.x = xsum;
         vec.z = float_0_8041c144;
-        iconDispGx(&vec, 0x10, 0x1B5, float_0p75_8041c190);
+        iconDispGx(&vec, 0x10, 0x1B5, 0.75f);
     }
     if (cursor->field_4 < cursor->unk8 - 6) {
-        f32 ysum = float_20_8041c168 + pos->y - float_164_8041c194;
-        f32 xsum = float_155_8041c188 + pos->x;
+        f32 ysum = 20.0f + pos->y - 164.0f;
+        f32 xsum = 155.0f + pos->x;
         vec.y = ysum - f31;
         vec.x = xsum;
         vec.z = float_0_8041c144;
-        iconDispGx(&vec, 0x10, 0x1B6, float_0p75_8041c190);
+        iconDispGx(&vec, 0x10, 0x1B6, 0.75f);
     }
     vec.x = pos->x;
     n = cursor->field_0 - cursor->field_4;
@@ -1156,11 +1088,11 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
         n = 5;
     }
     {
-        f32 ny = float_24_8041c198 * -(f32)n;
+        f32 ny = 24.0f * -(f32)n;
         vec.y = pos->y + ny;
         vec.z = float_0_8041c144;
     }
-    iconDispGx(&vec, 0x14, 0x1F0, float_1_8041c178);
+    iconDispGx(&vec, 0x14, 0x1F0, 1.0f);
 }
 #pragma dont_inline reset
 
@@ -1186,7 +1118,7 @@ void InitSubMenuCommonProcess(BattleMenuWork** window, BattleCursor** cursor, Ba
     } else {
         *cursor = &wp->commandMenu.cursor[1];
     }
-    (*window)->field_0x98 = 0.0f;
+    (*window)->field_0x98 = float_0_8041c144;
     for (i = 0; i < 7; i++) {
         (*window)->field_0xA4[i] = 0;
         (*window)->field_0xC0[i] = 1;
@@ -1249,7 +1181,7 @@ void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 i
         window->field_0xC = 0x1E;
         window->field_0x10 = 0;
         window->field_0x9C = (f32)(a->unk8 - 6);
-        window->field_0xA0 = 0.0f;
+        window->field_0xA0 = float_0_8041c144;
         for (i = 0; i < 7; i++) {
             window->field_0xC0[i] = 0x1E;
             window->field_0xDC[i] = 0;
@@ -1257,7 +1189,7 @@ void DrawSubMenuCommonProcessSub1(BattleMenuWork* window, BattleCursor* a, s32 i
     } else if (mode == 6 && a->unk8 > 6 && idx == 0 && a->field_4 == a->unk8 - 6 && a->field_0 != 5) {
         window->field_0xC = 0x28;
         window->field_0x10 = 0;
-        window->field_0x9C = 0.0f;
+        window->field_0x9C = float_0_8041c144;
         window->field_0xA0 = (f32)(a->unk8 - 6);
         for (i = 0; i < 7; i++) {
             window->field_0xC0[i] = 0x28;
@@ -1327,8 +1259,8 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
         cursor->field_4 = cursor->unk8 - maxCount;
     }
 
-    *outX = float_neg200_8041c17c;
-    *outY = float_neg100_8041c180;
+    *outX = (-200.0f);
+    *outY = (-100.0f);
 
     {
     s32 type = window->field_0xC;
@@ -1393,10 +1325,10 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
             window->field_0x20[i] |= 1;
             window->field_0x20[i] |= 2;
             GetRingCenter(&vecB[i]);
-            vecB[i].x = intplGetValue(4, window->field_0x48[i], 12, vecB[i].x, float_neg60_8041c16c);
-            vecB[i].y = intplGetValue(4, window->field_0x48[i], 12, vecB[i].y, float_55_8041c170);
+            vecB[i].x = intplGetValue(4, window->field_0x48[i], 12, vecB[i].x, (-60.0f));
+            vecB[i].y = intplGetValue(4, window->field_0x48[i], 12, vecB[i].y, 55.0f);
             PSMTXTrans(mtxA[i], 20.0f + vecB[i].x, vecB[i].y, vecB[i].z);
-            scales[i] = intplGetValue(0, window->field_0x48[i], 12, 0.0f, 360.0f);
+            scales[i] = intplGetValue(0, window->field_0x48[i], 12, float_0_8041c144, 360.0f);
             if (scales[i] > 360.0f) {
                 scales[i] -= 360.0f;
             }
@@ -1411,27 +1343,27 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
         case 1:
             window->field_0x20[i] |= 1;
             window->field_0x20[i] |= 2;
-            PSMTXTrans(mtxA[i], float_neg40_8041c184, float_55_8041c170, 0.0f);
+            PSMTXTrans(mtxA[i], (-40.0f), 55.0f, float_0_8041c144);
             scales[i] = 360.0f;
             window->field_0x1C = 1;
             break;
         case 0xA:
             window->field_0x20[i] |= 1;
             window->field_0x20[i] &= ~2;
-            angle = float_3p1416_8041c14c * kakutable[mainCursor->unk8 - 3][window->field_0x84[i]] / 180.0f;
+            angle = 3.1415927f * kakutable[mainCursor->unk8 - 3][window->field_0x84[i]] / 180.0f;
             GetRingCenter(&vecB[i]);
             GetRingOffset(&ringX, &ringY, angle);
             vecB[i].x += ringX;
             vecB[i].y += ringY;
             vecB[i].z = ringY;
-            scale = 1.0f - float_0p1_8041c174 * (f32)window->field_0x48[i];
-            if (scale <= 0.0f) {
+            scale = 1.0f - 0.1f * (f32)window->field_0x48[i];
+            if (scale <= float_0_8041c144) {
                 window->field_0x34[i] = 0xB;
             }
             PSMTXScale(scaleMtx, scale, scale, 1.0f);
             PSMTXTrans(transMtx, vecB[i].x, vecB[i].y, vecB[i].z);
             PSMTXConcat(transMtx, scaleMtx, mtxA[i]);
-            scales[i] = 0.0f;
+            scales[i] = float_0_8041c144;
             window->field_0x48[i]++;
             break;
         case 0xB:
@@ -1451,7 +1383,7 @@ void DrawSubMenuCommonProcess(f32* outX, f32* outY, Mtx* mtxA, Vec* vecB, f32* s
             window->field_0xA4[i] &= ~1;
             window->field_0x114[i] = 0xFF;
             if (window->field_0xDC[i] >= 0 && i != 6) {
-                f32 rad = intplGetValue(0, window->field_0xDC[i], 12, 90.0f, 0.0f);
+                f32 rad = intplGetValue(0, window->field_0xDC[i], 12, 90.0f, float_0_8041c144);
                 window->field_0xA4[i] |= 1;
                 PSMTXRotRad(mtxC[i], 'y', 0.017453292f * rad);
             }
@@ -1673,9 +1605,9 @@ void DrawMainMenu(void) {
         case 1:
             window->field_0x20[i] |= 1;
             {
-                cur = float_0p2_8041c148 * (f32)window->field_0x48[i] + float_0_8041c144;
+                cur = 0.2f * (f32)window->field_0x48[i] + float_0_8041c144;
             }
-            angle = float_3p1416_8041c14c * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / float_180_8041c150;
+            angle = 3.1415927f * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / 180.0f;
             {
                 if (cur >= angle) {
                     cur = angle;
@@ -1686,24 +1618,24 @@ void DrawMainMenu(void) {
                 vecB[i].y += ringY;
                 vecB[i].z = ringY;
                 if (i == cursor->field_0) {
-                    f32 r = float_90_8041c158 * (f32)window->field_0x48[i] / float_10_8041c15c + float_270_8041c154;
-                    if (r >= float_360_8041c160) {
+                    f32 r = 90.0f * (f32)window->field_0x48[i] / 10.0f + 270.0f;
+                    if (r >= 360.0f) {
                         r = float_0_8041c144;
                     }
-                    PSMTXRotRad(rotMtx, 'x', float_0p017453_8041c164 * r);
-                    PSMTXTrans(transMtx, float_20_8041c168 + vecB[i].x, vecB[i].y, vecB[i].z);
+                    PSMTXRotRad(rotMtx, 'x', 0.017453292f * r);
+                    PSMTXTrans(transMtx, 20.0f + vecB[i].x, vecB[i].y, vecB[i].z);
                     PSMTXConcat(transMtx, rotMtx, mtxA[i]);
                     window->field_0x20[i] |= 2;
                 } else {
-                    f32 r = float_90_8041c158 * (f32)window->field_0x48[i] / float_10_8041c15c + float_270_8041c154;
-                    if (r >= float_360_8041c160) {
+                    f32 r = 90.0f * (f32)window->field_0x48[i] / 10.0f + 270.0f;
+                    if (r >= 360.0f) {
                         r = float_0_8041c144;
                     }
-                    PSMTXRotRad(rotMtx, 'x', float_0p017453_8041c164 * r);
+                    PSMTXRotRad(rotMtx, 'x', 0.017453292f * r);
                     PSMTXTrans(transMtx, vecB[i].x, vecB[i].y, vecB[i].z);
                     PSMTXConcat(transMtx, rotMtx, mtxA[i]);
                 }
-                scales[i] = 0.0f;
+                scales[i] = float_0_8041c144;
                 if (cur >= angle && window->field_0x48[i] >= 10) {
                     window->field_0x34[i] = 3;
                     window->field_0x48[i] = -1;
@@ -1712,30 +1644,30 @@ void DrawMainMenu(void) {
             }
             break;
         case 3:
-            angle = float_3p1416_8041c14c * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / float_180_8041c150;
+            angle = 3.1415927f * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / 180.0f;
             GetRingCenter(&vecB[i]);
             GetRingOffset(&ringX, &ringY, angle);
             vecB[i].x += ringX;
             vecB[i].y += ringY;
             vecB[i].z = ringY;
             if (i == cursor->field_0) {
-                PSMTXTrans(mtxA[i], float_20_8041c168 + vecB[i].x, vecB[i].y, vecB[i].z);
+                PSMTXTrans(mtxA[i], 20.0f + vecB[i].x, vecB[i].y, vecB[i].z);
                 window->field_0x20[i] |= 2;
             } else {
                 PSMTXTrans(mtxA[i], vecB[i].x, vecB[i].y, vecB[i].z);
             }
-            scales[i] = 0.0f;
+            scales[i] = float_0_8041c144;
             break;
         case 4:
             {
                 f32 v70 = kakutable[cursor->unk8 - 3][window->field_0x70[i]];
                 f32 v84 = kakutable[cursor->unk8 - 3][window->field_0x84[i]];
                 f32 cur;
-                if (v84 == 0.0f) {
-                    v84 = float_360_8041c160;
+                if (v84 == float_0_8041c144) {
+                    v84 = 360.0f;
                 }
-                cur = (f32)window->field_0x48[i] * float_0p2_8041c148 + float_3p1416_8041c14c * v70 / float_180_8041c150;
-                angle = float_3p1416_8041c14c * v84 / float_180_8041c150;
+                cur = (f32)window->field_0x48[i] * 0.2f + 3.1415927f * v70 / 180.0f;
+                angle = 3.1415927f * v84 / 180.0f;
                 if (cur >= angle) {
                     window->field_0x34[i] = 3;
                     cur = angle;
@@ -1747,7 +1679,7 @@ void DrawMainMenu(void) {
                 vecB[i].y += ringY;
                 vecB[i].z = ringY;
                 PSMTXTrans(mtxA[i], vecB[i].x, vecB[i].y, vecB[i].z);
-                scales[i] = 0.0f;
+                scales[i] = float_0_8041c144;
                 window->field_0x20[i] &= ~2;
                 window->field_0x48[i]++;
             }
@@ -1762,21 +1694,21 @@ void DrawMainMenu(void) {
                 f32 a84;
 #endif
                 v70 = kakutable[cursor->unk8 - 3][window->field_0x70[i]];
-                if (v70 == 0.0f) {
-                    v70 = float_360_8041c160;
+                if (v70 == float_0_8041c144) {
+                    v70 = 360.0f;
                 }
                 v84 = kakutable[cursor->unk8 - 3][window->field_0x84[i]];
 #ifdef MUST_MATCH
                 // Compute both `pi * deg` numerators before the divisions: the target's
                 // fmuls, fmuls, fdivs, fdivs schedule only comes out of this order.
-                a70 = float_3p1416_8041c14c * v70;
-                a84 = float_3p1416_8041c14c * v84;
-                cur = a70 / float_180_8041c150 - (f32)window->field_0x48[i] * float_0p2_8041c148;
-                angle = a84 / float_180_8041c150;
+                a70 = 3.1415927f * v70;
+                a84 = 3.1415927f * v84;
+                cur = a70 / 180.0f - (f32)window->field_0x48[i] * 0.2f;
+                angle = a84 / 180.0f;
 #else
-                a70 = float_3p1416_8041c14c * v70 / float_180_8041c150;
-                angle = float_3p1416_8041c14c * v84 / float_180_8041c150;
-                cur = a70 - float_0p2_8041c148 * (f32)window->field_0x48[i];
+                a70 = 3.1415927f * v70 / 180.0f;
+                angle = 3.1415927f * v84 / 180.0f;
+                cur = a70 - 0.2f * (f32)window->field_0x48[i];
 #endif
                 if (cur <= angle) {
                     window->field_0x34[i] = 3;
@@ -1789,7 +1721,7 @@ void DrawMainMenu(void) {
                 vecB[i].y += ringY;
                 vecB[i].z = ringY;
                 PSMTXTrans(mtxA[i], vecB[i].x, vecB[i].y, vecB[i].z);
-                scales[i] = 0.0f;
+                scales[i] = float_0_8041c144;
                 window->field_0x20[i] &= ~2;
                 window->field_0x48[i]++;
             }
@@ -1798,14 +1730,14 @@ void DrawMainMenu(void) {
             window->field_0x20[i] |= 1;
             window->field_0x20[i] |= 2;
             GetRingCenter(&vecB[i]);
-            GetRingOffset(&ringX, &ringY, 0.0f);
+            GetRingOffset(&ringX, &ringY, float_0_8041c144);
             vecB[i].x += ringX;
             vecB[i].y += ringY;
             vecB[i].z = ringY;
-            vecB[i].x = intplGetValue(4, window->field_0x48[i], 12, float_neg60_8041c16c, vecB[i].x);
-            vecB[i].y = intplGetValue(4, window->field_0x48[i], 12, float_55_8041c170, vecB[i].y);
-            PSMTXTrans(mtxA[i], float_20_8041c168 + vecB[i].x, vecB[i].y, vecB[i].z);
-            scales[i] = intplGetValue(0, window->field_0x48[i], 12, float_360_8041c160, float_0_8041c144);
+            vecB[i].x = intplGetValue(4, window->field_0x48[i], 12, (-60.0f), vecB[i].x);
+            vecB[i].y = intplGetValue(4, window->field_0x48[i], 12, 55.0f, vecB[i].y);
+            PSMTXTrans(mtxA[i], 20.0f + vecB[i].x, vecB[i].y, vecB[i].z);
+            scales[i] = intplGetValue(0, window->field_0x48[i], 12, 360.0f, float_0_8041c144);
             window->field_0x48[i]++;
             if (window->field_0x48[i] > 12) {
                 window->field_0x34[i] = 3;
@@ -1814,7 +1746,7 @@ void DrawMainMenu(void) {
         case 0xB:
             window->field_0x20[i] |= 1;
             window->field_0x20[i] &= ~2;
-            angle = float_3p1416_8041c14c * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / float_180_8041c150;
+            angle = 3.1415927f * kakutable[cursor->unk8 - 3][window->field_0x84[i]] / 180.0f;
             {
                 f32 s;
                 GetRingCenter(&vecB[i]);
@@ -1822,14 +1754,14 @@ void DrawMainMenu(void) {
                 vecB[i].x += ringX;
                 vecB[i].y += ringY;
                 vecB[i].z = ringY;
-                s = float_0p1_8041c174 * (f32)window->field_0x48[i];
-                if (s >= float_1_8041c178) {
+                s = 0.1f * (f32)window->field_0x48[i];
+                if (s >= 1.0f) {
                     window->field_0x34[i] = 3;
                 }
-                PSMTXScale(scaleMtx, s, s, float_1_8041c178);
+                PSMTXScale(scaleMtx, s, s, 1.0f);
                 PSMTXTrans(transMtx, vecB[i].x, vecB[i].y, vecB[i].z);
                 PSMTXConcat(transMtx, scaleMtx, mtxA[i]);
-                scales[i] = 0.0f;
+                scales[i] = float_0_8041c144;
                 window->field_0x48[i]++;
             }
             break;
@@ -1911,7 +1843,7 @@ void DrawWeaponWin(void) {
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
-    vec = vec3_802ef168;
+    vec = ((Vec){ -60.0f, 35.0f, 0.0f });
     DrawMenuCursorAndScrollArrow(&vec);
     if (sel != 0) {
         s32 id = *(s32*)((u8*)sel + 0x8);
@@ -2008,7 +1940,7 @@ void DrawOperationWin(void) {
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
-    vec = vec3_802ef174;
+    vec = ((Vec){ -60.0f, 35.0f, 0.0f });
     DrawMenuCursorAndScrollArrow(&vec);
     if ((u32)entries[cursor->field_0].field_0x14 != 0) {
         DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x14, outX, outY);
@@ -2084,7 +2016,7 @@ void DrawChangePartyWin(void) {
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, (void*)entries, 1);
-    vec = vec3_802ef180;
+    vec = ((Vec){ -60.0f, 35.0f, 0.0f });
     DrawMenuCursorAndScrollArrow(&vec);
     if ((u32)entries[cursor->field_0].field_0x10 != 0) {
         DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x10, outX, outY);
@@ -2155,10 +2087,14 @@ void DrawMultiItemWin(void) {
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
-    vec = vec3_802ef18c;
+    vec = ((Vec){ -60.0f, 35.0f, 0.0f });
     DrawMenuCursorAndScrollArrow(&vec);
     if (entries[cursor->field_0].field_0x8 != 0) {
         DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x8, outX, outY);
     }
 }
 #pragma dont_inline reset
+
+#pragma explicit_zero_data on
+const f32 float_0_8041c144 = 0.0f;
+#pragma explicit_zero_data reset
