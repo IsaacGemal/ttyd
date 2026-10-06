@@ -222,29 +222,15 @@ static BattleWeapon weapon = {
     { 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0 }, // field_B4
 };
 
-// .sdata2 critical constants (base order), defined at the top.
+// Keep zero visible here: moving it after the code changes main_base's FP register allocation.
+// Other scalar values use literals, except one, whose late definition prevents a duplicate
+// literal alongside the MATCH_F32 load in main_star.
 const f32 float_0_80421fb4 = 0.0f;
-const f32 float_neg1000_80421fe8 = -1000.0f;
-const f32 float_1_80421fc4 = 1.0f;
-const f32 float_2_80421fa4 = 2.0f;
-const f32 float_37_80421fec = 37.0f;
-const f32 float_50_80421ff0 = 50.0f;
-const f32 float_neg1_80421fc8 = -1.0f;
-const f32 float_2160_80421ff4 = 2160.0f;
-const f32 float_300_80421ff8 = 300.0f;
-const f32 float_1p5_80421ffc = 1.5f;
-const f32 float_9_80422010 = 9.0f;
-const f32 float_neg400_8042202c = -400.0f;
-const f32 float_90_80422030 = 90.0f;
-const f32 float_neg120_80422034 = -120.0f;
-const f32 float_0p1_80422048 = 0.1f;
-const f32 float_neg0p1_8042204c = -0.1f;
+extern const f32 float_1_80421fc4;
 const char str_80422038[] = "M_X_1";
 const char str_80422040[] = "M_S_1";
 const char str_80421F98[] = "M_I_Y";
 const char str_8042201C[] = "M_D_1";
-const f32 float_5_80422014 = 5.0f;
-const f32 float_1_80422018 = 0.25f;
 // non-critical: declared here, defined after the code.
 extern __declspec(section ".sdata2") u32 dat_80421f50;
 extern __declspec(section ".sdata2") u32 dat_80421f54;
@@ -425,7 +411,7 @@ s32 main_muki(EventEntry* event, BOOL isFirstCall) {
         work->field_10 = evtGetValue(event, args[0]);
         for (i = 0; i < 9; i++) {
             f32 zero = MATCH_F32(float_0_80421fb4);
-            work->entries[i].effect = effStarStoneEntry(9, zero, float_neg1000_80421fe8, zero,
+            work->entries[i].effect = effStarStoneEntry(9, zero, -1000.0f, zero,
                                                         float_1_80421fc4);
         }
     }
@@ -472,8 +458,8 @@ static void main_base(void) {
         work->field_14 = float_0_80421fb4;
         work->field_20 = float_0_80421fb4;
         work->field_1C = float_0_80421fb4;
-        work->field_2C = float_neg400_8042202c;
-        work->field_30 = float_90_80422030;
+        work->field_2C = -400.0f;
+        work->field_30 = 90.0f;
         work->field_0C = 0x383;
         for (i = 0; i < 9; i++) {
             work->points[i].type = 1;
@@ -496,7 +482,7 @@ static void main_base(void) {
         break;
     case 3:
         work->field_08++;
-        work->field_2C = intplGetValue(4, work->field_08, 0x1E, float_neg400_8042202c, float_neg120_80422034);
+        work->field_2C = intplGetValue(4, work->field_08, 0x1E, -400.0f, -120.0f);
         if (work->field_08 >= 0x1E) {
             work->state = 4;
             work->field_08 = 0;
@@ -563,7 +549,7 @@ static void main_base(void) {
     diff = work->field_14 - work->field_18;
     if (float_0_80421fb4 != diff) {
         if (diff > float_0_80421fb4) {
-            f = float_0p1_80422048;
+            f = 0.1f;
             {
                 f32 prod = f * diff;
                 f = (prod < f) ? f : prod;
@@ -574,12 +560,12 @@ static void main_base(void) {
             }
         }
         else {
-            f = float_0p1_80422048 * diff;
-            if (f > float_neg0p1_8042204c) {
-                f = float_0p1_80422048;
+            f = 0.1f * diff;
+            if (f > -0.1f) {
+                f = 0.1f;
             }
             else {
-                f = float_neg0p1_8042204c * diff;
+                f = -0.1f * diff;
             }
             work->field_18 -= f;
             if (work->field_14 - work->field_18 > float_0_80421fb4) {
@@ -591,7 +577,7 @@ static void main_base(void) {
     diff = work->field_1C - work->field_20;
     if (float_0_80421fb4 != diff) {
         if (diff > float_0_80421fb4) {
-            f = float_0p1_80422048;
+            f = 0.1f;
             {
                 f32 prod = f * diff;
                 f = (prod < f) ? f : prod;
@@ -602,12 +588,12 @@ static void main_base(void) {
             }
         }
         else {
-            f = float_0p1_80422048 * diff;
-            if (f > float_neg0p1_8042204c) {
-                f = float_0p1_80422048;
+            f = 0.1f * diff;
+            if (f > -0.1f) {
+                f = 0.1f;
             }
             else {
-                f = float_neg0p1_8042204c * diff;
+                f = -0.1f * diff;
             }
             work->field_20 -= f;
             if (work->field_1C - work->field_20 > float_0_80421fb4) {
@@ -640,7 +626,7 @@ void main_cursor(void) {
         }
         work->field_38 = 2;
         work->field_44 = work->points[4].pos;
-        work->field_44.z += float_5_80422014;
+        work->field_44.z += 5.0f;
         work->field_68 = *(Vec*)(RO(base, 0x3C, vec3_80300714));
         work->field_40 = 4;
         work->field_74 = dat_80421f50;
@@ -661,9 +647,9 @@ void main_cursor(void) {
                 switch (entry->mode) {
                 case 0:
                     old = work->field_14;
-                    work->field_14 += float_1_80422018;
-                    if (work->field_14 > float_9_80422010) {
-                        work->field_14 = float_9_80422010;
+                    work->field_14 += 0.25f;
+                    if (work->field_14 > 9.0f) {
+                        work->field_14 = 9.0f;
                     }
                     if ((s32)work->field_14 > (s32)old) {
                         work->field_24 = 0x3C;
@@ -687,9 +673,9 @@ void main_cursor(void) {
                     break;
                 case 1:
                     old = work->field_1C;
-                    work->field_1C += float_1_80422018;
-                    if (work->field_1C > float_9_80422010) {
-                        work->field_1C = float_9_80422010;
+                    work->field_1C += 0.25f;
+                    if (work->field_1C > 9.0f) {
+                        work->field_1C = 9.0f;
                     }
                     if ((s32)work->field_1C > (s32)old) {
                         work->field_28 = 0x3C;
@@ -1000,7 +986,7 @@ void main_icon(s32 index) {
         data[6] = entry->field_24;
         data[7] = entry->rot;
         data[8] = entry->field_2C;
-        data[5] = float_9_80422010 * entry->scale.x;
+        data[5] = 9.0f * entry->scale.x;
         ((u8*)data)[0x5F] = entry->alpha;
     }
 }
@@ -1022,18 +1008,18 @@ static void main_star(void) {
 
             work->field_3B4 = 2;
             {
-                f32 neg = float_neg1000_80421fe8;
+                f32 neg = -1000.0f;
 
                 work->field_3B8 = 0;
                 work->starStone = effStarStoneEntry(2, zero, neg, zero, MATCH_F32(float_1_80421fc4));
             }
         }
         BtlUnit_GetPos(mario, &work->posX, &work->posY, &work->posZ);
-        work->posY += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_80421fec;
+        work->posY += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
         *(Vec*)&work->startX = *(Vec*)&work->posX;
         *(Vec*)&work->endX = *(Vec*)&work->posX;
-        work->endY += float_50_80421ff0;
-        work->endZ += float_neg1_80421fc8;
+        work->endY += 50.0f;
+        work->endZ += -1.0f;
         work->scale = vec3_8030075c;
         work->scale2 = vec3_80300768;
         /* fallthrough */
@@ -1043,13 +1029,13 @@ static void main_star(void) {
             work->posX = intplGetValue(0, work->field_3B8, 0x64, work->startX, work->endX);
             work->posY = intplGetValue(0, work->field_3B8, 0x64, work->startY, work->endY);
             work->posZ = intplGetValue(0, work->field_3B8, 0x64, work->startZ, work->endZ);
-            f = intplGetValue(0, work->field_3B8, 0x64, MATCH_F32(float_0_80421fb4), float_2_80421fa4);
+            f = intplGetValue(0, work->field_3B8, 0x64, MATCH_F32(float_0_80421fb4), 2.0f);
             work->scale.z = f;
             work->scale.y = f;
             work->scale.x = f;
         }
         else {
-            f32 two = float_2_80421fa4;
+            f32 two = 2.0f;
 
             work->posX = work->endX;
             work->posY = work->endY;
@@ -1058,12 +1044,12 @@ static void main_star(void) {
             work->scale.y = two;
             work->scale.x = two;
         }
-        work->scale2.y = intplGetValue(4, work->field_3B8, 0x78, MATCH_F32(float_0_80421fb4), float_2160_80421ff4);
+        work->scale2.y = intplGetValue(4, work->field_3B8, 0x78, MATCH_F32(float_0_80421fb4), 2160.0f);
         if (work->field_3B8 >= 0x78) {
             work->field_3B4 = 3;
             work->field_3B8 = 0;
             *(Vec*)&work->startX = *(Vec*)&work->posX;
-            work->endY = float_300_80421ff8;
+            work->endY = 300.0f;
         }
         break;
     case 3:
@@ -1080,7 +1066,7 @@ static void main_star(void) {
     }
 
     if (work->starStone != NULL) {
-        f32 s = float_1p5_80421ffc;
+        f32 s = 1.5f;
 
         data = work->starStone->userdata;
         data[2] = work->posX;
@@ -1209,7 +1195,7 @@ static void disp_2D(CameraId cameraId, void* param) {
         PSMTXScale(mtx, float_16_80421fc0, float_1_80421fc4, float_1_80421fc4);
         PSMTXTransApply(mtx, mtx, sx, sy, float_0_80421fb4);
         btlDispTexPlane2(mtx, 0x44, c, 0);
-        PSMTXScale(mtx, float_neg1_80421fc8, float_1_80421fc4, float_1_80421fc4);
+        PSMTXScale(mtx, -1.0f, float_1_80421fc4, float_1_80421fc4);
         PSMTXTransApply(mtx, mtx, sx + float_32_80421fb8 + float_8_80421fbc, sy, float_0_80421fb4);
         btlDispTexPlane2(mtx, 0x43, c, 0);
 
@@ -1268,7 +1254,7 @@ static void disp_2D(CameraId cameraId, void* param) {
         PSMTXScale(mtx, float_16_80421fc0, float_1_80421fc4, float_1_80421fc4);
         PSMTXTransApply(mtx, mtx, sx, sy, float_0_80421fb4);
         btlDispTexPlane2(mtx, 0x44, c, 0);
-        PSMTXScale(mtx, float_neg1_80421fc8, float_1_80421fc4, float_1_80421fc4);
+        PSMTXScale(mtx, -1.0f, float_1_80421fc4, float_1_80421fc4);
         PSMTXTransApply(mtx, mtx, sx + float_32_80421fb8 + float_8_80421fbc, sy, float_0_80421fb4);
         btlDispTexPlane2(mtx, 0x43, c, 0);
 
@@ -1369,8 +1355,8 @@ static void disp_3D(CameraId cameraId, void* param) {
 static inline GXColor mukiAlphaColor(GXColor c, u8 a) { c.a = a; return c; }
 #endif
 // The interleaved argv fill removed the extra temp store; adding any mid-block temp makes the compiler hang.
-// NONMATCHING (98.39%): frame and Mtx base match; the scratch block is still 0x8 low and float_2
-// pools as @939 (also swapping f30/f31 and f1/f2).
+// NONMATCHING (98.65%): frame and Mtx base match; the scratch block is still 0x8 low,
+// and the rotation calculation swaps f30/f31 in cases 1 and 2.
 // .text:0x1A4 | 0x80246F70 | size: 0x38C
 #pragma dont_inline on
 static void disp_3D_alpha(CameraId cameraId, void* param) {
@@ -1391,10 +1377,10 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
             switch (entry->mode) {
             case 0:
                 PSMTXRotRad(mtx, 'y', float_deg2rad_80421fa0 * entry->rot);
-                PSMTXScaleApply(mtx, mtx, float_2_80421fa4 * entry->scale.x,
-                                float_2_80421fa4 * entry->scale.y, entry->scale.z);
+                PSMTXScaleApply(mtx, mtx, 2.0f * entry->scale.x,
+                                2.0f * entry->scale.y, entry->scale.z);
                 PSMTXTransApply(mtx, mtx, entry->pos.x, entry->pos.y, entry->pos.z);
-                f = float_2_80421fa4 * entry->rot * float_3p1416_80421fa8 / float_360_80421fac;
+                f = 2.0f * entry->rot * float_3p1416_80421fa8 / float_360_80421fac;
                 fc = (f32)cos(f);
                 fs = (f32)sin(f);
                 PSMTXTransApply(mtx, mtx, float_15_80421fb0 * fs,
@@ -1414,10 +1400,10 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 break;
             case 1:
                 PSMTXRotRad(mtx, 'y', float_deg2rad_80421fa0 * entry->rot);
-                PSMTXScaleApply(mtx, mtx, float_2_80421fa4 * entry->scale.x,
-                                float_2_80421fa4 * entry->scale.y, entry->scale.z);
+                PSMTXScaleApply(mtx, mtx, 2.0f * entry->scale.x,
+                                2.0f * entry->scale.y, entry->scale.z);
                 PSMTXTransApply(mtx, mtx, entry->pos.x, entry->pos.y, entry->pos.z);
-                f = float_2_80421fa4 * entry->rot * float_3p1416_80421fa8 / float_360_80421fac;
+                f = 2.0f * entry->rot * float_3p1416_80421fa8 / float_360_80421fac;
                 fc = (f32)cos(f);
                 fs = (f32)sin(f);
                 PSMTXTransApply(mtx, mtx, float_15_80421fb0 * fs,
@@ -1439,7 +1425,7 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 PSMTXRotRad(mtx, 'y', float_deg2rad_80421fa0 * entry->rot);
                 PSMTXScaleApply(mtx, mtx, entry->scale.x, entry->scale.y, entry->scale.z);
                 PSMTXTransApply(mtx, mtx, entry->pos.x, entry->pos.y, entry->pos.z);
-                f = float_2_80421fa4 * entry->rot * float_3p1416_80421fa8 / float_360_80421fac;
+                f = 2.0f * entry->rot * float_3p1416_80421fa8 / float_360_80421fac;
                 fc = (f32)cos(f);
                 fs = (f32)sin(f);
                 PSMTXTransApply(mtx, mtx, float_15_80421fb0 * fs,
@@ -1564,6 +1550,8 @@ const f32 float_20_80422024 = 20.0f;
 const f32 float_10_80422028 = 10.0f;
 const f32 float_901_80422050 = 901.0f;
 __declspec(section ".sdata2") u32 gap_09_80422054_sdata2 = 0;
+// Defined after its uses so the ordinary and MATCH_F32 reads share this object.
+const f32 float_1_80421fc4 = 1.0f;
 
 
 // The BODY SFX strings, defined after the code so the compiler's pooled i2f double lands between them and the
