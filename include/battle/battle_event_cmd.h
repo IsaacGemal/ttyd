@@ -334,3 +334,7 @@ USER_FUNC(btlevtcmd_SetPartsWalkSound);
 USER_FUNC(btlevtcmd_GetACPossibility);
 USER_FUNC(btlevtcmd_SacBgsetMove);
 USER_FUNC(btlevtcmd_BtlStageObjFlagOnOff);
+void _UnitMoveSoundControl(BattleUnit* unit);
+void _PartsMoveSoundControl(BattleUnitPart* part);
+void _UnitMoveSoundControlEnd(BattleUnit* unit);
+void _PartsMoveSoundControlEnd(BattleUnitPart* part);
