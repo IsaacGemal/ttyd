@@ -1559,12 +1559,12 @@ void puniMapFindbuff(Vec* pos) {
     u16 id;
     u16 nid;
     u16 cur;
-    s32 i;
     s32 iw;
     s32 ipw;
     s32 im1;
     s32 ip1;
     s32 hi;
+    s32 i;
     s32 out1;
     s32 total;
     s32 out2;
@@ -7800,11 +7800,11 @@ USER_FUNC(evt_puni_exit) {
     } else {
         f31 = bero_get_BeroSX();
         f30 = puniExitNearest(bero_get_BeroSY());
-        f1 = bero_get_BeroSZ();
-        f29 = f1;
+        f29 = bero_get_BeroSZ();
         f28 = f31;
         f27 = f30;
-        f29 = f29 + 60.0f;
+        f1 = f29;
+        f29 += 60.0f;
     }
     Punigp->field_0x47C = 2;
     Punigp->field_0x480.x = f31;
