@@ -115,28 +115,25 @@ void parsePopNext(void) {
 
 
 
-// control flow and every instruction shape match; only volatile register names differ.
-// The original puts state=r5, tokenStart=r6, the parse base temp (=&parse)=r7, base=r4, i=r10, end=r0; this
-// version gets base=r4, i=r10, end=r0 but state=r8, tokenStart=r9, &parse=r5, which cascades into the
-// token-scan scratch (r6/r7 vs the original r7/r8/r9) and case 0's i/src/q/src2. Moving the `state`
-// declaration to the front (the declaration order here) keeps base/i/end right and swaps state/tokenStart
-// between r8/r9; no other order of the six default locals (a full 720-order search plus 3,100 random
-// declaration/preamble-order combinations) beats this. Making `state` born at entry (`s32 state = 0;` at the
-// declaration) still leaves state in r8 here: the compiler hoists a `li r8,0` to the entry (95.79% with the
-// block's `state = 0;` removed) instead of the target's in-block `li r5,0`, so it is worse. Every
-// default-block assignment order, each opt_* / optimize_for_size /
-// scheduling pragma, and the named-`idx`/comma/default-scope forms leave the same allocator choice: the
-// colouring wants the `&parse` temp to take r5 before `state`. A permuter job.
-// NONMATCHING (97.32%): only the volatile register assignment above still differs.
 BOOL parseGet1Next(s32 type, void* data) {
-	s32 state;
-	s32 tokenStart;
+	s8* src;
+	s8* src2;
+	s8* q;
+	s8 c2;
 	s32 result = 1;
+	s8* dst;
 	s32* p;
-	s32 i;
-	s32 end;
-	s8* base;
 	s32 tokenEnd;
+	s32 end;
+	s8 c;
+	s8 ch;
+	s8* base;
+	s32 k;
+	s32 len;
+	s32 i;
+	s32 tokenStart;
+	s32 state;
+
 
 	switch (type) {
 	case 3:
@@ -152,7 +149,7 @@ BOOL parseGet1Next(s32 type, void* data) {
 		state = 0;
 
 		while (i < end) {
-			s8 c = base[i];
+			c = base[i];
 
 			if (c == '/' && base[i + 1] == '/') {
 				for (; i < end; i++) {
@@ -166,7 +163,7 @@ BOOL parseGet1Next(s32 type, void* data) {
 				state = 1;
 				i++;
 				for (; i < end; i++) {
-					s8 c2 = base[i];
+					c2 = base[i];
 
 					if (c2 == ' ' || (u8)(c2 - 9) <= 1 || c2 == '\r' ||
 					    (c2 == '/' && base[i + 1] == '/')) {
@@ -186,36 +183,37 @@ BOOL parseGet1Next(s32 type, void* data) {
 
 		switch (type) {
 		case 0: {
-			s8* src = base + tokenStart;
-			s8* dst = data;
-			s32 len = 0;
+			k = tokenStart;
+			dst = data;
+			src = base + tokenStart;
+			len = 0;
 
-			i = tokenStart;
-			while (i < end) {
+			while (k < end) {
 				if (*src == '"') {
-					s8* q = dst;
-					s8* src2;
+					q = dst;
 
-					i++;
-					src2 = base + i;
+					k++;
+					src2 = base + k;
 					src++;
-					for (; i < end; i++) {
-						if (*src2 == '"') {
+					while (k < end) {
+						ch = *src2;
+						if (ch == '"') {
 							break;
 						}
-						*q = *src2;
+						*q = ch;
 						q++;
 						dst++;
 						len++;
+						k++;
 						src++;
 						src2++;
 					}
 				}
-				i++;
+				k++;
 				src++;
 			}
 			((s8*)data)[len] = 0;
-			p[0] = i;
+			p[0] = k;
 			break;
 		}
 		case 1:
