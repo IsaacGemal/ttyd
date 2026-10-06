@@ -231,15 +231,15 @@ YOUR TASK: PUT {src} (unit {unit}, {part}) IN THE ORIGINAL'S FUNCTION ORDER. Its
 original bytes, but the built .text has them in a different order than the original, which keeps the unit from
 linking. This compiler emits a file's functions in REVERSE source order, so the source must list them from the
 highest original address to the lowest. Function bodies don't change in this task. SUCCESS MEANS
-`python3 tools/fn_order_check.py {unit}` prints `order matches` after a build, with no function scoring lower than it
+`uv run --with pyelftools python3 tools/fn_order_check.py {unit}` prints `order matches` after a build, with no function scoring lower than it
 does now and no data section scoring lower or holding different bytes than now. Scores now:
 {funcs}
 Data sections below 100% now: {secs}.
 
 Steps:
 1. `cp {src} tmp/start.c` first, so you can always go back. Run `ninja`, then `python3 check.py {unit}` and note every
-   function's score; `python3 tools/link_diag.py {unit}` and note each data section's state.
-2. `python3 tools/fn_order.py {unit}` prints the order the file has and the order it needs. `--write` rewrites the
+   function's score; `uv run --with pyelftools python3 tools/link_diag.py {unit}` and note each data section's state.
+2. `uv run --with pyelftools python3 tools/fn_order.py {unit}` prints the order the file has and the order it needs. `--write` rewrites the
    file when it can; when it refuses it says why, and nothing is written. Fix the cause by hand, then run it again:
    - "X would use Y before its definition": add a declaration of Y above the first function (a prototype for a
      function: `static` ones in this file, global ones in the unit's header, lines added only; an `extern` for a data
@@ -247,10 +247,10 @@ Steps:
    - a `#pragma` or `#define` region spanning several functions: give each function its own pragma pair with the same
      settings (`#pragma X on` before it, `#pragma X reset` after it), so the functions can move separately.
    - an `#if` block straddling functions: split it so each function sits in its own complete block.
-   If `fn_order.py` can't parse the file at all, `python3 tools/fn_order_check.py {unit} {src} --write` permutes the
+   If `fn_order.py` can't parse the file at all, `uv run --with pyelftools python3 tools/fn_order_check.py {unit} {src} --write` permutes the
    function bodies among their slots instead.
-3. Rebuild (`ninja`) and check: `python3 tools/fn_order_check.py {unit}` (order), `python3 check.py {unit}` (no
-   function below its score in step 1), `python3 tools/link_diag.py {unit}` and `python3 tools/rodatalayout.py {unit}
+3. Rebuild (`ninja`) and check: `uv run --with pyelftools python3 tools/fn_order_check.py {unit}` (order), `python3 check.py {unit}` (no
+   function below its score in step 1), `uv run --with pyelftools python3 tools/link_diag.py {unit}` and `python3 tools/rodatalayout.py {unit}
    .sdata2` (also .rodata): function order moves the compiler's literal pool, so a section can get worse with every
    function unchanged.
 4. If a pool moved, fix it with the brief's pool recipes (docs/AGENT_BRIEF.md: "Pool recipes", "Where pool entries
