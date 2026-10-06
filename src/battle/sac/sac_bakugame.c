@@ -555,7 +555,9 @@ __declspec(section ".data") s32 gap_05_803B108C_data[1] = {
 // references a pool entry rather than 0xd4.  The remaining diffs are the r25-r29 entry-pointer register rotation
 // and residual float/vector load scheduling (case 0/4/22 and the first_done cases), plus the pooled second zero.
 // The entry-init loop's three stores are in the original's type/0x10/0x20 order.
-// NONMATCHING (98.80%): what differs is the r25-r29 entry-pointer register rotation and residual scheduling.
+// NONMATCHING (98.82%): retail loads float_300 once for both case-0 0x1D0.x/0x1DC.x stores, ours twice; the
+// rest is the r25-r29 entry-pointer register rotation and residual float/vector scheduling.  Declaring c2v
+// last among the case-27 FPR locals frees f3 for c80v/lim and is worth +0.01.
 s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
     BattleWork* wp = _battleWorkPointer;
@@ -574,7 +576,7 @@ s32 bakuGameMain(EventEntry* event, BOOL isFirstCall) {
     f32 hx = 0.0f;
     f32 hy = 0.0f;
     f32 hz = 0.0f;
-    f32 c2v, cnv, c80v;
+    f32 c80v, cnv, c2v;
     f32 f30v;
 #ifdef MUST_MATCH
     // -O4,s hoists case 30's three args[] loads above the evtSetValue/evtSetFloat calls; a volatile pointee
@@ -1022,7 +1024,7 @@ first_done:
             /* fall through */
         case 11:
             {
-            f32 zero = float_0_80421618;
+            f32 zero = 0.0f;
             for (i = 0; i < 3; i++) {
                 BakuGameWorkEntry* entry = &baku->entries[i];
                 if (*(f32*)&entry->field_0x10[0] <= zero) {
@@ -1538,8 +1540,9 @@ state_done:
     return 0;
 }
 
-// NONMATCHING (99.34%): case-0 stores the zero constant from f1 where the original uses f0; case-5 loads the
-// three vec words x,y,z where the original does z,x,y; case-10 loads the int args before the float args.
+// NONMATCHING (99.54%): case 5 loads the vec3_802febf0 words x,y,z where the original loads z,x,y, and its base
+// pointer and two temporaries land in r5 where the original uses r4.  That is register coloring and scheduling;
+// no source shape reaches the original's allocation.
 s32 bakuGameHeihoReturn(EventEntry* event, BOOL isFirstCall) {
     BakuGameWork* baku = GetBakuGamePtr();
     f32 zero;
@@ -1556,7 +1559,7 @@ s32 bakuGameHeihoReturn(EventEntry* event, BOOL isFirstCall) {
                 baku->field_0x1D0.y += baku->field_0x1F8;
                 baku->field_0x1F8 += float_neg2_80421634;
             }
-            if (baku->field_0x1D0.y <= (zero = float_0_80421618)) {
+            if (baku->field_0x1D0.y <= (zero = 0.0f)) {
                 baku->field_0x1D0.y = zero;
                 baku->field_0x1C0 = 5;
             }
