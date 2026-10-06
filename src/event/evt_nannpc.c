@@ -561,22 +561,24 @@ USER_FUNC(evt_nannpc_set_subfunc) {
     return EVT_RETURN_DONE;
 }
 
-// The mask must be written on `name` (as the inlined nannpcFind does) to be hoisted after the
-// induction-var init; with `id` it is hoisted before it and mask itself lands in r27.
-// Tried: all 720 declaration orders (no effect), function-scope entry/name, pointer-vs-index,
-// s32/void* name forms, every statement order, and every combination of the
-// opt_lifetimes/opt_propagation/opt_common_subs/opt_dead_assignments/scheduling/global_optimizer/
-// peephole pragmas (all <=97.13). The remaining swap is pure colouring.
-// NONMATCHING (97.13%): only the three loop temporaries work/offset/name stay cyclically permuted
-// (orig work=r23, offset=r26, name=r27; ours work=r26, offset=r27, name=r23); vec/poses/mask/entry/
-// id/i all match.
+// The explicit `offset` induction variable (a named form of the strength reduction `&work->entries[i]`
+// produces) plus this declaration order reproduces the original's callee-saved colouring (work=r23,
+// offset=r26, name=r27; i/id/entry/poses/vec all match). The mask stays on `name`; writing it on `id`
+// compiles but lands the mask in the wrong register. The only remaining difference is the preheader
+// schedule: the compiler emits the hoisted sign mask `clrrwi r29, r3, 31` between `li r24, 0x0` (i)
+// and `li r26, 0x0` (offset), while the original emits both `li`s first and the mask last (same
+// instructions and registers; the mask is a loop-invariant block the scheduler merges into the preheader).
+// NONMATCHING (97.75%): preheader scheduling; the hoisted sign mask is emitted before `li offset`.
 USER_FUNC(evt_nannpc_entry) {
-    Vec* vec;
-    ExtPose* poses;
-    NanNpcWork* work;
+    const char* name;
+    s32 offset;
     s32 id;
     s32 i;
+    NanNpcEntry* entry;
+    Vec* vec;
     s32* args;
+    ExtPose* poses;
+    NanNpcWork* work;
 
     vec = (Vec*)vec3_802f2ff8;
     args = event->args;
@@ -584,9 +586,9 @@ USER_FUNC(evt_nannpc_entry) {
     id = evtGetValue(event, args[0]);
     work = nanNPCWork;
 
-    for (i = 0; i < work->count; i++) {
-        NanNpcEntry* entry = &work->entries[i];
-        const char* name = (const char*)id;
+    for (i = 0, offset = 0; i < work->count; offset += sizeof(NanNpcEntry), i++) {
+        entry = (NanNpcEntry*)((u8*)work->entries + offset);
+        name = (const char*)id;
 
         if (!((s32)name & 0x80000000)) {
             sprintf(makestring, "%06x", (s32)name);
