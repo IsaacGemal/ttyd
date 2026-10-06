@@ -720,9 +720,9 @@ USER_FUNC(mario_main_setup_func) {
         c = op[idx].angle;                                                                  \
         rad = 3.141592f * c / 180.0f;                                                       \
         s = sin(rad);                                                                       \
-        target = d * s + centerX;                                                           \
+        tx = d * s + centerX;                                                           \
         c = cosOf(rad);                                                                       \
-        (obj)->position.x = target;                                                         \
+        (obj)->position.x = tx;                                                         \
         (obj)->position.z = d * c + centerZ;                                                \
     }
 
@@ -731,9 +731,12 @@ static inline double cosOf(f32 arg0) {
 }
 
 // Holds `op[idx].dist` in a block-local `f32 d`, captures `op[idx].angle` in `c` before the radians
-// conversion, and calls an inlined cos wrapper. Remaining: cur/target sit one register high and the
-// dist/rad pair is the other way round.
-// NONMATCHING (99.52%)
+// conversion, and calls an inlined cos wrapper. Computing x into `tx` instead of reusing the `target`
+// event argument reproduces the original's f27 for the x value; what still differs is the first
+// iteration's event `cur`/`target` pair sitting one register high (f27/f28 vs f26/f27), which swaps
+// the per-iteration `d`/`rad` pair. Those webs are compiler temps no declaration order reaches:
+// mwccdbg's rasim search floors at 15 wrong, so this is permuter work.
+// NONMATCHING (99.68%)
 USER_FUNC(mario_main_func) {
     s32* args = event->args;
     f32 cur = (f32)evtGetValue(event, args[0]);
@@ -753,6 +756,7 @@ USER_FUNC(mario_main_func) {
     f32 rad;
     f32 s;
     f32 c;
+    f32 tx;
 
     MARIO_MAIN_UPDATE(0, mario);
     MARIO_MAIN_UPDATE(1, party);
@@ -995,16 +999,15 @@ USER_FUNC(cam_test_init_func) {
 }
 
 // Writing the addend of the second set as `rad = (radius * s) * 0.0f;` (a runtime zero) makes MWCC
-// emit the original `fnmsubs` instead of `fmuls`+`fneg`. Still differs: the original keeps a second
-// args+1 int base (frame 0x60 vs our 0x50), and s/rad land in f30/f29 instead of f29/f30.
-// The original keeps a second `args+1` integer base (`mr r30, r31; addi r31, r31, 4`,
-// frame 0x60, event in r29) that MWCC 2.6 folds away at the file's -O4,s, in every
-// spelling tried (`args++`, `args = args + 1`, an explicit `argp = args + 1`);
-// `optimization_level 1` keeps two bases but changes the FPRs and schedule. Declaring
-// `s`/`c` before `rad` is what puts angle/radius/rad in f30/f31/f29.
-// NONMATCHING (98.16%): the original keeps a second pointer base (`mr r30,r31; addi r31,r31,4`) and reads args[3]
-// and args[1] through args+1. Reading the two floats through a post-incremented pointer (`*p++`, MUST_MATCH) is the
-// only spelling found that MWCC does not fold back into plain offsets; it gets the second base, but at args+3.
+// emit the original `fnmsubs` instead of `fmuls`+`fneg`.
+// NONMATCHING (98.16%): the only difference left is the second integer base. The original keeps
+// `args` in r30 and `args+1` in r31 (`mr r30,r31; addi r31,r31,4`) and reads args[3] and args[1]
+// through r31; we fold the base into plain offsets. `args++`, `args = args + 1` and an explicit
+// `argp = args + 1` all fold; a separate pointer update makes mwcceppc hang. `optimization_level`
+// 0-4 does not keep it (3/4 give this same 5-instruction diff, 0-2 are worse). A post-incremented
+// `*p++` keeps a second base but at args+3; the evt_eff-style ident helper under `optimization_level
+// 1` does put the base at args+1, but level 1 then reallocates the FPRs and adds 20 more
+// instruction differences.
 USER_FUNC(cam_test_func) {
     s32* args = event->args;
 #ifdef MUST_MATCH
