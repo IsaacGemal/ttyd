@@ -95,3 +95,16 @@ extern WinMgrDesc select_party_desc[];
 extern WinMgrDesc select_mario_desc[];
 extern WinMgrDesc select_luigi_desc[];
 extern WinMgrDesc select_johoya_perfect_desc[];
+
+void select_disp3_mario(WinMgrEntry* entry);
+void select_disp3_party(WinMgrEntry* entry);
+void select_disp3(WinMgrEntry* entry);
+void select_main3(WinMgrEntry* entry);
+void select_disp2(WinMgrEntry* entry);
+void select_disp_luigi(WinMgrEntry* entry);
+void select_disp_mario(WinMgrEntry* entry);
+void select_disp_party(WinMgrEntry* entry);
+void select_disp(WinMgrEntry* entry);
+void select_main(WinMgrEntry* entry);
+s32 unk_802399f8(EventEntry* event);
+s32 unk_80239b2c(EventEntry* event);

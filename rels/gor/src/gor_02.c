@@ -42,6 +42,7 @@
 #include "eff/eff_stardust.h"
 #include "eff/eff_mahojin.h"
 #include "manager/evtmgr_cmd.h"
+#include "manager/winmgr.h"
 #include "mario/mario.h"
 #include "mario/mario_pouch.h"
 #include "mario/mariost.h"
@@ -59,7 +60,6 @@ extern s32 evt_goki_sub_intpl_init[];
 extern s32 evt_gor_villager_urouro_check_func[];
 extern s32 gor_irai_init[];
 extern s32 luigi_gor_first_talk[];
-extern s32 unk_80239b2c[];
 static USER_FUNC(set_depthPlaneOffset);
 static USER_FUNC(evt_StatusClose);
 static USER_FUNC(evt_StatusOpen);
