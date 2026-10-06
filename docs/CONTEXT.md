@@ -4809,3 +4809,30 @@ the original kit and stay `.s` in libs/metrowerks/src/TRK_MINNOW_DOLPHIN.a. They
 Thirty source-build experiments in the win_mario task checkout found no version satisfying the requested native pool-base conversion addressing, IDENTICAL pool checks, and no score regressions together. The source was restored exactly. Fresh baseline/final: winMarioDisp 96.15% (task/comment's 93.90% is stale for this check), other eight functions 100%; natural compile passes, relocation-value check reports 0, existing function-order mismatch unchanged. Details are in CODEX_ATTEMPTS.md and REPORT.md in that checkout.
 
 The reported .rodata DUP_OURS zero Vec is an entry-boundary artifact: retail has one 80-byte digit-table symbol, ours has two 40-byte templates; sdata2_diff strips all-zero entries to empty keys and reports the last zero Vec as the extra one. All overlapping baseline .rodata bytes match; the original has five extra zero tail-alignment bytes. A genuine shared digit-table object makes the checker report .rodata IDENTICAL but changes the two public number functions' prologue load scheduling. Native pool ports did load both conversion doubles at pool+0x820/+0x828, but regressed winMarioDisp through table-address webs/hoisting and register allocation. This bounded failure is not a proof that no C solution exists.
+- **Batch 35 (overnight 2026-10-06, waves 84-85):** text order and a function wave on 2-5-left units.
+  - Text order (wave 84): a script pass (fn_order.py --write, full ci.py, fn_order_check.py) committed none of the
+    10 units `fn_order.py --all` listed outside the skip list: five refused (a data object used before its
+    definition, pragma regions spanning functions, data between functions whose pooled literals would move, a
+    #define in a gap) and five lowered a score (pools moved). wave_launch.py gained an `order` mode (one pass, two
+    hours, bodies unchanged, restore and report REFUSED rather than lower anything), and DeepSeek V4.1 Flash agents
+    put 9 of the 10 in retail order with nothing lower: sac_zubastar (.rodata 89 -> 93, .sdata2 71 -> 89), win_log
+    (.sdata2 91.4 -> 97.8), win_mario, envdrv (its MUST_MATCH i2f pool helper removed: in retail order the compiler
+    pools the double itself), battle_stage, battle_seq_command (.rodata identical), npcdrv (two duplicated literals
+    read through their named strings), battle_event_cmd (.rodata 95 -> 96) and battle_disp. `fn_order.py --all` is
+    down from 16 units to the 7 left out on purpose. pmario_sound was dropped (Claude #1): its order needed a
+    MUST_MATCH `defer_codegen off` i2f helper in `__declspec(section ".init")`, which only hides the extra function
+    from fn_order_check (.init is not stripped), and without it .rodata fell 100 -> 51.5.
+  - Functions (wave 85, 20 units, the 2026-10-05 brief levers): to 100% effRadiationN64Entry, tou's
+    champion_belt_27_text_34 and rankingControll (tou 36/36; one duplicated i2f .rodata entry keeps it from
+    linking), parseGet1Next, sac_muki's disp_3D, L__LvupParamHelpMsgDisp. Up: GaugeTiming2 main 99.09 -> 99.67,
+    winBadgeDisp 99.37 -> 99.73, loadDraw 99.23 -> 99.54, mario_main_func 99.52 -> 99.68, bakugame's two,
+    evt_nannpc_entry 97.13 -> 97.75, badgeshop's bottakuru 97.97 -> 98.00. Refused: sys display 100 via a `360.0f`
+    literal that adds a .rodata pool entry; eff_fall's +0.06 through `defer_codegen off` helpers in .text; win_item (item_disp 95.41 -> 94.90 in the real
+    build). No source lever (to the permuter): battle_detect, evt_uranaisi, sys display_func, seq_load loadMain,
+    las_05, parsePush, badge_disp, nanNPCOption, mario_pouch. gor_03's goryuugijo_init_slot matches only as `void`;
+    it is an evt USER_FUNC, so that is a type-mismatch question, left open.
+  - Agents keep looking for the permuter outside their workspace (ls ~/, find ~/ttyd, ls ../), read-only each time;
+    muj_00's agent found mwccdbg's ORIG column disagreeing with objdiff on mario_main_func's FPRs.
+  - Slots (01:00-07:00 cap 8, q36's 2 jobs alongside): 8 agents 00:40-01:10 while both waves ran, then 5-7 until wave
+    85's queue ran dry after 05:00, 1 at 05:40; never over 8. Load ran 8-11.4, with two single samples above 12
+    (12.7 at 00:30 while the waves started, 13.6 at 02:40); the 5-minute average stayed under 12 all night.
