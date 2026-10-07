@@ -56,16 +56,20 @@ static inline s32 __fpclassifyf(f32 x) {
 #pragma pool_data on
 #endif
 
-// Preserve the named size prefix without folding its reads in the matching build.
+// Scalar const reads fold into a second pool entry in MWCC. Singleton const arrays
+// retain ordinary readonly loads, sharing the width and half values across functions.
 #ifdef MUST_MATCH
-#define PARTICLE_F32(sym) (*(f32*)&(sym))
+#define PARTICLE_CONST(sym, value) const f32 sym[1] = { value }
+#define PARTICLE_F32(sym) ((sym)[0])
 #else
+#define PARTICLE_CONST(sym, value) const f32 sym = value
 #define PARTICLE_F32(sym) (sym)
 #endif
-const f32 float_4_80421ce0 = 4.0f;
-const f32 float_8_80421ce4 = 8.0f;
+PARTICLE_CONST(float_4_80421ce0, 4.0f);
+PARTICLE_CONST(float_8_80421ce4, 8.0f);
 const f32 float_deg2rad_80421ce8 = 0.017453292f;
-const f32 float_0p5_80421cec = 0.5f;
+PARTICLE_CONST(float_0p5_80421cec, 0.5f);
+#undef PARTICLE_CONST
 
 // .rodata
 // Non-const matching vectors preserve the original struct copies; const reads fold them away.
@@ -317,7 +321,7 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	work->alpha = 0xFF;
 	work->count = count;
 	work->particles = (ParticleEntry*)((u8*)work + entry->count * 0xB0);
-	work->field_0xAC = 4.0f;
+	work->field_0xAC = PARTICLE_F32(float_4_80421ce0);
 	{
 		ParticleWork* w2 = entry->userdata;
 
@@ -476,8 +480,8 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 			particle->velocity.z = vz - c1;
 			radius = particle->velocity.x * particle->velocity.x + particle->velocity.z * particle->velocity.z;
 		} while (radius > c1);
-		particle->velocity.x *= 0.5f;
-		particle->velocity.z *= 0.5f;
+		particle->velocity.x *= PARTICLE_F32(float_0p5_80421cec);
+		particle->velocity.z *= PARTICLE_F32(float_0p5_80421cec);
 		radius *= 0.25f;
 #ifdef MUST_MATCH
 		particle->velocity.y = particle_sqrtf(c1 - radius, &secondScratch);
