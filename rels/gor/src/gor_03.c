@@ -4602,6 +4602,7 @@ EVT_END()
 // `(s32)data[i + 0x30]` (rather than `(s32)((u8*)data + i)[0x30]`) makes MWCC emit the original's
 // `add r3, r28, r0` operand order.
 // NONMATCHING (99.03%): see above.
+extern const f32 float_45_gor_0001b7f4;
 USER_FUNC(goryuugijo_main_slot) {
     s32 stop;
     s32 j;
@@ -4747,7 +4748,7 @@ USER_FUNC(goryuugijo_main_slot) {
             s32 tmp1[3];
             s32 cnt;
             for (i = 0; i < 3; i++) {
-                tmp1[i] = *(u32*)((u8*)slotgara + *(s32*)(data + 0x60) * 0x60 + i * 0x20 + (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f) * 4);
+                tmp1[i] = *(u32*)((u8*)slotgara + *(s32*)(data + 0x60) * 0x60 + i * 0x20 + (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / float_45_gor_0001b7f4) * 4);
             }
             if (tmp1[0] == tmp1[1] && tmp1[1] == tmp1[2]) {
                 *(s32*)(data + 0x04) = 6;
