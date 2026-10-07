@@ -57,6 +57,7 @@ void N_setupErrorHandler(void) {
 
 // NONMATCHING (98.96%): a three-register rotation (string base, print buffer, retrace count) and one folded
 // texture-address copy differ; the strings, conversion mask and .sdata2 pool are the original's.
+extern const f32 float_0p5_80422618;
 void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
 	// MUST_MATCH: local order gives the original argument/font/dimension/loop registers.
 #ifdef MUST_MATCH
@@ -165,7 +166,7 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	GXSetScissor(0, 0, 608, 480);
 	MTXOrtho(projection, 0.0f, 608.0f, 0.0f, 480.0f, 0.0f, 1.0f);
 	GXSetProjection(projection, GX_ORTHOGRAPHIC);
-	MTXScale(matrix, 0.5f, 0.5f, 1.0f);
+	MTXScale(matrix, float_0p5_80422618, 0.5f, 1.0f);
 	GXLoadPosMtxImm(matrix, 0);
 	GXSetCurrentMtx(0);
 	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
