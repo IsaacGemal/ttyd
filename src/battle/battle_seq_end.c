@@ -99,6 +99,51 @@ extern const f32 float_neg0p6_80420c70;
 extern const f32 float_0p6_80420c74;
 extern const f64 double_to_int_802fe050;
 
+// Remaining pool objects; definitions retain retail address order.
+extern const f32 float_1p5_80420c80;
+extern const f32 float_2160_80420c84;
+extern const f32 float_neg50_80420cc4;
+extern const f32 float_neg76p9_80420cc8;
+extern const f32 float_21_80420ccc;
+extern const f32 float_165p8_80420cd0;
+extern const f32 float_24p2_80420cd4;
+extern const f32 float_24_80420cdc;
+extern const f32 float_18_80420ce0;
+extern const f32 float_36_80420ce4;
+extern const f32 float_0p9_80420ce8;
+extern const f32 float_0p45_80420cec;
+extern const f32 float_86p9_80420cf0;
+extern const f32 float_16p2_80420cf4;
+extern const f32 float_neg30_80420d00;
+extern const f32 float_6p25_80420d04;
+extern const f32 float_30_80420d08;
+extern const f32 float_12p5_80420d0c;
+extern const f32 float_32_80420d10;
+extern const f32 float_neg70_80420d14;
+extern const f32 float_neg10_80420d18;
+extern const f32 float_130_80420d1c;
+extern const f32 float_60_80420d20;
+extern const f32 float_27_80420d24;
+extern const f32 float_neg13_80420d28;
+extern const f32 float_neg38_80420d2c;
+extern const f32 float_neg40_80420d30;
+extern const f32 float_200_80420d34;
+extern const f32 float_neg200_80420d38;
+extern const char str_80420D3C[4];
+extern const f32 float_neg160_80420d40;
+extern const f32 float_225_80420d44;
+extern const f32 float_neg163_80420d48;
+extern const f32 float_900_80420d4c;
+extern const f32 float_40_80420d50;
+extern const char str_80420D54[8];
+
+#ifdef MUST_MATCH
+// Keep zero at its point of use instead of adding a saved FP register across earlier calls.
+#define SEQ_END_ZERO_AT_USE (*(volatile const f32*)&float_0_80420c7c)
+#else
+#define SEQ_END_ZERO_AT_USE float_0_80420c7c
+#endif
+
 //.data
 RankUpData _rank_up_data[] = {
     {1, 0, "msg_menu_mario_name_0", "butai_01"},
@@ -419,6 +464,13 @@ typedef struct BattleSeqEndWorkLvup {
 } BattleSeqEndWorkLvup;
 
 #pragma dont_inline on
+
+// Keep named objects between the compiler colour templates, in retail order.
+__declspec(section ".sdata2") const GXColor dat_80420c00 = { 0x00, 0x00, 0x00, 0xFF };
+__declspec(section ".sdata2") const GXColor dat_80420c04 = { 0x00, 0x00, 0x00, 0xFF };
+
+// The retail rank lookup is called out of line.
+#pragma dont_inline on
 RankUpData* _get_rank_data(s32 level) {
     RankUpData* rank;
 
@@ -571,7 +623,7 @@ void btlseqEnd(BattleWork* wp) {
         _ExecAllUnitBattleEndEvent();
         btl_camera_set_moveSpeedLv(0, 2);
         btl_camera_set_mode(0, 0x13);
-        btl_camera_set_posoffset(0, 0.0f, 0.0f, 0.0f);
+        btl_camera_set_posoffset(0, float_0_80420c7c, float_0_80420c7c, float_0_80420c7c);
         fadeEntry(0xA, 0xC8, dat_80420c00);
         psndBGMOff(0x201);
         BattleSetSeq(wp, SEQ_END, 0x07000002);
@@ -677,7 +729,7 @@ void btlseqEnd(BattleWork* wp) {
         } else {
             btl_camera_set_mode(0, 0x12);
         }
-        btl_camera_set_posoffset(0, 0.0f, 0.0f, 0.0f);
+        btl_camera_set_posoffset(0, float_0_80420c7c, float_0_80420c7c, float_0_80420c7c);
         BattleSetSeq(wp, SEQ_END, 0x07000009);
         BattleAudienceSoundCheer(0x3C, 0x3C);
         BattleAudienceSoundClap(-1, 0);
@@ -724,9 +776,9 @@ void btlseqEnd(BattleWork* wp) {
                 // MUST_MATCH: source-order of the arguments is what decides which load MWCC schedules last
                 // (it emits `lfs f2` before `lha r4` here, the original's order). The prototype's register
                 // mapping is unchanged, so the natural call below still links to the same function.
-                *(void**)((u8*)work + 0x29C) = ((EffectEntry* (*)(s32, f32, f32, s32, s32, f32))effPointGetEntry)(0, 0.0f, 90.0f, *(s16*)((u8*)work + 0x8), 0, 0.0f);
+                *(void**)((u8*)work + 0x29C) = ((EffectEntry* (*)(s32, f32, f32, s32, s32, f32))effPointGetEntry)(0, float_0_80420c7c, float_90_80420ca0, *(s16*)((u8*)work + 0x8), 0, float_0_80420c7c);
 #else
-                *(void**)((u8*)work + 0x29C) = effPointGetEntry(0, *(s16*)((u8*)work + 0x8), 0, 0.0f, 90.0f, 0.0f);
+                *(void**)((u8*)work + 0x29C) = effPointGetEntry(0, *(s16*)((u8*)work + 0x8), 0, float_0_80420c7c, float_90_80420ca0, float_0_80420c7c);
 #endif
             }
             BattleSetSeq(wp, SEQ_END, 0x0700000B);
@@ -984,17 +1036,17 @@ void btlseqEnd(BattleWork* wp) {
                 }
             }
         }
-        BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), "M_V_2");
+        BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), str_80420C20);
         BattleAudienceSoundCheer(0xB4, 0x28);
         *(s32*)((u8*)work + 0x4) = 0xB4;
         BattleSetSeq(wp, SEQ_END, 0x07000016);
         unit = BattleGetMarioPtr(wp);
         party = BattleGetPartyPtr(wp);
         if (unit != NULL) {
-            effRecoveryEntry(4, 0, unit->mPosition.x, 40.0f + unit->mPosition.y, unit->mPosition.z);
+            effRecoveryEntry(4, 0, unit->mPosition.x, float_40_80420d50 + unit->mPosition.y, unit->mPosition.z);
         }
         if (party != NULL) {
-            effRecoveryEntry(4, 0, party->mPosition.x, 40.0f + party->mPosition.y, party->mPosition.z);
+            effRecoveryEntry(4, 0, party->mPosition.x, float_40_80420d50 + party->mPosition.y, party->mPosition.z);
         }
         break;
 
@@ -1003,7 +1055,7 @@ void btlseqEnd(BattleWork* wp) {
         if (*(s32*)((u8*)work + 0x4) == 0x78) {
             unit = BattleGetMarioPtr(wp);
             if (unit != NULL) {
-                effRecoveryEntry(5, 0, unit->mPosition.x, 40.0f + unit->mPosition.y, unit->mPosition.z);
+                effRecoveryEntry(5, 0, unit->mPosition.x, float_40_80420d50 + unit->mPosition.y, unit->mPosition.z);
             }
         }
         if (*(s32*)((u8*)work + 0x4) > 0) {
@@ -1059,7 +1111,7 @@ void btlseqEnd(BattleWork* wp) {
                 }
             }
         }
-        BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), "M_V_1");
+        BtlUnit_SetBodyAnim(BattleGetMarioPtr(wp), str_80420D54);
         *(s32*)((u8*)work + 0x4) = 0x3C;
         BattleSetSeq(wp, SEQ_END, 0x0700001A);
         break;
@@ -1180,20 +1232,20 @@ void btlseqEnd_DispMain(CameraId camId, BattleWork* param) {
     }
     if (*(u32*)((u8*)work + 0x30) & 2) {
         _GetExpIcon_Main(param);
-        dispEntry(camId, 900.0f, 1, _GetExpIcon_Disp, param);
+        dispEntry(camId, float_900_80420d4c, 1, _GetExpIcon_Disp, param);
     }
     if (*(u32*)((u8*)work + 0x30) & 4) {
-        dispEntry(camId, 900.0f, 1, _MarioExpDisp, param);
+        dispEntry(camId, float_900_80420d4c, 1, _MarioExpDisp, param);
     }
     if (*(u32*)((u8*)work + 0x30) & 8) {
         Vec pos = vec3_802fde84;
         dispEntry(4, dispCalcZ(&pos), 2, _lvup_select_object_disp, param);
     }
     if (*(u32*)((u8*)work + 0x30) & 0x10) {
-        dispEntry(camId, 900.0f, 1, _LvupParamConfirmDisp, param);
+        dispEntry(camId, float_900_80420d4c, 1, _LvupParamConfirmDisp, param);
     }
     if (*(u32*)((u8*)work + 0x30) & 0x20) {
-        dispEntry(camId, 900.0f, 1, L__LvupParamHelpMsgDisp, param);
+        dispEntry(camId, float_900_80420d4c, 1, L__LvupParamHelpMsgDisp, param);
     }
 }
 
@@ -1207,56 +1259,58 @@ void _MarioExpDisp(CameraId camId, void* param) {
     f32 lenf;
 
     pouchGetPtr();
-    pos.x = 200.0f;
-    pos.y = -200.0f;
-    pos.z = 0.0f;
+    pos.x = float_200_80420d34;
+    pos.y = float_neg200_80420d38;
+    pos.z = float_0_80420c7c;
     if (work != NULL) {
-        sprintf(buf, "%2d", *(s16*)((u8*)work + 0xA));
+        sprintf(buf, str_80420D3C, *(s16*)((u8*)work + 0xA));
         lenf = (f32)strlen(buf);
-        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, 180.0f, -160.0f, 12.5f * lenf + 65.0f, 32.0f, 10.0f);
-        iconDispGx(&pos, 0x10, 0x18C, 1.0f);
+        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_180_80420cac, float_neg160_80420d40, float_12p5_80420d0c * lenf + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
+        iconDispGx(&pos, 0x10, 0x18C, float_1_80420c64);
         FontDrawStart();
-        FontDrawString(buf, 225.0f, -163.0f);
+        FontDrawString(buf, float_225_80420d44, float_neg163_80420d48);
     }
 }
 
-// NONMATCHING (85.46%): every call and non-data immediate matches (tools/diff_shape.py); the score is
-// dominated by (a) register allocation: the string-base and `work` base are swapped (orig r30=base, r31=work;
-// ours r31=base, r30=work) and `-30.0f`/`12.5f` land in the other of f4/f5; and (b) the len int->float
-// schedule, which inserts one extra `mr r6, r3` -- the original stores the strlen result from r3 twice
-// (0x34, 0x3c) before clobbering r3 with the camId 0.  The remaining diffs are rodata offsets: here
-// btl_msg_lvup_ok/yes/no sit at +0x278/+0x288/+0x29c and the two doubles at +0x268/+0x270, vs
-// +0x304/+0x314/+0x328 and +0x260/+0x338 in the original. The file is now in the original's function order
-// (reversed in the source, for -inline deferred), which leaves these offsets where they were: the gap is in
-// what precedes btl_msg_lvup_ok in the unit's string pool, not in function order.
-// Written out twice with no `f32 w` local so mwcc CSEs `6.25f * (f32)len` into the original's `fmuls f31`.
-// Tried a `w`/`lf` local, s32/size_t len, mixed signed casts, named dat_80420c0c/dat_80420c10, an inline
-// colour, non-const float locals, and opt_propagation/size/commonsubs/scheduling/lifetimes pragmas: all <= 85.41.
+// NONMATCHING (85.46%): work/string-base registers are swapped; FP scheduling and the strlen
+// conversion still differ (including one extra mr). Both constant pools now have retail offsets.
 void _LvupParamConfirmDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
     Vec pos;
     char buf[0x14];
     u32 len;
-    f32 zero = 0.0f;
+    f32 halfWidth;
+    f32 zero;
 
     pouchGetPtr();
     sprintf(buf, msgSearch("btl_msg_lvup_ok"));
     len = strlen(buf);
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, -30.0f - 6.25f * (f32)len, 30.0f,
-                          12.5f * (f32)len + 65.0f, 32.0f, 10.0f);
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, -70.0f, -10.0f, 130.0f, 60.0f, 10.0f);
+#ifdef MUST_MATCH
+    // Assign in the argument tree so the shared half-width retains the original FP load order.
+    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_neg30_80420d00 - (halfWidth = float_6p25_80420d04 * (f32)len), float_30_80420d08,
+                          float_12p5_80420d0c * (f32)len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
+#else
+    halfWidth = float_6p25_80420d04 * (f32)len;
+    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_neg30_80420d00 - halfWidth, float_30_80420d08,
+                          float_12p5_80420d0c * (f32)len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
+#endif
+    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_neg70_80420d14, float_neg10_80420d18, float_130_80420d1c, float_60_80420d20, float_10_80420cd8);
     FontDrawStart();
-    FontDrawString(buf, zero - 6.25f * (f32)len, 27.0f);
-    FontDrawString(msgSearch("btl_msg_lvup_yes"), -20.0f, -13.0f);
-    FontDrawString(msgSearch("btl_msg_lvup_no"), -20.0f, -38.0f);
-    pos.x = -40.0f;
+    zero = SEQ_END_ZERO_AT_USE;
+    FontDrawString(buf, zero - halfWidth, float_27_80420d24);
+    FontDrawString(msgSearch("btl_msg_lvup_yes"), float_neg20_80420c90, float_neg13_80420d28);
+    FontDrawString(msgSearch("btl_msg_lvup_no"), float_neg20_80420c90, float_neg38_80420d2c);
+    pos.x = float_neg40_80420d30;
     pos.y = (f32)(-50 - *(s32*)((u8*)work + 0x24) * 25);
-    pos.z = 0.0f;
-    iconDispGx(&pos, 0x10, 0x18C, 1.0f);
+    pos.z = float_0_80420c7c;
+    iconDispGx(&pos, 0x10, 0x18C, float_1_80420c64);
 }
 
-// The window y/height reuse the truncated `lines + 1` and the width keeps a clrlwi plus srawi/addze.
+// Keep named objects between the compiler colour templates, in retail order.
+__declspec(section ".sdata2") const GXColor dat_80420c14 = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+// The window y/height reuse the truncated lines + 1; width keeps clrlwi plus srawi/addze.
 void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
@@ -1264,7 +1318,7 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     const char* msg;
     u16 lines;
     s32 width;
-    f32 zero = 0.0f;
+    f32 zero;
 
     pouch = pouchGetPtr();
     switch (*(s32*)((u8*)work + 0x10)) {
@@ -1289,8 +1343,9 @@ void L__LvupParamHelpMsgDisp(CameraId camId, void* param) {
     }
     width = FontGetMessageWidthLine(msg, &lines);
     lines++;
-    windowDispGX_Waku_col(0, dat_80420c14, zero - (f32)(width / 2) - 20.0f, -145.0f + (f32)(((u16)lines - 1) * 29),
-                          (f32)(width + 40), (f32)(lines * 29 + 1), 10.0f);
+    zero = SEQ_END_ZERO_AT_USE;
+    windowDispGX_Waku_col(0, dat_80420c14, zero - (f32)(width / 2) - float_20_80420c48, float_neg145_80420cf8 + (f32)(((u16)lines - 1) * 29),
+                          (f32)(width + 40), (f32)(lines * 29 + 1), float_10_80420cd8);
     FontDrawStart_alpha(0xFF);
     FontDrawMessage((s32)(zero - (f32)(width / 2)), (s32)float_neg148_80420cfc + (lines - 1) * 29, msg);
 }
@@ -1304,13 +1359,13 @@ void _GetExpIcon_Init(BattleSeqEndWork* arg) {
         sprintf(name, "_Bgsp%d", i);
         iconEntry2D(name, 0x18C);
         *(u32*)((u8*)work + 0x34 + i * 4) = (u32)iconNameToPtr(name);
-        iconSetScale(name, 0.9f);
+        iconSetScale(name, float_0p9_80420ce8);
         iconFlagOn(name, 2);
         *(s32*)((u8*)work + 0xCC + i * 4) = 0;
         *(f32*)((u8*)work + 0x118 + i * 0xC) =
-            36.0f * (f32)i + (24.0f - 18.0f * (f32)(*(s16*)((u8*)work + 0xA) / 10));
-        *(f32*)((u8*)work + 0x11C + i * 0xC) = 25.0f;
-        *(f32*)((u8*)work + 0x120 + i * 0xC) = 0.0f;
+            float_36_80420ce4 * (f32)i + (float_24_80420cdc - float_18_80420ce0 * (f32)(*(s16*)((u8*)work + 0xA) / 10));
+        *(f32*)((u8*)work + 0x11C + i * 0xC) = float_25_80420c9c;
+        *(f32*)((u8*)work + 0x120 + i * 0xC) = float_0_80420c7c;
         iconSetPos(name, *(f32*)((u8*)work + 0x118 + i * 0xC),
                    *(f32*)((u8*)work + 0x11C + i * 0xC), *(f32*)((u8*)work + 0x120 + i * 0xC));
     }
@@ -1318,12 +1373,12 @@ void _GetExpIcon_Init(BattleSeqEndWork* arg) {
         sprintf(name, "_Bgsp%d", i);
         iconEntry2D(name, 0x18C);
         *(u32*)((u8*)work + 0x34 + i * 4) = (u32)iconNameToPtr(name);
-        iconSetScale(name, 0.45f);
+        iconSetScale(name, float_0p45_80420cec);
         iconFlagOn(name, 2);
         *(s32*)((u8*)work + 0xCC + i * 4) = 0;
-        *(f32*)((u8*)work + 0x118 + i * 0xC) = 86.899994f - 16.199999f * (f32)(i - 9);
-        *(f32*)((u8*)work + 0x11C + i * 0xC) = 0.0f;
-        *(f32*)((u8*)work + 0x120 + i * 0xC) = 0.0f;
+        *(f32*)((u8*)work + 0x118 + i * 0xC) = float_86p9_80420cf0 - float_16p2_80420cf4 * (f32)(i - 9);
+        *(f32*)((u8*)work + 0x11C + i * 0xC) = float_0_80420c7c;
+        *(f32*)((u8*)work + 0x120 + i * 0xC) = float_0_80420c7c;
         iconSetPos(name, *(f32*)((u8*)work + 0x118 + i * 0xC),
                    *(f32*)((u8*)work + 0x11C + i * 0xC), *(f32*)((u8*)work + 0x120 + i * 0xC));
     }
@@ -1334,7 +1389,6 @@ void _GetExpIcon_Main(BattleWork* wp) {
     BattleSeqEndWork* work = wp->seqEndWork;
     s32 exp = *(s16*)((u8*)work + 0xA);
     s32 j;
-    f32 zero = 0.0f;
 
     for (j = 0; j < exp / 10; j++) {
         iconFlagOff((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18), 2);
@@ -1350,7 +1404,7 @@ void _GetExpIcon_Main(BattleWork* wp) {
             *(s32*)((u8*)work + 0xCC + j * 4) += 1;
         }
         *(f32*)((u8*)work + 0x118 + j * 0xC) =
-            36.0f * (f32)j + (24.0f - 18.0f * (f32)(*(s16*)((u8*)work + 0xA) / 10));
+            float_36_80420ce4 * (f32)j + (float_24_80420cdc - float_18_80420ce0 * (f32)(*(s16*)((u8*)work + 0xA) / 10));
     }
     for (; j < 10; j++) {
         iconFlagOn((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18), 2);
@@ -1378,7 +1432,7 @@ void _GetExpIcon_Main(BattleWork* wp) {
         iconSetAlpha((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18),
                      (u8)*(s32*)((u8*)work + 0x80 + j * 4));
         iconSetPos((const char*)(*(u32*)((u8*)work + 0x34 + j * 4) + 0x18),
-                   ((f32*)((u8*)work + 0x118 + j * 0xC))[0], ((f32*)((u8*)work + 0x11C + j * 0xC))[0] + zero,
+                   ((f32*)((u8*)work + 0x118 + j * 0xC))[0], ((f32*)((u8*)work + 0x11C + j * 0xC))[0] + float_0_80420c7c,
                    ((f32*)((u8*)work + 0x120 + j * 0xC))[0]);
     }
 }
@@ -1386,8 +1440,12 @@ void _GetExpIcon_Main(BattleWork* wp) {
 void _GetExpIcon_Disp(CameraId camId, void* param) {
     GXColor color = {0xFF, 0xFF, 0xFF, 0x80};
 
-    windowDispGX_Waku_col(0, color, -76.899994f, 21.0f, 165.79999f, 24.199999f, 10.0f);
+    windowDispGX_Waku_col(0, color, float_neg76p9_80420cc8, float_21_80420ccc, float_165p8_80420cd0, float_24p2_80420cd4, float_10_80420cd8);
 }
+
+// Keep named objects between the compiler colour templates, in retail order.
+__declspec(section ".sdata2") const f32 float_0_80420c1c = 0.0f;
+__declspec(section ".sdata2") const char str_80420C20[8] = "M_V_2";
 
 void _GetExpIcon_End(BattleSeqEndWork* work) {
     s32 i;
@@ -1521,6 +1579,9 @@ s32 _lvup_disp_flag_onoff(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
+// Keep named objects between the compiler colour templates, in retail order.
+__declspec(section ".sdata2") const u32 dat_80420c28 = 0xFFFFFFFF;
+
 s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
     BattleSpotWork* spot = BatSpotGetPtr();
     BattleSpotEntry* entry;
@@ -1533,19 +1594,19 @@ s32 _lvup_spot_on(EventEntry* event, BOOL isFirstCall) {
 
     switch (code) {
     case 0:
-        entry->field_4 = (Vec){25.0f * (f32)code + -50.0f, 25.0f, -50.0f};
+        entry->field_4 = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, 25.0f, -50.0f};
         break;
     case 1:
-        entry->field_4 = (Vec){25.0f * (f32)code + -50.0f, -10.0f, -50.0f};
+        entry->field_4 = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, -10.0f, -50.0f};
         break;
     case 2:
-        entry->field_4 = (Vec){25.0f * (f32)code + -50.0f, 25.0f, -50.0f};
+        entry->field_4 = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, 25.0f, -50.0f};
         break;
     case 3:
-        entry->field_4 = (Vec){25.0f * (f32)code + -50.0f, -10.0f, -50.0f};
+        entry->field_4 = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, -10.0f, -50.0f};
         break;
     case 4:
-        entry->field_4 = (Vec){25.0f * (f32)code + -50.0f, 25.0f, -50.0f};
+        entry->field_4 = (Vec){float_25_80420c9c * (f32)code + float_neg50_80420cc4, 25.0f, -50.0f};
         break;
     }
 #ifdef MUST_MATCH
@@ -1650,7 +1711,7 @@ s32 _lvup_spot_off(EventEntry* event, BOOL isFirstCall) {
         entry = &spot->entries[i];
         color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
 
-        ((u8*)&color)[3] = (s32)intplGetValue(2, event->userdata[1], event->userdata[0], 0.0f, (f32)event->userdata[2]);
+        ((u8*)&color)[3] = (s32)intplGetValue(2, event->userdata[1], event->userdata[0], float_0_80420c7c, (f32)event->userdata[2]);
         entry->field_28 = *(u32*)&color;
         if (((u8*)&entry->field_28)[3] == 0) {
             entry->flags &= ~2;
@@ -1677,7 +1738,7 @@ s32 _lvup_object_noselect_delete(EventEntry* event, BOOL isFirstCall) {
     if (event->userdata[0] < event->userdata[2]) {
         for (i = 0; i < *(s32*)((u8*)work + 0x18); i++) {
             if (i != selected) {
-                ((u8*)work)[i * 0x34 + 0x233] = (u8)(s32)intplGetValue(5, event->userdata[0], event->userdata[2], 255.0f, 0.0f);
+                ((u8*)work)[i * 0x34 + 0x233] = (u8)(s32)intplGetValue(5, event->userdata[0], event->userdata[2], float_255_80420c88, float_0_80420c7c);
             }
         }
         return 0;
@@ -1709,7 +1770,7 @@ s32 _lvup_object_select_move(EventEntry* event, BOOL isFirstCall) {
     if (event->userdata[0] < event->userdata[1]) {
         *(f32*)(entry + 0x0) = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->userdata[2], (f32)*(s32*)((u8*)event + 0x88));
         *(f32*)(entry + 0x8) = intplGetValue(5, event->userdata[0], event->userdata[1], (f32)(s32)event->field_84, (f32)*(s32*)((u8*)event + 0x8C));
-        *(f32*)(entry + 0x1C) = reviseAngle(intplGetValue(5, event->userdata[0], event->userdata[1], 0.0f, 2160.0f));
+        *(f32*)(entry + 0x1C) = reviseAngle(intplGetValue(5, event->userdata[0], event->userdata[1], float_0_80420c7c, float_2160_80420c84));
         return 0;
     }
     *(f32*)(entry + 0x0) = (f32)*(s32*)((u8*)event + 0x88);
@@ -1735,15 +1796,15 @@ s32 _lvup_object_decide_bound(EventEntry* event, BOOL isFirstCall) {
     if (event->userdata[0] < event->userdata[2]) {
         half = event->userdata[2] / 2;
         if (event->userdata[0] < half) {
-            *(f32*)(entry + 0x4) = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0], half, 0.0f, (f32)(s32)event->field_84);
+            *(f32*)(entry + 0x4) = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0], half, float_0_80420c7c, (f32)(s32)event->field_84);
         } else {
-            *(f32*)(entry + 0x4) = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0] - half, half, (f32)(s32)event->field_84, 0.0f);
+            *(f32*)(entry + 0x4) = (f32)event->userdata[1] + intplGetValue(5, event->userdata[0] - half, half, (f32)(s32)event->field_84, float_0_80420c7c);
         }
         return 0;
     }
     *(f32*)(entry + 0x4) = (f32)event->userdata[1];
     entry[0x28] = 4;
-    effPokopiPchargeN64Entry(*(f32*)(entry + 0x0), *(f32*)(entry + 0x4), *(f32*)(entry + 0x8), 1.5f, 3, 0x78);
+    effPokopiPchargeN64Entry(*(f32*)(entry + 0x0), *(f32*)(entry + 0x4), *(f32*)(entry + 0x8), float_1p5_80420c80, 3, 0x78);
     return 2;
 }
 
@@ -1807,10 +1868,6 @@ s32 _keta_get(s32 value) {
         digits++;
     }
     return digits;
-}
-
-void _ac_help_disp(CameraId camId, void* param) {
-
 }
 
 // The three level-up select objects live in the sequence-end work at 0x200, stride 0x34.
@@ -2085,23 +2142,11 @@ s32 _get_rank_up_msg(EventEntry* event, BOOL isFirstCall) {
 // Reset at the end of the file: with -inline deferred the setting in force at end of file decides.
 #pragma dont_inline reset
 
-// .sdata2 constants, in the original address order.
+// Named .sdata2 suffix follows the compiler colour templates, in retail address order.
+// Keep unreferenced tail words: they are part of the original section layout.
+#ifdef MUST_MATCH
 #pragma force_active on
-__declspec(section ".sdata2") const GXColor dat_80420c00 = { 0x00, 0x00, 0x00, 0xFF };
-__declspec(section ".sdata2") const GXColor dat_80420c04 = { 0x00, 0x00, 0x00, 0xFF };
-__declspec(section ".sdata2") const u32 dat_80420c08 = 0xFFFFFFFF;
-__declspec(section ".sdata2") const u32 dat_80420c0c = 0xFFFFFFFF;
-__declspec(section ".sdata2") const u32 dat_80420c10 = 0xFFFFFFFF;
-__declspec(section ".sdata2") const GXColor dat_80420c14 = { 0xFF, 0xFF, 0xFF, 0xFF };
-__declspec(section ".sdata2") const u32 dat_80420c18 = 0xFFFFFF80;
-__declspec(section ".sdata2") const f32 float_0_80420c1c = 0.0f;
-__declspec(section ".sdata2") const char str_80420C20[8] = "M_V_2";
-__declspec(section ".sdata2") const u32 dat_80420c28 = 0xFFFFFFFF;
-__declspec(section ".sdata2") const u32 dat_80420c2c = 0xFFFFFF00;
-__declspec(section ".sdata2") const u32 dat_80420c30 = 0xFFFFFF00;
-__declspec(section ".sdata2") const u32 dat_80420c34 = 0xC8FFFFFF;
-__declspec(section ".sdata2") const u32 dat_80420c38 = 0xC8FFFFFF;
-__declspec(section ".sdata2") const u32 dat_80420c3c = 0xC8FFFFFF;
+#endif
 __declspec(section ".sdata2") const f32 float_deg2rad_80420c40 = 0.017453292f;
 __declspec(section ".sdata2") const f32 float_16_80420c44 = 16.0f;
 __declspec(section ".sdata2") const f32 float_20_80420c48 = 20.0f;
@@ -2180,4 +2225,6 @@ __declspec(section ".sdata2") const f32 float_neg145_80420d6c = -145.0f;
 __declspec(section ".sdata2") const f32 float_10_80420d70 = 10.0f;
 __declspec(section ".sdata2") const f32 float_neg148_80420d74 = -148.0f;
 __declspec(section ".sdata2") const f32 float_498_80420d78 = 498.0f;
-#pragma force_active off
+#ifdef MUST_MATCH
+#pragma force_active reset
+#endif
