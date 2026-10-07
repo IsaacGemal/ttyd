@@ -67,19 +67,21 @@ def apply(text, func, site):
 
 
 def sdata2_names(target):
-    """{value: name} and {name: value} for the float_* objects in the original object's .sdata2."""
+    """{value: name} and {name: value} for the float_* objects in the original object's .sdata2, or .rodata where a
+    REL keeps its floats."""
     from elftools.elf.elffile import ELFFile
     f = ELFFile(open(target, "rb"))
-    sec = f.get_section_by_name(".sdata2")
-    if sec is None:
-        return {}, {}
-    data, idx = sec.data(), f.get_section_index(".sdata2")
     by_value, by_name = {}, {}
-    for s in f.get_section_by_name(".symtab").iter_symbols():
-        if s["st_shndx"] == idx and s.name.startswith("float_") and s["st_size"] == 4:
-            v = struct.unpack(">f", data[s["st_value"]:s["st_value"] + 4])[0]
-            by_value.setdefault(v, s.name)
-            by_name[s.name] = v
+    for secname in (".sdata2", ".rodata"):
+        sec = f.get_section_by_name(secname)
+        if sec is None:
+            continue
+        data, idx = sec.data(), f.get_section_index(secname)
+        for s in f.get_section_by_name(".symtab").iter_symbols():
+            if s["st_shndx"] == idx and s.name.startswith("float_") and s["st_size"] == 4:
+                v = struct.unpack(">f", data[s["st_value"]:s["st_value"] + 4])[0]
+                by_value.setdefault(v, s.name)
+                by_name[s.name] = v
     return by_value, by_name
 
 
