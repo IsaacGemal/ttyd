@@ -603,7 +603,7 @@ static void main_base(void) {
 
         for (i = 0; i < 8; i++) {
             DekaTiming* t = &p->timing[idx[i]];
-            if (t->state == 2 && t->unk08 != 2 && p->beatPos > float_7_80421e78 + t->time) {
+            if (t->state == 2 && t->unk08 != 2 && p->beatPos > 7.0f + t->time) {
                 p->baseState = 5;
                 p->gaugeState = 4;
                 t->flag = 2;
