@@ -28,7 +28,8 @@ LIT = re.compile(r"(?<![\w.])(\d+\.\d*|\d*\.\d+)f\b")
 
 def func_span(text, func):
     """(start, end) of FUNC's definition: from its header to the closing `}` at column 0."""
-    m = re.search(rf"^[^\n;]*\b{re.escape(func)}\([^;{{]*\)\s*{{", text, re.M)
+    f = re.escape(func)
+    m = re.search(rf"^(?:[^\n;]*\b{f}\([^;{{]*\)|[^\n;]*\bUSER_FUNC\({f}\))\s*{{", text, re.M)
     if not m:
         raise ValueError(f"{func} not found")
     return m.start(), text.index("\n}\n", m.start())
@@ -85,7 +86,8 @@ def sdata2_names(target):
 def main(argv):
     unit, func = argv[0], argv[1]
     to_literal = "--to-literal" in argv
-    entry = next(e for e in json.load(open("objdiff.json"))["units"] if e["name"].split("/", 1)[1] == unit)
+    # a dol unit is named MarioSt/UNIT in objdiff.json, a REL unit MOD/UNIT as given
+    entry = next(e for e in json.load(open("objdiff.json"))["units"] if e["name"] in ("MarioSt/" + unit, unit))
     src = entry["metadata"]["source_path"]
     by_value, by_name = sdata2_names(entry["target_path"])
 

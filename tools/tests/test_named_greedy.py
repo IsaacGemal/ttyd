@@ -22,6 +22,12 @@ class Sites(unittest.TestCase):
         sites = ng.named_sites(SRC, "f", {"float_8_8041d0a0": 8.0})
         self.assertEqual([s[2] for s in sites], ["8.0f"])
 
+    def test_user_func_header(self):
+        src = "static USER_FUNC(npc_jump);\nstatic USER_FUNC(npc_jump) {\n    g(16.0f);\n}\n"
+        a, b = ng.func_span(src, "npc_jump")
+        self.assertTrue(src[a:].startswith("static USER_FUNC(npc_jump) {"))
+        self.assertEqual([s[2] for s in ng.literal_sites(src, "npc_jump", NAMES)], ["float_16_8041d0e4"])
+
     def test_literal_formatting(self):
         self.assertEqual([ng.literal(v) for v in (16.0, 0.5, -4.0)], ["16.0f", "0.5f", "-4.0f"])
 
