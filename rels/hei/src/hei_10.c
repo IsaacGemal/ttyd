@@ -319,6 +319,7 @@ static inline f32 heiCos2(f32 angle) {
 }
 
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
+extern const f32 float_360_hei_00007b94;
 static void ext_main(void) {
     s16 oldState;
     const char* sfx;
@@ -342,7 +343,7 @@ static void ext_main(void) {
             f32 degR = (f32)rand() / 32767.0f;
             f32 speed = randf(4.0f, 7.0f);
             f32 zero = 0.0f;
-            f32 deg = degR * 360.0f + zero;
+            f32 deg = degR * float_360_hei_00007b94 + zero;
 #else
             f32 deg = randf(0.0f, 360.0f);
             f32 speed = randf(4.0f, 7.0f);
