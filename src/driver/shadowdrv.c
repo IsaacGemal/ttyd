@@ -18,25 +18,25 @@ extern const f32 float_255_80419914;
 __declspec(section ".data") u8 lbl_80303460[8] = {
     0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
 };
-__declspec(section ".data") u8 negone_one_374[8] = {
+__declspec(section ".data") static u8 negone_one_374[8] = {
     0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
 };
 __declspec(section ".data") u8 lbl_80303470[8] = {
     0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
 };
-__declspec(section ".data") u8 one_negone_373[8] = {
+__declspec(section ".data") static u8 one_negone_373[8] = {
     0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
 };
 __declspec(section ".data") u8 lbl_80303480[8] = {
     0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
 };
-__declspec(section ".data") u8 negone_one_360[8] = {
+__declspec(section ".data") static u8 negone_one_360[8] = {
     0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
 };
 __declspec(section ".data") u8 lbl_80303490[8] = {
     0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
 };
-__declspec(section ".data") u8 one_negone_359[8] = {
+__declspec(section ".data") static u8 one_negone_359[8] = {
     0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
 };
 __declspec(section ".data") u8 shadowConfig[144] = {
@@ -904,10 +904,8 @@ void shadowCharShadowDisp_Polygon(CameraId camId, void* param) {
     }
 }
 
-// The target keeps `negSize = -size` in f30 across the entry loop and recomputes `negSize * half` per
-// iteration in f2; assigning size/negSize just before the loop, reading half/quarter from locals (they
-// fix the f0/f1/f2 colouring) and turning loop-invariant hoisting off gives that shape. The natural
-// form is under #else in each MUST_MATCH block.
+// Retail keeps negSize in f30 across the loop and computes the negative half-size in f2
+// per entry. Match-only FIFO writes below reuse the named zero/one objects without pooling duplicates.
 #ifdef MUST_MATCH
 // MUST_MATCH: building the by-value GXColor inside an inlined helper makes MWCC put its local in the
 // lower scratch slot (r1+0x10) and the GXSetFog copy in r1+0x14, as the original does; writing the
@@ -918,14 +916,16 @@ static inline void shadowTexMatColor(void) {
 }
 #endif
 
-#pragma opt_loop_invariants off // needed: the target recomputes negSize*0.5f inside the entry loop (below)
+#ifdef MUST_MATCH
+#pragma opt_loop_invariants off // Retail recomputes the negative half-size inside the entry loop.
+#endif
 void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     ShadowEntry* entry = cswp->entries;
     f32 (*view)[4];
     u16 left, top, right, bottom;
     GXTexObj texObj;
     Mtx mtx;
-    f32 zero = 0.0f;
+    f32 zero;
 #ifdef MUST_MATCH
     f32 size;
     f32 negSize;
@@ -956,7 +956,7 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xA);
     GXSetTevAlphaIn(0, 7, 4, 5, 7);
-    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422f9c);
+    GXSetFog(0, float_0_804198f4, float_0_804198f4, float_0_804198f4, float_0_804198f4, unk_80422f9c);
     GXSetBlendMode(1, 4, 5, 0);
     GXSetZMode(1, 3, 0);
     GXSetZCompLoc(1);
@@ -972,7 +972,11 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
     size = float_2p5_80419918;
     negSize = -size;
 #endif
+    zero = float_0_804198f4;
     for (i = 0; i < cswp->unk104; i++, entry++) {
+#ifdef MUST_MATCH
+        f32 positive, negative;
+#endif
         if (entry->size == zero) {
             continue;
         }
@@ -993,29 +997,40 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
         GXLoadPosMtxImm(mtx, 0);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 #ifdef MUST_MATCH
-        GXPosition3f32(negSize * float_0p5_804198f8, 0.0f, float_1p25_8041991c);
+        // Keep separate zero/one loads and write coordinates at each FIFO access; named
+        // positive/negative coordinates preserve the target's f1/f2 allocation.
+        positive = float_1p25_8041991c;
+        negative = negSize * float_0p5_804198f8;
+        GXWGFifo.f32 = negative;
+        GXWGFifo.f32 = *(const volatile f32*)&float_0_804198f4;
+        GXWGFifo.f32 = positive;
+        GXWGFifo.f32 = *(const volatile f32*)&float_0_804198f4;
+        GXWGFifo.f32 = *(const volatile f32*)&float_0_804198f4;
+        GXWGFifo.f32 = positive;
+        GXWGFifo.f32 = *(const volatile f32*)&float_0_804198f4;
+        GXWGFifo.f32 = positive;
+        GXWGFifo.f32 = *(const volatile f32*)&float_1_80419904;
+        GXWGFifo.f32 = *(const volatile f32*)&float_0_804198f4;
+        GXWGFifo.f32 = positive;
+        GXWGFifo.f32 = *(const volatile f32*)&float_0_804198f4;
+        GXWGFifo.f32 = negative;
+        GXWGFifo.f32 = *(const volatile f32*)&float_1_80419904;
+        GXWGFifo.f32 = *(const volatile f32*)&float_1_80419904;
+        GXWGFifo.f32 = negative;
+        GXWGFifo.f32 = *(const volatile f32*)&float_0_804198f4;
+        GXWGFifo.f32 = negative;
+        GXWGFifo.f32 = *(const volatile f32*)&float_0_804198f4;
+        GXWGFifo.f32 = *(const volatile f32*)&float_1_80419904;
 #else
         GXPosition3f32(negSize * float_0p5_804198f8, 0.0f, float_1p25_8041991c);
-#endif
         GXTexCoord2f32(0.0f, 0.0f);
-#ifdef MUST_MATCH
         GXPosition3f32(float_1p25_8041991c, 0.0f, float_1p25_8041991c);
-#else
-        GXPosition3f32(float_1p25_8041991c, 0.0f, float_1p25_8041991c);
-#endif
         GXTexCoord2f32(1.0f, 0.0f);
-#ifdef MUST_MATCH
         GXPosition3f32(float_1p25_8041991c, 0.0f, negSize * float_0p5_804198f8);
-#else
-        GXPosition3f32(float_1p25_8041991c, 0.0f, negSize * float_0p5_804198f8);
-#endif
         GXTexCoord2f32(1.0f, 1.0f);
-#ifdef MUST_MATCH
         GXPosition3f32(negSize * float_0p5_804198f8, 0.0f, negSize * float_0p5_804198f8);
-#else
-        GXPosition3f32(negSize * float_0p5_804198f8, 0.0f, negSize * float_0p5_804198f8);
-#endif
         GXTexCoord2f32(0.0f, 1.0f);
+#endif
         if (camId == 1) {
             sysWaitDrawSync();
             GXReadBoundingBox(&left, &top, &right, &bottom);
@@ -1023,7 +1038,9 @@ void shadowCharShadowDisp_Texture(CameraId camId, void* param) {
         }
     }
 }
+#ifdef MUST_MATCH
 #pragma opt_loop_invariants reset
+#endif
 
 #pragma opt_common_subs off // needed: keeps the fade clamp and alpha ramp in separate FP temporaries
 void cylinder(ShadowEntry* entry) {
