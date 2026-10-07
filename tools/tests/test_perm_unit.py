@@ -138,3 +138,11 @@ class LoopTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class VariantCflagsTest(unittest.TestCase):
+    def test_repeated_rel_unit_uses_the_module_rule(self):
+        ninja = ("build build/G8MJ01/src/rel/gor/event/evt_x.o: mwcc_sjis rels/gor/src/event/evt_x.c\n"
+                 "  cflags = -O4,p -gor\n  basedir = build/G8MJ01/src/rel/gor/event\n")
+        self.assertEqual(perm_unit.cflags(ninja, "event/evt_x", "gor"), "-O4,p -gor")
+        with self.assertRaises(LookupError):
+            perm_unit.cflags(ninja, "event/evt_x")

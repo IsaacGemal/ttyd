@@ -29,7 +29,7 @@ unit, func = args[0], args[1]
 out = args[2] if len(args) > 2 else os.path.join(os.environ.get("PERM_ROOT", os.path.expanduser("~/permuter")), "inputs", unit.replace("/", "_") + "__" + func)
 try:
     res = perm_unit.resolve(unit, ROOT)
-    cflags = perm_unit.cflags(open(os.path.join(ROOT, "build.ninja")).read(), res["name"])
+    cflags = perm_unit.cflags(open(os.path.join(ROOT, "build.ninja")).read(), res["name"], res["mod"])
 except LookupError as e:
     sys.exit(str(e))
 os.makedirs(out, exist_ok=True)
