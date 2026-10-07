@@ -1726,7 +1726,7 @@ void envSetWater(s32 arg0, void* arg1) {
 
     for (i = 0; i < 0x40; i++) {
         for (j = 0; j < 0x40; j++) {
-            f32 s = (f32)sin(float_18p85_8041e548 * (f32)j * float_0p015625_8041e54c + (f32)gp->retraceCount / float_10_8041e524);
+            f32 s = (f32)sin(18.849552154541016f * (f32)j * float_0p015625_8041e54c + (f32)gp->retraceCount / float_10_8041e524);
             s32 v = (s32)(float_0p6_8041e550 + (scale * s + float_128_8041e554));
             p = &water[((i % 4) + (j % 4) * 4) * 2 + (i / 4) * 32 + (j / 4) * 512];
 
