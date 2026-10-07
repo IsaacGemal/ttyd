@@ -1116,6 +1116,7 @@ static inline char* wmDispNum(WM_BASE_PARAMS s32 width, s32 num) {
 // NONMATCHING (93.90%): same 179 calls and no differing immediates; FP/GPR colouring, the i2f-magic
 // addressing and the stack layout differ. The independent local/Vec load and store order below
 // (colours, f20/f21/f19, tmp/sc/scale/pos/c/tr, hours/mins) reproduces the original codegen schedule.
+extern const f32 float_10_8041d61c;
 void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     // Draws the Mario status panel: name/level/rank, HP/FP/BP, star pieces and
     // shine sprites, the play-time clock and the collected star powers.
@@ -1544,7 +1545,7 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
 
     f23 = 10.0f + x;
     winKirinukiGX(work, 0, f23,
-                  20.0f + (10.0f + y),
+                  20.0f + (float_10_8041d61c + y),
                   260.0f, 150.0f);
     winIconInit();
     f24 = 10.0f + (20.0f + x);
