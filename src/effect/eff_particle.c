@@ -18,17 +18,27 @@ int __float_nan[];
 #define FP_NORMAL 4
 #define FP_SUBNORMAL 5
 
+#ifdef MUST_MATCH
+// Explicit scratch slots preserve retail's two inlined classification temporaries.
+static inline s32 __fpclassifyf(const f32* x) {
+#else
 static inline s32 __fpclassifyf(f32 x) {
-	switch (*(s32*)&x & 0x7F800000) {
+#endif
+#ifdef MUST_MATCH
+#define FP_BITS (*(const s32*)x)
+#else
+#define FP_BITS (*(s32*)&x)
+#endif
+	switch (FP_BITS & 0x7F800000) {
 	case 0x7F800000:
-		if (*(s32*)&x & 0x007FFFFF) {
+		if (FP_BITS & 0x007FFFFF) {
 			return FP_NAN;
 		} else {
 			return FP_INFINITE;
 		}
 		break;
 	case 0:
-		if (*(s32*)&x & 0x007FFFFF) {
+		if (FP_BITS & 0x007FFFFF) {
 			return FP_SUBNORMAL;
 		} else {
 			return FP_ZERO;
@@ -39,39 +49,26 @@ static inline s32 __fpclassifyf(f32 x) {
 	}
 }
 
-// The inline sqrtf below and the two Vec constants share the original .rodata pool.
-#pragma pool_data on
+#undef FP_BITS
 
-// .sdata2 constants. The matching build keeps them writable so the loads reference the
-// original symbols instead of being folded into MWCC's own pool.
+// The inline sqrtf and the two Vec constants share the original .rodata pool.
 #ifdef MUST_MATCH
-#define SDATA2_CONST __declspec(section ".sdata2")
-#else
-#define SDATA2_CONST const
+#pragma pool_data on
 #endif
-#pragma explicit_zero_data on
 
-SDATA2_CONST f32 float_4_80421ce0 = 4.0f;
-SDATA2_CONST f32 float_8_80421ce4 = 8.0f;
-SDATA2_CONST f32 float_deg2rad_80421ce8 = 0.017453292f;
-SDATA2_CONST f32 float_0p5_80421cec = 0.5f;
-SDATA2_CONST f32 float_0_80421cf0 = 0.0f;
-SDATA2_CONST f32 float_2_80421cf4 = 2.0f;
-SDATA2_CONST f32 float_1_80421cf8 = 1.0f;
-SDATA2_CONST f32 float_neg0p03_80421cfc = -0.03f;
-SDATA2_CONST f32 float_5_80421d00 = 5.0f;
-SDATA2_CONST f32 float_125_80421d04 = 125.0f;
-SDATA2_CONST f32 float_25_80421d08 = 25.0f;
-SDATA2_CONST f32 float_1000_80421d0c = 1000.0f;
-SDATA2_CONST f32 dat_80421d10 = 0.00000000023283064f;
-SDATA2_CONST f32 float_neg2_80421d14 = -2.0f;
-SDATA2_CONST f32 float_0p25_80421d18 = 0.25f;
-SDATA2_CONST f32 float_2p5_80421d1c = 2.5f;
-#pragma explicit_zero_data reset
+// Preserve the named size prefix without folding its reads in the matching build.
+#ifdef MUST_MATCH
+#define PARTICLE_F32(sym) (*(f32*)&(sym))
+#else
+#define PARTICLE_F32(sym) (sym)
+#endif
+const f32 float_4_80421ce0 = 4.0f;
+const f32 float_8_80421ce4 = 8.0f;
+const f32 float_deg2rad_80421ce8 = 0.017453292f;
+const f32 float_0p5_80421cec = 0.5f;
 
 // .rodata
-// The zero vectors share the sdata2 trick: non-const under MUST_MATCH so the loads reference the
-// original symbols (and MWCC keeps the struct copy instead of folding it), const otherwise.
+// Non-const matching vectors preserve the original struct copies; const reads fold them away.
 #ifdef MUST_MATCH
 __declspec(section ".rodata") Vec vec3_80300260 = { 0.0f, 0.0f, 0.0f };
 __declspec(section ".rodata") Vec vec3_8030026c = { 0.0f, 0.0f, 0.0f };
@@ -98,7 +95,11 @@ u32 seed = 1;
 
 // Inlined MetroWerks sqrtf. The double literals become .rodata pool entries (double_0p5,
 // double_3, double_0) that the original references through the vec3_80300260 base register.
+#ifdef MUST_MATCH
+static inline f32 particle_sqrtf(f32 x, f32* scratch) {
+#else
 static inline f32 particle_sqrtf(f32 x) {
+#endif
 	const f64 _half = .5;
 	const f64 _three = 3.0;
 
@@ -110,22 +111,28 @@ static inline f32 particle_sqrtf(f32 x) {
 		return x * guess;
 	} else if (x < 0.0) {
 		return NAN;
+#ifdef MUST_MATCH
+	} else {
+		*scratch = x;
+		if (__fpclassifyf(scratch) == FP_NAN) {
+			return NAN;
+		}
+	}
+#else
 	} else if (particle_isnan(x)) {
 		return NAN;
 	}
+#endif
 	return x;
 }
 
-// What is left: (a) the two volatile FP temporaries in the top/left/bottom init rotate - the target
-// negates float_8 into f1 and keeps 0.5 in f0, MWCC negates the 0.5 literal instead; writing
-// -float_8*float_0p5 gets the negation right but rotates the whole temp set. (b) The GX vertex uses
-// literal 0.0f/1.0f and deg2rad/right use literals, so those loads (plus the compiler's own u32->f32
-// double) reference anonymous .sdata2/.rodata entries instead of float_0/float_1/float_deg2rad/
-// float_2/double_to_int_mask_80300278. Mtx declaration order (trans, rot, scale, local) gives the
-// original stack slots; declaring alpha, i, particle in that order gives the original r24/r25/r26;
-// the literals force the per-vertex reloads the original has.
-// NONMATCHING (99.22%): FP multiply temporaries rotate, and literal constants make the pool
-// relocations anonymous.
+#ifdef MUST_MATCH
+// Emit real functions in retail order; their native conversions supply the pool.
+#pragma defer_codegen off
+#endif
+
+// NONMATCHING (99.22%): the height/half negation and scratch FPRs differ in the
+// size products. Literal loads preserve the original per-vertex reloads.
 void effParticleDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	ParticleWork* work = effect->userdata;
@@ -170,9 +177,14 @@ void effParticleDisp(CameraId camId, void* param) {
 	PSMTXScale(scale, work->scale, work->scale, work->scale);
 	PSMTXConcat(trans, scale, local);
 
-	top = float_4_80421ce0;
-	left = -top * float_0p5_80421cec;
-	bottom = -float_0p5_80421cec * float_8_80421ce4;
+	top = PARTICLE_F32(float_4_80421ce0);
+	left = -top * PARTICLE_F32(float_0p5_80421cec);
+#ifdef MUST_MATCH
+	// Negating half preserves the closest measured temporary allocation.
+	bottom = -PARTICLE_F32(float_0p5_80421cec) * PARTICLE_F32(float_8_80421ce4);
+#else
+	bottom = -float_8_80421ce4 * float_0p5_80421cec;
+#endif
 	deg2rad = 0.017453292f;
 	right = 2.0f;
 
@@ -218,11 +230,6 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
 // The two-slot position Vec matches because `vec3_8030026c` is non-const under MUST_MATCH (see the
 // declaration above): a const zero vector lets MWCC fold the copy and hoist `lwz r4,0x0(r5)` above
 // the userdata load; the non-const global keeps the copy and the load stays put.
-#ifdef MUST_MATCH
-#pragma defer_codegen off
-static void pool_flush1(void) {}
-#pragma defer_codegen reset
-#endif
 void effParticleMain(EffectEntry* effect) {
 	ParticleWork* work = effect->userdata;
 	Vec position;
@@ -264,7 +271,7 @@ void effParticleMain(EffectEntry* effect) {
 			work->head--;
 		} else {
 			PSVECAdd(&particle->position, &particle->velocity, &particle->position);
-			particle->velocity.y += float_neg0p03_80421cfc;
+			particle->velocity.y += -0.03f;
 			prev = particle;
 		}
 		i = prev->next;
@@ -281,12 +288,7 @@ static inline Vec makeVec2(f32 x, f32 y, f32 z) {
 	return temp;
 }
 
-// Matches 100%: the direction Vec/two-slot copy, the `w2` work reload (`0xc(r30)`) in the loop/head and
-// the emitter stores all match (non-const `vec3_80300260` + the MUST_MATCH literal constant array, which
-// reproduces the target's f3/f2/f1/f0 colouring and its 0/5/125/25 load order). `scale`/`field_0xAC` written
-// as 1.0f/4.0f literals, the literal 0.0f/1000.0f arguments to the second angleABf, and the literal
-// 0.017453292f to the first PSMTXRotRad are all required for the target's register colouring and load
-// scheduling; `entry->type` uses the file's named `"Particle"` so the literal is not pooled into .rodata.
+// Literal scalar reads preserve Entry's register colouring and load scheduling.
 EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 velX, f32 velY, f32 velZ) {
 	EffectEntry* entry = effEntry();
 	ParticleWork* work;
@@ -346,14 +348,14 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 		work->emitter.field_0x60 = c[0];
 	}
 #else
-	work->emitter.field_0x3C.z = float_0_80421cf0;
-	work->emitter.field_0x3C.y = float_0_80421cf0;
-	work->emitter.field_0x3C.x = float_0_80421cf0;
+	work->emitter.field_0x3C.z = 0.0f;
+	work->emitter.field_0x3C.y = 0.0f;
+	work->emitter.field_0x3C.x = 0.0f;
 	work->emitter.field_0x48 = work->emitter.field_0x3C;
-	work->emitter.field_0x54 = float_0_80421cf0;
-	work->emitter.field_0x58 = float_5_80421d00;
-	work->emitter.field_0x5C = float_125_80421d04;
-	work->emitter.field_0x60 = float_25_80421d08;
+	work->emitter.field_0x54 = 0.0f;
+	work->emitter.field_0x58 = 5.0f;
+	work->emitter.field_0x5C = 125.0f;
+	work->emitter.field_0x60 = 25.0f;
 #endif
 	{
 		Vec direction;
@@ -362,22 +364,24 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 		direction = makeVec2(work->velocity.x, work->velocity.y, work->velocity.z);
 		direction2 = direction;
 		PSVECNormalize(&direction2, &direction2);
-		work->angleX = -angleABf(float_0_80421cf0, float_0_80421cf0, float_1000_80421d0c * direction2.z,
-		                         float_1000_80421d0c * direction2.y);
+		work->angleX = -angleABf(0.0f, 0.0f, 1000.0f * direction2.z,
+		                         1000.0f * direction2.y);
 		work->angleZ = -angleABf(0.0f, 0.0f, 1000.0f * direction2.x, 1000.0f * direction2.y);
 	}
 	{
 		Mtx rotX;
 		Mtx rotZ;
 		PSMTXRotRad(rotX, 'x', 0.017453292f * work->angleX);
-		PSMTXRotRad(rotZ, 'z', float_deg2rad_80421ce8 * work->angleZ);
+		PSMTXRotRad(rotZ, 'z', 0.017453292f * work->angleZ);
 		PSMTXConcat(rotX, rotZ, work->emitter.matrix);
 	}
 	return entry;
 }
 
-// dont_inline: the original calls EmitterEmit from effParticleMain (deferred inlining would pull it in).
+// The original calls EmitterEmit from effParticleMain instead of inlining it.
+#ifdef MUST_MATCH
 #pragma dont_inline on
+#endif
 void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 	ParticleWork* work = effect->userdata;
 	u32 oldCount;
@@ -408,22 +412,13 @@ void EmitterEmit(EffectEntry* effect, ParticleEmitter* emitter) {
 		}
 	}
 }
-#pragma dont_inline reset
-
-// ParticleEmit. `use_last`/`y2` keep the second half of the disc sample for the next call. The
-// first loop needs its constants read-only: MWCC only colours the loads as the original does
-// (float_2 -> f5, dat -> f4, float_1 -> f1) when their values are known at compile time, so
-// float_2/float_1/dat use the file's SDATA2_CONST macro above. The second loop uses `vx`/`vz`
-// temporaries: without them MWCC contracts `float_2 * (dat * conv) - float_1` into fmsubs, where
-// the original emits two fmuls and an fsubs.
-// NONMATCHING (93.13%): the u32->f32 2^52 pool double is at .rodata+0x48 not +0x18, the inlined
-// __fpclassifyf scratch slots are swapped, and the second loop/post-loop keep dat/float_1 and
-// float_0p5 in the other scratch FPRs.
 #ifdef MUST_MATCH
-#pragma defer_codegen off
-static void pool_flush4(void) {}
-#pragma defer_codegen reset
+#pragma dont_inline reset
 #endif
+
+// use_last/y2 retain the other half of the disc sample for the next call.
+// Native scalar/conversion pooling and explicit classification scratch slots match
+// the original. vx/vz keep the second loop's two multiplies separate from subtraction.
 void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter* emitter) {
 	static f32 y2;
 	static s32 use_last;
@@ -433,13 +428,18 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 	f32 x;
 	f32 radius;
 	f32 factor;
+#ifdef MUST_MATCH
+	// Reverse declaration order gives firstScratch +0x08 and secondScratch +0x0C.
+	f32 secondScratch;
+	f32 firstScratch;
+#endif
 
 	if (use_last) {
 		use_last = 0;
 		random = y2;
 	} else {
 		f32 c1 = 1.0f;
-		f32 cd = dat_80421d10;
+		f32 cd = 0.00000000023283064f;
 		f32 c2 = 2.0f;
 		do {
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
@@ -448,7 +448,11 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 			z = cd * (f32)(u32)seed * c2 - c1;
 			radius = x * x + z * z;
 		} while (radius > c1);
-		factor = particle_sqrtf(float_neg2_80421d14 * (f32)log(radius) / radius);
+#ifdef MUST_MATCH
+		factor = particle_sqrtf(-2.0f * (f32)log(radius) / radius, &firstScratch);
+#else
+		factor = particle_sqrtf(-2.0f * (f32)log(radius) / radius);
+#endif
 		random = x * factor;
 		use_last = 1;
 		y2 = z * factor;
@@ -459,7 +463,7 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 	{
 		f32 c1 = 1.0f;
 		f32 c2 = 2.0f;
-		f32 cd = dat_80421d10;
+		f32 cd = 0.00000000023283064f;
 		do {
 			f32 vx;
 			f32 vz;
@@ -474,25 +478,29 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 		} while (radius > c1);
 		particle->velocity.x *= 0.5f;
 		particle->velocity.z *= 0.5f;
-		radius *= float_0p25_80421d18;
+		radius *= 0.25f;
+#ifdef MUST_MATCH
+		particle->velocity.y = particle_sqrtf(c1 - radius, &secondScratch);
+#else
 		particle->velocity.y = particle_sqrtf(c1 - radius);
+#endif
 	}
 
 	PSVECScale(&particle->velocity, &particle->velocity, work->field_0xAC);
 	PSMTXMultVec(emitter->matrix, &particle->velocity, &particle->velocity);
-	PSVECScale(&particle->velocity, &particle->position, float_2p5_80421d1c);
+	PSVECScale(&particle->velocity, &particle->position, 2.5f);
 	PSVECAdd(&emitter->position, &particle->position, &particle->position);
 }
 
 #ifdef MUST_MATCH
-// The original's pool also holds the s32->f32 magic double after ParticleEmit's constants.
-#pragma defer_codegen off
-static void pool_flush5(void) {}
 #pragma defer_codegen reset
-#pragma defer_codegen off
-static f32 pool_s2f(s32 v) { return (f32)v; }
-#pragma defer_codegen reset
+#pragma pool_data reset
 #endif
+
+// Retail retains this unreferenced signed-conversion constant after the sqrt pool.
+#pragma force_active on
+const f64 double_to_int_803002a8 = 4503601774854144.0;
+#pragma force_active reset
 
 // trailing .sdata gap before the next unit's data
 #pragma explicit_zero_data on
