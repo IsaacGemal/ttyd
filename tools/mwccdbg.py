@@ -60,7 +60,7 @@ class net_lock:
 def compile_args(unit, src_override=None, out_obj="obj.o"):
     """mwcceppc.exe + flags for the unit, relative to the repo root, compiling src to out_obj."""
     res = perm_unit.resolve(unit, str(ROOT))
-    flags = [t for t in shlex.split(perm_unit.cflags((ROOT / "build.ninja").read_text(), res["name"])) if t != "-MMD"]
+    flags = [t for t in shlex.split(perm_unit.cflags((ROOT / "build.ninja").read_text(), res["name"], res["mod"])) if t != "-MMD"]
     return res, ["build/compilers/GC/2.6/mwcceppc.exe", *flags, "-c", src_override or res["src"], "-o", out_obj]
 
 

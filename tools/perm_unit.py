@@ -32,10 +32,14 @@ def resolve(unit, root):
     raise LookupError(f"{unit}: no src/{unit}.c, libs/*/src/{unit}.c or rels/*/src/{unit}.c")
 
 
-def cflags(ninja_text, name):
-    """The cflags of the mwcc rule that builds build/G8MJ01/src/NAME.o (any mwcc rule variant)."""
-    m = re.search(rf"^build {re.escape(BUILD)}/src/{re.escape(name)}\.o: mwcc\w*[^\n]*(?:\n(?!\S)[^\n]*)*?\n  cflags = (.*?)\n  basedir",
-                  ninja_text, re.M | re.S)
+def cflags(ninja_text, name, mod=None):
+    """The cflags of the mwcc rule that builds build/G8MJ01/src/NAME.o (any mwcc rule variant). A unit name repeated
+    across RELs builds to build/G8MJ01/src/rel/MOD/NAME.o instead; pass MOD to fall back to that rule."""
+    for stem in [name] + ([f"rel/{mod}/{name}"] if mod else []):
+        m = re.search(rf"^build {re.escape(BUILD)}/src/{re.escape(stem)}\.o: mwcc\w*[^\n]*(?:\n(?!\S)[^\n]*)*?\n  cflags = (.*?)\n  basedir",
+                      ninja_text, re.M | re.S)
+        if m:
+            break
     if not m:
         raise LookupError(f"{name}: no compile rule in build.ninja")
     return re.sub(r"\s+", " ", re.sub(r"\$\n\s*", "", m.group(1))).strip()
