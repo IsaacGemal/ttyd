@@ -548,7 +548,7 @@ void itemMain(void) {
                 yy = float_20_8041afa0 + y;
                 hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                                      xx, yy, zz,
-                                     float_0_8041af9c, float_neg1_8041afac, float_0_8041af9c);
+                                     0.0f, float_neg1_8041afac, 0.0f);
                 if (hit != NULL) {
                     newY = hitY;
                 } else {

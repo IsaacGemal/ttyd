@@ -1735,6 +1735,8 @@ void ext_yuunpc_minigame4_init(void) {
 // Logic complete (all blocks, states 0/1/2, all jump tables). The `f32 y; z; x;` declaration
 // order below is load-bearing (see the comment there), as is `t = 3600.0f + (f0 + f1);` in case 2..6.
 // NONMATCHING (98.84%): callee-saved colouring (entry/i/counters land in different regs).
+extern const f32 float_1000_yuu_00015048;
+extern const f32 float_150_yuu_0001509c;
 void yuunpc_pose_minigame4_main(void) {
     Yuuminigame4Data* data;
     ExtPose* pose;
@@ -1794,7 +1796,7 @@ void yuunpc_pose_minigame4_main(void) {
                     (x >= -50.0f && x <= 50.0f) ||
                     (x >= 1600.0f && x <= 1700.0f)) {
                     if (y > -500.0f) {
-                        y += -1000.0f;
+                        y += -float_1000_yuu_00015048;
                         ((MtxPtr)pose->matrix)[1][3] = y;
                     }
                 } else {
@@ -2169,7 +2171,7 @@ void yuunpc_pose_minigame4_main(void) {
                         if (f6 >= -150.0f + f2 && f6 < (150.0f - f2) + f0) {
                             f31 = 0.0f;
                         } else if (f6 > 0.0f) {
-                            f31 = f6 - ((150.0f - f2) + f0);
+                            f31 = f6 - ((float_150_yuu_0001509c - f2) + f0);
                         } else {
                             f31 = -f7 + f6;
                         }

@@ -393,6 +393,7 @@ static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
 // NONMATCHING (97.76%): calls, branches, immediates, the frame and both literal pools match; register colouring
 // differs (x/y rank above cx/barX/top in the first loop; the original reuses x's register for the move list's
 // name column) and the stack slots of some block locals.
+extern const f32 float_0p5_8041d258;
 void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
     GXColor unusedWhite = winPartyWhite;
     GXColor unusedBlack = winPartyBlack;
@@ -435,7 +436,7 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
         winFontSetV((Vec){cx - w * 0.5f, 12.0f + rowY, 0.0f}, (Vec){scale, scale, scale}, loopBlack,
                     msgSearch(labels[i]));
         if (i < 1) {
-            winFontSetV((Vec){cx - w2 * 0.5f, 21.0f + rowY, 0.0f}, (Vec){0.5f, 0.5f, 0.5f}, subColors[i],
+            winFontSetV((Vec){cx - w2 * float_0p5_8041d258, 21.0f + rowY, 0.0f}, (Vec){0.5f, 0.5f, 0.5f}, subColors[i],
                         msgSearch(subLabels[i]));
         }
     }
@@ -585,7 +586,7 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
                     name = pouchGetYoshiName();
                 }
                 w = FontGetMessageWidth(name);
-                winFontSetEdgeV((Vec){(200.0f - w) * 0.5f + (x - 230.0f), y2, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
+                winFontSetEdgeV((Vec){(200.0f - w) * float_0p5_8041d258 + (x - 230.0f), y2, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
                                 loopWhite, name);
             }
         }
@@ -595,7 +596,7 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
     if (WW_S32(work, 0x1E0) > 1) {
         winFontInit();
         w = 0.8f * FontGetMessageWidth(msgSearch("msg_menu_party_henkou"));
-        x2 = (-230.0f - w) * 0.5f + x;
+        x2 = (-230.0f - w) * float_0p5_8041d258 + x;
         winFontSetV((Vec){x2, y - 90.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, black, msgSearch("msg_menu_party_henkou"));
         winIconInit();
         winIconSetV(0x64, (Vec){x2 - 30.0f, y - 100.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white);
@@ -617,7 +618,7 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
     winFontInit();
     w = 0.8f * FontGetMessageWidth(msgSearch("msg_menu_party_waza"));
     y2 = 45.0f + y;
-    winFontSetEdgeV((Vec){(200.0f - w) * 0.5f + x, y2, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white,
+    winFontSetEdgeV((Vec){(200.0f - w) * float_0p5_8041d258 + x, y2, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white,
                     msgSearch("msg_menu_party_waza"));
     x2 = 230.0f + x;
     winFontSetEdgeV((Vec){x2 - 20.0f, y2, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white, "\202e\202o");

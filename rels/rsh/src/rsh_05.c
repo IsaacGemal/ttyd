@@ -1437,6 +1437,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
 // NONMATCHING (94.94%): calls/immediates match (85/85); the 23 extra insns and remaining `!!`s are register/
 // scheduling colouring in the inlined moamoa_sin/moamoa_cos/randf bodies and the res==3 `vec3` store (the same
 // artifacts eki_00's structurally-correct copy carries). The permuter tools are unavailable here.
+extern const f32 float_1_rsh_00013b38;
 static void ext_moamoa_main(void) {
     const char* voiceSfx;
     MarioWork* mario;
@@ -1691,7 +1692,7 @@ static void ext_moamoa_main(void) {
             ty = (*ep->matrix)[1][3];
             dist = wp->field_0x554;
             {
-                f32 a = randf(1.0f, 1.0f);
+                f32 a = randf(1.0f, float_1_rsh_00013b38);
 
                 moamoa_jump(ep, entry, (dist < 100.0f) ? entry->field_0x2 : 0, 1, tx, ty, tz, a, randf(0.4f, 0.4f));
             }

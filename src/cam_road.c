@@ -887,7 +887,7 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
             flags = 0;
             k1 = (float_640_804195ac * ((f24 * (f32)sin(rad)) / (f32)cos(rad))) / float_480_804195b0;
             h3.unk_08 = float_neg1E06_804195a0;
-            h3.unk_18 = float_0_8041954c;
+            h3.unk_18 = 0.0f;
             h3.unk_1C = float_0_8041954c;
             h3.unk_20 = float_0_8041954c;
             t2.y = float_1E06_804195b4;
@@ -942,7 +942,7 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
             u.y = float_0_8041954c;
             u.z = f31;
             w.x = -f31;
-            w.y = float_0_8041954c;
+            w.y = 0.0f;
             w.z = nzv;
             w1.y = float_0_8041954c;
             w2.y = float_0_8041954c;

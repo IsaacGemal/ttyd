@@ -4846,3 +4846,16 @@ The reported .rodata DUP_OURS zero Vec is an entry-boundary artifact: retail has
 Linked rels/tou/src/tou.c in 26 bounded build experiments, recorded in CODEX_ATTEMPTS.md. The final source emits the real functions in retail order under MUST_MATCH, with the named scalar groups interleaved at their original pool positions. The belt/viewport constants use native literals, and the compiler generates the conversion double itself; no pool helper or new section-placement trick was added. TOU_F32 suppresses folding of the remaining named scalars through ordinary f32 pointer reads under MUST_MATCH, with direct named reads in the natural build. Swapping the tentative rank_work/disp_work declaration order restores the original BSS offsets; explicit zero initializers were rejected because this compiler placed them in .data.
 
 Verified 36/36 functions at 100%, .sdata2/.rodata IDENTICAL, original function order, zero relocation-value findings, natural compilation without MUST_MATCH, and the full linked build/checksum (`32 files OK`). configure.py retains Object(Matching, "tou.c"). Default configure/Ninja attempted a redundant tool download in the offline checkout; the successful full build used explicit paths to the already installed tools with identical compiler/link flags. Changes remain uncommitted.
+- **Batch 36 (overnight 2026-10-07, scripted, no agents):** tools/named_greedy.py, default then `--to-literal`, over
+  all 159 open functions of the 89 units with 5 or fewer left (ac_pendulum_crane_timing skipped, Codex's). Each unit
+  gated on full `ci.py --base origin/main` and fn_order_check, committed only on PASS; 14 units committed, none
+  failed or got worse in order. Up: sac_deka main_base 99.94 -> 100, eff_particle ParticleEmit 93.13 -> 95.90,
+  itemdrv itemMain 99.20 -> 99.88, envdrv envSetWater 95.83 -> 96.34, unk_0x8025de70 N_systemErrorHandler 98.96 ->
+  99.21, cam_road calcCamRoad 81.88 -> 82.06, win_party winPartyDisp 97.76 -> 97.83, win_mario winMarioDisp 96.15 ->
+  96.19, mot_roll 98.53 -> 98.55; RELs gor_03 goryuugijo_main_slot 99.03 -> 99.06, hei_10 ext_main 93.67 -> 93.68,
+  rsh_05 and rsh_06 ext_moamoa_main +0.02 each (own .c only), evt_yuunpc yuunpc_pose_minigame4_main 98.84 -> 98.86.
+  named_greedy.py did nothing for RELs before tonight: it looked units up as MarioSt/UNIT, missed `USER_FUNC(name)`
+  headers, and read float_* names only from .sdata2 while RELs keep floats in .rodata. All three are fixed (with a
+  test); the DOL units have no .rodata float names, so they gain nothing from the last fix. A script killed between a
+  source edit and its restore leaves a newer object than its source, so the next ratchet sees a phantom regression in
+  an untouched unit: touch the sources (or rebuild the unit with tools/agent_check.py) before trusting it.

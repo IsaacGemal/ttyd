@@ -537,6 +537,8 @@ static inline float mot_roll_sqrtf(float x) {
 // has the reverse (rasim FPR replay is exact; no declaration-order permutation of f26..fqm helped); (2) the final block keeps `s`/`co`
 // as address-taken locals shared by both branches (declare them above the `if (ab < dbl_45)`, `tmp = 5.0f * s; ... -4.0f + 5.0f * co;`):
 // that makes mot_roll 8084 bytes like the original, but the objdiff score drops 98.53 -> 98.38 until (1) is fixed, so it is not applied.
+extern const f32 float_135_8041ace8;
+extern const f32 float_5_8041acd0;
 void mot_roll(void) {
 #define vec vec3_802c5d40
     MarioWork* mario = marioGetPtr();
@@ -1036,7 +1038,7 @@ void mot_roll(void) {
             lo += 360.0f;
             kind = 1;
         }
-        hi = a10 + 135.0f;
+        hi = a10 + float_135_8041ace8;
         if (hi > 360.0f) {
             hi -= 360.0f;
             kind = 2;
@@ -1322,7 +1324,7 @@ roll_tail:
                     f26 = 3.1415927f * n / 180.0f;
                     s = (f32)sin(f26);
                     c = (f32)cos(f26);
-                    tmp = 5.0f * s;
+                    tmp = float_5_8041acd0 * s;
                     *(f32*)((u8*)m + 0x98) = 6.0f + tmp;
                     tmp = 5.0f * c;
                     *(f32*)((u8*)m + 0x9C) = -4.0f + tmp;

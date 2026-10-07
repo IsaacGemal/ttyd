@@ -438,9 +438,9 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 		use_last = 0;
 		random = y2;
 	} else {
-		f32 c1 = float_1_80421cf8;
+		f32 c1 = 1.0f;
 		f32 cd = dat_80421d10;
-		f32 c2 = float_2_80421cf4;
+		f32 c2 = 2.0f;
 		do {
 			seed = seed * 0x5EEDF715 + 0x1B0CB173;
 			x = cd * (f32)(u32)seed * c2 - c1;
@@ -457,8 +457,8 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 	particle->life = (s32)(emitter->field_0x60 * random + emitter->field_0x5C);
 
 	{
-		f32 c1 = float_1_80421cf8;
-		f32 c2 = float_2_80421cf4;
+		f32 c1 = 1.0f;
+		f32 c2 = 2.0f;
 		f32 cd = dat_80421d10;
 		do {
 			f32 vx;
