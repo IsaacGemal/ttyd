@@ -14,24 +14,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-// Data objects defined later in this file or in other units, declared before their first use.
-extern const f32 float_88_80420994;
-extern const f32 float_50_80420998;
-extern const f32 float_18_8042099c;
-extern const f32 float_neg288_804209a0;
-extern const f32 float_neg300_804209a4;
-extern const f32 float_30_804209a8;
-extern const f32 float_3_804209ac;
-extern const f32 float_0p5_804209b0;
-extern const f32 float_270_804209b4;
-extern const f32 float_neg1_804209b8;
-extern const f32 float_0p0078125_804209bc;
-extern const f32 float_0p95_804209c0;
-
 #ifdef MUST_MATCH
 // Match-only: read the constant from its own symbol instead of folding it, so the code below
-// loads it as the original does and the pool keeps one copy.
-#define NF32(x) (*(const f32*)&(x))
+// loads it as the original does when definitions precede immediate code generation.
+#define NF32(x) (*(f32*)&(x))
 #else
 #define NF32(x) (x)
 #endif
@@ -40,8 +26,7 @@ extern const f32 float_0p95_804209c0;
 const Vec vec3_802fdba0 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fdbac = {0.0f, 0.0f, 0.0f};
 
-// .sdata2, first block: the original lays these seven out ahead of the deferred constants, so
-// they are defined here (before the code) while the rest are defined after it.
+// Named scalar pool in retail order, defined before immediate code generation.
 const f32 float_0_80420978 = 0.0f;
 const f32 float_45_8042097c = 45.0f;
 const f32 float_100_80420980 = 100.0f;
@@ -50,18 +35,18 @@ const f32 float_neg200_80420988 = -200.0f;
 const f32 float_25_8042098c = 25.0f;
 const f32 float_1_80420990 = 1.0f;
 
-// .sdata2 constants the code reads by name are declared in this unit's header.
-
-
-#ifdef MUST_MATCH
-// An ordinary, immediately generated helper pools the int->float conversion double ahead of the
-// deferred functions' string literals; nothing calls it and the linker strips the body.
-#pragma defer_codegen off
-static f32 pool_i2f(s32 v) {
-	return (f32)v;
-}
-#pragma defer_codegen reset
-#endif
+const f32 float_88_80420994 = 88.0f;
+const f32 float_50_80420998 = 50.0f;
+const f32 float_18_8042099c = 18.0f;
+const f32 float_neg288_804209a0 = -288.0f;
+const f32 float_neg300_804209a4 = -300.0f;
+const f32 float_30_804209a8 = 30.0f;
+const f32 float_3_804209ac = 3.0f;
+const f32 float_0p5_804209b0 = 0.5f;
+const f32 float_270_804209b4 = 270.0f;
+const f32 float_neg1_804209b8 = -1.0f;
+const f32 float_0p0078125_804209bc = 0.0078125f;
+const f32 float_0p95_804209c0 = 0.95f;
 
 // .sdata
 typedef struct HpAngle {
@@ -94,6 +79,11 @@ typedef struct PendulumCraneTimingWork {
 	s32 timer;     // 0x4C
 } PendulumCraneTimingWork;
 
+// Emit real functions in retail order; actionCommandDisp pools the native conversion double.
+#ifdef MUST_MATCH
+#pragma defer_codegen off
+#endif
+
 // don't_inline: the original calls _get_angle_hp/_get_angle_rate (bl) instead of inlining them.
 #pragma dont_inline on
 s32 _get_angle_hp(s32 hp) {
@@ -116,6 +106,7 @@ s32 _get_angle_hp(s32 hp) {
 // scheduling/optimize_for_size/optimization_level/pool_data/fp_contract); none forces the
 // non-destructive add. tools/flag_sweep.py confirms no other -O level helps (only -O4,s keeps the
 // file), and MWCC 2.5/2.6/2.7/3.0a3/3.0a3p1/3.0a5 all give 99.2% for this function.
+// The bounded helper-removal attempts in CODEX_ATTEMPTS.md also retain these three differences.
 s32 _get_angle_rate(f32 angle) {
 	f32 base = compAngle(MATCH_F32(float_0_80420978), angle);
 	f32 bumped = base + MATCH_F32(float_45_8042097c);
@@ -184,7 +175,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	}
 
 	v2 = vec3_802fdbac;
-	v2.x = float_neg288_804209a0 + x + (f32)(dec->rate * 176) / NF32(float_100_80420980);
+	v2.x = NF32(float_neg288_804209a0) + x + (f32)(dec->rate * 176) / NF32(float_100_80420980);
 	v2.y = NF32(float_45_8042097c) + y;
 	iconDispGx(&v2, 0x10, 0x96, NF32(float_1_80420990));
 }
@@ -244,7 +235,7 @@ s32 battleAcResult_PendulumCraneTiming(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// 100%: the action-command state machine. The state-0 literals are read directly (not through MATCH_F32) so
+// 100%: the action-command state machine. The state-0 constants use nonvolatile reads so
 // 0.0f/3.0f share the FPRs the target uses; `span` holds field_34[0x14]*2 in one value to get the target's
 // r4 allocation; `bw`/`delta` are read before the direction test so the global and 0.0f loads hoist as they do
 // in the target; the `k` temp (guarded below) fixes the final product's fmuls operand order. The sfx-id and
@@ -271,14 +262,14 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	switch (work->actionCommands.mAcState) {
 	case 0:
 		memset(disp, 0, 0x2C);
-		disp->iconX = float_neg300_804209a4;
-		disp->iconY = float_0_80420978;
+		disp->iconX = NF32(float_neg300_804209a4);
+		disp->iconY = NF32(float_0_80420978);
 		disp->counter = 0x14;
 		dec->frame = 0;
-		dec->angle = float_0_80420978;
+		dec->angle = NF32(float_0_80420978);
 		dec->accum = *(s32*)&work->actionCommands.field_34[0x14];
 		dec->accum2 = 0;
-		dec->amplitude = float_3_804209ac;
+		dec->amplitude = NF32(float_3_804209ac);
 		dec->lastDir = -1;
 		dec->trigger = 0x100;
 		work->actionCommands.outputParams[0] = 0;
@@ -314,7 +305,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 		dec->angle = reviseAngle(sinfd(dec->angle2) * MATCH_F32(float_45_8042097c));
 
 		bw = _battleWorkPointer;
-		delta = float_0_80420978;
+		delta = NF32(float_0_80420978);
 
 		if (dec->angle2 >= MATCH_F32(float_90_80420984) && dec->angle2 < MATCH_F32(float_270_804209b4)) {
 			dirF = MATCH_F32(float_neg1_804209b8);
@@ -338,7 +329,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 						t = float_1_80420990;
 					}
 #ifdef MUST_MATCH
-					k = float_0p95_804209c0 * -dec->amplitude;
+					k = NF32(float_0p95_804209c0) * -dec->amplitude;
 					delta = k * t;
 #else
 					delta = (float_0p95_804209c0 * -dec->amplitude) * t;
@@ -352,7 +343,7 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 						t = float_1_80420990;
 					}
 #ifdef MUST_MATCH
-					k = float_0p95_804209c0 * -dec->amplitude;
+					k = NF32(float_0p95_804209c0) * -dec->amplitude;
 					delta = k * t;
 #else
 					delta = (float_0p95_804209c0 * -dec->amplitude) * t;
@@ -450,21 +441,6 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	return 1;
 }
 
-// Named .sdata2 constants, defined after the code in the original's order.
-const f32 float_88_80420994 = 88.0f;
-const f32 float_50_80420998 = 50.0f;
-const f32 float_18_8042099c = 18.0f;
-const f32 float_neg288_804209a0 = -288.0f;
-const f32 float_neg300_804209a4 = -300.0f;
-const f32 float_30_804209a8 = 30.0f;
-const f32 float_3_804209ac = 3.0f;
-const f32 float_0p5_804209b0 = 0.5f;
-const f32 float_270_804209b4 = 270.0f;
-const f32 float_neg1_804209b8 = -1.0f;
-const f32 float_0p0078125_804209bc = 0.0078125f;
-const f32 float_0p95_804209c0 = 0.95f;
-
-
 // 4-byte zero word that ends the unit's .sdata: explicit_zero_data keeps the zero word instead of
 // dropping it, force_active keeps it through the linker, and the section keeps it out of .bss.
 #pragma explicit_zero_data on
@@ -472,4 +448,3 @@ const f32 float_0p95_804209c0 = 0.95f;
 __declspec(section ".sdata") static u32 gap_07_804141CC_sdata[1] = {0};
 #pragma force_active reset
 #pragma explicit_zero_data reset
-
