@@ -42,21 +42,6 @@ typedef struct effKamekiTornadeData {
 	f32 field_0x148;     // 0x148
 } effKamekiTornadeData;
 
-// .sdata2 float constants (named after their original addresses).
-extern const f32 float_4_8041f208;
-extern const f32 float_5_8041f204;
-extern const f32 float_10_8041f1f4;
-extern const f32 float_12p96_8041f214;
-extern const f32 float_17p28_8041f218;
-extern const f32 float_64_8041f21c;
-extern const f32 float_90_8041f20c;
-extern const f32 float_neg90_8041f210;
-extern const f32 float_0p1_8041f1ec;
-extern const f32 float_0_8041f1f8;
-extern const f32 float_1_8041f220;
-extern const f32 float_0p2_8041f224;
-extern const f32 float_2_8041f228;
-extern const char str_802FA870[];
 EffectEntry* effKamekiTornadeN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effKamekiTornadeData* data;
@@ -68,7 +53,7 @@ EffectEntry* effKamekiTornadeN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 sca
 	   padded 24-byte literal leaves the same trailing zero words. */
 	effect->type = "KamekiTornadeN64\0\0\0\0\0\0\0";
 #else
-	effect->type = str_802FA870;
+	effect->type = "KamekiTornadeN64";
 #endif
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(effKamekiTornadeData));
@@ -97,24 +82,20 @@ EffectEntry* effKamekiTornadeN64Entry(s32 a, s32 b, f32 x, f32 y, f32 z, f32 sca
 		data->field_0x38[i] = x;
 		data->field_0x58[i] = y;
 		data->field_0x78[i] = z;
-		data->field_0x98[i] = float_0p2_8041f224 * i + float_1_8041f220;
+		data->field_0x98[i] = 0.2f * i + 1.0f;
 		data->field_0xB8[i] = rand() % 360;
-		data->field_0xD8[i] = float_0p1_8041f1ec * (rand() % 100) + float_2_8041f228;
-		data->field_0xF8[i] = float_0p1_8041f1ec * (rand() % 30);
-		data->field_0x118[i] = float_0_8041f1f8;
+		data->field_0xD8[i] = 0.1f * (rand() % 100) + 2.0f;
+		data->field_0xF8[i] = 0.1f * (rand() % 30);
+		data->field_0x118[i] = 0.0f;
 	}
-	data->field_0x138 = float_0_8041f1f8;
-	data->field_0x144 = float_0_8041f1f8;
-	data->field_0x13C = float_0_8041f1f8;
-	data->field_0x140 = float_0_8041f1f8;
-	data->field_0x148 = float_1_8041f220;
+	data->field_0x138 = 0.0f;
+	data->field_0x144 = 0.0f;
+	data->field_0x13C = 0.0f;
+	data->field_0x140 = 0.0f;
+	data->field_0x148 = 1.0f;
 	return effect;
 }
 
-// With common-subexpression elimination on, MWCC reuses the loop temporaries for the 4.0/90/-90
-// constants and permutes every FPR in the loop and the 0x138/0x13C/0x140 rotation block; turning it
-// off keeps retail's f4/f1/f0 constants and f2/f3 temporaries.
-#pragma opt_common_subs off
 void effKamekiTornadeMain(EffectEntry* effect) {
 	effKamekiTornadeData* data;
 	Vec position;
@@ -152,34 +133,33 @@ void effKamekiTornadeMain(EffectEntry* effect) {
 	data->field_0x38[0] = data->x;
 	data->field_0x58[0] = data->y;
 	data->field_0x78[0] = data->z;
-	f5 = float_5_8041f204 * scale;
+	f5 = 5.0f * scale;
 	for (i = 7; i != 0; i--) {
-		data->field_0x118[i] = float_4_8041f208 * (data->field_0x38[i - 1] - data->field_0x38[i]);
+		data->field_0x118[i] = 4.0f * (data->field_0x38[i - 1] - data->field_0x38[i]);
 		data->field_0x38[i] = data->field_0x38[i - 1];
 		data->field_0x58[i] = data->field_0x58[i - 1] + f5;
 		data->field_0x78[i] = data->field_0x78[i - 1];
-		if (data->field_0x118[i] > float_90_8041f20c) {
-			data->field_0x118[i] = float_90_8041f20c;
+		if (data->field_0x118[i] > 90.f) {
+			data->field_0x118[i] = 90.f;
 		}
-		else if (data->field_0x118[i] < float_neg90_8041f210) {
-			data->field_0x118[i] = float_neg90_8041f210;
+		else if (data->field_0x118[i] < -90.f) {
+			data->field_0x118[i] = -90.f;
 		}
 	}
-	data->field_0x138 += float_10_8041f1f4;
-	data->field_0x13C += float_12p96_8041f214;
-	data->field_0x140 += float_17p28_8041f218;
-	if (data->field_0x13C > float_64_8041f21c) {
-		data->field_0x13C -= float_64_8041f21c;
+	data->field_0x138 += 10.f;
+	data->field_0x13C += 12.959999f;
+	data->field_0x140 += 17.28f;
+	if (data->field_0x13C > 64.0f) {
+		data->field_0x13C -= 64.0f;
 	}
-	if (data->field_0x140 > float_64_8041f21c) {
-		data->field_0x140 -= float_64_8041f21c;
+	if (data->field_0x140 > 64.0f) {
+		data->field_0x140 -= 64.0f;
 	}
 	for (i = 0; i < 8; i++) {
 		data->field_0xB8[i] += data->field_0xD8[i];
 	}
 	dispEntry(CAMERA_3D, dispCalcZ(&position), 2, effKamekiTornadeDisp, effect);
 }
-#pragma opt_common_subs reset
 // Build the two by-value GXColors in helpers so MWCC gives their argument copies the same stack
 // slots as the original (the trick from effBattenDisp2/effTimestampSetColor).
 #ifdef MUST_MATCH
@@ -222,7 +202,6 @@ static inline GXColor kamekiTornadeSetColor2(effKamekiTornadeData* data) {
 	return color;
 }
 #endif
-#define KT_ZERO MATCH_F32(float_0_8041f1f8)
 // One 14-byte vertex: copy the source, then rotate its s16 position through the matrix with the
 // SDK fast-cast inlines. Retail inlines this once per vertex, each with its own Vec temp and its
 // own GQR2-5 setup (same shape as eff_flame_n64/eff_sstar_n64).
@@ -249,13 +228,10 @@ static inline void kamekiTornadeSetVtx(KamekiTornadeVtx* dst, KamekiTornadeVtx* 
 	dst->pos[2] = v.z;
 #endif
 }
-// Every instruction, constant and stack slot matches retail; the remaining diffs are register
-// colouring only. The ring loop's constants land one FPR higher than retail (f30-f27 vs f29-f26),
-// which pushes the outer loop's i2f double (f27 vs f26), its `10` (f20 vs f27) and the vertex
-// helper's conversion temps (f26-f24 vs f25-f23) one register high. The ring preheader also
-// initialises the strength-reduced `t`/angle accumulators later than retail (`li r20,0; li r27,0`
-// instead of retail's `li r27,0; mr r20,r27`).
-// NONMATCHING (99.14%): only register colouring differs.
+// The float constants are literals the compiler pools in first-use order. Declaring f19/angle/scale and
+// the second sin/cos block's locals in this order gives the original's FPR colouring.
+// NONMATCHING (99.96%): the ring loop's 0x200 texture counter (a strength-reduced `i * 0x200`) lands in
+// r31 where the original has r20, and the second half's `s` in f16 instead of f17.
 void effKamekiTornadeDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	CameraEntry* cam;
@@ -269,8 +245,9 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 	Mtx rotMtx;
 	Mtx baseMtx;
 	Vec axis;
-	f32 scale;
 	f32 f19;
+	f32 angle;
+	f32 scale;
 	s32 i;
 	s32 j;
 	s32 field24;
@@ -323,53 +300,46 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 	{
 		KamekiTornadeVtx* q;
 		s32 s;
-		s32 t;
 
-		for (i = 0, s = 0, t = 0; i < 16; i++, s += 0x80, t += 0x200) {
+		for (i = 0, s = 0; i < 16; i++, s += 0x80) {
 			KamekiTornadeVtx* p = &tbl[i];
-			f32 angle =
-			    float_6p2832_8041f1dc * (f32)(i * 0x168 / 0xF) / float_360_8041f1e0;
 
-			p->pos[0] = (s16)((f32)cos(angle) * float_100_8041f1e4);
+			angle = 6.2831855f * (f32)(i * 0x168 / 0xF) / 360.f;
+
+			p->pos[0] = (s16)((f32)cos(angle) * 100.f);
 			p->pos[1] = 0;
-			p->pos[2] = (s16)((f32)sin(angle) * float_100_8041f1e4);
+			p->pos[2] = (s16)((f32)sin(angle) * 100.f);
 			p->tex[0] = s;
 			p->tex[1] = 0;
 			{
 				q = &tbl[i + 16];
 
-				q->pos[0] = (s16)((f32)cos(angle) * float_100_8041f1e4);
+				q->pos[0] = (s16)((f32)cos(angle) * 100.f);
 				q->pos[1] = 0;
-				q->pos[2] = (s16)((f32)sin(angle) * float_100_8041f1e4);
-#ifdef MUST_MATCH
-				/* MUST_MATCH: deriving the value from `s` (equal to `t`) reproduces retail's
-				   strength-reduced 0x200 counter and its `mr` prologue in the ring loop. */
-				q->tex[0] = s * 4;
-#else
-				q->tex[0] = t;
-#endif
+				q->pos[2] = (s16)((f32)sin(angle) * 100.f);
+				q->tex[0] = i * 0x200;
 				q->tex[1] = 0x400;
 			}
 		}
 	}
 
-	PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041f1e8 * data->field_0x144);
-	PSMTXScale(baseMtx, float_0p1_8041f1ec, float_0p1_8041f1ec, float_0p1_8041f1ec);
+	PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->field_0x144);
+	PSMTXScale(baseMtx, 0.1f, 0.1f, 0.1f);
 	PSMTXConcat(rotMtx, baseMtx, baseMtx);
 
-	f19 = float_0p02_8041f1f0 * (f32)(0x7F - field24);
+	f19 = 0.02f * (f32)(0x7F - field24);
 
 	for (i = 0; i < 7; i++) {
 		vtx = smartAlloc(0x1C0, 3)->address;
 		effSetVtxDescN64((effVtxArray*)vtx);
 
 		/* first half: the 0..15 ring, rotated about vec3_802fa84c */
-		PSMTXTrans(work, float_10_8041f1f4 * data->field_0x38[i], float_10_8041f1f4 * data->field_0x58[i],
-		           float_10_8041f1f4 * data->field_0x78[i]);
-		PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041f1e8 * data->field_0x118[i]);
+		PSMTXTrans(work, 10.f * data->field_0x38[i], 10.f * data->field_0x58[i],
+		           10.f * data->field_0x78[i]);
+		PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->field_0x118[i]);
 		PSMTXConcat(work, rotMtx, work);
 		axis = vec3_802fa84c;
-		PSMTXRotAxisRad(rotMtx, &axis, float_deg2rad_8041f1e8 * (data->field_0x138 + (f32)(i * i)));
+		PSMTXRotAxisRad(rotMtx, &axis, 0.017453292f * (data->field_0x138 + (f32)(i * i)));
 		PSMTXConcat(work, rotMtx, work);
 		{
 			f32 zScale = data->field_0x98[i] * scale;
@@ -386,12 +356,12 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 			f32 rad;
 			f32 c;
 
-			rad = float_10_8041f1f4 * data->field_0xF8[i];
-			theta = float_6p2832_8041f1dc * data->field_0xB8[i] / float_360_8041f1e0;
+			rad = 10.f * data->field_0xF8[i];
+			theta = 6.2831855f * data->field_0xB8[i] / 360.f;
 			s = (f32)sin(theta);
 			c = (f32)cos(theta);
 
-			PSMTXTrans(scaleMtx, rad * s, KT_ZERO, rad * c);
+			PSMTXTrans(scaleMtx, rad * s, 0.0f, rad * c);
 		}
 		PSMTXConcat(work, scaleMtx, work);
 		PSMTXConcat(baseMtx, work, work);
@@ -400,13 +370,13 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 		}
 
 		/* second half: the 16..31 ring, rotated about vec3_802fa858 */
-		PSMTXTrans(work, float_10_8041f1f4 * data->field_0x38[i + 1],
-		           float_10_8041f1f4 * data->field_0x58[i + 1],
-		           float_10_8041f1f4 * data->field_0x78[i + 1]);
-		PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041f1e8 * data->field_0x118[i + 1]);
+		PSMTXTrans(work, 10.f * data->field_0x38[i + 1],
+		           10.f * data->field_0x58[i + 1],
+		           10.f * data->field_0x78[i + 1]);
+		PSMTXRotRad(rotMtx, 'z', 0.017453292f * data->field_0x118[i + 1]);
 		PSMTXConcat(work, rotMtx, work);
 		axis = vec3_802fa858;
-		PSMTXRotAxisRad(rotMtx, &axis, float_deg2rad_8041f1e8 * (data->field_0x138 + (f32)(i * i)));
+		PSMTXRotAxisRad(rotMtx, &axis, 0.017453292f * (data->field_0x138 + (f32)(i * i)));
 		PSMTXConcat(work, rotMtx, work);
 		{
 			f32 zScale = data->field_0x98[i + 1] * scale;
@@ -415,11 +385,15 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 		}
 		PSMTXConcat(work, scaleMtx, work);
 		{
-			f32 rad = float_10_8041f1f4 * data->field_0xF8[i];
-			f32 s = (f32)sin(float_6p2832_8041f1dc * data->field_0xB8[i] / float_360_8041f1e0);
-			f32 c = (f32)cos(float_6p2832_8041f1dc * data->field_0xB8[i] / float_360_8041f1e0);
+			f32 s;
+			f32 c;
+			f32 rad;
 
-			PSMTXTrans(scaleMtx, rad * s, KT_ZERO, rad * c);
+			rad = 10.f * data->field_0xF8[i];
+			s = (f32)sin(6.2831855f * data->field_0xB8[i] / 360.f);
+			c = (f32)cos(6.2831855f * data->field_0xB8[i] / 360.f);
+
+			PSMTXTrans(scaleMtx, rad * s, 0.0f, rad * c);
 		}
 		PSMTXConcat(work, scaleMtx, work);
 		PSMTXConcat(baseMtx, work, work);
@@ -430,28 +404,18 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 		GXInvalidateVtxCache();
 		DCFlushRange(vtx, 0x1C0);
 
-		PSMTXScale(scaleMtx, float_0p015625_8041f1fc, float_0p03125_8041f200, KT_ZERO);
+		PSMTXScale(scaleMtx, 0.015625f, 0.03125f, 0.0f);
 		{
-#ifdef MUST_MATCH
-			/* MUST_MATCH: the literal zero reproduces retail's one-load-plus-`fmr` and keeps the
-			   function's scratch FPRs at retail's colours; the named float_0_8041f1f8 shifts them. */
 			f32 z = 0.0f;
-#else
-			f32 z = float_0_8041f1f8;
-#endif
 
 			PSMTXTrans(work, data->field_0x13C + (f32)(i * 4), z, z);
 		}
 		PSMTXConcat(scaleMtx, work, scaleMtx);
 		GXLoadTexMtxImm(scaleMtx, 0x1E, 1);
 
-		PSMTXScale(scaleMtx, float_0p015625_8041f1fc, float_0p03125_8041f200, KT_ZERO);
+		PSMTXScale(scaleMtx, 0.015625f, 0.03125f, 0.0f);
 		{
-#ifdef MUST_MATCH
 			f32 z = 0.0f;
-#else
-			f32 z = float_0_8041f1f8;
-#endif
 
 			PSMTXTrans(work, data->field_0x140 + (f32)(i * 2), z, z);
 		}
@@ -470,26 +434,6 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const u32 dat_8041f1d8 = 0x00000020;
-const f32 float_6p2832_8041f1dc = 6.2831855f;
-const f32 float_360_8041f1e0 = 360.0f;
-const f32 float_100_8041f1e4 = 100.0f;
-const f32 float_deg2rad_8041f1e8 = 0.017453292f;
-const f32 float_0p1_8041f1ec = 0.1f;
-const f32 float_0p02_8041f1f0 = 0.02f;
-const f32 float_10_8041f1f4 = 10.0f;
-const f32 float_0_8041f1f8 = 0.0f;
-const f32 float_0p015625_8041f1fc = 0.015625f;
-const f32 float_0p03125_8041f200 = 0.03125f;
-const f32 float_5_8041f204 = 5.0f;
-const f32 float_4_8041f208 = 4.0f;
-const f32 float_90_8041f20c = 90.0f;
-const f32 float_neg90_8041f210 = -90.0f;
-const f32 float_12p96_8041f214 = 12.959999f;
-const f32 float_17p28_8041f218 = 17.28f;
-const f32 float_64_8041f21c = 64.0f;
-const f32 float_1_8041f220 = 1.0f;
-const f32 float_0p2_8041f224 = 0.2f;
-const f32 float_2_8041f228 = 2.0f;
 
 Vec __declspec(section ".rodata") vec3_802fa84c = { -0.03f, 1.0f, 0.1f };
 Vec __declspec(section ".rodata") vec3_802fa858 = { 0.03f, 1.0f, 0.0f };

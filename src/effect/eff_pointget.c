@@ -107,16 +107,11 @@ void effPointGetMain(EffectEntry* effect) {
 	dispEntry(8, dispCalcZ(&position), 2, effPointGetDisp, effect);
 }
 
-// basehalf (target f27) and the double_to_int conversion double
-// (target f25) are swapped; the frontend hoists basehalf to a lower vreg than the loop's
-// conversion temp. All other FPRs match, as do the 0x1e0 frame, the callee-saved set
-// (f19-f31/r26-r31), the constant loads and the mtx offsets (0xb8/0x88/0x58).
-// basehalf is written inline (`f24 * (f32)j + f22 * f26`) so the optimizer hoists it;
-// naming float_48_80420ee4 fixes the 48<->32 assignment. Writing part2's
-// `base / 2.0f` as a division stops the compiler CSEing it with basehalf, keeping the
-// 13-register frame. The @NNN vs named double_to_int_* pool labels are benign
-// (see window/win_mario.c).
-// NONMATCHING (99.92%): basehalf (f27) and the conversion double (f25) are swapped.
+// The half-height and the number's left edge are computed per row inside the loop, as the original
+// does; MWCC's frontend loop-invariant hoisting would move them (and `f22 * f26`) into early temps that
+// take different FPRs. Naming float_48_80420ee4 fixes the 48<->32 assignment. Writing part2's
+// `base / 2.0f` as a division stops the compiler CSEing it with the inner loop's product.
+#pragma opt_loop_invariants off // the original keeps these per-iteration computations in place (as effKemuTestDisp)
 void effPointGetDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	PointGetWork* work = effect->userdata;
@@ -170,14 +165,14 @@ void effPointGetDisp(CameraId camId, void* param) {
 	f28 = 24.0f;
 	f24 = float_32_80420edc;
 	f23 = float_48_80420ee4;
-	f21 = -f23 * f26;
-	f22 = -(float_362_80420ee0 + f20);
 	f31 = 352.0f;
 
 	for (i = 1; i >= 0; i--) {
 		s32 ofs = i * 4;
 		ox = (f32)ofs;
 		nx = (f32)(-i * 4);
+		f21 = -f23 * f26;
+		f22 = -(float_362_80420ee0 + f20);
 
 		if (i != 0) {
 			effGetTexObj(texid_tbl[gp->language != 0][3], &texObj);
@@ -249,6 +244,7 @@ void effPointGetDisp(CameraId camId, void* param) {
 	}
 }
 
+#pragma opt_loop_invariants reset
 // Named .sdata2 constants kept by tools/pool_plan.py, defined after the code in the original's order.
 const char str_80420ED8[] = "%d";
 const f32 float_32_80420edc = 32.0f;
