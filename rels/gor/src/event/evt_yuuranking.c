@@ -95,17 +95,17 @@ extend_data(53,
      f32, one, 1.0f)
 static s32 fontlenpitch(s8* text, s32 pitch) {
     if (pitch != 0) {
-        s8* str = text;
+        s32 i = 0;
         s32 count = 0;
 
-        while (*str) {
-            if (_ismbblead(*str)) {
+        while (text[i]) {
+            if (_ismbblead(text[i])) {
                 count++;
-                str++;
+                i++;
             } else {
                 count++;
             }
-            str++;
+            i++;
         }
         return count * pitch;
     } else {
@@ -134,43 +134,14 @@ void unk_gor_0000dfc4(const char* msg, s32 width, f32 x, f32 y, f32 z) {
 #define A74(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0x74 + (i) * 4))
 #define AD4(i) (*(s32*)((unsigned char*)yuwp + work->field_14 * 24 + 0xd4 + (i) * 4))
 
-#ifdef MUST_MATCH
-// Match-only: the inlined expansion wants str=r25/count=r26 while the standalone
-// `fontlenpitch` keeps the opposite local order for its own r31/r30 allocation.
-static inline s32 fontlenpitch_inl(s8* text, s32 pitch) {
-    if (pitch != 0) {
-        s32 count = 0;
-        s8* str = text;
-
-        while (*str) {
-            if (_ismbblead(*str)) {
-                count++;
-                str++;
-            } else {
-                count++;
-            }
-            str++;
-        }
-        return count * pitch;
-    } else {
-        return (u16)FontGetMessageWidth((char*)text);
-    }
-}
-#define FLP_TEXT(s, p) fontlenpitch_inl((s), (p))
-#else
-#define FLP_TEXT(s, p) fontlenpitch((s), (p))
-#endif
 
 
-// NONMATCHING (98.02%): block order, the nested mode switches, the callee-saved set (stmw r24-r31) and the
+// History: block order, the nested mode switches, the callee-saved set (stmw r24-r31) and the
 // call sequence all match. Adopting the yuu source's `k = 1.0f` forms (sc = k*w + 50.0f,
 // x = field_0C + -(k*w + 50.0f)*0.5f, y = field_10 + 128.0f + k, FontDrawMessage x = k*(-w)*0.5f) reproduces
 // the target's fnmadds/fmadds and lifted this function 96.67 -> 97.03 (the earlier note that they lowered the
 // score was measured against a misaligned prefix). The rank-list `msg[0]=='m'...` chain is `cmpwi` in the
-// target; `(s8)` casts give cmpwi and 97.03 -> 97.08. The inlined fontlenpitch wants str=r25/count=r26, so the
-// disp calls go through FLP_TEXT, which is `fontlenpitch_inl` (a MUST_MATCH static inline with `count`
-// declared before `str`) in matching builds and the natural `fontlenpitch` otherwise; the standalone
-// fontlenpitch keeps `str` first for its own r31/r30 allocation and stays at 100. Reloading A74(i) in the rank
+// target; `(s8)` casts give cmpwi and 97.03 -> 97.08. Reloading A74(i) in the rank
 // case-0 sprintf instead of reusing the `v` temp lifted 97.38 -> 97.58. Declaring the case-2/3 minute/second
 // temps `min` before `sec` (instead of reusing `i`/`j`) lifted 97.58 -> 97.80, and nesting the top-level
 // case-2/3 first `msgSearch("menu_colon")` in the sprintf (keeping the same two calls) lifted it to 97.82.
@@ -183,9 +154,6 @@ static inline s32 fontlenpitch_inl(s8* text, s32 pitch) {
 // 20 in the main block at 0x08..0x54, and declaring them c0..c19 with the colourer's c5,c6,c4 / c9,c10,c8 /
 // c13,c12 rotations pre-applied reproduces the target slots exactly; lifted 97.87 -> 98.02. The `+ k` on the
 // windowDispGX y argument is grouped `k + (...)` to keep the target's fadds operand order.
-// What is left is pure register allocation: the inlined fontlenpitch copies `buf` with `mr` where the target
-// re-materialises it with `addi`, and the rank loop's strength-reduced offset starts with `mr` instead of `li`.
-// NONMATCHING (98.02%): see the notes above; what remains is MWCC register allocation only.
 #ifdef MUST_MATCH
 // Match-only: taking each by-value colour's address keeps all 20 GXColor locals in one contiguous stack block,
 // the same address the by-value GC ABI passes in the argument register.
@@ -210,9 +178,10 @@ static inline s32 fontlenpitch_inl(s8* text, s32 pitch) {
 // results into their calls emits the format string and the 80.0f/75.2f literals in the target's `.rodata` order.
 // Giving the top case-2/3 subtitle its own `msg2` local matches the target's r27 for that group, but the title
 // (r28), the case-0/case-1/end/rank `msg` groups and the rank case-2/3 subtitles stay in r28 where the target
-// uses r24/r27; the second Waku block's FP temporaries keep a different colouring, and the fontlenpitch buffer
-// rematerialises with `mr r25,r24` where the target computes `addi r25,r1,0x78`.
-// NONMATCHING (98.18%): MWCC register allocation only.
+// uses r24/r27, and the second Waku block's FP temporaries keep a different colouring. fontlenpitch walks the
+// string by index: loop strength reduction then builds the inlined copy's pointer from `buf` after CSE has run,
+// giving the target's two separate `addi rN,r1,0x78` (bp and the walk pointer) instead of `mr r25,r24`.
+// NONMATCHING (99.09%): MWCC register allocation only.
 static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     YuRankWork* work = param;
     const char* titleTbl[4] = {
@@ -295,7 +264,8 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
         if (work->field_38 >= 0) {
             sprintf(buf, "%3d%s%02d", work->field_38 / 1000, msgSearch("menu_decimal_point"), (work->field_38 % 1000) / 10);
-            bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+            bp = buf;
+            FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
             if (work->field_30 >= 4) {
                 FontDrawStart();
                 FontDrawScale(1.0f);
@@ -304,7 +274,8 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 msg = msgSearch("menu_subtitle4_getmonte");
                 unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 32.0f, 1.0f);
                 sprintf(buf, "%4d", work->field_20);
-                bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
+                bp = buf;
+                FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
             }
             if (work->field_30 >= 7) {
                 FontDrawStart();
@@ -320,13 +291,15 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     } else {
                         sprintf(buf, "%2d", work->field_24 - 0x100);
                     }
-                    bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                    bp = buf;
+                    FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 } else if (work->field_24 < 0) {
                     msg = msgSearch("menu_subtitle5_minigame1");
                     unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
                     msg = msgSearch("menu_subtitle6_minigame1");
                     sprintf(buf, msg, -work->field_24);
-                    bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                    bp = buf;
+                    FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 }
             }
         } else {
@@ -334,7 +307,8 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             FontDrawColor(&c4);
             msg = msgSearch("menu_error_minigame1");
             sprintf(buf, msg);
-            bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+            bp = buf;
+            FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
         }
         goto end;
 
@@ -362,7 +336,8 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             min = sec / 60;
             sec = sec % 60;
             sprintf(buf, "%1d%s%02d%s%02d", min, msgSearch("menu_colon"), sec, msgSearch("menu_colon"), (v % 1000) / 10);
-            bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+            bp = buf;
+            FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
             if (work->field_30 >= 4) {
                 FontDrawStart();
                 c9 = *(GXColor*)&dat_gor_0001cd50;
@@ -378,7 +353,8 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                 unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 32.0f, 1.0f);
                 FontDrawScale(1.0f);
                 sprintf(buf, "%4d", work->field_20);
-                bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
+                bp = buf;
+                FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 32.0f, 18.0f);
                 if (work->field_30 >= 7) {
                     FontDrawStart();
                     c10 = *(GXColor*)&dat_gor_0001cd54;
@@ -400,14 +376,16 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                         } else {
                             sprintf(buf, "%2d", work->field_24 - 0x100);
                         }
-                        bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                        bp = buf;
+                        FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                     } else if (work->field_24 < 0) {
                         msg = msgSearch("menu_subtitle5_minigame1");
                         unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
                         FontDrawScale(1.0f);
                         msg = msgSearch("menu_subtitle6_minigame1");
                         sprintf(buf, msg, -work->field_24);
-                        bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                        bp = buf;
+                        FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                     }
                 }
             }
@@ -419,7 +397,8 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
             } else {
                 sprintf(buf, msgSearch("menu_error_minigame3"));
             }
-            bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+            bp = buf;
+            FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
         }
         goto end;
 
@@ -432,7 +411,8 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
         unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 56.0f, 1.0f);
         if (work->field_38 < work->field_2C) {
             sprintf(buf, "%4d", work->field_38 + 1);
-            bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+            bp = buf;
+            FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
             if (work->field_30 >= 7) {
                 FontDrawStart();
                 FontDrawScale(1.0f);
@@ -447,20 +427,23 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
                     } else {
                         sprintf(buf, "%2d", work->field_24 - 0x100);
                     }
-                    bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                    bp = buf;
+                    FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 } else if (work->field_24 < 0) {
                     msg = msgSearch("menu_subtitle5_minigame1");
                     unk_gor_0000dfc4(msg, 165, work->field_0C + -150.4f, work->field_10 + 8.0f, 1.0f);
                     msg = msgSearch("menu_subtitle6_minigame1");
                     sprintf(buf, msg, -work->field_24);
-                    bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
+                    bp = buf;
+                    FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 8.0f, 18.0f);
                 }
             }
         } else {
             c12 = *(GXColor*)&dat_gor_0001cd64;
             FontDrawColor(&c12);
             sprintf(buf, msgSearch("menu_error_minigame4"));
-            bp = buf, FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)FLP_TEXT((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
+            bp = buf;
+            FontDrawStringPitch(bp, work->field_0C + (150.4f - (f32)fontlenpitch((s8*)buf, 18)), work->field_10 + 56.0f, 18.0f);
         }
         goto end;
 
