@@ -14,39 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef MUST_MATCH
-// Match-only: read the constant from its own symbol instead of folding it, so the code below
-// loads it as the original does when definitions precede immediate code generation.
-#define NF32(x) (*(f32*)&(x))
-#else
-#define NF32(x) (x)
-#endif
-
 // .rodata
 const Vec vec3_802fdba0 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802fdbac = {0.0f, 0.0f, 0.0f};
-
-// Named scalar pool in retail order, defined before immediate code generation.
-const f32 float_0_80420978 = 0.0f;
-const f32 float_45_8042097c = 45.0f;
-const f32 float_100_80420980 = 100.0f;
-const f32 float_90_80420984 = 90.0f;
-const f32 float_neg200_80420988 = -200.0f;
-const f32 float_25_8042098c = 25.0f;
-const f32 float_1_80420990 = 1.0f;
-
-const f32 float_88_80420994 = 88.0f;
-const f32 float_50_80420998 = 50.0f;
-const f32 float_18_8042099c = 18.0f;
-const f32 float_neg288_804209a0 = -288.0f;
-const f32 float_neg300_804209a4 = -300.0f;
-const f32 float_30_804209a8 = 30.0f;
-const f32 float_3_804209ac = 3.0f;
-const f32 float_0p5_804209b0 = 0.5f;
-const f32 float_270_804209b4 = 270.0f;
-const f32 float_neg1_804209b8 = -1.0f;
-const f32 float_0p0078125_804209bc = 0.0078125f;
-const f32 float_0p95_804209c0 = 0.95f;
 
 // .sdata
 typedef struct HpAngle {
@@ -95,23 +65,13 @@ s32 _get_angle_hp(s32 hp) {
 	return entry->angle;
 }
 
-// NONMATCHING (99.20%): only the 100.0f load target (f2 vs f3) and the add/mul destination
-// register differ; mwcc folds the sum into f1 instead of f2. base is dead after the add, so the
-// allocator coalesces it with bumped; keeping base live forces more registers and extra loads.
-// Tried: operand swap, parenthesised/ratio/direct-division forms, locals for every constant before
-// and after the call, extra temps, `register`, `const`, `f64`, compound assignment, comma operator,
-// address-of, struct/union temporaries, nested/do-while scopes, static inline helpers for the add
-// and the scale, and every relevant pragma (opt_lifetimes/opt_propagation/opt_common_subs/
-// opt_dead_assignments/opt_loop_invariants/opt_strength_reduction/global_optimizer/peephole/
-// scheduling/optimize_for_size/optimization_level/pool_data/fp_contract); none forces the
-// non-destructive add. tools/flag_sweep.py confirms no other -O level helps (only -O4,s keeps the
-// file), and MWCC 2.5/2.6/2.7/3.0a3/3.0a3p1/3.0a5 all give 99.2% for this function.
-// The bounded helper-removal attempts in CODEX_ATTEMPTS.md also retain these three differences.
+// 100%: the original reuses the parameter for the adjusted angle, which puts the sum in angle's f2.
 s32 _get_angle_rate(f32 angle) {
-	f32 base = compAngle(MATCH_F32(float_0_80420978), angle);
-	f32 bumped = base + MATCH_F32(float_45_8042097c);
-	f32 scaled = MATCH_F32(float_100_80420980) * bumped;
-	s32 rate = (s32)(scaled / MATCH_F32(float_90_80420984));
+	s32 rate;
+
+	angle = compAngle(0.0f, angle);
+	angle += 45.0f;
+	rate = (s32)(100.0f * angle / 90.0f);
 
 	if (rate < 0) {
 		rate = 0;
@@ -129,8 +89,7 @@ static void actionCommandDisp(f32 x, f32 y);
 #pragma dont_inline on
 // 100%: two Vec locals are needed -- the original keeps the first icon's temp at sp+0x14 and the second at
 // sp+0x8. The f32 declaration order below is what makes baseX land in f25 (shared with yBottom), matching the
-// original's saved-register set; the second icon's constants are read without MATCH_F32 so the scheduler
-// interleaves them with the Vec copy as the target does.
+// original's saved-register set.
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
 	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)((u8*)work + 0x1F4C);
@@ -145,19 +104,19 @@ static void actionCommandDisp(f32 x, f32 y) {
 
 	camGetPtr(CAMERA_2D);
 
-	baseX = MATCH_F32(float_neg200_80420988) + x;
+	baseX = -200.0f + x;
 	v = vec3_802fdba0;
 	v.x = baseX;
-	v.y = MATCH_F32(float_25_8042098c) + y;
-	iconDispGx(&v, 0x10, 0x8C, MATCH_F32(float_1_80420990));
+	v.y = 25.0f + y;
+	iconDispGx(&v, 0x10, 0x8C, 1.0f);
 
 	cam = camGetPtr(CAMERA_2D);
 	btlDispGXInit2DRasta();
 	GXLoadPosMtxImm(cam->view, 0);
 
-	yTop = MATCH_F32(float_50_80420998) + y;
-	xBase = baseX - MATCH_F32(float_88_80420994);
-	yBottom = yTop - MATCH_F32(float_18_8042099c);
+	xBase = baseX - 88.0f;
+	yTop = 50.0f + y;
+	yBottom = yTop - 18.0f;
 
 	for (i = 0; i < 7; i++) {
 		f32 x0;
@@ -167,17 +126,17 @@ static void actionCommandDisp(f32 x, f32 y) {
 			x0 = xBase;
 		}
 		else {
-			x0 = xBase + (f32)(((u16*)_hp_tbl)[2 * i - 2] * 175) / NF32(float_100_80420980);
+			x0 = xBase + (f32)(((u16*)_hp_tbl)[2 * i - 2] * 175) / 100.0f;
 		}
-		x1 = xBase + (f32)(((u16*)_hp_tbl)[2 * i] * 175) / NF32(float_100_80420980);
+		x1 = xBase + (f32)(((u16*)_hp_tbl)[2 * i] * 175) / 100.0f;
 		btlDispGXQuads2DRasta(x0, yTop, x1, yBottom, (u8)((3 - abs(3 - i)) * 60), 0,
 		                      (u8)(180 - (3 - abs(3 - i)) * 60), 0xFF);
 	}
 
 	v2 = vec3_802fdbac;
-	v2.x = NF32(float_neg288_804209a0) + x + (f32)(dec->rate * 176) / NF32(float_100_80420980);
-	v2.y = NF32(float_45_8042097c) + y;
-	iconDispGx(&v2, 0x10, 0x96, NF32(float_1_80420990));
+	v2.x = -288.0f + x + (f32)(dec->rate * 176) / 100.0f;
+	v2.y = 45.0f + y;
+	iconDispGx(&v2, 0x10, 0x96, 1.0f);
 }
 #pragma dont_inline reset
 
@@ -201,8 +160,7 @@ void battleAcDisp_PendulumCraneTiming(CameraId camId, void* param) {
 
 	switch (state) {
 	case 0x63:
-		ag->iconX =
-		    intplGetValue(4, 0x14 - ag->counter, 0x14, MATCH_F32(float_neg300_804209a4), MATCH_F32(float_30_804209a8));
+		ag->iconX = intplGetValue(4, 0x14 - ag->counter, 0x14, -300.0f, 30.0f);
 #ifdef MUST_MATCH
 		p = ag;
 #endif
@@ -217,11 +175,10 @@ void battleAcDisp_PendulumCraneTiming(CameraId camId, void* param) {
 	case 0x3EA:
 	case 0x3EB:
 		if (p->counter >= 0x28) {
-			p->iconX = intplGetValue(4, p->counter - 0x28, 0x14, MATCH_F32(float_30_804209a8),
-			                         MATCH_F32(float_neg300_804209a4));
+			p->iconX = intplGetValue(4, p->counter - 0x28, 0x14, 30.0f, -300.0f);
 		}
 		else {
-			p->iconX = MATCH_F32(float_30_804209a8);
+			p->iconX = 30.0f;
 		}
 		actionCommandDisp(p->iconX, p->iconY);
 		if (p->counter < 0x3C) {
@@ -235,11 +192,10 @@ s32 battleAcResult_PendulumCraneTiming(BattleWork* work) {
 	return work->actionCommands.result;
 }
 
-// 100%: the action-command state machine. The state-0 constants use nonvolatile reads so
-// 0.0f/3.0f share the FPRs the target uses; `span` holds field_34[0x14]*2 in one value to get the target's
+// 100%: the action-command state machine. `span` holds field_34[0x14]*2 in one value to get the target's
 // r4 allocation; `bw`/`delta` are read before the direction test so the global and 0.0f loads hoist as they do
-// in the target; the `k` temp (guarded below) fixes the final product's fmuls operand order. The sfx-id and
-// BattlePadCheckTrigger tests use a `(u32)`/`(s32)` cast to match the original's `addis`/`cmplwi` and signed tests.
+// in the target. The sfx-id and BattlePadCheckTrigger tests use a `(u32)`/`(s32)` cast to match the original's
+// `addis`/`cmplwi` and signed tests.
 s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	BattleACDispParams* disp = &work->actionCommands.dispParams;
 	PendulumCraneTimingWork* dec = (PendulumCraneTimingWork*)((u8*)work + 0x1F4C);
@@ -251,7 +207,6 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	f32 dirA;
 	f32 dirB;
 	f32 dirF;
-	f32 zero;
 
 	if (work->actionCommands.mAcUnit->badgesEquipped.AutoCommand != 0) {
 		flag = 1;
@@ -262,14 +217,14 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 	switch (work->actionCommands.mAcState) {
 	case 0:
 		memset(disp, 0, 0x2C);
-		disp->iconX = NF32(float_neg300_804209a4);
-		disp->iconY = NF32(float_0_80420978);
+		disp->iconX = -300.0f;
+		disp->iconY = 0.0f;
 		disp->counter = 0x14;
 		dec->frame = 0;
-		dec->angle = NF32(float_0_80420978);
+		dec->angle = 0.0f;
 		dec->accum = *(s32*)&work->actionCommands.field_34[0x14];
 		dec->accum2 = 0;
-		dec->amplitude = NF32(float_3_804209ac);
+		dec->amplitude = 3.0f;
 		dec->lastDir = -1;
 		dec->trigger = 0x100;
 		work->actionCommands.outputParams[0] = 0;
@@ -281,14 +236,13 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 		dec->sfxId = -1;
 		break;
 	case 0x64:
-		zero = MATCH_F32(float_0_80420978);
-		BtlUnit_SetRotateOffset(unit, zero, (f32)*(s32*)&work->actionCommands.field_34[0x10], zero);
+		BtlUnit_SetRotateOffset(unit, 0.0f, (f32)*(s32*)&work->actionCommands.field_34[0x10], 0.0f);
 		unit = BattleGetUnitPtr(work, *(s32*)&work->actionCommands.field_34[0x08]);
 		BtlUnit_GetPartsPtr(unit, *(s32*)&work->actionCommands.field_34[0x0C]);
 		BtlUnit_GetPos(unit, &dec->position.x, &dec->position.y, &dec->position.z);
 		dec->center = dec->position;
 		dec->frame = 0;
-		dec->unk20 = MATCH_F32(float_0p5_804209b0);
+		dec->unk20 = 0.5f;
 		dec->dir = 1;
 		work->actionCommands.mAcState = 0x3E8;
 		// fallthrough
@@ -302,63 +256,52 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 		span = *(s32*)&work->actionCommands.field_34[0x14] * 2;
 		rem = (dec->accum + dec->accum2) % span;
 		dec->angle2 = (f32)(rem * 360 / span);
-		dec->angle = reviseAngle(sinfd(dec->angle2) * MATCH_F32(float_45_8042097c));
+		dec->angle = reviseAngle(sinfd(dec->angle2) * 45.0f);
 
 		bw = _battleWorkPointer;
-		delta = NF32(float_0_80420978);
+		delta = 0.0f;
 
-		if (dec->angle2 >= MATCH_F32(float_90_80420984) && dec->angle2 < MATCH_F32(float_270_804209b4)) {
-			dirF = MATCH_F32(float_neg1_804209b8);
+		if (dec->angle2 >= 90.0f && dec->angle2 < 270.0f) {
+			dirF = -1.0f;
 		}
 		else {
-			dirF = MATCH_F32(float_1_80420990);
+			dirF = 1.0f;
 		}
 
 		if (*(s32*)&work->actionCommands.field_34[0x00] & 1) {
 			PADStatus* pad = &bw->padWork[0].mPadData[0];
 			f32 t;
-#ifdef MUST_MATCH
-			// Match-only temp: splitting the product gives the target's fmuls operand order (f0 * f2).
-			f32 k;
-#endif
+			f32 one;
 
 			if (pad->triggerRight > 10 && pad->triggerLeft < 10) {
-				if (dirF < MATCH_F32(float_0_80420978)) {
-					t = (f32)pad->triggerRight * MATCH_F32(float_0p0078125_804209bc);
-					if (t > float_1_80420990) {
-						t = float_1_80420990;
+				if (dirF < 0.0f) {
+					t = pad->triggerRight / 128.0f;
+					one = 1.0f;
+					if (t > one) {
+						t = one;
 					}
-#ifdef MUST_MATCH
-					k = NF32(float_0p95_804209c0) * -dec->amplitude;
-					delta = k * t;
-#else
-					delta = (float_0p95_804209c0 * -dec->amplitude) * t;
-#endif
+					delta = 0.95f * -dec->amplitude * t;
 				}
 			}
 			else if (pad->triggerRight < 10 && pad->triggerLeft > 10) {
-				if (dirF > MATCH_F32(float_0_80420978)) {
-					t = (f32)pad->triggerLeft * MATCH_F32(float_0p0078125_804209bc);
-					if (t > float_1_80420990) {
-						t = float_1_80420990;
+				if (dirF > 0.0f) {
+					t = pad->triggerLeft / 128.0f;
+					one = 1.0f;
+					if (t > one) {
+						t = one;
 					}
-#ifdef MUST_MATCH
-					k = NF32(float_0p95_804209c0) * -dec->amplitude;
-					delta = k * t;
-#else
-					delta = (float_0p95_804209c0 * -dec->amplitude) * t;
-#endif
+					delta = 0.95f * -dec->amplitude * t;
 				}
 			}
 		}
 
 		dec->accum2 += delta;
 
-		if (dec->angle2 >= MATCH_F32(float_90_80420984) && dec->angle2 < MATCH_F32(float_270_804209b4)) {
-			dirA = MATCH_F32(float_neg1_804209b8);
+		if (dec->angle2 >= 90.0f && dec->angle2 < 270.0f) {
+			dirA = -1.0f;
 		}
 		else {
-			dirA = MATCH_F32(float_1_80420990);
+			dirA = 1.0f;
 		}
 
 		dec->accum += dec->amplitude;
@@ -366,16 +309,15 @@ s32 battleAcMain_PendulumCraneTiming(BattleWork* work) {
 		span = *(s32*)&work->actionCommands.field_34[0x14] * 2;
 		rem = (dec->accum + dec->accum2) % span;
 		dec->angle2 = (f32)(rem * 360 / span);
-		dec->angle = reviseAngle(sinfd(dec->angle2) * MATCH_F32(float_45_8042097c));
+		dec->angle = reviseAngle(sinfd(dec->angle2) * 45.0f);
 
-		zero = float_0_80420978;
-		BtlUnit_SetRotate(unit, zero, zero, dec->angle);
+		BtlUnit_SetRotate(unit, 0.0f, 0.0f, dec->angle);
 
-		if (dec->angle2 >= MATCH_F32(float_90_80420984) && dec->angle2 < MATCH_F32(float_270_804209b4)) {
-			dirB = MATCH_F32(float_neg1_804209b8);
+		if (dec->angle2 >= 90.0f && dec->angle2 < 270.0f) {
+			dirB = -1.0f;
 		}
 		else {
-			dirB = MATCH_F32(float_1_80420990);
+			dirB = 1.0f;
 		}
 		if (dirA != dirB) {
 			dec->dir = 0;

@@ -398,7 +398,7 @@ config.libs = [
             Object(Matching, "battle/ac/ac_stick_rotate.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/ac/ac_button_down.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/ac/ac_timing_wide.c"),
-            Object(NonMatching, "battle/ac/ac_pendulum_crane_timing.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/ac/ac_pendulum_crane_timing.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/ac/ac_air_gauge.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/ac/ac_crane_timing.c"),
             Object(Matching, "battle/ac/ac_power_gauge.c", extra_cflags=["-O4,s"]),
@@ -901,7 +901,7 @@ config.libs = [
             Object(Matching, "data/database.c"),
             Object(Matching, "data/battle/battle_item_data.c"),
             Object(Matching, "system.c"),
-            Object(NonMatching, "unk_0x8025de70.c"),
+            Object(Matching, "unk_0x8025de70.c"),
         ],
     },
     DolphinLib(
