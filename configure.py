@@ -889,7 +889,7 @@ config.libs = [
             Object(Matching, "main.c"),
             Object(Matching, "memory.c"),
             Object(NonMatching, "nameent.c"),
-            Object(NonMatching, "npc_event.c"),
+            Object(Matching, "npc_event.c"),
             Object(NonMatching, "parse.c"),
             Object(NonMatching, "party.c"),
             Object(Matching, "peach.c"),
