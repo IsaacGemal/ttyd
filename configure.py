@@ -479,7 +479,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(Matching, "effect/eff_fukidashi.c"),
-            Object(NonMatching, "effect/eff_kemuri.c"),
+            Object(Matching, "effect/eff_kemuri.c"),
             Object(Matching, "effect/eff_butterfly.c"),
             Object(Matching, "effect/eff_confetti.c"),
             Object(NonMatching, "effect/eff_damage_star.c"),
