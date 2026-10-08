@@ -25,7 +25,7 @@ extern const f32 float_4p8_8041ffc4;
 extern const f32 float_1_8041ffc8;
 extern const u32 dat_8041ffa8;
 
-EffectEntry* effSweatN64Entry(s32 type, s32 life, f32 x, f32 y, f32 z, f32 scale, f32 angle) {
+EffectEntry* effSweatN64Entry(s32 type, f32 x, f32 y, f32 z, f32 scale, f32 angle, s32 life) {
 	EffectEntry* effect;
 	effSweatData* data;
 	effSweatData* p;
