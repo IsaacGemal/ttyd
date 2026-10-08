@@ -4859,3 +4859,68 @@ Verified 36/36 functions at 100%, .sdata2/.rodata IDENTICAL, original function o
   test); the DOL units have no .rodata float names, so they gain nothing from the last fix. A script killed between a
   source edit and its restore leaves a newer object than its source, so the next ratchet sees a phantom regression in
   an untouched unit: touch the sources (or rebuild the unit with tools/agent_check.py) before trusting it.
+
+## decomp.me: what the community already solved, and how to use it (2026-10-08, Isaac + Claude Opus 5.5)
+
+[decomp.me](https://decomp.me) is the matching-decomp community's shared workbench. A **scratch** is one function
+packed with everything needed to compile it: the target assembly, a context header, the C, and a compiler with
+flags. Anyone can fork a scratch, edit the C and watch the score live; a score of **0 means matched**. Projects
+register **presets** (compiler + flags) so scratches for a game start from the right settings. Hard functions are
+usually cracked there by people trading forks.
+
+### What exists for TTYD
+
+- **Presets:** id 68 "The Thousand-Year Door (DOL)" and id 134 "(REL)", both by NWPlayer123. Preset 68 uses
+  `mwcc_247_108` with `-fp hard -fp_contract on -enum int -O4,p -sdata 48 -sdata2 6 -rostr -multibyte
+  -use_lmw_stmw on -inline auto,deferred -Cpp_exceptions off`. Our `objdiff.json` scratch block says
+  `mwcc_247_107`; check which id is our GC/2.6 before setting `config.scratch_preset_id` in configure.py.
+- **Scratches:** 232 carry the TTYD presets (140 matched), mostly functions we had already matched. A name search
+  over all 292 functions still open on 2026-10-08 found 25 GameCube scratches covering 11 of them.
+- **The people:** NWPlayer123 (about 135 TTYD scratches), Rainchus, theKidOfArcrania, SwareJonge, SplaatSites,
+  fraser125, Cuyler36, kiwi515, SeekyCt. A hard TTYD scratch posted under the preset reaches them.
+
+### What it gave us
+
+| Function | Ours before | decomp.me | Result |
+| --- | --- | --- | --- |
+| `evt_eff_fukidashi` | 99.19 | matched (theKidOfArcrania, scratch NwWJP, 2024) | 100, #629 |
+| `__strtold` | 99.24 | matched (cadmic, lPWyY), on `mwcc_233_163` with another game's flags | to try on our compiler |
+| `_mapLoad` | 95.06 | 99.17 (NWPlayer123, t9PZw) | to port |
+| 8 others | | at or below ours | nothing to take |
+
+### Lessons
+
+1. **Search before attacking a hard function.** A stuck function may already be matched there, sometimes for
+   years (fukidashi's scratch is from 2024). It costs one search per function.
+2. **A scratch match covers code only.** decomp.me compares the function's instructions with relocations masked;
+   it never sees the unit's pool or data layout. Port the shape, then re-check `.sdata2`/`.rodata` and run CI.
+   For fukidashi, a literal `0.0f` had been rejected here earlier because of the pool order; with the scratch's
+   other changes in place the data did not change.
+3. **Port the whole shape, not the most visible trick.** Fukidashi needed three things together:
+   `#pragma opt_propagation off`, the height in one local with 2/3 of it computed into a second local before the
+   call (variable as the first operand), and literal `0.0f` arguments. The pragma alone: no change. The shape
+   alone: 99.79. Without the pragma: 98.96.
+4. **Credit the author** in the source comment, the commit and the PR (for example "Credit: theKidOfArcrania
+   (decomp.me)"), with the scratch id.
+5. **Our hard functions are mostly new territory.** No one has posted the 99.9% register ties that stop our agents.
+   Posting them (`winMarioDisp`, `effKemuTestEntry`, `battleCameraMain`, ...) is a way to get human help; it makes
+   the project visible, so it is Isaac's call.
+
+### How to look things up
+
+- The site sits behind a Cloudflare bot check: `curl` and the in-app browser get "Just a moment..." (HTTP 403).
+  Solving that check is off limits. What works is Isaac's own Chrome through the Claude in Chrome extension,
+  where the check is already passed: same-origin `fetch()` from a decomp.me tab returns JSON.
+- Useful endpoints: `/api/preset?platform=gc_wii`, `/api/scratch?preset=<id>`, `/api/scratch?search=<name>`,
+  `/api/scratch/<slug>` (source_code, context, compiler, compiler_flags, score, max_score).
+- **Go slowly.** About 100 quick searches earned a rate limit (HTTP 429). One request every 4 seconds with a
+  60-second back-off on 429 ran all 292 searches in about 20 minutes without a single limit.
+- The extension refuses to return script output that looks like query-string data, which includes most C source.
+  Read a scratch from the page itself (page text, scrolling the editor, screenshots) rather than working around
+  the filter.
+
+### Our side of the format
+
+objdiff's "Create scratch" builds a scratch for any function from the `scratch` block in `objdiff.json` (GameCube,
+the compiler and our full flags with `-DMUST_MATCH`). The same bundle (target asm, context, C, flags) is also the
+right unit for our own hard-function tools: it compiles in a second and holds no project state.
