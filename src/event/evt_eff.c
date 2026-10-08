@@ -394,7 +394,7 @@ USER_FUNC(evt_eff64) {
 		case 29: effect = effKemuri11N64Entry(int2, float3, float4, float5); break;
 		case 30: effect = effOnpuN64Entry(int2, float3, float4, float5); break;
 		case 31: effect = effKemuri12N64Entry(int2, int7, float3, float4, float5, float6); break;
-		case 32: effect = effSweatN64Entry(int2, int8, float3, float4, float5, float6, float7); break;
+		case 32: effect = effSweatN64Entry(int2, float3, float4, float5, float6, float7, int8); break;
 		case 33: effect = effBalloonN64Entry(int2, float3, float4, float5, float6, float7); break;
 		case 34: effect = effCoolLeafN64Entry(int2, float3, float4, float5); break;
 		case 35: effect = effBushN64Entry(int2, float3, float4, float5); break;

@@ -766,7 +766,7 @@ config.libs = [
             Object(Matching, "motion/mot_jump.c"),
             Object(Matching, "motion/mot_plane.c"),
             Object(NonMatching, "motion/mot_roll.c"),
-            Object(NonMatching, "motion/mot_ship.c"),
+            Object(Matching, "motion/mot_ship.c"),
             Object(NonMatching, "motion/mot_slit.c"),
             Object(Matching, "motion/mot_stay.c"),
             Object(Matching, "motion/mot_damage.c"),
@@ -781,7 +781,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "party/party_yoshi.c"),
+            Object(Matching, "party/party_yoshi.c"),
             Object(Matching, "party/party_bomhei.c"),
             Object(Matching, "data/party_data.c"),
             Object(NonMatching, "party/party_hit.c"),

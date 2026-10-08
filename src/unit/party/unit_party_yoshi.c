@@ -1955,9 +1955,9 @@ USER_FUNC(btl_yoshi_yoroyoro_jump_move) {
         }
         height = BtlUnit_GetHeight(unit);
         event->userdata[2] = (s32)effSweatN64Entry(
-            1, 16, unit->mMoveCurrentPos.x,
+            1, unit->mMoveCurrentPos.x,
             unit->mSizeMultiplier * (0.5f * height) + unit->mMoveCurrentPos.y,
-            unit->mMoveCurrentPos.z, 5.0f * unit->mSizeMultiplier, newSpeedY);
+            unit->mMoveCurrentPos.z, 5.0f * unit->mSizeMultiplier, newSpeedY, 16);
     } else {
         effect = (EffectEntry*)event->userdata[2];
         if (event->userdata[1] < 16) {

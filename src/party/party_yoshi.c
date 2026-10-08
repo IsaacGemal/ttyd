@@ -27,25 +27,14 @@
 #pragma pool_data on // the original addresses its .rodata through one base register
 
 // .sbss
-f32 jumpheight;
-s32 evt_yoshi_frm;
 f32 evt_yoshi_spd;
+s32 evt_yoshi_frm;
+f32 jumpheight;
 
-// The original .rodata keeps PYS_H_1/PYS_H_2 right after PYS_S_2/PYS_R_2, and the
-// code reaches them as the S/R string plus 8. Match-only: the S/R literals carry the
-// H strings (strcmp stops at the first NUL, so the comparisons are unchanged); the
-// natural form names all four.
-#ifdef MUST_MATCH
-#define YOSHI_S_2 "PYS_S_2\0PYS_H_1"
-#define YOSHI_R_2 "PYS_R_2\0PYS_H_2"
-#define YOSHI_H_1 (YOSHI_S_2 + 8)
-#define YOSHI_H_2 (YOSHI_R_2 + 8)
-#else
 #define YOSHI_S_2 "PYS_S_2"
 #define YOSHI_R_2 "PYS_R_2"
 #define YOSHI_H_1 "PYS_H_1"
 #define YOSHI_H_2 "PYS_H_2"
-#endif
 #define YOSHI_F_1 "PYS_F_1"
 
 // Local declarations: not yet in a header.
@@ -475,15 +464,30 @@ void yoshi_init(PartyEntry* party) {
 #define M_P(off) (*(void**)((u8*)mario + (off)))
 
 
+// Rider height offset for Yoshi's current walk/run/flutter pose frame.
+static inline f32 yoshiRideHeight(PartyEntry* party) {
+    MarioWork* pm = party->playerPtr;
+    f32 ofs = 0.0f;
+    if (strcmp(party->field_18, YOSHI_S_2) == 0) {
+        ofs = 2.0f * ofs_PYS_S_2[*(u16*)&pm->poseTime] + ofs;
+    } else if (strcmp(party->field_18, YOSHI_R_2) == 0) {
+        ofs = 2.0f * ofs_PYS_R_2[*(u16*)&pm->poseTime] + ofs;
+    } else if (strcmp(party->field_18, YOSHI_F_1) == 0) {
+        ofs = 2.0f * ofs_PYS_F_1[*(u16*)&pm->poseTime] + ofs;
+    }
+    return ofs;
+}
+
+// Records the ceiling above Yoshi's head in the rider's work.
+static inline void yoshiSearchHead(PartyEntry* party) {
+    MarioWork* pl = party->playerPtr;
+    Vec pos = party->position;
+    f32 h = partyGetHeight(party);
+    *(void**)((u8*)pl + 0x1F4) = marioSearchHead(&pos, &h, 10.0f);
+}
+
 #define VEC_S2 YOSHI_S_2
 
-// Semantics fully reconstructed. The `vec` pointer is gone, so MWCC builds the
-// `.rodata` base from the section symbol and folds the int->float magic double
-// to `lfd fX, 0x28(r31)` like the original; the zero-`Vec` copies are volatile
-// on both sides so MWCC keeps the original's load/store interleave. Remaining
-// diffs: the five `Vec` stack temporaries' slots, two one-instruction `addi`s
-// for the PYS_H_* tails and a couple of list-scheduling choices.
-// NONMATCHING (99.46%): semantics complete, not yet byte-exact.
 void yoshi_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     PartyEntry* extra;
@@ -671,12 +675,7 @@ L_312C:
         M_P(0x1F4) = NULL;
         f30 = mario->directionView;
         f31 = mario->baseSpeed;
-        {
-            MarioWork* pl = party->playerPtr;
-            Vec pos = party->position;
-            f32 h = partyGetHeight(party);
-            *(void**)((u8*)pl + 0x1F4) = marioSearchHead(&pos, &h, 10.0f);
-        }
+        yoshiSearchHead(party);
         checkWall(party, f31, f30);
         mario->field_EC.x = party->position.x;
         mario->field_EC.z = party->position.z;
@@ -752,12 +751,7 @@ L_312C:
         M_P(0x1F0) = NULL;
         f30 = party->dir;
         f31 = party->speed;
-        {
-            MarioWork* pl = party->playerPtr;
-            Vec pos = party->position;
-            f32 h = partyGetHeight(party);
-            *(void**)((u8*)pl + 0x1F4) = marioSearchHead(&pos, &h, 10.0f);
-        }
+        yoshiSearchHead(party);
         checkWall(party, f31, f30);
         mario->field_EC.x = party->position.x;
         mario->field_EC.z = party->position.z;
@@ -779,13 +773,23 @@ L_3588:
     switch (party->useMotionId) {
     case 0x64:
         {
-            MarioWork* pl64 = party->playerPtr;
+#ifdef MUST_MATCH
+            // Volatile, as in marioYoshiForceCancel: keeps the playerPtr load ahead of the copies.
+            MarioWork* pl64 = *(MarioWork* volatile*)&party->playerPtr;
             *(volatile Vec*)((u8*)pl64 + 0x98) = *(const volatile Vec*)&vec3_802cccd0;
             *(volatile Vec*)((u8*)pl64 + 0xA4) = *(const volatile Vec*)&vec3_802cccdc;
+#else
+            MarioWork* pl64 = party->playerPtr;
+            *(YoshiZeroVec6*)((u8*)pl64 + 0x98) = *(const YoshiZeroVec6*)&vec3_802cccd0;
+#endif
         }
         extra = partyGetPtr(marioGetExtraPartyId());
         if (extra != NULL) {
+#ifdef MUST_MATCH
             *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec3_802ccce8;
+#else
+            *(Vec*)((u8*)extra + 0x7C) = vec3_802ccce8;
+#endif
         }
         marioChgSmallJumpMotion();
         mario->baseSpeed = 0.0f;
@@ -901,7 +905,7 @@ L_3800:
             if (((PartyYoshiUse*)party->useStruct)->effect == NULL) {
                 f32 c = (party->field_110 == 180.0f) ? -1.0f : 1.0f;
                 ((PartyYoshiUse*)party->useStruct)->effect =
-                    effSweatN64Entry(1, 0x16, px, py, pz, 1.0f, 70.0f * c);
+                    effSweatN64Entry(1, px, py, pz, 1.0f, 70.0f * c, 0x16);
                 ((PartyYoshiUse*)party->useStruct)->timer = 0x14;
             }
         }
@@ -941,12 +945,7 @@ L_3800:
         party->field_134 = NULL;
         f30 = party->dir;
         f31 = party->speed;
-        {
-            MarioWork* pl = party->playerPtr;
-            Vec pos = party->position;
-            f32 h = partyGetHeight(party);
-            *(void**)((u8*)pl + 0x1F4) = marioSearchHead(&pos, &h, 10.0f);
-        }
+        yoshiSearchHead(party);
         checkWall(party, f31, f30);
         if (party->field_138 == NULL && mario->airTimer >= 0xA) {
             searchGround2(party);
@@ -1005,30 +1004,10 @@ L_3800:
             movePos(&fx, &fz, -6.0f, toMovedir(party->field_10C));
             M_F(0x98) = fx;
             M_F(0xA0) = fz;
-            f30 = 0.0f;
-            {
-                MarioWork* pm = party->playerPtr;
-                if (strcmp(party->field_18, VEC_S2) == 0) {
-                    f30 = 2.0f * ofs_PYS_S_2[*(u16*)((u8*)pm + 0x28)] + f30;
-                } else if (strcmp(party->field_18, YOSHI_R_2) == 0) {
-                    f30 = 2.0f * ofs_PYS_R_2[*(u16*)((u8*)pm + 0x28)] + f30;
-                } else if (strcmp(party->field_18, YOSHI_F_1) == 0) {
-                    f30 = 2.0f * ofs_PYS_F_1[*(u16*)((u8*)pm + 0x28)] + f30;
-                }
-            }
-            M_F(0xA8) = 8.0f + f30;
+            M_F(0xA8) = 8.0f + yoshiRideHeight(party);
             extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
-                MarioWork* pm2 = party->playerPtr;
-                f30 = 0.0f;
-                if (strcmp(party->field_18, VEC_S2) == 0) {
-                    f30 = 2.0f * ofs_PYS_S_2[*(u16*)&pm2->poseTime] + f30;
-                } else if (strcmp(party->field_18, YOSHI_R_2) == 0) {
-                    f30 = 2.0f * ofs_PYS_R_2[*(u16*)&pm2->poseTime] + f30;
-                } else if (strcmp(party->field_18, YOSHI_F_1) == 0) {
-                    f30 = 2.0f * ofs_PYS_F_1[*(u16*)&pm2->poseTime] + f30;
-                }
-                *(f32*)((u8*)extra + 0x80) = f30;
+                *(f32*)((u8*)extra + 0x80) = yoshiRideHeight(party);
             }
         }
 
@@ -1163,12 +1142,7 @@ L_3800:
             M_P(0x1F0) = NULL;
             f30 = party->dir;
             f31 = party->speed;
-            {
-                MarioWork* pl = party->playerPtr;
-                Vec pos = party->position;
-                f32 h = partyGetHeight(party);
-                *(void**)((u8*)pl + 0x1F4) = marioSearchHead(&pos, &h, 10.0f);
-            }
+            yoshiSearchHead(party);
             checkWall(party, f31, f30);
             searchGround(party);
             if (party->field_138 != NULL) {
@@ -1230,13 +1204,23 @@ L_3800:
             partyChgRunMode(party, 2);
             party->field_3B = 0;
             {
-                MarioWork* pl = party->playerPtr;
+#ifdef MUST_MATCH
+                // Volatile, as in marioYoshiForceCancel: keeps the playerPtr load ahead of the copies.
+                MarioWork* pl = *(MarioWork* volatile*)&party->playerPtr;
                 *(volatile Vec*)((u8*)pl + 0x98) = *(const volatile Vec*)&vec3_802cccd0;
                 *(volatile Vec*)((u8*)pl + 0xA4) = *(const volatile Vec*)&vec3_802cccdc;
+#else
+                MarioWork* pl = party->playerPtr;
+                *(YoshiZeroVec6*)((u8*)pl + 0x98) = *(const YoshiZeroVec6*)&vec3_802cccd0;
+#endif
             }
             extra = partyGetPtr(marioGetExtraPartyId());
             if (extra != NULL) {
+#ifdef MUST_MATCH
                 *(volatile Vec*)((u8*)extra + 0x7C) = *(const volatile Vec*)&vec3_802ccce8;
+#else
+                *(Vec*)((u8*)extra + 0x7C) = vec3_802ccce8;
+#endif
             }
             return;
         }
@@ -1250,12 +1234,7 @@ L_3800:
         mario->unk1A8 = party->field_10C;
         M_F(0x1AC) = party->field_110;
         mario->position = party->position;
-        {
-            Vec v;
-            Vec* pv = &v;
-            v = party->position;
-            marioUpdateCamCollision(*pv);
-        }
+        marioUpdateCamCollision(party->position);
     }
 }
 

@@ -20,7 +20,7 @@
 #include "eff/eff_funemizu.h"
 #include "math_ext.h"
 
-EVT_BEGIN(sound_evt)
+static EVT_BEGIN(sound_evt)
 CALL(evt_snd_sfxon_3d, STRING("SFX_MARIO_SHIP1_1"), LW(0), LW(1), LW(2), 0)
 WAIT_FRAMES(12)
 CALL(evt_snd_sfxon_3d, STRING("SFX_MARIO_SHIP1_1"), LW(0), LW(1), LW(2), 0)
@@ -216,14 +216,43 @@ void mot_ship_post(void) {
         marioGetPtr()->motStruct = NULL;
     }
 }
-// NONMATCHING (99.89%): 39 GPR differences remain. Initialization and case 0 use r29 for
-// the data/Mario pointer (target r28), and case 0 uses r27 for hit/direction (target r29).
-// Case 52's two wake updates swap their r29/r30 Mario/data pairs. FP register allocation,
-// arithmetic, the 0x90-byte frame, and the literal data pools match.
+// Moves the wake effect along with the ship. A stopped ship eases the wake strength toward
+// a resting value that depends on its bob phase.
+static inline void shipWakeUpdate(f32 speed) {
+    MarioWork* m = marioGetPtr();
+
 #ifdef MUST_MATCH
-// Keep case 31's 1.6 scale loaded before the effect lookups; scoped zeros avoid an extra saved FPR.
-#pragma opt_propagation off
+    if (!speed) {
+#else
+    if (speed == 0.0f) {
 #endif
+        marioGetPtr();
+        { s32 b; if (SHIP_DATA->unk08 > 180.0f) b = 0; else b = 1; speed = b ? 0.3f : 0.6f; }
+        SHIP_DATA->unk10 += 0.1f * (speed - SHIP_DATA->unk10);
+        speed = SHIP_DATA->unk10;
+    }
+    ((f32*)SHIP_DATA->eff->userdata)[1] = m->position.x;
+#ifdef MUST_MATCH
+    {
+        // Assign zero in the right operand to keep the original f0/f1 loads and fadds.
+        f32 zero;
+        ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + (zero = 0.0f);
+    }
+#else
+    ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + 0.0f;
+#endif
+    ((f32*)SHIP_DATA->eff->userdata)[3] = m->position.z;
+    ((f32*)SHIP_DATA->eff->userdata)[4] = speed;
+    ((f32*)SHIP_DATA->eff->userdata)[5] = m->unk1A8;
+}
+
+// Defined after shipMove, where the original's copies sit: MWCC inlines them into mot_ship
+// (-inline auto,deferred) and still emits their bodies, which pool 15, 50, 30.30303 and 180
+// between checkHarbor's and shipMove's constants. The linker strips the unreferenced bodies.
+static s32 shipJumpDir(HitEntry* hit);
+static void shipHarborOffset(Vec* out, s32 dir, f32 x, f32 z);
+static s32 shipHarborTarget(HitEntry* hit, Vec* out);
+
 void mot_ship(void) {
     MarioWork* mario = marioGetPtr();
     MotionShipData* data;
@@ -263,32 +292,8 @@ void mot_ship(void) {
         mario->baseSpeed = 0.0f;
         SHIP_DATA->unk1C = 0.0f;
         N_marioSetBottomlessRespawnPosOnBeroEntry(mario->position.x, mario->position.y, mario->position.z);
-        {
-            HitEntry* hit = mario->hitobjJumpFrom;
-            MarioWork* m = marioGetPtr();
-            s32 attr = hitGetAttr(hit);
-            Vec pos1;
-            Vec pos2;
-            dir = 0;
-            if (attr & 0x4000) {
-                f32 a;
-                hitObjGetPos(hitGetName(m->hitobjJumpFrom), &pos2);
-                f30 = angleABf(m->position.x, m->position.z, pos2.x, pos2.z);
-                a = revise360(f30 - m->targetYaw);
-                dir = (a >= 180.0f) ? 2 : 1;
-            } else if (attr & 0x8000) {
-                f32 a;
-                hitObjGetPos(hitGetName(m->hitobjJumpFrom), &pos1);
-                a = angleABf(m->position.x, m->position.z, pos1.x, pos1.z);
-                a = revise360(a - m->targetYaw);
-                dir = (a >= 180.0f) ? 2 : 1;
-            } else if (attr & 0x10000) {
-                dir = 2;
-            } else if (attr & 0x20000) {
-                dir = 1;
-            }
-            SHIP_DATA->flags = dir;
-        }
+        dir = shipJumpDir(mario->hitobjJumpFrom);
+        SHIP_DATA->flags = dir;
     }
     /* fall through */
     case 1: {
@@ -300,9 +305,7 @@ void mot_ship(void) {
         } else {
             f31 = -30.0f;
         }
-        data = SHIP_DATA;
-        f30 = data->unk1C;
-        data->unk1C = 0.125f * (f31 - SHIP_DATA->unk1C) + f30;
+        SHIP_DATA->unk1C += 0.125f * (f31 - SHIP_DATA->unk1C);
         if (SHIP_DATA->flags & 1) {
             if (SHIP_DATA->unk1C >= 30.0f) {
                 SHIP_DATA->unk1C = 30.0f;
@@ -348,9 +351,7 @@ void mot_ship(void) {
         s32 wrap;
 
         f31 = SHIP_DATA->unk20 * ((SHIP_DATA->flags & 1) ? 1.0f : -1.0f);
-        data = SHIP_DATA;
-        f30 = data->unk1C;
-        data->unk1C = 0.125f * (f31 - SHIP_DATA->unk1C) + f30;
+        SHIP_DATA->unk1C += 0.125f * (f31 - SHIP_DATA->unk1C);
         mario->unk1A8 += SHIP_DATA->unk1C;
         wrap = 0;
         if (SHIP_DATA->flags & 1) {
@@ -390,9 +391,7 @@ void mot_ship(void) {
         s32 wrap;
 
         f31 = SHIP_DATA->unk20 * ((SHIP_DATA->flags & 1) ? 1.0f : -1.0f);
-        data = SHIP_DATA;
-        f30 = data->unk1C;
-        data->unk1C = 0.125f * (f31 - SHIP_DATA->unk1C) + f30;
+        SHIP_DATA->unk1C += 0.125f * (f31 - SHIP_DATA->unk1C);
         mario->unk1A8 += SHIP_DATA->unk1C;
         SHIP_DATA->unk20 -= 0.1f;
         if (SHIP_DATA->unk20 <= 1.0f) {
@@ -416,50 +415,11 @@ void mot_ship(void) {
         break;
     }
     case 10: {
-        f32 fz;
-        f32 fx;
         mario->dispFlags &= ~0x100;
         mario->unk1A8 = revise360(mario->unk1A8);
         mario->wPlayerCollisionBox.x = 40.0f;
         mario->wPlayerCollisionBox.y = 40.0f;
-        data = SHIP_DATA;
-        {
-            HitEntry* hit = mario->hitobjJumpFrom;
-            MarioWork* m = marioGetPtr();
-            Vec pos;
-            s32 attr;
-            hitObjGetPos(hitGetName(hit), &pos);
-            dir = 0;
-            fx = (f32)(s32)((100.0f * pos.x + 0.5f) / 100.0f);
-            fz = (f32)(s32)((100.0f * pos.z + 0.5f) / 100.0f);
-            data->unk3C.y = m->position.y - 15.0f;
-            attr = hitGetAttr(m->hitobjJumpFrom);
-            if (attr & 0x4000) {
-                dir = 1;
-            } else if (attr & 0x8000) {
-                dir = 2;
-            } else if (attr & 0x10000) {
-                dir = 3;
-            } else if (attr & 0x20000) {
-                dir = 4;
-            }
-        }
-        if (dir == 1) {
-            data->unk3C.x = fx;
-            data->unk3C.z = fz - 50.0f - 30.30303f;
-        } else if (dir == 2) {
-            data->unk3C.x = fx;
-            data->unk3C.z = 30.30303f + (50.0f + fz);
-        } else if (dir == 3) {
-            data->unk3C.x = (fx - 50.0f) - 30.30303f;
-            data->unk3C.z = fz;
-        } else if (dir == 4) {
-            data->unk3C.x = 30.30303f + (50.0f + fx);
-            data->unk3C.z = fz;
-        } else {
-            data->unk3C.x = fx;
-            data->unk3C.z = fz;
-        }
+        dir = shipHarborTarget(mario->hitobjJumpFrom, &SHIP_DATA->unk3C);
         {
             f30 = 0.1f * distABf(SHIP_DATA->unk3C.x, SHIP_DATA->unk3C.z, mario->position.x, mario->position.z);
             switch (dir) {
@@ -574,31 +534,7 @@ void mot_ship(void) {
             mario->multiTimer = 4;
             mario->currSubMotionId = 0x20;
         }
-        f30 = 1.6f;
-        {
-            MarioWork* m;
-            m = marioGetPtr();
-            ((f32*)SHIP_DATA->eff->userdata)[1] = (m->position.x);
-#ifdef MUST_MATCH
-            // Assign zero in the right operand to keep the original f0/f1 loads and fadds.
-            {
-                f32 zero;
-                ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + (zero = 0.0f);
-            }
-#else
-            ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + 0.0f;
-#endif
-            f31 = m->position.z;
-            ((f32*)SHIP_DATA->eff->userdata)[3] = f31;
-            ((f32*)SHIP_DATA->eff->userdata)[4] = f30;
-#ifdef MUST_MATCH
-            // The direct yaw store lets the scratch value stay in f31 after the scale's last use.
-            ((f32*)SHIP_DATA->eff->userdata)[5] = m->unk1A8;
-#else
-            f31 = m->unk1A8;
-            ((f32*)SHIP_DATA->eff->userdata)[5] = f31;
-#endif
-        }
+        shipWakeUpdate(1.6f);
         break;
     case 32:
         if (--mario->multiTimer > 0) {
@@ -679,9 +615,7 @@ void mot_ship(void) {
         ((void (*)(s32))marioSetPaperAnimeLocalTime)(*(s32*)((u8*)mario + 0x2A4));
         if (--*(s32*)((u8*)mario + 0x2A4) >= 0x2C) {
             f30 = (SHIP_DATA->flags & 1) ? 20.0f : -20.0f;
-            data = SHIP_DATA;
-            f31 = data->unk1C;
-            data->unk1C = 0.125f * (f30 - SHIP_DATA->unk1C) + f31;
+            SHIP_DATA->unk1C += 0.125f * (f30 - SHIP_DATA->unk1C);
             if (SHIP_DATA->flags & 1) {
                 if (SHIP_DATA->unk1C >= 20.0f) {
                     SHIP_DATA->unk1C = 20.0f;
@@ -719,9 +653,7 @@ void mot_ship(void) {
         ((void (*)(s32))marioSetPaperAnimeLocalTime)(*(s32*)((u8*)mario + 0x2A4));
         f30 = SHIP_DATA->unk20 * ((SHIP_DATA->flags & 1) ? 1.0f : -1.0f);
         {
-            data = SHIP_DATA;
-            f31 = data->unk1C;
-            data->unk1C = 0.05f * (f30 - SHIP_DATA->unk1C) + f31;
+            SHIP_DATA->unk1C += 0.05f * (f30 - SHIP_DATA->unk1C);
         }
         mario->unk1A8 += SHIP_DATA->unk1C;
         SHIP_DATA->unk20 += -0.005f;
@@ -736,9 +668,7 @@ void mot_ship(void) {
         s32 r27;
         f30 = SHIP_DATA->unk20 * ((SHIP_DATA->flags & 1) ? 1.0f : -1.0f);
         {
-            data = SHIP_DATA;
-            f31 = data->unk1C;
-            data->unk1C = 0.05f * (f30 - SHIP_DATA->unk1C) + f31;
+            SHIP_DATA->unk1C += 0.05f * (f30 - SHIP_DATA->unk1C);
         }
         mario->unk1A8 += SHIP_DATA->unk1C;
         SHIP_DATA->unk20 += -0.005f;
@@ -777,9 +707,7 @@ void mot_ship(void) {
         marioGetPtr();
         f30 = (SHIP_DATA->flags & 1) ? 4.0f : -4.0f;
         {
-            data = SHIP_DATA;
-            f31 = data->unk1C;
-            data->unk1C = 0.05f * (f30 - SHIP_DATA->unk1C) + f31;
+            SHIP_DATA->unk1C += 0.05f * (f30 - SHIP_DATA->unk1C);
         }
         mario->unk1A8 += SHIP_DATA->unk1C;
         if (SHIP_DATA->flags & 1) {
@@ -833,39 +761,7 @@ void mot_ship(void) {
             *(f32*)((u8*)mario + 0x9C) = 3.0f * (f32)sin(3.1415927f * SHIP_DATA->unk08 / 180.0f) + -13.0f;
         }
         if (mario->flags & 0x20) {
-            MarioWork* m;
-            f30 = mario->baseSpeed;
-            m = marioGetPtr();
-#ifdef MUST_MATCH
-            // Variable-first float compare, without a zero local spanning the lookups.
-            if (!f30) {
-#else
-            if (f30 == 0.0f) {
-#endif
-                marioGetPtr();
-                { s32 b; if (SHIP_DATA->unk08 > 180.0f) b = 0; else b = 1; f30 = b ? 0.3f : 0.6f; }
-                {
-                    data = SHIP_DATA;
-                    f31 = data->unk10;
-                    data->unk10 = 0.1f * (f30 - SHIP_DATA->unk10) + f31;
-                    f30 = SHIP_DATA->unk10;
-                }
-            }
-            {
-                ((f32*)SHIP_DATA->eff->userdata)[1] = m->position.x;
-#ifdef MUST_MATCH
-                // Assign zero in the right operand to keep the original f0/f1 loads and fadds.
-                {
-                    f32 zero;
-                    ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + (zero = 0.0f);
-                }
-#else
-                ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + 0.0f;
-#endif
-                ((f32*)SHIP_DATA->eff->userdata)[3] = m->position.z;
-                ((f32*)SHIP_DATA->eff->userdata)[4] = f30;
-                ((f32*)SHIP_DATA->eff->userdata)[5] = m->unk1A8;
-            }
+            shipWakeUpdate(mario->baseSpeed);
         } else {
         if (mario->hitobjStandOn == NULL) {
             mario->wStickDir1 = 0;
@@ -928,39 +824,7 @@ void mot_ship(void) {
             mario->baseSpeed = 0.0f;
             mario->currSubMotionId = 0x32;
         }
-        {
-            MarioWork* m;
-            f30 = mario->baseSpeed;
-            m = marioGetPtr();
-#ifdef MUST_MATCH
-            // Variable-first float compare, without a zero local spanning the lookups.
-            if (!f30) {
-#else
-            if (f30 == 0.0f) {
-#endif
-                marioGetPtr();
-                { s32 b; if (SHIP_DATA->unk08 > 180.0f) b = 0; else b = 1; f30 = b ? 0.3f : 0.6f; }
-                {
-                    data = SHIP_DATA;
-                    f31 = data->unk10;
-                    data->unk10 = 0.1f * (f30 - SHIP_DATA->unk10) + f31;
-                    f30 = SHIP_DATA->unk10;
-                }
-            }
-            ((f32*)SHIP_DATA->eff->userdata)[1] = m->position.x;
-#ifdef MUST_MATCH
-            // Assign zero in the right operand to keep the original f0/f1 loads and fadds.
-            {
-                f32 zero;
-                ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + (zero = 0.0f);
-            }
-#else
-            ((f32*)SHIP_DATA->eff->userdata)[2] = m->position.y + 0.0f;
-#endif
-            ((f32*)SHIP_DATA->eff->userdata)[3] = m->position.z;
-            ((f32*)SHIP_DATA->eff->userdata)[4] = f30;
-            ((f32*)SHIP_DATA->eff->userdata)[5] = m->unk1A8;
-        }
+        shipWakeUpdate(mario->baseSpeed);
         if ((*(u16*)((u8*)mario + 0x248) & 0xA00) != 0) {
             if (checkHarbor(&SHIP_DATA->unk3C)) {
                 mario->currSubMotionId = 0x1E;
@@ -973,9 +837,6 @@ void mot_ship(void) {
         break;
     }
 }
-#ifdef MUST_MATCH
-#pragma opt_propagation reset
-#endif
 
 void marioShipChgFall(void) {
     MarioWork* mario = marioGetPtr();
@@ -1159,14 +1020,82 @@ void shipMove(void) {
     }
     *(f32*)((u8*)mario + 0x18C) = f29;
 }
-#ifdef MUST_MATCH
-// Reverse source order emits 15, 50, 30.30303, then 180 between checkHarbor and shipMove.
-// These unreferenced helpers position the shared literal pool; their bodies are stripped when linked.
-static f32 shipPoolAngle(void) { return 180.0f; }
-static f32 shipPoolHarborInset(void) { return 30.30303f; }
-static f32 shipPoolHarborWidth(void) { return 50.0f; }
-static f32 shipPoolHarborHeight(void) { return 15.0f; }
-#endif
+
+// Turn direction for boarding the ship: from Mario's angle to the harbor object for the first
+// two harbor attributes, fixed for the other two.
+static s32 shipJumpDir(HitEntry* hit) {
+    MarioWork* m = marioGetPtr();
+    s32 attr = hitGetAttr(hit);
+    Vec pos2;
+    Vec pos1;
+    s32 dir = 0;
+    if (attr & 0x4000) {
+        f32 a;
+        hitObjGetPos(hitGetName(m->hitobjJumpFrom), &pos2);
+        a = angleABf(m->position.x, m->position.z, pos2.x, pos2.z);
+        a = revise360(a - m->targetYaw);
+        dir = (a >= 180.0f) ? 2 : 1;
+    } else if (attr & 0x8000) {
+        f32 a;
+        hitObjGetPos(hitGetName(m->hitobjJumpFrom), &pos1);
+        a = angleABf(m->position.x, m->position.z, pos1.x, pos1.z);
+        a = revise360(a - m->targetYaw);
+        dir = (a >= 180.0f) ? 2 : 1;
+    } else if (attr & 0x10000) {
+        dir = 2;
+    } else if (attr & 0x20000) {
+        dir = 1;
+    }
+    return dir;
+}
+
+// Moves the docking point out in front of the harbor on its open side.
+static void shipHarborOffset(Vec* out, s32 dir, f32 x, f32 z) {
+    if (dir == 1) {
+        out->x = x;
+        out->z = z - 50.0f - 30.30303f;
+    } else if (dir == 2) {
+        out->x = x;
+        out->z = 30.30303f + (50.0f + z);
+    } else if (dir == 3) {
+        out->x = (x - 50.0f) - 30.30303f;
+        out->z = z;
+    } else if (dir == 4) {
+        out->x = 30.30303f + (50.0f + x);
+        out->z = z;
+    } else {
+        out->x = x;
+        out->z = z;
+    }
+}
+
+// Docking point for the harbor Mario jumped from (rounded to 0.01) and the harbor side.
+static s32 shipHarborTarget(HitEntry* hit, Vec* out) {
+    MarioWork* m = marioGetPtr();
+    Vec pos;
+    s32 attr;
+    s32 dir;
+    f32 fx;
+    f32 fz;
+
+    hitObjGetPos(hitGetName(hit), &pos);
+    dir = 0;
+    fx = (f32)(s32)((100.0f * pos.x + 0.5f) / 100.0f);
+    fz = (f32)(s32)((100.0f * pos.z + 0.5f) / 100.0f);
+    out->y = m->position.y - 15.0f;
+    attr = hitGetAttr(m->hitobjJumpFrom);
+    if (attr & 0x4000) {
+        dir = 1;
+    } else if (attr & 0x8000) {
+        dir = 2;
+    } else if (attr & 0x10000) {
+        dir = 3;
+    } else if (attr & 0x20000) {
+        dir = 4;
+    }
+    shipHarborOffset(out, dir, fx, fz);
+    return dir;
+}
 
 s32 checkHarbor(Vec* out) {
     MarioWork* mario = marioGetPtr();
