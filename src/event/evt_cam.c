@@ -6,29 +6,12 @@
 #include "evt/evt_npc.h"
 #include "mario/mario.h"
 #include "mario/mariost.h"
+#include "parse.h"
 #include "manager/evtmgr_cmd.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include "cam_road.h"
 #include "cam_shift.h"
-// The unit's rodata pool, in the original's address order. The inline sqrtf below pools its
-// local double constants after these, at the original's +0xd8/+0xe0/+0xe8. The other
-// functions in this unit still use anonymous zero-vector literals (which MWCC emits
-// separately), so only the leading pool slots are declared here to reproduce the offsets.
-const Vec vec3_802c5f38 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5f44 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5f50 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5f5c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5f68 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5f74 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5f80 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5f8c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5f98 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5fa4 = { 0.0f, 0.0f, 0.0f };
-// Original format string; no code names it, it only fills the pool gap before the doubles.
-#pragma force_active on
-const char str_802C5FF8[16] = "%f%f%f%f%f%f%d%s";
-#pragma force_active reset
 
 
 
@@ -112,11 +95,9 @@ static inline f32 camShakeSqrtf(f32 x) {
     return x;
 }
 
-// evt_cam_shake: the call order, sqrtf, pool offsets and every 32-bit store match. The wInterp
-// halves are stored through the s32* cast because that is the form the original compiled (the
-// u64 expression schedules the two stores in the opposite order).
-// NONMATCHING (98.46%): only register colouring differs (event r29->r26, isFirstCall r30->r24,
-// pool base r26->r30, camId r25->r29, start hi/lo r31/r30 -> r28/r27). Permuter work.
+// The original treats wInterpRelatedTime as two 32-bit words: it stores the halves through the
+// s32* cast (the u64 store schedules the two words in the opposite order) and reads them back
+// joined into a u64 (a plain u64 load colours start, event and camId differently).
 USER_FUNC(evt_cam_shake) {
     s32* args = event->args;
     CameraId camId = evtGetValue(event, args[0]);
@@ -152,7 +133,8 @@ USER_FUNC(evt_cam_shake) {
         f32 mag = camShakeSqrtf(ampX * ampX + ampY * ampY);
         s32 onTime = (s32)(13000.0f * mag);
         s32 offTime = (s32)(50.0f * (1.0f - mag));
-        OSTime wInterp = event->wInterpRelatedTime;
+        u64 wInterp = ((u64)((u32*)&event->wInterpRelatedTime)[0] << 32) |
+                      ((u32*)&event->wInterpRelatedTime)[1];
 
         if (onTime != 0 && offTime != 0) {
             if ((s32)event->field_84 == 0) {
@@ -212,7 +194,7 @@ USER_FUNC(evt_cam3d_evt_set_at) {
     s32 time = evtGetValue(event, args[4]);
     s32 curve = evtGetValue(event, args[5]);
     CameraEntry* cam = camGetPtr(CAMERA_3D);
-    Vec at = makeVecByValue((f32)x, (f32)y, (f32)z);
+    Vec at = (Vec){ (f32)x, (f32)y, (f32)z };
     Vec pos;
 
     PSVECSubtract(&at, &cam->cameraPos, &pos);
@@ -222,6 +204,28 @@ USER_FUNC(evt_cam3d_evt_set_at) {
     cam->presetPos = cam->cameraPos;
     cam->presetAt = cam->cameraAt;
     cam->storedPos = pos;
+    cam->storedAt = at;
+    cam->startTimeA = gp->renderTime;
+    cam->durationA = OSMillisecondsToTicks(time);
+    cam->stateA = 3;
+    cam->curveA = curve;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_cam3d_evt_set_at_rel) {
+    s32* args = event->args;
+    f32 x = evtGetFloat(event, args[0]);
+    f32 y = evtGetFloat(event, args[1]);
+    f32 z = evtGetFloat(event, args[2]);
+    s32 time = evtGetValue(event, args[3]);
+    s32 curve = evtGetValue(event, args[4]);
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    MarioWork* mario = marioGetPtr();
+    Vec at = (Vec){ mario->position.x + x, mario->position.y + y, mario->position.z + z };
+
+    cam->presetPos = cam->cameraPos;
+    cam->presetAt = cam->cameraAt;
+    cam->storedPos = cam->cameraPos;
     cam->storedAt = at;
     cam->startTimeA = gp->renderTime;
     cam->durationA = OSMillisecondsToTicks(time);
@@ -241,8 +245,8 @@ USER_FUNC(evt_cam3d_evt_set) {
     s32 time = evtGetValue(event, args[6]);
     s32 curve = evtGetValue(event, args[7]);
     CameraEntry* cam = camGetPtr(CAMERA_3D);
-    Vec sp = makeVecByValue(x, y, z);
-    Vec sa = makeVecByValue2(ax, ay, az);
+    Vec sp = (Vec){ x, y, z };
+    Vec sa = (Vec){ ax, ay, az };
 
     cam->presetPos = cam->cameraPos;
     cam->presetAt = cam->cameraAt;
@@ -293,6 +297,34 @@ USER_FUNC(evt_cam3d_evt_set_rel) {
     return EVT_RETURN_DONE;
 }
 
+USER_FUNC(evt_cam3d_evt_set_npc_rel_str) {
+    s32* args = event->args;
+    const char* str = (const char*)evtGetValue(event, args[0]);
+    s32 curve = evtGetValue(event, args[1]);
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    Vec pos = (Vec){ 0.0f, 0.0f, 0.0f };
+    Vec at = (Vec){ 0.0f, 0.0f, 0.0f };
+    s32 time;
+    char npcName[32];
+    NpcEntry* npc;
+    Vec stPos;
+    Vec stAt;
+
+    sscanf(str, "%f%f%f%f%f%f%d%s", &pos.x, &pos.y, &pos.z, &at.x, &at.y, &at.z, &time, npcName);
+    npc = evtNpcNameToPtr(event, npcName);
+    PSVECAdd(&npc->position, &at, &stAt);
+    PSVECAdd(&stAt, &pos, &stPos);
+    cam->presetPos = cam->cameraPos;
+    cam->presetAt = cam->cameraAt;
+    cam->storedPos = stPos;
+    cam->storedAt = stAt;
+    cam->startTimeA = gp->renderTime;
+    cam->durationA = OSMillisecondsToTicks(time);
+    cam->stateA = 3;
+    cam->curveA = curve;
+    return EVT_RETURN_DONE;
+}
+
 USER_FUNC(evt_cam3d_evt_set_npc_rel) {
     s32* args = event->args;
     const char* npcName = (const char*)evtGetValue(event, args[0]);
@@ -308,8 +340,8 @@ USER_FUNC(evt_cam3d_evt_set_npc_rel) {
     NpcEntry* npc = evtNpcNameToPtr(event, npcName);
     Vec stPos;
     Vec stAt;
-    Vec pos = makeVecByValue(x, y, z);
-    Vec at = makeVecByValue2(ax, ay, az);
+    Vec pos = (Vec){ x, y, z };
+    Vec at = (Vec){ ax, ay, az };
 
     PSVECAdd(&npc->position, &at, &stAt);
     PSVECAdd(&stAt, &pos, &stPos);
@@ -339,8 +371,8 @@ USER_FUNC(evt_cam3d_evt_set_rel_dir) {
     MarioWork* mario = marioGetPtr();
     Vec stPos;
     Vec stAt;
-    Vec pos = makeVecByValue(x, y, z);
-    Vec at = makeVecByValue2(ax, ay, az);
+    Vec pos = (Vec){ x, y, z };
+    Vec at = (Vec){ ax, ay, az };
     Mtx rot;
 
     PSMTXRotRad(rot, 'Y', MTXDegToRad(yaw));
@@ -371,6 +403,29 @@ USER_FUNC(evt_cam3d_evt_off) {
     cam->startTimeA = gp->renderTime;
     cam->durationA = OSMillisecondsToTicks(time);
     cam->stateA = 1;
+    cam->curveA = curve;
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(evt_cam3d_evt_dolly) {
+    s32* args = event->args;
+    s32 dolly = evtGetValue(event, args[0]);
+    s32 time = evtGetValue(event, args[1]);
+    s32 curve = evtGetValue(event, args[2]);
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    Vec pos;
+
+    PSVECSubtract(&cam->cameraAt, &cam->cameraPos, &pos);
+    PSVECScale(&pos, &pos, (f32)dolly / 100.0f);
+    PSVECAdd(&pos, &cam->cameraPos, &pos);
+
+    cam->presetPos = cam->cameraPos;
+    cam->presetAt = cam->cameraAt;
+    cam->storedPos = pos;
+    cam->storedAt = cam->cameraAt;
+    cam->startTimeA = gp->renderTime;
+    cam->durationA = OSMillisecondsToTicks(time);
+    cam->stateA = 3;
     cam->curveA = curve;
     return EVT_RETURN_DONE;
 }
@@ -427,7 +482,10 @@ USER_FUNC(evt_cam3d_evt_xyz_off) {
     s32 curve = evtGetValue(event, args[1]);
     CameraEntry* cam = camGetPtr(CAMERA_3D);
 
-    cam->anchorPrev = makeVecByValue(cam->blendPos.x, cam->blendPos.y, cam->blendPos.z);
+    {
+        Vec prev = (Vec){ cam->blendPos.x, cam->blendPos.y, cam->blendPos.z };
+        cam->anchorPrev = prev;
+    }
     cam->dollyStartAlt = cam->dollyPercent;
     cam->startTimeB = gp->renderTime;
     cam->durationB = OSMillisecondsToTicks(time);
@@ -621,20 +679,4 @@ USER_FUNC(evt_cam_letter_box_camid) {
 
     camGetPtr(CAMERA_2D)->letterBoxCamId = id;
     return EVT_RETURN_DONE;
-}
-
-inline Vec makeVecByValue(f32 x, f32 y, f32 z) {
-    Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
-}
-
-inline Vec makeVecByValue2(f32 x, f32 y, f32 z) {
-    Vec v = (Vec){ 0.0f, 0.0f, 0.0f };
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
 }
