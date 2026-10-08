@@ -567,7 +567,7 @@ static void monte_disp(CameraId cameraId, void* param) {
     if (monte != NULL) {
         for (i = 0; i < monte->count; i++) {
             if (monte[i].flag == 0) {
-                iconDispGx(&monte[i].pos, 0, 0x13F, 1.0f);
+                iconDispGx(1.0f, &monte[i].pos, 0, 0x13F);
             }
         }
     }

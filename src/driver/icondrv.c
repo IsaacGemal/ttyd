@@ -423,7 +423,7 @@ void iconDispGxAlpha(Vec* position, s16 flags, s16 iconId, u8 alpha, f32 scale) 
 
 #pragma dont_inline reset
 
-void iconDispGx(Vec* position, s16 flags, s16 iconId, f32 scale) {
+void iconDispGx(f32 scale, Vec* position, s16 flags, s16 iconId) {
     iconDispGxAlpha(position, flags, iconId, 0xFF, scale);
 }
 

@@ -1829,7 +1829,7 @@ void bakuGameDisp2D(void) {
             Vec screen;
 
             btlGetScreenPoint(&entry->pos, &screen);
-            iconDispGx(&screen, 0x10, icon, entry->field_0x20);
+            iconDispGx(entry->field_0x20, &screen, 0x10, icon);
         }
     }
     flag = 0;

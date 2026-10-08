@@ -165,7 +165,7 @@ void unk_yuu_00001054(CameraId cameraId, void* param) {
                 if ((gp->retraceCount & 0x1F) < 9) {
                     pos.x -= 5.0f * dir;
                 }
-                iconDispGx(&pos, 0, 0x163, -2.0f * dir);
+                iconDispGx(-2.0f * dir, &pos, 0, 0x163);
             }
         }
     }
@@ -246,7 +246,7 @@ static void monte_disp(CameraId cameraId, void* param) {
     if (board != NULL) {
         for (i = 0; i < board->count; i++) {
             if (board[i].active == 0) {
-                iconDispGx(&board[i].pos, 0, 0x13F, 1.0f);
+                iconDispGx(1.0f, &board[i].pos, 0, 0x13F);
             }
         }
     }

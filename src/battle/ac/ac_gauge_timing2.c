@@ -351,9 +351,9 @@ void battleAcDelete_GaugeTiming2(BattleWork* work) {
 // Match-only: iconDispGx's header declares the icon id `s16`, but the original passes the value
 // returned by BattleACGetButtonIcon straight through (no `extsh`); a differently-typed function
 // pointer keeps the call a direct `bl iconDispGx`. Same workaround as ac_power_gauge_lv2.c.
-#define ICON_DISP(v, f, id, s) (((void (*)(Vec*, s16, s32, f32))iconDispGx)((v), (f), (id), (s)))
+#define ICON_DISP(v, f, id, s) (((void (*)(f32, Vec*, s16, s32))iconDispGx)((s), (v), (f), (id)))
 #else
-#define ICON_DISP(v, f, id, s) iconDispGx((v), (f), (id), (s))
+#define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
 #endif
 
 // don't_inline: the original keeps actionCommandDisp as its own local function

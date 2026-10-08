@@ -598,14 +598,14 @@ void kpa_status_disp(CameraId cameraId, void* param) {
         ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, (u16)iconId);
     }
 #else
-    iconDispGx(&pos, 0x10, (u32)gp->language == 0 ? 0x206 : 0x210, 1.0f);
+    iconDispGx(1.0f, &pos, 0x10, (u32)gp->language == 0 ? 0x206 : 0x210);
 #endif
     pos.x = 50.0f;
     pos.y = 160.0f;
-    iconDispGx(&pos, 0x10, 0x208, 1.0f);
+    iconDispGx(1.0f, &pos, 0x10, 0x208);
     pos.x = 220.0f;
     pos.y = 160.0f;
-    iconDispGx(&pos, 0x10, 0x207, 1.0f);
+    iconDispGx(1.0f, &pos, 0x10, 0x207);
 
     value = pouchGetKpaScore();
     digits[0] = value / 100000;
@@ -624,14 +624,14 @@ void kpa_status_disp(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
         ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, numeric_id[digits[i]]);
 #else
-        iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+        iconDispGx(1.0f, &pos, 0x10, numeric_id[digits[i]]);
 #endif
         pos.x += 20.0f;
     }
     pos.x += 20.0f;
-    iconDispGx(&pos, 0x10, 0x18B, 0.7f);
+    iconDispGx(0.7f, &pos, 0x10, 0x18B);
     pos.x += 30.0f;
-    iconDispGx(&pos, 0x10, 0x1D5, 1.0f);
+    iconDispGx(1.0f, &pos, 0x10, 0x1D5);
 
 #ifdef MUST_MATCH
     // pouchGetKpaCoin's header says u8, but the original does not zero-extend the result
@@ -647,7 +647,7 @@ void kpa_status_disp(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
         ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, numeric_id[digits[i]]);
 #else
-        iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+        iconDispGx(1.0f, &pos, 0x10, numeric_id[digits[i]]);
 #endif
         pos.x += 20.0f;
     }
@@ -656,10 +656,10 @@ void kpa_status_disp(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
     ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, numeric_id[kwp[0]]);
 #else
-    iconDispGx(&pos, 0x10, numeric_id[kwp[0]], 1.0f);
+    iconDispGx(1.0f, &pos, 0x10, numeric_id[kwp[0]]);
 #endif
     pos.x += 20.0f;
-    iconDispGx(&pos, 0x10, 0x1EE, 1.0f);
+    iconDispGx(1.0f, &pos, 0x10, 0x1EE);
 
     value = kwp[1];
     pos.x += 20.0f;
@@ -669,7 +669,7 @@ void kpa_status_disp(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
         ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, numeric_id[digits[i]]);
 #else
-        iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+        iconDispGx(1.0f, &pos, 0x10, numeric_id[digits[i]]);
 #endif
         pos.x += 20.0f;
     }
@@ -684,7 +684,7 @@ void kpa_status_disp(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
         ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, 1.0f, numeric_id[digits[i]]);
 #else
-        iconDispGx(&pos, 0x10, numeric_id[digits[i]], 1.0f);
+        iconDispGx(1.0f, &pos, 0x10, numeric_id[digits[i]]);
 #endif
         pos.x += 20.0f;
     }

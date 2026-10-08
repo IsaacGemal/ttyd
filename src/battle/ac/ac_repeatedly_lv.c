@@ -403,9 +403,9 @@ void battleAcDelete_RepeatedlyLv(BattleWork* work) {
 // BattleACGetButtonIcon straight through (no `extsh`); a differently-typed function pointer keeps
 // the call a direct `bl iconDispGx`. Same workaround as ac_repeatedly.c / ac_power_gauge.c.
 #ifdef MUST_MATCH
-#define ICON_DISP(v, f, id, s) (((void (*)(Vec*, s16, s32, f32))iconDispGx)((v), (f), (id), (s)))
+#define ICON_DISP(v, f, id, s) (((void (*)(f32, Vec*, s16, s32))iconDispGx)((s), (v), (f), (id)))
 #else
-#define ICON_DISP(v, f, id, s) iconDispGx((v), (f), (id), (s))
+#define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
 #endif
 
 // Match-only: the header declares BattleAcDrawGauge's float ratio last, but the original's prototype

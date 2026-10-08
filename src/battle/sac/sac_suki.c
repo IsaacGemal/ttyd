@@ -564,13 +564,13 @@ static void disp_2D(CameraId camera, void* param) {
     pos1.x = work->pos.x + 215.0f;
     pos1.y = work->pos.y + 60.0f;
     pos1.z = work->pos.z;
-    iconDispGx(&pos1, 0x10, 0x90, 1.0f);
+    iconDispGx(1.0f, &pos1, 0x10, 0x90);
 
     pos2 = vec3_80300a84;
     pos2.x = work->pos.x - 215.0f;
     pos2.y = work->pos.y + 60.0f;
     pos2.z = work->pos.z;
-    iconDispGx(&pos2, 0x10, 0x8F, 1.0f);
+    iconDispGx(1.0f, &pos2, 0x10, 0x8F);
 
     GXSetScissor(0, 0x91, gp->fbWidth, 0x50);
     for (i = 0; i < 7; i++) {
@@ -670,7 +670,7 @@ void N__disp_2D(s32 type, s32 index) {
     // Cast through the signature the original used; still a direct `bl iconDispGx`.
     ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&pos, 0x10, iconId, float_1_804220d8);
 #else
-    iconDispGx(&pos, 0x10, iconId, float_1_804220d8);
+    iconDispGx(float_1_804220d8, &pos, 0x10, iconId);
 #endif
 }
 

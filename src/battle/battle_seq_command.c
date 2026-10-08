@@ -1950,7 +1950,7 @@ void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleW
 	pos.x = float_neg40_8041c36c;
 	pos.y = (f32)(-42 - wp->commandMenu.cursor[13].field_0 * 25);
 	pos.z = float_0_8041c2f0;
-	iconDispGx(&pos, 0x14, 0x1F0, float_1_8041c2f4);
+	iconDispGx(float_1_8041c2f4, &pos, 0x14, 0x1F0);
 }
 #pragma opt_propagation reset
 
@@ -2294,7 +2294,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 			iconPos.x = screen.x;
 			iconPos.y = screen.y;
 			iconPos.z = float_0_8041c2f0;
-			iconDispGx(&iconPos, 0x10, 0x1EF, float_1_8041c2f4);
+			iconDispGx(float_1_8041c2f4, &iconPos, 0x10, 0x1EF);
 			if (unit->currentKind == 0xE2) {
 				name = pouchGetYoshiName();
 			} else {
@@ -2310,7 +2310,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 			iconPos.x = screen.x;
 			iconPos.y = screen.y;
 			iconPos.z = float_0_8041c2f0;
-			iconDispGx(&iconPos, 0x18, 0x1EF, float_1_8041c2f4);
+			iconDispGx(float_1_8041c2f4, &iconPos, 0x18, 0x1EF);
 			if (unit->currentKind == 0xE2) {
 				name = pouchGetYoshiName();
 			} else {
@@ -2346,7 +2346,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 				iconPos.x = screen.x;
 				iconPos.y = screen.y;
 				iconPos.z = float_0_8041c2f0;
-				iconDispGx(&iconPos, 0x10, 0x1EF, float_1_8041c2f4);
+				iconDispGx(float_1_8041c2f4, &iconPos, 0x10, 0x1EF);
 				if (unit->currentKind == 0xE2) {
 					name = pouchGetYoshiName();
 				} else {
@@ -2363,7 +2363,7 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 				iconPos.x = screen.x;
 				iconPos.y = screen.y;
 				iconPos.z = float_0_8041c2f0;
-				iconDispGx(&iconPos, 0x18, 0x1EF, float_1_8041c2f4);
+				iconDispGx(float_1_8041c2f4, &iconPos, 0x18, 0x1EF);
 				if (unit->currentKind == 0xE2) {
 					name = pouchGetYoshiName();
 				} else {
@@ -2415,7 +2415,7 @@ void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWor
 	iconPos.x = screen.x;
 	iconPos.y = screen.y;
 	iconPos.z = float_0_8041c2f0;
-	iconDispGx(&iconPos, 0x10, 0x1EF, float_1_8041c2f4);
+	iconDispGx(float_1_8041c2f4, &iconPos, 0x10, 0x1EF);
 	len = (f32)strlen(msgSearch((char*)partner->mKindParams->name));
 	xoff = float_6p25_8041c318 * len;
 	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2d8, iconPos.x - xoff, float_80_8041c31c + iconPos.y,

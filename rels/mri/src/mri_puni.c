@@ -471,11 +471,11 @@ void evt_icon_disp_func(CameraId camId, void* param) {
                 pos2 = pos;
                 puniSinCosRet(dat->field_0x116 + gp->retraceCount * 10, &pos.z, &pos.x, 9.0f, 9.0f);
                 pos.y += 13.0f;
-                iconDispGx(&pos, 0, 0x14D, 0.6f);
+                iconDispGx(0.6f, &pos, 0, 0x14D);
 
                 puniSinCosRet(dat->field_0x116 + gp->retraceCount * 10 + 0xB4, &pos2.z, &pos2.x, 9.0f, 9.0f);
                 pos2.y += 15.0f;
-                iconDispGx(&pos2, 0, 0x14D, 0.5f);
+                iconDispGx(0.5f, &pos2, 0, 0x14D);
             }
         }
     }

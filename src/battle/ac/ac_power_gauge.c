@@ -325,9 +325,9 @@ void battleAcDelete_PowerGauge(BattleWork* work) {
 // returned by BattleACGetButtonIcon straight through (no `extsh`/`clrlwi`); a differently-typed
 // function pointer keeps the call a direct `bl iconDispGx`. Same workaround as ac_gauge_timing.
 #ifdef MUST_MATCH
-#define ICON_DISP(v, f, id, s) (((void (*)(Vec*, s16, s32, f32))iconDispGx)((v), (f), (id), (s)))
+#define ICON_DISP(v, f, id, s) (((void (*)(f32, Vec*, s16, s32))iconDispGx)((s), (v), (f), (id)))
 #else
-#define ICON_DISP(v, f, id, s) iconDispGx((v), (f), (id), (s))
+#define ICON_DISP(v, f, id, s) iconDispGx((s), (v), (f), (id))
 #endif
 
 // The only remaining difference is the FPR colouring of the ratio clamp: the original loads

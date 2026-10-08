@@ -108,7 +108,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	v = vec3_802fdba0;
 	v.x = baseX;
 	v.y = 25.0f + y;
-	iconDispGx(&v, 0x10, 0x8C, 1.0f);
+	iconDispGx(1.0f, &v, 0x10, 0x8C);
 
 	cam = camGetPtr(CAMERA_2D);
 	btlDispGXInit2DRasta();
@@ -136,7 +136,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	v2 = vec3_802fdbac;
 	v2.x = -288.0f + x + (f32)(dec->rate * 176) / 100.0f;
 	v2.y = 45.0f + y;
-	iconDispGx(&v2, 0x10, 0x96, 1.0f);
+	iconDispGx(1.0f, &v2, 0x10, 0x96);
 }
 #pragma dont_inline reset
 

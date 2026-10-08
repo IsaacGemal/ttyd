@@ -3171,7 +3171,7 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 	pos = vec3_802f97f4;
 	pos.x = float_17_8041e698 + *(f32*)((u8*)win + 0x8);
 	pos.y = *(f32*)((u8*)win + 0xc) - float_40_8041e690;
-	iconDispGx(&pos, 0x10, 0x209, float_0p8_8041e69c);
+	iconDispGx(float_0p8_8041e69c, &pos, 0x10, 0x209);
 
 	PSMTXTrans(mtx, float_75_8041e658 + *(f32*)((u8*)win + 0x8),
 	           *(f32*)((u8*)win + 0xc) - float_40_8041e690, float_0_8041e618);

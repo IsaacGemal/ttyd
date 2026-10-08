@@ -433,14 +433,14 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 		pos = vec3_802fdc68;
 		pos.x = -200.0f + f1;
 		pos.y = 58.0f + f2;
-		iconDispGx(&pos, 0x10, 0x65, 1.0f);
+		iconDispGx(1.0f, &pos, 0x10, 0x65);
 	}
 	else {
 		Vec pos;
 		pos = vec3_802fdc74;
 		pos.x = -200.0f + f1;
 		pos.y = 58.0f + f2;
-		iconDispGx(&pos, 0x10, 0x64, 1.0f);
+		iconDispGx(1.0f, &pos, 0x10, 0x64);
 	}
 }
 #pragma dont_inline reset

@@ -358,13 +358,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 			Vec v = vecs[0];
 			v.x = -200.f + x;
 			v.y = 50.f + y;
-			iconDispGx(&v, 0x10, down, 1.0f);
+			iconDispGx(1.0f, &v, 0x10, down);
 		}
 		else {
 			Vec v = vecs[1];
 			v.x = -200.f + x;
 			v.y = 50.f + y;
-			iconDispGx(&v, 0x10, up, 1.0f);
+			iconDispGx(1.0f, &v, 0x10, up);
 		}
 		break;
 	case 2:
@@ -377,13 +377,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 				Vec v = vecs[2];
 				v.x = -200.f + x;
 				v.y = 50.f + y;
-				iconDispGx(&v, 0x10, down, 1.0f);
+				iconDispGx(1.0f, &v, 0x10, down);
 			}
 			else {
 				Vec v = vecs[3];
 				v.x = -200.f + x;
 				v.y = 50.f + y;
-				iconDispGx(&v, 0x10, up, 1.0f);
+				iconDispGx(1.0f, &v, 0x10, up);
 			}
 		}
 		else {
@@ -391,13 +391,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 				Vec v = vecs[4];
 				v.x = -200.f + x;
 				v.y = 50.f + y;
-				iconDispGx(&v, 0x10, up, 1.0f);
+				iconDispGx(1.0f, &v, 0x10, up);
 			}
 			else {
 				Vec v = vecs[5];
 				v.x = -200.f + x;
 				v.y = 50.f + y;
-				iconDispGx(&v, 0x10, down, 1.0f);
+				iconDispGx(1.0f, &v, 0x10, down);
 			}
 		}
 		break;
@@ -409,13 +409,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 					Vec v = vecs[6];
 					v.x = -200.f + x;
 					v.y = 50.f + y;
-					iconDispGx(&v, 0x10, up, 1.0f);
+					iconDispGx(1.0f, &v, 0x10, up);
 				}
 				else {
 					Vec v = vecs[7];
 					v.x = -200.f + x;
 					v.y = 50.f + y;
-					iconDispGx(&v, 0x10, down, 1.0f);
+					iconDispGx(1.0f, &v, 0x10, down);
 				}
 			}
 			else {
@@ -423,13 +423,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 					Vec v = vecs[8];
 					v.x = -200.f + x;
 					v.y = 50.f + y;
-					iconDispGx(&v, 0x10, down, 1.0f);
+					iconDispGx(1.0f, &v, 0x10, down);
 				}
 				else {
 					Vec v = vecs[9];
 					v.x = -200.f + x;
 					v.y = 50.f + y;
-					iconDispGx(&v, 0x10, up, 1.0f);
+					iconDispGx(1.0f, &v, 0x10, up);
 				}
 			}
 		}
@@ -438,13 +438,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 				Vec v = vecs[10];
 				v.x = -200.f + x;
 				v.y = 50.f + y;
-				iconDispGx(&v, 0x10, down, 1.0f);
+				iconDispGx(1.0f, &v, 0x10, down);
 			}
 			else {
 				Vec v = vecs[11];
 				v.x = -200.f + x;
 				v.y = 50.f + y;
-				iconDispGx(&v, 0x10, up, 1.0f);
+				iconDispGx(1.0f, &v, 0x10, up);
 			}
 		}
 		break;

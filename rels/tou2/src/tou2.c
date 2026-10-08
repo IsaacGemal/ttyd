@@ -1108,31 +1108,31 @@ static void disp_proc(CameraId cameraId, void* param) {
 
         pos.x = 15.0f + f31;
         pos.y = yv - 24.0f;
-        iconDispGx(&pos, 0x10, 0x123, 0.8f);
+        iconDispGx(0.8f, &pos, 0x10, 0x123);
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
     if (dwp->field_08 > 0) {
         Vec pos = { 0.0f, 125.0f, 0.0f };
 
         pos.x = f31 + c250;
-        iconDispGx(&pos, 0x10, 0x205, -1.0f);
+        iconDispGx(-1.0f, &pos, 0x10, 0x205);
         {
             Vec pos = { 0.0f, 75.0f, 0.0f };
 
             pos.x = f31 + c250;
-            iconDispGx(&pos, 0x10, 0x7e, 0.6f);
+            iconDispGx(0.6f, &pos, 0x10, 0x7e);
         }
     }
     if (dwp->field_08 < 1) {
         Vec pos = { 0.0f, -140.0f, 0.0f };
 
         pos.x = f31 + c250;
-        iconDispGx(&pos, 0x10, 0x205, 1.0f);
+        iconDispGx(1.0f, &pos, 0x10, 0x205);
         {
             Vec pos = { 0.0f, -125.0f, 0.0f };
 
             pos.x = f31 + c250;
-            iconDispGx(&pos, 0x10, 0x80, 0.6f);
+            iconDispGx(0.6f, &pos, 0x10, 0x80);
         }
     }
 }

@@ -387,7 +387,7 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
         v.x = float_neg200_8041c3e8 + x;
         v.y = float_70_8041c3ec + y;
-        iconDispGx(&v, 0x10, 0x79, float_1_8041c3f0);
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x79);
         break;
     }
     case 0x3E8:
@@ -395,13 +395,13 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
             Vec v = ((Vec){0.0f, 0.0f, 0.0f});
             v.x = float_neg200_8041c3e8 + x;
             v.y = float_70_8041c3ec + y;
-            iconDispGx(&v, 0x10, 0x78, float_1_8041c3f0);
+            iconDispGx(float_1_8041c3f0, &v, 0x10, 0x78);
         }
         else {
             Vec v = ((Vec){0.0f, 0.0f, 0.0f});
             v.x = float_neg200_8041c3e8 + x;
             v.y = float_70_8041c3ec + y;
-            iconDispGx(&v, 0x10, 0x79, float_1_8041c3f0);
+            iconDispGx(float_1_8041c3f0, &v, 0x10, 0x79);
         }
         break;
     default:
@@ -409,13 +409,13 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
             Vec v = ((Vec){0.0f, 0.0f, 0.0f});
             v.x = float_neg200_8041c3e8 + x;
             v.y = float_70_8041c3ec + y;
-            iconDispGx(&v, 0x10, 0x78, float_1_8041c3f0);
+            iconDispGx(float_1_8041c3f0, &v, 0x10, 0x78);
         }
         else {
             Vec v = ((Vec){0.0f, 0.0f, 0.0f});
             v.x = float_neg200_8041c3e8 + x;
             v.y = float_70_8041c3ec + y;
-            iconDispGx(&v, 0x10, 0x79, float_1_8041c3f0);
+            iconDispGx(float_1_8041c3f0, &v, 0x10, 0x79);
         }
         break;
     }
@@ -441,21 +441,21 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
 #else
         v.y = yy = float_25_8041c400 + y;
 #endif
-        iconDispGx(&v, 0x10, 0x8F, float_1_8041c3f0);
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x8F);
     }
 
     for (i = 1; i < n; i++) {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
         v.x = x + (step * i + float_neg288_8041c3fc);
         v.y = yy;
-        iconDispGx(&v, 0x10, 0x8E, float_1_8041c3f0);
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x8E);
     }
 
     {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
         v.x = x + (step * i + float_neg288_8041c3fc);
         v.y = yy;
-        iconDispGx(&v, 0x10, 0x90, float_1_8041c3f0);
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x90);
     }
 
     step = float_33_8041c404;
@@ -473,21 +473,21 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
                 // iconDispGx's header says s16 but the original passes a zero-extended u16 (clrlwi, no extsh).
                 ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&v, 0x10, (u16)(i + 0x92), float_1_8041c3f0);
 #else
-                iconDispGx(&v, 0x10, (s16)(i + 0x92), float_1_8041c3f0);
+                iconDispGx(float_1_8041c3f0, &v, 0x10, (s16)(i + 0x92));
 #endif
             }
             else {
                 Vec v = ((Vec){0.0f, 0.0f, 0.0f});
                 v.x = x + (step * i + float_neg258_8041c40c);
                 v.y = yy;
-                iconDispGx(&v, 0x10, 0x94, float_1_8041c3f0);
+                iconDispGx(float_1_8041c3f0, &v, 0x10, 0x94);
             }
         }
         else {
             Vec v = ((Vec){0.0f, 0.0f, 0.0f});
             v.x = x + (step * i + float_neg258_8041c40c);
             v.y = yy;
-            iconDispGx(&v, 0x10, 0x91, float_0p5_8041c410);
+            iconDispGx(float_0p5_8041c410, &v, 0x10, 0x91);
         }
     }
 
@@ -495,13 +495,13 @@ static void actionCommandDisp(f32 x, f32 y, s32 type) {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
         v.x = x + (step * (count - 1) + float_neg250_8041c414);
         v.y = yy;
-        iconDispGx(&v, 0x10, 0x91, float_1_8041c3f0);
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x91);
     }
     else {
         Vec v = ((Vec){0.0f, 0.0f, 0.0f});
         v.x = x + (step * (count - 1) + float_neg250_8041c414);
         v.y = yy;
-        iconDispGx(&v, 0x10, 0x95, float_1_8041c3f0);
+        iconDispGx(float_1_8041c3f0, &v, 0x10, 0x95);
     }
 }
 
