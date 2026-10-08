@@ -55,31 +55,15 @@ void N_setupErrorHandler(void) {
 	OSSetErrorHandler(OS_ERROR_PROGRAM, (OSErrorHandler)N_systemErrorHandler);
 }
 
-// NONMATCHING (98.96%): a three-register rotation (string base, print buffer, retrace count) and one folded
-// texture-address copy differ; the strings, conversion mask and .sdata2 pool are the original's.
-extern const f32 float_0p5_80422618;
+// 100%: the text loop indexes print_buffer by i; the two byte pointers the original walks are the compiler's
+// strength-reduced induction variables, and &print_buffer[i] is its hoisted loop invariant.
 void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar) {
-	// MUST_MATCH: local order gives the original argument/font/dimension/loop registers.
-#ifdef MUST_MATCH
-	s8* base;
 	u32 count;
 	int i;
 	OSFontHeader* fontHeader;
 	s32 width2, height2;
-	s8* loop_zero;
-	s8* loop_newline;
 	u32 stack;
 	u16 w1, w2, h1, h2, x1, x2, y1, y2;
-#else
-	OSFontHeader* fontHeader;
-	s8* loop_newline;
-	s8* loop_zero;
-	s32 width2, height2;
-	int i;
-	u32 count, stack;
-	u16 w1, w2, h1, h2, x1, x2, y1, y2;
-	s8* base;
-#endif
 	//stack vars
 	char print_buffer2[0x400]; // 0x10E0
 	char print_buffer[0x1000]; // 0xE0
@@ -166,7 +150,7 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	GXSetScissor(0, 0, 608, 480);
 	MTXOrtho(projection, 0.0f, 608.0f, 0.0f, 480.0f, 0.0f, 1.0f);
 	GXSetProjection(projection, GX_ORTHOGRAPHIC);
-	MTXScale(matrix, float_0p5_80422618, 0.5f, 1.0f);
+	MTXScale(matrix, 0.5f, 0.5f, 1.0f);
 	GXLoadPosMtxImm(matrix, 0);
 	GXSetCurrentMtx(0);
 	GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
@@ -182,24 +166,19 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 	GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, 1, 3, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, 1, 3, 0);
-	base = (s8*)&print_buffer; // the original hoists &print_buffer into r31 here
 	while (1) {
 		count = VIGetRetraceCount();
-		loop_newline = (s8*)&print_buffer;
 		width2 = 50;
 		height2 = 50;
 		i = 0;
-		loop_zero = loop_newline;
-		while (*loop_zero != '\0') {
-			if (*loop_newline == '\n') {
+		while ((s8)print_buffer[i] != '\0') {
+			if ((s8)print_buffer[i] == '\n') {
 				width2 = 50;
 				height2 += 24;
 				i++;
-				loop_zero++;
-				loop_newline++;
 			}
 			else {
-				OSGetFontTexture((const char*)&base[i], &image, &x, &y, &width);
+				OSGetFontTexture(&print_buffer[i], &image, &x, &y, &width);
 				GXInitTexObj(&texObj, image, fontHeader->sheetWidth, fontHeader->sheetHeight,
 					(GXTexFmt)fontHeader->sheetFormat, GX_CLAMP, GX_CLAMP, GX_FALSE);
 				GXLoadTexObj(&texObj, GX_TEXMAP0);
@@ -240,8 +219,6 @@ void N_systemErrorHandler(OSError error, OSContext* context, u32 dsisr, u32 dar)
 				GXPosition1x16(y2);
 
 				i++;
-				loop_zero++;
-				loop_newline++;
 				width2 += width;
 			}
 		}
