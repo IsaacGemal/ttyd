@@ -63,12 +63,10 @@ enum hex_scan_states {
 #define fetch() (count++, (*ReadProc)(ReadProcArg, 0, __GetAChar))
 #define unfetch(c) (*ReadProc)(ReadProcArg, c, __UngetAChar)
 
-// NONMATCHING (99.24%): the call sequence and all immediates match. Every named local lands in the
-// original's register and mwccdbg pass-2 replay reports 0 of 414 registers differ. The 30 residual
-// instructions are scheduler/peephole output over compiler materialized webs: the hex digit loops
-// coalesce the `_toupper` index and value into one register (we use r5, original r3), and the hex
-// exponent normalization keeps the short->int promotion and a two-instruction bit insert (see
-// REPORT.md). The `num` union keeps `result`/`mantissa` in the original's aliased 0x18(r1) slot.
+// NONMATCHING (99.95%): only the two hex digit loops differ. The original keeps the `_toupper` result
+// in r3 and the converted digit `ui` in r5; ours assigns the result straight into `ui` (both r5).
+// Separate temps, a `c = _toupper(c)` form, the expanded macro, and int/long/unsigned `ui` were tried.
+// The `num` union keeps `result`/`mantissa` in the original's aliased 0x18(r1) slot.
 long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* ReadProcArg, int* chars_scanned,
                       int* overflow) {
     int scan_state = start;
@@ -531,7 +529,7 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
 
         return result;
     } else {
-        double* dbl = (double*)mantissa;
+        long double* dbl = (long double*)mantissa;
 
         if (*dbl) {
             if (expsign) {
@@ -543,10 +541,10 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
                 *(unsigned long long*)mantissa >>= 1;
             }
 
-            *(short*)mantissa = *(short*)mantissa & 0xF;
-            exponent = (short)(exponent + (intdigits - 1) * 4);
-            *(short*)mantissa = (short)((*(short*)mantissa & ~0xFFF0) | ((exponent + 0x3FF) << 4));
-            *chars_scanned = spaces + (sign_detected + NibbleIndex + 1 + exp_digits);
+            exponent += (intdigits - 1) * 4;
+            *(short*)mantissa &= 0xF;
+            *(short*)mantissa |= (exponent + 0x3FF) << 4;
+            *chars_scanned = spaces + sign_detected + NibbleIndex + 1 + exp_digits;
 
             if (*dbl != 0.0 && *dbl < *(double*)__extended_min) {
                 *dbl = 0.0;
