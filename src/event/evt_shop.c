@@ -717,10 +717,6 @@ USER_FUNC(disp_list) {
 	return 0;
 }
 
-// NONMATCHING (99.07%): the row index initializes at the loop preheader instead of
-// before the first msgSearch. The second heading and price x sums use r3 for their
-// last intermediate instead of r0. The fnmsubs width/factor operands are reversed;
-// swapping them in C also swaps the conversion-mask/factor FPR allocation.
 void list_disp(WinMgrEntry* entry) {
 	PouchData* pouch;
 	GXColor color0;
@@ -734,7 +730,6 @@ void list_disp(WinMgrEntry* entry) {
 	s32 i;
 	ItemData* item;
 	const char* msg;
-	u32 width;
 	f32 s;
 	char buf[0x100];
 	Mtx mtx;
@@ -745,14 +740,14 @@ void list_disp(WinMgrEntry* entry) {
 	}
 
 	pouch = pouchGetPtr();
+	i = 0;
 
 	msg = msgSearch(str_802ECDF8);
 	FontDrawStart();
 	FontDrawEdge();
 	*(u32*)&color0 = dat_8041bbf0;
 	FontDrawColor(&color0);
-	width = FontGetMessageWidth(msg);
-	FontDrawMessage((100 - (s32)width) / 2 + (10 + entry->field_0x18), entry->field_0x1C + 13, msg);
+	FontDrawMessage((100 - FontGetMessageWidth(msg)) / 2 + (10 + entry->field_0x18), entry->field_0x1C + 13, msg);
 	FontDrawEdgeOff();
 
 	msg = msgSearch(str_802ECE10);
@@ -760,11 +755,9 @@ void list_disp(WinMgrEntry* entry) {
 	FontDrawEdge();
 	*(u32*)&color1 = dat_8041bbf4;
 	FontDrawColor(&color1);
-	width = FontGetMessageWidth(msg);
-	FontDrawMessage(entry->field_0x18 + entry->field_0x20 / 2 - 10 + (100 - (s32)width) / 2, entry->field_0x1C + 13, msg);
+	FontDrawMessage(entry->field_0x18 + entry->field_0x20 / 2 - 10 + (100 - FontGetMessageWidth(msg)) / 2, entry->field_0x1C + 13, msg);
 	FontDrawEdgeOff();
 
-	i = 0;
 	FontDrawStart();
 	for (; shopPointList[i].price != -1; i++) {
 		item = &itemDataTable[shopPointList[i].item];
@@ -778,8 +771,7 @@ void list_disp(WinMgrEntry* entry) {
 			FontDrawColor(&color3);
 		}
 		sprintf(buf, str_8041BC28, winZenkakuStr(shopPointList[i].price));
-		width = FontGetMessageWidth(buf);
-		FontDrawMessage(entry->field_0x20 / 2 - (s32)width + entry->field_0x18 - 90, entry->field_0x1C - 20 - i * 26, buf);
+		FontDrawMessage(entry->field_0x20 / 2 - FontGetMessageWidth(buf) + entry->field_0x18 - 90, entry->field_0x1C - 20 - i * 26, buf);
 
 		FontDrawStart();
 		if (pouch->field_0x5B4 & (1 << i)) {
@@ -790,21 +782,13 @@ void list_disp(WinMgrEntry* entry) {
 			*(u32*)&color5 = dat_8041bc04;
 			FontDrawColor(&color5);
 		}
-		msg = msgSearch(str_802ECDF8);
-		sprintf(buf, str_8041BC28, msg);
-		width = FontGetMessageWidth(buf);
+		sprintf(buf, str_8041BC28, msgSearch(str_802ECDF8));
 		{
-#ifdef MUST_MATCH
-			f32 w = width;
-			f32 x = (f32)(entry->field_0x20 / 2) - w * SHOP_F32(float_0p6_8041bc2c);
+			f32 w = FontGetMessageWidth(buf);
+			f32 x = (f32)(entry->field_0x20 / 2) - SHOP_F32(float_0p6_8041bc2c) * w;
 			x = (f32)entry->field_0x18 + x;
 			x -= SHOP_F32(float_40_8041bc30);
 			PSMTXTrans(mtx, x, entry->field_0x1C - 28 - i * 26, SHOP_F32(float_0_8041bc34));
-#else
-			f32 w = width;
-			w *= SHOP_F32(float_0p6_8041bc2c);
-			PSMTXTrans(mtx, (f32)entry->field_0x18 + (entry->field_0x20 / 2 - w) - SHOP_F32(float_40_8041bc30), entry->field_0x1C - 28 - i * 26, SHOP_F32(float_0_8041bc34));
-#endif
 		}
 		s = MATCH_F32(float_0p64_8041bc38);
 		PSMTXScale(scale, s, s, s);
