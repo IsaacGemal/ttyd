@@ -78,6 +78,12 @@ USER_FUNC(unk_yuu_00009d5c) {
 // case-0 `marioGetPtr()->position.x` value is read through a `MarioWork*` local so the FP add/multiply
 // land in the original's f0/f1/f2 rotation. The 0x140 frame and the r20-r31 save set match; the tie is
 // insensitive to declaration order, statement order, pragmas, flags and compiler version.
+// tools/rasim.py on the mwccdbg dump: `param` (r32, `work` copy-propagated into it) is always the lowest
+// vreg, so it is coloured first and takes r31. Replaying with `--key r32=36.5` (param just above `skip2`)
+// or with rem/mario/seconds/skip2 moved above every other vreg gives work=r24, &digits=r31, digit=r30, and a
+// decl-order search with param movable then reaches 9 of 10 target registers: the original's `work` seems to
+// keep its own (non-propagated) vreg among the locals. `register`, an initialiser, `opt_propagation off`
+// and typing the parameter directly all keep the merge.
 // The two loop increments set the schedule: `for (...; i1++, xoff1 += 30)` (case 1) and
 // `for (...; i3++, xoff3 += 15)` (subsec) emit the xoff add before the loop compare, as the original
 // does; keeping them in the body puts the byteoff add first instead.
