@@ -503,11 +503,9 @@ USER_FUNC(evt_eff_delete_ptr) {
 	return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.19%): every case matches except the `2.0f` multiplicand, which MWCC materialises into the
-// result scratch register (f2) instead of loading it into f1 as the target does (`fmuls f2, f1, f3`).
-// A literal `0.0f` for the two zero args flips the multiplicand to f1 (correct register), but pools 0.0 first
-// so the pool becomes 0.0/2.0/3.0 and the 0.0 load schedules a slot early (96.25%). `#pragma global_optimizer
-// off` also flips f1 with the pool addresses intact, but reorders the 0.0 load past `fdivs f4` (96.25%).
+// Matching shape from theKidOfArcrania's decomp.me scratch NwWJP (opt_propagation off, the height kept in f2 and
+// 2/3 of it computed into f3 before the call, literal 0.0f arguments).
+#pragma opt_propagation off
 USER_FUNC(evt_eff_fukidashi) {
 	s32* args = event->args;
 	s32 type;
@@ -516,6 +514,7 @@ USER_FUNC(evt_eff_fukidashi) {
 	s32 int3, int4, int10;
 	f32 float5, float6, float7, float8, float9;
 	EffectEntry* entry;
+	f32 f2, f3;
 
 	type = evtGetValue(event, args[0]);
 	effName = (const char*)evtGetValue(event, args[1]);
@@ -532,8 +531,9 @@ USER_FUNC(evt_eff_fukidashi) {
 
 	switch (type) {
 		case 0: {
-			f32 height = marioGetPtr()->wPlayerCollisionBox.y;
-			entry = effFukidashiEntry(int3, int4, -1, int10, float_0_8041a240, 2.0f * height / 3.0f, float_0_8041a240, height / 3.0f, float9);
+			f2 = marioGetPtr()->wPlayerCollisionBox.y;
+			f3 = (f2 * 2.0f) / 3.0f;
+			entry = effFukidashiEntry(int3, int4, -1, int10, 0.0f, f3, 0.0f, f2 / 3.0f, float9);
 			break;
 		}
 		case 1: {
@@ -544,8 +544,8 @@ USER_FUNC(evt_eff_fukidashi) {
 			} else {
 				npc = npcNameToPtr(npcName);
 			}
-			height = npc->height;
-			entry = effFukidashiEntry(int3, int4, (s32)npc, int10, float_0_8041a240, 2.0f * height / 3.0f, float_0_8041a240, height / 3.0f, float9);
+			f2 = (2.0f * npc->height) / 3.0f;
+			entry = effFukidashiEntry(int3, int4, (s32)npc, int10, 0.0f, f2, 0.0f, npc->height / 3.0f, float9);
 			break;
 		}
 		case 2:
@@ -554,16 +554,16 @@ USER_FUNC(evt_eff_fukidashi) {
 		case 3: {
 			PartyEntry* party = partyGetPtr(marioGetPartyId());
 			if (party) {
-				f32 height = *(f32*)((u8*)party + 0xF0);
-				entry = effFukidashiEntry(int3, int4, -2, int10, float_0_8041a240, 2.0f * height / 3.0f, float_0_8041a240, height / 3.0f, float9);
+				f2 = (2.0f * *(f32*)((u8*)party + 0xF0)) / 3.0f;
+				entry = effFukidashiEntry(int3, int4, -2, int10, 0.0f, f2, 0.0f, *(f32*)((u8*)party + 0xF0) / 3.0f, float9);
 			}
 			break;
 		}
 		case 4: {
 			PartyEntry* party = partyGetPtr(marioGetExtraPartyId());
 			if (party) {
-				f32 height = *(f32*)((u8*)party + 0xF0);
-				entry = effFukidashiEntry(int3, int4, -3, int10, float_0_8041a240, 2.0f * height / 3.0f, float_0_8041a240, height / 3.0f, float9);
+				f2 = (2.0f * *(f32*)((u8*)party + 0xF0)) / 3.0f;
+				entry = effFukidashiEntry(int3, int4, -3, int10, 0.0f, f2, 0.0f, *(f32*)((u8*)party + 0xF0) / 3.0f, float9);
 			}
 			break;
 		}
@@ -574,3 +574,4 @@ USER_FUNC(evt_eff_fukidashi) {
 	}
 	return EVT_RETURN_DONE;
 }
+#pragma opt_propagation reset
