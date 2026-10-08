@@ -1306,12 +1306,6 @@ u32 rose_table[120] = {
     0x433E0000, 0x43870000, 0x433E0000, 0xC3820000,
 };
 
-// NONMATCHING (99.91%): only the two negation temporaries differ. The original computes left/bottom as
-// `fneg f2,f0` (w) and `fneg f1,f1` (h) then `fmuls f29,f2,0.5` / `fmuls f28,f1,0.5`; MWCC 2.6 negates directly into
-// the persistent f29/f28 (`fneg f29,f0` / `fneg f28,f1` / `fmuls f29,f29,0.5`). Every source shape that forces a
-// separate temp (`-w * 0.5f`, `-w / 2.0f`, explicit intermediates, an inline helper) either leaves the pool order
-// `101,0.5,92` instead of `101,92,0.5` (so the file would not link) or, when `bottom = -h` keeps the pool right,
-// assigns left to f31 instead of f29 and shifts top/right, scoring 99.73%. The baseline below is the best shape.
 void flower_disp(CameraId camera, void* param) {
     CameraEntry* cam = camGetPtr(camera);
     FlowerData* data = (FlowerData*)param;
@@ -1320,10 +1314,8 @@ void flower_disp(CameraId camera, void* param) {
     Mtx trans;
     Mtx scale;
     Mtx result;
-    f32 left;
-    f32 bottom;
-    f32 top;
-    f32 right;
+    f32 w = 101.0f;
+    f32 h = 92.0f;
     s32 i;
 
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
@@ -1350,16 +1342,6 @@ void flower_disp(CameraId camera, void* param) {
     GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     flower = data->flowers;
-    {
-        f32 w = 101.0f;
-        f32 h = 92.0f;
-        left = -w;
-        bottom = -h;
-        left = left / 2.0f;
-        bottom = bottom / 2.0f;
-        top = 46.0f;
-        right = 50.5f;
-    }
 
     for (i = 0; i < data->count; i++, flower++) {
         GXSetChanMatColor(GX_COLOR0A0, (GXColor){0xFF, 0xFF, 0xFF, flower->alpha});
@@ -1370,13 +1352,13 @@ void flower_disp(CameraId camera, void* param) {
         GXLoadPosMtxImm(result, GX_PNMTX0);
         GXSetCurrentMtx(GX_PNMTX0);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-        GXPosition3f32(left, top, 0.0f);
+        GXPosition3f32(-w / 2.0f, h / 2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
-        GXPosition3f32(left, bottom, 0.0f);
+        GXPosition3f32(-w / 2.0f, -h / 2.0f, 0.0f);
         GXTexCoord2f32(0.0f, 1.0f);
-        GXPosition3f32(right, bottom, 0.0f);
+        GXPosition3f32(w / 2.0f, -h / 2.0f, 0.0f);
         GXTexCoord2f32(1.0f, 1.0f);
-        GXPosition3f32(right, top, 0.0f);
+        GXPosition3f32(w / 2.0f, h / 2.0f, 0.0f);
         GXTexCoord2f32(1.0f, 0.0f);
     }
 }

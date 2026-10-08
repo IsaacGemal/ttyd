@@ -1952,7 +1952,7 @@ config.libs = [
             Object(Matching, "window/win_03.c"),
             Object(Matching, "window/win_00.c"),
             Object(Matching, "window/win_06.c"),
-            Object(NonMatching, "window/win_04.c"),
+            Object(Matching, "window/win_04.c"),
             Object(Matching, "win.c"),
             Object(Matching, "event/evt_lect_win.c"),
         ],
