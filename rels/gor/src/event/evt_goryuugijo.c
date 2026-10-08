@@ -83,7 +83,7 @@ USER_FUNC(evt_goryuugijo_alloc) {
         memset(work->data, 0, 4);
         break;
     case 1:
-        work->init = goryuugijo_init_slot;
+        work->init = (UserFunction)goryuugijo_init_slot;
         work->main = goryuugijo_main_slot;
         work->disp = goryuugijo_disp_slot;
         work->data = _mapAlloc(0x78);

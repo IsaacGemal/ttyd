@@ -5676,13 +5676,12 @@ USER_FUNC(kuzi_bomb_bomb_eff) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.17%): only the register holding the `zero_gor_0001b7b4` address differs (r3 in the original, r5 here).
-USER_FUNC(goryuugijo_init_slot) {
-    f32 zero = zero_gor_0001b7b4;
+// Returns nothing: the original leaves r3 unset. evt_goryuugijo_alloc stores it in the UserFunction slot with a cast.
+void goryuugijo_init_slot(EventEntry* event, BOOL isFirstCall) {
     u8* data = (u8*)((GoryuugijoWork*)event->lwData[0])->data;
 
     *(s32*)(data + 0x54) = 0;
-    *(f32*)(data + 0x8) = zero;
+    *(f32*)(data + 0x8) = zero_gor_0001b7b4;
     *(s32*)(data + 0x6c) = 0;
     *(u32*)data &= ~1;
 }

@@ -847,7 +847,11 @@ s32 evt_mobj_floatswitch_red(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// No map uses this switch, so the linker strips it from retail; its name stays in the literal pool.
+/// @todo reconstructed: retail's evt_mobj .rodata pool has "MOBJ_RedTornadoSwitch" (which no retail function
+/// references) just ahead of evt_mobj_floatswitch_red's "MOBJ_RedSwitchBlock", and party_kuribo/party_bomhei test
+/// animName against it, so the object existed. Invented: the name (the missing red member of the blue
+/// switch/floatswitch/tornadoswitch set) and the body (evt_mobj_tornadoswitch_blue with mobj_switch_red).
+#ifdef MUST_MATCH
 s32 evt_mobj_tornadoswitch_red(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -882,6 +886,7 @@ s32 evt_mobj_tornadoswitch_red(EventEntry* event, BOOL isFirstCall) {
     mobjCalcMtx(obj);
     return 2;
 }
+#endif
 
 s32 mobj_timerswitch(MapObjectEntry* obj) {
     MapObjectEntry* child = mobjNameToPtr((char*)((u8*)obj + 0x1B8));
@@ -1123,7 +1128,10 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
     return 0;
 }
 
-// Ride switches A and B are unused in retail; the linker strips them but keeps their names in the pool.
+/// @todo reconstructed: retail's pool has "MOBJ_RideSwitchA" (unreferenced) after "MOBJ_RideSwitchB", both
+/// following evt_mobj_rideswitch_lightblue's "MOBJ_RideSwitchC" (codegen runs in reverse source order), and
+/// party_kuribo/party_bomhei test animName against it. Invented: the name and the body (rideswitch_lightblue's).
+#ifdef MUST_MATCH
 s32 evt_mobj_rideswitch_a(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -1160,7 +1168,12 @@ s32 evt_mobj_rideswitch_a(EventEntry* event, BOOL isFirstCall) {
     mobjCalcMtx2(obj);
     return 2;
 }
+#endif
 
+/// @todo reconstructed: retail's pool has "MOBJ_RideSwitchB" (unreferenced) between evt_mobj_rideswitch_lightblue's
+/// "MOBJ_RideSwitchC" and "MOBJ_RideSwitchA", and party_kuribo/party_bomhei test animName against it. Invented: the
+/// name and the body (rideswitch_lightblue's).
+#ifdef MUST_MATCH
 s32 evt_mobj_rideswitch_b(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -1197,6 +1210,7 @@ s32 evt_mobj_rideswitch_b(EventEntry* event, BOOL isFirstCall) {
     mobjCalcMtx2(obj);
     return 2;
 }
+#endif
 
 // NONMATCHING (99.79%): only the gp/string-address temp colouring is swapped (retail gp=r5/str=r4,
 // ours gp=r4/str=r5); `!!gp->inBattle` fixed the scheduling.
@@ -2539,7 +2553,10 @@ s32 evt_mobj_signboard(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// Unused in retail (stripped by the linker); its animation name stays in the literal pool.
+/// @todo reconstructed: retail's pool has "MOBJ_Arrow" (unreferenced) just ahead of evt_mobj_signboard's
+/// "MOBJ_Signboard", and party_kuribo/party_bomhei test animName against it. Invented: the name and the body
+/// (evt_mobj_signboard's shape without its callback).
+#ifdef MUST_MATCH
 s32 evt_mobj_arrow(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -2570,6 +2587,7 @@ s32 evt_mobj_arrow(EventEntry* event, BOOL isFirstCall) {
     obj->unk1DC = 0;
     return 2;
 }
+#endif
 
 // Recovery block (heart / coin-taken). MapObjectEntry does not declare the fields this object stores in
 // its 0x1A0 padding, so they are read/written through the declared array: *(s32*)&obj->unk1A0[4] (0x1A4
@@ -3790,7 +3808,9 @@ s32 evt_mobj_kururing_floor(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// The trap and bomb rock objects are unused in retail; the linker strips them but keeps their names in the pool.
+/// @todo reconstructed: retail's pool has "MOBJ_trap" (unreferenced) right after "MOBJ_BombRock" and "OFF_d_bom".
+/// Invented: the name and the body (evt_mobj_signboard's shape).
+#ifdef MUST_MATCH
 s32 evt_mobj_trap(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -3821,7 +3841,12 @@ s32 evt_mobj_trap(EventEntry* event, BOOL isFirstCall) {
     obj->unk1DC = 0;
     return 2;
 }
+#endif
 
+/// @todo reconstructed: retail's pool has "MOBJ_BombRock" then "OFF_d_bom" (both unreferenced) at this slot, before
+/// "MOBJ_trap", and party_kuribo/party_bomhei test animName against "MOBJ_BombRock". Invented: the name and the
+/// body (evt_mobj_signboard's shape plus the hitObjFlagOn that uses "OFF_d_bom").
+#ifdef MUST_MATCH
 s32 evt_mobj_bombrock(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -3853,6 +3878,7 @@ s32 evt_mobj_bombrock(EventEntry* event, BOOL isFirstCall) {
     hitObjFlagOn("OFF_d_bom", 1);
     return 2;
 }
+#endif
 
 s32 kpa_powerup(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
