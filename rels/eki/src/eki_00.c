@@ -305,9 +305,11 @@ static Mtx mt = {
     {0.0f, 0.0f, 8.0f, 0.0f},
 };
 
-const Vec vec3_eki_00008884 = {0.0f, 0.0f, 10.0f};
-const Vec vec3_eki_00008890 = {0.0f, 0.0f, 10.0f};
-const Vec vec3_eki_0000889c = {0.0f, 0.0f, 10.0f};
+// Non-const as in rsh_06: ext_moamoa_init copies all three into wp, and as `const` MWCC knows the values
+// and reorders the copies.
+__declspec(section ".rodata") Vec vec3_eki_00008884 = {0.0f, 0.0f, 10.0f};
+__declspec(section ".rodata") Vec vec3_eki_00008890 = {0.0f, 0.0f, 10.0f};
+__declspec(section ".rodata") Vec vec3_eki_0000889c = {0.0f, 0.0f, 10.0f};
 const Vec vec3_eki_000088a8 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_eki_000088b4 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_eki_000088c0 = {0.0f, 0.0f, 0.0f};
@@ -316,7 +318,7 @@ const Vec vec3_eki_000088d8 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_eki_000088e4 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_eki_000088f0 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_eki_000088fc = {0.0f, 0.0f, 0.0f};
-const Vec vec3_eki_00008908 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_eki_00008908 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_eki_00008914 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_eki_00008920 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_eki_0000892c = {0.0f, 0.0f, 0.0f};
@@ -1290,9 +1292,6 @@ static inline f32 initCosf(f32 rad) {
 
 #pragma opt_lifetimes off // keeps the inlined sin/cos seeds in f2/f3 like retail instead of reusing f1
 #pragma opt_propagation off // stop MWCC rematerialising the sin/cos coefficients per branch
-// NONMATCHING (99.38%): pose/ep/i GPRs, the inlined polynomial and copies 2/3 all match. The 7 `!!`
-// left are only the first `wp->field_0x14` copy: retail emits the source address/load before the `wp`
-// address/load (and so keeps wp@ha in r5); ours emits wp first (r4).
 static void ext_moamoa_init(void) {
     s32 i;
     ExtPose* ep;
@@ -1310,14 +1309,9 @@ static void ext_moamoa_init(void) {
 
     wp = _mapAlloc(0x870);
     memset(wp, 0, 0x870);
-    // A plain `Vec = Vec` copy makes MWCC hoist the third word above the second store here; the
-    // volatile cast forces retail's load/load/store/store/load/store order (and the same for the
-    // other two). This is the only way found to reproduce it at -O4 (the plain copy matches only at -O3).
-    // The `(*(MoamoaWork* volatile*)&wp)` read is a match-only trick: it makes each `wp` reload volatile
-    // so the scheduler cannot reorder it against the source loads. It fixed copies 2/3 (11 -> 7 diffs).
-    *(volatile Vec*)&(*(MoamoaWork* volatile*)&wp)->field_0x14 = *(const volatile Vec*)&vec3_eki_00008884;
-    *(volatile Vec*)&(*(MoamoaWork* volatile*)&wp)->field_0x20 = *(const volatile Vec*)&vec3_eki_00008890;
-    *(volatile Vec*)&(*(MoamoaWork* volatile*)&wp)->field_0x2C = *(const volatile Vec*)&vec3_eki_0000889c;
+    wp->field_0x14 = vec3_eki_00008884;
+    wp->field_0x20 = vec3_eki_00008890;
+    wp->field_0x2C = vec3_eki_0000889c;
     wp->poseNum = extGetPoseNum();
     wp->poses = _mapAlloc(wp->poseNum * 0x50);
     memset(wp->poses, 0, wp->poseNum * 0x50);
@@ -1787,10 +1781,10 @@ static inline f32 ekiCosfM(f32 rad) {
 }
 
 #define MOA_TARGET(i) ((&wp->field_0x14)[(i) % 3])
-// NONMATCHING (97.298%): the half-angle setup still hoists the vector address and delays the multiply;
-// state-machine float registers, operand order and random-range scheduling also differ.
-// Sound Vec setup and the rider-vector tail match.
 // voiceSfx is a union under MUST_MATCH so it is not copy-propagated (as yuu_01 fall_rtn): that puts it in r24 and `handled` in r25.
+// Sound Vec setup and the rider-vector tail match.
+// NONMATCHING (97.45%): state-machine float registers (per-case tx/ty/tz colouring), operand order and
+// random-range scheduling differ.
 static void ext_moamoa_main(void) {
     MarioWork* mario;
     PartyEntry* party;
@@ -1898,10 +1892,9 @@ static void ext_moamoa_main(void) {
             } else if (res == 3) {
                 {
 #ifdef MUST_MATCH
-                    // Keep the sum in f1, half in f0, and load the breath angle first.
                     f32 half = 0.5f;
-                    f32 breath = wp->field_0x55C;
                     f32 angle = wp->field_0x550;
+                    f32 breath = wp->field_0x55C;
                     f32 t = breath + angle;
 #else
                     f32 t = wp->field_0x550 + wp->field_0x55C;
@@ -1915,12 +1908,7 @@ static void ext_moamoa_main(void) {
                     f = t * 0.5f;
 #endif
                 }
-#ifdef MUST_MATCH
-                // Preserve retail's load/load/store/store/load/store copy order.
-                *(volatile Vec*)&pose->position = *(const volatile Vec*)&vec3_eki_00008908;
-#else
                 pose->position = vec3_eki_00008908;
-#endif
                 dist = randf(0.1f, 0.2f);
                 rad = 6.2831855f * f / 360.0f;
                 pose->field_0x14 = dist * ekiSinfM(rad);
