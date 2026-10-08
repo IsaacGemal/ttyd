@@ -1676,11 +1676,13 @@ void fan_disp(void) {
 //    literal `* 0.5f` picks different FPRs (same story as the `field_0x38` line below).
 //  - `fan->field_0x40 = scale * -c;` (negating the operand, not `-scale * c`) is what retail's
 //    fused form wants; `-(scale * c)` / `-scale * c` colour the FPRs differently.
-//  - the last loop advances `fan++, pose++, i++` (of the six permutations this one colours the
-//    loop's GPRs and the preceding switch loop exactly like retail).
+//  - the last loop advances `i++, pose++, fan++`, retail's increment order.
 //  - the case-1 random angle goes through the `fanAngle` inline above: inlining `r * span + min`
 //    through parameters emits the retail `fmadds f, rf, 90, 135` operand order (the direct
-//    `135.0f + rf * 90.0f` comes out with the constant as the multiplicand).
+//    `135.0f + rf * 90.0f` comes out with the constant as the multiplicand). The result is held
+//    in the inline's own local `a`: an inline's locals are numbered before the caller's temps, so
+//    the allocator colours the angle after case 2's `scale`/`a` and it lands in retail's f30
+//    (returned directly, the return temp took f31).
 // A sixth: the fly SFX pointer is held in two callee-saved registers (r30 and r29); the
 // single-variable form lets MWCC colour the switch loop's `&fan_wp` r30 instead of retail's
 // r26, which broke the first normalize loop's registers. 98.20 -> 98.27.
@@ -1691,17 +1693,21 @@ void fan_disp(void) {
 //    declares `FanPose* fan` before `s32 i` (the else loop uses `fane`/`posee` declared before
 //    `found`/`i`, the pair loop `fanp`/`ip`, the switch loop `fan` before `i`);
 //  - the case-10/20 counters use `s16 v = field; field = --v;` (the `v - 1` form colours r0/r3 wrong).
-// Together 98.27 -> 98.86 and one instruction. What is still different (45 instruction diffs):
+// Together 98.27 -> 98.86 and one instruction; with the `fanAngle` local, the retail increment
+// order and `if (PSVECMag(&d))` (retail compares the magnitude first) 98.98. What is still
+// different (26 instruction diffs):
 //  - the switch-loop preheader: the string address is materialised in r0 and copied to the two
 //    fly-SFX pointers, where retail writes it straight into r30 (`addi r30` + one `mr`), one extra
 //    `mr`. Same for the `vec3_tou_0000d064`/`0.5` schedule in case 2 (loads before the stores).
-//  - case 1's angle `a` lands in f31 where retail has f30; this cascades through the inlined
-//    fanSinf/fanCosf branches (the `fdivs f30` in retail).
-//  - a handful of residual register names in the else loop and one `fcmpu` operand order.
+//  - the else loop's `found` (retail r27, ours r30) and the pair loop's `ip` / inner `&fan_wp`
+//    (retail r27/r29, ours r29/r27). tools/rasim.py on a mwccdbg dump reproduces our colouring
+//    and only reaches retail's if `found` and `ip` are the two lowest-numbered locals (declared
+//    last), which no block-scoped declaration order allows: probably a structural difference.
 static inline f32 fanAngle(f32 rf, f32 min, f32 span) {
-    return (rf * span + min) * TWO_PI / 360.0f;
+    f32 a = (rf * span + min) * TWO_PI / 360.0f;
+    return a;
 }
-// NONMATCHING (98.86%): the above register/scheduling clusters; no logic differs.
+// NONMATCHING (98.98%): the above register/scheduling clusters; no logic differs.
 #pragma opt_loop_invariants off // stops `&query.hitNormal` being hoisted into r30 before the loop
 void ext_fan_main(void) {
     MarioWork* mario = marioGetPtr();
@@ -1771,7 +1777,7 @@ void ext_fan_main(void) {
             continue;
         }
         PSVECSubtract(&vec, &fan->position, &d);
-        if (PSVECMag(&d) != 0.0f) {
+        if (PSVECMag(&d)) {
             PSVECNormalize(&d, &d);
             d.y = 0.0f;
             PSVECScale(&d, &d, 0.1f);
@@ -1904,7 +1910,7 @@ void ext_fan_main(void) {
 
     pose = extGetPosePtr();
     fan = fan_wp->poses;
-    for (i = 0; i < fan_wp->poseNum; fan++, pose++, i++) {
+    for (i = 0; i < fan_wp->poseNum; i++, pose++, fan++) {
         switch (fan->field_0x2) {
         case 0:
         {
