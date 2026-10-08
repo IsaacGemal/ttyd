@@ -85,6 +85,15 @@ typedef struct BattleNozzleWork {
 #define BSO_STR_IF_BODY "if_body"
 #define BSO_STR_IF_WIRE "if_wire"
 
+// _object_fall_attack's three sound names. MUST_MATCH: retail computes them once, before the hit loop (TUB
+// stays in a register and a spilled copy serves the HP-damage path). MWCC's frontend hoists an integer round
+// trip out of the loop as an invariant expression; a plain literal is rematerialised at each call instead.
+#ifdef MUST_MATCH
+#define BSO_SFX(name) ((char*)(u32)(name))
+#else
+#define BSO_SFX(name) (name)
+#endif
+
 // ---------------------------------------------------------------------------
 // _object_fall_attack: spawns and updates the "falling object" hazard. Each
 // spawned object gets a BattleWeapon copied from the battle's fall-object data
@@ -94,7 +103,7 @@ typedef struct BattleNozzleWork {
 // ---------------------------------------------------------------------------
 
 typedef struct FallObjectEntry {
-	s8 flag;              // 0x00, 0 = active, -1 = done
+	s8 no;                // 0x00, the entry's number; -1 once it has hit
 	s8 type;              // 0x01, fall-object kind (indexes the data table)
 	u8 pad_02[2];         // 0x02
 	s32 mode;             // 0x04, 0 = stage object, 1 = audience thrown
@@ -2616,38 +2625,39 @@ s32 _object_fall_wait(void) {
 	return 2;
 }
 
-// NONMATCHING (97.10%): calls, branches, constants and data match (the unit's pool is ported). What remains is
-// GPR allocation: retail keeps strNormal in r14 and spills strTub, strRest and part to 0x15F0-0x15F8, which
-// makes its frame 0x1670 against our 0x1660, so every frame offset differs by 0x10. The scalar declaration
-// order below is a search artefact.
 USER_FUNC(_object_fall_attack) {
-	// Scalar declarations: the order is not semantic. MWCC colours callee-saved registers roughly in
-	// declaration order, so this sequence only decides which register each local lands in.
-	s32 off;
-	s32 outPartId;
-	s32 idx;
-	s32 flag;
-	BattleWork* wp;
-	f32 f31;
-	s32 check;
-	s32 dst;
-	FallObjectEntry* entry;
-	s16 rand;
-	char* strTub;
+	s32* args = event->args;
+	// Each loop has its own entry/weapon locals; MWCC numbers locals in declaration order and colours
+	// the callee-saved registers from that, so this order is what places each local in retail's register.
 	s32 outId;
-	BattleUnit* unit;
-	BattleUnitPart* part;
-	char* strNormal;
-	s32 sum;
-	char* strRest;
-	s32 m;
-	s32 active;
+	f32 f31;
+	s32 outPartId;
 	f32 f30;
+	BattleWork* wp;
+	s32 j;
+	s32 active;
+	s32 check;
+	BattleWeapon* preWeapon;
 	s32 flags;
-	BattleWeapon* weapon;
-	s8* alloc;
+	s32 dst;
+	s32 sum;
+	FallObjectEntry* preEntry;
+	s32 hitFlags;
 	s32 i;
 	u8* typeTable;
+	FallObjectEntry* entry;
+	BattleUnit* unit;
+	BattleWeapon* newWeapon;
+	BattleUnitPart* part;
+	s32 idx;
+	s32 flag;
+	s32 slot;
+	FallObjectEntry* newEntry;
+	s16 rand;
+	BattleWeapon* weapon;
+	s8* alloc;
+	s32 k;
+	s32 off;
 	// Stack objects are declared so MWCC lays them out at the original offsets.
 	u8 samplingA[0xACC];
 	u8 samplingB[0xACC];
@@ -2659,7 +2669,7 @@ USER_FUNC(_object_fall_attack) {
 	// `wp` is the BattleWork base; typeTable is its fall-object data table (weights at +0xC0, stats at +0xCC).
 	wp = _battleWorkPointer;
 	typeTable = *(u8**)((u8*)wp + 0x180F8);
-	dst = *event->args;
+	dst = *args++;
 	flag = 0;
 	if (isFirstCall) {
 		alloc = (s8*)BattleAlloc(0xEC);
@@ -2678,75 +2688,75 @@ USER_FUNC(_object_fall_attack) {
 		i = 0;
 		off = 0;
 		while (i < (u8)alloc[0]) {
-			entry = (FallObjectEntry*)(alloc + 4 + off);
-			entry->flag = 0;
-			for (idx = 0; idx < 3; idx++) {
-				if ((s8)alloc[idx + 1] == -1) {
+			newEntry = (FallObjectEntry*)(alloc + 4 + off);
+			newEntry->no = i;
+			for (slot = 0; slot < 3; slot++) {
+				if ((s8)alloc[slot + 1] == -1) {
 					break;
 				}
 			}
-			if (idx >= 3) {
-				entry->type = (s8)alloc[irand(3) + 1];
+			if (slot >= 3) {
+				newEntry->type = (s8)alloc[irand(3) + 1];
 			} else {
 				sum = 0;
-				for (m = 0; m < 9; m++) {
-					sum += typeTable[0xC0 + m];
+				for (j = 0; j < 9; j++) {
+					sum += typeTable[0xC0 + j];
 				}
 				sum = irand(sum);
-				entry->type = 0;
-				while (entry->type < 8) {
-					sum -= typeTable[0xC0 + (s8)entry->type];
+				newEntry->type = 0;
+				while (newEntry->type < 8) {
+					sum -= typeTable[0xC0 + (s8)newEntry->type];
 					if (sum < 0) {
 						break;
 					}
-					entry->type++;
+					newEntry->type++;
 				}
-				alloc[idx + 1] = entry->type;
+				alloc[slot + 1] = newEntry->type;
 			}
 			{
-				s32 t = entry->type;
-				entry->weapon = *(BattleWeapon*)(typeTable + 0xCC + t * 0xC0);
+				s32 t = newEntry->type;
+				newEntry->weapon = *(BattleWeapon*)(typeTable + 0xCC + t * 0xC0);
 			}
-			if (entry->type == 6) {
+			if (newEntry->type == 6) {
 				if (irand(100) < 0x32) {
-					entry->weapon.targetClassFlags |= 0x100;
-					entry->weapon.targetClassFlags &= ~0x200;
+					newEntry->weapon.targetClassFlags |= 0x100;
+					newEntry->weapon.targetClassFlags &= ~0x200;
 				} else {
-					entry->weapon.targetClassFlags &= ~0x100;
-					entry->weapon.targetClassFlags |= 0x200;
+					newEntry->weapon.targetClassFlags &= ~0x100;
+					newEntry->weapon.targetClassFlags |= 0x200;
 				}
 			}
-			weapon = &entry->weapon;
-			entry->mode = 0;
+			newWeapon = &newEntry->weapon;
+			newEntry->mode = 0;
 			if (pouchGetPtr()->mStarPowersObtained != 0
 			    && (BattleAudienceBaseGetPtr()->flags & 0x4000) == 0
-			    && entry->type != 6 && entry->type != 7
+			    && newEntry->type != 6 && newEntry->type != 7
 			    && ((*(u32*)&wp->field_19064[4] & 2) != 0 || irand(100) < 10)) {
 				// BattleWork.field_19064 padding: a BattleWork flag word.
-				entry->mode = 1;
-				entry->partId = -1;
-				entry->unitId = BattleAudience_HaitiRandForFallObject();
+				newEntry->mode = 1;
+				newEntry->partId = -1;
+				newEntry->unitId = BattleAudience_HaitiRandForFallObject();
 				flag = 1;
 				event->userdata[1] = 1;
 			}
-			if (entry->mode == 0) {
+			if (newEntry->mode == 0) {
 				// BattleWork.alliances[1].attackDirection (0x12).
-				BattleSamplingEnemy(samplingA, weapon, BattleGetSystemPtr(wp)->unitId, 1,
-				                    weapon->targetClassFlags, weapon->targetPropertyFlags,
+				BattleSamplingEnemy(samplingA, newWeapon, BattleGetSystemPtr(wp)->unitId, 1,
+				                    newWeapon->targetClassFlags, newWeapon->targetPropertyFlags,
 				                    (s8)-wp->alliances[1].attackDirection);
 				if ((s8)samplingA[0xA6C] <= 0) {
 					evtSetValue(event, dst, event->userdata[1]);
 					return EVT_RETURN_DONE;
 				}
 				flag = 1;
-				BattleChoiceSamplingEnemy(samplingA, weapon->targetWeightingFlags, &outId,
+				BattleChoiceSamplingEnemy(samplingA, newWeapon->targetWeightingFlags, &outId,
 				                          &outPartId);
-				entry->unitId = outId;
-				entry->partId = outPartId;
-				entry->flag14 = 1;
-				for (m = i; m >= 0; m--) {
-					FallObjectEntry* prev = (FallObjectEntry*)(alloc + 4 + m * 0xE8);
-					if (prev != entry && prev->mode == 0 && prev->unitId == entry->unitId) {
+				newEntry->unitId = outId;
+				newEntry->partId = outPartId;
+				newEntry->flag14 = 1;
+				for (j = i; j >= 0; j--) {
+					FallObjectEntry* prev = (FallObjectEntry*)(alloc + 4 + j * 0xE8);
+					if (newEntry != prev && prev->mode == 0 && newEntry->unitId == prev->unitId) {
 						prev->flag14 = 0;
 					}
 				}
@@ -2759,26 +2769,26 @@ USER_FUNC(_object_fall_attack) {
 			return EVT_RETURN_DONE;
 		}
 		for (i = 0; i < (u8)alloc[0]; i++) {
-			entry = (FallObjectEntry*)(alloc + 4 + i * 0xE8);
-			weapon = &entry->weapon;
-			if (entry->mode != 0) {
+			preEntry = (FallObjectEntry*)(alloc + 4 + i * 0xE8);
+			preWeapon = &preEntry->weapon;
+			if (preEntry->mode != 0) {
 				continue;
 			}
 			flags = 0;
-			if (entry->flag14 != 0) {
+			if (preEntry->flag14 != 0) {
 				flags |= 0x100;
 			}
-			if (entry->flag15 != 0) {
+			if (preEntry->flag15 != 0) {
 				flags |= 0x100000;
 			}
-			part = BattleGetUnitPartsPtr(entry->unitId, entry->partId);
-			unit = BattleGetUnitPtr(wp, entry->unitId);
-			entry->index = BattlePreCheckDamage(BattleGetSystemPtr(wp), unit, part, weapon, flags);
-			if (entry->index == 1 && entry->flag14 == 0) {
+			preEntry->index = BattlePreCheckDamage(BattleGetSystemPtr(wp), BattleGetUnitPtr(wp, preEntry->unitId),
+			                                    BattleGetUnitPartsPtr(preEntry->unitId, preEntry->partId),
+			                                    preWeapon, flags);
+			if (preEntry->index == 1 && preEntry->flag14 == 0) {
 				rand = irand(0);
-				for (m = 0; m < i; m++) {
-					FallObjectEntry* prev = (FallObjectEntry*)(alloc + 4 + m * 0xE8);
-					if (entry->unitId == prev->unitId) {
+				for (k = 0; k < i; k++) {
+					FallObjectEntry* prev = (FallObjectEntry*)(alloc + 4 + k * 0xE8);
+					if (preEntry->unitId == prev->unitId) {
 						prev->timer = rand;
 						rand = (s16)((s32)irand(0x16) + (s32)rand + 0x14);
 						if (prev->flag14 != 0) {
@@ -2790,17 +2800,11 @@ USER_FUNC(_object_fall_attack) {
 		}
 	}
 
-	// The three SFX names are string literals; MWCC pools them with the other
-	// rodata constants, which makes the int->float magic double ride the pool
-	// base register as the original does.
 	alloc = (s8*)event->userdata[0];
-	strTub = "SFX_BTL_STAGE_DAMAGE_TUB1";
-	strNormal = "SFX_BTL_STAGE_DAMAGE_NORMAL1";
-	strRest = "SFX_REST_CONDITION1";
 	active = 1;
 	for (i = 0; i < (u8)alloc[0]; i++) {
 		entry = (FallObjectEntry*)(alloc + 4 + i * 0xE8);
-		if (entry->flag == -1) {
+		if (entry->no == -1) {
 			continue;
 		}
 		check = 0;
@@ -2913,12 +2917,12 @@ USER_FUNC(_object_fall_attack) {
 		switch (entry->type) {
 		case 0:
 		case 1:
-			psndSFXOn_3D(strTub, &hitPos);
+			psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_TUB1"), &hitPos);
 			break;
 		case 5:
 			break;
 		default:
-			psndSFXOn_3D(strNormal, &hitPos);
+			psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_NORMAL1"), &hitPos);
 			break;
 		}
 		goto done;
@@ -2927,9 +2931,9 @@ USER_FUNC(_object_fall_attack) {
 		BattleAudience_Case_FallObject_Stage();
 		if (weapon->targetClassFlags & 0x01000000) {
 			BtlUnit_GetHitPos(unit, part, &hitPos.x, &hitPos.y, &hitPos.z);
-			m = 0;
+			hitFlags = 0;
 			if (entry->flag14 != 0) {
-				m |= 0x100;
+				hitFlags |= 0x100;
 			}
 			psndSFXOff(entry->sfxId);
 			switch (entry->index) {
@@ -2940,7 +2944,7 @@ USER_FUNC(_object_fall_attack) {
 				switch (entry->type) {
 				case 0:
 				case 1:
-					psndSFXOn_3D(strTub, &hitPos);
+					psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_TUB1"), &hitPos);
 					break;
 				case 5:
 					break;
@@ -2950,19 +2954,19 @@ USER_FUNC(_object_fall_attack) {
 				switch (entry->type) {
 				case 0:
 				case 1:
-					psndSFXOn_3D(strTub, &hitPos);
+					psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_TUB1"), &hitPos);
 					break;
 				case 5:
-					psndSFXOn_3D(strRest, &hitPos);
+					psndSFXOn_3D(BSO_SFX("SFX_REST_CONDITION1"), &hitPos);
 					break;
 				default:
-					psndSFXOn_3D(strNormal, &hitPos);
+					psndSFXOn_3D(BSO_SFX("SFX_BTL_STAGE_DAMAGE_NORMAL1"), &hitPos);
 					break;
 				}
 				if (BtlUnit_GetACPossibility(unit) != 0) {
 					BattleActionCommandCheckDefence(unit, weapon);
 				}
-				BattleCheckDamage(BattleGetSystemPtr(wp), unit, part, weapon, m);
+				BattleCheckDamage(BattleGetSystemPtr(wp), unit, part, weapon, hitFlags);
 				break;
 			}
 		} else {
@@ -2975,20 +2979,22 @@ USER_FUNC(_object_fall_attack) {
 				s32 si;
 				u8* se;
 				s32 res;
+				BattleUnit* target;
 				if ((s8)samplingB[0xAB7] >= (s8)samplingB[0xA6C]) {
 					break;
 				}
 				si = (s8)samplingB[0xA6D + (s8)samplingB[0xAB7]];
 				se = samplingB + 4 + si * 0x24;
-				unit = BattleGetUnitPtr(wp, *(s16*)(se + 0));
-				part = BattleGetUnitPartsPtr(*(s16*)(se + 0), *(s16*)(se + 2));
-				res = BattlePreCheckDamage(BattleGetSystemPtr(wp), unit, part, weapon, 0x100);
+				target = BattleGetUnitPtr(wp, *(s16*)(se + 0));
+				res = BattlePreCheckDamage(BattleGetSystemPtr(wp), target,
+				                           BattleGetUnitPartsPtr(*(s16*)(se + 0), *(s16*)(se + 2)),
+				                           weapon, 0x100);
 				switch (res) {
 				case 2:
 				case 4:
 					break;
 				case 3:
-					BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
+					BtlUnit_GetPos(target, &pos.x, &pos.y, &pos.z);
 					if (pos.y < 85.0f) {
 						pos.y += 50.0f;
 					} else {
@@ -2999,19 +3005,19 @@ USER_FUNC(_object_fall_attack) {
 						EffectEntry* e = effNiceEntry(6, pos.x, pos.y, pos.z);
 						*(f32*)((u8*)e->userdata + 0x1C) = 0.75f;
 					}
-					unit->damagePattern = 0;
-					BattleRunHitEvent(unit, 0x126);
+					target->damagePattern = 0;
+					BattleRunHitEvent(target, 0x126);
 					break;
 				case 6:
-					unit->damagePattern = 0;
-					BattleRunHitEvent(unit, 0x127);
+					target->damagePattern = 0;
+					BattleRunHitEvent(target, 0x127);
 					break;
 				case 1:
-					if (BtlUnit_GetACPossibility(unit) != 0 && check <= 0) {
-						BattleActionCommandCheckDefence(unit, weapon);
+					if (BtlUnit_GetACPossibility(target) != 0 && check <= 0) {
+						BattleActionCommandCheckDefence(target, weapon);
 						check++;
 					}
-					BattleCheckDamage(BattleGetSystemPtr(wp), unit,
+					BattleCheckDamage(BattleGetSystemPtr(wp), target,
 					                  BattleGetUnitPartsPtr(*(s16*)(se + 0), *(s16*)(se + 2)),
 					                  weapon, 0x100);
 					break;
@@ -3020,7 +3026,7 @@ USER_FUNC(_object_fall_attack) {
 			}
 		}
 	done:
-		entry->flag = -1;
+		entry->no = -1;
 	}
 
 	if (!active) {
