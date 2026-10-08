@@ -200,9 +200,7 @@ typedef struct GenkiObject {
 
 typedef struct GenkiEffect {
     s32 field_0;                // 0x0
-    s32 field_4;                // 0x4
-    s32 field_8;                // 0x8
-    s32 field_C;                // 0xC
+    Vec pos;                    // 0x4
     f32 field_10;               // 0x10
 } GenkiEffect;                  // 0x14
 
@@ -243,9 +241,7 @@ typedef struct GenkiWork {
     s32 field_68;               // 0x68
     f32 field_6C;               // 0x6C
     f32 field_70;               // 0x70
-    s32 field_74;               // 0x74
-    s32 field_78;               // 0x78
-    s32 field_7C;               // 0x7C
+    Vec field_74;               // 0x74
     GenkiEffect field_80[7];    // 0x80
     GenkiWeapon weapon[7];      // 0x10C
     GenkiObject objects[10];    // 0x358
@@ -589,16 +585,9 @@ void main_target(void) {
     }
 }
 
-// 99.40%: the function names its vec3 objects directly and the SFX sound name is a
-// pooled string literal, so MWCC anchors the .rodata base in r29 and folds the int->float
-// pool double into `lfd 0x1b8(r29)` and the string into `addi r4, r29, 0x1c0`, exactly as
-// retail. The only remaining difference is the effect loop's scratch register: retail
-// uses eff=r5 / field_74=r4 / field_78=r3; we get eff=r4 / field_74=r3 / field_78=r0, a
-// volatile-register tie-break in MWCC's allocator that none of the source spellings tried
-// (separate loop index, pointer forms, function-scope eff, reordered stores, continue/while)
-// moved. The switch jump tables are anonymous `@...@` too, but those are symbol-only (`~~`)
-// and resolve when the unit links.
-// NONMATCHING (99.40%): 11 instructions, all in the effect loop's register allocation.
+// The function names its vec3 objects directly and the SFX sound name is a pooled string literal, so
+// MWCC anchors the .rodata base in r29 and folds the int->float pool double into `lfd 0x1b8(r29)` and
+// the string into `addi r4, r29, 0x1c0`, as retail does. The effect's position is one Vec copy.
 void main_weapon(s32 idx) {
     GenkiWork* genki = get_ptr();
     GenkiWeapon* weapon = &genki->weapon[idx];
@@ -637,9 +626,7 @@ void main_weapon(s32 idx) {
 
             if (eff->field_0 <= 0) {
                 eff->field_0 = 0x1E;
-                eff->field_4 = genki->field_74;
-                eff->field_8 = genki->field_78;
-                eff->field_C = genki->field_7C;
+                eff->pos = genki->field_74;
                 eff->field_10 = float_2_80421d70 * (f32)genki->field_68;
                 break;
             }

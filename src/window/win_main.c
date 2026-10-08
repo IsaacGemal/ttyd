@@ -76,8 +76,8 @@ extern ItemData itemDataTable[];
 __declspec(section ".sdata2") const GXColor dat_8041dc00 = { 0xFF, 0xFF, 0xFF, 0xFF };
 
 //.sbss
-static WindowWork* wp;
-TEXPalette* winTexTpl;
+static WindowWork* wp = NULL;
+TEXPalette* winTexTpl = NULL;
 
 // local prototypes
 
@@ -179,8 +179,6 @@ extern PartyData partyDataTbl[];
 extern s32 evt_item_use[];
 
 // The display hook at the end is a switch on characterId (MWCC's three-case lowering is the original's branch layout).
-// NONMATCHING (99.99%): the code matches except the string-pool offsets in the fileAsyncf/fileAllocf format strings
-// (the unit's unported .data order).
 void winMain(void) {
     MarioWork* mario;
     WindowPartyDt* list[7];
@@ -312,19 +310,8 @@ void winMain(void) {
                 break;
 
             case 1:
-                {
-                    const char* names[2] = {"jp", "us"};
-                    s32 done;
-
-                    if ((u32)fileAsyncf(4, 0, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]) == 0) {
-                        done = 0;
-                    } else {
-                        WM_PTR(0x28) = fileAllocf(4, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]);
-                        done = 1;
-                    }
-                    if (done != 0) {
-                        wp->menuState += 1;
-                    }
+                if (winTplLoad()) {
+                    wp->menuState += 1;
                 }
                 break;
 
@@ -479,6 +466,18 @@ void winMain(void) {
             }
         }
     }
+}
+
+// Inlined into winMain's case 1 and stripped from retail's .text (nothing else calls it). Generated before winMain,
+// it pools "%s/w/%s/win.tpl" ahead of case 0's strings, as in retail's .rodata.
+BOOL winTplLoad(void) {
+    const char* names[2] = {"jp", "us"};
+
+    if ((u32)fileAsyncf(4, 0, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]) == 0) {
+        return FALSE;
+    }
+    WM_PTR(0x28) = fileAllocf(4, "%s/w/%s/win.tpl", getMarioStDvdRoot(), names[gp->language]);
+    return TRUE;
 }
 
 void winDisp(CameraId camId, void* param) {
@@ -1106,6 +1105,28 @@ void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
     GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
 }
 
+// Centred sibling of winFontSetR. Nothing in the game calls it, so the linker strips it from retail's .text;
+// its int->float conversion is why retail's signed conversion double pools ahead of winIconSet's unsigned one.
+void winFontSetC(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
+    char buf[0x400];
+    Mtx mtx1;
+    Mtx mtx2;
+    GXColor c;
+    s32 half;
+    va_list args;
+
+    va_start(args, format);
+    vsprintf(buf, format, args);
+    va_end(args);
+    half = FontGetMessageWidth(buf) / 2;
+    PSMTXTrans(mtx1, pos->x - scale->x * (f32)half, pos->y, pos->z);
+    PSMTXScale(mtx2, scale->x, scale->y, scale->z);
+    PSMTXConcat(mtx1, mtx2, mtx1);
+    c = *color;
+    FontDrawColor(&c);
+    FontDrawStringMtx(mtx1, buf);
+}
+
 s32 unk_80175eb0(EventEntry* event, BOOL isFirstCall) {
     s32 value = evtGetValue(event, event->args[0]);
 
@@ -1443,17 +1464,6 @@ __declspec(section ".sdata2") const GXColor dat_8041dc90 = { 0xFF, 0xFF, 0xFF, 0
 __declspec(section ".sdata2") const GXColor dat_8041dc94 = { 0x55, 0x55, 0x55, 0xFF };
 const f32 float_0p5_8041dc98 = 0.5f;
 
-#ifdef MUST_MATCH
-// The original pools both int->float conversion doubles ahead of the deferred functions' strings.
-#pragma defer_codegen off
-static f32 pool_i2f(s32 v) {
-    return (f32)v;
-}
-static f32 pool_u2f(u32 v) {
-    return (f32)v;
-}
-#pragma defer_codegen reset
-#endif
 // clang-format on
 
 
@@ -1462,12 +1472,5 @@ static f32 pool_u2f(u32 v) {
 #pragma explicit_zero_data on
 #pragma force_active on
 __declspec(section ".data") static u32 gap_05_8037631C_data[1] = {0};
-#pragma force_active reset
-#pragma explicit_zero_data reset
-
-// 4-byte zero word that ends the unit's .sdata2 (same treatment as the .data gap).
-#pragma explicit_zero_data on
-#pragma force_active on
-__declspec(section ".sdata2") static u32 gap_09_8041DCCC_sdata2[1] = {0};
 #pragma force_active reset
 #pragma explicit_zero_data reset

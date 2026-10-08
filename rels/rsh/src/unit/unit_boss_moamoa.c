@@ -1244,21 +1244,15 @@ static void ext_moamoa_init(void) {
     }
 }
 
-// The part/retrace/third loops need their own counters (`iF`/`iR`/`iT`): a single shared `i`
-// costs several more mismatches. The retrace takes the two joint addresses as `Vec*`
-// (`vp0`/`vp1`) and tests `vp0->y`/`vp1->y` inline, which lets MWCC keep `float_1@ha` in r4 and
-// colour `p0`/`p1` r5/r0 (named `y0`/`y1` locals instead force a stray `addi &float_1` and shift
-// every later branch by 4). Each `0.5f` matrix update is written
+// The part loop keeps its own counter (`iF`); the other loops share `i` and the pose loops share `extPose`,
+// which is how the original's per-loop webs come out in its registers. The retrace takes the two joint
+// addresses as `Vec*` (`vp0`/`vp1`) and tests `vp0->y`/`vp1->y` inline, which lets MWCC keep `float_1@ha` in
+// r4 and colour `p0`/`p1` r5/r0. Each `0.5f` matrix update is written
 // `{ f32 half = 0.5f; f32 d = off - M; M += d * half; }`: the named `half` stops MWCC
 // canonicalising the product to `0.5f * d` and yields the target's `fmadds f0,f0,f2,f1`.
-// Declaration permutations and all counter permutations do not move the animation-loop pair.
-// NONMATCHING (99.90%): only the animation loop's `extF`/`i` are coloured the other way (ours r22/r24).
 static void ext_moamoa_main(void) {
     MoamoaWorkPose* pose;
-    s32 iR;
-    s32 iT;
     ExtPose* extPose;
-    ExtPose* extF;
     s32 iF;
     MoamoaWorkAnim* anim;
     s32 i;
@@ -1277,14 +1271,15 @@ static void ext_moamoa_main(void) {
     s32 frame;
     f32 f;
 
-    extGetPosePtr();
-    for (i = 0; i < wp->countA; i++) {
+    extPose = extGetPosePtr();
+    pose = wp->poses;
+    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
     }
     wp->field_0x7C0 += 0.1f * (wp->field_0x7BC - wp->field_0x7C0);
 
-    extF = extGetPosePtr();
+    extPose = extGetPosePtr();
     pose = wp->poses;
-    for (i = 0; i < wp->countA; i++, extF++, pose++) {
+    for (i = 0; i < wp->countA; i++, extPose++, pose++) {
         anim = &wp->anims[pose->field_0x10];
         f = (f32)gp->framerate * (f32)OSTicksToMilliseconds((u64)(gp->renderTime - pose->field_0x18)) / 1000.0f / anim->field_0x18;
         if (f >= 1.0f) {
@@ -1295,7 +1290,7 @@ static void ext_moamoa_main(void) {
         if (frame >= anim->field_0x20) {
             frame = anim->field_0x20 - 1;
         }
-        extF->field_0x10 = anim->field_0x1C + frame;
+        extPose->field_0x10 = anim->field_0x1C + frame;
     }
 
     if (wp->mainUnitId != -1) {
@@ -1312,7 +1307,7 @@ static void ext_moamoa_main(void) {
 
         extPose = extGetPosePtr();
         pose = wp->poses;
-        for (iR = 0; iR < wp->countA; iR++, extPose++, pose++) {
+        for (i = 0; i < wp->countA; i++, extPose++, pose++) {
             if (*(s32*)pose->field_0x30 == -1) {
                 (*extPose->matrix)[0][3] = 0.0f;
                 (*extPose->matrix)[1][3] = -1000.0f;
@@ -1370,7 +1365,7 @@ static void ext_moamoa_main(void) {
         }
         extPose = extGetPosePtr();
         pose = wp->poses;
-        for (iT = 0; iT < wp->countA; iT++, extPose++, pose++) {
+        for (i = 0; i < wp->countA; i++, extPose++, pose++) {
             if (pose->field_0x0 & 1) {
                 PSVECSubtract((Vec*)pose->field_0x34, (Vec*)wp->field_0x7A8, &offsetR);
                 PSMTXRotAxisRad(mtx, (Vec*)pose->field_0x40, 0.017453292f * wp->field_0x7B4);

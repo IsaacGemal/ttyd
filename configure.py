@@ -421,7 +421,7 @@ config.libs = [
             Object(NonMatching, "battle/sac/sac_bakugame.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_scissor.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_zubastar.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/sac/sac_genki.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/sac/sac_genki.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/sac/sac_common.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_deka.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/sac/sac_muki.c", extra_cflags=["-O4,s"]),
@@ -853,7 +853,7 @@ config.libs = [
             Object(NonMatching, "window/win_item.c"),
             Object(NonMatching, "window/win_mario.c"),
             Object(NonMatching, "window/win_log.c"),
-            Object(NonMatching, "window/win_main.c"),
+            Object(Matching, "window/win_main.c"),
         ],
     },
     {
@@ -1879,7 +1879,7 @@ config.libs = [
             Object(Matching, "rsh_00.c"),
             Object(NonMatching, "rsh_05.c"),
             Object(NonMatching, "rsh_06.c"),
-            Object(NonMatching, "unit/unit_boss_moamoa.c"),
+            Object(Matching, "unit/unit_boss_moamoa.c"),
         ],
     ),
     Rel(
