@@ -20,9 +20,6 @@
 #include <string.h>
 
 Vec cloud_at;
-// Pins the compiler's int->float magic double to .rodata+0x10 (after the vec3 template, before the
-// pooled strings); the inline conversions still emit their own anonymous copy at +0x38 (i2f limit).
-const f64 double_to_int_802f8130;
 
 
 void mot_cloud() {
@@ -195,11 +192,16 @@ void unk_801820d0(PartyEntry* party) {
 }
 
 void unk_8018206c(PartyEntry* party) {
+    f32 bob;
+
     *(f32*)((u8*)party + 0x17C) = revise360(*(f32*)((u8*)party + 0x17C) - *(f32*)((u8*)party + 0x180));
-    *(f32*)((u8*)party + 0x80) = 3.0f + 3.0f * (f32)sin((3.1415927f * *(f32*)((u8*)party + 0x17C)) / 180.0f);
+    bob = sin((3.1415927f * *(f32*)((u8*)party + 0x17C)) / 180.0f);
+    *(f32*)((u8*)party + 0x80) = 3.0f + 3.0f * bob;
 }
 
 void cloud_move(PartyEntry* party) {
+    f32 bob;
+
     if ((party->field_8 & 0x8) != 0) {
         party->field_8 &= ~0x8;
         partyMoveFlyInit(party, 1);
@@ -210,7 +212,8 @@ void cloud_move(PartyEntry* party) {
     partyFlyMain(party);
 
     *(f32*)((u8*)party + 0x17C) = revise360(*(f32*)((u8*)party + 0x17C) - *(f32*)((u8*)party + 0x180));
-    *(f32*)((u8*)party + 0x80) = 3.0f + 3.0f * (f32)sin((3.1415927f * *(f32*)((u8*)party + 0x17C)) / 180.0f);
+    bob = sin((3.1415927f * *(f32*)((u8*)party + 0x17C)) / 180.0f);
+    *(f32*)((u8*)party + 0x80) = 3.0f + 3.0f * bob;
 
     if (party->field_3B != 2) {
         party->field_8 &= ~0x40000;
@@ -317,8 +320,6 @@ static inline void cloudMoveToMarioStep(PartyEntry* party) {
     *(f32*)((u8*)party + 0x98) += 10.0f;
 }
 #define MOVE_TO_MARIO() cloudMoveToMarioStep(party)
-static inline f32 s70(void) { return 70.0f; }
-#define SEVENTY() s70()
 #else
 #define MOVE_TO_MARIO() do { \
     MarioWork* pm = party->playerPtr; \
@@ -331,7 +332,6 @@ static inline f32 s70(void) { return 70.0f; }
     movePos((f32*)((u8*)party + 0x94), (f32*)((u8*)party + 0x9C), 3.3f, pa); \
     *(f32*)((u8*)party + 0x98) += 10.0f; \
 } while (0)
-#define SEVENTY() 70.0f
 #endif
 
 #ifdef MUST_MATCH
@@ -342,17 +342,6 @@ static inline f32 s70(void) { return 70.0f; }
 #define RELOAD_MARIO() ((void)0)
 #endif
 
-// The three s32->f32 divisor conversions compile to MWCC's inline int->float sequence, which always
-// reads the compiler's own anonymous copy of the 2^52+2^31 double. That copy pools after the
-// function's string literals, so it lands at .rodata+0x38 while the original reads the unit's named
-// double_to_int_802f8130 at .rodata+0x10 (r31 = the vec3 base). Reading the named double by hand (a
-// union plus a double subtract) drops the anonymous copy but emits fsub+frsp instead of the fused
-// fsubs and grows the frame, so it scores lower; this is the project-wide i2f limit (kpaFireAttack).
-// The 70.0f and the clamp's mario reload are reproduced by the SEVENTY()/RELOAD_MARIO() match-only
-// macros above.
-// NONMATCHING (99.90%): the three i2f `lfd` loads read the anonymous double at +0x38 instead of
-// the named one at +0x10, and the f2/f3 colours that feed fsubs/fadds/fmuls follow from that;
-// the anonymous copy also leaves 8 extra bytes at the end of .rodata.
 void N__cloud_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     HitEntry* hit;
@@ -395,12 +384,9 @@ void N__cloud_use(PartyEntry* party) {
         MOVE_TO_MARIO();
         *(f32*)((u8*)party + 0x10C) = mario->unk1A8;
         *(f32*)((u8*)party + 0x110) = *(f32*)((u8*)mario + 0x1AC);
-        angle = party->position.x;
-        party->position.x = angle + (*(f32*)((u8*)party + 0x94) - angle) / (f32)*(s32*)((u8*)party + 0x24);
-        angle = party->position.y;
-        party->position.y = angle + (*(f32*)((u8*)party + 0x98) - angle) / (f32)*(s32*)((u8*)party + 0x24);
-        angle = party->position.z;
-        party->position.z = angle + (*(f32*)((u8*)party + 0x9C) - angle) / (f32)*(s32*)((u8*)party + 0x24);
+        party->position.x += (*(f32*)((u8*)party + 0x94) - party->position.x) / (f32)*(s32*)((u8*)party + 0x24);
+        party->position.y += (*(f32*)((u8*)party + 0x98) - party->position.y) / (f32)*(s32*)((u8*)party + 0x24);
+        party->position.z += (*(f32*)((u8*)party + 0x9C) - party->position.z) / (f32)*(s32*)((u8*)party + 0x24);
         if (--*(s32*)((u8*)party + 0x24) > 0) {
             break;
         }
@@ -431,8 +417,7 @@ void N__cloud_use(PartyEntry* party) {
         *(f32*)((u8*)cloud + 0x4) = mario->unk1A8;
         if ((party->flags & 0x80000000) == 0) {
             mario->unk150.x = 0.03f;
-            angle = revise360(270.0f - *(f32*)((u8*)mario + 0x1AC));
-            mario->unk138 = SEVENTY() * ((angle <= 180.0f) ? -1.0f : 1.0f);
+            mario->unk138 = 70.0f * ((revise360(270.0f - *(f32*)((u8*)mario + 0x1AC)) <= 180.0f) ? -1.0f : 1.0f);
         }
         if (party->useStruct != NULL && *(u32*)((u8*)party->useStruct + 0x34) == 0xFFFFFFFFu) {
             *(s32*)((u8*)party->useStruct + 0x34) = psndSFXOn_3D((char*)0x930, &party->playerPtr->position);
@@ -763,12 +748,18 @@ void cloudGetAt(Vec* position) {
 }
 
 
-const f64 double_to_int_802f8130 = 4503601774854144.0;
+// Nothing in the game calls this (the linker strips it), but as the last function in the file it is
+// compiled first, so its constants (0, 70, 180 and the int->float conversion double) head the pools.
+void cloudSetMarioSpeed(s32 dir) {
+    MarioWork* mario = marioGetPtr();
+    f32 angle;
 
-// 4-byte tail of the original .data after the useMotionId jump table (the next unit's object);
-// explicit_zero_data + force_active keep the zero word instead of dropping it.
-#pragma explicit_zero_data on // emit the zero-valued object below
-#pragma force_active on // keep it even though nothing references it
-__declspec(section ".data") static u32 gap_05_8038BAAC_data[1] = {0};
-#pragma force_active reset
-#pragma explicit_zero_data reset
+    mario->unk138 = 0.0f;
+    if (dir >= 0) {
+        angle = revise360((f32)dir);
+        mario->unk138 = 70.0f;
+        if (angle <= 180.0f) {
+            mario->unk138 = -mario->unk138;
+        }
+    }
+}
