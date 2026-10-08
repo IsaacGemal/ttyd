@@ -32,34 +32,20 @@ extend_data(25,
 
 const GXColor dat_yuu_00014d98 = { 0xFF, 0xFF, 0xFF, 0x00 };
 
-// `#pragma opt_common_subs off` is required for the register allocation: with CSE on, the
-// two `(1.0f - t)` uses are merged and MWCC puts `1.0f`/`wp->field_18` in different FP
-// registers, which changes the whole block.  Same reason as evt_badgeshop.c/evt_sub.c.
-#pragma opt_common_subs off
-// Only MWCC's register allocation of the `wp->field_08` lerp and the `0.8f * t + 0.2f` fade differs.  The
-// original keeps the fade factor in f1 and the `field_10 * (1-t)` product in f0, while this build does the
-// opposite (`fmadds f0, f1, f5, f0` / `fmuls f1, f3, f2`), which also swaps the dependent `fmuls f31` /
-// `fmadds f0, f4, f5, ...`.  Writing the half-width factor as a division rather than `* 0.5f` reproduces the
-// original's operand order (`fmuls f30, f1, f0`, since MWCC keeps `x / 2.0f` as `x * 0.5` instead of forcing
-// the constant into FRA).  Tried: every statement/temporary order, explicit/inline fade and lerp helpers,
-// commuted/split/direct lerp and fade forms, separate lerp temporaries, `t2`/`nt` indirections, named pool
-// constants, `opt_lifetimes`/`opt_propagation`/`opt_dead_code`/`opt_dead_assignments`/`opt_loop_invariants`/
-// `opt_pointer_analysis`/`opt_strength_reduction`/`_strict`/`opt_vectorize_loops`/`schedule`/`scheduling`/
-// `peephole`/`optimization_level`/`inline_bottom_up`/`pool_data`/`pool_strings`/`force_active`/
-// `optimize_for_size`/`defer_codegen` pragmas, compiler versions 1.3.2-3.0a5.2 and `-O4,p`; none changes the
-// factor/product allocation.  A standalone compile of the fade expression always puts the FMA result in the
-// addend register; retail overwrites the multiplicand (0.8f).  Same class as shadowdrv.c:cylinder, permuter
-// work.  The tail is fixed by evaluating the FontDrawString arguments in the original's order (x, y, str).
-// NONMATCHING (99.80%): the fade/product register allocation (f1/f0 swapped) still differs.
+// The fade factor is a real local, not folded into its use: with copy propagation off it keeps its own
+// (low) variable number, so MWCC colours the `field_10 * (1 - t)` product first (f0) and the fade gets f1, as
+// in the original.  The `(f32)` on each lerp product is what the frontend's tree looks like when the product
+// went through an f32 temporary: without it MWCC picks a different fmadds shape.
+#pragma opt_propagation off
 void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
     YuuTitleWork* wp = param;
     f32 scale = 2.0f;
     f32 halfWidth;
-    f32 temp;
     f32 alphaF;
     GXColor c;
     GXColor color;
     f32 t;
+    f32 fade;
 
     if (wp->alpha < 0xFF) {
         wp->alpha += 6;
@@ -68,11 +54,10 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
         }
         alphaF = (f32)wp->alpha;
         t = alphaF / 255.0f;
-        temp = wp->field_10 * (1.0f - t);
-        wp->field_08 = temp + wp->field_18 * t;
-        scale *= 0.8f * t + 0.2f;
-        temp = wp->field_14 * (1.0f - t);
-        wp->field_0c = temp + wp->field_1c * t;
+        wp->field_08 = (f32)(wp->field_10 * (1.0f - t)) + wp->field_18 * t;
+        fade = 0.8f * t + 0.2f;
+        scale *= fade;
+        wp->field_0c = (f32)(wp->field_14 * (1.0f - t)) + wp->field_1c * t;
     }
 #ifdef MUST_MATCH
     // MWCC folds `/ 2.0f` into `* 0.5f` but keeps the product's operand order.
@@ -96,7 +81,8 @@ void evt_yuutitle_disp_func(CameraId cameraId, void* param) {
 #endif
     FontDrawEdgeOff();
 }
-#pragma opt_common_subs on
+#pragma opt_propagation reset
+
 USER_FUNC(evt_yuutitle_main_func) {
     YuuTitleWork* wp = (YuuTitleWork*)event->lwData[0];
 
