@@ -270,7 +270,7 @@ static void actionCommandDisp(f32 f1, f32 f2) {
         Vec pos = vec3_802fea38;
         pos.x = float_neg200_804215d4 + f1;
         pos.y = float_25_804215d8 + f2;
-        iconDispGx(&pos, 0x10, 0x8c, float_1_804215dc);
+        iconDispGx(float_1_804215dc, &pos, 0x10, 0x8c);
     }
 
     ratio = dec->gaugePercent / float_100_804215e0;
@@ -308,13 +308,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
             Vec pos = vec3_802fea44;
             pos.x = f1;
             pos.y = f2;
-            iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
+            iconDispGx(float_1_804215dc, &pos, 0x10, 0x7e);
         }
         {
             Vec pos = vec3_802fea50;
             pos.x = float_56_804215ec + f1;
             pos.y = f2;
-            iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
+            iconDispGx(float_1_804215dc, &pos, 0x10, 0x80);
         }
         break;
     case 0x3e8:
@@ -326,13 +326,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
                 Vec pos = vec3_802fea5c;
                 pos.x = f1;
                 pos.y = f2;
-                iconDispGx(&pos, 0x10, 0x7f, float_1_804215dc);
+                iconDispGx(float_1_804215dc, &pos, 0x10, 0x7f);
             }
             {
                 Vec pos = vec3_802fea68;
                 pos.x = float_56_804215ec + f1;
                 pos.y = f2;
-                iconDispGx(&pos, 0x10, 0x81, float_1_804215dc);
+                iconDispGx(float_1_804215dc, &pos, 0x10, 0x81);
             }
         }
         else {
@@ -342,13 +342,13 @@ static void actionCommandDisp(f32 f1, f32 f2) {
                 Vec pos = vec3_802fea74;
                 pos.x = f1;
                 pos.y = f2;
-                iconDispGx(&pos, 0x10, 0x7e, float_1_804215dc);
+                iconDispGx(float_1_804215dc, &pos, 0x10, 0x7e);
             }
             {
                 Vec pos = vec3_802fea80;
                 pos.x = float_56_804215ec + f1;
                 pos.y = f2;
-                iconDispGx(&pos, 0x10, 0x80, float_1_804215dc);
+                iconDispGx(float_1_804215dc, &pos, 0x10, 0x80);
             }
         }
         break;

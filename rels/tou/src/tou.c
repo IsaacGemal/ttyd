@@ -3173,31 +3173,31 @@ static void disp_proc(CameraId cameraId, void* param) {
 
         pos.x = TOU_F32(float_15_tou_0000a8e4) + f31;
         pos.y = yv - TOU_F32(float_24_tou_0000a8e8);
-        iconDispGx(&pos, 0x10, 0x123, TOU_F32(float_0p8_tou_0000a8c8));
+        iconDispGx(TOU_F32(float_0p8_tou_0000a8c8), &pos, 0x10, 0x123);
     }
     GXSetScissor(0, 0, 0x260, 0x1e0);
     if (((DispWork*)dwp[0])->field_08 > 0) {
         Vec pos = vec3_tou_00009920;
 
         pos.x = f31 + TOU_F32(float_250_tou_0000a890);
-        iconDispGx(&pos, 0x10, 0x205, TOU_F32(float_neg1_tou_0000a8ec));
+        iconDispGx(TOU_F32(float_neg1_tou_0000a8ec), &pos, 0x10, 0x205);
         {
             Vec pos = vec3_tou_0000992c;
 
             pos.x = f31 + TOU_F32(float_250_tou_0000a890);
-            iconDispGx(&pos, 0x10, 0x7e, 0.6f);
+            iconDispGx(0.6f, &pos, 0x10, 0x7e);
         }
     }
     if (((DispWork*)dwp[0])->field_08 < 1) {
         Vec pos = vec3_tou_00009938;
 
         pos.x = f31 + TOU_F32(float_250_tou_0000a890);
-        iconDispGx(&pos, 0x10, 0x205, 1.0f);
+        iconDispGx(1.0f, &pos, 0x10, 0x205);
         {
             Vec pos = vec3_tou_00009944;
 
             pos.x = f31 + TOU_F32(float_250_tou_0000a890);
-            iconDispGx(&pos, 0x10, 0x80, 0.6f);
+            iconDispGx(0.6f, &pos, 0x10, 0x80);
         }
     }
 }

@@ -105,7 +105,7 @@ void twoddisp_disp(CameraId cameraId, void* param) {
 			// Match-only: original call site passes a u16 icon id (clrlwi); the header's s16 would extsh.
 			((void (*)(Vec*, s16, u16, f32))iconDispGx)(&pos, 0x10, entry->field_0x24, entry->scale);
 #else
-			iconDispGx(&pos, 0x10, entry->field_0x24, entry->scale);
+			iconDispGx(entry->scale, &pos, 0x10, entry->field_0x24);
 #endif
 		} else {
 			FontDrawStart();

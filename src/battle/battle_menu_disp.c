@@ -1069,7 +1069,7 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
         vec.y = ysum + f31;
         vec.x = xsum;
         vec.z = float_0_8041c144;
-        iconDispGx(&vec, 0x10, 0x1B5, 0.75f);
+        iconDispGx(0.75f, &vec, 0x10, 0x1B5);
     }
     if (cursor->field_4 < cursor->unk8 - 6) {
         f32 ysum = 20.0f + pos->y - 164.0f;
@@ -1077,7 +1077,7 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
         vec.y = ysum - f31;
         vec.x = xsum;
         vec.z = float_0_8041c144;
-        iconDispGx(&vec, 0x10, 0x1B6, 0.75f);
+        iconDispGx(0.75f, &vec, 0x10, 0x1B6);
     }
     vec.x = pos->x;
     n = cursor->field_0 - cursor->field_4;
@@ -1092,7 +1092,7 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
         vec.y = pos->y + ny;
         vec.z = float_0_8041c144;
     }
-    iconDispGx(&vec, 0x14, 0x1F0, 1.0f);
+    iconDispGx(1.0f, &vec, 0x14, 0x1F0);
 }
 #pragma dont_inline reset
 

@@ -412,7 +412,7 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
         // Match-only: original passes a u16 id (no extsh) and evaluates the scale before the id.
         ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, float_1_8041c904, gauge_wakka[fifteenths]);
 #else
-        iconDispGx(&pos, 0x10, gauge_wakka[fifteenths], float_1_8041c904);
+        iconDispGx(float_1_8041c904, &pos, 0x10, gauge_wakka[fifteenths]);
 #endif
     }
     y = 12.0f + y;
@@ -429,7 +429,7 @@ void gaugeDisp(s32 a1, f32 x, f32 y) {
         // Match-only: original passes a u16 id (no extsh) and evaluates the scale before the id.
         ((void (*)(Vec*, s16, f32, u16))iconDispGx)(&pos, 0x10, float_1_8041c904, (i < hundreds) ? gauge_back[i] : 0x1BF);
 #else
-        iconDispGx(&pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF, float_1_8041c904);
+        iconDispGx(float_1_8041c904, &pos, 0x10, (i < hundreds) ? gauge_back[i] : 0x1BF);
 #endif
     }
 }

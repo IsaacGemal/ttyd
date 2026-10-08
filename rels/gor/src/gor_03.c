@@ -5705,7 +5705,7 @@ static void monte_disp(CameraId cameraId, void* param) {
 
     for (i = 0; i < *(s32*)(*(u32*)(p + 0x4c) + 0x5c); i++) {
         if (p[i * 0x50] == 0) {
-            iconDispGx((Vec*)(p + i * 0x50 + 0xc), 0x40, 0x13f, 1.0f);
+            iconDispGx(1.0f, (Vec*)(p + i * 0x50 + 0xc), 0x40, 0x13f);
         }
     }
 }

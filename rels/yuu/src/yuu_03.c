@@ -99,7 +99,7 @@ void unk_yuu_0000365c(CameraId cameraId, void* param) {
                 if ((gp->retraceCount & 0x1F) < 9) {
                     pos.y += 5.0f;
                 }
-                iconDispGx(&pos, 0, 0x1B6, 1.0f);
+                iconDispGx(1.0f, &pos, 0, 0x1B6);
             }
         }
     }

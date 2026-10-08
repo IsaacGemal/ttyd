@@ -1266,7 +1266,7 @@ void _MarioExpDisp(CameraId camId, void* param) {
         sprintf(buf, str_80420D3C, *(s16*)((u8*)work + 0xA));
         lenf = (f32)strlen(buf);
         windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_180_80420cac, float_neg160_80420d40, float_12p5_80420d0c * lenf + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
-        iconDispGx(&pos, 0x10, 0x18C, float_1_80420c64);
+        iconDispGx(float_1_80420c64, &pos, 0x10, 0x18C);
         FontDrawStart();
         FontDrawString(buf, float_225_80420d44, float_neg163_80420d48);
     }
@@ -1304,7 +1304,7 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     pos.x = float_neg40_80420d30;
     pos.y = (f32)(-50 - *(s32*)((u8*)work + 0x24) * 25);
     pos.z = float_0_80420c7c;
-    iconDispGx(&pos, 0x10, 0x18C, float_1_80420c64);
+    iconDispGx(float_1_80420c64, &pos, 0x10, 0x18C);
 }
 
 // Keep named objects between the compiler colour templates, in retail order.

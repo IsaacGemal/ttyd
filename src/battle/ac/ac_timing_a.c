@@ -259,13 +259,13 @@ static void actionCommandDisp(f32 x, f32 y) {
 		Vec v = vec3_802efbc8;
 		v.x = float_neg200_8041c428 + x;
 		v.y = float_50_8041c42c + y;
-		iconDispGx(&v, 0x10, 0x65, float_1_8041c430);
+		iconDispGx(float_1_8041c430, &v, 0x10, 0x65);
 	}
 	else {
 		Vec v = vec3_802efbd4;
 		v.x = float_neg200_8041c428 + x;
 		v.y = float_50_8041c42c + y;
-		iconDispGx(&v, 0x10, 0x64, float_1_8041c430);
+		iconDispGx(float_1_8041c430, &v, 0x10, 0x64);
 	}
 
 	(*(s32*)&disp->field_0x0[0])++;

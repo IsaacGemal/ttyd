@@ -388,7 +388,7 @@ static void actionCommandDisp(f32 x, f32 y) {
     v = vec3_802f92b8[0];
     v.x = baseX;
     v.y = 25.0f + y;
-    iconDispGx(&v, 0x10, 0x8C, 1.0f);
+    iconDispGx(1.0f, &v, 0x10, 0x8C);
 
     target = aw->field_0x1C / 100.0f;
     if (disp->value <= target) {

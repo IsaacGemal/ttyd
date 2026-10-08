@@ -529,7 +529,7 @@ void BattleAcDrawGauge(s32 x, s32 y, s32 type, s32 count, s32 t0, s32 t1, s32 t2
 	pos = vec3_802eda58;
 	pos.x = (f32)(x - 200);
 	pos.y = (f32)(y + 25);
-	iconDispGx(&pos, 0x10, 0x8C, 1.0f);
+	iconDispGx(1.0f, &pos, 0x10, 0x8C);
 
 	if (count >= 2) {
 		gaugeSegment(cam, x, y, type, 0, t0, 0x21, 0x21, 0x75, 0xFF);

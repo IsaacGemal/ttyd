@@ -1337,7 +1337,7 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
         // so the upper bits are already clear. The natural declared call is under #else.
         ((void (*)(Vec*, s16, s32, f32))iconDispGx)(&pos, 0x10, icon, 1.0f);
 #else
-        iconDispGx(&pos, 0x10, icon, 1.0f);
+        iconDispGx(1.0f, &pos, 0x10, icon);
 #endif
         BattleAcDrawGauge((s32)work->field_0x094.x, (s32)work->field_0x094.y, 0xB1, 4, 0x1A, 0x34, 0x4E,
                           0, 0.01f * work->field_0x084);
@@ -1392,7 +1392,7 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
 #endif
         }
     }
-    iconDispGx(Z20, 0x10, 0x19D, 1.0f);
+    iconDispGx(1.0f, Z20, 0x10, 0x19D);
     if (Z18 >= 0x19 && Z18 < 0x1E) {
         f32 yoffset = 20.0f;
 

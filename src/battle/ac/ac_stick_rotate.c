@@ -517,14 +517,14 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec v = STICK_ZERO_VEC(0);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
+            iconDispGx(float_1_804204d8, &v, 0x10, 0x79);
             break;
         }
         case 0x3E8: {
             Vec v = STICK_ZERO_VEC(1);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02), float_1_804204d8);
+            iconDispGx(float_1_804204d8, &v, 0x10, GET_ICON_ID(sr->field_0x02));
             break;
         }
         case 0x3E9:
@@ -534,20 +534,20 @@ static void actionCommandDisp(f32 x, f32 y) {
                     Vec v = STICK_ZERO_VEC(2);
                     v.x = float_neg200_804204d0 + x;
                     v.y = float_70_804204d4 + y;
-                    iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02),
-                               float_1_804204d8);
+                    iconDispGx(float_1_804204d8, &v, 0x10,
+                               GET_ICON_ID(sr->field_0x02));
                 } else {
                     Vec v = STICK_ZERO_VEC(3);
                     v.x = float_neg200_804204d0 + x;
                     v.y = float_70_804204d4 + y;
-                    iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x01),
-                               float_1_804204d8);
+                    iconDispGx(float_1_804204d8, &v, 0x10,
+                               GET_ICON_ID(sr->field_0x01));
                 }
             } else {
                 Vec v = STICK_ZERO_VEC(4);
                 v.x = float_neg200_804204d0 + x;
                 v.y = float_70_804204d4 + y;
-                iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x02), float_1_804204d8);
+                iconDispGx(float_1_804204d8, &v, 0x10, GET_ICON_ID(sr->field_0x02));
             }
             break;
         case 0x3EA:
@@ -558,7 +558,7 @@ static void actionCommandDisp(f32 x, f32 y) {
             Vec v = STICK_ZERO_VEC(5);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
+            iconDispGx(float_1_804204d8, &v, 0x10, 0x79);
             break;
         }
         default:
@@ -585,7 +585,7 @@ void actionCommandDisp2(f32 x, f32 y) {
             Vec v = STICK_ZERO_VEC(6);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
+            iconDispGx(float_1_804204d8, &v, 0x10, 0x79);
             break;
         }
         case 0x3E8:
@@ -616,7 +616,7 @@ void actionCommandDisp2(f32 x, f32 y) {
             v = STICK_ZERO_VEC(7);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, GET_ICON_ID(sr->field_0x06), float_1_804204d8);
+            iconDispGx(float_1_804204d8, &v, 0x10, GET_ICON_ID(sr->field_0x06));
             break;
         }
         case 0x3EA:
@@ -627,7 +627,7 @@ void actionCommandDisp2(f32 x, f32 y) {
             Vec v = STICK_ZERO_VEC(8);
             v.x = float_neg200_804204d0 + x;
             v.y = float_70_804204d4 + y;
-            iconDispGx(&v, 0x10, 0x79, float_1_804204d8);
+            iconDispGx(float_1_804204d8, &v, 0x10, 0x79);
             break;
         }
         default:

@@ -581,14 +581,14 @@ void select_disp_luigi(WinMgrEntry* entry) {
         posLuigi = vec3_802ffd08;
         posLuigi.x = (f32)(entry->field_0x18 + 0x10c);
         posLuigi.y = (f32)(entry->field_0x1C - 0xc);
-        iconDispGx(&posLuigi, 0x10, 0x18b, 0.6f);
+        iconDispGx(0.6f, &posLuigi, 0x10, 0x18b);
         break;
     }
 
     posMain = vec3_802ffd14;
     posMain.x = select->field_0x14;
     posMain.y = select->field_0x18;
-    iconDispGx(&posMain, 0x14, 0x1f0, 1.0f);
+    iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
     if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->field_0x10 != 0) {
@@ -596,13 +596,13 @@ void select_disp_luigi(WinMgrEntry* entry) {
             // Division by two pools 0.5f while preserving retail multiplication operand order.
             posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posUp.y = (f32)(entry->field_0x1C - 0x24);
-            iconDispGx(&posUp, 0x10, 0x1b5, 0.6f);
+            iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->field_0x10 != select->field_0x34 - 8) {
             posDown = vec3_802ffd2c;
             posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
-            iconDispGx(&posDown, 0x10, 0x1b6, 0.6f);
+            iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
         }
     }
 }
@@ -820,20 +820,20 @@ void select_disp_mario(WinMgrEntry* entry) {
     posMain = vec3_802ffc9c;
     posMain.x = select->field_0x14;
     posMain.y = select->field_0x18;
-    iconDispGx(&posMain, 0x14, 0x1f0, 1.0f);
+    iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
     if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->field_0x10 != 0) {
             posUp = vec3_802ffca8;
             posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posUp.y = (f32)(entry->field_0x1C - 0x24);
-            iconDispGx(&posUp, 0x10, 0x1b5, 0.6f);
+            iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->field_0x10 != select->field_0x34 - 8) {
             posDown = vec3_802ffcb4;
             posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
-            iconDispGx(&posDown, 0x10, 0x1b6, 0.6f);
+            iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
         }
     }
 }
@@ -1141,20 +1141,20 @@ void select_disp_party(WinMgrEntry* entry) {
     posMain = vec3_802ffbd0;
     posMain.x = select->field_0x14;
     posMain.y = select->field_0x18;
-    iconDispGx(&posMain, 0x14, 0x1f0, 1.0f);
+    iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
     if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->field_0x10 != 0) {
             posUp = vec3_802ffbdc;
             posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posUp.y = (f32)(entry->field_0x1C - 0x24);
-            iconDispGx(&posUp, 0x10, 0x1b5, 0.6f);
+            iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->field_0x10 != select->field_0x34 - 8) {
             posDown = vec3_802ffbe8;
             posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
-            iconDispGx(&posDown, 0x10, 0x1b6, 0.6f);
+            iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
         }
     }
 }
@@ -1405,7 +1405,7 @@ void select_disp(WinMgrEntry* entry) {
             posIcon3 = vec3_802ffb10;
             posIcon3.x = (f32)(entry->field_0x18 + 0x10c);
             posIcon3.y = (f32)(entry->field_0x1C - 0xc);
-            iconDispGx(&posIcon3, 0x10, 0x18b, 0.6f);
+            iconDispGx(0.6f, &posIcon3, 0x10, 0x18b);
             break;
         case 13:
             PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
@@ -1415,7 +1415,7 @@ void select_disp(WinMgrEntry* entry) {
             posIcon13 = vec3_802ffb1c;
             posIcon13.x = (f32)(entry->field_0x18 + 0x10c);
             posIcon13.y = (f32)(entry->field_0x1C - 0xc);
-            iconDispGx(&posIcon13, 0x10, 0x18d, 0.6f);
+            iconDispGx(0.6f, &posIcon13, 0x10, 0x18d);
             break;
         case 16:
             PSMTXTrans(mtx1, (f32)(entry->field_0x18 + 0x10c), (f32)(entry->field_0x1C - 0x12), 0.0f);
@@ -1425,27 +1425,27 @@ void select_disp(WinMgrEntry* entry) {
             posIcon16 = vec3_802ffb28;
             posIcon16.x = (f32)(entry->field_0x18 + 0x10c);
             posIcon16.y = (f32)(entry->field_0x1C - 0xc);
-            iconDispGx(&posIcon16, 0x10, 0x13f, 0.6f);
+            iconDispGx(0.6f, &posIcon16, 0x10, 0x13f);
             break;
         }
 
     posMain = vec3_802ffb34;
     posMain.x = select->field_0x14;
     posMain.y = select->field_0x18;
-    iconDispGx(&posMain, 0x14, 0x1f0, 1.0f);
+    iconDispGx(1.0f, &posMain, 0x14, 0x1f0);
 
     if (select->field_0x34 > 8 && (gp->retraceCount & 0x1F) < 20) {
         if (select->field_0x10 != 0) {
             posUp = vec3_802ffb40;
             posUp.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posUp.y = (f32)(entry->field_0x1C - 0x24);
-            iconDispGx(&posUp, 0x10, 0x1b5, 0.6f);
+            iconDispGx(0.6f, &posUp, 0x10, 0x1b5);
         }
         if (select->field_0x10 != select->field_0x34 - 8) {
             posDown = vec3_802ffb4c;
             posDown.x = (f32)entry->field_0x18 + (f32)entry->field_0x20 / 2.0f;
             posDown.y = (f32)(entry->field_0x1C - entry->field_0x24 - 0xc);
-            iconDispGx(&posDown, 0x10, 0x1b6, 0.6f);
+            iconDispGx(0.6f, &posDown, 0x10, 0x1b6);
         }
     }
 }

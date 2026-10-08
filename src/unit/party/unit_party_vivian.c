@@ -1510,8 +1510,8 @@ void _disp_heart(CameraId cameraId, void* param) {
     iconPos = pos;
     iconPos.y = pos.y + 16.0f * scale;
     iconPos.z = 5.0f + pos.z;
-    iconDispGx(&pos, 0, 0x1F2, scale);
-    iconDispGx(&iconPos, 0, 0x189, scale);
+    iconDispGx(scale, &pos, 0, 0x1F2);
+    iconDispGx(scale, &iconPos, 0, 0x189);
 }
 
 

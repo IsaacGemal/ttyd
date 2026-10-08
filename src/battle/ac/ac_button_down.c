@@ -337,7 +337,7 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
         Vec t = vec3_802fd5d0;
         t.x = iconX;
         t.y = iconY;
-        iconDispGx(&t, 0x10, 0x8F, float_1_804204f4);
+        iconDispGx(float_1_804204f4, &t, 0x10, 0x8F);
     }
 
     iconX += float_16_804204f8;
@@ -350,7 +350,7 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
 #endif
         t.x = iconX;
         t.y = iconY;
-        iconDispGx(&t, 0x10, 0x8E, float_1_804204f4);
+        iconDispGx(float_1_804204f4, &t, 0x10, 0x8E);
         iconX += float_16_804204f8;
     }
 
@@ -358,7 +358,7 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
         Vec t = vec3_802fd5e8;
         t.x = iconX;
         t.y = iconY;
-        iconDispGx(&t, 0x10, 0x90, float_1_804204f4);
+        iconDispGx(float_1_804204f4, &t, 0x10, 0x90);
     }
 
     flags = *(s32*)&work->actionCommands.field_34[0x00];
@@ -423,12 +423,12 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
             Vec v = vec3_802fd5f4;
             v.x = baseX + (f32)(i * 0x30);
             v.y = iconY;
-            iconDispGx(&v, 0x10, pressed, float_1_804204f4);
+            iconDispGx(float_1_804204f4, &v, 0x10, pressed);
         } else {
             Vec v = vec3_802fd600;
             v.x = baseX + (f32)(i * 0x30);
             v.y = iconY;
-            iconDispGx(&v, 0x10, released, float_1_804204f4);
+            iconDispGx(float_1_804204f4, &v, 0x10, released);
         }
     }
 }

@@ -1368,7 +1368,7 @@ static void _disp_icon(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
     ((void (*)(Vec*, s16, u16, f32))iconDispGx)(&obj->pos, 0, (u16)event->userdata[1], 1.0f);
 #else
-    iconDispGx(&obj->pos, 0, event->userdata[1], 1.0f);
+    iconDispGx(1.0f, &obj->pos, 0, event->userdata[1]);
 #endif
 }
 // clang-format on

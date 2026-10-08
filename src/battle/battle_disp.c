@@ -1085,7 +1085,7 @@ void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 		v.x += unit->heldItemOffset.x;
 		v.y += unit->heldItemOffset.y;
 		v.z += unit->heldItemOffset.z;
-		iconDispGx(&v, 0, itemDataTable[item].icon_id, float_1_8041bf64);
+		iconDispGx(float_1_8041bf64, &v, 0, itemDataTable[item].icon_id);
 	}
 }
 #pragma dont_inline reset
@@ -1140,7 +1140,7 @@ void btlUnitStolenItemDisp(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
 	((void (*)(Vec*, s16, u16, f32))iconDispGx)(&v, 0, items[itemId].icon_id, float_1_8041bf64);
 #else
-	iconDispGx(&v, 0, itemDataTable[itemId].icon_id, float_1_8041bf64);
+	iconDispGx(float_1_8041bf64, &v, 0, itemDataTable[itemId].icon_id);
 #endif
 }
 
@@ -1711,12 +1711,12 @@ void _btlStockExpDisp(CameraId cameraId, void* param) {
 		pos1 = vec3_802ede0c;
 		pos1.x = (308.0f + x_1184) - 3.5f - 13.0f * (f32)i;
 		pos1.y = y_1185 - 220.0f;
-		iconDispGx(&pos1, 0x10, 0x18c, 0.35f);
+		iconDispGx(0.35f, &pos1, 0x10, 0x18c);
 	}
 	for (i = 0; i < tens; i++) {
 		pos2 = vec3_802ede18;
 		pos2.x = (308.0f + x_1184) - 10.0f - 20.0f * (f32)i + 4.0f;
 		pos2.y = (y_1185 - 220.0f) + 16.0f;
-		iconDispGx(&pos2, 0x10, 0x18c, 0.5f);
+		iconDispGx(0.5f, &pos2, 0x10, 0x18c);
 	}
 }

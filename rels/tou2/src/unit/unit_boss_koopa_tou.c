@@ -1187,7 +1187,7 @@ static void _disp_icon(CameraId camera, void* param) {
     // an extra extsh. Call through a matching function-pointer type to stay byte-exact.
     ((void (*)(Vec*, s16, u16, f32))iconDispGx)(position, 0, (u16)event->userdata[1], 1.0f);
 #else
-    iconDispGx(position, 0, (u16)event->userdata[1], 1.0f);
+    iconDispGx(1.0f, position, 0, (u16)event->userdata[1]);
 #endif
 }
 // clang-format on

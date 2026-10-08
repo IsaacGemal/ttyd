@@ -339,7 +339,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 		// Match-only: icondrv.h says s16, but the original passes the icon unextended (no `extsh`).
 		((void (*)(Vec*, s32, s32, f32))iconDispGx)(&v, 0x10, icon, float_1_80422088);
 #else
-		iconDispGx(&v, 0x10, icon, float_1_80422088);
+		iconDispGx(float_1_80422088, &v, 0x10, icon);
 #endif
 	}
 }

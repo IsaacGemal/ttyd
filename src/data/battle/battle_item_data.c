@@ -6152,8 +6152,8 @@ void _disp_item_icon(CameraId camera, void* param) {
                                                 itemDataTable[event->userdata[1]].icon_id,
                                                 1.0f);
 #else
-    iconDispGx((Vec*)((u8*)event->userdata[0] + 0xc), 0, itemDataTable[event->userdata[1]].icon_id,
-               1.0f);
+    iconDispGx(1.0f, (Vec*)((u8*)event->userdata[0] + 0xc), 0,
+               itemDataTable[event->userdata[1]].icon_id);
 #endif
 }
 
