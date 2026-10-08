@@ -60,34 +60,12 @@ typedef struct JabaraWork {
 #define MW_F32(m, off) (*(f32*)((u8*)(m) + (off)))
 #define MW_VEC(m, off) (*(Vec*)((u8*)(m) + (off)))
 
-// .rodata
-const Vec vec3_802c5b88 = { 0.0f, 40.0f, 0.0f };
-const Vec vec3_802c5b94 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5ba0 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5bac = { 0.0f, 0.0f, 0.0f };
-const char str_802C5BB8[] = "M_J_1A";
-const char str_802C5BC0[] = "p_jyabara";
-const char str_802C5BCC[] = "PM_J_1B";
-const char str_802C5BD4[] = "PM_J_3B";
-const char str_802C5BDC[] = "PM_J_2B";
-const char str_802C5BE4[] = "M_J_5A";
-const char str_802C5BEC[] = "PM_J_1C";
-const char str_802C5BF4[] = "M_J_1C";
-const char str_802C5BFC[] = "PM_J_1D";
-const char str_802C5C04[] = "eki_02";
-const char str_802C5C0C[] = "PM_J_1F";
-const char str_802C5C14[] = "PM_J_1G";
-const char str_802C5C1C[] = "PM_J_1H";
-__declspec(section ".rodata") const u32 gap_04_802C5C24_rodata = 0;
-
-// .data trailing zero word after the two switch jump tables.
-#pragma force_active on
-#pragma explicit_zero_data on
-__declspec(section ".data") u32 gap_05_8030E97C_data = 0;
-#pragma explicit_zero_data reset
-#pragma force_active reset
-const f64 double_1p5708_802c5c28 = 1.5707963705062866;
-const char str_802C5C30[] = "M_J_1B";
+#ifdef MUST_MATCH
+// A nonconst view keeps these named pool words from folding into duplicate literals.
+#define JABARA_F32(sym) (*(f32*)&(sym))
+#else
+#define JABARA_F32(sym) (sym)
+#endif
 
 // Local quake script table (`.sdata`), referenced by mot_jabara.
 static s32 quake_evt[8] = { 0x0005005B, (s32)evt_cam_shake, 4, (s32)0xF24A7A80,
@@ -293,8 +271,9 @@ end:
 }
 
 // .sdata2
-// The first seven words pool from swingMain. Define the remaining words in
-// retail order before the immediate functions that read them.
+// The first seven words pool from swingMain. The words up to 37.0 are defined
+// here, before mot_jabara_post; mot_jabara pools its seven camera constants
+// itself, and the words after those are defined after mot_jabara.
 const f32 float_neg0p1_8041aadc = -0.1f;
 const f32 float_0p18_8041aae0 = 0.18f;
 const f32 float_24_8041aae4 = 24.0f;
@@ -303,53 +282,109 @@ const f32 float_neg0p4_8041aaec = -0.4f;
 const f32 float_0p01_8041aaf0 = 0.01f;
 const f32 float_20_8041aaf4 = 20.0f;
 const f32 float_37_8041aaf8 = 37.0f;
-const f32 float_0p2_8041aafc = 0.2f;
-const f32 float_0p005_8041ab00 = 0.005f;
-const f32 float_1p5_8041ab04 = 1.5f;
-const f32 float_0p4_8041ab08 = 0.4f;
-const f32 float_1p7_8041ab0c = 1.7f;
-const f32 float_0p3_8041ab10 = 0.3f;
-const f32 float_1p6_8041ab14 = 1.6f;
-const f32 float_480_8041ab18 = 480.0f;
-const f32 float_50_8041ab1c = 50.0f;
-const f32 float_25_8041ab20 = 25.0f;
-const f32 float_200_8041ab24 = 200.0f;
-const f32 float_10p45_8041ab28 = 10.45f;
-const f32 float_0p278_8041ab2c = 0.278f;
-const f32 float_neg0p031_8041ab30 = -0.031f;
-const f32 float_8_8041ab34 = 8.0f;
-const f32 float_neg0p84_8041ab38 = -0.84f;
-const f32 float_0p08_8041ab3c = 0.08f;
-const f32 float_neg0p015_8041ab40 = -0.015f;
-const f32 float_4p3_8041ab44 = 4.3f;
-const f32 float_0p5_8041ab48 = 0.5f;
-const f32 float_100_8041ab4c = 100.0f;
-const f32 float_3p5_8041ab50 = 3.5f;
-const f32 float_9_8041ab54 = 9.0f;
-const f32 float_neg6_8041ab58 = -6.0f;
-const f32 float_neg450_8041ab5c = -450.0f;
-const f32 float_neg190_8041ab60 = -190.0f;
-const f32 float_neg8_8041ab64 = -8.0f;
-const f32 float_4_8041ab68 = 4.0f;
-const f32 float_2_8041ab6c = 2.0f;
-__declspec(section ".sdata2") const char str_8041AB70[8] = "M_S_1";
-const f32 float_0p6_8041ab78 = 0.6f;
-const f32 float_neg0p6_8041ab7c = -0.6f;
-const f32 float_3p1416_8041ab80 = 3.1415927f;
-const f32 float_neg1_8041ab84 = -1.0f;
-__declspec(section ".sdata2") const char str_8041AB88[8] = "M_S_4";
-const f32 float_10_8041ab90 = 10.0f;
-const f32 float_1_8041ab94 = 1.0f;
-__declspec(section ".sdata2") const char str_8041AB98[8] = "M_W_6";
-const f32 float_90_8041aba0 = 90.0f;
-const f32 float_270_8041aba4 = 270.0f;
-const f32 float_neg0p5_8041aba8 = -0.5f;
-__declspec(section ".sdata2") const char str_8041ABAC[8] = "M_I_Y";
-const u32 gap_09_8041ABB4_sdata2 = 0;
 
+
+// Camera follow parameters for the stretched pose.
+static inline void jabaraSetCamParam(f32 a, f32 b, f32 c) {
+    MarioWork* mario = marioGetPtr();
+
+    mario->unk148 = a;
+    mario->unk150.z = b;
+    mario->field_68 = c;
+    mario->field_6C = (Vec){ 0.0f, 40.0f, 0.0f };
+}
+
+// Restores Mario's facing, movement vectors and collision box when the motion ends.
+static inline void jabaraResetMario(void) {
+    MarioWork* mario = marioGetPtr();
+
+    mario->unk1A8 = MW_F32(mario, 0x2A4);
+    MW_F32(mario, 0x1AC) = MW_F32(mario, 0x2A4);
+    MW_VEC(mario, 0xB0) = (Vec){ 0.0f, 0.0f, 0.0f };
+    MW_VEC(mario, 0x98) = (Vec){ 0.0f, 0.0f, 0.0f };
+    MW_VEC(mario, 0xBC) = (Vec){ 0.0f, 0.0f, 0.0f };
+    mario->wPlayerCollisionBox.x = JABARA_F32(float_20_8041aaf4);
+    mario->wPlayerCollisionBox.y = JABARA_F32(float_37_8041aaf8);
+    marioAdjustMoveDir();
+    mario->dispFlags &= ~4;
+    mario->dispFlags &= ~0x100;
+}
+
+// Puts Mario on the ground he landed on.
+static inline void jabaraLanding(f32 y, HitEntry* hit) {
+    MarioWork* mario = marioGetPtr();
+
+    mario->airTimer = 0;
+    MW_S16(mario, 0x52) = 0;
+    mario->hitobjStandOn = hit;
+    mario->hitobjJumpFrom = NULL;
+    MW_F32(mario, 0x90) = y;
+    mario->flags &= 0xFFF0FFFF;
+}
+
+// Releases the motion's work buffer.
+static inline void jabaraFreeWork(void) {
+    if (marioGetPtr()->motStruct != NULL) {
+        __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
+        marioGetPtr()->motStruct = NULL;
+    }
+}
+
+// .rodata strings; the compound-literal templates above pool ahead of them.
+const char str_802C5BB8[] = "M_J_1A";
+const char str_802C5BC0[] = "p_jyabara";
+const char str_802C5BCC[] = "PM_J_1B";
+const char str_802C5BD4[] = "PM_J_3B";
+const char str_802C5BDC[] = "PM_J_2B";
+const char str_802C5BE4[] = "M_J_5A";
+const char str_802C5BEC[] = "PM_J_1C";
+const char str_802C5BF4[] = "M_J_1C";
+const char str_802C5BFC[] = "PM_J_1D";
+const char str_802C5C04[] = "eki_02";
+const char str_802C5C0C[] = "PM_J_1F";
+const char str_802C5C14[] = "PM_J_1G";
+const char str_802C5C1C[] = "PM_J_1H";
+__declspec(section ".rodata") const u32 gap_04_802C5C24_rodata = 0;
+const f64 double_1p5708_802c5c28 = 1.5707963705062866;
+const char str_802C5C30[] = "M_J_1B";
+
+// .sdata2 words defined after mot_jabara (they follow its pooled literals).
+extern const f32 float_480_8041ab18;
+extern const f32 float_50_8041ab1c;
+extern const f32 float_25_8041ab20;
+extern const f32 float_200_8041ab24;
+extern const f32 float_10p45_8041ab28;
+extern const f32 float_0p278_8041ab2c;
+extern const f32 float_neg0p031_8041ab30;
+extern const f32 float_8_8041ab34;
+extern const f32 float_neg0p84_8041ab38;
+extern const f32 float_0p08_8041ab3c;
+extern const f32 float_neg0p015_8041ab40;
+extern const f32 float_4p3_8041ab44;
+extern const f32 float_0p5_8041ab48;
+extern const f32 float_100_8041ab4c;
+extern const f32 float_3p5_8041ab50;
+extern const f32 float_9_8041ab54;
+extern const f32 float_neg6_8041ab58;
+extern const f32 float_neg450_8041ab5c;
+extern const f32 float_neg190_8041ab60;
+extern const f32 float_neg8_8041ab64;
+extern const f32 float_4_8041ab68;
+extern const f32 float_2_8041ab6c;
+extern __declspec(section ".sdata2") const char str_8041AB70[8];
+extern const f32 float_0p6_8041ab78;
+extern const f32 float_neg0p6_8041ab7c;
+extern const f32 float_3p1416_8041ab80;
+extern const f32 float_neg1_8041ab84;
+extern __declspec(section ".sdata2") const char str_8041AB88[8];
+extern const f32 float_10_8041ab90;
+extern const f32 float_1_8041ab94;
+extern __declspec(section ".sdata2") const char str_8041AB98[8];
+extern const f32 float_90_8041aba0;
+extern const f32 float_270_8041aba4;
+extern const f32 float_neg0p5_8041aba8;
 
 void mot_jabara_post(void) {
-    const Vec* vec = &vec3_802c5b88;
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
 
@@ -361,21 +396,8 @@ void mot_jabara_post(void) {
         marioPaperOff();
     }
     allPartyRideOff();
-    mario2 = marioGetPtr();
-    mario2->unk1A8 = MW_F32(mario2, 0x2A4);
-    MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
-    MW_VEC(mario2, 0xB0) = vec[1];
-    MW_VEC(mario2, 0x98) = vec[2];
-    MW_VEC(mario2, 0xBC) = vec[3];
-    mario2->wPlayerCollisionBox.x = MATCH_F32(float_20_8041aaf4);
-    mario2->wPlayerCollisionBox.y = MATCH_F32(float_37_8041aaf8);
-    marioAdjustMoveDir();
-    mario2->dispFlags &= ~(1 << 2);
-    mario2->dispFlags &= ~(1 << 8);
-    if (marioGetPtr()->motStruct != NULL) {
-        __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
-        marioGetPtr()->motStruct = NULL;
-    }
+    jabaraResetMario();
+    jabaraFreeWork();
     switch (mario->currMotionId) {
     case 3:
     case 4:
@@ -404,21 +426,20 @@ s32 jabaraNoHitChk(void) {
     return 0;
 }
 
-#ifdef MUST_MATCH
-// A nonconst view keeps these named pool words from folding into duplicate literals.
-#define JABARA_F32(sym) (*(f32*)&(sym))
-#else
-#define JABARA_F32(sym) (sym)
-#endif
+// Depth of the hit object Mario grabbed, rounded to two decimals.
+static inline f32 jabaraGetHitDepth(HitEntry* hit) {
+    Vec pos;
+
+    marioGetPtr();
+    hitObjGetPos(hitGetName(hit), &pos);
+    return (f32)(s32)((JABARA_F32(float_100_8041ab4c) * pos.z + JABARA_F32(float_0p5_8041ab48)) / JABARA_F32(float_100_8041ab4c));
+}
 
 #ifdef MUST_MATCH
 // Preserve the repeated signed state-byte comparison.
 #pragma opt_common_subs off
 #endif
-// NONMATCHING (98.86%): an extra rodata-base copy expands the frame and shifts
-// saved registers; several floating registers and one camera argument slot differ.
 void mot_jabara(void) {
-    const Vec* vec = &vec3_802c5b88;
     MarioWork* mario = marioGetPtr();
     MarioWork* mario2;
     HitEntry* hit;
@@ -426,8 +447,6 @@ void mot_jabara(void) {
     f32 f31, f30, f29, f28;
     Vec sp74;
     Vec sp68;
-    Vec sp50;
-    Vec sp5C;
     s32 sp4C, sp48;
     f32 sp44;
     s32 sp40;
@@ -486,11 +505,7 @@ void mot_jabara(void) {
         }
         L_allPartyRideOn();
         psndSFXOn_3D((const char*)0x182, &mario->position);
-        mario2 = marioGetPtr();
-        mario2->unk148 = JABARA_F32(float_0p2_8041aafc);
-        mario2->unk150.z = JABARA_F32(float_0p005_8041ab00);
-        mario2->field_68 = JABARA_F32(float_1p5_8041ab04);
-        mario2->field_6C = (&vec3_802c5b88)[0];
+        jabaraSetCamParam(0.2f, 0.005f, 1.5f);
         mario->multiTimer = 8;
         mario->currSubMotionId = 0xB;
         /* fallthrough */
@@ -519,11 +534,7 @@ void mot_jabara(void) {
                 }
                 marioChgPaper(RSTR(0x4C, str_802C5BD4));
                 MW_U8(mario, 0x42) = 3;
-                mario2 = marioGetPtr();
-                mario2->unk148 = JABARA_F32(float_0p4_8041ab08);
-                mario2->unk150.z = JABARA_F32(float_0p005_8041ab00);
-                mario2->field_68 = JABARA_F32(float_1p7_8041ab0c);
-                mario2->field_6C = (&vec3_802c5b88)[0];
+                jabaraSetCamParam(0.4f, 0.005f, 1.7f);
             } else if (jt == 2) {
                 if (!(((JabaraWork*)marioGetPtr()->motStruct)->flags & 0x20000)) {
                     ((JabaraWork*)marioGetPtr()->motStruct)->flags |= 0x20000;
@@ -531,11 +542,7 @@ void mot_jabara(void) {
                 }
                 marioChgPaper(RSTR(0x54, str_802C5BDC));
                 MW_U8(mario, 0x42) = 2;
-                mario2 = marioGetPtr();
-                mario2->unk148 = JABARA_F32(float_0p3_8041ab10);
-                mario2->unk150.z = JABARA_F32(float_0p005_8041ab00);
-                mario2->field_68 = JABARA_F32(float_1p6_8041ab14);
-                mario2->field_6C = (&vec3_802c5b88)[0];
+                jabaraSetCamParam(0.3f, 0.005f, 1.6f);
             }
         }
         marioChkGnd();
@@ -620,36 +627,18 @@ void mot_jabara(void) {
         }
         f31 = sp3C;
         if (f31 < MW_F32(mario, 0x120)) {
+            HitEntry* stand;
+
             marioPaperOff();
-            hit = (HitEntry*)mario->hitobjStandOn;
-            f30 = MW_F32(mario, 0x120);
-            mario2 = marioGetPtr();
-            mario2->airTimer = 0;
-            MW_S16(mario2, 0x52) = 0;
-            mario2->hitobjStandOn = hit;
-            mario2->hitobjJumpFrom = NULL;
-            MW_F32(mario2, 0x90) = f30;
-            mario2->flags &= 0xFFF0FFFF;
+            stand = (HitEntry*)mario->hitobjStandOn;
+            jabaraLanding(MW_F32(mario, 0x120), stand);
             camFollowYOn();
             marioGetPtr();
             allPartyRideOff();
-            mario2 = marioGetPtr();
-            mario2->unk1A8 = MW_F32(mario2, 0x2A4);
-            MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
-            MW_VEC(mario2, 0xB0) = vec[1];
-            MW_VEC(mario2, 0x98) = vec[2];
-            MW_VEC(mario2, 0xBC) = vec[3];
-            mario2->wPlayerCollisionBox.x = JABARA_F32(float_20_8041aaf4);
-            mario2->wPlayerCollisionBox.y = JABARA_F32(float_37_8041aaf8);
-            marioAdjustMoveDir();
-            mario2->dispFlags &= ~4;
-            mario2->dispFlags &= ~0x100;
+            jabaraResetMario();
             marioChgMotSub(0, 0);
-            if (marioGetPtr()->motStruct != NULL) {
-                __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
-                marioGetPtr()->motStruct = NULL;
-                return;
-            }
+            jabaraFreeWork();
+            return;
         } else {
             MW_F32(mario, 0x90) = f31;
             if (MW_S8(mario, 0x42) <= 2) {
@@ -660,10 +649,7 @@ void mot_jabara(void) {
                 mario->currSubMotionId = 0x46;
                 mario->multiTimer = 0xA;
                 MW_S32(mario, 0x2A8) = (s32)(sp3C + MW_F32(mario, 0x1B8));
-                hit = (HitEntry*)MW_S32(mario, 0x1F4);
-                marioGetPtr();
-                hitObjGetPos(hitGetName(hit), &sp50);
-                MW_F32(mario, 0x94) = (f32)(s32)((JABARA_F32(float_100_8041ab4c) * sp50.z + JABARA_F32(float_0p5_8041ab48)) / JABARA_F32(float_100_8041ab4c));
+                MW_F32(mario, 0x94) = jabaraGetHitDepth((HitEntry*)MW_S32(mario, 0x1F4));
                 f30 = (f32)MW_S32(mario, 0x2A8);
                 f28 = f30 - MW_F32(mario, 0x1B8);
                 MW_F32(mario, 0x90) = f28 - JABARA_F32(float_3p5_8041ab50);
@@ -708,35 +694,14 @@ void mot_jabara(void) {
             goto block_72;
         }
         marioPaperOff();
-        f30 = sp3C;
-        mario2 = marioGetPtr();
-        mario2->airTimer = 0;
-        MW_S16(mario2, 0x52) = 0;
-        mario2->hitobjStandOn = hit;
-        mario2->hitobjJumpFrom = NULL;
-        MW_F32(mario2, 0x90) = f30;
-        mario2->flags &= 0xFFF0FFFF;
+        jabaraLanding(sp3C, hit);
         camFollowYOn();
         marioGetPtr();
         allPartyRideOff();
-        mario2 = marioGetPtr();
-        mario2->unk1A8 = MW_F32(mario2, 0x2A4);
-        MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
-        MW_VEC(mario2, 0xB0) = vec[1];
-        MW_VEC(mario2, 0x98) = vec[2];
-        MW_VEC(mario2, 0xBC) = vec[3];
-        mario2->wPlayerCollisionBox.x = JABARA_F32(float_20_8041aaf4);
-        mario2->wPlayerCollisionBox.y = JABARA_F32(float_37_8041aaf8);
-        marioAdjustMoveDir();
-        mario2->dispFlags &= ~4;
-        mario2->dispFlags &= ~0x100;
+        jabaraResetMario();
         marioChgMotSub(0, 0);
-        if (marioGetPtr()->motStruct != NULL) {
-            __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
-            marioGetPtr()->motStruct = NULL;
-            return;
-        }
-        break;
+        jabaraFreeWork();
+        return;
     default:
         goto block_72;
     }
@@ -777,16 +742,12 @@ block_72:
             MW_F32(mario, 0x9C) = 0.0f;
         }
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)(s8)MW_U8(mario, 0x2BB));
-        {
-            s8 b = MW_S8(mario, 0x2BB) + 1;
-            MW_U8(mario, 0x2BB) = b;
-            if (b >= 0x10) {
-                MW_U8(mario, 0x2BB) = 0x10;
-                marioChgPaper(RSTR(0x8C, str_802C5C14));
-                marioPaperLightOff();
-                mario->currSubMotionId = 0x2B;
-                mario->multiTimer = 0x18;
-            }
+        if (++MW_S8(mario, 0x2BB) >= 0x10) {
+            MW_U8(mario, 0x2BB) = 0x10;
+            marioChgPaper(RSTR(0x8C, str_802C5C14));
+            marioPaperLightOff();
+            mario->currSubMotionId = 0x2B;
+            mario->multiTimer = 0x18;
         }
         goto block_121;
     case 0x2B:
@@ -802,35 +763,39 @@ block_72:
         goto do_32;
     case 0x32:
     do_32:
+    {
+        s32 changed;
+        f32 spd;
+        f32 dy;
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)(s8)MW_U8(mario, 0x2BB));
-            var_r28 = 0;
+            changed = 0;
             {
                 s8 b = MW_S8(mario, 0x2BB);
                 if (b >= 0x23 && b <= 0x62) {
                     if (MW_F32(mario, 0x1AC) == 180.0f) {
-                        var_f28 = JABARA_F32(float_0p6_8041ab78);
+                        spd = JABARA_F32(float_0p6_8041ab78);
                     } else {
-                        var_f28 = JABARA_F32(float_neg0p6_8041ab7c);
+                        spd = JABARA_F32(float_neg0p6_8041ab7c);
                     }
-                    if (var_f28 != ((JabaraWork*)marioGetPtr()->motStruct)->unk18) {
+                    if (spd != ((JabaraWork*)marioGetPtr()->motStruct)->unk18) {
                         ((JabaraWork*)marioGetPtr()->motStruct)->unk14++;
-                        var_r28 = 1;
+                        changed = 1;
                     }
-                    ((JabaraWork*)marioGetPtr()->motStruct)->unk18 = var_f28;
+                    ((JabaraWork*)marioGetPtr()->motStruct)->unk18 = spd;
                 } else {
                     if (MW_F32(mario, 0x1AC) == 180.0f) {
-                        var_f28 = JABARA_F32(float_neg0p6_8041ab7c);
+                        spd = JABARA_F32(float_neg0p6_8041ab7c);
                     } else {
-                        var_f28 = JABARA_F32(float_0p6_8041ab78);
+                        spd = JABARA_F32(float_0p6_8041ab78);
                     }
-                    if (var_f28 != ((JabaraWork*)marioGetPtr()->motStruct)->unk18) {
+                    if (spd != ((JabaraWork*)marioGetPtr()->motStruct)->unk18) {
                         ((JabaraWork*)marioGetPtr()->motStruct)->unk14++;
-                        var_r28 = 1;
+                        changed = 1;
                     }
-                    ((JabaraWork*)marioGetPtr()->motStruct)->unk18 = var_f28;
+                    ((JabaraWork*)marioGetPtr()->motStruct)->unk18 = spd;
                 }
             }
-            if (var_r28 != 0) {
+            if (changed != 0) {
                 if (((JabaraWork*)marioGetPtr()->motStruct)->unk14 == 1) {
                     psndSFXOn_3D((const char*)0x189, &mario->position);
                 } else if (((JabaraWork*)marioGetPtr()->motStruct)->unk14 == 2) {
@@ -840,13 +805,13 @@ block_72:
                 }
             }
             f29 = (f32)cos((JABARA_F32(float_3p1416_8041ab80) * MW_F32(mario, 0x198)) / 180.0f);
-            MW_F32(mario, 0x98) = var_f28 * f29 + MW_F32(mario, 0x98);
+            MW_F32(mario, 0x98) = spd * f29 + MW_F32(mario, 0x98);
             f30 = (f32)sin((JABARA_F32(float_3p1416_8041ab80) * MW_F32(mario, 0x198)) / 180.0f);
-            MW_F32(mario, 0xA0) = var_f28 * f30 + MW_F32(mario, 0xA0);
-            var_f28 = JABARA_F32(float_neg1_8041ab84) * (f32)sin(RDBL(0xA0, double_1p5708_802c5c28));
-            hit = (HitEntry*)marioChkLandon2(&sp3C, var_f28, MW_F32(mario, 0x9C));
+            MW_F32(mario, 0xA0) = spd * f30 + MW_F32(mario, 0xA0);
+            dy = JABARA_F32(float_neg1_8041ab84) * (f32)sin(RDBL(0xA0, double_1p5708_802c5c28));
+            hit = (HitEntry*)marioChkLandon2(&sp3C, dy, MW_F32(mario, 0x9C));
             if (hit == NULL) {
-                MW_F32(mario, 0x90) = MW_F32(mario, 0x90) + var_f28;
+                MW_F32(mario, 0x90) = MW_F32(mario, 0x90) + dy;
                 if ((f32)MW_S32(mario, 0x16C) > JABARA_F32(float_480_8041ab18)) {
                     camFollowYOn();
                 }
@@ -863,23 +828,10 @@ block_72:
                     marioPaperOff();
                     marioGetPtr();
                     allPartyRideOff();
-                    mario2 = marioGetPtr();
-                    mario2->unk1A8 = MW_F32(mario2, 0x2A4);
-                    MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
-                    MW_VEC(mario2, 0xB0) = vec[1];
-                    MW_VEC(mario2, 0x98) = vec[2];
-                    MW_VEC(mario2, 0xBC) = vec[3];
-                    mario2->wPlayerCollisionBox.x = JABARA_F32(float_20_8041aaf4);
-                    mario2->wPlayerCollisionBox.y = JABARA_F32(float_37_8041aaf8);
-                    marioAdjustMoveDir();
-                    mario2->dispFlags &= ~4;
-                    mario2->dispFlags &= ~0x100;
+                    jabaraResetMario();
                     marioChgMotSub(0, 0);
-                    if (marioGetPtr()->motStruct != NULL) {
-                        __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
-                        marioGetPtr()->motStruct = NULL;
-                        return;
-                    }
+                    jabaraFreeWork();
+                    return;
                 } else {
                     goto block_121;
                 }
@@ -892,6 +844,7 @@ block_72:
                 mario->multiTimer = 0x14;
                 goto block_121;
             }
+    }
         break;
     case 0x34:
         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)(s8)MW_U8(mario, 0x2BB));
@@ -912,21 +865,8 @@ block_121:
             mario->hitobjStandOn = NULL;
             MW_F32(mario, 0x180) = 0.0f;
             mario->flags &= ~0x400;
-            mario2 = marioGetPtr();
-            mario2->unk1A8 = MW_F32(mario2, 0x2A4);
-            MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
-            MW_VEC(mario2, 0xB0) = vec[1];
-            MW_VEC(mario2, 0x98) = vec[2];
-            MW_VEC(mario2, 0xBC) = vec[3];
-            mario2->wPlayerCollisionBox.x = JABARA_F32(float_20_8041aaf4);
-            mario2->wPlayerCollisionBox.y = JABARA_F32(float_37_8041aaf8);
-            marioAdjustMoveDir();
-            mario2->dispFlags &= ~4;
-            mario2->dispFlags &= ~0x100;
-            if (marioGetPtr()->motStruct != NULL) {
-                __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
-                marioGetPtr()->motStruct = NULL;
-            }
+            jabaraResetMario();
+            jabaraFreeWork();
             marioPaperOff();
             camFollowYOff();
             marioChgSmallJumpMotion();
@@ -984,23 +924,10 @@ block_121:
                         mario->flags |= 0x80;
                         marioGetPtr();
                         allPartyRideOff();
-                        mario2 = marioGetPtr();
-                        mario2->unk1A8 = MW_F32(mario2, 0x2A4);
-                        MW_F32(mario2, 0x1AC) = MW_F32(mario2, 0x2A4);
-                        MW_VEC(mario2, 0xB0) = vec[1];
-                        MW_VEC(mario2, 0x98) = vec[2];
-                        MW_VEC(mario2, 0xBC) = vec[3];
-                        mario2->wPlayerCollisionBox.x = JABARA_F32(float_20_8041aaf4);
-                        mario2->wPlayerCollisionBox.y = JABARA_F32(float_37_8041aaf8);
-                        marioAdjustMoveDir();
-                        mario2->dispFlags &= ~4;
-                        mario2->dispFlags &= ~0x100;
+                        jabaraResetMario();
                         marioChgMotSub(0, 0);
-                        if (marioGetPtr()->motStruct != NULL) {
-                            __memFree(HEAP_DEFAULT, marioGetPtr()->motStruct);
-                            marioGetPtr()->motStruct = NULL;
-                            return;
-                        }
+                        jabaraFreeWork();
+                        return;
                     } else {
                         animPoseSetLocalTime(mario->paperAnimGroupId[marioAnimeId()], (f32)(s8)MW_U8(mario, 0x2BB));
                         sp68 = mario->position;
@@ -1013,6 +940,9 @@ block_121:
                             MW_S32(mario, 0x1F4) = (s32)marioSearchHead(&sp68, &sp2C, 0.0f);
                         }
                         if (MW_F32(mario, 0x190)) {
+                            s32 wall;
+                            f32 move;
+
                             marioChgPose(str_8041AB98);
                             mario2 = marioGetPtr();
                             if (MW_S8(mario2, 0x2BA) == 0) {
@@ -1023,13 +953,13 @@ block_121:
                                 ((JabaraWork*)marioGetPtr()->motStruct)->unk8 = JABARA_F32(float_neg0p1_8041aadc);
                                 ((JabaraWork*)marioGetPtr()->motStruct)->unk10 = JABARA_F32(float_0p18_8041aae0);
                             }
-                            var_r28 = 0;
-                            f31 = JABARA_F32(float_1_8041ab94);
+                            wall = 0;
+                            move = JABARA_F32(float_1_8041ab94);
                             if ((HitEntry*)MW_S32(mario, 0x1F4) != NULL &&
                                 (hitGetAttr((HitEntry*)MW_S32(mario, 0x1F4)) & 0x40000)) {
-                                var_r28 = 1;
+                                wall = 1;
                             }
-                            if (var_r28 != 0) {
+                            if (wall != 0) {
                                 f32 angle = MW_F32(mario, 0x194);
                                 mario2 = marioGetPtr();
                                 f28 = mario2->position.x;
@@ -1040,9 +970,9 @@ block_121:
                                 hit = hitCheckFilter(NULL, &sp10, &sp14, &sp18, &sp1C, &sp20, &sp24, &sp28,
                                                      f28, f29, f30, sp8, 0.0f, spC);
                                 if (hit == NULL) {
-                                    f31 = f31 * (f32)sin((JABARA_F32(float_3p1416_8041ab80) * MW_F32(mario, 0x194)) / 180.0f);
-                                    MW_F32(mario, 0x8C) = MW_F32(mario, 0x8C) + f31;
-                                    if (f31 > 0.0f) {
+                                    move = move * (f32)sin((JABARA_F32(float_3p1416_8041ab80) * MW_F32(mario, 0x194)) / 180.0f);
+                                    MW_F32(mario, 0x8C) = MW_F32(mario, 0x8C) + move;
+                                    if (move > 0.0f) {
                                         if (MW_F32(mario, 0x1A8) >= JABARA_F32(float_90_8041aba0) && MW_F32(mario, 0x1A8) <= JABARA_F32(float_270_8041aba4)) {
                                             MW_U8(mario, 0x2BB) = MW_U8(mario, 0x2BB) + 1;
                                             if ((s8)MW_U8(mario, 0x2BB) > 0x20) {
@@ -1075,8 +1005,7 @@ block_121:
                                     }
                                 }
                             }
-                            sp5C = mario->position;
-                            marioUpdateCamCollision(sp5C);
+                            marioUpdateCamCollision(mario->position);
                         }
                     }
                     break;
@@ -1114,6 +1043,44 @@ block_177:
 #ifdef MUST_MATCH
 #pragma opt_common_subs reset
 #endif
+
+// .sdata2, after mot_jabara's pooled camera constants
+__declspec(section ".sdata2") const f32 float_480_8041ab18 = 480.0f;
+__declspec(section ".sdata2") const f32 float_50_8041ab1c = 50.0f;
+__declspec(section ".sdata2") const f32 float_25_8041ab20 = 25.0f;
+__declspec(section ".sdata2") const f32 float_200_8041ab24 = 200.0f;
+__declspec(section ".sdata2") const f32 float_10p45_8041ab28 = 10.45f;
+__declspec(section ".sdata2") const f32 float_0p278_8041ab2c = 0.278f;
+__declspec(section ".sdata2") const f32 float_neg0p031_8041ab30 = -0.031f;
+__declspec(section ".sdata2") const f32 float_8_8041ab34 = 8.0f;
+__declspec(section ".sdata2") const f32 float_neg0p84_8041ab38 = -0.84f;
+__declspec(section ".sdata2") const f32 float_0p08_8041ab3c = 0.08f;
+__declspec(section ".sdata2") const f32 float_neg0p015_8041ab40 = -0.015f;
+__declspec(section ".sdata2") const f32 float_4p3_8041ab44 = 4.3f;
+__declspec(section ".sdata2") const f32 float_0p5_8041ab48 = 0.5f;
+__declspec(section ".sdata2") const f32 float_100_8041ab4c = 100.0f;
+__declspec(section ".sdata2") const f32 float_3p5_8041ab50 = 3.5f;
+__declspec(section ".sdata2") const f32 float_9_8041ab54 = 9.0f;
+__declspec(section ".sdata2") const f32 float_neg6_8041ab58 = -6.0f;
+__declspec(section ".sdata2") const f32 float_neg450_8041ab5c = -450.0f;
+__declspec(section ".sdata2") const f32 float_neg190_8041ab60 = -190.0f;
+__declspec(section ".sdata2") const f32 float_neg8_8041ab64 = -8.0f;
+__declspec(section ".sdata2") const f32 float_4_8041ab68 = 4.0f;
+__declspec(section ".sdata2") const f32 float_2_8041ab6c = 2.0f;
+__declspec(section ".sdata2") const char str_8041AB70[8] = "M_S_1";
+__declspec(section ".sdata2") const f32 float_0p6_8041ab78 = 0.6f;
+__declspec(section ".sdata2") const f32 float_neg0p6_8041ab7c = -0.6f;
+__declspec(section ".sdata2") const f32 float_3p1416_8041ab80 = 3.1415927f;
+__declspec(section ".sdata2") const f32 float_neg1_8041ab84 = -1.0f;
+__declspec(section ".sdata2") const char str_8041AB88[8] = "M_S_4";
+__declspec(section ".sdata2") const f32 float_10_8041ab90 = 10.0f;
+__declspec(section ".sdata2") const f32 float_1_8041ab94 = 1.0f;
+__declspec(section ".sdata2") const char str_8041AB98[8] = "M_W_6";
+__declspec(section ".sdata2") const f32 float_90_8041aba0 = 90.0f;
+__declspec(section ".sdata2") const f32 float_270_8041aba4 = 270.0f;
+__declspec(section ".sdata2") const f32 float_neg0p5_8041aba8 = -0.5f;
+__declspec(section ".sdata2") const char str_8041ABAC[8] = "M_I_Y";
+const u32 gap_09_8041ABB4_sdata2 = 0;
 
 BOOL marioChkJabara(void) {
     MarioWork* mario = marioGetPtr();
