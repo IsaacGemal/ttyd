@@ -73,9 +73,16 @@ void battleCameraInit(void) {
 // The per-case declarations are ordered for the register allocator (first-declared gets the highest
 // vreg), which recovers the register picks of cases 7, 9 and 10, and the case 8/11 base/f9/xv statements
 // are ordered so the caller-saved FPRs land on the originals.
-// NONMATCHING (99.88%): case 13's FPR set (shifted by one), plus the case-7 `u` (r25, want r28), the
-// case-11 `unit2`/`part` swap (r26/r28) and the `cvy`/`vv.y` f2/f3 pair with one `fmuls` operand order
-// in cases 7/10. Permuter work.
+// Cases 7/10: the height offset is `/ 2.0f` (MWCC turns it into `* 0.5` with the variable first,
+// retail's operand order; a literal `* 0.5f` puts the constant first), and the clamp keeps the
+// unclamped height in `y` (retail loads `cvy` and tests a copy for the `< 0` bound). Case 13 writes
+// `u * x` with `u` first, retail's `fmuls` operand order.
+// Still different: case 13's volatile FPRs (`u`/`zz`/the reloaded `unkC8.x`/the `cy` temp), the
+// case-7 `u` (r25, want r28), the case-11 `unit2`/`part` swap (r26/r28) and case 13's `unit` (r28,
+// want r27). In tools/rasim.py on a mwccdbg dump the GPRs need case 7's `u` to sweep among the
+// frontend's split webs of `unit`/`unit2` (moving its declaration changes nothing), and no single
+// move fixes case 13's FPRs.
+// NONMATCHING (99.92%): the register clusters above; no logic differs.
 void battleCameraMain(void) {
   CameraEntry* cam;
   BattleWork* wp;
@@ -194,6 +201,7 @@ void battleCameraMain(void) {
     f32 dz;
     f32 off;
     f32 cvy;
+    f32 y;
     BattleUnit* u;
     f32 w;
 
@@ -205,7 +213,7 @@ void battleCameraMain(void) {
     part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
     BtlUnit_GetPos(u, &vv.x, &vv.y, &vv.z);
     {
-      f32 hh = ((f32)BtlUnit_GetHeight(u) - 50.0f) * 0.5f;
+      f32 hh = ((f32)BtlUnit_GetHeight(u) - 50.0f) / 2.0f;
       vv.y += hh;
     }
     w = (f32)BtlUnit_GetWidth(u) - 24.0f;
@@ -215,11 +223,12 @@ void battleCameraMain(void) {
     dz = wp->cameraWork.zoom;
     dz = dz - 1.5f * w;
     cvy = vv.y;
+    y = cvy;
     off = -dz / 9.0f;
     if (cvy > 100.0f) {
       cvy = 100.0f;
     }
-    if (vv.y < 0.0f) {
+    if (y < 0.0f) {
       cvy = 0.0f;
     }
     battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, vv.x, 110.0f + cvy + off, 750.0f - dz, vv.x,
@@ -343,6 +352,7 @@ void battleCameraMain(void) {
     f32 off;
     f32 w;
     f32 cvy;
+    f32 y;
 
     unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
     if (unit == NULL) {
@@ -356,7 +366,7 @@ void battleCameraMain(void) {
     }
     BtlUnit_GetHitPos(unit, part, &vv.x, &vv.y, &vv.z);
     {
-      f32 hh = ((f32)BtlUnit_GetHeight(unit) - 50.0f) * 0.5f;
+      f32 hh = ((f32)BtlUnit_GetHeight(unit) - 50.0f) / 2.0f;
       vv.y += hh;
     }
     w = (f32)BtlUnit_GetWidth(unit) - 24.0f;
@@ -366,11 +376,12 @@ void battleCameraMain(void) {
     dz = wp->cameraWork.zoom;
     dz = dz - 1.5f * w;
     cvy = vv.y;
+    y = cvy;
     off = -dz / 9.0f;
     if (cvy > 100.0f) {
       cvy = 100.0f;
     }
-    if (vv.y < 0.0f) {
+    if (y < 0.0f) {
       cvy = 0.0f;
     }
     battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, vv.x, 110.0f + cvy + off, 750.0f - dz, vv.x,
@@ -491,7 +502,7 @@ void battleCameraMain(void) {
     cy = vv.y;
     cy = cy - wp->cameraWork.unkBC.y - 100.0f;
     zz = float_2_8041c450 * wp->cameraWork.zoom;
-    v = wp->cameraWork.unkC8.x * u;
+    v = u * wp->cameraWork.unkC8.x;
     if (cy > 0.0f) {
       cy = 0.0f;
     }
@@ -499,7 +510,7 @@ void battleCameraMain(void) {
       cy = -30.0f;
     }
     off = -(1.0 - t) * (125.0f - cy);
-    w = zz * u;
+    w = u * zz;
     battleCameraMoveTo(1, 1, &o1, &o2, &o3, &o4, &o5, &o6, v, 110.0f + off, 750.0f - w, v, 60.0f + off,
                        -w);
     strcpy(name,
