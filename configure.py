@@ -691,7 +691,7 @@ config.libs = [
             Object(Matching, "event/evt_mario.c"),
             Object(Matching, "event/evt_door.c"),
             Object(Matching, "event/evt_party.c"),
-            Object(NonMatching, "event/evt_shop.c"),
+            Object(Matching, "event/evt_shop.c"),
             Object(Matching, "event/evt_pouch.c"),
             Object(Matching, "event/evt_kinopio.c"),
             Object(Matching, "event/evt_bg.c"),
