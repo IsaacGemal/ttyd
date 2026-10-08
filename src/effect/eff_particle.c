@@ -135,8 +135,11 @@ static inline f32 particle_sqrtf(f32 x) {
 #pragma defer_codegen off
 #endif
 
-// NONMATCHING (99.22%): the height/half negation and scratch FPRs differ in the
-// size products. Literal loads preserve the original per-vertex reloads.
+// The quad's half-size products are written per vertex: MWCC hoists them out of the loop, which
+// gives the original's preheader order (4, 8, -4, 0.5, -8). Literal loads preserve the original
+// per-vertex reloads.
+// NONMATCHING (99.87%): the three hoisted scratch FPRs come out reversed (ours 8/-8 f0, -4 f1,
+// 0.5 f2; original 0.5 f0, 8/-8 f1, -4 f2).
 void effParticleDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	ParticleWork* work = effect->userdata;
@@ -148,9 +151,6 @@ void effParticleDisp(CameraId camId, void* param) {
 	Mtx local;
 	GXColor color;
 	f32 deg2rad;
-	f32 top;
-	f32 left;
-	f32 bottom;
 	f32 right;
 	f32 factor;
 	s32 alpha;
@@ -181,14 +181,6 @@ void effParticleDisp(CameraId camId, void* param) {
 	PSMTXScale(scale, work->scale, work->scale, work->scale);
 	PSMTXConcat(trans, scale, local);
 
-	top = PARTICLE_F32(float_4_80421ce0);
-	left = -top * PARTICLE_F32(float_0p5_80421cec);
-#ifdef MUST_MATCH
-	// Negating half preserves the closest measured temporary allocation.
-	bottom = -PARTICLE_F32(float_0p5_80421cec) * PARTICLE_F32(float_8_80421ce4);
-#else
-	bottom = -float_8_80421ce4 * float_0p5_80421cec;
-#endif
 	deg2rad = 0.017453292f;
 	right = 2.0f;
 
@@ -209,13 +201,13 @@ void effParticleDisp(CameraId camId, void* param) {
 		GXLoadPosMtxImm(trans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(left, top, 0.0f);
+		GXPosition3f32(PARTICLE_F32(float_0p5_80421cec) * -PARTICLE_F32(float_4_80421ce0), PARTICLE_F32(float_4_80421ce0), 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
-		GXPosition3f32(right, top, 0.0f);
+		GXPosition3f32(right, PARTICLE_F32(float_4_80421ce0), 0.0f);
 		GXTexCoord2f32(1.0f, 0.0f);
-		GXPosition3f32(right, bottom, 0.0f);
+		GXPosition3f32(right, PARTICLE_F32(float_0p5_80421cec) * -PARTICLE_F32(float_8_80421ce4), 0.0f);
 		GXTexCoord2f32(1.0f, 1.0f);
-		GXPosition3f32(left, bottom, 0.0f);
+		GXPosition3f32(PARTICLE_F32(float_0p5_80421cec) * -PARTICLE_F32(float_4_80421ce0), PARTICLE_F32(float_0p5_80421cec) * -PARTICLE_F32(float_8_80421ce4), 0.0f);
 		GXTexCoord2f32(0.0f, 1.0f);
 		i = particle->next;
 	}
