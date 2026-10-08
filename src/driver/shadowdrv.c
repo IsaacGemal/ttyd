@@ -178,6 +178,8 @@ __declspec(section ".data") u8 vertex_tbl[720] = {
     0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00,
 };
 __declspec(section ".rodata") const Vec vec3_802c1a90 = {0.0f, -1.0f, 0.0f};
+// Nothing references these by name in the matching build; keep the linker from stripping them.
+#pragma force_active on
 __declspec(section ".rodata") const Vec vec3_802c1a9c = {0.0f, 1000.0f, 0.0f};
 __declspec(section ".rodata") const Vec vec3_802c1aa8 = {0.0f, 0.0f, -1.0f};
 __declspec(section ".rodata") const Vec vec3_802c1ab4 = {0.0f, 0.0f, 0.0f};
@@ -192,6 +194,7 @@ __declspec(section ".rodata") const char str_802C1B44[] = "projected shadow dept
 __declspec(section ".rodata") const char str_802C1B6C[] = "result scene (16bit depth)";
 __declspec(section ".rodata") const char str_802C1B88[] = "actual depth from the light (16bit depth)";
 __declspec(section ".rodata") const char str_802C1BB4[] = "projected shadow depth map (16bit depth)";
+#pragma force_active reset
 extern GXColor dat_804198e4;
 extern GXColor dat_804198e8;
 extern const f32 float_1000_8041992c;
@@ -635,9 +638,16 @@ void shadowCharShadowDisp_Collision(CameraId cameraId, void* param) {
 // source through a `volatile` pointer so the nine loads come out in retail's ascending order and v0/v8 get
 // r27/r0; a plain read loads them v7..v0,v8 with v0/v8 in r0/r27. The two .sdata2 `~~` pool labels vanish
 // when the unit links.
-// NONMATCHING (99.52%): one `fsubs f3,f2,f29` (the `(float_0 + w) - we` term shared by the last two
-// vertices) is scheduled five instructions later than retail -- after v11's four colour bytes instead of
-// between v11's y and z stores; every other instruction and register matches.
+// The vertex block is one straight run that MWCC cuts into scheduling blocks of about 100 initial
+// instructions, and the last cut decides where the `(float_0 + w) - we` fsubs lands. Under MUST_MATCH
+// PROJ_ZERO (every y, and v9's x) reads the zero through a cast: the front end then gives each use its own
+// load (the back end still merges them into the one `lfs`), which moves that cut to retail's place, between
+// v11's y and z.
+#ifdef MUST_MATCH
+#define PROJ_ZERO (*(const f32*)&float_0_804198f4)
+#else
+#define PROJ_ZERO float_0_804198f4
+#endif
 void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
     ShadowConfigFields* config;
     void* work;
@@ -786,37 +796,37 @@ void shadowCharShadowDisp_Projection(CameraId camId, void* param) {
         we = float_0p2_8041990c * w;
         GXBegin(GX_QUADS, GX_VTXFMT0, 16);
         {
-        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, float_0_804198f4 - d);
+        GXPosition3f32(float_0_804198f4 - w, PROJ_ZERO, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, float_0_804198f4 - d);
+        GXPosition3f32(float_0_804198f4 + w, PROJ_ZERO, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, de + (float_0_804198f4 - d));
+        GXPosition3f32(float_0_804198f4 + w, PROJ_ZERO, de + (float_0_804198f4 - d));
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, de + (float_0_804198f4 - d));
+        GXPosition3f32(float_0_804198f4 - w, PROJ_ZERO, de + (float_0_804198f4 - d));
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, float_0_804198f4 + d);
+        GXPosition3f32(float_0_804198f4 - w, PROJ_ZERO, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, float_0_804198f4 + d);
+        GXPosition3f32(float_0_804198f4 + w, PROJ_ZERO, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, (float_0_804198f4 + d) - de);
+        GXPosition3f32(float_0_804198f4 + w, PROJ_ZERO, (float_0_804198f4 + d) - de);
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, (float_0_804198f4 + d) - de);
+        GXPosition3f32(float_0_804198f4 - w, PROJ_ZERO, (float_0_804198f4 + d) - de);
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, float_0_804198f4 - d);
+        GXPosition3f32(PROJ_ZERO - w, PROJ_ZERO, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(float_0_804198f4 - w, float_0_804198f4, float_0_804198f4 + d);
+        GXPosition3f32(float_0_804198f4 - w, PROJ_ZERO, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(we + (float_0_804198f4 - w), float_0_804198f4, float_0_804198f4 + d);
+        GXPosition3f32(we + (float_0_804198f4 - w), PROJ_ZERO, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(we + (float_0_804198f4 - w), float_0_804198f4, float_0_804198f4 - d);
+        GXPosition3f32(we + (float_0_804198f4 - w), PROJ_ZERO, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, float_0_804198f4 - d);
+        GXPosition3f32(float_0_804198f4 + w, PROJ_ZERO, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32(float_0_804198f4 + w, float_0_804198f4, float_0_804198f4 + d);
+        GXPosition3f32(float_0_804198f4 + w, PROJ_ZERO, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0xFF);
-        GXPosition3f32((float_0_804198f4 + w) - we, float_0_804198f4, float_0_804198f4 + d);
+        GXPosition3f32((float_0_804198f4 + w) - we, PROJ_ZERO, float_0_804198f4 + d);
         GXColor4u8(0, 0, 0, 0);
-        GXPosition3f32((float_0_804198f4 + w) - we, float_0_804198f4, float_0_804198f4 - d);
+        GXPosition3f32((float_0_804198f4 + w) - we, PROJ_ZERO, float_0_804198f4 - d);
         GXColor4u8(0, 0, 0, 0);
         }
     }
