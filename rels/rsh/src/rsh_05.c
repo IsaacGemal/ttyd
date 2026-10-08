@@ -122,7 +122,7 @@ const Vec vec3_rsh_00013710 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_0001371c = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013728 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013734 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_rsh_00013740 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_rsh_00013740 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_0001374c = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013758 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013764 = {0.0f, 0.0f, 0.0f};
@@ -1434,10 +1434,9 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaPose* entry) {
 #pragma opt_propagation off
 #pragma opt_lifetimes off
 // Per-frame update of every moamoa (the ordinary variant, no follower).
-// NONMATCHING (94.94%): calls/immediates match (85/85); the 23 extra insns and remaining `!!`s are register/
-// scheduling colouring in the inlined moamoa_sin/moamoa_cos/randf bodies and the res==3 `vec3` store (the same
-// artifacts eki_00's structurally-correct copy carries). The permuter tools are unavailable here.
 extern const f32 float_1_rsh_00013b38;
+// NONMATCHING (95.30%): calls/immediates match (85/85); the remaining `!!`s are register/scheduling colouring
+// in the inlined moamoa_sin/moamoa_cos/randf bodies (the same artifacts eki_00's copy carries).
 static void ext_moamoa_main(void) {
     const char* voiceSfx;
     MarioWork* mario;
@@ -1555,10 +1554,10 @@ static void ext_moamoa_main(void) {
             } else if (res == 3) {
                 {
 #ifdef MUST_MATCH
-                    // Match eki_00's half-angle lifetimes and breath-first load order.
+                    // Match eki_00's half-angle lifetimes.
                     f32 half = 0.5f;
-                    f32 breath = wp->field_0x55C;
                     f32 angle = wp->field_0x550;
+                    f32 breath = wp->field_0x55C;
                     f32 t = breath + angle;
 #else
                     f32 t = wp->field_0x550 + wp->field_0x55C;
@@ -1572,12 +1571,7 @@ static void ext_moamoa_main(void) {
                     f = t * 0.5f;
 #endif
                 }
-#ifdef MUST_MATCH
-                // Preserve the retail load/load/store/store/load/store copy order.
-                *(volatile Vec*)&entry->field_0x8 = *(const volatile Vec*)&vec3_rsh_00013740;
-#else
                 entry->field_0x8 = vec3_rsh_00013740;
-#endif
                 dist = randf(0.1f, 0.2f);
                 rad = 6.2831855f * f / 360.0f;
                 entry->field_0x14 = dist * moamoa_sin(rad);
@@ -1975,6 +1969,7 @@ static void ext_moamoa_dispent(void) {
 }
 
 // Hops an npc to (x, y, z) over a frame count: userdata holds the frames left, the vertical velocity and the speed.
+// NONMATCHING (99.88%): only `dy` is coloured f2 (retail f4), which swaps the next two FPRs.
 static USER_FUNC(npc_jump) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -1983,7 +1978,8 @@ static USER_FUNC(npc_jump) {
     f32 z = evtGetFloat(event, args[3]);
     f32 speed = evtGetFloat(event, args[4]);
     f32 grav = evtGetFloat(event, args[5]);
-    f32 frames = 60.0f * (f32)evtGetValue(event, args[6]) / 1000.0f;
+    s32 ms = evtGetValue(event, args[6]);
+    f32 frames = 60.0f * (f32)ms / 1000.0f;
     NpcEntry* npc = npcNameToPtr(name);
     f32 vy;
     f32 rad;
@@ -2000,7 +1996,7 @@ static USER_FUNC(npc_jump) {
         to = vec3_rsh_0001377c;
         to.x = x;
         to.z = z;
-        dist = PSVECDistance(&from, &to);
+        dist = PSVECDistance(&to, &from);
         dy = y - npc->position.y;
         if (0.0f == frames) {
             frames = dist / speed;
@@ -2018,8 +2014,8 @@ static USER_FUNC(npc_jump) {
     rad = 6.2831855f * angleABf(npc->position.x, npc->position.z, x, z) / 360.0f;
     npc->position.x = speed * moamoa_sin(rad) + npc->position.x;
     npc->position.z = -(speed * moamoa_cos(rad) - npc->position.z);
+    npc->position.y += vy;
     vy -= grav;
-    npc->position.y += event->userdataf[1];
     frames -= 1.0f;
     if (frames < 0.0f) {
         Vec land;

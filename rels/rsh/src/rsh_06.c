@@ -238,7 +238,7 @@ const Vec vec3_rsh_00013d58 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013d64 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013d70 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013d7c = {0.0f, 0.0f, 0.0f};
-const Vec vec3_rsh_00013d88 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_rsh_00013d88 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013d94 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_rsh_00013da0 = {0.0f, 0.0f, 0.0f};
 
@@ -2036,7 +2036,7 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
 #pragma opt_propagation off
 // Keeps the inlined sin/cos argument in a callee-saved FPR instead of rematerialising it per branch.
 #pragma opt_lifetimes off
-// NONMATCHING (90.50%): calls and immediates match, the frame (0x150) and the saved register sets
+// Calls and immediates match, the frame (0x150) and the saved register sets
 // (r17..r31, f31..f26) match, and stack traffic is identical, but our body is 12272 B vs the target's
 // 12252 B (+5 instructions, leftover `addi`/`lis` address materialisation in the inlined sin/cos/randf);
 // the rest is register colouring and scheduling. The structural findings that were load-bearing:
@@ -2061,9 +2061,9 @@ static s32 moamoa_hit_check(ExtPose* pose, MoamoaEntry* entry) {
 // materialise their address instead of using `@l`. Rest is permuter work.
 #define MOA_TARGET(i) (wp->vec[(i) % 3])
 // Per-frame update of every moamoa (the Great Moamoa variant: a follower pulls the swarm to a joint of "base").
-// NONMATCHING (90.50%): register/scheduling colouring only; see the block above for the full breakdown.
 extern const f32 float_2_rsh_00014514;
 extern const f32 float_1_rsh_00014470;
+// NONMATCHING (90.88%): register/scheduling colouring only; see the block above for the full breakdown.
 static void ext_moamoa_main(void) {
     MarioWork* mario;
     PartyEntry* party;
@@ -2143,10 +2143,10 @@ static void ext_moamoa_main(void) {
 
                 {
 #ifdef MUST_MATCH
-                    // Match eki_00's half-angle lifetimes and breath-first load order.
+                    // Match eki_00's half-angle lifetimes.
                     f32 half = 0.5f;
-                    f32 breath = wp->field_0x55C;
                     f32 angle = wp->field_0x550;
+                    f32 breath = wp->field_0x55C;
                     f32 t = breath + angle;
 #else
                     f32 t = wp->field_0x550 + wp->field_0x55C;
@@ -2160,12 +2160,7 @@ static void ext_moamoa_main(void) {
                     f3 = t * 0.5f;
 #endif
                 }
-#ifdef MUST_MATCH
-                // Preserve the retail load/load/store/store/load/store copy order.
-                *(volatile Vec*)&entry->field_0x8 = *(const volatile Vec*)&vec3_rsh_00013d88;
-#else
                 entry->field_0x8 = vec3_rsh_00013d88;
-#endif
                 dist3 = randf(0.1f, 0.2f);
                 rad3 = 6.2831855f * f3 / 360.0f;
                 entry->field_0x14 = dist3 * moamoa_sin(rad3);
