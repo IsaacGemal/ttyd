@@ -11,15 +11,16 @@ USER_FUNC(evt_cam_shake);
 USER_FUNC(evt_cam_shake);
 USER_FUNC(evt_cam3d_evt_set);
 USER_FUNC(evt_cam_letter_box_disable);
-inline Vec makeVecByValue(f32 x, f32 y, f32 z);
-inline Vec makeVecByValue2(f32 x, f32 y, f32 z);
 USER_FUNC(evt_cam_letter_box_camid);
 USER_FUNC(evt_cam_letter_box_onoff);
 
 USER_FUNC(evt_cam3d_event_from_road);
+USER_FUNC(evt_cam3d_evt_dolly);
 USER_FUNC(evt_cam3d_evt_set_at);
+USER_FUNC(evt_cam3d_evt_set_at_rel);
 USER_FUNC(evt_cam3d_evt_set_now);
 USER_FUNC(evt_cam3d_evt_set_npc_rel);
+USER_FUNC(evt_cam3d_evt_set_npc_rel_str);
 USER_FUNC(evt_cam3d_evt_set_rel);
 USER_FUNC(evt_cam3d_evt_set_rel_dir);
 USER_FUNC(evt_cam3d_evt_set_xyz);
