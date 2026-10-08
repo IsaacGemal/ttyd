@@ -4032,64 +4032,56 @@ USER_FUNC(kamec_fire_magic_delete) {
 
 // TODO: type
 
-// NONMATCHING (99.93%): the first block's s.x lands in f23 where the original uses f28 (one load, one fsubs,
-// one fmadds); every other instruction and relocation matches.
 USER_FUNC(chain_main) {
     NpcEntry* npc = evtNpcNameToPtr(event, "me");
     NpcEntry* ref;
     NpcEntry* cur;
-    f32 f28;
-    f32 f23;
-    f32 f24;
-    f32 f25;
-    f32 f31;
-    f32 f26;
-    f32 f30;
-    f32 f27;
-    f32 f29;
+    f32 len;
+    f32 sag;
+    f32 x;
+    f32 y;
+    f32 z;
+    f32 dx;
+    f32 dy;
+    f32 dz;
+    f32 dist;
+    f32 t;
     s32 i;
-    s32 j;
+
+    ref = npc->slaves[3];
+    dx = npc->position.x - ref->position.x;
+    dy = npc->position.y - ref->position.y;
+    dz = npc->position.z - ref->position.z;
+    len = (f32)sqrt(dx * dx + dy * dy + dz * dz) / 4.0f;
+    if (len < 10.0f) {
+        len = 10.0f;
+    }
+    sag = 300.0f / (len * len);
 
     {
-        NpcEntry* n = npc->slaves[3];
-        f32 dy = npc->position.y - n->position.y;
-        f32 dx = npc->position.x - n->position.x;
-        f32 dz = npc->position.z - n->position.z;
+    Vec pos;
 
-        f31 = (f32)sqrt(dx * dx + dy * dy + dz * dz) / 4.0f;
+    cur = npc->slaves[0];
+    y = cur->position.y;
+    x = cur->position.x;
+    z = cur->position.z;
+    y = y - sag;
+    dx = npc->position.x - x;
+    dy = npc->position.y - y;
+    dz = npc->position.z - z;
+    dist = (f32)sqrt(dx * dx + dy * dy + dz * dz);
+    t = 1.0f - len / dist;
+    y = dy * t + y;
+    x = dx * t + x;
+    z = dz * t + z;
+    if (y < npc->territoryBase.y) {
+        y = npc->territoryBase.y;
     }
-    if (f31 < 10.0f) {
-        f31 = 10.0f;
-    }
-    f30 = 300.0f / (f31 * f31);
-
-    {
-        Vec pos;
-        NpcEntry* s = npc->slaves[0];
-
-        f29 = s->position.y;
-        f28 = s->position.x;
-        f27 = s->position.z;
-        f29 = f29 - f30;
-        f26 = npc->position.x - f28;
-        f25 = npc->position.y - f29;
-        f24 = npc->position.z - f27;
-        {
-            f32 dist = (f32)sqrt(f26 * f26 + f25 * f25 + f24 * f24);
-            f32 t = 1.0f - f31 / dist;
-
-            f29 = f25 * t + f29;
-            f26 = f26 * t + f28;
-            f24 = f24 * t + f27;
-        }
-        if (f29 < npc->territoryBase.y) {
-            f29 = npc->territoryBase.y;
-        }
-        pos = (Vec){ 0.0f, 0.0f, 0.0f };
-        pos.x = f26;
-        pos.y = f29;
-        pos.z = f24;
-        s->position = pos;
+    pos = (Vec){ 0.0f, 0.0f, 0.0f };
+    pos.x = x;
+    pos.y = y;
+    pos.z = z;
+    cur->position = pos;
     }
 
     for (i = 0; i < 2; i++) {
@@ -4097,58 +4089,52 @@ USER_FUNC(chain_main) {
 
         ref = npc->slaves[i];
         cur = npc->slaves[i + 1];
-        f23 = cur->position.y;
-        f23 = f23 - f30;
-        f27 = cur->position.x;
-        f29 = cur->position.z;
-        f26 = ref->position.x - f27;
-        f25 = ref->position.y - f23;
-        f24 = ref->position.z - f29;
-        {
-            f32 dist = (f32)sqrt(f26 * f26 + f25 * f25 + f24 * f24);
-            f32 t = 1.0f - f31 / dist;
-
-            f23 = f25 * t + f23;
-            f26 = f26 * t + f27;
-            f24 = f24 * t + f29;
-        }
-        if (f23 < npc->territoryBase.y) {
-            f23 = npc->territoryBase.y;
+        y = cur->position.y;
+        y = y - sag;
+        x = cur->position.x;
+        z = cur->position.z;
+        dx = ref->position.x - x;
+        dy = ref->position.y - y;
+        dz = ref->position.z - z;
+        dist = (f32)sqrt(dx * dx + dy * dy + dz * dz);
+        t = 1.0f - len / dist;
+        y = dy * t + y;
+        x = dx * t + x;
+        z = dz * t + z;
+        if (y < npc->territoryBase.y) {
+            y = npc->territoryBase.y;
         }
         pos = (Vec){ 0.0f, 0.0f, 0.0f };
-        pos.x = f26;
-        pos.y = f23;
-        pos.z = f24;
+        pos.x = x;
+        pos.y = y;
+        pos.z = z;
         cur->position = pos;
     }
 
-    for (j = 3; j >= 1; j--) {
+    for (i = 3; i >= 1; i--) {
         Vec pos;
 
-        ref = npc->slaves[j];
-        cur = npc->slaves[j - 1];
-        f23 = cur->position.y;
-        f23 = f23 - f30;
-        f27 = cur->position.x;
-        f29 = cur->position.z;
-        f26 = ref->position.x - f27;
-        f25 = ref->position.y - f23;
-        f24 = ref->position.z - f29;
-        {
-            f32 dist = (f32)sqrt(f26 * f26 + f25 * f25 + f24 * f24);
-            f32 t = 1.0f - f31 / dist;
-
-            f23 = f25 * t + f23;
-            f26 = f26 * t + f27;
-            f24 = f24 * t + f29;
-        }
-        if (f23 < npc->territoryBase.y) {
-            f23 = npc->territoryBase.y;
+        ref = npc->slaves[i];
+        cur = npc->slaves[i - 1];
+        y = cur->position.y;
+        y = y - sag;
+        x = cur->position.x;
+        z = cur->position.z;
+        dx = ref->position.x - x;
+        dy = ref->position.y - y;
+        dz = ref->position.z - z;
+        dist = (f32)sqrt(dx * dx + dy * dy + dz * dz);
+        t = 1.0f - len / dist;
+        y = dy * t + y;
+        x = dx * t + x;
+        z = dz * t + z;
+        if (y < npc->territoryBase.y) {
+            y = npc->territoryBase.y;
         }
         pos = (Vec){ 0.0f, 0.0f, 0.0f };
-        pos.x = f26;
-        pos.y = f23;
-        pos.z = f24;
+        pos.x = x;
+        pos.y = y;
+        pos.z = z;
         cur->position = pos;
     }
     return EVT_RETURN_DONE;
