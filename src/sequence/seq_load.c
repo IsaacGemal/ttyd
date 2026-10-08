@@ -34,8 +34,8 @@
 #include <dolphin/os.h>
 #include <string.h>
 
-// The original reaches its whole .rodata region through one base register (r30 = &vec3_802ed670);
-// this puts the pooled strings and the int->float conversion double at the target's base+offset sites.
+// The original reaches its .rodata and .data through the compiler's pool bases (r30 = .rodata+0,
+// loadMain's r29 = .data+0, which reaches win_dt/win_dt2/win_dt3 at +0x40/+0x13c/+0x200).
 #pragma pool_data on
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
@@ -92,23 +92,6 @@ struct LoadAngleTable
 #define ANGLES_AT(a, w) ((a).v[(w)->field_0x30 * 4 + (w)->field_0x34])
 #endif
 
-#ifdef MUST_MATCH
-// loadMain reaches the three window tables from one base (the object before them, lbl_80349DE8, plus 0x40/0x13c/0x200),
-// which is what the original's code does
-#define WDT_TABLE ((WinDt*)(base2 + 0x40))
-#define WDT2_TABLE ((WinDt*)(base2 + 0x13c))
-#define WDT3_TABLE ((WinDt*)(base2 + 0x200))
-#define WDT(i)  (wd = WDT_TABLE, wd[i])
-#define WDT2(i) (wd = WDT2_TABLE, wd[i])
-#define WDT3(i) (wd = WDT3_TABLE, wd[i])
-#else
-#define WDT_TABLE ((WinDt*)win_dt)
-#define WDT2_TABLE ((WinDt*)win_dt2)
-#define WDT3_TABLE ((WinDt*)win_dt3)
-#define WDT(i)  (((WinDt*)win_dt)[i])
-#define WDT2(i) (((WinDt*)win_dt2)[i])
-#define WDT3(i) (((WinDt*)win_dt3)[i])
-#endif
 
 static LoadWork work;
 static LoadWork* wp = &work;
@@ -124,33 +107,33 @@ u32 gap_80349DF0[14] = {
     0xBF800000, 0x3F800000, 0x3F800000, 0xBF800000, 0x3F800000, 0xBF800000, 0xBF800000, 0x3F800000,
     0xBF800000, 0x3F800000, 0x3F800000, 0xBF800000, 0x3F800000, 0xBF800000,
 };
-u32 win_dt[9][7] = {
-    { 0xC30C0000, 0x42960000, 0xC2F00000, 0x42700000, 0x0000000D, 0x00000000, 0x07020101 },
-    { 0x430C0000, 0x42960000, 0xC2F00000, 0x42700000, 0x0000000C, 0x00000000, 0x08030000 },
-    { 0xC30C0000, 0xC2820000, 0xC2F00000, 0x42700000, 0x0000000B, 0x00000000, 0x00040303 },
-    { 0x430C0000, 0xC2820000, 0xC2F00000, 0x42700000, 0x0000000A, 0x00000000, 0x01050202 },
-    { 0xC3480000, 0xC3160000, 0xC2A00000, 0x00000000, 0x00000010, 0x0000001E, 0x02070605 },
-    { 0x00000000, 0xC3160000, 0xC2A00000, 0x00000000, 0x00000011, 0x0000001E, 0x02070406 },
-    { 0x43480000, 0xC3160000, 0xC2A00000, 0x00000000, 0x00000012, 0x0000001E, 0x03080504 },
-    { 0xC3020000, 0xC33E0000, 0xC2C80000, 0x00000000, 0x00000013, 0x0000001F, 0x04000808 },
-    { 0x43020000, 0xC33E0000, 0xC2C80000, 0x00000000, 0x00000014, 0x0000001F, 0x05010707 },
+WinDt win_dt[9] = {
+    { -140.0f, 75.0f, -120.0f, 60.0f, 13, 0, 7, 2, 1, 1 },
+    { 140.0f, 75.0f, -120.0f, 60.0f, 12, 0, 8, 3, 0, 0 },
+    { -140.0f, -65.0f, -120.0f, 60.0f, 11, 0, 0, 4, 3, 3 },
+    { 140.0f, -65.0f, -120.0f, 60.0f, 10, 0, 1, 5, 2, 2 },
+    { -200.0f, -150.0f, -80.0f, 0.0f, 16, 30, 2, 7, 6, 5 },
+    { 0.0f, -150.0f, -80.0f, 0.0f, 17, 30, 2, 7, 4, 6 },
+    { 200.0f, -150.0f, -80.0f, 0.0f, 18, 30, 3, 8, 5, 4 },
+    { -130.0f, -190.0f, -100.0f, 0.0f, 19, 31, 4, 0, 8, 8 },
+    { 130.0f, -190.0f, -100.0f, 0.0f, 20, 31, 5, 1, 7, 7 },
 };
 
-u32 win_dt2[7][7] = {
-    { 0xC30C0000, 0x42960000, 0xC2F00000, 0x42700000, 0x0000000D, 0x00000000, 0x06020101 },
-    { 0x430C0000, 0x42960000, 0xC2F00000, 0x42700000, 0x0000000C, 0x00000000, 0x06030000 },
-    { 0xC30C0000, 0xC2820000, 0xC2F00000, 0x42700000, 0x0000000B, 0x00000000, 0x00060303 },
-    { 0x430C0000, 0xC2820000, 0xC2F00000, 0x42700000, 0x0000000A, 0x00000000, 0x01060202 },
-    { 0xC3480000, 0xC3160000, 0xC2A00000, 0x00000000, 0x00000010, 0x0000001E, 0x02070605 },
-    { 0x00000000, 0xC3160000, 0xC2A00000, 0x00000000, 0x00000011, 0x0000001E, 0x02070406 },
-    { 0x43480000, 0xC3160000, 0xC2A00000, 0x00000000, 0x00000012, 0x0000001E, 0x03010606 },
+WinDt win_dt2[7] = {
+    { -140.0f, 75.0f, -120.0f, 60.0f, 13, 0, 6, 2, 1, 1 },
+    { 140.0f, 75.0f, -120.0f, 60.0f, 12, 0, 6, 3, 0, 0 },
+    { -140.0f, -65.0f, -120.0f, 60.0f, 11, 0, 0, 6, 3, 3 },
+    { 140.0f, -65.0f, -120.0f, 60.0f, 10, 0, 1, 6, 2, 2 },
+    { -200.0f, -150.0f, -80.0f, 0.0f, 16, 30, 2, 7, 6, 5 },
+    { 0.0f, -150.0f, -80.0f, 0.0f, 17, 30, 2, 7, 4, 6 },
+    { 200.0f, -150.0f, -80.0f, 0.0f, 18, 30, 3, 1, 6, 6 },
 };
 
-u32 win_dt3[4][7] = {
-    { 0xC30C0000, 0x42960000, 0xC2F00000, 0x42700000, 0x0000000D, 0x00000000, 0x02020101 },
-    { 0x430C0000, 0x42960000, 0xC2F00000, 0x42700000, 0x0000000C, 0x00000000, 0x03030000 },
-    { 0xC30C0000, 0xC2820000, 0xC2F00000, 0x42700000, 0x0000000B, 0x00000000, 0x00000303 },
-    { 0x430C0000, 0xC2820000, 0xC2F00000, 0x42700000, 0x0000000A, 0x00000000, 0x01010202 },
+WinDt win_dt3[4] = {
+    { -140.0f, 75.0f, -120.0f, 60.0f, 13, 0, 2, 2, 1, 1 },
+    { 140.0f, 75.0f, -120.0f, 60.0f, 12, 0, 3, 3, 0, 0 },
+    { -140.0f, -65.0f, -120.0f, 60.0f, 11, 0, 0, 0, 3, 3 },
+    { 140.0f, -65.0f, -120.0f, 60.0f, 10, 0, 1, 1, 2, 2 },
 };
 
 const GXColor dat_8041bd68 = {0, 0, 0, 0xFF};
@@ -183,38 +166,6 @@ const GXColor dat_8041bdcc = {0xFF, 0xFF, 0xFF, 0xFF};
 const GXColor dat_8041bdd0 = {0xFF, 0xFF, 0xFF, 0xFF};
 const u32 dat_8041bdd4 = 0x80;
 const u32 dat_8041bdd8 = 0x80;
-__declspec(section ".sdata2") const char str_8041BE34[] = "\202W\202W\000\000\000";
-const char str_8041BE40[] = " \000";
-const f32 float_0_8041bde4 = 0.0f;
-const f32 float_1_8041bde8 = 1.0f;
-const f32 float_neg304_8041bdec = -304.0f;
-const f32 float_240_8041bdf0 = 240.0f;
-const f32 float_neg240_8041bdf4 = -240.0f;
-const f32 float_neg272_8041bdf8 = -272.0f;
-const f32 float_272_8041bdfc = 272.0f;
-const f32 float_304_8041be00 = 304.0f;
-const f32 float_60_8041be04 = 60.0f;
-const f32 float_neg250_8041be08 = -250.0f;
-const f32 float_200_8041be0c = 200.0f;
-const f32 float_500_8041be10 = 500.0f;
-const f32 float_40_8041be14 = 40.0f;
-const f32 float_20_8041be18 = 20.0f;
-const f32 float_0p6_8041be1c = 0.6f;
-const f32 float_100_8041be20 = 100.0f;
-const f32 float_84_8041be24 = 84.0f;
-const f32 float_0p5_8041be28 = 0.5f;
-const f32 float_12_8041be2c = 12.0f;
-const f32 float_70_8041be30 = 70.0f;
-const f32 float_8_8041be44 = 8.0f;
-const f32 float_22_8041be48 = 22.0f;
-const f32 float_1p5_8041be4c = 1.5f;
-const f32 float_106_8041be50 = 106.0f;
-const f32 float_52_8041be54 = 52.0f;
-const f32 float_0p05_8041be58 = 0.05f;
-const f32 float_120_8041be5c = 120.0f;
-const f32 float_140_8041be60 = 140.0f;
-const f32 float_neg150_8041be64 = -150.0f;
-const f32 float_300_8041be68 = 300.0f;
 
 const Vec vec3_802ed670 = {0, 0, 0};
 const Vec vec3_802ed67c = {1, 1, 1};
@@ -276,27 +227,9 @@ const char str_802ED920[] = "gor_00\000";
 const char str_802ED928[] = "jin_04\000";
 const char str_802ED930[] = "aaa_00\000";
 const char str_802ED938[] = "prologue\000\000\000";
-const u32 gap_04_802ED944_rodata[] = {0x00000000};
 const f64 double_480_802ed948 = 480;
 const f64 double_32_802ed950 = 32;
 const f64 double_544_802ed958 = 544;
-const char str_802ED960[] = "\203f\201[\203^%s\000\000\000";
-const char str_802ED96C[] = "\202\261\202\355\202\352\202\304\202\242\202\334\202\267\000";
-const char str_802ED97C[] = "\203j\203\205\201[\203Q\201[\203\200\000\000\000";
-const char str_802ED98C[] = "\202\315\202\266\202\337\202\251\202\347\000";
-const char str_802ED998[] = "\203\214\203x\203\213\201@%s\000";
-const char str_802ED9A4[] = "\203v\203\214\203C\202\266\202\251\202\361\201@\000";
-const u32 gap_04_802ED9B4_rodata[] = {0x00000000};
-const f64 double_90_802ed9b8 = 90;
-const char str_8041BDDC[] = "next";
-const f32 float_30_8041be3c = 30.0f;
-const f32 float_50_8041be6c = 50.0f;
-const f32 float_2_8041be70 = 2.0f;
-const f32 float_neg74_8041be74 = -74.0f;
-const f32 float_4_8041be78 = 4.0f;
-const f32 float_0p25_8041be7c = 0.25f;
-const f32 float_0p125_8041be80 = 0.125f;
-const f32 float_1000_8041be84 = 1000.0f;
 
 s32 stone_id[] = { 0x197, 0x198, 0x19A, 0x19C, 0x19D, 0x199, 0x19B };
 
@@ -314,12 +247,6 @@ EVT_BEGIN(evt_continue)
     RETURN
 EVT_END()
 
-// The original addresses these .rodata objects as offsets from one base symbol.
-#ifdef MUST_MATCH
-#define RO(base, off, sym) ((const char*)&(sym))
-#else
-#define RO(base, off, sym) ((const char*)&(sym))
-#endif
 
 s32 unk_800f2398(EventEntry* event, BOOL isFirstCall) {
     fadeReset(4);
@@ -389,8 +316,8 @@ void seq_loadMain(SequenceWork* workArg) {
                 wp->field_0x24 = wp->field_0x40;
                 wp->field_0x28 = wp->field_0x44;
                 wp->field_0x20 = gp->unk11B8;
-                wp->field_0x8 = ((f32(*)[7])win_dt)[wp->field_0x20][0];
-                wp->field_0xC = ((f32(*)[7])win_dt)[wp->field_0x20][1];
+                wp->field_0x8 = win_dt[wp->field_0x20].x;
+                wp->field_0xC = win_dt[wp->field_0x20].y;
             }
             break;
         case 3: {
@@ -405,27 +332,12 @@ void seq_loadMain(SequenceWork* workArg) {
     }
 }
 
-// Materialise win_dt/win_dt2/win_dt3 as base2+0x40/0x13c/0x200 with a separate addi, as the original does,
-// instead of letting the compiler fold those displacements into the load.
-#pragma opt_propagation off
-// NONMATCHING (99.21%): full reconstruction. The only diffs are three register colours: the two
-// compiler-materialised base registers are swapped (our data base lbl_80349DE8 in r30 and the .rodata
-// pool base in r29, the original the other way round) and the derived temp @1527 follows the data base
-// from r30 to r29. Both bases are objectless global-address webs created at function entry; declaration
-// order, bare assignment, inline helpers and moving the WDT macros all leave their priority order
-// unchanged, so this is a permuter job (rasim reproduces the colouring and no single interference edge
-// fixes it).
 void loadMain(SequenceWork* workArg) {
-#ifdef MUST_MATCH
-    const char* base2 = (const char*)&lbl_80349DE8;
-#endif
-    const char* base = (const char*)&vec3_802ed670;
     u32 btn = keyGetButtonTrg(0);
     u32 rep = keyGetButtonRep(0);
     u32 dir = keyGetDirRep(0);
     s32 sel;
     s32 code = cardGetCode();
-    WinDt* wd;
     MarioWork* mario;
     s32 i;
     s32 off;
@@ -433,6 +345,8 @@ void loadMain(SequenceWork* workArg) {
     CardData* card;
 
     GXColor color;
+    f32 bounce;
+    s32 mode;
     (void)rep;
 
     if (cardIsExec() || !fadeIsFinish()) {
@@ -462,20 +376,22 @@ void loadMain(SequenceWork* workArg) {
         wp->field_0x0 |= 0x10;
     }
 
-    i = 0;
+    // This scan counts in `off` and steps the byte offset in `i` (the first scan's roles swapped);
+    // the frontend numbers each local's later webs together, which is what gives retail's registers.
     off = 0;
+    i = 0;
     wp->field_0x0 &= ~0x20;
-    while (i < 4) {
+    while (off < 4) {
         card = cardGetFilePtr();
-        flag = *(u16*)((u8*)card + off + 0x2000);
+        flag = *(u16*)((u8*)card + i + 0x2000);
         if ((flag & 1) || (flag & 2)) {
-            i++;
-            off += 0x4000;
+            off++;
+            i += 0x4000;
         } else {
             break;
         }
     }
-    if (i >= 4) {
+    if (off >= 4) {
         wp->field_0x0 |= 0x20;
     }
 
@@ -488,14 +404,13 @@ void loadMain(SequenceWork* workArg) {
             sel = wp->field_0x20;
 
             if (dir & 0x1000) {
-                wd = WDT_TABLE;
-                wp->field_0x20 = wd[sel].b18;
+                wp->field_0x20 = win_dt[sel].b18;
             } else if (dir & 0x2000) {
-                wp->field_0x20 = WDT(sel).b19;
+                wp->field_0x20 = win_dt[sel].b19;
             } else if (dir & 0x4000) {
-                wp->field_0x20 = WDT(sel).b1a;
+                wp->field_0x20 = win_dt[sel].b1a;
             } else if (dir & 0x8000) {
-                wp->field_0x20 = WDT(sel).b1b;
+                wp->field_0x20 = win_dt[sel].b1b;
             } else if (btn & 0x100) {
                 card = cardGetFilePtr();
                 flag = *(u16*)((u8*)card + (wp->field_0x20 << 14) + 0x2000);
@@ -577,16 +492,15 @@ void loadMain(SequenceWork* workArg) {
                 psndSFXOn((const char*)0x13);
                 wp->field_0x18 = 0xa;
             }
-            if (wp->field_0x20 != sel) {
+            if (sel != wp->field_0x20) {
                 if (wp->field_0x20 < 4) {
                     psndSFXOn((const char*)9);
                 } else {
                     psndSFXOn((const char*)5);
                 }
             }
-            wd = WDT_TABLE;
-            wp->field_0x10 = wd[wp->field_0x20].x + wd[wp->field_0x20].z;
-            wp->field_0x14 = wd[wp->field_0x20].y + wd[wp->field_0x20].w;
+            wp->field_0x10 = win_dt[wp->field_0x20].x + win_dt[wp->field_0x20].z;
+            wp->field_0x14 = win_dt[wp->field_0x20].y + win_dt[wp->field_0x20].w;
             break;
 
         case 0xa:
@@ -693,7 +607,7 @@ void loadMain(SequenceWork* workArg) {
                         wp->field_0x3C->lwData[0] = 0x17;
                         wp->field_0x18++;
                     } else {
-                        seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x2c0, str_802ED930), RO(base, 0x2c8, str_802ED938));
+                        seqSetSeq(SEQ_MAP_CHANGE, str_802ED930, str_802ED938);
                     }
                 }
             }
@@ -701,7 +615,7 @@ void loadMain(SequenceWork* workArg) {
 
         case 0x23:
             if (!evtCheckID(wp->field_0x3C->eventId)) {
-                seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x2c0, str_802ED930), RO(base, 0x2c8, str_802ED938));
+                seqSetSeq(SEQ_MAP_CHANGE, str_802ED930, str_802ED938);
             }
             break;
 
@@ -710,13 +624,13 @@ void loadMain(SequenceWork* workArg) {
             sel = wp->field_0x20;
 
             if (dir & 0x1000) {
-                wp->field_0x20 = WDT2(sel).b18;
+                wp->field_0x20 = win_dt2[sel].b18;
             } else if (dir & 0x2000) {
-                wp->field_0x20 = WDT2(sel).b19;
+                wp->field_0x20 = win_dt2[sel].b19;
             } else if (dir & 0x4000) {
-                wp->field_0x20 = WDT2(sel).b1a;
+                wp->field_0x20 = win_dt2[sel].b1a;
             } else if (dir & 0x8000) {
-                wp->field_0x20 = WDT2(sel).b1b;
+                wp->field_0x20 = win_dt2[sel].b1b;
             } else if (btn & 0x100) {
                 if (sel < 4) {
                     card = cardGetFilePtr();
@@ -737,14 +651,13 @@ void loadMain(SequenceWork* workArg) {
                 wp->field_0x18 = 1;
                 psndSFXOn((const char*)0x13);
             }
-            if (wp->field_0x20 != sel) {
+            if (sel != wp->field_0x20) {
                 if (wp->field_0x20 < 4) {
                     psndSFXOn((const char*)9);
                 }
             }
-            wd = WDT2_TABLE;
-            wp->field_0x10 = wd[wp->field_0x20].x + wd[wp->field_0x20].z;
-            wp->field_0x14 = wd[wp->field_0x20].y + wd[wp->field_0x20].w;
+            wp->field_0x10 = win_dt2[wp->field_0x20].x + win_dt2[wp->field_0x20].z;
+            wp->field_0x14 = win_dt2[wp->field_0x20].y + win_dt2[wp->field_0x20].w;
             break;
 
         case 0x29:
@@ -773,13 +686,13 @@ void loadMain(SequenceWork* workArg) {
             sel = wp->field_0x20;
 
             if (dir & 0x1000) {
-                wp->field_0x20 = WDT2(sel).b18;
+                wp->field_0x20 = win_dt2[sel].b18;
             } else if (dir & 0x2000) {
-                wp->field_0x20 = WDT2(sel).b19;
+                wp->field_0x20 = win_dt2[sel].b19;
             } else if (dir & 0x4000) {
-                wp->field_0x20 = WDT2(sel).b1a;
+                wp->field_0x20 = win_dt2[sel].b1a;
             } else if (dir & 0x8000) {
-                wp->field_0x20 = WDT2(sel).b1b;
+                wp->field_0x20 = win_dt2[sel].b1b;
             } else if (btn & 0x100) {
                 if (sel < 4) {
                     card = cardGetFilePtr();
@@ -801,14 +714,13 @@ void loadMain(SequenceWork* workArg) {
                 wp->field_0x18 = 1;
                 psndSFXOn((const char*)0x13);
             }
-            if (wp->field_0x20 != sel) {
+            if (sel != wp->field_0x20) {
                 if (wp->field_0x20 < 4) {
                     psndSFXOn((const char*)9);
                 }
             }
-            wd = WDT2_TABLE;
-            wp->field_0x10 = wd[wp->field_0x20].x + wd[wp->field_0x20].z;
-            wp->field_0x14 = wd[wp->field_0x20].y + wd[wp->field_0x20].w;
+            wp->field_0x10 = win_dt2[wp->field_0x20].x + win_dt2[wp->field_0x20].z;
+            wp->field_0x14 = win_dt2[wp->field_0x20].y + win_dt2[wp->field_0x20].w;
             break;
 
         case 0x33:
@@ -817,19 +729,19 @@ void loadMain(SequenceWork* workArg) {
 
             if (dir & 0x1000) {
                 do {
-                    { const u8* tbl = (const u8*)WDT3_TABLE; wp->field_0x20 = tbl[wp->field_0x20 * 0x1c + 0x18]; }
+                    wp->field_0x20 = win_dt3[wp->field_0x20].b18;
                 } while (wp->field_0x20 == wp->field_0x30);
             } else if (dir & 0x2000) {
                 do {
-                    { const u8* tbl = (const u8*)WDT3_TABLE; wp->field_0x20 = tbl[wp->field_0x20 * 0x1c + 0x19]; }
+                    wp->field_0x20 = win_dt3[wp->field_0x20].b19;
                 } while (wp->field_0x20 == wp->field_0x30);
             } else if (dir & 0x4000) {
                 do {
-                    { const u8* tbl = (const u8*)WDT3_TABLE; wp->field_0x20 = tbl[wp->field_0x20 * 0x1c + 0x1a]; }
+                    wp->field_0x20 = win_dt3[wp->field_0x20].b1a;
                 } while (wp->field_0x20 == wp->field_0x30);
             } else if (dir & 0x8000) {
                 do {
-                    { const u8* tbl = (const u8*)WDT3_TABLE; wp->field_0x20 = tbl[wp->field_0x20 * 0x1c + 0x1b]; }
+                    wp->field_0x20 = win_dt3[wp->field_0x20].b1b;
                 } while (wp->field_0x20 == wp->field_0x30);
             } else if (btn & 0x100) {
                 wp->field_0x18 = 0x34;
@@ -840,15 +752,14 @@ void loadMain(SequenceWork* workArg) {
                 wp->field_0x18 = 0x32;
                 psndSFXOn((const char*)0x13);
             }
-            if (wp->field_0x20 != sel) {
+            if (sel != wp->field_0x20) {
                 if (wp->field_0x20 < 4) {
                     psndSFXOn((const char*)9);
                 }
             }
             wp->field_0x34 = wp->field_0x20;
-            wd = WDT2_TABLE;
-            wp->field_0x10 = wd[wp->field_0x20].x + wd[wp->field_0x20].z;
-            wp->field_0x14 = wd[wp->field_0x20].y + wd[wp->field_0x20].w;
+            wp->field_0x10 = win_dt2[wp->field_0x20].x + win_dt2[wp->field_0x20].z;
+            wp->field_0x14 = win_dt2[wp->field_0x20].y + win_dt2[wp->field_0x20].w;
             break;
 
         case 0x34:
@@ -875,15 +786,15 @@ void loadMain(SequenceWork* workArg) {
 
         case 0x64:
             wp->field_0x0 |= 1;
-            sel = wp->field_0x24;
+            off = wp->field_0x24;
             if (dir & 0x1000) {
-                wp->field_0x24 = sel - 1;
+                wp->field_0x24 = off - 1;
                 psndSFXOn((const char*)5);
             } else if (dir & 0x2000) {
-                wp->field_0x24 = sel + 1;
+                wp->field_0x24 = off + 1;
                 psndSFXOn((const char*)5);
             } else if (btn & 0x100) {
-                switch (sel) {
+                switch (off) {
                     case 0:
                         OSSetSoundMode(0);
                         gp->unk1274 = 0;
@@ -929,8 +840,9 @@ void loadMain(SequenceWork* workArg) {
             if (wp->field_0x24 < 0) {
                 wp->field_0x24 = 2;
             }
-            if (wp->field_0x24 != sel) {
-                switch (wp->field_0x24) {
+            mode = wp->field_0x24;
+            if (mode != off) {
+                switch (mode) {
                     case 0:
                         SoundSetOutputMode(0);
                         break;
@@ -943,8 +855,8 @@ void loadMain(SequenceWork* workArg) {
                 }
                 psndENVOn(0x110, 0x75);
             }
-            wp->field_0x10 = float_neg74_8041be74;
-            wp->field_0x14 = float_4_8041be78 + (float_50_8041be6c - float_50_8041be6c * (f32)wp->field_0x24);
+            wp->field_0x10 = -74.0f;
+            wp->field_0x14 = 4.0f + (50.0f - 50.0f * (f32)wp->field_0x24);
             break;
 
         case 0xc8:
@@ -976,54 +888,22 @@ void loadMain(SequenceWork* workArg) {
             if (wp->field_0x28 < 0) {
                 wp->field_0x28 = 1;
             }
-            wp->field_0x10 = float_neg74_8041be74;
-            wp->field_0x14 = float_4_8041be78 + (float_30_8041be3c - float_50_8041be6c * (f32)wp->field_0x28);
+            wp->field_0x10 = -74.0f;
+            wp->field_0x14 = 4.0f + (30.0f - 50.0f * (f32)wp->field_0x28);
             break;
     }
 
-    wp->field_0x8 += (wp->field_0x10 - wp->field_0x8) * float_0p25_8041be7c;
-    wp->field_0xC += (wp->field_0x14 - wp->field_0xC) * float_0p25_8041be7c;
-    wp->field_0x8 += __fabsf(float_2_8041be70 * (f32)sin((f32)gp->retraceCount * float_0p125_8041be80));
-    dispEntry(4, float_1000_8041be84, 0, (DispCallback)loadDraw, NULL);
+    wp->field_0x8 += (wp->field_0x10 - wp->field_0x8) / 4.0f;
+    wp->field_0xC += (wp->field_0x14 - wp->field_0xC) / 4.0f;
+    bounce = 2.0f * (f32)sin((f32)gp->retraceCount / 8.0f);
+    wp->field_0x8 += __fabsf(bounce);
+    dispEntry(4, 1000.0f, 0, (DispCallback)loadDraw, NULL);
 }
-#pragma opt_propagation reset
 
-// NONMATCHING (99.54%): complete reconstruction of the save-file load screen. Every call, loop bound,
-// rodata object, table read and branch is present and semantically correct. The remaining diffs are
-// compiler only: five callee-saved colours (field28 and four time-formatting temps sit one register off
-// the target) and the stack slots of the by-value Vec/GXColor call temps in the nine-window loop; every
-// rodata object now lands at its target offset and the i2f double is read base-relative at +0x350.
-// The frame is 0x890, the named aggregates sit at
-// nameBuf 0x310 / projection 0x330 / viewport 0x34c / timeBuf 0x494, the quads and angle table at
-// 0x364..0x434 and the icon matrices at 0x434/0x464. That was reproduced by declaring the aggregates in
-// the reverse of the target's slot order (viewport, projection, nameBuf[0x20], timeBuf[0x100]) and by
-// hoisting the icon-block `Mtx mtx` so the first block and the five-stone loop share the target's slot.
-// The target addresses its whole .rodata region from one base register (r30 = &vec3_802ed670); routing
-// the six format strings, the angle table (dat_802ed7a8 at 0x138), the fmod 90.0 double
-// (double_90_802ed9b8 at 0x348), the four f64 quad scales (double_480/32/544 at 0x2d8/0x2e0/0x2e8) and
-// the vec3_802ed670/vec3_802ed6c4/vec3_802ed6f4 loads through the existing RO macro reproduces those,
-// while routing the remaining vecs raises the register pressure past the target's 12 callee-saved
-// registers and scores lower, so only those are routed. The f64 scales are passed to loadDrawQuad by pointer so
-// the load sits by the `fabs` the target has instead of being hoisted to the inline's entry.
-// A by-value loadDrawVec (the win_item.c form) drops the real diffs to 648 but scores 81.57, so this
-// pointer form is kept for that trade-off.
-// Other source-shape fixes that removed real diffs: keeping the play-time divisor inline at its use
-// (`ticks / (s64)(*(volatile u32*)0x800000F8 >> 2)`) so the `lwz 0xf8/srwi` schedule matches; loading
-// the loop colours through a volatile pointer so MWCC does not hoist them out of the loop; computing the
-// icon `GXColor c` after the PSMTXTrans/Scale/Concat chain; writing the nine-window colour select as
-// `GXColor color = greyA0; if (...) color = white;` instead of a ternary (MWCC then copies the value
-// directly instead of taking the address of the colour local); and dividing by 2.0f instead of
-// multiplying by 0.5f in the centred-text x positions, which fixes the `fnmsubs` operand order.
-// The angle table is copied on the stack through a struct assignment (the target does a 16-word block
-// copy before indexing); the name width is halved with `>> 1`, which is what makes MWCC fold the shift
-// and mask into the target's `extrwi`; the texture-strip scale uses the double __fabs idiom shared with
-// win_root.c's winNameQuad. The stone loop reads wd->y through a preheader pointer so MWCC emits the
-// target's `addi r23,r28,0x4` + `lfs 0(r23)` instead of folding it into `lfs 4(r28)`; the time-block and
-// save-file-slot locals are declared in the order that reproduces the target's colours. Raw offsets used
-// for undeclared CardSaveSlot fields are listed in REPORT.md.
-// A textured strip quad, the same form as win_root.c's winNameQuad but sourced from the global
-// LoadWork. The two f64 scales are read from the named pool entries through the unit's rodata base so
-// the target's `lfd` + `fabs` pair is reproduced instead of a folded anonymous pool copy.
+// loadDraw's frame: the named aggregates are declared in the reverse of the original's slot order
+// (viewport, projection, nameBuf, timeBuf) and the icon-block `Mtx mtx` is shared by the first icon
+// block and the stone loop. The quad scales are passed as pointers to the named f64 pool objects so
+// the `lfd` + `fabs` pair stays at the use instead of being folded to a constant.
 static inline void loadDrawQuad(s32 texId, f32 x, f32 y, f32 w, f32 h, const f64* wAbs, const f64* hAbs) {
     GXTexObj texObj;
     Mtx mtx;
@@ -1032,14 +912,14 @@ static inline void loadDrawQuad(s32 texId, f32 x, f32 y, f32 w, f32 h, const f64
     f32 syf;
 
     TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)wp->file + 0xA0), &texObj, texId);
-    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041bde4, float_0_8041bde4, float_0_8041bde4, 0, 0, 0);
+    GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
     GXLoadTexObj(&texObj, 0);
     GXSetNumTexGens(1);
     GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
     sy = __fabs(*hAbs);
     sx = __fabs(*wAbs);
     syf = (f32)sy / (f32)GXGetTexObjHeight(&texObj);
-    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), syf, float_1_8041bde8);
+    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), syf, 1.0f);
     GXLoadTexMtxImm(mtx, 0x1E, 1);
     GXBegin(0x80, 0, 4);
     GXPosition3f32(x, y, 0.0f);
@@ -1052,18 +932,16 @@ static inline void loadDrawQuad(s32 texId, f32 x, f32 y, f32 w, f32 h, const f64
     GXTexCoord2f32(1.0f, 0.0f);
 }
 
-// Build a by-value Vec from a named base and two coordinates; mirrors win_root.c's winBadgeMkVec so
-// each call site gets its own stack temp instead of reusing one local.
-static inline Vec loadDrawVec(const Vec* bp, f32 x, f32 y) {
-    Vec base = *bp;
+// A by-value Vec copied from a template with x/y replaced. The template is a by-value parameter, so
+// its copy lands among each call's argument temps as in the original.
+static inline Vec loadDrawVec(f32 x, f32 y, Vec base) {
     base.x = x;
     base.y = y;
     return base;
 }
 
 // Same, for the calls that only move y and keep the base's x/z.
-static inline Vec loadDrawVecY(const Vec* bp, f32 y) {
-    Vec base = *bp;
+static inline Vec loadDrawVecY(f32 y, Vec base) {
     base.y = y;
     return base;
 }
@@ -1075,21 +953,15 @@ static inline void loadDrawColor(GXColor color) {
     FontDrawColor(&color);
 }
 
-// NONMATCHING (99.54%): see the full note above the helpers; the callee-saved register colouring still
-// puts field28 and four time temps one register away from the target, and the by-value call temps in the
-// nine-window loop use different stack slots. All calls, loops, rodata and pool offsets are present.
 void loadDraw(void) {
-#ifdef MUST_MATCH
-    const char* base = (const char*)&vec3_802ed670;
-#endif
     CameraEntry* cam = camGetPtr(CAMERA_2D);
     GXColor white = *(GXColor*)&dat_8041bd84;
     GXColor greyA0 = *(GXColor*)&dat_8041bd88;
+    s32 i;
     s32 j;
     WinDt* wd;
     CardData* card;
     u8* slot;
-    s32 i;
     GXColor grey80 = *(GXColor*)&dat_8041bd8c;
     f32 viewport[6];
     f32 projection[7];
@@ -1127,18 +999,18 @@ void loadDraw(void) {
     GXSetCurrentMtx(0);
 
     loadDrawQuad(0x35, -304.0f, 240.0f, 32.0f, 480.0f,
-                 (const f64*)RO(base, 0x2E0, double_32_802ed950), (const f64*)RO(base, 0x2D8, double_480_802ed948));
+                 &double_32_802ed950, &double_480_802ed948);
     loadDrawQuad(0x34, -272.0f, 240.0f, 544.0f, 480.0f,
-                 (const f64*)RO(base, 0x2E8, double_544_802ed958), (const f64*)RO(base, 0x2D8, double_480_802ed948));
+                 &double_544_802ed958, &double_480_802ed948);
     loadDrawQuad(0x36, 272.0f, 240.0f, 32.0f, 480.0f,
-                 (const f64*)RO(base, 0x2E0, double_32_802ed950), (const f64*)RO(base, 0x2D8, double_480_802ed948));
+                 &double_32_802ed950, &double_480_802ed948);
 
     // The nine file windows.
     for (i = 0; i < 9; i++) {
         GXColor color = greyA0;
         if (i == wp->field_0x20) { color = white; }
 
-        wd = &((WinDt*)win_dt)[i];
+        wd = &win_dt[i];
         if (wp->field_0x18 == 0x33 && (i == wp->field_0x30 || i == wp->field_0x34)) {
             color = white;
         }
@@ -1155,13 +1027,13 @@ void loadDraw(void) {
         case 0xd:
             color.a = 0xFE;
             winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
-            winTexSet(0xe, loadDrawVec((const Vec*)RO(base, 0x0, vec3_802ed670), wd->x, wd->y), vec3_802ed67c, color);
+            winTexSet(0xe, loadDrawVec(wd->x, wd->y, vec3_802ed670), vec3_802ed67c, color);
             winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
-            winTexSet(wd->unk10, loadDrawVec(&vec3_802ed688, wd->x, wd->y + 60.0f), vec3_802ed694, color);
+            winTexSet(wd->unk10, loadDrawVec(wd->x, wd->y + 60.0f, vec3_802ed688), vec3_802ed694, color);
             break;
         default:
             winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
-            winTexSet_x2(wd->unk10, wd->unk14, loadDrawVec(&vec3_802ed6a0, wd->x, wd->y), vec3_802ed6ac, color);
+            winTexSet_x2(wd->unk10, wd->unk14, loadDrawVec(wd->x, wd->y, vec3_802ed6a0), vec3_802ed6ac, color);
             break;
         }
     }
@@ -1177,9 +1049,9 @@ void loadDraw(void) {
     // The four save files.
     for (i = 0; i < 4; i++) {
         u16 mask;
+        u16 flags;
         s32 level;
         s32 field28;
-        u16 flags;
         u32 field2c;
         s32 field17c;
         const char* name;
@@ -1193,7 +1065,7 @@ void loadDraw(void) {
         mask = *(u16*)(slot + 0x146c);
         field17c = *(u32*)(slot + 0x17c);
         name = (const char*)(slot + 0x11c4);
-        wd = &((WinDt*)win_dt)[i];
+        wd = &win_dt[i];
 
         FontDrawStart();
         loadDrawColor(*(volatile GXColor*)&dat_8041bd98);
@@ -1202,7 +1074,7 @@ void loadDraw(void) {
         }
         FontDrawScale(0.6f);
         FontDrawEdge();
-        sprintf(nameBuf, RO(base, 0x2f0, str_802ED960), winZenkakuStr(i + 1));
+        sprintf(nameBuf, "\203f\201[\203^%s", winZenkakuStr(i + 1));
         FontDrawString(nameBuf, wd->x - 100.0f, 84.0f + wd->y);
         FontDrawEdgeOff();
         FontDrawScale(1.0f);
@@ -1212,15 +1084,15 @@ void loadDraw(void) {
         }
 
         if (flags & 2) {
-            const char* s = RO(base, 0x2fc, str_802ED96C);
+            const char* s = "\202\261\202\355\202\352\202\304\202\242\202\334\202\267";
 
             FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
         } else if (flags & 1) {
-            const char* s = RO(base, 0x30c, str_802ED97C);
+            const char* s = "\203j\203\205\201[\203Q\201[\203\200";
 
             FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
         } else if (field17c == 0) {
-            const char* s = RO(base, 0x31c, str_802ED98C);
+            const char* s = "\202\315\202\266\202\337\202\251\202\347";
 
             FontDrawString(s, wd->x - (f32)FontGetMessageWidth(s) / 2.0f, 12.0f + wd->y);
             if (strlen(name) != 0) {
@@ -1235,28 +1107,32 @@ void loadDraw(void) {
             Mtx mtx;
             f32 half2;
 
-            FontGetMessageWidth(str_8041BE34);
-            secs = (u64)(ticks / (s64)(*(volatile u32*)0x800000F8 >> 2));
-            if (secs > 0x57E3F) {
+            FontGetMessageWidth("\202W\202W");
+            secs = ticks / (s64)(*(volatile u32*)0x800000F8 >> 2);
+            if (secs > 359999) {
                 hours = 99;
                 mins = 59;
             } else {
-                hours = (u32)(secs / 3600);
-                mins = (u32)((secs % 3600) / 60);
+                u64 t = secs;
+                hours = (u32)(t / 3600);
+                t %= 3600;
+                mins = (u32)(t / 60);
             }
 
             if (strlen(name) != 0) {
                 FontDrawString(name, wd->x - (f32)(FontGetMessageWidth(name) >> 1), 70.0f + wd->y);
             }
-            sprintf(timeBuf, RO(base, 0x328, str_802ED998), winZenkakuStr(level));
+            sprintf(timeBuf, "\203\214\203x\203\213\201@%s", winZenkakuStr(level));
             FontDrawString(timeBuf, wd->x - (f32)FontGetMessageWidth(timeBuf) / 2.0f, 30.0f + wd->y);
-            strcpy(timeBuf, RO(base, 0x334, str_802ED9A4));
+            strcpy(timeBuf, "\203v\203\214\203C\202\266\202\251\202\361\201@");
             strcat(timeBuf, unk_8016af5c(hours, 2));
-            strcat(timeBuf, str_8041BE40);
+            strcat(timeBuf, " ");
             strcat(timeBuf, unk_8016af5c(mins, 2));
-            half = (f32)FontGetMessageWidth(timeBuf) / 2.0f;
-            FontDrawString(timeBuf, wd->x - half, wd->y);
-            strcpy(timeBuf, RO(base, 0x334, str_802ED9A4));
+            {
+                f32 w = (f32)FontGetMessageWidth(timeBuf);
+                FontDrawString(timeBuf, wd->x - (half = w / 2.0f), wd->y);
+            }
+            strcpy(timeBuf, "\203v\203\214\203C\202\266\202\251\202\361\201@");
             strcat(timeBuf, unk_8016af5c(hours, 2));
             half2 = (f32)FontGetMessageWidth(timeBuf);
             {
@@ -1270,17 +1146,14 @@ void loadDraw(void) {
                 iconDispGxCol(mtx, 0, 0x201, c);
             }
 
-            {
-            f32* wdY = &wd->y;
             for (j = 0; j < 7; j++) {
                 if (mask & (1 << (j + 1))) {
                     GXColor c;
 
-                    PSMTXTrans(mtx, wd->x - 106.0f + (f32)(j * 0x20), *wdY - 52.0f, 0.0f);
+                    PSMTXTrans(mtx, win_dt[i].x - 106.0f + (f32)(j * 0x20), win_dt[i].y - 52.0f, 0.0f);
                     c = (i == wp->field_0x20) ? white : greyA0;
                     iconDispGxCol(mtx, 0, stone_id[j] & 0xFFFF, c);
                 }
-            }
             }
         }
     }
@@ -1300,19 +1173,19 @@ void loadDraw(void) {
 
     if (wp->field_0x18 >= 0x64 && wp->field_0x18 < 0xc8) {
         winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
-        winTexSet(0xf, vec3_802ed6b8, *(const Vec*)RO(base, 0x54, vec3_802ed6c4), *(GXColor*)&dat_8041bdac);
+        winTexSet(0xf, vec3_802ed6b8, vec3_802ed6c4, *(GXColor*)&dat_8041bdac);
         winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
         winTexSet_x2(0x13, 0x1f, vec3_802ed6d0, vec3_802ed6dc, *(GXColor*)&dat_8041bdb0);
 
         for (j = 0; j < 3; j++) {
-            if (wp->field_0x24 == j) {
+            if (j == wp->field_0x24) {
                 winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
-                winTexSet(0x33, loadDrawVecY(&vec3_802ed6e8, (f32)(0x32 - j * 0x32)), *(const Vec*)RO(base, 0x84, vec3_802ed6f4), *(GXColor*)&dat_8041bdb4);
+                winTexSet(0x33, loadDrawVecY((f32)(0x32 - j * 0x32), vec3_802ed6e8), vec3_802ed6f4, *(GXColor*)&dat_8041bdb4);
                 winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
-                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY(&vec3_802ed700, (f32)(0x36 - j * 0x32)), vec3_802ed70c, *(GXColor*)&dat_8041bdb8);
+                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY((f32)(0x36 - j * 0x32), vec3_802ed700), vec3_802ed70c, *(GXColor*)&dat_8041bdb8);
             } else {
                 winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
-                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY(&vec3_802ed718, (f32)(0x32 - j * 0x32)), vec3_802ed724, *(GXColor*)&dat_8041bdbc);
+                winTexSet_x2(j + 0x15, 0x33, loadDrawVecY((f32)(0x32 - j * 0x32), vec3_802ed718), vec3_802ed724, *(GXColor*)&dat_8041bdbc);
             }
         }
     }
@@ -1324,32 +1197,32 @@ void loadDraw(void) {
         winTexSet_x2(0x14, 0x1f, vec3_802ed748, vec3_802ed754, *(GXColor*)&dat_8041bdc4);
 
         for (j = 0; j < 2; j++) {
-            if (wp->field_0x28 == j) {
+            if (j == wp->field_0x28) {
                 winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
-                winTexSet(0x33, loadDrawVecY(&vec3_802ed760, (f32)(0x1e - j * 0x32)), vec3_802ed76c, *(GXColor*)&dat_8041bdc8);
+                winTexSet(0x33, loadDrawVecY((f32)(0x1e - j * 0x32), vec3_802ed760), vec3_802ed76c, *(GXColor*)&dat_8041bdc8);
                 winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
-                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY(&vec3_802ed778, (f32)(0x22 - j * 0x32)), vec3_802ed784, *(GXColor*)&dat_8041bdcc);
+                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY((f32)(0x22 - j * 0x32), vec3_802ed778), vec3_802ed784, *(GXColor*)&dat_8041bdcc);
             } else {
                 winTexInit_x2(**(TEXPalette***)((u8*)wp->file + 0xA0));
-                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY(&vec3_802ed790, (f32)(0x1e - j * 0x32)), vec3_802ed79c, *(GXColor*)&dat_8041bdd0);
+                winTexSet_x2(j + 0x18, 0x33, loadDrawVecY((f32)(0x1e - j * 0x32), vec3_802ed790), vec3_802ed79c, *(GXColor*)&dat_8041bdd0);
             }
         }
     }
 
     if (wp->field_0x18 == 0x33 && wp->field_0x34 < 4) {
-        struct LoadAngleTable angles = *(struct LoadAngleTable*)RO(base, 0x138, dat_802ed7a8);
-        f32 f30;
+        struct LoadAngleTable angles = *(struct LoadAngleTable*)dat_802ed7a8;
         f32 f29;
+        f32 f30;
 
-        if (!(f32)fmod(ANGLES_AT(angles, wp), *(const f64*)RO(base, 0x348, double_90_802ed9b8))) {
+        if (!(f32)fmod(ANGLES_AT(angles, wp), 90.0)) {
+            f32 mod = (f32)(wp->field_0x30 % 2);
             f32 fa = (f32)(wp->field_0x30 / 2);
             f32 fb = (f32)(wp->field_0x34 / 2);
-            f32 mod = (f32)(wp->field_0x30 % 2);
             if (fa == fb) {
                 f29 = 0.0f;
                 f30 = 120.0f - 140.0f * fa;
             } else {
-                f29 = 300.0f * mod + float_neg150_8041be64;
+                f29 = 300.0f * mod + -150.0f;
                 f30 = 50.0f;
             }
         } else {
@@ -1362,16 +1235,16 @@ void loadDraw(void) {
             Mtx mtx;
 
             winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
-            winTexSetRot(0x1d, loadDrawVec(&vec3_802ed7e8, 2.0f + f29, f30 - 2.0f), vec3_802ed7f4, ANGLES_AT(angles, wp), *(GXColor*)&dat_8041bdd4);
-            winTexSetRot(0x1d, loadDrawVec(&vec3_802ed800, f29, f30), vec3_802ed80c, ANGLES_AT(angles, wp), white);
+            winTexSetRot(0x1d, loadDrawVec(2.0f + f29, f30 - 2.0f, vec3_802ed7e8), vec3_802ed7f4, ANGLES_AT(angles, wp), *(GXColor*)&dat_8041bdd4);
+            winTexSetRot(0x1d, loadDrawVec(f29, f30, vec3_802ed800), vec3_802ed80c, ANGLES_AT(angles, wp), white);
             (void)mtx;
         }
     }
 
     if (!(wp->field_0x0 & 0x40)) {
         winTexInit(**(TEXPalette***)((u8*)wp->file + 0xA0));
-        winTexSet(0, loadDrawVec(&vec3_802ed818, wp->field_0x8 + 2.0f, wp->field_0xC - 2.0f), vec3_802ed824, *(GXColor*)&dat_8041bdd8);
-        winTexSet(0, loadDrawVec(&vec3_802ed830, wp->field_0x8, wp->field_0xC), vec3_802ed83c, white);
+        winTexSet(0, loadDrawVec(wp->field_0x8 + 2.0f, wp->field_0xC - 2.0f, vec3_802ed818), vec3_802ed824, *(GXColor*)&dat_8041bdd8);
+        winTexSet(0, loadDrawVec(wp->field_0x8, wp->field_0xC, vec3_802ed830), vec3_802ed83c, white);
     }
 
     GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
@@ -1381,7 +1254,6 @@ void loadDraw(void) {
 
 void continueGame(void) {
     MarioWork* mario;
-    const char* base = (const char*)&vec3_802ed670;
 
     cardCopy2Main(wp->field_0x20);
     *(s32*)(gp->field_0x11BC + 0x14) = wp->field_0x20;
@@ -1407,112 +1279,112 @@ void continueGame(void) {
         case 1:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x214, str_802ED884), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED884, NULL);
             break;
         case 2:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x21C, str_802ED88C), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED88C, NULL);
             break;
         case 3:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x224, str_802ED894), RO(base, 0x22C, str_802ED89C));
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED894, str_802ED89C);
             break;
         case 4:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x214, str_802ED884), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED884, NULL);
             break;
         case 5:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x238, str_802ED8A8), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8A8, NULL);
             break;
         case 6:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x240, str_802ED8B0), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8B0, NULL);
             break;
         case 7:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x214, str_802ED884), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED884, NULL);
             break;
         case 8:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x248, str_802ED8B8), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8B8, NULL);
             break;
         case 9:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x250, str_802ED8C0), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8C0, NULL);
             break;
         case 10:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x258, str_802ED8C8), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8C8, NULL);
             break;
         case 11:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x260, str_802ED8D0), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8D0, NULL);
             break;
         case 12:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x258, str_802ED8C8), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8C8, NULL);
             break;
         case 13:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x268, str_802ED8D8), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8D8, NULL);
             break;
         case 14:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x258, str_802ED8C8), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8C8, NULL);
             break;
         case 15:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x270, str_802ED8E0), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8E0, NULL);
             break;
         case 16:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x278, str_802ED8E8), str_8041BDDC);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8E8, "next");
             break;
         case 17:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x280, str_802ED8F0), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8F0, NULL);
             break;
         case 18:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x260, str_802ED8D0), RO(base, 0x288, str_802ED8F8));
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED8D0, str_802ED8F8);
             break;
         case 19:
             gp->areaFadeInType = 0x3E;
             gp->areaFadeOutType = 0x3A;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x298, str_802ED908), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED908, NULL);
             break;
         case 20:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x2A0, str_802ED910), RO(base, 0x2A8, str_802ED918));
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED910, str_802ED918);
             break;
         case 21:
             gp->areaFadeInType = 0x3C;
             gp->areaFadeOutType = 0x36;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x2B0, str_802ED920), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED920, NULL);
             break;
         case 22:
             gp->areaFadeInType = 0;
             gp->areaFadeOutType = 0x1C;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x2B8, str_802ED928), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED928, NULL);
             break;
         case 23:
             stg0_00_init();
@@ -1525,12 +1397,12 @@ void continueGame(void) {
             gp->areaFadeOutType = 0x19;
             swInit();
             swByteSet(0, 0);
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x2C0, str_802ED930), RO(base, 0x2C8, str_802ED938));
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED930, str_802ED938);
             break;
         case 24:
             gp->areaFadeInType = 0x3D;
             gp->areaFadeOutType = 0x38;
-            seqSetSeq(SEQ_MAP_CHANGE, RO(base, 0x214, str_802ED884), NULL);
+            seqSetSeq(SEQ_MAP_CHANGE, str_802ED884, NULL);
             break;
     }
 }
