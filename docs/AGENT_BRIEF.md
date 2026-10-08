@@ -517,12 +517,20 @@ When the instructions match but the stack slots, register allocation or scheduli
 - **`if (best == NULL || d < bestD) { copy }` can be the copy written twice in the original,** one branch per
   condition: a duplicated block gives retail's frame where the combined condition does not (searchFrontWall #518,
   marioChkGnd #513).
-- **Never add pool helper functions (`defer_codegen off` pool_i2f/pool_flush/pool_str, `static ... pool_x(void)`,
-  section tricks): they put .text in the unit that the original doesn't have, so it can never link.** To get the
-  original's pool order instead, put `#ifdef MUST_MATCH` / `#pragma defer_codegen off` / `#endif` over the REAL
-  functions so they emit in source order, and let native int->float conversions and literals pool the magic and
-  constants themselves. That linked tou (#593) and winmgr (#594, which also removed two existing helpers) on
-  2026-10-06 (Codex). Check with sdata2_diff, fn_order_check, and the flip's `32 files OK`.
+- **Prefer the original's own functions over pool helper functions (`defer_codegen off` pool_i2f/pool_flush/pool_str,
+  `static ... pool_x(void)`, section tricks).** mwld dead-strips functions nothing references, so an uncalled
+  function does not add linked .text (a dead static function in linked mot_jump keeps `32 files OK`), but a
+  `defer_codegen off` helper is generated immediately and flushes the deferred functions queued before it, which
+  moves .text order and pool entries. To get the original's pool order, put `#ifdef MUST_MATCH` /
+  `#pragma defer_codegen off` / `#endif` over the REAL functions so they emit in source order, and let native
+  int->float conversions and literals pool the magic and constants themselves. That linked tou (#593) and winmgr
+  (#594) on 2026-10-06 (Codex). Check with sdata2_diff, fn_order_check, and the flip's `32 files OK`.
+- **Strings or constants no code references are the original's uncalled functions.** MWCC pools a function's
+  literals at its slot in codegen order, and the linker then strips the function while live code keeps the
+  unit's pooled `.rodata` through `...rodata.0`. Reconstruct the plausible missing function (the other colour of a
+  pair, a sibling event function) where its strings must land, with no float literals in it (those are stripped
+  from `.sdata2`). This made evt_mobj's `.rodata` identical (#608); every construct that adds no function
+  (`if (0)`, unused locals, uncalled inlines, dead stores) drops the literal. Details: [dead_strings.md](dead_strings.md).
 - **A repeated block whose operands the original evaluates at the point of use is a macro, not an inline function.**
   An inline call evaluates its arguments up front; a macro leaves each expression where it is written. winBookGX's
   textured quad computes each coordinate at its vertex write and `|span|` right after GXSetTexCoordGen2: 82% as an
