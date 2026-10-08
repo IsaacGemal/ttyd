@@ -89,63 +89,6 @@ extern u32 kurokaron_vivian_prev_sts;
 extern u8 kurokaron_stop_cnt;
 extern u16 kurokaron_run_cnt;
 
-// Shared rodata constants named in config/G8MJ01/las/symbols.txt.
-extern const f32 zero_las_000121fc;
-extern const f32 float_0p1_las_000122e4;
-extern const f32 float_0p3_las_0001225c;
-extern const f32 float_0p5_las_00012200;
-extern const f32 float_0p5_las_000122bc;
-extern const f32 float_1000_las_000122e8;
-extern const f32 float_100_las_000122ec;
-extern const f32 float_10_las_00012298;
-extern const f32 float_1140_las_000122a8;
-extern const f32 float_15_las_00012294;
-extern const f32 float_180_las_00012204;
-extern const f32 float_190_las_00012314;
-extern const f32 float_199_las_000122dc;
-extern const f32 float_1_las_00012260;
-extern const f32 float_1p5_las_0001223c;
-extern const f32 float_1p7_las_000122c4;
-extern const f32 float_1p8_las_000122f0;
-extern const f32 float_20_las_00012220;
-extern const f32 float_250_las_000122ac;
-extern const f32 float_260_las_00012304;
-extern const f32 float_270_las_0001220c;
-extern const f32 float_29p5_las_0001221c;
-extern const f32 float_30_las_000122d8;
-extern const f32 float_32767_las_00012288;
-extern const f32 float_360_las_000122b4;
-extern const f32 float_3_las_00012258;
-extern const f32 float_3p3_las_000122c0;
-extern const f32 float_3p8_las_000122b8;
-extern const f32 float_40_las_00012218;
-extern const f32 float_490_las_0001230c;
-extern const f32 float_4_las_00012264;
-extern const f32 float_540_las_000122b0;
-extern const f32 float_560_las_000122fc;
-extern const f32 float_570_las_000122a0;
-extern const f32 float_5_las_0001228c;
-extern const f32 float_6_las_00012240;
-extern const f32 float_6p2832_las_000122f4;
-extern const f32 float_80_las_00012268;
-extern const f32 float_90_las_00012208;
-extern const f32 float_neg0p5_las_0001229c;
-extern const f32 float_neg100_las_000122a4;
-extern const f32 float_neg190_las_00012310;
-extern const f32 float_neg1_las_0001226c;
-extern const f32 float_neg260_las_00012300;
-extern const f32 float_neg270_las_00012214;
-extern const f32 float_neg3_las_000122e0;
-extern const f32 float_neg490_las_00012308;
-extern const f32 float_neg560_las_000122f8;
-extern const f32 float_neg5_las_00012290;
-extern const f32 float_neg570_las_00012210;
-extern const f64 double_0p5_las_00012270;
-extern const f64 double_3_las_00012278;
-extern const f64 double_to_int_mask_las_000122c8;
-extern const f64 double_to_int_las_000122d0;
-extern const f64 zero_las_00012280;
-
 
 #define FP_NAN 1
 #define FP_INFINITE 2
@@ -183,11 +126,11 @@ static inline s32 __fpclassifyf(f32 x) {
 static inline f32 sqrtf(f32 x) {
     if (x > 0.0f) {
         f64 guess = __frsqrte(x);
-        guess = double_0p5_las_00012270 * guess * (double_3_las_00012278 - guess * guess * x);
-        guess = double_0p5_las_00012270 * guess * (double_3_las_00012278 - guess * guess * x);
-        guess = double_0p5_las_00012270 * guess * (double_3_las_00012278 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
+        guess = 0.5 * guess * (3.0 - guess * guess * x);
         return x * guess;
-    } else if (x < zero_las_00012280) {
+    } else if (x < 0.0) {
         return NAN;
     } else if (isnan(x)) {
         return NAN;
@@ -396,7 +339,7 @@ s32 _kurokaron_run_away(f32 x1, f32 z1, f32 x2, f32 z2) {
         if (i == other) {
             otherAngle = angle;
         }
-        if (angle > float_90_las_00012208) {
+        if (angle > 90.0f) {
             candidates[count] = i;
             count++;
         }
@@ -404,7 +347,7 @@ s32 _kurokaron_run_away(f32 x1, f32 z1, f32 x2, f32 z2) {
 
     if (count > 0) {
         result = candidates[rand() % count];
-        if (curAngle < float_90_las_00012208) {
+        if (curAngle < 90.0f) {
             if (!(kurokaron_move_flag & 1)) {
                 kurokaron_move_flag |= 1;
             } else {
@@ -434,8 +377,8 @@ s32 kurokaron_move2(NpcEntry* npc, MarioWork* mario) {
     }
     kurokaron_move_flag &= ~4;
 
-    if (npc->position.x < float_neg560_las_000122f8 || npc->position.x > float_560_las_000122fc ||
-        npc->position.z < float_neg260_las_00012300 || npc->position.z > float_260_las_00012304) {
+    if (npc->position.x < -560.0f || npc->position.x > 560.0f ||
+        npc->position.z < -260.0f || npc->position.z > 260.0f) {
         f32 angle;
 
         if (rand() % 100 == 0) {
@@ -448,27 +391,27 @@ s32 kurokaron_move2(NpcEntry* npc, MarioWork* mario) {
         angle = angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z);
 
         if (kurokaron_move_flag & 8) {
-            npc->moveDir = reviseAngle(angle - float_90_las_00012208);
+            npc->moveDir = reviseAngle(angle - 90.0f);
         } else {
-            npc->moveDir = reviseAngle(float_90_las_00012208 + angle);
+            npc->moveDir = reviseAngle(90.0f + angle);
         }
         kurokaron_move_flag |= 4;
         flag = 0;
         return 0;
     }
 
-    if (distABf(npc->position.x, npc->position.z, mario->position.x, mario->position.z) < float_100_las_000122ec) {
+    if (distABf(npc->position.x, npc->position.z, mario->position.x, mario->position.z) < 100.0f) {
         if (count != 0) {
             count--;
         } else {
-            if (npc->position.x < float_neg490_las_00012308 || npc->position.x > float_490_las_0001230c ||
-                npc->position.z < float_neg190_las_00012310 || npc->position.z > float_190_las_00012314) {
+            if (npc->position.x < -490.0f || npc->position.x > 490.0f ||
+                npc->position.z < -190.0f || npc->position.z > 190.0f) {
                 f32 angle = angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z);
 
                 if (kurokaron_move_flag & 8) {
-                    npc->moveDir = angle - float_90_las_00012208;
+                    npc->moveDir = angle - 90.0f;
                 } else {
-                    npc->moveDir = float_90_las_00012208 + angle;
+                    npc->moveDir = 90.0f + angle;
                 }
                 count = 10;
             } else {
@@ -528,24 +471,24 @@ USER_FUNC(kurokaron_move_position) {
         // The original evaluates a now-dead sqrtf here; MWCC keeps its argument check.
         distTarget = sqrtf(vec.x * vec.x + vec.z * vec.z);
 #endif
-        npc->moveDir = angleABf(zero_las_000121fc, zero_las_000121fc, vec.x, vec.z);
+        npc->moveDir = angleABf(0.0f, 0.0f, vec.x, vec.z);
         npc->moveSpeed = z;
-        npc->moveOffset.y = zero_las_000121fc;
-        if (npc->moveSpeed <= float_0p1_las_000122e4 && zero_las_000121fc == npc->moveTime) {
-            npc->moveSpeed = float_1_las_00012260;
+        npc->moveOffset.y = 0.0f;
+        if (npc->moveSpeed <= 0.1f && 0.0f == npc->moveTime) {
+            npc->moveSpeed = 1.0f;
         }
-        npc->footstepAccum = zero_las_000121fc;
+        npc->footstepAccum = 0.0f;
         npc->footstepToggle = 1;
     }
 
     mario = marioGetPtr();
     PSVECSubtract(&npc->jumpTargetPos, &npc->position, &vec);
     distTarget = sqrtf(vec.x * vec.x + vec.z * vec.z);
-    speed = float_20_las_00012220 * npc->moveSpeed / float_1000_las_000122e8;
+    speed = 20.0f * npc->moveSpeed / 1000.0f;
     PSVECSubtract(&mario->position, &npc->position, &vec);
     distMario = sqrtf(vec.x * vec.x + vec.z * vec.z);
 
-    if (distMario < float_80_las_00012268 && (s32)kurokaron_vivian_prev_sts == 3 && vivianGetStatus() == 0) {
+    if (distMario < 80.0f && (s32)kurokaron_vivian_prev_sts == 3 && vivianGetStatus() == 0) {
         kurokaron_stop_cnt = 60;
     }
     kurokaron_vivian_prev_sts = vivianGetStatus();
@@ -556,7 +499,7 @@ USER_FUNC(kurokaron_move_position) {
     }
 
     if (!(kurokaron_move_flag & 2) && vivianGetStatus() != 1 && vivianGetStatus() != 2 && vivianGetStatus() != 3 &&
-        distMario < float_80_las_00012268) {
+        distMario < 80.0f) {
         kurokaron_move_index = _kurokaron_run_away(npc->position.x, npc->position.z, mario->position.x, mario->position.z);
         kurokaron_run_cnt = 350;
         kurokaron_move_flag |= 2;
@@ -575,18 +518,18 @@ USER_FUNC(kurokaron_move_position) {
         if (kurokaron_move_flag & 4) {
             if (kurokaron_move_flag & 8) {
                 kurokaron_move_flag &= ~8;
-                npc->moveDir = reviseAngle(float_90_las_00012208 + angle);
+                npc->moveDir = reviseAngle(90.0f + angle);
             } else {
                 kurokaron_move_flag |= 8;
-                npc->moveDir = reviseAngle(angle - float_90_las_00012208);
+                npc->moveDir = reviseAngle(angle - 90.0f);
             }
         }
         kurokaron_run_cnt = 350;
         kurokaron_move_flag |= 2;
     }
 
-    if (distTarget <= speed && distMario > float_100_las_000122ec) {
-        npc->moveSpeed = zero_las_000121fc;
+    if (distTarget <= speed && distMario > 100.0f) {
+        npc->moveSpeed = 0.0f;
         kurokaron_move_flag &= ~2;
         if (kurokaron_prev_goal[0] == kurokaron_move_index) {
             kurokaron_same_goal++;
@@ -610,21 +553,21 @@ USER_FUNC(kurokaron_move_position) {
         return EVT_RETURN_DONE;
     }
 
-    if ((npc->jumpFlags & 2) != 0 && npc->moveSpeed > float_0p1_las_000122e4) {
+    if ((npc->jumpFlags & 2) != 0 && npc->moveSpeed > 0.1f) {
         npcTuningRy(npc, npc->moveDir);
     }
     if ((kurokaron_move_flag & 2) != 0 && kurokaron_run_cnt != 0) {
-        speed2 = float_1p8_las_000122f0 * npc->moveSpeed;
+        speed2 = 1.8f * npc->moveSpeed;
     } else {
         speed2 = npc->moveSpeed;
     }
 
     {
-        f32 s = (f32)sin(float_6p2832_las_000122f4 * npc->moveDir / float_360_las_000122b4);
+        f32 s = (f32)sin(6.2831855f * npc->moveDir / 360.0f);
         npc->moveOffset.x += npc->moveDt * (speed2 * s);
     }
     {
-        f32 c = (f32)cos(float_6p2832_las_000122f4 * npc->moveDir / float_360_las_000122b4);
+        f32 c = (f32)cos(6.2831855f * npc->moveDir / 360.0f);
         npc->moveOffset.z += npc->moveDt * (speed2 * -c);
     }
 
@@ -638,7 +581,7 @@ USER_FUNC(kurokaron_move_position) {
                 psndSFXOn_3D(npc->footstepSfxB, &npc->position);
             }
         }
-        npc->footstepAccum = zero_las_000121fc;
+        npc->footstepAccum = 0.0f;
 #ifdef MUST_MATCH
         // The original truncates the toggle to s8 before storing (MWCC emits extsb).
         npc->footstepToggle = (s8)(1 - npc->footstepToggle);
@@ -647,7 +590,7 @@ USER_FUNC(kurokaron_move_position) {
 #endif
     }
     if (npc->footstepSfxB != NULL || npc->footstepToggle != 0) {
-        npc->footstepAccum += float_1000_las_000122e8 * npc->moveDt;
+        npc->footstepAccum += 1000.0f * npc->moveDt;
     }
     return EVT_RETURN_BLOCK;
 }
@@ -716,7 +659,7 @@ void move_check(ExtPose* pose, s32 index) {
                 f32 ax = __fabsf((*pose->matrix)[0][3] - (*nextPose->matrix)[0][3]);
                 f32 az = __fabsf((*pose->matrix)[2][3] - (*nextPose->matrix)[2][3]);
 
-                if (__fabsf(ax - az) < float_20_las_00012220) {
+                if (__fabsf(ax - az) < 20.0f) {
                     entry->flags |= 2;
                 }
             } else {
@@ -726,22 +669,17 @@ void move_check(ExtPose* pose, s32 index) {
     }
 }
 
-// NONMATCHING (99.02%): the shared divisor 40 lands in f4 and the x difference in f0; retail has them the
-// other way round, which also swaps the two fdivs and the fctiwz that consumes the x quotient.
 void calc_area(s32 index, f32 x, f32 z) {
     KaronPoseEntry* entries = skwp->entries;
-#ifdef MUST_MATCH
-    // A volatile read of neg570 keeps its load from folding into the x difference until f0 is needed for the
-    // divisor, which fixes the constant-load order and everything but those two registers.
-    f32 n570 = MATCH_F32(float_neg570_las_00012210);
-    u16 a = (u16)(s32)((z - float_neg270_las_00012214) / float_40_las_00012218);
-    u16 b = (u16)(s32)((x - n570) / float_40_las_00012218);
-#else
-    u16 a = (u16)(s32)((z - float_neg270_las_00012214) / float_40_las_00012218);
-    u16 b = (u16)(s32)((x - float_neg570_las_00012210) / float_40_las_00012218);
-#endif
-
-    entries[index].area = (u16)(s32)(float_29p5_las_0001221c * (f32)a + (f32)b);
+    f32 dx = x - -570.0f;
+    f32 dz = z - -270.0f;
+    u16 a;
+    u16 b;
+    dx /= 40.0f;
+    dz /= 40.0f;
+    a = dz;
+    b = dx;
+    entries[index].area = (u16)(s32)(29.5f * (f32)a + (f32)b);
 }
 
 s32 party_hit_check(f32 x, f32 z, f32* out) {
@@ -774,33 +712,33 @@ s32 party_hit_check(f32 x, f32 z, f32* out) {
         if (isNokonoko && dx < party->field_F4 && dz < party->field_F4) {
             result = 1;
             if (x < party->position.x) {
-                *out = float_1_las_00012260;
+                *out = 1.0f;
             } else {
-                *out = float_neg1_las_0001226c;
+                *out = -1.0f;
             }
         }
         break;
     case PARTY_MEMBER_BOBBERY:
-        if (partyGetPtr(PARTY_SLOT_PARTY)->useMotionId == 0x46 && dx < float_80_las_00012268 && dz < float_80_las_00012268) {
+        if (partyGetPtr(PARTY_SLOT_PARTY)->useMotionId == 0x46 && dx < 80.0f && dz < 80.0f) {
             result = 1;
             if (x < party->position.x) {
-                *out = float_1_las_00012260;
+                *out = 1.0f;
             } else {
-                *out = float_neg1_las_0001226c;
+                *out = -1.0f;
             }
         }
         break;
     case PARTY_MEMBER_FLURRIE:
-        if ((party->flags & PARTY_FLAG_IS_BEING_USED) != 0 && dx < cloudGetBreathDist() && dz < float_30_las_000122d8) {
-            if (cloudGetBreathDir() < float_180_las_00012204) {
+        if ((party->flags & PARTY_FLAG_IS_BEING_USED) != 0 && dx < cloudGetBreathDist() && dz < 30.0f) {
+            if (cloudGetBreathDir() < 180.0f) {
                 if (x > party->position.x) {
                     result = 1;
-                    *out = float_neg1_las_0001226c;
+                    *out = -1.0f;
                 }
             } else {
                 if (x < party->position.x) {
                     result = 1;
-                    *out = float_1_las_00012260;
+                    *out = 1.0f;
                 }
             }
         }
@@ -809,25 +747,12 @@ s32 party_hit_check(f32 x, f32 z, f32* out) {
     return result;
 }
 
-// Match-only inline of calc_area with both differences computed before the division: the original's
-// calc_area loads neg570, neg270, then 40 (the plain call gives 40, 29.5, neg270, mask, neg570).
-#ifdef MUST_MATCH
-static inline void senkaron_calc_area(s32 index, f32 x, f32 z) {
-    KaronPoseEntry* entries = skwp->entries;
-    f32 dx = x - float_neg570_las_00012210;
-    f32 dz = z - float_neg270_las_00012214;
-    u16 a = (u16)(s32)(dz / float_40_las_00012218);
-    u16 b = (u16)(s32)(dx / float_40_las_00012218);
-
-    entries[index].area = (u16)(s32)(float_29p5_las_0001221c * (f32)a + (f32)b);
-}
-#endif
-
 // The orientation comparison, the second loop's entries reload and its counter (shared with start) now
 // match.
-// NONMATCHING (98.37%): pure MWCC register colouring/scheduling. The collision half lands in f27 not
-// f29 and the first loop's mask double in f3 not f2 (retail f29/f2); the setup's string/constant
-// load order and the base pointers also differ. Every call and immediate matches.
+// NONMATCHING (98.69%): two extra `mr` before the main loop: the two sfx string addresses are built in
+// temps and copied into the named locals, where retail builds them straight into r25/r27. The rest is
+// register colouring (collision half in f27 not f29, mario/entries/pose in r28/r26/r29 not r26/r31/r27).
+// Every call and immediate matches.
 static void senkaron_ext_main(void) {
     ExtPose* pose;
     MarioWork* mario;
@@ -887,11 +812,7 @@ static void senkaron_ext_main(void) {
     pose += start;
     for (j = start; j < end; j++, pose++) {
         entries[j].flags &= ~2;
-#ifdef MUST_MATCH
-        senkaron_calc_area(j, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
-#else
         calc_area(j, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
-#endif
     }
 
     pose = extGetPosePtr() + start;
@@ -925,7 +846,7 @@ static void senkaron_ext_main(void) {
                     f32 ax = __fabsf((*pose->matrix)[0][3] - (*nextPose->matrix)[0][3]);
                     f32 az = __fabsf((*pose->matrix)[2][3] - (*nextPose->matrix)[2][3]);
 
-                    if (__fabsf(ax - az) < float_20_las_00012220) {
+                    if (__fabsf(ax - az) < 20.0f) {
                         entry->flags |= 2;
                     }
                 } else {
