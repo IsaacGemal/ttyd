@@ -41,9 +41,13 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj);
 s32 mobj_timerswitch(MapObjectEntry* obj);
 void kururing_capture(CameraId cameraId, void* param);
 
+#ifdef MUST_MATCH
 USER_FUNC(evt_mobj_arrow);
+#endif
 USER_FUNC(evt_mobj_badgeblk);
+#ifdef MUST_MATCH
 USER_FUNC(evt_mobj_bombrock);
+#endif
 USER_FUNC(evt_mobj_breaking_floor);
 USER_FUNC(evt_mobj_brick);
 USER_FUNC(evt_mobj_check);
@@ -79,8 +83,10 @@ USER_FUNC(evt_mobj_lock_unlock);
 USER_FUNC(evt_mobj_lv_blk);
 USER_FUNC(evt_mobj_powerupblk);
 USER_FUNC(evt_mobj_recovery_blk);
+#ifdef MUST_MATCH
 USER_FUNC(evt_mobj_rideswitch_a);
 USER_FUNC(evt_mobj_rideswitch_b);
+#endif
 USER_FUNC(evt_mobj_rideswitch_lightblue);
 USER_FUNC(evt_mobj_save_blk);
 USER_FUNC(evt_mobj_set_anim);
@@ -97,8 +103,10 @@ USER_FUNC(evt_mobj_switch_float_blk);
 USER_FUNC(evt_mobj_switch_red);
 USER_FUNC(evt_mobj_timerswitch);
 USER_FUNC(evt_mobj_tornadoswitch_blue);
+#ifdef MUST_MATCH
 USER_FUNC(evt_mobj_tornadoswitch_red);
 USER_FUNC(evt_mobj_trap);
+#endif
 USER_FUNC(evt_mobj_wait_animation_end);
 extern s32 evt_fire[8];
 extern s32 evt_box_sound1[];

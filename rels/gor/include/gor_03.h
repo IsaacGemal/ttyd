@@ -14,7 +14,7 @@ USER_FUNC(teresa_badge_item_list_init);
 USER_FUNC(goryuugijo_main_slot);
 s32 slot_rotate_sub(void* arg0, u8* data, s32 index);
 void slot_neon_sub(void* arg0, u8* data);
-USER_FUNC(goryuugijo_init_slot);
+void goryuugijo_init_slot(EventEntry* event, BOOL isFirstCall);
 USER_FUNC(goryuugijo_door_init_slot);
 void goryuugijo_upsidewindow_disp_sub(s32 a, s32 b);
 void goryuugijo_upsidewindow_dispoff_sub(s32 a, s32 b);

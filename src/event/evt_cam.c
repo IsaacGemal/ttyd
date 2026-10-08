@@ -212,6 +212,11 @@ USER_FUNC(evt_cam3d_evt_set_at) {
     return EVT_RETURN_DONE;
 }
 
+/// @todo reconstructed: retail's evt_cam .rodata has a zero Vec template at 0x0C (vec3_802c5f44) that no retail
+/// function references, between evt_cam3d_evt_set_at's (0x00) and evt_cam3d_evt_set's (0x18, 0x24); templates pool
+/// in source order, so a function with one compound-literal Vec sat here. Invented: the name, the arguments and the
+/// body (a Mario-relative evt_cam3d_evt_set_at).
+#ifdef MUST_MATCH
 USER_FUNC(evt_cam3d_evt_set_at_rel) {
     s32* args = event->args;
     f32 x = evtGetFloat(event, args[0]);
@@ -233,6 +238,7 @@ USER_FUNC(evt_cam3d_evt_set_at_rel) {
     cam->curveA = curve;
     return EVT_RETURN_DONE;
 }
+#endif
 
 USER_FUNC(evt_cam3d_evt_set) {
     s32* args = event->args;
@@ -297,6 +303,11 @@ USER_FUNC(evt_cam3d_evt_set_rel) {
     return EVT_RETURN_DONE;
 }
 
+/// @todo reconstructed: retail's .rodata has two unreferenced zero Vec templates at 0x30/0x3C (vec3_802c5f68/74),
+/// between evt_cam3d_evt_set's and evt_cam3d_evt_set_npc_rel's, and an unreferenced "%f%f%f%f%f%f%d%s"
+/// (str_802C5FF8) after the conversion double. Invented: the name and the body (an evt_cam3d_evt_set_npc_rel that
+/// sscanfs its offsets, time and NPC name from one string).
+#ifdef MUST_MATCH
 USER_FUNC(evt_cam3d_evt_set_npc_rel_str) {
     s32* args = event->args;
     const char* str = (const char*)evtGetValue(event, args[0]);
@@ -324,6 +335,7 @@ USER_FUNC(evt_cam3d_evt_set_npc_rel_str) {
     cam->curveA = curve;
     return EVT_RETURN_DONE;
 }
+#endif
 
 USER_FUNC(evt_cam3d_evt_set_npc_rel) {
     s32* args = event->args;
@@ -407,6 +419,11 @@ USER_FUNC(evt_cam3d_evt_off) {
     return EVT_RETURN_DONE;
 }
 
+/// @todo reconstructed: retail's .sdata2 has 100.0f (float_100_8041af30) ahead of evt_cam3d_evt_set_rel_dir's
+/// deg2rad, while its live users (evt_cam3d_evt_set_at, evt_cam3d_evt_zoom_in) are compiled after set_rel_dir, so a
+/// 100.0f user sat between set_rel_dir and evt_cam_road_reset2. Invented: the name and the body
+/// (evt_cam3d_evt_zoom_in's percent dolly without the sideways shift).
+#ifdef MUST_MATCH
 USER_FUNC(evt_cam3d_evt_dolly) {
     s32* args = event->args;
     s32 dolly = evtGetValue(event, args[0]);
@@ -429,6 +446,7 @@ USER_FUNC(evt_cam3d_evt_dolly) {
     cam->curveA = curve;
     return EVT_RETURN_DONE;
 }
+#endif
 
 USER_FUNC(evt_cam3d_road_shift_onoff) {
     s32* args = event->args;

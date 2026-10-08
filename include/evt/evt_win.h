@@ -21,6 +21,8 @@ USER_FUNC(unitwin_setmariolevel);
 USER_FUNC(unitwin_setpartylank);
 USER_FUNC(unitwincoin_disp_onoff);
 USER_FUNC(unitwincoin_wait);
+#ifdef MUST_MATCH
 USER_FUNC(unitwin_icon_delete);
+#endif
 USER_FUNC(unk_801751f8);
 USER_FUNC(unk_8017524c);

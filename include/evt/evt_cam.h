@@ -15,12 +15,18 @@ USER_FUNC(evt_cam_letter_box_camid);
 USER_FUNC(evt_cam_letter_box_onoff);
 
 USER_FUNC(evt_cam3d_event_from_road);
+#ifdef MUST_MATCH
 USER_FUNC(evt_cam3d_evt_dolly);
+#endif
 USER_FUNC(evt_cam3d_evt_set_at);
+#ifdef MUST_MATCH
 USER_FUNC(evt_cam3d_evt_set_at_rel);
+#endif
 USER_FUNC(evt_cam3d_evt_set_now);
 USER_FUNC(evt_cam3d_evt_set_npc_rel);
+#ifdef MUST_MATCH
 USER_FUNC(evt_cam3d_evt_set_npc_rel_str);
+#endif
 USER_FUNC(evt_cam3d_evt_set_rel);
 USER_FUNC(evt_cam3d_evt_set_rel_dir);
 USER_FUNC(evt_cam3d_evt_set_xyz);

@@ -690,8 +690,10 @@ USER_FUNC(unk_80174e98) {
 	return EVT_RETURN_BLOCK;
 }
 
-// No script in the retail game calls this; the linker strips it, but its format string stays in the
-// unit's .rodata pool (docs/dead_strings.md).
+/// @todo reconstructed: retail's evt_win .rodata has "%s_%04d" (str_802F68B0), which no retail function references,
+/// between the signed and unsigned conversion doubles, at this slot. Invented: the name, the arguments and the body
+/// (deletes the icon named "<name>_<no>").
+#ifdef MUST_MATCH
 USER_FUNC(unitwin_icon_delete) {
 	s32* args = event->args;
 	const char* name = (const char*)evtGetValue(event, args[0]);
@@ -702,6 +704,7 @@ USER_FUNC(unitwin_icon_delete) {
 	iconDelete(buf);
 	return EVT_RETURN_DONE;
 }
+#endif
 
 USER_FUNC(evt_unitwin_main_func) {
 	UnitWinWork* wp = (UnitWinWork*)event->lwData[0];

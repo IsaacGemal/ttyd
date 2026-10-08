@@ -31,4 +31,6 @@ void cloud_exit(PartyEntry* party);
 void cloud_use(PartyEntry* party);
 void N__cloud_use(PartyEntry* party);
 void getHitBreatheout2(PartyEntry* party, f32 angle);
+#ifdef MUST_MATCH
 void cloudSetMarioSpeed(s32 dir);
+#endif

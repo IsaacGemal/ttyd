@@ -26,5 +26,7 @@ void winIconGrayInit(void);
 void winFontSetLabel(Vec* pos, Vec* scale, GXColor* color, const char* tag);
 void winFontSetEdge(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);
 void winFontSetR(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);
+#ifdef MUST_MATCH
 void winFontSetC(Vec* pos, Vec* scale, GXColor* color, const char* format, ...);
+#endif
 void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color);

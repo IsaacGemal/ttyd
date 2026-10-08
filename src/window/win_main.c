@@ -1105,8 +1105,10 @@ void winIconSet(s32 iconId, Vec* translate, Vec* scale, GXColor* color) {
     GXSetTevSwapMode(GX_TEVSTAGE2, GX_TEV_SWAP0, GX_TEV_SWAP0);
 }
 
-// Centred sibling of winFontSetR. Nothing in the game calls it, so the linker strips it from retail's .text;
-// its int->float conversion is why retail's signed conversion double pools ahead of winIconSet's unsigned one.
+/// @todo reconstructed: retail's win_main .rodata has the signed int->float conversion double
+/// (double_to_int_802f6ae0) ahead of winIconSet's unsigned one, which needs a signed conversion compiled before
+/// winIconSet. Invented: the name and the body (a centred sibling of winFontSetR).
+#ifdef MUST_MATCH
 void winFontSetC(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) {
     char buf[0x400];
     Mtx mtx1;
@@ -1126,6 +1128,7 @@ void winFontSetC(Vec* pos, Vec* scale, GXColor* color, const char* format, ...) 
     FontDrawColor(&c);
     FontDrawStringMtx(mtx1, buf);
 }
+#endif
 
 s32 unk_80175eb0(EventEntry* event, BOOL isFirstCall) {
     s32 value = evtGetValue(event, event->args[0]);

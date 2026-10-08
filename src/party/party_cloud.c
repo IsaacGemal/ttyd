@@ -748,8 +748,10 @@ void cloudGetAt(Vec* position) {
 }
 
 
-// Nothing in the game calls this (the linker strips it), but as the last function in the file it is
-// compiled first, so its constants (0, 70, 180 and the int->float conversion double) head the pools.
+/// @todo reconstructed: retail's party_cloud .sdata2 starts 0.0f, 70.0f, 180.0f and its int->float conversion
+/// double pools first, which needs a function compiled first (last in source) that uses them in that order.
+/// Invented: the name and the body (Mario's speed from a stick angle).
+#ifdef MUST_MATCH
 void cloudSetMarioSpeed(s32 dir) {
     MarioWork* mario = marioGetPtr();
     f32 angle;
@@ -763,3 +765,4 @@ void cloudSetMarioSpeed(s32 dir) {
         }
     }
 }
+#endif
