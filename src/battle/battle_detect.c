@@ -64,21 +64,28 @@ typedef struct BattleSampling {
 // merge its two `keep = 0` blocks; the separate-if/goto shape reproduces the original's
 // inline `li r0,0; b` per condition. The dedup loop's `noDup` uses the same shape. The sort
 // uses explicit `ei`/`ej` pointers (`&esort[order[i]]`) so its address/value registers land
-// as in the original, and the dedup loop reads `p2->attributes` into a temp. Declaring the
-// first loop's `kindPart` in the outer loop (where the original's allocation puts it) lands
-// numParts(r22), part(r24) and faceDirection(r21) right. The dedup loop reads
-// entry(r21)/offset(r23)/noDup(r22)/u2(r24) vs the original's entry(r29)/offset(r21)/
-// noDup(r23)/u2(r22).
-// NONMATCHING (99.84%): first loop still swaps i(r25)/kindPart(r23) for i(r23)/kindPart(r25).
+// as in the original, and the dedup loop reads `p2->attributes` into a temp. The locals live
+// at function scope (the main-part loop keeps its own `cur`/`curPart`); their declaration
+// order gives the original's registers in the first loop and for the dedup loop's
+// `entry`/`noDup`.
+// NONMATCHING (99.95%): in the dedup loop `other` and the `u2` copy swap registers (ours
+// r22/r24, the original r24/r22).
 void _btlSamplingEnemy(u8* sampling) {
-    BattleSamplingEntry* esort;
-    s8* order;
-    BattleSampling* s = (BattleSampling*)sampling;
-    s32 i;
+    BattleSamplingEntry* entry;
+    BattleUnitKindPart* kindPart;
+    BattleUnit* unit;
     s32 count = 0;
     BattleSamplingEntry* entries = (BattleSamplingEntry*)(sampling + 4);
-    BattleWork* wp = _battleWorkPointer;
+    BattleSamplingEntry* esort;
+    BattleSampling* s = (BattleSampling*)sampling;
     s32 j;
+    s8* order;
+    BattleUnitPart* part;
+    s32 i;
+    s32 noDup;
+    s32 numParts;
+    BattleWork* wp = _battleWorkPointer;
+    s32 faceDirection;
 
     if (s->field_0xAC0 & 0x80000000) {
         s->count = -1;
@@ -86,10 +93,6 @@ void _btlSamplingEnemy(u8* sampling) {
     }
 
     for (i = 0; i < 64; i++) {
-        BattleUnitPart* part;
-        BattleUnitKindPart* kindPart;
-        s32 numParts;
-        BattleUnit* unit;
         unit = BattleGetUnitPtr(wp, i);
 
         if (unit == NULL) {
@@ -112,7 +115,6 @@ void _btlSamplingEnemy(u8* sampling) {
             f32 y;
             f32 z;
             f32 wz;
-            s32 faceDirection;
 
             if (part->attributes & kNotTargetable) {
                 part = part->mNextPart;
@@ -177,10 +179,11 @@ void _btlSamplingEnemy(u8* sampling) {
     entries = (BattleSamplingEntry*)(sampling + 4);
 
     for (i = 0; i < count; i++) {
-        BattleSamplingEntry* entry = &entries[i];
-        BattleUnit* unit = BattleGetUnitPtr(wp, entry->unitId);
-        BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, entry->partId);
         s32 keep;
+
+        entry = &entries[i];
+        unit = BattleGetUnitPtr(wp, entry->unitId);
+        part = BtlUnit_GetPartsPtr(unit, entry->partId);
 
         if (s->field_0xAC0 & 0x80000000)
             keep = 0;
@@ -231,10 +234,11 @@ void _btlSamplingEnemy(u8* sampling) {
     }
 
     for (i = 0; i < count; i++) {
-        BattleSamplingEntry* entry = &entries[i];
-        BattleUnit* unit = BattleGetUnitPtr(wp, entry->unitId);
-        BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, entry->partId);
         s32 keep;
+
+        entry = &entries[i];
+        unit = BattleGetUnitPtr(wp, entry->unitId);
+        part = BtlUnit_GetPartsPtr(unit, entry->partId);
 
         if (s->field_0xAC4 & 0x1) {
             if (part->attributes & 0x80000) {
@@ -307,15 +311,15 @@ void _btlSamplingEnemy(u8* sampling) {
     // A unit's important part is dropped when the same unit also has its main part in the list.
     if (s->field_0xAC0 & 0x100000) {
         for (i = 0; i < count; i++) {
-            BattleSamplingEntry* entry = &entries[i];
-            BattleUnitPart* part = BtlUnit_GetPartsPtr(BattleGetUnitPtr(wp, entry->unitId), entry->partId);
+            BattleSamplingEntry* cur = &entries[i];
+            BattleUnitPart* curPart = BtlUnit_GetPartsPtr(BattleGetUnitPtr(wp, cur->unitId), cur->partId);
             s32 keep = 1;
 
-            if (part->attributes & kImportantPart) {
+            if (curPart->attributes & kImportantPart) {
                 for (j = 0; j < count; j++) {
                     BattleSamplingEntry* other = &entries[j];
 
-                    if (entry != other && entry->unitId == other->unitId &&
+                    if (cur != other && cur->unitId == other->unitId &&
                         (BtlUnit_GetPartsPtr(BattleGetUnitPtr(wp, other->unitId), other->partId)->attributes &
                          kMainPart)) {
                         keep = 0;
@@ -334,13 +338,14 @@ void _btlSamplingEnemy(u8* sampling) {
     }
 
     for (i = 0; i < count; i++) {
-        BattleSamplingEntry* entry = &entries[i];
-        BattleUnit* unit = BattleGetUnitPtr(wp, entry->unitId);
-        BattleUnitPart* part = BtlUnit_GetPartsPtr(unit, entry->partId);
         s32 keep;
 
+        entry = &entries[i];
+        unit = BattleGetUnitPtr(wp, entry->unitId);
+        part = BtlUnit_GetPartsPtr(unit, entry->partId);
+
         if ((s->field_0xAC4 & 0x1000000) && !(part->attributes & 0x10)) {
-            s32 noDup = 1;
+            noDup = 1;
 
                 for (j = 0; j < count; j++) {
                     BattleSamplingEntry* other = &entries[j];
@@ -472,20 +477,11 @@ void BattleSamplingEnemyUpdate(u8* sampling) {
     _btlSamplingEnemy(sampling);
 }
 
-// Remaining diff (4 insns, all in the default itemDataTable FP block): the int->float magic double
-// lands in f3 where the original uses f4 and the first conversion temp in f4 where the original uses
-// f3, so both fsubs and the fmadds feed the wrong register; instruction sequence, stack slots, the
-// integer registers and every other block match. Holding the weights conversion in a temp `w` before
-// the diff conversion and multiplying `w * fpDiff` fixed the trailing fmuls operand order
-// (99.94 -> 99.96); the magic/temp colouring is a MWCC register-allocation tie that no source shape
-// tried (declaration order/scopes, inline helpers, pointers, pragmas, constants as locals) moved.
-// NONMATCHING (99.96%): default block's f3/f4 colouring is swapped vs the original.
 void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPartId) {
     s32 n;
     s32 e;
     BattleUnit* unit;
     f32 rate;
-    f32 w;
     BattleWork* wp = _battleWorkPointer;
     s32 weights[74];
     BattleUnit* baseUnit;
@@ -609,14 +605,8 @@ void BattleChoiceSamplingEnemy(u8* sampling, u32 flags, s32* outId, s32* outPart
                     }
                     maxFp = BtlUnit_GetMaxFp(unit);
                     if (BtlUnit_GetFp(unit) < maxFp) {
-                        s32 curFp;
-                        f32 fpDiff;
                         maxFp = BtlUnit_GetMaxFp(unit);
-                        curFp = BtlUnit_GetFp(unit);
-                        w = (f32)weights[e];
-                        fpDiff = (f32)(maxFp - curFp);
-                        fpDiff = float_0p1_8041bf0c * fpDiff + float_1_8041bf1c;
-                        weights[e] = (s32)(w * fpDiff);
+                        weights[e] = (s32)((f32)weights[e] * (float_0p1_8041bf0c * (f32)(maxFp - BtlUnit_GetFp(unit)) + float_1_8041bf1c));
                     } else {
                         if (itemDataTable[s->weapon->item].hp_restored == 0 &&
                             itemDataTable[s->weapon->item].sp_restored == 0) {

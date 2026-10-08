@@ -10,7 +10,6 @@
 #include <string.h>
 #pragma pool_data on // the original addresses its .rodata through one base register
 
-extern const f32 float_neg288_80421af4;
 #ifdef MUST_MATCH
 // Match-only: a non-const .sdata2 definition stops MWCC hoisting the `lwz` of this const global above
 // the surrounding case-0 stores; the hoist shifts the whole callee-saved GPR colouring (96.74 -> 98.38).
@@ -359,10 +358,9 @@ void battleAcDelete_GaugeTiming2(BattleWork* work) {
 
 // don't_inline: the original keeps actionCommandDisp as its own local function
 // Written from scratch; byte size 1652 matches. All callee-saved register colouring now matches.
-// The only remaining diff is one scheduler slot near the top: the original issues `lfs f1,
-// float_neg288` before `lhz dec->total` and computes `f31` before `subic`, mine the reverse.
+// The only remaining diff is one scheduler slot near the top: the original issues the `lfs` of
+// -288.0 before `lhz dec->total` and computes `f31` before `subic`, mine the reverse.
 // NONMATCHING (99.21%): one top-of-function instruction-scheduling slot.
-#pragma opt_common_subs off // MWCC's CSE pass shifts the callee-saved FPR set by one; off restores it
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
 	BattleActions* ac = &work->actionCommands;
@@ -384,8 +382,8 @@ static void actionCommandDisp(f32 x, f32 y) {
 	dec = (GaugeTiming2Work*)&ac->field_0x2BC[0];
 	cam = camGetPtr(CAMERA_2D);
 
+	f31 = -288.0f + x;
 	f30 = 49.0f + y;
-	f31 = float_neg288_80421af4 + x;
 	f27 = f30 - 8.0f;
 
 	count = dec->total - 0x10;
@@ -543,14 +541,12 @@ static void actionCommandDisp(f32 x, f32 y) {
 		}
 	}
 }
-#pragma opt_common_subs reset
 
-// Named .sdata2 objects: the six -1 words the display code passes as GXColors plus the first
-// float constant. Defined after the code so MWCC emits them ahead of its own literal pool.
+// Named .sdata2 objects: the six -1 words the display code passes as GXColors. Defined after the code
+// so MWCC emits them ahead of its own literal pool.
 const s32 dat_80421adc = -1;
 const s32 dat_80421ae0 = -1;
 const s32 dat_80421ae4 = -1;
 const s32 dat_80421ae8 = -1;
 const s32 dat_80421aec = -1;
 const s32 dat_80421af0 = -1;
-const f32 float_neg288_80421af4 = -288.0f;

@@ -438,12 +438,7 @@ static inline void itemseq_delMatchingMain(ItemEntry* item) {
         }
     }
 }
-// The mode-9 loop matches (inlined via itemseq_delMatchingMain, giving the target's r25/r26/r27 allocation).
-// In the mode-1 itemId distance setup the compiler folds `double_20_802cac28` to 20.0, pools it and
-// allocates the pool/fabs pair as f5/f2 (target f2/f5, read from the named symbol with `lis r3`); the two
-// address bases also come out r3/r4. Reading it through `p_dbl20` (MATCH_DBL20) stops the fold and reaches
-// 99.78%, but removes the pooled 20.0 from [.rodata] (89.456 -> 88.946), so keep the direct named-constant read.
-// NONMATCHING (99.20%): only the mode-1 distance setup differs, as described above.
+// The mode-9 loop is inlined via itemseq_delMatchingMain, giving the target's r25/r26/r27 allocation.
 void itemMain(void) {
     ItemWork* wp;
     ItemEntry* entry;
@@ -541,10 +536,12 @@ void itemMain(void) {
                 f32 xx;
                 f32 yy;
                 f32 zz;
+                f64 d;
 
                 xx = entry->position.x;
                 zz = entry->position.z;
-                distance = (f32)(double_20_802cac28 + __fabs(double_neg1_802cae60));
+                d = __fabs(double_neg1_802cae60);
+                distance = (f32)(double_20_802cac28 + d);
                 yy = float_20_8041afa0 + y;
                 hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                                      xx, yy, zz,
