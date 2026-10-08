@@ -732,31 +732,47 @@ static inline double cosOf(f32 arg0) {
 
 // Holds `op[idx].dist` in a block-local `f32 d`, captures `op[idx].angle` in `c` before the radians
 // conversion, and calls an inlined cos wrapper. Computing x into `tx` instead of reusing the `target`
-// event argument reproduces the original's f27 for the x value; what still differs is the first
-// iteration's event `cur`/`target` pair sitting one register high (f27/f28 vs f26/f27), which swaps
-// the per-iteration `d`/`rad` pair. Those webs are compiler temps no declaration order reaches:
-// mwccdbg's rasim search floors at 15 wrong, so this is permuter work.
-// NONMATCHING (99.68%)
+// event argument reproduces the original's f27 for the x value. Declaring `cur` last (lowest local
+// vreg) puts `target` in the original's f27; what still differs is `cur` in f28 (retail f26), which
+// swaps the first iteration's `d`/`rad` pair (f28/f27 vs f26/f28), and the last two iterations'
+// rad/sin and `d` (retail d7 in f29). rasim over every local order floors at 5 wrong: the rest are
+// frontend temps (@662, @663, @670) that no declaration order reaches.
+// NONMATCHING (99.71%)
 USER_FUNC(mario_main_func) {
     s32* args = event->args;
-    f32 cur = (f32)evtGetValue(event, args[0]);
-    f32 target = (f32)evtGetValue(event, args[1]);
-    f32 centerX = (f32)evtGetValue(event, args[2]);
-    f32 centerZ = (f32)evtGetValue(event, args[3]);
-    OpField* op = _op;
-    MarioWork* mario = marioGetPtr();
-    PartyEntry* party = partyGetPtr(0);
-    NpcEntry* marco = evtNpcNameToPtr(event, "マルコ");
-    NpcEntry* cortez = evtNpcNameToPtr(event, "コルテス");
-    NpcEntry* monie = evtNpcNameToPtr(event, "モニー");
-    NpcEntry* gara = evtNpcNameToPtr(event, "ガラの悪い水夫");
-    NpcEntry* piton = evtNpcNameToPtr(event, "ピートン");
-    NpcEntry* odoodo = evtNpcNameToPtr(event, "オドオド水夫");
-    f32 delta = target - cur;
+    f32 target;
+    f32 centerX;
+    f32 centerZ;
+    OpField* op;
+    MarioWork* mario;
+    PartyEntry* party;
+    NpcEntry* marco;
+    NpcEntry* cortez;
+    NpcEntry* monie;
+    NpcEntry* gara;
+    NpcEntry* piton;
+    NpcEntry* odoodo;
+    f32 delta;
     f32 rad;
     f32 s;
     f32 c;
     f32 tx;
+    f32 cur;
+
+    cur = (f32)evtGetValue(event, args[0]);
+    target = (f32)evtGetValue(event, args[1]);
+    centerX = (f32)evtGetValue(event, args[2]);
+    centerZ = (f32)evtGetValue(event, args[3]);
+    op = _op;
+    mario = marioGetPtr();
+    party = partyGetPtr(0);
+    marco = evtNpcNameToPtr(event, "マルコ");
+    cortez = evtNpcNameToPtr(event, "コルテス");
+    monie = evtNpcNameToPtr(event, "モニー");
+    gara = evtNpcNameToPtr(event, "ガラの悪い水夫");
+    piton = evtNpcNameToPtr(event, "ピートン");
+    odoodo = evtNpcNameToPtr(event, "オドオド水夫");
+    delta = target - cur;
 
     MARIO_MAIN_UPDATE(0, mario);
     MARIO_MAIN_UPDATE(1, party);

@@ -673,10 +673,8 @@ USER_FUNC(evt_ryushi_init) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.37%): evt_ryushi_clr; the whole loop body now matches, including both randf
-// products for all three coordinates. Remaining: the top xwp/event->args[0] load order - the
-// target emits `lis r4,xwp@ha; lwz r7,0x18(r3); ...; lwz r29,0(r6)`, we fuse `lwz r29,xwp@l(r6)`.
 USER_FUNC(evt_ryushi_clr) {
+    s32* args = event->args;
     RyushiEntry* wp = xwp;
     s32 i;
     s32 n = ryuwp;
@@ -684,7 +682,7 @@ USER_FUNC(evt_ryushi_clr) {
     f32 half = 0.5f;
 #endif
 
-    wp->unk04 = evtGetValue(event, event->args[0]);
+    wp->unk04 = evtGetValue(event, *args++);
     wp->unk24 = 0;
     wp->unk20 = 0;
     wp->x = 0.0f;
