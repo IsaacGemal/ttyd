@@ -18,14 +18,6 @@ extern const f32 float_0p9_80420f18;
 extern const f32 float_1p7_80420f1c;
 extern const f32 float_0p6_80420f20;
 extern const f32 float_48_80420f24;
-extern const f32 float_0_80420f28;
-extern const f32 float_1_80420f2c;
-extern const f32 float_25_80420f30;
-extern const f32 float_640_80420f34;
-extern const f32 float_0p5_80420f38;
-extern const f32 float_24_80420f3c;
-extern const f32 float_100_80420f40;
-extern const f32 float_0p2_80420f44;
 extern const u32 dat_80420f10;
 extern const u32 dat_80420f14;
 
@@ -44,19 +36,6 @@ const Vec vec3_802fe3d8 = { 0.0f, 1.0f, 0.0f };
 const Vec vec3_802fe3e4 = { 0.0f, 0.0f, 0.0f };
 #endif
 const f64 double_0p21817_802fe3f0 = 0.21816615760326385;
-
-#ifdef MUST_MATCH
-// Immediately generated helpers pool the int->float conversion doubles ahead of the deferred functions'
-// "StageClear" string; nothing calls them and the linker strips the bodies.
-#pragma defer_codegen off // Pool the conversion doubles before the deferred functions' string literals.
-static f32 pool_i2f(s32 v) {
-	f32 a = (f32)v;
-	f32 b = (f32)(u32)v;
-
-	return a + b;
-}
-#pragma defer_codegen reset
-#endif
 
 // .data
 static u32 tex_us[13] = {
@@ -129,7 +108,7 @@ EffectEntry* effStageClearEntry(s32 type, f32 x, f32 y, f32 z) {
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->scale = float_1_80420f2c;
+	data->scale = 1.0f;
 	data->timer = 0;
 	data->field_0x1C = 0;
 	data->count = irand(5) + 1;
@@ -138,10 +117,10 @@ EffectEntry* effStageClearEntry(s32 type, f32 x, f32 y, f32 z) {
 		effStageClearWork* work = &data[i];
 
 		work->x = (f32)((i - 1) * 0x26 - (entry->count - 1) * 0x26 / 2 + 0x14);
-		work->y = float_0_80420f28;
-		work->z = float_0_80420f28;
-		work->scale = float_0_80420f28;
-		work->timer = (s32)((f32)i * (float_0p2_80420f44 * gp->framerate));
+		work->y = 0.0f;
+		work->z = 0.0f;
+		work->scale = 0.0f;
+		work->timer = (s32)((f32)i * (0.2f * gp->framerate));
 		work->field_0x1C = 0;
 		work->evt = NULL;
 	}
@@ -173,7 +152,7 @@ void effStageClearMain(EffectEntry* effect) {
 			}
 		} else {
 			if ((u32)data->field_0x1C < 0xB) {
-				data->scale = (f32)scale_dt[data->field_0x1C] / float_100_80420f40;
+				data->scale = (f32)scale_dt[data->field_0x1C] / 100.f;
 			}
 			data->field_0x1C++;
 			if (data->scale > float_0p9_80420f18) {
@@ -223,30 +202,16 @@ static inline Vec getStageClearCamPos(void) {
 	Vec temp = vec3_802fe3cc;
 #ifdef MUST_MATCH
 	// Read the named double so the load comes off the base register instead of a pooled copy of it.
-	temp.z = float_1_80420f2c / (f32)tan(*(volatile const f64*)&double_0p21817_802fe3f0);
+	temp.z = 1.0f / (f32)tan(*(volatile const f64*)&double_0p21817_802fe3f0);
 #else
-	temp.z = float_1_80420f2c / (f32)tan(double_0p21817_802fe3f0);
+	temp.z = 1.0f / (f32)tan(double_0p21817_802fe3f0);
 #endif
 	return temp;
 }
 
-#pragma opt_common_subs off // without it MWCC CSEs the repeated float_0 pool loads in the GX vertex block
-// Register colouring only, no structural or pool difference left. The long-lived
-// FP values land in f31 (int->float magic), f30 (24), f29 (-24) and f28 (1) where the target has f30
-// (magic), f31 (1), f29 (-24) and f28 (24); the target reuses f28 from the free `scale` for 24, and the
-// two uncached float_1 texcoords follow from it. The outer loop counter/work pointers also land in
-// r23/r21 where the target has r21/r23. Computing the inner `work` pointer in place (load userdata
-// into work, then work++) instead of through &(...)[1] fixed the last scratch-register diffs; no
-// declaration or statement order, loop shape, or pragma (opt_lifetimes, opt_dead_assignments,
-// opt_propagation, scheduling, global_optimizer, optimization_level 0-4) moved the rest. The int->float
-// magic and 0.2181 double pool at the target's 0x38/0x30 slots via the helper above and the named
-// double. Also rejected (fresh scores, none above 99.40%): a K&R definition, defining the named floats
-// so they fold, ~8000 random combinations of the texcoord MATCH mask, the constant hoist points, the
-// declaration/assignment orders and every other work-pointer form, and compiling the unit with
-// GC/1.3.2-2.7 (all six give this exact colouring; 3.0a3+ reorders everything). The target's four
-// texcoords all reload float_1 while ours keep it in a register for the last two, so the target's 1.0
-// is live only to the fdiv.
-// NONMATCHING (99.40%): FP/GPR colouring only; the permuter is needed.
+// The constants after the first four .sdata2 floats are literals the compiler pools in first-use order;
+// the 48/2 half-extent is computed at runtime from the named 48 and a `half` local, as the original does.
+// The declaration order of shadow/work/j/i/type gives the original's GPR colouring.
 void effStageClearDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	effStageClearWork* data = effect->userdata;
@@ -254,15 +219,16 @@ void effStageClearDisp(CameraId camId, void* param) {
 	CameraEntry* cam2;
 	s32 field1C;
 	s32 shadow;
-	s32 i, j;
+	effStageClearWork* work;
+	s32 j;
+	s32 i;
 	s32 type;
 	f32 scale;
 	f32 f27;
 	f32 f26;
-	f32 f28;
-	f32 f29;
-	f32 f30;
-	f32 f31;
+	f32 lo;
+	f32 hi;
+	f32 half;
 	GXTexObj tex;
 	f32 proj[7];
 	f32 viewport[6];
@@ -302,31 +268,13 @@ void effStageClearDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(0, 9, 1, 4, 0);
 	GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 	shadow = type % 10;
-#ifdef MUST_MATCH
-	// match-only: assigning the loop-invariant i*4/-i*4 offsets and the 24/-24/1 constants inside the
-	// inner loop makes MWCC hoist them together with the int->float magic, reproducing the target's FP
-	// load order; the natural form is the #else arm (same values, just outside the loop)
 	for (i = 1; i >= 0; i--) {
-		effStageClearWork* work = (effStageClearWork*)effect->userdata;
+		work = (effStageClearWork*)effect->userdata;
 		work++;
 
 		for (j = 1; j < effect->count; j++, work++) {
 			f27 = (f32)(i * 4);
 			f26 = (f32)(-i * 4);
-			f29 = -float_48_80420f24 * float_0p5_80420f38;
-			f31 = float_1_80420f2c;
-			f28 = float_24_80420f3c;
-#else
-	f29 = -float_48_80420f24 * float_0p5_80420f38;
-	f31 = float_1_80420f2c;
-	f28 = float_24_80420f3c;
-	for (i = 1; i >= 0; i--) {
-		effStageClearWork* work = &data[1];
-
-		for (j = 1; j < effect->count; j++, work++) {
-			f27 = (f32)(i * 4);
-			f26 = (f32)(-i * 4);
-#endif
 			if (i != 0) {
 				if (shadow == 0) {
 					u32* tbl = texid_tbl[(u32)gp->language * 2 + 1];
@@ -397,24 +345,27 @@ void effStageClearDisp(CameraId camId, void* param) {
 				Vec camUp = vec3_802fe3d8;
 				Vec target = vec3_802fe3e4;
 
-				C_MTXLightPerspective(persp, float_25_80420f30, float_640_80420f34,
-					float_0p5_80420f38, float_0p5_80420f38,
-					float_0p5_80420f38, float_0p5_80420f38);
+				C_MTXLightPerspective(persp, 25.0f, 640.f,
+					0.5f, 0.5f,
+					0.5f, 0.5f);
 				C_MTXLookAt(lookAt, &camPos, &camUp, &target);
 				PSMTXConcat(persp, lookAt, persp);
 				PSMTXConcat(persp, trans, trans);
 				PSMTXTrans(scaleMtx, (f32)-field1C, 0.0f, 0.0f);
 				PSMTXConcat(trans, scaleMtx, trans);
 				GXLoadTexMtxImm(trans, 0x1E, 1);
+				half = 0.5f;
+				lo = -float_48_80420f24 * half;
+				hi = 24.0f;
 				GXBegin(0x80, 0, 4);
-				GXPosition3f32(f29, f28, 0.0f);
+				GXPosition3f32(lo, hi, 0.0f);
 				GXTexCoord2f32(0.0f, 0.0f);
-				GXPosition3f32(f28, f28, 0.0f);
-				GXTexCoord2f32(MATCH_F32(float_1_80420f2c), 0.0f);
-				GXPosition3f32(f28, f29, 0.0f);
-				GXTexCoord2f32(MATCH_F32(float_1_80420f2c), float_1_80420f2c);
-				GXPosition3f32(f29, f29, 0.0f);
-				GXTexCoord2f32(0.0f, float_1_80420f2c);
+				GXPosition3f32(hi, hi, 0.0f);
+				GXTexCoord2f32(1.0f, 0.0f);
+				GXPosition3f32(hi, lo, 0.0f);
+				GXTexCoord2f32(1.0f, 1.0f);
+				GXPosition3f32(lo, lo, 0.0f);
+				GXTexCoord2f32(0.0f, 1.0f);
 			}
 		}
 	}
@@ -423,7 +374,6 @@ void effStageClearDisp(CameraId camId, void* param) {
 	GXSetViewport(viewport[0], viewport[1], viewport[2], viewport[3], viewport[4], viewport[5]);
 }
 
-#pragma opt_common_subs reset
 
 BOOL effStageClearEndChk(EffectEntry* effect) {
 	effStageClearWork* data = effect->userdata;
@@ -438,11 +388,3 @@ const f32 float_0p9_80420f18 = 0.9f;
 const f32 float_1p7_80420f1c = 1.7f;
 const f32 float_0p6_80420f20 = 0.6f;
 const f32 float_48_80420f24 = 48.0f;
-const f32 float_0_80420f28 = 0.0f;
-const f32 float_1_80420f2c = 1.0f;
-const f32 float_25_80420f30 = 25.0f;
-const f32 float_640_80420f34 = 640.0f;
-const f32 float_0p5_80420f38 = 0.5f;
-const f32 float_24_80420f3c = 24.0f;
-const f32 float_100_80420f40 = 100.0f;
-const f32 float_0p2_80420f44 = 0.2f;
