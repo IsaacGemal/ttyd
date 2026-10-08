@@ -45,7 +45,7 @@
 #define FontDrawString(s, x, y) ((void (*)(f32, f32, const char*))FontDrawString)(x, y, s)
 #else
 #define FontDrawColorV(c) do { GXColor fontColor_ = (c); FontDrawColor(&fontColor_); } while (0)
-static inline void iconDispGxS(f32 scale, Vec* pos, u16 flags, u16 iconId) { iconDispGx(pos, flags, iconId, scale); }
+static inline void iconDispGxS(f32 scale, Vec* pos, u16 flags, u16 iconId) { iconDispGx(scale, pos, flags, iconId); }
 #endif
 
 // evt_unitwin_disp_func is a display callback, not an event command.
