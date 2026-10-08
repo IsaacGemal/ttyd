@@ -1111,20 +1111,25 @@ s32 tou_gamen_screen_tev_init(EventEntry* event) {
 
 // The original keeps i/4 (r31) and i%4 (r30) live across the rand() calls. The
 // second loop's `sgrow`/`sgcol` are precomputed with shifts before the count loop so
-// they land in the callee-saved registers the original uses. In the first loop
-// `base`/`col` are split out the same way and `mask` (the (i&1) select) is a
-// function-scope temp assigned between the `base` and `(j%8)` additions: both shape
-// the first loop's schedule and registers. With opt_propagation off the base/col add
-// into the byte index as the original does instead of folding into a buf+col pointer.
-// The min-clamp's `x = (x > ratio) ? ratio : x;` reproduces the original's
-// two-branch select. The MUST_MATCH blocks are allocator levers: the `zero` alias
-// and the function-scope counters fix the pointer web's vreg, and the split idx2
-// temporaries keep the running index in its own web; compiled as the natural form
-// the body is 99.46%.
-// NONMATCHING (99.62%): the first loop's integer register allocation and schedule only; base/col sit in r7/r8 (original r4/r3), the 0xff select in r4 (original r5) and (j%8) is scheduled after (j/8)*0x20 (reversed here); everything else, including the second loop and the pointer/alias web, matches.
+// they land in the callee-saved registers the original uses. The first loop's
+// base/row/col/mask/pct locals summed step by step into `idx` give the original's
+// schedule (the same body as tou2/tou_03's screen_tev, whose original is identical).
+// With opt_propagation off the base/col add into the byte index as the original
+// does instead of folding into a buf+col pointer. The min-clamp's
+// `x = (x > ratio) ? ratio : x;` reproduces the original's two-branch select. The
+// MUST_MATCH blocks are allocator levers: the `zero` alias and the function-scope
+// counters fix the pointer web's vreg, and the split idx2 temporaries keep the
+// running index in its own web.
+// What differs: the first loop's volatile register colouring only (opcodes and
+// order match). The original colours col/base/0xff first (r3/r4/r5), then the j%8 and
+// j/8 temporaries (r7/r8, r6); here the frontend hoists (i/4)*0x100 and (i%4)*8 as
+// loop-invariant temps whose vregs sit below the loop body's, so the body colours first
+// (j/8, j%8 in r3/r4, base/col in r7/r8). rasim says the original's order needs base,
+// col and the 0xff constant numbered after the body's j%8 and mask temporaries; no
+// source shape tried produced that. The base+row add's operands are also swapped.
+// NONMATCHING (99.82%): the first loop's volatile register colouring only (see above).
 #pragma opt_propagation off // needed: with propagation on the second loop folds col into a buf+col pointer (see above)
 void tou_gamen_screen_tev(void* param) {
-	int mask;
 	GXTexObj texObj;
 	Mtx mtx;
 	Mtx mtxScale;
@@ -1163,22 +1168,15 @@ void tou_gamen_screen_tev(void* param) {
 		for (i = 0; i < 0x40; i++) {
 			for (j = 0; j < 0x40; j++) {
 				int base = (i / 4) * 0x100;
+				int row = j / 8;
 				int col = (i % 4) * 8;
-#ifdef MUST_MATCH
-				// MUST_MATCH: the separate idx2 web keeps the (j%8) add out of the base
-				// register, matching the original's running index.
-				int idx;
-				int idx2;
-				idx = (j / 8) * 0x20 + base;
-				mask = (i & 1) ? 0xFF : 0;
-				idx2 = idx + (j % 8);
-				buf[idx2 + col] = mask;
-#else
-				int idx = (j / 8) * 0x20 + base;
-				mask = (i & 1) ? 0xFF : 0;
-				idx += (j % 8);
-				buf[idx + col] = mask;
-#endif
+				int mask = (i & 1) ? 0xFF : 0;
+				int pct = j % 8;
+				int idx = base;
+				idx += row * 0x20;
+				idx += pct;
+				idx += col;
+				buf[idx] = mask;
 			}
 			{
 				s32 count = 100 + rand() % 100;
