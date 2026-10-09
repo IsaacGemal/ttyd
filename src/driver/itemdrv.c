@@ -37,13 +37,6 @@
 extern GlobalWork* gp;
 
 extern int __float_nan[];
-extern const f32 float_0_8041af9c;
-extern const f32 float_1_8041afa4;
-extern const f32 float_10_8041afb0;
-extern const f32 float_15_8041afb4;
-extern const f32 float_0p5_8041afb8;
-extern const f32 float_180_8041afbc;
-extern const f32 float_100_8041afc0;
 #define NAN (*(f32*)__float_nan)
 
 #define FP_NAN 1
@@ -80,7 +73,7 @@ static inline f32 sqrtf(f32 x) {
     const f64 _half = .5;
     const f64 _three = 3.0;
 
-    if (x > float_0_8041af9c) {
+    if (x > 0.0f) {
         f64 guess = __frsqrte(x);
         guess = _half * guess * (_three - guess * guess * x);
         guess = _half * guess * (_three - guess * guess * x);
@@ -96,21 +89,9 @@ static inline f32 sqrtf(f32 x) {
 
 
 extern ItemData itemDataTable[];
-extern const char str_802CAC8C[];
-extern const char str_802CADE8[];
-extern const char str_802CAE00[];
-extern const char str_802CAE18[];
-extern const char str_802CAE30[];
-extern const char str_802CAE48[];
 extern u32 dat_8041af90;
 extern u32 dat_8041af94;
 extern u32 dat_8041af98;
-extern const f32 float_20_8041afa0;
-extern const f32 float_16_8041afc8;
-extern const f32 float_neg1000_8041aff0;
-extern const f32 float_neg1_8041afac;
-extern const f32 float_12_8041b010;
-extern const f64 double_neg1_802cae60;
 const Vec vec3_802cabe0 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cabec = {0.0f, 0.0f, 0.0f};
 const Vec vec3_802cabf8 = {0.0f, 0.0f, 0.0f};
@@ -119,11 +100,7 @@ __declspec(section ".rodata") Vec vec3_802cac04 = {0.0f, 0.0f, 0.0f};
 #else
 const Vec vec3_802cac04 = {0.0f, 0.0f, 0.0f};
 #endif
-#ifdef MUST_MATCH
-__declspec(section ".rodata") Vec vec3_802cac10 = {0.0f, 0.0f, 0.0f};
-#else
 const Vec vec3_802cac10 = {0.0f, 0.0f, 0.0f};
-#endif
 #ifdef MUST_MATCH
 // Deliberately non-const and pinned to .rodata: itemseq_GetItem copies this zero Vec, and the compiler
 // otherwise treats the const load as hoistable and schedules it above the two stores to `item` that
@@ -134,27 +111,7 @@ __declspec(section ".rodata") Vec vec3_802cac1c = {0.0f, 0.0f, 0.0f};
 #else
 const Vec vec3_802cac1c = {0.0f, 0.0f, 0.0f};
 #endif
-const f64 double_20_802cac28 = 20.0;
-#ifdef MUST_MATCH
-// The original reads 20.0 from the named .rodata object, not from a pooled copy of the literal. Reading it through
-// the pointer (rather than the symbol directly) also keeps the optimiser from seeing the value, which is what makes
-// it emit the original `fadd f7, f2, f5` instead of coalescing the sum into 20.0's f2 (7 fewer diffs).
-#define MATCH_DBL20 (*(volatile const f64*)&double_20_802cac28)
-#else
-#define MATCH_DBL20 double_20_802cac28
-#endif
-#ifndef MUST_MATCH
-const char str_802CAC8C[] = "SFX_FLOWER_GET1";
-const char str_802CAC9C[] = "SFX_COIN_LEAPED1\0\0\0";
-const char str_802CACB0[] = "SFX_EVT_GAME_MONTE_LEAPED1\0";
-const char str_802CACCC[] = "SFX_HEART_LEAPED1\0\0";
-const char str_802CACE0[] = "SFX_FLOWER_LEAPED1\0";
-const char str_802CACF4[] = "SFX_STAR_PIECE_LEAPED1\0";
-const char str_802CAD0C[] = "SFX_EVT_STARSTONE_JUMP1";
-const char str_802CAD24[] = "SFX_BADGE_LEAPED1\0\0";
-const char str_802CAD38[] = "SFX_ITEM_LEAPED1\0\0\0";
-const char str_802CAD4C[] = "MOBJ_KururinFloor\0\0";
-#endif
+extern const f64 double_20_802cac28;
 
 //.bss
 static ItemWork work[2];
@@ -191,38 +148,10 @@ void itemInit(void) { // 1:1
 #define ITEM_STATUS(item) (*(u32*)((u8*)(item) + 0x38))
 extern WinMgrDesc itemdrv_window_desc[];
 extern s32 all_juyoitem_lecture[];
-extern const f32 float_35_8041afc4;
-extern const f32 float_50_8041b000;
-extern const f32 float_62_8041b004;
-extern const f32 float_85_8041b008;
-extern const f32 float_120_8041b00c;
-extern const f32 float_0p7_8041aff4;
-extern const f32 float_1024_8041affc;
 #define IT_S32(i, off) (*(s32*)((u8*)(i) + (off)))
 #define IT_U32(i, off) (*(u32*)((u8*)(i) + (off)))
 #define IT_F32(i, off) (*(f32*)((u8*)(i) + (off)))
 #define IT_S64(i, off) (*(s64*)((u8*)(i) + (off)))
-#ifdef MUST_MATCH
-#define IB_STR(off, sym) ((const char*)ibBase + (off))
-#define IB_DBL20 (*(const f64*)((const u8*)ibBase + 0x48))
-#define IB_VEC(off, sym) (sym)
-#else
-#define IB_STR(off, sym) (sym)
-#define IB_DBL20 double_20_802cac28
-#define IB_VEC(off, sym) (sym)
-#endif
-extern const f32 float_4_8041afa8;
-extern const f32 float_500_8041afcc;
-extern const f32 float_90_8041afd0;
-extern const f32 float_30_8041afd4;
-extern const f32 float_0p67_8041afd8;
-extern const f32 float_1E06_8041afdc;
-extern const f32 float_6p2832_8041afe0;
-extern const f32 float_360_8041afe4;
-extern const f32 float_neg980_8041afe8;
-extern const f32 float_0p25_8041afec;
-extern const f32 float_8_8041aff8;
-extern const f32 float_0p7_8041aff4;
 
 void itemReInit(void) {
     ItemWork* wp = itemGetWork();
@@ -451,7 +380,7 @@ void itemMain(void) {
     mario = marioGetPtr();
 
     itemHit = itemHitCheck(mario->position.x, mario->position.y, mario->position.z,
-                           float_0p5_8041afb8 * mario->wPlayerCollisionBox.x + float_12_8041b010);
+                           0.5f * mario->wPlayerCollisionBox.x + 12.0f);
     if (itemGetCheck(itemHit)) {
         itemHit->mode = 2;
         itemHit->field_0x26 = 0;
@@ -519,6 +448,7 @@ void itemMain(void) {
             break;
         case 1:
         {
+            f32 vy = -1.0f;
             f32 y = entry->position.y;
             f32 hitNZ;
             f32 hitNY;
@@ -531,7 +461,7 @@ void itemMain(void) {
 
             if (*(u32*)((u8*)entry + 0x38) & 0x100000) {
                 hit = NULL;
-                newY = y + float_neg1_8041afac;
+                newY = y + vy;
             } else {
                 f32 xx;
                 f32 yy;
@@ -540,17 +470,17 @@ void itemMain(void) {
 
                 xx = entry->position.x;
                 zz = entry->position.z;
-                d = __fabs(double_neg1_802cae60);
+                d = __fabs(-1.0);
                 distance = (f32)(double_20_802cac28 + d);
-                yy = float_20_8041afa0 + y;
+                yy = 20.0f + y;
                 hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                                      xx, yy, zz,
-                                     0.0f, float_neg1_8041afac, 0.0f);
+                                     0.0f, -1.0f, 0.0f);
                 if (hit != NULL) {
                     newY = hitY;
                 } else {
                     hit = NULL;
-                    newY = y + float_neg1_8041afac;
+                    newY = y + vy;
                 }
             }
             if (hit == NULL) {
@@ -569,7 +499,7 @@ void itemMain(void) {
             PartyEntry* party = partyGetPtr(marioGetPartyId());
             if (party != NULL) {
                 f32 x = party->position.x;
-                f32 y = float_15_8041afb4 + party->position.y;
+                f32 y = 15.0f + party->position.y;
                 f32 z = party->position.z;
 
                 entry->position.x = x;
@@ -604,11 +534,11 @@ void itemMain(void) {
             if (!(*(u32*)((u8*)entry + 0x38) & 0x100)) {
                 ((f32*)((u8*)entry->effect->userdata + 0x8))[0] = entry->position.x;
                 ((f32*)((u8*)entry->effect->userdata + 0x8))[1]
-                    = float_16_8041afc8 + entry->position.y;
+                    = 16.0f + entry->position.y;
                 ((f32*)((u8*)entry->effect->userdata + 0x8))[2] = entry->position.z;
             } else {
                 ((f32*)((u8*)entry->effect->userdata + 0x8))[0] = entry->position.x;
-                ((f32*)((u8*)entry->effect->userdata + 0x8))[1] = float_neg1000_8041aff0;
+                ((f32*)((u8*)entry->effect->userdata + 0x8))[1] = -1000.0f;
                 ((f32*)((u8*)entry->effect->userdata + 0x8))[2] = entry->position.z;
             }
             break;
@@ -618,7 +548,7 @@ void itemMain(void) {
                 iconSetScale(entry->name, entry->scale);
                 iconSetAlpha(entry->name, entry->alpha);
             } else {
-                iconSetPos(entry->name, entry->position.x, float_neg1000_8041aff0, entry->position.z);
+                iconSetPos(entry->name, entry->position.x, -1000.0f, entry->position.z);
             }
             break;
         }
@@ -631,7 +561,7 @@ void itemMain(void) {
                 s32 b = irand(20) + 10;
 
                 effHagetakaFlushN64Entry(0, 0xa, entry->position.x + (f32)a, entry->position.y + (f32)b,
-                                         entry->position.z, float_1_8041afa4);
+                                         entry->position.z, 1.0f);
             }
         }
     }
@@ -737,7 +667,7 @@ ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5,
 	entry->field_0x2 = a3;
 	*(s32*)((u8*)entry + 0x20) = a5;
 	entry->flags |= 1;
-	entry->scale = float_1_8041afa4;
+	entry->scale = 1.0f;
 	entry->alpha = 0xFF;
 
 	if (evtId != -1) {
@@ -762,7 +692,7 @@ ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5,
 	case 0x76:
 	case 0x77:
 	case 0x78:
-		entry->effect = effStarStoneEntry(entry->itemId - 0x72, a6, float_16_8041afc8 + a7, a8, float_1_8041afa4);
+		entry->effect = effStarStoneEntry(entry->itemId - 0x72, a6, 16.0f + a7, a8, 1.0f);
 		break;
 	default:
 	{
@@ -777,8 +707,8 @@ ItemEntry* itemEntry(const char* name, ItemType type, u16 a3, s32 evtId, s32 a5,
 		break;
 	}
 
-	*(f32*)((u8*)entry + 0x84) = float_1_8041afa4;
-	*(f32*)((u8*)entry + 0x80) = float_1_8041afa4;
+	*(f32*)((u8*)entry + 0x84) = 1.0f;
+	*(f32*)((u8*)entry + 0x80) = 1.0f;
 	entry->field_0x68 = gp->renderTime;
 
 	switch (entry->itemId) {
@@ -918,20 +848,6 @@ ItemEntry* itemNameToPtr(char* name) {
     return NULL;
 }
 
-// The vertical range test needs the original's FPR colouring (0.5 in f4, the offset in f2,
-// 10.0 in f1) and the 0.5 load scheduled before mario's collision-box Y. Written directly,
-// MWCC CSEs the two products and schedules the direct sum so the constants land in f3/f5;
-// reading 0.5 and the box Y through the two inlines below splits the range term and produces
-// the original schedule. The natural expression is under #else.
-#ifdef MUST_MATCH
-static inline f32 itemHitCheckHalf(void) {
-    return float_0p5_8041afb8;
-}
-
-static inline f32 itemHitCheckBoxY(MarioWork* mario) {
-    return mario->wPlayerCollisionBox.y;
-}
-#endif
 ItemEntry* itemHitCheck(f32 x, f32 y, f32 z, f32 maxDist) {
     ItemWork* wp = itemGetWork();
     MarioWork* mario;
@@ -979,19 +895,14 @@ ItemEntry* itemHitCheck(f32 x, f32 y, f32 z, f32 maxDist) {
             && marioGetJabaraState() != 1
             && marioGetJabaraState() != 4
             && marioGetJabaraState() != 5
-#ifdef MUST_MATCH
-            && __fabsf((float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + y) - entry->position.y)
-                < (itemHitCheckHalf() * itemHitCheckBoxY(mario) + float_10_8041afb0)) {
-#else
-            && __fabsf((float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + y) - entry->position.y)
-                < (float_0p5_8041afb8 * mario->wPlayerCollisionBox.y + float_10_8041afb0)) {
-#endif
+            && __fabsf((0.5f * mario->wPlayerCollisionBox.y + y) - entry->position.y)
+                < (0.5f * mario->wPlayerCollisionBox.y + 10.0f)) {
             hit = NULL;
             if (y < entry->position.y) {
-                distance = float_10_8041afb0 + (entry->position.y - y);
-                if (distance > float_0_8041af9c) {
+                distance = 10.0f + (entry->position.y - y);
+                if (distance > 0.0f) {
                     hit = hitCheckAttr(0x80000000, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                       x, y, z, float_0_8041af9c, float_1_8041afa4, float_0_8041af9c);
+                                       x, y, z, 0.0f, 1.0f, 0.0f);
                 }
             }
             if (hit == NULL) {
@@ -1064,10 +975,10 @@ void winNameDisp(WinMgrEntry* entry) {
 
     msg = msgSearch(itemDataTable[item->itemId].name);
     if (item->itemId >= 0xf0 && item->itemId < 0x153) {
-        sprintf(buf, msgSearch(str_802CAE30), msg);
+        sprintf(buf, msgSearch("msg_window_badge_get"), msg);
     }
     else {
-        sprintf(buf, msgSearch(str_802CAE48), msg);
+        sprintf(buf, msgSearch("msg_window_item_get"), msg);
     }
 
     width = FontGetMessageWidth(buf);
@@ -1094,7 +1005,7 @@ void winNameDisp2(WinMgrEntry* entry) {
     u16 width;
 
     name = msgSearch(itemDataTable[item->itemId].name);
-    msg = msgSearch(str_802CAE18);
+    msg = msgSearch("msg_window_item_release");
     sprintf(buf, msg, name);
 
     width = FontGetMessageWidth(buf);
@@ -1131,7 +1042,7 @@ void winFullDisp(WinMgrEntry* entry) {
     const char* msg;
     u16 width;
 
-    msg = (item->itemId >= 0xf0 && item->itemId < 0x153) ? msgSearch(str_802CADE8) : msgSearch(str_802CAE00);
+    msg = (item->itemId >= 0xf0 && item->itemId < 0x153) ? msgSearch("msg_window_badge_full") : msgSearch("msg_window_item_full");
 
     width = FontGetMessageWidth(msg);
     if (width + 0x14 > entry->field_0x20) {
@@ -1181,56 +1092,6 @@ static inline void itemseq_deleteMatching(ItemEntry* item) {
     }
 }
 
-// Plays the "item obtained" stardust/SFX for the item id, at the item's position.
-static inline void itemseq_sfxGet(ItemEntry* item) {
-    Vec pos2;
-    // vec3_802cac1c is the 6th of the contiguous zero Vecs. Its declaration (top of file) is non-const
-    // under MUST_MATCH so the compiler keeps the three dead loads *after* the caller's stores instead
-    // of hoisting them; see the comment there. `(Vec){0.0f,0.0f,0.0f}` schedules right but adds a
-    // `.rodata` object at +0x50 that shifts sqrtf's doubles and regresses itemHitCheck.
-    Vec pos = vec3_802cac1c;
-
-    pos.x = item->position.x;
-    pos.y = item->position.y;
-    pos.z = item->position.z;
-    pos2 = pos;
-    switch (item->itemId) {
-    case 0x79:
-        effStardustEntry(1, 3, 0x1E, pos.x, 35.0f + pos.y, pos.z, 16.0f, 16.0f);
-        psndSFXOn_3D("SFX_COIN_GET1", &pos2);
-        break;
-    case 0x7A:
-        effStardustEntry(1, 3, 0x1E, pos.x, 35.0f + pos.y, pos.z, 16.0f, 16.0f);
-        psndSFXOn_3D("SFX_EVT_GAME_MONTE_COUNT1", &pos2);
-        break;
-    case 0x7B:
-        psndSFXOn_3D("SFX_HEART_GET1", &pos2);
-        break;
-    case 0x7C:
-#ifdef MUST_MATCH
-        // str_802CAC8C..str_802CAD4C are ten consecutive .rodata strings; itemseq_Bound reads the last nine through its base register. As named objects they would be emitted
-        // ahead of the pooled doubles and shift sqrtf's constants, so they are folded into this one
-        // literal, which reproduces the target .rodata bytes; the call still sees "SFX_FLOWER_GET1".
-        psndSFXOn_3D(
-            "SFX_FLOWER_GET1\0"
-            "SFX_COIN_LEAPED1\0\0\0\0"
-            "SFX_EVT_GAME_MONTE_LEAPED1\0\0"
-            "SFX_HEART_LEAPED1\0\0\0"
-            "SFX_FLOWER_LEAPED1\0\0"
-            "SFX_STAR_PIECE_LEAPED1\0\0"
-            "SFX_EVT_STARSTONE_JUMP1\0"
-            "SFX_BADGE_LEAPED1\0\0\0"
-            "SFX_ITEM_LEAPED1\0\0\0\0"
-            "MOBJ_KururinFloor\0\0",
-            &pos2);
-#else
-        psndSFXOn_3D(str_802CAC8C, &pos2);
-#endif
-        break;
-    case 0x7D:
-        break;
-    }
-}
 
 // Puts the item into the pouch (clearing its switch if it has one), spawning its
 // first-hit event at the item position. Returns 0 when the pouch is already full.
@@ -1698,33 +1559,21 @@ void itemseq_GetItem(ItemEntry* item) {
 
 static s32 _move_dir;
 
-static inline f32 itemTicksToSec(s64 ticks) {
-    return (f32)OSTicksToMicroseconds(ticks) / 1000000.0f;
-}
-
 // Falling/bouncing motion of a dropped item: gravity from the elapsed time, the side/floor/ceiling hit checks, the
 // bounce sounds and the water splash. The bounce float polynomial is split into locals so MWCC does not contract it
 // into `fmsubs`/`fnmadds`; the itemId range test is written as explicit switch cases (0x72..0x78) so the branch
 // layout matches; hardHit is zeroed after the switch; the two identical `IT_S64(item,0x60) += d1` tails and the two
-// `bounce = 0` tails are reached through a label/goto so MWCC keeps one shared out-of-line copy, as the target does;
-// the 7 hitCheckFilter locals are declared in target stack order, and the three calls load pos.x/y/z into block
-// locals (with `20.0f + pos.y` folded in) so the compiler hoists the loads the way the target does; the `x * 0.25f`
-// damping goes through a single-use `k` local so the variable stays the left operand. Referencing the vec3_802cac04/
-// vec3_802cac10 objects by name (IB_VEC) makes MWCC build the .rodata base register and fold the int->float magic
-// onto it as `lfd 0x68(rBase)`, which is what the target has; they are non-const under MUST_MATCH and pinned to
-// .rodata so the two vec loads are not hoisted above the preceding status store. `ibBase = &vec3_802cabe0` (spelled
-// as the 6th zero Vec's address) addresses the strings and 20.0 through the same section, and the second status
-// 0x100000 test is a volatile read so it is not common-subsumed into the first.
-// What still differs: MWCC keeps ibBase in a second register (`addi r28, r29, 0`) instead of reusing its
-// internal .rodata base `r29`, so the item/mario/camera allocation shifts by one callee-saved register (target r30
-// base, r27 mario, r28 camera vs ours r29/r30/r26 + r28). That is ~170 of the remaining arg_mismatch diffs. The
-// only non-register difference left is the third hitCheckFilter return (ours `mr. r25,r3`, target `cmplwi r3,0`
-// then `mr r26,r3`). Call order, switch trees, constants and call arguments match.
-// NONMATCHING (98.84%): the extra ibBase register shifts the callee-saved colouring; see above.
+// `bounce = 0` tails are reached through a label/goto so MWCC keeps one shared out-of-line copy, as the target does.
+// The ceiling/floor rays and the bounce SFX are the out-of-line functions above (auto-inlined here, their own copies
+// dead-stripped at link); their literals pool at their own .text slots, which is where retail's .rodata/.sdata2 has
+// them. vec3_802cac04 is non-const under MUST_MATCH and pinned to .rodata so its load is not hoisted above the
+// preceding status store.
+// What still differs (GPR colouring only): retail gives `item` r31 and the .rodata base r30 (ours the reverse),
+// the elapsed-ticks s64 `d1` halves are swapped (retail low r29/high r28), and the badge-delete loop's `e`/`j` and
+// `hardHit` sit in r27/r28 instead of r24/r25; the third hitCheckFilter return is `mr. r25,r3` where retail has
+// `cmplwi r3,0; mr r26,r3`. The FPR colouring, call order, switch trees, constants and stack frame match.
+// NONMATCHING (98.23%): GPR colouring only; see above.
 void itemseq_Bound(ItemEntry* item) {
-#ifdef MUST_MATCH
-    const u8* ibBase = (const u8*)&vec3_802cabe0;
-#endif
     MarioWork* mario = marioGetPtr();
     CameraEntry* camera = camGetPtr(CAMERA_3D);
 
@@ -1819,9 +1668,9 @@ void itemseq_Bound(ItemEntry* item) {
 
         IT_S64(item, 0x70) = gp->renderTime;
         d1 = IT_S64(item, 0x70) - IT_S64(item, 0x68);
-        t1 = itemTicksToSec(d1);
-        t2 = itemTicksToSec(IT_S64(item, 0x60));
-        t3 = itemTicksToSec(IT_S64(item, 0x60) + d1);
+        t1 = (f32)OSTicksToMicroseconds(d1) / 1000000.0f;
+        t2 = (f32)OSTicksToMicroseconds(IT_S64(item, 0x60)) / 1000000.0f;
+        t3 = (f32)OSTicksToMicroseconds(IT_S64(item, 0x60) + d1) / 1000000.0f;
         vx = t1 * (IT_F32(item, 0x50) * (f32)sin((6.2831855f * (f32)IT_S32(item, 0x54)) / 360.0f));
         vz = t1 * (IT_F32(item, 0x50) * -(f32)cos((6.2831855f * (f32)IT_S32(item, 0x54)) / 360.0f));
         if (IT_U32(item, 0x38) & 0x8000) {
@@ -1874,38 +1723,10 @@ void itemseq_Bound(ItemEntry* item) {
             IT_F32(item, 0x50) = IT_F32(item, 0x50) * k;
         }
         if (!(IT_U32(item, 0x38) & 0x20) && !(item->flags & 0x800)) {
-            f32 hnz, hny, hnx, dist, hz, hy, hx;
-
-            if (vy <= 0.0f) {
-                hit = NULL;
-            } else {
-                f32 px = item->position.x;
-                f32 py = 20.0f + item->position.y;
-                f32 pz = item->position.z;
-
-                dist = (f32)(IB_DBL20 + __fabs(vy));
-                hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f,
-                                     1.0f, 0.0f);
-                if (hit != NULL) {
-                    item->position.y = (hy - 20.0f) - 4.0f;
-                } else {
-                    f32 px = item->position.x;
-                    f32 py = item->position.y;
-                    f32 pz = item->position.z;
-
-                    dist = (f32)(IB_DBL20 + __fabs(vy));
-                    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f, 1.0f,
-                                         0.0f);
-                    if (hit != NULL) {
-                        item->position.y = hy - 20.0f;
-                    } else {
-                        hit = NULL;
-                    }
-                }
-            }
+            hit = itemBoundHitCeiling(item, vy);
             if (hit != NULL) {
                 vy = 0.0f;
-                IT_F32(item, 0x58) = -IT_F32(item, 0x58) * float_0p25_8041afec;
+                IT_F32(item, 0x58) = -IT_F32(item, 0x58) * 0.25f;
                 IT_S64(item, 0x60) = 0;
                 IT_S64(item, 0x68) = IT_S64(item, 0x70);
             }
@@ -1930,39 +1751,13 @@ void itemseq_Bound(ItemEntry* item) {
             IT_U32(item, 0x38) &= ~0x1000;
             item->flags |= 0x100;
         } else {
-            f32 hnz, hny, hnx, dist, hz, hy, hx;
-
-            if (vy >= 0.0f) {
-                hit = NULL;
-                item->position.y += vy;
-#ifdef MUST_MATCH
-            } else if (*(volatile u32*)((u8*)item + 0x38) & 0x100000) {
-#else
-            } else if (IT_U32(item, 0x38) & 0x100000) {
-#endif
-                hit = NULL;
-                item->position.y += vy;
-            } else {
-                f32 px = item->position.x;
-                f32 py = 20.0f + item->position.y;
-                f32 pz = item->position.z;
-
-                dist = (f32)(IB_DBL20 + __fabs(vy));
-                hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f,
-                                     -1.0f, 0.0f);
-                if (hit != NULL) {
-                    item->position.y = hy;
-                } else {
-                    hit = NULL;
-                    item->position.y += vy;
-                }
-            }
+            hit = itemBoundHitFloor(item, vy);
             if (hit != NULL) {
                 if (hitGetAttr(hit) & 0x600) {
                     Vec pos;
 
                     IT_U32(item, 0x38) |= 0x100000;
-                    pos = IB_VEC(0x24, vec3_802cac04);
+                    pos = vec3_802cac04;
                     pos.x = item->position.x;
                     pos.y = item->position.y;
                     pos.z = item->position.z;
@@ -1981,52 +1776,11 @@ void itemseq_Bound(ItemEntry* item) {
                         IT_U32(item, 0x38) &= ~8;
                         IT_U32(item, 0x38) &= ~0x4000;
                     } else {
-                        Vec p0;
-                        Vec p1;
-                        s32 id;
                         int hardHit;
                         int bounce;
                         f32 q, g, tt, dd;
 
-                        p0 = IB_VEC(0x30, vec3_802cac10);
-                        p0.x = item->position.x;
-                        p0.y = item->position.y;
-                        p0.z = item->position.z;
-                        p1 = p0;
-                        id = item->itemId;
-                        switch (id) {
-                        case 0x79:
-                            psndSFXOn_3D(IB_STR(0xBC, str_802CAC9C), &p1);
-                            break;
-                        case 0x7A:
-                            psndSFXOn_3D(IB_STR(0xD0, str_802CACB0), &p1);
-                            break;
-                        case 0x7B:
-                            psndSFXOn_3D(IB_STR(0xEC, str_802CACCC), &p1);
-                            break;
-                        case 0x7C:
-                            psndSFXOn_3D(IB_STR(0x100, str_802CACE0), &p1);
-                            break;
-                        case 0x7D:
-                            psndSFXOn_3D(IB_STR(0x114, str_802CACF4), &p1);
-                            break;
-                        case 0x72:
-                        case 0x73:
-                        case 0x74:
-                        case 0x75:
-                        case 0x76:
-                        case 0x77:
-                        case 0x78:
-                            psndSFXOn_3D(IB_STR(0x12C, str_802CAD0C), &p1);
-                            break;
-                        default:
-                            if (id >= 0xF0 && id < 0x153) {
-                                psndSFXOn_3D(IB_STR(0x144, str_802CAD24), &p1);
-                            } else {
-                                psndSFXOn_3D(IB_STR(0x158, str_802CAD38), &p1);
-                            }
-                            break;
-                        }
+                        itemseq_sfxBound(item);
                         hardHit = 0;
                         if ((item->flags & 0x80) && IT_F32(item, 0x58) != 0.0f) {
                             bounce = 1;
@@ -2035,7 +1789,7 @@ void itemseq_Bound(ItemEntry* item) {
 
                             if (mario->characterId == 2) {
                                 bounce = 0;
-                            } else if (obj != NULL && strcmp(obj->animName, IB_STR(0x16C, str_802CAD4C)) != 0) {
+                            } else if (obj != NULL && strcmp(obj->animName, "MOBJ_KururinFloor") != 0) {
                                 bounce = 1;
                                 hardHit = 1;
                             } else {
@@ -2095,6 +1849,86 @@ void itemseq_Bound(ItemEntry* item) {
     IT_U32(item, 0x38) &= ~0x10;
 }
 
+// Plays the bounce SFX for the item id, at the item's position.
+void itemseq_sfxBound(ItemEntry* item) {
+    Vec p0;
+    Vec p1;
+    s32 id;
+
+    p0 = vec3_802cac10;
+    p0.x = item->position.x;
+    p0.y = item->position.y;
+    p0.z = item->position.z;
+    p1 = p0;
+    id = item->itemId;
+    switch (id) {
+    case 0x79:
+        psndSFXOn_3D("SFX_COIN_LEAPED1", &p1);
+        break;
+    case 0x7A:
+        psndSFXOn_3D("SFX_EVT_GAME_MONTE_LEAPED1", &p1);
+        break;
+    case 0x7B:
+        psndSFXOn_3D("SFX_HEART_LEAPED1", &p1);
+        break;
+    case 0x7C:
+        psndSFXOn_3D("SFX_FLOWER_LEAPED1", &p1);
+        break;
+    case 0x7D:
+        psndSFXOn_3D("SFX_STAR_PIECE_LEAPED1", &p1);
+        break;
+    case 0x72:
+    case 0x73:
+    case 0x74:
+    case 0x75:
+    case 0x76:
+    case 0x77:
+    case 0x78:
+        psndSFXOn_3D("SFX_EVT_STARSTONE_JUMP1", &p1);
+        break;
+    default:
+        if (id >= 0xF0 && id < 0x153) {
+            psndSFXOn_3D("SFX_BADGE_LEAPED1", &p1);
+        } else {
+            psndSFXOn_3D("SFX_ITEM_LEAPED1", &p1);
+        }
+        break;
+    }
+}
+
+// Plays the "item obtained" stardust/SFX for the item id, at the item's position.
+void itemseq_sfxGet(ItemEntry* item) {
+    Vec pos2;
+    // vec3_802cac1c is the 6th of the contiguous zero Vecs. Its declaration (top of file) is non-const
+    // under MUST_MATCH so the compiler keeps the three dead loads *after* the caller's stores instead
+    // of hoisting them; see the comment there. `(Vec){0.0f,0.0f,0.0f}` schedules right but adds a
+    // `.rodata` object at +0x50 that shifts sqrtf's doubles and regresses itemHitCheck.
+    Vec pos = vec3_802cac1c;
+
+    pos.x = item->position.x;
+    pos.y = item->position.y;
+    pos.z = item->position.z;
+    pos2 = pos;
+    switch (item->itemId) {
+    case 0x79:
+        effStardustEntry(1, 3, 0x1E, pos.x, 35.0f + pos.y, pos.z, 16.0f, 16.0f);
+        psndSFXOn_3D("SFX_COIN_GET1", &pos2);
+        break;
+    case 0x7A:
+        effStardustEntry(1, 3, 0x1E, pos.x, 35.0f + pos.y, pos.z, 16.0f, 16.0f);
+        psndSFXOn_3D("SFX_EVT_GAME_MONTE_COUNT1", &pos2);
+        break;
+    case 0x7B:
+        psndSFXOn_3D("SFX_HEART_GET1", &pos2);
+        break;
+    case 0x7C:
+        psndSFXOn_3D("SFX_FLOWER_GET1", &pos2);
+        break;
+    case 0x7D:
+        break;
+    }
+}
+
 void itemSetPosition(ItemEntry* item, f32 x, f32 y, f32 z) {
     item->position.x = x;
     item->position.y = y;
@@ -2120,6 +1954,7 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
     f32 dot;
     f32 nx;
     f32 nz;
+    f32 height = 15.0f;
 
     *outX = item->position.x;
     *outZ = item->position.z;
@@ -2132,12 +1967,12 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
         return NULL;
     }
 
-    sincosf(&sin, &cos, angleABf(float_0_8041af9c, float_0_8041af9c, dirX, dirZ));
+    sincosf(&sin, &cos, angleABf(0.0f, 0.0f, dirX, dirZ));
 
-    distance = float_10_8041afb0 + sqrtf(dirX * dirX + dirZ * dirZ);
+    distance = 10.0f + sqrtf(dirX * dirX + dirZ * dirZ);
     hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                         item->position.x, item->position.y + float_15_8041afb4, item->position.z,
-                         sin, float_0_8041af9c, cos);
+                         item->position.x, item->position.y + height, item->position.z,
+                         sin, 0.0f, cos);
     if (hit != NULL) {
         f32 half = 0.5f;
         dot = dirX * hitNX + dirZ * hitNZ;
@@ -2145,17 +1980,17 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
         nz = (dirZ - dot * hitNZ) * half;
         *outX = *outX + nx;
         *outZ = *outZ + nz;
-        dirZ = reviseAngle(float_180_8041afbc + (f32)*angle);
-        dirX = reviseAngle(angleABf(0.0f, 0.0f, float_100_8041afc0 * hitNX,
-                                    float_100_8041afc0 * hitNZ));
+        dirZ = reviseAngle(180.0f + (f32)*angle);
+        dirX = reviseAngle(angleABf(0.0f, 0.0f, 100.0f * hitNX,
+                                    100.0f * hitNZ));
         *angle = (s32)reviseAngle(dirX + reviseAngle(dirX - dirZ));
         return hit;
     }
     else {
-        distance = float_10_8041afb0 + sqrtf(dirX * dirX + dirZ * dirZ);
+        distance = 10.0f + sqrtf(dirX * dirX + dirZ * dirZ);
         hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                             item->position.x, item->position.y + float_15_8041afb4, item->position.z,
-                             sin, float_0_8041af9c, cos);
+                             item->position.x, item->position.y + height, item->position.z,
+                             sin, 0.0f, cos);
         if (hit != NULL) {
             f32 half = 0.5f;
             dot = dirX * hitNX + dirZ * hitNZ;
@@ -2163,9 +1998,9 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
             nz = (dirZ - dot * hitNZ) * half;
             *outX = *outX + nx;
             *outZ = *outZ + nz;
-            dirZ = reviseAngle(float_180_8041afbc + (f32)*angle);
-            dirX = reviseAngle(angleABf(0.0f, 0.0f, float_100_8041afc0 * hitNX,
-                                        float_100_8041afc0 * hitNZ));
+            dirZ = reviseAngle(180.0f + (f32)*angle);
+            dirX = reviseAngle(angleABf(0.0f, 0.0f, 100.0f * hitNX,
+                                        100.0f * hitNZ));
             *angle = (s32)reviseAngle(dirX + reviseAngle(dirX - dirZ));
             return hit;
         }
@@ -2175,6 +2010,74 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
             return NULL;
         }
     }
+}
+
+// Floor ray of a falling item: lands it on the hit's y, or moves it down by vy when nothing is hit.
+HitEntry* itemBoundHitFloor(ItemEntry* item, f32 vy) {
+    f32 hx, hy, hz, dist, hnx, hny, hnz;
+    HitEntry* hit;
+
+    if (vy >= 0.0f) {
+        hit = NULL;
+        item->position.y += vy;
+#ifdef MUST_MATCH
+    } else if (*(volatile u32*)((u8*)item + 0x38) & 0x100000) {
+#else
+    } else if (IT_U32(item, 0x38) & 0x100000) {
+#endif
+        hit = NULL;
+        item->position.y += vy;
+    } else {
+        f32 px = item->position.x;
+        f32 py = 20.0f + item->position.y;
+        f32 pz = item->position.z;
+
+        dist = (f32)(double_20_802cac28 + __fabs(vy));
+        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f,
+                             -1.0f, 0.0f);
+        if (hit != NULL) {
+            item->position.y = hy;
+        } else {
+            hit = NULL;
+            item->position.y += vy;
+        }
+    }
+    return hit;
+}
+
+// Ceiling ray of a rising item: puts it under the hit, 4 units below the ceiling when the raised ray hits.
+HitEntry* itemBoundHitCeiling(ItemEntry* item, f32 vy) {
+    f32 hx, hy, hz, dist, hnx, hny, hnz;
+    HitEntry* hit;
+
+    if (vy <= 0.0f) {
+        hit = NULL;
+    } else {
+        f32 px = item->position.x;
+        f32 py = 20.0f + item->position.y;
+        f32 pz = item->position.z;
+
+        dist = (f32)(double_20_802cac28 + __fabs(vy));
+        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f,
+                             1.0f, 0.0f);
+        if (hit != NULL) {
+            item->position.y = (hy - 20.0f) - 4.0f;
+        } else {
+            f32 px = item->position.x;
+            f32 py = item->position.y;
+            f32 pz = item->position.z;
+
+            dist = (f32)(double_20_802cac28 + __fabs(vy));
+            hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f, 1.0f,
+                                 0.0f);
+            if (hit != NULL) {
+                item->position.y = hy - 20.0f;
+            } else {
+                hit = NULL;
+            }
+        }
+    }
+    return hit;
 }
 
 void itemForceGet(ItemEntry* item) {
@@ -2257,3 +2160,5 @@ __declspec(section ".data") u32 gap_05_803124B4_data[1] = {0};
 __declspec(section ".sdata2") u32 dat_8041af90 = 0x000000FF;
 __declspec(section ".sdata2") u32 dat_8041af94 = 0x000000FF;
 __declspec(section ".sdata2") u32 dat_8041af98 = 0xFFFFFFFF;
+
+const f64 double_20_802cac28 = 20.0;
