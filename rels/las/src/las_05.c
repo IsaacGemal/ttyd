@@ -99,6 +99,15 @@ extern u16 kurokaron_run_cnt;
 extern s32 __float_nan[];
 #define NAN (*(f32*)__float_nan)
 
+// senkaron_ext_main's two sound names. MUST_MATCH: retail builds both addresses once, before the main loop,
+// straight into callee-saved registers. MWCC's frontend hoists an integer round trip out of the loop as an
+// invariant expression; a plain literal is rematerialised at each call instead.
+#ifdef MUST_MATCH
+#define KARON_SFX(name) ((const char*)(u32)(name))
+#else
+#define KARON_SFX(name) (name)
+#endif
+
 static inline s32 __fpclassifyf(f32 x) {
     switch (*(s32*)&x & 0x7F800000) {
         case 0x7F800000:
@@ -646,7 +655,7 @@ void move_check(ExtPose* pose, s32 index) {
     }
     nextPose = pose + 1;
 
-    for (j = index + 1; count != 0; count--, j++, nextPose++) {
+    for (j = index + 1; count != 0; j++, nextPose++, count--) {
         other = &entries[j];
 
         if (other->type == 1 && other->area == entry->area) {
@@ -747,20 +756,10 @@ s32 party_hit_check(f32 x, f32 z, f32* out) {
     return result;
 }
 
-// The orientation comparison, the second loop's entries reload and its counter (shared with start) now
-// match.
-// NONMATCHING (98.69%): two extra `mr` before the main loop: the two sfx string addresses are built in
-// temps and copied into the named locals, where retail builds them straight into r25/r27. The rest is
-// register colouring (collision half in f27 not f29, mario/entries/pose in r28/r26/r29 not r26/r31/r27).
-// Every call and immediate matches.
 static void senkaron_ext_main(void) {
     ExtPose* pose;
     MarioWork* mario;
     KaronPoseEntry* entries;
-    const char* sfxLanding;
-    const char* sfxFly;
-    f32 f31;
-    f32 f30;
     f32 f29;
     f32 f28;
     f32 f27;
@@ -770,9 +769,11 @@ static void senkaron_ext_main(void) {
     s32 i;
     s32 j;
     s32 start;
+    s32 dir;
     s32 end;
     s32 hit;
-    s32 dir;
+    KaronPoseEntry* p;
+    ExtPose* ep;
 
     pose = extGetPosePtr();
     mario = marioGetPtr();
@@ -816,124 +817,84 @@ static void senkaron_ext_main(void) {
     }
 
     pose = extGetPosePtr() + start;
-    for (; start < end; start++, pose++) {
-        MarioWork* m;
-        KaronPoseEntry* entry;
-        KaronPoseEntry* other;
-        KaronPoseEntry* list;
-        ExtPose* nextPose;
-        s32 count;
-        s32 k;
-
-        extGetPosePtr();
-        m = marioGetPtr();
-        list = skwp->entries;
-        count = extGetPoseNum() - (start + 1);
-        entry = &list[start];
-        if (entry->type != 1) {
-            continue;
-        }
-        nextPose = pose + 1;
-        for (k = start + 1; count != 0; k++, nextPose++, count--) {
-            other = &list[k];
-            if (other->type == 1 && other->area == entry->area) {
-                f32 px = __fabsf((*pose->matrix)[0][3] - m->position.x);
-                f32 pz = __fabsf((*pose->matrix)[2][3] - m->position.z);
-                f32 nx = __fabsf((*nextPose->matrix)[0][3] - m->position.x);
-                f32 nz = __fabsf((*nextPose->matrix)[2][3] - m->position.z);
-
-                if (px * px + pz * pz > nx * nx + nz * nz) {
-                    f32 ax = __fabsf((*pose->matrix)[0][3] - (*nextPose->matrix)[0][3]);
-                    f32 az = __fabsf((*pose->matrix)[2][3] - (*nextPose->matrix)[2][3]);
-
-                    if (__fabsf(ax - az) < 20.0f) {
-                        entry->flags |= 2;
-                    }
-                } else {
-                    other->flags |= 2;
-                }
-            }
-        }
+    for (j = start; j < end; j++, pose++) {
+        move_check(pose, j);
     }
 
     skwp->field_C++;
-    pose = extGetPosePtr();
-    sfxLanding = "SFX_STG8_KARON_LANDING1";
-    f31 = 1.5f * (6.0f * f29);
-    sfxFly = "SFX_STG8_KARON_FLY1";
-    f30 = 3.0f * f29;
+    ep = extGetPosePtr();
 
-    for (i = 0; i < 1000; i++) {
-        KaronPoseEntry* p = &entries[i];
+    for (i = 0; i < 1000; i++, ep++) {
+        p = &entries[i];
 
         switch (p->type) {
         case 0:
-            pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+            ep->field_0x10 = (gp->retraceCount + i * i) % 0x18;
             if (p->field_4 > 0) {
                 if (skwp->escape != 0) {
-                    pose->flags &= ~1;
+                    ep->flags &= ~1;
                     p->type = 0x63;
                 } else if (skwp->attackStart != 0) {
                     p->field_4--;
                 }
             } else {
-                (*pose->matrix)[1][3] += p->field_C;
+                (*ep->matrix)[1][3] += p->field_C;
                 p->field_C -= 0.3f;
-                if ((*pose->matrix)[1][3] < 0.0f) {
-                    (*pose->matrix)[1][3] = 0.0f;
+                if ((*ep->matrix)[1][3] < 0.0f) {
+                    (*ep->matrix)[1][3] = 0.0f;
                     p->type = 1;
                     p->field_4 = 0;
                     p->flags &= 0xFFFE;
                     if (i % 8 == 0) {
                         Vec v = {0.0f, 0.0f, 0.0f};
 
-                        v.x = (*pose->matrix)[0][3];
-                        v.y = (*pose->matrix)[1][3];
-                        v.z = (*pose->matrix)[2][3];
-                        psndSFXOn_3D(sfxLanding, &v);
+                        v.x = (*ep->matrix)[0][3];
+                        v.y = (*ep->matrix)[1][3];
+                        v.z = (*ep->matrix)[2][3];
+                        psndSFXOn_3D(KARON_SFX("SFX_STG8_KARON_LANDING1"), &v);
                     }
                 }
             }
             break;
         case 1:
-            pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+            ep->field_0x10 = (gp->retraceCount + i * i) % 0x18;
             if (skwp->escape != 0) {
-                if ((*pose->matrix)[0][3] == 0.0f && (*pose->matrix)[2][3] == 0.0f) {
+                if ((*ep->matrix)[0][3] == 0.0f && (*ep->matrix)[2][3] == 0.0f) {
                     p->field_8 = 1.0f;
                     p->field_10 = 1.0f;
                 } else {
-                    f32 len = (f32)sqrt((*pose->matrix)[0][3] * (*pose->matrix)[0][3] +
-                                        (*pose->matrix)[2][3] * (*pose->matrix)[2][3]);
+                    f32 len = (f32)sqrt((*ep->matrix)[0][3] * (*ep->matrix)[0][3] +
+                                        (*ep->matrix)[2][3] * (*ep->matrix)[2][3]);
 
-                    p->field_8 = 4.0f * (*pose->matrix)[0][3] / len;
-                    p->field_10 = 4.0f * (*pose->matrix)[2][3] / len;
+                    p->field_8 = 4.0f * (*ep->matrix)[0][3] / len;
+                    p->field_10 = 4.0f * (*ep->matrix)[2][3] / len;
                 }
                 if (p->field_8 < 0.0f) {
-                    pose->field_0x4 = 90.0f;
+                    ep->field_0x4 = 90.0f;
                 } else {
-                    pose->field_0x4 = 270.0f;
+                    ep->field_0x4 = 270.0f;
                 }
                 p->type = 0x62;
                 p->field_4 = 300;
                 break;
             }
             hit = 0;
-            f27 = (*pose->matrix)[0][3] - mario->position.x;
+            f27 = (*ep->matrix)[0][3] - mario->position.x;
             f26 = __fabsf(f27);
-            f25 = __fabsf((*pose->matrix)[2][3] - mario->position.z);
+            f25 = __fabsf((*ep->matrix)[2][3] - mario->position.z);
             f28 = 0.0f;
 
-            if ((*pose->matrix)[0][3] >= mario->position.x) {
+            if ((*ep->matrix)[0][3] >= mario->position.x) {
                 if (p->flags & 1) {
-                    pose->field_0x4 = 270.0f;
+                    ep->field_0x4 = 270.0f;
                 } else {
-                    pose->field_0x4 = 90.0f;
+                    ep->field_0x4 = 90.0f;
                 }
             } else {
                 if (p->flags & 1) {
-                    pose->field_0x4 = 90.0f;
+                    ep->field_0x4 = 90.0f;
                 } else {
-                    pose->field_0x4 = 270.0f;
+                    ep->field_0x4 = 270.0f;
                 }
             }
 
@@ -943,12 +904,12 @@ static void senkaron_ext_main(void) {
 
             if (dir != 0 && f25 < 80.0f) {
                 if (dir == 2) {
-                    if ((*pose->matrix)[0][3] > mario->position.x && f26 < f31) {
+                    if ((*ep->matrix)[0][3] > mario->position.x && f26 < 1.5f * (6.0f * f29)) {
                         hit = 1;
                         f28 = 1.0f;
                     }
                 } else {
-                    if ((*pose->matrix)[0][3] < mario->position.x && f26 < f31) {
+                    if ((*ep->matrix)[0][3] < mario->position.x && f26 < 1.5f * (6.0f * f29)) {
                         hit = 1;
                         f28 = -1.0f;
                     }
@@ -960,26 +921,26 @@ static void senkaron_ext_main(void) {
 
                 if (ka >= 0.0f && f26 < 80.0f && f25 < 80.0f) {
                     if (ka >= 0.0f && ka < 90.0f) {
-                        if ((*pose->matrix)[2][3] > mario->position.z &&
-                            (*pose->matrix)[0][3] > mario->position.x) {
+                        if ((*ep->matrix)[2][3] > mario->position.z &&
+                            (*ep->matrix)[0][3] > mario->position.x) {
                             hit = 1;
                             f28 = 1.0f;
                         }
                     } else if (ka >= 90.0f && ka < 180.0f) {
-                        if ((*pose->matrix)[2][3] > mario->position.z &&
-                            (*pose->matrix)[0][3] < mario->position.x) {
+                        if ((*ep->matrix)[2][3] > mario->position.z &&
+                            (*ep->matrix)[0][3] < mario->position.x) {
                             hit = 1;
                             f28 = -1.0f;
                         }
                     } else if (ka >= 180.0f && ka < 270.0f) {
-                        if ((*pose->matrix)[2][3] < mario->position.z &&
-                            (*pose->matrix)[0][3] < mario->position.x) {
+                        if ((*ep->matrix)[2][3] < mario->position.z &&
+                            (*ep->matrix)[0][3] < mario->position.x) {
                             hit = 1;
                             f28 = -1.0f;
                         }
                     } else {
-                        if ((*pose->matrix)[2][3] < mario->position.z &&
-                            (*pose->matrix)[0][3] > mario->position.x) {
+                        if ((*ep->matrix)[2][3] < mario->position.z &&
+                            (*ep->matrix)[0][3] > mario->position.x) {
                             hit = 1;
                             f28 = -1.0f;
                         }
@@ -990,7 +951,7 @@ static void senkaron_ext_main(void) {
             {
                 f32 out = 0.0f;
 
-                if (party_hit_check((*pose->matrix)[0][3], (*pose->matrix)[2][3], &out) != 0) {
+                if (party_hit_check((*ep->matrix)[0][3], (*ep->matrix)[2][3], &out) != 0) {
                     hit = 2;
                     f28 = out;
                 }
@@ -1006,39 +967,38 @@ static void senkaron_ext_main(void) {
                 if (hit == 1) {
                     Vec v = {0.0f, 0.0f, 0.0f};
 
-                    v.x = (*pose->matrix)[0][3];
-                    v.y = (*pose->matrix)[1][3];
-                    v.z = (*pose->matrix)[2][3];
-                    psndSFXOn_3D(sfxFly, &v);
+                    v.x = (*ep->matrix)[0][3];
+                    v.y = (*ep->matrix)[1][3];
+                    v.z = (*ep->matrix)[2][3];
+                    psndSFXOn_3D(KARON_SFX("SFX_STG8_KARON_FLY1"), &v);
                 }
                 break;
             }
 
             if (f25 < 40.0f && vivianGetStatus() != 1 && vivianGetStatus() != 2 && vivianGetStatus() != 3) {
-                if ((*pose->matrix)[0][3] > 0.0f) {
-                    if ((*pose->matrix)[0][3] > mario->position.x + f29 - 10.0f &&
-                        (*pose->matrix)[0][3] < mario->position.x + f30) {
+                if ((*ep->matrix)[0][3] > 0.0f) {
+                    if ((*ep->matrix)[0][3] > mario->position.x + f29 - 10.0f &&
+                        (*ep->matrix)[0][3] < mario->position.x + 3.0f * f29) {
                         skwp->marioPushed |= 1;
                     }
                 } else {
-                    if ((*pose->matrix)[0][3] > mario->position.x - f30 &&
-                        (*pose->matrix)[0][3] < mario->position.x - f29 + 10.0f) {
+                    if ((*ep->matrix)[0][3] > mario->position.x - 3.0f * f29 &&
+                        (*ep->matrix)[0][3] < mario->position.x - f29 + 10.0f) {
                         skwp->marioPushed |= 2;
                     }
                 }
             }
 
             if (p->field_4 == 0) {
-                f32 d;
+                f32 dx = (*ep->matrix)[0][3] - mario->position.x;
+                f32 dz = (*ep->matrix)[2][3] - mario->position.z;
+                f32 d = 10.0f * (f32)sqrt(dx * dx + dz * dz);
 
-                f25 = (*pose->matrix)[0][3] - mario->position.x;
-                f26 = (*pose->matrix)[2][3] - mario->position.z;
-                d = 10.0f * (f32)sqrt(f25 * f25 + f26 * f26);
                 hit = rand() % 50;
                 p->field_8 = randf(-0.5f, 0.5f);
                 p->field_10 = randf(-0.5f, 0.5f);
-                p->field_8 -= f25 / d;
-                p->field_10 -= f26 / d;
+                p->field_8 -= dx / d;
+                p->field_10 -= dz / d;
                 if (hit == 1) {
                     p->flags |= 1;
                 } else {
@@ -1048,43 +1008,43 @@ static void senkaron_ext_main(void) {
             }
             p->field_4--;
             if (p->flags & 2) {
-                (*pose->matrix)[0][3] -= p->field_8;
-                (*pose->matrix)[2][3] -= p->field_10;
+                (*ep->matrix)[0][3] -= p->field_8;
+                (*ep->matrix)[2][3] -= p->field_10;
             } else {
-                (*pose->matrix)[0][3] += p->field_8;
-                (*pose->matrix)[2][3] += p->field_10;
+                (*ep->matrix)[0][3] += p->field_8;
+                (*ep->matrix)[2][3] += p->field_10;
             }
-            if ((*pose->matrix)[0][3] > 570.0f) {
-                (*pose->matrix)[0][3] = 570.0f;
+            if ((*ep->matrix)[0][3] > 570.0f) {
+                (*ep->matrix)[0][3] = 570.0f;
             }
-            if ((*pose->matrix)[0][3] < -570.0f) {
-                (*pose->matrix)[0][3] = -570.0f;
+            if ((*ep->matrix)[0][3] < -570.0f) {
+                (*ep->matrix)[0][3] = -570.0f;
             }
-            if ((*pose->matrix)[2][3] > 270.0f) {
-                (*pose->matrix)[2][3] = 270.0f;
+            if ((*ep->matrix)[2][3] > 270.0f) {
+                (*ep->matrix)[2][3] = 270.0f;
             }
-            if ((*pose->matrix)[2][3] < -270.0f) {
-                (*pose->matrix)[2][3] = -270.0f;
+            if ((*ep->matrix)[2][3] < -270.0f) {
+                (*ep->matrix)[2][3] = -270.0f;
             }
             break;
         case 0x61:
-            pose->flags |= 4;
-            if ((*pose->matrix)[1][3] > -100.0f) {
-                (*pose->matrix)[0][3] += p->field_8;
-                (*pose->matrix)[1][3] += p->field_C;
-                (*pose->matrix)[2][3] += p->field_10;
-                if ((*pose->matrix)[2][3] <= -270.0f) {
-                    (*pose->matrix)[2][3] = -270.0f;
+            ep->flags |= 4;
+            if ((*ep->matrix)[1][3] > -100.0f) {
+                (*ep->matrix)[0][3] += p->field_8;
+                (*ep->matrix)[1][3] += p->field_C;
+                (*ep->matrix)[2][3] += p->field_10;
+                if ((*ep->matrix)[2][3] <= -270.0f) {
+                    (*ep->matrix)[2][3] = -270.0f;
                 }
                 p->field_C -= 0.3f;
-                pose->field_0x10 = 0x18;
+                ep->field_0x10 = 0x18;
             } else {
                 marioGetPtr();
-                (*pose->matrix)[0][3] = randf(-570.0f, 570.0f);
-                (*pose->matrix)[1][3] = 250.0f;
-                (*pose->matrix)[2][3] = randf(-270.0f, 270.0f);
-                pose->field_0x4 = randf(0.0f, 360.0f);
-                pose->flags &= ~4;
+                (*ep->matrix)[0][3] = randf(-570.0f, 570.0f);
+                (*ep->matrix)[1][3] = 250.0f;
+                (*ep->matrix)[2][3] = randf(-270.0f, 270.0f);
+                ep->field_0x4 = randf(0.0f, 360.0f);
+                ep->flags &= ~4;
                 p->type = 0;
                 p->field_4 = rand() % 1000 + 1;
                 p->field_C = 0.0f;
@@ -1092,46 +1052,47 @@ static void senkaron_ext_main(void) {
             break;
         case 0x62:
             if (p->field_4 > 0) {
-                (*pose->matrix)[0][3] += p->field_8;
-                (*pose->matrix)[2][3] += p->field_10;
+                (*ep->matrix)[0][3] += p->field_8;
+                (*ep->matrix)[2][3] += p->field_10;
                 p->field_4--;
                 if (p->field_4 % 10 == 0) {
                     if (((p->field_4 / 5) & 1) == 0) {
                         Vec v = {0.0f, 0.0f, 0.0f};
 
-                        v.x = (*pose->matrix)[0][3];
-                        v.y = (*pose->matrix)[1][3];
-                        v.z = (*pose->matrix)[2][3];
+                        v.x = (*ep->matrix)[0][3];
+                        v.y = (*ep->matrix)[1][3];
+                        v.z = (*ep->matrix)[2][3];
                         psndSFXOn_3D((const char*)0xAFB, &v);
                     } else {
                         Vec v = {0.0f, 0.0f, 0.0f};
 
-                        v.x = (*pose->matrix)[0][3];
-                        v.y = (*pose->matrix)[1][3];
-                        v.z = (*pose->matrix)[2][3];
+                        v.x = (*ep->matrix)[0][3];
+                        v.y = (*ep->matrix)[1][3];
+                        v.z = (*ep->matrix)[2][3];
                         psndSFXOn_3D((const char*)0xAFC, &v);
                     }
                 }
             } else {
-                pose->flags &= ~1;
+                ep->flags &= ~1;
                 p->type = 0x63;
             }
-            pose->field_0x10 = (gp->retraceCount + i * i) % 0x18;
+            ep->field_0x10 = (gp->retraceCount + i * i) % 0x18;
             break;
         case 0x63:
             break;
         }
-        pose++;
     }
 
     if (((skwp->marioPushed & 1) && mario->position.x > 0.0f) ||
         ((skwp->marioPushed & 2) && mario->position.x < 0.0f)) {
         f32 speed;
+        f32 dx;
+        f32 dz;
 
-        f26 = -mario->position.z;
-        f25 = -mario->position.x;
+        dz = -mario->position.z;
+        dx = -mario->position.x;
         {
-            f32 len = sqrtf(f25 * f25 + f26 * f26);
+            f32 len = sqrtf(dx * dx + dz * dz);
 
             switch (mario->currMotionId) {
             case MARIO_MOTION_HAMMER:
@@ -1151,8 +1112,8 @@ static void senkaron_ext_main(void) {
                 speed = randf(1.7f, 2.2f);
                 break;
             }
-            mario->position.x += speed * (f25 / len);
-            mario->position.z += speed * (f26 / len);
+            mario->position.x += speed * (dx / len);
+            mario->position.z += speed * (dz / len);
         }
     }
 }
