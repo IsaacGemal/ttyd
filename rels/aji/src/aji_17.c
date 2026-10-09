@@ -379,27 +379,32 @@ EVT_BEGIN(evt_last)
     RETURN
 EVT_END()
 
-// Builds the texture's TEV colour; the temporary keeps the zero colour in the
+// Builds and sets the texture's TEV colour; the temporary keeps the zero colour in the
 // original's stack slot instead of the outgoing argument slot.
-static inline GXColor noiseTevColor(u8 alpha) {
+static inline void noiseTevColor(u8 alpha) {
     GXColor c = zero_aji_00014dfc;
     c.a = alpha;
-    return c;
+    GXSetTevColor(GX_TEVREG0, c);
 }
 
-// Lifting q,r,a,b to function scope and splitting `num = rand()%100; num += 100;` got param/data
-// onto the target's registers (98.99 -> 99.11); declaration-order searches (tools/perm_decls.py)
-// and source-shape variants did not close the rest.
-// NONMATCHING (99.11%): q/a and cam are swapped callee-saved registers (ours q/a r30 / cam r31,
-// target q/a r31 / cam r30) and so are b and num (ours b r27 / num r24, target b r24 / num r27);
-// the first-loop schedule slots follow from q's register. param/data/i/r/start/len match.
+// The pixel loop is tou2/tou_03's screen_tev loop (the same retail code): `base = i / 4` and
+// `col = i % 4` assigned in the loop and shifted in the sum, with opt_propagation off, so the
+// frontend hoists only the divisions and the shifts stay loop-body code until the backend hoists
+// them. The sparkle loop does the same per texel, which makes both of its shifts backend
+// temporaries: the base shift, numbered after cam's web, takes r31 (shared with i/4) before cam
+// claims r30, as in the original.
+// What differs: one operand order. The original adds `row + base` with the base shift computed
+// first; MWCC evaluates a sum left to right, so `base * 256 + row` (written here) gets the
+// registers right but `add r4,r31,r4`, and `row + base * 256` (operands right) numbers the shift
+// after the row temporaries and loses the r31/r30 order. A single index expression is
+// reassociated by the frontend (base + pct first).
+// NONMATCHING (99.97%): one add's operand order in the sparkle loop (see above).
+#pragma opt_propagation off // needed: with propagation on the frontend copy-propagates base/col and hoists their shifts
 void noiseDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     s32 i, j, k;
     u8 val;
-    GXColor color;
     Mtx mtx;
-    s32 q, r, a, b;
     CameraEntry* cam;
     s32 num, len, start;
     u8* data;
@@ -409,30 +414,29 @@ void noiseDisp(CameraId cameraId, void* param) {
     entry = smartAlloc(GXGetTexBufferSize(0x40, 0x40, GX_TF_I8, GX_FALSE, 0), 3);
     data = (u8*)entry->address;
     for (i = 0; i < 0x40; i++) {
-        q = i / 4;
-        r = i % 4;
         for (j = 0; j < 0x40; j++) {
-            s32 off = q * 256 + (j / 8) * 32;
-            off += j % 8;
-            off += r * 8;
-            data[off] = (i & 1) ? 0xFF : 0;
+            s32 base, row, col, mask, pct, off;
+            row = j / 8;
+            pct = j % 8;
+            mask = (i & 1) ? 0xFF : 0;
+            base = i / 4;
+            col = i % 4;
+            off = row * 32 + base * 256;
+            off += pct;
+            off += col * 8;
+            data[off] = mask;
         }
-        num = rand() % 100;
-        num += 100;
-        {
-            a = (i / 4) * 256;
-            b = (i % 4) * 8;
-            for (j = 0; j < num; j++) {
-                len = rand() % 4 + 2;
-                start = rand() % (0x41 - len);
-                val = rand() % 255;
-                for (k = start; k < start + len; k++) {
-                    s32 off = (k / 8) * 32;
-                    off += a;
-                    off += k % 8;
-                    off += b;
-                    data[off] = val;
-                }
+        num = rand() % 100 + 100;
+        for (j = 0; j < num; j++) {
+            len = rand() % 4 + 2;
+            start = rand() % (0x41 - len);
+            val = rand() % 255;
+            for (k = start; k < start + len; k++) {
+                s32 off, base, col;
+                base = i / 4;
+                col = i % 4;
+                off = base * 256 + (k / 8) * 32;
+                data[off + k % 8 + col * 8] = val;
             }
         }
     }
@@ -451,8 +455,7 @@ void noiseDisp(CameraId cameraId, void* param) {
     GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
     GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
     GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
-    color = noiseTevColor((u8)param);
-    GXSetTevColor(GX_TEVREG0, color);
+    noiseTevColor((u8)param);
     GXLoadPosMtxImm(cam->view, 0);
     GXSetCurrentMtx(0);
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
@@ -475,6 +478,7 @@ void noiseDisp(CameraId cameraId, void* param) {
     GXPosition3s16(-gp->fbWidth, -gp->efbHeight / 2, 0);
     GXTexCoord2s16(0, 0);
 }
+#pragma opt_propagation reset
 
 EVT_BEGIN(evt_last2)
     CALL(evt_mario_key_onoff, 0)
