@@ -459,24 +459,6 @@ extern const f32 float_40_8041a51c;
 extern const f32 float_25_8041a520;
 extern const f32 float_2_8041a524;
 extern const f32 float_0p3_8041a528;
-extern const f32 float_1_8041a52c;
-extern const f32 float_400_8041a530;
-extern const f32 float_0p5_8041a534;
-extern const f32 float_10_8041a538;
-extern const f32 float_240_8041a53c;
-extern const f32 float_36_8041a540;
-extern const f32 float_62_8041a544;
-extern const f32 float_80_8041a548;
-extern const f32 float_60_8041a54c;
-extern const f32 float_28_8041a550;
-extern const f32 float_6_8041a554;
-extern const f32 float_8_8041a558;
-extern const f32 float_50_8041a55c;
-extern const f32 float_52_8041a560;
-extern const f32 float_31_8041a564;
-extern const f32 float_180_8041a568;
-extern const f32 float_5_8041a56c;
-extern const f32 float_0p6_8041a570;
 #pragma pool_data on // the original addresses its .rodata through one base register
 #ifdef MUST_MATCH
 // MUST_MATCH: retail passes these colours by value (MWCC copies the GXColor to a stack temp and passes
@@ -532,7 +514,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			PSMTXIdentity(mtx);
 			rotY = *(f32*)((u8*)entry + 0x14);
 			if (rotY >= 90.0f && rotY <= 270.0f) {
-				PSMTXScaleApply(mtx, mtx, float_1_8041a52c, float_1_8041a52c, -1.0f);
+				PSMTXScaleApply(mtx, mtx, 1.0f, 1.0f, -1.0f);
 			}
 			PSMTXTransApply(mtx, mtx,
 				x + (f32)*(s16*)((u8*)entry + 0x6),
@@ -636,7 +618,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 			if (entry->glyph == 0xFFF8) {
 				GXColor color = FontGetDrawColor();
 				Vec pos;
-				pos.x = float_28_8041a550 + (x + (f32)*(s16*)((u8*)entry + 0x6));
+				pos.x = 20.f + (x + (f32)*(s16*)((u8*)entry + 0x6));
 				pos.y = (f32)*(s16*)((u8*)entry + 0xA) + (((f32)*(s16*)((u8*)entry + 0x8) + (y + (f32)data->field_0x28)) - float_40_8041a51c);
 				pos.z = float_0_8041a514;
 				// MUST_MATCH: retail converts iconId as u16 (clrlwi, no extsh); cast the callee at the call site.
@@ -656,7 +638,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				break;
 			}
 
-			if ((f32)(*(s16*)((u8*)entry + 0x8) + data->field_0x28) >= 32.0f * *(f32*)((u8*)entry + 0x10) - float_10_8041a538) {
+			if ((f32)(*(s16*)((u8*)entry + 0x8) + data->field_0x28) >= 32.0f * *(f32*)((u8*)entry + 0x10) - 10.f) {
 				break;
 			}
 
@@ -693,7 +675,7 @@ BOOL msgDisp(smartEntry* smart, u8 alpha, f32 x, f32 y) {
 				PSMTXScaleApply(mtx, mtx, *(f32*)((u8*)entry + 0x10), *(f32*)((u8*)entry + 0x10), *(f32*)((u8*)entry + 0x10));
 				PSMTXTransApply(mtx, mtx, fx, fy, float_0_8041a514);
 				FontDrawCodeMtx(mtx, entry->glyph);
-				*(f32*)((u8*)entry + 0x14) = float_0p5_8041a534 * ((*(f32*)((u8*)entry + 0x14)) - 1.0f) + 1.0f;
+				*(f32*)((u8*)entry + 0x14) = 0.5f * ((*(f32*)((u8*)entry + 0x14)) - 1.0f) + 1.0f;
 			}
 			else if (entry->field_0x0 & 2) {
 				f32 fx = px + (f32)(irand(10000) % 3);
@@ -776,7 +758,7 @@ void msgDispKeyWait_render(s32 wXluStage) {
 // a 32-bit signed local: its liveness pins the allocator's `total`/`skip`/`off` colouring (u16,
 // u32 or inlining the cast costs ~0.3%). The target's conversion uses the unsigned magic because
 // its optimizer had the value's range; ours emits the signed one, numerically identical here.
-// NONMATCHING (96.94%): register-allocation residue around the promoted `var[0]`.
+// NONMATCHING (97.03%): register-allocation residue around the promoted `var[0]`.
 void msgAnalize(smartEntry* smart, const char* msg) {
 	char tagName[128];
 	char tagArg[128];
@@ -846,7 +828,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	window = data->window;
 	flags = 0;
 	entry = &data->entries[data->entryId];
-	maxScale = 0.0f;
+	maxScale = float_0_8041a514;
 	scale = 1.0f;
 	if (window->type < 0) {
 		window->type = 0;
@@ -898,7 +880,7 @@ loop:
 		s32 exinc = (s32)((f32)(width + 4) * scale);
 		entry->glyph = glyph;
 		*(s16*)(entry->field_0x6) = ex;
-		*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(float_10_8041a538 * scale));
+		*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.f * scale));
 		*(f32*)(entry->field_0x10) = scale;
 		entry->field_0x0 = flags;
 		if (*(const u16*)msg == 0x8145) {
@@ -938,7 +920,7 @@ loop:
 		entry->glyph = 0xFFFB;
 		ex = 0;
 		entry->field_0xC = r24;
-		if (maxScale == 0.0f) {
+		if (maxScale == float_0_8041a514) {
 			maxScale = 1.0f;
 		}
 		{
@@ -951,7 +933,7 @@ loop:
 		msg++;
 		entry++;
 		data->entryId++;
-		maxScale = 0.0f;
+		maxScale = float_0_8041a514;
 		if (data->field_0x4 & 0x20) {
 			flags = (flags & ~0xFF00) | (0x100 << (s8)data->field_0x7A40);
 			data->field_0x7A40++;
@@ -1016,7 +998,7 @@ loop:
 			if (var[0] != 0) {
 				entry->glyph = 0xFFFD;
 				*(s16*)(entry->field_0x6 + 2) = (s16)(var[0] - 3);
-				ey = (s16)(ey - 3);
+				ey -= 3;
 				entry->field_0xC = r24;
 				r24 += 50;
 				entry++;
@@ -1243,7 +1225,7 @@ loop:
 				w = (u16)(s32)((f32)(width + 4) * scale);
 				entry->glyph = glyph;
 				*(s16*)(entry->field_0x6) = ex;
-				*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(float_10_8041a538 * scale));
+				*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.f * scale));
 				*(f32*)(entry->field_0x10) = scale;
 				entry->field_0x0 = flags;
 				entry->field_0x0 |= 8;
@@ -1271,7 +1253,7 @@ loop:
 			*(s16*)(entry->field_0x6) = (s16)animA;
 			*(s16*)(entry->field_0x6 + 2) = (s16)((s32)var[2] - animB);
 			*(f32*)(entry->field_0x10) = animF;
-			*(f32*)(entry->field_0x10 + 4) = (animC == 0) ? float_0_8041a514 : float_180_8041a568;
+			*(f32*)(entry->field_0x10 + 4) = (animC == 0) ? float_0_8041a514 : 180.f;
 			r24 += var54;
 			entry++;
 			data->entryId++;
@@ -1335,7 +1317,7 @@ loop:
 			mid = (s32)((f32)total16 - 0.55f * base);
 			{
 				f32 t = (f32)((s16)r25 + (s32)ex) - base;
-				r25 = (s32)((t - (f32)(u16)mid) * float_0p5_8041a534);
+				r25 = (s32)((t - (f32)(u16)mid) * 0.5f);
 			}
 
 			rp = tagName + skip;
@@ -1385,7 +1367,7 @@ defaultchar:
 	s32 exinc = (s32)((f32)(width + 2) * scale);
 	entry->glyph = glyph;
 	*(s16*)(entry->field_0x6) = ex;
-	*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(float_10_8041a538 * scale));
+	*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.f * scale));
 	*(f32*)(entry->field_0x10) = scale;
 	entry->field_0x0 = flags;
 	if ((s8)*msg != ' ') {
@@ -1844,7 +1826,7 @@ void msgWindow_Main(WindowEntry* window) {
 		if (data->field_0x28 < value) {
 			break;
 		}
-		data->field_0x28 = (s32)((f32)((MessageData*)data)->field_0x28 - float_0p6_8041a570 * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
+		data->field_0x28 = (s32)((f32)((MessageData*)data)->field_0x28 - 0.6f * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
 		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
 		if (data->field_0x28 > value) {
 			break;
@@ -1863,7 +1845,7 @@ void msgWindow_Main(WindowEntry* window) {
 		if (data->field_0x28 > value) {
 			break;
 		}
-		data->field_0x28 = (s32)((f32)((MessageData*)data)->field_0x28 + float_0p6_8041a570 * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
+		data->field_0x28 = (s32)((f32)((MessageData*)data)->field_0x28 + 0.6f * (f32)OSTicksToMilliseconds(gp->renderTime - *(OSTime*)(window->field_0x1C + 4)));
 		*(OSTime*)(window->field_0x1C + 4) = gp->renderTime;
 		if (data->field_0x28 < value) {
 			break;
@@ -1929,7 +1911,7 @@ void msgWindow_Main(WindowEntry* window) {
 	}
 	}
 
-	dispEntry(8, float_400_8041a530 - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
+	dispEntry(8, 400.f - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
 }
 
 void msgWindow_Clear_Main(WindowEntry* window) {
@@ -1995,11 +1977,10 @@ void msgWindow_Clear_Main(WindowEntry* window) {
 		}
 		break;
 	}
-	dispEntry(8, float_400_8041a530 - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
+	dispEntry(8, 400.f - (f32)*(s16*)&window->field_0x4, 0, msgWindow_Disp, window);
 }
 
 
-// NONMATCHING (99.31%): FPR colouring of the last two intplGetValue results (width in f2 vs f0) in the two fly-in cases.
 void msgWindow_Disp(CameraId camId, void* param) {
 	WindowEntry* window = param;
 	CameraEntry* camera = camGetCurPtr();
@@ -2013,88 +1994,89 @@ void msgWindow_Disp(CameraId camId, void* param) {
 	case 1:
 	case 6:
 	case 8:
-	case 9:
+	case 9: {
+		f32 half = 0.5f;
+
 		if (window->field_0x2C != 0) {
-		if (window->field_0x2C & 0x10) {
-			pos = window->anchor;
-		} else {
-			getScreenPoint(&window->anchor, &pos);
-		}
-		switch (window->type) {
-		case 0:
-		case 6:
-		case 8:
-		case 9: {
 			f32 px, py, h, w;
 
-			px = intplGetValue(0, window->alpha, 0xFF, pos.x, window->x + window->height * float_0p5_8041a534);
-			py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width * float_0p5_8041a534);
-			h = intplGetValue(0, window->alpha, 0xFF, float_10_8041a538, window->height);
-			w = intplGetValue(0, window->alpha, 0xFF, float_10_8041a538, window->width);
-			windowDispGX_Message(window->type, window->field_0x2C, (u8)window->alpha, px - h * float_0p5_8041a534, py + w * float_0p5_8041a534, h, w, pos.x, pos.y);
-			if (window->alpha == 0xFF) {
-				GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540)), camera->scissor[2], 100);
-				drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
-			}
-			break;
-		}
-		case 1: {
-			f32 px, py, h, w;
-			s32 top;
-
-			window->x = pos.x - window->height * float_0p5_8041a534;
-			if (window->field_0x2C & 8) {
-				window->y = pos.y - float_80_8041a548;
+			if (window->field_0x2C & 0x10) {
+				pos = window->anchor;
 			} else {
-				window->y = float_60_8041a54c + pos.y;
+				getScreenPoint(&window->anchor, &pos);
 			}
-			px = intplGetValue(0, window->alpha, 0xFF, pos.x, window->x + window->height * float_0p5_8041a534);
-			py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width * float_0p5_8041a534);
-			h = intplGetValue(0, window->alpha, 0xFF, float_10_8041a538, window->height);
-			w = intplGetValue(0, window->alpha, 0xFF, float_10_8041a538, window->width);
-			windowDispGX_Message(window->type, window->field_0x2C, (u8)window->alpha, px - h * float_0p5_8041a534, py + w * float_0p5_8041a534, h, w, pos.x, pos.y);
-			if (window->alpha == 0xFF) {
-				top = 0xF0 - ((s32)window->y - 10);
-				if (top < 0) {
-					top = 0;
+			switch (window->type) {
+			case 0:
+			case 6:
+			case 8:
+			case 9:
+				px = intplGetValue(0, window->alpha, 0xFF, pos.x, window->x + window->height * half);
+				py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width * half);
+				h = intplGetValue(0, window->alpha, 0xFF, 10.f, window->height);
+				w = intplGetValue(0, window->alpha, 0xFF, 10.f, window->width);
+				windowDispGX_Message(window->type, window->field_0x2C, (u8)window->alpha, px - h * half, py + w * half, h, w, pos.x, pos.y);
+				if (window->alpha == 0xFF) {
+					GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f)), camera->scissor[2], 100);
+					drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 				}
-				if (top > 0x1E0) {
-					top = 0x1E0;
+				break;
+			case 1: {
+				s32 top;
+
+				window->x = pos.x - window->height * half;
+				if (window->field_0x2C & 8) {
+					window->y = pos.y - 80.f;
+				} else {
+					window->y = 60.f + pos.y;
 				}
-				GXSetScissor(camera->scissor[0], top, camera->scissor[2], 0x7E);
-				msgDisp(window->userdata, (u8)window->alpha, float_28_8041a550 + window->x, window->y - float_6_8041a554);
+				px = intplGetValue(0, window->alpha, 0xFF, pos.x, window->x + window->height * half);
+				py = intplGetValue(0, window->alpha, 0xFF, pos.y, window->y - window->width * half);
+				h = intplGetValue(0, window->alpha, 0xFF, 10.f, window->height);
+				w = intplGetValue(0, window->alpha, 0xFF, 10.f, window->width);
+				windowDispGX_Message(window->type, window->field_0x2C, (u8)window->alpha, px - h * half, py + w * half, h, w, pos.x, pos.y);
+				if (window->alpha == 0xFF) {
+					top = 0xF0 - ((s32)window->y - 10);
+					if (top < 0) {
+						top = 0;
+					}
+					if (top > 0x1E0) {
+						top = 0x1E0;
+					}
+					GXSetScissor(camera->scissor[0], top, camera->scissor[2], 0x7E);
+					msgDisp(window->userdata, (u8)window->alpha, 20.f + window->x, window->y - 7.0f);
+				}
+				break;
 			}
-			break;
-		}
-		}
+			}
 		} else {
 			windowDispGX_Message(window->type, 0, (u8)window->alpha, window->x, window->y, window->height, window->width, float_0_8041a514, float_0_8041a514);
-			GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540) - float_8_8041a558), camera->scissor[2], 0x7E);
-			drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
+			GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - 8.0f), camera->scissor[2], 0x7E);
+			drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 		}
 		break;
+	}
 	case 2:
 	case 4:
 	case 10:
 		windowDispGX_Kanban(window->type, (u8)window->alpha, window->x, window->y, window->height, window->width);
-		GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540) - float_2_8041a524), camera->scissor[2], 0x68);
-		drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
+		GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - float_2_8041a524), camera->scissor[2], 0x68);
+		drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 		break;
 	case 7:
 		windowDispGX_Kanban(window->type, (u8)window->alpha, window->x, window->y, window->height, window->width);
-		GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540) - float_8_8041a558), camera->scissor[2], 0x7E);
-		drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
+		GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - 8.0f), camera->scissor[2], 0x7E);
+		drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 		break;
 	case 3:
 		windowDispGX_System(window->type, (u8)window->alpha, window->x, window->y, window->height, window->width);
-		drawn = (u32)(window->width - float_50_8041a55c);
-		GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540) - float_8_8041a558), camera->scissor[2], drawn);
-		drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
+		drawn = (u32)(window->width - 50.f);
+		GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - 8.0f), camera->scissor[2], drawn);
+		drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 		break;
 	case 11:
-		drawn = (u32)(window->width - float_50_8041a55c);
-		GXSetScissor(camera->scissor[0], (u32)(float_240_8041a53c - (window->y - float_36_8041a540) - float_8_8041a558), camera->scissor[2], drawn);
-		drawn = msgDisp(window->userdata, (u8)window->alpha, float_62_8041a544 + window->x, window->y - float_36_8041a540);
+		drawn = (u32)(window->width - 50.f);
+		GXSetScissor(camera->scissor[0], (u32)(240.f - (window->y - 36.0f) - 8.0f), camera->scissor[2], drawn);
+		drawn = msgDisp(window->userdata, (u8)window->alpha, 62.0f + window->x, window->y - 36.0f);
 		break;
 	}
 
@@ -2104,7 +2086,7 @@ void msgWindow_Disp(CameraId camId, void* param) {
 			active = 1;
 		}
 		animPoseMain(msgw->poseId);
-		animPoseDraw(msgw->poseId, window->x + window->height - float_52_8041a560, float_31_8041a564 + (window->y - window->width), float_0_8041a514, float_180_8041a568, float_5_8041a56c, 2);
+		animPoseDraw(msgw->poseId, window->x + window->height - 52.0f, 31.0f + (window->y - window->width), float_0_8041a514, 180.f, 5.0f, 2);
 	}
 }
 
@@ -2184,7 +2166,7 @@ void selectWindow_Main(WindowEntry* window) {
 	case 4:
 		return;
 	}
-	dispEntry(8, float_400_8041a530 - (f32)*(s16*)&window->field_0x4, 0, selectWindow_Disp, window);
+	dispEntry(8, 400.f - (f32)*(s16*)&window->field_0x4, 0, selectWindow_Disp, window);
 }
 
 // Builds the waku colour in one expression so MWCC lands it in the same stack slot as the
@@ -2221,7 +2203,7 @@ void selectWindow_Disp(CameraId camId, void* param) {
 	pos.y = data->field_0x7A48;
 	pos.z = float_0_8041a514;
 
-	iconDispGxAlpha(&pos, 0x14, 0x1F0, (u8)window->alpha, float_1_8041a52c);
+	iconDispGxAlpha(&pos, 0x14, 0x1F0, (u8)window->alpha, 1.0f);
 }
 
 // .sdata2 colour words read by name in the message renderer.
@@ -2244,22 +2226,4 @@ const f32 float_40_8041a51c = 40.f;
 const f32 float_25_8041a520 = 25.0f;
 const f32 float_2_8041a524 = 2.0f;
 const f32 float_0p3_8041a528 = 0.3f;
-const f32 float_1_8041a52c = 1.0f;
-const f32 float_400_8041a530 = 400.f;
-const f32 float_0p5_8041a534 = 0.5f;
-const f32 float_10_8041a538 = 10.f;
-const f32 float_240_8041a53c = 240.f;
-const f32 float_36_8041a540 = 36.0f;
-const f32 float_62_8041a544 = 62.0f;
-const f32 float_80_8041a548 = 80.f;
-const f32 float_60_8041a54c = 60.f;
-const f32 float_28_8041a550 = 20.f;
-const f32 float_6_8041a554 = 7.0f;
-const f32 float_8_8041a558 = 8.0f;
-const f32 float_50_8041a55c = 50.f;
-const f32 float_52_8041a560 = 52.0f;
-const f32 float_31_8041a564 = 31.0f;
-const f32 float_180_8041a568 = 180.f;
-const f32 float_5_8041a56c = 5.0f;
-const f32 float_0p6_8041a570 = 0.6f;
 
