@@ -43,6 +43,80 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any('x *= b' in candidate for _, candidate in candidates))
         self.assertTrue(any('expand +=' == name for name, _ in self.candidates('int sample(int a) { a += 1; return a; }')))
 
+    def test_user_func_definition(self):
+        source = 'static USER_FUNC(sample);\nstatic USER_FUNC(sample) {\n    s32 v;\n    v = event->args[0] + 1;\n    return v;\n}'
+        tokens = mwsearch.tokenize(source)
+        function = mwsearch.find_function(tokens, "sample")
+        self.assertEqual(tokens[function.opening].text, "{")
+        self.assertTrue(self.candidates(source))
+
+    def test_declaration_order(self):
+        source = 'int sample(int a) {\n    int x;\n    float y = 1.0f;\n    int z = a;\n    x = a + z;\n    return x + (int)y;\n}'
+        candidates = self.candidates(source)
+        swapped = [candidate for name, candidate in candidates if name == 'swap declarations x/y']
+        self.assertTrue(swapped)
+        self.assertLess(swapped[0].index('float y'), swapped[0].index('int x;'))
+        self.assertTrue(any(name == 'declaration z to front' for name, _ in candidates))
+
+    def test_declaration_order_respects_dependencies_and_directives(self):
+        source = 'int sample(int a) {\n    int x = a;\n    int y = x;\n#ifdef M\n    int z;\n#endif\n    return y;\n}'
+        names = [name for name, _ in self.candidates(source)]
+        self.assertFalse(any(name.startswith('swap declarations') or ' to front' in name or ' to back' in name for name in names))
+
+    def test_event_args_pointer(self):
+        source = ('s32 sample(EventEntry* event, BOOL isFirstCall) {\n    s32 v;\n    v = evtGetValue(event, event->args[0]);\n'
+                  '    evtSetValue(event, event->args[1], v);\n    return 2;\n}')
+        candidates = dict(self.candidates(source))
+        stepped = candidates['event->args as *args++']
+        self.assertIn('s32* args = event->args;', stepped)
+        self.assertIn('evtGetValue(event, *args++)', stepped)
+        self.assertIn('evtSetValue(event, *args++, v)', stepped)
+        self.assertIn('event->args[1]', source)
+        self.assertIn('args[1]', candidates['event->args through local args'])
+
+    def test_nested_call_arguments_first(self):
+        source = 'void sample(int a) {\n    jump(a, (float)rand() / 2.0f, (float)rand() / 4.0f);\n}'
+        candidates = dict(self.candidates(source))
+        ordered = candidates['call arguments of jump first (in order)']
+        self.assertLess(ordered.index('mwsearch_temp_0 = (float)rand() / 2.0f'), ordered.index('mwsearch_temp_1 = (float)rand()'))
+        self.assertIn('jump(a, mwsearch_temp_0, mwsearch_temp_1);', ordered)
+        reversed_ = candidates['call arguments of jump first (reversed)']
+        self.assertLess(reversed_.index('mwsearch_temp_1 = '), reversed_.index('mwsearch_temp_0 = '))
+
+    def test_compound_member_and_dereference(self):
+        source = 'void sample(Work* w, short* m) {\n    w->count = w->count + 1;\n    *m &= 0xF;\n}'
+        candidates = dict(self.candidates(source))
+        self.assertIn('w->count += 1', candidates['compound w->count'])
+        self.assertIn('*m = *m & (0xF)', candidates['expand &= on *m'])
+
+    def test_reorder_across_memory(self):
+        source = 'void sample(short* m, int e, int d) {\n    *m &= 0xF;\n    e += d * 4;\n    *m |= e;\n}'
+        candidates = [candidate for name, candidate in self.candidates(source) if name == 'reorder across memory']
+        self.assertTrue(any(candidate.index('e += d * 4') < candidate.index('*m &= 0xF') for candidate in candidates))
+        blocked = 'void sample(short* m, int e) {\n    *m &= 0xF;\n    e = *m;\n}'
+        self.assertFalse(any(name == 'reorder across memory' for name, _ in self.candidates(blocked)))
+
+    def test_forward_substitution(self):
+        source = 'void sample(float w, float h) {\n    float left;\n    left = -w / 2.0f;\n    quad(left, h);\n    quad(left, -h);\n}'
+        candidates = dict(self.candidates(source))
+        substituted = candidates['substitute left at 2 uses']
+        self.assertEqual(substituted.count('((float)(-w / 2.0f))'), 2)
+        self.assertNotIn('left', substituted)
+
+    def test_forward_substitution_through_constant_macro(self):
+        source = ('extern const float float_4_8041;\n#define CONSTF(x) (x)\nvoid sample(float w) {\n    float top;\n'
+                  '    top = CONSTF(float_4_8041) * w;\n    quad(top, 1.0f);\n    quad(top, 2.0f);\n}')
+        self.assertTrue(any(name == 'substitute top at 2 uses' for name, _ in self.candidates(source)))
+        unsafe = 'void sample(float w) {\n    float top;\n    top = get(w);\n    quad(top, 1.0f);\n    quad(top, 2.0f);\n}'
+        self.assertFalse(any(name.startswith('substitute top') for name, _ in self.candidates(unsafe)))
+
+    def test_loop_invariant_moves(self):
+        source = 'void sample(int n, int a) {\n    int i;\n    int k;\n    k = a * 2;\n    for (i = 0; i < n; i++) {\n        use(k, i);\n    }\n}'
+        moved = dict(self.candidates(source))['move k = ... into loop']
+        self.assertLess(moved.index('for (i = 0'), moved.index('k = a * 2'))
+        back = moved.replace('\n    k = a * 2;', '', 0)
+        self.assertTrue(any(name == 'move k = ... out of loop' for name, _ in self.candidates(moved)))
+
     def test_no_swap_of_calls(self):
         candidates = self.candidates('int sample(int a) { return call(a) + call(2); }')
         self.assertFalse(any(name.startswith('swap') for name, _ in candidates))
