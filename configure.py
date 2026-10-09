@@ -1785,7 +1785,7 @@ config.libs = [
             Object(Matching, "las.c"),
             Object(Matching, "las_03.c"),
             Object(Matching, "las_04.c"),
-            Object(NonMatching, "las_05.c"),
+            Object(Matching, "las_05.c"),
             Object(Matching, "las_14.c"),
             Object(Matching, "las_29.c"),
             Object(Matching, "unit/unit_boss_black_peach.c"),
