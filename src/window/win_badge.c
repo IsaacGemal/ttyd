@@ -19,6 +19,12 @@
 // Indexed float-field read: the plain WW_F32 macro groups the constant first and MWCC folds 0x3F4
 // into the lfs displacement; retail emits `slwi; addi r0, idx*4, 0x3F4; lfsx f, work, r0`.
 #define WW_F32X(w, idx, off) (((f32*)((u8*)(w) + ((idx) << 2) + (off)))[0])
+// win texture ids of the BP pips
+typedef enum {
+    WIN_TEX_BP_ON = 0x1C,
+    WIN_TEX_BP_OFF = 0x1D,
+} WinBadgeTex;
+
 // .sdata2: the colours the two draw functions use
 const GXColor dat_8041d348 = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_8041d34c = { 0x00, 0x00, 0x00, 0xFF };
@@ -28,8 +34,6 @@ const GXColor dat_8041d358 = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_8041d35c = { 0xFF, 0xFF, 0xFF, 0xFF };
 const GXColor dat_8041d360 = { 0x7F, 0x7F, 0x7F, 0xFF };
 const GXColor dat_8041d364 = { 0x00, 0x00, 0x00, 0xFF };
-const GXColor dat_8041d368 = { 0xFF, 0xFF, 0xFF, 0xFF };
-const GXColor dat_8041d36c = { 0x00, 0x00, 0x00, 0xFF };
 
 extern ItemData itemDataTable[];
 
@@ -371,9 +375,8 @@ static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
 #define WIN_BADGE_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
 
 // Draws the badge screen: the "all"/"equipped" tabs, the BP panel with one pip per BP, then the list.
-// NONMATCHING (99.91%): the entry copies `mr r23,r5` / `mr r29,r4` come out in the other order (as in
-// winMarioDisp), and the first loop's `ofs` is coloured r25 where the original has r26.
-void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
+void winBadgeDisp(CameraId camId, void* param, s32 idx) {
+    WindowWork* work = param;
     GXColor white = dat_8041d348;
     GXColor color = dat_8041d34c;
     PouchData* pouch = pouchGetPtr();
@@ -382,7 +385,6 @@ void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
     f32 tabTop;
     f32 x = WW_F32((u8*)work + idx * 0x14, 0xC4);
     s32 i;
-    s32 ofs;
     f32 y = WW_F32((u8*)work + idx * 0x14, 0xC8);
     (void)camId;
 
@@ -393,17 +395,17 @@ void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
     tabX = (x - 190.0f) - 4.0f;
     tabY = 4.0f + tabTop;
 
-    for (i = 0, ofs = 0; i < 2; i++, ofs += 0x28) {
+    for (i = 0; i < 2; i++) {
         if (i == WW_S32(work, 0x3E0)) {
             winTexInit(WIN_BADGE_TEX(work));
-            winTexSet(0xB4, (Vec){x - 190.0f, 20.0f + (tabTop - (f32)ofs), 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
+            winTexSet(0xB4, (Vec){x - 190.0f, 20.0f + (tabTop - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
                       dat_8041d350);
             winTexInit_x2(WIN_BADGE_TEX(work));
-            winTexSet_x2(i + 0x1A, 0xB4, (Vec){tabX, 20.0f + (tabY - (f32)ofs), 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
+            winTexSet_x2(i + 0x1A, 0xB4, (Vec){tabX, 20.0f + (tabY - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
                          white);
         } else {
             winTexInit_x2(WIN_BADGE_TEX(work));
-            winTexSet_x2(i + 0x1A, 0xB4, (Vec){x - 190.0f, 20.0f + (tabTop - (f32)ofs), 0.0f},
+            winTexSet_x2(i + 0x1A, 0xB4, (Vec){x - 190.0f, 20.0f + (tabTop - (f32)(i * 0x28)), 0.0f},
                          (Vec){1.0f, 1.0f, 1.0f}, dat_8041d354);
         }
     }
@@ -429,11 +431,11 @@ void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
         f32 rx = x - 242.0f;
 
         for (i = 0; i < pouch->availableBP; i++) {
-            winTexSet(0x1C, (Vec){rx + (f32)((i % 10) * 0xD), 20.0f + (ry - (f32)((i / 10) * 0xD)) - 18.0f, 0.0f},
+            winTexSet(WIN_TEX_BP_ON, (Vec){rx + (f32)((i % 10) * 0xD), 20.0f + (ry - (f32)((i / 10) * 0xD)) - 18.0f, 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
         }
         for (i = pouch->availableBP; i < pouch->maximumBP; i++) {
-            winTexSet(0x1D,
+            winTexSet(WIN_TEX_BP_OFF,
                       (Vec){(x - 242.0f) + (f32)((i % 10) * 0xD), 20.0f + (ry - (f32)((i / 10) * 0xD)) - 18.0f, 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
         }
@@ -443,10 +445,6 @@ void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx) {
 
 // The badge list: per row the equipped marker, icon, name, BP cost and one pip per BP, then the scroll
 // arrows and the sort / BP-needed captions.
-// NONMATCHING (97.47%): the pip loop's `equipped == 0 ? 0x1D : 0x1C` is turned into a hoisted cntlzw where the
-// original keeps `li r3,0x1d; beq; li r3,0x1c` in the loop (so equipped/temps swap r24/r25); the post-loop
-// white/black sit at 0x3c/0x38 instead of after the loop's argument copies (0x28/0x24), shifting the copy slots
-// by 8; and the row text y (`scroll + (12 + rowY)`), arrowX and sortX get f24 where the original has f21.
 void badge_disp(WindowWork* work, f32 x, f32 y) {
     GXColor iconColor = dat_8041d358;
     GXColor color;
@@ -480,6 +478,7 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
     for (i = 0, ofs = 0, entry = (u8*)work; i < count; entry += 0xC, ofs += 0x17, i++) {
         s32 badge;
         s32 equipped;
+        f32 textY;
 
         if (WW_S32(work, 0x3E0) == 0) {
             badge = pouchHaveBadge(i);
@@ -521,30 +520,29 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
         winIconSetV(*(u16*)&itemDataTable[badge].icon_id, (Vec){x - 75.0f, drawY, 0.0f}, (Vec){0.54f, 0.54f, 0.54f},
                     iconColor);
         winFontInit();
-        winFontSetV((Vec){x - 55.0f, scroll + (12.0f + rowY), 0.0f}, (Vec){0.9f, 0.9f, 0.9f}, color, itemDataTable[badge].id);
+        winFontSetV((Vec){x - 55.0f, textY = scroll + (12.0f + rowY), 0.0f}, (Vec){0.9f, 0.9f, 0.9f}, color, itemDataTable[badge].id);
         {
             char buf[0x40];
 
             sprintf(buf, "%s", winZenkakuStr(itemDataTable[badge].bp_cost));
-            winFontSetV((Vec){costX - (f32)((u16)FontGetMessageWidth(buf) / 2), scroll + (12.0f + rowY), 0.0f}, (Vec){0.9f, 0.9f, 0.9f},
+            winFontSetV((Vec){costX - (f32)((u16)FontGetMessageWidth(buf) / 2), textY, 0.0f}, (Vec){0.9f, 0.9f, 0.9f},
                         color, buf);
         }
         winTexInit(WIN_BADGE_TEX(work));
         {
             s32 j;
-            s32 jofs;
 
-            for (j = 0, jofs = 0; j < itemDataTable[badge].bp_cost; j++, jofs += 0xD) {
-                winTexSet(equipped == 0 ? 0x1D : 0x1C, (Vec){pipX + (f32)jofs, drawY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
+            for (j = 0; j < itemDataTable[badge].bp_cost; j++) {
+                winTexSet(equipped ? WIN_TEX_BP_ON : WIN_TEX_BP_OFF, (Vec){pipX + (f32)(j * 0xD), drawY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
                           iconColor);
             }
         }
     }
 
     GXSetScissor(0, 0, 0x260, 0x1E0);
-    white = dat_8041d368;
-    black = dat_8041d36c;
-    if (WW_S32(work, WW_S32(work, 0x3E0) * 4 + 0x3EC) > 0) {
+    white = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
+    black = (GXColor){ 0x00, 0x00, 0x00, 0xFF };
+    if (work->badgeScrollRow[WW_S32(work, 0x3E0)] > 0) {
         f32 arrowX;
 
         winTexInit(WIN_BADGE_TEX(work));
@@ -553,7 +551,7 @@ void badge_disp(WindowWork* work, f32 x, f32 y) {
         winIconInit();
         winIconSetV(0x7E, (Vec){arrowX, 20.0f + (113.0f + y), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
-    if (count > (WW_S32(work, WW_S32(work, 0x3E0) * 4 + 0x3EC) << 3) + 8) {
+    if (count > (work->badgeScrollRow[WW_S32(work, 0x3E0)] << 3) + 8) {
         f32 arrowX;
 
         winTexInit(WIN_BADGE_TEX(work));

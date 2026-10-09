@@ -849,9 +849,9 @@ config.libs = [
         "objects": [
             Object(NonMatching, "window/win_root.c"),
             Object(NonMatching, "window/win_party.c"),
-            Object(NonMatching, "window/win_badge.c"),
+            Object(Matching, "window/win_badge.c"),
             Object(NonMatching, "window/win_item.c"),
-            Object(NonMatching, "window/win_mario.c"),
+            Object(Matching, "window/win_mario.c"),
             Object(NonMatching, "window/win_log.c"),
             Object(Matching, "window/win_main.c"),
         ],

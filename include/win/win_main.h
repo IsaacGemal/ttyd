@@ -15,7 +15,9 @@ typedef struct WindowWork {
     s32 menuState;              // 0x20, TODO: rename?
     u8 field_0x24[0x3C - 0x24]; // 0x24
     EventEntry* currentEvent;   // 0x3C
-    u8 field_40[0x1210 - 0x40]; // 0x40
+    u8 field_40[0x3EC - 0x40];  // 0x40
+    s32 badgeScrollRow[2];      // 0x3EC, win_badge: first visible row per tab
+    u8 field_3F4[0x1210 - 0x3F4]; // 0x3F4
 } WindowWork;
 
 typedef struct WindowPartyDt {
