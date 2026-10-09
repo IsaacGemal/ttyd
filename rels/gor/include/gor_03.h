@@ -10,9 +10,31 @@ USER_FUNC(get_mario_dispReqDir);
 USER_FUNC(desk_talk_func);
 USER_FUNC(desk_talk_init_func);
 USER_FUNC(teresa_badge_item_list_init);
+// The slot machine's state block (GoryuugijoWork.data of the slot game).
+typedef struct SlotData {
+    u32 flags;               // 0x00
+    s32 phase;               // 0x04
+    f32 rot;                 // 0x08
+    f32 angle[2][3];         // 0x0C
+    f32 speed[3];            // 0x24
+    s8 state[3];             // 0x30
+    s8 target[2][3];         // 0x33
+    s8 count[3];             // 0x39
+    s32 wait[3];             // 0x3C
+    s32 loops[3];            // 0x48
+    s32 timer;               // 0x54
+    s32 timer2;              // 0x58
+    s32 prize;               // 0x5C
+    s32 now;                 // 0x60
+    s32 caseId[2];           // 0x64
+    EventEntry* fallEvt;     // 0x6C
+    s32 sfxId;               // 0x70
+    s16 cursor;              // 0x74
+} SlotData;
+
 // goryuugijo_disp_slot: this unit has its own copy; a header already declares it.
 void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall);
-s32 slot_rotate_sub(void* arg0, u8* data, s32 index);
+s32 slot_rotate_sub(void* arg0, SlotData* data, s32 index);
 void slot_neon_sub(void* arg0, u8* data);
 void goryuugijo_init_slot(EventEntry* event, BOOL isFirstCall);
 USER_FUNC(goryuugijo_door_init_slot);
