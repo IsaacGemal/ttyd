@@ -4050,20 +4050,14 @@ EVT_BEGIN(evt_kyaku_8)
     RETURN
 EVT_END()
 
-// The two fill loops reproduce retail's instruction sequence and schedule (the pixel loop keeps
-// `(i / 4) * 0x100` / `(i % 4) * 8` and the `base` / `row` / `col` / `mask` / `pct` locals summed
-// step by step so the `(i & 1) ? 0xFF : 0` mask and the `j % 8` term select the retail instructions;
-// the sparkle loop precomputes `sgrow` / `sgcol` with shifts and adds `col` last). The min-clamp
-// also matches after declaring `x` before `ratio` and writing `x = (x > ratio) ? ratio : x`. The
-// MUST_MATCH blocks are the allocator levers of battle/battle_stage's tou_gamen_screen_tev (the
-// same function): the `zero` alias and the function-scope counters put `param` in r27, and
-// declaring `sgcol` before `sgrow` plus the split idx2 temporaries put `sgrow` in r25.
-// What differs: the pixel loop's volatile register colouring only (opcodes and order
-// match). Retail colours col/base/0xff first (r3/r4/r5), then the j%8 and j/8 temporaries
-// (r7/r8, r6); here the frontend hoists (i/4)*0x100 and (i%4)*8 as loop-invariant temps whose
-// vregs sit below the loop body's, so the body colours first. The base+row add's operands are
-// also swapped. See tou_gamen_screen_tev's note.
-// NONMATCHING (99.83%): the pixel loop's volatile register colouring only (see above).
+// The pixel loop assigns `base = i / 4` and `col = i % 4` inside the loop and shifts them in the
+// sum: the frontend hoists only the divisions (shared with the sparkle loop), so the two shifts stay
+// loop-body code until the backend hoists them, which gives retail's register colouring. The sparkle
+// loop precomputes `sgrow` / `sgcol` with shifts and adds `col` last. The min-clamp matches after
+// declaring `x` before `ratio` and writing `x = (x > ratio) ? ratio : x`. The MUST_MATCH blocks are
+// the allocator levers of battle/battle_stage's tou_gamen_screen_tev (the same function): the
+// `zero` alias and the function-scope counters put `param` in r27, and declaring `sgcol` before
+// `sgrow` plus the split idx2 temporaries put `sgrow` in r25.
 #pragma opt_propagation off // needed: with propagation on the second fill loop folds sgcol into a buf+sgcol pointer
 void screen_tev(TevCallbackParam* param) {
     GXTexObj texObj;
@@ -4097,15 +4091,15 @@ void screen_tev(TevCallbackParam* param) {
 
         for (i = 0; i < 0x40; i++) {
             for (j = 0; j < 0x40; j++) {
-                int base = (i / 4) * 0x100;
-                int row = j / 8;
-                int col = (i % 4) * 8;
-                int mask = (i & 1) ? 0xFF : 0;
-                int pct = j % 8;
-                int idx = base;
-                idx += row * 0x20;
+                int base, row, col, mask, pct, idx;
+                row = j / 8;
+                pct = j % 8;
+                mask = (i & 1) ? 0xFF : 0;
+                base = i / 4;
+                col = i % 4;
+                idx = row * 0x20 + base * 0x100;
                 idx += pct;
-                idx += col;
+                idx += col * 8;
                 buf[idx] = mask;
             }
             {
