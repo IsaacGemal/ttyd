@@ -1499,7 +1499,7 @@ config.libs = [
             Object(Matching, "gor_00.c"),
             Object(Matching, "gor_01.c"),
             Object(Matching, "gor_02.c"),
-            Object(NonMatching, "gor_03.c"),
+            Object(Matching, "gor_03.c"),
             Object(Matching, "gor_irai.c"),
             Object(NonMatching, "gor_10.c"),
             Object(Matching, "unit/unit_lecture_frankli_sac.c"),

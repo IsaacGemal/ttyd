@@ -2501,7 +2501,7 @@ u32 slotevttbl[2] = {
 };
 
 // TODO: type
-u32 slotgara[48] = {
+u32 slotgara[2][3][8] = {
     0x00000000, 0x00000000, 0x00000002, 0x00000000,
     0x00000001, 0x00000001, 0x00000000, 0x00000001,
     0x00000000, 0x00000001, 0x00000000, 0x00000001,
@@ -4398,46 +4398,6 @@ EVT_BEGIN(kuzi_bomb_talk_husei)
     RETURN
 EVT_END()
 
-// The phase-0x2d block declares `u8* pb = data+i` before `u8* pw = data+i*4`, `s8 s` and indexes `tmp1[j]`
-// (the operand order matters for the register pick); case 11 keeps `CaseSetup* sp = &setup` so the struct
-// address is materialised once (r22) exactly like the original, and case 3's `dir` is a single nested ternary
-// (an if/else compiles an extra `mr`). The sel loop is written as a
-// `k = 0; goto sel_test; sel_body: ... k = 1; sel_inc: k++; sel_test: if (k < 2) goto sel_body;` with the
-// success path setting `k = 1` in each case and the invalid path `goto sel_inc`: a plain `for` compiles to
-// `mtctr`/`bdnz` here, this form reproduces the original's explicit `li r9,0; b test` counter and its
-// `li r9,1; stb; addi r9,r9,1; cmpwi r9,2; blt` break.
-// Case 3 is the original's `if (i==sel) { switch(i){...} } else { stop = 0; } if (stop && ...) {...}` (its
-// `bne` after `cmpw i, sel` targets the `li r25,0` the `else` emits). Writing it that way is required for the
-// case-2 `else` to exist, and it changes which registers MWCC hands out. `j2` is declared at the top of the
-// function (not inside the phase-0 `cnt` block) because that makes the `cnt`/`j2` pair come out in the
-// original's r8/r7.
-// The phase-0x2d first loop declares its `s32 a` before `u8* base`, the sel loop declares `u8* pb` before
-// `u8* pw`, the case-3 `data + i` temp is a named top-level `u8* pb3`, the phase-0x2d `tmp[3][3]` plus its row
-// pointer `tptr` are declared at the top, and `s32 stop` is declared first (no logic change). Those
-// declaration moves lifted the allocator out of worse local optima: 98.58% -> 98.92%. A separate top-level
-// `s32 i2` counter is used for the phase-0x2d first loop (plain `i` there costs 0.02%).
-//
-// Returns nothing: the original never writes r3 before `blr`. Like goryuugijo_init_slot it is a `void`
-// function stored in an evt UserFunction slot; as `s32` it needs a `return 0` (an extra `li r3,0`, 4 bytes).
-//
-// Two operand-order reorders removed several diff instructions without changing the logic: the phase-0 `cnt`
-// loop compares the table byte before `tmp1[j2]` (the original loads the byte as the first compare operand),
-// and the sel loop's case-1 guard and OR term are written `tptr[6] != s` / `tptr[6] == s`. The `cnt` loop
-// also initialises `j2` and `cnt` in one comma expression, which reproduces the original's setup order.
-//
-// Still differs (all register allocation / scheduling, 59 changed instructions at 99.15%): event stays in
-// r25 vs the original's r26 (the entry `mr r25, r3` vs `mr r26, r3`) even when the two later `event` uses are
-// replaced by `work`/`work->entry`; `stop` lands in r31 vs the original's r25 and `stopSfx` in r25 vs r31 (so
-// the string address is materialised into r0 and then `mr`'d instead of loaded straight into r31; pb now
-// matches at r30); the flag loops use i=r26/p=r27 where the original has i=r27/p=r26, and the case-11 index
-// is swapped the same way. The phase-0 `cnt` loop still emits `li r7,0` where the original reuses the zero in
-// r8 via `mr r7,r8`, and both phase-0 loops keep a different scratch-register set. The instruction stream is
-// otherwise identical (40 calls, same immediates). What is left is the
-// callee-saved colouring of the {event,stop,stopSfx} clique (r25/r26/r31), which is permuter work.
-// `(s32)data[i + 0x30]` (rather than `(s32)((u8*)data + i)[0x30]`) makes MWCC emit the original's
-// `add r3, r28, r0` operand order.
-// NONMATCHING (99.15%): see above.
-
 EVT_BEGIN(kuzi_bomb_bomb)
     SET_VALUE(LW(15), LW(0))
     WAIT_FRAMES(40)
@@ -4885,7 +4845,7 @@ USER_FUNC(goryuugijo_get_slot_phase) {
     s32* args = event->args;
     GoryuugijoWork* work = (GoryuugijoWork*)evtGetValue(event, args[0]);
 
-    evtSetValue(event, args[1], *(s32*)((u8*)work->data + 0x04));
+    evtSetValue(event, args[1], ((SlotData*)work->data)->phase);
     return EVT_RETURN_DONE;
 }
 
@@ -5048,329 +5008,318 @@ void slot_neon_sub(void* arg0, u8* data) {
     }
 }
 
-// The angle table is three floats per slot starting at 0xc, so it is read as a `f32[][3]` view of the
-// data. The `sdata` alias gives the byte-array accesses a signed pointer type: written as `(s8*)data`
-// casts at every use, MWCC emits the `data + index` add with the operands swapped.
 // The if-branch updates `steps` in place: the original reuses the steps register for `(steps + 1) & 7`
-// and the later `45.0f * (f32)steps` reads that updated value on the shared path.
-// NONMATCHING (99.41%): only the `if (*(s32*)(data + index*4 + 0x3c) == 0)` address remains; the original
-// rematerialises `data + index*4` into r5 (`add r5, r4, r0`), ours reuses the r3 live across the 0x24 uses,
-// so the preceding `add r5, r4, r0` is missing and the branch target shifts by one instruction.
-s32 slot_rotate_sub(void* arg0, u8* data, s32 index) {
+// and the later `45.0f * (f32)steps` reads that updated value on the shared path. A reel whose `wait`
+// counter is still running skips the rotation (`goto done`).
+s32 slot_rotate_sub(void* arg0, SlotData* data, s32 index) {
     s32 dir = 0;
     s32 changed = 0;
-    s32 steps = (s32)((f32)(s32)(((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) / 45.0f);
-    s8* sdata = (s8*)data;
+    s32 steps = (s32)((f32)(s32)data->angle[data->now][index] / 45.0f);
     f32 diff;
 
-    if ((*(f32*)(data + index * 4 + 0x24)) > 0.0f) {
+    if (data->speed[index] > 0.0f) {
         steps = (steps + 1) & 7;
-        diff = 45.0f * (f32)steps - (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]);
+        diff = 45.0f * (f32)steps - data->angle[data->now][index];
         if (diff < 0.0f) {
             diff += 360.0f;
         }
-        dir = (diff <= (*(f32*)(data + index * 4 + 0x24))) ? 1 : 0;
+        dir = (diff <= data->speed[index]) ? 1 : 0;
     } else {
-        diff = 45.0f * (f32)steps - (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]);
+        diff = 45.0f * (f32)steps - data->angle[data->now][index];
         if (diff > 0.0f) {
             diff -= 360.0f;
         }
-        dir = (diff > (*(f32*)(data + index * 4 + 0x24))) ? -1 : 0;
+        dir = (diff > data->speed[index]) ? -1 : 0;
     }
-    if ((sdata[index + 0x30] == 3 || sdata[index + 0x30] == 4) && dir != 0) {
-        if (sdata[index + 0x39] != 0) {
-            if (sdata[index + 0x30] == 4) {
-                s32* q = ((s32*)sdata + index);
-                if (q[0xf] == 0) {
-                    if (q[0x12] != 0) {
-                        q[0x12]--;
-                        q[0xf] = 0;
+    if ((data->state[index] == 3 || data->state[index] == 4) && dir != 0) {
+        if (data->count[index] != 0) {
+            if (data->state[index] == 4) {
+                if (data->wait[index] == 0) {
+                    if (data->loops[index] != 0) {
+                        data->loops[index]--;
+                        data->wait[index] = 0;
                     } else {
-                        q[0xf] = 0x12;
+                        data->wait[index] = 0x12;
                     }
                 } else {
-                    q[0xf]--;
+                    data->wait[index]--;
                 }
             }
-            if (*(s32*)(data + index * 4 + 0x3c) == 0) {
-                sdata[index + 0x39]--;
+            if (data->wait[index] != 0) {
+                goto done;
             }
+            data->count[index]--;
         } else {
-            sdata[index + 0x30] = 0;
+            data->state[index] = 0;
             changed = 1;
-            (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) = 45.0f * (f32)steps;
+            data->angle[data->now][index] = 45.0f * (f32)steps;
             goto done;
         }
     }
-    (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) += (*(f32*)(data + index * 4 + 0x24));
-    if ((((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) >= 360.0f) {
-        (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) -= 360.0f;
+    data->angle[data->now][index] += data->speed[index];
+    if (data->angle[data->now][index] >= 360.0f) {
+        data->angle[data->now][index] -= 360.0f;
     }
-    if ((((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) < 0.0f) {
-        (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]) += 360.0f;
+    if (data->angle[data->now][index] < 0.0f) {
+        data->angle[data->now][index] += 360.0f;
     }
 done:
-    mapObjRotate(drumname[*(s32*)(data + 0x60)][index], 0.0f, 0.0f, (((f32(*)[3])(data + 0xc))[*(s32*)(data + 0x60)][index]));
+    mapObjRotate(drumname[data->now][index], 0.0f, 0.0f, data->angle[data->now][index]);
     return changed;
 }
 
-void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
-    s32 stop;
-    s32 j;
-    s32 k;
-    s32 j2;
-    u8* pb3;
-    s32 tmp[3][3];
-    s32* tptr;
-    s32 i2;
-    GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
-    u8* data = (u8*)work->data;
+// Inline helpers of goryuugijo_main_slot. Their locals become compiler temporaries when inlined, which is what
+// gives the original's registers: the stop sound's address goes straight into r31 (a named local in the caller
+// is materialised into r0 and copied), and slot_count_hit's `cnt = 0` / `i = 0` share one `li` (`mr r7, r8`).
+// slot_stop_sub must start the loop body (the reel-stopped test is inside it) for the sound address to be
+// hoisted out of the loop; `count` and `stop` are the caller's locals, so they keep their caller registers.
+static inline s32 slot_count_hit(SlotData* data, s32* gara) {
+    s32 cnt = 0;
     s32 i;
 
-    switch (*(s32*)(data + 0x04)) {
+    for (i = 0; i < 3; i++) {
+        if (data->target[data->now][i] == gara[i]) {
+            cnt += 1;
+        }
+    }
+    return cnt;
+}
+
+static inline void slot_stop_sub(GoryuugijoWork* work, SlotData* data, s32 reel, s32* count, s32* stop) {
+    const char* sfx = "SFX_EVT_GAME_SLOT_STOP1";
+
+    if (data->state[reel] == 0) {
+        *count += 1;
+        return;
+    }
+    if (reel == data->cursor) {
+        switch (reel) {
+        case 0:
+            if (keyGetButtonTrg(0) & 0x100) {
+                *stop = 1;
+            } else {
+                *stop = 0;
+            }
+            break;
+        case 1:
+            if (keyGetButtonTrg(0) & 0x100) {
+                *stop = 1;
+            } else {
+                *stop = 0;
+            }
+            break;
+        case 2:
+            if (keyGetButtonTrg(0) & 0x100) {
+                *stop = 1;
+            } else {
+                *stop = 0;
+            }
+            break;
+        }
+    } else {
+        *stop = 0;
+    }
+    if (*stop && data->state[reel] == 2) {
+        data->state[reel] = 3;
+        if (data->flags & 2) {
+            data->count[reel] = 0;
+        } else {
+            data->count[reel] = irand(2);
+        }
+        psndSFXOn(sfx);
+    }
+    *count += slot_rotate_sub(work, data, reel);
+}
+
+// Returns nothing: like goryuugijo_init_slot it is a `void` function stored in an evt UserFunction slot (the
+// original never writes r3). Phase 4's first table read keeps the step in `j` (written inline, the slotgara
+// base is lowered before the 45.0f constant and their scratch registers swap); case 6 has the inline form. The
+// sel loop's `goto` counter reproduces the original's explicit `li r9,0; b test` loop (a `for` becomes
+// `mtctr`/`bdnz`), and case 11's `CaseSetup* sp` materialises the struct address once (r22).
+void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
+    s32 j;
+    s32 k;
+    s32 tmp[3][3];
+    GoryuugijoWork* work = (GoryuugijoWork*)event->lwData[0];
+    SlotData* data = work->data;
+    s32 i;
+
+    switch (data->phase) {
     case 1:
-        *(s16*)(data + 0x74) = 0;
-        *(s32*)(data + 0x54) = 0;
-        *(s32*)(data + 0x58) = 0;
-        *(s32*)(data + 0x44) = 0;
-        *(s32*)(data + 0x40) = 0;
-        *(s32*)(data + 0x3c) = 0;
-        *(s32*)(data + 0x50) = 0;
-        *(s32*)(data + 0x4c) = 0;
-        *(s32*)(data + 0x48) = 0;
-        *(s8*)(data + 0x32) = 1;
-        *(s8*)(data + 0x31) = 1;
-        *(s8*)(data + 0x30) = 1;
-        *(f32*)(data + 0x2c) = 0.0f;
-        *(f32*)(data + 0x28) = 0.0f;
-        *(f32*)(data + 0x24) = 0.0f;
-        *(u32*)data &= ~2;
-        *(u32*)data &= ~4;
-        *(s32*)(data + 0x04) += 1;
+        data->cursor = 0;
+        data->timer = 0;
+        data->timer2 = 0;
+        data->wait[2] = 0;
+        data->wait[1] = 0;
+        data->wait[0] = 0;
+        data->loops[2] = 0;
+        data->loops[1] = 0;
+        data->loops[0] = 0;
+        data->state[2] = 1;
+        data->state[1] = 1;
+        data->state[0] = 1;
+        data->speed[2] = 0.0f;
+        data->speed[1] = 0.0f;
+        data->speed[0] = 0.0f;
+        data->flags &= ~2;
+        data->flags &= ~4;
+        data->phase += 1;
         break;
     case 2:
-        slot_neon_sub(work, data);
-        if (*(s32*)(data + 0x54) >= 0xf) {
-            *(s32*)(data + 0x54) = 0;
-            *(s32*)(data + 0x04) += 1;
-            *(s32*)(data + 0x70) = psndSFXOn("SFX_EVT_GAME_SLOT_ROUND1");
+        slot_neon_sub(work, (u8*)data);
+        if (data->timer >= 0xf) {
+            data->timer = 0;
+            data->phase += 1;
+            data->sfxId = psndSFXOn("SFX_EVT_GAME_SLOT_ROUND1");
         } else {
-            *(s32*)(data + 0x54) += 1;
-            *(f32*)(data + 0x08) += 4.0f;
-            mapObjRotate(drumname[*(s32*)(data + 0x60)][3], 0.0f, 0.0f, *(f32*)(data + 0x08));
+            data->timer += 1;
+            data->rot += 4.0f;
+            mapObjRotate(drumname[data->now][3], 0.0f, 0.0f, data->rot);
         }
         break;
     case 3:
     {
         s32 changed;
-        slot_neon_sub(work, data);
-        if (*(s32*)(data + 0x54) <= 6) {
-            if (*(s32*)(data + 0x54) >= 6) {
-                *(f32*)(data + 0x08) = 0.0f;
+        s32 stop;
+        slot_neon_sub(work, (u8*)data);
+        if (data->timer <= 6) {
+            if (data->timer >= 6) {
+                data->rot = 0.0f;
             } else {
-                *(f32*)(data + 0x08) -= 10.0f;
+                data->rot -= 10.0f;
             }
-            mapObjRotate(drumname[*(s32*)(data + 0x60)][3], 0.0f, 0.0f, *(f32*)(data + 0x08));
-            *(s32*)(data + 0x54) += 1;
+            mapObjRotate(drumname[data->now][3], 0.0f, 0.0f, data->rot);
+            data->timer += 1;
         }
-        i = *(s16*)(data + 0x74);
-        if ((s32)data[i + 0x30] != 2 || (keyGetDirRep(0) & 0xC000) != 0) {
-            s32 dir;
-            i = *(s16*)(data + 0x74);
-            dir = ((s32)data[i + 0x30] != 2) ? 1 : ((keyGetDirRep(0) & 0x4000) ? -1 : 1);
+        if (data->state[data->cursor] != 2 || (keyGetDirRep(0) & 0xC000) != 0) {
+            s32 dir = (data->state[data->cursor] != 2) ? 1 : ((keyGetDirRep(0) & 0x4000) ? -1 : 1);
             for (j = 0; j < 3; j++) {
-                i = *(s16*)(data + 0x74) + dir;
-                *(s16*)(data + 0x74) = i;
-                if (*(s16*)(data + 0x74) < 0) {
-                    *(s16*)(data + 0x74) = 2;
-                } else if (*(s16*)(data + 0x74) > 2) {
-                    *(s16*)(data + 0x74) = 0;
+                data->cursor += dir;
+                if (data->cursor < 0) {
+                    data->cursor = 2;
+                } else if (data->cursor > 2) {
+                    data->cursor = 0;
                 }
-                if (*(s8*)(data + *(s16*)(data + 0x74) + 0x30) == 2) {
+                if (data->state[data->cursor] == 2) {
                     break;
                 }
             }
         }
         changed = 0;
-        {
-        char* stopSfx = "SFX_EVT_GAME_SLOT_STOP1";
         for (i = 0; i < 3; i++) {
-            pb3 = data + i;
-            if (*(s8*)(pb3 + 0x30) == 0) {
-                changed += 1;
-                continue;
-            }
-            if (i == *(s16*)(data + 0x74)) {
-                switch (i) {
-                case 0:
-                    if (keyGetButtonTrg(0) & 0x100) {
-                        stop = 1;
-                    } else {
-                        stop = 0;
-                    }
-                    break;
-                case 1:
-                    if (keyGetButtonTrg(0) & 0x100) {
-                        stop = 1;
-                    } else {
-                        stop = 0;
-                    }
-                    break;
-                case 2:
-                    if (keyGetButtonTrg(0) & 0x100) {
-                        stop = 1;
-                    } else {
-                        stop = 0;
-                    }
-                    break;
-                }
-            } else {
-                stop = 0;
-            }
-                if (stop && *(s8*)(pb3 + 0x30) == 2) {
-                    *(s8*)(pb3 + 0x30) = 3;
-                    if (*(u32*)data & 2) {
-                        *(s8*)(pb3 + 0x39) = 0;
-                    } else {
-                        *(s8*)(pb3 + 0x39) = irand(2);
-                    }
-                    psndSFXOn(stopSfx);
-                }
-            changed += slot_rotate_sub(work, data, i);
-        }
+            slot_stop_sub(work, data, i, &changed, &stop);
         }
         if (changed == 3) {
             for (i = 0; i < 3; i++) {
-                char** p = drumname[*(s32*)(data + 0x60)] + i * 3;
-                mapGrpFlagOn(p[5], 1);
-                mapGrpFlagOn(p[6], 1);
-                mapGrpFlagOn(p[7], 1);
+                goryuugijo_upsidewindow_disp_sub(data->now, i);
             }
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
-            *(s32*)(data + 0x54) = 0;
-            *(s32*)(data + 0x04) += 1;
+            mapPlayAnimationLv(drumname[data->now][15], 0, 0);
+            data->timer = 0;
+            data->phase += 1;
         }
         break;
     }
     case 4:
     {
-        s32 phase = *(s32*)(data + 0x54);
+        s32 phase = data->timer;
         if (phase == 0) {
             s32 tmp1[3];
-            s32 cnt;
             for (i = 0; i < 3; i++) {
-                tmp1[i] = *(u32*)((u8*)slotgara + *(s32*)(data + 0x60) * 0x60 + i * 0x20 + (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f) * 4);
+                j = (s32)(data->angle[data->now][i] / 45.0f);
+                tmp1[i] = slotgara[data->now][i][j];
             }
             if (tmp1[0] == tmp1[1] && tmp1[1] == tmp1[2]) {
-                *(s32*)(data + 0x04) = 6;
+                data->phase = 6;
                 break;
             }
-            if ((*(u32*)data & 4) == 0) {
-                *(s32*)(data + 0x04) = 6;
+            if ((data->flags & 4) == 0) {
+                data->phase = 6;
                 break;
             }
-            {
-            for (j2 = 0, cnt = 0; j2 < 3; j2++) {
-                if (*(s8*)(data + *(s32*)(data + 0x60) * 3 + j2 + 0x33) == tmp1[j2]) {
-                    cnt += 1;
-                }
-            }
-            }
-            if (cnt < 2) {
-                *(s32*)(data + 0x04) = 6;
+            if (slot_count_hit(data, tmp1) < 2) {
+                data->phase = 6;
                 break;
             }
         }
         if (phase == 0 || phase == 0x12 || phase == 0x24) {
             for (i = 0; i < 3; i++) {
-                char** p = drumname[*(s32*)(data + 0x60)] + i * 3;
-                mapGrpFlagOn(p[5], 1);
-                mapGrpFlagOn(p[6], 1);
-                mapGrpFlagOn(p[7], 1);
+                goryuugijo_upsidewindow_disp_sub(data->now, i);
             }
         }
-        if (*(s32*)(data + 0x54) == 9 || *(s32*)(data + 0x54) == 0x1b || *(s32*)(data + 0x54) == 0x2d) {
+        if (data->timer == 9 || data->timer == 0x1b || data->timer == 0x2d) {
             for (i = 0; i < 3; i++) {
-                char** p = drumname[*(s32*)(data + 0x60)] + i * 3;
-                mapGrpFlagOn(p[5], 1);
-                mapGrpFlagOn(p[6], 1);
-                mapGrpFlagOn(p[7], 1);
+                goryuugijo_upsidewindow_disp_sub(data->now, i);
             }
         }
-        if (*(s32*)(data + 0x54) == 0x2d) {
-            for (i2 = 0; i2 < 3; i2++) {
-                s32 a = (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i2 * 4) / 45.0f);
-                u8* base = (u8*)slotgara + i2 * 0x20;
-                for (j = 0; j < 3; j++) {
-                    tmp[j][i2] = *(u32*)(base + *(s32*)(data + 0x60) * 0x60 + ((a + j - 1) & 7) * 4);
+        if (data->timer == 0x2d) {
+            for (j = 0; j < 3; j++) {
+                s32 a = (s32)(data->angle[data->now][j] / 45.0f);
+                for (i = 0; i < 3; i++) {
+                    tmp[i][j] = slotgara[data->now][j][(a + i - 1) & 7];
                 }
             }
             for (i = 0; i < 3; i++) {
                 s8 s;
                 s32 sel;
-                tptr = &tmp[0][i];
-                if (tptr[3] == *(s8*)(data + *(s32*)(data + 0x60) * 3 + i + 0x33)) {
+                if (tmp[1][i] == data->target[data->now][i]) {
                     continue;
                 }
                 sel = irand(2);
-                {
-                u8* pb = data + i;
-                u8* pw = data + i * 4;
                 k = 0;
                 goto sel_test;
                 sel_body:
                     sel = (sel + 1) & 1;
                     switch (sel) {
                     case 0:
-                        s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
+                        s = data->target[data->now][i];
 #ifdef MUST_MATCH
                         // The original emits a dead `beq sel_inc` after `beq <after_if>`: MWCC CSEs the
                         // repeated `s == tmp[0][i]` (contradicts the guard) into one compare with two
                         // branches. The redundant OR term reproduces it.
-                        if (s != tptr[0] && (s == tptr[0] || tptr[6] == s)) {
+                        if (s != tmp[0][i] && (s == tmp[0][i] || tmp[2][i] == s)) {
 #else
                         if (s != tmp[0][i] && tmp[2][i] == s) {
 #endif
                             goto sel_inc;
                         }
                         if (s == 0) {
-                            pb[0x39] = 1;
-                            *(s32*)(pw + 0x48) = 1;
-                            *(f32*)(pw + 0x24) = -1.40625f;
+                            data->count[i] = 1;
+                            data->loops[i] = 1;
+                            data->speed[i] = -1.40625f;
                         } else {
-                            pb[0x39] = 6;
-                            if (*(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33) == 2) {
-                                pb[0x39] += 8;
+                            data->count[i] = 6;
+                            if (data->target[data->now][i] == 2) {
+                                data->count[i] += 8;
                             }
-                            *(s32*)(pw + 0x48) = 0;
-                            *(f32*)(pw + 0x24) = 1.40625f;
+                            data->loops[i] = 0;
+                            data->speed[i] = 1.40625f;
                         }
-                        pb[0x30] = 4;
+                        data->state[i] = 4;
                         k = 1;
                         break;
                     case 1:
-                        s = *(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33);
+                        s = data->target[data->now][i];
 #ifdef MUST_MATCH
                         // Same dead-branch artifact as case 0, on the `s != tmp[2][i]` guard.
-                        if (tptr[6] != s && (s == tptr[0] || tptr[6] == s)) {
+                        if (tmp[2][i] != s && (s == tmp[0][i] || tmp[2][i] == s)) {
 #else
                         if (s != tmp[2][i] && s == tmp[0][i]) {
 #endif
                             goto sel_inc;
                         }
                         if (s == 0) {
-                            pb[0x39] = 0;
-                            *(s32*)(pw + 0x48) = 0;
-                            *(f32*)(pw + 0x24) = 1.40625f;
+                            data->count[i] = 0;
+                            data->loops[i] = 0;
+                            data->speed[i] = 1.40625f;
                         } else {
-                            pb[0x39] = 7;
-                            if (*(s8*)(pb + *(s32*)(data + 0x60) * 3 + 0x33) == 2) {
-                                pb[0x39] += 8;
+                            data->count[i] = 7;
+                            if (data->target[data->now][i] == 2) {
+                                data->count[i] += 8;
                             }
-                            *(s32*)(pw + 0x48) = 1;
-                            *(f32*)(pw + 0x24) = -1.40625f;
+                            data->loops[i] = 1;
+                            data->speed[i] = -1.40625f;
                         }
-                        pb[0x30] = 4;
+                        data->state[i] = 4;
                         k = 1;
                         break;
                     }
@@ -5378,27 +5327,26 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
                     k++;
                 sel_test:
                     if (k < 2) goto sel_body;
-                }
             }
-            *(s32*)(data + 0x04) += 1;
+            data->phase += 1;
         }
-        *(s32*)(data + 0x54) += 1;
+        data->timer += 1;
         break;
     }
     case 5:
     {
         s32 n = 0;
-        s32 m5;
-        for (m5 = 0; m5 < 3; m5++) {
-            if (*(s8*)(data + m5 + 0x30) == 0) {
+        s32 reel;
+        for (reel = 0; reel < 3; reel++) {
+            if (data->state[reel] == 0) {
                 n += 1;
             } else {
-                n += slot_rotate_sub(work, data, m5);
+                n += slot_rotate_sub(work, data, reel);
             }
         }
         if (n == 3) {
-            *(s32*)(data + 0x54) = 0;
-            *(s32*)(data + 0x04) += 1;
+            data->timer = 0;
+            data->phase += 1;
         }
         break;
     }
@@ -5406,98 +5354,98 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
     {
         s32 tmp[3];
         for (i = 0; i < 3; i++) {
-            tmp[i] = *(u32*)((u8*)slotgara + *(s32*)(data + 0x60) * 0x60 + i * 0x20 + (s32)(*(f32*)(data + 0xc + *(s32*)(data + 0x60) * 0xc + i * 4) / 45.0f) * 4);
+            tmp[i] = slotgara[data->now][i][(s32)(data->angle[data->now][i] / 45.0f)];
         }
         if (tmp[0] == tmp[1] && tmp[1] == tmp[2]) {
-            *(s32*)(data + 0x54) = 0;
-            *(s32*)(data + 0x04) += 1;
+            data->timer = 0;
+            data->phase += 1;
             psndSFXOn("SFX_EVT_GAME_SLOT_SUCCESS1");
             switch (tmp[0]) {
             case 0:
-                *(s32*)(data + 0x5c) = 3;
+                data->prize = 3;
                 break;
             case 1:
-                *(s32*)(data + 0x5c) = 0xf;
+                data->prize = 0xf;
                 break;
             case 2:
-                *(s32*)(data + 0x5c) = 0x64;
+                data->prize = 0x64;
                 break;
             }
-            caseDelete(*(s32*)(data + 0x64));
-            caseDelete(*(s32*)(data + 0x68));
-            *(u32*)data |= 1;
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][16], 1, 0);
-            *(u32*)data |= 8;
+            caseDelete(data->caseId[0]);
+            caseDelete(data->caseId[1]);
+            data->flags |= 1;
+            mapPlayAnimationLv(drumname[data->now][16], 1, 0);
+            data->flags |= 8;
         } else {
-            *(s32*)(data + 0x04) = 0xb;
+            data->phase = 0xb;
         }
-        psndSFXOff(*(s32*)(data + 0x70));
+        psndSFXOff(data->sfxId);
         break;
     }
     case 7:
-        if (*(s32*)(data + 0x54) >= 0x30) {
-            *(s32*)(data + 0x54) = 0;
-            *(s32*)(data + 0x04) += 1;
+        if (data->timer >= 0x30) {
+            data->timer = 0;
+            data->phase += 1;
         }
-        *(s32*)(data + 0x54) += 1;
+        data->timer += 1;
         break;
     case 8:
-        if (*(s32*)(data + 0x54) >= 0x24) {
-            *(s32*)(data + 0x54) = 0x13;
-            *(s32*)(data + 0x04) += 1;
+        if (data->timer >= 0x24) {
+            data->timer = 0x13;
+            data->phase += 1;
         }
-        *(s32*)(data + 0x54) += 1;
+        data->timer += 1;
         break;
     case 9:
-        if (*(s32*)(data + 0x54) >= 0x13) {
-            *(s32*)(data + 0x54) = 0;
-            if (*(EventEntry**)(data + 0x6c) == NULL) {
-                *(EventEntry**)(data + 0x6c) = evtEntry(slot_fall_monte, 0, 0);
-                (*(EventEntry**)(data + 0x6c))->lwData[0] = event->lwData[0];
+        if (data->timer >= 0x13) {
+            data->timer = 0;
+            if (data->fallEvt == NULL) {
+                data->fallEvt = evtEntry(slot_fall_monte, 0, 0);
+                data->fallEvt->lwData[0] = event->lwData[0];
             }
-            *(s32*)(data + 0x04) += 1;
+            data->phase += 1;
         } else {
-            *(s32*)(data + 0x54) += 1;
+            data->timer += 1;
         }
         break;
     case 10:
     {
-        EventEntry* e = *(EventEntry**)(data + 0x6c);
+        EventEntry* e = data->fallEvt;
         if (e == NULL || evtCheckID(e->eventId) == 0) {
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][16], 2, 0);
-            *(u32*)data &= ~8;
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
-            *(s32*)(data + 0x54) = 0;
-            *(EventEntry**)(data + 0x6c) = NULL;
-            *(s32*)(data + 0x04) += 1;
+            mapPlayAnimationLv(drumname[data->now][16], 2, 0);
+            data->flags &= ~8;
+            mapPlayAnimationLv(drumname[data->now][15], 0, 0);
+            data->timer = 0;
+            data->fallEvt = NULL;
+            data->phase += 1;
         } else {
-            *(s32*)(data + 0x54) += 1;
+            data->timer += 1;
         }
         break;
     }
     case 11:
     {
-        if (*(EventEntry**)(data + 0x6c) != NULL) {
+        if (data->fallEvt != NULL) {
             u8* p = (u8*)monte_p[0];
             *(s32*)(*(u8**)(p + 0x4c) + 0x5c) = 0;
             _mapFree((void*)monte_p[0]);
-            evtDeleteID((*(EventEntry**)(data + 0x6c))->eventId);
-            *(EventEntry**)(data + 0x6c) = NULL;
+            evtDeleteID(data->fallEvt->eventId);
+            data->fallEvt = NULL;
         }
-        *(s32*)(data + 0x54) = 0;
-        *(s32*)(data + 0x58) = 0;
-        *(s32*)(data + 0x04) = 0;
-        *(s32*)(data + 0x44) = 0;
-        *(s32*)(data + 0x40) = 0;
-        *(s32*)(data + 0x3c) = 0;
-        *(s32*)(data + 0x50) = 0;
-        *(s32*)(data + 0x4c) = 0;
-        *(s32*)(data + 0x48) = 0;
-        if (*(u32*)data & 1) {
+        data->timer = 0;
+        data->timer2 = 0;
+        data->phase = 0;
+        data->wait[2] = 0;
+        data->wait[1] = 0;
+        data->wait[0] = 0;
+        data->loops[2] = 0;
+        data->loops[1] = 0;
+        data->loops[0] = 0;
+        if (data->flags & 1) {
             s32 m;
             CaseSetup setup;
             CaseSetup* sp = &setup;
-            *(u32*)data &= ~1;
+            data->flags &= ~1;
             for (m = 0; m < 2; m++) {
                 sp->activeConditionId = 0x8009;
                 sp->hitObjName = drumname[m][4];
@@ -5506,13 +5454,13 @@ void goryuugijo_main_slot(EventEntry* event, BOOL isFirstCall) {
                 sp->evtCode = (void*)slotevttbl[m];
                 sp->priority = 0;
                 memcpy(sp->lwData, event->lwData, 0x40);
-                *(s32*)(data + m * 4 + 0x64) = caseEntry(sp);
+                data->caseId[m] = caseEntry(sp);
             }
         }
-        if (*(u32*)data & 8) {
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][16], 2, 0);
-            *(u32*)data &= ~8;
-            mapPlayAnimationLv(drumname[*(s32*)(data + 0x60)][15], 0, 0);
+        if (data->flags & 8) {
+            mapPlayAnimationLv(drumname[data->now][16], 2, 0);
+            data->flags &= ~8;
+            mapPlayAnimationLv(drumname[data->now][15], 0, 0);
         }
         break;
     }
