@@ -265,9 +265,12 @@ static inline f32 heiDeg2Rad(f32 deg) {
 //  - case 0's `a` is `aR * 0.19999999f + 0.3f` for float_0p2_hei_00007bec,
 //    and case 1's field_0x1C uses 0.20000005f (float_0p2_hei_00007c08);
 //    plain 0.2f shifts .rodata;
-//  - case 1's `Vec pos = { 0 }` and `Vec sfxPos = { 0 }` keep their initialisers (case 0's
-//    does not) so the six vec3 zero templates are emitted with npc_jump's three; the
-//    case-1 copy must sit in its own `{ }` block or MWCC sinks it;
+//  - case 0 calls chb_jump, which MWCC inlines: the original inlines it in both cases (retail
+//    reads chb_jump's zero template vec3_hei_00007a34 three times: chb_jump, case 0, case 1).
+//    Case 1 still spells the body out (as a call, with its v1/v2 arguments, it scores 93.00 but
+//    gets the three 7a34 references and the sfxPos template at 7a40 right; retail's 7a4c is
+//    unreferenced). Case 1's `Vec pos = { 0 }` and `Vec sfxPos = { 0 }` keep their
+//    initialisers, and its copy must sit in its own `{ }` block or MWCC sinks it;
 //  - case 1's `field_0x20 = zero * b + 0.8f` needs a block-local `zero` so the
 //    original's zero_hei_00007b88 load and fmadds survive (a literal folds);
 //  - case 0x64 keeps `matrix[2][3] += field_0x1C * -cosv` (fneg + fmadds, not
@@ -281,11 +284,10 @@ static inline f32 heiDeg2Rad(f32 deg) {
 //  - the loop header increments `pose++, entry++, i++`, not the original
 //    `i++, pose++, entry++` (worth 0.02%).
 // What is left: MWCC's allocator still keeps pz/aR swapped (f28/f29) through
-// the case-0 rand calls, slots the case-0/case-1 Vec temporaries 0x18 bytes
-// high (0x2c/0x20 vs the original's 0x14/0x8), reads the case-0 `deg` fmadd
+// the case-0 rand calls, slots the case-0/case-1 Vec temporaries at 0x8/0x20
+// (the original's 0x14/0x8), reads the case-0 `deg` fmadd
 // with its operands the other way round, and spills the sfx address through r0
 // (`mr r28, r0`). Allocator work, no source-shape fix left.
-// NONMATCHING (93.67%): MWCC FPR/GPR allocation and instruction scheduling.
 static inline f32 heiSin2(f32 angle) {
     f32 v = 0.00761f;
     f32 b = 0.16605f;
@@ -320,6 +322,7 @@ static inline f32 heiCos2(f32 angle) {
 
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
 extern const f32 float_360_hei_00007b94;
+// NONMATCHING (93.69%): MWCC FPR/GPR allocation and instruction scheduling (notes above heiSin2).
 static void ext_main(void) {
     s16 oldState;
     const char* sfx;
@@ -363,26 +366,7 @@ static void ext_main(void) {
             f32 a = randf(0.3f, 0.5f);
             f32 b = randf(0.5f, 0.8f);
 #endif
-            Vec pos;
-            f32 dy;
-            f32 dist;
-            s32 frames;
-
-            oldState = entry->state;
-            pos.x = px;
-            pos.y = py;
-            pos.z = pz;
-            entry->position = pos;
-            entry->field_0x1C = a;
-            entry->field_0x20 = b;
-            dy = entry->position.y - (*pose->matrix)[1][3];
-            dist = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
-            angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
-            frames = (s32)(dist / entry->field_0x1C);
-            entry->field_0x18 = frames;
-            entry->field_0x14 = entry->field_0x20 * (f32)(s16)entry->field_0x18 / 2.0f + dy / (f32)(s16)entry->field_0x18;
-            entry->state = 0x64;
-            entry->field_0x24 = oldState;
+            chb_jump(pose, entry, entry->state, px, py, pz, a, b);
         } break;
         case 1: {
             f32 dist = distABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
@@ -557,10 +541,15 @@ USER_FUNC(evt_chorobon_wait) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (92.18%): frame is 0xc0 vs 0x90 (compound-literal temps for the three vec3 templates; declaration
-// initialisers fix the frame and leave only 3 anonymous GPR copy temps, but objdiff scores that lower) and the
-// i2f magic/float pool loads are anonymous where the target reads named objects.
-#pragma inline_max_size(1000)
+const Vec vec3_hei_00007a58 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_hei_00007a64 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_hei_00007a70 = {0.0f, 0.0f, 0.0f};
+
+// Hops an npc to (x, y, z) over a frame count: userdata holds the frames left, the vertical velocity and the speed.
+// The same 5 FPR diffs as rsh_05's copy (dy f2 vs retail f4, then the frames reload and 0.5 swap f1/f2).
+// MWCC's parser puts the leaf operand of `grav * frames * 0.5f` on the left whichever way it is written, so
+// the 0.5 load gets the lower vreg; rasim says retail numbered the product first.
+// NONMATCHING (99.88%): FPR colouring of dy and the vy expression.
 #pragma opt_lifetimes off
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
 static USER_FUNC(npc_jump) {
@@ -571,7 +560,8 @@ static USER_FUNC(npc_jump) {
     f32 z = evtGetFloat(event, args[3]);
     f32 speed = evtGetFloat(event, args[4]);
     f32 grav = evtGetFloat(event, args[5]);
-    f32 frames = 60.0f * (f32)evtGetValue(event, args[6]) / 1000.0f;
+    s32 ms = evtGetValue(event, args[6]);
+    f32 frames = 60.0f * (f32)ms / 1000.0f;
     NpcEntry* npc = npcNameToPtr(name);
     f32 vy;
     f32 rad;
@@ -582,13 +572,13 @@ static USER_FUNC(npc_jump) {
         f32 dist;
         f32 dy;
 
-        from = (Vec){ 0.0f, 0.0f, 0.0f };
+        from = vec3_hei_00007a64;
         from.x = npc->position.x;
         from.z = npc->position.z;
-        to = (Vec){ 0.0f, 0.0f, 0.0f };
+        to = vec3_hei_00007a58;
         to.x = x;
         to.z = z;
-        dist = PSVECDistance(&from, &to);
+        dist = PSVECDistance(&to, &from);
         dy = y - npc->position.y;
         if (0.0f == frames) {
             frames = dist / speed;
@@ -606,13 +596,13 @@ static USER_FUNC(npc_jump) {
     rad = 6.2831855f * angleABf(npc->position.x, npc->position.z, x, z) / 360.0f;
     npc->position.x = speed * heiSin2(rad) + npc->position.x;
     npc->position.z = -(speed * heiCos2(rad) - npc->position.z);
+    npc->position.y += vy;
     vy -= grav;
-    npc->position.y += event->userdataf[1];
     frames -= 1.0f;
     if (frames < 0.0f) {
         Vec land;
 
-        land = (Vec){ 0.0f, 0.0f, 0.0f };
+        land = vec3_hei_00007a70;
         land.x = x;
         land.y = y;
         land.z = z;
@@ -625,7 +615,6 @@ static USER_FUNC(npc_jump) {
 }
 #pragma opt_propagation reset
 #pragma opt_lifetimes reset
-#pragma inline_max_size reset
 USER_FUNC(wait_anim_frame) {
     f32 frame = evtGetFloat(event, event->args[0]);
     AnimationPose* pose = animPoseGetAnimPosePtr(npcNameToPtr("ゴールドチョロボン")->poseId);
