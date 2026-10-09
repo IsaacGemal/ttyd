@@ -173,6 +173,64 @@ class MutationTests(unittest.TestCase):
                  'f32 bumped = base + MATCH_F32(forty_five); return bumped; }'
         self.assertTrue(any(name == 'reuse angle for base' for name, _ in self.candidates(source)))
 
+    NAMED = ('extern const f32 float_0p0078125_8041c6f8;\nextern const f32 float_6p2832_80000000;\n'
+             'static const f32 half = 0.5f;\nconst f64 negtwo = -2.0;\n#define MATCH_F32(x) x\n')
+
+    def test_float_constants_need_an_exact_known_value(self):
+        source = self.NAMED + 'void sample(void) {}\nconst f32 float_0p0078125_8041c6f8 = 0.0078125f;\nconst f32 late = 1.0f;\n'
+        constants = mwsearch.float_constants(mwsearch.active_tokens(source))
+        self.assertEqual(constants['float_0p0078125_8041c6f8'].value, 0.0078125)
+        self.assertEqual(constants['negtwo'].literal, '-2.0')
+        # A rounded name (6.2832 is not an f32) is never trusted as a value.
+        self.assertNotIn('float_6p2832_80000000', constants)
+        function = mwsearch.find_function(mwsearch.active_tokens(source), 'sample')
+        self.assertGreater(constants['late'].visible_from, function.start)
+
+    def test_literal_and_named_constant_substitutions(self):
+        source = self.NAMED + ('void sample(f32* out, f32 a, f64 d) {\n    out[0] = a + 0.5f;\n    out[1] = half * a;\n'
+                               '    out[2] = MATCH_F32(0.5f) + a;\n    out[3] = d * -2.0;\n    out[4] = a * 0.5;\n'
+                               '    out[5] = negtwo * d;\n}\nconst f32 late = 0.5f;\n')
+        candidates = dict(self.candidates(source))
+        replaced = [text for name, text in candidates.items() if name.startswith('literal 0.5f -> half')]
+        self.assertEqual(len(replaced), 1)
+        self.assertIn('out[0] = a + half;', replaced[0])
+        self.assertIn('MATCH_F32(0.5f)', replaced[0])
+        self.assertFalse(any('late' in name for name in candidates))
+        # A double literal is never swapped for an f32 constant (or the reverse).
+        self.assertFalse(any('out[4] = a * half' in text for text in candidates.values()))
+        self.assertIn('out[1] = 0.5f * a;', candidates[next(name for name in candidates if name.startswith('half -> literal'))])
+        self.assertIn('out[5] = (-2.0) * d;', candidates[next(name for name in candidates if name.startswith('negtwo -> literal'))])
+
+    def test_division_by_power_of_two_becomes_named_reciprocal(self):
+        source = self.NAMED + ('void sample(f32* out, f32 a, u8* table) {\n    if (a) {\n'
+                               '        out[0] = (f32)table[0] / 128.0f;\n        out[1] = (f32)table[1] / 128.0f;\n'
+                               '    } else {\n        out[2] = (f32)table[2] / 128.0f;\n    }\n'
+                               '    out[3] = a / 3.0f;\n    a /= 128.0f;\n    out[4] = a;\n}\n')
+        candidates = dict(self.candidates(source))
+        plain = [text for name, text in candidates.items() if name.startswith('/ 128.0f -> * float_0p0078125_8041c6f8 at')]
+        self.assertEqual(len(plain), 4)
+        self.assertTrue(any('out[0] = (f32)table[0] * float_0p0078125_8041c6f8;' in text for text in plain))
+        self.assertTrue(any('a *= float_0p0078125_8041c6f8;' in text for text in plain))
+        self.assertIn('/ 128.0f -> * float_0p0078125_8041c6f8 (all 4)', candidates)
+        # PR #623's form: each dividend goes through a temp that is multiplied by the named constant.
+        every = candidates['via-temp / 128.0f -> * float_0p0078125_8041c6f8 (all 3)']
+        self.assertIn('f32 mwsearch_temp;', every)
+        self.assertIn('mwsearch_temp = (f32)table[1];\n        out[1] = mwsearch_temp * float_0p0078125_8041c6f8;', every)
+        self.assertIn('out[2] = mwsearch_temp * float_0p0078125_8041c6f8;', every)
+        block = [text for name, text in candidates.items() if name.startswith('via-temp / 128.0f') and '(block' in name]
+        self.assertEqual(len(block), 1)
+        self.assertIn('out[2] = (f32)table[2] / 128.0f;', block[0])
+        self.assertFalse(any('3.0f' in name and 'float_0p0078125' in name for name in candidates))
+        for text in candidates.values():
+            mwsearch.pairs(mwsearch.tokenize(text))
+
+    def test_aggregate_initializer_literals_are_left_alone(self):
+        source = 'static const f32 zero = 0.0f;\nvoid sample(void) { Vec v = {0.0f, 1.0f}; v.x = 0.0f; use(&v); }'
+        replaced = [text for name, text in self.candidates(source) if name.startswith('literal 0.0f')]
+        self.assertEqual(len(replaced), 1)
+        self.assertIn('{0.0f, 1.0f}', replaced[0])
+        self.assertIn('v.x = zero;', replaced[0])
+
 
 def row(text, kind=None):
     entry = {'instruction': {'formatted': text}}
@@ -302,6 +360,47 @@ class SearchTests(unittest.TestCase):
             self.assertIn('-initial', patches[-1].read_text())
             self.assertIn('+matched', patches[-1].read_text())
             json.loads((Path(directory) / 'results.json').read_text())
+
+    def test_plateau_crossing_keeps_neutral_steps_that_change_code(self):
+        # Greedy reaches 75% and stalls. The match is reachable only through a neutral step whose code
+        # differs (50% -> 50%) and then a step that is worse than the best so far (60% < 75%).
+        tree = {'initial': [('greedy', 'greedy'), ('cosmetic', 'cosmetic'), ('neutral', 'neutral')],
+                'greedy': [('greedy tie', 'greedy_tie')], 'greedy_tie': [], 'cosmetic': [],
+                'neutral': [('bridge', 'bridge')], 'bridge': [('finish', 'matched')], 'matched': []}
+        percents = {'greedy': 75.0, 'greedy_tie': 75.0, 'bridge': 60.0, 'matched': 100.0}
+        code = {'cosmetic': 'initial', 'greedy_tie': 'greedy'}
+
+        def score(target_path, path, func):
+            percent = percents.get(path, 50.0)
+            return {'sample': mwsearch.Score(percent, 0 if percent == 100 else 1, 2, code.get(path, path))}
+
+        def run(**options):
+            with tempfile.TemporaryDirectory() as directory, \
+                 mock.patch.object(mwsearch, 'compile_source', lambda command, source, directory, timeout=30: source), \
+                 mock.patch.object(mwsearch, 'read_object', lambda path: mwsearch.ObjectImage({'sample': 4}, {})), \
+                 mock.patch.object(mwsearch, 'mutations', lambda source, func, defines: iter(tree[source])), \
+                 mock.patch.object(mwsearch, 'objdiff_scores', score), contextlib.redirect_stdout(io.StringIO()):
+                return mwsearch.search(self.command(), 'target.o', 'initial', 'sample', 2, 1, Path(directory), **options)
+
+        summary = run()
+        self.assertEqual(summary['stop_reason'], 'match')
+        self.assertGreaterEqual(summary['stats']['explored'], 2)
+        # Without exploration this is the old beam: it ends on the greedy plateau.
+        self.assertEqual(run(explore=0)['best']['sample']['percent'], 75.0)
+        # The stall budget bounds non-improving steps; the bridge improves on its own parent.
+        self.assertEqual(run(max_stall=0)['best']['sample']['percent'], 75.0)
+        self.assertEqual(run(max_stall=1)['stop_reason'], 'match')
+
+    def test_select_beam_prefers_new_code_and_round_robins_parents(self):
+        def entry(name, percent, signature):
+            return mwsearch.Result(name, name, {'f': mwsearch.Score(percent, 1, 4, signature)}, digest=name)
+
+        main = [entry('a', 90, 'x'), entry('b', 90, 'x'), entry('c', 90, 'y'), entry('d', 90, 'z')]
+        chosen = mwsearch.select_beam(main, [], 'f', 2, 0, {'y'})
+        self.assertEqual([item.description for item in chosen], ['a', 'd'])
+        buckets = [[entry('p1', 80, 'p1'), entry('p2', 79, 'p2')], [entry('q1', 70, 'q1')], [entry('r1', 60, 'x')]]
+        chosen = mwsearch.select_beam(main[:1], buckets, 'f', 1, 3, set())
+        self.assertEqual([item.description for item in chosen], ['a', 'p1', 'q1', 'p2'])
 
     def test_bundle_has_context_labels_and_exact_flags(self):
         preprocessed = b'int helper(void) { return 2; }\nint sample(int a) { return helper() + a; }\n'

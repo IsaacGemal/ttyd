@@ -11,19 +11,27 @@ and each data section must stay byte-identical to the input's or become the targ
 (up to the extracted section's trailing alignment zeros).
 A match is not a proof of C equivalence or a linked checksum:
 review every emitted patch, especially floating-point operand swaps.
+
+Each generation expands the best-or-tied candidates (distinct generated code, code not yet
+expanded first) plus up to --explore candidates that kept their own parent's score but changed
+its code, taken round-robin across parents; --stall bounds consecutive non-improving steps on
+one line of descent. This crosses plateaus where the greedy beam settles on a local optimum.
 """
 
 import argparse
 import concurrent.futures
 import dataclasses
 import difflib
+import fractions
 import hashlib
 import json
 import math
 import os
+import re
 from pathlib import Path
 import shlex
 import shutil
+import struct
 import subprocess
 import tempfile
 import time
@@ -648,6 +656,92 @@ def replace_name(body, name, replacement, first=0, last=None):
             if index >= first and (last is None or index < last)]
 
 
+def float_literal(text):
+    """(value, "f32" | "double") for a decimal floating literal token, else None."""
+    lowered = text.lower()
+    if lowered.startswith("0x") or not ("." in lowered or "e" in lowered):
+        return None
+    kind = "f32" if lowered.endswith("f") else "double"
+    try:
+        return float(lowered.rstrip("fl")), kind
+    except ValueError:
+        return None
+
+
+def same_float(first, second, kind):
+    if kind == "f32":
+        return struct.pack(">f", first) == struct.pack(">f", second)
+    return first == second
+
+
+@dataclasses.dataclass(frozen=True)
+class FloatConstant:
+    name: str
+    kind: str
+    value: float
+    literal: str
+    visible_from: int
+
+
+def float_constants(tokens):
+    """Named floating constants of known value at file scope: `[static] const T NAME = [-]literal;`
+    definitions, plus `extern const T NAME;` declarations whose name spells an exact value
+    (`float_0p0078125_8041c6f8`, `float_neg2_...`; rounded spellings such as 6p2832 are not exact
+    and are skipped). `visible_from` is the token index after the first declaration of the name.
+    """
+    found = {}
+    declared = {}
+    depth = 0
+    start = True
+    for index, token in enumerate(tokens):
+        if token.text == "{":
+            depth += 1
+        elif token.text == "}":
+            depth -= 1
+            start = depth == 0
+            continue
+        if depth or token.kind == "directive" or token.text == ";":
+            start = depth == 0 and token.text in {";"} or token.kind == "directive"
+            continue
+        if not start:
+            continue
+        start = False
+        cursor = index
+        if tokens[cursor].text in {"static", "extern"}:
+            cursor += 1
+        if cursor + 3 >= len(tokens) or tokens[cursor].text != "const" or tokens[cursor + 1].text not in FLOAT_TYPES:
+            continue
+        kind = "f32" if tokens[cursor + 1].text in {"f32", "float"} else "double"
+        name_token = tokens[cursor + 2]
+        if name_token.kind != "ident":
+            continue
+        name = name_token.text
+        declared.setdefault(name, cursor + 3)
+        following = tokens[cursor + 3].text
+        if following == "=":
+            negative = tokens[cursor + 4].text == "-"
+            literal_index = cursor + 5 if negative else cursor + 4
+            if literal_index + 1 >= len(tokens) or tokens[literal_index + 1].text != ";":
+                continue
+            parsed = float_literal(tokens[literal_index].text)
+            if not parsed or (kind == "f32") != (parsed[1] == "f32"):
+                continue
+            value = -parsed[0] if negative else parsed[0]
+            literal = ("-" if negative else "") + tokens[literal_index].text
+            found[name] = (kind, value, literal)
+        elif following == ";" and name not in found:
+            match = re.fullmatch(r"(?:float|double)_(neg)?(\d+)(?:p(\d+))?_[0-9a-f]{8}", name)
+            if not match:
+                continue
+            decimal = ("-" if match[1] else "") + match[2] + "." + (match[3] or "0")
+            value = float(decimal)
+            exact = struct.unpack(">f", struct.pack(">f", value))[0] if kind == "f32" else value
+            if fractions.Fraction(decimal) != fractions.Fraction(exact):
+                continue
+            found[name] = (kind, value, repr(value) + ("f" if kind == "f32" else ""))
+    return {name: FloatConstant(name, kind, value, literal, declared[name]) for name, (kind, value, literal) in found.items()}
+
+
 def mutations(source, func, defines=None):
     """Yield (description, full unit) candidates; unsupported C is left untouched.
 
@@ -694,6 +788,10 @@ def mutations(source, func, defines=None):
                 and expression.children[0].kind == "ident" and expression.children[0].operator == name
                 and name not in names(expression.children[1]))
 
+    constants = {name: constant for name, constant in float_constants(tokens).items()
+                 if constant.visible_from <= body.function.start}
+
+    scaled_sites = {}
     for statement in [*body.statements, *body.conditions]:
         expression = statement.expression
         if not expression:
@@ -719,6 +817,19 @@ def mutations(source, func, defines=None):
                     if (operator, right.operator.lower()) in {("/", "2.0f"), ("*", "0.5f")}:
                         replacement = f"({left_text}) {'* 0.5f' if operator == '/' else '/ 2.0f'}"
                         yield candidate("float reciprocal", [(*body.span(node.first, node.last), replacement)])
+                parsed = float_literal(right.operator) if operator == "/" and right.kind == "number" else None
+                if (parsed and pure(left) and node.first not in delayed and not statement.declaration
+                        and tokens[statement.first].text not in {"return", "if", "while", "for", "switch"}):
+                    value, kind = parsed
+                    mantissa = math.frexp(value)[0] if value else 0
+                    for name, constant in constants.items():
+                        if abs(mantissa) == 0.5 and constant.kind == kind and same_float(constant.value, 1.0 / value, kind):
+                            statement_start = tokens[statement.first].start
+                            indent = body.indent(statement.first)
+                            yield candidate(f"via-temp {left_text[:50]} * {name}", [
+                                (statement_start, statement_start, f"{kind} {fresh};\n{indent}{fresh} = {left_text};\n{indent}"),
+                                (*body.span(node.first, node.last), f"{fresh} * {name}")])
+                            scaled_sites.setdefault((right.operator, name, kind), []).append((statement, node, left_text))
             direct_call = (node.kind == "call" and expression.kind == "binary" and expression.operator == "="
                            and expression.children[0].kind == "ident" and expression.children[1] is node)
             type_name = body.types.get(expression.children[0].operator) if direct_call else expression_type(node, body)
@@ -876,6 +987,91 @@ def mutations(source, func, defines=None):
                     yield candidate(f"type {declaration_name}: {declaration.type_name}->{type_name}",
                                     [(tokens[declaration.first].start, tokens[declaration.first].end, type_name)])
 
+
+    def fixed_site(index):
+        depth = 0
+        for cursor in range(index - 1, body.function.opening, -1):
+            text = tokens[cursor].text
+            if text in {")", "]"}:
+                depth += 1
+            elif text in {"(", "["}:
+                if depth == 0:
+                    caller = tokens[cursor - 1]
+                    if text == "(" and caller.kind == "ident" and caller.text.isupper():
+                        return True
+                else:
+                    depth -= 1
+            elif text == "{":
+                return tokens[cursor - 1].text in {"=", ",", "{"}
+            elif text in {";", "}"}:
+                return False
+        return False
+
+    for (literal, name, kind), sites in scaled_sites.items():
+        statements = [statement for statement, _, _ in sites]
+        if len(set(statements)) != len(statements):
+            continue
+        groups = {}
+        for site in sites:
+            groups.setdefault(site[0].block, []).append(site)
+        selections = [(f"(block {block})", group) for block, group in groups.items() if 1 < len(group) < len(sites)]
+        if len(sites) > 1:
+            selections.append((f"(all {len(sites)})", sites))
+        insertion = tokens[body.function.opening].end
+        for label, group in selections:
+            changes = [(insertion, insertion, f"\n{body.indent(group[0][0].first)}{kind} {fresh};")]
+            for statement, node, left_text in group:
+                statement_start = tokens[statement.first].start
+                changes.append((statement_start, statement_start, f"{fresh} = {left_text};\n{body.indent(statement.first)}"))
+                changes.append((*body.span(node.first, node.last), f"{fresh} * {name}"))
+            yield candidate(f"via-temp / {literal} -> * {name} {label}", changes)
+
+    literal_sites = {}
+    reciprocal_sites = {}
+    named_sites = {}
+    for index in range(body.function.opening + 1, body.function.closing):
+        token = tokens[index]
+        if fixed_site(index) if token.kind in {"number", "ident"} else True:
+            continue
+        if token.kind == "ident" and token.text in constants and tokens[index - 1].text not in {".", "->", "&"}:
+            named_sites.setdefault(token.text, []).append(index)
+        parsed = float_literal(token.text) if token.kind == "number" else None
+        if not parsed:
+            continue
+        value, kind = parsed
+        for name, constant in constants.items():
+            if constant.kind != kind:
+                continue
+            if same_float(constant.value, value, kind):
+                literal_sites.setdefault((token.text, name), []).append(index)
+            mantissa, _ = math.frexp(value) if value else (0, 0)
+            if (tokens[index - 1].text in {"/", "/="} and abs(mantissa) == 0.5
+                    and same_float(constant.value, 1.0 / value, kind)):
+                reciprocal_sites.setdefault((token.text, name), []).append(index)
+    for (literal, name), sites in literal_sites.items():
+        for index in sites:
+            yield candidate(f"literal {literal} -> {name} at {tokens[index].start}",
+                            [(tokens[index].start, tokens[index].end, name)])
+        if len(sites) > 1:
+            yield candidate(f"literal {literal} -> {name} (all {len(sites)})",
+                            [(tokens[index].start, tokens[index].end, name) for index in sites])
+    for (literal, name), sites in reciprocal_sites.items():
+        def multiply(index):
+            return (tokens[index - 1].start, tokens[index].end, f"{'*=' if tokens[index - 1].text == '/=' else '*'} {name}")
+        for index in sites:
+            yield candidate(f"/ {literal} -> * {name} at {tokens[index].start}", [multiply(index)])
+        if len(sites) > 1:
+            yield candidate(f"/ {literal} -> * {name} (all {len(sites)})", [multiply(index) for index in sites])
+    for name, sites in named_sites.items():
+        literal = constants[name].literal
+        literal = f"({literal})" if literal.startswith("-") else literal
+        for index in sites:
+            yield candidate(f"{name} -> literal {literal} at {tokens[index].start}",
+                            [(tokens[index].start, tokens[index].end, literal)])
+        if len(sites) > 1:
+            yield candidate(f"{name} -> literal {literal} (all {len(sites)})",
+                            [(tokens[index].start, tokens[index].end, literal) for index in sites])
+
     for first, second in zip(body.statements, body.statements[1:]):
         if first.last != second.first or first.block != second.block or first.declaration or second.declaration:
             continue
@@ -994,6 +1190,7 @@ class Score:
     percent: float
     differing: int
     total: int
+    signature: str = dataclasses.field(default="", compare=False)
 
     def key(self):
         return (-round(self.percent, 4), self.differing)
@@ -1028,7 +1225,9 @@ def parse_objdiff(diff):
                         if (left_rows[position] if position < len(left_rows) else {}).get("diff_kind")
                         or (right_rows[position] if position < len(right_rows) else {}).get("diff_kind")
                         or position >= len(left_rows) or position >= len(right_rows))
-        result[symbol["name"]] = Score(float(symbol.get("match_percent", 0.0) if ours else 0.0), differing, rows)
+        code = "\n".join(row.get("instruction", {}).get("formatted", "") for row in right_rows)
+        result[symbol["name"]] = Score(float(symbol.get("match_percent", 0.0) if ours else 0.0), differing, rows,
+                                       hashlib.sha256(code.encode()).hexdigest()[:16])
     return result
 
 
@@ -1179,7 +1378,8 @@ def write_bundle(command, target_path, source, func, output):
 
 
 def as_json(scores):
-    return {name: dataclasses.asdict(score) for name, score in scores.items()}
+    return {name: {"percent": score.percent, "differing": score.differing, "total": score.total}
+            for name, score in scores.items()}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -1188,9 +1388,45 @@ class Result:
     source: str
     scores: dict = dataclasses.field(default_factory=dict)
     error: str = ""
+    stall: int = 0
+    digest: str = ""
+
+    def signature(self, func):
+        """The function's generated code (objdiff's formatted rows), or the source when that is unknown."""
+        score = self.scores.get(func)
+        return (score.signature if score else "") or self.digest or normalized_hash(self.source)
 
 
-def search(command, target_path, source, func, jobs, minutes, output, beam_width=4):
+def select_beam(main, buckets, func, beam_width, explore, expanded):
+    """Next generation's parents: the best-or-tied `main` entries with distinct code, unexpanded code
+    first, then up to `explore` plateau-crossing entries taken round-robin across parents.
+
+    `buckets` maps each parent (ordered best first) to children that did not lose ground against it
+    and generate code no frontier has expanded; one child per parent per round keeps each line of
+    descent alive instead of letting the currently best parent fill every slot.
+    """
+    chosen, signatures = [], set()
+    for entry in sorted(main, key=lambda item: (item.scores[func].key(), item.signature(func) in expanded,
+                                                item.digest)):
+        if len(chosen) < beam_width and entry.signature(func) not in signatures:
+            chosen.append(entry)
+            signatures.add(entry.signature(func))
+    queues = [sorted(children, key=lambda item: (item.scores[func].key(), item.stall, item.digest))
+              for children in buckets]
+    explored = 0
+    while explore and explored < explore and any(queues):
+        for queue in queues:
+            while queue and (queue[0].signature(func) in signatures or queue[0].signature(func) in expanded):
+                queue.pop(0)
+            if queue and explored < explore:
+                entry = queue.pop(0)
+                chosen.append(entry)
+                signatures.add(entry.signature(func))
+                explored += 1
+    return chosen
+
+
+def search(command, target_path, source, func, jobs, minutes, output, beam_width=4, explore=8, max_stall=2):
     started = time.monotonic()
     deadline = started + minutes * 60
     target = read_object(target_path)
@@ -1200,29 +1436,30 @@ def search(command, target_path, source, func, jobs, minutes, output, beam_width
         baseline_scores = objdiff_scores(target_path, object_path, func)
     if func not in baseline.functions or func not in target.functions or func not in baseline_scores:
         raise ValueError(f"{func} missing from baseline or target object")
-    best = Result("input", source, baseline_scores)
+    best = Result("input", source, baseline_scores, digest=normalized_hash(source))
     stats = {"compiled": 0, "compile_failures": 0, "data_rejections": 0, "sibling_rejections": 0,
-             "improvements": 0, "deduplicated": 0}
+             "improvements": 0, "deduplicated": 0, "generations": 0, "explored": 0}
     seen = {normalized_hash(source)}
     beam = [best]
+    expanded = {best.signature(func)}
     sibling_names = sorted(name for name in baseline_scores if name != func)
     print(f"baseline {func}: {baseline_scores[func]}", flush=True)
     print("siblings: " + ", ".join(f"{name}={baseline_scores[name].percent:.3f}%" for name in sibling_names), flush=True)
     (output / "input.c").write_text(source, encoding="utf-8", errors="surrogateescape")
 
-    def evaluate(description, candidate_source):
+    def evaluate(description, candidate_source, digest):
         remaining = deadline - time.monotonic()
         if remaining <= 0:
-            return Result(description, candidate_source, error="deadline")
+            return Result(description, candidate_source, error="deadline", digest=digest)
         try:
             with tempfile.TemporaryDirectory(prefix="mwsearch-candidate-") as directory:
                 object_path = compile_source(command, candidate_source, directory, min(30, remaining))
                 image = read_object(object_path)
                 candidate_scores = objdiff_scores(target_path, object_path, func)
                 rejected = acceptable(baseline_scores, baseline, candidate_scores, image, func, target)
-                return Result(description, candidate_source, candidate_scores, rejected or "")
+                return Result(description, candidate_source, candidate_scores, rejected or "", digest=digest)
         except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as error:
-            return Result(description, candidate_source, error=str(error))
+            return Result(description, candidate_source, error=str(error), digest=digest)
 
     def record(result):
         nonlocal best
@@ -1242,14 +1479,17 @@ def search(command, target_path, source, func, jobs, minutes, output, beam_width
     if not best.scores[func].matched():
         with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as executor:
             while beam and time.monotonic() < deadline and not best.scores[func].matched():
-                frontier = []
+                stats['generations'] += 1
+                main = {}
+                buckets = [[] for _ in beam]
                 pending = {}
-                candidates = iter(item for parent in beam for item in mutations(parent.source, func, command.defines()))
+                candidates = iter((slot, item) for slot, parent in enumerate(beam)
+                                  for item in mutations(parent.source, func, command.defines()))
                 exhausted = False
                 while (not exhausted or pending) and time.monotonic() < deadline:
                     while not exhausted and len(pending) < jobs:
                         try:
-                            description, candidate_source = next(candidates)
+                            slot, (description, candidate_source) = next(candidates)
                         except StopIteration:
                             exhausted = True
                             break
@@ -1258,13 +1498,13 @@ def search(command, target_path, source, func, jobs, minutes, output, beam_width
                             stats['deduplicated'] += 1
                             continue
                         seen.add(digest)
-                        pending[executor.submit(evaluate, description, candidate_source)] = digest
+                        pending[executor.submit(evaluate, description, candidate_source, digest)] = slot
                     if not pending:
                         break
                     completed, _ = concurrent.futures.wait(pending, timeout=max(0.01, deadline - time.monotonic()),
                                                             return_when=concurrent.futures.FIRST_COMPLETED)
                     for future in completed:
-                        pending.pop(future)
+                        slot = pending.pop(future)
                         result = future.result()
                         stats['compiled'] += 1
                         if result.error:
@@ -1275,22 +1515,40 @@ def search(command, target_path, source, func, jobs, minutes, output, beam_width
                             else:
                                 stats['compile_failures'] += 1
                             continue
-                        if result.scores[func].key() < best.scores[func].key():
+                        parent = beam[slot]
+                        key, parent_key = result.scores[func].key(), parent.scores[func].key()
+                        result = dataclasses.replace(result, stall=0 if key < parent_key else parent.stall + 1)
+                        if key < best.scores[func].key():
                             record(result)
-                        if result.scores[func].key() <= best.scores[func].key():
-                            frontier.append(result)
-                            frontier.sort(key=lambda entry: (entry.scores[func].key(), normalized_hash(entry.source)))
-                            del frontier[beam_width:]
+                        if key <= best.scores[func].key():
+                            signature = result.signature(func)
+                            if signature not in main or result.digest < main[signature].digest:
+                                main[signature] = result
+                            ranked = sorted(main.values(), key=lambda item: (item.scores[func].key(), item.signature(func) in expanded,
+                                                                            item.digest))
+                            main = {item.signature(func): item for item in ranked[:beam_width * 2]}
+                        if (key <= parent_key and result.stall <= max_stall and result.signature(func) != parent.signature(func)
+                                and result.signature(func) not in expanded):
+                            bucket = buckets[slot]
+                            bucket.append(result)
+                            bucket.sort(key=lambda item: (item.scores[func].key(), item.stall, item.digest))
+                            del bucket[max(1, explore):]
                     if best.scores[func].matched():
                         break
                 for future in pending:
                     future.cancel()
-                beam = [entry for entry in frontier if entry.scores[func].key() <= best.scores[func].key()]
+                order = sorted(range(len(beam)), key=lambda index: beam[index].scores[func].key())
+                main_entries = [entry for entry in main.values() if entry.scores[func].key() <= best.scores[func].key()]
+                beam = select_beam(main_entries, [buckets[index] for index in order], func, beam_width, explore, expanded)
+                main_digests = {entry.digest for entry in main_entries}
+                stats['explored'] += sum(1 for entry in beam if entry.digest not in main_digests)
+                expanded |= {entry.signature(func) for entry in beam}
     summary = {"function": func, "baseline": as_json(baseline_scores), "best": as_json(best.scores), "stats": stats,
                "elapsed_seconds": time.monotonic() - started, "jobs": jobs, "minutes": minutes,
                "stop_reason": "match" if best.scores[func].matched() else "deadline" if time.monotonic() >= deadline else "exhausted",
                "score": "objdiff-cli diff match_percent (aligned rows; relocations by name/address)",
-               "data_gate": "each data section equals the input's or the target's"}
+               "data_gate": "each data section equals the input's or the target's",
+               "beam": beam_width, "explore": explore, "max_stall": max_stall}
     (output / "results.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(f"finished: {best.scores[func]}; {stats}; {summary['stop_reason']}", flush=True)
     return summary
@@ -1305,12 +1563,16 @@ def main(argv=None):
     parser.add_argument("--minutes", type=float, default=15)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--beam", type=int, default=4, help="equal-or-better frontier width (default 4)")
+    parser.add_argument("--explore", type=int, default=8,
+                        help="extra parents per generation that kept their parent's score but changed its code (default 8)")
+    parser.add_argument("--stall", type=int, default=2,
+                        help="non-improving steps an exploring line may take in a row (default 2)")
     parser.add_argument("--bundle", action="store_true", help="write scratch bundle instead of searching")
     args = parser.parse_args(argv)
     if not 1 <= args.j <= 12:
         parser.error("-j must be between 1 and 12")
-    if not math.isfinite(args.minutes) or args.minutes <= 0 or args.beam < 1:
-        parser.error("--minutes must be finite and positive; --beam must be positive")
+    if not math.isfinite(args.minutes) or args.minutes <= 0 or args.beam < 1 or args.explore < 0 or args.stall < 0:
+        parser.error("--minutes must be finite and positive; --beam must be positive; --explore/--stall nonnegative")
     try:
         resolution, command = compile_command(args.unit)
         source_path = (args.src or ROOT / resolution['src']).resolve()
@@ -1327,7 +1589,7 @@ def main(argv=None):
         if args.bundle:
             write_bundle(command, target_path, source, args.func, output)
         else:
-            search(command, target_path, source, args.func, args.j, args.minutes, output, args.beam)
+            search(command, target_path, source, args.func, args.j, args.minutes, output, args.beam, args.explore, args.stall)
     except (ValueError, LookupError, RuntimeError, OSError, subprocess.SubprocessError) as error:
         parser.exit(1, f"mwsearch: {error}\n")
     return 0
