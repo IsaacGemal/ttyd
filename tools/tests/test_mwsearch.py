@@ -2,6 +2,7 @@
 import sys
 import contextlib
 import io
+import json
 import subprocess
 import tempfile
 import unittest
@@ -136,27 +137,113 @@ class MutationTests(unittest.TestCase):
         self.assertFalse(any(name == 'split live range of x' for name, _ in self.candidates(source)))
         self.assertFalse(any(name == 'inline assignment to x' for name, _ in self.candidates(source)))
 
+    def test_parameter_reuse_keeps_declarations_first(self):
+        # MWCC's C front end rejects a declaration after a statement ("expression syntax error").
+        source = 'int sample(float angle) {\n\tfloat base = comp(angle);\n\tfloat bumped = base + 45.0f;\n' \
+                 '\tint rate = (int)bumped;\n\treturn rate;\n}'
+        candidate = dict(self.candidates(source))['reuse angle for base']
+        self.assertIn('\tfloat bumped;\n\tint rate;\n\tangle = comp(angle);\n\tbumped = angle + 45.0f;\n'
+                      '\trate = (int)bumped;', candidate)
+
+    def test_declaration_hoist_leaves_valid_blocks_alone(self):
+        source = 'void sample(int a) {\n\tGXColor c = {1, 2};\n\tPouch* p;\n\tint x = a;\n\tif (a) {\n\t\tint y = 2;\n' \
+                 '\t\tuse(y);\n\t} else {\n\t\tuse(x);\n\t}\n\tdo { x--; } while (x);\n}'
+        self.assertEqual(mwsearch.c89_declarations(source, 'sample'), source)
+        late = 'void sample(int a) {\n\tPouch* p;\n\tuse(a);\n\tint x = a + 1;\n\t{\n\t\tuse(a);\n\t\tint y;\n\t\ty = x;\n\t}\n}'
+        self.assertEqual(mwsearch.c89_declarations(late, 'sample'),
+                         'void sample(int a) {\n\tPouch* p;\n\tint x;\n\tuse(a);\n\tx = a + 1;\n\t{\n\t\tint y;\n'
+                         '\t\tuse(a);\n\t\t\n\t\ty = x;\n\t}\n}')
+
+    def test_hoist_skips_declarations_already_late_in_input(self):
+        # A declaring macro hides the declaration run; the compiling input proves `int x` is not late.
+        source = 'void sample(int a) {\n\tBASE_DECLS\n\tf32 y;\n\tint x = a;\n\tuse(x);\n\ty = 1.0f;\n\tuse_f(y);\n}'
+        self.assertEqual(mwsearch.late_declarations(source, 'sample'), {'x'})
+        for _, candidate in self.candidates(source):
+            self.assertTrue(candidate.startswith('void sample(int a) {\n\tBASE_DECLS\n\tf32 y;\n'))
+        literal = 'void sample(void) {\n\tVec v = (Vec){ 0.0f, 0.0f, 0.0f };\n\tint x;\n\tx = 2;\n\tuse(x);\n}'
+        self.assertEqual(mwsearch.c89_declarations(literal, 'sample'), literal)
+
+    def test_via_temp_after_statement_is_hoisted(self):
+        source = 'float sample(float a) { float x; use(a); x = (float)table[2] * a; return x; }'
+        candidate = next(text for name, text in self.candidates(source) if name.startswith('via-temp (float)table[2]'))
+        self.assertLess(candidate.index(' mwsearch_temp;'), candidate.index('use(a);'))
+
     def test_parameter_reuse_with_macro_arguments(self):
         source = 'f32 sample(f32 angle) { f32 base = compAngle(MATCH_F32(zero), angle); ' \
                  'f32 bumped = base + MATCH_F32(forty_five); return bumped; }'
         self.assertTrue(any(name == 'reuse angle for base' for name, _ in self.candidates(source)))
 
 
+def row(text, kind=None):
+    entry = {'instruction': {'formatted': text}}
+    if kind:
+        entry['diff_kind'] = kind
+    return entry
+
+
 class ScoreTests(unittest.TestCase):
-    def test_mask_only_relocation_bits(self):
-        self.assertEqual(mwsearch.instruction_score(((0x38630000, 0xffff),), ((0x38631234, 0xffff),)), (0, 1))
-        self.assertEqual(mwsearch.instruction_score(((0x38630000, 0xffff),), ((0x38831234, 0xffff),)), (1, 1))
-        self.assertEqual(mwsearch.instruction_score(((0x38630000, 0xffff),), ()), (1, 1))
+    def diff(self, left_rows, right_rows, percent):
+        return {'left': {'symbols': [{'name': 'sample', 'kind': 'SYMBOL_FUNCTION', 'target_symbol': 1,
+                                      'match_percent': percent, 'instructions': left_rows},
+                                     {'name': 'gone', 'kind': 'SYMBOL_FUNCTION', 'instructions': [row('blr')]},
+                                     {'name': '@1', 'kind': 'SYMBOL_OBJECT'}]},
+                'right': {'symbols': [{'name': 'other'}, {'name': 'sample', 'instructions': right_rows}]}}
+
+    def test_objdiff_alignment_counts_an_insertion_once(self):
+        # objdiff aligns with blank rows: one extra instruction is one differing row, not a shifted tail.
+        left = [row('li r3, 0'), {}, row('addi r3, r3, 1'), row('blr')]
+        right = [row('li r3, 0'), row('nop', 'DIFF_INSERT'), row('addi r3, r3, 1'), row('blr')]
+        scores = mwsearch.parse_objdiff(self.diff(left, right, 87.5))
+        self.assertEqual(scores['sample'], mwsearch.Score(87.5, 1, 4))
+        self.assertFalse(scores['sample'].matched())
+        self.assertEqual(scores['gone'].percent, 0.0)
+        self.assertNotIn('@1', scores)
+
+    def test_objdiff_register_and_relocation_differences_count(self):
+        left = [row('lfs f3, float_0p0078125@sda21', 'DIFF_ARG_MISMATCH'), row('fmr f1, f2', 'DIFF_ARG_MISMATCH')]
+        right = [row('lfs f3, @405@sda21', 'DIFF_ARG_MISMATCH'), row('fmr f1, f3', 'DIFF_ARG_MISMATCH')]
+        self.assertEqual(mwsearch.parse_objdiff(self.diff(left, right, 99.9))['sample'].differing, 2)
+        matched = mwsearch.parse_objdiff(self.diff([row('blr')], [row('blr')], 100.0))['sample']
+        self.assertTrue(matched.matched())
+
+    def test_percent_orders_before_row_count(self):
+        self.assertLess(mwsearch.Score(99.5, 3, 10).key(), mwsearch.Score(99.0, 1, 10).key())
+        self.assertLess(mwsearch.Score(99.0, 1, 10).key(), mwsearch.Score(99.0, 2, 10).key())
+
+    def test_objdiff_cli_invocation(self):
+        output = {'left': {'symbols': [{'name': 'sample', 'kind': 'SYMBOL_FUNCTION', 'target_symbol': 0,
+                                        'match_percent': 100.0, 'instructions': [row('blr')]}]},
+                  'right': {'symbols': [{'name': 'sample', 'instructions': [row('blr')]}]}}
+        calls = []
+
+        def run_fixture(argv, timeout):
+            calls.append(argv)
+            return subprocess.CompletedProcess(argv, 0, json.dumps(output).encode(), b'')
+
+        with mock.patch.object(mwsearch, 'run_process', run_fixture):
+            self.assertTrue(mwsearch.objdiff_scores('t.o', 'c.o', 'sample')['sample'].matched())
+        self.assertEqual(calls[0][1:], ['diff', '-1', 't.o', '-2', 'c.o', 'sample', '-o', '-', '--format', 'json'])
 
     def test_sibling_and_raw_data_regression_gates(self):
-        baseline = mwsearch.ObjectImage({'sample': (), 'sibling': ()}, {'.sdata2': b'1234'})
-        before = {'sample': (2, 4), 'sibling': (0, 2)}
-        after = {'sample': (0, 4), 'sibling': (0, 2)}
-        self.assertIsNone(mwsearch.acceptable(before, baseline, after, baseline, 'sample'))
+        baseline = mwsearch.ObjectImage({'sample': 8, 'sibling': 4}, {'.sdata2': b'1234'})
+        target = mwsearch.ObjectImage({'sample': 8, 'sibling': 4}, {'.sdata2': b'12'})
+        before = {'sample': mwsearch.Score(90.0, 2, 4), 'sibling': mwsearch.Score(99.0, 1, 2)}
+        after = {'sample': mwsearch.Score(100.0, 0, 4), 'sibling': mwsearch.Score(99.0, 1, 2)}
+        self.assertIsNone(mwsearch.acceptable(before, baseline, after, baseline, 'sample', target))
         self.assertIn('sibling regressed', mwsearch.acceptable(before, baseline,
-                      {**after, 'sibling': (1, 2)}, baseline, 'sample'))
+                      {**after, 'sibling': mwsearch.Score(98.0, 1, 2)}, baseline, 'sample', target))
         changed = mwsearch.ObjectImage(baseline.functions, {'.sdata2': b'1243'})
-        self.assertEqual(mwsearch.acceptable(before, baseline, after, changed, 'sample'), 'data changed')
+        self.assertEqual(mwsearch.acceptable(before, baseline, after, changed, 'sample', target), 'data changed')
+        # Data that becomes the target's (a stray literal dropped from the pool) is progress, not a regression.
+        self.assertIsNone(mwsearch.acceptable(before, baseline, after, target, 'sample', target))
+        padded = mwsearch.ObjectImage(target.functions, {'.sdata2': b'12\0\0\0\0'})
+        self.assertIsNone(mwsearch.acceptable(before, baseline, after, target, 'sample', padded))
+        self.assertEqual(mwsearch.acceptable(before, baseline, after, mwsearch.ObjectImage(baseline.functions, {'.sdata2': b'1'}),
+                                             'sample', mwsearch.ObjectImage(target.functions, {'.sdata2': b'12'})), 'data changed')
+        missing = mwsearch.ObjectImage(baseline.functions, {})
+        self.assertEqual(mwsearch.acceptable(before, baseline, after, missing, 'sample', target), 'data changed')
+        fewer = mwsearch.ObjectImage({'sample': 8}, baseline.data)
+        self.assertEqual(mwsearch.acceptable(before, baseline, after, fewer, 'sample', target), 'function set changed')
 
 
 class SearchTests(unittest.TestCase):
@@ -169,43 +256,52 @@ class SearchTests(unittest.TestCase):
     def test_compile_command_only_redirects_source_and_output(self):
         command = self.command()
         rewritten = command.for_paths('/tmp/sample.c', '/tmp/sample.o')
-        self.assertEqual([index for index, (left, right) in enumerate(zip(command.argv, rewritten)) if left != right], [10, 12])
+        self.assertEqual([argument for argument in command.argv if argument not in {'-MMD', 'src/sample.c', 'build/G8MJ01/src'}],
+                         [argument for argument in rewritten if argument not in {'/tmp/sample.c', '/tmp/sample.o'}])
         self.assertEqual(command.defines(), {'MUST_MATCH': '1'})
         self.assertIn('-E', command.preprocess('/tmp/sample.c'))
         self.assertNotIn('-MMD', command.preprocess('/tmp/sample.c'))
 
-    def test_neutral_beam_and_regression_rejections(self):
-        target = mwsearch.ObjectImage({'sample': ((0, 0),), 'sibling': ((0, 0),)}, {'.data': b'same'})
+    def test_compile_drops_dependency_output(self):
+        self.assertNotIn('-MMD', self.command().for_paths('/tmp/sample.c', '/tmp/sample.o'))
 
+    def test_neutral_beam_and_regression_rejections(self):
         def compile_fixture(command, source, directory, timeout=30):
             if source == 'broken':
                 raise RuntimeError('compile failed')
             return source
 
-        def image(source):
-            return mwsearch.ObjectImage({'sample': ((0 if source == 'matched' else 1, 0),),
-                                         'sibling': ((1 if source == 'sibling_bad' else 0, 0),)},
-                                        {'.data': b'changed' if source == 'data_bad' else b'same'})
+        def image(path):
+            return mwsearch.ObjectImage({'sample': 4, 'sibling': 4},
+                                        {'.data': b'changed' if path == 'data_bad' else b'same'})
+
+        def score(target_path, path, func):
+            self.assertEqual((target_path, func), ('target.o', 'sample'))
+            percent = {'matched': 100.0, 'neutral': 50.0, 'step': 75.0}.get(path, 50.0)
+            return {'sample': mwsearch.Score(percent, 0 if percent == 100 else 1, 2),
+                    'sibling': mwsearch.Score(90.0 if path == 'sibling_bad' else 100.0, 0, 2)}
 
         def candidates(source, func, defines):
             if source == 'initial':
                 return iter([('data regression', 'data_bad'), ('sibling regression', 'sibling_bad'),
-                             ('compile error', 'broken'), ('neutral rewrite', 'neutral')])
+                             ('compile error', 'broken'), ('neutral rewrite', 'neutral'), ('better rewrite', 'step')])
             return iter([('matching rewrite', 'matched')])
 
         with tempfile.TemporaryDirectory() as directory, mock.patch.object(mwsearch, 'compile_source', compile_fixture), \
              mock.patch.object(mwsearch, 'read_object', image), mock.patch.object(mwsearch, 'mutations', candidates), \
-             contextlib.redirect_stdout(io.StringIO()):
-            summary = mwsearch.search(self.command(), target, 'initial', 'sample', 2, 1, Path(directory))
-            self.assertEqual(summary['best']['sample'][0], 0)
-            self.assertEqual(summary['stats']['improvements'], 1)
+             mock.patch.object(mwsearch, 'objdiff_scores', score), contextlib.redirect_stdout(io.StringIO()):
+            summary = mwsearch.search(self.command(), 'target.o', 'initial', 'sample', 2, 1, Path(directory))
+            self.assertEqual(summary['best']['sample']['percent'], 100.0)
+            self.assertEqual(summary['stop_reason'], 'match')
+            self.assertEqual(summary['stats']['improvements'], 2)
             self.assertEqual(summary['stats']['data_rejections'], 1)
             self.assertEqual(summary['stats']['sibling_rejections'], 1)
             self.assertEqual(summary['stats']['compile_failures'], 1)
-            patches = list(Path(directory).glob('*.diff'))
-            self.assertEqual(len(patches), 1)
-            self.assertIn('-initial', patches[0].read_text())
-            self.assertIn('+matched', patches[0].read_text())
+            patches = sorted(Path(directory).glob('*.diff'))
+            self.assertEqual(len(patches), 2)
+            self.assertIn('-initial', patches[-1].read_text())
+            self.assertIn('+matched', patches[-1].read_text())
+            json.loads((Path(directory) / 'results.json').read_text())
 
     def test_bundle_has_context_labels_and_exact_flags(self):
         preprocessed = b'int helper(void) { return 2; }\nint sample(int a) { return helper() + a; }\n'

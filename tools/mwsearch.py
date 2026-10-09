@@ -4,9 +4,12 @@
     uv run --with pyelftools python tools/mwsearch.py --unit event/evt_shop \
         --func list_disp --minutes 15 --out /tmp/shop-search
 
-The score is a positional count of differing PowerPC instructions, masking only
-the relocated bits. Siblings must not lose score and the input unit's data bytes
-must stay identical. A match is not a proof of C equivalence or a linked checksum:
+The score is objdiff-cli's match percent for the function (build/tools/objdiff-cli
+diff, target vs candidate object), so it agrees with objdiff: rows are aligned and
+registers, operands and relocation targets all count. Siblings must not lose percent,
+and each data section must stay byte-identical to the input's or become the target's
+(up to the extracted section's trailing alignment zeros).
+A match is not a proof of C equivalence or a linked checksum:
 review every emitted patch, especially floating-point operand swaps.
 """
 
@@ -496,6 +499,91 @@ def edits(source, changes):
     return source
 
 
+DECLARATION_STARTS = {"const", "volatile", "static", "register", "struct", "union", "enum", "unsigned", "signed",
+                      "char", "short", "long", "void", "typedef", *SCALAR_TYPES}
+CONTROL_STARTS = {"if", "for", "while", "switch", "do", "else", "return", "break", "continue", "goto", "case", "default"}
+
+
+def block_items(tokens, matching, opening):
+    """Top-level items (first, last) of one block: `;`-terminated statements, compound statements, control."""
+    items = []
+    index = opening + 1
+    closing = matching[opening]
+    while index < closing:
+        if tokens[index].kind == "directive":
+            index += 1
+            continue
+        first = index
+        while index < closing:
+            text = tokens[index].text
+            if text in {"(", "["}:
+                index = matching[index] + 1
+                continue
+            if text == "{":
+                compound = index == first or tokens[first].text in CONTROL_STARTS
+                index = matching[index] + 1
+                if not compound or tokens[first].text == "do" or (index < closing and tokens[index].text == "else"):
+                    continue
+                break
+            index += 1
+            if text == ";" or (text == ":" and tokens[first].text in {"case", "default"}):
+                break
+        items.append((first, index))
+    return items
+
+
+def looks_like_declaration(tokens, first, last):
+    if tokens[first].text in CONTROL_STARTS:
+        return False
+    if tokens[first].text in DECLARATION_STARTS:
+        return True
+    cursor = first + 1
+    while cursor < last and tokens[cursor].text == "*":
+        cursor += 1
+    return (tokens[first].kind == "ident" and cursor + 1 < last and tokens[cursor].kind == "ident"
+            and tokens[cursor + 1].text in {";", "=", "[", ","})
+
+
+def c89_declarations(source, func, defines=None, keep=frozenset()):
+    """Hoist scalar declarations that a rewrite left after a statement (MWCC's C rejects them).
+
+    `T x = e;` after a statement becomes `x = e;` in place with `T x;` after the block's leading
+    declarations, so evaluation order is unchanged. Shadowed names are never declarations here.
+    Names in `keep` (already "late" in the compiling input, e.g. after a declaring macro) stay put.
+    """
+    body = Body(source, func, defines)
+    tokens = body.tokens
+    changes = []
+    for opening in [body.function.opening, *body.parents]:
+        items = block_items(tokens, body.matching, opening)
+        leading = 0
+        while leading < len(items) and looks_like_declaration(tokens, *items[leading]):
+            leading += 1
+        insertion = tokens[items[leading - 1][1] - 1].end if leading else tokens[opening].end
+        hoisted = []
+        for first, last in items[leading:]:
+            statement = next((item for item in body.declarations.values() if item.first == first and item.last == last), None)
+            if statement is None or statement.declaration in keep:
+                continue
+            name = statement.declaration
+            replacement = f"{name} = {body.expr_text(statement.expression)};" if tokens[first + 2].text == "=" else ""
+            changes.append((*body.span(first, last), replacement))
+            hoisted.append(f"{statement.type_name} {name};")
+        if hoisted:
+            indent = body.indent(items[0][0]) if items else "    "
+            changes.append((insertion, insertion, "".join(f"\n{indent}{text}" for text in hoisted)))
+    return edits(source, changes) if changes else source
+
+
+def late_declarations(source, func, defines=None):
+    hoisted = c89_declarations(source, func, defines)
+    before = Body(source, func, defines)
+    after = Body(hoisted, func, defines)
+    return {name for name, statement in before.declarations.items()
+            if name not in after.declarations or after.text(after.declarations[name].first, after.declarations[name].last)
+            != before.text(statement.first, statement.last)}
+
+
 def normalized_hash(source):
     tokens = tokenize(source)
     text = "\0".join(token.kind + ":" + token.text for token in tokens)
@@ -575,8 +663,19 @@ def mutations(source, func, defines=None):
         suffix += 1
         fresh = f"mwsearch_temp_{suffix}"
 
+    try:
+        original_late = frozenset(late_declarations(source, func, defines))
+    except (ValueError, IndexError, KeyError, StopIteration):
+        original_late = None
+
     def candidate(description, changes):
-        return description, edits(source, changes)
+        result = edits(source, changes)
+        try:
+            if original_late is not None:
+                result = c89_declarations(result, func, defines, original_late)
+        except (ValueError, IndexError, KeyError, StopIteration):
+            pass
+        return description, result
 
     def safe_local(name):
         uses = body.uses(name)
@@ -869,11 +968,7 @@ class ObjectImage:
 
 
 def read_object(path):
-    """ELF bits masking mirrors perm_objdump's relocated-operand normalization.
-
-    Keep the opcode and registers (notably SDA21's destination), unlike zeroing
-    an entire relocated instruction. Reject unknown text relocations outright.
-    """
+    """Function names/sizes and raw data sections; instruction scoring is objdiff's (see objdiff_scores)."""
     try:
         from elftools.elf.elffile import ELFFile
     except ImportError as error:
@@ -882,66 +977,88 @@ def read_object(path):
         elf = ELFFile(handle)
         if elf['e_machine'] != "EM_PPC" or elf.little_endian:
             raise ValueError("expected big-endian PowerPC ELF")
-        sections = list(elf.iter_sections())
-        text_masks = {}
-        relocation_masks = {1: 0xffffffff, 2: 0x03fffffc, 3: 0xffff, 4: 0xffff, 5: 0xffff, 6: 0xffff,
-                            7: 0xfffc, 8: 0xfffc, 9: 0xfffc, 10: 0x03fffffc, 11: 0xfffc, 12: 0xfffc,
-                            13: 0xfffc, 26: 0xffffffff, 32: 0xffff, 109: 0x001fffff}
-        for section in sections:
-            if section['sh_type'] not in {"SHT_REL", "SHT_RELA"}:
-                continue
-            target = section['sh_info']
-            if not sections[target]['sh_flags'] & 4:
-                continue
-            for relocation in section.iter_relocations():
-                kind = relocation['r_info_type']
-                if kind == 0:
-                    continue
-                if kind not in relocation_masks:
-                    raise ValueError(f"unsupported PowerPC text relocation {kind}")
-                offset = relocation['r_offset']
-                text_masks[(target, offset // 4 * 4)] = text_masks.get((target, offset // 4 * 4), 0) | relocation_masks[kind]
-        functions = {}
         symbols = elf.get_section_by_name(".symtab")
         if symbols is None:
             raise ValueError("object has no symbol table")
-        for symbol in symbols.iter_symbols():
-            section_index = symbol['st_shndx']
-            if symbol['st_info']['type'] != "STT_FUNC" or not isinstance(section_index, int) or not symbol['st_size']:
-                continue
-            offset, size = symbol['st_value'], symbol['st_size']
-            raw = sections[section_index].data()[offset:offset + size]
-            if len(raw) != size or size % 4:
-                raise ValueError(f"bad function size: {symbol.name}")
-            functions[symbol.name] = tuple((int.from_bytes(raw[position:position + 4], "big"),
-                                           text_masks.get((section_index, offset + position), 0))
-                                          for position in range(0, size, 4))
-        data = {section.name: section.data() for section in sections
+        functions = {symbol.name: symbol['st_size'] for symbol in symbols.iter_symbols()
+                     if symbol['st_info']['type'] == "STT_FUNC" and isinstance(symbol['st_shndx'], int)
+                     and symbol['st_size']}
+        data = {section.name: section.data() for section in elf.iter_sections()
                 if section.name in {".sdata2", ".rodata", ".data", ".sdata"}}
         return ObjectImage(functions, data)
 
 
-def instruction_score(target, ours):
-    total = max(len(target), len(ours))
-    differing = abs(len(target) - len(ours))
-    for (target_word, target_mask), (our_word, our_mask) in zip(target, ours):
-        if (target_word ^ our_word) & ~(target_mask | our_mask):
-            differing += 1
-    return differing, total
+@dataclasses.dataclass(frozen=True)
+class Score:
+    """objdiff's match percent for one function, plus its count of differing aligned rows."""
+    percent: float
+    differing: int
+    total: int
+
+    def key(self):
+        return (-round(self.percent, 4), self.differing)
+
+    def matched(self):
+        return self.percent >= 100 and self.differing == 0
+
+    def __str__(self):
+        return f"{self.percent:.3f}% ({self.differing}/{self.total} rows differ)"
 
 
-def scores(target, ours):
-    return {name: instruction_score(instructions, ours.functions.get(name, ()))
-            for name, instructions in target.functions.items()}
+OBJDIFF = ROOT / "build/tools/objdiff-cli"
 
 
-def acceptable(baseline_scores, baseline_image, candidate_scores, candidate_image, func):
-    if candidate_image.data != baseline_image.data:
-        return "data changed"
+def parse_objdiff(diff):
+    """Score every target-side function in `objdiff-cli diff --format json` output.
+
+    Left is the target (-1). Rows are objdiff's alignment, so one inserted or removed
+    instruction costs one row, not every row after it; relocation targets are compared
+    by name/address (objdiff's default), so a different literal or symbol is a diff.
+    """
+    right = diff.get("right", {}).get("symbols", [])
+    result = {}
+    for symbol in diff.get("left", {}).get("symbols", []):
+        if symbol.get("kind") != "SYMBOL_FUNCTION":
+            continue
+        index = symbol.get("target_symbol")
+        ours = right[index] if isinstance(index, int) and index < len(right) else {}
+        left_rows, right_rows = symbol.get("instructions", []), ours.get("instructions", [])
+        rows = max(len(left_rows), len(right_rows))
+        differing = sum(1 for position in range(rows)
+                        if (left_rows[position] if position < len(left_rows) else {}).get("diff_kind")
+                        or (right_rows[position] if position < len(right_rows) else {}).get("diff_kind")
+                        or position >= len(left_rows) or position >= len(right_rows))
+        result[symbol["name"]] = Score(float(symbol.get("match_percent", 0.0) if ours else 0.0), differing, rows)
+    return result
+
+
+def objdiff_scores(target_path, object_path, func, timeout=30):
+    result = run_process([str(OBJDIFF), "diff", "-1", str(target_path), "-2", str(object_path), func,
+                          "-o", "-", "--format", "json"], timeout)
+    if result.returncode:
+        raise RuntimeError("objdiff diff failed: " + result.stderr.decode("utf-8", "replace")[-2000:])
+    return parse_objdiff(json.loads(result.stdout))
+
+
+def same_as_target(ours, target):
+    """The target's bytes, allowing the extracted section's trailing alignment zeros (e.g. 76 vs 80 bytes)."""
+    if ours is None or target is None:
+        return False
+    padding = target[len(ours):]
+    return target[:len(ours)] == ours and len(padding) < 32 and not any(padding)
+
+
+def acceptable(baseline_scores, baseline_image, candidate_scores, candidate_image, func, target_image=None):
+    """Each data section must equal the input's or the target's; siblings must not lose objdiff percent."""
+    target_data = target_image.data if target_image else {}
+    for name in set(baseline_image.data) | set(candidate_image.data):
+        ours, before = candidate_image.data.get(name), baseline_image.data.get(name)
+        if ours != before and not same_as_target(ours, target_data.get(name)):
+            return "data changed"
     if set(candidate_image.functions) != set(baseline_image.functions):
         return "function set changed"
-    for name, (different, _) in baseline_scores.items():
-        if name != func and candidate_scores[name][0] > different:
+    for name, score in baseline_scores.items():
+        if name != func and round(candidate_scores[name].percent, 4) < round(score.percent, 4):
             return f"sibling regressed: {name}"
     return None
 
@@ -957,7 +1074,7 @@ class CompileCommand:
         argv = list(self.argv)
         argv[argv.index("-c") + 1] = str(source)
         argv[argv.index("-o") + 1] = str(output)
-        return argv
+        return [argument for argument in argv if argument != "-MMD"]
 
     def preprocess(self, source):
         argv = list(self.argv)
@@ -1061,6 +1178,10 @@ def write_bundle(command, target_path, source, func, output):
     print(f"bundle: {output}", flush=True)
 
 
+def as_json(scores):
+    return {name: dataclasses.asdict(score) for name, score in scores.items()}
+
+
 @dataclasses.dataclass(frozen=True)
 class Result:
     description: str
@@ -1069,13 +1190,15 @@ class Result:
     error: str = ""
 
 
-def search(command, target, source, func, jobs, minutes, output, beam_width=4):
+def search(command, target_path, source, func, jobs, minutes, output, beam_width=4):
     started = time.monotonic()
     deadline = started + minutes * 60
+    target = read_object(target_path)
     with tempfile.TemporaryDirectory(prefix="mwsearch-baseline-") as directory:
-        baseline = read_object(compile_source(command, source, directory))
-    baseline_scores = scores(target, baseline)
-    if func not in baseline.functions or func not in target.functions:
+        object_path = compile_source(command, source, directory)
+        baseline = read_object(object_path)
+        baseline_scores = objdiff_scores(target_path, object_path, func)
+    if func not in baseline.functions or func not in target.functions or func not in baseline_scores:
         raise ValueError(f"{func} missing from baseline or target object")
     best = Result("input", source, baseline_scores)
     stats = {"compiled": 0, "compile_failures": 0, "data_rejections": 0, "sibling_rejections": 0,
@@ -1083,8 +1206,8 @@ def search(command, target, source, func, jobs, minutes, output, beam_width=4):
     seen = {normalized_hash(source)}
     beam = [best]
     sibling_names = sorted(name for name in baseline_scores if name != func)
-    print(f"baseline {func}: {baseline_scores[func][0]} differing/{baseline_scores[func][1]} instructions", flush=True)
-    print("siblings: " + ", ".join(f"{name}={baseline_scores[name][0]}/{baseline_scores[name][1]}" for name in sibling_names), flush=True)
+    print(f"baseline {func}: {baseline_scores[func]}", flush=True)
+    print("siblings: " + ", ".join(f"{name}={baseline_scores[name].percent:.3f}%" for name in sibling_names), flush=True)
     (output / "input.c").write_text(source, encoding="utf-8", errors="surrogateescape")
 
     def evaluate(description, candidate_source):
@@ -1093,9 +1216,10 @@ def search(command, target, source, func, jobs, minutes, output, beam_width=4):
             return Result(description, candidate_source, error="deadline")
         try:
             with tempfile.TemporaryDirectory(prefix="mwsearch-candidate-") as directory:
-                image = read_object(compile_source(command, candidate_source, directory, min(30, remaining)))
-                candidate_scores = scores(target, image)
-                rejected = acceptable(baseline_scores, baseline, candidate_scores, image, func)
+                object_path = compile_source(command, candidate_source, directory, min(30, remaining))
+                image = read_object(object_path)
+                candidate_scores = objdiff_scores(target_path, object_path, func)
+                rejected = acceptable(baseline_scores, baseline, candidate_scores, image, func, target)
                 return Result(description, candidate_source, candidate_scores, rejected or "")
         except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as error:
             return Result(description, candidate_source, error=str(error))
@@ -1104,21 +1228,20 @@ def search(command, target, source, func, jobs, minutes, output, beam_width=4):
         nonlocal best
         best = result
         stats['improvements'] += 1
-        different, total = result.scores[func]
-        prefix = f"improvement-{stats['improvements']:03d}-{different:04d}"
+        score = result.scores[func]
+        prefix = f"improvement-{stats['improvements']:03d}-{score.percent:07.3f}"
         patch = "".join(difflib.unified_diff(source.splitlines(keepends=True), result.source.splitlines(keepends=True),
                                            fromfile="a/" + command.original_source, tofile="b/" + command.original_source))
         (output / (prefix + ".diff")).write_text(patch, encoding="utf-8", errors="surrogateescape")
         (output / "best.c").write_text(result.source, encoding="utf-8", errors="surrogateescape")
-        (output / (prefix + ".json")).write_text(json.dumps({"mutation": result.description, "scores": result.scores,
+        (output / (prefix + ".json")).write_text(json.dumps({"mutation": result.description, "scores": as_json(result.scores),
                                                             "elapsed_seconds": time.monotonic() - started}, indent=2) + "\n")
-        print(f"improvement {stats['improvements']}: {different}/{total} ({100 * (1 - different / total):.3f}%) "
+        print(f"improvement {stats['improvements']}: {score} "
               f"{result.description}; {stats['compiled']} candidates; {time.monotonic() - started:.1f}s; {prefix}.diff", flush=True)
-        print("siblings: " + ", ".join(f"{name}={result.scores[name][0]}/{result.scores[name][1]}" for name in sibling_names), flush=True)
 
-    if best.scores[func][0] != 0:
+    if not best.scores[func].matched():
         with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as executor:
-            while beam and time.monotonic() < deadline and best.scores[func][0] != 0:
+            while beam and time.monotonic() < deadline and not best.scores[func].matched():
                 frontier = []
                 pending = {}
                 candidates = iter(item for parent in beam for item in mutations(parent.source, func, command.defines()))
@@ -1152,23 +1275,24 @@ def search(command, target, source, func, jobs, minutes, output, beam_width=4):
                             else:
                                 stats['compile_failures'] += 1
                             continue
-                        if result.scores[func][0] < best.scores[func][0]:
+                        if result.scores[func].key() < best.scores[func].key():
                             record(result)
-                        if result.scores[func][0] <= best.scores[func][0]:
+                        if result.scores[func].key() <= best.scores[func].key():
                             frontier.append(result)
-                            frontier.sort(key=lambda entry: (entry.scores[func][0], normalized_hash(entry.source)))
+                            frontier.sort(key=lambda entry: (entry.scores[func].key(), normalized_hash(entry.source)))
                             del frontier[beam_width:]
-                    if best.scores[func][0] == 0:
+                    if best.scores[func].matched():
                         break
                 for future in pending:
                     future.cancel()
-                beam = [entry for entry in frontier if entry.scores[func][0] <= best.scores[func][0]]
-    summary = {"function": func, "baseline": baseline_scores, "best": best.scores, "stats": stats,
+                beam = [entry for entry in frontier if entry.scores[func].key() <= best.scores[func].key()]
+    summary = {"function": func, "baseline": as_json(baseline_scores), "best": as_json(best.scores), "stats": stats,
                "elapsed_seconds": time.monotonic() - started, "jobs": jobs, "minutes": minutes,
-               "stop_reason": "match" if best.scores[func][0] == 0 else "deadline" if time.monotonic() >= deadline else "exhausted",
-               "score": "positional relocation-masked instruction differences", "data_unchanged": True}
+               "stop_reason": "match" if best.scores[func].matched() else "deadline" if time.monotonic() >= deadline else "exhausted",
+               "score": "objdiff-cli diff match_percent (aligned rows; relocations by name/address)",
+               "data_gate": "each data section equals the input's or the target's"}
     (output / "results.json").write_text(json.dumps(summary, indent=2) + "\n")
-    print(f"finished: {best.scores[func][0]} differing instructions; {stats}; {summary['stop_reason']}", flush=True)
+    print(f"finished: {best.scores[func]}; {stats}; {summary['stop_reason']}", flush=True)
     return summary
 
 
@@ -1203,7 +1327,7 @@ def main(argv=None):
         if args.bundle:
             write_bundle(command, target_path, source, args.func, output)
         else:
-            search(command, read_object(target_path), source, args.func, args.j, args.minutes, output, args.beam)
+            search(command, target_path, source, args.func, args.j, args.minutes, output, args.beam)
     except (ValueError, LookupError, RuntimeError, OSError, subprocess.SubprocessError) as error:
         parser.exit(1, f"mwsearch: {error}\n")
     return 0
