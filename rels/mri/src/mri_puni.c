@@ -3096,19 +3096,19 @@ void puniModeChangeFallCheck(void) {
 
 #pragma push
 #pragma dont_inline on
-// NONMATCHING (99.41%): chaining each store with the next loop's counter init
+// NONMATCHING (99.79%): chaining each store with the next loop's counter init
 // (`pN->unkC = i(N+1) = 1`) reproduces the target's coalesced constant/counter; only a
-// one-register rotation is left (puni r21 vs r29, inner counters r29..r23 vs r27..r21).
+// swap is left (puni r21 vs r29, i5 r29 vs r21).
 void puniFukki(PuniData* puni) {
     s32 i1;
     PuniData* p1;
-    s32 i2;
-    PuniData* p2;
-    s32 i3;
-    PuniData* p3;
-    s32 i4;
-    PuniData* p4;
     s32 i5;
+    PuniData* p2;
+    s32 i2;
+    PuniData* p3;
+    s32 i3;
+    PuniData* p4;
+    s32 i4;
     PuniData* p5;
 
     for (p1 = &Punidat[1], i1 = 1; i1 <= 102; i1++, p1++) {
