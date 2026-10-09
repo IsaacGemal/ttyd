@@ -546,10 +546,6 @@ const Vec vec3_hei_00007a64 = {0.0f, 0.0f, 0.0f};
 const Vec vec3_hei_00007a70 = {0.0f, 0.0f, 0.0f};
 
 // Hops an npc to (x, y, z) over a frame count: userdata holds the frames left, the vertical velocity and the speed.
-// The same 5 FPR diffs as rsh_05's copy (dy f2 vs retail f4, then the frames reload and 0.5 swap f1/f2).
-// MWCC's parser puts the leaf operand of `grav * frames * 0.5f` on the left whichever way it is written, so
-// the 0.5 load gets the lower vreg; rasim says retail numbered the product first.
-// NONMATCHING (99.88%): FPR colouring of dy and the vy expression.
 #pragma opt_lifetimes off
 #pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
 static USER_FUNC(npc_jump) {
@@ -586,7 +582,7 @@ static USER_FUNC(npc_jump) {
             speed = dist / frames;
         }
         event->userdata[0] = *(s32*)&frames;
-        vy = dy / frames + grav * frames * 0.5f;
+        vy = dy / frames + grav * frames / 2.0f;
         event->userdata[1] = *(s32*)&vy;
         event->userdata[2] = *(s32*)&speed;
     }
