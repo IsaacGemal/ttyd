@@ -31,10 +31,6 @@ const char str_8041D5A0[6] = "M_H_7";
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
 #define WW_PTR(w, off) (*(void**)((u8*)(w) + (off)))
 
-// .bss. The original's symbols are compiler-tagged (`tmp2$708`); the `$` cannot
-// be spelled in C, so the name here is cosmetic and the address is what matters.
-char unk_803dfbf8[0x100];
-
 // .rodata / .sdata2 objects this unit reads but does not define yet
 
 // .data table: one entry per window "link" (see linkDt in win_mario.s)
@@ -475,23 +471,24 @@ char* unk_8016af5c(s32 num, s32 width) {
         "\x82\x4F", "\x82\x50", "\x82\x51", "\x82\x52", "\x82\x53",
         "\x82\x54", "\x82\x55", "\x82\x56", "\x82\x57", "\x82\x58",
     };
+    static char tmp[0x100];
     s32 i;
 
     if (num < 0) {
-        strcpy(unk_803dfbf8, "\x81\x7C");
+        strcpy(tmp, "\x81\x7C");
         num = -num;
     } else {
-        strcpy(unk_803dfbf8, "");
+        strcpy(tmp, "");
     }
     sprintf((char*)buf, "%d", num);
     for (i = 0; i < width; i++) {
         if (i < width - strlen((char*)buf)) {
-            strcat(unk_803dfbf8, "\x82\x4F");
+            strcat(tmp, "\x82\x4F");
         } else {
-            strcat(unk_803dfbf8, tbl[buf[i - (width - (s32)strlen((char*)buf))] - 0x30]);
+            strcat(tmp, tbl[buf[i - (width - (s32)strlen((char*)buf))] - 0x30]);
         }
     }
-    return unk_803dfbf8;
+    return tmp;
 }
 
 const GXColor dat_8041d5d0 = { 0x00, 0x00, 0x00, 0x80 };
@@ -631,10 +628,8 @@ const char* hammer_pose[4] = { NULL, str_8041D584, str_8041D598, str_8041D5A0 };
 
 #define POSE (WW_S32(work, 0x188))
 
-// Calls, immediates, frame, literal pools and the .rodata base addressing all match.
-// NONMATCHING (99.99%): only the entry differs: the two parameter copies (`mr r19,r5` / `mr r30,r4`)
-// are emitted in the other order, and `work + idx * 0x14` adds its operands the other way round.
-void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
+void winMarioDisp(CameraId camId, void* param, s32 idx) {
+    WindowWork* work = param;
     // Draws the Mario status panel: name/level/rank, HP/FP/BP, star pieces and
     // shine sprites, the play-time clock and the collected star powers.
     PouchData* pouch = pouchGetPtr();
@@ -653,8 +648,8 @@ void winMarioDisp(CameraId camId, WindowWork* work, s32 idx) {
     unusedBlack = dat_8041d5ec;
     black = dat_8041d5ec;
     loopBlack = dat_8041d5ec;
-    x = WW_F32(work, 0xC4 + idx * 0x14);
-    y = WW_F32(work, 0xC8 + idx * 0x14);
+    x = ((f32*)((u8*)work + 0xC4))[idx * 5];
+    y = ((f32*)((u8*)work + 0xC8))[idx * 5];
 
     winBgGX(work, 0, x, y);
     winNameGX(work, 2, x - 265.0f, 154.0f + y, 190.0f, 24.0f);
@@ -881,8 +876,6 @@ LinkDt linkDt[18] = {
     { (s16)0x0003, (s16)0xFFB6, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F5754, { 0x0F, 0x11, 0x04, 0x04 } },
     { (s16)0x0003, (s16)0xFF9A, str_8041D578, NULL, str_8041D580, 0x0000, 0x0000, str_802F576C, { 0x10, 0x0B, 0x04, 0x04 } },
 };
-
-__declspec(section ".data") const u32 gap_05_80374F34_data = 0;
 
 #pragma force_active off
 #pragma explicit_zero_data reset

@@ -11,5 +11,5 @@ void winBadgeExit(void);
 void winBadgeInit2(WindowWork* work);
 void winBadgeInit(WindowWork* work);
 #include "driver/camdrv.h"
-void winBadgeDisp(CameraId camId, WindowWork* work, s32 idx);
+void winBadgeDisp(CameraId camId, void* param, s32 idx);
 void badge_disp(WindowWork* work, f32 x, f32 y);

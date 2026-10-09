@@ -13,7 +13,7 @@ extern const GXColor dat_8041d5dc;
 extern const GXColor dat_8041d5e0;
 extern const GXColor dat_8041d5e4;
 
-void winMarioDisp(CameraId camId, WindowWork* work, s32 idx);
+void winMarioDisp(CameraId camId, void* param, s32 idx);
 s32 winMarioMain(WindowWork* work);
 void winMarioMain2(WindowWork* work);
 void winMarioInit(WindowWork* work);
