@@ -257,6 +257,10 @@ def find_function(tokens, name):
     depth = 0
     boundary = 0
     for index, token in enumerate(tokens):
+        if (depth == 0 and token.text == name and token.kind == "ident" and index >= 2 and tokens[index - 1].text == "("
+                and tokens[index - 2].text == "USER_FUNC" and index + 2 < len(tokens) and tokens[index + 1].text == ")"
+                and tokens[index + 2].text == "{"):
+            return Function(boundary, index + 2, matching[index + 2], {})
         if depth == 0 and token.text == name and token.kind == "ident":
             after = index + 1
             if after < len(tokens) and tokens[after].text == "(":
@@ -1094,6 +1098,398 @@ def mutations(source, func, defines=None):
                 yield candidate("reorder independent statements", [(*body.span(first.first, first.last), body.text(second.first, second.last)),
                                 (*body.span(second.first, second.last), body.text(first.first, first.last))])
 
+    body.const_names = set(re.findall(r"\bconst\s+(?:f32|float|f64|double)\s+(\w+)\s*[;=]", source))
+    for family in (declaration_orders, event_args_pointer, nested_call_arguments, compound_lvalues,
+                   reorder_across_memory, forward_substitution, loop_invariant_moves):
+        try:
+            yield from family(body, candidate, safe_local, fresh)
+        except (ValueError, IndexError, KeyError, StopIteration):
+            continue
+
+
+
+# Families added from the hand fixes of 2026-10-08 (#631-#646): declaration order, `*args++`, call arguments
+# evaluated into temps first, compound assignment to a member/element, statement order across memory and calls,
+# a local's value written at each use, and a statement moved into or out of a loop.
+
+def declared_name(tokens, first, last):
+    """The single name an item declares (`T x;`, `T* p = e;`), or None for multi-declarator or array forms."""
+    if any(tokens[index].text == "," for index in range(first, last)):
+        return None
+    for index in range(first, last - 1):
+        if tokens[index].kind == "ident" and tokens[index + 1].text in {";", "="} and index > first:
+            return tokens[index].text
+    return None
+
+
+def item_calls(tokens, first, last):
+    return any(tokens[index].kind == "ident" and tokens[index + 1].text == "(" for index in range(first, last - 1))
+
+
+def item_names(tokens, first, last):
+    return {tokens[index].text for index in range(first, last)
+            if tokens[index].kind == "ident" and tokens[index - 1].text not in {".", "->"}}
+
+
+def declaration_orders(body, candidate, safe_local, fresh):
+    """Adjacent declarations swapped, and each moved to the front or back of its block's declarations: MWCC numbers
+    locals in declaration order, which decides register colouring ties."""
+    tokens = body.tokens
+    for opening in [body.function.opening, *body.parents]:
+        items = block_items(tokens, body.matching, opening)
+        run = []
+        for first, last in items:
+            if not looks_like_declaration(tokens, first, last) or tokens[first].text in {"static", "typedef"}:
+                break
+            if run and any(tokens[index].kind == "directive" for index in range(run[-1][1], first)):
+                break
+            name = declared_name(tokens, first, last)
+            if name is None:
+                break
+            run.append((first, last, name))
+        if len(run) < 2:
+            continue
+
+        def movable(moved, others):
+            first, last, name = moved
+            reads = item_names(tokens, first, last) - {name}
+            for other_first, other_last, other_name in others:
+                if other_name in reads or name in item_names(tokens, other_first, other_last):
+                    return False
+                if item_calls(tokens, first, last) and item_calls(tokens, other_first, other_last):
+                    return False
+            return True
+
+        texts = [body.text(first, last) for first, last, _ in run]
+        start, end = body.span(run[0][0], run[-1][1])
+        layout = body.source[start:end]
+        separators = []
+        cursor = 0
+        for text in texts:
+            at = layout.index(text, cursor)
+            separators.append(layout[cursor:at])
+            cursor = at + len(text)
+        tail = layout[cursor:]
+
+        def rebuilt(order):
+            return "".join(separator + texts[index] for separator, index in zip(separators, order)) + tail
+
+        seen = set()
+        for index in range(len(run) - 1):
+            if movable(run[index], [run[index + 1]]):
+                order = list(range(len(run)))
+                order[index], order[index + 1] = order[index + 1], order[index]
+                seen.add(tuple(order))
+                yield candidate(f"swap declarations {run[index][2]}/{run[index + 1][2]}", [(start, end, rebuilt(order))])
+        for index in range(len(run)):
+            for label, order in (("front", [index] + [item for item in range(len(run)) if item != index]),
+                                 ("back", [item for item in range(len(run)) if item != index] + [index])):
+                if tuple(order) in seen or order == list(range(len(run))):
+                    continue
+                jumped = run[:index] if label == "front" else run[index + 1:]
+                if movable(run[index], jumped):
+                    seen.add(tuple(order))
+                    yield candidate(f"declaration {run[index][2]} to {label}", [(start, end, rebuilt(order))])
+
+
+def event_args_pointer(body, candidate, safe_local, fresh):
+    """`event->args[k]` read through a local `s32* args = event->args;`, as `*args++` when the reads go 0, 1, 2...
+    in source order (evt_ryushi_clr, #636)."""
+    tokens = body.tokens
+    sites = []
+    for index in range(body.function.opening + 1, body.function.closing - 5):
+        if (tokens[index].kind == "ident" and tokens[index + 1].text == "->" and tokens[index + 2].text == "args"
+                and tokens[index + 3].text == "[" and tokens[index + 4].kind == "number" and tokens[index + 5].text == "]"
+                and tokens[index - 1].text not in {".", "->"}):
+            sites.append((index, tokens[index].text, tokens[index + 4].text))
+    bases = {base for _, base, _ in sites}
+    if len(bases) != 1:
+        return
+    base = bases.pop()
+    identifiers = {tokens[position].text for position in range(body.function.start, body.function.closing)
+                   if tokens[position].kind == "ident" and tokens[position - 1].text not in {".", "->"}}
+    pointer = "args" if "args" not in identifiers else "evt_args"
+    if pointer in identifiers:
+        return
+    opening = body.function.opening
+    insertion = tokens[opening].end
+    indent = body.indent(opening + 1) if opening + 1 < body.function.closing else "    "
+    declaration = f"\n{indent}s32* {pointer} = {base}->args;"
+    indexed = [(tokens[index].start, tokens[index + 5].end, f"{pointer}[{number}]") for index, _, number in sites]
+    yield candidate(f"{base}->args through local {pointer}", [(insertion, insertion, declaration), *indexed])
+    if [int(number, 0) for _, _, number in sites] == list(range(len(sites))):
+        stepped = [(tokens[index].start, tokens[index + 5].end, f"*{pointer}++") for index, _, _ in sites]
+        yield candidate(f"{base}->args as *{pointer}++", [(insertion, insertion, declaration), *stepped])
+
+
+PROTOTYPES = None
+
+
+def return_types(source):
+    """name -> scalar return type, from the unit and the repository's headers (read once per process)."""
+    global PROTOTYPES
+    pattern = re.compile(r"(?:^|[\s;{}])(?:static\s+|inline\s+|extern\s+)*(s32|u32|s16|u16|s8|u8|int|f32|float|f64|double)"
+                         r"\s+(\w+)\s*\(", re.M)
+    if PROTOTYPES is None:
+        PROTOTYPES = {}
+        for header in (ROOT / "include").rglob("*.h"):
+            try:
+                text = header.read_text(errors="replace")
+            except OSError:
+                continue
+            for match in pattern.finditer(text):
+                PROTOTYPES.setdefault(match.group(2), match.group(1))
+    found = dict(PROTOTYPES)
+    for match in pattern.finditer(source):
+        found[match.group(2)] = match.group(1)
+    return found
+
+
+def nested_call_arguments(body, candidate, safe_local, fresh):
+    """A call's arguments that themselves call something, evaluated into temps first in a block of their own, in
+    argument order and in reverse (both rand() fractions before scaling, rsh_06 #646)."""
+    tokens = body.tokens
+    returns = None
+    for statement in body.statements:
+        expression = statement.expression
+        if not expression or statement.declaration or tokens[statement.first].text in {"return", "if", "while", "for", "switch"}:
+            continue
+        for node in expression.walk():
+            if node.kind != "call" or node.first in unevaluated_sites(expression):
+                continue
+            hoisted = []
+            for argument in node.children[1:]:
+                if not any(item.kind == "call" for item in argument.walk()):
+                    continue
+                type_name = expression_type(argument, body)
+                if type_name is None and argument.kind == "call" and argument.children[0].kind == "ident":
+                    if returns is None:
+                        returns = return_types(body.source)
+                    type_name = returns.get(argument.children[0].operator)
+                if type_name is None:
+                    break
+                hoisted.append((argument, type_name))
+            else:
+                if not hoisted:
+                    continue
+                indent = body.indent(statement.first)
+                inner = indent + "    "
+                names_ = [f"{fresh}_{index}" for index in range(len(hoisted))]
+                for order_label, order in (("in order", range(len(hoisted))), ("reversed", reversed(range(len(hoisted))))):
+                    order = list(order)
+                    if order_label == "reversed" and len(order) < 2:
+                        continue
+                    declarations = "".join(f"\n{inner}{hoisted[index][1]} {names_[index]};" for index in range(len(hoisted)))
+                    assignments = "".join(f"\n{inner}{names_[index]} = {body.expr_text(hoisted[index][0])};" for index in order)
+                    statement_text = body.text(statement.first, statement.last)
+                    offset = tokens[statement.first].start
+                    for index in sorted(range(len(hoisted)), key=lambda item: -hoisted[item][0].first):
+                        argument = hoisted[index][0]
+                        start, end = body.span(argument.first, argument.last)
+                        statement_text = statement_text[:start - offset] + names_[index] + statement_text[end - offset:]
+                    replacement = "{" + declarations + "\n" + assignments + f"\n{inner}{statement_text}\n{indent}" + "}"
+                    yield candidate(f"call arguments of {body.expr_text(node.children[0])} first ({order_label})",
+                                    [(*body.span(statement.first, statement.last), replacement)])
+
+
+def lvalue(node):
+    return node.kind in {"member", "index"} or (node.kind == "unary" and node.operator == "*")
+
+
+def compound_lvalues(body, candidate, safe_local, fresh):
+    """`L = L op R` <-> `L op= R` where L is a member, element or dereference (strtold's mantissa updates, #634)."""
+    for statement in body.statements:
+        expression = statement.expression
+        if not expression or expression.kind != "binary" or statement.declaration:
+            continue
+        left, right = expression.children
+        address = left.children[0] if left.kind == "unary" else left
+        if not lvalue(left) or not pure(address):
+            continue
+        left_text = body.expr_text(left)
+        if expression.operator == "=" and right.kind == "binary" and right.operator in {"+", "-", "*", "/", "&", "|", "^", "<<", ">>"}:
+            if body.expr_text(right.children[0]) == left_text:
+                yield candidate(f"compound {left_text[:40]}", [(*body.span(expression.first, expression.last),
+                                f"{left_text} {right.operator}= {body.expr_text(right.children[1])}")])
+        elif expression.operator in ASSIGNMENTS - {"="}:
+            yield candidate(f"expand {expression.operator} on {left_text[:40]}", [(*body.span(expression.first, expression.last),
+                            f"{left_text} = {left_text} {expression.operator[:-1]} ({body.expr_text(right)})")])
+
+
+def effects(body, statement):
+    """(local writes, local reads, calls, memory writes, memory reads) of an expression statement, or None."""
+    expression = statement.expression
+    if not expression or statement.declaration or body.tokens[statement.first].text in {"return", "if", "while", "for", "switch", "break", "continue", "goto"}:
+        return None
+    locals_ = set(body.types) - body.ambiguous
+    writes, reads, memory_writes = set(), set(), False
+    calls = any(node.kind == "call" for node in expression.walk())
+    memory_reads = False
+    for node in expression.walk():
+        target = None
+        if node.kind == "binary" and node.operator in ASSIGNMENTS:
+            target = node.children[0]
+        elif node.kind in {"postfix"} or (node.kind == "unary" and node.operator in {"++", "--"}):
+            target = node.children[0]
+        if target is not None:
+            if target.kind == "ident":
+                if target.operator not in locals_:
+                    return None
+                writes.add(target.operator)
+            else:
+                memory_writes = True
+        if node.kind == "ident":
+            if node.operator in locals_:
+                reads.add(node.operator)
+            elif not (body.tokens[node.last].text == "(" if node.last < len(body.tokens) else False):
+                memory_reads = True
+        if lvalue(node):
+            memory_reads = True
+        if node.kind == "unary" and node.operator == "&":
+            return None
+    return writes, reads, calls, memory_writes, memory_reads
+
+
+def reorder_across_memory(body, candidate, safe_local, fresh):
+    """Adjacent statements swapped when one only touches unaliased locals and the other doesn't use them, even when
+    the other writes memory or calls (strtold's exponent update before the mantissa stores, #634)."""
+    for first, second in zip(body.statements, body.statements[1:]):
+        if first.last != second.first or first.block != second.block:
+            continue
+        one, two = effects(body, first), effects(body, second)
+        if not one or not two:
+            continue
+        local_only = lambda item: not item[2] and not item[3]
+        if not (local_only(one) or local_only(two)) or (local_only(one) and local_only(two) and
+                                                          not (one[4] or two[4] or one[2] or two[2])):
+            continue
+        writes1, reads1, calls1, memw1, memr1 = one
+        writes2, reads2, calls2, memw2, memr2 = two
+        if writes1 & (writes2 | reads2) or writes2 & reads1:
+            continue
+        if (calls1 or memw1) and (calls2 or memw2 or memr2):
+            continue
+        if (calls2 or memw2) and memr1:
+            continue
+        yield candidate("reorder across memory", [(*body.span(first.first, first.last), body.text(second.first, second.last)),
+                        (*body.span(second.first, second.last), body.text(first.first, first.last))])
+
+
+def value_only(expression, body):
+    """True when an expression reads nothing but locals, parameters, constants and named `const` floats, through
+    all-uppercase accessor macros at most (no memory, calls or writes)."""
+    constants = getattr(body, "const_names", set())
+    callees = set()
+    for node in expression.walk():
+        if node.kind == "call":
+            callee = node.children[0]
+            if callee.kind != "ident" or not callee.operator.isupper():
+                return False
+            callees.add(callee.first)
+        elif node.kind in {"member", "index", "postfix"}:
+            return False
+        elif node.kind == "unary" and node.operator in {"++", "--", "*", "&"}:
+            return False
+        elif node.kind == "binary" and node.operator in ASSIGNMENTS | {","}:
+            return False
+        elif node.kind == "ident" and node.first not in callees and node.operator not in body.types \
+                and node.operator not in constants:
+            return False
+    return True
+
+
+def written(body, name, first=0, last=None):
+    tokens = body.tokens
+    for index in body.uses(name):
+        if index < first or (last is not None and index >= last):
+            continue
+        if tokens[index + 1].text in ASSIGNMENTS | {"++", "--"} or tokens[index - 1].text in {"++", "--", "&"}:
+            return True
+    return False
+
+
+def forward_substitution(body, candidate, safe_local, fresh):
+    """A local holding a value of locals and constants, written once, replaced by that value at every use (the
+    half-size quad corners of eff_particle #633 and win_04 #635)."""
+    tokens = body.tokens
+    for name, declaration in body.declarations.items():
+        if not safe_local(name) or name in body.ambiguous:
+            continue
+        uses = [index for index in body.uses(name) if index >= declaration.last]
+        assignments = [item for item in body.statements if item.expression and item.expression.kind == "binary"
+                       and item.expression.operator == "=" and item.expression.children[0].kind == "ident"
+                       and item.expression.children[0].operator == name and not item.declaration]
+        if declaration.expression and not assignments:
+            value, definition, reads = declaration.expression, declaration, uses
+        elif not declaration.expression and len(assignments) == 1:
+            definition = assignments[0]
+            value = definition.expression.children[1]
+            reads = [index for index in uses if index != definition.expression.children[0].first]
+            if any(index < definition.first for index in reads):
+                continue
+            if not all(definition.block in set(body.ancestors(body.owners[index])) for index in reads):
+                continue
+        else:
+            continue
+        if len(reads) < 2 or not value_only(value, body) or name in names(value):
+            continue
+        if any(written(body, other, definition.last) for other in names(value)):
+            continue
+        text = f"(({declaration.type_name})({body.expr_text(value)}))" if value.kind not in {"ident", "number"} else body.expr_text(value)
+        changes = [(tokens[index].start, tokens[index].end, text) for index in reads]
+        changes.append((*body.span(declaration.first, declaration.last), ""))
+        if definition is not declaration:
+            changes.append((*body.span(definition.first, definition.last), ""))
+        yield candidate(f"substitute {name} at {len(reads)} uses", changes)
+
+
+def loop_invariant_moves(body, candidate, safe_local, fresh):
+    """`x = e;` moved from just before a loop to the top of its body, or from the top of the body to before the loop,
+    when x lives only in the loop and e is a value of locals the loop doesn't write."""
+    tokens = body.tokens
+    for opening in [body.function.opening, *body.parents]:
+        items = block_items(tokens, body.matching, opening)
+        for (first, last), (loop_first, loop_last) in zip(items, items[1:]):
+            if tokens[loop_first].text not in {"for", "while"}:
+                continue
+            header_close = body.matching[loop_first + 1]
+            loop_open = header_close + 1
+            if tokens[loop_open].text != "{":
+                continue
+            statement = next((item for item in body.statements if item.first == first and item.last == last), None)
+            expression = statement.expression if statement else None
+            inside = next((item for item in body.statements if item.first > loop_open and item.block == loop_open), None)
+            moves = []
+            if (statement and not statement.declaration and expression and expression.kind == "binary"
+                    and expression.operator == "=" and expression.children[0].kind == "ident"):
+                moves.append(("into", statement, expression))
+            if inside and inside.first == loop_open + 1 and not inside.declaration and inside.expression \
+                    and inside.expression.kind == "binary" and inside.expression.operator == "=" \
+                    and inside.expression.children[0].kind == "ident":
+                moves.append(("out of", inside, inside.expression))
+            for direction, moved, assignment in moves:
+                name = assignment.children[0].operator
+                value = assignment.children[1]
+                if not safe_local(name) or not value_only(value, body) or name in names(value):
+                    continue
+                declared = body.declarations.get(name)
+                bare = declared is not None and declared.expression is None
+                if any(index < loop_first or index >= loop_last for index in body.uses(name)
+                       if not (moved.first <= index < moved.last) and not (bare and declared.first <= index < declared.last)):
+                    continue
+                if any(written(body, other, loop_first, loop_last) for other in names(value)):
+                    continue
+                if any(index != assignment.children[0].first and tokens[index + 1].text in ASSIGNMENTS | {"++", "--"}
+                       for index in body.uses(name) if loop_first <= index < loop_last):
+                    continue
+                text = body.text(moved.first, moved.last)
+                if direction == "into":
+                    at = tokens[loop_open].end
+                    changes = [(*body.span(moved.first, moved.last), ""), (at, at, f"\n{body.indent(loop_open + 1)}{text}")]
+                else:
+                    at = tokens[loop_first].start
+                    changes = [(*body.span(moved.first, moved.last), ""), (at, at, f"{text}\n{body.indent(loop_first)}")]
+                yield candidate(f"move {name} = ... {direction} loop", changes)
 
 def integer_range(expression, body):
     if not expression:
