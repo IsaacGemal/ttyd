@@ -4924,3 +4924,22 @@ usually cracked there by people trading forks.
 objdiff's "Create scratch" builds a scratch for any function from the `scratch` block in `objdiff.json` (GameCube,
 the compiler and our full flags with `-DMUST_MATCH`). The same bundle (target asm, context, C, flags) is also the
 right unit for our own hard-function tools: it compiles in a second and holds no project state.
+
+## How to frame agent prompts: night 5 experiment (2026-10-08/09, Isaac + Claude Opus 5.5)
+
+Question: does a time cap, a firm target, or pushback get more out of an Opus agent on a near-miss unit?
+
+| Framing | Agents | Typical run | Tool calls | Result |
+| --- | --- | --- | --- | --- |
+| A: "2.5 h cap, report your best state" | 14 | 15-45 min | 60-170 | 4 links |
+| B: "firm target: keep going until the unit links" (no cap) | 4 | 1 h 45 - 2 h | 170-380 | 6 links (las_05, eki_00, rsh_05, gor_03, tou_03, battle_stage) |
+| Pushback on a finished B agent ("one add away, keep going") | 1 | +1 h 15 | 57 + a 70-min mwsearch | no gain (aji_17 stays 99.97) |
+
+- A cap is read as a ceiling but agents stop at their first plateau anyway: every A agent quit far below its cap.
+- The same function under both: las_05 senkaron_ext_main stopped at 98.69 after 25 min under A and linked after 1 h 44 under B. The moamoa and gor_03 units went the same way.
+- B costs about 3-5x the tokens per agent (290-684k vs ~100-300k); tonight it was the right trade (6 links from 4 agents vs 4 from 14). Budget accordingly: four B agents plus two dedicated sessions used ~5% of the weekly limit in two hours.
+- Pushback adds effort but does not beat a residual that is genuinely stuck at the compiler level. It did pay off in Isaac's Codex run on rsh_06 (90.88 -> 94.83, "aim for 95%") where the source structure was still wrong, and that run's lead (make both rand() calls before scaling either) then let a B agent link eki_00 and rsh_05.
+- Default from now on: firm target per agent, no cap; keep a usage heartbeat; push back once when an agent stops short with structural differences left, not when only a register tie remains.
+- Not tested yet: firm target plus a minimum working time.
+
+Also from the night: tools/mwsearch.py (#644/#645/#647) found two real fixes in seconds (evt_ryushi_clr via `*args++`, hei_10 npc_jump via `/ 2.0f`) but nothing in a 30-function batch of pure register ties; dedicated sessions (Claude #2, #4) with history worked well alongside subagents, but they must not share ~/ttyd-ci with the orchestrator's CI runs (concurrent checkouts killed each other's builds).
