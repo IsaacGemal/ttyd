@@ -2625,16 +2625,20 @@ static inline s32 puniQrnd2(s32 range) {
 }
 
 
-// NONMATCHING (98.90%): the LCG/abs now match and `idx`/`i` land in the target's
-// registers; only `end` (target r7, ours r10) and the short-lived `puni` cursor (target
-// r10, ours r7) are swapped.
 PuniData* puniSearchRandom(s32 start, s32 count) {
-    PuniData* puni;
+    s32 end;
     s32 idx;
     s32 i;
-    s32 end;
+    PuniData* puni;
+    s32 v;
 
-    idx = start + puniQrnd2(count - 1);
+    Punigp->field_0x450 += Punigp->field_0x454 + 0x17340000 - 0x506F;
+    Punigp->field_0x454 += Punigp->field_0x450 + 0x21270000 + 0x3F9C;
+    v = Punigp->field_0x454;
+    if ((s32)(v ^ 0) < 0) {
+        v = -v;
+    }
+    idx = start + v % (count - 1);
     end = start + count;
     for (i = 0;; i++) {
         if (i == count) {
@@ -8394,31 +8398,43 @@ USER_FUNC(evt_puni_get_lsw_index) {
 // opt_propagation off stops MWCC rematerialising the named high bytes (h1/h2) at each
 // _swByteSet, so they stay in callee-saved registers like the original.
 #pragma opt_propagation off
-// NONMATCHING (98.27%): instruction sequence now matches; only the callee-saved numbering rotates
-// (original event=r28,args=r26,index=r27,i=r30,b0=r31; ours event=r26,args=r28,index=r31,i=r29,b0=r30).
 USER_FUNC(evt_puni_set_lsw_index) {
-    s32* args = event->args;
-    s32 index = args[0];
-    s32 i = evtGetValue(event, args[1]);
-    s32 b0 = evtGetValue(event, args[2]);
-    f32 v1 = (f32)evtGetValue(event, args[3]);
-    f32 v2 = (f32)evtGetValue(event, args[4]);
-    f32 v3 = (f32)evtGetValue(event, args[5]);
-    s32 s1 = (s32)v1;
-    s32 s2 = (s32)v2;
-    s32 s3 = (s32)v3;
+    s32 b0;
+    s32 s3;
+    s32 i;
+    s32 s2;
+    s32 s1;
+    s32 h1;
+    s32 h2;
+    s32 index;
+    s32 base;
+    s32* args;
+    f32 v1;
+    f32 v2;
+    f32 v3;
 
-    s32 h1 = (s1 >> 8) & 0xFF;
-    s32 h2 = (s2 >> 8) & 0xFF;
+    args = event->args;
+    index = args[0];
+    i = evtGetValue(event, args[1]);
+    b0 = evtGetValue(event, args[2]);
+    v1 = (f32)evtGetValue(event, args[3]);
+    v2 = (f32)evtGetValue(event, args[4]);
+    v3 = (f32)evtGetValue(event, args[5]);
+    s1 = (s32)v1;
+    s2 = (s32)v2;
+    s3 = (s32)v3;
 
-    index += i * 7;
-    _swByteSet(index + EVTDAT_LSW_BASE + 0, b0);
-    _swByteSet(index + EVTDAT_LSW_BASE + 1, s1 & 0xFF);
-    _swByteSet(index + EVTDAT_LSW_BASE + 2, h1);
-    _swByteSet(index + EVTDAT_LSW_BASE + 3, s2 & 0xFF);
-    _swByteSet(index + EVTDAT_LSW_BASE + 4, h2);
-    _swByteSet(index + EVTDAT_LSW_BASE + 5, s3 & 0xFF);
-    _swByteSet(index + EVTDAT_LSW_BASE + 6, (s3 >> 8) & 0xFF);
+    h1 = (s1 >> 8) & 0xFF;
+    h2 = (s2 >> 8) & 0xFF;
+
+    base = index + i * 7;
+    _swByteSet(base + EVTDAT_LSW_BASE + 0, b0);
+    _swByteSet(base + EVTDAT_LSW_BASE + 1, s1 & 0xFF);
+    _swByteSet(base + EVTDAT_LSW_BASE + 2, h1);
+    _swByteSet(base + EVTDAT_LSW_BASE + 3, s2 & 0xFF);
+    _swByteSet(base + EVTDAT_LSW_BASE + 4, h2);
+    _swByteSet(base + EVTDAT_LSW_BASE + 5, s3 & 0xFF);
+    _swByteSet(base + EVTDAT_LSW_BASE + 6, (s3 >> 8) & 0xFF);
     return EVT_RETURN_DONE;
 }
 #pragma opt_propagation reset
@@ -8437,23 +8453,22 @@ USER_FUNC(evt_puni_get_trap_index) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.36%): writing the byte update as separate statements (like puniswTrapSetindex)
-// fixes the `and`/`or` operand order and the clrlwi. Only event/args land in r29/r30 instead of
-// the original r31/r29.
 USER_FUNC(evt_puni_set_trap_index) {
-    s32* args = event->args;
-    s32 index = evtGetValue(event, args[0]);
-    s32 value = evtGetValue(event, args[1]);
+    s32 value;
+    s32 index;
+    s32 byte;
+    s32 div;
+    s32* args;
 
+    args = event->args;
+    index = evtGetValue(event, args[0]);
+    value = evtGetValue(event, args[1]);
     if (index < 0x67) {
-        s32 bit;
-        s32 div = index / 8;
-        s32 byte;
-
-        bit = index % 8;
+        div = index / 8;
+        index %= 8;
         byte = swByteGet(0x28C + div);
-        byte = byte & ((1 << bit) ^ 0xFF);
-        byte = byte | (value << bit);
+        byte &= (1 << index) ^ 0xFF;
+        byte |= value << index;
         swByteSet(0x28C + div, (u8)byte);
     }
     return EVT_RETURN_DONE;
