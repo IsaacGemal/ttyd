@@ -1533,7 +1533,7 @@ config.libs = [
             Object(Matching, "aji_10.c"),
             Object(Matching, "aji_06.c"),
             Object(Matching, "aji_13.c"),
-            Object(NonMatching, "aji_17.c"),
+            Object(Matching, "aji_17.c"),
             Object(Matching, "aji.c"),
             Object(Matching, "unit/unit_boss_magnum_battender_mkII.c"),
             Object(Matching, "unit/unit_barriern_custom.c"),

@@ -387,18 +387,10 @@ static inline void noiseTevColor(u8 alpha) {
     GXSetTevColor(GX_TEVREG0, c);
 }
 
-// The pixel loop is tou2/tou_03's screen_tev loop (the same retail code): `base = i / 4` and
-// `col = i % 4` assigned in the loop and shifted in the sum, with opt_propagation off, so the
-// frontend hoists only the divisions and the shifts stay loop-body code until the backend hoists
-// them. The sparkle loop does the same per texel, which makes both of its shifts backend
-// temporaries: the base shift, numbered after cam's web, takes r31 (shared with i/4) before cam
-// claims r30, as in the original.
-// What differs: one operand order. The original adds `row + base` with the base shift computed
-// first; MWCC evaluates a sum left to right, so `base * 256 + row` (written here) gets the
-// registers right but `add r4,r31,r4`, and `row + base * 256` (operands right) numbers the shift
-// after the row temporaries and loses the r31/r30 order. A single index expression is
-// reassociated by the frontend (base + pct first).
-// NONMATCHING (99.97%): one add's operand order in the sparkle loop (see above).
+// The pixel loop matches tou2/tou_03's screen_tev. Keep propagation off so its
+// base and column shifts become the original's backend loop temporaries. In the
+// sparkle loop, splitting the row offset and grouping the index additions keeps
+// the base shift in r31 while emitting the original `add r4, r4, r31`.
 #pragma opt_propagation off // needed: with propagation on the frontend copy-propagates base/col and hoists their shifts
 void noiseDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
@@ -435,8 +427,14 @@ void noiseDisp(CameraId cameraId, void* param) {
                 s32 off, base, col;
                 base = i / 4;
                 col = i % 4;
+#ifdef MUST_MATCH
+                // Preserve the original add operand order and register allocation.
+                off = (k / 8) * 32;
+                data[(off + base * 256) + (k % 8 + col * 8)] = val;
+#else
                 off = base * 256 + (k / 8) * 32;
                 data[off + k % 8 + col * 8] = val;
+#endif
             }
         }
     }
@@ -3262,6 +3260,13 @@ EVT_BEGIN(aji_17_init_evt)
     RETURN
 EVT_END()
 
+// Four zero bytes at the end of the original .data, after aji_17_init_evt.
+#pragma explicit_zero_data on
+__declspec(section ".data") u32 gap_04_000271D4_data = 0;
+#pragma explicit_zero_data reset
+
+// The original .bss ends with four bytes after horogram_wp.
+static u32 gap_05_0000014C_bss;
 HorogramWork* horogram_wp;
 
 DanceWork dance_dt;
