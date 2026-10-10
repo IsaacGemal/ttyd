@@ -869,30 +869,70 @@ static inline void marioChkGndHeight(MarioWork* wp) {
     GND_PTR(wp, HitEntry*, 0x1F8) = hit;
 }
 
-// NONMATCHING (96.21%): same 56 calls and immediates as the original, and the same 0x1b0 frame (the ground-height
-// probe is one inline expanded twice, each copy with its own Vec slots; the rolling branch re-tests `hit` before
-// storing roll_grx/roll_grz). Remaining: stack-slot placement inside the inlined marioHitCheckVecOut copies and FPR
-// colouring.
-void marioChkGnd(void) {
-    MarioWork* wp = marioGetPtr();
-    MarioWork* m;
+// marioChkGnd's angle/centi steps: plain reads of the 100.0 scale (not MATCH_F32) let the
+// inlined copies share the live scale across the gndAngle/gndCenti boundary, as the original does.
+// gndAngle/gndCenti with a plain read of float_100, so MWCC can share one load across the rounding and angle steps.
+static inline f32 gndAnglePlain(f32 x, f32 y) {
+    f32 k = float_100_8041a7f8;
+
+    return angleABf(float_0_8041a7a4, float_0_8041a7a4, k * x, k * y);
+}
+
+static inline f32 gndCentiPlain(f32 v) {
+    f32 k = float_100_8041a7f8;
+
+    return (f32)(s32)(k * v + float_0p5_8041a7c4) / k;
+}
+
+// The rolling probe's inline expansion only happens with the raised limits; at the default
+// inline_max_size the helper stays a real `bl` and the whole frame shifts.
+#pragma inline_max_total_size(60000) // let the rolling probe's inlined callees expand
+#pragma inline_max_size(1000) // per-callee inline budget for the probe's callees
+static inline void marioChkGndRollProbe(MarioWork* wp) {
     HitEntry* hit;
-    HitEntry* ride;
     Vec p;
     Vec dir;
     Vec hitPos;
     Vec normal;
     f32 dist;
-    f32 gy;
+    f32 grx;
+    f32 grz;
+
+    dist = float_47_8041a84c;
+    GND_PTR(wp, f32, 0x164) = GND_PTR(wp, f32, 0x114) - wp->position.y;
+    p = wp->position;
+    p.y = float_10_8041a7fc + p.y;
+    dir = vec3_802c5748;
+    hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
+    if (hit != NULL) {
+        grx = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - float_180_8041a7cc);
+        grz = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - float_180_8041a7cc);
+        angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
+        if (hit != NULL) {
+            roll_grx = grx;
+            roll_grz = grz;
+        }
+    }
+}
+
+#pragma inline_max_total_size reset // restore the file's default inline budget after marioChkGnd
+#pragma inline_max_size reset // (1000 already keeps the rest of the unit's scores)
+// NONMATCHING (98.85%): same 56 calls/immediates, 861 instructions and 0x1b0 frame; the rolling probe is a real
+// inline above so its Vecs land in the original's frame slots. Only scheduling/colour ripples remain: the three `dir`
+// loads hoist a few slots early, the `grx` block's two `fmuls` swap, and that swap rotates the centi `fmadds` web.
+void marioChkGnd(void) {
+    MarioWork* wp = marioGetPtr();
+    MarioWork* m;
+    HitEntry* hit;
+    HitEntry* ride;
     f32 gx;
+    f32 gy;
     f32 gz;
     f32 h;
     f32 fy;
     f32 fd;
     f32 fa;
     f32 dy;
-    f32 grx;
-    f32 grz;
     s32 ok;
 
     if (vivianGetStatus() == 2 || vivianGetStatus() == 1 || vivianGetStatus() == 3) {
@@ -977,8 +1017,9 @@ void marioChkGnd(void) {
         }
         if (wp->airTimer == 0) {
             if (!(wp->flags & 0x1000000)) {
-                if (marioChkFrontStep(&fy, &fd, &fa) != NULL) {
-                    dy = fy - wp->position.y;
+                hit = marioChkFrontStep(&fy, &fd, &fa);
+                dy = fy - wp->position.y;
+                if (hit != NULL) {
                     if (dy <= float_11_8041a7ac && dy >= float_5_8041a7b8 && GND_PTR(wp, f32, 0x214) <= float_30_8041a82c) {
                         GND_PTR(wp, f32, 0x1C4) = fy;
                         if (wp->baseSpeed != float_0_8041a7a4) {
@@ -992,8 +1033,9 @@ void marioChkGnd(void) {
                     }
                 }
             } else {
-                if (marioChkFrontStep(&fy, &fd, &fa) != NULL) {
-                    dy = fy - wp->position.y;
+                hit = marioChkFrontStep(&fy, &fd, &fa);
+                dy = fy - wp->position.y;
+                if (hit != NULL) {
                     if (dy <= float_11_8041a7ac && dy >= float_5_8041a7b8 && GND_PTR(wp, f32, 0x214) <= float_30_8041a82c) {
                         GND_PTR(wp, f32, 0x1C4) = fy;
                         if (wp->baseSpeed != float_0_8041a7a4) {
@@ -1012,21 +1054,7 @@ void marioChkGnd(void) {
         }
         if (ride != NULL) {
             if (wp->flags & 0x1000000) {
-                GND_PTR(wp, f32, 0x164) = GND_PTR(wp, f32, 0x114) - wp->position.y;
-                p = wp->position;
-                p.y += float_10_8041a7fc;
-                dir = vec3_802c5748;
-                dist = float_47_8041a84c;
-                hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
-                if (hit != NULL) {
-                    grx = gndCenti(gndAngle(normal.z, normal.y) - float_180_8041a7cc);
-                    grz = gndCenti(gndAngle(normal.x, normal.y) - float_180_8041a7cc);
-                    angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
-                    if (hit != NULL) {
-                        roll_grx = grx;
-                        roll_grz = grz;
-                    }
-                }
+                marioChkGndRollProbe(wp);
             }
         } else {
             if (!(wp->flags & 0x1000000)) {
@@ -1112,32 +1140,36 @@ void marioChkGnd2(void) {
 static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
 
 // fabs is __fabsf (no frsp), the first sample offset is `oz = ox`, and the angle rounding goes through
-// gndAngle/gndCenti; the frame matches (0x1e0).
-// NONMATCHING (96.71%): same 25 calls and immediates as the original; remaining: stack slots and FPR colouring.
+// gndAngle/gndCenti; the frame matches (0x1e0) and the sample Vectors take the original's stack slots.
+// The parameter b colours f21 where the original has f29, rotating the whole long-lived FPR set
+// (f23/f24/bestY/py/px/pz) one to two registers low; no instruction differs and a declaration
+// reorder cannot move b (rasim best 6 of 10 targets wrong). The chosen declaration order
+// (see the block below) is the rasim-best one and lifts this to 99.37%.
+// NONMATCHING (99.37%): FPR colouring only; every call, immediate and instruction matches the original.
 HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
-    Vec p;
     Vec up;
     Vec hitPos;
     Vec normal;
+    Vec p;
     HitEntry* hit;
     HitEntry* result;
-    f32 dist;
-    f32 fa;
-    f32 fb;
-    f32 ox;
-    f32 oz;
-    f32 f23;
-    f32 f24;
-    f32 bestY;
-    f32 py;
-    f32 px;
-    f32 pz;
-    f32 lim;
-    f32 rad;
-    f32 angle;
-    f32 ang;
     s32 i;
+    f32 py;
+    f32 pz;
+    f32 ang;
+    f32 rad;
+    f32 px;
+    f32 f23;
+    f32 fa;
+    f32 angle;
+    f32 ox;
+    f32 bestY;
+    f32 fb;
+    f32 lim;
+    f32 oz;
+    f32 f24;
+    f32 dist;
 
     *(f32*)((u8*)wp + 0x218) = float_0_8041a7a4;
     *(f32*)((u8*)wp + 0x21C) = float_0_8041a7a4;
@@ -1153,10 +1185,10 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     }
     fa = __fabsf(a);
     fb = __fabsf(b);
+    fa += float_0p01_8041a854;
     *outY = wp->position.y;
-    fa = fa + float_0p01_8041a854;
     *outX = float_neg1_8041a7dc;
-    fb = float_5_8041a7b8 + fb;
+    fb += float_5_8041a7b8;
     if (wp->baseSpeed != float_0_8041a7a4) {
         angle = revise360(*(f32*)((u8*)wp + 0x1A0) - *(f32*)((u8*)wp + 0x198));
     } else {
@@ -1210,9 +1242,9 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
                 lim = float_50_8041a844;
             }
             wp2 = marioGetPtr();
-            *(f32*)((u8*)wp2 + 0x218) = gndCenti(gndAngle(normal.z, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x218) = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - float_180_8041a7cc);
             *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
-            *(f32*)((u8*)wp2 + 0x220) = gndCenti(gndAngle(normal.x, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x220) = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - float_180_8041a7cc);
             ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (ang >= lim) {
                 hit = NULL;
@@ -1220,9 +1252,9 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
         }
         if (hit != NULL) {
             MarioWork* wp2 = marioGetPtr();
-            *(f32*)((u8*)wp2 + 0x218) = gndCenti(gndAngle(normal.z, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x218) = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - float_180_8041a7cc);
             *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
-            *(f32*)((u8*)wp2 + 0x220) = gndCenti(gndAngle(normal.x, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x220) = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - float_180_8041a7cc);
             *(f32*)((u8*)wp + 0x214) = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (hitPos.y < py && __fabsf(hitPos.y - py) >= float_2_8041a7e8) {
                 if (__fabsf(hitPos.y - py) > __fabsf(b)) {
@@ -1517,12 +1549,12 @@ static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32*
 
 
 // Older landing check (the Koopa-aware ground probe): same five-sample ring as marioChkLandon2 but the ray points
-// down from 0.75 * height and the accepted hit y is returned rounded to 0.01.
-// The hit's y and normal are read into locals straight after the probe, before the NULL test: the original loads all
-// four into saved FPRs there and reuses 100 * ny across both angleABf calls.
-// NONMATCHING (95.09%): same 15 calls; the original also keeps 100 * ny in a saved FPR across the two angleABf calls,
-// which gndAngle cannot (frame 0x1f0 vs 0x200). An explicit ny100 local with plain reads was worse. Compares: fabs(...) < 0.1 and the rounding
-// tests (cror eq,gt -> >=) checked against the asm.
+// down from 0.75 * height and the accepted hit y is returned rounded to 0.01. The hit's y and normal are read into
+// locals straight after the probe; the explicit ny100 local keeps 100 * ny in a saved FPR across both angleABf calls.
+// The original shares one 100.0 load between the first gndCenti's rounding and the second angleABf's 100 * nx
+// argument; MATCH_F32's volatile read cannot share it, so ours emits one extra lfs, and the rest is FPR colouring in
+// the sample ring. Compares: fabs(...) < 0.1 and the rounding tests (cror eq,gt -> >=) checked against the asm.
+// NONMATCHING (96.89%): same 15 calls and the same 0x200 frame; one extra lfs plus FPR colouring.
 void* marioLandonChk_old(f32* pos, f32 spd) {
     MarioWork* wp = marioGetPtr();
     Vec dir;
@@ -1530,28 +1562,29 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
     Vec hitPos;
     Vec normal;
     HitEntry* hit;
-    f32 dist;
-    f32 fa;
     f32 h;
+    f32 d0;
+    f32 pz;
+    f32 yy;
+    f32 fa;
+    f32 px;
     f32 rad;
+    f32 ang;
     f32 angle;
     f32 f20;
     f32 f19;
-    f32 yy;
-    f32 d0;
-    f32 px;
-    f32 pz;
+    f32 py;
+    f32 ny100;
+    f32 ny;
+    f32 nz;
     f32 ox;
     f32 oz;
-    f32 ang;
+    f32 hy;
+    f32 dist;
+    f32 nx;
     f32 gy;
     f32 gx;
     f32 gz;
-    f32 nx;
-    f32 ny;
-    f32 nz;
-    f32 hy;
-    f32 py;
     s32 i;
     void* r;
 
@@ -1619,11 +1652,13 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
         ny = normal.y;
         nz = normal.z;
         if (hit != NULL) {
-            MarioWork* wp2 = marioGetPtr();
+            MarioWork* wp2;
 
-            *(f32*)((u8*)wp2 + 0x218) = gndCenti(gndAngle(nz, ny) - float_180_8041a7cc);
+            wp2 = marioGetPtr();
+            ny100 = float_100_8041a7f8 * ny;
+            *(f32*)&wp2->field_0x1F0[0x28] = gndCenti(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * nz, ny100) - float_180_8041a7cc);
             *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
-            *(f32*)((u8*)wp2 + 0x220) = gndCenti(gndAngle(nx, ny) - float_180_8041a7cc);
+            *(f32*)&wp2->field_0x1F0[0x30] = gndCenti(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * nx, ny100) - float_180_8041a7cc);
             ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(nx * nx + nz * nz), -ny);
             *(f32*)((u8*)wp + 0x214) = ang;
             if (__fabsf(LND_CENTI((yy - hy) - dist)) < float_0p1_8041a7e4) {
@@ -2422,13 +2457,11 @@ void marioSearchFrontWall_staying(f32 a) {
     wp->position.z = v.z;
 }
 
-// The targetDistance round colours float_1000 f3 / the fctiwz double f2 / the early
-// out1.x load f1 where the original uses f2 / f1 / f4 (a global allocation-order
-// difference). The extra MATCH_F32 read of float_1000 on the out1.x divisor recovers
-// the original's per-round reload and 0.62% over the plain form. Conversions reference
-// a local @865 double rather than the shared double_to_int_802c5920 (name only, no score
-// cost; same project-wide limitation noted in window/win_*.c).
-// NONMATCHING (99.30%): only FPR colouring and the local @865 double differ from the original.
+// The hit-test block builds the query, dispatches the filter and rounds the result in one
+// place, so the original inlines marioHitCheckVecRound there.
+// NONMATCHING (99.83%): the inlined rounding's frontend temps colour the rounded component
+// f3 and the float_1000 load f4 where the original has component f4 / 1000 f3 (and follows
+// that swap through the z block's fmadds). Instruction counts and calls match.
 void marioCheckWall_roll(f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     Vec v;
@@ -2475,43 +2508,7 @@ void marioCheckWall_roll(f32 a, f32 b) {
         query.targetPos = v2;
         query.targetDir = dir;
         query.targetDistance = f31;
-        if (marioGetPtr()->currMotionId == 0x1C) {
-            headHit = hitCheckVecFilter(&query, chkfilterVecVivian);
-        } else if (marioGetPtr()->flags & 0x1000000) {
-            headHit = hitCheckVecFilter(&query, chkfilterVecRoll);
-        } else {
-            headHit = hitCheckVecFilter(&query, chkfilterVec);
-        }
-        if (headHit == NULL) {
-            headHit = NULL;
-        } else {
-            f31 = (f32)(s32)(float_1000_8041a7a0 * query.targetDistance +
-                             (query.targetDistance >= MATCH_F32(float_0_8041a7a4) ? float_0p5_8041a7c4
-                                                                       : float_neg0p5_8041a7c8)) /
-                  float_1000_8041a7a0;
-            {
-                Vec* pOut = &out1;
-                out1 = query.hitPos;
-                // MATCH: the volatile read of the divisor forces MWCC to reload
-                // float_1000 for this round as the original does (plain form: 98.68).
-                pOut->x = (f32)(s32)(float_1000_8041a7a0 * pOut->x +
-                                     (pOut->x >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
-                           MATCH_F32(float_1000_8041a7a0);
-                pOut->y = (f32)(s32)(float_1000_8041a7a0 * pOut->y +
-                                     (pOut->y >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
-                           float_1000_8041a7a0;
-                pOut->z = (f32)(s32)(float_1000_8041a7a0 * pOut->z +
-                                     (pOut->z >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
-                           float_1000_8041a7a0;
-            }
-#ifdef MUST_MATCH
-            if (&out2 != NULL) {
-                out2 = query.hitNormal;
-            }
-#else
-            out2 = query.hitNormal;
-#endif
-        }
+        headHit = marioHitCheckVecRound(&query, &out1, &out2, &f31);
         if (headHit != NULL && f31 > float_16p8_8041a830) {
             headHit = NULL;
         }
