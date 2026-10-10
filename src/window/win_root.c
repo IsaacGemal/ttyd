@@ -173,7 +173,10 @@ extern const f32 float_8_8041d0a0;
 
 // The per-quad texture setup/scale of the kirinuki window: same shape as
 // nameent.c's NAME_KIRINUKI_SCALE. `yscale` is a local of the caller, shared
-// across the quads like nameKirinukiGX's.
+// across the quads like nameKirinukiGX's. The LOD's zeroes are the `0.0f`
+// literals of nameent.c, not reads of float_0_8041d068: the literals make MWCC
+// create the frontend temporaries in the original's order (the named reads
+// shift the whole FPR colouring and cost ~0.2%).
 #define WIN_KIRINUKI_SCALE(id_, W, H) \
     { \
         GXTexObj texObj; \
@@ -182,7 +185,7 @@ extern const f32 float_8_8041d0a0;
         f64 hh; \
         f64 ww; \
         TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, (id_)); \
-        GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0); \
+        GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0); \
         GXLoadTexObj(&texObj, 0); \
         GXSetNumTexGens(1); \
         GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D); \
@@ -1513,25 +1516,29 @@ void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3) {
 //  * The 8.0 and 16.0 are literals, as in nameent.c's nameKirinukiGX: MWCC CSEs `w - 8.0f - 8.0f` and the
 //    like across the GX calls (the original computes each once and reuses it for the scale and the quad),
 //    which it does not do for reads of the named float_8/float_16 objects. 90.0 and 74.0 stay named reads
-//    (as literals both score lower). The quads use the `w - 8`/`h - 8 - 8` expressions directly, and kxw74/
-//    kxw82 are assigned just before their first use in the else branch; 95.77 -> 98.40 in all.
+//    (as literals both score lower). The quads use the `w - 8`/`h - 8 - 8` expressions directly. The
+//    else-branch 7th quad and the two x offsets after it group `x + (w - 90)` so MWCC computes that sum
+//    once (a plain `x + w - 90` reassociates and adds an instruction). The second x offset (`x + (w - 90)
+//    + 8`) is held in the same local as `yscale`, which is dead at that point; reusing one local is what
+//    keeps the instruction multiset equal to the original's (a second local makes MWCC recompute a sum).
 //  * The else-branch 7th quad's width is w-8 (single fsubs), not w-16, and the else-branch texture ids at
 //    quads 11/12 are C then 8. Every texture id (if0 B,9,D,A,8,C,8,E; else B,9,D,A,8,C,8,F,8,A,8,C,8,E),
 //    every scale W/H and every quad rectangle was checked against the asm.
 //  * `winKirinukiQuad` must be inlined at all 20 call sites (the inline_max pragmas below); without them
-//    MWCC outlines it and the function drops to 61.68%. Turning the kxw74/kxw82 assignments into
-//    assignment expressions has made mwcceppc loop forever.
-// NONMATCHING (98.44%): FPR colouring and a few scheduling moves (see above).
+//    MWCC outlines it and the function drops to 61.68%. Turning the kxw74 assignment into an assignment
+//    expression has made mwcceppc loop forever.
+// NONMATCHING (99.11%): the instruction multiset is exact and the four parameter saves now match the
+// target (f28-f31). Ten frontend CSE temporaries still colour into f24-f27 differently (they overlap
+// their neighbours here where the target's do not); that is the permuter's remaining 10-register case.
 void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
     f32 yscale;
     f32 kxw74;
-    f32 kxw82;
 
     GXSetBlendMode(0, 1, 0, 0);
     GXSetZCompLoc(0);
     GXSetAlphaCompare(6, 0x80, 1, 0, 0);
     GXSetZMode(0, 7, 0);
-    GXSetFog(0, float_0_8041d068, float_0_8041d068, float_0_8041d068, float_0_8041d068,
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f,
              dat_8041cf48);
     GXSetNumChans(0);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
@@ -1553,7 +1560,7 @@ void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
         WIN_KIRINUKI_SCALE(0x9, w - 8.0f - 8.0f, 8.0);
         winKirinukiQuad(x + 8.0f, y, w - 8.0f - 8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0xD, 8.0, 8.0);
-        winKirinukiQuad(x + (w - 8.0f), y, 8.0f, float_8_8041d0a0);
+        winKirinukiQuad(x + w - 8.0f, y, 8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0xA, 8.0, h - 8.0f - 8.0f);
         winKirinukiQuad(x, y - 8.0f, 8.0f, (h - 8.0f - 8.0f));
         WIN_KIRINUKI_SCALE(0x8, w - 8.0f, (h - 8.0f - 8.0f));
@@ -1565,7 +1572,7 @@ void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
         winKirinukiQuad(x + 8.0f, y - (h - 8.0f),
                         w - 8.0f - 8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0xE, 8.0, 8.0);
-        winKirinukiQuad(x + (w - 8.0f), y - (h - 8.0f), 8.0f,
+        winKirinukiQuad(x + w - 8.0f, y - (h - 8.0f), 8.0f,
                         8.0f);
     } else {
         WIN_KIRINUKI_SCALE(0xB, 8.0, 8.0);
@@ -1573,7 +1580,7 @@ void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
         WIN_KIRINUKI_SCALE(0x9, w - 8.0f - 8.0f, 8.0);
         winKirinukiQuad(x + 8.0f, y, w - 8.0f - 8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0xD, 8.0, 8.0);
-        winKirinukiQuad(x + (w - 8.0f), y, 8.0f, 8.0f);
+        winKirinukiQuad(x + w - 8.0f, y, 8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0xA, 8.0, h - 8.0f - 8.0f);
         winKirinukiQuad(x, y - 8.0f, 8.0f, (h - 8.0f - 8.0f));
         WIN_KIRINUKI_SCALE(0x8, w - 8.0f, (h - 8.0f - 8.0f));
@@ -1585,26 +1592,26 @@ void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
         winKirinukiQuad(x + 8.0f, y - (h - 8.0f),
                         w - 8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0xF, 16.0, 8.0);
-        winKirinukiQuad(x + w - float_90_8041d194, y - h, 16.0f, 8.0f);
-        kxw74 = x + w - float_90_8041d194 + 16.0f;
-        kxw82 = x + w - float_90_8041d194 + 8.0f;
+        winKirinukiQuad(x + (w - float_90_8041d194), y - h, 16.0f, 8.0f);
+        kxw74 = x + (w - float_90_8041d194) + 16.0f;
+        yscale = x + (w - float_90_8041d194) + 8.0f;
         WIN_KIRINUKI_SCALE(0x8, float_74_8041d198, 8.0);
         winKirinukiQuad(kxw74, y - h, float_74_8041d198,
                         8.0f);
         WIN_KIRINUKI_SCALE(0xA, 8.0, 8.0);
-        winKirinukiQuad(kxw82, y - h - 8.0f,
+        winKirinukiQuad(yscale, y - h - 8.0f,
                         8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0x8, float_74_8041d198, 8.0);
         winKirinukiQuad(kxw74, y - h - 8.0f,
                         float_74_8041d198, 8.0f);
         WIN_KIRINUKI_SCALE(0xC, 8.0, 8.0);
-        winKirinukiQuad(kxw82, y - h - 16.0f,
+        winKirinukiQuad(yscale, y - h - 16.0f,
                         8.0f, 8.0f);
         WIN_KIRINUKI_SCALE(0x8, float_66_8041d19c, 8.0);
         winKirinukiQuad(kxw74, y - h - 16.0f,
                         float_66_8041d19c, 8.0f);
         WIN_KIRINUKI_SCALE(0xE, 8.0, 8.0);
-        winKirinukiQuad(x + (w - 8.0f), y - h - 16.0f, 8.0f,
+        winKirinukiQuad(x + w - 8.0f, y - h - 16.0f, 8.0f,
                         8.0f);
     }
 }
