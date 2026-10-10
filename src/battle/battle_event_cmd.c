@@ -53,7 +53,6 @@ extern const f32 float_0p15_8041bfe8;
 extern const f32 float_0_8041bf98;
 extern const f32 float_450_8041bf9c;
 extern const f32 float_260_8041bfa0;
-extern const f32 float_150_8041bfc0;
 extern const f32 float_0p75_8041bfa8;
 extern const f32 float_450_8041bf9c;
 extern const f32 float_260_8041bfa0;
@@ -5501,7 +5500,7 @@ USER_FUNC(btlevtcmd_ACSuccessEffect) {
     case 5:
         id = 3;
         sfx = ACSE_SYSSFX(str_802EE0BC, "SFX_SYSTEM_WONDERFUL1");
-        angle = float_150_8041bfc0;
+        angle = 150.0f;
         break;
     case 6:
         id = 4;
@@ -7156,7 +7155,6 @@ const f32 float_90_8041bfb0 = 90.0f;
 const f32 float_0p6_8041bfb4 = 0.6f;
 const f32 float_1p2_8041bfb8 = 1.2f;
 const f32 float_120_8041bfbc = 120.0f;
-const f32 float_150_8041bfc0 = 150.0f;
 const f32 float_180_8041bfc4 = 180.0f;
 const f32 float_0p5_8041bfc8 = 0.5f;
 const f32 float_160_8041bfcc = 160.0f;
