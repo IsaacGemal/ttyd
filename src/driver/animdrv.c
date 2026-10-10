@@ -1263,7 +1263,7 @@ void animPoseMain(s32 poseId) {
     start = ((f32*)ANIM_DATA_CLIP(anim))[1];
     duration = end - start;
 
-    if (float_0_80419a48 == duration) {
+    if (0.0f == duration) {
         pose->loopTime = time - start;
     } else if (canLoop) {
         f32 t = time - start;
