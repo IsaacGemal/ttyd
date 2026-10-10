@@ -2119,7 +2119,7 @@ config.libs = [
             Object(Matching, "yuu_00.c"),
             Object(Matching, "yuu_01.c"),
             Object(Matching, "event/evt_yuutitle.c"),
-            Object(NonMatching, "event/evt_yuucounter.c"),
+            Object(Matching, "event/evt_yuucounter.c"),
             Object(NonMatching, "event/evt_yuunpc.c"),
             Object(NonMatching, "event/evt_yuuranking.c", modules=["yuu"]),
         ],
