@@ -665,8 +665,10 @@ static inline void winFontSetLabelV(Vec pos, Vec scale, GXColor color, const cha
 // per-state logic and the common per-tab animation. The string array is the
 // unit's static msg_help object; the byte-pointer casts reproduce the original
 // `add base,base,idx; lwz disp(base)` reads of tabs[]/recs[].
-// NONMATCHING (97.04%): remaining diff is MWCC register colouring/scheduling and
-// a few `add base,base,idx` vs `addi+index` addressing forms.
+// The tab-state loop initialization is the only remaining difference: retail copies the counter's initial
+// value into cnt (`mr r27, r30`), while MWCC folds that copy to `li r27, 0`.
+#pragma opt_common_subs off // keep each field load's own `add base,base,idx` instead of hoisting &work->tabs
+// NONMATCHING (99.61%): see the loop-init note above.
 s32 winRootMain(WindowWork* work) {
     static const char* msg_help[5] = {
         "msg_menu_mario", "msg_menu_nakama", "msg_menu_mochimono", "msg_menu_badge", "msg_menu_kiroku",
@@ -772,10 +774,8 @@ s32 winRootMain(WindowWork* work) {
         WW_F32(work, 0x164) = float_neg1000_8041d0cc;
         WW_F32(work, 0x170) = float_neg1000_8041d0cc;
         WW_F32(work, 0x168) = float_neg1000_8041d0cc;
-        str = WROOT(work)->tabs[WW_S32(work, 0x40)].str;
-        if (str != NULL) {
-            winMsgEntry(work, 0, str, 0);
-        }
+        str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->str;
+        winMsgEntry(work, 0, str, 0);
         WW_S32(work, 0x24) = 0xA;
         switch (WW_S32(work, 0x1C)) {
         case 1:
@@ -824,10 +824,10 @@ s32 winRootMain(WindowWork* work) {
             break;
         }
         if (work->buttonTrg & 0x100) {
-            if (WROOT(work)->tabs[WW_S32(work, 0x40)].id != 1 || WW_S32(work, 0x1E0) != 0) {
+            if (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id != 1 || WW_S32(work, 0x1E0) != 0) {
                 psndSFXOn((const char*)0x20012);
                 WW_S32(work, 0x24) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id + 0xB;
-                switch (WROOT(work)->tabs[WW_S32(work, 0x40)].id) {
+                switch (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id) {
                 case 0:
                     winMarioInit2(work);
                     break;
@@ -862,10 +862,8 @@ s32 winRootMain(WindowWork* work) {
             WW_S32(work, 0xCC) = 0x1E;
             WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id;
             WW_F32(work, 0x158) = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
-            str = WROOT(work)->tabs[WW_S32(work, 0x40)].str;
-            if (str != NULL) {
-                winMsgEntry(work, 0, str, 0);
-            }
+            str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->str;
+            winMsgEntry(work, 0, str, 0);
         } else if (work->dirRep & 0x8000) {
             psndSFXOn((const char*)0x20032);
             psndSFXOn((const char*)0x20031);
@@ -881,10 +879,8 @@ s32 winRootMain(WindowWork* work) {
             WW_S32(work, 0xCC) = 0x14;
             WW_S32(work, 0xC0) = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->id;
             WW_F32(work, 0x158) = (f32)(WW_S32(work, 0x40) * 0x69 - 0x10E);
-            str = WROOT(work)->tabs[WW_S32(work, 0x40)].str;
-            if (str != NULL) {
-                winMsgEntry(work, 0, str, 0);
-            }
+            str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->str;
+            winMsgEntry(work, 0, str, 0);
         }
         break;
     case 100:
@@ -922,9 +918,7 @@ s32 winRootMain(WindowWork* work) {
             WW_F32(work, 0x15C) = float_185_8041d1e4;
             WW_S32(work, 0x24) = 0xA;
             str = ((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->str;
-            if (str != NULL) {
-                winMsgEntry(work, 0, str, 0);
-            }
+            winMsgEntry(work, 0, str, 0);
             work->flags &= ~0x4000;
         } else if (result == -2) {
             WW_S32(work, 0x24) = 0x14;
@@ -980,9 +974,9 @@ s32 winRootMain(WindowWork* work) {
     s32 xoff;
     s32 cnt;
 
-    i = 0;
     base = (u8*)work;
-    cnt = i;
+    cnt = 0;
+    i = cnt;
     xoff = -0xCD;
 
     for (; i < 5; i++) {
@@ -1046,26 +1040,28 @@ s32 winRootMain(WindowWork* work) {
     winSortMain(work);
     if (WW_S32(work, 0x24) < 0x14) {
         if (work->flags & 0x4000) {
-            WW_F32(work, 0x150) += (WW_F32(work, 0x158) - WW_F32(work, 0x150)) * float_0p25_8041d1ec;
-            WW_F32(work, 0x154) += (WW_F32(work, 0x15C) - WW_F32(work, 0x154)) * float_0p25_8041d1ec;
+            { f32 d = WW_F32(work, 0x158) - WW_F32(work, 0x150); WW_F32(work, 0x150) += d * float_0p25_8041d1ec; }
+            { f32 d = WW_F32(work, 0x15C) - WW_F32(work, 0x154); WW_F32(work, 0x154) += d * float_0p25_8041d1ec; }
         } else {
-            WW_F32(work, 0x150) += (WW_F32(work, 0x158) - WW_F32(work, 0x150)) * float_0p25_8041d1ec;
-            WW_F32(work, 0x154) += (WW_F32(work, 0x15C) + (WROOT(work)->tabs[WW_S32(work, 0x40)].y - float_185_8041d1e4) - WW_F32(work, 0x154)) * float_0p25_8041d1ec;
+            { f32 d = WW_F32(work, 0x158) - WW_F32(work, 0x150); WW_F32(work, 0x150) += d * float_0p25_8041d1ec; }
+            { f32 d = WW_F32(work, 0x15C) + (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->y - float_185_8041d1e4) - WW_F32(work, 0x154); WW_F32(work, 0x154) += d * float_0p25_8041d1ec; }
         }
     } else if (WW_F32(work, 0x154) > float_180_8041d18c) {
-            WW_F32(work, 0x150) += (WW_F32(work, 0x158) - WW_F32(work, 0x150)) * float_0p25_8041d1ec;
-            WW_F32(work, 0x154) += (WW_F32(work, 0x15C) + (WROOT(work)->tabs[WW_S32(work, 0x40)].y - float_185_8041d1e4) - WW_F32(work, 0x154)) * float_0p25_8041d1ec;
+            { f32 d = WW_F32(work, 0x158) - WW_F32(work, 0x150); WW_F32(work, 0x150) += d * float_0p25_8041d1ec; }
+            { f32 d = WW_F32(work, 0x15C) + (((WinRootTab*)((u8*)WROOT(work)->tabs + WW_S32(work, 0x40) * 0x18))->y - float_185_8041d1e4) - WW_F32(work, 0x154); WW_F32(work, 0x154) += d * float_0p25_8041d1ec; }
     } else {
-            WW_F32(work, 0x150) += (WW_F32(work, 0x158) + WW_F32(work, 0xC4) - WW_F32(work, 0x150)) * float_0p25_8041d1ec;
-            WW_F32(work, 0x154) += (WW_F32(work, 0x15C) - WW_F32(work, 0x154)) * float_0p25_8041d1ec;
+            { f32 d = WW_F32(work, 0x158) + WW_F32(work, 0xC4) - WW_F32(work, 0x150); WW_F32(work, 0x150) += d * float_0p25_8041d1ec; }
+            { f32 d = WW_F32(work, 0x15C) - WW_F32(work, 0x154); WW_F32(work, 0x154) += d * float_0p25_8041d1ec; }
     }
     WW_F32(work, 0x150) = (f32)(WW_F32(work, 0x150) +
         __fabs(float_2_8041d090 * (f32)sin((f32)gp->retraceCount * float_0p125_8041d104)));
-    WW_F32(work, 0x164) += (WW_F32(work, 0x16C) - WW_F32(work, 0x164)) * float_0p25_8041d1ec;
-    WW_F32(work, 0x168) += (WW_F32(work, 0x170) - WW_F32(work, 0x168)) * float_0p25_8041d1ec;
+    { f32 d = WW_F32(work, 0x16C) - WW_F32(work, 0x164); WW_F32(work, 0x164) += d * float_0p25_8041d1ec; }
+    { f32 d = WW_F32(work, 0x170) - WW_F32(work, 0x168); WW_F32(work, 0x168) += d * float_0p25_8041d1ec; }
     dispEntry(CAMERA_2D, float_1000_8041d1e8, 0, (DispCallback)unk_8014d338, work);
     return 0;
 }
+
+#pragma opt_common_subs reset
 
 // Named tail templates precede the tab loop's native compound-literal templates.
 static const Vec vec3_802f403c = { 0.0f, 0.0f, 0.0f };
