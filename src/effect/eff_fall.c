@@ -362,22 +362,18 @@ static inline f32 effFallCosf(f32 t) {
 }
 
 #pragma opt_lifetimes off // one register per variable: the sin/cos accumulators stay in their coefficient's register
-#pragma opt_propagation off // keeps the sin/cos coefficients and the sound names as variables loaded before the loop
-// The sound names are declared in the original's rank order (BUG2, BUG1, KOOPA1, FORK1, METEOR2, LIGHT1 above the
-// loop state, METEOR1 last); the release loop has its own `rel`/`j`. The type-2 vertex loops step the vertex
-// pointer (`for (...; i++, v += 5)`), which MWCC unrolls into the original's mtctr/bdnz loops.
-// The original's first allocation pass spills both BUG1 and FORK1 (two stack slots, r15-r31); ours spills only
-// BUG1 and FORK1 takes r14, which shifts effect, METEOR1 and the release-loop/vector-copy temporaries by one
-// register. rasim gives the original's pass 1 when one more coalesced value holds r3 across the case-7 vector table
-// copy; no source shape for it found yet.
-// NONMATCHING (99.51%): GPR colouring only (the FORK1 spill and METEOR1/effect order described above).
+#pragma opt_propagation off // keeps the sin/cos coefficients as variables loaded before the loop
+// The sound names are computed once in the loop preheader, BUG1 and FORK1 spilled to the stack: MWCC's frontend
+// hoists an integer round trip of a literal out of the loop as an invariant expression (as in battle_stage_object's
+// BSO_SFX), while a plain literal is rematerialised at each call. The release loop has its own `rel`/`j`. The
+// type-2 vertex loops step the vertex pointer (`for (...; i++, v += 5)`), which MWCC unrolls into the original's
+// mtctr/bdnz loops.
+#ifdef MUST_MATCH
+#define FALL_SFX(name) ((char*)(u32)(name))
+#else
+#define FALL_SFX(name) (name)
+#endif
 void effFallMain(EffectEntry* effect) {
-	const char* sfxBug2;
-	const char* sfxBug1;
-	const char* sfxKoopa1;
-	const char* sfxFork1;
-	const char* sfxMeteor2;
-	const char* sfxLight1;
 	FallWork* elem = effect->userdata;
 	s32 i;
 	s32 type;
@@ -385,10 +381,9 @@ void effFallMain(EffectEntry* effect) {
 	s32 flag = 0;
 	s32 done;
 	s32 inBattle;
-	const char* sfxMeteor1;
 	Vec pos;
-	s32 j;
 	FallWork* rel;
+	s32 j;
 	f32 y;
 	f32 f30;
 	f32 f29;
@@ -426,14 +421,6 @@ void effFallMain(EffectEntry* effect) {
 	f30 = 6.2831855f * unk18;
 	f29 = 30.f + y;
 
-	{
-	sfxBug1 = "SFX_BTL_STAGE_FALL_BUG1";
-	sfxBug2 = "SFX_BTL_STAGE_FALL_BUG2";
-	sfxFork1 = "SFX_BTL_STAGE_DAMAGE_FORK1";
-	sfxKoopa1 = "SFX_BTL_STAGE_FALL_KOOPA1";
-	sfxMeteor1 = "SFX_BTL_STAGE_FALL_METEOR1";
-	sfxMeteor2 = "SFX_BTL_STAGE_DAMAGE_METEOR2";
-	sfxLight1 = "SFX_BTL_STAGE_DAMAGE_LIGHT1";
 	done = 0;
 	for (i = 1, elem++; i < effect->count; i++, elem++) {
 		switch (type) {
@@ -447,15 +434,15 @@ void effFallMain(EffectEntry* effect) {
 				if (elem->unk24 == 0) {
 					elem->unk38++;
 					if (type == 1) {
-						psndSFXOn_3D(sfxBug1, &pos);
+						psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_BUG1"), &pos);
 					} else if (i == 1) {
-						psndSFXOn_3D(sfxBug2, &pos);
+						psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_BUG2"), &pos);
 					}
 				}
 				break;
 			case 1:
 				if (type == 0 && i > 1 && flag == 0 && gp->retraceCount % 6 == 0) {
-					psndSFXOn_3D(sfxBug2, &pos);
+					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_BUG2"), &pos);
 					flag = 1;
 				}
 				elem->y += elem->unk34;
@@ -524,7 +511,7 @@ void effFallMain(EffectEntry* effect) {
 					elem->y = y;
 					elem->unk24 = 0;
 					elem->unk38++;
-					psndSFXOn_3D(sfxFork1, &pos);
+					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_DAMAGE_FORK1"), &pos);
 				}
 				break;
 			case 1: {
@@ -714,7 +701,7 @@ void effFallMain(EffectEntry* effect) {
 				if (elem->unk5C == -1) {
 					elem->unk5C = animPoseEntry("EFF_koopa", inBattle);
 					animPoseSetAnim(elem->unk5C, "Z_1", 1);
-					psndSFXOn_3D(sfxKoopa1, &pos);
+					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_KOOPA1"), &pos);
 				}
 				elem->x += elem->unk50;
 				elem->y += elem->unk54;
@@ -739,7 +726,7 @@ void effFallMain(EffectEntry* effect) {
 					elem->unk38++;
 				}
 				if (elem->unk24 == 0x64) {
-					psndSFXOn_3D(sfxKoopa1, &pos);
+					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_KOOPA1"), &pos);
 				}
 				break;
 			case 2:
@@ -755,7 +742,7 @@ void effFallMain(EffectEntry* effect) {
 					done++;
 				}
 				if (elem->unk24 == 0x46) {
-					psndSFXOn_3D(sfxKoopa1, &pos);
+					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_KOOPA1"), &pos);
 				}
 				break;
 			}
@@ -769,7 +756,7 @@ void effFallMain(EffectEntry* effect) {
 				if (!animGroupBaseAsync("EFF_inseki", inBattle, NULL)) {
 					break;
 				}
-				psndSFXOn_3D(sfxMeteor1, &pos);
+				psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_FALL_METEOR1"), &pos);
 				if (elem->unk5C == -1) {
 					elem->unk5C = animPoseEntry("EFF_inseki", inBattle);
 					animPoseSetAnim(elem->unk5C, "Z_1", 1);
@@ -814,7 +801,7 @@ void effFallMain(EffectEntry* effect) {
 					elem->z = elem->unk58;
 					elem->unk38++;
 					if (elem->unk38 == 2) {
-						elem->unk64 = psndSFXOn_3D(sfxMeteor2, &pos);
+						elem->unk64 = psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_DAMAGE_METEOR2"), &pos);
 					}
 					if (elem->unk38 != 8) {
 						effKemuri1N64Entry(4, pos.x + elem->x, pos.y + elem->y - 40.f,
@@ -868,7 +855,7 @@ void effFallMain(EffectEntry* effect) {
 					evtEntry(evt_shake, 0, 0);
 					animPoseSetAnim(elem->unk5C, "A_1", 1);
 					elem->unk38++;
-					psndSFXOn_3D(sfxLight1, &pos);
+					psndSFXOn_3D(FALL_SFX("SFX_BTL_STAGE_DAMAGE_LIGHT1"), &pos);
 				}
 				break;
 			case 3:
@@ -922,7 +909,6 @@ void effFallMain(EffectEntry* effect) {
 	default:
 		dispEntry(CAMERA_3D, dispCalcZ(&pos), 2, effFallDisp, effect);
 		break;
-	}
 	}
 }
 #pragma opt_propagation reset
@@ -1488,14 +1474,6 @@ s32 effFallCheckHit(EffectEntry* effect) {
 	}
 	return 0;
 }
-
-// 4-byte zero word that ends the unit's .data (after the compiler's switch jump tables): an all-zero
-// object needs explicit_zero_data to stay in .data and force_active to survive the linker.
-#pragma explicit_zero_data on
-#pragma force_active on
-__declspec(section ".data") u32 gap_05_803AE094_data[1] = { 0 };
-#pragma force_active reset
-#pragma explicit_zero_data reset
 
 // .sdata2 objects, in the original address order. Defined after the code so the compiler does not
 // fold their values into the functions; the code loads each by name.

@@ -510,7 +510,7 @@ config.libs = [
             Object(Matching, "effect/eff_itemget.c"),
             Object(Matching, "effect/eff_pointget.c"),
             Object(Matching, "effect/eff_stageclear.c"),
-            Object(NonMatching, "effect/eff_fall.c"),
+            Object(Matching, "effect/eff_fall.c"),
             Object(Matching, "effect/eff_levelup.c"),
             Object(Matching, "effect/eff_break.c"),
             Object(Matching, "effect/eff_mobj_broken.c"),
