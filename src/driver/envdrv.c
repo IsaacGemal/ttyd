@@ -12,26 +12,21 @@
 #include <stdlib.h>
 #include "math_ext.h"
 
-// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+// The unit's .data opens with the eight {-1, 1} / {1, -1} pairs every unit that includes this header
+// set has; the four named pairs are local ($) in the original, so they are static here and
+// force_active keeps them emitted (same layout as battle_break_slot.c).
+#pragma force_active on
 __declspec(section ".data") u32 lbl_80398960[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_80398970[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 lbl_80398980[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_80398990[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+#pragma force_active reset
 
 extern GlobalWork* gp;
-extern const f32 float_0p004_8041e520;
-extern const f32 float_1000_8041e540;
-extern const f32 float_127_8041e544;
-extern const f32 float_18p85_8041e548;
-extern const f32 float_0p015625_8041e54c;
-extern const f32 float_10_8041e524;
-extern const f32 float_0p6_8041e550;
-extern const f32 float_128_8041e554;
-extern const f32 float_6p2832_8041e558;
-extern const f32 float_360_8041e55c;
-extern const f32 float_0p5_8041e538;
-extern const f32 float_0_8041e53c;
-extern const f32 float_45_8041e560;
-extern const f32 float_0p15_8041e564;
-extern const f32 float_0p3_8041e56c;
-extern const f32 float_90_8041e568;
 
 // Texture-matrix ids and the five vectors the matrix cases rotate against (target .rodata at 0x802f9338).
 const EnvTevMtxData dat_802f9338 = {
@@ -50,8 +45,8 @@ const GXColor dat_8041e518 = { 0xFF, 0xFF, 0xFF, 0xA0 };
 const GXColor dat_8041e51c = { 0x7F, 0x7F, 0x7F, 0x00 };
 
 //.data
-EnvironmentGlare envGlare0 = {
-    GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_TEV_KCSEL_K1_A, GX_TEV_KCSEL_K0_A, 5.25f, 16,
+static EnvironmentGlare envGlare0 = {
+    GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_TEV_KCSEL_7_8, GX_TEV_KCSEL_1, 5.25f, 16,
     {
         {-1.0f, 0.0f}, {-3.0f, 0.0f}, {-5.0f, 0.0f}, {-7.0f, 0.0f},
     {1.0f, 0.0f}, {3.0f, 0.0f}, {5.0f, 0.0f}, {7.0f, 0.0f},
@@ -60,16 +55,16 @@ EnvironmentGlare envGlare0 = {
 }
 };
 
-EnvironmentGlare envGlare1 = {
-    GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_TEV_KCSEL_K1_A, GX_TEV_KCSEL_1, 3.5f, 8,
+static EnvironmentGlare envGlare1 = {
+    GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_TEV_KCSEL_7_8, GX_TEV_KCSEL_1_2, 3.5f, 8,
     {
         {-1.41419994831f, -1.41419994831f}, {0.0f, -1.0f}, {1.41419994831f, -1.41419994831f}, {-1.0f, 0.0f},
     {1.0f, 0.0f}, {-1.41419994831f, 1.41419994831f}, {0.0f, 1.0f}, {1.41419994831f, 1.41419994831f},
 }
 };
 
-EnvironmentGlare envGlare2 = {
-    GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_TEV_KCSEL_K1_A, GX_TEV_KCSEL_3_4, 3.5f, 52,
+static EnvironmentGlare envGlare2 = {
+    GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_TEV_KCSEL_7_8, GX_TEV_KCSEL_1_4, 3.5f, 52,
     {
         {0.0f, -5.0f}, {-1.0f, -4.0f}, {0.0f, -4.0f}, {1.0f, -4.0f},
     {-2.0f, -3.0f}, {-1.0f, -3.0f}, {0.0f, -3.0f}, {1.0f, -3.0f},
@@ -87,8 +82,8 @@ EnvironmentGlare envGlare2 = {
 }
 };
 
-EnvironmentGlare envGlare3 = {
-    GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_TEV_KCSEL_K1_A, GX_TEV_KCSEL_1, 3.5f, 16,
+static EnvironmentGlare envGlare3 = {
+    GX_BM_BLEND, GX_BL_ONE, GX_BL_ONE, GX_TEV_KCSEL_7_8, GX_TEV_KCSEL_1_2, 3.5f, 16,
     {
         {0.0f, -4.0f}, {-1.0f, -3.0f}, {1.0f, -3.0f}, {-2.0f, -2.0f},
     {2.0f, -2.0f}, {-3.0f, -1.0f}, {3.0f, -1.0f}, {-3.0f, 0.0f},
@@ -100,14 +95,14 @@ EnvironmentGlare envGlare3 = {
 //.bss
 static EnvironmentWork work[2];
 
-//.sbss
-TEXPalette* env_tpl;
-s32 tpl_ok;
-f32 frame_cnt;
-f32 a;
-f32 u1;
-f32 u2;
+//.sbss (MWCC lays these out last-declared-first: declared in the reverse of the original's order)
 s32 v_count;
+f32 u2;
+f32 u1;
+f32 a;
+f32 frame_cnt;
+s32 tpl_ok;
+TEXPalette* env_tpl;
 
 //local prototypes
 
@@ -116,7 +111,6 @@ s32 v_count;
 
 #define PI 3.141592653589793f
 #define TWO_PI 6.283185307179586f
-s32 texmtx_tbl[] = {30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 4, 5, 6, 14, 0, 1, 2, 3, 8, 9, 10}; //TODO: put in right spot
 #define NAN (*(f32*)__float_nan)
 #define FP_NAN 1
 #define FP_INFINITE 2
@@ -239,9 +233,6 @@ void envDisp2(CameraId camId, void *param) {
     f32 pm[GX_PROJECTION_SZ];
     EnvironmentWork* wp;
     EnvironmentGlareFilter* filter;
-#ifdef MUST_MATCH
-    u8* base = (u8*)lbl_80398960;
-#endif
 
     GXGetViewportv(vp);
     GXGetProjectionv(pm);
@@ -251,21 +242,6 @@ void envDisp2(CameraId camId, void *param) {
         switch (filter->type) {
             case 0:
                 break;
-#ifdef MUST_MATCH
-            // retail addresses envGlare0..3 as offsets from lbl_80398960 (0x40/0xdc/0x138/0x2f4)
-            case 1:
-                envGlare((EnvironmentGlare*)(base + 0x40));
-                break;
-            case 2:
-                envGlare((EnvironmentGlare*)(base + 0xdc));
-                break;
-            case 3:
-                envGlare((EnvironmentGlare*)(base + 0x138));
-                break;
-            case 4:
-                envGlare((EnvironmentGlare*)(base + 0x2f4));
-                break;
-#else
             case 1:
                 envGlare(&envGlare0);
                 break;
@@ -278,7 +254,6 @@ void envDisp2(CameraId camId, void *param) {
             case 4:
                 envGlare(&envGlare3);
                 break;
-#endif
         }
     }
     GXSetViewport(vp[0], vp[1], vp[2], vp[3], vp[4], vp[5]);
@@ -292,34 +267,49 @@ void envMain(void) {
     dispEntry(CAMERA_3D, 5000.0f, 8, envDisp2, NULL);
 }
 
+// The stage that blends the blurred capture (texmap 1) over the frame by the konst alpha.
+static inline void envDofBlendStage(s32 tevStage, s32 texCoord, s32 colorC, s32 alphaC) {
+    GXSetTevKColorSel(tevStage, 0xC);
+    GXSetTevKAlphaSel(tevStage, 0x1C);
+    GXSetTevOrder(tevStage, texCoord, 1, 0xFF);
+    GXSetTevColorOp(tevStage, 8, 0, 0, 1, 0);
+    GXSetTevAlphaOp(tevStage, 8, 0, 0, 1, 0);
+    GXSetTevColorIn(tevStage, 8, 0xE, colorC, 0xF);
+    GXSetTevAlphaIn(tevStage, 4, 6, alphaC, 7);
+    GXSetTevSwapMode(tevStage, 0, 0);
+}
+
+// The same blend stage weighted by a register colour (TEVREG1 white) instead of the frame.
+static inline void envDofBlendStageReg(s32 tevStage, s32 texCoord) {
+    GXSetTevColor(2, dat_8041e510);
+    envDofBlendStage(tevStage, texCoord, 0xC, 2);
+}
+
 // `opt_propagation off` stops MWCC rematerialising the polynomial coefficients into every branch
 // (same as envDisp_FF/evt_sub); `opt_lifetimes off` keeps the 0.00761/0.03705 seed loads inside the loop.
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-// The code is complete and logically matches. Block 1's polynomial coefficients are assigned inside the loop
-// (with `v31 = TWO_PI` also inside the loop, before the angle), so LICM hoists them in the value order MWCC
-// wants and every block-1 FPR now matches (TWO_PI=f31, magic=f30, 0.25=f29, PI=f28, 1.0=f27, 0.16605=f26,
-// 0.4967=f25, 100=f24). The GXColor temporaries go through a named `color` local (only the r/a fields
-// written), which puts the two GXSetTevKColor argument copies on sp+0x10/sp+0xC and keeps sp48 at 0x48 /
-// sp18 at 0x18. The declaration order below (`i`, `tevStage`, `temp_r27`, `wp`, `u`, `mtx`, `texCoord`)
-// was found by search. Four later edits raised the score to 96.21% (119 real diffs):
-// block 2's `v34` uses the if/else form, block 1's coefficients are ordered v24,v26,v27,v28,v25, the
-// `f32 half` local in the two `GXBegin` runs is gone (the 0.5f factor is a literal in each GXPosition3f32),
-// and block 2 reaches the matrix table through its own `mtx2` pointer. Both `mtx` and `mtx2` now point
-// at `dat_802f9338` (the target's object, via a cast), which removes the old `texmtx_tbl` symbol diff.
-// What remains is integer register
-// colouring (the loop-base addi uses an r0 scratch, and the target's mtx/tevStage/magic regs differ) and
-// block 2's magic/0.25 FPR swap. Renaming block 2's `tevStage` (or any coefficient) makes MWCC loop forever,
-// so those cannot be separated; the rest needs the permuter.
-// NONMATCHING (96.21%): register colouring/scheduling only; no instruction differs for a logic reason.
+// Block 1's polynomial coefficients are assigned inside the loop (with `v31 = TWO_PI` also inside the loop,
+// before the angle), so LICM hoists them in the value order MWCC wants (TWO_PI=f31, magic=f30, 0.25=f29,
+// PI=f28, 1.0=f27, 0.16605=f26, 0.4967=f25, 100=f24). The GXColor temporaries go through a named `color`
+// local (only the r/a fields written), which puts the two GXSetTevKColor argument copies on sp+0x10/sp+0xC.
+// The blend stage after each loop is an inline helper called with `texCoord++`: the argument copy and the
+// increment then sit right after GXSetTexCoordGen2, as in retail. The angle is `(2pi * i) * 0.25` with the
+// variable product first, and the quad corners are `+-size / 2.0f` (variable-first fmuls).
+// What differs: integer register colouring in both loops (retail block 1: i r31, mtx r30, vcond r27,
+// tevStage r26, texCoord r25; block 2: texCoord r31, tevStage r30, mtx2 r26, i r25), the table pointer's
+// `addi r0` + `mr` that retail builds directly in its register (not coalesced here), block 2's counter
+// initialisation (retail `li r31, 0; mr r30, r31; mr r25, r31`), block 2's 0.25/magic FPR swap, and one
+// fmuls scheduled early in each quad.
+// NONMATCHING (97.67%): register colouring/scheduling only (see above).
 void envDisp_DepthOfField(void) {
     s32 i;
     s32 tevStage;
     CameraEntry* temp_r27;
     EnvironmentWork* wp = envGetWork();
     EnvironmentUnk88* u = &wp->unk88;
-    s32* mtx;
-    s32* mtx2;
+    const s32* mtx;
+    const s32* mtx2;
     s32 texCoord;
     Mtx sp48;
     GXColor color;
@@ -364,18 +354,20 @@ void envDisp_DepthOfField(void) {
     GXSetCullMode(0);
 
     if ((u->unk0 & 1) && (u->unk4)) {
-        mtx = (s32*)dat_802f9338.tbl;
+        mtx = dat_802f9338.tbl;
         texCoord = 0;
         tevStage = 0;
         for (i = 0; i < 4; i++) {
+            v29 = 0.25f;
             v31 = TWO_PI;
             f2 = 0.00761f;
-            f3 = v31 * (f32)i * 0.25f;
+            f0 = v31 * (f32)i;
+            f3 = f0 * v29;
             v24 = 100.0f;
             v26 = 0.16605f;
             v27 = 1.0f;
-            v28 = PI;
             v25 = 0.4967f;
+            v28 = PI;
             if (f3 <= v28) {
                 f1 = MTXDegToRad(90.0f);
                 if (f3 <= f1) {
@@ -479,34 +471,26 @@ void envDisp_DepthOfField(void) {
         color.a = 0xFF;
         GXSetTevKColor(0, color);
         GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
-        GXSetTevKColorSel(tevStage, 0xC);
-        GXSetTevKAlphaSel(tevStage, 0x1C);
-        GXSetTevOrder(tevStage, texCoord, 1, 0xFF);
-        GXSetTevColorOp(tevStage, 8, 0, 0, 1, 0);
-        GXSetTevAlphaOp(tevStage, 8, 0, 0, 1, 0);
-        GXSetTevColorIn(tevStage, 8, 0xE, 2, 0xF);
-        GXSetTevAlphaIn(tevStage, 4, 6, 1, 7);
-        GXSetTevSwapMode(tevStage, 0, 0);
-        texCoord++;
-        GXSetNumTexGens(texCoord);
+        envDofBlendStage(tevStage, texCoord++, 2, 1);
         tevStage++;
+        GXSetNumTexGens(texCoord);
         GXSetNumTevStages(tevStage);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         {
-            GXPosition3f32(0.5f * -gp->fbWidth, gp->efbHeight * 0.5f, 0.0f);
+            GXPosition3f32(-gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
             GXTexCoord2f32(0.0f, 0.0f);
-            GXPosition3f32(0.5f * gp->fbWidth, gp->efbHeight * 0.5f, 0.0f);
+            GXPosition3f32(gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
             GXTexCoord2f32(1.0f, 0.0f);
-            GXPosition3f32(0.5f * gp->fbWidth, 0.5f * -gp->efbHeight, 0.0f);
+            GXPosition3f32(gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
             GXTexCoord2f32(1.0f, 1.0f);
-            GXPosition3f32(0.5f * -gp->fbWidth, 0.5f * -gp->efbHeight, 0.0f);
+            GXPosition3f32(-gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
             GXTexCoord2f32(0.0f, 1.0f);
         }
     }
 
     if ((u->unk0 & 2) && (u->unk8)) {
         v28 = TWO_PI;
-        mtx2 = (s32*)dat_802f9338.tbl;
+        mtx2 = dat_802f9338.tbl;
         v31 = PI;
         i = 0;
         texCoord = 0;
@@ -624,34 +608,25 @@ void envDisp_DepthOfField(void) {
         color.a = 0xFF;
         GXSetTevKColor(0, color);
         GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
-        GXSetTevColor(2, dat_8041e510);
-        GXSetTevKColorSel(tevStage, 0xC);
-        GXSetTevKAlphaSel(tevStage, 0x1C);
-        GXSetTevOrder(tevStage, texCoord, 1, 0xFF);
-        GXSetTevColorOp(tevStage, 8, 0, 0, 1, 0);
-        GXSetTevAlphaOp(tevStage, 8, 0, 0, 1, 0);
-        GXSetTevColorIn(tevStage, 8, 0xE, 0xC, 0xF);
-        GXSetTevAlphaIn(tevStage, 4, 6, 2, 7);
-        GXSetTevSwapMode(tevStage, 0, 0);
+        envDofBlendStageReg(tevStage, texCoord++);
         GXSetTevOrder(tevStage + 1, 0xFF, 0xFF, 0xFF);
         GXSetTevColorOp(tevStage + 1, 0, 0, 0, 1, 0);
         GXSetTevAlphaOp(tevStage + 1, 0, 0, 0, 1, 0);
         GXSetTevColorIn(tevStage + 1, 2, 0xF, 1, 0xF);
         GXSetTevAlphaIn(tevStage + 1, 1, 7, 0, 7);
         GXSetTevSwapMode(tevStage + 1, 0, 0);
-        texCoord++;
-        GXSetNumTexGens(texCoord);
         tevStage += 2;
+        GXSetNumTexGens(texCoord);
         GXSetNumTevStages(tevStage);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         {
-            GXPosition3f32(0.5f * -gp->fbWidth, gp->efbHeight * 0.5f, 0.0f);
+            GXPosition3f32(-gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
             GXTexCoord2f32(0.0f, 0.0f);
-            GXPosition3f32(0.5f * gp->fbWidth, gp->efbHeight * 0.5f, 0.0f);
+            GXPosition3f32(gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
             GXTexCoord2f32(1.0f, 0.0f);
-            GXPosition3f32(0.5f * gp->fbWidth, 0.5f * -gp->efbHeight, 0.0f);
+            GXPosition3f32(gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
             GXTexCoord2f32(1.0f, 1.0f);
-            GXPosition3f32(0.5f * -gp->fbWidth, 0.5f * -gp->efbHeight, 0.0f);
+            GXPosition3f32(-gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
             GXTexCoord2f32(0.0f, 1.0f);
         }
     }
@@ -1140,9 +1115,9 @@ void envDisp_FF(void) {
         for (i = 0; i < 1000; i++) {
             f32 angle = (TWO_PI * (f32)i) / 1000.0f;
 
+            cosv = 0.03705f;
             cosC1 = 0.4967f;
             one = 1.0f;
-            cosv = 0.03705f;
             if (angle <= 3.1415927f) {
                 f1 = 1.5707964f;
                 if (angle <= f1) {
@@ -1479,9 +1454,9 @@ void envAddTev(s32 type, void* param) {
         case 1:
             GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ZERO);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            *(f32*)&wp->unk70[0x10] = float_10_8041e524;
+            *(f32*)&wp->unk70[0x10] = 10.0f;
             *(f32*)&wp->unk70[0x14] = (f32)(gp->retraceCount + 45);
-            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
+            *(f32*)&wp->unk70[0xC] = 0.5f;
             envLoadTevTexture(6, texMap, &texObj1, &tlut1);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1492,9 +1467,9 @@ void envAddTev(s32 type, void* param) {
         case 2:
             GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXA);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            *(f32*)&wp->unk70[0x10] = float_10_8041e524;
+            *(f32*)&wp->unk70[0x10] = 10.0f;
             *(f32*)&wp->unk70[0x14] = (f32)(gp->retraceCount + 45);
-            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
+            *(f32*)&wp->unk70[0xC] = 0.5f;
             envLoadTevTexture(8, texMap, &texObj2, &tlut2);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1505,7 +1480,7 @@ void envAddTev(s32 type, void* param) {
         case 3:
             GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_TEXC, GX_CC_ZERO);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
+            *(f32*)&wp->unk70[0xC] = 0.5f;
             envLoadTevTexture(0, texMap, &texObj3, &tlut3);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(1, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1516,9 +1491,9 @@ void envAddTev(s32 type, void* param) {
         case 4:
             GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
-            *(f32*)&wp->unk70[0x10] = float_45_8041e560;
-            *(f32*)&wp->unk70[0x14] = float_45_8041e560;
+            *(f32*)&wp->unk70[0xC] = 0.5f;
+            *(f32*)&wp->unk70[0x10] = 45.0f;
+            *(f32*)&wp->unk70[0x14] = 45.0f;
             envLoadTevTexture(1, texMap, &texObj4, &tlut4);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(2, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1529,9 +1504,9 @@ void envAddTev(s32 type, void* param) {
         case 5:
             GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
-            *(f32*)&wp->unk70[0x10] = float_45_8041e560;
-            *(f32*)&wp->unk70[0x14] = float_45_8041e560;
+            *(f32*)&wp->unk70[0xC] = 0.5f;
+            *(f32*)&wp->unk70[0x10] = 45.0f;
+            *(f32*)&wp->unk70[0x14] = 45.0f;
             envLoadTevTexture(2, texMap, &texObj5, &tlut5);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(3, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1542,9 +1517,9 @@ void envAddTev(s32 type, void* param) {
         case 6:
             GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            *(f32*)&wp->unk70[0xC] = float_0p15_8041e564;
-            *(f32*)&wp->unk70[0x10] = float_0_8041e53c;
-            *(f32*)&wp->unk70[0x14] = float_90_8041e568;
+            *(f32*)&wp->unk70[0xC] = 0.15f;
+            *(f32*)&wp->unk70[0x10] = 0.0f;
+            *(f32*)&wp->unk70[0x14] = 90.0f;
             envLoadTevTexture(4, texMap, &texObj6, &tlut6);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(2, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1555,9 +1530,9 @@ void envAddTev(s32 type, void* param) {
         case 7:
             GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            *(f32*)&wp->unk70[0xC] = float_0p3_8041e56c;
-            *(f32*)&wp->unk70[0x10] = float_0_8041e53c;
-            *(f32*)&wp->unk70[0x14] = float_90_8041e568;
+            *(f32*)&wp->unk70[0xC] = 0.3f;
+            *(f32*)&wp->unk70[0x10] = 0.0f;
+            *(f32*)&wp->unk70[0x14] = 90.0f;
             envLoadTevTexture(5, texMap, &texObj7, &tlut7);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(3, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1568,9 +1543,9 @@ void envAddTev(s32 type, void* param) {
         case 8:
             GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ZERO);
             GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
-            *(f32*)&wp->unk70[0xC] = float_0p5_8041e538;
-            *(f32*)&wp->unk70[0x10] = float_10_8041e524;
-            *(f32*)&wp->unk70[0x14] = float_45_8041e560;
+            *(f32*)&wp->unk70[0xC] = 0.5f;
+            *(f32*)&wp->unk70[0x10] = 10.0f;
+            *(f32*)&wp->unk70[0x14] = 45.0f;
             envLoadTevTexture(10, texMap, &texObj8, &tlut8);
             GXSetTexCoordGen2(texCoord, GX_TG_MTX2x4, GX_TG_NRM, dat_802f9338.tbl[texMap], GX_FALSE, GX_PTIDENTITY);
             envTevLoadTexMtxImm(0, dat_802f9338.tbl[texMap], 0x40, GX_MTX2x4);
@@ -1608,33 +1583,34 @@ void envAddTev(s32 type, void* param) {
 // and load obj with `lwz r3, 0x0(r3)` as the target does.
 #pragma opt_propagation off // stops MWCC re-evaluating yami->unk0, so obj/flags colour as the target
 #pragma opt_lifetimes off
-// NONMATCHING (95.83%): register allocation only (water/height and the i-division temp colour one register off).
+// `texMap` is an `int` so its enum-typed `texMap + 1` arguments are not merged into one temporary; the
+// water texel offset is built in two steps from `i / 4` and `i % 4`; the frustum's near distance is an
+// argument expression, so its int->float temporary is created after the four edge conversions.
 void envSetWater(s32 arg0, void* arg1) {
     EnvironmentYami* yami = (EnvironmentYami*)arg0;
     s32 tevStage;
-    s32 texMap;
+    int texMap;
     void* capture;
     s32 texCoord;
     s32 unk18;
     u8* water;
     MapObject* obj;
     u32 size;
-    s32 height;
     u32 flags;
     s32 i;
     s32 width;
     s32 j;
-    u8* p;
     s32 x0;
     s32 y0;
     s32 x1;
     s32 y1;
+    s32 height;
     GXTexObj captureObj;
     GXTexObj waterObj;
     Vec pos;
     Mtx mtx;
     f32 indMtx[2][3];
-    f32 dist;
+    f32 fovTan;
     f32 scale;
 #ifndef MUST_MATCH
     x0 = y0 = x1 = y1 = 0;
@@ -1710,15 +1686,15 @@ void envSetWater(s32 arg0, void* arg1) {
     GXPixModeSync();
     GXTexModeSync();
     GXInitTexObj(&captureObj, capture, (u16)(width / 2), (u16)(height / 2), GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GXInitTexObjLOD(&captureObj, GX_NEAR, GX_NEAR, float_0_8041e53c, float_0_8041e53c, float_0_8041e53c, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXInitTexObjLOD(&captureObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 
     PSMTXMultVec(yami->unk4, (Vec*)(((MapObject*)yami->unk0)->field_0xC + 4), &pos);
-    scale = float_1000_8041e540 / PSVECDistance(&camGetCurPtr()->cameraPos, &pos);
-    if (scale < float_0_8041e53c) {
-        scale = float_0_8041e53c;
+    scale = 1000.0f / PSVECDistance(&camGetCurPtr()->cameraPos, &pos);
+    if (scale < 0.0f) {
+        scale = 0.0f;
     }
-    if (scale > float_127_8041e544) {
-        scale = float_127_8041e544;
+    if (scale > 127.0f) {
+        scale = 127.0f;
     }
 
     size = GXGetTexBufferSize(0x40, 0x40, GX_TF_IA8, GX_FALSE, 0);
@@ -1726,10 +1702,16 @@ void envSetWater(s32 arg0, void* arg1) {
 
     for (i = 0; i < 0x40; i++) {
         for (j = 0; j < 0x40; j++) {
-            f32 s = (f32)sin(18.849552154541016f * (f32)j * float_0p015625_8041e54c + (f32)gp->retraceCount / float_10_8041e524);
-            s32 v = (s32)(float_0p6_8041e550 + (scale * s + float_128_8041e554));
-            p = &water[((i % 4) + (j % 4) * 4) * 2 + (i / 4) * 32 + (j / 4) * 512];
+            f32 s = (f32)sin(18.849552154541016f * (f32)j / 64.0f + (f32)gp->retraceCount / 10.0f);
+            s32 v = (s32)(0.6f + (scale * s + 128.0f));
+            s32 base, col, idx;
+            u8* p;
 
+            base = i / 4;
+            col = i % 4;
+            idx = base * 32 + (j / 4) * 512;
+            idx += (col + (j % 4) * 4) * 2;
+            p = &water[idx];
             p[0] = v;
             p[1] = 0x80;
         }
@@ -1737,16 +1719,16 @@ void envSetWater(s32 arg0, void* arg1) {
 
     DCFlushRange(water, 0x2000);
     GXInitTexObj(&waterObj, water, 0x40, 0x40, GX_TF_IA8, GX_REPEAT, GX_REPEAT, GX_FALSE);
-    GXInitTexObjLOD(&waterObj, GX_LINEAR, GX_LINEAR, float_0_8041e53c, float_0_8041e53c, float_0_8041e53c, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXInitTexObjLOD(&waterObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
 
-    dist = (f32)gp->efbHeight * float_0p5_8041e538 / (f32)tan(float_6p2832_8041e558 * (camGetPtr(CAMERA_3D)->fovY * float_0p5_8041e538) / float_360_8041e55c);
+    fovTan = (f32)tan(6.2831855f * (camGetPtr(CAMERA_3D)->fovY / 2.0f) / 360.0f);
     C_MTXLightFrustum(mtx,
         (f32)(gp->efbHeight / 2 - y1),
         (f32)(gp->efbHeight / 2 - y0),
         (f32)(x0 - gp->fbWidth / 2),
         (f32)(x1 - gp->fbWidth / 2),
-        dist,
-        float_0p5_8041e538, float_0p5_8041e538, float_0p5_8041e538, float_0p5_8041e538);
+        (f32)gp->efbHeight / 2.0f / fovTan,
+        0.5f, 0.5f, 0.5f, 0.5f);
     PSMTXConcat(mtx, camGetCurPtr()->view, mtx);
     PSMTXConcat(mtx, yami->unk4, mtx);
 
@@ -1760,12 +1742,12 @@ void envSetWater(s32 arg0, void* arg1) {
     GXSetTevColorIn(tevStage, GX_CC_TEXC, GX_CC_CPREV, GX_CC_APREV, GX_CC_ZERO);
     GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
     GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    indMtx[0][0] = float_0p5_8041e538;
-    indMtx[0][1] = float_0_8041e53c;
-    indMtx[0][2] = float_0_8041e53c;
-    indMtx[1][0] = float_0_8041e53c;
-    indMtx[1][1] = float_0p5_8041e538;
-    indMtx[1][2] = float_0_8041e53c;
+    indMtx[0][0] = 0.5f;
+    indMtx[0][1] = 0.0f;
+    indMtx[0][2] = 0.0f;
+    indMtx[1][0] = 0.0f;
+    indMtx[1][1] = 0.5f;
+    indMtx[1][2] = 0.0f;
     GXSetIndTexMtx(GX_ITM_0, indMtx, 1);
     GXSetIndTexOrder(unk18, texCoord, texMap + 1);
     GXSetIndTexCoordScale(unk18, GX_ITS_1, GX_ITS_1);
@@ -1799,7 +1781,7 @@ void envSetYami(EnvironmentYami* yami) {
     // texMap*4 kept in a callee-saved register (r29); declared before the counters so it colours after them.
     s32 texMtxOff;
 #else
-    s32* texMtx;
+    const s32* texMtx;
 #endif
     s32 tevStage = yami->tevStage;
     s32 texMap = yami->texMap;
@@ -1813,8 +1795,8 @@ void envSetYami(EnvironmentYami* yami) {
     if (oldCount != newCount) {
         v_count = newCount;
 
-        u1 = u1 + float_0p004_8041e520;
-        u2 = u2 - float_0p004_8041e520;
+        u1 += 0.004f;
+        u2 -= 0.004f;
         if (u1 > 10.0f) {
             u1 -= 10.0f;
         }
@@ -1830,12 +1812,12 @@ void envSetYami(EnvironmentYami* yami) {
     PSMTXConcat(mtx, (MtxPtr)wp->unkC0, mtx);
     PSMTXConcat(mtx, yami->unk4, mtx);
 #ifdef MUST_MATCH
-    texMtx = (u8*)texmtx_tbl;
+    texMtx = (u8*)dat_802f9338.tbl;
     texMtxOff = texMap * 4;
     GXLoadTexMtxImm(mtx, *(s32*)(texMtx + texMtxOff), GX_MTX3x4);
     GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, *(s32*)(texMtx + texMtxOff), GX_FALSE, GX_PTIDENTITY);
 #else
-    texMtx = texmtx_tbl;
+    texMtx = dat_802f9338.tbl;
     GXLoadTexMtxImm(mtx, texMtx[texMap], GX_MTX3x4);
     GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texMtx[texMap], GX_FALSE, GX_PTIDENTITY);
 #endif
@@ -1845,7 +1827,7 @@ void envSetYami(EnvironmentYami* yami) {
     PSMTXConcat(mtx, yami->unk4, mtx);
 #ifdef MUST_MATCH
     {
-        s32* p = (s32*)((u8*)texmtx_tbl + texMtxOff);
+        s32* p = (s32*)((u8*)dat_802f9338.tbl + texMtxOff);
         GXLoadTexMtxImm(mtx, *++p, GX_MTX3x4);
         GXSetTexCoordGen2(texCoord + 1, GX_TG_MTX3x4, GX_TG_POS, *p, GX_FALSE, GX_PTIDENTITY);
     }

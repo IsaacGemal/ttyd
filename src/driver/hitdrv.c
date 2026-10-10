@@ -94,12 +94,16 @@ void hitReInit(void) {
 }
 
 // This function is cursed, managed to hit 99% - https://decomp.me/scratch/FjwSA
-// NONMATCHING (98.76%): 44 instructions differ, all in the packed-display-list loop. The two
+// 44 instructions differ, all in the packed-display-list loop. The two
 // unrolled loops are exclusive, so our allocator reuses the normal loop's volatile registers
 // (count r5, index r7, temps r11/r10/r12) for the packed loop, while retail keeps the packed
 // count in r11 / index in r12 and reuses r5/r7/r30 for its pointer temps. Structure and calls
 // match (diff_shape); declaration-order variants (j/k/numVectors permutations, int/u32/register,
-// scoping) all score lower.
+// scoping) all score lower, as do per-branch counters, an `int` k, a packed-list walker pointer,
+// swapping the branches (both loops then colour like the normal one), and per-mesh / per-joint /
+// packed-only count inline helpers. A 60-minute tools/mwsearch.py run (19k variants) found nothing,
+// and rasim finds no declaration order or single interference edge that gives retail's colouring.
+// NONMATCHING (98.76%): register colouring of the packed loop only (see above).
 HitEntry* _hitEnt(MapFileJoint* joint, HitEntry* parent, Mtx parentMtx, s32 mapIndex) {
     MapWork* wp = mapGetWork();
     HitEntry* hit = wp->entries[mapIndex].hitEntries;
@@ -586,8 +590,15 @@ static inline void hitSetGQR5(u32 shift) {
 // the natural build scales in C). The unpacked even/odd pick is `!(triIndex & 1)` narrowed to s16 after the
 // first PSMTXMultVec; the packed pick is u16. The element stride is the popcount of the low 12 bits of
 // elementMask times two. Retail returns numVectors in r3 without an extsh, so the function returns s32.
-// NONMATCHING (88.09%): callee-saved colouring through the packed loop (retail keeps mapGetWork() in r26,
-// numVectors r30, mesh r29, hit r27) and the order of the index loads around it.
+// The unpacked vectors are `&hit->vectors[numVectors++]`: MWCC strength-reduces the index once per display
+// list, as retail does. The packed vertex indices are `list + (stride * k + 3)`, whose
+// strength-reduced `stride * triIndex` gives retail's `mr` copy of the index for the byte offset, and the
+// three corner offsets are computed (`o0 = i0 * 3` before the picks, `o1`/`o2` right after each) as retail
+// orders them. `dlIndex`/`triIndex` are function-level: each branch gets its own web, as in retail.
+// What differs: callee-saved register colouring only (retail: partIndex r31, numVectors r30, mesh r29,
+// hit r27, even/mw r26), plus one `addi r3, hit, 0xc` scheduled before the even/odd branch. rasim finds no
+// declaration order for it (best 7-12 targets wrong); the @ temps (stride, parts offset, list walkers) differ.
+// NONMATCHING (95.00%): register colouring only (see above).
 s32 hitCalcVtxPosition(HitEntry* hit) {
     s32 numVectors = 0;
     s32 partIndex;
@@ -606,17 +617,14 @@ s32 hitCalcVtxPosition(HitEntry* hit) {
         }
 
         if (!mesh->isPackedDisplay) {
-            s32 off = numVectors * 0x54;
             for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
                 u8* base = (u8*)mesh->displayLists.normalLists[dlIndex];
                 for (triIndex = 0; triIndex < *(s32*)base - 2; triIndex++) {
                     s32 i0 = *(s16*)(base + triIndex * 0x18 + 4);
                     s32 i1 = *(s16*)(base + (triIndex + 1) * 0x18 + 4);
                     s32 i2 = *(s16*)(base + (triIndex + 2) * 0x18 + 4);
-                    HitVector* vector = (HitVector*)((u8*)hit->vectors + off);
+                    HitVector* vector = &hit->vectors[numVectors++];
                     Vec* vtx = (Vec*)(((u32*)mesh->vcdTableOffset)[0] + 4);
-                    off += 0x54;
-                    numVectors++;
 
                     PSMTXMultVec(hit->worldMtx, &vtx[i0], &vector->v0);
                     {
@@ -647,30 +655,28 @@ s32 hitCalcVtxPosition(HitEntry* hit) {
 
                 for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
                     u8* list = (u8*)mesh->displayLists.packedLists[dlIndex].offset;
-                    s32 triCount = *(u16*)(list + 1) - 2;
-                    s32 byteOffset = 0;
                     s32 off = vecOffset;
+                    s32 triCount = *(u16*)(list + 1) - 2;
 
-                    for (triIndex = 0; triIndex < triCount; triIndex++, byteOffset += stride) {
+                    for (triIndex = 0; triIndex < triCount; triIndex++) {
                         s16* vtx = (s16*)(((u32*)mesh->vcdTableOffset)[0] + 4);
-                        s32 i0 = *(u16*)(list + (byteOffset + 3));
+                        s32 i0 = *(u16*)(list + (stride * triIndex + 3));
                         s32 i1 = *(u16*)(list + (stride * (triIndex + 1) + 3));
                         s32 i2 = *(u16*)(list + (stride * (triIndex + 2) + 3));
-                        u16 v1i;
-                        u16 v2i;
+                        HitVector* vector = (HitVector*)((u8*)hit->vectors + off);
+                        BOOL even;
+                        s32 o0;
+                        s32 o1;
+                        s32 o2;
                         Vec v0;
                         Vec v1;
                         Vec v2;
-                        HitVector* vector = (HitVector*)((u8*)hit->vectors + off);
 
-                        BOOL even = !(triIndex & 1);
-                        v1i = even ? i2 : i1;
-                        v2i = even ? i1 : i2;
-
+                        o0 = i0 * 3;
+                        even = !(triIndex & 1);
+                        o1 = (u16)(even ? i2 : i1) * 3;
+                        o2 = (u16)(even ? i1 : i2) * 3;
                         {
-                            s32 o0 = i0 * 3;
-                            s32 o1 = v1i * 3;
-                            s32 o2 = v2i * 3;
 #ifdef MUST_MATCH
                             hitSetGQR5(HIT_VTX_FRAC(mw, hit));
                             v0.x = __OSs16tof32(&vtx[o0 + 0]);
@@ -1474,3 +1480,20 @@ s32 hitGetEntNum(HitEntry* hit) {
     return numVectors;
 }
 */
+
+// Uncalled in retail (stripped at link, listed UNUSED in the map): the joint's padded bounding box,
+// the same 0.1 margin _hitEnt applies. It is first in the original's text, so its 0.0 and 0.1 open
+// the unit's .sdata2 pool.
+void bounding_box(MapFileJoint* joint, Vec* min, Vec* max) {
+    if (joint->partCount == 0) {
+        min->x = min->y = min->z = 0.0f;
+        max->x = max->y = max->z = 0.0f;
+        return;
+    }
+    min->x = joint->bboxMin.x - 0.1f;
+    min->y = joint->bboxMin.y - 0.1f;
+    min->z = joint->bboxMin.z - 0.1f;
+    max->x = joint->bboxMax.x + 0.1f;
+    max->y = joint->bboxMax.y + 0.1f;
+    max->z = joint->bboxMax.z + 0.1f;
+}
