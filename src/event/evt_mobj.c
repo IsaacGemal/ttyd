@@ -81,11 +81,6 @@ extern const char str_802C3EAC[];
 // Prototypes for functions in other, not-yet-decompiled units (koopa / hit / etc.)
 
 // Read-only constants defined in this unit's .rodata (to be defined locally later)
-extern f32 float_0_8041a150;
-extern f32 float_10_8041a1a4;
-extern f32 float_0p8_8041a1b0;
-extern const f32 float_1p4_8041a208;
-extern const f32 float_1p2_8041a20c;
 extern Vec vec3_802c3dc8[];
 extern Vec vec3_802c3dd4[];
 extern Vec vec3_802c40ac[];
@@ -1017,9 +1012,11 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
             break;
         case 1: {
             f32 x = obj->scale2.x;
-            f32 y = obj->scale2.y - 0.9f;
+            f32 y = obj->scale2.y;
             f32 z = obj->scale2.z;
             Vec v;
+
+            y -= 0.9f;
 
             if (y <= 0.2f) {
                 obj->unk1DC = 2;
@@ -1040,7 +1037,7 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
             // MUST_MATCH: route the products through a temporary `w` (copied to `v`) and move the
             // vec+0x88 copy after them. This reproduces retail's FP scheduling (products in f2/f0/f1
             // with 10.0 kept live) and the retail temp-copy of the Vec. The natural form is under #else.
-            // The named float_0p8_8041a1b0/float_10_8041a1a4 loads (rather than literals) keep both
+            // The named 0.8f/10.0f loads (rather than literals) keep both
             // constants live, as in retail.
             Vec w;
             f32 vx;
@@ -1049,9 +1046,9 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
             f32 mag;
             f32 dist;
 
-            vx = float_0p8_8041a1b0 * (float_10_8041a1a4 * data->bboxMax.x);
-            vy = float_10_8041a1a4 * data->bboxMax.y;
-            vz = float_0p8_8041a1b0 * (float_10_8041a1a4 * data->bboxMax.z);
+            vx = 0.8f * (10.0f * data->bboxMax.x);
+            vy = 10.0f * data->bboxMax.y;
+            vz = 0.8f * (10.0f * data->bboxMax.z);
             w = *(Vec*)((u32*)vec + 0x22);
             w.x = vx; w.y = vy; w.z = vz;
             v = w;
@@ -1060,9 +1057,9 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
             f32 mag;
             f32 dist;
 
-            v.x = float_0p8_8041a1b0 * (float_10_8041a1a4 * data->bboxMax.x);
-            v.z = float_0p8_8041a1b0 * (float_10_8041a1a4 * data->bboxMax.z);
-            v.y = float_10_8041a1a4 * data->bboxMax.y;
+            v.x = 0.8f * (10.0f * data->bboxMax.x);
+            v.z = 0.8f * (10.0f * data->bboxMax.z);
+            v.y = 10.0f * data->bboxMax.y;
 #endif
             mag = PSVECMag(&v);
             dist = PSVECDistance(&obj->position, &marioGetPtr()->position);
@@ -1080,9 +1077,11 @@ s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
         }
         case 3: {
             f32 x = obj->scale2.x;
-            f32 y = obj->scale2.y + float_0p9_8041a228;
+            f32 y = obj->scale2.y;
             f32 z = obj->scale2.z;
             Vec v;
+
+            y += 0.9f;
 
             if (y >= 15.0f) {
                 obj->unk1DC = 0;
@@ -1642,7 +1641,7 @@ s32 mobj_float_blk(MapObjectEntry* obj) {
                 distance = 1.0f + (f32)__fabs(obj->unk5C.y);
                 if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                                         obj->position.x, 0.5f + obj->position.y, obj->position.z,
-                                        float_0_8041a150, (-1.0f), float_0_8041a150) != 0) {
+                                        0.0f, (-1.0f), 0.0f) != 0) {
                     if (strcmp(animPoseGetCurrentAnim(obj->poseId)->name, "S_1") != 0) {
                         animPoseSetAnim(obj->poseId, "S_1", 1);
                         obj->flags |= 2;
@@ -1741,7 +1740,7 @@ s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
         distance = 1.0f + (f32)__fabs(obj->unk5C.y);
         if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                                 obj->position.x, 0.5f + obj->position.y, obj->position.z,
-                                float_0_8041a150, (-1.0f), float_0_8041a150) != 0) {
+                                0.0f, (-1.0f), 0.0f) != 0) {
             animPoseSetAnim(obj->poseId, "S_1", 1);
             obj->flags |= 2;
         } else {
@@ -1794,8 +1793,8 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 distance = 1.0f + (f32)__fabs(child->unk5C.y);
                 if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                                         child->position.x, 0.5f + child->position.y,
-                                        child->position.z, float_0_8041a150, (-1.0f),
-                                        float_0_8041a150) != 0) {
+                                        child->position.z, 0.0f, (-1.0f),
+                                        0.0f) != 0) {
                     if (evtCheckID(obj->eventId) != 0) {
                         anim = animPoseGetCurrentAnim(obj->poseId);
                         {
@@ -1966,8 +1965,8 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 distance = 1.0f + (f32)__fabs(child->unk5C.y);
                 if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                                         child->position.x, 0.5f + child->position.y,
-                                        child->position.z, float_0_8041a150, (-1.0f),
-                                        float_0_8041a150) != 0) {
+                                        child->position.z, 0.0f, (-1.0f),
+                                        0.0f) != 0) {
                     animPoseSetAnim(obj->poseId, "S_1", 0);
                 } else {
                     animPoseSetAnim(obj->poseId, "A_3", 0);
@@ -2048,8 +2047,8 @@ s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
         distance = 1.0f + (f32)__fabs(obj2->unk5C.y);
         hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                              obj2->position.x, 0.5f + obj2->position.y,
-                             obj2->position.z, float_0_8041a150, (-1.0f),
-                             float_0_8041a150);
+                             obj2->position.z, 0.0f, (-1.0f),
+                             0.0f);
         if ((s32)hit != 0) {
             animPoseSetAnim(obj->poseId, "S_1", 1);
         } else {
@@ -2168,7 +2167,7 @@ s32 mobj_lock(MapObjectEntry* obj) {
             distance = 1.0f + (f32)__fabs(obj->unk5C.y);
             if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                                obj->position.x, 1.0f + obj->position.y, obj->position.z,
-                               float_0_8041a150, obj->unk5C.y, float_0_8041a150) != NULL) {
+                               0.0f, obj->unk5C.y, 0.0f) != NULL) {
                 obj->position.y = hitY;
                 obj->unk5C.y *= (-0.8f);
                 obj->unk6C += 1.0f;
@@ -2351,10 +2350,10 @@ s32 mobj_itembox(MapObjectEntry* obj) {
             bboxMin.z = bboxMin.z - IB_F64(0x710, double_0p2_802c44d8, ((f64)0.2f)) * __fabsf(bboxMax.y - bboxMin.y);
             PSVECAdd(&bboxMax, &bboxMin, &obj->translation);
             PSVECScale(&obj->translation, &obj->translation, 0.5f);
-            PSVECScale(&obj->translation, &obj->translation, float_10_8041a1a4);
-            obj->translation.y = float_0_8041a150;
-            obj->scale2.y = obj->scale2.y * float_1p4_8041a208;
-            obj->scale2.z = obj->scale2.z * float_1p2_8041a20c;
+            PSVECScale(&obj->translation, &obj->translation, 10.0f);
+            obj->translation.y = 0.0f;
+            obj->scale2.y *= 1.4f;
+            obj->scale2.z *= 1.2f;
             mobjCalcMtx2(obj);
             marioKeyOn();
             partyKeyOn();
@@ -2445,10 +2444,10 @@ s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
         bboxMin.z = bboxMin.z - (f64)0.2f * __fabsf(bboxMax.y - bboxMin.y);
         PSVECAdd(&bboxMax, &bboxMin, &obj->translation);
         PSVECScale(&obj->translation, &obj->translation, 0.5f);
-        PSVECScale(&obj->translation, &obj->translation, float_10_8041a1a4);
-        obj->translation.y = float_0_8041a150;
-        obj->scale2.y = obj->scale2.y * float_1p4_8041a208;
-        obj->scale2.z = obj->scale2.z * float_1p2_8041a20c;
+        PSVECScale(&obj->translation, &obj->translation, 10.0f);
+        obj->translation.y = 0.0f;
+        obj->scale2.y *= 1.4f;
+        obj->scale2.z *= 1.2f;
         mobjCalcMtx2(obj);
         obj->unk1DC = 0x63;
     }
@@ -2463,7 +2462,7 @@ s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
 
         if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
                            obj->position.x, 1.0f + obj->position.y, obj->position.z,
-                           float_0_8041a150, (-1.0f), float_0_8041a150) != NULL) {
+                           0.0f, (-1.0f), 0.0f) != NULL) {
             obj->flags |= 2;
             obj->flags &= ~0x40;
         }
@@ -2582,7 +2581,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
                 y2 += obj->position.y;
                 *(EffectEntry**)((u8*)obj + 0x1C8) = effCoinFukidashiEntry(
                     0, *(s32*)&obj->unk1A0[4], 0,
-                    obj->position.x, y2, obj->position.z - float_10_8041a1a4);
+                    obj->position.x, y2, obj->position.z - 10.0f);
             }
             obj->unk1DC++;
             break;
@@ -2700,7 +2699,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
                 y2 += obj->position.y;
                 *(EffectEntry**)((u8*)obj + 0x1C8) = effCoinFukidashiEntry(
                     0, *(s32*)&obj->unk1A0[4], 0,
-                    obj->position.x, y2, obj->position.z - float_10_8041a1a4);
+                    obj->position.x, y2, obj->position.z - 10.0f);
             }
             if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
@@ -3532,7 +3531,7 @@ void kururing_capture(CameraId cameraId, void* param) {
     cam->projType = GX_PERSPECTIVE;
     C_MTXLookAt(cam->view, &cam->cameraPos, &cam->cameraUp, &cam->cameraAt);
     GXSetProjection(cam->projection, cam->projType);
-    GXSetViewport(float_0_8041a150, float_0_8041a150, (f32)texWidth, (f32)texHeight, float_0_8041a150,
+    GXSetViewport(0.0f, 0.0f, (f32)texWidth, (f32)texHeight, 0.0f,
                   1.0f);
     GXSetScissor(0, 0, texWidth, texHeight);
     test_kururing_mapdisp(cameraId);
@@ -3547,7 +3546,7 @@ void kururing_capture(CameraId cameraId, void* param) {
     GXTexModeSync();
     GXInitTexObj(&obj->paperTexObj, ((smartEntry*)obj->unk208)->address, texWidth / 2,
                  texHeight / 2, 6, 0, 0, 0);
-    GXInitTexObjLOD(&obj->paperTexObj, 0, 0, float_0_8041a150, float_0_8041a150, float_0_8041a150, 0,
+    GXInitTexObjLOD(&obj->paperTexObj, 0, 0, 0.0f, 0.0f, 0.0f, 0,
                     0, 0);
     PSMTXIdentity(obj->paperTexMtx);
     memcpy(camGetPtr(cameraId), &save, 0x260);
@@ -3582,7 +3581,7 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
                 break;
             }
             f31 = distABf(mario->position.x, mario->position.z, obj->position.x, obj->position.z);
-            if (__fabsf(mario->position.y - obj->position.y) > float_10_8041a1a4) {
+            if (__fabsf(mario->position.y - obj->position.y) > 10.0f) {
                 f31 = 100000.0f;
             }
             if (obj->unk1E0 == 0x01000000) {
@@ -4984,7 +4983,7 @@ s32 kpa_disp_pole_init(EventEntry* event, BOOL isFirstCall) {
     f32 zero;
 
     psw = _mapAlloc(0x14);
-    zero = float_0_8041a150;
+    zero = 0.0f;
     psw->str[0] = 0;
     psw->z = zero;
     psw->y = zero;
@@ -5223,18 +5222,6 @@ s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
 // ROData pool objects
 __declspec(section ".sdata2") u32 dat_8041a130 = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 dat_8041a134 = 0xFFFFFFFF;
-__declspec(section ".sdata2") const char str_8041A138[4] = "_h\000";
-#pragma explicit_zero_data on  // keep the zero float_0 in .sdata2 (otherwise MWCC puts it in bss)
-__declspec(section ".sdata2") f32 float_0_8041a150 = 0.0f;
-#pragma explicit_zero_data reset
-__declspec(section ".sdata2") f32 float_10_8041a1a4 = 10.0f;
-__declspec(section ".sdata2") f32 float_0p8_8041a1b0 = 0.8f;
-__declspec(section ".sdata2") const char str_8041A1E8[4] = "S_3";
-const f32 float_1p4_8041a208 = 1.4f;
-const f32 float_1p2_8041a20c = 1.2f;
-__declspec(section ".sdata2") const char str_8041A21C[4] = "Z_1";
-__declspec(section ".sdata2") f32 float_0p9_8041a228 = 0.9f;
-__declspec(section ".sdata2") const char str_8041A234[4] = "me\000";
 
 // .sdata
 s32 kpa_powerup_evt[7] = {
