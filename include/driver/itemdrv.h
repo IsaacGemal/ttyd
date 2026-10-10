@@ -57,7 +57,7 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* x, f32* z, s32* angle, f32 dx, 
 s32 itemGetCheck(ItemEntry* entry);
 void itemseq_Bound(ItemEntry* item);
 void itemseq_sfxGet(ItemEntry* item);
-void itemseq_sfxBound(ItemEntry* item);
+void itemseq_sfxBound(ItemEntry* item, Vec* pos);
 HitEntry* itemBoundHitFloor(ItemEntry* item, f32 vy);
 HitEntry* itemBoundHitCeiling(ItemEntry* item, f32 vy);
 void itemseq_GetItem(ItemEntry* item);
