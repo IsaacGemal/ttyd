@@ -3084,20 +3084,19 @@ static inline BOOL fbatNpcEventDone(NpcEntry* npc) {
     return FALSE;
 }
 
-// NONMATCHING (98.38%): every call, branch and constant matches; GPR/FPR colouring differs, the two spin-hammer
-// kind stores are merged into one (retail stores in each arm), and the hammer's angle table is copied through a
-// second base register.
 // Finds the nearest field npc Mario's attacks hit, for each kind of attack `flags` enables in turn: jumps
 // (0x30), the hammer (0x40), the spin hammer (0x80), Koops' shell (0x100) and partner 3 (0x200). Flag 0x2000
 // only tests (no attack announce); 0x1000 looks at npcs with flag 8 instead of the others.
+// NONMATCHING (99.3%): every call, branch and constant matches; one redundant `addi r22,r29,0` copies the
+// hammer angle table's rodata base instead of reusing r29, and the callee-saved GPR colouring then differs.
 void* fbatHitCheck(s32 flags, s32 out) {
     NpcEntry* hit = NULL;
     NpcEntry* npc = NULL;
     NpcWork* npcWork = npcGetWorkPtrInline();
     MarioWork* mario;
     FbatHitInfo info;
-    u32 dryRun;
     s32 count;
+    u32 dryRun;
     s32 i;
     f32 dist;
 
@@ -3237,12 +3236,15 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 s32 frameNo;
                 u32 flag8;
                 MarioWork* pose;
+                f32 yaw;
 
                 if (mario->currMotionId != 0x12) {
                     break;
                 }
                 radius = float_1p5_80419bcc * mario->wPlayerCollisionBox.x;
-                angle = reviseAngle((mario->unk1A8 - float_90_80419bd0) + camGetPtr(CAMERA_3D)->viewYaw);
+
+                yaw = reviseAngle((mario->unk1A8 - float_90_80419bd0) + camGetPtr(CAMERA_3D)->viewYaw);
+                angle = yaw;
                 pose = marioGetPtr();
                 animPoseGetAnimPosePtr(pose->paperAnimGroupId[marioAnimeId()]);
                 frameNo = pose->multiTimer;
@@ -3399,11 +3401,21 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     }
                     info.dist = dist;
                     hit = npc;
+#ifdef MUST_MATCH
+                    // The two arms write the same field through syntactically different lvalues so the
+                    // frontend keeps the if/else; with the plain form MWCC if-converts it to a select.
+                    if (pouchGetHammerLv() < 3) {
+                        info.kind = 0x200000;
+                    } else {
+                        ENC(&info, s32, 0) = 0x400000;
+                    }
+#else
                     if (pouchGetHammerLv() < 3) {
                         info.kind = 0x200000;
                     } else {
                         info.kind = 0x400000;
                     }
+#endif
                     if (!dryRun) {
                         fbatSetAttackAnnounce(info.kind);
                     }
@@ -3438,11 +3450,21 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     }
                     info.dist = dist;
                     hit = npc;
+#ifdef MUST_MATCH
+                    // The two arms write the same field through syntactically different lvalues so the
+                    // frontend keeps the if/else; with the plain form MWCC if-converts it to a select.
+                    if (pouchGetHammerLv() < 3) {
+                        info.kind = 0x200000;
+                    } else {
+                        ENC(&info, s32, 0) = 0x400000;
+                    }
+#else
                     if (pouchGetHammerLv() < 3) {
                         info.kind = 0x200000;
                     } else {
                         info.kind = 0x400000;
                     }
+#endif
                     if (!dryRun) {
                         fbatSetAttackAnnounce(info.kind);
                     }
@@ -3481,8 +3503,8 @@ void* fbatHitCheck(s32 flags, s32 out) {
             if (attack) {
                 f32 radius = float_0p5_80419ba0 * party->field_F4;
                 f32 y = float_0p5_80419ba0 * *(f32*)((u8*)party + 0xF0) + party->position.y; // 0xF0: the shell's height
-                f32 x = party->position.x;
                 f32 z = party->position.z;
+                f32 x = party->position.x;
                 u32 flag8 = flags & 0x1000;
 
                 npc = npcWork->entries;
