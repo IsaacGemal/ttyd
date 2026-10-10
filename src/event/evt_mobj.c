@@ -234,7 +234,7 @@ s32 evt_mobj_set_scale(EventEntry* event, BOOL isFirstCall) {
     Vec scale;
 
     name = (const char*)evtGetValue(event, args[0]);
-    if (strcmp(name, "me") == 0) {
+    if (strcmp(name, "me\0") == 0) {
         obj = event->thisMapObj;
     } else {
         obj = mobjNameToPtr(name);
@@ -257,7 +257,7 @@ s32 evt_mobj_get_position(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
 
     name = (const char*)evtGetValue(event, args[0]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -274,7 +274,7 @@ s32 evt_mobj_get_x_position(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
 
     name = (const char*)evtGetValue(event, args[0]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -289,7 +289,7 @@ s32 evt_mobj_get_y_position(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
 
     name = (const char*)evtGetValue(event, args[0]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -304,7 +304,7 @@ s32 evt_mobj_get_z_position(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
 
     name = (const char*)evtGetValue(event, args[0]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -326,7 +326,7 @@ s32 evt_mobj_set_position(EventEntry* event, BOOL isFirstCall) {
     x = evtGetFloat(event, args[1]);
     y = evtGetFloat(event, args[2]);
     z = evtGetFloat(event, args[3]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -347,7 +347,7 @@ s32 evt_mobj_set_x_position(EventEntry* event, BOOL isFirstCall) {
     Vec pos;
 
     name = (const char*)evtGetValue(event, args[0]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -366,7 +366,7 @@ s32 evt_mobj_set_y_position(EventEntry* event, BOOL isFirstCall) {
     Vec pos;
 
     name = (const char*)evtGetValue(event, args[0]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -385,7 +385,7 @@ s32 evt_mobj_set_z_position(EventEntry* event, BOOL isFirstCall) {
     Vec pos;
 
     name = (const char*)evtGetValue(event, args[0]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -402,7 +402,7 @@ s32 evt_mobj_exec_cancel(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
 
     name = (const char*)evtGetValue(event, event->args[0]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -421,7 +421,7 @@ s32 evt_mobj_set_gravity_bound(EventEntry* event, BOOL isFirstCall) {
     name = (const char*)evtGetValue(event, args[0]);
     f1 = evtGetFloat(event, args[1]);
     f2 = evtGetFloat(event, args[2]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -439,7 +439,7 @@ s32 evt_mobj_set_anim(EventEntry* event, BOOL isFirstCall) {
 
     name = (const char*)evtGetValue(event, args[0]);
     animName = (const char*)evtGetValue(event, args[1]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -453,7 +453,7 @@ s32 evt_mobj_wait_animation_end(EventEntry* event, BOOL isFirstCall) {
     MapObjectEntry* obj;
 
     name = (const char*)evtGetValue(event, event->args[0]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -472,7 +472,7 @@ s32 evt_mobj_set_camid(EventEntry* event, BOOL isFirstCall) {
 
     name = (const char*)evtGetValue(event, args[0]);
     camId = (u8)evtGetValue(event, args[1]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
@@ -489,7 +489,7 @@ s32 evt_mobj_hitevt_onoff(EventEntry* event, BOOL isFirstCall) {
 
     name = (const char*)evtGetValue(event, args[0]);
     on = evtGetValue(event, args[1]);
-    if (strcmp(name, "me") != 0) {
+    if (strcmp(name, "me\0") != 0) {
         obj = mobjNameToPtr(name);
     } else {
         obj = event->thisMapObj;
