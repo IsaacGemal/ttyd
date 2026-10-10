@@ -844,6 +844,20 @@ static const Vec vec3_802c5808 = { 0.0f, 0.0f, 0.0f };
 
 static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
 
+// a plain read of float_100 lets MWCC CSE one load across the rounding step and the following
+// angle step (gndCenti/gndAngle read it volatile for the other callers).
+static inline f32 marioSearchGndCenti(f32 v) {
+    f32 k = float_100_8041a7f8;
+
+    return (f32)(s32)(k * v + float_0p5_8041a7c4) / k;
+}
+
+static inline f32 marioSearchGndAngle(f32 x, f32 y) {
+    f32 k = float_100_8041a7f8;
+
+    return angleABf(float_0_8041a7a4, float_0_8041a7a4, k * x, k * y);
+}
+
 // The ground-height probe under Mario, inlined twice into marioChkGnd (each copy keeps its own Vec slots).
 static inline void marioChkGndHeight(MarioWork* wp) {
     MarioWork* m;
@@ -1112,32 +1126,36 @@ void marioChkGnd2(void) {
 static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
 
 // fabs is __fabsf (no frsp), the first sample offset is `oz = ox`, and the angle rounding goes through
-// gndAngle/gndCenti; the frame matches (0x1e0).
-// NONMATCHING (96.71%): same 25 calls and immediates as the original; remaining: stack slots and FPR colouring.
+// gndAngle/gndCenti; the frame matches (0x1e0) and the sample Vectors take the original's stack slots.
+// The parameter b colours f21 where the original has f29, rotating the whole long-lived FPR set
+// (f23/f24/bestY/py/px/pz) one to two registers low; no instruction differs and a declaration
+// reorder cannot move b (rasim best 6 of 10 targets wrong). The chosen declaration order
+// (see the block below) is the rasim-best one and lifts this to 99.37%.
+// NONMATCHING (99.37%): FPR colouring only; every call, immediate and instruction matches the original.
 HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
-    Vec p;
     Vec up;
     Vec hitPos;
     Vec normal;
+    Vec p;
     HitEntry* hit;
     HitEntry* result;
-    f32 dist;
-    f32 fa;
-    f32 fb;
-    f32 ox;
-    f32 oz;
-    f32 f23;
-    f32 f24;
-    f32 bestY;
-    f32 py;
-    f32 px;
-    f32 pz;
-    f32 lim;
-    f32 rad;
-    f32 angle;
-    f32 ang;
     s32 i;
+    f32 py;
+    f32 pz;
+    f32 ang;
+    f32 rad;
+    f32 px;
+    f32 f23;
+    f32 fa;
+    f32 angle;
+    f32 ox;
+    f32 bestY;
+    f32 fb;
+    f32 lim;
+    f32 oz;
+    f32 f24;
+    f32 dist;
 
     *(f32*)((u8*)wp + 0x218) = float_0_8041a7a4;
     *(f32*)((u8*)wp + 0x21C) = float_0_8041a7a4;
@@ -1153,10 +1171,10 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     }
     fa = __fabsf(a);
     fb = __fabsf(b);
+    fa += float_0p01_8041a854;
     *outY = wp->position.y;
-    fa = fa + float_0p01_8041a854;
     *outX = float_neg1_8041a7dc;
-    fb = float_5_8041a7b8 + fb;
+    fb += float_5_8041a7b8;
     if (wp->baseSpeed != float_0_8041a7a4) {
         angle = revise360(*(f32*)((u8*)wp + 0x1A0) - *(f32*)((u8*)wp + 0x198));
     } else {
@@ -1210,9 +1228,9 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
                 lim = float_50_8041a844;
             }
             wp2 = marioGetPtr();
-            *(f32*)((u8*)wp2 + 0x218) = gndCenti(gndAngle(normal.z, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x218) = marioSearchGndCenti(marioSearchGndAngle(normal.z, normal.y) - float_180_8041a7cc);
             *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
-            *(f32*)((u8*)wp2 + 0x220) = gndCenti(gndAngle(normal.x, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x220) = marioSearchGndCenti(marioSearchGndAngle(normal.x, normal.y) - float_180_8041a7cc);
             ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (ang >= lim) {
                 hit = NULL;
@@ -1220,9 +1238,9 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
         }
         if (hit != NULL) {
             MarioWork* wp2 = marioGetPtr();
-            *(f32*)((u8*)wp2 + 0x218) = gndCenti(gndAngle(normal.z, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x218) = marioSearchGndCenti(marioSearchGndAngle(normal.z, normal.y) - float_180_8041a7cc);
             *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
-            *(f32*)((u8*)wp2 + 0x220) = gndCenti(gndAngle(normal.x, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x220) = marioSearchGndCenti(marioSearchGndAngle(normal.x, normal.y) - float_180_8041a7cc);
             *(f32*)((u8*)wp + 0x214) = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (hitPos.y < py && __fabsf(hitPos.y - py) >= float_2_8041a7e8) {
                 if (__fabsf(hitPos.y - py) > __fabsf(b)) {
