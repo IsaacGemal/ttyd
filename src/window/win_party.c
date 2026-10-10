@@ -390,16 +390,16 @@ static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
 #define WIN_PARTY_ID(w, n) (((s32*)(w))[0x6F + (n)])
 #define WIN_PARTY_POSE(w, n) (((s32*)(w))[0x68 + (n)])
 
-// NONMATCHING (97.76%): calls, branches, immediates, the frame and both literal pools match; register colouring
+// NONMATCHING (98.07%): calls, branches, immediates, the frame and both literal pools match; register colouring
 // differs (x/y rank above cx/barX/top in the first loop; the original reuses x's register for the move list's
 // name column) and the stack slots of some block locals.
 extern const f32 float_0p5_8041d258;
 void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
+    GXColor loopWhite = winPartyWhite;
     GXColor unusedWhite = winPartyWhite;
     GXColor unusedBlack = winPartyBlack;
     GXColor white = winPartyWhite;
     GXColor black = winPartyBlack;
-    GXColor loopWhite = winPartyWhite;
     GXColor loopBlack = winPartyBlack;
     f32 x = WW_F32(work, 0xC4 + partyIdx * 0x14);
     f32 y = WW_F32(work, 0xC8 + partyIdx * 0x14);
@@ -580,7 +580,11 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
             if (WIN_PARTY_ID(work, WW_S32(work, 0x1DC)) == winPartyDt[n].field_0x0) {
                 const char* name;
 
+#ifdef MUST_MATCH
+                if ((4) != (winPartyDt[n].field_0x0)) {
+#else
                 if (winPartyDt[n].field_0x0 != 4) {
+#endif
                     name = msgSearch(winPartyDt[n].field_0x8);
                 } else {
                     name = pouchGetYoshiName();
@@ -623,16 +627,18 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
     x2 = 230.0f + x;
     winFontSetEdgeV((Vec){x2 - 20.0f, y2, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white, "\202e\202o");
     {
-        f32 costX = (238.0f + x) - 20.0f;
-        f32 fpX = 2.0f + (2.0f + ((17.0f + x2) - 20.0f));
-        f32 nameX = 10.0f + x;
+        f32 costX;
+        f32 fpX;
+        y = 10.0f + x;
+        costX = (238.0f + x) - 20.0f;
+        fpX = 2.0f + (2.0f + ((17.0f + x2) - 20.0f));
 
         for (i = 0; i < WW_S32(work, 0x204); i++) {
             BattleWeapon* weapon;
             char buf[64];
 
             rowY = (top - (f32)(i * 26)) - 30.0f;
-            winFontSetLabelV((Vec){nameX, rowY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, loopBlack,
+            winFontSetLabelV((Vec){y, rowY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, loopBlack,
                              ((BattleWeapon**)winPartyDt[WW_S32(work, 0x1D8)].field_0x20)[i]->name);
             weapon = ((BattleWeapon**)winPartyDt[WW_S32(work, 0x1D8)].field_0x20)[i];
             sprintf(buf, "%s", winZenkakuStr(weapon->baseFpCost));
