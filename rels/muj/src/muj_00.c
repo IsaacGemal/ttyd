@@ -54,9 +54,11 @@ static s32 dai3_shurai_after[68];
 s32 dai3_beat_back[194];
 s32 muj_gor_ship_start[245];
 
-void* Tobidat;
-OpField* _op;
+// .bss is laid out last-declared-first: the original has Tobidat, _op, _ap and four trailing bytes.
+static u32 gap_05_0000000C_bss;
 static u8* _ap;
+OpField* _op;
+void* Tobidat;
 
 // clang-format off
 extend_data(4,
@@ -713,31 +715,15 @@ USER_FUNC(mario_main_setup_func) {
 }
 
 
-#define MARIO_MAIN_UPDATE(idx, obj)                                                              \
-    op[idx].angle += delta;                                                                     \
-    {                                                                                           \
-        f32 d = op[idx].dist;                                                               \
-        c = op[idx].angle;                                                                  \
-        rad = 3.141592f * c / 180.0f;                                                       \
-        s = sin(rad);                                                                       \
-        tx = d * s + centerX;                                                           \
-        c = cosOf(rad);                                                                       \
-        (obj)->position.x = tx;                                                         \
-        (obj)->position.z = d * c + centerZ;                                                \
-    }
-
 static inline double cosOf(f32 arg0) {
     return cos(arg0);
 }
 
-// Holds `op[idx].dist` in a block-local `f32 d`, captures `op[idx].angle` in `c` before the radians
-// conversion, and calls an inlined cos wrapper. Computing x into `tx` instead of reusing the `target`
-// event argument reproduces the original's f27 for the x value. Declaring `cur` last (lowest local
-// vreg) puts `target` in the original's f27; what still differs is `cur` in f28 (retail f26), which
-// swaps the first iteration's `d`/`rad` pair (f28/f27 vs f26/f28), and the last two iterations'
-// rad/sin and `d` (retail d7 in f29). rasim over every local order floors at 5 wrong: the rest are
-// frontend temps (@662, @663, @670) that no declaration order reaches.
-// NONMATCHING (99.71%)
+// Written out per object with the locals reused the way the original reuses them: `rad` first
+// holds the angle delta, Mario's distance has its own `dist` (declared just before `cur`, which
+// gives `cur` the original's f26), Piton's angle goes through `tx` and Odoodo's distance through
+// `rad`. The last two objects compute x after the cos call, the first six before it. The cos
+// goes through an f32 wrapper so `rad` stays live across the x computation.
 USER_FUNC(mario_main_func) {
     s32* args = event->args;
     f32 target;
@@ -757,6 +743,7 @@ USER_FUNC(mario_main_func) {
     f32 s;
     f32 c;
     f32 tx;
+    f32 dist;
     f32 cur;
 
     cur = (f32)evtGetValue(event, args[0]);
@@ -772,16 +759,110 @@ USER_FUNC(mario_main_func) {
     gara = evtNpcNameToPtr(event, "ガラの悪い水夫");
     piton = evtNpcNameToPtr(event, "ピートン");
     odoodo = evtNpcNameToPtr(event, "オドオド水夫");
-    delta = target - cur;
+    rad = target - cur;
+    delta = rad;
 
-    MARIO_MAIN_UPDATE(0, mario);
-    MARIO_MAIN_UPDATE(1, party);
-    MARIO_MAIN_UPDATE(2, marco);
-    MARIO_MAIN_UPDATE(3, cortez);
-    MARIO_MAIN_UPDATE(4, monie);
-    MARIO_MAIN_UPDATE(5, gara);
-    MARIO_MAIN_UPDATE(6, piton);
-    MARIO_MAIN_UPDATE(7, odoodo);
+    op[0].angle += delta;
+    {
+        dist = op[0].dist;
+
+        c = op[0].angle;
+        rad = 3.141592f * c / 180.0f;
+        s = sin(rad);
+        tx = dist * s + centerX;
+        c = cosOf(rad);
+        mario->position.x = tx;
+        mario->position.z = dist * c + centerZ;
+    }
+
+    op[1].angle += delta;
+    {
+        f32 d = op[1].dist;
+
+        c = op[1].angle;
+        rad = 3.141592f * c / 180.0f;
+        s = sin(rad);
+        tx = d * s + centerX;
+        c = cosOf(rad);
+        party->position.x = tx;
+        party->position.z = d * c + centerZ;
+    }
+
+    op[2].angle += delta;
+    {
+        f32 d = op[2].dist;
+
+        c = op[2].angle;
+        rad = 3.141592f * c / 180.0f;
+        s = sin(rad);
+        tx = d * s + centerX;
+        c = cosOf(rad);
+        marco->position.x = tx;
+        marco->position.z = d * c + centerZ;
+    }
+
+    op[3].angle += delta;
+    {
+        f32 d = op[3].dist;
+
+        c = op[3].angle;
+        rad = 3.141592f * c / 180.0f;
+        s = sin(rad);
+        tx = d * s + centerX;
+        c = cosOf(rad);
+        cortez->position.x = tx;
+        cortez->position.z = d * c + centerZ;
+    }
+
+    op[4].angle += delta;
+    {
+        f32 d = op[4].dist;
+
+        c = op[4].angle;
+        rad = 3.141592f * c / 180.0f;
+        s = sin(rad);
+        tx = d * s + centerX;
+        c = cosOf(rad);
+        monie->position.x = tx;
+        monie->position.z = d * c + centerZ;
+    }
+
+    op[5].angle += delta;
+    {
+        f32 d = op[5].dist;
+
+        c = op[5].angle;
+        rad = 3.141592f * c / 180.0f;
+        s = sin(rad);
+        tx = d * s + centerX;
+        c = cosOf(rad);
+        gara->position.x = tx;
+        gara->position.z = d * c + centerZ;
+    }
+
+    op[6].angle += delta;
+    {
+        f32 d = op[6].dist;
+
+        c = op[6].angle;
+        tx = 3.141592f * c / 180.0f;
+        s = sin(tx);
+        c = cosOf(tx);
+        piton->position.x = d * s + centerX;
+        piton->position.z = d * c + centerZ;
+    }
+
+    op[7].angle += delta;
+    {
+        rad = op[7].dist;
+
+        c = op[7].angle;
+        tx = 3.141592f * c / 180.0f;
+        s = sin(tx);
+        c = cosOf(tx);
+        odoodo->position.x = rad * s + centerX;
+        odoodo->position.z = rad * c + centerZ;
+    }
 
     marco->prevPosition = marco->position;
     cortez->prevPosition = cortez->position;
@@ -1014,41 +1095,24 @@ USER_FUNC(cam_test_init_func) {
     return EVT_RETURN_DONE;
 }
 
-// Writing the addend of the second set as `rad = (radius * s) * 0.0f;` (a runtime zero) makes MWCC
-// emit the original `fnmsubs` instead of `fmuls`+`fneg`.
-// NONMATCHING (98.16%): the only difference left is the second integer base. The original keeps
-// `args` in r30 and `args+1` in r31 (`mr r30,r31; addi r31,r31,4`) and reads args[3] and args[1]
-// through r31; we fold the base into plain offsets. `args++`, `args = args + 1` and an explicit
-// `argp = args + 1` all fold; a separate pointer update makes mwcceppc hang. `optimization_level`
-// 0-4 does not keep it (3/4 give this same 5-instruction diff, 0-2 are worse). A post-incremented
-// `*p++` keeps a second base but at args+3; the evt_eff-style ident helper under `optimization_level
-// 1` does put the base at args+1, but level 1 then reallocates the FPRs and adds 20 more
-// instruction differences.
+// The output indices are taken as pointers (`xp`, `zp`) and the inputs read through the advanced
+// `args`, which keeps the original's second base (`mr r30,r31; addi r31,r31,4`). The circle centre
+// z is a local zero so the subtraction stays the original's `fnmsubs` against the pooled 0.0f.
 USER_FUNC(cam_test_func) {
     s32* args = event->args;
-#ifdef MUST_MATCH
-    s32* p = args + 2;
-    f32 angle = evtGetFloat(event, *p++);
-    f32 radius = evtGetFloat(event, *p);
-#else
-    f32 angle = evtGetFloat(event, args[2]);
-    f32 radius = evtGetFloat(event, args[3]);
-#endif
+    s32* xp = args++;
+    s32* zp = args++;
+    f32 angle = evtGetFloat(event, *args++);
+    f32 radius = evtGetFloat(event, *args);
     f32 s;
     f32 c;
+    f32 centerZ = 0.0f;
     f32 rad = angle * 6.2831855f / 360.0f;
+
     s = sin(rad);
     c = cos(rad);
-
-    evtSetValue(event, args[0], (s32)(radius * s + 70.0f));
-#ifdef MUST_MATCH
-    // Reusing `rad` as the (zero) addend makes MWCC emit the target's `fnmsubs`
-    // instead of the natural form's `fmuls`+`fneg`.
-    rad = (radius * s) * 0.0f;
-    evtSetValue(event, args[1], (s32)(rad - (radius * c)));
-#else
-    evtSetValue(event, args[1], (s32)(0.0f - radius * c));
-#endif
+    evtSetValue(event, *xp, (s32)(radius * s + 70.0f));
+    evtSetValue(event, *zp, (s32)(centerZ - radius * c));
     return EVT_RETURN_DONE;
 }
 

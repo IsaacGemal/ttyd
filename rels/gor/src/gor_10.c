@@ -276,26 +276,15 @@ void tegami_delete(void) {
     }
 }
 
-// What made this match: assigning the loop constants inside the loop in source order
-// twoPi, dbl, quarter, c16605, one, pi (...c4967, hundred) lets MWCC hoist all of them before
-// the loop in the target's exact order (twoPi, double, quarter, ...). Declaring the
-// coefficients as `f32 pi, quarter, hundred, twoPi, one, c16605, c4967, scale, dbl;` reproduces
-// the target's FPR colours (MWCC colours callee-saved FPRs by declaration position, descending).
+// What made this match: the angle is `twoPi * i / 8.0f` (MWCC turns the divide into the pooled 0.125
+// multiply) with the pi compares as literals, so the 0.125 and pi loads and the int->float magic are
+// hoisted compiler temps that colour f31/f30/f29 ahead of the named coefficients. `f0 = f3 * f3` is
+// written out in the first polynomial branches: as `(f3 * f3)` twice MWCC CSEs it into frontend temps,
+// which add a neighbour to every hoisted constant and push the named ones into a second simplify sweep
+// (magic and hundred then trade f29/f23). The coefficients (`twoPi, one, c16605, c4967, scale,
+// hundred`) are assigned inside the loop in pool order and declared in the target's FPR order.
 // The tev color-in argument is cached in `cc` so the `(i == 0)` boolean is computed once
 // (cntlzw/srwi) before the arg setup instead of being interleaved with it.
-//
-// The .rodata pool order matches the target exactly (no data-symbol diffs). 6 instruction diffs
-// remain, all MWCC register colouring:
-//  * The anonymous int->float magic double takes f29 in the target but f23 here (hundred takes
-//    f29 here and f23 in the target); the two swap. The conversion double is compiler-generated
-//    (our object's is an anonymous pooled @NNN@, the target's is the named global
-//    `double_to_int_gor_0001dbb0`). MWCC colours it into the lowest free callee-saved FPR
-//    regardless of declaration or statement arrangement; only the shape of the angle expression
-//    moves it, and no shape tried keeps the target's named-constant block (f31..f24). It costs
-//    the `lfd`/`lfs`, the `fsubs`, and the two `fdivs` by hundred at the PSMTXTrans.
-//  * The fmuls combining twoPi*dbl with quarter comes out with its operands swapped (target
-//    `f0*f30`, ours `f30*f0`); the commutative encoding is not controlled by the source operand
-//    order (`quarter * (twoPi*dbl)` compiles the same).
 // `mtxId` is `u32` (the GX headers take `u32 mtx`/`u32 id`); as `s32` MWCC adds a redundant
 // `mr` copying the computed id into the loop variable.
 // As in envdrv.c's envDisp_FF: without this MWCC rematerialises the polynomial coefficients
@@ -304,14 +293,12 @@ void tegami_delete(void) {
 // The lifetime pass would hoist the two seed loads (0.00761/0.03705) out of the loop, keeping
 // two extra FPRs live; the target reloads them per iteration.
 #pragma opt_lifetimes off
-// NONMATCHING (99.91%, 6 diffs): the f23/f29 magic-double/hundred colour swap and one
-// commutative fmuls operand order (see above); everything else is byte-identical.
 static void depthDisp(CameraId cameraId, void* param) {
     GXTexObj texObj;
     Mtx mtx;
     smartEntry* texBuf;
     CameraEntry* cam;
-    f32 pi, quarter, hundred, twoPi, one, c16605, c4967, scale, dbl;
+    f32 twoPi, one, c16605, c4967, scale, hundred;
     s32 i;
     u32 mtxId;
     f32 f0, f1, f2, f3, f4;
@@ -336,24 +323,16 @@ static void depthDisp(CameraId cameraId, void* param) {
     GXSetNumTevStages(8);
     for (i = 0; i < 8; i++) {
         twoPi = 6.2831855f;
-#ifdef MUST_MATCH
-        dbl = (f32)i; // match-only: the conversion needs its own local for the target's load order
-#endif
-        quarter = 0.125f;
+        f3 = twoPi * (f32)i / 8.0f;
         f2 = 0.00761f;
         c16605 = 0.16605f;
         one = 1.0f;
-        pi = 3.1415927f;
-#ifdef MUST_MATCH
-        f3 = (twoPi * dbl) * quarter; // match-only: see dbl above
-#else
-        f3 = (twoPi * (f32)i) * quarter;
-#endif
-        if (f3 <= pi) {
+        if (f3 <= 3.1415927f) {
             f1 = 1.5707964f;
             if (f3 <= f1) {
-                f2 = f2 * (f3 * f3) - c16605;
-                f2 = f2 * (f3 * f3) + one;
+                f0 = f3 * f3;
+                f2 = f2 * f0 - c16605;
+                f2 = f2 * f0 + one;
                 f2 = f2 * f3;
             } else {
                 f0 = f3 - f1;
@@ -383,11 +362,12 @@ static void depthDisp(CameraId cameraId, void* param) {
         f4 = 0.03705f;
         c4967 = 0.4967f;
         hundred = 100.0f;
-        if (f3 <= pi) {
+        if (f3 <= 3.1415927f) {
             f1 = 1.5707964f;
             if (f3 <= f1) {
-                f4 = f4 * (f3 * f3) - c4967;
-                f4 = f4 * (f3 * f3) + one;
+                f0 = f3 * f3;
+                f4 = f4 * f0 - c4967;
+                f4 = f4 * f0 + one;
             } else {
                 f0 = f3 - f1;
                 f0 = f1 - f0;
