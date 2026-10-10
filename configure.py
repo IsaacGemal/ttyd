@@ -696,7 +696,7 @@ config.libs = [
             Object(Matching, "event/evt_kinopio.c"),
             Object(Matching, "event/evt_bg.c"),
             Object(Matching, "event/evt_damage.c"),
-            Object(NonMatching, "event/evt_nannpc.c"),
+            Object(Matching, "event/evt_nannpc.c"),
             Object(Matching, "event/evt_fade.c"),
             Object(Matching, "event/evt_light.c"),
             Object(Matching, "event/evt_audience.c"),

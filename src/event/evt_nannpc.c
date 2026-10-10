@@ -57,6 +57,10 @@ struct NanNpcEntry {
     GXColor color;                  // 0xBC
 };
 
+// .sbss is laid out last-declared-first: the original has makestring, nanNPCWork and a 4-byte tail.
+#pragma force_active on
+static u32 gap_08_8041899C_sbss;
+#pragma force_active reset
 NanNpcWork* nanNPCWork;
 static char makestring[0x10];
 static Mtx mt_544 = {
@@ -64,6 +68,12 @@ static Mtx mt_544 = {
     {0.0f, 10.0f, 0.0f, 0.1f},
     {0.0f, 0.0f, 10.0f, 0.0f},
 };
+// 24 zero bytes that end the original's .sdata.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".sdata") static u32 gap_07_804113E8_sdata[6] = {0};
+#pragma force_active reset
+#pragma explicit_zero_data reset
 // Non-const (so the compiler does not hoist the loop loads out of evt_nannpc_init) but forced into
 // .rodata to keep the original's section. Declared global to match the original's symbol linkage.
 __declspec(section ".rodata") Vec vec3_802f2ff8[6] = {
@@ -76,8 +86,9 @@ __declspec(section ".rodata") Vec vec3_802f2ff8[6] = {
 };
 // The original's `dat_8041c5xx` are global, read-only `.sdata2` constants; section is forced so
 // they get the exact symbol names and placement.
-__declspec(section ".sdata2") GXColor dat_8041c570 = {0xFF, 0xFF, 0xFF, 0xFF};
+__declspec(section ".sdata2") GXColor dat_8041c568 = {0xFF, 0xFF, 0xFF, 0xFF};
 __declspec(section ".sdata2") GXColor dat_8041c56c = {0xFF, 0xFF, 0xFF, 0xFF};
+__declspec(section ".sdata2") GXColor dat_8041c570 = {0xFF, 0xFF, 0xFF, 0xFF};
 
 // Look up an entry by numeric id (formatted as "%06x") or by the string the id
 // points at. Small enough that the original compiler inlined it everywhere.
@@ -101,59 +112,102 @@ static inline NanNpcEntry* nannpcFind(const char* name) {
     return NULL;
 }
 
+// One wall check for a moving entry. Locals of the two helpers below become compiler temporaries
+// when they are inlined, which is what gives the third loop's flag and hit-pointer temps their
+// registers; the by-value `pos`/`dir` parameters are the original's staged copies at 0x78/0x84 (the
+// reflection reads `dir`, not `velNorm`). The helpers' locals are laid out in reverse declaration
+// order relative to ordinary locals.
+static inline BOOL nannpcHitWall(NanNpcEntry* entry, f32 vlen, Vec pos, Vec dir) {
+    BOOL scale;
+    f32 d;
+    f32 fpx2, fpy2, fpz2, fnx2, fny2, fnz2;
+    f32 hitDist;
+    Vec hitPos;
+    Vec hitNormal;
+    Vec move;
+    Vec savedPos;
+    Vec reflect;
 
-// Passing the operands as by-value Vecs reproduces the original's struct-copy staging (frame now
-// matches at 0xe0).
-static inline HitEntry* hitCheckFilterVec(HitFilterCallback callback, f32* hitX, f32* hitY, f32* hitZ,
-                                            f32* distance, f32* hitNX, f32* hitNY, f32* hitNZ, Vec pos, Vec dir) {
-    return hitCheckFilter(callback, hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ, pos.x, pos.y, pos.z, dir.x,
-                          dir.y, dir.z);
+    entry->work[5] = 0;
+    entry->work[4] = 0;
+    scale = TRUE;
+    hitDist = vlen;
+    entry->work[4] = (s32)hitCheckFilter((HitFilterCallback)0, &hitPos.x, &hitPos.y, &hitPos.z, &hitDist,
+                                        &hitNormal.x, &hitNormal.y, &hitNormal.z, pos.x, pos.y, pos.z, dir.x, dir.y,
+                                        dir.z);
+    if ((u32)entry->work[4] == 0) {
+        PSVECAdd(&entry->position, &entry->field_0x3C, &entry->position);
+    } else {
+        savedPos = entry->position;
+        PSVECAdd(&entry->position, &entry->field_0x3C, &entry->position);
+        if (entry->field_0x3C.y == 0.0f) {
+            hitNormal.y = 0.0f;
+        }
+        PSVECNormalize(&hitNormal, &hitNormal);
+        C_VECReflect(&dir, &hitNormal, &reflect);
+        PSVECScale(&reflect, &entry->field_0x3C, vlen);
+        scale = FALSE;
+        d = PSVECDotProduct(&dir, &hitNormal);
+        PSVECScale(&hitNormal, &hitNormal, d * -(vlen - hitDist) + 0.1f);
+        PSVECAdd(&entry->position, &hitNormal, &entry->position);
+        PSVECSubtract(&entry->position, &savedPos, &move);
+        hitDist = PSVECMag(&move);
+        if (hitDist > 0.0f) {
+            PSVECNormalize(&move, &move);
+#ifdef MUST_MATCH
+            // MUST_MATCH: the original copies savedPos into the `pos` parameter here although the ray
+            // reads savedPos; the self-assignment below keeps that dead copy alive through register
+            // allocation (the post-allocation peephole then deletes the self-assignment itself).
+            pos = savedPos;
+#endif
+            entry->work[5] = (s32)hitCheckFilter((HitFilterCallback)0, &fpx2, &fpy2, &fpz2, &hitDist, &fnx2, &fny2,
+                                                &fnz2, savedPos.x, savedPos.y + 1.0f, savedPos.z, move.x, move.y,
+                                                move.z);
+            if ((u32)entry->work[5] != 0) {
+                entry->position = savedPos;
+            }
+#ifdef MUST_MATCH
+            pos = pos;
+#endif
+        }
+    }
+    return scale;
 }
 
-// The explicit dirArg/posArg copies (see the MUST_MATCH block below) plus this declaration order
-// reproduce the original's whole local stack layout (pos 0x60, velNorm 0x6c, staged copies
-// 0x78/0x84, hitPos 0x24, hitNormal 0x30). The second ray's scalar hit buffers are declared in
-// reverse (fnz2..fpx2) so their stack slots ascend like the original's.
-// NONMATCHING (94.27%): only the callee-saved colouring of work/scale/temps and the two
-// hitCheckFilter argument-staging schedules differ. first-loop other/entry and the third-loop cursor
-// (r23/r24/r25) now match; work is r27 vs r26, scale r26 vs r31, the four hit-pointer temps r28-r31
-// vs r27-r30. Real fixes from 92.21: the `zero` named constant for `vlen == 0.0f` (the literal form
-// emitted `fcmpu f0, f31`), reusing the posArg Vec across the second ray (MUST_MATCH block below),
-// giving the third loop its own `cursor` (the shared `entry` left r25 to a staging temp), naming the
-// dot product (`d`) so the fused op matches `fmadds f1, f1, f2, f0`, and passing the second ray's
-// middle lane via posArg but its outer lanes straight from `savedPos`. 94.26 -> 94.27: C_VECReflect
-// and PSVECDotProduct read the staged `dirArg` copy at 0x84 (the original reuses the copy made for
-// hitCheckFilter), not `velNorm` at 0x6c.
-// Tried: every declaration order (no effect), every allowed pragma and combination, all
-// posArg/dirArg copy orders, the natural hitCheckFilterVec first call, extra per-loop cursor
-// splits, and every second-call Vec/field staging shape; all <=94.27. The rest is pure colouring,
-// the same class as battle/ac/ac_shot_target.c.
-// NONMATCHING (94.27%): callee-saved colouring (work/scale/temps shifted) plus the two
-// hitCheckFilter argument-staging schedules differ.
+static inline void nannpcMoveEntry(NanNpcEntry* entry) {
+    f32 zero = 0.0f;
+    f32 vlen;
+    Vec pos;
+    Vec velNorm;
+
+    if (!(entry->flags & 4)) {
+        return;
+    }
+    vlen = PSVECMag(&entry->field_0x3C);
+    if (vlen == zero) {
+        return;
+    }
+    if (vlen > 10.0f) {
+        PSVECScale(&entry->field_0x3C, &entry->field_0x3C, 5.0f / vlen);
+        vlen = 5.0f;
+    }
+    pos = entry->position;
+    pos.y += 1.0f;
+    PSVECNormalize(&entry->field_0x3C, &velNorm);
+    if (entry->flags & 8) {
+        PSVECAdd(&entry->position, &entry->field_0x3C, &entry->position);
+        PSVECScale(&entry->field_0x3C, &entry->field_0x3C, 0.6f);
+        return;
+    }
+    if (nannpcHitWall(entry, vlen, pos, velNorm)) {
+        PSVECScale(&entry->field_0x3C, &entry->field_0x3C, 0.6f);
+    }
+}
+
 void nanNPCOption(void) {
     Vec delta;
-#ifdef MUST_MATCH
-    // MUST_MATCH: explicit copies of pos/velNorm force the by-value Vec temps into the original's
-    // outgoing-arg slots (0x78/0x84); the plain helper call below stages them in low locals instead
-    // and shifts every other local's slot.
-    Vec dirArg;
-    Vec posArg;
-#endif
-    Vec velNorm;
-    Vec pos;
-    Vec reflect;
-    Vec savedPos;
-    Vec move;
-    Vec hitNormal;
-    Vec hitPos;
-    f32 hitDist;
-    f32 fnz2, fny2, fnx2, fpz2, fpy2, fpx2;
     f32 vlen;
-    f32 zero = 0.0f;
-    f32 d;
     NanNpcEntry* other;
-    BOOL scale;
-    NanNpcEntry* cursor;
     NanNpcEntry* entry;
     NanNpcWork* work = nanNPCWork;
 
@@ -196,90 +250,8 @@ void nanNPCOption(void) {
         }
     }
 
-    for (cursor = work->entries; cursor < &work->entries[work->count]; cursor++) {
-        if (!(cursor->flags & 4)) {
-            continue;
-        }
-        vlen = PSVECMag(&cursor->field_0x3C);
-        if (vlen == zero) {
-            continue;
-        }
-        if (vlen > 10.0f) {
-            PSVECScale(&cursor->field_0x3C, &cursor->field_0x3C, 5.0f / vlen);
-            vlen = 5.0f;
-        }
-        pos = cursor->position;
-        pos.y += 1.0f;
-        PSVECNormalize(&cursor->field_0x3C, &velNorm);
-        if (cursor->flags & 8) {
-            PSVECAdd(&cursor->position, &cursor->field_0x3C, &cursor->position);
-            PSVECScale(&cursor->field_0x3C, &cursor->field_0x3C, 0.6f);
-            continue;
-        }
-        cursor->work[5] = 0;
-        cursor->work[4] = 0;
-        scale = TRUE;
-        hitDist = vlen;
-#ifdef MUST_MATCH
-        posArg = pos;
-        dirArg = velNorm;
-        cursor->work[4] = (s32)hitCheckFilter((HitFilterCallback)0, &hitPos.x, &hitPos.y, &hitPos.z, &hitDist,
-                                             &hitNormal.x, &hitNormal.y, &hitNormal.z, posArg.x, posArg.y, posArg.z,
-                                             dirArg.x, dirArg.y, dirArg.z);
-#else
-        cursor->work[4] = (s32)hitCheckFilterVec((HitFilterCallback)0, &hitPos.x, &hitPos.y, &hitPos.z, &hitDist,
-                                                &hitNormal.x, &hitNormal.y, &hitNormal.z, pos, velNorm);
-#endif
-        if ((u32)cursor->work[4] == 0) {
-            PSVECAdd(&cursor->position, &cursor->field_0x3C, &cursor->position);
-        } else {
-            savedPos = cursor->position;
-            PSVECAdd(&cursor->position, &cursor->field_0x3C, &cursor->position);
-            if (cursor->field_0x3C.y == 0.0f) {
-                hitNormal.y = 0.0f;
-            }
-            PSVECNormalize(&hitNormal, &hitNormal);
-#ifdef MUST_MATCH
-            C_VECReflect(&dirArg, &hitNormal, &reflect);
-#else
-            C_VECReflect(&velNorm, &hitNormal, &reflect);
-#endif
-            PSVECScale(&reflect, &cursor->field_0x3C, vlen);
-            scale = FALSE;
-#ifdef MUST_MATCH
-            d = PSVECDotProduct(&dirArg, &hitNormal);
-#else
-            d = PSVECDotProduct(&velNorm, &hitNormal);
-#endif
-            PSVECScale(&hitNormal, &hitNormal, d * -(vlen - hitDist) + 0.1f);
-            PSVECAdd(&cursor->position, &hitNormal, &cursor->position);
-            PSVECSubtract(&cursor->position, &savedPos, &move);
-            hitDist = PSVECMag(&move);
-            if (hitDist > 0.0f) {
-                PSVECNormalize(&move, &move);
-#ifdef MUST_MATCH
-                // MUST_MATCH: reusing the posArg Vec through the second ray is what lands the
-                // third-loop cursor/work/temps one register lower, matching the original.
-                posArg = savedPos;
-                posArg.y = savedPos.y + 1.0f;
-                cursor->work[5] = (s32)hitCheckFilter((HitFilterCallback)0, &fpx2, &fpy2, &fpz2,
-                                                     &hitDist, &fnx2, &fny2, &fnz2,
-                                                     savedPos.x, posArg.y, savedPos.z, move.x, move.y,
-                                                     move.z);
-#else
-                cursor->work[5] = (s32)hitCheckFilter((HitFilterCallback)0, &fpx2, &fpy2, &fpz2,
-                                                     &hitDist, &fnx2, &fny2, &fnz2,
-                                                     savedPos.x, savedPos.y + 1.0f, savedPos.z, move.x, move.y,
-                                                     move.z);
-#endif
-                if ((u32)cursor->work[5] != 0) {
-                    cursor->position = savedPos;
-                }
-            }
-        }
-        if (scale) {
-            PSVECScale(&cursor->field_0x3C, &cursor->field_0x3C, 0.6f);
-        }
+    for (entry = work->entries; entry < &work->entries[work->count]; entry++) {
+        nannpcMoveEntry(entry);
     }
 }
 
@@ -307,7 +279,7 @@ static inline void nannpcExtSetup(void) {
     GXSetNumChans(0);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     {
-        GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
+        GXColor color = dat_8041c568;
         GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, color);
     }
     GXSetNumTexGens(1);
@@ -335,7 +307,7 @@ void nannpc_ext_disp(void) {
         GXSetNumChans(0);
         GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
         {
-            GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
+            GXColor color = dat_8041c568;
             GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, color);
         }
         GXSetNumTexGens(1);
@@ -564,15 +536,18 @@ USER_FUNC(evt_nannpc_set_subfunc) {
 // The explicit `offset` induction variable (a named form of the strength reduction `&work->entries[i]`
 // produces) plus this declaration order reproduces the original's callee-saved colouring (work=r23,
 // offset=r26, name=r27; i/id/entry/poses/vec all match). The mask stays on `name`; writing it on `id`
-// compiles but lands the mask in the wrong register. The only remaining difference is the preheader
-// schedule: the compiler emits the hoisted sign mask `clrrwi r29, r3, 31` between `li r24, 0x0` (i)
-// and `li r26, 0x0` (offset), while the original emits both `li`s first and the mask last (same
-// instructions and registers; the mask is a loop-invariant block the scheduler merges into the preheader).
-// NONMATCHING (97.75%): preheader scheduling; the hoisted sign mask is emitted before `li offset`.
+// compiles but lands the mask in the wrong register.
 USER_FUNC(evt_nannpc_entry) {
     const char* name;
     s32 offset;
+#ifdef MUST_MATCH
+    // MUST_MATCH: the 64-bit id leaves a dead sign word (`srawi`) after evtGetValue that the backend
+    // only deletes after scheduling; it holds the hoisted `id & 0x80000000` mask behind `li offset`
+    // in the loop preheader, as in the original. As an s32 the mask is scheduled between the two `li`s.
+    s64 id;
+#else
     s32 id;
+#endif
     s32 i;
     NanNpcEntry* entry;
     Vec* vec;
@@ -598,21 +573,21 @@ USER_FUNC(evt_nannpc_entry) {
         if (entry->pose != NULL) {
             continue;
         }
-            strcpy(entry->name, name);
-            entry->pose = &poses[i];
-            entry->flags = 0;
-            entry->field_0x16 = 0;
-            entry->position = vec[3];
-            entry->homePosition = vec[4];
-            entry->hoseiPosition = vec[5];
-            entry->width = 32.0f;
-            entry->field_0x4C = 32.0f;
-            entry->field_0x50 = 0;
-            entry->animCount = 0;
-            entry->field_0x60 = 0.0f;
-            entry->pose->field_0x4 = -entry->field_0x60;
-            entry->color = dat_8041c570;
-            break;
+        strcpy(entry->name, name);
+        entry->pose = &poses[i];
+        entry->flags = 0;
+        entry->field_0x16 = 0;
+        entry->position = vec[3];
+        entry->homePosition = vec[4];
+        entry->hoseiPosition = vec[5];
+        entry->width = 32.0f;
+        entry->field_0x4C = 32.0f;
+        entry->field_0x50 = 0;
+        entry->animCount = 0;
+        entry->field_0x60 = 0.0f;
+        entry->pose->field_0x4 = -entry->field_0x60;
+        entry->color = dat_8041c570;
+        break;
     }
     return EVT_RETURN_DONE;
 }
