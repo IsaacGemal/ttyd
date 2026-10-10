@@ -1400,8 +1400,10 @@ void bmapUnLoad(void) {
 	}
 }
 
-// NONMATCHING (96.59%): opening constant/pointer setup order; target reuses r28 for activeGroup=0, MWCC uses r0.
-// `i = 0;` is hoisted before `offset = 0;` because it scores marginally better (96.59 vs 96.54).
+// All registers, calls and immediates match. Only the opening block's scheduling differs: retail
+// keeps `li offset=0` ahead of `lwz wp=mapWork` and the `stw activeGroup` that reuses offset's r28,
+// while MWCC hoists the load above the li; no source spelling reaches the scheduler tie.
+// NONMATCHING (97.80%): opening load hoisted above the offset li.
 void bmapLoad(const char* map1, const char* map2) {
 	s32 offset;
 	u8* p;
@@ -1410,10 +1412,9 @@ void bmapLoad(const char* map1, const char* map2) {
 	MapWork* wp;
 
 	sysWaitDrawSync();
-	i = 0;
-	offset = 0;
+	activeGroup = offset = 0;
 	wp = mapWork;
-	activeGroup = 0;
+	i = 0;
 	p = (u8*)wp;
 	for (; i < wp->entries[0].count; i++) {
 		entry = (MapEntry*)((u8*)mapWork + activeGroup * 0x2F4 + offset);
