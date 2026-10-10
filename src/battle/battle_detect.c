@@ -67,9 +67,8 @@ typedef struct BattleSampling {
 // as in the original, and the dedup loop reads `p2->attributes` into a temp. The locals live
 // at function scope (the main-part loop keeps its own `cur`/`curPart`); their declaration
 // order gives the original's registers in the first loop and for the dedup loop's
-// `entry`/`noDup`.
-// NONMATCHING (99.95%): in the dedup loop `other` and the `u2` copy swap registers (ours
-// r22/r24, the original r24/r22).
+// `entry`/`noDup`/`other`/`p2attr` (declared in the inner block, `other` and the `u2` copy
+// swap registers).
 void _btlSamplingEnemy(u8* sampling) {
     BattleSamplingEntry* entry;
     BattleUnitKindPart* kindPart;
@@ -81,6 +80,8 @@ void _btlSamplingEnemy(u8* sampling) {
     s32 j;
     s8* order;
     BattleUnitPart* part;
+    s32 p2attr;
+    BattleSamplingEntry* other;
     s32 i;
     s32 noDup;
     s32 numParts;
@@ -348,10 +349,10 @@ void _btlSamplingEnemy(u8* sampling) {
             noDup = 1;
 
                 for (j = 0; j < count; j++) {
-                    BattleSamplingEntry* other = &entries[j];
                     s32 a;
                     s32 b;
 
+                    other = &entries[j];
                     if (entry == other) {
                         continue;
                     }
@@ -373,7 +374,7 @@ void _btlSamplingEnemy(u8* sampling) {
                         BattleUnit* u2;
                         BattleUnit* u3;
 
-                        s32 p2attr = p2->attributes;
+                        p2attr = p2->attributes;
                         if (p2attr & 0x10) {
                             continue;
                         }
