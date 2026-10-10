@@ -3622,14 +3622,16 @@ NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z,
 // Removing the `dist`/`npc` initialisers (the loop always assigns them) and declaring dx/dy/dz as dy,dx,dz
 // recovered the prologue; computing the point into a `Vec pos` (pos.x, pos.z, pos.y) and copying to px/pz/py
 // gets the target's px,pz,py FP order (was py,px,pz). The angle-table and sqrtf double-pool offsets resolve
-// once the other agents finish the unit's rodata.
-// NONMATCHING (99.27%): the final py fmadds lands in f3 instead of f6 (target px f5, py f6, dx f3), plus
-// the pending unit-rodata pool offsets.
+// once the unit's rodata is complete.
+// The allocator coalesces pos.y into the register of its dead addend here; the original instead reuses the
+// register that held s2. No declaration order or expression order in the source moves that choice.
+// NONMATCHING (99.78%): only the FP register holding pos.y differs (ours f3, target f6; dx then follows into f5).
 NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle) {
     MarioWork* mario;
     f32 i = 0.0f;
     f32 dist;
     NpcEntry* npc;
+    NpcEntry* hit;
 
     for (; i <= 11.0f; i += 1.0f) {
         f32 idx = i;
@@ -3668,13 +3670,14 @@ NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius,
         }
         dist = sqrtf(dx * dx + dy * dy + dz * dz);
         npc = (dist < entry->width * 0.5f + 12.0f) ? entry : NULL;
+        hit = npc;
         if (npc != NULL) {
             break;
         }
         }
     }
     *outDist = dist;
-    return npc;
+    return hit;
 }
 
 BOOL npcCheckInterrupt(NpcEntry* npc) {
