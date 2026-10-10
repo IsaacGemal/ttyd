@@ -844,20 +844,6 @@ static const Vec vec3_802c5808 = { 0.0f, 0.0f, 0.0f };
 
 static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32* distance);
 
-// a plain read of float_100 lets MWCC CSE one load across the rounding step and the following
-// angle step (gndCenti/gndAngle read it volatile for the other callers).
-static inline f32 marioSearchGndCenti(f32 v) {
-    f32 k = float_100_8041a7f8;
-
-    return (f32)(s32)(k * v + float_0p5_8041a7c4) / k;
-}
-
-static inline f32 marioSearchGndAngle(f32 x, f32 y) {
-    f32 k = float_100_8041a7f8;
-
-    return angleABf(float_0_8041a7a4, float_0_8041a7a4, k * x, k * y);
-}
-
 // The ground-height probe under Mario, inlined twice into marioChkGnd (each copy keeps its own Vec slots).
 static inline void marioChkGndHeight(MarioWork* wp) {
     MarioWork* m;
@@ -883,30 +869,70 @@ static inline void marioChkGndHeight(MarioWork* wp) {
     GND_PTR(wp, HitEntry*, 0x1F8) = hit;
 }
 
-// NONMATCHING (96.21%): same 56 calls and immediates as the original, and the same 0x1b0 frame (the ground-height
-// probe is one inline expanded twice, each copy with its own Vec slots; the rolling branch re-tests `hit` before
-// storing roll_grx/roll_grz). Remaining: stack-slot placement inside the inlined marioHitCheckVecOut copies and FPR
-// colouring.
-void marioChkGnd(void) {
-    MarioWork* wp = marioGetPtr();
-    MarioWork* m;
+// marioChkGnd's angle/centi steps: plain reads of the 100.0 scale (not MATCH_F32) let the
+// inlined copies share the live scale across the gndAngle/gndCenti boundary, as the original does.
+// gndAngle/gndCenti with a plain read of float_100, so MWCC can share one load across the rounding and angle steps.
+static inline f32 gndAnglePlain(f32 x, f32 y) {
+    f32 k = float_100_8041a7f8;
+
+    return angleABf(float_0_8041a7a4, float_0_8041a7a4, k * x, k * y);
+}
+
+static inline f32 gndCentiPlain(f32 v) {
+    f32 k = float_100_8041a7f8;
+
+    return (f32)(s32)(k * v + float_0p5_8041a7c4) / k;
+}
+
+// The rolling probe's inline expansion only happens with the raised limits; at the default
+// inline_max_size the helper stays a real `bl` and the whole frame shifts.
+#pragma inline_max_total_size(60000) // let the rolling probe's inlined callees expand
+#pragma inline_max_size(1000) // per-callee inline budget for the probe's callees
+static inline void marioChkGndRollProbe(MarioWork* wp) {
     HitEntry* hit;
-    HitEntry* ride;
     Vec p;
     Vec dir;
     Vec hitPos;
     Vec normal;
     f32 dist;
-    f32 gy;
+    f32 grx;
+    f32 grz;
+
+    dist = float_47_8041a84c;
+    GND_PTR(wp, f32, 0x164) = GND_PTR(wp, f32, 0x114) - wp->position.y;
+    p = wp->position;
+    p.y = float_10_8041a7fc + p.y;
+    dir = vec3_802c5748;
+    hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
+    if (hit != NULL) {
+        grx = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - float_180_8041a7cc);
+        grz = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - float_180_8041a7cc);
+        angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
+        if (hit != NULL) {
+            roll_grx = grx;
+            roll_grz = grz;
+        }
+    }
+}
+
+#pragma inline_max_total_size reset // restore the file's default inline budget after marioChkGnd
+#pragma inline_max_size reset // (1000 already keeps the rest of the unit's scores)
+// NONMATCHING (98.85%): same 56 calls/immediates, 861 instructions and 0x1b0 frame; the rolling probe is a real
+// inline above so its Vecs land in the original's frame slots. Only scheduling/colour ripples remain: the three `dir`
+// loads hoist a few slots early, the `grx` block's two `fmuls` swap, and that swap rotates the centi `fmadds` web.
+void marioChkGnd(void) {
+    MarioWork* wp = marioGetPtr();
+    MarioWork* m;
+    HitEntry* hit;
+    HitEntry* ride;
     f32 gx;
+    f32 gy;
     f32 gz;
     f32 h;
     f32 fy;
     f32 fd;
     f32 fa;
     f32 dy;
-    f32 grx;
-    f32 grz;
     s32 ok;
 
     if (vivianGetStatus() == 2 || vivianGetStatus() == 1 || vivianGetStatus() == 3) {
@@ -991,8 +1017,9 @@ void marioChkGnd(void) {
         }
         if (wp->airTimer == 0) {
             if (!(wp->flags & 0x1000000)) {
-                if (marioChkFrontStep(&fy, &fd, &fa) != NULL) {
-                    dy = fy - wp->position.y;
+                hit = marioChkFrontStep(&fy, &fd, &fa);
+                dy = fy - wp->position.y;
+                if (hit != NULL) {
                     if (dy <= float_11_8041a7ac && dy >= float_5_8041a7b8 && GND_PTR(wp, f32, 0x214) <= float_30_8041a82c) {
                         GND_PTR(wp, f32, 0x1C4) = fy;
                         if (wp->baseSpeed != float_0_8041a7a4) {
@@ -1006,8 +1033,9 @@ void marioChkGnd(void) {
                     }
                 }
             } else {
-                if (marioChkFrontStep(&fy, &fd, &fa) != NULL) {
-                    dy = fy - wp->position.y;
+                hit = marioChkFrontStep(&fy, &fd, &fa);
+                dy = fy - wp->position.y;
+                if (hit != NULL) {
                     if (dy <= float_11_8041a7ac && dy >= float_5_8041a7b8 && GND_PTR(wp, f32, 0x214) <= float_30_8041a82c) {
                         GND_PTR(wp, f32, 0x1C4) = fy;
                         if (wp->baseSpeed != float_0_8041a7a4) {
@@ -1026,21 +1054,7 @@ void marioChkGnd(void) {
         }
         if (ride != NULL) {
             if (wp->flags & 0x1000000) {
-                GND_PTR(wp, f32, 0x164) = GND_PTR(wp, f32, 0x114) - wp->position.y;
-                p = wp->position;
-                p.y += float_10_8041a7fc;
-                dir = vec3_802c5748;
-                dist = float_47_8041a84c;
-                hit = marioHitCheckVecOut(&p, &dir, &hitPos, &normal, &dist);
-                if (hit != NULL) {
-                    grx = gndCenti(gndAngle(normal.z, normal.y) - float_180_8041a7cc);
-                    grz = gndCenti(gndAngle(normal.x, normal.y) - float_180_8041a7cc);
-                    angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
-                    if (hit != NULL) {
-                        roll_grx = grx;
-                        roll_grz = grz;
-                    }
-                }
+                marioChkGndRollProbe(wp);
             }
         } else {
             if (!(wp->flags & 0x1000000)) {
@@ -1228,9 +1242,9 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
                 lim = float_50_8041a844;
             }
             wp2 = marioGetPtr();
-            GND_PTR(wp2, f32, 0x218) = marioSearchGndCenti(marioSearchGndAngle(normal.z, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x218) = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - float_180_8041a7cc);
             *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
-            GND_PTR(wp2, f32, 0x220) = marioSearchGndCenti(marioSearchGndAngle(normal.x, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x220) = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - float_180_8041a7cc);
             ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (ang >= lim) {
                 hit = NULL;
@@ -1238,9 +1252,9 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
         }
         if (hit != NULL) {
             MarioWork* wp2 = marioGetPtr();
-            GND_PTR(wp2, f32, 0x218) = marioSearchGndCenti(marioSearchGndAngle(normal.z, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x218) = gndCentiPlain(gndAnglePlain(normal.z, normal.y) - float_180_8041a7cc);
             *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
-            GND_PTR(wp2, f32, 0x220) = marioSearchGndCenti(marioSearchGndAngle(normal.x, normal.y) - float_180_8041a7cc);
+            GND_PTR(wp2, f32, 0x220) = gndCentiPlain(gndAnglePlain(normal.x, normal.y) - float_180_8041a7cc);
             *(f32*)((u8*)wp + 0x214) = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(normal.x * normal.x + normal.z * normal.z), -normal.y);
             if (hitPos.y < py && __fabsf(hitPos.y - py) >= float_2_8041a7e8) {
                 if (__fabsf(hitPos.y - py) > __fabsf(b)) {
