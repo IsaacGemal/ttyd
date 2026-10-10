@@ -538,10 +538,6 @@ static inline void winMsgFontV(Vec pos, Vec scale, GXColor color, const char* ms
     winFontSet(&pos, &scale, &color, msg);
 }
 
-static inline void* winMsgDispField(WindowWork* work, s32 off) {
-    return *(void**)((u8*)work + off);
-}
-
 // Picks the row colour. Keeping this as an inline helper (rather than the same
 // if/else written at the call site) is what makes MWCC home the loop colour in the
 // original's 0x8 slot.
@@ -1413,9 +1409,16 @@ void winMsgMain(WindowWork* work) {
     }
 }
 
-// The 10/40/120/240/250 constants are literals: MWCC CSEs the repeated position sums with them, as the original
-// does, and not with reads of the named float objects.
-// NONMATCHING (96.53%): label-block scheduling and one extra copied template word.
+// Most of the 10/40/120/240/250 position sums stay literals: MWCC pools each literal at the named
+// object's slot, so the code is the same either way (objdiff reports only a symbol-only diff); a couple
+// of sites read the named objects directly.
+// The 0x140 pointer is loaded once and shared by the NULL test and msgSearch, and ty is declared before width so
+// the width/ty pair lands in f26/f27 as in the original. The rest are scratch-register assignments of compiler
+// temporaries: the width/ty int-to-float sequence, the `fy -= 14` / `240 - fy` pair, and the icon block's
+// `40 + (y - 40)` / `(250 + x) - 10`. The `msg_lottery_number` offset (0x5c0 vs 0x5d0) follows winHalfBookGX's
+// still-missing .rodata conversion doubles.
+// NONMATCHING (99.81%): scratch-register allocation of compiler temporaries in three float blocks, plus the
+// winHalfBookGX-dependent string offset.
 void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     char buf[0x400];
     GXColor iconColor = dat_8041cf28;
@@ -1438,11 +1441,11 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         winMailIconV(((0, (ItemDataView*)itemDataTable)[WW_S32(work, 0x138)]).icon_id, (Vec){ fx, fy, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor);
     }
 
-    if (WW_U32(work, 0x140) != 0) {
+    if (WW_PTR(work, 0x140) != NULL) {
         const char* msg;
+        f32 ty;
         f32 width;
         f32 edge;
-        f32 ty;
 
         edge = (WW_S32(work, 0x138) == -2) ? float_neg130_8041d1ac : float_0_8041d068;
         msg = msgSearch((const char*)WW_PTR(work, 0x140));
@@ -1460,10 +1463,10 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
             // lottery_info has no declared field at 0x20; the original loads an s16 there.
             sprintf(buf, msgSearch((const char*)WW_PTR(work, 0x13C)), *(s16*)((u8*)lotteryGetPtr() + 0x20));
             winFontInit();
-            winMsgFontV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
+            winMsgFontV((Vec){ (40.0f + (x - 250.0f)) - float_10_8041d1a0, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, buf);
         } else {
             winFontInit();
-            winMailLabelV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, (const char*)winMsgDispField(work, 0x13C));
+            winMailLabelV((Vec){ (40.0f + (x - 250.0f)) - 10.0f, fy + (f32)(WW_S32(work, 0x148) * 0x1C), 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, fontColor, (const char*)WW_PTR(work, 0x13C));
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
     }
@@ -1474,7 +1477,7 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         winIconInit();
         i = WW_S32(work, 0x148);
         if (i == 0) {
-            if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B6, (Vec){ (250.0f + x) - 10.0f, (40.0f + (y - 40.0f)) - float_24_8041d0c8, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf34);
+            if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B6, (Vec){ (float_250_8041d1a4 + x) - 10.0f, (40.0f + (y - 40.0f)) - float_24_8041d0c8, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf34);
         } else if (i / 2 == (WW_S32(work, 0x14C) + 1) / 2 - 1) {
             if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B5, (Vec){ (250.0f + x) - 10.0f, float_24_8041d0c8 + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf38);
         } else if ((gp->retraceCount & 0x1F) < 0x14) {
