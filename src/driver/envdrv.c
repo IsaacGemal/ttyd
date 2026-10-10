@@ -296,25 +296,33 @@ static inline void envDofBlendStageReg(s32 tevStage, s32 texCoord) {
 // The blend stage after each loop is an inline helper called with `texCoord++`: the argument copy and the
 // increment then sit right after GXSetTexCoordGen2, as in retail. The angle is `(2pi * i) * 0.25` with the
 // variable product first, and the quad corners are `+-size / 2.0f` (variable-first fmuls).
-// What differs: integer register colouring in both loops (retail block 1: i r31, mtx r30, vcond r27,
-// tevStage r26, texCoord r25; block 2: texCoord r31, tevStage r30, mtx2 r26, i r25), the table pointer's
-// `addi r0` + `mr` that retail builds directly in its register (not coalesced here), block 2's counter
-// initialisation (retail `li r31, 0; mr r30, r31; mr r25, r31`), block 2's 0.25/magic FPR swap, and one
-// fmuls scheduled early in each quad.
-// NONMATCHING (97.67%): register colouring/scheduling only (see above).
+// Block 2 has its own counters (opt_lifetimes off gives each variable one register for the whole function,
+// and retail colours the two blocks' counters differently). Block 1's `tevStage` is an `int`: as `s32` the
+// frontend caches its `(int)` conversion for the enum parameters in a temp that steals a saved register.
+// The declaration order is the one tools/rasim.py found for retail's loop registers.
+// What differs: the table pointer's `addi r0` + `mr` that retail builds directly in its register (not
+// coalesced here), block 2's counter initialisation (retail `li r31, 0; mr r30, r31; mr r25, r31`), the
+// saved register picked for wp, the camera temp and the post-loop temps (r28 here where retail has
+// r27/r25/r26), block 2's 0.25/magic FPR swap, and one fmuls scheduled early in each quad.
+// NONMATCHING (97.92%): register colouring/scheduling only (see above).
 void envDisp_DepthOfField(void) {
-    s32 i;
-    s32 tevStage;
-    CameraEntry* temp_r27;
-    EnvironmentWork* wp = envGetWork();
-    EnvironmentUnk88* u = &wp->unk88;
-    const s32* mtx;
+    s32 vcond2;
     const s32* mtx2;
+    s32 texCoord2;
+    s32 tevStage2;
+    EnvironmentUnk88* u;
+    int tevStage;
+    s32 j;
     s32 texCoord;
+    CameraEntry* temp_r27;
+    s32 vcond;
+    const s32* mtx;
+    s32 i;
+    EnvironmentWork* wp = envGetWork();
+    GXTexObj* texobj;
     Mtx sp48;
     GXColor color;
     Mtx sp18;
-    GXTexObj* texobj;
     f32 v30;
     f32 v29;
     f32 v28;
@@ -326,7 +334,8 @@ void envDisp_DepthOfField(void) {
     f32 v31;
     GXTevColorArg v33;
     GXTevAlphaArg v34;
-    s32 vcond;
+
+    u = &wp->unk88;
 
     if (!(wp->flags & 0x80000000)) {
         return;
@@ -492,17 +501,17 @@ void envDisp_DepthOfField(void) {
         v28 = TWO_PI;
         mtx2 = dat_802f9338.tbl;
         v31 = PI;
-        i = 0;
-        texCoord = 0;
+        j = 0;
+        texCoord2 = 0;
         v26 = 0.16605f;
         v25 = 1.0f;
         v30 = 0.25f;
         v27 = 0.4967f;
         v24 = 100.0f;
-        tevStage = 0;
-        for (i = 0; i < 4; i++) {
+        tevStage2 = 0;
+        for (j = 0; j < 4; j++) {
             f2 = 0.00761f;
-            f0 = (f32)i;
+            f0 = (f32)j;
             f0 = v28 * f0;
             f3 = f0 * v30;
             if (f3 <= v31) {
@@ -581,43 +590,43 @@ void envDisp_DepthOfField(void) {
             f0 = u->unk8;
             MTXTrans(sp18, f0 * f2 / v24, f0 * f4 / v24, 0.0f);
             GXLoadTexMtxImm(sp18, *mtx2, 1);
-            GXSetTexCoordGen2(texCoord, 1, 4, *mtx2, 0, 0x7D);
-            GXSetTevKColorSel(tevStage, 6);
-            GXSetTevKAlphaSel(tevStage, 6);
-            GXSetTevOrder(tevStage, texCoord, 0, 0xFF);
-            GXSetTevColorOp(tevStage, 0, 0, 0, 1, i == 3);
-            GXSetTevAlphaOp(tevStage, 0, 0, 0, 1, i == 3);
-            vcond = (i == 0);
+            GXSetTexCoordGen2(texCoord2, 1, 4, *mtx2, 0, 0x7D);
+            GXSetTevKColorSel(tevStage2, 6);
+            GXSetTevKAlphaSel(tevStage2, 6);
+            GXSetTevOrder(tevStage2, texCoord2, 0, 0xFF);
+            GXSetTevColorOp(tevStage2, 0, 0, 0, 1, j == 3);
+            GXSetTevAlphaOp(tevStage2, 0, 0, 0, 1, j == 3);
+            vcond2 = (j == 0);
             v33 = 0;
-            if (vcond) {
+            if (vcond2) {
                 v33 = 0xF;
             }
-            GXSetTevColorIn(tevStage, 0xF, 8, 0xE, v33);
-            if (vcond) {
+            GXSetTevColorIn(tevStage2, 0xF, 8, 0xE, v33);
+            if (vcond2) {
                 v34 = 7;
             } else {
                 v34 = 0;
             }
-            GXSetTevAlphaIn(tevStage, 7, 4, 6, v34);
-            GXSetTevSwapMode(tevStage, 0, 0);
-            texCoord++;
+            GXSetTevAlphaIn(tevStage2, 7, 4, 6, v34);
+            GXSetTevSwapMode(tevStage2, 0, 0);
+            texCoord2++;
             mtx2++;
-            tevStage++;
+            tevStage2++;
         }
         color.r = u->unk3;
         color.a = 0xFF;
         GXSetTevKColor(0, color);
-        GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
-        envDofBlendStageReg(tevStage, texCoord++);
-        GXSetTevOrder(tevStage + 1, 0xFF, 0xFF, 0xFF);
-        GXSetTevColorOp(tevStage + 1, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(tevStage + 1, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(tevStage + 1, 2, 0xF, 1, 0xF);
-        GXSetTevAlphaIn(tevStage + 1, 1, 7, 0, 7);
-        GXSetTevSwapMode(tevStage + 1, 0, 0);
-        tevStage += 2;
-        GXSetNumTexGens(texCoord);
-        GXSetNumTevStages(tevStage);
+        GXSetTexCoordGen2(texCoord2, 1, 4, 0x3C, 0, 0x7D);
+        envDofBlendStageReg(tevStage2, texCoord2++);
+        GXSetTevOrder(tevStage2 + 1, 0xFF, 0xFF, 0xFF);
+        GXSetTevColorOp(tevStage2 + 1, 0, 0, 0, 1, 0);
+        GXSetTevAlphaOp(tevStage2 + 1, 0, 0, 0, 1, 0);
+        GXSetTevColorIn(tevStage2 + 1, 2, 0xF, 1, 0xF);
+        GXSetTevAlphaIn(tevStage2 + 1, 1, 7, 0, 7);
+        GXSetTevSwapMode(tevStage2 + 1, 0, 0);
+        tevStage2 += 2;
+        GXSetNumTexGens(texCoord2);
+        GXSetNumTevStages(tevStage2);
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);
         {
             GXPosition3f32(-gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
