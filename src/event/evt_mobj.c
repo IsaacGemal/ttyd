@@ -82,17 +82,10 @@ extern const char str_802C3EAC[];
 
 // Read-only constants defined in this unit's .rodata (to be defined locally later)
 extern f32 float_0_8041a150;
-extern f32 float_12p5_8041a178;
-extern f32 float_1_8041a160;
-extern f32 float_0p5_8041a15c;
-extern f32 float_neg1_8041a214;
 extern f32 float_10_8041a1a4;
 extern f32 float_0p8_8041a1b0;
-extern f32 float_0p125_8041a1b4;
-extern f32 float_0p99_8041a1b8;
 extern const f32 float_1p4_8041a208;
 extern const f32 float_1p2_8041a20c;
-extern f32 float_5_8041a210;
 extern Vec vec3_802c3dc8[];
 extern Vec vec3_802c3dd4[];
 extern Vec vec3_802c40ac[];
@@ -102,27 +95,9 @@ extern Vec vec3_802c4050[];
 extern Vec vec3_802c405c[];
 extern u32 dat_8041a134;
 extern u32 dat_8041a130;
-extern f32 float_0p45_8041a1c4;
-extern f32 float_0p7_8041a1c8;
-extern f32 float_500_8041a1cc;
-extern f32 float_120_8041a1d0;
-extern f32 float_25_8041a140;
-extern f32 float_7p5_8041a1bc;
-extern f32 float_40_8041a1ec;
-extern f32 float_32767_8041a1e4;
 
 extern const char str_8041A12C[4];
 extern s32 evt_lock_sound[];
-extern f32 float_1024_8041a1a0;
-extern const f32 float_neg0p8_8041a220;
-extern const f32 float_4_8041a224;
-extern f32 float_30_8041a1a8;
-extern f32 float_60_8041a1ac;
-extern f32 float_1E05_8041a1d8;
-extern f32 float_42p42_8041a1dc;
-extern f32 float_0p6_8041a1e0;
-extern f32 float_300_8041a158;
-extern f32 float_2_8041a190;
 
 // Prototypes missing from manager/fontmgr.h
 
@@ -1592,7 +1567,7 @@ s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
         }
         case 0xb:
             img = imgNameToPtr(imgName, inBattle);
-            if (img->field_0x118 >= float_1_8041a160) {
+            if (img->field_0x118 >= 1.0f) {
                 obj->unk1DC = 0xc;
             }
             if (img->flags & 0x10000000) {
@@ -1664,10 +1639,10 @@ s32 mobj_float_blk(MapObjectEntry* obj) {
             if (*(s8*)&obj->unk1A0[0x18] == 0) {
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
 
-                distance = float_1_8041a160 + (f32)__fabs(obj->unk5C.y);
+                distance = 1.0f + (f32)__fabs(obj->unk5C.y);
                 if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                        obj->position.x, float_0p5_8041a15c + obj->position.y, obj->position.z,
-                                        float_0_8041a150, float_neg1_8041a214, float_0_8041a150) != 0) {
+                                        obj->position.x, 0.5f + obj->position.y, obj->position.z,
+                                        float_0_8041a150, (-1.0f), float_0_8041a150) != 0) {
                     if (strcmp(animPoseGetCurrentAnim(obj->poseId)->name, "S_1") != 0) {
                         animPoseSetAnim(obj->poseId, "S_1", 1);
                         obj->flags |= 2;
@@ -1763,10 +1738,10 @@ s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
     {
         f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
 
-        distance = float_1_8041a160 + (f32)__fabs(obj->unk5C.y);
+        distance = 1.0f + (f32)__fabs(obj->unk5C.y);
         if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                obj->position.x, float_0p5_8041a15c + obj->position.y, obj->position.z,
-                                float_0_8041a150, float_neg1_8041a214, float_0_8041a150) != 0) {
+                                obj->position.x, 0.5f + obj->position.y, obj->position.z,
+                                float_0_8041a150, (-1.0f), float_0_8041a150) != 0) {
             animPoseSetAnim(obj->poseId, "S_1", 1);
             obj->flags |= 2;
         } else {
@@ -1816,10 +1791,10 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 MapObjectEntry* child = mobjNameToPtr((const char*)&obj->unk1A0[0x18]);
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
 
-                distance = float_1_8041a160 + (f32)__fabs(child->unk5C.y);
+                distance = 1.0f + (f32)__fabs(child->unk5C.y);
                 if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                        child->position.x, float_0p5_8041a15c + child->position.y,
-                                        child->position.z, float_0_8041a150, float_neg1_8041a214,
+                                        child->position.x, 0.5f + child->position.y,
+                                        child->position.z, float_0_8041a150, (-1.0f),
                                         float_0_8041a150) != 0) {
                     if (evtCheckID(obj->eventId) != 0) {
                         anim = animPoseGetCurrentAnim(obj->poseId);
@@ -1912,7 +1887,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 obj->unk1DC = 0xa;
                 break;
             }
-            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+            if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
             if (*(s8*)&obj->unk1A0[0x18] != 0) {
@@ -1956,7 +1931,7 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 obj->unk1DC = 0;
                 break;
             }
-            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+            if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
             {
@@ -1988,10 +1963,10 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 MapObjectEntry* child = mobjNameToPtr((const char*)&obj->unk1A0[0x18]);
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
 
-                distance = float_1_8041a160 + (f32)__fabs(child->unk5C.y);
+                distance = 1.0f + (f32)__fabs(child->unk5C.y);
                 if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                        child->position.x, float_0p5_8041a15c + child->position.y,
-                                        child->position.z, float_0_8041a150, float_neg1_8041a214,
+                                        child->position.x, 0.5f + child->position.y,
+                                        child->position.z, float_0_8041a150, (-1.0f),
                                         float_0_8041a150) != 0) {
                     animPoseSetAnim(obj->poseId, str_8041A12C, 0);
                 } else {
@@ -2070,10 +2045,10 @@ s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
         MapObjectEntry* obj2 = mobjNameToPtr((char*)&obj->unk1A0[0x18]);
         HitEntry* hit;
         strcpy((char*)&obj2->unk1A0[0x18], obj->name);
-        distance = float_1_8041a160 + (f32)__fabs(obj2->unk5C.y);
+        distance = 1.0f + (f32)__fabs(obj2->unk5C.y);
         hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                             obj2->position.x, float_0p5_8041a15c + obj2->position.y,
-                             obj2->position.z, float_0_8041a150, float_neg1_8041a214,
+                             obj2->position.x, 0.5f + obj2->position.y,
+                             obj2->position.z, float_0_8041a150, (-1.0f),
                              float_0_8041a150);
         if ((s32)hit != 0) {
             animPoseSetAnim(obj->poseId, "S_1", 1);
@@ -2167,7 +2142,7 @@ s32 mobj_lock(MapObjectEntry* obj) {
         }
         case 3: {
             EventEntry* event = evtEntryType(evt_lock_sound, 0, 0, 0);
-            f32 scale = float_1024_8041a1a0;
+            f32 scale = 1024.0f;
 
             event->lwData[0] = (s32)(scale * obj->position.x) + 0xF24A7A80;
             event->lwData[1] = (s32)(scale * obj->position.y) + 0xF24A7A80;
@@ -2177,7 +2152,7 @@ s32 mobj_lock(MapObjectEntry* obj) {
             break;
         }
         case 4:
-            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+            if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
             obj->unk5C.y = 0.0f;
@@ -2190,21 +2165,21 @@ s32 mobj_lock(MapObjectEntry* obj) {
         case 5: {
             f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
 
-            distance = float_1_8041a160 + (f32)__fabs(obj->unk5C.y);
+            distance = 1.0f + (f32)__fabs(obj->unk5C.y);
             if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                               obj->position.x, float_1_8041a160 + obj->position.y, obj->position.z,
+                               obj->position.x, 1.0f + obj->position.y, obj->position.z,
                                float_0_8041a150, obj->unk5C.y, float_0_8041a150) != NULL) {
                 obj->position.y = hitY;
-                obj->unk5C.y *= float_neg0p8_8041a220;
+                obj->unk5C.y *= (-0.8f);
                 obj->unk6C += 1.0f;
-                if (obj->unk6C < float_4_8041a224) {
+                if (obj->unk6C < 4.0f) {
                     psndSFXOn_3D((const char*)0x1e6, &obj->position);
                 }
             } else {
                 obj->position.y += obj->unk5C.y;
                 obj->unk5C.y -= obj->unk68;
             }
-            if (obj->unk6C < float_4_8041a224) {
+            if (obj->unk6C < 4.0f) {
                 break;
             }
             if (evtCheckID(obj->eventId) != 1) {
@@ -2355,7 +2330,7 @@ s32 mobj_itembox(MapObjectEntry* obj) {
             Vec bboxMax;
             Vec bboxMin;
 
-            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+            if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
             if (obj->eventId != 0 && evtCheckID(obj->eventId) == 1) {
@@ -2375,7 +2350,7 @@ s32 mobj_itembox(MapObjectEntry* obj) {
             bboxMax = maxTmp;
             bboxMin.z = bboxMin.z - IB_F64(0x710, double_0p2_802c44d8, ((f64)0.2f)) * __fabsf(bboxMax.y - bboxMin.y);
             PSVECAdd(&bboxMax, &bboxMin, &obj->translation);
-            PSVECScale(&obj->translation, &obj->translation, float_0p5_8041a15c);
+            PSVECScale(&obj->translation, &obj->translation, 0.5f);
             PSVECScale(&obj->translation, &obj->translation, float_10_8041a1a4);
             obj->translation.y = float_0_8041a150;
             obj->scale2.y = obj->scale2.y * float_1p4_8041a208;
@@ -2469,7 +2444,7 @@ s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
         bboxMax = maxTmp;
         bboxMin.z = bboxMin.z - (f64)0.2f * __fabsf(bboxMax.y - bboxMin.y);
         PSVECAdd(&bboxMax, &bboxMin, &obj->translation);
-        PSVECScale(&obj->translation, &obj->translation, float_0p5_8041a15c);
+        PSVECScale(&obj->translation, &obj->translation, 0.5f);
         PSVECScale(&obj->translation, &obj->translation, float_10_8041a1a4);
         obj->translation.y = float_0_8041a150;
         obj->scale2.y = obj->scale2.y * float_1p4_8041a208;
@@ -2481,14 +2456,14 @@ s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
         f32 hitX;
         f32 hitY;
         f32 hitZ;
-        f32 distance = float_5_8041a210 + (f32)__fabs(obj->unk5C.y);
+        f32 distance = 5.0f + (f32)__fabs(obj->unk5C.y);
         f32 hitNX;
         f32 hitNY;
         f32 hitNZ;
 
         if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                           obj->position.x, float_1_8041a160 + obj->position.y, obj->position.z,
-                           float_0_8041a150, float_neg1_8041a214, float_0_8041a150) != NULL) {
+                           obj->position.x, 1.0f + obj->position.y, obj->position.z,
+                           float_0_8041a150, (-1.0f), float_0_8041a150) != NULL) {
             obj->flags |= 2;
             obj->flags &= ~0x40;
         }
@@ -2603,7 +2578,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
     switch (obj->unk1DC) {
         case -1:
             {
-                f32 y2 = float_25_8041a140;
+                f32 y2 = 25.0f;
                 y2 += obj->position.y;
                 *(EffectEntry**)((u8*)obj + 0x1C8) = effCoinFukidashiEntry(
                     0, *(s32*)&obj->unk1A0[4], 0,
@@ -2650,8 +2625,8 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
         case 3:
             if (*(s32*)((u8*)obj + 0x1B0) == 100) {
                 effStardustEntry(1, 0x1E, 0x3C, obj->position.x,
-                                 float_45_8041a1f4 + obj->position.y, obj->position.z,
-                                 float_50_8041a14c, float_50_8041a14c);
+                                 45.0f + obj->position.y, obj->position.z,
+                                 50.0f, 50.0f);
                 psndSFXOn_3D((const char*)0x1DB, &obj->position);
             }
             if (*(s32*)((u8*)obj + 0x1B0) == 100) {
@@ -2660,7 +2635,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
                 PouchPartyData* party = pouch->partyData;
 
                 effStardustEntry(2, 0x32, 0x64, mario->position.x, mario->position.y, mario->position.z,
-                                 float_50_8041a14c, float_50_8041a14c);
+                                 50.0f, 50.0f);
                 marioChgPose(str_8041A1F8);
                 pouch->currentHP = pouch->maximumHP;
                 pouch->currentFP = pouch->maximumFP;
@@ -2680,8 +2655,8 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
         case 4:
             if (*(s32*)((u8*)obj + 0x1B0) == 100) {
                 effStardustEntry(1, 0x1E, 0x3C, obj->position.x,
-                                 float_45_8041a1f4 + obj->position.y, obj->position.z,
-                                 float_50_8041a14c, float_50_8041a14c);
+                                 45.0f + obj->position.y, obj->position.z,
+                                 50.0f, 50.0f);
                 psndSFXOn_3D((const char*)0x1DB, &obj->position);
             }
             if (*(s32*)((u8*)obj + 0x1B0) == 100) {
@@ -2691,7 +2666,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
                 PouchPartyData* party = pouch->partyData;
 
                 effStardustEntry(2, 0x32, 0x64, mario->position.x, mario->position.y, mario->position.z,
-                                 float_50_8041a14c, float_50_8041a14c);
+                                 50.0f, 50.0f);
                 marioChgPose(str_8041A1F8);
                 pouch->currentHP = pouch->maximumHP;
                 pouch->currentFP = pouch->maximumFP;
@@ -2709,7 +2684,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             }
             break;
         case 5:
-            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+            if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
             animPoseSetAnim(obj->poseId, str_8041A118, 1);
@@ -2721,13 +2696,13 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             break;
         case 6:
             if (*(EffectEntry**)((u8*)obj + 0x1C8) == NULL) {
-                f32 y2 = float_25_8041a140;
+                f32 y2 = 25.0f;
                 y2 += obj->position.y;
                 *(EffectEntry**)((u8*)obj + 0x1C8) = effCoinFukidashiEntry(
                     0, *(s32*)&obj->unk1A0[4], 0,
                     obj->position.x, y2, obj->position.z - float_10_8041a1a4);
             }
-            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+            if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
             animPoseSetAnim(obj->poseId, str_8041A12C, 1);
@@ -2815,7 +2790,7 @@ s32 mobj_save_blk(MapObjectEntry* obj) {
             }
             break;
         case 1:
-            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+            if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
             animPoseSetAnim(obj->poseId, "S_1", 1);
@@ -2915,17 +2890,17 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
                     ItemEntry* item;
 #ifdef MUST_MATCH
                     // Two-step sum loads the 0.04 constant into f2 (the target's register) instead of f1.
-                    f32 y = float_40_8041a1ec;
+                    f32 y = 40.0f;
 
                     y += obj->position.y;
 #else
-                    f32 y = float_40_8041a1ec + obj->position.y;
+                    f32 y = 40.0f + obj->position.y;
 #endif
                     itemEntry(obj->name, (ItemType)(*(s32*)((u8*)obj + 0x1A0)), 4, obj->unk1E4, 0,
                               obj->position.x, y, obj->position.z);
                     item = itemNameToPtr(obj->name);
                     itemFlagOn(item, 0x10);
-                    *(f32*)((u8*)item + 0x80) = float_0p7_8041a1c8;
+                    *(f32*)((u8*)item + 0x80) = 0.7f;
                     *(f32*)((u8*)item + 0x84) = 1.0f;
                     *(s32*)((u8*)item + 0x88) = 0;
                     *(f32*)((u8*)item + 0x58) = 360.0f;
@@ -3063,7 +3038,7 @@ s32 mobj_powerupblk(MapObjectEntry* obj) {
                 (*(s32*)((u8*)obj + 0x1A4))--;
             } else {
                 itemForceGet(itemEntry(PB_BLK2, (ItemType)0x57, 0x11, -1, 0,
-                                       obj->position.x, float_40_8041a1ec + obj->position.y,
+                                       obj->position.x, 40.0f + obj->position.y,
                                        obj->position.z));
                 evtSetValue(NULL, obj->unk1E4, 1);
                 marioKeyOn();
@@ -3552,13 +3527,13 @@ void kururing_capture(CameraId cameraId, void* param) {
     cam->cameraPos = obj->position;
     t = (f32)tan(0.21816615760326385);
     cam->cameraPos.y += 0.5f * (f32)texHeight / t;
-    C_MTXPerspective(cam->projection, float_25_8041a140, (f32)(texWidth / texHeight),
-                     float_1_8041a160, float_32767_8041a1e4);
+    C_MTXPerspective(cam->projection, 25.0f, (f32)(texWidth / texHeight),
+                     1.0f, 32767.0f);
     cam->projType = GX_PERSPECTIVE;
     C_MTXLookAt(cam->view, &cam->cameraPos, &cam->cameraUp, &cam->cameraAt);
     GXSetProjection(cam->projection, cam->projType);
     GXSetViewport(float_0_8041a150, float_0_8041a150, (f32)texWidth, (f32)texHeight, float_0_8041a150,
-                  float_1_8041a160);
+                  1.0f);
     GXSetScissor(0, 0, texWidth, texHeight);
     test_kururing_mapdisp(cameraId);
     sysWaitDrawSync();
@@ -3608,14 +3583,14 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
             }
             f31 = distABf(mario->position.x, mario->position.z, obj->position.x, obj->position.z);
             if (__fabsf(mario->position.y - obj->position.y) > float_10_8041a1a4) {
-                f31 = float_1E05_8041a1d8;
+                f31 = 100000.0f;
             }
             if (obj->unk1E0 == 0x01000000) {
                 if (pouchGetJumpLv() < 2) {
                     flag = 0;
-                } else if (f31 < float_60_8041a1ac) {
+                } else if (f31 < 60.0f) {
                     flag = 2;
-                } else if (f31 < float_100_8041a148) {
+                } else if (f31 < 100.0f) {
                     flag = 1;
                 } else {
                     flag = 0;
@@ -3638,10 +3613,10 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
                     flag = 1;
                 }
             }
-            if (itemHitCheck(obj->position.x, obj->position.y, obj->position.z, float_42p42_8041a1dc) != NULL) {
+            if (itemHitCheck(obj->position.x, obj->position.y, obj->position.z, 42.420002f) != NULL) {
                 flag = 1;
             }
-            if (npcNearDistCheck(obj->position.x, obj->position.y, obj->position.z, float_42p42_8041a1dc) != NULL) {
+            if (npcNearDistCheck(obj->position.x, obj->position.y, obj->position.z, 42.420002f) != NULL) {
                 flag = 1;
             }
             if (flag == 0) {
@@ -3658,7 +3633,7 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
                 obj->unk1DC = 1;
                 item = itemNameToPtr(obj->name);
                 if (item == NULL || !(item->flags & 1)) {
-                    f32 y = float_30_8041a1a8;
+                    f32 y = 30.0f;
 
                     y += obj->position.y;
 #ifdef MUST_MATCH
@@ -3690,7 +3665,7 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
             animGetPtr()->poses[obj->poseId].flags |= 0x10;
             obj->flags |= 0x400;
             dispEntry(2, 0.0f, 0, kururing_capture, obj);
-            if (animPoseGetLoopTimes(obj->poseId) < float_1_8041a160) {
+            if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
             animGetPtr()->poses[obj->poseId].flags &= ~0x10;
@@ -3729,11 +3704,11 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
                     }
                 }
             }
-            item = itemNearDistCheck(obj->position.x, obj->position.y, obj->position.z, float_42p42_8041a1dc);
+            item = itemNearDistCheck(obj->position.x, obj->position.y, obj->position.z, 42.420002f);
             if (item != NULL) {
                 item->position.y = *(f32*)(posBuf + 0x10);
             }
-            if (animPoseGetLoopTimes(obj->poseId) < float_2_8041a190) {
+            if (animPoseGetLoopTimes(obj->poseId) < 2.0f) {
                 break;
             }
             animGetPtr()->poses[obj->poseId].flags &= ~0x10;
@@ -3939,10 +3914,10 @@ s32 mobj_koopa_ojama_blk_evt(MapObjectEntry* obj) {
             ItemEntry* item;
 
             psndSFXOn_3D((const char*)0x1C4, &obj->position);
-            effMObjBrokenEntry(5, obj->position.x, float_25_8041a140 + obj->position.y,
-                               float_25_8041a140 + obj->position.z);
+            effMObjBrokenEntry(5, obj->position.x, 25.0f + obj->position.y,
+                               25.0f + obj->position.z);
             if ((item = itemEntry(obj->name, (ItemType)0x59, 4, -1, (s32)kpa_powerup_evt,
-                                  obj->position.x, float_25_8041a140 + obj->position.y,
+                                  obj->position.x, 25.0f + obj->position.y,
                                   obj->position.z)) != NULL) {
                 itemStatusOn(item, 0x10);
                 itemFlagOn(item, 0x14);
@@ -4208,7 +4183,7 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
                             ItemEntry* item;
                             itemEntry(obj->name, (ItemType)(*(s32*)((u8*)obj + 0x1A0)), 4, -1,
                                       (s32)kpa_powerup_evt, obj->position.x,
-                                      float_12p5_8041a178 + obj->position.y, obj->position.z);
+                                      12.5f + obj->position.y, obj->position.z);
                             item = itemNameToPtr(obj->name);
                             itemStatusOn(item, 0x10);
                             itemFlagOn(item, 0x14);
@@ -4278,8 +4253,8 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
             break;
         case 0x5b:
             psndSFXOn_3D((const char*)0x1B8, &obj->position);
-            effMObjBrokenEntry(2, obj->position.x, float_12p5_8041a178 + obj->position.y,
-                               float_12p5_8041a178 + obj->position.z);
+            effMObjBrokenEntry(2, obj->position.x, 12.5f + obj->position.y,
+                               12.5f + obj->position.z);
             obj->unk1DC = 0x63;
             break;
         case 0x63:
@@ -4402,8 +4377,8 @@ s32 mobj_koopa_blk(MapObjectEntry* obj) {
             break;
         case 0xa:
             psndSFXOn_3D((const char*)0x1b8, &obj->position);
-            effMObjBrokenEntry(2, obj->position.x, float_12p5_8041a178 + obj->position.y,
-                                 float_12p5_8041a178 + obj->position.z);
+            effMObjBrokenEntry(2, obj->position.x, 12.5f + obj->position.y,
+                                 12.5f + obj->position.z);
             obj->unk1DC = 0x63;
             /* fall through */
         case 0x63:
@@ -4481,16 +4456,16 @@ s32 mobj_koopa_dokan_evt(MapObjectEntry* obj) {
             break;
         case 0xa:
             if (strcmp(obj->animName, "MOBJ_GreenPipe_ks") == 0) {
-                effMObjBrokenEntry(6, obj->position.x, float_25_8041a140 + obj->position.y,
-                                   float_25_8041a140 + obj->position.z);
+                effMObjBrokenEntry(6, obj->position.x, 25.0f + obj->position.y,
+                                   25.0f + obj->position.z);
             } else if (strcmp(obj->animName, "MOBJ_GreenPipe_kl") == 0) {
                 effMObjBrokenEntry(6, obj->position.x,
-                                   float_7p5_8041a1bc + (float_25_8041a140 + obj->position.y),
-                                   float_25_8041a140 + obj->position.z);
+                                   7.5f + (25.0f + obj->position.y),
+                                   25.0f + obj->position.z);
             } else {
-                effMObjBrokenEntry(6, obj->position.x - float_25_8041a140,
-                                   float_25_8041a140 + obj->position.y,
-                                   float_25_8041a140 + obj->position.z);
+                effMObjBrokenEntry(6, obj->position.x - 25.0f,
+                                   25.0f + obj->position.y,
+                                   25.0f + obj->position.z);
             }
             psndSFXOn_3D((const char*)0x834, &obj->position);
             obj->unk1DC = 0x63;
@@ -5046,7 +5021,7 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
             switch (kpaGetLevel()) {
                 case 0:
                 case 1:
-                    if (mario->position.y < float_25_8041a140) {
+                    if (mario->position.y < 25.0f) {
                         obj->flags &= ~8;
                     } else {
                         next = 0xa;
@@ -5089,11 +5064,11 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
             } else if (kpaGetLevel() >= 2) {
                 kpaAddScore(0x3e8);
             } else {
-                if (mario->position.y >= float_170_8041a144) {
+                if (mario->position.y >= 170.0f) {
                     score = 1000;
-                } else if (mario->position.y >= float_100_8041a148) {
+                } else if (mario->position.y >= 100.0f) {
                     score = 500;
-                } else if (mario->position.y >= float_50_8041a14c) {
+                } else if (mario->position.y >= 50.0f) {
                     score = 200;
                 } else {
                     score = 100;
@@ -5120,11 +5095,11 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
             } else if (kpaGetLevel() >= 2) {
                 kpaAddScore(0x3e8);
             } else {
-                if (mario->position.y >= float_170_8041a144) {
+                if (mario->position.y >= 170.0f) {
                     score = 1000;
-                } else if (mario->position.y >= float_100_8041a148) {
+                } else if (mario->position.y >= 100.0f) {
                     score = 500;
-                } else if (mario->position.y >= float_50_8041a14c) {
+                } else if (mario->position.y >= 50.0f) {
                     score = 200;
                 } else {
                     score = 100;
@@ -5255,67 +5230,21 @@ __declspec(section ".sdata2") const char str_8041A12C[4] = "S_1";
 __declspec(section ".sdata2") u32 dat_8041a130 = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 dat_8041a134 = 0xFFFFFFFF;
 __declspec(section ".sdata2") const char str_8041A138[4] = "_h\000";
-const f32 float_180_8041a13c = 180.0f;
-__declspec(section ".sdata2") f32 float_25_8041a140 = 25.0f;
-__declspec(section ".sdata2") f32 float_170_8041a144 = 170.0f;
-__declspec(section ".sdata2") f32 float_100_8041a148 = 100.0f;
-__declspec(section ".sdata2") f32 float_50_8041a14c = 50.0f;
 #pragma explicit_zero_data on  // keep the zero float_0 in .sdata2 (otherwise MWCC puts it in bss)
 __declspec(section ".sdata2") f32 float_0_8041a150 = 0.0f;
 #pragma explicit_zero_data reset
-const f32 float_230_8041a154 = 230.0f;
-__declspec(section ".sdata2") f32 float_300_8041a158 = 300.0f;
-__declspec(section ".sdata2") f32 float_0p5_8041a15c = 0.5f;
-__declspec(section ".sdata2") f32 float_1_8041a160 = 1.0f;
-const f32 float_175_8041a164 = 175.0f;
 __declspec(section ".sdata2") const char str_8041A168[8] = "%s%2x\000\000";
-const f32 float_150_8041a170 = 150.0f;
-const f32 float_deg2rad_8041a174 = 0.017453292f;
-__declspec(section ".sdata2") f32 float_12p5_8041a178 = 12.5f;
-const f32 float_neg1000_8041a17c = -1000.0f;
-const f32 float_200_8041a180 = 200.0f;
-const f32 float_6_8041a184 = 6.0f;
-const f32 float_75_8041a188 = 75.0f;
-const f32 float_4p8_8041a18c = 4.8f;
-__declspec(section ".sdata2") f32 float_2_8041a190 = 2.0f;
-const f32 float_0p04_8041a194 = 0.04f;
-const f32 float_3_8041a198 = 3.0f;
-const f32 float_0p2_8041a19c = 0.2f;
-__declspec(section ".sdata2") f32 float_1024_8041a1a0 = 1024.0f;
 __declspec(section ".sdata2") f32 float_10_8041a1a4 = 10.0f;
-__declspec(section ".sdata2") f32 float_30_8041a1a8 = 30.0f;
-__declspec(section ".sdata2") f32 float_60_8041a1ac = 60.0f;
 __declspec(section ".sdata2") f32 float_0p8_8041a1b0 = 0.8f;
-__declspec(section ".sdata2") f32 float_0p125_8041a1b4 = 0.125f;
-__declspec(section ".sdata2") f32 float_0p99_8041a1b8 = 0.99f;
-__declspec(section ".sdata2") f32 float_7p5_8041a1bc = 7.5f;
 __declspec(section ".sdata2") const char str_8041A1C0[4] = "S_2";
-__declspec(section ".sdata2") f32 float_0p45_8041a1c4 = 0.45f;
-__declspec(section ".sdata2") f32 float_0p7_8041a1c8 = 0.7f;
-__declspec(section ".sdata2") f32 float_500_8041a1cc = 500.0f;
-__declspec(section ".sdata2") f32 float_120_8041a1d0 = 120.0f;
-const f32 float_0p1_8041a1d4 = 0.1f;
-__declspec(section ".sdata2") f32 float_1E05_8041a1d8 = 100000.0f;
-__declspec(section ".sdata2") f32 float_42p42_8041a1dc = 42.420002f;
-__declspec(section ".sdata2") f32 float_0p6_8041a1e0 = 0.6f;
-__declspec(section ".sdata2") f32 float_32767_8041a1e4 = 32767.0f;
 __declspec(section ".sdata2") const char str_8041A1E8[4] = "S_3";
-__declspec(section ".sdata2") f32 float_40_8041a1ec = 40.0f;
-const f32 float_360_8041a1f0 = 360.0f;
-__declspec(section ".sdata2") f32 float_45_8041a1f4 = 45.0f;
 __declspec(section ".sdata2") const char str_8041A1F8[8] = "M_I_1";
 __declspec(section ".sdata2") const char str_8041A200[8] = "M_S_1";
 const f32 float_1p4_8041a208 = 1.4f;
 const f32 float_1p2_8041a20c = 1.2f;
-__declspec(section ".sdata2") f32 float_5_8041a210 = 5.0f;
-__declspec(section ".sdata2") f32 float_neg1_8041a214 = -1.0f;
 __declspec(section ".sdata2") const char str_8041A218[4] = "S_4";
 __declspec(section ".sdata2") const char str_8041A21C[4] = "Z_1";
-const f32 float_neg0p8_8041a220 = -0.8f;
-const f32 float_4_8041a224 = 4.0f;
 __declspec(section ".sdata2") f32 float_0p9_8041a228 = 0.9f;
-const f32 float_15_8041a22c = 15.0f;
-const f32 float_0p3_8041a230 = 0.3f;
 __declspec(section ".sdata2") const char str_8041A234[4] = "me\000";
 
 // .sdata
