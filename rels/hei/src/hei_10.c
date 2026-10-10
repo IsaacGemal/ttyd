@@ -38,90 +38,6 @@ static f32 randf(f32 min, f32 max);
 
 static HeiExtWork* wp;
 
-// Inline degree/radian sine and cosine approximations (same polynomials used by
-// the npc blur path). Assigning the coefficients to non-const locals first
-// (rather than using the literals directly) stops MWCC rematerialising them in
-// every branch, which recovers most of both callers.
-static inline f32 heiSinf(f32 rad) {
-    f32 c0, c1, c2, pi;
-    f32 f0, f1, sinv;
-
-    c0 = 0.00761f;
-    c1 = 0.16605f;
-    c2 = 1.0f;
-    pi = 3.1415927f;
-    sinv = c0;
-    if (rad <= pi) {
-        if (rad <= 1.5707964f) {
-            f0 = rad * rad;
-            sinv = sinv * f0 - c1;
-            sinv = sinv * f0 + c2;
-            sinv = sinv * rad;
-        } else {
-            f0 = rad - 1.5707964f;
-            f1 = 1.5707964f - f0;
-            f0 = f1 * f1;
-            sinv = sinv * f0 - c1;
-            sinv = sinv * f0 + c2;
-            sinv = sinv * f1;
-        }
-    } else if (rad < 4.712389f) {
-        f1 = rad - pi;
-        f0 = f1 * f1;
-        sinv = sinv * f0 - c1;
-        sinv = sinv * f0 + c2;
-        sinv = sinv * f1;
-        sinv = -sinv;
-    } else {
-        f0 = rad - 4.712389f;
-        f1 = 1.5707964f - f0;
-        f0 = f1 * f1;
-        sinv = sinv * f0 - c1;
-        sinv = sinv * f0 + c2;
-        sinv = sinv * f1;
-        sinv = -sinv;
-    }
-    return sinv;
-}
-
-static inline f32 heiCosf(f32 rad) {
-    f32 c0, c1, c2, pi;
-    f32 f0, cosv;
-
-    c0 = 0.03705f;
-    c1 = 0.4967f;
-    c2 = 1.0f;
-    pi = 3.1415927f;
-    cosv = c0;
-    if (rad <= pi) {
-        if (rad <= 1.5707964f) {
-            f0 = rad * rad;
-            cosv = cosv * f0 - c1;
-            cosv = cosv * f0 + c2;
-        } else {
-            f0 = rad - 1.5707964f;
-            f0 = 1.5707964f - f0;
-            f0 = f0 * f0;
-            cosv = cosv * f0 - c1;
-            cosv = cosv * f0 + c2;
-            cosv = -cosv;
-        }
-    } else if (rad < 4.712389f) {
-        f0 = rad - pi;
-        f0 = f0 * f0;
-        cosv = cosv * f0 - c1;
-        cosv = cosv * f0 + c2;
-        cosv = -cosv;
-    } else {
-        f0 = rad - 4.712389f;
-        f0 = 1.5707964f - f0;
-        f0 = f0 * f0;
-        cosv = cosv * f0 - c1;
-        cosv = cosv * f0 + c2;
-    }
-    return cosv;
-}
-
 // clang-format off
 extend_data(44,
      u64, negone_one, 0xBF8000003F800000,
@@ -171,6 +87,22 @@ static ExtEntry ext_data[21] = {
     { "c_chorobon", "CBN_W_1", 38.0f },
     { NULL, NULL, 0.0f },
 };
+// randf's scaling step, for the sites in ext_main that draw the rand() fraction ahead of its use.
+static inline f32 randScale(f32 t, f32 min, f32 max) {
+    return t * (max - min) + min;
+}
+
+// randf's first step, the rand() fraction in [0, 1].
+static inline f32 frand(void) {
+    f32 r = (f32)rand() / 32767.0f;
+
+    return r;
+}
+
+static inline f32 randRange(f32 min, f32 max) {
+    return max - min;
+}
+
 static f32 randf(f32 min, f32 max) {
     f32 r = (f32)rand() / 32767.0f;
 
@@ -228,8 +160,12 @@ static void ext_shadow_disp(void) {
     extDrawShadow();
 }
 
-void chb_jump(ExtPose* pose, HeiExtEntry* entry, s16 field24, f32 x, f32 y, f32 z, f32 v1, f32 v2) {
-    Vec pos = { 0 };
+const Vec vec3_hei_00007a34 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_hei_00007a40 = {0.0f, 0.0f, 0.0f};
+const Vec vec3_hei_00007a4c = {0.0f, 0.0f, 0.0f};
+
+void chb_jump(ExtPose* pose, HeiExtEntry* entry, f32 x, f32 y, f32 z, f32 v1, f32 v2, s16 field24) {
+    Vec pos = vec3_hei_00007a34;
     f32 dy;
     f32 dist;
     s32 frames;
@@ -250,44 +186,20 @@ void chb_jump(ExtPose* pose, HeiExtEntry* entry, s16 field24, f32 x, f32 y, f32 
     entry->field_0x24 = field24;
 }
 
+static inline void chbJumpRand(ExtPose* pose, HeiExtEntry* entry, f32 x, f32 y, f32 z, f32 a, f32 lo1, f32 hi1, f32 b,
+                               f32 lo2, f32 hi2, s16 state) {
+    chb_jump(pose, entry, x, y, z, a * (hi1 - lo1) + lo1, b * (hi2 - lo2) + lo2, state);
+}
+
+static inline void chbJumpRand2(ExtPose* pose, HeiExtEntry* entry, f32 x, f32 y, f32 z, f32 k, f32 a, f32 lo1, f32 hi1,
+                                f32 b, f32 lo2, f32 hi2, s16 state) {
+    chb_jump(pose, entry, x, y, z, k * (a * (hi1 - lo1) + lo1), b * (hi2 - lo2) + lo2, state);
+}
+
 // Inline degree->radian used by ext_main (the original inlines pi*deg/180).
 static inline f32 heiDeg2Rad(f32 deg) {
     return 3.1415927f * deg / 180.0f;
 }
-// Structure, the switch dispatch, the case ordering, the clamp guard and the
-// inlined sin/cos blocks match the original. Source spellings the original
-// needs:
-//  - case 1's range test is `if (dist < 800.0f) { ... } else { state = 99; }`
-//    (an early-return would make MWCC emit the NaN-safe cror eq,gt,eq form);
-//  - the trailing clamp guard is `switch (entry->state)` with `case 1: break;`
-//    before `case 0:` so MWCC emits the original's two-compare range test;
-//  - the jitter is `+ -45.0f` (loads float_neg45 and contracts to fmadds);
-//  - case 0's `a` is `aR * 0.19999999f + 0.3f` for float_0p2_hei_00007bec,
-//    and case 1's field_0x1C uses 0.20000005f (float_0p2_hei_00007c08);
-//    plain 0.2f shifts .rodata;
-//  - case 0 calls chb_jump, which MWCC inlines: the original inlines it in both cases (retail
-//    reads chb_jump's zero template vec3_hei_00007a34 three times: chb_jump, case 0, case 1).
-//    Case 1 still spells the body out (as a call, with its v1/v2 arguments, it scores 93.00 but
-//    gets the three 7a34 references and the sfxPos template at 7a40 right; retail's 7a4c is
-//    unreferenced). Case 1's `Vec pos = { 0 }` and `Vec sfxPos = { 0 }` keep their
-//    initialisers, and its copy must sit in its own `{ }` block or MWCC sinks it;
-//  - case 1's `field_0x20 = zero * b + 0.8f` needs a block-local `zero` so the
-//    original's zero_hei_00007b88 load and fmadds survive (a literal folds);
-//  - case 0x64 keeps `matrix[2][3] += field_0x1C * -cosv` (fneg + fmadds, not
-//    fnmsubs) and updates matrix[0][3] before heiCosf;
-//  - the inlined randf calls are unfolded by hand so the normalised
-//    rand()/32767 survives the next rand() call in a callee-saved FPR;
-//  - `oldState` is declared at function scope first;
-//  - heiSinf/heiCosf reuse `rad` as the reduced angle and spell the reduction
-//    `1.5707964f - (rad - 1.5707964f)`: that is what colours the 1p5708 pivot
-//    into f1 and the accumulator seed into f6/f4 like the original;
-//  - the loop header increments `pose++, entry++, i++`, not the original
-//    `i++, pose++, entry++` (worth 0.02%).
-// What is left: MWCC's allocator still keeps pz/aR swapped (f28/f29) through
-// the case-0 rand calls, slots the case-0/case-1 Vec temporaries at 0x8/0x20
-// (the original's 0x14/0x8), reads the case-0 `deg` fmadd
-// with its operands the other way round, and spills the sfx address through r0
-// (`mr r28, r0`). Allocator work, no source-shape fix left.
 static inline f32 heiSin2(f32 angle) {
     f32 v = 0.00761f;
     f32 b = 0.16605f;
@@ -320,135 +232,71 @@ static inline f32 heiCos2(f32 angle) {
     return v;
 }
 
-#pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
-extern const f32 float_360_hei_00007b94;
-// NONMATCHING (93.69%): MWCC FPR/GPR allocation and instruction scheduling (notes above heiSin2).
+#pragma opt_propagation off // stop MWCC rematerialising the heiSin2/heiCos2 coefficients per branch
+#pragma opt_lifetimes off
 static void ext_main(void) {
-    s16 oldState;
+#ifdef MUST_MATCH
+    union { const char* p; u32 u; } sfx;
+#else
     const char* sfx;
+#endif
     MarioWork* mario;
     s32 i;
     ExtPose* pose;
     HeiExtEntry* entry;
+    Vec sfxOut;
+    Vec sfxPos;
 
     mario = marioGetPtr();
     pose = extGetPosePtr();
     entry = wp->entries;
+#ifdef MUST_MATCH
+    sfx.p = "SFX_STG1_CHORO_ESCAPE1";
+#else
     sfx = "SFX_STG1_CHORO_ESCAPE1";
+#endif
 
-    for (i = 0; i < wp->count; pose++, entry++, i++) {
+    for (i = 0; i < wp->count; i++, pose++, entry++) {
         switch (entry->state) {
         case 0: {
-#ifdef MUST_MATCH
-            // The original's inlined randf(0,360) keeps the normalised
-            // rand()/32767 in a callee-saved FPR across the following rand()
-            // call, and folds the `*360+0` scaling in after it. Unfold by hand.
-            f32 degR = (f32)rand() / 32767.0f;
-            f32 speed = randf(4.0f, 7.0f);
-            f32 zero = 0.0f;
-            f32 deg = degR * float_360_hei_00007b94 + zero;
-#else
-            f32 deg = randf(0.0f, 360.0f);
-            f32 speed = randf(4.0f, 7.0f);
-#endif
-            f32 rad = heiDeg2Rad(deg);
-            f32 sinv = heiSinf(rad);
-            f32 py = (*pose->matrix)[1][3];
-            f32 px = speed * sinv + (*pose->matrix)[0][3];
-            f32 cosv = heiCosf(rad);
-            f32 pz = (*pose->matrix)[2][3] - speed * cosv;
-#ifdef MUST_MATCH
-            f32 aR = (f32)rand() / 32767.0f;
-            f32 bR = (f32)rand() / 32767.0f;
-            f32 a = aR * 0.19999999f + 0.3f;
-            f32 b = bR * 0.3f + 0.5f;
-#else
-            f32 a = randf(0.3f, 0.5f);
-            f32 b = randf(0.5f, 0.8f);
-#endif
-            chb_jump(pose, entry, entry->state, px, py, pz, a, b);
+            f32 speed, degR, aR, bR, rad, py, pz, deg, px;
+
+            degR = frand();
+            speed = randf(4.0f, 7.0f);
+            deg = randScale(degR, 0.0f, 360.0f);
+            rad = heiDeg2Rad(deg);
+            px = speed * heiSin2(rad) + (*pose->matrix)[0][3];
+            py = (*pose->matrix)[1][3];
+            pz = -(speed * heiCos2(rad) - (*pose->matrix)[2][3]);
+            aR = frand();
+            bR = frand();
+            chbJumpRand(pose, entry, px, py, pz, aR, 0.3f, 0.5f, bR, 0.5f, 0.8f, entry->state);
         } break;
         case 1: {
-            f32 dist = distABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
-            f32 r;
-            f32 dir;
-            f32 rad;
-            f32 speed;
-            f32 sinv;
-            f32 py;
-            f32 cosv;
-            f32 pz;
-            f32 a;
-            f32 px;
-            f32 b;
-            f32 dy;
-            s32 frames;
+            f32 pz, speed, rad, py, dist, a, px, b, dir;
 
+            dist = distABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]);
             if (dist < 800.0f) {
-#ifdef MUST_MATCH
-            // The original folds randf(0,1)'s "*1+0" away here; propagation is
-            // off for the sin/cos coefficients, so spell the division out.
-            r = (f32)rand() / 32767.0f;
-#else
-            r = randf(0.0f, 1.0f);
-#endif
-            // Spelling the jitter as `+ -45.0f` makes MWCC load float_neg45 and
-            // contract to fmadds, matching the original's pool entry; the natural
-            // `- 45.0f` instead pools float_45 and emits fmsubs.
-            dir = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]) + (r * 90.0f + -45.0f);
+            a = frand();
+            dir = angleABf(mario->position.x, mario->position.z, (*pose->matrix)[0][3], (*pose->matrix)[2][3]) +
+                  (a * randRange(-45.0f, 45.0f) + -45.0f);
             speed = randf(15.0f, 20.0f);
             rad = heiDeg2Rad(dir);
-            sinv = heiSinf(rad);
-            px = speed * sinv + (*pose->matrix)[0][3];
+            px = speed * heiSin2(rad) + (*pose->matrix)[0][3];
             py = (*pose->matrix)[1][3];
-            cosv = heiCosf(rad);
-            pz = (*pose->matrix)[2][3] - speed * cosv;
-#ifdef MUST_MATCH
-            a = (f32)rand() / 32767.0f;
-            b = (f32)rand() / 32767.0f;
-#else
-            a = randf(0.0f, 1.0f);
-            b = randf(0.0f, 1.0f);
-#endif
-            {
-                Vec pos = { 0 };
-
-                pos.x = px;
-                pos.y = py;
-                pos.z = pz;
-                oldState = entry->state;
-                entry->position = pos;
-            }
-            entry->field_0x1C = 2.0f * (1.0f + 0.20000005f * a);
-            {
-                f32 zero = 0.0f;
-
-                entry->field_0x20 = zero * b + 0.8f;
-            }
-            dy = entry->position.y - (*pose->matrix)[1][3];
-            dist = distABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
-            angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
-            frames = (s32)(dist / entry->field_0x1C);
-            entry->field_0x18 = frames;
-            entry->field_0x14 = entry->field_0x20 * (f32)(s16)entry->field_0x18 / 2.0f + dy / (f32)(s16)entry->field_0x18;
-            entry->state = 0x64;
-            entry->field_0x24 = oldState;
+            pz = -(speed * heiCos2(rad) - (*pose->matrix)[2][3]);
+            a = frand();
+            b = frand();
+            chbJumpRand2(pose, entry, px, py, pz, 2.0f, a, 1.0f, 1.2f, b, 0.8f, 0.8f, entry->state);
             if (rand() % 150 == 0) {
-#ifdef MUST_MATCH
-                // The original builds the position then copies it to a second
-                // Vec before the call (MWCC by-value argument copy).
-                Vec sfxPos = { 0 };
-                Vec sfxOut;
-#else
-                Vec sfxPos = { 0 };
-#endif
+                sfxPos = vec3_hei_00007a40;
 
                 sfxPos.x = (*pose->matrix)[0][3];
                 sfxPos.y = (*pose->matrix)[1][3];
                 sfxPos.z = (*pose->matrix)[2][3];
 #ifdef MUST_MATCH
                 sfxOut = sfxPos;
-                psndSFXOn_3D(sfx, &sfxOut);
+                psndSFXOn_3D((const char*)(u32)sfx.p, &sfxOut);
 #else
                 psndSFXOn_3D(sfx, &sfxPos);
 #endif
@@ -469,9 +317,9 @@ static void ext_main(void) {
             entry->field_0x14 -= entry->field_0x20;
             angle = angleABf((*pose->matrix)[0][3], (*pose->matrix)[2][3], entry->position.x, entry->position.z);
             rad = 3.1415927f * angle / 180.0f;
-            sinv = heiSinf(rad);
+            sinv = heiSin2(rad);
             (*pose->matrix)[0][3] += entry->field_0x1C * sinv;
-            cosv = heiCosf(rad);
+            cosv = heiCos2(rad);
             (*pose->matrix)[2][3] += entry->field_0x1C * -cosv;
             if (--entry->field_0x18 < 0) {
                 (*pose->matrix)[0][3] = entry->position.x;
@@ -506,6 +354,7 @@ static void ext_main(void) {
         }
     }
 }
+#pragma opt_lifetimes reset
 #pragma opt_propagation reset
 static void ext_dispent(void) {
     dispEntry(4, 0.0f, 1, ext_disp, NULL);
@@ -547,7 +396,7 @@ const Vec vec3_hei_00007a70 = {0.0f, 0.0f, 0.0f};
 
 // Hops an npc to (x, y, z) over a frame count: userdata holds the frames left, the vertical velocity and the speed.
 #pragma opt_lifetimes off
-#pragma opt_propagation off // stop MWCC rematerialising the heiSinf/heiCosf coefficients per branch
+#pragma opt_propagation off // stop MWCC rematerialising the heiSin2/heiCos2 coefficients per branch
 static USER_FUNC(npc_jump) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
