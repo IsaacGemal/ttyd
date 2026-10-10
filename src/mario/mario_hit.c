@@ -1517,12 +1517,12 @@ static inline HitEntry* marioHitCheckVecOut(Vec* a, Vec* b, Vec* c, Vec* d, f32*
 
 
 // Older landing check (the Koopa-aware ground probe): same five-sample ring as marioChkLandon2 but the ray points
-// down from 0.75 * height and the accepted hit y is returned rounded to 0.01.
-// The hit's y and normal are read into locals straight after the probe, before the NULL test: the original loads all
-// four into saved FPRs there and reuses 100 * ny across both angleABf calls.
-// NONMATCHING (95.09%): same 15 calls; the original also keeps 100 * ny in a saved FPR across the two angleABf calls,
-// which gndAngle cannot (frame 0x1f0 vs 0x200). An explicit ny100 local with plain reads was worse. Compares: fabs(...) < 0.1 and the rounding
-// tests (cror eq,gt -> >=) checked against the asm.
+// down from 0.75 * height and the accepted hit y is returned rounded to 0.01. The hit's y and normal are read into
+// locals straight after the probe; the explicit ny100 local keeps 100 * ny in a saved FPR across both angleABf calls.
+// The original shares one 100.0 load between the first gndCenti's rounding and the second angleABf's 100 * nx
+// argument; MATCH_F32's volatile read cannot share it, so ours emits one extra lfs, and the rest is FPR colouring in
+// the sample ring. Compares: fabs(...) < 0.1 and the rounding tests (cror eq,gt -> >=) checked against the asm.
+// NONMATCHING (96.89%): same 15 calls and the same 0x200 frame; one extra lfs plus FPR colouring.
 void* marioLandonChk_old(f32* pos, f32 spd) {
     MarioWork* wp = marioGetPtr();
     Vec dir;
@@ -1530,28 +1530,29 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
     Vec hitPos;
     Vec normal;
     HitEntry* hit;
-    f32 dist;
-    f32 fa;
     f32 h;
+    f32 d0;
+    f32 pz;
+    f32 yy;
+    f32 fa;
+    f32 px;
     f32 rad;
+    f32 ang;
     f32 angle;
     f32 f20;
     f32 f19;
-    f32 yy;
-    f32 d0;
-    f32 px;
-    f32 pz;
+    f32 py;
+    f32 ny100;
+    f32 ny;
+    f32 nz;
     f32 ox;
     f32 oz;
-    f32 ang;
+    f32 hy;
+    f32 dist;
+    f32 nx;
     f32 gy;
     f32 gx;
     f32 gz;
-    f32 nx;
-    f32 ny;
-    f32 nz;
-    f32 hy;
-    f32 py;
     s32 i;
     void* r;
 
@@ -1619,11 +1620,13 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
         ny = normal.y;
         nz = normal.z;
         if (hit != NULL) {
-            MarioWork* wp2 = marioGetPtr();
+            MarioWork* wp2;
 
-            *(f32*)((u8*)wp2 + 0x218) = gndCenti(gndAngle(nz, ny) - float_180_8041a7cc);
+            wp2 = marioGetPtr();
+            ny100 = float_100_8041a7f8 * ny;
+            *(f32*)&wp2->field_0x1F0[0x28] = gndCenti(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * nz, ny100) - float_180_8041a7cc);
             *(f32*)((u8*)wp2 + 0x21C) = float_0_8041a7a4;
-            *(f32*)((u8*)wp2 + 0x220) = gndCenti(gndAngle(nx, ny) - float_180_8041a7cc);
+            *(f32*)&wp2->field_0x1F0[0x30] = gndCenti(angleABf(float_0_8041a7a4, float_0_8041a7a4, float_100_8041a7f8 * nx, ny100) - float_180_8041a7cc);
             ang = angleABf(float_0_8041a7a4, float_0_8041a7a4, (f32)sqrtf(nx * nx + nz * nz), -ny);
             *(f32*)((u8*)wp + 0x214) = ang;
             if (__fabsf(LND_CENTI((yy - hy) - dist)) < float_0p1_8041a7e4) {
