@@ -33,6 +33,8 @@
 #include "driver/animdrv.h"
 #include "driver/itemdrv.h"
 
+#pragma pool_data on
+
 #define fpclassify(x) __fpclassifyf(x)
 #define isnan(x) (fpclassify(x) == FP_NAN)
 
@@ -3818,27 +3820,29 @@ USER_FUNC(btlevtcmd_DispItemIcon) {
 // folds differently as a result. Reusing isFirstCall for currentKind did not change the allocation.
 USER_FUNC(btlevtcmd_CommandFlyItem) {
     s32* args = event->args;
+    u8* tbl;
+    s32 btlId;
+    s32 rawId;
     BattleWork* wp;
     BattleUnit* unit;
-    s32 btlId;
     s32 count;
     s32 itemId;
+    s32 kind;
     Vec pos;
-#ifdef MUST_MATCH
-    const char* base = (const char*)&vec3_802ede88;
-#endif
 
-    btlId = evtGetValue(event, args[0]);
+    rawId = evtGetValue(event, args[0]);
     count = evtGetValue(event, args[1]);
-    btlId = BattleTransID(event, btlId);
+    btlId = BattleTransID(event, rawId);
     if (isFirstCall) {
         wp = _battleWorkPointer;
+        tbl = (u8*)wp + 0x171C;
         unit = BattleGetUnitPtr(wp, btlId);
-        isFirstCall = unit->currentKind;
-        if (isFirstCall == 0xDE || (isFirstCall >= 0xE0 && isFirstCall < 0xE7)) {
-            u8* tbl = (u8*)&wp->commandMenu;
-        s32* cmd = (s32*)(tbl + wp->commandMenu.cursor[11].field_0 * 0x1C);
-            itemId = cmd[0x94 / 4];
+        kind = unit->currentKind;
+        if (kind == 0xDE || (kind >= 0xE0 && kind < 0xE7)) {
+            u8* base2 = tbl;
+            s32 idx = *(s32*)(tbl + 0x51C);
+            base2 += idx * 0x1C;
+            itemId = *(s32*)(base2 + 0x94);
         } else {
             itemId = unit->heldItem;
         }
@@ -3853,13 +3857,13 @@ USER_FUNC(btlevtcmd_CommandFlyItem) {
             }
         }
         event->userdata[1] = (s32)itemEntry(NULL, (ItemType)itemId, 0x11, -1, 0, pos.x, pos.y, pos.z);
-        effItemGetEntry(0xA, pos.x, pos.y + float_12_8041bffc, pos.z - float_5_8041bff8);
-        if (isFirstCall == 0xDE) {
-            psndSFXOn_3D(ACSE_STR(0x2F0, str_802EE178), &pos);
-        } else if (isFirstCall >= 0xE0 && isFirstCall < 0xE7) {
-            psndSFXOn_3D(ACSE_STR(0x304, str_802EE18C), &pos);
+        effItemGetEntry(0xA, pos.x, float_12_8041bffc + pos.y, pos.z - float_5_8041bff8);
+        if (kind == 0xDE) {
+            psndSFXOn_3D("SFX_ITEM_MARIO_USE1", &pos);
+        } else if (kind >= 0xE0 && kind < 0xE7) {
+            psndSFXOn_3D("SFX_ITEM_PARTY_USE1", &pos);
         } else {
-            psndSFXOn_3D(ACSE_STR(0x318, str_802EE1A0), &pos);
+            psndSFXOn_3D("SFX_ENM_ITEM_USE1", &pos);
         }
         return EVT_RETURN_BLOCK;
     }
