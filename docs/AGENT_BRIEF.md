@@ -172,6 +172,11 @@ When instructions match and registers or scheduling do not, the source form is u
   swap).  A struct whose address is never taken is scalarised and its fields are numbered by *first write*, not field
   order (`v.z = ..; v.x = ..;` puts `z` in f31); plain scalars follow declaration order. If the target's registers are a rotation of
   yours, permute declaration order first, or replace such a struct with scalars declared in write order.
+- **Shared versus per-block locals moves registers in real functions,** although splitting a reused local did nothing in
+  the minimal repro below: one set of locals over three passes (chain_main 99.93 -> 100, #606), loops sharing `i` and `extPose`
+  (unit_boss_moamoa #618), one function-scope `theta/s/rad/c` (effKamekiTornadeDisp #659), a macro expanded into blocks with
+  retail's variable reuse (mario_main_func #661). The opposite also happens: a value the original keeps apart needs its own
+  variable (`base = index + i * 7`, evt_puni_set_lsw_index #648). Try both.
 - **Allocator model and levers (from MarkMcCaskey/decomp-scripts `mwcc-compiler-notes.md`, MIT; written for GC/1.2.5, checked on GC/2.6
   with small repros and mwccdbg/rasim):** the allocator is Chaitin with Briggs-style optimistic colouring, per class in the order
   vector, GPR, FPR. Copy coalescing is aggressive and the LOWER-numbered web survives; liveness and dead-definition elimination run
@@ -184,7 +189,8 @@ When instructions match and registers or scheduling do not, the source form is u
   computation (`a2 = a + z`) is a new web and costs one more callee-saved register.
   *Did not move anything in a minimal repro on 2.6:* a plain copy local (`T* q = p;`, `int a2 = a;`, declared before or after, with
   or without an initialiser: identical code to the uncopied form, the copy is propagated away before allocation); declaration with
-  initialiser vs separate assignment; splitting a reused local when the two lives do not overlap. His "initialiser-bearing pointer
+  initialiser vs separate assignment; splitting a reused local when the two lives do not overlap (in real functions it does move
+  registers: see "Shared versus per-block locals" above). His "initialiser-bearing pointer
   local" lever therefore needs a copy that survives propagation (a loop-carried pointer, an address used by several blocks, or a
   `+ zero` alias as in tou_gamen_screen_tev); try it on the real function and check mwccdbg for the vreg, not the register.
   `int` vs `u16` changes emitted code (a `clrlwi`), so it is a lowering lever, not a pure allocator one. Wrapping a local in a
@@ -205,6 +211,9 @@ When instructions match and registers or scheduling do not, the source form is u
   the sign-extend round trip leaves a value the scheduler orders against, then the backend folds it away). A ternary
   (`name ? name : name`) also pins it but leaves a dead `cmplwi`; `name + 0`, a `u32` cast, `(0, name)` and a local copy
   are folded too early to help. Under MUST_MATCH, with the plain use in `#else`.
+- **Reuse the parameter for a result the original overwrites it with.** `angle = compAngle(0.0f, angle); angle += 45.0f;`
+  instead of new locals puts the sum in angle's f2 (_get_angle_rate 99.20 -> 100, #607). A copy of a parameter never
+  outranks a named local, but reassigning the parameter itself makes it the web the original has.
 
 - **`int` vs `s32` locals (from tw2004, CC0):** they are different types to the front end. For an `int` local, `n += 3` is folded into every
   later use (`addi r3, rN, 3` at each call and compare); for an `s32`/`long` local it stays one in-place `addi rN, rN, 3` followed by plain
@@ -212,6 +221,9 @@ When instructions match and registers or scheduling do not, the source form is u
   The same choice moves loop hoisting and unroll guards (an `s32` counter keeps the `li 0; cmpwi; bge` guard that `int` folds away).
 - **Two-value choices:** `h = (n == 2) ? 6 : 7` compiles branch-free (`subi/nor/srawi`); `h = 7; if (n == 2) h = 6;` compiles to `cmpwi / li /
   bnelr / li`. A `li; bne; li` in the target is the second form.
+- **Enum constants keep the branch that plain integer constants lose:** `equipped ? 0x1C : 0x1D` compiles branch-free
+  (`cntlzw`); `equipped ? WIN_TEX_BP_ON : WIN_TEX_BP_OFF` with enum constants keeps retail's branch (badge_disp 97.47 -> 100,
+  #657).
 - **Evaluation order:** on 2.6 the right operand of a comparison or an addition, and the last argument of a call, is evaluated first
   (`f(0) < f(1)` and `f(0) + f(1)` call `f(1)` first; `use(g(), h())` calls `h()` first). The call order in the target tells you how the
   expression was written; m2c's `t = f(1); if (f(0) < t)` is the source `f(0) < f(1)`.
@@ -374,7 +386,7 @@ The tool needs the repo's build.ninja and `build/G8MJ01/obj` (the original objec
 tree (`--src copy.c` compiles a scratch copy with the unit's flags).
 
 **Levers Codex proved** (full attempt logs, including what failed, in `docs/codex/`; the ledger has the table "Codex's wins, and why each worked"):
-- Place such helpers before EVERY function in the file (or at the very end for the tail-data flush). A helper in the middle generates immediately and so flushes the functions queued before it first, which reverses the text order of those functions (mot_roll: clrRollEvtFlag and its neighbours moved to the front, 32 bytes shifted the whole DOL). Check the symbol order after adding one.
+- Pool helper functions are the older lever; prefer the original's own functions ("Prefer the original's own functions over pool helper functions" below). Where a `defer_codegen off` helper is still used (fadedrv, unit_party_yoshi), it sits before EVERY function in the file (or at the very end for the tail-data flush): a helper in the middle generates immediately and so flushes the functions queued before it first, which reverses the text order of those functions (mot_roll: clrRollEvtFlag and its neighbours moved to the front, 32 bytes shifted the whole DOL). Check the symbol order after adding one.
 - Helper functions position pool entries and force tail data in a deferred unit: an unused helper placed between two functions pools its constant at that point; an immediately generated `u32 -> f32` helper at EOF flushes deferred code ahead of `force_active` tail words so they land last ([fadedrv](codex/fadedrv.md), [koopa](codex/koopa.md)).
 - Block-scoped assignment inside the inner loop, just before the use, limits how far MWCC hoists (to the inner-loop preheader only), which also fixes pool order ([eff_kemutest](codex/eff_kemutest.md)).
 - `DUP_OURS` in `sdata2_diff.py` means we pool a value twice that the original merges: remove the duplicate constants and keep runtime products and registers through locals ([eff_fire](codex/eff_fire.md)).
@@ -384,11 +396,14 @@ tree (`--src copy.c` compiles a scratch copy with the unit's flags).
 
 **Conversion double before strings.** If the target's `.rodata` has an int->float double (`double_to_int_*`) ahead of a string that a
 deferred function pools, our build pools the double later, since a deferred unit emits functions in reverse source order and each
-function pools its strings before its own conversion double. Under `#ifdef MUST_MATCH` add an ordinary helper that is generated
-immediately, wrapped in `#pragma defer_codegen off` ... `#pragma defer_codegen reset`:
-`static f32 pool_i2f(s32 v) { return (f32)v; }` (`u32` for the `_mask` double; a second helper returning a string literal pools
-that string at its slot too). Nothing calls it and the linker strips the body. Reference: `kpaFireBreath` in `src/koopa.c`,
-`yoshi_pool_i2f` in `unit_party_yoshi.c`. `pool_plan.py` prints an `I2F HELPER` note when it sees the pattern.
+function pools its strings before its own conversion double. Get the double from a real function that is generated earlier:
+an uncalled original-style sibling that does an int->float conversion, placed where it is generated first (party_cloud's
+`cloudSetMarioSpeed` #615, win_main's `winFontSetC` #618), or `#pragma defer_codegen off` over the real functions so the one
+that converts is generated in retail order (tou #593, winmgr #594; `src/koopa.c` makes the original's own `kpaFireBreath`
+immediate). A bare MUST_MATCH helper under `defer_codegen off` (`static f32 pool_i2f(s32 v) { return (f32)v; }`, `u32` for the
+`_mask` double; `yoshi_pool_i2f` in `unit_party_yoshi.c`) also pools the double, but it flushes the deferred functions queued
+before it and moves `.text` order; use it only when no real function gives the order (see "Prefer the original's own functions
+over pool helper functions" below). `pool_plan.py` prints an `I2F HELPER` note when it sees the pattern.
 
 The plan's rules, so you can read its output: pooled entries land in the order the compiler first emits them (text order,
 expression-tree order inside a function); named objects land before the pool in a deferred unit and after it in a nodefer
@@ -417,6 +432,11 @@ time (it lists their owners in the order the source must define them).
   - Do not define the compiler's own pool entries yourself (the i2f double `double_to_int_*`, literal `Vec` initialisers `(Vec){0,0,0}`): the explicit object and the pooled copy both land in the section. Leave the symbol undefined; the linker resolves the original name from the section it belongs to.
   - If the code needs the constant *read from the object* (no folding of `-48.0f * 0.5f`, no hoist into a callee-saved FPR, a reload per use), use a `MUST_MATCH` volatile read of the named object (`#define ONE (*(volatile const f32*)&float_1_x)`, see `MATCH_F32` in `matching.h`); a temp (`f32 one = ONE;`) when the target loads once and moves with `fmr`. A local (`f32 sixteen = 16.0f;`) stops constant folding without touching the pool.
   - A `.rodata` Vec the code copies by value is defined `const volatile` under `MUST_MATCH`, otherwise the optimizer folds the known contents (eff_hit_n64, eff_magic3_n64).
+  - Plain-C alternative: a non-const object placed in `.rodata`. `__declspec(section ".rodata") Vec vec3_x = {...};`
+    keeps the bytes and the section, but MWCC no longer knows the values, so it stops reordering the copies; that
+    replaced four volatile hacks in eki_00 (ext_moamoa_init -> 100, #631; rsh_06's init already used it). For scalars,
+    a singleton `const f32 sym[1] = { v }` keeps ordinary loads where a scalar `const` read folds into a second pool
+    entry (eff_particle `.sdata2` duplicates 3 -> 1, #601).
   - What remains after that is usually one function's register allocation (eff_magic3_n64, eff_kumokumo_n64, eff_bomb): queue it for the permuter.
 - `tools/data_check.py` (run by ci.py as `[data]`) reports a data object whose bytes differ from the original object's: a table written `{4,0,0}` for `{0,4,0}` scores the same in objdiff. `--allow-data-mismatch NAME` excuses an object.
 
@@ -458,6 +478,15 @@ When the instructions match but the stack slots, register allocation or scheduli
   `#ifdef MUST_MATCH` (eff_mahorn).
 - **A loop stepping two pointers increments in the wrong order**: put both in the loop header, in the target's
   order (`i++, data++`; eff_starpoint).
+- **Let the compiler build loop counters and offsets: write `i * K`, not a hand-stepped accumulator.** MWCC's loop
+  strength reduction turns `xbase + (f32)(i * 30)` into the original's offset temps, which are coloured after the
+  named locals; a named `xoff += 30` counter is a named web that takes a higher register (evt_yuucounter #662, r31 went
+  to `work`). The same fix: `(f32)(i * 0x28)` (winBadgeDisp #657), `dispCnt * 0x18` (evt_unitwin_disp_func #624),
+  `print_buffer[i]` instead of two walking byte pointers, which are the compiler's own induction variables
+  (N_systemErrorHandler #607), `msg[i]` instead of `p++` (fontlenpitch #616: strength reduction runs after CSE, so the
+  index form keeps two separate `addi rN,r1,0x78`), `&vectors[n++]` instead of `off += 0x54` (hitCalcVtxPosition
+  #672). The arithmetic spelling also decides when the counter temp is created: `(i * 2) << 8` matched where
+  `i * 0x200` did not (effKamekiTornadeDisp #659).
 - **Float literals are pooled in the order the compiler first meets them,** function by function in `.text` order,
   and within a function in expression-tree order, with a call's argument constants pooled after the other constants of
   the statement that holds the call: `a = 0.04f * sinf(6.28f * x / 360.f) + 0.5f;` pools 0.5, 0.04, 6.28, 360, while
@@ -466,11 +495,28 @@ When the instructions match but the stack slots, register allocation or scheduli
   changing any instruction.
 - **A product of two literals folds** (`-16.0f * 0.5f` becomes `-8.0f`), so the target's two separate constants
   vanish: `f32 sixteen = 16.0f; f32 half = 0.5f; f = -sixteen * half;` keeps both.
+- **`x / 2.0f` and `x * 0.5f` compile to the same `fmuls` but number their operands differently.** MWCC's parser puts
+  the leaf operand of `a * b * 0.5f` on the left and gives the 0.5 load the lower vreg; written `/ 2.0f`, the division
+  is turned into `* 0.5` with the variable first, retail's operand order (battleCameraMain #619). hei_10 npc_jump
+  99.88 -> 100 was only `grav * frames / 2.0f` for `* 0.5f` (#652, found by mwsearch in 1.3 s); the moamoa units used
+  `/ 4.0f` and `/ 2.0f` for the same reason (#650). Try the other spelling whenever a power-of-two constant's load is
+  the register that differs.
+- **A sum of three or more terms is reassociated; two two-term sums are not.** aji_17 noiseDisp's last `add` operand
+  order (99.97, after 3.5 h of agents and a 70-minute mwsearch) matched with the row offset in its own statement and
+  the index grouped `data[(off + base * 256) + (k % 8 + col * 8)]` (#656, GPT-6 Sol, MUST_MATCH). The same rule
+  the other way: `x + (w - 90)` is computed once where `x + w - 90` adds an instruction (winKirinukiGX #675).
 - **A constant assigned to a local before the variable it multiplies fixes the FP load order and the registers** without
   touching the pool: `f32 k = 0.03125f; ... x = x * k + y;` (eff_nokotarou), `f32 half = 0.5f;` (eff_kemuri9_n64),
   `f32 zero = 0.0f; if (f30 == zero)` (eff_lensflare_n64). The literal is still pooled in its place; the local makes
   the compiler hoist the load the way the target does. Try it when the pool is already right and only the FP loads
   or one callee-saved register differ.
+- **Move where a value is created when no declaration order works.** rasim checked 5040 declaration orders for
+  screen_tev's first loop and none matched; the fix was `base = i / 4; col = i % 4;` as plain copies assigned inside
+  the inner loop under `#pragma opt_propagation off`, so the frontend hoists only the divisions and the shifts stay in
+  the body until the back end hoists them, numbered after the body temps (tou_03 + battle_stage #653). Likewise a
+  product written in place at each use is hoisted by MWCC in the original's preheader order where a precomputed local
+  is not (effParticleDisp #633: 4, 8, -4, 0.5, -8; senkaron_ext_main #649), and a fade kept in its own local under
+  `opt_propagation off` keeps its low variable number (evt_yuutitle disp_func #632).
 - **Arguments are evaluated in the order of the declared parameters, not of the registers.** A callee that takes both
   integer and float arguments loads them from the call's parameter order, so `f32 f(s32 a, s32 b, f32 x)` loads `a`, `b`,
   then `x`, while `f32 f(s32 a, f32 x, s32 b)` loads `a`, `x`, `b`: the registers (`r3`, `r4`, `f1`) are the same either
@@ -479,29 +525,50 @@ When the instructions match but the stack slots, register allocation or scheduli
   is `(mode, start, end, currStep, steps)` (not `(mode, currStep, steps, start, end)`), which fixed 18 functions in one
   header change; callers keep writing the old order through a macro in `include/system.h`. Look for the same callee
   across several near-misses before fixing the call sites one by one.
+- **The same rule holds for the original's own helpers and callbacks.** moamoa_jump and chb_jump take their float
+  parameters before the ints (#650, #663; the callee ABI is unchanged because GPRs and FPRs are separate). iconDispGx
+  takes the scale first: its callers evaluate it before the position (#627, 147 call sites, btlUnitItemDisp
+  98.02 -> 99.05). Window disp callbacks take `void* param` and assign `WindowWork* work = param;` first, which fixes
+  the parameter-copy order at entry (winMarioDisp, winBadgeDisp #657).
 - **A cast that only exists to avoid an `extsb` or a signed/unsigned compare means the header type is wrong.** A call
   followed by `extsb r3, r3` that the target does not have means the function does not return `s8` (and the field it
   returns is probably `u8`); `cmplwi r3, 0` where the target has `cmpwi r3, 0` means it does not return `u32`.
   `(s32)BattlePadCheckRepeat(...)` and `((s32 (*)(BattleWork*))BattleActionCommandGetDifficulty)(...)` were such
   casts; fix the declaration in the header (and the definition) once instead of casting at every call.
+- **A function that leaves r3 unset in the original returns `void`.** An event callback typed `UserFunction` that ends
+  with `return 0` adds a `li r3,0` the original doesn't have: goryuugijo_init_slot 99.17 -> 100 and main_slot as
+  `void`, cast to `UserFunction` at the assignment as Melee casts callbacks (#628, #638).
 - **A call result passed on as an argument: nested or through a local decides one `mr`.** `f(id, g(x))` compiles to
   `bl g; mr r4, r3; mr r3, rID; bl f` (the result goes straight to its argument register). `s32 v = g(x); f(id, v);`
   compiles to `bl g; mr r0, r3; mr r3, rID; mr r4, r0; bl f` (the local is parked in `r0` while the first argument
   is set up). Read which of the two the target has and write that; it changes three instructions and nothing else
   (`btlevtcmd_SetPartsBaseScale`: 97.98% to 100% by moving `evtGetValue(event, args[1])` into a local; the mirror image
   fixes the cases where ours has the `r0` route and the target does not).
+- **Random values: make both `rand()` calls before scaling either.** In ext_moamoa_main the original draws
+  `ra = (f32)rand() / 32767.0f; rb = ...;` and then scales (`ra * (max - min) + min`) at the argument; nested
+  `randf(...)` calls reshape the whole inlined block (rsh_06 90.88 -> 94.83, #646, GPT-6 Sol). With small inlines that
+  write randf's body out (`randRange`, `randScale`, `randRad`, `randOffset`), the local inside the inline loads the
+  outer constant as early as retail: eki_00, rsh_05, rsh_06 linked (#650, #663).
 - Inlined float polynomials (sin/cos approximations used 10+ times in one function): write the coefficients as non-const locals at the top of the inline (`f32 c1 = 0.16605f, c2 = 1.0f;`). MWCC then hoists the constant loads once per instance like the original; `const` locals, or literals in the branches, rematerialise them per branch (hit_check 68 -> 89%).
 - A function that inlines many callees: raise `#pragma inline_max_total_size(60000)` and `inline_max_size(1000)` around it (reset after), and put `#pragma dont_inline on` / `reset` around the definition of any callee the original still calls.
 - A decision chain on a small integer result where the original shows `cmpwi 1; bne; cmpwi 2; beq; cmpwi 4; bne` is an `if/else if (a || b)` chain, not a `switch`; a `switch` makes a different tree.
 - Do not wrap a dense `switch` in `if (x <= N)`: the switch already emits that range check (a second `bgt` appears).
 
 - **Check the shape before the registers: `python3 tools/diff_shape.py UNIT FUNC`.** It prints whether the `bl` sequence is the same and which immediates the original has that yours lacks. A function whose calls and immediates all match differs only in scheduling and registers (permuter work); one that doesn't has a structural difference. This is how a wrong reconstruction shows up: a `__strtold` written from the generic MSL source scored 75% with one call fewer; the m2c draft had a different hex path (nibble index from 2, limit 17, no leading-exponent-zero case) and the rewrite from it reached 96%.
+- **One instruction late in a long straight-line block can be a scheduling-block cut.** MWCC cuts long straight-line
+  runs into blocks of about 100 instructions. shadowCharShadowDisp_Projection's one late `fsubs` matched once the zero
+  for each vertex y was read through `(*(const f32*)&float_0)`: the front end gives each use its own load (the back end
+  still merges them into one `lfs`), which moves the cut to retail's place (99.52 -> 100, #611, MUST_MATCH).
 - **The original's tail is duplicated per branch when the target has two copies of the same calls.** `__dec2num` has `__minus_dec, __minus_dec, __equals_dec` twice, once after the guessed-low loop and once after the guessed-high loop, each loop with its first iteration peeled (`n2d(); while (cond) { ...; n2d(); }`) and their own `decimal` locals on the stack. Written once after an if/else the compiler shares the tail (calls 13 vs 18); write it in both branches. The same shows up as `if (c) ioff = A; else ioff = A;` feeding one `PSMTXTrans` (actionCommandDisp), which keeps both computations.
 - **A `bl tolower`/`bl isdigit` where the target has none, and a smaller frame in the original, means an inlined table lookup.** `tolower` in the SDK `arc.c` is `c == -1 ? -1 : __lower_map[(u8)c]` inline (`ARCConvertPathToEntrynum` 72.65% to 100%). Declare `extern const unsigned char __lower_map[];` and write the one-line inline.
-- **A function that reads many rodata strings/vectors as `addi rX, rBase, 0x..` from one base register** (the base is the unit's first rodata object, `vec3_802fe418`) gets there with the MUST_MATCH macro `#define FB(off, sym) ((const char*)&vec3_xxx + (off))` and `FV(off, sym)` for Vec reads; the `#else` form uses the named symbol (eff_fall: `effFallMain` 85.4 to 86.6, win_log `LV`/`RO`). The i2f magic double the compiler pools itself stays anonymous.
-- **`clrlwi r,r,16` where yours has `extsh` on an argument means the original converts as u16.** Don't change the shared prototype if other linked units need `extsh`; cast the callee at the call site (`((void (*)(Vec*, u16, u16, f32))iconDispGx)(...)`, evt_win).
+- **A function that reads many rodata strings/vectors as `addi rX, rBase, 0x..` from one base register** (the base is the unit's first rodata object) is usually the original's plain literals and compound literals under `#pragma pool_data on`: try that first (seq_load #620, win_mario #625, win_badge #640, itemdrv #642, battle_event_cmd #669 all replaced base-pointer macros that way). The fallback is a MUST_MATCH macro reading off the base, `#define FB(off, sym, val) ((const char*)vec + (off))` and `FV` for Vec reads, with the plain value or named symbol in `#else` (party_motion's `FB`/`FV`, win_log's `RO`/`LV`). The i2f magic double the compiler pools itself stays anonymous.
+- **`clrlwi r,r,16` where yours has `extsh` on an argument means the original converts as u16.** Don't change the shared prototype if other linked units need `extsh`; cast the callee at the call site (`((void (*)(f32, Vec*, u16, u16))iconDispGx)(...)`, evt_win; iconDispGx takes the scale first, #627).
 - **`extrwi. r0,r0,1,29` is `(x >> 2) & 1`, not `x & 4`** (`rlwinm. 0,29,29`); a bit test written the other way is the whole difference.
 - **A float literal divided in several statements (`/ 1000000.0f`) is reloaded per use; the same constant as a named `extern const f32` is hoisted into a callee-saved FPR.** Where the target reloads, use the literal (itemseq_Bound `itemTicksToSec`).
+- **MWCC shares float-literal expressions but not named-constant ones.** `x + 16.0f` and `16.0f + x` are canonicalised
+  and kept in a saved FPR; `x + float_16` is left as written. Where the original recomputes a sum, use the named
+  constant at that site (win_root, 10 sites, #586). `tools/named_greedy.py` tries each site in both directions with a
+  data gate (#587).
 - **A `static inline` double constant read through the unit's base register** (`*(const f64*)((const u8*)&vec3_xxx + 0x48)`) avoids the compiler emitting a second anonymous copy of a double the unit already defines, which otherwise shifts every later `.rodata` offset and fails the ratchet.
 
 - **`divw` by a constant in the target where yours has `lis 0x9249; mulhw`:** the original was built with the size optimiser for that function. `#pragma optimize_for_size on` / `reset` around it keeps the divide (and often fixes loop shapes that came out as `bdnz`): `ac_repeatedly_lv` `actionCommandDisp` 90.30 to 99.88.
@@ -518,6 +585,15 @@ When the instructions match but the stack slots, register allocation or scheduli
 - **A variable that must outrank the function's frontend temps goes in a `static inline` helper.** Inline-expansion
   objects get vreg numbers above the frontend temps, which no declaration order can reach: effCalcMayaAnimMatrix's
   `frame` in f0 and its GQR value in r9 matched only once the channel loop and the GQR write were inline helpers.
+- **A dead copy the allocator must still see: write it so it is deleted after allocation.** The post-allocation
+  peephole removes a self-store, but it is live during allocation: `m[0][i / 10] = m[0][i / 10];` kept the quotient in
+  its register (kpaSen_ext_main #661), `pos = pos;` kept retail's dead `savedPos` copy (nanNPCOption #668). An `s64`
+  local leaves a dead sign word the back end removes only after scheduling, which held a hoisted mask behind
+  `li offset` (evt_nannpc_entry #668). All under MUST_MATCH with the plain form in `#else`; flagged for review.
+  Dead code removed early (`if (0)`, unused locals) does nothing.
+- **Post-increment reads keep the original's index chain under `opt_dead_assignments off`.** `r_data[row++]` three
+  times then `r_data[++row]`, inside a `#pragma opt_dead_assignments off` region, stops MWCC folding the increments
+  into load displacements (effRadiationN64Entry #590, effRadiationMain #659).
 - **A named `extern const f32` that MWCC hoists into a saved FPR, where the original reloads it per statement,** shows
   as a bigger frame with more psq_st saves and the constant parked in f14-f31. Read it through a small inline helper
   that loads it once via MATCH_F32 into a local (mario_hit's gndCenti/gndAngle); a non-const view `*(f32*)&x` does
@@ -528,6 +604,11 @@ When the instructions match but the stack slots, register allocation or scheduli
   reproduces; list the labels, since `case A ... B:` is rejected), or an early `return` inside an inline helper (the
   inline's return is that `b`). #529 _audience_Whistle_control 96.45 -> 100, #530 winMain 99.06 -> 99.99, #531
   animPoseSetEffect 98.27 -> 99.34, #532 npcSetupBattleInfo 93.73 -> 95.48 (Claude #4). Count bcc->b pairs, orig vs ours.
+- **Return from each branch to keep a pointer out of a saved register.** itemseq_Bound's floor and ceiling rays
+  `return hit;` inside `if (hit != NULL)` and `return NULL;` at the end, instead of one return of a variable, so the
+  hit pointer isn't live across the ray (98.23 -> 100, #658).
+- **Two arms that store the same field are if-converted to a select unless the lvalues differ.** fbatHitCheck keeps
+  retail's if/else with one arm writing `info.kind` and the other `ENC(&info, s32, 0)` (MUST_MATCH, #675).
 - **`if (best == NULL || d < bestD) { copy }` can be the copy written twice in the original,** one branch per
   condition: a duplicated block gives retail's frame where the combined condition does not (searchFrontWall #518,
   marioChkGnd #513).
@@ -539,12 +620,28 @@ When the instructions match but the stack slots, register allocation or scheduli
   `#pragma defer_codegen off` / `#endif` over the REAL functions so they emit in source order, and let native
   int->float conversions and literals pool the magic and constants themselves. That linked tou (#593) and winmgr
   (#594) on 2026-10-06 (Codex). Check with sdata2_diff, fn_order_check, and the flip's `32 files OK`.
+- **`defer_codegen on` for a middle group that must inline its real callees.** winmgr linked with `off` before the
+  first function, a MUST_MATCH `on` over a middle group in reverse retail order so winMgrSelectEntry inlines its real
+  callees, and `off` again before select_main, after which MWCC flushes the deferred group (#594, Codex). Constants a
+  function reads during immediate generation must be defined before it, or they become writable small data
+  (docs/codex/winmgr.md). `fn_order.py --write` gives the deferred (reversed) order, which an immediate region has to
+  undo (docs/codex/evt_shop.md); confirm with `fn_order_check.py`.
 - **Strings or constants no code references are the original's uncalled functions.** MWCC pools a function's
   literals at its slot in codegen order, and the linker then strips the function while live code keeps the
   unit's pooled `.rodata` through `...rodata.0`. Reconstruct the plausible missing function (the other colour of a
   pair, a sibling event function) where its strings must land, with no float literals in it (those are stripped
   from `.sdata2`). This made evt_mobj's `.rodata` identical (#608); every construct that adds no function
-  (`if (0)`, unused locals, uncalled inlines, dead stores) drops the literal. Details: [dead_strings.md](dead_strings.md).
+  (`if (0)`, unused locals, uncalled inlines, dead stores) drops the literal. An unused *initialised* local array or
+  struct is the exception: it still pools its parse-time template (dead_strings.md test d7). sac_bakugame's two
+  unreferenced `.rodata` templates are two never-read locals in bakuGameMain (`s32 order[8] = {0..7}`,
+  `Vec home = {125, 0, -30}`; #674, flagged for review). Details: [dead_strings.md](dead_strings.md).
+- **Pool entries for a helper the original kept out of line: define it as a real function at its `.text` slot and
+  let MWCC auto-inline it.** Under `-inline auto,deferred` a plain static (or global) function is inlined at its call
+  sites but its body is still generated, so its literals pool at its own slot, and the linker strips the body:
+  shipJumpDir/shipHarborTarget/shipHarborOffset (mot_ship #617), itemBoundHitCeiling/Floor, itemseq_sfxGet,
+  itemseq_sfxBound (itemdrv data IDENTICAL, #642), winTplLoad defined after winMain so it is generated first and pools
+  `"%s/w/%s/win.tpl"` ahead of case 0's strings (winMain 99.99 -> 100, #618). A function defined last in a deferred
+  unit is generated first: cloudSetMarioSpeed's 0, 70, 180 and i2f double head party_cloud's pools (#615).
 - **A repeated block whose operands the original evaluates at the point of use is a macro, not an inline function.**
   An inline call evaluates its arguments up front; a macro leaves each expression where it is written. winBookGX's
   textured quad computes each coordinate at its vertex write and `|span|` right after GXSetTexCoordGen2: 82% as an
