@@ -5647,7 +5647,7 @@ Their weakness showed on eff_fall and eff_kiss: a handoff carries the previous a
 refined it instead of questioning it. The long arm on eff_fall had the room to step outside it; on eff_kiss neither
 arm did until the hint.
 
-**Verdict.** Long arm: 4 links of 6 at ~1.97M tokens in all; short arm: 2 links of 6 at ~2.66M. Where both
+**Verdict.** Long arm: 4 links of 6 at ~1.97M tokens in all; short arm: 3 links of 6 at ~2.66M. Where both
 linked (sstar, detect) the cost was similar; on the four hard ones the long arm linked two the short arm could not
 (fall, horao), went further on envdrv (99.68 vs 97.92), and only lost eff_kiss, where the short arm had the framing
 hint. For the hardest near-misses, give one agent a long run rather than relays of short ones; keep handoff notes for
