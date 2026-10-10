@@ -285,64 +285,204 @@ static inline void envDofBlendStageReg(s32 tevStage, s32 texCoord) {
     envDofBlendStage(tevStage, texCoord, 0xC, 2);
 }
 
-// `opt_propagation off` stops MWCC rematerialising the polynomial coefficients into every branch
-// (same as envDisp_FF/evt_sub); `opt_lifetimes off` keeps the 0.00761/0.03705 seed loads inside the loop.
-#pragma opt_propagation off
-#pragma opt_lifetimes off
-// Block 1's polynomial coefficients are assigned inside the loop (with `v31 = TWO_PI` also inside the loop,
-// before the angle), so LICM hoists them in the value order MWCC wants (TWO_PI=f31, magic=f30, 0.25=f29,
-// PI=f28, 1.0=f27, 0.16605=f26, 0.4967=f25, 100=f24). The GXColor temporaries go through a named `color`
-// local (only the r/a fields written), which puts the two GXSetTevKColor argument copies on sp+0x10/sp+0xC.
-// The blend stage after each loop is an inline helper called with `texCoord++`: the argument copy and the
-// increment then sit right after GXSetTexCoordGen2, as in retail. The angle is `(2pi * i) * 0.25` with the
-// variable product first, and the quad corners are `+-size / 2.0f` (variable-first fmuls).
-// Block 2 has its own counters (opt_lifetimes off gives each variable one register for the whole function,
-// and retail colours the two blocks' counters differently). Block 1's `tevStage` is an `int`: as `s32` the
-// frontend caches its `(int)` conversion for the enum parameters in a temp that steals a saved register.
-// The declaration order is the one tools/rasim.py found for retail's loop registers.
-// What differs: the table pointer's `addi r0` + `mr` that retail builds directly in its register (not
-// coalesced here), block 2's counter initialisation (retail `li r31, 0; mr r30, r31; mr r25, r31`), the
-// saved register picked for wp, the camera temp and the post-loop temps (r28 here where retail has
-// r27/r25/r26), block 2's 0.25/magic FPR swap, and one fmuls scheduled early in each quad.
-// NONMATCHING (97.92%): register colouring/scheduling only (see above).
-void envDisp_DepthOfField(void) {
-    s32 vcond2;
-    const s32* mtx2;
-    s32 texCoord2;
-    s32 tevStage2;
-    EnvironmentUnk88* u;
-    int tevStage;
-    s32 j;
-    s32 texCoord;
-    CameraEntry* temp_r27;
-    s32 vcond;
-    const s32* mtx;
-    s32 i;
-    EnvironmentWork* wp = envGetWork();
-    GXTexObj* texobj;
-    Mtx sp48;
-    GXColor color;
-    Mtx sp18;
-    f32 v30;
-    f32 v29;
-    f32 v28;
-    f32 v27;
-    f32 v26;
-    f32 v25;
-    f32 v24;
-    f32 f0, f1, f2, f3, f4;
-    f32 v31;
-    GXTevColorArg v33;
-    GXTevAlphaArg v34;
+// The sin/cos coefficients are read through the original .sdata2 names: as memory loads they stay
+// loop-invariant and MWCC hoists them into f24-f27 once per pass as retail does. As literals the
+// default propagation pass folds them into every branch (envDisp_FF instead turns propagation off,
+// but here retail's quad shows propagation on: the first vertex's x is substituted into its store).
+// The natural literals are under the #else.
+#ifdef MUST_MATCH
+extern const f32 float_0p00761_8041e5b4;
+extern const f32 float_0p16605_8041e5b8;
+extern const f32 float_0p03705_8041e5a4;
+extern const f32 float_0p4967_8041e5a8;
+extern const f32 float_1_8041e574;
+#define ENV_DOF_SIN0 float_0p00761_8041e5b4
+#define ENV_DOF_SIN1 float_0p16605_8041e5b8
+#define ENV_DOF_COS0 float_0p03705_8041e5a4
+#define ENV_DOF_COS1 float_0p4967_8041e5a8
+#define ENV_DOF_ONE float_1_8041e574
+#else
+#define ENV_DOF_SIN0 0.00761f
+#define ENV_DOF_SIN1 0.16605f
+#define ENV_DOF_COS0 0.03705f
+#define ENV_DOF_COS1 0.4967f
+#define ENV_DOF_ONE 1.0f
+#endif
 
-    u = &wp->unk88;
+// `opt_lifetimes off` keeps the 0.00761/0.03705 seed loads inside the loop.
+#pragma opt_lifetimes off
+#pragma inline_max_size(2000)
+static inline void envDofSinCos(f32 angle, f32* s, f32* c) {
+    f32 cb;
+    f32 cv;
+    f32 sb;
+    f32 one;
+    f32 sv;
+    f32 t, u;
+    f32 cu;
+
+    sb = ENV_DOF_SIN1;
+    sv = ENV_DOF_SIN0;
+    one = ENV_DOF_ONE;
+    if (angle <= PI) {
+        if (angle <= 1.5707964f) {
+            u = angle * angle;
+            sv = sv * u - sb;
+            sv = sv * u + one;
+            sv = sv * angle;
+        } else {
+            t = 1.5707964f - (angle - 1.5707964f);
+            u = t * t;
+            sv = sv * u - sb;
+            sv = sv * u + one;
+            sv = sv * t;
+        }
+    } else if (angle < 4.712389f) {
+        t = angle - PI;
+        u = t * t;
+        sv = sv * u - sb;
+        sv = sv * u + one;
+        sv = sv * t;
+        sv = -sv;
+    } else {
+        t = 1.5707964f - (angle - 4.712389f);
+        u = t * t;
+        sv = sv * u - sb;
+        sv = sv * u + one;
+        sv = sv * t;
+        sv = -sv;
+    }
+    *s = sv;
+
+    cb = ENV_DOF_COS1;
+    cv = ENV_DOF_COS0;
+    if (angle <= PI) {
+        if (angle <= 1.5707964f) {
+            cu = angle * angle;
+            cv = cv * cu - cb;
+            cv = cv * cu + one;
+        } else {
+            cu = 1.5707964f - (angle - 1.5707964f);
+            cu = cu * cu;
+            cv = cv * cu - cb;
+            cv = cv * cu + one;
+            cv = -cv;
+        }
+    } else if (angle < 4.712389f) {
+        cu = angle - PI;
+        cu = cu * cu;
+        cv = cv * cu - cb;
+        cv = cv * cu + one;
+        cv = -cv;
+    } else {
+        cu = 1.5707964f - (angle - 4.712389f);
+        cu = cu * cu;
+        cv = cv * cu - cb;
+        cv = cv * cu + one;
+    }
+    *c = cv;
+}
+
+// One blur tap per texture matrix: each offsets the capture by `amount` around a circle.
+static inline void envDofTaps(const f32* amount, s32* texCoord, GXTevStageID* tevStage) {
+    Mtx mtx;
+    s32 first;
+    const s32* id = dat_802f9338.tbl;
+    s32 i;
+    GXTevColorArg colorD;
+    GXTevAlphaArg alphaD;
+
+    for (i = 0; i < 4; i++) {
+        f32 s, c;
+
+        envDofSinCos(TWO_PI * i / 4, &s, &c);
+
+        MTXTrans(mtx, *amount * s / 100.0f, *amount * c / 100.0f, 0.0f);
+        GXLoadTexMtxImm(mtx, *id, 1);
+        GXSetTexCoordGen2(*texCoord, 1, 4, *id, 0, 0x7D);
+        GXSetTevKColorSel(*tevStage, 6);
+        GXSetTevKAlphaSel(*tevStage, 6);
+        GXSetTevOrder(*tevStage, *texCoord, 0, 0xFF);
+        GXSetTevColorOp(*tevStage, 0, 0, 0, 1, i == 3);
+        GXSetTevAlphaOp(*tevStage, 0, 0, 0, 1, i == 3);
+        first = !i;
+        colorD = GX_CC_CPREV;
+        if (first) {
+            colorD = GX_CC_ZERO;
+        }
+        GXSetTevColorIn(*tevStage, 0xF, 8, 0xE, colorD);
+        if (first) {
+            alphaD = GX_CA_ZERO;
+        } else {
+            alphaD = GX_CA_APREV;
+        }
+        GXSetTevAlphaIn(*tevStage, 7, 4, 6, alphaD);
+        GXSetTevSwapMode(*tevStage, 0, 0);
+        (*texCoord)++;
+        id++;
+        (*tevStage)++;
+    }
+}
+
+static inline void envDofQuad(void) {
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition3f32(-gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(-gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+}
+
+// The far pass: blur the frame by u->unk8 and weight it by the white register colour.
+static inline void envDofFar(EnvironmentUnk88* u, GXColor* color) {
+    GXTevStageID tevStage;
+    s32 texCoord;
+
+    texCoord = 0;
+    tevStage = 0;
+    envDofTaps(&u->unk8, &texCoord, &tevStage);
+    color->r = u->unk3;
+    color->a = 0xFF;
+    GXSetTevKColor(0, *color);
+    GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
+    envDofBlendStageReg(tevStage, texCoord++);
+    GXSetTevOrder((GXTevStageID)(tevStage + 1), 0xFF, 0xFF, 0xFF);
+    GXSetTevColorOp((GXTevStageID)(tevStage + 1), 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp((GXTevStageID)(tevStage + 1), 0, 0, 0, 1, 0);
+    GXSetTevColorIn((GXTevStageID)(tevStage + 1), 2, 0xF, 1, 0xF);
+    GXSetTevAlphaIn((GXTevStageID)(tevStage + 1), 1, 7, 0, 7);
+    GXSetTevSwapMode((GXTevStageID)(tevStage + 1), 0, 0);
+    tevStage += 2;
+    GXSetNumTexGens(texCoord);
+    GXSetNumTevStages(tevStage);
+    envDofQuad();
+}
+
+// Both passes go through envDofTaps; tevStage is a GXTevStageID so its increments stay in place
+// (an int counter gets folded into the GXSetNumTevStages argument by the propagation pass).
+// NONMATCHING (99.68%): integer register colouring only. Block 1's loop has retail's registers
+// mirrored (retail: i r31, id r30, tevStage r26, texCoord r25, the blend texCoord copy r27; here the
+// counters take r31/r30), and block 2's tevStage + 1 is r25 instead of r26. Writing block 1's loop
+// directly in this function with named i/id locals colours that loop exactly, but a named pointer
+// assigned the table address always costs an `addi r0` + `mr` (only inline/compiler locals coalesce).
+void envDisp_DepthOfField(void) {
+    EnvironmentWork* wp = envGetWork();
+    EnvironmentUnk88* u = &wp->unk88;
+    CameraEntry* cam;
+    GXTexObj* texobj;
+    s32 texCoord;
+    GXTevStageID tevStage;
+    GXColor color;
 
     if (!(wp->flags & 0x80000000)) {
         return;
     }
 
-    temp_r27 = camGetPtr(CAMERA_2D);
-    GXSetProjection(camGetPtr(CAMERA_2D)->projection, temp_r27->projType);
+    cam = camGetPtr(CAMERA_2D);
+    GXSetProjection(camGetPtr(CAMERA_2D)->projection, cam->projType);
     GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
     GXSetCurrentMtx(0);
     texobj = smartTexObj(&wp->captureObj, (void**)wp->capture);
@@ -363,119 +503,9 @@ void envDisp_DepthOfField(void) {
     GXSetCullMode(0);
 
     if ((u->unk0 & 1) && (u->unk4)) {
-        mtx = dat_802f9338.tbl;
         texCoord = 0;
         tevStage = 0;
-        for (i = 0; i < 4; i++) {
-            v29 = 0.25f;
-            v31 = TWO_PI;
-            f2 = 0.00761f;
-            f0 = v31 * (f32)i;
-            f3 = f0 * v29;
-            v24 = 100.0f;
-            v26 = 0.16605f;
-            v27 = 1.0f;
-            v25 = 0.4967f;
-            v28 = PI;
-            if (f3 <= v28) {
-                f1 = MTXDegToRad(90.0f);
-                if (f3 <= f1) {
-                    f0 = f3 * f3;
-                    f2 = f2 * f0 - v26;
-                    f2 = f2 * f0 + v27;
-                    f2 = f2 * f3;
-                }
-                else {
-                    f0 = f3 - f1;
-                    f1 = f1 - f0;
-                    f0 = f1 * f1;
-                    f2 = f2 * f0 - v26;
-                    f2 = f2 * f0 + v27;
-                    f2 = f2 * f1;
-                }
-            }
-            else {
-                f0 = MTXDegToRad(270.0f);
-                if (f3 < f0) {
-                    f1 = f3 - v28;
-                    f0 = f1 * f1;
-                    f2 = f2 * f0 - v26;
-                    f2 = f2 * f0 + v27;
-                    f2 = f2 * f1;
-                    f2 = -f2;
-                }
-                else {
-                    f0 = f3 - f0;
-                    f1 = MTXDegToRad(90.0f);
-                    f1 = f1 - f0;
-                    f0 = f1 * f1;
-                    f2 = f2 * f0 - v26;
-                    f2 = f2 * f0 + v27;
-                    f2 = f2 * f1;
-                    f2 = -f2;
-                }
-            }
-            f4 = 0.03705f;
-            if (f3 <= v28) {
-                f1 = MTXDegToRad(90.0f);
-                if (f3 <= f1) {
-                    f0 = f3 * f3;
-                    f4 = f4 * f0 - v25;
-                    f4 = f4 * f0 + v27;
-                }
-                else {
-                    f0 = f3 - f1;
-                    f0 = f1 - f0;
-                    f0 = f0 * f0;
-                    f4 = f4 * f0 - v25;
-                    f4 = f4 * f0 + v27;
-                    f4 = -f4;
-                }
-            }
-            else {
-                f0 = MTXDegToRad(270.0f);
-                if (f3 < f0) {
-                    f0 = f3 - v28;
-                    f0 = f0 * f0;
-                    f4 = f4 * f0 - v25;
-                    f4 = f4 * f0 + v27;
-                    f4 = -f4;
-                }
-                else {
-                    f0 = f3 - f0;
-                    f1 = MTXDegToRad(90.0f);
-                    f0 = f1 - f0;
-                    f0 = f0 * f0;
-                    f4 = f4 * f0 - v25;
-                    f4 = f4 * f0 + v27;
-                }
-            }
-            f0 = u->unk4;
-            MTXTrans(sp48, f0 * f2 / v24, f0 * f4 / v24, 0.0f);
-            GXLoadTexMtxImm(sp48, *mtx, 1);
-            GXSetTexCoordGen2(texCoord, 1, 4, *mtx, 0, 0x7D);
-            GXSetTevKColorSel(tevStage, 6);
-            GXSetTevKAlphaSel(tevStage, 6);
-            GXSetTevOrder(tevStage, texCoord, 0, 0xFF);
-            GXSetTevColorOp(tevStage, 0, 0, 0, 1, i == 3);
-            GXSetTevAlphaOp(tevStage, 0, 0, 0, 1, i == 3);
-            vcond = (i == 0);
-            v33 = 0;
-            if (vcond) {
-                v33 = 0xF;
-            }
-            GXSetTevColorIn(tevStage, 0xF, 8, 0xE, v33);
-            if (vcond) {
-                v34 = 7;
-            } else {
-                v34 = 0;
-            }
-            GXSetTevAlphaIn(tevStage, 7, 4, 6, v34);
-            GXSetTevSwapMode(tevStage, 0, 0);
-            texCoord++;
-            mtx++;
-            tevStage++;
-        }
+        envDofTaps(&u->unk4, &texCoord, &tevStage);
         color.r = u->unk2;
         color.a = 0xFF;
         GXSetTevKColor(0, color);
@@ -484,164 +514,15 @@ void envDisp_DepthOfField(void) {
         tevStage++;
         GXSetNumTexGens(texCoord);
         GXSetNumTevStages(tevStage);
-        GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-        {
-            GXPosition3f32(-gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
-            GXTexCoord2f32(0.0f, 0.0f);
-            GXPosition3f32(gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
-            GXTexCoord2f32(1.0f, 0.0f);
-            GXPosition3f32(gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
-            GXTexCoord2f32(1.0f, 1.0f);
-            GXPosition3f32(-gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
-            GXTexCoord2f32(0.0f, 1.0f);
-        }
+        envDofQuad();
     }
 
     if ((u->unk0 & 2) && (u->unk8)) {
-        v28 = TWO_PI;
-        mtx2 = dat_802f9338.tbl;
-        v31 = PI;
-        j = 0;
-        texCoord2 = 0;
-        v26 = 0.16605f;
-        v25 = 1.0f;
-        v30 = 0.25f;
-        v27 = 0.4967f;
-        v24 = 100.0f;
-        tevStage2 = 0;
-        for (j = 0; j < 4; j++) {
-            f2 = 0.00761f;
-            f0 = (f32)j;
-            f0 = v28 * f0;
-            f3 = f0 * v30;
-            if (f3 <= v31) {
-                f1 = MTXDegToRad(90.0f);
-                if (f3 <= f1) {
-                    f0 = f3 * f3;
-                    f2 = f2 * f0 - v26;
-                    f2 = f2 * f0 + v25;
-                    f2 = f2 * f3;
-                }
-                else {
-                    f0 = f3 - f1;
-                    f1 = f1 - f0;
-                    f0 = f1 * f1;
-                    f2 = f2 * f0 - v26;
-                    f2 = f2 * f0 + v25;
-                    f2 = f2 * f1;
-                }
-            }
-            else {
-                f0 = MTXDegToRad(270.0f);
-                if (f3 < f0) {
-                    f1 = f3 - v31;
-                    f0 = f1 * f1;
-                    f2 = f2 * f0 - v26;
-                    f2 = f2 * f0 + v25;
-                    f2 = f2 * f1;
-                    f2 = -f2;
-                }
-                else {
-                    f0 = f3 - f0;
-                    f1 = MTXDegToRad(90.0f);
-                    f1 = f1 - f0;
-                    f0 = f1 * f1;
-                    f2 = f2 * f0 - v26;
-                    f2 = f2 * f0 + v25;
-                    f2 = f2 * f1;
-                    f2 = -f2;
-                }
-            }
-            f4 = 0.03705f;
-            if (f3 <= v31) {
-                f1 = MTXDegToRad(90.0f);
-                if (f3 <= f1) {
-                    f0 = f3 * f3;
-                    f4 = f4 * f0 - v27;
-                    f4 = f4 * f0 + v25;
-                }
-                else {
-                    f0 = f3 - f1;
-                    f0 = f1 - f0;
-                    f0 = f0 * f0;
-                    f4 = f4 * f0 - v27;
-                    f4 = f4 * f0 + v25;
-                    f4 = -f4;
-                }
-            }
-            else {
-                f0 = MTXDegToRad(270.0f);
-                if (f3 < f0) {
-                    f0 = f3 - v31;
-                    f0 = f0 * f0;
-                    f4 = f4 * f0 - v27;
-                    f4 = f4 * f0 + v25;
-                    f4 = -f4;
-                }
-                else {
-                    f0 = f3 - f0;
-                    f1 = MTXDegToRad(90.0f);
-                    f0 = f1 - f0;
-                    f0 = f0 * f0;
-                    f4 = f4 * f0 - v27;
-                    f4 = f4 * f0 + v25;
-                }
-            }
-            f0 = u->unk8;
-            MTXTrans(sp18, f0 * f2 / v24, f0 * f4 / v24, 0.0f);
-            GXLoadTexMtxImm(sp18, *mtx2, 1);
-            GXSetTexCoordGen2(texCoord2, 1, 4, *mtx2, 0, 0x7D);
-            GXSetTevKColorSel(tevStage2, 6);
-            GXSetTevKAlphaSel(tevStage2, 6);
-            GXSetTevOrder(tevStage2, texCoord2, 0, 0xFF);
-            GXSetTevColorOp(tevStage2, 0, 0, 0, 1, j == 3);
-            GXSetTevAlphaOp(tevStage2, 0, 0, 0, 1, j == 3);
-            vcond2 = (j == 0);
-            v33 = 0;
-            if (vcond2) {
-                v33 = 0xF;
-            }
-            GXSetTevColorIn(tevStage2, 0xF, 8, 0xE, v33);
-            if (vcond2) {
-                v34 = 7;
-            } else {
-                v34 = 0;
-            }
-            GXSetTevAlphaIn(tevStage2, 7, 4, 6, v34);
-            GXSetTevSwapMode(tevStage2, 0, 0);
-            texCoord2++;
-            mtx2++;
-            tevStage2++;
-        }
-        color.r = u->unk3;
-        color.a = 0xFF;
-        GXSetTevKColor(0, color);
-        GXSetTexCoordGen2(texCoord2, 1, 4, 0x3C, 0, 0x7D);
-        envDofBlendStageReg(tevStage2, texCoord2++);
-        GXSetTevOrder(tevStage2 + 1, 0xFF, 0xFF, 0xFF);
-        GXSetTevColorOp(tevStage2 + 1, 0, 0, 0, 1, 0);
-        GXSetTevAlphaOp(tevStage2 + 1, 0, 0, 0, 1, 0);
-        GXSetTevColorIn(tevStage2 + 1, 2, 0xF, 1, 0xF);
-        GXSetTevAlphaIn(tevStage2 + 1, 1, 7, 0, 7);
-        GXSetTevSwapMode(tevStage2 + 1, 0, 0);
-        tevStage2 += 2;
-        GXSetNumTexGens(texCoord2);
-        GXSetNumTevStages(tevStage2);
-        GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-        {
-            GXPosition3f32(-gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
-            GXTexCoord2f32(0.0f, 0.0f);
-            GXPosition3f32(gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
-            GXTexCoord2f32(1.0f, 0.0f);
-            GXPosition3f32(gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
-            GXTexCoord2f32(1.0f, 1.0f);
-            GXPosition3f32(-gp->fbWidth / 2.0f, -gp->efbHeight / 2.0f, 0.0f);
-            GXTexCoord2f32(0.0f, 1.0f);
-        }
+        envDofFar(u, &color);
     }
 }
+#pragma inline_max_size reset
 #pragma opt_lifetimes reset
-#pragma opt_propagation reset
 
 // MUST_MATCH: a by-value GXColor built as `color = dat; color.a = a;` and then passed lands its local at
 // the higher slot (sp+0x10 here) and the argument copy at sp+0xC, the wrong way round. Building the colour
