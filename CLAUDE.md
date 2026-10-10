@@ -1,7 +1,8 @@
 # TTYD decomp fork: agent notes
 
-Read `docs/CONTEXT.md` first. It is the ledger: every decision on this fork and why. `README.md` has the build
-setup.
+`docs/CONTEXT.md` is the ledger: every decision on this fork and why. It is long; don't read it whole. Read its
+"Current state" section at the top, then search it (grep for the unit, tool or topic) for the chapters you need.
+`README.md` has the build setup.
 
 ## The ledger
 
