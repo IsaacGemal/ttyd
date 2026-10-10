@@ -329,7 +329,7 @@ def parse_blocks(path):
         if m:
             cur = blocks.setdefault(m.group(1), [])
             continue
-        m = re.match(r'^\s+\d+\s+(\S+)\s*(.*)$', line)
+        m = re.match(r'^\s+(?:\d+\s+)?(\S+)\s*(.*)$', line)  # hoisted instructions have no source line number
         if m and cur is not None:
             cur.append((m.group(1), m.group(2).strip()))
     return blocks
