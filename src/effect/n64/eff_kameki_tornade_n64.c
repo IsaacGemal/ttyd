@@ -228,10 +228,9 @@ static inline void kamekiTornadeSetVtx(KamekiTornadeVtx* dst, KamekiTornadeVtx* 
 	dst->pos[2] = v.z;
 #endif
 }
-// The float constants are literals the compiler pools in first-use order. Declaring f19/angle/scale and
-// the second sin/cos block's locals in this order gives the original's FPR colouring.
-// NONMATCHING (99.96%): the ring loop's 0x200 texture counter (a strength-reduced `i * 0x200`) lands in
-// r31 where the original has r20, and the second half's `s` in f16 instead of f17.
+// The float constants are literals the compiler pools in first-use order. Declaring f19/angle/scale in
+// this order, and sharing one set of theta/s/rad/c locals between the two ring halves, gives the
+// original's FPR colouring.
 void effKamekiTornadeDisp(CameraId camId, void* param) {
 	EffectEntry* effect;
 	CameraEntry* cam;
@@ -245,6 +244,10 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 	Mtx rotMtx;
 	Mtx baseMtx;
 	Vec axis;
+	f32 theta;
+	f32 s;
+	f32 rad;
+	f32 c;
 	f32 f19;
 	f32 angle;
 	f32 scale;
@@ -317,7 +320,7 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 				q->pos[0] = (s16)((f32)cos(angle) * 100.f);
 				q->pos[1] = 0;
 				q->pos[2] = (s16)((f32)sin(angle) * 100.f);
-				q->tex[0] = i * 0x200;
+				q->tex[0] = (i * 2) << 8;
 				q->tex[1] = 0x400;
 			}
 		}
@@ -350,19 +353,12 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 			PSMTXScale(scaleMtx, zScale, scale, zScale);
 		}
 		PSMTXConcat(work, scaleMtx, work);
-		{
-			f32 s;
-			f32 theta;
-			f32 rad;
-			f32 c;
+		rad = 10.f * data->field_0xF8[i];
+		theta = 6.2831855f * data->field_0xB8[i] / 360.f;
+		s = (f32)sin(theta);
+		c = (f32)cos(theta);
 
-			rad = 10.f * data->field_0xF8[i];
-			theta = 6.2831855f * data->field_0xB8[i] / 360.f;
-			s = (f32)sin(theta);
-			c = (f32)cos(theta);
-
-			PSMTXTrans(scaleMtx, rad * s, 0.0f, rad * c);
-		}
+		PSMTXTrans(scaleMtx, rad * s, 0.0f, rad * c);
 		PSMTXConcat(work, scaleMtx, work);
 		PSMTXConcat(baseMtx, work, work);
 		for (j = 0; j < 16; j++) {
@@ -384,17 +380,11 @@ void effKamekiTornadeDisp(CameraId camId, void* param) {
 			PSMTXScale(scaleMtx, zScale, scale, zScale);
 		}
 		PSMTXConcat(work, scaleMtx, work);
-		{
-			f32 s;
-			f32 c;
-			f32 rad;
+		rad = 10.f * data->field_0xF8[i];
+		s = (f32)sin(6.2831855f * data->field_0xB8[i] / 360.f);
+		c = (f32)cos(6.2831855f * data->field_0xB8[i] / 360.f);
 
-			rad = 10.f * data->field_0xF8[i];
-			s = (f32)sin(6.2831855f * data->field_0xB8[i] / 360.f);
-			c = (f32)cos(6.2831855f * data->field_0xB8[i] / 360.f);
-
-			PSMTXTrans(scaleMtx, rad * s, 0.0f, rad * c);
-		}
+		PSMTXTrans(scaleMtx, rad * s, 0.0f, rad * c);
 		PSMTXConcat(work, scaleMtx, work);
 		PSMTXConcat(baseMtx, work, work);
 		for (j = 16; j < 32; j++) {
