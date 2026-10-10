@@ -958,16 +958,16 @@ __declspec(section ".rodata") static const char ml_str_c_d[] = "./m/%s/c";
 #define ML_STR_SPOT "spotLight"
 #define ML_STR_C "./m/%s/c"
 #endif
-// NONMATCHING (95.06%): register numbering only; the target saves r17-r31 and keeps entry in r31,
-// ours saves r20-r31 with base in r31/entry in r29, so the string adds and frame size differ. The
-// instruction stream is otherwise the same (one extra `li 0`, one re-materialised format string).
+// NONMATCHING (95.64%): the base and the lightEntry argument order now match. What is left is register
+// numbering/rematerialisation: the target saves r17-r31 and recomputes wp->entries[group] after the
+// light loop, ours saves r20-r31 and keeps it live, plus one extra `li 0` and the animation store order.
 void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	MapHeader* header;
 	MapEntry* entry;
 	MapFileInfo* info;
 	MapFileJoint* mapJoint;
-	MapFileJoint* hitJoint;
 	MapFileLight* light;
+	MapFileJoint* hitJoint;
 	MapObject* obj;
 	DVDEntry* dvd;
 	char str1[128];
@@ -982,14 +982,12 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	u8 *data;
 	u8* base;
 	void* anim;
-	s32 type;
-	s32 flags;
 	s32 rel_i;
 	s32 disp_i;
 	s32 i;
 
 	entry = &wp->entries[group];
-	base = vec3_802c16d8;
+	base = (u8*)((u32)vec3_802c16d8);
 	error_flag = FALSE;
 	error_count = 0;
 	strncpy(entry->name, map, sizeof(entry->name));
@@ -1025,9 +1023,9 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 
 	GXInvalidateVtxCache();
 	header = &entry->header;
-	data = (u8*)entry->dat;
 	{
 		u32 entryDatSize = wp->entries[group].datSize;
+		data = (u8*)entry->dat;
 		if (header != NULL) {
 			memset(header, 0, sizeof(MapHeader));
 			wp->entries[group].header.field_0x3C |= 1;
@@ -1089,6 +1087,9 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	wp->entries[group].rootHitObj = hitEntry(hitJoint, mtx, group);
 
 	for (i = 0; i < ((MapFileLightTable*)*(void**)((u8*)entry + 0x98))->count; i++) {
+		s32 type;
+		s32 flags;
+
 		light = ((MapFileLightTable*)*(void**)((u8*)entry + 0x98))->lights[i];
 		type = 1;
 		flags = 0;
@@ -1108,7 +1109,14 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 		if (light->field_0x40 == 0x12D60D8) {
 			flags = light->field_0x3C;
 		}
+#ifdef MUST_MATCH
+		// MUST_MATCH: the original evaluates the two f32 arguments before attenType/flags, so the
+		// floats are declared first in this cast; the header's declaration order differs but the
+		// register assignment is identical.
+		((s32 (*)(const char*, s32, Vec*, Vec*, GXColor, f32, f32, s32, s32))lightEntry)(light->name, type, &pos, &light->rotation, light->color, light->spotAngle, light->attenAngle, light->attenType, flags);
+#else
 		lightEntry(light->name, type, &pos, &light->rotation, light->color, light->attenType, flags, light->spotAngle, light->attenAngle);
+#endif
 	}
 
 	paper_ambient = dat_8041982c;
