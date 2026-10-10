@@ -2425,13 +2425,11 @@ void marioSearchFrontWall_staying(f32 a) {
     wp->position.z = v.z;
 }
 
-// The targetDistance round colours float_1000 f3 / the fctiwz double f2 / the early
-// out1.x load f1 where the original uses f2 / f1 / f4 (a global allocation-order
-// difference). The extra MATCH_F32 read of float_1000 on the out1.x divisor recovers
-// the original's per-round reload and 0.62% over the plain form. Conversions reference
-// a local @865 double rather than the shared double_to_int_802c5920 (name only, no score
-// cost; same project-wide limitation noted in window/win_*.c).
-// NONMATCHING (99.30%): only FPR colouring and the local @865 double differ from the original.
+// The hit-test block builds the query, dispatches the filter and rounds the result in one
+// place, so the original inlines marioHitCheckVecRound there.
+// NONMATCHING (99.83%): the inlined rounding's frontend temps colour the rounded component
+// f3 and the float_1000 load f4 where the original has component f4 / 1000 f3 (and follows
+// that swap through the z block's fmadds). Instruction counts and calls match.
 void marioCheckWall_roll(f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     Vec v;
@@ -2478,43 +2476,7 @@ void marioCheckWall_roll(f32 a, f32 b) {
         query.targetPos = v2;
         query.targetDir = dir;
         query.targetDistance = f31;
-        if (marioGetPtr()->currMotionId == 0x1C) {
-            headHit = hitCheckVecFilter(&query, chkfilterVecVivian);
-        } else if (marioGetPtr()->flags & 0x1000000) {
-            headHit = hitCheckVecFilter(&query, chkfilterVecRoll);
-        } else {
-            headHit = hitCheckVecFilter(&query, chkfilterVec);
-        }
-        if (headHit == NULL) {
-            headHit = NULL;
-        } else {
-            f31 = (f32)(s32)(float_1000_8041a7a0 * query.targetDistance +
-                             (query.targetDistance >= MATCH_F32(float_0_8041a7a4) ? float_0p5_8041a7c4
-                                                                       : float_neg0p5_8041a7c8)) /
-                  float_1000_8041a7a0;
-            {
-                Vec* pOut = &out1;
-                out1 = query.hitPos;
-                // MATCH: the volatile read of the divisor forces MWCC to reload
-                // float_1000 for this round as the original does (plain form: 98.68).
-                pOut->x = (f32)(s32)(float_1000_8041a7a0 * pOut->x +
-                                     (pOut->x >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
-                           MATCH_F32(float_1000_8041a7a0);
-                pOut->y = (f32)(s32)(float_1000_8041a7a0 * pOut->y +
-                                     (pOut->y >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
-                           float_1000_8041a7a0;
-                pOut->z = (f32)(s32)(float_1000_8041a7a0 * pOut->z +
-                                     (pOut->z >= float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
-                           float_1000_8041a7a0;
-            }
-#ifdef MUST_MATCH
-            if (&out2 != NULL) {
-                out2 = query.hitNormal;
-            }
-#else
-            out2 = query.hitNormal;
-#endif
-        }
+        headHit = marioHitCheckVecRound(&query, &out1, &out2, &f31);
         if (headHit != NULL && f31 > float_16p8_8041a830) {
             headHit = NULL;
         }
