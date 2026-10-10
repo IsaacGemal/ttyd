@@ -17,15 +17,27 @@ extern BattleWork *_battleWorkPointer;
 // loads past the preceding stores (a `const` declaration lets MWCC hoist them, shifting every FP/GP
 // register). Declaring them non-const while pinning the section to ".rodata" reproduces the original
 // schedule and keeps the data in place. The remaining five stay `const`.
+#ifdef MUST_MATCH
+// MWCC keeps these vector loads at the original points when the objects are mutable.
 __declspec(section ".rodata") Vec vec3_802efc40 = { 0.0f, 0.0f, 0.0f };
 __declspec(section ".rodata") Vec vec3_802efc4c = { 0.0f, 0.0f, 0.0f };
 __declspec(section ".rodata") Vec vec3_802efc58 = { 0.0f, 0.0f, 0.0f };
+#else
+const Vec vec3_802efc40 = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802efc4c = { 0.0f, 0.0f, 0.0f };
+const Vec vec3_802efc58 = { 0.0f, 0.0f, 0.0f };
+#endif
 const Vec vec3_802efc64 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802efc70 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802efc7c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802efc88 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802efc94 = { 0.0f, 0.0f, 0.0f };
+#ifdef MUST_MATCH
+// Keep this copy at the original load site as well.
 __declspec(section ".rodata") Vec vec3_802efca0 = { 0.0f, 0.0f, 0.0f };
+#else
+const Vec vec3_802efca0 = { 0.0f, 0.0f, 0.0f };
+#endif
 
 
 // prototypes for the event wrappers
@@ -68,21 +80,14 @@ void battleCameraInit(void) {
 // (not inlined); keep inlining off across the small API surface.
 #pragma dont_inline on
 
-// Prologue/epilogue (frame 0x100, stmw r25), the stack layout, every call and every rodata reference all match.
-// What differs is register allocation only (29 instructions, no inserts/deletes, every diff `arg_mismatch`).
-// The per-case declarations are ordered for the register allocator (first-declared gets the highest
-// vreg), which recovers the register picks of cases 7, 9 and 10, and the case 8/11 base/f9/xv statements
-// are ordered so the caller-saved FPRs land on the originals.
-// Cases 7/10: the height offset is `/ 2.0f` (MWCC turns it into `* 0.5` with the variable first,
-// retail's operand order; a literal `* 0.5f` puts the constant first), and the clamp keeps the
-// unclamped height in `y` (retail loads `cvy` and tests a copy for the `< 0` bound). Case 13 writes
-// `u * x` with `u` first, retail's `fmuls` operand order.
-// Still different: case 13's volatile FPRs (`u`/`zz`/the reloaded `unkC8.x`/the `cy` temp), the
-// case-7 `u` (r25, want r28), the case-11 `unit2`/`part` swap (r26/r28) and case 13's `unit` (r28,
-// want r27). In tools/rasim.py on a mwccdbg dump the GPRs need case 7's `u` to sweep among the
-// frontend's split webs of `unit`/`unit2` (moving its declaration changes nothing), and no single
-// move fixes case 13's FPRs.
-// NONMATCHING (99.92%): the register clusters above; no logic differs.
+#ifdef MUST_MATCH
+// Inlining this lookup gives case 7's live unit pointer the original register.
+static inline BattleUnit* bcam_get_unit(BattleWork* wp, s32 id) { return BattleGetUnitPtr(wp, id); }
+#endif
+// Prologue/epilogue (frame 0x100, stmw r25), stack layout, calls and data references match.
+// The case-7 lookup inline now gives `u` the original r28. The remaining 17 instructions differ
+// only in case 11's `unit2`/`part` r26/r28 swap and case 13's `unit` r28/r27 and volatile FPRs.
+// NONMATCHING (99.93%): the case-11 and case-13 register clusters above.
 void battleCameraMain(void) {
   CameraEntry* cam;
   BattleWork* wp;
@@ -205,7 +210,11 @@ void battleCameraMain(void) {
     BattleUnit* u;
     f32 w;
 
+#ifdef MUST_MATCH
+    u = bcam_get_unit(wp, wp->cameraWork.unk10);
+#else
     u = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+#endif
     if (u == NULL) {
       btl_camera_set_mode(0, 0);
       break;
@@ -270,7 +279,11 @@ void battleCameraMain(void) {
     }
     // Match-only: materialising the subtraction keeps dxc in the original register (and leaves the
     // earlier width in f3 instead of f4).
+#ifdef MUST_MATCH
     { f32 _t = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x; dxc = _t; }
+#else
+    dxc = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x;
+#endif
     num = hv.x - vv.x;
     if (dxc == 0.0f) {
       t = 0.5f;
@@ -283,7 +296,12 @@ void battleCameraMain(void) {
     if (t < 0.5f) {
       t = 0.5f;
     }
+#ifdef MUST_MATCH
+    // Materialise the product for the original register allocation.
     { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
+#else
+    base = float_2_8041c450 * wp->cameraWork.zoom - 1.5f * (wa + wb);
+#endif
     f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
     xv = (1.0f - t) * wp->cameraWork.unkC8.x;
     v = (1.0f - t) * base;
@@ -436,7 +454,12 @@ void battleCameraMain(void) {
     if (t < 0.5f) {
       t = 0.5f;
     }
+#ifdef MUST_MATCH
+    // Materialise the product for the original register allocation.
     { f32 _t = float_2_8041c450 * wp->cameraWork.zoom; base = _t - 1.5f * (wa + wb); }
+#else
+    base = float_2_8041c450 * wp->cameraWork.zoom - 1.5f * (wa + wb);
+#endif
     f9 = (vv.y - wp->cameraWork.unkC8.y) * (wp->cameraWork.unkC8.y / 80.0f);
     xv = (1.0f - t) * wp->cameraWork.unkC8.x;
     v = (1.0f - t) * base;
@@ -499,8 +522,12 @@ void battleCameraMain(void) {
     }
     u = 1.0f - t;
     // Match-only: splitting the subtraction stops MWCC from introducing an extra temporary.
+#ifdef MUST_MATCH
     cy = vv.y;
     cy = cy - wp->cameraWork.unkBC.y - 100.0f;
+#else
+    cy = vv.y - wp->cameraWork.unkBC.y - 100.0f;
+#endif
     zz = float_2_8041c450 * wp->cameraWork.zoom;
     v = u * wp->cameraWork.unkC8.x;
     if (cy > 0.0f) {
