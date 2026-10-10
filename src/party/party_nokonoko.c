@@ -201,13 +201,7 @@ void nokonoko_use_post(PartyEntry* party) {
 #define NKM(off) (*(f32*)((u8*)mario + (off)))
 
 // Koops' overworld use state machine.  Reconstructed from the original asm; the
-// many switches mirror the jump tables in party_nokonoko.s.  Control flow, jump
-// tables, case bodies, callees and constants all match.  What is left is the
-// compiler's own int->float magic double loading through a fresh `lis` instead
-// of `lfd 0x10(r31)` (the same objdiff-only base/offset difference documented
-// for party_cloud.c), and the effKemuTestEntry height product's two `lfs` in
-// swapped order.
-// NONMATCHING (99.73%): register colouring and stack-slot placement only.
+// many switches mirror the jump tables in party_nokonoko.s.
 void nokonoko_use(PartyEntry* party) {
     MarioWork* mario = party->playerPtr;
     HitEntry* hit;
@@ -353,7 +347,8 @@ void nokonoko_use(PartyEntry* party) {
         f2 = (f1 > 180.0f) ? 1.0f : -1.0f;
         NKF(0x10C) = revise360(50.0f * f2 + NKF(0x10C));
         if (gp->retraceCount & 1) {
-            EffectEntry* eff = effKemuTestEntry(0, party->position.x, NKF(0xF0) * 0.25f + party->position.y,
+            f32 k = 0.25f;
+            EffectEntry* eff = effKemuTestEntry(0, party->position.x, NKF(0xF0) * k + party->position.y,
                                                 party->position.z, 0.3f);
             effKemuTestDrawCam(eff, party->camId);
         }
