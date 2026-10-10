@@ -96,7 +96,6 @@ extern Vec vec3_802c405c[];
 extern u32 dat_8041a134;
 extern u32 dat_8041a130;
 
-extern const char str_8041A12C[4];
 extern s32 evt_lock_sound[];
 
 // Prototypes missing from manager/fontmgr.h
@@ -165,10 +164,11 @@ extern Vec vec3_802c3ef4[];
 #else
 #define LVB_TEMPLATE(dst, src) strcpy((dst), (src))
 #endif
-extern const char str_8041A11C[4];
 s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
-extern const char* _switch_anim[6];
-extern const char str_8041A120[4];
+
+const char* _switch_anim[6] = {
+    "A_1", "A_2", "A_3", "A_4", "A_5", "S_1",
+};
 
 s32 evt_mobj_entry(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -1547,7 +1547,7 @@ s32 mobj_lv_blk_evt(MapObjectEntry* obj) {
             evt_img_alloc_capture(&tmpEvent2, 1);
             img = imgNameToPtr(imgName, inBattle);
             img->poseId = animPaperPoseGetId("P_box_y", inBattle);
-            img->animName = str_8041A118;
+            img->animName = "A_1";
             // ImageEntry declares no field at 0x110 (it falls 4 bytes into the field_0x10C padding,
             // 0x10C..0x118); the same location is written by evt_img.c, evt_cloud.c and fadedrv.c.
             *(OSTime*)(img->field_0x10C + 4) = animTimeGetTime(inBattle);
@@ -1903,9 +1903,9 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                     isA = 0;
                 }
                 if (isA) {
-                    nm = str_8041A120;
+                    nm = "A_3";
                 } else {
-                    nm = str_8041A12C;
+                    nm = "S_1";
                 }
                 animPoseSetAnim(obj->poseId, nm, 1);
             }
@@ -1943,9 +1943,9 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                     isA = 0;
                 }
                 if (isA) {
-                    animPoseSetAnim(obj->poseId, str_8041A120, 1);
+                    animPoseSetAnim(obj->poseId, "A_3", 1);
                 } else {
-                    animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+                    animPoseSetAnim(obj->poseId, "S_1", 1);
                 }
             }
             *(s32*)((u8*)obj + 0x1B0) = 0x78;
@@ -1968,9 +1968,9 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                                         child->position.x, 0.5f + child->position.y,
                                         child->position.z, float_0_8041a150, (-1.0f),
                                         float_0_8041a150) != 0) {
-                    animPoseSetAnim(obj->poseId, str_8041A12C, 0);
+                    animPoseSetAnim(obj->poseId, "S_1", 0);
                 } else {
-                    animPoseSetAnim(obj->poseId, str_8041A120, 0);
+                    animPoseSetAnim(obj->poseId, "A_3", 0);
                 }
             } else {
                 AnimTableEntry* anim = animPoseGetCurrentAnim(obj->poseId);
@@ -1981,9 +1981,9 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                     isA = 0;
                 }
                 if (isA) {
-                    animPoseSetAnim(obj->poseId, str_8041A120, 1);
+                    animPoseSetAnim(obj->poseId, "A_3", 1);
                 } else {
-                    animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+                    animPoseSetAnim(obj->poseId, "S_1", 1);
                 }
             }
             obj->unk1DC = 0;
@@ -2147,7 +2147,7 @@ s32 mobj_lock(MapObjectEntry* obj) {
             event->lwData[0] = (s32)(scale * obj->position.x) + 0xF24A7A80;
             event->lwData[1] = (s32)(scale * obj->position.y) + 0xF24A7A80;
             event->lwData[2] = (s32)(scale * obj->position.z) + 0xF24A7A80;
-            animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+            animPoseSetAnim(obj->poseId, "S_1", 1);
             obj->unk1DC++;
             break;
         }
@@ -2317,7 +2317,7 @@ s32 mobj_itembox(MapObjectEntry* obj) {
                 event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
                 event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
             }
-            animPoseSetAnim(obj->poseId, str_8041A118, 1);
+            animPoseSetAnim(obj->poseId, "A_1", 1);
             obj->eventId = 0;
             mobjRunEvent(obj, obj->unk1D8);
             obj->unk1DC++;
@@ -2368,9 +2368,9 @@ s32 mobj_itembox(MapObjectEntry* obj) {
             obj->flags |= 8;
             obj->flags &= ~0x20;
             if (strcmp(obj->animName, IB_R(0x6E0, str_802C44A8, "MOBJ_BlackTreasureBox")) == 0) {
-                animPoseSetAnim(obj->poseId, str_8041A218, 1);
+                animPoseSetAnim(obj->poseId, "S_4", 1);
             } else {
-                animPoseSetAnim(obj->poseId, str_8041A1C0, 1);
+                animPoseSetAnim(obj->poseId, "S_2", 1);
             }
             break;
     }
@@ -2613,7 +2613,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
                 *(EffectEntry**)((u8*)obj + 0x1C8) = NULL;
             }
             psndSFXOn_3D((const char*)0x1DA, &obj->position);
-            animPoseSetAnim(obj->poseId, str_8041A11C, 1);
+            animPoseSetAnim(obj->poseId, "A_2", 1);
             if (*(s32*)((u8*)obj + 0x1A4) == 0) {
                 obj->unk1DC = 3;
             } else {
@@ -2636,7 +2636,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
 
                 effStardustEntry(2, 0x32, 0x64, mario->position.x, mario->position.y, mario->position.z,
                                  50.0f, 50.0f);
-                marioChgPose(str_8041A1F8);
+                marioChgPose("M_I_1");
                 pouch->currentHP = pouch->maximumHP;
                 pouch->currentFP = pouch->maximumFP;
                 for (i = 0; i < 8; i++) {
@@ -2667,7 +2667,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
 
                 effStardustEntry(2, 0x32, 0x64, mario->position.x, mario->position.y, mario->position.z,
                                  50.0f, 50.0f);
-                marioChgPose(str_8041A1F8);
+                marioChgPose("M_I_1");
                 pouch->currentHP = pouch->maximumHP;
                 pouch->currentFP = pouch->maximumFP;
                 for (i = 0; i < 8; i++) {
@@ -2687,8 +2687,8 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
-            animPoseSetAnim(obj->poseId, str_8041A118, 1);
-            marioChgPose(str_8041A200);
+            animPoseSetAnim(obj->poseId, "A_1", 1);
+            marioChgPose("M_S_1");
             marioKeyOn();
             statusWinForceOff();
             camGetPtr(8)->flags &= ~0x200;
@@ -2705,7 +2705,7 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
             if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
             }
-            animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+            animPoseSetAnim(obj->poseId, "S_1", 1);
             obj->flags &= ~8;
             obj->unk1DC = 0;
             break;
@@ -3624,11 +3624,11 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
                 break;
             }
             if (flag == 1) {
-                animPoseSetAnim(obj->poseId, str_8041A118, 1);
+                animPoseSetAnim(obj->poseId, "A_1", 1);
                 psndSFXOnEx_3D((const char*)0x1ee, &obj->position, 0xff, 0xff, 0x64, 0x10);
                 obj->unk1DC = 0xa;
             } else if (flag == 2) {
-                animPoseSetAnim(obj->poseId, str_8041A11C, 1);
+                animPoseSetAnim(obj->poseId, "A_2", 1);
                 psndSFXOn_3D((const char*)0x1ef, &obj->position);
                 obj->unk1DC = 1;
                 item = itemNameToPtr(obj->name);
@@ -3671,7 +3671,7 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
             animGetPtr()->poses[obj->poseId].flags &= ~0x10;
             obj->flags &= ~0x400;
             obj->flags &= ~8;
-            animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+            animPoseSetAnim(obj->poseId, "S_1", 1);
             psndSFXOn_3D((const char*)0x1f0, &obj->position);
             obj->unk1DC = 0;
             break;
@@ -3713,7 +3713,7 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
             }
             animGetPtr()->poses[obj->poseId].flags &= ~0x10;
             obj->flags &= ~0x400;
-            animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+            animPoseSetAnim(obj->poseId, "S_1", 1);
             psndSFXOn_3D((const char*)0x1f0, &obj->position);
             *(s32*)&obj->unk1A0[0x10] = 0x14;
             obj->unk1DC++;
@@ -4146,13 +4146,13 @@ s32 evt_mobj_koopa_brick(EventEntry* event, BOOL isFirstCall) {
     *(s32*)obj->unk1A0 = unk1A0;
     mobjCalcMtx(obj);
 #ifdef MUST_MATCH
-    animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+    animPoseSetAnim(obj->poseId, "S_1", 1);
 #else
     animPoseSetAnim(obj->poseId, "S_1", 1);
 #endif
     if (evtGetValue(event, unk1E4) != 0) {
 #ifdef MUST_MATCH
-        animPoseSetAnim(obj->poseId, str_8041A12C, 1);
+        animPoseSetAnim(obj->poseId, "S_1", 1);
 #else
         animPoseSetAnim(obj->poseId, "S_1", 1);
 #endif
@@ -5221,36 +5221,22 @@ s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
 }
 
 // ROData pool objects
-__declspec(section ".sdata2") const char str_8041A118[4] = "A_1";
-__declspec(section ".sdata2") const char str_8041A11C[4] = "A_2";
-__declspec(section ".sdata2") const char str_8041A120[4] = "A_3";
-__declspec(section ".sdata2") const char str_8041A124[4] = "A_4";
-__declspec(section ".sdata2") const char str_8041A128[4] = "A_5";
-__declspec(section ".sdata2") const char str_8041A12C[4] = "S_1";
 __declspec(section ".sdata2") u32 dat_8041a130 = 0xFFFFFFFF;
 __declspec(section ".sdata2") u32 dat_8041a134 = 0xFFFFFFFF;
 __declspec(section ".sdata2") const char str_8041A138[4] = "_h\000";
 #pragma explicit_zero_data on  // keep the zero float_0 in .sdata2 (otherwise MWCC puts it in bss)
 __declspec(section ".sdata2") f32 float_0_8041a150 = 0.0f;
 #pragma explicit_zero_data reset
-__declspec(section ".sdata2") const char str_8041A168[8] = "%s%2x\000\000";
 __declspec(section ".sdata2") f32 float_10_8041a1a4 = 10.0f;
 __declspec(section ".sdata2") f32 float_0p8_8041a1b0 = 0.8f;
-__declspec(section ".sdata2") const char str_8041A1C0[4] = "S_2";
 __declspec(section ".sdata2") const char str_8041A1E8[4] = "S_3";
-__declspec(section ".sdata2") const char str_8041A1F8[8] = "M_I_1";
-__declspec(section ".sdata2") const char str_8041A200[8] = "M_S_1";
 const f32 float_1p4_8041a208 = 1.4f;
 const f32 float_1p2_8041a20c = 1.2f;
-__declspec(section ".sdata2") const char str_8041A218[4] = "S_4";
 __declspec(section ".sdata2") const char str_8041A21C[4] = "Z_1";
 __declspec(section ".sdata2") f32 float_0p9_8041a228 = 0.9f;
 __declspec(section ".sdata2") const char str_8041A234[4] = "me\000";
 
 // .sdata
-const char* _switch_anim[6] = {
-    str_8041A118, str_8041A11C, str_8041A120, str_8041A124, str_8041A128, str_8041A12C,
-};
 s32 kpa_powerup_evt[7] = {
     0x0004005B, (s32)kpa_powerup, 0xFE363C80, 0xFE363C81, 0xFE363C82, 0x00000002, 0x00000001,
 };
