@@ -1820,17 +1820,18 @@ static inline u8* mapSearchAnimObj(const char* name) {
 // r22/r25. The inlined Hermite blocks colour t in f5 vs retail's f12 (colour/light) or f2
 // (alpha, where only d and the orientation FPRs differ), so the polynomial FPRs rotate; and the
 // `if (!(t <= next))` diamond lays out as `beq after` vs retail's `bne body; b after` (8
-// op_mismatch). All are allocator colouring; no C shape found that moves them (the remaining
-// levers -- two-u32 split of `time`, a real inlined Hermite helper -- either do not move the
-// colouring or make MWCC hang).
+// op_mismatch). The Hermite output sum evaluates `value0 * h00` before `tan0 * (d * h10)` and
+// the light blocks declare `ki` first, which together move the FPR/callee-saved colouring; the
+// remaining FPR rotation is allocator colouring that no further C shape found moves (the
+// remaining levers -- a two-u32 split of `time`, a real inlined Hermite helper -- either do not
+// move the colouring or make MWCC hang).
 // The d==0 boolean uses the __cntlzw intrinsic to reproduce retail's cntlzw/srwi normalisation.
 // The colour/light Hermite loops have no `if (cnt > 1)` wrapper: the bare `for (ki = 1; ...)`
 // guard reproduces retail's `subi cnt-1; mtctr` scheduled before the `cmpwi`.
 #pragma opt_loop_invariants off // pins the colour/light channel loads and fixes allocator colouring
 #pragma opt_common_subs off // same: required for retail's register colouring here
-// NONMATCHING (96.21%): only register colouring/scheduling differs; calls, immediates, branches and
-// structure match. Retail keeps the spline time in f12 (colour/light) and d in f11/f12, while MWCC
-// here puts t in f5 and d in f6; the list16/list15-vs-time GPR swap cascades from the same colouring.
+// NONMATCHING (96.69%): the eight clamp diamonds still emit `beq` where retail has `bne`+`b`;
+// the rest is FPR colouring (t f5 vs f12, d f6 vs f11), plus the list16/list15 GPR swap.
 void mapMain(void) {
 	u8* list19;
 	MapEntry* entry;
@@ -1971,8 +1972,8 @@ void mapMain(void) {
 									f32 k1 = *(f32*)next;
 									f32 dt = t - k0;
 									f32 d = k1 - k0;
-									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value0 = *(f32*)(ch + 4);
+									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value1 = *(f32*)(chn + 4);
 									f32 tan1 = *(f32*)(chn + 8);
 									f32 den;
@@ -1995,7 +1996,7 @@ void mapMain(void) {
 									h10 = u + b;
 									h00 = float_1_80419860 + c;
 									h01 = float_neg2_804198a0 * u3 + a;
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 								}
 							}
 							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
@@ -2036,8 +2037,8 @@ void mapMain(void) {
 									f32 k1 = *(f32*)next;
 									f32 dt = t - k0;
 									f32 d = k1 - k0;
-									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value0 = *(f32*)(ch + 4);
+									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value1 = *(f32*)(chn + 4);
 									f32 tan1 = *(f32*)(chn + 8);
 									f32 den;
@@ -2060,7 +2061,7 @@ void mapMain(void) {
 									h10 = u + b;
 									h00 = float_1_80419860 + c;
 									h01 = float_neg2_804198a0 * u3 + a;
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 								}
 							}
 							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
@@ -2101,8 +2102,8 @@ void mapMain(void) {
 									f32 k1 = *(f32*)next;
 									f32 dt = t - k0;
 									f32 d = k1 - k0;
-									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value0 = *(f32*)(ch + 4);
+									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value1 = *(f32*)(chn + 4);
 									f32 tan1 = *(f32*)(chn + 8);
 									f32 den;
@@ -2125,7 +2126,7 @@ void mapMain(void) {
 									h10 = u + b;
 									h00 = float_1_80419860 + c;
 									h01 = float_neg2_804198a0 * u3 + a;
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 								}
 							}
 							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
@@ -2326,9 +2327,9 @@ void mapMain(void) {
 				for (li = 0; li < *(s32*)list16; lp += 4, li++) {
 					LightEntry* light = lightNameToPtr(*(char**)*(u8**)(lp + 4));
 					if (light != NULL) {
+					s32 ki;
 					u8* item = *(u8**)(lp + 4);
 					s32 cnt = *(s32*)(item + 4);
-					s32 ki;
 					f32 out[9];
 					for (ki = 1; ki < cnt; ki++) {
 						u8* prev = item + 8 + (ki - 1) * 0xB8;
@@ -2356,8 +2357,8 @@ void mapMain(void) {
 								f32 k1 = *(f32*)next;
 								f32 dt = t - k0;
 								f32 d = k1 - k0;
-								f32 tan0 = *(f32*)(ch + 0xC);
 								f32 value0 = *(f32*)(ch + 4);
+								f32 tan0 = *(f32*)(ch + 0xC);
 								f32 value1 = *(f32*)(chn + 4);
 								f32 tan1 = *(f32*)(chn + 8);
 								f32 den;
@@ -2380,7 +2381,7 @@ void mapMain(void) {
 								h10 = u + b;
 								h00 = float_1_80419860 + c;
 								h01 = float_neg2_804198a0 * u3 + a;
-								out[k] = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								out[k] = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 							}
 						}
 						{
@@ -2399,14 +2400,14 @@ void mapMain(void) {
 			}
 			/* light animation (color/angle) */
 			if (list15 != NULL) {
-				u8* lp = list15;
 				s32 li;
+				u8* lp = list15;
 				for (li = 0; li < *(s32*)list15; lp += 4, li++) {
 					LightEntry* light = lightNameToPtr(*(char**)*(u8**)(lp + 4));
 					if (light != NULL) {
+					s32 ki;
 					u8* item = *(u8**)(lp + 4);
 					s32 cnt = *(s32*)(item + 4);
-					s32 ki;
 					f32 out[5];
 					for (ki = 1; ki < cnt; ki++) {
 						u8* prev = item + 8 + (ki - 1) * 0x68;
@@ -2434,8 +2435,8 @@ void mapMain(void) {
 								f32 k1 = *(f32*)next;
 								f32 dt = t - k0;
 								f32 d = k1 - k0;
-								f32 tan0 = *(f32*)(ch + 0xC);
 								f32 value0 = *(f32*)(ch + 4);
+								f32 tan0 = *(f32*)(ch + 0xC);
 								f32 value1 = *(f32*)(chn + 4);
 								f32 tan1 = *(f32*)(chn + 8);
 								f32 den;
@@ -2458,7 +2459,7 @@ void mapMain(void) {
 								h10 = u + b;
 								h00 = float_1_80419860 + c;
 								h01 = float_neg2_804198a0 * u3 + a;
-								out[k] = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								out[k] = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 							}
 						}
 						light->color.r = (s32)(255.0f * out[0]);
