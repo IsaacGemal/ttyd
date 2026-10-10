@@ -45,7 +45,7 @@ __declspec(section ".data") s32 r_data[0x140 / 4] = {
 
 // Local copy of system.c's inline helper so it inlines here (as in eff_guruguru.c).
 inline Vec initializeVec(Vec* input) {
-	Vec temp = (Vec){ 0.0f, 0.0f, 0.0f };
+	Vec temp = { 0.0f, 0.0f, 0.0f };
 	temp.x = input->x;
 	temp.y = input->y;
 	temp.z = input->z;
@@ -53,21 +53,10 @@ inline Vec initializeVec(Vec* input) {
 }
 
 // The declaration order `row, n, i, flag, count` and the `n += 2, i++` update order are what
-// match the original's flag/type (r24/r25) and n/i (r9/r10) register picks. Reading the table
-// through the `rd` local instead of `r_data` directly is what pins the int->float magic
-// (0x4330) in r6 and the zero constant in r3, matching the original instead of swapping them
-// with the row register. What still differs: MWCC folds the default loop's fourth table load
-// `rd[row + 2]` into the third load's already-scaled index (`slwi r4, r4, 2; addi r0, r4, 8`)
-// where the original re-derives it (`addi r8, r8, 2; slwi r0, r8, 2; lwzx`). That fold also
-// drops the function to 956 bytes against the original's 960 and lands row in r4 rather than
-// r8 (and the loop counter i in r8 rather than r10). Because the fold shortens row's live
-// range, no source shape removes it without breaking the conversion schedule: a `row + 2` /
-// `row += 2` / separate row4 temp / byte-pointer index, all declaration and update orders, the
-// GC/1.3 1.3.2 2.0 2.5 2.6 2.7 compilers and every opt_* pragma combination were tried; the
-// 1.2.5-family compilers cannot parse the file. Available compiler gets no closer.
+// match the original's flag/type (r24/r25) and n/i (r9/r10) register picks. With dead-assignment
+// elimination off, the table row's post-increments keep the original's index chain (row, +1, +1,
+// then +2 for the fifth word) instead of folding it into the load's displacement.
 #pragma opt_dead_assignments off
-// NONMATCHING (99.16%): default loop's 4th table load folded into the 3rd load's scaled index;
-// row/i land in r4/r8 instead of r8/r10.
 EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 	EffectEntry* effect;
 	EffRadiationData* data;
@@ -164,18 +153,10 @@ EffectEntry* effRadiationN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5) {
 
 	return effect;
 }
-#pragma opt_dead_assignments reset
 
-// The prologue is matched by starting the Vec temp from the anonymous zero literal (a named
-// zero vector makes MWCC hoist its loads above `data = effect->userdata`), which is why the
-// file's vec3_802fb478 global is gone: the literal already lands at the same .rodata slot.
-// MWCC still folds the default loop's fourth table load `r_data[row + 2]` (after two `++row`)
-// into the third load's byte base (`add r5, r10, r7; lwz r5, 0x8(r5)`) where the original
-// re-derives the index (`addi r11, r11, 2; slwi r5, r11, 2; lwzx`). The no-fold forms
-// (`row += 2`, a row4 temp, an explicit byte offset) restore the missing instruction and the
-// original size but reassociate the increment as `(row + 1) + 3` and reorder the int->float
-// conversion loads, scoring worse (98.48%). Same blocker as effRadiationN64Entry.
-// NONMATCHING (99.37%): default loop's 4th r_data load folded into the 3rd load's byte base.
+// The default loop reads its table row with the same post-increments as effRadiationN64Entry (still
+// under opt_dead_assignments off). The countdown skips the rest of the iteration while it is
+// running, which is what lets the `<= 0` path jump straight to the position update.
 void effRadiationMain(EffectEntry* effect) {
 	s32 n1;
 	s32 n2;
@@ -288,9 +269,9 @@ void effRadiationMain(EffectEntry* effect) {
 				data->field_0x58 = 0.0f;
 				data->field_0x28 = n;
 				row = (i - 1) * 5;
-				data->field_0x5C = (f32)r_data[row];
-				data->field_0x60 = (f32)r_data[++row];
-				data->field_0x64 = (f32)r_data[++row];
+				data->field_0x5C = (f32)r_data[row++];
+				data->field_0x60 = (f32)r_data[row++];
+				data->field_0x64 = (f32)r_data[row++];
 				data->field_0x24 = 0;
 				data->field_0x2C = 0;
 				data->field_0x38 = 0.0f;
@@ -303,17 +284,18 @@ void effRadiationMain(EffectEntry* effect) {
 				data->field_0x54 = 0.6f;
 				data->field_0x80 = 0.0f;
 				data->field_0x84 = 0.0f;
-				data->field_0x88 = (f32)r_data[row + 2] * 0.1f;
+				data->field_0x88 = (f32)r_data[++row] * 0.1f;
 				data->field_0x90 = 0;
 			}
 			if (data->field_0x90 > 0) {
 				data->field_0x90--;
+				if (data->field_0x90 > 0) {
+					continue;
+				}
 			}
-			if (data->field_0x90 <= 0) {
-				data->field_0x5C += data->field_0x80;
-				data->field_0x60 += data->field_0x84;
-				data->field_0x64 += data->field_0x88;
-			}
+			data->field_0x5C += data->field_0x80;
+			data->field_0x60 += data->field_0x84;
+			data->field_0x64 += data->field_0x88;
 		}
 		break;
 	}
@@ -329,6 +311,7 @@ void effRadiationMain(EffectEntry* effect) {
 		}
 	}
 }
+#pragma opt_dead_assignments reset
 
 // .sdata2/.rodata constants and .data/.sdata vertex arrays used by effRadiationDisp
 // (original symbols from config/G8MJ01/symbols.txt).

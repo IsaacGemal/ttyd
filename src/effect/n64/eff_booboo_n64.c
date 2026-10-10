@@ -36,31 +36,31 @@ __declspec(section ".sdata") GXColor unk_804230a8;
 #pragma section ".sdata" ".sbss"
 
 // .data
-__declspec(section ".data") u32 negone_one_374[2] ATTRIBUTE_ALIGN(8) = {
+static __declspec(section ".data") u32 negone_one_374[2] ATTRIBUTE_ALIGN(8) = {
 	0xBF800000, 0x3F800000,
 };
 
-__declspec(section ".data") u32 lbl_8039A9F0[2] ATTRIBUTE_ALIGN(8) = {
+static __declspec(section ".data") u32 lbl_8039A9F0[2] ATTRIBUTE_ALIGN(8) = {
 	0x3F800000, 0xBF800000,
 };
 
-__declspec(section ".data") u32 one_negone_373[2] ATTRIBUTE_ALIGN(8) = {
+static __declspec(section ".data") u32 one_negone_373[2] ATTRIBUTE_ALIGN(8) = {
 	0x3F800000, 0xBF800000,
 };
 
-__declspec(section ".data") u32 lbl_8039AA00[2] ATTRIBUTE_ALIGN(8) = {
+static __declspec(section ".data") u32 lbl_8039AA00[2] ATTRIBUTE_ALIGN(8) = {
 	0xBF800000, 0x3F800000,
 };
 
-__declspec(section ".data") u32 negone_one_360[2] ATTRIBUTE_ALIGN(8) = {
+static __declspec(section ".data") u32 negone_one_360[2] ATTRIBUTE_ALIGN(8) = {
 	0xBF800000, 0x3F800000,
 };
 
-__declspec(section ".data") u32 lbl_8039AA10[2] ATTRIBUTE_ALIGN(8) = {
+static __declspec(section ".data") u32 lbl_8039AA10[2] ATTRIBUTE_ALIGN(8) = {
 	0x3F800000, 0xBF800000,
 };
 
-__declspec(section ".data") u32 one_negone_359[2] ATTRIBUTE_ALIGN(8) = {
+static __declspec(section ".data") u32 one_negone_359[2] ATTRIBUTE_ALIGN(8) = {
 	0x3F800000, 0xBF800000,
 };
 
@@ -1052,23 +1052,28 @@ BOOL texture_dl(EffectEntry* effect, s32 index, u32 tex) {
 	return FALSE;
 }
 
-// effBoobooDisp: every instruction is byte-identical except the callee-saved colouring of the four
-// loop-carried values effect/camera/word/byte. Building the GXColor with separate .r/.g/.b statements
-// fixed the by-value store order (99.30% -> 99.42%). Storing the sin result in `f32 s` first pools
-// 6.2832/360 before 63.0 as the original's .sdata2 does (no instruction changes). Using `param`
-// directly instead of the local `effect` puts effect/camera in r29/r28 but swaps the word/byte
-// induction pointers to r27/r26 (99.29%), so the local `effect` is kept.
-// Declaration-order (perm_decls over all 10 locals), opt_lifetimes/opt_propagation/opt_common_subs/
-// optimize_for_size/scheduling/global_optimizer/optimization_level pragma and random source-shape
-// searches were all tried; none reach the target rotation. The int->float magic is emitted as an
-// anonymous @NNN label instead of the named double_to_int_802fa2d8; the word itself pools at the
-// original's slot (the file-local i2f helper above), so only the symbol name differs and the unit's
-// data sections are byte-identical.
-// NONMATCHING (99.42%): target effect r29/camera r28/word r26/byte r27; ours effect r26/camera r29/word r28/byte r27.
+// Draws one of the three Booboo shapes. As an inline, `poly` is a front-end temp numbered ahead of the
+// loop's pointer temps, which gives the original's callee-saved order (camera, shape, data pointers).
+static inline void boo_polygon(int poly) {
+	GXSetCullMode(GX_CULL_BACK);
+	switch (poly) {
+	case 0:
+		boo_polygon_0();
+		break;
+	case 1:
+		boo_polygon_1();
+		break;
+	case 2:
+		boo_polygon_2();
+		break;
+	}
+}
+
+// Building the GXColor with separate .r/.g/.b statements gives the original's by-value store order.
+// Storing the sin result in `f32 s` first pools 6.2832/360 before 63.0 as the original's .sdata2 does.
 void effBoobooDisp(CameraId camId, void* param) {
 	CameraEntry* camera;
 	int phase;
-	int poly;
 	BoobooData* data;
 	int i;
 	Mtx mtx;
@@ -1101,19 +1106,7 @@ void effBoobooDisp(CameraId camId, void* param) {
 #endif
 					GXSetTevColor(GX_TEVREG0, color);
 				}
-				poly = (u8)(data->poly[i]);
-				GXSetCullMode(GX_CULL_BACK);
-				switch (poly) {
-				case 0:
-					boo_polygon_0();
-					break;
-				case 1:
-					boo_polygon_1();
-					break;
-				case 2:
-					boo_polygon_2();
-					break;
-				}
+				boo_polygon(data->poly[i]);
 			}
 		}
 	}
