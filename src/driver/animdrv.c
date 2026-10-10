@@ -3152,17 +3152,19 @@ extern GXColor dat_80419a34;
 extern GXColor dat_80419a38;
 
 // Logic, offsets, constants, calls and branch layout match; what remains is the callee-saved GPR map.
-// The original keeps pose in r30, animData in r29, materialFlag in r31, flags in r28 and
-// materialLightFlag in r27, and reuses r27/r31/r28 for x/c/b (and r28/r29 for w/h) in the tail;
-// this compiler instead assigns pose r28, flags r27, materialFlag r30, materialLightFlag r31,
-// w r29 and h r30. Declaration order (all 23 locals, sampled), assignment order, block-scoped
-// x/y/b/c, a local `p = pose` copy, `register`, every -O/opt_*/global_optimizer/scheduling/
-// defer_codegen/peephole/optimize_for_size pragma, and GC compiler 2.0/2.5/2.6/2.7 all leave
-// `pose` in r28 -- it is a pure graph-colouring tie-break and needs the permuter. The y-flip
-// statements must be `x=...; y=...; c=x; if(x<y)c=y;` (c=x after y, not before) and the
-// field_0x104 numerator is emitted as the negated `-(left - pose114)` form; the max is written
-// with a temp under MUST_MATCH to stop the else branch coalescing c into x.
-// NONMATCHING (97.50%): callee-saved GPR map (pose r30 vs r28 etc.) and the tail schedule it drives.
+// The original keeps pose in r30, animData in r29, flags in r31, materialFlag in r28 and
+// materialLightFlag in r27 (x r27, y r3, y2 r4, b r5 all match). This compiler assigns the
+// four callee-saved web slots in the 4-cycle pose r28, animData/w r30, flags/t r29,
+// materialFlag/h r31. Declaration order, assignment order, block-scoped x/y/b/c, a local
+// `p = pose` copy, `register`, every -O/opt_*/global_optimizer/scheduling/defer_codegen/
+// peephole/optimize_for_size pragma, and GC compiler 2.0/2.5/2.6/2.7 leave the rotation; the
+// mwcc debugger replays the compiler and reports the swap involves the two frontend `@` temps
+// for the per-branch `b` (no declaration order can reach a frontend temp) with no single
+// interference edge to edit, i.e. a many-to-many reallocation the permuter takes.
+// The y-flip statements must be `x=...; y=...; c=x; if(x<y)c=y;` (c=x after y, not before),
+// the field_0x104 and field_0x108 numerators are emitted as the negated `-(... - ...)` forms,
+// and the max is written with a temp under MUST_MATCH to stop the else branch coalescing c into x.
+// NONMATCHING (98.96%): callee-saved GPR colouring rotation (pose r30 vs r28 etc.).
 void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
     AnimData* animData;
     AnimationPoseData* data;
@@ -3307,12 +3309,12 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
     }
 
     left -= 2;
-    left -= left & 1;
     top -= 2;
-    top -= top & 1;
+    left -= left & 1;
     right += 2;
-    right += right & 1;
     bottom += 2;
+    top -= top & 1;
+    right += right & 1;
     bottom += bottom & 1;
     w = right - left;
     h = bottom - top;
@@ -3322,7 +3324,12 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
 #else
     POSE_F0x104(pose) = ((f32)POSE_S0x114(pose) - (f32)left) / (f32)(POSE_S0x116(pose) - POSE_S0x114(pose));
 #endif
+#ifdef MUST_MATCH
+    // match-only negation: the original emits -(top - pose118), not pose118 - top
+    POSE_F0x108(pose) = -((f32)top - (f32)POSE_S0x118(pose)) / (f32)(POSE_S0x11A(pose) - POSE_S0x118(pose));
+#else
     POSE_F0x108(pose) = ((f32)POSE_S0x118(pose) - (f32)top) / (f32)(POSE_S0x11A(pose) - POSE_S0x118(pose));
+#endif
     POSE_F0x10C(pose) = (f32)(POSE_S0x116(pose) - POSE_S0x114(pose)) / (f32)w;
     POSE_F0x110(pose) = (f32)(POSE_S0x11A(pose) - POSE_S0x118(pose)) / (f32)h;
     GXSetTexCopySrc(left, top, w, h);
