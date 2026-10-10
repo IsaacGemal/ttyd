@@ -5582,7 +5582,18 @@ the original's order (effKissDisp2's constants first). effKissDisp2 was reshaped
 `opt_common_subs off` pragma went), and the 8-byte `.data` gap needed `explicit_zero_data` + `force_active` to
 survive the link. The long arm reached 100% on the function with `const` named floats but could not link.
 
-**envdrv, envDisp_DepthOfField 97.67 -> 97.92 ([#682](https://github.com/IsaacGemal/ttyd/pull/682)).** Not linked.
+**envdrv, envDisp_DepthOfField 97.67 -> 99.68 (long arm, "xl-dof", Claude Opus 5.5; supersedes 97.92 from
+[#682](https://github.com/IsaacGemal/ttyd/pull/682)).** `opt_propagation off` was wrong: the target folds the first
+vertex's x straight into its store, which only propagation does. With propagation on, `tevStage` is a `GXTevStageID`
+(an int counter lets propagation fold `tevStage++` into the `GXSetNumTevStages` argument; the enum keeps it in place),
+sin and cos come from one `envDofSinCos` inline sharing a `one` local as matched `envDisp_FF` does, and the five
+coefficients are read through their .sdata2 names under MUST_MATCH (as literals, propagation copies them into each
+branch). Left: block 1's integer registers are mirrored (retail looks like a plain `i` with a compiler-generated `id`;
+a named pointer set to an address always adds `addi r0` + `mr`, about 20 forms tried), and the far pass's
+`tevStage + 1` takes r25 for r26. Linking also needs the five constants defined after their uses plus the .sdata2
+literals from 0x8041E574 named. Tried and failed: the `GXPosition3f32` override, other pragma levels, size padding,
+a shared pass helper, other counter types, indexed `tbl[i]` loops, moving the helpers after the caller.
+The short arm's step on the way, #682:
 Block 1's `tevStage` was `s32`; the GX functions take enum (`int`) parameters, so the frontend kept the `(int)`
 conversion in a temp that lived across the loop and took a saved register (`stmw r24` vs the original's r25).
 Declared `int`, the temp is gone; block 2 keeps `s32` because there the original shares `tevStage + 1` in one temp.
@@ -5626,15 +5637,21 @@ for the next, up to 4 attempts. Tokens are each agent's reported total.
 | --- | --- | --- |
 | eff_sstar_n64 | linked, attempt 1, 154k | linked, 247k |
 | battle_detect | linked, attempt 2, 285k | linked, 182k |
-| eff_fall | not linked after 2 attempts (275k), attempt 3 for measurement | linked, 294k |
+| eff_fall | not linked after 3 attempts, ~434k (99.51) | linked, 294k |
 | eff_kiss | linked, attempt 4, 598k (attempt 4's prompt carried an orchestrator hint: "question the framing") | 100% function, no link (pool), 418k |
-| envdrv | 97.92 after 4 attempts, 603k | running |
-| eff_magic_horao_n64 | 99.86 after 4 attempts, 590k | running |
+| envdrv | 97.92 after 4 attempts, 603k | 99.68, not linked, 459k / 2 h 9 min |
+| eff_magic_horao_n64 | 99.86 after 4 attempts, 590k | linked, 373k / 62 min |
 
 Handoff notes worked: each fresh attempt went straight to the previous one's diagnosis and did not repeat its list.
 Their weakness showed on eff_fall and eff_kiss: a handoff carries the previous attempt's framing, and each attempt
 refined it instead of questioning it. The long arm on eff_fall had the room to step outside it; on eff_kiss neither
-arm did until the hint. Final verdict when the last two long runs finish.
+arm did until the hint.
+
+**Verdict.** Long arm: 4 links of 6 at ~1.97M tokens in all; short arm: 2 links of 6 at ~2.66M. Where both
+linked (sstar, detect) the cost was similar; on the four hard ones the long arm linked two the short arm could not
+(fall, horao), went further on envdrv (99.68 vs 97.92), and only lost eff_kiss, where the short arm had the framing
+hint. For the hardest near-misses, give one agent a long run rather than relays of short ones; keep handoff notes for
+when a run must stop, and have the next attempt start by listing what the note assumes.
 
 Process notes from the day: agents sharing a function must not share scratch dirs (one pair overwrote each other's
 files in the Claude scratchpad, and one ran `rm vars/*.c` there); the preamble now requires per-TAG scratch
