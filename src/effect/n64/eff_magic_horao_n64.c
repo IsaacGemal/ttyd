@@ -139,8 +139,18 @@ typedef struct MagicHoraoVtx {
 	s16 unk1A;     // 0x1A
 } MagicHoraoVtx;
 
-// .sdata2 / .sbss2 scratch colours the original builds its TEV colours from.
-extern GXColor unk_804231b8;
+// .sbss2 zero-initialised scratch colour the original builds its second TEV colour from, and
+// the padding word after it that the unit owns.
+#ifdef MUST_MATCH
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804231b8;
+#pragma force_active on
+__declspec(section ".sdata") u32 gap_10_804231BC_sbss2;
+#pragma force_active reset
+#pragma section ".sdata" ".sbss"
+#else
+GXColor unk_804231b8;
+#endif
 
 // MUST_MATCH: building colour2 in an inline that returns it keeps its by-value temporary in the
 // original's stack slot (the plain field-by-field form below puts the local in the temporary's slot).
@@ -161,24 +171,19 @@ static inline GXColor makeHoraoColor(GXColor c, s32 counter, u8 a) {
 #endif
 
 // The FPR allocation (alpha in f31, the loop's 2pi/magic/360/500/200 in f26-f30) comes from the
-// named `s` temp in the vertex loop, see the MUST_MATCH block there. The source order of the
-// preheader assignments is also tuned: it decides the GPR schedule's load/increment interleave;
-// only reorder together with a check. The vertex writes use the sibling n64 quad layout. The first
-// colour is built by the makeHoraoColor inline above, whose base parameter (rather than the global
-// read inside) is what puts its local at 0x10 and the by-value copy at 0x14.
-// NONMATCHING (99.86%): everything matches except the zero-copy `v = y`, which this build folds to `li`
-// where the original emits `mr` (a copy of the already-zero y register).
+// named `s` temp in the vertex loop, see the MUST_MATCH block there. The vertex loop is written
+// per index (`&vtx[i]`, `i * 400`, `counter * 10 + i * k`) and the frontend strength-reduces it,
+// which gives the original's preheader copies; the texture row `i * 2 * 0x40U` is unsigned, so the
+// backend reduces it instead, and its zero start becomes a copy of the `i * 400` one. The first colour is built by
+// the makeHoraoColor inline above, whose base parameter (rather than the global read inside) is
+// what puts its local at 0x10 and the by-value copy at 0x14.
 void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	effMagicHoraoData* data;
 	Mtx mtx1;
 	GXColor color2;
-	MagicHoraoVtx* vp;
 	GXTexObj texObj;
 	f32 alpha;
 	s32 j;
-	s32 off2;
-	s32 y;
-	s32 off1;
 	s32 counter;
 	Mtx mtx2;
 	GXColor color;
@@ -191,7 +196,6 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 	EffectEntry* effect;
 	s32 colorAlpha;
 	CameraEntry* cam;
-	s16 v;
 
 	cam = camGetPtr(cameraId);
 	effect = param;
@@ -280,13 +284,8 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 		}
 
 		vtx = smartAlloc(0x1C0, 3)->address;
-		off1 = counter * 10;
-		y = 0;
-		i = 0;
-		vp = vtx;
-		off2 = off1;
-		v = y;
-		for (; i < 16; i++) {
+		for (i = 0; i < 16; i++) {
+			MagicHoraoVtx* vp = &vtx[i];
 			s32 a;
 			s32 b;
 
@@ -294,42 +293,24 @@ void effMagicHoraoDisp(CameraId cameraId, void* param) {
 // makes MWCC put alpha in f31 and the loop's constants in f26-f30, as the original does.
 #ifdef MUST_MATCH
 			f32 s;
-			s = (f32)sin((6.2831855f * (f32)(angleBase + off1)) / 360.0f);
+			s = (f32)sin((6.2831855f * (f32)(angleBase + (counter * 10 + i * 60))) / 360.0f);
 			a = (s32)(alpha * (500.0f * s));
-			s = (f32)sin((6.2831855f * (f32)(angleBase + off2)) / 360.0f);
+			s = (f32)sin((6.2831855f * (f32)(angleBase + (counter * 10 + i * 6))) / 360.0f);
 			b = (s32)(alpha * (200.0f * s));
 #else
-			a = (s32)(500.0f * (f32)sin((6.2831855f * (f32)(angleBase + off1)) / 360.0f) * alpha);
-			b = (s32)(200.0f * (f32)sin((6.2831855f * (f32)(angleBase + off2)) / 360.0f) * alpha);
+			a = (s32)(500.0f * (f32)sin((6.2831855f * (f32)(angleBase + (counter * 10 + i * 60))) / 360.0f) * alpha);
+			b = (s32)(200.0f * (f32)sin((6.2831855f * (f32)(angleBase + (counter * 10 + i * 6))) / 360.0f) * alpha);
 #endif
-#ifdef MUST_MATCH
 			vp->x = a - 0xC80;
-			vp->y = b + y;
+			vp->y = b + i * 400;
 			vp->z = 0;
 			vp->unk06 = 0;
-			vp->unk08 = v;
+			vp->unk08 = i * 2 * 0x40U;
 			vp->x2 = a + 0xC80;
-			vp->y2 = b + y;
+			vp->y2 = b + i * 400;
 			vp->z2 = 0;
 			vp->unk14 = 0x800;
-			vp->unk16 = v;
-#else
-			vp->x = a - 0xC80;
-			vp->x2 = a + 0xC80;
-			vp->y = b + y;
-			vp->y2 = b + y;
-			vp->z = 0;
-			vp->z2 = 0;
-			vp->unk06 = 0;
-			vp->unk08 = v;
-			vp->unk14 = 0x800;
-			vp->unk16 = v;
-#endif
-			vp++;
-			off1 += 60;
-			off2 += 6;
-			y += 400;
-			v += 0x80;
+			vp->unk16 = i * 2 * 0x40U;
 		}
 		DCFlushRange(vtx, 0x1C0);
 		GXInvalidateVtxCache();
