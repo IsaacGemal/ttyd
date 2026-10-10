@@ -71,42 +71,37 @@ USER_FUNC(unk_yuu_00009d5c) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.33%): every opcode, operand and scheduler slot matches; only register numbers
-// differ. The original keeps `work` in r24, the allocator here picks r31, and the loop webs permute
-// with it: `&digits` r30 -> r31 (case 0/2) and r24 -> r22 (case 1), `digit` r29 -> r30, `skip` r24 ->
-// r25/r29, `xoff` r25 -> r23, `byteoff` r23 -> r22, and the case-1 `zero_yuu` pointer r22 -> r31. The
-// case-0 `marioGetPtr()->position.x` value is read through a `MarioWork*` local so the FP add/multiply
-// land in the original's f0/f1/f2 rotation. The 0x140 frame and the r20-r31 save set match; the tie is
-// insensitive to declaration order, statement order, pragmas, flags and compiler version.
-// tools/rasim.py on the mwccdbg dump: `param` (r32, `work` copy-propagated into it) is always the lowest
-// vreg, so it is coloured first and takes r31. Replaying with `--key r32=36.5` (param just above `skip2`)
-// or with rem/mario/seconds/skip2 moved above every other vreg gives work=r24, &digits=r31, digit=r30, and a
-// decl-order search with param movable then reaches 9 of 10 target registers: the original's `work` seems to
-// keep its own (non-propagated) vreg among the locals. `register`, an initialiser, `opt_propagation off`
-// and typing the parameter directly all keep the merge.
-// The two loop increments set the schedule: `for (...; i1++, xoff1 += 30)` (case 1) and
-// `for (...; i3++, xoff3 += 15)` (subsec) emit the xoff add before the loop compare, as the original
-// does; keeping them in the body puts the byteoff add first instead.
-// NONMATCHING (99.33%): only register colouring differs; see the note above.
+// The case-0, case-2 and sub-second loops position each digit at `i * 30` (`i * 15`); loop strength
+// reduction turns that into the original's x-offset temporaries, which colour after the named locals
+// (a named `xoff` counter takes a higher register and pushes `work` to r31). Case 1 keeps its named
+// counter, stepped in the for-header so its add schedules before the loop compare. The declaration
+// order of the integer locals sets the remaining callee-saved registers. The case-0
+// `marioGetPtr()->position.x` value is read through a `MarioWork*` local so the FP add/multiply land
+// in the original's f0/f1/f2 rotation.
 void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
-    s32 digits[4];
+    s32 i3;
     s32 digit0, digit1, digit2;
-    s32 i0, i1, i2, i3;
-    GXColor digitColor;
-    s32 time;
+    s32 skip2;
+    s32 i2;
     s32 subsec;
+    s32 i0;
+    s32 icon;
+    s32 seconds;
+    s32 skip0;
+    s32 xoff1;
+    s32 time;
+    s32 i1;
+    YuuCounterWork* work;
+    s32 digits[4];
+    GXColor digitColor;
     GXColor iconColor;
     Mtx mtxTemp;
-    s32 icon;
-    s32 xoff0, xoff1, xoff2, xoff3;
-    YuuCounterWork* work;
-    s32 skip0, skip2;
     Mtx mtxScale;
     f32 scale;
-    s32 seconds;
     Mtx mtx;
     f32 xbase;
     GXColor color;
+
     work = param;
     color = *(GXColor*)&dat_yuu_00014dd0;
     iconColor = *(GXColor*)&dat_yuu_00014dd0;
@@ -183,17 +178,16 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
         digits[2] = seconds % 10;
 
         skip0 = 1;
-        for (i0 = 0, xoff0 = 0; i0 < 3; i0++) {
+        for (i0 = 0; i0 < 3; i0++) {
             digit0 = digits[i0];
             if (digit0 != 0 || i0 == 2) {
                 skip0 = 0;
             }
             if (!skip0) {
-                PSMTXTrans(mtxTemp, xbase + (f32)xoff0, 8.0f, 0.0f);
+                PSMTXTrans(mtxTemp, xbase + (f32)(i0 * 30), 8.0f, 0.0f);
                 PSMTXConcat(mtx, mtxTemp, mtxTemp);
                 iconDispGxCol(mtxTemp, 0x10, (digit0 + 0x1F7) & 0xFFFF, digitColor);
             }
-            xoff0 += 30;
         }
         break;
     }
@@ -228,17 +222,16 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
         digits[3] = rem % 10;
 
         skip2 = 1;
-        for (i2 = 0, xoff2 = 0; i2 < 4; i2++) {
+        for (i2 = 0; i2 < 4; i2++) {
             digit2 = digits[i2];
             if (digit2 != 0 || i2 == 3) {
                 skip2 = 0;
             }
             if (!skip2) {
-                PSMTXTrans(mtxTemp, xbase + (f32)xoff2, 8.0f, 0.0f);
+                PSMTXTrans(mtxTemp, xbase + (f32)(i2 * 30), 8.0f, 0.0f);
                 PSMTXConcat(mtx, mtxTemp, mtxTemp);
                 iconDispGxCol(mtxTemp, 0x10, (digit2 + 0x1F7) & 0xFFFF, digitColor);
             }
-            xoff2 += 30;
         }
         break;
     }
@@ -255,8 +248,8 @@ void evt_yuucounter_disp_func(CameraId cameraId, void* param) {
     case 1:
         digits[0] = subsec / 100;
         digits[1] = subsec % 100 / 10;
-        for (i3 = 0, xoff3 = 0; i3 < 2; i3++, xoff3 += 15) {
-            PSMTXTrans(mtxTemp, 90.0f + xbase + (f32)xoff3, 8.0f, 0.0f);
+        for (i3 = 0; i3 < 2; i3++) {
+            PSMTXTrans(mtxTemp, 90.0f + xbase + (f32)(i3 * 15), 8.0f, 0.0f);
             PSMTXScale(mtxScale, 0.5f, 0.5f, 0.5f);
             PSMTXConcat(mtxTemp, mtxScale, mtxTemp);
             PSMTXConcat(mtx, mtxTemp, mtxTemp);
