@@ -46,7 +46,7 @@ USER_FUNC(wait_anim_end);
 USER_FUNC(wait_anim_frame);
 USER_FUNC(evt_chorobon_wait);
 USER_FUNC(evt_chorobon_escape);
-void chb_jump(ExtPose* pose, HeiExtEntry* entry, s16 field24, f32 x, f32 y, f32 z, f32 v1, f32 v2);
+void chb_jump(ExtPose* pose, HeiExtEntry* entry, f32 x, f32 y, f32 z, f32 v1, f32 v2, s16 field24);
 EVT_DEF(golden_se);
 EVT_DEF(evt_golden);
 EVT_DEF(hei_10_init_evt);
