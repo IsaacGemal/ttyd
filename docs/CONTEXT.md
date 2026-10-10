@@ -533,6 +533,13 @@ takes an agent's word for anything, only the build's.
   PR branch, and before sharing agent sessions anywhere.
 - Codex runs on GPT-5.6 Sol at medium effort; never a larger model (it burns Isaac's usage).
 - Delete with `trash`, not `rm -rf`; Python packages with `uv`.
+- **Session scheduled jobs (CronCreate, ScheduleWakeup, /loop) can silently stop firing** in the desktop app.
+  On 2026-10-10 the night-6 heartbeat last fired at 2:41 AM; after that no session job fired for 8 hours
+  (heartbeats, a 4:35 AM one-shot, a 10:27 AM test), though the process was alive, the Mac awake, and peer
+  messages still arrived. The jobs stayed listed in CronList. Only a session restart clears it (open bugs
+  anthropics/claude-code#100416, #96531, #82728). For unattended nights, check that the heartbeat actually
+  lands in `scratch/RUN_STATE.md`, and prefer a wake-up from outside the session (a timer that messages it)
+  over session-only crons.
 
 **Where the tooling lives.** `tools/ci.py` is in the repo. The wave tooling (launcher, the agents' `check.py`
 helper, merge script, `lint_patch.py`, Codex rules files) is still in the orchestrator's scratch on Isaac's Mac,
