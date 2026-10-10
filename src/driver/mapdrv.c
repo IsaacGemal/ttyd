@@ -3009,12 +3009,15 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 	return count;
 }
 
-#pragma opt_lifetimes off // needed: default lifetime analysis colours 15 more instructions wrong (243 -> 228 diffs)
-// Register colouring/scheduling only (228 real instruction diffs, 21 symbol-only). The unit's .rodata
+#pragma opt_lifetimes off // needed: default lifetime analysis colours 15 more instructions wrong (243 -> 226 diffs)
+// Register colouring/scheduling only (226 real instruction diffs, 21 symbol-only). The unit's .rodata
 // (vec3_802c16d8, double_to_int_mask_802c19a0, ...) is not defined here yet, so MWCC addresses the pooled
 // i2f double absolutely (lis/lfd) instead of `lfd f2, 0x2c8(r28)`, and TEXMTX uses add+lwzu (16 sites).
-// NONMATCHING (96.99%): the identity casts on the texMap/texCoord init below removed 14 diffs; the
-// else-branch constant order in the flags&0x80100000 block was reordered for the same reason.
+// Dropping opt_lifetimes costs +17; opt_common_subs/opt_propagation off and opt_strength_reduction off
+// are all worse (375/604/245 diffs), so this is the local optimum.
+// NONMATCHING (97.06%): the identity casts on the texMap/texCoord init below removed 14 diffs and the
+// texCoordTmp copy below 2 more; the else-branch constant order in the flags&0x80100000 block was reordered
+// for the same reason. The two structural blockers need the unit's .rodata ported.
 void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	u8* base;
 	s32 texMap;
@@ -3022,14 +3025,19 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	GXTevStageID tevStage;
 	s32 numIndStages;
 	Mtx queen_mtx;
-
+#ifdef MUST_MATCH
+	// A separate temporary for texCoord's initial value keeps it a distinct web from texMap, so
+	// MWCC does not coalesce the two (2 fewer instruction diffs).
+	s32 texCoordTmp;
+#endif
 	base = vec3_802c16d8;
 #ifdef MUST_MATCH
 	// Identity casts break MWCC's coalescing of texMap with texCount and texCoord with texMap; without
 	// them the allocator parks texCount in r21, rematerialises texMap from it at every TEXMTX site, and
 	// turns the table loads into add+lwzu (240 -> 228 diffs).
 	texMap = (s32)texCount;
-	texCoord = (s32)texMap;
+	texCoordTmp = (s32)texMap;
+	texCoord = texCoordTmp;
 #else
 	texMap = texCount;
 	texCoord = texCount;
