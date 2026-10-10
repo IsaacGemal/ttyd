@@ -4805,6 +4805,10 @@ the original kit and stay `.s` in libs/metrowerks/src/TRK_MINNOW_DOLPHIN.a. They
   (win_mario's .sdata2 99.33 -> 92.19 with identical function scores), so a reorder is gated on full ci.py. Units
   with match-only `defer_codegen off` pool helpers (evt_win, winmgr, evt_shop, ac_pendulum_crane_timing,
   eff_particle) cannot reach retail order by reordering alone.
+  Correction (2026-10-10): the helpers are gone and four of the five are linked. winmgr (#594), evt_shop (#596, #610)
+  and ac_pendulum_crane_timing (#597, #607) put `defer_codegen off` over the real functions instead; evt_win (#624)
+  dropped its helpers and uses plain reverse order. eff_particle is in retail order the same way (#600) and one
+  function from linking (effParticleDisp 99.91, #665).
 - **Dead ends tried overnight (don't retry without a new idea):** marioCreviceWallChk; effPokopiThunderDisp;
   renderProc index form; msgAnalize var[] promotion; winBookGX named constants; winHakoGX base-relative templates;
   win_mario's i2f pool (needs a rodata port); mapMain's 8 inverted diamonds (MWCC canonicalises them); winMailDisp's
@@ -4950,6 +4954,589 @@ Question: does a time cap, a firm target, or pushback get more out of an Opus ag
 - Not tested yet: firm target plus a minimum working time.
 
 Also from the night: tools/mwsearch.py (#644/#645/#647) found two real fixes in seconds (evt_ryushi_clr via `*args++`, hei_10 npc_jump via `/ 2.0f`) but nothing in a 30-function batch of pure register ties; dedicated sessions (Claude #2, #4) with history worked well alongside subagents, but they must not share ~/ttyd-ci with the orchestrator's CI runs (concurrent checkouts killed each other's builds).
+
+## Night 2: data ports without helpers, and the defer_codegen lever (2026-10-06, Claude Opus 5.5 orchestrating; Claude #3 (Sonnet 5.5), Claude #4 (Opus 5.5), DeepSeek V4.1 Flash waves, Codex)
+
+Two links (tou, winmgr); code linked 56.77 -> 57.75. Most of the night removed the `defer_codegen off` pool helper
+functions that kept units out of retail `.text` order. Codex PRs carry a `GPT-6.1 Sol (Codex)` trailer; the ledger's
+tou chapter calls the model GPT-6 (see "Attribution notes" after night 6).
+
+**Pool order from the real functions, not helpers**
+
+- **tou: pools IDENTICAL, unit linked ([#593](https://github.com/IsaacGemal/ttyd/pull/593), Codex).** All 36 functions were
+  already 100; `.rodata` held a duplicate i2f double and zero. One MUST_MATCH `#pragma defer_codegen off` before the
+  first function makes the real functions generate immediately in retail order, so the compiler's own conversion
+  double and literals land in the original slots (comment); the named `double_to_int_*`, rad2deg, 360 and zero became
+  literals, and the remaining named scalars are read through a non-const `TOU_F32` view so they aren't folded. The last
+  2-byte REL mismatch was `rank_work`/`disp_work` declared in the wrong order (`.bss` is last-declared-first).
+  The "tou native pool and link completion" chapter has the details.
+- **winmgr: both pools IDENTICAL, unit linked ([#594](https://github.com/IsaacGemal/ttyd/pull/594), Codex).** The two
+  `winmgr_pool_i2f*` helpers removed with the tou lever, plus a MUST_MATCH `defer_codegen on` over a middle group "in
+  reverse retail order so winMgrSelectEntry can inline its real callees", and `off` again before select_main (MWCC
+  flushes the deferred group right after it). 21 missing `.sdata2` entries ported. Forward `const` scalars read during
+  immediate generation become writable small data, so each definition must come before its readers
+  (docs/codex/winmgr.md). #595 put the lever into the brief.
+- **evt_shop ([#596](https://github.com/IsaacGemal/ttyd/pull/596), Codex), then ac_pendulum_crane_timing ([#597](https://github.com/IsaacGemal/ttyd/pull/597), night 3), eff_particle ([#600](https://github.com/IsaacGemal/ttyd/pull/600)) and mot_jabara ([#605](https://github.com/IsaacGemal/ttyd/pull/605)): helpers removed, retail order, pools IDENTICAL.**
+  Same lever. These left each unit one function from linking (list_disp, _get_angle_rate, effParticleDisp, mot_jabara);
+  night 4 linked evt_shop, ac_pendulum_crane_timing and mot_jabara. eff_particle is still open (effParticleDisp 99.91,
+  #665). `fn_order.py` ignores pragmas, so its suggested order is reversed for a
+  `defer_codegen off` unit; `fn_order_check` is the confirmation.
+
+**Natural data ports (Claude #3, Sonnet 5.5)**
+
+- **battle_menu_disp `.rodata`/`.sdata2` IDENTICAL, DrawMainMenu 99.80 -> 99.96, DrawSubIconSub 99.94 -> 99.96 ([#581](https://github.com/IsaacGemal/ttyd/pull/581)).**
+  About 50 named float/GXColor/Vec externs as literals and compound literals, no helpers; the zero stays named and is
+  defined at the end of the file under `explicit_zero_data`. In DrawMenuCursorAndScrollArrow `xsum = 155.0f` is
+  computed before `ysum = 15.0f` so 155 pools before 15 (PR).
+- **party_nokonoko `.rodata` IDENTICAL, nokonoko_use 99.62 -> 99.94 ([#582](https://github.com/IsaacGemal/ttyd/pull/582)).**
+  `#pragma pool_data on` plus literal strings (retail reaches its `.rodata` through one base register); `sin(pia)` of a
+  `f32 pia = 3.1415927f` local removes two extra named `.sdata2` entries. The 1.0/6.0 pair stays out of order (ccwall's
+  expression tree). nokonoko_use reached 100 on night 6 (#673).
+- **eff_magic_horao_n64 pools IDENTICAL ([#583](https://github.com/IsaacGemal/ttyd/pull/583)).** Literals and a compound-literal
+  colour; `alpha * (500.0f * s)` keeps retail's `fmuls` operand order (MUST_MATCH).
+- **gor evt_yuuranking `.rodata` IDENTICAL, disp_func 98.02 -> 98.18 ([#579](https://github.com/IsaacGemal/ttyd/pull/579)).**
+  yuu's shape ported: `msgSearch` results nested into their calls so the format string and the 80.0/75.2 literals pool
+  in retail order, colours passed by address under MUST_MATCH so the 20 GXColor locals sit in retail's stack block
+  (comment).
+- Parked the same night, with reasons: party_cloud (i2f), eff_kiss (forward pool order), shadowdrv, evt_cam and mot_roll
+  (dead pool entries). All but eff_kiss were solved on night 4 by uncalled original functions and compound literals;
+  eff_kiss on day 7 (#681).
+
+**Allocator: named vs literal constants, cached loads**
+
+- **winmgr select_main 99.71 -> 99.97 ([#585](https://github.com/IsaacGemal/ttyd/pull/585), permuter q36, merged by Claude Opus 5.5).**
+  `for (i = 0; i < (count = select->numDescriptors); i++)` and `if (count >= 3)`: caching the count in the loop
+  condition fixed the case-0 loop's GPRs (comment).
+- **win_root named constants at 10 sites: winBookGX 89.35 -> 90.68, winHalfBookGX 95.34 -> 95.62, winHakoGX 89.17 -> 89.27, winKirinukiGX 98.40 -> 98.44 ([#586](https://github.com/IsaacGemal/ttyd/pull/586), Claude #4, Opus 5.5).**
+  MWCC canonicalises and shares float-literal expressions (`x + 16` with `16 + x`) and keeps them in saved FPRs, but
+  leaves named-constant expressions as written (PR). Found one site at a time by a greedy search, which became
+  tools/named_greedy.py ([#587](https://github.com/IsaacGemal/ttyd/pull/587)): keep a literal <-> named swap only if the
+  function rises, nothing else in the unit drops and no `sdata2_diff` category grows.
+- **win_root winRootMain 96.97 -> 97.04 ([#588](https://github.com/IsaacGemal/ttyd/pull/588), Claude #4).** A byte-offset cast,
+  `((WinRootTab*)((u8*)tabs + idx * 0x18))->str`, turns one `lwzx` into retail's `add` + `lwz` (comment); converting
+  every site, or array indexing, scored lower.
+- **mri_puni evt_puni_exit 93.48 -> 93.76, puniMapFindbuff 90.35 -> 90.57 ([#584](https://github.com/IsaacGemal/ttyd/pull/584), Claude #4).**
+  `f29 = bero_get_BeroSZ(); ... f1 = f29; f29 += 60.0f;` gives retail's `fmr`/`fadds` and the original instruction
+  count; `perm_decls.py` moved one declaration. Both NONMATCHING comments still show the old numbers.
+
+**Batch 35 ([#590](https://github.com/IsaacGemal/ttyd/pull/590), Claude #2 waves 84/85, DeepSeek V4.1 Flash agents, merged by Claude Opus 5.5)**
+
+Nine units into retail text order and five functions to 100:
+- effRadiationN64Entry: `#pragma opt_dead_assignments off` and `r_data[row++]` x3 then `r_data[++row]`: with
+  dead-assignment elimination off, the post-increments keep retail's index chain instead of folding it into the load
+  displacement (comment). The same shape took effRadiationMain to 100 on night 6 (#659).
+- tou_champion_belt_27_text_34: `void** ud = &handle->userdata;` and reads through `*ud` fixed an r30/r31 swap;
+  mechanism not recorded. This finished tou's functions.
+- rankingControll: `FighterEntry.flags` retyped `u16` + pad, typed entry pointers instead of MUST_MATCH `idx*14`
+  blocks, `insert()` as a static inline; mechanism not recorded.
+- parseGet1Next: every block-scoped local hoisted to function scope in a new order; mechanism not recorded.
+- L__LvupParamHelpMsgDisp: no `x` local (recomputed at both uses) and the white colour read from the named
+  `.sdata2` object; mechanism not recorded.
+- sac_muki was held back because its 100% needed a `.text` pool helper; Codex instead cut its `.sdata2` duplicates
+  18 -> 1 with literals and one named object defined after the code ([#591](https://github.com/IsaacGemal/ttyd/pull/591),
+  disp_3D_alpha 98.39 -> 98.65).
+
+## Night 3: pool ports by Codex, the named_greedy sweep (2026-10-07, Claude Opus 5.5 orchestrating; Claude #2 (Opus 5.5) scripted, Codex)
+
+No links; four units brought to one function from linking (evt_shop, ac_pendulum_crane_timing, eff_particle,
+shadowdrv). Night 4 linked all but eff_particle.
+
+- **sac_deka main_base 99.94 -> 100 ([#599](https://github.com/IsaacGemal/ttyd/pull/599), Batch 36, scripted named_greedy sweep, no agents).**
+  `p->beatPos > 7.0f + t->time` instead of `float_7_80421e78 + t->time`; mechanism not recorded (the stale comment
+  above it still describes 7 sitting in f2 where retail has f1, which the literal presumably fixed). 13 other units
+  moved by under 3 points. named_greedy learned RELs and `USER_FUNC` headers. sac_deka is still NonMatching.
+- **eff_particle ParticleEmit 95.90 -> 100 (#600, Codex).** `particle_sqrtf`/`__fpclassifyf` take an explicit scratch
+  pointer under MUST_MATCH, with `f32 secondScratch; f32 firstScratch;` declared in reverse so firstScratch gets
+  +0x08 and secondScratch +0x0C (comment). Then `.sdata2` duplicates 3 -> 1 ([#601](https://github.com/IsaacGemal/ttyd/pull/601)):
+  scalar `const` reads fold into a second pool entry, singleton `const f32 sym[1]` arrays keep ordinary loads
+  (comment; `PARTICLE_CONST`).
+- **battle_seq_end `.sdata2` IDENTICAL (was 57 duplicates) ([#602](https://github.com/IsaacGemal/ttyd/pull/602), Codex).** 36
+  named objects in retail order, two GXColors in `.sdata2` placed between functions, and a MUST_MATCH volatile zero read
+  "at its point of use instead of adding a saved FP register across earlier calls" (comment).
+- **win_root pool ported, 8 functions up, winWazaGX 99.97 -> 100 ([#603](https://github.com/IsaacGemal/ttyd/pull/603), Codex).**
+  Functions in retail order, MUST_MATCH `pool_data on` (retail shares one base register for literals and templates),
+  colours and Vec templates defined in the unit, `static const char* tbl[]` (not `* const`) so the table is writable
+  `.data` as in retail. winWazaGX's body did not change: its only diffs were pool-base offsets, which settled once the
+  other functions defined their own `.rodata` (comment).
+- **shadowdrv both pools IDENTICAL ([#604](https://github.com/IsaacGemal/ttyd/pull/604), Codex + Claude Opus 5.5).** Texture
+  writes `GXWGFifo.f32` directly with named `positive`/`negative` locals and volatile reads of the named zero/one
+  (MUST_MATCH). The four `negone_one_*` tables became function-local `static` (they collided with ac_air_gauge.o at
+  link, as in #489).
+- **party_cloud** (Codex, branch codex-cloud, not merged): `.sdata2` IDENTICAL but `.rodata`'s magic landed after the
+  strings; night 4 finished it with an uncalled original function (#615).
+
+## Night 4: twenty links, and how each was found (2026-10-07/08, Claude Opus 5.5 orchestrating; Opus 5.5 agents, Codex branches)
+
+Seven Opus agents, then a second wave of ten, all building on the tower (`scratch/tb.sh`). Code linked 57.75 -> 62.57,
+data linked 86.43 -> 88.22, 20 units linked (#606-#624). Agent tags in brackets (claims n4/n5). Scores are from the PR
+bodies; "comment" means the source comment states the mechanism, "PR" means only the PR body does.
+
+**Register allocation and declaration order**
+
+- **npc_event chain_main 99.93 -> 100, linked ([#606](https://github.com/IsaacGemal/ttyd/pull/606), Opus agent "chain").**
+  The three chain-link passes had per-block locals named after their registers (`f28`, `f23`, ...); written over one
+  shared set of locals (`x, y, z, sag`, the second loop reusing `i`), block 0's `x` gets retail's f28 instead of f23.
+  PR: with per-block locals a compiler temp outranked `x`. Plain C. Earlier triage (night 2, Claude #3) had called it
+  NO-SOURCE-LEVER, and a 14-minute permuter run found nothing.
+- **ac_pendulum_crane_timing _get_angle_rate 99.20 -> 100, linked ([#607](https://github.com/IsaacGemal/ttyd/pull/607), "pend").**
+  `angle = compAngle(0.0f, angle); angle += 45.0f;` instead of new locals `base`/`bumped`: the original reuses the
+  parameter, which puts the sum in angle's f2 (comment). The 19 named `.sdata2` floats and `NF32`/`MATCH_F32` reads
+  became plain literals in the same PR, which gives retail's `.sdata2`. Haiku 5.5 missed "reuse the parameter" in the
+  morning benchmark; mwsearch later found it in 2.8 s (#645).
+- **unk_0x8025de70 N_systemErrorHandler -> 100, linked (#607, "pend").** Index the buffer (`print_buffer[i]`) instead
+  of walking two byte pointers: the original's two pointers are the compiler's strength-reduced induction variables
+  and `&print_buffer[i]` its hoisted invariant (comment). The MUST_MATCH declaration split and an `extern 0.5f`
+  workaround went.
+- **unit_boss_moamoa ext_moamoa_main -> 100, linked ([#618](https://github.com/IsaacGemal/ttyd/pull/618), "smB").** All loops
+  share `i` and the pose loops share `extPose`, "which is how the original's per-loop webs come out in its
+  registers" (comment). Same family as #606.
+- **sac_genki main_weapon -> 100, linked (#618, "smB").** Three `s32` field copies became one `Vec` copy
+  (`eff->pos = genki->field_74`) after retyping the struct; a struct copy allocates differently from three word copies.
+- **eff_stageclear effStageClearDisp 99.40 -> 100, linked ([#622](https://github.com/IsaacGemal/ttyd/pull/622), "smA").** Literals
+  in first-use order, the 48/2 half extent computed at run time (`half = 0.5f; lo = -float_48 * half`) as the
+  original does, and `shadow/work/j/i/type` declared in the order that gives retail's GPRs (comment). A `pool_i2f`
+  helper, an `opt_common_subs off` pragma and a MUST_MATCH hoist were removed.
+
+**Strings and constants as hoisted expressions**
+
+- **battle_stage_object _object_fall_attack 97.10 -> 100, linked ([#612](https://github.com/IsaacGemal/ttyd/pull/612), "bso").**
+  Retail computes the three sound names once, before the hit loop. `#define BSO_SFX(name) ((char*)(u32)(name))`
+  under MUST_MATCH: "MWCC's frontend hoists an integer round trip out of the loop as an invariant expression; a plain
+  literal is rematerialised at each call instead" (comment). Also one real wrong-code fix (loop 1 stores the entry
+  index: `newEntry->no = i`, not `flag = 0`), per-loop locals, `*args++`, and the unit lookups nested inside
+  `BattlePreCheckDamage(...)`. The PR body also calls two operand reorders "wrong code"; in the diff they are
+  equivalent reorders. Night 2 triage had called this NO-SOURCE-LEVER, and permuter q32 only reached 2480.
+- **evt_shop list_disp 99.07 -> 100, linked ([#610](https://github.com/IsaacGemal/ttyd/pull/610), "shop").** No `width` local:
+  `FontGetMessageWidth(msg)` is called inside each expression, `msgSearch(...)` goes straight into `sprintf`, `i = 0`
+  moves up to right after `pouchGetPtr()`, and `f32 w = FontGetMessageWidth(buf)` feeds the matrix x. No mechanism is
+  written down beyond "retail calls it inside each expression" (PR). mwsearch could not reach it (#644/#645).
+
+**Scheduling**
+
+- **shadowdrv shadowCharShadowDisp_Projection 99.52 -> 100, linked ([#611](https://github.com/IsaacGemal/ttyd/pull/611), "shadow").**
+  One late `fsubs`. MWCC cuts a long straight-line run into scheduling blocks of about 100 instructions. Reading the
+  zero for each vertex's y through `#define PROJ_ZERO (*(const f32*)&float_0)` (MUST_MATCH; plain `float_0` under
+  `#else`) makes the front end give each use its own load; the back end still merges them into one `lfs`, but the
+  cut moves to retail's place, between v11's y and z (comment). `force_active` around the unreferenced `.rodata` vec3s
+  and strings keeps them in the link.
+- **eff_pointget effPointGetDisp 99.92 -> 100, linked (#622, "smA").** `#pragma opt_loop_invariants off` around Disp
+  and two products moved into the outer loop, so the frontend's loop-invariant hoisting doesn't give them early temps
+  in different FPRs (comment). Same lever as effKemuTestDisp in the brief.
+
+**Data: dead strings, compound literals, function slots**
+
+- **evt_mobj .rodata IDENTICAL (2576/2576), 79 -> 81/95 functions ([#608](https://github.com/IsaacGemal/ttyd/pull/608), "dead", on Codex's codex-mobj port).**
+  The open question from night 2 (how does retail keep strings no code references?) answered: the original had event
+  functions no map calls. MWCC pools their literals at the function's slot, mwld dead-strips the function, and the
+  strings stay because live code reaches the pool through `...rodata.0`. Six plausible sibling event functions
+  (`tornadoswitch_red`, `rideswitch_a/b`, `arrow`, `trap`, `bombrock`), with no float literals in them, replaced
+  Codex's seven `pool_x()` helpers. Every experiment, including the negatives (`if (0)`, unused locals, uncalled
+  inlines), is in docs/dead_strings.md. It also corrected the brief's "pool helpers can never link" (#613): uncalled
+  functions are stripped; the real cost of a `defer_codegen off` helper is that it flushes deferred functions.
+- **evt_cam evt_cam_shake 98.46 -> 100, linked ([#614](https://github.com/IsaacGemal/ttyd/pull/614), "cam").** Code: read
+  `wInterpRelatedTime` as two `u32` halves joined into a `u64`, as it is stored; "a plain u64 load colours start,
+  event and camId differently" (comment). Data: per-call-site `(Vec){...}` compound literals pool each template at
+  parse time in source order (replacing the shared `makeVecByValue` inlines and ten placeholder objects), and three
+  uncalled original-style event functions (`set_at_rel`, `set_npc_rel_str` whose `sscanf` supplies
+  `"%f%f%f%f%f%f%d%s"`, `dolly`) supply the rest of retail's pool.
+- **party_cloud N__cloud_use 99.90 -> 100, both pools IDENTICAL, linked ([#615](https://github.com/IsaacGemal/ttyd/pull/615), "cloud", with Codex's codex-cloud branch).**
+  An uncalled `cloudSetMarioSpeed(s32 dir)` placed last in the file is compiled first in this deferred unit, so its
+  0, 70, 180 and the int->float double head the pools; the linker strips it (comment). It replaced a named
+  `double_to_int_*` that duplicated the compiler's own. Also: the `revise360` call passed straight into the sign
+  condition keeps 70 as the first `fmuls` operand (match-only `s70()` gone), interpolation divides by `(f32)count`.
+- **mot_jabara 98.86 -> 100, linked ([#609](https://github.com/IsaacGemal/ttyd/pull/609), "jab").** The repeated end-of-motion
+  and camera-offset blocks became static inline helpers whose `(Vec){0.0f, 40.0f, 0.0f}` compound literals are the
+  four anonymous `.rodata` vectors retail pools at parse time; dropping the `vec = &vec3_...` base also dropped the
+  extra saved register (PR). The `return` moved after `jabaraFreeWork()`, and the `.data` gap object went (linker
+  padding gives retail's layout).
+- **mot_roll 98.55 -> 100, linked ([#621](https://github.com/IsaacGemal/ttyd/pull/621), "roll").** The same approach: the
+  hand-written `Vec vec3_802c5d40[9]` replaced by compound literals in inline helpers and direct zero-vector writes,
+  which pool first in source order; the `sqrtf`/45.0 doubles defined after `mot_roll` follow them (comment). Code:
+  one local per quantity, float truth tests (`!f30 && !ay`) instead of a MUST_MATCH zero local, block-scoped `min`
+  copies of `rollData[3]`. Two old `defer_codegen` pool helpers remain.
+- **mot_ship 99.89 -> 100 and party_yoshi yoshi_use 99.46 -> 100, both linked ([#617](https://github.com/IsaacGemal/ttyd/pull/617), "ship").**
+  mot_ship's repeated blocks are the original's helpers: `shipJumpDir`/`shipHarborTarget`/`shipHarborOffset` as
+  plain static functions after `shipMove`. Under `-inline auto,deferred` they are auto-inlined into `mot_ship` but
+  still emitted, so their constants (15, 50, 30.30303, 180) pool between `checkHarbor`'s and `shipMove`'s, and the
+  linker strips the bodies (comment). That replaced four `shipPool*()` helpers. Which change fixed the 39 GPR diffs is
+  not recorded. yoshi_use: plain string literals (no `"PYS_S_2\0PYS_H_1"` + 8 trick), two inlines, `.sbss` declared
+  in reverse; mechanism not written down. `effSweatN64Entry`'s parameter order was corrected to the original's.
+- **win_main winMain 99.99 -> 100, linked (#618, "smB").** Retail pools `"%s/w/%s/win.tpl"` (case 1) ahead of case 0's
+  strings, which a case swap, an inline helper and an early static had all failed to give (ONE_FUNCTION_LEFT.md).
+  The answer: case 1 calls `winTplLoad()`, a global function defined after `winMain`; in this deferred unit it is
+  generated first, inlined, and pools its string first (comment). An uncalled `winFontSetC` sibling's `(f32)` conversion
+  puts the signed conversion double ahead of `winIconSet`'s unsigned one, replacing `pool_i2f`/`pool_u2f` helpers.
+- **seq_load loadMain 99.21 -> 100 and loadDraw 99.54 -> 100, linked ([#620](https://github.com/IsaacGemal/ttyd/pull/620), "seqld").**
+  The window tables typed `WinDt win_dt[9]` and named directly, so `pool_data` creates the `.data` base at entry (fixes
+  the r29/r30 swap); 38 named floats and strings became literals; `loadDrawVec` takes its template `Vec` by value, so
+  its copy lands among each call's argument temps (comment); play time split through a `u64` local (no mechanism
+  written down).
+- **eff_kemuri: all six functions 100, `.sdata2`/`.rodata` IDENTICAL, linked ([#623](https://github.com/IsaacGemal/ttyd/pull/623), "kemu").**
+  Main: `scale = touchdown_scale[..]; ... = scale * k` keeps the converted value the first `fmuls` operand. Disp:
+  MUST_MATCH `opt_common_subs off` so the 0.5/20 loads stay separate until the back end merges and hoists them and
+  ranks them like retail's literals. 2Disp reads 6.4 through a MUST_MATCH cast so the front end doesn't merge its uses.
+  The four missing constants defined by name in their retail slots; `kemuriPoolFlush` removed. mwsearch later found
+  effKemuriMain's form in 1.9 s with its literal <-> named-constant mutation (#645).
+- **evt_win evt_unitwin_disp_func 96.53 -> 100, linked ([#624](https://github.com/IsaacGemal/ttyd/pull/624), "win").** Data: all
+  `defer_codegen` pool helpers removed, functions in reverse retail order, dead `"%s_%04d"` from a reconstructed
+  uncalled `unitwin_icon_delete`, named objects replaced by literals and compound literals, `char help[0x40] = ""`.
+  Code: `dispCnt * 0x18` row offsets, which MWCC strength-reduces into a per-loop offset register (comment), instead of
+  `dispOff += 0x18` accumulators; one function-scope loop counter; two static inline pickers. Two real bugs fixed (level
+  up/down help arguments swapped). Three prototypes looked wrong and were cast under MUST_MATCH (FontDrawColor colour by
+  value, FontDrawString `(x, y, str)`, iconDispGx scale first); see #627.
+
+**Partial gains**
+
+- **evt_yuuranking (yuu and gor) disp_func 98.18 -> 99.09 ([#616](https://github.com/IsaacGemal/ttyd/pull/616), "rank").**
+  `fontlenpitch` walks by index (`msg[i]`) instead of by pointer: loop strength reduction then builds the pointer from
+  `buf` after CSE has run, giving retail's two separate `addi rN,r1,0x78` instead of `mr r25,r24` (comment). One plain
+  `fontlenpitch` matches standalone and inlined; the MUST_MATCH `fontlenpitch_inl` went.
+- **battle_camera battleCameraMain 99.88 -> 99.92 and tou_02 ext_fan_main 98.86 -> 98.98 ([#619](https://github.com/IsaacGemal/ttyd/pull/619), "bcam").**
+  `/ 2.0f` instead of `* 0.5f`: MWCC turns it into `* 0.5` with the variable first, retail's operand order (comment).
+  `fanAngle` returns through a local: an inline's locals are numbered before the caller's temps (comment).
+- **battle_detect BattleChoiceSamplingEnemy 100, _btlSamplingEnemy 99.95; itemdrv itemMain 100 (#618, "smB").**
+  `_btlSamplingEnemy`: all locals at function scope in a chosen order. itemMain: `f64 d = __fabs(...)` temp; mechanism
+  not recorded. (_btlSamplingEnemy linked on day 7, #679.)
+- **eff_kameki_tornade_n64 99.69 -> 99.96 (#622, "smA").** All-literal pool, `i * 0x200` ring index replacing a
+  MUST_MATCH `s * 4` form.
+- **win_mario winMarioDisp 96.19 -> 99.99, `.sdata2` IDENTICAL ([#625](https://github.com/IsaacGemal/ttyd/pull/625), "wmar").**
+  The `vp` single-base hack, `WM_*` macros and ~24 named Vec externs replaced by compound literals passed by value,
+  literal strings and local tables (`GXColor colTbl[3]` inside the loop), so MWCC pools everything from one base with
+  both i2f doubles at retail offsets (PR). Codex's 30-experiment `pool_data` attempt on night 2 had missed this.
+
+## Haiku trial, prototype fixes, decomp.me (2026-10-08, Claude Opus 5.5; Claude Haiku 5.5 agents)
+
+- **Haiku 5.5 benchmark:** 0 of 3 of the night's Opus solves reproduced (_get_angle_rate, list_disp, chain_main), even
+  with the shared-locals hint; correct diagnoses and honest reports, but it stopped 3-8 minutes into a 90-minute budget.
+  Verdict: gated mechanical work, not near-miss matching.
+- **pmario_sound in retail `.text` order ([#626](https://github.com/IsaacGemal/ttyd/pull/626), Haiku 5.5).** `fn_order.py --write`, 40
+  of 50 functions moved; the last unit that was out of order. calc3D 99.48 -> 99.47: its two int->float magic doubles
+  were already swapped, and the move put the `"mri_00"` string past them, exposing the swap on both loads.
+- **iconDispGx takes the scale first ([#627](https://github.com/IsaacGemal/ttyd/pull/627), Haiku 5.5).** Prototype
+  `(f32 scale, Vec* position, s16 flags, s16 iconId)`, 147 call sites and the `ICON_DISP` macros. The original's callers
+  evaluate the scale before the position, and arguments are evaluated in declared-parameter order (the intplGetValue
+  rule). btlUnitItemDisp 98.02 -> 99.05, nothing dropped. The other two suspects were wrong: FontDrawColor by value
+  dropped 25 callers that match with `&local`, and FontDrawString `(x, y, str)` cost gor_irai data; both reverted.
+  About ten MUST_MATCH casts still spell the old order (battle_disp, sac_suki, ac_repeatedly, ac_lst_rc_keep,
+  ac_stick_keep_left, sac_zubastar, battle_item_data); same registers, so harmless, but inconsistent.
+- **goryuugijo_init_slot 99.17 -> 100 ([#628](https://github.com/IsaacGemal/ttyd/pull/628), Claude Opus 5.5, Isaac's call).** It returns
+  `void` (retail leaves r3 unset) and is cast to `UserFunction` at its one assignment, as Melee casts callbacks.
+  The permuter had reached 0 only with `void` on night 3. Same PR: the 12 reconstructed uncalled functions moved under
+  MUST_MATCH with Melee-style `/// @todo reconstructed:` notes; plain builds drop them and their literals.
+- **evt_eff_fukidashi 100, from a community decomp.me scratch ([#629](https://github.com/IsaacGemal/ttyd/pull/629), Claude Opus 5.5; shape by theKidOfArcrania, scratch NwWJP).**
+  `#pragma opt_propagation off`, the height in a local, 2/3 of it computed into a second local before the call,
+  literal `0.0f` arguments. Each piece was needed: the shape alone gave 99.79, without the pragma 98.96. The lesson
+  (search decomp.me first) is in the decomp.me chapter (#630).
+
+## Night 5: firm targets, mwsearch, and the first relays (2026-10-08/09, Claude Opus 5.5 orchestrating; Opus 5.5 agents, Claude #2 and #4 (Opus 5.5), Codex GPT-6 Sol)
+
+Waves A/A2/A3 (capped) and B (firm target) as in the prompt-framing chapter; tools/mwsearch.py written and upgraded.
+Links: evt_yuutitle, win_04, yuu_03, las_05, eki_00, rsh_05, gor_03, tou_03, battle_stage. Code linked 62.57 -> 65.22.
+
+**Register allocation: what the frontend numbers first**
+
+- **evt_yuutitle disp_func 99.80 -> 100, linked ([#632](https://github.com/IsaacGemal/ttyd/pull/632), Opus agent "yuu").**
+  The fade as its own local (`fade = 0.8f * t + 0.2f; scale *= fade;`) under `opt_propagation off` for this one
+  function (replacing `opt_common_subs off`): with copy propagation off the fade keeps its own low variable number, so
+  the product is coloured first (f0) and the fade gets f1. The lerps carry an `(f32)` on the product, which mimics an
+  f32 temporary in the frontend tree; without it MWCC picks a different `fmadds` shape (comment). rasim showed the
+  product had to be coloured before the fade.
+- **yuu_03 evt_ryushi_clr 98.37 -> 100, linked ([#636](https://github.com/IsaacGemal/ttyd/pull/636), "muj").** The TTYD
+  idiom `s32* args = event->args; evtGetValue(event, *args++)`. The post-increment keeps `args` a real local, so the
+  `xwp` address load takes r4 and the peephole no longer fuses `addi`+`lwz` (PR; rasim replay predicted it). mwsearch
+  rediscovered it in 7.7 s once it had the `*args++` family (#647).
+- **win_04 flower_disp 99.92 -> 100, linked ([#635](https://github.com/IsaacGemal/ttyd/pull/635), "maps").** The quad drawn from
+  the texture's size: `f32 w = 101.0f, h = 92.0f;` and vertices `-w / 2.0f`, `h / 2.0f` instead of precomputed
+  `46.0f`/`50.5f`. MWCC folds the halves but keeps the run-time negations, which gives the original's `fneg` temps and
+  pool order (PR). No match-only code. mwsearch could not find it (a meaning-level rewrite).
+- **mri_puni: evt_puni_set_lsw_index 98.27 -> 100, evt_puni_set_trap_index 99.36 -> 100, puniSearchRandom 98.90 -> 100 ([#648](https://github.com/IsaacGemal/ttyd/pull/648), Claude #4, Opus 5.5).**
+  lsw_index: the slot index in its own variable (`base = index + i * 7`) instead of `index += i * 7`; retail keeps the
+  two in separate registers. trap_index: `div` at function scope and `index %= 8` reused as the bit number (mwsearch's
+  shape, rewritten as plain C). puniSearchRandom: the LCG written inline with its own local `v` instead of calling
+  `puniQrnd2`. Declaration order for all three from `rasim.py search` against registers read off the retail asm.
+  Same method: puniFukki 99.41 -> 99.79 ([#654](https://github.com/IsaacGemal/ttyd/pull/654)).
+- **hei_10 npc_jump 92.18 -> 99.88 ([#641](https://github.com/IsaacGemal/ttyd/pull/641), "uran2") -> 100 ([#652](https://github.com/IsaacGemal/ttyd/pull/652), Claude #2 via mwsearch).**
+  First rsh_05's three fixes from #631 (frame count through an `s32 ms` local, `PSVECDistance(&to, &from)`,
+  `position.y += vy` before `vy -= grav`; no per-fix mechanism recorded) plus the three zero templates as the named Vec
+  objects retail references (fixed the 0xc0 vs 0x90 frame). The last step, found by mwsearch in 1.3 s:
+  `grav * frames / 2.0f` instead of `* 0.5f`. Same value; MWCC's parser puts the leaf operand of `* 0.5f` on the left
+  and numbers the 0.5 load before the product, while the division numbers its operands the way retail's FPRs are
+  assigned, which settles the dy/vy tie.
+
+**Hoisting and the frontend: where a value is computed**
+
+- **eff_particle effParticleDisp 99.22 -> 99.87 ([#633](https://github.com/IsaacGemal/ttyd/pull/633), "fx").** The half-size
+  products written in place at each vertex (`GXPosition3f32(0.5f * -4.0f, 4.0f, 0.0f)` through the named reads);
+  MWCC hoists them out of the loop in the original's preheader order 4, 8, -4, 0.5, -8 (comment). Removed the
+  `top/left/bottom` locals and a match-only negate-half block.
+- **las_05 calc_area 99.02 -> 100 ([#639](https://github.com/IsaacGemal/ttyd/pull/639), "las05") and senkaron_ext_main 98.69 -> 100, linked ([#649](https://github.com/IsaacGemal/ttyd/pull/649), "las05b").**
+  calc_area: both differences, then divide in place, then convert (`dx = x - -570.0f; dx /= 40.0f; b = dx;`); the
+  volatile MATCH_F32 read went (PR). senkaron_ext_main: the second loop calls `move_check` (auto-inlined) with
+  retail's increment order, the two float products written in place inside the loop so the frontend hoists them with
+  retail's priority, per-block `dx/dz/d`; the two sound names through a MUST_MATCH `KARON_SFX` cast, the
+  `BSO_SFX` hoist again. The capped agent stopped at 98.69 after 25 minutes; the firm-target agent linked it after 1 h 44.
+- **tou_03 screen_tev and battle_stage tou_gamen_screen_tev 99.62/99.74 -> 99.82/99.83 ([#637](https://github.com/IsaacGemal/ttyd/pull/637), "tev") -> 100, both linked ([#653](https://github.com/IsaacGemal/ttyd/pull/653), "tev2").**
+  The two copies of the same retail function each had half right; swapping halves gave 99.8. The last 11 instructions:
+  `base` and `col` written as plain copies assigned inside the inner loop under `opt_propagation off`, so the frontend
+  hoists only `i/4` and `i%4`, the shifts stay in the body until the back end hoists them, and they are numbered after
+  the body temps (retail's colouring); `row` evaluated before `base` (comment). rasim had checked 5040 declaration
+  orders with none matching: the lever was when the values are created, not their order.
+- **aji_17 noiseDisp 99.11 -> 99.97 (#653, "tev2").** The same loop rewrite. The last `add` operand order resisted a
+  75-minute pushback and a 70-minute mwsearch; GPT-6 Sol solved it on night 6 (#656).
+
+**Random-number blocks: evaluate the calls first**
+
+- **rsh_06 ext_moamoa_main 90.88 -> 94.83 ([#646](https://github.com/IsaacGemal/ttyd/pull/646), GPT-6 Sol in Isaac's Codex app).**
+  In each jump path the original makes both `rand()` calls before scaling either result: `ra = (f32)rand() / 32767.0f;
+  rb = (f32)rand() / 32767.0f;` then `ra * (0.5f - 0.3f) + 0.3f` as the argument. That reshapes the whole inlined
+  `randf` block (PR). The diff also reorders `tx2`/`ty2` and `rad3`'s operands, not mentioned in the body. The squash
+  trailer says GPT-6.1 Sol by mistake.
+- **eki_00 and rsh_05 ext_moamoa_main -> 100, both linked; rsh_05 npc_jump -> 100 ([#650](https://github.com/IsaacGemal/ttyd/pull/650), "moa2").**
+  #646's lead plus: `randRange`/`randScale` inlines reproduce randf's `t * (max - min) + min`; `moamoa_jump`'s float
+  parameters moved before the ints (MWCC evaluates arguments in declared order; GPRs and FPRs are separate files, so
+  the callee ABI is unchanged); constant multiplies as power-of-two divisions (`/ 4.0f`, `/ 2.0f`, replacing a
+  MUST_MATCH `half`); separate locals for split live ranges; a few commented reuses of shared float temps that the
+  mwccdbg colouring needs. rsh_05 data: table terminator `{NULL, NULL, 0.0f}`, `Mtx mt` at file scope before the vec3,
+  the defined jumptable copy removed. Before that, #631 ("moa") had made eki_00 ext_moamoa_init 100 by making the
+  source vectors non-const `__declspec(section ".rodata") Vec`: "as const MWCC knows the values and reorders the copies"
+  (comment); four volatile hacks went.
+
+**Data, function slots and function signatures**
+
+- **gor_03: data layout ([#638](https://github.com/IsaacGemal/ttyd/pull/638), "gor03") then slot_rotate_sub 99.41 -> 100 and goryuugijo_main_slot 99.15 -> 100, linked ([#651](https://github.com/IsaacGemal/ttyd/pull/651), "gor03b").**
+  objdiff's 0.2% data gap was layout, not bytes: function order (pool entries follow it), `fall_rtn`'s position (its
+  Vec initialisers pool at its source slot), a named zero that pooled first, a `float_45` extern that only exists in
+  the extracted object, and `.bss` order. `main_slot` became `void` (retail never writes r3). Then a `SlotData` struct
+  replaced the `*(T*)(data + 0xNN)` casts, which exposed a real bug (retail skips the rotation while a reel's wait
+  counter is non-zero), and `main_slot` was written with the original's inline helpers; `slot_stop_sub`'s locals become
+  compiler temps, so the stop-sound address goes straight into r31 and is hoisted (comment). Which part of
+  `slot_rotate_sub`'s change fixed its missing `add r5,r4,r0` is not recorded.
+- **itemdrv data pool IDENTICAL ([#642](https://github.com/IsaacGemal/ttyd/pull/642), "envitem").** Retail's pool order shows
+  four helpers the original had out of line: `itemBoundHitCeiling/Floor`, `itemseq_sfxGet`, `itemseq_sfxBound`. Placed
+  at their `.text` slots, they are auto-inlined at their call sites, their copies stripped at link, and their literals
+  pool at their own slots (comment). The `ibBase`/`IB_*` base-pointer macros and the string-blob hack went.
+  itemseq_Bound dropped 98.84 -> 98.23 (allowed); it reached 100 on night 6 (#658).
+- **msgdrv msgWindow_Disp 99.31 -> 100, data IDENTICAL ([#643](https://github.com/IsaacGemal/ttyd/pull/643), "msg").** Constants
+  after the first seven as literals in first-use order (tools/pool_floats.py); in the function, `f32 half = 0.5f` once
+  at case scope and one shared `px/py/h/w` set instead of per-case locals (mechanism not written down). Check:
+  `float_28_8041a550` was replaced by `20.f`; the data verdict says 20.0 is right, so the old name was wrong.
+- **win_badge natural pool, `.sdata2`/`.rodata` IDENTICAL, winBadgeDisp 99.73 -> 99.91, badge_disp 95.39 -> 97.47 ([#640](https://github.com/IsaacGemal/ttyd/pull/640), "badge").**
+  #625's recipe: 46 named Vecs, 47 named floats and every named string replaced by literals and by-value compound
+  literals.
+- **__strtold 99.24 -> 99.95 ([#634](https://github.com/IsaacGemal/ttyd/pull/634), "drv").** `long double* dbl` instead of
+  `double*` gives the original's two separate 0.0 pool constants; `exponent += ...; *(short*)mantissa &= 0xF;
+  *(short*)mantissa |= (exponent + 0x3FF) << 4;` gives the original `rlwimi` and registers (PR). A 100% literal variant
+  was rejected because it duplicated pool words.
+
+**Tools**
+
+- **tools/mwsearch.py ([#644](https://github.com/IsaacGemal/ttyd/pull/644) Codex + Opus "search" agent, [#645](https://github.com/IsaacGemal/ttyd/pull/645) Opus agent, [#647](https://github.com/IsaacGemal/ttyd/pull/647) Claude #2).**
+  Source-mutation beam search scored with objdiff-cli (Codex wrote it but its sandbox blocks wibo; its positional
+  scorer was wrong and was replaced). #645 keeps tied and non-worsening candidates (plateau crossing) and adds literal
+  <-> named-constant and `x / 2^n` <-> `x * k` mutations: _get_angle_rate 98.4 -> 100 in 2.8 s, effKemuriMain 100 in
+  1.9 s. #647 adds the families tonight's hand fixes used (declaration order, `*args++`, nested-call arguments first,
+  compound assignment, reorder across memory, forward substitution, loop moves) and `USER_FUNC` definitions:
+  evt_ryushi_clr 98.10 -> 100 in 7.7 s. Over 30 pure register-tie functions it found nothing.
+
+## Night 6: relays across model families, and 16 links (2026-10-09/10, Claude Opus 5.5 orchestrating; Opus 5.5 agents, Codex GPT-6 Sol, Claude Sonnet 5.5 (#3), DeepSeek V4.1 Flash)
+
+Six firm-target Opus agents, then three more; stalled functions relayed to GPT-6 Sol with the failed-approaches
+list. Links: aji_17, win_mario, win_badge, itemdrv, eff_booboo_n64, eff_radiation_n64, eff_kameki_tornade_n64,
+muj_00, usu_00, gor_10, evt_yuucounter, rsh_06, hei_10, eff_kemutest, evt_nannpc, sac_bakugame (the run log counts
+15; aji_17 landed just before the agents started). Code linked 65.22 -> 68.93.
+
+**Expression shape the allocator can't reassociate**
+
+- **aji_17 noiseDisp 99.97 -> 100, linked ([#656](https://github.com/IsaacGemal/ttyd/pull/656), GPT-6 Sol, Codex app, ~11 min).**
+  After ~3.5 h of Opus agents and a 70-minute mwsearch run: the row offset in its own statement and the final index
+  grouped as two two-term sums, `off = (k / 8) * 32; data[(off + base * 256) + (k % 8 + col * 8)]`. MWCC reassociates
+  any 3+-term sum; two two-term sums it can't, so it emits the original's `add r4, r4, r31` with the base shift still
+  in r31 (comment + PR). MUST_MATCH, plain form under `#else`.
+- **win_root winKirinukiGX 98.44 -> 99.11 ([#675](https://github.com/IsaacGemal/ttyd/pull/675), DeepSeek swarm).** The same
+  rule in the other direction: `x + (w - 90)` is computed once, a plain `x + w - 90` reassociates and adds an
+  instruction (comment); reusing the dead local `yscale` avoids a recomputed sum.
+
+**Induction variables: let the compiler make the counter**
+
+- **evt_yuucounter disp_func 99.33 -> 100, linked ([#662](https://github.com/IsaacGemal/ttyd/pull/662), "yuu2").** Digit
+  positions as `xbase + (f32)(i * 30)` instead of named `xoff += 30` counters: loop strength reduction turns `i * 30`
+  into the original's offset temps, which are coloured after the named locals; the named counter took a higher
+  register and pushed `work` to r31. Integer locals reordered per rasim. Plain C.
+- **win_badge winBadgeDisp 99.91 -> 100 and badge_disp 97.47 -> 100; win_mario winMarioDisp 99.99 -> 100; both linked ([#657](https://github.com/IsaacGemal/ttyd/pull/657), "win6").**
+  Disp callbacks take `void* param` with `WindowWork* work = param;` first, which fixes the parameter-copy order in
+  both. `(f32)(i * 0x28)` instead of a hand-written offset counter (induction variable again). Pip texture via enum
+  constants: MWCC makes `K ? / K+1` ternaries of plain integer constants branch-free (`cntlzw`), while enum constants
+  keep retail's branch (PR). win_mario's menu reads via `((f32*)((u8*)work + 0xC4))[idx * 5]` for the add operand order;
+  a function-local static for `.bss` order. Both compile without MUST_MATCH.
+- **eff_kameki_tornade_n64 effKamekiTornadeDisp 99.96 -> 100, linked ([#659](https://github.com/IsaacGemal/ttyd/pull/659), "fx6").**
+  `q->tex[0] = (i * 2) << 8` instead of `i * 0x200`: the arithmetic form of a strength-reduced expression decides when
+  its counter temp is created (PR); one shared function-scope `theta/s/rad/c` set (comment).
+- **eff_kemutest effKemuTestEntry 99.99 -> 100, linked ([#664](https://github.com/IsaacGemal/ttyd/pull/664), GPT-6 Sol relay, ~10 min).**
+  An Opus agent had stopped on an r21/r22 swap: array-pointer induction temps are created in first-appearance order.
+  The fix sets up a direction pointer before the speed calculation (`f32* dirptr = bom_dir + i; dirptr = dirptr + 0;
+  ... dirptr[-1]`) so MWCC assigns `bom_dir` r22 and `bom_spd` r21 in retail order with the FP order unchanged
+  (comment). What the `+ 0` no-op contributes is not recorded. MUST_MATCH.
+- **hitdrv hitCalcVtxPosition 88.09 -> 95.00 ([#672](https://github.com/IsaacGemal/ttyd/pull/672), "hitenv").**
+  `&hit->vectors[numVectors++]` instead of a hand-stepped `off += 0x54` pointer, and `stride * triIndex + 3`: MWCC
+  strength-reduces the index once per display list as retail does (comment).
+
+**Values that must stay live: dead copies the allocator still sees**
+
+- **usu_00 kpaSen_ext_main 99.55 -> 100, linked ([#661](https://github.com/IsaacGemal/ttyd/pull/661), "map2").**
+  `if (i % 10 == 0) { m[0][i / 10] = m[0][i / 10]; }` under MUST_MATCH (plain empty `if` in `#else`): the float
+  self-store survives until after register allocation, keeping `i / 10` live so the quotient gets its register; the
+  post-allocation peephole then deletes the load/store pair (comment). A body deleted after allocation still shapes it.
+- **evt_nannpc nanNPCOption 94.27 -> 100 and evt_nannpc_entry 97.75 -> 100, linked ([#668](https://github.com/IsaacGemal/ttyd/pull/668), "nan").**
+  nanNPCOption: the third loop's body and the wall hit as inline helpers (`nannpcMoveEntry`, `nannpcHitWall(entry,
+  vlen, Vec pos, Vec dir)`); inline locals become compiler temps, which gives the loop's flag and hit-pointer temps
+  their registers, and the by-value `pos`/`dir` are the original's staged copies. Retail's dead `savedPos` copy is kept
+  with a MUST_MATCH `pos = pos;` (the #661 trick). evt_nannpc_entry: MUST_MATCH `s64 id` (`s32` in `#else`): the
+  64-bit id leaves a dead sign word the back end deletes only after scheduling, which holds the hoisted
+  `id & 0x80000000` mask behind `li offset` in the preheader (comment; flagged for review). Link: retail's gap objects
+  and the three fog-colour words defined in address order.
+- **msgdrv msgAnalize 97.03 -> 97.74 ([#658](https://github.com/IsaacGemal/ttyd/pull/658), "item").** Indexing `tagName`
+  through `rp` keeps retail's dead `+2` loop counters: the frontend leaves the offset counters alone, so the back end's
+  strength reduction keeps them next to the derived pointer (comment); `msgIconStr2ID` inlined so exactly `var[0..2]`
+  spill.
+
+**Inline helpers and returns**
+
+- **itemdrv itemseq_Bound 98.23 -> 100, linked (#658, "item").** The floor and ceiling rays return from each branch
+  (`if (hit != NULL) { ...; return hit; } ... return NULL;`), which keeps the hit pointer out of the floor ray's saved
+  register until the hit is known (comment); the badge-delete loop is the unit's own `itemDelete` (auto-inlined).
+  Link: cardmgr's `_mariost_icon_tex` gets `align:32` in symbols.txt (the eff_torch fix), and the `.data` gap object
+  goes (jump tables come after source data).
+- **eff_booboo_n64 effBoobooDisp 99.58 -> 100, linked (#659, "fx6").** The cull-mode and poly switch as
+  `static inline boo_polygon(data->poly[i])`: as an inline parameter `poly` is a frontend temp numbered ahead of the
+  loop's pointer temps (comment). The seven 8-byte `.data` tables made `static` (they collided at link with
+  ac_air_gauge's same-named tables).
+- **battle_camera battleCameraMain 99.92 -> 99.93 ([#660](https://github.com/IsaacGemal/ttyd/pull/660), GPT-6 Sol relay).** An
+  inlined wrapper around case 7's `BattleGetUnitPtr` call gives that case's unit pointer retail's r28 (all four case-7
+  diffs). MUST_MATCH.
+- **rsh_06 ext_moamoa_main 94.83 -> 100 and hei_10 ext_main 93.69 -> 100, both linked ([#663](https://github.com/IsaacGemal/ttyd/pull/663), "moa3").**
+  #650's recipe ported (floats before ints in `moamoa_jump`, power-of-two divisions, rand fractions first, float
+  locals in rasim's order). The last 69 diffs fell to `randRad`/`randOffset` inlines with randf's body written out: the
+  local inside the inline loads the outer constant as early as retail (PR). hei_10: `chb_jump` takes floats before
+  the s16 and is called through `chbJumpRand`/`chbJumpRand2` so the random values arrive as plain variables; the
+  undefined `float_360` extern became a literal (inside `randScale`, not `heiDeg2Rad` as the PR says). Both use a
+  MUST_MATCH `union { const char* p; u32 u; }` for the voice/sfx string; why is not recorded.
+
+**Order of operands and constants**
+
+- **gor_10 depthDisp 99.91 -> 100, linked (#661, "map2").** `twoPi * (f32)i / 8.0f` instead of a `quarter = 0.125f`
+  local: the divide becomes a pooled 0.125 multiply whose load, with pi's and the magic's, becomes a hoisted temp that
+  colours f31/f30/f29 ahead of the named coefficients; `f0 = f3 * f3` as its own statement (written twice it is CSE'd
+  into frontend temps); pi compares as literals (comment).
+- **muj_00 cam_test_func 98.16 -> 100 and mario_main_func 99.71 -> 100, linked (#661, "map2").** cam_test_func: output
+  indices taken as pointers first (`s32* xp = args++; s32* zp = args++;`), which keeps the original's second base
+  (`mr r30,r31; addi r31,r31,4`); `f32 centerZ = 0.0f` gives `fnmsubs` against the pooled zero. mario_main_func: the
+  `MARIO_MAIN_UPDATE` macro written out as eight blocks with retail's variable reuse (comment).
+- **party_nokonoko nokonoko_use 99.94 -> 100 ([#673](https://github.com/IsaacGemal/ttyd/pull/673), DeepSeek V4.1 Flash, Isaac's session).**
+  `f32 k = 0.25f; ... NKF(0xF0) * k + party->position.y` as the `effKemuTestEntry` argument: the brief's
+  const-in-a-local rule, giving retail's load order. (The removed note said 99.73; #582's 99.94 is the right before.)
+- **battle_seq_end _MarioExpDisp 99.27 -> 99.45 ([#666](https://github.com/IsaacGemal/ttyd/pull/666), Claude #4, Opus 5.5).**
+  `lenf * float_12p5 + float_65` instead of `float_12p5 * lenf + ...`; no mechanism recorded.
+- **eff_particle effParticleDisp 99.87 -> 99.91 ([#665](https://github.com/IsaacGemal/ttyd/pull/665), GPT-6 Sol relay).**
+  `negativeLeft = -4.0f` (through the named read) set before the loop and used as `negativeLeft * 0.5f`: keeping the
+  negated edge separate gives it the original scratch register and preheader load order (comment). Plain C; the PR
+  body says MUST_MATCH, the diff has none.
+- **eff_radiation_n64 effRadiationMain 99.37 -> 100, linked (#659, "fx6").** The table row read as `r_data[row++]` x3
+  then `r_data[++row]`, inside the existing `opt_dead_assignments off` region: the post-increments keep the original
+  index chain instead of folding it into the load displacement (comment); the countdown as
+  `if (x > 0) { x--; if (x > 0) continue; }`.
+
+**Data ports**
+
+- **evt_mobj `.sdata2` IDENTICAL, kururing_capture 90.09 -> 99.84 ([#667](https://github.com/IsaacGemal/ttyd/pull/667), Claude #3, Sonnet 5.5).**
+  All named floats as literals; `strcmp(name, "me\0")` so the pooled string is a 4-byte entry as in retail; `*=` and
+  `+=`/`-=` forms in itembox and rideswitch (no mechanism recorded). The source comment above kururing_capture still
+  says 90.09.
+- **battle_event_cmd `.rodata` IDENTICAL, btlevtcmd_CommandFlyItem 96.62 -> 100 ([#669](https://github.com/IsaacGemal/ttyd/pull/669), Claude #3, Sonnet 5.5).**
+  `#pragma pool_data on` plus literal item sound names emit the three missing strings; `150.0f` as a literal removes a
+  `.sdata2` duplicate; CommandFlyItem through the table idiom (`tbl = (u8*)wp + 0x171C` hoisted, `base2 += idx * 0x1C`)
+  and declaration order, replacing a MUST_MATCH base+offset hack. Its stale NONMATCHING (96.62%) comment remains.
+- **envdrv data byte-correct, envSetWater 96.34 -> 100 (#672, "hitenv").** `int texMap` (not `s32`) so its enum-typed
+  `texMap + 1` arguments are not merged into one temp; the texel offset built in two steps; the near distance as an
+  argument expression so its int->float temp is created after the four edge conversions (comment). 16 named floats
+  as literals, `.sbss` declared in reverse. hitdrv: an uncalled `bounding_box()` (named UNUSED in the map) puts 0.0/0.1
+  first in `.sdata2`, and the `.rodata` split moved 4 bytes that fadedrv had borrowed.
+- **sac_bakugame bakuGameMain 98.82 -> 100 and bakuGameHeihoReturn 99.54 -> 100, linked ([#674](https://github.com/IsaacGemal/ttyd/pull/674), "fall2").**
+  All floats literal; five `-x / 20.0f` sites through a local (`f32 h = -200.0f; ... -h / 20.0f`) to keep the run-time
+  `fneg`; two retail `.rodata` templates nobody references come from two never-read initialised locals in Main
+  (`s32 order[8] = {0..7}`, `Vec home = {125, 0, -30}`; flagged for review; dead_strings.md test d7 shows unused
+  initialised local arrays pool their template); `(s32)t` of a `40.0f` local stays a run-time conversion; eleven
+  volatile MUST_MATCH hacks gone; a misplaced `case 25:` label fixed, which objdiff missed and the link check caught.
+- **eff_fall effFallEntry 99.22 -> 100, effFallMain 96.82 -> 99.51 (#674, "fall2").** Entry: `(const char*)(s32)sfx` at
+  its only use (MUST_MATCH) pins the address into sfx's own saved register; `(s32)c` inside the loop is hoisted and
+  ranked above `sfx` (comment). Main: pointer-stepping vertex loops (`v += 5`) unroll into retail's `mtctr/bdnz`,
+  inline sin/cos helpers, `opt_lifetimes`/`opt_propagation off`. Main reached 100 on day 7 (#680, the hoisted
+  `FALL_SFX` round trip).
+
+**DeepSeek V4.1 Flash swarm (Claude #2; [#670](https://github.com/IsaacGemal/ttyd/pull/670), #675, [#676](https://github.com/IsaacGemal/ttyd/pull/676))**
+
+23 agents, one wrong-code function each in win_root, mapdrv, npcdrv, animdrv and mario_hit; 19 gains, none at 100.
+The ones with a recorded mechanism:
+- winMsgDisp 96.53 -> 99.81: the 0x140 pointer loaded once and shared by the NULL test and `msgSearch`; `ty` declared
+  before `width` for f26/f27.
+- winRootMain 97.04 -> 99.61: `opt_common_subs off` keeps each field load's own `add base,base,idx` instead of hoisting
+  `&work->tabs`; the `str != NULL` guards removed because the score says retail has none (a behaviour change).
+- mapSetMaterial 95.09 -> 98.13: the `drawMode` conditional inlined into the tail call's argument so it is evaluated
+  first. _mapLoad 95.06 -> 95.64: a MUST_MATCH `lightEntry` cast with the two f32 parameters first.
+- mapSetMaterialTev 96.99 -> 97.06: `texCoordTmp = (s32)texMap; texCoord = texCoordTmp;` keeps a separate web so
+  MWCC does not coalesce it with `texMap`.
+- fbatEncountCheck 99.24 -> 99.93: an `fbatOut` pointer local fixes `total`/temp registers; literal zeros schedule as retail.
+- fbatHitCheck 98.40 -> 99.27: the two if/else arms write through syntactically different lvalues (`ENC(&info, s32, 0)`)
+  so the frontend keeps the branch instead of if-converting to a select (MUST_MATCH).
+- animSetMaterial_Texture 97.89 -> 98.37: `wrapS = wrapFlags; wrapS &= 1;` in an if/else instead of a ternary adds a web
+  that rotates the callee-saved set by two.
+- animPoseEntry 98.09 -> 98.32: early-return static inline slot-search helpers give the `bne next; b found` exit (the
+  brief's bcc->b rule).
+- marioSearchGround 96.71 -> 99.37: `gndAnglePlain`/`gndCentiPlain` share one load across the rounding and angle steps;
+  rasim declaration order. marioChkGnd 96.21 -> 98.85: a probe inline under a scoped `inline_max_*` pair so its Vecs
+  land in retail's frame slots. marioLandonChk_old 95.09 -> 96.91: an explicit `ny100` local keeps `100 * ny` in a saved
+  FPR across both `angleABf` calls. marioCheckWall_roll 99.30 -> 99.83: call the existing `marioHitCheckVecRound` inline
+  instead of a hand copy.
+- animPaperPoseDispSub 97.50 -> 98.96: `-(top - y0) / h` (MUST_MATCH), retail's negated form.
+- Unexplained in the source: bmapLoad 96.59 -> 97.80 (a chained zero assignment), mapMain 96.21 -> 96.69,
+  _npcHitCheckHammerAllMotion 99.27 -> 99.78, animPoseMain 98.53 -> 98.66 (literal `0.0f == duration`; its comment is
+  stale).
+- Refused: `_animPoseDrawMtx` and animPoseMain's 99.03, which needed 360/-360 literals that grow `.sdata2` duplicates 7 -> 9.
+
+## Nights 2-6: patterns and attribution (2026-10-06 to 2026-10-10)
+
+### Patterns that recur
+
+1. **Ask when a value is created, not only how locals are declared.** tou_03/battle_stage (#653), aji_17 (#656),
+   evt_yuutitle (#632), eff_particle (#633): rasim found no declaration order; the fix changed which pass creates the
+   value (in-loop copies under `opt_propagation off`, in-place products the frontend hoists, two-term sums).
+2. **Let the compiler build counters and offsets.** `i * 30`, `(f32)(i * 0x28)`, `dispCnt * 0x18`, `(i * 2) << 8`,
+   `print_buffer[i]`, `&vectors[n++]` (#662, #657, #624, #659, #607, #672): a hand-written accumulator is a named
+   web that outranks the original's strength-reduced temps.
+3. **A string or constant used inside a loop that retail loads once is a hoisted cast:** `((char*)(u32)"SFX_...")`
+   under MUST_MATCH (#612 BSO_SFX, #649 KARON_SFX, #680 FALL_SFX).
+4. **Dead code still shapes allocation when the compiler deletes it late:** a float self-store (#661), `pos = pos` (#668),
+   an `s64` sign word (#668). Dead code it deletes early (`if (0)`, unused locals) does nothing.
+5. **Pool order comes from where code and templates sit:** uncalled original functions (#608, #614, #615, #618, #624,
+   #672), out-of-line helpers that are auto-inlined (#617, #642, #618 winTplLoad), compound literals in inline helpers
+   (#609, #621), literals instead of named floats (#607, #620, #639, #643, #667, day 7's eff_kiss). Named float objects
+   and base-pointer macros were the cause more often than the cure.
+6. **`/ 2.0f` vs `* 0.5f`, operand order and argument order are allocator levers** (#619, #650, #652, #666, #627).
+7. **Inline helpers turn named locals into compiler temps** (#609, #651, #658, #659, #660, #668, #663) and an early
+   `return` inside one gives the `bcc; b` exit (#675).
+8. **Relay to a different model family when one stalls.** GPT-6 Sol solved aji_17 and eff_kemutest in about 10 minutes
+   each after hours of Opus work (#656, #664); the moamoa lead came from Codex (#646) and linked three units in Opus
+   hands (#650, #663). Firm targets beat caps (night-5 chapter).
+9. **Check the pieces a fix rests on before trusting it:** several PR bodies describe their own diff inaccurately
+   (#612's "wrong code" reorders, #663's heiDeg2Rad, #665's MUST_MATCH, #672's "missing fields"); the diff and the
+   checksum are the record.
+
+### Attribution notes
+
+- Codex PRs on nights 2-3 (#591, #593, #594, #596, #597, #600-#605) and #644 carry a `GPT-6.1 Sol (Codex)` trailer.
+  #646's body says that trailer was a mistake for Isaac's Codex app (GPT-6 Sol); the tou and win_mario chapters call
+  the tower Codex model GPT-6. Which model the tower Codex CLI ran on nights 2-3 is not recorded; check before citing.
+- Orchestrator merges of Opus subagent work carry `Claude Opus 5.5`; the agent tags above come from the run log.
+- Claude #3 is Claude Sonnet 5.5 (#579-#583, #667, #669 trailers); Claude #2 and #4 are Opus 5.5.
 
 ## Day 7: four links, and how each was found (2026-10-10, Claude Opus 5.5 orchestrating; Opus 5.5 agents)
 
