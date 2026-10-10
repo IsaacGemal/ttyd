@@ -1627,18 +1627,15 @@ void fadeSetNarrowFast(void) {
 
 #ifdef MUST_MATCH
 // Generating this unused conversion helper flushes the deferred functions before force_active is enabled.
-// This keeps the pool helpers' bodies out of the linked text and places both data tails after the pools.
+// This keeps the pool helpers' bodies out of the linked text and places the data tail after the pools.
 #pragma defer_codegen off // Generate the flushing helper immediately; its conversion double is already pooled.
 static f32 fadedrvFlushPools(u32 value) {
 	return (f32)value;
 }
-#pragma explicit_zero_data on // These zero words belong to initialized sections.
-#pragma force_active on // Retain the original section tails.
-__declspec(section ".rodata") const u32 lbl_802C1538 = 0;
+#pragma explicit_zero_data on // This zero word belongs to an initialized section.
+#pragma force_active on // Retain the original section tail.
 __declspec(section ".data") static u32 fadedrv_data_pad = 0;
 #pragma force_active reset
 #pragma explicit_zero_data reset
 #pragma defer_codegen reset // Restore the default function emission mode.
-#else
-const u32 lbl_802C1538 = 0;
 #endif
