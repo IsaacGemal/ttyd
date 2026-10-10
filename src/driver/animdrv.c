@@ -1765,9 +1765,9 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z) {
     PSMTXConcat(g_modeling_mtx_stack[g_modeling_mtx_lv - 1], result, g_modeling_mtx_stack[g_modeling_mtx_lv]);
 }
 
-// NONMATCHING (97.89%): every instruction/constant/offset matches; what is left is register colouring
-// (loop2 texMtxId/flags one off) plus the wrapS ternary materialising through r3 (`mr`) and the loop2
-// `texMtxId` init (`mr r19,r21` in the target vs a `li` here).
+// NONMATCHING (98.37%): instructions/constants match; register colouring only. The split wrapS
+// assignment adds a web that promotes `i`/`wrapFlags` above the parameter webs and rotates the
+// callee-saved set by two; the loop2 `texMtxId` init is `mr r19,r21` vs a `li` here.
 void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pTexEntries, AnimTexMtx* animEntries,
                              s32 texBindsCapacity, AnimTexBind* texBinds, AnimationTextureFile* texFile) {
     Mtx mRot, mTrans, mScale, mTmp;
@@ -1821,7 +1821,12 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
                 wrapS = desc->textureHeader->wrapS;
                 wrapT = desc->textureHeader->wrapT;
                 if (wrapFlags >= 0) {
-                    wrapS = (wrapFlags & 4) ? 2 : (wrapFlags & 1);
+                    if (wrapFlags & 4) {
+                        wrapS = 2;
+                    } else {
+                        wrapS = wrapFlags;
+                        wrapS &= 1;
+                    }
                     if (wrapFlags & 8) {
                         wrapT = 2;
                     } else {
@@ -1844,7 +1849,12 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
                 wrapS = desc->textureHeader->wrapS;
                 wrapT = desc->textureHeader->wrapT;
                 if (wrapFlags >= 0) {
-                    wrapS = (wrapFlags & 4) ? 2 : (wrapFlags & 1);
+                    if (wrapFlags & 4) {
+                        wrapS = 2;
+                    } else {
+                        wrapS = wrapFlags;
+                        wrapS &= 1;
+                    }
                     if (wrapFlags & 8) {
                         wrapT = 2;
                     } else {
