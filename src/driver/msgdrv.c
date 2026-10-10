@@ -754,11 +754,14 @@ void msgDispKeyWait_render(s32 wXluStage) {
 // register allocation for the spilled s16 cursor group and the R-ruby float temps to match the
 // shipped binary (this is how MWCC 2.6 behaves under the original's higher register pressure).
 #pragma opt_dead_assignments off
-// The target's i2f conversion for `mid` reads a 32-bit stack slot at 0x22c, so `total16` must stay
-// a 32-bit signed local: its liveness pins the allocator's `total`/`skip`/`off` colouring (u16,
-// u32 or inlining the cast costs ~0.3%). The target's conversion uses the unsigned magic because
-// its optimizer had the value's range; ours emits the signed one, numerically identical here.
-// NONMATCHING (97.03%): register-allocation residue around the promoted `var[0]`.
+// The R-ruby loops index through the `rp` pointer (not the tagName array), so MWCC's frontend leaves the
+// offset counters alone and the backend's strength reduction keeps them next to the pointer it derives,
+// as in the target; the icon name goes through msgIconStr2ID (auto-inlined).
+// What differs: after the spill of var[0..2] (as in the target), the second colouring pass gives the R-ruby
+// glyph loop's pointer/glyph/0x4330 temps and the .rodata base r31-r27 ahead of data/window/entry, so every
+// long-lived GPR sits four registers lower than the target (data r26 vs r30); var[1]/var[2] spill slots are
+// swapped (0x234/0x232) and defaultchar reuses the switch's extsb of `check`.
+// NONMATCHING (97.74%): GPR colouring of the second allocation pass; see above.
 void msgAnalize(smartEntry* smart, const char* msg) {
 	char tagName[128];
 	char tagArg[128];
@@ -796,7 +799,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	MsgDataEntry* entry;
 	s16 ex;
 	s16 ey;
-	s32 r25;
+	s16 r25;
 	s32 r24;
 	u32 flags;
 	f32 maxScale;
@@ -818,7 +821,6 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	s32 half;
 	s32 total;
 	const char* rp;
-	s32 total16;
 	f32 base;
 	s32 mid;
 	s32 j;
@@ -877,7 +879,7 @@ loop:
 		glyph = kanjiSearch(*(const u16*)msg);
 		width = kanjiGetWidth((u16)glyph);
 		{
-		s32 exinc = (s32)((f32)(width + 4) * scale);
+		s32 exinc = (s32)(scale * (f32)(width + 4));
 		entry->glyph = glyph;
 		*(s16*)(entry->field_0x6) = ex;
 		*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.f * scale));
@@ -920,7 +922,7 @@ loop:
 		entry->glyph = 0xFFFB;
 		ex = 0;
 		entry->field_0xC = r24;
-		if (maxScale == float_0_8041a514) {
+		if (float_0_8041a514 == maxScale) {
 			maxScale = 1.0f;
 		}
 		{
@@ -1016,11 +1018,15 @@ loop:
 		}
 		else if (strcmp(tagName, "pos") == 0) {
 			sscanf(tagArg, "%d%d", &posX, &posY);
-			ex = (s16)posX;
-			if (posY != 999) {
-				ey = (s16)(var[2] - posY);
+			{
+				s32 y = posY;
+
+				ex = (s16)posX;
+				if (y != 999) {
+					ey = (s16)(var[2] - y);
+				}
+				var[0] = (s16)(-y);
 			}
-			var[0] = (s16)(-posY);
 		}
 		else if (strcmp(tagName, "scale") == 0) {
 			sscanf(tagArg, "%f", &scale);
@@ -1183,22 +1189,11 @@ loop:
 				sscanf(tagArg, "%d%f%d%d%d", &iconId, &iconScale, &icon3, &icon4, &icon5);
 			}
 			else {
-				s32 id;
-
 				sscanf(tagArg, "%s%f%d%d%d", buf4, &iconScale, &icon3, &icon4, &icon5);
 				if (strcmp(buf4, "HM") == 0) {
 					isHM = 1;
 				}
-				for (i = 0; (u32)i < 18; i++) {
-					if (strcmp(msgIcon[i].name, buf4) == 0) {
-						id = msgIcon[i].value;
-						break;
-					}
-				}
-				if ((u32)i >= 18) {
-					id = -1;
-				}
-				iconId = id;
+				iconId = msgIconStr2ID(buf4);
 				if (iconId < 0) {
 					iconId = 0;
 				}
@@ -1222,7 +1217,7 @@ loop:
 			else {
 				glyph = kanjiSearch(0x94B5);
 				width = kanjiGetWidth((u16)glyph);
-				w = (u16)(s32)((f32)(width + 4) * scale);
+				w = (u16)(s32)(scale * (f32)(width + 4));
 				entry->glyph = glyph;
 				*(s16*)(entry->field_0x6) = ex;
 				*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.f * scale));
@@ -1298,46 +1293,47 @@ loop:
 			if (data->window->type == 1) {
 				goto loop;
 			}
-			rp = tagName + skip;
-			len = strlen(rp);
-			half = (len + (s32)((u32)len >> 31)) >> 1;
+			len = strlen(tagName + skip);
+			half = len / 2;
 			total = 0;
+			rp = tagName;
 			{
 			s32 off = skip;
-			for (i = 0; i < half; i++, off += 2) {
-				u16 g = kanjiSearch(*(const u16*)(tagName + off));
+			for (i = 0; i < half; i++) {
+				u16 g = kanjiSearch(*(const u16*)(rp + off));
 				u16 kwidth = kanjiGetWidth((u16)g);
 
-				total += (s32)(0.55f * ((f32)(kwidth + 4) * scale));
-				rp += 2;
+				f32 fw = scale * (f32)(kwidth + 4);
+
+				total += (s32)(0.55f * fw);
+				off += 2;
 			}
 			}
-			total16 = (u16)total;
 			base = 4.0f * scale;
-			mid = (s32)((f32)total16 - 0.55f * base);
+			mid = (s32)((f32)(u16)total - 0.55f * base);
 			{
 				f32 t = (f32)((s16)r25 + (s32)ex) - base;
 				r25 = (s32)((t - (f32)(u16)mid) * 0.5f);
 			}
 
-			rp = tagName + skip;
+			rp = tagName;
 			for (j = 0; j < half; j++) {
-				u16 g = kanjiSearch(*(const u16*)rp);
+				u16 g = kanjiSearch(*(const u16*)(rp + skip));
 				u16 kwidth = kanjiGetWidth((u16)g);
-				s32 rinc = (s32)(0.55f * ((f32)(kwidth + 4) * scale));
+				f32 fw = scale * (f32)(kwidth + 4);
+				s32 rinc = (s32)(0.55f * fw);
 
 				entry->glyph = g;
 				*(s16*)(entry->field_0x6) = (s16)r25;
-				*(s16*)(entry->field_0x6 + 2) = ey;
+				*(s16*)(entry->field_0x6 + 2) = (s32)ey;
 				*(f32*)(entry->field_0x10) = 0.55f * scale;
 				entry->field_0x0 = flags;
 				if (flags & 1) {
 					*(f32*)(entry->field_0x10 + 4) = dyn;
 				}
 				entry->field_0xC = 0;
-				r25 = (s16)((s32)r25 + rinc);
+				r25 += rinc;
 				skip += 2;
-				rp += 2;
 				entry++;
 				data->entryId++;
 			}
@@ -1356,7 +1352,7 @@ aftertag:
 	goto loop;
 
 defaultchar:
-	if ((u32)gp->language == 0 && check >= '0' && check <= '9') {
+	if ((u32)gp->language == 0 && (s8)check >= '0' && (s8)check <= '9') {
 		glyph = kanjiSearch((u16)((u8)check + 0x10000 - 0x7DE1));
 	}
 	else {
@@ -1364,7 +1360,7 @@ defaultchar:
 	}
 	width = kanjiGetWidth((u16)glyph);
 	{
-	s32 exinc = (s32)((f32)(width + 2) * scale);
+	s32 exinc = (s32)(scale * (f32)(width + 2));
 	entry->glyph = glyph;
 	*(s16*)(entry->field_0x6) = ex;
 	*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.f * scale));

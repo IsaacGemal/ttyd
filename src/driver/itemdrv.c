@@ -1564,15 +1564,11 @@ static s32 _move_dir;
 // into `fmsubs`/`fnmadds`; the itemId range test is written as explicit switch cases (0x72..0x78) so the branch
 // layout matches; hardHit is zeroed after the switch; the two identical `IT_S64(item,0x60) += d1` tails and the two
 // `bounce = 0` tails are reached through a label/goto so MWCC keeps one shared out-of-line copy, as the target does.
-// The ceiling/floor rays and the bounce SFX are the out-of-line functions above (auto-inlined here, their own copies
-// dead-stripped at link); their literals pool at their own .text slots, which is where retail's .rodata/.sdata2 has
-// them. vec3_802cac04 is non-const under MUST_MATCH and pinned to .rodata so its load is not hoisted above the
-// preceding status store.
-// What still differs (GPR colouring only): retail gives `item` r31 and the .rodata base r30 (ours the reverse),
-// the elapsed-ticks s64 `d1` halves are swapped (retail low r29/high r28), and the badge-delete loop's `e`/`j` and
-// `hardHit` sit in r27/r28 instead of r24/r25; the third hitCheckFilter return is `mr. r25,r3` where retail has
-// `cmplwi r3,0; mr r26,r3`. The FPR colouring, call order, switch trees, constants and stack frame match.
-// NONMATCHING (98.23%): GPR colouring only; see above.
+// The ceiling/floor rays, the bounce SFX and the badge-delete loop (itemDelete) are out-of-line functions,
+// auto-inlined here; the rays return from each branch, which keeps the hit pointer out of the floor ray's saved
+// register until the hit is known. Their literals pool at their own .text slots, which is where retail's
+// .rodata/.sdata2 has them. vec3_802cac04 is non-const under MUST_MATCH and pinned to .rodata so its load is not
+// hoisted above the preceding status store.
 void itemseq_Bound(ItemEntry* item) {
     MarioWork* mario = marioGetPtr();
     CameraEntry* camera = camGetPtr(CAMERA_3D);
@@ -1665,6 +1661,7 @@ void itemseq_Bound(ItemEntry* item) {
         f32 nz;
         s32 angle;
         HitEntry* hit;
+        Vec p1;
 
         IT_S64(item, 0x70) = gp->renderTime;
         d1 = IT_S64(item, 0x70) - IT_S64(item, 0x68);
@@ -1672,7 +1669,11 @@ void itemseq_Bound(ItemEntry* item) {
         t2 = (f32)OSTicksToMicroseconds(IT_S64(item, 0x60)) / 1000000.0f;
         t3 = (f32)OSTicksToMicroseconds(IT_S64(item, 0x60) + d1) / 1000000.0f;
         vx = t1 * (IT_F32(item, 0x50) * (f32)sin((6.2831855f * (f32)IT_S32(item, 0x54)) / 360.0f));
-        vz = t1 * (IT_F32(item, 0x50) * -(f32)cos((6.2831855f * (f32)IT_S32(item, 0x54)) / 360.0f));
+        {
+            f32 c = (f32)cos((6.2831855f * (f32)IT_S32(item, 0x54)) / 360.0f);
+
+            vz = t1 * (IT_F32(item, 0x50) * -c);
+        }
         if (IT_U32(item, 0x38) & 0x8000) {
             vz = 0.0f;
         }
@@ -1685,32 +1686,8 @@ void itemseq_Bound(ItemEntry* item) {
             IT_U32(item, 0x38) &= ~8;
         }
         if ((IT_U32(item, 0x38) & 0x20) && vy < 0.0f) {
-            ItemWork* w;
-            ItemEntry* e;
-            s32 j;
-
             effStardustEntry(1, 3, 0x1E, item->position.x, item->position.y, item->position.z, 16.0f, 16.0f);
-            w = itemGetWork();
-            for (e = w->entries, j = 0; j < w->count; j++, e++) {
-                if (strcmp(e->name, item->name) == 0) {
-                    itemCheckBadge(e);
-                    switch (e->itemId) {
-                    case 0x72:
-                    case 0x73:
-                    case 0x74:
-                    case 0x75:
-                    case 0x76:
-                    case 0x77:
-                    case 0x78:
-                        effSoftDelete(e->effect);
-                        break;
-                    default:
-                        iconDelete(e->name);
-                        break;
-                    }
-                    e->flags &= ~1;
-                }
-            }
+            itemDelete(item->name);
             return;
         }
         angle = IT_S32(item, 0x54);
@@ -1726,7 +1703,11 @@ void itemseq_Bound(ItemEntry* item) {
             hit = itemBoundHitCeiling(item, vy);
             if (hit != NULL) {
                 vy = 0.0f;
-                IT_F32(item, 0x58) = -IT_F32(item, 0x58) * 0.25f;
+                {
+                    f32 k = 0.25f;
+
+                    IT_F32(item, 0x58) = -IT_F32(item, 0x58) * k;
+                }
                 IT_S64(item, 0x60) = 0;
                 IT_S64(item, 0x68) = IT_S64(item, 0x70);
             }
@@ -1778,9 +1759,9 @@ void itemseq_Bound(ItemEntry* item) {
                     } else {
                         int hardHit;
                         int bounce;
-                        f32 q, g, tt, dd;
+                        f32 tt, dd;
 
-                        itemseq_sfxBound(item);
+                        itemseq_sfxBound(item, &p1);
                         hardHit = 0;
                         if ((item->flags & 0x80) && IT_F32(item, 0x58) != 0.0f) {
                             bounce = 1;
@@ -1812,11 +1793,13 @@ void itemseq_Bound(ItemEntry* item) {
                             ff = IT_F32(item, 0x58) * t1 + ee;
                             IT_F32(item, 0x58) = 0.7f * (IT_F32(item, 0x80) * (-ff / t1));
                         }
-                        g = -980.0f * IT_F32(item, 0x84);
-                        q = IT_F32(item, 0x58);
-                        dd = (f32)__fabs(0.5f * (q / g));
                         {
-                            f32 hitval = q * dd + (dd * g) * dd;
+                            f64 a = __fabs(0.5f * (IT_F32(item, 0x58) / (-980.0f * IT_F32(item, 0x84))));
+
+                            dd = (f32)a;
+                        }
+                        {
+                            f32 hitval = IT_F32(item, 0x58) * dd + dd * ((-980.0f * IT_F32(item, 0x84)) * dd);
 
                             if (hardHit == 0) {
                                 if (hitval <= 8.0f) {
@@ -1849,33 +1832,32 @@ void itemseq_Bound(ItemEntry* item) {
     IT_U32(item, 0x38) &= ~0x10;
 }
 
-// Plays the bounce SFX for the item id, at the item's position.
-void itemseq_sfxBound(ItemEntry* item) {
+// Plays the bounce SFX for the item id at the item's position, which it also leaves in *p.
+void itemseq_sfxBound(ItemEntry* item, Vec* p) {
     Vec p0;
-    Vec p1;
     s32 id;
 
     p0 = vec3_802cac10;
     p0.x = item->position.x;
     p0.y = item->position.y;
     p0.z = item->position.z;
-    p1 = p0;
+    *p = p0;
     id = item->itemId;
     switch (id) {
     case 0x79:
-        psndSFXOn_3D("SFX_COIN_LEAPED1", &p1);
+        psndSFXOn_3D("SFX_COIN_LEAPED1", p);
         break;
     case 0x7A:
-        psndSFXOn_3D("SFX_EVT_GAME_MONTE_LEAPED1", &p1);
+        psndSFXOn_3D("SFX_EVT_GAME_MONTE_LEAPED1", p);
         break;
     case 0x7B:
-        psndSFXOn_3D("SFX_HEART_LEAPED1", &p1);
+        psndSFXOn_3D("SFX_HEART_LEAPED1", p);
         break;
     case 0x7C:
-        psndSFXOn_3D("SFX_FLOWER_LEAPED1", &p1);
+        psndSFXOn_3D("SFX_FLOWER_LEAPED1", p);
         break;
     case 0x7D:
-        psndSFXOn_3D("SFX_STAR_PIECE_LEAPED1", &p1);
+        psndSFXOn_3D("SFX_STAR_PIECE_LEAPED1", p);
         break;
     case 0x72:
     case 0x73:
@@ -1884,13 +1866,13 @@ void itemseq_sfxBound(ItemEntry* item) {
     case 0x76:
     case 0x77:
     case 0x78:
-        psndSFXOn_3D("SFX_EVT_STARSTONE_JUMP1", &p1);
+        psndSFXOn_3D("SFX_EVT_STARSTONE_JUMP1", p);
         break;
     default:
         if (id >= 0xF0 && id < 0x153) {
-            psndSFXOn_3D("SFX_BADGE_LEAPED1", &p1);
+            psndSFXOn_3D("SFX_BADGE_LEAPED1", p);
         } else {
-            psndSFXOn_3D("SFX_ITEM_LEAPED1", &p1);
+            psndSFXOn_3D("SFX_ITEM_LEAPED1", p);
         }
         break;
     }
@@ -2015,49 +1997,53 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
 // Floor ray of a falling item: lands it on the hit's y, or moves it down by vy when nothing is hit.
 HitEntry* itemBoundHitFloor(ItemEntry* item, f32 vy) {
     f32 hx, hy, hz, dist, hnx, hny, hnz;
+    f64 d;
     HitEntry* hit;
 
     if (vy >= 0.0f) {
-        hit = NULL;
         item->position.y += vy;
+        return NULL;
+    }
 #ifdef MUST_MATCH
-    } else if (*(volatile u32*)((u8*)item + 0x38) & 0x100000) {
+    if (*(volatile u32*)((u8*)item + 0x38) & 0x100000) {
 #else
-    } else if (IT_U32(item, 0x38) & 0x100000) {
+    if (IT_U32(item, 0x38) & 0x100000) {
 #endif
-        hit = NULL;
         item->position.y += vy;
+        return NULL;
     } else {
         f32 px = item->position.x;
         f32 py = 20.0f + item->position.y;
         f32 pz = item->position.z;
 
-        dist = (f32)(double_20_802cac28 + __fabs(vy));
+        d = __fabs(vy);
+        dist = (f32)(double_20_802cac28 + d);
         hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f,
                              -1.0f, 0.0f);
         if (hit != NULL) {
             item->position.y = hy;
-        } else {
-            hit = NULL;
-            item->position.y += vy;
+            return hit;
         }
+        item->position.y += vy;
+        return NULL;
     }
-    return hit;
 }
 
 // Ceiling ray of a rising item: puts it under the hit, 4 units below the ceiling when the raised ray hits.
 HitEntry* itemBoundHitCeiling(ItemEntry* item, f32 vy) {
     f32 hx, hy, hz, dist, hnx, hny, hnz;
+    f64 d;
     HitEntry* hit;
 
     if (vy <= 0.0f) {
-        hit = NULL;
+        return NULL;
     } else {
         f32 px = item->position.x;
         f32 py = 20.0f + item->position.y;
         f32 pz = item->position.z;
 
-        dist = (f32)(double_20_802cac28 + __fabs(vy));
+        d = __fabs(vy);
+        dist = (f32)(double_20_802cac28 + d);
         hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f,
                              1.0f, 0.0f);
         if (hit != NULL) {
@@ -2067,14 +2053,15 @@ HitEntry* itemBoundHitCeiling(ItemEntry* item, f32 vy) {
             f32 py = item->position.y;
             f32 pz = item->position.z;
 
-            dist = (f32)(double_20_802cac28 + __fabs(vy));
+            d = __fabs(vy);
+            dist = (f32)(double_20_802cac28 + d);
             hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f, 1.0f,
                                  0.0f);
             if (hit != NULL) {
                 item->position.y = hy - 20.0f;
-            } else {
-                hit = NULL;
+                return hit;
             }
+            return NULL;
         }
     }
     return hit;
@@ -2146,15 +2133,6 @@ WinMgrDesc itemdrv_window_desc[] = {
     { {0, 0}, 8, 0xFFFFFF51, 0xC8, 0x15E, 0x4B, {0x2B, 0xA4, 0xFF, 0xFF}, NULL, winFullDisp },
     { {0, 0}, 8, 0xFFFFFF51, 0x78, 0x15E, 0x2A, {0xE1, 0xD7, 0x9B, 0xFF}, NULL, winNameDisp2 },
 };
-
-// Trailing zero word of the .data section (the next unit's addresses depend on it).
-#ifdef MUST_MATCH
-#pragma force_active on
-#pragma explicit_zero_data on
-__declspec(section ".data") u32 gap_05_803124B4_data[1] = {0};
-#pragma explicit_zero_data reset
-#pragma force_active reset
-#endif
 
 // .sdata2 colour words for the message windows (0x8041af90..0x8041af98; low byte only).
 __declspec(section ".sdata2") u32 dat_8041af90 = 0x000000FF;
