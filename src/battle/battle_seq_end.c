@@ -1249,8 +1249,8 @@ void btlseqEnd_DispMain(CameraId camId, BattleWork* param) {
     }
 }
 
-// NONMATCHING (99.27%): buf[0x10] (not [8]) makes the frame match; the 6 !! left are the strlen int->float
-// conversion (target unsigned/no xoris, ours signed s32 len) - identical for len < 2^31.
+// NONMATCHING (99.45%): buf[0x10] (not [8]) makes the frame match. Left: the 12.5 load is hoisted above
+// lenf's conversion (rasim: retail has no lenf--12.5 interference), so f2/f3 and r0/r4/r5 rotate.
 void _MarioExpDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
@@ -1265,7 +1265,7 @@ void _MarioExpDisp(CameraId camId, void* param) {
     if (work != NULL) {
         sprintf(buf, str_80420D3C, *(s16*)((u8*)work + 0xA));
         lenf = (f32)strlen(buf);
-        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_180_80420cac, float_neg160_80420d40, float_12p5_80420d0c * lenf + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
+        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_180_80420cac, float_neg160_80420d40, lenf * float_12p5_80420d0c + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
         iconDispGx(float_1_80420c64, &pos, 0x10, 0x18C);
         FontDrawStart();
         FontDrawString(buf, float_225_80420d44, float_neg163_80420d48);
