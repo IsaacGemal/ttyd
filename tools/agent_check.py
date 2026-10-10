@@ -44,11 +44,13 @@ if b.returncode == 0 and FINAL:
     b = subprocess.run(["ninja", *jobs, "all_source"], capture_output=True, text=True)
 if b.returncode:
     out = b.stdout + b.stderr
-    # tools/project.py's compile rules cap mwcc and print this marker when the cap kills it.
-    if "COMPILER TIMEOUT" in out:
+    # tools/project.py's compile rules cap mwcc and print this marker on a line of its own when the cap kills it; the
+    # failed rule's command text that ninja echoes contains the same words, so only whole marker lines count.
+    timeouts = [l for l in out.splitlines() if l.startswith("COMPILER TIMEOUT")]
+    if timeouts:
         print("BUILD FAILED: THE COMPILER HUNG and was killed (a normal compile takes about a second). Your last edit "
               "makes mwcceppc loop forever: undo it (lastgood.c is the last version that built) and write that part "
-              "differently.\n" + "\n".join(l for l in out.splitlines() if "COMPILER TIMEOUT" in l))
+              "differently.\n" + "\n".join(timeouts))
         sys.exit(1)
     errs = [l for l in out.splitlines() if "rror" in l or "###" in l or l.startswith("#")]
     print("BUILD FAILED\n" + "\n".join((errs or out.splitlines())[-40:]))

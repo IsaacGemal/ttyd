@@ -958,16 +958,16 @@ __declspec(section ".rodata") static const char ml_str_c_d[] = "./m/%s/c";
 #define ML_STR_SPOT "spotLight"
 #define ML_STR_C "./m/%s/c"
 #endif
-// NONMATCHING (95.06%): register numbering only; the target saves r17-r31 and keeps entry in r31,
-// ours saves r20-r31 with base in r31/entry in r29, so the string adds and frame size differ. The
-// instruction stream is otherwise the same (one extra `li 0`, one re-materialised format string).
+// NONMATCHING (95.64%): the base and the lightEntry argument order now match. What is left is register
+// numbering/rematerialisation: the target saves r17-r31 and recomputes wp->entries[group] after the
+// light loop, ours saves r20-r31 and keeps it live, plus one extra `li 0` and the animation store order.
 void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	MapHeader* header;
 	MapEntry* entry;
 	MapFileInfo* info;
 	MapFileJoint* mapJoint;
-	MapFileJoint* hitJoint;
 	MapFileLight* light;
+	MapFileJoint* hitJoint;
 	MapObject* obj;
 	DVDEntry* dvd;
 	char str1[128];
@@ -982,14 +982,12 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	u8 *data;
 	u8* base;
 	void* anim;
-	s32 type;
-	s32 flags;
 	s32 rel_i;
 	s32 disp_i;
 	s32 i;
 
 	entry = &wp->entries[group];
-	base = vec3_802c16d8;
+	base = (u8*)((u32)vec3_802c16d8);
 	error_flag = FALSE;
 	error_count = 0;
 	strncpy(entry->name, map, sizeof(entry->name));
@@ -1025,9 +1023,9 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 
 	GXInvalidateVtxCache();
 	header = &entry->header;
-	data = (u8*)entry->dat;
 	{
 		u32 entryDatSize = wp->entries[group].datSize;
+		data = (u8*)entry->dat;
 		if (header != NULL) {
 			memset(header, 0, sizeof(MapHeader));
 			wp->entries[group].header.field_0x3C |= 1;
@@ -1089,6 +1087,9 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	wp->entries[group].rootHitObj = hitEntry(hitJoint, mtx, group);
 
 	for (i = 0; i < ((MapFileLightTable*)*(void**)((u8*)entry + 0x98))->count; i++) {
+		s32 type;
+		s32 flags;
+
 		light = ((MapFileLightTable*)*(void**)((u8*)entry + 0x98))->lights[i];
 		type = 1;
 		flags = 0;
@@ -1108,7 +1109,14 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 		if (light->field_0x40 == 0x12D60D8) {
 			flags = light->field_0x3C;
 		}
+#ifdef MUST_MATCH
+		// MUST_MATCH: the original evaluates the two f32 arguments before attenType/flags, so the
+		// floats are declared first in this cast; the header's declaration order differs but the
+		// register assignment is identical.
+		((s32 (*)(const char*, s32, Vec*, Vec*, GXColor, f32, f32, s32, s32))lightEntry)(light->name, type, &pos, &light->rotation, light->color, light->spotAngle, light->attenAngle, light->attenType, flags);
+#else
 		lightEntry(light->name, type, &pos, &light->rotation, light->color, light->attenType, flags, light->spotAngle, light->attenAngle);
+#endif
 	}
 
 	paper_ambient = dat_8041982c;
@@ -3893,11 +3901,18 @@ static inline s32 mapMatSearchTex(s32* table, const char* name) {
 	return -1;
 }
 
-// NONMATCHING (95.09%): every call and branch matches but one. Left: the u8 -> f32 LOD conversions use a pooled
-// int->double mask where the original loads it from the unit's .rodata base (+0x2C8), the texture search's found
-// exit is a beq where retail branches around a b, and some callee-saved register colouring.
+// The calls and branches all match. Three instructions are still added: the light index table is materialised
+// as vec3_802c16d8 + 0x100 with a second copy of the base address (+1 lis, +1 addi) where retail reaches it as
+// r28 + 0x100, and the u8 -> f32 LOD conversion loads the compiler's pooled int->double mask (+1 lis) where
+// retail loads the unit's double_to_int_mask from the .rodata base (+0x2C8). Both need the unit's .rodata
+// objects defined so MWCC can fold the offsets; without them the frontend emits a fresh address. The rest is
+// register colouring: the light-loop counter lands in r25 instead of r22, the texture-loop ref/wp/desc in
+// r23/r24/r23 instead of r22/r29/r28. The final mapSetMaterialTev tail now matches (the argument expression is
+// inlined so the drawMode conditional is evaluated first). A rasim search over the named locals'
+// declaration order cannot reach retail's colouring (the counter and texMap coalesce), so it is allocator-only.
 // Loads the map object's lights into GX light slots (point, spot and directional), sets the colour channel from
 // the material, loads each of the material's textures by name from the map's TPL, then sets up TEV.
+// NONMATCHING (98.13%): base-relative lightId/i2f loads (3 instructions) and register colouring; see above.
 void mapSetMaterial(MapObject* obj, void* materialPtr) {
 	s32 i;
 	s32 texMap;
@@ -3907,18 +3922,24 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 	Mtx mtxY;
 	Mtx mtxZ;
 	LightEntry* lights[8];
+	LightEntry* light;
 	GXTexObj texObj;
 	Vec pos;
 	Vec defaultDir;
 	GXColor ambient;
 	GXColor defaultAmbient;
 #ifdef MUST_MATCH
-	u8* base;
-	s32* wrapTbl;
+	f32 spotAngle;
 #endif
 	s32* lightId;
 	u32 lightMask;
+#ifdef MUST_MATCH
+	s32* wrapTbl;
+#endif
 	s32 attn;
+#ifdef MUST_MATCH
+	u8* base;
+#endif
 	s32 count;
 
 	mat = materialPtr;
@@ -3931,16 +3952,17 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 	texMap = 0;
 	attn = 2;
 	defaultAmbient = dat_80419828;
-	count = mapSetLight(obj, lights);
 	lightMask = 0;
+	count = mapSetLight(obj, lights);
 
 	for (i = 0; i < count; i++) {
 
 		defaultDir = MAPMAT_DEFAULT_DIR;
-		if (lights[i]->flags & LIGHT_POINT) {
+		light = lights[i];
+		if (light->flags & LIGHT_POINT) {
 			CameraEntry* cam = camGetCurPtr();
 
-			PSMTXMultVec(cam->view, &lights[i]->position, &pos);
+			PSMTXMultVec(cam->view, &light->position, &pos);
 			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
 			GXInitLightColor(&lightObj, lights[i]->color);
 			GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
@@ -3948,8 +3970,8 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 			GXLoadLightObjImm(&lightObj, lightId[i]);
 			attn = 1;
 		}
-		else if (lights[i]->flags & LIGHT_SPOT) {
-			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
+		else if (light->flags & LIGHT_SPOT) {
+			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * light->rotation.x);
 			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
 			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
 			PSMTXConcat(mtxZ, mtxY, mtxY);
@@ -3968,10 +3990,10 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 			                float_0_80419850, float_0_80419850, float_1_80419860);
 			GXLoadLightObjImm(&lightObj, lightId[i]);
 		}
-		else if (lights[i]->flags & LIGHT_DIRECTIONAL) {
+		else if (light->flags & LIGHT_DIRECTIONAL) {
 			CameraEntry* cam = camGetCurPtr();
 
-			PSMTXMultVec(cam->view, &lights[i]->position, &pos);
+			PSMTXMultVec(cam->view, &light->position, &pos);
 			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
 			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
 			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
@@ -3982,7 +4004,12 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 			PSMTXMultVecSR(cam->view, &defaultDir, &defaultDir);
 			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
 			GXInitLightDir(&lightObj, defaultDir.x, defaultDir.y, defaultDir.z);
+#ifdef MUST_MATCH
+			spotAngle = lights[i]->spotAngle;
+			GXInitLightSpot(&lightObj, spotAngle * float_0p5_80419854, GX_SP_SHARP);
+#else
 			GXInitLightSpot(&lightObj, lights[i]->spotAngle * float_0p5_80419854, GX_SP_SHARP);
+#endif
 			GXInitLightDistAttn(&lightObj, float_1000_80419874, float_0p5_80419854, GX_DA_OFF);
 			GXInitLightColor(&lightObj, lights[i]->color);
 			GXLoadLightObjImm(&lightObj, lightId[i]);
@@ -4021,9 +4048,9 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 	wrapTbl = (s32*)(base + 0xEC);
 #endif
 	for (i = mat->texCount - 1; i >= 0; i--) {
-		MapWork* wp = &mapWork[activeGroup];
 		MapMatTexRef* ref = mat->texRefs[i];
 		TEXDescriptor* desc;
+		MapWork* wp = &mapWork[activeGroup];
 
 		desc = TEXGet(wp->entries[*(s16*)(obj->field_0xDC + 2)].tpl,
 		              mapMatSearchTex(*(s32**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 8),
@@ -4038,11 +4065,8 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 		texMap++;
 	}
 
-	{
-		u8* drawMode = mat->field_0x110;
-
-		mapSetMaterialTev(mat->texCount, drawMode ? drawMode[0] : 0, *(s32*)obj->field_0x0, obj->modelWorldMtx);
-	}
+	mapSetMaterialTev(mat->texCount, mat->field_0x110 ? mat->field_0x110[0] : 0,
+	                  *(s32*)obj->field_0x0, obj->modelWorldMtx);
 }
 
 void mapSetPaperAmbColor(GXColor* color) {
