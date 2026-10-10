@@ -5607,6 +5607,14 @@ vreg, search pairs of declaration moves) turn "no declaration order works" into 
 (battle_detect). (5) `tools/sched750.py` skipped every hoisted instruction (dump lines without a source line
 number); fixed in this chapter's PR.
 
+### winPartyDisp 97.83 -> 98.07 (DeepSeek V4.1 Flash, Isaac's own session)
+
+Codex had stopped on this function. DeepSeek found three source changes that move the register colouring toward
+retail. Declaring `loopWhite` first among the GXColor locals, and reusing `y` for the move list's name column instead
+of a new `nameX` (the earlier comment already said the original reuses x's register there), give 98.04. The comparison
+written `(4) != (winPartyDt[n].field_0x0)` adds 0.03 and is kept under MUST_MATCH. Still register colouring and block
+stack slots; not linked.
+
 ### Compaction and attempts: long vs short runs (experiment)
 
 Isaac's hypothesis: shorter contexts cost less per turn, so the same weekly budget buys more attempts and more
