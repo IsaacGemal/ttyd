@@ -47,17 +47,8 @@ const Vec vec3_802fdcc8 = { 0.0f, 5.0f, -5.0f };
 const Vec vec3_802fdcd4 = { 5.0f, 0.0f, -2.0f };
 const Vec vec3_802fdce0 = { 0.0f, 1.0f, 2.0f };
 const Vec vec3_802fdcec = { 0.0f, 0.0f, 0.0f };
-// effKemuTestEntry (99.99%): everything structural matches — function/`.text` order, rodata order
-// (named arrays before the pool double/strings), the `work = data; work++;` scheduling, the case 11
-// `360.0f * (f32)(i - 1) / (f32)(count - 2)` left-association, and MWCC's per-case FP temp colouring
-// (block-scoping `angle`/`spd` inside the paired cases pins it; the `spd = 0.0f;` MUST_MATCH dead
-// store before the loop keeps `spd` function-lived in f26). The only remaining diff is two
-// instructions in case 4/13: the two array base GPRs are swapped (the original materialises
-// `bom_dir` into r22 first, ours `bom_spd`, so the angle/spd `lfs` read r21/r22 the other way).
-// `bom_dir`/`bom_spd` are referenced nowhere else, so this is the allocator's tie-break on the two
-// hoisted `li`s; every source form that hoists `bom_dir` first (angle statement before spd) also
-// renumbers the caller-saved temps, so it needs the permuter.
-// NONMATCHING (99.99%): only the two case-4/13 array base GPRs (r21/r22) are swapped.
+// effKemuTestEntry: case 4/13 uses an explicit direction pointer under MUST_MATCH so MWCC
+// assigns bom_dir to r22 and bom_spd to r21 while retaining the original FP instruction order.
 EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* entry;
 	effKemuTestData* data;
@@ -280,8 +271,17 @@ EffectEntry* effKemuTestEntry(s32 type, f32 x, f32 y, f32 z, f32 scale) {
 			work->field_0x44 = 0;
 			if (type == 4 || type == 13) {
 				f32 angle, spd;
+#ifdef MUST_MATCH
+				/* Preserve the direction pointer before the speed calculation so MWCC
+				   assigns the two array induction registers in retail order. */
+				f32* dirptr = bom_dir + i;
+				dirptr = dirptr + 0;
+				spd = 2.0f * bom_spd[i - 1];
+				angle = 6.2831855f * (90.0f + dirptr[-1]) / 360.0f;
+#else
 				spd = 2.0f * bom_spd[i - 1];
 				angle = 6.2831855f * (90.0f + bom_dir[i - 1]) / 360.0f;
+#endif
 				work->velX = spd * (f32)sin(angle);
 				work->velY = -spd * (f32)cos(angle);
 				work->scale = 1.0f;
