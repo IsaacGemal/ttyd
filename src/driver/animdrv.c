@@ -387,14 +387,50 @@ void animPoseBattleInit(void) {
     animPoseRefresh();
 }
 
-// NONMATCHING (98.09%): register differences, and the free-slot loops' found-exit layout (retail `bne next; b found`).
+// Finds the first inactive file slot, writing its index through id. The early return
+// inside the loop is what gives the found-exit the target's `bne next; b found` layout.
+static inline AnimationPoseFile* animPoseFindFreeFile(s32* id) {
+    AnimationPoseFile* f;
+
+    for (*id = 0; *id < wp->totalFiles; (*id)++) {
+        f = &wp->files[*id];
+        if (!f->active) {
+            return f;
+        }
+    }
+    *id = -1;
+    return NULL;
+}
+
+// Finds the first inactive texture slot, writing its index through id. Same early-return
+// shape as the file search above.
+static inline AnimationTextureFile* animPoseFindFreeTexture(s32* id) {
+    AnimationTextureFile* t;
+
+    for (*id = 0; *id < wp->totalTextures; (*id)++) {
+        t = &wp->textures[*id];
+        if ((u32)t->active == 0) {
+            return t;
+        }
+    }
+    *id = -1;
+    return NULL;
+}
+
+// The file- and texture-slot free loops use the early-return helpers above for the target's
+// `bne next; b found` found-exit layout; the name-search loops use fileId/texId as counters.
+// NONMATCHING (98.32%): register allocation only, plus five induction-offset initialisations
+// (retail `mr offset, index`, ours `li offset, 0`); the instruction count matches.
 s32 animPoseEntry(const char* animName, s32 type) {
-    AnimationPose *pose, *temp;
-    AnimationPoseFile *file, *tempfile;
-    AnimationTextureFile *texture, *temptex;
+    AnimationPose *pose;
     AnimationPoseData* data;
-    s32 poseId, fileId, texId;
-    s32 check, i;
+    AnimationTextureFile *texture;
+    AnimationPoseFile *file;
+    AnimationPose *temp;
+    s32 poseId;
+    s32 fileId;
+    s32 texId;
+    s32 check;
     char textureName[256];
 
     switch (type) {
@@ -409,8 +445,8 @@ s32 animPoseEntry(const char* animName, s32 type) {
             break;
     }
 
-    for (i = 0, poseId = 0; i < wp->totalPoses; i++, poseId++) {
-        temp = &wp->poses[i];
+    for (poseId = 0; poseId < wp->totalPoses; poseId++) {
+        temp = &wp->poses[poseId];
         if (!temp->flags) {
             pose = temp;
             goto label_1;
@@ -424,8 +460,8 @@ label_1:
     pose->references = 0;
 
     check = wp->totalFiles;
-    for (i = 0; i < check; i++) {
-        file = &wp->files[i];
+    for (fileId = 0; fileId < check; fileId++) {
+        file = &wp->files[fileId];
         if (file->active) {
             data = *file->handle->data;
             if (!strcmp(data->fileName, animName)) {
@@ -435,15 +471,7 @@ label_1:
         }
     }
 
-    for (i = 0, fileId = 0; i < wp->totalFiles; i++, fileId++) {
-        tempfile = &wp->files[i];
-        if (!tempfile->active) {
-            file = tempfile;
-            goto label_2;
-        }
-    }
-    file = NULL;
-    fileId = -1;
+    file = animPoseFindFreeFile(&fileId);
 label_2:
     file->active = TRUE;
     file->references++;
@@ -463,8 +491,8 @@ label_2:
         } else {
             sprintf(textureName, "%s/%s-", str_80419A5C, data->textureName);
             check = wp->totalTextures;
-            for (i = 0; i < check; i++) {
-                texture = &wp->textures[i];
+            for (texId = 0; texId < check; texId++) {
+                texture = &wp->textures[texId];
                 if ((u32)texture->active != 0) {
                     if (texture->handle) {
                         if (!strcmp(texture->handle->filename, textureName)) {
@@ -475,15 +503,7 @@ label_2:
                 }
             }
 
-            for (i = 0, texId = 0; i < wp->totalTextures; i++, texId++) {
-                temptex = &wp->textures[i];
-                if ((u32)temptex->active == 0) {
-                    texture = temptex;
-                    goto label_3;
-                }
-            }
-            texture = NULL;
-            texId = -1;
+            texture = animPoseFindFreeTexture(&texId);
         label_3:
             texture->active = TRUE;
             texture->references++;
@@ -501,12 +521,12 @@ label_5:
     pose->animId = 0;
     pose->localTime = animTimeGetTime(type); // inline
     pose->lastFrameZero = -1;
-    pose->lastFrameTime = 0.0f;
+    pose->lastFrameTime = float_0_80419a48;
     pose->field_0x80 = 0;
-    pose->loopTime = 0.0f;
-    pose->field_0x70 = 0.0f;
-    pose->rotationY = 0.0f;
-    pose->field_0x7C = 0.0f;
+    pose->loopTime = float_0_80419a48;
+    pose->field_0x70 = float_0_80419a48;
+    pose->rotationY = float_0_80419a48;
+    pose->field_0x7C = float_0_80419a48;
     pose->type = type;
     pose->paperId = -1;
     animPose_AllocBuffer(pose);
@@ -516,10 +536,10 @@ label_5:
     pose->materialLightFlag = 0;
     pose->materialColor = dat_80419a2c;
     pose->materialColor2 = dat_80419a30;
-    pose->field_0xFC = 1.0f;
-    pose->field_0xF8 = 1.0f;
-    pose->field_0x100 = 0.0f;
-    pose->localTimeRate = 1.0f;
+    pose->field_0xFC = float_1_80419a44;
+    pose->field_0xF8 = float_1_80419a44;
+    pose->field_0x100 = float_0_80419a48;
+    pose->localTimeRate = float_1_80419a44;
     MTXIdentity(pose->matrix);
     if (!strcmp(animName, "tst_vivi")) {
         pose->vivianType = 1;
