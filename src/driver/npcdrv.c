@@ -2374,18 +2374,24 @@ void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
 // 100%: control flow and the `mode == 3` test match. The two `regularEvtId` reads go through a fresh
 // `*(NpcEntry**)(fbatData->field_2 + 2)` load (as in the original), which also fixes `entry`/`mario` to r30/r29.
 
-// Same 57 calls and immediates; no structural difference. The three decision trees match (the first switch carries the empty case 0x10000 the
+// Same 57 calls and immediates, no structural difference. The three decision trees match (the first switch carries the empty case 0x10000 the
 // original probes; the side scan is a `switch` on `blocked`), `wk` is the ternary form, the OffChk pair is one
 // `||` test, the first reviseAngle result uses its own local, and `h180` keeps the blocked-loop threshold in
-// the target's f29 (an inline constant put the whole talk-loop FPR set one register low). The `s32 i; s32
-// total;` pair sits right after `NpcWork* wk;` as in the sibling loops. Remaining: the register holding
-// `total` is r26 vs the target's r27 and the first hit block's base r27 vs r26 (which pulls the second block's
-// fb to r26 vs r25); a handful of scratch FPRs in the first block's angle wrap and the dx/dz load slot.
-// NONMATCHING (99.51%): a few callee-saved and scratch registers only.
+// the target's f29 (an inline constant put the whole talk-loop FPR set one register low). The two SFX strings
+// and the inlined sqrtf's double pool are read through the unit's base register, so the sqrtf uses
+// npcNearDistCheck_sqrtf with the explicit pool and the strings come off `sfxBase`; that keeps MWCC from
+// re-materialising the section base (`addi r3, r28, 0`) before each string offset. The two `angleABf` zero
+// constants before dx/dz are literals so their loads schedule as retail does. Naming the `fb + 0x10` out-address
+// (`fbatOut`) makes MWCC keep `total` in r27 and that temp in r26, as retail does; the second fbatHitCheck block
+// gets a block-scoped `fbatOut2` so its temp takes r22 and its `fb` r25 (a function-scope reuse kept both in r26).
+// Initialising the talk loop as `best = NULL; i = 0;` matches the two `li` order. Seven scratch-FPR rotations
+// remain in the second wrap loop (diff/rot/const swap f1/f2/f3); no source form tested moves them.
+// NONMATCHING (99.93%): every instruction matches; only callee-saved/scratch register numbers differ.
 void fbatEncountCheck(void) {
     NpcWork* wk;
-    s32 i;
     s32 total;
+    s32* fbatOut;
+    s32 i;
     NpcEntry* npc;
     NpcEntry* best;
     NpcEntry* hit;
@@ -2409,6 +2415,10 @@ void fbatEncountCheck(void) {
     s32 side;
     s32 found;
     s32 blocked;
+#ifdef MUST_MATCH
+    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+    const char* sfxBase = (const char*)vec3_802c2f78;
+#endif
 
     wk = gp->inBattle != 0 ? &work.battle : &work.field;
     total = wk->total;
@@ -2426,7 +2436,8 @@ void fbatEncountCheck(void) {
         return;
     }
     fb = gp->fbatData;
-    hit = (NpcEntry*)fbatHitCheck(0x13F1, (s32)((u8*)fb + 0x10));
+    fbatOut = (s32*)((u8*)fb + 0x10);
+    hit = (NpcEntry*)fbatHitCheck(0x13F1, (s32)fbatOut);
     if (hit != NULL && fb->mode == 1) {
         FieldBattleData* fb2 = gp->fbatData;
         s32 ok;
@@ -2441,7 +2452,7 @@ void fbatEncountCheck(void) {
             fb2->target = hit;
         }
         if (ok != 0) {
-            switch (ENC(fb, s32, 0x10)) {
+            switch (*fbatOut) {
                 case 0x40000:
                 case 0x80000:
                 case 0x20000:
@@ -2509,7 +2520,7 @@ void fbatEncountCheck(void) {
                 pose->rotationY -= float_360_80419be0;
             }
             pose->rotationY = float_0p75_80419bf4 * (pose->field_0x7C - pose->rotationY) + pose->rotationY;
-            switch (ENC(fb, s32, 0x10)) {
+            switch (*fbatOut) {
                 case 0x200000:
                 case 0x1000000:
                 case 0x800000:
@@ -2524,7 +2535,7 @@ void fbatEncountCheck(void) {
                     effSmallStarEntry(3, 3, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z, float_0_80419b9c, float_neg1_80419bf8, float_0_80419b9c);
                     break;
             }
-            switch (ENC(fb, s32, 0x10)) {
+            switch (*fbatOut) {
                 case 0x200000:
                 case 0x1000000:
                 case 0x800000:
@@ -2534,12 +2545,20 @@ void fbatEncountCheck(void) {
                 case 0x40000:
                 case 0x20000:
                     if (hit != NULL) {
+#ifdef MUST_MATCH
+                        psndSFXOn_3D(sfxBase + 0x204, &hit->position);
+#else
                         psndSFXOn_3D(FBAT_SFX_ENEMY, &hit->position);
+#endif
                         return;
                     }
                     break;
                 case 0x10000000:
+#ifdef MUST_MATCH
+                    psndSFXOn_3D(sfxBase + 0x220, &mario->position);
+#else
                     psndSFXOn_3D(FBAT_SFX_MARIO, &mario->position);
+#endif
                     break;
             }
         }
@@ -2548,8 +2567,8 @@ void fbatEncountCheck(void) {
     nearest = float_1000_80419bc8;
     if (marioChkTalkable() != 0 && *(s8*)((u8*)mario + 0x39) == 0) {
         npc = wk->entries;
-        i = 0;
         best = NULL;
+        i = 0;
         for (; i < total; i++, npc++) {
             if ((npc->flags & 2) && !(npc->flags & 8) && ENC(npc, u32, 0x128) != 0) {
                 found = 0;
@@ -2598,8 +2617,12 @@ void fbatEncountCheck(void) {
                         if (!(dist > float_0p5_80419ba0 * (mario->wPlayerCollisionBox.x + npc->width) + float_10_80419bb8)) {
                             dx = npc->position.x - mario->position.x;
                             dz = npc->position.z - mario->position.z;
-                            sincosf(&sx, &sz, angleABf(float_0_80419b9c, float_0_80419b9c, dx, dz));
+                            sincosf(&sx, &sz, angleABf(0.0f, 0.0f, dx, dz));
+#ifdef MUST_MATCH
+                            d = npcNearDistCheck_sqrtf(dx * dx + dz * dz, pool);
+#else
                             d = sqrtf(dx * dx + dz * dz);
+#endif
                             if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &d, &hitNX, &hitNY, &hitNZ, mario->position.x,
                                                float_0p75_80419bf4 * mario->wPlayerCollisionBox.y + mario->position.y,
                                                mario->position.z, sx, float_0_80419b9c, sz) == NULL) {
@@ -2650,12 +2673,14 @@ void fbatEncountCheck(void) {
     }
     fb = gp->fbatData;
     if (fb->mode == 1) {
-        hit = (NpcEntry*)fbatHitCheck(0x2361, (s32)((u8*)fb + 0x10));
+        s32* fbatOut2 = (s32*)((u8*)fb + 0x10);
+
+        hit = (NpcEntry*)fbatHitCheck(0x2361, (s32)fbatOut2);
         if (hit != NULL && fb->mode == 1) {
             s32 fval;
             FieldBattleData* fb2;
 
-            fval = ENC(fb, s32, 0x10);
+            fval = *fbatOut2;
             fb2 = gp->fbatData;
             if (fb2->mode == 1) {
                 fb2->mode = 3;
@@ -2663,7 +2688,7 @@ void fbatEncountCheck(void) {
                 *(NpcEntry**)((u8*)fb2 + 4) = hit;
                 ENC(hit, s32, 0x318) = fval;
             }
-            switch (ENC(fb, s32, 0x10)) {
+            switch (*fbatOut2) {
                 case 0x40000:
                 case 0x20000:
                 case 0x80000:
