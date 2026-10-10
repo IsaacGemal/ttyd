@@ -166,23 +166,21 @@ inline Vec initializeVec(Vec* input) {
     return temp;
 }
 
-// One 14-byte half of a vertex, as an inlined helper: retail inlines this twice per vertex
-// (first half at +0x0, second at +0xE), each inlining with its own Vec slot and its own
-// GQR2-5 setup. The OSs16tof32/OSf32tos16 fast-cast calls are the SDK inlines (see
-// libs/dolsdk2004/include/dolphin/os/OSFastCast.h); without them MWCC 2.6 lowers the casts
-// to the lha/fctiwz integer path, which shifts the whole FPR set and frame size.
-static inline void sstarSetVtx(s16* dst, Mtx mtx, s16* src) {
+// Copies vertex idx of a table into dst and transforms its position by mtx. The OSs16tof32/
+// OSf32tos16 fast-cast calls are the SDK inlines (libs/dolsdk2004/include/dolphin/os/OSFastCast.h);
+// without them MWCC 2.6 lowers the casts to the lha/fctiwz integer path.
+static inline void sstarSetVtx(SstarVtx* dst, Mtx mtx, SstarVtx* tbl, s32 idx) {
     Vec v;
-    memcpy(dst, src, 0xE);
-    OSInitFastCast(); /* retail's GQR2-5 setup before the s16->f32 reads */
-    OSs16tof32(&dst[0], &v.x);
-    OSs16tof32(&dst[1], &v.y);
-    OSs16tof32(&dst[2], &v.z);
+    memcpy(dst, &tbl[idx], sizeof(SstarVtx));
+    OSInitFastCast();
+    OSs16tof32(&dst->pos[0], &v.x);
+    OSs16tof32(&dst->pos[1], &v.y);
+    OSs16tof32(&dst->pos[2], &v.z);
     PSMTXMultVec(mtx, &v, &v);
-    OSInitFastCast(); /* retail's GQR2-5 setup before the f32->s16 writes */
-    OSf32tos16(&v.x, &dst[0]);
-    OSf32tos16(&v.y, &dst[1]);
-    OSf32tos16(&v.z, &dst[2]);
+    OSInitFastCast();
+    OSf32tos16(&v.x, (s16*)dst);
+    OSf32tos16(&v.y, &dst->pos[1]);
+    OSf32tos16(&v.z, &dst->pos[2]);
 }
 
 // MWCC's FPR allocation follows the local declaration order: with negSin declared next to
@@ -341,38 +339,12 @@ void effSstarMain(EffectEntry* effect) {
     }
 }
 
-// The psq_l/psq_st vertex conversions match: the original calls the SDK OSs16tof32/OSf32tos16
-// fast-cast inlines (libs/dolsdk2004/include/dolphin/os/OSFastCast.h), which MWCC 2.6 lowers to
-// the GQR5 paired-single path instead of lha/fctiwz. The `b = i * 2;` form of the final tri2 loop
-// (rather than a `b += 2` induction) is what makes the loop emit retail's `mr r24, r22` init. The
-// declaration order below (found by search) is the only one that gives type=r25/colR=r22/colG=r23
-// and matches the GXColor argument slots for tev stages 2/3.
-// The GXColor staging for tev stages 1-3 matches (the sstarTev1-3 inlines build each colour in a
-// scratch slot below its outgoing copy, as retail does). What still differs is the callee-saved
-// register colouring only, in two linked places. (1) Retail has colB=r24/camId=r26; ours has the
-// pair swapped (camId=r24/colB=r26). (2) In the vertex-copy loop retail keeps src=r29 and off=r24;
-// ours swaps those two, which cascades into the `addi` association for src2 and the r28-relative
-// vtx.y2/z2 stores. `tools/diff_shape.py` reports no shape difference; all differences are the
-// `!!` register mismatches. Searches that did not help: every single-swap (171) and 1200 random
-// declaration permutations, a further 3000 random declaration x loop x colour-helper mutations
-// (fast-scored by comparing the effSstarDisp .text bytes), every subset of opt_lifetimes/
-// opt_common_subs/opt_dead_assignments/opt_loop_invariants/global_optimizer set off,
-// opt_strength_reduction off (98.18), whole-file optimize_for_size (98.18), optimization_level 0-3,
-// `register`/initialisers/moving GXColor color, splitting the colour or loop variables per block,
-// block-scoping the colour locals, colour arrays/local structs, direct `data->col*` reads,
-// inline-return/inline-void GXColor helpers, colour-load reordering, `u32`/`s16*`/`SstarVertex*`
-// src, `s32`/`int`/`u16` off, off hoisted to function scope or the enclosing block, a `s32 mi`/
-// `Mtx*` matrix temp, a derived `src`, coalescing hints (`off = colB`), a camId copy, and moving the
-// first camGetPtr before/after other statements. Compilers GC/1.3..2.7 all give the same result, so
-// this is not a compiler-version issue. A loop-carried `off` (for-clause or body) makes mwcceppc
-// loop forever; do not use it. The camId/colB pair and the loop src/off pair are independent
-// allocator tie-breaks (camId's last use is before the loop, so r24 is free in the loop either way).
-// This is a permuter job (queue the sstarTev1-3 base).
-// NONMATCHING (99.52%): register colouring only (camId/colB swap, loop src/off swap); no differing
-// instruction or constant.
+// Each of the five trail segments is two table vertices (2i, 2i+1), both transformed by the
+// segment's history matrix. The vertex tables are addressed by name, so MWCC reaches them through
+// the unit's .data base (lbl_803A5C90). The `b = i * 2;` form of the final tri2 loop is what emits
+// retail's `mr r24, r22` init.
 void effSstarDisp(CameraId camId, void* param) {
     EffectEntry* effect = param;
-    u8* base = (u8*)lbl_803A5C90;
     Mtx mtx1;
     Mtx mtx2;
     Mtx mtx4;
@@ -386,10 +358,9 @@ void effSstarDisp(CameraId camId, void* param) {
     s32 colG;
     s32 i;
     s32 idx;
-    u8* src;
     CameraEntry* cam;
-    s32 type;
     s32 colB;
+    s32 type;
 
     cam = camGetPtr(camId);
     data = effect->userdata;
@@ -444,7 +415,7 @@ void effSstarDisp(CameraId camId, void* param) {
     GXSetTevAlphaOp(2, 0, 0, 0, 1, 0);
     GXSetTevColorIn(2, 6, 0xF, 0xF, 0);
     GXSetTevAlphaIn(2, 7, 0, 5, 7);
-    effSetVtxDescN64((effVtxArray*)(base + 0x40));
+    effSetVtxDescN64((effVtxArray*)size64x64_tex64x64_vtx);
     PSMTXConcat(cam->view, mtx3, mtx1);
     GXLoadPosMtxImm(mtx1, 0);
     GXBegin(0x90, 0, 6);
@@ -456,7 +427,7 @@ void effSstarDisp(CameraId camId, void* param) {
     GXSetTevAlphaOp(0, 0, 0, 0, 1, 0);
     GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xC);
     GXSetTevAlphaIn(0, 7, 5, 3, 7);
-    effSetVtxDescN64((effVtxArray*)(base + 0x78));
+    effSetVtxDescN64((effVtxArray*)size128x128_tex32x32_vtx);
     GXBegin(0x90, 0, 0xC);
     tri2(0, 1, 4, 0, 1, 2, 4, 0);
     tri2(0, 4, 3, 0, 4, 2, 3, 0);
@@ -492,12 +463,11 @@ void effSstarDisp(CameraId camId, void* param) {
         PSMTXRotRad(mtx2, 'z', float_deg2rad_8041fd84 * data->angle);
         PSMTXConcat(mtx1, mtx2, data->mtx[data->field_0x3C]);
 
-        src = base + 0xC0;
-        for (i = 0; i < 5; i++, src += 0x1C) {
-            u32 off = i * 0x1C + 0xE;
-            sstarSetVtx((s16*)&data->vtx[i], data->mtx[(idx - i + 8) % 8], (s16*)src);
-            sstarSetVtx((s16*)((u8*)data + off + 0x1d0), data->mtx[(idx - i + 8) % 8],
-                (s16*)((u8*)base + 0xC0 + off));
+        for (i = 0; i < 5; i++) {
+            sstarSetVtx(&data->vtx[i * 2], data->mtx[(idx - i + 8) % 8],
+                (SstarVtx*)shooting_dust_vtx, i * 2);
+            sstarSetVtx(&data->vtx[i * 2 + 1], data->mtx[(idx - i + 8) % 8],
+                (SstarVtx*)shooting_dust_vtx, i * 2 + 1);
         }
         GXInvalidateVtxCache();
         DCFlushRange(data->vtx, 0x8C);

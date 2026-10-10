@@ -3,16 +3,10 @@
 #include <dolphin/mtx.h>
 #include "driver/camdrv.h"
 #include "driver/effdrv.h"
-typedef struct SstarVertex {
-    s16 x; // 0x0
-    s16 y;
-    s16 z;
-    s16 unk0[4];  // 0x6
-    s16 x2; // 0xE
-    s16 y2;
-    s16 z2;
-    u16 unk1[4];  // 0x14
-} SstarVertex;
+typedef struct SstarVtx {
+    s16 pos[3];  // 0x0
+    s16 unk[4];  // 0x6
+} SstarVtx;
 typedef struct SstarWork {
     s32 field_0x0;  // 0x0
     Vec position;   // 0x4
@@ -33,7 +27,7 @@ typedef struct SstarWork {
     s32 colR;       // 0x1C4
     s32 colG;       // 0x1C8
     s32 colB;       // 0x1CC
-    SstarVertex vtx[5]; // 0x1D0
+    SstarVtx vtx[10]; // 0x1D0
 } SstarWork;
 EffectEntry* effSstarN64Entry(s32 type, f32 x, f32 y, f32 z, f32 a5, f32 a6, f32 a7, f32 a8);
 void effSstarMain(EffectEntry* effect);
