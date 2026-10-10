@@ -1400,8 +1400,10 @@ void bmapUnLoad(void) {
 	}
 }
 
-// NONMATCHING (96.59%): opening constant/pointer setup order; target reuses r28 for activeGroup=0, MWCC uses r0.
-// `i = 0;` is hoisted before `offset = 0;` because it scores marginally better (96.59 vs 96.54).
+// All registers, calls and immediates match. Only the opening block's scheduling differs: retail
+// keeps `li offset=0` ahead of `lwz wp=mapWork` and the `stw activeGroup` that reuses offset's r28,
+// while MWCC hoists the load above the li; no source spelling reaches the scheduler tie.
+// NONMATCHING (97.80%): opening load hoisted above the offset li.
 void bmapLoad(const char* map1, const char* map2) {
 	s32 offset;
 	u8* p;
@@ -1410,10 +1412,9 @@ void bmapLoad(const char* map1, const char* map2) {
 	MapWork* wp;
 
 	sysWaitDrawSync();
-	i = 0;
-	offset = 0;
+	activeGroup = offset = 0;
 	wp = mapWork;
-	activeGroup = 0;
+	i = 0;
 	p = (u8*)wp;
 	for (; i < wp->entries[0].count; i++) {
 		entry = (MapEntry*)((u8*)mapWork + activeGroup * 0x2F4 + offset);
@@ -1819,17 +1820,18 @@ static inline u8* mapSearchAnimObj(const char* name) {
 // r22/r25. The inlined Hermite blocks colour t in f5 vs retail's f12 (colour/light) or f2
 // (alpha, where only d and the orientation FPRs differ), so the polynomial FPRs rotate; and the
 // `if (!(t <= next))` diamond lays out as `beq after` vs retail's `bne body; b after` (8
-// op_mismatch). All are allocator colouring; no C shape found that moves them (the remaining
-// levers -- two-u32 split of `time`, a real inlined Hermite helper -- either do not move the
-// colouring or make MWCC hang).
+// op_mismatch). The Hermite output sum evaluates `value0 * h00` before `tan0 * (d * h10)` and
+// the light blocks declare `ki` first, which together move the FPR/callee-saved colouring; the
+// remaining FPR rotation is allocator colouring that no further C shape found moves (the
+// remaining levers -- a two-u32 split of `time`, a real inlined Hermite helper -- either do not
+// move the colouring or make MWCC hang).
 // The d==0 boolean uses the __cntlzw intrinsic to reproduce retail's cntlzw/srwi normalisation.
 // The colour/light Hermite loops have no `if (cnt > 1)` wrapper: the bare `for (ki = 1; ...)`
 // guard reproduces retail's `subi cnt-1; mtctr` scheduled before the `cmpwi`.
 #pragma opt_loop_invariants off // pins the colour/light channel loads and fixes allocator colouring
 #pragma opt_common_subs off // same: required for retail's register colouring here
-// NONMATCHING (96.21%): only register colouring/scheduling differs; calls, immediates, branches and
-// structure match. Retail keeps the spline time in f12 (colour/light) and d in f11/f12, while MWCC
-// here puts t in f5 and d in f6; the list16/list15-vs-time GPR swap cascades from the same colouring.
+// NONMATCHING (96.69%): the eight clamp diamonds still emit `beq` where retail has `bne`+`b`;
+// the rest is FPR colouring (t f5 vs f12, d f6 vs f11), plus the list16/list15 GPR swap.
 void mapMain(void) {
 	u8* list19;
 	MapEntry* entry;
@@ -1970,8 +1972,8 @@ void mapMain(void) {
 									f32 k1 = *(f32*)next;
 									f32 dt = t - k0;
 									f32 d = k1 - k0;
-									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value0 = *(f32*)(ch + 4);
+									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value1 = *(f32*)(chn + 4);
 									f32 tan1 = *(f32*)(chn + 8);
 									f32 den;
@@ -1994,7 +1996,7 @@ void mapMain(void) {
 									h10 = u + b;
 									h00 = float_1_80419860 + c;
 									h01 = float_neg2_804198a0 * u3 + a;
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 								}
 							}
 							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
@@ -2035,8 +2037,8 @@ void mapMain(void) {
 									f32 k1 = *(f32*)next;
 									f32 dt = t - k0;
 									f32 d = k1 - k0;
-									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value0 = *(f32*)(ch + 4);
+									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value1 = *(f32*)(chn + 4);
 									f32 tan1 = *(f32*)(chn + 8);
 									f32 den;
@@ -2059,7 +2061,7 @@ void mapMain(void) {
 									h10 = u + b;
 									h00 = float_1_80419860 + c;
 									h01 = float_neg2_804198a0 * u3 + a;
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 								}
 							}
 							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
@@ -2100,8 +2102,8 @@ void mapMain(void) {
 									f32 k1 = *(f32*)next;
 									f32 dt = t - k0;
 									f32 d = k1 - k0;
-									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value0 = *(f32*)(ch + 4);
+									f32 tan0 = *(f32*)(ch + 0xC);
 									f32 value1 = *(f32*)(chn + 4);
 									f32 tan1 = *(f32*)(chn + 8);
 									f32 den;
@@ -2124,7 +2126,7 @@ void mapMain(void) {
 									h10 = u + b;
 									h00 = float_1_80419860 + c;
 									h01 = float_neg2_804198a0 * u3 + a;
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 								}
 							}
 							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
@@ -2325,9 +2327,9 @@ void mapMain(void) {
 				for (li = 0; li < *(s32*)list16; lp += 4, li++) {
 					LightEntry* light = lightNameToPtr(*(char**)*(u8**)(lp + 4));
 					if (light != NULL) {
+					s32 ki;
 					u8* item = *(u8**)(lp + 4);
 					s32 cnt = *(s32*)(item + 4);
-					s32 ki;
 					f32 out[9];
 					for (ki = 1; ki < cnt; ki++) {
 						u8* prev = item + 8 + (ki - 1) * 0xB8;
@@ -2355,8 +2357,8 @@ void mapMain(void) {
 								f32 k1 = *(f32*)next;
 								f32 dt = t - k0;
 								f32 d = k1 - k0;
-								f32 tan0 = *(f32*)(ch + 0xC);
 								f32 value0 = *(f32*)(ch + 4);
+								f32 tan0 = *(f32*)(ch + 0xC);
 								f32 value1 = *(f32*)(chn + 4);
 								f32 tan1 = *(f32*)(chn + 8);
 								f32 den;
@@ -2379,7 +2381,7 @@ void mapMain(void) {
 								h10 = u + b;
 								h00 = float_1_80419860 + c;
 								h01 = float_neg2_804198a0 * u3 + a;
-								out[k] = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								out[k] = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 							}
 						}
 						{
@@ -2398,14 +2400,14 @@ void mapMain(void) {
 			}
 			/* light animation (color/angle) */
 			if (list15 != NULL) {
-				u8* lp = list15;
 				s32 li;
+				u8* lp = list15;
 				for (li = 0; li < *(s32*)list15; lp += 4, li++) {
 					LightEntry* light = lightNameToPtr(*(char**)*(u8**)(lp + 4));
 					if (light != NULL) {
+					s32 ki;
 					u8* item = *(u8**)(lp + 4);
 					s32 cnt = *(s32*)(item + 4);
-					s32 ki;
 					f32 out[5];
 					for (ki = 1; ki < cnt; ki++) {
 						u8* prev = item + 8 + (ki - 1) * 0x68;
@@ -2433,8 +2435,8 @@ void mapMain(void) {
 								f32 k1 = *(f32*)next;
 								f32 dt = t - k0;
 								f32 d = k1 - k0;
-								f32 tan0 = *(f32*)(ch + 0xC);
 								f32 value0 = *(f32*)(ch + 4);
+								f32 tan0 = *(f32*)(ch + 0xC);
 								f32 value1 = *(f32*)(chn + 4);
 								f32 tan1 = *(f32*)(chn + 8);
 								f32 den;
@@ -2457,7 +2459,7 @@ void mapMain(void) {
 								h10 = u + b;
 								h00 = float_1_80419860 + c;
 								h01 = float_neg2_804198a0 * u3 + a;
-								out[k] = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								out[k] = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 							}
 						}
 						light->color.r = (s32)(255.0f * out[0]);
@@ -3007,12 +3009,15 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 	return count;
 }
 
-#pragma opt_lifetimes off // needed: default lifetime analysis colours 15 more instructions wrong (243 -> 228 diffs)
-// Register colouring/scheduling only (228 real instruction diffs, 21 symbol-only). The unit's .rodata
+#pragma opt_lifetimes off // needed: default lifetime analysis colours 15 more instructions wrong (243 -> 226 diffs)
+// Register colouring/scheduling only (226 real instruction diffs, 21 symbol-only). The unit's .rodata
 // (vec3_802c16d8, double_to_int_mask_802c19a0, ...) is not defined here yet, so MWCC addresses the pooled
 // i2f double absolutely (lis/lfd) instead of `lfd f2, 0x2c8(r28)`, and TEXMTX uses add+lwzu (16 sites).
-// NONMATCHING (96.99%): the identity casts on the texMap/texCoord init below removed 14 diffs; the
-// else-branch constant order in the flags&0x80100000 block was reordered for the same reason.
+// Dropping opt_lifetimes costs +17; opt_common_subs/opt_propagation off and opt_strength_reduction off
+// are all worse (375/604/245 diffs), so this is the local optimum.
+// NONMATCHING (97.06%): the identity casts on the texMap/texCoord init below removed 14 diffs and the
+// texCoordTmp copy below 2 more; the else-branch constant order in the flags&0x80100000 block was reordered
+// for the same reason. The two structural blockers need the unit's .rodata ported.
 void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	u8* base;
 	s32 texMap;
@@ -3020,14 +3025,19 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	GXTevStageID tevStage;
 	s32 numIndStages;
 	Mtx queen_mtx;
-
+#ifdef MUST_MATCH
+	// A separate temporary for texCoord's initial value keeps it a distinct web from texMap, so
+	// MWCC does not coalesce the two (2 fewer instruction diffs).
+	s32 texCoordTmp;
+#endif
 	base = vec3_802c16d8;
 #ifdef MUST_MATCH
 	// Identity casts break MWCC's coalescing of texMap with texCount and texCoord with texMap; without
 	// them the allocator parks texCount in r21, rematerialises texMap from it at every TEXMTX site, and
 	// turns the table loads into add+lwzu (240 -> 228 diffs).
 	texMap = (s32)texCount;
-	texCoord = (s32)texMap;
+	texCoordTmp = (s32)texMap;
+	texCoord = texCoordTmp;
 #else
 	texMap = texCount;
 	texCoord = texCount;
