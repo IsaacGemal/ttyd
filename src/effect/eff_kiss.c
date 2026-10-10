@@ -7,9 +7,8 @@
 #include <dolphin/mtx.h>
 #include "math_ext.h"
 
-// The original has these constants in .sdata2. Declared const, MWCC folds their values into its own pool;
-// the matching build keeps the ones marked SDATA2_CONST writable so the loads reference the original symbols
-// (the const ones are those effKissEntry's scheduling needs const).
+// .sdata2: the colour words. The float constants are literals at each use; MWCC pools them after these
+// in code-generation order (effKissDisp2 first), which is retail's .sdata2 order.
 #ifdef MUST_MATCH
 #define SDATA2_CONST __declspec(section ".sdata2")
 #else
@@ -18,32 +17,6 @@
 SDATA2_CONST char str_804213F0[4] = "<<<";
 SDATA2_CONST char str_804213F4[4] = "<<<";
 SDATA2_CONST u32 dat_804213f8 = 0xFFB5DA00;
-SDATA2_CONST f32 float_deg2rad_804213fc = 0.017453292f;
-SDATA2_CONST f32 float_8_80421400 = 8.0f;
-const f32 float_1_80421404 = 1.0f;
-SDATA2_CONST f32 float_0p5_80421408 = 0.5f;
-const f32 float_0_8042140c = 0.0f;
-SDATA2_CONST f32 float_4_80421410 = 4.0f;
-SDATA2_CONST f32 float_2_80421414 = 2.0f;
-const f32 float_1p5_80421418 = 1.5f;
-SDATA2_CONST f32 float_32_8042141c = 32.0f;
-SDATA2_CONST f32 float_40_80421420 = 40.0f;
-SDATA2_CONST f32 float_20_80421424 = 20.0f;
-SDATA2_CONST f32 float_5_80421428 = 5.0f;
-SDATA2_CONST f32 float_1p15_8042142c = 1.15f;
-SDATA2_CONST f32 float_10_80421430 = 10.0f;
-SDATA2_CONST f32 float_0p9_80421434 = 0.9f;
-const f32 float_6p2832_80421438 = 6.2831855f;
-SDATA2_CONST f32 float_0p03125_8042143c = 0.03125f;
-SDATA2_CONST f32 float_1p2_80421440 = 1.2f;
-const f32 float_360_80421444 = 360.0f;
-SDATA2_CONST f32 float_0p2_80421448 = 0.2f;
-SDATA2_CONST f32 float_9p4248_8042144c = 9.424778f;
-SDATA2_CONST f32 float_60_80421450 = 60.0f;
-SDATA2_CONST f32 float_12_80421454 = 12.0f;
-SDATA2_CONST char str_80421458[8] = "kiss";
-const f32 float_3_80421460 = 3.0f;
-const f32 float_neg1_80421464 = -1.0f;
 
 // .rodata
 const Vec vec3_802fe780 = { 0.0f, 0.0f, 0.0f };
@@ -72,7 +45,11 @@ u8 kura_kiss[] = {
 	0xA0, 0x59, 0x4A, 0xA0, 0x59, 0x4A, 0xA1, 0x59, 0x49, 0x00, 0x00, 0x00,
 };
 
+#pragma explicit_zero_data on
+#pragma force_active on
 __declspec(section ".data") u32 gap_05_803B01F8_data[2] = { 0, 0 };
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 // .sdata
 s16 kuri_kiss_r[] = {
@@ -98,8 +75,7 @@ __declspec(section ".sdata") u32 unk_80423314;
 __declspec(section ".sdata") u32 unk_80423310;
 #pragma section ".sdata" ".sbss"
 
-// 100% matched. The const declarations make MWCC schedule the constants as retail does (writable
-// globals would reload them after sin/cos); `t` splits the shared twoPi/360 division out of the
+// 100% matched. `t` splits the shared twoPi/360 division out of the
 // sin/cos arguments so it is computed once, as retail does. In case 5 the `negOne` local hoists the
 // -1.0f load into retail's f0 (MUST_MATCH; natural form in the #else).
 EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
@@ -115,7 +91,7 @@ EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 		effStampN64Entry(2, x, y, z);
 		count = 7;
 	}
-	entry->type = str_80421458;
+	entry->type = "kiss";
 	entry->count = count;
 	data = __memAlloc(HEAP_EFFECT, sizeof(KissEffectWork) * entry->count);
 	entry->userdata = data;
@@ -125,68 +101,68 @@ EffectEntry* effKissEntry(s32 type, f32 x, f32 y, f32 z, f32 angle) {
 	data->x = x;
 	data->y = y;
 	data->z = z;
-	data->scaleY = float_1_80421404;
-	data->scaleX = float_1_80421404;
+	data->scaleY = 1.0f;
+	data->scaleX = 1.0f;
 	data->life = (type != 4) ? 40 : 60;
 	data->frame = 0;
-	twoPi = float_6p2832_80421438 * angle;
+	twoPi = 6.2831855f * angle;
 	data->alpha = 0xFF;
 	data->angle = angle;
-	data->rot = float_0_8042140c;
+	data->rot = 0.0f;
 
 	data++;
 	for (i = 1; i < entry->count; i++, data++) {
-		data->x = float_0_8042140c;
-		data->y = float_0_8042140c;
-		data->z = float_0_8042140c;
-		data->rot = float_0_8042140c;
+		data->x = 0.0f;
+		data->y = 0.0f;
+		data->z = 0.0f;
+		data->rot = 0.0f;
 		data->life = 0;
 		data->frame = 0;
 		switch (type) {
 		case 0:
 		case 3:
-			data->scaleY = float_1_80421404;
-			data->scaleX = float_1_80421404;
+			data->scaleY = 1.0f;
+			data->scaleX = 1.0f;
 			{
-				f32 t = twoPi / float_360_80421444;
-				data->velX = float_3_80421460 * (f32)sin(t);
-				data->velY = float_3_80421460 * (f32)cos(t);
+				f32 t = twoPi / 360.0f;
+				data->velX = 3.0f * (f32)sin(t);
+				data->velY = 3.0f * (f32)cos(t);
 			}
 			break;
 		case 1:
 		case 2:
-			data->scaleY = float_0_8042140c;
-			data->scaleX = float_0_8042140c;
+			data->scaleY = 0.0f;
+			data->scaleX = 0.0f;
 			{
-				f32 t = twoPi / float_360_80421444;
-				data->velX = float_3_80421460 * (f32)sin(t);
-				data->velY = float_3_80421460 * (f32)cos(t);
+				f32 t = twoPi / 360.0f;
+				data->velX = 3.0f * (f32)sin(t);
+				data->velY = 3.0f * (f32)cos(t);
 			}
 			break;
 		case 4:
-			data->scaleY = float_1_80421404;
-			data->scaleX = float_1_80421404;
+			data->scaleY = 1.0f;
+			data->scaleX = 1.0f;
 			break;
 		case 5:
 #ifdef MUST_MATCH
 		{
 			/* MUST_MATCH: the local hoists the -1.0f load into retail's f0 (the natural form is in #else). */
-			f32 negOne = float_neg1_80421464;
-			data->scaleY = float_1p5_80421418;
-			data->scaleX = float_1p5_80421418;
-			data->rot = float_360_80421444 * (f32)i / (f32)(entry->count - 1);
-			data->velX = float_3_80421460 * (f32)sin(float_6p2832_80421438 * data->rot / float_360_80421444);
-			data->velY = float_3_80421460 * (f32)cos(float_6p2832_80421438 * data->rot / float_360_80421444);
+			f32 negOne = -1.0f;
+			data->scaleY = 1.5f;
+			data->scaleX = 1.5f;
+			data->rot = 360.0f * (f32)i / (f32)(entry->count - 1);
+			data->velX = 3.0f * (f32)sin(6.2831855f * data->rot / 360.0f);
+			data->velY = 3.0f * (f32)cos(6.2831855f * data->rot / 360.0f);
 			data->rot = data->rot * negOne;
 			break;
 		}
 #else
-			data->scaleY = float_1p5_80421418;
-			data->scaleX = float_1p5_80421418;
-			data->rot = float_360_80421444 * (f32)i / (f32)(entry->count - 1);
-			data->velX = float_3_80421460 * (f32)sin(float_6p2832_80421438 * data->rot / float_360_80421444);
-			data->velY = float_3_80421460 * (f32)cos(float_6p2832_80421438 * data->rot / float_360_80421444);
-			data->rot = data->rot * float_neg1_80421464;
+			data->scaleY = 1.5f;
+			data->scaleX = 1.5f;
+			data->rot = 360.0f * (f32)i / (f32)(entry->count - 1);
+			data->velX = 3.0f * (f32)sin(6.2831855f * data->rot / 360.0f);
+			data->velY = 3.0f * (f32)cos(6.2831855f * data->rot / 360.0f);
+			data->rot = data->rot * -1.0f;
 			break;
 #endif
 		}
@@ -230,8 +206,8 @@ void effKissMain(EffectEntry* effect) {
 
 	if (data->life < 0) {
 		if (type == 4) {
-			EffectEntry* entry = effStardustN64Entry(1, data->x + data[1].x, data->y + data[1].y + float_5_80421428, data->z + data[1].z, float_10_80421430);
-			effStardustN64SetScale(entry, float_0p5_80421408);
+			EffectEntry* entry = effStardustN64Entry(1, data->x + data[1].x, data->y + data[1].y + 5.0f, data->z + data[1].z, 10.0f);
+			effStardustN64SetScale(entry, 0.5f);
 		}
 		effDelete(effect);
 		return;
@@ -255,27 +231,27 @@ void effKissMain(EffectEntry* effect) {
 		break;
 	}
 	case 1: {
-		base = float_6p2832_80421438 * angle;
+		base = 6.2831855f * angle;
 		for (i = 1; i < effect->count; i++, data++) {
 			if ((u32)data->frame < 24) {
 #ifdef MUST_MATCH
-				/* MUST_MATCH: the /32.0f nudge (the natural * float_0p03125_8042143c is in #else). */
+				/* MUST_MATCH: the /32.0f nudge (the natural * 0.03125f is in #else). */
 				f32 radius = (f32)kuri_kiss[data->frame * 3] / 32.0f;
 #else
-				f32 radius = (f32)kuri_kiss[data->frame * 3] * float_0p03125_8042143c;
+				f32 radius = (f32)kuri_kiss[data->frame * 3] * 0.03125f;
 #endif
-				radius *= float_1p2_80421440;
-				t = base / float_360_80421444;
+				radius *= 1.2f;
+				t = base / 360.0f;
 				data->x = radius * (f32)sin(t);
 				data->y = radius * (f32)cos(t);
 #ifdef MUST_MATCH
-				/* MUST_MATCH: the /32 division (rather than the *float_0p03125_8042143c in the #else) is the
+				/* MUST_MATCH: the /32 division (rather than the *0.03125f in the #else) is the
 				   register-allocation nudge; the constant folds and the instruction stream matches. */
 				data->scaleX = (f32)kuri_kiss[data->frame * 3 + 1] / 32.0f;
 				data->scaleY = (f32)kuri_kiss[data->frame * 3 + 2] / 32.0f;
 #else
-				data->scaleX = (f32)kuri_kiss[data->frame * 3 + 1] * float_0p03125_8042143c;
-				data->scaleY = (f32)kuri_kiss[data->frame * 3 + 2] * float_0p03125_8042143c;
+				data->scaleX = (f32)kuri_kiss[data->frame * 3 + 1] * 0.03125f;
+				data->scaleY = (f32)kuri_kiss[data->frame * 3 + 2] * 0.03125f;
 #endif
 				data->rot = (f32)kuri_kiss_r[data->frame];
 				data->frame++;
@@ -284,17 +260,17 @@ void effKissMain(EffectEntry* effect) {
 		break;
 	}
 	case 2: {
-		base = float_6p2832_80421438 * angle;
+		base = 6.2831855f * angle;
 		for (i = 1; i < effect->count; i++, data++) {
 			if ((u32)data->frame < 39) {
 #ifdef MUST_MATCH
-				/* MUST_MATCH: the /32.0f nudge (the natural * float_0p03125_8042143c is in #else). */
+				/* MUST_MATCH: the /32.0f nudge (the natural * 0.03125f is in #else). */
 				f32 radius = (f32)kura_kiss[data->frame * 3] / 32.0f;
 #else
-				f32 radius = (f32)kura_kiss[data->frame * 3] * float_0p03125_8042143c;
+				f32 radius = (f32)kura_kiss[data->frame * 3] * 0.03125f;
 #endif
-				radius *= float_1p2_80421440;
-				t = base / float_360_80421444;
+				radius *= 1.2f;
+				t = base / 360.0f;
 				data->x = radius * (f32)sin(t);
 				data->y = radius * (f32)cos(t);
 #ifdef MUST_MATCH
@@ -302,8 +278,8 @@ void effKissMain(EffectEntry* effect) {
 				data->scaleX = (f32)kura_kiss[data->frame * 3 + 1] / 32.0f;
 				data->scaleY = (f32)kura_kiss[data->frame * 3 + 2] / 32.0f;
 #else
-				data->scaleX = (f32)kura_kiss[data->frame * 3 + 1] * float_0p03125_8042143c;
-				data->scaleY = (f32)kura_kiss[data->frame * 3 + 2] * float_0p03125_8042143c;
+				data->scaleX = (f32)kura_kiss[data->frame * 3 + 1] * 0.03125f;
+				data->scaleY = (f32)kura_kiss[data->frame * 3 + 2] * 0.03125f;
 #endif
 				data->frame++;
 			}
@@ -312,10 +288,10 @@ void effKissMain(EffectEntry* effect) {
 	}
 	case 4: {
 		f32 s;
-		data->x += float_0p2_80421448;
+		data->x += 0.2f;
 		s = (f32)sin(9.424778f * (f32)data->frame / 60.0f);
 		data->y = 2.0f * __fabsf(s);
-		data->rot = float_12_80421454 * (f32)sin(9.424778f * (f32)data->frame / 60.0f);
+		data->rot = 12.0f * (f32)sin(9.424778f * (f32)data->frame / 60.0f);
 		data->frame++;
 		break;
 	}
@@ -382,9 +358,8 @@ static inline GXColor effKissAlphaColor(const void* src, s32 a) {
 // directly below the by-value argument copy, per call (eff_teresa.c/effThunderDisp use the same idiom).
 // The final switch's two extra branches are reproduced by the MUST_MATCH goto form below (the original
 // reaches the shared case body through gotos and a `default: return`).
-// NONMATCHING (99.95%): all instructions, calls and stack slots match; only the alpha/2 sign-correction
-// `add` schedules one slot after the color_rotation_data pointer add (2 instructions). Moving the frameIdx
-// assignment after alpha makes mwcceppc loop forever, and hoisting/reordering pragmas change the frame.
+// 100% matched. The deg-to-rad factor is a 0.017453292f literal at each use: MWCC then hoists
+// `0.017453292f * angle` out of the loop itself, which gives retail's FPRs and preheader schedule.
 void effKissDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	KissEffectWork* data = effect->userdata;
@@ -400,9 +375,8 @@ void effKissDisp(CameraId camId, void* param) {
 	s32 type;
 	s32 frameIdx;
 	f32 angle;
-	f32 angleDeg;
 	f32 negAngleDeg;
-	f32 deg;
+	f32 heightScale;
 	f32 offset;
 	f32 rectW;
 	f32 rectH;
@@ -417,7 +391,7 @@ void effKissDisp(CameraId camId, void* param) {
 
 	PSMTXTrans(mtxA, data->x, data->y, data->z);
 	PSMTXScale(scl, data->scaleX, data->scaleY, data->scaleY);
-	PSMTXRotRad(rot, 'y', float_deg2rad_804213fc * -camGetPtr(CAMERA_3D)->viewYaw);
+	PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
 	PSMTXConcat(mtxA, rot, mtxA);
 	PSMTXConcat(mtxA, scl, view);
 
@@ -438,15 +412,13 @@ void effKissDisp(CameraId camId, void* param) {
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
-	deg = float_deg2rad_804213fc;
-	angleDeg = deg * angle;
-	negAngleDeg = deg * -angle;
+	negAngleDeg = 0.017453292f * -angle;
 
 	for (pass = 0; pass < 2; pass++) {
 		data = effect->userdata;
 		data++;
 		for (i = 1; i < effect->count; i++, data++) {
-			offset = float_0_8042140c;
+			offset = 0.0f;
 			switch (type) {
 			case 0:
 			case 1:
@@ -454,7 +426,7 @@ void effKissDisp(CameraId camId, void* param) {
 				effGetTexObj(0x14, &tex);
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (pass == 0) {
-					offset = float_1p5_80421418;
+					offset = 1.5f;
 #ifdef MUST_MATCH
 					effKissChanAlpha(&unk_80423310, alpha / 2);
 #else
@@ -469,9 +441,9 @@ void effKissDisp(CameraId camId, void* param) {
 #endif
 				}
 				rectH = 8.0f;
-				texU = float_2_80421414;
+				texU = 2.0f;
 				rectW = 8.0f;
-				texV = float_1_80421404;
+				texV = 1.0f;
 				break;
 			case 3:
 				if (pass == 0) {
@@ -491,8 +463,8 @@ void effKissDisp(CameraId camId, void* param) {
 						GXSetChanMatColor(GX_COLOR0A0, color);
 					}
 #endif
-					rectW = float_32_8042141c;
-					rectH = float_40_80421420;
+					rectW = 32.0f;
+					rectH = 40.0f;
 				} else {
 					effGetTexObj(0x58, &tex);
 					GXLoadTexObj(&tex, GX_TEXMAP0);
@@ -501,10 +473,10 @@ void effKissDisp(CameraId camId, void* param) {
 #else
 					GXSetChanMatColor(GX_COLOR0A0, effKissAlphaColor(&str_804213F0, alpha));
 #endif
-					rectW = float_20_80421424;
-					rectH = float_32_8042141c;
+					rectW = 20.0f;
+					rectH = 32.0f;
 				}
-				texV = float_1_80421404;
+				texV = 1.0f;
 				texU = texV;
 				rectW *= 0.5f;
 				rectH *= 0.5f;
@@ -516,16 +488,16 @@ void effKissDisp(CameraId camId, void* param) {
 			PSMTXTrans(mtxA, data->x + offset, data->y - offset, data->z);
 			PSMTXRotRad(rot, 'z', negAngleDeg);
 			PSMTXConcat(mtxA, rot, mtxA);
-			PSMTXRotRad(rot, 'y', deg * data->rot);
+			PSMTXRotRad(rot, 'y', 0.017453292f * data->rot);
 			PSMTXConcat(mtxA, rot, mtxA);
 			if (type == 3) {
-				PSMTXRotRad(rot, 'z', angleDeg);
+				PSMTXRotRad(rot, 'z', 0.017453292f * angle);
 				PSMTXConcat(mtxA, rot, mtxA);
 			}
 			PSMTXScale(scl, data->scaleX, data->scaleY, data->scaleY);
 			PSMTXConcat(mtxA, scl, mtxA);
 			if (type == 3) {
-				PSMTXTrans(scl, float_0_8042140c, float_5_80421428, float_0_8042140c);
+				PSMTXTrans(scl, 0.0f, 5.0f, 0.0f);
 				PSMTXConcat(mtxA, scl, mtxA);
 			}
 			PSMTXConcat(view, mtxA, mtxA);
@@ -537,45 +509,45 @@ void effKissDisp(CameraId camId, void* param) {
 #ifdef MUST_MATCH
 				// MUST_MATCH: a named 0.5f local makes MWCC emit rectW/rectH as the first fmuls operand like retail.
 				f32 h = 0.5f;
-				GXPosition3f32(-rectW * h, rectH * h, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, float_0_8042140c);
-				GXPosition3f32(rectW * h, rectH * h, float_0_8042140c);
-				GXTexCoord2f32(texU, float_0_8042140c);
-				GXPosition3f32(rectW * h, -rectH * h, float_0_8042140c);
+				GXPosition3f32(-rectW * h, rectH * h, 0.0f);
+				GXTexCoord2f32(0.0f, 0.0f);
+				GXPosition3f32(rectW * h, rectH * h, 0.0f);
+				GXTexCoord2f32(texU, 0.0f);
+				GXPosition3f32(rectW * h, -rectH * h, 0.0f);
 				GXTexCoord2f32(texU, texV);
-				GXPosition3f32(-rectW * h, -rectH * h, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, texV);
+				GXPosition3f32(-rectW * h, -rectH * h, 0.0f);
+				GXTexCoord2f32(0.0f, texV);
 #else
-				GXPosition3f32(-rectW * 0.5f, rectH * 0.5f, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, float_0_8042140c);
-				GXPosition3f32(rectW * 0.5f, rectH * 0.5f, float_0_8042140c);
-				GXTexCoord2f32(texU, float_0_8042140c);
-				GXPosition3f32(rectW * 0.5f, -rectH * 0.5f, float_0_8042140c);
+				GXPosition3f32(-rectW * 0.5f, rectH * 0.5f, 0.0f);
+				GXTexCoord2f32(0.0f, 0.0f);
+				GXPosition3f32(rectW * 0.5f, rectH * 0.5f, 0.0f);
+				GXTexCoord2f32(texU, 0.0f);
+				GXPosition3f32(rectW * 0.5f, -rectH * 0.5f, 0.0f);
 				GXTexCoord2f32(texU, texV);
-				GXPosition3f32(-rectW * 0.5f, -rectH * 0.5f, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, texV);
+				GXPosition3f32(-rectW * 0.5f, -rectH * 0.5f, 0.0f);
+				GXTexCoord2f32(0.0f, texV);
 #endif
 			} else {
 #ifdef MUST_MATCH
 				// MUST_MATCH: same as the type-3 branch: keeps rectW first in the fmuls.
 				f32 h = 0.5f;
-				GXPosition3f32(-rectW * h, rectH, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, float_0_8042140c);
-				GXPosition3f32(rectW * h, rectH, float_0_8042140c);
-				GXTexCoord2f32(texU, float_0_8042140c);
-				GXPosition3f32(rectW * h, float_0_8042140c, float_0_8042140c);
+				GXPosition3f32(-rectW * h, rectH, 0.0f);
+				GXTexCoord2f32(0.0f, 0.0f);
+				GXPosition3f32(rectW * h, rectH, 0.0f);
+				GXTexCoord2f32(texU, 0.0f);
+				GXPosition3f32(rectW * h, 0.0f, 0.0f);
 				GXTexCoord2f32(texU, texV);
-				GXPosition3f32(-rectW * h, float_0_8042140c, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, texV);
+				GXPosition3f32(-rectW * h, 0.0f, 0.0f);
+				GXTexCoord2f32(0.0f, texV);
 #else
-				GXPosition3f32(-rectW * 0.5f, rectH, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, float_0_8042140c);
-				GXPosition3f32(rectW * 0.5f, rectH, float_0_8042140c);
-				GXTexCoord2f32(texU, float_0_8042140c);
-				GXPosition3f32(rectW * 0.5f, float_0_8042140c, float_0_8042140c);
+				GXPosition3f32(-rectW * 0.5f, rectH, 0.0f);
+				GXTexCoord2f32(0.0f, 0.0f);
+				GXPosition3f32(rectW * 0.5f, rectH, 0.0f);
+				GXTexCoord2f32(texU, 0.0f);
+				GXPosition3f32(rectW * 0.5f, 0.0f, 0.0f);
 				GXTexCoord2f32(texU, texV);
-				GXPosition3f32(-rectW * 0.5f, float_0_8042140c, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, texV);
+				GXPosition3f32(-rectW * 0.5f, 0.0f, 0.0f);
+				GXTexCoord2f32(0.0f, texV);
 #endif
 			}
 		}
@@ -602,14 +574,14 @@ kiss_disp_body:
 	case 3:
 		{
 #endif
-		deg = float_1p15_8042142c;
+		heightScale = 1.15f;
 		texV = 0.5f;
 		for (i = 0; i < 2; i++) {
 #ifdef MUST_MATCH
 			// MUST_MATCH: a second copy of the loop's offset keeps its register different from the first loop's.
-			f32 off2 = float_0_8042140c;
+			f32 off2 = 0.0f;
 #else
-			offset = float_0_8042140c;
+			offset = 0.0f;
 #endif
 			data = effect->userdata;
 			switch (type) {
@@ -620,9 +592,9 @@ kiss_disp_body:
 				GXLoadTexObj(&tex, GX_TEXMAP0);
 				if (i == 0) {
 #ifdef MUST_MATCH
-					off2 = float_1p5_80421418;
+					off2 = 1.5f;
 #else
-					offset = float_1p5_80421418;
+					offset = 1.5f;
 #endif
 #ifdef MUST_MATCH
 					effKissChanAlpha(&unk_80423318, alpha / 2);
@@ -671,9 +643,9 @@ kiss_disp_body:
 			}
 
 #ifdef MUST_MATCH
-			PSMTXTrans(mtxA, off2, -off2, float_0_8042140c);
+			PSMTXTrans(mtxA, off2, -off2, 0.0f);
 #else
-			PSMTXTrans(mtxA, offset, -offset, float_0_8042140c);
+			PSMTXTrans(mtxA, offset, -offset, 0.0f);
 #endif
 			PSMTXRotRad(rot, 'z', negAngleDeg);
 			PSMTXConcat(rot, mtxA, mtxA);
@@ -685,33 +657,33 @@ kiss_disp_body:
 			{
 #ifdef MUST_MATCH
 				// MUST_MATCH: loop-local h/w keep the vertex temps in retail's scratch FPRs and texV supplies 0.5.
-				f32 h = deg * data[1].y;
-				f32 w = float_1_80421404;
+				f32 h = heightScale * data[1].y;
+				f32 w = 1.0f;
 				if (type == 3 && i == 0) {
-					w = float_2_80421414;
+					w = 2.0f;
 				}
-				GXPosition3f32(-w * texV, h, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, float_0_8042140c);
-				GXPosition3f32(w * texV, h, float_0_8042140c);
-				GXTexCoord2f32(float_1_80421404, float_0_8042140c);
-				GXPosition3f32(w * texV, float_0_8042140c, float_0_8042140c);
-				GXTexCoord2f32(float_1_80421404, float_1_80421404);
-				GXPosition3f32(-w * texV, float_0_8042140c, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, float_1_80421404);
+				GXPosition3f32(-w * texV, h, 0.0f);
+				GXTexCoord2f32(0.0f, 0.0f);
+				GXPosition3f32(w * texV, h, 0.0f);
+				GXTexCoord2f32(1.0f, 0.0f);
+				GXPosition3f32(w * texV, 0.0f, 0.0f);
+				GXTexCoord2f32(1.0f, 1.0f);
+				GXPosition3f32(-w * texV, 0.0f, 0.0f);
+				GXTexCoord2f32(0.0f, 1.0f);
 #else
-				rectH = deg * data[1].y;
-				texU = float_1_80421404;
+				rectH = heightScale * data[1].y;
+				texU = 1.0f;
 				if (type == 3 && i == 0) {
-					texU = float_2_80421414;
+					texU = 2.0f;
 				}
-				GXPosition3f32(-texU * 0.5f, rectH, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, float_0_8042140c);
-				GXPosition3f32(texU * 0.5f, rectH, float_0_8042140c);
-				GXTexCoord2f32(float_1_80421404, float_0_8042140c);
-				GXPosition3f32(texU * 0.5f, float_0_8042140c, float_0_8042140c);
-				GXTexCoord2f32(float_1_80421404, float_1_80421404);
-				GXPosition3f32(-texU * 0.5f, float_0_8042140c, float_0_8042140c);
-				GXTexCoord2f32(float_0_8042140c, float_1_80421404);
+				GXPosition3f32(-texU * 0.5f, rectH, 0.0f);
+				GXTexCoord2f32(0.0f, 0.0f);
+				GXPosition3f32(texU * 0.5f, rectH, 0.0f);
+				GXTexCoord2f32(1.0f, 0.0f);
+				GXPosition3f32(texU * 0.5f, 0.0f, 0.0f);
+				GXTexCoord2f32(1.0f, 1.0f);
+				GXPosition3f32(-texU * 0.5f, 0.0f, 0.0f);
+				GXTexCoord2f32(0.0f, 1.0f);
 #endif
 			}
 		}
@@ -733,11 +705,8 @@ static inline GXColor effKissDisp2Color(u8 alpha) {
 }
 #endif
 
-#pragma opt_common_subs off // MUST_MATCH: keep the .sdata2 vertex constants' individual loads
-
-// 100% matched. `#pragma opt_common_subs off` stops MWCC from CSE-ing the vertex .sdata2
-// constants (retail reloads each one before every FIFO store); the colour inline puts the by-value
-// GXColor temp in retail's slot; splitting the yaw angle into two statements lands the negate and
+// 100% matched. The colour inline puts the by-value GXColor temp in retail's slot; the vertex half-width
+// is `eight / 2.0f` in the loop (MWCC hoists it); splitting the yaw angle into two statements lands the negate and
 // multiply in retail's f1/f0; declaring i before alpha and deg before eight fixes the GPR/FPR picks.
 void effKissDisp2(CameraId camId, void* param) {
 	EffectEntry* effect = param;
@@ -752,8 +721,6 @@ void effKissDisp2(CameraId camId, void* param) {
 	GXTexObj texObj;
 	f32 deg;
 	f32 eight;
-	f32 negfour;
-	f32 four;
 	f32 ang;
 	s32 i;
 	s32 alpha;
@@ -764,7 +731,7 @@ void effKissDisp2(CameraId camId, void* param) {
 	PSMTXScale(scale, data->scaleX, data->scaleY, data->scaleY);
 	cam3d = camGetPtr(CAMERA_3D);
 	ang = -cam3d->viewYaw;
-	ang = float_deg2rad_804213fc * ang;
+	ang = 0.017453292f * ang;
 	PSMTXRotRad(rot, 'y', ang);
 	PSMTXConcat(trans, rot, trans);
 	PSMTXConcat(trans, scale, local);
@@ -795,14 +762,12 @@ void effKissDisp2(CameraId camId, void* param) {
 #endif
 	GXSetChanMatColor(GX_COLOR0A0, color);
 
-	eight = float_8_80421400;
-	deg = float_deg2rad_804213fc;
-	negfour = -eight * float_0p5_80421408;
-	four = float_4_80421410;
+	eight = 8.0f;
+	deg = 0.017453292f;
 	data++;
 	for (i = 1; i < effect->count; i++, data++) {
 		PSMTXTrans(trans, data->x, data->y, data->z);
-		PSMTXScale(scale, data->scaleX, data->scaleY, float_1_80421404);
+		PSMTXScale(scale, data->scaleX, data->scaleY, 1.0f);
 		PSMTXRotRad(rot, 'z', deg * data->rot);
 		PSMTXConcat(trans, scale, trans);
 		PSMTXConcat(trans, rot, trans);
@@ -811,14 +776,13 @@ void effKissDisp2(CameraId camId, void* param) {
 		GXLoadPosMtxImm(trans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(negfour, eight, float_0_8042140c);
-		GXTexCoord2f32(float_0_8042140c, float_0_8042140c);
-		GXPosition3f32(four, eight, float_0_8042140c);
-		GXTexCoord2f32(float_2_80421414, float_0_8042140c);
-		GXPosition3f32(four, float_0_8042140c, float_0_8042140c);
-		GXTexCoord2f32(float_2_80421414, float_1_80421404);
-		GXPosition3f32(negfour, float_0_8042140c, float_0_8042140c);
-		GXTexCoord2f32(float_0_8042140c, float_1_80421404);
+		GXPosition3f32(-eight / 2.0f, eight, 0.0f);
+		GXTexCoord2f32(0.0f, 0.0f);
+		GXPosition3f32(eight / 2.0f, eight, 0.0f);
+		GXTexCoord2f32(2.0f, 0.0f);
+		GXPosition3f32(eight / 2.0f, 0.0f, 0.0f);
+		GXTexCoord2f32(2.0f, 1.0f);
+		GXPosition3f32(-eight / 2.0f, 0.0f, 0.0f);
+		GXTexCoord2f32(0.0f, 1.0f);
 	}
 }
-#pragma opt_common_subs reset
