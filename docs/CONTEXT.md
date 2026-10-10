@@ -4950,3 +4950,97 @@ Question: does a time cap, a firm target, or pushback get more out of an Opus ag
 - Not tested yet: firm target plus a minimum working time.
 
 Also from the night: tools/mwsearch.py (#644/#645/#647) found two real fixes in seconds (evt_ryushi_clr via `*args++`, hei_10 npc_jump via `/ 2.0f`) but nothing in a 30-function batch of pure register ties; dedicated sessions (Claude #2, #4) with history worked well alongside subagents, but they must not share ~/ttyd-ci with the orchestrator's CI runs (concurrent checkouts killed each other's builds).
+
+## Day 7: four links, and how each was found (2026-10-10, Claude Opus 5.5 orchestrating; Opus 5.5 agents)
+
+Six units each one function from linking, every one of them already ground on for hours by earlier agents and
+(for envdrv) by Codex. Two arms per function (see "Compaction and attempts" below). Results:
+
+**eff_sstar_n64, effSstarDisp 99.52 -> 100, linked ([#678](https://github.com/IsaacGemal/ttyd/pull/678)).**
+The header described each vertex as one 0x1C-byte struct with `x/y/z` and `x2/y2/z2` halves. The original's loop
+registers gave it away: a counter starting at 0xE and stepping by 0x1C, plus y/z stores at `0x1e0(r28)`, only come
+out of indexing `(2i+1) * 0xE`. So the frame is ten 14-byte N64 vertices (`SstarVtx { s16 pos[3]; s16 unk[4]; }`,
+`vtx[10]`, which is exactly the 0x8C the function's `DCFlushRange` flushes), two per trail segment, copied from the
+named `shooting_dust_vtx` table through a per-vertex helper shaped like eff_flame_n64's. Addressing the vertex
+tables by name (not `base + 0x40/0x78/0xC0`) lets MWCC reach them off the unit's `.data` base. With the right
+struct, the two register swaps that had survived thousands of declaration-order searches disappeared. Both arms
+found this independently. Lesson: when a loop's strides and offsets don't fit the struct, the struct is wrong.
+
+**battle_detect, _btlSamplingEnemy 99.95 -> 100, linked ([#679](https://github.com/IsaacGemal/ttyd/pull/679)).**
+In the dedup loop `other` (&entries[j]) took r22 where the original has r24. mwccdbg + `tools/rasim.py` showed
+`other` and the `u2` copy did not interfere (the pre-allocation scheduler moves the `other->unitId` load above the
+copy), and that no single declaration move fixes it: `other` needs both an earlier sweep position and one more
+neighbour. A brute-force rasim search over *pairs* of declaration moves found it: `other` and `p2attr` declared at
+function scope (with the function's other locals) instead of in the inner block. The short arm found a sibling
+answer (`a`, `b` and `other` at function scope). Lesson: when rasim says one move isn't enough, search pairs.
+
+**eff_fall, effFallMain 99.51 -> 100, linked ([#680](https://github.com/IsaacGemal/ttyd/pull/680)).** Hours of
+work (night 6 and three short attempts) chased "one more value live during the case-7 table copy": the original
+spills BUG1 and FORK1 to two stack slots, ours spilled one. The answer was the seven sound names. As named
+`const char*` variables each holds one register for its whole life and never spills. The original computes them once
+in the loop preheader as compiler temps, which can spill: written as `FALL_SFX("SFX_...")`, a MUST_MATCH-guarded
+`((char*)(u32)(name))` round trip (the same shape as battle_stage_object's `BSO_SFX`), MWCC's frontend hoists the
+cast out of the loop as an invariant. That took the diff from 65 lines to 16; declaring `rel` before `j` in the
+release loop did the rest. Link fix: the trailing `.data` `gap_*` object sat in front of the switch jump tables (the
+known `.data` exception in AGENT_BRIEF) and was removed.
+
+**eff_kiss, effKissDisp 99.95 -> 100, linked ([#681](https://github.com/IsaacGemal/ttyd/pull/681)).** Three short
+attempts, a 49-minute long run and a 26-minute Codex run all fought "two independent `add`s scheduled in the wrong
+order" (and an f30/f31 swap once the order was fixed). The cause was how the constants were written. The unit used
+named `float_*` `.sdata2` globals, which also duplicated the compiler's own pool, so the unit could never have linked
+however good the functions got (ONE_FUNCTION_LEFT.md had recorded its pool order as unreachable). With every float a
+literal at each use (`0.017453292f * angle`, `1.15f`, as eff_naniga and icondrv write them), MWCC creates and
+hoists the deg-to-rad product itself, which gives the original's FPRs and preheader schedule, and `.sdata2` pools in
+the original's order (effKissDisp2's constants first). effKissDisp2 was reshaped for literals (its
+`opt_common_subs off` pragma went), and the 8-byte `.data` gap needed `explicit_zero_data` + `force_active` to
+survive the link. The long arm reached 100% on the function with `const` named floats but could not link.
+
+**envdrv, envDisp_DepthOfField 97.67 -> 97.92 ([#682](https://github.com/IsaacGemal/ttyd/pull/682)).** Not linked.
+Block 1's `tevStage` was `s32`; the GX functions take enum (`int`) parameters, so the frontend kept the `(int)`
+conversion in a temp that lived across the loop and took a saved register (`stmw r24` vs the original's r25).
+Declared `int`, the temp is gone; block 2 keeps `s32` because there the original shares `tevStage + 1` in one temp.
+Block 2 also gets its own counters (`opt_lifetimes off` makes each variable one register for the whole function,
+and the original's two blocks use different registers). Left: the table pointer's `addi r0` + `mr` (MWCC coalesces
+the frontend's address copy only into a variable assigned once; `mtx++` reassigns it), a few temps, block 2's
+`li; mr; mr` zero inits, FPR order. Handoff notes: scratch/exp/handoff_dof_3.md.
+
+**eff_magic_horao_n64, effMagicHoraoDisp 99.86, open.** One instruction: the original's `mr r24,r29` (`v = y`
+while y is 0), ours `li r24,0`. The frontend folds `v = y` to `v = 0` whenever one constant definition of y reaches
+it (not a size limit; every zero trick folds). The backend's second CSE pass turns a later `li rX,0` into
+`mr rX,rY` only when both are compiler variables (inline params/locals, scalarised struct fields), never named
+locals. A struct cursor `{ vp; off2; y; v; }` gets the `mr` and three of four registers (99.64); struct fields and
+inline variables always number above named locals, which is what's left. eff_timestamp_n64's effTimestampDisp has
+the identical retail pattern. Handoff notes: scratch/exp/handoff_horao_3.md.
+
+**Patterns.** (1) Before fighting the allocator, check how the original wrote constants and strings: literal vs
+named global (eff_kiss), named variable vs hoisted expression (eff_fall). Both looked like register puzzles.
+(2) Loop strides and store offsets reveal struct layout (eff_sstar). (3) Types matter to the frontend: `int` vs
+`s32` against an enum parameter adds or removes a conversion temp (envdrv). (4) rasim what-ifs (add an edge, move a
+vreg, search pairs of declaration moves) turn "no declaration order works" into a specific two-variable change
+(battle_detect). (5) `tools/sched750.py` skipped every hoisted instruction (dump lines without a source line
+number); fixed in this chapter's PR.
+
+### Compaction and attempts: long vs short runs (experiment)
+
+Isaac's hypothesis: shorter contexts cost less per turn, so the same weekly budget buys more attempts and more
+solves. Same six functions, two arms: **long** = one Opus agent, one continuous run, target "unit links";
+**short** = fresh Opus agents in sequence, each stopping at ~60 tool calls (~150k tokens) and writing a handoff note
+for the next, up to 4 attempts. Tokens are each agent's reported total.
+
+| Unit | Short arm | Long arm |
+| --- | --- | --- |
+| eff_sstar_n64 | linked, attempt 1, 154k | linked, 247k |
+| battle_detect | linked, attempt 2, 285k | linked, 182k |
+| eff_fall | not linked after 2 attempts (275k), attempt 3 for measurement | linked, 294k |
+| eff_kiss | linked, attempt 4, 598k (attempt 4's prompt carried an orchestrator hint: "question the framing") | 100% function, no link (pool), 418k |
+| envdrv | 97.92 after 4 attempts, 603k | running |
+| eff_magic_horao_n64 | 99.86 after 4 attempts, 590k | running |
+
+Handoff notes worked: each fresh attempt went straight to the previous one's diagnosis and did not repeat its list.
+Their weakness showed on eff_fall and eff_kiss: a handoff carries the previous attempt's framing, and each attempt
+refined it instead of questioning it. The long arm on eff_fall had the room to step outside it; on eff_kiss neither
+arm did until the hint. Final verdict when the last two long runs finish.
+
+Process notes from the day: agents sharing a function must not share scratch dirs (one pair overwrote each other's
+files in the Claude scratchpad, and one ran `rm vars/*.c` there); the preamble now requires per-TAG scratch
+directories and bans `rm` on variable or wildcard paths, since nobody can approve a prompt overnight.

@@ -430,6 +430,20 @@ time (it lists their owners in the order the source must define them).
 - A `.sdata` object the original 32-aligns (GX vertex arrays: `Pos`, `Nrm`, `Col` in `himo`) is `ATTRIBUTE_ALIGN(32)`; the padding the disassembly shows as `gap_*` objects then comes for free.
 
 When the instructions match but the stack slots, register allocation or scheduling differ, try these first:
+- **Check how the original wrote constants and strings before fighting the allocator.** Named `float_*` globals
+  that the compiler also pools, or named `const char*` sound/string variables, change temps, FPR order and
+  scheduling in ways no declaration order fixes. eff_kiss (#681): every float as a literal at each use gave the
+  original's FPRs, schedule and `.sdata2` order. eff_fall (#680): seven named sfx variables became literals through
+  a MUST_MATCH `((char*)(u32)(name))` round trip (as battle_stage_object's `BSO_SFX`), which MWCC hoists to the
+  loop preheader as spillable temps.
+- **Loop strides and store offsets give the struct layout.** A counter starting at 0xE and stepping 0x1C means
+  14-byte elements indexed `2i+1`, not a 28-byte struct with two halves (eff_sstar_n64, #678: `SstarVtx vtx[10]`).
+  When registers in a loop resist every declaration order, check the element type first.
+- **`int` vs `s32` against an enum parameter.** Passing an `s32` to a GX enum (`int`) parameter makes the frontend
+  keep the conversion in a temp that can take a saved register; the same variable declared `int` has no temp
+  (envdrv, #682: `stmw r24` -> the original's r25).
+- **When rasim says one declaration move isn't enough, search pairs.** battle_detect (#679): `other` needed an
+  earlier sweep position and one more neighbour; moving `other` and `p2attr` to function scope together did both.
 - **A `GXColor` passed by value lands in the wrong stack slot** (`color = *(GXColor*)&dat_...;` followed by setting
   some channels): move the build into an inline that returns the colour, setting the same channels the original
   sets, e.g. `static inline GXColor f(u8 a) { GXColor c = *(GXColor*)&dat_...; c.a = a; return c; }` and
