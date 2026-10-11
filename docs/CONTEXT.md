@@ -6102,3 +6102,14 @@ The targets were every untried function at 98.2-99.99% in the 15 big unlinked un
   - **All locals at function scope in a searched order** (mapCalcAnimMatrix +0.37, FPR colouring).
 - Hard negatives / no change: mapdrv bmapUnLoad (third loop), npcdrv _npcDeleteGroup (the slave loop after the inlined recursive call).
 
+
+### Swarm batch 5c (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#730](https://github.com/IsaacGemal/ttyd/pull/730)
+- Wins:
+  - **The evt_mobj inBattle family is closed** (koopa_badgeblk, rideswitch_lightblue -> 100; seven functions in all with #720/#723). The detail that matters: the `inBattle` local must be assigned *before* the asyncName string. Declared after it, the score doesn't move (koopa_badgeblk).
+  - **Locals assigned in the original's load order under `opt_propagation off`** (mobj_recovery_blk -> 100). `z2 = pos.z; z2 -= 10; x = pos.x;` keeps the z and x loads as separate webs.
+  - **A u16 counter with compound assignment instead of casts** (FontGetMessageWidthLine -> 100). `curwidth += w + space` on a u16 truncates without the zero-extension the explicit `(u16)(...)` casts produced.
+  - **Declaration order inside a shared inline helper** (FontDrawStringShake -> 100). Swapping `FontGetWidthPtr`'s two block locals renumbers the temps in every inlined caller. Here only the target moved; check the whole unit when doing this.
+- Hard negatives:
+  - btlUnitItemDisp (battle_disp) 99.05 -> 100 was refused. It called `iconDispGx` through a function-pointer cast with a u16 parameter, plus an `ItemDataView` cast, to get the original's unsigned `lhz` of `icon_id`. The real fix is a u16 `icon_id` / `iconDispGx` parameter in the headers, which touches every caller; left for a dedicated change.
+  - No change: animdrv animPoseDrawShape (register colouring only).
+
