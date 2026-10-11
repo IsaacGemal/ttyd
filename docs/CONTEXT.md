@@ -5807,6 +5807,16 @@ rasim showed `found`/`ip` must rank below the hammer-check loop's counter. From 
 were the agent's own. Tried and failed: every scope/inline/loop-form/volatile/union/cast/pragma variant against
 the `&query.hitNormal` hoist, merging `found`/`ip`, the hammer-check loop as an inline (shifts the frame).
 
+**ac_gauge_timing2 links: actionCommandDisp 99.21 and battleAcMain_GaugeTiming2 99.67 -> 100 (on1-gauge2; lever
+from the list: partial; 124k, 32 min).** Main: the four sound names as literals through a MUST_MATCH `GT2_SFX`
+round trip (the BSO_SFX/FALL_SFX lever, from the list; 99.88), then the auto-command probe writes a separate
+block-local `s32 hit` instead of reusing `autoFlag`; rasim `--key` what-ifs showed the probe result had to be a
+named local. Disp: `f32 t16 = 16.0f + (-288.0f + x);` repeats the offset sum instead of `16.0f + f31`, and MWCC's
+CSE turns the repeat into a copy of the first sum, which moves `lfs -288.0` ahead of `lhz dec->total` as retail
+schedules it (the agent's own find). Tried and failed: statement reorders, a constant local, an inline,
+`opt_propagation off` (98.36), the full sum everywhere, the same repeat on other values, `autoFlag = 0` inside
+the if (99.48).
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
