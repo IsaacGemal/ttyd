@@ -4345,11 +4345,10 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 #pragma opt_common_subs reset
 
 #pragma opt_common_subs off // MUST_MATCH: keep GX_VA_TEX0+i from being CSE-hoisted
-// GX setup order/constants and addressing match; the only remaining diff is the operand order of the
-// first material's `add r7, wp, idx` (target puts wp first, MWCC puts the index first). `wp=mapGetWork()`,
-// the `vcd` pointer local, the pos/nrm declaration order and the opt_common_subs pragma are all
-// match-only improvements over the 95.93% baseline.
-// NONMATCHING (99.91%): `add r7, r31, r0` (target) vs `add r7, r0, r31` (the single differing insn)
+// GX setup order/constants and addressing match. The `base = (u8*)wp + 0xA4` local gives the first
+// material load the original's `add r7, wp, idx` operand order (a direct `(u8*)wp->entries + off`
+// form emits the index first). `wp = mapGetWork()`, the `vcd` pointer local and the pos/nrm
+// declaration order are the rest of the matched source shape.
 void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 	MapWork* wp;
 	void* pos;
@@ -4366,7 +4365,10 @@ void mapSetPolygonVtxDesc(MapObject* obj, MapFileMesh* mesh) {
 
 	GXClearVtxDesc();
 	GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
-	material = *(u8**)((u8*)wp->entries + (*(s16*)(obj->field_0xDC + 2) * 0x178 + 0xA4));
+	{
+		u8* base = (u8*)wp + 0xA4;
+		material = *(u8**)(base + *(s16*)(obj->field_0xDC + 2) * 0x178);
+	}
 	GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_S16, (u8)*(u32*)(material + 0x44));
 	GXSetArray(GX_VA_POS, pos, 6);
 	GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
@@ -4832,9 +4834,32 @@ static inline f32 spline_sqrtf(f32 x, const f64* c) {
 	return x;
 }
 
-// NONMATCHING (99.31%): only a rotation of the backward-substitution loop pointers differs (target
-// tangents=r6,dt=r7,mat=r8,temp=r9; ours tangents=r7,dt=r9,mat=r8,temp=r6). Pinned with `((Vec*)a)`
-// in the dt/mat loop, `((f32*)b)` in the dt loop, `f64 three, half` + `f32 knprev` at fn scope.
+// Resolves the two boundary rows of the tridiagonal system in place, then divides each remaining
+// row through by its diagonal during the backward sweep.
+static inline void spline_backsub(s32 count, f32* dt, Vec* mat, Vec* tangents) {
+	Vec* mp;
+	f32* dp;
+	Vec* tp;
+	Vec* tend;
+	s32 i;
+
+	tp = &tangents[count - 2];
+	dp = &dt[count - 2];
+	mp = &mat[count - 2];
+	tend = &tangents[count];
+	tend[-2].x = tend[-2].x - dt[count - 2] * tangents[count - 1].x;
+	tend[-2].y = tend[-2].y - dt[count - 2] * tangents[count - 1].y;
+	tend[-2].z = tend[-2].z - dt[count - 2] * tangents[count - 1].z;
+	for (i = count - 2; i > 0; i--) {
+		tp->x = (tp->x - *dp * tp[1].x) / mp->x;
+		tp->y = (tp->y - *dp * tp[1].y) / mp->y;
+		tp->z = (tp->z - *dp * tp[1].z) / mp->z;
+		tp--;
+		dp--;
+		mp--;
+	}
+}
+
 void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 	Vec* points = (Vec*)a;
 	f32* knots = (f32*)b;
@@ -4916,23 +4941,7 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 		mat[i + 1].z = 2.0f * (knots[i + 2] - knots[i]) - wz * dt[i];
 	}
 
-	tangents[count - 2].x = tangents[count - 2].x - dt[count - 2] * tangents[count - 1].x;
-	tangents[count - 2].y = tangents[count - 2].y - dt[count - 2] * tangents[count - 1].y;
-	tangents[count - 2].z = tangents[count - 2].z - dt[count - 2] * tangents[count - 1].z;
-
-	{
-		Vec* mp = &mat[count - 2];
-		f32* dp = &dt[count - 2];
-		Vec* tp = &tangents[count - 2];
-		for (i = count - 2; i > 0; i--) {
-			tp->x = (tp->x - *dp * tp[1].x) / mp->x;
-			tp->y = (tp->y - *dp * tp[1].y) / mp->y;
-			tp->z = (tp->z - *dp * tp[1].z) / mp->z;
-			tp--;
-			dp--;
-			mp--;
-		}
-	}
+	spline_backsub(count, dt, mat, tangents);
 
 	_mapFree(mat);
 	_mapFree(dt);

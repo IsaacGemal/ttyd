@@ -760,11 +760,12 @@ s32 animPaperPoseGetId(const char* animName, s32 group) {
     return i;
 }
 
-// NONMATCHING (98.83%): the two search loops call animPaperPoseSearchGroup, so only the callee-saved
-// colouring differs (target pose r27/someflag r30/i r29/type r28/offset r26; here r30/r29/r28/r27/r26).
+// NONMATCHING (98.95%): instructions and immediates match, only the callee-saved colouring differs
+// (target pose r27/someflag r30/search index r29/offset r26; here r30/r29/r28/r27). Declaring `type`
+// as `int` folds it into the call argument and drops one web; the rest has no source lever.
 void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) {
     s32 poseOffset = poseId * 0x170;
-    s32 type;
+    int type;
     s32 i;
     s32 j;
     AnimationPose* pose = &wp->poses[poseId];
@@ -893,11 +894,14 @@ static inline s32 animEffectPoseEntry(const char* animName, s32 type) {
     return id;
 }
 
-// NONMATCHING (99.34%): the paper-release block is the shared inline animPoseReleasePaper above and the new pose's
-// entry is animEffectPoseEntry; only the pose/poseOffset callee-saved pair is swapped (target pose r31, offset r30).
+// Deriving the pose pointer from poseOffset keeps the index multiply in one named local; computing it
+// from poseId separately lets the front end make poseOffset its own temp that outranks the pose web.
 void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
-    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPose* pose;
     s32 poseOffset;
+
+    poseOffset = poseId * 0x170;
+    pose = (AnimationPose*)((u8*)wp->poses + poseOffset);
 
     if (pose->paperId != -1) {
         if (animName != NULL) {
@@ -917,7 +921,6 @@ void animPoseSetEffect(s32 poseId, const char* animName, BOOL someflag) {
             animPoseReleasePaper(paper);
         }
     }
-    poseOffset = poseId * 0x170;
     if (animName == NULL) {
         pose->paperId = -1;
         ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag &= ~1;
@@ -3606,33 +3609,37 @@ BOOL animPoseTestXLU(s32 poseId) {
 }
 
 // evalProc
-// NONMATCHING (99.75%): control flow and offsets match; the first block's data/groups registers are
-// swapped (target data r4/groups r6, here data r6) and the vec3/PSMTX blocks schedule the pointer
-// adds and mtx loads in a different order. No structural difference.
+// The first block's register colouring needs the sign extension as a cast on the loaded element,
+// as in dispProc; the pointer form under #else is the natural equivalent.
 void evalProc(s32 parentGroupId, s32 groupId) {
     AnimPoseGroup* group;
+    AnimPoseGroup* groups;
     AnimPoseGroup* parent;
     AnimationPoseData* data;
     Vec pos;
     f32* nodes;
+    f32* node;
     f32 x, y, z;
 
     if (groupId == -1) {
         return;
     }
     data = wp->mpCurPoseData;
-    group = &ANIM_POSE_DATA_GROUPS(data)[groupId];
+    groups = ANIM_POSE_DATA_GROUPS(data);
+    group = &groups[groupId];
 
+#ifdef MUST_MATCH
+    if ((s8)wp->mpCurPose->mpGroupVisibility[group->visibilityId] != 0) {
+#else
     if (((s8*)wp->mpCurPose->mpGroupVisibility)[group->visibilityId] != 0) {
-        f32* node;
-
+#endif
         nodes = (f32*)wp->mpCurPose->mpNodes;
         node = &nodes[group->nodeId];
         if (group->useSSC) {
             if (parentGroupId == -1) {
                 x = y = z = 1.0f;
             } else {
-                parent = &ANIM_POSE_DATA_GROUPS(data)[parentGroupId];
+                parent = &groups[parentGroupId];
                 if (!parent->useSSC) {
                     x = y = z = 1.0f;
                 } else {
