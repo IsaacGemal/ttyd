@@ -46,8 +46,9 @@ void fontmgrInit(void) {
 }
 
 static BinaryFontWidth* FontGetWidthPtr(u16 code) {
-	BinaryFontWidth* width = (BinaryFontWidth*)(pfh + 1);
+	// The two block locals' declaration order sets the temp numbering for every inlined caller.
 	u32 blockcount = pfh->blockcount;
+	BinaryFontWidth* width = (BinaryFontWidth*)(pfh + 1);
 	u32 i;
 
 	for (i = 0; i < blockcount; i++) {
@@ -697,8 +698,14 @@ static inline void FontDrawStringShake_ColorA(GXColor color) {
 }
 #endif
 
-// NONMATCHING (99.51%): only register allocation differs: retail keeps fontScale in r26 and the glyph
-// width in r27 (and pfh in r7, the block pointer in r6 in the inlined FontGetWidthPtr); ours is swapped.
+#ifdef MUST_MATCH
+// MUST_MATCH: reading the width byte through this inline numbers its result after the inlined
+// FontGetWidthPtr temps, which gives the glyph width retail's r27; the plain direct read is under #else.
+static inline u16 FontDrawStringShake_Width(u16 glyph) {
+	return ((u8*)FontGetWidthPtr(glyph))[1];
+}
+#endif
+
 void FontDrawStringShake(const char* str, f32 x, f32 y) {
 	CameraEntry* cam;
 	Mtx mtx2;
@@ -720,7 +727,11 @@ void FontDrawStringShake(const char* str, f32 x, f32 y) {
 		}
 		offX = fontScale.x * (f32)(irand(10000) % 3) + x;
 		offY = fontScale.y * (f32)(irand(10000) % 3) + y;
-		w = *(u8*)((u8*)FontGetWidthPtr(glyph) + 1);
+#ifdef MUST_MATCH
+		w = FontDrawStringShake_Width(glyph);
+#else
+		w = ((u8*)FontGetWidthPtr(glyph))[1];
+#endif
 		PSMTXTransApply(mtx, mtx2, offX, offY, 0.0f);
 		PSMTXConcat(cam->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
@@ -1112,13 +1123,12 @@ u16 kanjiGetWidth(u16 code) {
 	return *(u8*)((u8*)width + 1);
 }
 
-// NONMATCHING (99.38%): `(s8)*message++` in the default case matched. Remaining diffs are register
-// allocation only: retail reuses the maxwidth/curwidth source register (mr r29,r28, subf with r29)
-// where ours uses the masked r0/r5 copy; the two anonymous @-labels are symbol-only.
+// maxwidth and curwidth are both u16; the original truncates curwidth with a compound assignment
+// (no zero-extension before the add) and its final subtraction reads maxwidth in a 32-bit context.
 u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 	u16 glyph;
 	u16 maxwidth = 0;
-	s32 curwidth = 0;
+	u16 curwidth = 0;
 	s32 linecount = 0;
 
 	while (*(s8*)message != 0) {
@@ -1163,7 +1173,7 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 						}
 					}
 					iconGetWidthHight(&width, &height, (u16)id);
-					curwidth = (s32)((f32)width * scale + offset + (f32)(u16)curwidth);
+					curwidth = (f32)width * scale + offset + (f32)curwidth;
 				}
 #ifdef MUST_MATCH // retail's second test is dead (compares a sign-extended byte against 0x2f72)
 				else if ((s8)arg1[0] == 'R' || ((s8)arg1[0] == '/' && (u32)(s8)arg1[0] == 0x2f72)) {
@@ -1185,13 +1195,13 @@ u16 FontGetMessageWidthLine(const char* message, u16* lines) {
 		if (glyph == 0xFFFF) {
 			continue;
 		}
-		curwidth = (u16)(curwidth + (((BinaryFontWidthEntry*)FontGetWidthPtr(glyph))->width + charspace[gp->language]));
+		curwidth += ((BinaryFontWidthEntry*)FontGetWidthPtr(glyph))->width + charspace[gp->language];
 	}
 	if ((u16)maxwidth < (u16)curwidth) {
 		maxwidth = curwidth;
 	}
 	if ((u16)maxwidth != 0) {
-		maxwidth = (u16)(maxwidth - charspace[gp->language]);
+		maxwidth = (s32)maxwidth - charspace[gp->language];
 	}
 	if (lines) {
 		*lines = linecount;

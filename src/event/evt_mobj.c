@@ -1203,8 +1203,9 @@ s32 evt_mobj_rideswitch_b(EventEntry* event, BOOL isFirstCall) {
 }
 #endif
 
-// NONMATCHING (99.79%): only the gp/string-address temp colouring is swapped (retail gp=r5/str=r4,
-// ours gp=r4/str=r5); `!!gp->inBattle` fixed the scheduling.
+// The gp->inBattle read is kept in its own local ahead of the asyncName string address, so the gp
+// load temp colours r5 and the string-address temp r4 as in the original.
+#pragma opt_propagation off
 s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     s32 unk1E4;
@@ -1216,6 +1217,7 @@ s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     s32 unk1D4;
     s32 unk1D8;
     const char* asyncName;
+    BOOL inBattle;
 
     name = (const char*)evtGetValue(event, args[0]);
     f31 = evtGetFloat(event, args[1]);
@@ -1223,9 +1225,10 @@ s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     f29 = evtGetFloat(event, args[3]);
     unk1D4 = evtGetValue(event, args[4]);
     unk1D8 = evtGetValue(event, args[5]);
+    inBattle = gp->inBattle != 0;
     asyncName = "MOBJ_RideSwitchC";
     unk1E4 = args[6];
-    if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -1243,6 +1246,7 @@ s32 evt_mobj_rideswitch_lightblue(EventEntry* event, BOOL isFirstCall) {
     mobjCalcMtx2(obj);
     return 2;
 }
+#pragma opt_propagation reset
 
 s32 mobj_jumpstand_red(MapObjectEntry* obj) {
     MarioWork* mario = marioGetPtr();
@@ -2612,10 +2616,10 @@ s32 evt_mobj_arrow(EventEntry* event, BOOL isFirstCall) {
 // its 0x1A0 padding, so they are read/written through the declared array: *(s32*)&obj->unk1A0[4] (0x1A4
 // coinNeeded), (u8*)obj + 0x1A8 msgWindowId, +0x1B0 timer, +0x1C8 EffectEntry* effect. The
 // effCoinFukidashiEntry calls pass the header's (type, coinNum, count, x, y, z) order; y is accumulated
-// through a local (`f32 y2 = float_25; y2 += obj->position.y;`) so mwcc emits `fadds f2,f2,f1` like retail.
-// The residue is register allocation: retail keeps the y operand in f1 and the z operand in f3, ours uses
-// f0/f1, and retail loads the coin argument last.
-// NONMATCHING (98.21%)
+// through a local (`f32 y2 = float_25; y2 += obj->position.y;`). opt_propagation off keeps the z and x
+// loads as separate webs so mwcceppc colours them like retail (x/y in f1, z-10 in f3) and schedules the
+// coin load last.
+#pragma opt_propagation off
 s32 mobj_recovery_blk(MapObjectEntry* obj) {
     s32 i;
 
@@ -2623,10 +2627,15 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
         case -1:
             {
                 f32 y2 = 25.0f;
+                f32 z2;
+                f32 x;
+                z2 = obj->position.z;
                 y2 += obj->position.y;
+                z2 = z2 - 10.0f;
+                x = obj->position.x;
                 *(EffectEntry**)((u8*)obj + 0x1C8) = effCoinFukidashiEntry(
                     0, *(s32*)&obj->unk1A0[4], 0,
-                    obj->position.x, y2, obj->position.z - 10.0f);
+                    x, y2, z2);
             }
             obj->unk1DC++;
             break;
@@ -2741,10 +2750,15 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
         case 6:
             if (*(EffectEntry**)((u8*)obj + 0x1C8) == NULL) {
                 f32 y2 = 25.0f;
+                f32 z2;
+                f32 x;
+                z2 = obj->position.z;
                 y2 += obj->position.y;
+                z2 = z2 - 10.0f;
+                x = obj->position.x;
                 *(EffectEntry**)((u8*)obj + 0x1C8) = effCoinFukidashiEntry(
                     0, *(s32*)&obj->unk1A0[4], 0,
-                    obj->position.x, y2, obj->position.z - 10.0f);
+                    x, y2, z2);
             }
             if (animPoseGetLoopTimes(obj->poseId) < 1.0f) {
                 break;
@@ -2780,6 +2794,8 @@ s32 mobj_recovery_blk(MapObjectEntry* obj) {
     }
     return 0;
 }
+
+#pragma opt_propagation reset
 
 s32 evt_mobj_recovery_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
@@ -4308,8 +4324,9 @@ s32 mobj_koopa_badgeblk(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (99.80%): only the gp/string-address temp colouring is swapped (retail gp=r5/str=r4,
-// ours gp=r4/str=r5); `!!gp->inBattle` fixed the scheduling.
+// The gp->inBattle read is kept in its own local ahead of the asyncName string address, so the gp
+// load temp colours r5 and the string-address temp r4 as in the original.
+#pragma opt_propagation off
 s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -4319,10 +4336,11 @@ s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
     s32 unk1A0 = evtGetValue(event, args[4]);
     s32 unk1D4 = evtGetValue(event, args[5]);
     s32 unk1E4 = args[6];
+    BOOL inBattle = gp->inBattle != 0;
     const char* asyncName = "MOBJ_HatenaBlock";
     MapObjectEntry* obj;
 
-    if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -4343,6 +4361,7 @@ s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
+#pragma opt_propagation reset
 
 // The original loads the gp pointer before the asyncName string address.  With the named
 // inBattle web kept (opt_propagation off) the assignments happen in declaration order, giving
