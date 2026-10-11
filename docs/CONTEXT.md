@@ -6050,6 +6050,18 @@ identical interference sets, so no declaration order works. `_sscallback` 99.29 
 copies variants over the source and then tb.sh's rsync can leave an older timestamp, so ninja reuses a stale object;
 `touch` the source before verifying.
 
+**party_motion: 48 -> 50 of 53, .rodata and .sdata2 byte-identical, not linked (on2-pmotion; levers from the list:
+mostly; 309k, 100 min).** The 0x108-byte .rodata blob from batch 4b is split into retail's named objects read by name
+(FB/FV under MUST_MATCH, plain values in `#else`). party_roll -> 100: its test is retail's
+`if (fabsf(target - next < 1.0f))`, a misplaced parenthesis the asm shows (int-to-float, fabs, compare with zero).
+getFrontFloor 94.06 -> 100: `wall = touch_wall_ct` read at the top, `floorY = -2000.0f` set after the loop with a hit
+jumping past it (`goto found`), `targetDistance` stored before `targetDir`. homing_walk 99.99 (a literal passed as an
+inline argument keeps the constant as the second operand like retail, a literal in the code doesn't), homing_fly
+99.75, jump 99.91. Pool order: three uncalled functions (partyGetFrontFloorY, partyGetAjiSpeed, partyGetHoverOfs)
+built from logic the unit's own functions carry inline supply the .sdata2 constants in retail's order and are
+stripped by mwld. Unlike party.c's four, these names have no map evidence; they rest on the dead-function rule in
+the preamble. Linking also needs walk's `float_40_8041cdf0` (four sites) defined or turned into inline arguments.
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
