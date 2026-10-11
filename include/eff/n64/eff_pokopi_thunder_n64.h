@@ -19,7 +19,12 @@ typedef struct EffPokopiThunderData {
 	s32 field_0x40;  // 0x40
 	s32 field_0x44;  // 0x44
 	s32 field_0x48;  // 0x48
-	u8 pad_0x4C[0xCC];
+	u8 pad_0x4C[0x4];
+	f32 ptX[12];     // 0x50
+	f32 ptY[12];     // 0x80
+	f32 ptZ[12];     // 0xB0
+	f32 ptScale[12]; // 0xE0
+	u8 pad_0x110[0x8];
 	s32 cameraId;    // 0x118
 } EffPokopiThunderData;
 void effPokopiThunderDisp(CameraId camId, void* param);
