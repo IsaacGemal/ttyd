@@ -6113,6 +6113,17 @@ question: whether the original called windowDispGX_Waku_col without a prototype,
 order naturally. _lvup_select_object_disp 98.09: our scheduler hoists the 0.8 load above the `pos2` block; mwsearch
 10,254 compiles found nothing.
 
+**win_item links: winItemDisp 99.73, item_disp 95.41, itemUseDisp 99.73 -> 100, 10/10 (on2-winitem; levers from the
+list: partial; 294k, 70 min).** The main fix: all 50 named `vec3_802f52xx/55xx` constants deleted and the draw calls
+building their positions and scales inline (`(Vec){x, y, 0.0f}`) as the sibling win_badge does; the compiler places
+them in source order, so .rodata stays identical, and every hand copy, volatile hack and the `winItemMkVec` helper
+went (the agent's list had rated this unlikely). Floats and short strings as literals; `winFontSetV`/`RV`,
+`winIconSetV`, `winFontSetPitchV` as by-value casts under MUST_MATCH with plain `#else`. winItemDisp takes
+`void* param` like winBadgeDisp; itemUseDisp offsets from `i`, the body inside `if (!winMgrAction(..))`, `?:` for the
+name; item_disp in badge_disp's shape with a new `itemScrollRow[2]` field at 0x21C (layout unchanged) and assignments
+inside expressions. Link: winItemInit's direct `str_802F560C/20/38` references became the existing macros. About
+1,150 lines shorter.
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
