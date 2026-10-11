@@ -1100,7 +1100,7 @@ const volatile Vec vec3_tou_0000d034 = { 0.0f, 0.0f, 0.0f };
 const volatile Vec vec3_tou_0000d040 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_tou_0000d04c = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_tou_0000d058 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_tou_0000d064 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_tou_0000d064 = { 0.0f, 0.0f, 0.0f };
 
 EVT_BEGIN(mario_momikucha_msg)
     SET_VALUE(LW(10), 0)
@@ -1665,58 +1665,52 @@ void fan_disp(void) {
 #pragma opt_propagation off // hoist the sin/cos coefficient loads out of the inline branches
 #pragma opt_lifetimes off // retail FPR colouring of the sin/cos inlines in the switch cases
 // Both pragmas are required: without `opt_propagation off` the function is 74.9%, without
-// `opt_lifetimes off` it is 95.5%. `opt_lifetimes off` recovered the loop FPRs (95.5 -> 98.0);
-// the else-branch and second-loop counters are block-scoped so MWCC keeps the short-lived `i` in
-// a volatile register as retail does (98.0 -> 98.1).
-// These idioms recover retail's exact code shape (98.1 -> 98.20):
+// `opt_lifetimes off` it is 95.5%.
+// Code-shape idioms that give retail's instructions and FPRs:
 //  - the random ranges use `randf(min, max)`, whose `r * (max - min) + min` emits MWCC's
 //    `fmadds rf, 90, ...` operand order directly (the hand-written `min + r * span` comes out with
 //    the constant first). `randf` inlines to the same `rand`-then-scale sequence.
 //  - `ang = (ang + breath) / 2.0f` folds to the retail `* 0.5` fused-multiply-add colouring; the
-//    literal `* 0.5f` picks different FPRs (same story as the `field_0x38` line below).
+//    literal `* 0.5f` picks different FPRs (same story as the `field_0x38` line below). Case 2
+//    computes it before copying `vec3_tou_0000d064` into `target`, and that template is a non-const
+//    `.rodata` object, so the copy is scheduled after the `field_0x2` store as in retail.
 //  - `fan->field_0x40 = scale * -c;` (negating the operand, not `-scale * c`) is what retail's
 //    fused form wants; `-(scale * c)` / `-scale * c` colour the FPRs differently.
-//  - the last loop advances `i++, pose++, fan++`, retail's increment order.
 //  - the case-1 random angle goes through the `fanAngle` inline above: inlining `r * span + min`
 //    through parameters emits the retail `fmadds f, rf, 90, 135` operand order (the direct
 //    `135.0f + rf * 90.0f` comes out with the constant as the multiplicand). The result is held
-//    in the inline's own local `a`: an inline's locals are numbered before the caller's temps, so
-//    the allocator colours the angle after case 2's `scale`/`a` and it lands in retail's f30
-//    (returned directly, the return temp took f31).
-// A sixth: the fly SFX pointer is held in two callee-saved registers (r30 and r29); the
-// single-variable form lets MWCC colour the switch loop's `&fan_wp` r30 instead of retail's
-// r26, which broke the first normalize loop's registers. 98.20 -> 98.27.
-// The display loop matches (pose/fan/i = r29/r30/r28) and the early loops nearly do. Load-bearing
-// edits for the allocator, all local to this function:
-//  - `opt_loop_invariants off` stops `&query.hitNormal` being hoisted into r30 before the display loop;
-//  - `fan` is declared before `pose` at the top, and each loop that owns its own `fan`/`fan`+`i` pair
-//    declares `FanPose* fan` before `s32 i` (the else loop uses `fane`/`posee` declared before
-//    `found`/`i`, the pair loop `fanp`/`ip`, the switch loop `fan` before `i`);
-//  - the case-10/20 counters use `s16 v = field; field = --v;` (the `v - 1` form colours r0/r3 wrong).
-// Together 98.27 -> 98.86 and one instruction; with the `fanAngle` local, the retail increment
-// order and `if (PSVECMag(&d))` (retail compares the magnitude first) 98.98. What is still
-// different (26 instruction diffs):
-//  - the switch-loop preheader: the string address is materialised in r0 and copied to the two
-//    fly-SFX pointers, where retail writes it straight into r30 (`addi r30` + one `mr`), one extra
-//    `mr`. Same for the `vec3_tou_0000d064`/`0.5` schedule in case 2 (loads before the stores).
-//  - the else loop's `found` (retail r27, ours r30) and the pair loop's `ip` / inner `&fan_wp`
-//    (retail r27/r29, ours r29/r27). tools/rasim.py on a mwccdbg dump reproduces our colouring
-//    and only reaches retail's if `found` and `ip` are the two lowest-numbered locals (declared
-//    last), which no block-scoped declaration order allows: probably a structural difference.
+//    in the inline's own local `a`, which the allocator colours into retail's f30.
+//  - the case-10/20 counters use `s16 v = field; field = --v;` (the `v - 1` form colours r0/r3
+//    wrong), the last loop advances `i++, pose++, fan++`, and `if (PSVECMag(&d))` compares the
+//    magnitude first, all as retail.
+// Loop invariants and registers:
+//  - the fly SFX name is a `FAN_SFX` round trip at both uses: MWCC hoists each cast into the
+//    hammer-check loop's preheader, giving retail's `addi r30` / `mr r29, r30` pair.
+//  - the hit branch reads the normal through `hit = &query`: `&query.hitNormal` written in the
+//    call is a loop invariant MWCC hoists into a saved register before the display loop, where
+//    retail forms the address at the call.
+//  - the declaration order sets the allocator's priorities: `pose` before `fan` at the top, the
+//    hammer-check loop's own `fp`/`k` after `j`, and the else and pair loops declare their
+//    counters (`found`/`i`, `ip`) before their pointers.
+#ifdef MUST_MATCH
+#define FAN_SFX(name) ((char*)(u32)(name))
+#else
+#define FAN_SFX(name) (name)
+#endif
 static inline f32 fanAngle(f32 rf, f32 min, f32 span) {
     f32 a = (rf * span + min) * TWO_PI / 360.0f;
     return a;
 }
-// NONMATCHING (98.98%): the above register/scheduling clusters; no logic differs.
-#pragma opt_loop_invariants off // stops `&query.hitNormal` being hoisted into r30 before the loop
 void ext_fan_main(void) {
     MarioWork* mario = marioGetPtr();
-    FanPose* fan;
     ExtPose* pose;
+    FanPose* fan;
     Vec d;
     Vec vec = vec3_tou_0000d04c;
     s32 i;
     s32 j;
+    FanPose* fp;
+    s32 k;
 
     if (mario->currMotionId == 0x12) {
         fan_wp->field_0x50C++;
@@ -1742,10 +1736,10 @@ void ext_fan_main(void) {
             n--;
         }
     } else {
-        FanPose* fane;
-        ExtPose* posee;
         s32 found = 0;
         s32 i;
+        FanPose* fane;
+        ExtPose* posee;
         posee = extGetPosePtr();
         fane = fan_wp->poses;
         for (i = 0; i < fan_wp->poseNum; i++, fane++, posee++) {
@@ -1787,8 +1781,8 @@ void ext_fan_main(void) {
     }
 
     {
-    FanPose* fanp = fan_wp->poses;
     s32 ip;
+    FanPose* fanp = fan_wp->poses;
     for (ip = 0; ip < fan_wp->poseNum; ip++, fanp++) {
         if (fanp->field_0x2 != 0) {
             continue;
@@ -1815,26 +1809,14 @@ void ext_fan_main(void) {
     }
     }
 
-    {
-        FanPose* fan = fan_wp->poses;
-#ifdef MUST_MATCH
-        // The original holds the fly SFX pointer in two callee-saved registers (r30 and
-        // r29, `addi r30, ...` then `mr r29, r30`); the single-variable form lets MWCC
-        // put the switch loop's `&fan_wp` in r30 instead of r26.
-        const char* flySfx = "SFX_STG3_AUDIENCE_FAN_FLY1";
-        const char* flySfx2 = flySfx;
-#else
-        const char* flySfx = "SFX_STG3_AUDIENCE_FAN_FLY1";
-#endif
-        s32 i;
-
-        for (i = 0; i < fan_wp->poseNum; i++, fan++) {
-        if (fan->field_0x2 != 0) {
+    fp = fan_wp->poses;
+    for (k = 0; k < fan_wp->poseNum; k++, fp++) {
+        if (fp->field_0x2 != 0) {
             continue;
         }
-        switch (check_hammer(fan)) {
+        switch (check_hammer(fp)) {
         case 1:
-            fan->field_0x2 = 10;
+            fp->field_0x2 = 10;
             {
                 f32 rf = (f32)rand() / 32767.0f;
                 f32 a = fanAngle(rf, 135.0f, 90.0f);
@@ -1843,67 +1825,62 @@ void ext_fan_main(void) {
                 f32 c;
                 f32 vx, vz;
 
-                vx = fan->position.x + dist * s;
+                vx = fp->position.x + dist * s;
                 c = fanCosf(a);
-                vz = fan->position.z - dist * c;
+                vz = fp->position.z - dist * c;
                 {
                     Vec v = vec3_tou_0000d058;
                     v.x = vx;
                     v.y = -100.0f;
                     v.z = vz;
-                    fan->target = v;
+                    fp->target = v;
                 }
-                fan->field_0x3C = randf(4.0f, 6.0f);
-                fan->field_0x40 = randf(0.1f, 0.2f);
+                fp->field_0x3C = randf(4.0f, 6.0f);
+                fp->field_0x40 = randf(0.1f, 0.2f);
                 {
-                    f32 dy = fan->target.y - fan->position.y;
-                    f32 dxy = distABf(fan->position.x, fan->position.z, fan->target.x, fan->target.z);
-                    f32 ang = angleABf(fan->position.x, fan->position.z, fan->target.x, fan->target.z);
+                    f32 dy = fp->target.y - fp->position.y;
+                    f32 dxy = distABf(fp->position.x, fp->position.z, fp->target.x, fp->target.z);
+                    f32 ang = angleABf(fp->position.x, fp->position.z, fp->target.x, fp->target.z);
 
-                    fan->field_0x44 = (s16)(dxy / fan->field_0x3C);
+                    fp->field_0x44 = (s16)(dxy / fp->field_0x3C);
 #ifdef MUST_MATCH
                     // /2.0f makes MWCC fold to the retail `* 0.5` fused-multiply-add colouring;
                     // the natural `* 0.5f` picks different FPRs.
-                    fan->field_0x38 = fan->field_0x40 * (f32)fan->field_0x44 / 2.0f + dy / (f32)fan->field_0x44;
+                    fp->field_0x38 = fp->field_0x40 * (f32)fp->field_0x44 / 2.0f + dy / (f32)fp->field_0x44;
 #else
-                    fan->field_0x38 = fan->field_0x40 * (f32)fan->field_0x44 * 0.5f + dy / (f32)fan->field_0x44;
+                    fp->field_0x38 = fp->field_0x40 * (f32)fp->field_0x44 * 0.5f + dy / (f32)fp->field_0x44;
 #endif
                     (void)ang;
                 }
-#ifdef MUST_MATCH
-                psndSFXOn_3D(flySfx2, &fan->position);
-#else
-                psndSFXOn_3D(flySfx, &fan->position);
-#endif
+                psndSFXOn_3D(FAN_SFX("SFX_STG3_AUDIENCE_FAN_FLY1"), &fp->position);
             }
             break;
         case 2:
             {
-                f32 ang = angleABf(mario->position.x, mario->position.z, fan->position.x, fan->position.z);
+                f32 ang = angleABf(mario->position.x, mario->position.z, fp->position.x, fp->position.z);
                 f32 breath = cloudGetBreathDir();
 
-                fan->field_0x2 = 20;
-                fan->target = vec3_tou_0000d064;
+                fp->field_0x2 = 20;
                 ang = (ang + breath) / 2.0f;
+                fp->target = vec3_tou_0000d064;
                 {
                     f32 scale = randf(0.1f, 0.2f);
                     f32 s;
                     f32 c;
                     f32 a = TWO_PI * ang / 360.0f;
                     s = fanSinf(a);
-                    fan->field_0x38 = scale * s;
-                    fan->field_0x3C = randf(0.03f, 0.06f);
+                    fp->field_0x38 = scale * s;
+                    fp->field_0x3C = randf(0.03f, 0.06f);
                     c = fanCosf(a);
-                    fan->field_0x40 = scale * -c;
-                    fan->field_0x44 = 120;
+                    fp->field_0x40 = scale * -c;
+                    fp->field_0x44 = 120;
                 }
-                psndSFXOn_3D(flySfx, &fan->position);
+                psndSFXOn_3D(FAN_SFX("SFX_STG3_AUDIENCE_FAN_FLY1"), &fp->position);
             }
             break;
         case 0:
         default:
             break;
-        }
         }
     }
     fan_wp->field_0x510 = fan_wp->poseNum;
@@ -1925,7 +1902,9 @@ void ext_fan_main(void) {
             query.targetDir.y = 0.0f;
             query.targetDistance = 25.0f + mag;
             if (hitCheckVecFilter(&query, NULL) != NULL) {
-                C_VECReflect(&fan->velocity, &query.hitNormal, &fan->velocity);
+                HitCheckQuery* hit = &query;
+
+                C_VECReflect(&fan->velocity, &hit->hitNormal, &fan->velocity);
             } else {
                 fan->position.x += fan->velocity.x;
                 fan->position.z += fan->velocity.z;
@@ -2003,7 +1982,6 @@ void ext_fan_main(void) {
     psndSFX_pos(fan_wp->sfxId, &vec);
     psndSFX_vol(fan_wp->sfxId, (u8)(fan_wp->volume * fan_wp->field_0x510 / fan_wp->poseNum));
 }
-#pragma opt_loop_invariants reset
 #pragma opt_lifetimes reset
 #pragma opt_propagation reset
 void ext_fan_dispent(void) {

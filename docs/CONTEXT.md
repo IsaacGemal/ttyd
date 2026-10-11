@@ -5795,6 +5795,18 @@ colours are `(GXColor){ v, v, v, 0xFF }` compound literals and the camera eye
 one slot wrong; a block-local `GXColor c` took the top slot). `cbuf` is `u16 cbuf[2]` (4 bytes, not 8, which had
 shifted every Vec slot). getLightColor is called normally instead of expanded by hand.
 
+**tou_02 links: ext_fan_main 98.98 -> 100 (on1-fan; lever from the list: partial; 406k, 57 min).** Four pieces.
+(1) `opt_loop_invariants off` removed; the fly sound name is written at each use through `FAN_SFX` (the MUST_MATCH
+`((char*)(u32)"...")` round trip of BSO_SFX/FALL_SFX), so MWCC hoists it to the preheader as retail's
+`addi r30` / `mr r29,r30`. (2) MWCC 2.6 hoists `&query.hitNormal` out of every loop shape tried, but not
+`&hit->hitNormal` when `hit = &query` is assigned inside the branch, and the backend folds it back to
+`addi r4,r1,0x5c` at the call (hitCheckFilter in hitdrv uses the same pointer-to-query style). This is what made
+turning loop invariants back on possible. (3) Case 2: the Vec as non-const `.rodata` (#631) and
+`ang = (ang + breath) / 2.0f` before the target copy. (4) Declaration order from a 672-variant compile sweep after
+rasim showed `found`/`ip` must rank below the hammer-check loop's counter. From the list: (1) and (3); (2) and (4)
+were the agent's own. Tried and failed: every scope/inline/loop-form/volatile/union/cast/pragma variant against
+the `&query.hitNormal` hoist, merging `found`/`ip`, the hammer-check loop as an inline (shifts the frame).
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
