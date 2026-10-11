@@ -5656,3 +5656,21 @@ when a run must stop, and have the next attempt start by listing what the note a
 Process notes from the day: agents sharing a function must not share scratch dirs (one pair overwrote each other's
 files in the Claude scratchpad, and one ran `rm vars/*.c` there); the preamble now requires per-TAG scratch
 directories and bans `rm` on variable or wildcard paths, since nobody can approve a prompt overnight.
+
+## Overnight 1: long runs that read the whole ledger first (2026-10-10/11, Claude Opus 5.5 orchestrating; Opus 5.5 agents)
+
+One long Opus run per unit with a single function left, target "unit links". Before editing, each agent reads all
+of this file and AGENT_BRIEF.md with its diff open and writes a ranked, sourced list of levers that could apply
+(`levers.md`), then works through it, marking each entry tried, not applicable or skipped. Each report says
+whether the closing lever came from that list. Prompt: `scratch/on1_prompt.md`.
+
+**parse links: parsePush 99.71 -> 100 (on1-parse; lever from the list: yes).** The tag-copy loop became
+`static inline void parseTagName(char* dst, s8* src, s32 pos, s32 end)`, reading `src[pos]` at each use with no
+`c` local and writing the terminating 0 itself. The buffer pointer is the frontend's strength-reduction temp, which
+no named local outranks by declaration order; locals of an inline are numbered above frontend temps, so `j` and
+`len` move into the inline and outrank it. Keeping `c` in the inline made it worse (it outranks the rest too), which
+is why the earlier Codex relay's whole-loop inline failed. Source: the brief's "a variable that must outrank the
+function's frontend temps goes in a static inline helper" (fontmgr #408, nanNPCOption #668, eff_booboo #659), entry 1
+of the agent's list; rasim what-ifs showed that `c` had to go. Tried and failed: a named `char* p` buffer pointer in
+6 declaration orders (an extra `mr`: the original's pointer is the compiler's own temp), `int` for `j`/`len`.
+

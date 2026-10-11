@@ -890,7 +890,7 @@ config.libs = [
             Object(Matching, "memory.c"),
             Object(NonMatching, "nameent.c"),
             Object(Matching, "npc_event.c"),
-            Object(NonMatching, "parse.c"),
+            Object(Matching, "parse.c"),
             Object(NonMatching, "party.c"),
             Object(Matching, "peach.c"),
             Object(NonMatching, "pmario_sound.c"),
