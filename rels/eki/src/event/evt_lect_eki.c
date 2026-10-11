@@ -6,6 +6,7 @@
 #include "eff/eff_itemget.h"
 #include "driver/hitdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/itemdrv.h"
 #include "driver/mapdrv.h"
 #include "driver/mobjdrv.h"

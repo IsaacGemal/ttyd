@@ -82,7 +82,7 @@
  {
   "path": "*",
   "name": "iconDispGxAlpha",
-  "reason": "the definition takes the icon id as s16 (icondrv's iconDispGx needs it), but the REL lecture units pass it zero-extended (u16); declare it with the width your file's asm passes."
+  "reason": "the definition takes the icon id as s16 (icondrv's iconDispGx needs it), but the REL lecture units and fontmgr pass it zero-extended (u16), and fontmgr evaluates the scale first; icondrv_gx.h has the definition's signature, otherwise declare it with the width and order your file's asm uses."
  },
  {
   "path": "src/sequence/seq_mapchange.c",

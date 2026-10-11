@@ -1,4 +1,5 @@
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/dispdrv.h"
 #include "driver/mapdrv.h"
 #include "evt/evt_cmd.h"

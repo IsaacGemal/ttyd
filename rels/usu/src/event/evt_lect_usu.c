@@ -5,6 +5,7 @@
 #include "driver/fadedrv.h"
 #include "driver/hitdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/mapdrv.h"
 #include "driver/mobjdrv.h"
 #include "eff/eff_fukidashi.h"
