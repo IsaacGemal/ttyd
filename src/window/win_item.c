@@ -18,6 +18,8 @@
 #include "driver/swdrv.h"
 #include "data/mail_data.h"
 #include "system.h"
+#include <stdio.h>
+#include <stdarg.h>
 
 // These .rodata strings are deliberately NOT defined here: defining them would push the
 // compiler's anonymous int->float pool doubles behind them (0x958 instead of 0x8f0), which
@@ -48,61 +50,57 @@ extern const char str_802F5638[];
 #define WW_U16(w, off) (*(u16*)((u8*)(w) + (off)))
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
 
+// The window draw functions take their Vec and GXColor arguments by value. win_main.h declares the font and
+// icon ones with pointers, which compiles to the same callee.
+#ifdef MUST_MATCH
+// Match-only: called through by-value casts (caller copies plus a pointer, ABI-identical).
+#define winFontSetV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSet)
+#define winFontSetRV ((void (*)(Vec, Vec, GXColor, const char*, ...))winFontSetR)
+#define winIconSetV ((void (*)(s32, Vec, Vec, GXColor))winIconSet)
+#define winFontSetPitchV ((void (*)(Vec, Vec, GXColor, f32, const char*, ...))winFontSetPitch)
+#else
+static void winItemFontV(void (*fn)(Vec*, Vec*, GXColor*, const char*, ...), Vec pos, Vec scale,
+                         GXColor color, const char* format, va_list args) {
+    char text[0x200];
+
+    vsprintf(text, format, args);
+    fn(&pos, &scale, &color, "%s", text);
+}
+static void winFontSetV(Vec pos, Vec scale, GXColor color, const char* format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    winItemFontV(winFontSet, pos, scale, color, format, args);
+    va_end(args);
+}
+static void winFontSetRV(Vec pos, Vec scale, GXColor color, const char* format, ...) {
+    va_list args;
+
+    va_start(args, format);
+    winItemFontV(winFontSetR, pos, scale, color, format, args);
+    va_end(args);
+}
+static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
+    winIconSet(id, &pos, &scale, &color);
+}
+static inline void winFontSetPitchV(Vec pos, Vec scale, GXColor color, f32 pitch, const char* text) {
+    winFontSetPitch(&pos, scale, &color, pitch, "%s", text);
+}
+#endif
+
 extern u16 menu_skip_list[18];
 extern const char** luigi_book_list[5];
 extern WindowPartyDt winPartyDt[];
-extern const f32 float_neg310_8041d550;
-extern const f32 float_neg170_8041d558;
-extern const f32 float_160_8041d4dc;
-extern const f32 float_neg144_8041d55c;
-extern const f32 float_180_8041d560;
-extern const f32 float_neg96_8041d568;
-extern const f32 float_neg80_8041d56c;
-extern const f32 float_130_8041d570;
-extern const f32 float_28_8041d574;
-extern const f32 float_60_8041d564;
-extern const f32 float_neg16_8041d4b0;
-extern const f32 float_neg28_8041d4b4;
-extern const f32 float_190_8041d544;
-extern const f32 float_0p25_8041d548;
-extern const f32 float_6_8041d54c;
-extern const f32 float_neg275_8041d554;
-extern const f32 float_320_8041d528;
-extern const f32 float_neg240_8041d4f4;
-extern const f32 float_0_8041d4ac;
-extern const f32 float_20_8041d4e8;
-extern const f32 float_105_8041d4fc;
-extern const f32 float_120_8041d530;
-extern const f32 float_150_8041d52c;
-extern const f32 float_210_8041d538;
-extern const f32 float_215_8041d53c;
-extern const f32 float_415_8041d534;
-extern const f32 float_4_8041d540;
 extern const GXColor dat_8041d468;
 extern const GXColor dat_8041d46c;
 extern const GXColor dat_8041d470;
 extern const GXColor dat_8041d474;
 extern const GXColor dat_8041d478;
 extern const GXColor dat_8041d47c;
-extern const f32 float_100_8041d4e4;
-extern const f32 float_10_8041d4ec;
-extern const f32 float_240_8041d4f0;
-extern const f32 float_125_8041d4f8;
-extern const f32 float_250_8041d500;
-extern const f32 float_18_8041d504;
-extern const f32 float_110_8041d508;
-extern const f32 float_113_8041d50c;
-extern const f32 float_90_8041d510;
-extern const f32 float_15_8041d514;
-extern const f32 float_0p7_8041d518;
-extern const f32 float_220_8041d51c;
-extern const f32 float_92_8041d520;
-extern const f32 float_30_8041d524;
 
-extern const f32 float_0p5_8041d4a8;
 extern const GXColor dat_8041d4a4;
 
-// .sdata2 colours, floats and format strings used by itemUseDisp (defined elsewhere).
+// .sdata2 colours used by itemUseDisp (defined at the end of the file).
 extern const GXColor dat_8041d480;
 extern const GXColor dat_8041d484;
 extern const GXColor dat_8041d488;
@@ -112,24 +110,10 @@ extern const GXColor dat_8041d494;
 extern const GXColor dat_8041d498;
 extern const GXColor dat_8041d49c;
 extern const GXColor dat_8041d4a0;
-extern const f32 float_neg16_8041d4b0;
-extern const f32 float_neg28_8041d4b4;
-extern const f32 float_0p9_8041d4b8;
-extern __declspec(section ".sdata2") const char str_8041D4BC[];
-extern __declspec(section ".sdata2") const char str_8041D4C4[];
-extern __declspec(section ".sdata2") const char str_8041D4C8[];
-extern __declspec(section ".sdata2") const char str_8041D4CC[];
-extern const f32 float_14_8041d4d4;
-extern const f32 float_1_8041d4d8;
-extern const f32 float_160_8041d4dc;
-extern const f32 float_2_8041d4e0;
 extern WindowPartyDt winPartyDt[];
 
-// .rodata prefix of window/win_item: the 60 msg_luigi_book strings and the vec3_802f52xx /
-// vec3_802f55xx aggregate constants. Defining them here (rather than extern) is what lets MWCC
-// address itemUseDisp/winItemDisp's rodata through one base register plus displacements. The tail
-// (str_802F55E8.. and the int->float pool doubles) is intentionally left extern/implicit above.
-// The vec3 names/sizes/order and every constant are taken byte-for-byte from the original .rodata.
+// .rodata prefix of window/win_item: the 60 msg_luigi_book strings. The Vec templates after them
+// come from the draw functions' compound literals, in source order.
 const char str_802F4CE8[24] = "msg_luigi_book1_txt1\000\000\000";
 
 const char str_802F4D00[24] = "msg_luigi_book1_txt2\000\000\000";
@@ -250,145 +234,6 @@ const char str_802F5258[24] = "msg_luigi_book5_txt11\000\000";
 
 const char str_802F5270[24] = "msg_luigi_book5_txt12\000\000";
 
-const Vec vec3_802f5288 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5294 = { 1.0, 1.0, 1.0 };
-
-const Vec vec3_802f52a0 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f52ac = { 1.0, 1.0, 1.0 };
-
-const Vec vec3_802f52b8 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f52c4 = { 1.0, 1.0, 1.0 };
-
-const Vec vec3_802f52d0 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f52dc = { 0.8, 0.8, 0.8 };
-
-const Vec vec3_802f52e8 = { 0.6666667, 0.6666667, 0.6666667 };
-
-const Vec vec3_802f52f4 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5300 = { 0.9, 0.9, 0.9 };
-
-const Vec vec3_802f530c = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5318 = { -1.0, -1.0, -1.0 };
-
-const Vec vec3_802f5324 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5330 = { 0.6, 0.6, 0.6 };
-
-const Vec vec3_802f533c = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5348 = { 1.0, 1.0, 1.0 };
-
-const Vec vec3_802f5354 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5360 = { 0.6, 0.6, 0.6 };
-
-const Vec vec3_802f536c = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5378 = { 0.7, 0.7, 0.7 };
-
-const Vec vec3_802f5384 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5390 = { 0.6, 0.6, 0.6 };
-
-const Vec vec3_802f539c = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f53a8 = { 0.65, 0.65, 0.65 };
-
-const Vec vec3_802f53b4 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f53c0 = { 1.0, 1.0, 1.0 };
-
-const Vec vec3_802f53cc = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f53d8 = { 1.0, 1.0, 1.0 };
-
-const Vec vec3_802f53e4 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f53f0 = { 1.0, 1.0, 1.0 };
-
-const Vec vec3_802f53fc = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5408 = { 0.9, 0.9, 0.9 };
-
-const Vec vec3_802f5414 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5420 = { 0.9, 0.9, 0.9 };
-
-const Vec vec3_802f542c = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5438 = { 0.8, 0.8, 0.8 };
-
-const Vec vec3_802f5444 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5450 = { 0.8, 0.8, 0.8 };
-
-const Vec vec3_802f545c = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5468 = { 0.9, 0.9, 0.9 };
-
-const Vec vec3_802f5474 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5480 = { 0.9, 0.9, 0.9 };
-
-const Vec vec3_802f548c = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5498 = { 0.8, 0.8, 0.8 };
-
-const Vec vec3_802f54a4 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f54b0 = { 0.8, 0.8, 0.8 };
-
-const Vec vec3_802f54bc = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f54c8 = { 1.0, 1.0, 1.0 };
-
-const Vec vec3_802f54d4 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f54e0 = { 0.65, 0.65, 0.65 };
-
-const Vec vec3_802f54ec = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f54f8 = { 0.0, 1.0, 1.0 };
-
-const Vec vec3_802f5504 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5510 = { 0.9, 0.9, 0.9 };
-
-const Vec vec3_802f551c = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5528 = { 0.9, 0.9, 0.9 };
-
-const Vec vec3_802f5534 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5540 = { 0.8, 0.8, 0.8 };
-
-const Vec vec3_802f554c = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5558 = { 0.8, 0.8, 0.8 };
-
-const Vec vec3_802f5564 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5570 = { 0.15, 0.15, 0.15 };
-
-const Vec vec3_802f557c = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f5588 = { 1.0, 1.0, 1.0 };
-
-const Vec vec3_802f5594 = { 0.0, 0.0, 0.0 };
-
-const Vec vec3_802f55a0 = { 1.0, 1.0, 1.0 };
-
-const Vec vec3_802f55ac = { 0.0, 134.0, 0.0 };
-
-const Vec vec3_802f55b8 = { 1.0, 1.0, 1.0 };
-
-const char str_802F55C4[20] = "msg_window_select_5";
 
 
 
@@ -463,14 +308,14 @@ void winItemInit(WindowWork* work) {
     WW_S32(work, 0x21C) = 0;
     WW_S32(work, 0x218) = 0;
     WW_S32(work, 0x220) = 0;
-    WW_F32(work, 0x238) = float_320_8041d528;
-    WW_F32(work, 0x234) = float_320_8041d528;
-    WW_F32(work, 0x240) = float_neg240_8041d4f4;
-    WW_F32(work, 0x23C) = float_neg240_8041d4f4;
-    WW_F32(work, 0x248) = float_320_8041d528;
-    WW_F32(work, 0x244) = float_320_8041d528;
-    WW_F32(work, 0x250) = float_neg240_8041d4f4;
-    WW_F32(work, 0x24C) = float_neg240_8041d4f4;
+    WW_F32(work, 0x238) = 320.f;
+    WW_F32(work, 0x234) = 320.f;
+    WW_F32(work, 0x240) = -240.f;
+    WW_F32(work, 0x23C) = -240.f;
+    WW_F32(work, 0x248) = 320.f;
+    WW_F32(work, 0x244) = 320.f;
+    WW_F32(work, 0x250) = -240.f;
+    WW_F32(work, 0x24C) = -240.f;
 
     if ((s32)pouchCheckItem(0x36) == 0) {
         pouchGetItem(0x36);
@@ -479,8 +324,8 @@ void winItemInit(WindowWork* work) {
 
     WW_S32(work, 0x258) = 0;
     WW_S32(work, 0x25C) = 0;
-    WW_F32(work, 0x264) = float_0_8041d4ac;
-    WW_F32(work, 0x260) = float_0_8041d4ac;
+    WW_F32(work, 0x264) = 0.0f;
+    WW_F32(work, 0x260) = 0.0f;
 
     {
         p = (u8*)work;
@@ -526,37 +371,37 @@ void winItemInit(WindowWork* work) {
     WW_S32(work, 0x120C) = winMgrEntry(&window_desc[1]);
     winMgrSetPriority(WW_S32(work, 0x1208), -0xC8);
     winMgrSetPriority(WW_S32(work, 0x120C), -0x64);
-    fileAsyncf(4, NULL, str_802F5638, getMarioStDvdRoot());
+    fileAsyncf(4, NULL, STR_MAIL_TPL, getMarioStDvdRoot());
 }
 
 void winItemInit2(WindowWork* work) {
     f32 t;
 
-    WW_F32(work, 0x158) = float_neg275_8041d554;
+    WW_F32(work, 0x158) = -275.0f;
     WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
 
-    t = float_190_8041d544 * (f32)WW_S32(work, 0x21C);
+    t = 190.f * (f32)WW_S32(work, 0x21C);
     WW_F32(work, 0x22C) = t;
     WW_F32(work, 0x224) = t;
 
-    t = float_190_8041d544 * (f32)WW_S32(work, 0x220);
+    t = 190.f * (f32)WW_S32(work, 0x220);
     WW_F32(work, 0x230) = t;
     WW_F32(work, 0x228) = t;
 
-    WW_F32(work, 0x238) = float_320_8041d528;
-    WW_F32(work, 0x234) = float_320_8041d528;
-    WW_F32(work, 0x240) = float_neg240_8041d4f4;
-    WW_F32(work, 0x23C) = float_neg240_8041d4f4;
-    WW_F32(work, 0x248) = float_320_8041d528;
-    WW_F32(work, 0x244) = float_320_8041d528;
-    WW_F32(work, 0x250) = float_neg240_8041d4f4;
-    WW_F32(work, 0x24C) = float_neg240_8041d4f4;
+    WW_F32(work, 0x238) = 320.f;
+    WW_F32(work, 0x234) = 320.f;
+    WW_F32(work, 0x240) = -240.f;
+    WW_F32(work, 0x23C) = -240.f;
+    WW_F32(work, 0x248) = 320.f;
+    WW_F32(work, 0x244) = 320.f;
+    WW_F32(work, 0x250) = -240.f;
+    WW_F32(work, 0x24C) = -240.f;
 
     t = (f32)(WW_S32(work, 0x258) * 0xC8);
     WW_F32(work, 0x264) = t;
     WW_F32(work, 0x260) = t;
 
-    winMsgEntry(work, 0, WW_S32(work, 0x210) == 0 ? str_802F560C : str_802F5620, 0);
+    winMsgEntry(work, 0, WW_S32(work, 0x210) == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, 0);
     WW_S32(work, 0x2D4) = 0;
 }
 
@@ -607,12 +452,12 @@ s32 winItemMain(WindowWork* work) {
             psndSFXOn((const char*)0x20012);
             break;
         } else if (work->buttonTrg & 0x10) {
-            winSortEntry(work, WW_S32(work, 0x210) != 0, float_neg310_8041d550, float_150_8041d52c);
+            winSortEntry(work, WW_S32(work, 0x210) != 0, -310.f, 150.f);
             WW_S32(work, 0x124) = WW_S32(work, 0x20C);
             psndSFXOn((const char*)0x20012);
             WW_S32(work, 0x20C) = 1000;
         }
-        WW_F32(work, 0x158) = float_neg275_8041d554;
+        WW_F32(work, 0x158) = -275.0f;
         WW_F32(work, 0x15C) = (f32)(0x7D - WW_S32(work, 0x210) * 0x28);
         winMsgEntry(work, 0, WW_S32(work, 0x210) == 0 ? STR_MOCHI_ITEM : STR_MOCHI_DAIJI, 0);
         break;
@@ -656,8 +501,8 @@ s32 winItemMain(WindowWork* work) {
                     const char** book;
 
                     WW_S32(work, 0x20C) = 100;
-                    WW_F32(work, 0x238) = float_neg170_8041d558;
-                    WW_F32(work, 0x240) = float_160_8041d4dc;
+                    WW_F32(work, 0x238) = -170.f;
+                    WW_F32(work, 0x240) = 160.f;
                     work->flags |= 0x8000;
                     book = luigi_book_list[item - 0x37];
                     WW_S32(work, 0x2C8) = item - 0x37;
@@ -670,8 +515,8 @@ s32 winItemMain(WindowWork* work) {
                     psndSFXOn((const char*)0x20012);
                 } else if (item == 0x36 && pouchReceiveMailCount() != 0) {
                     WW_S32(work, 0x20C) = 200;
-                    WW_F32(work, 0x248) = float_neg144_8041d55c;
-                    WW_F32(work, 0x250) = float_180_8041d560;
+                    WW_F32(work, 0x248) = -144.0f;
+                    WW_F32(work, 0x250) = 180.f;
                     psndSFXOn((const char*)0x20012);
                 } else if (item == 0x4E) {
                     WW_S32(work, 0x2D4) = item;
@@ -735,7 +580,7 @@ s32 winItemMain(WindowWork* work) {
             ((s32*)((u8*)work + 0x21C))[sel] = ((s32*)((u8*)work + 0x214))[sel] / 10;
             psndSFXOn((const char*)0x20035);
         } else if (work->buttonTrg & 0x10) {
-            winSortEntry(work, WW_S32(work, 0x210) != 0, float_neg310_8041d550, float_150_8041d52c);
+            winSortEntry(work, WW_S32(work, 0x210) != 0, -310.f, 150.f);
             WW_S32(work, 0x124) = WW_S32(work, 0x20C);
             psndSFXOn((const char*)0x20012);
             WW_S32(work, 0x20C) = 1000;
@@ -758,8 +603,8 @@ s32 winItemMain(WindowWork* work) {
             if (WW_S32(work, 0x2D0) >= WW_S32(work, 0x2CC)) {
                 WW_S32(work, 0x2D0) = WW_S32(work, 0x2CC) - 1;
                 WW_S32(work, 0x20C) = 10;
-                WW_F32(work, 0x238) = float_320_8041d528;
-                WW_F32(work, 0x240) = float_neg240_8041d4f4;
+                WW_F32(work, 0x238) = 320.f;
+                WW_F32(work, 0x240) = -240.f;
                 work->flags &= ~0x8000;
                 WW_F32(work, 0x150) = WW_F32(work, 0x158);
                 WW_F32(work, 0x154) = WW_F32(work, 0x15C);
@@ -770,22 +615,22 @@ s32 winItemMain(WindowWork* work) {
             if (WW_S32(work, 0x2D0) < 0) {
                 WW_S32(work, 0x2D0) = 0;
                 WW_S32(work, 0x20C) = 10;
-                WW_F32(work, 0x238) = float_320_8041d528;
-                WW_F32(work, 0x240) = float_neg240_8041d4f4;
+                WW_F32(work, 0x238) = 320.f;
+                WW_F32(work, 0x240) = -240.f;
                 work->flags &= ~0x8000;
                 WW_F32(work, 0x150) = WW_F32(work, 0x158);
                 WW_F32(work, 0x154) = WW_F32(work, 0x15C);
             }
         } else if (work->buttonTrg & 0x1000) {
-            WW_F32(work, 0x238) = float_320_8041d528;
-            WW_F32(work, 0x240) = float_neg240_8041d4f4;
+            WW_F32(work, 0x238) = 320.f;
+            WW_F32(work, 0x240) = -240.f;
             work->flags &= ~0x8000;
             WW_F32(work, 0x150) = WW_F32(work, 0x158);
             WW_F32(work, 0x154) = WW_F32(work, 0x15C);
             return -2;
         }
-        WW_F32(work, 0x158) = float_neg170_8041d558;
-        WW_F32(work, 0x15C) = float_150_8041d52c;
+        WW_F32(work, 0x158) = -170.f;
+        WW_F32(work, 0x15C) = 150.f;
         break;
 
     case 200:
@@ -815,8 +660,8 @@ s32 winItemMain(WindowWork* work) {
         } else if (work->buttonTrg & 0x200) {
             psndSFXOn((const char*)0x20013);
             WW_S32(work, 0x20C) = 10;
-            WW_F32(work, 0x248) = float_320_8041d528;
-            WW_F32(work, 0x250) = float_neg240_8041d4f4;
+            WW_F32(work, 0x248) = 320.f;
+            WW_F32(work, 0x250) = -240.f;
         } else if (work->dirRep & 0x1000) {
             old = WW_S32(work, 0x258);
             WW_S32(work, 0x258) = old - 1;
@@ -862,17 +707,17 @@ s32 winItemMain(WindowWork* work) {
                 psndSFXOn((const char*)0x20036);
             }
         } else if (work->buttonTrg & 0x10) {
-            winSortEntry(work, 7, WW_F32(work, 0x248), WW_F32(work, 0x250) - float_60_8041d564);
+            winSortEntry(work, 7, WW_F32(work, 0x248), WW_F32(work, 0x250) - 60.f);
             WW_S32(work, 0x124) = WW_S32(work, 0x20C);
             psndSFXOn((const char*)0x20012);
             WW_S32(work, 0x20C) = 1000;
         } else if (work->buttonTrg & 0x1000) {
-            WW_F32(work, 0x248) = float_320_8041d528;
-            WW_F32(work, 0x250) = float_neg240_8041d4f4;
+            WW_F32(work, 0x248) = 320.f;
+            WW_F32(work, 0x250) = -240.f;
             return -2;
         }
-        WW_F32(work, 0x158) = float_neg96_8041d568;
-        WW_F32(work, 0x15C) = float_120_8041d530 - (f32)((WW_S32(work, 0x258) % 5) * 0x28);
+        WW_F32(work, 0x158) = -96.0f;
+        WW_F32(work, 0x15C) = 120.f - (f32)((WW_S32(work, 0x258) % 5) * 0x28);
         break;
 
     case 201: {
@@ -917,12 +762,12 @@ s32 winItemMain(WindowWork* work) {
             if ((u32)WW_S32(work, 0x2C) != 0) {
                 fileFree((FileEntry*)WW_S32(work, 0x2C));
             }
-            WW_F32(work, 0x248) = float_320_8041d528;
-            WW_F32(work, 0x250) = float_neg240_8041d4f4;
+            WW_F32(work, 0x248) = 320.f;
+            WW_F32(work, 0x250) = -240.f;
             return -2;
         }
-        WW_F32(work, 0x158) = float_neg96_8041d568;
-        WW_F32(work, 0x15C) = float_120_8041d530;
+        WW_F32(work, 0x158) = -96.0f;
+        WW_F32(work, 0x15C) = 120.f;
         break;
 
     case 300:
@@ -1012,20 +857,20 @@ s32 winItemMain(WindowWork* work) {
             winMgrClose(WW_S32(work, 0x120C));
             return -2;
         }
-        WW_F32(work, 0x158) = float_neg80_8041d56c;
+        WW_F32(work, 0x158) = -80.f;
         {
             f32 f4;
             s32 t = WW_S32(work, 0x2DC);
 
             if (t == 0) {
-                f4 = float_0_8041d4ac;
+                f4 = 0.0f;
             } else if (t == 1) {
-                f4 = float_neg16_8041d4b0;
+                f4 = -16.0f;
             } else {
-                f4 = float_neg28_8041d4b4;
+                f4 = -28.0f;
             }
             {
-                f32 v = float_130_8041d570 - float_28_8041d574 * (f32)t;
+                f32 v = 130.f - 28.0f * (f32)t;
 
                 WW_F32(work, 0x15C) = v + f4;
             }
@@ -1065,187 +910,67 @@ s32 winItemMain(WindowWork* work) {
     return 0;
 }
 
-// MUST_MATCH: retail keeps the blend difference in a temp so MWCC contracts it as
-// `diff * 0.25f + old` rather than `0.25f * diff + old`; using the same temp for the
-// 190.0f scale also makes the allocator colour that value f5, as retail does. The natural
-// form is under #else.
 void winItemMain2(WindowWork* work) {
-#ifdef MUST_MATCH
-    f32 t;
+    WW_F32(work, 0x22C) = 190.0f * (f32)WW_S32(work, 0x21C);
+    WW_F32(work, 0x224) += (WW_F32(work, 0x22C) - WW_F32(work, 0x224)) / 4.0f;
+    WW_F32(work, 0x230) = 190.0f * (f32)WW_S32(work, 0x220);
+    WW_F32(work, 0x228) += (WW_F32(work, 0x230) - WW_F32(work, 0x228)) / 4.0f;
 
-    t = float_190_8041d544;
-    WW_F32(work, 0x22C) = t * (f32)WW_S32(work, 0x21C);
-    t = WW_F32(work, 0x22C) - WW_F32(work, 0x224);
-    WW_F32(work, 0x224) = t * float_0p25_8041d548 + WW_F32(work, 0x224);
-
-    t = float_190_8041d544;
-    WW_F32(work, 0x230) = t * (f32)WW_S32(work, 0x220);
-    t = WW_F32(work, 0x230) - WW_F32(work, 0x228);
-    WW_F32(work, 0x228) = t * float_0p25_8041d548 + WW_F32(work, 0x228);
-#else
-    WW_F32(work, 0x22C) = float_190_8041d544 * (f32)WW_S32(work, 0x21C);
-    WW_F32(work, 0x224) += (WW_F32(work, 0x22C) - WW_F32(work, 0x224)) * float_0p25_8041d548;
-
-    WW_F32(work, 0x230) = float_190_8041d544 * (f32)WW_S32(work, 0x220);
-    WW_F32(work, 0x228) += (WW_F32(work, 0x230) - WW_F32(work, 0x228)) * float_0p25_8041d548;
-#endif
-
-    WW_F32(work, 0x234) += (WW_F32(work, 0x238) - WW_F32(work, 0x234)) / float_6_8041d54c;
-    WW_F32(work, 0x23C) += (WW_F32(work, 0x240) - WW_F32(work, 0x23C)) / float_6_8041d54c;
-    WW_F32(work, 0x244) += (WW_F32(work, 0x248) - WW_F32(work, 0x244)) / float_6_8041d54c;
-    WW_F32(work, 0x24C) += (WW_F32(work, 0x250) - WW_F32(work, 0x24C)) / float_6_8041d54c;
+    WW_F32(work, 0x234) += (WW_F32(work, 0x238) - WW_F32(work, 0x234)) / 6.0f;
+    WW_F32(work, 0x23C) += (WW_F32(work, 0x240) - WW_F32(work, 0x23C)) / 6.0f;
+    WW_F32(work, 0x244) += (WW_F32(work, 0x248) - WW_F32(work, 0x244)) / 6.0f;
+    WW_F32(work, 0x24C) += (WW_F32(work, 0x250) - WW_F32(work, 0x24C)) / 6.0f;
 
     WW_F32(work, 0x264) = (f32)(WW_S32(work, 0x25C) * 200);
-#ifdef MUST_MATCH
-    t = WW_F32(work, 0x264) - WW_F32(work, 0x260);
-    WW_F32(work, 0x260) += t * float_0p25_8041d548;
-#else
-    WW_F32(work, 0x260) += (WW_F32(work, 0x264) - WW_F32(work, 0x260)) * float_0p25_8041d548;
-#endif
+    WW_F32(work, 0x260) += (WW_F32(work, 0x264) - WW_F32(work, 0x260)) / 4.0f;
 }
 
-#ifdef MUST_MATCH
-// Match shape: building the modified Vec in an inline that returns it (rather than a local
-// `Vec translate` per branch) puts the caller's translate temp in the original's stack slot.
-// The plain local form under #else is the natural code and scores 96.78%.
-static inline Vec winItemMkVec(Vec base, f32 x, f32 y) {
-    base.x = x;
-    base.y = y;
-    return base;
-}
-#endif
 
-// The original reaches the six Vecs and the int->float double through one base register
-// (r31 = str_802F4CE8) plus displacements; defining win_item's .rodata in this unit is what
-// makes MWCC pool them that way. The body reads the work pointer through a local `w` whose
-// identity cast keeps it a separate web (the original colours it and the loop counter
-// independently).
-// NONMATCHING (99.73%): only the FP scratch colouring in the a/b/c block differs (the
-// float_105 temp is f1 where the original has f0, and float_215/float_4 swap with it), plus
-// one `add` operand order in the x/y address (`work + ofs` in the original).
-void winItemDisp(CameraId camId, WindowWork* work, s32 idx) {
-    GXColor color = dat_8041d468;
-    s32 ofs;
-#ifdef MUST_MATCH
-    // The original keeps a distinct callee-saved web for the work pointer; the identity
-    // cast stops the optimizer from folding it back into the parameter.
-    WindowWork* w = (WindowWork*)((u8*)work + 0);
-#else
-    WindowWork* w = work;
-#endif
+// Draws the item window frame and the two tabs, then the list.
+void winItemDisp(CameraId camId, void* param, s32 idx) {
+    WindowWork* w = param;
     f32 c;
     f32 b;
     f32 a;
-    f32 x = WW_F32(w, idx * 0x14 + 0xC4);
-    f32 y = WW_F32(w, idx * 0x14 + 0xC8);
-    f32 k105, k215, k4;
-
+    f32 x = WW_F32((u8*)w + idx * 0x14, 0xC4);
+    f32 y = WW_F32((u8*)w + idx * 0x14, 0xC8);
+    GXColor color = dat_8041d468;
     s32 i;
 
     winBgGX(w, 2, x, y);
-    winKirinukiGX(w, 0, x - float_150_8041d52c, float_20_8041d4e8 + (float_120_8041d530 + y), float_415_8041d534,
-                  float_210_8041d538);
+    winKirinukiGX(w, 0, x - 150.f, 20.f + (120.f + y), 415.0f,
+                  210.f);
 
-    k215 = float_215_8041d53c;
-    k105 = float_105_8041d4fc;
-    k4 = float_4_8041d540;
-    a = k105 + y;
-    b = k4 + a;
-    c = (x - k215) - k4;
+    a = 105.0f + y;
+    c = (x - 215.0f) - 4.0f;
+    b = 4.0f + a;
 
-    for (i = 0, ofs = 0; i < 2; i++, ofs += 0x28) {
+    for (i = 0; i < 2; i++) {
         if (i == WW_S32(w, 0x210)) {
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)w + 0x28) + 0xA0));
-#ifdef MUST_MATCH
-            winTexSet(0xB3, winItemMkVec(vec3_802f5288, x - float_215_8041d53c, float_20_8041d4e8 + (a - (f32)ofs)), vec3_802f5294, dat_8041d46c);
-#else
-            {
-                Vec translate = vec3_802f5288;
-
-                translate.x = x - float_215_8041d53c;
-                translate.y = float_20_8041d4e8 + (a - (f32)ofs);
-                winTexSet(0xB3, translate, vec3_802f5294, dat_8041d46c);
-            }
-#endif
+            winTexSet(0xB3, (Vec){x - 215.0f, 20.0f + (a - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, dat_8041d46c);
             winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)w + 0x28) + 0xA0));
-#ifdef MUST_MATCH
-            winTexSet_x2(i + 0x18, 0xB3, winItemMkVec(vec3_802f52a0, c, float_20_8041d4e8 + (b - (f32)ofs)), vec3_802f52ac, color);
-#else
-            {
-                Vec translate = vec3_802f52a0;
-
-                translate.x = c;
-                translate.y = float_20_8041d4e8 + (b - (f32)ofs);
-                winTexSet_x2(i + 0x18, 0xB3, translate, vec3_802f52ac, color);
-            }
-#endif
+            winTexSet_x2(i + 0x18, 0xB3, (Vec){c, 20.0f + (b - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, color);
         } else {
             winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)w + 0x28) + 0xA0));
-#ifdef MUST_MATCH
-            winTexSet_x2(i + 0x18, 0xB3, winItemMkVec(vec3_802f52b8, x - float_215_8041d53c, float_20_8041d4e8 + (a - (f32)ofs)), vec3_802f52c4, dat_8041d470);
-#else
-            {
-                Vec translate = vec3_802f52b8;
-
-                translate.x = x - float_215_8041d53c;
-                translate.y = float_20_8041d4e8 + (a - (f32)ofs);
-                winTexSet_x2(i + 0x18, 0xB3, translate, vec3_802f52c4, dat_8041d470);
-            }
-#endif
+            winTexSet_x2(i + 0x18, 0xB3, (Vec){x - 215.0f, 20.0f + (a - (f32)(i * 0x28)), 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
+                         dat_8041d470);
         }
     }
 
     item_disp(w, x, y);
 }
 
-// Draws the item window: the held/key-item grid, the selected item's large
-// icon and name, the overflow arrows and the sort label. The two int->float pool
-// doubles come out as anonymous @NNN@ instead of double_to_int_802f55e0 /
-// double_to_int_mask_802f55d8 (defining them makes MWCC emit fresh anonymous copies).
-// The .rodata prefix is now defined in this file, so the Vec/GXColor strings below address
-// through the base register; score went 68.53% -> 83.60% from that alone.
-// 87.03%: the FP register colours now match (f27=base, f28=float_20, f29=double_to_int,
-// f25=item y, f26=row base) via the `twenty` local and the f26/f25 declaration order, and
-// each winIconSet gets a by-value GXColor copy like the original.
-// 92.29%: building the by-value/pointed Vec arguments through the `winItemMkVec` inline
-// (returning the modified Vec) instead of a source Vec plus assignment lands several of the
-// argument copies in the original's stack slots - the loop's winIconSet translate copy, the
-// loop's winFontSetPitch translate, the final winFontSet translate, and the two overflow
-// winTexSet translate arguments.
-// 92.29% -> 93.16%: writing item_disp's two sort-tag lookups as the inline literal
-// "msg_menu_sort_narabikae" (instead of the extern str_802F55F4) pools that string at 0x90c,
-// between itemUseDisp's name_mario and winItemMain's three strings, which is what makes
-// winItemMain exactly 100%. That pooling rearranges item_disp's own register allocation, so
-// the remaining wins came from re-shaping the loop: swapping the `parity`/`half` declaration
-// order (the original computes parity first), writing the grey flag as `!colored` rather than
-// `colored == 0` (MWCC emits a different cntlzw shape), and putting `i++` before `entry += 2`
-// in the for-increment. The frame is now the original's 0x250. Still differs in the integer
-// colours (ours keeps `work` in r23, the original r31, and the rest rotate) and the loop
-// block's stack-slot order (the winIconSet/winFontSetPitch argument copies and the `scale`
-// source land at different offsets. 94.75% -> 95.27%: a second `white` local
-// (whiteOverflow, MUST_MATCH) reproduces the original's third spill and gets the frame to
-// the original's 0x250; `white` now homes at r1+0x8 with copies at 0x2c (overflow) and
-// 0x38 (loop), as the original does). 95.27% -> 95.29%: declaring `entry` before `i` and putting
-// `entry += 2` before `i++` in the for-increment matches the original's two `addi` order and removes
-// two operand diffs (the remaining 228 are the allocator's colours and stack offsets).
-// NONMATCHING (95.41%): integer register colours and the loop's stack-slot order; `work` spills to
-// a volatile register because the shared i2f `0x4330` temp colours first (target keeps it in r30).
+// Draws the item list (two columns, scrolled per tab), the scroll arrows and the sort caption.
 void item_disp(WindowWork* work, f32 x, f32 y) {
-    GXColor white = dat_8041d474;
+    GXColor iconColor;
     GXColor dark = dat_8041d478;
     GXColor gray = dat_8041d47c;
-#ifdef MUST_MATCH
-    // Match shape: the original spills `white` three times (home, one copy for the two
-    // overflow winTexSet colour arguments and one for the loop's icon colour). A second
-    // local initialised straight from the palette object reproduces that spill and the
-    // original's -0x250 frame; without it the frame is -0x240 and the score is 94.75%.
-    GXColor whiteOverflow = dat_8041d474;
-#endif
-    f32 twenty;
+    GXColor white;
     f32 base;
-    f32 f22;
-    f32 f26;
-    f32 f25;
+    f32 drawY;
+    f32 rowY;
+    f32 scroll;
     s32 half;
     u8* entry;
     s32 grayFlag;
@@ -1253,8 +978,10 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     s32 parity;
     s32 i;
     s32 count;
-    s32 colored;
+    s32 colX;
 
+    white = dat_8041d474;
+    iconColor = dat_8041d474;
     if (WW_S32(work, 0x210) == 0) {
         count = pouchGetHaveItemCnt();
     } else {
@@ -1262,8 +989,7 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
     }
 
     GXSetScissor(0, 0x6D, 0x260, 0xC0);
-    twenty = float_20_8041d4e8;
-    base = float_100_8041d4e4 + y;
+    base = 100.0f + y;
 
     for (i = 0, entry = (u8*)work; i < count; entry += 2, i++) {
         parity = i % 2;
@@ -1274,16 +1000,14 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         } else {
             item = *(s16*)(entry + 0x2E8);
         }
-        f25 = *(f32*)((u8*)work + WW_S32(work, 0x210) * 4 + 0x224);
+        scroll = *(f32*)((u8*)work + WW_S32(work, 0x210) * 4 + 0x224);
 
-        colored = (WW_S32(work, 0x210) != 0) || (itemDataTable[item].usable_locations & 4);
-        grayFlag = !colored;
-        f26 = base - (f32)(half * 0x26);
-        f22 = f25 + (twenty + (f26 - float_10_8041d4ec));
-        if (f22 > float_240_8041d4f0) {
+        grayFlag = ((WW_S32(work, 0x210) != 0) || (itemDataTable[item].usable_locations & 4)) == 0;
+        drawY = scroll + (20.0f + ((rowY = base - (f32)(half * 0x26)) - 10.0f));
+        if (drawY > 240.0f) {
             continue;
         }
-        if (f22 < float_neg240_8041d4f4) {
+        if (drawY < -240.0f) {
             break;
         }
 
@@ -1292,222 +1016,72 @@ void item_disp(WindowWork* work, f32 x, f32 y) {
         } else {
             winIconInit();
         }
-
-        {
-            GXColor iconColor = white;
-            Vec scale;
-#ifdef MUST_MATCH
-            // The original calls winIconSet with by-value Vecs (one copy per struct);
-            // the shared header declares Vec* (see report), so copy them here to match.
-            Vec tcopy;
-#endif
-#ifndef MUST_MATCH
-            Vec translate = vec3_802f52d0;
-#endif
-
-            if (WW_S32(work, 0x210) == 0) {
-                scale = vec3_802f52dc;
-            } else {
-                scale = vec3_802f52e8;
-            }
-
-#ifdef MUST_MATCH
-            tcopy = winItemMkVec(vec3_802f52d0, (x - float_125_8041d4f8) + (f32)(parity * 0xCC), f22);
-            winIconSet(*(u16*)&itemDataTable[item].icon_id, &tcopy, &scale, &iconColor);
-#else
-            translate.x = (x - float_125_8041d4f8) + (f32)(parity * 0xCC);
-            translate.y = f22;
-            winIconSet(*(u16*)&itemDataTable[item].icon_id, &translate, &scale, &iconColor);
-#endif
-        }
+        winIconSetV(*(u16*)&itemDataTable[item].icon_id, (Vec){(x - 125.0f) + (f32)(colX = parity * 0xCC), drawY, 0.0f},
+                    WW_S32(work, 0x210) == 0 ? (Vec){0.8f, 0.8f, 0.8f} : (Vec){0.6666667f, 0.6666667f, 0.6666667f},
+                    iconColor);
         winFontInit();
-        {
-            GXColor color = grayFlag ? gray : dark;
-            Vec scale = vec3_802f5300;
-#ifdef MUST_MATCH
-            Vec translate = winItemMkVec(vec3_802f52f4, (x - float_105_8041d4fc) + (f32)(parity * 0xCC), f25 + (float_20_8041d4e8 + f26));
-#else
-            Vec translate = vec3_802f52f4;
-#endif
-
-#ifndef MUST_MATCH
-            translate.x = (x - float_105_8041d4fc) + (f32)(parity * 0xCC);
-            translate.y = f25 + (float_20_8041d4e8 + f26);
-#endif
-            winFontSetPitch(&translate, scale, &color, float_20_8041d4e8,
-                            msgSearch(itemDataTable[item].name));
-        }
+        winFontSetPitchV((Vec){(x - 105.0f) + (f32)colX, scroll + (20.0f + rowY), 0.0f},
+                         (Vec){0.9f, 0.9f, 0.9f}, grayFlag ? gray : dark, 20.0f, msgSearch(itemDataTable[item].name));
     }
 
     GXSetScissor(0, 0, 0x260, 0x1E0);
+    if (work->itemScrollRow[WW_S32(work, 0x210)] > 0) {
+        f32 arrowX;
 
-    {
-        if (WW_S32(work, 0x21C + WW_S32(work, 0x210) * 4) > 0) {
-            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-            f22 = float_250_8041d500 + x;
-            {
-#ifdef MUST_MATCH
-                Vec scale = vec3_802f5318;
-
-                winTexSet(0x17, winItemMkVec(vec3_802f530c, f22, float_20_8041d4e8 + (float_18_8041d504 + (float_110_8041d508 + y))), scale, whiteOverflow);
-#else
-                Vec translate = vec3_802f530c;
-                Vec scale = vec3_802f5318;
-
-                translate.x = f22;
-                translate.y = float_20_8041d4e8 + (float_18_8041d504 + (float_110_8041d508 + y));
-                winTexSet(0x17, translate, scale, white);
-#endif
-            }
-            winIconInit();
-            {
-                Vec translate = vec3_802f5324;
-                Vec scale = vec3_802f5330;
-#ifdef MUST_MATCH
-                Vec tcopy;
-                GXColor ccopy;
-#endif
-
-                translate.x = f22;
-                translate.y = float_20_8041d4e8 + (float_113_8041d50c + y);
-#ifdef MUST_MATCH
-                tcopy = translate;
-                ccopy = white;
-                winIconSet(0x7E, &tcopy, &scale, &ccopy);
-#else
-                winIconSet(0x7E, &translate, &scale, &white);
-#endif
-            }
-        }
-        if (count > WW_S32(work, 0x21C + WW_S32(work, 0x210) * 4) * 10 + 10) {
-            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-            f22 = float_250_8041d500 + x;
-            {
-#ifdef MUST_MATCH
-                Vec scale = vec3_802f5348;
-
-                winTexSet(0x17, winItemMkVec(vec3_802f533c, f22, float_20_8041d4e8 + ((y - float_90_8041d510) - float_15_8041d514)), scale, whiteOverflow);
-#else
-                Vec translate = vec3_802f533c;
-                Vec scale = vec3_802f5348;
-
-                translate.x = f22;
-                translate.y = float_20_8041d4e8 + ((y - float_90_8041d510) - float_15_8041d514);
-                winTexSet(0x17, translate, scale, white);
-#endif
-            }
-            winIconInit();
-            {
-                Vec translate = vec3_802f5354;
-                Vec scale = vec3_802f5360;
-#ifdef MUST_MATCH
-                Vec tcopy;
-                GXColor ccopy;
-#endif
-
-                translate.x = f22;
-                translate.y = float_20_8041d4e8 + (y - float_90_8041d510);
-#ifdef MUST_MATCH
-                tcopy = translate;
-                ccopy = white;
-                winIconSet(0x80, &tcopy, &scale, &ccopy);
-#else
-                winIconSet(0x80, &translate, &scale, &white);
-#endif
-            }
-        }
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        arrowX = 250.0f + x;
+        winTexSet(0x17, (Vec){arrowX, 20.0f + (18.0f + (110.0f + y)), 0.0f}, (Vec){-1.0f, -1.0f, -1.0f}, white);
+        winIconInit();
+        winIconSetV(0x7E, (Vec){arrowX, 20.0f + (113.0f + y), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
+    if (count > work->itemScrollRow[WW_S32(work, 0x210)] * 10 + 10) {
+        f32 arrowX;
 
+        winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        arrowX = 250.0f + x;
+        winTexSet(0x17, (Vec){arrowX, 20.0f + ((y - 90.0f) - 15.0f), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
+        winIconInit();
+        winIconSetV(0x80, (Vec){arrowX, 20.0f + (y - 90.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
+    }
     {
-        const char* msg = msgSearch("msg_menu_sort_narabikae");
-        f32 w = float_0p7_8041d518 * (f32)FontGetMessageWidth(msg);
+        f32 w = 0.7f * (f32)FontGetMessageWidth(msgSearch("msg_menu_sort_narabikae"));
+        f32 sortX;
 
         winFontInit();
-        f22 = x + (float_220_8041d51c - w);
-        {
-#ifdef MUST_MATCH
-            Vec translate = winItemMkVec(vec3_802f536c, f22, float_20_8041d4e8 + ((y - float_92_8041d520) - float_10_8041d4ec));
-#else
-            Vec translate = vec3_802f536c;
-#endif
-            Vec scale = vec3_802f5378;
-            GXColor dcopy = dark;
-
-#ifndef MUST_MATCH
-            translate.x = f22;
-            translate.y = float_20_8041d4e8 + ((y - float_92_8041d520) - float_10_8041d4ec);
-#endif
-            winFontSet(&translate, &scale, &dcopy, msgSearch("msg_menu_sort_narabikae"));
-        }
+        sortX = x + (220.0f - w);
+        winFontSetV((Vec){sortX, 20.0f + ((y - 92.0f) - 10.0f), 0.0f}, (Vec){0.7f, 0.7f, 0.7f}, dark,
+                    msgSearch("msg_menu_sort_narabikae"));
         winIconInit();
-        {
-            Vec translate = vec3_802f5384;
-            Vec scale = vec3_802f5390;
-#ifdef MUST_MATCH
-            Vec tcopy;
-            GXColor ccopy;
-#endif
-
-            translate.x = f22 - float_30_8041d524;
-            translate.y = float_20_8041d4e8 + ((y - float_100_8041d4e4) - float_10_8041d4ec);
-#ifdef MUST_MATCH
-            tcopy = translate;
-            ccopy = white;
-            winIconSet(0x217, &tcopy, &scale, &ccopy);
-#else
-            winIconSet(0x217, &translate, &scale, &white);
-#endif
-        }
+        winIconSetV(0x217, (Vec){sortX - 30.0f, 20.0f + ((y - 100.0f) - 10.0f), 0.0f}, (Vec){0.6f, 0.6f, 0.6f}, white);
     }
 
-    if (WW_F32(work, 0x234) < float_320_8041d528 && WW_F32(work, 0x23C) > float_neg240_8041d4f4) {
+    if (WW_F32(work, 0x234) < 320.0f && WW_F32(work, 0x23C) > -240.0f) {
         winBookGX(work, 0, WW_F32(work, 0x234), WW_F32(work, 0x23C));
     }
 }
 
-// Draws the item/submenu window: the selected item's icon, name and description, the
-// party members' names and HP/FP, the item grid and the window's background textures.
-// Complete and logically correct. The original walks the party list with a running pointer (the
-// target increments r27 by 4 in the loop header and reads `-4(r27)`), so the else branch keeps
-// `lp[-1]` and the loop increments `lp++`. Every call, constant, branch and loop shape matches.
-// The object is now the target's 5284 B (was 5404 B). `winTexSet` (`include/win/win_main.h:44`) is
-// declared by value, but retail passes `scale`/`color` in their own home slot (the arg address
-// equals the local) and copies only the rebuilt `translate`; MWCC materialises a fresh outgoing
-// copy per by-value `Vec`/`GXColor` argument, which was 30 extra instructions. Calling through a
-// pointer-signature cast reproduces retail's arg addresses without editing the header; the original
-// prototype was almost certainly `void winTexSet(u32, Vec*, Vec*, GXColor*)`
-// The frame and every stack slot now match (per-block `tcopy`/`translate`/`scale` declarations in
-// the original's order, a 10-entry party list); what remains is callee-saved colouring: `i` and
-// `ofs` land in r28/r25 where retail has r25/r28.
-// The `(*(s32(*)(void))pouchGetFP)()` cast suppresses an `extsh` the `s16` header prototype
-// would emit before the variadic winFontSetR; retail passes pouchGetFP's sign-extended r3
-// straight through (`mr r7, r3`), and winItemMain already calls it through this cast.
-// NONMATCHING (99.73%): the `i`/`ofs` register colours.
+// Draws the use-item target window: Mario's HP/FP rows, then one HP row per partner (the current
+// partner first), and the window's background textures. The `(*(s32(*)(void))pouchGetFP)()` cast
+// passes pouchGetFP's result on without the `extsh` its `s16` prototype would add (winItemMain calls
+// it the same way).
 void itemUseDisp(WinMgrEntry* entry) {
     WindowWork* work = winGetPtr();
     WindowPartyDt* list[10];
-    WindowPartyDt** lp;
     WindowPartyDt* party;
     GXColor color = dat_8041d480;
-    GXColor iconColor = dat_8041d484;
-    GXColor white = dat_8041d484;
-    s32 ofs2;
-    s32 ofs;
+    GXColor iconColor;
+    GXColor white;
     s32 i;
     s32 sel2e0;
     f32 f31;
-    f32 w;
     const char* name;
     s32 n;
     s32 gray;
     s32 n2;
-    Vec tcopy;
 
-    if (winMgrAction(WW_S32(work, 0x1208))) {
-        return;
-    }
-
-    {
+    white = dat_8041d484;
+    iconColor = dat_8041d484;
+    if (!winMgrAction(WW_S32(work, 0x1208))) {
         s32 partyId;
 
         partyId = !marioBgmodeChk() ? marioGetParty() : marioGetPtr()->prevPartyMemberId[0];
@@ -1525,432 +1099,138 @@ void itemUseDisp(WinMgrEntry* entry) {
             }
         }
 
-    }
-
-    for (i = 0, lp = list, ofs = i, ofs2 = i; i < WW_S32(work, 0x1E0) + 1; i++, lp++, ofs2 += 0x1C, ofs += 0x16) {
-        if (i == 0) {
-            f31 = float_0_8041d4ac;
-        } else if (i == 1) {
-            f31 = float_neg16_8041d4b0;
-        } else {
-            f31 = float_neg28_8041d4b4;
-        }
-
-        sel2e0 = WW_S32(work, 0x2E0);
-        gray = 0;
-        if (sel2e0 != 0) {
-            if (i == WW_S32(work, 0x2DC)) {
-                color = dat_8041d488;
+        for (i = 0; i < WW_S32(work, 0x1E0) + 1; i++) {
+            if (i == 0) {
+                f31 = 0.0f;
+            } else if (i == 1) {
+                f31 = -16.0f;
             } else {
-                color = dat_8041d48c;
-                gray = 1;
+                f31 = -28.0f;
             }
-        }
 
-        if (i == 0) {
+            sel2e0 = WW_S32(work, 0x2E0);
+            gray = 0;
+            if (sel2e0 != 0) {
+                if (i == WW_S32(work, 0x2DC)) {
+                    color = dat_8041d488;
+                } else {
+                    color = dat_8041d48c;
+                    gray = 1;
+                }
+            }
 
-            if (sel2e0 % 20 > 15 && i == WW_S32(work, 0x2DC)) {
-                continue;
-            }
-            if (gray) {
-                winIconGrayInit();
-            } else {
-                winIconInit();
-            }
-            {
-                GXColor c = iconColor;
-                Vec tcopy;
-                Vec translate = vec3_802f539c;
-                Vec scale = vec3_802f53a8;
-                translate.x = (f32)(entry->field_0x18 + 0x1E);
-                translate.y = (f32)(entry->field_0x1C - 0x14 - ofs);
-#ifdef MUST_MATCH
-                tcopy = translate;
-                winIconSet(0x19E, &tcopy, &scale, &c);
-#else
-                winIconSet(0x19E, &translate, &scale, &c);
-#endif
-            }
-            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-            GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
-            GXSetTevAlphaIn(0, 7, 1, 4, 7);
-            {
-                GXColor c = dat_8041d490;
-                Vec tcopy;
-                Vec translate;
-                Vec scale;
-                f32 p;
-                scale = vec3_802f53c0;
-                translate = vec3_802f53b4;
-                w = (f32)FontGetMessageWidth(str_8041D4BC);
-                p = float_0p9_8041d4b8 * w;
-                translate.x = p * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
-                translate.y = (f32)(entry->field_0x1C - 0x13 - ofs);
-#ifdef MUST_MATCH
-                tcopy = translate;
-                ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0xAF, &tcopy, &scale, &c);
-#else
-                winTexSet(0xAF, translate, scale, c);
-#endif
-            }
-            {
-                GXColor c = dat_8041d494;
-                Vec tcopy;
-                Vec translate;
-                Vec scale;
-                f32 p;
-                scale = vec3_802f53d8;
-                translate = vec3_802f53cc;
-                w = (f32)FontGetMessageWidth(str_8041D4BC);
-                p = float_0p9_8041d4b8 * w;
-                translate.x = p * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
-                translate.y = (f32)(entry->field_0x1C - 0x13 - (i + 1) * 0x16);
-#ifdef MUST_MATCH
-                tcopy = translate;
-                ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0xAF, &tcopy, &scale, &c);
-#else
-                winTexSet(0xAF, translate, scale, c);
-#endif
-            }
-            winFontInit();
-            {
-                GXColor c = color;
-                Vec tcopy;
-                Vec translate = vec3_802f53e4;
-                Vec scale = vec3_802f53f0;
-                translate.x = (f32)(entry->field_0x18 + 0x32);
-                translate.y = (f32)(entry->field_0x1C - 8 - ofs);
-                tcopy = translate;
-                winFontSet(&tcopy, &scale, &c, msgSearch("name_mario"));
-            }
-            {
-                GXColor c = color;
-                Vec tcopy;
-                Vec translate = vec3_802f53fc;
-                Vec scale = vec3_802f5408;
-
-                translate.x = (f32)(entry->field_0x18 + 0xDC);
-                translate.y = (f32)(entry->field_0x1C - 8 - ofs);
-                tcopy = translate;
-                winFontSet(&tcopy, &scale, &c, str_8041D4BC);
-            }
-            {
-                Vec tcopy;
-                Vec translate = vec3_802f5414;
-                Vec scale;
-                GXColor c = color;
-                scale = vec3_802f5420;
-                translate.x = (f32)(entry->field_0x18 + 0xF5);
-                translate.y = (f32)(entry->field_0x1C - 8 - ofs);
-                tcopy = translate;
-                winFontSetR(&tcopy, &scale, &c, str_8041D4C4, pouchGetHP());
-            }
-            {
-                GXColor c = color;
-                Vec tcopy;
-                Vec translate = vec3_802f542c;
-                Vec scale = vec3_802f5438;
-
-                translate.x = (f32)(entry->field_0x18 + 0x10B);
-                translate.y = (f32)(entry->field_0x1C - 8 - ofs);
-                tcopy = translate;
-                winFontSetR(&tcopy, &scale, &c, str_8041D4C8);
-            }
-            {
-                Vec tcopy;
-                Vec translate = vec3_802f5444;
-                Vec scale;
-                GXColor c = color;
-                scale = vec3_802f5450;
-                translate.x = (f32)(entry->field_0x18 + 0x136);
-                translate.y = (f32)(entry->field_0x1C - 0xA - ofs);
-                tcopy = translate;
-                winFontSet(&tcopy, &scale, &c, str_8041D4C4, pouchGetMaxHP());
-            }
-            if (itemDataTable[WW_S32(work, 0x2D4)].fp_restored != 0) {
-                if (WW_S32(work, 0x2E0) % 20 > 15) {
+            if (i == 0) {
+                if (sel2e0 % 20 > 15 && i == WW_S32(work, 0x2DC)) {
                     continue;
                 }
-                color = dat_8041d498;
-            }
-            winFontInit();
-            {
-                Vec tcopy;
-                Vec translate = vec3_802f545c;
-                Vec scale;
-                GXColor c = color;
-                scale = vec3_802f5468;
-                translate.x = (f32)(entry->field_0x18 + 0xDC);
-                translate.y = (f32)(entry->field_0x1C - 8 - (i + 1) * 0x16);
-                tcopy = translate;
-                winFontSet(&tcopy, &scale, &c, str_8041D4CC);
-            }
-            {
-                GXColor c = color;
-                Vec tcopy;
-                Vec translate = vec3_802f5474;
-                Vec scale = vec3_802f5480;
-
-                translate.x = (f32)(entry->field_0x18 + 0xF5);
-                translate.y = (f32)(entry->field_0x1C - 8 - (i + 1) * 0x16);
-                tcopy = translate;
-                winFontSetR(&tcopy, &scale, &c, str_8041D4C4, (*(s32(*)(void))pouchGetFP)());
-            }
-            {
-                Vec tcopy;
-                Vec translate = vec3_802f548c;
-                Vec scale;
-                GXColor c = color;
-                scale = vec3_802f5498;
-                translate.x = (f32)(entry->field_0x18 + 0x10B);
-                translate.y = (f32)(entry->field_0x1C - 8 - (i + 1) * 0x16);
-                tcopy = translate;
-                winFontSetR(&tcopy, &scale, &c, str_8041D4C8);
-            }
-            {
-                GXColor c = color;
-                Vec tcopy;
-                Vec translate = vec3_802f54a4;
-                Vec scale = vec3_802f54b0;
-
-                translate.x = (f32)(entry->field_0x18 + 0x136);
-                translate.y = (f32)(entry->field_0x1C - 0xA - (i + 1) * 0x16);
-                tcopy = translate;
-                winFontSet(&tcopy, &scale, &c, str_8041D4C4, pouchGetMaxFP());
-            }
-        } else {
-
-
-
-            if (lp[-1]->field_0x0 != 4) {
-                name = msgSearch(lp[-1]->field_0x8);
-            } else {
-                name = pouchGetYoshiName();
-            }
-            if (WW_S32(work, 0x2E0) % 20 > 15 && i == WW_S32(work, 0x2DC)) {
-                continue;
-            }
-            winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-            GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
-            GXSetTevAlphaIn(0, 7, 1, 4, 7);
-            {
-                GXColor c = dat_8041d49c;
-                Vec tcopy;
-                Vec translate;
-                Vec scale;
-                f32 p;
-                scale = vec3_802f54c8;
-                translate = vec3_802f54bc;
-                w = (f32)FontGetMessageWidth(str_8041D4BC);
-                p = float_0p9_8041d4b8 * w;
-                translate.x = p * float_0p5_8041d4a8 + (f32)(entry->field_0x18 + 0xDC);
-                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2)) - float_14_8041d4d4;
-#ifdef MUST_MATCH
-                tcopy = translate;
-                ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0xAF, &tcopy, &scale, &c);
-#else
-                winTexSet(0xAF, translate, scale, c);
-#endif
-            }
-            if (gray) {
-                winIconGrayInit();
-            } else {
-                winIconInit();
-            }
-            {
-                GXColor c = iconColor;
-                Vec tcopy;
-                Vec translate = vec3_802f54d4;
-                Vec scale = vec3_802f54e0;
-                translate.x = (f32)(entry->field_0x18 + 0x1E);
-                translate.y = f31 + ((f32)(entry->field_0x1C - 0x14 - ofs2));
-#ifdef MUST_MATCH
-                tcopy = translate;
-                winIconSet(lp[-1]->field_0x4, &tcopy, &scale, &c);
-#else
-                winIconSet(lp[-1]->field_0x4, &translate, &scale, &c);
-#endif
-            }
-            winFontInit();
-            {
-                GXColor c = color;
-                Vec tcopy;
-                Vec translate;
-                Vec cscale;
-                Vec scale = vec3_802f54f8;
-                GXColor* pc = &c;
-                w = (f32)FontGetMessageWidth(name);
-                if (w < float_160_8041d4dc) {
-                    scale.x = float_1_8041d4d8;
+                if (gray) {
+                    winIconGrayInit();
                 } else {
-                    scale.x = float_160_8041d4dc / (f32)FontGetMessageWidth(name);
+                    winIconInit();
                 }
-                cscale = scale;
-                translate = vec3_802f54ec;
-                translate.x = (f32)(entry->field_0x18 + 0x32);
-                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2));
-                tcopy = translate;
-                winFontSet(&tcopy, &cscale, pc, name);
-            }
-            {
-                GXColor c = color;
-                Vec tcopy;
-                Vec translate = vec3_802f5504;
-                Vec scale = vec3_802f5510;
-
-                translate.x = (f32)(entry->field_0x18 + 0xDC);
-                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2));
-                tcopy = translate;
-                winFontSet(&tcopy, &scale, &c, str_8041D4BC);
-            }
-            {
-                Vec tcopy;
-                Vec translate = vec3_802f551c;
-                Vec scale;
-                GXColor c = color;
-                scale = vec3_802f5528;
-                translate.x = (f32)(entry->field_0x18 + 0xF5);
-                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2));
-                tcopy = translate;
-                winFontSetR(&tcopy, &scale, &c, str_8041D4C4, pouchGetPtr()->partyData[lp[-1]->field_0x0].currentHP);
-            }
-            {
-                GXColor c = color;
-                Vec tcopy;
-                Vec translate = vec3_802f5534;
-                Vec scale = vec3_802f5540;
-
-                translate.x = (f32)(entry->field_0x18 + 0x10B);
-                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2));
-                tcopy = translate;
-                winFontSetR(&tcopy, &scale, &c, str_8041D4C8);
-            }
-            {
-                GXColor c = color;
-                Vec tcopy;
-                Vec translate = vec3_802f554c;
-                Vec scale = vec3_802f5558;
-
-                translate.x = (f32)(entry->field_0x18 + 0x136);
-                translate.y = f31 + ((f32)(entry->field_0x1C - 8 - ofs2)) - float_2_8041d4e0;
-                tcopy = translate;
-                winFontSet(&tcopy, &scale, &c, str_8041D4C4, pouchGetPtr()->partyData[lp[-1]->field_0x0].maximumHP);
+                winIconSetV(0x19E, (Vec){(f32)(entry->field_0x18 + 0x1E), (f32)(entry->field_0x1C - 0x14 - i * 0x16), 0.0f},
+                            (Vec){0.65f, 0.65f, 0.65f}, iconColor);
+                winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+                GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
+                GXSetTevAlphaIn(0, 7, 1, 4, 7);
+                winTexSet(0xAF,
+                          (Vec){0.9f * (f32)FontGetMessageWidth("\202g\202o") / 2 + (f32)(entry->field_0x18 + 0xDC),
+                                (f32)(entry->field_0x1C - 0x13 - i * 0x16), 0.0f},
+                          (Vec){1.0f, 1.0f, 1.0f}, dat_8041d490);
+                winTexSet(0xAF,
+                          (Vec){0.9f * (f32)FontGetMessageWidth("\202g\202o") / 2 + (f32)(entry->field_0x18 + 0xDC),
+                                (f32)(entry->field_0x1C - 0x13 - (i + 1) * 0x16), 0.0f},
+                          (Vec){1.0f, 1.0f, 1.0f}, dat_8041d494);
+                winFontInit();
+                winFontSetV((Vec){(f32)(entry->field_0x18 + 0x32), (f32)(entry->field_0x1C - 8 - i * 0x16), 0.0f},
+                            (Vec){1.0f, 1.0f, 1.0f}, color, msgSearch("name_mario"));
+                winFontSetV((Vec){(f32)(entry->field_0x18 + 0xDC), (f32)(entry->field_0x1C - 8 - i * 0x16), 0.0f},
+                            (Vec){0.9f, 0.9f, 0.9f}, color, "\202g\202o");
+                winFontSetRV((Vec){(f32)(entry->field_0x18 + 0xF5), (f32)(entry->field_0x1C - 8 - i * 0x16), 0.0f},
+                             (Vec){0.9f, 0.9f, 0.9f}, color, "%d", pouchGetHP());
+                winFontSetRV((Vec){(f32)(entry->field_0x18 + 0x10B), (f32)(entry->field_0x1C - 8 - i * 0x16), 0.0f},
+                             (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
+                winFontSetV((Vec){(f32)(entry->field_0x18 + 0x136), (f32)(entry->field_0x1C - 0xA - i * 0x16), 0.0f},
+                            (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetMaxHP());
+                if (itemDataTable[WW_S32(work, 0x2D4)].fp_restored != 0) {
+                    if (WW_S32(work, 0x2E0) % 20 > 15) {
+                        continue;
+                    }
+                    color = dat_8041d498;
+                }
+                winFontInit();
+                winFontSetV((Vec){(f32)(entry->field_0x18 + 0xDC), (f32)(entry->field_0x1C - 8 - (i + 1) * 0x16), 0.0f},
+                            (Vec){0.9f, 0.9f, 0.9f}, color, "\202e\202o");
+                winFontSetRV((Vec){(f32)(entry->field_0x18 + 0xF5), (f32)(entry->field_0x1C - 8 - (i + 1) * 0x16), 0.0f},
+                             (Vec){0.9f, 0.9f, 0.9f}, color, "%d", (*(s32(*)(void))pouchGetFP)());
+                winFontSetRV((Vec){(f32)(entry->field_0x18 + 0x10B), (f32)(entry->field_0x1C - 8 - (i + 1) * 0x16), 0.0f},
+                             (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
+                winFontSetV((Vec){(f32)(entry->field_0x18 + 0x136), (f32)(entry->field_0x1C - 0xA - (i + 1) * 0x16), 0.0f},
+                            (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetMaxFP());
+            } else {
+                name = list[i - 1]->field_0x0 != 4 ? msgSearch(list[i - 1]->field_0x8) : pouchGetYoshiName();
+                if (WW_S32(work, 0x2E0) % 20 > 15 && i == WW_S32(work, 0x2DC)) {
+                    continue;
+                }
+                winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+                GXSetTevColorIn(0, 0xF, 0xF, 0xF, 2);
+                GXSetTevAlphaIn(0, 7, 1, 4, 7);
+                winTexSet(0xAF,
+                          (Vec){0.9f * (f32)FontGetMessageWidth("\202g\202o") / 2 + (f32)(entry->field_0x18 + 0xDC),
+                                f31 + (f32)(entry->field_0x1C - 8 - i * 0x1C) - 14.0f, 0.0f},
+                          (Vec){1.0f, 1.0f, 1.0f}, dat_8041d49c);
+                if (gray) {
+                    winIconGrayInit();
+                } else {
+                    winIconInit();
+                }
+                winIconSetV(list[i - 1]->field_0x4,
+                            (Vec){(f32)(entry->field_0x18 + 0x1E), f31 + (f32)(entry->field_0x1C - 0x14 - i * 0x1C), 0.0f},
+                            (Vec){0.65f, 0.65f, 0.65f}, iconColor);
+                winFontInit();
+                winFontSetV((Vec){(f32)(entry->field_0x18 + 0x32), f31 + (f32)(entry->field_0x1C - 8 - i * 0x1C), 0.0f},
+                            (Vec){(f32)FontGetMessageWidth(name) < 160.0f ? 1.0f : 160.0f / (f32)FontGetMessageWidth(name),
+                                  1.0f, 1.0f},
+                            color, name);
+                winFontSetV((Vec){(f32)(entry->field_0x18 + 0xDC), f31 + (f32)(entry->field_0x1C - 8 - i * 0x1C), 0.0f},
+                            (Vec){0.9f, 0.9f, 0.9f}, color, "\202g\202o");
+                winFontSetRV((Vec){(f32)(entry->field_0x18 + 0xF5), f31 + (f32)(entry->field_0x1C - 8 - i * 0x1C), 0.0f},
+                             (Vec){0.9f, 0.9f, 0.9f}, color, "%d", pouchGetPtr()->partyData[list[i - 1]->field_0x0].currentHP);
+                winFontSetRV((Vec){(f32)(entry->field_0x18 + 0x10B), f31 + (f32)(entry->field_0x1C - 8 - i * 0x1C), 0.0f},
+                             (Vec){0.8f, 0.8f, 0.8f}, color, "\201^");
+                winFontSetV((Vec){(f32)(entry->field_0x18 + 0x136), f31 + (f32)(entry->field_0x1C - 8 - i * 0x1C) - 2.0f, 0.0f},
+                            (Vec){0.8f, 0.8f, 0.8f}, color, "%d", pouchGetPtr()->partyData[list[i - 1]->field_0x0].maximumHP);
             }
         }
-    }
 
-    if (WW_S32(work, 0x1E0) > 1) {
-        winIconInit();
-        for (n2 = 2; n2 < 0x1E; n2++) {
-            GXColor c = color;
-            Vec tcopy;
-            Vec translate;
-            Vec scale;
-#ifdef MUST_MATCH
-            /* Retail reloads these rodata Vecs every iteration instead of hoisting them into
-               callee-saved registers; the volatile view keeps the loads in the loop and the
-               objects in .rodata. */
-            scale = *(const volatile Vec*)&vec3_802f5570;
-            translate = *(const volatile Vec*)&vec3_802f5564;
-#else
-            scale = vec3_802f5570;
-            translate = vec3_802f5564;
-#endif
-            translate.x = (f32)(entry->field_0x18 + (entry->field_0x20 / 31) * n2);
-            translate.y = (f32)(entry->field_0x1C - 0x54);
-#ifdef MUST_MATCH
-            tcopy = translate;
-            winIconSet(0x1B7, &tcopy, &scale, &c);
-#else
-            winIconSet(0x1B7, &translate, &scale, &c);
-#endif
+        if (WW_S32(work, 0x1E0) > 1) {
+            winIconInit();
+            for (n2 = 2; n2 < 0x1E; n2++) {
+                winIconSetV(0x1B7, (Vec){(f32)(entry->field_0x18 + (entry->field_0x20 / 31) * n2), (f32)(entry->field_0x1C - 0x54), 0.0f},
+                            (Vec){0.15f, 0.15f, 0.15f}, color);
+            }
         }
     }
     winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-    {
-#ifdef MUST_MATCH
-        GXColor c = *(const volatile GXColor*)&dat_8041d4a0;
-#else
-        GXColor c = dat_8041d4a0;
-#endif
-        Vec tcopy;
-        Vec translate;
-        Vec scale;
-        scale = *(const volatile Vec*)&vec3_802f5588;
-        translate = *(const volatile Vec*)&vec3_802f557c;
-        translate.x = float_2_8041d4e0 + WW_F32(work, 0x150);
-        translate.y = WW_F32(work, 0x154) - float_2_8041d4e0;
-#ifdef MUST_MATCH
-        tcopy = translate;
-        ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0, &tcopy, &scale, &c);
-#else
-        winTexSet(0, translate, scale, c);
-#endif
-    }
-    {
-        GXColor c = *(const volatile GXColor*)&white;
-        Vec tcopy;
-        Vec translate;
-        Vec scale;
-        scale = *(const volatile Vec*)&vec3_802f55a0;
-        translate = *(const volatile Vec*)&vec3_802f5594;
-        translate.x = WW_F32(work, 0x150);
-        translate.y = WW_F32(work, 0x154);
-#ifdef MUST_MATCH
-        tcopy = translate;
-        ((void(*)(u32, Vec*, Vec*, GXColor*))winTexSet)(0, &tcopy, &scale, &c);
-#else
-        winTexSet(0, translate, scale, c);
-#endif
-    }
+    winTexSet(0, (Vec){2.0f + WW_F32(work, 0x150), WW_F32(work, 0x154) - 2.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
+              dat_8041d4a0);
+    winTexSet(0, (Vec){WW_F32(work, 0x150), WW_F32(work, 0x154), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
 }
 
-// The original reaches vec3_802f55ac/b8, str_802F4CE8 and the two int->float pool doubles through
-// one base register (r31 = str_802F4CE8) plus displacements (0x8c4, 0x8d0, 0x8f0, 0x8f8). Defining
-// the .rodata prefix in this unit is what makes MWCC emit those offsets; the pool doubles must stay
-// un-named so the compiler puts its own @NNN@ entries at 0x8f0/0x8f8 (naming them makes MWCC append
-// fresh copies after the whole section, shifting them to 0x958). The strings after str_802F55C4 are
-// left extern for the same reason; they belong inline in the functions that use them (other agents).
-// 100%: the .rodata prefix plus the MUST_MATCH shapes below (GXColor copied into the 0x8 argument
-// slot from an inner block, the pos temp/struct copy, and the dh0 temp that fixes the FP colours).
 void itemUseDisp2(WinMgrEntry* entry) {
     WindowWork* work = winGetPtr();
     s32 id = WW_S32(work, 0x120C);
     const char* msg;
     f32 width;
     GXColor color;
-    Vec pos;
-#ifdef MUST_MATCH
-    Vec tmp;
-    f32 dh0;
-#endif
-    Vec scale;
 
     color = dat_8041d4a4;
     if (!winMgrAction(id)) {
-        msg = msgSearch(str_802F55C4);
+        msg = msgSearch("msg_window_select_5");
         width = (f32)FontGetMessageWidth(msg);
         winFontInit();
-        // The original keeps the GXColor in its own 0xc home and copies it to the 0x8 argument
-        // slot for the variadic winFontSet call; declaring the copy in this inner block (after
-        // winFontInit) reproduces both the slot and the copy's schedule.
-        {
-            GXColor c = color;
-            scale = vec3_802f55b8;
-#ifdef MUST_MATCH
-            // A separate temp plus the struct copy is what reproduces the original's 0x1c scratch
-            // and the lwz/stw (not lfs/stfs) copy of pos into its final slot. The dh0 temp is what
-            // colours the pool double f3 and 0.5f f1 (target), rather than f2/f3.
-            tmp = vec3_802f55ac;
-            dh0 = (f32)entry->field_0x20 - width;
-            tmp.x = (f32)entry->field_0x18 + dh0 * float_0p5_8041d4a8;
-            pos = tmp;
-#else
-            pos = vec3_802f55ac;
-            pos.x = (f32)entry->field_0x18 + ((f32)entry->field_0x20 - width) * float_0p5_8041d4a8;
-#endif
-            winFontSet(&pos, &scale, &c, msg);
-        }
+        winFontSetV((Vec){(f32)entry->field_0x18 + ((f32)entry->field_0x20 - width) / 2, 134.0f, 0.0f},
+                    (Vec){1.0f, 1.0f, 1.0f}, color, msg);
     }
 }
 
@@ -2076,156 +1356,6 @@ __declspec(section ".sdata2") const GXColor dat_8041d4a0 = { 0x00, 0x00, 0x00, 0
 
 // .sdata2:0x3C | 0x8041D4A4 | size 0x4
 __declspec(section ".sdata2") const GXColor dat_8041d4a4 = { 0x00, 0x00, 0x00, 0xFF };
-
-// .sdata2:0x40 | 0x8041D4A8 | size 0x4
-__declspec(section ".sdata2") const f32 float_0p5_8041d4a8 = 0.5f;
-
-// .sdata2:0x44 | 0x8041D4AC | size 0x4
-__declspec(section ".sdata2") const f32 float_0_8041d4ac = 0.0f;
-
-// .sdata2:0x48 | 0x8041D4B0 | size 0x4
-__declspec(section ".sdata2") const f32 float_neg16_8041d4b0 = -16.0f;
-
-// .sdata2:0x4C | 0x8041D4B4 | size 0x4
-__declspec(section ".sdata2") const f32 float_neg28_8041d4b4 = -28.0f;
-
-// .sdata2:0x50 | 0x8041D4B8 | size 0x4
-__declspec(section ".sdata2") const f32 float_0p9_8041d4b8 = 0.9f;
-
-// .sdata2:0x54 | 0x8041D4BC | size 0x8
-__declspec(section ".sdata2") const char str_8041D4BC[8] = "\202g\202o\000\000\000";
-
-// .sdata2:0x5C | 0x8041D4C4 | size 0x4
-__declspec(section ".sdata2") const char str_8041D4C4[4] = "%d";
-
-// .sdata2:0x60 | 0x8041D4C8 | size 0x4
-__declspec(section ".sdata2") const char str_8041D4C8[4] = "\201^\000";
-
-// .sdata2:0x64 | 0x8041D4CC | size 0x8
-__declspec(section ".sdata2") const char str_8041D4CC[8] = "\202e\202o\000\000\000";
-
-// .sdata2:0x6C | 0x8041D4D4 | size 0x4
-__declspec(section ".sdata2") const f32 float_14_8041d4d4 = 14.0f;
-
-// .sdata2:0x70 | 0x8041D4D8 | size 0x4
-__declspec(section ".sdata2") const f32 float_1_8041d4d8 = 1.0f;
-
-// .sdata2:0x74 | 0x8041D4DC | size 0x4
-__declspec(section ".sdata2") const f32 float_160_8041d4dc = 160.0f;
-
-// .sdata2:0x78 | 0x8041D4E0 | size 0x4
-__declspec(section ".sdata2") const f32 float_2_8041d4e0 = 2.0f;
-
-// .sdata2:0x7C | 0x8041D4E4 | size 0x4
-__declspec(section ".sdata2") const f32 float_100_8041d4e4 = 100.0f;
-
-// .sdata2:0x80 | 0x8041D4E8 | size 0x4
-__declspec(section ".sdata2") const f32 float_20_8041d4e8 = 20.0f;
-
-// .sdata2:0x84 | 0x8041D4EC | size 0x4
-__declspec(section ".sdata2") const f32 float_10_8041d4ec = 10.0f;
-
-// .sdata2:0x88 | 0x8041D4F0 | size 0x4
-__declspec(section ".sdata2") const f32 float_240_8041d4f0 = 240.0f;
-
-// .sdata2:0x8C | 0x8041D4F4 | size 0x4
-__declspec(section ".sdata2") const f32 float_neg240_8041d4f4 = -240.0f;
-
-// .sdata2:0x90 | 0x8041D4F8 | size 0x4
-__declspec(section ".sdata2") const f32 float_125_8041d4f8 = 125.0f;
-
-// .sdata2:0x94 | 0x8041D4FC | size 0x4
-__declspec(section ".sdata2") const f32 float_105_8041d4fc = 105.0f;
-
-// .sdata2:0x98 | 0x8041D500 | size 0x4
-__declspec(section ".sdata2") const f32 float_250_8041d500 = 250.0f;
-
-// .sdata2:0x9C | 0x8041D504 | size 0x4
-__declspec(section ".sdata2") const f32 float_18_8041d504 = 18.0f;
-
-// .sdata2:0xA0 | 0x8041D508 | size 0x4
-__declspec(section ".sdata2") const f32 float_110_8041d508 = 110.0f;
-
-// .sdata2:0xA4 | 0x8041D50C | size 0x4
-__declspec(section ".sdata2") const f32 float_113_8041d50c = 113.0f;
-
-// .sdata2:0xA8 | 0x8041D510 | size 0x4
-__declspec(section ".sdata2") const f32 float_90_8041d510 = 90.0f;
-
-// .sdata2:0xAC | 0x8041D514 | size 0x4
-__declspec(section ".sdata2") const f32 float_15_8041d514 = 15.0f;
-
-// .sdata2:0xB0 | 0x8041D518 | size 0x4
-__declspec(section ".sdata2") const f32 float_0p7_8041d518 = 0.7f;
-
-// .sdata2:0xB4 | 0x8041D51C | size 0x4
-__declspec(section ".sdata2") const f32 float_220_8041d51c = 220.0f;
-
-// .sdata2:0xB8 | 0x8041D520 | size 0x4
-__declspec(section ".sdata2") const f32 float_92_8041d520 = 92.0f;
-
-// .sdata2:0xBC | 0x8041D524 | size 0x4
-__declspec(section ".sdata2") const f32 float_30_8041d524 = 30.0f;
-
-// .sdata2:0xC0 | 0x8041D528 | size 0x4
-__declspec(section ".sdata2") const f32 float_320_8041d528 = 320.0f;
-
-// .sdata2:0xC4 | 0x8041D52C | size 0x4
-__declspec(section ".sdata2") const f32 float_150_8041d52c = 150.0f;
-
-// .sdata2:0xC8 | 0x8041D530 | size 0x4
-__declspec(section ".sdata2") const f32 float_120_8041d530 = 120.0f;
-
-// .sdata2:0xCC | 0x8041D534 | size 0x4
-__declspec(section ".sdata2") const f32 float_415_8041d534 = 415.0f;
-
-// .sdata2:0xD0 | 0x8041D538 | size 0x4
-__declspec(section ".sdata2") const f32 float_210_8041d538 = 210.0f;
-
-// .sdata2:0xD4 | 0x8041D53C | size 0x4
-__declspec(section ".sdata2") const f32 float_215_8041d53c = 215.0f;
-
-// .sdata2:0xD8 | 0x8041D540 | size 0x4
-__declspec(section ".sdata2") const f32 float_4_8041d540 = 4.0f;
-
-// .sdata2:0xDC | 0x8041D544 | size 0x4
-__declspec(section ".sdata2") const f32 float_190_8041d544 = 190.0f;
-
-// .sdata2:0xE0 | 0x8041D548 | size 0x4
-__declspec(section ".sdata2") const f32 float_0p25_8041d548 = 0.25f;
-
-// .sdata2:0xE4 | 0x8041D54C | size 0x4
-__declspec(section ".sdata2") const f32 float_6_8041d54c = 6.0f;
-
-// .sdata2:0xE8 | 0x8041D550 | size 0x4
-__declspec(section ".sdata2") const f32 float_neg310_8041d550 = -310.0f;
-
-// .sdata2:0xEC | 0x8041D554 | size 0x4
-__declspec(section ".sdata2") const f32 float_neg275_8041d554 = -275.0f;
-
-// .sdata2:0xF0 | 0x8041D558 | size 0x4
-__declspec(section ".sdata2") const f32 float_neg170_8041d558 = -170.0f;
-
-// .sdata2:0xF4 | 0x8041D55C | size 0x4
-__declspec(section ".sdata2") const f32 float_neg144_8041d55c = -144.0f;
-
-// .sdata2:0xF8 | 0x8041D560 | size 0x4
-__declspec(section ".sdata2") const f32 float_180_8041d560 = 180.0f;
-
-// .sdata2:0xFC | 0x8041D564 | size 0x4
-__declspec(section ".sdata2") const f32 float_60_8041d564 = 60.0f;
-
-// .sdata2:0x100 | 0x8041D568 | size 0x4
-__declspec(section ".sdata2") const f32 float_neg96_8041d568 = -96.0f;
-
-// .sdata2:0x104 | 0x8041D56C | size 0x4
-__declspec(section ".sdata2") const f32 float_neg80_8041d56c = -80.0f;
-
-// .sdata2:0x108 | 0x8041D570 | size 0x4
-__declspec(section ".sdata2") const f32 float_130_8041d570 = 130.0f;
-
-// .sdata2:0x10C | 0x8041D574 | size 0x4
-__declspec(section ".sdata2") const f32 float_28_8041d574 = 28.0f;
 
 #pragma force_active reset
 #pragma explicit_zero_data reset
