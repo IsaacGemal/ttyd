@@ -6003,6 +6003,18 @@ marioMakeDispDir became block locals (`f32 lean = 30.0f;`, per pool_plan.py). Th
 six parallel readers, one chunk each.
 
 
+**party links: six functions -> 100, 66/66 (on2-party; levers from the list: yes; 131k, 68 min).** The main lever was
+rebuilding the original functions the map lists as UNUSED and calling them where our source had hand-expanded
+copies: `partyPaperRelease` (0x40), `getPartyEntryId` (0x7c; ours compiles to exactly 0x7c), `partyPoseEntry`
+(0xb8), `partyChkHerohero` (0x4c). Inlined, they give the register conflicts the hand copies lacked (partyEntryMain,
+partySetFamicomMode, partyReInit, partyRideMain); hand-expanded pose code became `partyChgPoseId(party, 1/4)`.
+partyPaperOn (96.60): `lightOff = flag ? FALSE : TRUE;` makes the value a temp copied in after the base register's
+last use, as retail does (`!flag`, `== FALSE`, the if-form and u8/s8 types all 93-98.4). partyEntry: the data port
+(floats as literals, Vec/strings as compound or string literals; two reset blocks as static inlines so their
+templates pool once, the mot_jabara #609 lever; .sbss declared in reverse; no explicit .data gap word, which shifted
+the jump tables). Cleanup: unused `L_*` helpers, partyDokanInit's `opt_common_subs off` and a MUST_MATCH block gone;
+14 unused externs dropped from party.h.
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
