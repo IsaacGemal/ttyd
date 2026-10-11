@@ -6147,3 +6147,15 @@ The targets were every untried function at 98.2-99.99% in the 15 big unlinked un
   - btlUnitItemDisp (battle_disp) 99.05 -> 100 was refused. It called `iconDispGx` through a function-pointer cast with a u16 parameter, plus an `ItemDataView` cast, to get the original's unsigned `lhz` of `icon_id`. The real fix is a u16 `icon_id` / `iconDispGx` parameter in the headers, which touches every caller; left for a dedicated change.
   - No change: animdrv animPoseDrawShape (register colouring only).
 
+
+### Swarm batch 5d (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#734](https://github.com/IsaacGemal/ttyd/pull/734)
+- Wins:
+  - **`x / 2.0f` and literal constants instead of `x * float_0p5` / a named limit** (btlevtcmd_ACSuccessEffect, btlevtcmd_EllipseMovePosition -> 100). The spelling changes which constant MWCC materialises first, and so the FPR webs. The data sections are unchanged (the literal pools onto the same value).
+  - **One expression instead of a temp plus an update** (btlDispMain -> 100: `f = (f32)strength + 1.0f`; BattleAudience_Entry -> 100: `rand()` inline in the sum). The constant or call is then ordered before the conversion, as in the original.
+  - **Declaration order plus `u32` for a unit id** (btlevtcmd_CalculateFaceDirection -> 100).
+  - **A rounding helper that reads each component into a local first** (marioHitCheckVecRound) lifts all three of its callers (marioChkFront +0.12, marioCheckWall_roll +0.07, searchFrontWall +0.05).
+- Hard negatives:
+  - btlUnitItemDisp (battle_disp, 99.05 -> 100) and FontDrawMessageMtx (fontmgr, 99.03 -> 99.97) need a u16 icon id. The shared iconDispGx/iconDispGxAlpha prototype is s16, and a u16 header change breaks the DOL and linked-REL checksums (Claude #1 tested). The agents' function-pointer casts were refused. A per-file LOCAL_PROTO route is queued as an on2 task.
+  - psndBGMOn_f_d (pmario_sound) 99.27 -> 100 refused: it stores the BGM id in the dead `const char*` parameter `b` through cast macros to reuse its register.
+  - FontDrawMessage (fontmgr) 99.91 -> 99.98 refused: it copies FontDrawColor's body and adds a second colour-helper variant to move stack slots.
+
