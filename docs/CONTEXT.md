@@ -5735,6 +5735,32 @@ in one register; the original keeps r3 and r5 apart, which the block-scoped `int
 NonMatching here too, with the same `ui = toupper(c)` shape. Tried: assignment inside the `if`, a ternary (99.58),
 `_toupper` in each arm (96.91), casts, `c = _toupper(c)`, block-scoped `long ui` (99.95).
 
+**eff_stardust2_n64 links: effStardust2N64Entry 98.67 -> 100 (on1-stardust2; lever from the list: partial,
+found before the ledger read; 186k, 9 min).** mwccdbg + rasim showed the original's 0.1/0.4 loads outrank the
+int-to-float conversion temps, which happens only when they are backend temps created after the conversion: plain
+literals used after `denom`. Entry now writes the header stores, then `denom = (f32)(count + 1) - 1.0f`, then the four
+products with literal 0.1f/0.4f; the `li` for `field_20 = 0` comes before the conversion, which also folds the magic
+double's `addi` into the `lfd`. Pool: only the six objects Disp reads first stay named (defined after the code);
+every constant from 0.5 on is a literal (the named 0.4 was a duplicate). Main's blend became
+`scale += 0.1f * (0.1f - scale)` with no local. All MUST_MATCH reordering went except Disp's colour inline.
+Tried and failed: the named externs in the same order (their two reads merge early and rank low), `MATCH_F32`
+(an extra instruction), `denom` before the field stores. Third all-literal win tonight, after eff_kiss and
+eff_particle.
+
+**envdrv: envDisp_DepthOfField stays 99.68 (on1-envdrv; lever from the list: partial; 314k, 91 min).** Data side:
+plain literals with `opt_propagation off` give an `.sdata2` identical to retail with no named objects (envDisp_FF
+pools all five coefficients first), but the quads lose 10 rows: the first vertex's x becomes an inline-parameter
+variable coloured after the y conversion. With propagation on, the frontend copies the literal coefficients into
+every branch (`register` locals don't stop it). Retail looks like propagation off for the coefficients and on for
+the quad; not reconciled. The named-prefix route needs all 43 `.sdata2` entries 0x510-0x5B8 named across 8+ matched
+functions; skipped. Integer side: writing block 1's loop directly in DoF with `i`/`id` swapped gets the loops'
+registers right (18 rows) but scores 99.04, since a named pointer set to an address and incremented always costs
+`addi r0` + `mr` (a 15-line repro holds for every spelling); `tbl[i]` gives a strength-reduced pointer coloured
+first (99.35-99.40). rasim: block 1 needs `id` coloured before `i` with tevStage/texCoord at <= 28 neighbours
+(they have 30, two from colorD/alphaD merged into r7). 266 declaration/scope/type variants and a 60-minute mwsearch
+(22,096 compiles) found nothing. Next: block 1's table pointer as a compiler variable ranked below the named
+tevStage/texCoord.
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.

@@ -10,44 +10,16 @@
 #include "math_ext.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
-extern const f32 float_deg2rad_8041fe8c;
-extern const f32 float_0p0056818_8041fe90;
-extern const f32 float_0p045455_8041fe94;
-extern const f32 float_0_8041fe98;
-extern const f32 float_1_8041fe9c;
-extern const f32 float_0p5_8041fea0;
-extern const f32 float_0p1_8041fea4;
-extern const f32 float_0p8_8041fea8;
-extern const f32 float_0p7_8041feac;
-extern const f32 float_1p4_8041feb0;
-extern const f32 float_neg0p02_8041feb4;
-extern const f32 float_0p01_8041feb8;
-extern const f32 float_60_8041febc;
-extern const f32 float_360_8041fec0;
-extern const f32 float_120_8041fec4;
-extern const f32 float_6p2832_8041fec8;
-extern const f32 float_neg0p05_8041fecc;
-extern const f32 float_0p96_8041fed0;
-extern const f32 float_0p4_8041fed4;
 
-extern const f32 float_0p4_8041fed4;
 extern const Vec vec3_802fb740;
 
-// .sdata2 constants (named after their original addresses; defined by the
-// not-yet-written Entry function of this unit).
+// .sdata2 constants the code reads by name (named after their original addresses).
 extern const GXColor dat_8041fe88;
 extern const f32 float_deg2rad_8041fe8c;
 extern const f32 float_0p0056818_8041fe90;
 extern const f32 float_0p045455_8041fe94;
 extern const f32 float_0_8041fe98;
 extern const f32 float_1_8041fe9c;
-extern const f32 float_0p5_8041fea0;
-extern const f32 float_0p1_8041fea4;
-extern const f32 float_0p8_8041fea8;
-extern const f32 float_0p7_8041feac;
-extern const f32 float_1p4_8041feb0;
-
-// .rodata constants (in the original's order, named after their addresses).
 
 // .sdata colour rotation table, local to this file.
 static u8 color_rotation_data[36] = {
@@ -116,26 +88,6 @@ static inline Vec makeVec(f32 x, f32 y, f32 z) {
     return temp;
 }
 
-// The argument moves (x=f18/y=f22/z=f15), the loop angle/sin/cos (angle=f22, sin=f23, rad=f15), the
-// step/base FPRs (stepA=f21, stepB=f19, baseA=f20, baseB=f18), angleScale/yScale (f27/f31) and the
-// 2pi/10/90 temps (f28/f29/f30) all match. Making angleScale/yScale the two free preheader FPRs (rather
-// than block-allocating them) needs them hoisted from the two `float_360 / denom` divisions instead of
-// declared; the k1/k4 constant locals and `field_24 += i + i` reproduce the multiply/add operand order.
-// The loop's multiply operand order (`fmuls f22, f27, f0`) only comes out right when `float_360 / denom`
-// is named in an in-loop local (MWCC still hoists it); the natural expression form emits `f0, f27`.
-// What still differs is one volatile-register tie-break in the preheader: this build loads 0.4 into f2
-// and the int->float conversion double into f0 (original f0/f2), keeps the (count+1) conversion in f0
-// (original f1) and schedules `li r5, 0` before the 1.0 load. No source shape found moves it (declaration/
-// statement order, operand swaps, named int->float temp, constant locals, inline helpers, pragma combos and
-// a 400-permutation random search were all tried). The MUST_MATCH reorder below groups stepB/baseA/stepA; it
-// does not move the registers but schedules one more instruction like the original (11 -> 10 differing
-// instructions, 98.61 -> 98.67).
-// The int->float pool constant also resolves to an anonymous .rodata entry because Main/Disp pool two
-// extra double literals there.
-// NONMATCHING (98.67%): the preheader f0/f2/f1 tie-break above; see the comment.
-// 98.67%: the only remaining difference is the FPR schedule of the preheader step/base multiplies (the original
-// loads 0.4 before the two multiplies and issues them in a different order); pools are identical. Every dependency-valid
-// order of the k1/k4/step/base statements was tried.
 EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z, f32 scaleA, f32 scaleB) {
     EffectEntry* effect;
     EffStardust2Data* data;
@@ -152,8 +104,6 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
     f32 vA;
     f32 vB;
     f32 yStep;
-    f32 k1;
-    f32 k4;
     s32 i;
     s32 r;
 
@@ -172,24 +122,7 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
         data->flags = 0;
     }
 
-#ifdef MUST_MATCH
-    // Match-only statement order: it schedules the preheader's step/base multiplies one
-    // instruction closer to the original (10 vs 11 differing instructions).
-    k1 = float_0p1_8041fea4;
-    k4 = float_0p4_8041fed4;
-    stepB = k1 * scaleB;
-    baseA = k4 * scaleA;
-    stepA = k1 * scaleA;
-#else
-    k1 = float_0p1_8041fea4;
-    stepA = k1 * scaleA;
-    stepB = k1 * scaleB;
-    k4 = float_0p4_8041fed4;
-    baseA = k4 * scaleA;
-#endif
-
     data->x = x;
-    baseB = k4 * scaleB;
     data->y = y;
     data->z = z;
     data->field_20 = 0;
@@ -198,25 +131,24 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
     data->drawCam = 4;
 
     denom = (f32)(count + 1) - float_1_8041fe9c;
+    stepA = 0.1f * scaleA;
+    stepB = 0.1f * scaleB;
+    baseA = 0.4f * scaleA;
+    baseB = 0.4f * scaleB;
 
     ptr = data + 1;
     for (i = 1; i < count + 1; i++, ptr++) {
-#ifdef MUST_MATCH
-        f32 angleScale = float_360_8041fec0 / denom;
-        y = angleScale * (f32)i;
-#else
-        y = (float_360_8041fec0 / denom) * (f32)i;
-#endif
+        y = (360.f / denom) * (f32)i;
         if (type > 1) {
             r = rand() % 360;
         }
         else {
             r = 0;
         }
-        rad = float_6p2832_8041fec8 * (y + (f32)r) / float_360_8041fec0;
+        rad = 6.2831855f * (y + (f32)r) / 360.f;
         s = (f32)sin(rad);
         c = (f32)cos(rad);
-        t = (f32)sin(float_6p2832_8041fec8 * (10.f * y - 90.f) / float_360_8041fec0);
+        t = (f32)sin(6.2831855f * (10.f * y - 90.f) / 360.f);
         vA = baseA - stepA * t;
         vB = baseB - stepB * t;
 
@@ -239,7 +171,7 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
             ptr->y = yStep;
             ptr->z = c * vA;
             ptr->field_14 = 0.03f * (f32)(-(rand() % 10));
-            ptr->field_18 = 0.04f * (f32)(rand() % 10) + float_0p01_8041feb8;
+            ptr->field_18 = 0.04f * (f32)(rand() % 10) + 0.01f;
             break;
         case 3:
             ptr->x = 0.005f * (s * scaleA * (f32)(rand() % 100));
@@ -255,7 +187,7 @@ EffectEntry* effStardust2N64Entry(s32 type, s32 count, s32 life, f32 x, f32 y, f
             ptr->y = yStep;
             ptr->z = c * vA;
             ptr->field_14 = 0.03f * (f32)(-(rand() % 10));
-            ptr->field_18 = 0.04f * (f32)(rand() % 10) + float_0p01_8041feb8;
+            ptr->field_18 = 0.04f * (f32)(rand() % 10) + 0.01f;
             break;
         }
     }
@@ -295,46 +227,43 @@ void effStardust2Main(EffectEntry* effect) {
         case 0:
         case 1:
             data->field_28 = (colorIndex + i) & 7;
-            data->field_18 += float_neg0p02_8041feb4;
+            data->field_18 += -0.02f;
             if (colorIndex - 1 < 14) {
-                f32 val = float_0p01_8041feb8 * speed_data[colorIndex - 1];
+                f32 val = 0.01f * speed_data[colorIndex - 1];
                 data->x = data->field_10 * val;
                 data->y = data->field_14 * val + data->field_18;
-                data->scale = float_0p01_8041feb8 * scale_data[colorIndex - 1];
+                data->scale = 0.01f * scale_data[colorIndex - 1];
             }
             else {
                 f32 angle;
                 f32 ratio;
                 one = float_1_8041fe9c;
-                ratio = float_360_8041fec0 / (f32)(effect->count - 1);
-                angle = ratio * (f32)i + float_60_8041febc;
+                ratio = 360.f / (f32)(effect->count - 1);
+                angle = ratio * (f32)i + 60.f;
                 if (i & 1) {
-                    angle -= float_120_8041fec4;
+                    angle -= 120.f;
                 }
-                rad = float_6p2832_8041fec8 * angle / MATCH_F32(float_360_8041fec0);
+                rad = 6.2831855f * angle / 360.f;
                 data->type = 10;
                 data->field_10 = one * (f32)sin(rad);
                 data->field_14 = one * (f32)cos(rad);
-                data->field_18 = float_neg0p05_8041fecc;
+                data->field_18 = -0.05f;
             }
             break;
         case 30:
         case 10:
             data->field_28 = (colorIndex + i) & 7;
-            data->field_10 *= float_0p96_8041fed0;
-            data->field_14 *= float_0p96_8041fed0;
+            data->field_10 *= 0.96f;
+            data->field_14 *= 0.96f;
             data->field_14 += data->field_18;
             data->x += data->field_10;
             data->y += data->field_14;
-            {
-                f32 k = float_0p1_8041fea4;
-                data->scale = k * (k - data->scale) + data->scale;
-            }
+            data->scale += 0.1f * (0.1f - data->scale);
             break;
         case 3:
             data->field_28 = (colorIndex + i + i) & 7;
             if (colorIndex - 1 < 14) {
-                data->scale = float_0p01_8041feb8 * scale_data[colorIndex - 1];
+                data->scale = 0.01f * scale_data[colorIndex - 1];
             }
             else {
                 data->type = 30;
@@ -356,27 +285,26 @@ void effStardust2Main(EffectEntry* effect) {
                 data->field_20++;
                 colorIndex = data->field_20;
                 if (colorIndex - 1 < 14) {
-                    data->scale = float_0p01_8041feb8 * scale_data[colorIndex - 1];
+                    data->scale = 0.01f * scale_data[colorIndex - 1];
                     if (type == 5) {
                         data->field_14 += data->field_18;
                         data->y += data->field_14;
                     }
                 }
                 else {
-                    f32 k = float_0p1_8041fea4;
-                    data->scale = k * (k - data->scale) + data->scale;
+                    data->scale += 0.1f * (0.1f - data->scale);
                     data->field_14 += data->field_18;
                     data->y += data->field_14;
                 }
                 if (type == 4) {
-                    rad = float_6p2832_8041fec8 * (f32)(colorIndex * 12) / float_360_8041fec0;
+                    rad = 6.2831855f * (f32)(colorIndex * 12) / 360.f;
                     data->x = data->field_10 * (f32)sin(rad);
                     data->z = data->field_10 * (f32)cos(rad);
                 }
                 else {
                     data->x = data->field_10;
                 }
-                data->field_14 *= float_0p96_8041fed0;
+                data->field_14 *= 0.96f;
             }
             break;
         }
@@ -452,23 +380,23 @@ void effStardust2Disp(CameraId camId, void* param) {
     case 2:
     case 10:
         colorR = float_1_8041fe9c;
-        colorG = float_0p5_8041fea0;
-        colorB = float_0p1_8041fea4;
+        colorG = 0.5f;
+        colorB = 0.1f;
         break;
     case 3:
     case 30:
         colorR = float_1_8041fe9c;
-        colorG = float_0p8_8041fea8;
-        colorB = float_0p7_8041feac;
+        colorG = 0.8f;
+        colorB = 0.7f;
         break;
     case 5:
-        colorR = float_1p4_8041feb0;
-        colorB = float_0p7_8041feac;
+        colorR = 1.4f;
+        colorB = 0.7f;
         colorG = colorR;
         break;
     default:
-        colorG = float_0p7_8041feac;
-        colorR = float_1p4_8041feb0;
+        colorG = 0.7f;
+        colorR = 1.4f;
         colorB = colorG;
         break;
     }
@@ -544,11 +472,7 @@ void effStardust2N64SetDrawCam(EffectEntry* entry, s32 cam) {
     *(s32*)((u8*)entry->userdata + 0x2C) = cam;
 }
 
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
-
-// .sdata2 constants, defined after the code that loads them by name (defined first, the compiler folds them).
-
-// The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
+// The constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const Vec vec3_802fb740 = { 0.0f, 0.0f, 0.0f };
 const GXColor dat_8041fe88 = { 0x00, 0x00, 0x00, 0xFF };
 const f32 float_deg2rad_8041fe8c = 0.017453292f;
@@ -556,17 +480,3 @@ const f32 float_0p0056818_8041fe90 = 0.0056818184f;
 const f32 float_0p045455_8041fe94 = 0.045454547f;
 const f32 float_0_8041fe98 = 0.0f;
 const f32 float_1_8041fe9c = 1.0f;
-const f32 float_0p5_8041fea0 = 0.5f;
-const f32 float_0p1_8041fea4 = 0.1f;
-const f32 float_0p8_8041fea8 = 0.8f;
-const f32 float_0p7_8041feac = 0.7f;
-const f32 float_1p4_8041feb0 = 1.4f;
-const f32 float_neg0p02_8041feb4 = -0.02f;
-const f32 float_0p01_8041feb8 = 0.01f;
-const f32 float_60_8041febc = 60.0f;
-const f32 float_360_8041fec0 = 360.0f;
-const f32 float_120_8041fec4 = 120.0f;
-const f32 float_6p2832_8041fec8 = 6.2831855f;
-const f32 float_neg0p05_8041fecc = -0.05f;
-const f32 float_0p96_8041fed0 = 0.96f;
-const f32 float_0p4_8041fed4 = 0.4f;
