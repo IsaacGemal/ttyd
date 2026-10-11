@@ -77,6 +77,10 @@ extern const char str_802C3E68[];
 extern const char str_802C3E7C[];
 extern const char str_802C3E98[];
 extern const char str_802C3EAC[];
+extern const char str_802C41A0[];
+extern const char str_802C41B0[];
+extern const char str_802C41BC[];
+extern Vec vec3_802c40d0[];
 
 // Prototypes for functions in other, not-yet-decompiled units (koopa / hit / etc.)
 
@@ -4800,9 +4804,9 @@ s32 mobj_koopa_fireber_dodai_evt(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (98.83%): 2 instructions differ, 1 extra, plus register differences.
+// The read-only strings and Vec template are reached by name so that the unit's
+// pool_data base covers the compiler's int->float conversion constant too.
 s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
-    u8* base = (u8*)vec3_802c3dc8;
     s32* args = event->args;
     s32 sign = evtGetValue(event, args[0]);
     const char* name = (const char*)evtGetValue(event, args[1]);
@@ -4819,16 +4823,16 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
     s32 i;
     char buf[32];
 
-    if (!animGroupBaseAsync((const char*)(base + 0x3D8), inBattle, NULL)) {
+    if (!animGroupBaseAsync(str_802C41A0, inBattle, NULL)) {
         return 0;
     }
-    if (!animGroupBaseAsync((const char*)(base + 0x3E8), inBattle, NULL)) {
+    if (!animGroupBaseAsync(str_802C41B0, inBattle, NULL)) {
         return 0;
     }
-    mobjEntry(name, (const char*)(base + 0x3D8));
+    mobjEntry(name, str_802C41A0);
     obj = mobjNameToPtr(name);
     obj->flags |= 4;
-    pos = *(Vec*)(base + 0x308);
+    pos = vec3_802c40d0[0];
     pos.x = x;
     pos.y = y;
     pos.z = z;
@@ -4854,14 +4858,14 @@ s32 evt_mobj_koopa_fireber_dodai(EventEntry* event, BOOL isFirstCall) {
         NpcEntry* npc;
 
         sprintf(buf, "%s%2x", name, i);
-        npcEntry(buf, (const char*)(base + 0x3E8));
+        npcEntry(buf, str_802C41B0);
         npc = npcNameToPtr(buf);
         npc->flags |= 0x08000000;
         *(u16*)((u8*)npc + 0x31E) |= 0xF;
         npc->position.x = x;
         npc->position.y = 25.0f * (f32)i + y;
         npc->position.z = z;
-        animPoseSetAnim(npc->poseId, (const char*)(base + 0x3F4), 1);
+        animPoseSetAnim(npc->poseId, str_802C41BC, 1);
         npc->flags |= 0x40000;
     }
     return 2;

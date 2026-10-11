@@ -2656,8 +2656,9 @@ PuniData* puniSearchRandom(s32 start, s32 count) {
     return puni;
 }
 
-// NONMATCHING (95.98%): the LCG/abs and the loop tail match; the loop counter/index
-// registers are still one lower than the target (target i=r5/idx=r4, ours i=r7/idx=r5).
+// NONMATCHING (97.83%): every instruction, constant and register matches except a trailing
+// `blr` after the loop back-edge. MWCC shares the two returns in one empty return block and
+// emits it even after inlining it into both predecessors; no source shape drops it at -O4,s.
 PuniData* puniSearchRandom_Mikata(void) {
     s32 i;
     s32 idx;
@@ -2673,9 +2674,8 @@ PuniData* puniSearchRandom_Mikata(void) {
     if ((s32)(r ^ 0) < 0) {
         r = -r;
     }
-    r = r % range;
+    idx = r % range + 1;
     base = Punidat;
-    idx = r + 1;
     i = 0;
     while (1) {
         if (i == 102) {
@@ -2688,12 +2688,13 @@ PuniData* puniSearchRandom_Mikata(void) {
         {
             s32 flag = puni->unk4;
             if ((flag & 0x400) != 0 && (flag & 0x4000) == 0) {
-                return puni;
+                break;
             }
         }
         idx++;
         i++;
     }
+    return puni;
 }
 
 // The original body is a single `blr`; the function is genuinely empty.
@@ -2701,8 +2702,7 @@ void fn_19_A820(void) {
     (void)0;
 }
 
-// NONMATCHING (97.61%): same shape as puniSearchRandom_Mikata; the same two diffs remain
-// (`subf r7` vs target `subf r3`/`addi r4,r3` and the extra trailing epilogue `blr`).
+// NONMATCHING (97.83%): same shape as puniSearchRandom_Mikata; only the trailing `blr` remains.
 PuniData* puniSearchRandom_Teki(void) {
     s32 i;
     s32 idx;
@@ -2718,9 +2718,8 @@ PuniData* puniSearchRandom_Teki(void) {
     if ((s32)(r ^ 0) < 0) {
         r = -r;
     }
-    r = r % range;
+    idx = r % range + 110;
     base = Punidat;
-    idx = r + 110;
     i = 0;
     while (1) {
         if (i == 100) {
@@ -2733,12 +2732,13 @@ PuniData* puniSearchRandom_Teki(void) {
         {
             s32 flag = puni->unk4;
             if ((flag & 0x400) != 0 && (flag & 0x4000) == 0) {
-                return puni;
+                break;
             }
         }
         idx++;
         i++;
     }
+    return puni;
 }
 
 // The original body is a single `blr`; the function is genuinely empty.
