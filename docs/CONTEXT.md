@@ -5874,6 +5874,17 @@ bargainGeneration: zeroing as one chain ending `= i = 0` then `for (; i < 99; i+
 order. evt_win case 11 now takes `s32 got` (stays 19/19). Tried and failed: a row pointer `q = &table[n]` (96-97.6),
 pointer-stepping the first loop (74-76, stops unrolling), `base[i]` (99.84), no `= table` initialiser (99.62).
 
+**eff_pokopi_thunder_n64: effPokopiThunderDisp 98.99 -> 99.85, not linked (on1-pokopi; levers from the list: yes;
+165k, 39 min).** The per-point data at 0x50/0x80/0xB0/0xE0 became four header arrays (`ptX`, `ptY`, `ptZ`,
+`ptScale[12]`) indexed by `i`; loop 2's hand-stepped texture and colour counters became `i * 12`, `i * 50`,
+`i * 120`, `i * 30` (the horao/timestamp lever); loop 3 a small static inline `effPokopiThunderDrawStrip(count)`
+(matches exactly); the 8.0 amplitude its own `f32 amp` declared right after `wy` (rasim plus a 29-position sweep;
+reusing `wy`/`wx`/`t` becomes a compiler temp that stays in f25). Left (5 instructions): at loop 2's start retail
+zeroes `i` once and copies it into the four counters; ours zeroes the first counter and copies from that, since
+the compiler only uses a compiler-created variable as the copy source, so retail's loop-2 counter was likely not a
+plain named local. Loop 2 inside an inline (needs `inline_max_size(1000)`) fixes the zero but renumbers everything
+(122-152 diffs).
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.

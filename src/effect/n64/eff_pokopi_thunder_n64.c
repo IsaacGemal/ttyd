@@ -323,44 +323,43 @@ static inline void effPokopiThunderSetColor2(EffPokopiThunderData* data) {
 }
 #endif
 
-// NONMATCHING (98.99% / 52 differing insns): logic, constants, data, the prologue and the colour stack
-// slots (built by the two void inlines above) match, and the instruction count now equals the target's.
-// The loop-2 angle if/else is written as a nested `if`/`else` with `f20 = 8.0f;` at the head of both
-// arms, so the 8.0 amplitude constant is rematerialised per branch instead of being folded with `scale`
-// and hoisted to the preheader (the target loads float_8 in each arm). What still differs is mwcc's
-// GPR colouring only: in loop 1 the `p` cursor takes r27 where the target uses r29 (and the `tbl+i`
-// temp takes r29 where the target uses r27), the loop-2 `i`/`uoff`/`cr` counters are rotated, and the
-// backend's `@` temps @339/@341/@342/@343 (the loop-2 zero-init copies, which this compile materialises
-// with `li` where the target shares one zero with `mr` copies) own the saved registers `p` needs. The
-// register allocator gives 8 of 66 GPR targets a different saved register and no declaration order
-// reaches them; the missing register is held by a compiler temp. The angle average is `/ 2.0f`
-// (strength-reduced to the 0.5 pool multiply) as in effPokopiThunderMain.
-//
-// NONMATCHING (98.99%): the loop-1 `p` cursor (r27 vs r29) and the backend `@` temps that hold its
-// saved register differ; instruction count and data match.
+// NONMATCHING (99.85% / 5 differing insns): everything matches except the loop-2 preheader. The target
+// zeroes `i` with `li r26,0` and copies that zero into the strength-reduced colour/texture counters
+// (`mr r30/r31/r28/r27, r26`); ours zeroes the first counter and copies from it, then zeroes `i` on its own.
+// MWCC's second CSE pass only uses a compiler variable (inline local/param) as the copy source, never a
+// named local, so the target's loop-2 counter was not a plain named local. Moving the loop into an inline
+// helper makes `i` the source but renumbers every helper variable above the named locals and costs ~120
+// instructions of colouring.
+static inline void effPokopiThunderDrawStrip(s32 count) {
+	s32 j;
+	s32 k;
+	for (j = 0, k = 0; j < count - 1; j++) {
+		GXBegin(0x90, 0, 6);
+		tri2(k, k + 2, k + 1, 2, k + 1, k + 2, k + 3, 0);
+		k += 2;
+	}
+}
+
 void effPokopiThunderDisp(CameraId camId, void* param) {
+	s32 n;
 	CameraEntry* cam;
 	s32 t1;
 	GXTexObj texObj;
 	GXColor color;
 	s32 cr;
-	s32 cg;
 	f32 scale;
 	f32 t;
 	
 	s32 i;
-	s32 k;
 	f32 a2;
 	s32 type;
 	Mtx mtx;
 	f32 wx;
-	f32* p;
 	f32 proj[7];
 	f32 wy;
+	f32 amp;
 	s32 timer;
-	s32 uoff;
 	f32 f20;
-	s32 j;
 	f32 viewport[6];
 	GXColor color2;
 	smartEntry* entry;
@@ -369,7 +368,6 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	f32 s2;
 	EffPokopiThunderData* data;
 	f32 ang;
-	s32 cb;
 	f32 zero = 0.0f;
 	EffPokopiThunderVtx* vtx;
 	EffPokopiThunderVtx* v;
@@ -462,45 +460,39 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 		}
 	}
 
-	p = (f32*)data;
-	for (i = 0; i < 12; i++, p++) {
-		s32 idx = *(s32*)((u8*)data + 0x110) + (i - timer) * 10;
-		t = (f32)tbl[i];
+	for (n = 0; n < 12; n++) {
+		s32 idx = *(s32*)((u8*)data + 0x110) + (n - timer) * 10;
+		t = (f32)tbl[n];
 		wx = 0.09090909f * ((*(f32*)((u8*)data + 0x1C)) - (*(f32*)((u8*)data + 0x10)));
 		ang = 6.2831855f * (f32)(idx % 120 - 60) / 360.0f;
 		wy = 0.09090909f * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)));
 		f20 = 0.04f * (t * (f32)sin(ang));
 		f6 = 0.04f * (t * (f32)cos(ang));
 		t = wx * f6 - wy * f20;
-		p[20] = (t) +
-		          (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x1C)) - (*(f32*)((u8*)data + 0x10)))) + (*(f32*)((u8*)data + 0x10)));
+		data->ptX[n] = (t) +
+		          (0.09090909f * ((f32)n * ((*(f32*)((u8*)data + 0x1C)) - (*(f32*)((u8*)data + 0x10)))) + (*(f32*)((u8*)data + 0x10)));
 		t = wy * f6;
-		p[32] = (wx * f20 + t) +
-		          (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)))) + (*(f32*)((u8*)data + 0x14)));
-		p[44] = zero + (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x24)) - (*(f32*)((u8*)data + 0x18)))) + (*(f32*)((u8*)data + 0x18)));
-		p[56] = 0.1f * (f32)tbl[i + 12];
+		data->ptY[n] = (wx * f20 + t) +
+		          (0.09090909f * ((f32)n * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)))) + (*(f32*)((u8*)data + 0x14)));
+		data->ptZ[n] = zero + (0.09090909f * ((f32)n * ((*(f32*)((u8*)data + 0x24)) - (*(f32*)((u8*)data + 0x18)))) + (*(f32*)((u8*)data + 0x18)));
+		data->ptScale[n] = 0.1f * (f32)tbl[n + 12];
 	}
 
 	entry = smartAlloc(0x2A0, 3);
 	vtx = (EffPokopiThunderVtx*)entry->address;
 
-	p = (f32*)data;
 	v = vtx;
-	uoff = 0;
-	cr = 0;
-	cg = 0;
-	cb = 0;
-	for (i = 0; i < 12; i++, p++) {
+	for (i = 0; i < 12; i++) {
 		if (i == 0) {
-			f20 = 8.0f;
-			ang = -angleABf(p[33], -p[21], p[32], -p[20]);
+			amp = 8.0f;
+			ang = -angleABf(data->ptY[i + 1], -data->ptX[i + 1], data->ptY[i], -data->ptX[i]);
 		} else {
-			f20 = 8.0f;
+			amp = 8.0f;
 			if (i == 11) {
 				ang = -90.0f;
 			} else {
-				a1 = -angleABf(p[33], -p[21], p[32], -p[20]);
-				a2 = -angleABf(p[32], -p[20], p[31], -p[19]);
+				a1 = -angleABf(data->ptY[i + 1], -data->ptX[i + 1], data->ptY[i], -data->ptX[i]);
+				a2 = -angleABf(data->ptY[i], -data->ptX[i], data->ptY[i - 1], -data->ptX[i - 1]);
 				if (a2 - a1 > 180.0f) {
 					a1 += 360.0f;
 				} else if (a2 - a1 < -180.0f) {
@@ -510,44 +502,35 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 				ang = (ang) / 2.0f;
 			}
 		}
-		u = (0x80 - uoff) << 5;
-		f20 = f20 * (scale * p[56]);
+		u = (0x80 - i * 12) << 5;
+		amp = amp * (scale * data->ptScale[i]);
 		ang = 6.2831855f * ang / 360.0f;
-		s2 = f20 * (f32)sin(ang);
-		ct = f20 * (f32)cos(ang);
-		v[0].pos[0] = (s16)(10.0f * (p[20] + s2));
-		v[0].pos[1] = (s16)(10.0f * (p[32] + ct));
-		v[0].pos[2] = (s16)(10.0f * (p[44] + zero));
+		s2 = amp * (f32)sin(ang);
+		ct = amp * (f32)cos(ang);
+		v[0].pos[0] = (s16)(10.0f * (data->ptX[i] + s2));
+		v[0].pos[1] = (s16)(10.0f * (data->ptY[i] + ct));
+		v[0].pos[2] = (s16)(10.0f * (data->ptZ[i] + zero));
 		v[0].tex0[0] = u;
 		v[0].tex0[1] = 0;
-		v[0].clr[0] = cr;
-		v[0].clr[1] = cg;
-		v[0].clr[2] = cb;
-		v[1].pos[0] = (s16)(10.0f * (p[20] - s2));
-		v[1].pos[1] = (s16)(10.0f * (p[32] - ct));
-		v[1].pos[2] = (s16)(10.0f * (p[44] + zero));
+		v[0].clr[0] = i * 50;
+		v[0].clr[1] = i * 120;
+		v[0].clr[2] = i * 30;
+		v[1].pos[0] = (s16)(10.0f * (data->ptX[i] - s2));
+		v[1].pos[1] = (s16)(10.0f * (data->ptY[i] - ct));
+		v[1].pos[2] = (s16)(10.0f * (data->ptZ[i] + zero));
 		v[1].tex0[0] = u;
 		v[1].tex0[1] = 0x400;
-		v[1].clr[0] = cr;
-		v[1].clr[1] = cg;
-		v[1].clr[2] = cb;
-		cr += 50;
-		cg += 120;
+		v[1].clr[0] = i * 50;
+		v[1].clr[1] = i * 120;
+		v[1].clr[2] = i * 30;
 		v += 2;
-		cb += 30;
-		uoff += 12;
 	}
 
 	DCFlushRange(vtx, 0x2A0);
 	GXInvalidateVtxCache();
 	effSetVtxDescN64((effVtxArray*)vtx);
 
-	k = 0;
-	for (j = 0; j < i - 1; j++) {
-		GXBegin(0x90, 0, 6);
-		tri2(k, k + 2, k + 1, 2, k + 1, k + 2, k + 3, 0);
-		k += 2;
-	}
+	effPokopiThunderDrawStrip(i);
 
 	if (data->cameraId != 4) {
 		GXSetProjectionv(proj);
