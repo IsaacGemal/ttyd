@@ -436,12 +436,13 @@ static inline IconBinaryEntry* iconGetBinaryData(IconBinary* bin, u16 id) {
     return (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
 }
 
-// NONMATCHING (98.24%): the inline lookup gives us `data`=r4 (retail r4) and the MUST_MATCH
-// dummy store pins the cached numIcons load to r7 and `frames` to r8 (retail r8/r7); only that
-// numIcons/frames swap and the extra store remain. Lookup, loop bounds and branches match.
-// Without the dummy store the allocator puts numIcons in r5 (97.28%); explicit lookup, split
-// guards, aliases, loop forms, pragmas, declaration orders and inline helpers were all tried
-// (GC/1.3.2 gives the same colouring as GC/2.6), none give r8. Permuter target.
+// NONMATCHING (98.24%): retail keeps the cached numIcons in r8 (one web: the `> 1` test and both loop
+// bounds) and the loops' frame pointer in r7. Ours loads `n` into r5 for the test and copies it to r7
+// for the loops, with the frame pointer in r8. rasim on a mwccdbg dump: no declaration order, temp
+// key or single interference edge gives r8; retail's numIcons web has one fewer neighbour.
+// Tried: a dummy `entryp->numIcons` store (same score), n as int/s32/u32/s16, reusing `id`,
+// block-scope n, explicit lookup, plain `data->frames[i]`, writes to `entry.`, a frame-selection
+// inline helper, opt_lifetimes/propagation/common_subs/strength_reduction/dead_assignments, permuter.
 void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
@@ -451,6 +452,7 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     Mtx view;
     IconBinary* bin;
     u16 id;
+    u16 n;
 
     camera = camGetCurPtr();
     entryp = &entry;
@@ -466,23 +468,18 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     entryp->height = data->height;
     entryp->tplId = data->frames[0].tplId;
     entryp->frameDelay = data->frames[0].frameDelay;
-#ifdef MUST_MATCH
-    // MUST_MATCH: dummy store, not in retail. It forces the cached numIcons load into r7
-    // before the frame loop so the loop's register layout matches; the entry is a stack
-    // local and iconGX does not read numIcons, so behaviour is unchanged.
-    entryp->numIcons = data->numIcons;
-#endif
-    if (data->numIcons > 1) {
+    n = data->numIcons;
+    if (n > 1) {
         s32 total = 0;
         s32 rest;
         int i;
 
         ICON_FRAMES_INIT(data)
-        for (i = 0; i < data->numIcons; i++) {
+        for (i = 0; i < n; i++) {
             total += ICON_FRAME(data, i).frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
-        for (i = 0; i < data->numIcons; i++) {
+        for (i = 0; i < n; i++) {
             if (rest < ICON_FRAME(data, i).frameDelay) {
                 entryp->tplId = ICON_FRAME(data, i).tplId;
                 break;
@@ -494,10 +491,8 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     iconGX(view, entryp);
 }
 
-// NONMATCHING (98.17%): same register picture as iconDispGx2 (retail `data` r4, `numIcons`
-// r8, `frames` r7). The inline lookup plus the MUST_MATCH dummy store reproduce everything
-// except the numIcons/frames swap and that extra store. Removing the dummy store drops it to 97.17%
-// (numIcons goes to r5); the same search as iconDispGx2 found no C shape that gives r8.
+// NONMATCHING (98.17%): same register picture as iconDispGx2 (retail `numIcons` r8, `frames` r7;
+// ours puts `n` in r5 plus a copy in r7, and `frames` in r8). See iconDispGx2.
 void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
@@ -507,6 +502,7 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     Mtx view;
     IconBinary* bin;
     u16 id;
+    u16 n;
 
     camera = camGetCurPtr();
     entryp = &entry;
@@ -522,21 +518,18 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     entryp->height = data->height;
     entryp->tplId = data->frames[0].tplId;
     entryp->frameDelay = data->frames[0].frameDelay;
-#ifdef MUST_MATCH
-    // MUST_MATCH: dummy store, not in retail. See iconDispGx2.
-    entryp->numIcons = data->numIcons;
-#endif
-    if (data->numIcons > 1) {
+    n = data->numIcons;
+    if (n > 1) {
         s32 total = 0;
         s32 rest;
         int i;
 
         ICON_FRAMES_INIT(data)
-        for (i = 0; i < data->numIcons; i++) {
+        for (i = 0; i < n; i++) {
             total += ICON_FRAME(data, i).frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
-        for (i = 0; i < data->numIcons; i++) {
+        for (i = 0; i < n; i++) {
             if (rest < ICON_FRAME(data, i).frameDelay) {
                 entryp->tplId = ICON_FRAME(data, i).tplId;
                 break;
