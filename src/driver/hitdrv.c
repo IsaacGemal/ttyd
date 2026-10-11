@@ -587,25 +587,46 @@ static inline void hitSetGQR5(u32 shift) {
 
 // The packed s16 vertex reads use the SDK __OSs16tof32 fast-cast inline, so they lower to retail's psq_lx
 // through GQR5, which retail reprograms per vertex from the map file's fraction shift (hitSetGQR5, MUST_MATCH;
-// the natural build scales in C). The unpacked even/odd pick is `!(triIndex & 1)` narrowed to s16 after the
-// first PSMTXMultVec; the packed pick is u16. The element stride is the popcount of the low 12 bits of
-// elementMask times two. Retail returns numVectors in r3 without an extsh, so the function returns s32.
-// The unpacked vectors are `&hit->vectors[numVectors++]`: MWCC strength-reduces the index once per display
-// list, as retail does. The packed vertex indices are `list + (stride * k + 3)`, whose
-// strength-reduced `stride * triIndex` gives retail's `mr` copy of the index for the byte offset, and the
-// three corner offsets are computed (`o0 = i0 * 3` before the picks, `o1`/`o2` right after each) as retail
-// orders them. `dlIndex`/`triIndex` are function-level: each branch gets its own web, as in retail.
-// What differs: callee-saved register colouring only (retail: partIndex r31, numVectors r30, mesh r29,
-// hit r27, even/mw r26), plus one `addi r3, hit, 0xc` scheduled before the even/odd branch. rasim finds no
-// declaration order for it (best 7-12 targets wrong); the @ temps (stride, parts offset, list walkers) differ.
-// NONMATCHING (95.00%): register colouring only (see above).
+// the natural build scales in C). The element stride is the popcount of the low 12 bits of elementMask times
+// two. Retail returns numVectors in r3 without an extsh, so the function returns s32. All locals are declared
+// at the top (C89 style) and the loop counters are shared by both branches; the declaration order sets the
+// register colouring. Both branches index `&hit->vectors[numVectors]` and MWCC strength-reduces the byte
+// offsets itself (including the packed branch's per-list copy). The packed list base is the u32 `offset` field,
+// so `list + 3 + stride * k` adds the list first as retail does, and the triangle count is the raw u16 with
+// the `- 2` in the loop test.
 s32 hitCalcVtxPosition(HitEntry* hit) {
-    s32 numVectors = 0;
-    s32 partIndex;
     s32 dlIndex;
+    MapWork* mw;
+    Vec v0;
     s32 triIndex;
+    u8* base;
+    u32 mask;
+    s32 i1;
+    s16* pvtx;
+    s32 i2;
+    s32 pi0;
+    s32 partIndex;
+    s32 i0;
+    s32 numVectors;
+    s32 s;
+    HitVector* vector;
     MapFileMesh* mesh;
+    Vec* vtx;
+    u32 list;
+    s32 o0;
+    s32 o1;
+    HitVector* pvector;
+    Vec v1;
+    f32 zero;
+    s32 stride;
+    s32 pi2;
+    Vec v2;
+    s32 o2;
+    s32 pi1;
+    BOOL peven;
+    u16 triCount;
 
+    numVectors = 0;
     if (hit->vectors == NULL) {
         return 0;
     }
@@ -618,20 +639,17 @@ s32 hitCalcVtxPosition(HitEntry* hit) {
 
         if (!mesh->isPackedDisplay) {
             for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
-                u8* base = (u8*)mesh->displayLists.normalLists[dlIndex];
+                base = (u8*)mesh->displayLists.normalLists[dlIndex];
                 for (triIndex = 0; triIndex < *(s32*)base - 2; triIndex++) {
-                    s32 i0 = *(s16*)(base + triIndex * 0x18 + 4);
-                    s32 i1 = *(s16*)(base + (triIndex + 1) * 0x18 + 4);
-                    s32 i2 = *(s16*)(base + (triIndex + 2) * 0x18 + 4);
-                    HitVector* vector = &hit->vectors[numVectors++];
-                    Vec* vtx = (Vec*)(((u32*)mesh->vcdTableOffset)[0] + 4);
+                    i0 = *(s16*)(base + triIndex * 0x18 + 4);
+                    i1 = *(s16*)(base + (triIndex + 1) * 0x18 + 4);
+                    i2 = *(s16*)(base + (triIndex + 2) * 0x18 + 4);
+                    vector = &hit->vectors[numVectors++];
+                    vtx = (Vec*)(((u32*)mesh->vcdTableOffset)[0] + 4);
 
                     PSMTXMultVec(hit->worldMtx, &vtx[i0], &vector->v0);
-                    {
-                        BOOL even = !(triIndex & 1);
-                        PSMTXMultVec(hit->worldMtx, &vtx[(s16)(even ? i2 : i1)], &vector->v1);
-                        PSMTXMultVec(hit->worldMtx, &vtx[(s16)(even ? i1 : i2)], &vector->v2);
-                    }
+                    PSMTXMultVec(hit->worldMtx, &vtx[(s16)(!(triIndex & 1) ? i2 : i1)], &vector->v1);
+                    PSMTXMultVec(hit->worldMtx, &vtx[(s16)(!(triIndex & 1) ? i1 : i2)], &vector->v2);
                     PSVECSubtract(&vector->v2, &vector->v0, &vector->edge0);
                     PSVECSubtract(&vector->v0, &vector->v1, &vector->edge1);
                     PSVECSubtract(&vector->v1, &vector->v2, &vector->edge2);
@@ -639,82 +657,67 @@ s32 hitCalcVtxPosition(HitEntry* hit) {
                 }
             }
         } else {
-            MapWork* mw = mapGetWork();
-            u32 mask = mesh->elementMask;
-            s32 stride = 0;
-            s32 s;
-            f32 zero = 0.0f;
+            mw = mapGetWork();
+            mask = mesh->elementMask;
+            stride = 0;
+            zero = 0.0f;
 
             for (s = 0; 12 > s; s++) {
                 stride += (mask >> s) & 1;
             }
             stride *= 2;
 
-            {
-                s32 vecOffset = numVectors * 0x54;
+            for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
+                list = mesh->displayLists.packedLists[dlIndex].offset;
+                triCount = *(u16*)(list + 1);
 
-                for (dlIndex = 0; dlIndex < mesh->displayListCount; dlIndex++) {
-                    u8* list = (u8*)mesh->displayLists.packedLists[dlIndex].offset;
-                    s32 off = vecOffset;
-                    s32 triCount = *(u16*)(list + 1) - 2;
+                for (triIndex = 0; triIndex < triCount - 2; triIndex++) {
+                    pvtx = (s16*)(((u32*)mesh->vcdTableOffset)[0] + 4);
+                    pi0 = *(u16*)(list + 3 + stride * triIndex);
+                    pi1 = *(u16*)(list + 3 + stride * (triIndex + 1));
+                    pi2 = *(u16*)(list + 3 + stride * (triIndex + 2));
+                    pvector = &hit->vectors[numVectors];
 
-                    for (triIndex = 0; triIndex < triCount; triIndex++) {
-                        s16* vtx = (s16*)(((u32*)mesh->vcdTableOffset)[0] + 4);
-                        s32 i0 = *(u16*)(list + (stride * triIndex + 3));
-                        s32 i1 = *(u16*)(list + (stride * (triIndex + 1) + 3));
-                        s32 i2 = *(u16*)(list + (stride * (triIndex + 2) + 3));
-                        HitVector* vector = (HitVector*)((u8*)hit->vectors + off);
-                        BOOL even;
-                        s32 o0;
-                        s32 o1;
-                        s32 o2;
-                        Vec v0;
-                        Vec v1;
-                        Vec v2;
-
-                        o0 = i0 * 3;
-                        even = !(triIndex & 1);
-                        o1 = (u16)(even ? i2 : i1) * 3;
-                        o2 = (u16)(even ? i1 : i2) * 3;
-                        {
+                    o0 = pi0 * 3;
+                    peven = !(triIndex & 1);
+                    o1 = (u16)(peven ? pi2 : pi1) * 3;
+                    o2 = (u16)(peven ? pi1 : pi2) * 3;
+                    {
 #ifdef MUST_MATCH
-                            hitSetGQR5(HIT_VTX_FRAC(mw, hit));
-                            v0.x = __OSs16tof32(&vtx[o0 + 0]);
-                            v0.y = __OSs16tof32(&vtx[o0 + 1]);
-                            v0.z = __OSs16tof32(&vtx[o0 + 2]);
-                            v1.x = __OSs16tof32(&vtx[o1 + 0]);
-                            v1.y = __OSs16tof32(&vtx[o1 + 1]);
-                            v1.z = __OSs16tof32(&vtx[o1 + 2]);
-                            v2.x = __OSs16tof32(&vtx[o2 + 0]);
-                            v2.y = __OSs16tof32(&vtx[o2 + 1]);
-                            v2.z = __OSs16tof32(&vtx[o2 + 2]);
+                        hitSetGQR5(HIT_VTX_FRAC(mw, hit));
+                        v0.x = __OSs16tof32(&pvtx[o0 + 0]);
+                        v0.y = __OSs16tof32(&pvtx[o0 + 1]);
+                        v0.z = __OSs16tof32(&pvtx[o0 + 2]);
+                        v1.x = __OSs16tof32(&pvtx[o1 + 0]);
+                        v1.y = __OSs16tof32(&pvtx[o1 + 1]);
+                        v1.z = __OSs16tof32(&pvtx[o1 + 2]);
+                        v2.x = __OSs16tof32(&pvtx[o2 + 0]);
+                        v2.y = __OSs16tof32(&pvtx[o2 + 1]);
+                        v2.z = __OSs16tof32(&pvtx[o2 + 2]);
 #else
-                            f32 scale = 1.0f / (f32)(1 << HIT_VTX_FRAC(mw, hit));
+                        f32 scale = 1.0f / (f32)(1 << HIT_VTX_FRAC(mw, hit));
 
-                            v0.x = vtx[o0 + 0] * scale;
-                            v0.y = vtx[o0 + 1] * scale;
-                            v0.z = vtx[o0 + 2] * scale;
-                            v1.x = vtx[o1 + 0] * scale;
-                            v1.y = vtx[o1 + 1] * scale;
-                            v1.z = vtx[o1 + 2] * scale;
-                            v2.x = vtx[o2 + 0] * scale;
-                            v2.y = vtx[o2 + 1] * scale;
-                            v2.z = vtx[o2 + 2] * scale;
+                        v0.x = pvtx[o0 + 0] * scale;
+                        v0.y = pvtx[o0 + 1] * scale;
+                        v0.z = pvtx[o0 + 2] * scale;
+                        v1.x = pvtx[o1 + 0] * scale;
+                        v1.y = pvtx[o1 + 1] * scale;
+                        v1.z = pvtx[o1 + 2] * scale;
+                        v2.x = pvtx[o2 + 0] * scale;
+                        v2.y = pvtx[o2 + 1] * scale;
+                        v2.z = pvtx[o2 + 2] * scale;
 #endif
-                        }
+                    }
 
-                        PSMTXMultVec(hit->worldMtx, &v0, &vector->v0);
-                        PSMTXMultVec(hit->worldMtx, &v1, &vector->v1);
-                        PSMTXMultVec(hit->worldMtx, &v2, &vector->v2);
-                        PSVECSubtract(&vector->v2, &vector->v0, &vector->edge0);
-                        PSVECSubtract(&vector->v0, &vector->v1, &vector->edge1);
-                        PSVECSubtract(&vector->v1, &vector->v2, &vector->edge2);
-                        PSVECCrossProduct(&vector->edge0, &vector->edge1, &vector->normal);
-                        if (vector->normal.x != zero || vector->normal.y != zero || vector->normal.z != zero) {
-                            off += 0x54;
-                            vecOffset += 0x54;
-                            numVectors++;
-                        }
+                    PSMTXMultVec(hit->worldMtx, &v0, &pvector->v0);
+                    PSMTXMultVec(hit->worldMtx, &v1, &pvector->v1);
+                    PSMTXMultVec(hit->worldMtx, &v2, &pvector->v2);
+                    PSVECSubtract(&pvector->v2, &pvector->v0, &pvector->edge0);
+                    PSVECSubtract(&pvector->v0, &pvector->v1, &pvector->edge1);
+                    PSVECSubtract(&pvector->v1, &pvector->v2, &pvector->edge2);
+                    PSVECCrossProduct(&pvector->edge0, &pvector->edge1, &pvector->normal);
+                    if (pvector->normal.x != zero || pvector->normal.y != zero || pvector->normal.z != zero) {
+                        numVectors++;
                     }
                 }
             }

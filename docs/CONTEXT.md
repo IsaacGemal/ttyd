@@ -6028,6 +6028,17 @@ inline `SubIconDrawColor(GXColor c) { FontDrawColor(&c); }` (Grind 20's GXColor-
 `(GXColor){0, 0, 0, 0}`. Look for the by-value parameter in other near-misses where loads through a pointer
 parameter move past stores to a local.
 
+**hitdrv: hitCalcVtxPosition 95.00 -> 100, 40/41, not linked (on2-hitdrv; lever from the list: partial; 361k,
+69 min).** Plain C89: every local declared at the top with loop counters shared by both branches (the shared-locals
+lever, #606/#618/#661, taken all the way), `&hit->vectors[numVectors]` so MWCC builds the per-list offsets (#672's
+`vecOffset`/`off` locals gone), `list` as the `u32 offset` field read as `list + 3 + stride * k` (every `u8*` spelling
+gave `lhzx` or index-first), `triCount` as the raw u16 with the `- 2` in the loop test, the even/odd pick inline as
+`(s16)(!(triIndex & 1) ? i2 : i1)`, and `s` before `stride`; the final order from a scripted hill-climb. `_hitEnt`
+stays 98.76: rasim says retail's packed count must colour after two short-lived unroll-setup temps yet before the
+unrolled-body temps, which no declaration order or expression gives, so retail's variable set differs (try loop
+shapes that change how MWCC unrolls the count loop: do-while, a pointer bound, the count copied out before the
+branch). Eleven optimisation pragmas tried on both: none helped.
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
