@@ -12,7 +12,10 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 #include "dolphin/types.h"
-#include "math.h"
+#include "math_ext.h"
+
+#define fabs(x) __fabs(x)
+#define fabsf(x) __fabsf(x)
 #include "party/party_move.h"
 #include "party/party_hit.h"
 #include "party/party_motion.h"
@@ -24,6 +27,33 @@ extern const f32 float_neg0p5_8041ce04;
 #include "motion/mot_slit.h"
 #include "party/party_chuchu.h"
 #include "party/party_nokonoko.h"
+
+__declspec(section ".rodata") u8 vec3_802f3e40[0x108] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x42, 0xF4, 0x00, 0x00, 0x43, 0x02, 0x00, 0x00, 0xC3, 0x9C, 0x80, 0x00,
+    0x50, 0x43, 0x48, 0x5F, 0x41, 0x32, 0x5F, 0x31, 0x00, 0x00, 0x00, 0x00,
+    0x67, 0x6F, 0x72, 0x5F, 0x30, 0x31, 0x00, 0x00, 0x41, 0x5F, 0x69, 0x65,
+    0x5F, 0x30, 0x33, 0x5F, 0x79, 0x75, 0x6B, 0x61, 0x5F, 0x66, 0x31, 0x5F,
+    0x43, 0x00, 0x00, 0x00, 0x41, 0x5F, 0x69, 0x65, 0x5F, 0x30, 0x33, 0x5F,
+    0x79, 0x75, 0x6B, 0x61, 0x5F, 0x66, 0x32, 0x5F, 0x43, 0x00, 0x00, 0x00,
+};
+
+#pragma pool_data on // the original addresses its .rodata through one base register
 
 // LOCAL_PROTO(psndSFXOnEx_3D): retail event callers narrow volume and pan to u8; the implementation uses s32 and sharing that signature regresses matched event code.
 s32 psndSFXOnEx_3D(const char* name, Vec* position, u8 vol, u8 pan, u16 pitch, u16 flags);
@@ -296,7 +326,6 @@ void N_partyFollowCloseOff(PartyEntry* party) {
 }
 
 void party_motion_stay(PartyEntry* party) {
-    extern u8 vec3_802f3e40[];
     u8* vec = vec3_802f3e40;
     MarioWork* mario;
     HitEntry* hit;
@@ -706,17 +735,17 @@ void unk_8014b824(PartyEntry* party) {
 
 // opt_common_subs off: with it on MWCC's CSE costs an extra callee-saved register (stmw r24,
 // 8 regs); the target saves 7 (stmw r25). Same reason as homing_fly's pragma.
+#pragma opt_propagation off // keep the 1000.0f load after the ternary branch, as retail does
 #pragma opt_common_subs off
-// NONMATCHING (99.58%): every call, branch body, constant and rodata read matches. What
-// differs is register colouring (id/groundHit swapped within r27/r28, the i2f result in
-// physical f25) plus the pooled i2f magic double and a t0 home-slot store
+// NONMATCHING (99.85%): every call, branch body, constant and rodata read matches. What
+// differs is FPR colouring (i2f result in f25 not f24, a y94/ypos rotation) and the second
+// movePos address addis, plus the pooled i2f magic double (fresh lis not 0x108(r29)).
 void party_motion_homing_walk(PartyEntry* party) {
     extern const f32 float_40_8041cdf0;
     extern const f32 float_0p5_8041ce00;
     extern const f32 float_0p1_8041ce44;
     extern const f32 float_1000_8041cdf4;
     extern const f32 float_100_8041cde0;
-    extern u8 vec3_802f3e40[];
     // The unit's .rodata is one block starting at vec3_802f3e40; retail addresses
     // every string and vector in it as vec3_802f3e40 + offset. The FB/FV macros
     // above reproduce that under MUST_MATCH (offsets: str_802F3F18=0xd8,
@@ -729,6 +758,7 @@ void party_motion_homing_walk(PartyEntry* party) {
     f32 dist;
     f32 f;
     HitEntry* groundHit = NULL; // retail inits groundHit (r28), which unk_800c8dd0 reads even when the flags guard skips its assignment
+    s32 sid;
     MarioWork* mario;
     MarioWork* mm;
     u32 id;
@@ -748,6 +778,7 @@ void party_motion_homing_walk(PartyEntry* party) {
     f32 ry;
     f32 rz;
     f32 t0;
+    f32 off;
     s32 noChg;
     u8* fmark; // struct Footmark is incomplete; fields read at raw offsets (x=0x4, y=0x8, z=0xC, flags=0x0)
     f32 f29;
@@ -761,12 +792,16 @@ void party_motion_homing_walk(PartyEntry* party) {
     f32 f25;
     f32 f24;
     f32 ang;
+    f32 tw;
     f32 headHeight;
     f32 c1;
     f32 py;
     Vec v58;
     f32 s1;
     s32 writeId;
+#ifdef MUST_MATCH
+    s32 readId;
+#endif
     HitCheckQuery q3;
     f32 c2;
     Vec v4c;
@@ -776,6 +811,7 @@ void party_motion_homing_walk(PartyEntry* party) {
     f32 pz;
 
     id = partyGetFootmarkId(&party->flags);
+    sid = id;
     mario = party->playerPtr;
     if (party->field_8 & 0x2) {
         party->field_8 &= ~0x2;
@@ -797,7 +833,7 @@ void party_motion_homing_walk(PartyEntry* party) {
             party->field_8 |= 0x20000;
         }
     }
-    if (partyGetTargetDistY(id) != 0.0f) {
+    if (partyGetTargetDistY(id)) {
         f30 = 50.0f;
     } else {
         f30 = 35.0f;
@@ -910,7 +946,7 @@ void party_motion_homing_walk(PartyEntry* party) {
             v94 = marioGetPtr()->position;
         }
         v70 = party->position;
-        f25 = partyGetTargetDist3D(id, &v70);
+        f25 = partyGetTargetDist3D(sid, &v70);
         if (f25 >= f31) {
             unk_800c93d0(party, f29);
         }
@@ -931,7 +967,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                 v58.y = py;
                 v58.z = pz;
                 v64 = v58;
-                f25 = partyGetTargetDist3D(id, &v64);
+                f25 = partyGetTargetDist3D(sid, &v64);
                 if (f25 >= f31) {
                     if (party->field_8 & 0x20000) {
                         f = float_0p1_8041ce44 * (f25 - f30);
@@ -989,7 +1025,12 @@ void party_motion_homing_walk(PartyEntry* party) {
                 }
             }
             writeId = partyGetFootmarkWriteId(id);
+#ifdef MUST_MATCH
+            readId = partyGetFootmarkReadId(id);
+            if (readId == writeId) {
+#else
             if (writeId == partyGetFootmarkReadId(id)) {
+#endif
                 unk_800c93d0(party, party->playerPtr->baseSpeed);
                 if (!(party->playerPtr->baseSpeed != 0.0f && (*(f32*)((u8*)party + 0xA0)) == 0.0f && (*(f32*)((u8*)party + 0xA8)) == 0.0f)) {
                     angle = party->dir;
@@ -1044,19 +1085,19 @@ void party_motion_homing_walk(PartyEntry* party) {
                 (*(f32*)((u8*)party + 0x9C)) = rz;
                 (*(f32*)((u8*)party + 0x98)) = ry;
                 v4c = *(Vec*)((u8*)party + 0x94);
-                f24 = touch_wall_ct;
+                tw = touch_wall_ct;
                 sincosf(&s2, &c2, ang);
                 q2.targetPos = v4c;
                 q2.targetPos.x += s2 * float_40_8041cdf0;
-                q2.targetPos.y += f24;
                 q2.targetPos.z += c2 * float_40_8041cdf0;
+                q2.targetPos.y += tw;
                 q2.targetDistance = float_1000_8041cdf4;
                 q2.targetDir = FV(0x84, vec3_802f3ec4, ((Vec){0.0f, -1.0f, 0.0f}));
                 hit = hitCheckVecFilter(&q2, NULL);
                 if (hit != NULL) {
                     f = q2.hitPos.y;
-                    t0 = (f >= 0.0f) ? float_0p5_8041ce00 : float_neg0p5_8041ce04;
-                    f24 = (f32)(s32)(float_1000_8041cdf4 * f + t0) / float_1000_8041cdf4;
+                    off = (f >= 0.0f) ? float_0p5_8041ce00 : float_neg0p5_8041ce04;
+                    f24 = (f32)(s32)(float_1000_8041cdf4 * f + off) / float_1000_8041cdf4;
                     hitGetAttr(hit);
                 } else {
                     f24 = -2000.0f;
@@ -1139,7 +1180,7 @@ void party_motion_homing_walk(PartyEntry* party) {
             if (!(attr & 0x200)) {
                 vA0.x = party->position.x;
                 vA0.z = party->position.z;
-                movePos(&vA0.x, &vA0.z, party->speed, party->dir);
+                { f32* pz = &vA0.z; f32* px = &vA0.x; movePos(px, pz, party->speed, party->dir); }
             }
         }
     } else {
@@ -1251,6 +1292,7 @@ void party_motion_homing_walk(PartyEntry* party) {
     }
 }
 #pragma opt_common_subs reset
+#pragma opt_propagation reset
 
 // opt_common_subs off: with it on, MWCC's CSE duplicates the footmark id into a
 // second callee-saved register (7 saved regs / 0x140 frame); the target keeps only
@@ -1264,7 +1306,6 @@ void party_motion_homing_walk(PartyEntry* party) {
 // NONMATCHING (99.61%): 3 scheduling/pool diffs: `mr r27,r3` sits one slot late and the i2f magic
 // double is reached with a fresh lis instead of `0x108(r31)`. Every call, constant and branch body is exact.
 void party_motion_homing_fly(PartyEntry* party) {
-    extern u8 vec3_802f3e40[];
     extern const Vec vec3_802f3e4c;
     extern const char str_802F3FC8[];
     extern const char str_802F3FD0[];
@@ -2381,7 +2422,6 @@ void party_motion_beside_mario(PartyEntry* party) {
 // `lis` vs `0x108(r31)`); permuter work.
 #pragma opt_lifetimes off
 void party_motion_jump(PartyEntry* party) {
-    extern u8 vec3_802f3e40[];
     u8* vec = vec3_802f3e40;
     MarioWork* mario;
     HitEntry* hit;
@@ -3044,7 +3084,6 @@ void partyChgMotSlitFloor(PartyEntry* party) {
 // Match shapes below are marked MUST_MATCH: the natural forms compile to the
 // same logic but differ in mwcc register allocation / block layout.
 BOOL party_slit(PartyEntry* party) {
-    extern u8 vec3_802f3e40[];
     u8* vec = vec3_802f3e40;
     s32 ret = 1;
     MarioWork* mario = party->playerPtr;
@@ -3212,14 +3251,10 @@ BOOL party_slit(PartyEntry* party) {
 // twice, `rate = 0.1f` local) gives the target's fsubs/fmuls/fadds registers and load order;
 // `cond = fabsf((f32)(target - next < 1.0f))` plus the named zero `float_0_8041cdec` fix the fcmpu
 // operand order and the conversion tail.
-// NONMATCHING (98.54%): only the int->float magic double differs. The target reaches it as
-// `lfd f2, 0x108(r31)` off the vec3_802f3e40 `.rodata` base; MWCC pools its own anonymous copy
-// and loads it with a fresh `lis`+`lfd`, which this unit's source cannot change (tools/diff_shape.py
-// shows calls and immediates identical). The vec3-relative addressing needs the unit's `.rodata`
-// blob, which does not make MWCC go base-relative here; permuter work.
+// NONMATCHING (99.95%): the int->float magic and the four string reads are now base-relative; the
+// remaining diff is the pool offset of the two zero Vecs copied to party +0x88/+0x7C. As `(Vec){0,0,0}`
+// they pool at `.rodata+0x108/0x114` where the target reads 0x48/0x54, shifting the rest by 0x18.
 s32 party_roll(PartyEntry* party) {
-    extern u8 vec3_802f3e40[];
-    u8* vec = vec3_802f3e40;
     s32 ret = 1;
     f32 target;
     f32 next;
@@ -3233,8 +3268,8 @@ s32 party_roll(PartyEntry* party) {
     }
     if (party->field_8 & 0x1) {
         party->field_8 = (party->field_8 & ~0x1);
-        partyPaperOn(party, (const char*)(vec + 0x128));
-        partyChgPaper(party, (void*)(vec + 0x130));
+        partyPaperOn(party, "p_roll");
+        partyChgPaper(party, (void*)"PM_R_1A");
         partyChgPoseId(party, 0);
         *(f32*)((u8*)party + 0x88) = -6.0f;
         *(f32*)((u8*)party + 0x8C) = 6.0f;
@@ -3248,7 +3283,7 @@ s32 party_roll(PartyEntry* party) {
     case 0:
         *(s32*)((u8*)party + 0x24) = *(s32*)((u8*)party + 0x24) - 1;
         if (*(s32*)((u8*)party + 0x24) <= 0) {
-            partyChgPaper(party, (void*)(vec + 0x138));
+            partyChgPaper(party, (void*)"PM_R_1B");
             party->field_3A = 0xA;
         }
         break;
@@ -3272,7 +3307,7 @@ s32 party_roll(PartyEntry* party) {
         *(f32*)((u8*)party + 0x80) = 0.0f;
         *(s32*)((u8*)party + 0x24) = 0x41;
         party->field_3A = 0x65;
-        partyChgPaper(party, (void*)(vec + 0x140));
+        partyChgPaper(party, (void*)"PM_R_1C");
         partyPaperLightOff(party);
         // fallthrough
     case 0x65:
@@ -3314,8 +3349,8 @@ s32 party_roll(PartyEntry* party) {
             party->field_FC = 90.0f;
             party->dir = 90.0f;
         }
-        *(Vec*)(partyBytes + 0x88) = *(Vec*)(vec + 0x48);
-        *(Vec*)(partyBytes + 0x7C) = *(Vec*)(vec + 0x54);
+        *(Vec*)(partyBytes + 0x88) = (Vec){0.0f, 0.0f, 0.0f};
+        *(Vec*)(partyBytes + 0x7C) = (Vec){0.0f, 0.0f, 0.0f};
         party->field_37[0] = 0;
         party->flags = (party->flags & ~0x1000);
         party->flags2 = (party->flags2 & ~0x100);
@@ -3373,13 +3408,10 @@ static inline f32 pt_sqrtf(f32 x) {
 
 // Stack slots, statement order/shape, calls and immediates all match, as do the FP colours (scale f29, wall f28);
 // the `(a < b) ? a : b` select written as if/else drops the spurious fmr the ternary emitted.
-// NONMATCHING (92.49%): only the unit's pooled doubles and the register allocation they drive remain. The target
-// reaches the int->float magic as `lfd f30, 0x108(r31)` and the sqrtf half/three as `0x110/0x118/0x120(r31)` (r31 =
-// vec3_802f3e40 base); MWCC pools its own anonymous copies and loads them with a fresh `lis`, which also pushes
-// 0x4330 into r31 and shifts the callee-saved set (orig party/pos/vec/i = r29/r30/r31/r27, ours r27/r28/r30/r29).
-// Defining the unit .rodata does not make MWCC base-relative these pool entries; permuter work.
+// NONMATCHING (94.06%): the unit `.rodata` blob plus `pool_data` and source string literals put the
+// int->float magic at `lfd f30, 0x108(r31)` and the sqrtf half/three at `0x110/0x118/0x120(r31)`; the
+// remaining diff is the FP colouring shift driven by the pool ordering; permuter work.
 s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
-    extern u8 vec3_802f3e40[];
     u8* vec = vec3_802f3e40;
     f32 wall;
     HitCheckQuery query2;
