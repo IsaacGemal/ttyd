@@ -6079,6 +6079,14 @@ first, then `i`. The pool: both MUST_MATCH `defer_codegen off` helpers and the n
 literals plus a zero-Vec compound literal in a static inline give both pools byte-identical. Told to list what the
 old framing assumed and question it, the agent found the wrong step in six minutes.
 
+**icondrv: iconDispGx2 98.24 and iconDispGxCol 98.17 unchanged, MUST_MATCH dummy store removed (on2-icondrv; 86k,
+20 min).** A cached `u16 n = data->numIcons;` replaces the guarded `entryp->numIcons = data->numIcons;` store at the
+same score. Left: retail keeps the count in r8 as one value; ours loads it into r5 and copies it to r7. rasim finds no
+declaration order or single edge that works, so retail's count conflicts with one fewer variable (try a while loop
+walking frames by pointer, or an `iconGetBinaryData` that also returns the count). The swarm's u16 icon-id lead
+(btlUnitItemDisp): inside icondrv it holds only if iconDispGx and iconDispGxAlpha change together (iconDispGx alone
+u16: 88.89); not applied, callers in battle and the RELs unchecked (a u16 iconDispGx once broke linked RELs).
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
