@@ -6002,3 +6002,18 @@ before `ofsZ`. marioDispBlurSub: the colour as `(GXColor){0xFF, 0xFF, 0xFF, 0x80
 marioMakeDispDir became block locals (`f32 lean = 30.0f;`, per pool_plan.py). The agent split the ledger read across
 six parallel readers, one chunk each.
 
+
+### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
+
+The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
+- Wins:
+  - **Spell an address the way a sibling function does** (mapSetPolygonVtxDesc -> 100). `base = (u8*)wp + 0xA4; base + idx * 0x178` gives the original's `add r7, wp, idx` operand order. The direct `(u8*)wp->entries + (idx * 0x178 + 0xA4)` puts the index first.
+  - **Derive one pointer from the other's named offset** (animPoseSetEffect -> 100). Computing `poseOffset = poseId * 0x170` first, with `pose` derived from it, keeps one named web; computing both from `poseId` swapped the saved pair.
+  - **Factor a tail loop into a static inline helper** (spline_maketable -> 100). The backward-substitution sweep as `spline_backsub` gives the original's loop-pointer rotation. The helper is the function's own code moved out, not a copy.
+  - **One shared array-base local plus the cast style of a sibling** (evalProc -> 100). `groups = ANIM_POSE_DATA_GROUPS(data)` serves both group and parent, and the visibility byte is read as `(s8)arr[i]`, as dispProc does.
+  - **A one-use boolean local kept real with `opt_propagation off`** (evt_mobj_tornadoswitch_blue -> 100). That creates the gp base-load temp before the string temp, so r5/r4 come out as in the original.
+  - **`int` instead of `s32` for a one-use local** (animPoseSetPaperAnimGroup +0.12). The value folds straight into the call argument.
+- Hard negatives:
+  - _mapDispMapObj (mapdrv) 99.98 -> 100 refused. It needs an identity inline `mapFlagId(flags) { return flags; }` to pin flags to r3, on top of moving the fog block into an inline helper to reorder the GXColor temp slots.
+  - mapObjSetFlushColor (mapdrv): no change.
+

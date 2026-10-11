@@ -662,8 +662,10 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (99.78%): only the gp/string-address temp colouring is swapped (retail gp=r5/str=r4,
-// ours gp=r4/str=r5); `!!gp->inBattle` fixed the scheduling.
+// mwcc folds the one-use `inBattle` local back into the call, which then builds the string
+// address before the gp load. Keeping it a real local makes the gp temp first, so the two
+// share r5/r4 as in the original.
+#pragma opt_propagation off // keep `inBattle` a real local so the gp base-load temp is created before the string temp
 s32 evt_mobj_tornadoswitch_blue(EventEntry* event, BOOL isFirstCall) {
     f32 x;
     s32* args = event->args;
@@ -674,6 +676,7 @@ s32 evt_mobj_tornadoswitch_blue(EventEntry* event, BOOL isFirstCall) {
     s32 unk1E4;
     MapObjectEntry* obj;
     s32 unk1D4;
+    BOOL inBattle;
 
     evtGetValue(event, args[0]);
     name = (const char*)evtGetValue(event, args[1]);
@@ -682,8 +685,9 @@ s32 evt_mobj_tornadoswitch_blue(EventEntry* event, BOOL isFirstCall) {
     z = evtGetFloat(event, args[4]);
     unk1D4 = evtGetValue(event, args[5]);
     unk1E4 = args[6];
+    inBattle = !!gp->inBattle;
     asyncName = "MOBJ_BlueTornadoSwitch";
-    if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -701,6 +705,7 @@ s32 evt_mobj_tornadoswitch_blue(EventEntry* event, BOOL isFirstCall) {
     mobjCalcMtx(obj);
     return 2;
 }
+#pragma opt_propagation reset
 
 s32 mobj_switch_red(MapObjectEntry* obj) {
     switch (obj->unk1DC) {
