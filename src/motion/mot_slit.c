@@ -31,17 +31,6 @@
 // .sdata2: the base {0, 0, 0, 255} colour both mapSetPaperAmbColor callers start from.
 __declspec(section ".sdata2") const u32 dat_8041ae80 = 0x000000FF;
 
-// Zero vectors that the unit uses as scratch/base for its pooled string
-// accesses. They must be the first objects in .rodata for the string offsets
-// to match the original.
-const Vec vec3_802c5e78 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5e84 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5e90 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5e9c = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5ea8 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5eb4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802c5ec0 = { 0.0f, 0.0f, 0.0f };
-
 void unk_800a4e40(void) {
     MarioWork* mario = marioGetPtr();
 
@@ -184,34 +173,16 @@ done:
     if (marioSlitChkWallAround()) {
         return 1;
     }
-    {
-        Vec pos = mario->position;
-        return marioCreviceWallChk(&pos) != 0;
-    }
+    return marioCreviceWallChk(mario->position) != 0;
 }
 
-// The six marioHitCheckVec blocks match in call sequence and constants; only float-register allocation
-// and the schedule differ. Checks 1/4 use `volatile` copies/loads (LHS `*(volatile Vec*)&A = *pos`, a
-// volatile load read into `tmp` then stored back, a volatile `dir.z` store), `dist` written before the
-// add, and a MUST_MATCH duplicated dead `dist = 20.0f;`, which is the schedule knob that scores best.
-// The `f32 tmp;` local is a real temporary for the volatile `A.y` read; it (or an equivalent form such
-// as `tmp = *(volatile f32*)&A.y + 10.0f; A.y = tmp;`) is worth ~0.04-0.5% here. The target's `A.y`
-// store is an early word copy (`lwz`/`stw`), then the dir block, then the `A.y` add, then `A.x`/`A.z`;
-// ours stores `A.x`/`A.y`/`A.z` together up front. The offset checks keep x+offx/z+offz/y+10/dist in
-// f3/f0/f1/f4, ours f4/f3/f1/f0, and the dir block reads sinv/cosv into one register where the target
-// keeps them in f1/f0. The MUST_MATCH duplicate emits two `stfs dist` per A block (target has one: 318
-// real instructions, ours 320); removing it drops the score to 93.5. This is a permuter candidate: the
-// source shape (`*(volatile Vec*)&A = *pos` + temp/volatile `A.y` add, `Vec a = vec3_*; a.x/z/y = ...;
-// A = a;`) is right and all calls/constants match.
-// NONMATCHING (95.08%): FP register allocation/scheduling only; calls and constants all match.
-BOOL marioCreviceWallChk(Vec* pos) {
+BOOL marioCreviceWallChk(Vec pos) {
     Vec A, B, C, D;
     f32 sinv, cosv, dist;
     f32 offx, offz;
     f32 ten = 10.0f;
     f32 angle1;
     f32 angle2;
-    f32 tmp;
     HitEntry* hit1;
     HitEntry* hit2;
 
@@ -223,51 +194,25 @@ BOOL marioCreviceWallChk(Vec* pos) {
     offz = 0.5f * (20.0f * cosv);
     sincosf(&sinv, &cosv, toMovedirSimple(180.0f));
 
-    *(volatile Vec*)&A = *pos;
-#ifdef MUST_MATCH
-    // The duplicate is dead (overwritten by the line below), but its presence
-    // steers MWCC's scheduler into the target's FP register allocation; see the
-    // NONMATCHING note above the function.
     dist = 20.0f;
-    dist = 20.0f;
-#else
-    dist = 20.0f;
-#endif
-    tmp = *(volatile f32*)&A.y;
-    A.y = tmp + 10.0f;
-    {
-        Vec dir = vec3_802c5e78;
-        dir.x = sinv;
-        *(volatile f32*)&dir.z = cosv;
-        B = dir;
-    }
+    A = pos;
+    A.y += ten;
+    B = (Vec){sinv, 0.0f, cosv};
     hit1 = marioHitCheckVec(&A, &B, &C, &D, &dist);
     if (hit1) {
         angle1 = angleABf(0.0f, 0.0f, D.x, D.z);
     }
     if (!hit1) {
-        {
-            Vec a = vec3_802c5e84;
-            a.x = pos->x + offx;
-            a.z = pos->z + offz;
-            a.y = pos->y + ten;
-            dist = 20.0f;
-            A = a;
-        }
+        dist = 20.0f;
+        A = (Vec){pos.x + offx, pos.y + ten, pos.z + offz};
         hit1 = marioHitCheckVec(&A, &B, &C, &D, &dist);
         if (hit1) {
             angle1 = angleABf(0.0f, 0.0f, D.x, D.z);
         }
     }
     if (!hit1) {
-        {
-            Vec a = vec3_802c5e90;
-            a.x = pos->x - offx;
-            a.z = pos->z - offz;
-            a.y = pos->y + ten;
-            dist = 20.0f;
-            A = a;
-        }
+        dist = 20.0f;
+        A = (Vec){pos.x - offx, pos.y + ten, pos.z - offz};
         hit1 = marioHitCheckVec(&A, &B, &C, &D, &dist);
         if (hit1) {
             angle1 = angleABf(0.0f, 0.0f, D.x, D.z);
@@ -275,51 +220,25 @@ BOOL marioCreviceWallChk(Vec* pos) {
     }
 
     sincosf(&sinv, &cosv, toMovedirSimple(0.0f));
-    *(volatile Vec*)&A = *pos;
-#ifdef MUST_MATCH
-    // The duplicate is dead (overwritten by the line below), but its presence
-    // steers MWCC's scheduler into the target's FP register allocation; see the
-    // NONMATCHING note above the function.
     dist = 20.0f;
-    dist = 20.0f;
-#else
-    dist = 20.0f;
-#endif
-    tmp = *(volatile f32*)&A.y;
-    A.y = tmp + 10.0f;
-    {
-        Vec dir = vec3_802c5e9c;
-        dir.x = sinv;
-        *(volatile f32*)&dir.z = cosv;
-        B = dir;
-    }
+    A = pos;
+    A.y += ten;
+    B = (Vec){sinv, 0.0f, cosv};
     hit2 = marioHitCheckVec(&A, &B, &C, &D, &dist);
     if (hit2) {
         angle2 = angleABf(0.0f, 0.0f, D.x, D.z);
     }
     if (!hit2) {
-        {
-            Vec a = vec3_802c5ea8;
-            a.x = pos->x + offx;
-            a.z = pos->z + offz;
-            a.y = pos->y + ten;
-            dist = 20.0f;
-            A = a;
-        }
+        dist = 20.0f;
+        A = (Vec){pos.x + offx, pos.y + ten, pos.z + offz};
         hit2 = marioHitCheckVec(&A, &B, &C, &D, &dist);
         if (hit2) {
             angle2 = angleABf(0.0f, 0.0f, D.x, D.z);
         }
     }
     if (!hit2) {
-        {
-            Vec a = vec3_802c5eb4;
-            a.x = pos->x - offx;
-            a.z = pos->z - offz;
-            a.y = pos->y + ten;
-            dist = 20.0f;
-            A = a;
-        }
+        dist = 20.0f;
+        A = (Vec){pos.x - offx, pos.y + ten, pos.z - offz};
         hit2 = marioHitCheckVec(&A, &B, &C, &D, &dist);
         if (hit2) {
             angle2 = angleABf(0.0f, 0.0f, D.x, D.z);
@@ -507,13 +426,10 @@ done:
     if (marioSlitChkWallAround()) {
         return 1;
     }
-    {
-        Vec pos = mario->position;
-        if (marioCreviceWallChk(&pos) != 0) {
-            return 1;
-        }
-        return 0;
+    if (marioCreviceWallChk(mario->position) != 0) {
+        return 1;
     }
+    return 0;
 }
 
 void marioSlitForceCancel(void) {
@@ -1047,18 +963,14 @@ keyOffPath:
                     if (count >= frames) {
                         HitCheckQuery query;
                         HitCheckQuery* q = &query;
-                        Vec dir;
 
                         mario->directionView = revise360(MW_F32(mario, 0x2A8) + mario->targetYaw);
                         MW_S32(mario, 0x2A4) = 0;
                         sincosf(&slitSinv, &slitCosv, mario->directionView);
                         query.targetPos.x = mario->position.x;
-                        dir = vec3_802c5ec0;
                         query.targetPos.y = 11.0f + mario->position.y;
                         query.targetPos.z = mario->position.z;
-                        dir.x = slitSinv;
-                        dir.z = slitCosv;
-                        query.targetDir = dir;
+                        query.targetDir = (Vec){slitSinv, 0.0f, slitCosv};
                         query.targetDistance = 20.0f;
                         if (hitCheckVecHitObjXZ(q, (HitEntry*)(s32)mario->hitobjPush) != 0) {
                             query.targetPos.x = mario->position.x;

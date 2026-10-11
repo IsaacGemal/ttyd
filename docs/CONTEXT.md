@@ -6087,6 +6087,21 @@ walking frames by pointer, or an `iconGetBinaryData` that also returns the count
 (btlUnitItemDisp): inside icondrv it holds only if iconDispGx and iconDispGxAlpha change together (iconDispGx alone
 u16: 88.89); not applied, callers in battle and the RELs unchecked (a u16 iconDispGx once broke linked RELs).
 
+**mot_slit links: marioCreviceWallChk 95.08 -> 100 (on2-slit; lever from the list: partial; 444k, 8 min).** The third
+by-value `Vec` win of the day: `Vec pos` instead of `Vec* pos` (every caller already copied `mario->position` to the
+stack; mario_motion stays 37/37), so MWCC moves the `pos` reads past the stores to the locals as retail does. The seven
+named zero `vec3_802c5e78..ec0` objects were the compiler's own templates for the `(Vec){...}` literals and went;
+the volatile hacks, a `tmp` local and a MUST_MATCH duplicate `dist = 20.0f` went (no MUST_MATCH left). `dist = 20.0f`
+before each `A` assignment (91.08 -> 98.49), and `pos.y + ten` with the existing `f32 ten = 10.0f` local so the
+constant loads after `pos.y` (the brief's const-in-a-local rule, used the other way round).
+
+**u16 icon id for iconDispGx/iconDispGxAlpha: rejected (orchestrator test, 2026-10-11).** Two swarm functions
+(btlUnitItemDisp, FontDrawMessageMtx 99.03 -> 99.97) only reach 100 with the icon id as u16, and icondrv itself stays
+at 100 if both prototypes change together. But changing them in include/driver/icondrv.h breaks the DOL and every
+linked REL checksum: linked callers compiled against `s16` change code. If the original really had u16 somewhere, it
+was in a different declaration than the one those callers saw; until that's sorted out, keep s16 and leave the two
+functions at their cast-free scores.
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.

@@ -1391,7 +1391,6 @@ s32 marioRollChgChk(void) {
     s32 unk10;
     s32 unk0C;
     s32 unk08;
-    Vec pos;
 
     if (mario->flags & MARIO_FLAG_IS_8_BIT) {
         return 0;
@@ -1418,8 +1417,7 @@ s32 marioRollChgChk(void) {
 #endif
     }
     {
-        pos = mario->position;
-        if (marioCreviceWallChk(&pos) != 0) {
+        if (marioCreviceWallChk(mario->position) != 0) {
 #ifdef MUST_MATCH
 fail:
 #endif
