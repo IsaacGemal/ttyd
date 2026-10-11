@@ -5773,6 +5773,16 @@ literals, coefficient locals with propagation off, moving where the conversion i
 the agent's own. Tried and failed: the polynomial as one expression (99.85-99.90), shared `t`/`u` temps, `rad`
 rewritten in place, named sin/cos results, non-inline helpers (80).
 
+**evt_uranaisi links: uranaisi_data_make_supercoin and _starpiece 99.78 -> 100 (on1-uranaisi; lever from the list:
+partial; 18 min).** Both siblings get the same edit: the end-of-tag flag and the byte saved under the terminator
+became one `s32 tmp`, declared last, and each function is wrapped in `opt_lifetimes off` so `tmp` stays one live
+range (prefix r24, tmp r25, as retail). The lookup reset is the chained `initEndPos[tagEndPos] = mbbpos = 0;`,
+under MUST_MATCH beside the existing while/goto lookup and `offset` counter (both with natural `#else` forms).
+From the list: shared versus per-block locals (#606, #618, #661), opt_lifetimes keeping one range (#682); a rasim
+what-if showed the single range had to be numbered below `count`. Tried and failed: the merged variable without
+the pragma (split back into two ranges, 98.46), `opt_propagation off` alone, `u8`/`char` for it, the natural
+break-form lookup (95.40), `wp->info[count]` without `offset` (98.37). Next: make the goto lookup and `offset` natural.
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.

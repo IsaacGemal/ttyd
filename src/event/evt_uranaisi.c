@@ -484,20 +484,20 @@ s32 uranaisi_data_make_next(const char* prefix, s32 type) {
     return count;
 }
 
-// NONMATCHING (99.78%): mirror of make_supercoin, same 7 callee-saved colouring
-// diffs (prefix in r25 instead of r24, tagdone/saved in r24 instead of r25).
+// opt_lifetimes off: one variable per local for the whole function, so `tmp` (the end-of-tag
+// flag, then the byte saved under the terminator) and `mbbpos` (then the table index) keep the
+// original's registers.
+#pragma opt_lifetimes off
 s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     s32 mbbpos;
     char label[64];
     char tag[64];
     s32 tagNum;
     UranaiWork* wp = &_udt;
-    u8 saved;
 #ifdef MUST_MATCH
     s32 offset;
 #endif
     const s8* msg;
-    BOOL tagdone;
     BOOL typeFlag;
     s32 storyId;
     char* initEndPos;
@@ -507,6 +507,7 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     const s8* tagdata;
     s32 maxLabel;
     s32 count;
+    s32 tmp;
 
     maxLabel = evtGetValue(NULL, -170000000);
     typeFlag = type & 1;
@@ -528,8 +529,8 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
 
         tagNum = 0;
         mbbpos = 0;
-        tagdone = FALSE;
-        while (!tagdone) {
+        tmp = FALSE;
+        while (!tmp) {
             if (_ismbblead(*tagdata)) {
                 if (tagNum == 0) {
                     tag[mbbpos++] = tagdata[0];
@@ -542,7 +543,7 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
             } else {
                 switch (tagdata[0]) {
                     case '>':
-                        tagdone = TRUE;
+                        tmp = TRUE;
                         // fallthrough
                     case ',':
                         tagdata++;
@@ -573,13 +574,11 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
         if (strcmp(tag, zero_80420460)) {
             labelId = search_evt_no(tag);
             if (labelId != -1 && labelId <= maxLabel) {
-                saved = initEndPos[tagEndPos];
+                tmp = initEndPos[tagEndPos];
 #ifdef MUST_MATCH
-                // See uranaisi_data_make_supercoin: mbbpos (0 after the tag parse) is
-                // reused as the lookup index, so the terminator store and the index share
-                // one zero register.
-                mbbpos = 0;
-                initEndPos[tagEndPos] = mbbpos;
+                // Match-only: the not-found exit after the loop, reached past by a goto, and the
+                // terminator store chained with the index reset.
+                initEndPos[tagEndPos] = mbbpos = 0;
                 while (uranai_table_starpiece[mbbpos].name != NULL) {
                     if (!strcmp(initEndPos, uranai_table_starpiece[mbbpos].name)) {
                         gswf = uranai_table_starpiece[mbbpos].value;
@@ -601,10 +600,11 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
                     mbbpos++;
                 }
 #endif
-                initEndPos[tagEndPos] = saved;
+                initEndPos[tagEndPos] = tmp;
                 if (gswf != -1 && evtGetValue(NULL, gswf) == 0) {
                     if (typeFlag) {
 #ifdef MUST_MATCH
+                        // Match-only: the entry offset in its own counter (offset == count * 6).
                         ((UranaiInfo*)((u8*)wp->info + offset))->labelId = (s16)labelId;
                         ((UranaiInfo*)((u8*)wp->info + offset))->unk4 = (s16)storyId;
 #else
@@ -623,22 +623,20 @@ s32 uranaisi_data_make_starpiece(const char* prefix, s32 type) {
     }
     return count;
 }
+#pragma opt_lifetimes reset
 
-// NONMATCHING (99.78%): instructions identical; only callee-saved colouring differs.
-// The explicit offset (count*6), u8 saved and the declaration order reproduce every
-// target register except a prefix<->tagdone/saved swap (7 arg_mismatch diffs).
+// opt_lifetimes off: see uranaisi_data_make_starpiece.
+#pragma opt_lifetimes off
 s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     s32 mbbpos;
     char label[64];
     char tag[64];
     s32 tagNum;
     UranaiWork* wp = &_udt;
-    u8 saved;
 #ifdef MUST_MATCH
     s32 offset;
 #endif
     const s8* msg;
-    BOOL tagdone;
     BOOL typeFlag;
     s32 storyId;
     char* initEndPos;
@@ -648,6 +646,7 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     const s8* tagdata;
     s32 maxLabel;
     s32 count;
+    s32 tmp;
 
     maxLabel = evtGetValue(NULL, -170000000);
     typeFlag = type & 1;
@@ -669,8 +668,8 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
 
         tagNum = 0;
         mbbpos = 0;
-        tagdone = FALSE;
-        while (!tagdone) {
+        tmp = FALSE;
+        while (!tmp) {
             if (_ismbblead(*tagdata)) {
                 if (tagNum == 0) {
                     tag[mbbpos++] = tagdata[0];
@@ -683,7 +682,7 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
             } else {
                 switch (tagdata[0]) {
                     case '>':
-                        tagdone = TRUE;
+                        tmp = TRUE;
                         // fallthrough
                     case ',':
                         tagdata++;
@@ -714,13 +713,11 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
         if (strcmp(tag, zero_80420460)) {
             labelId = search_evt_no(tag);
             if (labelId != -1 && labelId <= maxLabel) {
-                saved = initEndPos[tagEndPos];
+                tmp = initEndPos[tagEndPos];
 #ifdef MUST_MATCH
-                // The target reuses mbbpos (already 0 after the tag parse) as the lookup
-                // index, so the terminator store and the index share one zero register
-                // (the `i` form materialises a second zero and adds an instruction).
-                mbbpos = 0;
-                initEndPos[tagEndPos] = mbbpos;
+                // Match-only: the not-found exit after the loop, reached past by a goto, and the
+                // terminator store chained with the index reset.
+                initEndPos[tagEndPos] = mbbpos = 0;
                 while (uranai_table_supercoin[mbbpos].name != NULL) {
                     if (!strcmp(initEndPos, uranai_table_supercoin[mbbpos].name)) {
                         gswf = uranai_table_supercoin[mbbpos].value;
@@ -742,10 +739,11 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
                     mbbpos++;
                 }
 #endif
-                initEndPos[tagEndPos] = saved;
+                initEndPos[tagEndPos] = tmp;
                 if (gswf != -1 && evtGetValue(NULL, gswf) == 0) {
                     if (typeFlag) {
 #ifdef MUST_MATCH
+                        // Match-only: the entry offset in its own counter (offset == count * 6).
                         ((UranaiInfo*)((u8*)wp->info + offset))->labelId = (s16)labelId;
                         ((UranaiInfo*)((u8*)wp->info + offset))->unk4 = (s16)storyId;
 #else
@@ -764,6 +762,8 @@ s32 uranaisi_data_make_supercoin(const char* prefix, s32 type) {
     }
     return count;
 }
+
+#pragma opt_lifetimes reset
 
 s32 uranaisi_ryokin_rtn(s32 idx) {
     if (idx != 0) {
