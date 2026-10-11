@@ -1222,9 +1222,11 @@ void btlseqEnd_DispInit(BattleWork* wp) {
     *(u32*)((u8*)wp->seqEndWork + 0x30) = 0;
 }
 
-// NONMATCHING (98.87%): callee-saved allocation is swapped: orig camId=r29, param=r31, work=r30; ours
-// param=r30, work=r31.
-void btlseqEnd_DispMain(CameraId camId, BattleWork* param) {
+// The parameter copy keeps its own web only with propagation off; it then colours ahead of `work` (r31/r30), as in
+// retail (battleSortPhaseMoveTable in battle_seq.c has the same shape).
+#pragma opt_propagation off
+void btlseqEnd_DispMain(CameraId camId, BattleWork* wp) {
+    BattleWork* param = wp;
     BattleSeqEndWork* work = param->seqEndWork;
 
     if (work == NULL) {
@@ -1248,15 +1250,14 @@ void btlseqEnd_DispMain(CameraId camId, BattleWork* param) {
         dispEntry(camId, float_900_80420d4c, 1, L__LvupParamHelpMsgDisp, param);
     }
 }
+#pragma opt_propagation reset
 
-// NONMATCHING (99.45%): buf[0x10] (not [8]) makes the frame match. Left: the 12.5 load is hoisted above
-// lenf's conversion (rasim: retail has no lenf--12.5 interference), so f2/f3 and r0/r4/r5 rotate.
 void _MarioExpDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
     char buf[0x10];
     Vec pos;
-    f32 lenf;
+    u32 len;
 
     pouchGetPtr();
     pos.x = float_200_80420d34;
@@ -1264,16 +1265,24 @@ void _MarioExpDisp(CameraId camId, void* param) {
     pos.z = float_0_80420c7c;
     if (work != NULL) {
         sprintf(buf, str_80420D3C, *(s16*)((u8*)work + 0xA));
-        lenf = (f32)strlen(buf);
-        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_180_80420cac, float_neg160_80420d40, lenf * float_12p5_80420d0c + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
+        len = strlen(buf);
+#ifdef MUST_MATCH
+        // Retail builds the white colour after the width (float args first, as in battle_message.c's cast call).
+        ((void (*)(f32, f32, f32, f32, f32, u16, GXColor))windowDispGX_Waku_col)(
+            float_180_80420cac, float_neg160_80420d40, float_12p5_80420d0c * len + float_65_80420ca8,
+            float_32_80420d10, float_10_80420cd8, 0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+#else
+        windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_180_80420cac, float_neg160_80420d40,
+                              float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
+#endif
         iconDispGx(float_1_80420c64, &pos, 0x10, 0x18C);
         FontDrawStart();
         FontDrawString(buf, float_225_80420d44, float_neg163_80420d48);
     }
 }
 
-// NONMATCHING (85.46%): work/string-base registers are swapped; FP scheduling and the strlen
-// conversion still differ (including one extra mr). Both constant pools now have retail offsets.
+// NONMATCHING (99.58%): only work (retail r31) and the string/pool base (retail r30) are swapped. The base is a
+// backend temp, numbered above every local, so it colours first; retail's work behaves like a later temp.
 void _LvupParamConfirmDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
@@ -1287,13 +1296,16 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     sprintf(buf, msgSearch("btl_msg_lvup_ok"));
     len = strlen(buf);
 #ifdef MUST_MATCH
-    // Assign in the argument tree so the shared half-width retains the original FP load order.
-    windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_neg30_80420d00 - (halfWidth = float_6p25_80420d04 * (f32)len), float_30_80420d08,
-                          float_12p5_80420d0c * (f32)len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
+    // Retail builds the white colour after the float arguments (as in _MarioExpDisp), and assigns the half width
+    // inside the argument tree.
+    ((void (*)(f32, f32, f32, f32, f32, u16, GXColor))windowDispGX_Waku_col)(
+        float_neg30_80420d00 - (halfWidth = float_6p25_80420d04 * len), float_30_80420d08,
+        float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8, 0,
+        (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 #else
-    halfWidth = float_6p25_80420d04 * (f32)len;
+    halfWidth = float_6p25_80420d04 * len;
     windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_neg30_80420d00 - halfWidth, float_30_80420d08,
-                          float_12p5_80420d0c * (f32)len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
+                          float_12p5_80420d0c * len + float_65_80420ca8, float_32_80420d10, float_10_80420cd8);
 #endif
     windowDispGX_Waku_col(0, (GXColor){0xFF, 0xFF, 0xFF, 0xFF}, float_neg70_80420d14, float_neg10_80420d18, float_130_80420d1c, float_60_80420d20, float_10_80420cd8);
     FontDrawStart();
