@@ -1689,14 +1689,10 @@ static inline f32 marioMoveMain_sqrtf(f32 x) {
 	return x;
 }
 
-// MWCC allocates f29 to the x-accumulator and f30 to the speed/baseSpeed/z chain (the original is the
-// reverse), so ~22 instructions differ only in those two registers (and the FP temporaries that feed
-// them). Two expression-order fixes matched the target's schedule: the magnitude as f29*f29 + f30*f30
-// (f29 squared first) reproduces `fmuls f0, f29, f29; fmadds f31, f30, f30, f0`, and computing
-// wp->position.y before the magnitude makes the scheduler interleave `fadds f1, f2, f1` the way the
-// original does. N_dou10_yoko_yari3 is missing one `addi r3, wp+0x210` because its definition and
-// header prototype are declared (void), so the argument cannot be passed without changing another file.
-// NONMATCHING (99.27%): register allocation of the x-accumulator/speed floats and the missing addi noted above.
+// The direction-view result is kept in its own local (`dirRes`) instead of reusing the speed local
+// `f29`; the split is what gives the original's FPR allocation (the accumulator in f30, the direction
+// result in f29, the magnitude in f31). The two riderDelta accumulations and the magnitude are in the
+// operand order that reproduces the original's schedule.
 void marioMoveMain(void) {
 	MarioWork* wp = mp;
 	PartyEntry* party;
@@ -1704,6 +1700,7 @@ void marioMoveMain(void) {
 	f32 f30;
 	f32 f31;
 	f32 f29;
+	f32 dirRes;
 	f32 sinVal;
 	f32 cosVal;
 	f32 cap;
@@ -1813,27 +1810,27 @@ void marioMoveMain(void) {
 
 	sincosf(&sinVal, &cosVal, wp->directionView);
 	f30 = f29 * sinVal + f30;
-	f29 = f29 * cosVal + f31;
+	dirRes = f29 * cosVal + f31;
 	if (!(wp->flags & (0x02000000 | MARIO_FLAG_HAS_INPUT_JUMP))) {
 		if (*(f32*)(wp->field_0x1F0 + 0x30) != 0.0f) {
 			f30 *= (f32)cos(3.1415927f * *(f32*)(wp->field_0x1F0 + 0x24) / 180.0f);
 		}
 		if (*(f32*)(wp->field_0x1F0 + 0x28) != 0.0f) {
-			f29 *= (f32)cos(3.1415927f * *(f32*)(wp->field_0x1F0 + 0x24) / 180.0f);
+			dirRes *= (f32)cos(3.1415927f * *(f32*)(wp->field_0x1F0 + 0x24) / 180.0f);
 		}
 	}
 
 	zero = 0.0f;
-	f29 = f29 + wp->riderDelta.z;
 	f30 = f30 + wp->riderDelta.x;
+	dirRes = dirRes + wp->riderDelta.z;
 	wp->position.y = wp->position.y + (zero + wp->riderDelta.y);
-	f31 = f29 * f29 + f30 * f30;
+	f31 = f30 * f30 + dirRes * dirRes;
 	f31 = marioMoveMain_sqrtf(f31);
 
 	if (f31) {
-		f29 = angleABf(0.0f, 0.0f, f30, f29);
+		dirRes = angleABf(0.0f, 0.0f, f30, dirRes);
 	} else {
-		f29 = toMovedir(wp->unk1A8);
+		dirRes = toMovedir(wp->unk1A8);
 	}
 
 	if (!(wp->flags & MARIO_FLAG_PAPER_MODE)) {
@@ -1853,26 +1850,26 @@ void marioMoveMain(void) {
 	*(f32*)wp->unk18C = f31;
 
 	if (wp->flags & MARIO_FLAG_USE_FORCE_DIRECTION) {
-		f29 = wp->unk1A4;
-		wp->directionView = f29;
+		dirRes = wp->unk1A4;
+		wp->directionView = dirRes;
 	} else if (wp->flags & MARIO_FLAG_WALLS_DISABLED) {
-		f29 = wp->directionView;
+		dirRes = wp->directionView;
 	}
 
 	if (wp->flags & MARIO_FLAG_WALLS_DISABLED) {
-		movePos(&wp->position.x, &wp->position.z, wp->baseSpeed, f29);
+		movePos(&wp->position.x, &wp->position.z, wp->baseSpeed, dirRes);
 		return;
 	}
 
 	if (!(wp->flags & 0x01000000)) {
-		marioCheckWall(f31, f29);
+		marioCheckWall(f31, dirRes);
 	} else {
 		if (!(wp->flags & MARIO_FLAG_IS_JUMPING)) {
-			marioCheckWall(f31, f29);
+			marioCheckWall(f31, dirRes);
 		} else {
-			marioCheckWall_roll(f31, f29);
+			marioCheckWall_roll(f31, dirRes);
 		}
-		N_dou10_yoko_yari3();
+		N_dou10_yoko_yari3((u8*)wp + 0x210);
 		hit = (HitEntry*)*(void**)((u8*)wp + 0x1E0);
 		if (hit != NULL && (hitGetAttr(hit) & 0x800)) {
 			set_damage_root_ypos(wp->position.y);
