@@ -5707,6 +5707,27 @@ The last two registers came from a `rasim search` over declaration orders with e
 `unk_804232b0`/`unk_804232b4` defined as `.sbss2` objects (horao's idiom). Any other N64 effect with a hand-stepped
 vertex loop and a `li`/`mr` difference at the counter should take this directly.
 
+**battle_camera links: battleCameraMain 99.93 -> 100 (on1-camera; lever from the list: yes; 176k, 78 min).** The
+compiler splits each shared function-scope pointer into one web per case, numbers the webs by variable in first-use
+order (reverse source order inside a variable), and the first live web keeps the name and colours after the numbered
+ones. So which case uses which variable, and the declaration order, decide the registers. Fix: declarations
+`unit2, unit, part, unit3, part2`; case 7's unit in `unit2` (through the existing MUST_MATCH inline) with its unused
+parts lookup in `part2`; a new `unit3` for cases 8 and 13; case 13's float locals with `zz` and `t` last and the
+`cy` split kept under MUST_MATCH. Found by search, not by hand: a rasim-based DFS over colouring orders, then a
+script modelling the numbering rule over per-case variable choices; its best result matched on the first compile.
+Levers from the list: per-case variable choice plus declaration order and rasim search; the `cy` split (Grind 45,
+the brief's bfbb note). Tried and failed: all 24 declaration orders alone (21-27 diffs vs 17), block-local pointers,
+other per-case renames (18-45). Left for later: replace the case-7 inline and the `cy` split with natural code.
+
+**nameent: nameKirinukiGX stays 99.75 (on1-nameent; lever from the list: no; 203k, 76 min).** All 45 diffs are FPR
+names. rasim shows the target needs the middle row's bottom edge `(y - 8) - (w - 16)` (shared by quads 4 and 5) to
+outrank every frontend temp, but `x + 8` repeats inside quad 2 first, so its temp always ranks above it, and no named
+local slot reaches 0 wrong. Tried: inline locals in the quad (dropped as dead), an identity inline, macro/corner
+quad shapes, `static` quad, merged scale+quad inline, four opt pragmas off (103-322 diffs), shared vs per-block
+locals, expression forms, mwsearch 40 min / 22,155 compiles (0 improvements). Sibling winKirinukiGX (win_root,
+99.11) has the same temp pattern. Next idea: a row helper whose local `bottom` draws quads 4 and 5 without sharing
+`x + 8` with quads 4 and 6; solving one likely solves both.
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
