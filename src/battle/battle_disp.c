@@ -400,11 +400,9 @@ StatusEffectType _GetStatusPoseType(BattleUnit* unit) {
 // `_GetStatusPoseType` and `BattleStockExpDisp` are kept out of line so the original's `bl`s are
 // emitted. Case 2 matches only with the `double fabsx` local below: it keeps the __fabs result in f4
 // while the 10.0 double stays in f0, which the bare `10.0 < __fabs(...)` form gets backwards.
-// The second status block assigns 1.0f to f0 and float_2 to f3 (target has f3/f0), and four `lfd`
-// load the unit's to-int double at +0x60 instead of +0x58 because the unit's pooled rodata order is
-// not the original's (the file's function order is not yet the original's; that resolves when the
-// whole file is reordered).
-// NONMATCHING (99.96%): second status block FP register swap + pooled-rodata lfd offsets.
+// The second status gain writes the sum as `(f32)strength + 1.0f`, so the 1.0 constant is
+// materialised before the int->float conversion. That orders the temp webs as retail does: 1.0 in
+// f3 and the 2.0 limit in f0.
 void btlDispMain(void) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleUnit* unit;
@@ -508,10 +506,9 @@ void btlDispMain(void) {
 		}
 		BtlUnit_GetStatus(unit, 0xA, &turns, &strength);
 		if (turns > 0 && strength > 0) {
-			f32 f = (f32)strength;
-			f = 1.0f + f;
-			if (f > float_2_8041bf68) {
-				f = float_2_8041bf68;
+			f32 f = (f32)strength + 1.0f;
+			if (f > 2.0f) {
+				f = 2.0f;
 			}
 			unit->mSizeMultiplier = unit->mSizeMultiplier * f;
 		}

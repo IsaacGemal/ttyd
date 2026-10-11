@@ -302,15 +302,20 @@ static inline HitEntry* marioHitCheckVecRound(HitCheckQuery* query, Vec* c, Vec*
                 float_1000_8041a7a0;
 #endif
     if (c) {
+        f32 v;
+
         *c = query->hitPos;
-        c->x = (f32)(s32)(c->x * *(const f32*)&float_1000_8041a7a0 +
-                          (c->x >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+        v = c->x;
+        c->x = (f32)(s32)(v * *(const f32*)&float_1000_8041a7a0 +
+                          (v >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
                *(const f32*)&float_1000_8041a7a0;
-        c->y = (f32)(s32)(c->y * *(const f32*)&float_1000_8041a7a0 +
-                          (c->y >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+        v = c->y;
+        c->y = (f32)(s32)(*(const f32*)&float_1000_8041a7a0 * v +
+                          (v >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
                *(const f32*)&float_1000_8041a7a0;
-        c->z = (f32)(s32)(c->z * *(const f32*)&float_1000_8041a7a0 +
-                          (c->z >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
+        v = c->z;
+        c->z = (f32)(s32)(*(const f32*)&float_1000_8041a7a0 * v +
+                          (v >= *(const f32*)&float_0_8041a7a4 ? float_0p5_8041a7c4 : float_neg0p5_8041a7c8)) /
                *(const f32*)&float_1000_8041a7a0;
     }
     if (d) {
@@ -1286,10 +1291,11 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
 
 // The roll variant of marioSearchGround: the sample ring depends on |wp+0x214| (flat: 0..3, steep: 4..6) and the
 // accepted slope window is ang > 105 or ang < 75.
-// NONMATCHING (90.16%): salvaged wave 59 version; its `fabs(...) <= dist` was flipped (the asm is cror eq,gt,eq = >=) and
-// is fixed here, the slope window (ang > 105 || ang < 75) re-checked. Only FPR/GPR colouring and scheduling differ (posY/posX/posZ land in f25-f29
-// where the original has f25-f27, and the out pointers sit one register lower); the frame size now matches
-// and calls/immediates agree.
+// salvaged wave 59 version; its `fabs(...) <= dist` was flipped (the asm is cror eq,gt,eq = >=) and
+// is fixed here, the slope window (ang > 105 || ang < 75) re-checked.
+// NONMATCHING (90.16%): only FPR/GPR colouring and scheduling differ (posY/posX/posZ land in f25-f29 where the
+// original has f25-f27, and the out pointers sit one register lower); the frame size now matches and
+// calls/immediates agree.
 s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     const char* base = (const char*)&vec3_802c5730;
     MarioWork* wp = marioGetPtr();
@@ -2591,9 +2597,11 @@ void marioCheckWall_roll(f32 a, f32 b) {
 
 
 
-// NONMATCHING (98.27%): the caller builds `query` (via marioHitCheckVecRound) so
-// query.targetPos = *pos is written first, reproducing the original's load/store order. The
-// remaining diffs are GPR naming in that build and the hitPos rounding's f3/f4 colouring.
+// The caller builds `query` (via marioHitCheckVecRound) so query.targetPos = *pos is written first.
+// The remaining diffs are the schedule of that query/dir build (the original issues the vec3.y and
+// pos.z loads earlier, which also changes the registers those webs get) and one hitPos rounding
+// temporary (the y component) that takes f5 where the original has f4.
+// NONMATCHING (98.39%): same instruction count, calls and immediates; scheduling and allocation only.
 void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist) {
     HitCheckQuery query;
     Vec hitPos;

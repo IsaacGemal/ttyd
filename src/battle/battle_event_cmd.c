@@ -2288,23 +2288,20 @@ USER_FUNC(btlevtcmd_GetPartyTechLv) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.89%): the logic, calls and schedule match. The remaining instructions differ only in which
-// callee-saved register holds `event`, `targetId`, `thisPartId`, `flags` and `targetUnit`; declaration order below
-// decides MWCC's allocation and the best order found still leaves that one cycle. The natural order is under #else.
 USER_FUNC(btlevtcmd_CalculateFaceDirection) {
     BattleWork* wp;
-    BattleUnit* thisUnit;
-    s32 targetUnitId;
+    s32 thisId;
+    u32 targetUnitId;
+    s32 thisPartId;
     s32 targetPartId;
-    s32 value;
     s32* args;
     s32 index;
     s32 targetId;
     s32 btlId;
     u32 flags;
     BattleUnit* targetUnit;
-    s32 thisPartId;
-    s32 thisId;
+    s32 value;
+    BattleUnit* thisUnit;
     BattleUnitPart* thisPart;
     BattleUnitPart* targetPart;
     f32 calculate;
@@ -3478,9 +3475,9 @@ static inline f32 sqrtf(f32 x) {
 
 //s32* battleId, s32* tx, s32* ty, s32* tz, s32* frame, s32* height, s32* mode
 // The pool offsets, the arg/e schedule and the dist/ellipse temps match: `frame, mode` before `args`, `e`
-// last with its i2f deferred to `eRaw`, both mMoveSpeedXZ divisions reread 0x17C, and the cx/dz/cz/dx/radius
-// source order is chosen to colour the FPRs like the original.
-// NONMATCHING (99.88%): 11 instructions differ only in the f3/f4/f5 colouring of the cx/dx x temps.
+// last with its i2f deferred to `eRaw`, both mMoveSpeedXZ divisions reread 0x17C, and the dx/dz/cx/cz/radius
+// source order with the start-first sums and the radius constant first colours the f3/f4/f5 x temps like the
+// original.
 USER_FUNC(btlevtcmd_EllipseMovePosition) {
     s32 btlId, id;
     s32 frame, mode;
@@ -3541,11 +3538,11 @@ USER_FUNC(btlevtcmd_EllipseMovePosition) {
             unit->moveDirection = -1;
         }
     }
-    cx = (unit->mMoveTargetPos.x + unit->mMoveStartPos.x) * float_0p5_8041bfc8;
-    dz = unit->mMoveTargetPos.z - unit->mMoveStartPos.z;
-    cz = (unit->mMoveStartPos.z + unit->mMoveTargetPos.z) * float_0p5_8041bfc8;
     dx = unit->mMoveTargetPos.x - unit->mMoveStartPos.x;
-    radius = sqrtf(dx * dx + dz * dz) * float_0p5_8041bfc8;
+    dz = unit->mMoveTargetPos.z - unit->mMoveStartPos.z;
+    cx = (unit->mMoveStartPos.x + unit->mMoveTargetPos.x) / 2.0f;
+    cz = (unit->mMoveStartPos.z + unit->mMoveTargetPos.z) / 2.0f;
+    radius = float_0p5_8041bfc8 * sqrtf(dx * dx + dz * dz);
     e = (f32)eRaw;
     angle = angleABf(cx, cz, unit->mMoveStartPos.x, unit->mMoveStartPos.z);
     t = intpl_sub(mode, (s32)*(f32*)((u8*)unit + 0x180), *(s32*)((u8*)unit + 0x168),
@@ -5449,8 +5446,9 @@ USER_FUNC(btlevtcmd_AudienceDeclareAcrobatResult) {
 // vec3+0x1c0..0x24c), so MUST_MATCH spells them as literals and the natural build uses the symbols.
 
 //s32* type, s32* x, s32* y, s32* z
-// NONMATCHING (99.67%): correct logic, but MWCC keeps `angle` in f30 (an extra saved FPR) and
-// reloads the double_to_int constant via lis/lfd instead of the target's base-relative 0x1b0(r30).
+// The angle halving is written as `angle / 2.0f` (not `angle * 0.5f`) and the clamp limit as a
+// literal `160.0f` (not the named float_160): both spellings give the original's FPR allocation,
+// which keeps 160 in f0, pos.x in f1 and the 0.5 in f2 when the clamp is evaluated.
 USER_FUNC(btlevtcmd_ACSuccessEffect) {
     s32* args = event->args;
     s32 type;
@@ -5511,9 +5509,9 @@ USER_FUNC(btlevtcmd_ACSuccessEffect) {
         return 2;
     }
     angle = angle * scale;
-    angle = angle * float_0p5_8041bfc8;
-    if (pos.x + angle > float_160_8041bfcc) {
-        pos.x = float_160_8041bfcc - angle;
+    angle = angle / 2.0f;
+    if (pos.x + angle > 160.0f) {
+        pos.x = 160.0f - angle;
     }
     if (pos.y < float_80_8041bfd4) {
         entry = effNiceEntry(id, pos.x - angle, float_50_8041bfd0 + pos.y, pos.z);
