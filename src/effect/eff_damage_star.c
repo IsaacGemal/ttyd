@@ -170,73 +170,69 @@ __declspec(section ".sdata") u32 gap_07_80411BE4_sdata[1] = { 0 };
 
 // Inline sine/cosine polynomial approximations (the same two helpers evt_sub.c uses; they
 // reproduce the target's polynomial instruction sequence).
-static inline f32 damageStarSinf(f32 angle) {
+static inline f32 damageStarSinf(f32 rad) {
     f32 v = 0.00761f;
     f32 b = 0.16605f;
     f32 one = 1.0f;
     f32 t, u;
 
-    if (angle <= 3.1415927f) {
-        if (angle <= 1.5707964f) {
-            t = angle * angle;
-            v = v * t - b;
-            v = v * t + one;
-            v = v * angle;
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
+            u = rad * rad;
+            v = v * u - b;
+            v = v * u + one;
+            v = v * rad;
         } else {
-            t = angle - 1.5707964f;
-            u = 1.5707964f - t;
-            t = u * u;
-            v = v * t - b;
-            v = v * t + one;
-            v = v * u;
+            t = 1.5707964f - (rad - 1.5707964f);
+            u = t * t;
+            v = v * u - b;
+            v = v * u + one;
+            v = v * t;
         }
-    } else if (angle < 4.712389f) {
-        t = angle - 3.1415927f;
+    } else if (rad < 4.712389f) {
+        t = rad - 3.1415927f;
         u = t * t;
         v = v * u - b;
         v = v * u + one;
         v = v * t;
         v = -v;
     } else {
-        t = angle - 4.712389f;
-        u = 1.5707964f - t;
-        t = u * u;
-        v = v * t - b;
-        v = v * t + one;
-        v = v * u;
+        t = 1.5707964f - (rad - 4.712389f);
+        u = t * t;
+        v = v * u - b;
+        v = v * u + one;
+        v = v * t;
         v = -v;
     }
     return v;
 }
 
-static inline f32 damageStarCosf(f32 angle) {
+static inline f32 damageStarCosf(f32 rad) {
     f32 v = 0.03705f;
     f32 b = 0.4967f;
     f32 one = 1.0f;
     f32 t, u;
 
-    if (angle <= 3.1415927f) {
-        if (angle <= 1.5707964f) {
-            t = angle * angle;
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
+            t = rad * rad;
             v = v * t - b;
             v = v * t + one;
         } else {
-            t = angle - 1.5707964f;
-            u = 1.5707964f - t;
+            u = 1.5707964f - (rad - 1.5707964f);
             t = u * u;
             v = v * t - b;
             v = v * t + one;
             v = -v;
         }
-    } else if (angle < 4.712389f) {
-        t = angle - 3.1415927f;
+    } else if (rad < 4.712389f) {
+        t = rad - 3.1415927f;
         t = t * t;
         v = v * t - b;
         v = v * t + one;
         v = -v;
     } else {
-        t = angle - 4.712389f;
-        u = 1.5707964f - t;
+        u = 1.5707964f - (rad - 4.712389f);
         t = u * u;
         v = v * t - b;
         v = v * t + one;
@@ -248,27 +244,10 @@ static inline f32 damageStarCosf(f32 angle) {
 // branch; `opt_lifetimes off` keeps the seed loads (0.00761/0.03705) inside the loop instead of
 // hoisting them to the preheader (the envdrv.c/envDisp_FF shape). Both are required: with only one
 // the coefficient loads move and the diff count grows.
-// The named constant locals below (k6/k360/k15/f4) and their declaration and assignment order
-// are load-bearing for MWCC's FPR colouring (the eff_starpoint/eff_gonbaba_breath technique):
-// without them the whole preheader constant block shifts several registers. The 0.2 scale is
-// written as a literal inside the loop rather than a preheader local so it pools last, which is
-// where the target keeps float_0p2; with a preheader `k02` local the pool was displaced at slot
-// 0x6c (360/.00761/... vs 0.2/360/...). The .sdata2 pool now matches the target entry for entry.
-// The instruction sequence, control flow, stack frame, the loop accumulator (f13), rad (f29), the
-// 30-count local (f4), the per-branch 1.5708/4.7124 scratch and the preheader load order all match.
-// The loop-invariant constants are all live across the loop, so they form a clique and any FPR
-// permutation is a legal colouring; only the colour choice differs. Target value->FPR: 30->f6,
-// 0.0->f12, 6.28->f11, 360->f10, .166->f2, 1.0->f1, pi->f9, 1.5->f8, .4967->f3, .2->f5, magic->f0,
-// 30-count->f4, seed->f13; ours: 30->f6, 0.0->f8, 6.28->f1, 360->f2, .166->f12, 1.0->f11, pi->f7,
-// 1.5->f3, .4967->f0, .2->f5, magic->f9, 30-count->f4, seed->f13. (check.py pairs the two columns
-// by position, so reading our registers off its rows mislabels them; this map comes from the built
-// object's @NNN relocations against rodatalayout.) Permuting the outer locals' and
-// the helpers' internals' declarations/assignments, parameterising or inlining the polynomial,
-// const locals, and opt_common_subs/global_optimizer/scheduling/fp_contract/optimization_level/
-// optimize_for_size/pool_data variants all leave >=68 differing instructions (or make it worse);
-// it is allocator luck.
-// NONMATCHING (97.66%): only the FPR colouring of the loop-invariant constants (and the compiler's
-// i2f magic double / the 1.5708 scratch) differs (allocator luck; a permuter job should finish it).
+// The loop's constants are literals at their uses (no k6/k360/k15 locals), with the zero stores
+// ahead of `rad` as in eff_starpoint, so the preheader loads them in the target's order. In the
+// sine, `t` holds the (reflected) angle and `u` its square in every branch; that naming gives
+// the target's FPR colouring of the constant clique and the per-branch scratch pair.
 #pragma opt_propagation off
 #pragma opt_lifetimes off
 EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 speed, f32 angle) {
@@ -276,9 +255,6 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
     DamageStarData* data;
     s32 origCount;
     s32 i;
-    f32 k6;
-    f32 k360;
-    f32 k15;
     f32 f4;
 
     entry = effEntry();
@@ -306,23 +282,21 @@ EffectEntry* effDamageStarEntry(s32 type, s32 count, f32 x, f32 y, f32 z, f32 sp
     data->field_0x40 = gp->retraceCount;
 
     f4 = 30.0f - (f32)(count + 2);
-    k6 = 6.2831855f;
-    k15 = 1.5f;
-    k360 = 360.0f;
     i = 1;
     data = &data[1];
     for (; i < count + 2; i++, data++) {
         s32 spiral = i * ((i % 2) * 2 - 1) / 2;
         f32 a = f4 * (f32)spiral + angle;
-        f32 rad = (k6 * a) / k360;
+        f32 rad;
 
         data->angle = a;
         data->position.x = 0.0f;
         data->position.y = 0.0f;
         data->position.z = 0.0f;
+        rad = (6.2831855f * a) / 360.0f;
 
-        data->vx = k15 * (speed * -damageStarSinf(rad));
-        data->vy = k15 * (speed * damageStarCosf(rad));
+        data->vx = 1.5f * (speed * -damageStarSinf(rad));
+        data->vy = 1.5f * (speed * damageStarCosf(rad));
 
         data->vz = 0.0f;
         data->rot = 0.0f;

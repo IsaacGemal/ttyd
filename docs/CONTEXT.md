@@ -5817,6 +5817,16 @@ schedules it (the agent's own find). Tried and failed: statement reorders, a con
 `opt_propagation off` (98.36), the full sum everywhere, the same repeat on other values, `autoFlag = 0` inside
 the if (99.48).
 
+**eff_damage_star links: effDamageStarEntry 97.66 -> 100 (on1-dmgstar; lever from the list: partial; 113k,
+17 min).** The loop's constant locals became literals with the zero stores before `rad = (6.2831855f * a) / 360.0f`
+(eff_starpoint's shape, from the list), which gives the preheader load order. Both helpers write the reflected
+angle as one expression. The last 13 diffs went when the sine helper used its shared `f32 t, u;` by role in every
+branch: `t` the (reflected) angle, `u` its square, including `u = rad * rad` in the first quadrant (the agent's own;
+it kept `v = -v`, no early return). Found after scoring all 128 combinations of helper features (shared vs
+per-block locals, early return, one-expression reflection) x two loop shapes on the tower, best 13 diffs.
+eff_starpoint's helpers copied as-is did worse here (81 diffs with the literal loop): the same sin/cos polynomial
+needs different shapes in the two units. Try the t/u roles on other near-misses with this polynomial.
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
