@@ -39,35 +39,34 @@ const char* marioAnimeGroupData[4][3] = {
 	{"a_mario_wl", "a_mario_wlr", "e_mario_wl"}
 };
 
-//unreferenced vec constants kept to preserve the original .rodata layout
-const Vec vec3_802c3698 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802c36a4 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802c36b0 = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802c36bc = {0.0f, 0.0f, 0.0f};
+// The non-const `__declspec(section ".rodata")` Vecs are read by marioOfsRotReset, marioInit and
+// marioReInit; see marioInit.
+__declspec(section ".rodata") Vec vec3_802c3698 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_802c36a4 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_802c36b0 = {0.0f, 0.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_802c36bc = {0.0f, 0.0f, 0.0f};
 __declspec(section ".rodata") Vec vec3_802c36c8 = {1.0f, 1.0f, 1.0f};
 __declspec(section ".rodata") Vec vec3_802c36d4 = {0.0f, 74.0f, 0.0f};
-const Vec vec3_802c36e0 = {1.0f, 1.0f, 1.0f};
-const Vec vec3_802c36ec = {0.0f, 74.0f, 0.0f};
-const Vec vec3_802c36f8 = {0.0f, -10000.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_802c36e0 = {1.0f, 1.0f, 1.0f};
+__declspec(section ".rodata") Vec vec3_802c36ec = {0.0f, 74.0f, 0.0f};
+__declspec(section ".rodata") Vec vec3_802c36f8 = {0.0f, -10000.0f, 0.0f};
 const Vec vec3_802c3704 = {0.0f, 0.0f, 0.0f};
 
-//.sdata2
-const u32 dat_80419e34 = 0xFFFFFF00;
 
 //.bss
 Vec blurPos[8];
 
-//.sbss
+//.sbss (declared in reverse address order)
 MarioWork* mp;
+Vec R_last_position;
+s32 blurPosId;
 
 //local prototypes
 
 //locals for symbols with no home header
-extern Vec R_last_position;
 #include "mario/mario_balloon.h"
 #include "mario/mario_pouch.h"
 #include "memory.h"
-extern s32 blurPosId;
 #include "mario/mario_kemuri.h"
 #include "driver/itemdrv.h"
 #include "motion/mot_damage.h"
@@ -771,19 +770,6 @@ void marioResetHitObj(const char* name) {
 	}
 }
 
-// The original calls marioOfsRotReset(), whose body the compiler inlined here; mirror that with an inline helper
-// so the four zero-vector stores are emitted at the call site.
-static inline void marioOfsRotResetInline(void) {
-	MarioWork* wp = mp;
-
-	*(Vec*)(wp->field_0x98 + 0x24) = vec3_802c3698;
-	*(Vec*)(wp->field_0x98 + 0x18) = vec3_802c36a4;
-	*(Vec*)(wp->field_0x98 + 0x00) = vec3_802c36b0;
-	*(Vec*)(wp->field_0x98 + 0x0C) = vec3_802c36bc;
-}
-
-// NONMATCHING (91.09%): the compiler hoists the zero-vector loads of the inlined marioOfsRotReset ahead of the
-// dispFlags clears; every other instruction matches. The clears are split around the copy to steer that schedule.
 void marioReset(void) {
 	MarioWork* wp = mp;
 	MarioWork* wp2;
@@ -836,42 +822,20 @@ void marioReset(void) {
 		}
 	}
 
-#ifdef MUST_MATCH
-	// MUST_MATCH: this split of the two clears around the inlined copy is what makes the compiler keep
-	// the copy's loads after both clears, as the original does; the natural order is under #else.
-	wp->dispFlags &= ~0x8;
-	marioOfsRotResetInline();
-	wp->dispFlags &= ~0x100;
-#else
 	wp->dispFlags &= ~0x8;
 	wp->dispFlags &= ~0x100;
-	marioOfsRotResetInline();
-#endif
+	marioOfsRotReset();
 	wp->baseSpeed = 0.0f;
 	marioChgMot(0);
 }
 
-// The original addresses the four zero vectors off the unit's first .rodata object (the "a_mario" string,
-// str_802C3610 in the asm) at +0x88, and reads them through the `s[i]` pointer so the compiler keeps the
-// load-load-store-store-load-store pattern: naming the vec3_802c36* objects directly makes it hoist the next
-// vector's load past the previous store.
 void marioOfsRotReset(void) {
-	u8* base = (u8*)mp;
-#ifdef MUST_MATCH
-	const Vec* s = (const Vec*)("a_mario" + 0x88);
+	MarioWork* wp = mp;
 
-	*(Vec*)(base + 0xBC) = s[0];
-	*(Vec*)(base + 0xB0) = s[1];
-	*(Vec*)(base + 0x98) = s[2];
-	*(Vec*)(base + 0xA4) = s[3];
-#else
-	Vec zero = {0.0f, 0.0f, 0.0f};
-
-	*(Vec*)(base + 0xBC) = zero;
-	*(Vec*)(base + 0xB0) = zero;
-	*(Vec*)(base + 0x98) = zero;
-	*(Vec*)(base + 0xA4) = zero;
-#endif
+	*(Vec*)(wp->field_0x98 + 0x24) = vec3_802c3698;
+	*(Vec*)(wp->field_0x98 + 0x18) = vec3_802c36a4;
+	*(Vec*)(wp->field_0x98 + 0x00) = vec3_802c36b0;
+	*(Vec*)(wp->field_0x98 + 0x0C) = vec3_802c36bc;
 }
 
 void marioSoundInit(void) {
@@ -950,26 +914,19 @@ void marioInit(void) {
 
 // Calling marioSoundInit() (inlined by the target) makes the three 0x278/0x27C/0x280 stores reuse one
 // `lwz mp`, as the original does; writing them out as three mp->... stores reloads mp each time.
-// The snapshot's callee-saved registers are permuted versus the target (target/ours: camId r31/r30,
-// motionId r21/r31, partySlot0 r29/r21, partySlot1 r28/r24, animGroup0 r24/r28, str r30/r29),
-// `wp = mp` fails to coalesce (extra `mr r25, r4`), and the prevParty0/1 loads and the
-// scale/bottomlessReset Vec word copies are scheduled slightly differently. All calls, constants and
-// the rest of the body match; reordering the declarations, the snapshot loads and the restore stores
-// (all tried) did not move the registers.
 // prevParty0/1 are s8 locals: the original copies prevPartyMemberId back without the extsb it does for the
-// other byte snapshots.
-// NONMATCHING (95.87%): register/scheduling permutation of the snapshot and the Vec copies.
+// other byte snapshots. The declaration order is the original's callee-saved order (r29 down to r15).
 void marioReInit(void) {
+	s32 partySlot0;
+	s32 partySlot1;
 	s32 animGroup1;
 	s32 animGroup2;
 	MarioWork* wp;
 	s32 animGroup0;
-	s32 partySlot1;
 	s32 trigFlags;
 	s32 peachFlags;
-	u16 motionId;
+	s32 motionId;
 	s32 camId;
-	s32 partySlot0;
 	s32 characterId;
 	s32 highFlag;
 	s32 paperPoseId;
@@ -982,8 +939,7 @@ void marioReInit(void) {
 	f32 unk19C;
 	s32 i;
 
-	wp = mp;
-	highFlag = wp->flags & 0x80000000;
+	highFlag = (wp = mp)->flags & 0x80000000;
 	camId = marioGetCamId();
 	paperPoseId = wp->paperPoseId;
 	characterId = wp->characterId;
@@ -1003,8 +959,8 @@ void marioReInit(void) {
 	animGroup1 = wp->paperAnimGroupId[1];
 	animGroup2 = wp->paperAnimGroupId[2];
 
-	if (wp->paperPoseId >= 0) {
-		animPoseSetPaperAnimGroup(wp->paperAnimGroupId[0], NULL, 0);
+	if (0 <= wp->paperPoseId) {
+		animPoseSetPaperAnimGroup(animGroup0, NULL, 0);
 		animPoseRelease(wp->paperPoseId);
 		wp->paperPoseId = -1;
 		paperPoseId = -1;
@@ -1890,13 +1846,13 @@ BOOL marioChkPushAnime(void) {
 }
 
 s32 marioAnimeId(void) {
-	s32 flags = mp->dispFlags;
+	MarioWork* wp = mp;
 	s32 id;
 
-	if (flags & 0x10000000) {
+	if (wp->dispFlags & 0x10000000) {
 		id = 2;
 	}
-	else if (flags & 0x80000000) {
+	else if (wp->dispFlags & 0x80000000) {
 		id = 1;
 	}
 	else {
@@ -2171,6 +2127,8 @@ void marioMakeDispDir(void) {
 
 			if (dirRounded == 0.0f) {
 				f32 delta;
+				f32 lean = 30.0f;
+				f32 limit = 20.0f;
 
 				if (wp->trigFlags & 0x400) {
 					wp->trigFlags &= ~0x400;
@@ -2181,11 +2139,11 @@ void marioMakeDispDir(void) {
 					delta = 0.3f * (10.0f - wp->unk1A8);
 				}
 				else {
-					delta = 0.125f * (-float_30_80419f70 - wp->unk1A8);
+					delta = 0.125f * (-lean - wp->unk1A8);
 				}
 				wp->unk1A8 += delta;
 				if (!(wp->trigFlags & 0x100)) {
-					if (wp->unk1A8 < -float_20_80419fac) {
+					if (wp->unk1A8 < -limit) {
 						wp->trigFlags |= 0x100;
 					}
 				}
@@ -2227,6 +2185,8 @@ void marioMakeDispDir(void) {
 		else if (wp->unk1A8 > 180.0f) {
 			if (*marioDir == 0.0f) {
 				f32 delta;
+				f32 lean = 30.0f;
+				f32 limit = 20.0f;
 
 				if (wp->trigFlags & 0x400) {
 					wp->trigFlags &= ~0x400;
@@ -2237,11 +2197,11 @@ void marioMakeDispDir(void) {
 					delta = 0.3f * (10.0f - wp->unk1A8);
 				}
 				else {
-					delta = 0.125f * (-float_30_80419f70 - wp->unk1A8);
+					delta = 0.125f * (-lean - wp->unk1A8);
 				}
 				wp->unk1A8 += delta;
 				if (!(wp->trigFlags & 0x100)) {
-					if (wp->unk1A8 < -float_20_80419fac) {
+					if (wp->unk1A8 < -limit) {
 						wp->trigFlags |= 0x100;
 					}
 				}
@@ -2318,17 +2278,15 @@ void marioRearAnime(void) { //1:1
 	}
 }
 
-// NONMATCHING (99.45%): mp is held in r4 then copied to r31 (the target loads r31 directly), and the FPR chosen
-// for ofsZ is f3 here, f5 in the target.
 void marioPreDisp(void) {
-	MarioWork* wp = mp;
+	MarioWork* wp = marioGetPtr();
 	Vec pos;
 	f32 size;
 	f32 ofsY;
+	f32 diff;
 	f32 ofsZ;
 	f32 ofsX;
 	f32 c;
-	f32 diff;
 	s32 v;
 
 	if (wp->characterId == 0 || wp->characterId == 1) {
@@ -2453,25 +2411,11 @@ void marioPreDisp(void) {
 	}
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: returning the built GXColor from an inline lands the local at the original's stack slot
-// (sp+0x8) and the call argument at sp+0xC, instead of the other way round (brief code shape).
-static inline GXColor marioBlurColor(u8 alpha) {
-	GXColor color = *(GXColor*)(void*)&dat_80419e34;
-
-	color.a = alpha;
-	return color;
-}
-#endif
-
-// NONMATCHING (99.97%): body and control flow match; in the evt-color call, MWCC loads
-// the mp scratch into wp's r31 instead of the target's fresh r4 (two instructions).
 void marioDispBlurSub(s32* unused, s32 blurId) {
 	MarioWork* wp = mp;
 	Mtx mtx;
 	Mtx temp;
 	Mtx scale;
-	GXColor color;
 	f32 scaleFactor;
 	f32 s;
 
@@ -2564,17 +2508,7 @@ void marioDispBlurSub(s32* unused, s32 blurId) {
 
 	animPoseSetMaterialFlagOn(wp->paperAnimGroupId[marioAnimeId()], 0x40);
 
-#ifdef MUST_MATCH
-	// MUST_MATCH: re-defining wp (to the same mp) here is what makes MWCC's allocator keep
-	// the GXColor word in r3 and the marioAnimeId mp scratch in wp's r31; the plain form
-	// gives those two scratch registers the other way round (and 4 diffs instead of 2).
-	wp = mp;
-	color = marioBlurColor(0x80 - blurId * 16);
-#else
-	color = *(const GXColor*)&dat_80419e34;
-	color.a = 0x80 - blurId * 16;
-#endif
-	animPoseSetMaterialEvtColor(wp->paperAnimGroupId[marioAnimeId()], color);
+	animPoseSetMaterialEvtColor(wp->paperAnimGroupId[marioAnimeId()], (GXColor){0xFF, 0xFF, 0xFF, 0x80 - blurId * 16});
 
 	animPoseDrawMtx(wp->paperAnimGroupId[marioAnimeId()], mtx, 1, 0.0f, 1.0f);
 	animPoseDrawMtx(wp->paperAnimGroupId[marioAnimeId()], mtx, 2, 0.0f, 1.0f);
@@ -2659,7 +2593,8 @@ static inline f32 marioDispBlurCosf(f32 angle) {
 // sin and a cos polynomial approximation whose results are unused by the surviving code, so the only
 // residue is their compare skeleton (angle<=pi, <=pi/2, <3pi/2). MWCC's dead-assignment pass removes the
 // whole chain; `opt_dead_assignments off` keeps the compare skeleton while still dropping the (unused)
-// polynomial arithmetic and coefficient loads, which is exactly what the target has.
+// polynomial arithmetic and coefficient loads, which is exactly what the target has. The four coefficients
+// still pool in .sdata2, but nothing loads them, so the linker strips them as it did for the original.
 #pragma opt_dead_assignments off
 void marioDispBlur(CameraId camId, void* param) {
 	MarioWork* wp = param;
