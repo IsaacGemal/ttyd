@@ -6029,3 +6029,12 @@ The targets were every untried function at 98.2-99.99% in the 15 big unlinked un
   - _mapDispMapObj (mapdrv) 99.98 -> 100 refused. It needs an identity inline `mapFlagId(flags) { return flags; }` to pin flags to r3, on top of moving the fog block into an inline helper to reorder the GXColor temp slots.
   - mapObjSetFlushColor (mapdrv): no change.
 
+
+### Swarm batch 5b (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#722](https://github.com/IsaacGemal/ttyd/pull/722)
+- Wins:
+  - **evt_mobj's "gp/string-address temp swapped" family** (floatswitch_blue/red, signboard, koopa_hidden_blk -> 100; tornadoswitch_blue in #720). The original creates the gp base-load temp before the asyncName string temp. `BOOL inBattle = !!gp->inBattle;` as its own statement, kept alive by an `opt_propagation off`/`reset` pair around the function, reproduces that order (gp r5, string r4). koopa_badgeblk and rideswitch_lightblue carry the same comment and are still running.
+  - **A loop moved into a static inline keeps its init copy** (mobj_switch_float_blk -> 100). Written inline in the caller, `for (i = idx; ...)` with `idx = 0` folds to `li r30,0`; as its own inline body the front end keeps the original's `mr r30,r29`. The same li/mr class as eff_magic_horao_n64 / eff_timestamp_n64.
+  - **`optimization_level 2` around one function** stops -O4 folding a loop's `off = i` init (mapDispMapObj_bbox -> 100). There is precedent in three merged files.
+  - **All locals at function scope in a searched order** (mapCalcAnimMatrix +0.37, FPR colouring).
+- Hard negatives / no change: mapdrv bmapUnLoad (third loop), npcdrv _npcDeleteGroup (the slave loop after the inlined recursive call).
+
