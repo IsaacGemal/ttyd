@@ -63,10 +63,8 @@ enum hex_scan_states {
 #define fetch() (count++, (*ReadProc)(ReadProcArg, 0, __GetAChar))
 #define unfetch(c) (*ReadProc)(ReadProcArg, c, __UngetAChar)
 
-// NONMATCHING (99.95%): only the two hex digit loops differ. The original keeps the `_toupper` result
-// in r3 and the converted digit `ui` in r5; ours assigns the result straight into `ui` (both r5).
-// Separate temps, a `c = _toupper(c)` form, the expanded macro, and int/long/unsigned `ui` were tried.
-// The `num` union keeps `result`/`mantissa` in the original's aliased 0x18(r1) slot.
+// The block-scoped `int ui` in the hex digit loops keeps the `_toupper` result (r3) apart from the
+// converted digit (r5). The `num` union keeps `result`/`mantissa` in the original's aliased 0x18(r1) slot.
 long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* ReadProcArg, int* chars_scanned,
                       int* overflow) {
     int scan_state = start;
@@ -96,7 +94,6 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
     int radix_marker = *(unsigned char*)(__lconv).decimal_point;
 
     unsigned mantissa_digits;
-    long ui;
     unsigned char uch, uch1;
 
     *overflow = 0;
@@ -374,13 +371,15 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
                         } else if (NibbleIndex < 17) {
                             intdigits++;
                             uch = *(chptr + NibbleIndex / 2);
-                            ui = _toupper(c);
-                            if (ui >= 'A') {
-                                ui = ui - 'A' + 10;
-                            } else {
-                                ui -= '0';
+                            {
+                                int ui = _toupper(c);
+                                if (ui >= 'A') {
+                                    ui = ui - 'A' + 10;
+                                } else {
+                                    ui -= '0';
+                                }
+                                uch1 = (unsigned char)ui;
                             }
-                            uch1 = (unsigned char)ui;
                             if ((NibbleIndex % 2) != 0) {
                                 uch |= uch1;
                             } else {
@@ -398,13 +397,15 @@ long double __strtold(int max_width, int (*ReadProc)(void*, int, int), void* Rea
                             hex_scan_state = hex_sig_end;
                         } else if (NibbleIndex < 17) {
                             uch = *(chptr + NibbleIndex / 2);
-                            ui = _toupper(c);
-                            if (ui >= 'A') {
-                                ui = ui - 'A' + 10;
-                            } else {
-                                ui -= '0';
+                            {
+                                int ui = _toupper(c);
+                                if (ui >= 'A') {
+                                    ui = ui - 'A' + 10;
+                                } else {
+                                    ui -= '0';
+                                }
+                                uch1 = (unsigned char)ui;
                             }
-                            uch1 = (unsigned char)ui;
                             if ((NibbleIndex % 2) != 0) {
                                 uch |= uch1;
                             } else {

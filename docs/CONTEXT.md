@@ -5728,6 +5728,13 @@ locals, expression forms, mwsearch 40 min / 22,155 compiles (0 improvements). Si
 99.11) has the same temp pattern. Next idea: a row helper whose local `bottom` draws quads 4 and 5 without sharing
 `x + 8` with quads 4 and 6; solving one likely solves both.
 
+**strtold links: __strtold 99.95 -> 100 (on1-strtold; lever from the list: no, found before the ledger read; 108k,
+10 min).** In both hex digit loops the conversion moved into its own block with a local `int ui = _toupper(c);`
+(the function-scope `long ui` went). The mwccdbg dump showed ours kept `_toupper`'s result and the converted digit
+in one register; the original keeps r3 and r5 apart, which the block-scoped `int` gives. tp's reference is
+NonMatching here too, with the same `ui = toupper(c)` shape. Tried: assignment inside the `if`, a ternary (99.58),
+`_toupper` in each arm (96.91), casts, `c = _toupper(c)`, block-scoped `long ui` (99.95).
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
