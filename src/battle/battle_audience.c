@@ -2791,9 +2791,8 @@ static inline GXColor BattleAudienceDispAudience_color(u8 r, u8 g, u8 b, u8 a) {
 }
 #endif
 
-// NONMATCHING (95.98%): functionally complete. The angle wrap now fuses and the texture scale uses
-// explicit k/s locals in the MUST_MATCH arm; what still differs is FP scheduling and register
-// allocation in the matrix build (including the trig call order) and the GX texcoord output.
+// NONMATCHING (96.07%): cos(rz) colours to f9 (the original's f6 is taken by a backend temp), so the
+// matrix/trig schedule differs; the quad emission also spills float_20 and orders addresses differently.
 #pragma dont_inline on
 void BattleAudienceDispAudience(CameraId camId, void* param) {
 	BattleAudience* audience;
@@ -2975,18 +2974,18 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		cz = (f32)cos(rz);
 		sz = (f32)sin(rz);
 
-		mtxRot[2][0] = sy * cz + sx * cy * sz;
-		mtxRot[0][3] = 0.0f;
-		mtxRot[0][2] = -cx * sy;
-		mtxRot[0][0] = cy * cz - sx * sy * sz;
-		mtxRot[1][0] = cx * sz;
-		mtxRot[0][1] = -cy * sz - sx * sy * cz;
-		mtxRot[1][2] = -sx;
 		mtxRot[1][3] = 0.0f;
-		mtxRot[2][1] = -sy * sz + sx * cy * cz;
+		mtxRot[1][0] = cx * sz;
+		mtxRot[0][3] = 0.0f;
+		mtxRot[2][0] = sy * cz + sx * cy * sz;
+		mtxRot[0][1] = -cy * sz - sx * sy * cz;
+		mtxRot[0][2] = -cx * sy;
 		mtxRot[1][1] = cx * cz;
-		mtxRot[2][2] = cx * cy;
+		mtxRot[2][1] = -sy * sz + cy * sx * cz;
+		mtxRot[0][0] = cy * cz - sx * sy * sz;
 		mtxRot[2][3] = 0.0f;
+		mtxRot[1][2] = -sx;
+		mtxRot[2][2] = cx * cy;
 
 		*(Vec*)((u8*)member + 0x90) = vec3_802f9768;
 		PSMTXMultVec(mtxRot, (Vec*)((u8*)member + 0x90), (Vec*)((u8*)member + 0x90));

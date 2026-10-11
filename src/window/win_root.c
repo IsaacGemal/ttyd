@@ -1751,23 +1751,29 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
     }
 }
 
-// NONMATCHING (95.62%): span allocation/scheduling; existing match-only pool views retained
-// because native loads regressed this function. Its unique 320/-16 doubles remain unported.
+// The last differences are the preheader's spill widths and the int->float mask's
+// addressing. Retail keeps the nine __fabs doubles alive as f64 and spills several raw
+// doubles (stfd/lfd) before the hoisted (f32) conversions, and reaches its 2^52 mask
+// through the str_802F3FE8 base (0x4e0(rBase)); MWCC here emits an extra `lis` for the
+// mask and spills some conversions as f32 (stfs/lfs), which is one extra instruction
+// overall (+6 lfs, -3 lfd, +2 stfs, +1 fadds, +1 lis). Calls, immediates and the
+// inlined winHalfBookPage bodies all match.
+// NONMATCHING (95.92%): preheader spill widths and int->float mask addressing.
 void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
 #ifdef MUST_MATCH
     const u8* rodata = (const u8*)&str_802F3FE8;
 #endif
+    f32 y16;
+    f32 y8;
+    f32 x264;
+    f32 x312;
+    f32 y264;
     f32 x8;
     f32 x16;
     f32 x32;
-    f32 x264;
-    f32 x312;
     f32 x320;
-    f32 y8;
-    f32 y16;
     f32 y200;
     f32 y256;
-    f32 y264;
     f64 sn16;
     f64 s24;
     f64 s40;
@@ -1782,7 +1788,7 @@ void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
 
     (void)a4;
 
-    GXSetFog(0, float_0_8041d068, float_0_8041d068, float_0_8041d068, float_0_8041d068, dat_8041cf5c);
+    GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041cf5c);
     GXSetNumChans(1);
     GXSetChanCtrl(4, 0, 0, 0, 0, 0, 2);
     GXSetNumTevStages(1);
@@ -1824,7 +1830,7 @@ void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
             GXSetZCompLoc(1);
             GXSetAlphaCompare(7, 0, 0, 7, 0);
             GXSetZMode(0, 7, 0);
-            PSMTXTrans(mtx, float_8_8041d0a0, float_neg8_8041d158, float_0_8041d068);
+            PSMTXTrans(mtx, float_8_8041d0a0, float_neg8_8041d158, 0.0f);
             PSMTXConcat(camGetPtr(CAMERA_2D)->view, mtx, mtx);
             GXLoadPosMtxImm(mtx, 0);
             GXSetCurrentMtx(0);
@@ -1844,16 +1850,16 @@ void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
         winHalfBookPage(pal, 0x26, s16,  s48,  x264,         y,    x312,                     y16);
         winHalfBookPage(pal, 0x3B, s16,  s24,  x312,         y,    x312 + 24.0f,             y16);
         winHalfBookPage(pal, 0x30, s248, s8,   x,            y8,   x8,                       y8 - 248.0f);
-        winHalfBookPage(pal, 0x32, s240, s16,  x264 + 8.0f,  y16,  (x264 + 8.0f) + 16.0f,    y16 - 240.0f);
+        winHalfBookPage(pal, 0x32, s240, s16,  x264 + 8.0f,  y16,  (x264 + 8.0f) + 16.0f,    y16 - float_240_8041d0ac);
         winHalfBookPage(pal, 0x36, s40,  s248, x16,          y200, x264,                     y200 - 40.0f);
         winHalfBookPage(pal, 0x3A, s8,   s16,  x,            y256, x16,                      y264);
         winHalfBookPage(pal, 0x38, s8,   sn16, x32,          y256, x32 + -16.0f,              y264);
-        winHalfBookPage(pal, 0x38, s8,   s240, x32,          y256, x32 + 240.0f,             y264);
+        winHalfBookPage(pal, 0x38, s8,   s240, x32,          y256, x32 + float_240_8041d0ac,             y264);
         winHalfBookPage(pal, 0x39, s8,   s16,  x + 272.0f,   y256, (x + 272.0f) + 16.0f,     y264);
         winHalfBookPage(pal, 0x38, s8,   s16,  x + float_288_8041d16c,   y256, (x + 288.0f) + 16.0f,     y264);
         winHalfBookPage(pal, 0x38, s8,   sn16, x320,         y256, x320 + -16.0f,             y264);
         winHalfBookPage(pal, 0x38, s8,   s16,  x320,         y256, x320 + 16.0f,             y264);
-        winHalfBookPage(pal, 0x3C, s240, s8,   x + 328.0f,   y16,  (x + 328.0f) + 8.0f,      y16 - 240.0f);
+        winHalfBookPage(pal, 0x3C, s240, s8,   x + 328.0f,   y16,  (x + 328.0f) + 8.0f,      y16 - float_240_8041d0ac);
 
     }
 }
