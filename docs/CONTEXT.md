@@ -5858,3 +5858,13 @@ the if (99.48).
   - The named-read lever does not carry over everywhere: in star_control (sac_scissor), naming the vec3 symbols instead of `SCVEC` base+off drops 98.93 -> 91.05.
   - No change: sound _sscallback (two prologue `mr`), icondrv iconDispGx2 (the existing MUST_MATCH `numIcons` store; dropping it swaps r7/r8).
 
+
+### Swarm batch 4d (2026-10-10, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#707](https://github.com/IsaacGemal/ttyd/pull/707)
+- Wins:
+  - **A missing `addi` before a call can be a prototype with too few parameters** (marioMoveMain -> 100). The original passes `wp + 0x210` to `N_dou10_yoko_yari3`, which we declared `(void)`. An unused parameter emits the argument and leaves the callee byte-identical. The rest was a separate `dirRes` local for the direction result: written back into the speed local it became a frontend temp that outranks the named locals, which swapped f29/f30.
+  - **Per-block locals stop an `lwzu` fold** (ext_yuunpc_minigame4_init_sub -> 100). One function-scope `name` let MWCC fold `addi`+`lwz` into `lwzu` for the second and third copy. Per-block `name`/`Vec` locals, the `volatile` Vec copies dropped, a direct `B - A` for the original's `fnmsubs`, and inline name strings closed it.
+  - **A constant written at the head of both branch arms is rematerialised per arm** (effPokopiThunderDisp +1.66). With `f20 = 8.0f;` in each arm, the instruction count matches; the rest is GPR colouring that rasim shows no declaration order reaches.
+- Hard negatives / no change:
+  - collisionCurve (cam_road) timed out at 96.84. Its collected mid-edit state (+0.08, with mwsearch paren artifacts) was not kept. The wrong code is `d0 = 0.0` as a double, where the original loads `float_0` single.
+  - Batch 4 overall: 33 agents. 21 kept (6 at 100), 3 refused (main_point, puniModeALLCheck, disp_sight: a pool helper or a duplicated helper), 9 no change.
+

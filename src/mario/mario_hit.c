@@ -2934,7 +2934,7 @@ HitEntry* dou10_yoko_yari2(f32* out) {
 // (vec3_802c5880 / vec3_802c5898) and then overwriting the components, and adds the
 // float_5 clearance after the copy; both shapes are needed for the exact stack layout.
 // 0x1E0 is unnamed MarioWork padding.
-HitEntry* N_dou10_yoko_yari3(void) {
+HitEntry* N_dou10_yoko_yari3(void* unused) {
     const char* base = (const char*)&vec3_802c5730;
     MarioWork* wp = marioGetPtr();
     f32 sn;
