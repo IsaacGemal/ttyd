@@ -67,6 +67,18 @@ s32 pos_data[10][3] = {
 	{ 140, 90, 25 },
 };
 
+// .sbss2 zero-initialised scratch colours the display code builds its TEV colours from (this
+// compiler lays such objects out last-declared first, so the higher address comes first).
+#ifdef MUST_MATCH
+#pragma section ".sdata" ".sbss2"
+__declspec(section ".sdata") GXColor unk_804232b4;
+__declspec(section ".sdata") GXColor unk_804232b0;
+#pragma section ".sdata" ".sbss"
+#else
+GXColor unk_804232b4;
+GXColor unk_804232b0;
+#endif
+
 EffectEntry* effTimestampN64Entry(s32 type, s32 time, f32 x, f32 y, f32 z, f32 scale) {
 	EffectEntry* effect;
 	effTimestampN64Data* data;
@@ -199,53 +211,29 @@ static inline void effTimestampSetVtxColor(effTimestampN64Data* data, s32 counte
 	GXSetTevColor(GX_TEVREG0, color);
 }
 
-#pragma opt_common_subs off // with CSE on MWCC folds the constants differently and the integer colouring drifts further
-#pragma opt_lifetimes off // the default lifetime analysis picks a different, worse-matching register assignment
-// The vertex loop's per-iteration sin result must go into a named `s` temp instead of being reused
-// inline: that is what makes MWCC give the loop's 6.2832/double/360/500/200 constants f27-f31 exactly
-// as the original does. `texT += 0x80` must be the third for-increment (not the loop body's last
-// statement) or the vtx/t increments are emitted in the wrong order. The first-loop t coordinate (`v`)
-// and the second loop's tri2 index/counter (`j`/`k`) must be separate locals; sharing one variable
-// makes the second loop's registers land in the wrong slots. The target's field_0x30 scale and the
-// transform scale are also separate locals. `data` still lands in r28 here but r26 in the original
-// (which gives its first-loop `i` r28; this build gives `data` r28 and `i` r26), the second loop's base
-// pointer/colr are r30/r29 here (r29/r30 there), `v = 0` compiles to `li` where the original emits `mr`
-// for its t=offset, and the `valB + offset - 3000` temp is r5/r6 swapped.
-// The `data`/first-loop-`i` colouring ({r28,r26} here vs {r26,r28} in the original) survives every
-// declaration-order permutation (single moves, 2500 random orders, pairwise hill-climb), a separate
-// first- or second-loop counter (including reusing `j`/`k`/`counter`), a second `data` pointer
-// (coalesced away), moving the `timer`/`counter` loads later, the `v = offset` init moved into the
-// `for`, statement reordering in the prologue and both loops (single moves and all pair swaps),
-// `-O4,p`, `optimization_level` 0-4, and every `opt_*` pragma the compiler accepts. `opt_common_subs`
-// is the only knob that moves `data` to r26, but it also breaks the FPR/moving-pointer shapes
-// (51-82 diffs), so it must stay off. It is allocator tie-break luck and wants a permuter job.
-// NONMATCHING (99.40%): instruction shapes and frame match; only register colouring differs.
-// 99.4%: the only remaining difference is integer register colouring (the original keeps the data pointer in r26
-// and the loop counter in r28 where we use r28/r26); pools are identical. Declaration-order swaps did not move it.
+// The vertex loop is written per index (`&base[i * 2]`, `i * 400`, `timer * 10 + i * k`), so the
+// frontend strength-reduces it into the original's preheader copies; the texture row `i * 2 * 0x40U`
+// is unsigned, so the backend reduces it instead and its zero start becomes a copy of the `i * 400`
+// one. Each sin result goes into the named `s` temp, which gives the loop's constants f27-f31.
 void effTimestampDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
-	CameraEntry* cam = camGetPtr(camId);
-	s32 i;
+	s32 j;
+	smartEntry* entry;
 	s32 counter;
-	s32 timer;
-	s32 angleA;
 	effTimestampN64Data* data;
-	s32 offset;
-	s32 angleB;
-	effTimestampVtx* vtx;
+	s32 i;
+	s32 k;
+	s32 timer;
+	s32 valA;
 	effTimestampVtx* base;
-	s32 v;
+	CameraEntry* cam = camGetPtr(camId);
 	Mtx trans;
 	Mtx scale;
 	Mtx rot;
 	Mtx work;
 	GXTexObj texObj;
-	smartEntry* entry;
-	s32 j;
 	f32 scaleF;
 	f32 fieldScale;
-	s32 k;
-	s32 valA;
 	s32 valB;
 
 	data = effect->userdata;
@@ -282,32 +270,25 @@ void effTimestampDisp(CameraId camId, void* param) {
 	GXLoadTexMtxImm(scale, GX_TEXMTX0, GX_MTX2x4);
 	effTimestampSetColor(data);
 	entry = smartAlloc(0x1C0, HEAP_EFFECT);
-	angleA = timer * 10;
 	base = entry->address;
-	offset = 0;
-	vtx = base;
-	angleB = angleA;
-	v = 0;
-	for (i = 0; i < 16; i++, vtx += 2, v += 0x80) {
+	for (i = 0; i < 16; i++) {
+		effTimestampVtx* vp = &base[i * 2];
 		f32 s;
 		fieldScale = data->field_0x30;
-		s = (f32)sin(6.2831855f * (f32)angleA / 360.f);
+		s = (f32)sin(6.2831855f * (f32)(timer * 10 + i * 60) / 360.f);
 		valA = (s32)(fieldScale * (500.f * s));
-		s = (f32)sin(6.2831855f * (f32)angleB / 360.f);
+		s = (f32)sin(6.2831855f * (f32)(timer * 10 + i * 6) / 360.f);
 		valB = (s32)(fieldScale * (200.f * s));
-		vtx[0].x = valA - 3200;
-		vtx[0].y = valB + offset - 3000;
-		vtx[0].z = 0;
-		vtx[0].s = 0;
-		vtx[0].t = v;
-		vtx[1].x = valA + 3200;
-		vtx[1].y = valB + offset - 3000;
-		vtx[1].z = 0;
-		vtx[1].s = 0x800;
-		vtx[1].t = v;
-		angleA += 60;
-		angleB += 6;
-		offset += 400;
+		vp[0].x = valA - 3200;
+		vp[0].y = valB + i * 400 - 3000;
+		vp[0].z = 0;
+		vp[0].s = 0;
+		vp[0].t = i * 2 * 0x40U;
+		vp[1].x = valA + 3200;
+		vp[1].y = valB + i * 400 - 3000;
+		vp[1].z = 0;
+		vp[1].s = 0x800;
+		vp[1].t = i * 2 * 0x40U;
 	}
 	DCFlushRange(base, 0x1C0);
 	GXInvalidateVtxCache();
@@ -337,4 +318,3 @@ void effTimestampDisp(CameraId camId, void* param) {
 		}
 	}
 }
-#pragma opt_lifetimes reset
