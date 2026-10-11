@@ -5685,6 +5685,18 @@ of the all-literal shape the agent added mid-run from the pool order; with `* 0.
 99.91), named `bottom`/`negativeBottom` locals, products moved before the loop, a named `half`, `opt_propagation off`
 (96.8). Same lesson as eff_kiss: when the pool order is the function's own literal order, go all-literal first.
 
+**eff_kemuri5_n64 links: effKemuri5N64Entry 99.59 -> 100 (on1-kemuri5; lever from the list: partial).** One float
+local `rad` holds the angle offset `(f32)(i * 45)`, converted before the four reset-constant stores, and is then
+reassigned to the radians passed to sin/cos (`rad = 6.2832 * reviseAngle(a4 + rad) / 360`). All the MUST_MATCH
+constant locals went; no match-only code left. A rasim `--key` what-if on a mwccdbg dump showed the mechanism: the
+reset-constant loads must be numbered after the conversion's temps so they leave the graph in the first simplify
+sweep and take registers below the parameters. A single-use `angle` local doesn't work (the compiler sinks it back
+to the call); reassigning the local blocks the sink. The ideas are in the brief ("move where a value is created",
+the reused-local note), but the agent found it before finishing the ledger read. Tried and failed: the loop body as
+an inline, parameter copies, a local `Vec pos`, the whole sum in the reused local (42-116 diffs), `opt_propagation
+off`; `rasim neighbors` finds no single-edge fix. Worth trying the `--key` what-if on the other open FPR swaps
+(eff_magic3_n64, eff_kumokumo_n64, eff_bomb).
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
