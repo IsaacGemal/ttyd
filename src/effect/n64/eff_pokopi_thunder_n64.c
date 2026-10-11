@@ -13,8 +13,7 @@
 #include <stdlib.h>
 
 // Inlined MetroWerks sqrtf and its NaN classification (same helper several other effect
-// files carry). The two double literals and the comparison zero pool into the original
-// .rodata (double_0p5_802fb438, double_3_802fb440, double_0_802fb448).
+// files carry).
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
 
@@ -48,20 +47,14 @@ static inline s32 __fpclassifyf(f32 x) {
 #define fpclassify(x) __fpclassifyf(x)
 #define isnan(x) (fpclassify(x) == FP_NAN)
 
-// The sqrtf constants are named .rodata objects in the original; declaring them extern forces the
-// inlined Newton iterations to load the symbols instead of materialising fresh pool entries.
-extern const f64 double_0p5_802fb438;
-extern const f64 double_3_802fb440;
-extern const f64 double_0_802fb448;
-
 static inline f32 pt_sqrtf(f32 x) {
 	if (x > 0.0f) {
 		f64 guess = __frsqrte(x);
-		guess = double_0p5_802fb438 * guess * (double_3_802fb440 - guess * guess * x);
-		guess = double_0p5_802fb438 * guess * (double_3_802fb440 - guess * guess * x);
-		guess = double_0p5_802fb438 * guess * (double_3_802fb440 - guess * guess * x);
+		guess = 0.5 * guess * (3.0 - guess * guess * x);
+		guess = 0.5 * guess * (3.0 - guess * guess * x);
+		guess = 0.5 * guess * (3.0 - guess * guess * x);
 		return x * guess;
-	} else if (x < double_0_802fb448) {
+	} else if (x < 0.0) {
 		return NAN;
 	} else if (isnan(x)) {
 		return NAN;
@@ -69,39 +62,15 @@ static inline f32 pt_sqrtf(f32 x) {
 	return x;
 }
 
-// .rodata
-
-#ifdef MUST_MATCH
-// Immediately generated helpers pool the zero-Vec copy template and the two int->float
-// conversion doubles (the unsigned mask first, then the signed one) ahead of the
-// "PokopiThunderN64" string, in the original's .rodata order. Nothing calls the conversion
-// helpers; the linker strips their unused bodies.
-#pragma defer_codegen off
-static inline Vec pool_vec3(void) {
+// .rodata is all the compiler's own pool: the zero-Vec template from this inline's compound literal
+// (pooled once, when the inline is parsed), then the functions' literals in generation order (Disp's
+// two int->float doubles, Entry's type string and sqrtf doubles).
+static inline Vec effPokopiThunderZeroVec(void) {
 	return (Vec){ 0.0f, 0.0f, 0.0f };
 }
 
-static f32 pool_i2f_mask(s32 v) {
-	return (f32)(u32)v;
-}
-
-static f32 pool_i2f_signed(s32 v) {
-	return (f32)v;
-}
-#pragma defer_codegen reset
-#else
-const Vec vec3_802fb400 = { 0.0f, 0.0f, 0.0f };
-#endif
-
-const char str_802FB420[] = "PokopiThunderN64";
-// Named in the original .rodata (see the .obj blocks).
-const f64 double_0p5_802fb438 = 0.5;
-const f64 double_3_802fb440 = 3.0;
-const f64 double_0_802fb448 = 0.0;
-
-// The named sqrtf doubles (0x38/0x40/0x48) sit where the original .rodata has them, and the
-// else-return-0 block is placed next to the sqrt result; together with a real zero variable (so
-// the outer fcmpu compares dist2 first, as retail does) that reproduces the original exactly.
+// The else-return-NULL block is placed next to the sqrt result; together with a real zero variable
+// (so the outer fcmpu compares dist2 first, as retail does) that reproduces the original exactly.
 EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 z, f32 endX, f32 endY, f32 endZ, f32 scale) {
 	EffectEntry* effect;
 	s32 cameraId;
@@ -123,7 +92,7 @@ EffectEntry* effPokopiThunderN64Entry(s32 type, s32 lifetime, f32 x, f32 y, f32 
 		cameraId = 8;
 	}
 	type %= 10;
-	effect->type = str_802FB420;
+	effect->type = "PokopiThunderN64";
 	effect->count = 1;
 	data = __memAlloc(HEAP_EFFECT, sizeof(EffPokopiThunderData));
 	effect->userdata = data;
@@ -184,11 +153,7 @@ void effPokopiThunderMain(EffectEntry* effect) {
 	s32 timer;
 
 	data = effect->userdata;
-#ifdef MUST_MATCH
-	pos = pool_vec3();
-#else
-	pos = vec3_802fb400;
-#endif
+	pos = effPokopiThunderZeroVec();
 	pos.x = data->x;
 	pos.y = data->y;
 	pos.z = data->z;
@@ -323,13 +288,6 @@ static inline void effPokopiThunderSetColor2(EffPokopiThunderData* data) {
 }
 #endif
 
-// NONMATCHING (99.85% / 5 differing insns): everything matches except the loop-2 preheader. The target
-// zeroes `i` with `li r26,0` and copies that zero into the strength-reduced colour/texture counters
-// (`mr r30/r31/r28/r27, r26`); ours zeroes the first counter and copies from it, then zeroes `i` on its own.
-// MWCC's second CSE pass only uses a compiler variable (inline local/param) as the copy source, never a
-// named local, so the target's loop-2 counter was not a plain named local. Moving the loop into an inline
-// helper makes `i` the source but renumbers every helper variable above the named locals and costs ~120
-// instructions of colouring.
 static inline void effPokopiThunderDrawStrip(s32 count) {
 	s32 j;
 	s32 k;
@@ -340,8 +298,11 @@ static inline void effPokopiThunderDrawStrip(s32 count) {
 	}
 }
 
+// The point loop and the vertex loop share one counter `i`: the vertex loop's zero is then the start of
+// `i`'s second live range, which MWCC copies into the strength-reduced colour/texture counters as retail does.
 void effPokopiThunderDisp(CameraId camId, void* param) {
-	s32 n;
+	s32 timer;
+	s32 i;
 	CameraEntry* cam;
 	s32 t1;
 	GXTexObj texObj;
@@ -349,8 +310,6 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	s32 cr;
 	f32 scale;
 	f32 t;
-	
-	s32 i;
 	f32 a2;
 	s32 type;
 	Mtx mtx;
@@ -358,7 +317,6 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	f32 proj[7];
 	f32 wy;
 	f32 amp;
-	s32 timer;
 	f32 f20;
 	f32 viewport[6];
 	GXColor color2;
@@ -460,22 +418,22 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 		}
 	}
 
-	for (n = 0; n < 12; n++) {
-		s32 idx = *(s32*)((u8*)data + 0x110) + (n - timer) * 10;
-		t = (f32)tbl[n];
+	for (i = 0; i < 12; i++) {
+		s32 idx = *(s32*)((u8*)data + 0x110) + (i - timer) * 10;
+		t = (f32)tbl[i];
 		wx = 0.09090909f * ((*(f32*)((u8*)data + 0x1C)) - (*(f32*)((u8*)data + 0x10)));
 		ang = 6.2831855f * (f32)(idx % 120 - 60) / 360.0f;
 		wy = 0.09090909f * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)));
 		f20 = 0.04f * (t * (f32)sin(ang));
 		f6 = 0.04f * (t * (f32)cos(ang));
 		t = wx * f6 - wy * f20;
-		data->ptX[n] = (t) +
-		          (0.09090909f * ((f32)n * ((*(f32*)((u8*)data + 0x1C)) - (*(f32*)((u8*)data + 0x10)))) + (*(f32*)((u8*)data + 0x10)));
+		data->ptX[i] = (t) +
+		          (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x1C)) - (*(f32*)((u8*)data + 0x10)))) + (*(f32*)((u8*)data + 0x10)));
 		t = wy * f6;
-		data->ptY[n] = (wx * f20 + t) +
-		          (0.09090909f * ((f32)n * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)))) + (*(f32*)((u8*)data + 0x14)));
-		data->ptZ[n] = zero + (0.09090909f * ((f32)n * ((*(f32*)((u8*)data + 0x24)) - (*(f32*)((u8*)data + 0x18)))) + (*(f32*)((u8*)data + 0x18)));
-		data->ptScale[n] = 0.1f * (f32)tbl[n + 12];
+		data->ptY[i] = (wx * f20 + t) +
+		          (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)))) + (*(f32*)((u8*)data + 0x14)));
+		data->ptZ[i] = zero + (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x24)) - (*(f32*)((u8*)data + 0x18)))) + (*(f32*)((u8*)data + 0x18)));
+		data->ptScale[i] = 0.1f * (f32)tbl[i + 12];
 	}
 
 	entry = smartAlloc(0x2A0, 3);
