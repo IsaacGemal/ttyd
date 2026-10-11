@@ -6062,6 +6062,14 @@ built from logic the unit's own functions carry inline supply the .sdata2 consta
 stripped by mwld. Unlike party.c's four, these names have no map evidence; they rest on the dead-function rule in
 the preamble. Linking also needs walk's `float_40_8041cdf0` (four sites) defined or turned into inline arguments.
 
+**party_nokonoko: lookupSafetyPos 98.97 -> 100, Pos2 95.87 -> 99.54, Pos3 95.20 -> 99.92, 13/15 (on2-noko; lever from
+the list: yes; 95k, 12 min).** battle_menu_disp's lever, an hour later: the four lookups take `Vec pos` by value
+instead of `Vec* pos` (the callers already copied `party+0x94` to the stack before every call, which is what by-value
+passing produces). With no aliasing the 0.0 load orders against `pos.z` and the tail copy is a plain `*out = pos;`;
+the MUST_MATCH volatile and u32 word-copy hacks went. Left: first-probe FPR choice; the existing `fadd32` keeps
+`radius * s` unfused but its temps outrank `s` (an inline probe helper unfuses too but doubles the stack slots and
+folds the angle to a .rodata double).
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
