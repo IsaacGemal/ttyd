@@ -585,39 +585,36 @@ L_800CC620:
             goto L_800CCD8C;
         }
         NKF(0x104) = 0.0f;
-        {
-            Vec pos = *(Vec*)((u8*)party + 0x94);
-            res = lookupSafetyPos(&pos, &out, NKF(0xF0));
-        }
+        res = lookupSafetyPos(*(Vec*)((u8*)party + 0x94), &out, NKF(0xF0));
         if (party->field_138 != NULL && (res == 1 || res == 2 || res == 4 || res == 8)) {
             party->useMotionId = 0x46;
             goto L_800CCD8C;
         }
         switch (res) {
         case 3:
-            { Vec pos1 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos1, &out, NKF(0xF0), 135.0f); }
+            lookupSafetyPosSub(*(Vec*)((u8*)party + 0x94), &out, NKF(0xF0), 135.0f);
             break;
         case 5:
-            { Vec pos2 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos2, &out, NKF(0xF0), 315.0f); }
+            lookupSafetyPosSub(*(Vec*)((u8*)party + 0x94), &out, NKF(0xF0), 315.0f);
             break;
         case 10:
-            { Vec pos3 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos3, &out, NKF(0xF0), 225.0f); }
+            lookupSafetyPosSub(*(Vec*)((u8*)party + 0x94), &out, NKF(0xF0), 225.0f);
             break;
         case 12:
-            { Vec pos4 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos4, &out, NKF(0xF0), 315.0f); }
+            lookupSafetyPosSub(*(Vec*)((u8*)party + 0x94), &out, NKF(0xF0), 315.0f);
             break;
         case 7: case 14: case 15:
             party->useMotionId = 0x46;
             break;
         case 1:
-            { Vec pos5 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos5, &out, NKF(0xF0), 270.0f); }
+            lookupSafetyPosSub(*(Vec*)((u8*)party + 0x94), &out, NKF(0xF0), 270.0f);
             break;
         case 8:
-            { Vec pos6 = *(Vec*)((u8*)party + 0x94); lookupSafetyPos3(&pos6, &out, NKF(0xF0)); }
+            lookupSafetyPos3(*(Vec*)((u8*)party + 0x94), &out, NKF(0xF0));
             break;
         case 0: case 2: case 4: case 6: case 9: case 11: case 13:
         default:
-            { Vec pos7 = *(Vec*)((u8*)party + 0x94); lookupSafetyPos2(&pos7, &out, NKF(0xF0)); }
+            lookupSafetyPos2(*(Vec*)((u8*)party + 0x94), &out, NKF(0xF0));
             break;
         }
         party->useMotionId = 0x36;
@@ -837,39 +834,36 @@ L_800CCD8C:
 
     case 0x58:
         NKF(0x104) = 0.0f;
-        {
-            Vec pos = *(Vec*)((u8*)party + 0x94);
-            res = lookupSafetyPos(&pos, &out2, NKF(0xF0));
-        }
+        res = lookupSafetyPos(*(Vec*)((u8*)party + 0x94), &out2, NKF(0xF0));
         if (party->field_138 != NULL && (res == 1 || res == 2 || res == 4 || res == 8)) {
             party->useMotionId = 0x46;
             goto L_800CD8A8;
         }
         switch (res) {
         case 3:
-            { Vec pos8 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos8, &out2, NKF(0xF0), 135.0f); }
+            lookupSafetyPosSub(*(Vec*)((u8*)party + 0x94), &out2, NKF(0xF0), 135.0f);
             break;
         case 5:
-            { Vec pos9 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos9, &out2, NKF(0xF0), 315.0f); }
+            lookupSafetyPosSub(*(Vec*)((u8*)party + 0x94), &out2, NKF(0xF0), 315.0f);
             break;
         case 10:
-            { Vec pos10 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos10, &out2, NKF(0xF0), 225.0f); }
+            lookupSafetyPosSub(*(Vec*)((u8*)party + 0x94), &out2, NKF(0xF0), 225.0f);
             break;
         case 12:
-            { Vec pos11 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos11, &out2, NKF(0xF0), 315.0f); }
+            lookupSafetyPosSub(*(Vec*)((u8*)party + 0x94), &out2, NKF(0xF0), 315.0f);
             break;
         case 7: case 14: case 15:
             party->useMotionId = 0x46;
             break;
         case 1:
-            { Vec pos12 = *(Vec*)((u8*)party + 0x94); lookupSafetyPosSub(&pos12, &out2, NKF(0xF0), 270.0f); }
+            lookupSafetyPosSub(*(Vec*)((u8*)party + 0x94), &out2, NKF(0xF0), 270.0f);
             break;
         case 8:
-            { Vec pos13 = *(Vec*)((u8*)party + 0x94); lookupSafetyPos3(&pos13, &out2, NKF(0xF0)); }
+            lookupSafetyPos3(*(Vec*)((u8*)party + 0x94), &out2, NKF(0xF0));
             break;
         case 0: case 2: case 4: case 6: case 9: case 11: case 13:
         default:
-            { Vec pos14 = *(Vec*)((u8*)party + 0x94); lookupSafetyPos2(&pos14, &out2, NKF(0xF0)); }
+            lookupSafetyPos2(*(Vec*)((u8*)party + 0x94), &out2, NKF(0xF0));
             break;
         }
         party->useMotionId = 0x5A;
@@ -1205,11 +1199,7 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
     return NULL;
 }
 
-// The four probes, the selection logic and the register mask (r4) match.  What is left is
-// scheduler-only: blocks 2-4 load float_0 after pos->z (the original loads float_0 first), and
-// the hit0&&hit1 branch reads v1.y instead of the original's pos->y.
-// NONMATCHING (98.97%)
-s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
+s32 lookupSafetyPos(Vec pos, Vec* out, f32 height) {
     s32 result;
     Vec v1;
     Vec v2;
@@ -1236,12 +1226,12 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
 
     angle = revise360(toMovedir(*(f32*)mario->unk1AC) - float_180);
     s = sin(float_3p1416 * angle / float_180);
-    x = radius * s + pos->x;
+    x = radius * s + pos.x;
     v1.x = x;
     c = cos(float_3p1416 * angle / float_180);
-    y = pos->y + height;
-    z = pos->z + radius * -c;
-    v1.y = pos->y;
+    y = pos.y + height;
+    z = pos.z + radius * -c;
+    v1.y = pos.y;
     v1.z = z;
     distance = float_0p1 + height;
     hit0 = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1,
@@ -1249,12 +1239,12 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
 
     angle = revise360(toMovedir(*(f32*)mario->unk1AC) - float_90);
     s = sin(float_3p1416 * angle / float_180);
-    x = radius * s + pos->x;
+    x = radius * s + pos.x;
     v2.x = x;
     c = cos(float_3p1416 * angle / float_180);
-    y = pos->y + height;
-    z = pos->z + radius * -c;
-    v2.y = pos->y;
+    y = pos.y + height;
+    z = pos.z + radius * -c;
+    v2.y = pos.y;
     v2.z = z;
     distance = float_0p1 + height;
     hit1 = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1,
@@ -1262,12 +1252,12 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
 
     angle = revise360(toMovedir(*(f32*)mario->unk1AC) + float_90);
     s = sin(float_3p1416 * angle / float_180);
-    x = radius * s + pos->x;
+    x = radius * s + pos.x;
     v3.x = x;
     c = cos(float_3p1416 * angle / float_180);
-    y = pos->y + height;
-    z = pos->z + radius * -c;
-    v3.y = pos->y;
+    y = pos.y + height;
+    z = pos.z + radius * -c;
+    v3.y = pos.y;
     v3.z = z;
     distance = float_0p1 + height;
     hit2 = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1,
@@ -1275,12 +1265,12 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
 
     angle = revise360(toMovedir(*(f32*)mario->unk1AC));
     s = sin(float_3p1416 * angle / float_180);
-    x = radius * s + pos->x;
+    x = radius * s + pos.x;
     v4.x = x;
     c = cos(float_3p1416 * angle / float_180);
-    y = pos->y + height;
-    z = pos->z + radius * -c;
-    v4.y = pos->y;
+    y = pos.y + height;
+    z = pos.z + radius * -c;
+    v4.y = pos.y;
     v4.z = z;
     distance = float_0p1 + height;
     hit3 = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1,
@@ -1309,7 +1299,7 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
         } else if (hit1) {
             out->x = (v1.x + v2.x) * float_0p5;
             out->z = (v1.z + v2.z) * float_0p5;
-            out->y = v1.y;
+            out->y = pos.y;
             return result;
         } else if (hit2) {
             out->x = (v1.x + v3.x) * float_0p5;
@@ -1350,31 +1340,13 @@ s32 lookupSafetyPos(Vec* pos, Vec* out, f32 height) {
             }
         }
     }
-#ifdef MUST_MATCH
-    // MUST_MATCH: the natural `*out = *pos;` makes the compiler keep `result` in r5 and reorder the
-    // three loads/stores; volatile word accesses pin the original's load/load/store/load/store/store
-    // order and its r0/r3/r4 scratch registers.  Same three words either way.
-    {
-        volatile u32* s = (volatile u32*)pos;
-        volatile u32* d = (volatile u32*)out;
-        u32 a, b, c;
-        a = s[0];
-        b = s[1];
-        d[0] = a;
-        c = s[2];
-        d[1] = b;
-        d[2] = c;
-    }
-#else
-    *out = *pos;
-#endif
+    *out = pos;
     return result;
 }
 
-// NONMATCHING (95.87%): early-return four probes; calls, dead pi sin/cos, baseY cache and constants match.
-// The original puts height/radius/distance in f29/f30/f31 (sin reuses f31), ours in f30/f31/f29 (f26 for sin),
-// and the pos copy interleave differs. The third probe's two bare loads are written z-then-x for the score.
-void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
+// NONMATCHING (99.54%): only FP register colouring differs: the first probe's sin result (f26 here, f31 in the
+// original), its baseY/x/z (f27/f28/f26 vs f28/f26/f27) and the third probe's x/z (f26/f28 swapped).
+void lookupSafetyPos2(Vec pos, Vec* out, f32 height) {
     f32 distance;
     f32 hitX, hitY, hitZ;
     f32 hitNX, hitNY, hitNZ;
@@ -1392,16 +1364,16 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
 
     s = sin(MATCH_F32(float_1p5708));
     c = cos(MATCH_F32(float_1p5708));
-    baseY = pos->y;
+    baseY = pos.y;
     t = radius * s;
 #ifdef MUST_MATCH
-    x = fadd32(pos->x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+    x = fadd32(pos.x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
 #else
-    x = pos->x + t;
+    x = pos.x + t;
 #endif
     y = baseY + height;
     u = radius * -c;
-    z = pos->z + u;
+    z = pos.z + u;
     distance = float_0p1 + height;
     if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
         out->x = x;
@@ -1412,16 +1384,16 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
 
     s = sin(MATCH_F32(float_4p7124));
     c = cos(MATCH_F32(float_4p7124));
-    baseY = pos->y;
+    baseY = pos.y;
     t = radius * s;
 #ifdef MUST_MATCH
-    x = fadd32(pos->x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+    x = fadd32(pos.x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
 #else
-    x = pos->x + t;
+    x = pos.x + t;
 #endif
     y = baseY + height;
     u = radius * -c;
-    z = pos->z + u;
+    z = pos.z + u;
     distance = float_0p1 + height;
     if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
         out->x = x;
@@ -1431,9 +1403,9 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
     }
 
     { f32 pia = 3.1415927f; s = sin(pia); c = cos(pia); }
-    z = pos->z;
-    x = pos->x;
-    baseY = pos->y;
+    x = pos.x;
+    z = pos.z;
+    baseY = pos.y;
     y = baseY + height;
     distance = float_0p1 + height;
     if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
@@ -1444,16 +1416,16 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
     }
 
     { f32 za = 0.0f; s = sin(za); c = cos(za); }
-    baseY = pos->y;
+    baseY = pos.y;
     t = radius * s;
 #ifdef MUST_MATCH
-    x = fadd32(pos->x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+    x = fadd32(pos.x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
 #else
-    x = pos->x + t;
+    x = pos.x + t;
 #endif
     y = baseY + height;
     u = radius * -c;
-    z = pos->z + u;
+    z = pos.z + u;
     distance = float_0p1 + height;
     if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
         out->x = x;
@@ -1461,20 +1433,11 @@ void lookupSafetyPos2(Vec* pos, Vec* out, f32 height) {
         out->y = baseY;
         return;
     }
-#ifdef MUST_MATCH
-    // Word-wise copy keeps the original's r0/r3 scratch order.
-    *(u32*)&out->x = *(u32*)&pos->x;
-    *(u32*)&out->y = *(u32*)&pos->y;
-    *(u32*)&out->z = *(u32*)&pos->z;
-#else
-    *out = *pos;
-#endif
+    *out = pos;
 }
 
-// NONMATCHING (95.20%): probe values and control flow match; the product/pos->x pair and z/baseY/distance
-// land like the original. The remaining diffs are the first probe's sin result (f27 here, f29 in the
-// original), the float_0/pos->z schedule and the tail word copy.
-void lookupSafetyPos3(Vec* pos, Vec* out, f32 height) {
+// NONMATCHING (99.92%): only the first probe's sin result differs (f27 here, f29 in the original).
+void lookupSafetyPos3(Vec pos, Vec* out, f32 height) {
     f32 s, c, distance;
     f32 hitX, hitY, hitZ;
     f32 hitNX, hitNY, hitNZ;
@@ -1484,16 +1447,16 @@ void lookupSafetyPos3(Vec* pos, Vec* out, f32 height) {
     radius = marioGetPtr()->wPlayerCollisionBox.x;
     s = sin(MATCH_F32(float_1p5708));
     c = cos(MATCH_F32(float_1p5708));
-    baseY = pos->y;
+    baseY = pos.y;
     x = radius * s;
 #ifdef MUST_MATCH
-    x = fadd32(pos->x, x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+    x = fadd32(pos.x, x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
 #else
-    x = pos->x + x;
+    x = pos.x + x;
 #endif
-    y = pos->y + height;
+    y = pos.y + height;
     t = radius * -c;
-    z = pos->z + t;
+    z = pos.z + t;
     distance = float_0p1 + height;
     if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
         out->x = x;
@@ -1502,41 +1465,28 @@ void lookupSafetyPos3(Vec* pos, Vec* out, f32 height) {
     } else {
         s = sin(MATCH_F32(float_4p7124));
         c = cos(MATCH_F32(float_4p7124));
-        baseY = pos->y;
+        baseY = pos.y;
         x = radius * s;
 #ifdef MUST_MATCH
-        x = fadd32(pos->x, x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
+        x = fadd32(pos.x, x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
 #else
-        x = pos->x + x;
+        x = pos.x + x;
 #endif
-        y = pos->y + height;
+        y = pos.y + height;
         t = radius * -c;
-        z = pos->z + t;
+        z = pos.z + t;
         distance = float_0p1 + height;
         if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
             out->x = x;
             out->z = z;
             out->y = baseY;
         } else {
-#ifdef MUST_MATCH
-            // MUST_MATCH: the natural *out = *pos lets MWCC fold all three words through one r0
-            // scratch; volatile word accesses keep the loads/stores as written and recover one instruction
-            // of the original's r0/r3 tail. Same three words either way.
-            {
-                volatile u32* sp = (volatile u32*)pos;
-                volatile u32* dp = (volatile u32*)out;
-                dp[0] = sp[0];
-                dp[1] = sp[1];
-                dp[2] = sp[2];
-            }
-#else
-            *out = *pos;
-#endif
+            *out = pos;
         }
     }
 }
 
-void lookupSafetyPosSub(Vec* pos, Vec* out, f32 height, f32 angle) {
+void lookupSafetyPosSub(Vec pos, Vec* out, f32 height, f32 angle) {
     Vec sp;
     f32 distance;
     f32 hitX, hitY, hitZ;
@@ -1554,10 +1504,10 @@ void lookupSafetyPosSub(Vec* pos, Vec* out, f32 height, f32 angle) {
     radius = mario->wPlayerCollisionBox.x;
     rad = float_3p1416 * angle / float_180;
     s = sin(rad);
-    x = radius * s + pos->x;
+    x = radius * s + pos.x;
     c = cos(rad);
-    y = pos->y + height;
-    z = pos->z + radius * -c;
+    y = pos.y + height;
+    z = pos.z + radius * -c;
     distance = float_0p1 + height;
     if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
         sp = (Vec){ 0.0f, 0.0f, 0.0f };
@@ -1566,7 +1516,7 @@ void lookupSafetyPosSub(Vec* pos, Vec* out, f32 height, f32 angle) {
         sp.z = z;
         p = &sp;
     } else {
-        p = pos;
+        p = &pos;
     }
     *out = *p;
 }
