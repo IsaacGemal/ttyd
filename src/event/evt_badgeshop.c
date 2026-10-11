@@ -1,6 +1,5 @@
 /* "evt_badgeshop" - Badge Shop Script Functions
- * Status: Complete, not 1:1 (see comments throughout files, mostly
- * regalloc, along with bargainGeneration cleanup
+ * Status: 1:1
  *
  * Function: part of the backend for various shops
  */
@@ -146,71 +145,38 @@ s32 bottakuruComp(const void** sortA, const void** sortB) {
 	return a > b;
 }
 
-// `s16 count`, `s32 j`, `u32 k`, `u32 dobreak`, `s32 i`, a `s32* p` row pointer for the
-// `[1]` store and a separate `u32 m` counter for the last loop get most compares and the
-// inline `badgeShop_get` (r30/r31) right. What is left: the target stores `[1]` through a
-// pointer and
-// `[0]` through base+scaled-index (`stwx r24, r28, r25`), so it keeps a row pointer AND an
-// integer offset; ours strength-reduces `table[dobreak][0]` to the same pointer and drops
-// the offset register. The fill loop's `[0]` store reaches the target's base+scaled-index
-// form (`stwx base,offset`) once the table is read through a row pointer and the index is
-// kept signed (the cast is a MUST_MATCH device: with a plain `dobreak` MWCC folds the index
-// into a row pointer instead of keeping an offset register). The remaining diff is a
-// two-register swap in that loop: the target keeps `count` in r21 and the `[1]` pointer
-// copy in r23, this build puts the copy in r21 and `count` in r23 (the inline `badgeShop_get`
-// result is a compiler temp, so no named local can outrank it). That swaps the
-// `extsh`/`mr`/`stw`/`cmpw` operands and the last loop's base/bp register choice, and shifts
-// the branch offsets.
-// NONMATCHING (98.00%): remaining diff is the r21/r23 count-vs-`bp` swap above.
 void badgeShop_bottakuruGeneration(void) {
 	s32 table[0x11][2];
-	s16 count;
+	s32 (*base)[2] = table;
 	s32 j;
-	u32 k;
-	s32* bp;
-	s32* p;
-	s32 (*base)[2];
 	s32 i;
-	u32 dobreak;
-	u32 m;
-	for (k = 0; k < 0x11; k++) {
-		table[k][1] = 200;
-		table[k][0] = 0;
+	u32 n;
+	s32 count;
+	for (i = 0; i < sizeof(table) / sizeof(table[0]); i++) {
+		base = &table[i];
+		(*base)[1] = 200;
+		(*base)[0] = 0;
 	}
 
-	i = 0;
-	dobreak = 0;
 	base = table;
-	p = (s32*)table;
-	for (; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
+	n = 0;
+	for (i = 0; i < BADGE_MAX - KEY_ITEM_MIN; i++) {
 		count = badgeShop_get(bdsw->bottakuru_table, (s16)(i + KEY_ITEM_MIN)); //inline
-		bp = p;
 		for (j = 0; j < count; j++) {
-			bp[1] = irand(100);
-#ifdef MUST_MATCH
-			// `(s32)dobreak` is a no-op for the 0..15 index; it only tells MWCC to keep the
-			// index as a signed value so it strength-reduces to the target's byte-offset IV.
-			base[(s32)dobreak][0] = i + KEY_ITEM_MIN;
-#else
-			base[dobreak][0] = i + KEY_ITEM_MIN;
-#endif
-			dobreak += 1;
-			p += 2;
-			bp += 2;
-			if (dobreak >= 0x10) break;
+			table[n][1] = irand(100);
+			table[n++][0] = i + KEY_ITEM_MIN;
+			if (n >= 0x10) break;
 		}
-		if (dobreak >= 0x10) break;
+		if (n >= 0x10) break;
 	}
 
 	qqsort(table, 0x11, 8, (int (*)(void*, void*))bottakuruComp);
 
-	for (i = 0; i < 4; i++) { //only 4 slots
-		bp = badge_bottakuru_table;
-		for (m = 0; m < 0x11; m++) {
-			if (base[i][0] == *bp) {
-				evtSetValue(NULL, i + GSW(118), m);
+	for (i = 0; i < 4; i++, base++) { //only 4 slots
+		for (n = 0; n < 0x11; n++) {
+			if ((*base)[0] == badge_bottakuru_table[n]) {
+				evtSetValue(NULL, i + GSW(118), n);
 			}
-			bp++;
 		}
 	}
 }
@@ -256,30 +222,18 @@ void badgeShop_bteresaGeneration(void) {
 }
 
 #pragma inline_max_size(160) // keep badgeShop_get inlined but badgeShop_set a real `bl`
-// With that pragma the target's prologue/allocation fall into place (badgeShop_get stays
-// inlined, badgeShop_set stays a `bl`). The final loop's `(s16)badge` conversion now matches
-// through a MUST_MATCH call cast (original badgeShop_add id is s16; the cast makes the
-// compiler emit the target's `addi r3` before `extsh r4`). The only remaining diff is the
-// field-init stores: the target shares the first loop's counter register as the zero
-// (`li r25,0`; `stw r25,0xf8..`), MWCC here rematerialises a fresh `r0` and emits a second
-// `li r25,0`. An `i = 0;`, a `s32 zero = 0;`, a 5-iteration loop and opt_lifetimes/
-// opt_common_subs/opt_propagation/opt_dead_assignments all leave it unchanged.
-// Earlier findings that still hold: `value`/`count4`/`stopcount` are s16, the first loop's
-// `value |= 1` is the target's `ori r0,r5,1` (not `li`), and the bargain loop must be a real
-// `while (bdsw->field_0x10C + bdsw->field_0x110 < count3)` to get the target's rotated loop.
-// NONMATCHING (99.68%): field-init zero coalescing (r25 vs a fresh r0 + extra `li`).
-void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably fixes
+void badgeShop_bargainGeneration(void) {
 	s16 value;
+	s16 stopcount;
 	s32 count3;
 	int i;
 	u8 table[0x19];
-	s16 stopcount;
-	s32 count;
-	s32 v7;
-	s32* ptr;
 	s32 count2;
 	s16 count4;
-	s32 badge;
+	s32 count;
+	s32 v7;
+	s16 badge;
+	s32* ptr;
 
 	if (evtGetValue(NULL, GSW(0)) >= 55 && !evtGetValue(0, GSWF(238))) {
 		evtSetValue(NULL, GSWF(238), 1);
@@ -332,21 +286,16 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 	}
 
 	memset(table, 0, sizeof(table));
-	bdsw->field_0xF8[0] = ITEM_NULL;
-	bdsw->field_0xF8[1] = ITEM_NULL;
-	bdsw->field_0xF8[2] = ITEM_NULL;
-	bdsw->field_0xF8[3] = ITEM_NULL;
-	bdsw->field_0xF8[4] = ITEM_NULL;
-	bdsw->field_0x10C = 0;
-	bdsw->field_0x110 = 0;
+	bdsw->field_0x110 = bdsw->field_0x10C = bdsw->field_0xF8[4] = bdsw->field_0xF8[3] =
+		bdsw->field_0xF8[2] = bdsw->field_0xF8[1] = bdsw->field_0xF8[0] = i = 0;
 
 	v7 = 0;
 	count = 0;
 	count2 = 0;
-	for (i = 0; i < 99; i++) {
+	for (; i < 99; i++) {
 		value = 0;
-		badge = (s16)badgeShop_get(bdsw->special_table, (s16)(i + BADGE_MIN)); //inline
-		if ((s16)badge) {
+		badge = badgeShop_get(bdsw->special_table, (s16)(i + BADGE_MIN)); //inline
+		if (badge) {
 			count++;
 			value |= 1;
 		}
@@ -377,10 +326,10 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 				bdsw->field_0xF8[bdsw->field_0x10C] = i + BADGE_MIN;
 				bdsw->field_0x10C++;
 				badgeShop_set(table, (s16)(i + BADGE_MIN), 0);
-				if ((s16)badge & 1) {
+				if (badge & 1) {
 					count--;
 				}
-				if ((s16)badge & 2) {
+				if (badge & 2) {
 					v7--;
 				}
 			}
@@ -390,31 +339,21 @@ void badgeShop_bargainGeneration(void) { //finished, needs cleanup and probably 
 		bdsw->bargain_table[i] = bdsw->special_table[i];
 	}
 	for (i = 0; i < 5; i++) {
-		badge = bdsw->field_0xF8[i];
-		if (badge) {
+		if (bdsw->field_0xF8[i]) {
 #ifdef MUST_MATCH
-			// Original badgeShop_add takes its id as s16 (see evt_badgeShop_throw_inc); the
-			// cast restores the target's `addi r3` before `extsh r4`.
-			((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->bargain_table, badge, -1);
+			// Original badgeShop_add takes its id as s16 (see evt_badgeShop_throw_inc).
+			((s32 (*)(u8*, s16, s32))badgeShop_add)(bdsw->bargain_table, bdsw->field_0xF8[i], -1);
 #else
-			badgeShop_add(bdsw->bargain_table, (s16)badge, -1);
+			badgeShop_add(bdsw->bargain_table, (s16)bdsw->field_0xF8[i], -1);
 #endif
 		}
 	}
 }
 #pragma inline_max_size reset
 
-// Target reuses r6 for `index / 4` (`addze r6, r0`); our separate `word` temp gets r9
-// because the allocator treats `bound` (also r6) as still live, so the load/store index and
-// the val sign-extend register differ. Declaration order permutations, opt_lifetimes/
-// opt_common_subs/opt_propagation and inline forms do not move it (inline `table[index/4]`
-// drops the val clamp instead).
 // The target never inlines `badgeShop_set` (both callers emit a real `bl`), but it always
 // inlines the smaller `badgeShop_get`.
-// NONMATCHING (99.84%): the only diff is the sign-extend of `val` for the shift
-// (`extsh r0,r5` target vs `extsh r5,r5` ours); everything else, including `word` in r6
-// (the dead `bound` register) and `val` in r5, now matches.
-s32 badgeShop_set(u8* table, s16 id, s16 val) {
+s16 badgeShop_set(u8* table, s16 id, s16 val) {
 	s32 bound;
 	s16 index;
 	u8 mask;
@@ -455,16 +394,10 @@ s32 badgeShop_set(u8* table, s16 id, s16 val) {
 		val = 3;
 	}
 	table[word] = (u8)((u8)(mask & table[word]) + (u8)(val << shift));
-#ifdef MUST_MATCH
-	// `+ word - word` folds to zero but keeps `word` live until the return; without it the
-	// allocator lets `word` die earlier and colours it r9 instead of the target's r6.
-	return val + word - word;
-#else
 	return val;
-#endif
 }
 
-s32 badgeShop_get(u8* table, s16 id) { //1:1
+s16 badgeShop_get(u8* table, s16 id) { //1:1
 	s32 bound;
 	s16 index;
 	u8 mask;
@@ -496,7 +429,7 @@ s32 badgeShop_get(u8* table, s16 id) { //1:1
 			shift = 6;
 			break;
 	}
-	return (s16)((mask & table[index / 4]) >> shift);
+	return (mask & table[index / 4]) >> shift;
 }
 
 s32 badgeShop_add(u8* table, s32 id, s32 value) { // 1:1, can blow up in your face
