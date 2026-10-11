@@ -387,14 +387,7 @@ s32 _getHammerIconId(void) {
 	}
 }
 
-// NONMATCHING (99.77%): only the arg/wp save pair differs (20 rows). Retail saves
-// arg in r31 and wp in r30 because the original's second parameter is a real s32
-// (`cmpwi r31, ...` on it). The header types it `void*`, so our `arg` is a separate
-// named local instead of the parameter web: it colours r30 while wp takes r31, and an
-// extra `mr r0, r4` appears. A cast to s32 in the definition cannot coalesce through the
-// pointer type; the declaration has to carry the s32 type. All loops and cases match.
-// NONMATCHING (99.77%): the arg/wp callee-saved pair differs from the original.
-s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
+s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, s32 arg) {
 	static BattleWeapon defaultWeapon_Dummy_NoItem = {
 		"btl_wn_dummy_noitem",
 		0,
@@ -420,7 +413,6 @@ s32 _btlcmd_MakeSelectWeaponTable(BattleWork* wp, void* arg_) {
 		NULL,
 		{0, 0, 0, 0x64},
 	};
-	s32 arg = (s32)arg_;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)&wp->commandMenu;
 	PouchData* pouch = pouchGetPtr();
@@ -1067,7 +1059,7 @@ s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx) {
 	s32 i;
 	s8 belong;
 
-	_btlcmd_MakeSelectWeaponTable(wp, (void*)arg);
+	_btlcmd_MakeSelectWeaponTable(wp, arg);
 	weapon = ((BattleWorkCommand*)&wp->commandMenu)->mWeaponTable[weaponIdx].mWeaponParams;
 	belong = (s8)BtlUnit_GetEnemyBelong(unit);
 #ifdef MUST_MATCH
@@ -1207,12 +1199,12 @@ s32 BattleCommandInput(BattleWork* wp) {
 			}
 			if (state == 5) {
 				if (a == 2 && (unit->badgesEquipped.DoubleDip || unit->badgesEquipped.TripleDip)) {
-					BattleCommandDisplay_WeaponSelectMenuSetup(wp, (void*)a, 0);
+					BattleCommandDisplay_WeaponSelectMenuSetup(wp, a, 0);
 				} else {
-					BattleCommandDisplay_WeaponSelectMenuSetup(wp, (void*)a, (void*)1);
+					BattleCommandDisplay_WeaponSelectMenuSetup(wp, a, 1);
 				}
 			} else {
-				BattleCommandDisplay_WeaponSelectMenuSetup(wp, (void*)a, 0);
+				BattleCommandDisplay_WeaponSelectMenuSetup(wp, a, 0);
 			}
 			}
 			BattleStageOffLightFriendInCommand();
@@ -1536,7 +1528,7 @@ s32 BattleCommandDisplay_ActMenuMain(BattleWork* wp) {
 			case 0:
 			case 1:
 				if ((t == 0 && (wp->flags & 0x200)) || (t == 1 && (wp->flags & 0x400))) {
-					_btlcmd_MakeSelectWeaponTable(wp, (void*)t);
+					_btlcmd_MakeSelectWeaponTable(wp, t);
 					if (_btlcmd_CheckWeaponTargetNum(wp, unit, wcmd->mWeaponTable[0].mWeaponParams) > 0) {
 						continue;
 					}
@@ -1719,26 +1711,22 @@ void BattleCommandDisplay_ActMenuEnd(BattleWork* wp) {
 	wp->commandMenu.field_4 &= ~0x1;
 }
 
-void BattleCommandDisplay_WeaponSelectMenuSetup(BattleWork* wp, void* arg, void* arg2) {
+void BattleCommandDisplay_WeaponSelectMenuSetup(BattleWork* wp, s32 arg, u32 arg2) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleCursor* cursor;
 
 	_btlcmd_MakeSelectWeaponTable(wp, arg);
-	_btlcmd_GetCursorPtr(cmd, (s32)arg, &cursor);
-	BattleMenuDisp_WeaponSelect_Init(wp, cursor, &cmd->unk8[0x80 - 0x8], (u32)arg2);
+	_btlcmd_GetCursorPtr(cmd, arg, &cursor);
+	BattleMenuDisp_WeaponSelect_Init(wp, cursor, &cmd->unk8[0x80 - 0x8], arg2);
 	cmd->field_4 |= 0x01000010;
 }
 
-// NONMATCHING (99.00%): declaring `s32 result;` first (assigned after BattleGetUnitPtr, as the
-// target does) puts `result` in r30 like retail; the rest is a callee-saved colouring: target
-// unit=r27/wp=r28/arg=r29/result=r30/cmd=r31, ours wp=r27/arg=r28/cmd=r29/result=r30/unit=r31.
 s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
-	s32 result;
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleUnit* unit = BattleGetUnitPtr(wp, wp->activeUnitId);
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
 	BattleCursor* cursor;
-	result = 0;
+	s32 result = 0;
 
 	while (BattleMenuKeyOKInACT(wp)) {
 		_btlcmd_GetCursorPtr(cmd, arg, &cursor);
@@ -1774,8 +1762,8 @@ s32 BattleCommandDisplay_WeaponSelectMenuMain(BattleWork* wp, s32 arg) {
 				result = 1;
 				cmd->unk0 = 8;
 				*(s32*)&cmd->unk560[4] = wcmd->mWeaponTable[cursor->field_0].field_0x18;
-				goto end;
 			}
+			goto end;
 		}
 		if (cursor->field_0 < cursor->unk8 - 1) {
 			if (BattlePadCheckRepeat(0x20000)) {
@@ -2170,7 +2158,6 @@ void BattleCommandDisplay_ChangePartySelectMenuSetup(BattleWork* wp, void* arg) 
 	wp->commandMenu.field_4 |= 0x01001000;
 }
 
-// NONMATCHING (99.27%): cmplwi vs cmpwi, pooled labels, missing mr r3 before ChangePartySelect_Main.
 s32 BattleCommandDisplay_ChangePartySelectMenuMain(BattleWork* wp) {
 	BattleCommand* cmd = &wp->commandMenu;
 	BattleWorkCommand* wcmd = (BattleWorkCommand*)cmd;
@@ -2233,7 +2220,12 @@ s32 BattleCommandDisplay_ChangePartySelectMenuMain(BattleWork* wp) {
 		}
 	}
 end:
+#ifdef MUST_MATCH
+	// MUST_MATCH: header declares BattleMenuDisp_ChangePartySelect_Main(void), but the original passes wp in r3.
+	((void (*)(BattleWork*))BattleMenuDisp_ChangePartySelect_Main)(wp);
+#else
 	BattleMenuDisp_ChangePartySelect_Main();
+#endif
 	return result;
 }
 
@@ -2886,7 +2878,7 @@ void* BattleSetConfuseAct(BattleWork* wp, BattleUnit* unit) {
 	case 6:
 	case 7:
 	case 8:
-		_btlcmd_MakeSelectWeaponTable(wp, (void*)*(s32*)&cmd->unk540[0]);
+		_btlcmd_MakeSelectWeaponTable(wp, *(s32*)&cmd->unk540[0]);
 		_btlcmd_GetCursorPtr(cmd, *(s32*)&cmd->unk540[0], &cursor);
 		count = 0;
 		{
