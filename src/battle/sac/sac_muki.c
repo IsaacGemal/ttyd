@@ -1349,23 +1349,23 @@ static void disp_3D(CameraId cameraId, void* param) {
 
 #ifdef MUST_MATCH
 // MUST_MATCH: building each colour through an inline that returns it makes MWCC keep the source
-// colour in the original's stack slot (the plain assignment below lands it 8 bytes low); pairing it
-// with an interleaved cA/cB/cA/cB argument-array fill lifts the block to 98.39%. The inline folds
-// away; the call sequence is unchanged.
-static inline GXColor mukiAlphaColor(GXColor c, u8 a) { c.a = a; return c; }
+// colour in the original's stack slot and rank the colour/alpha webs the original's way. The alpha
+// parameter must come first: with `(GXColor c, u8 a)` the case-2 word/alpha land in r0/r7, with
+// `(u8 a, GXColor c)` they land in the original's r4/r0. The inline folds away.
+static inline GXColor mukiAlphaColor(u8 a, GXColor c) { c.a = a; return c; }
 #endif
-// The interleaved argv fill removed the extra temp store; adding any mid-block temp makes the compiler hang.
-// NONMATCHING (98.65%): frame and Mtx base match; the scratch block is still 0x8 low,
-// and the rotation calculation swaps f30/f31 in cases 1 and 2.
-// .text:0x1A4 | 0x80246F70 | size: 0x38C
+// dont_inline so the original's own helpers stay real calls and its argument copies survive
 #pragma dont_inline on
+// case 0 keeps its own rotation angle so its f30/f31 webs are not merged with cases 1 and 2
+// .text:0x1A4 | 0x80246F70 | size: 0x38C
 static void disp_3D_alpha(CameraId cameraId, void* param) {
+    f32 angle0;
     MukiWork* work = get_ptr();
     MukiEntry* entry;
     Mtx mtx;
     GXColor cA;
     GXColor cB;
-    GXColor argv[5];
+    GXColor argv[4];
     f32 f;
     f32 fc;
     f32 fs;
@@ -1380,23 +1380,25 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 PSMTXScaleApply(mtx, mtx, 2.0f * entry->scale.x,
                                 2.0f * entry->scale.y, entry->scale.z);
                 PSMTXTransApply(mtx, mtx, entry->pos.x, entry->pos.y, entry->pos.z);
-                f = 2.0f * entry->rot * float_3p1416_80421fa8 / float_360_80421fac;
-                fc = (f32)cos(f);
-                fs = (f32)sin(f);
+                angle0 = 2.0f * entry->rot * float_3p1416_80421fa8 / float_360_80421fac;
+                fc = (f32)cos(angle0);
+                fs = (f32)sin(angle0);
                 PSMTXTransApply(mtx, mtx, float_15_80421fb0 * fs,
                                 MATCH_F32(float_0_80421fb4), float_15_80421fb0 * fc);
 #ifdef MUST_MATCH
-                cA = mukiAlphaColor(*(GXColor*)&str_80421F84, entry->alpha);
-                cB = mukiAlphaColor(*(GXColor*)&dat_80421f88, entry->alpha);
+                cA = mukiAlphaColor(entry->alpha, *(GXColor*)&str_80421F84);
+                cB = mukiAlphaColor(entry->alpha, *(GXColor*)&dat_80421f88);
 #else
                 cA = *(GXColor*)&str_80421F84;
                 cA.a = entry->alpha;
                 cB = *(GXColor*)&dat_80421f88;
                 cB.a = entry->alpha;
 #endif
-                argv[0] = cA; argv[1] = cB; argv[2] = cA; argv[3] = cB;
+                // reverse-order fill, each colour's two copies written together, so MWCC emits
+                // the original's grouped colour stores; the call then takes the array in order.
+                argv[1] = cA; argv[0] = cA; argv[3] = cB; argv[2] = cB;
                 ((void (*)(Mtx, u32, GXColor, GXColor, GXColor, GXColor, s32))btlDispTexPlane3)(
-                    mtx, 0x45, argv[0], argv[2], argv[1], argv[3], 0);
+                    mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
                 break;
             case 1:
                 PSMTXRotRad(mtx, 'y', float_deg2rad_80421fa0 * entry->rot);
@@ -1409,17 +1411,17 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 PSMTXTransApply(mtx, mtx, float_15_80421fb0 * fs,
                                 MATCH_F32(float_0_80421fb4), float_15_80421fb0 * fc);
 #ifdef MUST_MATCH
-                cA = mukiAlphaColor(*(GXColor*)&float_0p74965_80421f8c, entry->alpha);
-                cB = mukiAlphaColor(*(GXColor*)&dat_80421f90, entry->alpha);
+                cA = mukiAlphaColor(entry->alpha, *(GXColor*)&float_0p74965_80421f8c);
+                cB = mukiAlphaColor(entry->alpha, *(GXColor*)&dat_80421f90);
 #else
                 cA = *(GXColor*)&float_0p74965_80421f8c;
                 cA.a = entry->alpha;
                 cB = *(GXColor*)&dat_80421f90;
                 cB.a = entry->alpha;
 #endif
-                argv[0] = cA; argv[1] = cB; argv[2] = cA; argv[3] = cB;
+                argv[1] = cA; argv[0] = cA; argv[3] = cB; argv[2] = cB;
                 ((void (*)(Mtx, u32, GXColor, GXColor, GXColor, GXColor, s32))btlDispTexPlane3)(
-                    mtx, 0x45, argv[0], argv[2], argv[1], argv[3], 0);
+                    mtx, 0x45, argv[0], argv[1], argv[2], argv[3], 0);
                 break;
             case 2:
                 PSMTXRotRad(mtx, 'y', float_deg2rad_80421fa0 * entry->rot);
@@ -1430,9 +1432,13 @@ static void disp_3D_alpha(CameraId cameraId, void* param) {
                 fs = (f32)sin(f);
                 PSMTXTransApply(mtx, mtx, float_15_80421fb0 * fs,
                                 MATCH_F32(float_0_80421fb4), float_15_80421fb0 * fc);
-                cA = *(GXColor*)&dat_80421f94;
-                cA.a = entry->alpha;
-                btlDispTexPlane2(mtx, 0x31, cA, 0);
+#ifdef MUST_MATCH
+                argv[0] = mukiAlphaColor(entry->alpha, *(GXColor*)&dat_80421f94);
+#else
+                argv[0] = *(GXColor*)&dat_80421f94;
+                argv[0].a = entry->alpha;
+#endif
+                btlDispTexPlane2(mtx, 0x31, argv[0], 0);
                 break;
             }
         }

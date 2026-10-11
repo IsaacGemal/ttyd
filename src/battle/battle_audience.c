@@ -2593,37 +2593,34 @@ BOOL BattleAudienceApSrcEntry(void) {
 #else
 #define BA_ZERO float_0_8041e618
 #endif
-// NONMATCHING (96.32%): the positive clamp is a ternary (`step = step < float_0p1 ? float_0p1 : step;`)
-// and the two final stores go through locals; the rest is FP register colouring (the first cast's
-// zero lands in f3 instead of f0, rotating both clamps).
+// opt_common_subs off keeps the negative clamp's 0.1 constant and step result in the target's
+// f2/f1 order instead of swapping them.
+#pragma opt_common_subs off
 #pragma dont_inline on
+// The zero test is constant-first for the target's `(f0, diff)` operand order, the branches use
+// literal 0.0f so the target's four separate `lfs` reloads reappear, and `step` is a function-scope
+// local so the diff result takes f3.
 void BattleAudienceWinCtrlProcess(void) {
 	BattleAudience* audience;
 	BattleAudienceWindow* window;
 	u8* win;
 	f32 diff;
-#ifdef MUST_MATCH
-	f32 zero;
-#endif
+	f32 step;
 
 	audience = BattleAudienceBaseGetPtr();
 	window = BattleAudienceWinGetPtr();
-	diff = window->count;
-	diff = (f32)audience->mCurrentAudienceIntCount - diff;
-#ifdef MUST_MATCH
-	zero = float_0_8041e618;
-#endif
-	if (BA_ZERO != diff) {
-		if (diff > BA_ZERO) {
-			f32 step = float_0p1_8041e678 * diff;
+	diff = (f32)audience->mCurrentAudienceIntCount - window->count;
+	if (0.0f != diff) {
+		if (diff > 0.0f) {
+			step = float_0p1_8041e678 * diff;
 			step = step < float_0p1_8041e678 ? float_0p1_8041e678 : step;
 			window->count += step;
-			if ((f32)audience->mCurrentAudienceIntCount - window->count < BA_ZERO) {
+			if ((f32)audience->mCurrentAudienceIntCount - window->count < 0.0f) {
 				window->count = (f32)audience->mCurrentAudienceIntCount;
 			}
 		}
 		else {
-			f32 step = float_0p1_8041e678 * diff;
+			step = float_0p1_8041e678 * diff;
 			if (step > float_neg0p1_8041e6bc) {
 				step = float_0p1_8041e678;
 			}
@@ -2631,7 +2628,7 @@ void BattleAudienceWinCtrlProcess(void) {
 				step = float_neg0p1_8041e6bc * diff;
 			}
 			window->count -= step;
-			if ((f32)audience->mCurrentAudienceIntCount - window->count > BA_ZERO) {
+			if ((f32)audience->mCurrentAudienceIntCount - window->count > 0.0f) {
 				window->count = (f32)audience->mCurrentAudienceIntCount;
 			}
 		}
@@ -2653,13 +2650,26 @@ void BattleAudienceWinCtrlProcess(void) {
 
 	*(f32*)(win + 0x8) =
 	    intplGetValue(4, *(s32*)(win + 0x14), 0xF, float_neg500_8041e6c0, float_neg280_8041e6c4);
+#ifdef MUST_MATCH
+	// Match-only: the volatile read pins the -160 load ahead of the 0.0f one in the scheduled block,
+	// which is the target's order; the #else form is the natural pair of copies.
 	{
-		f32 a = float_neg160_8041e6c8;
-		f32 b = float_0_8041e618;
+		f32 b;
+		f32 a = (*(volatile f32*)&float_neg160_8041e6c8);
+		b = float_0_8041e618;
 		*(f32*)(win + 0xC) = a;
 		*(f32*)(win + 0x10) = b;
 	}
+#else
+	{
+		f32 a = float_neg160_8041e6c8;
+		f32 b = 0.0f;
+		*(f32*)(win + 0xC) = a;
+		*(f32*)(win + 0x10) = b;
+	}
+#endif
 }
+#pragma opt_common_subs reset
 #pragma dont_inline reset
 #undef BA_ZERO
 
