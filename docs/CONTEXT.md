@@ -5674,3 +5674,20 @@ function's frontend temps goes in a static inline helper" (fontmgr #408, nanNPCO
 of the agent's list; rasim what-ifs showed that `c` had to go. Tried and failed: a named `char* p` buffer pointer in
 6 declaration orders (an extra `mr`: the original's pointer is the compiler's own temp), `int` for `j`/`len`.
 
+
+### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
+- Wins:
+  - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
+  - **An inline's parameter order ranks the webs** (disp_3D_alpha -> 100). `mukiAlphaColor(u8 a, GXColor c)` puts the colour word and alpha in r4/r0; `(GXColor c, u8 a)` gives r0/r7.
+  - **Plain string literals instead of `RO(base, off, "...")`** (monoshiriGX +2.8). The `RO` base local makes a second rodata base register, the extra `addi` copy and a sixth saved GPR. Literals pool on the compiler's own base. monosiri_disp (+1.25) gets the same effect by naming the `str_*` symbols.
+  - **`RO` in symbol form (`&sym`) for MUST_MATCH, around one function** (winLogMain +2.1, unit .rodata 85.7 -> 98.1). The compiler then hangs its i2f magic on the section base: native `(f32)` casts give the original's `fsubs` with `lfd 0x420(r31)`, and the int-to-float helpers (`mainLogI2F`, `logI2F` in winLogDisp) go away.
+  - **Zero `Vec`s as `(Vec){0,0,0}` instead of `*(const Vec*)(base + off)`** (partyRideMain +2.8). The compiler anchors the pool at the vec3 object, and the five i2f sites become base-relative.
+  - **An empty `case 22: break;`** (partyRideMain). The target's switch tree has a sixth key in that subtree, which moves the pivot from 111 to 110.
+  - **Argument evaluation order:** irand jitter written inline in the `PSMTXTrans` call (capture) and a lookup moved into the last `sprintf` argument (monosiri_disp). MWCC evaluates the last argument first.
+  - **A loop counter as a `static inline` helper's local** (winLogInit). It folds into the zero already materialised for the header stores (`+1 li` gone).
+- Hard negatives:
+  - main_point (sac_muki) reaches 100 only with a `defer_codegen off` i2f pool helper plus non-const `.rodata` Vecs (refused, banned helper). `index % 3` alone scores lower (95.12 -> 94.22).
+  - Moving win_log's three `const f64` objects above `logI2F` as `static` lowers .rodata (85.71 -> 85.33).
+  - partyEntryMain: a second copy of `L_partyChgPoseId1`, differing only in declaration order, gives 99.89 but is a match-only duplicate (refused). Only the `party->playerPtr` reload kept.
+  - No change: renderProc (the unrolled `texIds[texCount - l - 1]` loop's folded -1 displacement) and BattleDrawEnemyHPBar (a dead GXColor aggregate store; every shape that drops it reschedules the 0xA/0xB loads lower).
+
