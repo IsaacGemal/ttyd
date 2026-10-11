@@ -482,7 +482,7 @@ config.libs = [
             Object(Matching, "effect/eff_kemuri.c"),
             Object(Matching, "effect/eff_butterfly.c"),
             Object(Matching, "effect/eff_confetti.c"),
-            Object(NonMatching, "effect/eff_damage_star.c"),
+            Object(Matching, "effect/eff_damage_star.c"),
             Object(Matching, "effect/eff_hit.c"),
             Object(Matching, "effect/eff_mario_balloon.c"),
             Object(Matching, "effect/eff_small_star.c"),
