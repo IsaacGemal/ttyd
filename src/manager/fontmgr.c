@@ -1095,12 +1095,14 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 	}
 }
 
-u16 hankakuSearch(s8 code) {
-	return JUTFont_CodeToGlyph(code);
+// msgAnalize passes its u32 character straight through (no extsb at the call), so the parameter is u32 and
+// the callee does the `(s8)`.
+u16 hankakuSearch(u32 code) {
+	return JUTFont_CodeToGlyph((s8)code);
 }
 
 // The header declares `u32 code`; the original passes r3 straight to JUTFont_CodeToGlyph(u32) without a
-// zero-extension (only hankakuSearch sign-extends its s8).
+// zero-extension (only hankakuSearch sign-extends, through its `(s8)` cast).
 u16 kanjiSearch(u32 code) {
 	return JUTFont_CodeToGlyph(code);
 }
