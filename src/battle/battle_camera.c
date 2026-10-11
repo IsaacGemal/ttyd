@@ -84,17 +84,17 @@ void battleCameraInit(void) {
 // Inlining this lookup gives case 7's live unit pointer the original register.
 static inline BattleUnit* bcam_get_unit(BattleWork* wp, s32 id) { return BattleGetUnitPtr(wp, id); }
 #endif
-// Prologue/epilogue (frame 0x100, stmw r25), stack layout, calls and data references match.
-// The case-7 lookup inline now gives `u` the original r28. The remaining 17 instructions differ
-// only in case 11's `unit2`/`part` r26/r28 swap and case 13's `unit` r28/r27 and volatile FPRs.
-// NONMATCHING (99.93%): the case-11 and case-13 register clusters above.
+// The unit pointers are shared function-scope locals reused across cases; which case uses which
+// one (and their declaration order) decides how the frontend numbers their per-case webs, and so
+// the registers in cases 7, 9, 11 and 13.
 void battleCameraMain(void) {
   CameraEntry* cam;
   BattleWork* wp;
   BattleAudience* audience;
+  BattleUnit* unit2;
   BattleUnit* unit;
   BattleUnitPart* part;
-  BattleUnit* unit2;
+  BattleUnit* unit3;
   BattleUnitPart* part2;
   PouchData* pouch;
   BattleAudienceMember* member;
@@ -207,25 +207,24 @@ void battleCameraMain(void) {
     f32 off;
     f32 cvy;
     f32 y;
-    BattleUnit* u;
     f32 w;
 
 #ifdef MUST_MATCH
-    u = bcam_get_unit(wp, wp->cameraWork.unk10);
+    unit2 = bcam_get_unit(wp, wp->cameraWork.unk10);
 #else
-    u = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
 #endif
-    if (u == NULL) {
+    if (unit2 == NULL) {
       btl_camera_set_mode(0, 0);
       break;
     }
-    part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
-    BtlUnit_GetPos(u, &vv.x, &vv.y, &vv.z);
+    part2 = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
+    BtlUnit_GetPos(unit2, &vv.x, &vv.y, &vv.z);
     {
-      f32 hh = ((f32)BtlUnit_GetHeight(u) - 50.0f) / 2.0f;
+      f32 hh = ((f32)BtlUnit_GetHeight(unit2) - 50.0f) / 2.0f;
       vv.y += hh;
     }
-    w = (f32)BtlUnit_GetWidth(u) - 24.0f;
+    w = (f32)BtlUnit_GetWidth(unit2) - 24.0f;
     if (w < 0.0f) {
       w = 0.0f;
     }
@@ -260,17 +259,17 @@ void battleCameraMain(void) {
     f32 f11;
 
     unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
-    unit2 = BattleGetUnitPtr(wp, wp->cameraWork.unk14);
-    if (unit == NULL || unit2 == NULL) {
+    unit3 = BattleGetUnitPtr(wp, wp->cameraWork.unk14);
+    if (unit == NULL || unit3 == NULL) {
       btl_camera_set_mode(0, 0);
       break;
     }
     part = BattleGetUnitPartsPtr(wp->cameraWork.unk10, wp->cameraWork.unk18);
     part = BattleGetUnitPartsPtr(wp->cameraWork.unk14, wp->cameraWork.unk1C);
     BtlUnit_GetPos(unit, &vv.x, &vv.y, &vv.z);
-    BtlUnit_GetHitPos(unit2, part, &hv.x, &hv.y, &hv.z);
+    BtlUnit_GetHitPos(unit3, part, &hv.x, &hv.y, &hv.z);
     wa = (f32)BtlUnit_GetWidth(unit) - 24.0f;
-    wb = (f32)BtlUnit_GetWidth(unit2) - 24.0f;
+    wb = (f32)BtlUnit_GetWidth(unit3) - 24.0f;
     if (wa < 0.0f) {
       wa = 0.0f;
     }
@@ -486,17 +485,17 @@ void battleCameraMain(void) {
     break;
   case 13: {
     f32 off;
-    f32 zz;
     f32 dxn;
     f32 w;
-    f32 t;
     f32 dx;
     f32 u;
     f32 v;
     f32 cy;
+    f32 zz;
+    f32 t;
 
-    unit = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
-    if (unit == NULL) {
+    unit3 = BattleGetUnitPtr(wp, wp->cameraWork.unk10);
+    if (unit3 == NULL) {
       btl_camera_set_mode(0, 0);
       break;
     }
@@ -507,7 +506,7 @@ void battleCameraMain(void) {
     }
     wp->cameraWork.unk20 = 10;
     dx = wp->cameraWork.unkC8.x - wp->cameraWork.unkBC.x;
-    BtlUnit_GetPos(unit, &vv.x, &vv.y, &vv.z);
+    BtlUnit_GetPos(unit3, &vv.x, &vv.y, &vv.z);
     dxn = wp->cameraWork.unkC8.x - vv.x;
     if (dx == 0.0f) {
       t = 0.5f;
@@ -520,12 +519,13 @@ void battleCameraMain(void) {
     if (t < 0.5f) {
       t = 0.5f;
     }
-    u = 1.0f - t;
-    // Match-only: splitting the subtraction stops MWCC from introducing an extra temporary.
 #ifdef MUST_MATCH
-    cy = vv.y;
-    cy = cy - wp->cameraWork.unkBC.y - 100.0f;
+    // Match-only: the split subtraction keeps the intermediate in cy's register.
+    cy = vv.y - wp->cameraWork.unkBC.y;
+    u = 1.0f - t;
+    cy -= 100.0f;
 #else
+    u = 1.0f - t;
     cy = vv.y - wp->cameraWork.unkBC.y - 100.0f;
 #endif
     zz = float_2_8041c450 * wp->cameraWork.zoom;
