@@ -6124,6 +6124,18 @@ name; item_disp in badge_disp's shape with a new `itemScrollRow[2]` field at 0x2
 inside expressions. Link: winItemInit's direct `str_802F560C/20/38` references became the existing macros. About
 1,150 lines shorter.
 
+**fontmgr: FontDrawMessageMtx 99.03 -> 99.99, FontDrawMessage 99.91 -> 99.94, .sdata2 91.30 -> 100 (on2-iconproto;
+207k, 22 min).** A file-local `// LOCAL_PROTO(iconDispGxAlpha)` declared
+`(f32 scale, Vec* position, s16 flags, u16 iconId, u8 alpha)`, with iconDispGxAlpha's shared declaration moved from
+icondrv.h into a new `include/driver/icondrv_gx.h` that fontmgr.c doesn't include (icondrv.c, msgdrv.c and four
+lecture RELs got the include line). The u16 alone didn't move the score; scale first did (floats go in FPRs, so the
+order is ABI-neutral but sets evaluation order: retail loads the scale before the integer arguments, the same effect
+as battle_seq_end's float-first cast). Both function-pointer casts went. Also: the edge helpers call
+`FontDrawColorIDX(0)`, the red branch `c = (GXColor){0xE0, 0x00, 0x00, 0xFF};`, and `dat_8041a2f0` became a compound
+literal in `_JUTFont_DrawPos` (fixes .sdata2). Left: the unsigned int-to-float constant pools first in retail
+because `_JUTFont_DrawPos` converts `blk->cellheight` first; doing that gives FontDrawMessageMtx 100 but costs
+`_JUTFont_DrawPos` (63.72 -> ~61), so it waits for a rework of that function.
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
