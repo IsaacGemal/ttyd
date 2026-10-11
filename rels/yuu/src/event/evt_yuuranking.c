@@ -523,7 +523,7 @@ void unk_yuu_00008e40(const char* msg, s32 maxWidth, f32 x, f32 y, f32 scale) {
 #define ICON_NUM(mtx, num, small, c) ((s32 (*)(Mtx, s32, BOOL, GXColor*))iconNumberDispGx)((mtx), (num), (small), &(c))
 // Match-only: retail evaluates the title frame's lower edge as k + (field_10 + 128); the natural order gives a
 // different fadds operand order.
-#define WAKU_BOTTOM (k + work->field_10 + 128.0f)
+#define WAKU_BOTTOM (k + (work->field_10 + 128.0f))
 #else
 #define WAKU_COL(c, x, y, w, h, curve) windowDispGX_Waku_col(0, (c), (x), (y), (w), (h), (curve))
 #define ICON_COL(mtx, flags, id, c) iconDispGxCol((mtx), (flags), (id), (c))
@@ -536,12 +536,15 @@ void unk_yuu_00008e40(const char* msg, s32 maxWidth, f32 x, f32 y, f32 scale) {
 // address (WAKU_COL/ICON_COL/ICON_NUM) puts all 20 GXColor locals in the target's contiguous 0x54..0x08 block, and
 // nesting the case-0 `menu_decimal_point` and the rank `menu_subtitle5_rank`/`menu_subtitle1_monte` msgSearch
 // results into their calls emits the format string and the 80.0f/75.2f literals in the target's `.rodata` order.
-// Giving the top case-2/3 subtitle its own `msg2` local matches the target's r27 for that group, but the title
-// (r28), the case-0/case-1/end/rank `msg` groups and the rank case-2/3 subtitles stay in r28 where the target
-// uses r24/r27, and the second Waku block's FP temporaries keep a different colouring. fontlenpitch walks the
+// Giving the top case-2/3 subtitle its own `msg2` local matches the target's r27 for that group. The title frame
+// takes FontGetMessageWidth straight into `-(k * width + 50.0f) / 2.0f` and `k * -width / 2.0f`, and the rank
+// case 0 reads `v` before testing it, with the decimal-point msgSearch nested in the sprintf. Remaining: the
+// case-0 first subtitle shares `msg` with the title (the target gives it its own r24 temp), the top case-2/3
+// time block colours v/min/colon/bp as r27/r24/r25/r27 (target r28/r25/r24/r24), the inner case-2/3 subtitles
+// take r28 (target r27), and the rank case-2/3 second `menu_colon` address goes through r0. fontlenpitch walks the
 // string by index: loop strength reduction then builds the inlined copy's pointer from `buf` after CSE has run,
 // giving the target's two separate `addi rN,r1,0x78` (bp and the walk pointer) instead of `mr r25,r24`.
-// NONMATCHING (99.09%): MWCC register allocation only.
+// NONMATCHING (99.89%): MWCC register allocation only.
 static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     YuuRankingWork* work = param;
     const char* titleTbl[4] = {
@@ -560,7 +563,6 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     const char* msg2;
     s32 i;
     s32 j;
-    f32 w;
     f32 sc;
     f32 y;
     GXColor c0;
@@ -598,16 +600,13 @@ static void evt_yuuranking_disp_func(CameraId cameraId, void* param) {
     c1 = *(GXColor*)&dat_yuu_00014a84;
     {
         f32 k = 1.0f;
-        w = (f32)FontGetMessageWidth(msg);
-        sc = k * w + 50.0f;
-        w = (f32)FontGetMessageWidth(msg);
-        { f32 t = -(k * w + 50.0f); WAKU_COL(c1, work->field_0C + t * 0.5f, WAKU_BOTTOM, sc, 28.0f, 8.0f); }
+        sc = k * FontGetMessageWidth(msg) + 50.0f;
+        WAKU_COL(c1, work->field_0C + -(k * FontGetMessageWidth(msg) + 50.0f) / 2.0f, WAKU_BOTTOM, sc, 28.0f, 8.0f);
         FontDrawStart();
         FontDrawScale(1.0f);
         c2 = *(GXColor*)&dat_yuu_00014a88;
         FontDrawColor(&c2);
-        w = (f32)(-(s32)FontGetMessageWidth(msg));
-        FontDrawMessage((s32)(work->field_0C + k * w * 0.5f), (s32)(work->field_10 + 128.0f), msg);
+        FontDrawMessage((s32)(work->field_0C + k * -FontGetMessageWidth(msg) / 2.0f), (s32)(work->field_10 + 128.0f), msg);
     }
 
     if (work->field_18 != 0) {
@@ -886,12 +885,11 @@ rank:
             FontDrawStringPitch(msg, work->field_0C + -150.4f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
         }
         switch (work->mode) {
-        case 0:
-            if (A74(i) >= 0) {
-                s32 v = A74(i);
+        case 0: {
+            s32 v = A74(i);
 
-                msg = msgSearch("menu_decimal_point");
-                sprintf(buf, "%3d%s%02d", A74(i) / 1000, msg, (v % 1000) / 10);
+            if (v >= 0) {
+                sprintf(buf, "%3d%s%02d", A74(i) / 1000, msgSearch("menu_decimal_point"), (v % 1000) / 10);
                 FontDrawStringPitch(buf, work->field_0C + -75.200005f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
                 sprintf(buf, "%4d", AD4(i));
                 FontDrawStringPitch(buf, work->field_0C + 75.19998f, work->field_10 + (104.0f - 24.0f * y), 18.0f);
@@ -900,7 +898,8 @@ rank:
                 FontDrawMessage((s32)(work->field_0C + -75.200005f),
                                 (s32)(work->field_10 + (104.0f - 24.0f * y)), buf);
             }
-        break;
+            break;
+        }
         case 2:
         case 3:
             if (A74(i) >= 0) {

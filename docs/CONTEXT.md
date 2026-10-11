@@ -5897,6 +5897,17 @@ ternaries, or `goalincheck` exceeds its inline size limit). The three hand-copie
 reordered 0/2/4, 1/3/5, -1/6 so both jump tables point at retail's block order. Lesson: where the original has
 identical repeated code, look for an existing function call that gets inlined before hand-matching the copy.
 
+**evt_yuuranking (gor and yuu): evt_yuuranking_disp_func 99.09 -> 99.89, not linked (on1-yuurank; levers from the
+list: partial; 291k, 4 h).** The two sources are identical apart from names; every fix went into both. Title frame
+block now exact: the width goes straight from `FontGetMessageWidth` into each expression (the `f32 w` temp was the
+problem, found by mwsearch after `/ 2.0f` and operand grouping alone did nothing), and `WAKU_BOTTOM` is
+`k + (field_10 + 128.0f)` as its comment said. Rank case 0 reads the value once (`s32 v = A74(i); if (v >= 0)`) with
+the decimal-point lookup nested in the `sprintf`. Left (33 instructions, nearly all colouring): the frontend keeps a
+local's name only for its uninitialised web and its first single-assignment web in code order, so the case-0
+subtitle shares `msg`; splitting it into `msg2` fixes that but swaps title/`msg2` (r27/r28); rasim says `msg2` needs
+a sweep position after the `field_38` load. Next: create the case 2/3 subtitle value inside that block. Tried:
+pragmas (94-96), `msg = NULL` (adds an `li`), several pointer splits, two more 45-minute mwsearch runs.
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
