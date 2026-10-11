@@ -622,8 +622,9 @@ s32 evt_mobj_switch_blue(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (99.78%): only the gp/string-address temp colouring is swapped (retail gp=r5/str=r4,
-// ours gp=r4/str=r5); `!!gp->inBattle` fixed the scheduling.
+// `opt_propagation off` keeps the `gp->inBattle` boolean in its own web and ahead of the asyncName
+// address, so the two temps colour as retail's (`gp` r5, string address r4) instead of a swapped pair.
+#pragma opt_propagation off
 s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     f32 x;
     s32* args = event->args;
@@ -634,6 +635,7 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     s32 unk1E4;
     MapObjectEntry* obj;
     s32 unk1D4;
+    BOOL inBattle;
 
     evtGetValue(event, args[0]);
     name = (const char*)evtGetValue(event, args[1]);
@@ -642,8 +644,9 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     z = evtGetFloat(event, args[4]);
     unk1D4 = evtGetValue(event, args[5]);
     unk1E4 = args[6];
+    inBattle = !!gp->inBattle;
     asyncName = "MOBJ_BlueSwitchBlock";
-    if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -661,6 +664,7 @@ s32 evt_mobj_floatswitch_blue(EventEntry* event, BOOL isFirstCall) {
     mobjCalcMtx(obj);
     return 2;
 }
+#pragma opt_propagation reset
 
 // mwcc folds the one-use `inBattle` local back into the call, which then builds the string
 // address before the gp load. Keeping it a real local makes the gp temp first, so the two
@@ -786,8 +790,9 @@ s32 evt_mobj_switch_red(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (99.78%): only the gp/string-address temp colouring is swapped (retail gp=r5/str=r4,
-// ours gp=r4/str=r5); `!!gp->inBattle` fixed the scheduling.
+// Keep the gp->inBattle load ahead of the string-address temp (named local + no propagation): retail
+// orders gp=r5 / string-high=r4, and with the load sunk to the call the two temps colour the other way.
+#pragma opt_propagation off // keep the inBattle load ahead of the string-address temp so gp=r5, str-high=r4
 s32 evt_mobj_floatswitch_red(EventEntry* event, BOOL isFirstCall) {
     f32 x;
     s32* args = event->args;
@@ -798,6 +803,7 @@ s32 evt_mobj_floatswitch_red(EventEntry* event, BOOL isFirstCall) {
     s32 unk1E4;
     MapObjectEntry* obj;
     s32 unk1D4;
+    BOOL inBattle;
 
     evtGetValue(event, args[0]);
     name = (const char*)evtGetValue(event, args[1]);
@@ -806,8 +812,9 @@ s32 evt_mobj_floatswitch_red(EventEntry* event, BOOL isFirstCall) {
     z = evtGetFloat(event, args[4]);
     unk1D4 = evtGetValue(event, args[5]);
     unk1E4 = args[6];
+    inBattle = !!gp->inBattle;
     asyncName = "MOBJ_RedSwitchBlock";
-    if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -825,6 +832,7 @@ s32 evt_mobj_floatswitch_red(EventEntry* event, BOOL isFirstCall) {
     mobjCalcMtx(obj);
     return 2;
 }
+#pragma opt_propagation reset
 
 /// @todo reconstructed: retail's evt_mobj .rodata pool has "MOBJ_RedTornadoSwitch" (which no retail function
 /// references) just ahead of evt_mobj_floatswitch_red's "MOBJ_RedSwitchBlock", and party_kuribo/party_bomhei test
@@ -1761,40 +1769,64 @@ s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
 
 // Data for mobj_switch_float_blk only (unit .rodata).
 
+#ifdef MUST_MATCH
+// Match-only inline for the case-0 `_switch_anim` scan. Written as its own function body, the
+// frontend keeps the loop-init copy (`i = idx`) that the same code inline in the caller folds to
+// `li`; the local declaration order below then gives retail's registers (p r27, anim r28,
+// idx r29, i r30).
+static inline s32 mobjSwitchAnimIndex(MapObjectEntry* o) {
+    const char** p;
+    AnimTableEntry* anim;
+    s32 idx;
+    s32 i;
+
+    anim = animPoseGetCurrentAnim(o->poseId);
+    idx = 0;
+    p = _switch_anim;
+    for (i = idx; i < 6; i++, p++) {
+        if (strcmp(*p, anim->name) == 0) {
+            idx = i;
+            break;
+        }
+    }
+    return idx;
+}
+#endif
+
 // Switch-block state machine: picks the child/partner anim based on whether the linked block
 // is hit, runs the event, and opens/closes its animation.  `_switch_anim` is the six anim-name
 // table in .sdata.
-// One residual MWCC non-determinism remains: the case-0 `_switch_anim` scan initialises i with
-// a fresh `li r30,0` where the target copies the already-zero idx (`mr r30,r29`).
-// opt_common_subs off: with CSE on, MWCC reorders the float_0/float_1 loads, the fmr and the
-// fabs around the child-pointer copy in the two hitCheckFilter calls (target
-// `mr r11,r3; lfs f4; lfs f0; lfs f1; fmr; fabs` vs CSE-on
-// `lfs f0; mr r11,r3; lfs f4; fabs; lfs f1; lfs f2; fmr`); off reproduces the retail order.
-// Scoped to this function by the reset below.
-// NONMATCHING (99.85%)
-#pragma opt_common_subs off
 s32 mobj_switch_float_blk(MapObjectEntry* obj) {
     switch (obj->unk1DC) {
         case 0: {
-            s32 i;
-            s32 idx;
             AnimTableEntry* anim;
-            const char** p;
             s32 animId;
 
             if (!(obj->flags & 8)) {
                 break;
             }
-            anim = animPoseGetCurrentAnim(obj->poseId);
-            idx = 0;
-            p = _switch_anim;
-            for (i = 0; i < 6; i++, p++) {
-                if (strcmp(*p, anim->name) == 0) {
-                    idx = i;
-                    break;
+#ifdef MUST_MATCH
+            *(s32*)&obj->unk1A0[4] =
+                (*(s32*)&obj->unk1A0[4] & 0x40000000) | mobjSwitchAnimIndex(obj);
+#else
+            {
+                s32 i;
+                s32 idx;
+                const char** p;
+
+                anim = animPoseGetCurrentAnim(obj->poseId);
+                idx = 0;
+                p = _switch_anim;
+                for (i = idx; i < 6; i++, p++) {
+                    if (strcmp(*p, anim->name) == 0) {
+                        idx = i;
+                        break;
+                    }
                 }
+                *(s32*)&obj->unk1A0[4] =
+                    (*(s32*)&obj->unk1A0[4] & 0x40000000) | idx;
             }
-            *(s32*)((u8*)obj + 0x1A4) = (*(s32*)((u8*)obj + 0x1A4) & 0x40000000) | idx;
+#endif
             if (*(s8*)&obj->unk1A0[0x18] != 0) {
                 MapObjectEntry* child = mobjNameToPtr((const char*)&obj->unk1A0[0x18]);
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
@@ -1999,7 +2031,6 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
     }
     return 0;
 }
-#pragma opt_common_subs reset
 
 // The float-block switch animation names pool in their original codegen order.
 s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
@@ -2500,9 +2531,11 @@ s32 mobj_signboard(MapObjectEntry* obj) {
     return 0;
 }
 
-// NONMATCHING (99.74%): the gp pointer and the string-address high-part temp are coloured the other
-// way round (retail `lwz r5, gp` + `lis r4, str`; ours `lwz r4, gp` + `lis r5, str`). Everything else
-// byte-matches; `!!gp->inBattle` fixed the unk1E4 load scheduling.
+// The gp->inBattle read is kept in its own local ahead of the asyncName string address; under
+// opt_propagation off the front end keeps that order, so the string's `lis` temp colours into r4 and
+// the gp pointer into r5 as retail. Without the local/pragma the string address is created first and
+// the two registers come out swapped.
+#pragma opt_propagation off
 s32 evt_mobj_signboard(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name;
@@ -2513,15 +2546,17 @@ s32 evt_mobj_signboard(EventEntry* event, BOOL isFirstCall) {
     s32 unk1D4;
     s32 unk1E4;
     const char* asyncName;
+    BOOL inBattle;
 
     name = (const char*)evtGetValue(event, args[0]);
     f1 = evtGetFloat(event, args[1]);
     f2 = evtGetFloat(event, args[2]);
     f3 = evtGetFloat(event, args[3]);
     unk1D4 = evtGetValue(event, args[4]);
+    inBattle = !!gp->inBattle;
     asyncName = "MOBJ_Signboard";
     unk1E4 = args[5];
-    if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -2535,6 +2570,7 @@ s32 evt_mobj_signboard(EventEntry* event, BOOL isFirstCall) {
     obj->unk1DC = 0;
     return 2;
 }
+#pragma opt_propagation reset
 
 /// @todo reconstructed: retail's pool has "MOBJ_Arrow" (unreferenced) just ahead of evt_mobj_signboard's
 /// "MOBJ_Signboard", and party_kuribo/party_bomhei test animName against it. Invented: the name and the body
@@ -4308,8 +4344,10 @@ s32 evt_mobj_koopa_badgeblk(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (99.81%): only the gp/string-address temp colouring is swapped (retail gp=r5/str=r4,
-// ours gp=r4/str=r5); `!!gp->inBattle` fixed the scheduling.
+// The original loads the gp pointer before the asyncName string address.  With the named
+// inBattle web kept (opt_propagation off) the assignments happen in declaration order, giving
+// the pointer register the original uses for each temp.
+#pragma opt_propagation off
 s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -4319,10 +4357,11 @@ s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     s32 unk1A0 = evtGetValue(event, args[4]);
     s32 unk1D4 = evtGetValue(event, args[6]);
     s32 unk1E4 = args[7];
+    BOOL inBattle = gp->inBattle != 0;
     const char* asyncName = "MOBJ_HiddenHatenaBlock";
     MapObjectEntry* obj;
 
-    if (!animGroupBaseAsync(asyncName, !!gp->inBattle, NULL)) {
+    if (!animGroupBaseAsync(asyncName, inBattle, NULL)) {
         return 0;
     }
     mobjEntry(name, asyncName);
@@ -4345,6 +4384,7 @@ s32 evt_mobj_koopa_hidden_blk(EventEntry* event, BOOL isFirstCall) {
     }
     return 2;
 }
+#pragma opt_propagation reset
 
 s32 mobj_koopa_blk(MapObjectEntry* obj) {
     s32 flag = 0;

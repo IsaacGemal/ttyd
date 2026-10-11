@@ -1460,9 +1460,9 @@ void bmapLoad(const char* map1, const char* map2) {
 
 
 
-// NONMATCHING (99.29%): spline math, constants, the d==0 boolean (cntlzw/srwi) and the inner-loop
-// GPRs (ch=r3, out=r4, chn=r5) now match. What differs is FPR colouring: the key-select time t is f13
-// in retail but f6 here, which cascades k0/dt and the polynomial temps (u, u2, neg2). Permuter.
+// NONMATCHING (99.66%): spline math, constants, the d==0 boolean (cntlzw/srwi) and the inner-loop
+// GPRs (ch=r3, out=r4, chn=r5) match; the function-scope declaration order brings most FPRs in line.
+// What differs is the remaining FPR colouring of the key-select time and the polynomial temps.
 void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* jointPtr) {
 	MapAnimData* joint = (MapAnimData*)jointPtr;
 	MapAnimKey* key;
@@ -1476,15 +1476,13 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 	Mtx rotY;
 	Mtx rotZ;
 	Mtx local;
-	f32 f31, f30, f29, f28, f27, f23;
-	f32 f26, f25, f24;
-	f32 zero;
-	f32 u, u2, u3;
+	f32 f31, f30, f29, f28, f27, neg2, u3, f26, h00, u2, dt, two, k0;
+	f32 value0, tan0, f23, den, value1, f25, tan1, u, f24, d, a, t;
+	f32 k1, b, c, h10, h01, h11, zero;
+	s32 flag;
 
 	count = joint->count;
 	for (i = 1; i < count; i++) {
-		f32 t;
-
 		key = &joint->key[i - 1];
 		next = &joint->key[i];
 		if (*(f32*)((u8*)anim + 0x10) <= next->time) {
@@ -1512,18 +1510,15 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 #endif
 			}
 			else {
-				f32 k0 = key->time;
-				f32 k1 = next->time;
-				f32 tan1 = chn->unk4;
-				f32 value1 = chn->value;
-				f32 tan0 = ch->unk8;
-				f32 value0 = ch->value;
-				f32 dt = t - k0;
-				f32 d = k1 - k0;
-				f32 den;
-				s32 flag;
-				f32 a, b, c, h10, h00, h01, h11;
-				f32 two, neg2;
+				k0 = key->time;
+				k1 = next->time;
+				dt = t - k0;
+				d = k1 - k0;
+
+				tan1 = chn->unk4;
+				value1 = chn->value;
+				tan0 = ch->unk8;
+				value0 = ch->value;
 
 				flag = (d != MATCH_F32(float_0_80419850));
 				if (((u32)__cntlzw(flag) >> 5) != 0) {
@@ -1539,13 +1534,11 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 				a = MATCH_F32(float_3_8041984c) * u2;
 				b = u3 - two * u2;
 				c = two * u3 - a;
+				h11 = u3 - u2;
 				h10 = u + b;
 				h00 = MATCH_F32(float_1_80419860) + c;
 				neg2 = MATCH_F32(float_neg2_804198a0);
 				h01 = neg2 * u3 + a;
-
-
-				h11 = u3 - u2;
 #ifdef MUST_MATCH
 				*outp = tan0 * (d * h10)
 #else
@@ -2771,14 +2764,13 @@ void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2) {
 #endif
 }
 
-// NONMATCHING (99.12%): loop counter i/offset register swap only (target i=r31, off=r30 with an
-// `mr r30,r31` init; ours i=r30, off=r31). The `(u32)(off >> 3)` index is match-only.
+#pragma optimization_level 2 // -O4 folds the loop's `off = i` init to `li r30,0`; level 2 keeps the retail `mr r30,r31`
+#pragma opt_propagation off  // stops `i`'s value propagating into `off`, so the copy `mr r30,r31` survives
 void mapDispMapObj_bbox(s32 camId, MapObject* obj) {
 	Mtx invMtx;
 	Mtx mtx;
 	s32 i;
 	s32 off;
-	GXColor color;
 
 	sysWaitDrawSync();
 	GXClearBoundingBox();
@@ -2789,20 +2781,19 @@ void mapDispMapObj_bbox(s32 camId, MapObject* obj) {
 	GXSetCurrentMtx(GX_PNMTX0);
 	GXSetCullMode(GX_CULL_ALL);
 	GXSetNumChans(1);
-	color = unk_80422f84;
-	GXSetChanMatColor(GX_COLOR0A0, color);
+	GXSetChanMatColor(GX_COLOR0A0, unk_80422f84);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(0);
 	GXSetNumTevStages(1);
 	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
 	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 #ifdef MUST_MATCH
-	// MUST_MATCH: the explicit off induction variable and the (u32) index cast are what put the
-	// counter in r31/off in r30 (98.84% -> 99.12%); the natural indexed loop is under #else.
+	// MUST_MATCH: the explicit byte-offset induction variable with the off-then-i increment order
+	// gives the original's `addi r0,off,0x64; lwzx` addressing and its i=r31/off=r30 registers.
 	i = 0;
 	off = i;
-	for (; i < obj->joints->partCount; i++, off += 8) {
-		mapSetPolygon(obj, obj->joints->parts[(u32)(off >> 3)].mesh);
+	for (; i < obj->joints->partCount; off += 8, i++) {
+		mapSetPolygon(obj, *(MapFileMesh**)((u8*)obj->joints + offsetof(MapFileJoint, parts) + offsetof(MapFileJointPart, mesh) + off));
 	}
 #else
 	for (i = 0; i < obj->joints->partCount; i++) {
@@ -2812,6 +2803,9 @@ void mapDispMapObj_bbox(s32 camId, MapObject* obj) {
 	sysWaitDrawSync();
 	GXReadBoundingBox((u16*)((u8*)obj + 0xEC), (u16*)((u8*)obj + 0xEE), (u16*)((u8*)obj + 0xF0), (u16*)((u8*)obj + 0xF2));
 }
+
+#pragma opt_propagation reset
+#pragma optimization_level reset
 
 void mapDispMapGrp_bbox(MapObject* obj, MapEntry* entry) {
 	sysWaitDrawSync();
