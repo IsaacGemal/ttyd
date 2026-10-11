@@ -5972,3 +5972,20 @@ hand copies (yuunpc), and rasim/compile sweeps to settle declaration order.
   - collisionCurve (cam_road) timed out at 96.84. Its collected mid-edit state (+0.08, with mwsearch paren artifacts) was not kept. The wrong code is `d0 = 0.0` as a double, where the original loads `float_0` single.
   - Batch 4 overall: 33 agents. 21 kept (6 at 100), 3 refused (main_point, puniModeALLCheck, disp_sight: a pool helper or a duplicated helper), 9 no change.
 
+## Run 2: whole-unit long runs (2026-10-11/12, Claude Opus 5.5 orchestrating; Opus 5.5 agents)
+
+Same format as Overnight 1 (each agent reads all of this file and the brief first and works a ranked lever list),
+aimed at the large unlinked units with several functions left, where the goal is the link or as many functions at 100
+as possible. DeepSeek swarm batch 5 (Claude #2) ran alongside on the biggest units' remaining functions.
+
+**battle_seq_command: 52 -> 55 of 57 functions (on2-bsc; levers from the list: yes; 183k, 22 min).** Three fixes from
+the header and control flow, not register tricks. `BattleCommandDisplay_ChangePartySelectMenuMain` (99.27 -> 100)
+takes the unit's existing MUST_MATCH cast at `end:` (the header says `(void)`, retail passes `wp` in r3).
+`_btlcmd_MakeSelectWeaponTable` (99.77 -> 100) takes `s32 arg`, not `void*`: retail compares it with `cmpwi` and every
+caller cast integers to `(void*)`; `WeaponSelectMenuSetup` became `(BattleWork*, s32, u32)` to stay at 100.
+`WeaponSelectMenuMain` (99.00 -> 100) had a real bug: the `goto end;` after the `field_0x18 != 0` block must be
+unconditional (we fell through); then `s32 result = 0` declared last. Left: `BattleDrawEnemyHPBar` 96.18 (an extra
+stack store of the colour in two draw calls; using the colour directly loads it too late) and
+`WeaponMultiItemCancelCheckDisp` 95.37 (rasim: the colour load must be created before the 0x4330 constant; moving
+`xoff` into the call does that but adds `mr r6,r3`). 42 local arrangements and 15 expression shapes found nothing.
+
