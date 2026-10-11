@@ -36,7 +36,7 @@ void InitSubMenuCommonProcess2(BattleMenuWork* window, BattleCursor* cursor);
 void InitSubMenuCommonProcess3(BattleMenuWork* window, BattleCursor* cursor);
 void DrawMenuPartyChangeButton_Sub(u32 tex, f32 x, f32 y, f32 angle);
 void DrawMenuPartyChangeButton(void);
-void DrawMenuCursorAndScrollArrow(Vec* pos);
+void DrawMenuCursorAndScrollArrow(Vec pos);
 void BattleMenuDisp_ChangePartySelect_Main(void);
 void BattleMenuDisp_MultiItem_Main(void);
 void BattleMenuDisp_Operation_Main(void);

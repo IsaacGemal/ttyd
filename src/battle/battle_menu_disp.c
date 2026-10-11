@@ -19,8 +19,6 @@ extern ItemData itemDataTable[];
 
 
 extern const f32 float_0_8041c144;
-// Constants used by DrawSubIconSub (declared here so the symbols are emitted).
-extern GXColor unk_80422ff0;
 
 // Layout of the battle menu scratch buffer allocated by
 // InitSubMenuCommonProcess (0x124 bytes). Only the fields this file touches
@@ -61,6 +59,13 @@ s8 seq;
 
 //.sdata
 GXColor seleItemCoordCol = {0xFF, 0xC0, 0xC0, 0xCF};
+
+//.data
+f32 kakutable[3][5] = {
+    {240.0f, 120.0f, 0.0f, 0.0f, 0.0f},
+    {270.0f, 180.0f, 90.0f, 0.0f, 0.0f},
+    {270.0f, 203.0f, 157.0f, 90.0f, 0.0f},
+};
 
 typedef struct BattleMenuDispEntry {
     s32 field_0x0;   // 0x0
@@ -497,9 +502,11 @@ static inline GXColor SubIconFontColor(GXColor c, s32 alpha) {
     return c;
 }
 
-// NONMATCHING (99.96%): the instruction sequence matches; the remaining diffs are register/stack allocation: the
-// i2f int temp in r4 instead of r3, the cursor->field_0 compare in r3/r0 instead of r0/r3, and the
-// SubIconFontColor GXColor temp/color stack slots 0x30/0x14 swapped.
+// Sets the label colour; the colour is passed by value.
+static inline void SubIconDrawColor(GXColor c) {
+    FontDrawColor(&c);
+}
+
 #pragma dont_inline on
 void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s32 c, s32 d, s32 e, void* table,
                     s32 flag) {
@@ -527,6 +534,7 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     s32 ca;
     s32 count;
     s32 i;
+    s32 item;
 
     frac = window->field_0x98 - (f32)(s32)window->field_0x98;
     alpha = 0xFF;
@@ -536,7 +544,8 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     if (index == 6) {
         alpha = (s32)(255.0f * frac);
     }
-    if ((s32)window->field_0x98 + index == cursor->field_0) {
+    item = (s32)window->field_0x98 + index;
+    if (item == cursor->field_0) {
         cr = seleItemCoordCol.r;
         cg = seleItemCoordCol.g;
         cb = seleItemCoordCol.b;
@@ -600,9 +609,13 @@ void DrawSubIconSub(BattleMenuWork* window, s32 index, Mtx mtx, s32 a, u16 b, s3
     }
     FontDrawStart();
     {
-        GXColor color = (a == 1) ? SubIconFontColor(unk_80422ff0, alpha)
-                                 : SubIconFontColor(((GXColor){ 0x40, 0x40, 0x40, 0x00 }), alpha);
-        FontDrawColor(&color);
+        GXColor color;
+        if (a == 1) {
+            color = SubIconFontColor(((GXColor){ 0x00, 0x00, 0x00, 0x00 }), alpha);
+        } else {
+            color = SubIconFontColor(((GXColor){ 0x40, 0x40, 0x40, 0x00 }), alpha);
+        }
+        SubIconDrawColor(color);
     }
     PSMTXTrans(mtxTrans, (-104.0f), 22.0f, float_0_8041c144);
     if (flag == 1) {
@@ -1018,68 +1031,31 @@ void DrawMenuHelpWin(const char* tag, f32 x, f32 y) {
 // be marked don't-inline itself (a surrounding region only stops its functions
 // being inlined elsewhere).
 #pragma dont_inline on
-// Instruction scheduling / register allocation only. Splitting the first block's sums
-// (`ysum = float_15; ysum += pos->y;`) makes MWCC form the sum in place in f2 exactly
-// like the target; a single-expression form materialises it in a fresh register. The
-// residual: `pos->y` lands in f0 where the target has f1 (so the 0.0 load is scheduled
-// after pos->x); the second block has the same rotation; the tail uses the `f32 ny`
-// temp and schedules the final fnmsubs differently. All 140 valid orderings of the
-// first block's load/add/store statements compile identically, as do single-expression,
-// local-constant, shared-temp and volatile forms and opt_propagation/opt_lifetimes/
-// opt_common_subs/opt_dead_assignments off; only the register rotation is left, so this
-// is permuter work. Re-verified: 140 first-block orderings, a joint cross product of
-// block1/block2/tail forms, a 324-combination single/rev/split sum sweep (max 87.98%), the
-// volatile/local/literal `zero` forms, compound-literal/designated-initializer/array forms,
-// a hand-ordered whole-function rewrite under `#pragma scheduling off` (49.57%, and it
-// moves `pos` to r29), every `-O` level, GC compilers 2.0/2.5/2.6/2.7 (identical 88.09%),
-// and the `optimize_for_size`/`scheduling`/opt_* pragmas (all lower; function-scope zero
-// hangs MWCC). Per-region diff counts are 8/8/11 and the best tail-only form still leaves
-// 8 scheduling diffs. The scheduler never hoists the `float_0` load into f0 above
-// `pos->x`, so `pos->y`/`pos->x` land in f0 instead of the target's f1.
-// Exhaustive first- and second-block linear-extension searches (all 30
-// dependency-respecting orderings each, in split and single-statement sum forms) and a
-// tail sweep were tried. The tail breakthrough: writing the product as a signed negated temp
-// `f32 ny = float_24 * -(f32)n; vec.y = pos->y + ny;` (rather than `vec.y = pos->y - ny`)
-// drops the tail diffs from 11 to 10 and lifts the whole function to 89.63%; the direct
-// `pos->y - 24*(f32)n` form emits the target's `fnmsubs` but re-schedules the `vec.x`
-// load (88.04%), and `(f32)n * 24`, `-ny + pos->y`, function-scope `ny`, `px`/`py` locals,
-// four store orders and every `vec.x` position all score lower. Per-region diff counts are
-// now 8/8/10; the remaining 8+8 are the first/second block's `pos->y`-in-f0 rotation.
-// NONMATCHING (89.63%): see above.
-void DrawMenuCursorAndScrollArrow(Vec* pos) {
+void DrawMenuCursorAndScrollArrow(Vec pos) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
     BattleCursor* cursor = window->cursor;
     Vec vec;
-    f32 f31;
+    f32 bounce;
     s32 n;
 
-    f31 = intplGetValue(4, window->field_0x11C, 6, float_0_8041c144, 10.0f);
+    bounce = intplGetValue(4, window->field_0x11C, 6, float_0_8041c144, 10.0f);
     window->field_0x11C++;
     if (window->field_0x11C >= 12) {
         window->field_0x11C = 0;
     }
     if (cursor->field_4 > 0) {
-        f32 ysum;
-        f32 xsum;
-        xsum = 155.0f;
-        xsum += pos->x;
-        ysum = 15.0f;
-        ysum += pos->y;
-        vec.y = ysum + f31;
-        vec.x = xsum;
+        vec.x = 155.0f + pos.x;
+        vec.y = 15.0f + pos.y + bounce;
         vec.z = float_0_8041c144;
         iconDispGx(0.75f, &vec, 0x10, 0x1B5);
     }
     if (cursor->field_4 < cursor->unk8 - 6) {
-        f32 ysum = 20.0f + pos->y - 164.0f;
-        f32 xsum = 155.0f + pos->x;
-        vec.y = ysum - f31;
-        vec.x = xsum;
+        vec.x = 155.0f + pos.x;
+        vec.y = 20.0f + pos.y - 164.0f - bounce;
         vec.z = float_0_8041c144;
         iconDispGx(0.75f, &vec, 0x10, 0x1B6);
     }
-    vec.x = pos->x;
     n = cursor->field_0 - cursor->field_4;
     if (n < 0) {
         n = 0;
@@ -1087,11 +1063,9 @@ void DrawMenuCursorAndScrollArrow(Vec* pos) {
     if (n >= 6) {
         n = 5;
     }
-    {
-        f32 ny = 24.0f * -(f32)n;
-        vec.y = pos->y + ny;
-        vec.z = float_0_8041c144;
-    }
+    vec.x = pos.x;
+    vec.y = pos.y - 24.0f * n;
+    vec.z = float_0_8041c144;
     iconDispGx(1.0f, &vec, 0x14, 0x1F0);
 }
 #pragma dont_inline reset
@@ -1494,20 +1468,11 @@ void BattleMenuDisp_ActSelect_End(BattleWork* wp) {
     }
 }
 
-// Register allocation only: every instruction, call, constant and branch matches the target;
-// the remaining diffs are FPR/GPR colours. Case 5's angles are built from the explicit
-// `pi * deg` numerators (a70/a84) before the `/ 180` divisions; that fixes the original's
-// interleaved `fmuls, fmuls, fdivs, fdivs` schedule, and writing case 4's `0.2 * n` as
-// `n * 0.2` puts its i2f magic/double in f4/f3 like the target (98.50% -> 99.77%).
-// Case 1 now computes `d` as "load field_0x18 into a temp then subf" (`s32 d =
-// window->field_0x18; d = window->cursor->field_0 - d;`), which moves the field_0x18 load
-// from r4 to r3 and the `subf` to the target's `subf r4,r3,r0`; writing case 5's product as
-// `(f32)n * float_0p2` (not `float_0p2 * (f32)n`) re-colours the i2f/0p2 set (99.79%).
-// Still differing: case 1 reloads `window->cursor` into r3 where the target uses r5; in case 4
-// only `v84` (f2 vs f3) and the `float_180`/`float_0p2` pair (f5/f2 vs f2/f5) are swapped;
-// case 5 keeps `pi`/`float_180` in f6/f5 where the target has f3/f2, so its i2f magic/double/
-// 0.2 sit in f4/f3/f2 instead of f5/f4/f6.
-// NONMATCHING (99.79%): see above.
+// How far the cursor moved since the ring was last turned.
+static inline s32 menuCursorDelta(BattleMenuWork* w) {
+    return w->cursor->field_0 - w->field_0x18;
+}
+
 void DrawMainMenu(void) {
     BattleWork* wp = _battleWorkPointer;
     BattleMenuWork* window = (BattleMenuWork*)wp->commandMenu.field_55C;
@@ -1542,8 +1507,7 @@ void DrawMainMenu(void) {
     case 1:
         window->field_0x14 = 1;
         {
-            s32 d = window->field_0x18;
-            d = window->cursor->field_0 - d;
+            s32 d = menuCursorDelta(window);
             if (d == 1 || -(window->cursor->unk8 - 1) == d) {
                 window->field_0xC = 2;
                 window->field_0x14 = 0;
@@ -1663,7 +1627,12 @@ void DrawMainMenu(void) {
                 f32 v70 = kakutable[cursor->unk8 - 3][window->field_0x70[i]];
                 f32 v84 = kakutable[cursor->unk8 - 3][window->field_0x84[i]];
                 f32 cur;
+#ifdef MUST_MATCH
+                // Zero on the left: the original's fcmpu has the constant first.
+                if (float_0_8041c144 == v84) {
+#else
                 if (v84 == float_0_8041c144) {
+#endif
                     v84 = 360.0f;
                 }
                 cur = (f32)window->field_0x48[i] * 0.2f + 3.1415927f * v70 / 180.0f;
@@ -1689,27 +1658,18 @@ void DrawMainMenu(void) {
                 f32 v70;
                 f32 v84;
                 f32 cur;
-                f32 a70;
-#ifdef MUST_MATCH
-                f32 a84;
-#endif
                 v70 = kakutable[cursor->unk8 - 3][window->field_0x70[i]];
+#ifdef MUST_MATCH
+                // Zero on the left: the original's fcmpu has the constant first.
+                if (float_0_8041c144 == v70) {
+#else
                 if (v70 == float_0_8041c144) {
+#endif
                     v70 = 360.0f;
                 }
                 v84 = kakutable[cursor->unk8 - 3][window->field_0x84[i]];
-#ifdef MUST_MATCH
-                // Compute both `pi * deg` numerators before the divisions: the target's
-                // fmuls, fmuls, fdivs, fdivs schedule only comes out of this order.
-                a70 = 3.1415927f * v70;
-                a84 = 3.1415927f * v84;
-                cur = a70 / 180.0f - (f32)window->field_0x48[i] * 0.2f;
-                angle = a84 / 180.0f;
-#else
-                a70 = 3.1415927f * v70 / 180.0f;
+                cur = 3.1415927f * v70 / 180.0f - (f32)window->field_0x48[i] * 0.2f;
                 angle = 3.1415927f * v84 / 180.0f;
-                cur = a70 - 0.2f * (f32)window->field_0x48[i];
-#endif
                 if (cur <= angle) {
                     window->field_0x34[i] = 3;
                     cur = angle;
@@ -1808,7 +1768,6 @@ void DrawWeaponWin(void) {
     f32 outX;
     f32 outY;
     u16 arr24[7];
-    Vec vec;
     f32 scales[5];
     s32 arr88[7];
     s32 arr6C[7];
@@ -1843,8 +1802,7 @@ void DrawWeaponWin(void) {
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
-    vec = ((Vec){ -60.0f, 35.0f, 0.0f });
-    DrawMenuCursorAndScrollArrow(&vec);
+    DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (sel != 0) {
         s32 id = *(s32*)((u8*)sel + 0x8);
         if (id != 0) {
@@ -1915,7 +1873,6 @@ void DrawOperationWin(void) {
     s32 arr50[7];
     Mtx mats[5];
     s32 arr34[7];
-    Vec vec;
     f32 outY;
 
     BattleMenuDispEntryOp* entry;
@@ -1940,8 +1897,7 @@ void DrawOperationWin(void) {
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
-    vec = ((Vec){ -60.0f, 35.0f, 0.0f });
-    DrawMenuCursorAndScrollArrow(&vec);
+    DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if ((u32)entries[cursor->field_0].field_0x14 != 0) {
         DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x14, outX, outY);
     }
@@ -1983,7 +1939,6 @@ void DrawChangePartyWin(void) {
     f32 outX;
     f32 outY;
     u16 arr24[7];
-    Vec vec;
     f32 scales[5];
     s32 arr88[7];
     s32 arr6C[7];
@@ -2016,8 +1971,7 @@ void DrawChangePartyWin(void) {
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, (void*)entries, 1);
-    vec = ((Vec){ -60.0f, 35.0f, 0.0f });
-    DrawMenuCursorAndScrollArrow(&vec);
+    DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if ((u32)entries[cursor->field_0].field_0x10 != 0) {
         DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x10, outX, outY);
     }
@@ -2057,7 +2011,6 @@ void DrawMultiItemWin(void) {
     f32 outX;
     f32 outY;
     u16 arr24[7];
-    Vec vec;
     f32 scales[5];
     s32 arr88[7];
     s32 arr6C[7];
@@ -2087,8 +2040,7 @@ void DrawMultiItemWin(void) {
     }
     DrawMainIcon(window, (void*)((u8*)wp + 0x1724), mats, centers, scales);
     DrawSubIcon(window, rot, arr88, arr24, arr6C, arr50, arr34, 0, 0);
-    vec = ((Vec){ -60.0f, 35.0f, 0.0f });
-    DrawMenuCursorAndScrollArrow(&vec);
+    DrawMenuCursorAndScrollArrow((Vec){ -60.0f, 35.0f, 0.0f });
     if (entries[cursor->field_0].field_0x8 != 0) {
         DrawMenuHelpWin((const char*)entries[cursor->field_0].field_0x8, outX, outY);
     }
