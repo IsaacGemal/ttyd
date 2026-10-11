@@ -19,39 +19,40 @@
 #include "party/party_move.h"
 #include "party/party_hit.h"
 #include "party/party_motion.h"
-extern const f32 float_0_8041cdec;
-extern const f32 float_180_8041ce38;
-extern const f32 float_neg0p5_8041ce04;
 #include "party/party_bomhei.h"
 #include "motion/mot_stay.h"
 #include "motion/mot_slit.h"
 #include "party/party_chuchu.h"
 #include "party/party_nokonoko.h"
 
-__declspec(section ".rodata") u8 vec3_802f3e40[0x108] = {
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x3F, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x42, 0xF4, 0x00, 0x00, 0x43, 0x02, 0x00, 0x00, 0xC3, 0x9C, 0x80, 0x00,
-    0x50, 0x43, 0x48, 0x5F, 0x41, 0x32, 0x5F, 0x31, 0x00, 0x00, 0x00, 0x00,
-    0x67, 0x6F, 0x72, 0x5F, 0x30, 0x31, 0x00, 0x00, 0x41, 0x5F, 0x69, 0x65,
-    0x5F, 0x30, 0x33, 0x5F, 0x79, 0x75, 0x6B, 0x61, 0x5F, 0x66, 0x31, 0x5F,
-    0x43, 0x00, 0x00, 0x00, 0x41, 0x5F, 0x69, 0x65, 0x5F, 0x30, 0x33, 0x5F,
-    0x79, 0x75, 0x6B, 0x61, 0x5F, 0x66, 0x32, 0x5F, 0x43, 0x00, 0x00, 0x00,
-};
+// The unit's named .rodata objects, in the original's order ahead of the pooled literals.
+#ifdef MUST_MATCH
+// MUST_MATCH: non-const so MWCC keeps the loads and copies instead of folding the known contents.
+#define PM_RODATA __declspec(section ".rodata")
+#else
+#define PM_RODATA const
+#endif
+PM_RODATA Vec vec3_802f3e40 = { 0.0f, 0.0f, 0.0f };
+PM_RODATA Vec vec3_802f3e4c = { 0.0f, 0.0f, 0.0f };
+PM_RODATA Vec vec3_802f3e58 = { 0.0f, 0.0f, 0.0f };
+PM_RODATA Vec vec3_802f3e64 = { 0.0f, 0.0f, 0.0f };
+PM_RODATA Vec vec3_802f3e70 = { 0.0f, 0.0f, 0.0f };
+PM_RODATA Vec vec3_802f3e7c = { 0.0f, 0.0f, 0.0f };
+PM_RODATA Vec vec3_802f3e88 = { 0.0f, 0.0f, 0.0f };
+PM_RODATA Vec vec3_802f3e94 = { 0.0f, 0.0f, 0.0f };
+PM_RODATA Vec vec3_802f3ea0 = { 0.0f, 1.0f, 0.0f };
+PM_RODATA Vec vec3_802f3eac = { 0.0f, -1.0f, 0.0f };
+PM_RODATA Vec vec3_802f3eb8 = { 0.0f, -1.0f, 0.0f };
+PM_RODATA Vec vec3_802f3ec4 = { 0.0f, -1.0f, 0.0f };
+PM_RODATA Vec vec3_802f3ed0 = { 0.0f, -1.0f, 0.0f };
+PM_RODATA Vec vec3_802f3edc = { 0.0f, -1.0f, 0.0f };
+PM_RODATA Vec vec3_802f3ee8 = { 0.0f, -1.0f, 0.0f };
+PM_RODATA Vec vec3_802f3ef4 = { 0.0f, -1.0f, 0.0f };
+PM_RODATA Vec vec3_802f3f00 = { 122.0f, 130.0f, -313.0f };
+PM_RODATA char str_802F3F0C[12] = "PCH_A2_1";
+PM_RODATA char str_802F3F18[8] = "gor_01";
+PM_RODATA char str_802F3F20[20] = "A_ie_03_yuka_f1_C";
+PM_RODATA char str_802F3F34[20] = "A_ie_03_yuka_f2_C";
 
 #pragma pool_data on // the original addresses its .rodata through one base register
 
@@ -70,14 +71,13 @@ s32 unk_804189ec;
 f32 touch_wall_ct;
 
 #ifdef MUST_MATCH
-// MUST_MATCH: retail reads these through the vec3_802f3e40 base register.
-#define FB(off, sym, val) ((const char*)vec + (off))
-#define FV(off, sym, val) (*(const Vec*)(vec + (off)))
+// MUST_MATCH: retail reads these named .rodata objects (the compiler reaches them off the section base).
+#define FB(sym, val) (sym)
+#define FV(sym, val) (sym)
 #else
-#define FB(off, sym, val) (val)
-#define FV(off, sym, val) (val)
+#define FB(sym, val) (val)
+#define FV(sym, val) (val)
 #endif
-extern const f64 double_180_802f3fa0;
 #define PT_FP_NAN 1
 #define PT_FP_INFINITE 2
 #define PT_FP_ZERO 3
@@ -326,7 +326,6 @@ void N_partyFollowCloseOff(PartyEntry* party) {
 }
 
 void party_motion_stay(PartyEntry* party) {
-    u8* vec = vec3_802f3e40;
     MarioWork* mario;
     HitEntry* hit;
     PartyEntry* other;
@@ -369,9 +368,9 @@ void party_motion_stay(PartyEntry* party) {
     if (mario->characterId == 2) {
         f31 = 70.0f;
     }
-    if (strcmp(gp->currentMapName, (char*)(vec + 0x188)) == 0 ||
-        strcmp(gp->currentMapName, (char*)(vec + 0x190)) == 0 ||
-        strcmp(gp->currentMapName, (char*)(vec + 0x198)) == 0) {
+    if (strcmp(gp->currentMapName, "aji_02") == 0 ||
+        strcmp(gp->currentMapName, "aji_05") == 0 ||
+        strcmp(gp->currentMapName, "aji_12") == 0) {
         if (!marioKeyOffChk()) {
             if (party->field_32 == 0) {
                 f30 = 18.0f;
@@ -515,7 +514,7 @@ skip_target:
         case 0:
 #endif
         default:
-            partyChgPose(party, (char*)(vec + 0xcc));
+            partyChgPose(party, FB(str_802F3F0C, "PCH_A2_1"));
             party->useMotionId = 1;
             *(s32*)((u8*)party + 0x24) = 0x1e;
             break;
@@ -573,7 +572,7 @@ void unk_8014bbc8(PartyEntry* party) {
                 case 0:
 #endif
                 default:
-                    partyChgPose(party, "PCH_A2_1");
+                    partyChgPose(party, FB(str_802F3F0C, "PCH_A2_1"));
                     party->useMotionId = 1;
                     *(s32*)((u8*)party + 0x24) = 0x1E;
                     break;
@@ -733,25 +732,34 @@ void unk_8014b824(PartyEntry* party) {
     }
 }
 
+// Attribute of the floor `r` ahead of the partner along its facing, probed from `r` above it.
+static inline s32 partyGetFrontAttr(PartyEntry* party, f32 r) {
+    HitCheckQuery q;
+    f32 s, c;
+    HitEntry* hit;
+
+    sincosf(&s, &c, party->dir);
+    q.targetDistance = 100.0f;
+    q.targetPos.x = party->position.x + s * r;
+    q.targetPos.z = party->position.z + c * r;
+    q.targetPos.y = party->position.y + r;
+    q.targetDir = FV(vec3_802f3edc, ((Vec){0.0f, -1.0f, 0.0f}));
+    hit = hitCheckVecFilter(&q, NULL);
+    return (hit != NULL) ? hitGetAttr(hit) : 0;
+}
+
 // opt_common_subs off: with it on MWCC's CSE costs an extra callee-saved register (stmw r24,
 // 8 regs); the target saves 7 (stmw r25). Same reason as homing_fly's pragma.
 #pragma opt_propagation off // keep the 1000.0f load after the ternary branch, as retail does
 #pragma opt_common_subs off
-// NONMATCHING (99.85%): every call, branch body, constant and rodata read matches. What
-// differs is FPR colouring (i2f result in f25 not f24, a y94/ypos rotation) and the second
-// movePos address addis, plus the pooled i2f magic double (fresh lis not 0x108(r29)).
+// The floor probe's result in its own `fy` (declared last) gets retail's f24, and the ypos/y94 pair
+// declared in that order and assigned after the declarations gives the f1/f3 colouring.
+// The probe and jump-target sites still read the 40.0f by name: as a literal MWCC puts the constant
+// first in the fmadds/fmuls, where retail has it second.
+// NONMATCHING (99.99%): the second movePos call computes `&vA0.x` before `&vA0.z` (retail: z first);
+// the pointer-temp block that fixes the first call recolours the base/footmark GPRs here.
 void party_motion_homing_walk(PartyEntry* party) {
     extern const f32 float_40_8041cdf0;
-    extern const f32 float_0p5_8041ce00;
-    extern const f32 float_0p1_8041ce44;
-    extern const f32 float_1000_8041cdf4;
-    extern const f32 float_100_8041cde0;
-    // The unit's .rodata is one block starting at vec3_802f3e40; retail addresses
-    // every string and vector in it as vec3_802f3e40 + offset. The FB/FV macros
-    // above reproduce that under MUST_MATCH (offsets: str_802F3F18=0xd8,
-    // str_802F3F20=0xe0, str_802F3F34=0xf4, str_802F3F48 is the i2f double,
-    // str_802F3FC8=0x188, str_802F3FD0=0x190, str_802F3FD8=0x198; vec3_802f3ec4=0x84,
-    // vec3_802f3ed0=0x90, vec3_802f3edc=0x9c, vec3_802f3f00=0xc0).
     Vec vA0;
     s32 attr;
     f32 f31;
@@ -784,7 +792,6 @@ void party_motion_homing_walk(PartyEntry* party) {
     f32 f29;
     PartyEntry* target;
     f32 t1;
-    u8* vec = vec3_802f3e40;
     Vec v70;
     Vec v64;
     f32 t2;
@@ -802,13 +809,11 @@ void party_motion_homing_walk(PartyEntry* party) {
 #ifdef MUST_MATCH
     s32 readId;
 #endif
-    HitCheckQuery q3;
     f32 c2;
     Vec v4c;
     f32 s2;
-    f32 c4;
-    f32 s4;
     f32 pz;
+    f32 fy;
 
     id = partyGetFootmarkId(&party->flags);
     sid = id;
@@ -818,9 +823,9 @@ void party_motion_homing_walk(PartyEntry* party) {
         party->flags &= ~0x80000;
     }
     f31 = (party->field_28 != 0) ? 28.0f : 37.5f;
-    if (strcmp(gp->currentMapName, FB(0x188, str_802F3FC8, "aji_02")) == 0 ||
-        strcmp(gp->currentMapName, FB(0x190, str_802F3FD0, "aji_05")) == 0 ||
-        strcmp(gp->currentMapName, FB(0x198, str_802F3FD8, "aji_12")) == 0) {
+    if (strcmp(gp->currentMapName, "aji_02") == 0 ||
+        strcmp(gp->currentMapName, "aji_05") == 0 ||
+        strcmp(gp->currentMapName, "aji_12") == 0) {
         if (marioKeyOffChk() == 0) {
             if (party->field_32 == 0) {
                 f24 = 18.0f;
@@ -886,7 +891,7 @@ void party_motion_homing_walk(PartyEntry* party) {
         }
         if (party->playerPtr->flags & 0x8000) {
             f29 = 1.0f;
-            f31 = float_100_8041cde0;
+            f31 = 100.0f;
         }
         unk_800c93d0(party, f29);
     } else {
@@ -922,7 +927,7 @@ void party_motion_homing_walk(PartyEntry* party) {
     i = 0;
     py = party->position.y;
     pz = party->position.z;
-    f24 = float_40_8041cdf0;
+    f24 = 40.0f;
     f25 = 20.0f;
     for (;;) {
         fmark = (u8*)partyGetFootmarkPtr(id);
@@ -933,7 +938,7 @@ void party_motion_homing_walk(PartyEntry* party) {
         q.targetPos.x = party->position.x + f25 * s1;
         q.targetPos.z = party->position.z + f25 * c1;
         q.targetPos.y = f25 + party->position.y;
-        q.targetDir = FV(0x90, vec3_802f3ed0, ((Vec){0.0f, -1.0f, 0.0f}));
+        q.targetDir = FV(vec3_802f3ed0, ((Vec){0.0f, -1.0f, 0.0f}));
         hit = hitCheckVecFilter(&q, NULL);
         attr = (hit != NULL) ? hitGetAttr(hit) : 0;
         if (attr & 0x800) {
@@ -959,10 +964,10 @@ void party_motion_homing_walk(PartyEntry* party) {
             if (mario->flags & 0x8000) {
                 f = party->field_F4 + mario->wPlayerCollisionBox.x;
             } else {
-                f = float_0p5_8041ce00 * party->field_F4 + party->speed;
+                f = 0.5f * party->field_F4 + party->speed;
             }
             if (f25 > f) {
-                v58 = FV(0x0, vec3_802f3e40, ((Vec){0.0f, 0.0f, 0.0f}));
+                v58 = FV(vec3_802f3e40, ((Vec){0.0f, 0.0f, 0.0f}));
                 v58.x = px;
                 v58.y = py;
                 v58.z = pz;
@@ -970,11 +975,11 @@ void party_motion_homing_walk(PartyEntry* party) {
                 f25 = partyGetTargetDist3D(sid, &v64);
                 if (f25 >= f31) {
                     if (party->field_8 & 0x20000) {
-                        f = float_0p1_8041ce44 * (f25 - f30);
+                        f = 0.1f * (f25 - f30);
                         if (f > 4.0f) {
                             f = 4.0f;
                         }
-                        if (f < float_0p5_8041ce00) {
+                        if (f < 0.5f) {
                             f = 0.0f;
                         }
                         unk_800c9398(party, mario->baseSpeed + f);
@@ -996,11 +1001,11 @@ void party_motion_homing_walk(PartyEntry* party) {
                 }
                 if (f25 > f30) {
                     if (party->field_8 & 0x20000) {
-                        f = float_0p1_8041ce44 * (f25 - f30);
+                        f = 0.1f * (f25 - f30);
                         if (f > 4.0f) {
                             f = 4.0f;
                         }
-                        if (f < float_0p5_8041ce00) {
+                        if (f < 0.5f) {
                             f = 0.0f;
                         }
                         unk_800c9398(party, mario->baseSpeed + f);
@@ -1091,23 +1096,23 @@ void party_motion_homing_walk(PartyEntry* party) {
                 q2.targetPos.x += s2 * float_40_8041cdf0;
                 q2.targetPos.z += c2 * float_40_8041cdf0;
                 q2.targetPos.y += tw;
-                q2.targetDistance = float_1000_8041cdf4;
-                q2.targetDir = FV(0x84, vec3_802f3ec4, ((Vec){0.0f, -1.0f, 0.0f}));
+                q2.targetDistance = 1000.0f;
+                q2.targetDir = FV(vec3_802f3ec4, ((Vec){0.0f, -1.0f, 0.0f}));
                 hit = hitCheckVecFilter(&q2, NULL);
                 if (hit != NULL) {
                     f = q2.hitPos.y;
-                    off = (f >= 0.0f) ? float_0p5_8041ce00 : float_neg0p5_8041ce04;
-                    f24 = (f32)(s32)(float_1000_8041cdf4 * f + off) / float_1000_8041cdf4;
+                    off = (f >= 0.0f) ? 0.5f : -0.5f;
+                    fy = (f32)(s32)(1000.0f * f + off) / 1000.0f;
                     hitGetAttr(hit);
                 } else {
-                    f24 = -2000.0f;
+                    fy = -2000.0f;
                 }
-                if (f24 > party->position.y) {
+                if (fy > party->position.y) {
                     angle = partyToMovedir(party, party->field_110);
                     sincosf(&s3, &c3, angle);
                     (*(f32*)((u8*)party + 0x94)) = s3 * float_40_8041cdf0;
                     (*(f32*)((u8*)party + 0x9C)) = c3 * float_40_8041cdf0;
-                    (*(f32*)((u8*)party + 0x98)) = f24;
+                    (*(f32*)((u8*)party + 0x98)) = fy;
                 }
                 partyChgMot(party, 2);
                 break;
@@ -1129,7 +1134,7 @@ void party_motion_homing_walk(PartyEntry* party) {
         }
         break;
     }
-    if (party->speed != float_0_8041cdec) {
+    if (party->speed) {
         unk_800c8f24(party, party->speed);
     } else if (!(*(u8*)(fmark + 0x0) & 0x4)) {
         partyChgMot(party, 0);
@@ -1150,15 +1155,14 @@ void party_motion_homing_walk(PartyEntry* party) {
             partyGetAppearPos4(party, &v94);
         }
         {
-            f32 y94 = v94.y;
-            f32 ypos = party->position.y;
+            f32 ypos;
+            f32 y94;
+            f32 d;
+            y94 = v94.y;
+            ypos = party->position.y;
             if (y94 > ypos) {
-                dist = y94 - ypos;
-#ifdef MUST_MATCH
-                if (dist > *(const f64*)(vec + 0x1a0) && dist < 60.0f) { // named double_12_802f3fe0 read base-relative
-#else
-                if (dist > 12.0 && dist < 60.0f) {
-#endif
+                d = y94 - ypos;
+                if (d > 12.0 && d < 60.0f) {
                     *(Vec*)((u8*)party + 0x94) = v94;
                     partyChgMot(party, 2);
                     return;
@@ -1168,15 +1172,8 @@ void party_motion_homing_walk(PartyEntry* party) {
                 }
             }
         }
-        if (party->speed != float_0_8041cdec) {
-            sincosf(&s4, &c4, party->dir);
-            q3.targetDistance = float_100_8041cde0;
-            q3.targetPos.x = party->position.x + s4 * float_40_8041cdf0;
-            q3.targetPos.z = party->position.z + c4 * float_40_8041cdf0;
-            q3.targetPos.y = party->position.y + float_40_8041cdf0;
-            q3.targetDir = FV(0x9c, vec3_802f3edc, ((Vec){0.0f, -1.0f, 0.0f}));
-            hit = hitCheckVecFilter(&q3, NULL);
-            attr = (hit != NULL) ? hitGetAttr(hit) : 0;
+        if (party->speed) {
+            attr = partyGetFrontAttr(party, 40.0f);
             if (!(attr & 0x200)) {
                 vA0.x = party->position.x;
                 vA0.z = party->position.z;
@@ -1185,7 +1182,7 @@ void party_motion_homing_walk(PartyEntry* party) {
         }
     } else {
         party->field_12C = groundHit;
-        if (party->speed != float_0_8041cdec) {
+        if (party->speed) {
             party->field_134 = groundHit;
             attr = hitGetAttr(groundHit);
             if (attr & 0x2000) {
@@ -1195,7 +1192,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                         party->field_8 |= 0x1;
                         party->field_37[0] = 1;
                     }
-                } else if (party->speed != float_0_8041cdec) {
+                } else if (party->speed) {
                     vA0.x = party->position.x;
                     vA0.z = party->position.z;
                     movePos(&vA0.x, &vA0.z, party->speed, party->dir);
@@ -1216,7 +1213,7 @@ void party_motion_homing_walk(PartyEntry* party) {
                             partyChkFrontStep(party, 11.0f, &t0, &t1, &t2);
                             if (t0 - party->position.y >= 5.0f && (*(f32*)((u8*)party + 0xE0)) <= 30.0f) {
                                 *(f32*)party->field_120 = t0;
-                                if (party->speed != float_0_8041cdec) {
+                                if (party->speed) {
                                     partyChgMot(party, 6);
                                     return;
                                 }
@@ -1282,11 +1279,11 @@ void party_motion_homing_walk(PartyEntry* party) {
     party->position.y = vA0.y;
     party_force_reset_outofscreen(party);
     mm = party->playerPtr;
-    if (strcmp(gp->currentMapName, FB(0xd8, str_802F3F18, "gor_01")) == 0) {
+    if (strcmp(gp->currentMapName, FB(str_802F3F18, "gor_01")) == 0) {
         if (mm->hitobjStandOn != NULL && party->field_138 != NULL) {
-            if (strcmp(hitGetName(mm->hitobjStandOn), FB(0xe0, str_802F3F20, "A_ie_03_yuka_f1_C")) == 0 &&
-                strcmp(hitGetName(party->field_138), FB(0xf4, str_802F3F34, "A_ie_03_yuka_f2_C")) == 0) {
-                party->position = FV(0xc0, vec3_802f3f00, ((Vec){122.0f, 130.0f, -313.0f}));
+            if (strcmp(hitGetName(mm->hitobjStandOn), FB(str_802F3F20, "A_ie_03_yuka_f1_C")) == 0 &&
+                strcmp(hitGetName(party->field_138), FB(str_802F3F34, "A_ie_03_yuka_f2_C")) == 0) {
+                party->position = FV(vec3_802f3f00, ((Vec){122.0f, 130.0f, -313.0f}));
             }
         }
     }
@@ -1303,14 +1300,9 @@ void party_motion_homing_walk(PartyEntry* party) {
 #pragma opt_loop_invariants off
 // opt_dead_assignments: keeps MWCC from dropping the `mario`/`id` copies that keep the target's GPR colouring.
 #pragma opt_dead_assignments off
-// NONMATCHING (99.61%): 3 scheduling/pool diffs: `mr r27,r3` sits one slot late and the i2f magic
-// double is reached with a fresh lis instead of `0x108(r31)`. Every call, constant and branch body is exact.
+// NONMATCHING (99.75%): `mr r27,r3` sits one slot late (after `lwz r30, 0x160(r3)`). Every call, constant
+// and branch body is exact; the `(s64)(s32)` parameter pin and a 20-minute mwsearch do not move it.
 void party_motion_homing_fly(PartyEntry* party) {
-    extern const Vec vec3_802f3e4c;
-    extern const char str_802F3FC8[];
-    extern const char str_802F3FD0[];
-    extern const char str_802F3FD8[];
-    u8* vec = vec3_802f3e40;
     MarioWork* mario;
     s32 id;
     s32 flag;
@@ -1330,7 +1322,6 @@ void party_motion_homing_fly(PartyEntry* party) {
     Vec tv2;
     Vec tv;
     f32 zero = 0.0f;
-    f32 dY;
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
@@ -1344,9 +1335,9 @@ void party_motion_homing_fly(PartyEntry* party) {
     } else {
         f31 = 32.0f;
     }
-    if (strcmp(gp->currentMapName, FB(0x188, str_802F3FC8, "aji_02")) == 0 ||
-        strcmp(gp->currentMapName, FB(0x190, str_802F3FD0, "aji_05")) == 0 ||
-        strcmp(gp->currentMapName, FB(0x198, str_802F3FD8, "aji_12")) == 0) {
+    if (strcmp(gp->currentMapName, "aji_02") == 0 ||
+        strcmp(gp->currentMapName, "aji_05") == 0 ||
+        strcmp(gp->currentMapName, "aji_12") == 0) {
         if (!marioKeyOffChk()) {
             if (party->field_32 == 0) {
                 f25 = 18.0f;
@@ -1367,8 +1358,7 @@ void party_motion_homing_fly(PartyEntry* party) {
             party->field_8 = (party->field_8 | 0x20000);
         }
     }
-    dY = partyGetTargetDistY(id);
-    if (dY != float_0_8041cdec) {
+    if (partyGetTargetDistY(id)) {
         f30 = 50.0f;
     } else {
         f30 = 35.0f;
@@ -1461,7 +1451,7 @@ void party_motion_homing_fly(PartyEntry* party) {
         if (dist > (mario->flags & 0x8000
                        ? party->field_F4 + mario->wPlayerCollisionBox.x
                        : 0.5f * party->field_F4 + party->speed)) {
-            tv = FV(0xC, vec3_802f3e4c, ((Vec){0.0f, 0.0f, 0.0f}));
+            tv = FV(vec3_802f3e4c, ((Vec){0.0f, 0.0f, 0.0f}));
             tv.x = f28;
             tv.y = f27;
             tv.z = f26;
@@ -1968,7 +1958,8 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
             dir = toMovedir(mario->unk1A8);
         }
     }
-    *(f32*)((u8*)party + 0x54) = revise360(dir + float_180_8041ce38);
+    dir += 180.0f;
+    *(f32*)((u8*)party + 0x54) = revise360(dir);
     if (party->field_8 & 0x2) {
         party->field_8 = (party->field_8 & ~0x2);
         limit = 1.5f * mario->wPlayerCollisionBox.x;
@@ -1992,7 +1983,8 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
                 dir = toMovedir(mario2->unk1A8);
             }
         }
-        *(f32*)((u8*)party + 0x54) = revise360(dir + float_180_8041ce38);
+        dir += 180.0f;
+        *(f32*)((u8*)party + 0x54) = revise360(dir);
     }
     if (!(party->flags & 0x8)) {
         limit = 1.5f * mario->wPlayerCollisionBox.x;
@@ -2410,19 +2402,17 @@ void party_motion_beside_mario(PartyEntry* party) {
 // the two `fmadds` results in f3/f2; `f32 zero` keeps `party->speed != zero` variable-first; and
 // `party->playerPtr->playerGravity` reproduces the target's fresh `lwz r3, 0x160(r28)` (the local `mario` is
 // not reused there).
-// Register rotation remains (10 diffs): in the jump-param block the 0x128 load gets f1 and the delta f5 where
-// the target uses f5/f6, and the compiler's int->float double is reached with a fresh `lis` rather than
-// `0x108(r31)` (the unit-level pool offset). The min block, the two `+ 10.0f` operand orders and the
+// Register rotation remains: in the jump-param block the 0x128 load gets f1 and the delta f5 where
+// the target uses f5/f6. The min block, the two `+ 10.0f` operand orders and the
 // `!(f6 >= 0)` branch are now exact: inlining the min product, `ty += 10.0f`/`floor.y += 10.0f`, writing the
 // inner test as the ternary `f6 = (f6 >= 0.0f) ? f6 : 10.0f`, and `#pragma opt_lifetimes off` around the
 // function (just below) are all needed for the target's f0/f2 colouring and its `bne assign; b end` layout.
 // The old `cmpw r27, r3` diff is gone: storing the read id in an `s32 readId` local before the test makes
 // MWCC emit the target's `cmpw r3, r27`.
-// NONMATCHING (99.69%): FPR colouring in the jump-param block (0x128 in f1 vs f5, delta in f5 vs f6, fresh
-// `lis` vs `0x108(r31)`); permuter work.
+// NONMATCHING (99.91%): FPR colouring in the jump-param block (0x128 in f1 vs f5, delta in f5 vs f6);
+// declaration order of f0..f6 and a 20-minute mwsearch do not move it.
 #pragma opt_lifetimes off
 void party_motion_jump(PartyEntry* party) {
-    u8* vec = vec3_802f3e40;
     MarioWork* mario;
     HitEntry* hit;
     Vec floor;
@@ -2456,7 +2446,7 @@ void party_motion_jump(PartyEntry* party) {
             movePos(&tx, &tz, party->speed, party->dir);
 #ifdef MUST_MATCH
             {
-                Vec pos = *(Vec*)(vec + 0x18);
+                Vec pos = FV(vec3_802f3e58, ((Vec){0.0f, 0.0f, 0.0f}));
                 pos.x = tx; pos.y = ty; pos.z = tz;
                 *(Vec*)((u8*)party + 0x94) = pos;
             }
@@ -2486,7 +2476,7 @@ void party_motion_jump(PartyEntry* party) {
                 }
 #ifdef MUST_MATCH
                 {
-                    Vec pos = *(Vec*)(vec + 0x24);
+                    Vec pos = FV(vec3_802f3e64, ((Vec){0.0f, 0.0f, 0.0f}));
                     pos.x = tx; pos.y = ty; pos.z = tz;
                     *(Vec*)((u8*)party + 0x94) = pos;
                 }
@@ -2526,7 +2516,7 @@ void party_motion_jump(PartyEntry* party) {
                     ty += 10.0f;
 #ifdef MUST_MATCH
                     {
-                        Vec pos = *(Vec*)(vec + 0x30);
+                        Vec pos = FV(vec3_802f3e70, ((Vec){0.0f, 0.0f, 0.0f}));
                         pos.x = tx; pos.y = ty; pos.z = tz;
                         *(Vec*)((u8*)party + 0x94) = pos;
                     }
@@ -2547,7 +2537,7 @@ void party_motion_jump(PartyEntry* party) {
                     }
 #ifdef MUST_MATCH
                     {
-                        Vec pos = *(Vec*)(vec + 0x3c);
+                        Vec pos = FV(vec3_802f3e7c, ((Vec){0.0f, 0.0f, 0.0f}));
                         pos.x = tx; pos.y = ty; pos.z = tz;
                         *(Vec*)((u8*)party + 0x94) = pos;
                     }
@@ -3084,7 +3074,6 @@ void partyChgMotSlitFloor(PartyEntry* party) {
 // Match shapes below are marked MUST_MATCH: the natural forms compile to the
 // same logic but differ in mwcc register allocation / block layout.
 BOOL party_slit(PartyEntry* party) {
-    u8* vec = vec3_802f3e40;
     s32 ret = 1;
     MarioWork* mario = party->playerPtr;
     f32 angle;
@@ -3095,8 +3084,8 @@ BOOL party_slit(PartyEntry* party) {
     if (party->field_8 & 0x1) {
         party->field_8 = (party->field_8 & ~0x1);
         party->flags2 = (party->flags2 | 0x100);
-        partyPaperOn(party, (const char*)(vec + 0x148));
-        partyChgPaper(party, (char*)(vec + 0x150));
+        partyPaperOn(party, "p_slit");
+        partyChgPaper(party, "PM_S_1A");
         *(s32*)((u8*)party + 0x24) = 0x1E;
         unk_800c9398(party, 0.0f);
         angle = revise360(party->dir - mario->targetYaw);
@@ -3114,7 +3103,7 @@ BOOL party_slit(PartyEntry* party) {
             party->flags = (party->flags | 0x1000);
             party->field_10C = 270.0f;
             party->field_110 = party->field_10C;
-            partyChgPaper(party, (char*)(vec + 0x158));
+            partyChgPaper(party, "PM_S_1B");
             if (!(party->flags & 0x2000)) {
                 party->field_3A = 0xA;
                 ret = 0;
@@ -3128,7 +3117,7 @@ BOOL party_slit(PartyEntry* party) {
             party->flags = (party->flags | 0x1000);
             party->field_10C = 270.0f;
             party->field_110 = party->field_10C;
-            partyChgPaper(party, (char*)(vec + 0x158));
+            partyChgPaper(party, "PM_S_1B");
             if (!(party->flags & 0x2000)) {
                 party->field_3A = 0xA;
                 ret = 0;
@@ -3144,16 +3133,11 @@ BOOL party_slit(PartyEntry* party) {
 #else
         if (party->speed == 0.0f) {
 #endif
-            partyChgPaper(party, (char*)(vec + 0x158));
+            partyChgPaper(party, "PM_S_1B");
             party->field_10C = 270.0f;
         } else {
             angle = revise360(party->dir - mario->targetYaw);
-#ifdef MUST_MATCH
-            // retail reads the 180.0 double (double_180_802f3fa0) as vec+0x160
-            if (angle >= *(f64*)(vec + 0x160)) {
-#else
-            if (angle >= double_180_802f3fa0) {
-#endif
+            if (angle >= 180.0) {
                 party->flags2 = (party->flags2 | 0x200);
             } else {
                 party->flags2 = (party->flags2 & ~0x200);
@@ -3164,17 +3148,17 @@ BOOL party_slit(PartyEntry* party) {
             // One compound test: mwcc shares a single 0x168 body at the end;
             // the natural if / else-if form duplicates that body.
             if (angle >= 315.0f || angle <= 45.0f || (angle >= 135.0f && angle <= 225.0f)) {
-                partyChgPaper(party, (char*)(vec + 0x168));
+                partyChgPaper(party, "PM_S_1E");
             } else {
-                partyChgPaper(party, (char*)(vec + 0x170));
+                partyChgPaper(party, "PM_S_1D");
             }
 #else
             if (angle >= 315.0f || angle <= 45.0f) {
-                partyChgPaper(party, (char*)(vec + 0x168));
+                partyChgPaper(party, "PM_S_1E");
             } else if (angle < 135.0f || angle > 225.0f) {
-                partyChgPaper(party, (char*)(vec + 0x170));
+                partyChgPaper(party, "PM_S_1D");
             } else {
-                partyChgPaper(party, (char*)(vec + 0x168));
+                partyChgPaper(party, "PM_S_1E");
             }
 #endif
         }
@@ -3191,7 +3175,7 @@ BOOL party_slit(PartyEntry* party) {
     }
     switch (party->field_3A) {
     case 0x14:
-        partyChgPaper(party, (char*)(vec + 0x178));
+        partyChgPaper(party, "PM_S_1H");
         party->flags = (party->flags | 0x02000000);
         party->flags = (party->flags | 0x20);
         *(s32*)((u8*)party + 0x24) = 0x14;
@@ -3223,7 +3207,7 @@ BOOL party_slit(PartyEntry* party) {
     }
     switch (party->field_3A) {
     case 0x28:
-        partyChgPaper(party, (char*)(vec + 0x180));
+        partyChgPaper(party, "PM_S_1C");
         *(s32*)((u8*)party + 0x24) = 0x1E;
         party->field_3A = 0x29;
         angle = revise360(party->dir - mario->targetYaw);
@@ -3249,16 +3233,12 @@ BOOL party_slit(PartyEntry* party) {
 
 // `next = rate * (target - party->field_10C); next = next + party->field_10C;` (the field read inlined
 // twice, `rate = 0.1f` local) gives the target's fsubs/fmuls/fadds registers and load order;
-// `cond = fabsf((f32)(target - next < 1.0f))` plus the named zero `float_0_8041cdec` fix the fcmpu
-// operand order and the conversion tail.
-// NONMATCHING (99.95%): the int->float magic and the four string reads are now base-relative; the
-// remaining diff is the pool offset of the two zero Vecs copied to party +0x88/+0x7C. As `(Vec){0,0,0}`
-// they pool at `.rodata+0x108/0x114` where the target reads 0x48/0x54, shifting the rest by 0x18.
+// retail tests `fabsf(target - next < 1.0f)`: the comparison result goes through int->float, fabs and a
+// compare with zero, so the misplaced parenthesis is kept.
 s32 party_roll(PartyEntry* party) {
     s32 ret = 1;
     f32 target;
     f32 next;
-    f32 cond;
     f32 rate = 0.1f;
     // byte view of party for the 0x7C/0x88 fields the PartyEntry header leaves as padding
     u8* partyBytes = (u8*)party;
@@ -3318,8 +3298,7 @@ s32 party_roll(PartyEntry* party) {
                 target = 90.0f;
                 next = rate * (target - party->field_10C);
                 next = next + party->field_10C;
-                cond = fabsf((f32)(target - next < 1.0f));
-                if (cond != float_0_8041cdec) {
+                if (fabsf(target - next < 1.0f)) {
                     next = target;
                 }
                 party->field_10C = next;
@@ -3328,8 +3307,7 @@ s32 party_roll(PartyEntry* party) {
                 target = 270.0f;
                 next = rate * (target - party->field_10C);
                 next = next + party->field_10C;
-                cond = fabsf((f32)(target - next < 1.0f));
-                if (cond != float_0_8041cdec) {
+                if (fabsf(target - next < 1.0f)) {
                     next = target;
                 }
                 party->field_10C = next;
@@ -3349,8 +3327,8 @@ s32 party_roll(PartyEntry* party) {
             party->field_FC = 90.0f;
             party->dir = 90.0f;
         }
-        *(Vec*)(partyBytes + 0x88) = (Vec){0.0f, 0.0f, 0.0f};
-        *(Vec*)(partyBytes + 0x7C) = (Vec){0.0f, 0.0f, 0.0f};
+        *(Vec*)(partyBytes + 0x88) = FV(vec3_802f3e88, ((Vec){0.0f, 0.0f, 0.0f}));
+        *(Vec*)(partyBytes + 0x7C) = FV(vec3_802f3e94, ((Vec){0.0f, 0.0f, 0.0f}));
         party->field_37[0] = 0;
         party->flags = (party->flags & ~0x1000);
         party->flags2 = (party->flags2 & ~0x100);
@@ -3362,6 +3340,40 @@ s32 party_roll(PartyEntry* party) {
         break;
     }
     return ret;
+}
+
+// Partner speed on the aji conveyor maps; stay/homing_walk/homing_fly carry the same selection inline.
+// Uncalled in retail (mwld strips it); its 18/8/30 pool after getFrontFloor's constants.
+f32 partyGetAjiSpeed(PartyEntry* party) {
+    f32 speed;
+
+    if (party->field_32 == 0) {
+        speed = 18.0f;
+    } else if ((s8)party->currentMemberId == 5) {
+        if (party->field_8 & 0x200000) {
+            speed = 8.0f;
+        } else {
+            speed = 30.0f;
+        }
+    } else if ((s8)party->currentMemberId == 6) {
+        if (party->field_8 & 0x200000) {
+            speed = 8.0f;
+        } else {
+            speed = 30.0f;
+        }
+    }
+    return speed;
+}
+
+// Hover height above the floor (1 while flags2 0x8000 is set), as in unk_8014b824.
+// Uncalled in retail; its 5/1 pool ahead of partyGetAjiSpeed's.
+f32 partyGetHoverOfs(PartyEntry* party) {
+    f32 ofs = 5.0f;
+
+    if (party->flags2 & 0x8000) {
+        ofs = 1.0f;
+    }
+    return ofs;
 }
 
 // Inline square root used by the original (same expansion as party_hit.c).
@@ -3408,24 +3420,23 @@ static inline f32 pt_sqrtf(f32 x) {
 
 // Stack slots, statement order/shape, calls and immediates all match, as do the FP colours (scale f29, wall f28);
 // the `(a < b) ? a : b` select written as if/else drops the spurious fmr the ternary emitted.
-// NONMATCHING (94.06%): the unit `.rodata` blob plus `pool_data` and source string literals put the
-// int->float magic at `lfd f30, 0x108(r31)` and the sqrtf half/three at `0x110/0x118/0x120(r31)`; the
-// remaining diff is the FP colouring shift driven by the pool ordering; permuter work.
+// `wall` is read before the probes (retail loads touch_wall_ct into f28 up front), the not-found height
+// is set after the loop (the goto skips it when a probe hits), and `targetDistance` is stored before
+// `targetDir` in the second query.
 s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
-    u8* vec = vec3_802f3e40;
-    f32 wall;
     HitCheckQuery query2;
     HitCheckQuery query1;
     f32 sin2, cos2;
     f32 cos1, sin1;
     f32 scale;
-    f32 floorY = -2000.0f;
+    f32 wall = touch_wall_ct;
+    f32 floorY;
     f32 h;
     s32 i;
     HitEntry* hit;
 
     scale = 2.0f * *(f32*)((u8*)party + 0xF4) / 3.0f;
-    query1.targetDir = *(Vec*)(vec + 0x60);
+    query1.targetDir = FV(vec3_802f3ea0, ((Vec){0.0f, 1.0f, 0.0f}));
     sincosf(&sin1, &cos1, angle);
     for (i = 0; i < 3; i++) {
         query1.targetPos.x = party->position.x + (f32)i * (sin1 * scale);
@@ -3436,11 +3447,12 @@ s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
         if (hit != NULL) {
             if (pt_sqrtf(query1.hitNormal.x * query1.hitNormal.x + query1.hitNormal.z * query1.hitNormal.z) < 45.0f) {
                 floorY = query1.hitPos.y;
-                break;
+                goto found;
             }
         }
     }
-    wall = touch_wall_ct;
+    floorY = -2000.0f;
+found:
     if (floorY > -2000.0f) {
         f32 a = party->position.y + wall;
         f32 b = floorY - 2.0f;
@@ -3456,8 +3468,8 @@ s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
     sincosf(&sin2, &cos2, angle);
     query2.targetPos.x = party->position.x + sin2 * h;
     query2.targetPos.z = party->position.z + cos2 * h;
-    query2.targetDir = *(Vec*)(vec + 0x6C);
     query2.targetDistance = 300.0f;
+    query2.targetDir = FV(vec3_802f3eac, ((Vec){0.0f, -1.0f, 0.0f}));
     hit = hitCheckVecFilter(&query2, NULL);
     if (hit == NULL) {
         pos->x = party->position.x;
@@ -3471,10 +3483,28 @@ s32 getFrontFloor(PartyEntry* party, Vec* pos, f32 angle) {
     return hitGetAttr(hit);
 }
 
+// Floor height 40 units ahead of (x, y, z) along `angle`, rounded to 1/1000 (-2000 when nothing is hit).
+// Uncalled in retail; generated right after party_force_reset_outofscreen, so 40, 1000, -1, -2000 and
+// +-0.5 follow that function's constants in .sdata2.
+f32 partyGetFrontFloorY(f32 x, f32 y, f32 z, f32 angle) {
+    HitEntry* hit;
+    f32 hx, hy, hz, hd, hnx, hny, hnz;
+    f32 s, c;
+
+    sincosf(&s, &c, angle);
+    x += s * 40.0f;
+    z += c * 40.0f;
+    hd = 1000.0f;
+    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, y + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
+    if (hit == NULL) {
+        return -2000.0f;
+    }
+    return (f32)(s32)(1000.0f * hy + (hy >= 0.0f ? 0.5f : -0.5f)) / 1000.0f;
+}
+
 void party_force_reset_outofscreen(PartyEntry* party) {
     // Declaration order is load-bearing: the Vecs in this order, `dist` before
     // sx/sy/sz, and `mario` last give the original's frame and callee-saved set.
-    extern Vec vec3_802f3ef4[];
     HitEntry* hit;
     Vec cur;
     Vec tmp;
@@ -3526,7 +3556,7 @@ void party_force_reset_outofscreen(PartyEntry* party) {
         up = 10.0f;
         limit = 50;
     }
-    dir = vec3_802f3ef4[0];
+    dir = FV(vec3_802f3ef4, ((Vec){0.0f, -1.0f, 0.0f}));
     for (;;) {
         marioGetScreenPos(cur, &sx, &sy, &sz);
         if (-limit <= sx && sx <= limit + 600) {
