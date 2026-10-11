@@ -6015,6 +6015,19 @@ templates pool once, the mot_jabara #609 lever; .sbss declared in reverse; no ex
 the jump tables). Cleanup: unused `L_*` helpers, partyDokanInit's `opt_common_subs off` and a MUST_MATCH block gone;
 14 unused externs dropped from party.h.
 
+**battle_menu_disp links: DrawMenuCursorAndScrollArrow 89.63, DrawMainMenu 99.93, DrawSubIconSub 99.96 -> 100, 46/46
+(on2-bmenu; lever from the list: partial; 385k, 30 min).** Retail loads every `pos` field before any store to the
+local `vec` and moves the loads past the stores, which needs the compiler to know `pos` can't alias `vec`; a
+`Vec* __restrict pos` probe matched at once, and the natural form is the parameter by value,
+`DrawMenuCursorAndScrollArrow(Vec pos)` (header changed; the four callers pass `(Vec){ -60.0f, 35.0f, 0.0f }`), with
+`vec.y = pos.y - 24.0f * n` giving retail's `fnmsubs` (the agent's own find, from the scheduler model's
+memory-dependence rules). DrawMainMenu: the cursor delta as a small inline (rasim: the reloaded cursor temp must rank
+before `d`) and two zero-first compares under MUST_MATCH (#676). DrawSubIconSub: the colour passed through a by-value
+inline `SubIconDrawColor(GXColor c) { FontDrawColor(&c); }` (Grind 20's GXColor-through-an-inline) and a named
+`s32 item` for the compare. Link: `kakutable` defined in .data, the .sbss2 zero colour written as
+`(GXColor){0, 0, 0, 0}`. Look for the by-value parameter in other near-misses where loads through a pointer
+parameter move past stores to a local.
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
