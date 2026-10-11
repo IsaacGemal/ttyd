@@ -5827,6 +5827,19 @@ per-block locals, early return, one-expression reflection) x two loop shapes on 
 eff_starpoint's helpers copied as-is did worse here (81 diffs with the literal loop): the same sin/cos polynomial
 needs different shapes in the two units. Try the t/u roles on other near-misses with this polynomial.
 
+**battle_seq links: battleSortPhaseMoveTable 99.19, BattleWaitAllActiveEvtEnd_NoBgSetEndWait 99.55, btlseqMove
+99.93 -> 100 (on1-btlseq; lever from the list: yes; 157k, 21 min).** Registers: SortPhaseMoveTable copies its
+parameter (`BattleWork* work = wp;`) under `opt_propagation off` so the copy keeps r31 ahead of `count` (either
+alone does nothing; evt_yuutitle #632); WaitAllActiveEvtEnd declares a `void* p = wp` first (a typed copy reached
+96.43); btlseqMove declares case 8's `id`/`moveState` at function scope ahead of `j` so case 6's index shares a
+register. Data port (dol_gen `--append`, then the brief's "Data and pool" recipe): force_active statics for the
+.data pairs (battle_break_slot.c), `const char*` rule-message tables, `__declspec(section ".sdata")` event scripts,
+`#pragma pool_data on`, every string and float a literal (the `base + 0x3ac` hack gone). `math_ext.h` with
+`#define fabs(x) __fabs(x)` instead of math.h, which writes two extra sqrt constants into .rodata (without the
+define fabs becomes a call, 92%). The tables must be defined after `N_weapon_lucky_start` and the colours, or their
+strings land first. _rule_disp reads the tables by name, drops its pragma, and keeps `cx = 0.0f`/`y = 120.0f`
+locals (as literals the compiler folds `0.0f - w` and `(s32)120.0f`).
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
