@@ -323,18 +323,23 @@ static inline void effPokopiThunderSetColor2(EffPokopiThunderData* data) {
 }
 #endif
 
-// NONMATCHING (97.33% / 55 differing insns): logic, constants, data, the prologue and the colour stack
-// slots (built by the two void inlines above) match. Loop 2's amplitude/sin/cos are computed in the
-// target's registers; the remaining differences are mwcc's register colouring. In loop 1 our `p` cursor
-// takes r27 where the target uses r29 (and the reverse for the `tbl+i` temp), which also shuffles the
-// volatile FP temporaries of the loop-1 body. Loop 2's counter takes r30 instead of r26 (so `uoff` and
-// the `cr`/`cg`/`cb` zero-init shift too, and the trailing tri2 loop's bound follows `i`), and the amp's
-// `8.0f * scale` is folded and hoisted to the loop-2 preheader instead of being rematerialised in each
-// branch as the target does. The angle average is `/ 2.0f` (strength-reduced to the 0.5 pool multiply)
-// as in effPokopiThunderMain.
+// NONMATCHING (98.99% / 52 differing insns): logic, constants, data, the prologue and the colour stack
+// slots (built by the two void inlines above) match, and the instruction count now equals the target's.
+// The loop-2 angle if/else is written as a nested `if`/`else` with `f20 = 8.0f;` at the head of both
+// arms, so the 8.0 amplitude constant is rematerialised per branch instead of being folded with `scale`
+// and hoisted to the preheader (the target loads float_8 in each arm). What still differs is mwcc's
+// GPR colouring only: in loop 1 the `p` cursor takes r27 where the target uses r29 (and the `tbl+i`
+// temp takes r29 where the target uses r27), the loop-2 `i`/`uoff`/`cr` counters are rotated, and the
+// backend's `@` temps @339/@341/@342/@343 (the loop-2 zero-init copies, which this compile materialises
+// with `li` where the target shares one zero with `mr` copies) own the saved registers `p` needs. The
+// register allocator gives 8 of 66 GPR targets a different saved register and no declaration order
+// reaches them; the missing register is held by a compiler temp. The angle average is `/ 2.0f`
+// (strength-reduced to the 0.5 pool multiply) as in effPokopiThunderMain.
 //
-// NONMATCHING (97.33%): 55 instructions differ only in mwcc register colouring/scheduling (see above).
+// NONMATCHING (98.99%): the loop-1 `p` cursor (r27 vs r29) and the backend `@` temps that hold its
+// saved register differ; instruction count and data match.
 void effPokopiThunderDisp(CameraId camId, void* param) {
+	CameraEntry* cam;
 	s32 t1;
 	GXTexObj texObj;
 	GXColor color;
@@ -342,8 +347,7 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	s32 cg;
 	f32 scale;
 	f32 t;
-	CameraEntry* cam;
-	s32 field3C;
+	
 	s32 i;
 	s32 k;
 	f32 a2;
@@ -376,7 +380,7 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	cam = camGetPtr(camId);
 	data = effect->userdata;
 	timer = data->timer;
-	field3C = data->field_0x3C;
+	cr = data->field_0x3C;
 	type = data->type;
 	scale = (*(f32*)((u8*)data + 0x4C));
 	if (data->cameraId != 4) {
@@ -390,13 +394,13 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	GXLoadPosMtxImm(mtx, 0);
 	GXSetCurrentMtx(0);
 #ifdef MUST_MATCH
-	effPokopiThunderSetColor1(data, field3C);
+	effPokopiThunderSetColor1(data, cr);
 #else
 	color = unk_80423220;
 	color.r = data->field_0x30;
 	color.g = data->field_0x34;
 	color.b = data->field_0x38;
-	color.a = field3C;
+	color.a = cr;
 	GXSetTevColor(1, color);
 #endif
 #ifdef MUST_MATCH
@@ -467,9 +471,11 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 		wy = 0.09090909f * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)));
 		f20 = 0.04f * (t * (f32)sin(ang));
 		f6 = 0.04f * (t * (f32)cos(ang));
-		p[20] = (wx * f6 - wy * f20) +
+		t = wx * f6 - wy * f20;
+		p[20] = (t) +
 		          (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x1C)) - (*(f32*)((u8*)data + 0x10)))) + (*(f32*)((u8*)data + 0x10)));
-		p[32] = (wx * f20 + wy * f6) +
+		t = wy * f6;
+		p[32] = (wx * f20 + t) +
 		          (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x20)) - (*(f32*)((u8*)data + 0x14)))) + (*(f32*)((u8*)data + 0x14)));
 		p[44] = zero + (0.09090909f * ((f32)i * ((*(f32*)((u8*)data + 0x24)) - (*(f32*)((u8*)data + 0x18)))) + (*(f32*)((u8*)data + 0x18)));
 		p[56] = 0.1f * (f32)tbl[i + 12];
@@ -486,21 +492,26 @@ void effPokopiThunderDisp(CameraId camId, void* param) {
 	cb = 0;
 	for (i = 0; i < 12; i++, p++) {
 		if (i == 0) {
+			f20 = 8.0f;
 			ang = -angleABf(p[33], -p[21], p[32], -p[20]);
-		} else if (i == 11) {
-			ang = -90.0f;
 		} else {
-			a1 = -angleABf(p[33], -p[21], p[32], -p[20]);
-			a2 = -angleABf(p[32], -p[20], p[31], -p[19]);
-			if (a2 - a1 > 180.0f) {
-				a1 += 360.0f;
-			} else if (a2 - a1 < -180.0f) {
-				a2 += 360.0f;
+			f20 = 8.0f;
+			if (i == 11) {
+				ang = -90.0f;
+			} else {
+				a1 = -angleABf(p[33], -p[21], p[32], -p[20]);
+				a2 = -angleABf(p[32], -p[20], p[31], -p[19]);
+				if (a2 - a1 > 180.0f) {
+					a1 += 360.0f;
+				} else if (a2 - a1 < -180.0f) {
+					a2 += 360.0f;
+				}
+				ang = a1 + a2;
+				ang = (ang) / 2.0f;
 			}
-			ang = (a1 + a2) / 2.0f;
 		}
 		u = (0x80 - uoff) << 5;
-		f20 = 8.0f * scale * p[56];
+		f20 = f20 * (scale * p[56]);
 		ang = 6.2831855f * ang / 360.0f;
 		s2 = f20 * (f32)sin(ang);
 		ct = f20 * (f32)cos(ang);

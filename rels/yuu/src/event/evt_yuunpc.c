@@ -1404,12 +1404,9 @@ s32 yuunpc_juni(Vec* pos) {
     return count;
 }
 
-// Register allocation only: every stack local sits 4 bytes higher than the original (arr1 0x4C vs
-// 0x48, the map scratch at 0xC vs 0x8), the `i >= 0xC8` matrix block uses the FPR row one slot
-// lower, and the `npcNameToPtr` Vec copies schedule differently.
-// NONMATCHING (97.03%): logic complete; all calls and immediates match and the `i < 0xC8` branch
-// is byte-identical. The `f32 half` local (the only named temp) buys one instruction of FPR
-// allocation; the remaining 149 diffs are scheduling/register allocation.
+// Matching: per-block non-volatile Vec copies through a stack temp, the n16 rejection loop split
+// into independent short-lived `a1`/`a2` reads with `continue`, and the k-loop map read hoisted into
+// `ev` reproduce the original's register colours and `cmpw` operand order.
 void ext_yuunpc_minigame4_init_sub(void) {
     f32 arr1[4] = { 45.0f, 5.0f, -34.0f, -74.0f };
     f32 arr2[8] = { -7.0f, -1.0f, 5.0f, -5.0f, 1.0f, 7.0f, -3.0f, 3.0f };
@@ -1422,7 +1419,6 @@ void ext_yuunpc_minigame4_init_sub(void) {
     s32 n;
     s32 r26, r27, r28;
     s16 n16;
-    const char* name;
 
     saved = yuunpc_wp->entries;
     memset(yuunpc_wp, 0, 0xA94);
@@ -1460,26 +1456,23 @@ void ext_yuunpc_minigame4_init_sub(void) {
     }
     yuunpc_wp->flags |= 1;
     pose = extGetPosePtr();
-    name = "yuusp0";
     ((s32*)yuunpc_wp->pad_08)[2] = -1;
     ((s32*)yuunpc_wp->pad_08)[1] = -1;
     ((s32*)yuunpc_wp->pad_08)[0] = -1;
     {
-        volatile Vec v;
+        Vec v;
         v = (Vec){ 0.0f, -1000.0f, 0.0f };
-        npcNameToPtr(name)->position = v;
+        npcNameToPtr("yuusp0")->position = *(Vec*)&v;
     }
     {
-        volatile Vec v;
+        Vec v;
         v = (Vec){ 0.0f, -1000.0f, 0.0f };
-        name = "yuusp1";
-        npcNameToPtr(name)->position = v;
+        npcNameToPtr("yuusp1")->position = *(Vec*)&v;
     }
     {
-        volatile Vec v;
+        Vec v;
         v = (Vec){ 0.0f, -1000.0f, 0.0f };
-        name = "yuusp2";
-        npcNameToPtr(name)->position = v;
+        npcNameToPtr("yuusp2")->position = *(Vec*)&v;
     }
     r26 = arr3[irand(9)];
     if (irand(10) == 0) {
@@ -1496,12 +1489,22 @@ void ext_yuunpc_minigame4_init_sub(void) {
     if (r28 != 0) {
         for (i = 0; i < r26; i++) {
             s32 slot;
+            s32 a1, a2;
             do {
                 slot = irand(3);
             } while (((s32*)yuunpc_wp)[slot + 2] != -1);
-            do {
+            while (1) {
                 n16 = irand(0x2BC) + 0xC8;
-            } while (((s32*)yuunpc_wp)[(slot + 1) % 3 + 2] == n16 || ((s32*)yuunpc_wp)[(slot + 2) % 3 + 2] == n16);
+                a1 = ((s32*)yuunpc_wp)[(slot + 1) % 3 + 2];
+                if (a1 == n16) {
+                    continue;
+                }
+                a2 = ((s32*)yuunpc_wp)[(slot + 2) % 3 + 2];
+                if (a2 == n16) {
+                    continue;
+                }
+                break;
+            }
             ((s32*)yuunpc_wp)[slot + 2] = n16;
         }
     }
@@ -1565,14 +1568,17 @@ void ext_yuunpc_minigame4_init_sub(void) {
             s32 r24, r25, r23;
             s32 idx;
             s32 k;
+            s32 ev;
             f32 half;
+            f32 hp;
             entry->flags |= 2;
             r24 = (s32)yuunpc_minigame4_sqrt(700.0f);
             idx = i - 0xC8;
             r25 = idx / r24;
             r23 = idx % r24;
             for (k = 0; k < 3; k++) {
-                if (((s32*)yuunpc_wp)[k + 2] == i) {
+                ev = ((s32*)yuunpc_wp)[k + 2];
+                if (ev == i) {
                     switch (k) {
                         case 0:
                             entry->flags |= 0x100;
@@ -1598,7 +1604,8 @@ void ext_yuunpc_minigame4_init_sub(void) {
             }
             PSMTXIdentity((MtxPtr)pose->matrix);
             half = 0.5f;
-            ((MtxPtr)pose->matrix)[0][3] = -(((240.0f / (f32)(r24 - 1)) * half * (f32)(r23 & 1)) - ((-(f32)r25 * (240.0f / (f32)(r24 - 1))) + -1520.0f));
+            hp = (240.0f / (f32)(r24 - 1)) * half;
+            ((MtxPtr)pose->matrix)[0][3] = ((-(f32)r25 * (240.0f / (f32)(r24 - 1))) + -1520.0f) - (hp * (f32)(r23 & 1));
             ((MtxPtr)pose->matrix)[1][3] = 0.0f;
             ((MtxPtr)pose->matrix)[2][3] = 10.0f * (((f32)((entry->field_0 % 101) - 50)) / 50.0f) + ((((f32)r23 * (240.0f / (f32)(r24 - 1))) - 120.0f) + arr2[r25 % 8]);
             v = (Vec){ 0.0f, 0.0f, 0.0f };
