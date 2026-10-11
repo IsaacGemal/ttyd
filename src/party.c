@@ -587,9 +587,9 @@ f32 partyGetHeight(PartyEntry* party) {
     return PF32(party, 0xF0);
 }
 
-// NONMATCHING (99.51%): the material setup uses the already-loaded `player` instead of reloading
-// party->playerPtr (r31 vs the target's r28); using the reload shifts the whole animName/pose chain
-// to r31, and the shared L_setMaterial helper makes mwcceppc 2.6 loop forever in this function.
+// NONMATCHING (99.53%): the material setup reloads party->playerPtr as the target does; what is left is
+// allocation in the pose chain (the target keeps v5 in r31 and the index/v6 result in r28) and animName
+// (r31 where the target has r28).
 s32 partyEntryMain(s32 memberId) {
     MarioWork* player = marioGetPtr();
     s32 slotId;
@@ -652,7 +652,7 @@ found:
     party->paperAnimGroup = animPoseEntry(animName, 2);
     animPosePeraOff(party->paperAnimGroup);
     {
-        MarioWork* mario = player;
+        MarioWork* mario = party->playerPtr;
 
         animPoseSetMaterialFlagOn(party->paperAnimGroup,
                                   animPoseGetMaterialFlag(mario->paperAnimGroupId[marioAnimeId()]));
@@ -2524,19 +2524,21 @@ static inline char* L_ridePose1b(PartyEntry* party, s32 index) {
     party->field_8 |= 0x2000;
     return pose;
 }
-// NONMATCHING (97.13%): calls, immediates and code shape all match. What still differs is the
-// int->float magic double (the target reads it as `lfd fN, 0x1d0(r31)`; our object pools an
-// anonymous `@NNN` copy with `lis`/`addi`, a documented project-wide limitation whose extra
-// GPR shifts every i2f site's allocation), some FPR colouring rotations (the case-11/111 pose
-// value in r28 instead of r30), and the switch's left subtree (our `case 99:` is an explicit
-// leaf, the target's is the 100/101 range bound).
 // Raw offsets used: 0x24 frame counter, 0x38 ride mode, 0x80 scale, 0x94 ride target Vec, 0x124
 // rotation speed, 0x128 distance, 0x174 jump accel, 0xF0 vertical assist. Player fields
 // 0x1AC/0x1B8 are read via the file's PF32 macro.
-// NONMATCHING (97.13%): the int->float literal pool and a few FPR colours still differ.
+// Writing the zero Vecs as plain `(Vec){0,0,0}` literals (not the `PR_FV` base+offset hack the
+// rest of the file uses) lets MWCC pool them and address both the templates and the int->float
+// magic double through the r31 `.rodata` base, so the i2f sites read `lfd fN, 0xd0(r31)` like
+// the original's `lfd fN, 0x1d0(r31)`. The case-1 clamp constant must be a `10.0f` literal (a
+// named extern f32 gets hoisted and the division then misses the original's reload), and the
+// `case 22:` leaf (state 22, set by case 21) is needed to balance the switch tree even though it
+// shares the default body. What still differs: the unit's incomplete `.rodata` pool shifts every
+// pooled offset (our templates at 0x98/0xa4/0xb0/0xbc vs 0x15c/0x168/0x174/0x180, our double at
+// 0xd0 vs 0x1d0), and the case-11/111 pose value is in r28 instead of r30.
+// NONMATCHING (99.91%): the pooled offsets and the pose register.
 void partyRideMain(PartyEntry* party) {
     MarioWork* player = party->playerPtr;
-    const u8* base = (const u8*)vec3_802ccd30;
     Vec ridePos;
     f32 dy;
     f32 tmp;
@@ -2582,10 +2584,10 @@ void partyRideMain(PartyEntry* party) {
                 }
             }
             scale = (f32)PS32(party, 0x24);
-            if (scale > float_10_8041b124) {
-                scale = float_10_8041b124;
+            if (scale > 10.0f) {
+                scale = 10.0f;
             }
-            party->field_70.x = scale / float_10_8041b124;
+            party->field_70.x = scale / 10.0f;
             party->field_70.y = party->field_70.x;
             party->field_70.z = party->field_70.x;
             if ((PS32(party, 0x24) = PS32(party, 0x24) - 1) < 0) {
@@ -2596,7 +2598,7 @@ void partyRideMain(PartyEntry* party) {
             L_ridePose1(party);
             party->jumpPara1 = float_0_8041b100;
             party->position.y = PF32(party, 0x98);
-            party->field_70 = PR_FV(0x15c, vec3_802cce8c);
+            party->field_70 = (Vec){0.0f,0.0f,0.0f};
             party->flags2 |= 1;
             if (party != NULL) {
                 party->flags2 |= 0x100000;
@@ -2615,7 +2617,7 @@ void partyRideMain(PartyEntry* party) {
                 party->flags2 |= 0x100000;
             }
             getRidePos(party, &ridePos);
-            party->field_70 = PR_FV(0x168, vec3_802cce98);
+            party->field_70 = (Vec){0.0f,0.0f,0.0f};
             party->position = ridePos;
             party->jumpPara1 = float_0_8041b100;
             party->field_110 = PF32(party->playerPtr, 0x1AC);
@@ -2646,13 +2648,16 @@ void partyRideMain(PartyEntry* party) {
             }
             partyChgRunMode(party, 1);
             break;
+        case 22:
+            break;
         case 100:
         case 101:
             party->flags2 &= ~1;
             px = player->position.x;
+            dy = player->position.y;
             pz = player->position.z;
             party->position.x = px;
-            party->position.y = PF32(player, 0x1B8) * float_0p5_8041b170 + player->position.y;
+            party->position.y = float_0p5_8041b170 * PF32(player, 0x1B8) + dy;
             party->position.z = pz;
             if (P8(party, 0x38) == 100) {
                 partyGetAppearPos(party, (Vec*)(party->field_7C + (0x94 - 0x7C)));
@@ -2683,8 +2688,6 @@ void partyRideMain(PartyEntry* party) {
             }
             P8(party, 0x38) = 110;
             break;
-        case 99:
-            break;
         case 110:
             partyMoveNoHosei(party);
             if (party->jumpPara1 <= float_0_8041b100) {
@@ -2698,7 +2701,7 @@ void partyRideMain(PartyEntry* party) {
             } else if (party->field_138 == 0) {
                 Vec vec;
                 t = (f32)(16 - PS32(party, 0x24)) * float_0p0625_8041b184;
-                vec = PR_FV(0x174, vec3_802ccea4);
+                vec = (Vec){0.0f,0.0f,0.0f};
                 vec.x = t;
                 vec.y = t;
                 vec.z = t;
@@ -2714,7 +2717,7 @@ void partyRideMain(PartyEntry* party) {
         {
             Vec vec;
             t = (f32)(16 - PS32(party, 0x24)) * float_0p0625_8041b184;
-            vec = PR_FV(0x180, vec3_802cceb0);
+            vec = (Vec){0.0f,0.0f,0.0f};
             vec.x = t;
             vec.y = t;
             vec.z = t;
