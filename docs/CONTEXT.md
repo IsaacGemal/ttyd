@@ -5675,6 +5675,16 @@ of the agent's list; rasim what-ifs showed that `c` had to go. Tried and failed:
 6 declaration orders (an extra `mr`: the original's pointer is the compiler's own temp), `int` for `j`/`len`.
 
 
+**eff_particle links: effParticleDisp 99.91 -> 100 (on1-particle; lever from the list: partial).** Retail's
+.sdata2 order (4, 8, deg2rad, 0.5, 0, 2, 1) is the order Disp creates its own literals, so the singleton-array
+constants went and every float became a literal: `w = 4.0f; h = 8.0f;` before the loop, the quad as `(-w / 2, h / 2)`
+and so on, the literal deg2rad in Disp and Entry, `velocity.x/z *= 0.5f` in ParticleEmit. Net diff negative. The
+`/ 2` spelling (listed lever: #619, #652, the brief's leaf-operand numbering) fixes the f0/f1 swap, but only on top
+of the all-literal shape the agent added mid-run from the pool order; with `* 0.5f` the all-literal code stays at
+99.87 in every order tried. Tried and failed: deg2rad through the array (fixes the duplicate pool entry, still
+99.91), named `bottom`/`negativeBottom` locals, products moved before the loop, a named `half`, `opt_propagation off`
+(96.8). Same lesson as eff_kiss: when the pool order is the function's own literal order, go all-literal first.
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.

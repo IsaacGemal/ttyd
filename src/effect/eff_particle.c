@@ -56,21 +56,6 @@ static inline s32 __fpclassifyf(f32 x) {
 #pragma pool_data on
 #endif
 
-// Scalar const reads fold into a second pool entry in MWCC. Singleton const arrays
-// retain ordinary readonly loads, sharing the width and half values across functions.
-#ifdef MUST_MATCH
-#define PARTICLE_CONST(sym, value) const f32 sym[1] = { value }
-#define PARTICLE_F32(sym) ((sym)[0])
-#else
-#define PARTICLE_CONST(sym, value) const f32 sym = value
-#define PARTICLE_F32(sym) (sym)
-#endif
-PARTICLE_CONST(float_4_80421ce0, 4.0f);
-PARTICLE_CONST(float_8_80421ce4, 8.0f);
-const f32 float_deg2rad_80421ce8 = 0.017453292f;
-PARTICLE_CONST(float_0p5_80421cec, 0.5f);
-#undef PARTICLE_CONST
-
 // .rodata
 // Non-const matching vectors preserve the original struct copies; const reads fold them away.
 #ifdef MUST_MATCH
@@ -135,9 +120,6 @@ static inline f32 particle_sqrtf(f32 x) {
 #pragma defer_codegen off
 #endif
 
-// MWCC hoists the quad size products out of the loop. Keeping the negated left edge
-// separate gives it the original scratch register and preheader load order.
-// NONMATCHING (99.91%): the 8/-8 and 0.5 scratch registers are swapped (f0/f1).
 void effParticleDisp(CameraId camId, void* param) {
 	EffectEntry* effect = param;
 	ParticleWork* work = effect->userdata;
@@ -148,10 +130,9 @@ void effParticleDisp(CameraId camId, void* param) {
 	Mtx scale;
 	Mtx local;
 	GXColor color;
-	f32 deg2rad;
-	f32 right;
+	f32 w;
+	f32 h;
 	f32 factor;
-	f32 negativeLeft;
 	s32 alpha;
 	s32 i;
 	ParticleEntry* particle;
@@ -180,9 +161,8 @@ void effParticleDisp(CameraId camId, void* param) {
 	PSMTXScale(scale, work->scale, work->scale, work->scale);
 	PSMTXConcat(trans, scale, local);
 
-	deg2rad = 0.017453292f;
-	right = 2.0f;
-	negativeLeft = -PARTICLE_F32(float_4_80421ce0);
+	w = 4.0f;
+	h = 8.0f;
 
 	i = work->particles[work->count].next;
 	while (i != work->count + 1) {
@@ -193,21 +173,21 @@ void effParticleDisp(CameraId camId, void* param) {
 		PSMTXTrans(trans, particle->position.x, particle->position.y, particle->position.z);
 		PSMTXConcat(local, trans, trans);
 		PSMTXConcat(camera->view, trans, trans);
-		PSMTXRotRad(rot, 'y', deg2rad * -camGetPtr(camId)->viewYaw);
+		PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(camId)->viewYaw);
 		PSMTXConcat(trans, rot, trans);
 		factor = (f32)((gp->retraceCount + i) % 360 * 10);
-		PSMTXRotRad(rot, 'x', deg2rad * factor);
+		PSMTXRotRad(rot, 'x', 0.017453292f * factor);
 		PSMTXConcat(trans, rot, trans);
 		GXLoadPosMtxImm(trans, GX_PNMTX0);
 		GXSetCurrentMtx(GX_PNMTX0);
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(negativeLeft * PARTICLE_F32(float_0p5_80421cec), PARTICLE_F32(float_4_80421ce0), 0.0f);
+		GXPosition3f32(-w / 2, h / 2, 0.0f);
 		GXTexCoord2f32(0.0f, 0.0f);
-		GXPosition3f32(right, PARTICLE_F32(float_4_80421ce0), 0.0f);
+		GXPosition3f32(w / 2, h / 2, 0.0f);
 		GXTexCoord2f32(1.0f, 0.0f);
-		GXPosition3f32(right, PARTICLE_F32(float_0p5_80421cec) * -PARTICLE_F32(float_8_80421ce4), 0.0f);
+		GXPosition3f32(w / 2, -h / 2, 0.0f);
 		GXTexCoord2f32(1.0f, 1.0f);
-		GXPosition3f32(negativeLeft * PARTICLE_F32(float_0p5_80421cec), PARTICLE_F32(float_0p5_80421cec) * -PARTICLE_F32(float_8_80421ce4), 0.0f);
+		GXPosition3f32(-w / 2, -h / 2, 0.0f);
 		GXTexCoord2f32(0.0f, 1.0f);
 		i = particle->next;
 	}
@@ -313,7 +293,7 @@ EffectEntry* effParticleEntry(s32 type, s32 count, s32 life, f32 x, f32 y, f32 z
 	work->alpha = 0xFF;
 	work->count = count;
 	work->particles = (ParticleEntry*)((u8*)work + entry->count * 0xB0);
-	work->field_0xAC = PARTICLE_F32(float_4_80421ce0);
+	work->field_0xAC = 4.0f;
 	{
 		ParticleWork* w2 = entry->userdata;
 
@@ -472,8 +452,8 @@ void ParticleEmit(EffectEntry* effect, ParticleEntry* particle, ParticleEmitter*
 			particle->velocity.z = vz - c1;
 			radius = particle->velocity.x * particle->velocity.x + particle->velocity.z * particle->velocity.z;
 		} while (radius > c1);
-		particle->velocity.x *= PARTICLE_F32(float_0p5_80421cec);
-		particle->velocity.z *= PARTICLE_F32(float_0p5_80421cec);
+		particle->velocity.x *= 0.5f;
+		particle->velocity.z *= 0.5f;
 		radius *= 0.25f;
 #ifdef MUST_MATCH
 		particle->velocity.y = particle_sqrtf(c1 - radius, &secondScratch);
