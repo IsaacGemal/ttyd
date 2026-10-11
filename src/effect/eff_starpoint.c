@@ -5,7 +5,6 @@
 #include "memory.h"
 #include <dolphin/mtx.h>
 #include <stdlib.h>
-#include "matching.h"
 
 typedef struct StarPointData {
     s32 type;       // 0x00
@@ -21,82 +20,68 @@ typedef struct StarPointData {
     s32 field_0x30; // 0x30
 } StarPointData;
 
-extern const f32 float_deg2rad_804209c8;
-extern const f32 float_0_804209cc;
-extern const f32 float_6p2832_804209d0;
-extern const f32 float_360_804209d4;
-extern const f32 float_0p00761_804209d8;
-extern const f32 float_0p16605_804209dc;
-extern const f32 float_1_804209e0;
-extern const f32 float_3p1416_804209e4;
-extern const f32 float_1p5708_804209e8;
-extern const f32 float_4p7124_804209ec;
-extern const f32 float_2_804209f0;
-extern const f32 float_0p03705_804209f4;
-extern const f32 float_0p4967_804209f8;
-extern const f32 float_14_804209fc;
 
-static inline f32 effStarPointSinf(f32 rad, f32 b, f32 one, f32 pi) {
-    f32 v = MATCH_F32(float_0p00761_804209d8);
+static inline f32 effStarPointSinf(f32 rad) {
+    f32 v = 0.00761f;
+    f32 b = 0.16605f;
+    f32 one = 1.0f;
 
-    if (rad <= pi) {
-        if (rad <= float_1p5708_804209e8) {
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
             f32 t = rad * rad;
             v = v * t - b;
             v = v * t + one;
             v = v * rad;
         } else {
-            f32 t = rad - float_1p5708_804209e8;
-            f32 u = float_1p5708_804209e8 - t;
+            f32 u = 1.5707964f - (rad - 1.5707964f);
             f32 s = u * u;
             v = v * s - b;
             v = v * s + one;
             v = v * u;
         }
-    } else if (rad < float_4p7124_804209ec) {
-        f32 t = rad - pi;
+    } else if (rad < 4.712389f) {
+        f32 t = rad - 3.1415927f;
         f32 u = t * t;
         v = v * u - b;
         v = v * u + one;
         v = v * t;
-        v = -v;
+        return -v;
     } else {
-        f32 t = rad - float_4p7124_804209ec;
-        f32 u = float_1p5708_804209e8 - t;
+        f32 u = 1.5707964f - (rad - 4.712389f);
         f32 s = u * u;
         v = v * s - b;
         v = v * s + one;
         v = v * u;
-        v = -v;
+        return -v;
     }
     return v;
 }
 
-static inline f32 effStarPointCosf(f32 rad, f32 b, f32 one, f32 pi) {
-    f32 v = MATCH_F32(float_0p03705_804209f4);
+static inline f32 effStarPointCosf(f32 rad) {
+    f32 v = 0.03705f;
+    f32 b = 0.4967f;
+    f32 one = 1.0f;
 
-    if (rad <= pi) {
-        if (rad <= float_1p5708_804209e8) {
+    if (rad <= 3.1415927f) {
+        if (rad <= 1.5707964f) {
             f32 t = rad * rad;
             v = v * t - b;
             v = v * t + one;
         } else {
-            f32 t = rad - float_1p5708_804209e8;
-            f32 u = float_1p5708_804209e8 - t;
+            f32 u = 1.5707964f - (rad - 1.5707964f);
             f32 s = u * u;
             v = v * s - b;
             v = v * s + one;
-            v = -v;
+            return -v;
         }
-    } else if (rad < float_4p7124_804209ec) {
-        f32 t = rad - pi;
-        f32 s = t * t;
-        v = v * s - b;
-        v = v * s + one;
-        v = -v;
+    } else if (rad < 4.712389f) {
+        f32 t = rad - 3.1415927f;
+        f32 u = t * t;
+        v = v * u - b;
+        v = v * u + one;
+        return -v;
     } else {
-        f32 t = rad - float_4p7124_804209ec;
-        f32 u = float_1p5708_804209e8 - t;
+        f32 u = 1.5707964f - (rad - 4.712389f);
         f32 s = u * u;
         v = v * s - b;
         v = v * s + one;
@@ -104,33 +89,16 @@ static inline f32 effStarPointCosf(f32 rad, f32 b, f32 one, f32 pi) {
     return v;
 }
 
-// opt_lifetimes off: the default lifetime analysis schedules the seed/temp FPRs differently
-// (0.00761 lands in f3 vs f2, rad in f0 vs f3); this recovers the target's instruction scheduling.
+// opt_lifetimes off keeps `rad` and the inlines' locals as single webs (on, the webs split and the
+// constants land in other FPRs); opt_propagation off keeps the inlines' `b`/`one` as hoisted locals
+// instead of folding them back into literal loads at each use.
 #pragma opt_lifetimes off
-// The sin/cos polynomial is written as the two static inline helpers above. Block-scoping each
-// branch's transformed-angle and square temps is load-bearing: declared at helper scope the
-// polynomial's volatile f0/f1 work registers came out swapped in all four branches, while a
-// per-branch scope reproduces the target's register for every one of them. Passing the helper's
-// first coefficient (`b`) plus `one` and `pi` as arguments places the loop-invariant constants in
-// the target's callee-saved registers; the preheader assignment order and `i = 1` before
-// `lowAlpha = 4` match the target's init order.
-// NONMATCHING (99.25%): the compiler's own int->float magic double (double_to_int_802fdbf8) and
-// the named cTwo (2.0f) hold swapped callee-saved FPRs (target magic=f26/cTwo=f31, ours
-// magic=f31/cTwo=f26). The replay model shows the whole gap is exactly this vreg swap: moving the
-// magic's sweep slot between cOne and c0 and cTwo's above cPi reproduces every target register.
-// The magic is a backend-materialised web, so a named local cannot outrank it. Rewriting the
-// conversion with the unit's manual-union idiom (win_log.c) does reference a named double, but MWCC
-// emits fsub+frsp instead of the fused fsubs the original has, and every arrangement that puts the
-// f64 local below the constants makes mwcceppc loop forever. Making the constants literals lets
-// their temps interleave with the magic by first-use order and pushes it all the way down to f28
-// (cPi/c0/c360 land above it), but cTwo then drops to f22-f26 instead of rising to f31 and the
-// exact order never co-occurs. Allocator luck; a permuter route.
+#pragma opt_propagation off
 EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     s32 lowAlpha;
     EffectEntry* entry;
     StarPointData* data;
     s32 i;
-    f32 cPi, c360, c6, c0, cTwo, cOne;
 
     entry = effEntry();
     entry->type = "StarPoint";
@@ -145,33 +113,21 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
     data->field_0x04 = 60;
     data->field_0x08 = 0;
 
-    cPi = float_3p1416_804209e4;
-    c0 = float_0_804209cc;
-    c6 = float_6p2832_804209d0;
-    c360 = float_360_804209d4;
-    cTwo = float_2_804209f0;
-    cOne = float_1_804209e0;
-
     i = 1;
     lowAlpha = 4;
     data = &data[1];
     for (; i < entry->count; i++, data++) {
-        s32 angle = rand() % 360;
-        f32 rad = (c6 * (f32)angle) / c360;
-        f32 cSin1 = float_0p16605_804209dc;
-        f32 cCos1 = float_0p4967_804209f8;
+        f32 angle = rand() % 360;
+        f32 rad;
 
-        data->position.x = c0;
-        data->position.y = c0;
-        data->position.z = c0;
-
-        data->field_0x18 = cTwo * effStarPointSinf(rad, cSin1, cOne, cPi);
-
-        // cos approximation
-        data->field_0x1C = cTwo * effStarPointCosf(rad, cCos1, cOne, cPi);
-
-        data->field_0x20 = float_14_804209fc;
-        data->field_0x24 = cTwo;
+        data->position.x = 0.0f;
+        data->position.y = 0.0f;
+        data->position.z = 0.0f;
+        rad = (6.2831855f * angle) / 360.0f;
+        data->field_0x18 = 2.0f * effStarPointSinf(rad);
+        data->field_0x1C = 2.0f * effStarPointCosf(rad);
+        data->field_0x20 = 14.0f;
+        data->field_0x24 = 2.0f;
         data->field_0x2C = 0;
         data->field_0x30 = lowAlpha;
         lowAlpha += 3;
@@ -179,7 +135,7 @@ EffectEntry* effStarPointEntry(s32 type, s32 count, f32 x, f32 y, f32 z) {
 
     return entry;
 }
-
+#pragma opt_propagation reset
 #pragma opt_lifetimes reset
 
 void effStarPointMain(EffectEntry* effect) {
@@ -210,7 +166,7 @@ void effStarPointMain(EffectEntry* effect) {
             data->position.x += data->field_0x18;
             data->position.y += data->field_0x20;
             data->position.z += data->field_0x1C;
-            if (data->field_0x20 < float_0_804209cc) {
+            if (data->field_0x20 < 0.0f) {
                 data->field_0x2C -= 2;
                 if (data->field_0x2C < 0) {
                     data->field_0x2C = 0;
@@ -233,7 +189,7 @@ void effStarPointDisp(CameraId camId, void* param) {
     s32 i;
 
     PSMTXTrans(mtx, data->position.x, data->position.y, data->position.z);
-    PSMTXRotRad(rot, 'y', float_deg2rad_804209c8 * -camGetPtr(CAMERA_3D)->viewYaw);
+    PSMTXRotRad(rot, 'y', 0.017453292f * -camGetPtr(CAMERA_3D)->viewYaw);
     PSMTXConcat(mtx, rot, mtx);
 
     data++;
@@ -246,19 +202,3 @@ void effStarPointDisp(CameraId camId, void* param) {
     }
 }
 
-// The named .sdata2 objects, defined after the code so they are emitted before the function
-// literal pool in the original's order.
-const f32 float_deg2rad_804209c8 = 0.017453292f;
-const f32 float_0_804209cc = 0.0f;
-const f32 float_6p2832_804209d0 = 6.2831855f;
-const f32 float_360_804209d4 = 360.0f;
-const f32 float_0p00761_804209d8 = 0.00761f;
-const f32 float_0p16605_804209dc = 0.16605f;
-const f32 float_1_804209e0 = 1.0f;
-const f32 float_3p1416_804209e4 = 3.1415927f;
-const f32 float_1p5708_804209e8 = 1.5707964f;
-const f32 float_4p7124_804209ec = 4.712389f;
-const f32 float_2_804209f0 = 2.0f;
-const f32 float_0p03705_804209f4 = 0.03705f;
-const f32 float_0p4967_804209f8 = 0.4967f;
-const f32 float_14_804209fc = 14.0f;
