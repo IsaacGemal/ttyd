@@ -58,21 +58,25 @@ typedef struct GaugeTiming2Work {
 static void actionCommandDisp(f32 x, f32 y);
 
 // Defining dat_80421ad8 non-const (see the .sdata2 definition at the top) stops MWCC hoisting its
-// `lwz` above the case-0 stores and fixes the case-0 schedule. Reading `autoFlag` into a `doCheck`
-// temp before zeroing it (`s32 doCheck = autoFlag; autoFlag = 0; if (doCheck)`) pins the
-// auto-command probe's `li <flag>,0` before its `beq` the way the original scheduler did. The
-// original's callee-saved allocation is ng=r30, triggered=r29, m=r28, dec=r27, autoFlag=r26; it is
-// reached by declaring `ng`, `triggered` and `m` at function scope before `dec` (their vregs
-// outrank `dec` because the allocator numbers named locals in reverse declaration order). The ng
-// loop's counter must be the function-scope `m`; the auto probe's `p` and the final SFX loop's `q`
-// stay block-scoped. Calls, constants, memory accesses and byte size 1628 all match.
-// The remaining difference is the register reuse of the block-scoped webs; the pone loop's
-// counter/string land in r28/r30 where the original has r30/r23, and the final block's ng2/ok/q land
-// in r26/r28/r29 where the original has r29/r30/r28; the post-zero autoFlag web also stays in r30
-// instead of joining autoFlag's r26.
-// NONMATCHING (99.67%): pure allocator tie-break, so the permuter's.
+// `lwz` above the case-0 stores and fixes the case-0 schedule. The original's callee-saved
+// allocation (triggered=r29, m=r28, dec=r27, autoFlag=r26) is reached by declaring `triggered` and
+// `m` at function scope before `dec`; the ng loop's counter is the function-scope `m`. The auto
+// probe writes its result to a separate `hit` flag declared in the case block (it takes over
+// autoFlag's r26 once the probe has read it).
+// GT2_SFX: the original computes each sound name once in the loop preheader as a compiler temp; a
+// MUST_MATCH `((char*)(u32)(name))` round trip makes MWCC's frontend hoist it the same way (as
+// battle_stage_object's BSO_SFX and eff_fall's FALL_SFX). A named `const char*` holds a callee-saved
+// register of its own and a plain literal is rematerialised at each call. OK_SFX's extra NUL spells
+// out the word padding of the original's string object.
+#ifdef MUST_MATCH
+#define GT2_SFX(name) ((char*)(u32)(name))
+#define OK_SFX "SFX_AC_COMMAND_OK1\0"
+#else
+#define GT2_SFX(name) (name)
+#define OK_SFX "SFX_AC_COMMAND_OK1"
+#endif
+
 s32 battleAcMain_GaugeTiming2(BattleWork* work) {
-	const char* ng;
 	s32 triggered;
 	s32 m;
 	GaugeTiming2Work* dec = (GaugeTiming2Work*)((u8*)work + 0x1F4C);
@@ -132,6 +136,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 	case 0x3E8: {
 		s32 p;
 		s32 allSet;
+		s32 hit;
 
 		triggered = 0;
 		dec->frame++;
@@ -163,13 +168,12 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 		dec->progress = 100.f * (f32)dec->field_0x08 / (f32)dec->maxFrame;
 
 		{
-			ng = "SFX_AC_COMMAND_NG1";
 			{
 				for (m = 0; m < *(s32*)&work->actionCommands.field_34[0x0C]; m++) {
 					if (dec->state[m] == 0) {
 						if (dec->progress > 6.0f + dec->value[m]) {
 							dec->state[m] = -1;
-							psndSFXOn(ng);
+							psndSFXOn(GT2_SFX("SFX_AC_COMMAND_NG1"));
 						}
 					}
 				}
@@ -178,48 +182,37 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 
 		dec->field_0x10 = 0;
 		{
-			const char* pone = "SFX_AC_PONE1";
 			for (i = 0; i < *(s32*)&work->actionCommands.field_34[0x0C]; i++) {
 				if (dec->state[i] == 0) {
 					if (__fabs(dec->progress - dec->value[i]) <= 6.0) {
 						dec->field_0x10 = 1;
 						if (dec->sound[i] == -1) {
-							dec->sound[i] = psndSFXOn(pone);
+							dec->sound[i] = psndSFXOn(GT2_SFX("SFX_AC_PONE1"));
 						}
 					}
 				}
 			}
 		}
 
-		{
-			s32 doCheck = autoFlag;
-			autoFlag = 0;
-			if (doCheck) {
-				s32 found;
-				found = 0;
-				{
-					s32 p;
-					for (p = 0; p < *(s32*)&work->actionCommands.field_34[0x0C]; p++) {
-						if (dec->state[p] == 0 && __fabs(dec->progress - dec->value[p]) <= 6.0) {
-							found = 1;
-							break;
-						}
+		hit = 0;
+		if (autoFlag) {
+			s32 found;
+			found = 0;
+			{
+				s32 p;
+				for (p = 0; p < *(s32*)&work->actionCommands.field_34[0x0C]; p++) {
+					if (dec->state[p] == 0 && __fabs(dec->progress - dec->value[p]) <= 6.0) {
+						found = 1;
+						break;
 					}
 				}
-				if (found) {
-					autoFlag = 1;
-				}
+			}
+			if (found) {
+				hit = 1;
 			}
 		}
 
-		if (triggered || autoFlag) {
-			const char* ng2 = "SFX_AC_COMMAND_NG1";
-#ifdef MUST_MATCH
-			// the original's string object is padded to the next word: the extra NUL spells the pad out
-			const char* ok = "SFX_AC_COMMAND_OK1\0";
-#else
-			const char* ok = "SFX_AC_COMMAND_OK1";
-#endif
+		if (triggered || hit) {
 			s32 done = 0;
 			{
 				s32 q;
@@ -233,15 +226,15 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 					}
 					diff = __fabs(dec->progress - dec->value[q]);
 					if (diff <= 6.0) {
-						if (autoFlag == 0 && dec->flag[q] != 0) {
+						if (hit == 0 && dec->flag[q] != 0) {
 							dec->state[q] = -1;
-							psndSFXOn(ng2);
+							psndSFXOn(GT2_SFX("SFX_AC_COMMAND_NG1"));
 							done = 1;
 						}
 						else {
 							dec->state[q] = 1;
 							work->actionCommands.outputParams[0]++;
-							psndSFXOn(ok);
+							psndSFXOn(GT2_SFX(OK_SFX));
 							done = 1;
 						}
 					}
@@ -250,7 +243,7 @@ s32 battleAcMain_GaugeTiming2(BattleWork* work) {
 							dec->flag[q] = 1;
 							if (q == *(s32*)&work->actionCommands.field_34[0x0C] - 1) {
 								dec->state[q] = -1;
-								psndSFXOn(ng2);
+								psndSFXOn(GT2_SFX("SFX_AC_COMMAND_NG1"));
 								done = 1;
 							}
 						}
@@ -357,10 +350,9 @@ void battleAcDelete_GaugeTiming2(BattleWork* work) {
 #endif
 
 // don't_inline: the original keeps actionCommandDisp as its own local function
-// Written from scratch; byte size 1652 matches. All callee-saved register colouring now matches.
-// The only remaining diff is one scheduler slot near the top: the original issues the `lfs` of
-// -288.0 before `lhz dec->total` and computes `f31` before `subic`, mine the reverse.
-// NONMATCHING (99.21%): one top-of-function instruction-scheduling slot.
+// `t16` spells out `-288.0f + x` again instead of reusing `f31`: MWCC's CSE then turns it into a
+// copy of the first sum, which moves the `lfs` of -288.0 ahead of `lhz dec->total` in the first
+// block the way the original scheduled it.
 static void actionCommandDisp(f32 x, f32 y) {
 	BattleWork* work = _battleWorkPointer;
 	BattleActions* ac = &work->actionCommands;
@@ -422,7 +414,7 @@ static void actionCommandDisp(f32 x, f32 y) {
 	}
 
 	{
-		f32 t16 = 16.0f + f31;
+		f32 t16 = 16.0f + (-288.0f + x);
 		GXColor color = *(GXColor*)&dat_80421ae8;
 		((void (*)(f32, f32, f32, f32, f32, s32, GXColor*, s32))btlDispTexPlane)(
 		    t16 + (f32)count, f27, 0.0f, -1.0f, 1.0f, 0x43, &color, 0);
