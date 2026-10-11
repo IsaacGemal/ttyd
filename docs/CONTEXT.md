@@ -5908,6 +5908,19 @@ subtitle shares `msg`; splitting it into `msg2` fixes that but swaps title/`msg2
 a sweep position after the `field_38` load. Next: create the case 2/3 subtitle value inside that block. Tried:
 pragmas (94-96), `msg = NULL` (adds an `li`), several pointer splits, two more 45-minute mwsearch runs.
 
+**Tally (all 22 runs done by 01:35).** 16 units linked (parse, eff_particle, eff_kemuri5_n64, eff_timestamp_n64,
+battle_camera, strtold, eff_stardust2_n64, eff_starpoint, evt_uranaisi, sys, tou_02, ac_gauge_timing2,
+eff_damage_star, battle_seq, evt_badgeshop, evt_yuunpc), 3 partial (msgAnalize 98.16, effPokopiThunderDisp 99.85,
+evt_yuuranking_disp_func 99.89 in both RELs), 3 unchanged with diagnoses (nameent, envdrv, evt_eff). Code linked
+69.77% -> 73.03% over the night (with swarm batch 4), data linked 94.00% -> 94.76%, functions 9522 -> 9551; weekly
+usage 35% -> ~47%. Whether the closing lever came from the agent's ledger-read list: yes 6, partial 13, no 3; of the
+16 links, yes 4, partial 11, no 1. Several agents found the fix before finishing the read (strtold, kemuri5,
+stardust2), so the list mostly helped as a starting point plus a checklist, with the last step usually from a rasim
+what-if or a compile sweep. Recurring levers: all-literal floats in first-use order (particle, stardust2, starpoint,
+sys, damage_star), `/ 2.0f`, per-index loops instead of hand-stepped counters (timestamp, pokopi, badgeshop), the
+`((char*)(u32)"...")` sound-name round trip (tou_02, gauge_timing2), inlined calls to existing functions instead of
+hand copies (yuunpc), and rasim/compile sweeps to settle declaration order.
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
