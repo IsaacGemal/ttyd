@@ -5885,6 +5885,18 @@ the compiler only uses a compiler-created variable as the copy source, so retail
 plain named local. Loop 2 inside an inline (needs `inline_max_size(1000)`) fixes the zero but renumbers everything
 (122-152 diffs).
 
+**evt_yuunpc links: yuunpc_pose_minigame4_main 98.86 -> 100 (on1-yuunpc; lever from the list: partial; 65 min).**
+The cause was 11 map lookups written as `(s16)`-cast ternaries: same code, but extra copy nodes in the allocator's
+graph pushed the long-lived registers around. Written `oob = cond; v = oob ? -500 : yuunpc_wp->map[...];`, the
+declaration order `i, pose, entry, r28, r27, r26, data` then gives every register (at least 4 lookups stay
+ternaries, or `goalincheck` exceeds its inline size limit). The three hand-copied arrive checks call
+`goalincheck()` (inlined to the original's float code); literals for `float_1000`/`float_300` and `/ 2.0f` for
+`* 0.5f`; four `goto done` became `break`. Link: the 12 hand-written `jumptable_*` copies went;
+`ext_yuunpc_minigame4_init_sub` calls `yuunpc_maphit_init` and `errper_set_rtn` instead of repeating their bodies
+(the repeat duplicated a .rodata string and shifted everything after it by 4 bytes); `errper_set_rtn`'s cases
+reordered 0/2/4, 1/3/5, -1/6 so both jump tables point at retail's block order. Lesson: where the original has
+identical repeated code, look for an existing function call that gets inlined before hand-matching the copy.
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
