@@ -6070,6 +6070,15 @@ the MUST_MATCH volatile and u32 word-copy hacks went. Left: first-probe FPR choi
 `radius * s` unfused but its temps outrank `s` (an inline probe helper unfuses too but doubles the stack slots and
 folds the angle to a .rodata double).
 
+**eff_pokopi_thunder_n64 links: effPokopiThunderDisp 99.85 -> 100 (on2-pokopi2, second run; lever from the list:
+partial; 442k, 6 min).** The first run (#713) was right that the zero's copy source must be a compiler variable, and
+wrong that only an inline gives one: reusing `i` for both the point loop and the vertex loop makes the vertex loop's
+`i = 0` a second live range, which MWCC numbers like a compiler variable, so the four strength-reduced counters copy
+`i`'s zero as retail does (99.92). A sweep of `timer` over all 31 declaration slots found one that matches: `timer`
+first, then `i`. The pool: both MUST_MATCH `defer_codegen off` helpers and the named string/double/Vec objects went;
+literals plus a zero-Vec compound literal in a static inline give both pools byte-identical. Told to list what the
+old framing assumed and question it, the agent found the wrong step in six minutes.
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
