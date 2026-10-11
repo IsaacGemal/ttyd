@@ -3189,9 +3189,9 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (99.91%): `audience_kind[type]` (no `(u8)` cast) is required so MWCC uses the
-// parameter directly, and `m * 0x19 - 0xeb + r` (not `m * 0x19 + r - 0xeb`) is required so `r`
-// lands in r6. The only remaining diff is one commuted `fadds` in the second branch.
+// `audience_kind[type]` (no `(u8)` cast) is required so MWCC uses the parameter directly, and
+// `m * 0x19 - 0xeb + r` (not `m * 0x19 + r - 0xeb`) so `r` lands in r6. In the second branch the
+// draw of `rand()` must be written inline in the expression so the fadds keeps the original order.
 #pragma dont_inline on
 BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 	BattleAudienceMember* member;
@@ -3227,9 +3227,8 @@ BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 			return FALSE;
 		}
 		member->flags = 0x85;
-		r = rand() * 10 / 0x7fff;
 		m = index % 20;
-		f = float_12p5_8041e688 + (f32)(m * 0x19 - 0xe6) + (f32)r - float_5_8041e62c;
+		f = float_12p5_8041e688 + (f32)(m * 0x19 - 0xe6) + (f32)(rand() * 10 / 0x7fff) - float_5_8041e62c;
 		member->position.x = f;
 		member->mHomePosition.x = f;
 		BattleAudience_Entry_Sub(index, type, status);
