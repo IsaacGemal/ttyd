@@ -141,12 +141,27 @@ static DekaWork* get_ptr(void);
 typedef struct { s32 v[11]; } DekaTableInt11;
 typedef struct { f32 v[6]; } DekaTableF32x6;
 // .rodata in retail order.
-const Vec vec3_803004f8[3] = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+#ifdef MUST_MATCH
+// Non-const so yuka_init's loop loads stay in the inner loop; the section keeps them in .rodata.
+__declspec(section ".rodata") Vec vec3_803004f8 = { 0, 0, 0 };
+__declspec(section ".rodata") Vec vec3_80300504 = { 0, 0, 0 };
+__declspec(section ".rodata") Vec vec3_80300510 = { 0, 0, 0 };
+#else
+const Vec vec3_803004f8 = { 0, 0, 0 };
+const Vec vec3_80300504 = { 0, 0, 0 };
+const Vec vec3_80300510 = { 0, 0, 0 };
+#endif
 __declspec(section ".rodata") Vec vec3_8030051c[1] = { { 0, 0, 0 } };
 __declspec(section ".rodata") Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
 const Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
+#ifdef MUST_MATCH
+// Non-const so MWCC's scheduler keeps main_star's named loads in place; the section keeps them in .rodata.
+__declspec(section ".rodata") Vec vec3_80300540 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_8030054c = { 0.0f, 0.0f, 0.0f };
+#else
 const Vec vec3_80300540 = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_8030054c = { 0.0f, 0.0f, 0.0f };
+#endif
 const DekaTableInt11 dat_80300558 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
 const DekaTableInt11 dat_80300584 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
 const DekaTableF32x6 dat_803005b0 = { { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f } };
@@ -273,28 +288,21 @@ s32 main_deka(EventEntry* event, s32 arg) {
 // layout (86.59 -> 98.18).
 // NONMATCHING (98.18%): only that unpolled magic constant differs.
 static void yuka_init(void) {
-#ifdef MUST_MATCH
-    const u8* base = (const u8*)&vec3_803004f8;
-#endif
+    f32 x;
     DekaWork* p = get_ptr();
-#ifdef MUST_MATCH
-    MapObject* obj = mapGetMapObj((const char*)(base + 0x1B8));
-#else
-    MapObject* obj = mapGetMapObj("stg_b_yuka");
-#endif
     DekaYukaMesh* mesh;
-    s32 i, j;
+    MapObject* obj = mapGetMapObj("stg_b_yuka");
+    f32 z;
+    s32 j, i;
+    s32 texW;
 
-#ifdef MUST_MATCH
-    mapGrpFlagOn((const char*)(base + 0x1B8), 0x400001);
-#else
     mapGrpFlagOn("stg_b_yuka", 0x400001);
-#endif
 
     PSMTXMultVec(obj->modelWorldMtx, &obj->joints->bboxMin, &p->plane0);
     PSMTXMultVec(obj->modelWorldMtx, &obj->joints->bboxMax, &p->plane1);
 
-    p->width = p->texWidth = (s32)(p->plane1.x - p->plane0.x);
+    texW = (s32)(p->plane1.x - p->plane0.x);
+    p->width = p->texWidth = texW;
     p->height = p->texHeight = (s32)(p->plane1.z - p->plane0.z);
 
     p->texWidth += p->texWidth & 1;
@@ -303,7 +311,7 @@ static void yuka_init(void) {
     if (p->texWidth > 0x260) {
         p->texWidth = 0x260;
     }
-    if (p->texHeight > 0x1E0) {
+    if (0x1E0 < p->texHeight) {
         p->texHeight = 0x1E0;
     }
 
@@ -315,38 +323,31 @@ static void yuka_init(void) {
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 0x81; j++) {
             Vec v, v2;
-            f32 x = p->plane0.x + (f32)p->width * float_0p0078125_80421eac * (f32)j;
-            f32 z = p->plane0.z + (f32)p->height * (f32)i;
+            f32 tmp;
+            f32 fw = (f32)p->width;
+            f32 wc = fw * float_0p0078125_80421eac;
+            x = p->plane0.x + wc * (f32)j;
 
-#ifdef MUST_MATCH
-            v = *(Vec*)(base + 0x00);
+            tmp = (f32)p->height;
+            z = p->plane0.z + tmp * (f32)i;
+
+            v = vec3_803004f8;
             v.x = x;
             v.z = z;
             mesh->disp[i][j] = v;
-            v2 = *(Vec*)(base + 0x0C);
+            v2 = vec3_80300504;
             v2.x = x;
             v2.z = z;
             mesh->pos[i][j] = v2;
-            mesh->normal[i][j] = *(Vec*)(base + 0x18);
-#else
-            v = vec3_803004f8[0];
-            v.x = x;
-            v.z = z;
-            mesh->disp[i][j] = v;
-            v2 = vec3_803004f8[1];
-            v2.x = x;
-            v2.z = z;
-            mesh->pos[i][j] = v2;
-            mesh->normal[i][j] = vec3_803004f8[2];
-#endif
-            mesh->texU[i][j] = float_0p0078125_80421eac * (f32)j;
+            mesh->normal[i][j] = vec3_80300510;
+            tmp = (f32)j;
+            mesh->texU[i][j] = float_0p0078125_80421eac * tmp;
             mesh->texV[i][j] = (f32)i;
         }
     }
 
     dispEntry(CAMERA_SHADOW, float_0_80421e8c, 0, (DispCallback)yuka_capture, NULL);
 }
-
 // .text:0x2664 | 0x80245664 | size: 0x38C
 static void yuka_main(void) {
     DekaWork* p = get_ptr();
@@ -713,18 +714,13 @@ void main_timing(s32 idx) {
 
 #pragma dont_inline on
 // .text:0x1640 | 0x80244638 | size: 0x89C
-// The algorithm and nearly all instructions match. The rest is the unit's incomplete
-// .rodata pool: the original resolves its int->float magic constant
-// (double_to_int_80300630) as vec3_803004f8+0x138, while ours must materialise an
-// anonymous @NNN constant with its own lis; that extra base register also shifts a few
-// GPRs around it (state 1, and the state-11 camera-shake / yukaUnk / velocity block).
-// Same root cause as main_base and yuka_init. A few register/scheduling diffs remain in
-// the state-10 setup.
-// NONMATCHING (96.59%): the anonymous int->float magic and its register fallout.
+// The int->float magic now resolves at vec3_803004f8+0x138 through the same base
+// register as the named reads, so the extra base copy is gone. The remaining diff is
+// the state-11 launch velocity: the original keeps starTarget.y in f2 and the 0.5
+// factor in f1, ours the other way, plus two scheduling ties (the state-10 `li` order
+// and the yukaUnk float_4 load).
+// NONMATCHING (98.15%): the velocity FPR f1/f2 swap and two scheduling ties.
 static void main_star(void) {
-#ifdef MUST_MATCH
-    const u8* base = (const u8*)&vec3_803004f8;
-#endif
     DekaWork* p = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
     s32 audience = BattleAudience_GetAudienceNum();
@@ -741,13 +737,8 @@ static void main_star(void) {
         p->starTarget = p->starPos;
         p->starTarget.y += float_50_80421ebc;
         p->starTarget.z += float_neg1_80421e94;
-#ifdef MUST_MATCH
-        p->starScale = *(Vec*)(base + 0x48);
-        p->starRot = *(Vec*)(base + 0x54);
-#else
         p->starScale = vec3_80300540;
         p->starRot = vec3_8030054c;
-#endif
         /* fallthrough */
     case 2:
         p->starTimer++;
@@ -814,11 +805,7 @@ static void main_star(void) {
     case 7: {
         DekaTableInt11 tbl;
         f32 s;
-#ifdef MUST_MATCH
-        tbl = *(const DekaTableInt11*)(base + 0x60);
-#else
         tbl = dat_80300558;
-#endif
         p->starTimer++;
         s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starUnk44, p->starUnk48);
         p->starScale.z = s;
@@ -841,11 +828,7 @@ static void main_star(void) {
     case 9: {
         DekaTableInt11 tbl;
         f32 s;
-#ifdef MUST_MATCH
-        tbl = *(const DekaTableInt11*)(base + 0x8c);
-#else
         tbl = dat_80300584;
-#endif
         p->starTimer++;
         s = intplGetValue(4, tbl.v[p->starTimer / 4], 5, p->starUnk44, p->starUnk48);
         p->starScale.z = s;
@@ -874,13 +857,8 @@ static void main_star(void) {
         p->starPos.y = p->starPos.y + p->starVel;
         p->starVel = p->starVel + float_neg0p5_80421ecc;
         if (p->starPos.y < p->starTarget.y) {
-#ifdef MUST_MATCH
-            tblA = *(const DekaTableF32x6*)(base + 0xb8);
-            tblB = *(const DekaTableF32x6*)(base + 0xd0);
-#else
             tblA = dat_803005b0;
             tblB = dat_803005c8;
-#endif
             p->starCounter++;
 #ifdef MUST_MATCH
             btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], float_0_80421e8c);
@@ -918,9 +896,18 @@ static void main_star(void) {
             } else {
                 f32 x = float_4_80421e64 * (f32)p->starCounter + float_20_80421e74;
                 f32 half = float_0p5_80421e54;
+#ifdef MUST_MATCH
+                // Match shape: naming the half*x product keeps MWCC's multiply order as the
+                // original's; the natural form below is the same arithmetic.
+                f32 hx = half * x;
+#endif
 
                 p->starPos.y = p->starTarget.y;
+#ifdef MUST_MATCH
+                p->starVel = hx * x / (float_2_80421e7c * x);
+#else
                 p->starVel = half * x * x / (float_2_80421e7c * x);
+#endif
             }
         }
         break;
