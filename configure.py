@@ -709,7 +709,7 @@ config.libs = [
             Object(Matching, "event/evt_env.c"),
             Object(Matching, "event/evt_telop.c"),
             Object(Matching, "event/evt_movefloor.c"),
-            Object(NonMatching, "event/evt_badgeshop.c"),
+            Object(Matching, "event/evt_badgeshop.c"),
             Object(Matching, "event/evt_johoya.c"),
             Object(Matching, "event/evt_uranaisi.c"),
             Object(Matching, "event/evt_window.c"),

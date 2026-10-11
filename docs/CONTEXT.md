@@ -5863,6 +5863,17 @@ evt_eff64 (worse than its level-1 workaround), mwsearch 40 min / 25,009 compiles
 carry the flag (0x10) that makes the remover treat a use as a copy; compiler addresses in the agent's levers.md
 (worktree ~/ttyd-n4-on1-evteff).
 
+**evt_badgeshop links: badgeShop_set 99.84, bargainGeneration 99.68, bottakuruGeneration 98.00 -> 100 (on1-badgeshop;
+lever from the list: partial; 260k, 40 min).** `badgeShop_set`/`_get` return `s16` (johoya_set precedent), which drops
+set's `+ word - word` hack and keeps bottakuru's `count` a real named variable (fixing an r21/r23 swap). bottakuru
+became plain indexed code: the first loop on `i` with a `sizeof` bound setting `base = &table[i]` (base declared
+`= table`, which gives it an earlier live range that outranks the fill loop's `i`), the fill as
+`table[n][1] = irand(100); table[n++][0] = i + KEY_ITEM_MIN;` with `u32 n`, the last loop
+`for (i = 0; i < 4; i++, base++)`; the MUST_MATCH `(s32)dobreak` cast and four hand-stepped variables went.
+bargainGeneration: zeroing as one chain ending `= i = 0` then `for (; i < 99; i++)`, `s16 badge`, rasim's declaration
+order. evt_win case 11 now takes `s32 got` (stays 19/19). Tried and failed: a row pointer `q = &table[n]` (96-97.6),
+pointer-stepping the first loop (74-76, stops unrolling), `base[i]` (99.84), no `= table` initialiser (99.62).
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.

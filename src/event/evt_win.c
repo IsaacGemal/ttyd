@@ -1069,8 +1069,8 @@ void evt_unitwin_disp_func(CameraId cameraId, void* param) {
 				item = pouchHaveBadge(i);
 				break;
 			case 11: {
-				s16 got = badgeShop_get(bdsw->bargain_table, (s16)(i + 0xF0));
-				if ((s32)got - badgeShop_ThrowCheck(i + 0xF0) > 0) {
+				s32 got = badgeShop_get(bdsw->bargain_table, (s16)(i + 0xF0));
+				if (got - badgeShop_ThrowCheck(i + 0xF0) > 0) {
 					item = i + 0xF0;
 				} else {
 					item = 0;
