@@ -1,6 +1,7 @@
 // dont_inline: retail calls the file's small helpers (BattleWaitAllActiveEvtEnd and others) with `bl` from
 // btlseqMove/BattleSequenceManager; without it MWCC inlines them.
 #pragma dont_inline on
+#pragma pool_data on // the original addresses its .rodata and .data through one base register
 #include "battle/battle_seq.h"
 #include "battle/battle.h"
 #include "battle/battle_actrecord.h"
@@ -24,7 +25,7 @@
 #include "party.h"
 #include "pmario_sound.h"
 #include "system.h"
-#include <math.h>
+#include "math_ext.h"
 #include <stdio.h>
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
@@ -34,14 +35,32 @@
 #include "driver/dispdrv.h"
 #include "eff/eff_recovery.h"
 #include "eff/n64/eff_freeze_n64.h"
+#include "battle/battle_event_cmd.h"
+#include "evt/evt_cmd.h"
 
-// First object of this unit's .data (the float pair that used to end the previous unit's .data).
+// math.h's fabs is the __fabs intrinsic (math_ext.h instead of math.h: math.h's sqrt inline emits two
+// doubles into .rodata), as in system.c.
+#ifdef __MWERKS__
+#define fabs(x) __fabs(x)
+#endif
+
+// This unit's .data: the float pair that opens it, the header pairs (local `$` statics in the original, so
+// static here) and then the rule-message tables. Nothing names the pairs, so force_active keeps them.
+#pragma force_active on
 __declspec(section ".data") f32 lbl_80360FE0[2] = { -1.0f, 1.0f };
+__declspec(section ".data") static u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_80360FF0[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") u32 lbl_80361000[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") u32 lbl_80361010[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+#pragma force_active reset
 
 extern BattleWork* _battleWorkPointer;
 
-// Weapon stat table for ITEM_LUCKY_START; _set_effect_luck copies it and btlseqInit uses it as the
-// .rodata base for its anim-name strings in the original (str_802EF5FC/604/610 at +0x3AC/3B4/3C0).
+// Weapon stat table for ITEM_LUCKY_START; _set_effect_luck copies it. It is the first .rodata object, so
+// pool_data reaches the unit's strings from it.
 const u8 N_weapon_lucky_start[0xC0] = {
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 	0x64,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -57,24 +76,69 @@ const u8 N_weapon_lucky_start[0xC0] = {
 	0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x64,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 
-f32 float_0_8041c280 = 0.0f;
-f32 float_1_8041c284 = 1.0f;
-f32 float_110_8041c28c = 110.0f;
-f32 float_90_8041c290 = 90.0f;
-f32 float_100_8041c294 = 100.0f;
-const char str_8041C27C[] = "A1";
-const char str_8041C288[] = "A2";
-f32 float_1000_8041c298 = 1000.0f;
-f32 float_2_8041c29c = 2.0f;
-f32 float_10_8041c2a0 = 10.0f;
-f32 float_94_8041c2a4 = 94.0f;
-f32 float_120_8041c2a8 = 120.0f;
-f32 float_900_8041c2ac = 900.0f;
-f32 float_45_8041c2b0 = 45.0f;
-f32 float_60_8041c2b4 = 60.0f;
-f32 float_0p75_8041c2b8 = 0.75f;
-const char str_802EF61C[] = "SFX_BTL_DANGER1";
-const char str_802EF62C[] = "SFX_BTL_PINCH1";
+const GXColor dat_8041c268 = { 0x00, 0x00, 0x00, 0xFF };
+const GXColor dat_8041c26c = { 0xFF, 0xFF, 0xFF, 0xFF };
+
+const char* _rule_msg_table_2bu[68] = {
+    "a", "stg3_tou_cp_001", "a", "stg3_tou_cp_002",
+    "a", "stg3_tou_cp_004", "stg3_tou_cp_008", "a",
+    "a", "a", "a", "a",
+    "a", "a", "a", "a",
+    "a", "a", "stg3_tou_cp_000", "a",
+    "a", "a", "a", "a",
+    "a", "a", "stg3_tou_cp_005", "a",
+    "a", "a", "a", "a",
+    "stg3_tou_cp_006", "a", "a", "a",
+    "a", "a", "a", "a",
+    "a", "a", "a", "stg3_tou_cp_009",
+    "a", "a", "a", "a",
+    "stg3_tou_cp_003", "a", "a", "a",
+    "a", "a", "a", "a",
+    "a", "a", "a", "stg3_tou_cp_007",
+    "a", "a", "a", "a",
+    "a", "a", "a", "a",
+};
+
+const char* _rule_msg_table_1bu[68] = {
+    "test", "stg3_tou_cp_011", "a", "stg3_tou_cp_012",
+    "a", "stg3_tou_cp_014", "stg3_tou_cp_019", "a",
+    "a", "a", "a", "stg3_tou_cp_020",
+    "a", "a", "a", "a",
+    "a", "a", "stg3_tou_cp_010", "a",
+    "stg3_tou_cp_018", "a", "a", "a",
+    "a", "a", "stg3_tou_cp_015", "a",
+    "a", "a", "a", "a",
+    "stg3_tou_cp_016", "a", "a", "a",
+    "a", "a", "a", "a",
+    "a", "a", "a", "stg3_tou_cp_021",
+    "a", "a", "a", "a",
+    "stg3_tou_cp_013", "a", "a", "a",
+    "a", "a", "a", "a",
+    "a", "a", "a", "stg3_tou_cp_017",
+    "a", "a", "a", "stg3_tou_cp_024",
+    "stg3_tou_cp_023", "stg3_tou_cp_022", "a", "a",
+};
+
+const char* _rule_msg_table_after[68] = {
+    "a", "stg3_tou_cp_041", "a", "stg3_tou_cp_042",
+    "a", "stg3_tou_cp_044", "stg3_tou_cp_049", "a",
+    "a", "a", "a", "stg3_tou_cp_050",
+    "a", "a", "a", "a",
+    "a", "a", "stg3_tou_cp_040", "a",
+    "stg3_tou_cp_048", "a", "a", "a",
+    "a", "a", "stg3_tou_cp_045", "a",
+    "a", "a", "a", "a",
+    "stg3_tou_cp_046", "a", "a", "a",
+    "a", "a", "a", "a",
+    "a", "a", "a", "stg3_tou_cp_051",
+    "a", "a", "a", "a",
+    "stg3_tou_cp_043", "a", "a", "a",
+    "a", "a", "a", "a",
+    "a", "a", "a", "stg3_tou_cp_047",
+    "a", "a", "a", "stg3_tou_cp_054",
+    "stg3_tou_cp_053", "stg3_tou_cp_052", "a", "a",
+};
+
 
 extern BattleWeapon marioDefaultWeapon_Jump;
 extern BattleWeapon marioWeapon_KururinJump;
@@ -83,17 +147,26 @@ extern BattleWeapon marioDefaultWeapon_FirstAttackKaitenHammer;
 extern BattleWeapon marioDefaultWeapon_FirstAttackUltraHammer;
 extern BattleWeapon partyWeapon_NokotarouFirstAttack;
 extern BattleWeapon partyWeapon_SandersFirstAttack;
-extern GXColor dat_8041c268;
-extern const char str_802EF5DC[];
-extern __declspec(section ".sdata") u32 nanika_luck_event[];
-extern __declspec(section ".sdata") u32 _default_haikei_set_entry_event[];
-extern const char str_802EF5C8[];
-extern GXColor dat_8041c26c;
-extern f32 lbl_80360FE0[];
 typedef struct PhaseEvtEntry {
 	s32 unitIndex; //0x0
 	s32 value;     //0x4
 } PhaseEvtEntry;
+
+// clang-format off
+__declspec(section ".sdata") EVT_BEGIN(nanika_luck_event)
+    BEGIN_SIBLING_EVENT_GET_ID(LW(15))
+        WAIT_FRAMES(60)
+    END_SIBLING_EVENT
+    CALL(_set_effect_luck)
+    CALL(btlevtcmd_WaitEventEnd, LW(15))
+    RETURN
+EVT_END()
+
+__declspec(section ".sdata") EVT_BEGIN(_default_haikei_set_entry_event)
+    CALL(_set_haikei_entry_scale)
+    RETURN
+EVT_END()
+// clang-format on
 
 void BattleSequenceManager(void) { //1:1
 	BattleWork* wp = _battleWorkPointer;
@@ -155,7 +228,7 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) {
 		if (wp->alertTick <= 0) {
 			wp->alertTick = 60;
 			if (wp->commandMenu.field_4 & 1) {
-				psndSFXOn(str_802EF61C);
+				psndSFXOn("SFX_BTL_DANGER1");
 			}
 		}
 	}
@@ -184,7 +257,7 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) {
 			if (wp->alertTick <= 0) {
 				wp->alertTick = 60;
 				if (wp->commandMenu.field_4 & 1) {
-					psndSFXOn(str_802EF62C);
+					psndSFXOn("SFX_BTL_PINCH1");
 				}
 			}
 		}
@@ -199,7 +272,6 @@ void BattleCheckAllPinchStatus(BattleWork* wp, BOOL a2) {
 }
 
 void btlseqInit(BattleWork* wp) {
-	const char* base = (const char*)N_weapon_lucky_start;
 	MarioWork* mario;
 	PartyEntry* party;
 
@@ -225,9 +297,9 @@ void btlseqInit(BattleWork* wp) {
 			break;
 
 		case 0x1000003:
-			if (animEffectAsync((char*)base + 0x3ac, 1) &&
-				animEffectAsync((char*)base + 0x3b4, 1) &&
-				animEffectAsync((char*)base + 0x3c0, 1) &&
+			if (animEffectAsync("p_b_st", 1) &&
+				animEffectAsync("p_jyabara", 1) &&
+				animEffectAsync("p_kaiten_h", 1) &&
 				effNiceAsync(1))
 			{
 				BattleSetSeq(wp, SEQ_INIT, 0x1000004);
@@ -395,7 +467,7 @@ void btlseqFirstAct(BattleWork* wp) {
 			break;
 		}
 		fadeEntry(0x17, 0xC8, dat_8041c268);
-		wp->field_19060 = psndSFXOn(str_802EF5DC);
+		wp->field_19060 = psndSFXOn("SFX_OFF_BTL_START_CURTAIN_UP1");
 		BattleSetSeq(wp, 2, 0x2000002);
 		/* fallthrough */
 	case 0x2000002:
@@ -591,12 +663,12 @@ s32 _set_effect_luck(void) {
 	BattleWeapon* weaponPtr = (0, &weapon);
 	f32* pz = (0, &z);
 	f32* py = (0, &y);
-	const char* sfxName = (0, str_802EF5C8);
+	const char* sfxName = (0, "SFX_SYSTEM_LUCKY1");
 #else
 	BattleWeapon* weaponPtr = &weapon;
 	f32* pz = &z;
 	f32* py = &y;
-	const char* sfxName = str_802EF5C8;
+	const char* sfxName = "SFX_SYSTEM_LUCKY1";
 #endif
 	BattleUnit* unit;
 	BattleUnitPart* part;
@@ -652,8 +724,8 @@ s32 _set_effect_luck(void) {
 		BattleSetStatusDamageFromWeapon(BattleGetSystemPtr(wp), unit, part, weaponPtr, 0x100);
 		BtlUnit_GetPos(unit, &x, py, pz);
 		psndSFXOn(sfxName);
-		eff = effNiceEntry(6, x - float_45_8041c2b0, float_60_8041c2b4 + y, z);
-		((NiceEffectWork*)eff->userdata)->field_0x1C = float_0p75_8041c2b8;
+		eff = effNiceEntry(6, x - 45.0f, 60.0f + y, z);
+		((NiceEffectWork*)eff->userdata)->field_0x1C = 0.75f;
 	}
 	return 2;
 }
@@ -699,7 +771,7 @@ void btlseqTurn(BattleWork* wp) {
 			if (*(s32*)wp->field_EFC <= 0 || BattlePadCheckTrigger(0x300)) {
 				BattleIncSeq(wp, SEQ_TURN);
 			} else {
-				dispEntry(CAMERA_2D, float_900_8041c2ac, 1, (DispCallback)_rule_disp, NULL);
+				dispEntry(CAMERA_2D, 900.0f, 1, (DispCallback)_rule_disp, NULL);
 			}
 			break;
 
@@ -772,7 +844,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -799,7 +871,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -827,7 +899,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -855,7 +927,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -883,7 +955,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -911,7 +983,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -939,7 +1011,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -961,7 +1033,7 @@ void btlseqTurn(BattleWork* wp) {
 			f32 x;
 			f32* pz = (0, &z);
 			f32* py = (0, &y);
-			const char* sfx = (0, str_802EF5AC);
+			const char* sfx = (0, "SFX_CONDITION_BREAK_ICE1");
 #define BT_X x
 #define BT_Y y
 #define BT_Z z
@@ -970,7 +1042,7 @@ void btlseqTurn(BattleWork* wp) {
 			Vec pos;
 			f32* pz = &pos.z;
 			f32* py = &pos.y;
-			const char* sfx = str_802EF5AC;
+			const char* sfx = "SFX_CONDITION_BREAK_ICE1";
 #define BT_X pos.x
 #define BT_Y pos.y
 #define BT_Z pos.z
@@ -984,7 +1056,7 @@ void btlseqTurn(BattleWork* wp) {
 					}
 					BtlUnit_GetPos(unit, &BT_X, py, pz);
 					BT_Y += (f32)BtlUnit_GetHeight(unit);
-					effFreezeN64Entry(0, 1, BT_X, BT_Y, BT_Z, float_1_8041c284);
+					effFreezeN64Entry(0, 1, BT_X, BT_Y, BT_Z, 1.0f);
 					psndSFXOn_3D(sfx, BT_POS);
 					handled = TRUE;
 				}
@@ -1020,7 +1092,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1048,7 +1120,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1076,7 +1148,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1104,7 +1176,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1132,7 +1204,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1160,7 +1232,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1188,7 +1260,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1216,7 +1288,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1246,7 +1318,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1276,7 +1348,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1306,7 +1378,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1336,7 +1408,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1368,7 +1440,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1398,7 +1470,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1428,7 +1500,7 @@ void btlseqTurn(BattleWork* wp) {
 				}
 			}
 			if (recovered) {
-				psndSFXOn(str_802EF598);
+				psndSFXOn("SFX_REST_CONDITION1");
 			}
 			if (!handled) {
 				BattleIncSeq(wp, SEQ_TURN);
@@ -1789,59 +1861,42 @@ void btlseqTurn(BattleWork* wp) {
 	}
 }
 
-// The three rule-message pointer tables are the 0x110-byte arrays the original addresses as
-// lbl_80360FE0+0x40 (2bu), +0x150 (1bu) and +0x260 (after); one base register is shared.
-// The pooled int->float double is a local @770 here instead of the original's shared
-// double_to_int_802ef590 because this file's other int->float users are not written yet (MWCC then
-// pools a local constant), and it lands at a different .rodata offset because the rule-message
-// strings are also not in the file.
-
-// `#pragma opt_propagation off` is required: with propagation on, MWCC folds each branch's
-// `tbl = (const char**)(base + 0x150); tbl[i]` into `add base,i*4; lwz 0x150(base)`, where the
-// original keeps the table address in a register (`addi base,off; lwzx base,i*4`).
-#pragma opt_propagation off
-
-// 100%: the local @NNN int->float double is a relocation name only (the .rodata value and its
-// offset are the original's double_to_int_802ef590; cf. battle_attack_audience.c's
-// _get_item_announce_disp). Using _battleWorkPointer->fbatInfo directly, rather than a wp temp,
-// keeps it and lbl_80360FE0 in the original's r5/r6 prologue registers.
+// The centre `cx` and the text line `y` are locals in the original: written as literals, MWCC folds
+// `0.0f - w` into fneg and `(s32)120.0f` into a constant, where the original loads both at their use.
+// Using _battleWorkPointer->fbatInfo directly, rather than a wp temp, gives the original's prologue order.
 void _rule_disp(void) {
-	u8* base = (u8*)lbl_80360FE0;
-	const char** tbl;
 	FieldBattleInfo* info = _battleWorkPointer->fbatInfo;
 	GXColor color;
 	u16 lines;
 	u16 width;
 	f32 x;
+	f32 cx = 0.0f;
+	f32 y = 120.0f;
 	char buf[0x100];
 
 	if (evtGetValue(NULL, 0xF5DE0180) < 0xAC) {
 		if (evtGetValue(NULL, 0xF5DE03C4) < 0xB) {
-			tbl = (const char**)(base + 0x150);
-			sprintf(buf, msgSearch(tbl[info->field_0x14[4]]), info->field_0x14[6]);
+			sprintf(buf, msgSearch(_rule_msg_table_1bu[info->field_0x14[4]]), info->field_0x14[6]);
 		} else {
-			tbl = (const char**)(base + 0x40);
-			sprintf(buf, msgSearch(tbl[info->field_0x14[4]]), info->field_0x14[6]);
+			sprintf(buf, msgSearch(_rule_msg_table_2bu[info->field_0x14[4]]), info->field_0x14[6]);
 		}
 	} else {
-		tbl = (const char**)(base + 0x260);
-		sprintf(buf, msgSearch(tbl[info->field_0x14[4]]), info->field_0x14[6]);
+		sprintf(buf, msgSearch(_rule_msg_table_after[info->field_0x14[4]]), info->field_0x14[6]);
 	}
 	width = FontGetMessageWidthLine(buf, &lines);
 	lines++;
 	color = dat_8041c26c;
-	x = float_0_8041c280 - (f32)(width >> 1);
+	x = cx - (f32)(width >> 1);
 #ifdef MUST_MATCH
-	((void (*)(s32, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &color, x - float_10_8041c2a0,
-		float_94_8041c2a4, (f32)(width + 20), (f32)(lines * 29 + 3), float_10_8041c2a0);
+	((void (*)(s32, GXColor*, f32, f32, f32, f32, f32))windowDispGX_Waku_col)(0, &color, x - 10.0f,
+		94.0f, (f32)(width + 20), (f32)(lines * 29 + 3), 10.0f);
 #else
-	windowDispGX_Waku_col(0, color, x - float_10_8041c2a0, float_94_8041c2a4,
-		(f32)(width + 20), (f32)(lines * 29 + 3), float_10_8041c2a0);
+	windowDispGX_Waku_col(0, color, x - 10.0f, 94.0f,
+		(f32)(width + 20), (f32)(lines * 29 + 3), 10.0f);
 #endif
 	FontDrawStart();
-	FontDrawMessage((s32)x, (s32)float_120_8041c2a8 - 29, buf);
+	FontDrawMessage((s32)x, (s32)y - 29, buf);
 }
-#pragma opt_propagation reset
 
 void btlseqPhase(BattleWork* wp) { //1:1
 	switch (BattleGetSeq(wp, SEQ_PHASE)) {
@@ -1863,13 +1918,14 @@ void btlseqPhase(BattleWork* wp) { //1:1
 	}
 }
 
-// NONMATCHING (99.93%): only the case 0x5000006 loop index differs (r27 here, r25 in the original; it
-// wants a separate colour from the shared case-4/case-8 counter `i`). The other two diffs are the
-// jump-table relocation, which needs btlseqAct/btlseqTurn written before the table lands at its offset.
+// Case 8's `id` and `moveState` are declared at function scope ahead of `j`, so the case 0x5000006 loop
+// index is numbered below them and colours last, sharing moveState's register as in the original.
 void btlseqMove(BattleWork* wp) {
 	BattleUnit* unit;
-	s32 j;
 	s32 i;
+	s32 id;
+	s32 moveState;
+	s32 j;
 	BOOL changed;
 
 	do {
@@ -1965,7 +2021,6 @@ void btlseqMove(BattleWork* wp) {
 			}
 			break;
 		case 0x5000008: {
-			s32 id;
 			PouchData* pouch;
 			memset(&wp->impendingBonuses, 0, sizeof(StarPowerInfo));
 			for (i = 0; i < 64; i++) {
@@ -1996,7 +2051,7 @@ void btlseqMove(BattleWork* wp) {
 					continue;
 				}
 				{
-					s32 moveState = unit->moveState;
+					moveState = unit->moveState;
 					if (moveState == 10) {
 						continue;
 					}
@@ -2193,7 +2248,7 @@ void btlseqAct(BattleWork* wp) {
 
 	case 0x6000001:
 		speed = battleCameraGetPosMoveSpeed();
-		if (speed > float_2_8041c29c) {
+		if (speed > 2.0f) {
 			break;
 		}
 		BattleSetSeq(wp, SEQ_ACT, 0x6000002);
@@ -2501,15 +2556,11 @@ void btlseqPhaseFirstProcess(BattleWork* wp) { //1:1
 	battleMakePhaseEvtTable(wp);
 }
 
-// NONMATCHING (99.19%): all instructions match except the count/wp callee-saved pair is swapped
-// (target count r30/wp r31, compiler picks count r31/wp r30). Declaration order, raw vs header-field
-// offsets, 128 pragma combos, compilers 1.3-2.7, inline helpers, f32/Vec/array temps and loop forms tried.
-// Rechecked: every GC compiler 1.3-2.7, optimization_level 0-4, opt_lifetimes/opt_loop_invariants/
-// peephole/scheduling pairs, wp/count aliases (u8* casts, selective per-loop use, 1-6 deep), extra locals,
-// algebraic rewrites, inline swap/count helpers, function reordering and -fp_contract off all keep the
-// same swap; the generated instruction sequence is otherwise byte-for-byte identical.
-void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
-	s32 count = mode;
+// The work pointer is copied into its own local and copy propagation is off for this function: the
+// original keeps that copy as a separate web, which takes r31 ahead of `count` (r30).
+#pragma opt_propagation off
+void battleSortPhaseMoveTable(BattleWork* wp, s32 count) { //1:1
+	BattleWork* work = wp;
 	s32 i;
 	s32 j;
 	BattleUnit* a;
@@ -2518,7 +2569,7 @@ void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
 	if (count <= 0) {
 		count = 0;
 		for (i = 0; i < 64; i++) {
-			if (*(s32*)(wp->field_120 + i * 4) == -1) {
+			if (*(s32*)(work->field_120 + i * 4) == -1) {
 				break;
 			}
 			count++;
@@ -2529,29 +2580,30 @@ void battleSortPhaseMoveTable(BattleWork* wp, s32 mode) { //1:1
 		for (j = 0; j < count - i - 1; j++) {
 			f32 ax, ay, az;
 			f32 bx, by, bz;
-			a = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4));
-			b = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4 + 4));
+			a = BattleGetUnitPtr(work, *(s32*)(work->field_120 + j * 4));
+			b = BattleGetUnitPtr(work, *(s32*)(work->field_120 + j * 4 + 4));
 			BtlUnit_GetHomePos(a, &ax, &ay, &az);
 			BtlUnit_GetHomePos(b, &bx, &by, &bz);
 			if (fabs(ax) > fabs(bx)) {
-				s32 tmp = *(s32*)(wp->field_120 + j * 4);
-				*(s32*)(wp->field_120 + j * 4) = *(s32*)(wp->field_120 + j * 4 + 4);
-				*(s32*)(wp->field_120 + j * 4 + 4) = tmp;
+				s32 tmp = *(s32*)(work->field_120 + j * 4);
+				*(s32*)(work->field_120 + j * 4) = *(s32*)(work->field_120 + j * 4 + 4);
+				*(s32*)(work->field_120 + j * 4 + 4) = tmp;
 			}
 		}
 	}
 	for (i = 0; i < count - 1; i++) {
 		for (j = 0; j < count - i - 1; j++) {
-			a = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4));
-			b = BattleGetUnitPtr(wp, *(s32*)(wp->field_120 + j * 4 + 4));
+			a = BattleGetUnitPtr(work, *(s32*)(work->field_120 + j * 4));
+			b = BattleGetUnitPtr(work, *(s32*)(work->field_120 + j * 4 + 4));
 			if (*(s32*)(a->field_0x27 + 1) < *(s32*)(b->field_0x27 + 1)) {
-				s32 tmp = *(s32*)(wp->field_120 + j * 4);
-				*(s32*)(wp->field_120 + j * 4) = *(s32*)(wp->field_120 + j * 4 + 4);
-				*(s32*)(wp->field_120 + j * 4 + 4) = tmp;
+				s32 tmp = *(s32*)(work->field_120 + j * 4);
+				*(s32*)(work->field_120 + j * 4) = *(s32*)(work->field_120 + j * 4 + 4);
+				*(s32*)(work->field_120 + j * 4 + 4) = tmp;
 			}
 		}
 	}
 }
+#pragma opt_propagation reset
 
 void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
 	PhaseEvtEntry* table = (PhaseEvtEntry*)((u8*)wp + 0x220);
@@ -2577,8 +2629,8 @@ void battleMakePhaseEvtTable(BattleWork* wp) { //1:1
 		{
 			f32 x, y, z;
 			BtlUnit_GetHomePos(unit, &x, &y, &z);
-			if (x >= float_0_8041c280) {
-				table[count].value = (s32)(float_1000_8041c298 + x);
+			if (x >= 0.0f) {
+				table[count].value = (s32)(1000.0f + x);
 			}
 			else {
 				table[count].value = (s32)fabs(x);
@@ -2637,14 +2689,14 @@ BOOL BattleWaitAllActiveEvtEnd(BattleWork* wp) { //1:1
 	return TRUE;
 }
 
-// NONMATCHING (99.55%): the four event-id guards use while(...){...;break;} for the original's check-after-body
-// layout, and the local `void* p` (copied from wp before the loop) fixes the prologue scheduling. Only the
-// wp/i callee-saved pair is still swapped (we get wp r28/i r30; the original has wp r30/i r28).
+// The four event-id guards use while(...){...;break;} for the original's check-after-body layout, and the
+// local `void* p` (copied from wp before the loop, declared first) gives wp its own web ranked above
+// `result` and `i`, as in the original (wp r30, result r29, i r28).
 s32 BattleWaitAllActiveEvtEnd_NoBgSetEndWait(BattleWork* wp) { //1:1
-	s32 i;
-	BOOL result = TRUE;
-	BattleUnit* unit;
 	void* p;
+	BOOL result = TRUE;
+	s32 i;
+	BattleUnit* unit;
 
 	p = wp;
 	for (i = 0; i < 64; i++) {
@@ -2809,103 +2861,103 @@ s32 _set_haikei_entry_scale(EventEntry* event, BOOL isFirstCall) {
 	if (isFirstCall) {
 		event->userdata[0] = 60;
 		event->userdata[1] = 0;
-		if (mapGetMapObj(str_8041C27C) != NULL) {
-			mapObjScale(str_8041C27C, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+		if (mapGetMapObj("A1") != NULL) {
+			mapObjScale("A1", 0.0f, 0.0f, 1.0f);
 		}
-		if (mapGetMapObj(str_8041C288) != NULL) {
-			mapObjScale(str_8041C288, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+		if (mapGetMapObj("A2") != NULL) {
+			mapObjScale("A2", 0.0f, 0.0f, 1.0f);
 		}
 	}
 	if (event->userdata[0] > 0) {
 		event->userdata[0]--;
 		if (event->userdata[0] > 0) {
-			if (mapGetMapObj(str_8041C27C) != NULL) {
-				mapObjScale(str_8041C27C, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+			if (mapGetMapObj("A1") != NULL) {
+				mapObjScale("A1", 0.0f, 0.0f, 1.0f);
 				_mapobj_data_touch_scale(0);
 			}
-			if (mapGetMapObj(str_8041C288) != NULL) {
-				mapObjScale(str_8041C288, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+			if (mapGetMapObj("A2") != NULL) {
+				mapObjScale("A2", 0.0f, 0.0f, 1.0f);
 				_mapobj_data_touch_scale(1);
 			}
 			return 0;
 		}
 	}
 	event->userdata[1]++;
-	if (mapGetMapObj(str_8041C27C) != NULL) {
+	if (mapGetMapObj("A1") != NULL) {
 		if (event->userdata[1] >= 40) {
-			mapObjScale(str_8041C27C, float_1_8041c284, float_1_8041c284, float_1_8041c284);
+			mapObjScale("A1", 1.0f, 1.0f, 1.0f);
 			_mapobj_data_touch_scale(0);
 		} else {
 			ret = 1;
 			if (event->userdata[1] < 15) {
-				mapObjScale(str_8041C27C, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+				mapObjScale("A1", 0.0f, 0.0f, 1.0f);
 				_mapobj_data_touch_scale(0);
 			} else {
-				mapObjScale(str_8041C27C, float_1_8041c284, float_1_8041c284, float_1_8041c284);
+				mapObjScale("A1", 1.0f, 1.0f, 1.0f);
 				_mapobj_data_touch_scale(0);
 				if (event->userdata[1] < 25) {
-					scale1 = intpl_sub(5, event->userdata[1] - 15, 10, float_0_8041c280, float_110_8041c28c);
+					scale1 = intpl_sub(5, event->userdata[1] - 15, 10, 0.0f, 110.0f);
 				} else if (event->userdata[1] < 35) {
-					scale1 = intpl_sub(11, event->userdata[1] - 25, 10, float_110_8041c28c, float_90_8041c290);
+					scale1 = intpl_sub(11, event->userdata[1] - 25, 10, 110.0f, 90.0f);
 				} else if (event->userdata[1] < 40) {
-					scale1 = intpl_sub(11, event->userdata[1] - 35, 5, float_90_8041c290, float_100_8041c294);
+					scale1 = intpl_sub(11, event->userdata[1] - 35, 5, 90.0f, 100.0f);
 				}
 				if (event->userdata[1] < 25) {
-					scale2 = intpl_sub(5, event->userdata[1] - 15, 10, float_100_8041c294, float_90_8041c290);
+					scale2 = intpl_sub(5, event->userdata[1] - 15, 10, 100.0f, 90.0f);
 				} else if (event->userdata[1] < 35) {
-					scale2 = intpl_sub(11, event->userdata[1] - 25, 10, float_90_8041c290, float_110_8041c28c);
+					scale2 = intpl_sub(11, event->userdata[1] - 25, 10, 90.0f, 110.0f);
 				} else if (event->userdata[1] < 40) {
-					scale2 = intpl_sub(11, event->userdata[1] - 35, 5, float_110_8041c28c, float_100_8041c294);
+					scale2 = intpl_sub(11, event->userdata[1] - 35, 5, 110.0f, 100.0f);
 				}
-				scaleDiv = float_100_8041c294;
+				scaleDiv = 100.0f;
 				for (i = 0; i < 32; i++) {
 					obj = &wp->stageObjects[i];
 					if (obj->id > 0 && obj->data->mLayer == 0) {
-						mapObjScale(obj->data->name, scale2 / scaleDiv, scale1 / scaleDiv, float_1_8041c284);
+						mapObjScale(obj->data->name, scale2 / scaleDiv, scale1 / scaleDiv, 1.0f);
 						obj->mFlags |= 2;
 					}
 				}
 			}
 		}
 	}
-	if (mapGetMapObj(str_8041C288) != NULL) {
+	if (mapGetMapObj("A2") != NULL) {
 		if (event->userdata[1] >= 45) {
-			mapObjScale(str_8041C288, float_1_8041c284, float_1_8041c284, float_1_8041c284);
+			mapObjScale("A2", 1.0f, 1.0f, 1.0f);
 			_mapobj_data_touch_scale(1);
 		} else {
 			ret = 1;
 			if (event->userdata[1] < 20) {
-				mapObjScale(str_8041C288, float_0_8041c280, float_0_8041c280, float_1_8041c284);
+				mapObjScale("A2", 0.0f, 0.0f, 1.0f);
 				_mapobj_data_touch_scale(1);
 			} else {
-				mapObjScale(str_8041C288, float_1_8041c284, float_1_8041c284, float_1_8041c284);
+				mapObjScale("A2", 1.0f, 1.0f, 1.0f);
 				_mapobj_data_touch_scale(1);
 				if (event->userdata[1] < 30) {
-					scale1 = intpl_sub(5, event->userdata[1] - 20, 10, float_0_8041c280, float_110_8041c28c);
+					scale1 = intpl_sub(5, event->userdata[1] - 20, 10, 0.0f, 110.0f);
 				} else if (event->userdata[1] < 40) {
-					scale1 = intpl_sub(11, event->userdata[1] - 30, 10, float_110_8041c28c, float_90_8041c290);
+					scale1 = intpl_sub(11, event->userdata[1] - 30, 10, 110.0f, 90.0f);
 				} else if (event->userdata[1] < 45) {
-					scale1 = intpl_sub(11, event->userdata[1] - 40, 5, float_90_8041c290, float_100_8041c294);
+					scale1 = intpl_sub(11, event->userdata[1] - 40, 5, 90.0f, 100.0f);
 				}
 				if (event->userdata[1] < 30) {
-					scale2 = intpl_sub(5, event->userdata[1] - 20, 10, float_100_8041c294, float_90_8041c290);
+					scale2 = intpl_sub(5, event->userdata[1] - 20, 10, 100.0f, 90.0f);
 				} else if (event->userdata[1] < 40) {
-					scale2 = intpl_sub(11, event->userdata[1] - 30, 10, float_90_8041c290, float_110_8041c28c);
+					scale2 = intpl_sub(11, event->userdata[1] - 30, 10, 90.0f, 110.0f);
 				} else if (event->userdata[1] < 45) {
-					scale2 = intpl_sub(11, event->userdata[1] - 40, 5, float_110_8041c28c, float_100_8041c294);
+					scale2 = intpl_sub(11, event->userdata[1] - 40, 5, 110.0f, 100.0f);
 				}
-				scaleDiv = float_100_8041c294;
+				scaleDiv = 100.0f;
 				for (i = 0; i < 32; i++) {
 #ifdef MUST_MATCH
 					obj2 = &wp->stageObjects[i];
 					if (obj2->id > 0 && obj2->data->mLayer == 1) {
-						mapObjScale(obj2->data->name, scale2 / scaleDiv, scale1 / scaleDiv, float_1_8041c284);
+						mapObjScale(obj2->data->name, scale2 / scaleDiv, scale1 / scaleDiv, 1.0f);
 						obj2->mFlags |= 2;
 					}
 #else
 					obj = &wp->stageObjects[i];
 					if (obj->id > 0 && obj->data->mLayer == 1) {
-						mapObjScale(obj->data->name, scale2 / scaleDiv, scale1 / scaleDiv, float_1_8041c284);
+						mapObjScale(obj->data->name, scale2 / scaleDiv, scale1 / scaleDiv, 1.0f);
 						obj->mFlags |= 2;
 					}
 #endif
