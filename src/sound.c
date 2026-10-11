@@ -1379,14 +1379,17 @@ void cache_flush(u32 pointerToARQRequest) {
     _ssDVDReadAsync_activeChk(0, &dvd->info);
 }
 
-// NONMATCHING (99.07%): the code is complete and does what the assembly does. The instruction stream is
-// identical in order and count (225 each); what still differs is register allocation only: the inlined
-// entry helper's `entry` and `len` land in r29/r31 where the original has them in r31/r29 (`aligned`
-// is r30 in both). The buffer select, the ARQ `dest` addend order and the ARQ source/dest argument
-// order (`dest` first) are the forms that reproduce the original's `subfic; slwi; add; lwz 0x2c`.
+// NONMATCHING (99.31%): the code is complete and does what the assembly does. The instruction stream is
+// identical in order and count (225 each); what still differs is register allocation only. The second
+// expansion matches. In the first, entry/len/aligned are r29/r30/r31 where the original has r31/r29/r30
+// (rasim: the first call's entry object has to rank above the helper's locals, and an inline parameter
+// always ranks below them). The second expansion's ARQ dest temps are r6/r7 swapped, and the else
+// branch's len is r27 for the original's r29. The buffer select, the ARQ `dest` addend order and the
+// ARQ source/dest argument order (`dest` first) are the forms that reproduce the original's
+// `subfic; slwi; add; lwz 0x2c`.
 static inline void _ssDVDReadAsync_cache_entry(SoundStream* stream, SoundStreamEntry* entry, u32 offset) {
-    u32 aligned;
     u32 len;
+    u32 aligned;
     u32 n;
 
     len = 0x8000;
@@ -1415,7 +1418,7 @@ static inline void _ssDVDReadAsync_cache_entry(SoundStream* stream, SoundStreamE
     entry->requestLength = len;
 }
 
-// NONMATCHING (99.07%): see the note on _ssDVDReadAsync_cache_entry above; only register allocation
+// NONMATCHING (99.31%): see the note on _ssDVDReadAsync_cache_entry above; only register allocation
 // differs. The logic, every call, branch, store and instruction order all match.
 void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
     SoundStream* stream = &sound.streams[((ARQRequest*)pointerToARQRequest)->owner & 0xFF];
@@ -1431,8 +1434,7 @@ void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
         *(u32*)stream->entries[1].unk38 = 0;
         *(u16*)stream->entries[0].unk4C = 1;
 
-        entry = &stream->entries[0];
-        _ssDVDReadAsync_cache_entry(stream, entry, 0);
+        _ssDVDReadAsync_cache_entry(stream, entry = &stream->entries[0], 0);
 
         if (stream->count == 2) {
             *(u16*)stream->entries[1].unk4C = 1;
@@ -1484,9 +1486,6 @@ void _ssDVDReadAsync_cache_next(s32 result, DVDFileInfo* fileInfo) {
     }
 }
 
-// NONMATCHING (99.92%): the else nibble is now in r9 like the original, but its sign-extension
-// before the <<4 is fused into the shift destination (extsb r0,r9; slwi r0,r0,4) where the target
-// extends in place (extsb r9,r9; slwi r0,r9,4); only those 2 operands differ
 u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 count, u8* in) {
     u8* e = (u8*)entry;
     s8 delta;
@@ -1502,7 +1501,7 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
                 delta = (byte >> 4) & 0xF;
             }
             index = *(u16*)(e + 0x58);
-            delta = (s8)(delta << 4);
+            delta <<= 4;
             delta >>= 4;
             *(u16*)(e + 0x5a) += 1;
             if (*(u16*)(e + 0x5a) >= *(u16*)(e + 0x5c)) {
@@ -1517,15 +1516,15 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
             in++;
             *(u32*)(e + 0x44) += 1;
             index = byte & 0xF;
-            delta = (s8)index;
-            if ((s8)delta == 8) {
+            if (index == 8) {
                 *(u16*)(e + 0x5c) = ((byte >> 4) & 0xF) + 4;
                 *(u16*)(e + 0x5a) = 0;
                 continue;
             }
+            delta = index;
             index = (byte >> 4) & 0xF;
             *(u16*)(e + 0x58) = index;
-            delta = (s8)(delta << 4);
+            delta <<= 4;
             delta >>= 4;
         }
 
@@ -2284,8 +2283,8 @@ void SoundSSMain(void) {
 // dest are written so MWCC emits the original's `subfic; slwi; addi 0x2c; lwzx` and `0x21c(base)` forms;
 // the shared helper above is left as-is because _ssDVDReadAsync_cache_aram needs its form.
 static inline void _ssDVDReadAsync_cache_entry_ss(SoundStream* stream, SoundStreamEntry* entry, u32 offset) {
-    u32 aligned;
     u32 len;
+    u32 aligned;
     u32 n;
 
     len = 0x8000;
@@ -2317,9 +2316,9 @@ static inline void _ssDVDReadAsync_cache_entry_ss(SoundStream* stream, SoundStre
 // dont_inline keeps SoundSSMainInt out of SoundMainInt (the original keeps a
 // stack frame and real call sequence).
 #pragma dont_inline on
-// NONMATCHING (99.18%): instruction stream identical; only three induction/helper registers differ: the
-// original keeps the loop byte offset in r25, the entry pointer in r28 and the helper's len in r26;
-// MWCC uses r26/r25/r28 here.
+// NONMATCHING (99.51%): instruction stream identical; the loop offset and the second expansion match.
+// In the first expansion entry/len/aligned are r26/r27/r28 where the original has r28/r26/r27, the
+// same first-call ranking problem as _ssDVDReadAsync_cache_aram.
 void SoundSSMainInt(void) {
     int i;
     SoundStream* stream;
@@ -2339,8 +2338,7 @@ void SoundSSMainInt(void) {
 
         if (*(u32*)&stream->entries[0].unk38[0xC] && *(s16*)&stream->entries[0].unk4C[8] == 0 &&
             !(stream->flags & 0x1000)) {
-            entry = &stream->entries[0];
-            _ssDVDReadAsync_cache_entry_ss(stream, entry, 0);
+            _ssDVDReadAsync_cache_entry_ss(stream, entry = &stream->entries[0], 0);
             stream->flags |= 0x1000;
             if (stream->flags & 0x400) {
                 *(u16*)&stream->entries[0].unk4C[8] = 1;

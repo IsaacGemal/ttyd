@@ -6039,6 +6039,17 @@ unrolled-body temps, which no declaration order or expression gives, so retail's
 shapes that change how MWCC unrolls the count loop: do-while, a pointer bound, the count copied out before the
 branch). Eleven optimisation pragmas tried on both: none helped.
 
+**sound: ssDecodeDPCM 99.92 -> 100, 54/58, not linked (on2-sound; levers from the list: partial; 353k, 115 min).**
+DPCM: `delta = index;` after the `if (index == 8) {...; continue;}` in the else branch, plus `delta <<= 4; delta >>= 4;`
+in both branches instead of `delta = (s8)(delta << 4)`, so `delta` stays one variable and the sign-extension gets
+its own register (neither alone helps). `_ssDVDReadAsync_cache_aram` 99.07 -> 99.31 and `SoundSSMainInt` 99.18 ->
+99.51: `f(stream, entry = &stream->entries[0], 0)` (#408) and the helper's locals as `len, aligned, n`; the second
+inlined copy now matches, the first is rotated because an inline parameter always ranks below the helper's locals
+(try an outer inline that owns `entry`). `SoundSSMain` 99.05: rasim shows the counter and both offset temps have
+identical interference sets, so no declaration order works. `_sscallback` 99.29 unchanged. Build trap: a script that
+copies variants over the source and then tb.sh's rsync can leave an older timestamp, so ninja reuses a stale object;
+`touch` the source before verifying.
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
