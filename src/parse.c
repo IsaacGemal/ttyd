@@ -18,10 +18,22 @@ void parseInit(void* ptr, u32 size) {
 
 
 
-// NONMATCHING (99.71%): the copy loop's strength-reduced buffer pointer and index use swapped scratch
-// registers (mine buf=r4/j=r6, original buf=r6/j=r4); everything else matches. Tested without success:
-// u8/s8 buffer, explicit `*(buf+len)`, an explicit `char* bp = buf`, a separate index local, reordered
-// declarations, and the opt_lifetimes/opt_common_subs/optimize_for_size pragmas (all leave the r4/r6 swap).
+// Copies the tag starting at src[pos] into dst, dropping whitespace, up to 127 characters or the closing '>'.
+static inline void parseTagName(char* dst, s8* src, s32 pos, s32 end) {
+	s32 len = 0;
+
+	for (; pos < end; pos++) {
+		if (src[pos] != ' ' && src[pos] != '\t' && src[pos] != '\n' && src[pos] != '\r') {
+			dst[len] = src[pos];
+			len++;
+		}
+		if (len >= 0x7f || src[pos] == '>') {
+			break;
+		}
+	}
+	dst[len] = 0;
+}
+
 BOOL parsePush(const char* tag) {
 	static char buf[128];
 	s32 i = ((s32*)&parse.field_0x4)[parse.field_0x54];
@@ -53,21 +65,7 @@ BOOL parsePush(const char* tag) {
 			}
 			else {
 				if (state == 0 && depth == 0) {
-					s32 len = 0;
-					s32 j;
-
-					for (j = i; j < end; j++) {
-						s8 c = base[j];
-
-						if (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
-							buf[len] = c;
-							len++;
-						}
-						if (len >= 0x7f || base[j] == '>') {
-							break;
-						}
-					}
-					buf[len] = 0;
+					parseTagName(buf, base, i, end);
 					if (strcmp(buf, tag) == 0) {
 						for (; i < end; i++) {
 							if (base[i] == '>') {
