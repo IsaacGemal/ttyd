@@ -533,7 +533,7 @@ config.libs = [
             Object(Matching, "effect/eff_scanning.c"),
             Object(Matching, "effect/eff_toiki.c"),
             Object(Matching, "effect/eff_mist2.c"),
-            Object(NonMatching, "effect/eff_particle.c"),
+            Object(Matching, "effect/eff_particle.c"),
             Object(Matching, "effect/eff_ibuki.c"),
             Object(Matching, "effect/eff_mahorn.c"),
             Object(Matching, "effect/eff_spirit.c"),
