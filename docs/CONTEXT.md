@@ -6102,6 +6102,17 @@ linked REL checksum: linked callers compiled against `s16` change code. If the o
 was in a different declaration than the one those callers saw; until that's sorted out, keep s16 and leave the two
 functions at their cast-free scores.
 
+**battle_seq_end: btlseqEnd_DispMain 98.87 and _MarioExpDisp 99.45 -> 100, _LvupParamConfirmDisp 85.46 -> 99.58, 33/35
+(on2-bsend; levers from the list: partial; 149k, 72 min).** DispMain: `BattleWork* param = wp;` under
+`opt_propagation off` (battleSortPhaseMoveTable's lever from Overnight 1). _MarioExpDisp: `u32 len = strlen(buf)` and,
+under MUST_MATCH, `windowDispGX_Waku_col` called through a cast with the float parameters first and the colour last,
+so the white colour is built after the width conversion as in retail (battle_message.c already calls this function
+through a MUST_MATCH cast; the `#else` is the plain call). The same cast took _LvupParamConfirmDisp to 99.58; left
+there is `work`/pool base swapped (r30/r31), since the base is a compiler temp numbered above every local. Open
+question: whether the original called windowDispGX_Waku_col without a prototype, which would explain the float-first
+order naturally. _lvup_select_object_disp 98.09: our scheduler hoists the 0.8 load above the `pos2` block; mwsearch
+10,254 compiles found nothing.
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.
