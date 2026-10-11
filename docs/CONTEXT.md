@@ -5761,6 +5761,18 @@ first (99.35-99.40). rasim: block 1 needs `id` coloured before `i` with tevStage
 (22,096 compiles) found nothing. Next: block 1's table pointer as a compiler variable ranked below the named
 tevStage/texCoord.
 
+**eff_starpoint links: effStarPointEntry 99.25 -> 100 (on1-starpoint; lever from the list: partial; 228k,
+64 min).** All 14 named `float_*` objects and the `MATCH_F32` reads became literals, which gives the original's pool
+in first-use order. The sin/cos inlines take only `rad` with their own `v`/`b`/`one` locals and the reflected angle in
+one expression; the loop starts `f32 angle = rand() % 360;`, then the zero stores, then
+`rad = (6.2831855f * angle) / 360.0f`. Entry is wrapped in `opt_propagation off` (new) besides the existing
+`opt_lifetimes off`; removing either costs 76 / 90.7. The last step came from rasim: the 2.0 constant was one
+interference short of landing in f31 (one dummy edge in the simulation reproduced the target), and writing the
+helpers' negating branches as early `return -v;` instead of `v = -v;` supplies that edge. From the list: all
+literals, coefficient locals with propagation off, moving where the conversion is created; the early return was
+the agent's own. Tried and failed: the polynomial as one expression (99.85-99.90), shared `t`/`u` temps, `rad`
+rewritten in place, named sin/cos results, non-inline helpers (80).
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
