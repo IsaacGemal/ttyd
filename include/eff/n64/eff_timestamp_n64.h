@@ -8,8 +8,8 @@ typedef struct effTimestampVtx {
 	/* 0x0 */ s16 x;
 	/* 0x2 */ s16 y;
 	/* 0x4 */ s16 z;
-	/* 0x6 */ u16 s;
-	/* 0x8 */ u16 t;
+	/* 0x6 */ s16 s;
+	/* 0x8 */ s16 t;
 	/* 0xA */ u8 r;
 	/* 0xB */ u8 g;
 	/* 0xC */ u8 b;

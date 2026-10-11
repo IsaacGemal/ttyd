@@ -5697,6 +5697,16 @@ an inline, parameter copies, a local `Vec pos`, the whole sum in the reused loca
 off`; `rasim neighbors` finds no single-edge fix. Worth trying the `--key` what-if on the other open FPR swaps
 (eff_magic3_n64, eff_kumokumo_n64, eff_bomb).
 
+**eff_timestamp_n64 links: effTimestampDisp 99.40 -> 100 (on1-timestamp; lever from the list: yes).** The same fix
+as eff_magic_horao_n64 (#684), found from the list: the vertex loop indexed per `i` (`vp = &base[i * 2]`,
+`timer * 10 + i * 60`, `i * 400`, the texture row `i * 2 * 0x40U`) with the five hand-stepped accumulators gone, so
+the compiler's own counter gives retail's `mr r23,r29`. Two more pieces: the vertex `s`/`t` fields are `s16`, not
+`u16` (N64 texture coordinates are signed and the sibling MagicHoraoVtx/SstarVtx use s16; with u16 the compiler
+masks `i * 2` with `clrlslwi`), and both pragmas (`opt_common_subs off`, `opt_lifetimes off`) went, 99.32 -> 99.82.
+The last two registers came from a `rasim search` over declaration orders with explicit targets. Linking needed
+`unk_804232b0`/`unk_804232b4` defined as `.sbss2` objects (horao's idiom). Any other N64 effect with a hand-stepped
+vertex loop and a `li`/`mr` difference at the counter should take this directly.
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.
