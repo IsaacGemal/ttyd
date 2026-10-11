@@ -757,11 +757,11 @@ void msgDispKeyWait_render(s32 wXluStage) {
 // The R-ruby loops index through the `rp` pointer (not the tagName array), so MWCC's frontend leaves the
 // offset counters alone and the backend's strength reduction keeps them next to the pointer it derives,
 // as in the target; the icon name goes through msgIconStr2ID (auto-inlined).
-// What differs: after the spill of var[0..2] (as in the target), the second colouring pass gives the R-ruby
-// glyph loop's pointer/glyph/0x4330 temps and the .rodata base r31-r27 ahead of data/window/entry, so every
-// long-lived GPR sits four registers lower than the target (data r26 vs r30); var[1]/var[2] spill slots are
-// swapped (0x234/0x232) and defaultchar reuses the switch's extsb of `check`.
-// NONMATCHING (97.74%): GPR colouring of the second allocation pass; see above.
+// What differs: the second colouring pass. The target keys the loop-2 counter and an extra R-ruby temp so the
+// tagName base lands in r0 in both preheaders and the long-lived GPRs (data, window, entry, .rodata base) sit
+// higher; ours colours them differently, and loop 2's preheader schedules `add ptr, tagName, skip` after the
+// ey/flags hoists instead of before them.
+// NONMATCHING (98.16%): GPR colouring of the second allocation pass; see above.
 void msgAnalize(smartEntry* smart, const char* msg) {
 	char tagName[128];
 	char tagArg[128];
@@ -809,12 +809,13 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	const char* after;
 	s32 mode;
 	u32 n;
-	u8 check;
+	u32 check;
 	s8 tch;
 	char tchc;
 	BOOL checkkanji;
 	u16 glyph, width;
 	NpcEntry* npc;
+	s32 off;
 	s32 i;
 	u32 skip;
 	s32 len;
@@ -835,9 +836,9 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	if (window->type < 0) {
 		window->type = 0;
 	}
+	var[2] = 0;
 	r24 = data->field_0x7A30;
 	var[1] = data->field_0x7A38;
-	var[2] = 0;
 	ex = data->field_0x7A34;
 	var[0] = data->field_0x7A3A;
 	ey = data->field_0x7A36;
@@ -865,7 +866,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	}
 
 loop:
-	check = *msg;
+	check = (u8)*msg;
 	{
 		u32 c = (u8)check;
 		if ((c >= 0x81 && c <= 0x9F) || (c >= 0xE0 && c <= 0xFC)) {
@@ -1217,7 +1218,7 @@ loop:
 			else {
 				glyph = kanjiSearch(0x94B5);
 				width = kanjiGetWidth((u16)glyph);
-				w = (u16)(s32)(scale * (f32)(width + 4));
+				w = (u16)(s32)((f32)(width + 4) * scale);
 				entry->glyph = glyph;
 				*(s16*)(entry->field_0x6) = ex;
 				*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.f * scale));
@@ -1297,30 +1298,28 @@ loop:
 			half = len / 2;
 			total = 0;
 			rp = tagName;
-			{
-			s32 off = skip;
+			off = skip;
 			for (i = 0; i < half; i++) {
 				u16 g = kanjiSearch(*(const u16*)(rp + off));
 				u16 kwidth = kanjiGetWidth((u16)g);
 
-				f32 fw = scale * (f32)(kwidth + 4);
+				f32 fw = (f32)(kwidth + 4) * scale;
 
 				total += (s32)(0.55f * fw);
 				off += 2;
-			}
 			}
 			base = 4.0f * scale;
 			mid = (s32)((f32)(u16)total - 0.55f * base);
 			{
 				f32 t = (f32)((s16)r25 + (s32)ex) - base;
-				r25 = (s32)((t - (f32)(u16)mid) * 0.5f);
+				r25 = (t - (f32)(u16)mid) / 2.0f;
 			}
 
 			rp = tagName;
 			for (j = 0; j < half; j++) {
 				u16 g = kanjiSearch(*(const u16*)(rp + skip));
 				u16 kwidth = kanjiGetWidth((u16)g);
-				f32 fw = scale * (f32)(kwidth + 4);
+				f32 fw = (f32)(kwidth + 4) * scale;
 				s32 rinc = (s32)(0.55f * fw);
 
 				entry->glyph = g;
@@ -1353,10 +1352,10 @@ aftertag:
 
 defaultchar:
 	if ((u32)gp->language == 0 && (s8)check >= '0' && (s8)check <= '9') {
-		glyph = kanjiSearch((u16)((u8)check + 0x10000 - 0x7DE1));
+		glyph = kanjiSearch((u16)(check + 0x10000 - 0x7DE1));
 	}
 	else {
-		glyph = hankakuSearch((s8)check);
+		glyph = hankakuSearch(check);
 	}
 	width = kanjiGetWidth((u16)glyph);
 	{

@@ -5840,6 +5840,29 @@ define fabs becomes a call, 92%). The tables must be defined after `N_weapon_luc
 strings land first. _rule_disp reads the tables by name, drops its pragma, and keeps `cx = 0.0f`/`y = 120.0f`
 locals (as literals the compiler folds `0.0f - w` and `(s32)120.0f`).
 
+**msgdrv: msgAnalize 97.74 -> 98.16, not linked (on1-msgdrv; levers from the list: yes; 75 min).** The character is
+an int (`u32 check = (u8)*msg;`) tested with the unit's own `_ismbblead(check)`; `hankakuSearch(u32 code)` does the
+`(s8)` itself (`return JUTFont_CodeToGlyph((s8)code);`), since retail passes the u32 without extending it at the
+call; `r25` takes the float directly (no extsh); `var[2] = 0` before `var[1]` (array elements are numbered by first
+appearance, which fixes their stack slots); loop 1's `off` at function level; `(f32)(kwidth + 4) * scale` operand
+order (found by mwsearch). Left: second-pass register assignment (355 instructions) and one preheader order
+(`add ptr, tagName, skip` before the `ey`/`flags & 1` hoists). rasim points to a fresh `addi T, r1, tagName` base
+temp merged into `rp` in both preheaders (retail holds the base in r0). Tried and failed: inlining
+`msgGetCommand` (97.56), a branchless skip ternary, a separate loop-2 counter, one shared counter, indexing
+`tagName + skip` directly (95.8-97.9), u32 arithmetic on tagName, `s32 r25`.
+
+**evt_eff: evt_eff stays 99.17, evt_eff64 99.78 (on1-evteff; lever from the list: no; 303k, 81 min).** Retail keeps
+two copies of the `args + 2` pointer: the int base `addi r25,r27,8` before the effSet call and the float base
+`mr r24,r25` after it, so it saves one more register (`stmw r20`). Setting the float pointer from the int pointer
+after effSet under `opt_propagation off` is exactly retail midway through the backend, but the next pass removes
+the copy. From the disassembled copy-removal code: it keeps a copy only if a use is itself a copy, a use also
+overwrites it, or the source changes between copy and use. Re-deriving `args` (`args++; iargs = args + 1; ...`)
+gives two `addi` bases and `stmw r20` (98.31) but never retail's `mr`. Tried and failed: walking `args`,
+inline/struct-field pointers, pointer rewinds, `opt_dead_assignments off`, optimization level 1 (91-95), O4 for
+evt_eff64 (worse than its level-1 workaround), mwsearch 40 min / 25,009 compiles. Next: find which instructions
+carry the flag (0x10) that makes the remover treat a use as a copy; compiler addresses in the agent's levers.md
+(worktree ~/ttyd-n4-on1-evteff).
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.

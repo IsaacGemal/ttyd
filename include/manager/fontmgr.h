@@ -99,7 +99,7 @@ void FontDrawStringShake(const char* str, f32 x, f32 y);
 
 u16 kanjiSearch(u32 code);
 u16 kanjiGetWidth(u16 code);
-u16 hankakuSearch(s8 code);
+u16 hankakuSearch(u32 code);
 u16 FontGetMessageWidthLine(const char* message, u16* lines);
 u16 FontGetMessageWidth(const char* message);
 
