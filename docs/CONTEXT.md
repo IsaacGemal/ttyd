@@ -5989,3 +5989,16 @@ stack store of the colour in two draw calls; using the colour directly loads it 
 `WeaponMultiItemCancelCheckDisp` 95.37 (rasim: the colour load must be created before the 0x4330 constant; moving
 `xoff` into the call does that but adds `mr r6,r3`). 42 local arrangements and 15 expression shapes found nothing.
 
+**mario links: marioReset 91.09, marioReInit 95.87, marioPreDisp 99.45, marioDispBlurSub 99.97 -> 100, 65/65 (on2-mario;
+levers from the list: mostly; 435k, 36 min).** marioReset calls `marioOfsRotReset()` (inlined) instead of a hand copy,
+and its four zero Vecs are non-const `__declspec(section ".rodata")` (#631), so the copies keep order off the rodata
+base. marioReInit: its Vec templates also non-const rodata (98.38); `u16 motionId` -> `s32` (the u16 copy was a temp
+outranking every named local); `animGroup0` passed straight through (one CSE temp fewer); rasim's declaration order
+(98.80); `if (0 <= wp->paperPoseId)` (mwsearch, 99.56); `highFlag = (wp = mp)->flags & 0x80000000;` so `wp` loads
+straight into r25 (#408's assignment-in-expression lever). marioPreDisp: `wp = marioGetPtr()` (#660) and `diff`
+before `ofsZ`. marioDispBlurSub: the colour as `(GXColor){0xFF, 0xFF, 0xFF, 0x80 - blurId * 16}` (the named
+`dat_80419e34` was that literal's template) plus `marioAnimeId` reading through `MarioWork* wp = mp;`. Link:
+`blurPosId`/`R_last_position` defined in .sbss after `mp` in reverse address order; two undefined float externs in
+marioMakeDispDir became block locals (`f32 lean = 30.0f;`, per pool_plan.py). The agent split the ledger read across
+six parallel readers, one chunk each.
+

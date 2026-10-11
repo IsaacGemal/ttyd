@@ -742,7 +742,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "mario/mario.c"),
+            Object(Matching, "mario/mario.c"),
             Object(Matching, "mario/mariost.c"),
             Object(NonMatching, "mario/mario_hit.c"),
             Object(Matching, "mario/mario_motion.c"),
