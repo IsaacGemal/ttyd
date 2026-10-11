@@ -5744,3 +5744,15 @@ locals, expression forms, mwsearch 40 min / 22,155 compiles (0 improvements). Si
   - partyEntryMain: a second copy of `L_partyChgPoseId1`, differing only in declaration order, gives 99.89 but is a match-only duplicate (refused). Only the `party->playerPtr` reload kept.
   - No change: renderProc (the unrolled `texIds[texCount - l - 1]` loop's folded -1 displacement) and BattleDrawEnemyHPBar (a dead GXColor aggregate store; every shape that drops it reschedules the 0xA/0xB loads lower).
 
+
+### Swarm batch 4b (2026-10-10, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#695](https://github.com/IsaacGemal/ttyd/pull/695)
+- Wins:
+  - **Defining the unit's .rodata block lets the pool anchor on it** (party_motion: party_roll 98.54 -> 99.95, getFrontFloor +1.6, .rodata 26.2 -> 85.4). This needs `__declspec(section ".rodata") u8 vec3_802f3e40[0x108]`, `#pragma pool_data on`, and `math_ext.h` with the `fabs`/`fabsf` macros, so the SDK sqrtf statics leave .rodata+0. After that, a function with a frontend pool constant (string literals, a `(Vec){0,0,0}`) takes the section base, and its i2f magic and strings become base-relative (`lfd 0x108(r31)`). This is the unit-wide answer to the "+1 lis, absolute @NNN i2f" near-miss. party_motion_jump/homing_fly (the same +1 lis) did not move on their own; they need the same frontend-constant trigger.
+  - **`opt_propagation off` around homing_walk** (+0.27) keeps the 1000.0f load after the ternary.
+  - **winHalfBookGX:** the declaration order, literal `0.0f` for the GX zeros and the named 240 constant in three page arguments (+0.30).
+- Hard negatives:
+  - party_roll reaches 100 if the blob is split at 0x48 so its two zero Vecs pool there. That drops homing_walk 99.58 -> 97.90, because its `vec + 0x148..` string reads re-resolve through the new array symbol. Not kept; a full typed .rodata in emission order is the way to 100.
+  - puniModeALLCheck (mri_puni) 97.97 -> 100 was refused. It replaced the shared `puniSearch*InlineATK` calls with a macro copy of the same search (the inlines are still used elsewhere), plus a MUST_MATCH no-op cast `dst = (PuniData*)dst` to keep a then-arm alive. The natural macro form gives 98.79 but is still a duplicate.
+  - winHalfBookGX's MUST_MATCH via-temp copies (`y200v`, a `x16 -> x320 -> y264` chain) and BattleAudienceDispAudience's MUST_MATCH `texIndex` local for one of two texcoord components were refused as allocation-only junk (+0.09 and +0.33).
+  - No change: party_motion_jump and homing_fly (the absolute i2f `lis`), marioCreviceWallChk (mot_slit: the MUST_MATCH volatile-Vec block stores `dist = 20.0f` twice per half; removing it loses more).
+
