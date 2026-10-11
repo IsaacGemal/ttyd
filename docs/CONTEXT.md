@@ -5823,3 +5823,16 @@ shifted every Vec slot). getLightColor is called normally instead of expanded by
   - winHalfBookGX's MUST_MATCH via-temp copies (`y200v`, a `x16 -> x320 -> y264` chain) and BattleAudienceDispAudience's MUST_MATCH `texIndex` local for one of two texcoord components were refused as allocation-only junk (+0.09 and +0.33).
   - No change: party_motion_jump and homing_fly (the absolute i2f `lis`), marioCreviceWallChk (mot_slit: the MUST_MATCH volatile-Vec block stores `dist = 20.0f` twice per half; removing it loses more).
 
+
+### Swarm batch 4c (2026-10-10, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#702](https://github.com/IsaacGemal/ttyd/pull/702)
+- Wins:
+  - **Read .rodata by name, not through a local `base + off`, in pool_data units** (evt_mobj_koopa_fireber_dodai -> 100). The local pointer isn't the compiler's pool base, so the i2f magic got its own `lis`. Named strings and Vecs let `pool_data` pick the section base, and the magic folds to `lfd 0x400(r27)`. It's the same lever as winLogMain (#691) and party_motion (#697).
+  - **Split a `.rodata` array into the retail objects** (yuka_init -> 100). With `vec3_803004f8[3]` as one object, the function named too few .rodata objects for MWCC to create `...rodata.0`. The three separate 12-byte objects make it create the base, and the magic becomes `0x138(r30)`.
+  - **Non-const `__declspec(section ".rodata")` Vecs** keep named loads inside loops or in place (yuka_init, main_star +0.51). Behind MUST_MATCH with `const` in `#else`; Claude #1 ruled it acceptable, per AGENT_BRIEF ~435 (#631).
+  - **One-statement index plus `break` to a single return** (puniSearchRandom_Mikata/Teki +0.22). The registers then match; only a trailing `blr` from MWCC's shared empty return block remains.
+- Hard negatives:
+  - main_point (sac_muki) stays refused: its 100 needs a `defer_codegen off` i2f pool helper. Its non-const Vec part alone is acceptable.
+  - disp_sight (bom_01) 97.17 -> 99.91 was refused. It needs `sightDrawNum`, an inline copy of `drawNum`. Without the copy it scores 98.29, but turning the named float constants into literals lowers .rodata 99.45 -> 98.04.
+  - The named-read lever does not carry over everywhere: in star_control (sac_scissor), naming the vec3 symbols instead of `SCVEC` base+off drops 98.93 -> 91.05.
+  - No change: sound _sscallback (two prologue `mr`), icondrv iconDispGx2 (the existing MUST_MATCH `numIcons` store; dropping it swaps r7/r8).
+
