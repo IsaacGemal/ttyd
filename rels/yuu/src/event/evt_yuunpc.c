@@ -787,10 +787,6 @@ void ext_yuunpc_minigame1_init(void) {
 }
 
 
-// `float_300` is read through a volatile pointer (MUST_MATCH only) so the compiler emits the
-// original's `addi`+`lfs 0(rN)` address form instead of a direct `lfs @l(rN)`.
-const f32 float_300_yuu_0001508c = 300.0f;
-
 void yuunpc_pose_minigame1_main(void) {
     s32 i;
     ExtPose* pose;
@@ -1358,10 +1354,6 @@ s32 goalincheck(YuunpcMapWork* p) {
 
 void errper_set_rtn(ErrPer* p) {
     switch (p->field_4) {
-        case -1:
-        case 6:
-            p->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
-            break;
         case 0:
         case 2:
         case 4:
@@ -1370,6 +1362,10 @@ void errper_set_rtn(ErrPer* p) {
         case 1:
         case 3:
         case 5:
+            p->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
+            break;
+        case -1:
+        case 6:
             p->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
             break;
         default:
@@ -1432,28 +1428,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
     yuunpc_set_jump_pose("c_luigi", "R_1", 4.0f);
     yuunpc_set_jump_pose("c_nokorin", "R_1", 5.0f);
     yuunpc_set_jump_pose("c_joho_a", "R_1", 17.0f);
-    {
-        s8 str[3] = "\x81\xA1";
-        for (i = 0; i < 72; i++) {
-            yuunpc_wp->map[6 * 72 + i] = ((s8)hitdata[i * 2] - '0') * 10 + ((s8)hitdata[i * 2 + 1] - '0');
-        }
-        for (i = 0; i < 72; i++) {
-            s16 v = -(((s8)hitdata[i * 2 + 0x90] - '0') * 10 + ((s8)hitdata[i * 2 + 0x91] - '0'));
-            yuunpc_wp->map[5 * 72 + i] = v;
-            yuunpc_wp->map[4 * 72 + i] = v;
-            yuunpc_wp->map[3 * 72 + i] = v;
-            yuunpc_wp->map[2 * 72 + i] = v;
-            yuunpc_wp->map[1 * 72 + i] = v;
-            yuunpc_wp->map[0 * 72 + i] = v;
-        }
-        for (i = 0; i < 6; i++) {
-            for (j = 0; j < 72; j++) {
-                if ((s8)hitdata[i * 0x90 + j * 2 + 0x120] == str[0] && (s8)hitdata[i * 0x90 + j * 2 + 0x121] == str[1]) {
-                    yuunpc_wp->map[i * 72 + j] = -500;
-                }
-            }
-        }
-    }
+    yuunpc_maphit_init();
     yuunpc_wp->flags |= 1;
     pose = extGetPosePtr();
     ((s32*)yuunpc_wp->pad_08)[2] = -1;
@@ -1707,25 +1682,7 @@ void ext_yuunpc_minigame4_init_sub(void) {
             yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
 #endif
             entry->flags |= 0x20;
-            switch (entry->field_4) {
-                case -1:
-                case 6:
-                    entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
-                    break;
-                case 0:
-                case 2:
-                case 4:
-                    entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
-                    break;
-                case 1:
-                case 3:
-                case 5:
-                    entry->field_8 = 2.0f * (0.25f * ((f32)rand() / 32767.0f)) + (-0.25f);
-                    break;
-                default:
-                    entry->field_8 = 2.0f * (0.1f * ((f32)rand() / 32767.0f)) + (-0.1f);
-                    break;
-            }
+            errper_set_rtn((ErrPer*)entry);
         }
     }
 }
@@ -1739,15 +1696,18 @@ void ext_yuunpc_minigame4_init(void) {
     ext_yuunpc_minigame4_init_sub();
 }
 
-// Logic complete (all blocks, states 0/1/2, all jump tables). The `f32 y; z; x;` declaration
-// order below is load-bearing (see the comment there), as is `t = 3600.0f + (f0 + f1);` in case 2..6.
-// NONMATCHING (98.84%): callee-saved colouring (entry/i/counters land in different regs).
-extern const f32 float_1000_yuu_00015048;
-extern const f32 float_150_yuu_0001509c;
+// Matching. The map lookups test a `oob` flag (`v = oob ? -500 : map[...]`, no cast), which keeps
+// coalesced copies out of the allocator's graph so the long-lived GPRs get the original's registers;
+// the declaration order of `i`..`data` then sets their colours. The arrive checks call goalincheck(),
+// which inlines to the original's code.
 void yuunpc_pose_minigame4_main(void) {
-    Yuuminigame4Data* data;
+    s32 i;
     ExtPose* pose;
     YuunpcEntry* entry;
+    s32 r28;
+    s32 r27;
+    s32 r26;
+    Yuuminigame4Data* data;
     f32 f31;
     f32 camY;
     f32 f29;
@@ -1761,12 +1721,9 @@ void yuunpc_pose_minigame4_main(void) {
     s32 mode;
     s32 n;
     f32 f0;
-    s32 i;
     s16 h;
     s16 hh;
-    s32 r26;
-    s32 r27;
-    s32 r28;
+    BOOL oob;
 
     camY = camGetPtr(CAMERA_3D)->cameraAt.x;
     r26 = 0;
@@ -1803,7 +1760,7 @@ void yuunpc_pose_minigame4_main(void) {
                     (x >= -50.0f && x <= 50.0f) ||
                     (x >= 1600.0f && x <= 1700.0f)) {
                     if (y > -500.0f) {
-                        y += -float_1000_yuu_00015048;
+                        y += -1000.0f;
                         ((MtxPtr)pose->matrix)[1][3] = y;
                     }
                 } else {
@@ -1881,7 +1838,7 @@ void yuunpc_pose_minigame4_main(void) {
         f0 = entry->field_24;
         mode = 1;
         h = (f0 < -1800.0f || f0 >= 1800.0f) ? 0
-            : (s16)yuunpc_wp->map[432 + (s32)((f0 - -1800.0f) / 50.0f)];
+            : yuunpc_wp->map[432 + (s32)((f0 - -1800.0f) / 50.0f)];
         hh = h;
         switch (h) {
         case 0:
@@ -1893,12 +1850,7 @@ void yuunpc_pose_minigame4_main(void) {
                     d = -d;
                 }
                 if (d > 16.666666f) {
-#ifdef MUST_MATCH
-                    f32 d300 = *(volatile const f32*)&float_300_yuu_0001508c;
-#else
-                    f32 d300 = 300.0f;
-#endif
-                    entry->field_18 = 0.5f * (d300 * (1.0f - d / d300)) + entry->field_24;
+                    entry->field_18 = (300.0f * (1.0f - d / 300.0f)) / 2.0f + entry->field_24;
                 }
             }
             break;
@@ -1929,14 +1881,14 @@ void yuunpc_pose_minigame4_main(void) {
             entry->field_18 = 50.0f * (f32)n - 3600.0f;
             {
                 f32 v = (f32)((s32)(entry->field_0 % 101) - 50) / 50.0f;
-                f1 = v * (10.0f + 50.0f * (f32)(mode - 1) * 0.5f);
+                f1 = v * (10.0f + 50.0f * (f32)(mode - 1) / 2.0f);
             }
             {
                 f32 fp20;
                 if (entry->field_2C >= 0.0f) {
-                    fp20 = (150.0f - 50.0f * (f32)mode * 0.5f) + f1;
+                    fp20 = (150.0f - 50.0f * (f32)mode / 2.0f) + f1;
                 } else {
-                    fp20 = (-150.0f + 50.0f * (f32)mode * 0.5f) + f1;
+                    fp20 = (-150.0f + 50.0f * (f32)mode / 2.0f) + f1;
                 }
                 entry->field_20 = fp20;
             }
@@ -1949,9 +1901,10 @@ void yuunpc_pose_minigame4_main(void) {
         case 10:
         {
             f32 t;
-            n = 3 - (h - 7);
-            { f32 q = 50.0f * (f32)n; f0 = f0 + q; }
-            t = 3600.0f + f0;
+            f32 f1;
+            f1 = 50.0f * (f32)(3 - (h - 7));
+            t = 3600.0f + (f0 + f1);
+            f0 = f0 + f1;
             n = (s32)(t / 50.0f) + 1;
             entry->field_18 = 50.0f * (f32)n - 3600.0f;
             entry->field_20 = 0.65f * entry->field_C.z;
@@ -2062,7 +2015,6 @@ void yuunpc_pose_minigame4_main(void) {
         case 3:
         case 4:
             switch (h) {
-                default:
                 case 0:
                 case 2:
                 case 3:
@@ -2083,13 +2035,10 @@ void yuunpc_pose_minigame4_main(void) {
                 case 25:
                 case 26:
                 {
-                    {
-                        f32 f2 = entry->field_2C;
-                        if (f2 >= -150.0f && f2 < 150.0f + f0) {
-                            f31 = (150.0f + f0) - f2;
-                        } else {
-                            f31 = 0.0f;
-                        }
+                    if (entry->field_2C >= -150.0f && entry->field_2C < 150.0f + f0) {
+                        f31 = (150.0f + f0) - entry->field_2C;
+                    } else {
+                        f31 = 0.0f;
                     }
                     break;
                 }
@@ -2102,18 +2051,17 @@ void yuunpc_pose_minigame4_main(void) {
                 case 27:
                 case 28:
                 {
-                    f32 f6 = entry->field_2C;
-                    f32 f3;
                     f32 f2;
-                    if (f6 >= -150.0f && f6 < 150.0f) {
+                    f32 f3;
+                    if (entry->field_2C >= -150.0f && entry->field_2C < 150.0f) {
                         f2 = 50.0f * (f32)mode;
                         f3 = (-150.0f + f2) + f0;
-                        if (f6 >= f3 && f6 < 150.0f - f2) {
+                        if (entry->field_2C >= f3 && entry->field_2C < 150.0f - f2) {
                             f31 = 0.0f;
-                        } else if (f6 > 0.0f) {
-                            f31 = (150.0f + f0) - f6;
+                        } else if (entry->field_2C > 0.0f) {
+                            f31 = (150.0f + f0) - entry->field_2C;
                         } else {
-                            f31 = f3 - f6;
+                            f31 = f3 - entry->field_2C;
                         }
                     } else {
                         f31 = 0.0f;
@@ -2152,10 +2100,9 @@ void yuunpc_pose_minigame4_main(void) {
                 case 25:
                 case 26:
                     {
-                        f32 f2 = entry->field_2C;
                         f32 f1 = -150.0f + f0;
-                        if (f2 >= f1 && f2 < 150.0f) {
-                            f31 = -f1 + f2;
+                        if (entry->field_2C >= f1 && entry->field_2C < 150.0f) {
+                            f31 = -f1 + entry->field_2C;
                         } else {
                             f31 = 0.0f;
                         }
@@ -2170,17 +2117,16 @@ void yuunpc_pose_minigame4_main(void) {
                 case 27:
                 case 28:
                 {
-                    f32 f6 = entry->field_2C;
                     f32 f7 = -150.0f + f0;
                     f32 f2;
-                    if (f6 >= f7 && f6 < 150.0f) {
+                    if (entry->field_2C >= f7 && entry->field_2C < 150.0f) {
                         f2 = 50.0f * (f32)mode;
-                        if (f6 >= -150.0f + f2 && f6 < (150.0f - f2) + f0) {
+                        if (entry->field_2C >= -150.0f + f2 && entry->field_2C < (150.0f - f2) + f0) {
                             f31 = 0.0f;
-                        } else if (f6 > 0.0f) {
-                            f31 = f6 - ((float_150_yuu_0001509c - f2) + f0);
+                        } else if (entry->field_2C > 0.0f) {
+                            f31 = entry->field_2C - ((150.0f - f2) + f0);
                         } else {
-                            f31 = -f7 + f6;
+                            f31 = -f7 + entry->field_2C;
                         }
                     } else {
                         f31 = 0.0f;
@@ -2348,6 +2294,7 @@ void yuunpc_pose_minigame4_main(void) {
             case 4:
                 switch (entry->flags & 0x18) {
                 case 0x18:
+                    f3 = 0.0f;
                     break;
                 case 8:
                 case 0x10:
@@ -2391,48 +2338,17 @@ void yuunpc_pose_minigame4_main(void) {
                 st = entry->field_4C;
                 switch (st) {
                 case 0: {
-                    f32 vf0, vf3, vf4;
                     s32 r0v;
-                    vf0 = entry->field_2C;
-                    vf4 = entry->field_18;
-                    vf3 = vf0 - entry->field_20;
-                    vf0 = entry->field_3C;
-                    vf0 = vf0 * vf0;
-                    f0 = entry->field_24 - vf4;
-                    vf3 = vf3 * vf3;
-                    vf3 = f0 * f0 + vf3;
-                    if (vf3 <= vf0) {
-                        if (vf4 == entry->field_C.x &&
-                            entry->field_20 == entry->field_C.z) {
-                            entry->field_24 = vf4;
-                            r0v = -1;
-                            entry->field_2C = entry->field_20;
-                            goto r0v_set;
-                        }
-                        *(Vec*)&entry->field_18 = *&entry->field_C;
-                    }
-                    r0v = 0;
-                r0v_set:
+                    r0v = goalincheck((YuunpcMapWork*)entry);
                     if (r0v == -1 || (yuunpc_wp->flags & 1) ||
-                        (entry->field_4 < 2 && entry->field_4 <= 1 && irand(0x24) != 0)) {
-                        goto done;
+                        (entry->field_4 < 2 && !(entry->field_4 <= 1 && irand(0x24) == 0))) {
+                        break;
                     }
                     {
-                        f32 t4 = 25.0f + entry->field_24;
-                        f32 t5;
-                        s32 h1, h2;
-                        h1 = (t4 < -1800.0f || t4 >= 1800.0f ||
-                               entry->field_2C < -150.0f ||
-                               entry->field_2C >= 150.0f) ? -500
-                             : (s16)yuunpc_wp->map[(s32)((t4 - (-1800.0f)) / 50.0f) +
-                                                   0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
-                        t5 = 75.0f + entry->field_24;
+                                                s32 h1, h2;
+                        h1 = ((25.0f + entry->field_24) < -1800.0f || (25.0f + entry->field_24) >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)(((25.0f + entry->field_24) - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
                         f27 = (f32)h1;
-                        h2 = (t5 < -1800.0f || t5 >= 1800.0f ||
-                               entry->field_2C < -150.0f ||
-                               entry->field_2C >= 150.0f) ? -500
-                             : (s16)yuunpc_wp->map[(s32)((t5 - (-1800.0f)) / 50.0f) +
-                                                   0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
+                        h2 = ((75.0f + entry->field_24) < -1800.0f || (75.0f + entry->field_24) >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)(((75.0f + entry->field_24) - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)];
                         f28 = (f32)h2;
                         if (entry->field_4 <= 3 && irand(2) != 0) {
                             if (f27 >= entry->field_28) {
@@ -2452,16 +2368,16 @@ void yuunpc_pose_minigame4_main(void) {
                                 goto bf30;
                             }
                             if ((entry->flags & 0x18) == 0) {
-                                goto done;
+                                break;
                             }
                             if (f27 >= entry->field_28) {
                                 goto bf30;
                             }
                             if (!(f27 < entry->field_28)) {
-                                goto done;
+                                break;
                             }
                             if (!(f28 < entry->field_28)) {
-                                goto done;
+                                break;
                             }
                         bf30:
                             entry->field_4C = 2;
@@ -2476,31 +2392,11 @@ void yuunpc_pose_minigame4_main(void) {
                     }
                 } break;
                 case 1: {
-                    f32 vf0, vf3, vf4;
                     s32 r0v;
                     Vec va1, va2;
                     Vec vb1, vb2;
                     s32 s1, s2, s3;
-                    vf0 = entry->field_2C;
-                    vf4 = entry->field_18;
-                    vf3 = vf0 - entry->field_20;
-                    vf0 = entry->field_3C;
-                    vf0 = vf0 * vf0;
-                    f0 = entry->field_24 - vf4;
-                    vf3 = vf3 * vf3;
-                    vf3 = f0 * f0 + vf3;
-                    if (vf3 <= vf0) {
-                        if (vf4 == entry->field_C.x &&
-                            entry->field_20 == entry->field_C.z) {
-                            entry->field_24 = vf4;
-                            r0v = -1;
-                            entry->field_2C = entry->field_20;
-                            goto r0v_set2;
-                        }
-                        *(Vec*)&entry->field_18 = *&entry->field_C;
-                    }
-                    r0v = 0;
-                r0v_set2:
+                    r0v = goalincheck((YuunpcMapWork*)entry);
                     if (r0v == -1) {
                         entry->field_4C = 0;
                         yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
@@ -2512,17 +2408,20 @@ void yuunpc_pose_minigame4_main(void) {
                         PSVECNormalize(&va1, &va1);
                         PSVECScale(&va1, &va2, 10.0f);
                         { f32 hx = entry->field_24 + va2.x;
-                          s1 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
-                        f27 = (f32)s1;
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f;
+                          s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
+                        f28 = (f32)s1;
                         PSVECScale(&va1, &va2, 25.0f);
                         { f32 hx = entry->field_24 + va2.x;
-                          s2 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
-                        f28 = (f32)s2;
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f;
+                          s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
+                        f27 = (f32)s2;
                         PSVECScale(&va1, &va2, 75.0f);
                         { f32 hx = entry->field_24 + va2.x;
-                          s3 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + va2.z < -150.0f || entry->field_2C + va2.z >= 150.0f;
+                          s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + va2.z - (-150.0f)) / 50.0f)]; }
                         f0 = (f32)s3;
-                        if (f27 > entry->field_28) {
+                        if (f28 > entry->field_28) {
                             entry->field_4C = 4;
                             yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
                             entry->field_40 = 6.5f;
@@ -2534,7 +2433,7 @@ void yuunpc_pose_minigame4_main(void) {
                             r26++;
                             goto cbec;
                         }
-                        if (f28 < entry->field_28 && f0 == entry->field_28) {
+                        if (f27 < entry->field_28 && f0 == entry->field_28) {
                             entry->field_4C = 0;
                             yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                             entry->field_3C = 0.0f;
@@ -2547,7 +2446,7 @@ void yuunpc_pose_minigame4_main(void) {
                                 entry->field_3C = 0.0f;
                                 goto cbec;
                             }
-                            if (f28 >= entry->field_28) {
+                            if (f27 >= entry->field_28) {
                                 entry->field_4C = 2;
                                 yuunpc_pose_change(entry, entry->field_5A, 1.0f, (f32)rand() / 32767.0f);
                                 if (entry->flags & 0x18) {
@@ -2562,17 +2461,20 @@ void yuunpc_pose_minigame4_main(void) {
                         PSVECNormalize(&vb1, &vb1);
                         PSVECScale(&vb1, &vb2, 20.0f);
                         { f32 hx = entry->field_24 + vb2.x;
-                          s1 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
-                        f27 = (f32)s1;
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f;
+                          s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
+                        f28 = (f32)s1;
                         PSVECScale(&vb1, &vb2, 25.0f);
                         { f32 hx = entry->field_24 + vb2.x;
-                          s2 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
-                        f28 = (f32)s2;
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f;
+                          s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
+                        f27 = (f32)s2;
                         PSVECScale(&vb1, &vb2, 75.0f);
                         { f32 hx = entry->field_24 + vb2.x;
-                          s3 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + vb2.z < -150.0f || entry->field_2C + vb2.z >= 150.0f;
+                          s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + vb2.z - (-150.0f)) / 50.0f)]; }
                         f0 = (f32)s3;
-                        if (f27 > entry->field_28) {
+                        if (f28 > entry->field_28) {
                             if (data->unk10 == 0) {
                                 entry->field_4C = 4;
                                 yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
@@ -2591,7 +2493,7 @@ void yuunpc_pose_minigame4_main(void) {
                                 goto cbec;
                             }
                         }
-                        if (!(f28 < entry->field_28 && f0 == entry->field_28)) {
+                        if (!(f27 < entry->field_28 && f0 == entry->field_28)) {
                             if (!(entry->field_4 <= 3 && irand(0x3c) == 0)) {
                                 goto cbec;
                             }
@@ -2624,31 +2526,11 @@ void yuunpc_pose_minigame4_main(void) {
                     r28++;
                 } break;
                 case 2: {
-                    f32 vf0, vf3, vf4;
                     s32 r0v;
                     Vec wa1, wa2;
                     Vec wb1, wb2;
                     s32 s1, s2, s3;
-                    vf0 = entry->field_2C;
-                    vf4 = entry->field_18;
-                    vf3 = vf0 - entry->field_20;
-                    vf0 = entry->field_3C;
-                    vf0 = vf0 * vf0;
-                    f0 = entry->field_24 - vf4;
-                    vf3 = vf3 * vf3;
-                    vf3 = f0 * f0 + vf3;
-                    if (vf3 <= vf0) {
-                        if (vf4 == entry->field_C.x &&
-                            entry->field_20 == entry->field_C.z) {
-                            entry->field_24 = vf4;
-                            r0v = -1;
-                            entry->field_2C = entry->field_20;
-                            goto r0v_set3;
-                        }
-                        *(Vec*)&entry->field_18 = *&entry->field_C;
-                    }
-                    r0v = 0;
-                r0v_set3:
+                    r0v = goalincheck((YuunpcMapWork*)entry);
                     if (r0v == -1) {
                         entry->field_4C = 0;
                         yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
@@ -2660,17 +2542,20 @@ void yuunpc_pose_minigame4_main(void) {
                         PSVECNormalize(&wa1, &wa1);
                         PSVECScale(&wa1, &wa2, 20.0f);
                         { f32 hx = entry->field_24 + wa2.x;
-                          s1 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
-                        f27 = (f32)s1;
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f;
+                          s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
+                        f28 = (f32)s1;
                         PSVECScale(&wa1, &wa2, 25.0f);
                         { f32 hx = entry->field_24 + wa2.x;
-                          s2 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
-                        f28 = (f32)s2;
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f;
+                          s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
+                        f27 = (f32)s2;
                         PSVECScale(&wa1, &wa2, 75.0f);
                         { f32 hx = entry->field_24 + wa2.x;
-                          s3 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wa2.z < -150.0f || entry->field_2C + wa2.z >= 150.0f;
+                          s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wa2.z - (-150.0f)) / 50.0f)]; }
                         f0 = (f32)s3;
-                        if (f27 > entry->field_28) {
+                        if (f28 > entry->field_28) {
                             entry->field_4C = 4;
                             yuunpc_pose_change(entry, entry->field_5C, 0.0f, yuunpc_wp->poseEntries[entry->field_5C].field_20 / yuunpc_wp->poseEntries[entry->field_5C].field_1C);
                             entry->field_40 = 6.5f;
@@ -2682,7 +2567,7 @@ void yuunpc_pose_minigame4_main(void) {
                             r26++;
                             goto cbec2;
                         }
-                        if (f28 < entry->field_28 && f0 == entry->field_28) {
+                        if (f27 < entry->field_28 && f0 == entry->field_28) {
                             entry->field_4C = 0;
                             yuunpc_pose_change(entry, entry->field_56, 1.0f, (f32)rand() / 32767.0f);
                             entry->field_3C = 0.0f;
@@ -2697,7 +2582,7 @@ void yuunpc_pose_minigame4_main(void) {
                                     goto cbec2;
                                 }
                             }
-                            if (f28 >= entry->field_28) {
+                            if (f27 >= entry->field_28) {
                                 entry->field_4C = 1;
                                 yuunpc_pose_change(entry, entry->field_58, yuunpc_wp->poseEntries[entry->field_58].field_30, (f32)rand() / 32767.0f);
                                 if (entry->flags & 0x18) {
@@ -2712,22 +2597,25 @@ void yuunpc_pose_minigame4_main(void) {
                         PSVECNormalize(&wb1, &wb1);
                         PSVECScale(&wb1, &wb2, 5.0f);
                         { f32 hx = entry->field_24 + wb2.x;
-                          s1 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
-                        f27 = (f32)s1;
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f;
+                          s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
+                        f28 = (f32)s1;
                         PSVECScale(&wb1, &wb2, 45.0f);
                         { f32 hx = entry->field_24 + wb2.x;
-                          s2 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
-                        f28 = (f32)s2;
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f;
+                          s2 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
+                        f27 = (f32)s2;
                         PSVECScale(&wb1, &wb2, 55.0f);
                         { f32 hx = entry->field_24 + wb2.x;
-                          s3 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
+                          oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C + wb2.z < -150.0f || entry->field_2C + wb2.z >= 150.0f;
+                          s3 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C + wb2.z - (-150.0f)) / 50.0f)]; }
                         f0 = (f32)s3;
-                        if (f27 < entry->field_28) {
+                        if (f28 < entry->field_28) {
                             if (f0 == entry->field_28) {
                                 goto d670;
                             }
                         }
-                        if (!(f28 > entry->field_28)) goto d764;
+                        if (!(f27 > entry->field_28)) goto d764;
                     d670:
                         if (data->unk10 == 0) {
                             entry->field_4C = 4;
@@ -2757,7 +2645,8 @@ void yuunpc_pose_minigame4_main(void) {
                                 }
                             }
                             { f32 hx = 25.0f + entry->field_24;
-                              s1 = (hx < -1800.0f || hx >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f) ? -500 : (s16)yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)]; }
+                              oob = hx < -1800.0f || hx >= 1800.0f || entry->field_2C < -150.0f || entry->field_2C >= 150.0f;
+                              s1 = oob ? -500 : yuunpc_wp->map[(s32)((hx - (-1800.0f)) / 50.0f) + 0x48 * (s32)((entry->field_2C - (-150.0f)) / 50.0f)]; }
                             f0 = (f32)s1;
                             if (f0 >= entry->field_28) {
                                 entry->field_4C = 1;
@@ -2790,7 +2679,6 @@ void yuunpc_pose_minigame4_main(void) {
             loop_test:;
             } while (mode);
         }
-    done:
         n = entry->field_4C;
         switch (n) {
         case 0:
@@ -2948,109 +2836,5 @@ void ext_yuunpc_minigame4_main(void) {
     yuunpc_pose_minigame4_main();
 }
 // its asm is in build/G8MJ01/yuu/asm/event/evt_yuunpc.s; this is where the original has it, just before the first script that uses it
-
-// TODO: type
-static u32 jumptable_00005CC4[25] = {
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1770), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1764), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1764), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1758),
-};
-// TODO: type
-static u32 jumptable_00005D28[25] = {
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1724), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1718), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1718), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1778),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1714),
-};
-// TODO: type
-static u32 jumptable_00005D8C[25] = {
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1460), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x15d8), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x16a0),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1518),
-};
-// TODO: type
-static u32 jumptable_00005DF0[8] = {
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1374), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x12ac), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x12ac),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x12ac), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1374),
-};
-// TODO: type
-static u32 jumptable_00005E10[8] = {
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1140), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1078), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x10dc), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1078),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x10dc), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1078), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x10dc), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1140),
-};
-// TODO: type
-static u32 jumptable_00005E30[25] = {
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xf04), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1438),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x1208),
-};
-// TODO: type
-static u32 jumptable_00005E94[29] = {
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xdd4), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xde0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xde0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xdd4), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xea4),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xea4),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xea4),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xea4),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xd90), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xde0),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xde0),
-};
-// TODO: type
-static u32 jumptable_00005F08[29] = {
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xca8), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xcb4), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xcb4), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xca8), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xea4),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xea4),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xea4),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xea4),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xc68), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xcb4),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xcb4),
-};
-// TODO: type
-static u32 jumptable_00005F7C[29] = {
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x4b8), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x4b8), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x550), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x550),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x550), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x550), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x550), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x6ec),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x6ec), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x6ec), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x6ec), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x784),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x7f0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x7f0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x7f0), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x7f0),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x944), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x944), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x944), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x944),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0xa94), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xa94), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xa94), (u32)((u8*)&yuunpc_pose_minigame4_main + 0xa94),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x548), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x548), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x548), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x548),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x548),
-};
-// TODO: type
-static u32 jumptable_00005FF0[25] = {
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x274), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x28c), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310), (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310),
-    (u32)((u8*)&yuunpc_pose_minigame4_main + 0x310),
-};
-// TODO: type
-static u32 jumptable_00006054[8] = {
-    (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x25b0), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x24e8), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x254c), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x24e8),
-    (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x254c), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x24e8), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x254c), (u32)((u8*)&ext_yuunpc_minigame4_init_sub + 0x25b0),
-};
-// TODO: type
-static u32 jumptable_00006074[8] = {
-    (u32)((u8*)&errper_set_rtn + 0x104), (u32)((u8*)&errper_set_rtn + 0x3C), (u32)((u8*)&errper_set_rtn + 0xA0), (u32)((u8*)&errper_set_rtn + 0x3C),
-    (u32)((u8*)&errper_set_rtn + 0xA0), (u32)((u8*)&errper_set_rtn + 0x3C), (u32)((u8*)&errper_set_rtn + 0xA0), (u32)((u8*)&errper_set_rtn + 0x104),
-};
 
 // clang-format on
