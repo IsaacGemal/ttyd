@@ -5783,6 +5783,18 @@ what-if showed the single range had to be numbered below `count`. Tried and fail
 the pragma (split back into two ranges, 98.46), `opt_propagation off` alone, `u8`/`char` for it, the natural
 break-form lookup (95.40), `wp->info[count]` without `offset` (98.37). Next: make the goto lookup and `offset` natural.
 
+**sys links: display_func 99.70 and display 99.84 -> 100 (on1-sys; lever from the list: partial; 155k, 16 min).**
+Every float and string became a literal at its use (named objects and `double_to_int` definitions gone), and
+display's init-loop x is `(f32)((count - 1) * 0x24) / 2.0f` (the `/ 2.0f` lever, #619/#652), which took display to
+100. In display_func the nine named `dat_`/`vec3_` constants became local initialisers (no more volatile reads);
+their templates must sit between msg_tbl's strings and lang_prefix's, so display_func and the five functions before
+it moved to just after msg_tbl. The last stack slots came from the agent's own rule: declared locals are allocated
+first, then argument copies and compound-literal temps in parse order, then inline locals last. So the material
+colours are `(GXColor){ v, v, v, 0xFF }` compound literals and the camera eye
+`Vec camPos = (Vec){ 0.0f, 0.0f, 1.0f / (f32)tan(0.21816616f) };` (an inline returning GXColor reached 99.99 with
+one slot wrong; a block-local `GXColor c` took the top slot). `cbuf` is `u16 cbuf[2]` (4 bytes, not 8, which had
+shifted every Vec slot). getLightColor is called normally instead of expanded by hand.
+
 ### Swarm batch 4a (2026-10-10, DeepSeek V4.1 Flash; Claude Opus 5.5 orchestrating), [#690](https://github.com/IsaacGemal/ttyd/pull/690)
 - Wins:
   - **A literal 0.0f at each compare** (BattleAudienceWinCtrlProcess -> 100). A named zero hoists into one FPR, and the original reloads it at every check.

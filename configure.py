@@ -2143,7 +2143,7 @@ config.libs = [
     Rel(
         "sys",
         [
-            Object(NonMatching, "sys.c"),
+            Object(Matching, "sys.c"),
         ],
     ),
     Rel(
