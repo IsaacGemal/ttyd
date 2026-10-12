@@ -7353,10 +7353,14 @@ static inline f32 puniRandfSetup(f32 a, f32 b) {
 }
 
 
-// NONMATCHING (99.46%): logic, constants and offsets match; declaring i before p matches the
-// original's p=r28/i=r29. The remaining diffs are register allocation (event r22 vs r23, args r27
-// vs r22, mario r31 vs r30, ...) and the anonymous float-pool symbols.
+// NONMATCHING (99.53%): logic, constants and offsets match. Hoisting the byte/offset/iv temporaries
+// to function scope fixed the event/args registers (they were r22/r27, now r23/r22). The remaining
+// diffs are register allocation: mario r31 vs r30, c0 r30 vs r31, and the b6/iv2/iv3 conversion
+// temps and the anonymous float-pool symbols.
 USER_FUNC(evt_puni_setup) {
+    u8 b1, b2, b3, b4, b5, b6;
+    s32 off;
+    s32 iv1, iv2, iv3;
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
     s32 a = evtGetValue(event, args[0]);
@@ -7398,7 +7402,6 @@ USER_FUNC(evt_puni_setup) {
     p = &Punidat[1];
     for (i = 1; i <= 0x6d; i++, p++) {
         s32 c0;
-        u8 b1, b2, b3, b4, b5, b6;
         f32 v1, v2, v3;
 
         if (p->unk4 & 0x40000000) {
@@ -7410,8 +7413,7 @@ USER_FUNC(evt_puni_setup) {
             continue;
         }
         {
-            s32 off = (i - 1) * 7;
-            s32 iv1, iv2, iv3;
+            off = (i - 1) * 7;
 
             c0 = (u8)_swByteGet(off + 0);
             b1 = _swByteGet(off + 1);
