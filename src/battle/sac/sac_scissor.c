@@ -1264,20 +1264,20 @@ static inline GXColor SCISSOR_HSV2RGB(GXColor* h) {
     return c;
 }
 #endif
-// The original keeps the built HSV colour at r1+0x8 and GXSetChanMatColor's outgoing
-// argument at r1+0xC; ours has the argument at r1+0x8 and the colour at r1+0xC (same
-// instructions, same frame). The original materialises HSV2RGB's result directly in the
-// argument slot; calling it through a GXColor-returning pointer removes the extra copy
-// the u32 return type would add. The hsvTmp copy reproduces the original's
-// build-in-a-temp then copy-into-the-local shape.
-// NONMATCHING (99.97%): the two stack slots are swapped (see above).
+#ifdef MUST_MATCH
+// Inline locals are allocated after call argument temporaries: this puts the
+// copied HSV input at r1+0x8 and the RGB argument at r1+0xC, matching retail.
+static inline void scissorSetHSVColor(GXColor* hsv) {
+    GXColor tmp = *hsv;
+
+    GXSetChanMatColor(GX_COLOR0A0, SCISSOR_HSV2RGB(&tmp));
+}
+#endif
+
 void scissor_disp_control(CameraId cameraId, void* param) {
     ScissorWork* work = GetScissorPtr();
     f32* points = work->field_0x114;
     GXColor hsv;
-#ifdef MUST_MATCH
-    GXColor hsvTmp;
-#endif
     s32 i;
 
     work->field_0x10++;
@@ -1308,8 +1308,7 @@ void scissor_disp_control(CameraId cameraId, void* param) {
         hsv = *(GXColor*)&dat_8042171c;
         hsv.r = (u8)(((gp->retraceCount + i * 2) % 0x7F) << 1);
 #ifdef MUST_MATCH
-        hsvTmp = hsv;
-        GXSetChanMatColor(GX_COLOR0A0, SCISSOR_HSV2RGB(&hsvTmp));
+        scissorSetHSVColor(&hsv);
 #else
         GXSetChanMatColor(GX_COLOR0A0, SCISSOR_HSV2RGB(&hsv));
 #endif
