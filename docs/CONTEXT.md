@@ -6226,3 +6226,26 @@ The targets were every untried function at 98.2-99.99% in the 15 big unlinked un
 
 - evt_puni_setup +0.07: the loop body's conversion temps (`b1`-`b6`, `off`, `iv1`-`iv3`) are declared at function scope. `event` and `args` then take r23/r22 as in retail. Still open, register-only: the marioGetPtr result and the first conversion temp swap r30/r31.
 
+
+
+### party_motion_homing_walk 99.99 -> 100 (2026-10-12, GPT-6.1 Sol in Codex), [#748](https://github.com/IsaacGemal/ttyd/pull/748)
+
+**Ledger win:** the closing lever came straight from the ledger (#668's late-deleted sign-word experiment), read before
+any edit. Several Opus runs had left this function at 99.99 without finding it.
+
+Read the two previous attempts and the compiler experiment entries before changing the function.
+The only remaining differences were two address instructions before the second movePos call: retail
+computes the z-pointer in r4 before the x-pointer in r3. Reordered inline parameters canonicalized
+back to the baseline; shared pointer locals and inline-local pointer copies disturbed other GPRs.
+Equivalent stack-address expressions also canonicalized back to the baseline.
+
+The closing source form is a MUST_MATCH-only 64-bit round trip on the z-pointer:
+`(f32*)(u32)(s64)(s32)&vA0.z`. The final u32 cast retains the pointer's low 32 bits on GameCube;
+the natural path uses `&vA0.z` directly. This follows the ledger's late-deleted sign-word/cast
+experiments (#668 and the early parameter-save rule), without extra pointer locals. The x-pointer
+round trip alone leaves the 99.99% result; the z-pointer alone reaches 100%. All 1,160 instructions
+match; party_motion now has 51/53 matched functions, with jump and homing_fly scores unchanged.
+The .rodata, .sdata2, .data and .sdata section bytes equal the baseline objects. The compiler dump
+confirms that the cast introduces `srawi r266,r4,0x1f` in B277; the first scheduling pass moves
+`addi r4` before `addi r3`, and the post-allocation peephole deletes the sign word. Full project CI
+passed: no regressions, the natural build succeeds, and linked modules pass build.sha1 checksums.
