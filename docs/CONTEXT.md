@@ -6194,3 +6194,13 @@ The targets were every untried function at 98.2-99.99% in the 15 big unlinked un
   - psndBGMOn_f_d (pmario_sound) 99.27 -> 100 refused: it stores the BGM id in the dead `const char*` parameter `b` through cast macros to reuse its register.
   - FontDrawMessage (fontmgr) 99.91 -> 99.98 refused: it copies FontDrawColor's body and adds a second colour-helper variant to move stack slots.
 
+
+### Swarm batch 5e (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#740](https://github.com/IsaacGemal/ttyd/pull/740)
+
+- Wins:
+  - **The function's own search loop as a `static inline`** (ext_init_minnnanokoe, btlevtcmd_DrawLots, puniModeParentpre -> 100). This is the same lever as spline_backsub and mobjSwitchAnimIndex in 5a/5b: inlining changes the register allocation of the loop's induction variables so they match the original. In DrawLots the two counters also had to be zeroed in separate statements.
+  - **A store through a `u16` lvalue to an `s16` header field** (puniModeRecover -> 100, `MUST_MATCH` only, plain store in `#else`). The unsigned access makes MWCC schedule the following `li` before the `sth`, as in the target.
+- Hard negatives (refused):
+  - puniFukki (mri_puni): a `MUST_MATCH` alias `p0 = puni + zero` exists only to split a register web.
+  - __psndSFXOn (pmario_sound): it carries the name pointer through an `s32` local that is reused as a counter. This is the same type-pun pattern as psndBGMOn_f_d in 5d.
+
