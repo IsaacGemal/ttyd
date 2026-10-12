@@ -6204,3 +6204,20 @@ The targets were every untried function at 98.2-99.99% in the 15 big unlinked un
   - puniFukki (mri_puni): a `MUST_MATCH` alias `p0 = puni + zero` exists only to split a register web.
   - __psndSFXOn (pmario_sound): it carries the name pointer through an `s32` local that is reused as a counter. This is the same type-pun pattern as psndBGMOn_f_d in 5d.
 
+
+### Swarm batch 5f (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#742](https://github.com/IsaacGemal/ttyd/pull/742)
+
+- Wins:
+  - **Named locals for loop-invariant field addresses** (evt_puni_all_fall_check -> 100): `f32* pHitY = &hit.y;` etc. The frontend's own `@` address temps outrank named locals in colouring priority, so they took r31..r28. As named locals, declared after `puni` and `i`, they colour below those two, as in retail.
+  - **Function-scope loop variables in colour order** (puni_puni_main -> 100): the two loops' counters and pointers are declared at the top, in the order the original assigns their registers.
+  - **An assignment inside an argument list** (taihou_r -> 100): `angleABf(..., p = 100.0f * s)`, with `p` reused by the second call. The zero-address arguments are then materialised before the product.
+  - **`sum = a + sum` under `opt_propagation`/`opt_lifetimes` off** (BattleAudienceJoy_Sub -> 100): `sum += a` always emits the destination register first. With propagation on, the two statements fold and the three-term sum is reassociated.
+  - npcMain +0.29: `opt_loop_invariants off` stops the "kpa_03" address from being hoisted, and the SFX name, which retail does hoist, becomes a named local.
+- Hard negatives (refused):
+  - npcMain: `dist = dist > 0 ? dist : dist;` (a no-op ternary, worth +0.53, reaching 99.13) and an `angleTmp` copy-through temp. Retail's redundant `fcmpo` before PSVECSubtract remains open.
+  - BattleAudienceAddAudienceNum 98.94 -> 99.42 needs `nextId = rand(); id = nextId;` (a copy-through temp).
+  - No source lever (agent evidence, rasim/mwsearch):
+    - BattleAudience_ApRecoveryBuild 99.94: a commuted final `fmuls` on a flat float chain; mwsearch found nothing in 7336 compiles.
+    - bom1000_jump 99.12: compiler CSE temps rotate r30/r31.
+    - evt_puni_debug_info 99.67: sign-extension temps swap r3/r4.
+
