@@ -2477,15 +2477,27 @@ void mapMain(void) {
 #pragma opt_common_subs reset
 #pragma opt_loop_invariants reset
 
-// Routing the inlined mapSetMaterialLastStageBlend through this wrapper reproduces the
-// original's register allocation (flags in r3, activeGroup in r4) and blend temp layout.
-static inline void mapBlendSet(s32 flags, MapObject* obj, MapMaterialTex* material) {
-	mapSetMaterialLastStageBlend(flags, *(GXColor*)obj->field_0xC, *(GXColor*)((u8*)material + 0x10C));
+// Objects with the 0x80000 flag suppress the map fog.
+static inline void mapDrawObjectFog(MapObject* obj) {
+	CameraEntry* cur = camGetCurPtr();
+	MapEntry* entry = &mapWork[activeGroup].entries[0];
+
+	if ((entry->flags & 0x1) && !(*(u32*)obj->field_0x0 & 0x80000)) {
+		GXSetFog(fog_type[*(s32*)((u8*)entry + 0x28)], *(f32*)((u8*)entry + 0x2C), *(f32*)((u8*)entry + 0x30), cur->near, cur->far, *(GXColor*)((u8*)entry + 0x34));
+	}
+	else {
+		GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, dat_80419824);
+	}
 }
 
-// NONMATCHING (99.98%): instruction-for-instruction except the by-value GXColor call temps.
-// The target's slots (fog 0x18/1c, loop2 0x20/24, loop1 0x28/2c) need the blend expanded as a
-// macro, which swaps flags/activeGroup; the inline wrapper fixes the registers but rotates them.
+#ifdef MUST_MATCH
+// A scalar compound literal keeps the flags web ahead of the inlined map-work pointer
+// in MWCC's allocation order, without changing the by-value GXColor argument slots.
+#define MAP_BLEND_FLAGS(obj) ((s32){ *(u32*)(obj)->field_0x0 })
+#else
+#define MAP_BLEND_FLAGS(obj) ((s32)*(u32*)(obj)->field_0x0)
+#endif
+
 void _mapDispMapObj(CameraId camId, MapObject* obj) {
 	CameraEntry* cam;
 	Mtx mtx;
@@ -2600,17 +2612,7 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 	if (cull != culling[obj->joints->drawMode->cullMode]) {
 		GXSetCullMode(culling[obj->joints->drawMode->cullMode]);
 	}
-	{
-		CameraEntry* cur = camGetCurPtr();
-		MapEntry* entry = &mapWork[activeGroup].entries[0];
-
-		if ((entry->flags & 0x1) && !(*(u32*)obj->field_0x0 & 0x80000)) {
-			GXSetFog(fog_type[*(s32*)((u8*)entry + 0x28)], *(f32*)((u8*)entry + 0x2C), *(f32*)((u8*)entry + 0x30), cur->near, cur->far, *(GXColor*)((u8*)entry + 0x34));
-		}
-		else {
-			GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, dat_80419824);
-		}
-	}
+	mapDrawObjectFog(obj);
 
 	if (!(*(u32*)obj->field_0x0 & 0x20) || !((*(u32*)obj->field_0x0 & 0x4000) || ((*(u32*)obj->field_0x0 & 0x1) && !(*(u32*)obj->field_0x0 & 0x80)) || ((*(u32*)obj->field_0x0 & 0x40) && obj->field_0xC[3] == 0))) {
 		if (*(u32*)obj->field_0x0 & 0x100) {
@@ -2619,7 +2621,7 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 				MapFileMesh* mesh = obj->joints->parts[i].mesh;
 
 				mapSetTextureMatrix(material);
-				mapBlendSet(*(u32*)obj->field_0x0, obj, material);
+				mapSetMaterialLastStageBlend(MAP_BLEND_FLAGS(obj), *(GXColor*)obj->field_0xC, *(GXColor*)((u8*)material + 0x10C));
 				mapSetPolygonVtxDesc(obj, mesh);
 				GXCallDisplayList(*(void**)(obj->field_0xEC + 8 + i * 4), *(u32*)(obj->field_0xEC + 0x28 + i * 4));
 				{
@@ -2637,7 +2639,7 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 				MapFileMesh* mesh = obj->joints->parts[i].mesh;
 
 				mapSetTextureMatrix(material);
-				mapBlendSet(*(u32*)obj->field_0x0, obj, material);
+				mapSetMaterialLastStageBlend(MAP_BLEND_FLAGS(obj), *(GXColor*)obj->field_0xC, *(GXColor*)((u8*)material + 0x10C));
 				mapSetMaterial(obj, material);
 				mapSetPolygon(obj, mesh);
 			}
@@ -2656,6 +2658,8 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 		GXSetNumIndStages(0);
 	}
 }
+
+#undef MAP_BLEND_FLAGS
 
 void _mapDispMapGrp(CameraId camId, MapObject* obj) {
 	_mapDispMapObj(camId, obj);
