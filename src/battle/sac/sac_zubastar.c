@@ -576,11 +576,6 @@ static const Vec zubastar_points_init[4] = {
 // switch on work->field_0x004, work->field_0x018 and work->field_0x07C. Case 0x19 of the first
 // gathers the star endpoints, sorts them, finds the widest gap on each edge and randomly places a
 // split point in it before calling zubastar_bunkatu.
-// The instruction stream is complete. The remaining difference is the unit's .rodata still being
-// 0x40 bytes short of the original: the tail this file does not yet define (str_802FF7D0/7E4/7F8/80C,
-// the i2f double_to_int_802ff828 and str_802FF830/848) sits before the conversion double and the
-// STAR1/2/3 string reads, so those read early (0x180/0x188/0x1a0 instead of 0x1c0/0x1c8/0x1e0).
-// NONMATCHING (99.99%): six .rodata offsets of the unported tail (details above).
 s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
 #ifdef MUST_MATCH
@@ -1074,10 +1069,7 @@ s32 zubastar_main(EventEntry* event, BOOL isFirstCall) {
 // the known values and recovers the schedule. Two structural details matter (both under MUST_MATCH below):
 // a single-case `switch` instead of `if` for the early-out guard, which makes MWCC emit `beq body;
 // b main_loop` like the original, and hoisting the SFX string into a loop-lived local to fix the
-// callee-saved colouring. The remaining diffs are three .rodata reads: the SFX string at 0x168
-// instead of the original's 0x1a4 and the i2f double at 0x180 instead of 0x1c0, both shifted by the
-// not-yet-ported .rodata tail (str_802FF7D0/E4/F8/80C, double_to_int_802ff828 and str_802FF830/848).
-// NONMATCHING (99.99%): 3 rodata offsets (unported unit .rodata tail).
+// callee-saved colouring.
 s32 zubastar_bomb(EventEntry* event, BOOL isFirstCall) {
     ZubaStarWork* work = GetZubaStarPtr();
     s32 i;
@@ -1416,3 +1408,9 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
 #undef Z18
 #undef Z20
 #undef Z2C
+
+// Keep these startup sound names after the vector templates and before the compiler's
+// function-literal pool. The original marioAttackEvent_ZubaStar script references them.
+const char str_802FF7D0[20] = "SFX_BTL_SAC_START1";
+const char str_802FF7E4[20] = "SFX_BTL_SAC_START2";
+const char str_802FF7F8[20] = "SFX_BTL_SAC_START3";
