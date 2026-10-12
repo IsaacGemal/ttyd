@@ -3267,15 +3267,13 @@ void puniModeNormal(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (99.06%): the instruction sequence is identical; only the loop
-// pointer is allocated r6 instead of r3 (and the field temporary takes r3).
-void puniModeParentpre(PuniData* punidat) {
+// Picks the parent puni with the lowest field_0x11A. Kept as an inline helper so
+// the loop pointer colours ahead of the field-load CSE temp (r3 in the original).
+static inline PuniData* puniParentpreFind(PuniData* punidat, s16* outMin) {
     s32 i;
     s16 min;
     PuniData* best;
     PuniData* p;
-    f32 mag;
-    Vec vec;
 
     min = 10000;
     p = Punidat;
@@ -3298,6 +3296,17 @@ void puniModeParentpre(PuniData* punidat) {
             min += 1;
         }
     }
+    *outMin = min;
+    return best;
+}
+
+void puniModeParentpre(PuniData* punidat) {
+    s16 min;
+    PuniData* best;
+    f32 mag;
+    Vec vec;
+
+    best = puniParentpreFind(punidat, &min);
     if (min != 10000) {
         punidat->field_0x1D0 = (s32)best;
         punidat->field_0x11A = min;
@@ -4217,9 +4226,6 @@ static inline f32 puniRandfRecover(f32 a, f32 b) {
 }
 
 
-// NONMATCHING (99.38%): only the `field_0xE = unkC` store in case 1 is scheduled one slot earlier
-// than the target (ours before `li r3, 0xd`, the target after it); reordering the source statements
-// or routing the old unkC through a temporary only makes it worse.
 void puniModeRecover(PuniData* punidat) {
     s32 i;
     PuniData* p;
@@ -4298,7 +4304,13 @@ void puniModeRecover(PuniData* punidat) {
             return;
         }
         if (punidat->field_0x1A0 > 10.0f) {
+#ifdef MUST_MATCH
+            // An unsigned 16-bit access makes MWCC schedule `li r3, 0xd` before the store, as in
+            // the target (the header declares `field_0xE` as s16).
+            *(u16*)&punidat->field_0xE = punidat->unkC;
+#else
             punidat->field_0xE = punidat->unkC;
+#endif
             punidat->field_0x1DC = Punigp->field_0x360;
             punidat->unkC = 13;
             punidat->field_0x114 = 0;
