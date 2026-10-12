@@ -3118,19 +3118,18 @@ USER_FUNC(bom1000_msg) {
     return EVT_RETURN_DONE;
 }
 
-#pragma opt_common_subs off // keeps the three float temps and the schedule the target has (see the NONMATCHING note)
-// NONMATCHING (99.66%): the first block loads float_100 into r4 and zero into r3;
-// the target has float_100 in r3 and zero in r4 (f29/f30/f31 and the second block match).
+#pragma opt_common_subs off // required: CSE otherwise reorders the float address temps (87.49% without it)
 USER_FUNC(taihou_r) {
     f32 c;
     f32 s;
+    f32 p;
     f32 rx;
     f32 rz;
 
     c = (f32)cos(double_0p7854_bom_00007088);
-    s = float_100_bom_00007000 * (f32)sin(double_0p7854_bom_00007088);
-    rx = -angleABf(zero_bom_00007004, zero_bom_00007004, zero_bom_00007004, s);
-    rz = -angleABf(zero_bom_00007004, zero_bom_00007004, float_100_bom_00007000 * c, s);
+    s = (f32)sin(double_0p7854_bom_00007088);
+    rx = -angleABf(zero_bom_00007004, zero_bom_00007004, zero_bom_00007004, p = float_100_bom_00007000 * s);
+    rz = -angleABf(zero_bom_00007004, zero_bom_00007004, float_100_bom_00007000 * c, p);
     effKemuTestSetRxRz(effNameToPtr("kemuri"), rx, rz);
     effRippleN64SetRxRz(effNameToPtr("ripple"), rx, rz);
     return EVT_RETURN_DONE;

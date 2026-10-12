@@ -6765,13 +6765,14 @@ void puniSound(void) {
     Punigp->field_0x4C4 = 0;
 }
 
-// No structural diff; only register colouring differs (first loop target pd/i = r27/r28, pose loop
-// target pd/i = r29/r31).
-// NONMATCHING (99.22%): declaring the party loop's locals as `s32 i; PuniData* pd; s32 j;` before
-// the loop fixed that loop; the first and pose loops keep a rotated pd/i.
 void puni_puni_main(void) {
     MarioWork* mario;
     PuniData* p0;
+    s32 i;
+    PuniData* pd;
+    s32 i2;
+    PuniData* pd2;
+    s32 j;
     Vec v;
     Vec tmp;
     Vec tmp2;
@@ -6800,80 +6801,76 @@ void puni_puni_main(void) {
     }
 
     if ((Punigp->field_0x324 & 0x20) != 0) {
-        s32 i;
-        PuniData* pd;
-        s32 j;
         PartyEntry* party;
         PuniSearchEntry* sei;
         s32 k;
         for (j = 0; j < 2; j++) {
-            pd = &Punidat[1];
-            for (i = 1; i < 0xD3; i++, pd++) {
-                if ((pd->unk4 & 0x400) != 0) {
+            pd2 = &Punidat[1];
+            for (i2 = 1; i2 < 0xD3; i2++, pd2++) {
+                if ((pd2->unk4 & 0x400) != 0) {
                     if (j == 0) {
-                        if (pd->unkC != 7) {
+                        if (pd2->unkC != 7) {
                             continue;
                         }
-                        pd->unk4 |= 0x02000000;
+                        pd2->unk4 |= 0x02000000;
                     } else {
-                        if ((pd->unk4 & 0x02000000) != 0) {
+                        if ((pd2->unk4 & 0x02000000) != 0) {
                             continue;
                         }
-                        pd->unk4 |= 0x02000000;
+                        pd2->unk4 |= 0x02000000;
                     }
-                    if ((pd->unk4 & 0x04000000) == 0) {
-                    pd->unk4 |= 0x04000000;
-                    if ((pd->field_0x8 & 0x10) != 0) {
-                        pd->field_0x8 &= ~0x10;
-                        pd->unkC = 0xC;
-                        pd->field_0x114 = 0;
+                    if ((pd2->unk4 & 0x04000000) == 0) {
+                    pd2->unk4 |= 0x04000000;
+                    if ((pd2->field_0x8 & 0x10) != 0) {
+                        pd2->field_0x8 &= ~0x10;
+                        pd2->unkC = 0xC;
+                        pd2->field_0x114 = 0;
                     }
                     party = partyGetPtr(marioGetPartyId());
-                    pd->field_0x1A0 = 0.0f;
+                    pd2->field_0x1A0 = 0.0f;
                     if (Punigp->field_0x4CC == 0 && party != NULL) {
-                        tmp2 = pd->field_0x12C;
-                        pd->field_0x1A0 = cloudGetBreathPower(10.0f, &tmp2);
+                        tmp2 = pd2->field_0x12C;
+                        pd2->field_0x1A0 = cloudGetBreathPower(10.0f, &tmp2);
                     }
-                    if (32.0 < __fabsf(pd->field_0x12C.y - mario->position.y)) {
-                        pd->field_0x1A4 = 1000.0f;
+                    if (32.0 < __fabsf(pd2->field_0x12C.y - mario->position.y)) {
+                        pd2->field_0x1A4 = 1000.0f;
                     } else {
-                        pd->field_0x1A4 = PSVECDistance(&pd->field_0x12C, &mario->position);
+                        pd2->field_0x1A4 = PSVECDistance(&pd2->field_0x12C, &mario->position);
                     }
                     sei = (PuniSearchEntry*)((u8*)Punigp + 0x374);
-                    pd->field_0x1B4 = -1;
-                    pd->field_0x1B8 = 1e+06f;
-                    pd->field_0x1BC = -1;
-                    pd->field_0x1C0 = 1e+06f;
+                    pd2->field_0x1B4 = -1;
+                    pd2->field_0x1B8 = 1e+06f;
+                    pd2->field_0x1BC = -1;
+                    pd2->field_0x1C0 = 1e+06f;
                     for (k = 0; k < 10; k++, sei++) {
-                        if ((sei->flags & 1) != 0 && !(32.0 < __fabsf(pd->field_0x12C.y - sei->pos.y))) {
+                        if ((sei->flags & 1) != 0 && !(32.0 < __fabsf(pd2->field_0x12C.y - sei->pos.y))) {
                             if ((sei->flags & 4) != 0) {
-                                f32 d = PSVECSquareDistance(&pd->field_0x12C, &sei->pos);
-                                if (pd->field_0x1C0 > d) {
-                                    pd->field_0x1BC = k;
-                                    pd->field_0x1C0 = d;
+                                f32 d = PSVECSquareDistance(&pd2->field_0x12C, &sei->pos);
+                                if (pd2->field_0x1C0 > d) {
+                                    pd2->field_0x1BC = k;
+                                    pd2->field_0x1C0 = d;
                                 }
                             }
                             if ((sei->flags & 2) != 0) {
-                                f32 d = PSVECSquareDistance(&pd->field_0x12C, &sei->pos);
-                                if (pd->field_0x1B8 > d) {
-                                    pd->field_0x1B4 = k;
-                                    pd->field_0x1B8 = d;
+                                f32 d = PSVECSquareDistance(&pd2->field_0x12C, &sei->pos);
+                                if (pd2->field_0x1B8 > d) {
+                                    pd2->field_0x1B4 = k;
+                                    pd2->field_0x1B8 = d;
                                 }
                             }
                         }
                     }
                     }
-                    unk_mri_00012d58(pd);
+                    unk_mri_00012d58(pd2);
                 }
             }
         }
         puniOption();
     } else {
-        PuniData* pd = &Punidat[1];
-        s32 i;
         PartyEntry* party;
         PuniSearchEntry* sei;
         s32 k;
+        pd = &Punidat[1];
         for (i = 1; i <= 0x6D; i++, pd++) {
             if ((pd->unk4 & 0x400) != 0) {
                 party = partyGetPtr(marioGetPartyId());
@@ -8491,7 +8488,8 @@ USER_FUNC(evt_puni_set_ymode) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.29%): callee-saved register numbering for the hoisted hit/hitN addresses; logic and stack layout match.
+// The four loop-invariant hit/hitN component addresses are held in named locals so the
+// allocator colours them below puni/i, as the original does.
 USER_FUNC(evt_puni_all_fall_check) {
     Vec hit;
     Vec hitN;
@@ -8500,16 +8498,20 @@ USER_FUNC(evt_puni_all_fall_check) {
     f32 distance;
     PuniData* puni = &Punidat[1];
     s32 i = 1;
+    f32* pHitNZ = &hitN.z;
+    f32* pHitNY = &hitN.y;
+    f32* pHitZ = &hit.z;
+    f32* pHitY = &hit.y;
 
     for (; i <= 0x66; i++, puni++) {
         if (!(puni->unk4 & 0x400)) {
             continue;
         }
         pos = puni->field_0x12C;
-        pos.y += 1.0f;
+        pos.y = 1.0f + pos.y;
         normal = (Vec){0.0f, -1.0f, 0.0f};
         distance = 2.0f;
-        if (hitCheckFilter(NULL, &hit.x, &hit.y, &hit.z, &distance, &hitN.x, &hitN.y, &hitN.z, pos.x, pos.y, pos.z,
+        if (hitCheckFilter(NULL, &hit.x, pHitY, pHitZ, &distance, &hitN.x, pHitNY, pHitNZ, pos.x, pos.y, pos.z,
                            normal.x, normal.y, normal.z) == NULL) {
             PuniDokuritsu(puni);
             *(Vec*)&puni->field_0x15C = (Vec){0.0f, 0.0f, 0.0f};

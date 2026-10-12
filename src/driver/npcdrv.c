@@ -1189,16 +1189,22 @@ static inline BOOL npcBlown(NpcEntry* entry) {
     return FALSE;
 }
 
-// NONMATCHING (98.31%): every call, branch and constant matches. Left: the loop hoists the "kpa_03" address into
-// a callee-saved register as well as the SFX name (retail hoists only the SFX name, so one more GPR is saved), the
-// find check's dx*dx + dz*dz has a dead compare against 0 before PSVECSubtract in retail, and some FPR colouring.
 // Per frame for each live npc: advance its clocks, apply its movement and walk/run animation, raise its event's
 // reactions (interrupt flags: 1 found Mario, 2 lost him, 4 left its territory, 8 blown by Flurrie), and queue its
 // draw, shadow and offscreen passes; then run the first strike banner and the field battle mode.
+// keep loop-invariant string addresses where they are written, as the original does
+#pragma opt_loop_invariants off
+// keep the constants and addresses at their uses rather than propagated into the hot loop's registers
+#pragma opt_propagation off
+// NONMATCHING (98.60%): retail keeps a redundant `fcmpo f30, 0`/`lfs float_0` before PSVECSubtract that ours
+// folds into the later sqrtf guard; `fire = jump = 0` is two `li`s where retail has `li`+`mr`; the state == 1/4
+// FPR set is one callee-saved register low; fbat and state sit in each other's GPR. All calls and constants match.
 void npcMain(void) {
+    s32 fire;
 #ifdef MUST_MATCH
     const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
 #endif
+    const char* fallSfx = NPCMAIN_STR_FALL;
     NpcWork* npcwork;
     NpcEntry* entry;
     FieldBattleData* fbat;
@@ -1277,7 +1283,7 @@ void npcMain(void) {
             if (!strcmp(gp->currentMapName, NPCMAIN_STR_KPA03) && !(entry->position.y > float_365_80419ba8)) {
                 entry->jumpFlags |= 0x100000;
                 if (!(entry->jumpFlags & 0x200000) && (entry->jumpFlags & 0x100000)) {
-                    psndSFXOn_3D(NPCMAIN_STR_FALL, &entry->position);
+                    psndSFXOn_3D(fallSfx, &entry->position);
                 }
             }
             if ((entry->jumpFlags & 0x100000) && !(entry->jumpFlags & 0x10000000)) {
@@ -1300,7 +1306,7 @@ void npcMain(void) {
                         mz *= float_0p5_80419ba0;
                     }
                     if (entry->flags & 0x08000000) {
-                        mz = float_0_80419b9c;
+                        mz = 0.0f;
                     }
                     if (entry->flags & 0x40000000) {
                         entry->position.x += mx;
@@ -1477,11 +1483,7 @@ void npcMain(void) {
                     if (entry->color.r != 0xFF || entry->color.g != 0xFF || entry->color.b != 0xFF ||
                         entry->color.a != 0xFF) {
                         animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-                        {
-                            GXColor color = entry->color;
-
-                            animPoseSetMaterialEvtColor(entry->poseId, color);
-                        }
+                        animPoseSetMaterialEvtColor(entry->poseId, entry->color);
                     } else {
                         animPoseSetMaterialFlagOff(entry->poseId, 0x40);
                     }
@@ -1508,11 +1510,10 @@ void npcMain(void) {
                             if (!(entry->flags & 0x40000)) {
                                 shadow = entry->position;
                                 if (entry->tribe != NULL) {
-                                    f32 side = sinfd(reviseAngle(entry->direction) < float_180_80419bec
-                                                         ? float_90_80419bd0
-                                                         : float_270_80419be4);
-
-                                    shadow.x += entry->tribe->shadowOffsetX * entry->scale.x * side;
+                                    shadow.x += entry->tribe->shadowOffsetX * entry->scale.x *
+                                                sinfd(reviseAngle(entry->direction) < float_180_80419bec
+                                                          ? float_90_80419bd0
+                                                          : float_270_80419be4);
                                     shadow.y += entry->tribe->shadowOffsetY * entry->scale.y;
                                     shadow.z += entry->tribe->shadowOffsetZ * entry->scale.z;
                                 }
@@ -1608,7 +1609,6 @@ void npcMain(void) {
         case 1: {
             FieldBattleData* data;
             s32 jump;
-            s32 fire;
 
             fbatEncountCheck();
             data = gp->fbatData;
@@ -1649,6 +1649,8 @@ void npcMain(void) {
     }
     fbat->field_54C[1] = 0;
 }
+#pragma opt_loop_invariants reset
+#pragma opt_propagation reset
 
 NpcEntry* npcNameToPtr(const char* name) {
     NpcWork* wp = npcGetWorkPtrInline();
