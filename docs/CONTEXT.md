@@ -6268,3 +6268,19 @@ baseline. The generated .rodata is 503 bytes versus retail's 504 because of one 
 byte; padding that section end makes the entire .rodata byte-identical. This unit is not claimed
 linked. Full project CI passed: no regressions, the natural build succeeds, and linked modules
 pass their build.sha1 checksums.
+
+### scissor_disp_control 99.97 -> 100 (2026-10-11, GPT-6.1 Sol in Codex), [#746](https://github.com/IsaacGemal/ttyd/pull/746)
+
+Selected the 568-byte callback because its only four instruction mismatches were the HSV input and
+RGB argument occupying opposite stack slots. The `sys` chapter's stack-layout experiment supplied
+the closing lever: named locals first, call argument temporaries next, inline locals last. Moving the
+HSV copy into a MUST_MATCH `scissorSetHSVColor(GXColor*)` inline that also calls GXSetChanMatColor
+puts the copy at r1+0x8 and the converted RGB argument at r1+0xC, matching retail. The existing natural
+path remains the direct HSV conversion and GX call. No new function-pointer cast was added.
+
+Tried before the winning form: reversing the HSV declarations (99.95), a GXColor-returning inline
+with a by-value argument or an internal copy (99.25), and a void inline with a by-value argument
+(99.97). The pointer-taking void inline closes the match. `agent_check.py` reports 100%, zero real
+instruction differences, and 25/27 functions matching in sac_scissor; the two other partial functions
+retain their baseline scores. Full project CI passed: no regressions, natural compile succeeds, and
+linked modules match their build.sha1 checksums.
