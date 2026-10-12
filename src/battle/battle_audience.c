@@ -4362,14 +4362,16 @@ static inline s32 BattleAudienceJoyAdd2(s32 x, s32 y) {
 #endif
 
 #pragma opt_loop_invariants off // needed: keep a,b,c,d live and recompute the branch bounds each iteration
+#pragma opt_propagation off // needed: keep `sum = b + c;` and `sum = a + sum;` separate so the second add keeps `a` first
+#pragma opt_lifetimes off // needed: let the two sum adds share one register instead of materialising a temp
 
-// The frame, prologue and every call now match. The third branch bound's commuted `add` is fixed by
-// routing it through the inlined BattleAudienceJoyAdd2 helper above. One commuted `add` remains: the
-// second sum add (`add r29, r29, r25` where the original has `add r29, r25, r29`). `sum = b + c;
-// sum += a;` is required (writing `a + sum` makes MWCC reassociate the first add and recolour the
-// callee-saved set). The declaration order member/i/sum is load-bearing: MWCC colours the
-// callee-saved locals in declaration order (member r31, i r30, sum r29); any other order rotates them.
-// NONMATCHING (99.86%): one commuted `add` operand on the loop-invariant sum.
+// The frame, prologue and every call match. The third branch bound's commuted `add` is fixed by
+// routing it through the inlined BattleAudienceJoyAdd2 helper above. The loop-invariant sum is
+// `sum = b + c; sum = a + sum;` under opt_propagation/opt_lifetimes off: propagation would fold the
+// first assignment into the second and reassociate the 3-term sum, while lifetimes on would give the
+// `b + c` result its own short-lived web instead of reusing the loop value's register (r29).
+// The declaration order member/i/sum is load-bearing: MWCC colours the callee-saved locals in
+// declaration order (member r31, i r30, sum r29); any other order rotates them.
 #pragma dont_inline on
 void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 	BattleAudienceMember* member;
@@ -4379,7 +4381,7 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 	s32 r;
 	audience = BattleAudienceBaseGetPtr();
 	sum = b + c;
-	sum += a;
+	sum = a + sum;
 	i = 0;
 	member = BattleAudienceGetPtr(0);
 	for (; i < 200; i++, member++) {
@@ -4415,6 +4417,8 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 	}
 }
 #pragma dont_inline reset
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
 #pragma opt_loop_invariants reset
 
 #pragma dont_inline on
