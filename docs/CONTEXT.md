@@ -6221,3 +6221,8 @@ The targets were every untried function at 98.2-99.99% in the 15 big unlinked un
     - bom1000_jump 99.12: compiler CSE temps rotate r30/r31.
     - evt_puni_debug_info 99.67: sign-extension temps swap r3/r4.
 
+
+### Swarm batch 5g (2026-10-11, DeepSeek V4.1 Flash agent; Claude Opus 5.5 orchestrating), [#744](https://github.com/IsaacGemal/ttyd/pull/744)
+
+- evt_puni_setup +0.07: the loop body's conversion temps (`b1`-`b6`, `off`, `iv1`-`iv3`) are declared at function scope. `event` and `args` then take r23/r22 as in retail. Still open, register-only: the marioGetPtr result and the first conversion temp swap r30/r31.
+
