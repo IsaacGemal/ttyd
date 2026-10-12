@@ -6136,6 +6136,18 @@ literal in `_JUTFont_DrawPos` (fixes .sdata2). Left: the unsigned int-to-float c
 because `_JUTFont_DrawPos` converts `blk->cellheight` first; doing that gives FontDrawMessageMtx 100 but costs
 `_JUTFont_DrawPos` (63.72 -> ~61), so it waits for a rework of that function.
 
+**evt_yuuranking (gor and yuu) both link: evt_yuuranking_disp_func 99.89 -> 100 (on2-yuurank2, second run; levers from
+the list: yes; 327k, 95 min).** The `>= 7` block un-nested to a sibling of `>= 4`; a separate switch-assigned `title`
+local; `msg2` for all three case-2/3 subtitle switches; rank case 2/3 reads `v = A74(i)` before testing, with one
+function-level `s32 v` between `title` and `msg` (the only one of 45 positions that works); both rank `menu_colon`
+lookups nested in the `sprintf`; and `bp` dropped so `FontDrawStringPitch` takes `buf` (the compiler keeps its own
+copy of the address across the inlined `fontlenpitch`, giving retail's two `addi rN,r1,0x78`). Nesting and dropping
+`bp` only work together (84 and 119 diffs alone, 0 combined; rasim: the `bp` copies must colour before the
+`fontlenpitch` counters). The first run's framing was off on one point: declaration order never decided it. Link:
+gor's approved asm `yuu_kesan_chk_copy` was emitted first in .text because an asm function is generated on parse,
+so its three instructions moved into an `asm {}` block inside a C function (listed in asm_exceptions.json);
+gor's dead `dat_gor_0001cc40` moved after `#pragma force_active on`; yuu's functions reordered to gor's layout.
+
 ### Swarm batch 5a (2026-10-11, DeepSeek V4.1 Flash agents; Claude Opus 5.5 orchestrating), [#719](https://github.com/IsaacGemal/ttyd/pull/719)
 
 The targets were every untried function at 98.2-99.99% in the 15 big unlinked units.

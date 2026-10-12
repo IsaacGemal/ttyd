@@ -1505,7 +1505,7 @@ config.libs = [
             Object(Matching, "unit/unit_lecture_frankli_sac.c"),
             Object(Matching, "event/evt_lect_gor.c"),
             Object(Matching, "data/battle/battle_database_gor.c"),
-            Object(NonMatching, "event/evt_yuuranking.c", modules=["gor"]),
+            Object(Matching, "event/evt_yuuranking.c", modules=["gor"]),
         ],
     ),
     Rel(
@@ -2121,7 +2121,7 @@ config.libs = [
             Object(Matching, "event/evt_yuutitle.c"),
             Object(Matching, "event/evt_yuucounter.c"),
             Object(Matching, "event/evt_yuunpc.c"),
-            Object(NonMatching, "event/evt_yuuranking.c", modules=["yuu"]),
+            Object(Matching, "event/evt_yuuranking.c", modules=["yuu"]),
         ],
     ),
     Rel(
