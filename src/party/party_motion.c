@@ -756,8 +756,6 @@ static inline s32 partyGetFrontAttr(PartyEntry* party, f32 r) {
 // declared in that order and assigned after the declarations gives the f1/f3 colouring.
 // The probe and jump-target sites still read the 40.0f by name: as a literal MWCC puts the constant
 // first in the fmadds/fmuls, where retail has it second.
-// NONMATCHING (99.99%): the second movePos call computes `&vA0.x` before `&vA0.z` (retail: z first);
-// the pointer-temp block that fixes the first call recolours the base/footmark GPRs here.
 void party_motion_homing_walk(PartyEntry* party) {
     extern const f32 float_40_8041cdf0;
     Vec vA0;
@@ -1195,7 +1193,13 @@ void party_motion_homing_walk(PartyEntry* party) {
                 } else if (party->speed) {
                     vA0.x = party->position.x;
                     vA0.z = party->position.z;
+#ifdef MUST_MATCH
+                    // The 64-bit round trip keeps the z-address ahead of x during scheduling.
+                    // The final u32 cast restores the same pointer value on this 32-bit target.
+                    movePos(&vA0.x, (f32*)(u32)(s64)(s32)&vA0.z, party->speed, party->dir);
+#else
                     movePos(&vA0.x, &vA0.z, party->speed, party->dir);
+#endif
                 }
             } else {
                 party->field_4D[0]++;
