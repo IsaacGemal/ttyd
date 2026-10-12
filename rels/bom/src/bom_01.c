@@ -1936,17 +1936,30 @@ static inline void pose_init_minnnanokoe_copy(void) {
     pd->count++;
 }
 
-// NONMATCHING (99.46%): loop register colouring differs; the target puts i in r26, e in r27, j in r28,
-// the compiler picks j=r26, i=r27, e=r28. Writing the inner increment as `e++, j++` aligns best.
-void ext_init_minnnanokoe(void) {
-    s32 i;
-    s32 j;
-    PoseData* data;
-    ExtPose* pose;
+// Finds the named pose entry. The loop lives in a helper so the compiler gives its locals the
+// same registers as the original.
+static inline s32 find_entry_minnnanokoe(PoseData* pd) {
     PoseEntry* e;
+    s32 j;
+
+    for (j = 0, e = pd->entries; j < pd->count; j++, e++) {
+        if (strcmp(e->name, str_00000E08) == 0) {
+            break;
+        }
+    }
+    return j;
+}
+
+// Sets each pose state's initial values, places a pose on a grid, and records which named
+// entry it uses.
+void ext_init_minnnanokoe(void) {
     PoseData* pd;
     s32 rx;
+    s32 j;
+    s32 i;
+    PoseData* data;
     s32 rz;
+    ExtPose* pose;
 
     lp[0] = (u32)smartAlloc(0xBC30, 1);
     data = ((PoseRoot*)lp[0])->data;
@@ -1968,11 +1981,7 @@ void ext_init_minnnanokoe(void) {
         pose->matrix[0][2][3] = (f32)rz;
         pose->field_0x4 = float_270_bom_0000703c;
         pd = ((PoseRoot*)lp[0])->data;
-        for (j = 0, e = pd->entries; j < pd->count; e++, j++) {
-            if (strcmp(e->name, str_00000E08) == 0) {
-                break;
-            }
-        }
+        j = find_entry_minnnanokoe(pd);
         if (j < pd->count) {
             if (pd->states[i].field_20 != j) {
                 pd->states[i].field_20 = (s16)j;

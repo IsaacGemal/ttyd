@@ -284,15 +284,31 @@ USER_FUNC(btlevtcmd_GetRandomValue) {
 }
 
 //s32 retIndex, s32 countIndex, s32 sizeIndex[]
-// NONMATCHING (98.82%): reading `args[-1]` after `args += 2` makes the target load
-// `args[0]` before `args[1]`; what is left is `retcount = ceilcount = 0`, which MWCC
-// constant-folds to `li r5,0` where the target copies `mr r5,r6`.
+// The pick loop's `ceilcount`/`retcount` are an inline helper's locals, i.e. MWCC compiler
+// variables; its backend CSE then turns the second `li 0` into `mr r5,r6` for the
+// `retcount = ceilcount` copy, where named locals keep `li r5,0`. Two separate `= 0`
+// statements (not `retcount = ceilcount = 0`) are needed so the front end emits two `li`s
+// for the CSE to merge. The MUST_MATCH block below makes the target load `args[0]` before
+// `args[1]` (reading `args[-1]` after `args += 2`).
+static inline s32 btlevtcmd_DrawLotsPick(s32* alloc, s32 count, s32 ceiling) {
+    s32 ceilcount, retcount, i;
+    ceilcount = 0;
+    retcount = 0;
+    for (i = 0; i < count; i++) {
+        ceilcount += alloc[i];
+        if (ceiling < ceilcount) {
+            break;
+        }
+        retcount++;
+    }
+    return retcount;
+}
 USER_FUNC(btlevtcmd_DrawLots) {
     s32* args = event->args;
     s32 index;
     s32 *alloc;
     s32 i, countId, count, max;
-    s32 ceiling, ceilcount, retcount;
+    s32 ceiling, retcount;
 
 #ifdef MUST_MATCH
     index = args[0];
@@ -311,14 +327,7 @@ USER_FUNC(btlevtcmd_DrawLots) {
         max += alloc[i];
     }
     ceiling = irand(max);
-    retcount = ceilcount = 0;
-    for (i = 0; i < count; i++) {
-        ceilcount += alloc[i];
-        if (ceiling < ceilcount) {
-            break;
-        }
-        retcount++;
-    }
+    retcount = btlevtcmd_DrawLotsPick(alloc, count, ceiling);
     evtSetValue(event, index, retcount);
     BattleFree(alloc);
     return EVT_RETURN_DONE;
