@@ -6249,3 +6249,22 @@ The .rodata, .sdata2, .data and .sdata section bytes equal the baseline objects.
 confirms that the cast introduces `srawi r266,r4,0x1f` in B277; the first scheduling pass moves
 `addi r4` before `addi r3`, and the post-allocation peephole deletes the sign word. Full project CI
 passed: no regressions, the natural build succeeds, and linked modules pass build.sha1 checksums.
+
+
+### zubastar_main and zubastar_bomb -> 100 (2026-10-12, GPT-6.1 Sol in Codex), [#749](https://github.com/IsaacGemal/ttyd/pull/749)
+
+The ledger's pool-offset diagnosis was correct; this was data placement rather than register allocation.
+The original .rodata contains three 20-byte startup sound names at 0x168, 0x17C and 0x190, referenced
+by marioAttackEvent_ZubaStar's .data relocations: SFX_BTL_SAC_START1/2/3. Our object omitted all three,
+so STAR3 sat at 0x168 and the conversion double at 0x180, instead of 0x1A4 and 0x1C0. Restore those
+three original global char[20] objects at the end of the source, after the parse-time vector templates
+and before function-codegen string literals. The 60 restored bytes and alignment recover every offset.
+No function body, compiler flag, new pragma, or dummy padding is needed.
+
+The three named strings' offsets, sizes and every byte match their original objects. zubastar_main
+(3576 bytes) and zubastar_bomb (920 bytes) both reach 100%, with zero real instruction differences;
+sac_zubastar improves from 13/16 to 15/16 matched functions. zubastar_bunkatu remains at its 94.64%
+baseline. The generated .rodata is 503 bytes versus retail's 504 because of one final section-alignment
+byte; padding that section end makes the entire .rodata byte-identical. This unit is not claimed
+linked. Full project CI passed: no regressions, the natural build succeeds, and linked modules
+pass their build.sha1 checksums.
