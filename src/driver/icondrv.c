@@ -437,13 +437,14 @@ static inline IconBinaryEntry* iconGetBinaryData(IconBinary* bin, u16 id) {
     return (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
 }
 
-// NONMATCHING (98.24%): retail keeps the cached numIcons in r8 (one web: the `> 1` test and both loop
-// bounds) and the loops' frame pointer in r7. Ours loads `n` into r5 for the test and copies it to r7
-// for the loops, with the frame pointer in r8. rasim on a mwccdbg dump: no declaration order, temp
-// key or single interference edge gives r8; retail's numIcons web has one fewer neighbour.
-// Tried: a dummy `entryp->numIcons` store (same score), n as int/s32/u32/s16, reusing `id`,
-// block-scope n, explicit lookup, plain `data->frames[i]`, writes to `entry.`, a frame-selection
-// inline helper, opt_lifetimes/propagation/common_subs/strength_reduction/dead_assignments, permuter.
+static inline u16 iconGetNumFrames(IconBinaryEntry* data) {
+    return data->numIcons;
+}
+
+// NONMATCHING (99.04%): only r7/r8 are swapped: retail has numIcons in r8 and the loops' frame
+// pointers in r7. rasim on a mwccdbg dump: the numIcons web would need a sweep position between the
+// loop-1 and loop-2 frame-pointer temps (or one of those temps above it); the getter object sits
+// above both, a named `n` or the direct `data->numIcons` CSE temp below both.
 void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
@@ -469,7 +470,7 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     entryp->height = data->height;
     entryp->tplId = data->frames[0].tplId;
     entryp->frameDelay = data->frames[0].frameDelay;
-    n = data->numIcons;
+    n = iconGetNumFrames(data);
     if (n > 1) {
         s32 total = 0;
         s32 rest;
@@ -492,8 +493,7 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     iconGX(view, entryp);
 }
 
-// NONMATCHING (98.17%): same register picture as iconDispGx2 (retail `numIcons` r8, `frames` r7;
-// ours puts `n` in r5 plus a copy in r7, and `frames` in r8). See iconDispGx2.
+// NONMATCHING (99.00%): same r7/r8 swap as iconDispGx2.
 void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     ICON_FRAMES_DECL
     CameraEntry* camera;
@@ -519,7 +519,7 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     entryp->height = data->height;
     entryp->tplId = data->frames[0].tplId;
     entryp->frameDelay = data->frames[0].frameDelay;
-    n = data->numIcons;
+    n = iconGetNumFrames(data);
     if (n > 1) {
         s32 total = 0;
         s32 rest;
