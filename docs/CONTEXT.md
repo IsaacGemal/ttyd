@@ -6558,3 +6558,18 @@ also told to write down the old framing's assumptions and question them first. S
 - Negatives: main_timing Vec copy before the alpha store (83.76/87.83); tan call before the camera copy (66.44); tan
   inline in the expression (99.72); expression reorders (99.79); main_gauge `inline` (main_deka 0%); an uncalled
   main_gauge copy (the linker strips it with its table).
+
+### mario_pouch LINKED: pouchRemoveItem 95.78, pouchRemoveItemIndex 96.02, pouchGetItem 98.45 -> 100, 75/75 (Claude Opus 5.5)
+- **RemoveItem / RemoveItemIndex:** the shared clear-and-shift code as one `static inline void pouchShiftItems(table1,
+  table2, index, maximum)` used by both (spline_backsub #719, #722, #740). The two clearing stores must be inside the
+  helper too (loop only: 95.18); then MWCC puts the pointer setup in its own block near the end, as retail.
+- **GetItem:** its second half (pick table, find empty slot, shift, insert) as `static inline BOOL
+  pouchInsertItem(ItemType type)`, ending `return pouchInsertItem(type);`. As an inlined function's locals they become
+  compiler temps: retail's single zero copied twice (`li r4,0; mr r29,r4; mr r30,r4`), the ternary straight into r4,
+  the shift loop's registers. Declaration order from an exhaustive rasim replay (p1 before i, table1 before table2;
+  all six predicted orders compiled to 100). **New signal:** a `li 0` + `mr` copy pattern and a ternary landing in r0
+  then copied point to locals inside an inlined helper in the original.
+- Negatives: RemoveItem loop shapes (while, reuse i, temp = maximum-1, goto: 95.78; do-while 54; `j + 1 < maximum`
+  54; `j = i + 1` 89); scoped opt pragmas (worse or no change); GetItem as one shift loop (96.26); nine zero-init
+  orders, chained `= NULL`, copies from maximum, assignment in expression (98.43-98.45, propagation turns copies back
+  into li); ternary as if/else; six table2 counter forms (identical code); old permuter outputs (noise).
