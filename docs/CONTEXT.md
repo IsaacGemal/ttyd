@@ -6382,3 +6382,21 @@ also told to write down the old framing's assumptions and question them first. S
 - Negatives: else arm first (pool fixed, ccwall ~93.8); an earlier 6.0f local, literal spellings, dead compares,
   ternaries, goto/switch/early return; helper defined before ccwall (no change); ccfloor with its own hit locals
   (pool identical, frame 0xd0 -> 0xe0, 99.70); pointer outputs without the z/x swap (99.96).
+
+### win_party partial: winPartyDisp 98.07 -> 99.86, 2 rows left (Claude Opus 5.5)
+- **Signature from the Matching sibling win_mario:** `void winPartyDisp(CameraId, void* param, s32)` with
+  `WindowWork* work = param;` and win_mario's `((f32*)((u8*)work + 0xC4))[idx * 5]` x/y read fixed the prologue
+  schedule (99.49 -> 99.86 on its own). Header updated; win_root.o stays byte-identical.
+- **Stack slots:** `white = (GXColor){...}; loopWhite = white;` (same for black): the "unused" colour locals and the
+  named winPartyWhite/Black are gone, since the dead stores at 0xc/0x8 are the compiler's own temps.
+  `shadow = &(GXColor){0,0,0,0x80};` just before winKageGX puts it at 0x44 and fixes every later argument slot.
+  `Mtx mtx, scaleMtx, tilt, turn;` fixes the four matrix slots.
+- **Also:** assignment inside the call argument (rowY, y2, listTop, listY; #408); starX/listY as block locals,
+  iconY/listTop function locals, `party` last, float declaration order from a rasim search; `cx - w / 2.0f`.
+- **Last 2 rows:** retail copies the shadow colour's address into r4 (`mr r4, r22`) after the 0.8/0.6 scale branch;
+  ours copies it before. Failed: compound literal in the call (plain, cast, typed pointer, u8[4]/u32/array, by-value
+  wrappers, inline scale helper, if/else scale, assignment in argument) -- the frontend hoists the scale `?:` above the
+  colour init, so 0.8/0.6 land before 140 in .sdata2; declared colour at block/nested/function scope or array (slot
+  0x6c/0x70, not 0x44); ~20 argument probe shapes; optimisation pragmas (79-98.8); mwsearch 25 min, 20,677 compiles;
+  a plain compare instead of the Yoda one (99.83, so the MUST_MATCH guard stays). Next: find in mwcc-debugger which
+  argument kind is moved into its register after a conditional float argument is evaluated.

@@ -62,9 +62,6 @@ WindowPartyDt winPartyDt[7] = {
     { 7, 0x161, "name_party6", "msg_menu_party_chu", "EFF_m_chu", "W_1", "d_mario", "R_14", (const char*)chu_waza },
 };
 
-static const GXColor winPartyWhite = {0xFF, 0xFF, 0xFF, 0xFF};
-static const GXColor winPartyBlack = {0x00, 0x00, 0x00, 0xFF};
-
 // Extended fields of WindowWork used by this unit. win/win_main.h only declares
 // the first 0x40 bytes, so the rest are reached through raw offsets below.
 #define WW_U16(w, off) (*(u16*)((u8*)(w) + (off)))
@@ -390,22 +387,38 @@ static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
 #define WIN_PARTY_ID(w, n) (((s32*)(w))[0x6F + (n)])
 #define WIN_PARTY_POSE(w, n) (((s32*)(w))[0x68 + (n)])
 
-// NONMATCHING (98.07%): calls, branches, immediates, the frame and both literal pools match; register colouring
-// differs (x/y rank above cx/barX/top in the first loop; the original reuses x's register for the move list's
-// name column) and the stack slots of some block locals.
+// NONMATCHING (99.86%): one instruction is scheduled differently. The original copies the shadow colour's
+// hoisted address into r4 after the scale branch (`mr r4, r22` just before `bl winKageGX`), not before it.
 extern const f32 float_0p5_8041d258;
-void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
-    GXColor loopWhite = winPartyWhite;
-    GXColor unusedWhite = winPartyWhite;
-    GXColor unusedBlack = winPartyBlack;
-    GXColor white = winPartyWhite;
-    GXColor black = winPartyBlack;
-    GXColor loopBlack = winPartyBlack;
-    f32 x = WW_F32(work, 0xC4 + partyIdx * 0x14);
-    f32 y = WW_F32(work, 0xC8 + partyIdx * 0x14);
+void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
+    WindowWork* work = param;
+    GXColor loopWhite, loopBlack, white, black;
+    f32 barX;
+    f32 cx;
+    f32 cy;
+    f32 rowY;
+    f32 y2;
+    f32 costX;
+    f32 top;
+    f32 x2;
+    f32 fpX;
+    f32 listTop;
+    f32 x;
+    f32 y;
+    f32 w;
+    f32 w2;
+    f32 iconY;
+    f32 scale;
+    s32 i;
+    s32 n;
     PouchPartyData* party;
-    f32 cx, cy, barX, top, rowY, scale, w, w2, x2, y2;
-    s32 i, n;
+
+    white = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
+    loopWhite = white;
+    black = (GXColor){0x00, 0x00, 0x00, 0xFF};
+    loopBlack = black;
+    x = ((f32*)((u8*)work + 0xC4))[partyIdx * 5];
+    y = ((f32*)((u8*)work + 0xC8))[partyIdx * 5];
 
     winBgGX(work, 1, x, y);
     if (WW_S32(work, 0x1E0) == 0) {
@@ -420,9 +433,9 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
     top = 110.0f + y;
     for (i = 0; i < 2; i++) {
         GXColor barColors[2] = {{0xCB, 0x8C, 0xA2, 0xFE}, {0x9C, 0xC3, 0x81, 0xFE}};
+        GXColor subColors[1] = {{0xA7, 0x3C, 0x3C, 0xFF}};
         const char* labels[2] = {"msg_menu_party_hp", "msg_menu_party_rank"};
         const char* subLabels[2] = {"msg_menu_mario_ruby_hp", "msg_menu_mario_ruby_hp"};
-        GXColor subColors[1] = {{0xA7, 0x3C, 0x3C, 0xFF}};
 
         scale = i == 0 ? 1.0f : 0.9f;
         w = scale * FontGetMessageWidth(msgSearch(labels[i]));
@@ -430,10 +443,9 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
         winTexInit(WIN_PARTY_TEX(work));
         GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
         GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
-        rowY = top - (f32)(i * 32);
-        winTexSet(0xAF, (Vec){barX, rowY - 4.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, barColors[i]);
+        winTexSet(0xAF, (Vec){barX, (rowY = top - (f32)(i * 32)) - 4.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, barColors[i]);
         winFontInit();
-        winFontSetV((Vec){cx - w * 0.5f, 12.0f + rowY, 0.0f}, (Vec){scale, scale, scale}, loopBlack,
+        winFontSetV((Vec){cx - w / 2.0f, 12.0f + rowY, 0.0f}, (Vec){scale, scale, scale}, loopBlack,
                     msgSearch(labels[i]));
         if (i < 1) {
             winFontSetV((Vec){cx - w2 * float_0p5_8041d258, 21.0f + rowY, 0.0f}, (Vec){0.5f, 0.5f, 0.5f}, subColors[i],
@@ -443,22 +455,25 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
 
     // rank stars: the rank's icon, then one per rank above 2
     winIconInit();
-    cx = 60.0f + cx;
-    rowY = 4.0f + top;
-    winIconSetV(0x19F, (Vec){cx, rowY, 0.0f}, (Vec){0.82f, 0.82f, 0.82f}, white);
-    y2 = 4.0f + (top - 32.0f);
-    for (i = 0; i < WW_S32(work, 0x204) - 2; i++) {
-        winIconSetV(((ItemDataView*)itemDataTable)[ITEM_SHINE_SPRITE].icon_id,
-                    (Vec){cx + (f32)(i * 34), y2, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, loopWhite);
+    {
+        f32 starX;
+
+        starX = 60.0f + cx;
+        iconY = 4.0f + top;
+        winIconSetV(0x19F, (Vec){starX, iconY, 0.0f}, (Vec){0.82f, 0.82f, 0.82f}, white);
+        cy = 4.0f + (top - 32.0f);
+        for (i = 0; i < WW_S32(work, 0x204) - 2; i++) {
+            winIconSetV(((ItemDataView*)itemDataTable)[ITEM_SHINE_SPRITE].icon_id,
+                        (Vec){starX + (f32)(i * 34), cy, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, loopWhite);
+        }
     }
 
     // HP: current / max
     winTexInit(WIN_PARTY_TEX(work));
-    winTexSet(0x10, (Vec){8.0f + (170.0f + (x - 10.0f)), rowY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
+    winTexSet(0x10, (Vec){8.0f + (170.0f + (x - 10.0f)), iconY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, white);
     winFontInit();
-    y2 = 4.0f + (12.0f + top);
-    winFontSetRV((Vec){10.0f + (110.0f + (x - 10.0f)), y2, 0.0f}, (Vec){0.9f, 0.9f, 0.9f}, black, "%s",
-                 winZenkakuStr(party->currentHP));
+    winFontSetRV((Vec){10.0f + (110.0f + (x - 10.0f)), y2 = 4.0f + (12.0f + top), 0.0f}, (Vec){0.9f, 0.9f, 0.9f},
+                 black, "%s", winZenkakuStr(party->currentHP));
     winFontSetV((Vec){8.0f + (180.0f + (x - 10.0f)), y2, 0.0f}, (Vec){0.9f, 0.9f, 0.9f}, black, "%s",
                 winZenkakuStr(party->maximumHP));
     winZClear();
@@ -467,20 +482,21 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
     for (i = 0; i < WW_S32(work, 0x1E0); i++) {
         Vec pos = {0.0f, 0.0f, 80.0f};
         Mtx tilt, turn;
-        GXColor shadow = {0x00, 0x00, 0x00, 0x80};
+        GXColor* shadow;
 
         PSMTXRotRad(tilt, 'x', 0.5235988f);
         PSMTXRotRad(turn, 'y',
                     0.017453292f * (360.0f / (f32)WW_S32(work, 0x1E0) * (f32)i - WW_F32(work, 0x1E4)));
         PSMTXMultVec(turn, &pos, &pos);
         PSMTXMultVec(tilt, &pos, &pos);
-        winKageGX(work, &shadow, (x - 140.0f) + pos.x, 20.0f + (y + pos.y), pos.z,
+        shadow = &(GXColor){0x00, 0x00, 0x00, 0x80};
+        winKageGX(work, shadow, (x - 140.0f) + pos.x, 20.0f + (y + pos.y), pos.z,
                   i == WW_S32(work, 0x1DC) ? 0.8f : 0.6f);
     }
 
     for (i = 0; i < WW_S32(work, 0x1E0); i++) {
         Vec pos = {0.0f, 0.0f, 80.0f};
-        Mtx tilt, turn, scaleMtx, mtx;
+        Mtx mtx, scaleMtx, tilt, turn;
         s32 pose = WIN_PARTY_POSE(work, i);
         AnimData* anim;
         const char* animName;
@@ -617,8 +633,7 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
                 msgSearch("msg_menu_party_waza_kakunin"));
     winIconInit();
     winIconSetV(0x1F5, (Vec){x2 - 20.0f, y - 110.0f, 0.0f}, (Vec){0.7f, 0.7f, 0.7f}, white);
-    top = 50.0f + y;
-    winWazaGX(work, 0, x - 5.0f, top, 260.0f, 144.0f);
+    winWazaGX(work, 0, x - 5.0f, listTop = 50.0f + y, 260.0f, 144.0f);
     winFontInit();
     w = 0.8f * FontGetMessageWidth(msgSearch("msg_menu_party_waza"));
     y2 = 45.0f + y;
@@ -627,8 +642,8 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
     x2 = 230.0f + x;
     winFontSetEdgeV((Vec){x2 - 20.0f, y2, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white, "\202e\202o");
     {
-        f32 costX;
-        f32 fpX;
+        f32 listY;
+
         y = 10.0f + x;
         costX = (238.0f + x) - 20.0f;
         fpX = 2.0f + (2.0f + ((17.0f + x2) - 20.0f));
@@ -637,14 +652,13 @@ void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx) {
             BattleWeapon* weapon;
             char buf[64];
 
-            rowY = (top - (f32)(i * 26)) - 30.0f;
-            winFontSetLabelV((Vec){y, rowY, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, loopBlack,
-                             ((BattleWeapon**)winPartyDt[WW_S32(work, 0x1D8)].field_0x20)[i]->name);
+            winFontSetLabelV((Vec){y, listY = (listTop - (f32)(i * 26)) - 30.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
+                             loopBlack, ((BattleWeapon**)winPartyDt[WW_S32(work, 0x1D8)].field_0x20)[i]->name);
             weapon = ((BattleWeapon**)winPartyDt[WW_S32(work, 0x1D8)].field_0x20)[i];
             sprintf(buf, "%s", winZenkakuStr(weapon->baseFpCost));
-            winFontSetV((Vec){(costX - (f32)(FontGetMessageWidth(buf) >> 1)) - 2.0f, rowY, 0.0f},
+            winFontSetV((Vec){(costX - (f32)(FontGetMessageWidth(buf) >> 1)) - 2.0f, listY, 0.0f},
                         (Vec){1.0f, 1.0f, 1.0f}, loopBlack, buf);
-            winFontSetV((Vec){fpX, rowY - 10.0f, 0.0f}, (Vec){0.5f, 0.5f, 0.5f}, loopBlack, "\202e\202o");
+            winFontSetV((Vec){fpX, listY - 10.0f, 0.0f}, (Vec){0.5f, 0.5f, 0.5f}, loopBlack, "\202e\202o");
         }
     }
 }
