@@ -754,10 +754,9 @@ static inline s32 partyGetFrontAttr(PartyEntry* party, f32 r) {
 #pragma opt_common_subs off
 // The floor probe's result in its own `fy` (declared last) gets retail's f24, and the ypos/y94 pair
 // declared in that order and assigned after the declarations gives the f1/f3 colouring.
-// The probe and jump-target sites still read the 40.0f by name: as a literal MWCC puts the constant
-// first in the fmadds/fmuls, where retail has it second.
+// Local probe radii keep the forward component first in the fused products.
+// Assigning each jump-target radius at its use lets MWCC rematerialise the same load.
 void party_motion_homing_walk(PartyEntry* party) {
-    extern const f32 float_40_8041cdf0;
     Vec vA0;
     s32 attr;
     f32 f31;
@@ -1090,12 +1089,15 @@ void party_motion_homing_walk(PartyEntry* party) {
                 v4c = *(Vec*)((u8*)party + 0x94);
                 tw = touch_wall_ct;
                 sincosf(&s2, &c2, ang);
-                q2.targetPos = v4c;
-                q2.targetPos.x += s2 * float_40_8041cdf0;
-                q2.targetPos.z += c2 * float_40_8041cdf0;
-                q2.targetPos.y += tw;
-                q2.targetDistance = 1000.0f;
-                q2.targetDir = FV(vec3_802f3ec4, ((Vec){0.0f, -1.0f, 0.0f}));
+                {
+                    f32 radius;
+                    q2.targetPos = v4c;
+                    q2.targetPos.x += s2 * (radius = 40.0f);
+                    q2.targetPos.z += c2 * radius;
+                    q2.targetPos.y += tw;
+                    q2.targetDistance = 1000.0f;
+                    q2.targetDir = FV(vec3_802f3ec4, ((Vec){0.0f, -1.0f, 0.0f}));
+                }
                 hit = hitCheckVecFilter(&q2, NULL);
                 if (hit != NULL) {
                     f = q2.hitPos.y;
@@ -1106,10 +1108,11 @@ void party_motion_homing_walk(PartyEntry* party) {
                     fy = -2000.0f;
                 }
                 if (fy > party->position.y) {
+                    f32 radius;
                     angle = partyToMovedir(party, party->field_110);
                     sincosf(&s3, &c3, angle);
-                    (*(f32*)((u8*)party + 0x94)) = s3 * float_40_8041cdf0;
-                    (*(f32*)((u8*)party + 0x9C)) = c3 * float_40_8041cdf0;
+                    (*(f32*)((u8*)party + 0x94)) = s3 * (radius = 40.0f);
+                    (*(f32*)((u8*)party + 0x9C)) = c3 * (radius = 40.0f);
                     (*(f32*)((u8*)party + 0x98)) = fy;
                 }
                 partyChgMot(party, 2);
@@ -1304,8 +1307,7 @@ void party_motion_homing_walk(PartyEntry* party) {
 #pragma opt_loop_invariants off
 // opt_dead_assignments: keeps MWCC from dropping the `mario`/`id` copies that keep the target's GPR colouring.
 #pragma opt_dead_assignments off
-// NONMATCHING (99.75%): `mr r27,r3` sits one slot late (after `lwz r30, 0x160(r3)`). Every call, constant
-// and branch body is exact; the `(s64)(s32)` parameter pin and a 20-minute mwsearch do not move it.
+// Initialise zero after the entry call so its later-deleted load does not reorder the parameter save.
 void party_motion_homing_fly(PartyEntry* party) {
     MarioWork* mario;
     s32 id;
@@ -1325,10 +1327,11 @@ void party_motion_homing_fly(PartyEntry* party) {
     Vec pos;
     Vec tv2;
     Vec tv;
-    f32 zero = 0.0f;
+    f32 zero;
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
+    zero = 0.0f;
     if (party->field_8 & 0x2) {
         party->field_8 = (party->field_8 & ~0x2);
         party->flags = (party->flags & ~0x80000);
@@ -2406,16 +2409,17 @@ void party_motion_beside_mario(PartyEntry* party) {
 // the two `fmadds` results in f3/f2; `f32 zero` keeps `party->speed != zero` variable-first; and
 // `party->playerPtr->playerGravity` reproduces the target's fresh `lwz r3, 0x160(r28)` (the local `mario` is
 // not reused there).
-// Register rotation remains: in the jump-param block the 0x128 load gets f1 and the delta f5 where
-// the target uses f5/f6. The min block, the two `+ 10.0f` operand orders and the
+// The rounded travel-time expression assigns its distance and scale at their point of use.
+// The min block, the two `+ 10.0f` operand orders and the
 // `!(f6 >= 0)` branch are now exact: inlining the min product, `ty += 10.0f`/`floor.y += 10.0f`, writing the
 // inner test as the ternary `f6 = (f6 >= 0.0f) ? f6 : 10.0f`, and `#pragma opt_lifetimes off` around the
 // function (just below) are all needed for the target's f0/f2 colouring and its `bne assign; b end` layout.
 // The old `cmpw r27, r3` diff is gone: storing the read id in an `s32 readId` local before the test makes
 // MWCC emit the target's `cmpw r3, r27`.
-// NONMATCHING (99.91%): FPR colouring in the jump-param block (0x128 in f1 vs f5, delta in f5 vs f6);
-// declaration order of f0..f6 and a 20-minute mwsearch do not move it.
 #pragma opt_lifetimes off
+// Keep the nested travel-time assignments until backend allocation; their redundant copies then disappear.
+#pragma opt_dead_assignments off
+// NONMATCHING (99.93%): the adjusted jump height uses f5 instead of f6 (six rows).
 void party_motion_jump(PartyEntry* party) {
     MarioWork* mario;
     HitEntry* hit;
@@ -2424,8 +2428,8 @@ void party_motion_jump(PartyEntry* party) {
     f32 tx, ty, tz;
     f32 angle;
     f32 f31, f30, f29;
-    f32 f0, f1, f3, f4, f5, f6;
-    f32 zero = 0.0f;
+    f32 f0, f1, f3, f4, f6;
+    f32 zero;
     u32 id;
     s32 writeId;
 #ifdef MUST_MATCH
@@ -2434,6 +2438,7 @@ void party_motion_jump(PartyEntry* party) {
 
     mario = party->playerPtr;
     id = partyGetFootmarkId(&party->flags);
+    zero = 0.0f;
     if (party->field_8 & 0x2) {
         party->field_8 = (party->field_8 & ~0x2);
         *(u8*)((u8*)party + 0x38) = 0;
@@ -2561,9 +2566,14 @@ void party_motion_jump(PartyEntry* party) {
             party->dir = angleABf(party->position.x, party->position.z, *(f32*)((u8*)party + 0x94), *(f32*)((u8*)party + 0x9C));
             party->speed = 2.25f * party->playerPtr->playerGravity;
         }
-        f5 = *(f32*)((u8*)party + 0x128);
-        f1 = 0.9f * (f5 / party->speed);
+#ifdef MUST_MATCH
+        // Nested assignments preserve the distance web until allocation, yielding retail's f5 load.
+        f0 = (10.0f * (f1 = 0.9f * ((f6 = *(f32*)((u8*)party + 0x128)) / party->speed)) + 0.5f) / 10.0f;
+#else
+        f6 = *(f32*)((u8*)party + 0x128);
+        f1 = 0.9f * (f6 / party->speed);
         f0 = (10.0f * f1 + 0.5f) / 10.0f;
+#endif
         *(s32*)((u8*)party + 0x24) = (s32)f0;
         if (*(s32*)((u8*)party + 0x24) < 0xc) {
             *(s32*)((u8*)party + 0x24) = 0xc;
@@ -2658,6 +2668,7 @@ void party_motion_jump(PartyEntry* party) {
         break;
     }
 }
+#pragma opt_dead_assignments reset
 #pragma opt_lifetimes reset
 
 void party_motion_jump2(PartyEntry* party) {
