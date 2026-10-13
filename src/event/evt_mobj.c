@@ -54,6 +54,10 @@
 extern Vec mobj_vec3_802c4050_template[];
 extern Vec mobj_vec3_802c405c_template[];
 extern Vec mobj_vec3_802c40b8_template[];
+extern Vec mobj_vec3_802c3ef4_template[];
+extern Vec mobj_vec3_802c40a0_template[];
+extern Vec mobj_vec3_802c40ac_template[];
+extern Vec mobj_vec3_802c40c4_template[];
 static const Vec vec3_802c3fd8[1];
 static const Vec vec3_802c3fe4[1];
 extern Vec vec3_802c4020[];
@@ -129,18 +133,6 @@ u32 gap_08_80418714_sbss;
 __declspec(section ".data") static f32 negone_one_374[2] = { -1.0f, 1.0f };
 #endif
 
-#ifdef MUST_MATCH
-// MUST_MATCH: retail reads these objects through the vec3_802c3dc8 / negone_one_374 base registers.
-#define IB_R(off, sym, val) ((const char*)(rbase + (off)))
-#define IB_D(off, sym) ((s32*)(dbase + (off)))
-#define IB_VEC(off, sym, val) (*(Vec*)(rbase + (off)))
-#define IB_F64(off, sym, val) (*(f64*)(rbase + (off)))
-#else
-#define IB_R(off, sym, val) (val)
-#define IB_D(off, sym) ((s32*)(sym))
-#define IB_VEC(off, sym, val) (val)
-#define IB_F64(off, sym, val) (val)
-#endif
 // .rodata (part A)
 #pragma force_active on
 // vec3_802c3dc8: placeholder for the object the code copies (defining it hangs MWCC)
@@ -246,7 +238,11 @@ s32 evt_mobj_set_scale(EventEntry* event, BOOL isFirstCall) {
     x = evtGetFloat(event, args[1]);
     y = evtGetFloat(event, args[2]);
     z = evtGetFloat(event, args[3]);
+#ifdef MUST_MATCH
+    scale = mobj_vec3_802c3dc8_template[0];
+#else
     scale = vec3_802c3dc8[0];
+#endif
     scale.x = x;
     scale.y = y;
     scale.z = z;
@@ -335,7 +331,11 @@ s32 evt_mobj_set_position(EventEntry* event, BOOL isFirstCall) {
     } else {
         obj = event->thisMapObj;
     }
+#ifdef MUST_MATCH
+    pos = mobj_vec3_802c3dd4_template[0];
+#else
     pos = vec3_802c3dd4[0];
+#endif
     pos.x = x;
     pos.y = y;
     pos.z = z;
@@ -1012,7 +1012,11 @@ s32 evt_mobj_timerswitch(EventEntry* event, BOOL isFirstCall) {
 }
 
 s32 mobj_rideswitch_lightblue(MapObjectEntry* obj) {
+#ifdef MUST_MATCH
+    Vec* vec = mobj_vec3_802c3dc8_template;
+#else
     Vec* vec = vec3_802c3dc8;
+#endif
 
     switch (obj->unk1DC) {
 #ifdef MUST_MATCH
@@ -1639,7 +1643,11 @@ s32 evt_mobj_lv_blk(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     obj->flags |= 0x44;
+#ifdef MUST_MATCH
+    pos = mobj_vec3_802c3ef4_template[0];
+#else
     pos = vec3_802c3ef4[0];
+#endif
     pos.x = f29;
     pos.y = f30;
     pos.z = f31;
@@ -2301,16 +2309,7 @@ s32 evt_mobj_lock(EventEntry* event, BOOL isFirstCall) {
 }
 
 // Itembox per-frame update callback (obj->unk1D0). Installed by evt_mobj_itembox.
-// MUST_MATCH: the named rodata base keeps the object in r31 and the pool in r30.
-// The literal form alone swaps those registers (97.58%). All addressed strings and
-// the double are now compiler-owned literals, first pooled by evt_mobj_itembox;
-// IB_* selects their natural values without MUST_MATCH.
 s32 mobj_itembox(MapObjectEntry* obj) {
-#ifdef MUST_MATCH
-    u8* dbase = (u8*)negone_one_374;
-    u8* rbase = (u8*)vec3_802c3dc8;
-
-#endif
     switch (obj->unk1DC) {
         case 0:
             if (obj->flags & 8) {
@@ -2343,19 +2342,19 @@ s32 mobj_itembox(MapObjectEntry* obj) {
         case 2: {
             EventEntry* event;
 
-            if (strcmp(obj->animName, IB_R(0x6A0, str_802C4468, "MOBJ_TreasureBox")) == 0 ||
-                strcmp(obj->animName, IB_R(0x6C8, str_802C4490, "MOBJ_GrayTreasureBox")) == 0) {
-                event = evtEntryType(IB_D(0x90, evt_box_sound1), 0, 0, 0);
+            if (strcmp(obj->animName, "MOBJ_TreasureBox") == 0 ||
+                strcmp(obj->animName, "MOBJ_GrayTreasureBox") == 0) {
+                event = evtEntryType(evt_box_sound1, 0, 0, 0);
                 event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
                 event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
                 event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
-            } else if (strcmp(obj->animName, IB_R(0x6E0, str_802C44A8, "MOBJ_BlackTreasureBox")) == 0) {
-                event = evtEntryType(IB_D(0x130, evt_box_sound3), 0, 0, 0);
+            } else if (strcmp(obj->animName, "MOBJ_BlackTreasureBox") == 0) {
+                event = evtEntryType(evt_box_sound3, 0, 0, 0);
                 event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
                 event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
                 event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
             } else {
-                event = evtEntryType(IB_D(0xE0, evt_box_sound2), 0, 0, 0);
+                event = evtEntryType(evt_box_sound2, 0, 0, 0);
                 event->lwData[0] = (s32)(1024.0f * obj->position.x) + 0xF24A7A80;
                 event->lwData[1] = (s32)(1024.0f * obj->position.y) + 0xF24A7A80;
                 event->lwData[2] = (s32)(1024.0f * obj->position.z) + 0xF24A7A80;
@@ -2381,17 +2380,17 @@ s32 mobj_itembox(MapObjectEntry* obj) {
             }
             obj->flags &= ~0x20;
             animData = animPoseGetAnimBaseDataPtr(obj->poseId);
-            minTmp = IB_VEC(0x210, vec3_802c3fd8, ((Vec){0.0f, 0.0f, 0.0f}));
+            minTmp = vec3_802c3fd8[0];
             minTmp.x = animData->bboxMin.x;
             minTmp.y = animData->bboxMin.y;
             minTmp.z = animData->bboxMin.z;
             bboxMin = minTmp;
-            maxTmp = IB_VEC(0x21C, vec3_802c3fe4, ((Vec){0.0f, 0.0f, 0.0f}));
+            maxTmp = vec3_802c3fe4[0];
             maxTmp.x = animData->bboxMax.x;
             maxTmp.y = animData->bboxMax.y;
             maxTmp.z = animData->bboxMax.z;
             bboxMax = maxTmp;
-            bboxMin.z = bboxMin.z - IB_F64(0x710, double_0p2_802c44d8, ((f64)0.2f)) * __fabsf(bboxMax.y - bboxMin.y);
+            bboxMin.z = bboxMin.z - (f64)0.2f * __fabsf(bboxMax.y - bboxMin.y);
             PSVECAdd(&bboxMax, &bboxMin, &obj->translation);
             PSVECScale(&obj->translation, &obj->translation, 0.5f);
             PSVECScale(&obj->translation, &obj->translation, 10.0f);
@@ -2410,7 +2409,7 @@ s32 mobj_itembox(MapObjectEntry* obj) {
             evtSetValue(NULL, obj->unk1E4, 1);
             obj->flags |= 8;
             obj->flags &= ~0x20;
-            if (strcmp(obj->animName, IB_R(0x6E0, str_802C44A8, "MOBJ_BlackTreasureBox")) == 0) {
+            if (strcmp(obj->animName, "MOBJ_BlackTreasureBox") == 0) {
                 animPoseSetAnim(obj->poseId, "S_4", 1);
             } else {
                 animPoseSetAnim(obj->poseId, "S_2", 1);
@@ -2917,16 +2916,6 @@ s32 evt_mobj_save_blk(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (99.35%): the itemEntry argument setup schedules the evtId load before the fadds and the x
-// load after it (target: x load, fadds, z load, evtId load); 2 replaced instructions, otherwise identical.
-// The two-step `y` (below) already forces the 0.04 constant into f2, the target's register. The remaining
-// reorder is the global optimizer hoisting the evtId load, not source-order scheduling: tried with no change
-// -- direct/inline/commuted y sums, x/z/evtId locals (function and block scope, every declaration/assignment
-// order), returning-inline helpers, comma-sequence forms, nested blocks, raw-offset and volatile reads, the
-// opt_propagation/opt_lifetimes/opt_common_subs/opt_dead_assignments/scheduling/optimize_for_size/
-// global_optimizer/defer_codegen pragmas, -O4,s, and MWCC 2.5/2.7/3.0a3/3.0a3p1/3.0a5 (all give this
-// schedule). Same known-hard load-hoist class as _hammer_star_effect (battle_mario.c) and
-// DrawSubMenuCommonProcess (battle_menu_disp.c).
 s32 mobj_badgeblk(MapObjectEntry* obj) {
 
 
@@ -2956,8 +2945,15 @@ s32 mobj_badgeblk(MapObjectEntry* obj) {
 #else
                     f32 y = 40.0f + obj->position.y;
 #endif
+#ifdef MUST_MATCH
+                    // Float arguments evaluate before evtId, as in mobj_kururing_floor (see the note there).
+                    ((ItemEntry* (*)(const char*, ItemType, u16, f32, f32, f32, s32, s32))itemEntry)(
+                        obj->name, (ItemType)(*(s32*)((u8*)obj + 0x1A0)), 4, obj->position.x, y, obj->position.z,
+                        obj->unk1E4, 0);
+#else
                     itemEntry(obj->name, (ItemType)(*(s32*)((u8*)obj + 0x1A0)), 4, obj->unk1E4, 0,
                               obj->position.x, y, obj->position.z);
+#endif
                     item = itemNameToPtr(obj->name);
                     itemFlagOn(item, 0x10);
                     *(f32*)((u8*)item + 0x80) = 0.7f;
@@ -3548,8 +3544,6 @@ s32 evt_mobj_breaking_floor(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (90.09%): the compiler now shares both conversion doubles with the
-// read-only pool; floating-point register allocation and scheduling still differ.
 void kururing_capture(CameraId cameraId, void* param) {
     MapObjectEntry* obj = param;
 
@@ -3586,7 +3580,7 @@ void kururing_capture(CameraId cameraId, void* param) {
     cam->cameraAt = obj->position;
     cam->cameraPos = obj->position;
     t = (f32)tan(0.21816615760326385);
-    cam->cameraPos.y += 0.5f * (f32)texHeight / t;
+    cam->cameraPos.y += (f32)texHeight / 2.0f / t;
     C_MTXPerspective(cam->projection, 25.0f, (f32)(texWidth / texHeight),
                      1.0f, 32767.0f);
     cam->projType = GX_PERSPECTIVE;
@@ -3622,8 +3616,6 @@ static inline BOOL mobjIsInRange(f32 cx, f32 cz, f32 range, f32 x, f32 z) {
     return FALSE;
 }
 
-// NONMATCHING (99.94%): range-box checks, state machine, literals and the itemEntry schedule match. Residue is
-// the global allocator colouring posBuf r28 where the target uses r30 (6 instructions).
 s32 mobj_kururing_floor(MapObjectEntry* obj) {
     MarioWork* mario = marioGetPtr();
     PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -3633,7 +3625,7 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
     ItemEntry* item;
     NpcWork* npcWork;
     NpcEntry* entry;
-    u8* posBuf;
+    Vec* vtx;
     PartyEntry* party2;
 
     switch (obj->unk1DC) {
@@ -3740,33 +3732,33 @@ s32 mobj_kururing_floor(MapObjectEntry* obj) {
             animGetPtr()->poses[obj->poseId].flags |= 0x10;
             obj->flags |= 0x400;
             dispEntry(2, 0.0f, 0, kururing_capture, obj);
-            posBuf = (u8*)((smartEntry*)*(void**)((u8*)animPoseGetAnimPosePtr(obj->poseId) + 0x15C))->address;
+            vtx = &((Vec*)((smartEntry*)*(void**)((u8*)animPoseGetAnimPosePtr(obj->poseId) + 0x15C))->address)[1];
             mario = marioGetPtr();
             if (mobjIsInRange(obj->position.x, obj->position.z, 30.0f, mario->position.x, mario->position.z)) {
-                mario->position.y = *(f32*)(posBuf + 0x10);
+                mario->position.y = vtx->y;
             }
             party2 = partyGetPtr(marioGetPartyId());
             if (party2 != NULL &&
                 mobjIsInRange(obj->position.x, obj->position.z, 30.0f, party2->position.x, party2->position.z)) {
-                party2->position.y = *(f32*)(posBuf + 0x10);
+                party2->position.y = vtx->y;
             }
             party2 = partyGetPtr(marioGetExtraPartyId());
             if (party2 != NULL &&
                 mobjIsInRange(obj->position.x, obj->position.z, 30.0f, party2->position.x, party2->position.z)) {
-                party2->position.y = *(f32*)(posBuf + 0x10);
+                party2->position.y = vtx->y;
             }
             npcWork = npcGetWorkPtr();
             entry = npcWork->entries;
             for (i = 0; i < npcWork->total; i++, entry++) {
                 if (entry->flags & 1) {
                     if (mobjIsInRange(obj->position.x, obj->position.z, 42.420002f, entry->position.x, entry->position.z)) {
-                        entry->position.y = *(f32*)(posBuf + 0x10);
+                        entry->position.y = vtx->y;
                     }
                 }
             }
             item = itemNearDistCheck(obj->position.x, obj->position.y, obj->position.z, 42.420002f);
             if (item != NULL) {
-                item->position.y = *(f32*)(posBuf + 0x10);
+                item->position.y = vtx->y;
             }
             if (animPoseGetLoopTimes(obj->poseId) < 2.0f) {
                 break;
@@ -4019,7 +4011,11 @@ s32 evt_mobj_koopa_ojama_blk(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     obj->flags |= 4;
+#ifdef MUST_MATCH
+    pos = mobj_vec3_802c40a0_template[0];
+#else
     pos = vec3_802c40a0[0];
+#endif
     pos.x = f29;
     pos.y = f30;
     pos.z = f31;
@@ -4058,7 +4054,11 @@ s32 evt_mobj_koopa_stone_blk(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, asyncName);
     obj = mobjNameToPtr(name);
     obj->flags |= 4;
+#ifdef MUST_MATCH
+    pos = mobj_vec3_802c40ac_template[0];
+#else
     pos = vec3_802c40ac[0];
+#endif
     pos.x = x;
     pos.y = y;
     pos.z = z;
@@ -4734,7 +4734,11 @@ s32 evt_mobj_koopa_sango(EventEntry* event, BOOL isFirstCall) {
     mobjEntry(name, "MOBJ_sango");
     obj = mobjNameToPtr(name);
     obj->flags |= 0x84;
+#ifdef MUST_MATCH
+    pos = mobj_vec3_802c40c4_template[0];
+#else
     pos = vec3_802c40c4[0];
+#endif
     pos.x = f29;
     pos.y = f30;
     pos.z = f31;
@@ -4971,38 +4975,24 @@ s32 kpa_get_width(EventEntry* event, BOOL isFirstCall) {
     return 2;
 }
 
-// NONMATCHING (94.91%): `rem` (rather than mutating `value`) gets the divisions right but the four
-// digit registers are still coloured wrongly (retail wants hundreds=r6/tens=r5/ones=r3; ours r7/r5/r6)
-// and retail's per-digit `add; mr` coalescing is absent. Tried: all declaration orders, explicit
-// temps, `ones = rem - tens*10`, least-significant-digit-first, digit widths and every pragma.
 s32 kpa_score_to_str(EventEntry* event, BOOL isFirstCall) {
-    s32 value = evtGetValue(event, event->args[0]);
-    s32 i = 0;
-    s32 thousands;
-    s32 hundreds;
-    s32 tens;
-    s32 ones;
-    s32 rem;
+    s32 n = evtGetValue(event, event->args[0]);
+    s32 digits[4];
+    s32 len;
+    s32 j;
 
-    thousands = value / 1000;
-    rem = value % 1000;
-    hundreds = rem / 100;
-    rem %= 100;
-    tens = rem / 10;
-    ones = rem % 10;
-
-    if (i != 0 || thousands != 0) {
-        psw->str[i] = thousands + '0';
-        i = 1;
-    }
-    if (i != 0 || hundreds != 0) {
-        psw->str[i++] = hundreds + '0';
-    }
-    if (i != 0 || tens != 0) {
-        psw->str[i++] = tens + '0';
-    }
-    if (i != 0 || ones != 0) {
-        psw->str[i] = ones + '0';
+    digits[0] = n / 1000;
+    n %= 1000;
+    digits[1] = n / 100;
+    n %= 100;
+    digits[2] = n / 10;
+    digits[3] = n % 10;
+    len = 0;
+    for (j = 0; j != 4; j++) {
+        if (len != 0 || digits[j] != 0) {
+            psw->str[len] = digits[j] + '0';
+            len++;
+        }
     }
     psw->unk4 = 0;
     return 2;
@@ -5228,7 +5218,11 @@ s32 mobj_koopa_pole_evt(MapObjectEntry* obj) {
 // `obj+0x1B8` is reached as `&obj->unk1A0[0x18]` (the declared array), so MWCC recomputes the
 // `addi r3, r31, 0x1b8` per use; the raw `(char*)((u8*)obj + 0x1B8)` form CSEs the address into r25.
 s32 evt_mobj_koopa_pole(EventEntry* event, BOOL isFirstCall) {
+#ifdef MUST_MATCH
+    u8* base = (u8*)mobj_vec3_802c3dc8_template;
+#else
     u8* base = (u8*)vec3_802c3dc8;
+#endif
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
     f32 x = evtGetFloat(event, args[1]);
