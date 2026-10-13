@@ -8,6 +8,7 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/dispdrv.h"
 #include "manager/fontmgr.h"
 #include "memory.h"

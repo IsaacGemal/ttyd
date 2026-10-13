@@ -5,6 +5,7 @@
 #include "battle/ac/ac_table.h"
 #include "driver/dispdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "pmario_sound.h"
 
 extern ActionCommandEntry ActionCommandList[];

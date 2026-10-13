@@ -6,6 +6,7 @@
 #include "battle/battle_unit.h"
 #include "driver/camdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "mario/mariost.h"
 #include "pmario_sound.h"
 #include "system.h"

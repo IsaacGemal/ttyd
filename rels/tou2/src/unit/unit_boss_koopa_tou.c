@@ -8,6 +8,7 @@
 #include "battle/battle_weapon_power.h"
 #include "driver/dispdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "evt/evt_cmd.h"
 #include "evt/evt_eff.h"
 #include "evt/evt_msg.h"

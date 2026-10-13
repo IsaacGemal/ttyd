@@ -14,6 +14,7 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/mapdrv.h"
 #include "eff/eff_starstone.h"
 #include "eff/eff_sandars.h"

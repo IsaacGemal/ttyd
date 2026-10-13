@@ -9,6 +9,7 @@
 #include "manager/fontmgr.h"
 #include "battle/battle_disp.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/msgdrv.h"
 #include "pmario_sound.h"
 #include <stdio.h>

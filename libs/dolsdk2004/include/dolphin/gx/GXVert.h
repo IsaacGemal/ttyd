@@ -53,8 +53,10 @@ static inline void name##2##T(T x, T y) { GXWGFifo.T = x; GXWGFifo.T = y; }
 #define FUNC_3PARAM(name, T) \
 static inline void name##3##T(T x, T y, T z) { GXWGFifo.T = x; GXWGFifo.T = y; GXWGFifo.T = z; }
 
+// const parameters: MWCC loads the arguments of a const-parameter inline as temporaries, which is what
+// battle_disp's btlDispTexPlainGX colour writes need.
 #define FUNC_4PARAM(name, T) \
-static inline void name##4##T(T x, T y, T z, T w) { GXWGFifo.T = x; GXWGFifo.T = y; GXWGFifo.T = z; GXWGFifo.T = w; }
+static inline void name##4##T(const T x, const T y, const T z, const T w) { GXWGFifo.T = x; GXWGFifo.T = y; GXWGFifo.T = z; GXWGFifo.T = w; }
 
 #define FUNC_INDEX8(name) \
 static inline void name##1x8(u8 x) { GXWGFifo.u8 = x; }

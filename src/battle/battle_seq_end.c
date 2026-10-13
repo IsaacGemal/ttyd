@@ -8,6 +8,7 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/msgdrv.h"
 #include "driver/windowdrv.h"
 #include "manager/evtmgr.h"

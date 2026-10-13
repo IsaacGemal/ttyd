@@ -2,6 +2,7 @@
 #include "statuswindow.h"
 #include "battle/battle.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/seqdrv.h"
 #include "driver/swdrv.h"
 #include "mario/mario.h"

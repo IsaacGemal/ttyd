@@ -4,6 +4,7 @@
 #include "battle/battle_pad.h"
 #include "battle/battle_disp.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "math_ext.h"
 #include "matching.h"
 #include "pmario_sound.h"

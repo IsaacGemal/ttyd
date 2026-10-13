@@ -1,6 +1,7 @@
 #include "battle/ac/ac_repeatedly_lv.h"
 #include "battle/battle.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "system.h"
 
 

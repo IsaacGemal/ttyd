@@ -16,6 +16,9 @@
 #include "battle/battle_stage.h"
 #include "battle/battle_seq_command.h"
 
+// LOCAL_PROTO(iconDispGx): this unit's original passes the icon id zero-extended (ItemData.icon_id read with `lhz`
+// and handed over with no `extsh`), so it saw the id as u16.
+void iconDispGx(f32 scale, Vec* position, s16 flags, u16 iconId);
 
 extern BattleWork* _battleWorkPointer;
 
@@ -39,14 +42,6 @@ const Vec vec3_802edde8 = { -1.0f, 1.0f, 1.0f };
 const Vec vec3_802eddf4 = { -1.0f, -1.0f, 1.0f };
 const Vec vec3_802ede00 = { 1.0f, -1.0f, 1.0f };
 
-extern double double_to_int_802ede28;
-extern f32 float_4_8041bf3c;
-extern f32 float_2_8041bf68;
-extern f32 float_0_8041bf58;
-extern f32 float_1_8041bf64;
-extern f32 float_0p5_8041bf4c;
-extern f32 float_304_8041bf5c;
-extern f32 float_240_8041bf60;
 extern const char str_802EDE38[];
 extern const char str_802EDE40[];
 extern const char str_802EDE48[];
@@ -55,19 +50,11 @@ extern const char str_802EDE58[];
 extern const char str_802EDE60[];
 extern const char str_802EDE68[];
 extern const char str_802EDE70[];
-extern f32 float_deg2rad_8041bf54;
-extern f32 float_270_8041bf70;
-extern f32 float_90_8041bf74;
-extern f32 float_neg1_8041bf78;
-extern f32 float_180_8041bf7c;
-extern f32 float_neg5_8041bf80;
 typedef void (*BattleUnitPartDispCallback)(BattleUnitPart* part, s32 mode);
 
-extern f32 float_7_8041bf84;
-extern f32 float_10_8041bf40;
-extern f32 float_901_8041bf50;
 extern ItemData itemDataTable[];
-extern f32 float_5_8041bf6c;
+
+static void btlDispAnimeSpeedReset(BattleUnit* unit);
 
 // Keep searchPoseTbl out of line: the original calls it rather than inlining.
 #pragma dont_inline on
@@ -135,7 +122,7 @@ void btlDispGXInit2D(void) {
 // Keep btlDispGXPoint2DRasta out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void btlDispGXPoint2DRasta(f32 x, f32 y, u8 r, u8 g, u8 b, u8 a) {
-	GXPosition3f32(x, y, float_0_8041bf58);
+	GXPosition3f32(x, y, 0.0f);
 	GXColor4u8(r, g, b, a);
 }
 #pragma dont_inline reset
@@ -151,7 +138,7 @@ void btlDispGXQuads2DRasta(f32 x0, f32 y0, f32 x1, f32 y1, u8 r, u8 g, u8 b, u8 
 // Keep btlDispGXPoint2D out of line: the original calls it rather than inlining.
 #pragma dont_inline on
 void btlDispGXPoint2D(f32 x, f32 y, u8 r, u8 g, u8 b, u8 a, f32 s, f32 t) {
-	GXPosition3f32(x, y, float_0_8041bf58);
+	GXPosition3f32(x, y, 0.0f);
 	GXColor4u8(r, g, b, a);
 	GXTexCoord2f32(s, t);
 }
@@ -159,10 +146,10 @@ void btlDispGXPoint2D(f32 x, f32 y, u8 r, u8 g, u8 b, u8 a, f32 s, f32 t) {
 
 void btlDispGXQuads2D(f32 x0, f32 y0, f32 x1, f32 y1, u8 r, u8 g, u8 b, u8 a) {
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	btlDispGXPoint2D(x0, y0, r, g, b, a, float_0_8041bf58, float_0_8041bf58);
-	btlDispGXPoint2D(x1, y0, r, g, b, a, float_1_8041bf64, float_0_8041bf58);
-	btlDispGXPoint2D(x1, y1, r, g, b, a, float_1_8041bf64, float_1_8041bf64);
-	btlDispGXPoint2D(x0, y1, r, g, b, a, float_0_8041bf58, float_1_8041bf64);
+	btlDispGXPoint2D(x0, y0, r, g, b, a, 0.0f, 0.0f);
+	btlDispGXPoint2D(x1, y0, r, g, b, a, 1.0f, 0.0f);
+	btlDispGXPoint2D(x1, y1, r, g, b, a, 1.0f, 1.0f);
+	btlDispGXPoint2D(x0, y1, r, g, b, a, 0.0f, 1.0f);
 }
 
 // Keep btlDispTexPlaneInit out of line: the original calls it rather than inlining.
@@ -183,21 +170,6 @@ void btlDispTexPlaneInit(void) {
 }
 #pragma dont_inline reset
 
-// Writing the quad through a local `volatile PPCWGPipe*` puts the GX FIFO base in r12 as the target does (and
-// `ny` keeps -y in f2); the remaining diffs are only which caller-saved register holds each colour byte
-// (target: r0/r3/r6/r7, r4/r5/r10/r11, r6/r7/r8/r9, r0/r3/r4/r5). The `switch` keeps the target's
-// `beq then; b else` layout.
-// NONMATCHING (99.22%): only GX colour-byte temp registers differ; opcode sequence is identical.
-// Tried without a win: a GXColor4u8-style 4-scalar-argument inline helper (and all 24 argument permutations)
-// reproduces the target's colour0 registers exactly but forces the FIFO base into r5 instead of r12; a color
-// pointer helper, local GXColor copies, per-byte helpers, a 16-parameter whole-quad helper, explicit
-// `u8`/array temporaries, direct `GXWGFifo` accesses, and every relevant opt_* pragma (opt_lifetimes,
-// opt_common_subs, opt_propagation, opt_pointer_analysis, ...) all leave one of {base r12, colour registers}
-// wrong. The 1.0f/double pool-symbol names differ but do not affect the score.
-// Also tried without a win: local GXColor copies (90.53%), `-x`/`-y` inline instead of the nx/ny locals
-// (hangs), nx/ny assigned before GXBegin (30 diffs), and opt_lifetimes/opt_common_subs/opt_propagation/
-// opt_strength_reduction/peephole/scheduling off (30-102 diffs), optimization_level 1 (68 diffs),
-// global_optimizer/defer_codegen/always_inline/opt_loop_invariants off or on (30 diffs).
 void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, GXColor color3) {
 	GXTexObj texobj;
 	f32 x, y;
@@ -244,53 +216,6 @@ void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, G
 	x = 0.5f * (f32)GXGetTexObjWidth(&texobj);
 	y = 0.5f * (f32)GXGetTexObjHeight(&texobj);
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-#ifdef MUST_MATCH
-	/* MUST_MATCH: writing through this local pointer reproduces the target's r12 GX FIFO base. */
-	{
-		volatile PPCWGPipe* fifo = &GXWGFifo;
-		f32 nx = -x, ny = -y;
-
-		fifo->f32 = nx;
-		fifo->f32 = y;
-		fifo->f32 = 0.0f;
-		fifo->u8 = color0.r;
-		fifo->u8 = color0.g;
-		fifo->u8 = color0.b;
-		fifo->u8 = color0.a;
-		fifo->f32 = 0.0f;
-		fifo->f32 = 0.0f;
-
-		fifo->f32 = x;
-		fifo->f32 = y;
-		fifo->f32 = 0.0f;
-		fifo->u8 = color1.r;
-		fifo->u8 = color1.g;
-		fifo->u8 = color1.b;
-		fifo->u8 = color1.a;
-		fifo->f32 = 1.0f;
-		fifo->f32 = 0.0f;
-
-		fifo->f32 = x;
-		fifo->f32 = ny;
-		fifo->f32 = 0.0f;
-		fifo->u8 = color2.r;
-		fifo->u8 = color2.g;
-		fifo->u8 = color2.b;
-		fifo->u8 = color2.a;
-		fifo->f32 = 1.0f;
-		fifo->f32 = 1.0f;
-
-		fifo->f32 = nx;
-		fifo->f32 = ny;
-		fifo->f32 = 0.0f;
-		fifo->u8 = color3.r;
-		fifo->u8 = color3.g;
-		fifo->u8 = color3.b;
-		fifo->u8 = color3.a;
-		fifo->f32 = 0.0f;
-		fifo->f32 = 1.0f;
-	}
-#else
 	GXPosition3f32(-x, y, 0.0f);
 	GXColor4u8(color0.r, color0.g, color0.b, color0.a);
 	GXTexCoord2f32(0.0f, 0.0f);
@@ -306,7 +231,6 @@ void btlDispTexPlainGX(u32 id, GXColor color0, GXColor color1, GXColor color2, G
 	GXPosition3f32(-x, -y, 0.0f);
 	GXColor4u8(color3.r, color3.g, color3.b, color3.a);
 	GXTexCoord2f32(0.0f, 1.0f);
-#endif
 }
 
 void btlDispTexPlane(u32 id, GXColor color, f32 tX, f32 tY, f32 tZ, f32 sX, f32 sY) {
@@ -439,16 +363,16 @@ void btlDispMain(void) {
 				      (other->damageEventId != 0 && evtCheckID(other->damageEventId) != 0))) {
 					BtlUnit_GetPos(unit, &pos1.x, &pos1.y, &pos1.z);
 					BtlUnit_GetPos(other, &pos2.x, &pos2.y, &pos2.z);
-					pos2.z += float_7_8041bf84;
+					pos2.z += 7.0f;
 					floor = BattleGetFloorHeight(wp, pos2.x, pos2.y, pos2.z);
 					switch (unit->work[2]) {
 					case 2: {
 						double fabsx = __fabs(pos1.x - pos2.x);
 						if (fabsx > 10.0) {
 							if (pos2.x > pos1.x) {
-								pos1.x = pos1.x + ((pos2.x - pos1.x) - float_10_8041bf40);
+								pos1.x = pos1.x + ((pos2.x - pos1.x) - 10.0f);
 							} else {
-								pos1.x = pos1.x - ((pos1.x - pos2.x) - float_10_8041bf40);
+								pos1.x = pos1.x - ((pos1.x - pos2.x) - 10.0f);
 							}
 						}
 						BtlUnit_SetPos(unit, pos1.x, pos2.y, pos2.z);
@@ -460,10 +384,10 @@ void btlDispMain(void) {
 							unit->work[2] = 1;
 						} else {
 							if (pos2.x > pos1.x) {
-								pos1.x = pos1.x + float_1_8041bf64;
+								pos1.x++;
 								BtlUnit_SetPos(unit, pos1.x, floor, pos2.z);
 							} else {
-								pos1.x = pos1.x - float_1_8041bf64;
+								pos1.x--;
 								BtlUnit_SetPos(unit, pos1.x, floor, pos2.z);
 							}
 						}
@@ -495,7 +419,7 @@ void btlDispMain(void) {
 		unit->field_0x30E[0] = unk;
 
 		BtlUnit_HpGaugeMain(unit);
-		unit->mSizeMultiplier = float_1_8041bf64;
+		unit->mSizeMultiplier = 1.0f;
 		BtlUnit_GetStatus(unit, 0xB, &turns, &strength);
 		if (turns > 0 && strength < 0) {
 			f32 f = 0.5f * (f32)strength + 1.0f;
@@ -544,14 +468,14 @@ void btlDispMain(void) {
 					}
 				}
 				if (BtlUnit_CheckStatus(unit, 0x13)) {
-					btlDispAnimeSpeed((BattleUnit*)part, float_2_8041bf68);
+					btlDispAnimeSpeed((BattleUnit*)part, 2.0f);
 				} else if (BtlUnit_CheckStatus(unit, 0x14)) {
-					btlDispAnimeSpeed((BattleUnit*)part, float_0p5_8041bf4c);
+					btlDispAnimeSpeed((BattleUnit*)part, 0.5f);
 				} else {
-					btlDispAnimeSpeed((BattleUnit*)part, float_1_8041bf64);
+					btlDispAnimeSpeedReset((BattleUnit*)part);
 				}
 			} else {
-				btlDispAnimeSpeed((BattleUnit*)part, float_1_8041bf64);
+				btlDispAnimeSpeedReset((BattleUnit*)part);
 			}
 
 			if (*(s32*)(part->field_0x1C0 + 0x44) & 1) {
@@ -627,11 +551,11 @@ void btlDispMain(void) {
 					if (part->field_0x4F4[3] < 0xFF ||
 					    animPoseTestXLU(*(s32*)part->field_0x1C0)) {
 						if (!(*(s32*)(part->field_0x1C0 + 0x44) & 0x100)) {
-							dispEntry(4, dispCalcZ(&v2), 2, (DispCallback)btlUnitPartsDisp, part);
+							dispEntry(4, dispCalcZ(&v2), 2, btlUnitPartsDisp, part);
 						}
 					} else {
 						if (!(*(s32*)(part->field_0x1C0 + 0x44) & 0x100)) {
-							dispEntry(4, dispCalcZ(&v2), 1, (DispCallback)btlUnitPartsDisp, part);
+							dispEntry(4, dispCalcZ(&v2), 1, btlUnitPartsDisp, part);
 						}
 					}
 				}
@@ -702,15 +626,15 @@ void btlDispMain(void) {
 
 		if (unit->heldItem != 0) {
 			if ((unit->flags & 0x40000000) && !(unit->flags & 0x08000000)) {
-				dispEntry(4, float_0_8041bf58, 2, btlUnitStolenItemDisp, unit);
+				dispEntry(4, 0.0f, 2, btlUnitStolenItemDisp, unit);
 			} else if (!(unit->flags & 0x04000000) || (unit->flags & 0x02000000)) {
 				if (!(unit->flags & 0x08000000)) {
-					dispEntry(4, float_0_8041bf58, 2, (DispCallback)btlUnitItemDisp, unit);
+					dispEntry(4, 0.0f, 2, (DispCallback)btlUnitItemDisp, unit);
 				}
 			}
 		} else {
 			if (wp->flags & 0x20000) {
-				dispEntry(4, float_0_8041bf58, 2, (DispCallback)btlUnitItemDisp2, unit);
+				dispEntry(4, 0.0f, 2, (DispCallback)btlUnitItemDisp2, unit);
 			}
 		}
 	}
@@ -728,38 +652,23 @@ void btlDispMain(void) {
 	}
 }
 
-#pragma opt_common_subs off // keeps the faceDirection int->float conversion in retail's f1/f2/f0 registers
-// All code, calls and matrix/switch structure match; remaining diffs are register allocation only. The
-// target keeps owner in r29 / wp in r31 (we have them swapped) and maps the six callee-saved floats to
-// f26-f31 in the "natural" order (f26=1.0, f27=270/90, f28=pos.z, f29=pos.x, f30=height, f31=angle),
-// while MWCC assigns ours in a different permutation. The three callees are kept as real `bl`s with
-// #pragma dont_inline because the target does not inline them. MWCC gives owner r31 / wp r29 and puts
-// height in f27 and the 270/90 constant in f30; every x/z/1.0/angle and stack slot already matches. The
-// f32 declaration order and the prologue load order below are chosen so the allocator lands as close as
-// it can - reordering them moved several dozen instructions into the target's registers. Writing the
-// alliance lookup as the named fields `wp->alliances[owner->mAlliance].attackDirection` (not a flat
-// +0xA offset) fixed the add/addi/lbzx addressing shape. parts->mOwner reloads at the flag tests, the
-// rotation-sum grouping, FP operand order, the float_270 initializer and opt_common_subs off moved the
-// rest into place.
-// NONMATCHING (99.10%): only the callee-saved register assignment (owner/wp GPR swap and the height/270
-// FPR swap) plus the prologue schedule differ.
-void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
+// The f26-f31 locals are reused across both branches; their declaration order (and wp before parts) sets
+// MWCC's callee-saved register assignment. The three callees are kept as real `bl`s with #pragma dont_inline
+// because the target does not inline them.
+void btlUnitPartsDisp(CameraId camId, void* param) {
 	BattleWork* wp;
+	BattleUnitPart* parts = param;
 	BattleUnit* owner;
 	CameraEntry* cam;
 	// Order matters for MWCC's callee-saved FPR allocation (do not sort).
-	f32 f27 = float_270_8041bf70;
-	f32 f28;
-	f32 f29;
-#ifdef MUST_MATCH
-	// Dead initializer (f30 is assigned before every use); its presence alone reproduces MWCC's
-	// callee-saved FPR allocation in the else branch.
-	f32 f30 = float_0_8041bf58;
-#else
-	f32 f30;
-#endif
-	f32 f26;
+	f32 angle;
 	f32 f31;
+	f32 f29;
+	f32 f30;
+	f32 f28;
+	f32 f27;
+	f32 flip;
+	f32 f26;
 	Mtx m28;
 	Mtx m27;
 	Mtx m26;
@@ -792,7 +701,7 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 
 	(void)camId;
 	wp = _battleWorkPointer;
-	f26 = float_1_8041bf64;
+	flip = 1.0f;
 	owner = parts->mOwner;
 	if (*(s32*)((char*)parts + 0x1C0) < 0) {
 		return;
@@ -802,9 +711,9 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 	PSMTXTrans(m10, owner->mRotationOffset.x, owner->mRotationOffset.y, owner->mRotationOffset.z);
 	PSMTXTrans(m15, owner->mDisplayOffset.x, owner->mDisplayOffset.y, owner->mDisplayOffset.z);
 	PSMTXTrans(m16, owner->mPosition.x, owner->mPosition.y, owner->mPosition.z);
-	PSMTXRotRad(m14, 'x', float_deg2rad_8041bf54 * (owner->mRotation.x + owner->mBaseRotation.x));
-	PSMTXRotRad(m13, 'y', float_deg2rad_8041bf54 * (owner->mRotation.y + owner->mBaseRotation.y));
-	PSMTXRotRad(m12, 'z', float_deg2rad_8041bf54 * (owner->mRotation.z + owner->mBaseRotation.z));
+	PSMTXRotRad(m14, 'x', 0.017453292f * (owner->mRotation.x + owner->mBaseRotation.x));
+	PSMTXRotRad(m13, 'y', 0.017453292f * (owner->mRotation.y + owner->mBaseRotation.y));
+	PSMTXRotRad(m12, 'z', 0.017453292f * (owner->mRotation.z + owner->mBaseRotation.z));
 	PSMTXScale(m9, owner->mSizeMultiplier * (owner->mBaseScale.x * owner->mScale.x),
 	                   owner->mSizeMultiplier * (owner->mBaseScale.y * owner->mScale.y),
 	                   owner->mBaseScale.z * owner->mScale.z);
@@ -818,15 +727,15 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 	PSMTXConcat(m15, m28, m28);
 
 
+	f27 = 270.0f;
 	if (parts->attributes & 0x10000000) {
 		if (parts->faceDirection >= 0) {
-			f27 = float_90_8041bf74;
+			f27 = 90.0f;
 		}
 		f29 = parts->mPosition.x;
-		f30 = getFloatDispOffset((BattleUnit*)parts);
 // dont_inline: retail keeps these real bls from btlUnitPartsDisp.
 #pragma dont_inline on
-		f30 = (parts->mPosition.y + getGravityDispOffset((BattleUnit*)parts)) + f30;
+		f30 = parts->mPosition.y + getGravityDispOffset((BattleUnit*)parts) + getFloatDispOffset((BattleUnit*)parts);
 		f28 = parts->mPosition.z;
 		cam = camGetCurPtr();
 		f31 = angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z);
@@ -834,22 +743,22 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 
 		PSMTXTrans(m22, -parts->mRotationOffset.x, -parts->mRotationOffset.y, -parts->mRotationOffset.z);
 		PSMTXTrans(m21, parts->mRotationOffset.x, parts->mRotationOffset.y, parts->mRotationOffset.z);
-		PSMTXRotRad(m20, 'x', float_deg2rad_8041bf54 * (parts->mRotation.x + parts->mBaseRotation.x));
-		PSMTXRotRad(m19, 'y', float_deg2rad_8041bf54 * (parts->mRotation.y + parts->mBaseRotation.y + f31));
-		PSMTXRotRad(m18, 'z', float_deg2rad_8041bf54 * (parts->mRotation.z + parts->mBaseRotation.z));
+		PSMTXRotRad(m20, 'x', 0.017453292f * (parts->mRotation.x + parts->mBaseRotation.x));
+		PSMTXRotRad(m19, 'y', 0.017453292f * (parts->mRotation.y + parts->mBaseRotation.y + f31));
+		PSMTXRotRad(m18, 'z', 0.017453292f * (parts->mRotation.z + parts->mBaseRotation.z));
 		PSMTXTrans(m23, f29, f30, f28);
 
-		f30 = reviseAngle(float_neg1_8041bf78 * f27 - float_90_8041bf74);
+		f30 = reviseAngle(-1.0f * f27 - 90.0f);
 		f28 = reviseAngle(parts->mBaseRotation.y + (f30 + parts->mRotation.y));
 		cam = camGetCurPtr();
-		f27 = angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z);
+		angle = angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z);
 		{
-			f32 f0 = reviseAngle(f28 + f27);
-			if (f0 >= float_90_8041bf74 && f0 <= float_270_8041bf70) {
-				f26 = f26 * float_neg1_8041bf78;
-				PSMTXRotRad(m19, 'y', float_deg2rad_8041bf54 *
+			f32 f0 = reviseAngle(f28 + angle);
+			if (f0 >= 90.0f && f0 <= 270.0f) {
+				flip *= -1.0f;
+				PSMTXRotRad(m19, 'y', 0.017453292f *
 					(f31 + (parts->mRotation.y + parts->mBaseRotation.y) -
-					 float_2_8041bf68 * (float_180_8041bf7c - (f0 - f27))));
+					 2.0f * (180.0f - (f0 - angle))));
 			}
 		}
 
@@ -857,12 +766,12 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 			PSMTXScale(m26,
 				parts->mBaseScale.x * parts->mScale.x,
 				parts->mBaseScale.y * parts->mScale.y,
-				f26 * (parts->mBaseScale.z * parts->mScale.z));
+				flip * (parts->mBaseScale.z * parts->mScale.z));
 		} else {
 			PSMTXScale(m26,
 				owner->mSizeMultiplier * (parts->mBaseScale.x * parts->mScale.x),
 				owner->mSizeMultiplier * (parts->mBaseScale.y * parts->mScale.y),
-				f26 * (parts->mBaseScale.z * parts->mScale.z));
+				flip * (parts->mBaseScale.z * parts->mScale.z));
 		}
 
 		PSMTXIdentity(m17);
@@ -874,54 +783,54 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 		PSMTXConcat(m21, m17, m17);
 		PSMTXConcat(m23, m17, m27);
 		PSMTXCopy(m27, m25);
-		PSMTXTrans(m0, float_0_8041bf58, float_0_8041bf58, float_neg5_8041bf80);
+		PSMTXTrans(m0, 0.0f, 0.0f, -5.0f);
 		PSMTXConcat(m0, m25, m25);
 	} else {
 		f32 dir;
 		f32 sign;
 
 		if (owner->faceDirection >= 0) {
-			f27 = float_90_8041bf74;
+			f27 = 90.0f;
 		}
 		dir = (f32)parts->faceDirection;
-		if (dir > float_0_8041bf58) {
-			sign = float_1_8041bf64;
-		} else if (dir < float_0_8041bf58) {
-			sign = float_neg1_8041bf78;
+		if (dir > 0.0f) {
+			sign = 1.0f;
+		} else if (dir < 0.0f) {
+			sign = -1.0f;
 		} else {
 			sign = (f32)wp->alliances[owner->mAlliance].attackDirection;
 		}
-		f30 = sign * parts->mPositionOffset.x + owner->mPosition.x;
-		f26 = getFloatDispOffset((BattleUnit*)parts);
-		f31 = (owner->mPosition.y + parts->mPositionOffset.y + getGravityDispOffset((BattleUnit*)parts)) + f26;
-		f29 = owner->mPosition.z + parts->mPositionOffset.z;
-		f28 = float_0_8041bf58;
+		f30 = parts->mPositionOffset.x * sign + owner->mPosition.x;
+		f29 = owner->mPosition.y + parts->mPositionOffset.y + getGravityDispOffset((BattleUnit*)parts) +
+		      getFloatDispOffset((BattleUnit*)parts);
+		f31 = owner->mPosition.z + parts->mPositionOffset.z;
+		f28 = 0.0f;
 		if (parts->mOwner->mAttributeFlags & 0x04000000) {
 			cam = camGetCurPtr();
 			f26 = angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z);
-			f28 = reviseAngle(f26 - angleABf(cam->cameraPos.x, cam->cameraPos.z, f30, f29));
+			f28 = reviseAngle(f26 - angleABf(cam->cameraPos.x, cam->cameraPos.z, f30, f31));
 		}
 
 		PSMTXTrans(m3, -parts->mRotationOffset.x, -parts->mRotationOffset.y, -parts->mRotationOffset.z);
 		PSMTXTrans(m2, parts->mRotationOffset.x, parts->mRotationOffset.y, parts->mRotationOffset.z);
-		PSMTXRotRad(m6, 'x', float_deg2rad_8041bf54 * (parts->mRotation.x + parts->mBaseRotation.x));
-		PSMTXRotRad(m5, 'y', float_deg2rad_8041bf54 * (parts->mRotation.y + parts->mBaseRotation.y + f28));
-		PSMTXRotRad(m4, 'z', float_deg2rad_8041bf54 * (parts->mRotation.z + parts->mBaseRotation.z));
-		PSMTXTrans(m8, f30, f31, f29);
+		PSMTXRotRad(m6, 'x', 0.017453292f * (parts->mRotation.x + parts->mBaseRotation.x));
+		PSMTXRotRad(m5, 'y', 0.017453292f * (parts->mRotation.y + parts->mBaseRotation.y + f28));
+		PSMTXRotRad(m4, 'z', 0.017453292f * (parts->mRotation.z + parts->mBaseRotation.z));
+		PSMTXTrans(m8, f30, f29, f31);
 		PSMTXTrans(m7, parts->mDisplayOffset.x, parts->mDisplayOffset.y, parts->mDisplayOffset.z);
 
-		f30 = reviseAngle(float_neg1_8041bf78 * f27 - float_90_8041bf74);
+		f30 = reviseAngle(-1.0f * f27 - 90.0f);
 		if (!(parts->mOwner->flags & 0x1000000)) {
 			f26 = reviseAngle(parts->mBaseRotation.y + (owner->mBaseRotation.y +
 				(parts->mRotation.y + (f30 + owner->mRotation.y))));
 			cam = camGetCurPtr();
 			{
 				f32 f0 = reviseAngle(f26 + angleABf(cam->cameraPos.x, cam->cameraPos.z, cam->cameraAt.x, cam->cameraAt.z));
-				if (f0 >= float_90_8041bf74 && f0 <= float_270_8041bf70) {
+				if (f0 >= 90.0f && f0 <= 270.0f) {
 					PSMTXScale(m9,
 						owner->mSizeMultiplier * (owner->mBaseScale.x * owner->mScale.x),
 						owner->mSizeMultiplier * (owner->mBaseScale.y * owner->mScale.y),
-						float_neg1_8041bf78 * (owner->mBaseScale.z * owner->mScale.z));
+						-1.0f * (owner->mBaseScale.z * owner->mScale.z));
 					PSMTXIdentity(m24);
 					PSMTXConcat(m9, m24, m24);
 					PSMTXConcat(m11, m24, m24);
@@ -966,7 +875,7 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 		PSMTXScale(m1,
 			parts->mBaseScale.x * parts->mScale.x,
 			parts->mBaseScale.y * parts->mScale.y,
-			float_1_8041bf64 * (parts->mBaseScale.z * parts->mScale.z));
+			flip * (parts->mBaseScale.z * parts->mScale.z));
 		PSMTXIdentity(m24);
 		PSMTXConcat(m28, m24, m24);
 		PSMTXConcat(m1, m24, m24);
@@ -1007,7 +916,7 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 		PSMTXConcat(m8, m24, m27);
 		PSMTXConcat(m7, m27, m27);
 		PSMTXCopy(m27, m25);
-		PSMTXTrans(m0, float_0_8041bf58, float_0_8041bf58, float_neg5_8041bf80);
+		PSMTXTrans(m0, 0.0f, 0.0f, -5.0f);
 		PSMTXConcat(m0, m25, m25);
 	}
 
@@ -1042,9 +951,9 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 	} else {
 		animPoseSetMaterialFlagOff(*(s32*)((char*)parts + 0x1C0), 0x800000);
 	}
-	animPoseDrawMtx(*(s32*)((char*)parts + 0x1C0), m27, 1, f30, float_2_8041bf68);
-	animPoseDrawMtx(*(s32*)((char*)parts + 0x1C0), m27, 2, f30, float_2_8041bf68);
-	animPoseDrawMtx(*(s32*)((char*)parts + 0x1C0), m27, 3, f30, float_2_8041bf68);
+	animPoseDrawMtx(*(s32*)parts->field_0x1C0, m27, 1, f30, 2.0f);
+	animPoseDrawMtx(*(s32*)parts->field_0x1C0, m27, 2, f30, 2.0f);
+	animPoseDrawMtx(*(s32*)parts->field_0x1C0, m27, 3, f30, 2.0f);
 	if (*(BattleUnitPartDispCallback*)((char*)parts + 0x210)) {
 		(*(BattleUnitPartDispCallback*)((char*)parts + 0x210))(parts, 1);
 	}
@@ -1054,15 +963,12 @@ void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts) {
 }
 #pragma dont_inline reset
 #pragma dont_inline reset
-#pragma opt_common_subs reset
 
 // The original's dead int->double conversion of BtlUnit_GetHeight survives as the two `stw`s of a
 // constant double pair (frame 0x30). A bare `(f32)`/`(f64)` statement is DCE'd away; `opt_dead_assignments
 // off` plus assigning the height to an otherwise-unused double local keeps the conversion stores.
 #pragma opt_dead_assignments off
 #pragma dont_inline on
-// NONMATCHING (98.02%): only the iconDispGx arg setup differs -- target computes &itemDataTable[item] in
-// r4 and reads icon_id `lhz` late; we use r3 / `lha` early.
 void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 	BattleWork* wp = _battleWorkPointer;
 	Vec v;
@@ -1082,7 +988,7 @@ void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit) {
 		v.x += unit->heldItemOffset.x;
 		v.y += unit->heldItemOffset.y;
 		v.z += unit->heldItemOffset.z;
-		iconDispGx(float_1_8041bf64, &v, 0, itemDataTable[item].icon_id);
+		iconDispGx(1.0f, &v, 0, itemDataTable[item].icon_id);
 	}
 }
 #pragma dont_inline reset
@@ -1104,41 +1010,14 @@ void btlUnitItemDisp2(CameraId cameraId, BattleUnit* unit) {
 	}
 }
 
-// The original reads ItemData.icon_id with `lhz` (unsigned), but the header declares it s16, so this uses
-// the ItemDataView field plus the u16 callee signature to reproduce that with no `extsh` (fixing
-// ItemData.icon_id and iconDispGx's iconId to u16 in the headers would remove the MUST_MATCH).
-// The rest: target f3=mSizeMultiplier, f4=height, f2=float_5 with float_1 live before the fmadds (ours
-// f2/f3 with float_5/float_1 sharing f1), and `add r5, r4, r0` vs `add r4, r4, r0` (the target coalesces
-// the table address into the icon-argument register r5, ours reuses the base r4).
-// NONMATCHING (91.46%): only the FP allocation (f3/f4/f2 vs f2/f3/f1) and `add r5` vs `add r4` differ; the unsigned `lhz` matches.
-// Tried without a win: `float_5 + mSizeMultiplier * height` (same), `height * mSizeMultiplier` (same),
-// `v.y = v.y + ...` (90.00%), a local for the height, the multiplier or float_5 (below 72%), reading
-// icon_id into a local at 91.46% (same regs), a `s32`/`u16` height local (89.63/70.32%), a static inline
-// height or product helper (90.73/82.68%), an `ItemDataView*` item pointer (17.78%) or an inline
-// `itemDataTable[unit->heldItem]` index (67.68%), a `MATCH_F32` volatile read of float_1/float_5
-// (8-23 diffs), and opt_lifetimes/opt_common_subs/opt_propagation/opt_dead_assignments/
-// opt_strength_reduction/scheduling/global_optimizer/defer_codegen/always_inline/opt_loop_invariants
-// off (8 diffs), optimization_level 1/2 (28/23 diffs), optimize_for_size off (80.24%). The target keeps
-// f1 reserved for float_1 across the fmadds, which shifts every other FP register by one; no source form
-// reserves f1 without parking the value in a callee-saved FPR.
-// NONMATCHING (91.46%): the iconDispGx argument setup and the reserved f1 for float_1 differ.
 void btlUnitStolenItemDisp(CameraId cameraId, void* param) {
 	BattleUnit* unit = param;
 	Vec v;
-#ifdef MUST_MATCH
-	/* MUST_MATCH: the header's s16 icon_id makes the load `lha`; the view + u16 callee signature
-	   reproduce the original's unsigned `lhz` with no `extsh`. */
-	ItemDataView* items = (ItemDataView*)itemDataTable;
-#endif
 	s32 itemId = unit->heldItem;
 
 	BtlUnit_GetPos(unit, &v.x, &v.y, &v.z);
-	v.y += unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit) + float_5_8041bf6c;
-#ifdef MUST_MATCH
-	((void (*)(Vec*, s16, u16, f32))iconDispGx)(&v, 0, items[itemId].icon_id, float_1_8041bf64);
-#else
-	iconDispGx(float_1_8041bf64, &v, 0, itemDataTable[itemId].icon_id);
-#endif
+	v.y += unit->mSizeMultiplier * (f32)BtlUnit_GetHeight(unit) + 5.0f;
+	iconDispGx(1.0f, &v, 0, itemDataTable[itemId].icon_id);
 }
 
 #pragma dont_inline on // the original keeps calls to this function out of line
@@ -1192,9 +1071,9 @@ void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts) {
 			if (color.a == 0) continue;
 			animPoseSetMaterialEvtColor(*(s32*)((char*)parts + 0x1c0), color);
 			animPoseSetMaterialFlagOn(*(s32*)((char*)parts + 0x1c0), 0x40);
-			animPoseDrawMtx(*(s32*)((char*)parts + 0x1c0), work->orientation, 1, work->rotation, float_2_8041bf68);
-			animPoseDrawMtx(*(s32*)((char*)parts + 0x1c0), work->orientation, 2, work->rotation, float_2_8041bf68);
-			animPoseDrawMtx(*(s32*)((char*)parts + 0x1c0), work->orientation, 3, work->rotation, float_2_8041bf68);
+			animPoseDrawMtx(*(s32*)parts->field_0x1C0, work->orientation, 1, work->rotation, 2.0f);
+			animPoseDrawMtx(*(s32*)parts->field_0x1C0, work->orientation, 2, work->rotation, 2.0f);
+			animPoseDrawMtx(*(s32*)parts->field_0x1C0, work->orientation, 3, work->rotation, 2.0f);
 		}
 	}
 }
@@ -1315,14 +1194,18 @@ void floatOffsetControl(BattleUnitPart* part) {
 }
 #pragma dont_inline reset
 
-static volatile const Vec vec3_802ede0c = { 0.0f, 0.0f, -100.0f };
-static volatile const Vec vec3_802ede18 = { 0.0f, 0.0f, -100.0f };
 
 #pragma dont_inline on // the original keeps calls to this function out of line
 f32 getFloatDispOffset(BattleUnit* unit) {
 	return sinfd((f32)((*(u16*)((char*)unit + 0x1a8) * 4 + 0x10e) % 360)) * 2.0f + 2.0f;
 }
 #pragma dont_inline reset
+
+// Inlined into btlDispMain, but its body is still generated here, which pools 1.0f ahead of getFloatDispOffset's
+// 2.0f as retail's .sdata2 has it.
+static void btlDispAnimeSpeedReset(BattleUnit* unit) {
+	btlDispAnimeSpeed(unit, 1.0f);
+}
 
 #pragma dont_inline on // the original keeps calls to this function out of line
 void statusPoseControl(BattleUnitPart* part) {
@@ -1533,98 +1416,38 @@ void btlGetScreenPoint(Vec* pos, Vec* out) {
 }
 #pragma dont_inline reset
 
-// See the note on double_to_int_802ede28 above.
-#if 0
-const double double_to_int_mask_802ede30 = 4503599627370496.0;
-#endif
-
-// The original passes the vectors and colour by value to an inlined wrapper, which copies
-// them into the _btlDispTex4 argument slots. Keep the wrapper's body a plain pass-through.
-static inline void _btlDispTex4Sub(s32 id, Vec trans, Vec scale, Vec rot, Vec pos, Vec scale2, GXColor color) {
-	_btlDispTex4(id, &trans, &scale, &rot, &pos, &scale2, &color);
-}
-
-// NONMATCHING (86.94%): the target batches every argument store into r14-r25 and keeps its
-// trans/scale/rot pointers in r27-r29; caching the dereferences in locals reproduces the batching
-// but spills them (frame 0x1c0 vs 0x1a0) and puts the u16->f32 double at +0x58 not +0x60.
-// Passing the dereferences straight to the by-value wrapper is the natural form and gets the target's
-// stack slots exactly (0x100/0xf4/0xe8/0xdc/0xd0/0x18) but only 64.06%: the compiler no longer batches
-// (stmw r23, frame 0x180). Partial caching (any one or two of trans/scale/rot) and explicit per-call
-// by-value temporaries both send mwcceppc 2.6 into an endless loop -- keep the all-three cache.
-// #pragma scheduling off is worse (27.28%); opt_lifetimes on/off, optimize_for_size on/off,
-// optimization_level 2/3, global_optimizer off, defer_codegen on, always_inline on and a raised
-// inline_max_total_size all leave 177 diffs on the cached form, and the direct form stays at 64.06%
-// under every one of them. The original `_btlDispTex4` likely took the Vecs by value (a by-value
-// definition compiles to the same 100% asm), but calling it that way directly still gives 64.06% --
-// the batching is the scheduler's, not the signature's. Reordering the wrapper's by-value parameters
-// is worse (68.69%).
-void btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, GXColor* color) {
-#ifdef MUST_MATCH
-	u16 width;
-	u16 height;
-	f32 halfW;
-	f32 halfH;
-	Vec t;
-	Vec s;
-	Vec r;
-	Vec pos;
-
-	pos.z = float_0_8041bf58;
-	btlDispGetTexSize(id, &width, &height);
-	halfW = float_0p5_8041bf4c * ((f32)width * scale->x);
-	halfH = float_0p5_8041bf4c * ((f32)height * scale->y);
-
-	t = *trans;
-	s = *scale;
-	r = *rot;
-	pos.x = -halfW;
-	pos.y = halfH;
-	_btlDispTex4Sub(id, t, s, r, pos, vec3_802edddc, *color);
-
-	pos.x = halfW;
-	pos.y = halfH;
-	_btlDispTex4Sub(id, t, s, r, pos, vec3_802edde8, *color);
-
-	pos.x = halfW;
-	pos.y = -halfH;
-	_btlDispTex4Sub(id, t, s, r, pos, vec3_802eddf4, *color);
-
-	pos.x = -halfW;
-	pos.y = -halfH;
-	_btlDispTex4Sub(id, t, s, r, pos, vec3_802ede00, *color);
-#else
+void btlDispTex4(s32 id, Vec trans, Vec scale, Vec rot, GXColor color) {
 	u16 width;
 	u16 height;
 	f32 halfW;
 	f32 halfH;
 	Vec pos;
 
-	pos.z = float_0_8041bf58;
+	pos.z = 0.0f;
 	btlDispGetTexSize(id, &width, &height);
-	halfW = float_0p5_8041bf4c * ((f32)width * scale->x);
-	halfH = float_0p5_8041bf4c * ((f32)height * scale->y);
+	halfW = 0.5f * ((f32)width * scale.x);
+	halfH = 0.5f * ((f32)height * scale.y);
 
 	pos.x = -halfW;
 	pos.y = halfH;
-	_btlDispTex4Sub(id, *trans, *scale, *rot, pos, vec3_802edddc, *color);
+	_btlDispTex4(id, trans, scale, rot, pos, vec3_802edddc, color);
 
 	pos.x = halfW;
 	pos.y = halfH;
-	_btlDispTex4Sub(id, *trans, *scale, *rot, pos, vec3_802edde8, *color);
+	_btlDispTex4(id, trans, scale, rot, pos, vec3_802edde8, color);
 
 	pos.x = halfW;
 	pos.y = -halfH;
-	_btlDispTex4Sub(id, *trans, *scale, *rot, pos, vec3_802eddf4, *color);
+	_btlDispTex4(id, trans, scale, rot, pos, vec3_802eddf4, color);
 
 	pos.x = -halfW;
 	pos.y = -halfH;
-	_btlDispTex4Sub(id, *trans, *scale, *rot, pos, vec3_802ede00, *color);
-#endif
+	_btlDispTex4(id, trans, scale, rot, pos, vec3_802ede00, color);
 }
 
 // Keep _btlDispTex4 out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-void _btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, Vec* pos2, Vec* scale2, GXColor* color) {
+void _btlDispTex4(s32 id, Vec trans, Vec scale, Vec rot, Vec pos2, Vec scale2, GXColor color) {
 	Mtx mtx;
 	Mtx transM;
 	Mtx scaleM;
@@ -1635,13 +1458,13 @@ void _btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, Vec* pos2, Vec* scal
 	Mtx scale2M;
 
 	PSMTXIdentity(mtx);
-	PSMTXTrans(transM, trans->x, trans->y, trans->z);
-	PSMTXTrans(posM, pos2->x, pos2->y, pos2->z);
-	PSMTXScale(scaleM, scale->x, scale->y, scale->z);
-	PSMTXScale(scale2M, scale2->x, scale2->y, scale2->z);
-	PSMTXRotRad(rotXM, 0x78, float_deg2rad_8041bf54 * rot->x);
-	PSMTXRotRad(rotYM, 0x79, float_deg2rad_8041bf54 * rot->y);
-	PSMTXRotRad(rotZM, 0x7a, float_deg2rad_8041bf54 * rot->z);
+	PSMTXTrans(transM, trans.x, trans.y, trans.z);
+	PSMTXTrans(posM, pos2.x, pos2.y, pos2.z);
+	PSMTXScale(scaleM, scale.x, scale.y, scale.z);
+	PSMTXScale(scale2M, scale2.x, scale2.y, scale2.z);
+	PSMTXRotRad(rotXM, 0x78, 0.017453292f * rot.x);
+	PSMTXRotRad(rotYM, 0x79, 0.017453292f * rot.y);
+	PSMTXRotRad(rotZM, 0x7a, 0.017453292f * rot.z);
 	PSMTXConcat(scaleM, mtx, mtx);
 	PSMTXConcat(scale2M, mtx, mtx);
 	PSMTXConcat(posM, mtx, mtx);
@@ -1649,7 +1472,7 @@ void _btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, Vec* pos2, Vec* scal
 	PSMTXConcat(rotXM, mtx, mtx);
 	PSMTXConcat(rotYM, mtx, mtx);
 	PSMTXConcat(transM, mtx, mtx);
-	btlDispTexPlane2(mtx, id, *color, 0);
+	btlDispTexPlane2(mtx, id, color, 0);
 }
 #pragma dont_inline reset
 
@@ -1665,34 +1488,20 @@ void BattleStockExpDisp(void) {
 		}
 	}
 	if (wp->dispFlags & 2) {
-		dispEntry(CAMERA_2D, float_901_8041bf50, 1, _btlStockExpDisp, NULL);
+		dispEntry(CAMERA_2D, 901.0f, 1, _btlStockExpDisp, NULL);
 	}
 }
 #pragma dont_inline reset
 
-// .rodata
-
-// .sbss
-static f32 y_1185;
-static f32 x_1184;
-
-// Declaring these explicitly made the compiler emit a second copy of its u32->f32 conversion
-// doubles in .rodata, which shifted the pooled strings by 8 bytes and broke every function that
-// common-bases .rodata. The compiler already emits both doubles
-#if 0
-double double_to_int_802ede28 = 4503601774854144.0;
-#endif
-
-// NONMATCHING (91.05%): instructions differ; see check.py
 void _btlStockExpDisp(CameraId cameraId, void* param) {
+	static f32 y;
+	static f32 x;
 	BattleWork* wp = _battleWorkPointer;
 	s32 exp;
 	s32 value;
 	s32 tens;
 	s32 ones;
 	s32 i;
-	Vec pos1;
-	Vec pos2;
 
 	exp = *(s32*)((char*)wp + 0xf04);
 	if (exp <= 0) {
@@ -1705,15 +1514,9 @@ void _btlStockExpDisp(CameraId cameraId, void* param) {
 	tens = value / 10;
 	ones = value - tens * 10;
 	for (i = 0; i < ones; i++) {
-		pos1 = vec3_802ede0c;
-		pos1.x = (308.0f + x_1184) - 3.5f - 13.0f * (f32)i;
-		pos1.y = y_1185 - 220.0f;
-		iconDispGx(0.35f, &pos1, 0x10, 0x18c);
+		iconDispGx(0.35f, &(Vec){(308.0f + x) - 3.5f - 13.0f * (f32)i, y - 220.0f, -100.0f}, 0x10, 0x18c);
 	}
 	for (i = 0; i < tens; i++) {
-		pos2 = vec3_802ede18;
-		pos2.x = (308.0f + x_1184) - 10.0f - 20.0f * (f32)i + 4.0f;
-		pos2.y = (y_1185 - 220.0f) + 16.0f;
-		iconDispGx(0.5f, &pos2, 0x10, 0x18c);
+		iconDispGx(0.5f, &(Vec){(308.0f + x) - 10.0f - 20.0f * (f32)i + 4.0f, (y - 220.0f) + 16.0f, -100.0f}, 0x10, 0x18c);
 	}
 }

@@ -6485,3 +6485,29 @@ also told to write down the old framing's assumptions and question them first. S
   loop-2 index, n placement, types, removing id/bin locals, store order, entry. vs entryp->, frames[i], six pragmas;
   mwsearch 15 min. Next: natural C where loop 2's own setup creates the count (inline-call bound?), or a permuter
   allowed to restructure loop 2's header.
+
+### battle_disp LINKED: 42/42, .sdata2 78.89 -> 100 (Claude Opus 5.5) -- two items flagged for Isaac's review
+- **btlUnitItemDisp 99.05 / btlUnitStolenItemDisp 91.46 -> 100:** `ItemData.icon_id` is u16 (every user already reads
+  it with lhz) and battle_disp.c has its own u16 `iconDispGx` prototype: the same header split as #738 (declaration
+  moved to icondrv_gx.h, every caller includes it, `"*"` exceptions entry). No casts left; StolenItem's "reserved f1"
+  came from the old function-pointer cast.
+- **_btlStockExpDisp 91.05 -> 100:** retail's `x$1184`/`y$1185` are function-local statics (declared y then x: MWCC
+  places them in reverse); positions as compound literals in the call, whose templates land where vec3_802ede0c/18 are.
+- **btlDispTex4 86.95 -> 100:** it and `_btlDispTex4` take Vecs and GXColor by value (the original batches its copies
+  into r14-r25 because by-value parameters can't alias). Callers in other files (ac_shot, ac_shot_target,
+  ac_monosiri_target, sac_genki) already copy and pass addresses; they get the pointer form from a new
+  include/battle/battle_disp_tex4.h (same ABI).
+- **btlUnitPartsDisp 99.10 -> 100:** `void* param` + `BattleWorkUnitPart* parts = param;` after `wp` (#657) fixes the
+  owner/wp/parts swap no declaration order could; separate `flip` and `angle` locals; float/gravity offsets summed in
+  one expression; opt_common_subs pragma removed.
+- **.sdata2:** every `extern float_*` is a literal (`pos1.x++`/`--` keep btlDispMain at 100). The last pool gap is
+  closed by `static void btlDispAnimeSpeedReset(BattleUnit*)` called at btlDispMain's two default-speed sites (its body
+  is still generated at its own slot, so 1.0f pools before getFloatDispOffset's 2.0f; #617). **Review:** inferred from
+  pool order alone.
+- **btlDispTexPlainGX 99.22 -> 100:** plain GXPosition3f32/GXColor4u8/GXTexCoord2f32 calls, with the SDK's 4-parameter
+  GX inlines (GXColor4u8, GXParam4f32) taking `const` parameters, so MWCC loads each colour byte as retail's registers
+  need. **Review:** making all GX inlines const regressed envGlare and _JUTFont_DrawPos, so only FUNC_4PARAM changed;
+  the "original SDK had const parameters" justification is weaker for one macro only.
+- Negatives: opt_pointer_analysis/opt_lifetimes/opt_propagation (no effect); sum operand order (no effect); compound
+  literals assigned to locals (78); local FIFO pointer with SDK GXColor4u8 (base register wrong); pool_plan.py probe
+  mislabelled entries (ported by hand).

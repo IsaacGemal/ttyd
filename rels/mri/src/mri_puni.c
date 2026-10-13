@@ -13,6 +13,7 @@
 #pragma pool_data off
 
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/animdrv.h"
 #include "mario/mariost.h"
 #include "driver/swdrv.h"

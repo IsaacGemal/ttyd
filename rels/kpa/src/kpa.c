@@ -2,6 +2,7 @@
 #include "data/mapdata.h"
 #include "driver/dispdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/mobjdrv.h"
 #include "evt/evt_bero.h"
 #include "evt/evt_cam.h"

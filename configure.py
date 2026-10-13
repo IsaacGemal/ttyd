@@ -344,7 +344,7 @@ config.libs = [
             Object(Matching, "battle/battle_ac.c"),
             Object(Matching, "battle/battle_damage.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_detect.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/battle_disp.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/battle_disp.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_event_cmd.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_event_default.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_event_subset.c", extra_cflags=["-O4,s"]),
