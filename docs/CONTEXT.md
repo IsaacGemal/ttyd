@@ -6469,3 +6469,19 @@ also told to write down the old framing's assumptions and question them first. S
   the named `gap_05_803B24BC_data` padding word removed (the section alignment supplies it; it pushed the jump table
   4 bytes late).
 - Tower note: Mac/tower clock skew can leave stale objects; delete the unit's .o before scoring.
+
+### icondrv partial: iconDispGx2 98.24 -> 99.04, iconDispGxCol 98.17 -> 99.00 (Claude Opus 5.5)
+- `static inline u16 iconGetNumFrames(IconBinaryEntry* data) { return data->numIcons; }` beside iconGetBinaryData,
+  used as `n = iconGetNumFrames(data);` in both: the count becomes a compiler object (the inline's return value), the
+  extra copy merges into it, the extra `mr` goes and both reach retail's instruction count (125/120). A scalar compound
+  literal `(u16){ data->numIcons }` scores the same; the getter reads better.
+- **Left (22 rows each, one register pair):** retail has the count in r8 and the loops' frame pointers in r7; ours is
+  swapped. rasim on mwccdbg dumps: the count must be created after loop 1's frame-pointer temp and before loop 2's;
+  the getter's object is created before both, a named `n` or direct read after both; no declaration order or single
+  edge fixes it.
+- Negatives: direct `data->numIcons` (as iconDispGxAlpha; 91 diffs); a shared inline body (95-148); loop 1/2/both as
+  inline helpers (38-140; loop 1 inline gets r8 but merges counter and total into one zero, and needs dont_inline to
+  stay out of iconNumberDispGx); 128 count-source combinations (only the getter reaches 22); bound spellings, separate
+  loop-2 index, n placement, types, removing id/bin locals, store order, entry. vs entryp->, frames[i], six pragmas;
+  mwsearch 15 min. Next: natural C where loop 2's own setup creates the count (inline-call bound?), or a permuter
+  allowed to restructure loop 2's header.
