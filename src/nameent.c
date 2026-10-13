@@ -697,32 +697,23 @@ void nameBG(void) {
 		GXLoadTexMtxImm(mtx, GX_TEXMTX0, GX_MTX2x4); \
 	}
 
-static inline void nameKirinukiQuad(f32 x, f32 y, f32 w, f32 h) {
-	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-	GXPosition3f32(x, y, 0.0f);
-	GXTexCoord2f32(0.0f, 0.0f);
-	GXPosition3f32(x, y - h, 0.0f);
-	GXTexCoord2f32(0.0f, 1.0f);
-	GXPosition3f32(x + w, y - h, 0.0f);
-	GXTexCoord2f32(1.0f, 1.0f);
-	GXPosition3f32(x + w, y, 0.0f);
-	GXTexCoord2f32(1.0f, 0.0f);
-}
+#define NAME_KIRINUKI_VTX(px, py, s, t) \
+	GXPosition3f32((px), (py), 0.0f); \
+	GXTexCoord2f32((s), (t))
 
-// NONMATCHING (99.75%): the frame (0x3e0), the whole instruction stream, the call sequence and every immediate
-// match; only the FP callee-saved register names differ (45 `arg_mismatch` diffs). Three derived values that
-// the compiler CSEs and keeps live across calls are each assigned one register higher in ours than in the
-// target:  z-16 (live Q2..Q7) target f28 / ours f29;  x+8 (live Q2..Q8) target f29 / ours f30;
-// w-16 (live Q4..Q5) target f24 / ours f25.  The target's short-lived Q4 `ww = __fabs(8.0f)` therefore lands
-// in f30 where ours reuses f24, and the whole Q2-Q8 temp assignment cascades. Every mwcceppc in
-// build/compilers/GC (1.0 .. 3.0a5) plus 2.7 reproduces exactly these 45, as does every pragma tried
-// (optimize_for_size, opt_lifetimes, opt_common_subs, opt_propagation, opt_dead_assignments,
-// opt_loop_invariants, opt_strength_reduction, global_optimizer, ...), so this is a register-colouring
-// tie-break, not a flag: a decomp-permuter job. Naming the long-lived CSE values, hoisting them, making the
-// scale a static-inline function, an identity inline accessor, and distinct per-quad temp names all score
-// worse (66-183).
+// Eight quads: the 8x8 corners and the stretched edges and middle. Each edge coordinate is computed right after
+// the GXBegin of the first quad that uses it and reused by the later quads.
 void nameKirinukiGX(f32 x, f32 y, f32 z, f32 w) {
+	f32 size = 8.0f;
 	f32 yscale;
+	f32 midX;
+	f32 midW;
+	f32 midR;
+	f32 rightX;
+	f32 rightR;
+	f32 midH;
+	f32 botY;
+	f32 botB;
 
 	GXSetBlendMode(GX_BM_NONE, GX_BL_ONE, GX_BL_ZERO, GX_LO_CLEAR);
 	GXSetZCompLoc(GX_FALSE);
@@ -744,21 +735,66 @@ void nameKirinukiGX(f32 x, f32 y, f32 z, f32 w) {
 	GXSetCurrentMtx(0);
 
 	NAME_KIRINUKI_SCALE(0x2f, 8.0f, 8.0f);
-	nameKirinukiQuad(x, y, 8.0f, 8.0f);
-	NAME_KIRINUKI_SCALE(0x2d, z - 8.0f - 8.0f, 8.0f);
-	nameKirinukiQuad(x + 8.0f, y, z - 8.0f - 8.0f, 8.0f);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	NAME_KIRINUKI_VTX(x, y, 0.0f, 0.0f);
+	NAME_KIRINUKI_VTX(x, y - size, 0.0f, 1.0f);
+	NAME_KIRINUKI_VTX(x + size, y - size, 1.0f, 1.0f);
+	NAME_KIRINUKI_VTX(x + size, y, 1.0f, 0.0f);
+
+	NAME_KIRINUKI_SCALE(0x2d, midW = z - size - size, 8.0f);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	midX = size + x;
+	midR = midX + midW;
+	NAME_KIRINUKI_VTX(midX, y, 0.0f, 0.0f);
+	NAME_KIRINUKI_VTX(midX, y - size, 0.0f, 1.0f);
+	NAME_KIRINUKI_VTX(midR, y - size, 1.0f, 1.0f);
+	NAME_KIRINUKI_VTX(midR, y, 1.0f, 0.0f);
+
 	NAME_KIRINUKI_SCALE(0x31, 8.0f, 8.0f);
-	nameKirinukiQuad(x + z - 8.0f, y, 8.0f, 8.0f);
-	NAME_KIRINUKI_SCALE(0x2e, 8.0f, w - 8.0f - 8.0f);
-	nameKirinukiQuad(x, y - 8.0f, 8.0f, w - 8.0f - 8.0f);
-	NAME_KIRINUKI_SCALE(0x2c, z - 8.0f, w - 8.0f - 8.0f);
-	nameKirinukiQuad(x + 8.0f, y - 8.0f, z - 8.0f, w - 8.0f - 8.0f);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	rightX = x + z - size;
+	rightR = rightX + size;
+	NAME_KIRINUKI_VTX(rightX, y, 0.0f, 0.0f);
+	NAME_KIRINUKI_VTX(rightX, y - size, 0.0f, 1.0f);
+	NAME_KIRINUKI_VTX(rightR, y - size, 1.0f, 1.0f);
+	NAME_KIRINUKI_VTX(rightR, y, 1.0f, 0.0f);
+
+	NAME_KIRINUKI_SCALE(0x2e, 8.0f, midH = w - size - size);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	NAME_KIRINUKI_VTX(x, y - size, 0.0f, 0.0f);
+	NAME_KIRINUKI_VTX(x, y - size - midH, 0.0f, 1.0f);
+	NAME_KIRINUKI_VTX(x + size, y - size - midH, 1.0f, 1.0f);
+	NAME_KIRINUKI_VTX(x + size, y - size, 1.0f, 0.0f);
+
+	NAME_KIRINUKI_SCALE(0x2c, z - size, midH);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	NAME_KIRINUKI_VTX(midX, y - size, 0.0f, 0.0f);
+	NAME_KIRINUKI_VTX(midX, y - size - midH, 0.0f, 1.0f);
+	NAME_KIRINUKI_VTX(midX + (z - size), y - size - midH, 1.0f, 1.0f);
+	NAME_KIRINUKI_VTX(midX + (z - size), y - size, 1.0f, 0.0f);
+
 	NAME_KIRINUKI_SCALE(0x30, 8.0f, 8.0f);
-	nameKirinukiQuad(x, y - (w - 8.0f), 8.0f, 8.0f);
-	NAME_KIRINUKI_SCALE(0x2c, z - 8.0f - 8.0f, 8.0f);
-	nameKirinukiQuad(x + 8.0f, y - (w - 8.0f), z - 8.0f - 8.0f, 8.0f);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	botY = y - (w - size);
+	botB = botY - size;
+	NAME_KIRINUKI_VTX(x, botY, 0.0f, 0.0f);
+	NAME_KIRINUKI_VTX(x, botB, 0.0f, 1.0f);
+	NAME_KIRINUKI_VTX(x + size, botB, 1.0f, 1.0f);
+	NAME_KIRINUKI_VTX(x + size, botY, 1.0f, 0.0f);
+
+	NAME_KIRINUKI_SCALE(0x2c, midW, 8.0f);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	NAME_KIRINUKI_VTX(midX, botY, 0.0f, 0.0f);
+	NAME_KIRINUKI_VTX(midX, botB, 0.0f, 1.0f);
+	NAME_KIRINUKI_VTX(midR, botB, 1.0f, 1.0f);
+	NAME_KIRINUKI_VTX(midR, botY, 1.0f, 0.0f);
+
 	NAME_KIRINUKI_SCALE(0x32, 8.0f, 8.0f);
-	nameKirinukiQuad(x + z - 8.0f, y - (w - 8.0f), 8.0f, 8.0f);
+	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+	NAME_KIRINUKI_VTX(rightX, botY, 0.0f, 0.0f);
+	NAME_KIRINUKI_VTX(rightX, botB, 0.0f, 1.0f);
+	NAME_KIRINUKI_VTX(rightR, botB, 1.0f, 1.0f);
+	NAME_KIRINUKI_VTX(rightR, botY, 1.0f, 0.0f);
 }
 
 void nameMaskGX(f32 alpha) {
