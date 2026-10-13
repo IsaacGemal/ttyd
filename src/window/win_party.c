@@ -69,9 +69,6 @@ WindowPartyDt winPartyDt[7] = {
 #define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
 
-// NONMATCHING (99.99%): one instruction differs, `lfd f2, 0x400(r31)` vs 0x468. The compiler
-// pools its own int->float magic double after the named .rodata objects because the function that
-// first used it (winPartyDisp) has no source; the named copy is already at the original 0x400.
 void winPartyInit(WindowWork* work) {
     PouchData* pouch = pouchGetPtr();
 #ifndef MUST_MATCH
@@ -387,9 +384,6 @@ static inline void winIconSetV(s32 id, Vec pos, Vec scale, GXColor color) {
 #define WIN_PARTY_ID(w, n) (((s32*)(w))[0x6F + (n)])
 #define WIN_PARTY_POSE(w, n) (((s32*)(w))[0x68 + (n)])
 
-// NONMATCHING (99.86%): one instruction is scheduled differently. The original copies the shadow colour's
-// hoisted address into r4 after the scale branch (`mr r4, r22` just before `bl winKageGX`), not before it.
-extern const f32 float_0p5_8041d258;
 void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     WindowWork* work = param;
     GXColor loopWhite, loopBlack, white, black;
@@ -448,7 +442,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
         winFontSetV((Vec){cx - w / 2.0f, 12.0f + rowY, 0.0f}, (Vec){scale, scale, scale}, loopBlack,
                     msgSearch(labels[i]));
         if (i < 1) {
-            winFontSetV((Vec){cx - w2 * float_0p5_8041d258, 21.0f + rowY, 0.0f}, (Vec){0.5f, 0.5f, 0.5f}, subColors[i],
+            winFontSetV((Vec){cx - w2 / 2.0f, 21.0f + rowY, 0.0f}, (Vec){0.5f, 0.5f, 0.5f}, subColors[i],
                         msgSearch(subLabels[i]));
         }
     }
@@ -482,16 +476,14 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     for (i = 0; i < WW_S32(work, 0x1E0); i++) {
         Vec pos = {0.0f, 0.0f, 80.0f};
         Mtx tilt, turn;
-        GXColor* shadow;
 
         PSMTXRotRad(tilt, 'x', 0.5235988f);
         PSMTXRotRad(turn, 'y',
                     0.017453292f * (360.0f / (f32)WW_S32(work, 0x1E0) * (f32)i - WW_F32(work, 0x1E4)));
         PSMTXMultVec(turn, &pos, &pos);
         PSMTXMultVec(tilt, &pos, &pos);
-        shadow = &(GXColor){0x00, 0x00, 0x00, 0x80};
-        winKageGX(work, shadow, (x - 140.0f) + pos.x, 20.0f + (y + pos.y), pos.z,
-                  i == WW_S32(work, 0x1DC) ? 0.8f : 0.6f);
+        winKageGX(work, (x - 140.0f) + pos.x, 20.0f + (y + pos.y), pos.z, i == WW_S32(work, 0x1DC) ? 0.8f : 0.6f,
+                  &(GXColor){0x00, 0x00, 0x00, 0x80});
     }
 
     for (i = 0; i < WW_S32(work, 0x1E0); i++) {
@@ -606,7 +598,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
                     name = pouchGetYoshiName();
                 }
                 w = FontGetMessageWidth(name);
-                winFontSetEdgeV((Vec){(200.0f - w) * float_0p5_8041d258 + (x - 230.0f), y2, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
+                winFontSetEdgeV((Vec){(200.0f - w) / 2.0f + (x - 230.0f), y2, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
                                 loopWhite, name);
             }
         }
@@ -616,7 +608,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     if (WW_S32(work, 0x1E0) > 1) {
         winFontInit();
         w = 0.8f * FontGetMessageWidth(msgSearch("msg_menu_party_henkou"));
-        x2 = (-230.0f - w) * float_0p5_8041d258 + x;
+        x2 = (-230.0f - w) / 2.0f + x;
         winFontSetV((Vec){x2, y - 90.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, black, msgSearch("msg_menu_party_henkou"));
         winIconInit();
         winIconSetV(0x64, (Vec){x2 - 30.0f, y - 100.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white);
@@ -637,7 +629,7 @@ void winPartyDisp(CameraId camId, void* param, s32 partyIdx) {
     winFontInit();
     w = 0.8f * FontGetMessageWidth(msgSearch("msg_menu_party_waza"));
     y2 = 45.0f + y;
-    winFontSetEdgeV((Vec){(200.0f - w) * float_0p5_8041d258 + x, y2, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white,
+    winFontSetEdgeV((Vec){(200.0f - w) / 2.0f + x, y2, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white,
                     msgSearch("msg_menu_party_waza"));
     x2 = 230.0f + x;
     winFontSetEdgeV((Vec){x2 - 20.0f, y2, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, white, "\202e\202o");

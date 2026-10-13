@@ -6511,3 +6511,14 @@ also told to write down the old framing's assumptions and question them first. S
 - Negatives: opt_pointer_analysis/opt_lifetimes/opt_propagation (no effect); sum operand order (no effect); compound
   literals assigned to locals (78); local FIFO pointer with SDK GXColor4u8 (base register wrong); pool_plan.py probe
   mislabelled entries (ported by hand).
+
+### win_party LINKED: winPartyDisp 99.86 -> 100, second pass (Claude Opus 5.5)
+- **Closer: winKageGX's declared parameter order.** MWCC evaluates call arguments in declared-parameter order, not by
+  register. Retail sets r3 (work) before the 0.8/0.6 branch and r4 (colour) after it, so the prototype is
+  `void winKageGX(WindowWork* work, f32 x, f32 y, f32 w, f32 h, void* color);` (same registers r3, f1-f4, r4, same
+  callee ABI). Changed in win_root.h and the win_root.c definition; callers win_mario, win_log, win_party updated.
+  win_party's colour is a plain `&(GXColor){0,0,0,0x80}` in the call (as win_mario); slot 0x44 and the .sdata2 order
+  (140, 0.8, 0.6) come out right. No LOCAL_PROTO, cast, pragma or MUST_MATCH. The first pass's ~40 spellings and
+  mwsearch all kept the colour declared second: the framing ("which argument kind MWCC moves") was wrong.
+- **Link blocker:** an undefined `float_0p5_8041d258` extern; `* 0.5f` gave 99.93 (operand order at four sites),
+  `/ 2.0f` (#619/#652) gives 100 with the pool unchanged. Stale NONMATCHING comments removed.

@@ -847,7 +847,7 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(NonMatching, "window/win_root.c"),
-            Object(NonMatching, "window/win_party.c"),
+            Object(Matching, "window/win_party.c"),
             Object(Matching, "window/win_badge.c"),
             Object(Matching, "window/win_item.c"),
             Object(Matching, "window/win_mario.c"),

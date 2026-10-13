@@ -3174,7 +3174,7 @@ s32 winSortWait(WindowWork* work) {
 // Kage (paper) window quad. The vertex constants are literals so MWCC reloads each
 // through f0 into the FIFO as the original does; the same-literal GXSetFog zero lets
 // MWCC land it in f1 after saving x. The int->f32 magic double still pools anonymously.
-void winKageGX(WindowWork* work, void* color, f32 x, f32 y, f32 w, f32 h) {
+void winKageGX(WindowWork* work, f32 x, f32 y, f32 w, f32 h, void* color) {
     GXTexObj texObj;
     Mtx mtx4;
     Mtx mtx1;

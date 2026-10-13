@@ -2046,8 +2046,8 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
             PSMTXMultVec(ry, &p, &p);
             PSMTXMultVec(rx, &p, &p);
             shadow = VCOL(dat_8041d794);
-            winKageGX(work, &shadow, p.x + (x + w->e68), (p.y + (y + w->e70)) - float_30_8041d864, p.z,
-                      float_1_8041d7c0);
+            winKageGX(work, p.x + (x + w->e68), (p.y + (y + w->e70)) - float_30_8041d864, p.z,
+                      float_1_8041d7c0, &shadow);
             ((f32*)w->stones[i]->userdata)[2] = p.x + (x + w->e68);
             ((f32*)w->stones[i]->userdata)[3] = float_20_8041d8ac + (p.y + (y + w->e70));
             ((f32*)w->stones[i]->userdata)[4] = p.z;
