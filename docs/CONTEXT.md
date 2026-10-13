@@ -6347,3 +6347,21 @@ also told to write down the old framing's assumptions and question them first. S
   (floor 19); rasim edge/phantom/coalescing what-ifs.
 - **Next:** winKirinukiGX (win_root, 99.11) has the same structure and the same unsolved colouring; the same rewrite
   should carry over.
+
+### msgdrv partial: msgAnalize 98.16 -> 98.27 (Claude Opus 5.5)
+- **Kept (all natural, two pragmas removed):** `flags &= ~0xFF00; flags |= 0x100 << n;` (in-place rlwinm/or);
+  every width as `scale * (f32)(kanjiGetWidth(g) + n)` at all five sites (the call inside the conversion is evaluated
+  before `scale` loads, giving the fmuls operand order; all FPR diffs gone, the width/kwidth temps removed);
+  `_ismbblead(check)` (an existing function in this file) for the lead-byte test; `total` reused after the ruby loop;
+  both `opt_dead_assignments` pragmas removed; a `msgGetKanji(str, off)` inline used by both ruby loops (makes the
+  `rp = tagName` before loop 2 dead, giving loop 2's preheader); `s16 r25` declared first.
+- **Still open (338 rows):** second-pass register colouring. Retail's loop-2 counter takes r31 first, then data,
+  window, entry, ex, ey, r25, r24, flags, half, msg (r30..r21), then the ruby pointer/glyph/.rodata base; ours colours
+  msg and the ruby temps first. Retail keeps the post-loop-1 `total` value in r19 with `total` and the loop-2 glyph, so
+  that value must share one variable with a longer-lived one (e.g. a variable also live across `goto loop`). Retail
+  also schedules the loop-2 pointer setup before the hoisted ey/flags setup, suggesting those weren't frontend-hoisted.
+- Negatives: reusing total/glyph/i for the intermediate or loop-2 counter; 576 loop-2 counter placements; ~60 index and
+  address spellings (folded or +3 instructions); `strength_reduction off` (fixes loop 1, breaks the inlined icon loop);
+  u16 `total` (truncation each iteration); inlining msgGetCommand (364 rows); whole-width-loop helper (scale in a
+  register); explicit loop-2 pointer (95.9); one shared temp for post-loop total and loop-2 glyph (still split);
+  rasim declaration reorders (best 18/23 registers wrong).

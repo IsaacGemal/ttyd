@@ -751,19 +751,20 @@ void msgDispKeyWait_render(s32 wXluStage) {
 	anim->currDispMode = wXluStage;
 }
 
-// opt_dead_assignments off: keeps the original's dead cursor stores in place, which pins MWCC's
-// register allocation for the spilled s16 cursor group and the R-ruby float temps to match the
-// shipped binary (this is how MWCC 2.6 behaves under the original's higher register pressure).
-#pragma opt_dead_assignments off
-// The R-ruby loops index through the `rp` pointer (not the tagName array), so MWCC's frontend leaves the
-// offset counters alone and the backend's strength reduction keeps them next to the pointer it derives,
-// as in the target; the icon name goes through msgIconStr2ID (auto-inlined).
-// What differs: the second colouring pass. The target keys the loop-2 counter and an extra R-ruby temp so the
-// tagName base lands in r0 in both preheaders and the long-lived GPRs (data, window, entry, .rodata base) sit
-// higher; ours colours them differently, and loop 2's preheader schedules `add ptr, tagName, skip` after the
-// ey/flags hoists instead of before them.
-// NONMATCHING (98.16%): GPR colouring of the second allocation pass; see above.
+static inline u16 msgGetKanji(const char* str, s32 off) {
+	return kanjiSearch(*(const u16*)(str + off));
+}
+
+// The R-ruby loops read each kanji through msgGetKanji; loop 1 indexes through the `rp` pointer, so MWCC's
+// frontend leaves its offset counter alone and the backend's strength reduction keeps it next to the pointer
+// it derives, as in the target. Every width is `scale * (f32)(kanjiGetWidth(g) + n)`: the call inside the
+// conversion is evaluated before `scale` is loaded, which gives the target's fmuls operand order.
+// NONMATCHING (98.27%): GPR colouring of the second allocation pass. The target colours the loop-2 counter
+// first (r31) and then data, window, entry, ex, ey, r25, r24, flags, half and msg (r30 down to r21) before
+// the R-ruby pointer, glyph and .rodata base; ours colours msg and those R-ruby temps first, and holds the
+// post-loop-1 total in r0 where the target keeps it in r19 with `total` and the loop-2 glyph.
 void msgAnalize(smartEntry* smart, const char* msg) {
+	s16 r25;
 	char tagName[128];
 	char tagArg[128];
 	char buf4[32];
@@ -800,7 +801,6 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	MsgDataEntry* entry;
 	s16 ex;
 	s16 ey;
-	s16 r25;
 	s32 r24;
 	u32 flags;
 	f32 maxScale;
@@ -813,8 +813,7 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	u32 check;
 	s8 tch;
 	char tchc;
-	BOOL checkkanji;
-	u16 glyph, width;
+	u16 glyph;
 	NpcEntry* npc;
 	s32 off;
 	s32 i;
@@ -824,7 +823,6 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	s32 total;
 	const char* rp;
 	f32 base;
-	s32 mid;
 	s32 j;
 	s16 var[3];
 
@@ -868,20 +866,10 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 
 loop:
 	check = (u8)*msg;
-	{
-		u32 c = (u8)check;
-		if ((c >= 0x81 && c <= 0x9F) || (c >= 0xE0 && c <= 0xFC)) {
-			checkkanji = 1;
-		}
-		else {
-			checkkanji = 0;
-		}
-	}
-	if (checkkanji) {
+	if (_ismbblead(check)) {
 		glyph = kanjiSearch(*(const u16*)msg);
-		width = kanjiGetWidth((u16)glyph);
 		{
-		s32 exinc = (s32)(scale * (f32)(width + 4));
+		s32 exinc = (s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 4));
 		entry->glyph = glyph;
 		*(s16*)(entry->field_0x6) = ex;
 		*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.f * scale));
@@ -939,7 +927,8 @@ loop:
 		data->entryId++;
 		maxScale = float_0_8041a514;
 		if (data->field_0x4 & 0x20) {
-			flags = (flags & ~0xFF00) | (0x100 << (s8)data->field_0x7A40);
+			flags &= ~0xFF00;
+			flags |= 0x100 << (s8)data->field_0x7A40;
 			data->field_0x7A40++;
 		}
 		goto loop;
@@ -1218,8 +1207,7 @@ loop:
 			}
 			else {
 				glyph = kanjiSearch(0x94B5);
-				width = kanjiGetWidth((u16)glyph);
-				w = (u16)(s32)((f32)(width + 4) * scale);
+				w = (u16)(s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 4));
 				entry->glyph = glyph;
 				*(s16*)(entry->field_0x6) = ex;
 				*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.f * scale));
@@ -1301,26 +1289,19 @@ loop:
 			rp = tagName;
 			off = skip;
 			for (i = 0; i < half; i++) {
-				u16 g = kanjiSearch(*(const u16*)(rp + off));
-				u16 kwidth = kanjiGetWidth((u16)g);
-
-				f32 fw = (f32)(kwidth + 4) * scale;
+				u16 g = msgGetKanji(rp, off);
+				f32 fw = scale * (f32)(kanjiGetWidth((u16)g) + 4);
 
 				total += (s32)(0.55f * fw);
 				off += 2;
 			}
 			base = 4.0f * scale;
-			mid = (s32)((f32)(u16)total - 0.55f * base);
-			{
-				f32 t = (f32)((s16)r25 + (s32)ex) - base;
-				r25 = (t - (f32)(u16)mid) / 2.0f;
-			}
+			total = (s32)((f32)(u16)total - 0.55f * base);
+			r25 = ((f32)(r25 + ex) - base - (f32)(u16)total) / 2.0f;
 
-			rp = tagName;
 			for (j = 0; j < half; j++) {
-				u16 g = kanjiSearch(*(const u16*)(rp + skip));
-				u16 kwidth = kanjiGetWidth((u16)g);
-				f32 fw = (f32)(kwidth + 4) * scale;
+				u16 g = msgGetKanji(tagName, skip);
+				f32 fw = scale * (f32)(kanjiGetWidth((u16)g) + 4);
 				s32 rinc = (s32)(0.55f * fw);
 
 				entry->glyph = g;
@@ -1358,9 +1339,8 @@ defaultchar:
 	else {
 		glyph = hankakuSearch(check);
 	}
-	width = kanjiGetWidth((u16)glyph);
 	{
-	s32 exinc = (s32)(scale * (f32)(width + 2));
+	s32 exinc = (s32)(scale * (f32)(kanjiGetWidth((u16)glyph) + 2));
 	entry->glyph = glyph;
 	*(s16*)(entry->field_0x6) = ex;
 	*(s16*)(entry->field_0x6 + 2) = (s16)((s32)ey - (s32)(10.f * scale));
@@ -1387,7 +1367,6 @@ defaultchar:
 done:
 	return;
 }
-#pragma opt_dead_assignments reset
 
 //void msgAnalize(void* sameasmsgmain)
 
