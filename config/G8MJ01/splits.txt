@@ -693,9 +693,6 @@ battle/battle_damage.c:
 	.data       start:0x8034A150 end:0x8034A578
 	.sdata2     start:0x8041BEC8 end:0x8041BF08
 
-battle/battle_evt_cmd.c:
-	.data       start:0x8034A578 end:0x8034A598
-
 battle/battle_detect.c:
 	.text       start:0x800F9B80 end:0x800FB2D8
 	.rodata     start:0x802EDDC8 end:0x802EDDD0
@@ -711,6 +708,7 @@ battle/battle_disp.c:
 battle/battle_event_cmd.c:
 	.text       start:0x800FED94 end:0x8010E7EC
 	.rodata     start:0x802EDE88 end:0x802EE1B8
+	.data       start:0x8034A578 end:0x8034A598
 	.sdata      start:0x80410D20 end:0x80410D60
 	.sdata2     start:0x8041BF98 end:0x8041C010
 

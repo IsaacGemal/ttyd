@@ -6434,3 +6434,22 @@ also told to write down the old framing's assumptions and question them first. S
 - Negatives: opt_propagation off + compound literals (76.8); named GXColor white (96.57); u16-first cast (85.15);
   `int len` (85.14); cx declared first (85.14); assignment-in-argument without the cast (85.57); operand-order swaps
   (normalised). Open question shared with battle_seq_end: was the original windowDispGX_Waku_col prototype float-first?
+
+### battle_event_cmd LINKED: _MoveSoundControlCore 95.83 -> 100, BtlStageObjFlagOnOff 97.24 -> 100, 306/306 (Claude Opus 5.5)
+- **_MoveSoundControlCore:** `pos = (Vec){ x, y, z };` (non-constant compound literal; its template is the sixth zero
+  Vec in .rodata). The named vec3_802edec4, its extern, the `_makeMoveSoundPos` MUST_MATCH inline and the NONMATCHING
+  note are gone. A literal zero Vec in an inline also reached 100 but put its template in the wrong .rodata slot.
+- **BtlStageObjFlagOnOff:** the shape of its 100% siblings BtlStageObjSetRotate/GetRotate (wp, args, i, obj at
+  function scope; `obj->id > 0 && strcmp(...) == 0`; `if (onOff) |= flag; else &= ~flag;`, no mask local). `~flag`
+  alone: 97.45; ternary: 97.86.
+- **Data, all ported:** both voice tables as string literals before btlevtcmd_snd_voice plus the zero
+  `gap_07_80410D5C_sdata` (explicit_zero_data + force_active, as statuswindow.c); the 15 named str_ objects gone.
+  All 29 named floats are literals (tools/pool_floats.py), incl. the -250000000.0f sentinel (SENTINEL_NE/MATCH_SENTINEL
+  macros gone); four spellings restore the five functions that moved: `if (!speed)` in GetMoveFrame, `/ 2.0f` in the
+  Fall/Jump position functions, and `scale *= k;` before `angle = a;` in every ACSuccessEffect case (0.3/90 pool
+  order). .sdata2 132 -> 120 bytes and .sdata 0 -> 64, both identical; .rodata identical (810 vs 816 in rodatalayout:
+  the trailing gap_04_802EE1B4 can't be defined, Grind 58; the link passes).
+- **.data jump table:** ACSuccessEffect's 28-byte switch table (0x8034A578) was carried by the placeholder
+  src/battle/battle_evt_cmd.c ("Kept raw on purpose"). Its split range moved into battle/battle_event_cmd.c in
+  splits.txt, the placeholder's configure.py entry and file removed.
+- Cleanup: three MUST_MATCH blocks with identical branches collapsed; CommandFlyItem's stale NONMATCHING removed.
