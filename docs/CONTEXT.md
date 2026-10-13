@@ -6522,3 +6522,21 @@ also told to write down the old framing's assumptions and question them first. S
   mwsearch all kept the colour declared second: the framing ("which argument kind MWCC moves") was wrong.
 - **Link blocker:** an undefined `float_0p5_8041d258` extern; `* 0.5f` gave 99.93 (operand order at four sites),
   `/ 2.0f` (#619/#652) gives 100 with the pool unchanged. Stale NONMATCHING comments removed.
+
+### win_root partial: winKirinukiGX 99.11 -> 100, win_root 55/65 (Claude Opus 5.5)
+- **The nameent (#753) shape carried over:** the 20 `winKirinukiQuad` calls written out through a small
+  `WIN_KIRINUKI_VTX` macro, each derived edge a named local assigned right after the GXBegin of its first quad,
+  `f32 size = 8.0f` / `f32 size16 = 16.0f` for operand order (the sign quad's `signX + size16` stops MWCC merging it
+  with the bar's `16.0f + signX`), and else-quad 5's right edge assigned inside the vertex argument. Reached 99.74;
+  two compile hill-climbs over order/scope/named-vs-inline stalled at 44 diffs.
+- **Closer (rasim on the mwccdbg dump):** each scale block's `xs` is coalesced into f1 and becomes a permanent
+  neighbour of everything live across it, fixing 29 of the else `rightX`'s 31 allowed neighbours. So no compiler temp
+  or function-scope variable may be live beside `rightX` in the else branch: block locals per branch (if: midX midW midR
+  rightX rightR midH botY botB; else: midX rightX rightR midR midH midB botY botB signX signY signB barX barR edgeX row2B
+  edgeR y3 y3b, with midW inline as `w - size - size` and `midB = y - size - midH` named). rasim predicted 0 wrong;
+  first compile 100. The inline, the inline_max pragmas, `kxw74` and the yscale reuse are gone.
+- mwccdbg summary.txt's ORIG column gave wrong original registers here; a mapper aligning pre/post-allocation dumps with
+  objdiff rows was needed (tower ~/scratch-on3-winkiri/tgt.py).
+- Negatives: function-scope locals (139 diffs); variable reuse like `signX = size + signX` (119-126); size16 in the bar;
+  `xs` inline in PSMTXScale (no change); rasim declaration order alone (12 wrong); hill-climbs (floor 44).
+- **Next:** the merged-`xs` neighbour count probably limits winNameGX, winHalfBookGX, winHakoGX and winBookGX too.

@@ -197,18 +197,6 @@ extern const f32 float_8_8041d0a0;
         GXLoadTexMtxImm(mtx, 0x1E, 1); \
     }
 
-static inline void winKirinukiQuad(f32 x, f32 y, f32 w, f32 h) {
-    GXBegin(0x80, 0, 4);
-    GXPosition3f32(x, y, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(x, y - h, 0.0f);
-    GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(x + w, y - h, 0.0f);
-    GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(x + w, y, 0.0f);
-    GXTexCoord2f32(1.0f, 0.0f);
-}
-
 // One name-plate half: a textured quad from (x,y) to (x+w,y-h), with the texture
 // stretched across it. The scales are f64 because the original uses the double
 // __fabs() (not the fabsf() of windowdrv.c); the (f32) conversion happens at the
@@ -1510,29 +1498,20 @@ void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3) {
     }
 }
 
-#pragma inline_max_total_size(60000) // keep the 20 winKirinukiQuad instances inlined
-#pragma inline_max_size(1000)
-// The 9920-byte body reconstructed from the asm; the frame (0x8b0, saving f19..f31) matches.
-//  * The 8.0 and 16.0 are literals: MWCC CSEs `w - 8.0f - 8.0f` and the
-//    like across the GX calls (the original computes each once and reuses it for the scale and the quad),
-//    which it does not do for reads of the named float_8/float_16 objects. 90.0 and 74.0 stay named reads
-//    (as literals both score lower). The quads use the `w - 8`/`h - 8 - 8` expressions directly. The
-//    else-branch 7th quad and the two x offsets after it group `x + (w - 90)` so MWCC computes that sum
-//    once (a plain `x + w - 90` reassociates and adds an instruction). The second x offset (`x + (w - 90)
-//    + 8`) is held in the same local as `yscale`, which is dead at that point; reusing one local is what
-//    keeps the instruction multiset equal to the original's (a second local makes MWCC recompute a sum).
-//  * The else-branch 7th quad's width is w-8 (single fsubs), not w-16, and the else-branch texture ids at
-//    quads 11/12 are C then 8. Every texture id (if0 B,9,D,A,8,C,8,E; else B,9,D,A,8,C,8,F,8,A,8,C,8,E),
-//    every scale W/H and every quad rectangle was checked against the asm.
-//  * `winKirinukiQuad` must be inlined at all 20 call sites (the inline_max pragmas below); without them
-//    MWCC outlines it and the function drops to 61.68%. Turning the kxw74 assignment into an assignment
-//    expression has made mwcceppc loop forever.
-// NONMATCHING (99.11%): the instruction multiset is exact and the four parameter saves now match the
-// target (f28-f31). Ten frontend CSE temporaries still colour into f24-f27 differently (they overlap
-// their neighbours here where the target's do not); that is the permuter's remaining 10-register case.
+#define WIN_KIRINUKI_VTX(px, py, s, t) \
+    GXPosition3f32((px), (py), 0.0f); \
+    GXTexCoord2f32((s), (t))
+
+// The 9920-byte body reconstructed from the asm; the frame (0x8b0, saving f19..f31) matches. The quads are written
+// out (the shape of nameent.c's nameKirinukiGX): each derived edge is a named local computed right after the
+// GXBegin of the first quad that uses it and reused by the later quads; `size`/`size16` hold the tile sizes, which
+// gives the original's operand order (a literal goes on the left of `+`) and keeps the sign quad's `signX + 16`
+// apart from the bar's `16 + signX`. Each branch has its own block locals. Every texture id (if0 B,9,D,A,8,C,8,E;
+// else B,9,D,A,8,C,8,F,8,A,8,C,8,E), scale and rectangle was checked against the asm.
 void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
+    f32 size = 8.0f;
+    f32 size16 = 16.0f;
     f32 yscale;
-    f32 kxw74;
 
     GXSetBlendMode(0, 1, 0, 0);
     GXSetZCompLoc(0);
@@ -1555,69 +1534,212 @@ void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
     GXSetCurrentMtx(0);
 
     if (type == 0) {
+        f32 midX;
+        f32 midW;
+        f32 midR;
+        f32 rightX;
+        f32 rightR;
+        f32 midH;
+        f32 botY;
+        f32 botB;
+
         WIN_KIRINUKI_SCALE(0xB, 8.0, 8.0);
-        winKirinukiQuad(x, y, 8.0f, 8.0f);
-        WIN_KIRINUKI_SCALE(0x9, w - 8.0f - 8.0f, 8.0);
-        winKirinukiQuad(x + 8.0f, y, w - 8.0f - 8.0f, 8.0f);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(x, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(x, y - size, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, y - size, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, y, 1.0f, 0.0f);
+
+        WIN_KIRINUKI_SCALE(0x9, midW = w - size - size, 8.0);
+        GXBegin(0x80, 0, 4);
+        midX = size + x;
+        midR = midX + midW;
+        WIN_KIRINUKI_VTX(midX, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(midX, y - size, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(midR, y - size, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(midR, y, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0xD, 8.0, 8.0);
-        winKirinukiQuad(x + w - 8.0f, y, 8.0f, 8.0f);
-        WIN_KIRINUKI_SCALE(0xA, 8.0, h - 8.0f - 8.0f);
-        winKirinukiQuad(x, y - 8.0f, 8.0f, (h - 8.0f - 8.0f));
-        WIN_KIRINUKI_SCALE(0x8, w - 8.0f, (h - 8.0f - 8.0f));
-        winKirinukiQuad(x + 8.0f, y - 8.0f, (w - 8.0f),
-                        (h - 8.0f - 8.0f));
+        GXBegin(0x80, 0, 4);
+        rightX = x + w - size;
+        rightR = rightX + size;
+        WIN_KIRINUKI_VTX(rightX, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(rightX, y - size, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rightR, y - size, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rightR, y, 1.0f, 0.0f);
+
+        WIN_KIRINUKI_SCALE(0xA, 8.0, midH = h - size - size);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(x, y - size, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(x, y - size - midH, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, y - size - midH, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, y - size, 1.0f, 0.0f);
+
+        WIN_KIRINUKI_SCALE(0x8, w - size, midH);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(midX, y - size, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(midX, y - size - midH, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(midX + (w - size), y - size - midH, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(midX + (w - size), y - size, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0xC, 8.0, 8.0);
-        winKirinukiQuad(x, y - (h - 8.0f), 8.0f, 8.0f);
-        WIN_KIRINUKI_SCALE(0x8, w - 8.0f - 8.0f, 8.0);
-        winKirinukiQuad(x + 8.0f, y - (h - 8.0f),
-                        w - 8.0f - 8.0f, 8.0f);
+        GXBegin(0x80, 0, 4);
+        botY = y - (h - size);
+        botB = botY - size;
+        WIN_KIRINUKI_VTX(x, botY, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(x, botB, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, botB, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, botY, 1.0f, 0.0f);
+
+        WIN_KIRINUKI_SCALE(0x8, midW, 8.0);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(midX, botY, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(midX, botB, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(midR, botB, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(midR, botY, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0xE, 8.0, 8.0);
-        winKirinukiQuad(x + w - 8.0f, y - (h - 8.0f), 8.0f,
-                        8.0f);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(rightX, botY, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(rightX, botB, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rightR, botB, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rightR, botY, 1.0f, 0.0f);
     } else {
+        f32 midX;
+        f32 rightX;
+        f32 rightR;
+        f32 midR;
+        f32 midH;
+        f32 midB;
+        f32 botY;
+        f32 botB;
+        f32 signX;
+        f32 signY;
+        f32 signB;
+        f32 barX;
+        f32 barR;
+        f32 edgeX;
+        f32 row2B;
+        f32 edgeR;
+        f32 y3;
+        f32 y3b;
+
         WIN_KIRINUKI_SCALE(0xB, 8.0, 8.0);
-        winKirinukiQuad(x, y, 8.0f, 8.0f);
-        WIN_KIRINUKI_SCALE(0x9, w - 8.0f - 8.0f, 8.0);
-        winKirinukiQuad(x + 8.0f, y, w - 8.0f - 8.0f, 8.0f);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(x, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(x, y - size, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, y - size, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, y, 1.0f, 0.0f);
+
+        WIN_KIRINUKI_SCALE(0x9, w - size - size, 8.0);
+        GXBegin(0x80, 0, 4);
+        midX = size + x;
+        WIN_KIRINUKI_VTX(midX, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(midX, y - size, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(midX + (w - size - size), y - size, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(midX + (w - size - size), y, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0xD, 8.0, 8.0);
-        winKirinukiQuad(x + w - 8.0f, y, 8.0f, 8.0f);
-        WIN_KIRINUKI_SCALE(0xA, 8.0, h - 8.0f - 8.0f);
-        winKirinukiQuad(x, y - 8.0f, 8.0f, (h - 8.0f - 8.0f));
-        WIN_KIRINUKI_SCALE(0x8, w - 8.0f, (h - 8.0f - 8.0f));
-        winKirinukiQuad(x + 8.0f, y - 8.0f, (w - 8.0f),
-                        (h - 8.0f - 8.0f));
+        GXBegin(0x80, 0, 4);
+        rightX = x + w - size;
+        rightR = rightX + size;
+        WIN_KIRINUKI_VTX(rightX, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(rightX, y - size, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rightR, y - size, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rightR, y, 1.0f, 0.0f);
+
+        WIN_KIRINUKI_SCALE(0xA, 8.0, midH = h - size - size);
+        GXBegin(0x80, 0, 4);
+        midB = y - size - midH;
+        WIN_KIRINUKI_VTX(x, y - size, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(x, midB, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, midB, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, y - size, 1.0f, 0.0f);
+
+        WIN_KIRINUKI_SCALE(0x8, w - size, midH);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(midX, y - size, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(midX, midB, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX((midR = midX + (w - size)), midB, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(midR, y - size, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0xC, 8.0, 8.0);
-        winKirinukiQuad(x, y - (h - 8.0f), 8.0f, 8.0f);
-        WIN_KIRINUKI_SCALE(0x8, w - 8.0f, 8.0);
-        winKirinukiQuad(x + 8.0f, y - (h - 8.0f),
-                        w - 8.0f, 8.0f);
+        GXBegin(0x80, 0, 4);
+        botY = y - (h - size);
+        botB = botY - size;
+        WIN_KIRINUKI_VTX(x, botY, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(x, botB, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, botB, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + size, botY, 1.0f, 0.0f);
+
+        WIN_KIRINUKI_SCALE(0x8, w - size, 8.0);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(midX, botY, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(midX, botB, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(midR, botB, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(midR, botY, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0xF, 16.0, 8.0);
-        winKirinukiQuad(x + (w - float_90_8041d194), y - h, 16.0f, 8.0f);
-        kxw74 = x + (w - float_90_8041d194) + 16.0f;
-        yscale = x + (w - float_90_8041d194) + 8.0f;
+        GXBegin(0x80, 0, 4);
+        signX = x + (w - float_90_8041d194);
+        signY = y - h;
+        signB = signY - size;
+        WIN_KIRINUKI_VTX(signX, signY, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(signX, signB, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(signX + size16, signB, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(signX + size16, signY, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0x8, float_74_8041d198, 8.0);
-        winKirinukiQuad(kxw74, y - h, float_74_8041d198,
-                        8.0f);
+        GXBegin(0x80, 0, 4);
+        barX = 16.0f + signX;
+        barR = barX + float_74_8041d198;
+        WIN_KIRINUKI_VTX(barX, signY, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(barX, signB, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(barR, signB, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(barR, signY, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0xA, 8.0, 8.0);
-        winKirinukiQuad(yscale, y - h - 8.0f,
-                        8.0f, 8.0f);
+        GXBegin(0x80, 0, 4);
+        edgeX = size + signX;
+        row2B = signB - size;
+        edgeR = edgeX + size;
+        WIN_KIRINUKI_VTX(edgeX, signB, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(edgeX, row2B, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(edgeR, row2B, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(edgeR, signB, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0x8, float_74_8041d198, 8.0);
-        winKirinukiQuad(kxw74, y - h - 8.0f,
-                        float_74_8041d198, 8.0f);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(barX, signB, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(barX, row2B, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(barR, row2B, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(barR, signB, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0xC, 8.0, 8.0);
-        winKirinukiQuad(yscale, y - h - 16.0f,
-                        8.0f, 8.0f);
+        GXBegin(0x80, 0, 4);
+        y3 = signY - 16.0f;
+        y3b = y3 - size;
+        WIN_KIRINUKI_VTX(edgeX, y3, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(edgeX, y3b, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(edgeR, y3b, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(edgeR, y3, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0x8, float_66_8041d19c, 8.0);
-        winKirinukiQuad(kxw74, y - h - 16.0f,
-                        float_66_8041d19c, 8.0f);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(barX, y3, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(barX, y3b, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(barX + float_66_8041d19c, y3b, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(barX + float_66_8041d19c, y3, 1.0f, 0.0f);
+
         WIN_KIRINUKI_SCALE(0xE, 8.0, 8.0);
-        winKirinukiQuad(x + w - 8.0f, y - h - 16.0f, 8.0f,
-                        8.0f);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(rightX, y3, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(rightX, y3b, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rightR, y3b, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rightR, y3, 1.0f, 0.0f);
     }
 }
 
-#pragma inline_max_total_size reset
-#pragma inline_max_size reset
 
 // NONMATCHING (99.31%): all instructions match; retail colours the inlined
 // quad temps f26/f27/f28 and saves one more FPR (frame 0x280 vs our 0x270).
