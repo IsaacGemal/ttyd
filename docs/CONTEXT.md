@@ -6400,3 +6400,19 @@ also told to write down the old framing's assumptions and question them first. S
   0x6c/0x70, not 0x44); ~20 argument probe shapes; optimisation pragmas (79-98.8); mwsearch 25 min, 20,677 compiles;
   a plain compare instead of the Yoda one (99.83, so the MUST_MATCH guard stays). Next: find in mwcc-debugger which
   argument kind is moved into its register after a conditional float argument is evaluated.
+
+### battle_seq_end partial: _lvup_select_object_disp 98.09 -> 100, 34/35 (Claude Opus 5.5)
+- **Fix:** `#pragma opt_common_subs off`/`reset` around this one function (the file already has an opt_common_subs off
+  region around btlseqEnd; wider regions break _GetExpIcon_* and L__LvupParamHelpMsgDisp), pos2 statements in plain
+  x, y, z order. With CSE on, the frontend merges PSMTXScale's two 0.8 arguments into one temp that the scheduler
+  issues at the top of the block, keeping f1/f2 busy; without it the backend loads 0.8 late and copies it
+  (`lfs f1; fmr f2,f1`) as retail does. Pointer: literal `0.8f` (skipped lever #26) gave 99.99, only a relocation off.
+- **_LvupParamConfirmDisp stays 99.58 (work and the pool base swap r31/r30).** mwccdbg/rasim: every named local,
+  inline parameter, struct field, reused parameter or compiler `@` copy is numbered below the pool base (also in 80
+  other dumps on the tower), so declaration order can't fix it; `work` must be a codegen temp numbered after the
+  base. Retail-wide it is the only small function with the base below a pointer loaded at entry. Negatives: reusing
+  param/wp/void* (with and without opt_propagation off); inline helper or getter, struct/array-of-one holder,
+  inner block; dead (s64)(s32) round trips, scalar compound literals, comma/chained/(void)/used assignments (all
+  reduced to `work = load`); 15 pragmas singly and all 255 combinations of 8; mwsearch 25 min, 12,645 compiles;
+  rasim single edges. Next: a shape where codegen loads seqEndWork into its own temp then copies it (only seen for
+  a call result or a global-address expression).
