@@ -6573,3 +6573,19 @@ also told to write down the old framing's assumptions and question them first. S
   54; `j = i + 1` 89); scoped opt pragmas (worse or no change); GetItem as one shift loop (96.26); nine zero-init
   orders, chained `= NULL`, copies from maximum, assignment in expression (98.43-98.45, propagation turns copies back
   into li); ternary as if/else; six table2 counter forms (identical code); old permuter outputs (noise).
+
+### sac_muki LINKED: main_point 95.12, disp_2D 99.95, disp_3D 99.99 -> 100, 15/15 (Claude Opus 5.5)
+- **Data port replaces the refused pool helper:** every named .rodata/.sdata2 object was an artefact (str_*, vec3_*,
+  MukiTable8, the double_to_int double, BODY strings, named floats/colours, the RO macro and base pointers). With
+  file-wide `#pragma pool_data on`, literals, compound-literal/initialised Vec and GXColor locals, disp_3D's tables as
+  `s32 arr[8] = {...}` locals, the weapon struct at the top and the evt script after the functions, the pool layout is
+  retail's and the i2f double reads through the .rodata base by itself: the natural replacement for the refused
+  `defer_codegen off` pool helper (Swarm 4a).
+- main_point: `index % 3`. disp_3D_alpha: `f32 pi = 3.141592f;`; disp_2D: `f32 w = 32.0f; f32 len = 80.0f;` (constants
+  in locals keep operand order); disp_2D block 1 `PSMTXTrans(mtx, (sx = sp.x) - w - 8.0f, sy = sp.y, 0.0f)` (#408;
+  plain assignments 99.75); last f1/f2 swap: in the mukiScreenVec0/1 inlines `y` is the helper's own local read with
+  `MATCH_F32(work->field_30)` after `v.x` is set. mukiColor, the sx MATCH_F32 and main_cursor's volatile reads removed;
+  mukiAlphaColor and end_muki's mask kept (removing them: 98.81, 98.70).
+- Negatives: ~20 non-volatile ways to keep the inline's `y` a temp (unary/comma/`*1.0f`, f64 or pointer params,
+  scoped opt_propagation); 12 inline signature/body permutations; 8 declaration orders; a non-constant compound literal
+  directly (97.00); the bakugame `v = (Vec){...}` idiom; scoped opt_common_subs off; mwsearch.
