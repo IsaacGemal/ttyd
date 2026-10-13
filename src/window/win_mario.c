@@ -820,7 +820,7 @@ void winMarioDisp(CameraId camId, void* param, s32 idx) {
             animPoseSetLocalTime(POSE, frac);
         }
         animPoseMain(POSE);
-        winKageGX(work, &(GXColor){0x00, 0x00, 0x00, 0x80}, x - 150.0f, y, 0.0f, 1.0f);
+        winKageGX(work, x - 150.0f, y, 0.0f, 1.0f, &(GXColor){0x00, 0x00, 0x00, 0x80});
         {
             Mtx mtx;
             PSMTXTrans(mtx, x - 150.0f, y, 0.0f);
