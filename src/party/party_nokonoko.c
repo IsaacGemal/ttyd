@@ -40,8 +40,6 @@ static const f32 float_neg1 = -1.0f;
 #endif
 #define NKF_180 180.0
 
-static const f32 float_1p5708 = 1.5707964f;
-static const f32 float_4p7124 = 4.712389f;
 static const f32 float_90 = 90.0f;
 static const f32 float_0p5 = 0.5f;
 static const f32 float_10 = 10.0f;
@@ -51,11 +49,6 @@ static const f32 float_11 = 11.0f;
 static const f32 float_6 = 6.0f;
 static const f32 float_1 = 1.0f;
 static const f32 float_0p4 = 0.4f;
-
-#ifdef MUST_MATCH
-// MUST_MATCH: inlined add helper; the call boundary steers MWCC's FP register colouring in the probes.
-static inline float fadd32(f32 arg0, f32 arg1);
-#endif
 
 #define NKI(off) (*(ItemEntry**)((u8*)party + (off)))
 
@@ -1052,6 +1045,9 @@ static inline float fadd32(f32 arg0, f32 arg1)
 }
 #endif
 
+static void ccfloor(PartyEntry* party, s32 flag, f32 step, f32* hitX, f32* hitY, f32* hitZ, f32* distance,
+                    f32* hitNX, f32* hitNY, f32* hitNZ);
+
 // Four floor/wall probes: straight ahead, then dir-90, dir+90 and the f31 sweeps.
 HitEntry* ccwall(PartyEntry* party, s32 flag) {
     u8* p = (u8*)party;
@@ -1069,46 +1065,10 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
     f32 spd;
     f32 dot;
     f32 oy;
-    f32 x, z;
+    f32 z, x;
 
     y = float_10;
-
-    x = party->position.x;
-    z = party->position.z;
-    oy = party->position.y + *(f32*)(p + 0xF0) + y;
-#ifdef MUST_MATCH
-    distance = fadd32(*(f32*)(p + 0xF0), float_30);
-#else
-    distance = *(f32*)(p + 0xF0) + float_30;
-#endif
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, oy,
-                         z, float_0, float_neg1, float_0);
-    if (((hitGetAttr(hit) >> 9) & 1) == 1) {
-        hit = NULL;
-    }
-    *(HitEntry**)((u8*)party + 0x138) = hit;
-    if (hit != NULL) {
-        f32 py;
-        hitY = (f32)(s32)(float_100 * hitY + float_0p5) / float_100;
-        py = (f32)(s32)(float_100 * party->position.y + float_0p5) / float_100;
-        if (__fabsf(py - hitY) <= float_11) {
-            if (py <= hitY) {
-                if (flag == 0) {
-                    party->position.y = hitY;
-                    if (__fabsf(py - hitY) >= float_1) {
-                        *(s16*)(p + 0x17E) |= 0x2;
-                    }
-                }
-            } else {
-                if ((*(s16*)(p + 0x17E) & 0x2) != 0 && flag == 1) {
-                    party->position.y = hitY;
-                }
-                if (__fabsf(py - hitY) <= float_6) {
-                    party->position.y = hitY;
-                }
-            }
-        }
-    }
+    ccfloor(party, flag, float_1, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
 
     *(HitEntry**)((u8*)party + 0x130) = NULL;
     *(HitEntry**)((u8*)party + 0x12C) = NULL;
@@ -1197,6 +1157,52 @@ HitEntry* ccwall(PartyEntry* party, s32 flag) {
         return hit;
     }
     return NULL;
+}
+
+// Floor probe under the party: snaps position.y onto ground within 11 units and flags steps of at least `step`.
+static void ccfloor(PartyEntry* party, s32 flag, f32 step, f32* hitX, f32* hitY, f32* hitZ, f32* distance,
+                    f32* hitNX, f32* hitNY, f32* hitNZ) {
+    u8* p = (u8*)party;
+    HitEntry* hit;
+    f32 oy;
+    f32 x, z;
+
+    x = party->position.x;
+    z = party->position.z;
+    oy = party->position.y + *(f32*)(p + 0xF0) + float_10;
+#ifdef MUST_MATCH
+    *distance = fadd32(*(f32*)(p + 0xF0), float_30);
+#else
+    *distance = *(f32*)(p + 0xF0) + float_30;
+#endif
+    hit = hitCheckFilter(NULL, hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ, x, oy,
+                         z, float_0, float_neg1, float_0);
+    if (((hitGetAttr(hit) >> 9) & 1) == 1) {
+        hit = NULL;
+    }
+    *(HitEntry**)((u8*)party + 0x138) = hit;
+    if (hit != NULL) {
+        f32 py;
+        *hitY = (f32)(s32)(float_100 * *hitY + float_0p5) / float_100;
+        py = (f32)(s32)(float_100 * party->position.y + float_0p5) / float_100;
+        if (__fabsf(py - *hitY) <= float_11) {
+            if (py <= *hitY) {
+                if (flag == 0) {
+                    party->position.y = *hitY;
+                    if (__fabsf(py - *hitY) >= step) {
+                        *(s16*)(p + 0x17E) |= 0x2;
+                    }
+                }
+            } else {
+                if ((*(s16*)(p + 0x17E) & 0x2) != 0 && flag == 1) {
+                    party->position.y = *hitY;
+                }
+                if (__fabsf(py - *hitY) <= float_6) {
+                    party->position.y = *hitY;
+                }
+            }
+        }
+    }
 }
 
 s32 lookupSafetyPos(Vec pos, Vec* out, f32 height) {
@@ -1344,8 +1350,11 @@ s32 lookupSafetyPos(Vec pos, Vec* out, f32 height) {
     return result;
 }
 
-// NONMATCHING (99.54%): only FP register colouring differs: the first probe's sin result (f26 here, f31 in the
-// original), its baseY/x/z (f27/f28/f26 vs f28/f26/f27) and the third probe's x/z (f26/f28 swapped).
+// File-local float sine, as tou_03 has; MWCC inlines it into the probes.
+static f32 sinf(f32 x) {
+    return sin(x);
+}
+
 void lookupSafetyPos2(Vec pos, Vec* out, f32 height) {
     f32 distance;
     f32 hitX, hitY, hitZ;
@@ -1362,15 +1371,10 @@ void lookupSafetyPos2(Vec pos, Vec* out, f32 height) {
 
     radius = marioGetPtr()->wPlayerCollisionBox.x;
 
-    s = sin(MATCH_F32(float_1p5708));
-    c = cos(MATCH_F32(float_1p5708));
+    { f32 a = 1.5707964f; s = sinf(a); c = cos(a); }
     baseY = pos.y;
     t = radius * s;
-#ifdef MUST_MATCH
-    x = fadd32(pos.x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
-#else
     x = pos.x + t;
-#endif
     y = baseY + height;
     u = radius * -c;
     z = pos.z + u;
@@ -1382,15 +1386,10 @@ void lookupSafetyPos2(Vec pos, Vec* out, f32 height) {
         return;
     }
 
-    s = sin(MATCH_F32(float_4p7124));
-    c = cos(MATCH_F32(float_4p7124));
+    { f32 a = 4.712389f; s = sinf(a); c = cos(a); }
     baseY = pos.y;
     t = radius * s;
-#ifdef MUST_MATCH
-    x = fadd32(pos.x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
-#else
     x = pos.x + t;
-#endif
     y = baseY + height;
     u = radius * -c;
     z = pos.z + u;
@@ -1402,7 +1401,7 @@ void lookupSafetyPos2(Vec pos, Vec* out, f32 height) {
         return;
     }
 
-    { f32 pia = 3.1415927f; s = sin(pia); c = cos(pia); }
+    { f32 pia = 3.1415927f; s = sinf(pia); c = cos(pia); }
     x = pos.x;
     z = pos.z;
     baseY = pos.y;
@@ -1415,14 +1414,10 @@ void lookupSafetyPos2(Vec pos, Vec* out, f32 height) {
         return;
     }
 
-    { f32 za = 0.0f; s = sin(za); c = cos(za); }
+    { f32 za = 0.0f; s = sinf(za); c = cos(za); }
     baseY = pos.y;
     t = radius * s;
-#ifdef MUST_MATCH
-    x = fadd32(pos.x, t);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
-#else
     x = pos.x + t;
-#endif
     y = baseY + height;
     u = radius * -c;
     z = pos.z + u;
@@ -1436,45 +1431,34 @@ void lookupSafetyPos2(Vec pos, Vec* out, f32 height) {
     *out = pos;
 }
 
-// NONMATCHING (99.92%): only the first probe's sin result differs (f27 here, f29 in the original).
 void lookupSafetyPos3(Vec pos, Vec* out, f32 height) {
     f32 s, c, distance;
     f32 hitX, hitY, hitZ;
     f32 hitNX, hitNY, hitNZ;
     f32 x, y, z, radius, baseY;
-    f32 t;
+    f32 t, u;
 
     radius = marioGetPtr()->wPlayerCollisionBox.x;
-    s = sin(MATCH_F32(float_1p5708));
-    c = cos(MATCH_F32(float_1p5708));
+    { f32 a = 1.5707964f; s = sinf(a); c = cos(a); }
     baseY = pos.y;
-    x = radius * s;
-#ifdef MUST_MATCH
-    x = fadd32(pos.x, x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
-#else
-    x = pos.x + x;
-#endif
+    t = radius * s;
+    x = pos.x + t;
     y = pos.y + height;
-    t = radius * -c;
-    z = pos.z + t;
+    u = radius * -c;
+    z = pos.z + u;
     distance = float_0p1 + height;
     if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
         out->x = x;
         out->z = z;
         out->y = baseY;
     } else {
-        s = sin(MATCH_F32(float_4p7124));
-        c = cos(MATCH_F32(float_4p7124));
+        { f32 a = 4.712389f; s = sinf(a); c = cos(a); }
         baseY = pos.y;
-        x = radius * s;
-#ifdef MUST_MATCH
-        x = fadd32(pos.x, x);  // MUST_MATCH: inlined helper steers MWCC's FP colouring (see top of file).
-#else
-        x = pos.x + x;
-#endif
+        t = radius * s;
+        x = pos.x + t;
         y = pos.y + height;
-        t = radius * -c;
-        z = pos.z + t;
+        u = radius * -c;
+        z = pos.z + u;
         distance = float_0p1 + height;
         if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0, float_neg1, float_0)) {
             out->x = x;
@@ -1485,6 +1469,7 @@ void lookupSafetyPos3(Vec pos, Vec* out, f32 height) {
         }
     }
 }
+
 
 void lookupSafetyPosSub(Vec pos, Vec* out, f32 height, f32 angle) {
     Vec sp;
