@@ -6416,3 +6416,21 @@ also told to write down the old framing's assumptions and question them first. S
   reduced to `work = load`); 15 pragmas singly and all 255 combinations of 8; mwsearch 25 min, 12,645 compiles;
   rasim single edges. Next: a shape where codegen loads seqEndWork into its own temp then copies it (only seen for
   a call result or a global-address expression).
+
+### battle_seq_command LINKED: BattleDrawEnemyHPBar 96.18 -> 100, WeaponMultiItemCancelCheckDisp 95.37 -> 100 (Claude Opus 5.5)
+- **Old framing wrong:** earlier runs measured CancelCheckDisp with named float externs the original doesn't have,
+  which schedule differently from literals. Porting the data first changed the diff: all 48 undefined `float_*`/`dat_*`
+  externs became literals and `(GXColor){...}` compound literals; `_btl_cmd_error_msg_event` defined as an EVT script
+  (`CALL(_get_msg, LW(0))`, `CALL(btlevtcmd_AnnounceMessage, 0, 0, -30, LW(0), 60)`, `RETURN`). .sdata2 and .rodata
+  IDENTICAL, .sdata complete.
+- **HPBar:** `(Vec pos, BattleUnit* unit, GXColor color)` by value (the Run 2 by-value lever): the caller's copy to a
+  fresh slot and by-value colour cast already were by-value passing. The volatile read, colour local and MUST_MATCH
+  cast in BattleDrawEnemyHP are gone; header updated (only caller is this file).
+- **CancelCheckDisp:** float-first `windowDispGX_Waku_col` cast under MUST_MATCH (as battle_seq_end's _MarioExpDisp)
+  reached 99.36; mwccdbg showed the shared `lis 0x4330` belonged to the earlier `xoff` statement, so the colour's
+  register number was always later. `xoff` assigned inside the first call's argument (#408,
+  `-30.0f - (xoff = 6.25f * (f32)len)`) fixed it, plus a centre local `f32 cx = 0.0f` (battle_seq's `_rule_disp`)
+  so `cx - xoff` doesn't fold to fneg. opt_propagation pragma removed.
+- Negatives: opt_propagation off + compound literals (76.8); named GXColor white (96.57); u16-first cast (85.15);
+  `int len` (85.14); cx declared first (85.14); assignment-in-argument without the cast (85.57); operand-order swaps
+  (normalised). Open question shared with battle_seq_end: was the original windowDispGX_Waku_col prototype float-first?

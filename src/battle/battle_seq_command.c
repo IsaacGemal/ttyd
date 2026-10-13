@@ -28,6 +28,8 @@
 #include "battle/battle_event_subset.h"
 #include "battle/battle_ac_help.h"
 #include "system.h"
+#include "battle/battle_message.h"
+#include "evt/evt_cmd.h"
 
 // Data objects defined later in this file or in other units, declared before their first use.
 extern s32 _jump_badge_table[8];
@@ -41,54 +43,6 @@ extern BattleWeapon ItemWeaponData_Naniga_Okorukana;
 
 
 //TODO: move into battle/seq/?
-
-//local prototypes
-
-extern f32 float_5_8041c310;
-extern f32 float_0_8041c2f0;
-extern f32 float_1_8041c2f4;
-extern f32 float_3_8041c2ec;
-extern f32 float_6p25_8041c318;
-extern f32 float_80_8041c31c;
-extern f32 float_12p5_8041c320;
-extern f32 float_77_8041c324;
-extern f32 float_32_8041c30c;
-extern f32 float_10_8041c2e4;
-extern f32 float_19_8041c2e8;
-extern f32 float_2_8041c2f8;
-extern f32 float_34_8041c2fc;
-extern f32 float_8_8041c300;
-extern f32 float_20_8041c304;
-extern f32 float_60_8041c314;
-extern u32 dat_8041c2d8;
-extern u32 dat_8041c2c0;
-extern u32 dat_8041c2c4;
-extern u32 dat_8041c2c8;
-extern u32 dat_8041c2cc;
-extern u32 dat_8041c2d0;
-extern u32 dat_8041c2d4;
-extern f32 float_neg240_8041c328;
-extern f32 float_86_8041c32c;
-extern f32 float_16_8041c330;
-extern f32 float_neg232_8041c334;
-extern f32 float_83_8041c338;
-extern f32 float_118_8041c33c;
-extern f32 float_115_8041c340;
-extern f32 float_neg30_8041c344;
-extern f32 float_30_8041c348;
-extern f32 float_65_8041c34c;
-extern f32 float_neg70_8041c350;
-extern f32 float_neg10_8041c354;
-extern f32 float_130_8041c358;
-extern f32 float_27_8041c35c;
-extern f32 float_neg20_8041c360;
-extern f32 float_neg13_8041c364;
-extern f32 float_neg38_8041c368;
-extern f32 float_neg40_8041c36c;
-extern f32 float_900_8041c370;
-extern f32 float_255_8041c308;
-extern u32 dat_8041c2dc;
-extern u32 dat_8041c2e0;
 
 // Sampling work block lives inside BattleWork at offset 0x428 (same layout as the
 // local BattleSampling struct in battle_detect.c).
@@ -1900,47 +1854,43 @@ after:
 			wp->commandMenu.unk0 = 6;
 		}
 	}
-	dispEntry(CAMERA_2D, float_900_8041c370, 0, (DispCallback)BattleCommandDisplay_WeaponMultiItemCancelCheckDisp, wp);
+	dispEntry(CAMERA_2D, 900.0f, 0, (DispCallback)BattleCommandDisplay_WeaponMultiItemCancelCheckDisp, wp);
 	return done;
 }
 #pragma opt_propagation reset
 
 
 
-#pragma opt_propagation off // the two (f32)len conversions and the pooled string base keep retail's un-hoisted load order
-// `opt_propagation off` stops the compiler hoisting the two (f32)len magic-double and
-// 6.25/12.5/65 loads; `xarg` before `yoff` plus a named `neg30` temp recover six more
-// load-order/colour instructions.
-// NONMATCHING (95.32%): remaining are the r0/r5 magic-vs-colour GPR assignment, two
-// scheduler slots and the pooled string base (which resolves at link).
 void BattleCommandDisplay_WeaponMultiItemCancelCheckDisp(CameraId camId, BattleWork* wp) {
 	char buf[0x20];
 	Vec pos;
 	u32 len;
 	f32 xoff;
+	f32 cx = 0.0f;
 
 	pouchGetPtr();
 	sprintf(buf, msgSearch("btl_msg_multi_item_cancel_check"));
 	len = strlen(buf);
-	xoff = float_6p25_8041c318 * (f32)len;
-	{
-	f32 neg30 = float_neg30_8041c344;
-	f32 xarg = neg30 - xoff;
-	f32 yoff = float_12p5_8041c320 * (f32)len + float_65_8041c34c;
-	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c0, xarg, float_30_8041c348, yoff, float_32_8041c30c, float_10_8041c2e4);
-	}
-	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c4, float_neg70_8041c350, float_neg10_8041c354,
-	                      float_130_8041c358, float_60_8041c314, float_10_8041c2e4);
+#ifdef MUST_MATCH
+	// Retail evaluates the float arguments before the texture id and the colour (as in battle_seq_end's
+	// _MarioExpDisp), so the call goes through a float-first cast; the colour copy precedes the conversions.
+	((void (*)(f32, f32, f32, f32, f32, u16, GXColor))windowDispGX_Waku_col)(
+	    -30.0f - (xoff = 6.25f * (f32)len), 30.0f, 12.5f * (f32)len + 65.0f, 32.0f, 10.0f, 0,
+	    (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+#else
+	windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, -30.0f - (xoff = 6.25f * (f32)len), 30.0f,
+	                      12.5f * (f32)len + 65.0f, 32.0f, 10.0f);
+#endif
+	windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF }, -70.0f, -10.0f, 130.0f, 60.0f, 10.0f);
 	FontDrawStart();
-	FontDrawString(buf, float_0_8041c2f0 - xoff, float_27_8041c35c);
-	FontDrawString("\202\315\202\242\201@", float_neg20_8041c360, float_neg13_8041c364);
-	FontDrawString("\202\242\202\242\202\246", float_neg20_8041c360, float_neg38_8041c368);
-	pos.x = float_neg40_8041c36c;
+	FontDrawString(buf, cx - xoff, 27.0f);
+	FontDrawString("\202\315\202\242\201@", -20.0f, -13.0f);
+	FontDrawString("\202\242\202\242\202\246", -20.0f, -38.0f);
+	pos.x = -40.0f;
 	pos.y = (f32)(-42 - wp->commandMenu.cursor[13].field_0 * 25);
-	pos.z = float_0_8041c2f0;
-	iconDispGx(float_1_8041c2f4, &pos, 0x14, 0x1F0);
+	pos.z = 0.0f;
+	iconDispGx(1.0f, &pos, 0x14, 0x1F0);
 }
-#pragma opt_propagation reset
 
 void BattleCommandDisplay_OperationMenuSetup(BattleWork* wp, void* arg) {
 	_btlcmd_MakeOperationTable(wp);
@@ -2285,34 +2235,34 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 			btlGetScreenPoint(&pos, &screen);
 			iconPos.x = screen.x;
 			iconPos.y = screen.y;
-			iconPos.z = float_0_8041c2f0;
-			iconDispGx(float_1_8041c2f4, &iconPos, 0x10, 0x1EF);
+			iconPos.z = 0.0f;
+			iconDispGx(1.0f, &iconPos, 0x10, 0x1EF);
 			if (unit->currentKind == 0xE2) {
 				name = pouchGetYoshiName();
 			} else {
 				name = (char*)msgSearch(part->partName);
 			}
 			width = (f32)FontGetMessageWidth(name);
-			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2c8, float_neg240_8041c328, float_86_8041c32c,
-			                      float_16_8041c330 + width, float_32_8041c30c, float_10_8041c2e4);
+			windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f, 86.0f, 16.0f + width, 32.0f,
+			                      10.0f);
 			FontDrawStart();
-			FontDrawString(name, float_neg232_8041c334, float_83_8041c338);
+			FontDrawString(name, -232.0f, 83.0f);
 		} else {
 			btlGetScreenPoint(&pos, &screen);
 			iconPos.x = screen.x;
 			iconPos.y = screen.y;
-			iconPos.z = float_0_8041c2f0;
-			iconDispGx(float_1_8041c2f4, &iconPos, 0x18, 0x1EF);
+			iconPos.z = 0.0f;
+			iconDispGx(1.0f, &iconPos, 0x18, 0x1EF);
 			if (unit->currentKind == 0xE2) {
 				name = pouchGetYoshiName();
 			} else {
 				name = (char*)msgSearch(part->partName);
 			}
 			width = (f32)FontGetMessageWidth(name);
-			windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2cc, float_neg240_8041c328, float_86_8041c32c,
-			                      float_16_8041c330 + width, float_32_8041c30c, float_10_8041c2e4);
+			windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f, 86.0f, 16.0f + width, 32.0f,
+			                      10.0f);
 			FontDrawStart();
-			FontDrawString(name, float_neg232_8041c334, float_83_8041c338);
+			FontDrawString(name, -232.0f, 83.0f);
 		}
 	} else {
 		BattleTargetSampling* sampling = (BattleTargetSampling*)wp->field_428;
@@ -2337,36 +2287,34 @@ void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* param
 				btlGetScreenPoint(&pos, &screen);
 				iconPos.x = screen.x;
 				iconPos.y = screen.y;
-				iconPos.z = float_0_8041c2f0;
-				iconDispGx(float_1_8041c2f4, &iconPos, 0x10, 0x1EF);
+				iconPos.z = 0.0f;
+				iconDispGx(1.0f, &iconPos, 0x10, 0x1EF);
 				if (unit->currentKind == 0xE2) {
 					name = pouchGetYoshiName();
 				} else {
 					name = (char*)msgSearch(part->partName);
 				}
 				width = (f32)FontGetMessageWidth(name);
-				windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2d0, float_neg240_8041c328,
-				                      float_118_8041c33c - (f32)yoff, float_16_8041c330 + width,
-				                      float_32_8041c30c, float_10_8041c2e4);
+				windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f,
+				                      118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f);
 				FontDrawStart();
-				FontDrawString(name, float_neg232_8041c334, float_115_8041c340 - (f32)yoff);
+				FontDrawString(name, -232.0f, 115.0f - (f32)yoff);
 			} else {
 				btlGetScreenPoint(&pos, &screen);
 				iconPos.x = screen.x;
 				iconPos.y = screen.y;
-				iconPos.z = float_0_8041c2f0;
-				iconDispGx(float_1_8041c2f4, &iconPos, 0x18, 0x1EF);
+				iconPos.z = 0.0f;
+				iconDispGx(1.0f, &iconPos, 0x18, 0x1EF);
 				if (unit->currentKind == 0xE2) {
 					name = pouchGetYoshiName();
 				} else {
 					name = (char*)msgSearch(part->partName);
 				}
 				width = (f32)FontGetMessageWidth(name);
-				windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2d4, float_neg240_8041c328,
-				                      float_118_8041c33c - (f32)yoff, float_16_8041c330 + width,
-				                      float_32_8041c30c, float_10_8041c2e4);
+				windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, -240.0f,
+				                      118.0f - (f32)yoff, 16.0f + width, 32.0f, 10.0f);
 				FontDrawStart();
-				FontDrawString(name, float_neg232_8041c334, float_115_8041c340 - (f32)yoff);
+				FontDrawString(name, -232.0f, 115.0f - (f32)yoff);
 			}
 		}
 	}
@@ -2402,19 +2350,19 @@ void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWor
 	f32 xoff;
 
 	BtlUnit_GetPos(partner, &pos.x, &pos.y, &pos.z);
-	pos.y += float_60_8041c314;
+	pos.y += 60.0f;
 	btlGetScreenPoint(&pos, &screen);
 	iconPos.x = screen.x;
 	iconPos.y = screen.y;
-	iconPos.z = float_0_8041c2f0;
-	iconDispGx(float_1_8041c2f4, &iconPos, 0x10, 0x1EF);
+	iconPos.z = 0.0f;
+	iconDispGx(1.0f, &iconPos, 0x10, 0x1EF);
 	len = (f32)strlen(msgSearch((char*)partner->mKindParams->name));
-	xoff = float_6p25_8041c318 * len;
-	windowDispGX_Waku_col(0, *(GXColor*)&dat_8041c2d8, iconPos.x - xoff, float_80_8041c31c + iconPos.y,
-	                      float_12p5_8041c320 * len, float_32_8041c30c, float_10_8041c2e4);
+	xoff = 6.25f * len;
+	windowDispGX_Waku_col(0, (GXColor){ 0xFF, 0xFF, 0xFF, 0xCF }, iconPos.x - xoff, 80.0f + iconPos.y,
+	                      12.5f * len, 32.0f, 10.0f);
 	FontDrawStart();
 	FontDrawString(msgSearch((char*)partner->mKindParams->name),
-	               float_3_8041c2ec + iconPos.x - xoff, float_77_8041c324 + iconPos.y);
+	               3.0f + iconPos.x - xoff, 77.0f + iconPos.y);
 }
 
 void BattleCommandDisplay_ProtectPartnerSelectMenuEnd(BattleWork* wp) {
@@ -2682,14 +2630,14 @@ s32 _check_present_item(void) {
 	case 0x7B:
 		BtlUnit_RecoverHp(unit, 1);
 		BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
-		pos.y = (f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier + float_5_8041c310 + pos.y;
+		pos.y = (f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier + 5.0f + pos.y;
 		effRecoveryEntry(0, 1, pos.x, pos.y, pos.z);
 		BattleAudience_SetPresentItemNo(0);
 		return 0;
 	case 0x7C:
 		BtlUnit_RecoverFp(unit, 1);
 		BtlUnit_GetPos(unit, &pos.x, &pos.y, &pos.z);
-		pos.y = (f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier + float_5_8041c310 + pos.y;
+		pos.y = (f32)BtlUnit_GetHeight(unit) * unit->mSizeMultiplier + 5.0f + pos.y;
 		effRecoveryEntry(1, 1, pos.x, pos.y, pos.z);
 		BattleAudience_SetPresentItemNo(0);
 		return 0;
@@ -2716,8 +2664,7 @@ void BattleDrawEnemyHP(CameraId camId, void* param) {
 	BattleUnit* unit;
 	Vec position;
 	Vec screen;
-	Vec hpPos;
-	GXColor color = *(GXColor*)&dat_8041c2dc;
+	GXColor color = { 0xFF, 0xFF, 0xFF, 0xFF };
 	s32 icon;
 	Mtx mtx;
 
@@ -2743,8 +2690,7 @@ void BattleDrawEnemyHP(CameraId camId, void* param) {
 							btlGetScreenPoint(&position, &screen);
 							if (unit->flags & 1) {
 								if ((unit->hpGauge.field_0x2 & 1) && unit->hpGauge.field_0x8 < 0x14) {
-									color.a = (u8)(s32)intplGetValue(0, unit->hpGauge.field_0x8, 0x14, float_0_8041c2f0,
-									                                  float_255_8041c308);
+									color.a = (u8)(s32)intplGetValue(0, unit->hpGauge.field_0x8, 0x14, 0.0f, 255.0f);
 								}
 							}
 							icon = 20;
@@ -2753,12 +2699,9 @@ void BattleDrawEnemyHP(CameraId camId, void* param) {
 							} else if (wp->units[i]->currentHp >= 10) {
 								icon = 16;
 							}
-							PSMTXTrans(mtx, screen.x + (f32)icon, screen.y - float_32_8041c30c, float_0_8041c2f0);
-							iconNumberDispGx(mtx, wp->units[i]->currentHp, 1, *(GXColor*)&dat_8041c2e0);
-							// MUST_MATCH: BattleDrawEnemyHPBar takes GXColor by value (target copies it to a temp);
-							// the header declares GXColor*. The comma sequences the hpPos copy like the target.
-							((void (*)(Vec*, BattleUnit*, GXColor))BattleDrawEnemyHPBar)((hpPos = screen, &hpPos), unit,
-							                                                               color);
+							PSMTXTrans(mtx, screen.x + (f32)icon, screen.y - 32.0f, 0.0f);
+							iconNumberDispGx(mtx, wp->units[i]->currentHp, 1, (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF });
+							BattleDrawEnemyHPBar(screen, unit, color);
 						}
 					}
 				}
@@ -2767,58 +2710,35 @@ void BattleDrawEnemyHP(CameraId camId, void* param) {
 	}
 }
 
-// NONMATCHING (96.18%): `f32 w = gauge->field_0x14` and a volatile `GXColor c` read in the
-// 0xB arm give retail's `w`-in-f4 allocation and schedule; left are 5 instructions: the named
-// colour local plus its by-value argument temp stores the colour twice in each arm.
-void BattleDrawEnemyHPBar(Vec* pos, BattleUnit* unit, GXColor* color) {
+void BattleDrawEnemyHPBar(Vec pos, BattleUnit* unit, GXColor color) {
 	CameraEntry* camera = camGetPtr(CAMERA_2D);
 	BattleWorkHpGauge* gauge = &unit->hpGauge;
 
 	btlDispGXInit2DRasta();
 	GXLoadPosMtxImm(camera->view, 0);
-	{
-		f32 x = pos->x - float_10_8041c2e4;
-		f32 tx, ty, tz, one;
-		GXColor c = *color;
-		tx = float_19_8041c2e8 + x;
-		ty = pos->y - float_3_8041c2ec;
-		one = float_1_8041c2f4;
-		pos->x = x;
-		tz = float_0_8041c2f0;
-		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-		    0xA, c, 0, tx, ty, tz, one, one);
-	}
+	pos.x -= 10.0f;
+	((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
+	    0xA, color, 0, 19.0f + pos.x, pos.y - 3.0f, 0.0f, 1.0f, 1.0f);
 	switch ((s32)*(u16*)gauge->field_0x0) {
 	case 1:
 		if (gauge->field_0x4 > 0) {
 			btlDispGXInit2DRasta();
 			GXLoadPosMtxImm(camera->view, 0);
-			btlDispGXQuads2DRasta(float_1_8041c2f4 + pos->x, float_2_8041c2f8 + pos->y,
-			                     float_34_8041c2fc * gauge->field_0x18 + (float_1_8041c2f4 + pos->x),
-			                     (float_2_8041c2f8 + pos->y) - float_8_8041c300, 0, 0, 0, color->a);
+			btlDispGXQuads2DRasta(1.0f + pos.x, 2.0f + pos.y, 34.0f * gauge->field_0x18 + (1.0f + pos.x),
+			                     (2.0f + pos.y) - 8.0f, 0, 0, 0, color.a);
 			btlDispGXInit2DRasta();
 			GXLoadPosMtxImm(camera->view, 0);
 		}
 		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-		    0xB, *color, 0,
-		    float_19_8041c2e8 + pos->x - float_20_8041c304 * (float_1_8041c2f4 - gauge->field_0x14),
-		    pos->y - float_3_8041c2ec, float_0_8041c2f0, gauge->field_0x14, float_1_8041c2f4);
+		    0xB, color, 0, 19.0f + pos.x - 20.0f * (1.0f - gauge->field_0x14), pos.y - 3.0f, 0.0f,
+		    gauge->field_0x14, 1.0f);
 		break;
-	default:
-		{
-		f32 ty, tx, w = gauge->field_0x14;
-#ifdef MUST_MATCH
-		// volatile read pins the colour load before the fadds, as the target schedules it
-		GXColor c = *(volatile GXColor*)color;
-#else
-		GXColor c = *color;
-#endif
-		tx = float_19_8041c2e8 + pos->x;
-		tx -= float_20_8041c304 * (float_1_8041c2f4 - w);
-		ty = pos->y - float_3_8041c2ec;
+	default: {
+		f32 w = gauge->field_0x14;
 		((void (*)(u32, GXColor, s32, f32, f32, f32, f32, f32))btlDispTexPlane)(
-		    0xB, c, 0, tx, ty, float_0_8041c2f0, w, float_1_8041c2f4);
-		}
+		    0xB, color, 0, 19.0f + pos.x - 20.0f * (1.0f - w), pos.y - 3.0f, 0.0f, w, 1.0f);
+		break;
+	}
 	}
 }
 
@@ -3094,6 +3014,12 @@ s32 _get_msg(EventEntry* event) {
 	evtSetValue(event, index, (s32)msg);
 	return 2;
 }
+
+__declspec(section ".sdata") EVT_BEGIN(_btl_cmd_error_msg_event)
+	CALL(_get_msg, LW(0))
+	CALL(btlevtcmd_AnnounceMessage, 0, 0, -30, LW(0), 60)
+	RETURN
+EVT_END()
 
 s32 _check_weapon_type_attack(BattleWeapon* weapon) {
 	s8* p = (s8*)weapon;
