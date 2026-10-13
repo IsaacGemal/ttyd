@@ -6329,3 +6329,21 @@ also told to write down the old framing's assumptions and question them first. S
   neighbours); KColor spellings (31, unchanged); 8 counter-type combos (95.5-97.6); rasim what-ifs; mwsearch 60 min,
   33,198 compiles, 0 improvements. Next: a spelling of colorD/alphaD and the by-value GXColor argument that makes no
   coalesced temp in block 1. rasim what-if scripts were in the run's vars/whatif*.py.
+
+### nameent LINKED: nameKirinukiGX 99.75 -> 100 (Claude Opus 5.5)
+- **Diagnosis (mwccdbg + rasim):** MWCC numbers the shared CSE temps by where a value is first repeated. The
+  middle-row bottom edge only gets retail's register if it outranks all of `x+8`, `z-16`, `(x+8)+(z-16)`, `x+z-8`,
+  `(x+z-8)+8` and `w-16`; no reordering of the old CSE-temp structure can do that (exhaustive rasim placement search).
+- **Fix:** write the 8 `nameKirinukiQuad` inline calls out (GXBegin + four vertices through a small
+  `NAME_KIRINUKI_VTX` macro) with the derived edges as named locals declared in first-use order (`midX`, `midW`,
+  `midR`, `rightX`, `rightR`, `midH`, `botY`, `botB`), each assigned right after the GXBegin of the first quad that
+  uses it (`midW`/`midH` inside the scale-macro argument, where the original computes them). A rasim hill-climb over
+  named-local subsets and orders found the 0-wrong set; earlier runs named them but assigned them before the GX calls.
+  That left 7 operand-order diffs (MWCC puts a literal on the left of `+`), closed by "const in a local" (Grind 45):
+  `f32 size = 8.0f; midX = size + x`. No MUST_MATCH, helper or pragma.
+- Negatives: scalar compound literals (the _mapDispMapObj lever) on every argument, singly and in pairs (floor 19
+  diffs, 99.08); inline-local and parameter-reuse variants (49-238 diffs); corner-form quad (68-69); spelling, cast and
+  regrouping scans (>= 45); all 24 quad parameter orders (45); `optimization_level 0-3` (103-1036); random mixed search
+  (floor 19); rasim edge/phantom/coalescing what-ifs.
+- **Next:** winKirinukiGX (win_root, 99.11) has the same structure and the same unsolved colouring; the same rewrite
+  should carry over.

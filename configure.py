@@ -888,7 +888,7 @@ config.libs = [
             Object(Matching, "kpa_act.c"),
             Object(Matching, "main.c"),
             Object(Matching, "memory.c"),
-            Object(NonMatching, "nameent.c"),
+            Object(Matching, "nameent.c"),
             Object(Matching, "npc_event.c"),
             Object(Matching, "parse.c"),
             Object(Matching, "party.c"),

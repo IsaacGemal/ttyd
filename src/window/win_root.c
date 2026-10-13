@@ -1513,7 +1513,7 @@ void winMsgEntry(WindowWork* work, s32 a1, const char* str, s32 a3) {
 #pragma inline_max_total_size(60000) // keep the 20 winKirinukiQuad instances inlined
 #pragma inline_max_size(1000)
 // The 9920-byte body reconstructed from the asm; the frame (0x8b0, saving f19..f31) matches.
-//  * The 8.0 and 16.0 are literals, as in nameent.c's nameKirinukiGX: MWCC CSEs `w - 8.0f - 8.0f` and the
+//  * The 8.0 and 16.0 are literals: MWCC CSEs `w - 8.0f - 8.0f` and the
 //    like across the GX calls (the original computes each once and reuses it for the scale and the quad),
 //    which it does not do for reads of the named float_8/float_16 objects. 90.0 and 74.0 stay named reads
 //    (as literals both score lower). The quads use the `w - 8`/`h - 8 - 8` expressions directly. The
