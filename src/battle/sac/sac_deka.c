@@ -153,7 +153,7 @@ const Vec vec3_80300510 = { 0, 0, 0 };
 #endif
 __declspec(section ".rodata") Vec vec3_8030051c[1] = { { 0, 0, 0 } };
 __declspec(section ".rodata") Vec vec3_80300528 = { -1000.0f, 100.0f, 0.0f };
-const Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_80300534 = { 0.0f, 0.0f, 0.0f };
 #ifdef MUST_MATCH
 // Non-const so MWCC's scheduler keeps main_star's named loads in place; the section keeps them in .rodata.
 __declspec(section ".rodata") Vec vec3_80300540 = { 0.0f, 0.0f, 0.0f };
@@ -166,7 +166,7 @@ const DekaTableInt11 dat_80300558 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
 const DekaTableInt11 dat_80300584 = { { 1, 2, 0, 2, 3, 1, 3, 4, 2, 4, 5 } };
 const DekaTableF32x6 dat_803005b0 = { { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f } };
 const DekaTableF32x6 dat_803005c8 = { { 1.0f, 1.3f, 2.0f, 2.6f, 3.3f, 3.8f } };
-const Vec vec3_803005e0 = { 0.0f, 0.0f, -1.0f };
+__declspec(section ".rodata") Vec vec3_803005e0 = { 0.0f, 0.0f, -1.0f };
 const char str_803005EC[0x14] = "SFX_BTL_SAC_START1";
 const char str_80300600[0x14] = "SFX_BTL_SAC_START2";
 const char str_80300614[0x14] = "SFX_BTL_SAC_START3";
@@ -190,51 +190,6 @@ const GXColor dat_80421e40 = { 0xFF, 0xFF, 0xFF, 0x00 };
 __declspec(section ".sdata2") GXColor dat_80421e44 = { 0xFF, 0xFF, 0xFF, 0x00 };
 const GXColor dat_80421e48 = { 0xFF, 0xFF, 0xFF, 0x00 };
 __declspec(section ".sdata2") const char str_80421E4C[8] = "M_I_Y";
-
-// .sdata2 constants (names from the original object; used by name so the relocations match)
-__declspec(section ".sdata2") f32 float_0p5_80421e54 = 0.5f;
-__declspec(section ".sdata2") f32 float_0p25_80421e58 = 0.25f;
-__declspec(section ".sdata2") f32 float_64_80421e5c = 64.0f;
-__declspec(section ".sdata2") f32 float_5_80421e60 = 5.0f;
-__declspec(section ".sdata2") f32 float_4_80421e64 = 4.0f;
-extern const f32 float_40_80421e68;
-extern const f32 float_32767_80421e6c;
-extern const f32 float_30_80421e70;
-extern const f32 float_20_80421e74;
-extern const f32 float_7_80421e78;
-extern const f32 float_2_80421e7c;
-extern const f32 float_70_80421e80;
-extern const f32 float_25_80421e84;
-extern const f32 float_1_80421e88;
-extern const f32 float_0_80421e8c;
-extern const f32 float_8_80421e90;
-extern const f32 float_neg1_80421e94;
-extern const f32 float_255_80421e98;
-extern const f32 float_0p75_80421e9c;
-extern const f32 float_18_80421ea0;
-extern const f32 float_1p25_80421ea4;
-extern const f32 float_250_80421ea8;
-extern const f32 float_0p0078125_80421eac;
-extern const f32 float_120_80421eb0;
-extern const f32 float_neg1000_80421eb4;
-extern const f32 float_37_80421eb8;
-extern const f32 float_50_80421ebc;
-extern const f32 float_2160_80421ec0;
-extern const f32 float_neg100_80421ec4;
-extern const f32 float_12p5_80421ec8;
-extern const f32 float_neg0p5_80421ecc;
-extern const f32 float_43_80421ed0;
-extern const f32 float_1p5_80421ed4;
-extern const f32 float_500_80421ed8;
-extern const f32 float_180_80421edc;
-extern const f32 float_0p8_80421ee0;
-extern const f32 float_0p1_80421ee4;
-extern const f32 float_683_80421ee8;
-extern const f32 float_4096_80421eec;
-extern const f32 float_neg40_80421ef0;
-extern const f32 float_0p01_80421ef4;
-extern const f32 float_901_80421ef8;
-
 
 #ifdef MUST_MATCH
 // The original builds each GXColor in a helper that returns it by value: the
@@ -273,20 +228,14 @@ s32 main_deka(EventEntry* event, s32 arg) {
     main_star();
     main_enemy();
     yuka_main();
-    dispEntry(CAMERA_2D, float_901_80421ef8, 1, disp_2D, NULL);
-    dispEntry(CAMERA_3D, float_0_80421e8c, 1, disp_3D, NULL);
-    dispEntry(CAMERA_3D, float_0_80421e8c, 2, disp_3D_alpha, NULL);
-    dispEntry(CAMERA_3D, float_0_80421e8c, 0, yuka_disp, NULL);
+    dispEntry(CAMERA_2D, 901.0f, 1, disp_2D, NULL);
+    dispEntry(CAMERA_3D, 0.0f, 1, disp_3D, NULL);
+    dispEntry(CAMERA_3D, 0.0f, 2, disp_3D_alpha, NULL);
+    dispEntry(CAMERA_3D, 0.0f, 0, yuka_disp, NULL);
     return 0;
 }
 
 // .text:0x29F8 | 0x802459F0 | size: 0x2D8
-// Every instruction matches except the compiler's int->float magic constant: the original
-// pools `double_to_int_80300630` off `r30=&vec3_803004f8` (`lfd f6, 0x138(r30)`), ours emits
-// an anonymous `@735` with its own `lis` because the magic stays a compiler-pooled literal. Using two
-// separate Vec locals (`v`, `v2`) instead of reusing one was the key to the frame/register
-// layout (86.59 -> 98.18).
-// NONMATCHING (98.18%): only that unpolled magic constant differs.
 static void yuka_init(void) {
     f32 x;
     DekaWork* p = get_ptr();
@@ -325,7 +274,7 @@ static void yuka_init(void) {
             Vec v, v2;
             f32 tmp;
             f32 fw = (f32)p->width;
-            f32 wc = fw * float_0p0078125_80421eac;
+            f32 wc = fw / 128.0f;
             x = p->plane0.x + wc * (f32)j;
 
             tmp = (f32)p->height;
@@ -341,12 +290,12 @@ static void yuka_init(void) {
             mesh->pos[i][j] = v2;
             mesh->normal[i][j] = vec3_80300510;
             tmp = (f32)j;
-            mesh->texU[i][j] = float_0p0078125_80421eac * tmp;
+            mesh->texU[i][j] = 0.0078125f * tmp;
             mesh->texV[i][j] = (f32)i;
         }
     }
 
-    dispEntry(CAMERA_SHADOW, float_0_80421e8c, 0, (DispCallback)yuka_capture, NULL);
+    dispEntry(CAMERA_SHADOW, 0.0f, 0, (DispCallback)yuka_capture, NULL);
 }
 // .text:0x2664 | 0x80245664 | size: 0x38C
 static void yuka_main(void) {
@@ -358,6 +307,7 @@ static void yuka_main(void) {
     Vec vN;
     Vec v8;
     f32 f;
+    f32 w = 64.0f;
 
     for (i = 0; i < 6; i++) {
         if (p->yukaActive[i] == 1) {
@@ -366,12 +316,12 @@ static void yuka_main(void) {
                 s32 idx = p->yukaIndex[i];
                 s32 sc = (s32)p->yukaScale[i];
 
-                if ((sc > idx && p->yukaPos[i] > float_0_80421e8c) ||
-                    (sc < idx && p->yukaPos[i] < float_0_80421e8c)) {
+                if ((sc > idx && p->yukaPos[i] > 0.0f) ||
+                    (sc < idx && p->yukaPos[i] < 0.0f)) {
                     for (j = 0; j < 2; j++) {
                         mesh->normal[j][p->yukaIndex[i]].y += p->yukaUnk[i];
                     }
-                    if (p->yukaPos[i] > float_0_80421e8c) {
+                    if (p->yukaPos[i] > 0.0f) {
                         p->yukaIndex[i]++;
                     }
                     else {
@@ -397,13 +347,13 @@ static void yuka_main(void) {
         // in reverse declaration order, so declare two/zero/one and initialise
         // one/zero/two to get f29=one, f30=zero, f31=two.
         f32 two, zero, one;
-        one = float_1_80421e88;
-        zero = float_0_80421e8c;
-        two = float_2_80421e7c;
+        one = 1.0f;
+        zero = 0.0f;
+        two = 2.0f;
 #else
-        const f32 one = float_1_80421e88;
-        const f32 zero = float_0_80421e8c;
-        const f32 two = float_2_80421e7c;
+        const f32 one = 1.0f;
+        const f32 zero = 0.0f;
+        const f32 two = 2.0f;
 #endif
 
     for (i = 0; i < 2; i++) {
@@ -424,10 +374,10 @@ static void yuka_main(void) {
 
             v2.x = zero;
             v2.z = zero;
-            PSVECScale(&v2, &v2, float_0p01_80421ef4);
+            PSVECScale(&v2, &v2, 0.01f);
 
             PSVECAdd(&mesh->normal[i][j], &v2, &mesh->normal[i][j]);
-            PSVECScale(&mesh->normal[i][j], &v8, float_0p1_80421ee4);
+            PSVECScale(&mesh->normal[i][j], &v8, 0.1f);
             PSVECAdd(&mesh->pos[i][j], &v8, &mesh->pos[i][j]);
 
             mesh->pos[i][j].y += mesh->normal[i][j].y;
@@ -442,9 +392,9 @@ static void yuka_main(void) {
 
 #ifdef MUST_MATCH
     {
-        // float_0p5_80421e54 is not const in this file, so copy it to a local to
+        // 0.5f is not const in this file, so copy it to a local to
         // keep its load out of the inner loop, as the original does.
-        f32 half = float_0p5_80421e54;
+        f32 half = 0.5f;
 
         for (i = 0; i < 2; i++) {
             for (j = 1; j < 0x80; j++) {
@@ -455,7 +405,7 @@ static void yuka_main(void) {
 #else
     for (i = 0; i < 2; i++) {
         for (j = 1; j < 0x80; j++) {
-            mesh->pos[i][j].y = float_0p5_80421e54 * (mesh->pos[i][j - 1].y + mesh->pos[i][j + 1].y);
+            mesh->pos[i][j].y = 0.5f * (mesh->pos[i][j - 1].y + mesh->pos[i][j + 1].y);
         }
     }
 #endif
@@ -481,11 +431,6 @@ s32 yuka_end(EventEntry* event) {
 }
 
 // .text:0x8C8 | 0x80245120 | size: 0x4D8
-// The int->double magic constant is a local @660 instead of the pooled
-// double_to_int_80300630 at 0x138(r30) (one extra lis; the file's .rodata pool is
-// incomplete), and the third loop holds 7 in f2 and beatPos in f1 where the original
-// holds 7 in f1 and beatPos in f2 (same instructions, swapped f-registers).
-// NONMATCHING (99.60%): only those two register-allocation differences remain.
 static void main_base(void) {
     DekaWork* p = get_ptr();
     s32 idx[8];
@@ -500,8 +445,8 @@ static void main_base(void) {
         p->baseState = 2;
         p->beatCount = 1;
         p->combo = 0;
-        p->beatPeriod = float_180_80421edc;
-        p->beatPos = float_0_80421e8c;
+        p->beatPeriod = 180.f;
+        p->beatPos = 0.0f;
         create_timing();
         p->gaugeState = 1;
         /* fallthrough */
@@ -514,11 +459,11 @@ static void main_base(void) {
         /* fallthrough */
     case 3:
         if (p->gaugeState == 3) {
-            p->beatPos += float_0p8_80421ee0 + float_0p1_80421ee4 * (f32)p->combo;
+            p->beatPos += 0.8f + 0.1f * (f32)p->combo;
             psndSFX_pit(p->sndHandle,
-                (s32)(float_683_80421ee8 * (f32)p->combo + float_4096_80421eec * p->beatPos / p->beatPeriod));
+                (s32)(683.0f * (f32)p->combo + 4096.0f * p->beatPos / p->beatPeriod));
             if (p->beatPos >= p->beatPeriod) {
-                p->beatPos = float_0_80421e8c;
+                p->beatPos = 0.0f;
                 p->beatCount++;
                 p->combo++;
                 p->starState = 6;
@@ -535,7 +480,7 @@ static void main_base(void) {
                 else {
                     p->baseState = 4;
                     p->baseTimer = 30;
-                    p->unk4C = float_neg40_80421ef0;
+                    p->unk4C = -40.f;
                     create_timing();
                 }
             }
@@ -560,8 +505,8 @@ static void main_base(void) {
         if (keyGetButtonTrg(0) & 0x100) {
             for (i = 0; i < 8; i++) {
                 DekaTiming* t = &p->timing[idx[i]];
-                if (t->state == 2 && p->beatPos >= t->time - float_7_80421e78 &&
-                    p->beatPos <= float_7_80421e78 + t->time) {
+                if (t->state == 2 && p->beatPos >= t->time - 7.0f &&
+                    p->beatPos <= 7.0f + t->time) {
                     if (t->unk08 == 1) {
                         t->state = 3;
                         t->flag = 1;
@@ -617,7 +562,7 @@ static void main_base(void) {
         break;
     case 4:
         p->baseTimer--;
-        p->unk4C = intplGetValue(0, 30 - p->baseTimer, 30, float_neg40_80421ef0, float_0_80421e8c);
+        p->unk4C = intplGetValue(0, 30 - p->baseTimer, 30, -40.f, 0.0f);
         if (p->baseTimer <= 0) {
             p->baseState = 3;
             p->sndHandle = psndSFXOn("SFX_BTL_SAC_DOKKAN1_1");
@@ -640,12 +585,12 @@ void main_gauge(void) {
             p->gaugeState = 2;
             p->gaugeTimer = 0;
             p->gaugePos = vec3_80300528;
-            p->gaugeWidth = float_500_80421ed8;
+            p->gaugeWidth = 500.f;
             p->gaugeAlpha = 0xFF;
             // fallthrough
         case 2:
             p->gaugeTimer++;
-            p->gaugePos.x = intplGetValue(4, p->gaugeTimer, 30, float_neg1000_80421eb4, float_0_80421e8c);
+            p->gaugePos.x = intplGetValue(4, p->gaugeTimer, 30, -1000.f, 0.0f);
             if (p->gaugeTimer >= 30) {
                 p->gaugeState = 3;
                 p->gaugeTimer = 0;
@@ -673,7 +618,7 @@ void main_gauge(void) {
         }
         case 5:
             p->gaugeTimer++;
-            p->gaugePos.x = intplGetValue(4, p->gaugeTimer, 30, float_0_80421e8c, float_neg1000_80421eb4);
+            p->gaugePos.x = intplGetValue(4, p->gaugeTimer, 30, 0.0f, -1000.f);
             if (p->gaugeTimer >= 30) {
                 p->gaugeState = 3;
                 p->gaugeTimer = 0;
@@ -686,7 +631,6 @@ void main_gauge(void) {
 
 #pragma dont_inline on
 // .text:0x1EE0 | 0x80244ED8 | size: 0xB8
-// NONMATCHING (85.22%): 1 instruction differs, 3 missing, 6 extra, plus register differences.
 void main_timing(s32 idx) {
     DekaWork* p = get_ptr();
     DekaTiming* t = &p->timing[idx];
@@ -714,12 +658,6 @@ void main_timing(s32 idx) {
 
 #pragma dont_inline on
 // .text:0x1640 | 0x80244638 | size: 0x89C
-// The int->float magic now resolves at vec3_803004f8+0x138 through the same base
-// register as the named reads, so the extra base copy is gone. The remaining diff is
-// the state-11 launch velocity: the original keeps starTarget.y in f2 and the 0.5
-// factor in f1, ours the other way, plus two scheduling ties (the state-10 `li` order
-// and the yukaUnk float_4 load).
-// NONMATCHING (98.15%): the velocity FPR f1/f2 swap and two scheduling ties.
 static void main_star(void) {
     DekaWork* p = get_ptr();
     BattleUnit* mario = BattleGetMarioPtr(_battleWorkPointer);
@@ -730,13 +668,13 @@ static void main_star(void) {
     case 1:
         p->starState = 2;
         p->starTimer = 0;
-        p->starEffect = effStarStoneEntry(0, float_0_80421e8c, float_neg1000_80421eb4, float_0_80421e8c, float_1_80421e88);
+        p->starEffect = effStarStoneEntry(0, 0.0f, -1000.f, 0.0f, 1.0f);
         BtlUnit_GetPos(mario, &p->starPos.x, &p->starPos.y, &p->starPos.z);
-        p->starPos.y += mario->mSizeMultiplier * (f32)mario->mHeight + float_37_80421eb8;
+        p->starPos.y += mario->mSizeMultiplier * (f32)mario->mHeight + 37.0f;
         p->starPrev = p->starPos;
         p->starTarget = p->starPos;
-        p->starTarget.y += float_50_80421ebc;
-        p->starTarget.z += float_neg1_80421e94;
+        p->starTarget.y += 50.f;
+        p->starTarget.z += -1.0f;
         p->starScale = vec3_80300540;
         p->starRot = vec3_8030054c;
         /* fallthrough */
@@ -747,7 +685,7 @@ static void main_star(void) {
             p->starPos.y = intplGetValue(0, p->starTimer, 100, p->starPrev.y, p->starTarget.y);
             p->starPos.z = intplGetValue(0, p->starTimer, 100, p->starPrev.z, p->starTarget.z);
             {
-                f32 s = intplGetValue(0, p->starTimer, 100, float_0_80421e8c, float_2_80421e7c);
+                f32 s = intplGetValue(0, p->starTimer, 100, 0.0f, 2.0f);
                 p->starScale.z = s;
                 p->starScale.y = s;
                 p->starScale.x = s;
@@ -756,18 +694,18 @@ static void main_star(void) {
             p->starPos.x = p->starTarget.x;
             p->starPos.y = p->starTarget.y;
             p->starPos.z = p->starTarget.z;
-            p->starScale.z = float_2_80421e7c;
-            p->starScale.y = float_2_80421e7c;
-            p->starScale.x = float_2_80421e7c;
+            p->starScale.z = 2.0f;
+            p->starScale.y = 2.0f;
+            p->starScale.x = 2.0f;
         }
-        p->starRot.y = intplGetValue(4, p->starTimer, 120, float_0_80421e8c, float_2160_80421ec0);
+        p->starRot.y = intplGetValue(4, p->starTimer, 120, 0.0f, 2160.f);
         if (p->starTimer >= 120) {
             p->starState = 3;
             p->starTimer = 0;
             p->starPrev = p->starPos;
-            p->starTarget.x = float_neg100_80421ec4;
-            p->starTarget.y = float_30_80421e70;
-            p->starTarget.z = float_50_80421ebc;
+            p->starTarget.x = -100.f;
+            p->starTarget.y = 30.f;
+            p->starTarget.z = 50.f;
         }
         break;
     case 3:
@@ -784,7 +722,7 @@ static void main_star(void) {
         p->starState = 7;
         p->starTimer = 0;
         p->starUnk44 = p->starUnk48 = p->starScale.x;
-        p->starUnk48 += float_1_80421e88;
+        p->starUnk48 += 1.0f;
         psndSFXOn("SFX_BTL_SAC_DOKKAN4");
         if (audience >= 1 && audience <= 0x31) {
             BattleAudienceSoundCallKind(1);
@@ -811,7 +749,7 @@ static void main_star(void) {
         p->starScale.z = s;
         p->starScale.y = s;
         p->starScale.x = s;
-        p->starPos.y = float_12p5_80421ec8 * (p->starScale.y - float_2_80421e7c) + float_30_80421e70;
+        p->starPos.y = 12.5f * (p->starScale.y - 2.0f) + 30.f;
         if (p->starTimer >= 0x2B) {
             p->starState = 5;
             p->starTimer = 0;
@@ -823,7 +761,7 @@ static void main_star(void) {
         p->starState = 9;
         p->starTimer = 0;
         p->starUnk44 = p->starUnk48 = p->starScale.x;
-        p->starUnk48 = float_2_80421e7c;
+        p->starUnk48 = 2.0f;
         /* fallthrough */
     case 9: {
         DekaTableInt11 tbl;
@@ -834,7 +772,7 @@ static void main_star(void) {
         p->starScale.z = s;
         p->starScale.y = s;
         p->starScale.x = s;
-        p->starPos.y = float_12p5_80421ec8 * (p->starScale.y - float_2_80421e7c) + float_30_80421e70;
+        p->starPos.y = 12.5f * (p->starScale.y - 2.0f) + 30.f;
         if (p->starTimer >= 0x2B) {
             p->starState = 5;
             p->starTimer = 0;
@@ -845,7 +783,7 @@ static void main_star(void) {
     case 10:
         p->starState = 11;
         p->starTarget.y = p->starPos.y;
-        p->starVel = float_5_80421e60;
+        p->starVel = 5.0f;
         p->starTimer = 0;
         p->starCounter = 0;
         /* fallthrough */
@@ -855,16 +793,16 @@ static void main_star(void) {
         s32 j;
 
         p->starPos.y = p->starPos.y + p->starVel;
-        p->starVel = p->starVel + float_neg0p5_80421ecc;
+        p->starVel += -0.5f;
         if (p->starPos.y < p->starTarget.y) {
             tblA = dat_803005b0;
             tblB = dat_803005c8;
             p->starCounter++;
 #ifdef MUST_MATCH
-            btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], float_0_80421e8c);
+            btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], 0.0f);
             psndSFXOn("SFX_BTL_SAC_DOKKAN5");
 #else
-            btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], float_0_80421e8c);
+            btl_camera_shake_h(0, 20, 0, (f32)p->starCounter * tblA.v[p->combo], 0.0f);
             psndSFXOn("SFX_BTL_SAC_DOKKAN5");
 #endif
             for (j = 0; j < 2; j++) {
@@ -872,17 +810,17 @@ static void main_star(void) {
                 for (i = 0; i < 6; i++) {
                     if (p->yukaActive[i] == 0) {
                         p->yukaActive[i] = 1;
-                        p->yukaPos[i] = float_2_80421e7c;
+                        p->yukaPos[i] = 2.0f;
                         if (j == 1) {
-                            p->yukaPos[i] *= float_neg1_80421e94;
+                            p->yukaPos[i] *= -1.0f;
                         }
                         if (j == 0) {
                             p->yukaIndex[i] = 0x2A;
                         } else {
                             p->yukaIndex[i] = 0x29;
                         }
-                        p->yukaScale[i] = float_43_80421ed0;
-                        p->yukaUnk[i] = (f32)p->starCounter * tblB.v[p->combo] + float_4_80421e64;
+                        p->yukaScale[i] = 43.0f;
+                        p->yukaUnk[i] = (f32)p->starCounter * tblB.v[p->combo] + 4.0f;
                         break;
                     }
                 }
@@ -892,10 +830,10 @@ static void main_star(void) {
                 p->starTimer = 30;
                 p->starTarget = p->starPos;
                 p->starPrev = p->starTarget;
-                p->starTarget.y += float_40_80421e68;
+                p->starTarget.y += 40.f;
             } else {
-                f32 x = float_4_80421e64 * (f32)p->starCounter + float_20_80421e74;
-                f32 half = float_0p5_80421e54;
+                f32 x = 4.0f * (f32)p->starCounter + 20.f;
+                f32 half = 0.5f;
 #ifdef MUST_MATCH
                 // Match shape: naming the half*x product keeps MWCC's multiply order as the
                 // original's; the natural form below is the same arithmetic.
@@ -904,9 +842,9 @@ static void main_star(void) {
 
                 p->starPos.y = p->starTarget.y;
 #ifdef MUST_MATCH
-                p->starVel = hx * x / (float_2_80421e7c * x);
+                p->starVel = hx * x / (2.0f * x);
 #else
-                p->starVel = half * x * x / (float_2_80421e7c * x);
+                p->starVel = half * x * x / (2.0f * x);
 #endif
             }
         }
@@ -925,7 +863,7 @@ static void main_star(void) {
         if (p->starTimer > 30) {
             p->starTimer = 30;
         }
-        alpha = (s32)intplGetValue(0, p->starTimer, 30, float_255_80421e98, float_0_80421e8c);
+        alpha = (s32)intplGetValue(0, p->starTimer, 30, 255.0f, 0.0f);
         break;
     default:
         break;
@@ -940,7 +878,7 @@ static void main_star(void) {
         d->unk18.x = p->starRot.x;
         d->unk18.y = p->starRot.y;
         d->unk18.z = p->starRot.z;
-        d->unk14 = float_1p5_80421ed4 * p->starScale.x;
+        d->unk14 = 1.5f * p->starScale.x;
         d->unk5F = (u8)alpha;
     }
 }
@@ -985,21 +923,21 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
     s32 j;
 
     unit->mRotationOffset = unit->offsetCenter;
-    p->enemyVel[*count].y -= float_1p25_80421ea4;
+    p->enemyVel[*count].y -= 1.25f;
 
     x = unit->mPosition.x;
-    if (x >= float_250_80421ea8) {
-        cx = float_250_80421ea8;
+    if (x >= 250.f) {
+        cx = 250.f;
     }
-    else if (x <= float_0_80421e8c) {
-        cx = float_0_80421e8c;
+    else if (x <= 0.0f) {
+        cx = 0.0f;
     }
     else {
         cx = x;
     }
 
     for (j = 0x40; j < 0x81; j++) {
-        f32 step = (f32)p->width * float_0p0078125_80421eac;
+        f32 step = (f32)p->width / 128.0f;
         f32 xj = p->plane0.x + step * (f32)j;
 
         if (cx >= xj) {
@@ -1018,19 +956,19 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
 #endif
 
                 if (unit->mPosition.y < groundY) {
-                    if ((unit->mAttributeFlags & kCeiling) && groundY < float_120_80421eb0) {
+                    if ((unit->mAttributeFlags & kCeiling) && groundY < 120.f) {
                         break;
                     }
 #ifdef MUST_MATCH
-                    if (*(f32*)(row + 0x1834) > float_0_80421e8c) {
+                    if (*(f32*)(row + 0x1834) > 0.0f) {
 #else
-                    if (mesh->normal[0][j].y > float_0_80421e8c) {
+                    if (mesh->normal[0][j].y > 0.0f) {
 #endif
                         BattleUnitPart* part;
                         s32 partId;
 
-                        if (p->enemyVel[*count].y < float_0_80421e8c) {
-                            p->enemyVel[*count].y = float_0_80421e8c;
+                        if (p->enemyVel[*count].y < 0.0f) {
+                            p->enemyVel[*count].y = 0.0f;
                         }
                         unit->mPosition.y = groundY;
 #ifdef MUST_MATCH
@@ -1038,15 +976,15 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
                         // the two stores, as the original does; the natural form below
                         // schedules it after them.
                         {
-                            f32 half = float_0p5_80421e54;
-                            unit->mRotation.z = float_0_80421e8c;
-                            p->enemyUnk[*count] = float_0_80421e8c;
+                            f32 half = 0.5f;
+                            unit->mRotation.z = 0.0f;
+                            p->enemyUnk[*count] = 0.0f;
                             p->enemyVel[*count].y += half * *(f32*)(row + 0x1834);
                         }
 #else
-                        unit->mRotation.z = float_0_80421e8c;
-                        p->enemyUnk[*count] = float_0_80421e8c;
-                        p->enemyVel[*count].y += float_0p5_80421e54 * mesh->normal[0][j].y;
+                        unit->mRotation.z = 0.0f;
+                        p->enemyUnk[*count] = 0.0f;
+                        p->enemyVel[*count].y += 0.5f * mesh->normal[0][j].y;
 #endif
 
                         partId = BtlUnit_GetBodyPartsId(unit);
@@ -1055,12 +993,12 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
                             if (!(unit->mAttributeFlags & kInactive) && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
                                 BtlUnit_SetAnimType(part, 0x27);
                             }
-                            effSmallStarEntry(0, 2, cx, unit->mPosition.y, unit->mPosition.z, float_0_80421e8c, float_neg1_80421e94, float_0_80421e8c);
+                            effSmallStarEntry(0, 2, cx, unit->mPosition.y, unit->mPosition.z, 0.0f, -1.0f, 0.0f);
                             BtlUnit_snd_se(unit, unit->mKindParams->damageSfxName, 0xF1194D80, 0);
                             if (!(unit->mAttributeFlags & 0x200000) && !(unit->mAttributeFlags & kInactive) && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
-                                p->enemyUnk[*count] = float_20_80421e74;
+                                p->enemyUnk[*count] = 20.f;
                                 if (irand(2) == 0) {
-                                    p->enemyUnk[*count] *= float_neg1_80421e94;
+                                    p->enemyUnk[*count] *= -1.0f;
                                 }
                             }
                         }
@@ -1085,20 +1023,20 @@ void main_enemy_sub(BattleUnit* unit, s32* count) {
 
         if (py < hy) {
             unit->mPosition.y = hy;
-            p->enemyVel[*count].y = float_0_80421e8c;
+            p->enemyVel[*count].y = 0.0f;
             if (!(unit->mAttributeFlags & kInactive) && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
-                unit->mRotation.z = float_0_80421e8c;
-                p->enemyUnk[*count] = float_0_80421e8c;
+                unit->mRotation.z = 0.0f;
+                p->enemyUnk[*count] = 0.0f;
             }
         }
     }
 #else
     if (unit->mPosition.y < unit->mHomePosition.y) {
         unit->mPosition.y = unit->mHomePosition.y;
-        p->enemyVel[*count].y = float_0_80421e8c;
+        p->enemyVel[*count].y = 0.0f;
         if (!(unit->mAttributeFlags & kInactive) && !BtlUnit_CheckStatus(unit, STATUS_INSTANT_KILL)) {
-            unit->mRotation.z = float_0_80421e8c;
-            p->enemyUnk[*count] = float_0_80421e8c;
+            unit->mRotation.z = 0.0f;
+            p->enemyUnk[*count] = 0.0f;
         }
     }
 #endif
@@ -1125,8 +1063,8 @@ s32 end_deka(EventEntry* event) {
 // cursor `DekaTiming* t;` *before* `s32 i;` (each loop then assigns it after a leading `f32 x;`
 // declaration) all steer MWCC's GPR/FPR colouring and constant hoisting; dropping any of them
 // regresses the score. The MUST_MATCH shapes that recover the original's FPR colouring are: the
-// `ratio` temp in each loop, the volatile `float_1_80421e88` read at the resting-note scale, the
-// `volatile` GXColor `color` (own stack slot), the `y = gaugePos.y - float_18` temp in each note
+// `ratio` temp in each loop, the
+// `volatile` GXColor `color` (own stack slot), the `y = gaugePos.y - 18.0f` temp in each note
 // transform, and the `y = gaugePos.y` temp at the beat bar. The natural forms are under #else.
 // .text:0xAA8 | 0x80243AA0 | size: 0x6B0
 static void disp_2D(CameraId cameraId, void* param) {
@@ -1150,7 +1088,7 @@ static void disp_2D(CameraId cameraId, void* param) {
 
     f32 mid = p->gaugePos.x;
     f32 e8 = 8.0f;
-    f32 hw = float_0p5_80421e54 * p->gaugeWidth;
+    f32 hw = 0.5f * p->gaugeWidth;
     left = mid - hw - e8;
     right = mid + hw + e8;
 
@@ -1164,22 +1102,22 @@ static void disp_2D(CameraId cameraId, void* param) {
 #ifdef MUST_MATCH
         // Match trick: spell the expression out so MWCC rematerialises left here instead of
         // `fmr`ing f28; the original recomputes it at this call. Natural form under #else.
-        PSMTXTrans(mtx, p->gaugePos.x - float_0p5_80421e54 * p->gaugeWidth - e8, p->gaugePos.y, p->gaugePos.z);
+        PSMTXTrans(mtx, p->gaugePos.x - 0.5f * p->gaugeWidth - e8, p->gaugePos.y, p->gaugePos.z);
 #else
         PSMTXTrans(mtx, left, p->gaugePos.y, p->gaugePos.z);
 #endif
         btlDispTexPlane2(mtx, 0x43, color, 0);
 
-        PSMTXScale(scale, p->gaugeWidth * float_0p25_80421e58, float_1_80421e88, float_1_80421e88);
+        PSMTXScale(scale, p->gaugeWidth / 4.0f, 1.0f, 1.0f);
         PSMTXTrans(trans, p->gaugePos.x, p->gaugePos.y, p->gaugePos.z);
         PSMTXConcat(trans, scale, mtx);
         btlDispTexPlane2(mtx, 0x44, color, 0);
 
-        PSMTXScale(scale, float_neg1_80421e94, float_1_80421e88, float_1_80421e88);
+        PSMTXScale(scale, -1.0f, 1.0f, 1.0f);
 #ifdef MUST_MATCH
         // Same trick as the first plane: spell `right` out so it is rematerialised here rather than
         // reusing the live register (worth ~40 instructions of colouring drift).
-        PSMTXTrans(trans, float_0p5_80421e54 * p->gaugeWidth + p->gaugePos.x + float_8_80421e90, p->gaugePos.y, p->gaugePos.z);
+        PSMTXTrans(trans, 0.5f * p->gaugeWidth + p->gaugePos.x + 8.0f, p->gaugePos.y, p->gaugePos.z);
 #else
         PSMTXTrans(trans, right, p->gaugePos.y, p->gaugePos.z);
 #endif
@@ -1190,20 +1128,20 @@ static void disp_2D(CameraId cameraId, void* param) {
     if (p->gaugeState >= 2 && p->gaugeState <= 5) {
         f32 ratio = p->beatPos / p->beatPeriod;
 
-        if (ratio >= float_0_80421e8c && ratio <= float_1_80421e88) {
+        if (ratio >= 0.0f && ratio <= 1.0f) {
             btlDispGXInit2DRasta();
             GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
 #ifdef MUST_MATCH
-            // Match shape: the `y` temp reproduces the target's load order (f5=y, f4=float_8).
+            // Match shape: the `y` temp reproduces the target's load order (f5=y, f4=8.0f).
             {
                 f32 y = p->gaugePos.y;
-                btlDispGXQuads2DRasta(left, float_8_80421e90 + y,
-                    ratio * (right - left) + left, y - float_8_80421e90,
+                btlDispGXQuads2DRasta(left, 8.0f + y,
+                    ratio * (right - left) + left, y - 8.0f,
                     0xFF, 0, 0, p->gaugeAlpha);
             }
 #else
-            btlDispGXQuads2DRasta(left, float_8_80421e90 + p->gaugePos.y,
-                ratio * (right - left) + left, p->gaugePos.y - float_8_80421e90,
+            btlDispGXQuads2DRasta(left, 8.0f + p->gaugePos.y,
+                ratio * (right - left) + left, p->gaugePos.y - 8.0f,
                 0xFF, 0, 0, p->gaugeAlpha);
 #endif
         }
@@ -1234,31 +1172,31 @@ static void disp_2D(CameraId cameraId, void* param) {
             color = dat_80421e44;
             color.a = p->gaugeAlpha;
 #endif
-            color.a = color.a * (t->alpha / float_255_80421e98);
+            color.a = color.a * (t->alpha / 255.0f);
 
             if (t->unk08 == 1) {
-                PSMTXScale(scale, float_0p75_80421e9c, float_0p75_80421e9c, float_0p75_80421e9c);
+                PSMTXScale(scale, 0.75f, 0.75f, 0.75f);
 #ifdef MUST_MATCH
                 // Match shape: the explicit `y` temp makes MWCC emit the target's
                 // `fsubs f3,f3,f2` / `fadds f4,f3,f0` operand order.
                 {
-                    f32 y = p->gaugePos.y - float_18_80421ea0;
+                    f32 y = p->gaugePos.y - 18.0f;
                     PSMTXTrans(trans, x,
-                        float_40_80421e68 + (p->unk4C + (y + t->unk10.y)),
+                        40.f + (p->unk4C + (y + t->unk10.y)),
                         p->gaugePos.z + t->unk10.z);
                 }
 #else
                 PSMTXTrans(trans, x,
-                    float_40_80421e68 + (p->unk4C + (p->gaugePos.y - float_18_80421ea0 + t->unk10.y)),
+                    40.f + (p->unk4C + (p->gaugePos.y - 18.0f + t->unk10.y)),
                     p->gaugePos.z + t->unk10.z);
 #endif
                 PSMTXConcat(trans, scale, mtx);
                 iconDispGxCol(mtx, 0x10, 0x95, color);
             }
             else if (t->unk08 == 2) {
-                PSMTXScale(scale, float_1_80421e88, float_1_80421e88, float_1_80421e88);
+                PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
                 PSMTXTrans(trans, x,
-                    float_40_80421e68 + (p->unk4C + (p->gaugePos.y + t->unk10.y)),
+                    40.f + (p->unk4C + (p->gaugePos.y + t->unk10.y)),
                     p->gaugePos.z + t->unk10.z);
                 PSMTXConcat(trans, scale, mtx);
                 btlDispTexPlane2(mtx, 0x2C, color, 0);
@@ -1286,29 +1224,29 @@ static void disp_2D(CameraId cameraId, void* param) {
                 color = dat_80421e48;
                 color.a = p->gaugeAlpha;
 #endif
-                color.a = color.a * (t->alpha / float_255_80421e98);
+                color.a = color.a * (t->alpha / 255.0f);
 
                 if (t->unk08 == 1) {
-                    PSMTXScale(scale, float_0p75_80421e9c, float_0p75_80421e9c, float_0p75_80421e9c);
+                    PSMTXScale(scale, 0.75f, 0.75f, 0.75f);
 #ifdef MUST_MATCH
                     // Match shape: same `y` temp as the first-loop note.
                     {
-                        f32 y = p->gaugePos.y - float_18_80421ea0;
+                        f32 y = p->gaugePos.y - 18.0f;
                         PSMTXTrans(trans, x,
                             p->unk4C + (y + t->unk10.y),
                             p->gaugePos.z + t->unk10.z);
                     }
 #else
                     PSMTXTrans(trans, x,
-                        p->unk4C + (p->gaugePos.y - float_18_80421ea0 + t->unk10.y),
+                        p->unk4C + (p->gaugePos.y - 18.0f + t->unk10.y),
                         p->gaugePos.z + t->unk10.z);
 #endif
                     PSMTXConcat(trans, scale, mtx);
-                    id = p->beatPos >= t->time - float_7_80421e78 ? 0x95 : 0x91;
+                    id = p->beatPos >= t->time - 7.0f ? 0x95 : 0x91;
                     iconDispGxCol(mtx, 0x10, id, color);
                 }
                 else {
-                    PSMTXScale(scale, float_1_80421e88, float_1_80421e88, float_1_80421e88);
+                    PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
                     PSMTXTrans(trans, x,
                         p->unk4C + (p->gaugePos.y + t->unk10.y),
                         p->gaugePos.z + t->unk10.z);
@@ -1317,20 +1255,9 @@ static void disp_2D(CameraId cameraId, void* param) {
                 }
             }
 
-#ifdef MUST_MATCH
-            // Match trick: reading float_1_80421e88 through a volatile pointer makes MWCC treat it as a
-            // reloadable constant like a literal, reproducing the original's FPR colouring for the rest
-            // of the function; the plain named read under #else is the same value but colours several
-            // FPRs one register lower. Only this site needs it.
-            {
-                f32 one = *(volatile const f32*)&float_1_80421e88;
-                PSMTXScale(scale, one, one, one);
-            }
-#else
-            PSMTXScale(scale, float_1_80421e88, float_1_80421e88, float_1_80421e88);
-#endif
+            PSMTXScale(scale, 1.0f, 1.0f, 1.0f);
             PSMTXTrans(trans, x,
-                p->gaugePos.y + t->unk10.y - float_40_80421e68,
+                p->gaugePos.y + t->unk10.y - 40.f,
                 p->gaugePos.z + t->unk10.z);
             PSMTXConcat(trans, scale, mtx);
             switch (t->flag) {
@@ -1356,12 +1283,6 @@ static void disp_3D(CameraId cameraId, void* param) {}
 static void disp_3D_alpha(CameraId cameraId, void* param) {}
 
 // .text:0x83C | 0x8024380C | size: 0x28C
-// The residual is FPR allocation/scheduling: target keeps the y midpoint in f2 (so it can
-// hoist the `tan` argument load into the freed f1 before the camera stores) and emits
-// `fmuls f2,f2,f4`; ours materialises the y product in f1 and cannot hoist. Declaring the
-// three sums as named locals (`sx/sy/sz`) lifted it 94.78 -> 94.87.
-// NONMATCHING (94.87%): algorithm and every call/constant match; only that FPR/schedule
-// colouring differs.
 void yuka_capture(CameraId cameraId) {
     DekaWork* p = get_ptr();
     CameraEntry* cam = camGetPtr(cameraId);
@@ -1375,22 +1296,22 @@ void yuka_capture(CameraId cameraId) {
     sx = p->plane0.x + p->plane1.x;
     sy = p->plane0.y + p->plane1.y;
     sz = p->plane0.z + p->plane1.z;
-    target.x = sx * float_0p5_80421e54;
-    target.y = sy * float_0p5_80421e54;
-    target.z = sz * float_0p5_80421e54;
+    target.x = sx / 2.0f;
+    target.y = sy / 2.0f;
+    target.z = sz / 2.0f;
 
     cam->cameraUp = vec3_803005e0;
     cam->cameraPos = target;
     cam->cameraAt = cam->cameraPos;
 
     t = (f32)tan(0.21816615760326385);
-    cam->cameraPos.y += (f32)p->height * float_0p5_80421e54 / t;
+    cam->cameraPos.y += (f32)p->height / 2.0f / t;
 
     C_MTXLookAt(cam->view, (Point3d*)&cam->cameraPos, &cam->cameraUp, (Point3d*)&cam->cameraAt);
-    C_MTXPerspective(cam->projection, float_25_80421e84, (f32)p->width / (f32)p->height, float_1_80421e88, float_32767_80421e6c);
+    C_MTXPerspective(cam->projection, 25.0f, (f32)p->width / (f32)p->height, 1.0f, 32767.0f);
     cam->projType = GX_PERSPECTIVE;
     GXSetProjection(cam->projection, cam->projType);
-    GXSetViewport(float_0_80421e8c, float_0_80421e8c, (f32)p->texWidth, (f32)p->texHeight, float_0_80421e8c, float_1_80421e88);
+    GXSetViewport(0.0f, 0.0f, (f32)p->texWidth, (f32)p->texHeight, 0.0f, 1.0f);
     GXSetScissor(0, 0, p->texWidth, p->texHeight);
     test_kururing_mapdisp(cameraId);
     sysWaitDrawSync();
@@ -1471,15 +1392,9 @@ static DekaWork* get_ptr(void) {
 #pragma dont_inline reset
 
 // .text:0x4BC | 0x8024327C | size: 0x354
-// 100%: the loop-1 and final scratch FPRs are pinned by writing the literal
-// 30.0f / 7.0f / 2.0f / 70.0f where the named .sdata2 constants would be used. A
-// literal is a constant node and the named constant is an extern load, so MWCC colours
-// the surrounding float temporaries one register lower for the named form; the literals
-// hold the same values and pool to the same slots (objdiff normalises those symbols).
-// The MUST_MATCH block also hoists the scan loop's two clamp bounds as callee-saved
+// The MUST_MATCH block hoists the scan loop's two clamp bounds as callee-saved
 // locals (30 in f30, 20 in f31) and gives tm/tj function scope, which reproduces the
-// original's registers. The int->float magic stays the compiler's local @668 instead of
-// double_to_int_80300630 (objdiff ignores that reloc).
+// original's registers.
 void create_timing(void) {
     DekaWork* p = get_ptr();
     s32 idx[8];
@@ -1495,6 +1410,7 @@ void create_timing(void) {
     s32 tidx;
     s32 tries;
     f32 f;
+    f32 w = 64.0f;
 #ifdef MUST_MATCH
     // Declared in this order and initialised 30-then-20 they land in f30/f31.
     f32 c20;
@@ -1506,8 +1422,8 @@ void create_timing(void) {
 restart:
     n = p->beatCount + 3;
 #ifdef MUST_MATCH
-    c30 = float_30_80421e70;
-    c20 = float_20_80421e74;
+    c30 = 30.f;
+    c20 = 20.f;
 #endif
     for (i = 0; i < 8; i++) {
         ti = &p->timing[i];
@@ -1520,22 +1436,22 @@ restart:
             ti->unk08 = 1;
 #ifdef MUST_MATCH
             fr = (f32)rand();
-            d = (p->beatPeriod - float_40_80421e68);
-            f = d * fr / float_32767_80421e6c;
+            d = (p->beatPeriod - 40.f);
+            f = d * fr / 32767.0f;
 #else
-            f = (p->beatPeriod - float_40_80421e68) * (f32)rand() / float_32767_80421e6c;
+            f = (p->beatPeriod - 40.f) * (f32)rand() / 32767.0f;
 #endif
 #ifdef MUST_MATCH
             if (f <= 30.0f) {
                 f = 30.0f;
             }
 #else
-            if (f <= float_30_80421e70) {
-                f = float_30_80421e70;
+            if (f <= 30.f) {
+                f = 30.f;
             }
 #endif
-            if (f >= p->beatPeriod - float_20_80421e74) {
-                f = p->beatPeriod - float_20_80421e74;
+            if (f >= p->beatPeriod - 20.f) {
+                f = p->beatPeriod - 20.f;
             }
             ti->time = f;
             ti->state = 2;
@@ -1564,7 +1480,7 @@ scan:
                 continue;
             }
             if (__fabs(tj->time - tm->time) <= 15.75) {
-                f = p->beatPeriod * (f32)rand() / float_32767_80421e6c;
+                f = p->beatPeriod * (f32)rand() / 32767.0f;
 #ifdef MUST_MATCH
                 if (f <= c30) {
                     f = c30;
@@ -1573,11 +1489,11 @@ scan:
                     f = p->beatPeriod - c20;
                 }
 #else
-                if (f <= float_30_80421e70) {
-                    f = float_30_80421e70;
+                if (f <= 30.f) {
+                    f = 30.f;
                 }
-                if (f >= p->beatPeriod - float_20_80421e74) {
-                    f = p->beatPeriod - float_20_80421e74;
+                if (f >= p->beatPeriod - 20.f) {
+                    f = p->beatPeriod - 20.f;
                 }
 #endif
                 tm->time = f;
@@ -1612,8 +1528,8 @@ scan:
 #ifdef MUST_MATCH
     f = p->beatPeriod - 7.0f - 2.0f;
 #else
-    f = p->beatPeriod - float_7_80421e78;
-    f = f - float_2_80421e7c;
+    f = p->beatPeriod - 7.0f;
+    f = f - 2.0f;
 #endif
     p->timing[idx[n - 1]].time = f;
 #ifdef MUST_MATCH
@@ -1621,8 +1537,8 @@ scan:
         p->timing[idx[0]].time = 70.0f;
     }
 #else
-    if (p->timing[idx[0]].time > float_70_80421e80) {
-        p->timing[idx[0]].time = float_70_80421e80;
+    if (p->timing[idx[0]].time > 70.f) {
+        p->timing[idx[0]].time = 70.f;
     }
 #endif
 }
@@ -1640,20 +1556,20 @@ s32 wait_star_stone_take_on(EventEntry* event) {
 }
 
 // .text:0x1F8 | 0x802431F0 | size: 0x2C
-s32 start_game(EventEntry* event) {
+static s32 start_game(EventEntry* event) {
     DekaWork* p = get_ptr();
     p->baseState = 1;
     return 2;
 }
 
 // .text:0x1C0 | 0x802431B8 | size: 0x38
-s32 wait_game_end(EventEntry* event) {
+static s32 wait_game_end(EventEntry* event) {
     DekaWork* p = get_ptr();
     return (u32)(p->baseState - 5u) <= 0 ? 2 : 0;
 }
 
 // .text:0x1C0 | 0x8024318C | size: 0x24
-s32 star_stone_appear(EventEntry* event) {
+static s32 star_stone_appear(EventEntry* event) {
     DekaWork* p = get_ptr();
     p->starState = 1;
     return 2;
@@ -1665,28 +1581,29 @@ s32 get_ride_pos(EventEntry* event) {
     s32* args = event->args;
     s32 flag = evtGetValue(event, args[0]);
     f32 f;
+    f32 w = 64.0f;
 
     if (flag == 0) {
         s32 a = args[1];
         args += 2;
-        f = p->starScale.x * float_64_80421e5c * float_0p25_80421e58;
-        evtSetFloat(event, a, float_0p5_80421e54 * f + p->starPos.x);
+        f = p->starScale.x * w * 0.25f;
+        evtSetFloat(event, a, 0.5f * f + p->starPos.x);
     }
     else {
         s32 a = args[1];
         args += 2;
-        f = p->starScale.x * float_64_80421e5c * float_0p25_80421e58;
-        evtSetFloat(event, a, p->starPos.x - float_0p5_80421e54 * f);
+        f = p->starScale.x * w * 0.25f;
+        evtSetFloat(event, a, p->starPos.x - 0.5f * f);
     }
 
-    f = float_0p25_80421e58 * (p->starScale.y * float_64_80421e5c);
-    evtSetFloat(event, args[0], float_0p25_80421e58 * f + p->starPos.y);
-    evtSetFloat(event, args[1], float_4_80421e64 * p->starScale.z + (float_5_80421e60 + p->starPos.z));
+    f = 0.25f * (p->starScale.y * w);
+    evtSetFloat(event, args[0], 0.25f * f + p->starPos.y);
+    evtSetFloat(event, args[1], (5.0f + p->starPos.z) + 4.0f * p->starScale.z);
     return 2;
 }
 
 // .text:0x44 | 0x8024303C | size: 0x54
-s32 star_stone_attack(EventEntry* event, s32 arg) {
+static s32 star_stone_attack(EventEntry* event, s32 arg) {
     DekaWork* p = get_ptr();
     if (arg != 0) {
         p->starState = 10;
@@ -1839,49 +1756,6 @@ u32 dmg_evt[100] = {
     0x00010004, 0x0000000A, 0x00000002, 0x00000001,
 };
 
-// Trailing section gap (all zero).
-#pragma explicit_zero_data on
-#pragma force_active on
-__declspec(section ".data") static u32 gap_05_803B4844_data[7] = { 0 };
-#pragma force_active reset
-#pragma explicit_zero_data reset
 
 
 // ---- constant definitions (at end so uses emit symbol relocs) ----
-const f32 float_40_80421e68 = 40.0f;
-const f32 float_32767_80421e6c = 32767.0f;
-const f32 float_30_80421e70 = 30.0f;
-const f32 float_20_80421e74 = 20.0f;
-const f32 float_7_80421e78 = 7.0f;
-const f32 float_2_80421e7c = 2.0f;
-const f32 float_70_80421e80 = 70.0f;
-const f32 float_25_80421e84 = 25.0f;
-const f32 float_1_80421e88 = 1.0f;
-const f32 float_0_80421e8c = 0.0f;
-const f32 float_8_80421e90 = 8.0f;
-const f32 float_neg1_80421e94 = -1.0f;
-const f32 float_255_80421e98 = 255.0f;
-const f32 float_0p75_80421e9c = 0.75f;
-const f32 float_18_80421ea0 = 18.0f;
-const f32 float_1p25_80421ea4 = 1.25f;
-const f32 float_250_80421ea8 = 250.0f;
-const f32 float_0p0078125_80421eac = 0.0078125f;
-const f32 float_120_80421eb0 = 120.0f;
-const f32 float_neg1000_80421eb4 = -1000.0f;
-const f32 float_37_80421eb8 = 37.0f;
-const f32 float_50_80421ebc = 50.0f;
-const f32 float_2160_80421ec0 = 2160.0f;
-const f32 float_neg100_80421ec4 = -100.0f;
-const f32 float_12p5_80421ec8 = 12.5f;
-const f32 float_neg0p5_80421ecc = -0.5f;
-const f32 float_43_80421ed0 = 43.0f;
-const f32 float_1p5_80421ed4 = 1.5f;
-const f32 float_500_80421ed8 = 500.0f;
-const f32 float_180_80421edc = 180.0f;
-const f32 float_0p8_80421ee0 = 0.8f;
-const f32 float_0p1_80421ee4 = 0.1f;
-const f32 float_683_80421ee8 = 683.0f;
-const f32 float_4096_80421eec = 4096.0f;
-const f32 float_neg40_80421ef0 = -40.0f;
-const f32 float_0p01_80421ef4 = 0.01f;
-const f32 float_901_80421ef8 = 901.0f;
