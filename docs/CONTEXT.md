@@ -6653,3 +6653,27 @@ also told to write down the old framing's assumptions and question them first. S
 - **_sscallback 99.29:** retail keeps one late copy of buffer1 in r6 that is never coalesced into the decoder call's r5;
   every single-copy version is coalesced. Copy loops as inlines, copy orders/types: 93.8-97.5; whole body as inline
   (not inlined, 1.5-2.1); natural code 97.73. mwsearch 40 min per function (~16-17k compiles each), nothing.
+
+### win_root partial: 55/65 -> 63/65, eight GX/disp functions to 100 (Claude Opus 5.5)
+- **winNameGX 99.31:** quads written out with the kirinuki scale/vertex macros (#764/#753), one `yscale` for the whole
+  function, a per-branch cap `size`, named right-edge locals rx/rr (Grind 45).
+- **winBookGX 91.6 / winHalfBookGX 95.92:** one shared `winBookQuad(pal, id, x, y, f64 w, f64 h)` textured-quad helper
+  (#478); last rows closed by declaring `f64 sx; f64 sy;` in that order. **winMailGX 99.83:** its quads through
+  winBookQuad, so the texture-setup zeros are plain 0.0f instead of reads of the named zero constant.
+- **winRootMain 99.61:** the tab loop as `static inline winRootTabMain` (mobj_switch_float_blk). **winRootDisp 97.74:**
+  `(Vec){...}` compound literals and the tab-draw loop as a static inline defined after its caller. **winMsgDisp 99.81:**
+  ty/fy assigned inside the call arguments, function-scope ty/ix/width. **winMailDisp 99.25:** mail texture ids as a
+  file-local WinMailTex enum (badge_disp #657), colour locals after `num`.
+- Removed match-only pieces: hakoQuad, winMailQuad, winNameQuad, winSortMkVec, winHalfBookPage, the double-constant
+  macros, ROOT_VEC statics, a MUST_MATCH extern block. `luigi_book_list` declared `extern const char** ...[]` (was
+  [5]) for retail's lis/addi.
+- **Open: winSortGX 98.71** (label Vecs as compound literals fixed every stack slot, 98 -> 59 rows). Retail keeps the
+  0xA3 panel's right edge `(x+128)+24` alive across the loop for the 0xA4 panel while recomputing `x+128`, and doesn't
+  hoist the texture-setup zero: probably the original's frontend CSE grouping; compare frontend dumps next. Failed:
+  literal/named 128 offsets (best 98.95, more rows), named x2, named Vec locals, winBookQuad directly.
+- **Open: winHakoGX 91.30 -> 94.65** (quads via winBookQuad; `row` uninitialised under MUST_MATCH since retail reads it
+  before setting it on page 0, natural build initialises 0; type checks test `texBase` since retail compares type*13;
+  `x + 392.0f`, `(y - 224.0f) + scroll` inline). Retail spills tile ids t7d/t7e/t85/t84 and loads them once before the
+  bottom and right edge loops: explicit per-loop copies in the original? Failed: all float declaration orders; rasim
+  local order (8 wrong, spill costs 129 vs 131); `texBase + 0x7D` at uses (90.74); `type *= 13`; tile-id inlines.
+- **Link after those two:** .sdata2 order needs the named float/colour constants ported to literals.

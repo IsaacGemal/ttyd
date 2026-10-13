@@ -103,7 +103,6 @@ extern ItemData itemDataTable[];
 
 extern SortTable* sort_data[8];
 
-static const GXColor dat_8041ced8 = {0xFF, 0xFF, 0xFF, 0xFF};
 static const GXColor dat_8041cedc = {0x00, 0x00, 0x00, 0x80};
 static const GXColor dat_8041cee0 = {0xFF, 0xFF, 0xFF, 0xFE};
 static const GXColor dat_8041cee4 = {0x80, 0x80, 0x80, 0xFE};
@@ -197,69 +196,6 @@ extern const f32 float_8_8041d0a0;
         GXLoadTexMtxImm(mtx, 0x1E, 1); \
     }
 
-// One name-plate half: a textured quad from (x,y) to (x+w,y-h), with the texture
-// stretched across it. The scales are f64 because the original uses the double
-// __fabs() (not the fabsf() of windowdrv.c); the (f32) conversion happens at the
-// division, matching the target's frsp placement.
-static inline void winNameQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f32 h) {
-    GXTexObj texObj;
-    Mtx mtx;
-    f64 sy;
-    f64 sx;
-    f32 syf;
-
-    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, texId);
-    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
-    GXLoadTexObj(&texObj, 0);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-    sy = __fabs(h);
-    sx = __fabs(w);
-    syf = (f32)sy / (f32)GXGetTexObjHeight(&texObj);
-    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), syf, float_1_8041d070);
-    GXLoadTexMtxImm(mtx, 0x1E, 1);
-    GXBegin(0x80, 0, 4);
-    GXPosition3f32(x, y, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(x, y - h, 0.0f);
-    GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(x + w, y - h, 0.0f);
-    GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(x + w, y, 0.0f);
-    GXTexCoord2f32(1.0f, 0.0f);
-}
-
-// The name plate used by win_mario's partner menu: two inlined winNameQuad halves.
-// type 0/1 are the 32px-tall name bar (16px cap on the right), type 2 the 24px
-// tall bar used by the partner panels (8px cap).
-static inline void nameQuadTw(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f32 h) {
-    GXTexObj texObj;
-    Mtx mtx;
-    f32 syf;
-    f64 sy;
-    f64 sx;
-
-    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, texId);
-    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
-    GXLoadTexObj(&texObj, 0);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-    sy = __fabs(h);
-    sx = __fabs(w);
-    syf = (f32)sy / (f32)GXGetTexObjHeight(&texObj);
-    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), syf, float_1_8041d070);
-    GXLoadTexMtxImm(mtx, 0x1E, 1);
-    GXBegin(0x80, 0, 4);
-    GXPosition3f32(x, y, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(x, y - h, 0.0f);
-    GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(x + w, y - h, 0.0f);
-    GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(x + w, y, 0.0f);
-    GXTexCoord2f32(1.0f, 0.0f);
-}
-
 extern const f32 float_neg240_8041d078;
 extern const f32 float_4_8041d07c;
 extern const f32 float_208_8041d080;
@@ -332,41 +268,10 @@ static inline s32 winRootFindTag(const char* const* table, const char* tag, u8* 
     return i;
 }
 
-// winMailGX's copy of winNameQuad. The body is the same, but w and h arrive as
-// f64 so MWCC emits the target's `lfd double_<w>/<h>; fabs; frsp` scale idiom.
-// The drawn rectangles are the f32 sum chains of the caller and the f64 constants
-// fold back to the target's lfs words.
-static inline void winMailQuad(WindowWork* work, s32 texId, f32 x, f32 y, f64 w, f64 h) {
-    GXTexObj texObj;
-    Mtx mtx;
-    f64 sx;
-    f64 sy;
-
-    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, texId);
-    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
-    GXLoadTexObj(&texObj, 0);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-    sy = __fabs(h);
-    sx = __fabs(w);
-    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), (f32)sy / (f32)GXGetTexObjHeight(&texObj), float_1_8041d070);
-    GXLoadTexMtxImm(mtx, 0x1E, 1);
-    GXBegin(0x80, 0, 4);
-    GXPosition3f32(x, y, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(x, y - (f32)h, 0.0f);
-    GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(x + (f32)w, y - (f32)h, 0.0f);
-    GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(x + (f32)w, y, 0.0f);
-    GXTexCoord2f32(1.0f, 0.0f);
-}
-
 // ---- winHakoGX ------------------------------------------------------------
 // The item/badge container window ("hako" = box). It draws a scrolling grid of
-// item tiles, an overlay of item icons, and the bottom status bar. Every tile is
-// an inlined textured quad, so it uses its own hakoQuad copy below (the same body
-// as wazaQuad, matching retail's height-then-width scale computation).
+// item tiles, an overlay of item icons, and the bottom status bar. Every frame
+// piece is an inlined winBookQuad.
 extern const f32 float_224_8041d10c;
 extern const f32 float_392_8041d110;
 extern const f32 float_400_8041d114;
@@ -382,40 +287,9 @@ extern const f32 float_380_8041d138;
 extern const f32 float_228_8041d13c;
 extern const f32 float_237_8041d140;
 
-static inline void hakoQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f32 h) {
-    GXTexObj texObj;
-    Mtx mtx;
-    f64 sy;
-    f64 sx;
-    f32 syf;
-
-    TEXGetGXTexObjFromPalette(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0), &texObj, texId);
-    GXInitTexObjLOD(&texObj, 1, 1, float_0_8041d068, float_0_8041d068, float_0_8041d068, 0, 0, 0);
-    GXLoadTexObj(&texObj, 0);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-    sy = __fabs(h);
-    sx = __fabs(w);
-    syf = (f32)sy / (f32)GXGetTexObjHeight(&texObj);
-    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), syf, float_1_8041d070);
-    GXLoadTexMtxImm(mtx, 0x1E, 1);
-    GXBegin(0x80, 0, 4);
-    GXPosition3f32(x, y, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(x, y - h, 0.0f);
-    GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(x + w, y - h, 0.0f);
-    GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(x + w, y, 0.0f);
-    GXTexCoord2f32(1.0f, 0.0f);
-}
-
-// winWazaGX's copy of winNameQuad. The only difference from winNameQuad is the
-// nested `tw` local around the width division: with the division inlined MWCC gives
-// winWazaGX's callee-saved FPRs a different colouring (w/w75/h in f26/f27/f17
-// instead of retail's f22/f23/f31) and the whole function cascades. Naming the
-// texture width first makes MWCC colour it exactly as retail. No other function uses
-// this copy, so winNameQuad stays untouched for the rest of the unit.
+// One piece of winWazaGX's frame: a textured quad from (x,y) to (x+w,y-h). The
+// texture width is named (`tw`) before the width division, as MWCC colours retail's
+// callee-saved FPRs only with it.
 static inline void wazaQuad(WindowWork* work, s32 texId, f32 x, f32 y, f32 w, f32 h) {
     GXTexObj texObj;
     Mtx mtx;
@@ -461,13 +335,6 @@ extern const f32 float_128_8041d0ec;
 extern const f32 float_3_8041d08c;
 extern const f32 float_6_8041d0f8;
 extern const f32 float_8_8041d0a0;
-
-static inline Vec winSortMkVec(Vec base, f32 x, f32 y) {
-    Vec v = base;
-    v.x = x;
-    v.y = y;
-    return v;
-}
 
 // Draws one textured 1x1-uv quad. The original inlines this at every call site,
 // which is why each panel gets its own GXTexObj/Mtx stack slots.
@@ -529,37 +396,6 @@ static inline void winMsgFontV(Vec pos, Vec scale, GXColor color, const char* ms
     winFontSet(&pos, &scale, &color, msg);
 }
 
-// Picks the row colour. Keeping this as an inline helper (rather than the same
-// if/else written at the call site) is what makes MWCC home the loop colour in the
-// original's 0x8 slot.
-static inline GXColor root_color(WindowWork* work, s32 j) {
-    if (WW_S32(work, 0x40) == j) {
-        return dat_8041cee0;
-    }
-    return dat_8041cee4;
-}
-
-// Builds winTexSet's by-value Vec argument at the call site. Taking the base Vec
-// by pointer and doing `v = *base; v.x = x; v.y = y` reproduces the original's
-// `translate = vp->vN; translate.x = ..; translate.y = ..` cadence (it loads
-// base.x/y/z), while returning it inline keeps the argument evaluation order.
-// Without this the loop/tail temporaries and by-value copies land in different
-// stack slots. A named local in the caller scores 63%.
-#ifdef MUST_MATCH
-// MWCC evaluates the last argument first; retail loads x before y.
-#define ROOT_COORDS f32 y, f32 x
-#define ROOT_VEC(base, x, y) root_vec(base, y, x)
-#else
-#define ROOT_COORDS f32 x, f32 y
-#define ROOT_VEC(base, x, y) root_vec(base, x, y)
-#endif
-static inline Vec root_vec(const Vec* base, ROOT_COORDS) {
-    Vec v = *base;
-    v.x = x;
-    v.y = y;
-    return v;
-}
-
 #ifdef MUST_MATCH
 // MUST_MATCH: the original reloads each float constant immediately before its volatile
 // FIFO store; MWCC otherwise CSEs the constants into f1-f4 and reuses them. Loading
@@ -572,41 +408,8 @@ static inline Vec root_vec(const Vec* base, ROOT_COORDS) {
 #define BG_TEX(u, v) GXTexCoord2f32(u, v)
 #endif
 extern const f32 float_neg8_8041d158;
-#ifdef MUST_MATCH
-// Existing HalfBook views retained where literal loads still change register allocation.
-extern WinRootVecs str_802F3FE8;
-#define HB_DBL(off, sym, val) (*(const f64*)(rodata + (off)))
-#else
-#define HB_DBL(off, sym, val) (val)
-#endif
-static inline void winHalfBookPage(void* pal, s32 texId, f64 numY, f64 numX,
-                                   f32 x0, f32 y0, f32 x1, f32 y1) {
-    GXTexObj texObj;
-    Mtx mtx;
-    f64 sy;
-    f64 sx;
-
-    TEXGetGXTexObjFromPalette((TEXPalette*)pal, &texObj, texId);
-    GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
-    GXLoadTexObj(&texObj, 0);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
-    sy = (f32)numY / (f32)GXGetTexObjHeight(&texObj);
-    sx = (f32)numX / (f32)GXGetTexObjWidth(&texObj);
-    PSMTXScale(mtx, (f32)sx, (f32)sy, float_1_8041d070);
-    GXLoadTexMtxImm(mtx, 0x1E, 1);
-    GXBegin(0x80, 0, 4);
-    GXPosition3f32(x0, y0, 0.0f);
-    GXTexCoord2f32(0.0f, 0.0f);
-    GXPosition3f32(x0, y1, 0.0f);
-    GXTexCoord2f32(0.0f, 1.0f);
-    GXPosition3f32(x1, y1, 0.0f);
-    GXTexCoord2f32(1.0f, 1.0f);
-    GXPosition3f32(x1, y0, 0.0f);
-    GXTexCoord2f32(1.0f, 0.0f);
-}
 #define WIN_BOOK_TEX(w) (**(TEXPalette***)(*(u8**)((u8*)(w) + 0x28) + 0xA0))
-extern const char** luigi_book_list[5];
+extern const char** luigi_book_list[];
 // winFontSetLabel takes its Vec and GXColor arguments by value (each call copies them); win_main.h declares
 // pointers, which compiles to the same callee.
 // winFontSetLabel takes its Vecs and colour by pointer; the original passes them by value here (caller copies plus a
@@ -621,52 +424,72 @@ static inline void winFontSetLabelV(Vec pos, Vec scale, GXColor color, const cha
 
 // The book frame and pages (type 0: Luigi's book, with the open page's two labels and Luigi reading; type 1:
 // a 2x4 grid of frames, 32 lower).
-// One textured quad of the book. A macro, not an inline function: each argument is evaluated where it is used,
-// after the texture setup, as in the original.
-#define WIN_BOOK_PAGE(pal, texId, numY, numX, x0, y0, x1, y1)                       \
-    {                                                                              \
-        GXTexObj texObj;                                                           \
-        Mtx mtx;                                                                   \
-        f64 sy;                                                                    \
-        f64 sx;                                                                    \
-                                                                                   \
-        TEXGetGXTexObjFromPalette((TEXPalette*)(pal), &texObj, (texId));           \
-        GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);                \
-        GXLoadTexObj(&texObj, 0);                                                  \
-        GXSetNumTexGens(1);                                                        \
-        GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);                                 \
-        sy = __fabs(numY);                                                         \
-        sx = __fabs(numX);                                                         \
-        sy = (f32)sy / (f32)GXGetTexObjHeight(&texObj);                            \
-        sx = (f32)sx / (f32)GXGetTexObjWidth(&texObj);                             \
-        PSMTXScale(mtx, (f32)sx, (f32)sy, float_1_8041d070);                       \
-        GXLoadTexMtxImm(mtx, 0x1E, 1);                                             \
-        GXBegin(0x80, 0, 4);                                                       \
-        GXPosition3f32((x0), (y0), 0.0f);                                          \
-        GXTexCoord2f32(0.0f, 0.0f);                                                \
-        GXPosition3f32((x0), (y1), 0.0f);                                          \
-        GXTexCoord2f32(0.0f, 1.0f);                                                \
-        GXPosition3f32((x1), (y1), 0.0f);                                          \
-        GXTexCoord2f32(1.0f, 1.0f);                                                \
-        GXPosition3f32((x1), (y0), 0.0f);                                          \
-        GXTexCoord2f32(1.0f, 0.0f);                                                \
+// The tab slide-in/out animation run every frame.
+static inline void winRootTabMain(WindowWork* work) {
+    WinRootTab* tab;
+    s32 i;
+
+    for (i = 0; i < 5; i++) {
+        tab = &WROOT(work)->tabs[i];
+        switch (tab->state) {
+        case 0:
+            tab->x = (f32)(i * 0x69 - 0xCD);
+            tab->y = float_300_8041d0d4;
+            tab->counter = i * 4;
+            tab->state++;
+            break;
+        case 1:
+        case 11: {
+            s32 c = tab->counter - 1;
+
+            tab->counter = c;
+            if (c < 0) {
+                tab->counter = 0;
+                tab->state++;
+            }
+            break;
+        }
+        case 2: {
+            s32 c = tab->counter;
+
+            tab->counter = c + 1;
+            tab->y = intplGetValue(0xB, c, 0xA, float_300_8041d0d4, float_185_8041d1e4);
+            if (tab->counter > 0xA) {
+                tab->state++;
+            }
+            break;
+        }
+        case 10:
+            tab->counter = (4 - i) * 4;
+            tab->state++;
+            break;
+        case 12: {
+            s32 c = tab->counter;
+
+            tab->counter = c + 1;
+            tab->y = intplGetValue(0xB, c, 0xA, float_180_8041d18c, float_300_8041d0d4);
+            if (tab->counter > 0xA) {
+                tab->state++;
+            }
+            break;
+        }
+        case 13:
+            break;
+        }
     }
+}
 
 // Main menu. Builds the visible tab set into the work block, then runs the
 // per-state logic and the common per-tab animation. The string array is the
 // unit's static msg_help object; the byte-pointer casts reproduce the original
 // `add base,base,idx; lwz disp(base)` reads of tabs[]/recs[].
-// The tab-state loop initialization is the only remaining difference: retail copies the counter's initial
-// value into cnt (`mr r27, r30`), while MWCC folds that copy to `li r27, 0`.
 #pragma opt_common_subs off // keep each field load's own `add base,base,idx` instead of hoisting &work->tabs
-// NONMATCHING (99.61%): see the loop-init note above.
 s32 winRootMain(WindowWork* work) {
     static const char* msg_help[5] = {
         "msg_menu_mario", "msg_menu_nakama", "msg_menu_mochimono", "msg_menu_badge", "msg_menu_kiroku",
     };
     s32 result;
     WinRootTab* tab;
-    s32 i;
     s32 j;
     const char* str;
 
@@ -960,67 +783,7 @@ s32 winRootMain(WindowWork* work) {
         break;
     }
 
-    {
-    u8* base;
-    s32 xoff;
-    s32 cnt;
-
-    base = (u8*)work;
-    cnt = 0;
-    i = cnt;
-    xoff = -0xCD;
-
-    for (; i < 5; i++) {
-        switch (*(s32*)(base + 0x54)) {
-        case 0:
-            *(f32*)(base + 0x4C) = (f32)xoff;
-            *(f32*)(base + 0x50) = float_300_8041d0d4;
-            *(s32*)(base + 0x58) = cnt;
-            (*(s32*)(base + 0x54))++;
-            break;
-        case 1:
-        case 11: {
-            s32 c = *(s32*)(base + 0x58) - 1;
-
-            *(s32*)(base + 0x58) = c;
-            if (c < 0) {
-                *(s32*)(base + 0x58) = 0;
-                (*(s32*)(base + 0x54))++;
-            }
-            break;
-        }
-        case 2: {
-            s32 c = *(s32*)(base + 0x58);
-
-            *(s32*)(base + 0x58) = c + 1;
-            *(f32*)(base + 0x50) = intplGetValue(0xB, c, 0xA, float_300_8041d0d4, float_185_8041d1e4);
-            if (*(s32*)(base + 0x58) > 0xA) {
-                (*(s32*)(base + 0x54))++;
-            }
-            break;
-        }
-        case 10:
-            *(s32*)(base + 0x58) = (4 - i) * 4;
-            (*(s32*)(base + 0x54))++;
-            break;
-        case 12: {
-            s32 c = *(s32*)(base + 0x58);
-
-            *(s32*)(base + 0x58) = c + 1;
-            *(f32*)(base + 0x50) = intplGetValue(0xB, c, 0xA, float_180_8041d18c, float_300_8041d0d4);
-            if (*(s32*)(base + 0x58) > 0xA) {
-                (*(s32*)(base + 0x54))++;
-            }
-            break;
-        }
-        case 13:
-            break;
-        }
-        base += 0x18;
-        xoff += 0x69;
-        cnt += 4;
-    }
-    }
+    winRootTabMain(work);
     winBgMain(work);
     winMsgMain(work);
     winMarioMain2(work);
@@ -1054,18 +817,12 @@ s32 winRootMain(WindowWork* work) {
 
 #pragma opt_common_subs reset
 
-// Named tail templates precede the tab loop's native compound-literal templates.
-static const Vec vec3_802f403c = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802f4048 = { 1.0f, 1.0f, 1.0f };
-static const Vec vec3_802f4054 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802f4060 = { 1.0f, 1.0f, 1.0f };
 
-// NONMATCHING (97.74%): bgcolor load scheduling and by-value argument-copy stack slots.
+static inline void winRootTabDisp(WindowWork* work);
+
 void winRootDisp(CameraId camId, WindowWork* work) {
-    GXColor bgcolor = dat_8041ced8;
+    GXColor bgcolor = {0xFF, 0xFF, 0xFF, 0xFF};
     s32 i;
-    s32 j;
-    u8* p;
 
     if (WW_S32(work, 0x24) == 0) {
         return;
@@ -1104,17 +861,7 @@ void winRootDisp(CameraId camId, WindowWork* work) {
         }
     }
 
-    p = (u8*)work;
-    for (j = 0; j < WW_S32(work, 0x44); j++) {
-        GXColor color;
-
-        color = root_color(work, j);
-
-        winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-        winTexSet_x2(WW_S32(p, 0x48) + 1, 0xB2,
-                     ROOT_VEC(&((Vec){0.0f, 0.0f, 0.0f}), WW_F32(p, 0x4C), WW_F32(p, 0x50)), (Vec){1.0f, 1.0f, 1.0f}, color);
-        p += 0x18;
-    }
+    winRootTabDisp(work);
 
     winMailDisp(work);
     winMsgDisp(work, WW_F32(work, 0x128), WW_F32(work, 0x12C));
@@ -1125,11 +872,28 @@ void winRootDisp(CameraId camId, WindowWork* work) {
 
         {
             f32 two = float_2_8041d090;
-            winTexSet(0, ROOT_VEC(&vec3_802f403c, two + WW_F32(work, 0x150), WW_F32(work, 0x154) - two), vec3_802f4048,
+            winTexSet(0, (Vec){two + WW_F32(work, 0x150), WW_F32(work, 0x154) - two, 0.0f}, (Vec){1.0f, 1.0f, 1.0f},
                       dat_8041cedc);
         }
+        winTexSet(0, (Vec){WW_F32(work, 0x150), WW_F32(work, 0x154), 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, bgcolor);
+    }
+}
 
-        winTexSet(0, ROOT_VEC(&vec3_802f4054, WW_F32(work, 0x150), WW_F32(work, 0x154)), vec3_802f4060, bgcolor);
+// The menu tabs, the selected one bright.
+static inline void winRootTabDisp(WindowWork* work) {
+    s32 j;
+
+    for (j = 0; j < WW_S32(work, 0x44); j++) {
+        WinRootTab* tab = &WROOT(work)->tabs[j];
+        GXColor color;
+
+        if (WW_S32(work, 0x40) == j) {
+            color = dat_8041cee0;
+        } else {
+            color = dat_8041cee4;
+        }
+        winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
+        winTexSet_x2(tab->id + 1, 0xB2, (Vec){tab->x, tab->y, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, color);
     }
 }
 
@@ -1399,13 +1163,8 @@ void winMsgMain(WindowWork* work) {
 // Most of the 10/40/120/240/250 position sums stay literals: MWCC pools each literal at the named
 // object's slot, so the code is the same either way (objdiff reports only a symbol-only diff); a couple
 // of sites read the named objects directly.
-// The 0x140 pointer is loaded once and shared by the NULL test and msgSearch, and ty is declared before width so
-// the width/ty pair lands in f26/f27 as in the original. The rest are scratch-register assignments of compiler
-// temporaries: the width/ty int-to-float sequence, the `fy -= 14` / `240 - fy` pair, and the icon block's
-// `40 + (y - 40)` / `(250 + x) - 10`. The `msg_lottery_number` offset (0x5c0 vs 0x5d0) follows winHalfBookGX's
-// still-missing .rodata conversion doubles.
-// NONMATCHING (99.81%): scratch-register allocation of compiler temporaries in three float blocks, plus the
-// winHalfBookGX-dependent string offset.
+// The 0x140 pointer is loaded once and shared by the NULL test and msgSearch; ty, ix and width are
+// function-scope floats, and ty and fy are assigned inside the call arguments that use them.
 void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     char buf[0x400];
     GXColor iconColor = dat_8041cf28;
@@ -1418,6 +1177,9 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
     f32 fx = x - 250.0f;
     f32 fy = 40.0f + y;
 #endif
+    f32 ty;
+    f32 ix;
+    f32 width;
 
     windowDispGX_Waku_col(0, dat_8041cf30, fx, fy, float_500_8041d1a8, float_80_8041d0b0, float_20_8041d0c0);
 
@@ -1430,22 +1192,18 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
 
     if (WW_PTR(work, 0x140) != NULL) {
         const char* msg;
-        f32 ty;
-        f32 width;
         f32 edge;
 
         edge = (WW_S32(work, 0x138) == -2) ? float_neg130_8041d1ac : float_0_8041d068;
         msg = msgSearch((const char*)WW_PTR(work, 0x140));
         width = FontGetMessageWidth(msg);
-        ty = float_8_8041d0a0 + (float_16_8041d0e4 + fy);
-        winNameGX(work, 1, (x - 120.0f) + edge, ty, 240.0f, float_32_8041d0a4);
+        winNameGX(work, 1, (x - 120.0f) + edge, ty = 8.0f + (16.0f + fy), 240.0f, 32.0f);
         winFontInit();
         winMsgEdgeV((Vec){ edge + ((240.0f - width) * float_0p5_8041d06c + (x - 120.0f)), ty - float_4_8041d07c, 0.0f }, (Vec){ 1.0f, 1.0f, 1.0f }, iconColor, msg);
     }
 
     if (WW_U32(work, 0x13C) != 0) {
-        fy -= float_14_8041d180;
-        GXSetScissor(0, (u32)(240.0f - fy), 0x260, 0x38);
+        GXSetScissor(0, (u32)(240.0f - (fy -= 14.0f)), 0x260, 0x38);
         if (strcmp((const char*)WW_PTR(work, 0x13C), "msg_lottery_number") == 0) {
             // lottery_info has no declared field at 0x20; the original loads an s16 there.
             sprintf(buf, msgSearch((const char*)WW_PTR(work, 0x13C)), *(s16*)((u8*)lotteryGetPtr() + 0x20));
@@ -1468,8 +1226,9 @@ void winMsgDisp(WindowWork* work, f32 x, f32 y) {
         } else if (i / 2 == (WW_S32(work, 0x14C) + 1) / 2 - 1) {
             if ((gp->retraceCount & 0x1F) < 0x14) winMailIconV(0x1B5, (Vec){ (250.0f + x) - 10.0f, float_24_8041d0c8 + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf38);
         } else if ((gp->retraceCount & 0x1F) < 0x14) {
-            winMailIconV(0x1B5, (Vec){ (250.0f + x) - 10.0f, float_24_8041d0c8 + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf3c);
-            winMailIconV(0x1B6, (Vec){ (250.0f + x) - 10.0f, (40.0f + (y - 40.0f)) - float_24_8041d0c8, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf40);
+            ix = (250.0f + x) - 10.0f;
+            winMailIconV(0x1B5, (Vec){ ix, float_24_8041d0c8 + (40.0f + (y - 40.0f)), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf3c);
+            winMailIconV(0x1B6, (Vec){ ix, (40.0f + (y - 40.0f)) - float_24_8041d0c8, 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf40);
         }
         winMailIconV(0x70, (Vec){ (250.0f + x) - 10.0f, 40.0f + (y - 40.0f), 0.0f }, (Vec){ 0.6f, 0.6f, 0.6f }, dat_8041cf44);
     }
@@ -1741,10 +1500,13 @@ void winKirinukiGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
 }
 
 
-// NONMATCHING (99.31%): all instructions match; retail colours the inlined
-// quad temps f26/f27/f28 and saves one more FPR (frame 0x280 vs our 0x270).
-// The winNameQuad/nameQuadTw mix is the minimum-diff colouring found.
+// The name plate used by win_mario's partner menu: two quads per type, written out like winKirinukiGX's.
+// type 0/1 are the 32px-tall bar with a 16px cap on the right, type 2 the 24px bar with an 8px cap.
+// `yscale` is shared by all the quads (the scale macro's caller local), and each branch has its own
+// cap `size` and right-cap edges.
 void winNameGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
+    f32 yscale;
+
     GXSetBlendMode(0, 1, 0, 0);
     GXSetZCompLoc(0);
     GXSetAlphaCompare(6, 0x80, 1, 0, 0);
@@ -1765,18 +1527,89 @@ void winNameGX(WindowWork* work, s32 type, f32 x, f32 y, f32 w, f32 h) {
     GXSetCurrentMtx(0);
 
     if (type == 0) {
-        winNameQuad(work, 0x13, x, y, w - 16.0f, 32.0f);
-        nameQuadTw(work, 0x14, x + w - 16.0f, y, 16.0f, 32.0f);
+        f32 rx;
+        f32 rr;
+        f32 size = 16.0f;
+        WIN_KIRINUKI_SCALE(0x13, w - size, 32.0);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(x, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(x, y - 32.0f, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + (w - size), y - 32.0f, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + (w - size), y, 1.0f, 0.0f);
+        WIN_KIRINUKI_SCALE(0x14, 16.0, 32.0);
+        GXBegin(0x80, 0, 4);
+        rx = x + w - size;
+        rr = rx + size;
+        WIN_KIRINUKI_VTX(rx, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(rx, y - 32.0f, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rr, y - 32.0f, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rr, y, 1.0f, 0.0f);
     } else if (type == 1) {
-        nameQuadTw(work, 0x15, x, y, w - 16.0f, 32.0f);
-        nameQuadTw(work, 0x16, x + w - 16.0f, y, 16.0f, 32.0f);
+        f32 rx;
+        f32 rr;
+        f32 size = 16.0f;
+        WIN_KIRINUKI_SCALE(0x15, w - size, 32.0);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(x, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(x, y - 32.0f, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + (w - size), y - 32.0f, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + (w - size), y, 1.0f, 0.0f);
+        WIN_KIRINUKI_SCALE(0x16, 16.0, 32.0);
+        GXBegin(0x80, 0, 4);
+        rx = x + w - size;
+        rr = rx + size;
+        WIN_KIRINUKI_VTX(rx, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(rx, y - 32.0f, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rr, y - 32.0f, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rr, y, 1.0f, 0.0f);
     } else if (type == 2) {
-        nameQuadTw(work, 0x78, x, y, w - 8.0f, 24.0f);
-        nameQuadTw(work, 0x79, x + w - 8.0f, y, 8.0f, 24.0f);
+        f32 rx;
+        f32 rr;
+        f32 size = 8.0f;
+        WIN_KIRINUKI_SCALE(0x78, w - size, 24.0);
+        GXBegin(0x80, 0, 4);
+        WIN_KIRINUKI_VTX(x, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(x, y - 24.0f, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + (w - size), y - 24.0f, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(x + (w - size), y, 1.0f, 0.0f);
+        WIN_KIRINUKI_SCALE(0x79, 8.0, 24.0);
+        GXBegin(0x80, 0, 4);
+        rx = x + w - size;
+        rr = rx + size;
+        WIN_KIRINUKI_VTX(rx, y, 0.0f, 0.0f);
+        WIN_KIRINUKI_VTX(rx, y - 24.0f, 0.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rr, y - 24.0f, 1.0f, 1.0f);
+        WIN_KIRINUKI_VTX(rr, y, 1.0f, 0.0f);
     }
 }
 
-// NONMATCHING (91.60%): page-span FPR allocation and by-value label copies differ.
+// One textured piece of a book frame: (x, y) top-left, w x h, the texture stretched across it.
+static inline void winBookQuad(void* pal, s32 texId, f32 x, f32 y, f64 w, f64 h) {
+    GXTexObj texObj;
+    Mtx mtx;
+    f64 sx;
+    f64 sy;
+
+    TEXGetGXTexObjFromPalette((TEXPalette*)pal, &texObj, texId);
+    GXInitTexObjLOD(&texObj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
+    GXLoadTexObj(&texObj, 0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x1E, 0, 0x7D);
+    sy = __fabs(h);
+    sx = __fabs(w);
+    PSMTXScale(mtx, (f32)sx / (f32)GXGetTexObjWidth(&texObj), (f32)sy / (f32)GXGetTexObjHeight(&texObj), 1.0f);
+    GXLoadTexMtxImm(mtx, 0x1E, 1);
+    GXBegin(0x80, 0, 4);
+    GXPosition3f32(x, y, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(x, y - (f32)h, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXPosition3f32(x + (f32)w, y - (f32)h, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(x + (f32)w, y, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+}
+
 void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
     f32 yofs;
     s32 i;
@@ -1803,46 +1636,28 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
     yofs = type == 0 ? 0.0f : 32.0f;
 
     // the page area and the top edge
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x33, 256.0f - yofs, 432.0,
-                  8.0f + x, y - 8.0f, (8.0f + x) + 432.0f, ((y - 8.0f) - (256.0f - yofs)))
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x28, 8.0, 16.0,
-                  x, y, x + float_16_8041d0e4, y - float_8_8041d0a0)
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2C, 8.0, 184.0,
-                  (16.0f + x), y, (float_16_8041d0e4 + x) + 184.0f, y - 8.0f)
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x26, 16.0, 48.0,
-                  (184.0f + (16.0f + x)), y, (184.0f + (float_16_8041d0e4 + x)) + 48.0f, y - 16.0f)
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2D, 8.0, 184.0,
-                  (48.0f + (184.0f + (16.0f + x))), y, (float_48_8041d11c + (184.0f + (16.0f + x))) + 184.0f, y - 8.0f)
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2A, 8.0, 16.0,
-                  (184.0f + (48.0f + (184.0f + (16.0f + x)))), y, (184.0f + (48.0f + (184.0f + (16.0f + x)))) + 16.0f, y - 8.0f)
+    winBookQuad(WIN_BOOK_TEX(work), 0x33, x + 8.0f, y - 8.0f, 432.0, 256.0f - yofs);
+    winBookQuad(WIN_BOOK_TEX(work), 0x28, x, y, 16.0, 8.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x2C, x + 16.0f, y, 184.0, 8.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x26, x + 16.0f + 184.0f, y, 48.0, 16.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x2D, x + 16.0f + 184.0f + 48.0f, y, 184.0, 8.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x2A, x + 16.0f + 184.0f + 48.0f + 184.0f, y, 16.0, 8.0);
 
     // the sides and the spine
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x30, 256.0f - yofs, 8.0,
-                  x, y - 8.0f, x + 8.0f, ((y - 8.0f) - (256.0f - yofs)))
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x32, 248.0f - yofs, 16.0,
-                  8.0f + (184.0f + (16.0f + x)), y - 16.0f, (8.0f + (184.0f + (16.0f + x))) + 16.0f, (y - 16.0f) - (248.0f - yofs))
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x31, 256.0f - yofs, 8.0,
-                  8.0f + (184.0f + (48.0f + (184.0f + (16.0f + x)))), y - 8.0f, (8.0f + (184.0f + (48.0f + (184.0f + (16.0f + x))))) + 8.0f, ((y - 8.0f) - (256.0f - yofs)))
+    winBookQuad(WIN_BOOK_TEX(work), 0x30, x, y - 8.0f, 8.0, 256.0f - yofs);
+    winBookQuad(WIN_BOOK_TEX(work), 0x32, x + 16.0f + 184.0f + 8.0f, y - 16.0f, 16.0, 248.0f - yofs);
+    winBookQuad(WIN_BOOK_TEX(work), 0x31, x + 16.0f + 184.0f + 48.0f + 184.0f + 8.0f, y - 8.0f, 8.0, 256.0f - yofs);
 
     // the bottom edge
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x29, 16.0, 16.0,
-                  x, (((y - 8.0f) - 256.0f) + yofs), x + float_16_8041d0e4, (((y - 8.0f) - 256.0f) + yofs) - 16.0f)
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2E, 16.0, 184.0,
-                  (16.0f + x), (((y - 8.0f) - 256.0f) + yofs), (16.0f + x) + 184.0f, (((y - 8.0f) - 256.0f) + yofs) - 16.0f)
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x27, 24.0, 48.0,
-                  (184.0f + (16.0f + x)), (((y - 8.0f) - 256.0f) + yofs), (184.0f + (16.0f + x)) + 48.0f, (((y - 8.0f) - 256.0f) + yofs) - 24.0f)
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2F, 16.0, 184.0,
-                  (48.0f + (184.0f + (16.0f + x))), (((y - 8.0f) - 256.0f) + yofs), (48.0f + (184.0f + (16.0f + x))) + 184.0f, (((y - 8.0f) - 256.0f) + yofs) - 16.0f)
-    WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x2B, 16.0, 16.0,
-                  (184.0f + (48.0f + (184.0f + (16.0f + x)))), (((y - 8.0f) - 256.0f) + yofs), (184.0f + (48.0f + (184.0f + (16.0f + x)))) + 16.0f, (((y - 8.0f) - 256.0f) + yofs) - 16.0f)
+    winBookQuad(WIN_BOOK_TEX(work), 0x29, x, y - 8.0f - 256.0f + yofs, 16.0, 16.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x2E, x + 16.0f, y - 8.0f - 256.0f + yofs, 184.0, 16.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x27, x + 16.0f + 184.0f, y - 8.0f - 256.0f + yofs, 48.0, 24.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x2F, x + 16.0f + 184.0f + 48.0f, y - 8.0f - 256.0f + yofs, 184.0, 16.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x2B, x + 16.0f + 184.0f + 48.0f + 184.0f, y - 8.0f - 256.0f + yofs, 16.0, 16.0);
 
     if (type == 1) {
         for (i = 0; i < 8; i++) {
-            f32 cx = (float_16_8041d0e4 + x) + (f32)((i % 2) * 216);
-            f32 cy = (y - 32.0f) - (f32)((i / 2) * 48);
-
-            WIN_BOOK_PAGE(WIN_BOOK_TEX(work), 0x34, 32.0,
-                            192.0, cx, cy, cx + 192.0f, cy - 32.0f)
+            winBookQuad(WIN_BOOK_TEX(work), 0x34, x + 16.0f + (f32)((i % 2) * 216), y - 32.0f - (f32)((i / 2) * 48), 192.0, 32.0);
         }
     }
 
@@ -1873,42 +1688,9 @@ void winBookGX(WindowWork* work, s32 type, f32 x, f32 y) {
     }
 }
 
-// The last differences are the preheader's spill widths and the int->float mask's
-// addressing. Retail keeps the nine __fabs doubles alive as f64 and spills several raw
-// doubles (stfd/lfd) before the hoisted (f32) conversions, and reaches its 2^52 mask
-// through the str_802F3FE8 base (0x4e0(rBase)); MWCC here emits an extra `lis` for the
-// mask and spills some conversions as f32 (stfs/lfs), which is one extra instruction
-// overall (+6 lfs, -3 lfd, +2 stfs, +1 fadds, +1 lis). Calls, immediates and the
-// inlined winHalfBookPage bodies all match.
-// NONMATCHING (95.92%): preheader spill widths and int->float mask addressing.
 void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
-#ifdef MUST_MATCH
-    const u8* rodata = (const u8*)&str_802F3FE8;
-#endif
-    f32 y16;
-    f32 y8;
-    f32 x264;
-    f32 x312;
-    f32 y264;
-    f32 x8;
-    f32 x16;
-    f32 x32;
-    f32 x320;
-    f32 y200;
-    f32 y256;
-    f64 sn16;
-    f64 s24;
-    f64 s40;
-    f64 s320;
-    f64 s16;
-    f64 s48;
-    f64 s248;
-    f32 s8;
-    f32 s240;
     Mtx mtx;
     s32 i;
-
-    (void)a4;
 
     GXSetFog(0, 0.0f, 0.0f, 0.0f, 0.0f, dat_8041cf5c);
     GXSetNumChans(1);
@@ -1923,28 +1705,6 @@ void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
     GXSetVtxAttrFmt(0, 9, 1, 4, 0);
     GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
 
-    y8 = y - 8.0f;
-    y16 = y - 16.0f;
-    y200 = y - 200.0f;
-    y256 = y - 256.0f;
-    y264 = y256 - 8.0f;
-    x8 = x + 8.0f;
-    x16 = x + float_16_8041d0e4;
-    x32 = x + 32.0f;
-    x264 = x16 + 248.0f;
-    x312 = x264 + 48.0f;
-    x320 = x + 320.0f;
-
-    s8 = __fabs(HB_DBL(0x548, double_8_802f4530, 8.0));
-    sn16 = __fabs(HB_DBL(0x5A0, double_neg16_802f4588, -16.0));
-    s320 = __fabs(HB_DBL(0x598, double_320_802f4580, 320.0));
-    s248 = __fabs(HB_DBL(0x580, double_248_802f4568, 248.0));
-    s40 = __fabs(HB_DBL(0x4F8, double_40_802f44e0, 40.0));
-    s48 = __fabs(HB_DBL(0x558, double_48_802f4540, 48.0));
-    s16 = __fabs(HB_DBL(0x500, double_16_802f44e8, 16.0));
-    s240 = __fabs(HB_DBL(0x588, double_240_802f4570, 240.0));
-    s24 = __fabs(HB_DBL(0x4F0, double_24_802f44d8, 24.0));
-
     for (i = 0; i < 2; i++) {
         if (i == 0) {
             GXSetChanMatColor(4, dat_8041cf60);
@@ -1952,7 +1712,7 @@ void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
             GXSetZCompLoc(1);
             GXSetAlphaCompare(7, 0, 0, 7, 0);
             GXSetZMode(0, 7, 0);
-            PSMTXTrans(mtx, float_8_8041d0a0, float_neg8_8041d158, 0.0f);
+            PSMTXTrans(mtx, 8.0f, -8.0f, 0.0f);
             PSMTXConcat(camGetPtr(CAMERA_2D)->view, mtx, mtx);
             GXLoadPosMtxImm(mtx, 0);
             GXSetCurrentMtx(0);
@@ -1966,33 +1726,27 @@ void winHalfBookGX(void* pal, f32 x, f32 y, s32 a4) {
             GXSetCurrentMtx(0);
         }
 
-        winHalfBookPage(pal, 0x33, s248, s320, x8,           y8,   x8 + 320.0f,              y8 - 248.0f);
-        winHalfBookPage(pal, 0x28, s8,   s16,  x,            y,    x16,                      y8);
-        winHalfBookPage(pal, 0x35, s8,   s248, x16,          y,    x264,                     y8);
-        winHalfBookPage(pal, 0x26, s16,  s48,  x264,         y,    x312,                     y16);
-        winHalfBookPage(pal, 0x3B, s16,  s24,  x312,         y,    x312 + 24.0f,             y16);
-        winHalfBookPage(pal, 0x30, s248, s8,   x,            y8,   x8,                       y8 - 248.0f);
-        winHalfBookPage(pal, 0x32, s240, s16,  x264 + 8.0f,  y16,  (x264 + 8.0f) + 16.0f,    y16 - float_240_8041d0ac);
-        winHalfBookPage(pal, 0x36, s40,  s248, x16,          y200, x264,                     y200 - 40.0f);
-        winHalfBookPage(pal, 0x3A, s8,   s16,  x,            y256, x16,                      y264);
-        winHalfBookPage(pal, 0x38, s8,   sn16, x32,          y256, x32 + -16.0f,              y264);
-        winHalfBookPage(pal, 0x38, s8,   s240, x32,          y256, x32 + float_240_8041d0ac,             y264);
-        winHalfBookPage(pal, 0x39, s8,   s16,  x + 272.0f,   y256, (x + 272.0f) + 16.0f,     y264);
-        winHalfBookPage(pal, 0x38, s8,   s16,  x + float_288_8041d16c,   y256, (x + 288.0f) + 16.0f,     y264);
-        winHalfBookPage(pal, 0x38, s8,   sn16, x320,         y256, x320 + -16.0f,             y264);
-        winHalfBookPage(pal, 0x38, s8,   s16,  x320,         y256, x320 + 16.0f,             y264);
-        winHalfBookPage(pal, 0x3C, s240, s8,   x + 328.0f,   y16,  (x + 328.0f) + 8.0f,      y16 - float_240_8041d0ac);
-
+        winBookQuad(pal, 0x33, x + 8.0f, y - 8.0f, 320.0, 248.0);
+        winBookQuad(pal, 0x28, x, y, 16.0, 8.0);
+        winBookQuad(pal, 0x35, x + 16.0f, y, 248.0, 8.0);
+        winBookQuad(pal, 0x26, x + 16.0f + 248.0f, y, 48.0, 16.0);
+        winBookQuad(pal, 0x3B, x + 16.0f + 248.0f + 48.0f, y, 24.0, 16.0);
+        winBookQuad(pal, 0x30, x, y - 8.0f, 8.0, 248.0);
+        winBookQuad(pal, 0x32, x + 16.0f + 248.0f + 8.0f, y - 16.0f, 16.0, 240.0);
+        winBookQuad(pal, 0x36, x + 16.0f, y - 200.0f, 248.0, 40.0);
+        winBookQuad(pal, 0x3A, x, y - 256.0f, 16.0, 8.0);
+        winBookQuad(pal, 0x38, x + 32.0f, y - 256.0f, -16.0, 8.0);
+        winBookQuad(pal, 0x38, x + 32.0f, y - 256.0f, 240.0, 8.0);
+        winBookQuad(pal, 0x39, x + 272.0f, y - 256.0f, 16.0, 8.0);
+        winBookQuad(pal, 0x38, x + 288.0f, y - 256.0f, 16.0, 8.0);
+        winBookQuad(pal, 0x38, x + 320.0f, y - 256.0f, -16.0, 8.0);
+        winBookQuad(pal, 0x38, x + 320.0f, y - 256.0f, 16.0, 8.0);
+        winBookQuad(pal, 0x3C, x + 328.0f, y - 16.0f, 8.0, 240.0);
     }
 }
 
-// The mail window frame: nineteen textured quads (outer border and inner panels),
-// all drawn with the same inline quad helper. The native texture sizes are the f64
-// literals MWCC pools with its own i2f magic; the drawn rectangles are f32 sums of
-// the caller's x/y, reproducing retail's left-to-right summation chains. The helper
-// is byte-perfect with its `f64 sx;`/`f64 sy;` declaration order and the h-then-w fabs.
-// NONMATCHING (99.83%): only the global FPR of `x` (retail f30, ours f29) and
-// its deep-sum temporaries differ; all 212 calls and immediates match.
+// The mail window frame: nineteen textured quads (outer border and inner panels), each
+// an inlined winBookQuad; the drawn rectangles are f32 sums of the caller's x/y.
 void winMailGX(WindowWork* work, f32 x, f32 y) {
     GXSetBlendMode(0, 1, 0, 0);
     GXSetZCompLoc(0);
@@ -2013,36 +1767,32 @@ void winMailGX(WindowWork* work, f32 x, f32 y) {
     GXLoadPosMtxImm(camGetPtr(CAMERA_2D)->view, 0);
     GXSetCurrentMtx(0);
 
-    winMailQuad(work, 0x4D, x, y, 32.0f, 24.0);
-    winMailQuad(work, 0x63, x + 32.0f, y, 344.0f, 24.0);
-    winMailQuad(work, 0x64, x + 200.0f, y, 16.0f, 24.0);
-    winMailQuad(work, 0x55, x + 32.0f, y - 24.0f, 344.0f, 8.0);
-    winMailQuad(work, 0x4E, 16.0f + (40.0f + (112.0f + (16.0f + (48.0f + (40.0f + (72.0f + (x + 32.0f))))))), y, 40.0f, 24.0);
-    winMailQuad(work, 0x51, x, y - 24.0f, 16.0f, 248.0);
-    winMailQuad(work, 0x55, x + 16.0f, y - 24.0f, 16.0f, 248.0);
-    winMailQuad(work, 0x55, 16.0f + (248.0f + (8.0f + (72.0f + (16.0f + (16.0f + x))))), y - 24.0f, 16.0f, 248.0);
-    winMailQuad(work, 0x51, 16.0f + (16.0f + (248.0f + (8.0f + (72.0f + (16.0f + (16.0f + x)))))), y - 24.0f, 16.0f, 248.0);
-    winMailQuad(work, 0x52, 16.0f + (16.0f + (16.0f + (248.0f + (8.0f + (72.0f + (16.0f + (16.0f + x))))))), y - 24.0f, 8.0f, 248.0);
-    winMailQuad(work, 0x5C, x + 32.0f, y - 32.0f, 344.0f, 240.0);
-    winMailQuad(work, 0x55, x + 32.0f, y - 248.0f, 344.0f, 24.0);
-    winMailQuad(work, 0x4F, x, y - 272.0f, 32.0f, 32.0);
-    winMailQuad(work, 0x53, x + 32.0f, y - 272.0f, 344.0f, 32.0);
-    winMailQuad(work, 0x50, 344.0f + (x + 32.0f), y - 272.0f, 40.0f, 32.0);
-    winMailQuad(work, 0x54, x + 16.0f, (y - 24.0f) - 8.0f, 8.0f, -8.0);
-    winMailQuad(work, 0x54, 8.0f + (384.0f + x), (y - 24.0f) - 8.0f, -8.0f, -8.0);
-    winMailQuad(work, 0x54, x + 16.0f, y - 264.0f, 8.0f, 8.0);
-    winMailQuad(work, 0x54, 8.0f + (384.0f + x), y - 264.0f, -8.0f, 8.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x4D, x, y, 32.0f, 24.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x63, x + 32.0f, y, 344.0f, 24.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x64, x + 200.0f, y, 16.0f, 24.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x55, x + 32.0f, y - 24.0f, 344.0f, 8.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x4E, 16.0f + (40.0f + (112.0f + (16.0f + (48.0f + (40.0f + (72.0f + (x + 32.0f))))))), y, 40.0f, 24.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x51, x, y - 24.0f, 16.0f, 248.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x55, x + 16.0f, y - 24.0f, 16.0f, 248.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x55, 16.0f + (248.0f + (8.0f + (72.0f + (16.0f + (16.0f + x))))), y - 24.0f, 16.0f, 248.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x51, 16.0f + (16.0f + (248.0f + (8.0f + (72.0f + (16.0f + (16.0f + x)))))), y - 24.0f, 16.0f, 248.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x52, 16.0f + (16.0f + (16.0f + (248.0f + (8.0f + (72.0f + (16.0f + (16.0f + x))))))), y - 24.0f, 8.0f, 248.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x5C, x + 32.0f, y - 32.0f, 344.0f, 240.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x55, x + 32.0f, y - 248.0f, 344.0f, 24.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x4F, x, y - 272.0f, 32.0f, 32.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x53, x + 32.0f, y - 272.0f, 344.0f, 32.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x50, 344.0f + (x + 32.0f), y - 272.0f, 40.0f, 32.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x54, x + 16.0f, (y - 24.0f) - 8.0f, 8.0f, -8.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x54, 8.0f + (384.0f + x), (y - 24.0f) - 8.0f, -8.0f, -8.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x54, x + 16.0f, y - 264.0f, 8.0f, 8.0);
+    winBookQuad(WIN_BOOK_TEX(work), 0x54, 8.0f + (384.0f + x), y - 264.0f, -8.0f, 8.0);
 
     GXSetScissor((u32)(32.0f + (304.0f + x)), (u32)(1.0f + (32.0f + (240.0f - y))), 0x158, 0xC8);
 }
 
-// Section 1 draws the scrolling page of the box. Retail reads the row counter
-// before it is ever written (its `mulli r4, r25, 0x38` is at the top of the
-// outer loop, and r25 is only assigned inside the inner loops), i.e. the
-// original had an uninitialised `row`. That is undefined behaviour, so `row` is
-// initialised to 0 here; the only observable difference is page 0's visibility
-// test on the very first call, and the instruction count is unchanged (MWCC
-// still keeps it in a register and emits the `mulli`).
+// Section 1 draws the scrolling page of the box. Its visibility test uses `row`, which
+// the row loops leave at 4; on page 0 the original reads it before any write (retail's
+// `mulli r4, r25, 0x38` at the top of the page loop), so the natural build sets it to 0.
 // The four winIconSet calls take Vec/Vec/GXColor by value (winMailIconV), which gives the original 0x720 frame.
 // Hako's sixteen native Vec templates, in retail parse order.
 static const Vec vec3_802f41a4 = { 0.0f, 0.0f, 0.0f };
@@ -2062,7 +1812,7 @@ static const Vec vec3_802f4240 = { 0.7f, 0.7f, 0.7f };
 static const Vec vec3_802f424c = { 0.0f, 0.0f, 0.0f };
 static const Vec vec3_802f4258 = { 0.6f, 0.6f, 0.6f };
 
-// NONMATCHING (91.30%): register allocation in the inlined quads and outer-loop lowering.
+// NONMATCHING (94.65%): which tile-id locals spill: retail spills t7d/t7e/t85/t84 and reloads each once before its edge loop.
 void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     f32 scroll;
     s32 count;
@@ -2070,13 +1820,15 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     s32 pageCount;
     s32 texBase;
     s32 page;
-    s32 row = 0; // retail reads r25 (row) without setting it first at 0x80152E00, not only on page 0; 0 keeps it defined
+#ifdef MUST_MATCH
+    s32 row; // the original reads it in page 0's visibility test before the row loop sets it
+#else
+    s32 row = 0;
+#endif
     s32 col;
     s32 i;
     s32 ofs;
     s32 t7e, t7f, t84, t80, t87, t82, t81, t85, t86, t7d, t7b, t83;
-    f32 f24;
-    f32 f26;
 
     if (type == 0) {
         scroll = WW_F32(work, 0xEA0);
@@ -2122,8 +1874,6 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     t83 = texBase + 0x83;
     t87 = texBase + 0x87;
     t82 = texBase + 0x82;
-    f24 = float_392_8041d110 + x;
-    f26 = (y - float_224_8041d10c) + scroll;
     ofs = 0;
     for (page = 0; page < pageCount; ofs += 0xE8, page++) {
         f32 vis = (scroll + (y - (f32)(row * 0x38))) - (f32)ofs;
@@ -2132,43 +1882,41 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
             continue;
         }
         if ((texBase != 0 && page == 2) || (texBase != 1 && page == 3)) {
-                hakoQuad(work, t7b, x, (y + scroll) - (f32)(page * 0xE8), 56.0f, 56.0f);
-                hakoQuad(work, t7d, x, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
-                hakoQuad(work, t7e, x + 8.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), float_48_8041d11c, 8.0f);
-                hakoQuad(work, t85, x + 56.0f, (y + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
-                hakoQuad(work, t84, x + 56.0f, ((y - 8.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 48.0f);
-                hakoQuad(work, t81, x + 56.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                winBookQuad(WIN_BOOK_TEX(work), t7b, x, (y + scroll) - (f32)(page * 0xE8), 56.0f, 56.0f);
+                winBookQuad(WIN_BOOK_TEX(work), t7d, x, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                winBookQuad(WIN_BOOK_TEX(work), t7e, x + 8.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), float_48_8041d11c, 8.0f);
+                winBookQuad(WIN_BOOK_TEX(work), t85, x + 56.0f, (y + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                winBookQuad(WIN_BOOK_TEX(work), t84, x + 56.0f, ((y - 8.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 48.0f);
+                winBookQuad(WIN_BOOK_TEX(work), t81, x + 56.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
                 break; // retail leaves the page loop once the special page is drawn (b .L_80154348 at 0x8015386C)
             } else {
-                f32 f23;
-                f32 f22;
+                f32 bottomY;
 
                 for (col = 0; col < 7; col++) {
                     for (row = 0; row < 4; row++) {
-                        hakoQuad(work, t7b + ((col + 7 * row) & 1),
+                        winBookQuad(WIN_BOOK_TEX(work), t7b + ((col + 7 * row) & 1),
                                  x + (f32)(col * 0x38),
                                  (scroll + (y - (f32)(row * 0x38))) - (f32)ofs,
                                  56.0f, 56.0f);
                     }
                 }
-                f23 = f26 - (f32)ofs;
-                f22 = f23 - 8.0f;
+                bottomY = ((y - 224.0f) + scroll) - (f32)ofs;
                 for (i = 0; i < 7; i++) {
                     s32 t1 = i == 0 ? t7d : ((i & 1) ? t7f : t86);
                     s32 t2 = (i & 1) ? t80 : t7e;
-                    hakoQuad(work, t1, x + (f32)(i * 0x38), f23, 8.0f, 8.0f);
-                    hakoQuad(work, t2, x + (f32)(i * 0x38) + 8.0f, f23, 48.0f, 8.0f);
+                    winBookQuad(WIN_BOOK_TEX(work), t1, x + (f32)(i * 0x38), bottomY, 8.0f, 8.0f);
+                    winBookQuad(WIN_BOOK_TEX(work), t2, x + (f32)(i * 0x38) + 8.0f, bottomY, 48.0f, 8.0f);
                 }
                 for (i = 0; i < 4; i++) {
                     s32 t1 = i == 0 ? t85 : ((i & 1) ? t83 : t87);
                     f32 qy = (scroll + (y - (f32)(i * 0x38))) - (f32)ofs;
-                    hakoQuad(work, t1, f24, qy, 8.0f, 8.0f);
+                    winBookQuad(WIN_BOOK_TEX(work), t1, x + 392.0f, qy, 8.0f, 8.0f);
                     {
                         s32 t2 = (i & 1) ? t82 : t84;
-                        hakoQuad(work, t2, f24, (scroll + ((y - (f32)(i * 0x38)) - 8.0f)) - (f32)ofs, 8.0f, 48.0f);
+                        winBookQuad(WIN_BOOK_TEX(work), t2, x + 392.0f, (scroll + ((y - (f32)(i * 0x38)) - 8.0f)) - (f32)ofs, 8.0f, 48.0f);
                     }
                 }
-                hakoQuad(work, t81, f24, f23, 8.0f, 8.0f);
+                winBookQuad(WIN_BOOK_TEX(work), t81, x + 392.0f, bottomY, 8.0f, 8.0f);
             }
     }
 
@@ -2186,7 +1934,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                 if (idx < count) {
                     Vec translate;
 
-                    if (type == 0) {
+                    if (texBase == 0) {
                         s16 itemId = *(s16*)((u8*)work + 0xEB8 + idx * 2);
                         if (swGet(itemId + 0x80) != 0) {
                             continue;
@@ -2219,7 +1967,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                     Vec scale;
                     GXColor color;
 
-                    if (type == 0) {
+                    if (texBase == 0) {
                         if (swGet(*(s16*)((u8*)work + 0xEB8 + idx * 2) + 0x80) == 0) {
                             continue;
                         }
@@ -3167,14 +2915,9 @@ static SortTable sort_8[] = {
 
 SortTable* sort_data[8] = {sort_1, sort_2, sort_3, sort_4, sort_5, sort_6, sort_7, sort_8};
 
-static const Vec vec3_802f42cc = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802f42d8 = { 1.0f, 1.0f, 1.0f };
-static const Vec vec3_802f42e4 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802f42f0 = { 1.0f, 1.0f, 1.0f };
-static const Vec vec3_802f42fc = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802f4308 = { 1.0f, 1.0f, 1.0f };
 
-// NONMATCHING (98.67%): FPR colouring and extra arithmetic in the panels.
+// NONMATCHING (98.71%): the panels' x + 128 sums (retail keeps the 0xA3 right edge live across the
+// loop for 0xA4 and does not hoist the LOD zero) and the FPR colouring that follows.
 void winSortGX(WindowWork* work) {
     f32 x = WW_F32(work, 0x164);
     f32 y = WW_F32(work, 0x168);
@@ -3249,17 +2992,15 @@ void winSortGX(WindowWork* work) {
 
             winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             row = y - float_20_8041d0c0 - (f32)(i * 0x28) - 16.0f - float_8_8041d0a0;
-            winTexSet(0xB6, winSortMkVec(vec3_802f42cc, x83, row), vec3_802f42d8, dat_8041d008);
+            winTexSet(0xB6, (Vec){x83, row, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, dat_8041d008);
             winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-            winTexSet_x2(tex, 0xB6, winSortMkVec(vec3_802f42e4, x78, float_6_8041d0f8 + row),
-                         vec3_802f42f0, dat_8041d00c);
+            winTexSet_x2(tex, 0xB6, (Vec){x78, float_6_8041d0f8 + row, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, dat_8041d00c);
         } else {
             f32 row;
 
             winTexInit_x2(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
             row = y - float_20_8041d0c0 - (f32)(i * 0x28) - 16.0f - float_8_8041d0a0;
-            winTexSet_x2(tex, 0xB6, winSortMkVec(vec3_802f42fc, x84, row), vec3_802f4308,
-                         dat_8041d010);
+            winTexSet_x2(tex, 0xB6, (Vec){x84, row, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, dat_8041d010);
         }
     }
     }
@@ -3399,7 +3140,12 @@ void winZClear(void) {
     GXSetColorUpdate(1);
 }
 
-// NONMATCHING (99.25%): read/unread icon selection uses a branch-free select.
+// win texture ids of the read/unread mark
+typedef enum {
+    WIN_TEX_MAIL_UNREAD = 0x5D,
+    WIN_TEX_MAIL_READ = 0x5E,
+} WinMailTex;
+
 // The mail window: the list of letters (an envelope in the mail's colour, a read/unread mark, the two-digit
 // number and the title per row), or with one open (state 0xCA) its header, the scrolling body with its
 // picture, and the scroll arrows.
@@ -3432,7 +3178,7 @@ void winMailDisp(WindowWork* work) {
                       (Vec){float_4_8041d07c + (float_208_8041d080 + WW_F32(work, 0x244)), WW_F32(work, 0x260) + ((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)(i * 40)), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, color);
             white = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
-            winTexSet((s32)pouchCheckMail(id) == 2 ? 0x5E : 0x5D,
+            winTexSet((s32)pouchCheckMail(id) == 2 ? WIN_TEX_MAIL_READ : WIN_TEX_MAIL_UNREAD,
                       (Vec){float_72_8041d088 + WW_F32(work, 0x244), WW_F32(work, 0x260) + (((WW_F32(work, 0x24C) - float_56_8041d084) - (f32)(i * 40)) - float_3_8041d08c), 0.0f},
                       (Vec){1.0f, 1.0f, 1.0f}, white);
             winTexSet((num + 1) / 10 + 0x65,
@@ -3448,9 +3194,9 @@ void winMailDisp(WindowWork* work) {
         GXSetScissor(0, 0, 0x260, 0x1E0);
     } else {
         s32 sel = WW_S32(work, 0x258);
+        s32 num = *((u8*)work + 0x26E + sel * 2);
         GXColor white = {0xFF, 0xFF, 0xFF, 0xFF};
         GXColor black = {0x00, 0x00, 0x00, 0xFF};
-        s32 num = *((u8*)work + 0x26E + sel * 2);
         WinMailEntry* mail = mailGetPtr(*((u8*)work + 0x26F + sel * 2));
         GXColor color;
         u32 top;
