@@ -6311,3 +6311,21 @@ also told to write down the old framing's assumptions and question them first. S
   (98.97-99.11); pointer-bound/count-down/while loops move unrolling to the backend (93.1-93.6); count copied to a
   named local before the branch (95.2-98.9); `u16*` local (98.43); reusing `i` instead of `j` (98.24); split
   `+=`/`-= 2` (99.36).
+
+### envdrv partial: envDisp_DepthOfField data blocker gone, still 99.68 (Claude Opus 5.5)
+- **Data side closed:** the five undefined `float_*` externs (MUST_MATCH) are replaced by plain literals under
+  `#pragma opt_propagation off` around the DoF region, the same shape as envDisp_FF; the literals reuse FF's pool
+  entries and .sdata2 is byte-identical. The old framing ("retail's quad shows propagation on") was wrong: it was a
+  vertex evaluation-order problem. Under propagation off the inline `GXPosition3f32` keeps x in a parameter variable
+  that colours after the y conversion; a MUST_MATCH vertex macro that evaluates y first and stores x straight from
+  its computation removes all 10 quad rows (precedent: win_main's macro, #478).
+- **Still open, register colouring only (47 rows):** block 1's tevStage/texCoord have 31 interference neighbours,
+  three of them coalesced phantoms that never leave the graph (colorD, alphaD, GXSetTevKColor's argument pointer);
+  retail needs <= 28 and id ranked above i in block 1 only. Replacing colorD/alphaD with constants gives retail's
+  r26/r25 (confirms the mechanism, not valid code). Block 2: `tevStage + 1` in r25, retail r26.
+- Negatives: quad spellings under propagation off (const params 99.18, compound literal 96.6, local x/y 98.84/99.18);
+  sin/cos helper after DoF with propagation on (89.68/79.66); block-1 loop written in DoF (98.74), indexed (98.75),
+  as an inline (98.98-99.06); i/id swap (99.61, flips block 2); colorD/alphaD spellings (96.2-98.68, best 30
+  neighbours); KColor spellings (31, unchanged); 8 counter-type combos (95.5-97.6); rasim what-ifs; mwsearch 60 min,
+  33,198 compiles, 0 improvements. Next: a spelling of colorD/alphaD and the by-value GXColor argument that makes no
+  coalesced temp in block 1. rasim what-if scripts were in the run's vars/whatif*.py.

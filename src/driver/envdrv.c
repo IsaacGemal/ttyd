@@ -285,31 +285,10 @@ static inline void envDofBlendStageReg(s32 tevStage, s32 texCoord) {
     envDofBlendStage(tevStage, texCoord, 0xC, 2);
 }
 
-// The sin/cos coefficients are read through the original .sdata2 names: as memory loads they stay
-// loop-invariant and MWCC hoists them into f24-f27 once per pass as retail does. As literals the
-// default propagation pass folds them into every branch (envDisp_FF instead turns propagation off,
-// but here retail's quad shows propagation on: the first vertex's x is substituted into its store).
-// The natural literals are under the #else.
-#ifdef MUST_MATCH
-extern const f32 float_0p00761_8041e5b4;
-extern const f32 float_0p16605_8041e5b8;
-extern const f32 float_0p03705_8041e5a4;
-extern const f32 float_0p4967_8041e5a8;
-extern const f32 float_1_8041e574;
-#define ENV_DOF_SIN0 float_0p00761_8041e5b4
-#define ENV_DOF_SIN1 float_0p16605_8041e5b8
-#define ENV_DOF_COS0 float_0p03705_8041e5a4
-#define ENV_DOF_COS1 float_0p4967_8041e5a8
-#define ENV_DOF_ONE float_1_8041e574
-#else
-#define ENV_DOF_SIN0 0.00761f
-#define ENV_DOF_SIN1 0.16605f
-#define ENV_DOF_COS0 0.03705f
-#define ENV_DOF_COS1 0.4967f
-#define ENV_DOF_ONE 1.0f
-#endif
-
+// `opt_propagation off` keeps the polynomial coefficients in variables that MWCC hoists out of the
+// loop (as in envDisp_FF; with propagation on they are folded into every branch), and
 // `opt_lifetimes off` keeps the 0.00761/0.03705 seed loads inside the loop.
+#pragma opt_propagation off
 #pragma opt_lifetimes off
 #pragma inline_max_size(2000)
 static inline void envDofSinCos(f32 angle, f32* s, f32* c) {
@@ -321,9 +300,9 @@ static inline void envDofSinCos(f32 angle, f32* s, f32* c) {
     f32 t, u;
     f32 cu;
 
-    sb = ENV_DOF_SIN1;
-    sv = ENV_DOF_SIN0;
-    one = ENV_DOF_ONE;
+    sb = 0.16605f;
+    sv = 0.00761f;
+    one = 1.0f;
     if (angle <= PI) {
         if (angle <= 1.5707964f) {
             u = angle * angle;
@@ -354,8 +333,8 @@ static inline void envDofSinCos(f32 angle, f32* s, f32* c) {
     }
     *s = sv;
 
-    cb = ENV_DOF_COS1;
-    cv = ENV_DOF_COS0;
+    cb = 0.4967f;
+    cv = 0.03705f;
     if (angle <= PI) {
         if (angle <= 1.5707964f) {
             cu = angle * angle;
@@ -424,6 +403,20 @@ static inline void envDofTaps(const f32* amount, s32* texCoord, GXTevStageID* te
     }
 }
 
+#ifdef MUST_MATCH
+// Under propagation off the inline GXPosition3f32 keeps x in a parameter variable, which colours after
+// the y conversion (f5 for the first vertex). The original stores x straight from its computation after
+// y has been evaluated into its parameter, which is what this vertex macro does.
+#undef GXPosition3f32
+#define GXPosition3f32(x, y, z)                                                                            \
+    do {                                                                                                   \
+        f32 _y = (y);                                                                                      \
+        GXWGFifo.f32 = (x);                                                                                \
+        GXWGFifo.f32 = _y;                                                                                 \
+        GXWGFifo.f32 = (z);                                                                                \
+    } while (0)
+#endif
+
 static inline void envDofQuad(void) {
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
     GXPosition3f32(-gp->fbWidth / 2.0f, gp->efbHeight / 2.0f, 0.0f);
@@ -465,9 +458,11 @@ static inline void envDofFar(EnvironmentUnk88* u, GXColor* color) {
 // (an int counter gets folded into the GXSetNumTevStages argument by the propagation pass).
 // NONMATCHING (99.68%): integer register colouring only. Block 1's loop has retail's registers
 // mirrored (retail: i r31, id r30, tevStage r26, texCoord r25, the blend texCoord copy r27; here the
-// counters take r31/r30), and block 2's tevStage + 1 is r25 instead of r26. Writing block 1's loop
-// directly in this function with named i/id locals colours that loop exactly, but a named pointer
-// assigned the table address always costs an `addi r0` + `mr` (only inline/compiler locals coalesce).
+// counters take r31/r30), and block 2's tevStage + 1 is r25 instead of r26. mwccdbg/rasim: block 1's
+// tevStage/texCoord have 31 interference neighbours (more than 28), three of them coalesced
+// variables that never leave the graph (colorD, alphaD and the GXSetTevKColor argument pointer), so
+// they colour before the loop's i/id. Retail needs them at 28 or fewer and, in block 1 only, id
+// ranked above i; no C spelling of those three values tried so far removes them.
 void envDisp_DepthOfField(void) {
     EnvironmentWork* wp = envGetWork();
     EnvironmentUnk88* u = &wp->unk88;
@@ -523,6 +518,10 @@ void envDisp_DepthOfField(void) {
 }
 #pragma inline_max_size reset
 #pragma opt_lifetimes reset
+#pragma opt_propagation reset
+#ifdef MUST_MATCH
+#undef GXPosition3f32
+#endif
 
 // MUST_MATCH: a by-value GXColor built as `color = dat; color.a = a;` and then passed lands its local at
 // the higher slot (sp+0x10 here) and the argument copy at sp+0xC, the wrong way round. Building the colour
