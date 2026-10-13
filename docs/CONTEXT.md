@@ -6589,3 +6589,51 @@ also told to write down the old framing's assumptions and question them first. S
 - Negatives: ~20 non-volatile ways to keep the inline's `y` a temp (unary/comma/`*1.0f`, f64 or pointer params,
   scoped opt_propagation); 12 inline signature/body permutations; 8 declaration orders; a non-constant compound literal
   directly (97.00); the bakugame `v = (Vec){...}` idiom; scoped opt_common_subs off; mwsearch.
+
+### evt_mobj LINKED: four functions to 100, 95/95 (Claude Opus 5.5)
+- **mobj_badgeblk 99.35:** itemEntry evaluates its float arguments before evtId; the same MUST_MATCH float-first cast
+  the matched mobj_kururing_floor already uses for that call (the old "global optimizer hoist" comment was wrong).
+- **kururing_capture 99.84:** `(f32)texHeight / 2.0f / t` instead of `0.5f * (f32)texHeight / t`.
+- **kpa_score_to_str 94.91:** the shape of its kpa_act.c sibling: `s32 digits[4]` filled in straight lines, then
+  `for (j = 0; j != 4; j++) if (len != 0 || digits[j] != 0) psw->str[len++] = digits[j] + '0';`. MWCC unrolls and
+  scalarises the array into compiler variables (retail's `add; mr` copies). Clue: u8/s16 digit types put clrlwi/extsh
+  exactly where retail has `mr`. (kpa_act's own `s8 digits` gives 80.95.)
+- **mobj_kururing_floor 99.94:** `Vec* vtx = &((Vec*)...->address)[1];` used as `vtx->y` (0x15C is the pose's normal
+  vertex buffer). rasim: the pointer gets r30 only if its vreg is numbered above mario's prologue copy; taking the
+  address of element 1 makes MWCC fold `+0x10` into each load so the surviving value is a high-numbered compiler temp.
+  **New lever:** `&array[1]` address folding for a pointer local in the wrong callee-saved register.
+- **Link blocker:** six undefined vec3 externs (`vec3_802c3dc8`, 3dd4, 3ef4, 40a0, 40ac, 40c4); an earlier "32 files OK"
+  came from a stale DOL. MUST_MATCH reads now use the file's local `mobj_vec3_*_template` objects; mobj_itembox's
+  hand-made rodata base (IB_* macros on vec3_802c3dc8) replaced by literals and the named vec3_802c3fd8/3fe4 objects.
+- Negatives: `* 0.5f` variable-first (no change); kpa_score_to_str without the loop (82.55), inline helpers, `%=`
+  chains, digit types, scalarised struct (79-94.91); kururing_floor getters (r29), block scope, types, refetch variable,
+  five pragmas (no change), opt_common_subs off (98.87), repeated load (97.47); mobj_itembox pure compound literals
+  reshuffle .rodata.
+
+### evt_eff: no change, evt_eff 99.17 / evt_eff64 99.78 (Claude Opus 5.5, Overnight 2) -- hard negative
+- Retail keeps two copies of `args + 2`: the int pointer before effSet (`addi r25,r27,8`) and the float pointer copied
+  after it (`mr r24,r25`), saving one more register (`stmw r20`); evt_eff64 has a third copy. `fargs = iargs;` after
+  effSet under opt_propagation off gives retail's code mid-backend, but GC/2.6's copy propagation removes it because an
+  earlier pass folded every `iargs++` into load offsets (it keeps a copy only if a use is a copy, a use overwrites it,
+  or the source changes in between). A dead `s64 wide = (s32)iargs;` keeps the walked pointer and the copy alive
+  (saves r20, 98.23) but leaves a trailing addi. So retail had something that changed the int pointer and was deleted
+  after allocation; not found.
+- Negatives (~1,000 variants): 352-way grid of copy placement/walking/indexed/third pointer (best 99.17); re-pointing
+  (97.7-98.9); struct/inline/address-taken copies; self-assign, identity inline, swap, dead copy; inline readers
+  (96.7-98.6); s64 round trips; loop-filled arrays (50-51); volatile; isFirstCall as the float pointer; 8 opt pragmas
+  off; optimization_level 0-3 and global_optimizer off (level 1 gives the copy, 95.1); GC 2.5/2.7/3.0a; mwsearch 45 min,
+  34,263 compiles. Next: find what post-allocation passes delete, then a natural pointer pattern used only by it.
+
+### battle_seq_end second pass: _LvupParamConfirmDisp still 99.58 (Claude Opus 5.5, Overnight 2) -- cause proven
+- Under `opt_propagation off`, `s32 zero0 = 0; work = (BattleSeqEndWork*)((u8*)wp->seqEndWork + zero0);` makes the
+  load land in a fresh temp (r44) that the backend reduces `add` -> copy and propagates, so work's value is numbered
+  above the base (r43) and takes r31 like retail (z1). Not natural (junk zero) and it scores 93.1: propagation off
+  adds a stack copy per `(GXColor){...}` argument (+2 stw, frame +16). The base's value is created at the start of the
+  first block, so no callee prototype, argument order or string spelling lowers it (the framing holds).
+- Negatives: float-first FontDrawString, second Waku_col via the float-first cast, pouchGetPtr as void(*)(void); float
+  externs to literals (98.54); `str_802FDDF0 + off` (71.2); param shapes (BattleWork by value 99.58, read late 91.6,
+  msgSearch local 98.49); variable reuse/web splits; 64-bit truncation, `<<32>>32` (94.8), s64 local, __rlwinm (96.5);
+  folded zero-adds (x - x, & 0, ^x^x, address differences); 9 propagation-off shapes without the zero-add (92.7); unit
+  flags -inline variants (99.58), -O4,p (94.7); GC 2.0/2.5/2.7 (99.58), others break neighbours. Next: a natural
+  integer offset/index that only the backend knows is 0, or propagation off (btlseqEnd_DispMain already has it) with a
+  colour spelling that avoids the extra GXColor copy. Tower ~/scratch-on3-bsend2/chk.py reports work-in-r31 per variant.
