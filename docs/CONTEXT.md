@@ -6697,3 +6697,8 @@ also told to write down the old framing's assumptions and question them first. S
 - collisionCurve is still a goto/register-named transliteration and needs a natural rewrite from the asm.
 - Negatives: 6 probe-statement sweeps (scheduler reorders them), ternaries, k-chain shapes, pp/qq block locals, fov
   forms; abs-left compare forms, maxVal shapes; old permuter outputs (named-float source, 7000+).
+
+### sac_zubastar LINKED: zubastar_bunkatu 94.64 -> 100, 16/16 (GPT-6.1 Sol, resumed Overnight 2 run)
+- The interrupted run had already closed bunkatu via shared function-scope counters, one k across polygon prefix/insertion/suffix copies, normal state/vector/timer field order, and the two zero Vec templates as non-const .rodata views (#631). Resume from the source's measured state: the stale NONMATCHING note still said 94.64, but the tower reported 100.
+- Remaining blocker was disp_bomb's five coefficient loads: degree-first gives the correct pool but wrong load order; degree-last as a literal gives 100% code but wrong pool. A function-local static const degree coefficient emits at the function's slot before its literal texture constants. Reading it through MATCH_F32 after assigning 96/400/240/480 preserves the late load and avoids a duplicate anonymous degree entry. Both pools match; 16/16; fresh full link and 32 files OK. No helper or padding retained.
+- Negatives: real rotation/vertex helper variants (FPR rotations), coefficient declarations/loop placement, 32 optimizer combinations, whole named-prefix conversion. Plain static-const read duplicates the pool; scalar non-const or volatile-const memory reads both work.
