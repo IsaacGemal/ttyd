@@ -2,6 +2,7 @@
 #include "battle/battle_ac.h"
 #include "battle/battle_unit.h"
 #include "driver/dispdrv.h"
+#include "driver/icondrv_gx.h"
 
 //local prototypes
 

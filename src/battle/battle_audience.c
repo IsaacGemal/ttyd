@@ -17,6 +17,7 @@
 #include "battle/battle_audience_kinopio.h"
 #include "data/item_icon_view.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/windowdrv.h"
 #include "driver/swdrv.h"
 

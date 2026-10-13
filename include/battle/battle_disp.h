@@ -31,7 +31,7 @@ void btlDispEntAnime(BattleUnit* unit);
 void btlDispChangePeraAnime(BattleUnitPart* part, const char* animName);
 void btlDispTexPlane2(Mtx mtx, u32 id, GXColor color, s32 unused);
 const char* searchPoseTbl(BattleDispPose* table, s32 poseId);
-void btlUnitPartsDisp(CameraId camId, BattleUnitPart* parts);
+void btlUnitPartsDisp(CameraId camId, void* param);
 void btlUnitPartsBlurDisp(CameraId camId, BattleUnitPart* parts);
 void _btlStockExpDisp(CameraId cameraId, void* param);
 void btlUnitItemDisp(CameraId cameraId, BattleUnit* unit);
@@ -48,8 +48,7 @@ void _partsBlurControl(BattleUnitPart* part, s32 flags, Mtx orientation, GXColor
 void btlUnitPartsBlurControl(BattleUnitPart* part, s32 unused, Mtx orientation, GXColor color, f32 rotation);
 f32 getGravityDispOffset(BattleUnit* unit);
 f32 getFloatDispOffset(BattleUnit* unit);
-void btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, GXColor* color);
-void _btlDispTex4(s32 id, Vec* trans, Vec* scale, Vec* rot, Vec* pos2, Vec* scale2, GXColor* color);
+void _btlDispTex4(s32 id, Vec trans, Vec scale, Vec rot, Vec pos2, Vec scale2, GXColor color);
 void btlDispAnimeSpeed(BattleUnit* unit, f32 speed);
 void gravityOffsetControl(BattleUnitPart* part);
 void floatOffsetControl(BattleUnitPart* part);

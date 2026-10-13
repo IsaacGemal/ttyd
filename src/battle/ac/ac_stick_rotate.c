@@ -5,6 +5,7 @@
 #include "battle/battle_unit.h"
 #include "battle/battle_pad.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "system.h"
 #include <string.h>
 

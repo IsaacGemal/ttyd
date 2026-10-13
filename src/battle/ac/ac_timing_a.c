@@ -3,6 +3,7 @@
 #include "battle/battle_unit.h"
 #include "driver/camdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "system.h"
 #include <string.h>
 #include "battle/ac/ac_table.h"

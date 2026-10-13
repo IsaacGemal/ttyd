@@ -15,6 +15,7 @@
 #include "battle/battle_audience.h"
 #include "battle/battle_disp.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "manager/fontmgr.h"
 #include "driver/windowdrv.h"
 #include "pmario_sound.h"

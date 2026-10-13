@@ -8,6 +8,7 @@
 #include "driver/dispdrv.h"
 #include "driver/effdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "eff/eff_starstone.h"
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"

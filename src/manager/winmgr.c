@@ -12,6 +12,7 @@
 #include "mario/mario_party.h"
 #include "driver/msgdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "mario/mariost.h"
 #include "evt/evt_lottery.h"
 #include "evt/evt_johoya.h"

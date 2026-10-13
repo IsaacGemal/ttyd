@@ -4,6 +4,7 @@
 #include "battle/battle_unit.h"
 #include "battle/battle_ac.h"
 #include "battle/battle_disp.h"
+#include "battle/battle_disp_tex4.h"
 #include "driver/effdrv.h"
 #include "driver/icondrv.h"
 #include "driver/dispdrv.h"

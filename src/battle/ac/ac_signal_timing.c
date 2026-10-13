@@ -6,6 +6,7 @@
 #include "battle/battle_disp.h"
 #include "driver/camdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include <string.h>

@@ -20,6 +20,7 @@
 #include "driver/animdrv.h"
 #include "driver/effdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "eff/eff_naniga.h"
 #include "mario/mario_pouch.h"
 #include "pmario_sound.h"

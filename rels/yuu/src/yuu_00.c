@@ -17,6 +17,7 @@
 #include "driver/dispdrv.h"
 #include "driver/hitdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "evt_yuuminigame.h"
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"

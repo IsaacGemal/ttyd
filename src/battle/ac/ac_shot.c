@@ -2,9 +2,11 @@
 #include "battle/battle.h"
 #include "battle/battle_ac.h"
 #include "battle/battle_disp.h"
+#include "battle/battle_disp_tex4.h"
 #include "battle/battle_sub.h"
 #include "battle/battle_unit.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include <string.h>

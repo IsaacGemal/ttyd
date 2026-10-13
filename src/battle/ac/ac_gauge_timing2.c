@@ -4,6 +4,7 @@
 #include "battle/battle_disp.h"
 #include "battle/ac/ac_gauge_timing2.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include "math_ext.h"

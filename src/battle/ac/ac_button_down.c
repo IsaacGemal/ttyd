@@ -2,6 +2,7 @@
 #include "battle/battle_ac.h"
 #include "battle/battle_unit.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include <string.h>

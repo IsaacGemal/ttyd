@@ -18,6 +18,7 @@
 #include "driver/dispdrv.h"
 #include "driver/hitdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "evt_yuucounter.h"
 #include "mario/mario.h"
 #include "mario/mario_motion.h"

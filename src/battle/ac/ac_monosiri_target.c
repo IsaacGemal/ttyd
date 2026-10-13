@@ -2,9 +2,11 @@
 #include "battle/battle_ac.h"
 #include "battle/battle_unit.h"
 #include "battle/battle_disp.h"
+#include "battle/battle_disp_tex4.h"
 #include "battle/battle_pad.h"
 #include "driver/camdrv.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include <dolphin/gx.h>

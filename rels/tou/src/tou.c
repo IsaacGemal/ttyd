@@ -23,6 +23,7 @@
 #include "driver/dispdrv.h"
 #include "manager/fontmgr.h"
 #include "driver/icondrv.h"
+#include "driver/icondrv_gx.h"
 #include "driver/windowdrv.h"
 #include "driver/msgdrv.h"
 #include "driver/swdrv.h"
