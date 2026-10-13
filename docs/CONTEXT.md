@@ -6540,3 +6540,21 @@ also told to write down the old framing's assumptions and question them first. S
 - Negatives: function-scope locals (139 diffs); variable reuse like `signX = size + signX` (119-126); size16 in the bar;
   `xs` inline in PSMTXScale (no change); rasim declaration order alone (12 wrong); hill-climbs (floor 44).
 - **Next:** the merged-`xs` neighbour count probably limits winNameGX, winHalfBookGX, winHakoGX and winBookGX too.
+
+### sac_deka LINKED: main_timing 85.22, main_star 98.15, yuka_capture 94.87 -> 100, 26/26 (Claude Opus 5.5)
+- **All 42 named float_* constants -> literals** (.sdata2/.rodata identical, main_star 100). Restored after the port:
+  get_ride_pos `f32 w = 64.0f;` (Grind 45); yuka_init/main_enemy_sub `/ 128.0f` not `* 0.0078125f`; disp_2D `/ 4.0f`
+  and plain 1.0f in PSMTXScale (not the volatile read); main_star `p->starVel += -0.5f;`.
+- **main_timing / yuka_capture:** vec3_80300534 and vec3_803005e0 as non-const `__declspec(section ".rodata") Vec`
+  (#631; 94.56 -> 99.60), midpoints `sx / 2.0f` (99.79), height term `(f32)p->height / 2.0f / t` (100).
+- **Link blockers:** the trailing .data gap object removed (it landed before the two jump tables); start_game,
+  wait_game_end, star_stone_appear, star_stone_attack made static (local in symbols.txt, collided with sac_genki).
+- **New lever, alignment of the next unit:** the 28 zero bytes after sac_deka's jump tables are linker padding up to
+  0x803B4860 because **eff_ibuki's .data was 32-byte aligned** in retail. `ATTRIBUTE_ALIGN(32)` on eff_ibuki's vertex,
+  texcoord and display-list tables (as eff_starstone) fixes the DOL being 0x20 short; every table already sat at a
+  32-byte offset, eff_ibuki unchanged. **Lead:** other units a few bytes short before a 32-byte-aligned neighbour
+  (eff_naniga's 28-byte tail first) may need the same on the neighbour, possibly replacing eff_naniga's gap object
+  and `defer_codegen off`.
+- Negatives: main_timing Vec copy before the alpha store (83.76/87.83); tan call before the camera copy (66.44); tan
+  inline in the expression (99.72); expression reorders (99.79); main_gauge `inline` (main_deka 0%); an uncalled
+  main_gauge copy (the linker strips it with its table).

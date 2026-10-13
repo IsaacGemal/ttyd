@@ -40,7 +40,7 @@ __declspec(section ".data") u8 lbl_803B4890[8] = {
 static __declspec(section ".data") u8 one_negone_359[8] = {
 	0x3F, 0x80, 0x00, 0x00, 0xBF, 0x80, 0x00, 0x00,
 };
-__declspec(section ".data") u32 ibuki_vertex_tbl[24] = {
+__declspec(section ".data") u32 ibuki_vertex_tbl[24] ATTRIBUTE_ALIGN(32) = {
 	0x00000000, 0x00000F00, 0x00000000, 0x1DFF0000,
 	0x000045FF, 0x00000000, 0x55000000, 0x00000000,
 	0x05000000, 0x0F000500, 0x00001DFF, 0x05000000,
@@ -48,37 +48,37 @@ __declspec(section ".data") u32 ibuki_vertex_tbl[24] = {
 	0x00000F00, 0x0F000000, 0x1DFF1400, 0x000045FF,
 	0x23000000, 0x55002800, 0x00000000, 0x00000000,
 };
-__declspec(section ".data") u32 ibuki_texcoord0_tbl[16] = {
+__declspec(section ".data") u32 ibuki_texcoord0_tbl[16] ATTRIBUTE_ALIGN(32) = {
 	0x00002000, 0x0B4B2CCC, 0x0B4B4000, 0x00004000,
 	0x16963333, 0x16964000, 0x34B43800, 0x34B44000,
 	0x40003800, 0x40004000, 0x00000000, 0x0B4B0000,
 	0x16960000, 0x34B40000, 0x40000000, 0x00000000,
 };
-__declspec(section ".data") u32 ibuki_texcoord1_tbl[16] = {
+__declspec(section ".data") u32 ibuki_texcoord1_tbl[16] ATTRIBUTE_ALIGN(32) = {
 	0x00002000, 0x0B4B2CCC, 0x0B4B4000, 0x00004000,
 	0x16963333, 0x16964000, 0x34B43800, 0x34B44000,
 	0x40003800, 0x40004000, 0x00000000, 0x0B4B0000,
 	0x16960000, 0x34B40000, 0x40000000, 0x00000000,
 };
-__declspec(section ".data") u32 ibuki_dl_0_0[16] = {
+__declspec(section ".data") u32 ibuki_dl_0_0[16] ATTRIBUTE_ALIGN(32) = {
 	0x9800060A, 0x00000A0A, 0x0B00020B, 0x0B050000,
 	0x00000600, 0x01010100, 0x00000303, 0x01000002,
 	0x02000000, 0x00000000, 0x00000000, 0x00000000,
 	0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
-__declspec(section ".data") u32 ibuki_dl_0_1[16] = {
+__declspec(section ".data") u32 ibuki_dl_0_1[16] ATTRIBUTE_ALIGN(32) = {
 	0x9800060B, 0x00020B0B, 0x0C00030C, 0x0C060001,
 	0x01010700, 0x01040401, 0x00000202, 0x02000005,
 	0x05000000, 0x00000000, 0x00000000, 0x00000000,
 	0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
-__declspec(section ".data") u32 ibuki_dl_0_2[16] = {
+__declspec(section ".data") u32 ibuki_dl_0_2[16] ATTRIBUTE_ALIGN(32) = {
 	0x9800060C, 0x00030C0C, 0x0D00010D, 0x0D070001,
 	0x04040800, 0x01060602, 0x00000505, 0x03000007,
 	0x07000000, 0x00000000, 0x00000000, 0x00000000,
 	0x00000000, 0x00000000, 0x00000000, 0x00000000,
 };
-__declspec(section ".data") u32 ibuki_dl_0_3[16] = {
+__declspec(section ".data") u32 ibuki_dl_0_3[16] ATTRIBUTE_ALIGN(32) = {
 	0x9800060D, 0x00010D0D, 0x0E00000E, 0x0E080001,
 	0x06060900, 0x00080803, 0x00000707, 0x04000009,
 	0x09000000, 0x00000000, 0x00000000, 0x00000000,
