@@ -341,12 +341,11 @@ config.libs = [
         "progress_category": "game",
         "objects": [
             Object(Matching, "battle/battle.c", cflags=[*cflags_static_nodefer, "-O4,s", "-inline off"]),
-            Object(Matching, "battle/battle_evt_cmd.c"),
             Object(Matching, "battle/battle_ac.c"),
             Object(Matching, "battle/battle_damage.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_detect.c", extra_cflags=["-O4,s"]),
             Object(NonMatching, "battle/battle_disp.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/battle_event_cmd.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/battle_event_cmd.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_event_default.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_event_subset.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_information.c", extra_cflags=["-O4,s"]),
