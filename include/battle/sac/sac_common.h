@@ -8,3 +8,9 @@ s32 sac_enemy_slide_go(EventEntry* event, BOOL isFirstCall);
 s32 sac_enemy_slide_return(EventEntry* event, BOOL isFirstCall);
 s32 sac_ac_help_on(EventEntry* event, BOOL isFirstCall);
 s32 sac_ac_help_off(EventEntry* event, BOOL isFirstCall);
+
+extern s32 sac_start_camera_evt[];
+extern s32 sac_mario_item_on_evt[];
+extern s32 sac_start_stardust[];
+extern s32 sac_mario_back_home[];
+extern s32 sac_mario_item_on_end_evt[];

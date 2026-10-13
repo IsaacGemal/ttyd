@@ -419,7 +419,7 @@ config.libs = [
         "objects": [
             Object(Matching, "battle/sac/sac_bakugame.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/sac/sac_scissor.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/sac/sac_zubastar.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/sac/sac_zubastar.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/sac/sac_genki.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/sac/sac_common.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/sac/sac_deka.c", extra_cflags=["-O4,s"]),

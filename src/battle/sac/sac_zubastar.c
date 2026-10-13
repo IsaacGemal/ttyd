@@ -13,12 +13,18 @@
 #include "manager/evtmgr.h"
 #include "manager/evtmgr_cmd.h"
 #include "memory.h"
+#include "matching.h"
 #include "pmario_sound.h"
 #include "system.h"
 #include <dolphin/gx.h>
 #include <dolphin/mtx.h>
 #include <stdlib.h>
 #include <string.h>
+#include "battle/battle_camera.h"
+#include "battle/sac/sac_common.h"
+#include "evt/evt_cmd.h"
+#include "evt/evt_fade.h"
+#include "party/party_motion.h"
 #include "battle/sac/sac_zubastar.h"
 
 extern BattleWork* _battleWorkPointer;
@@ -32,56 +38,9 @@ const char str_802FF67C[] = "msg_zubastar";
 const char str_802FF68C[] = "msg_sac_8";
 #pragma force_active reset
 
-// .sdata2 constants referenced by this file's original.
-extern f32 float_200_804217c8;
-extern f32 float_60_804217cc;
-extern f32 float_1_804217d0;
-extern f32 float_0p01_804217d4;
-extern f32 float_128_804217d8;
-extern f32 float_255_804217dc;
-extern f32 float_0_804217e0;
-extern f32 float_20_804217e4;
-extern f32 float_deg2rad_804217e8;
-extern f32 float_96_804217ec;
-extern f32 float_400_804217f0;
-extern f32 float_240_804217f4;
-extern f32 float_480_804217f8;
-extern f32 float_600_804217fc;
-extern f32 float_104_80421800;
-extern f32 float_70_80421804;
-extern f32 float_32767_80421808;
-extern f32 float_35_8042180c;
-extern f32 float_2_80421810;
-extern f32 float_neg1p25_80421814;
-extern f32 float_100_80421818;
-extern f32 float_2p8_8042181c;
-extern f32 float_neg96_80421820;
-extern f32 float_344_80421824;
-extern f32 float_264_80421828;
-extern f32 float_neg240_8042182c;
-extern f32 float_5_80421830;
-extern f32 float_300_80421834;
-extern f32 float_8_80421838;
-extern f32 float_neg1_8042183c;
-extern f32 float_neg1000_80421840;
-extern f32 float_50_80421844;
-extern f32 float_0p25_80421848;
-extern f32 float_683_8042184c;
-extern f32 float_4096_80421850;
-extern f32 float_neg0p9_80421854;
-extern f32 float_0p1_80421858;
-extern f32 float_900_8042185c;
-extern f32 float_1Eneg05_80421860;
-extern f32 float_37_80421864;
-extern f32 float_2160_80421868;
-extern f32 float_1p5_8042186c;
-extern u32 dat_804217b8;
-extern u32 dat_804217bc;
 extern const Vec vec3_802ff6b0;
 extern const Vec vec3_802ff698;
 extern const Vec vec3_802ff6a4;
-extern const Vec vec3_802ff6bc;
-extern const Vec vec3_802ff6c8;
 extern const Vec vec3_802ff7ac;
 extern const Vec vec3_802ff7b8;
 extern const Vec vec3_802ff7c4;
@@ -324,86 +283,60 @@ void zubastar_create_takaku(s32 count, Vec* points) {
 }
 #pragma dont_inline reset
 
+// Mutable views keep the two initialization copies in their original load/store order.
+#ifdef MUST_MATCH
+__declspec(section ".rodata") Vec vec3_802ff6bc = { 0.0f, 0.0f, 0.0f };
+__declspec(section ".rodata") Vec vec3_802ff6c8 = { 0.0f, 0.0f, 0.0f };
+#else
 const Vec vec3_802ff6bc = { 0.0f, 0.0f, 0.0f };
 const Vec vec3_802ff6c8 = { 0.0f, 0.0f, 0.0f };
+#endif
 
 // .text:0x1A90 | 0x80230020 | size: 0x4C8
-// The instruction stream is complete and in order. What still differs is the callee-saved register
-// colouring throughout (this compiler gives a/b r30/r31 and bombCount r23; the original has a/b
-// r29/r30 and bombCount r31, so the whole colouring is permuted) and the schedule of the two Vec
-// copies that initialise bomb1/bomb2. Recovered from the original: the first bomb1->points copy loop
-// uses a separate source/dest index pair (two strength-reduced offsets plus a counter), the
-// found-point stores use post-increment so MWCC reuses the copy-loop counter for index[0]+1/+2 and k,
-// and bomb1->count is written in the original's +2-then-+j order.
-// The original's callee-saved order is bombCount,b,a,i*4,n,j,used,work,i*4+0xa8,bomb,i,j*0xc; this
-// compiler produces b,a,i*4,j,n,work,offset,bombCount,i,bomb,used,j*0xc. Nudging `bombCount` to the
-// front of that order is the whole remaining difference and no declaration order, statement order, alias,
-// scope or pragma tried moves it. Declaring the per-iteration scratch (`used`/`index`/`point`/`n`/out1/
-// out2) at function scope before i/j/k is the one source shape that moves `n` into the original's r27
-// (94.51 -> 94.64); everything else stays permuted. Kept from the recovered shapes: `used` base held in a
-// pointer just for the zeroing loop (the original keeps it in a callee-saved register and recomputes
-// r1+0x18 for the dedupe loop), the dedupe comparison inlines the (s32)out1/out2 casts (the original CSEs
-// them into r6/r7), the two point stores go through a `j1` temp (the original computes j+1 and adds 2 to
-// j), and the bomb1/bomb2 field order below is the one whose schedule matches. The natural forms are
-// under #else.
-// NONMATCHING (94.64%): register colouring (callee-saved + caller-saved argument mismatches);
-// the insert/delete/replace lines are the bomb1/bomb2 setup and the points[0]/[1] schedule.
+// Shared copy counters keep the prefix and suffix offsets in the same live ranges.
 void zubastar_bunkatu(Vec* a, Vec* b) {
-    ZubaStarWork* work = GetZubaStarPtr();
-    s32 bombCount = work->bombCount;
     s32 used[2];
     s32 index[2];
     Vec point[2];
-    s32 n;
     f32 out1;
     f32 out2;
+    ZubaStarWork* work;
+    ZubaStarBomb* bomb;
     s32 i;
     s32 j;
+    s32 n;
+    ZubaStarBomb* bomb1;
+    ZubaStarBomb* bomb2;
     s32 k;
+    s32 j1;
+    s32 m;
+    s32 bombCount;
+    work = GetZubaStarPtr();
+    bombCount = work->bombCount;
 
     for (i = 0; i < bombCount; i++) {
-        ZubaStarBomb* bomb = work->bombs[i];
+        bomb = work->bombs[i];
 
         n = 0;
-        {
-            s32* usedp = used;
-
-            for (k = 0; k < 2; k++) {
-                usedp[k] = 0;
-            }
+        for (k = 0; k < 2; k++) {
+            used[k] = 0;
         }
         for (j = 0; j < bomb->count; j++) {
-#ifdef MUST_MATCH
-            // The original compares the dedupe points against the CSE'd casts, not against stores of
-            // nx/ny; inlining them lets MWCC reuse r6/r7 exactly as the target does.
-#else
-            s32 nx;
-            s32 ny;
-#endif
-
             if (n == 2) {
                 break;
             }
             if (zubastar_get_kouten(a->x, a->y, b->x, b->y, bomb->points[j].x, bomb->points[j].y,
                                     bomb->points[(j + 1) % bomb->count].x,
                                     bomb->points[(j + 1) % bomb->count].y, &out1, &out2)) {
-#ifndef MUST_MATCH
-                nx = (s32)out1;
-                ny = (s32)out2;
-#endif
                 for (k = 0; k < n; k++) {
-#ifdef MUST_MATCH
                     if (used[k] == 1 && (s32)point[k].x == (s32)out1 && (s32)point[k].y == (s32)out2) {
-#else
-                    if (used[k] == 1 && (s32)point[k].x == nx && (s32)point[k].y == ny) {
-#endif
                         break;
                     }
                 }
                 if (k == n) {
                     point[k].x = out1;
                     point[k].y = out2;
-                    point[k].z = float_0_804217e0;
+                    point[k].z = 0.0f;
                     used[k] = 1;
                     index[k] = j;
                     n++;
@@ -411,9 +344,6 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
             }
         }
         if (n == 2) {
-            ZubaStarBomb* bomb1;
-            ZubaStarBomb* bomb2;
-
             bomb1 = BattleAlloc(0x50);
             bomb2 = BattleAlloc(0x50);
             for (j = 0; j < bomb->count; j++) {
@@ -424,38 +354,18 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
             }
             bomb1->points = BattleAlloc(bomb1->count * 0xC);
             bomb2->points = BattleAlloc(bomb2->count * 0xC);
-            {
-                s32 k;
-
-                for (j = 0, k = 0; j <= index[0]; j++, k++) {
-                    bomb1->points[k] = bomb->points[j];
-                }
+            for (k = 0, j = 0; j <= index[0]; j++, k++) {
+                bomb1->points[k] = bomb->points[j];
             }
-#ifdef MUST_MATCH
-            // Storing through j++ twice makes MWCC emit two `addi j,1`; the target computes j+1 into a
-            // second register and adds 2 to j, so the stores use j and j+1 and j advances by two.
-            {
-                s32 j1 = j + 1;
-
-                bomb1->points[j] = point[0];
-                bomb1->points[j1] = point[1];
-                j = j1 + 1;
-            }
-#else
-            bomb1->points[j++] = point[0];
-            bomb1->points[j++] = point[1];
-#endif
-            {
-                s32 k = j;
-
-                for (j = index[1] + 1; j < bomb->count; j++, k++) {
-                    bomb1->points[k] = bomb->points[j];
-                }
+            j1 = k + 1;
+            bomb1->points[k] = point[0];
+            bomb1->points[j1] = point[1];
+            k += 2;
+            for (j = index[1] + 1; j < bomb->count; j++, k++) {
+                bomb1->points[k] = bomb->points[j];
             }
             for (j = 0; j < bomb->count; j++) {
                 if (j == index[0]) {
-                    s32 m;
-
                     bomb2->points[0] = point[0];
                     for (m = 1; m <= bomb2->count - 2; m++) {
                         bomb2->points[m] = bomb->points[j + m];
@@ -463,18 +373,6 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
                     bomb2->points[bomb2->count - 1] = point[1];
                 }
             }
-#ifdef MUST_MATCH
-            // Statement order only: it is what makes the target's schedule of the two vec3 loads, the state
-            // stores and the two irand calls come out (the state store of bomb1 lands before the vec3 load).
-            bomb1->timer = irand(0x80);
-            bomb1->field_0x0C = vec3_802ff6bc;
-            bomb1->maxTimer = irand(5) + 1;
-            bomb1->state = 0;
-            bomb2->field_0x0C = vec3_802ff6c8;
-            bomb2->state = 0;
-            bomb2->timer = irand(0x80);
-            bomb2->maxTimer = irand(5) + 1;
-#else
             bomb1->state = 0;
             bomb1->field_0x0C = vec3_802ff6bc;
             bomb1->timer = irand(0x80);
@@ -483,7 +381,7 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
             bomb2->field_0x0C = vec3_802ff6c8;
             bomb2->timer = irand(0x80);
             bomb2->maxTimer = irand(5) + 1;
-#endif
+
             BattleFree(work->bombs[i]->points);
             BattleFree(work->bombs[i]);
             work->bombs[i] = bomb1;
@@ -494,14 +392,7 @@ void zubastar_bunkatu(Vec* a, Vec* b) {
 }
 
 // .text:0x1990 | 0x8022FF20 | size: 0x100
-// Kept out of line: the original's zubastar_bunkatu calls it (bl) instead of inlining it.
-// `opt_lifetimes off` + `opt_propagation off` (reset after the function) give the original's float
-// colouring: the first value (`a`) in f9, the first select result (`b`) in f10, the second select
-// result (`c`) in f11, and the `ct` temp in f3. The zero compares must stay `0.0f` literals, not the
-// named `float_0_804217e0` object: with the named object MWCC CSEs the zero reloads away, while the
-// literal (whose pooled word the file already has) forces the original's reloads. The 1e-05 fallback
-// is the named `float_1Eneg05_80421860` because a literal would add a new `.sdata2` word and shift the
-// section. The reused `ct`/`dt` temps and the separate `e`/`f` locals land in the original's registers.
+// Keep the intersection helper out of line and its select results in separate registers.
 #pragma dont_inline on
 #pragma opt_lifetimes off // keep the select results and the ct temp in f9/f10/f11/f3
 #pragma opt_propagation off // ditto for the rest of the float web
@@ -517,12 +408,12 @@ s32 zubastar_get_kouten(f32 f1, f32 f2, f32 f3, f32 f4, f32 f5, f32 f6, f32 f7, 
     if (a == 0.0f && f7 - f5 == 0.0f) {
         return 0;
     }
-    b = (a != 0.0f) ? a : float_1Eneg05_80421860;
+    b = (a != 0.0f) ? a : 0.00001f;
     {
         // Named temps: MWCC keeps the differences in f3 and the selected results in their own
         // registers with a copy, like the original (see the comment above the function).
         f32 ct = f7 - f5;
-        f32 c2 = (ct != 0.0f) ? ct : float_1Eneg05_80421860;
+        f32 c2 = (ct != 0.0f) ? ct : 0.00001f;
 
         c = c2;
     }
@@ -1240,6 +1131,7 @@ void zubastar_disp_bomb(CameraId cameraId, void* param) {
     f32 c400;
     f32 c96;
     f32 cdeg;
+    static const f32 degree = 0.017453292f;
 
     GXSetCullMode(GX_CULL_NONE);
     GXSetZCompLoc(GX_FALSE);
@@ -1259,14 +1151,15 @@ void zubastar_disp_bomb(CameraId cameraId, void* param) {
     GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_TEXC);
     GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ONE);
     GXInitTexObj(&texObj, work->tex->address, 0x190, 0x1E0, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, 0);
-    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, float_0_804217e0, float_0_804217e0,
-                    float_0_804217e0, 0, 0, 0);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f,
+                    0.0f, 0, 0, 0);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
-    c96 = float_96_804217ec;
-    c400 = float_400_804217f0;
-    c240 = float_240_804217f4;
-    c480 = float_480_804217f8;
-    cdeg = float_deg2rad_804217e8;
+    c96 = 96.0f;
+    c400 = 400.0f;
+    c240 = 240.0f;
+    c480 = 480.0f;
+    // Keep the stored coefficient: folding this read adds a second pool entry.
+    cdeg = MATCH_F32(degree);
     for (i = 0; i < work->bombCount; i++) {
         bomb = work->bombs[i];
 
@@ -1373,16 +1266,8 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
 #endif
             }
             GXBegin(0xA8, 0, 2);
-#ifdef MUST_MATCH
-            // Two separate 0.0f literals: the original reloads float_0_804217e0 for each vertex
-            // (its compiler did not CSE across the GX fifo stores); naming the symbol makes ours
-            // fold the two reads into one.
             GXPosition3f32(star->x0, star->y0, 0.0f);
             GXPosition3f32(star->x1, star->y1, 0.0f);
-#else
-            GXPosition3f32(star->x0, star->y0, float_0_804217e0);
-            GXPosition3f32(star->x1, star->y1, float_0_804217e0);
-#endif
         }
     }
     iconDispGx(1.0f, Z20, 0x10, 0x19D);
@@ -1415,3 +1300,150 @@ void zubastar_disp2D(CameraId cameraId, void* param) {
 const char str_802FF7D0[20] = "SFX_BTL_SAC_START1";
 const char str_802FF7E4[20] = "SFX_BTL_SAC_START2";
 const char str_802FF7F8[20] = "SFX_BTL_SAC_START3";
+
+s32 marioAttackEvent_ZubaStar[177];
+
+BattleWeapon weapon_zubastar = {
+    /* name */ str_802FF668,
+    /* icon */ 0x19B,
+    /* item */ 0,
+    /* description */ str_802FF67C,
+    /* baseAccuracy */ 100,
+    /* baseFpCost */ 0,
+    /* baseSpCost */ 6,
+    /* superguardType */ 0,
+    /* field_0x14 */ 1.0f,
+    /* mStylishCommandMultiplier */ 1,
+    /* field_0x19 */ 5,
+    /* mBingoSlotChance */ 100,
+    /* field_0x1B */ 50,
+    /* hpDamageFn */ (void*)weaponGetPower_ZubaStar,
+    /* hpDamageWork */ { 0, 3, 6, 9, 12, 15, 0, 0 },
+    /* fpDamageFn */ 0,
+    /* fpDamageWork */ { 0 },
+    /* targetClassFlags */ 0x02101260,
+    /* targetPropertyFlags */ 0x20000000,
+    /* element */ 0,
+    /* field_0x6D */ 0,
+    /* actionLevel */ 3,
+    /* field_0x6F */ 2,
+    /* acHelpMsg */ str_802FF68C,
+    /* special */ (BattleWeaponSpecialFlags)0x000200C8,
+    /* counterResistanceFlags */ 0x7FF,
+    /* targetWeightingFlags */ 0,
+    /* sleepChance */ 0,
+    /* sleepTime */ 0,
+    /* stopChance */ 0,
+    /* stopTime */ 0,
+    /* dizzyChance */ 0,
+    /* dizzyTime */ 0,
+    /* poisonChance */ 0,
+    /* poisonTime */ 0,
+    /* poisonStrength */ 0,
+    /* confuseChance */ 0,
+    /* confuseTime */ 0,
+    /* electricChance */ 0,
+    /* electricTime */ 0,
+    /* dodgyChance */ 0,
+    /* dodgyTime */ 0,
+    /* burnChance */ 0,
+    /* burnTime */ 0,
+    /* freezeChance */ 0,
+    /* freezeTime */ 0,
+    /* sizeChangeChance */ 0,
+    /* sizeChangeTime */ 0,
+    /* sizeChangeStrength */ 0,
+    /* atkChangeChance */ 0,
+    /* atkChangeTime */ 0,
+    /* atkChangeStrength */ 0,
+    /* defChangeChance */ 0,
+    /* defChangeTime */ 0,
+    /* defChangeStrength */ 0,
+    /* allergicChance */ 0,
+    /* allergicTime */ 0,
+    /* ohkoChance */ 0,
+    /* chargeStrength */ 0,
+    /* fastChance */ 0,
+    /* fastTime */ 0,
+    /* slowChance */ 0,
+    /* slowTime */ 0,
+    /* frightChance */ 0,
+    /* galeForceChance */ 0,
+    /* paybackTime */ 0,
+    /* holdFastTime */ 0,
+    /* invisibleChance */ 0,
+    /* invisibleTime */ 0,
+    /* hpRegenTime */ 0,
+    /* hpRegenStrength */ 0,
+    /* fpRegenTime */ 0,
+    /* fpRegenStrength */ 0,
+    /* mAttackEvtScript */ marioAttackEvent_ZubaStar,
+    /* field_B4 */ { 0, 0, 0, 100 },
+};
+
+EVT_BEGIN(marioAttackEvent_ZubaStar)
+    CALL(zubastar_init)
+    BEGIN_SIBLING_EVENT
+        CALL(main_star)
+    END_SIBLING_EVENT
+    CALL_CHILD(sac_start_camera_evt)
+    WAIT_MS(500)
+    CALL(btlevtcmd_snd_se, -2, STRING((void*)str_802FF7D0), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL_CHILD(sac_mario_item_on_evt)
+    WAIT_MS(500)
+    CALL(btlevtcmd_snd_se, -2, STRING((void*)str_802FF7E4), EVTDAT_POINTER_MAX, 0, LW(11))
+    CALL(star_stone_appear)
+    BEGIN_SIBLING_EVENT
+        CALL_CHILD(sac_start_stardust)
+    END_SIBLING_EVENT
+    WAIT_FRAMES(100)
+    CALL(btlevtcmd_snd_se, -2, STRING((void*)str_802FF7F8), EVTDAT_POINTER_MAX, 0, EVTDAT_POINTER_MAX)
+    CALL(evt_snd_sfxoff, LW(11))
+    CALL(evt_btl_camera_set_mode, 0, 0)
+    WAIT_FRAMES(40)
+    CALL_CHILD(sac_mario_item_on_end_evt)
+    CALL_CHILD(sac_mario_back_home)
+    CALL(wait_star_stone_up)
+    CALL(btlevtcmd_AnimeChangePose, -2, 1, STRING("M_I_Y"))
+    WAIT_MS(500)
+    BEGIN_SIBLING_EVENT
+        CALL(sac_handbeat)
+    END_SIBLING_EVENT
+    CALL(sac_ac_help_on)
+    CALL(zubastar_main)
+    CALL(sac_ac_help_off)
+    CALL(sac_handbeat_end)
+    BEGIN_SIBLING_EVENT
+        CALL(evt_fade_entry, 17, 1, 255, 255, 255)
+        WAIT_MS(100)
+        CALL(evt_fade_entry, 16, 250, 255, 255, 255)
+    END_SIBLING_EVENT
+    BEGIN_INLINE_EVENT
+        CALL(evt_btl_camera_shake_h, 0, 10, 0, 60, 0)
+        LOOP(6)
+            CALL(evt_btl_camera_shake_w, 0, 10, 0, 10, 0)
+            WAIT_FRAMES(10)
+        END_LOOP
+    END_INLINE_EVENT
+    CALL(btlevtcmd_WaitGuardMove)
+    CALL(btlevtcmd_CommandPayWeaponCost, -2)
+    CALL(btlevtcmd_CommandGetWeaponAddress, -2, LW(0))
+    CALL(btlevtcmd_WeaponAftereffect, LW(0))
+    CALL(btlevtcmd_GetSelectEnemy, LW(3), LW(4))
+    LABEL(95)
+    IF_INT_EQUAL(LW(3), -1)
+        GOTO(97)
+    END_IF
+    CALL(btlevtcmd_CheckPartsAttribute, LW(3), LW(4), 16384, LW(0))
+    IF_INT_EQUAL(LW(0), 0)
+        CALL(btlevtcmd_CheckDamage, -2, LW(3), LW(4), PTR(&weapon_zubastar), 256, LW(5))
+    END_IF
+    CALL(btlevtcmd_GetSelectNextEnemy, LW(3), LW(4))
+    GOTO(95)
+    LABEL(97)
+    CALL(zubastar_bomb)
+    CALL(zubastar_end)
+    LABEL(99)
+    CALL(btlevtcmd_StartWaitEvent, -2)
+    RETURN
+EVT_END()
