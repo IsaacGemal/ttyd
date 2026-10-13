@@ -6677,3 +6677,23 @@ also told to write down the old framing's assumptions and question them first. S
   bottom and right edge loops: explicit per-loop copies in the original? Failed: all float declaration orders; rasim
   local order (8 wrong, spill costs 129 vs 131); `texBase + 0x7D` at uses (90.74); `type *= 13`; tile-id inlines.
 - **Link after those two:** .sdata2 order needs the named float/colour constants ported to literals.
+
+### cam_road partial: calcCamRoad 82.06 -> 96.61, calcHokanCamRoad and camRoadMain -> 100 (Claude Opus 5.5) -- one item for review
+- **All 30 undefined float externs -> literals:** .sdata2 and .rodata IDENTICAL. collisionCurve 96.84 -> 96.74 (its old
+  score was measured against the named-float build; 96.68 after the port, `f32 d0` brought it back up).
+- **calcHokanCamRoad 95.14 -> 100:** 0 and 1 in f32 locals (`start`, `range`) reproduce retail's `cos(start)` and its
+  unfolded multiply-by-1/add-0 (Grind 45). **camRoadMain 98.48 -> 100:** plain truth tests of float fields.
+- **calcCamRoad 82.06 -> 96.61, rebuilt from the asm:** a `curve` pointer local (b spills like retail), separate
+  `found1` flag, hit path straight into f29-f31 with `*= -1.0f`; `hit` declared `void*` so the cast to `cur` stops MWCC
+  substituting hit for cur (hit path reads cur from r14); fallback loads in field order; chained `a = b = c = 0.0f`
+  for retail's reversed store order; u/w setup reordered; rasim float declaration order (every saved register and spill
+  slot matches). Left: retail's `pp` has <= 31 FPR neighbours, ours 33 (shorter-lived pp or fewer temps in the u/w
+  solve), plus temp registers in the two bank probes.
+- **compareCamRoad 98.92 -> 99.23:** no `node` local, `range` from `((CamRoadNode*)cur->unk_24)` directly. Left: retail
+  compares abs(d) on the left but evaluates range first; every abs-left form evaluates abs first (r0/r3 swap).
+- **Review:** camRoadSetup's junk `dbg = (s32)s1 + (s32)s2` replaced by an uncalled `static void camRoadPrint` that
+  OSReports the two debug strings (stripped by the linker, strings kept, per docs/dead_strings.md). An invented body
+  for an uncalled function: the open question Isaac has on this pattern.
+- collisionCurve is still a goto/register-named transliteration and needs a natural rewrite from the asm.
+- Negatives: 6 probe-statement sweeps (scheduler reorders them), ternaries, k-chain shapes, pp/qq block locals, fov
+  forms; abs-left compare forms, maxVal shapes; old permuter outputs (named-float source, 7000+).
