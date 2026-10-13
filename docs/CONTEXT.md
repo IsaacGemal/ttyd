@@ -6365,3 +6365,20 @@ also told to write down the old framing's assumptions and question them first. S
   u16 `total` (truncation each iteration); inlining msgGetCommand (364 rows); whole-width-loop helper (scale in a
   register); explicit loop-2 pointer (95.9); one shared temp for post-loop total and loop-2 glyph (still split);
   rasim declaration reorders (best 18/23 registers wrong).
+
+### party_nokonoko LINKED: lookupSafetyPos2 99.54 -> 100, lookupSafetyPos3 99.92 -> 100 (Claude Opus 5.5)
+- **Old framing wrong again:** earlier runs blamed declaration order and the fadd32 temps. rasim showed the first
+  `sin` result must be a compiler-made object numbered above the `distance` temp, which no named local can be.
+  Fix: a file-local `static f32 sinf(f32 x) { return sin(x); }` (the same wrapper tou_03 has; MWCC inlines it, so
+  each result is a compiler object), angles as plain float locals (`{ f32 a = 1.5707964f; s = sinf(a); ... }`, the
+  file's own `pia` shape). The MATCH_F32 statics, the fadd32 declaration and its probe calls, and both NONMATCHING
+  comments are gone. Pos3 also needed `y = pos.y + height`.
+- **Link blocker found at 15/15:** ccwall's .sdata2 pool order (target 11, 6, 1, 0.4; ours 11, 1, 6). Fix: ccwall's
+  own floor probe moved into `static void ccfloor(party, flag, step, &hitX, ..., &hitNZ)` defined after ccwall (MWCC
+  emits it first, so its body pools 10, 30, 100, 11, 6 first; ccwall inlines it and pools 1.0 itself via `step`).
+  Called once (code moved out, the spline_backsub precedent), unconditional, not under MUST_MATCH. **Borderline for
+  cleanup:** its 7 out-pointers exist so the inlined body shares ccwall's stack slots; ccwall also declares `f32 z, x`.
+  A small hit struct might keep the layout more naturally.
+- Negatives: else arm first (pool fixed, ccwall ~93.8); an earlier 6.0f local, literal spellings, dead compares,
+  ternaries, goto/switch/early return; helper defined before ccwall (no change); ccfloor with its own hit locals
+  (pool identical, frame 0xd0 -> 0xe0, 99.70); pointer outputs without the z/x swap (99.96).
