@@ -44,7 +44,7 @@ void BattleCommandDisplay_ActMenuEnd(BattleWork* wp);
 void BattleCommandDisplay_TargetSelectMenuDisp(CameraId camId, BattleWork* wp);
 void BattleCommandDisplay_ProtectPartnerSelectMenuDisp(CameraId camId, BattleWork* wp);
 BOOL BattleCommandCheckChangePositionEnable(BattleWork* wp);
-void BattleDrawEnemyHPBar(Vec* pos, BattleUnit* unit, GXColor* color);
+void BattleDrawEnemyHPBar(Vec pos, BattleUnit* unit, GXColor color);
 void _btlcmd_UpdateSelectWeaponTable(BattleWork* wp, s32 arg);
 s32 _btlcmd_SelectWeaponDecide(BattleWork* wp, s32 arg, s32 weaponIdx);
 void BattleCommandDisplay_TargetSelectMenuSetup(BattleWork* wp);
