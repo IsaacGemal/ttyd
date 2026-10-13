@@ -5,7 +5,7 @@
 
 #include <dolphin/types.h>
 
-void winPartyDisp(CameraId camId, WindowWork* work, s32 partyIdx);
+void winPartyDisp(CameraId camId, void* param, s32 partyIdx);
 void winPartyMain2(WindowWork* work);
 s32 winPartyMain(WindowWork* work);
 void winPartyExit(WindowWork* work);
