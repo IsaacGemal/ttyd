@@ -93,17 +93,6 @@ void hitReInit(void) {
     }
 }
 
-// This function is cursed, managed to hit 99% - https://decomp.me/scratch/FjwSA
-// 44 instructions differ, all in the packed-display-list loop. The two
-// unrolled loops are exclusive, so our allocator reuses the normal loop's volatile registers
-// (count r5, index r7, temps r11/r10/r12) for the packed loop, while retail keeps the packed
-// count in r11 / index in r12 and reuses r5/r7/r30 for its pointer temps. Structure and calls
-// match (diff_shape); declaration-order variants (j/k/numVectors permutations, int/u32/register,
-// scoping) all score lower, as do per-branch counters, an `int` k, a packed-list walker pointer,
-// swapping the branches (both loops then colour like the normal one), and per-mesh / per-joint /
-// packed-only count inline helpers. A 60-minute tools/mwsearch.py run (19k variants) found nothing,
-// and rasim finds no declaration order or single interference edge that gives retail's colouring.
-// NONMATCHING (98.76%): register colouring of the packed loop only (see above).
 HitEntry* _hitEnt(MapFileJoint* joint, HitEntry* parent, Mtx parentMtx, s32 mapIndex) {
     MapWork* wp = mapGetWork();
     HitEntry* hit = wp->entries[mapIndex].hitEntries;
@@ -162,7 +151,7 @@ HitEntry* _hitEnt(MapFileJoint* joint, HitEntry* parent, Mtx parentMtx, s32 mapI
     hit->radius = PSVECDistance(&vtmp, &hit->centerWorld);
 
     {
-        s32 numVectors, j, k;
+        s32 numVectors, j;
         s32 partIdx;
         for (numVectors = 0, partIdx = 0; partIdx < hit->joint->partCount; partIdx++) {
             MapFileMesh* mesh = hit->joint->parts[partIdx].mesh;
@@ -175,8 +164,10 @@ HitEntry* _hitEnt(MapFileJoint* joint, HitEntry* parent, Mtx parentMtx, s32 mapI
                     numVectors += *mesh->displayLists.normalLists[j] - 2;
                 }
             } else {
-                for (k = 0; k < mesh->displayListCount; k++) {
-                    numVectors += *(u16*)((u8*)mesh->displayLists.packedLists[k].offset + 1) - 2;
+                for (j = 0; j < mesh->displayListCount; j++) {
+                    u8* dl = (u8*)mesh->displayLists.packedLists[j].offset;
+                    dl++;
+                    numVectors += *(u16*)dl - 2;
                 }
             }
         }

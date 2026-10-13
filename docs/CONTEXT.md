@@ -6291,3 +6291,23 @@ linked modules match their build.sha1 checksums.
 - The direct call plus fog extraction already puts all six incoming color copies at their target slots (fog 0x18/1c, second loop 0x20/24, first loop 0x28/2c), but flags and the map-work pointer swap r3/r4. MWCC dumps explain it: baseline wrapper flags webs r83/r82 precede map-work r81/r80, whereas the direct call creates map-work r81/r79 before flags r80/r78. The compound literal creates the flags temporary early; its scalar copy vanishes, preserving the priority without adding instructions. This resolves the rejected identity-helper approach recorded in #719.
 - Negatives: helper parameter/definition orders, direct named flags/color locals, typed color-pointer wrappers, fog call/block extraction variants, self-stores, opt_propagation/opt_lifetimes/opt_common_subs, 64-bit mask/cast/shift variants, return/out-parameter blend calculation, and extracting the flush-color calculation. Reusing the addressed cull local gets all registers right but adds two stores. A signed-64 shift round trip gets flags right but retains two sign-extension instructions. A shared blend-body macro gets registers right but rotates many stack slots.
 - Whole unit: 86 -> 87 of 101 functions at 100%; every other score unchanged. Full CI: PASS (lint, natural compile, data checks, linked-module checksums and no-regression ratchet).
+
+## Overnight 2 (2026-10-12/13): long runs on units 1-2 functions from linking (Claude Opus 5.5 + GPT-6.1 Sol; orchestrated by Claude Opus 5.5)
+
+Opus runs in the on1 format (read the whole ledger, levers.md, work it); units that already had a failed run were
+also told to write down the old framing's assumptions and question them first. Sol ran headless through `codex exec`.
+
+### hitdrv LINKED: _hitEnt 98.76 -> 100 (Claude Opus 5.5)
+- **The old framing was wrong.** Earlier attempts (and a 60-minute mwsearch run, 19k variants) treated the packed
+  loop's colouring as a declaration-order problem. rasim showed instead that the packed loop's per-element values must
+  be named values (the `dl` copies the frontend makes when unrolling), and the loop index must be numbered after the
+  frontend's count copy and before those copies, i.e. it has to be a compiler-made object.
+- **Fix, two parts that only work together:** both exclusive loops share index `j` (the second use makes MWCC rename it
+  into a new object at that point; lever "second live range", pokopi2), and the packed body walks a named pointer
+  `u8* dl = ...offset; dl++; numVectors += *(u16*)dl - 2;` (skip the GX command byte, read the count). Separate `k` +
+  `dl++` body: 98.79; shared `j` without `dl`: 97.33; together: 100. No helper, pragma or MUST_MATCH.
+- Negatives: body local without `dl++` is folded away (98.76); inline helpers (per-list 98.76, whole-loop sum 98.16,
+  whole loop with `s32*` accumulator 99.57-99.67); list-base pointer local in all six declaration orders
+  (98.97-99.11); pointer-bound/count-down/while loops move unrolling to the backend (93.1-93.6); count copied to a
+  named local before the branch (95.2-98.9); `u16*` local (98.43); reusing `i` instead of `j` (98.24); split
+  `+=`/`-= 2` (99.36).

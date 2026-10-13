@@ -450,7 +450,7 @@ config.libs = [
             Object(Matching, "driver/camdrv.c"),
             Object(Matching, "driver/dispdrv.c", cflags=cflags_static_nodefer),
             Object(Matching, "driver/fadedrv.c"),
-            Object(NonMatching, "driver/hitdrv.c"),
+            Object(Matching, "driver/hitdrv.c"),
             Object(NonMatching, "driver/icondrv.c"),
             Object(Matching, "driver/lightdrv.c"),
             Object(NonMatching, "driver/mapdrv.c"),
