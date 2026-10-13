@@ -6453,3 +6453,19 @@ also told to write down the old framing's assumptions and question them first. S
   src/battle/battle_evt_cmd.c ("Kept raw on purpose"). Its split range moved into battle/battle_event_cmd.c in
   splits.txt, the placeholder's configure.py entry and file removed.
 - Cleanup: three MUST_MATCH blocks with identical branches collapsed; CommandFlyItem's stale NONMATCHING removed.
+
+### sac_scissor LINKED: star_control 98.93 -> 100, scissor_damage_sub 97.23 -> 100, 27/27 (Claude Opus 5.5)
+- **Data first (closed star_control):** all undefined named float/string/vec3 externs became literals and `(Vec){...}`
+  compound literals with `#pragma pool_data on` (the original reads its .rodata through one base, i2f double included);
+  weapon_scissor/weapon_scissor_finish moved just before star_control with literal strings for .rodata order; the
+  SCVEC base-pointer and RELOAD_F32 macros and vec3 externs removed. Old framings that were wrong: the named vec3 reads
+  were compound-literal templates via pool_data; the magic-double load was not a project-wide limit.
+- **scissor_damage_sub** (dropped to 95.21 once data was literal): row term written inline
+  `((f32)i * width) / nine` (MWCC hoists it; 95.16 -> 97.44); plain re-read of `unit->mSizeMultiplier` instead of the
+  volatile macro; `sign` by if/else (a named local; the ternary is 99.55); declarations from rasim (ratio, halfW,
+  halfH, width, height, sign); and the closer, statement order: of all 144 orders of the four setup statements against
+  the three point stores, only `pos.x +=`, `pos.y +=`, `halfH`, `halfW`, then point.x/y/z reaches 100 (others 91.3-99.77).
+- **Link blockers (DOL diff):** `star_stone_appear` made static (local in symbols.txt, clashed with sac_genki's copy);
+  the named `gap_05_803B24BC_data` padding word removed (the section alignment supplies it; it pushed the jump table
+  4 bytes late).
+- Tower note: Mac/tower clock skew can leave stale objects; delete the unit's .o before scoring.
