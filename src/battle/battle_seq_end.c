@@ -1283,6 +1283,9 @@ void _MarioExpDisp(CameraId camId, void* param) {
 
 // NONMATCHING (99.58%): only work (retail r31) and the string/pool base (retail r30) are swapped. The base is a
 // backend temp, numbered above every local, so it colours first; retail's work behaves like a later temp.
+// Every frontend object (named local, inline parameter, scalarised struct field, reused parameter, `@` copy) is
+// numbered below the base, so only a codegen temp holding the load (as a call result or `&global` would be) can
+// outrank it; no plain load spelling, pragma combination or mwsearch run (12.6k compiles) produced one.
 void _LvupParamConfirmDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
     BattleSeqEndWork* work = wp->seqEndWork;
@@ -1886,14 +1889,11 @@ s32 _keta_get(s32 value) {
 
 // The 0x200 area of the sequence-end work: three select objects.
 
-// Logic and instruction sequence match, apart from _keta_get, which ours inlines where the original calls it, the
-// stack/matrix layout, the pooled float order and the three btlDispTexPlane calls (the extra trailing zero
-// comes from btlDispTexPlane's missing 8th parameter -- see the report). Remaining: the register/scheduling
-// of the cur!=max position computation and the pooled int->float double is @N instead of
-// double_to_int_802fe050.
-// NONMATCHING (98.09%): logic and calls match. The remaining 18 `!!` are FP register/schedule
-// (ours computes y's fmadds into f0 rather than f4 and loads float_0p8 late). Statement order below is
-// the best-scoring of 24 permutations tried; see the note above.
+// The original was built without common-subexpression elimination here: with it, the frontend merges
+// PSMTXScale's two 0.8 arguments into one temp whose load the scheduler issues first, and the pos2 block's
+// FP registers and order drift. Without it the backend loads 0.8 once and copies it (`lfs f1; fmr f2, f1`)
+// late, as in retail.
+#pragma opt_common_subs off
 void _lvup_select_object_disp(CameraId camId, void* param) {
     BattleSeqEndWorkLvup* work = (BattleSeqEndWorkLvup*)_battleWorkPointer->seqEndWork;
     Mtx mtxMain;
@@ -2023,11 +2023,9 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
                 continue;
             }
             pos2 = obj->pos;
-            // Statement order is not semantic: it steers MWCC's FP scheduler toward the original's
-            // schedule (pos2.z, then the single-expression x, then y).
-            pos2.z = pos2.z + float_5_80420c5c;
             pos2.x = pos2.x - float_8_80420c50 - float_6_80420c54;
             pos2.y = pos2.y - (float_96_80420c58 * obj->scale.y + float_2_80420c4c);
+            pos2.z = pos2.z + float_5_80420c5c;
             PSMTXScale(mtxS2, float_0p8_80420c60, float_0p8_80420c60, float_1_80420c64);
             PSMTXTrans(mtxT2, pos2.x, pos2.y, pos2.z);
             PSMTXConcat(mtxT2, mtxS2, mtxT2);
@@ -2059,6 +2057,7 @@ void _lvup_select_object_disp(CameraId camId, void* param) {
         }
     }
 }
+#pragma opt_common_subs reset
 
 void _check_audience_battle_end_exec(void) {
     BattleWork* wp = _battleWorkPointer;
