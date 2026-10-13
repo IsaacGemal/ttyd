@@ -169,24 +169,72 @@ s32 pouchGetEmptyKeepItemCnt(void) {
 	return count;
 }
 
-//we have obtained an item, update the appropriate data
-// The saved-register swap, the loop's pointer temporaries and the found-slot pointer registers
-// now match. What still differs (29 instructions): (1) the common-section zero fill emits
-// `li r29,0`/`li r30,0` where the original reuses r4's zero (`li r4,0; mr r29,r4; mr r30,r4`);
-// (2) the `? :` for the held-item maximum is computed into r0 and moved to r4 instead of loaded
-// straight into r4; (3) in the table2 shift loop the second pointer is r6 and the unroll's
-// remainder counter is a copy `mr r3,r4`, where the original keeps the second pointer in r3 and
-// the remainder on r4. The pointer form of the shift loop (`*p1 = *(p1-1)`, `p1--`) is what took
-// this from 93.55% to 97.21%; moving `table2` before `table1` in the declarations completed the
-// saved-register fix (98.45%).
-// NONMATCHING (98.45%): the search/shift logic is right; left is register allocation in the shift: the original keeps the second (table2) walk pointer in r3 and the unroll remainder count in r4, ours uses r6 and r3 (plus an extra `mr r3,r4`). The prologue also differs (original `li r4,0; mr r29,r4; mr r30,r4` coalescing the three NULL/0 stores, ours `li r29,0; li r30,0`; and the STRANGE_SACK ternary loads straight into r4 vs our r0+`mr`). Tried unswitching the table2==0 loop, moving the p2 declaration, and decl/init reorders without improvement.
-BOOL pouchGetItem(ItemType type) {
-	s16* table2;
-	s16* table1;
+static inline BOOL pouchInsertItem(ItemType type) {
+	s16* p1;
+	s16* p2;
 	s32 maximum;
 	BOOL valid;
+	s16* table1;
+	s16* table2;
+	int i;
+
+	maximum = 0;
+	table1 = NULL;
+	table2 = NULL;
+	if (type >= ITEM_MIN && type < ITEM_MAX) {
+		table1 = mpp->heldItems;
+		maximum = (s32)pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
+		valid = TRUE;
+	}
+	else if (type >= KEY_ITEM_MIN && type < KEY_ITEM_MAX) {
+		table1 = mpp->keyItems;
+		table2 = NULL;
+		maximum = MAX_KEY_ITEMS;
+		valid = TRUE;
+	}
+	else if (type >= BADGE_MIN && type < BADGE_MAX) {
+		table1 = mpp->badges;
+		table2 = mpp->equippedBadges;
+		maximum = MAX_BADGES;
+		valid = TRUE;
+	}
+	else {
+		valid = FALSE;
+	}
+	if (!valid) {
+		return FALSE;
+	}
+	for (i = maximum - 1; i >= 0; i--) {
+		if (table1[i] == ITEM_NULL) {
+			p1 = &table1[i];
+			p2 = table2 + i;
+			if (table2 != NULL) {
+				while (i-- > 0) {
+					*p1 = *(p1 - 1);
+					*p2 = *(p2 - 1);
+					p1--;
+					p2--;
+				}
+			}
+			else {
+				while (i-- > 0) {
+					*p1 = *(p1 - 1);
+					p1--;
+				}
+			}
+			table1[0] = type;
+			if (table2 != NULL) {
+				table2[0] = ITEM_NULL;
+			}
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+//we have obtained an item, update the appropriate data
+BOOL pouchGetItem(ItemType type) {
 	s32 partyId;
-	int i, j;
 
 	if (type == ITEM_COIN) {
 		if (mpp->coins < 999) {
@@ -260,58 +308,7 @@ BOOL pouchGetItem(ItemType type) {
 			swSet(type - 0x70);
 		}
 	}
-	maximum = 0;
-	table1 = NULL;
-	table2 = NULL;
-	if (type >= ITEM_MIN && type < ITEM_MAX) {
-		table1 = mpp->heldItems;
-		maximum = (s32)pouchCheckItem(ITEM_STRANGE_SACK) ? MAX_HELD_ITEMS : HELD_ITEM_COUNT_BASE;
-		valid = TRUE;
-	}
-	else if (type >= KEY_ITEM_MIN && type < KEY_ITEM_MAX) {
-		table1 = mpp->keyItems;
-		table2 = NULL;
-		maximum = MAX_KEY_ITEMS;
-		valid = TRUE;
-	}
-	else if (type >= BADGE_MIN && type < BADGE_MAX) {
-		table1 = mpp->badges;
-		table2 = mpp->equippedBadges;
-		maximum = MAX_BADGES;
-		valid = TRUE;
-	}
-	else {
-		valid = FALSE;
-	}
-	if (!valid) {
-		return FALSE;
-	}
-	for (i = maximum - 1; i >= 0; i--) {
-		if (table1[i] == ITEM_NULL) {
-			s16* p1 = &table1[i];
-			s16* p2 = table2 + i;
-			if (table2 != NULL) {
-				while (i-- > 0) {
-					*p1 = *(p1 - 1);
-					*p2 = *(p2 - 1);
-					p1--;
-					p2--;
-				}
-			}
-			else {
-				while (i-- > 0) {
-					*p1 = *(p1 - 1);
-					p1--;
-				}
-			}
-			table1[0] = type;
-			if (table2 != NULL) {
-				table2[0] = ITEM_NULL;
-			}
-			return TRUE;
-		}
-	}
-	return FALSE;
+	return pouchInsertItem(type);
 }
 
 
@@ -359,12 +356,26 @@ u32 pouchCheckItem(u32 itemId) {
 #pragma dont_inline reset
 
 
-// NONMATCHING (95.78%): same single-loop-unswitch shape as pouchRemoveItemIndex. What is left is only the branch polarity / layout of the unswitched dispatch: the original's `cmplwi r30,0` branches `beq` to the table1-only loop (table2 loop is fallthrough) and the shared `table1+i`/`table2+i` preheader is scheduled before the test; ours does the adds after the test and branches `bne` to the table2 loop.
+static inline void pouchShiftItems(s16* table1, s16* table2, s32 index, s32 maximum) {
+	table1[index] = ITEM_NULL;
+	if (table2 != NULL) {
+		table2[index] = ITEM_NULL;
+	}
+	for (; index < maximum - 1; index++) {
+		table1[index] = table1[index + 1];
+		table1[index + 1] = ITEM_NULL;
+		if (table2 != NULL) {
+			table2[index] = table2[index + 1];
+			table2[index + 1] = ITEM_NULL;
+		}
+	}
+}
+
 BOOL pouchRemoveItem(ItemType type) {
 	s16* table1, * table2;
 	BOOL valid;
 	s32 maximum;
-	int i, j, temp;
+	int i;
 
 	maximum = 0;
 	table1 = NULL;
@@ -395,31 +406,19 @@ BOOL pouchRemoveItem(ItemType type) {
 	}
 	for (i = 0; i < maximum; i++) {
 		if (type == table1[i]) {
-			table1[i] = ITEM_NULL;
-			if (table2 != 0) {
-				table2[i] = ITEM_NULL;
-			}
-			for (j = i; j < maximum - 1; j++) {
-				table1[j] = table1[j + 1];
-				table1[j + 1] = ITEM_NULL;
-				if (table2) {
-					table2[j] = table2[j + 1];
-					table2[j + 1] = ITEM_NULL;
-				}
-			}
+			pouchShiftItems(table1, table2, i, maximum);
 			return TRUE;
 		}
 	}
 	return FALSE;
 }
 
-// NONMATCHING (96.02%): the shift is now written as ONE loop with the `if (table2)` unswitched by the compiler, which reproduces the original's shared `table1+i`/`table2+i` preheader. What is left is that preheader's scheduling/block layout: the original schedules the two `add`s before the dispatch's `cmplwi r30,0` and keeps the preheader as the merge point of the table2==0/!=0 paths (a cold block before the epilogue); ours folds the adds into the dispatch and branches `bne` to the table2 loop instead.
 s32 pouchRemoveItemIndex(s32 id, s32 index) {
 	s16* table1, * table2;
 	s16* p;
 	BOOL valid;
 	s32 maximum;
-	int i, j, temp;
+	int i;
 
 	maximum = 0;
 	table1 = NULL;
@@ -454,18 +453,7 @@ s32 pouchRemoveItemIndex(s32 id, s32 index) {
 	}
 	for (i = index; i < maximum; p++, i++) {
 		if (id == *p) {
-			table1[i] = ITEM_NULL;
-			if (table2 != 0) {
-				table2[i] = ITEM_NULL;
-			}
-			for (j = i; j < maximum - 1; j++) {
-				table1[j] = table1[j + 1];
-				table1[j + 1] = ITEM_NULL;
-				if (table2) {
-					table2[j] = table2[j + 1];
-					table2[j + 1] = ITEM_NULL;
-				}
-			}
+			pouchShiftItems(table1, table2, i, maximum);
 			return TRUE;
 		}
 	}
