@@ -1379,47 +1379,38 @@ void cache_flush(u32 pointerToARQRequest) {
     _ssDVDReadAsync_activeChk(0, &dvd->info);
 }
 
-// NONMATCHING (99.31%): the code is complete and does what the assembly does. The instruction stream is
-// identical in order and count (225 each); what still differs is register allocation only. The second
-// expansion matches. In the first, entry/len/aligned are r29/r30/r31 where the original has r31/r29/r30
-// (rasim: the first call's entry object has to rank above the helper's locals, and an inline parameter
-// always ranks below them). The second expansion's ARQ dest temps are r6/r7 swapped, and the else
-// branch's len is r27 for the original's r29. The buffer select, the ARQ `dest` addend order and the
-// ARQ source/dest argument order (`dest` first) are the forms that reproduce the original's
-// `subfic; slwi; add; lwz 0x2c`.
-static inline void _ssDVDReadAsync_cache_entry(SoundStream* stream, SoundStreamEntry* entry, u32 offset) {
+static inline void _ssPlayChRead(SoundStream* stream, SoundStreamEntry* entry, u32 offset) {
     u32 len;
     u32 aligned;
     u32 n;
+    SoundStreamEntry* e = entry;
 
     len = 0x8000;
-    if (entry->bytesLoaded + 0x8000 > *(u32*)&entry->unk4C[0x14]) {
-        len = *(u32*)&entry->unk4C[0x14] - entry->bytesLoaded;
+    if (e->bytesLoaded + 0x8000 > *(u32*)&e->unk4C[0x14]) {
+        len = *(u32*)&e->unk4C[0x14] - e->bytesLoaded;
     } else {
         for (n = 2; n < 6; n++) {
-            if (entry->bytesLoaded + n * 0x8000 <= *(u32*)&entry->unk4C[0x14]) {
+            if (e->bytesLoaded + n * 0x8000 <= *(u32*)&e->unk4C[0x14]) {
                 continue;
             }
-            len -= (0x8000 - (*(u32*)&entry->unk4C[0x14] - (entry->bytesLoaded + (n - 1) * 0x8000))) / n;
+            len -= (0x8000 - (*(u32*)&e->unk4C[0x14] - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
             len += 0x20 - (len & 0x1F);
             break;
         }
     }
     aligned = (len + 0x1F) & ~0x1F;
     if (!(stream->flags & 0x400)) {
-        DVDMgrReadAsync(entry->dvd, (void*)((u32*)&entry->loadBuffer)[1 - *(u16*)entry->unk4C], aligned,
-                        stream->unk4 + entry->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
+        DVDMgrReadAsync(e->dvd, (void*)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), aligned,
+                        stream->unk4 + e->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
     } else {
-        u32 dest = stream->unk4 + entry->bytesLoaded + offset + ((u32*)sound.unk21C)[stream->unk2];
-        DCInvalidateRange((void*)((u32*)&entry->loadBuffer)[1 - *(u16*)entry->unk4C], 0x8000);
-        ARQPostRequest(&entry->request, (u32)entry, 1, 0,
-                       dest, ((u32*)&entry->loadBuffer)[1 - *(u16*)entry->unk4C], aligned, cache_flush);
+        u32 dest = ((u32*)sound.unk21C)[stream->unk2] + (offset + (stream->unk4 + (e->bytesLoaded)));
+        DCInvalidateRange((void*)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), 0x8000);
+        ARQPostRequest(&e->request, (u32)e, 1, 0,
+                       dest, (u32)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), aligned, cache_flush);
     }
-    entry->requestLength = len;
+    e->requestLength = len;
 }
 
-// NONMATCHING (99.31%): see the note on _ssDVDReadAsync_cache_entry above; only register allocation
-// differs. The logic, every call, branch, store and instruction order all match.
 void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
     SoundStream* stream = &sound.streams[((ARQRequest*)pointerToARQRequest)->owner & 0xFF];
     SoundStreamEntry* entry;
@@ -1434,18 +1425,19 @@ void _ssDVDReadAsync_cache_aram(u32 pointerToARQRequest) {
         *(u32*)stream->entries[1].unk38 = 0;
         *(u16*)stream->entries[0].unk4C = 1;
 
-        _ssDVDReadAsync_cache_entry(stream, entry = &stream->entries[0], 0);
+        _ssPlayChRead(stream, &stream->entries[0], 0);
 
         if (stream->count == 2) {
             *(u16*)stream->entries[1].unk4C = 1;
             entry = &stream->entries[1];
-            _ssDVDReadAsync_cache_entry(stream, entry, *(u32*)&entry->unk4C[0x14] + (0x20 - (*(u32*)&entry->unk4C[0x14] & 0x1F)));
+            _ssPlayChRead(stream, entry, *(u32*)&entry->unk4C[0x14] + (0x20 - (*(u32*)&entry->unk4C[0x14] & 0x1F)));
         }
     } else {
         length = DVDMgrGetLength(stream->entries[0].dvd);
-        len = 0x8000;
         if (stream->entries[0].bytesLoaded + 0x8000 >= length) {
             len = length - stream->entries[0].bytesLoaded;
+        } else {
+            len = 0x8000;
         }
         DVDMgrReadAsync(stream->entries[0].dvd, (void*)stream->entries[0].loadBuffer,
                         (len + 0x1F) & ~0x1F, stream->entries[0].bytesLoaded,
@@ -1854,38 +1846,6 @@ void SoundSSPlayChEx(s32 chan, u32 a2, u32 a3) {
     DVDMgrReadAsync(stream->entries[0].dvd, stream->entries[0].unk28, 0x100, 0, SoundSSPlayChEx_main);
 }
 
-static inline void _ssPlayChRead(SoundStream* stream, SoundStreamEntry* entry, u32 offset) {
-    u32 len;
-    u32 aligned;
-    u32 n;
-    SoundStreamEntry* e = entry;
-
-    len = 0x8000;
-    if (e->bytesLoaded + 0x8000 > *(u32*)&e->unk4C[0x14]) {
-        len = *(u32*)&e->unk4C[0x14] - e->bytesLoaded;
-    } else {
-        for (n = 2; n < 6; n++) {
-            if (e->bytesLoaded + n * 0x8000 <= *(u32*)&e->unk4C[0x14]) {
-                continue;
-            }
-            len -= (0x8000 - (*(u32*)&e->unk4C[0x14] - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
-            len += 0x20 - (len & 0x1F);
-            break;
-        }
-    }
-    aligned = (len + 0x1F) & ~0x1F;
-    if (!(stream->flags & 0x400)) {
-        DVDMgrReadAsync(e->dvd, (void*)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), aligned,
-                        stream->unk4 + e->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
-    } else {
-        u32 dest = ((u32*)sound.unk21C)[stream->unk2] + (offset + (stream->unk4 + (e->bytesLoaded)));
-        DCInvalidateRange((void*)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), 0x8000);
-        ARQPostRequest(&e->request, (u32)e, 1, 0,
-                       dest, (u32)((&e->loadBuffer)[1 - *(u16*)e->unk4C]), aligned, cache_flush);
-    }
-    e->requestLength = len;
-}
-
 void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
     SoundStream* stream;
     s32 chan;
@@ -2279,46 +2239,43 @@ void SoundSSMain(void) {
     }
 }
 
-// Variant of _ssDVDReadAsync_cache_entry used only by SoundSSMainInt. The two-buffer select and the ARQ
-// dest are written so MWCC emits the original's `subfic; slwi; addi 0x2c; lwzx` and `0x21c(base)` forms;
-// the shared helper above is left as-is because _ssDVDReadAsync_cache_aram needs its form.
+// Variant of _ssPlayChRead used only by SoundSSMainInt. The two-buffer select and the ARQ dest are
+// written so MWCC emits the original's `subfic; slwi; addi 0x2c; lwzx` and `0x21c(base)` forms.
 static inline void _ssDVDReadAsync_cache_entry_ss(SoundStream* stream, SoundStreamEntry* entry, u32 offset) {
     u32 len;
     u32 aligned;
     u32 n;
+    SoundStreamEntry* e = entry;
 
     len = 0x8000;
-    if (entry->bytesLoaded + 0x8000 > *(u32*)&entry->unk4C[0x14]) {
-        len = *(u32*)&entry->unk4C[0x14] - entry->bytesLoaded;
+    if (e->bytesLoaded + 0x8000 > *(u32*)&e->unk4C[0x14]) {
+        len = *(u32*)&e->unk4C[0x14] - e->bytesLoaded;
     } else {
         for (n = 2; n < 6; n++) {
-            if (entry->bytesLoaded + n * 0x8000 <= *(u32*)&entry->unk4C[0x14]) {
+            if (e->bytesLoaded + n * 0x8000 <= *(u32*)&e->unk4C[0x14]) {
                 continue;
             }
-            len -= (0x8000 - (*(u32*)&entry->unk4C[0x14] - (entry->bytesLoaded + (n - 1) * 0x8000))) / n;
+            len -= (0x8000 - (*(u32*)&e->unk4C[0x14] - (e->bytesLoaded + (n - 1) * 0x8000))) / n;
             len += 0x20 - (len & 0x1F);
             break;
         }
     }
     aligned = (len + 0x1F) & ~0x1F;
     if (!(stream->flags & 0x400)) {
-        DVDMgrReadAsync(entry->dvd, (void*)((u32*)((u8*)entry + (1 - *(u16*)entry->unk4C) * 4 + 0x2C))[0], aligned,
-                        stream->unk4 + entry->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
+        DVDMgrReadAsync(e->dvd, (void*)((u32*)((u8*)e + (1 - *(u16*)e->unk4C) * 4 + 0x2C))[0], aligned,
+                        stream->unk4 + e->bytesLoaded + offset, _ssDVDReadAsync_activeChk);
     } else {
-        u32 dest = stream->unk4 + entry->bytesLoaded + offset + *(u32*)(sound.unk21C + stream->unk2 * 4);
-        DCInvalidateRange((void*)((u32*)((u8*)entry + (1 - *(u16*)entry->unk4C) * 4 + 0x2C))[0], 0x8000);
-        ARQPostRequest(&entry->request, (u32)entry, 1, 0,
-                       dest, ((u32*)((u8*)entry + (1 - *(u16*)entry->unk4C) * 4 + 0x2C))[0], aligned, cache_flush);
+        u32 dest = stream->unk4 + e->bytesLoaded + offset + *(u32*)(sound.unk21C + stream->unk2 * 4);
+        DCInvalidateRange((void*)((u32*)((u8*)e + (1 - *(u16*)e->unk4C) * 4 + 0x2C))[0], 0x8000);
+        ARQPostRequest(&e->request, (u32)e, 1, 0,
+                       dest, ((u32*)((u8*)e + (1 - *(u16*)e->unk4C) * 4 + 0x2C))[0], aligned, cache_flush);
     }
-    entry->requestLength = len;
+    e->requestLength = len;
 }
 
 // dont_inline keeps SoundSSMainInt out of SoundMainInt (the original keeps a
 // stack frame and real call sequence).
 #pragma dont_inline on
-// NONMATCHING (99.51%): instruction stream identical; the loop offset and the second expansion match.
-// In the first expansion entry/len/aligned are r26/r27/r28 where the original has r28/r26/r27, the
-// same first-call ranking problem as _ssDVDReadAsync_cache_aram.
 void SoundSSMainInt(void) {
     int i;
     SoundStream* stream;
@@ -2338,7 +2295,7 @@ void SoundSSMainInt(void) {
 
         if (*(u32*)&stream->entries[0].unk38[0xC] && *(s16*)&stream->entries[0].unk4C[8] == 0 &&
             !(stream->flags & 0x1000)) {
-            _ssDVDReadAsync_cache_entry_ss(stream, entry = &stream->entries[0], 0);
+            _ssDVDReadAsync_cache_entry_ss(stream, &stream->entries[0], 0);
             stream->flags |= 0x1000;
             if (stream->flags & 0x400) {
                 *(u16*)&stream->entries[0].unk4C[8] = 1;

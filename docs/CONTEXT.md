@@ -6637,3 +6637,19 @@ also told to write down the old framing's assumptions and question them first. S
   flags -inline variants (99.58), -O4,p (94.7); GC 2.0/2.5/2.7 (99.58), others break neighbours. Next: a natural
   integer offset/index that only the backend knows is 0, or propagation off (btlseqEnd_DispMain already has it) with a
   colour spelling that avoids the extra GXColor copy. Tower ~/scratch-on3-bsend2/chk.py reports work-in-r31 per variant.
+
+### sound partial: _ssDVDReadAsync_cache_aram 99.31 and SoundSSMainInt 99.51 -> 100, 56/58 (Claude Opus 5.5)
+- **Old framing wrong:** three differently written copies of the same inline read helper were not needed. The one
+  used by the matched SoundSSPlayChEx_main copies its `entry` parameter into a local `e = entry`, which MWCC ranks
+  above the helper's own len/aligned (retail's ranking). _ssDVDReadAsync_cache_aram now calls it and
+  `_ssDVDReadAsync_cache_entry` is gone; SoundSSMainInt's variant keeps its buffer-select spelling (91 with the shared
+  one) but gains the `e = entry` copy; both first calls pass `&stream->entries[0]`; the aram else branch as
+  `if (...) len = length - bytesLoaded; else len = 0x8000;` (SoundSSPlayChEx_main's tail shape).
+- **SoundSSMain 99.05 (one register pair):** rasim: retail ranks the loop's stream-offset counter above the inlined
+  helpers' stream pointers; no shape found. An unsigned channel parameter for SoundSSStopCh/SoundSSSetPanCh with
+  `int i` first gave 99.21 but the shared header change costs pmario_sound (psndBGMOn_f_d 99.27 -> 99.01, psndSFXMain
+  98.21 -> 98.12): not kept. Getters, wrappers, counter types, declaration orders: 96.9-99.05; loop body as a helper is
+  not inlined (3%).
+- **_sscallback 99.29:** retail keeps one late copy of buffer1 in r6 that is never coalesced into the decoder call's r5;
+  every single-copy version is coalesced. Copy loops as inlines, copy orders/types: 93.8-97.5; whole body as inline
+  (not inlined, 1.5-2.1); natural code 97.73. mwsearch 40 min per function (~16-17k compiles each), nothing.
