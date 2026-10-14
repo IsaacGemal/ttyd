@@ -6880,3 +6880,19 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   nothing. Used by #661 (kpaSen_ext_main), #668 (nanNPCOption) and #778 (party_motion_jump, which Sol missed while
   reading #668 as "initialization timing").
 - Diagnose first with rasim what-if edges (several at once, not just single edges): icondrv #774, party_motion #778.
+
+### mri_puni partial: .rodata templates fixed, 378 lines of hand copies gone (176/188 unchanged) (Claude Opus 5.5, on4-mripuni)
+- **Hand copies of existing functions duplicate .rodata:** each pasted copy carried its own vector template, where the
+  original inlined the real function and shared one. puniModeRecover/Prehagure/Fall now call puniPositionCheck and
+  puniPositionRecover; unk_mri_00012d58 cases 0/12/15/18/20/23/27/28 call puniModeNormal/Dead/Prehagure/Preupdraft/
+  Wonder/Dodai/Point/Dokan; evt_puni_all_fall_check is `puniModeChangeFallCheck(); return EVT_RETURN_DONE;`; match-only
+  puniCase15Hit/puniRandfRecover deleted, mriRandf (a copy of randf) replaced by randf; puniAnimCountInline made
+  `static inline` (no .text). .rodata now byte-identical except 4 bytes end padding; .text symbol-for-symbol.
+- puniPositionCheck: `Vec hit; Vec hitN;` instead of six floats and if/return instead of `?:`: function-level locals
+  get slots in reverse declaration order but the inlined copy forward, and Vecs satisfy both.
+- **Split error found (not applied, protected file):** puniSearchRandom_Mikata/Teki really end with a dead `blr`;
+  dtk split it into empty fn_19_A820/fn_19_A8DC. Deleting those two and setting Mikata/Teki size 0xbc in
+  config/G8MJ01/mri/symbols.txt should match the bytes.
+- Negatives: unk_mri_000095f0 statement reorders 94.16/89.11 (from 96.04). Next: rasim degree/what-if on puniFukki,
+  evt_puni_debug_info, evt_puni_setup, evt_puni_exit; look for more pasted copies in ALLCheck, Findbuff, ChildHagure,
+  980c, all_save.
