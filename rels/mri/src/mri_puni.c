@@ -2643,9 +2643,6 @@ PuniData* puniSearchRandom(s32 start, s32 count) {
     return puni;
 }
 
-// NONMATCHING (97.83%): every instruction, constant and register matches except a trailing
-// `blr` after the loop back-edge. MWCC shares the two returns in one empty return block and
-// emits it even after inlining it into both predecessors; no source shape drops it at -O4,s.
 PuniData* puniSearchRandom_Mikata(void) {
     s32 i;
     s32 idx;
@@ -2684,12 +2681,6 @@ PuniData* puniSearchRandom_Mikata(void) {
     return puni;
 }
 
-// The original body is a single `blr`; the function is genuinely empty.
-void fn_19_A820(void) {
-    (void)0;
-}
-
-// NONMATCHING (97.83%): same shape as puniSearchRandom_Mikata; only the trailing `blr` remains.
 PuniData* puniSearchRandom_Teki(void) {
     s32 i;
     s32 idx;
@@ -2726,11 +2717,6 @@ PuniData* puniSearchRandom_Teki(void) {
         i++;
     }
     return puni;
-}
-
-// The original body is a single `blr`; the function is genuinely empty.
-void fn_19_A8DC(void) {
-    (void)0;
 }
 
 PuniData* searchBattle(PuniData* puni, s32 start, s32 count, f32 maxDist) {
