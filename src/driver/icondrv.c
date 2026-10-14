@@ -28,12 +28,12 @@ extern GXColor dat_80419788;
 extern GXColor dat_8041978c;
 extern GXColor dat_80419790;
 
-//.sbss
-TEXPalette* icon_tpl;
-IconBinary* icon_bin;
-BOOL icon_tpl_ok;
-BOOL icon_bin_ok;
+//.sbss (declared in reverse: MWCC lays these out last-declared first)
 static IconWork work[2];
+BOOL icon_bin_ok;
+BOOL icon_tpl_ok;
+IconBinary* icon_bin;
+TEXPalette* icon_tpl;
 
 // local prototypes
 
@@ -56,17 +56,20 @@ inline IconEntry* iconGetEntry(const char* name) {
 }
 
 // MUST_MATCH: the retail code walks the frame table through a pointer cast from the entry start (frames at +2 u32 slots);
-// `data->frames[i]` compiles to the same loads but the registers come out differently (the inline accessor matters too).
+// `data->frames[i]` compiles to the same loads but the registers come out differently. iconDispGxAlpha and iconGetTexObj
+// take the pointer from an inline accessor; iconDispGx2 and iconDispGxCol cast it into a block-local pointer.
 #ifdef MUST_MATCH
 static inline IconFrame* iconFramesOf(IconBinaryEntry* e) {
     return (IconFrame*)e;
 }
 #define ICON_FRAMES_DECL IconFrame* frames;
 #define ICON_FRAMES_INIT(d) frames = iconFramesOf(d);
+#define ICON_FRAMES_LOCAL(d) IconFrame* frames = (IconFrame*)(d);
 #define ICON_FRAME(d, i) frames[(i) + 2]
 #else
 #define ICON_FRAMES_DECL
 #define ICON_FRAMES_INIT(d)
+#define ICON_FRAMES_LOCAL(d)
 #define ICON_FRAME(d, i) (d)->frames[i]
 #endif
 
@@ -428,25 +431,7 @@ void iconDispGx(f32 scale, Vec* position, s16 flags, s16 iconId) {
     iconDispGxAlpha(position, flags, iconId, 0xFF, scale);
 }
 
-// Inlining this lookup changes MWCC's register colouring: it puts `data` in r4 (retail's
-// register) instead of r6, so keep it inline.
-static inline IconBinaryEntry* iconGetBinaryData(IconBinary* bin, u16 id) {
-    if (!icon_tpl_ok || !icon_bin_ok) {
-        return NULL;
-    }
-    return (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
-}
-
-static inline u16 iconGetNumFrames(IconBinaryEntry* data) {
-    return data->numIcons;
-}
-
-// NONMATCHING (99.04%): only r7/r8 are swapped: retail has numIcons in r8 and the loops' frame
-// pointers in r7. rasim on a mwccdbg dump: the numIcons web would need a sweep position between the
-// loop-1 and loop-2 frame-pointer temps (or one of those temps above it); the getter object sits
-// above both, a named `n` or the direct `data->numIcons` CSE temp below both.
 void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
-    ICON_FRAMES_DECL
     CameraEntry* camera;
     IconBinaryEntry* data;
     IconEntry entry;
@@ -454,7 +439,6 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     Mtx view;
     IconBinary* bin;
     u16 id;
-    u16 n;
 
     camera = camGetCurPtr();
     entryp = &entry;
@@ -465,23 +449,26 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     bin = icon_bin;
     id = (u16)iconId;
     entryp->iconId = id;
-    data = iconGetBinaryData(bin, id);
+    if (!icon_tpl_ok || !icon_bin_ok) {
+        data = NULL;
+    } else {
+        data = (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
+    }
     entryp->width = data->width;
     entryp->height = data->height;
     entryp->tplId = data->frames[0].tplId;
     entryp->frameDelay = data->frames[0].frameDelay;
-    n = iconGetNumFrames(data);
-    if (n > 1) {
+    if (data->numIcons > 1) {
         s32 total = 0;
+        ICON_FRAMES_LOCAL(data)
         s32 rest;
         int i;
 
-        ICON_FRAMES_INIT(data)
-        for (i = 0; i < n; i++) {
+        for (i = 0; i < data->numIcons; i++) {
             total += ICON_FRAME(data, i).frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
-        for (i = 0; i < n; i++) {
+        for (i = 0; i < data->numIcons; i++) {
             if (rest < ICON_FRAME(data, i).frameDelay) {
                 entryp->tplId = ICON_FRAME(data, i).tplId;
                 break;
@@ -493,9 +480,7 @@ void iconDispGx2(Mtx mtx, s16 flags, s16 iconId) {
     iconGX(view, entryp);
 }
 
-// NONMATCHING (99.00%): same r7/r8 swap as iconDispGx2.
 void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
-    ICON_FRAMES_DECL
     CameraEntry* camera;
     IconBinaryEntry* data;
     IconEntry entry;
@@ -503,7 +488,6 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     Mtx view;
     IconBinary* bin;
     u16 id;
-    u16 n;
 
     camera = camGetCurPtr();
     entryp = &entry;
@@ -514,23 +498,26 @@ void iconDispGxCol(Mtx pos, s16 flags, s32 iconId, GXColor color) {
     bin = icon_bin;
     id = (u16)iconId;
     entryp->iconId = id;
-    data = iconGetBinaryData(bin, id);
+    if (!icon_tpl_ok || !icon_bin_ok) {
+        data = NULL;
+    } else {
+        data = (IconBinaryEntry*)((u8*)bin + bin->offset[id]);
+    }
     entryp->width = data->width;
     entryp->height = data->height;
     entryp->tplId = data->frames[0].tplId;
     entryp->frameDelay = data->frames[0].frameDelay;
-    n = iconGetNumFrames(data);
-    if (n > 1) {
+    if (data->numIcons > 1) {
         s32 total = 0;
+        ICON_FRAMES_LOCAL(data)
         s32 rest;
         int i;
 
-        ICON_FRAMES_INIT(data)
-        for (i = 0; i < n; i++) {
+        for (i = 0; i < data->numIcons; i++) {
             total += ICON_FRAME(data, i).frameDelay;
         }
         rest = (s32)gp->retraceCount % total;
-        for (i = 0; i < n; i++) {
+        for (i = 0; i < data->numIcons; i++) {
             if (rest < ICON_FRAME(data, i).frameDelay) {
                 entryp->tplId = ICON_FRAME(data, i).tplId;
                 break;

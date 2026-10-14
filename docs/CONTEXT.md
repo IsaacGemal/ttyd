@@ -6710,3 +6710,41 @@ also told to write down the old framing's assumptions and question them first. S
 - Walk's four undefined float_40 reads become literal local radii. First radius assigned at its first product; jump-target radius rematerialized per product. Walk stays 100, rodata/sdata2 identical. No undefined data artifacts remain.
 - Hard negatives: distinct raw/output heights, all pairwise declarations on the new graph, alternative branches, five-parameter inline rounding orders (240 variants), constant compound-literal combinations, pointer in/out arithmetic helpers and sign-word arguments, and optimizer combinations. New graph's distance and height share one web in f5; retail needs distinct registers.
 - Builds/natural compile, relocation values, instruction/store checks and existing linked-module checksums pass. Not a unit-link claim: jump remains partial and configure.py is NonMatching. Existing .sbss is four bytes short in the object, likely tail alignment but unverified.
+
+## Overnight 3 (2026-10-13/14)
+
+### icondrv LINKED: iconDispGx2 99.04 -> 100, iconDispGxCol 99.00 -> 100 (Claude Opus 5.5, on4-icondrv)
+- **Old framing wrong:** the r7/r8 swap was blamed on where the frame count `n` is numbered. rasim `neighbors` on a
+  direct-read dump showed removing ANY one of the count's 32 interference neighbours gives retail's registers: the cause
+  is the count's interference degree. The extra neighbour was the lookup inline's result, coalesced into `frames` but
+  still counted against the count. Lever: when a swap sits on a loop count, check degree (coalesced copies that still
+  interfere), not just sweep position.
+- Fix (both siblings, the iconDispGxAlpha shape): lookup in the body (if/else on icon_tpl_ok/icon_bin_ok), direct
+  `data->numIcons` reads (no cached `n`), and a block-local `IconFrame* frames = (IconFrame*)data;` after `total`
+  (MUST_MATCH macro ICON_FRAMES_LOCAL; `#else` keeps `data->frames[i]`). Unused inlines iconGetBinaryData and
+  iconGetNumFrames removed.
+- Separate pre-existing blocker: the five `.sbss` objects must be declared in reverse (AGENT_BRIEF's .sbss idiom); even
+  the untouched source failed the DOL hash as Matching.
+- Negatives (22 diffs = base for this list): loop-2 frame-pointer local 51; loop-2 index types 40-58; loop 2 as `while`
+  with `i++` in the subscript 19 (count and loop 1 right, loop 2 reshaped); re-reading the bound 60; loop 1 as an
+  inline 50-52; direct reads alone 47; in-body lookup alone 45; `data->frames`/`&data->frames[0]` pointer 52;
+  iconFramesOf inline for the local 45-47; keeping both inlines plus the local 55.
+
+### GXVert.h const on every vertex inline: hard negative (2026-10-13)
+TP and SFA put `const` on all FUNC_nPARAM/INDEX inlines; Melee and AC on none. TTYD (since #762) has it on FUNC_4PARAM
+only. Making all of them const (TP style) regresses envGlare 100 -> 99.85 and fontmgr _JUTFont_DrawPos 63.7 -> 57.4, so
+TTYD's mix is load-bearing: keep FUNC_1-3PARAM non-const. Review norms checked against ~/melee: uncalled static
+functions that only place strings (camRoadPrint; Melee debugconsole_main.c:813 under MUST_MATCH) and once-called
+static helpers with many out-pointers (ccfloor; Melee has ~20, e.g. gmTournament_SetRegularCoords) are accepted
+practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) before flagging such things for review.
+
+### GPT-6.1 Sol — party_motion_jump follow-up (2026-10-13; no match)
+
+**Result:** 99.927536% -> 99.927536%, 1,932 bytes, six register-only instruction differences. All trials reverted; unit remains NonMatching. No commit/PR. Entire 6,712-line ledger read in chunks before source experiments.
+
+**Diagnostic wins:** Fresh baseline supersedes the older +1 lis / absolute-i2f lead. Existing named .rodata objects, pool_data and math_ext work already removed that symptom. Both .sdata2 and .rodata are byte-identical. Other 52 unit functions remain 100%; direct constant-value check has no findings. Compiler dump and exact allocator replay identify the blocker: one virtual FPR f35 (source f6) serves both distance and adjusted height and is coloured physical f5. Retail needs distance f5 and adjusted height f6. All six mismatches belong to height. A whole-web recolour cannot preserve both regions.
+
+**Hard negatives:** Separate height local or real inline height selector normally yields 99.91: height remains f5, and distance folds into f1. Moving the height assignment into fabs, use-site copies, chained assignments, accumulator doubling and regrouped denominators do not close it. opt_propagation off hoists zero and worsens the graph; changing speed!=0 to a truth test only restores 99.93. Other optimizer switches and lifetimes changes fail. f64/long double distance narrowed before division does not leave a useful copy. Scalarized records, helper parameter/definition order, early returns, real travel-time and ballistic helpers fail. Native Vec compound literals with corresponding named objects removed regress to at best about 99.10. GC2.0/2.5/2.7 still99.93; GC3.0a5 regresses. Foreground mwsearch: 4,486 compile attempts, 81 failures, 18 generations, zero improvements. Some diagnostic identity/unsequenced forms were discarded, never retained.
+
+**Next lead:** Need a new meaningful graph that preserves the distance web's f5 allocation and creates a distinct height web allocated f6 without extra instructions. Compare preallocation backend graphs; ordinary split locals/copies have already failed. Once code matches, full data/section alignment and fresh linked “32 files OK” still required. Full report and lever list: ~/scratch-orch/reports/sjump_{REPORT,levers}.md on the Mac.
+
