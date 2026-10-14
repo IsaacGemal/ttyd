@@ -6800,3 +6800,22 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   78.74, opt_common_subs off 90.65, scheduling off 34.97. Start_alpha <= 60.40 over all six-statement orders (s32
   param 67.97 loses the clrlwi). FontDrawStart as an inline call to Start_alpha(0xFF) fixes slots but 92.25 < 95.06.
   FontDrawColor reading `a` first 78.6. FontDrawMessage unwrapping MUST_MATCH or hoisting 97.2-99.9.
+
+### party_motion LINKED: party_motion_jump 99.93 -> 100 (Claude Opus 5.5, on4-pmotion; after 2 swarm and 2 Sol passes)
+- **Framing fix (Sol's split was right, the missing piece was interference):** with height in its own local `h`,
+  rasim what-if edges showed distance only overlaps f0/f2 (so it takes f1); to land in f5 it must also overlap values
+  in f1/f3/f4 AND the height (pushing height to f6). Retail uses no f4 in distance's block, so in the original distance
+  stays live into the height code through something deleted after allocation. Storing distance back after the
+  if/else proved it (exact registers, one extra stfs).
+- Fix: two MUST_MATCH self-stores of the distance field (0x128), deleted post-allocation because each follows a load of
+  the same address with no store between (late-deleted dead code lever, #661/#668): (1) `*(f32*)((u8*)party + 0x128)
+  = f6;` after the nested travel-time line, before the 0x24 store (alone 99.91; after the 0x24 store not deleted,
+  99.70); (2) nested `*(f32*)(..0x128) = (f6 = *(f32*)(..0x128));` inside the `fabsf(h) < 1.0f` branch (alone 99.91;
+  the sequential `f6 = X; X = f6;` folds before allocation; elsewhere 97.5-99.3). `#else` empty. REVIEW: not plausible
+  original code, same status as #661/#668.
+- Link blocker: .sbss reversed (`unk_804189e8`, `unk_804189ec`, `touch_wall_ct`) plus a force_active
+  `gap_08_804189F4_sbss` 4-byte tail, as windowdrv does.
+- Negatives: plain/dead self-assignments and copies (removed pre-allocation, 99.91); self-store via a temp or
+  reload/store pairs at 17 points (97.5-99.91); 90-variant sequential grid (best 99.79 + extra stfs); height computed
+  into the distance var (99.87-99.93); unused distance param on a height inline (99.91); plain `#else` travel time
+  with both stores (99.81-99.91).

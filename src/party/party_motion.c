@@ -66,9 +66,16 @@ void psndSFX_pit(s32 id, s16 pitch);
 extern void psndSFX_vol(s32 id, u8 vol);
 
 // .sbss
-f32 unk_804189e8;
-s32 unk_804189ec;
+// MUST_MATCH: MWCC emits uninitialised globals in reverse declaration order.
+#ifdef MUST_MATCH
+// Keep the original section tail even though no code references it.
+#pragma force_active on
+static u32 gap_08_804189F4_sbss;
+#pragma force_active reset
+#endif
 f32 touch_wall_ct;
+s32 unk_804189ec;
+f32 unk_804189e8;
 
 #ifdef MUST_MATCH
 // MUST_MATCH: retail reads these named .rodata objects (the compiler reaches them off the section base).
@@ -2411,15 +2418,17 @@ void party_motion_beside_mario(PartyEntry* party) {
 // not reused there).
 // The rounded travel-time expression assigns its distance and scale at their point of use.
 // The min block, the two `+ 10.0f` operand orders and the
-// `!(f6 >= 0)` branch are now exact: inlining the min product, `ty += 10.0f`/`floor.y += 10.0f`, writing the
-// inner test as the ternary `f6 = (f6 >= 0.0f) ? f6 : 10.0f`, and `#pragma opt_lifetimes off` around the
+// `!(h >= 0)` branch are now exact: inlining the min product, `ty += 10.0f`/`floor.y += 10.0f`, writing the
+// inner test as the ternary `h = (h >= 0.0f) ? h : 10.0f`, and `#pragma opt_lifetimes off` around the
 // function (just below) are all needed for the target's f0/f2 colouring and its `bne assign; b end` layout.
 // The old `cmpw r27, r3` diff is gone: storing the read id in an `s32 readId` local before the test makes
 // MWCC emit the target's `cmpw r3, r27`.
 #pragma opt_lifetimes off
 // Keep the nested travel-time assignments until backend allocation; their redundant copies then disappear.
 #pragma opt_dead_assignments off
-// NONMATCHING (99.93%): the adjusted jump height uses f5 instead of f6 (six rows).
+// Retail keeps the distance (f5) live into the height code, so the height takes f6. The two MUST_MATCH
+// distance self-stores below give the allocator those ranges; the post-allocation peephole then deletes each
+// load/store pair (the #661 self-store lever).
 void party_motion_jump(PartyEntry* party) {
     MarioWork* mario;
     HitEntry* hit;
@@ -2428,7 +2437,7 @@ void party_motion_jump(PartyEntry* party) {
     f32 tx, ty, tz;
     f32 angle;
     f32 f31, f30, f29;
-    f32 f0, f1, f3, f4, f6;
+    f32 f0, f1, f3, f4, f6, h;
     f32 zero;
     u32 id;
     s32 writeId;
@@ -2569,6 +2578,7 @@ void party_motion_jump(PartyEntry* party) {
 #ifdef MUST_MATCH
         // Nested assignments preserve the distance web until allocation, yielding retail's f5 load.
         f0 = (10.0f * (f1 = 0.9f * ((f6 = *(f32*)((u8*)party + 0x128)) / party->speed)) + 0.5f) / 10.0f;
+        *(f32*)((u8*)party + 0x128) = f6;
 #else
         f6 = *(f32*)((u8*)party + 0x128);
         f1 = 0.9f * (f6 / party->speed);
@@ -2582,13 +2592,16 @@ void party_motion_jump(PartyEntry* party) {
             *(s32*)((u8*)party + 0x24) = 0x28;
         }
         f4 = 0.5f * (f32)*(s32*)((u8*)party + 0x24);
-        f6 = *(f32*)((u8*)party + 0x98) - party->position.y;
-        if (fabsf(f6) < 1.0f) {
-            f6 = 25.0f;
+        h = *(f32*)((u8*)party + 0x98) - party->position.y;
+        if (fabsf(h) < 1.0f) {
+#ifdef MUST_MATCH
+            *(f32*)((u8*)party + 0x128) = (f6 = *(f32*)((u8*)party + 0x128));
+#endif
+            h = 25.0f;
         } else {
-            f6 = (f6 >= 0.0f) ? f6 : 10.0f;
+            h = (h >= 0.0f) ? h : 10.0f;
         }
-        f3 = (f6 + f6) / (f4 * f4 - f4);
+        f3 = (h + h) / (f4 * f4 - f4);
         party->jumpPara1 = mario->playerGravity * (f3 * f4);
         if (party->jumpPara1 > 13.0f) {
             party->jumpPara1 = 13.0f;
