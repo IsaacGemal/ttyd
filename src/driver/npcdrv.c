@@ -52,12 +52,6 @@ extern GlobalWork* gp;
 extern NpcTribeInfo npcTribe[];
 extern char MarioStayPose[32];
 extern char MarioTalkPose[32];
-#ifdef MUST_MATCH
-// Unit .rodata head (target order); MWCC's generated double pool follows these at +0x1c0.
-const f32 vec3_802c2f78[3] = { 0.0f, 0.0f, 0.0f };
-const f32 vec3_802c2f84[3] = { 1.0f, 1.0f, 1.0f };
-const f32 vec3_802c2f90[3] = { 0.0f, 0.0f, 0.0f };
-#endif
 // This unit's float rodata (the names are the original .sdata2 symbols). Naming the constants lets MWCC
 // hoist the inlined sin/cos coefficient loads once per instance as retail does; the natural literals are
 // under the #else.
@@ -69,7 +63,6 @@ extern const f32 float_1p5708_80419c48;
 extern const f32 float_4p7124_80419c4c;
 extern const f32 float_1_80419bb4;
 extern const f32 float_0_80419b9c;
-extern u32 dat_80419b88;
 extern const f32 float_0p03705_80419c50;
 extern const f32 float_0p4967_80419c54;
 #define NPC_F_SIN0 float_0p00761_80419c3c
@@ -81,7 +74,6 @@ extern const f32 float_0p4967_80419c54;
 #define NPC_F_THREEHALVES float_4p7124_80419c4c
 #define NPC_F_ONE float_1_80419bb4
 #define NPC_F_ZERO float_0_80419b9c
-#define NPC_COLOR_DAT dat_80419b88
 #else
 #define NPC_F_SIN0 0.00761f
 #define NPC_F_SIN1 0.16605f
@@ -92,7 +84,6 @@ extern const f32 float_0p4967_80419c54;
 #define NPC_F_THREEHALVES 4.712389f
 #define NPC_F_ONE 1.0f
 #define NPC_F_ZERO 0.0f
-#define NPC_COLOR_DAT 0xFFFFFF00u
 #endif
 
 int __float_nan[];
@@ -105,7 +96,7 @@ int __float_nan[];
 #define FP_SUBNORMAL 5
 
 // Prototypes for the forward references the original function order needs.
-static inline f32 npcMain_sqrtf(f32 x, const f64* pool);
+static inline void npcHammerPos(Vec* pos, f32 frame, f32 angle, f32 radius);
 
 static inline s32 __fpclassifyf(f32 x) {
     switch (*(s32*)&x & 0x7F800000) {
@@ -172,65 +163,6 @@ static NpcWork2 work;
 // TODO: inlining?
 #define npcGetWorkPtrInline() (gp->inBattle ? &work.battle : &work.field)
 
-extern const f32 float_365_80419ba8;
-extern const f32 float_0_80419b9c;
-extern const char str_802C30FC[];
-extern const char str_802C3128[];
-extern const f32 float_0p5_80419ba0;
-extern const f32 float_180_80419bec;
-extern const f32 float_90_80419bd0;
-extern const f32 float_270_80419be4;
-extern const f32 float_0p75_80419bf4;
-extern const f32 float_neg1_80419bf8;
-extern const f32 float_1_80419bb4;
-extern const f32 float_100_80419c18;
-extern const f32 float_0p1_80419bfc;
-extern const f32 float_0p05_80419c78;
-extern const f32 float_0p25_80419c7c;
-extern const f32 float_neg2_80419c80;
-extern const f32 float_2_80419c5c;
-extern const f32 float_5000_80419c84;
-extern const f32 float_10000_80419c88;
-extern const f32 float_3_80419c08;
-extern const f32 float_1p33_80419c8c;
-extern const f32 float_neg600_80419c0c;
-extern const f32 float_600_80419c10;
-extern const f32 float_60_80419ba4;
-#ifdef MUST_MATCH
-// The original reaches these strings and the 0.75 double through the sqrtf double pool (vec3_802c2f78 + 0x1c0), one
-// register for all of them: "kpa_03" and the SFX name sit just before the pool, 0.75 at +0xa0.
-#define NPCMAIN_STR_KPA03 ((char*)pool - 0x34)
-#define NPCMAIN_STR_FALL ((char*)pool - 0x2c)
-#define NPCMAIN_SQRTF(x) npcMain_sqrtf((x), pool)
-#define NPCMAIN_0P75 (pool[20])
-#else
-#define NPCMAIN_STR_KPA03 "kpa_03"
-#define NPCMAIN_STR_FALL "SFX_KUPPA_3RD_WATER_FALL1"
-#define NPCMAIN_SQRTF(x) sqrtf(x)
-#define NPCMAIN_0P75 0.75
-#endif
-extern const f32 float_neg90_80419bd8;
-extern const f32 float_neg180_80419bf0;
-extern const f32 float_270_80419be4;
-extern const f32 float_neg270_80419be8;
-extern const f32 float_90_80419bd0;
-extern const f32 float_0p75_80419bf4;
-extern const f32 float_neg1_80419bf8;
-extern const f32 float_1_80419bb4;
-extern const f32 float_1000_80419bc8;
-extern const f32 float_10_80419bb8;
-extern const f32 float_0p5_80419ba0;
-extern const f32 float_0_80419b9c;
-extern const f32 float_180_80419bec;
-extern const f32 float_360_80419be0;
-#ifdef MUST_MATCH
-// The original reaches these two strings from the unit's rodata anchor.
-#define FBAT_SFX_ENEMY ((char*)vec3_802c2f78 + 0x204)
-#define FBAT_SFX_MARIO ((char*)vec3_802c2f78 + 0x220)
-#else
-#define FBAT_SFX_ENEMY "SFX_BTL_FLD_ENEMY_DAMAGED1"
-#define FBAT_SFX_MARIO "SFX_BTL_FLD_MARIO_DAMAGED1"
-#endif
 #define ENC(p, T, off) (*(T*)((u8*)(p) + (off)))
 typedef struct FbatHitInfo {
     s32 kind;           // 0x0, the attack (the fbatSetAttackAnnounce code)
@@ -238,14 +170,6 @@ typedef struct FbatHitInfo {
     f32 dist;           // 0x8, to the nearest npc hit so far
     u32 flags;          // 0xC, 1: only a test (no attack announce)
 } FbatHitInfo;
-extern const f32 float_11_80419bbc;
-extern const f32 float_12_80419bc0;
-extern const f32 float_15_80419bc4;
-extern const f32 float_1p5_80419bcc;
-extern const f32 float_30_80419bd4;
-typedef struct FbatAngleTable {
-    s32 deg[11];
-} FbatAngleTable;
 
 // TODO: inlining?
 NpcWork* npcGetWorkPtr(void) {
@@ -886,15 +810,13 @@ static inline f32 npcCosf(f32 rad) {
 // coefficient loads before the branches, `t1`/`t2` make MWCC put the product in f2 and the angle in f5, each
 // branch reuses `rad` as the folded angle, and declaring `alpha` first (with its init/decrement in the for
 // header) and putting `i` in the leading block give retail's callee-saved map. Left: the sin/cos
-// accumulator lands in f1 (an extern constant does not coalesce like a literal, so halfpi then takes f0), and
-// the colour/argument stack slots are 0x8/0xc swapped. The colour base is dat_80419b88 (not an li).
-// NONMATCHING (97.73%): sin/cos accumulator FPR (halfpi lands in f0, retail f1) and the colour/arg
-// stack slots only. The npcSinf square temp must be `f0` (not `f1`) to match retail's `fmuls f0,f5,f5`.
+// accumulator lands in f1 (an extern constant does not coalesce like a literal, so halfpi then takes f0).
+// The colour is a compound literal argument, which also gives retail's stack slots for it and its by-value copy.
+// NONMATCHING (97.75%): sin/cos accumulator FPR only (halfpi lands in f0, retail f1). The npcSinf square temp must be `f0` (not `f1`) to match retail's `fmuls f0,f5,f5`.
 void npcDisp_blur(CameraId camId, void* param) {
     s32 alpha;
     NpcEntry* entry = param; // cast to proper type
     Mtx mtx;
-    GXColor color;
     f32 rotY;
     f32 offX, offZ;
     f32 t1, t2;
@@ -912,9 +834,7 @@ void npcDisp_blur(CameraId camId, void* param) {
         mtx_setup(entry, mtx, i);
         PSMTXTransApply(mtx, mtx, offX, 0.0f, offZ);
         animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-        *(u32*)&color = NPC_COLOR_DAT;
-        color.a = 0x80 - alpha;
-        animPoseSetMaterialEvtColor(entry->poseId, color);        animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
+        animPoseSetMaterialEvtColor(entry->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, 0x80 - alpha });        animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
         animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
         animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
     }
@@ -961,14 +881,13 @@ s32 npcGetReactionOfLivingBody(BOOL inBattle) {
 
 // TODO: fix entry->position delayed set-Vec with r6/r30
 // TODO: a1 is desc/ription?
-// NONMATCHING (93.21%): the two search loops use a cached `total` and an incrementing `entry` pointer,
-// and the position/scale zero/one vectors are this file's rodata vec3_802c2f78/vec3_802c2f84.  Still register
-// rotation (a1 in r26 vs r25, so `stmw r26` instead of `stmw r25`) and the vec3 base is scheduled later.
+// 100%: the two search loops use a cached `total` and an incrementing `entry` pointer (`i` declared before
+// `entry`), and the position/scale vectors are compound literals, the head of the unit's .rodata.
 s32 npcEntry(const char* a1, const char* animName) {
     NpcWork* wp;
-    NpcEntry* entry;
     s32 total;
     s32 i;
+    NpcEntry* entry;
 
     wp = gp->inBattle ? &work.battle : &work.field;
     // wp = npcGetWorkPtr(); //inlined
@@ -995,25 +914,11 @@ s32 npcEntry(const char* a1, const char* animName) {
         entry->poseId = animPoseEntry("hoshi", gp->inBattle != 0);
     }
     animPosePeraOn(entry->poseId);
-#ifdef MUST_MATCH
-    // vec3_802c2f78 (0,0,0) and vec3_802c2f84 (1,1,1) are this file's own rodata, which the original reaches from one
-    // base register; indexing past the first object reproduces that until the file defines its rodata
-    entry->position = *(Vec*)&vec3_802c2f78;
-#else
-    entry->position.x = 0.0f;
-    entry->position.y = 0.0f;
-    entry->position.z = 0.0f;
-#endif
+    entry->position = (Vec){ 0.0f, 0.0f, 0.0f };
     entry->prevPosition = entry->position;
     entry->width = animPoseGetHeight(entry->poseId);
     entry->height = animPoseGetRadius(entry->poseId);
-#ifdef MUST_MATCH
-    entry->scale = *(Vec*)&vec3_802c2f84;
-#else
-    entry->scale.x = 1.0f;
-    entry->scale.y = 1.0f;
-    entry->scale.z = 1.0f;
-#endif
+    entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
     entry->field_154 = NPC_F_ONE;
     entry->field_108 = 0;
     entry->field_10C = "M_I_2";
@@ -1113,24 +1018,6 @@ void npcDeleteGroup(NpcEntry* entry) {
     _npcDeleteGroup(entry);
 }
 
-#ifdef MUST_MATCH
-static inline f32 npcMain_sqrtf(f32 x, const f64* pool) {
-    if (x > float_0_80419b9c) {
-        f64 guess = __frsqrte(x);
-        f64 half = pool[0];
-        f64 three = pool[1];
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        return x * guess;
-    } else if (x < pool[2]) {
-        return NAN;
-    } else if (isnan(x)) {
-        return NAN;
-    }
-    return x;
-}
-#endif
 
 // Mario can be noticed by a field npc: not in a cutscene, menu or talk, and not hidden by Vivian.
 static inline BOOL npcMarioNoticeable(void) {
@@ -1158,37 +1045,6 @@ static inline BOOL npcMarioNoticeable(void) {
     return TRUE;
 }
 
-// Flurrie's breath reaches the npc at its feet, middle or head.
-static inline BOOL npcBlown(NpcEntry* entry) {
-    Vec pos;
-    Vec at;
-
-    if (entry->flags & 0x20000000) {
-        return FALSE;
-    }
-    if (entry->flags & 0x20) {
-        return FALSE;
-    }
-    pos = entry->position;
-    at = pos;
-    if (cloudGetBreathPower(entry->width, &at) > float_0_80419b9c) {
-        return TRUE;
-    }
-    pos = entry->position;
-    pos.y -= entry->height * float_0p5_80419ba0;
-    at = pos;
-    if (cloudGetBreathPower(entry->width, &at) > float_0_80419b9c) {
-        return TRUE;
-    }
-    pos = entry->position;
-    pos.y -= entry->height;
-    at = pos;
-    if (cloudGetBreathPower(entry->width, &at) > float_0_80419b9c) {
-        return TRUE;
-    }
-    return FALSE;
-}
-
 // Per frame for each live npc: advance its clocks, apply its movement and walk/run animation, raise its event's
 // reactions (interrupt flags: 1 found Mario, 2 lost him, 4 left its territory, 8 blown by Flurrie), and queue its
 // draw, shadow and offscreen passes; then run the first strike banner and the field battle mode.
@@ -1196,15 +1052,14 @@ static inline BOOL npcBlown(NpcEntry* entry) {
 #pragma opt_loop_invariants off
 // keep the constants and addresses at their uses rather than propagated into the hot loop's registers
 #pragma opt_propagation off
-// NONMATCHING (98.60%): retail keeps a redundant `fcmpo f30, 0`/`lfs float_0` before PSVECSubtract that ours
+// NONMATCHING (98.71%): retail keeps a redundant `fcmpo f30, 0`/`lfs float_0` before PSVECSubtract that ours
 // folds into the later sqrtf guard; `fire = jump = 0` is two `li`s where retail has `li`+`mr`; the state == 1/4
 // FPR set is one callee-saved register low; fbat and state sit in each other's GPR. All calls and constants match.
 void npcMain(void) {
     s32 fire;
 #ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
+    const char* fallSfx = "SFX_KUPPA_3RD_WATER_FALL1";
 #endif
-    const char* fallSfx = NPCMAIN_STR_FALL;
     NpcWork* npcwork;
     NpcEntry* entry;
     FieldBattleData* fbat;
@@ -1274,36 +1129,41 @@ void npcMain(void) {
 
         if (entry->flags & 2) {
             // In Bowser's water level: splash on entering the water and move at half speed while in it.
+#ifdef MUST_MATCH
+            // npcKoopaWaterCheck by hand: retail loads the splash SFX name once before the npc loop
             if (entry->jumpFlags & 0x100000) {
                 entry->jumpFlags |= 0x200000;
             } else {
                 entry->jumpFlags &= ~0x200000;
             }
             entry->jumpFlags &= ~0x100000;
-            if (!strcmp(gp->currentMapName, NPCMAIN_STR_KPA03) && !(entry->position.y > float_365_80419ba8)) {
+            if (!strcmp(gp->currentMapName, "kpa_03") && !(entry->position.y > 365.0f)) {
                 entry->jumpFlags |= 0x100000;
                 if (!(entry->jumpFlags & 0x200000) && (entry->jumpFlags & 0x100000)) {
                     psndSFXOn_3D(fallSfx, &entry->position);
                 }
             }
+#else
+            npcKoopaWaterCheck(entry);
+#endif
             if ((entry->jumpFlags & 0x100000) && !(entry->jumpFlags & 0x10000000)) {
-                entry->field_1D0 = float_100_80419c18;
-                runScale = float_0p5_80419ba0;
+                entry->field_1D0 = 100.0f;
+                runScale = 0.5f;
             } else {
-                runScale = float_1_80419bb4;
+                runScale = 1.0f;
             }
             if (entry->jumpFlags & 0x100000) {
                 *(u16*)entry->field_31E |= 1;
             }
 
             if (entry->jumpFlags & 0x10) {
-                if (entry->moveDt > float_0_80419b9c) {
+                if (entry->moveDt > 0.0f) {
                     f32 mx = entry->moveOffset.x;
                     f32 mz = entry->moveOffset.z;
 
                     if ((entry->jumpFlags & 0x100000) && !(entry->jumpFlags & 0x10000000)) {
-                        mx *= float_0p5_80419ba0;
-                        mz *= float_0p5_80419ba0;
+                        mx *= 0.5f;
+                        mz *= 0.5f;
                     }
                     if (entry->flags & 0x08000000) {
                         mz = 0.0f;
@@ -1315,8 +1175,8 @@ void npcMain(void) {
                         entry->field_2FC = (u32)npcHitCheckSide(entry, &entry->position.x, &entry->position.z,
                                                                 &entry->moveDir, mx, mz);
                     }
-                    entry->moveOffset.x = float_0_80419b9c;
-                    entry->moveOffset.z = float_0_80419b9c;
+                    entry->moveOffset.x = 0.0f;
+                    entry->moveOffset.z = 0.0f;
                     npcMoveG(entry);
                 }
                 if (!(entry->flags & 8) && !(entry->flags & 0x20) && !(entry->flags & 0x4000)) {
@@ -1325,10 +1185,10 @@ void npcMain(void) {
 
                 // Pick the stay/walk/run animation from the distance moved this frame.
                 PSVECSubtract(&entry->position, &entry->prevPosition, &v);
-                if ((entry->flags & 0x400) && entry->moveDt > float_0_80419b9c) {
-                    f32 speed = NPCMAIN_SQRTF(v.x * v.x + v.z * v.z) / entry->moveDt;
+                if ((entry->flags & 0x400) && entry->moveDt > 0.0f) {
+                    f32 speed = sqrtf(v.x * v.x + v.z * v.z) / entry->moveDt;
 
-                    if (speed < float_0p1_80419bfc) {
+                    if (speed < 0.1f) {
                         if (entry->field_108 != 1) {
                             animPoseSetAnim(entry->poseId, entry->tribe->stayAnim, 1);
                             entry->field_108 = 1;
@@ -1351,7 +1211,7 @@ void npcMain(void) {
                 evt = evtGetPtrID(entry->regularEvtId);
                 if (evt != NULL && !(evt->flags & 2)) {
                     state = evt->wNpcEventType;
-                    if (entry->blowEvent != NULL && state != 5 && state != 8 && npcBlown(entry)) {
+                    if (entry->blowEvent != NULL && state != 5 && state != 8 && npcCheckBlow(entry)) {
                         *(s32*)entry->field_140 |= 8;
                         goto interrupt;
                     }
@@ -1361,7 +1221,7 @@ void npcMain(void) {
                         if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
                             dx = entry->territoryBase.x - entry->position.x;
                             dz = entry->territoryBase.z - entry->position.z;
-                            dist = NPCMAIN_SQRTF(dx * dx + dz * dz);
+                            dist = sqrtf(dx * dx + dz * dz);
                             if (dist > (state == 2 ? entry->territoryHoming.x : entry->territoryHoming.x)) {
                                 hit = TRUE;
                             }
@@ -1393,23 +1253,23 @@ void npcMain(void) {
                         dz = mario->position.z - entry->position.z;
                         PSVECSubtract(&entry->prevPosition, &entry->position, &moved);
                         dir = entry->direction;
-                        if ((entry->jumpFlags & 2) && NPCMAIN_SQRTF(moved.x * moved.x + moved.z * moved.z) > float_0p05_80419c78) {
+                        if ((entry->jumpFlags & 2) && sqrtf(moved.x * moved.x + moved.z * moved.z) > 0.05f) {
                             dir = entry->moveDir;
                         }
                         hit = FALSE;
                         if (!npcMarioNoticeable()) {
                             hit = TRUE;
                         } else {
-                            dist = NPCMAIN_SQRTF(dx * dx + dz * dz);
-                            if (dist > float_0p25_80419c7c * entry->homingRange) {
+                            dist = sqrtf(dx * dx + dz * dz);
+                            if (dist > 0.25f * entry->homingRange) {
                                 if (dy > entry->territoryLoiter.y) {
                                     hit = TRUE;
                                 } else if (-dy > entry->territoryHoming.y) {
                                     hit = TRUE;
                                 } else if (dist > entry->homingRange) {
                                     hit = TRUE;
-                                } else if (angle = angleABf(float_0_80419b9c, float_0_80419b9c, dx, dz),
-                                           __fabsf(compAngle(dir, angle)) > float_0p5_80419ba0 * entry->homingAngle) {
+                                } else if (angle = angleABf(0.0f, 0.0f, dx, dz),
+                                           __fabsf(compAngle(dir, angle)) > 0.5f * entry->homingAngle) {
                                     hit = TRUE;
                                 }
                             }
@@ -1427,19 +1287,19 @@ void npcMain(void) {
                         dy = mario->position.y - entry->position.y;
                         dist = dx * dx + dz * dz;
                         PSVECSubtract(&entry->prevPosition, &entry->position, &back);
-                        dir = reviseAngle(entry->direction) < float_180_80419bec ? float_90_80419bd0 : float_270_80419be4;
+                        dir = reviseAngle(entry->direction) < 180.0f ? 90.0f : 270.0f;
                         hit = TRUE;
                         if (!npcMarioNoticeable()) {
                             hit = FALSE;
                         } else {
-                            dist = NPCMAIN_SQRTF(dist);
-                            if (dist > float_0p25_80419c7c * entry->searchRange) {
+                            dist = sqrtf(dist);
+                            if (dist > 0.25f * entry->searchRange) {
                                 if (dist > entry->searchRange) {
                                     hit = FALSE;
                                     goto found;
                                 }
-                                angle = angleABf(float_0_80419b9c, float_0_80419b9c, dx, dz);
-                                if (__fabsf(compAngle(dir, angle)) > float_0p5_80419ba0 * entry->searchAngle) {
+                                angle = angleABf(0.0f, 0.0f, dx, dz);
+                                if (__fabsf(compAngle(dir, angle)) > 0.5f * entry->searchAngle) {
                                     hit = FALSE;
                                     goto found;
                                 }
@@ -1452,7 +1312,7 @@ void npcMain(void) {
                                 if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
                                     dx = entry->territoryBase.x - entry->position.x;
                                     dz = entry->territoryBase.z - entry->position.z;
-                                    if (NPCMAIN_SQRTF(dx * dx + dz * dz) > NPCMAIN_0P75 * entry->territoryHoming.x) {
+                                    if (sqrtf(dx * dx + dz * dz) > 0.75 * entry->territoryHoming.x) {
                                         hit = FALSE;
                                     }
                                 } else if (entry->position.x < entry->territoryBase.x - 0.75f * entry->territoryHoming.x ||
@@ -1477,8 +1337,8 @@ void npcMain(void) {
             if (!(entry->flags & 0x800)) {
                 PSMTXMultVec(camGetPtr(CAMERA_3D)->view, &entry->position, &v);
                 PSMTX44MultVec(camGetPtr(CAMERA_3D)->projection, &v, &v);
-                if ((v.z > float_neg1_80419bf8 && v.z < float_0_80419b9c && v.x >= float_neg2_80419c80 &&
-                     v.x <= float_2_80419c5c && v.y >= float_neg2_80419c80 && v.y <= float_2_80419c5c) ||
+                if ((v.z > (-1.0f) && v.z < 0.0f && v.x >= (-2.0f) &&
+                     v.x <= 2.0f && v.y >= (-2.0f) && v.y <= 2.0f) ||
                     (entry->flags & 0x40)) {
                     if (entry->color.r != 0xFF || entry->color.g != 0xFF || entry->color.b != 0xFF ||
                         entry->color.a != 0xFF) {
@@ -1488,13 +1348,13 @@ void npcMain(void) {
                         animPoseSetMaterialFlagOff(entry->poseId, 0x40);
                     }
 
-                    z = float_5000_80419c84 * v.z + float_5000_80419c84;
-                    if (z < float_0_80419b9c) {
-                        z = float_0_80419b9c;
-                    } else if (z > float_10000_80419c88) {
-                        z = float_10000_80419c88;
+                    z = 5000.0f * v.z + 5000.0f;
+                    if (z < 0.0f) {
+                        z = 0.0f;
+                    } else if (z > 10000.0f) {
+                        z = 10000.0f;
                     }
-                    z *= float_neg1_80419bf8;
+                    z *= (-1.0f);
 
                     if (!(entry->flags & 0x80) &&
                         (!(*(u16*)&entry->wFbatHitCheckRelated & 2) || (entry->jumpFlags & 0x10000))) {
@@ -1511,14 +1371,14 @@ void npcMain(void) {
                                 shadow = entry->position;
                                 if (entry->tribe != NULL) {
                                     shadow.x += entry->tribe->shadowOffsetX * entry->scale.x *
-                                                sinfd(reviseAngle(entry->direction) < float_180_80419bec
-                                                          ? float_90_80419bd0
-                                                          : float_270_80419be4);
+                                                sinfd(reviseAngle(entry->direction) < 180.0f
+                                                          ? 90.0f
+                                                          : 270.0f);
                                     shadow.y += entry->tribe->shadowOffsetY * entry->scale.y;
                                     shadow.z += entry->tribe->shadowOffsetZ * entry->scale.z;
                                 }
                                 shadowId = shadowEntry(shadow.x, shadow.y, shadow.z,
-                                                  float_1p33_80419c8c * (entry->field_154 *
+                                                  1.33f * (entry->field_154 *
                                                                          (entry->width / 3.0f * entry->scale.x)));
                                 if (entry->flags & 0x80000) {
                                     shadowSetCollision(shadowId, 0);
@@ -1528,10 +1388,10 @@ void npcMain(void) {
                             f32 hx, hy, hz, hdist, nx, ny, nz;
 
                             feet = entry->position;
-                            hdist = float_100_80419c18;
+                            hdist = 100.0f;
                             if (hitCheckFilter(NULL, &hx, &hy, &hz, &hdist, &nx, &ny, &nz, feet.x,
-                                               float_1_80419bb4 + feet.y, feet.z, float_0_80419b9c,
-                                               float_neg1_80419bf8, float_0_80419b9c) != NULL) {
+                                               1.0f + feet.y, feet.z, 0.0f,
+                                               (-1.0f), 0.0f) != NULL) {
                                 feet.y = hy;
                             }
                             animPoseVivianMain(entry->poseId, &feet);
@@ -1579,27 +1439,27 @@ void npcMain(void) {
             case 2:
                 strike->field_0xC++;
                 if ((s32)strike->field_0xC < 20) {
-                    strike->field_0x10 = intplGetValue(5, strike->field_0xC, 20, float_neg600_80419c0c, float_0_80419b9c);
+                    strike->field_0x10 = intplGetValue(5, strike->field_0xC, 20, (-600.0f), 0.0f);
                 } else if ((s32)strike->field_0xC < 80) {
-                    strike->field_0x10 = float_0_80419b9c;
+                    strike->field_0x10 = 0.0f;
                 } else if ((s32)strike->field_0xC < 100) {
                     strike->field_0x10 =
-                        intplGetValue(1, strike->field_0xC - 80, 20, float_0_80419b9c, float_600_80419c10);
+                        intplGetValue(1, strike->field_0xC - 80, 20, 0.0f, 600.0f);
                 } else {
                     strike->field_0x4 = 0;
                     break;
                 }
-                strike->field_0x14 = float_0_80419b9c;
-                dispEntry(CAMERA_FADE, float_0_80419b9c, 2, _fbatFirstAttackAnnouceDisp, strike);
+                strike->field_0x14 = 0.0f;
+                dispEntry(CAMERA_FADE, 0.0f, 2, _fbatFirstAttackAnnouceDisp, strike);
                 break;
             case 1:
                 strike->field_0xC++;
                 if ((s32)strike->field_0xC > 60) {
                     strike->field_0x4 = 0;
                 } else {
-                    strike->field_0x10 = float_0_80419b9c;
-                    strike->field_0x14 = float_0_80419b9c;
-                    dispEntry(CAMERA_FADE, float_0_80419b9c, 2, _fbatFirstAttackAnnouceDisp, strike);
+                    strike->field_0x10 = 0.0f;
+                    strike->field_0x14 = 0.0f;
+                    dispEntry(CAMERA_FADE, 0.0f, 2, _fbatFirstAttackAnnouceDisp, strike);
                 }
                 break;
         }
@@ -1621,14 +1481,7 @@ void npcMain(void) {
                 fire = kpaFireAttackCheck();
             }
             if (jump) {
-                if (data->field_57C > 0 && data->field_578 >= 2) {
-                    Vec pos = mario->position;
-
-                    pos.y += float_60_80419ba4;
-                    kpaAddScorePos(data->field_57C, &pos);
-                }
-                data->field_578 = 0;
-                data->field_57C = 0;
+                npcKoopaJumpScore(data, mario);
             }
             if (!fire) {
                 data->field_574 = 0;
@@ -1977,7 +1830,6 @@ static inline f32 npcHitSideMul(f32 a, f32 b) {
 #pragma opt_lifetimes off
 // NONMATCHING (99.59%): the sin/cos blocks and the radius match; only `offZ` (target f4, ours f6) and the
 // inlined sqrtf expression that reads it (target f6, ours f5) still colour into the other scratch FPR.
-// The remaining symbol-only pool displacements resolve when the unit links.
 s32 npcCheckHitMarioSide(NpcEntry* entry) {
     MarioWork* mario = marioGetPtr();
     Vec pos;
@@ -2131,11 +1983,6 @@ f32 npcTransRytoFaceDir(NpcEntry* npc) {
     return 270.0f;
 }
 
-// The unit's .rodata head is defined above (vec3 blob and the SFX/msg string objects). Their
-// presence places MWCC's generated sqrtf (0.5/3.0/0.0) and int->float 2^52 double pool at
-// vec3_802c2f78 + 0x1c0, where this function's target reads it; without them the pool landed at
-// ...rodata.0 + 0x30. Note `a_magu`/`mjef_coinup` also have a later codegen copy from the
-// functions that still use the bare literals; that tail is a separate function-order issue.
 HitEntry* npcHitCheckSide(NpcEntry* entry, f32* outX, f32* outZ, f32* outAngle, f32 dx, f32 dz) {
     HitEntry* hit;
     f32 hx, hy, hz, d, nx, ny, nz;
@@ -2235,32 +2082,8 @@ HitEntry* npcHitCheckSide(NpcEntry* entry, f32* outX, f32* outZ, f32* outAngle, 
 // The original evaluates `dx2 + dy*dy + dz2 > 0.0f` into a dead `fcmpo` (no branch); a discarded
 // `sqrtf(dx2 + dy*dy + dz2)` statement reproduces that, and declaring dy after dx2/dz2 gets dx2/dz2/dy
 // into f9/f10/f11.
-// 100%: the inline sqrtf's double pool is at vec3_802c2f78+0x1c0, so the MUST_MATCH helper reads the
-// doubles through the unit's base register (0x1c0/0x1c8/0x1d0) and declares `half`/`three` inside the
-// `x > 0.0f` branch after `frsqrte` so the loads schedule where the target has them.
-#ifdef MUST_MATCH
-static inline f32 npcNearDistCheck_sqrtf(f32 x, const f64* pool) {
-    if (x > 0.0f) {
-        f64 guess = __frsqrte(x);
-        f64 half = pool[0];
-        f64 three = pool[1];
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        return x * guess;
-    } else if (x < pool[2]) {
-        return NAN;
-    } else if (isnan(x)) {
-        return NAN;
-    }
-    return x;
-}
-#endif
 
 NpcEntry* npcNearDistCheck(f32 x, f32 y, f32 z, f32 radius) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     NpcEntry* entry;
     NpcEntry* found = NULL;
@@ -2274,11 +2097,7 @@ NpcEntry* npcNearDistCheck(f32 x, f32 y, f32 z, f32 radius) {
             f32 dx2 = dx * dx;
             f32 dz2 = dz * dz;
             f32 dy = y - entry->position.y;
-#ifdef MUST_MATCH
-            f32 dist = npcNearDistCheck_sqrtf(dx2 + dz2, pool);
-#else
             f32 dist = sqrtf(dx2 + dz2);
-#endif
             sqrtf(dx2 + dy * dy + dz2);
             if (dist < radius) {
                 found = entry;
@@ -2379,16 +2198,13 @@ void _fbatFirstAttackAnnouceDisp(CameraId camId, void* param) {
 // Same 57 calls and immediates, no structural difference. The three decision trees match (the first switch carries the empty case 0x10000 the
 // original probes; the side scan is a `switch` on `blocked`), `wk` is the ternary form, the OffChk pair is one
 // `||` test, the first reviseAngle result uses its own local, and `h180` keeps the blocked-loop threshold in
-// the target's f29 (an inline constant put the whole talk-loop FPR set one register low). The two SFX strings
-// and the inlined sqrtf's double pool are read through the unit's base register, so the sqrtf uses
-// npcNearDistCheck_sqrtf with the explicit pool and the strings come off `sfxBase`; that keeps MWCC from
-// re-materialising the section base (`addi r3, r28, 0`) before each string offset. The two `angleABf` zero
+// the target's f29 (an inline constant put the whole talk-loop FPR set one register low). The two `angleABf` zero
 // constants before dx/dz are literals so their loads schedule as retail does. Naming the `fb + 0x10` out-address
 // (`fbatOut`) makes MWCC keep `total` in r27 and that temp in r26, as retail does; the second fbatHitCheck block
 // gets a block-scoped `fbatOut2` so its temp takes r22 and its `fb` r25 (a function-scope reuse kept both in r26).
-// Initialising the talk loop as `best = NULL; i = 0;` matches the two `li` order. Seven scratch-FPR rotations
-// remain in the second wrap loop (diff/rot/const swap f1/f2/f3); no source form tested moves them.
-// NONMATCHING (99.93%): every instruction matches; only callee-saved/scratch register numbers differ.
+// Initialising the talk loop as `best = NULL; i = 0;` matches the two `li` order. The camera-relative angle is
+// `rel = reviseAngle(...); rel += -90.0f;` (a single `+ -90.0f` expression puts the constant first in the
+// fadds), and the final turn is `rotationY += 0.75f * (...)`, which gives the second wrap loop retail's f1/f2/f3.
 void fbatEncountCheck(void) {
     NpcWork* wk;
     s32 total;
@@ -2417,10 +2233,6 @@ void fbatEncountCheck(void) {
     s32 side;
     s32 found;
     s32 blocked;
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-    const char* sfxBase = (const char*)vec3_802c2f78;
-#endif
 
     wk = gp->inBattle != 0 ? &work.battle : &work.field;
     total = wk->total;
@@ -2486,42 +2298,36 @@ void fbatEncountCheck(void) {
             pose = animPoseGetAnimPosePtr(hit->poseId);
             ENC(hit, f32, 0x148) = hit->direction;
             hit->direction = angleABf(hit->position.x, hit->position.z, mario->position.x, mario->position.z);
-#ifdef MUST_MATCH
-            {
-                f32 r0 = reviseAngle(-hit->direction);
-                rel = r0 + float_neg90_80419bd8;
-            }
-#else
-            rel = reviseAngle(-hit->direction) + float_neg90_80419bd8;
-#endif
+            rel = reviseAngle(-hit->direction);
+            rel += -90.0f;
             cam = camGetPtr(CAMERA_3D);
             camAngle = reviseAngle(NPC_RAD2DEG((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
-            if (camAngle < float_0_80419b9c) {
-                camAngle += float_360_80419be0;
+            if (camAngle < 0.0f) {
+                camAngle += 360.0f;
             }
             diff = reviseAngle(camAngle - rel);
-            if ((diff > float_90_80419bd0 && diff <= float_270_80419be4) || (diff < float_neg90_80419bd8 && diff >= float_neg270_80419be8)) {
+            if ((diff > 90.0f && diff <= 270.0f) || (diff < (-90.0f) && diff >= (-270.0f))) {
                 cam = camGetPtr(CAMERA_3D);
                 camAngle = reviseAngle(NPC_RAD2DEG((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
-                if (camAngle < float_0_80419b9c) {
-                    camAngle += float_360_80419be0;
+                if (camAngle < 0.0f) {
+                    camAngle += 360.0f;
                 }
-                pose->field_0x7C = reviseAngle(float_180_80419bec + camAngle);
+                pose->field_0x7C = reviseAngle(180.0f + camAngle);
             } else {
                 cam = camGetPtr(CAMERA_3D);
                 camAngle = reviseAngle(NPC_RAD2DEG((f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z))));
-                if (camAngle < float_0_80419b9c) {
-                    camAngle += float_360_80419be0;
+                if (camAngle < 0.0f) {
+                    camAngle += 360.0f;
                 }
                 pose->field_0x7C = camAngle;
             }
-            while (pose->field_0x7C - pose->rotationY > float_180_80419bec) {
-                pose->rotationY += float_360_80419be0;
+            while (pose->field_0x7C - pose->rotationY > 180.0f) {
+                pose->rotationY += 360.0f;
             }
-            while (pose->field_0x7C - pose->rotationY < float_neg180_80419bf0) {
-                pose->rotationY -= float_360_80419be0;
+            while (pose->field_0x7C - pose->rotationY < (-180.0f)) {
+                pose->rotationY -= 360.0f;
             }
-            pose->rotationY = float_0p75_80419bf4 * (pose->field_0x7C - pose->rotationY) + pose->rotationY;
+            pose->rotationY += 0.75f * (pose->field_0x7C - pose->rotationY);
             switch (*fbatOut) {
                 case 0x200000:
                 case 0x1000000:
@@ -2531,10 +2337,10 @@ void fbatEncountCheck(void) {
                 case 0x100000:
                 case 0x40000:
                 case 0x20000:
-                    effSmallStarEntry(3, 3, hit->position.x, hit->position.y + hit->height, hit->position.z, float_0_80419b9c, float_neg1_80419bf8, float_0_80419b9c);
+                    effSmallStarEntry(3, 3, hit->position.x, hit->position.y + hit->height, hit->position.z, 0.0f, (-1.0f), 0.0f);
                     break;
                 case 0x10000000:
-                    effSmallStarEntry(3, 3, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z, float_0_80419b9c, float_neg1_80419bf8, float_0_80419b9c);
+                    effSmallStarEntry(3, 3, mario->position.x, mario->position.y + mario->wPlayerCollisionBox.y, mario->position.z, 0.0f, (-1.0f), 0.0f);
                     break;
             }
             switch (*fbatOut) {
@@ -2547,26 +2353,18 @@ void fbatEncountCheck(void) {
                 case 0x40000:
                 case 0x20000:
                     if (hit != NULL) {
-#ifdef MUST_MATCH
-                        psndSFXOn_3D(sfxBase + 0x204, &hit->position);
-#else
-                        psndSFXOn_3D(FBAT_SFX_ENEMY, &hit->position);
-#endif
+                        psndSFXOn_3D("SFX_BTL_FLD_ENEMY_DAMAGED1", &hit->position);
                         return;
                     }
                     break;
                 case 0x10000000:
-#ifdef MUST_MATCH
-                    psndSFXOn_3D(sfxBase + 0x220, &mario->position);
-#else
-                    psndSFXOn_3D(FBAT_SFX_MARIO, &mario->position);
-#endif
+                    psndSFXOn_3D("SFX_BTL_FLD_MARIO_DAMAGED1", &mario->position);
                     break;
             }
         }
         return;
     }
-    nearest = float_1000_80419bc8;
+    nearest = 1000.0f;
     if (marioChkTalkable() != 0 && *(s8*)((u8*)mario + 0x39) == 0) {
         npc = wk->entries;
         best = NULL;
@@ -2580,13 +2378,13 @@ void fbatEncountCheck(void) {
                     vec[2] = mario->position.z;
                     vec[1] = npc->position.y;
                     dist = PSVECDistance((Vec*)vec, &npc->position);
-                    if (dist <= float_0p5_80419ba0 * (mario->wPlayerCollisionBox.x + npc->width) + float_10_80419bb8 && dist < nearest) {
+                    if (dist <= 0.5f * (mario->wPlayerCollisionBox.x + npc->width) + 10.0f && dist < nearest) {
                         best = npc;
                     }
                     side = 0;
                     camAngle = camGetPtr(CAMERA_3D)->viewYaw;
                     rel = reviseAngle(marioGetDispDir() - camAngle);
-                    h180 = float_180_80419bec;
+                    h180 = 180.0f;
                     for (blocked = 0; blocked < 3; blocked++) {
                         f32 ang;
 
@@ -2595,10 +2393,10 @@ void fbatEncountCheck(void) {
                                 ang = reviseAngle(angleABf(mario->position.x, mario->position.z, npc->position.x, npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
                                 break;
                             case 1:
-                                ang = reviseAngle(angleABf(mario->position.x, mario->position.z, float_0p5_80419ba0 * npc->width + npc->position.x, npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
+                                ang = reviseAngle(angleABf(mario->position.x, mario->position.z, 0.5f * npc->width + npc->position.x, npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
                                 break;
                             default:
-                                ang = reviseAngle(angleABf(mario->position.x, mario->position.z, -(float_0p5_80419ba0 * npc->width - npc->position.x), npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
+                                ang = reviseAngle(angleABf(mario->position.x, mario->position.z, -(0.5f * npc->width - npc->position.x), npc->position.z) - camGetPtr(CAMERA_3D)->viewYaw);
                                 break;
                         }
                         if (ang < h180) {
@@ -2616,18 +2414,14 @@ void fbatEncountCheck(void) {
                         vec[2] = mario->position.z;
                         vec[1] = npc->position.y;
                         dist = PSVECDistance((Vec*)vec, &npc->position);
-                        if (!(dist > float_0p5_80419ba0 * (mario->wPlayerCollisionBox.x + npc->width) + float_10_80419bb8)) {
+                        if (!(dist > 0.5f * (mario->wPlayerCollisionBox.x + npc->width) + 10.0f)) {
                             dx = npc->position.x - mario->position.x;
                             dz = npc->position.z - mario->position.z;
                             sincosf(&sx, &sz, angleABf(0.0f, 0.0f, dx, dz));
-#ifdef MUST_MATCH
-                            d = npcNearDistCheck_sqrtf(dx * dx + dz * dz, pool);
-#else
                             d = sqrtf(dx * dx + dz * dz);
-#endif
                             if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &d, &hitNX, &hitNY, &hitNZ, mario->position.x,
-                                               float_0p75_80419bf4 * mario->wPlayerCollisionBox.y + mario->position.y,
-                                               mario->position.z, sx, float_0_80419b9c, sz) == NULL) {
+                                               0.75f * mario->wPlayerCollisionBox.y + mario->position.y,
+                                               mario->position.z, sx, 0.0f, sz) == NULL) {
                                 found = 1;
                                 if (dist < nearest) {
                                     nearest = dist;
@@ -2697,7 +2491,7 @@ void fbatEncountCheck(void) {
                     marioChgMotJump2();
                     break;
             }
-            effSmallStarEntry(3, 3, hit->position.x, hit->position.y + hit->height, hit->position.z, float_0_80419b9c, float_neg1_80419bf8, float_0_80419b9c);
+            effSmallStarEntry(3, 3, hit->position.x, hit->position.y + hit->height, hit->position.z, 0.0f, (-1.0f), 0.0f);
             return;
         }
     }
@@ -3026,9 +2820,6 @@ void npcGroupDead(NpcEntry* entry, s32 type) {
 #pragma dont_inline reset
 
 NpcEntry* fbatNpcTalkCheck(void) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
 
     if (wp->field_0x10 && marioChkTalkable()) {
@@ -3089,7 +2880,7 @@ static inline BOOL fbatNpcEventDone(NpcEntry* npc) {
 // Finds the nearest field npc Mario's attacks hit, for each kind of attack `flags` enables in turn: jumps
 // (0x30), the hammer (0x40), the spin hammer (0x80), Koops' shell (0x100) and partner 3 (0x200). Flag 0x2000
 // only tests (no attack announce); 0x1000 looks at npcs with flag 8 instead of the others.
-// NONMATCHING (99.3%): every call, branch and constant matches; one redundant `addi r22,r29,0` copies the
+// NONMATCHING (99.35%): every call, branch and constant matches; one redundant `addi r22,r29,0` copies the
 // hammer angle table's rodata base instead of reusing r29, and the callee-saved GPR colouring then differs.
 void* fbatHitCheck(s32 flags, s32 out) {
     NpcEntry* hit = NULL;
@@ -3103,7 +2894,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
     f32 dist;
 
     mario = marioGetPtr();
-    info.dist = float_1000_80419bc8;
+    info.dist = 1000.0f;
     info.kind = 0;
     info.flags &= ~1;
     dryRun = flags & 0x2000;
@@ -3150,7 +2941,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
 
                     dist = sqrtf(dx * dx + dz * dz);
                 }
-                if (dist > float_0p5_80419ba0 * (mario->wPlayerCollisionBox.x + npc->width)) {
+                if (dist > 0.5f * (mario->wPlayerCollisionBox.x + npc->width)) {
                     continue;
                 }
                 if (dist >= info.dist) {
@@ -3233,7 +3024,6 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 f32 radius;
                 f32 angle;
                 f32 frame;
-                f32 s, c, s2, c2;
                 f32 x, y, z;
                 s32 frameNo;
                 u32 flag8;
@@ -3243,9 +3033,9 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 if (mario->currMotionId != 0x12) {
                     break;
                 }
-                radius = float_1p5_80419bcc * mario->wPlayerCollisionBox.x;
+                radius = 1.5f * mario->wPlayerCollisionBox.x;
 
-                yaw = reviseAngle((mario->unk1A8 - float_90_80419bd0) + camGetPtr(CAMERA_3D)->viewYaw);
+                yaw = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
                 angle = yaw;
                 pose = marioGetPtr();
                 animPoseGetAnimPosePtr(pose->paperAnimGroupId[marioAnimeId()]);
@@ -3254,29 +3044,14 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     frameNo = 10;
                 }
                 frame = frameNo;
-                pose = marioGetPtr();
                 {
-#ifdef MUST_MATCH
-                    // The original has one copy of this table (dat_802c2f9c), shared with
-                    // _npcHitCheckHammerAllMotion's (whose initialiser is where it pools); read it through the
-                    // unit's rodata base.
-                    FbatAngleTable frameAngle = *(FbatAngleTable*)((u8*)vec3_802c2f78 + 0x24); // dat_802c2f9c
-#else
-                    FbatAngleTable frameAngle = {{0, 0, 0, 0, 45, 60, 90, 100, 101, 101, 101}};
-#endif
+                    Vec pos;
 
-                    if (frame < float_0_80419b9c) {
-                        frame = float_0_80419b9c;
-                    }
-                    if (frame >= float_11_80419bbc) {
-                        frame = float_10_80419bb8;
-                    }
-                    sincosf(&s, &c, angle);
-                    sincosf(&s2, &c2, frameAngle.deg[(s32)frame]);
+                    npcHammerPos(&pos, frame, angle, radius);
+                    x = pos.x;
+                    z = pos.z;
+                    y = pos.y;
                 }
-                x = s2 * (s * radius) + pose->position.x;
-                z = s2 * (c * radius) + pose->position.z;
-                y = radius * c2 + pose->position.y;
                 flag8 = flags & 0x1000;
                 npc = npcWork->entries;
                 for (i = 0; i < count; i++, npc++) {
@@ -3297,7 +3072,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                         || (npc->jumpFlags & 4)) {
                         continue;
                     }
-                    if (_npcHitCheckSphere(npc, &dist, x, y, z, float_12_80419bc0) == NULL || dist >= info.dist) {
+                    if (_npcHitCheckSphere(npc, &dist, x, y, z, 12.0f) == NULL || dist >= info.dist) {
                         continue;
                     }
                     info.dist = dist;
@@ -3309,8 +3084,8 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     break;
                 }
             } else {
-                f32 radius = float_1p5_80419bcc * mario->wPlayerCollisionBox.x;
-                f32 angle = reviseAngle((mario->unk1A8 - float_90_80419bd0) + camGetPtr(CAMERA_3D)->viewYaw);
+                f32 radius = 1.5f * mario->wPlayerCollisionBox.x;
+                f32 angle = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
                 u32 flag8 = flags & 0x1000;
 
                 npc = npcWork->entries;
@@ -3369,16 +3144,16 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     break;
                 }
                 angle = marioGetAngleKaitenHammer();
-                if (angle < float_0_80419b9c) {
+                if (angle < 0.0f) {
                     break;
                 }
-                radius = float_1p5_80419bcc * mario->wPlayerCollisionBox.x;
+                radius = 1.5f * mario->wPlayerCollisionBox.x;
                 m = marioGetPtr();
                 sincosf(&s, &c, angle);
                 flag8 = flags & 0x1000;
                 x = s * radius + m->position.x;
                 z = c * radius + m->position.z;
-                y = float_15_80419bc4 + m->position.y;
+                y = 15.0f + m->position.y;
                 npc = npcWork->entries;
                 for (i = 0; i < count; i++, npc++) {
                     if (npc == NULL || !(npc->flags & 2)) {
@@ -3398,7 +3173,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                         || (npc->flags & 0x08000000)) {
                         continue;
                     }
-                    if (_npcHitCheckSphere(npc, &dist, x, y, z, float_12_80419bc0) == NULL || dist >= info.dist) {
+                    if (_npcHitCheckSphere(npc, &dist, x, y, z, 12.0f) == NULL || dist >= info.dist) {
                         continue;
                     }
                     info.dist = dist;
@@ -3424,8 +3199,8 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     break;
                 }
             } else {
-                f32 radius = float_1p5_80419bcc * mario->wPlayerCollisionBox.x;
-                f32 angle = reviseAngle((mario->unk1A8 - float_90_80419bd0) + camGetPtr(CAMERA_3D)->viewYaw);
+                f32 radius = 1.5f * mario->wPlayerCollisionBox.x;
+                f32 angle = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
                 u32 flag8 = flags & 0x1000;
 
                 npc = npcWork->entries;
@@ -3503,8 +3278,8 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 }
             }
             if (attack) {
-                f32 radius = float_0p5_80419ba0 * party->field_F4;
-                f32 y = float_0p5_80419ba0 * *(f32*)((u8*)party + 0xF0) + party->position.y; // 0xF0: the shell's height
+                f32 radius = 0.5f * party->field_F4;
+                f32 y = 0.5f * *(f32*)((u8*)party + 0xF0) + party->position.y; // 0xF0: the shell's height
                 f32 z = party->position.z;
                 f32 x = party->position.x;
                 u32 flag8 = flags & 0x1000;
@@ -3583,8 +3358,8 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     continue;
                 }
                 if (_npcHitCheckSphere(other, &dist, party->position.x,
-                                       float_0p5_80419ba0 * *(f32*)((u8*)party + 0xF0) + party->position.y, party->position.z,
-                                       float_30_80419bd4) == NULL
+                                       0.5f * *(f32*)((u8*)party + 0xF0) + party->position.y, party->position.z,
+                                       30.0f) == NULL
                     || dist >= info.dist) {
                     continue;
                 }
@@ -3609,34 +3384,9 @@ void* fbatHitCheck(s32 flags, s32 out) {
 #pragma force_active on
 #pragma force_active reset
 
-// Match-only sqrtf for _npcHitCheckSphere: the original reaches the shared sqrtf double pool
-// (0.5 / 3.0 / 0.0 at vec3_802c2f78 + 0x1c0) with vec3_802c2f78 as the base register, so reproduce
-// that access instead of letting the compiler emit its own .rodata pool (rule 7).
-#ifdef MUST_MATCH
-static inline f32 npcHitCheckSphere_sqrtf(f32 x, const f64* pool) {
-    if (x > 0.0f) {
-        f64 guess = __frsqrte(x);
-        f64 half = pool[0];
-        f64 three = pool[1];
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        guess = half * guess * (three - guess * guess * x);
-        return x * guess;
-    } else if (x < pool[2]) {
-        return NAN;
-    } else if (isnan(x)) {
-        return NAN;
-    }
-    return x;
-}
-#endif
-
 // dont_inline: retail calls _npcHitCheckSphere from fbatHitCheck (4 sites) instead of inlining it.
 #pragma dont_inline on
 NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((u8*)vec3_802c2f78 + 0x1c0);
-#endif
     f32 dx = x - entry->position.x;
     f32 dy = y - entry->position.y;
     f32 dz = z - entry->position.z;
@@ -3648,62 +3398,35 @@ NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z,
             dy = y - (entry->position.y + entry->height);
         }
     }
-#ifdef MUST_MATCH
-    *outDist = npcHitCheckSphere_sqrtf(dx * dx + dy * dy + dz * dz, pool);
-#else
     *outDist = sqrtf(dx * dx + dy * dy + dz * dz);
-#endif
     if (*outDist < radius + entry->width * 0.5f) {
         return entry;
     }
     return NULL;
 }
-#pragma dont_inline reset
 
-// Hammer sweep over 12 elevation angles placing a point radius from Mario along (sin/cos of angle,
-// elevation from the shared table), then the _npcHitCheckSphere test. The local angle table
-// materialises as a per-iteration stack copy (correct) but from this unit's own `.rodata` template
-// instead of dat_802c2f9c (vec3_802c2f78 + 0x24), and the compiler's double pool (int->float 2^52,
-// sqrtf 0.5/3.0) lands at 0x48 instead of vec3_802c2f78 + 0x1d8/0x1c0, because this unit's rodata
-// data is not written yet.
-// Calling marioGetPtr() before the angle-table declaration (which needs a nested block, declarations
-// precede statements) and declaring c2,s2,c1,s1 reproduces the target's call order and stack slots.
-// Removing the `dist`/`npc` initialisers (the loop always assigns them) and declaring dx/dy/dz as dy,dx,dz
-// recovered the prologue; computing the point into a `Vec pos` (pos.x, pos.z, pos.y) and copying to px/pz/py
-// gets the target's px,pz,py FP order (was py,px,pz). The angle-table and sqrtf double-pool offsets resolve
-// once the unit's rodata is complete.
+// Hammer sweep over 12 elevation angles: npcHammerPos places the hammer head (its angle table is the one
+// template, dat_802c2f9c, that fbatHitCheck's inlined copy also reads), then the _npcHitCheckSphere test.
+// dont_inline keeps it out of fbatHitCheck, which calls it twice. Declaring dx/dy/dz as dy,dx,dz recovered
+// the prologue; copying the head position to px/pz/py gets the target's px,pz,py FP order. The unused `zero`
+// vector is the original's: its template sits in .rodata between npcEntry's vectors and the angle table.
 // The allocator coalesces pos.y into the register of its dead addend here; the original instead reuses the
-// register that held s2. No declaration order or expression order in the source moves that choice.
+// register that held s2.
 // NONMATCHING (99.78%): only the FP register holding pos.y differs (ours f3, target f6; dx then follows into f5).
 NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle) {
-    MarioWork* mario;
+    Vec zero = { 0.0f, 0.0f, 0.0f };
     f32 i = 0.0f;
     f32 dist;
     NpcEntry* npc;
     NpcEntry* hit;
 
     for (; i <= 11.0f; i += 1.0f) {
-        f32 idx = i;
-        f32 c2, s2, c1, s1;
         Vec pos;
         f32 px, py, pz;
         f32 dy, dx, dz;
 
-        mario = marioGetPtr();
+        npcHammerPos(&pos, i, angle, radius);
         {
-        s32 angles[] = { 0, 0, 0, 0, 45, 60, 90, 100, 101, 101, 101 };
-
-        if (i < 0.0f) {
-            idx = 0.0f;
-        }
-        if (idx >= 11.0f) {
-            idx = 10.0f;
-        }
-        sincosf(&s1, &c1, angle);
-        sincosf(&s2, &c2, (f32)angles[(s32)idx]);
-        pos.x = s2 * (s1 * radius) + mario->position.x;
-        pos.z = s2 * (c1 * radius) + mario->position.z;
-        pos.y = radius * c2 + mario->position.y;
         px = pos.x;
         pz = pos.z;
         py = pos.y;
@@ -3727,6 +3450,26 @@ NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius,
     }
     *outDist = dist;
     return hit;
+}
+#pragma dont_inline reset
+
+// The hammer head's position: `angle` around Mario, raised by the swing angle of animation frame `frame`.
+static inline void npcHammerPos(Vec* pos, f32 frame, f32 angle, f32 radius) {
+    MarioWork* mario = marioGetPtr();
+    s32 angles[] = { 0, 0, 0, 0, 45, 60, 90, 100, 101, 101, 101 };
+    f32 s1, c1, s2, c2;
+
+    if (frame < 0.0f) {
+        frame = 0.0f;
+    }
+    if (frame >= 11.0f) {
+        frame = 10.0f;
+    }
+    sincosf(&s1, &c1, angle);
+    sincosf(&s2, &c2, (f32)angles[(s32)frame]);
+    pos->x = s2 * (s1 * radius) + mario->position.x;
+    pos->z = s2 * (c1 * radius) + mario->position.z;
+    pos->y = radius * c2 + mario->position.y;
 }
 
 BOOL npcCheckInterrupt(NpcEntry* npc) {
@@ -3783,7 +3526,8 @@ BOOL npcCheckInterrupt(NpcEntry* npc) {
 // `u8* p`. The first roll loop now matches. Also: declaring `num` before `enemy` puts the heldItems loop's
 // num/enemy/walk in r27/r26/r30 (retail r30/r26/r27, still swapped). The level test is a switch (levels 1 and 2
 // skip the roll; 0 and everything else roll), whose lowering is retail's `beq/blt; cmpwi 3; bge roll; b body`.
-// NONMATCHING (95.48%): the heldItems loop's num/walk register pairing and its increment-block placement.
+// The held-item pick stores and breaks inside its `for (;;)` (retail's bcc->b shape).
+// NONMATCHING (98.78%): the heldItems loop's num/walk register pairing.
 void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     s32 i;
     u8* p;
@@ -3860,7 +3604,7 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
         num = info->groupSetup->numEnemies;
         enemy = info->groupSetup->enemyData;
         memset(info->heldItems, 0, 0x20);
-        for (i = 0; i < num; i++, enemy++) {
+        for (i = 0; i < num; enemy++, i++) {
             list = enemy->itemDropTable;
             if (list != NULL) {
                 d = list;
@@ -3871,11 +3615,15 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
                 }
                 if (sum > 0) {
                     pick = irand(sum);
-                    while ((pick -= list->holdWeight) >= 0) {
+                    for (;;) {
+                        pick -= list->holdWeight;
+                        if (pick < 0) {
+                            info->heldItems[i] = list->type;
+                            info->itemDropLists[i] = enemy->itemDropTable;
+                            break;
+                        }
                         list++;
                     }
-                    info->heldItems[i] = list->type;
-                    info->itemDropLists[i] = enemy->itemDropTable;
                 }
             }
         }
@@ -3917,9 +3665,6 @@ void npcSetBattleInfo(NpcEntry* npc, s32 battleInfoId) {
 }
 
 void npcStopForEvent(void) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     int i;
     s32 total;
@@ -3940,9 +3685,6 @@ void npcStopForOneEvent(NpcEntry* entry) {
 }
 
 void npcStartForEvent(void) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     int i;
     s32 total;
@@ -3963,9 +3705,6 @@ void npcStartForOneEvent(NpcEntry* entry) {
 }
 
 void npcSetColor(const char* name, GXColor* color) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     NpcEntry* entry;
     s32 total;
@@ -3982,9 +3721,6 @@ void npcSetColor(const char* name, GXColor* color) {
 }
 
 void npcBlurOn(const char* name) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     NpcEntry* entry;
     s32 total;
@@ -4006,9 +3742,6 @@ void npcBlurOn(const char* name) {
 }
 
 void npcBlurOff(const char* name) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     NpcEntry* entry;
     s32 total;
@@ -4060,9 +3793,6 @@ NpcTerritoryType dbGetDefData(NpcTerritoryInfo* info, const char* description) {
 }
 
 void npcExecAllInitEvt(void) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     int i;
     s32 total;
@@ -4089,9 +3819,6 @@ void npcExecAllInitEvt(void) {
 }
 
 BOOL npcWaitAllInitEvtEnd(void) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     BOOL result = TRUE;
     int i;
@@ -4116,9 +3843,6 @@ BOOL npcWaitAllInitEvtEnd(void) {
 }
 
 void npcExecAllReglEvt(void) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     int i;
     s32 total;
@@ -4167,9 +3891,9 @@ s32 _majinai_effect(EventEntry* evt, s32 a2) {
         EffectEntry* e = (EffectEntry*)evt->userdata[0];
         ((MajinaiWork*)e->userdata)->field_0x10 = 0.8f;
         }
-        effSetName((EffectEntry*)evt->userdata[0], str_802C3128);
+        effSetName((EffectEntry*)evt->userdata[0], "mjef_coinup");
     }
-    if (evt->userdata[0] != 0 && effNameToPtr(str_802C3128) != NULL) {
+    if (evt->userdata[0] != 0 && effNameToPtr("mjef_coinup") != NULL) {
         return 0;
     }
     return 2;
@@ -4201,20 +3925,29 @@ const char str_802C30A8[] = "SFX_EVT_BTL_INCANT_CUBE4";
 const char str_802C30C4[] = "SFX_EVT_BTL_INCANT_CUBE5";
 const char str_802C30E0[] = "msg_mj_coin_up";
 const char str_802C30F0[] = "msg_mj_last";
-const char str_802C30FC[] = "a_magu";
-const char str_802C3104[] = "kpa_03";
-const char str_802C310C[] = "SFX_KUPPA_3RD_WATER_FALL1";
-const char str_802C3128[] = "mjef_coinup";
 
 void npcClearDeadInfo(void) {
     memset(gp->fbatData->deadInfo, 0, 0x500);
 }
 
+// Bowser's water level: splash on entering the water; npcMain halves the npc's speed while it is in it.
+void npcKoopaWaterCheck(NpcEntry* entry) {
+    if (entry->jumpFlags & 0x100000) {
+        entry->jumpFlags |= 0x200000;
+    } else {
+        entry->jumpFlags &= ~0x200000;
+    }
+    entry->jumpFlags &= ~0x100000;
+    if (!strcmp(gp->currentMapName, "kpa_03") && !(entry->position.y > 365.0f)) {
+        entry->jumpFlags |= 0x100000;
+        if (!(entry->jumpFlags & 0x200000) && (entry->jumpFlags & 0x100000)) {
+            psndSFXOn_3D("SFX_KUPPA_3RD_WATER_FALL1", &entry->position);
+        }
+    }
+}
+
 void npcKoopaModeEncountCheck(void) {
     FieldBattleData* fbat = gp->fbatData;
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     s32 i;
     s32 total;
@@ -4248,7 +3981,7 @@ void npcKoopaModeEncountCheck(void) {
                     break;
                 default:
                     if (!(*(u16*)entry->field_31E & 0x10) && *(u32*)entry->field_300 != 0 &&
-                        !strcmp(hitGetName((HitEntry*)(*(u32*)entry->field_300)), str_802C30FC)) {
+                        !strcmp(hitGetName((HitEntry*)(*(u32*)entry->field_300)), "a_magu")) {
                         npcGroupDead(entry, 0x10);
                     }
                     break;
@@ -4258,9 +3991,6 @@ void npcKoopaModeEncountCheck(void) {
 }
 
 s32 npcKoopaModeMobjBoundDeadCheck(HitEntry* mobj) {
-#ifdef MUST_MATCH
-    const f64* pool = (const f64*)((const u8*)vec3_802c2f78 + 0x1c0);
-#endif
     NpcWork* wp = gp->inBattle ? &work.battle : &work.field;
     int i;
     s32 total;
@@ -4319,15 +4049,25 @@ s32 npcCalcScore(NpcEntry* entry) {
     return score;
 }
 
+void npcKoopaJumpScore(FieldBattleData* data, MarioWork* mario) {
+    if (data->field_57C > 0 && data->field_578 >= 2) {
+        Vec pos = mario->position;
+
+        pos.y += 60.0f;
+        kpaAddScorePos(data->field_57C, &pos);
+    }
+    data->field_578 = 0;
+    data->field_57C = 0;
+}
+
 // The original copies entry->position into a shared `position` temp and from there into one Vec per
 // cloudGetBreathPower call (the temp sits at 0x2C, the call Vecs at 0x20/0x14/0x8); writing the copies
-// this way is what reproduces those stack slots. `half` keeps the fnmsubs operands (f2=height, f1=0.5).
+// this way is what reproduces those stack slots. npcMain inlines this function.
 s32 npcCheckBlow(NpcEntry* entry) {
     Vec position;
     Vec pos1;
     Vec pos2;
     Vec pos3;
-    f32 half;
 
     if (entry->flags & 0x20000000) {
         return FALSE;
@@ -4341,8 +4081,7 @@ s32 npcCheckBlow(NpcEntry* entry) {
         return TRUE;
     }
     position = entry->position;
-    half = 0.5f;
-    position.y = position.y - entry->height * half;
+    position.y -= entry->height / 2.0f;
     pos2 = position;
     if (cloudGetBreathPower(entry->width, &pos2) > 0.0f) {
         return TRUE;
@@ -4350,7 +4089,10 @@ s32 npcCheckBlow(NpcEntry* entry) {
     position = entry->position;
     position.y = position.y - entry->height;
     pos3 = position;
-    return cloudGetBreathPower(entry->width, &pos3) > 0.0f;
+    if (cloudGetBreathPower(entry->width, &pos3) > 0.0f) {
+        return TRUE;
+    }
+    return FALSE;
 }
 
 s32 N_fbatPreventMarioEventChk(void) {

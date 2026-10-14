@@ -308,3 +308,5 @@ void fbatEncountCheck(void);
 void npcExecAllInitEvt(void);
 BOOL npcWaitAllInitEvtEnd(void);
 void npcExecAllReglEvt(void);
+void npcKoopaWaterCheck(NpcEntry* entry);
+void npcKoopaJumpScore(FieldBattleData* data, struct MarioWork* mario);
