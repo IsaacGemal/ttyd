@@ -1562,41 +1562,93 @@ u8* ssDecodeDPCM(SoundStream* stream, SoundStreamEntry* entry, s16* out, u32 cou
 
 // SoundStream has no write-position field; it lives at +0x24 and is written raw. SoundStreamEntry at
 // +0x2c is loadBuffer[?] and +0x38..0x60 is unk38/unk4C; all accessed raw here.
-#ifdef MUST_MATCH
-// MUST_MATCH: two register-homed copies of buffer1 so the zero-fill/7 loops and the PCM byte/s16
-// copy paths each get a register MWCC colours toward retail r6. The #else keeps the natural code
-// (buffer1 used directly), which still compiles but scores lower.
-#define SS_CB_LOOP t1
-#define SS_CB_COPY t3
-#else
-#define SS_CB_LOOP buffer1
-#define SS_CB_COPY buffer1
-#endif
 #pragma opt_propagation off // needed: with propagation on MWCC folds the /7 magic and homes n in r0
-// NONMATCHING (99.29%): only register colouring differs. Retail keeps one buffer1 in r6 for the
-// zero-fill/7 loops, DPCM and byte/s16 dst; ours keeps the parameter in r11 and two loop copies,
-// t1=r6/t3=r9, so the DPCM path and the second /7 division (r3/r4) differ.
+static inline u8* ssCopyPCM8(SoundStream* stream, u8* ep, u8* out, u32 count, u8* in) {
+    while (count != 0) {
+        *out++ = *in++;
+        count--;
+        *(u32*)(ep + 0x44) += 1;
+        if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
+            if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
+                *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
+                *(u32*)(ep + 0x44) = 0;
+                in = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                continue;
+            } else {
+                *(s16*)(ep + 0x54) = 0;
+                *(u32*)(ep + 0x44) = 0;
+                *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
+                in = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+            }
+        }
+        *(u32*)(ep + 0x38) += 1;
+        if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
+            *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
+            if (!(stream->flags & 0x200)) {
+                stream->flags |= 4;
+                break;
+            }
+        }
+    }
+    return in;
+}
+
+static inline u8* ssCopyPCM16(SoundStream* stream, u8* ep, s16* out, u32 count, u8* in) {
+    while (count != 0) {
+        *out++ = *(s16*)in;
+        in += 2;
+        count--;
+        *(u32*)(stream->unk1C + 8) += 1;
+        *(u32*)(ep + 0x44) += 2;
+        if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
+            if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
+                *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
+                *(u32*)(ep + 0x44) = 0;
+                in = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+                continue;
+            } else {
+                *(s16*)(ep + 0x54) = 0;
+                *(u32*)(ep + 0x44) = 0;
+                *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
+                in = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
+            }
+        }
+        *(u32*)(ep + 0x38) += 2;
+        if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
+            *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
+            if (!(stream->flags & 0x200)) {
+                stream->flags |= 4;
+                break;
+            }
+        }
+    }
+    return in;
+}
+
 u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
-    SoundStream* stream = &sound.streams[user & 0xFF];
-#ifdef MUST_MATCH
-    void* t1 = buffer1;
-    void* t3 = buffer1;
-#endif
+    SoundStream* stream;
+    s16* out1;
     u8* ep;
+    u8* in;
+    u32 size2;
     u32 i;
+    s16* out2;
+
+    stream = &sound.streams[user & 0xFF];
+    size2 = len2;
+    out1 = buffer1;
+    out2 = buffer2;
 
     *(u32*)(stream->unk1C + 8) = 0;
 
     if ((stream->flags & 0x8006) || sound.unk214) {
         if (!(stream->flags & 0x100)) {
             for (i = 0; i != len1; i++) {
-                *(s16*)SS_CB_LOOP = 0;
-                SS_CB_LOOP = (s16*)SS_CB_LOOP + 1;
+                *out1++ = 0;
                 *(u32*)(stream->unk1C + 8) += 1;
             }
-            for (i = 0; i != len2; i++) {
-                *(s16*)buffer2 = 0;
-                buffer2 = (s16*)buffer2 + 1;
+            for (i = 0; i != size2; i++) {
+                *out2++ = 0;
                 *(u32*)(stream->unk1C + 8) += 1;
             }
             return *(u32*)(stream->unk1C + 8);
@@ -1608,161 +1660,38 @@ u32 _sscallback(void* buffer1, u32 len1, void* buffer2, u32 len2, u32 user) {
             n = len1 / 7 * 4 & ~7;
             n /= 2;
             for (j = 0; j != n; j++) {
-                *(u16*)SS_CB_LOOP = 0;
-                SS_CB_LOOP = (void*)((u16*)SS_CB_LOOP + 1);
+                *out1++ = 0;
             }
-            n = len2 / 7 * 4 & ~7;
+            n = size2 / 7 * 4 & ~7;
             n /= 2;
             for (j = 0; j != n; j++) {
-                *(u16*)buffer2 = 0;
-                buffer2 = (void*)((u16*)buffer2 + 1);
+                *out2++ = 0;
             }
         }
-        return len1 + len2;
+        return len1 + size2;
     }
 
     ep = (u8*)((user & 0x100) ? &stream->entries[1] : &stream->entries[0]);
 
     if (stream->flags & 0x80) {
-        u8* in;
-
-        in = (u8*)(((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)] + *(u32*)(ep + 0x44));
-        in = ssDecodeDPCM(stream, (SoundStreamEntry*)ep, (s16*)buffer1, len1, in);
-        ssDecodeDPCM(stream, (SoundStreamEntry*)ep, (s16*)buffer2, len2, in);
+        in = (u8*)((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)];
+        in += *(u32*)(ep + 0x44);
+        in = ssDecodeDPCM(stream, (SoundStreamEntry*)ep, out1, len1, in);
+        ssDecodeDPCM(stream, (SoundStreamEntry*)ep, out2, size2, in);
     } else if (stream->flags & 0x100) {
-        u8* src;
-        u8* dst;
-        u32 count;
-
-        src = (u8*)(((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)] + *(u32*)(ep + 0x44));
-        dst = (u8*)SS_CB_COPY;
-        count = (len1 + 13) / 7 * 4 & ~7;
-        while (count != 0) {
-            *dst++ = *src++;
-            count--;
-            *(u32*)(ep + 0x44) += 1;
-            if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
-                if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
-                    *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
-                    *(u32*)(ep + 0x44) = 0;
-                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
-                    continue;
-                } else {
-                    *(s16*)(ep + 0x54) = 0;
-                    *(u32*)(ep + 0x44) = 0;
-                    *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
-                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
-                }
-            }
-            *(u32*)(ep + 0x38) += 1;
-            if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
-                *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
-                if (!(stream->flags & 0x200)) {
-                    stream->flags |= 4;
-                    break;
-                }
-            }
-        }
-        dst = (u8*)buffer2;
-        count = (len2 + 13) / 7 * 4 & ~7;
-        while (count != 0) {
-            *dst++ = *src++;
-            count--;
-            *(u32*)(ep + 0x44) += 1;
-            if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
-                if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
-                    *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
-                    *(u32*)(ep + 0x44) = 0;
-                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
-                    continue;
-                } else {
-                    *(s16*)(ep + 0x54) = 0;
-                    *(u32*)(ep + 0x44) = 0;
-                    *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
-                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
-                }
-            }
-            *(u32*)(ep + 0x38) += 1;
-            if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
-                *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
-                if (!(stream->flags & 0x200)) {
-                    stream->flags |= 4;
-                    break;
-                }
-            }
-        }
-        *(u32*)(stream->unk1C + 8) = len1 + len2;
+        in = (u8*)((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)];
+        in += *(u32*)(ep + 0x44);
+        in = ssCopyPCM8(stream, ep, (u8*)out1, (len1 + 13) / 7 * 4 & ~7, in);
+        ssCopyPCM8(stream, ep, (u8*)out2, (size2 + 13) / 7 * 4 & ~7, in);
+        *(u32*)(stream->unk1C + 8) = len1 + size2;
     } else {
-        u8* src;
-        s16* dst;
-        u32 count;
-
-        dst = (s16*)SS_CB_COPY;
-        count = len1;
-        src = (u8*)(((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)] + (*(u32*)(ep + 0x44) & ~1));
-        while (count != 0) {
-            *dst++ = *(s16*)src;
-            src += 2;
-            count--;
-            *(u32*)(stream->unk1C + 8) += 1;
-            *(u32*)(ep + 0x44) += 2;
-            if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
-                if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
-                    *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
-                    *(u32*)(ep + 0x44) = 0;
-                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
-                    continue;
-                } else {
-                    *(s16*)(ep + 0x54) = 0;
-                    *(u32*)(ep + 0x44) = 0;
-                    *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
-                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
-                }
-            }
-            *(u32*)(ep + 0x38) += 2;
-            if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
-                *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
-                if (!(stream->flags & 0x200)) {
-                    stream->flags |= 4;
-                    break;
-                }
-            }
-        }
-        count = len2;
-        dst = (s16*)buffer2;
-        while (count != 0) {
-            *dst++ = *(s16*)src;
-            src += 2;
-            count--;
-            *(u32*)(stream->unk1C + 8) += 1;
-            *(u32*)(ep + 0x44) += 2;
-            if (*(u32*)(ep + 0x44) >= *(u32*)(ep + 0x3c + ((*(u16*)(ep + 0x4c)) << 2))) {
-                if (*(s16*)(ep + 0x54) == 0 && !(stream->flags & 0x4000)) {
-                    *(u32*)(ep + 0x38) -= *(u32*)(ep + 0x44);
-                    *(u32*)(ep + 0x44) = 0;
-                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
-                    continue;
-                } else {
-                    *(s16*)(ep + 0x54) = 0;
-                    *(u32*)(ep + 0x44) = 0;
-                    *(u16*)(ep + 0x4c) = 1 - *(u16*)(ep + 0x4c);
-                    src = (u8*)*(u32*)(ep + 0x2c + ((*(u16*)(ep + 0x4c)) << 2));
-                }
-            }
-            *(u32*)(ep + 0x38) += 2;
-            if (*(u32*)(ep + 0x38) >= *(u32*)(stream->unk1C + 0)) {
-                *(u32*)(ep + 0x38) = *(u32*)(stream->unk1C + 4);
-                if (!(stream->flags & 0x200)) {
-                    stream->flags |= 4;
-                    break;
-                }
-            }
-        }
+        in = (u8*)((u32*)(ep + 0x2c))[*(u16*)(ep + 0x4c)];
+        in += *(u32*)(ep + 0x44) & ~1;
+        in = ssCopyPCM16(stream, ep, out1, len1, in);
+        ssCopyPCM16(stream, ep, out2, size2, in);
     }
     return *(u32*)(stream->unk1C + 8);
 }
-#undef SS_CB_LOOP
-#undef SS_CB_COPY
 #pragma opt_propagation reset
 
 void SoundSSPlayCh(s32 chan, u32 a2) {
