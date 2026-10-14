@@ -6833,3 +6833,21 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   `entry->field_0x0 & 1` (129); kanjiSearch directly (128); u16/u8/int `skip`; loop 1 as an inline 97.3-97.7; signed
   index casts `(u32)i * 2`, `i * 2u`, `i << 1` 97.9-98.1; one loop only 99.75-99.77. Note: .sdata2 is 508 vs 512 in
   the object (4 bytes tail padding; the DOL matches since the next unit aligns to 8).
+
+### sound partial: _sscallback 99.29 -> 100 (57/58); SoundSSMain stays 99.05 (Claude Opus 5.5, on4-sound)
+- _sscallback: PCM8/PCM16 copy loops as `static inline u8* ssCopyPCM8/16(stream, ep, out, count, in)` returning `in`,
+  the shape of the existing ssDecodeDPCM; one function-scope `u8* in`, each start as `in = table[idx]; in += off;`;
+  plain parameter copies `size2 = len2; out1 = buffer1; out2 = buffer2;` (decls stream, out1, ep, in, size2, i, out2).
+  Old MUST_MATCH t1/t3 copies gone; opt_propagation off stays (98.74 without).
+- **Argument-register copies:** MWCC merges a copy into an argument register only when they never overlap, and it
+  schedules the incoming parameter moves into the first block in source order. So the buffer1 copy must sit after the
+  len2 move and before the buffer2 move (overlaps r5, not r6) to get retail's separate r6 pointer.
+- **Tooling trap (fixed):** tb.sh's rsync used size+mtime, so a same-size variant written within the same second was not
+  synced and scored stale. tb.sh now syncs with `--checksum` (~4.5 s per call). Earlier "no change" results from rapid
+  same-size variants may be wrong.
+- SoundSSMain negatives: `u32 chan` in the helpers 99.21 but hurts pmario_sound (psndBGMOn_f_d 99.01, psndSFXMain
+  98.12); getters, `sound.streams + i`, `s32 i`, pragmas, int/long swaps, type matrix (best 99.21), named outer `stream`
+  98.77-99.21, `stream++` 97.36; rasim neighbors: no single edge; mwsearch 329 compiles. Candidate (99.27): loop body in
+  `static inline void SoundSSMainCh(int i)` with inline_max_size(2000) and dont_inline on around SoundSSMain (without
+  it SoundMain drops to 0); not kept. Need: the outer loop offset created before the five inlined StopCh/SetPanCh
+  `stream` temps (rasim what-if: ~vreg 51). Untried: levers 18 (reuse `i`), 19 (if/else-if body).
