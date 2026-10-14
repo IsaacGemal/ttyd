@@ -6896,3 +6896,22 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 - Negatives: unk_mri_000095f0 statement reorders 94.16/89.11 (from 96.04). Next: rasim degree/what-if on puniFukki,
   evt_puni_debug_info, evt_puni_setup, evt_puni_exit; look for more pasted copies in ALLCheck, Findbuff, ChildHagure,
   980c, all_save.
+
+### animdrv partial: animPoseEntry 98.32 -> 100 (63/73), all data sections identical (Claude Opus 5.5, on4-animdrv)
+- **New lever: inline helpers whose loop counter is their own local, returning by value.** Retail's `mr offset, index`
+  loop setup comes from loops inside inlined helpers. animPoseEntry uses `animPoseFindFreePose(&pose)` and
+  `animPoseLoadFile(animName)` (calling animPoseFindFreeFile and animPoseLoadTexture), each search loop with its own
+  block-scoped slot pointer; MakeExtTexture uses `animPoseSearchName(name, type)` (98.35 -> 99.93).
+- Data: all 32 named .sdata2 floats and the "%s/%s", "a", "" strings to literals (7 duplicates gone, sdata2_diff
+  IDENTICAL); pool order via a static `animGetAg2tgName` defined after animGroupBaseAsync and an uncalled
+  `animPoseEvalMtx` (evalProc pass alone) before evalProc; `mtx` a function-static in animPoseDrawMtx,
+  anim_ext_tex_size next to MakeExtTexture, .sbss/.bss decl order (.sbss 50 -> 100). No gap objects needed.
+- animPoseMain 98.66 -> 99.55 (the literal port hoisted the Hermite constants: compute `a2 = alpha * alpha` in the loop
+  and write `alpha * a2`). _animPoseDrawMtx 98.61 -> 99.64 (`animGetCameraAngle()` + `animAngleWrap()`, `if (rotY)`,
+  `rotationY += 0.1f * (...)`, opt_common_subs off dropped, shared `animPoseMainScratch(pose)` inline also used by
+  animPoseDrawShape). animSetMaterial_Texture 98.37 -> 98.91 (`animSetMaterial_TexMtx` inline, compiler-built j*3).
+- Negatives: materialProc helper param orders / add operand order / cached pose (99.775; rasim: needs a temp reorder);
+  animPoseMain a2/a3 and src/end swaps unreachable by decl order, opt_loop_invariants off and a Hermite inline worse;
+  SetPaperAnimGroup rewrites 94.7/92.4; removing the defer_codegen i2f helper costs .rodata (99.36); shared
+  animPoseSearchAnimIdx worse. Next: the same inline-counter lever on renderProc, Texture's first loop and
+  SetPaperAnimGroup (mwccdbg dumps in ~/scratch-on4-animdrv/dbg_mx, dbg_sp on the tower).

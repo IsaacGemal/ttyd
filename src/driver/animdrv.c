@@ -20,9 +20,6 @@
 // Data objects defined later in this file or in other units, declared before their first use.
 extern GXColor dat_80419a2c;
 extern GXColor dat_80419a30;
-extern u32 zero_80419a50;
-extern const char str_80419A54[];
-extern const char str_80419A5C[];
 
 #define TESTHEAP_SIZE (u32)(1.5 * 1024 * 1024)
 #define PI 3.14159265358979323846264338327950288419716939937510f
@@ -199,8 +196,8 @@ static f32 animdrv_pool_i2f_mask(u32 v) {
 #endif
 
 //.bss
-static AnimationWork work;
 f32 tanfTbl[0xB2];
+static AnimationWork work;
 
 //.sdata
 s32 vivihimoTailGroupNo[4] ATTRIBUTE_ALIGN(32) = { 0, 2, -1, -1 };
@@ -214,45 +211,16 @@ static AnimationWork* wp = &work;
 s32 _dummy = -1;
 static s32 tbl[4] = { 2, 1, 3, 0 };
 
-//.sbss
-u32 anim_ext_tex_size;
-Mtx mtx; // TODO: make sure it's put in .sbss
-s32 g_modeling_mtx_lv;
+//.sbss (MWCC lays these out last-declared-first)
 Mtx* g_modeling_mtx;
+s32 g_modeling_mtx_lv;
 Mtx g_modeling_mtx_stack[32];
 
 // .sdata2 constants this unit references by name in retail
-extern const f32 float_0_80419a48;
-extern const f32 float_1_80419a44;
-extern const f32 float_0p04_80419ac0;
-extern const f32 float_0p5_80419a64;
-extern const f32 float_8_80419a70;
-extern const f32 float_25p74_80419a74;
-extern const f32 float_0p14881_80419a78;
-extern const f32 float_150_80419a7c;
-extern const f32 float_215_80419a80;
-extern const f32 float_0p25_80419a6c;
-extern const f32 float_0p75_80419a68;
-extern const f64 double_to_int_mask_802c2de0;
-extern const f64 double_to_int_802c2df0;
-extern const f32 float_neg1_80419a8c;
-extern const f32 float_deg2rad_80419a4c;
-extern const f32 float_neg0p5_80419a88;
-extern const f32 float_neg2_80419ab8;
-extern const f32 float_neg3_80419abc;
-extern const f32 float_neg90_80419a90;
-extern const f32 float_rad2deg_80419a94;
-extern const f32 float_360_80419a98;
-extern const f32 float_neg360_80419a9c;
-extern const f32 float_90_80419aa0;
-extern const f32 float_270_80419aa4;
-extern const f32 float_neg270_80419aa8;
-extern const f32 float_180_80419aac;
-extern const f32 float_neg180_80419ab0;
-extern const f32 float_0p1_80419ab4;
 
 
 // local declarations
+static const char* animGetAg2tgName(const char* name);
 
 AnimationWork* animGetPtr(void) {
     return wp;
@@ -387,51 +355,120 @@ void animPoseBattleInit(void) {
     animPoseRefresh();
 }
 
-// Finds the first inactive file slot, writing its index through id. The early return
-// inside the loop is what gives the found-exit the target's `bne next; b found` layout.
-static inline AnimationPoseFile* animPoseFindFreeFile(s32* id) {
-    AnimationPoseFile* f;
+static inline s32 animPoseFindFreePose(AnimationPose** out) {
+    s32 i;
 
-    for (*id = 0; *id < wp->totalFiles; (*id)++) {
-        f = &wp->files[*id];
-        if (!f->active) {
-            return f;
+    for (i = 0; i < wp->totalPoses; i++) {
+        AnimationPose* p = &wp->poses[i];
+        if (!p->flags) {
+            *out = p;
+            return i;
         }
     }
-    *id = -1;
-    return NULL;
+    *out = NULL;
+    return -1;
+}
+
+// Finds the first inactive file slot, writing its index through id. The early return
+// inside the loop is what gives the found-exit the target's `bne next; b found` layout.
+static inline s32 animPoseFindFreeFile(AnimationPoseFile** out) {
+    s32 i;
+
+    for (i = 0; i < wp->totalFiles; i++) {
+        AnimationPoseFile* f = &wp->files[i];
+        if (!f->active) {
+            *out = f;
+            return i;
+        }
+    }
+    *out = NULL;
+    return -1;
 }
 
 // Finds the first inactive texture slot, writing its index through id. Same early-return
 // shape as the file search above.
-static inline AnimationTextureFile* animPoseFindFreeTexture(s32* id) {
-    AnimationTextureFile* t;
+static inline s32 animPoseFindFreeTexture(AnimationTextureFile** out) {
+    s32 i;
 
-    for (*id = 0; *id < wp->totalTextures; (*id)++) {
-        t = &wp->textures[*id];
+    for (i = 0; i < wp->totalTextures; i++) {
+        AnimationTextureFile* t = &wp->textures[i];
         if ((u32)t->active == 0) {
-            return t;
+            *out = t;
+            return i;
         }
     }
-    *id = -1;
-    return NULL;
+    *out = NULL;
+    return -1;
 }
 
-// The file- and texture-slot free loops use the early-return helpers above for the target's
-// `bne next; b found` found-exit layout; the name-search loops use fileId/texId as counters.
-// NONMATCHING (98.32%): register allocation only, plus five induction-offset initialisations
-// (retail `mr offset, index`, ours `li offset, 0`); the instruction count matches.
-s32 animPoseEntry(const char* animName, s32 type) {
-    AnimationPose *pose;
-    AnimationPoseData* data;
-    AnimationTextureFile *texture;
-    AnimationPoseFile *file;
-    AnimationPose *temp;
-    s32 poseId;
-    s32 fileId;
+// Returns the slot of the texture archive `name`, loading it into a free slot if no loaded
+// texture has that name.
+static inline s32 animPoseLoadTexture(const char* name) {
+    AnimationTextureFile* texture;
     s32 texId;
-    s32 check;
+    s32 count = wp->totalTextures;
+
+    for (texId = 0; texId < count; texId++) {
+        AnimationTextureFile* t = &wp->textures[texId];
+        if ((u32)t->active != 0) {
+            if (t->handle) {
+                if (!strcmp(t->handle->filename, name)) {
+                    t->references++;
+                    return texId;
+                }
+            }
+        }
+    }
+    texId = animPoseFindFreeTexture(&texture);
+    texture->active = TRUE;
+    texture->references++;
+    texture->handle = fileAlloc(name, 4);
+    return texId;
+}
+
+// Returns the slot of the animation archive `animName` (loading it and its textures if needed),
+// or -2 when it cannot be loaded.
+static inline s32 animPoseLoadFile(const char* animName) {
+    AnimationPoseFile* file;
+    AnimationPoseData* data;
+    s32 fileId;
+    s32 count = wp->totalFiles;
     char textureName[256];
+
+    for (fileId = 0; fileId < count; fileId++) {
+        AnimationPoseFile* f = &wp->files[fileId];
+        if (f->active) {
+            data = *f->handle->data;
+            if (!strcmp(data->fileName, animName)) {
+                f->references++;
+                return fileId;
+            }
+        }
+    }
+    fileId = animPoseFindFreeFile(&file);
+    file->active = TRUE;
+    file->references++;
+    file->handle = fileAllocf(5, "%s/%s", "a", animName);
+    if (!file->handle) {
+        file->active = FALSE;
+        file->references--;
+        return -2;
+    }
+    data = *file->handle->data;
+    if (!data) {
+        fileFree(file->handle);
+        file->active = FALSE;
+        file->references--;
+        return -2;
+    }
+    sprintf(textureName, "%s/%s-", "a", data->textureName);
+    file->textureId = animPoseLoadTexture(textureName);
+    return fileId;
+}
+
+s32 animPoseEntry(const char* animName, s32 type) {
+    AnimationPose* pose;
+    s32 poseId;
 
     switch (type) {
         case 0:
@@ -445,75 +482,12 @@ s32 animPoseEntry(const char* animName, s32 type) {
             break;
     }
 
-    for (poseId = 0; poseId < wp->totalPoses; poseId++) {
-        temp = &wp->poses[poseId];
-        if (!temp->flags) {
-            pose = temp;
-            goto label_1;
-        }
-    }
-    pose = NULL;
-    poseId = -1;
-label_1:
+    poseId = animPoseFindFreePose(&pose);
     pose->flags |= 1;
     pose->typeFlags = 0;
     pose->references = 0;
 
-    check = wp->totalFiles;
-    for (fileId = 0; fileId < check; fileId++) {
-        file = &wp->files[fileId];
-        if (file->active) {
-            data = *file->handle->data;
-            if (!strcmp(data->fileName, animName)) {
-                file->references++;
-                goto label_5;
-            }
-        }
-    }
-
-    file = animPoseFindFreeFile(&fileId);
-label_2:
-    file->active = TRUE;
-    file->references++;
-    file->handle = fileAllocf(5, str_80419A54, str_80419A5C, animName);
-
-    if (!file->handle) {
-        fileId = -2;
-        file->active = FALSE;
-        file->references--;
-    } else {
-        data = *file->handle->data;
-        if (!data) {
-            fileFree(file->handle);
-            fileId = -2;
-            file->active = FALSE;
-            file->references--;
-        } else {
-            sprintf(textureName, "%s/%s-", str_80419A5C, data->textureName);
-            check = wp->totalTextures;
-            for (texId = 0; texId < check; texId++) {
-                texture = &wp->textures[texId];
-                if ((u32)texture->active != 0) {
-                    if (texture->handle) {
-                        if (!strcmp(texture->handle->filename, textureName)) {
-                            texture->references++;
-                            goto label_4;
-                        }
-                    }
-                }
-            }
-
-            texture = animPoseFindFreeTexture(&texId);
-        label_3:
-            texture->active = TRUE;
-            texture->references++;
-            texture->handle = fileAlloc(textureName, 4);
-        label_4:
-            file->textureId = texId;
-        }
-    }
-label_5:
-    pose->fileId = fileId;
+    pose->fileId = animPoseLoadFile(animName);
     if (pose->fileId == -2) {
         pose->flags = 0;
         return -2;
@@ -521,12 +495,12 @@ label_5:
     pose->animId = 0;
     pose->localTime = animTimeGetTime(type); // inline
     pose->lastFrameZero = -1;
-    pose->lastFrameTime = float_0_80419a48;
+    pose->lastFrameTime = 0.0f;
     pose->field_0x80 = 0;
-    pose->loopTime = float_0_80419a48;
-    pose->field_0x70 = float_0_80419a48;
-    pose->rotationY = float_0_80419a48;
-    pose->field_0x7C = float_0_80419a48;
+    pose->loopTime = 0.0f;
+    pose->field_0x70 = 0.0f;
+    pose->rotationY = 0.0f;
+    pose->field_0x7C = 0.0f;
     pose->type = type;
     pose->paperId = -1;
     animPose_AllocBuffer(pose);
@@ -536,10 +510,10 @@ label_5:
     pose->materialLightFlag = 0;
     pose->materialColor = dat_80419a2c;
     pose->materialColor2 = dat_80419a30;
-    pose->field_0xFC = float_1_80419a44;
-    pose->field_0xF8 = float_1_80419a44;
-    pose->field_0x100 = float_0_80419a48;
-    pose->localTimeRate = float_1_80419a44;
+    pose->field_0xFC = 1.0f;
+    pose->field_0xF8 = 1.0f;
+    pose->field_0x100 = 0.0f;
+    pose->localTimeRate = 1.0f;
     MTXIdentity(pose->matrix);
     if (!strcmp(animName, "tst_vivi")) {
         pose->vivianType = 1;
@@ -628,7 +602,7 @@ BOOL animEffectAsync(const char* animName, u32 group) {
             fileSetCurrentArchiveType(0);
             break;
     }
-    fileId = fileAsyncf(5, NULL, str_80419A54, str_80419A5C, animName);
+    fileId = fileAsyncf(5, NULL, "%s/%s", "a", animName);
     data = wp->mp_ag2tg->data;
     size = (s32)data[1];
     entry = (u8*)data[0];
@@ -639,9 +613,9 @@ BOOL animEffectAsync(const char* animName, u32 group) {
         }
         entry += 0x20;
     }
-    result = (u8*)&zero_80419a50;
+    result = (u8*)"";
 found:
-    other = fileAsyncf(4, NULL, "%s/%s-", str_80419A5C, result);
+    other = fileAsyncf(4, NULL, "%s/%s-", "a", result);
 
     if (fileId == -1) {
         return TRUE;
@@ -735,9 +709,9 @@ void animPoseSetAnim(s32 poseId, const char* animName, BOOL reset) {
     }
     pose->localTime = animTimeGetTime(pose->type);
     pose->lastFrameZero = -1;
-    pose->lastFrameTime = float_0_80419a48;
+    pose->lastFrameTime = 0.0f;
     pose->field_0x80 = 0;
-    pose->loopTime = float_0_80419a48;
+    pose->loopTime = 0.0f;
 }
 
 s32 animPaperPoseGetId(const char* animName, s32 group) {
@@ -1003,9 +977,9 @@ void animPoseSetEffectAnim(s32 poseId, const char* animName, BOOL reset) {
     }
     pose->localTime = animTimeGetTime(pose->type);
     pose->lastFrameZero = -1;
-    pose->lastFrameTime = float_0_80419a48;
+    pose->lastFrameTime = 0.0f;
     pose->field_0x80 = 0;
-    pose->loopTime = float_0_80419a48;
+    pose->loopTime = 0.0f;
 }
 
 void animPoseSetGXFunc(s32 poseId, void (*callback)(s32 wXluStage), BOOL disableDraw) {
@@ -1196,18 +1170,34 @@ static inline void animPoseAddTexDelta(AnimTexMtx* dst, u8* src, s32 size) {
     } while (0)
 
 // The unit's own .sdata2 constants referenced by name from the assembly below.
-extern const f32 float_60_80419ac4;
-extern const f32 float_1000_80419ac8;
-extern const f32 float_0p0625_80419acc;
-extern const f32 float_2_80419a84;
-extern const f32 float_3_80419ad0;
+
+static inline f32 animAngleWrap(f32 a) {
+    while (a < -360.0f) {
+        a += 360.0f;
+    }
+    while (a >= 360.0f) {
+        a -= 360.0f;
+    }
+    return a;
+}
+
+static inline f32 animGetCameraAngle(void) {
+    CameraEntry* cam = camGetPtr(CAMERA_3D);
+    f32 raw = (f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z));
+    f32 angle = animAngleWrap(57.29579f * raw);
+
+    if (angle < 0.0f) {
+        angle += 360.0f;
+    }
+    return angle;
+}
 
 // The four inlined delta loops make each update path large; retail inlines them in both.
 #pragma inline_max_total_size(60000)
 // Reconstruction notes. The whole recursive pose evaluator is reconstructed from the assembly;
 // the bl sequence and immediates match (17 calls), so only register allocation and instruction
 // scheduling remain. Source shapes that reproduce retail's operand order and register split: the
-// two `float_0_80419a48 == x` compares keep the constant first in `fcmpu`; the clamped value
+// two `0.0f == x` compares keep the constant first in `fcmpu`; the clamped value
 // accumulates back into `start` (retail's clamp lives in start's f3) instead of a separate
 // `clamped` variable; `end` is declared before `start` and loaded first, giving retail's f1/f3
 // split; the range delta helper multiplies `dx * scale` (the size helper's `scale * dx` is what
@@ -1215,7 +1205,7 @@ extern const f32 float_3_80419ad0;
 // What is left: the reset loops take their source in r7 where retail uses r5, the node
 // cubic-Hermite block schedules a2/a3 and the tanfTbl loads in another order and keeps its
 // `angle` in f3 where retail uses f2, and the two `0.0f` clamp stores rematerialise
-// `float_0_80419a48` where retail keeps it live in f0. Permuter work: no call, immediate or
+// `0.0f` where retail keeps it live in f0. Permuter work: no call, immediate or
 // control-flow difference remains.
 // NONMATCHING (98.53%): register allocation/scheduling only; all calls and immediates match.
 void animPoseMain(s32 poseId) {
@@ -1258,7 +1248,7 @@ void animPoseMain(s32 poseId) {
 
     canLoop = ANIM_DATA_CLIP(anim)[0];
     now = animTimeGetTime(pose->type);
-    APOSE_F(pose, 0x20) = (f32)(u64)(now - pose->localTime) * float_60_80419ac4 / float_1000_80419ac8;
+    APOSE_F(pose, 0x20) = (f32)(u64)(now - pose->localTime) * 60.0f / 1000.0f;
     APOSE_F(pose, 0x20) *= pose->localTimeRate;
 
     time = APOSE_F(pose, 0x20);
@@ -1344,8 +1334,8 @@ void animPoseMain(s32 poseId) {
             den = *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x2C) * ANIM_FRAME_SIZE)
                 - *(f32*)(ANIM_DATA_FRAMES(anim) + APOSE_S(pose, 0x28) * ANIM_FRAME_SIZE);
         }
-        if (float_0_80419a48 == den) {
-            APOSE_F(pose, 0x30) = float_0_80419a48;
+        if (0.0f == den) {
+            APOSE_F(pose, 0x30) = 0.0f;
         } else {
             APOSE_F(pose, 0x30) = num / den;
         }
@@ -1383,18 +1373,18 @@ void animPoseMain(s32 poseId) {
                 pose->lastFrameZero = 0;
             }
             for (; f < fend; f += ANIM_FRAME_SIZE) {
-                ANIM_POSE_ADD_FRAME(pose, anim, f, float_0p0625_80419acc);
+                ANIM_POSE_ADD_FRAME(pose, anim, f, 0.0625f);
             }
         } else if (pose->lastFrameZero < frame1) {
             u8* f = ANIM_DATA_FRAMES(anim) + (pose->lastFrameZero + 1) * ANIM_FRAME_SIZE;
             u8* fend = ANIM_DATA_FRAMES(anim) + (frame1 + 1) * ANIM_FRAME_SIZE;
             for (; f < fend; f += ANIM_FRAME_SIZE) {
-                ANIM_POSE_ADD_FRAME(pose, anim, f, float_0p0625_80419acc);
+                ANIM_POSE_ADD_FRAME(pose, anim, f, 0.0625f);
             }
         }
     } else {
         if (pose->lastFrameTime > alpha) {
-            pose->lastFrameTime = float_0_80419a48;
+            pose->lastFrameTime = 0.0f;
         }
     }
 
@@ -1410,7 +1400,7 @@ void animPoseMain(s32 poseId) {
         }
     } else if (frame1 <= frame2) {
         u8* key2 = ANIM_DATA_FRAMES(anim) + frame2 * ANIM_FRAME_SIZE;
-        f32 blend = float_0p0625_80419acc * alpha;
+        f32 blend = 0.0625f * alpha;
 
         {
             u8* posSrc = ANIM_DATA_POS(anim) + ANIM_FRAME_POS_OFF(key2) * 4;
@@ -1468,19 +1458,17 @@ void animPoseMain(s32 poseId) {
                 memcpy_as4(dst, nodeSrc, nodeNum * 4);
             }
             {
-                f32 a2 = alpha * alpha;
                 while (src < srcEnd) {
-                    f32 a3 = alpha * a2;
                     s32 t1 = (s8)src[3];
                     dst += src[0];
                     if (t1 < 0x59 && t1 > -0x59) {
-                        f32 step = float_0p0625_80419acc * __OSs8tof32((s8*)src + 1);
+                        f32 a2 = alpha * alpha;
+                        f32 step = 0.0625f * __OSs8tof32((s8*)src + 1);
                         f32 tan0 = tanfTbl[(s8)src[2] + 0x59];
-                        s32 i1 = t1 + 0x59;
-                        f32 tan1 = tanfTbl[i1];
-                        *dst += (float_neg2_80419ab8 * a3 + float_3_80419ad0 * a2) * step
-                              + (a3 - float_2_80419a84 * a2 + alpha) * (timedelta * tan0)
-                              + (a3 - a2) * (timedelta * tan1);
+                        f32 tan1 = tanfTbl[t1 + 0x59];
+                        *dst += ((-2.0f) * (alpha * a2) + 3.0f * a2) * step
+                              + ((alpha * a2) - 2.0f * a2 + alpha) * (timedelta * tan0)
+                              + ((alpha * a2) - a2) * (timedelta * tan1);
                     }
                     src += 4;
                 }
@@ -1492,34 +1480,13 @@ void animPoseMain(s32 poseId) {
     pose->lastFrameTime = alpha;
 
     if (pose->flags & 8) {
-        CameraEntry* cam = camGetPtr(CAMERA_3D);
-        f32 rad = (f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z));
-        f32 angle = float_rad2deg_80419a94 * rad;
-        f32 diff;
+        f32 diff = animAngleWrap(animGetCameraAngle() - pose->rotationY);
 
-        while (angle < float_neg360_80419a9c) {
-            angle += float_360_80419a98;
-        }
-        while (angle >= float_360_80419a98) {
-            angle -= float_360_80419a98;
-        }
-        if (angle < float_0_80419a48) {
-            angle += float_360_80419a98;
-        }
-
-        diff = angle - pose->rotationY;
-        while (diff < float_neg360_80419a9c) {
-            diff += float_360_80419a98;
-        }
-        while (diff >= float_360_80419a98) {
-            diff -= float_360_80419a98;
-        }
-
-        if ((diff > float_90_80419aa0 && diff <= float_270_80419aa4)
-            || (diff < float_neg90_80419a90 && diff >= float_neg270_80419aa8)) {
-            pose->field_0x78 = float_neg1_80419a8c;
+        if ((diff > 90.0f && diff <= 270.0f)
+            || (diff < (-90.0f) && diff >= (-270.0f))) {
+            pose->field_0x78 = (-1.0f);
         } else {
-            pose->field_0x78 = float_1_80419a44;
+            pose->field_0x78 = 1.0f;
         }
     }
 }
@@ -1771,14 +1738,85 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z) {
 // NONMATCHING (98.37%): instructions/constants match; register colouring only. The split wrapS
 // assignment adds a web that promotes `i`/`wrapFlags` above the parameter webs and rotates the
 // callee-saved set by two; the loop2 `texMtxId` init is `mr r19,r21` vs a `li` here.
+// Loads each texture stage's animated texture matrix (rotate about the centre, then
+// translate, then scale) and points its texcoord generator at it.
+static inline void animSetMaterial_TexMtx(s32 texCount, s32* texIdRemap, AnimTexMtx* animEntries) {
+    Mtx mTmp, mScale, mTrans, mRot;
+    s32 j;
+
+    for (j = 0; j < texCount; j++) {
+#ifdef MUST_MATCH // `1u` keeps the original's `subf; subi 1; slwi` instead of folding it to `subf; slwi; subi 4`
+        s32 texId = texIdRemap[texCount - j - 1u];
+#else
+        s32 texId = texIdRemap[texCount - j - 1];
+#endif
+        AnimTexMtx* anim = &animEntries[texId];
+        f32 scaleS, scaleT, transS, transT, rotate;
+        u32 flags = 0;
+        f32(*mtx)[4];
+
+        rotate = anim->mRotate;
+        scaleS = anim->mScaleS;
+        scaleT = anim->mScaleT;
+        transS = anim->mTransS;
+        transT = anim->mTransT;
+        if (rotate != 0.0f) {
+            flags |= 1;
+            PSMTXTrans(mTmp, 0.5f, 0.5f, 0.0f);
+            PSMTXRotRad(mRot, 'z', MTXDegToRad(-rotate));
+            PSMTXConcat(mTmp, mRot, mTrans);
+            PSMTXTrans(mTmp, -0.5f, -0.5f, 0.0f);
+            PSMTXConcat(mTrans, mTmp, mRot);
+        }
+        if (transS != 0.0f || transT != 0.0f || scaleT != 0.0f) {
+            flags |= 2;
+            PSMTXTrans(mTrans, transS, (1.0f - transT) - scaleT, 0.0f);
+        }
+        if (scaleS != 1.0f || scaleT != 1.0f) {
+            flags |= 4;
+            PSMTXScale(mScale, scaleS, scaleT, 1.0f);
+        }
+        switch (flags) {
+            case 0:
+                GXSetTexCoordGen2(j, GX_TG_MTX2x4, GX_TG_TEX0 + j, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+                continue;
+            case 1:
+                mtx = mRot;
+                break;
+            case 2:
+                mtx = mTrans;
+                break;
+            case 3:
+                PSMTXConcat(mRot, mTrans, mTmp);
+                mtx = mTmp;
+                break;
+            case 4:
+                mtx = mScale;
+                break;
+            case 5:
+                PSMTXConcat(mRot, mScale, mTmp);
+                mtx = mTmp;
+                break;
+            case 6:
+                PSMTXConcat(mTrans, mScale, mTmp);
+                mtx = mTmp;
+                break;
+            case 7:
+                PSMTXConcat(mRot, mTrans, mTmp);
+                PSMTXConcat(mTmp, mScale, mTrans);
+                mtx = mTrans;
+                break;
+        }
+        GXSetTexCoordGen2(j, GX_TG_MTX2x4, GX_TG_TEX0 + j, GX_TEXMTX0 + (u32)(j * 3), GX_FALSE, GX_PTIDENTITY);
+        GXLoadTexMtxImm(mtx, GX_TEXMTX0 + (u32)(j * 3), GX_MTX2x4);
+    }
+}
+
 void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pTexEntries, AnimTexMtx* animEntries,
                              s32 texBindsCapacity, AnimTexBind* texBinds, AnimationTextureFile* texFile) {
-    Mtx mRot, mTrans, mScale, mTmp;
     GXTexObj texObj;
     GXTlutObj tlutObj;
     s32 i;
-    s32 texMtxId;
-    s32 j;
     GXTexWrapMode wrapT, wrapS;
     s32 mipmap;
 
@@ -1876,73 +1914,7 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
         }
     }
 
-    texMtxId = 0;
-    for (j = 0; j < texCount; j++, texMtxId += 3) {
-#ifdef MUST_MATCH // `1u` keeps the original's `subf; subi 1; slwi` instead of folding it to `subf; slwi; subi 4`
-        s32 texId = texIdRemap[texCount - j - 1u];
-#else
-        s32 texId = texIdRemap[texCount - j - 1];
-#endif
-        AnimTexMtx* anim = &animEntries[texId];
-        f32 scaleS, scaleT, transS, transT, rotate;
-        u32 flags = 0;
-        f32(*mtx)[4];
-
-        rotate = anim->mRotate;
-        scaleS = anim->mScaleS;
-        scaleT = anim->mScaleT;
-        transS = anim->mTransS;
-        transT = anim->mTransT;
-        if (rotate != 0.0f) {
-            flags |= 1;
-            PSMTXTrans(mTmp, 0.5f, 0.5f, 0.0f);
-            PSMTXRotRad(mRot, 'z', MTXDegToRad(-rotate));
-            PSMTXConcat(mTmp, mRot, mTrans);
-            PSMTXTrans(mTmp, -0.5f, -0.5f, 0.0f);
-            PSMTXConcat(mTrans, mTmp, mRot);
-        }
-        if (transS != 0.0f || transT != 0.0f || scaleT != 0.0f) {
-            flags |= 2;
-            PSMTXTrans(mTrans, transS, (1.0f - transT) - scaleT, 0.0f);
-        }
-        if (scaleS != 1.0f || scaleT != 1.0f) {
-            flags |= 4;
-            PSMTXScale(mScale, scaleS, scaleT, 1.0f);
-        }
-        switch (flags) {
-            case 0:
-                GXSetTexCoordGen2(j, GX_TG_MTX2x4, GX_TG_TEX0 + j, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-                continue;
-            case 1:
-                mtx = mRot;
-                break;
-            case 2:
-                mtx = mTrans;
-                break;
-            case 3:
-                PSMTXConcat(mRot, mTrans, mTmp);
-                mtx = mTmp;
-                break;
-            case 4:
-                mtx = mScale;
-                break;
-            case 5:
-                PSMTXConcat(mRot, mScale, mTmp);
-                mtx = mTmp;
-                break;
-            case 6:
-                PSMTXConcat(mTrans, mScale, mTmp);
-                mtx = mTmp;
-                break;
-            case 7:
-                PSMTXConcat(mRot, mTrans, mTmp);
-                PSMTXConcat(mTmp, mScale, mTrans);
-                mtx = mTrans;
-                break;
-        }
-        GXSetTexCoordGen2(j, GX_TG_MTX2x4, GX_TG_TEX0 + j, GX_TEXMTX0 + texMtxId, GX_FALSE, GX_PTIDENTITY);
-        GXLoadTexMtxImm(mtx, GX_TEXMTX0 + texMtxId, GX_MTX2x4);
-    }
+    animSetMaterial_TexMtx(texCount, texIdRemap, animEntries);
 }
 
 inline BOOL animSetMaterial_ChangeTexture(AnimationPoseData* data, AnimPoseShapeDraw* draw, AnimationPose* pose,
@@ -2490,11 +2462,11 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 field_0x28, s32 field_0x2c, f3
         node = &nodes[group->nodeId];
         if (group->useSSC) {
             if (parentGroupId == -1) {
-                x = y = z = float_1_80419a44;
+                x = y = z = 1.0f;
             } else {
                 AnimPoseGroup* parent = &groups[parentGroupId];
                 if (!parent->useSSC) {
-                    x = y = z = float_1_80419a44;
+                    x = y = z = 1.0f;
                 } else {
                     x = nodes[parent->nodeId + 3];
                     y = nodes[parent->nodeId + 4];
@@ -2522,22 +2494,22 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 field_0x28, s32 field_0x2c, f3
             Mtx* mtx = g_modeling_mtx;
             f32 (*matrix)[4] = wp->mpCurPose->matrix;
             f32* params = (f32*)((u8*)vivihimoData[wp->mpCurPose->vivianType] + wp->mpCurPose->animId * 8);
-            f32 v1 = float_0_80419a48;
+            f32 v1 = 0.0f;
             f32 v2 = v1;
             int i, j;
 
             switch (wp->mpCurPose->vivianType) {
                 case 1:
-                    v1 = float_neg2_80419ab8;
-                    v2 = float_0p5_80419a64;
+                    v1 = (-2.0f);
+                    v2 = 0.5f;
                     break;
                 case 2:
-                    v1 = float_neg3_80419abc;
-                    v2 = float_0p5_80419a64;
+                    v1 = (-3.0f);
+                    v2 = 0.5f;
                     break;
                 case 3:
-                    v1 = float_neg1_80419a8c;
-                    v2 = float_0p5_80419a64;
+                    v1 = (-1.0f);
+                    v2 = 0.5f;
                     break;
             }
             materialProc(group->shapeId, field_0x28);
@@ -2545,7 +2517,7 @@ void dispProc(s32 parentGroupId, s32 groupId, s32 field_0x28, s32 field_0x2c, f3
             wp->mpCurPose->flags &= ~0x20;
             for (i = 0; i < 3; i++) {
                 for (j = 0; j < 3; j++) {
-                    matrix[i][j] += float_0p04_80419ac0 * ((*mtx)[i][j] - matrix[i][j]);
+                    matrix[i][j] += 0.04f * ((*mtx)[i][j] - matrix[i][j]);
                 }
             }
         } else {
@@ -2570,36 +2542,40 @@ void animPoseDraw(s32 poseId, f32 x, f32 y, f32 z, f32 rotY, f32 scale, s32 xluM
 }
 
 
-// The original inlines one camera-angle helper at all three sites; the macro keeps the
-// target's frsp/lfs ordering.
-#define ANIM_GET_ANGLE(angle)                                                                       \
-    do {                                                                                              \
-        CameraEntry* cam = camGetPtr(CAMERA_3D);                                                      \
-        f32 raw = (f32)atan2(-(cam->cameraAt.x - cam->cameraPos.x), -(cam->cameraAt.z - cam->cameraPos.z)); \
-        angle = float_rad2deg_80419a94;                                                               \
-        angle *= raw;                                                                                 \
-        while (angle < float_neg360_80419a9c) {                                                       \
-            angle += float_360_80419a98;                                                              \
-        }                                                                                             \
-        while (angle >= float_360_80419a98) {                                                         \
-            angle -= float_360_80419a98;                                                              \
-        }                                                                                             \
-        if (angle < float_0_80419a48) {                                                               \
-            angle += float_360_80419a98;                                                              \
-        }                                                                                             \
-    } while (0)
 
 // _animPoseDrawMtx
-// The three inlined copies of the camera-angle helper and the two caller normalisations
-// read the file's named angle constants; MWCC must reload them at each loop rather than
-// CSE one register across the loops.
-#pragma opt_common_subs off // keeps the lastFrameZero block's GPR colouring
-// Still different: the helper's first-loop constants land swapped (360 in f0, -360 in f1; the
-// target has 360 in f1, -360 in f0), which also costs one extra 360 reload after the loops; the
-// rotation normalisation (loop-2 360 in f4 vs f2; rotationY/diff in f2/f1 vs the target's f1/f4)
-// and the lastFrameZero scratch (posNum/nrmNum/RP in r8/r0/r5 vs the target's r6/r5/r8) differ only
-// in register colouring.
-// NONMATCHING (98.61%): register colouring only (see above).
+// Brings a pose's vertex buffers up to date before drawing: paper poses evaluate into the shared
+// float scratch buffer when it has room.
+static inline void animPoseMainScratch(AnimationPose* pose) {
+    if (pose->lastFrameZero == -1) {
+        s32 poseId = (s32)((u32)((u8*)pose - (u8*)wp->poses) / sizeof(AnimationPose));
+
+        if (pose->typeFlags & 2) {
+            AnimationPoseData* data = animPoseGetBaseData(pose);
+            s32 posNum = data->mBufferPosNum;
+            s32 nrmNum = data->mBufferNrmNum;
+            s32 total = posNum + nrmNum;
+
+            if (total <= (s32)wp->mFloatScratchRP) {
+                if ((s32)(wp->mFloatScratchWP + total) > (s32)wp->mFloatScratchRP) {
+                    wp->mFloatScratchWP = 0;
+                }
+                wp->mbUseFloatScratch = 1;
+                wp->vtxArrayPos = &wp->mpFloatScratch[wp->mFloatScratchWP];
+                wp->mFloatScratchWP += posNum;
+                wp->vtxArrayNrm = &wp->mpFloatScratch[wp->mFloatScratchWP];
+                wp->mFloatScratchWP += nrmNum;
+            }
+            animPoseMain(poseId);
+            wp->mbUseFloatScratch = 0;
+        } else {
+            animPoseMain(poseId);
+        }
+    }
+}
+
+// NONMATCHING (99.64%): register colouring in the inlined animPoseMainScratch block only (wp r7 in
+// retail, r4 here).
 void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
     AnimationPoseData* poseData;
     AnimData* animData;
@@ -2613,7 +2589,6 @@ void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f3
     s32 field_0x2c;
     f32 field_0x30;
     s32 stage;
-    f32 neg1;
     s32 useScratch;
 
     poseData = animPoseGetBaseData(pose);
@@ -2679,96 +2654,54 @@ void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f3
     }
 
     if (pose->flags & 0x8) {
-        f32 angle;
         f32 diff;
 
-        rotY += float_neg90_80419a90;
+        rotY += (-90.0f);
         pose->field_0x70 = rotY;
-        ANIM_GET_ANGLE(diff);
-        diff = diff - pose->field_0x70;
-        while (diff < float_neg360_80419a9c) {
-            diff += float_360_80419a98;
-        }
-        while (diff >= float_360_80419a98) {
-            diff -= float_360_80419a98;
-        }
-        if ((diff > float_90_80419aa0 && diff <= float_270_80419aa4) ||
-            (diff < float_neg90_80419a90 && diff >= float_neg270_80419aa8)) {
-            ANIM_GET_ANGLE(angle);
-            angle = float_180_80419aac + angle;
-            while (angle < float_neg360_80419a9c) {
-                angle += float_360_80419a98;
-            }
-            while (angle >= float_360_80419a98) {
-                angle -= float_360_80419a98;
-            }
-            pose->field_0x7C = angle;
+        diff = animAngleWrap(animGetCameraAngle() - pose->field_0x70);
+        if ((diff > 90.0f && diff <= 270.0f) ||
+            (diff < (-90.0f) && diff >= (-270.0f))) {
+            pose->field_0x7C = animAngleWrap(180.0f + animGetCameraAngle());
         } else {
-            ANIM_GET_ANGLE(angle);
-            pose->field_0x7C = angle;
+            pose->field_0x7C = animGetCameraAngle();
         }
-        while (pose->field_0x7C - pose->rotationY > float_180_80419aac) {
-            pose->rotationY += float_360_80419a98;
+        while (pose->field_0x7C - pose->rotationY > 180.0f) {
+            pose->rotationY += 360.0f;
         }
-        while (pose->field_0x7C - pose->rotationY < float_neg180_80419ab0) {
-            pose->rotationY -= float_360_80419a98;
+        while (pose->field_0x7C - pose->rotationY < (-180.0f)) {
+            pose->rotationY -= 360.0f;
         }
         if (pose->flags & 0x100) {
             pose->rotationY = pose->field_0x7C;
         } else {
-            pose->rotationY = float_0p1_80419ab4 * (pose->field_0x7C - pose->rotationY) + pose->rotationY;
+            pose->rotationY += 0.1f * (pose->field_0x7C - pose->rotationY);
         }
         rotY = pose->rotationY;
-        if (float_0_80419a48 != rotY) {
-            PSMTXRotRad(rotMtx, 'y', float_deg2rad_80419a4c * rotY);
+        if (0.0f != rotY) {
+            PSMTXRotRad(rotMtx, 'y', 0.017453292f * rotY);
             PSMTXConcat(matrix, rotMtx, dstMtx);
             matrix = dstMtx;
         }
-        neg1 = float_neg1_80419a8c;
-        if (neg1 == pose->field_0x78) {
-            PSMTXScale(rotMtx, float_1_80419a44, float_1_80419a44, neg1);
+        if (pose->field_0x78 == -1.0f) {
+            PSMTXScale(rotMtx, 1.0f, 1.0f, -1.0f);
             PSMTXConcat(matrix, rotMtx, dstMtx);
             matrix = dstMtx;
         }
     } else {
-        if (rotY != float_0_80419a48) {
-            PSMTXRotRad(rotMtx2, 'y', float_deg2rad_80419a4c * rotY);
+        if (rotY) {
+            PSMTXRotRad(rotMtx2, 'y', 0.017453292f * rotY);
             PSMTXConcat(matrix, rotMtx2, dstMtx);
             matrix = dstMtx;
         }
     }
 
-    if (float_1_80419a44 != scale) {
+    if (1.0f != scale) {
         PSMTXScale(scaleMtx, scale, scale, scale);
         PSMTXConcat(matrix, scaleMtx, dstMtx);
         matrix = dstMtx;
     }
 
-    if (pose->lastFrameZero == -1) {
-        s32 poseIndex = ((u32)pose - (u32)wp->poses) / sizeof(AnimationPose);
-
-        if (pose->typeFlags & 2) {
-            AnimationPoseData* data;
-            s32 posNum;
-
-            data = animPoseGetBaseData(pose);
-            posNum = data->mBufferPosNum;
-            if (posNum + (s32)data->mBufferNrmNum <= (s32)wp->mFloatScratchRP) {
-                if ((s32)wp->mFloatScratchWP + posNum + (s32)data->mBufferNrmNum > (s32)wp->mFloatScratchRP) {
-                    wp->mFloatScratchWP = 0;
-                }
-                wp->mbUseFloatScratch = 1;
-                wp->vtxArrayPos = (Vec*)((u8*)wp->mpFloatScratch + wp->mFloatScratchWP * 12);
-                wp->mFloatScratchWP += posNum;
-                wp->vtxArrayNrm = (Vec*)((u8*)wp->mpFloatScratch + wp->mFloatScratchWP * 12);
-                wp->mFloatScratchWP += (s32)data->mBufferNrmNum;
-            }
-            animPoseMain(poseIndex);
-            wp->mbUseFloatScratch = 0;
-        } else {
-            animPoseMain(poseIndex);
-        }
-    }
+    animPoseMainScratch(pose);
 
     g_modeling_mtx_lv = 0;
     g_modeling_mtx = g_modeling_mtx_stack;
@@ -2787,7 +2720,6 @@ void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f3
     GXInvalidateVtxCache();
     dispProc(-1, poseData->groupCount - 1, field_0x28, field_0x2c, field_0x30);
 }
-#pragma opt_common_subs reset
 
 // Searches ANIM_POSE_DATA_ANIMS(data) for `name` when i is negative (i is the string's address used as
 // a sentinel), then clamps the result into [0, top). Used by animPoseDrawMtx below. The `return` inside the loop makes MWCC emit the target's
@@ -2822,6 +2754,7 @@ zero:
 // rematerialisation of the paper pose inside the animArg block (outer r30, inner r29).
 // NONMATCHING (99.24%): register allocation only (60 instructions, all register renames).
 void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
+    static Mtx mtx;
     AnimationPose* pose = &wp->poses[poseId];
     s32 top;
     s32 nrmNum;
@@ -2842,12 +2775,12 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
         if ((pose->flags & 0xC0) != 0) {
             poseData = *wp->files[pose->fileId].handle->data;
             pMtx = matrix;
-            if (!(pose->flags & 8) && rotY != float_0_80419a48) {
-                PSMTXRotRad(mtxB, 'y', float_deg2rad_80419a4c * rotY);
+            if (!(pose->flags & 8) && rotY) {
+                PSMTXRotRad(mtxB, 'y', 0.017453292f * rotY);
                 PSMTXConcat(matrix, mtxB, mtxA);
                 pMtx = mtxA;
             }
-            if (float_1_80419a44 != scale) {
+            if (1.0f != scale) {
                 PSMTXScale(mtxC, scale, scale, scale);
                 PSMTXConcat(pMtx, mtxC, mtxA);
                 pMtx = mtxA;
@@ -2930,28 +2863,28 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
         paperPose->materialColor2 = pose->materialColor2;
 
         if (pose->flags & 2) {
-            PSMTXScale(mtxE, *(f32*)(pose->field_0x104 + 8), *(f32*)(pose->field_0x104 + 0xC), float_1_80419a44);
-            PSMTXTrans(mtxD, *(f32*)pose->field_0x104, *(f32*)(pose->field_0x104 + 4), float_0_80419a48);
+            PSMTXScale(mtxE, *(f32*)(pose->field_0x104 + 8), *(f32*)(pose->field_0x104 + 0xC), 1.0f);
+            PSMTXTrans(mtxD, *(f32*)pose->field_0x104, *(f32*)(pose->field_0x104 + 4), 0.0f);
             PSMTXConcat(mtxE, mtxD, mtxE);
             animSetPaperTexMtx(mtxE, NULL, NULL);
             PSMTXScale(mtxE, pose->field_0xF8, pose->field_0xFC, pose->field_0xF8);
             if (wp->inBattle) {
-                PSMTXTrans(mtxD, float_0_80419a48, 2.0f * pose->field_0x100, float_0_80419a48);
+                PSMTXTrans(mtxD, 0.0f, 2.0f * pose->field_0x100, 0.0f);
             } else {
-                PSMTXTrans(mtxD, float_0_80419a48, pose->field_0x100, float_0_80419a48);
+                PSMTXTrans(mtxD, 0.0f, pose->field_0x100, 0.0f);
             }
             PSMTXConcat(mtxD, mtxE, mtxE);
             PSMTXConcat(matrix, mtxE, mtx);
             matrix = mtx;
         } else {
-            PSMTXScale(mtxE, *(f32*)(pose->field_0x104 + 8), *(f32*)(pose->field_0x104 + 0xC), float_1_80419a44);
-            PSMTXTrans(mtxD, *(f32*)pose->field_0x104, *(f32*)(pose->field_0x104 + 4), float_0_80419a48);
+            PSMTXScale(mtxE, *(f32*)(pose->field_0x104 + 8), *(f32*)(pose->field_0x104 + 0xC), 1.0f);
+            PSMTXTrans(mtxD, *(f32*)pose->field_0x104, *(f32*)(pose->field_0x104 + 4), 0.0f);
             PSMTXConcat(mtxE, mtxD, mtxE);
-            PSMTXTrans(mtxD, float_0p5_80419a64, float_1_80419a44, float_0_80419a48);
+            PSMTXTrans(mtxD, 0.5f, 1.0f, 0.0f);
             PSMTXConcat(mtxE, mtxD, mtxE);
-            PSMTXScale(mtxD, float_1_80419a44 / pose->field_0xF8, float_1_80419a44 / pose->field_0xFC, float_1_80419a44);
+            PSMTXScale(mtxD, 1.0f / pose->field_0xF8, 1.0f / pose->field_0xFC, 1.0f);
             PSMTXConcat(mtxE, mtxD, mtxE);
-            PSMTXTrans(mtxD, float_neg0p5_80419a88, float_neg1_80419a8c, float_0_80419a48);
+            PSMTXTrans(mtxD, (-0.5f), (-1.0f), 0.0f);
             PSMTXConcat(mtxE, mtxD, mtxE);
             animSetPaperTexMtx(mtxE, NULL, NULL);
         }
@@ -3193,7 +3126,7 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
     u16 h;
     f32 scale;
 
-    f31 = float_8_80419a70;
+    f31 = 8.0f;
 
     if ((pose->flags & 1) == 0) {
         return;
@@ -3202,15 +3135,15 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
     data = animPoseGetBaseData(pose);
     animData = ANIM_POSE_DATA_ANIMS(data)[pose->animId].data;
 
-    f31 *= float_25p74_80419a74 / (ANIMDATA_F54(animData) - ANIMDATA_F48(animData));
-    f30 = float_0p75_80419a68 * (f32)DEMOGetRenderModeObj()->efbHeight;
+    f31 *= 25.74f / (ANIMDATA_F54(animData) - ANIMDATA_F48(animData));
+    f30 = 0.75f * (f32)DEMOGetRenderModeObj()->efbHeight;
 
     sysWaitDrawSync();
     GXClearBoundingBox();
 
-    PSMTXTrans(mtxTrans, float_0_80419a48,
-               float_0p25_80419a6c * -(f32)DEMOGetRenderModeObj()->efbHeight - ANIMDATA_F48(animData) * f31,
-               float_0_80419a48);
+    PSMTXTrans(mtxTrans, 0.0f,
+               0.25f * -(f32)DEMOGetRenderModeObj()->efbHeight - ANIMDATA_F48(animData) * f31,
+               0.0f);
 
     materialFlag = pose->materialFlag;
     materialLightFlag = pose->materialLightFlag;
@@ -3227,7 +3160,7 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
         PSMTXCopy(mtxTrans, pose->matrix);
     }
 
-    _animPoseDrawMtx(pose, mtxTrans, 2, float_0_80419a48, f31);
+    _animPoseDrawMtx(pose, mtxTrans, 2, 0.0f, f31);
 
     pose->flags = flags;
     pose->materialFlag = materialFlag;
@@ -3277,15 +3210,15 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
             c = x;
             if (x < y) c = y;
 #endif
-            x = (s32)(float_0p5_80419a64 * (f32)c);
-            b = (s32)(float_0p14881_80419a78 * (f32)(bottom - top));
+            x = (s32)(0.5f * (f32)c);
+            b = (s32)(0.14881f * (f32)(bottom - top));
             POSE_S0x114(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) - c - x;
             POSE_S0x116(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) + x + c;
-            scale = float_8_80419a70 / f31;
+            scale = 8.0f / f31;
             POSE_S0x118(pose) = top - b;
             POSE_S0x11A(pose) = bottom + b;
-            pose->field_0xF8 = scale * ((f32)(POSE_S0x116(pose) - POSE_S0x114(pose)) / float_150_80419a7c);
-            pose->field_0xFC = scale * ((f32)(POSE_S0x11A(pose) - POSE_S0x118(pose)) / float_215_80419a80);
+            pose->field_0xF8 = scale * ((f32)(POSE_S0x116(pose) - POSE_S0x114(pose)) / 150.0f);
+            pose->field_0xFC = scale * ((f32)(POSE_S0x11A(pose) - POSE_S0x118(pose)) / 215.0f);
             pose->field_0x100 = ANIMDATA_F48(animData) + (f30 - (f32)bottom) / f31;
             pose->flags &= ~4;
         } else {
@@ -3298,15 +3231,15 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
             c = x;
             if (x < y) c = y;
 #endif
-            x = (s32)(float_0p5_80419a64 * (f32)c);
-            b = (s32)(float_0p14881_80419a78 * (f32)(bottom - top));
+            x = (s32)(0.5f * (f32)c);
+            b = (s32)(0.14881f * (f32)(bottom - top));
             POSE_S0x114(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) - c - x;
             POSE_S0x116(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) + x + c;
-            scale = float_8_80419a70 / f31;
+            scale = 8.0f / f31;
             POSE_S0x118(pose) = top - b;
             POSE_S0x11A(pose) = bottom + b;
-            pose->field_0xF8 = scale * ((f32)(POSE_S0x116(pose) - POSE_S0x114(pose)) / float_150_80419a7c);
-            pose->field_0xFC = scale * ((f32)(POSE_S0x11A(pose) - POSE_S0x118(pose)) / float_215_80419a80);
+            pose->field_0xF8 = scale * ((f32)(POSE_S0x116(pose) - POSE_S0x114(pose)) / 150.0f);
+            pose->field_0xFC = scale * ((f32)(POSE_S0x11A(pose) - POSE_S0x118(pose)) / 215.0f);
             pose->field_0x100 = ANIMDATA_F48(animData) + (f30 - (f32)bottom) / f31;
         }
     }
@@ -3344,9 +3277,25 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
     POSE_I0x9C(pose) = 0;
 }
 
+static inline s32 animPoseSearchName(const char* name, s32 type) {
+    s32 i;
+
+    for (i = 0; i < wp->totalPoses; i++) {
+        AnimationPose* pose = &wp->poses[i];
+        if ((pose->flags & 1) && pose->type == type && !strcmp(animPoseGetBaseData(pose)->fileName, name)) {
+            break;
+        }
+    }
+    if (i == wp->totalPoses) {
+        i = -1;
+    }
+    return i;
+}
+
 // animPoseDisp_MakeExtTexture
 
-extern const f32 float_16p667_80419a60;
+u32 anim_ext_tex_size;
+
 extern GXColor dat_80419a3c;
 extern GXColor dat_80419a40;
 // All logic/constants/offsets match (including every compare direction and signedness). What remains is
@@ -3363,8 +3312,6 @@ extern GXColor dat_80419a40;
 void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void* texObj, void* base,
                                  f32 f2, s32* out0, s32* out1, s32* out2, s32* out3) {
     s32 i;
-    BOOL inBattle;
-    s32 offset;
     s32 animId;
     s32 found;
     AnimationPoseData* data;
@@ -3389,21 +3336,7 @@ void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void
     s32 cx;
     s32 cy;
 
-    i = 0;
-    offset = 0;
-    inBattle = (gp->inBattle != 0);
-    while (i < wp->totalPoses) {
-        pose = (AnimationPose*)((u8*)wp->poses + offset);
-        if ((pose->flags & 1) && pose->type == inBattle &&
-            !strcmp(animPoseGetBaseData(pose)->fileName, name)) {
-            break;
-        }
-        offset += 0x170;
-        i++;
-    }
-    if (i == wp->totalPoses) {
-        i = -1;
-    }
+    i = animPoseSearchName(name, gp->inBattle != 0);
     if (i < 0) {
         return;
     }
@@ -3442,7 +3375,7 @@ void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void
         // declared before `time =` so the compiler schedules the fmuls above it and the (OSTime)
         // conversion below it, as the target does; moving it after costs ~1.4%.
         AnimationPose* p2 = &wp->poses[i];
-        time = (OSTime)(float_16p667_80419a60 * f1);
+        time = (OSTime)(16.666666f * f1);
         p2->localTime = animTimeGetTime(p2->type) - time;
         p2->mLocalTimeInit = p2->localTime;
         if (p2->paperId != -1) {
@@ -3454,11 +3387,11 @@ void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void
         }
     }
     animPoseMain(i);
-    f30 = float_0p5_80419a64 * (f32)DEMOGetRenderModeObj()->fbWidth;
-    f29 = float_0p75_80419a68 * (f32)DEMOGetRenderModeObj()->efbHeight;
+    f30 = 0.5f * (f32)DEMOGetRenderModeObj()->fbWidth;
+    f29 = 0.75f * (f32)DEMOGetRenderModeObj()->efbHeight;
     sysWaitDrawSync();
     GXClearBoundingBox();
-    PSMTXTrans(mtx, float_0_80419a48, float_0p25_80419a6c * -(f32)DEMOGetRenderModeObj()->efbHeight, float_0_80419a48);
+    PSMTXTrans(mtx, 0.0f, 0.25f * -(f32)DEMOGetRenderModeObj()->efbHeight, 0.0f);
     flags = pose->flags;
     color0 = pose->materialColor;
     color1 = pose->materialColor2;
@@ -3467,9 +3400,9 @@ void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void
     pose->materialFlag = 0;
     pose->materialColor = dat_80419a3c;
     pose->materialColor2 = dat_80419a40;
-    _animPoseDrawMtx(pose, mtx, 1, float_0_80419a48, f2);
-    _animPoseDrawMtx(pose, mtx, 2, float_0_80419a48, f2);
-    _animPoseDrawMtx(pose, mtx, 3, float_0_80419a48, f2);
+    _animPoseDrawMtx(pose, mtx, 1, 0.0f, f2);
+    _animPoseDrawMtx(pose, mtx, 2, 0.0f, f2);
+    _animPoseDrawMtx(pose, mtx, 3, 0.0f, f2);
     pose->materialColor = color0;
     pose->materialColor2 = color1;
     pose->flags = flags;
@@ -3540,11 +3473,6 @@ void animSetPaperTexMtx(Mtx mtx1, Mtx mtx2, Mtx mtx3) {
 BOOL animGroupBaseAsync(const char* name, s32 group, void* callback) {
     s32 fileId;
     s32 other;
-    void** data;
-    u8* entry;
-    u8* result;
-    s32 offset;
-    s32 size;
 
     switch (group) {
         case 0:
@@ -3557,20 +3485,8 @@ BOOL animGroupBaseAsync(const char* name, s32 group, void* callback) {
             fileSetCurrentArchiveType(0);
             break;
     }
-    fileId = fileAsyncf(5, callback, str_80419A54, str_80419A5C, name);
-    data = wp->mp_ag2tg->data;
-    size = (s32)data[1];
-    entry = (u8*)data[0];
-    for (offset = 0; offset < size; offset += 0x20) {
-        if (!strcmp((char*)entry, name)) {
-            result = entry + 0x20;
-            goto found;
-        }
-        entry += 0x20;
-    }
-    result = (u8*)&zero_80419a50;
-found:
-    other = fileAsyncf(4, NULL, "%s/%s-", str_80419A5C, result);
+    fileId = fileAsyncf(5, callback, "%s/%s", "a", name);
+    other = fileAsyncf(4, NULL, "%s/%s-", "a", animGetAg2tgName(name));
 
     if (fileId == -1) {
         return TRUE;
@@ -3582,6 +3498,21 @@ found:
         return TRUE;
     }
     return other != 0;
+}
+
+static const char* animGetAg2tgName(const char* name) {
+    void** data = wp->mp_ag2tg->data;
+    s32 size = (s32)data[1];
+    s32 offset;
+    u8* entry = (u8*)data[0];
+
+    for (offset = 0; offset < size; offset += 0x20) {
+        if (!strcmp((char*)entry, name)) {
+            return (const char*)(entry + 0x20);
+        }
+        entry += 0x20;
+    }
+    return "";
 }
 
 AnimationPose* animPoseGetAnimPosePtr(s32 poseId) {
@@ -3606,6 +3537,35 @@ AnimTableEntry* animPoseGetCurrentAnim(s32 poseId) {
 BOOL animPoseTestXLU(s32 poseId) {
     AnimationPoseData* data = animPoseGetAnimBaseDataPtr(poseId);
     return (*(u32*)data->field_0xC4 >> 3) & 1;
+}
+
+// Runs the evalProc pass of animPoseDrawMtx on its own: positions the pose and refreshes its
+// group matrices without drawing. Nothing in the game calls it (the linker strips it); generated
+// here, it pools 0.0f and the degree factor ahead of animGroupBaseAsync's strings.
+void animPoseEvalMtx(s32 poseId, Mtx matrix, f32 rotY, f32 scale) {
+    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPoseData* poseData = *wp->files[pose->fileId].handle->data;
+    f32(*pMtx)[4] = matrix;
+    Mtx rotMtx;
+    Mtx scaleMtx;
+    Mtx dstMtx;
+
+    if (!(pose->flags & 8) && rotY != 0.0f) {
+        PSMTXRotRad(rotMtx, 'y', 0.017453292f * rotY);
+        PSMTXConcat(matrix, rotMtx, dstMtx);
+        pMtx = dstMtx;
+    }
+    if (1.0f != scale) {
+        PSMTXScale(scaleMtx, scale, scale, scale);
+        PSMTXConcat(pMtx, scaleMtx, dstMtx);
+        pMtx = dstMtx;
+    }
+    g_modeling_mtx_lv = 0;
+    g_modeling_mtx = g_modeling_mtx_stack;
+    PSMTXCopy(pMtx, g_modeling_mtx_stack[0]);
+    wp->mpCurPose = pose;
+    wp->mpCurPoseData = poseData;
+    evalProc(-1, poseData->groupCount - 1);
 }
 
 // evalProc
@@ -3806,36 +3766,7 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
     wp->field_0xD8 = 0;
     wp->field_0xDC = 0;
 
-    if (pose->lastFrameZero == -1) {
-#ifdef MUST_MATCH
-        // The original loses poseId to the pointer mulli and recovers it with an unsigned
-        // division of the byte offset by sizeof(AnimationPose) (magic 0xb21642c9 >> 8).
-        s32 shapePoseId = (s32)((u32)((u8*)pose - (u8*)wp->poses) / sizeof(AnimationPose));
-#else
-        s32 shapePoseId = poseId;
-#endif
-        if (pose->typeFlags & 2) {
-            AnimationPoseData* data = animPoseGetBaseData(pose);
-            s32 posNum = data->mBufferPosNum;
-            s32 nrmNum = data->mBufferNrmNum;
-            s32 total = posNum + nrmNum;
-
-            if (total <= (s32)wp->mFloatScratchRP) {
-                if ((s32)(wp->mFloatScratchWP + total) > (s32)wp->mFloatScratchRP) {
-                    wp->mFloatScratchWP = 0;
-                }
-                wp->mbUseFloatScratch = 1;
-                wp->vtxArrayPos = &wp->mpFloatScratch[wp->mFloatScratchWP];
-                wp->mFloatScratchWP += posNum;
-                wp->vtxArrayNrm = &wp->mpFloatScratch[wp->mFloatScratchWP];
-                wp->mFloatScratchWP += nrmNum;
-            }
-            animPoseMain(shapePoseId);
-            wp->mbUseFloatScratch = 0;
-        } else {
-            animPoseMain(shapePoseId);
-        }
-    }
+    animPoseMainScratch(pose);
     renderProc(shapeId, *(s32*)((u8*)pose + 0x28));
 
     wp->mpCurPose = prevPose;
@@ -3901,42 +3832,3 @@ __declspec(section ".sdata2") GXColor dat_80419a3c = { 0xff, 0xff, 0xff, 0xff };
 __declspec(section ".sdata2") GXColor dat_80419a40 = { 0xff, 0xff, 0xff, 0xff };
 #pragma force_active reset
 
-const f32 float_1_80419a44 = 1.0f;
-#pragma explicit_zero_data on // emit float_0_80419a48 as 4 zero bytes instead of .sbss
-const f32 float_0_80419a48 = 0.0f;
-#pragma explicit_zero_data reset
-const f32 float_deg2rad_80419a4c = 0.017453292f;
-#pragma explicit_zero_data on // emit zero_80419a50 as 4 zero bytes instead of .sbss
-__declspec(section ".sdata2") u32 zero_80419a50 = 0;
-#pragma explicit_zero_data reset
-__declspec(section ".sdata2") const char str_80419A54[] = "%s/%s";
-__declspec(section ".sdata2") const char str_80419A5C[] = "a";
-const f32 float_16p667_80419a60 = 16.666666f;
-const f32 float_0p5_80419a64 = 0.5f;
-const f32 float_0p75_80419a68 = 0.75f;
-const f32 float_0p25_80419a6c = 0.25f;
-const f32 float_8_80419a70 = 8.0f;
-const f32 float_25p74_80419a74 = 25.74f;
-const f32 float_0p14881_80419a78 = 0.14881f;
-const f32 float_150_80419a7c = 150.f;
-const f32 float_215_80419a80 = 215.0f;
-const f32 float_2_80419a84 = 2.0f;
-const f32 float_neg0p5_80419a88 = -0.5f;
-const f32 float_neg1_80419a8c = -1.0f;
-const f32 float_neg90_80419a90 = -90.f;
-const f32 float_rad2deg_80419a94 = 57.29579f;
-const f32 float_360_80419a98 = 360.f;
-const f32 float_neg360_80419a9c = -360.f;
-const f32 float_90_80419aa0 = 90.f;
-const f32 float_270_80419aa4 = 270.f;
-const f32 float_neg270_80419aa8 = -270.f;
-const f32 float_180_80419aac = 180.f;
-const f32 float_neg180_80419ab0 = -180.f;
-const f32 float_0p1_80419ab4 = 0.1f;
-const f32 float_neg2_80419ab8 = -2.0f;
-const f32 float_neg3_80419abc = -3.0f;
-const f32 float_0p04_80419ac0 = 0.04f;
-const f32 float_60_80419ac4 = 60.f;
-const f32 float_1000_80419ac8 = 1000.f;
-const f32 float_0p0625_80419acc = 0.0625f;
-const f32 float_3_80419ad0 = 3.0f;
