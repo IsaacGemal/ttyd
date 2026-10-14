@@ -6963,3 +6963,23 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   bom1000_jump r30/r31 `idx*0x30` vs pose pointer; ext_init `range` f2 vs f0; bom1000_msg 7th saved reg (args+2 in r31)
   plus an unused 12-byte local. Next: flag/id as a parameter of a static inline drawNum wrapper; an unused Vec/s32[3]
   local in bom1000_msg; `x` into a named local before `dy` in ext_main.
+
+### envdrv third pass: envDisp_DepthOfField stays 99.68 -- old framing corrected (Claude Opus 5.5, on4-envdrv)
+- **Cause re-measured:** not "the counters need fewer neighbours (the three coalesced phantoms)". rasim and compiles:
+  texCoord/tevStage get retail's registers if any 3 of their 31 neighbours are named locals declared after them (they
+  leave the graph earlier in the first pass). The colorD/alphaD phantoms exist in retail too (both coalesced into r7),
+  so removing them was never the route.
+- `vars/dt_s.c` (the loop written directly in DepthOfField with named `i`, a named `id` pointer, named
+  `tc = texCoord++`, and i/id swapped in envDofTaps for the far pass) reproduces every block-1 register (i r31, id r30,
+  tevStage r26, texCoord r25, copy r27) but scores 99.05: a named pointer with two assignments never takes the address
+  directly (`addi r0,r4,lo; mr r30,r0` vs retail `addi r30,r4,lo`). 15 spellings in standalone compiles all keep the
+  `mr`; `id = q + 8` (named var + non-zero offset) compiles directly, a global at offset 0 does not; `tbl[i]` gives a
+  compiler pointer but `slwi; add` with propagation off (retail shape only with it on, which breaks the coefficients).
+- rasim: with `id` a compiler variable (inline local), one more removed tevStage neighbour suffices (any phantom, or
+  `first` and `tc` as one variable). The `tevStage + 1` row (r25 vs r26) needs an edge to the far pass's blend copy/id.
+- Negatives: colorD/alphaD spellings 96.2-99.68; GXColor by value/returned/pointer inline/block-local 99.32-99.68 (all
+  keep the argument-pointer phantom under propagation off); inline-local counters copied back 98.1-98.6; envDofNear
+  inline 98.98-99.06; lifetimes on 95.9-96.3; dead initial `first`; 15+ `id` spellings. Next: from dt_s.c, a natural
+  compiler-variable `id` (scalarised struct-field cursor, or an inline taking the table pointer); or propagation on +
+  named coefficients + `tbl[i]` (needs .sdata2 constants named before linking). Variants saved at ~/scratch-orch/reports/envdrv_vars/ (dt_s.c);
+  levers.md saved at ~/scratch-orch/reports/envdrv_levers.md on the Mac.
