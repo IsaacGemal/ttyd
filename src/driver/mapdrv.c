@@ -552,10 +552,7 @@ MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index) {
 }
 
 // `wp = mapGetWork()` (same value as &mapWork[activeGroup]) moves wp into r31 and lets the cached
-// entry pointer be dropped; the parenthesised else-store offset reproduces the target's
-// `add base,wp,off; stw 0x16c(base)` addressing. The only remaining diff is the operand order of that
-// one `add` (target puts wp first).
-// NONMATCHING (99.93%): `add r3, r31, r27` (target) vs `add r3, r27, r31` (the single differing insn)
+// entry pointer be dropped.
 void makeDisplayList(BOOL group) {
 	MapWork* wp;
 	void* buf;
@@ -624,9 +621,9 @@ void makeDisplayList(BOOL group) {
 			}
 			else {
 #ifdef MUST_MATCH
-				// MUST_MATCH: naming the group offset here is what makes MWCC keep the offset live and
-				// emit the target's `add r3,wp,off; stw 0x16c(r3)` instead of an indexed store.
-				*(void**)((u8*)wp + (group * 0x178 + 0x16C)) = NULL;
+				// MUST_MATCH: indexing the display-list pointers as a word array keeps the group offset live
+				// and gives the target's `add r3,wp,off; stw 0x16c(r3)` instead of an indexed store.
+				((void**)((u8*)wp + 0x16C))[group * (0x178 / 4)] = NULL;
 #else
 				*(void**)(wp->entries[group].field_0x168 + 4) = NULL;
 #endif
@@ -4734,20 +4731,15 @@ void mapObjSetColor(const char* name, GXColor* color) {
 	}
 }
 
-// NONMATCHING (99.60%): the target keeps the first `*color` load in r3 and reuses it for the inlined child
-// call (spilling it to 0x4c); ours loads it into r0 for the field write then reloads *color into r3 in the
-// child block. A function-scope `c` removes the reload but makes MWCC spill it before the flag (90.01%).
-void setColor(MapObject* obj, GXColor* color, s32 a3) {
+void setColor(MapObject* obj, GXColor color, s32 a3) {
 	if (obj == 0) return;
-	*(GXColor*)&obj->field_0xC = *color;
+	*(GXColor*)&obj->field_0xC = color;
 	*(u32*)obj->field_0x0 |= 0x40;
 	if (obj->child) {
-		GXColor c = *color;
-		setColor(obj->child, &c, 1);
+		setColor(obj->child, color, 1);
 	}
 	if (a3 && obj->next) {
-		GXColor d = *color;
-		setColor(obj->next, &d, 1);
+		setColor(obj->next, color, 1);
 	}
 }
 
@@ -4778,9 +4770,7 @@ static MapObject* mapGetMapObjSub(const char* name) {
 #pragma dont_inline on
 // NONMATCHING (94.47%): *color load is scheduled after the inlined mapGetMapObjSub search
 void mapGrpSetColor(const char* name, GXColor* color) {
-	GXColor c = *color;
-
-	setColor(mapGetMapObjSub(name), &c, 0);
+	setColor(mapGetMapObjSub(name), *color, 0);
 }
 #pragma dont_inline reset
 

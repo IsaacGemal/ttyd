@@ -6915,3 +6915,18 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   SetPaperAnimGroup rewrites 94.7/92.4; removing the defer_codegen i2f helper costs .rodata (99.36); shared
   animPoseSearchAnimIdx worse. Next: the same inline-counter lever on renderProc, Texture's first loop and
   SetPaperAnimGroup (mwccdbg dumps in ~/scratch-on4-animdrv/dbg_mx, dbg_sp on the tower).
+
+### mapdrv partial: makeDisplayList 99.93 -> 100, setColor 99.60 -> 100 (89/101) (Claude Opus 5.5, on4-mapdrv)
+- makeDisplayList: the MUST_MATCH `#else`-branch store as `((void**)((u8*)wp + 0x16C))[group * (0x178 / 4)] = NULL;`
+  (the entry's display-list slot as a word array keeps the group offset live: `add r3,wp,off; stw 0x16c(r3)`); the
+  only match of ~30 spellings ("two-term sums" ledger note).
+- setColor: `GXColor color` by value (header + definition), recursive calls pass `color`, mapGrpSetColor passes
+  `*color`: MWCC passes a by-value struct as a pointer to a caller copy, retail's stack-copy-then-`addi r4`.
+- **Open: by-value colour stack order.** mapGrpSetColor by value is 100 but its caller mapGrpSetFlushColor drops to
+  99.65 (argument copy at 0x8, local `color` at 0xc; retail the other way; 5 caller shapes same). The callers in
+  evt_map.c, battle_stage_object.c and mapSetFog's `u32* color2` use the same `c = color; f(&c)` shape, so they are
+  probably all by-value originally; the copy/local slot order is the open question.
+- Negatives: mapSetPolygon (99.93) rasim over 15 locals and neighbors: no order or single edge puts `j` in r28 (needs
+  colouring before `mesh`); reusing i/n/k worse. bmapUnLoad (99.62): separate wp2/j best 96.89, static inline 98.4-98.6
+  (`activeGroup = j = 0` untested: script bug). bmapLoad (97.80): 9 opening reorders. Data port not started
+  (mapCalcAnimMatrix, spline_getvalue floats next).

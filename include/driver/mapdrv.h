@@ -223,7 +223,7 @@ void mapResetPaperAmbColor(void);
 void mapGrpSetColor(const char* name, GXColor* color);
 void mapFlgOff(MapObject* obj, u32 flag, s32 a3);
 void mapFlgOn(MapObject* obj, u32 flag, s32 a3);
-void setColor(MapObject* obj, GXColor* color, s32 a3);
+void setColor(MapObject* obj, GXColor color, s32 a3);
 void mapSetPolygon(MapObject* obj, MapFileMesh* mesh);
 void _mapDispMapGrp(CameraId camId, MapObject* obj);
 void _mapDispMapObj(CameraId camId, MapObject* obj);
