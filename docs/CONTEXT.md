@@ -7007,3 +7007,18 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   tw/th types and orders 97.4-99.5; monoshiriGX 24 GXColor decl orders (c8, c8c, c4, c8b gives retail slots, flips
   registers). Left: .sdata2 (97.81) port; 7 functions with colouring/scheduling diffs; rasim what-if on monoshiriGX
   (i2f FPR rotation) and winLogMain not started.
+
+### battle_audience partial: ApRecoveryBuild and AddAudienceNum 100 (144/148) (Claude Opus 5.5, on4-baudience)
+- ApRecoveryBuild 99.94 -> 100: the slot factor read straight from the call inside the product
+  (`*(f32*)((u8*)BattleBreakSlotGetPtr() + 0x14)`), `slot` local gone; gives `fmuls f0, f0, f2` (source operand swaps do
+  nothing, MWCC reorders them).
+- AddAudienceNum 98.94 -> 100: rasim found no edge or order (MWCC splits `i`/`id` into per-use temps that outrank every
+  named local). 288 naming combos on the tower: total loop and outer add loop share `i`, inner loops `j`, the random
+  draw its own `pick`, `id` for the audience id (99.60); then decl-order search `pick, total, type, result, count, id,
+  j, i, sum` and `for (count = 0; ...)`. **Lever: variable naming/sharing across loops is a search space of its own.**
+- SettingAudience 99.06 -> 99.51: `i++, i %= 12` (in-place update as retail). Left: retail's miss-loop setup is
+  `li r3,0; mr r4,r3` (miss copied from i's zero), ours two `li`; ApSrcEntry starts with the same copy (`li r30,0 ...
+  mr r28,r30`). Failed: `i = miss = 0`, `miss = i = 0`, comma forms, `i = 0; miss = i;`, `idx = count = 0`,
+  `ids[count++]`; weighted pick as an inline with its own counter 98.98; `i = ++i % 12`. Next: mwccdbg on
+  SettingAudience for where the shared zero/copy comes from (maybe a strength-reduced IV: try do-while/goto loops).
+  Two offset-cast reads stay (BattleBreakSlot has no field definitions; audience + 0x13794 is a u8 array).
