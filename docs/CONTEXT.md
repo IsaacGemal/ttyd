@@ -6989,3 +6989,21 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   functions fn_19_A820 and fn_19_A8DC. Sizes set to 0xBC in config/G8MJ01/mri/symbols.txt, the two fakes and their
   prototypes deleted: both match. Lesson: a near-miss whose only diff is a missing trailing `blr`, next to a 4-byte
   "empty" fn_ symbol, is a split error, not a code problem. Function count 9,771 -> 9,769.
+
+### win_log partial: .rodata 98.12 -> 99.97 (full port), capture 99.39 -> 99.51 (Claude Opus 5.5, on4-winlog)
+- **Retail .rodata is what natural code produces:** vector and table templates are placed at parse time in source
+  order; strings and doubles used by functions are pooled afterwards in reverse source order. So the route is the full
+  port: all 71 single-use byte-image vec3 objects as `(Vec){...}` at their uses (LV/LVV macros gone), tab labels /
+  tattle strings / every `RO(base, off, "...")` as literals (force_active block, base locals and RO macro gone;
+  Shift-JIS kept as `\201` escapes), named i2f/mask/tan doubles deleted (the compiler's land at 0x420/0x428/0x430).
+- monosiriMain: the original's local initialiser `const char* lang[2] = { str_8041D7AC, str_8041D7B0 };` after
+  `s32 inBattle = !(g->inBattle == 0);` (literal "jp"/"us" would add 8 bytes to .sdata2). winGetMapTplName: plain
+  `if (swByteGet(0) < 0x15C) return "map6.tpl"; return "map7.tpl";` (the MUST_MATCH default-then-override put map7
+  first). winLogMain2: `x += d / 8.0;` (`d * 0.125` either order swaps fmadd operands). monosiri_disp: the second label
+  block uses monoshiriGX's `monoFontV(logMkVec((Vec){0,0,0}, x, y), (Vec){0.75f,...}, c, buf)`; the first stays
+  explicit with zero before scale (inline 98.77). capture: the MUST_MATCH bounding-box copy in plain order (mnScratch
+  zero, fields, copy; then mx) gives retail's r4-r8.
+- Negatives: monosiri_disp scale after the tmp stores 98.70; capture `/ 2.0f` 99.60 but adds a 0.5f to .sdata2;
+  tw/th types and orders 97.4-99.5; monoshiriGX 24 GXColor decl orders (c8, c8c, c4, c8b gives retail slots, flips
+  registers). Left: .sdata2 (97.81) port; 7 functions with colouring/scheduling diffs; rasim what-if on monoshiriGX
+  (i2f FPR rotation) and winLogMain not started.
