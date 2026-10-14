@@ -1287,9 +1287,8 @@ void BattleAudience_End(void) {
 // is inlined into the FMA. The weight sort walks `kind` from `k + 1`, tests
 // `weights[k] == weights[kind]` and swaps `order[k]` first; `diff_shape.py` shows the same calls
 // and branches as the original.
-// NONMATCHING (99.06%): the sort, both shuffles and the list build match; only the miss loop's
-// caller-saved assignment differs (retail i=r3, miss=r4, kind=r6, weights=r7, order=r8, kind*4=r9;
-// this build i=r9, miss=r3, kind=r5, weights=r6, order=r7, kind*4=r8).
+// NONMATCHING (99.51%): the miss loop's setup only: retail starts it with `li r3, 0; mr r4, r3`
+// (miss a copy of i's zero), this build with two `li`s scheduled after the array addresses.
 void BattleAudienceSettingAudience(void) {
 	s32 kind;
 	s32 deltaIdx;
@@ -1554,7 +1553,7 @@ void BattleAudienceSettingAudience(void) {
 	}
 
 	miss = 0;
-	for (i = 0; total < targetNum; i = (i + 1) % 12) {
+	for (i = 0; total < targetNum; i++, i %= 12) {
 		kind = order[i];
 		if (weights[kind] <= 0) {
 			continue;
@@ -3942,16 +3941,14 @@ BOOL BattleAudience_GetPPAudienceNum_Sub(s32 id) {
 // original, which also fixes the FMUL and `add` operand orders that followed from that tie. (e) in the
 // slot branch, an initialized accumulator (`s32 delta = 0; delta += (s32)(...)`) before the
 // `*(...0x137C4) += delta;` store makes MWCC load the running count into r0 instead of r3, matching
-// the original's count/delta registers. What is left is one commuted `fmuls` in that branch:
-// original `fmuls f0, f0, f2` (accum * slot->field_0x14), ours `fmuls f0, f2, f0`. The else branch
-// (no slot) matches exactly.
-// NONMATCHING (99.94%): slot branch's final FMUL operand order only (see above).
+// the original's count/delta registers. (f) the slot factor read straight off the
+// `BattleBreakSlotGetPtr()` call inside the product (no `slot` local) gives the original's final
+// `fmuls f0, f0, f2` operand order.
 void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	BattleUnit* mario;
 	BattleUnit* party;
-	BattleBreakSlot* slot;
 	s32 i;
 	f32 crowdKindSum;
 	f32 partyMultiplier;
@@ -4008,10 +4005,9 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	}
 	if (BattleBreakSlot_GetBreakTurn() >= 1) {
 		s32 delta = 0;
-		slot = BattleBreakSlotGetPtr();
 		delta += (s32)(float_1_8041e620 * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
 		               crowdKindSum * marioMultiplier * partyMultiplier *
-		               *(f32*)((u8*)slot + 0x14));
+		               *(f32*)((u8*)BattleBreakSlotGetPtr() + 0x14));
 		*(s32*)((u8*)audience + 0x137C4) += delta;
 	}
 	else {
@@ -4152,20 +4148,18 @@ void BattleAudienceAddTargetNumSub(f32 value) {
 }
 #pragma dont_inline reset
 
-// NONMATCHING (98.94%): register allocation only; the outer counter and the inner weighted-pick accumulator
-// land in r26/r25 instead of r25/r26, shifting the rest of the body. Declaring the negative branch's
-// `count` at function scope (instead of inside the `else`) moves it to r26 and lifts this 98.72 -> 98.94.
 s32 BattleAudienceAddAudienceNum(s32 num) {
 	BattleWork* wp = _battleWorkPointer;
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	s32 sum;
+	s32 pick;
 	s32 total = 0;
 	u8 type;
 	s32 result = 0;
 	s32 count;
+	s32 id;
 	s32 j;
 	s32 i;
-	s32 id;
+	s32 sum;
 	s32 waitlist[200];
 
 	if (pouchGetPtr()->mStarPowersObtained == 0) {
@@ -4181,13 +4175,13 @@ s32 BattleAudienceAddAudienceNum(s32 num) {
 		for (i = 0; i < 12; i++) {
 			total += *(s32*)((u8*)audience + 0x13794 + i * 4);
 		}
-		for (j = 0; j < num; j++) {
+		for (i = 0; i < num; i++) {
 			sum = 0;
-			id = irand(total);
-			for (i = 0; i < 12; i++) {
-				sum += *(s32*)((u8*)audience + 0x13794 + i * 4);
-				if (id < sum) {
-					type = (u8)i;
+			pick = irand(total);
+			for (j = 0; j < 12; j++) {
+				sum += *(s32*)((u8*)audience + 0x13794 + j * 4);
+				if (pick < sum) {
+					type = (u8)j;
 					break;
 				}
 			}
@@ -4202,12 +4196,11 @@ s32 BattleAudienceAddAudienceNum(s32 num) {
 		}
 	}
 	else {
-		count = 0;
-		for (; count > num; count--) {
+		for (count = 0; count > num; count--) {
 			s32 n = 0;
-			for (i = 0; i < 200; i++) {
-				if ((u8)BattleAudience_GetEscapeChangeOK(i)) {
-					waitlist[n++] = i;
+			for (j = 0; j < 200; j++) {
+				if ((u8)BattleAudience_GetEscapeChangeOK(j)) {
+					waitlist[n++] = j;
 				}
 			}
 			if (n >= 1) {
