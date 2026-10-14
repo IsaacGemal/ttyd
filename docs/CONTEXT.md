@@ -6851,3 +6851,32 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   `static inline void SoundSSMainCh(int i)` with inline_max_size(2000) and dont_inline on around SoundSSMain (without
   it SoundMain drops to 0); not kept. Need: the outer loop offset created before the five inlined StopCh/SetPanCh
   `stream` temps (rasim what-if: ~vreg 51). Untried: levers 18 (reuse `i`), 19 (if/else-if body).
+
+### npcdrv partial: npcEntry 93.21 -> 100, fbatEncountCheck 99.93 -> 100 (64/73), .rodata identical (Claude Opus 5.5, on4-npcdrv)
+- npcEntry: position/scale from `(Vec){0,0,0}`/`(Vec){1,1,1}`, `i` declared before `entry`; reached 100 only after the
+  .rodata port. fbatEncountCheck: `rel = reviseAngle(...); rel += -90.0f;` (one `x + -90.0f` expression puts the
+  constant first) and `rotationY += 0.75f * (...)`; a MUST_MATCH register hack removed. npcSetupBattleInfo 95.48 ->
+  98.78 (held-item pick stores and `break`s inside `for (;;)`, increment `enemy++, i++`: the bcc->b rule #532).
+  npcMain 98.60 -> 98.71 (calls the existing npcCheckBlow; global `npcKoopaJumpScore`, inlined then linker-stripped,
+  places the jump-score Vec and 60.0f). fbatHitCheck 99.35 via a shared `npcHammerPos` inline.
+- Data: float externs to literals (except npcDisp_blur's sin/cos), offset-from-named-Vec addressing gone, strings
+  literal; an unused `Vec zero` local supplies retail's template at .rodata 0x18; global `npcKoopaWaterCheck` places
+  "kpa_03" and the splash SFX string. .rodata identical (624 bytes); .sdata2 first mismatch 0xd0 -> 0xec.
+- Match-only blocks kept: npcMain's water check is a hand copy under MUST_MATCH (retail loads the SFX string address
+  once before the loop; the call costs 0.19); npcDisp_blur keeps named sin/cos externs (literals 80.35;
+  opt_lifetimes+opt_propagation off as eff_fall gets every FPR but 94.24, frame 0x90 vs 0x80).
+- Negatives: rasim decl-order searches for HammerAllMotion/HitMarioSide/BattleMode/SetupBattleInfo; GroupDead and
+  DeleteGroup `1U<<`/`(s32){1}`/int-vs-s32/block scopes; inlining _npcHitCheckSphere 96.01; static inline water check
+  (shifts .rodata); npcMain without opt_loop_invariants off: no change; 7 pragma combos for blur (best 94.24).
+- Link still needs: .sdata2 from 0xec (fbatHitCheck 15.0f order, -600/600), the three majinai scripts in .data,
+  MarioStayPose/MarioTalkPose (.sdata), .sbss; then the register misses above.
+
+### Lever restated: keep a value live without emitting code (2026-10-14, orchestrator)
+- The #661/#668 entries ("Values that must stay live") describe a general tool in unit-specific words. Stated plainly:
+  when rasim shows a value must stay live longer than the C needs it (to raise its interference degree or push a
+  neighbour to another register), add a MUST_MATCH self-store of a memory location: `p->f = p->f;` or the nested
+  `p->f = (v = p->f);`. MWCC keeps it through register allocation and deletes the load/store pair afterwards, so it
+  shapes allocation but emits nothing. Plain variable self-assignments (`v = v`) are removed before allocation and do
+  nothing. Used by #661 (kpaSen_ext_main), #668 (nanNPCOption) and #778 (party_motion_jump, which Sol missed while
+  reading #668 as "initialization timing").
+- Diagnose first with rasim what-if edges (several at once, not just single edges): icondrv #774, party_motion #778.
