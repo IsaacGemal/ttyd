@@ -45,12 +45,6 @@
 #include <string.h>
 
 // Data objects defined later in this file or in other units, declared before their first use.
-extern const char str_00000E08[];
-extern const char str_00000E10[];
-extern const char str_00000E18[];
-extern const char str_00000EB4[];
-extern const char str_00000ED0[];
-extern const char str_00000ED8[];
 
 #pragma pool_data off
 
@@ -72,17 +66,6 @@ static void pose_change(s32 index, const char* name);
 static void pose_main(void);  // TODO: real signature
 static void pose_init(void);
 
-__declspec(section ".rodata") GXColor dat_bom_00006360 = {0xff, 0xff, 0xff, 0xff};
-__declspec(section ".rodata") Vec vec3_bom_00006364 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_bom_00006370 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") u32 dat_bom_0000637c = 0xFFFFFFFF;
-__declspec(section ".rodata") u32 dat_bom_00006380 = 0x000000FF;
-__declspec(section ".rodata") Vec vec3_bom_00006384 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_bom_00006390 = {1.0f, 1.0f, 1.0f};
-__declspec(section ".rodata") Vec vec3_bom_0000639c = {-200.0f, 150.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_bom_000063a8 = {1.0f, 1.0f, 1.0f};
-__declspec(section ".rodata") Vec vec3_bom_000063b4 = {-210.0f, -140.0f, 0.0f};
-__declspec(section ".rodata") Vec vec3_bom_000063c0 = {1.0f, 1.0f, 1.0f};
 
 // clang-format off
 extend_data(8,
@@ -102,6 +85,326 @@ extend_data(9,
      u64, one_negone, 0x3F800000BF800000,
      f32, __local_PIO2, 1.57079632679489661923132169163975f,
      f32, one, 1.0f)
+
+// MWCC's frontend hoists an integer round trip of a string address out of a loop as an invariant
+// expression (battle_stage_object's BSO_SFX); a plain literal is rematerialised at each call.
+#ifdef MUST_MATCH
+#define BOM_SFX(name) ((char*)(u32)(name))
+#else
+#define BOM_SFX(name) (name)
+#endif
+
+extern u32 lp[1];
+
+// Inline Vec build reproduces the target's vec3 -> temp -> field copy (rule 7).
+static inline Vec bomVec3(f32 x, f32 y, f32 z, const Vec* base) {
+    Vec v = *base;
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
+
+// Sin/cos polynomials live in one inline helper each: keeping each polynomial in a single helper
+// (rather than inlining the branches twice) is what puts the angle^2 scratch in f0 and the
+// wrapped-angle pivot in f1, exactly as retail. The coefficients as helper locals keep the seed
+// in f2 and the coefficient group on f23..f27.
+static inline f32 bomSinApprox(f32 angle) {
+    f32 v = 0.00761f;
+    f32 b = 0.16605f;
+    f32 one = 1.0f;
+    f32 u;
+
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) {
+            u = angle * angle;
+            v = v * u - b;
+            v = v * u + one;
+            v = v * angle;
+        } else {
+            angle = 1.5707964f - (angle - 1.5707964f);
+            u = angle * angle;
+            v = v * u - b;
+            v = v * u + one;
+            v = v * angle;
+        }
+    } else if (angle < 4.712389f) {
+        angle = angle - 3.1415927f;
+        u = angle * angle;
+        v = v * u - b;
+        v = v * u + one;
+        v = v * angle;
+        v = -v;
+    } else {
+        angle = 1.5707964f - (angle - 4.712389f);
+        u = angle * angle;
+        v = v * u - b;
+        v = v * u + one;
+        v = v * angle;
+        v = -v;
+    }
+    return v;
+}
+
+static inline f32 bomCosApprox(f32 angle) {
+    f32 v = 0.03705f;
+    f32 b = 0.4967f;
+    f32 one = 1.0f;
+    f32 u;
+
+    if (angle <= 3.1415927f) {
+        if (angle <= 1.5707964f) {
+            u = angle * angle;
+            v = v * u - b;
+            v = v * u + one;
+        } else {
+            angle = 1.5707964f - (angle - 1.5707964f);
+            u = angle * angle;
+            v = v * u - b;
+            v = v * u + one;
+            v = -v;
+        }
+    } else if (angle < 4.712389f) {
+        angle = angle - 3.1415927f;
+        u = angle * angle;
+        v = v * u - b;
+        v = v * u + one;
+        v = -v;
+    } else {
+        angle = 1.5707964f - (angle - 4.712389f);
+        u = angle * angle;
+        v = v * u - b;
+        v = v * u + one;
+    }
+    return v;
+}
+
+extern SightWork* sight_wp;
+
+// The SoundWork fields disp_sight reads (sound.h conflicts with this unit's headers): the playing channel, the
+// per-channel s16 sample rings and the write position.
+typedef struct BomSoundView {
+    u8 field_0x0[0x330];                // 0x0
+    u16 unk330;                         // 0x330, channel
+    u8 field_0x332[0x5C0 - 0x332];      // 0x332
+    s16 unk5C0[2][0x400];               // 0x5C0, sample rings
+    s32 unk15C0;                        // 0x15C0, write position
+} BomSoundView;
+extern BomSoundView sound;
+
+// SightWork's word at 0x18 is the sight's rotation, an f32 (bom_01.h declares it as field_4[5]).
+#define SIGHT_ROT(wp) (*(f32*)&(wp)->field_4[5])
+
+// drawBG is the last function in the original asm, so it is the first body in the reverse-ordered source.
+void drawBG(s32 id, f32 x, f32 y, f32 scaleX, f32 scaleY, f32 rot) {
+    CameraEntry* cam;
+    GXTexObj texObj;
+    Mtx m0;
+    Mtx m2;
+    Mtx m1;
+    s16 w;
+    s16 h;
+
+    cam = camGetPtr(CAMERA_2D);
+    TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0), &texObj, id);
+    GXLoadTexObj(&texObj, 0);
+    GXSetBlendMode(1, 4, 5, 0);
+    GXSetZCompLoc(1);
+    GXSetAlphaCompare(7, 0, 0, 7, 0);
+    GXSetZMode(0, 3, 0);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+    GXSetNumTevStages(1);
+    GXSetTevOrder(0, 0, 0, 0xFF);
+    GXSetTevOp(0, 3);
+    if (id == 0) {
+        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xF);
+        GXSetTevAlphaIn(0, 6, 7, 4, 7);
+        GXSetTevKAlphaSel(0, 0);
+    }
+    PSMTXTrans(m0, x, y, 0.0f);
+    PSMTXScale(m1, scaleX, scaleY, 1.0f);
+    PSMTXRotRad(m2, 'z', 0.017453292f * rot);
+    PSMTXConcat(m0, m1, m1);
+    PSMTXConcat(m1, m2, m0);
+    PSMTXConcat(cam->view, m0, m0);
+    GXLoadPosMtxImm(m0, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 3, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 3, 0);
+    GXBegin(0x80, 0, 4);
+    w = (s16)GXGetTexObjWidth(&texObj);
+    h = (s16)GXGetTexObjHeight(&texObj);
+    GXPosition3s16(-w, h, 0);
+    GXTexCoord2s16(0, 0);
+    GXPosition3s16(0, h, 0);
+    GXTexCoord2s16(1, 0);
+    GXPosition3s16(0, 0, 0);
+    GXTexCoord2s16(1, 1);
+    GXPosition3s16(-w, 0, 0);
+    GXTexCoord2s16(0, 1);
+}
+
+// drawNum(): draw the last `count` decimal digits of |num|, least significant at index count-1.
+void drawNum(s32 num, s32 count, f32 a, f32 b, f32 c) {
+    s32 i;
+    GXTexObj texObj;
+    GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
+    s32 n = num < 0 ? -num : num;
+
+    winTexInit(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0));
+    for (i = 0; i < count; i++) {
+        s32 texId = n % 10 + 0xd;
+        u16 w;
+        f32 step;
+
+        TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0), &texObj, texId);
+        w = GXGetTexObjWidth(&texObj);
+        step = (f32)w;
+        step = c * step;
+        step += 2.0f;
+        winTexSet(texId, (Vec){step * (f32)(count - i - 1) + a, b, 0.0f}, (Vec){c, c, c}, color);
+        n /= 10;
+    }
+}
+
+// NONMATCHING (99.85%): every call, branch and constant matches; retail copies the flag/id into r26 and
+// r0 before the inlined drawNum calls (`mr r26,r3`, `li r0,7; mr r3,r0`), which this form does not.
+void disp_sight(CameraId cameraId, void* param) {
+    GXColor colorA = {0xFF, 0xFF, 0xFF, 0xFF};
+    GXColor colorB = {0x00, 0x00, 0x00, 0xFF};
+    s32 i;
+
+    drawBG(0, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f);
+    drawBG(0, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f);
+    drawBG(0, 0.0f, 0.0f, 1.0f, -1.0f, 0.0f);
+    drawBG(0, 0.0f, 0.0f, -1.0f, -1.0f, 0.0f);
+    drawBG(1, 0.0f, 0.0f, 1.0f, 1.0f, SIGHT_ROT(sight_wp));
+    drawBG(1, 0.0f, 0.0f, -1.0f, 1.0f, -SIGHT_ROT(sight_wp));
+    drawBG(1, 0.0f, 0.0f, 1.0f, -1.0f, -SIGHT_ROT(sight_wp));
+    drawBG(1, 0.0f, 0.0f, -1.0f, -1.0f, SIGHT_ROT(sight_wp));
+
+    if (sight_wp->state == 2) {
+        SIGHT_ROT(sight_wp) += 2.0f;
+    } else if (sight_wp->state == 3) {
+        SIGHT_ROT(sight_wp) -= 2.0f;
+    } else if (sight_wp->state == 0) {
+        SIGHT_ROT(sight_wp) -= 2.0f;
+    } else {
+        SIGHT_ROT(sight_wp) += 1.0f;
+    }
+
+    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
+    winTexSet(5, (Vec){0.0f, 0.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, colorB);
+
+    for (i = 0; i < 3; i++) {
+        s32 sel = ((s32)(gp->retraceCount % 30)) / 10;
+
+        if (sel != i) {
+            drawBG(4 - i, 100.0f, 60.0f, 1.0f, 1.0f, 0.0f);
+            drawBG(4 - i, -100.0f, 60.0f, -1.0f, 1.0f, 0.0f);
+            drawBG(4 - i, 100.0f, -60.0f, 1.0f, -1.0f, 0.0f);
+            drawBG(4 - i, -100.0f, -60.0f, -1.0f, -1.0f, 0.0f);
+        }
+    }
+
+    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
+    winTexSet(0x17, (Vec){-200.0f, 150.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, colorA);
+
+    drawNum((s32)(gp->renderTime / 100 / 1000), 10, 90.0f, 180.0f, 0.6f);
+    drawNum((s32)(gp->renderTime / 200 / 1000), 8, 126.0f, 150.0f, 0.6f);
+    drawNum((s32)(gp->renderTime / 300 / 1000), 6, 162.0f, 120.0f, 0.6f);
+    drawNum((s32)(gp->renderTime / 400 / 1000), 6, 162.0f, 90.0f, 0.6f);
+    drawNum((s32)((u32)gp->retraceCount >> 2), 4, 110.0f, -160.0f, 1.0f);
+    drawNum((s32)((u32)gp->retraceCount >> 3), 2, 230.0f, -170.0f, 0.8f);
+
+    winTexSet(8, (Vec){-210.0f, -140.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, colorA);
+
+    if ((gp->retraceCount & 3) == 0) {
+        for (i = 0; i < 4; i++) {
+            sight_wp->field_4[i] = sight_wp->field_4[i + 1];
+        }
+        // the newest sample of the playing channel's ring buffer (an s16 stream per channel)
+        sight_wp->field_4[4] = abs(sound.unk5C0[sound.unk330][sound.unk15C0]);
+    }
+
+    for (i = 0; i < 5; i++) {
+        s32 j;
+        s32 v = sight_wp->field_4[i];
+
+        v /= 300;
+
+        if (v > 7) {
+            v = 7;
+        }
+        {
+            f32 x = 20.0f * (f32)i + -240.0f;
+
+            for (j = 0; j < v; j++) {
+                f32 y = 16.0f * (f32)j + -190.0f;
+
+                if (j == 6) {
+                    drawBG(10, x, y, 1.0f, 1.0f, 0.0f);
+                } else {
+                    drawBG(9, x, y, 1.0f, 1.0f, 0.0f);
+                }
+            }
+            for (j = v; j < 7; j++) {
+                f32 y = 16.0f * (f32)j + -190.0f;
+
+                if (j == 6) {
+                    drawBG(12, x, y, 1.0f, 1.0f, 0.0f);
+                } else {
+                    drawBG(11, x, y, 1.0f, 1.0f, 0.0f);
+                }
+            }
+        }
+    }
+
+    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
+    for (i = 0; i < 4; i++) {
+        s32 flag = ((gp->retraceCount % 20) > 6 && i == sight_wp->state) ? 1 : 0;
+        s32 id = 7;
+
+        if (flag) {
+            id = 6;
+        }
+
+        if (sight_wp->state == 4) {
+            flag = 0;
+            id = 7;
+        }
+
+        switch (i) {
+        case 0:
+            drawBG(id, 16.0f, 180.0f, 1.0f, 1.0f, 90.0f);
+            break;
+        case 1:
+            drawBG(id, -16.0f, -180.0f, 1.0f, 1.0f, 270.0f);
+            break;
+        case 2:
+            drawBG(id, -180.0f, 16.0f, 1.0f, 1.0f, 180.0f);
+            if (flag != 0 && (gp->retraceCount & 3) == 0) {
+                sight_wp->field_20++;
+            }
+            break;
+        case 3:
+            drawBG(id, 180.0f, -16.0f, 1.0f, 1.0f, 0.0f);
+            if (flag != 0 && (gp->retraceCount & 3) == 0) {
+                sight_wp->field_24++;
+            }
+            break;
+        }
+    }
+
+    drawNum(sight_wp->field_20, 2, -220.0f, 0.0f, 0.8f);
+    drawNum(sight_wp->field_24, 2, 200.0f, 0.0f, 0.8f);
+}
 
 EVT_BEGIN(evt_door_1)
     MULTIPLY_FLOAT(LW(0), FLOAT(0.555f))
@@ -244,192 +547,273 @@ EVT_BEGIN(evt_bom_01_karakara)
     RETURN
 EVT_END()
 
-__declspec(section ".rodata") const Vec vec3_bom_0000649c = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") const Vec vec3_bom_000064a8 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") const Vec vec3_bom_000064b4 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") const Vec vec3_bom_000064c0 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") const Vec vec3_bom_000064cc = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") const Vec vec3_bom_000064d8 = {0.0f, 0.0f, 0.0f};
+static ExtTableEntry ext_data[31];
 
-static ExtTableEntry ext_data[31] = {0};
+static USER_FUNC(sight) {
+    s32 i;
 
-
-extern const f32 float_6p2832_bom_00007060;
-extern const f32 float_0p00761_bom_00007068;
-extern const f32 float_0p16605_bom_0000706c;
-extern const f32 float_3p1416_bom_00007070;
-extern const f32 float_1p5708_bom_00007074;
-extern const f32 float_4p7124_bom_00007078;
-extern const f32 float_0p03705_bom_0000707c;
-extern const f32 float_0p4967_bom_00007080;
-extern const f32 float_32767_bom_000070ac;
-extern const f32 float_400_bom_000070bc;
-extern const f32 float_500_bom_000070e8;
-extern const f32 float_1_bom_00006ffc;
-extern const f32 zero_bom_00007004;
-extern u32 lp[1];
-
-extern const f32 float_0p1_bom_00007008;
-extern const f32 float_0p5_bom_0000700c;
-extern const f32 float_1000_bom_0000705c;
-extern const f32 float_100_bom_00007000;
-extern const f32 float_10_bom_00007010;
-extern const f32 float_150_bom_000070b0;
-extern const f32 float_180_bom_000070c8;
-extern const f32 float_20_bom_000070d8;
-extern const f32 float_280_bom_000070a4;
-extern const f32 float_2_bom_0000704c;
-extern const f32 float_30_bom_000070b4;
-extern const f32 float_3_bom_000070a8;
-extern const f32 float_50_bom_000070b8;
-extern const f32 float_60_bom_000070dc;
-extern const f32 float_70_bom_000070c0;
-extern const f32 float_deg2rad_bom_000070d4;
-extern const f32 float_neg1000_bom_000070cc;
-extern const f32 float_neg20_bom_000070d0;
-extern const char str_00000DDC[];
-extern const f32 float_350_bom_000070c4;
-extern const char str_00000E58[];
-// Inline helpers defined later in the file (ext_main is emitted before them).
-static inline Vec bomVec3(f32 x, f32 y, f32 z, const Vec* base);
-static inline Vec bomVec3v(f32 x, f32 y, f32 z, const Vec* base);
-static inline f32 bomSinApprox(f32 angle);
-static inline f32 bomCosApprox(f32 angle);
-
-// extJump(): the inlined body of jump(), taking the SFX name as an argument so that the
-// ext_main copies use their cached local string pointer.
-static inline void extJump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q, const char* sfx) {
-PoseData* pd = ((PoseRoot*)lp[0])->data;
-ExtPose* ep = &extGetPosePtr()[index];
-Vec pos;
-Vec pos2;
-f32 d;
-f32 dy;
-
-pos = bomVec3(x, y, z, &vec3_bom_0000649c);
-pd->states[index].field_4 = pos;
-pd->states[index].field_10 = p;
-pd->states[index].field_14 = q;
-dy = y - ep->matrix[0][1][3];
-d = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
-angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
-pd->states[index].field_18 = d / pd->states[index].field_10;
-{
-    f32 m = pd->states[index].field_14 * (f32)pd->states[index].field_18;
-
-    pd->states[index].field_1C = m * float_0p5_bom_0000700c + dy / (f32)pd->states[index].field_18;
-}
-pd->states[index].field_1 = a;
-pd->states[index].field_0 = 100;
-ep->field_0x4 = angleABf(x, z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
-if (index % 20 == 0 && !(pd->flags & 1)) {
-    pos2 = bomVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3],
-                   &vec3_bom_000064a8);
-
-    psndSFXOn_3D(sfx, &pos2);
-}
+    if (isFirstCall) {
+        sight_wp = _mapAlloc(0x28);
+        memset(sight_wp, 0, 0x28);
+        for (i = 0; i < 5; i++) {
+            sight_wp->field_4[i] = 0;
+        }
+        sight_wp->field_20 = rand();
+        sight_wp->field_24 = rand();
+        sight_wp->state = 5;
+    }
+    if (sight_wp->file == NULL) {
+        if ((u32)fileAsyncf(4, 0, "%s/%s", getMarioStDvdRoot(), "taihou.tpl") == 0) {
+            return EVT_RETURN_BLOCK;
+        }
+        sight_wp->file = fileAllocf(4, "%s/%s", getMarioStDvdRoot(), "taihou.tpl");
+    }
+    if (sight_wp->state == 6) {
+        fileFree(sight_wp->file);
+        _mapFree(sight_wp);
+        return EVT_RETURN_DONE;
+    }
+    if (sight_wp->state != 5) {
+        dispEntry(CAMERA_2D, 800.0f, 0, disp_sight, NULL);
+    }
+    return EVT_RETURN_BLOCK;
 }
 
-#ifdef MUST_MATCH
-// Volatile base read keeps the per-iteration Vec load that retail has; without it MWCC hoists
-// the base word into the prologue and the frame/saved set no longer match (see NONMATCHING).
-static inline Vec bomVec3v(f32 x, f32 y, f32 z, const Vec* base) {
-    Vec v = *(volatile const Vec*)base;
+static USER_FUNC(sight_dir) {
+    s32 value = evtGetValue(event, event->args[0]);
 
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
+    sight_wp->state = value;
+    return EVT_RETURN_DONE;
 }
-#else
-static inline Vec bomVec3v(f32 x, f32 y, f32 z, const Vec* base) {
-    return bomVec3(x, y, z, base);
-}
-#endif
 
-// opt_lifetimes off: the default lifetime pass colours the prologue GPRs and the polynomial FPRs further from
-// retail (91.26% against 92.60% with it off).
+static USER_FUNC(bom_flag) {
+    s32* args = event->args;
+    s32 onoff = evtGetValue(event, args[0]);
+    s32 flag = evtGetValue(event, args[1]);
+    u16* p = (u16*)(u32)((u32*)(u32)lp[0])[0];
+
+    if (onoff != 0) {
+        *p |= flag;
+    } else {
+        *p &= ~flag;
+    }
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(bom_fall) {
+    PoseData* data = ((PoseRoot*)lp[0])->data;
+    ExtPose* pose = extGetPosePtr();
+    s32 i;
+    s32 j;
+    PoseEntry* e;
+    PoseData* pd;
+
+    // 0x4 of PoseData is the pose count written by ext_init; the header keeps it as padding
+    for (i = 0; i < *(s32*)((u8*)data + 0x4); i++, pose++) {
+        data->states[i].field_0 = 0x7f;
+        pose->matrix[0][0][3] = 600.0f * rand() / 32767.0f;
+        pose->matrix[0][1][3] = 300.0f + 3700.0f * rand() / 32767.0f;
+        pose->matrix[0][2][3] = -650.0f + -450.0f * rand() / 32767.0f;
+        pd = ((PoseRoot*)lp[0])->data;
+        for (j = 0, e = pd->entries; j < pd->count; j++, e++) {
+            if (strcmp(e->name, "S_2") == 0) {
+                break;
+            }
+        }
+        if (j < pd->count) {
+            if (pd->states[i].field_20 != j) {
+                pd->states[i].field_20 = (s16)j;
+                pd->states[i].time = gp->renderTime + rand();
+            }
+        }
+    }
+    return EVT_RETURN_DONE;
+}
+
+static void pose_init(void) {
+    char buf[0x28];
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    ExtTableEntry* p = ext_data;
+    s32 i = 0;
+    s32 start;
+
+    strcpy(buf, "");
+    pd->count = -1;
+    do {
+        if (strcmp(p->type, buf) != 0) {
+            strcpy(buf, p->type);
+            start = i;
+            pd->count++;
+        }
+        strcpy(pd->entries[pd->count].name, buf);
+        pd->entries[pd->count].field_C = start;
+        pd->entries[pd->count].field_10 = i - start + 1;
+        pd->entries[pd->count].field_8 = p->value;
+        i++;
+    } while ((++p)->name != NULL);
+    pd->count++;
+}
+
+static void pose_main(void) {
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    s32 i;
+    ExtPose* pose;
+
+    pose = extGetPosePtr();
+    for (i = 0; i < *(s32*)((u8*)pd + 0x4); i++) { // 0x4 of PoseData is the pose count (the header keeps it as padding)
+        PoseEntry* entry = &pd->entries[pd->states[i].field_20];
+        f32 t = 60.0f * (f32)OSTicksToMilliseconds(gp->renderTime - pd->states[i].time) / 1000.0f / entry->field_8;
+
+        if (t >= 1.0f) {
+            pd->states[i].time = gp->renderTime;
+            t = 0.0f;
+        }
+        pose->field_0x10 = entry->field_C + (s32)((f32)(entry->field_10 - 1) * t);
+        pose++;
+    }
+}
+
+static void pose_change(s32 index, const char* name) {
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    PoseEntry* e = pd->entries;
+    s32 i;
+
+    for (i = 0; i < pd->count; i++, e++) {
+        if (strcmp(e->name, name) == 0) {
+            break;
+        }
+    }
+    if (i < pd->count) {
+        if (pd->states[index].field_20 != i) {
+            pd->states[index].field_20 = (s16)i;
+            pd->states[index].time = gp->renderTime + rand();
+        }
+    }
+}
+
+USER_FUNC(make_ext_table) {
+    s32 i;
+
+    memset(ext_data, 0, 0x174);
+    for (i = 0; i < 10; i++) {
+        ext_data[i].name = "c_bom_sen";
+        ext_data[i].type = "R_1";
+        ext_data[i].value = (f32)i * 2.0f;
+    }
+    for (i = 0; i < 20; i++) {
+        ext_data[10 + i].name = "c_bom_sen";
+        ext_data[10 + i].type = "S_2";
+        ext_data[10 + i].value = (f32)i * 6.0f;
+    }
+    ext_data[30].name = NULL;
+    return EVT_RETURN_DONE;
+}
+
+#pragma opt_propagation off
 #pragma opt_lifetimes off
+static inline void extInitPos(ExtPose* pose, f32 angle, f32 range) {
+    (*pose->matrix)[0][3] = range * bomSinApprox(angle);
+    (*pose->matrix)[1][3] = 0.0f;
+    (*pose->matrix)[2][3] = range * bomCosApprox(angle);
+}
 
-// EXTCOS/EXTSIN expand the same polynomials as bomCosApprox/bomSinApprox but textually; the
-// local declaration order is what reproduces retail's coefficient colouring.
-#define EXTCOS(dst, ang) do { \
-    f32 _ca = (ang), _cv = float_0p03705_bom_0000707c, _cone = float_1_bom_00006ffc, \
-         _cb = float_0p4967_bom_00007080, _cu; \
-    if (_ca <= float_3p1416_bom_00007070) { \
-        if (_ca <= float_1p5708_bom_00007074) { \
-            _cu = _ca * _ca; _cv = _cv * _cu - _cb; _cv = _cv * _cu + _cone; \
-        } else { \
-            _cu = float_1p5708_bom_00007074 - (_ca - float_1p5708_bom_00007074); \
-            _cu = _cu * _cu; _cv = _cv * _cu - _cb; _cv = _cv * _cu + _cone; _cv = -_cv; \
-        } \
-    } else if (_ca < float_4p7124_bom_00007078) { \
-        _cu = _ca - float_3p1416_bom_00007070; _cu = _cu * _cu; \
-        _cv = _cv * _cu - _cb; _cv = _cv * _cu + _cone; _cv = -_cv; \
-    } else { \
-        _cu = float_1p5708_bom_00007074 - (_ca - float_4p7124_bom_00007078); \
-        _cu = _cu * _cu; _cv = _cv * _cu - _cb; _cv = _cv * _cu + _cone; \
-    } \
-    (dst) = _cv; \
-} while (0)
-#define EXTSIN(dst, ang) do { \
-    f32 _sa = (ang), _sone = float_1_bom_00006ffc, _sv = float_0p00761_bom_00007068, \
-         _sb = float_0p16605_bom_0000706c, _su, _st; \
-    if (_sa <= float_3p1416_bom_00007070) { \
-        if (_sa <= float_1p5708_bom_00007074) { \
-            _su = _sa * _sa; _sv = _sv * _su - _sb; _sv = _sv * _su + _sone; _sv = _sv * _sa; \
-        } else { \
-            _st = float_1p5708_bom_00007074 - (_sa - float_1p5708_bom_00007074); \
-            _su = _st * _st; _sv = _sv * _su - _sb; _sv = _sv * _su + _sone; _sv = _sv * _st; \
-        } \
-    } else if (_sa < float_4p7124_bom_00007078) { \
-        _st = _sa - float_3p1416_bom_00007070; _su = _st * _st; \
-        _sv = _sv * _su - _sb; _sv = _sv * _su + _sone; _sv = _sv * _st; _sv = -_sv; \
-    } else { \
-        _st = float_1p5708_bom_00007074 - (_sa - float_4p7124_bom_00007078); \
-        _su = _st * _st; _sv = _sv * _su - _sb; _sv = _sv * _su + _sone; _sv = _sv * _st; _sv = -_sv; \
-    } \
-    (dst) = _sv; \
-} while (0)
-// The sin/cos polynomials are expanded by the EXTCOS/EXTSIN macros above rather than called
-// through bomSinApprox/bomCosApprox: same instructions, but the inlined form colours the
-// seed/numerator/denominator FPRs as retail while the static-inline helpers do not. Still
-// differs: the polynomial b/one constants in f5/f3 instead of f3/f2 (the 4th rand() result
-// takes f1 instead of f2), the extJump/inline Vec temps at 0x44/0x20/0x5c(r1) instead of
-// 0x5c/0x44/0x8(r1), and two extra `mr`s in the prologue string setup.
-// NONMATCHING (92.60%): every call and immediate matches and the constants were checked by value; the frame is
-// 0x230 (retail 0x220), and register colouring, stack slots and the hoisting of the named float constants differ:
-// the unit's .rodata still defines its floats as named objects, not the literals the original pools (the
-// literal form reaches 96.56% but adds second copies to .rodata).
+// NONMATCHING (98.74%): retail keeps `range` in f0 and the second sine scratch in f2; here they are
+// swapped, which shifts the i2f stack slot and two base registers.
+static void ext_init(void) {
+    s32 i;
+    PoseData* pd;
+    ExtPose* pose;
+    f32 angle;
+
+    lp[0] = (u32)smartAlloc(0xBC30, 1);
+    pd = ((PoseRoot*)lp[0])->data;
+    memset(pd, 0, 0xBC30);
+    *(s32*)((u8*)pd + 4) = extGetPoseNum();
+    pose_init();
+    pose = extGetPosePtr();
+    for (i = 0; i < *(s32*)((u8*)pd + 4); i++, pose++) {
+        pd->states[i].field_1C = 0.0f;
+        pd->states[i].field_14 = 0.0f;
+        pd->states[i].field_0 = 0;
+        pose->flags |= 7;
+        PSMTXIdentity(*pose->matrix);
+        angle = (f32)rand() * 6.2831855f / 32767.0f;
+        extInitPos(pose, angle, (f32)rand() * 400.0f / 32767.0f + 500.0f);
+        pose_change(i, "R_1");
+    }
+}
+#pragma opt_lifetimes reset
+#pragma opt_propagation reset
+
+static void ext_disp(CameraId cameraId, void* param) {
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    extDraw();
+    extLoadTextureExit();
+}
+
+// jump(index, a, x, y, z, p, q): aim a pose at (x,z), distance/time-scaled.
+void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    ExtPose* ep = &extGetPosePtr()[index];
+    f32 d;
+    f32 dy;
+
+    pd->states[index].field_4 = (Vec){x, y, z};
+    pd->states[index].field_10 = p;
+    pd->states[index].field_14 = q;
+    dy = y - ep->matrix[0][1][3];
+    d = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
+    // the original calls angleABf here and discards the result (see asm 0x2EC0)
+    angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
+    pd->states[index].field_18 = d / pd->states[index].field_10;
+    {
+        f32 m = pd->states[index].field_14 * (f32)pd->states[index].field_18;
+
+        pd->states[index].field_1C = m / 2.0f +
+                                     dy / (f32)pd->states[index].field_18;
+    }
+    pd->states[index].field_1 = a;
+    pd->states[index].field_0 = 100;
+    ep->field_0x4 = angleABf(x, z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
+    if (index % 20 == 0 && !(pd->flags & 1)) {
+        Vec pos2 = (Vec){ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3]};
+
+        psndSFXOn_3D(BOM_SFX("SFX_STG7_BOMB_TOGETHER2"), &pos2);
+    }
+}
+
+// opt_lifetimes/opt_propagation off (as in rsh_05): hoists the sin/cos coefficients as retail does.
+// NONMATCHING (99.97%): in case 2 the inlined bomSinApprox argument temp and dy take f26/f28 swapped
+// against retail (f28/f26); everything else matches.
+#pragma opt_lifetimes off
+#pragma opt_propagation off
 static void ext_main(void) {
-    const char *sfxDDC, *sfxDDC2, *sfxDDC3, *sfxFall;
     s32 i;
     PoseData* pd = ((PoseRoot*)lp[0])->data;
     ExtPose* pose = extGetPosePtr();
-    sfxDDC = str_00000DDC;
-    sfxDDC2 = str_00000DDC;
-    sfxDDC3 = str_00000DDC;
-    sfxFall = str_00000E58;
 
     for (i = 0; i < *(s32*)((u8*)pd + 0x4); i++, pose++) {  // 0x4 of PoseData is the pose count
-        Vec zero1 = *(volatile const Vec*)&vec3_bom_000064b4;
-        Vec pos = bomVec3v(pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3],
-                           &vec3_bom_000064c0);
-        Vec zero2 = *(volatile const Vec*)&vec3_bom_000064cc;
+        Vec zero1 = {0.0f, 0.0f, 0.0f};
+        Vec pos = (Vec){pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]};
+        Vec zero2 = {0.0f, 0.0f, 0.0f};
+
 
         switch ((s8)pd->states[i].field_0) {
         case 0:
-            if (PSVECDistance(&zero1, &pos) > float_280_bom_000070a4) {
+            if (PSVECDistance(&zero1, &pos) > 280.0f) {
                 Vec dir;
 
                 PSVECSubtract(&zero1, &pos, &dir);
                 PSVECNormalize(&dir, &dir);
-                PSVECScale(&dir, &zero2, float_3_bom_000070a8);
+                PSVECScale(&dir, &zero2, 3.0f);
                 PSVECAdd(&pos, &zero2, &pos);
                 pose->matrix[0][0][3] = pos.x;
                 pose->matrix[0][1][3] = pos.y;
                 pose->matrix[0][2][3] = pos.z;
-                pose->field_0x4 = angleABf(zero_bom_00007004, zero_bom_00007004, pos.x, pos.z);
+                pose->field_0x4 = angleABf(0.0f, 0.0f, pos.x, pos.z);
             } else {
                 pd->states[i].field_0++;
             }
@@ -442,53 +826,54 @@ static void ext_main(void) {
             f32 radius;
             f32 angle;
 
-            angle = (f32)rand() * float_6p2832_bom_00007060 / float_32767_bom_000070ac;
-            radius = (f32)rand() * float_30_bom_000070b4 / float_32767_bom_000070ac + float_150_bom_000070b0;
-            q = (f32)rand() * float_0p1_bom_00007008 / float_32767_bom_000070ac + float_0p1_bom_00007008;
-            p = (f32)rand() / float_32767_bom_000070ac + float_3_bom_000070a8;
+            angle = (f32)rand() * 6.2831855f / 32767.0f;
+            radius = (f32)rand() * 30.0f / 32767.0f + 150.0f;
+            q = (f32)rand() * 0.1f / 32767.0f + 0.1f;
+            p = (f32)rand() / 32767.0f + 3.0f;
 
-            EXTCOS(z, angle);
+            z = bomCosApprox(angle);
             z = radius * -z;
-            EXTSIN(x, angle);
+            x = bomSinApprox(angle);
             x = radius * x;
 
-            extJump(i, 2, x, float_150_bom_000070b0, z, p, q, sfxDDC);
+            jump(i, 2, x, 150.0f, z, p, q);
             break;
         }
         case 2: {
-            f32 angle = (f32)rand() * float_6p2832_bom_00007060 / float_32767_bom_000070ac;
-            f32 radius =
-                (f32)rand() * float_30_bom_000070b4 / float_32767_bom_000070ac + float_50_bom_000070b8;
-            f32 q = (f32)rand() * float_0p1_bom_00007008 / float_32767_bom_000070ac + float_0p1_bom_00007008;
-            f32 p = (f32)rand() / float_32767_bom_000070ac + float_3_bom_000070a8;
+            f32 angle = (f32)rand() * 6.2831855f / 32767.0f;
+            f32 radius = (f32)rand() * 30.0f / 32767.0f + 50.0f;
             f32 z;
-            f32 x;
+            f32 p;
+            f32 q;
 
-            EXTCOS(z, angle);
+            q = (f32)rand() * 0.1f / 32767.0f + 0.1f;
+            p = (f32)rand() / 32767.0f + 3.0f;
+
+            z = bomCosApprox(angle);
             z = radius * -z;
-            EXTSIN(x, angle);
-            x = radius * x;
 
-            extJump(i, 3, x, float_400_bom_000070bc, z, p, q, sfxDDC2);
+            jump(i, 3, radius * bomSinApprox(angle), 400.0f, z, p, q);
             break;
         }
         case 3: {
-            f32 angle = (f32)rand() * float_6p2832_bom_00007060 / float_32767_bom_000070ac;
-            f32 radius = (f32)rand() * float_70_bom_000070c0 / float_32767_bom_000070ac;
+            f32 angle = (f32)rand() * 6.2831855f / 32767.0f;
+            f32 x;
+            f32 radius = (f32)rand() * 70.0f / 32767.0f;
+            f32 z;
+            f32 p;
+            f32 q;
             f32 cosv;
             f32 sinv;
-            f32 z;
-            f32 x;
 
-            const f32 cp = float_3_bom_000070a8;
-            const f32 cq = float_0p1_bom_00007008;
             rand();
+            q = 0.1f;
             rand();
-            EXTCOS(cosv, angle);
+            p = 3.0f;
+            cosv = bomCosApprox(angle);
             z = radius * -cosv;
-            EXTSIN(sinv, angle);
-            x = radius * sinv + (float_100_bom_00007000 + (f32)(i % 100));
-            extJump(i, 4, x, (f32)(i % 150) + float_350_bom_000070c4, z, cp, cq, sfxDDC3);
+            sinv = bomSinApprox(angle);
+            x = radius * sinv + (100.0f + (f32)(i % 100));
+            jump(i, 4, x, (f32)(i % 150) + 350.0f, z, p, q);
             break;
         }
         case 4:
@@ -506,10 +891,10 @@ static void ext_main(void) {
             pd->states[i].field_1C -= pd->states[i].field_14;
             angle = angleABf(pose->matrix[0][0][3], pose->matrix[0][2][3], pd->states[i].field_4.x,
                              pd->states[i].field_4.z);
-            rad = float_3p1416_bom_00007070 * angle / float_180_bom_000070c8;
-            EXTSIN(sinv, rad);
+            rad = 3.1415927f * angle / 180.0f;
+            sinv = bomSinApprox(rad);
             pose->matrix[0][0][3] += pd->states[i].field_10 * sinv;
-            EXTCOS(cosv, rad);
+            cosv = bomCosApprox(rad);
             pose->matrix[0][2][3] += pd->states[i].field_10 * -cosv;
             if (--pd->states[i].field_18 < 0) {
                 pose->matrix[0][0][3] = pd->states[i].field_4.x;
@@ -520,28 +905,27 @@ static void ext_main(void) {
             break;
         }
         case 0x7f:
-            if (pose->matrix[0][1][3] > float_neg1000_bom_000070cc) {
+            if (pose->matrix[0][1][3] > -1000.0f) {
                 Mtx a;
                 Mtx b;
                 Mtx c;
                 f32 v;
                 Vec casePos2;
 
-                pose->matrix[0][1][3] -= float_2_bom_0000704c;
+                pose->matrix[0][1][3] -= 2.0f;
                 pose->flags &= ~2u;
-                PSMTXTrans(a, zero_bom_00007004, float_neg20_bom_000070d0, zero_bom_00007004);
-                v = sin((f32)(i + gp->retraceCount) / float_100_bom_00007000);
-                PSMTXRotRad(b, 'z', float_deg2rad_bom_000070d4 * (float_10_bom_00007010 * v));
-                PSMTXTrans(c, zero_bom_00007004, float_20_bom_000070d8, zero_bom_00007004);
+                PSMTXTrans(a, 0.0f, -20.0f, 0.0f);
+                v = sin((f32)(i + gp->retraceCount) / 100.0f);
+                PSMTXRotRad(b, 'z', 0.017453292f * (10.0f * v));
+                PSMTXTrans(c, 0.0f, 20.0f, 0.0f);
                 PSMTXConcat(a, b, b);
                 PSMTXConcat(b, c, c);
                 PSMTXTrans(a, pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]);
                 PSMTXConcat(a, c, pose->matrix[0]);
                 if (irand(100) == 0) {
-                    casePos2 = bomVec3(pose->matrix[0][0][3], pose->matrix[0][1][3],
-                                       pose->matrix[0][2][3], &vec3_bom_000064d8);
+                    casePos2 = (Vec){pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]};
 
-                    psndSFXOn_3D(sfxFall, &casePos2);
+                    psndSFXOn_3D(BOM_SFX("SFX_STG7_BOMB_FALL1"), &casePos2);
                 }
             }
             break;
@@ -550,163 +934,13 @@ static void ext_main(void) {
         }
     }
 
-    {
-        PoseData* pd2 = ((PoseRoot*)lp[0])->data;
-        ExtPose* pose2 = extGetPosePtr();
-        s32 i2;
-
-        for (i2 = 0; i2 < *(s32*)((u8*)pd2 + 0x4); i2++, pose2++) {  // 0x4 of PoseData is the pose count
-            PoseEntry* e = &pd2->entries[pd2->states[i2].field_20];
-            f32 t = (f32)((gp->renderTime - pd2->states[i2].time) / (OS_TIMER_CLOCK / 1000));
-
-            t = float_60_bom_000070dc * t / float_1000_bom_0000705c / e->field_8;
-            if (t >= float_1_bom_00006ffc) {
-                pd2->states[i2].time = gp->renderTime;
-                t = zero_bom_00007004;
-            }
-            pose2->field_0x10 = e->field_C + (s32)((e->field_10 - 1) * t);
-        }
-    }
+    pose_main();
 }
-
+#pragma opt_propagation reset
 #pragma opt_lifetimes reset
 
-// The instruction sequence and frame layout (0x120) match. Declaring `i`/`j` first
-// reproduces the outer-loop integer colouring and re-deriving `pd` inside the entry-match
-// block reproduces the retail r20 reload. Comparing float_3p1416_bom_00007070 directly (no
-// `pi` local) puts pi in f31 and the constants on f22..f30 as retail has them; the local
-// PoseState* `st`/`st2` fixed most of the integer colouring. The callee-saved FPR values
-// match (c1=f23, c2=f24, ccos=f22, zero=f25, double=f26, 6.2832=f27, 32767=f28, 400=f29,
-// 500=f30, pi=f31, angle=f21). Assigning c1/c2 right after the sinv seed and ccos just
-// before the second block is what makes MWCC hoist the constant loads in retail's order
-// (0.16605, 1.0, pi, 0.4967). Casting the state address to bytes
-// (`(PoseState*)((u8*)pd->states + i * sizeof(PoseState))`) folds the array base 0xB0 into
-// the store displacement (0xcc/0xc4/0xb0 off pd+i*0x30) as retail does.
-// Still differs: only the loop scratch/FPR pairs are swapped. Retail keeps `range` in f0
-// and the second sine scratch in f2; ours puts range in f2 and the second scratch in f0
-// (the primary scratch f1 and every callee-saved FPR match). The preheader GPR base
-// registers, the pose/e r23/r26 pair and the i2f stack slot (retail 0x28, ours 0x30) follow
-// from that one swap. Every compare and constant is checked against the asm.
-#pragma opt_lifetimes off   // stop MWCC keeping every loop-invariant constant live (f19..f31)
-#pragma opt_common_subs off // same: reuse retail's f22..f31 set instead of a wider one
-// NONMATCHING (98.99%): only the loop scratch/FPR pairs are swapped; see above.
-static void ext_init(void) {
-    f32 f0;
-    ExtPose* pose;
-    s32 i;
-    s32 j;
-    PoseEntry* e;
-    f32 c2;
-    f32 c1;
-    f32 ccos;
-    f32 angle;
-    f32 range;
-    PoseData* pd;
-    f32 sinv;
-    f32 f1;
 
-    lp[0] = (u32)smartAlloc(0xBC30, 1);
-    pd = ((PoseRoot*)lp[0])->data;
-    memset(pd, 0, 0xBC30);
-    *(s32*)((u8*)pd + 4) = extGetPoseNum();
-    pose_init();
-    pose = extGetPosePtr();
-    for (i = 0; i < *(s32*)((u8*)pd + 4); i++, pose++) {
-        PoseState* st = (PoseState*)((u8*)pd->states + i * sizeof(PoseState));
-
-        st->field_1C = zero_bom_00007004;
-        st->field_14 = zero_bom_00007004;
-        st->field_0 = 0;
-        pose->flags |= 7;
-        PSMTXIdentity(*pose->matrix);
-        angle = (f32)rand() * float_6p2832_bom_00007060 / float_32767_bom_000070ac;
-        range = (f32)rand() * float_400_bom_000070bc / float_32767_bom_000070ac + float_500_bom_000070e8;
-        sinv = float_0p00761_bom_00007068;
-        c1 = float_0p16605_bom_0000706c;
-        c2 = float_1_bom_00006ffc;
-        if (angle <= float_3p1416_bom_00007070) {
-            if (angle <= float_1p5708_bom_00007074) {
-                f0 = angle * angle;
-                sinv = sinv * f0 - c1;
-                sinv = sinv * f0 + c2;
-                sinv = sinv * angle;
-            } else {
-                f0 = angle - float_1p5708_bom_00007074;
-                f1 = float_1p5708_bom_00007074 - f0;
-                f0 = f1 * f1;
-                sinv = sinv * f0 - c1;
-                sinv = sinv * f0 + c2;
-                sinv = sinv * f1;
-            }
-        } else if (angle < float_4p7124_bom_00007078) {
-            f1 = angle - float_3p1416_bom_00007070;
-            f0 = f1 * f1;
-            sinv = sinv * f0 - c1;
-            sinv = sinv * f0 + c2;
-            sinv = sinv * f1;
-            sinv = -sinv;
-        } else {
-            f0 = angle - float_4p7124_bom_00007078;
-            f1 = float_1p5708_bom_00007074 - f0;
-            f0 = f1 * f1;
-            sinv = sinv * f0 - c1;
-            sinv = sinv * f0 + c2;
-            sinv = sinv * f1;
-            sinv = -sinv;
-        }
-        (*pose->matrix)[0][3] = range * sinv;
-        (*pose->matrix)[1][3] = zero_bom_00007004;
-        sinv = float_0p03705_bom_0000707c;
-        ccos = float_0p4967_bom_00007080;
-        if (angle <= float_3p1416_bom_00007070) {
-            if (angle <= float_1p5708_bom_00007074) {
-                f0 = angle * angle;
-                sinv = sinv * f0 - ccos;
-                sinv = sinv * f0 + c2;
-            } else {
-                f0 = angle - float_1p5708_bom_00007074;
-                f0 = float_1p5708_bom_00007074 - f0;
-                f0 = f0 * f0;
-                sinv = sinv * f0 - ccos;
-                sinv = sinv * f0 + c2;
-                sinv = -sinv;
-            }
-        } else if (angle < float_4p7124_bom_00007078) {
-            f0 = angle - float_3p1416_bom_00007070;
-            f0 = f0 * f0;
-            sinv = sinv * f0 - ccos;
-            sinv = sinv * f0 + c2;
-            sinv = -sinv;
-        } else {
-            f0 = angle - float_4p7124_bom_00007078;
-            f0 = float_1p5708_bom_00007074 - f0;
-            f0 = f0 * f0;
-            sinv = sinv * f0 - ccos;
-            sinv = sinv * f0 + c2;
-        }
-        (*pose->matrix)[2][3] = range * sinv;
-        {
-            PoseData* pd2 = ((PoseRoot*)lp[0])->data;
-
-            e = pd2->entries;
-            for (j = 0; j < pd2->count; j++, e++) {
-                if (strcmp(e->name, str_00000E10) == 0) {
-                    break;
-                }
-            }
-            if (j < pd2->count) {
-                PoseState* st2 = (PoseState*)((u8*)pd2->states + i * sizeof(PoseState));
-
-                if (st2->field_20 != j) {
-                    st2->field_20 = (s16)j;
-                    st2->time = gp->renderTime + rand();
-                }
-            }
-        }
-    }
-}
-#pragma opt_lifetimes reset   // end of ext_init scope
-#pragma opt_common_subs reset // end of ext_init scope
+static ExtTableEntry ext_data[31] = {0};
 
 
 EVT_BEGIN(evt_bom1000)
@@ -913,43 +1147,6 @@ char* oh_data[8] = {
     "ニトロ", "stg7_bom_65_a", "ペントリット", "stg7_bom_65_b", "スラリー", "stg7_bom_65_c", "ボムヘイD",
     "stg7_bom_65_d",
 };
-
-extern const f32 float_600_bom_000070f4;
-extern const f32 float_32767_bom_000070ac;
-extern const f32 float_300_bom_000070f8;
-extern const f32 float_3700_bom_000070fc;
-extern const f32 float_neg450_bom_00007104;
-extern const f32 float_neg650_bom_00007100;
-
-USER_FUNC(bom_fall) {
-    PoseData* data = ((PoseRoot*)lp[0])->data;
-    ExtPose* pose = extGetPosePtr();
-    s32 i;
-    s32 j;
-    PoseEntry* e;
-    PoseData* pd;
-
-    // 0x4 of PoseData is the pose count written by ext_init; the header keeps it as padding
-    for (i = 0; i < *(s32*)((u8*)data + 0x4); i++, pose++) {
-        data->states[i].field_0 = 0x7f;
-        pose->matrix[0][0][3] = float_600_bom_000070f4 * rand() / float_32767_bom_000070ac;
-        pose->matrix[0][1][3] = float_300_bom_000070f8 + float_3700_bom_000070fc * rand() / float_32767_bom_000070ac;
-        pose->matrix[0][2][3] = float_neg650_bom_00007100 + float_neg450_bom_00007104 * rand() / float_32767_bom_000070ac;
-        pd = ((PoseRoot*)lp[0])->data;
-        for (j = 0, e = pd->entries; j < pd->count; j++, e++) {
-            if (strcmp(e->name, str_00000EB4) == 0) {
-                break;
-            }
-        }
-        if (j < pd->count) {
-            if (pd->states[i].field_20 != j) {
-                pd->states[i].field_20 = (s16)j;
-                pd->states[i].time = gp->renderTime + rand();
-            }
-        }
-    }
-    return EVT_RETURN_DONE;
-}
 
 static EVT_BEGIN(evt_taihou)
     CALL(evt_mario_key_onoff, 0)
@@ -1856,8 +2053,333 @@ static EVT_BEGIN(musume_c_entry)
     RETURN
 EVT_END()
 
-__declspec(section ".rodata") const Vec vec3_bom_00006ea4 = {0.0f, 0.0f, 0.0f};
-__declspec(section ".rodata") const Vec vec3_bom_00006eb0 = {0.0f, 0.0f, 0.0f};
+// Inlined copy of pose_init used by ext_init_minnnanokoe (the original inlines it there with a 0x20 buffer).
+static inline void pose_init_minnnanokoe_copy(void) {
+    char buf[0x20];
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    ExtTableEntry* p = ext_data;
+    s32 i = 0;
+    s32 start;
+
+    strcpy(buf, "");
+    pd->count = -1;
+    do {
+        if (strcmp(p->type, buf) != 0) {
+            strcpy(buf, p->type);
+            start = i;
+            pd->count++;
+        }
+        strcpy(pd->entries[pd->count].name, buf);
+        pd->entries[pd->count].field_C = start;
+        pd->entries[pd->count].field_10 = i - start + 1;
+        pd->entries[pd->count].field_8 = p->value;
+        i++;
+    } while ((++p)->name != NULL);
+    pd->count++;
+}
+
+// Finds the named pose entry. The loop lives in a helper so the compiler gives its locals the
+// same registers as the original.
+static inline s32 find_entry_minnnanokoe(PoseData* pd) {
+    PoseEntry* e;
+    s32 j;
+
+    for (j = 0, e = pd->entries; j < pd->count; j++, e++) {
+        if (strcmp(e->name, "S_1") == 0) {
+            break;
+        }
+    }
+    return j;
+}
+
+static void ext_dispent(void) {
+    u16* p = (u16*)(u32)((u32*)(u32)lp[0])[0];
+
+    if (!(*p & 1)) {
+        dispEntry(CAMERA_3D, 0.0f, 1, ext_disp, NULL);
+    }
+}
+
+#pragma opt_common_subs off // required: CSE otherwise reorders the float address temps (87.49% without it)
+USER_FUNC(taihou_r) {
+    f32 c;
+    f32 s;
+    f32 p;
+    f32 rx;
+    f32 rz;
+
+    c = (f32)cos(0.7853981852531433);
+    s = (f32)sin(0.7853981852531433);
+    rx = -angleABf(0.0f, 0.0f, 0.0f, p = 100.0f * s);
+    rz = -angleABf(0.0f, 0.0f, 100.0f * c, p);
+    effKemuTestSetRxRz(effNameToPtr("kemuri"), rx, rz);
+    effRippleN64SetRxRz(effNameToPtr("ripple"), rx, rz);
+    return EVT_RETURN_DONE;
+}
+#pragma opt_common_subs reset
+
+// The sin/cos polynomials live in one `static inline` helper each
+// (see pik_02.c's hoshi_sin_approx) so the angle^2 scratch / wrapped-angle pivot colour as
+// f0/f1; the angle is built in two statements (angle = 6p2832 * i; angle = angle * 0p125;)
+// for the target's f28/f29/f30 load order; mtxId is computed after PSMTXTrans; GXSetTevAlphaIn
+// takes its operand inline while GXSetTevColorIn keeps a `colorIn` temp; and the tev boolean
+// is written `!i` rather than `(i == 0)`. Both spell the same cntlzw/srwi, but `!i` gives the
+// loop web {mtxId, flag} the higher vreg number, which is what lands it in r25 and the
+// {texBuf, &6p2832, &zero} chain in r24 exactly as retail has them (the `==` form swaps the two).
+// opt_common_subs off: with CSE on MWCC hoists the two loop-invariant seed loads
+// (0.0076100002f/0.037050001f) into extra FPRs, which pushes the whole coefficient group
+// into f21/f22 and grows the frame; the target rematerialises them.
+#pragma opt_common_subs off // needed: CSE otherwise hoists the loop-invariant seed loads
+// opt_lifetimes off: the default lifetime pass assigns the loop scratch/temp FPRs differently.
+#pragma opt_lifetimes off // needed: default lifetime analysis colours the loop scratch FPRs differently
+// opt_propagation off: with propagation on MWCC folds the loop-invariant seed loads again.
+#pragma opt_propagation off // needed: propagation otherwise folds the loop-invariant seed loads
+static void depthDisp(CameraId cameraId, void* param) {
+    GXTexObj texObj;
+    Mtx mtx;
+    smartEntry* texBuf;
+    CameraEntry* cam;
+    f32 scale;
+    s32 i;
+    s32 mtxId;
+
+    scale = (f32)evtGetValue(NULL, GW(5)) / 100.0f;
+    cam = camGetPtr(cameraId);
+    texBuf = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, GX_TF_RGB565, GX_FALSE, 0), 3);
+    GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
+    GXSetTexCopyDst(0x260, 0x1E0, GX_TF_RGB565, GX_FALSE);
+    GXCopyTex(texBuf->address, GX_FALSE);
+    GXPixModeSync();
+    GXInitTexObj(&texObj, texBuf->address, 0x260, 0x1E0, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXSetNumChans(0);
+    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
+    GXSetNumTexGens(8);
+    GXSetNumTevStages(8);
+    for (i = 0; i < 8; i++) {
+        f32 angle = 6.2831855f * (f32)i;
+        f32 s, c, tmp;
+        tmp = angle / 8.0f;
+        s = bomSinApprox(tmp);
+        c = bomCosApprox(tmp);
+
+        PSMTXTrans(mtx, (scale * s) / 100.0f, (scale * c) / 100.0f, 0.0f);
+        mtxId = 30 + i * 3;
+        GXLoadTexMtxImm(mtx, mtxId, GX_MTX2x4);
+        GXSetTexCoordGen2(i, GX_TG_MTX2x4, GX_TG_TEX0, mtxId, GX_FALSE, GX_PTIDENTITY);
+        GXSetTevKColorSel(i, GX_TEV_KCSEL_1_8);
+        GXSetTevKAlphaSel(i, GX_TEV_KASEL_1_8);
+        GXSetTevOrder(i, i, GX_TEXMAP0, GX_COLOR_NULL);
+        GXSetTevColorOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        GXSetTevAlphaOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+        {
+            s32 flag = !i; // `!i` over `(i == 0)`: same cntlzw/srwi, right r24/r25 colouring
+            s32 colorIn = flag ? GX_CC_ZERO : GX_CC_CPREV;
+
+            GXSetTevColorIn(i, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, colorIn);
+            GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, flag ? GX_CA_ZERO : GX_CA_APREV);
+        }
+        GXSetTevSwapMode(i, GX_TEV_SWAP0, GX_TEV_SWAP0);
+    }
+    GXLoadPosMtxImm(cam->view, 0);
+    GXSetCurrentMtx(0);
+    GXSetCullMode(2);
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxDesc(0xD, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 3, 0);
+    GXSetVtxAttrFmt(0, 0xD, 1, 3, 0);
+    GXBegin(0x80, 0, 4);
+    GXPosition3s16(-0x130, 0xF0, 0);
+    GXTexCoord2s16(0, 0);
+    GXPosition3s16(0x130, 0xF0, 0);
+    GXTexCoord2s16(1, 0);
+    GXPosition3s16(0x130, -0xF0, 0);
+    GXTexCoord2s16(1, 1);
+    GXPosition3s16(-0x130, -0xF0, 0);
+    GXTexCoord2s16(0, 1);
+    sysWaitDrawSync();
+}
+#pragma opt_propagation reset
+#pragma opt_lifetimes reset
+#pragma opt_common_subs reset
+
+static USER_FUNC(depth) {
+    dispEntry(CAMERA_2D, 1000.0f, 0, depthDisp, NULL);
+    return EVT_RETURN_BLOCK;
+}
+
+static USER_FUNC(make_name) {
+    static char name[0x40];
+    s32* args = event->args;
+    s32 value = evtGetValue(event, args[0]);
+
+    sprintf(name, "S_hikari%d", value);
+    evtSetValue(event, args[1], (s32)name);
+    return EVT_RETURN_DONE;
+}
+
+USER_FUNC(make_ext_table_minnnanokoe) {
+    s32 i;
+
+    memset(ext_data, 0, 0x174);
+    for (i = 0; i < 10; i++) {
+        ext_data[i].name = "c_bom_sen";
+        ext_data[i].type = "S_1";
+        ext_data[i].value = (f32)i * 4.0f;
+    }
+    for (i = 0; i < 20; i++) {
+        ext_data[10 + i].name = "c_bom_sen";
+        ext_data[10 + i].type = "R_1";
+        ext_data[10 + i].value = (f32)i * 2.0f;
+    }
+    ext_data[30].name = NULL;
+    return EVT_RETURN_DONE;
+}
+
+// Sets each pose state's initial values, places a pose on a grid, and records which named
+// entry it uses.
+void ext_init_minnnanokoe(void) {
+    PoseData* pd;
+    s32 rx;
+    s32 j;
+    s32 i;
+    PoseData* data;
+    s32 rz;
+    ExtPose* pose;
+
+    lp[0] = (u32)smartAlloc(0xBC30, 1);
+    data = ((PoseRoot*)lp[0])->data;
+    memset(data, 0, 0xBC30);
+    // 0x4 of PoseData is the pose count; the header keeps it as padding
+    *(s32*)((u8*)data + 0x4) = extGetPoseNum();
+    pose_init_minnnanokoe_copy();
+    pose = extGetPosePtr();
+    for (i = 0; i < *(s32*)((u8*)data + 0x4); i++, pose++) {
+        data->states[i].field_1C = 0.0f;
+        data->states[i].field_14 = 0.0f;
+        data->states[i].field_0 = 5;
+        pose->flags |= 3;
+        PSMTXIdentity((MtxPtr)pose->matrix);
+        rx = (i % 14) * 30 - 205 + rand() % 10;
+        rz = 190 - (i / 14) * 20 + rand() % 20;
+        pose->matrix[0][0][3] = (f32)rx;
+        pose->matrix[0][1][3] = 0.0f;
+        pose->matrix[0][2][3] = (f32)rz;
+        pose->field_0x4 = 270.0f;
+        pd = ((PoseRoot*)lp[0])->data;
+        j = find_entry_minnnanokoe(pd);
+        if (j < pd->count) {
+            if (pd->states[i].field_20 != j) {
+                pd->states[i].field_20 = (s16)j;
+                pd->states[i].time = gp->renderTime + rand();
+            }
+        }
+    }
+}
+
+// jump_minnnanokoe(index, f): kick a single pose's state (position from pose matrix, a
+// short animation timer) and occasionally play a 3D SFX.
+void jump_minnnanokoe(s32 index, f32 f) {
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    ExtPose* pose = extGetPosePtr();
+
+    pd->states[index].field_4 = (Vec){pose[index].matrix[0][0][3], pose[index].matrix[0][1][3], pose[index].matrix[0][2][3]};
+    pd->states[index].field_10 = 0.0f;
+    pd->states[index].field_14 = 0.1f;
+    pd->states[index].field_18 = 20;
+    {
+        f32 m = pd->states[index].field_14 * (f32)pd->states[index].field_18;
+
+        pd->states[index].field_1C = m / 2.0f + f / (f32)pd->states[index].field_18;
+    }
+    pd->states[index].field_1 = 5;
+    pd->states[index].field_0 = 100;
+    if (evtGetValue(0, 0xF5DE0180) != 401 && index % 5 == 0) {
+        Vec pos2 = (Vec){pose[index].matrix[0][0][3], pose[index].matrix[0][1][3], pose[index].matrix[0][2][3]};
+
+        psndSFXOn_3D("SFX_STG7_BOMB_TOGETHER2", &pos2);
+    }
+}
+
+void ext_disp_minnnanokoe(CameraId cameraId, void* param) {
+    EnvironmentYami yami;
+    EnvironmentYami* pyami = &yami;
+    ExtPose* pose = extGetPosePtr();
+    s32 i;
+
+    extLoadRenderMode();
+    extLoadVertex();
+    extLoadTexture();
+    extLoadTev();
+    for (i = 0; i < extGetPoseNum(); ) {
+        pyami->tevStage = 1;
+        pyami->texMap = 1;
+        pyami->texCoord = 1;
+        pyami->unk18 = 0;
+        pyami->unk4 = (MtxPtr)pose->matrix;
+        envSetYami(pyami);
+        GXSetNumTexGens(pyami->texCoord);
+        GXSetNumTevStages(pyami->tevStage);
+        GXSetNumIndStages(pyami->unk18);
+        extPoseDraw(i);
+        i++;
+        pose++;
+    }
+    extLoadTextureExit();
+}
+
+void ext_dispent_minnnanokoe(void) {
+    dispEntry(CAMERA_3D, 0.0f, 1, ext_disp_minnnanokoe, NULL);
+}
+
+// NONMATCHING (96.86%): retail keeps event->args in r27 and a materialised args+2 in r31 (seven
+// callee-saved registers); here the compiler folds args+2 into the 0x8/0xc displacements of the single base
+// and saves one register, shifting flag/idx/p by one. The p local fixes the schedule, not the second base.
+USER_FUNC(bom1000_msg) {
+    s32* args = event->args;
+    s32 a = evtGetValue(event, args[0]);
+    s32 b = evtGetValue(event, args[1]);
+    ExtPose* pose = extGetPosePtr();
+    ExtPose* p;
+    s32 base;
+    s32 flag;
+    s32 idx;
+    if (a == 0) {
+        base = 3;
+        flag = 1;
+    } else {
+        base = 10;
+        flag = 0;
+    }
+    idx = b + base * 14;
+    b = (b + (rand() % 2 + 1) * 4) % 14;
+    p = &pose[idx];
+    evtSetValue(event, args[0], flag);
+    evtSetValue(event, args[1], b);
+    evtSetFloat(event, args[2], p->matrix[0][0][3]);
+    evtSetFloat(event, args[3], p->matrix[0][2][3]);
+    return EVT_RETURN_DONE;
+}
+
+// bom1000_jump(): kick a random pose's state and occasionally play a 3D SFX.
+// NONMATCHING (99.69%): register colouring only - the idx*0x30 temp and the extGetPosePtr element
+// land on swapped r30/r31 (r30=idx*0x30 in retail).
+USER_FUNC(bom1000_jump) {
+    PoseData* pd = ((PoseRoot*)lp[0])->data;
+    s32 idx = rand() % *(s32*)((u8*)pd + 0x4);  // 0x4 of PoseData is the pose count
+
+    if ((s32)pd->states[idx].field_0 != 100) {
+        jump_minnnanokoe(idx, 10.0f);
+    }
+    return EVT_RETURN_DONE;
+}
+
 __declspec(section ".rodata") const Vec vec3_bom_00006ebc = {0.0f, 100.0f, 0.0f};
 __declspec(section ".rodata") const Vec vec3_bom_00006ec8 = {0.0f, 1.0f, 0.0f};
 __declspec(section ".rodata") const Vec vec3_bom_00006ed4 = {0.0f, 0.0f, 0.0f};
@@ -1907,89 +2429,7 @@ static u32 npcEnt[161] = {
     0x00000000,
 };
 
-extern const f32 zero_bom_00007004;
-extern const f32 float_270_bom_0000703c;
-extern const char zero_bom_00007038[];
 
-// Inlined copy of pose_init used by ext_init_minnnanokoe (the original inlines it there with a 0x20 buffer).
-static inline void pose_init_minnnanokoe_copy(void) {
-    char buf[0x20];
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
-    ExtTableEntry* p = ext_data;
-    s32 i = 0;
-    s32 start;
-
-    strcpy(buf, zero_bom_00007038);
-    pd->count = -1;
-    do {
-        if (strcmp(p->type, buf) != 0) {
-            strcpy(buf, p->type);
-            start = i;
-            pd->count++;
-        }
-        strcpy(pd->entries[pd->count].name, buf);
-        pd->entries[pd->count].field_C = start;
-        pd->entries[pd->count].field_10 = i - start + 1;
-        pd->entries[pd->count].field_8 = p->value;
-        i++;
-    } while ((++p)->name != NULL);
-    pd->count++;
-}
-
-// Finds the named pose entry. The loop lives in a helper so the compiler gives its locals the
-// same registers as the original.
-static inline s32 find_entry_minnnanokoe(PoseData* pd) {
-    PoseEntry* e;
-    s32 j;
-
-    for (j = 0, e = pd->entries; j < pd->count; j++, e++) {
-        if (strcmp(e->name, str_00000E08) == 0) {
-            break;
-        }
-    }
-    return j;
-}
-
-// Sets each pose state's initial values, places a pose on a grid, and records which named
-// entry it uses.
-void ext_init_minnnanokoe(void) {
-    PoseData* pd;
-    s32 rx;
-    s32 j;
-    s32 i;
-    PoseData* data;
-    s32 rz;
-    ExtPose* pose;
-
-    lp[0] = (u32)smartAlloc(0xBC30, 1);
-    data = ((PoseRoot*)lp[0])->data;
-    memset(data, 0, 0xBC30);
-    // 0x4 of PoseData is the pose count; the header keeps it as padding
-    *(s32*)((u8*)data + 0x4) = extGetPoseNum();
-    pose_init_minnnanokoe_copy();
-    pose = extGetPosePtr();
-    for (i = 0; i < *(s32*)((u8*)data + 0x4); i++, pose++) {
-        data->states[i].field_1C = zero_bom_00007004;
-        data->states[i].field_14 = zero_bom_00007004;
-        data->states[i].field_0 = 5;
-        pose->flags |= 3;
-        PSMTXIdentity((MtxPtr)pose->matrix);
-        rx = (i % 14) * 30 - 205 + rand() % 10;
-        rz = 190 - (i / 14) * 20 + rand() % 20;
-        pose->matrix[0][0][3] = (f32)rx;
-        pose->matrix[0][1][3] = zero_bom_00007004;
-        pose->matrix[0][2][3] = (f32)rz;
-        pose->field_0x4 = float_270_bom_0000703c;
-        pd = ((PoseRoot*)lp[0])->data;
-        j = find_entry_minnnanokoe(pd);
-        if (j < pd->count) {
-            if (pd->states[i].field_20 != j) {
-                pd->states[i].field_20 = (s16)j;
-                pd->states[i].time = gp->renderTime + rand();
-            }
-        }
-    }
-}
 
 EVT_BEGIN(bom1000_minnnanokoe)
     CALL(make_ext_table_minnnanokoe)
@@ -1999,60 +2439,7 @@ EVT_BEGIN(bom1000_minnnanokoe)
     RETURN
 EVT_END()
 
-extern const Vec vec3_bom_00006ea4;
-extern const Vec vec3_bom_00006eb0;
-extern const f32 float_0p1_bom_00007008;
-extern const f32 float_0p5_bom_0000700c;
-extern const f32 float_10_bom_00007010;
-extern const f32 zero_bom_00007004;
-extern const char str_00000DDC[];
 
-// Inline Vec build reproduces the target's vec3 -> temp -> field copy (rule 7).
-static inline Vec bomVec3(f32 x, f32 y, f32 z, const Vec* base) {
-    Vec v = *base;
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
-}
-
-// bom1000_jump(): kick a random pose's state and occasionally play a 3D SFX.
-// NONMATCHING (99.12%): register colouring only - the idx*0x30 temp and the extGetPosePtr element
-// land on swapped r30/r31 (r30=idx*0x30 in retail), so the state base reuses r28 (pd) there.
-USER_FUNC(bom1000_jump) {
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
-    s32 idx = rand() % *(s32*)((u8*)pd + 0x4);  // 0x4 of PoseData is the pose count
-    s32 type = pd->states[idx].field_0;
-
-    if (type != 100) {
-        PoseData* data = ((PoseRoot*)lp[0])->data;
-        ExtPose* pose = extGetPosePtr();
-        Vec pos;
-
-        pos = bomVec3(pose[idx].matrix[0][0][3], pose[idx].matrix[0][1][3], pose[idx].matrix[0][2][3],
-                      &vec3_bom_00006ea4);
-        data->states[idx].field_4 = pos;
-        data->states[idx].field_10 = zero_bom_00007004;
-        data->states[idx].field_14 = float_0p1_bom_00007008;
-        data->states[idx].field_18 = 20;
-        {
-            f32 m = data->states[idx].field_14 * (f32)data->states[idx].field_18;
-
-            data->states[idx].field_1C = m * float_0p5_bom_0000700c +
-                                         float_10_bom_00007010 / (f32)data->states[idx].field_18;
-        }
-        data->states[idx].field_1 = 5;
-        data->states[idx].field_0 = 100;
-        if (evtGetValue(0, 0xF5DE0180) != 401 && idx % 5 == 0) {
-            Vec pos2;
-
-            pos2 = bomVec3(pose[idx].matrix[0][0][3], pose[idx].matrix[0][1][3], pose[idx].matrix[0][2][3],
-                           &vec3_bom_00006eb0);
-            psndSFXOn_3D(str_00000DDC, &pos2);
-        }
-    }
-    return EVT_RETURN_DONE;
-}
 
 static EVT_BEGIN(minnnanokoe_evt)
     SPAWN_EVENT(bom1000_minnnanokoe)
@@ -2280,536 +2667,9 @@ EVT_END()
 
 SightWork* sight_wp;
 
-// jump_minnnanokoe(index, f): kick a single pose's state (position from pose matrix, a
-// short animation timer) and occasionally play a 3D SFX.
-void jump_minnnanokoe(s32 index, f32 f) {
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
-    ExtPose* pose = extGetPosePtr();
-    Vec pos;
-
-    pos = bomVec3(pose[index].matrix[0][0][3], pose[index].matrix[0][1][3], pose[index].matrix[0][2][3],
-                  &vec3_bom_00006ea4);
-    pd->states[index].field_4 = pos;
-    pd->states[index].field_10 = zero_bom_00007004;
-    pd->states[index].field_14 = float_0p1_bom_00007008;
-    pd->states[index].field_18 = 20;
-    {
-        f32 m = pd->states[index].field_14 * (f32)pd->states[index].field_18;
-
-        pd->states[index].field_1C = m * float_0p5_bom_0000700c + f / (f32)pd->states[index].field_18;
-    }
-    pd->states[index].field_1 = 5;
-    pd->states[index].field_0 = 100;
-    if (evtGetValue(0, 0xF5DE0180) != 401 && index % 5 == 0) {
-        Vec pos2;
-
-        pos2 = bomVec3(pose[index].matrix[0][0][3], pose[index].matrix[0][1][3], pose[index].matrix[0][2][3],
-                       &vec3_bom_00006eb0);
-        psndSFXOn_3D(str_00000DDC, &pos2);
-    }
-}
-
-extern const f32 float_6p2832_bom_00007060;
-extern const f32 float_0p125_bom_00007064;
-extern const f32 float_0p00761_bom_00007068;
-extern const f32 float_0p16605_bom_0000706c;
-extern const f32 float_3p1416_bom_00007070;
-extern const f32 float_1p5708_bom_00007074;
-extern const f32 float_4p7124_bom_00007078;
-extern const f32 float_0p03705_bom_0000707c;
-extern const f32 float_0p4967_bom_00007080;
-extern const f32 float_100_bom_00007000;
-extern const f32 float_1_bom_00006ffc;
-
-// Sin/cos polynomials live in one inline helper each: keeping each polynomial in a single helper
-// (rather than inlining the branches twice) is what puts the angle^2 scratch in f0 and the
-// wrapped-angle pivot in f1, exactly as retail. The coefficients as helper locals keep the seed
-// in f2 and the coefficient group on f23..f27.
-static inline f32 bomSinApprox(f32 angle) {
-    f32 v = float_0p00761_bom_00007068;
-    f32 b = float_0p16605_bom_0000706c;
-    f32 one = float_1_bom_00006ffc;
-    f32 t, u;
-
-    if (angle <= float_3p1416_bom_00007070) {
-        if (angle <= float_1p5708_bom_00007074) {
-            u = angle * angle;
-            v = v * u - b;
-            v = v * u + one;
-            v = v * angle;
-        } else {
-            t = float_1p5708_bom_00007074 - (angle - float_1p5708_bom_00007074);
-            u = t * t;
-            v = v * u - b;
-            v = v * u + one;
-            v = v * t;
-        }
-    } else if (angle < float_4p7124_bom_00007078) {
-        t = angle - float_3p1416_bom_00007070;
-        u = t * t;
-        v = v * u - b;
-        v = v * u + one;
-        v = v * t;
-        v = -v;
-    } else {
-        t = float_1p5708_bom_00007074 - (angle - float_4p7124_bom_00007078);
-        u = t * t;
-        v = v * u - b;
-        v = v * u + one;
-        v = v * t;
-        v = -v;
-    }
-    return v;
-}
-static inline f32 bomCosApprox(f32 angle) {
-    f32 v = float_0p03705_bom_0000707c;
-    f32 b = float_0p4967_bom_00007080;
-    f32 one = float_1_bom_00006ffc;
-    f32 u;
-
-    if (angle <= float_3p1416_bom_00007070) {
-        if (angle <= float_1p5708_bom_00007074) {
-            u = angle * angle;
-            v = v * u - b;
-            v = v * u + one;
-        } else {
-            u = float_1p5708_bom_00007074 - (angle - float_1p5708_bom_00007074);
-            u = u * u;
-            v = v * u - b;
-            v = v * u + one;
-            v = -v;
-        }
-    } else if (angle < float_4p7124_bom_00007078) {
-        u = angle - float_3p1416_bom_00007070;
-        u = u * u;
-        v = v * u - b;
-        v = v * u + one;
-        v = -v;
-    } else {
-        u = float_1p5708_bom_00007074 - (angle - float_4p7124_bom_00007078);
-        u = u * u;
-        v = v * u - b;
-        v = v * u + one;
-    }
-    return v;
-}
-// The sin/cos polynomials live in one `static inline` helper each
-// (see pik_02.c's hoshi_sin_approx) so the angle^2 scratch / wrapped-angle pivot colour as
-// f0/f1; the angle is built in two statements (angle = 6p2832 * i; angle = angle * 0p125;)
-// for the target's f28/f29/f30 load order; mtxId is computed after PSMTXTrans; GXSetTevAlphaIn
-// takes its operand inline while GXSetTevColorIn keeps a `colorIn` temp; and the tev boolean
-// is written `!i` rather than `(i == 0)`. Both spell the same cntlzw/srwi, but `!i` gives the
-// loop web {mtxId, flag} the higher vreg number, which is what lands it in r25 and the
-// {texBuf, &6p2832, &zero} chain in r24 exactly as retail has them (the `==` form swaps the two).
-// opt_common_subs off: with CSE on MWCC hoists the two loop-invariant seed loads
-// (float_0p00761/float_0p03705) into extra FPRs, which pushes the whole coefficient group
-// into f21/f22 and grows the frame; the target rematerialises them.
-#pragma opt_common_subs off // needed: CSE otherwise hoists the loop-invariant seed loads
-// opt_lifetimes off: the default lifetime pass assigns the loop scratch/temp FPRs differently.
-#pragma opt_lifetimes off // needed: default lifetime analysis colours the loop scratch FPRs differently
-// opt_propagation off: with propagation on MWCC folds the loop-invariant seed loads again.
-#pragma opt_propagation off // needed: propagation otherwise folds the loop-invariant seed loads
-static void depthDisp(CameraId cameraId, void* param) {
-    GXTexObj texObj;
-    Mtx mtx;
-    smartEntry* texBuf;
-    CameraEntry* cam;
-    f32 scale;
-    s32 i;
-    s32 mtxId;
-
-    scale = (f32)evtGetValue(NULL, GW(5)) / float_100_bom_00007000;
-    cam = camGetPtr(cameraId);
-    texBuf = smartAlloc(GXGetTexBufferSize(0x260, 0x1E0, GX_TF_RGB565, GX_FALSE, 0), 3);
-    GXSetTexCopySrc(0, 0, 0x260, 0x1E0);
-    GXSetTexCopyDst(0x260, 0x1E0, GX_TF_RGB565, GX_FALSE);
-    GXCopyTex(texBuf->address, GX_FALSE);
-    GXPixModeSync();
-    GXInitTexObj(&texObj, texBuf->address, 0x260, 0x1E0, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-    GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, zero_bom_00007004, zero_bom_00007004, zero_bom_00007004, GX_FALSE, GX_FALSE, GX_ANISO_1);
-    GXLoadTexObj(&texObj, GX_TEXMAP0);
-    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_CLEAR);
-    GXSetZCompLoc(GX_TRUE);
-    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
-    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
-    GXSetNumChans(0);
-    GXSetChanCtrl(4, 0, 0, 0, 0, 2, 2);
-    GXSetNumTexGens(8);
-    GXSetNumTevStages(8);
-    for (i = 0; i < 8; i++) {
-        f32 angle = float_6p2832_bom_00007060 * (f32)i;
-        f32 s, c, tmp;
-        tmp = angle * float_0p125_bom_00007064;
-        s = bomSinApprox(tmp);
-        c = bomCosApprox(tmp);
-
-        PSMTXTrans(mtx, (scale * s) / float_100_bom_00007000, (scale * c) / float_100_bom_00007000, zero_bom_00007004);
-        mtxId = 30 + i * 3;
-        GXLoadTexMtxImm(mtx, mtxId, GX_MTX2x4);
-        GXSetTexCoordGen2(i, GX_TG_MTX2x4, GX_TG_TEX0, mtxId, GX_FALSE, GX_PTIDENTITY);
-        GXSetTevKColorSel(i, GX_TEV_KCSEL_1_8);
-        GXSetTevKAlphaSel(i, GX_TEV_KASEL_1_8);
-        GXSetTevOrder(i, i, GX_TEXMAP0, GX_COLOR_NULL);
-        GXSetTevColorOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-        GXSetTevAlphaOp(i, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-        {
-            s32 flag = !i; // `!i` over `(i == 0)`: same cntlzw/srwi, right r24/r25 colouring
-            s32 colorIn = flag ? GX_CC_ZERO : GX_CC_CPREV;
-
-            GXSetTevColorIn(i, GX_CC_ZERO, GX_CC_TEXC, GX_CC_KONST, colorIn);
-            GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, flag ? GX_CA_ZERO : GX_CA_APREV);
-        }
-        GXSetTevSwapMode(i, GX_TEV_SWAP0, GX_TEV_SWAP0);
-    }
-    GXLoadPosMtxImm(cam->view, 0);
-    GXSetCurrentMtx(0);
-    GXSetCullMode(2);
-    GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 3, 0);
-    GXSetVtxAttrFmt(0, 0xD, 1, 3, 0);
-    GXBegin(0x80, 0, 4);
-    GXPosition3s16(-0x130, 0xF0, 0);
-    GXTexCoord2s16(0, 0);
-    GXPosition3s16(0x130, 0xF0, 0);
-    GXTexCoord2s16(1, 0);
-    GXPosition3s16(0x130, -0xF0, 0);
-    GXTexCoord2s16(1, 1);
-    GXPosition3s16(-0x130, -0xF0, 0);
-    GXTexCoord2s16(0, 1);
-    sysWaitDrawSync();
-}
-#pragma opt_propagation reset
-#pragma opt_lifetimes reset
-#pragma opt_common_subs reset
-
-extern const Vec vec3_bom_0000649c;
-extern const Vec vec3_bom_000064a8;
-
-// jump(index, a, x, y, z, p, q): aim a pose at (x,z), distance/time-scaled.
-void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
-    ExtPose* ep = &extGetPosePtr()[index];
-    Vec pos;
-    f32 d;
-    f32 dy;
-
-    pos = bomVec3(x, y, z, &vec3_bom_0000649c);
-    pd->states[index].field_4 = pos;
-    pd->states[index].field_10 = p;
-    pd->states[index].field_14 = q;
-    dy = y - ep->matrix[0][1][3];
-    d = distABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
-    // the original calls angleABf here and discards the result (see asm 0x2EC0)
-    angleABf(ep->matrix[0][0][3], ep->matrix[0][2][3], x, z);
-    pd->states[index].field_18 = d / pd->states[index].field_10;
-    {
-        f32 m = pd->states[index].field_14 * (f32)pd->states[index].field_18;
-
-        pd->states[index].field_1C = m * float_0p5_bom_0000700c +
-                                     dy / (f32)pd->states[index].field_18;
-    }
-    pd->states[index].field_1 = a;
-    pd->states[index].field_0 = 100;
-    ep->field_0x4 = angleABf(x, z, ep->matrix[0][0][3], ep->matrix[0][2][3]);
-    if (index % 20 == 0 && !(pd->flags & 1)) {
-        Vec pos2;
-
-        pos2 = bomVec3(ep->matrix[0][0][3], ep->matrix[0][1][3], ep->matrix[0][2][3], &vec3_bom_000064a8);
-        psndSFXOn_3D(str_00000DDC, &pos2);
-    }
-}
-
-extern const f32 float_1000_bom_0000705c;
-extern const f32 float_60_bom_000070dc;
-
-static void pose_main(void) {
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
-    s32 i;
-    ExtPose* pose;
-
-    pose = extGetPosePtr();
-    for (i = 0; i < *(s32*)((u8*)pd + 0x4); i++) { // 0x4 of PoseData is the pose count (the header keeps it as padding)
-        PoseEntry* entry = &pd->entries[pd->states[i].field_20];
-        f32 t = float_60_bom_000070dc * (f32)OSTicksToMilliseconds(gp->renderTime - pd->states[i].time) / float_1000_bom_0000705c / entry->field_8;
-
-        if (t >= float_1_bom_00006ffc) {
-            pd->states[i].time = gp->renderTime;
-            t = zero_bom_00007004;
-        }
-        pose->field_0x10 = entry->field_C + (s32)((f32)(entry->field_10 - 1) * t);
-        pose++;
-    }
-}
-
-// The SoundWork fields disp_sight reads (sound.h conflicts with this unit's headers): the playing channel, the
-// per-channel s16 sample rings and the write position.
-typedef struct BomSoundView {
-    u8 field_0x0[0x330];                // 0x0
-    u16 unk330;                         // 0x330, channel
-    u8 field_0x332[0x5C0 - 0x332];      // 0x332
-    s16 unk5C0[2][0x400];               // 0x5C0, sample rings
-    s32 unk15C0;                        // 0x15C0, write position
-} BomSoundView;
-extern BomSoundView sound;
-
-extern const f32 float_0p6_bom_0000712c;
-extern const f32 float_0p8_bom_00007148;
-extern const f32 float_110_bom_00007140;
-extern const f32 float_120_bom_0000713c;
-extern const f32 float_126_bom_00007134;
-extern const f32 float_150_bom_000070b0;
-extern const f32 float_162_bom_00007138;
-extern const f32 float_16_bom_0000715c;
-extern const f32 float_180_bom_000070c8;
-extern const f32 float_200_bom_0000716c;
-extern const f32 float_20_bom_000070d8;
-extern const f32 float_230_bom_0000714c;
-extern const f32 float_2_bom_0000704c;
-extern const f32 float_90_bom_00007130;
-extern const f32 float_neg100_bom_00007124;
-extern const f32 float_neg160_bom_00007144;
-extern const f32 float_neg16_bom_00007160;
-extern const f32 float_neg170_bom_00007150;
-extern const f32 float_neg180_bom_00007164;
-extern const f32 float_neg190_bom_00007158;
-extern const f32 float_neg1_bom_00007120;
-extern const f32 float_neg220_bom_00007168;
-extern const f32 float_neg240_bom_00007154;
-extern const f32 float_neg60_bom_00007128;
-
-// SightWork's word at 0x18 is the sight's rotation, an f32 (bom_01.h declares it as field_4[5]).
-#define SIGHT_ROT(wp) (*(f32*)&(wp)->field_4[5])
-
-// NONMATCHING (97.17%): every call, branch and constant matches (checked by value); callee-saved register
-// colouring in the inlined drawNum blocks and the hoisting of the named float constants differ.
-void disp_sight(CameraId cameraId, void* param) {
-    GXColor colorA = *(GXColor*)&dat_bom_0000637c;
-    GXColor colorB = *(GXColor*)&dat_bom_00006380;
-    s32 i;
-
-    drawBG(0, zero_bom_00007004, zero_bom_00007004, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
-    drawBG(0, zero_bom_00007004, zero_bom_00007004, float_neg1_bom_00007120, float_1_bom_00006ffc, zero_bom_00007004);
-    drawBG(0, zero_bom_00007004, zero_bom_00007004, float_1_bom_00006ffc, float_neg1_bom_00007120, zero_bom_00007004);
-    drawBG(0, zero_bom_00007004, zero_bom_00007004, float_neg1_bom_00007120, float_neg1_bom_00007120, zero_bom_00007004);
-    drawBG(1, zero_bom_00007004, zero_bom_00007004, float_1_bom_00006ffc, float_1_bom_00006ffc, SIGHT_ROT(sight_wp));
-    drawBG(1, zero_bom_00007004, zero_bom_00007004, float_neg1_bom_00007120, float_1_bom_00006ffc, -SIGHT_ROT(sight_wp));
-    drawBG(1, zero_bom_00007004, zero_bom_00007004, float_1_bom_00006ffc, float_neg1_bom_00007120, -SIGHT_ROT(sight_wp));
-    drawBG(1, zero_bom_00007004, zero_bom_00007004, float_neg1_bom_00007120, float_neg1_bom_00007120, SIGHT_ROT(sight_wp));
-
-    if (sight_wp->state == 2) {
-        SIGHT_ROT(sight_wp) += float_2_bom_0000704c;
-    } else if (sight_wp->state == 3) {
-        SIGHT_ROT(sight_wp) -= float_2_bom_0000704c;
-    } else if (sight_wp->state == 0) {
-        SIGHT_ROT(sight_wp) -= float_2_bom_0000704c;
-    } else {
-        SIGHT_ROT(sight_wp) += float_1_bom_00006ffc;
-    }
-
-    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
-    winTexSet(5, vec3_bom_00006384, vec3_bom_00006390, colorB);
-
-    for (i = 0; i < 3; i++) {
-        s32 sel = ((s32)(gp->retraceCount % 30)) / 10;
-
-        if (sel != i) {
-            drawBG(4 - i, float_100_bom_00007000, float_60_bom_000070dc, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
-            drawBG(4 - i, float_neg100_bom_00007124, float_60_bom_000070dc, float_neg1_bom_00007120, float_1_bom_00006ffc, zero_bom_00007004);
-            drawBG(4 - i, float_100_bom_00007000, float_neg60_bom_00007128, float_1_bom_00006ffc, float_neg1_bom_00007120, zero_bom_00007004);
-            drawBG(4 - i, float_neg100_bom_00007124, float_neg60_bom_00007128, float_neg1_bom_00007120, float_neg1_bom_00007120, zero_bom_00007004);
-        }
-    }
-
-    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
-    winTexSet(0x17, vec3_bom_0000639c, vec3_bom_000063a8, colorA);
-
-    drawNum((s32)(gp->renderTime / 100 / 1000), 10, float_90_bom_00007130, float_180_bom_000070c8, float_0p6_bom_0000712c);
-    drawNum((s32)(gp->renderTime / 200 / 1000), 8, float_126_bom_00007134, float_150_bom_000070b0, float_0p6_bom_0000712c);
-    drawNum((s32)(gp->renderTime / 300 / 1000), 6, float_162_bom_00007138, float_120_bom_0000713c, float_0p6_bom_0000712c);
-    drawNum((s32)(gp->renderTime / 400 / 1000), 6, float_162_bom_00007138, float_90_bom_00007130, float_0p6_bom_0000712c);
-    drawNum((s32)((u32)gp->retraceCount >> 2), 4, float_110_bom_00007140, float_neg160_bom_00007144, float_1_bom_00006ffc);
-    drawNum((s32)((u32)gp->retraceCount >> 3), 2, float_230_bom_0000714c, float_neg170_bom_00007150, float_0p8_bom_00007148);
-
-    winTexSet(8, vec3_bom_000063b4, vec3_bom_000063c0, colorA);
-
-    if ((gp->retraceCount & 3) == 0) {
-        for (i = 0; i < 4; i++) {
-            sight_wp->field_4[i] = sight_wp->field_4[i + 1];
-        }
-        // the newest sample of the playing channel's ring buffer (an s16 stream per channel)
-        sight_wp->field_4[4] = abs(sound.unk5C0[sound.unk330][sound.unk15C0]);
-    }
-
-    for (i = 0; i < 5; i++) {
-        s32 v = sight_wp->field_4[i] / 300;
-        s32 j;
-
-        if (v > 7) {
-            v = 7;
-        }
-        {
-            f32 x = float_20_bom_000070d8 * (f32)i + float_neg240_bom_00007154;
-
-            for (j = 0; j < v; j++) {
-                f32 y = float_16_bom_0000715c * (f32)j + float_neg190_bom_00007158;
-
-                if (j == 6) {
-                    drawBG(10, x, y, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
-                } else {
-                    drawBG(9, x, y, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
-                }
-            }
-            for (j = v; j < 7; j++) {
-                f32 y = float_16_bom_0000715c * (f32)j + float_neg190_bom_00007158;
-
-                if (j == 6) {
-                    drawBG(12, x, y, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
-                } else {
-                    drawBG(11, x, y, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
-                }
-            }
-        }
-    }
-
-    winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
-    for (i = 0; i < 4; i++) {
-        s32 flag = ((gp->retraceCount % 20) > 6 && i == sight_wp->state) ? 1 : 0;
-        s32 id = 7;
-
-        if (flag) {
-            id = 6;
-        }
-
-        if (sight_wp->state == 4) {
-            flag = 0;
-            id = 7;
-        }
-
-        switch (i) {
-        case 0:
-            drawBG(id, float_16_bom_0000715c, float_180_bom_000070c8, float_1_bom_00006ffc, float_1_bom_00006ffc, float_90_bom_00007130);
-            break;
-        case 1:
-            drawBG(id, float_neg16_bom_00007160, float_neg180_bom_00007164, float_1_bom_00006ffc, float_1_bom_00006ffc, float_270_bom_0000703c);
-            break;
-        case 2:
-            drawBG(id, float_neg180_bom_00007164, float_16_bom_0000715c, float_1_bom_00006ffc, float_1_bom_00006ffc, float_180_bom_000070c8);
-            if (flag != 0 && (gp->retraceCount & 3) == 0) {
-                sight_wp->field_20++;
-            }
-            break;
-        case 3:
-            drawBG(id, float_180_bom_000070c8, float_neg16_bom_00007160, float_1_bom_00006ffc, float_1_bom_00006ffc, zero_bom_00007004);
-            if (flag != 0 && (gp->retraceCount & 3) == 0) {
-                sight_wp->field_24++;
-            }
-            break;
-        }
-    }
-
-    drawNum(sight_wp->field_20, 2, float_neg220_bom_00007168, zero_bom_00007004, float_0p8_bom_00007148);
-    drawNum(sight_wp->field_24, 2, float_200_bom_0000716c, zero_bom_00007004, float_0p8_bom_00007148);
-}
 
 
-extern const f32 float_2_bom_0000704c;
 
-// Vec build helpers: keep the base Vec's z / overwrite all three, the original's vec3 -> local
-// -> field copy.
-static inline Vec numTranslate(Vec base, f32 x, f32 y) {
-    base.x = x;
-    base.y = y;
-    return base;
-}
-
-static inline Vec numScale(Vec base, f32 s) {
-    base.x = s;
-    base.y = s;
-    base.z = s;
-    return base;
-}
-
-// drawNum(): draw the last `count` decimal digits of |num|, least significant at index count-1.
-void drawNum(s32 num, s32 count, f32 a, f32 b, f32 c) {
-    s32 i;
-    GXTexObj texObj;
-    GXColor color = *(GXColor*)&dat_bom_00006360;
-    s32 n = num < 0 ? -num : num;
-
-    winTexInit(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0));
-    for (i = 0; i < count; i++) {
-        s32 texId = n % 10 + 0xd;
-        u16 w;
-        f32 step;
-
-        TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0), &texObj, texId);
-        w = GXGetTexObjWidth(&texObj);
-        step = c * (f32)w;
-        step += float_2_bom_0000704c;
-        winTexSet(texId, numTranslate(vec3_bom_00006364, step * (f32)(count - i - 1) + a, b),
-                  numScale(vec3_bom_00006370, c), color);
-        n /= 10;
-    }
-}
-
-extern const f32 float_deg2rad_bom_000070d4;
-
-// drawBG is the last function in the original asm, so it is the first body in the reverse-ordered source.
-void drawBG(s32 id, f32 x, f32 y, f32 scaleX, f32 scaleY, f32 rot) {
-    CameraEntry* cam;
-    GXTexObj texObj;
-    Mtx m0;
-    Mtx m2;
-    Mtx m1;
-    s16 w;
-    s16 h;
-
-    cam = camGetPtr(CAMERA_2D);
-    TEXGetGXTexObjFromPalette(**(TEXPalette***)((u8*)((SightWork*)sight_wp)->file + 0xA0), &texObj, id);
-    GXLoadTexObj(&texObj, 0);
-    GXSetBlendMode(1, 4, 5, 0);
-    GXSetZCompLoc(1);
-    GXSetAlphaCompare(7, 0, 0, 7, 0);
-    GXSetZMode(0, 3, 0);
-    GXSetNumChans(0);
-    GXSetNumTexGens(1);
-    GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
-    GXSetNumTevStages(1);
-    GXSetTevOrder(0, 0, 0, 0xFF);
-    GXSetTevOp(0, 3);
-    if (id == 0) {
-        GXSetTevColorIn(0, 0xF, 0xF, 0xF, 0xF);
-        GXSetTevAlphaIn(0, 6, 7, 4, 7);
-        GXSetTevKAlphaSel(0, 0);
-    }
-    PSMTXTrans(m0, x, y, 0.0f);
-    PSMTXScale(m1, scaleX, scaleY, 1.0f);
-    PSMTXRotRad(m2, 'z', float_deg2rad_bom_000070d4 * rot);
-    PSMTXConcat(m0, m1, m1);
-    PSMTXConcat(m1, m2, m0);
-    PSMTXConcat(cam->view, m0, m0);
-    GXLoadPosMtxImm(m0, 0);
-    GXSetCurrentMtx(0);
-    GXSetCullMode(0);
-    GXClearVtxDesc();
-    GXSetVtxDesc(9, 1);
-    GXSetVtxDesc(0xD, 1);
-    GXSetVtxAttrFmt(0, 9, 1, 3, 0);
-    GXSetVtxAttrFmt(0, 0xD, 1, 3, 0);
-    GXBegin(0x80, 0, 4);
-    w = (s16)GXGetTexObjWidth(&texObj);
-    h = (s16)GXGetTexObjHeight(&texObj);
-    GXPosition3s16(-w, h, 0);
-    GXTexCoord2s16(0, 0);
-    GXPosition3s16(0, h, 0);
-    GXTexCoord2s16(1, 0);
-    GXPosition3s16(0, 0, 0);
-    GXTexCoord2s16(1, 1);
-    GXPosition3s16(-w, 0, 0);
-    GXTexCoord2s16(0, 1);
-}
 
 // clang-format on
 
@@ -2819,61 +2679,47 @@ void drawBG(s32 id, f32 x, f32 y, f32 scaleX, f32 scaleY, f32 rot) {
 // (the last asm function first). Data the functions need is declared at file scope, as the original does.
 // ------------------------------------------------------------------------------------------------------------
 
-extern const f32 float_100_bom_00007000;
-extern const f32 zero_bom_00007004;
-extern const f32 float_1000_bom_0000705c;
-extern const f32 float_1_bom_00006ffc;
-extern const f32 float_2_bom_0000704c;
-extern const f32 float_4_bom_00007044;
-extern const f32 float_6_bom_000070f0;
-extern const double double_0p7854_bom_00007088;
-extern const double double_to_int_bom_00007030;
-extern const char zero_bom_00007038[];
-extern const f32 float_800_bom_0000711c;
+// clang-format on
 
-USER_FUNC(make_ext_table) {
-    s32 i;
 
-    memset(ext_data, 0, 0x174);
-    for (i = 0; i < 10; i++) {
-        ext_data[i].name = "c_bom_sen";
-        ext_data[i].type = str_00000E10;
-        ext_data[i].value = (f32)i * 2.0f;
-    }
-    for (i = 0; i < 20; i++) {
-        ext_data[10 + i].name = "c_bom_sen";
-        ext_data[10 + i].type = str_00000EB4;
-        ext_data[10 + i].value = (f32)i * 6.0f;
-    }
-    ext_data[30].name = NULL;
+static USER_FUNC(yami_view) {
+    Vec camPos;
+    Vec up;
+    Vec target;
+    Mtx mtx;
+    f32 value = evtGetFloat(event, event->args[0]);
+
+    target = vec3_bom_00006ed4;
+    target.z = value;
+    up = vec3_bom_00006ec8;
+    camPos = vec3_bom_00006ebc;
+    camPos.z = 100.0f + value;
+    C_MTXLookAt(mtx, &camPos, &up, &target);
+    envSetYamiView(mtx);
     return EVT_RETURN_DONE;
 }
 
-USER_FUNC(make_ext_table_minnnanokoe) {
-    s32 i;
-
-    memset(ext_data, 0, 0x174);
-    for (i = 0; i < 10; i++) {
-        ext_data[i].name = "c_bom_sen";
-        ext_data[i].type = str_00000E08;
-        ext_data[i].value = (f32)i * 4.0f;
-    }
-    for (i = 0; i < 20; i++) {
-        ext_data[10 + i].name = "c_bom_sen";
-        ext_data[10 + i].type = str_00000E10;
-        ext_data[10 + i].value = (f32)i * 2.0f;
-    }
-    ext_data[30].name = NULL;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(starstone_set_ry) {
+static USER_FUNC(anim_tevcallback) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
-    f32 value = evtGetFloat(event, args[1]);
-    EffectEntry* entry = effNameToPtr((const char*)name);
+    s32 flag = evtGetValue(event, args[1]);
+    NpcEntry* npc = npcNameToPtr_NoAssert((const char*)name);
 
-    ((effStarStoneData*)entry->userdata)->field_0x1C = value;
+    if (npc == NULL) {
+        return EVT_RETURN_DONE;
+    }
+    animPoseSetMaterialFlagOn(npc->poseId, (flag & 0xF) << 24);
+    return EVT_RETURN_DONE;
+}
+
+static USER_FUNC(starstone_entry) {
+    s32* args = event->args;
+    s32 name = evtGetValue(event, args[0]);
+    f32 x = evtGetFloat(event, args[1]);
+    f32 y = evtGetFloat(event, args[2]);
+    f32 z = evtGetFloat(event, args[3]);
+
+    effSetName(effStarStoneEntry(6, x, y, z, 1.0f), (const char*)name);
     return EVT_RETURN_DONE;
 }
 
@@ -2891,327 +2737,15 @@ static USER_FUNC(starstone_set_pos) {
     return EVT_RETURN_DONE;
 }
 
-static USER_FUNC(starstone_entry) {
+static USER_FUNC(starstone_set_ry) {
     s32* args = event->args;
     s32 name = evtGetValue(event, args[0]);
-    f32 x = evtGetFloat(event, args[1]);
-    f32 y = evtGetFloat(event, args[2]);
-    f32 z = evtGetFloat(event, args[3]);
+    f32 value = evtGetFloat(event, args[1]);
+    EffectEntry* entry = effNameToPtr((const char*)name);
 
-    effSetName(effStarStoneEntry(6, x, y, z, float_1_bom_00006ffc), (const char*)name);
+    ((effStarStoneData*)entry->userdata)->field_0x1C = value;
     return EVT_RETURN_DONE;
 }
-
-static USER_FUNC(anim_tevcallback) {
-    s32* args = event->args;
-    s32 name = evtGetValue(event, args[0]);
-    s32 flag = evtGetValue(event, args[1]);
-    NpcEntry* npc = npcNameToPtr_NoAssert((const char*)name);
-
-    if (npc == NULL) {
-        return EVT_RETURN_DONE;
-    }
-    animPoseSetMaterialFlagOn(npc->poseId, (flag & 0xF) << 24);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(yami_view) {
-    Vec camPos;
-    Vec up;
-    Vec target;
-    Mtx mtx;
-    f32 value = evtGetFloat(event, event->args[0]);
-
-    target = vec3_bom_00006ed4;
-    target.z = value;
-    up = vec3_bom_00006ec8;
-    camPos = vec3_bom_00006ebc;
-    camPos.z = float_100_bom_00007000 + value;
-    C_MTXLookAt(mtx, &camPos, &up, &target);
-    envSetYamiView(mtx);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(make_name) {
-    static char name[0x40];
-    s32* args = event->args;
-    s32 value = evtGetValue(event, args[0]);
-
-    sprintf(name, str_00000E18, value);
-    evtSetValue(event, args[1], (s32)name);
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(depth) {
-    dispEntry(CAMERA_2D, float_1000_bom_0000705c, 0, depthDisp, NULL);
-    return EVT_RETURN_BLOCK;
-}
-
-static USER_FUNC(sight) {
-    s32 i;
-
-    if (isFirstCall) {
-        sight_wp = _mapAlloc(0x28);
-        memset(sight_wp, 0, 0x28);
-        for (i = 0; i < 5; i++) {
-            sight_wp->field_4[i] = 0;
-        }
-        sight_wp->field_20 = rand();
-        sight_wp->field_24 = rand();
-        sight_wp->state = 5;
-    }
-    if (sight_wp->file == NULL) {
-        if ((u32)fileAsyncf(4, 0, str_00000ED0, getMarioStDvdRoot(), str_00000ED8) == 0) {
-            return EVT_RETURN_BLOCK;
-        }
-        sight_wp->file = fileAllocf(4, str_00000ED0, getMarioStDvdRoot(), str_00000ED8);
-    }
-    if (sight_wp->state == 6) {
-        fileFree(sight_wp->file);
-        _mapFree(sight_wp);
-        return EVT_RETURN_DONE;
-    }
-    if (sight_wp->state != 5) {
-        dispEntry(CAMERA_2D, float_800_bom_0000711c, 0, disp_sight, NULL);
-    }
-    return EVT_RETURN_BLOCK;
-}
-
-static USER_FUNC(sight_dir) {
-    s32 value = evtGetValue(event, event->args[0]);
-
-    sight_wp->state = value;
-    return EVT_RETURN_DONE;
-}
-
-static USER_FUNC(bom_flag) {
-    s32* args = event->args;
-    s32 onoff = evtGetValue(event, args[0]);
-    s32 flag = evtGetValue(event, args[1]);
-    u16* p = (u16*)(u32)((u32*)(u32)lp[0])[0];
-
-    if (onoff != 0) {
-        *p |= flag;
-    } else {
-        *p &= ~flag;
-    }
-    return EVT_RETURN_DONE;
-}
-
-static void ext_disp(CameraId cameraId, void* param) {
-    extLoadRenderMode();
-    extLoadVertex();
-    extLoadTexture();
-    extLoadTev();
-    extDraw();
-    extLoadTextureExit();
-}
-
-static void ext_dispent(void) {
-    u16* p = (u16*)(u32)((u32*)(u32)lp[0])[0];
-
-    if (!(*p & 1)) {
-        dispEntry(CAMERA_3D, zero_bom_00007004, 1, ext_disp, NULL);
-    }
-}
-
-void ext_dispent_minnnanokoe(void) {
-    dispEntry(CAMERA_3D, zero_bom_00007004, 1, ext_disp_minnnanokoe, NULL);
-}
-
-void ext_disp_minnnanokoe(CameraId cameraId, void* param) {
-    EnvironmentYami yami;
-    EnvironmentYami* pyami = &yami;
-    ExtPose* pose = extGetPosePtr();
-    s32 i;
-
-    extLoadRenderMode();
-    extLoadVertex();
-    extLoadTexture();
-    extLoadTev();
-    for (i = 0; i < extGetPoseNum(); ) {
-        pyami->tevStage = 1;
-        pyami->texMap = 1;
-        pyami->texCoord = 1;
-        pyami->unk18 = 0;
-        pyami->unk4 = (MtxPtr)pose->matrix;
-        envSetYami(pyami);
-        GXSetNumTexGens(pyami->texCoord);
-        GXSetNumTevStages(pyami->tevStage);
-        GXSetNumIndStages(pyami->unk18);
-        extPoseDraw(i);
-        i++;
-        pose++;
-    }
-    extLoadTextureExit();
-}
-
-static void pose_change(s32 index, const char* name) {
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
-    PoseEntry* e = pd->entries;
-    s32 i;
-
-    for (i = 0; i < pd->count; i++, e++) {
-        if (strcmp(e->name, name) == 0) {
-            break;
-        }
-    }
-    if (i < pd->count) {
-        if (pd->states[index].field_20 != i) {
-            pd->states[index].field_20 = (s16)i;
-            pd->states[index].time = gp->renderTime + rand();
-        }
-    }
-}
-
-static void pose_init(void) {
-    char buf[0x28];
-    PoseData* pd = ((PoseRoot*)lp[0])->data;
-    ExtTableEntry* p = ext_data;
-    s32 i = 0;
-    s32 start;
-
-    strcpy(buf, zero_bom_00007038);
-    pd->count = -1;
-    do {
-        if (strcmp(p->type, buf) != 0) {
-            strcpy(buf, p->type);
-            start = i;
-            pd->count++;
-        }
-        strcpy(pd->entries[pd->count].name, buf);
-        pd->entries[pd->count].field_C = start;
-        pd->entries[pd->count].field_10 = i - start + 1;
-        pd->entries[pd->count].field_8 = p->value;
-        i++;
-    } while ((++p)->name != NULL);
-    pd->count++;
-}
-
-// NONMATCHING (96.86%): retail keeps event->args in r27 and a materialised args+2 in r31 (seven
-// callee-saved registers); here the compiler folds args+2 into the 0x8/0xc displacements of the single base
-// and saves one register, shifting flag/idx/p by one. The p local fixes the schedule, not the second base.
-USER_FUNC(bom1000_msg) {
-    s32* args = event->args;
-    s32* fargs = args + 2;
-    s32 a = evtGetValue(event, args[0]);
-    s32 b = evtGetValue(event, args[1]);
-    ExtPose* pose = extGetPosePtr();
-    ExtPose* p;
-    s32 base;
-    s32 flag;
-    s32 idx;
-    if (a == 0) {
-        base = 3;
-        flag = 1;
-    } else {
-        base = 10;
-        flag = 0;
-    }
-    idx = b + base * 14;
-    b = (b + (rand() % 2 + 1) * 4) % 14;
-    p = &pose[idx];
-    evtSetValue(event, args[0], flag);
-    evtSetValue(event, args[1], b);
-    evtSetFloat(event, fargs[0], p->matrix[0][0][3]);
-    evtSetFloat(event, fargs[1], p->matrix[0][2][3]);
-    return EVT_RETURN_DONE;
-}
-
-#pragma opt_common_subs off // required: CSE otherwise reorders the float address temps (87.49% without it)
-USER_FUNC(taihou_r) {
-    f32 c;
-    f32 s;
-    f32 p;
-    f32 rx;
-    f32 rz;
-
-    c = (f32)cos(double_0p7854_bom_00007088);
-    s = (f32)sin(double_0p7854_bom_00007088);
-    rx = -angleABf(zero_bom_00007004, zero_bom_00007004, zero_bom_00007004, p = float_100_bom_00007000 * s);
-    rz = -angleABf(zero_bom_00007004, zero_bom_00007004, float_100_bom_00007000 * c, p);
-    effKemuTestSetRxRz(effNameToPtr("kemuri"), rx, rz);
-    effRippleN64SetRxRz(effNameToPtr("ripple"), rx, rz);
-    return EVT_RETURN_DONE;
-}
-#pragma opt_common_subs reset
-
-// clang-format on
-
-const f32 float_1_bom_00006ffc = 1.0f;
-const f32 float_100_bom_00007000 = 100.0f;
-const f32 zero_bom_00007004 = 0.0f;
-const f32 float_0p1_bom_00007008 = 0.1f;
-const f32 float_0p5_bom_0000700c = 0.5f;
-const f32 float_10_bom_00007010 = 10.0f;
-const char str_00000DDC[] = "SFX_STG7_BOMB_TOGETHER2";
-const double double_to_int_bom_00007030 = 4503601774854144.0;
-const char zero_bom_00007038[4] = {0};
-const f32 float_270_bom_0000703c = 270.0f;
-const char str_00000E08[] = "S_1";
-const f32 float_4_bom_00007044 = 4.0f;
-const char str_00000E10[] = "R_1";
-const f32 float_2_bom_0000704c = 2.0f;
-const char str_00000E18[] = "S_hikari%d";
-const f32 float_1000_bom_0000705c = 1000.0f;
-const f32 float_6p2832_bom_00007060 = 6.2831855f;
-const f32 float_0p125_bom_00007064 = 0.125f;
-const f32 float_0p00761_bom_00007068 = 0.00761f;
-const f32 float_0p16605_bom_0000706c = 0.16605f;
-const f32 float_3p1416_bom_00007070 = 3.1415927f;
-const f32 float_1p5708_bom_00007074 = 1.5707964f;
-const f32 float_4p7124_bom_00007078 = 4.712389f;
-const f32 float_0p03705_bom_0000707c = 0.03705f;
-const f32 float_0p4967_bom_00007080 = 0.4967f;
-const double double_0p7854_bom_00007088 = 0.7853981852531433;
-const char str_00000E58[] = "SFX_STG7_BOMB_FALL1";
-const f32 float_280_bom_000070a4 = 280.0f;
-const f32 float_3_bom_000070a8 = 3.0f;
-const f32 float_32767_bom_000070ac = 32767.0f;
-const f32 float_150_bom_000070b0 = 150.0f;
-const f32 float_30_bom_000070b4 = 30.0f;
-const f32 float_50_bom_000070b8 = 50.0f;
-const f32 float_400_bom_000070bc = 400.0f;
-const f32 float_70_bom_000070c0 = 70.0f;
-const f32 float_350_bom_000070c4 = 350.0f;
-const f32 float_180_bom_000070c8 = 180.0f;
-const f32 float_neg1000_bom_000070cc = -1000.0f;
-const f32 float_neg20_bom_000070d0 = -20.0f;
-const f32 float_deg2rad_bom_000070d4 = 0.017453292f;
-const f32 float_20_bom_000070d8 = 20.0f;
-const f32 float_60_bom_000070dc = 60.0f;
-const double double_to_int_mask_bom_000070e0 = 4503599627370496.0;
-const f32 float_500_bom_000070e8 = 500.0f;
-const char str_00000EB4[] = "S_2";
-const f32 float_6_bom_000070f0 = 6.0f;
-const f32 float_600_bom_000070f4 = 600.0f;
-const f32 float_300_bom_000070f8 = 300.0f;
-const f32 float_3700_bom_000070fc = 3700.0f;
-const f32 float_neg650_bom_00007100 = -650.0f;
-const f32 float_neg450_bom_00007104 = -450.0f;
-const char str_00000ED0[] = "%s/%s";
-const char str_00000ED8[] = "taihou.tpl";
-const f32 float_800_bom_0000711c = 800.0f;
-const f32 float_neg1_bom_00007120 = -1.0f;
-const f32 float_neg100_bom_00007124 = -100.0f;
-const f32 float_neg60_bom_00007128 = -60.0f;
-const f32 float_0p6_bom_0000712c = 0.6f;
-const f32 float_90_bom_00007130 = 90.0f;
-const f32 float_126_bom_00007134 = 126.0f;
-const f32 float_162_bom_00007138 = 162.0f;
-const f32 float_120_bom_0000713c = 120.0f;
-const f32 float_110_bom_00007140 = 110.0f;
-const f32 float_neg160_bom_00007144 = -160.0f;
-const f32 float_0p8_bom_00007148 = 0.8f;
-const f32 float_230_bom_0000714c = 230.0f;
-const f32 float_neg170_bom_00007150 = -170.0f;
-const f32 float_neg240_bom_00007154 = -240.0f;
-const f32 float_neg190_bom_00007158 = -190.0f;
-const f32 float_16_bom_0000715c = 16.0f;
-const f32 float_neg16_bom_00007160 = -16.0f;
-const f32 float_neg180_bom_00007164 = -180.0f;
-const f32 float_neg220_bom_00007168 = -220.0f;
-const f32 float_200_bom_0000716c = 200.0f;
 
 u32 lp[1];
 
