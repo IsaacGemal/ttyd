@@ -6930,3 +6930,19 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   colouring before `mesh`); reusing i/n/k worse. bmapUnLoad (99.62): separate wp2/j best 96.89, static inline 98.4-98.6
   (`activeGroup = j = 0` untested: script bug). bmapLoad (97.80): 9 opening reorders. Data port not started
   (mapCalcAnimMatrix, spline_getvalue floats next).
+
+### mario_hit partial: 26 -> 29/37 (marioCheckWall_roll, marioSearchGround, marioChkGnd 100); .sdata2 order regressed (Claude Opus 5.5, on4-mariohit)
+- All 60 named floats to literals; recovered with truth-test zero compares, `x += k` where retail keeps the variable
+  left, `f32 ofs = 5.0f`, `dont_inline` around marioHitCheck2 (retail calls it). The file now calls its own
+  marioHitCheckVec/marioHitCheck/marioSearchUnder (MWCC inlines them as retail does); match-only copies VecOut, NoCTest,
+  DistOut, mhc_makePos/makeDir, marioChkGndHeight removed. ChkGnd: the rolling-probe inline before marioSearchUnder with
+  `dir = (Vec){0,-1,0}` puts the anonymous templates at retail .rodata 0x18/0x24. SearchGround: rasim decl order.
+  ChkFrontStep 90.68 -> 96.17, SearchHead 93.74 -> 96.28, ChkLandon2 92.94 -> 94.88, LandonChk_old 96.91 -> 98.27.
+- **Accepted regression (--allow-regress mario_hit):** .sdata2 was identical with named floats; with literals the same
+  60 values have 32 out of place (first at entry 14: retail 0.75, used by searchFrontWall and marioLandonChk_old; ours
+  ChkFrontStep's 18.5). Lead: a function generated between ChkWallAround and ChkFrontStep uses 0.75/-1/pi/0.1/2 (no
+  real one uses 0.75 there: probably a dead or helper function); 18 must precede LandonChk_old's 0.01. Then port the
+  Vec data as party_hit did (pool_data on, literals in source order, RO/base macros removed): the base pointers left in
+  ChkLandon2, LandonChk_old, ChkFrontStep, SearchGroundRoll, ChkWallAround likely cause their register misses.
+- Negatives: LandonChk_old calling marioHitCheck 94.48; 5 ChkGnd probe orders 99.13; probe dir as a Vec literal without
+  moving the probe (ChkGnd 99.98, 5 others drop); marioChkFront calling marioHitCheckVec 81.72. rasim neighbors untried.
