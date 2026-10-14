@@ -6946,3 +6946,20 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   ChkLandon2, LandonChk_old, ChkFrontStep, SearchGroundRoll, ChkWallAround likely cause their register misses.
 - Negatives: LandonChk_old calling marioHitCheck 94.48; 5 ChkGnd probe orders 99.13; probe dir as a Vec literal without
   moving the probe (ChkGnd 99.98, 5 others drop); marioChkFront calling marioHitCheckVec 81.72. rasim neighbors untried.
+
+### bom_01 partial: 27/32, .rodata and .data identical (Claude Opus 5.5, on4-bom01)
+- ext_main 92.60 -> 99.97, disp_sight 97.17 -> 99.85, bom1000_jump 99.12 -> 99.69; ext_init 98.99 -> 98.74 (accepted:
+  its sin/cos as inline helpers is what puts the pool in order; --allow-regress ext_init). .rodata (3600 B) and .data
+  (20440 B) identical; reloc_value_check 0.
+- Pool: all named float_/str_/i2f objects to literals (retail's two i2f doubles sit mid-pool, so it is compiler-made);
+  functions in reverse retail text order (deferred codegen). **New: place function groups by where their parse-time
+  templates sit in the pool:** compound literals and aggregate initialisers (`(Vec){...}`, `GXColor c = {...}`) enter
+  .rodata at parse time, so the sight..ext_main and minnnanokoe groups go where retail's pool has them (forward
+  declaration of ext_data). `/ 2.0f`, `/ 8.0f` over `* 0.5f`, `* 0.125f`; opt_propagation off + opt_lifetimes off on
+  ext_init/ext_main (as rsh_05); bomSinApprox/bomCosApprox/extInitPos inlines replace EXTSIN/EXTCOS; extJump and
+  bomVec3v hacks gone; BOM_SFX string hoist under MUST_MATCH (the BSO_SFX/FALL_SFX idiom).
+- Left: ext_main case 2 sin-arg temp vs `dy` f26/f28 swap (rasim no order; mwsearch 40 min / 14,446); disp_sight
+  missing `mr r26,r3` / `li r0,7; mr r3,r0` before inlined drawNum (mwsearch 12,628, 8 hand variants);
+  bom1000_jump r30/r31 `idx*0x30` vs pose pointer; ext_init `range` f2 vs f0; bom1000_msg 7th saved reg (args+2 in r31)
+  plus an unused 12-byte local. Next: flag/id as a parameter of a static inline drawNum wrapper; an unused Vec/s32[3]
+  local in bom1000_msg; `x` into a named local before `dy` in ext_main.
