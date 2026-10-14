@@ -5087,17 +5087,27 @@ static inline f32 psndSqrtf(f32 x) {
 // `lfd ...,(rBase)` loads need, so no pragma is needed. Declaring `ps` uninitialised and setting
 // it from &psnd only after `pos = *position` (not in the initialiser) is what puts ps in r27 and
 // the base in r31 like the target; written in the initialiser the whole callee-saved basis
-// rotates by one (vol/span/pan/base/ps). `pan`/`angOut` are s16 with a separate s32 temp
-// (`pan2`/`angOut2`) so the compiler truncates into the target's register instead of an `mr`.
+// rotates by one (vol/span/pan/base/ps). `pan2` takes the float conversion directly (an `(s32)`
+// cast adds a truncated copy the compares then use); `angOut` keeps its s32 temp `angOut2`.
 // Needed: the original used the size optimiser for this function; without it the
 // callee-saved GPR set and the immediate materialisation differ from the target.
+// Signed angle from the listener's facing to the source, as a fraction of a half turn (-1..1).
+static inline f32 psndRelAngle(f32 ang, f32 dir) {
+	if (__fabsf(ang - dir) >= 180.0f) {
+		if (ang < dir) {
+			ang += 360.0f;
+		}
+		else {
+			ang -= 360.0f;
+		}
+	}
+	return (ang - dir) / 180.0f;
+}
+
 #pragma optimize_for_size on
-// NONMATCHING (88.71%): `dir`/`rel`/`dist` use f30/f30/f31 instead of the target's
-// f30/f31/f30 (the allocator reuses `dir`'s register for `rel`), and the target's single
-// .rodata base register (`str_802CE198 + 0x10000`) is not produced because this unit's
-// `.rodata` is not defined yet; without it `psnd` sits in r28 instead of r27 and every
-// register past it shifts by one. The conversion temporaries also use a few permuted
-// stack slots. The logic, constants and call sequence match.
+// NONMATCHING (99.87%): the conversion temporaries use permuted stack slots, `angOut` converts
+// through an extra r0 copy, and the two i2f magic doubles are pooled in the other order (unit-level
+// .rodata order). `rel` coming out of psndRelAngle gives it f31 and `dist` f30, as the target.
 u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 	static u8 PAN[4];
 	Vec pos;
@@ -5130,16 +5140,8 @@ u32 calc3D(u32 flags, Vec* position, u8 volume, u16 span) {
 #else
 	ang = angleABf(ps->position.x, ps->position.z, pos.x, pos.z);
 #endif
-	if (__fabsf(ang - dir) >= 180.0f) {
-		if (ang < dir) {
-			ang += 360.0f;
-		}
-		else {
-			ang -= 360.0f;
-		}
-	}
-	rel = (ang - dir) / 180.0f;
-	pan2 = (s32)(127.0f * rel + 127.0f);
+	rel = psndRelAngle(ang, dir);
+	pan2 = 127.0f * rel + 127.0f;
 	if (pan2 < 0x40) {
 		pan2 = 0x7F - pan2;
 	}
@@ -5276,7 +5278,6 @@ void psndInit(void) { //1:1
     SoundSLibLoadDVD("sound/proj/pmario");
 }
 
-// NONMATCHING (85.71%): 3 missing, plus register differences.
 void psndMain(void) { //1:1
     u8 temp_r3;
 
@@ -6075,14 +6076,13 @@ static inline s32 psndSFXFindSongChannel(void) {
     return -1;
 }
 
-// NONMATCHING (98.21%): body, volume math and control flow all match, and every call/immediate does too. The
-// remaining 150 diffs are the callee-saved colouring of sfx/pp/i/ratio (target r25/r26/r27/r28; ours rotates by
-// one: pp=r25, i=r26, ratio=r27, sfx=r29), one extra r0 temp and one reordered clrlwi. Permuter territory.
+// NONMATCHING (98.66%): both loops index pssfx (`sfx = &pssfx[i]`), which gives the target's direct
+// `addi` base and the loop-1 copy. Left: callee-saved colouring of the loop-2 pointer, numSounds, ratio
+// and the hoisted &psnd (target r25/r29/r28/r27; rasim: no declaration order reaches it).
 void psndSFXMain(void) {
 
     s32 target;
     PaperSoundEffectDetail* sfx;
-    PaperSoundEffectDetail* scan;
     s32 vol;
     s32 numSounds;
     s32 ratio;
@@ -6094,39 +6094,34 @@ void psndSFXMain(void) {
     u8* pp;
     ratio = 0;
     pp = (u8*)&psnd;
-    sfx = (PaperSoundEffectDetail*)pssfx;
-    scan = sfx;
-    for (i = 0; i < 40; i++, scan++) {
-        if ((u32)scan->unk0 == -1) continue;
-        if (scan->unk6 & 1) continue;
-        entry = &pssfxlist[scan->unk0 & 0x1FFF];
+    for (i = 0; i < 40; i++) {
+        sfx = (PaperSoundEffectDetail*)&pssfx[i];
+        if ((u32)sfx->unk0 == -1) continue;
+        if (sfx->unk6 & 1) continue;
+        entry = &pssfxlist[sfx->unk0 & 0x1FFF];
         if (entry->field_0x4 & 0x80000000) {
-            u = (u32)SoundSSCheck(scan->unk18);
+            u = (u32)SoundSSCheck(sfx->unk18);
             if (u == 0) {
-                scan->unk0 = -1;
-                scan->unk18 = -1;
+                sfx->unk0 = -1;
+                sfx->unk18 = -1;
             }
         } else if (entry->field_0x4 & 0x40000000) {
-            u = (u32)SoundSongCheck(scan->unk18);
+            u = (u32)SoundSongCheck(sfx->unk18);
             if (u == 0) {
-                scan->unk0 = -1;
-                scan->unk18 = -1;
+                sfx->unk0 = -1;
+                sfx->unk18 = -1;
             }
         } else {
-            u = (u32)SoundEfxCheck(scan->unk18);
+            u = (u32)SoundEfxCheck(sfx->unk18);
             if (u == 0) {
-                scan->unk0 = -1;
-                scan->unk18 = -1;
+                sfx->unk0 = -1;
+                sfx->unk18 = -1;
             }
         }
     }
 
     if (pp[0x24] == 2) {
-        s16 cur;
-
-        cur = *(s16*)(pp + 0x28) - 1;
-        *(s16*)(pp + 0x28) = cur;
-        if (cur <= 0) {
+        if (--*(s16*)(pp + 0x28) <= 0) {
             pp[0x24] = 0;
         }
         ratio = *(s16*)(pp + 0x28) * 0x7F / *(s16*)(pp + 0x26);
@@ -6149,7 +6144,8 @@ void psndSFXMain(void) {
     }
 
     numSounds = 0;
-    for (i = 0; i < 40; i++, sfx++) {
+    for (i = 0; i < 40; i++) {
+        sfx = (PaperSoundEffectDetail*)&pssfx[i];
         if ((u32)sfx->unk0 == -1) continue;
         entry = &pssfxlist[sfx->unk0 & 0x1FFF];
         numSounds++;
@@ -6309,9 +6305,8 @@ void psndSFXMain(void) {
     psnd.unk54 = 0;
 }
 
-// NONMATCHING (98.22%): logic and constants match. `name`/priority is in r20 instead of r26, which
-// rotates the r20-r26 argument block and adds a clrlwi+move; the int->float magic doubles are
-// anonymous, and the final `or` writes r3 not r27.
+// NONMATCHING (99.42%): every callee-saved register matches; left is the volatile colouring of the
+// first scan loop (&psnd r3, sfx r4, i r5 in the target) and the branch offsets that follow.
 s32 __psndSFXOn(s32 name, s32 vol, s32 pan, s32 pitch, Vec* position, s32 a6, s32 flags, s32 a8) {
     s32 sfxid;
     s32 index;
@@ -6321,6 +6316,7 @@ s32 __psndSFXOn(s32 name, s32 vol, s32 pan, s32 pitch, Vec* position, s32 a6, s3
     PaperSoundEffect* slot = 0;
     SoundEffectEntry* entry;
     s32 slotIndex = 0;
+    s32 prio;
 
     index = searchPSSFXList((const char*)name);
     sfxid = index & 0x1FFF;
@@ -6341,13 +6337,13 @@ s32 __psndSFXOn(s32 name, s32 vol, s32 pan, s32 pitch, Vec* position, s32 a6, s3
         return -1;
     }
 
-    name = 0;
+    prio = 0;
     for (i = 0; i < 40; i++) {
         sfx = &pssfx[i];
         if ((u32)sfx->unk0 != -1 && (u32)(sfx->unk0 & 0x1FFF) == (u32)sfxid
-            && (((u16*)sfx)[3] & 0x100) && name == 0) {
-            name = (u16)(*(u16*)((u8*)&psnd + 0x54) + 8);
-            *(u16*)((u8*)&psnd + 0x54) = name;
+            && (((u16*)sfx)[3] & 0x100) && prio == 0) {
+            *(u16*)((u8*)&psnd + 0x54) += 8;
+            prio = *(u16*)((u8*)&psnd + 0x54);
         }
         if ((u32)sfx->unk0 == -1) {
             slot = sfx;
@@ -6408,8 +6404,8 @@ s32 __psndSFXOn(s32 name, s32 vol, s32 pan, s32 pitch, Vec* position, s32 a6, s3
     *(u8*)((u8*)slot + 8) = (u8)vol;
     *(u8*)((u8*)slot + 9) = entry->field_0xC;
     *(u8*)((u8*)slot + 0xA) = (u8)pan;
-    ((PaperSoundEffectDetail*)slot)->unkE = (s16)(s32)((f32)(u16)pitch / 16.666666f + (f32)name + (f32)entry->field_0x11);
-    *(u16*)((u8*)slot + 0x10) = (u16)(name * 5);
+    ((PaperSoundEffectDetail*)slot)->unkE = (s16)(s32)((f32)(u16)pitch / 16.666666f + (f32)prio + (f32)entry->field_0x11);
+    *(u16*)((u8*)slot + 0x10) = (u16)(prio * 5);
     *(u8*)((u8*)slot + 0xB) = entry->field_0xF;
     *(u16*)((u8*)slot + 0xC) = entry->field_0x10;
     *(s16*)((u8*)slot + 0x14) = *(s16*)((u8*)entry + 0x12);
@@ -6425,7 +6421,8 @@ s32 __psndSFXOn(s32 name, s32 vol, s32 pan, s32 pitch, Vec* position, s32 a6, s3
     *(u16*)((u8*)slot + 0x16) = 0x7D00;
     *(u16*)((u8*)&psnd + 0x50) += 1;
     *(u16*)((u8*)slot + 4) = *(u16*)((u8*)&psnd + 0x50);
-    return slotIndex | (*(u16*)((u8*)&psnd + 0x50) << 8);
+    slotIndex |= *(u16*)((u8*)&psnd + 0x50) << 8;
+    return slotIndex;
 }
 
 s32 psndSFXOn_(const char* name) {
@@ -6763,26 +6760,21 @@ static inline u8 psndENVGetVol(PaperSoundEnv* env, PaperSoundWork* ps) {
 	return (u8)(ps->unk5A * x / 100);
 }
 
-// All three loops, volume math and control flow match. What still differs is callee-saved colouring of the three
-// persistent pointers across the whole function: our &psnd lands in r29 (target r28), the hoisted
-// (u8*)&psnd+0xC in r28 (target r27) and psenv/envs in r27 (target r29); i (r26) and the loop-1 env (r30) already
-// match. Because of that colouring the inlined psndENVGetVol result is masked to r3 then re-masked to r4 at the
-// four loop-1 spawn sites (one extra clrlwi), the loop-2 env->unk14 checks reload instead of reusing a register,
-// and the four loop-2 LPF blocks drop one dead duplicate `bne`. The declaration order and every tested
-// pragma/restructuring did not move the three colours.
-// NONMATCHING (97.68%): the three persistent pointers are a 3-cycle off in the callee-saved register allocation.
+// NONMATCHING (98.09%): with both env loops indexing psenv the three persistent pointers and the
+// FPRs take the target's registers. Left: the inlined psndENVGetVol result is masked into r3 and
+// re-masked into r4 at the spawn sites (the target computes it straight into r4), with the volatile
+// registers inside the inline shifted to match.
 void psndENVMain(void) {
 	s32 target;
 	u16 span;
 	s32 i;
 	u8* work;
-	f32 f30;
-	PaperSoundEnv* envs;
 	u8* ramp;
 	s32 sfxId;
 	s32 rnd;
 	u8 vol;
 	f32 f31;
+	f32 f30;
 	SoundEffectEntry* entry;
 	PaperSoundEnv* env;
 	PaperSoundEffect* sfx;
@@ -6802,9 +6794,8 @@ void psndENVMain(void) {
 		}
 	}
 
-	envs = psenv;
-	env = envs;
-	for (i = 0; i < 16; i++, env++) {
+	for (i = 0; i < 16; i++) {
+		env = &psenv[i];
 		if (*(u16*)&env->unk4 == 0) {
 			continue;
 		}
@@ -7009,8 +7000,8 @@ void psndENVMain(void) {
 		}
 	}
 
-	env = envs;
-	for (i = 0; i < 16; i++, env++) {
+	for (i = 0; i < 16; i++) {
+		env = &psenv[i];
 		if (*(u16*)&env->unk4 == 0) {
 			continue;
 		}
@@ -7267,7 +7258,7 @@ static inline s32 psndENVFindName(s32 name) {
 	return index;
 }
 
-// NONMATCHING (99.20%): name lookup and free-env scan are inlined static helpers; with them index lands
+// NONMATCHING (99.25%): name lookup and free-env scan are inlined static helpers; with them index lands
 // in r31 and env in r30 as the target. Remaining: the target keeps slot*2 in r27 and active in r29, ours
 // swaps them (slot*2 r29, active r27); the empty `case 1`/`case 3` fix the switch's 2-then-0 tree.
 s32 psndENVOn_f_d(s32 id, s32 name, s32 value, s32 flag) {
@@ -7335,14 +7326,7 @@ s32 psndENVOn_f_d(s32 id, s32 name, s32 value, s32 flag) {
 				env->unk6[2] = list->field_0x6;
 				env->unk6[3] = list->field_0x7;
 				env->unk6[4] = list->field_0x8;
-				{
-					u32 a = list->field_0xC;
-					u32 b = list->field_0x10;
-
-					*(u32*)(env->unk6 + 0x16) = b;
-					*(u32*)(env->unk6 + 0x12) = a;
-					*(u32*)(env->unk6 + 0x1A) = list->field_0x14;
-				}
+				*(Vec*)(env->unk6 + 0x12) = *(Vec*)&list->field_0xC;
 				env->unk6[5] = list->field_0x18;
 				env->unk6[6] = list->field_0x19;
 				*(u16*)(env->unk6 + 0xA) = list->field_0x1A;

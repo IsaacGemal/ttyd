@@ -7022,3 +7022,38 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   `ids[count++]`; weighted pick as an inline with its own counter 98.98; `i = ++i % 12`. Next: mwccdbg on
   SettingAudience for where the shared zero/copy comes from (maybe a strength-reduced IV: try do-while/goto loops).
   Two offset-cast reads stay (BattleBreakSlot has no field definitions; audience + 0x13794 is a u8 array).
+
+### pmario_sound partial: five near-misses up, calc3D 99.47 -> 99.87 (42/50) (Claude Opus 5.5, on4-pmsound)
+- calc3D: `pan2 = 127.0f * rel + 127.0f;` (implicit f32->s16; compares use a sign-extended copy as retail); `rel` from
+  an inline `psndRelAngle(ang, dir)` (+-360 wrap, /180): rasim what-if showed rel gets retail's f31 (dist f30) only as
+  an inline temp. Left: conversion stack-slot order, an r0 copy in the angOut conversion.
+- __psndSFXOn 98.22 -> 99.42: `name` stays the lookup argument, priority in its own `s32 prio` after `slotIndex`
+  (removes the previously refused type-pun), `+= 8` then a reload, `slotIndex |= ...; return slotIndex;`: every
+  callee-saved reg matches. rasim: the loop-1 pointer needs one more neighbour (self-store, pointer loop 95.80, u32/int
+  counter 98.33, slot spellings 99.36-99.42 failed).
+- **Index the array in each loop (`sfx = &pssfx[i]`, `env = &psenv[i]`)** gives retail's direct `addi` base and loop-1
+  copy (psndSFXMain 98.21 -> 98.66, with `if (--*(s16*)(pp + 0x28) <= 0)`) and fixes psndENVMain's three persistent
+  pointers (97.68 -> 98.09, plus the f32 `f30` declared after `f31` from rasim's FPR search). psndENVOn_f_d 99.25: the
+  swapped `u32 a, b` copy as a plain Vec copy.
+- Link blocker: retail pools the signed i2f double first (first users psndENVMain, __psndSFXOn); ours pools the
+  unsigned one first via psndENVOff_f_d. Lead: an uncalled original function at the end of the deferred unit doing a
+  signed conversion.
+- Negatives: psndSFXMain clamp inline helpers, first loop as an inline 98.40, types; psndENV_stop as a macro (same as
+  pasted), calling psndSFXOff 96.5-97.9, indexing 98.09; psndENVMain psndENVGetVol variants 95.8-98.09; psndBGMOn_f_d
+  bgmid needs a position below the params (refused reuse of `b`); psndENV_LPF 7 shapes (88.89). Tooling: a score taken
+  right after restoring the source can read a stale object; force a rebuild before keeping a result.
+
+### evt_eff second pass: still 99.17 / evt_eff64 99.78 -- the self-store lever does not apply (Claude Opus 5.5, on4-evteff)
+- The gap is an extra instruction, not a colouring: retail keeps the float-pointer copy `mr r24,r25`; ours is deleted
+  BEFORE allocation, so lifetime levers (self-stores, rasim what-if) can't touch it. For the copy to survive, copy
+  propagation must see `iargs` change between the copy and the float reads, and that change must vanish after
+  allocation. Pass dumps: without opt_propagation off the frontend rewrites `fargs = iargs` as `fargs = args + 8`;
+  every later write to `iargs` (re-assignment, copy back from fargs, the load in a nested self-store) is renamed into a
+  new variable; only the `iargs++` steps count, and they are folded into load offsets before copy propagation.
+- Negatives (97.8-99.17): nested self-store `event->args = (iargs = event->args);` (store deleted post-RA as expected,
+  load renamed); `*iargs = *iargs`, `*fargs = *fargs` (dropped by the frontend); `*iargs = (raw = *iargs)` with/without
+  `iargs = args + 2`; `iargs = fargs` and cross stores; reset plus self-store use; dead `raw = (s32)iargs/fargs` under
+  opt_dead_assignments/opt_lifetimes off. Next: Overnight 2's dead `s64 wide = (s32)iargs` keeps the copy (98.23) but
+  leaves a stray `addi`: find whether a post-allocation pass can remove both. Variants:
+  ~/scratch-orch/reports/evteff_exp/ (gen2.py) on the Mac; dumps ~/scratch-on4-evteff/dbg_{w4,x1,y4w} on the tower.
+- Rule of thumb: the self-store lever fixes register choice, not instruction count. Check the diff first.
