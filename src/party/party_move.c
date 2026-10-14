@@ -46,7 +46,6 @@ extern const f32 float_20_8041b474;
 // places their callers before their definitions.
 static inline s32 partyFpClassifyf(f32 x);
 static inline f32 partySqrtf(f32 x);
-static inline f32 partyNrmToAngleV(Vec v);
 static inline void partyRecordFootmarkSub(PartyEntry* party, Vec* pos, s32 flags);
 static inline void partyWalkFootmarkSub(Vec* pos, s32 flags, s32 slot);
 static inline void partyFlyFootmarkSub(Vec* pos, s32 flags, s32 slot);
@@ -3067,12 +3066,9 @@ false_ret:
 // and the `targetDist` initializer before `unk1AC` fixed the r26/r27 and f25/f26 swaps.
 // The `hitNormal = query.hitNormal;` copy originally sat in a function-scope local, which MWCC
 // assigned the top scratch slot (0x34) instead of retail's bottom one (0x10), rotating the three
-// compound-literal scratch Vecs below it. Passing the Vec to the inline helper by value makes MWCC
-// materialise the by-value argument copy as an anonymous temp allocated at the call site, which is
-// the 3-word copy at 0x10 the original has.
-static inline f32 partyNrmToAngleV(Vec v) {
-    return partyNrmToAngle(&v);
-}
+// compound-literal scratch Vecs below it. partyNrmToAngle takes the Vec by value, so MWCC
+// materialises the argument copy as an anonymous temp allocated at the call site, which is the
+// 3-word copy at 0x10 the original has.
 BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
     u32 i;
     MarioWork* player = party->playerPtr;
@@ -3123,7 +3119,7 @@ BOOL partyGetAppearPos3(PartyEntry* party, Vec* position) {
         if (unk_800c8dd0(hit) != 0) {
             continue;
         }
-        if (partyNrmToAngleV(query.hitNormal) > 60.0f) {
+        if (partyNrmToAngle(query.hitNormal) > 60.0f) {
             continue;
         }
         {

@@ -6748,3 +6748,22 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 
 **Next lead:** Need a new meaningful graph that preserves the distance web's f5 allocation and creates a distinct height web allocated f6 without extra instructions. Compare preallocation backend graphs; ordinary split locals/copies have already failed. Once code matches, full data/section alignment and fresh linked “32 files OK” still required. Full report and lever list: ~/scratch-orch/reports/sjump_{REPORT,levers}.md on the Mac.
 
+
+### party_hit partial: 4 functions to 100 (9/11), .sdata2 58.8 -> 100 (Claude Opus 5.5, on4-partyhit)
+- partyNrmToAngle 84.11, partySearchGround 99.04, partySearchFrontWall 99.82, partySearchWallFront 80.69 -> 100;
+  partyChkFrontStep 89.49 -> 99.93; partySearchHead 71.38 -> 80.32. .sdata2 and .rodata identical.
+- **By-value Vec parameters closed three functions** (Run 2 lever): `partyNrmToAngle(Vec v)` (party_move's by-value
+  wrapper removed, header changed), by-value inlines `partyGroundSlope(party, n)` (Ground, reused by ChkFrontStep) and
+  `partyWallSlide` (FrontWall, WallFront). rasim declaration order finished Ground.
+- Data first: all named floats/doubles/strings/vec3s to literals and `(Vec){...}`, RO base macro gone. An uncalled
+  `partyGetRoofY` (upward probe rounded to 1/100, party_motion's idiom) at the end of the deferred unit puts 10, 0, 1,
+  0.5, 100 and the i2f double at the pool fronts; wrapped in `#ifdef MUST_MATCH` like Melee's
+  debugconsole_main.c `unused()`. Two unreferenced zero Vec templates (0x35c, 0x3a4) stay as named `const Vec`
+  placeholders between functions; no natural source found.
+- WallFront: volatile and dtmp2 gone; `dist` address-taken naturally (loops 2-3 pass `&dist`), `(Vec){sin, 0.0f, cos}`
+  directions, `f32 height[4]` (retail's 4-byte frame hole), a redundant `dist = len;` retail has.
+- Left: ChkFrontStep hx vs the slope inline's n.y temp swap f30/f27 (rasim: hx/hy/hz would need to be temps numbered
+  above it; no single edge; mwsearch 25 min / 31,559 compiles nothing). Head: retail keeps the x/y/z copy in memory
+  and reloads per probe; plain locals 57.8, address-taking getter 60.9, address escape (MWCC forwards the store), Vec
+  builders (break .rodata), 120 setup orders 79.0-80.4; MUST_MATCH volatile for now. Lead: a block boundary or an
+  escape MWCC can't see through between the stores and the first probe.
