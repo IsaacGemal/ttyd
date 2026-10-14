@@ -19,10 +19,11 @@
 extern GlobalWork* gp;
 
 #ifdef MUST_MATCH
-// .sbss2: the default .sbss2 is only used for compiler-generated pool templates.
+// .sbss2: the default .sbss2 is only used for compiler-generated pool templates. Declared in reverse, as
+// MWCC emits these in reverse source order.
 #pragma section ".sdata" ".sbss2"
-__declspec(section ".sdata") GXColor unk_80422fe0;
 __declspec(section ".sdata") GXColor unk_80422fe4;
+__declspec(section ".sdata") GXColor unk_80422fe0;
 #pragma section ".sdata" ".sbss"
 #else
 GXColor unk_80422fe0;
@@ -755,16 +756,13 @@ static inline u16 msgGetKanji(const char* str, s32 off) {
 	return kanjiSearch(*(const u16*)(str + off));
 }
 
-// The R-ruby loops read each kanji through msgGetKanji; loop 1 indexes through the `rp` pointer, so MWCC's
-// frontend leaves its offset counter alone and the backend's strength reduction keeps it next to the pointer
-// it derives, as in the target. Every width is `scale * (f32)(kanjiGetWidth(g) + n)`: the call inside the
-// conversion is evaluated before `scale` is loaded, which gives the target's fmuls operand order.
-// NONMATCHING (98.27%): GPR colouring of the second allocation pass. The target colours the loop-2 counter
-// first (r31) and then data, window, entry, ex, ey, r25, r24, flags, half and msg (r30 down to r21) before
-// the R-ruby pointer, glyph and .rodata base; ours colours msg and those R-ruby temps first, and holds the
-// post-loop-1 total in r0 where the target keeps it in r19 with `total` and the loop-2 glyph.
+// The R-ruby loops read each kanji with msgGetKanji(tagName, skip + i * 2). The u32 counters keep MWCC's
+// frontend from strength-reducing `i * 2`, so the backend builds the offset and pointer induction variables
+// the target has; `(s32)i < half` is the signed compare. Every width is `scale * (f32)(kanjiGetWidth(g) + n)`:
+// the call inside the conversion is evaluated before `scale` is loaded, which gives the target's fmuls operand
+// order. opt_lifetimes off keeps loop 1's `total`, the post-loop total and the loop-2 glyph in one register.
+#pragma opt_lifetimes off
 void msgAnalize(smartEntry* smart, const char* msg) {
-	s16 r25;
 	char tagName[128];
 	char tagArg[128];
 	char buf4[32];
@@ -796,34 +794,33 @@ void msgAnalize(smartEntry* smart, const char* msg) {
 	s16 sel1;
 	u16 w;
 	u16 h;
+	f32 maxScale;
+	f32 base;
+	u32 skip;
+	char* pa;
+	NpcEntry* npc;
+	s32 total;
+	u32 j;
+	u16 glyph;
+	s32 len;
+	char* pn;
+	u32 i;
+	const char* after;
+	char* q;
 	MessageData* data;
 	WindowEntry* window;
 	MsgDataEntry* entry;
 	s16 ex;
 	s16 ey;
+	s16 r25;
 	s32 r24;
 	u32 flags;
-	f32 maxScale;
-	char* pa;
-	char* pn;
-	char* q;
-	const char* after;
-	s32 mode;
-	u32 n;
+	s32 half;
 	u32 check;
+	u32 n;
+	s32 mode;
 	s8 tch;
 	char tchc;
-	u16 glyph;
-	NpcEntry* npc;
-	s32 off;
-	s32 i;
-	u32 skip;
-	s32 len;
-	s32 half;
-	s32 total;
-	const char* rp;
-	f32 base;
-	s32 j;
 	s16 var[3];
 
 	data = smart->address;
@@ -1286,21 +1283,18 @@ loop:
 			len = strlen(tagName + skip);
 			half = len / 2;
 			total = 0;
-			rp = tagName;
-			off = skip;
-			for (i = 0; i < half; i++) {
-				u16 g = msgGetKanji(rp, off);
+			for (i = 0; (s32)i < half; i++) {
+				u16 g = msgGetKanji(tagName, skip + i * 2);
 				f32 fw = scale * (f32)(kanjiGetWidth((u16)g) + 4);
 
 				total += (s32)(0.55f * fw);
-				off += 2;
 			}
 			base = 4.0f * scale;
 			total = (s32)((f32)(u16)total - 0.55f * base);
 			r25 = ((f32)(r25 + ex) - base - (f32)(u16)total) / 2.0f;
 
-			for (j = 0; j < half; j++) {
-				u16 g = msgGetKanji(tagName, skip);
+			for (j = 0; (s32)j < half; j++) {
+				u16 g = msgGetKanji(tagName, skip + j * 2);
 				f32 fw = scale * (f32)(kanjiGetWidth((u16)g) + 4);
 				s32 rinc = (s32)(0.55f * fw);
 
@@ -1314,7 +1308,6 @@ loop:
 				}
 				entry->field_0xC = 0;
 				r25 += rinc;
-				skip += 2;
 				entry++;
 				data->entryId++;
 			}
@@ -1367,6 +1360,7 @@ defaultchar:
 done:
 	return;
 }
+#pragma opt_lifetimes reset
 
 //void msgAnalize(void* sameasmsgmain)
 

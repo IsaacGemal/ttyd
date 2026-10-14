@@ -6819,3 +6819,17 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   reload/store pairs at 17 points (97.5-99.91); 90-variant sequential grid (best 99.79 + extra stfs); height computed
   into the distance var (99.87-99.93); unused distance param on a height inline (99.91); plain `#else` travel time
   with both stores (99.81-99.91).
+
+### msgdrv LINKED: msgAnalize 98.27 -> 100 (Claude Opus 5.5, on4-msgdrv)
+- `#pragma opt_lifetimes off`/`reset` around msgAnalize keeps loop 1's `total`, the post-loop total and loop 2's glyph
+  in one register (r19, as retail); without it the final source is 98.32.
+- **Unsigned counters stop the frontend rewriting `i * 2`:** both R-ruby loops read `msgGetKanji(tagName, skip + i * 2)`
+  with `u32 i, j` and `(s32)i < half` (the shape in kpa_act.c, evt_twoddisp.c); the `rp` pointer, `off` and
+  `skip += 2` are gone. The backend then builds retail's offset/pointer counters and loop-2 setup order. The same index
+  lever had failed with signed counters: retry failed levers after the framing changes.
+- rasim declaration order (`r25` next to `ey`); `.sbss2` colours declared in reverse (`unk_80422fe4` before
+  `unk_80422fe0`), the only DOL blocker (selectWindow_Disp loaded the wrong one).
+- Negatives: 64 placements of `ry`/`dyf`, for-init/`j = 0`/goto loop forms; opt_loop_invariants off (115 rows); testing
+  `entry->field_0x0 & 1` (129); kanjiSearch directly (128); u16/u8/int `skip`; loop 1 as an inline 97.3-97.7; signed
+  index casts `(u32)i * 2`, `i * 2u`, `i << 1` 97.9-98.1; one loop only 99.75-99.77. Note: .sdata2 is 508 vs 512 in
+  the object (4 bytes tail padding; the DOL matches since the next unit aligns to 8).
