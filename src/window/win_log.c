@@ -161,132 +161,14 @@ extern const f32 float_0p125_8041d890;
 extern const f32 float_140_8041d8c0;
 extern const f32 float_neg160_8041d8c4;
 extern const f32 float_0p25_8041d8c8;
-extern const f64 double_0p125_802f63c0;
-extern const f64 double_to_int_802f62d8;
-extern const f64 double_to_int_mask_802f62e0;
-extern const f64 double_0p21817_802f62e8;
-extern const char str_802F5ECC[];
-extern const char str_802F5EE4[];
-extern const char str_802F5EFC[];
-extern const char str_802F5F14[];
 extern const char str_8041D7AC[];
 extern const char str_8041D7B0[];
 extern const char str_8041D810[];
-
-// The read-only data prefix this unit addresses through the single base
-// register `str_802F5EB8`: the five tab labels, the sprite scale/translate Vec
-// pool, the two-entry language jump table, the tattle-viewer Vec pool and the
-// format strings for the tattle pages.  `force_active` keeps the objects the
-// code reaches through the language jump table and the base-plus-offset Vec
-// loads from being dropped.
-//
-// The Vec pool is declared as opaque `char[12]` byte images rather than `Vec`:
-// MWCC's -O4 propagation can see a `Vec` object's constant value through the
-// `vec3_...` reference and re-colours every function that uses the pool
-// (monoshiriGX falls from 94.76% to 87.61%).  A byte image keeps the exact
-// bytes and the symbol/relocation identity without the fold.  The
-// `str_802F5EB8` definition is `char` in the match build (see the header) so
-// the base is not hoisted out of the reload loops.
-#pragma force_active on
-#ifdef MUST_MATCH
-// `char` (not const) in the match build: MWCC then cannot hoist the base out
-// of the reload loops, which is what the original's per-iteration loads do.
-__declspec(section ".rodata") char str_802F5EB8[20] = "msg_menu_kiroku_map";
-#else
-__declspec(section ".rodata") const char str_802F5EB8[20] = "msg_menu_kiroku_map";
-#endif
-const char str_802F5ECC[24] = "msg_menu_kiroku_stone";
-const char str_802F5EE4[24] = "msg_menu_kiroku_badge";
-const char str_802F5EFC[24] = "msg_menu_kiroku_ryori";
-const char str_802F5F14[24] = "msg_menu_kiroku_mono";
-__declspec(section ".rodata") char vec3_802f5f2c[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5f38[12] = { 0x42, 0x70, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5f44[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x43, 0x2a, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5f50[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5f5c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5f68[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5f74[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5f80[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5f8c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5f98[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5fa4[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5fb0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5fbc[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5fc8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5fd4[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5fe0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5fec[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f5ff8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6004[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6010[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f601c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6028[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6034[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6040[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f604c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6058[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6064[12] = { 0x3f, 0x80, 0x00, 0x00, 0x42, 0x00, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6070[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f607c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x42, 0x00, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6088[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6094[12] = { 0x42, 0x6e, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f60a0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f60ac[12] = { 0x42, 0x6e, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f60b8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f60c4[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f60d0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f60dc[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f60e8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f60f4[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6100[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f610c[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6118[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6124[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6130[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f613c[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6148[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6154[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6160[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f616c[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6178[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6184[12] = { 0xbf, 0x80, 0x00, 0x00, 0xbf, 0x80, 0x00, 0x00, 0xbf, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6190[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f619c[12] = { 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a };
-__declspec(section ".rodata") char vec3_802f61a8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f61b4[12] = { 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f61c0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f61cc[12] = { 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a };
-__declspec(section ".rodata") char vec3_802f61d8[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f61e4[12] = { 0x3f, 0x33, 0x33, 0x33, 0x3f, 0x33, 0x33, 0x33, 0x3f, 0x33, 0x33, 0x33 };
-__declspec(section ".rodata") char vec3_802f61f0[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f61fc[12] = { 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a, 0x3f, 0x19, 0x99, 0x9a };
-const char* const jumptable_802F6208[2] = { str_8041D7AC, str_8041D7B0 };
-__declspec(section ".rodata") char vec3_802f6210[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f621c[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6228[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6234[12] = { 0x00, 0x00, 0x00, 0x00, 0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6240[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f624c[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6258[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6264[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f6270[12] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-__declspec(section ".rodata") char vec3_802f627c[12] = { 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00, 0x3f, 0x40, 0x00, 0x00 };
-const char str_802F6288[8] = "%d\201D%s";
-const char str_802F6290[16] = "btl_un_hatena";
-const char str_802F62A0[16] = "btl_un_rampell";
-const char str_802F62B0[8] = "%s\201@%s";
-const char str_802F62B8[28] = "menu_monosiri_derutokoro";
-#pragma force_active off
 
 #define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
 #define WW_PTR(w, off) (*(void**)((u8*)(w) + (off)))
 
-#ifdef MUST_MATCH
-#define RO(base, off, sym) ((const char*)(base) + (off))
-#else
-#define RO(base, off, sym) ((const char*)&(sym))
-#endif
 typedef struct WinLogEntry {
     f32 curX;             // 0xD78
     f32 curY;             // 0xD7C
@@ -316,21 +198,21 @@ typedef struct TubuDt {
 #ifdef MUST_MATCH
 #define MAP_TPL_NAME(dst, base)                                       \
     if (swByteGet(0) < 0x13) {                                        \
-        dst = RO(base, 0x4A8, "map0.tpl");                          \
+        dst = "map0.tpl";                          \
     } else if (swByteGet(0) < 0x41) {                                 \
-        dst = RO(base, 0x4B4, "map1.tpl");                          \
+        dst = "map1.tpl";                          \
     } else if (swByteGet(0) < 0x79) {                                 \
-        dst = RO(base, 0x4C0, "map2.tpl");                          \
+        dst = "map2.tpl";                          \
     } else if (swByteGet(0) < 0xAF) {                                 \
-        dst = RO(base, 0x4CC, "map3.tpl");                          \
+        dst = "map3.tpl";                          \
     } else if (swByteGet(0) < 0xDE) {                                 \
-        dst = RO(base, 0x4D8, "map4.tpl");                          \
+        dst = "map4.tpl";                          \
     } else if (swByteGet(0) < 0x110) {                                \
-        dst = RO(base, 0x4E4, "map5.tpl");                          \
+        dst = "map5.tpl";                          \
     } else if (swByteGet(0) < 0x15C) {                                \
-        dst = RO(base, 0x4F0, "map6.tpl");                          \
+        dst = "map6.tpl";                          \
     } else {                                                          \
-        dst = RO(base, 0x4FC, "map7.tpl");                          \
+        dst = "map7.tpl";                          \
     }
 #else
 #define MAP_TPL_NAME(dst, base) dst = winGetMapTplName()
@@ -621,23 +503,6 @@ static inline void winLogAddTab0(LogWin* w, s32 tabType, const char** msg_help, 
 #define LOG_ADD_3(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
 #define LOG_ADD_4(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
 #endif
-extern char vec3_802f5f2c[];
-extern char vec3_802f5f38[];
-extern char vec3_802f5f44[];
-extern char vec3_802f5f50[];
-extern char vec3_802f5f5c[];
-extern char vec3_802f5f68[];
-extern char vec3_802f5f74[];
-extern char vec3_802f5f80[];
-extern char vec3_802f5f8c[];
-extern char vec3_802f5f98[];
-extern char vec3_802f5fa4[];
-extern char vec3_802f5fb0[];
-extern char vec3_802f5fbc[];
-extern char vec3_802f5fc8[];
-extern char vec3_802f5fd4[];
-extern char vec3_802f5fe0[];
-extern char vec3_802f5fec[];
 extern const GXColor dat_8041d78c;
 extern const GXColor dat_8041d790;
 extern const GXColor dat_8041d794;
@@ -652,45 +517,14 @@ extern const f32 float_170_8041d8b8;
 extern const f32 float_130_8041d8bc;
 extern const f32 float_1_8041d7c0;
 #ifdef MUST_MATCH
-#define LV(off, sym) (*(const Vec*)(sym))
-// Volatile variant: forces the load to be repeated each loop iteration instead
-// of being hoisted into a callee-saved register, as the original does for the
-// per-stone Vec with the same address (MUST_MATCH codegen shaping).
-#define LVV(off, sym) (*(volatile const Vec*)(sym))
 // Volatile read of the per-stone shadow colour: the original reloads it from
 // the data symbol each loop iteration rather than hoisting it into a
 // callee-saved register (MUST_MATCH codegen shaping).
 #define VCOL(sym) (*(volatile const GXColor*)&(sym))
 #else
-#define LV(off, sym) (*(const Vec*)(sym))
-#define LVV(off, sym) (*(volatile const Vec*)(sym))
 #define VCOL(sym) (*(volatile const GXColor*)&(sym))
 #endif
 #define LOG_TEXPAL() (**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0))
-extern char vec3_802f5ff8[];
-extern char vec3_802f6004[];
-extern char vec3_802f6010[];
-extern char vec3_802f601c[];
-extern char vec3_802f6028[];
-extern char vec3_802f6034[];
-extern char vec3_802f6040[];
-extern char vec3_802f604c[];
-extern char vec3_802f6058[];
-extern char vec3_802f6064[];
-extern char vec3_802f6070[];
-extern char vec3_802f607c[];
-extern char vec3_802f6088[];
-extern char vec3_802f6094[];
-extern char vec3_802f60a0[];
-extern char vec3_802f60ac[];
-extern char vec3_802f60b8[];
-extern char vec3_802f60c4[];
-extern char vec3_802f60d0[];
-extern char vec3_802f60dc[];
-extern char vec3_802f60e8[];
-extern char vec3_802f60f4[];
-extern char vec3_802f6100[];
-extern char vec3_802f610c[];
 extern const GXColor dat_8041d7a0;
 extern const f32 float_74_8041d86c;
 extern const f32 float_120_8041d870;
@@ -702,26 +536,6 @@ extern const f32 float_1p5_8041d884;
 extern const f32 float_3_8041d888;
 extern const f32 float_0p125_8041d890;
 extern const f32 float_neg148_8041d898;
-extern char vec3_802f6118[];
-extern char vec3_802f6124[];
-extern char vec3_802f6130[];
-extern char vec3_802f613c[];
-extern char vec3_802f6148[];
-extern char vec3_802f6154[];
-extern char vec3_802f6160[];
-extern char vec3_802f616c[];
-extern char vec3_802f6178[];
-extern char vec3_802f6184[];
-extern char vec3_802f6190[];
-extern char vec3_802f619c[];
-extern char vec3_802f61a8[];
-extern char vec3_802f61b4[];
-extern char vec3_802f61c0[];
-extern char vec3_802f61cc[];
-extern char vec3_802f61d8[];
-extern char vec3_802f61e4[];
-extern char vec3_802f61f0[];
-extern char vec3_802f61fc[];
 extern const f32 float_110_8041d820;
 extern const f32 float_160_8041d7d8;
 extern const f32 float_100_8041d824;
@@ -745,10 +559,6 @@ extern const f32 float_30_8041d864;
 extern const f32 float_220_8041d868;
 extern const GXColor dat_8041d7a4;
 extern const GXColor dat_8041d7a8;
-extern char vec3_802f6258[];
-extern char vec3_802f6264[];
-extern char vec3_802f6270[];
-extern char vec3_802f627c[];
 extern const GXColor dat_8041d7b4;
 extern const GXColor dat_8041d7b8;
 extern const GXColor unk_80423050;
@@ -766,15 +576,7 @@ extern const f32 float_1p2667_8041d7f8;
 extern const f32 float_1000_8041d7fc;
 extern const f32 float_608_8041d800;
 extern const f32 float_480_8041d804;
-extern char vec3_802f6228[];
-extern char vec3_802f6234[];
-extern char vec3_802f6240[];
-extern char vec3_802f624c[];
-#ifdef MUST_MATCH
-#define HALF_FOV_TAN double_0p21817_802f62e8
-#else
 #define HALF_FOV_TAN 0.21816615760326385
-#endif
 typedef struct TattleCamEntry {
     s32 kind;
     f32 x;
@@ -793,30 +595,15 @@ typedef struct TattleCamEntry {
 // colouring and scheduling only (the loop counter lands in r7 instead of r5,
 // and the base/magic hoist a few instructions earlier)
 
-#ifdef MUST_MATCH
-// The native cast is what emits `fsubs`; no helper is needed now that the pool
-// entry lands at base+0x420.
-// Prototypes for the forward references the original function order needs.
-static inline f32 winLogI2F(s32 v, const char* base, f64* scratch);
-
-static inline f32 winLogI2F(s32 v, const char* base, f64* scratch) {
-    return (f32)v;
-}
-#else
 #define winLogI2F(v, base, scratch) ((f32)(v))
-#endif
 
 #pragma opt_common_subs off // keeps MWCC from CSE-ing the map/base addresses across the load loops
 // The tab-loop registers now match: the helper-local counter shares r5 and the `+1 li` is
-// gone. What is left is file-level `.rodata` layout: the eight map-name `addi` offsets are
-// 0x178 low and five `lfd` reads are at 0x438 instead of 0x420 because the `RO(base, ...)`
-// strings and the explicit i2f double are still pooled ahead of winLogInit's own literals;
-// plus a small mapScroll FPR rotation and one stack slot.
-// NONMATCHING (98.93%)
+// gone. What is left is a small mapScroll FPR rotation and one stack slot.
+// NONMATCHING (98.95%)
 void winLogInit(WindowWork* work) {
     LogWin* w = (LogWin*)work;
-    static const char* msg_help[5] = {str_802F5EB8, str_802F5ECC, str_802F5EE4, str_802F5EFC, str_802F5F14};
-    const char* base = str_802F5EB8;
+    static const char* msg_help[5] = {"msg_menu_kiroku_map", "msg_menu_kiroku_stone", "msg_menu_kiroku_badge", "msg_menu_kiroku_ryori", "msg_menu_kiroku_mono"};
     const char* area;
     s32 i;
     s32 k_;
@@ -1179,7 +966,7 @@ static inline BOOL tubuUnlocked(TubuDt* t) {
 // base-relative `lfd fN, 0x420(r31)` instead of a `lis @pool` absolute address (or the old helper's
 // `fsub`+`frsp`).  The natural (non-MUST_MATCH) build already uses that form.
 // What still differs: the unit's `.rodata` pool layout is not ported, so the pooled magic sits at
-// 0x438 instead of 0x420 from `str_802F5EB8` and the code-pooled strings land at their own addresses
+// 0x438 instead of 0x420 from `"msg_menu_kiroku_map"` and the code-pooled strings land at their own addresses
 // rather than the original's data order (e.g. `map0.tpl` at 0x448 vs 0x4A8); plus FPR/GPR colouring
 // (the map px/py/qx/qy and clamp registers, and the inlined monosiriExit object register r27 vs r28).
 //
@@ -1191,11 +978,7 @@ static inline BOOL tubuUnlocked(TubuDt* t) {
 // the named `.sdata2` constants here with float literals re-colours the FPRs to match, but it makes the
 // object reloc to a fresh anonymous `.sdata2` slot where the target names `float_166_8041d830` etc.;
 // that trades arg diffs for symbol-only diffs and was rejected.)
-#ifdef MUST_MATCH
-#undef RO
-#define RO(base, off, sym) ((const char*)&(sym))
-#endif
-// NONMATCHING (99.58%): the .rodata pool layout and register colouring remain (see the note above)
+// NONMATCHING (99.60%): register colouring remains (see the note above)
 s32 winLogMain(WindowWork* work) {
     LogWin* w = (LogWin*)work;
     const char* tpl;
@@ -1279,18 +1062,18 @@ s32 winLogMain(WindowWork* work) {
         case 10:
             MAP_TPL_NAME(tpl, 0);
             root = getMarioStDvdRoot();
-            if ((u32)fileAsyncf(4, NULL, RO(0, 0x510, "%s/w/jp/%s"), root, tpl) != 0) {
+            if ((u32)fileAsyncf(4, NULL, "%s/w/jp/%s", root, tpl) != 0) {
                 if (w->file == 0) {
                     MAP_TPL_NAME(tpl, 0);
                     root = getMarioStDvdRoot();
                     // (s32) add defeats the CSE with the fileAsyncf string above, so MWCC recomputes it
                     // into r4 (as the original) instead of pinning it in r28 across the call.
-                    w->file = (FileEntry*)fileAllocf(4, RO(0, 0x510, "%s/w/jp/%s"), root, tpl);
+                    w->file = (FileEntry*)fileAllocf(4, "%s/w/jp/%s", root, tpl);
                 }
                 if (w->pose == -1) {
                     if (w->flags & 0x2000) {
                         const char* anim = str_8041D8E0;
-                        w->pose = animPoseEntry(RO(0, 0x51C, "d_mario"), 0);
+                        w->pose = animPoseEntry("d_mario", 0);
                         switch (marioGetColor()) {
                         case 0:
                             anim = str_8041D8E0;
@@ -1307,19 +1090,19 @@ s32 winLogMain(WindowWork* work) {
                         }
                         animPoseSetAnim(w->pose, anim, 1);
                     } else {
-                        const char* model = RO(0, 0x524, "a_mario");
+                        const char* model = "a_mario";
                         switch (marioGetColor()) {
                         case 0:
-                            model = RO(0, 0x524, "a_mario");
+                            model = "a_mario";
                             break;
                         case 1:
-                            model = RO(0, 0x52C, "a_mario_l");
+                            model = "a_mario_l";
                             break;
                         case 2:
-                            model = RO(0, 0x538, "a_mario_w");
+                            model = "a_mario_w";
                             break;
                         case 3:
-                            model = RO(0, 0x544, "a_mario_wl");
+                            model = "a_mario_wl";
                             break;
                         }
                         w->pose = animPoseEntry(model, 0);
@@ -1380,8 +1163,8 @@ s32 winLogMain(WindowWork* work) {
                     if (best < float_50_8041d828) {
                         static char name[0x40];
                         static char help[0x40];
-                        sprintf(name, RO(0, 0x550, "menu_monosiri_%s"), tubuDt[bestIdx].id);
-                        sprintf(help, RO(0, 0x564, "menu_map_%s"), tubuDt[bestIdx].id);
+                        sprintf(name, "menu_monosiri_%s", tubuDt[bestIdx].id);
+                        sprintf(help, "menu_map_%s", tubuDt[bestIdx].id);
                         if (w->mapSel != bestIdx) {
                             SFX(0x20035);
                         }
@@ -1389,7 +1172,7 @@ s32 winLogMain(WindowWork* work) {
                         winMsgEntry(work, 0, help, (s32)name);
                     } else {
                         w->mapSel = -1;
-                        winMsgEntry(work, 0, str_802F5EB8, 0);
+                        winMsgEntry(work, 0, "msg_menu_kiroku_map", 0);
                     }
                     sx = (f32)keyGetStickX(0) * float_0p125_8041d890;
                     sy = (f32)keyGetStickY(0) * float_0p125_8041d890;
@@ -1511,7 +1294,7 @@ s32 winLogMain(WindowWork* work) {
                 ItemData* it = &itemDataTable[stone_tbl[w->stoneSel]];
                 winMsgEntry(work, -1, it->description, (s32)it->name);
             } else {
-                winMsgEntry(work, -1, RO(0, 0x570, "msg_menu_stone_none_help"), (s32)RO(0, 0x58C, "msg_menu_stone_none_name"));
+                winMsgEntry(work, -1, "msg_menu_stone_none_help", (s32)"msg_menu_stone_none_name");
             }
             break;
         case 12: {
@@ -1594,7 +1377,7 @@ s32 winLogMain(WindowWork* work) {
                 ItemData* it = &itemDataTable[w->cardIcon[w->cardSel]];
                 winMsgEntry(work, -2, (it + 240)->menu_description, (s32)(it + 240)->name);
             } else {
-                winMsgEntry(work, -2, RO(0, 0x570, "msg_menu_stone_none_help"), (s32)RO(0, 0x58C, "msg_menu_stone_none_name"));
+                winMsgEntry(work, -2, "msg_menu_stone_none_help", (s32)"msg_menu_stone_none_name");
             }
             break;
         }
@@ -1678,7 +1461,7 @@ s32 winLogMain(WindowWork* work) {
                 ItemData* it = &itemDataTable[w->badgeIcon[w->badgeSel]];
                 winMsgEntry(work, -2, (it + 179)->menu_description, (s32)(it + 179)->name);
             } else {
-                winMsgEntry(work, -2, RO(0, 0x570, "msg_menu_stone_none_help"), (s32)RO(0, 0x58C, "msg_menu_stone_none_name"));
+                winMsgEntry(work, -2, "msg_menu_stone_none_help", (s32)"msg_menu_stone_none_name");
             }
             break;
         }
@@ -1774,7 +1557,7 @@ s32 winLogMain(WindowWork* work) {
                 winMsgEntry(work, 0,
                             battleGetUnitMonosiriPtr(w->chars[w->charSel].id)->tattleLogTag, 0);
             } else {
-                winMsgEntry(work, 0, RO(0, 0x5A8, "msg_menu_monosiri_enemy"), 0);
+                winMsgEntry(work, 0, "msg_menu_monosiri_enemy", 0);
             }
     
             break;
@@ -1813,10 +1596,6 @@ s32 winLogMain(WindowWork* work) {
     return 0;
 }
 
-#ifdef MUST_MATCH
-#undef RO
-#define RO(base, off, sym) ((const char*)(base) + (off))
-#endif
 
 // A single tattle-log row inside WindowWork, at 0xD78 with stride 0x20.
 
@@ -1915,23 +1694,23 @@ void winLogMain2(WindowWork* work) {
 #ifdef MUST_MATCH
     {
         f32 d1 = WW_F32(new_var, 0xE28) - WW_F32(new_var, 0xE2C);
-        WW_F32(work, 0xE2C) += d1 * double_0p125_802f63c0;
+        WW_F32(work, 0xE2C) += d1 / 8.0;
     }
     {
         f32 d2 = WW_F32(new_var, 0xE30) - WW_F32(work, 0xE34);
-        WW_F32(new_var, 0xE34) += d2 * double_0p125_802f63c0;
+        WW_F32(new_var, 0xE34) += d2 / 8.0;
     }
     {
         f32 d3 = WW_F32(work, 0xE64) - WW_F32(work, 0xE68);
-        WW_F32(new_var, 0xE68) += d3 * double_0p125_802f63c0;
+        WW_F32(new_var, 0xE68) += d3 / 8.0;
     }
     {
         f32 d4 = WW_F32(work, 0xE6C) - WW_F32(work, 0xE70);
-        WW_F32(new_var, 0xE70) += d4 * double_0p125_802f63c0;
+        WW_F32(new_var, 0xE70) += d4 / 8.0;
     }
     {
         f32 d5 = WW_F32(new_var, 0xE74) - WW_F32(work, 0xE78);
-        WW_F32(work, 0xE78) += d5 * double_0p125_802f63c0;
+        WW_F32(work, 0xE78) += d5 / 8.0;
     }
     {
         f32 d6 = WW_F32(work, 0xE7C) - WW_F32(new_var, 0xE80);
@@ -1952,23 +1731,23 @@ void winLogMain2(WindowWork* work) {
 #else
     {
         f32 d1 = WW_F32(work, 0xE28) - WW_F32(work, 0xE2C);
-        WW_F32(work, 0xE2C) += d1 * double_0p125_802f63c0;
+        WW_F32(work, 0xE2C) += d1 / 8.0;
     }
     {
         f32 d2 = WW_F32(work, 0xE30) - WW_F32(work, 0xE34);
-        WW_F32(work, 0xE34) += d2 * double_0p125_802f63c0;
+        WW_F32(work, 0xE34) += d2 / 8.0;
     }
     {
         f32 d3 = WW_F32(work, 0xE64) - WW_F32(work, 0xE68);
-        WW_F32(work, 0xE68) += d3 * double_0p125_802f63c0;
+        WW_F32(work, 0xE68) += d3 / 8.0;
     }
     {
         f32 d4 = WW_F32(work, 0xE6C) - WW_F32(work, 0xE70);
-        WW_F32(work, 0xE70) += d4 * double_0p125_802f63c0;
+        WW_F32(work, 0xE70) += d4 / 8.0;
     }
     {
         f32 d5 = WW_F32(work, 0xE74) - WW_F32(work, 0xE78);
-        WW_F32(work, 0xE78) += d5 * double_0p125_802f63c0;
+        WW_F32(work, 0xE78) += d5 / 8.0;
     }
     {
         f32 d6 = WW_F32(work, 0xE7C) - WW_F32(work, 0xE80);
@@ -2015,7 +1794,6 @@ static inline Vec logMkVecYX(Vec base, f32 y, f32 x) {
 // NONMATCHING (99.02%): allocation only, as detailed above.
 void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
     LogWin* w = (LogWin*)work;
-    const char* base = str_802F5EB8;
     GXColor white3 = dat_8041d78c;
     GXColor white = dat_8041d78c;
     GXColor shadow;
@@ -2033,9 +1811,9 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
         winTexInit(LOG_TEXPAL());
         col = dat_8041d790;
         col.a = (s8)w->e78;
-        winTexSet(0x24, logMkVec(LV(0x74, vec3_802f5f2c), x + w->e68, y + w->e70), LV(0x80, vec3_802f5f38), col);
+        winTexSet(0x24, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->e68, y + w->e70), (Vec){6e+01f, 1.0f, 1.0f}, col);
         for (i = 0; i < 7; i++) {
-            Vec p = LVV(0x8C, vec3_802f5f44);
+            Vec p = (Vec){0.0f, 0.0f, 1.7e+02f};
             Mtx rx;
             Mtx ry;
 
@@ -2059,29 +1837,29 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
     if (w->e84 < float_320_8041d8b0 && w->e8c > float_neg240_8041d894) {
         winHakoGX(work, 0, x + w->e84, y + w->e8c);
         winTexInit(LOG_TEXPAL());
-        winTexSet(0x95, logMkVec(LV(0x98, vec3_802f5f50), x + w->ea8, y + w->eb0), LV(0xA4, vec3_802f5f5c), white);
+        winTexSet(0x95, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->ea8, y + w->eb0), (Vec){1.0f, 1.0f, 1.0f}, white);
         if (swGet(w->cardIcon[w->cardSel] + 0x80) != 0) {
             GXColor white2;
 
             winIconInit();
             white2 = white;
             logIconSet(((ItemDataView*)itemDataTable)[w->cardIcon[w->cardSel] + 240].icon_id, &white2,
-                       logMkVec(LV(0xB0, vec3_802f5f68), x + w->ea8, (y + w->eb0) - float_4_8041d88c),
-                       LV(0xBC, vec3_802f5f74));
+                       logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->ea8, (y + w->eb0) - float_4_8041d88c),
+                       (Vec){1.0f, 1.0f, 1.0f});
         }
     }
     if (w->f80 < float_320_8041d8b0 && w->f88 > float_neg240_8041d894) {
         winHakoGX(work, 1, x + w->f80, y + w->f88);
         winTexInit(LOG_TEXPAL());
-        winTexSet(0x96, logMkVec(LV(0xC8, vec3_802f5f80), x + w->fa4, y + w->fac), LV(0xD4, vec3_802f5f8c), white);
+        winTexSet(0x96, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->fa4, y + w->fac), (Vec){1.0f, 1.0f, 1.0f}, white);
         if (swGet(w->badgeIcon[w->badgeSel] + 0x41) != 0) {
             GXColor white2;
 
             winIconInit();
             white2 = white;
             logIconSet(((ItemDataView*)itemDataTable)[w->badgeIcon[w->badgeSel] + 179].icon_id, &white2,
-                       logMkVec(LV(0xE0, vec3_802f5f98), x + w->fa4, (y + w->fac) - float_10_8041d8b4),
-                       LV(0xEC, vec3_802f5fa4));
+                       logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->fa4, (y + w->fac) - float_10_8041d8b4),
+                       (Vec){1.0f, 1.0f, 1.0f});
         }
     }
     if (w->state == 0xE || (u32)(w->state - 0x14) <= 2 || w->state == 0x3E9) {
@@ -2093,21 +1871,21 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
 
             winTexInit(LOG_TEXPAL());
             c3 = dat_8041d798;
-            winTexSet(0xB5, logMkVecYX(LV(0xF8, vec3_802f5fb0), y + w->rows[i].curY, x + w->rows[i].curX),
-                      LV(0x104, vec3_802f5fbc), c3);
+            winTexSet(0xB5, logMkVecYX((Vec){0.0f, 0.0f, 0.0f}, y + w->rows[i].curY, x + w->rows[i].curX),
+                      (Vec){1.0f, 1.0f, 1.0f}, c3);
             winTexInit_x2(LOG_TEXPAL());
             winTexSet_x2(w->rows[i].type + 0x1F, 0xB5,
-                         logMkVecYX(LV(0x110, vec3_802f5fc8), float_8_8041d7d4 + (y + w->rows[i].curY),
+                         logMkVecYX((Vec){0.0f, 0.0f, 0.0f}, float_8_8041d7d4 + (y + w->rows[i].curY),
                                   (x + w->rows[i].curX) - float_8_8041d7d4),
-                         LV(0x11C, vec3_802f5fd4), white3);
+                         (Vec){1.0f, 1.0f, 1.0f}, white3);
         } else {
             GXColor c4;
 
             winTexInit_x2(LOG_TEXPAL());
             c4 = dat_8041d79c;
             winTexSet_x2(w->rows[i].type + 0x1F, 0xB5,
-                         logMkVecYX(LV(0x128, vec3_802f5fe0), y + w->rows[i].curY, x + w->rows[i].curX),
-                         LV(0x134, vec3_802f5fec), c4);
+                         logMkVecYX((Vec){0.0f, 0.0f, 0.0f}, y + w->rows[i].curY, x + w->rows[i].curX),
+                         (Vec){1.0f, 1.0f, 1.0f}, c4);
         }
     }
 }
@@ -2116,46 +1894,28 @@ void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
 // the `>= 0x15C` value before the branch, so the C default-result/override
 // ordering below is needed to reproduce it (see rule 7).
 const char* winGetMapTplName(void) {
-    const char* base = str_802F5EB8;
-
     if (swByteGet(0) < 0x13) {
-        return RO(base, 0x4A8, "map0.tpl");
+        return "map0.tpl";
     }
     if (swByteGet(0) < 0x41) {
-        return RO(base, 0x4B4, "map1.tpl");
+        return "map1.tpl";
     }
     if (swByteGet(0) < 0x79) {
-        return RO(base, 0x4C0, "map2.tpl");
+        return "map2.tpl";
     }
     if (swByteGet(0) < 0xAF) {
-        return RO(base, 0x4CC, "map3.tpl");
+        return "map3.tpl";
     }
     if (swByteGet(0) < 0xDE) {
-        return RO(base, 0x4D8, "map4.tpl");
+        return "map4.tpl";
     }
     if (swByteGet(0) < 0x110) {
-        return RO(base, 0x4E4, "map5.tpl");
+        return "map5.tpl";
     }
-    {
-#ifdef MUST_MATCH
-        // Default to the `>= 0x15C` template, then override it on the `<` path;
-        // the original compares r3 before overwriting it and branches on that
-        // earlier compare (rule 7).
-        const char* result;
-        s32 v = swByteGet(0);
-
-        result = RO(base, 0x4FC, "map7.tpl");
-        if (v < 0x15C) {
-            result = RO(base, 0x4F0, "map6.tpl");
-        }
-        return result;
-#else
-        if (swByteGet(0) >= 0x15C) {
-            return RO(base, 0x4FC, "map7.tpl");
-        }
-        return RO(base, 0x4F0, "map6.tpl");
-#endif
+    if (swByteGet(0) < 0x15C) {
+        return "map6.tpl";
     }
+    return "map7.tpl";
 }
 
 // Fixes that got here: the tail bounce ternaries computed into a local `d` before winTexInit (0xBC/0xBE/0xBB)
@@ -2174,7 +1934,7 @@ const char* winGetMapTplName(void) {
 // and the dead third-colour slot (original 0x8, ours 0x38) that shifts the by-value temp region.
 // opt_loop_invariants off: the target recomputes the vec3/colour loads inside the tubuDt loop, not hoisted.
 // opt_common_subs off: needed for the original's FPR/GPR colouring and by-value temp layout.
-// NONMATCHING (95.47%): behaviour complete; only register/allocation and the rodata-base conversion differ.
+// NONMATCHING (99.19%): behaviour complete; only register allocation differs.
 #pragma opt_loop_invariants off
 #pragma opt_common_subs off
 void mapGX(WindowWork* work, f32 x, f32 y) {
@@ -2182,7 +1942,6 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         {165.0f, 68.0f}, {0.0f, 75.0f}, {97.0f, 150.0f}, {-139.0f, -33.0f}, {41.0f, -163.0f}, {211.0f, -91.0f}, {-209.0f, 159.0f},
     };
     LogWin* w = (LogWin*)work;
-    const char* base = str_802F5EB8;
     f32 top;
     f32 tx = float_74_8041d86c + (x + w->mapScrollX);
     GXColor c0 = dat_8041d7a0;
@@ -2199,7 +1958,7 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         GXSetScissor((u32)(((float_304_8041d874 + x) - float_230_8041d878) - float_2_8041d87c),
                      (u32)((float_240_8041d858 - top) - float_2_8041d87c), 0x1D0, 0xF4);
         winTexInit((TEXPalette*)w->file->data[0]);
-        winTexSet(0, logMkVec(LV(0x140, vec3_802f5ff8), tx, ty), LV(0x14C, vec3_802f6004), c1);
+        winTexSet(0, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx, ty), (Vec){1.0f, 1.0f, 1.0f}, c1);
         winTexInit(LOG_TEXPAL());
         t = tubuDt;
         for (i = 0; (u32)i < 0x5D; i++, t++) {
@@ -2211,11 +1970,11 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
             if (w->mapSel == i) {
                 GXColor c = c0;
 
-                winTexSet(((gp->retraceCount >> 4) & 1) ? 0xB9 : 0xBA, logMkVec(LV(0x158, vec3_802f6010), tx + (f32)t->x, ty + (f32)t->y), LV(0x164, vec3_802f601c), c);
+                winTexSet(((gp->retraceCount >> 4) & 1) ? 0xB9 : 0xBA, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + (f32)t->x, ty + (f32)t->y), (Vec){1.0f, 1.0f, 1.0f}, c);
             } else {
                 GXColor c = c0;
 
-                winTexSet((t->visible != 0) ? 0xBA : 0xB8, logMkVec(LV(0x170, vec3_802f6028), tx + (f32)t->x, ty + (f32)t->y), LV(0x17C, vec3_802f6034), c);
+                winTexSet((t->visible != 0) ? 0xBA : 0xB8, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + (f32)t->x, ty + (f32)t->y), (Vec){1.0f, 1.0f, 1.0f}, c);
             }
         }
         {
@@ -2254,13 +2013,13 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 winIconInit();
                 {
                     GXColor cc = c2;
-                    logIconSet(icon, &cc, logMkVec(LV(0x188, vec3_802f6040), tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1])), LV(0x194, vec3_802f604c));
+                    logIconSet(icon, &cc, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1])), (Vec){1.0f, 1.0f, 1.0f});
                 }
 #else
                 GXColor cc = c2;
 
                 winIconInit();
-                logIconSet(icon, &cc, logMkVec(LV(0x188, vec3_802f6040), tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1])), LV(0x194, vec3_802f604c));
+                logIconSet(icon, &cc, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1])), (Vec){1.0f, 1.0f, 1.0f});
 #endif
             }
         }
@@ -2286,10 +2045,10 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
         winTexInit(LOG_TEXPAL());
-        winTexSet(0xBF, logMkVec(LV(0x1A0, vec3_802f6058), (x - float_230_8041d878) - float_4_8041d88c, y), LV(0x1AC, vec3_802f6064), c1);
-        winTexSet(0xBF, logMkVec(LV(0x1B8, vec3_802f6070), float_4_8041d88c + (float_230_8041d878 + x), y), LV(0x1C4, vec3_802f607c), c1);
-        winTexSet(0xBF, logMkVec(LV(0x1D0, vec3_802f6088), x, float_4_8041d88c + top), LV(0x1DC, vec3_802f6094), c1);
-        winTexSet(0xBF, logMkVec(LV(0x1E8, vec3_802f60a0), x, (y - float_120_8041d870) - float_4_8041d88c), LV(0x1F4, vec3_802f60ac), c1);
+        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - float_230_8041d878) - float_4_8041d88c, y), (Vec){1.0f, 32.0f, 1.0f}, c1);
+        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, float_4_8041d88c + (float_230_8041d878 + x), y), (Vec){1.0f, 32.0f, 1.0f}, c1);
+        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, float_4_8041d88c + top), (Vec){59.5f, 1.0f, 1.0f}, c1);
+        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, (y - float_120_8041d870) - float_4_8041d88c), (Vec){59.5f, 1.0f, 1.0f}, c1);
 #ifdef MUST_MATCH
         // Match-only: keep __fabs's double result in f0 (the original does
         // `fabs f0, f0; frsp f29, f0`); without the explicit f64 temp MWCC
@@ -2308,7 +2067,7 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         } else {
             d = bounce;
         }
-        winTexSet(0xBD, logMkVec(LV(0x200, vec3_802f60b8), x, top + d), LV(0x20C, vec3_802f60c4), c1);
+        winTexSet(0xBD, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, top + d), (Vec){1.0f, 1.0f, 1.0f}, c1);
         if (float_neg148_8041d898 == w->mapScrollX) {
             d = float_0_8041d7bc;
         } else {
@@ -2320,10 +2079,10 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
         // the original `fadds f0, f0, f30` operand order instead of commuting it.
         {
             f32 bx = float_220_8041d868 + x;
-            winTexSet(0xBC, logMkVec(LV(0x218, vec3_802f60d0), bx + d, y), LV(0x224, vec3_802f60dc), c1);
+            winTexSet(0xBC, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx + d, y), (Vec){1.0f, 1.0f, 1.0f}, c1);
         }
 #else
-        winTexSet(0xBC, logMkVec(LV(0x218, vec3_802f60d0), float_220_8041d868 + x + d, y), LV(0x224, vec3_802f60dc), c1);
+        winTexSet(0xBC, logMkVec((Vec){0.0f, 0.0f, 0.0f}, float_220_8041d868 + x + d, y), (Vec){1.0f, 1.0f, 1.0f}, c1);
 #endif
         if (float_0_8041d7bc == w->mapScrollY) {
             d = float_0_8041d7bc;
@@ -2331,14 +2090,14 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
             d = bounce;
         }
         winTexInit(LOG_TEXPAL());
-        winTexSet(0xBE, logMkVec(LV(0x230, vec3_802f60e8), x, (y - float_120_8041d870) - d), LV(0x23C, vec3_802f60f4), c1);
+        winTexSet(0xBE, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, (y - float_120_8041d870) - d), (Vec){1.0f, 1.0f, 1.0f}, c1);
         if (float_0_8041d7bc == w->mapScrollX) {
             d = float_0_8041d7bc;
         } else {
             d = bounce;
         }
         winTexInit(LOG_TEXPAL());
-        winTexSet(0xBB, logMkVec(LV(0x248, vec3_802f6100), (x - float_220_8041d868) - d, y), LV(0x254, vec3_802f610c), c1);
+        winTexSet(0xBB, logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - float_220_8041d868) - d, y), (Vec){1.0f, 1.0f, 1.0f}, c1);
     }
 }
 #pragma opt_loop_invariants reset
@@ -2361,7 +2120,7 @@ static inline void monoIconV(s32 id, Vec pos, Vec scale, GXColor color) {
 // every immediate match. Writing the rodata strings as plain literals (the AGENT_BRIEF base-
 // register recipe) makes MWCC pool them on the same base register as the vec3_* LV reads, so the
 // extra `addi base, pool, 0` and the r23/r24 colouring are gone and the instruction count is exact.
-// NONMATCHING (99.70%): the file-wide .rodata order (our pool is 0x179 bytes short, so the string and magic-double offsets differ) and the remaining FPR colouring; see REPORT.md.
+// NONMATCHING (99.72%): FPR colouring around the i2f conversions and the GXColor local slots.
 void monoshiriGX(WindowWork* work, f32 x, f32 y) {
     s32 i;
     LogWin* w = (LogWin*)work;
@@ -2384,15 +2143,15 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(pmsg));
         winFontInit();
         {
-            monoFontV(logMkVec(LV(0x260, vec3_802f6118), (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
-                               y - float_166_8041d830), LV(0x26C, vec3_802f6124), c8b, pmsg);
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
+                               y - float_166_8041d830), (Vec){0.75f, 0.75f, 0.75f}, c8b, pmsg);
         }
     }
     sprintf(buf, "%d\201^%d", w->seenCnt, w->charCnt);
     wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf));
     {
-        monoFontV(logMkVec(LV(0x278, vec3_802f6130), (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
-                           y - float_184_8041d834), LV(0x284, vec3_802f613c), c8b, buf);
+        monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
+                           y - float_184_8041d834), (Vec){0.75f, 0.75f, 0.75f}, c8b, buf);
     }
     winFontInit();
     fx = (float_24_8041d838 + x) - float_5_8041d83c;
@@ -2409,9 +2168,9 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         if (swGet(id + 0x117A) != 0) {
             if (id == 0x4D || id == 0x87) {
                 if (evtGetValue(NULL, GSW(0)) < 0xD2) {
-                    msg = msgSearch(str_802F6290);
+                    msg = msgSearch("btl_un_hatena");
                 } else {
-                    msg = msgSearch(str_802F62A0);
+                    msg = msgSearch("btl_un_rampell");
                 }
             } else {
                 msg = msgSearch(tattle->enemyTag);
@@ -2422,10 +2181,10 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         sprintf(buf2, "%d\x81\x44", (s32)enemy_monoshiri_sort_table[id]);
         
         {
-            monoFontV(logMkVec(LV(0x290, vec3_802f6148), fx + (f32)((s32)((i / 8) * 0xD8)), fy - (f32)((i % 8) * 0x18)), LV(0x29C, vec3_802f6154), c8c, buf2);
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, fx + (f32)((s32)((i / 8) * 0xD8)), fy - (f32)((i % 8) * 0x18)), (Vec){0.75f, 0.75f, 0.75f}, c8c, buf2);
         }
         {
-            monoFontV(logMkVec(LV(0x2A8, vec3_802f6160), xr + (f32)((s32)((i / 8) * 0xD8)), fy - (f32)((i % 8) * 0x18)), LV(0x2B4, vec3_802f616c), c8c, msg);
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, xr + (f32)((s32)((i / 8) * 0xD8)), fy - (f32)((i % 8) * 0x18)), (Vec){0.75f, 0.75f, 0.75f}, c8c, msg);
         }
     }
     if (w->charPage > 0) {
@@ -2433,10 +2192,10 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
 
         winTexInit(LOG_TEXPAL());
         bx = float_440_8041d84c + x;
-        winTexSet(0x17, logMkVec(LV(0x2C0, vec3_802f6178), bx, float_18_8041d850 + y), LV(0x2CC, vec3_802f6184), c4);
+        winTexSet(0x17, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, float_18_8041d850 + y), (Vec){-1.0f, -1.0f, -1.0f}, c4);
         winIconInit();
         {
-            monoIconV(0x7E, logMkVec(LV(0x2D8, vec3_802f6190), bx, y), LV(0x2E4, vec3_802f619c), c4);
+            monoIconV(0x7E, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, y), (Vec){0.6f, 0.6f, 0.6f}, c4);
         }
     }
     if (w->charPage < (w->charCnt + 0xF) / 16 - 1) {
@@ -2444,10 +2203,10 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
 
         winTexInit(LOG_TEXPAL());
         bx = float_440_8041d84c + x;
-        winTexSet(0x17, logMkVec(LV(0x2F0, vec3_802f61a8), bx, (y - float_15_8041d854) - float_240_8041d858), LV(0x2FC, vec3_802f61b4), c4);
+        winTexSet(0x17, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, (y - float_15_8041d854) - float_240_8041d858), (Vec){1.0f, 1.0f, 1.0f}, c4);
         winIconInit();
         {
-            monoIconV(0x80, logMkVec(LV(0x308, vec3_802f61c0), bx, y - float_240_8041d858), LV(0x314, vec3_802f61cc), c4);
+            monoIconV(0x80, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, y - float_240_8041d858), (Vec){0.6f, 0.6f, 0.6f}, c4);
         }
     }
     msg = msgSearch("msg_menu_sort_narabikae");
@@ -2458,11 +2217,11 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         winFontInit();
         ox = x + (float_420_8041d860 - fw);
         {
-            monoFontV(logMkVec(LV(0x320, vec3_802f61d8), ox, y - float_210_8041d7f0), LV(0x32C, vec3_802f61e4), c8b, msg);
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, ox, y - float_210_8041d7f0), (Vec){0.7f, 0.7f, 0.7f}, c8b, msg);
         }
         winIconInit();
         {
-            monoIconV(0x217, logMkVec(LV(0x338, vec3_802f61f0), ox - float_30_8041d864, y - float_220_8041d868), LV(0x344, vec3_802f61fc), c4);
+            monoIconV(0x217, logMkVec((Vec){0.0f, 0.0f, 0.0f}, ox - float_30_8041d864, y - float_220_8041d868), (Vec){0.6f, 0.6f, 0.6f}, c4);
         }
     }
 }
@@ -2488,7 +2247,7 @@ void* monosiriInit(BattleUnitType kind, f32 x, f32 y) {
 
 
 // 100%: matches through the unit's rodata base. The {jp, us} language table
-// lives at str_802F5EB8+0x350; reading it through `base` (instead of a local
+// lives at "msg_menu_kiroku_map"+0x350; reading it through `base` (instead of a local
 // initialiser) makes the compiler emit the original's `lwz r3, 0x350(r31)`.
 // `inBattle` is computed before the two table reads and as `!(x == 0)` so the
 // boolean lands in r3 and is copied to r28 exactly as the original does
@@ -2499,18 +2258,12 @@ void* monosiriInit(BattleUnitType kind, f32 x, f32 y) {
 void monosiriMain(void* work) {
     MonosiriWork* w = work;
     TattleEntry* tattle;
-    const char* base = str_802F5EB8;
     GlobalWork* g = gp;
-    const char* lang[2];
-    s32 inBattle;
+    s32 inBattle = !(g->inBattle == 0);
+    const char* lang[2] = { str_8041D7AC, str_8041D7B0 };
     GXTexObj texObj;
     s32 size;
 
-    // Raw offsets 0x350/0x354: the original's `jumptable_802F6208` (a local 2-entry
-    // const char* table) sits there in .rodata; no header names it.
-    inBattle = !(g->inBattle == 0);
-    lang[0] = *(const char**)(base + 0x350);
-    lang[1] = *(const char**)(base + 0x354);
 
     if (w == NULL) {
         return;
@@ -2518,10 +2271,10 @@ void monosiriMain(void* work) {
 
     switch (w->state) {
     case 0:
-        if ((u32)fileAsyncf(4, NULL, RO(base, 0x438, "%s/w/%s/win.tpl"), getMarioStDvdRoot(), lang[g->language]) != 0) {
-            if ((u32)fileAsyncf(0, NULL, RO(base, 0x448, "%s/w/jp/mono.dat"), getMarioStDvdRoot()) != 0) {
-                w->file1 = fileAllocf(4, RO(base, 0x438, "%s/w/%s/win.tpl"), getMarioStDvdRoot(), lang[gp->language]);
-                w->file2 = fileAllocf(0, RO(base, 0x448, "%s/w/jp/mono.dat"), getMarioStDvdRoot());
+        if ((u32)fileAsyncf(4, NULL, "%s/w/%s/win.tpl", getMarioStDvdRoot(), lang[g->language]) != 0) {
+            if ((u32)fileAsyncf(0, NULL, "%s/w/jp/mono.dat", getMarioStDvdRoot()) != 0) {
+                w->file1 = fileAllocf(4, "%s/w/%s/win.tpl", getMarioStDvdRoot(), lang[gp->language]);
+                w->file2 = fileAllocf(0, "%s/w/jp/mono.dat", getMarioStDvdRoot());
                 w->state++;
                 TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &texObj, 0x37);
                 size = GXGetTexBufferSize(GXGetTexObjWidth(&texObj), GXGetTexObjHeight(&texObj), 5, 0, 0);
@@ -2532,7 +2285,7 @@ void monosiriMain(void* work) {
     case 1:
         tattle = battleGetUnitMonosiriPtr(w->unitKind);
         if (animGroupBaseAsync(tattle->modelName, inBattle, NULL)) {
-            if (w->unitKind != 0x6B || animGroupBaseAsync(RO(base, 0x45C, "c_n_moa_a"), inBattle, NULL)) {
+            if (w->unitKind != 0x6B || animGroupBaseAsync("c_n_moa_a", inBattle, NULL)) {
                 w->alpha += 0x14;
                 if (w->alpha > 0xFF) {
                     w->alpha = 0xFF;
@@ -2543,7 +2296,7 @@ void monosiriMain(void* work) {
                         animPoseSetAnim(w->poseId, tattle->poseName, TRUE);
                         animPoseWorldPositionEvalOn(w->poseId);
                         animPoseMain(w->poseId);
-                        w->poseId2 = animPoseEntry(RO(base, 0x45C, "c_n_moa_a"), inBattle);
+                        w->poseId2 = animPoseEntry("c_n_moa_a", inBattle);
                         animPoseSetAnim(w->poseId2, str_8041D810, TRUE);
                         animPoseMain(w->poseId2);
                     } else {
@@ -2626,10 +2379,9 @@ void monosiriExit(void* work) {
 // matrix, as in the original. What is left is register colouring: the dead-copy loads/stores and the GXSetViewport
 // int->float temps take different registers, and the moamoa i2f magic pools anonymously at base+0x438/0x440 instead
 // of the original's base+0x420/0x428 (project-wide limitation).
-// NONMATCHING (99.39%): behaviour complete, checked against the asm; only register colouring and the anonymous i2f magic differ.
+// NONMATCHING (99.51%): behaviour complete, checked against the asm; only register colouring and the anonymous i2f magic differ.
 void capture(CameraId camId, void* param) {
     MonosiriWork* w = param;
-    const char* base = str_802F5EB8;
     AnimData* ad;
     Vec mn;
     Vec mx;
@@ -2678,15 +2430,15 @@ void capture(CameraId camId, void* param) {
     {
         u8* ap = (u8*)ad;
 
-        mnScratch = LV(0x358, vec3_802f6210);
-        mxScratch = LV(0x364, vec3_802f621c);
+        mnScratch = (Vec){0.0f, 0.0f, 0.0f};
         mnScratch.x = *(f32*)(ap + 0x44);
         mnScratch.y = *(f32*)(ap + 0x48);
         mnScratch.z = *(f32*)(ap + 0x4c);
+        mn = mnScratch;
+        mxScratch = (Vec){0.0f, 0.0f, 0.0f};
         mxScratch.x = *(f32*)(ap + 0x50);
         mxScratch.y = *(f32*)(ap + 0x54);
         mxScratch.z = *(f32*)(ap + 0x58);
-        mn = mnScratch;
         mx = mxScratch;
     }
 #else
@@ -2710,11 +2462,11 @@ void capture(CameraId camId, void* param) {
     } else {
         dist = ((float_608_8041d800 * (mx.y - cy)) / float_480_8041d804) / (f32)tan(HALF_FOV_TAN);
     }
-    at = LV(0x388, vec3_802f6240);
+    at = (Vec){0.0f, 0.0f, 0.0f};
     at.x = cx;
     at.y = cy;
-    up = LV(0x37C, vec3_802f6234);
-    eye = LV(0x370, vec3_802f6228);
+    up = (Vec){0.0f, 1.0f, 0.0f};
+    eye = (Vec){0.0f, 0.0f, 0.0f};
     eye.x = cx;
     eye.y = cy;
     eye.z = dist;
@@ -2746,7 +2498,7 @@ void capture(CameraId camId, void* param) {
     saved = *camGetPtr(camId);
     PSMTXCopy(view, camGetCurPtr()->view);
     if (animPoseGetVivianType(w->poseId) != 0) {
-        Vec v = LV(0x394, vec3_802f624c);
+        Vec v = (Vec){0.0f, 0.0f, 0.0f};
 
         animPoseVivianMain(w->poseId, &v);
     }
@@ -2803,7 +2555,7 @@ void capture(CameraId camId, void* param) {
 // 0x18/0x8 instead of 0x10/0x14, so the two winFontSet colour copies land at 0x14/0x10 instead of 0xc/0x8; the
 // first font block emits tx before bw where the original emits bw first; and the quad corner uses the opposite
 // volatile FPRs (f1/f2). The second font block's wdt2 block local fixes its volatile FPRs.
-// NONMATCHING (98.87%): call sequence, immediates and instruction count match; allocation/scheduling only.
+// NONMATCHING (98.88%): call sequence, immediates and instruction count match; allocation/scheduling only.
 void monosiri_disp(CameraId camId, void* param) {
     f32 s;
     MonosiriWork* w = param;
@@ -2919,55 +2671,34 @@ void monosiri_disp(CameraId camId, void* param) {
         tattle = battleGetUnitMonosiriPtr(unitKind);
         if (unitKind == 0x4D || unitKind == 0x87) {
             if (evtGetValue(NULL, GSW(0)) < 0xD2) {
-                sprintf(buf, str_802F6288, enemy_monoshiri_sort_table[unitKind],
-                        msgSearch(str_802F6290));
+                sprintf(buf, "%d\201D%s", enemy_monoshiri_sort_table[unitKind],
+                        msgSearch("btl_un_hatena"));
             } else {
-                sprintf(buf, str_802F6288, enemy_monoshiri_sort_table[unitKind],
-                        msgSearch(str_802F62A0));
+                sprintf(buf, "%d\201D%s", enemy_monoshiri_sort_table[unitKind],
+                        msgSearch("btl_un_rampell"));
             }
         } else {
-            sprintf(buf, str_802F6288, enemy_monoshiri_sort_table[unitKind],
+            sprintf(buf, "%d\201D%s", enemy_monoshiri_sort_table[unitKind],
                     msgSearch(tattle->enemyTag));
         }
         wdt = float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
         winFontInit();
         bw = float_248_8041d7e8 - wdt;
         tx = float_16_8041d7e4 + x;
-        {
-            GXColor cc = c;
-            Vec pos;
-            Vec tmp;
-            Vec scale;
-
-            scale = LV(0x3AC, vec3_802f6264);
-            tmp = LV(0x3A0, vec3_802f6258);
-            tmp.x = bw * float_0p5_8041d7c8 + tx;
-            tmp.y = y - float_180_8041d7ec;
-            pos = tmp;
-            winFontSet(&pos, &scale, &cc, buf);
-        }
-        sprintf(buf, str_802F62B0, msgSearch(str_802F62B8), msgSearch(tattle->locationTag));
+        monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, bw * float_0p5_8041d7c8 + tx, y - float_180_8041d7ec),
+                  (Vec){0.75f, 0.75f, 0.75f}, c, buf);
+        sprintf(buf, "%s\201@%s", msgSearch("menu_monosiri_derutokoro"), msgSearch(tattle->locationTag));
         wdt = float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
         {
-            GXColor cc = c;
-            Vec pos;
-            Vec tmp;
-            Vec scale;
             f32 wdt2 = float_248_8041d7e8 - wdt;
 
-            scale = LV(0x3C4, vec3_802f627c);
-            tmp = LV(0x3B8, vec3_802f6270);
-            tmp.x = float_1_8041d7c0 + (wdt2 * float_0p5_8041d7c8 + tx);
-            tmp.y = y - float_210_8041d7f0;
-            pos = tmp;
-            winFontSet(&pos, &scale, &cc, buf);
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, float_1_8041d7c0 + (wdt2 * float_0p5_8041d7c8 + tx),
+                               y - float_210_8041d7f0),
+                      (Vec){0.75f, 0.75f, 0.75f}, c, buf);
         }
     }
 }
 
-const f64 double_to_int_802f62d8 = 4503601774854144.0;
-const f64 double_to_int_mask_802f62e0 = 4503599627370496.0;
-const f64 double_0p21817_802f62e8 = 0.21816615760326385;
 
 // The SBSS2 region holds the tattle-viewer alpha scratch used by monosiri_disp.
 // A named zero-initialised object keeps it in .sbss2; the object after it is
