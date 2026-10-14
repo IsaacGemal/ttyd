@@ -6785,3 +6785,18 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   copies propagated away; opt_propagation off keeps them but grows the frame (~90); all twelve ids as expressions, decl
   orders, block-local counters, select as a statement: 92.75-97.29. Next: a frontend dump of a forced-inline variant to
   see whether MWCC makes the parameter temps at all.
+
+### fontmgr partial: FontDrawMessageMtx 99.99 -> 100, _JUTFont_DrawPos 63.72 -> 91.70 (Claude Opus 5.5, on4-fontmgr)
+- DrawPos: hue colour by value (`static inline u32 fontHSV2RGB(GXColor hsv)`: retail's four per-call copies, 0x140
+  frame); `f32 scale = 1.0f;` as a local keeps the `fmuls` (a literal folds); the unsigned `cellheight` conversion first
+  (fixes pool order: FontDrawMessageMtx 100, .rodata 97.98 -> 99.60, only trailing padding left); `xr`/`ty0` as ints
+  narrowed later into s16/u16 copies (raw first use, masked later uses); named s32 `hueL`/`hueR` plus rasim decl order
+  for all callee-saved regs; `GXColor rgb` filled via `*(u32*)&rgb = fontHSV2RGB(hsv)` and passed as
+  `GXColor4u8(rgb.r, ...)` (87.19 -> 91.70). Left: the 1.0f load and fheight's fsubs later in retail's prologue, a
+  `mr r0,r31` before the ty1 conversion, vertex 3-4 load/store order.
+- **FontDrawColor is aliasing:** `GXColor* __restrict color` makes the out-of-line copy 100 but its ~12 inlined copies
+  drop to 93.7-99.1 (not kept). Next: a natural way to make only the out-of-line definition alias-free.
+- Negatives: per-vertex inline helper 56; casts at stores; ty0/ty02/ty1 types; dead self-copies; opt_propagation off
+  78.74, opt_common_subs off 90.65, scheduling off 34.97. Start_alpha <= 60.40 over all six-statement orders (s32
+  param 67.97 loses the clrlwi). FontDrawStart as an inline call to Start_alpha(0xFF) fixes slots but 92.25 < 95.06.
+  FontDrawColor reading `a` first 78.6. FontDrawMessage unwrapping MUST_MATCH or hoisting 97.2-99.9.
