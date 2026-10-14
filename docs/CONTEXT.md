@@ -6983,3 +6983,9 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   compiler-variable `id` (scalarised struct-field cursor, or an inline taking the table pointer); or propagation on +
   named coefficients + `tbl[i]` (needs .sdata2 constants named before linking). Variants saved at ~/scratch-orch/reports/envdrv_vars/ (dt_s.c);
   levers.md saved at ~/scratch-orch/reports/envdrv_levers.md on the Mac.
+
+### mri_puni split fix: puniSearchRandom_Mikata/Teki 97.83 -> 100 (orchestrator, from on4-mripuni's finding)
+- Both functions really end with a dead `blr` after the loop back-edge; dtk had split it off as one-instruction
+  functions fn_19_A820 and fn_19_A8DC. Sizes set to 0xBC in config/G8MJ01/mri/symbols.txt, the two fakes and their
+  prototypes deleted: both match. Lesson: a near-miss whose only diff is a missing trailing `blr`, next to a 4-byte
+  "empty" fn_ symbol, is a split error, not a code problem. Function count 9,771 -> 9,769.

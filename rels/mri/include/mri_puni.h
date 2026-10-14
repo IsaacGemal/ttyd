@@ -238,9 +238,7 @@ s32 puniParaSelfCheck(PuniData* puni);
 s32 puniParaRecoverCheck(PuniData* puni);
 PuniData* puniSearchRandom(s32 start, s32 count);
 PuniData* puniSearchRandom_Mikata(void);
-void fn_19_A820(void);  // TODO: real signature
 PuniData* puniSearchRandom_Teki(void);
-void fn_19_A8DC(void);
 PuniData* searchBattle(PuniData* puni, s32 start, s32 count, f32 maxDist);
 PuniData* searchMikata(PuniData* puni);
 PuniData* searchTeki(PuniData* puni);
