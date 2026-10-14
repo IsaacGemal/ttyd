@@ -6767,3 +6767,21 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   and reloads per probe; plain locals 57.8, address-taking getter 60.9, address escape (MWCC forwards the store), Vec
   builders (break .rodata), 120 setup orders 79.0-80.4; MUST_MATCH volatile for now. Lead: a block boundary or an
   escape MWCC can't see through between the stores and the first probe.
+
+### win_root partial: winSortGX 98.71 -> 100, winHakoGX 94.65 -> 97.29, .sdata2 port done (Claude Opus 5.5, on4-winroot)
+- winSortGX: literal floats throughout with `f32 w = 128.0f; f32 w2 = 136.0f;` locals (retail's unfolded lfs and
+  `x + w + 8.0f`) -> 99.99; the last FPR closed by writing the three label x positions inline in the calls
+  (`x + 64.0f + 16.0f + 4.0f - 6.0f`) instead of x83/x84/x78 locals.
+- .sdata2 order (0 differing words): the tab animation became a plain static `winRootTabStep(tab, i)` defined AFTER
+  winRootMain and called from an inline `winRootTabMain` loop; MWCC emits the auto-inlined body first, so 185.0f lands
+  before 1000.0f (AGENT_BRIEF auto-inline pattern, #617/#618). Direct call 99.42; a static holding the whole loop isn't
+  inlined (91.24). Link risk: the standalone body leaves a third 0x38 jump table in .data (0x1f4 vs 0x1c0); expected to
+  strip with the body, unverifiable until Hako matches.
+- winHakoGX 97.29: by-value compound-literal Vecs/colours (frame size, low slots); per-strip `corner`/`edge` locals set to
+  `texBase + 0x7D/0x7E` (0x85/0x84) just before each loop, so only the special page uses t7d/t7e/t85/t84 and the same
+  six ids spill. Left: retail reloads each strip's corner/edge from the spill slot (we recompute) and starts each strip
+  counter as a copy (`mr r17,r21`): both look like an inlined function's parameter temps.
+- Negatives: edge-strip inline helpers exceed inline_max_size (72.97; forced 92.19, args still propagated); explicit
+  copies propagated away; opt_propagation off keeps them but grows the frame (~90); all twelve ids as expressions, decl
+  orders, block-local counters, select as a statement: 92.75-97.29. Next: a frontend dump of a forced-inline variant to
+  see whether MWCC makes the parameter temps at all.
