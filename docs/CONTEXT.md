@@ -7111,3 +7111,20 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   (98.51-98.53), rasim, mwsearch 20 min, CSE off, static sin/cos wrappers, inline products 98.49, retail store order
   96.6, tables as local arrays (fixes .rodata but NoUsedFCHaitiRand 66.9). Next: use `cz` in the first statement after
   the call, or compute sxsy/sxcy after a statement that uses `cz`.
+
+### mri_puni partial: 176 -> 181/186 (puniFukki, evt_puni_debug_info, evt_puni_setup, unk_mri_0000980c, puniModeALLCheck 100) (Claude Opus 5.5, on5-mripuni2)
+- More hand copies replaced by calls (#782 lever): debug_info/setup read records via
+  `puniswGetindex(0xF70F2E80, i - 1, &x, &pos)` and `puniswTrapGetindex(i, &trap)` (as mri_01's
+  elder_talk_sub_punicheck); evt_puni_exit calls puniswSetindex x3; ALLCheck's cleanup is puniDeleteEffect;
+  puni_sext16/puniNearest/puniExitNearest gone.
+- **Write the callee so it folds when inlined:** puniswGetindex computes `base + index * 7 + K` and reads into
+  `u8 b[7]` (the constant base cancels at call sites; the array fixes register order); puniswSetindex computes high bytes
+  in two statements (`yh = y >> 8; yh = yh & 0xFF;`, y before x), replacing an opt_propagation block.
+- **puniFukki as the 9-line recursive loop:** MWCC inlines the recursion itself; the hand-unrolled 5-level copy and
+  dont_inline pragma gone. unk_mri_0000980c is puniMoveAtari with by-value Vec/f32 (prototype changed, no callers).
+  ALLCheck's trailing if-chain as a switch with an empty `case 4`. rasim decl order for debug_info and exit.
+- Left: evt_puni_exit 94.58 (a merged compare temp takes r31, which `k` needs: rasim multi-edge what-if next);
+  evt_puni_all_save 89.23 (the natural Setindex version 86.63, hack kept); unk_mri_000095f0 96.04 (puniMoveAtari order
+  94.16); PuniChildHagure 97.88 (`child` must outrank every inlined temp; a static inline gives the right registers but
+  spends an inline level, 75.5); puniMapFindbuff 90.57 (retail precomputes four neighbour offsets, keeps &Punimap in r5;
+  calling puniMapPos2Blk 90.54); searchBattleTeki/Mikata calls 96.3-97.97. No further split errors.
