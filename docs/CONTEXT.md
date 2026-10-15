@@ -7078,3 +7078,18 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   monoshiriGX (no single edge); named `ty` assigned in the argument; winLogInit without pragmas 98.89; a tab helper
   taking `name` 94.87; non-volatile shadow 97.78. Cleanup left: winLogAddTab0, winLogMain2's `new_var`, capture's
   mnScratch block, the mapGX fabs block (remove one at a time).
+
+### win_root LINKED: winHakoGX 97.29 -> 100 (65/65) (Claude Opus 5.5, on5-winroot2)
+- **Hoisting decides spill copies:** the twelve `t7d..t82` and `corner`/`edge` locals are gone; each id is written
+  `type * 13 + 0xNN` at its use and strip tiles picked by if/else into `id`. MWCC judges the multiply-add worth hoisting
+  out of the loops and shares it between the special page and both strips, so each strip's setup gets copies that
+  become retail's spill-slot reloads. `texBase + 0xNN` is too cheap to hoist (92.7-93.6).
+- Second edge piece `if ((col & 1) == 0) id = edge; else id = odd;` (retail's branch order; `!(col & 1)` and `?:`
+  don't). Strip loops reuse `col`: MWCC gives each strip a compiler copy of the counter, which yields retail's
+  `li; mr r17,r21` (the second `li 0` becomes a `mr` only for a compiler copy, never a named variable). Page count
+  `(count + 0x1B) / 28` at each loop bound (mwsearch, 3 min); `(f32)(page * 0xE8)` instead of a hand-stepped `ofs`;
+  sections 2-3 write `ty` inside the Vec (fixed two swapped counters). Decl order row, count, page, cursor, texBase,
+  col, id. No pragma, helper or new MUST_MATCH. The #776 jump-table risk did not materialise.
+- Negatives: forced-inline strip helpers 92-93 (int params give copies but new spill slots); `(s32)(s64)`; local id
+  array, block scope, comma forms, a second assignment to `corner`; select as an inline. opt_propagation off gives the
+  strip copies (diagnostic only, 91.8 overall). Named copies like `corner = t7d` always propagate away.

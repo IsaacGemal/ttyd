@@ -1627,27 +1627,21 @@ void winMailGX(WindowWork* work, f32 x, f32 y) {
 // the row loops leave at 4; on page 0 the original reads it before any write (retail's
 // `mulli r4, r25, 0x38` at the top of the page loop), so the natural build sets it to 0.
 // The icon, texture and font calls take their Vecs and colours by value, built as compound literals.
-// Each edge strip takes its corner and long-edge tile from `corner`/`edge`, set before its loop.
-
-// NONMATCHING (97.29%): retail loads each strip's corner/edge from t7d/t7e/t85/t84's spill slots before
-// the loop, where this recomputes texBase + 0xNN, and its strip counters start as copies (`mr r17,r21`).
+// Tile ids are written `type * 13 + 0xNN` at each use and the page count `(count + 0x1B) / 28` at each
+// loop bound; MWCC hoists both out of the loops, which is where retail's twelve ids and page count come from.
 void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     f32 scroll;
-    s32 count;
-    s32 cursor;
-    s32 pageCount;
-    s32 texBase;
-    s32 page;
 #ifdef MUST_MATCH
     s32 row; // the original reads it in page 0's visibility test before the row loop sets it
 #else
     s32 row = 0;
 #endif
+    s32 count;
+    s32 page;
+    s32 cursor;
+    s32 texBase;
     s32 col;
-    s32 i;
-    s32 ofs;
-    s32 t7e, t7f, t84, t80, t87, t82, t81, t85, t86, t7d, t7b, t83;
-    s32 corner, edge;
+    s32 id;
 
     if (type == 0) {
         scroll = WW_F32(work, 0xEA0);
@@ -1680,69 +1674,74 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
     GXSetScissor((u32)(304.0f + x), (u32)(240.0f - y), 0x190, 0xE4);
 
     texBase = type * 0xD;
-    pageCount = (count + 0x1B) / 28;
-    t7d = texBase + 0x7D;
-    t7e = texBase + 0x7E;
-    t85 = texBase + 0x85;
-    t84 = texBase + 0x84;
-    t7b = texBase + 0x7B;
-    t81 = texBase + 0x81;
-    t86 = texBase + 0x86;
-    t80 = texBase + 0x80;
-    t7f = texBase + 0x7F;
-    t83 = texBase + 0x83;
-    t87 = texBase + 0x87;
-    t82 = texBase + 0x82;
-    ofs = 0;
-    for (page = 0; page < pageCount; ofs += 0xE8, page++) {
-        f32 vis = (scroll + (y - (f32)(row * 0x38))) - (f32)ofs;
+    for (page = 0; page < (count + 0x1B) / 28; page++) {
+        f32 vis = (scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8);
 
         if (vis > 400.0f || vis < -400.0f) {
             continue;
         }
         if ((texBase != 0 && page == 2) || (texBase != 1 && page == 3)) {
-                winBookQuad(WIN_BOOK_TEX(work), t7b, x, (y + scroll) - (f32)(page * 0xE8), 56.0f, 56.0f);
-                winBookQuad(WIN_BOOK_TEX(work), t7d, x, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
-                winBookQuad(WIN_BOOK_TEX(work), t7e, x + 8.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 48.0f, 8.0f);
-                winBookQuad(WIN_BOOK_TEX(work), t85, x + 56.0f, (y + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
-                winBookQuad(WIN_BOOK_TEX(work), t84, x + 56.0f, ((y - 8.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 48.0f);
-                winBookQuad(WIN_BOOK_TEX(work), t81, x + 56.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                winBookQuad(WIN_BOOK_TEX(work), type * 13 + 0x7B, x, (y + scroll) - (f32)(page * 0xE8), 56.0f, 56.0f);
+                winBookQuad(WIN_BOOK_TEX(work), type * 13 + 0x7D, x, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                winBookQuad(WIN_BOOK_TEX(work), type * 13 + 0x7E, x + 8.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 48.0f, 8.0f);
+                winBookQuad(WIN_BOOK_TEX(work), type * 13 + 0x85, x + 56.0f, (y + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                winBookQuad(WIN_BOOK_TEX(work), type * 13 + 0x84, x + 56.0f, ((y - 8.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 48.0f);
+                winBookQuad(WIN_BOOK_TEX(work), type * 13 + 0x81, x + 56.0f, ((y - 56.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
                 break; // retail leaves the page loop once the special page is drawn (b .L_80154348 at 0x8015386C)
             } else {
 
                 for (col = 0; col < 7; col++) {
                     for (row = 0; row < 4; row++) {
-                        winBookQuad(WIN_BOOK_TEX(work), t7b + ((col + 7 * row) & 1),
+                        winBookQuad(WIN_BOOK_TEX(work), type * 13 + 0x7B + ((col + 7 * row) & 1),
                                  x + (f32)(col * 0x38),
-                                 (scroll + (y - (f32)(row * 0x38))) - (f32)ofs,
+                                 (scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8),
                                  56.0f, 56.0f);
                     }
                 }
-                corner = texBase + 0x7D;
-                edge = texBase + 0x7E;
-                for (i = 0; i < 7; i++) {
-                    winBookQuad(WIN_BOOK_TEX(work), i == 0 ? corner : ((i & 1) ? t7f : t86), x + (f32)(i * 0x38), ((y - 224.0f) + scroll) - (f32)ofs, 8.0f, 8.0f);
-                    winBookQuad(WIN_BOOK_TEX(work), (i & 1) ? t80 : edge, x + (f32)(i * 0x38) + 8.0f, ((y - 224.0f) + scroll) - (f32)ofs, 48.0f, 8.0f);
+                for (col = 0; col < 7; col++) {
+                    if (col == 0) {
+                        id = type * 13 + 0x7D;
+                    } else if (col & 1) {
+                        id = type * 13 + 0x7F;
+                    } else {
+                        id = type * 13 + 0x86;
+                    }
+                    winBookQuad(WIN_BOOK_TEX(work), id, x + (f32)(col * 0x38), ((y - 224.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                    if ((col & 1) == 0) {
+                        id = type * 13 + 0x7E;
+                    } else {
+                        id = type * 13 + 0x80;
+                    }
+                    winBookQuad(WIN_BOOK_TEX(work), id, x + (f32)(col * 0x38) + 8.0f, ((y - 224.0f) + scroll) - (f32)(page * 0xE8), 48.0f, 8.0f);
                 }
-                corner = texBase + 0x85;
-                edge = texBase + 0x84;
-                for (i = 0; i < 4; i++) {
-                    winBookQuad(WIN_BOOK_TEX(work), i == 0 ? corner : ((i & 1) ? t83 : t87), x + 392.0f, (scroll + (y - (f32)(i * 0x38))) - (f32)ofs, 8.0f, 8.0f);
-                    winBookQuad(WIN_BOOK_TEX(work), (i & 1) ? t82 : edge, x + 392.0f, (scroll + ((y - (f32)(i * 0x38)) - 8.0f)) - (f32)ofs, 8.0f, 48.0f);
+                for (col = 0; col < 4; col++) {
+                    if (col == 0) {
+                        id = type * 13 + 0x85;
+                    } else if (col & 1) {
+                        id = type * 13 + 0x83;
+                    } else {
+                        id = type * 13 + 0x87;
+                    }
+                    winBookQuad(WIN_BOOK_TEX(work), id, x + 392.0f, (scroll + (y - (f32)(col * 0x38))) - (f32)(page * 0xE8), 8.0f, 8.0f);
+                    if ((col & 1) == 0) {
+                        id = type * 13 + 0x84;
+                    } else {
+                        id = type * 13 + 0x82;
+                    }
+                    winBookQuad(WIN_BOOK_TEX(work), id, x + 392.0f, (scroll + ((y - (f32)(col * 0x38)) - 8.0f)) - (f32)(page * 0xE8), 8.0f, 48.0f);
                 }
-                winBookQuad(WIN_BOOK_TEX(work), t81, x + 392.0f, ((y - 224.0f) + scroll) - (f32)ofs, 8.0f, 8.0f);
+                winBookQuad(WIN_BOOK_TEX(work), type * 13 + 0x81, x + 392.0f, ((y - 224.0f) + scroll) - (f32)(page * 0xE8), 8.0f, 8.0f);
             }
     }
 
     // Section 2: the empty-slot tiles. Drawn when the item is not yet obtained.
     winTexInit(**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0));
-    for (page = 0; page < pageCount; page++) {
+    for (page = 0; page < (count + 0x1B) / 28; page++) {
         f32 vis2 = (scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8);
         if (vis2 > 400.0f || vis2 < -400.0f) {
             continue;
         }
         for (row = 0; row < 4; row++) {
-            f32 ty = ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - 28.0f;
             for (col = 0; col < 7; col++) {
                 s32 idx = page * 0x1C + row * 7 + col;
                 if (idx < count) {
@@ -1757,7 +1756,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                             continue;
                         }
                     }
-                    winTexSet(0x97, (Vec){((x + (f32)(col * 0x38)) + 24.0f) + 4.0f, ty, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                    winTexSet(0x97, (Vec){((x + (f32)(col * 0x38)) + 24.0f) + 4.0f, ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - 28.0f, 0.0f}, (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
             }
         }
@@ -1765,9 +1764,8 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
 
     // Section 3: the item icons, drawn when the item is obtained.
     winIconInit();
-    for (page = 0; page < pageCount; page++) {
+    for (page = 0; page < (count + 0x1B) / 28; page++) {
         for (row = 0; row < 4; row++) {
-            f32 ty = ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - 28.0f;
             for (col = 0; col < 7; col++) {
                 s32 idx = page * 0x1C + row * 7 + col;
                 if (idx < count) {
@@ -1786,7 +1784,7 @@ void winHakoGX(WindowWork* work, s32 type, f32 x, f32 y) {
                         { ItemData* it = &itemDataTable[*(s16*)((u8*)work + 0xFB4 + idx * 2)];
                         iconId = *(u16*)&it[0xB3].icon_id; }
                     }
-                    winMailIconV(iconId, (Vec){((x + (f32)(col * 0x38)) + 24.0f) + 4.0f, ty, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+                    winMailIconV(iconId, (Vec){((x + (f32)(col * 0x38)) + 24.0f) + 4.0f, ((scroll + (y - (f32)(row * 0x38))) - (f32)(page * 0xE8)) - 28.0f, 0.0f}, (Vec){0.8f, 0.8f, 0.8f}, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
                 }
             }
         }

@@ -846,7 +846,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "window/win_root.c"),
+            Object(Matching, "window/win_root.c"),
             Object(Matching, "window/win_party.c"),
             Object(Matching, "window/win_badge.c"),
             Object(Matching, "window/win_item.c"),
