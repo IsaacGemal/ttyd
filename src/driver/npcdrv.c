@@ -99,8 +99,8 @@ int __float_nan[];
 #define FP_SUBNORMAL 5
 
 // Prototypes for the forward references the original function order needs.
-static inline void npcHammerPos(Vec* pos, f32 frame, f32 angle, f32 radius);
-static void npcSpinHammerPos(Vec* pos, f32 angle, f32 radius);
+static inline void npcHammerPos(f32* x, f32* y, f32* z, f32 frame, f32 angle, f32 radius);
+static void npcSpinHammerPos(f32* x, f32* y, f32* z, f32 angle, f32 radius);
 static void fbatFirstAttackAnnounceMain(FieldBattleData* fbat);
 
 static inline s32 __fpclassifyf(f32 x) {
@@ -781,8 +781,8 @@ static inline f32 npcSinf(f32 rad) {
 }
 
 static inline f32 npcCosf(f32 rad) {
+    f32 f0, f1;
     f32 cosv;
-    f32 f0;
     f32 c1, c2, pi;
 
     cosv = NPC_F_COS0;
@@ -796,8 +796,8 @@ static inline f32 npcCosf(f32 rad) {
             cosv = cosv * f0 - c1;
             cosv = cosv * f0 + c2;
         } else {
-            f0 = rad - pi;
-            rad = pi - f0;
+            f1 = rad - pi;
+            rad = pi - f1;
             f0 = rad * rad;
             cosv = cosv * f0 - c1;
             cosv = cosv * f0 + c2;
@@ -810,9 +810,9 @@ static inline f32 npcCosf(f32 rad) {
         cosv = cosv * f0 + c2;
         cosv = -cosv;
     } else {
-        f0 = rad - NPC_F_THREEHALVES;
+        f1 = rad - NPC_F_THREEHALVES;
         pi = NPC_F_HALFPI;
-        rad = pi - f0;
+        rad = pi - f1;
         f0 = rad * rad;
         cosv = cosv * f0 - c1;
         cosv = cosv * f0 + c2;
@@ -824,10 +824,13 @@ static inline f32 npcCosf(f32 rad) {
 // with history 4..1, alpha 0x80-100..0x80-25, flag save/restore). The named unit-rodata constants hoist the
 // coefficient loads before the branches, `t1`/`t2` make MWCC put the product in f2 and the angle in f5, each
 // branch reuses `rad` as the folded angle, and declaring `alpha` first (with its init/decrement in the for
-// header) and putting `i` in the leading block give retail's callee-saved map. Left: the sin/cos
-// accumulator lands in f1 (an extern constant does not coalesce like a literal, so halfpi then takes f0).
+// header) and putting `i` in the leading block give retail's callee-saved map.
 // The colour is a compound literal argument, which also gives retail's stack slots for it and its by-value copy.
-// NONMATCHING (97.75%): sin/cos accumulator FPR only (halfpi lands in f0, retail f1). The npcSinf square temp must be `f0` (not `f1`) to match retail's `fmuls f0,f5,f5`.
+// `opt_lifetimes off` keeps each polynomial accumulator in its seed's register (retail f4) instead of a new
+// register per step; npcCosf has npcSinf's shape (`f1` for the reflected angle), which recovers its scratch pair.
+// NONMATCHING (99.44%): in npcSinf/npcCosf's cosine copy, `rad` takes f0 and the 4.712389 compare constant f5
+// (retail the other way round).
+#pragma opt_lifetimes off
 void npcDisp_blur(CameraId camId, void* param) {
     s32 alpha;
     NpcEntry* entry = param; // cast to proper type
@@ -856,6 +859,8 @@ void npcDisp_blur(CameraId camId, void* param) {
     animPoseSetMaterialFlagOff(entry->poseId, 0x40);
     animPoseSetMaterialFlagOn(entry->poseId, flag);
 }
+
+#pragma opt_lifetimes reset
 
 void npcInit(void) { // 1:1
     FieldBattleData* data;
@@ -2899,17 +2904,27 @@ static inline BOOL fbatNpcEventDone(NpcEntry* npc) {
 // Finds the nearest field npc Mario's attacks hit, for each kind of attack `flags` enables in turn: jumps
 // (0x30), the hammer (0x40), the spin hammer (0x80), Koops' shell (0x100) and partner 3 (0x200). Flag 0x2000
 // only tests (no attack announce); 0x1000 looks at npcs with flag 8 instead of the others.
-// NONMATCHING (99.35%): every call, branch and constant matches; one redundant `addi r22,r29,0` copies the
-// hammer angle table's rodata base instead of reusing r29, and the callee-saved GPR colouring then differs.
+// dont_inline: retail calls _npcHitCheckSphere (4 sites) and _npcHitCheckHammerAllMotion (2) from here instead
+// of inlining them; the static inline helpers are still inlined.
+// The attack flags (flag8/jump/stomp) and dryRun/mario are function-wide and declared first, one `flag8`
+// and one `npc` serve every attack kind, the hammer frame number goes straight into npcHammerPos, and both
+// hammer helpers return the head position through x/y/z pointers: together they give retail's callee-saved
+// GPR map.
+// NONMATCHING (99.98%): only callee-saved FPR numbers differ, in the hammer and spin `else` blocks (radius/angle
+// take f29 where retail has f31) and in the shell block (radius/x in f29/f28, retail f28/f29).
+#pragma dont_inline on
 void* fbatHitCheck(s32 flags, s32 out) {
+    u32 flag8;
+    u32 jump;
+    u32 stomp;
+    u32 dryRun;
+    MarioWork* mario;
     NpcEntry* hit = NULL;
     NpcEntry* npc = NULL;
     NpcWork* npcWork = npcGetWorkPtrInline();
-    MarioWork* mario;
     FbatHitInfo info;
-    s32 count;
-    u32 dryRun;
     s32 i;
+    s32 count;
     f32 dist;
 
     mario = marioGetPtr();
@@ -2923,14 +2938,12 @@ void* fbatHitCheck(s32 flags, s32 out) {
 
     // jumps: the npc under Mario's feet
     if (flags & 0x30) {
-        u32 stomp = flags & 0x10;
-
+        stomp = flags & 0x10;
         count = npcWork->total; // retail reads the total here, and only here
         npc = npcWork->entries;
         if (!(stomp && mario->unk4C > 0) && fbatAttackEnabled(npc)) {
-            u32 flag8 = flags & 0x1000;
-            u32 jump = flags & 0x20;
-
+            flag8 = flags & 0x1000;
+            jump = flags & 0x20;
             for (i = 0; i < count; i++, npc++) {
                 if (npc == NULL || !(npc->flags & 2)) {
                     continue;
@@ -3042,10 +3055,8 @@ void* fbatHitCheck(s32 flags, s32 out) {
             if (flags & 1) {
                 f32 radius;
                 f32 angle;
-                f32 frame;
                 f32 x, y, z;
                 s32 frameNo;
-                u32 flag8;
                 MarioWork* pose;
                 f32 yaw;
 
@@ -3062,15 +3073,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 if (frameNo > 20) {
                     frameNo = 10;
                 }
-                frame = frameNo;
-                {
-                    Vec pos;
-
-                    npcHammerPos(&pos, frame, angle, radius);
-                    x = pos.x;
-                    z = pos.z;
-                    y = pos.y;
-                }
+                npcHammerPos(&x, &y, &z, frameNo, angle, radius);
                 flag8 = flags & 0x1000;
                 npc = npcWork->entries;
                 for (i = 0; i < count; i++, npc++) {
@@ -3103,9 +3106,12 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     break;
                 }
             } else {
-                f32 radius = 1.5f * mario->wPlayerCollisionBox.x;
-                f32 angle = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
-                u32 flag8 = flags & 0x1000;
+                f32 angle;
+                f32 radius;
+
+                radius = 1.5f * mario->wPlayerCollisionBox.x;
+                angle = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
+                flag8 = flags & 0x1000;
 
                 npc = npcWork->entries;
                 for (i = 0; i < count; i++, npc++) {
@@ -3154,8 +3160,9 @@ void* fbatHitCheck(s32 flags, s32 out) {
             if (flags & 1) {
                 f32 angle;
                 f32 radius;
-                Vec pos;
-                u32 flag8;
+                f32 x;
+                f32 y;
+                f32 z;
 
                 if (mario->currMotionId != 0x13) {
                     break;
@@ -3165,7 +3172,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     break;
                 }
                 radius = 1.5f * mario->wPlayerCollisionBox.x;
-                npcSpinHammerPos(&pos, angle, radius);
+                npcSpinHammerPos(&x, &y, &z, angle, radius);
                 flag8 = flags & 0x1000;
                 npc = npcWork->entries;
                 for (i = 0; i < count; i++, npc++) {
@@ -3186,7 +3193,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                         || (npc->flags & 0x08000000)) {
                         continue;
                     }
-                    if (_npcHitCheckSphere(npc, &dist, pos.x, pos.y, pos.z, 12.0f) == NULL || dist >= info.dist) {
+                    if (_npcHitCheckSphere(npc, &dist, x, y, z, 12.0f) == NULL || dist >= info.dist) {
                         continue;
                     }
                     info.dist = dist;
@@ -3214,7 +3221,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
             } else {
                 f32 radius = 1.5f * mario->wPlayerCollisionBox.x;
                 f32 angle = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
-                u32 flag8 = flags & 0x1000;
+                flag8 = flags & 0x1000;
 
                 npc = npcWork->entries;
                 for (i = 0; i < count; i++, npc++) {
@@ -3295,7 +3302,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 f32 y = 0.5f * *(f32*)((u8*)party + 0xF0) + party->position.y; // 0xF0: the shell's height
                 f32 z = party->position.z;
                 f32 x = party->position.x;
-                u32 flag8 = flags & 0x1000;
+                flag8 = flags & 0x1000;
 
                 npc = npcWork->entries;
                 for (i = 0; i < count; i++, npc++) {
@@ -3337,9 +3344,6 @@ void* fbatHitCheck(s32 flags, s32 out) {
         PartyEntry* party = partyGetPtr(marioGetPartyId());
 
         while (hit == NULL) {
-            NpcEntry* other;
-            u32 flag8;
-
             if ((flags & 0x10) && mario->unk4C > 0) {
                 break;
             }
@@ -3351,33 +3355,33 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 break;
             }
             flag8 = flags & 0x1000;
-            other = npcWork->entries;
-            for (i = 0; i < count; i++, other++) {
-                if (other == NULL || !(other->flags & 2)) {
+            npc = npcWork->entries;
+            for (i = 0; i < count; i++, npc++) {
+                if (npc == NULL || !(npc->flags & 2)) {
                     continue;
                 }
                 if (flag8) {
-                    if (!(other->flags & 8)) {
+                    if (!(npc->flags & 8)) {
                         continue;
                     }
-                } else if (other->flags & 8) {
+                } else if (npc->flags & 8) {
                     continue;
                 }
-                if (dryRun && !(other->reactionFlags & 8)) {
+                if (dryRun && !(npc->reactionFlags & 8)) {
                     continue;
                 }
-                if ((other->flags & 0x20000000) || (other->flags & 0x20) || (other->jumpFlags & 4)
-                    || (other->flags & 0x08000000)) {
+                if ((npc->flags & 0x20000000) || (npc->flags & 0x20) || (npc->jumpFlags & 4)
+                    || (npc->flags & 0x08000000)) {
                     continue;
                 }
-                if (_npcHitCheckSphere(other, &dist, party->position.x,
+                if (_npcHitCheckSphere(npc, &dist, party->position.x,
                                        0.5f * *(f32*)((u8*)party + 0xF0) + party->position.y, party->position.z,
                                        30.0f) == NULL
                     || dist >= info.dist) {
                     continue;
                 }
                 info.dist = dist;
-                hit = other;
+                hit = npc;
                 info.kind = 0x1000000;
                 if (!dryRun) {
                     fbatSetAttackAnnounce(info.kind);
@@ -3397,19 +3401,19 @@ void* fbatHitCheck(s32 flags, s32 out) {
 #pragma force_active on
 #pragma force_active reset
 
+#pragma dont_inline reset
+
 // The spin hammer's head: `radius` out from Mario at `angle`, 15 units up.
-static void npcSpinHammerPos(Vec* pos, f32 angle, f32 radius) {
+static void npcSpinHammerPos(f32* x, f32* y, f32* z, f32 angle, f32 radius) {
     MarioWork* m = marioGetPtr();
     f32 s, c;
 
     sincosf(&s, &c, angle);
-    pos->x = s * radius + m->position.x;
-    pos->z = c * radius + m->position.z;
-    pos->y = 15.0f + m->position.y;
+    *x = s * radius + m->position.x;
+    *z = c * radius + m->position.z;
+    *y = 15.0f + m->position.y;
 }
 
-// dont_inline: retail calls _npcHitCheckSphere from fbatHitCheck (4 sites) instead of inlining it.
-#pragma dont_inline on
 NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z, f32 radius) {
     f32 dx = x - entry->position.x;
     f32 dy = y - entry->position.y;
@@ -3430,13 +3434,10 @@ NpcEntry* _npcHitCheckSphere(NpcEntry* entry, f32* outDist, f32 x, f32 y, f32 z,
 }
 
 // Hammer sweep over 12 elevation angles: npcHammerPos places the hammer head (its angle table is the one
-// template, dat_802c2f9c, that fbatHitCheck's inlined copy also reads), then the _npcHitCheckSphere test.
-// dont_inline keeps it out of fbatHitCheck, which calls it twice. Declaring dx/dy/dz as dy,dx,dz recovered
-// the prologue; copying the head position to px/pz/py gets the target's px,pz,py FP order. The unused `zero`
-// vector is the original's: its template sits in .rodata between npcEntry's vectors and the angle table.
-// The allocator coalesces pos.y into the register of its dead addend here; the original instead reuses the
-// register that held s2.
-// NONMATCHING (99.78%): only the FP register holding pos.y differs (ours f3, target f6; dx then follows into f5).
+// template, dat_802c2f9c, that fbatHitCheck's inlined copy also reads), then _npcHitCheckSphere, inlined
+// here. npcHammerPos returns the head through x/y/z pointers: with a Vec the scalarised pos.y outranks the
+// sphere test's entry->position.y temp, while the named `y` ranks below it as in the original. The unused
+// `zero` vector is the original's: its template sits in .rodata between npcEntry's vectors and the angle table.
 NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius, f32 angle) {
     Vec zero = { 0.0f, 0.0f, 0.0f };
     f32 i = 0.0f;
@@ -3445,40 +3446,21 @@ NpcEntry* _npcHitCheckHammerAllMotion(NpcEntry* entry, f32* outDist, f32 radius,
     NpcEntry* hit;
 
     for (; i <= 11.0f; i += 1.0f) {
-        Vec pos;
-        f32 px, py, pz;
-        f32 dy, dx, dz;
+        f32 x, y, z;
 
-        npcHammerPos(&pos, i, angle, radius);
-        {
-        px = pos.x;
-        pz = pos.z;
-        py = pos.y;
-        dx = px - entry->position.x;
-        dy = py - entry->position.y;
-        dz = pz - entry->position.z;
-        if (py != entry->position.y) {
-            if (py >= entry->position.y && py <= entry->position.y + entry->height) {
-                dy = 0.0f;
-            } else if (py > entry->position.y + entry->height) {
-                dy = py - (entry->position.y + entry->height);
-            }
-        }
-        dist = sqrtf(dx * dx + dy * dy + dz * dz);
-        npc = (dist < entry->width * 0.5f + 12.0f) ? entry : NULL;
+        npcHammerPos(&x, &y, &z, i, angle, radius);
+        npc = _npcHitCheckSphere(entry, &dist, x, y, z, 12.0f);
         hit = npc;
         if (npc != NULL) {
             break;
-        }
         }
     }
     *outDist = dist;
     return hit;
 }
-#pragma dont_inline reset
 
 // The hammer head's position: `angle` around Mario, raised by the swing angle of animation frame `frame`.
-static inline void npcHammerPos(Vec* pos, f32 frame, f32 angle, f32 radius) {
+static inline void npcHammerPos(f32* x, f32* y, f32* z, f32 frame, f32 angle, f32 radius) {
     MarioWork* mario = marioGetPtr();
     s32 angles[] = { 0, 0, 0, 0, 45, 60, 90, 100, 101, 101, 101 };
     f32 s1, c1, s2, c2;
@@ -3491,9 +3473,9 @@ static inline void npcHammerPos(Vec* pos, f32 frame, f32 angle, f32 radius) {
     }
     sincosf(&s1, &c1, angle);
     sincosf(&s2, &c2, (f32)angles[(s32)frame]);
-    pos->x = s2 * (s1 * radius) + mario->position.x;
-    pos->z = s2 * (c1 * radius) + mario->position.z;
-    pos->y = radius * c2 + mario->position.y;
+    *x = s2 * (s1 * radius) + mario->position.x;
+    *z = s2 * (c1 * radius) + mario->position.z;
+    *y = radius * c2 + mario->position.y;
 }
 
 BOOL npcCheckInterrupt(NpcEntry* npc) {
@@ -3551,7 +3533,8 @@ BOOL npcCheckInterrupt(NpcEntry* npc) {
 // num/enemy/walk in r27/r26/r30 (retail r30/r26/r27, still swapped). The level test is a switch (levels 1 and 2
 // skip the roll; 0 and everything else roll), whose lowering is retail's `beq/blt; cmpwi 3; bge roll; b body`.
 // The held-item pick stores and breaks inside its `for (;;)` (retail's bcc->b shape).
-// NONMATCHING (98.78%): the heldItems loop's num/walk register pairing.
+// The loadout weight sum keeps the weight it tests in `weight` (retail adds the loaded value, no reload).
+// NONMATCHING (99.78%): the heldItems loop's num/walk register pairing.
 void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     s32 i;
     u8* p;
@@ -3565,6 +3548,7 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     s32 evt;
     s32 pick;
     s32 sum;
+    s32 weight;
 
     memset(info, 0, 0xC8);
     memset(info->recoveredItems, 0, 0x20);
@@ -3607,8 +3591,8 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     if (sel != NULL) {
         entry = sel;
         sum = 0;
-        while (entry->weight > 0) {
-            sum += entry->weight;
+        while ((weight = entry->weight) > 0) {
+            sum += weight;
             entry++;
         }
         if (sum > 0) {
