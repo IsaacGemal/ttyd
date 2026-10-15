@@ -7152,3 +7152,22 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   ChkWallAround/searchFrontWall (0x18 bytes of locals below `half`); marioChkFront dir.y load scheduling. Failed:
   ChkFront orders 90.6-98.5 / marioHitCheckVec form 95.13; searchFrontWall `half[]` position, non-const templates
   (90.84); rasim neighbors (no single edge); `const * -cos` spellings x4; yy in the loop in ChkLandon2 (94.15).
+
+### pmario_sound partial: 42 -> 44/50 (calc3D, psndENV_LPF 100), .rodata and .sdata2 identical (Claude Opus 5.5, on5-pmsound2)
+- .rodata link blocker cleared: an uncalled `s32 psndENV_vol(id, vol, time)` at the end of the file under MUST_MATCH
+  (`/// @todo reconstructed`; the env fade-to-volume sibling of psndENVOff_f_d's 0x800 branch) converts a signed time,
+  so the signed i2f double pools first (#775 pattern). Its only float is the existing 16.666666f. Data matched +1.63.
+- **Header types from evidence:** `psndENV_LPF(s32 id, u16 freq)` with early returns (100; the only caller passes u16);
+  `psndBGMOn_f_d(.., s32 name)` id-or-name like psndENVOn_f_d/__psndSFXOn (party_motion already cast an s32; the
+  parameter is reused for the resolved id, retail's r24, without the refused type-pun); `__psndSFXOn(.., u8 vol, u8 pan)`
+  plus u8 in psndSFXOnVol/psndSFXOnEx_3D (Super Paper Mario's __spsndSFXOn has u8 volume/pan; retail callers pass them
+  unmasked; psndENVMain 98.09 -> 98.80).
+- calc3D 99.87 -> 100: each branch keeps its `sin()` result in its own `f32 s` (fixed every conversion slot) and
+  `angOut = 64.0f +- 64.0f * s` converts implicitly (r0 copy gone); optimize_for_size pragma removed. psndBGMOn_f_d
+  99.78 (early slot pointer `cur`, rasim decl order, `psbgmlist[bgm->unk0].field_0x4`, opt_lifetimes removed).
+  psndENVMain 99.06 (`t = work4 * x / work2;` reusing `t`). psndENVOn_f_d 99.40 (`s32 ofs = slot * 2` after `work`).
+- Left: __psndSFXOn and psndENV_stop each need one more interference neighbour (rasim; psndENV_stop as inlined
+  psndSFXOff calls is instruction-identical at 97.88); self-stores, named psnd pointer, shared `i` 99.15, mwsearch
+  35 min/2,577 and 25 min/1,571 failed. psndENVOn_f_d: 0x7D00 constant vs address swap (six store spellings, types:
+  96.5-99.40). psndBGMOn_f_d `vol` load/store/copy: 12 spellings 98.63-99.78. psndSFXMain: rasim fails over 79 orders
+  (live ranges). psndENVMain /100 constant ordering: 24 inline decl orders, return types, operand order.
