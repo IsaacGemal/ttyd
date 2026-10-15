@@ -1495,22 +1495,24 @@ void puniMapDataSet(s32 w, s32 h, f32 a, f32 b, void* data) {
     }
 }
 
-// NONMATCHING (90.35%): shape/constants/calls all match; only register colouring + the four neighbour
-// `slwi` scalings differ. The target keeps `&Punimap` in r5 (`addi r5,r3,Punimap@l; lwz r3,0(r5)`);
-// we get `lwzu r4,Punimap@l(r3)` and r3, shifting every loop register a couple lower.
+// NONMATCHING (97.29%): the target loads pos->z above the field_0x1C store, and the volatile registers for
+// &Punimap, the reloaded Punimap, cur, id and id + 1 are rotated (r5/r4/r4/r7/r6 there, r4/r7/r7/r6/r5 here);
+// those are compiler temps, so no declaration order reaches them.
 void puniMapFindbuff(Vec* pos) {
-    s32 changed;
-    u16 id;
-    u16 nid;
-    u16 cur;
-    s32 iw;
-    s32 ipw;
-    s32 im1;
-    s32 ip1;
+    s32 index;
     s32 hi;
+    u16* buf;
+    u16* above;
+    u16* left;
+    u16 id;
     s32 i;
-    s32 out1;
+    u16* below;
     s32 total;
+    u16 cur;
+    u16* right;
+    s32 changed;
+    u16 nid;
+    s32 out1;
     s32 out2;
 
     if (Punimap->field_0x14 == 0)
@@ -1539,84 +1541,81 @@ void puniMapFindbuff(Vec* pos) {
             break;
         }
     }
-    {
-        s32 index = Punimap->field_0x8 * out2 + out1;
-
-        if (index < 0)
-            Punimap->field_0x1C = 0;
-        if (Punimap->field_0x1C == 0)
-            return;
-        Punimap->field_0x20[index] |= 1;
-    }
+    index = Punimap->field_0x8 * out2 + out1;
+    if (index < 0)
+        Punimap->field_0x1C = 0;
+    if (Punimap->field_0x1C == 0)
+        return;
+    Punimap->field_0x20[index] |= 1;
     id = 1;
     while (1) {
         changed = 0;
         total = Punimap->field_0x8 * Punimap->field_0xC;
         for (i = 0; i < total; i++) {
-            u16* buf = Punimap->field_0x20;
+            buf = Punimap->field_0x20;
             cur = buf[i];
 
             if (cur == 0xFFFF)
                 continue;
-            if ((cur & 0xFFF) != id)
+            if (id != (cur & 0xFFF))
                 continue;
             {
-                iw = i - Punimap->field_0x8;
-                ipw = i + Punimap->field_0x8;
-                im1 = i - 1;
-                ip1 = i + 1;
+                above = &buf[i - Punimap->field_0x8];
+                below = &buf[i + Punimap->field_0x8];
+                left = &buf[i - 1];
+                right = &buf[i + 1];
                 hi = cur & 0xF000;
                 {
-                    u16 nb = buf[iw];
+                    u16 nb = *above;
                     u8 low = nb & 0xFF;
 
                     if (low == 0) {
                         if (low < id) {
                             if (abs((nb & 0xF000) - hi) <= 0x1000) {
                                 nid = id + 1;
-                                buf[iw] = nb | nid;
+                                *above = nb | nid;
                                 changed = 1;
                             }
                         }
                     }
                 }
                 {
-                    u16 nb = buf[ipw];
+                    u16 nb = *below;
                     u8 low = nb & 0xFF;
 
                     if (low == 0) {
                         if (low < id) {
                             if (abs((nb & 0xF000) - hi) <= 0x1000) {
                                 nid = id + 1;
-                                buf[ipw] = nb | nid;
+                                *below = nb | nid;
                                 changed = 1;
                             }
                         }
                     }
                 }
                 {
-                    u16 nb = buf[im1];
+                    u16 nb = *left;
                     u8 low = nb & 0xFF;
 
                     if (low == 0) {
                         if (low < id) {
                             if (abs((nb & 0xF000) - hi) <= 0x1000) {
                                 nid = id + 1;
-                                buf[im1] = nb | nid;
+                                *left = nb | nid;
                                 changed = 1;
                             }
                         }
                     }
                 }
                 {
-                    u16 nb = buf[ip1];
+                    u16 nb = *right;
                     u8 low = nb & 0xFF;
 
                     if (low == 0) {
                         if (low < id) {
                             if (abs((nb & 0xF000) - hi) <= 0x1000) {
                                 nid = id + 1;
-                                buf[ip1] = nb | nid;
+                                *right = nb | nid;
                                 changed = 1;
                             }
                         }
@@ -1712,11 +1711,11 @@ void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
     xh = xh & 0xFF;
 
     _swByteSet(base + index * 7 + 0x8F0D180, *out);
-    _swByteSet(base + index * 7 + 0x8F0D181, x);
+    _swByteSet(base + index * 7 + 0x8F0D181, x & 0xFF);
     _swByteSet(base + index * 7 + 0x8F0D182, xh);
-    _swByteSet(base + index * 7 + 0x8F0D183, y);
+    _swByteSet(base + index * 7 + 0x8F0D183, y & 0xFF);
     _swByteSet(base + index * 7 + 0x8F0D184, yh);
-    _swByteSet(base + index * 7 + 0x8F0D185, z);
+    _swByteSet(base + index * 7 + 0x8F0D185, z & 0xFF);
     _swByteSet(base + index * 7 + 0x8F0D186, (z >> 8) & 0xFF);
 }
 
@@ -7161,8 +7160,8 @@ void puniHagurePos(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (94.58%): the three puniswSetindex calls inline as retail does; left is register colouring (the inlined
-// Setindex temps and loop counters rotated, mode/arg2 two registers off at the top).
+// NONMATCHING (98.37%): the three puniswSetindex calls inline as retail does; left is register colouring (the inlined
+// Setindex temps rotated with the x/y loads in f1/f0, and mode/arg2/k/punidat two registers off).
 USER_FUNC(evt_puni_exit) {
     s32 arg2;
     const char* name;
@@ -8037,21 +8036,13 @@ USER_FUNC(evt_puni_force_se_off) {
     return EVT_RETURN_DONE;
 }
 
-// x,y,z are read first, then the high bytes are extracted as (x >> 8) & 0xFF and re-cast to the u8 that
-// holds them; that keeps the target's single hoisted extrwi per byte and its prologue.
-// NONMATCHING (89.23%): the schedule is identical to the target; the only difference is register colouring
-// (puni gets r31 where the target uses r29, and z gets r29 where the target uses r31, and the else branch's
-// colours follow from that). Statement-order, declaration-order, type, temp/alias, z-split and
-// optimizer-pragma sweeps all stay at or below 89.23, so the tail is a permuter target.
+// NONMATCHING (96.79%): the inlined puniswSetindex colours its temps in another order (retail: the
+// base + index * 7 sum in r31, x/y/z in r24-r26; here the sum is r24) and the x/y loads swap f0/f1,
+// the same inline difference as evt_puni_exit; standalone puniswSetindex matches.
 USER_FUNC(evt_puni_all_save) {
-    PuniData* puni = &Punidat[1];
     s32 i;
-    s32 base;
-    s32 x;
-    s32 y;
-    s32 z;
-    u8 xh;
-    u8 yh;
+    PuniData* puni = &Punidat[1];
+    s32 area;
     Vec pos;
 
     for (i = 1; i <= 0x66; i++, puni++) {
@@ -8063,53 +8054,13 @@ USER_FUNC(evt_puni_all_save) {
         }
         if ((puni->unk4 & 0x8000) != 0) {
             puniHagurePos(puni);
+            area = Punigp->unk328;
             pos = puni->field_0x12C;
-            x = (s32)pos.x;
-            y = (s32)pos.y;
-            z = (s32)pos.z;
-#ifdef MUST_MATCH
-            // the second assignment is a no-op (xh/yh are u8); it stops MWCC folding the high-byte
-            // extraction into each _swByteSet argument, matching the target's hoisted extrwi
-            xh = (x >> 8) & 0xFF;
-            xh = (u8)xh;
-            yh = (y >> 8) & 0xFF;
-            yh = (u8)yh;
-#else
-            xh = (x >> 8) & 0xFF;
-            yh = (y >> 8) & 0xFF;
-#endif
-            base = (puni->field_0x116 - 1) * 7;
-            _swByteSet(base + 0, (u8)Punigp->unk328);
-            _swByteSet(base + 1, x);
-            _swByteSet(base + 2, xh);
-            _swByteSet(base + 3, y);
-            _swByteSet(base + 4, yh);
-            _swByteSet(base + 5, z);
-            _swByteSet(base + 6, (z >> 8) & 0xFF);
+            puniswSetindex(0xF70F2E80, puni->field_0x116 - 1, &area, &pos);
         } else {
-            pos = (Vec){0.0f, 0.0f, 0.0f};
-            x = (s32)pos.x;
-            y = (s32)pos.y;
-            z = (s32)pos.z;
-#ifdef MUST_MATCH
-            // the second assignment is a no-op (xh/yh are u8); it stops MWCC folding the high-byte
-            // extraction into each _swByteSet argument, matching the target's hoisted extrwi
-            xh = (x >> 8) & 0xFF;
-            xh = (u8)xh;
-            yh = (y >> 8) & 0xFF;
-            yh = (u8)yh;
-#else
-            xh = (x >> 8) & 0xFF;
-            yh = (y >> 8) & 0xFF;
-#endif
-            base = (puni->field_0x116 - 1) * 7;
-            _swByteSet(base + 0, 0);
-            _swByteSet(base + 1, x);
-            _swByteSet(base + 2, xh);
-            _swByteSet(base + 3, y);
-            _swByteSet(base + 4, yh);
-            _swByteSet(base + 5, z);
-            _swByteSet(base + 6, (z >> 8) & 0xFF);
+            pos = (Vec){ 0.0f, 0.0f, 0.0f };
+            area = 0;
+            puniswSetindex(0xF70F2E80, puni->field_0x116 - 1, &area, &pos);
         }
     }
     return EVT_RETURN_DONE;
