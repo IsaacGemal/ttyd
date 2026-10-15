@@ -7171,3 +7171,20 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   35 min/2,577 and 25 min/1,571 failed. psndENVOn_f_d: 0x7D00 constant vs address swap (six store spellings, types:
   96.5-99.40). psndBGMOn_f_d `vol` load/store/copy: 12 spellings 98.63-99.78. psndSFXMain: rasim fails over 79 orders
   (live ranges). psndENVMain /100 constant ordering: 24 inline decl orders, return types, operand order.
+
+### battle_seq_end LINKED: _LvupParamConfirmDisp 99.58 -> 100 (GPT-6.1 Sol, high effort, sol5; after 2 Opus passes)
+- **A pointer to the one field the function needs:** `const s32* selection = (const s32*)((u8*)wp->seqEndWork + 0x24);`
+  then `*selection` for the cursor. MWCC folds the early `addi selection, base, 0x24` into the final load, so the
+  named web disappears and the loaded seqEndWork base becomes a backend temp numbered AFTER the pool base: work r31,
+  pool r30 as retail. No MUST_MATCH, pragma or helper; the stale NONMATCHING note removed. This overturns the ledger's
+  "no load spelling can create a late backend pointer temp": a meaningful non-zero address computation is enough
+  (lever: Overnight 2's evt_mobj/mobj_kururing_floor address folding).
+- The #661/#668/#778 self-store also reaches 100 independently (`*(s32*)((u8*)work + 0x24) = *(s32*)((u8*)work +
+  0x24);` early leaves a high-numbered loaded base); not kept, the field pointer is natural.
+- Link: four compiler-named float-pair tables (negone_one_374, one_negone_373, negone_one_360, one_negone_359) made
+  static: their global names collided with ac_air_gauge.o.
+- Negatives (99.58): nested seqEndWork assignment, address-of-pointer, casted double indirection, scalar pointer
+  compound literal; aggregate/byte/late field self-copies; late `wp->seqEndWork = work` 97.29; propagation-off
+  variants 90.0-93.1. Adjusted byte/word/array/interior pointers and pointer indexing also reach 100.
+- Comparison note: Sol ran at high effort with the full ledger incl. Overnight 3; the two failed Opus runs predated
+  the address-folding and lifetime entries.
