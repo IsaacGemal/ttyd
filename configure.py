@@ -851,7 +851,7 @@ config.libs = [
             Object(Matching, "window/win_badge.c"),
             Object(Matching, "window/win_item.c"),
             Object(Matching, "window/win_mario.c"),
-            Object(NonMatching, "window/win_log.c"),
+            Object(Matching, "window/win_log.c"),
             Object(Matching, "window/win_main.c"),
         ],
     },

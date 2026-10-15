@@ -27,99 +27,6 @@
 #include "sdk/texPalette.h"
 #include "system.h"
 #include "memory.h"
-extern const f32 float_0_8041d7bc;
-extern const f32 float_1_8041d7c0;
-extern const f32 float_0p04_8041d7c4;
-extern const f32 float_0p5_8041d7c8;
-extern const f32 float_neg0p5_8041d7cc;
-extern const f32 float_32_8041d7d0;
-extern const f32 float_8_8041d7d4;
-extern const f32 float_160_8041d7d8;
-extern const f32 float_216_8041d7dc;
-extern const f32 float_0p75_8041d7e0;
-extern const f32 float_16_8041d7e4;
-extern const f32 float_248_8041d7e8;
-extern const f32 float_180_8041d7ec;
-extern const f32 float_210_8041d7f0;
-extern const f32 float_25_8041d7f4;
-extern const f32 float_1p2667_8041d7f8;
-extern const f32 float_1000_8041d7fc;
-extern const f32 float_neg1000_8041d948;
-extern const f32 float_608_8041d800;
-extern const f32 float_480_8041d804;
-extern const f32 float_500_8041d808;
-extern const f32 float_neg300_8041d80c;
-extern const f32 float_600_8041d814;
-extern const f32 float_neg400_8041d818;
-extern const f32 float_6_8041d81c;
-extern const f32 float_110_8041d820;
-extern const f32 float_100_8041d824;
-extern const f32 float_50_8041d828;
-extern const f32 float_108_8041d82c;
-extern const f32 float_166_8041d830;
-extern const f32 float_184_8041d834;
-extern const f32 float_24_8041d838;
-extern const f32 float_5_8041d83c;
-extern const f32 float_56_8041d840;
-extern const f32 float_440_8041d84c;
-extern const f32 float_18_8041d850;
-extern const f32 float_15_8041d854;
-extern const f32 float_240_8041d858;
-extern const f32 float_0p7_8041d85c;
-extern const f32 float_420_8041d860;
-extern const f32 float_30_8041d864;
-extern const f32 float_220_8041d868;
-extern const f32 float_74_8041d86c;
-extern const f32 float_120_8041d870;
-extern const f32 float_304_8041d874;
-extern const f32 float_230_8041d878;
-extern const f32 float_2_8041d87c;
-extern const f32 float_45_8041d880;
-extern const f32 float_1p5_8041d884;
-extern const f32 float_3_8041d888;
-extern const f32 float_4_8041d88c;
-extern const f32 float_0p125_8041d890;
-extern const f32 float_neg240_8041d894;
-extern const f32 float_neg148_8041d898;
-extern const f32 float_neg480_8041d89c;
-extern const f32 float_0p43633_8041d8a0;
-extern const f32 float_0p017453_8041d8a4;
-extern const f32 float_51p429_8041d8a8;
-extern const f32 float_20_8041d8ac;
-extern const f32 float_320_8041d8b0;
-extern const f32 float_10_8041d8b4;
-extern const f32 float_170_8041d8b8;
-extern const f32 float_130_8041d8bc;
-extern const f32 float_140_8041d8c0;
-extern const f32 float_neg160_8041d8c4;
-extern const f32 float_0p25_8041d8c8;
-extern const f32 float_255_8041d8cc;
-extern const f32 float_neg130_8041d8d0;
-extern const f32 float_neg200_8041d8d4;
-extern const f32 float_60_8041d8d8;
-extern const f32 float_neg128_8041d8dc;
-extern const f32 float_10000_8041d904;
-extern const char str_8041D8E0[];
-extern const char str_8041D8E4[];
-extern const char str_8041D8EC[];
-extern const char str_8041D8F4[];
-extern const char str_8041D8FC[];
-extern const f32 float_neg230_8041d908;
-extern const f32 float_neg120_8041d90c;
-extern const f32 float_neg8_8041d910;
-extern const f32 float_0p2_8041d914;
-extern const f32 float_604_8041d918;
-extern const f32 float_468_8041d91c;
-extern const f32 float_neg150_8041d920;
-extern const f32 float_150_8041d924;
-extern const f32 float_80_8041d928;
-extern const f32 float_neg80_8041d92c;
-extern const f32 float_360_8041d930;
-extern const f32 float_neg50_8041d934;
-extern const f32 float_330_8041d938;
-extern const f32 float_neg250_8041d93c;
-extern const f32 float_neg310_8041d940;
-extern const f32 float_neg60_8041d944;
 #pragma pool_data on // the original addresses its .rodata through one base register
 #ifdef MUST_MATCH
 #define RELOAD_F32(x) (*(const volatile f32*)&(x))
@@ -144,30 +51,16 @@ typedef struct MonosiriWork {
     s32 alpha;         // 0x2C
 } MonosiriWork;
 
-extern const f32 float_500_8041d808;
-extern const f32 float_neg300_8041d80c;
-extern const f32 float_neg128_8041d8dc;
-extern const f32 float_320_8041d8b0;
-extern const f32 float_neg240_8041d894;
-extern const f32 float_neg200_8041d8d4;
-extern const f32 float_8_8041d7d4;
-extern const f32 float_45_8041d880;
-extern const f32 float_0p5_8041d7c8;
-extern const f32 float_0_8041d7bc;
-extern const f32 float_600_8041d814;
-extern const f32 float_neg400_8041d818;
-extern const f32 float_6_8041d81c;
-extern const f32 float_0p125_8041d890;
-extern const f32 float_140_8041d8c0;
-extern const f32 float_neg160_8041d8c4;
-extern const f32 float_0p25_8041d8c8;
-extern const char str_8041D7AC[];
-extern const char str_8041D7B0[];
-extern const char str_8041D810[];
 
 #define WW_S32(w, off) (*(s32*)((u8*)(w) + (off)))
 #define WW_F32(w, off) (*(f32*)((u8*)(w) + (off)))
 #define WW_PTR(w, off) (*(void**)((u8*)(w) + (off)))
+// win texture ids of the tattle-map location pins
+typedef enum {
+    WIN_LOG_TEX_PIN_OFF = 0xB8,
+    WIN_LOG_TEX_PIN_SEL = 0xB9,
+    WIN_LOG_TEX_PIN_ON = 0xBA,
+} WinLogTex;
 
 typedef struct WinLogEntry {
     f32 curX;             // 0xD78
@@ -195,28 +88,6 @@ typedef struct TubuDt {
     u16 minProgress; // 0x6
     const char* id;  // 0x8
 } TubuDt;
-#ifdef MUST_MATCH
-#define MAP_TPL_NAME(dst, base)                                       \
-    if (swByteGet(0) < 0x13) {                                        \
-        dst = "map0.tpl";                          \
-    } else if (swByteGet(0) < 0x41) {                                 \
-        dst = "map1.tpl";                          \
-    } else if (swByteGet(0) < 0x79) {                                 \
-        dst = "map2.tpl";                          \
-    } else if (swByteGet(0) < 0xAF) {                                 \
-        dst = "map3.tpl";                          \
-    } else if (swByteGet(0) < 0xDE) {                                 \
-        dst = "map4.tpl";                          \
-    } else if (swByteGet(0) < 0x110) {                                \
-        dst = "map5.tpl";                          \
-    } else if (swByteGet(0) < 0x15C) {                                \
-        dst = "map6.tpl";                          \
-    } else {                                                          \
-        dst = "map7.tpl";                          \
-    }
-#else
-#define MAP_TPL_NAME(dst, base) dst = winGetMapTplName()
-#endif
 typedef struct LogRow {
     s32 type;         // 0x00
     f32 curX;         // 0x04
@@ -317,39 +188,6 @@ typedef struct LogWin {
 #define LOGWIN_CHECK(field, off) typedef char logwin_##field##_check[(offsetof(LogWin, field) == (off)) ? 1 : -1]
 extern TubuDt tubuDt[0x5D];
 extern s32 stone_tbl[7];
-extern const f32 float_20_8041d8ac;
-extern const f32 float_255_8041d8cc;
-extern const f32 float_neg130_8041d8d0;
-extern const f32 float_120_8041d870;
-extern const f32 float_60_8041d8d8;
-extern const f32 float_neg480_8041d89c;
-extern const f32 float_neg230_8041d908;
-extern const f32 float_74_8041d86c;
-extern const f32 float_neg120_8041d90c;
-extern const f32 float_10000_8041d904;
-extern const f32 float_50_8041d828;
-extern const f32 float_0p2_8041d914;
-extern const f32 float_304_8041d874;
-extern const f32 float_240_8041d858;
-extern const f32 float_16_8041d7e4;
-extern const f32 float_604_8041d918;
-extern const f32 float_468_8041d91c;
-extern const f32 float_230_8041d878;
-extern const f32 float_166_8041d830;
-extern const f32 float_neg150_8041d920;
-extern const f32 float_150_8041d924;
-extern const f32 float_80_8041d928;
-extern const f32 float_neg80_8041d92c;
-extern const f32 float_neg148_8041d898;
-extern const f32 float_24_8041d838;
-extern const f32 float_51p429_8041d8a8;
-extern const f32 float_360_8041d930;
-extern const f32 float_neg50_8041d934;
-extern const f32 float_330_8041d938;
-extern const f32 float_neg250_8041d93c;
-extern const f32 float_neg310_8041d940;
-extern const f32 float_neg60_8041d944;
-extern const f32 float_neg8_8041d910;
 TubuDt tubuDt[0x5D] = {
     { 14, -34, 0x01, 0x00, 0x0003, "gor" },
     { -4, -31, 0x00, 0x02, 0x000C, "gor" },
@@ -446,7 +284,6 @@ TubuDt tubuDt[0x5D] = {
     { -33, -74, 0x01, 0x00, 0x017E, "las" },};
 s32 stone_tbl[7] = {0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78};
 extern const u8 enemy_monoshiri_sort_table[];
-extern const f32 float_2_8041d87c;
 #define LOG_ADD_TAB(w, tabType, msg)                                                  \
     do {                                                                              \
         LogRow* r_ = &(w)->rows[(w)->count];                                          \
@@ -456,12 +293,12 @@ extern const f32 float_2_8041d87c;
         r_->name = (msg);                                                             \
         (w)->count++;                                                                 \
         for (k_ = 0; k_ < (w)->count; k_++) {                                         \
-            (w)->rows[k_].curX = float_0_8041d7bc;                                    \
-            (w)->rows[k_].targetX = float_0_8041d7bc;                                 \
+            (w)->rows[k_].curX = 0.0f;                                    \
+            (w)->rows[k_].targetX = 0.0f;                                 \
             {                                                                         \
-                f32 a_ = float_45_8041d880 * winLogI2F((w)->count, base, &e7cScratch);   \
-                f32 b_ = float_45_8041d880 * winLogI2F(k_, base, &macScratch);           \
-                f32 y_ = a_ * float_0p5_8041d7c8 - b_;                                \
+                f32 a_ = 45.0f * winLogI2F((w)->count, base, &e7cScratch);   \
+                f32 b_ = 45.0f * winLogI2F(k_, base, &macScratch);           \
+                f32 y_ = a_ / 2.0f - b_;                                 \
                 (w)->rows[k_].curY = y_;                                              \
                 (w)->rows[k_].targetY = y_;                                           \
             }                                                                         \
@@ -480,12 +317,12 @@ static inline void winLogAddTab0(LogWin* w, s32 tabType, const char** msg_help, 
     r->name = msg_help[msgIdx];
     w->count++;
     for (k = 0; k < w->count; k++) {
-        w->rows[k].curX = float_0_8041d7bc;
-        w->rows[k].targetX = float_0_8041d7bc;
+        w->rows[k].curX = 0.0f;
+        w->rows[k].targetX = 0.0f;
         {
-            f32 a = float_45_8041d880 * ((f32)w->count);
-            f32 b = float_45_8041d880 * ((f32)k);
-            f32 y = a * float_0p5_8041d7c8 - b;
+            f32 a = 45.0f * ((f32)w->count);
+            f32 b = 45.0f * ((f32)k);
+            f32 y = a / 2.0f - b;
             w->rows[k].curY = y;
             w->rows[k].targetY = y;
         }
@@ -503,79 +340,8 @@ static inline void winLogAddTab0(LogWin* w, s32 tabType, const char** msg_help, 
 #define LOG_ADD_3(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
 #define LOG_ADD_4(w, tabType, msg) LOG_ADD_TAB(w, tabType, msg)
 #endif
-extern const GXColor dat_8041d78c;
-extern const GXColor dat_8041d790;
-extern const GXColor dat_8041d794;
-extern const GXColor dat_8041d798;
-extern const GXColor dat_8041d79c;
-extern const f32 float_0p017453_8041d8a4;
-extern const f32 float_0p43633_8041d8a0;
-extern const f32 float_30_8041d864;
-extern const f32 float_4_8041d88c;
-extern const f32 float_10_8041d8b4;
-extern const f32 float_170_8041d8b8;
-extern const f32 float_130_8041d8bc;
-extern const f32 float_1_8041d7c0;
-#ifdef MUST_MATCH
-// Volatile read of the per-stone shadow colour: the original reloads it from
-// the data symbol each loop iteration rather than hoisting it into a
-// callee-saved register (MUST_MATCH codegen shaping).
-#define VCOL(sym) (*(volatile const GXColor*)&(sym))
-#else
-#define VCOL(sym) (*(volatile const GXColor*)&(sym))
-#endif
 #define LOG_TEXPAL() (**(TEXPalette***)(*(u8**)((u8*)work + 0x28) + 0xA0))
-extern const GXColor dat_8041d7a0;
-extern const f32 float_74_8041d86c;
-extern const f32 float_120_8041d870;
-extern const f32 float_304_8041d874;
-extern const f32 float_230_8041d878;
-extern const f32 float_240_8041d858;
-extern const f32 float_220_8041d868;
-extern const f32 float_1p5_8041d884;
-extern const f32 float_3_8041d888;
-extern const f32 float_0p125_8041d890;
-extern const f32 float_neg148_8041d898;
-extern const f32 float_110_8041d820;
-extern const f32 float_160_8041d7d8;
-extern const f32 float_100_8041d824;
-extern const f32 float_50_8041d828;
-extern const f32 float_0p75_8041d7e0;
-extern const f32 float_108_8041d82c;
-extern const f32 float_166_8041d830;
-extern const f32 float_184_8041d834;
-extern const f32 float_56_8041d840;
-extern const f32 float_24_8041d838;
-extern const f32 float_5_8041d83c;
-extern const f32 float_16_8041d7e4;
-extern const f32 float_440_8041d84c;
-extern const f32 float_18_8041d850;
-extern const f32 float_15_8041d854;
-extern const f32 float_240_8041d858;
-extern const f32 float_0p7_8041d85c;
-extern const f32 float_420_8041d860;
-extern const f32 float_210_8041d7f0;
-extern const f32 float_30_8041d864;
-extern const f32 float_220_8041d868;
-extern const GXColor dat_8041d7a4;
-extern const GXColor dat_8041d7a8;
-extern const GXColor dat_8041d7b4;
-extern const GXColor dat_8041d7b8;
 extern const GXColor unk_80423050;
-extern const f32 float_0p04_8041d7c4;
-extern const f32 float_neg0p5_8041d7cc;
-extern const f32 float_32_8041d7d0;
-extern const f32 float_216_8041d7dc;
-extern const f32 float_248_8041d7e8;
-extern const f32 float_180_8041d7ec;
-extern const f32 float_160_8041d7d8;
-extern const f32 float_210_8041d7f0;
-extern const f32 float_16_8041d7e4;
-extern const f32 float_25_8041d7f4;
-extern const f32 float_1p2667_8041d7f8;
-extern const f32 float_1000_8041d7fc;
-extern const f32 float_608_8041d800;
-extern const f32 float_480_8041d804;
 #define HALF_FOV_TAN 0.21816615760326385
 typedef struct TattleCamEntry {
     s32 kind;
@@ -587,20 +353,9 @@ typedef struct TattleCamEntry {
 // Appends a tab to the menu and re-centres every tab row.
 
 
-// All five tab i2f sites and the map/e7c sites now use the compiler's native
-// `(f32)` cast.  The padding object above makes the compiler's pooled magic
-// land at .rodata+0x420, so the compiler emits the original's fused `fsubs`
-// with a base-relative `lfd f3, 0x420(r31)` (r31 = the unit's rodata base)
-// instead of an anonymous lis/addi pool.  Remaining diffs are register
-// colouring and scheduling only (the loop counter lands in r7 instead of r5,
-// and the base/magic hoist a few instructions earlier)
-
 #define winLogI2F(v, base, scratch) ((f32)(v))
 
 #pragma opt_common_subs off // keeps MWCC from CSE-ing the map/base addresses across the load loops
-// The tab-loop registers now match: the helper-local counter shares r5 and the `+1 li` is
-// gone. What is left is a small mapScroll FPR rotation and one stack slot.
-// NONMATCHING (98.95%)
 void winLogInit(WindowWork* work) {
     LogWin* w = (LogWin*)work;
     static const char* msg_help[5] = {"msg_menu_kiroku_map", "msg_menu_kiroku_stone", "msg_menu_kiroku_badge", "msg_menu_kiroku_ryori", "msg_menu_kiroku_mono"};
@@ -610,7 +365,7 @@ void winLogInit(WindowWork* work) {
     f64 e7cScratch;
     f64 macScratch;
 
-    w->state = 0;
+    ((LogWin*)work)->state = 0;
     w->sel = 0;
     w->count = 0;
     LOG_ADD_TAB_0(w, 0, msg_help[0]);
@@ -637,10 +392,10 @@ void winLogInit(WindowWork* work) {
 
         if (i < w->stoneNum) {
             e = w->stones[i] =
-                effStarStoneEntry(i, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc, float_2_8041d87c);
+                effStarStoneEntry(i, 0.0f, -1000.f, 0.0f, 2.0f);
         } else {
-            e = w->stones[i] = effStarStoneEntry(i + 7, float_0_8041d7bc, float_neg1000_8041d948, float_0_8041d7bc,
-                                                 float_2_8041d87c);
+            e = w->stones[i] = effStarStoneEntry(i + 7, 0.0f, -1000.f, 0.0f,
+                                                 2.0f);
             ((u8*)e->userdata)[0x5C] = 0x20;
             ((u8*)e->userdata)[0x5D] = 0x20;
             ((u8*)e->userdata)[0x5E] = 0x20;
@@ -653,14 +408,14 @@ void winLogInit(WindowWork* work) {
     w->pose = -1;
     w->mapSel = -1;
     w->mapPick = 0;
-    w->mapCy = float_0_8041d7bc;
-    w->mapCx = float_0_8041d7bc;
-    w->e2c = float_0_8041d7bc;
-    w->e28 = float_0_8041d7bc;
-    w->e34 = float_neg480_8041d89c;
-    w->e30 = float_neg480_8041d89c;
-    w->mapScrollY = float_0_8041d7bc;
-    w->mapScrollX = float_0_8041d7bc;
+    w->mapCy = 0.0f;
+    w->mapCx = 0.0f;
+    w->e2c = 0.0f;
+    w->e28 = 0.0f;
+    w->e34 = -480.f;
+    w->e30 = -480.f;
+    w->mapScrollY = 0.0f;
+    w->mapScrollX = 0.0f;
     area = gp->currentAreaName;
     if (strcmp(gp->currentMapName, "pik_02") == 0
         || strcmp(gp->currentMapName, "pik_03") == 0) {
@@ -709,46 +464,46 @@ void winLogInit(WindowWork* work) {
         area = "dou";
     }
     for (i = 0; (u32)i < 0x5D; i++) {
-        if (area != NULL && strcmp(area, tubuDt[i].id) == 0) {
+        if (area == NULL || strcmp(area, tubuDt[i].id) == 0) {
             break;
         }
     }
     if ((u32)i < 0x5D) {
         w->mapPick = i;
     }
-    w->mapCx = float_304_8041d874 + (f32)tubuDt[w->mapPick].x;
-    w->mapCy = float_240_8041d858 + (f32)tubuDt[w->mapPick].y;
+    w->mapCx = 304.0f + (f32)tubuDt[w->mapPick].x;
+    w->mapCy = 240.f + (f32)tubuDt[w->mapPick].y;
     {
-        f32 sx = (w->mapCx + w->mapScrollX) - float_230_8041d878;
-        f32 sy = (w->mapCy + w->mapScrollY) - float_120_8041d870;
+        s32 ox = (s32)((w->mapCx + w->mapScrollX) - 230.f);
+        s32 oy = (s32)((w->mapCy + w->mapScrollY) - 120.f);
 
-        w->mapScrollX = w->mapScrollX - (f32)(s32)sx;
-        w->mapScrollY = w->mapScrollY - (f32)(s32)sy;
+        w->mapScrollX = w->mapScrollX - (f32)ox;
+        w->mapScrollY = w->mapScrollY - (f32)oy;
     }
-    if (w->mapScrollX > float_0_8041d7bc) {
-        w->mapScrollX = float_0_8041d7bc;
+    if (w->mapScrollX > 0.0f) {
+        w->mapScrollX = 0.0f;
     }
-    if (w->mapScrollY > float_0_8041d7bc) {
-        w->mapScrollY = float_0_8041d7bc;
+    if (w->mapScrollY > 0.0f) {
+        w->mapScrollY = 0.0f;
     }
-    if (w->mapScrollX < float_neg148_8041d898) {
-        w->mapScrollX = float_neg148_8041d898;
+    if (w->mapScrollX < -148.0f) {
+        w->mapScrollX = -148.0f;
     }
-    if (w->mapScrollY < float_neg240_8041d894) {
-        w->mapScrollY = float_neg240_8041d894;
+    if (w->mapScrollY < -240.f) {
+        w->mapScrollY = -240.f;
     }
     w->stoneSel = 0;
     {
-        f32 e7c = float_51p429_8041d8a8 * winLogI2F(w->stoneSel, base, &e7cScratch);
+        f32 e7c = 51.42857f * winLogI2F(w->stoneSel, base, &e7cScratch);
         w->e7c = e7c;
         w->e80 = e7c;
     }
-    w->e68 = float_0_8041d7bc;
-    w->e64 = float_0_8041d7bc;
-    w->e70 = float_neg480_8041d89c;
-    w->e6c = float_neg480_8041d89c;
-    w->e78 = float_0_8041d7bc;
-    w->e74 = float_0_8041d7bc;
+    w->e68 = 0.0f;
+    w->e64 = 0.0f;
+    w->e70 = -480.f;
+    w->e6c = -480.f;
+    w->e78 = 0.0f;
+    w->e74 = 0.0f;
     w->cardCnt = 0;
     for (i = 0xF0; i < 0xF0 + 0x63; i++) {
         if (itemDataTable[i].type_sort_order != -1) {
@@ -757,17 +512,17 @@ void winLogInit(WindowWork* work) {
     }
     qqsort(w->cardIcon, w->cardCnt, 2, compare_func5_2);
     w->cardSel = 0;
-    w->e88 = float_320_8041d8b0;
-    w->e84 = float_320_8041d8b0;
-    w->e90 = float_neg240_8041d894;
-    w->e8c = float_neg240_8041d894;
+    w->e88 = 320.f;
+    w->e84 = 320.f;
+    w->e90 = -240.f;
+    w->e8c = -240.f;
     w->cardPage = 0;
-    w->ea4 = float_0_8041d7bc;
-    w->ea0 = float_0_8041d7bc;
-    w->eac = float_neg200_8041d8d4;
-    w->ea8 = float_neg200_8041d8d4;
-    w->eb4 = float_neg300_8041d80c;
-    w->eb0 = float_neg300_8041d80c;
+    w->ea4 = 0.0f;
+    w->ea0 = 0.0f;
+    w->eac = -200.f;
+    w->ea8 = -200.f;
+    w->eb4 = -300.f;
+    w->eb0 = -300.f;
     w->badgeCnt = 0;
     for (i = 0xB3; i < 0xB3 + 0x39; i++) {
         if (itemDataTable[i].type_sort_order != -1) {
@@ -776,17 +531,17 @@ void winLogInit(WindowWork* work) {
     }
     qqsort(w->badgeIcon, w->badgeCnt, 2, compare_func6_2);
     w->badgeSel = 0;
-    w->f84 = float_320_8041d8b0;
-    w->f80 = float_320_8041d8b0;
-    w->f8c = float_neg240_8041d894;
-    w->f88 = float_neg240_8041d894;
+    w->f84 = 320.f;
+    w->f80 = 320.f;
+    w->f8c = -240.f;
+    w->f88 = -240.f;
     w->badgePage = 0;
-    w->fa0 = float_0_8041d7bc;
-    w->f9c = float_0_8041d7bc;
-    w->fa8 = float_neg200_8041d8d4;
-    w->fa4 = float_neg200_8041d8d4;
-    w->fb0 = float_neg300_8041d80c;
-    w->fac = float_neg300_8041d80c;
+    w->fa0 = 0.0f;
+    w->f9c = 0.0f;
+    w->fa8 = -200.f;
+    w->fa4 = -200.f;
+    w->fb0 = -300.f;
+    w->fac = -300.f;
     w->charCnt = 0;
     for (i = 1; i < 0xD8; i++) {
         if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL) {
@@ -827,13 +582,13 @@ void winLogInit(WindowWork* work) {
         }
     }
     w->charSel = 0;
-    w->x102c = float_0_8041d7bc;
-    w->x1028 = float_0_8041d7bc;
-    w->x1034 = float_0_8041d7bc;
-    w->x1030 = float_0_8041d7bc;
+    w->x102c = 0.0f;
+    w->x1028 = 0.0f;
+    w->x1034 = 0.0f;
+    w->x1030 = 0.0f;
     w->charPage = 0;
-    w->x104c = float_0_8041d7bc;
-    w->x1048 = float_0_8041d7bc;
+    w->x104c = 0.0f;
+    w->x1048 = 0.0f;
     w->seenCnt = 0;
     for (i = 1; i < 0xD8; i++) {
         if (battleGetUnitMonosiriPtr(i)->tattleLogTag != NULL && (u32)(i - 0x1F) > 1 && i != 0x4D && i != 0x3F
@@ -856,35 +611,35 @@ void winLogInit2(WindowWork* work) {
     s32 a;
     s32 b;
 
-    WW_F32(work, 0x158) = float_neg128_8041d8dc;
+    WW_F32(work, 0x158) = -128.0f;
     a = WW_S32(work, 0xD70);
     b = WW_S32(work, 0xD6C);
     {
-        f32 t = float_45_8041d880 * (f32)a;
-        WW_F32(work, 0x15C) = float_8_8041d7d4 + (t * float_0p5_8041d7c8 - float_45_8041d880 * (f32)b);
+        f32 t = 45.0f * (f32)a;
+        WW_F32(work, 0x15C) = 8.0f + (t / 2.0f - 45.0f * (f32)b);
     }
-    WW_F32(work, 0xE88) = float_320_8041d8b0;
-    WW_F32(work, 0xE84) = float_320_8041d8b0;
-    WW_F32(work, 0xE90) = float_neg240_8041d894;
-    WW_F32(work, 0xE8C) = float_neg240_8041d894;
+    WW_F32(work, 0xE88) = 320.f;
+    WW_F32(work, 0xE84) = 320.f;
+    WW_F32(work, 0xE90) = -240.f;
+    WW_F32(work, 0xE8C) = -240.f;
     v = WW_S32(work, 0xE9C) * 0xE8;
     WW_F32(work, 0xEA4) = v;
     WW_F32(work, 0xEA0) = v;
-    WW_F32(work, 0xEAC) = float_neg200_8041d8d4;
-    WW_F32(work, 0xEA8) = float_neg200_8041d8d4;
-    WW_F32(work, 0xEB4) = float_neg300_8041d80c;
-    WW_F32(work, 0xEB0) = float_neg300_8041d80c;
-    WW_F32(work, 0xF84) = float_320_8041d8b0;
-    WW_F32(work, 0xF80) = float_320_8041d8b0;
-    WW_F32(work, 0xF8C) = float_neg240_8041d894;
-    WW_F32(work, 0xF88) = float_neg240_8041d894;
+    WW_F32(work, 0xEAC) = -200.f;
+    WW_F32(work, 0xEA8) = -200.f;
+    WW_F32(work, 0xEB4) = -300.f;
+    WW_F32(work, 0xEB0) = -300.f;
+    WW_F32(work, 0xF84) = 320.f;
+    WW_F32(work, 0xF80) = 320.f;
+    WW_F32(work, 0xF8C) = -240.f;
+    WW_F32(work, 0xF88) = -240.f;
     v = WW_S32(work, 0xF98) * 0xE8;
     WW_F32(work, 0xFA0) = v;
     WW_F32(work, 0xF9C) = v;
-    WW_F32(work, 0xFA8) = float_neg200_8041d8d4;
-    WW_F32(work, 0xFA4) = float_neg200_8041d8d4;
-    WW_F32(work, 0xFB0) = float_neg300_8041d80c;
-    WW_F32(work, 0xFAC) = float_neg300_8041d80c;
+    WW_F32(work, 0xFA8) = -200.f;
+    WW_F32(work, 0xFA4) = -200.f;
+    WW_F32(work, 0xFB0) = -300.f;
+    WW_F32(work, 0xFAC) = -300.f;
     name = ((WinLogEntry*)((u8*)work + 0xD78))[WW_S32(work, 0xD6C)].name;
     winMsgEntry(work, 0, name, 0);
 }
@@ -954,37 +709,13 @@ static inline BOOL tubuUnlocked(TubuDt* t) {
 }
 
 // Tattle log / menu main: the tabbed "kiroku" window (map, crystal stars, cards, tattle log).
-// NONMATCHING (99.58%): behaviour complete, checked against the asm. The row-phase loops walk each
-// row from `work` with `p + offsetof(LogWin,rows) + offsetof(LogRow,phase)` (rows[i].phase, 0xD88);
-// the natural `w->rows[i].phase` form is the original's shape but moves MWCC's `w` from r29 to r31 and
-// costs ~300 more diffs, so the raw walk is kept (match-only). The loop pointer `p` is a function-scope
-// local shared by the five copies of the walk (declaring it inside each block makes MWCC colour it r5
-// instead of the original's r4); incrementing `p` before `i` gives the original's instruction order.
-// For MUST_MATCH only, `RO` is redefined just below to its symbol form (`&sym` instead of `base + off`)
-// and restored after the function.  That makes the compiler attach the pooled int->float magic to the
-// section base register, so the native `(f32)` casts emit the original's fused `fsubs` with a
-// base-relative `lfd fN, 0x420(r31)` instead of a `lis @pool` absolute address (or the old helper's
-// `fsub`+`frsp`).  The natural (non-MUST_MATCH) build already uses that form.
-// What still differs: the unit's `.rodata` pool layout is not ported, so the pooled magic sits at
-// 0x438 instead of 0x420 from `"msg_menu_kiroku_map"` and the code-pooled strings land at their own addresses
-// rather than the original's data order (e.g. `map0.tpl` at 0x448 vs 0x4A8); plus FPR/GPR colouring
-// (the map px/py/qx/qy and clamp registers, and the inlined monosiriExit object register r27 vs r28).
-//
-// The map-target sx/sy computation is written as separate in-place assignments (`sx = 304 + x;`
-// `sx -= w->mapCx;` `sx *= 0.2;`) rather than one nested expression: MWCC then emits the original's
-// `fadds`/`fsubs`/`fmuls` all into f27/f28 instead of routing the subtraction through f0/f2.  The x
-// conversion lands in the dead `px` (`px = ...; sx = px + 304.0f;`) and the first clamp is written
-// `float_16_8041d7e4 > w->mapCx` so the loads/compares take the original's operand order.  (Replacing
-// the named `.sdata2` constants here with float literals re-colours the FPRs to match, but it makes the
-// object reloc to a fresh anonymous `.sdata2` slot where the target names `float_166_8041d830` etc.;
-// that trades arg diffs for symbol-only diffs and was rejected.)
-// NONMATCHING (99.60%): register colouring remains (see the note above)
 s32 winLogMain(WindowWork* work) {
     LogWin* w = (LogWin*)work;
     const char* tpl;
     const char* root;
     u8* p;
     s32 i;
+    u32 j;
 
     {
         switch (w->state) {
@@ -1030,41 +761,41 @@ s32 winLogMain(WindowWork* work) {
                 case 4:
                     break;
                 case 0:
-                    w->e30 = float_20_8041d8ac;
+                    w->e30 = 20.f;
                     break;
                 case 1:
-                    w->e6c = float_20_8041d8ac;
-                    w->e74 = float_255_8041d8cc;
+                    w->e6c = 20.f;
+                    w->e74 = 255.0f;
                     break;
                 case 2:
-                    w->e88 = float_neg130_8041d8d0;
-                    w->e90 = float_120_8041d870;
-                    w->eac = float_neg200_8041d8d4;
-                    w->eb4 = float_60_8041d8d8;
+                    w->e88 = -130.f;
+                    w->e90 = 120.f;
+                    w->eac = -200.f;
+                    w->eb4 = 60.f;
                     break;
                 case 3:
-                    w->f84 = float_neg130_8041d8d0;
-                    w->f8c = float_120_8041d870;
-                    w->fa8 = float_neg200_8041d8d4;
-                    w->fb0 = float_60_8041d8d8;
+                    w->f84 = -130.f;
+                    w->f8c = 120.f;
+                    w->fa8 = -200.f;
+                    w->fb0 = 60.f;
                     break;
                 }
                 SFX(0x20012);
             }
-            w->curX = float_neg128_8041d8dc;
+            w->curX = -128.0f;
             {
-                f32 t = float_45_8041d880 * (f32)w->count;
+                f32 t = 45.0f * (f32)w->count;
                 w->curY =
-                    float_8_8041d7d4 + (t * float_0p5_8041d7c8 - float_45_8041d880 * (f32)w->sel);
+                    8.0f + (t / 2.0f - 45.0f * (f32)w->sel);
             }
             winMsgEntry(work, 0, w->rows[w->sel].name, 0);
             break;
         case 10:
-            MAP_TPL_NAME(tpl, 0);
+            tpl = winGetMapTplName();
             root = getMarioStDvdRoot();
             if ((u32)fileAsyncf(4, NULL, "%s/w/jp/%s", root, tpl) != 0) {
                 if (w->file == 0) {
-                    MAP_TPL_NAME(tpl, 0);
+                    tpl = winGetMapTplName();
                     root = getMarioStDvdRoot();
                     // (s32) add defeats the CSE with the fileAsyncf string above, so MWCC recomputes it
                     // into r4 (as the original) instead of pinning it in r28 across the call.
@@ -1072,20 +803,20 @@ s32 winLogMain(WindowWork* work) {
                 }
                 if (w->pose == -1) {
                     if (w->flags & 0x2000) {
-                        const char* anim = str_8041D8E0;
+                        const char* anim = "W_1";
                         w->pose = animPoseEntry("d_mario", 0);
                         switch (marioGetColor()) {
                         case 0:
-                            anim = str_8041D8E0;
+                            anim = "W_1";
                             break;
                         case 1:
-                            anim = str_8041D8E4;
+                            anim = "W_15";
                             break;
                         case 2:
-                            anim = str_8041D8EC;
+                            anim = "W_17";
                             break;
                         case 3:
-                            anim = str_8041D8F4;
+                            anim = "W_18";
                             break;
                         }
                         animPoseSetAnim(w->pose, anim, 1);
@@ -1106,7 +837,7 @@ s32 winLogMain(WindowWork* work) {
                             break;
                         }
                         w->pose = animPoseEntry(model, 0);
-                        animPoseSetAnim(w->pose, str_8041D8FC, 1);
+                        animPoseSetAnim(w->pose, "M_W_1", 1);
                     }
                     animPoseSetMaterialFlagOn(w->pose, 0x1800);
                 }
@@ -1123,7 +854,7 @@ s32 winLogMain(WindowWork* work) {
                     }
                     w->rows[w->sel].phase = 0x14;
                     w->state = 0;
-                    w->e30 = float_neg480_8041d89c;
+                    w->e30 = -480.f;
                     fileFree((FileEntry*)w->file);
                     w->file = 0;
                     if (w->pose != -1) {
@@ -1134,13 +865,12 @@ s32 winLogMain(WindowWork* work) {
                     return -2;
                 }
                 {
-                    f32 best = float_10000_8041d904;
-                    f32 px = float_neg230_8041d908 + w->mapScrollX + w->mapCx;
-                    f32 py = float_neg120_8041d90c + w->mapScrollY + w->mapCy;
-                    f32 qx = float_74_8041d86c + w->mapScrollX;
-                    f32 qy = float_120_8041d870 + w->mapScrollY;
+                    f32 best = 10000.f;
+                    f32 px = -230.f + w->mapScrollX + w->mapCx;
+                    f32 py = -120.f + w->mapScrollY + w->mapCy;
+                    f32 qx = 74.0f + w->mapScrollX;
+                    f32 qy = 120.f + w->mapScrollY;
                     TubuDt* t = tubuDt;
-                    u32 j;
                     s32 bestIdx;
                     f32 sx, sy;
                     s32 ox, oy;
@@ -1160,7 +890,7 @@ s32 winLogMain(WindowWork* work) {
                             }
                         }
                     }
-                    if (best < float_50_8041d828) {
+                    if (best < 50.f) {
                         static char name[0x40];
                         static char help[0x40];
                         sprintf(name, "menu_monosiri_%s", tubuDt[bestIdx].id);
@@ -1174,76 +904,73 @@ s32 winLogMain(WindowWork* work) {
                         w->mapSel = -1;
                         winMsgEntry(work, 0, "msg_menu_kiroku_map", 0);
                     }
-                    sx = (f32)keyGetStickX(0) * float_0p125_8041d890;
-                    sy = (f32)keyGetStickY(0) * float_0p125_8041d890;
-                    if (float_0_8041d7bc == sx && float_0_8041d7bc == sy) {
+                    sx = (f32)keyGetStickX(0) / 8.0f;
+                    sy = (f32)keyGetStickY(0) / 8.0f;
+                    if (0.0f == sx && 0.0f == sy) {
                         if (keyGetButton(0) & 1) {
-                            sx = float_neg8_8041d910;
+                            sx = -8.0f;
                         } else if (keyGetButton(0) & 2) {
-                            sx = float_8_8041d7d4;
+                            sx = 8.0f;
                         }
                         if (keyGetButton(0) & 8) {
-                            sy = float_8_8041d7d4;
+                            sy = 8.0f;
                         } else if (keyGetButton(0) & 4) {
-                            sy = float_neg8_8041d910;
+                            sy = -8.0f;
                         }
                     }
-                    if (float_0_8041d7bc == sx && float_0_8041d7bc == sy) {
+                    if (0.0f == sx && 0.0f == sy) {
                         s32 sel = w->mapSel;
                         if (sel != -1) {
-                            px = (f32)tubuDt[sel].x;
-                            sx = px + float_304_8041d874;
-                            sy = float_240_8041d858 + (f32)tubuDt[sel].y;
-                            sx -= w->mapCx;
-                            sy -= w->mapCy;
-                            sx *= float_0p2_8041d914;
-                            sy *= float_0p2_8041d914;
+                            sx = (304.0f + (f32)tubuDt[sel].x) - w->mapCx;
+                            sy = (240.f + (f32)tubuDt[sel].y) - w->mapCy;
+                            sx *= 0.2f;
+                            sy *= 0.2f;
                         }
                     }
                     w->mapCx = w->mapCx + sx;
                     w->mapCy = w->mapCy + sy;
-                    if (float_16_8041d7e4 > w->mapCx) {
-                        w->mapCx = float_16_8041d7e4;
+                    if (w->mapCx < 16.0f) {
+                        w->mapCx = 16.0f;
                     }
-                    if (w->mapCy < float_8_8041d7d4) {
-                        w->mapCy = float_8_8041d7d4;
+                    if (w->mapCy < 8.0f) {
+                        w->mapCy = 8.0f;
                     }
-                    if (w->mapCx >= float_604_8041d918) {
-                        w->mapCx = float_604_8041d918;
+                    if (w->mapCx >= 604.0f) {
+                        w->mapCx = 604.0f;
                     }
-                    if (w->mapCy >= float_468_8041d91c) {
-                        w->mapCy = float_468_8041d91c;
+                    if (w->mapCy >= 468.0f) {
+                        w->mapCy = 468.0f;
                     }
-                    ox = (s32)((w->mapCx + w->mapScrollX) - float_230_8041d878);
-                    oy = (s32)((w->mapCy + w->mapScrollY) - float_120_8041d870);
-                    if ((f32)ox >= float_166_8041d830) {
-                        w->mapScrollX = w->mapScrollX - ((f32)ox - float_166_8041d830);
+                    ox = (s32)((w->mapCx + w->mapScrollX) - 230.f);
+                    oy = (s32)((w->mapCy + w->mapScrollY) - 120.f);
+                    if ((f32)ox >= 166.0f) {
+                        w->mapScrollX = w->mapScrollX - ((f32)ox - 166.0f);
                     }
-                    if ((f32)ox <= float_neg150_8041d920) {
-                        w->mapScrollX = w->mapScrollX - (float_150_8041d924 + (f32)ox);
+                    if ((f32)ox <= -150.f) {
+                        w->mapScrollX = w->mapScrollX - (150.f + (f32)ox);
                     }
-                    if ((f32)oy >= float_80_8041d928) {
-                        w->mapScrollY = w->mapScrollY - ((f32)oy - float_80_8041d928);
+                    if ((f32)oy >= 80.f) {
+                        w->mapScrollY = w->mapScrollY - ((f32)oy - 80.f);
                     }
-                    if ((f32)oy <= float_neg80_8041d92c) {
-                        w->mapScrollY = w->mapScrollY - (float_80_8041d928 + (f32)oy);
+                    if ((f32)oy <= -80.f) {
+                        w->mapScrollY = w->mapScrollY - (80.f + (f32)oy);
                     }
-                    if (w->mapScrollX > float_0_8041d7bc) {
-                        w->mapScrollX = float_0_8041d7bc;
+                    if (w->mapScrollX > 0.0f) {
+                        w->mapScrollX = 0.0f;
                     }
-                    if (w->mapScrollY > float_0_8041d7bc) {
-                        w->mapScrollY = float_0_8041d7bc;
+                    if (w->mapScrollY > 0.0f) {
+                        w->mapScrollY = 0.0f;
                     }
-                    if (w->mapScrollX < float_neg148_8041d898) {
-                        w->mapScrollX = float_neg148_8041d898;
+                    if (w->mapScrollX < -148.0f) {
+                        w->mapScrollX = -148.0f;
                     }
-                    if (w->mapScrollY < float_neg240_8041d894) {
-                        w->mapScrollY = float_neg240_8041d894;
+                    if (w->mapScrollY < -240.f) {
+                        w->mapScrollY = -240.f;
                     }
-                    w->curX = float_neg230_8041d908 + w->mapScrollX + w->mapCx;
-                    w->curY = float_neg120_8041d90c + w->mapScrollY + w->mapCy;
-                    w->curX = w->curX - float_24_8041d838;
-                    w->curY = w->curY + float_20_8041d8ac;
+                    w->curX = -230.f + w->mapScrollX + w->mapCx;
+                    w->curY = -120.f + w->mapScrollY + w->mapCy;
+                    w->curX -= 24.0f;
+                    w->curY += 20.f;
                 }
             }
             break;
@@ -1261,16 +988,16 @@ s32 winLogMain(WindowWork* work) {
                 }
                 w->rows[w->sel].phase = 0x14;
                 w->state = 0;
-                w->e6c = float_neg480_8041d89c;
-                w->e74 = float_0_8041d7bc;
+                w->e6c = -480.f;
+                w->e74 = 0.0f;
             } else if (w->dirRep & 0x4000) {
                 w->stoneSel = w->stoneSel - 1;
                 while (w->stoneSel < 0) {
                     w->stoneSel = w->stoneSel + 7;
                 }
-                w->e7c = float_51p429_8041d8a8 * (f32)w->stoneSel;
+                w->e7c = 51.42857f * (f32)w->stoneSel;
                 while (w->e80 < w->e7c) {
-                    w->e80 += float_360_8041d930;
+                    w->e80 += 360.f;
                 }
                 SFX(0x209D6);
                 SFX(0x20037);
@@ -1279,17 +1006,17 @@ s32 winLogMain(WindowWork* work) {
                 while (w->stoneSel > 6) {
                     w->stoneSel = w->stoneSel - 7;
                 }
-                w->e7c = float_51p429_8041d8a8 * (f32)w->stoneSel;
+                w->e7c = 51.42857f * (f32)w->stoneSel;
                 while (w->e80 > w->e7c) {
-                    w->e80 -= float_360_8041d930;
+                    w->e80 -= 360.f;
                 }
                 SFX(0x209D6);
                 SFX(0x20037);
             } else if (w->buttonTrg & 0x1000) {
                 return -2;
             }
-            w->curX = float_neg50_8041d934;
-            w->curY = float_neg50_8041d934;
+            w->curX = -50.f;
+            w->curY = -50.f;
             if (w->stoneSel < w->stoneNum) {
                 ItemData* it = &itemDataTable[stone_tbl[w->stoneSel]];
                 winMsgEntry(work, -1, it->description, (s32)it->name);
@@ -1314,10 +1041,10 @@ s32 winLogMain(WindowWork* work) {
                 }
                 w->rows[w->sel].phase = 0x14;
                 w->state = 0;
-                w->e88 = float_330_8041d938;
-                w->e90 = float_neg250_8041d93c;
-                w->eac = float_neg200_8041d8d4;
-                w->eb4 = float_neg300_8041d80c;
+                w->e88 = 330.f;
+                w->e90 = -250.f;
+                w->eac = -200.f;
+                w->eb4 = -300.f;
             } else if (w->buttonRep & 0x40) {
                 w->cardPage = w->cardPage - 1;
                 if (w->cardPage < 0) {
@@ -1364,7 +1091,7 @@ s32 winLogMain(WindowWork* work) {
                 w->cardPage = w->cardSel / 28;
                 SFX(0x20035);
             } else if (trg & 0x10) {
-                winSortEntry(work, 4, float_neg310_8041d940, float_150_8041d924);
+                winSortEntry(work, 4, -310.f, 150.f);
                 w->retState = w->state;
                 SFX(0x20012);
                 w->state = 0x3E8;
@@ -1398,10 +1125,10 @@ s32 winLogMain(WindowWork* work) {
                 }
                 w->rows[w->sel].phase = 0x14;
                 w->state = 0;
-                w->f84 = float_330_8041d938;
-                w->f8c = float_neg250_8041d93c;
-                w->fa8 = float_neg200_8041d8d4;
-                w->fb0 = float_neg300_8041d80c;
+                w->f84 = 330.f;
+                w->f8c = -250.f;
+                w->fa8 = -200.f;
+                w->fb0 = -300.f;
             } else if (w->buttonRep & 0x40) {
                 w->badgePage = w->badgePage - 1;
                 if (w->badgePage < 0) {
@@ -1448,7 +1175,7 @@ s32 winLogMain(WindowWork* work) {
                 w->badgePage = w->badgeSel / 28;
                 SFX(0x20035);
             } else if (trg & 0x10) {
-                winSortEntry(work, 5, float_neg310_8041d940, float_150_8041d924);
+                winSortEntry(work, 5, -310.f, 150.f);
                 w->retState = w->state;
                 SFX(0x20012);
                 w->state = 0x3E8;
@@ -1481,8 +1208,8 @@ s32 winLogMain(WindowWork* work) {
                 }
                 w->rows[w->sel].phase = 0x14;
                 w->state = 0;
-                w->x102c = float_320_8041d8b0;
-                w->x1034 = float_neg240_8041d894;
+                w->x102c = 320.f;
+                w->x1034 = -240.f;
             } else if (w->buttonRep & 0x40) {
                 w->charPage = w->charPage - 1;
                 if (w->charPage < 0) {
@@ -1537,14 +1264,12 @@ s32 winLogMain(WindowWork* work) {
                 SFX(0x20035);
             } else if (trg & 0x100) {
                 if (swGet(w->chars[w->charSel].id + 0x117A) != 0) {
-                    u8 kind;
                     SFX(0x20012);
                     w->state = 0x15;
-                    kind = w->chars[w->charSel].id;
-                    w->mono = monosiriInit(kind, float_neg60_8041d944, float_150_8041d924);
+                    w->mono = monosiriInit(w->chars[w->charSel].id, -60.f, 150.f);
                 }
             } else if (trg & 0x10) {
-                winSortEntry(work, 6, float_neg310_8041d940, float_150_8041d924);
+                winSortEntry(work, 6, -310.f, 150.f);
                 w->retState = w->state;
                 SFX(0x20012);
                 w->state = 0x3E9;
@@ -1600,10 +1325,8 @@ s32 winLogMain(WindowWork* work) {
 // A single tattle-log row inside WindowWork, at 0xD78 with stride 0x20.
 
 
-// 100%: advances the tattle-log rows (state machine) and eases the panel
-// springs. The original's int->float conversions reference
-// 4503601774854144.0; our object emits an anonymous @271 literal instead,
-// which does not affect the match (same as winBadgeInit2). The per-block `dN`
+// Advances the tattle-log rows (state machine) and eases the panel
+// springs. The per-block `dN`
 // temps give the diff-first fmadd operand order; `ep` steps the entry base so
 // the prologue copy lands first. The MUST_MATCH `new_var` alias is scheduling
 // shaping only (see its comment).
@@ -1632,47 +1355,47 @@ void winLogMain2(WindowWork* work) {
             break;
 #endif
         case 10:
-            e->targetX = float_0_8041d7bc;
-            e->targetY = float_140_8041d8c0;
+            e->targetX = 0.0f;
+            e->targetY = 140.f;
             e->timer = 0;
             e->state++;
             break;
         case 11:
             if (++e->timer > 8) {
-                e->targetX = float_neg160_8041d8c4;
-                e->targetY = float_140_8041d8c0;
+                e->targetX = -160.f;
+                e->targetY = 140.f;
                 e->timer = 0;
                 e->state++;
             }
             break;
         case 20:
-            e->targetX = float_0_8041d7bc;
-            e->targetY = float_140_8041d8c0;
+            e->targetX = 0.0f;
+            e->targetY = 140.f;
             e->timer = 0;
             e->state++;
             break;
         case 21:
             if (++e->timer > 8) {
-                e->targetX = float_0_8041d7bc;
+                e->targetX = 0.0f;
                 {
-                    f32 prod = float_45_8041d880 * (f32)w->count;
-                    e->targetY = prod * float_0p5_8041d7c8 - float_45_8041d880 * (f32)i;
+                    f32 prod = 45.0f * (f32)w->count;
+                    e->targetY = prod / 2.0f - 45.0f * (f32)i;
                 }
                 e->timer = 0;
                 e->state++;
             }
             break;
         case 30:
-            e->targetX = float_0_8041d7bc;
-            e->targetY = float_neg160_8041d8c4;
+            e->targetX = 0.0f;
+            e->targetY = -160.f;
             e->timer = 0;
             e->state++;
             break;
         case 40:
-            e->targetX = float_0_8041d7bc;
+            e->targetX = 0.0f;
             {
-                f32 prod = float_45_8041d880 * (f32)w->count;
-                e->targetY = prod * float_0p5_8041d7c8 - float_45_8041d880 * (f32)i;
+                f32 prod = 45.0f * (f32)w->count;
+                e->targetY = prod / 2.0f - 45.0f * (f32)i;
             }
             e->timer = 0;
             e->state++;
@@ -1685,9 +1408,9 @@ void winLogMain2(WindowWork* work) {
         {
             f32 dx, dy;
             dx = e->targetX - e->curX;
-            e->curX += dx * float_0p125_8041d890;
+            e->curX += dx / 8.0f;
             dy = e->targetY - e->curY;
-            e->curY += dy * float_0p125_8041d890;
+            e->curY += dy / 8.0f;
         }
     }
 
@@ -1714,20 +1437,20 @@ void winLogMain2(WindowWork* work) {
     }
     {
         f32 d6 = WW_F32(work, 0xE7C) - WW_F32(new_var, 0xE80);
-        WW_F32(new_var, 0xE80) += d6 * float_0p25_8041d8c8;
+        WW_F32(new_var, 0xE80) += d6 / 4.0f;
     }
     WW_F32(work, 0xEA4) = (f32)(WW_S32(work, 0xE9C) * 0xE8);
-    WW_F32(work, 0xEA0) += (WW_F32(new_var, 0xEA4) - WW_F32(new_var, 0xEA0)) / float_6_8041d81c;
-    WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(new_var, 0xE84)) / float_6_8041d81c;
-    WW_F32(new_var, 0xE8C) += (WW_F32(work, 0xE90) - WW_F32(new_var, 0xE8C)) / float_6_8041d81c;
-    WW_F32(work, 0xEA8) += (WW_F32(work, 0xEAC) - WW_F32(new_var, 0xEA8)) / float_6_8041d81c;
-    WW_F32(new_var, 0xEB0) += (WW_F32(work, 0xEB4) - WW_F32(work, 0xEB0)) / float_6_8041d81c;
+    WW_F32(work, 0xEA0) += (WW_F32(new_var, 0xEA4) - WW_F32(new_var, 0xEA0)) / 6.0f;
+    WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(new_var, 0xE84)) / 6.0f;
+    WW_F32(new_var, 0xE8C) += (WW_F32(work, 0xE90) - WW_F32(new_var, 0xE8C)) / 6.0f;
+    WW_F32(work, 0xEA8) += (WW_F32(work, 0xEAC) - WW_F32(new_var, 0xEA8)) / 6.0f;
+    WW_F32(new_var, 0xEB0) += (WW_F32(work, 0xEB4) - WW_F32(work, 0xEB0)) / 6.0f;
     WW_F32(work, 0xFA0) = (f32)(WW_S32(new_var, 0xF98) * 0xE8);
-    WW_F32(work, 0xF9C) += (WW_F32(work, 0xFA0) - WW_F32(new_var, 0xF9C)) / float_6_8041d81c;
-    WW_F32(new_var, 0xF80) += (WW_F32(new_var, 0xF84) - WW_F32(new_var, 0xF80)) / float_6_8041d81c;
-    WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(new_var, 0xF88)) / float_6_8041d81c;
-    WW_F32(new_var, 0xFA4) += (WW_F32(new_var, 0xFA8) - WW_F32(new_var, 0xFA4)) / float_6_8041d81c;
-    WW_F32(work, 0xFAC) += (WW_F32(new_var, 0xFB0) - WW_F32(work, 0xFAC)) / float_6_8041d81c;
+    WW_F32(work, 0xF9C) += (WW_F32(work, 0xFA0) - WW_F32(new_var, 0xF9C)) / 6.0f;
+    WW_F32(new_var, 0xF80) += (WW_F32(new_var, 0xF84) - WW_F32(new_var, 0xF80)) / 6.0f;
+    WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(new_var, 0xF88)) / 6.0f;
+    WW_F32(new_var, 0xFA4) += (WW_F32(new_var, 0xFA8) - WW_F32(new_var, 0xFA4)) / 6.0f;
+    WW_F32(work, 0xFAC) += (WW_F32(new_var, 0xFB0) - WW_F32(work, 0xFAC)) / 6.0f;
 #else
     {
         f32 d1 = WW_F32(work, 0xE28) - WW_F32(work, 0xE2C);
@@ -1751,25 +1474,29 @@ void winLogMain2(WindowWork* work) {
     }
     {
         f32 d6 = WW_F32(work, 0xE7C) - WW_F32(work, 0xE80);
-        WW_F32(work, 0xE80) += d6 * float_0p25_8041d8c8;
+        WW_F32(work, 0xE80) += d6 / 4.0f;
     }
     WW_F32(work, 0xEA4) = (f32)(WW_S32(work, 0xE9C) * 0xE8);
-    WW_F32(work, 0xEA0) += (WW_F32(work, 0xEA4) - WW_F32(work, 0xEA0)) / float_6_8041d81c;
-    WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(work, 0xE84)) / float_6_8041d81c;
-    WW_F32(work, 0xE8C) += (WW_F32(work, 0xE90) - WW_F32(work, 0xE8C)) / float_6_8041d81c;
-    WW_F32(work, 0xEA8) += (WW_F32(work, 0xEAC) - WW_F32(work, 0xEA8)) / float_6_8041d81c;
-    WW_F32(work, 0xEB0) += (WW_F32(work, 0xEB4) - WW_F32(work, 0xEB0)) / float_6_8041d81c;
+    WW_F32(work, 0xEA0) += (WW_F32(work, 0xEA4) - WW_F32(work, 0xEA0)) / 6.0f;
+    WW_F32(work, 0xE84) += (WW_F32(work, 0xE88) - WW_F32(work, 0xE84)) / 6.0f;
+    WW_F32(work, 0xE8C) += (WW_F32(work, 0xE90) - WW_F32(work, 0xE8C)) / 6.0f;
+    WW_F32(work, 0xEA8) += (WW_F32(work, 0xEAC) - WW_F32(work, 0xEA8)) / 6.0f;
+    WW_F32(work, 0xEB0) += (WW_F32(work, 0xEB4) - WW_F32(work, 0xEB0)) / 6.0f;
     WW_F32(work, 0xFA0) = (f32)(WW_S32(work, 0xF98) * 0xE8);
-    WW_F32(work, 0xF9C) += (WW_F32(work, 0xFA0) - WW_F32(work, 0xF9C)) / float_6_8041d81c;
-    WW_F32(work, 0xF80) += (WW_F32(work, 0xF84) - WW_F32(work, 0xF80)) / float_6_8041d81c;
-    WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(work, 0xF88)) / float_6_8041d81c;
-    WW_F32(work, 0xFA4) += (WW_F32(work, 0xFA8) - WW_F32(work, 0xFA4)) / float_6_8041d81c;
-    WW_F32(work, 0xFAC) += (WW_F32(work, 0xFB0) - WW_F32(work, 0xFAC)) / float_6_8041d81c;
+    WW_F32(work, 0xF9C) += (WW_F32(work, 0xFA0) - WW_F32(work, 0xF9C)) / 6.0f;
+    WW_F32(work, 0xF80) += (WW_F32(work, 0xF84) - WW_F32(work, 0xF80)) / 6.0f;
+    WW_F32(work, 0xF88) += (WW_F32(work, 0xF8C) - WW_F32(work, 0xF88)) / 6.0f;
+    WW_F32(work, 0xFA4) += (WW_F32(work, 0xFA8) - WW_F32(work, 0xFA4)) / 6.0f;
+    WW_F32(work, 0xFAC) += (WW_F32(work, 0xFB0) - WW_F32(work, 0xFAC)) / 6.0f;
 #endif
 }
 
-static inline void logIconSet(u32 id, GXColor* c, Vec translate, Vec scale) {
-    winIconSet(id, &translate, &scale, c);
+// The original passes these draw arguments by value: an inline's by-value parameters give the same caller copies.
+static inline void monoFontV(Vec pos, Vec scale, GXColor color, const char* msg) {
+    winFontSet(&pos, &scale, &color, msg);
+}
+static inline void monoIconV(s32 id, Vec pos, Vec scale, GXColor color) {
+    winIconSet(id, &pos, &scale, &color);
 }
 static inline Vec logMkVec(Vec base, f32 x, f32 y) {
     base.x = x;
@@ -1784,108 +1511,86 @@ static inline Vec logMkVecYX(Vec base, f32 y, f32 x) {
 }
 
 // Draws one page of the log window: map, crystal stars, cards, badges, the tattle viewer and the tab strip.
-// The int->float conversion is the compiler's native `(f32)i`: it emits the original's fused `fsubs`
-// with a base-relative `lfd f31, 0x420(r31)` and the frame matches the original's 0x260.
-// What still differs is allocation: the small GXColor by-value temp slots (`col`, `shadow`, the
-// card/badge icon colour, the white/white3 pair) sit at different stack offsets, the `itemDataTable`
-// address web lands in r0 instead of the original's r7 in the two icon blocks, and a couple of
-// commutative/scheduling choices (`add r4, r3, r28` for `add r4, r28, r3`, the white/white3 store order).
-// The row-loop `logMkVec` evaluation order is fixed via the `logMkVecYX` helper (curX first).
-// NONMATCHING (99.02%): allocation only, as detailed above.
 void winLogDisp(CameraId camId, WindowWork* work, s32 idx) {
     LogWin* w = (LogWin*)work;
-    GXColor white3 = dat_8041d78c;
-    GXColor white = dat_8041d78c;
-    GXColor shadow;
-    f32 x = WW_F32(work, 0xC4 + idx * 0x14);
-    f32 y = WW_F32(work, 0xC8 + idx * 0x14);
+    static const GXColor white0 = {0xFF, 0xFF, 0xFF, 0xFF};
+    GXColor white3;
+    GXColor white;
+    f32 x = ((f32*)((u8*)work + 0xC4))[idx * 5];
+    f32 y = ((f32*)((u8*)work + 0xC8))[idx * 5];
     s32 i;
 
+    white = white0;
+    white3 = white0;
+
     winBgGX(work, 4, x, y);
-    if (y + w->e34 > float_neg480_8041d89c) {
+    if (y + w->e34 > -480.f) {
         mapGX(work, x + w->e2c, y + w->e34);
     }
-    if (y + w->e70 > float_neg480_8041d89c) {
-        GXColor col;
-
+    if (y + w->e70 > -480.f) {
         winTexInit(LOG_TEXPAL());
-        col = dat_8041d790;
-        col.a = (s8)w->e78;
-        winTexSet(0x24, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->e68, y + w->e70), (Vec){6e+01f, 1.0f, 1.0f}, col);
+        winTexSet(0x24, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->e68, y + w->e70), (Vec){6e+01f, 1.0f, 1.0f},
+                  (GXColor){0xFF, 0xFF, 0xFF, w->e78});
         for (i = 0; i < 7; i++) {
             Vec p = (Vec){0.0f, 0.0f, 1.7e+02f};
             Mtx rx;
             Mtx ry;
 
-            PSMTXRotRad(rx, 'x', float_0p43633_8041d8a0);
-            PSMTXRotRad(ry, 'y', float_0p017453_8041d8a4 * (float_51p429_8041d8a8 *
+            PSMTXRotRad(rx, 'x', 0.43633232f);
+            PSMTXRotRad(ry, 'y', 0.017453292f * (51.42857f *
                 (f32)i
                 - w->e80));
             PSMTXMultVec(ry, &p, &p);
             PSMTXMultVec(rx, &p, &p);
-            shadow = VCOL(dat_8041d794);
-            winKageGX(work, p.x + (x + w->e68), (p.y + (y + w->e70)) - float_30_8041d864, p.z,
-                      float_1_8041d7c0, &shadow);
+            winKageGX(work, p.x + (x + w->e68), (p.y + (y + w->e70)) - 30.f, p.z,
+                      1.0f, &(GXColor){0x00, 0x00, 0x00, 0x80});
             ((f32*)w->stones[i]->userdata)[2] = p.x + (x + w->e68);
-            ((f32*)w->stones[i]->userdata)[3] = float_20_8041d8ac + (p.y + (y + w->e70));
+            ((f32*)w->stones[i]->userdata)[3] = 20.f + (p.y + (y + w->e70));
             ((f32*)w->stones[i]->userdata)[4] = p.z;
         }
         for (i = 0; i < 7; i++) {
             effStarStoneDraw(8, w->stones[i]);
         }
     }
-    if (w->e84 < float_320_8041d8b0 && w->e8c > float_neg240_8041d894) {
+    if (w->e84 < 320.f && w->e8c > -240.f) {
         winHakoGX(work, 0, x + w->e84, y + w->e8c);
         winTexInit(LOG_TEXPAL());
         winTexSet(0x95, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->ea8, y + w->eb0), (Vec){1.0f, 1.0f, 1.0f}, white);
         if (swGet(w->cardIcon[w->cardSel] + 0x80) != 0) {
-            GXColor white2;
-
             winIconInit();
-            white2 = white;
-            logIconSet(((ItemDataView*)itemDataTable)[w->cardIcon[w->cardSel] + 240].icon_id, &white2,
-                       logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->ea8, (y + w->eb0) - float_4_8041d88c),
-                       (Vec){1.0f, 1.0f, 1.0f});
+            monoIconV(itemDataTable[w->cardIcon[w->cardSel] + 240].icon_id,
+                      logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->ea8, (y + w->eb0) - 4.0f),
+                      (Vec){1.0f, 1.0f, 1.0f}, white);
         }
     }
-    if (w->f80 < float_320_8041d8b0 && w->f88 > float_neg240_8041d894) {
+    if (w->f80 < 320.f && w->f88 > -240.f) {
         winHakoGX(work, 1, x + w->f80, y + w->f88);
         winTexInit(LOG_TEXPAL());
         winTexSet(0x96, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->fa4, y + w->fac), (Vec){1.0f, 1.0f, 1.0f}, white);
         if (swGet(w->badgeIcon[w->badgeSel] + 0x41) != 0) {
-            GXColor white2;
-
             winIconInit();
-            white2 = white;
-            logIconSet(((ItemDataView*)itemDataTable)[w->badgeIcon[w->badgeSel] + 179].icon_id, &white2,
-                       logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->fa4, (y + w->fac) - float_10_8041d8b4),
-                       (Vec){1.0f, 1.0f, 1.0f});
+            monoIconV(itemDataTable[w->badgeIcon[w->badgeSel] + 179].icon_id,
+                      logMkVec((Vec){0.0f, 0.0f, 0.0f}, x + w->fa4, (y + w->fac) - 10.f),
+                      (Vec){1.0f, 1.0f, 1.0f}, white);
         }
     }
     if (w->state == 0xE || (u32)(w->state - 0x14) <= 2 || w->state == 0x3E9) {
-        monoshiriGX(work, x - float_170_8041d8b8, float_130_8041d8bc + y);
+        monoshiriGX(work, x - 170.f, 130.f + y);
     }
     for (i = 0; i < w->count; i++) {
         if (i == w->sel) {
-            GXColor c3;
-
             winTexInit(LOG_TEXPAL());
-            c3 = dat_8041d798;
             winTexSet(0xB5, logMkVecYX((Vec){0.0f, 0.0f, 0.0f}, y + w->rows[i].curY, x + w->rows[i].curX),
-                      (Vec){1.0f, 1.0f, 1.0f}, c3);
+                      (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0x00, 0x00, 0x00, 0x80});
             winTexInit_x2(LOG_TEXPAL());
             winTexSet_x2(w->rows[i].type + 0x1F, 0xB5,
-                         logMkVecYX((Vec){0.0f, 0.0f, 0.0f}, float_8_8041d7d4 + (y + w->rows[i].curY),
-                                  (x + w->rows[i].curX) - float_8_8041d7d4),
+                         (Vec){(x + w->rows[i].curX) - 8.0f, 8.0f + (y + w->rows[i].curY), 0.0f},
                          (Vec){1.0f, 1.0f, 1.0f}, white3);
         } else {
-            GXColor c4;
-
             winTexInit_x2(LOG_TEXPAL());
-            c4 = dat_8041d79c;
             winTexSet_x2(w->rows[i].type + 0x1F, 0xB5,
                          logMkVecYX((Vec){0.0f, 0.0f, 0.0f}, y + w->rows[i].curY, x + w->rows[i].curX),
-                         (Vec){1.0f, 1.0f, 1.0f}, c4);
+                         (Vec){1.0f, 1.0f, 1.0f}, (GXColor){0x80, 0x80, 0x80, 0xFF});
         }
     }
 }
@@ -1918,50 +1623,34 @@ const char* winGetMapTplName(void) {
     return "map7.tpl";
 }
 
-// Fixes that got here: the tail bounce ternaries computed into a local `d` before winTexInit (0xBC/0xBE/0xBB)
-// and the mapSel/visible selection written as an argument-level ternary both stop mwcc hoisting the argument
-// setup past the branch (that was ~90% of the old gap). Later: declaring the two colours `tx, c0, ty, c1, c2`
-// (tx before c0 before ty) and routing the icon call through the by-value `logIconSet` helper (a fresh
-// `GXColor cc = c0` copy) with the `Vec` arguments left as inline `logMkVec`/`LV` expressions fixed the
-// by-value temp region; the two pragmas below give the original's FPR/GPR colouring. Both pragmas are
-// load-bearing: loop-only 94.35%, common-only 93.80%, neither 92.86%.
-// Later fixes: the 0xBC lane sums `(float_220 + x) + d` through a named `bx` so MWCC keeps the original's
-// `fadds f0, f0, f30` operand order; the bounce `__fabs` result is held in an explicit f64 temp so it stays
-// in f0 (`fabs f0, f0; frsp f29, f0`); and the icon `cc` copy is made after `winIconInit()` in a nested block,
-// which is where the original loads the colour from the c1 slot.
-// Remaining (95.47%): behaviour complete; register colouring, the int->float magic read at base+0x420 vs our
-// anonymous @N pool entry, the `extrwi.`-branch texture id (ours computes 0xBA-((count>>4)&1) branchless),
-// and the dead third-colour slot (original 0x8, ours 0x38) that shifts the by-value temp region.
 // opt_loop_invariants off: the target recomputes the vec3/colour loads inside the tubuDt loop, not hoisted.
-// opt_common_subs off: needed for the original's FPR/GPR colouring and by-value temp layout.
-// NONMATCHING (99.19%): behaviour complete; only register allocation differs.
 #pragma opt_loop_invariants off
-#pragma opt_common_subs off
 void mapGX(WindowWork* work, f32 x, f32 y) {
     static f32 pos_tbl[7][2] = {
         {165.0f, 68.0f}, {0.0f, 75.0f}, {97.0f, 150.0f}, {-139.0f, -33.0f}, {41.0f, -163.0f}, {211.0f, -91.0f}, {-209.0f, 159.0f},
     };
     LogWin* w = (LogWin*)work;
     f32 top;
-    f32 tx = float_74_8041d86c + (x + w->mapScrollX);
-    GXColor c0 = dat_8041d7a0;
-    f32 ty = float_120_8041d870 + (y + w->mapScrollY);
-    GXColor c1 = dat_8041d7a0;
-    GXColor c2 = dat_8041d7a0;
+    f32 tx = 74.0f + (x + w->mapScrollX);
+    static const GXColor white = {0xFF, 0xFF, 0xFF, 0xFF};
+    GXColor c0;
+    f32 ty = 120.f + (y + w->mapScrollY);
+    GXColor c1 = white;
     f32 bounce;
     f32 d;
-    TubuDt* t;
     s32 i;
 
+    c0 = white;
     if (w->file != NULL) {
-        top = float_120_8041d870 + y;
-        GXSetScissor((u32)(((float_304_8041d874 + x) - float_230_8041d878) - float_2_8041d87c),
-                     (u32)((float_240_8041d858 - top) - float_2_8041d87c), 0x1D0, 0xF4);
+        top = 120.f + y;
+        GXSetScissor((u32)(((304.0f + x) - 230.f) - 2.0f),
+                     (u32)((240.f - top) - 2.0f), 0x1D0, 0xF4);
         winTexInit((TEXPalette*)w->file->data[0]);
         winTexSet(0, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx, ty), (Vec){1.0f, 1.0f, 1.0f}, c1);
         winTexInit(LOG_TEXPAL());
-        t = tubuDt;
-        for (i = 0; (u32)i < 0x5D; i++, t++) {
+        for (i = 0; (u32)i < 0x5D; i++) {
+            TubuDt* t = &tubuDt[i];
+
             if (swByteGet(0) < (s32)t->minProgress) {
                 if (!tubuUnlocked(t)) {
                     continue;
@@ -1970,11 +1659,11 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
             if (w->mapSel == i) {
                 GXColor c = c0;
 
-                winTexSet(((gp->retraceCount >> 4) & 1) ? 0xB9 : 0xBA, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + (f32)t->x, ty + (f32)t->y), (Vec){1.0f, 1.0f, 1.0f}, c);
+                winTexSet(((gp->retraceCount >> 4) & 1) ? WIN_LOG_TEX_PIN_SEL : WIN_LOG_TEX_PIN_ON, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + (f32)t->x, ty + (f32)t->y), (Vec){1.0f, 1.0f, 1.0f}, c);
             } else {
                 GXColor c = c0;
 
-                winTexSet((t->visible != 0) ? 0xBA : 0xB8, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + (f32)t->x, ty + (f32)t->y), (Vec){1.0f, 1.0f, 1.0f}, c);
+                winTexSet((t->visible != 0) ? WIN_LOG_TEX_PIN_ON : WIN_LOG_TEX_PIN_OFF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + (f32)t->x, ty + (f32)t->y), (Vec){1.0f, 1.0f, 1.0f}, c);
             }
         }
         {
@@ -2005,22 +1694,8 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
                 k = 6;
             }
             if (icon != -1) {
-#ifdef MUST_MATCH
-                // Match-only: the original loads the colour copy from the `c1`
-                // slot after `winIconInit()`; declaring `cc` before the call
-                // makes MWCC read the live `c2` slot first and shifts the
-                // by-value temp region down 8 bytes.
                 winIconInit();
-                {
-                    GXColor cc = c2;
-                    logIconSet(icon, &cc, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1])), (Vec){1.0f, 1.0f, 1.0f});
-                }
-#else
-                GXColor cc = c2;
-
-                winIconInit();
-                logIconSet(icon, &cc, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + pos_tbl[k][0], float_45_8041d880 + (ty + pos_tbl[k][1])), (Vec){1.0f, 1.0f, 1.0f});
-#endif
+                monoIconV(icon, logMkVec((Vec){0.0f, 0.0f, 0.0f}, tx + pos_tbl[k][0], 45.0f + (ty + pos_tbl[k][1])), (Vec){1.0f, 1.0f, 1.0f}, c1);
             }
         }
         if (w->pose != -1) {
@@ -2031,132 +1706,111 @@ void mapGX(WindowWork* work, f32 x, f32 y) {
 
             animPoseGetAnimPosePtr(WW_S32(work, 0x188));
             anim = animPoseGetAnimDataPtr(WW_S32(work, 0x188));
-            scale = float_1p5_8041d884;
+            scale = 1.5f;
             if (w->flags & 0x2000) {
-                scale = float_3_8041d888;
+                scale = 3.0f;
             }
-            PSMTXTrans(m, tx + (f32)tubuDt[w->mapPick].x, ty + (f32)tubuDt[w->mapPick].y, float_0_8041d7bc);
+            PSMTXTrans(m, tx + (f32)tubuDt[w->mapPick].x, ty + (f32)tubuDt[w->mapPick].y, 0.0f);
             n = (s32)*(f32*)(*(u8**)((u8*)anim + 0x24) + 8);
             animPoseSetLocalTime(w->pose, (f32)(gp->retraceCount % n));
             animPoseMain(w->pose);
-            animPoseDrawMtx(w->pose, m, 1, float_0_8041d7bc, scale);
-            animPoseDrawMtx(w->pose, m, 2, float_0_8041d7bc, scale);
-            animPoseDrawMtx(w->pose, m, 3, float_0_8041d7bc, scale);
+            animPoseDrawMtx(w->pose, m, 1, 0.0f, scale);
+            animPoseDrawMtx(w->pose, m, 2, 0.0f, scale);
+            animPoseDrawMtx(w->pose, m, 3, 0.0f, scale);
         }
         GXSetScissor(0, 0, 0x260, 0x1E0);
         winTexInit(LOG_TEXPAL());
-        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - float_230_8041d878) - float_4_8041d88c, y), (Vec){1.0f, 32.0f, 1.0f}, c1);
-        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, float_4_8041d88c + (float_230_8041d878 + x), y), (Vec){1.0f, 32.0f, 1.0f}, c1);
-        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, float_4_8041d88c + top), (Vec){59.5f, 1.0f, 1.0f}, c1);
-        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, (y - float_120_8041d870) - float_4_8041d88c), (Vec){59.5f, 1.0f, 1.0f}, c1);
+        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - 230.f) - 4.0f, y), (Vec){1.0f, 32.0f, 1.0f}, c1);
+        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, 4.0f + (230.f + x), y), (Vec){1.0f, 32.0f, 1.0f}, c1);
+        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, 4.0f + top), (Vec){59.5f, 1.0f, 1.0f}, c1);
+        winTexSet(0xBF, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, (y - 120.f) - 4.0f), (Vec){59.5f, 1.0f, 1.0f}, c1);
 #ifdef MUST_MATCH
         // Match-only: keep __fabs's double result in f0 (the original does
         // `fabs f0, f0; frsp f29, f0`); without the explicit f64 temp MWCC
         // folds the abs into the callee-saved f29 (`fabs f29, f0`).
         {
-            f32 b = float_2_8041d87c * (f32)sin((f32)gp->retraceCount * float_0p125_8041d890);
+            f32 b = 2.0f * (f32)sin((f32)gp->retraceCount / 8.0f);
             f64 c = __fabs((f64)b);
             bounce = (f32)c;
         }
 #else
-        bounce = (f32)__fabs(float_2_8041d87c * (f32)sin((f32)gp->retraceCount * float_0p125_8041d890));
+        bounce = (f32)__fabs(2.0f * (f32)sin((f32)gp->retraceCount / 8.0f));
 #endif
         winTexInit(LOG_TEXPAL());
-        if (float_neg240_8041d894 == w->mapScrollY) {
-            d = float_0_8041d7bc;
+        if (-240.f == w->mapScrollY) {
+            d = 0.0f;
         } else {
             d = bounce;
         }
         winTexSet(0xBD, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, top + d), (Vec){1.0f, 1.0f, 1.0f}, c1);
-        if (float_neg148_8041d898 == w->mapScrollX) {
-            d = float_0_8041d7bc;
+        if (-148.0f == w->mapScrollX) {
+            d = 0.0f;
         } else {
             d = bounce;
         }
         winTexInit(LOG_TEXPAL());
-#ifdef MUST_MATCH
-        // Match-only: hoist the `float_220 + x` lane subexpression so MWCC keeps
-        // the original `fadds f0, f0, f30` operand order instead of commuting it.
-        {
-            f32 bx = float_220_8041d868 + x;
-            winTexSet(0xBC, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx + d, y), (Vec){1.0f, 1.0f, 1.0f}, c1);
-        }
-#else
-        winTexSet(0xBC, logMkVec((Vec){0.0f, 0.0f, 0.0f}, float_220_8041d868 + x + d, y), (Vec){1.0f, 1.0f, 1.0f}, c1);
-#endif
-        if (float_0_8041d7bc == w->mapScrollY) {
-            d = float_0_8041d7bc;
+        winTexSet(0xBC, logMkVec((Vec){0.0f, 0.0f, 0.0f}, 220.f + x + d, y), (Vec){1.0f, 1.0f, 1.0f}, c1);
+        if (0.0f == w->mapScrollY) {
+            d = 0.0f;
         } else {
             d = bounce;
         }
         winTexInit(LOG_TEXPAL());
-        winTexSet(0xBE, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, (y - float_120_8041d870) - d), (Vec){1.0f, 1.0f, 1.0f}, c1);
-        if (float_0_8041d7bc == w->mapScrollX) {
-            d = float_0_8041d7bc;
+        winTexSet(0xBE, logMkVec((Vec){0.0f, 0.0f, 0.0f}, x, (y - 120.f) - d), (Vec){1.0f, 1.0f, 1.0f}, c1);
+        if (0.0f == w->mapScrollX) {
+            d = 0.0f;
         } else {
             d = bounce;
         }
         winTexInit(LOG_TEXPAL());
-        winTexSet(0xBB, logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - float_220_8041d868) - d, y), (Vec){1.0f, 1.0f, 1.0f}, c1);
+        winTexSet(0xBB, logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - 220.f) - d, y), (Vec){1.0f, 1.0f, 1.0f}, c1);
     }
 }
 #pragma opt_loop_invariants reset
-#pragma opt_common_subs reset
 
-// The original passes these draw arguments by value: an inline's by-value parameters give the same caller copies.
-static inline void monoFontV(Vec pos, Vec scale, GXColor color, const char* msg) {
-    winFontSet(&pos, &scale, &color, msg);
-}
-static inline void monoIconV(s32 id, Vec pos, Vec scale, GXColor color) {
-    winIconSet(id, &pos, &scale, &color);
-}
-#pragma opt_loop_invariants off // needed: the target reloads the vec3 tables and address offsets inside the loop
 // Behaviour complete, checked against the asm. Declaring the shared rodata base non-const and
 // disabling loop-invariant motion stopped MWCC hoisting the vec3 loads; inlining the int->float
-// offsets and the CSE'd `float_440_8041d84c + x` value (bx) into the winTexSet/monoIconV calls
+// offsets and the CSE'd `440.f + x` value (bx) into the winTexSet/monoIconV calls
 // made the allocator rematerialise them as the original does, and `buf[0x100]` reproduces the
 // original's 0x390 frame and every Vec/buf stack offset. The five winFontSet and three winIconSet
 // calls take their Vec/Vec/GXColor by value (the monoFontV/monoIconV inlines); all 33 calls and
 // every immediate match. Writing the rodata strings as plain literals (the AGENT_BRIEF base-
 // register recipe) makes MWCC pool them on the same base register as the vec3_* LV reads, so the
 // extra `addi base, pool, 0` and the r23/r24 colouring are gone and the instruction count is exact.
-// NONMATCHING (99.72%): FPR colouring around the i2f conversions and the GXColor local slots.
 void monoshiriGX(WindowWork* work, f32 x, f32 y) {
+    static const GXColor white = {0xFF, 0xFF, 0xFF, 0xFF};
+    static const GXColor black = {0x00, 0x00, 0x00, 0xFF};
     s32 i;
     LogWin* w = (LogWin*)work;
-    GXColor c8 = dat_8041d7a8;
-    GXColor c4 = dat_8041d7a4;
-    GXColor c8c = dat_8041d7a8;
-    GXColor c8b = dat_8041d7a8;
+    GXColor c8c;
+    GXColor c4;
+    GXColor c8b;
     const char* msg;
     s32 wdt;
-    f32 fx;
-    f32 xr;
-    f32 fy;
     char buf[0x100];
     char buf2[0x20];
 
+    c4 = white;
+    c8b = black;
+    c8c = black;
     winBookGX(work, 1, x, y);
-    winKirinukiGX(work, 0, x - float_110_8041d820, y - float_160_8041d7d8, float_100_8041d824, float_50_8041d828);
+    winKirinukiGX(work, 0, x - 110.f, y - 160.f, 100.f, 50.f);
     {
         const char* pmsg = msgSearch("msg_menu_monosiri_kazu");
-        wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(pmsg));
+        wdt = (s32)(0.75f * (f32)FontGetMessageWidth(pmsg));
         winFontInit();
         {
-            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
-                               y - float_166_8041d830), (Vec){0.75f, 0.75f, 0.75f}, c8b, pmsg);
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - 108.0f) + (f32)((100 - (u16)wdt) / 2),
+                               y - 166.0f), (Vec){0.75f, 0.75f, 0.75f}, c8b, pmsg);
         }
     }
     sprintf(buf, "%d\201^%d", w->seenCnt, w->charCnt);
-    wdt = (s32)(float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf));
+    wdt = (s32)(0.75f * (f32)FontGetMessageWidth(buf));
     {
-        monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - float_108_8041d82c) + (f32)((100 - (u16)wdt) / 2),
-                           y - float_184_8041d834), (Vec){0.75f, 0.75f, 0.75f}, c8b, buf);
+        monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (x - 108.0f) + (f32)((100 - (u16)wdt) / 2),
+                           y - 184.0f), (Vec){0.75f, 0.75f, 0.75f}, c8b, buf);
     }
     winFontInit();
-    fx = (float_24_8041d838 + x) - float_5_8041d83c;
-    xr = float_56_8041d840 + x;
-    fy = y - float_16_8041d7e4;
     for (i = 0; i < 16; i++) {
         s32 id = w->chars[i + w->charPage * 16].id;
         TattleEntry* tattle = battleGetUnitMonosiriPtr(id);
@@ -2181,18 +1835,18 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         sprintf(buf2, "%d\x81\x44", (s32)enemy_monoshiri_sort_table[id]);
         
         {
-            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, fx + (f32)((s32)((i / 8) * 0xD8)), fy - (f32)((i % 8) * 0x18)), (Vec){0.75f, 0.75f, 0.75f}, c8c, buf2);
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, ((24.0f + x) - 5.0f) + (f32)((s32)((i / 8) * 0xD8)), (y - 16.0f) - (f32)((i % 8) * 0x18)), (Vec){0.75f, 0.75f, 0.75f}, c8c, buf2);
         }
         {
-            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, xr + (f32)((s32)((i / 8) * 0xD8)), fy - (f32)((i % 8) * 0x18)), (Vec){0.75f, 0.75f, 0.75f}, c8c, msg);
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (56.0f + x) + (f32)((s32)((i / 8) * 0xD8)), (y - 16.0f) - (f32)((i % 8) * 0x18)), (Vec){0.75f, 0.75f, 0.75f}, c8c, msg);
         }
     }
     if (w->charPage > 0) {
         f32 bx;
 
         winTexInit(LOG_TEXPAL());
-        bx = float_440_8041d84c + x;
-        winTexSet(0x17, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, float_18_8041d850 + y), (Vec){-1.0f, -1.0f, -1.0f}, c4);
+        bx = 440.f + x;
+        winTexSet(0x17, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, 18.0f + y), (Vec){-1.0f, -1.0f, -1.0f}, c4);
         winIconInit();
         {
             monoIconV(0x7E, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, y), (Vec){0.6f, 0.6f, 0.6f}, c4);
@@ -2202,30 +1856,29 @@ void monoshiriGX(WindowWork* work, f32 x, f32 y) {
         f32 bx;
 
         winTexInit(LOG_TEXPAL());
-        bx = float_440_8041d84c + x;
-        winTexSet(0x17, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, (y - float_15_8041d854) - float_240_8041d858), (Vec){1.0f, 1.0f, 1.0f}, c4);
+        bx = 440.f + x;
+        winTexSet(0x17, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, (y - 15.0f) - 240.f), (Vec){1.0f, 1.0f, 1.0f}, c4);
         winIconInit();
         {
-            monoIconV(0x80, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, y - float_240_8041d858), (Vec){0.6f, 0.6f, 0.6f}, c4);
+            monoIconV(0x80, logMkVec((Vec){0.0f, 0.0f, 0.0f}, bx, y - 240.f), (Vec){0.6f, 0.6f, 0.6f}, c4);
         }
     }
     msg = msgSearch("msg_menu_sort_narabikae");
     {
-        f32 fw = float_0p7_8041d85c * (f32)FontGetMessageWidth(msg);
+        f32 fw = 0.7f * (f32)FontGetMessageWidth(msg);
         f32 ox;
 
         winFontInit();
-        ox = x + (float_420_8041d860 - fw);
+        ox = x + (420.f - fw);
         {
-            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, ox, y - float_210_8041d7f0), (Vec){0.7f, 0.7f, 0.7f}, c8b, msg);
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, ox, y - 210.f), (Vec){0.7f, 0.7f, 0.7f}, c8b, msg);
         }
         winIconInit();
         {
-            monoIconV(0x217, logMkVec((Vec){0.0f, 0.0f, 0.0f}, ox - float_30_8041d864, y - float_220_8041d868), (Vec){0.6f, 0.6f, 0.6f}, c4);
+            monoIconV(0x217, logMkVec((Vec){0.0f, 0.0f, 0.0f}, ox - 30.f, y - 220.f), (Vec){0.6f, 0.6f, 0.6f}, c4);
         }
     }
 }
-#pragma opt_loop_invariants reset
 
 void* monosiriInit(BattleUnitType kind, f32 x, f32 y) {
     MonosiriWork* w = _mapAlloc(sizeof(MonosiriWork));
@@ -2235,8 +1888,8 @@ void* monosiriInit(BattleUnitType kind, f32 x, f32 y) {
     w->unitKind = kind;
     w->targetX = x;
     w->targetY = y;
-    w->x = float_500_8041d808;
-    w->y = float_neg300_8041d80c;
+    w->x = 500.f;
+    w->y = -300.f;
     w->alpha = 0;
     w->poseId = -1;
     w->poseId2 = -1;
@@ -2260,7 +1913,7 @@ void monosiriMain(void* work) {
     TattleEntry* tattle;
     GlobalWork* g = gp;
     s32 inBattle = !(g->inBattle == 0);
-    const char* lang[2] = { str_8041D7AC, str_8041D7B0 };
+    const char* lang[2] = { "jp", "us" };
     GXTexObj texObj;
     s32 size;
 
@@ -2297,28 +1950,28 @@ void monosiriMain(void* work) {
                         animPoseWorldPositionEvalOn(w->poseId);
                         animPoseMain(w->poseId);
                         w->poseId2 = animPoseEntry("c_n_moa_a", inBattle);
-                        animPoseSetAnim(w->poseId2, str_8041D810, TRUE);
+                        animPoseSetAnim(w->poseId2, "S_1", TRUE);
                         animPoseMain(w->poseId2);
                     } else {
                         w->poseId = animPoseEntry(tattle->modelName, inBattle);
                         animPoseSetAnim(w->poseId, tattle->poseName, TRUE);
                         animPoseMain(w->poseId);
                     }
-                    dispEntry(2, float_0_8041d7bc, 6, capture, w);
+                    dispEntry(2, 0.0f, 6, capture, w);
                 }
             }
         }
         break;
     case 2:
-        w->targetX = float_600_8041d814;
-        w->targetY = float_neg400_8041d818;
+        w->targetX = 600.f;
+        w->targetY = -400.f;
         break;
     }
 
-    w->x += (w->targetX - w->x) / float_6_8041d81c;
-    w->y += (w->targetY - w->y) / float_6_8041d81c;
+    w->x += (w->targetX - w->x) / 6.0f;
+    w->y += (w->targetY - w->y) / 6.0f;
     if (w->state > 0) {
-        dispEntry(8, float_0_8041d7bc, 0, monosiri_disp, w);
+        dispEntry(8, 0.0f, 0, monosiri_disp, w);
     }
 }
 #pragma opt_common_subs reset
@@ -2337,7 +1990,7 @@ BOOL monosiriCloseWait(void* work) {
     if (w == NULL) {
         return TRUE;
     }
-    if (w->x > float_500_8041d808 && w->y < float_neg300_8041d80c) {
+    if (w->x > 500.f && w->y < -300.f) {
         return TRUE;
     }
     return FALSE;
@@ -2376,10 +2029,7 @@ void monosiriExit(void* work) {
 // The original reads two dead zero vectors at base+0x358/0x364 into scratch slots before overwriting them from
 // AnimData; the MUST_MATCH block below reproduces that copy so the frame layout matches. The scratch slots are read
 // through the unit's existing `vec3_...` rodata names so the base stays live in r30. `tmp` doubles as the identity
-// matrix, as in the original. What is left is register colouring: the dead-copy loads/stores and the GXSetViewport
-// int->float temps take different registers, and the moamoa i2f magic pools anonymously at base+0x438/0x440 instead
-// of the original's base+0x420/0x428 (project-wide limitation).
-// NONMATCHING (99.51%): behaviour complete, checked against the asm; only register colouring and the anonymous i2f magic differ.
+// matrix, as in the original.
 void capture(CameraId camId, void* param) {
     MonosiriWork* w = param;
     AnimData* ad;
@@ -2408,9 +2058,6 @@ void capture(CameraId camId, void* param) {
     Vec mxScratch;
 #endif
     Mtx m;
-    Vec eye;
-    Vec up;
-    Vec at;
     s32 i;
     TattleCamEntry* tbl;
     s32 n;
@@ -2445,32 +2092,24 @@ void capture(CameraId camId, void* param) {
     mn = *(Vec*)((u8*)ad + 0x44);
     mx = *(Vec*)((u8*)ad + 0x50);
 #endif
-    cx = (mx.x + mn.x) * float_0p5_8041d7c8;
-    cy = (mx.y + mn.y) * float_0p5_8041d7c8;
+    cx = (mx.x + mn.x) / 2.0f;
+    cy = (mx.y + mn.y) / 2.0f;
     GXGetViewportv(vp);
     GXGetProjectionv(proj);
     GXGetScissor(&sl, &st, &sw, &sh);
     TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
     tw = GXGetTexObjWidth(&obj);
     th = GXGetTexObjHeight(&obj);
-    GXSetViewport(float_0_8041d7bc, float_0_8041d7bc, (f32)tw, (f32)th, float_0_8041d7bc, float_1_8041d7c0);
+    GXSetViewport(0.0f, 0.0f, (f32)tw, (f32)th, 0.0f, 1.0f);
     GXSetScissor(1, 1, tw - 2, th - 2);
-    C_MTXPerspective(persp, float_25_8041d7f4, float_1p2667_8041d7f8, float_1_8041d7c0, float_1000_8041d7fc);
+    C_MTXPerspective(persp, 25.0f, 1.2666667f, 1.0f, 1000.f);
     GXSetProjection(persp, 0);
     if ((mx.x - mn.x) / (f32)tw > (mx.y - mn.y) / (f32)th) {
         dist = (mx.x - cx) / (f32)tan(HALF_FOV_TAN);
     } else {
-        dist = ((float_608_8041d800 * (mx.y - cy)) / float_480_8041d804) / (f32)tan(HALF_FOV_TAN);
+        dist = ((608.0f * (mx.y - cy)) / 480.f) / (f32)tan(HALF_FOV_TAN);
     }
-    at = (Vec){0.0f, 0.0f, 0.0f};
-    at.x = cx;
-    at.y = cy;
-    up = (Vec){0.0f, 1.0f, 0.0f};
-    eye = (Vec){0.0f, 0.0f, 0.0f};
-    eye.x = cx;
-    eye.y = cy;
-    eye.z = dist;
-    C_MTXLookAt(view, &eye, &up, &at);
+    C_MTXLookAt(view, &(Vec){cx, cy, dist}, &(Vec){0.0f, 1.0f, 0.0f}, &(Vec){cx, cy, 0.0f});
     {
         tbl = (TattleCamEntry*)w->file2->data[0];
         n = (u32)w->file2->data[1] >> 4;
@@ -2484,12 +2123,12 @@ void capture(CameraId camId, void* param) {
             oy = tbl->y;
             os = tbl->scale;
         } else {
-            ox = float_0_8041d7bc;
-            os = float_1_8041d7c0;
+            ox = 0.0f;
+            os = 1.0f;
             oy = ox;
         }
     }
-    PSMTXTrans(tmp, ox, oy, float_0_8041d7bc);
+    PSMTXTrans(tmp, ox, oy, 0.0f);
     PSMTXScale(scaleM, os, os, os);
     PSMTXConcat(tmp, scaleM, tmp);
     PSMTXConcat(view, tmp, view);
@@ -2498,16 +2137,14 @@ void capture(CameraId camId, void* param) {
     saved = *camGetPtr(camId);
     PSMTXCopy(view, camGetCurPtr()->view);
     if (animPoseGetVivianType(w->poseId) != 0) {
-        Vec v = (Vec){0.0f, 0.0f, 0.0f};
-
-        animPoseVivianMain(w->poseId, &v);
+        animPoseVivianMain(w->poseId, &(Vec){0.0f, 0.0f, 0.0f});
     }
     animPoseSetMaterialFlagOn(w->poseId, 0x1800);
     animPosePeraOff(w->poseId);
     PSMTXIdentity(tmp);
-    animPoseDrawMtx(w->poseId, tmp, 1, float_0_8041d7bc, float_1_8041d7c0);
-    animPoseDrawMtx(w->poseId, tmp, 2, float_0_8041d7bc, float_1_8041d7c0);
-    animPoseDrawMtx(w->poseId, tmp, 3, float_0_8041d7bc, float_1_8041d7c0);
+    animPoseDrawMtx(w->poseId, tmp, 1, 0.0f, 1.0f);
+    animPoseDrawMtx(w->poseId, tmp, 2, 0.0f, 1.0f);
+    animPoseDrawMtx(w->poseId, tmp, 3, 0.0f, 1.0f);
     animPosePeraOn(w->poseId);
     if (w->unitKind == 0x6B) {
         Vec* verts = (Vec*)((smartEntry*)*(void**)((u8*)animPoseGetAnimPosePtr(w->poseId) + 0x15C))->address;
@@ -2530,12 +2167,12 @@ void capture(CameraId camId, void* param) {
             Vec* b = &verts[animPoseGetGroupIdx(w->poseId, g_moamoa_chain_tbl[k].anim)];
 
             PSVECScale(a, &p, t);
-            PSVECScale(b, &q, float_1_8041d7c0 - t);
+            PSVECScale(b, &q, 1.0f - t);
             PSVECAdd(&p, &q, &p);
             PSMTXTrans(m, p.x + (f32)(5 - irand(10)), p.y + (f32)(5 - irand(10)), p.z + (f32)(5 - irand(10)));
-            animPoseDrawMtx(w->poseId2, m, 1, float_0_8041d7bc, float_1_8041d7c0);
-            animPoseDrawMtx(w->poseId2, m, 2, float_0_8041d7bc, float_1_8041d7c0);
-            animPoseDrawMtx(w->poseId2, m, 3, float_0_8041d7bc, float_1_8041d7c0);
+            animPoseDrawMtx(w->poseId2, m, 1, 0.0f, 1.0f);
+            animPoseDrawMtx(w->poseId2, m, 2, 0.0f, 1.0f);
+            animPoseDrawMtx(w->poseId2, m, 3, 0.0f, 1.0f);
         }
         animPosePeraOn(w->poseId2);
     }
@@ -2551,15 +2188,14 @@ void capture(CameraId camId, void* param) {
     GXSetScissor(sl, st, sw, sh);
 }
 
-// The first GXSetTevColor argument temp lands at 0xc instead of 0x18 and the second colour's local/argument at
-// 0x18/0x8 instead of 0x10/0x14, so the two winFontSet colour copies land at 0x14/0x10 instead of 0xc/0x8; the
-// first font block emits tx before bw where the original emits bw first; and the quad corner uses the opposite
-// volatile FPRs (f1/f2). The second font block's wdt2 block local fixes its volatile FPRs.
-// NONMATCHING (98.88%): call sequence, immediates and instruction count match; allocation/scheduling only.
+static inline GXColor monoAlphaColor(GXColor c, u8 a) {
+    c.a = a;
+    return c;
+}
 void monosiri_disp(CameraId camId, void* param) {
     f32 s;
     MonosiriWork* w = param;
-    GXColor c = dat_8041d7b4;
+    GXColor c = {0x00, 0x00, 0x00, 0xFF};
     f32 x = w->x;
     f32 y = w->y;
 
@@ -2569,14 +2205,13 @@ void monosiri_disp(CameraId camId, void* param) {
         Mtx m2;
         Mtx m3;
         s32 i;
-        f32 x1;
         f32 x0;
         f32 y0;
+        f32 width = 216.0f;
         const TattleEntry* tattle;
         char buf[0x100];
         f32 tx;
         f32 wdt;
-        f32 bw;
         s32 unitKind;
 
         winHalfBookGX((void*)w->file1->data[0], x, y, 0);
@@ -2588,50 +2223,39 @@ void monosiri_disp(CameraId camId, void* param) {
             tw = GXGetTexObjWidth(&obj);
             th = GXGetTexObjHeight(&obj);
             TEXGetGXTexObjFromPalette((TEXPalette*)w->file1->data[0], &obj, 0x37);
-            GXInitTexObjLOD(&obj, 1, 1, float_0_8041d7bc, float_0_8041d7bc, float_0_8041d7bc, 0, 0, 0);
+            GXInitTexObjLOD(&obj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
             GXLoadTexObj(&obj, 0);
             GXInitTexObj(&obj, *(void**)w->alloc, tw, th, 5, 0, 0, 0);
         }
-        GXInitTexObjLOD(&obj, 1, 1, float_0_8041d7bc, float_0_8041d7bc, float_0_8041d7bc, 0, 0, 0);
+        GXInitTexObjLOD(&obj, 1, 1, 0.0f, 0.0f, 0.0f, 0, 0, 0);
         GXLoadTexObj(&obj, 1);
         GXSetNumTexGens(8);
         for (i = 0; i < 8; i++) {
             f32 half;
-            s = -((float_0p04_8041d7c4 * (f32)(7 - i)) - float_1_8041d7c0);
-            half = MATCH_F32(float_0p5_8041d7c8);
+            s = 1.0f - 0.04f * (f32)(7 - i);
+            half = 0.5f;
 
-            PSMTXTrans(m1, half, half, float_0_8041d7bc);
+            PSMTXTrans(m1, half, half, 0.0f);
             PSMTXScale(m2, s, s, s);
             {
-                f32 nhalf = MATCH_F32(float_neg0p5_8041d7cc);
+                f32 nhalf = -0.5f;
 
-                PSMTXTrans(m3, nhalf, nhalf, float_0_8041d7bc);
+                PSMTXTrans(m3, nhalf, nhalf, 0.0f);
             }
             PSMTXConcat(m1, m2, m1);
             PSMTXConcat(m1, m3, m1);
             GXLoadTexMtxImm(m1, 0x1E + i * 3, 1);
             GXSetTexCoordGen2(i, 1, 4, 0x1E + i * 3, 0, 0x7D);
         }
-        GXSetTevColor(1, dat_8041d7b8);
-        {
-            GXColor reg1 = unk_80423050;
-
-            reg1.a = (s8)w->alpha;
-            GXSetTevColor(2, reg1);
-        }
+        GXSetTevColor(1, (GXColor){0xCF, 0xBC, 0x9E, 0xFF});
+        GXSetTevColor(2, monoAlphaColor(unk_80423050, w->alpha));
         GXSetNumTevStages(0xC);
         for (i = 0; i < 8; i++) {
             GXSetTevOrder(i, i, 1, 0xFF);
             GXSetTevColorOp(i, 0, 0, 0, 1, 0);
             GXSetTevAlphaOp(i, 0, 0, 0, 1, 0);
             GXSetTevColorIn(i, 0xF, 0xF, 0xF, 2);
-            {
-                s32 a = 0;
-                if (i == 0) {
-                    a = 7;
-                }
-                GXSetTevAlphaIn(i, 7, 4, 6, a);
-            }
+            GXSetTevAlphaIn(i, GX_CA_ZERO, GX_CA_TEXA, GX_CA_KONST, (i == 0) ? GX_CA_ZERO : GX_CA_APREV);
             GXSetTevKAlphaSel(i, 7);
         }
         GXSetTevOrder(8, 7, 1, 0xFF);
@@ -2655,17 +2279,16 @@ void monosiri_disp(CameraId camId, void* param) {
         GXSetTevColorIn(0xB, 8, 0, 1, 0xF);
         GXSetTevAlphaIn(0xB, 7, 7, 7, 4);
         GXBegin(0x80, 0, 4);
-        x0 = float_32_8041d7d0 + x;
-        y0 = y - float_8_8041d7d4;
-        tx = y0 - float_160_8041d7d8;
-        x1 = x0 + float_216_8041d7dc;
+        x0 = 32.0f + x;
+        y0 = y - 8.0f;
+        tx = y0 - 160.f;
         GXPosition3f32(x0, y0, 0.0f);
         GXTexCoord2f32(0.0f, 0.0f);
         GXPosition3f32(x0, tx, 0.0f);
         GXTexCoord2f32(0.0f, 1.0f);
-        GXPosition3f32(x1, tx, 0.0f);
+        GXPosition3f32(x0 + width, tx, 0.0f);
         GXTexCoord2f32(1.0f, 1.0f);
-        GXPosition3f32(x1, y0, 0.0f);
+        GXPosition3f32(x0 + width, y0, 0.0f);
         GXTexCoord2f32(1.0f, 0.0f);
         unitKind = w->unitKind;
         tattle = battleGetUnitMonosiriPtr(unitKind);
@@ -2681,19 +2304,17 @@ void monosiri_disp(CameraId camId, void* param) {
             sprintf(buf, "%d\201D%s", enemy_monoshiri_sort_table[unitKind],
                     msgSearch(tattle->enemyTag));
         }
-        wdt = float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
+        wdt = 0.75f * (f32)FontGetMessageWidth(buf);
         winFontInit();
-        bw = float_248_8041d7e8 - wdt;
-        tx = float_16_8041d7e4 + x;
-        monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, bw * float_0p5_8041d7c8 + tx, y - float_180_8041d7ec),
+        monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, (16.0f + x) + (248.0f - wdt) / 2.0f, y - 180.f),
                   (Vec){0.75f, 0.75f, 0.75f}, c, buf);
         sprintf(buf, "%s\201@%s", msgSearch("menu_monosiri_derutokoro"), msgSearch(tattle->locationTag));
-        wdt = float_0p75_8041d7e0 * (f32)FontGetMessageWidth(buf);
+        wdt = 0.75f * (f32)FontGetMessageWidth(buf);
         {
-            f32 wdt2 = float_248_8041d7e8 - wdt;
+            f32 wdt2 = 248.0f - wdt;
 
-            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, float_1_8041d7c0 + (wdt2 * float_0p5_8041d7c8 + tx),
-                               y - float_210_8041d7f0),
+            monoFontV(logMkVec((Vec){0.0f, 0.0f, 0.0f}, 1.0f + (wdt2 / 2.0f + (16.0f + x)),
+                               y - 210.f),
                       (Vec){0.75f, 0.75f, 0.75f}, c, buf);
         }
     }
@@ -2711,117 +2332,4 @@ __declspec(section ".sdata") u8 gap_10_80423054_sbss2[4];
 // .sdata2 colour words and short region strings, in the original's address
 // order. The GXColor words are the shadow/page/tab tints the draw functions
 // load as flat colours.
-const GXColor dat_8041d78c = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041d790 = {0xFF, 0xFF, 0xFF, 0x00};
-const GXColor dat_8041d794 = {0x00, 0x00, 0x00, 0x80};
-const GXColor dat_8041d798 = {0x00, 0x00, 0x00, 0x80};
-const GXColor dat_8041d79c = {0x80, 0x80, 0x80, 0xFF};
-const GXColor dat_8041d7a0 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041d7a4 = {0xFF, 0xFF, 0xFF, 0xFF};
-const GXColor dat_8041d7a8 = {0x00, 0x00, 0x00, 0xFF};
-const char str_8041D7AC[4] = "jp";
-const char str_8041D7B0[4] = "us";
-const GXColor dat_8041d7b4 = {0x00, 0x00, 0x00, 0xFF};
-const GXColor dat_8041d7b8 = {0xCF, 0xBC, 0x9E, 0xFF};
 
-// Named .sdata2 constants, defined after the code in the original's order.
-#pragma explicit_zero_data on
-const f32 float_0_8041d7bc = 0.0f;
-#pragma explicit_zero_data reset
-const f32 float_1_8041d7c0 = 1.0f;
-#pragma explicit_zero_data on
-const f32 float_0p04_8041d7c4 = 0.04f;
-#pragma explicit_zero_data reset
-const f32 float_0p5_8041d7c8 = 0.5f;
-const f32 float_neg0p5_8041d7cc = -0.5f;
-const f32 float_32_8041d7d0 = 32.0f;
-const f32 float_8_8041d7d4 = 8.0f;
-const f32 float_160_8041d7d8 = 160.f;
-const f32 float_216_8041d7dc = 216.0f;
-const f32 float_0p75_8041d7e0 = 0.75f;
-const f32 float_16_8041d7e4 = 16.0f;
-const f32 float_248_8041d7e8 = 248.0f;
-const f32 float_180_8041d7ec = 180.f;
-const f32 float_210_8041d7f0 = 210.f;
-const f32 float_25_8041d7f4 = 25.0f;
-const f32 float_1p2667_8041d7f8 = 1.2666667f;
-const f32 float_1000_8041d7fc = 1000.f;
-const f32 float_608_8041d800 = 608.0f;
-const f32 float_480_8041d804 = 480.f;
-const f32 float_500_8041d808 = 500.f;
-const f32 float_neg300_8041d80c = -300.f;
-const char str_8041D810[4] = "S_1";
-const f32 float_600_8041d814 = 600.f;
-const f32 float_neg400_8041d818 = -400.f;
-const f32 float_6_8041d81c = 6.0f;
-const f32 float_110_8041d820 = 110.f;
-const f32 float_100_8041d824 = 100.f;
-const f32 float_50_8041d828 = 50.f;
-const f32 float_108_8041d82c = 108.0f;
-const f32 float_166_8041d830 = 166.0f;
-const f32 float_184_8041d834 = 184.0f;
-const f32 float_24_8041d838 = 24.0f;
-const f32 float_5_8041d83c = 5.0f;
-const f32 float_56_8041d840 = 56.0f;
-const f32 float_440_8041d84c = 440.f;
-const f32 float_18_8041d850 = 18.0f;
-const f32 float_15_8041d854 = 15.0f;
-const f32 float_240_8041d858 = 240.f;
-const f32 float_0p7_8041d85c = 0.7f;
-const f32 float_420_8041d860 = 420.f;
-const f32 float_30_8041d864 = 30.f;
-const f32 float_220_8041d868 = 220.f;
-const f32 float_74_8041d86c = 74.0f;
-const f32 float_120_8041d870 = 120.f;
-const f32 float_304_8041d874 = 304.0f;
-const f32 float_230_8041d878 = 230.f;
-const f32 float_2_8041d87c = 2.0f;
-const f32 float_45_8041d880 = 45.0f;
-const f32 float_1p5_8041d884 = 1.5f;
-const f32 float_3_8041d888 = 3.0f;
-const f32 float_4_8041d88c = 4.0f;
-const f32 float_0p125_8041d890 = 0.125f;
-const f32 float_neg240_8041d894 = -240.f;
-const f32 float_neg148_8041d898 = -148.0f;
-const f32 float_neg480_8041d89c = -480.f;
-const f32 float_0p43633_8041d8a0 = 0.43633232f;
-#pragma explicit_zero_data on
-const f32 float_0p017453_8041d8a4 = 0.017453292f;
-#pragma explicit_zero_data reset
-const f32 float_51p429_8041d8a8 = 51.42857f;
-const f32 float_20_8041d8ac = 20.f;
-const f32 float_320_8041d8b0 = 320.f;
-const f32 float_10_8041d8b4 = 10.f;
-const f32 float_170_8041d8b8 = 170.f;
-const f32 float_130_8041d8bc = 130.f;
-const f32 float_140_8041d8c0 = 140.f;
-const f32 float_neg160_8041d8c4 = -160.f;
-const f32 float_0p25_8041d8c8 = 0.25f;
-const f32 float_255_8041d8cc = 255.0f;
-const f32 float_neg130_8041d8d0 = -130.f;
-const f32 float_neg200_8041d8d4 = -200.f;
-const f32 float_60_8041d8d8 = 60.f;
-const f32 float_neg128_8041d8dc = -128.0f;
-const char str_8041D8E0[4] = "W_1";
-const char str_8041D8E4[5] = "W_15";
-const char str_8041D8EC[5] = "W_17";
-const char str_8041D8F4[5] = "W_18";
-const char str_8041D8FC[6] = "M_W_1";
-const f32 float_10000_8041d904 = 10000.f;
-const f32 float_neg230_8041d908 = -230.f;
-const f32 float_neg120_8041d90c = -120.f;
-const f32 float_neg8_8041d910 = -8.0f;
-const f32 float_0p2_8041d914 = 0.2f;
-const f32 float_604_8041d918 = 604.0f;
-const f32 float_468_8041d91c = 468.0f;
-const f32 float_neg150_8041d920 = -150.f;
-const f32 float_150_8041d924 = 150.f;
-const f32 float_80_8041d928 = 80.f;
-const f32 float_neg80_8041d92c = -80.f;
-const f32 float_360_8041d930 = 360.f;
-const f32 float_neg50_8041d934 = -50.f;
-const f32 float_330_8041d938 = 330.f;
-const f32 float_neg250_8041d93c = -250.f;
-const f32 float_neg310_8041d940 = -310.f;
-const f32 float_neg60_8041d944 = -60.f;
-const f32 float_neg1000_8041d948 = -1000.f;
