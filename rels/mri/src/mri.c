@@ -361,6 +361,13 @@ EVT_BEGIN(mri_punipuni_itemremove)
     RETURN
 EVT_END()
 
+#ifdef MUST_MATCH
+// Retail passes its own locals' addresses here (no by-value argument copies), hence the pointer cast.
+#define HAKARI_SET_COLOR(name, color) ((void (*)(const char*, GXColor*))mapGrpSetColor)(name, &(color))
+#else
+#define HAKARI_SET_COLOR(name, color) mapGrpSetColor(name, color)
+#endif
+
 USER_FUNC(hakari_color) {
     s32* args = event->args;
     const char* name = (const char*)evtGetValue(event, args[0]);
@@ -374,11 +381,11 @@ USER_FUNC(hakari_color) {
         hsv.r = (u8)gp->retraceCount;
         tmp = hsv;
         *(u32*)&color = HSV2RGB(&tmp);
-        mapGrpSetColor(name, &color);
+        HAKARI_SET_COLOR(name, color);
     } else {
         GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
 
-        mapGrpSetColor(name, &color);
+        HAKARI_SET_COLOR(name, color);
     }
     return EVT_RETURN_DONE;
 }

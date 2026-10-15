@@ -92,6 +92,18 @@ USER_FUNC(evt_mapobj_scale) {
     return EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
+// Built in an inline that returns the colour: puts the by-value argument copy above the local, as retail has it.
+static inline GXColor evtMapFogColor(s32 r, s32 g, s32 b) {
+    GXColor c = *(GXColor*)&dat_80419958;
+
+    c.r = r;
+    c.g = g;
+    c.b = b;
+    return c;
+}
+#endif
+
 USER_FUNC(evt_map_set_fog) {
     s32* args = event->args;
     s32 color = evtGetValue(event, args[0]);
@@ -100,15 +112,16 @@ USER_FUNC(evt_map_set_fog) {
     s32 r = evtGetValue(event, args[3]);
     s32 g = evtGetValue(event, args[4]);
     s32 b = evtGetValue(event, args[5]);
-    GXColor c;
-    GXColor color2;
+#ifdef MUST_MATCH
+    mapSetFog(color, near, far, evtMapFogColor(r, g, b));
+#else
+    GXColor color2 = *(GXColor*)&dat_80419958;
 
-    color2 = *(GXColor*)&dat_80419958;
     color2.r = r;
     color2.g = g;
     color2.b = b;
-    c = color2;
-    mapSetFog(color, near, far, (u32*)&c);
+    mapSetFog(color, near, far, color2);
+#endif
     return EVT_RETURN_DONE;
 }
 
@@ -265,6 +278,19 @@ USER_FUNC(evt_map_blend_set_mobj_flag) {
     return EVT_RETURN_DONE;
 }
 
+#ifdef MUST_MATCH
+// Built in an inline that returns the colour: puts the by-value argument copy above the local, as retail has it.
+static inline GXColor evtMapGrpColor(u8 r, u8 g, u8 b, u8 a) {
+    GXColor color = *(GXColor*)&unk_80422fbc;
+
+    color.r = r;
+    color.g = g;
+    color.b = b;
+    color.a = a;
+    return color;
+}
+#endif
+
 USER_FUNC(evt_mapobj_color) {
     s32* args = event->args;
     s32 type = evtGetValue(event, args[0]);
@@ -287,7 +313,9 @@ USER_FUNC(evt_mapobj_color) {
         mapObjSetColor((const char*)name, &c);
     }
     else {
-        GXColor c;
+#ifdef MUST_MATCH
+        mapGrpSetColor((const char*)name, evtMapGrpColor(r, g, b, a));
+#else
         GXColor color;
 
         color = *(GXColor*)&unk_80422fbc;
@@ -295,8 +323,8 @@ USER_FUNC(evt_mapobj_color) {
         color.g = g;
         color.b = b;
         color.a = a;
-        c = color;
-        mapGrpSetColor((const char*)name, &c);
+        mapGrpSetColor((const char*)name, color);
+#endif
     }
     return EVT_RETURN_DONE;
 }

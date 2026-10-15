@@ -462,17 +462,12 @@ USER_FUNC(uranai_bbox) {
 }
 
 USER_FUNC(card_xlu) {
-    GXColor c;
-    GXColor color;
     const char* name = (const char*)evtGetValue(event, LW(2));
 
     if (isFirstCall) {
         event->userdata[0] = 0xFF;
     }
-    color = (GXColor){0xFF, 0xFF, 0xFF, 0};
-    color.a = event->userdata[0];
-    c = color;
-    mapGrpSetColor(name, &c);
+    mapGrpSetColor(name, (GXColor){0xFF, 0xFF, 0xFF, event->userdata[0]});
     event->userdata[0] -= 8;
     if (event->userdata[0] < 0) {
         return EVT_RETURN_DONE;
