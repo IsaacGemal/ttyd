@@ -185,38 +185,6 @@ static inline f32 puni_rndf(f32 min, f32 max) {
     return (f32)rand() / 32767.0f * (max - min) + min;
 }
 
-static inline s32 puni_sext16(s32 v) {
-#ifdef MUST_MATCH
-    if (v & 0x8000) {
-        v |= 0xFFFF0000;
-    }
-#else
-    v = (s16)v;
-#endif
-    return v;
-}
-
-static inline f32 puniNearest(f32 v) {
-    f32 d = __fabs(v - Punigp->field_0x32C);
-    f32 r = Punigp->field_0x32C;
-    f32 t;
-
-    t = __fabs(v - Punigp->field_0x330);
-    if (d > t) {
-        d = t;
-        r = Punigp->field_0x330;
-    }
-    t = __fabs(v - Punigp->field_0x334);
-    if (d > t) {
-        d = t;
-        r = Punigp->field_0x334;
-    }
-    t = __fabs(v - Punigp->field_0x338);
-    if (d > t)
-        r = Punigp->field_0x338;
-    return r;
-}
-
 static inline BOOL puniHagureCheck(PuniData* punidat, Vec* pos, Vec* target) {
     Vec delta;
     Vec out;
@@ -236,27 +204,6 @@ static inline BOOL puniHagureCheck(PuniData* punidat, Vec* pos, Vec* target) {
         return TRUE;
     }
     return FALSE;
-}
-
-static inline f32 puniExitNearest(f32 f) {
-    f32 best = Punigp->field_0x32C;
-    f32 dist = (f32)__fabs(f - best);
-    f32 dist2 = (f32)__fabs(f - Punigp->field_0x330);
-
-    if (dist > dist2) {
-        dist = dist2;
-        best = Punigp->field_0x330;
-    }
-    dist2 = (f32)__fabs(f - Punigp->field_0x334);
-    if (dist > dist2) {
-        dist = dist2;
-        best = Punigp->field_0x334;
-    }
-    dist2 = (f32)__fabs(f - Punigp->field_0x338);
-    if (dist > dist2) {
-        best = Punigp->field_0x338;
-    }
-    return best;
 }
 
 // clang-format off
@@ -1718,31 +1665,29 @@ void puniTargetSearch(PuniData* punidat) {
 }
 
 void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
-    u8 b0, b1, b2, b3, b4, b5, b6;
-    u32 off;
+    u8 b[7];
 
-    off = base + index * 7;
-    b0 = _swByteGet(off + 0x8F0D180);
-    b1 = _swByteGet(off + 0x8F0D181);
-    b2 = _swByteGet(off + 0x8F0D182);
-    b3 = _swByteGet(off + 0x8F0D183);
-    b4 = _swByteGet(off + 0x8F0D184);
-    b5 = _swByteGet(off + 0x8F0D185);
-    b6 = _swByteGet(off + 0x8F0D186);
+    b[0] = _swByteGet(base + index * 7 + 0x8F0D180);
+    b[1] = _swByteGet(base + index * 7 + 0x8F0D181);
+    b[2] = _swByteGet(base + index * 7 + 0x8F0D182);
+    b[3] = _swByteGet(base + index * 7 + 0x8F0D183);
+    b[4] = _swByteGet(base + index * 7 + 0x8F0D184);
+    b[5] = _swByteGet(base + index * 7 + 0x8F0D185);
+    b[6] = _swByteGet(base + index * 7 + 0x8F0D186);
 
-    *out = b0;
+    *out = b[0];
     {
-        s32 x = b1 + (b2 << 8);
+        s32 x = b[1] + (b[2] << 8);
 
         if (x & 0x8000)
             x |= 0xFFFF0000;
         {
-            s32 y = b3 + (b4 << 8);
+            s32 y = b[3] + (b[4] << 8);
 
             if (y & 0x8000)
                 y |= 0xFFFF0000;
             {
-                s32 z = b5 + (b6 << 8);
+                s32 z = b[5] + (b[6] << 8);
 
                 if (z & 0x8000)
                     z |= 0xFFFF0000;
@@ -1754,34 +1699,26 @@ void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
     }
 }
 
-#pragma push
-#pragma opt_propagation off // the target keeps xh/yh in registers instead of rematerializing them
-// `(s16)x` in xh (found by the permuter; the same bits 8-15) gives the original's FP scheduling of the three
-// pos->x/y/z conversions (z loaded between the x and y conversions).
 void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
-    s32 xh;
-    s32 yh;
-    u32 off;
-    s32 x;
-    s32 y;
-    s32 z;
+    u32 x = (s32)pos->x;
+    u32 y = (s32)pos->y;
+    u32 z = (s32)pos->z;
+    s16 xh;
+    s16 yh;
 
-    x = (s32)pos->x;
-    { f32 ty = pos->y; y = (s32)ty; }
-    { f32 tz = pos->z; z = (s32)tz; }
-    xh = ((s16)x >> 8) & 0xFF;
-    yh = (y >> 8) & 0xFF;
-    off = base + index * 7;
+    yh = y >> 8;
+    yh = yh & 0xFF;
+    xh = x >> 8;
+    xh = xh & 0xFF;
 
-    _swByteSet(off + 0x8F0D180, *out);
-    _swByteSet(off + 0x8F0D181, x);
-    _swByteSet(off + 0x8F0D182, xh);
-    _swByteSet(off + 0x8F0D183, y);
-    _swByteSet(off + 0x8F0D184, yh);
-    _swByteSet(off + 0x8F0D185, z);
-    _swByteSet(off + 0x8F0D186, (z >> 8) & 0xFF);
+    _swByteSet(base + index * 7 + 0x8F0D180, *out);
+    _swByteSet(base + index * 7 + 0x8F0D181, x);
+    _swByteSet(base + index * 7 + 0x8F0D182, xh);
+    _swByteSet(base + index * 7 + 0x8F0D183, y);
+    _swByteSet(base + index * 7 + 0x8F0D184, yh);
+    _swByteSet(base + index * 7 + 0x8F0D185, z);
+    _swByteSet(base + index * 7 + 0x8F0D186, (z >> 8) & 0xFF);
 }
-#pragma pop
 
 void puniswTrapGetindex(s32 index, s32* out) {
     s32 byte;
@@ -2140,62 +2077,57 @@ void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag) {
     }
 }
 
-// NONMATCHING (90.47%): the `k` local makes the second `PSVECScale` argument schedule like the
-// target, and the word stores of `pos->x/y/z` match. Remaining: the second `hitCheckFilter`
-// argument setup is batched where the target interleaves it with the stores.
-void unk_mri_0000980c(PuniData* puni, Vec* pos, Vec* dir, f32 mag) {
-    Vec hitP;
-    Vec hitN;
-    Vec diff;
-    Vec refl;
-    Vec saved;
-    f32 hitP2x, hitP2y, hitP2z;
-    f32 hitN2x, hitN2y, hitN2z;
+void unk_mri_0000980c(PuniData* punidat, Vec pos, Vec vel, f32 mag) {
+    Vec hit;
+    Vec normal;
+    Vec dir;
+    Vec reflect;
+    Vec start;
+    f32 hit2x, hit2y, hit2z;
+    f32 normal2x, normal2y, normal2z;
     f32 dist;
-    f32 scale;
-    f32 k;
 
-    puni->field_0x214 = 0;
-    puni->field_0x210 = 0;
+    punidat->field_0x214 = NULL;
+    punidat->field_0x210 = NULL;
     dist = mag;
-    if (puni->unk4 & 0x1000) {
-        puni->field_0x210 = hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x,
-                                                         &hitN.y, &hitN.z, pos->x, pos->y, pos->z, dir->x,
-                                                         dir->y, dir->z);
-    }
-    if (puni->field_0x210 == 0) {
-        PSVECAdd(&puni->field_0x12C, (Vec*)&puni->field_0x15C, &puni->field_0x12C);
-    } else {
-        saved = puni->field_0x12C;
-        puni->field_0x560 = hitN;
-        PSVECAdd(&puni->field_0x12C, (Vec*)&puni->field_0x15C, &puni->field_0x12C);
-        if (puni->field_0x15C.y == 0.0f) {
-            hitN.y = 0.0f;
-        }
-        PSVECNormalize(&hitN, &hitN);
-        C_VECReflect(dir, &hitN, &refl);
-        PSVECScale(&refl, (Vec*)&puni->field_0x15C, mag);
-        scale = PSVECDotProduct(dir, &hitN);
-        k = scale * -(mag - dist) + 0.1f;
-        PSVECScale(&hitN, &hitN, k);
-        PSVECAdd(&puni->field_0x12C, &hitN, &puni->field_0x12C);
-        PSVECSubtract(&puni->field_0x12C, &saved, &diff);
-        dist = PSVECMag(&diff);
-        if (dist > 0.0f) {
-            PSVECNormalize(&diff, &diff);
-            *(s32*)&pos->y = *(s32*)&saved.y;
-            pos->y = pos->y + 1.0f;
-            *(s32*)&pos->x = *(s32*)&saved.x;
-            *(s32*)&pos->z = *(s32*)&saved.z;
-            puni->field_0x214 =
-                hitCheckFilter(0, &hitP2x, &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z,
-                                    saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z);
-            if (puni->field_0x214 != 0) {
-                puni->field_0x12C = saved;
-            }
-        }
-    }
 
+    if (punidat->unk4 & 0x1000) {
+        punidat->field_0x210 =
+            hitCheckFilter(0, &hit.x, &hit.y, &hit.z, &dist, &normal.x, &normal.y, &normal.z, pos.x, pos.y,
+                                pos.z, vel.x, vel.y, vel.z);
+    }
+    if (punidat->field_0x210 == NULL) {
+        PSVECAdd(&punidat->field_0x12C, &punidat->field_0x15C, &punidat->field_0x12C);
+        return;
+    }
+    start = punidat->field_0x12C;
+    punidat->field_0x560 = normal;
+    PSVECAdd(&punidat->field_0x12C, &punidat->field_0x15C, &punidat->field_0x12C);
+    if (0.0f == punidat->field_0x15C.y) {
+        normal.y = 0.0f;
+    }
+    PSVECNormalize(&normal, &normal);
+    C_VECReflect(&vel, &normal, &reflect);
+    PSVECScale(&reflect, &punidat->field_0x15C, mag);
+    {
+        f32 dot = PSVECDotProduct(&vel, &normal);
+
+        PSVECScale(&normal, &normal, dot * -(mag - dist) + 0.1f);
+    }
+    PSVECAdd(&punidat->field_0x12C, &normal, &punidat->field_0x12C);
+    PSVECSubtract(&punidat->field_0x12C, &start, &dir);
+    dist = PSVECMag(&dir);
+    if (dist > 0.0f) {
+        PSVECNormalize(&dir, &dir);
+        pos = start;
+        pos.y += 1.0f;
+        punidat->field_0x214 =
+            hitCheckFilter(0, &hit2x, &hit2y, &hit2z, &dist, &normal2x, &normal2y, &normal2z, start.x,
+                                start.y + 1.0f, start.z, dir.x, dir.y, dir.z);
+        if (punidat->field_0x214 != NULL) {
+            punidat->field_0x12C = start;
+        }
+    }
 }
 
 void puniMoveDecel(PuniData* puni) {
@@ -3067,146 +2999,30 @@ void puniModeChangeFallCheck(void) {
     }
 }
 
-#pragma push
-#pragma dont_inline on
-// NONMATCHING (99.79%): chaining each store with the next loop's counter init
-// (`pN->unkC = i(N+1) = 1`) reproduces the target's coalesced constant/counter; only a
-// swap is left (puni r21 vs r29, i5 r29 vs r21).
 void puniFukki(PuniData* puni) {
-    s32 i1;
-    PuniData* p1;
-    s32 i5;
-    PuniData* p2;
-    s32 i2;
-    PuniData* p3;
-    s32 i3;
-    PuniData* p4;
-    s32 i4;
-    PuniData* p5;
+    s32 i;
+    PuniData* p;
 
-    for (p1 = &Punidat[1], i1 = 1; i1 <= 102; i1++, p1++) {
-        if ((p1->unk4 & 0x400) && p1->unkC == 0x10 &&
-            !(32.0 < __fabsf(puni->field_0x12C.y - p1->field_0x12C.y)) &&
-            PSVECSquareDistance(&puni->field_0x12C, &p1->field_0x12C) < 900.0f) {
-            p1->unkC = i2 = 1;
-            for (p2 = &Punidat[1]; i2 <= 102; i2++, p2++) {
-                if ((p2->unk4 & 0x400) && p2->unkC == 0x10 &&
-                    !(32.0 < __fabsf(p1->field_0x12C.y - p2->field_0x12C.y)) &&
-                    PSVECSquareDistance(&p1->field_0x12C, &p2->field_0x12C) < 900.0f) {
-                    p2->unkC = i3 = 1;
-                    for (p3 = &Punidat[1]; i3 <= 102; i3++, p3++) {
-                        if ((p3->unk4 & 0x400) && p3->unkC == 0x10 &&
-                            !(32.0 < __fabsf(p2->field_0x12C.y - p3->field_0x12C.y)) &&
-                            PSVECSquareDistance(&p2->field_0x12C, &p3->field_0x12C) < 900.0f) {
-                            p3->unkC = i4 = 1;
-                            for (p4 = &Punidat[1]; i4 <= 102; i4++, p4++) {
-                                if ((p4->unk4 & 0x400) && p4->unkC == 0x10 &&
-                                    !(32.0 < __fabsf(p3->field_0x12C.y - p4->field_0x12C.y)) &&
-                                    PSVECSquareDistance(&p3->field_0x12C, &p4->field_0x12C) < 900.0f) {
-                                    p4->unkC = i5 = 1;
-                                    for (p5 = &Punidat[1]; i5 <= 102; i5++, p5++) {
-                                        if ((p5->unk4 & 0x400) && p5->unkC == 0x10 &&
-                                            !(32.0 < __fabsf(p4->field_0x12C.y - p5->field_0x12C.y)) &&
-                                            PSVECSquareDistance(&p4->field_0x12C, &p5->field_0x12C) < 900.0f) {
-                                            p5->unkC = 1;
-                                            puniFukki(p5);
-                                            puniDeleteEffect(p5);
-                                        }
-                                    }
-                                    if ((void*)p4->field_0x218 != NULL) {
-                                        effDelete((EffectEntry*)p4->field_0x218);
-                                        p4->field_0x218 = 0;
-                                    }
-                                }
-                            }
-                            if ((void*)p3->field_0x218 != NULL) {
-                                effDelete((EffectEntry*)p3->field_0x218);
-                                p3->field_0x218 = 0;
-                            }
-                        }
-                    }
-                    if ((void*)p2->field_0x218 != NULL) {
-                        effDelete((EffectEntry*)p2->field_0x218);
-                        p2->field_0x218 = 0;
-                    }
-                }
-            }
-            if ((void*)p1->field_0x218 != NULL) {
-                effDelete((EffectEntry*)p1->field_0x218);
-                p1->field_0x218 = 0;
-            }
+    for (p = &Punidat[1], i = 1; i <= 102; i++, p++) {
+        if ((p->unk4 & 0x400) && p->unkC == 0x10 &&
+            !(32.0 < __fabsf(puni->field_0x12C.y - p->field_0x12C.y)) &&
+            PSVECSquareDistance(&puni->field_0x12C, &p->field_0x12C) < 900.0f) {
+            p->unkC = 1;
+            puniFukki(p);
+            puniDeleteEffect(p);
         }
     }
 }
-#pragma pop
 
-// NONMATCHING (97.97%): the outer dispatch only matches with an explicit `case 4: break;` (a
-// semantic no-op). Left: a redundant `mr r0, r29` before the teki loop's `b` (our `best` lands
-// in r0, the target keeps it in r29) and the inlined mikata search using r27/r29/r28 vs r29/r28/r27.
 void puniModeALLCheck(void) {
-    s32 i;
-    PuniData* puni;
-    PuniData* best;
-
     switch (Punigp->field_0x43C) {
     case 4:
         break;
     case 2:
-        for (puni = &Punidat[1], i = 1; i <= 102; i++, puni++) {
-            if (!(puni->unk4 & 0x400)) {
-                continue;
-            }
-            if (puni->field_0x1C0 == 1e+06f) {
-                continue;
-            }
-            switch (puni->unkC) {
-            case 0:
-            case 1:
-            case 2:
-            case 4:
-            case 0x10:
-                PuniDokuritsu(puni);
-                puni->field_0xE = puni->unkC;
-                puni->unkC = 5;
-                puni->field_0x114 = 0;
-                if ((void*)puni->field_0x218 != NULL) {
-                    effDelete((EffectEntry*)puni->field_0x218);
-                    puni->field_0x218 = 0;
-                }
-                break;
-            }
-        }
+        puniModeChangeAway();
         break;
     case 3:
-        for (puni = &Punidat[1], i = 1; i < 211; i++, puni++) {
-            if (!(puni->unk4 & 0x400)) {
-                continue;
-            }
-            switch (puni->unkC) {
-            case 0:
-            case 1:
-            case 2:
-            case 0x1D:
-                if (puni->unk4 & 1) {
-                    best = puniSearchTekiInlineATK(puni);
-                } else {
-                    best = puniSearchMikataInlineATK(puni);
-                }
-                if (best != NULL) {
-                    *(PuniData**)((u8*)puni + 0x1DC) = best;
-                    puni->unkC = 7;
-                    puni->field_0x114 = 0;
-                    puni->field_0x11A = 0;
-                    puni->unk4 |= 0x100000;
-                    PuniDokuritsu(puni);
-                    if ((void*)puni->field_0x218 != NULL) {
-                        effDelete((EffectEntry*)puni->field_0x218);
-                        puni->field_0x218 = 0;
-                    }
-                }
-                break;
-            }
-        }
+        puniModeChangeAttack();
         break;
     }
 }
@@ -6943,51 +6759,17 @@ USER_FUNC(evt_puni_wait_systemmode) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.67%): all logic, constants, offsets and control flow match. Diffs are pooled rodata
-// symbols (anonymous @N@ until the unit links) plus register colouring: ours xv=r3/yv=r4 (target
-// r4/r3), x=f29/y=f30 (target f30/f29), and `flag` r28 (target r24, the register `f` had).
 USER_FUNC(evt_puni_debug_info) {
     char buf[256];
     s32 i;
+    s32 index;
+    Vec pos;
+    s32 cond;
+    s32 trap;
 
     for (i = 1; i <= 0x66; i++) {
-        s32 xv;
-        s32 yv;
-        s32 zv;
-        f32 x;
-        f32 y;
-        f32 z;
-        s32 a;
-        u8 b;
-        u8 c;
-        u8 d;
-        u8 e;
-        u8 f;
-        u8 g;
-        s32 base;
-        s32 cond;
-        s32 flag;
-
-        base = (i - 1) * 7;
-        a = (u8)_swByteGet(base);
-        b = _swByteGet(base + 1);
-        c = _swByteGet(base + 2);
-        d = _swByteGet(base + 3);
-        e = _swByteGet(base + 4);
-        f = _swByteGet(base + 5);
-        g = _swByteGet(base + 6);
-
-        xv = puni_sext16(b + (c << 8));
-        yv = puni_sext16(d + (e << 8));
-        zv = puni_sext16(f + (g << 8));
-        y = (f32)yv;
-        x = (f32)xv;
-        z = (f32)zv;
-        if (i >= 0x67) {
-            flag = 0;
-        } else {
-            flag = (swByteGet(0x28C + i / 8) >> (i % 8)) & 1;
-        }
+        puniswGetindex(0xF70F2E80, i - 1, &index, &pos);
+        puniswTrapGetindex(i, &trap);
         cond = 0;
         if (i == 1) {
             if (swGet(0xB3C) == 0) {
@@ -7008,13 +6790,13 @@ USER_FUNC(evt_puni_debug_info) {
         } else if (swByteGet(0x28B) + 5 <= i) {
             cond = 1;
         }
-        if (!flag) {
+        if (!trap) {
             if (!cond) {
-                if (!a) {
+                if (!index) {
                     sprintf(buf, "No%03d,ついて来ています\n", i);
                 } else {
-                    sprintf(buf, "No%03d,はぐれています area = mri_%02d, x = %04d, y = %04d, z = %04d,\n", i, a - 1,
-                            (s32)x, (s32)y, (s32)z);
+                    sprintf(buf, "No%03d,はぐれています area = mri_%02d, x = %04d, y = %04d, z = %04d,\n", i, index - 1,
+                            (s32)pos.x, (s32)pos.y, (s32)pos.z);
                 }
             } else {
                 sprintf(buf, "No%03d,＜まだ仲間になっていません＞\n", i);
@@ -7036,14 +6818,7 @@ static inline f32 puniRandfSetup(f32 a, f32 b) {
 }
 
 
-// NONMATCHING (99.53%): logic, constants and offsets match. Hoisting the byte/offset/iv temporaries
-// to function scope fixed the event/args registers (they were r22/r27, now r23/r22). The remaining
-// diffs are register allocation: mario r31 vs r30, c0 r30 vs r31, and the b6/iv2/iv3 conversion
-// temps and the anonymous float-pool symbols.
 USER_FUNC(evt_puni_setup) {
-    u8 b1, b2, b3, b4, b5, b6;
-    s32 off;
-    s32 iv1, iv2, iv3;
     s32* args = event->args;
     MarioWork* mario = marioGetPtr();
     s32 a = evtGetValue(event, args[0]);
@@ -7085,7 +6860,7 @@ USER_FUNC(evt_puni_setup) {
     p = &Punidat[1];
     for (i = 1; i <= 0x6d; i++, p++) {
         s32 c0;
-        f32 v1, v2, v3;
+        Vec pos;
 
         if (p->unk4 & 0x40000000) {
             p->unk4 &= ~0x40000000;
@@ -7095,37 +6870,12 @@ USER_FUNC(evt_puni_setup) {
             p->field_0x8 |= 0x20;
             continue;
         }
-        {
-            off = (i - 1) * 7;
-
-            c0 = (u8)_swByteGet(off + 0);
-            b1 = _swByteGet(off + 1);
-            b2 = _swByteGet(off + 2);
-            b3 = _swByteGet(off + 3);
-            b4 = _swByteGet(off + 4);
-            b5 = _swByteGet(off + 5);
-            b6 = _swByteGet(off + 6);
-            iv1 = b1 + (b2 << 8);
-            if (iv1 & 0x8000)
-                iv1 |= 0xffff0000;
-            iv2 = b3 + (b4 << 8);
-            if (iv2 & 0x8000)
-                iv2 |= 0xffff0000;
-            iv3 = b5 + (b6 << 8);
-            if (iv3 & 0x8000)
-                iv3 |= 0xffff0000;
-            v1 = (f32)iv1;
-            v2 = (f32)iv2;
-            v3 = (f32)iv3;
-        }
+        puniswGetindex(0xF70F2E80, i - 1, &c0, &pos);
         if (c0 != 0 && c0 != Punigp->unk328)
             continue;
         {
             s32 bit;
-            if (i >= 0x67)
-                bit = 0;
-            else
-                bit = (swByteGet(i / 8 + 0x28c) >> (i % 8)) & 1;
+            puniswTrapGetindex(i, &bit);
             if (bit != 0)
                 continue;
         }
@@ -7165,10 +6915,10 @@ USER_FUNC(evt_puni_setup) {
                 p->unkC = 1;
             } else {
                 sx = bero_get_BeroSX();
-                sy = puniNearest(bero_get_BeroSY());
+                sy = puni_init_posy(bero_get_BeroSY());
                 sz = bero_get_BeroSZ();
                 ex = bero_get_BeroEX();
-                ey = puniNearest(bero_get_BeroEY());
+                ey = puni_init_posy(bero_get_BeroEY());
                 ez = bero_get_BeroEZ();
                 if ((Punigp->field_0x324 & 8) == 0) {
                     sx = puniRandfSetup(sx - 10.0f, sx + 10.0f);
@@ -7183,9 +6933,9 @@ USER_FUNC(evt_puni_setup) {
                 p->unk4 &= ~0x1000;
             }
         } else {
-            sx = v1;
-            sy = v2;
-            sz = v3;
+            sx = pos.x;
+            sy = pos.y;
+            sz = pos.z;
             p->unkC = 0xf;
             p->unk4 |= 0x8000;
         }
@@ -7229,7 +6979,7 @@ USER_FUNC(evt_puni_setup) {
         p->unkC = 0x1c;
         p->field_0x190 = 25.0f;
         hitObjGetPos(beros[j]->hitName, &p->field_0x12C);
-        p->field_0x12C.y = puniNearest(p->field_0x12C.y);
+        p->field_0x12C.y = puni_init_posy(p->field_0x12C.y);
     }
     return 2;
 }
@@ -7411,56 +7161,28 @@ void puniHagurePos(PuniData* punidat) {
     }
 }
 
-// The `&0x8000`/else branches load field_0x12C through the float stack slots like the target; the
-// inlined nearest-of-four helper still colours its result differently in the two branches. The
-// anonymous `@NNN` pool names for float_60/float_100/vec3_mri_00025b2c are symbol-only (`~~`) and
-// go away when the unit links. The main scan loop is a pointer walk so its `addi 0x5a8` matches.
-// Matched scheduling details: the field stores after the FP setup are ordered 0x480.z, 0x4B0,
-// 0x48C.xyz, 0x4B4; in the `!&0x8` branch BeroSZ is fetched before BeroEX; in the `&0x8`
-// branch BeroSZ is stored to f1 first and then copied to f29 (`f1 = BeroSZ; f29 = f1;`) so the
-// target's `fmr f29, f1` appears. The declaration order below
-// (`args, punidat, mode, floats, then yh, xh, arg2, x, name, y, cmp, i, z, pos, base`) is tuned to
-// mwcc's callee-saved colouring; a random declaration-order search tops out at this score.
-// x,y,z are `u32`: `x >> 8` is then a logical shift and the `(u8)` truncation folds to the single
-// `extrwi` the target uses for each high byte (the same expression with `s32` x emits `srawi`+
-// `clrlwi`). The redundant second assignment under MUST_MATCH (`xh = (u8)xh;`) is a no-op but keeps
-// the loops' callee-saved colouring (dropping it drops the score to 85%). The final loop's locals
-// are `u32 x = (s32)v.x;` for the same reason: the conversion stays signed (`fctiwz`) while `>> 8`
-// stays logical. Giving the first scan loop its own counter `k` (the final loop keeps `i`) moves
-// the final loop's byte temps off r27/r22 and lifts the score to 93.48. Still differs: `mode`
-// lands in r29 (target r28, so `name` reuses r29 and `cmp` takes r31; target keeps name r29,
-// mode/cmp r28), `arg2` in r28 (target r27), the final loop counter in r22 (target r27, which
-// pushes the `!&0x8000`/final byte temps into r25-r27 instead of r24-r26), the `&0x8` branch's
-// f27/f28 copy order and `fadds` operand, and the byte-store `addi r3`/`clrlwi r4` scheduling.
-// `tools/diff_shape.py` reports the same 38 calls and all immediates.
-// The `&0x8000` branch colours yh before xh (`yh = y >> 8; yh = (u8)yh; xh = ...`) rather than the
-// xh-first order the other two blocks use: that one web-order difference fixes two byte-store
-// instructions (93.40 -> 93.42). Changing it in the other blocks does not help. This is a
-// permuter candidate: the remaining diffs are all web colouring/scheduling.
-// NONMATCHING (93.48%): call sequence and every immediate match; only callee-saved/FPR colouring
-// and scheduling differ.
+// NONMATCHING (94.58%): the three puniswSetindex calls inline as retail does; left is register colouring (the inlined
+// Setindex temps and loop counters rotated, mode/arg2 two registers off at the top).
 USER_FUNC(evt_puni_exit) {
-    s32* args = event->args;
+    s32 arg2;
+    const char* name;
+    s32* args;
     PuniData* punidat;
-    s32 mode = evtGetValue(event, args[0]);
+    s32 k;
+    s32 i;
+    s32 mode;
+    s32 cmp;
     f32 f31;
     f32 f30;
     f32 f29;
     f32 f28;
     f32 f27;
     f32 f1;
-    u8 yh;
-    u8 xh;
-    s32 arg2;
-    u32 x;
-    const char* name;
-    u32 y;
-    s32 cmp;
-    s32 i;
-    u32 z;
     Vec pos;
-    s32 base;
-    s32 k;
+    s32 area;
+
+    args = event->args;
+    mode = evtGetValue(event, args[0]);
     evtGetValue(event, args[1]);
     arg2 = evtGetValue(event, args[2]);
     name = (const char*)evtGetValue(event, args[3]);
@@ -7490,14 +7212,14 @@ USER_FUNC(evt_puni_exit) {
     }
     if (!(Punigp->field_0x324 & 0x8)) {
         f31 = bero_get_BeroSX();
-        f30 = puniExitNearest(bero_get_BeroSY());
+        f30 = puni_init_posy(bero_get_BeroSY());
         f29 = bero_get_BeroSZ();
         f28 = bero_get_BeroEX();
-        f27 = puniExitNearest(bero_get_BeroEY());
+        f27 = puni_init_posy(bero_get_BeroEY());
         f1 = bero_get_BeroEZ();
     } else {
         f31 = bero_get_BeroSX();
-        f30 = puniExitNearest(bero_get_BeroSY());
+        f30 = puni_init_posy(bero_get_BeroSY());
         f29 = bero_get_BeroSZ();
         f28 = f31;
         f27 = f30;
@@ -7535,54 +7257,13 @@ USER_FUNC(evt_puni_exit) {
                 continue;
             }
             puniHagurePos(punidat);
-            {
-                base = (punidat->field_0x116 - 1) * 7;
-                pos = punidat->field_0x12C;
-                x = (s32)pos.x;
-                y = (s32)pos.y;
-                z = (s32)pos.z;
-#ifdef MUST_MATCH
-                yh = y >> 8;
-                yh = (u8)yh;
-                xh = x >> 8;
-                xh = (u8)xh;
-#else
-                yh = y >> 8;
-                xh = x >> 8;
-#endif
-
-                _swByteSet(base + 0, (u8)Punigp->unk328);
-                _swByteSet(base + 1, (u8)x);
-                _swByteSet(base + 2, (u8)xh);
-                _swByteSet(base + 3, (u8)y);
-                _swByteSet(base + 4, (u8)yh);
-                _swByteSet(base + 5, (u8)z);
-                _swByteSet(base + 6, (u8)((z >> 8) & 0xFF));
-            }
+            area = Punigp->unk328;
+            pos = punidat->field_0x12C;
+            puniswSetindex(0xF70F2E80, punidat->field_0x116 - 1, &area, &pos);
         } else {
             pos = (Vec){ 0.0f, 0.0f, 0.0f };
-            base = (punidat->field_0x116 - 1) * 7;
-            x = (s32)pos.x;
-            y = (s32)pos.y;
-            z = (s32)pos.z;
-#ifdef MUST_MATCH
-            // the second assignments are no-ops (xh/yh are u8) needed for the target's extrwi
-            xh = x >> 8;
-            xh = (u8)xh;
-            yh = y >> 8;
-            yh = (u8)yh;
-#else
-            xh = x >> 8;
-            yh = y >> 8;
-#endif
-
-            _swByteSet(base + 0, 0);
-            _swByteSet(base + 1, (u8)x);
-            _swByteSet(base + 2, (u8)xh);
-            _swByteSet(base + 3, (u8)y);
-            _swByteSet(base + 4, (u8)yh);
-            _swByteSet(base + 5, (u8)z);
-            _swByteSet(base + 6, (u8)((z >> 8) & 0xFF));
+            area = 0;
+            puniswSetindex(0xF70F2E80, punidat->field_0x116 - 1, &area, &pos);
             PuniDokuritsu(punidat);
             if (cmp == 0) {
                 punidat->unkC = 0xE;
@@ -7599,28 +7280,9 @@ USER_FUNC(evt_puni_exit) {
     if (name != NULL && strcmp(name, "mri_00") == 0) {
         for (i = 1; i <= 0x66; i++) {
             Vec v = { 0.0f, 0.0f, 0.0f };
-            u32 x = (s32)v.x;
-            u32 y = (s32)v.y;
-            u32 z = (s32)v.z;
-            s32 base = (i - 1) * 7;
-#ifdef MUST_MATCH
-            // the second assignments are no-ops (xh/yh are u8) needed for the target's extrwi
-            xh = x >> 8;
-            xh = (u8)xh;
-            yh = y >> 8;
-            yh = (u8)yh;
-#else
-            xh = x >> 8;
-            yh = y >> 8;
-#endif
 
-            _swByteSet(base + 0, 0);
-            _swByteSet(base + 1, (u8)x);
-            _swByteSet(base + 2, (u8)xh);
-            _swByteSet(base + 3, (u8)y);
-            _swByteSet(base + 4, (u8)yh);
-            _swByteSet(base + 5, (u8)z);
-            _swByteSet(base + 6, (u8)((z >> 8) & 0xFF));
+            area = 0;
+            puniswSetindex(0xF70F2E80, i - 1, &area, &v);
         }
     }
     return 2;

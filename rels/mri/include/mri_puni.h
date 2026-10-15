@@ -225,7 +225,7 @@ s32 searchMario(PuniData* puni);
 s32 puniPositionCheck(PuniData* puni);
 void puniPositionRecover(PuniData* puni);
 void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag);
-void unk_mri_0000980c(PuniData* puni, Vec* pos, Vec* dir, f32 mag);
+void unk_mri_0000980c(PuniData* puni, Vec pos, Vec vel, f32 mag);
 void puniMoveLimitedNormal(PuniData* puni);
 void puniMoveNormal(PuniData* puni);
 void puniMoveSimple(PuniData* puni);
