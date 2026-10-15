@@ -655,11 +655,10 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     return NULL;
 }
 
-const Vec vec3_802cd3a4 = {0.0f, 0.0f, 0.0f};
-
 static inline HitEntry* partyHeadHit(Vec* pos, f32* dist) {
     HitEntry* hit;
     f32 hx, hy, hz, hnx, hny, hnz, d;
+    Vec n = {0.0f, 0.0f, 0.0f}; // unused: its zero template is the original's unreferenced .rodata Vec
 
     d = *dist;
     hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &hnx, &hny, &hnz, pos->x, pos->y + 10.0f, pos->z, 0.0f, 1.0f, 0.0f);
@@ -706,20 +705,20 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
         z = pz - offCos;
         q = (Vec){x, y, z};
         hit = partyHeadHit(&q, &dist);
-    }
-    if (hit == NULL) {
-        x = px + offCos;
-        y = py;
-        z = pz + offSin;
-        q = (Vec){x, y, z};
-        hit = partyHeadHit(&q, &dist);
-    }
-    if (hit == NULL) {
-        x = px - offCos;
-        y = py;
-        z = pz - offSin;
-        q = (Vec){x, y, z};
-        hit = partyHeadHit(&q, &dist);
+        if (hit == NULL) {
+            x = px + offCos;
+            y = py;
+            z = pz + offSin;
+            q = (Vec){x, y, z};
+            hit = partyHeadHit(&q, &dist);
+            if (hit == NULL) {
+                x = px - offCos;
+                y = py;
+                z = pz - offSin;
+                q = (Vec){x, y, z};
+                hit = partyHeadHit(&q, &dist);
+            }
+        }
     }
     if (hit != NULL) {
         position->x = x;
