@@ -1944,30 +1944,37 @@ void SoundSSPlayChEx_main(s32 result, DVDFileInfo* fileInfo) {
     }
 }
 
-void SoundSSStopCh(s32 chan) {
-    SoundStream* stream = &sound.streams[chan];
+// Stop channel `chan`, leaving `stream` pointing at it. A macro so SoundSSMain can expand it (and
+// SOUND_SS_SET_PAN_CH) with one pointer variable reused at every site, as the original's registers show.
+#define SOUND_SS_STOP_CH(stream, chan)                        \
+    do {                                                      \
+        (stream) = &sound.streams[chan];                      \
+        if ((stream)->flags) {                                \
+            if (!sound.unk20C) {                              \
+                sound.interrupts = OSDisableInterrupts();     \
+            }                                                 \
+            sound.unk20C++;                                   \
+            if ((stream)->flags & 0x400) {                    \
+                sound.unk226[(stream)->unk2] = 0;             \
+            }                                                 \
+            (stream)->flags = 0;                              \
+            DVDMgrClose((stream)->entries[0].dvd);            \
+            DVDMgrClose((stream)->entries[1].dvd);            \
+            sndStreamFree((stream)->entries[0].streamId);     \
+            if ((stream)->count == 2) {                       \
+                sndStreamFree((stream)->entries[1].streamId); \
+            }                                                 \
+            if (sound.unk20C && !--sound.unk20C) {            \
+                OSRestoreInterrupts(sound.interrupts);        \
+            }                                                 \
+            sound.unk104 = -1;                                \
+        }                                                     \
+    } while (0)
 
-    if (!stream->flags) {
-        return;
-    }
-    if (!sound.unk20C) {
-        sound.interrupts = OSDisableInterrupts();
-    }
-    sound.unk20C++;
-    if (stream->flags & 0x400) {
-        sound.unk226[stream->unk2] = 0;
-    }
-    stream->flags = 0;
-    DVDMgrClose(stream->entries[0].dvd);
-    DVDMgrClose(stream->entries[1].dvd);
-    sndStreamFree(stream->entries[0].streamId);
-    if (stream->count == 2) {
-        sndStreamFree(stream->entries[1].streamId);
-    }
-    if (sound.unk20C && !--sound.unk20C) {
-        OSRestoreInterrupts(sound.interrupts);
-    }
-    sound.unk104 = -1;
+void SoundSSStopCh(s32 chan) {
+    SoundStream* stream;
+
+    SOUND_SS_STOP_CH(stream, chan);
 }
 
 void SoundSSFadeoutCh(s32 chan) {
@@ -1994,31 +2001,37 @@ void SoundSSContinueCh(s32 chan) {
     }
 }
 
+// Set channel `chan`'s pan (a plain u8 variable), leaving `stream` pointing at it (see SOUND_SS_STOP_CH).
+#define SOUND_SS_SET_PAN_CH(stream, chan, pan)                                                                \
+    do {                                                                                                      \
+        (stream) = &sound.streams[chan];                                                                      \
+        if ((stream)->flags) {                                                                                \
+            (stream)->pan = pan;                                                                              \
+            if ((stream)->flags & 8) {                                                                        \
+                if ((stream)->count == 1) {                                                                   \
+                    sndStreamMixParameter((stream)->entries[0].streamId, (stream)->unk10, pan,                \
+                                          (u8)(stream)->span, 0);                                             \
+                } else {                                                                                      \
+                    f32 left = (stream)->unk10;                                                               \
+                    f32 right = left;                                                                         \
+                                                                                                              \
+                    if (pan < 64) {                                                                           \
+                        right = ((f32)pan * left) / 63.0f;                                                    \
+                    }                                                                                         \
+                    if (!((u32)(pan - 64) >> 31)) {                                                           \
+                        left = ((f32)(127 - pan) * left) / 63.0f;                                             \
+                    }                                                                                         \
+                    sndStreamMixParameter((stream)->entries[0].streamId, left, 0, (u8)(stream)->span, 0);     \
+                    sndStreamMixParameter((stream)->entries[1].streamId, right, 0x7F, (u8)(stream)->span, 0); \
+                }                                                                                             \
+            }                                                                                                 \
+        }                                                                                                     \
+    } while (0)
+
 void SoundSSSetPanCh(s32 chan, u8 pan) {
-    SoundStream* stream = &sound.streams[chan];
+    SoundStream* stream;
 
-    if (!stream->flags) {
-        return;
-    }
-    stream->pan = pan;
-    if (!(stream->flags & 8)) {
-        return;
-    }
-    if (stream->count == 1) {
-        sndStreamMixParameter(stream->entries[0].streamId, stream->unk10, pan, (u8)stream->span, 0);
-    } else {
-        f32 left = stream->unk10;
-        f32 right = left;
-
-        if (pan < 64) {
-            right = ((f32)pan * left) / 63.0f;
-        }
-        if (!((u32)(pan - 64) >> 31)) {
-            left = ((f32)(127 - pan) * left) / 63.0f;
-        }
-        sndStreamMixParameter(stream->entries[0].streamId, left, 0, (u8)stream->span, 0);
-        sndStreamMixParameter(stream->entries[1].streamId, right, 0x7F, (u8)stream->span, 0);
-    }
+    SOUND_SS_SET_PAN_CH(stream, chan, pan);
 }
 
 // The index helper is an inline so the stream pointer's live range matches the original's
@@ -2112,15 +2125,14 @@ void SoundSSMuteOff(s32 chan) {
     }
 }
 
-// The original allocates the inlined helpers' stream offset to r26 and the loop counter to r28; this build
-// swaps them (r28/r26), and the outer offset/helper pointer land in r29/r30 instead of r30/r29.
-// NONMATCHING (99.05%): instruction stream and all constants identical; only induction-variable registers differ.
+// SoundDVDChan: as in SoundDVDMain, the channel reaches the helpers as an unsigned value.
 void SoundSSMain(void) {
-    SoundStream* stream;
+    SoundStream* ch;
     int i;
+    u8 pan;
 
     for (i = 0; i < 3; i++) {
-        stream = &sound.streams[i];
+        SoundStream* stream = &sound.streams[i];
         if (!(stream->flags & 8)) {
             continue;
         }
@@ -2129,7 +2141,7 @@ void SoundSSMain(void) {
         }
         if (stream->flags & 4) {
             stream->flags &= ~4;
-            SoundSSStopCh(i);
+            SOUND_SS_STOP_CH(ch, SoundDVDChan(i));
             continue;
         }
         if (stream->flags & 0x40) {
@@ -2142,19 +2154,21 @@ void SoundSSMain(void) {
             if (stream->unk10 <= 0.0f) {
                 stream->unk10 = 0.0f;
             }
-            SoundSSSetPanCh(i, (u8)stream->pan);
+            pan = (u8)stream->pan;
+            SOUND_SS_SET_PAN_CH(ch, SoundDVDChan(i), pan);
         }
         if (stream->flags & 0x20) {
             if (stream->unk10 == 0.0f) {
                 stream->flags &= ~0x20;
-                SoundSSStopCh(i);
+                SOUND_SS_STOP_CH(ch, SoundDVDChan(i));
                 continue;
             }
             stream->unk10 -= stream->unk14;
             if (stream->unk10 <= 0.0f) {
                 stream->unk10 = 0.0f;
             }
-            SoundSSSetPanCh(i, (u8)stream->pan);
+            pan = (u8)stream->pan;
+            SOUND_SS_SET_PAN_CH(ch, SoundDVDChan(i), pan);
         }
         if (stream->flags & 0x10) {
             stream->unk10 += stream->unk14;
@@ -2163,7 +2177,8 @@ void SoundSSMain(void) {
                 stream->unk14 = 0.0f;
                 stream->flags &= ~0x10;
             }
-            SoundSSSetPanCh(i, (u8)stream->pan);
+            pan = (u8)stream->pan;
+            SOUND_SS_SET_PAN_CH(ch, SoundDVDChan(i), pan);
         }
     }
 }
