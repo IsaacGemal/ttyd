@@ -7346,3 +7346,20 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   inline declaration order j,i,object,wp,entry, which breaks the helper's other users: all 120 orders swept).
 - Next: mapSetMaterial/Tev and _mapLoad wait on a real .rodata port (typed objects in retail order with pool_data; they
   load from +0x2C8/+0x2D0 of the section), and the 32 bytes of SDK sqrt constants math.h puts at its front must go.
+
+### npcdrv 64 -> 65/73: _npcHitCheckHammerAllMotion 100, fbatHitCheck 99.98, npcSetupBattleInfo 99.78, npcDisp_blur 99.44 (Claude Opus 5.5, on6-npcdrv)
+- HammerAllMotion 100: the in-loop sphere test is the existing `_npcHitCheckSphere(..., 12.0f)`, inlined, instead of a
+  hand copy; npcHammerPos/npcSpinHammerPos return through `f32* x, y, z`. A Vec's scalarised fields are numbered in
+  store order, before the CSE temps, so `pos.y` outranked `entry->position.y`; named locals rank lowest. `dont_inline`
+  belongs around fbatHitCheck (which calls the sphere test and HammerAll), not around `_npcHitCheckSphere`.
+- fbatHitCheck 99.98: the attack flags are function-wide and declared first, one shared `flag8`/`npc` across the attack
+  blocks. rasim's `--summary` targets were too noisy here; exact per-variable targets taken from the diff found the order.
+- npcSetupBattleInfo 99.78: `while ((weight = entry->weight) > 0) sum += weight;` (add the value just tested).
+- npcDisp_blur 99.44: `opt_lifetimes off` keeps each polynomial accumulator in its seed register; npcCosf in npcSinf's
+  shape. `opt_propagation off` instead turns a by-value struct argument's address into a hoisted temp (94.24).
+- Hard negatives: SetupBattleInfo's num/walk swap (the walk is a frontend induction temp; declaration orders, what-ifs,
+  inline helper 98.38, per-function opt_* pragmas, mwsearch 40 min / 6200 candidates: nothing); blur with eff_damage_star
+  helpers 80-94, all 120 npcCosf declaration orders (98.96 best); npcDelete locals break the recursive inlining (14.57);
+  an empty `if (dist > 0.0f) {}` in npcMain is dropped.
+- Next: npcCheckHitMarioSide (rasim: `limit`/`scale` before `offX`/`offZ` leaves 1 missing interference for offZ; its
+  sqrtf code suggests opt_lifetimes on), fbatBattleMode (mario/marioGetPtr node below `hasStolen`, `fbatData` above `entry`).
