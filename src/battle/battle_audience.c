@@ -186,11 +186,14 @@ const Vec vec3_802f9744 = { 0.9f, 0.9f, 0.9f };
 #ifndef MUST_MATCH
 static const Vec* const p_vec3_802f9744 = &vec3_802f9744;
 #endif
-static const f32 zero_8041e618 = 0.0f;
-static const f32 f360_8041e6b4 = 360.0f;
 const Vec vec3_802f9750 = { 0.75f, 0.75f, 0.75f };
 const Vec vec3_802f975c = { -96.0f, 106.0f, 0.0f };
+#ifdef MUST_MATCH
+// Non-const for the same reason as vec3_802f9744: DispAudience's copy then keeps retail's lis+addi.
+__declspec(section ".rodata") Vec vec3_802f9768 = { 0.0f, 0.0f, -1.0f };
+#else
 const Vec vec3_802f9768 = { 0.0f, 0.0f, -1.0f };
+#endif
 const f32 dat_802f9774[] = {
 	0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
 	1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
@@ -198,143 +201,11 @@ const f32 dat_802f9774[] = {
 	0.0f, 0.075f, 0.0f, 1.075f, 1.0f, 1.075f, 0.0f, 1.075f,
 };
 const Vec vec3_802f97f4 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f9800 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f980c = { 0.0f, 0.0f, -1.0f };
-const Vec vec3_802f9818 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f9824 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f9830 = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802f983c = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802f9848 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f9854 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f9860 = { 0.0f, 0.0f, 0.0f };
-const Vec vec3_802f986c = { 1.0f, 1.0f, 1.0f };
-const Vec vec3_802f9878 = { 0.0f, 0.0f, 0.0f };
-const s32 dat_802f9884[] = { 10000, 1000, 100, 10, 5, 2, 1, 1, 1, 1 };
-const s32 dat_802f98ac[] = { 1, 1, 2, 2, 4, 4, 8, 8, 16, 16, 16, 16, 8, 8, 4, 4, 2, 2, 1, 1 };
-const s32 dat_802f98fc[] = { -1, 1, 0, 1, 1, 1, -1, 0, 1, 0, -1, -1, 0, -1, 1, -1 };
-const s32 dat_802f993c[] = {
-	0, 3, -1, 2, 0, 2, 1, 2, -2, 1, -1, 1, 0, 1, 1, 1, 2, 1, -3, 0, -2, 0, -1, 0, 1, 0, 2, 0, 3, 0, -2, -1,
-	-1, -1, 0, -1, 1, -1, 2, -1, -1, -2, 0, -2, 1, -2, 0, -3,
-};
-const f64 double_to_int_802f9a00 = 4503601774854144.0;
-const f64 double_to_int_mask_802f9a08 = 4503599627370496.0;
 
-const char str_802F9A10[] = "SFX_AUDIENCE_PAKU_EAT1";
-const char str_802F9A28[] = "SFX_AUDIENCE_BOMB_BURST1";
-const char str_802F9A44[] = "SFX_AUDIENCE_BOMB_READY1";
-const char str_802F9A60[] = "SFX_AUDIENCE_SHELL_TRANSFORM1";
-const char str_802F9A80[] = "SFX_AUDIENCE_PANSY_SINGING1";
-const char str_802F9A9C[] = "SFX_AUDIENCE_ZZZ1";
-const char str_802F9AB0[] = "SFX_AUDIENCE_SLEEP1";
-const char str_802F9AC4[] = "SFX_AUDIENCE_SLEEP2";
-const char str_802F9AD8[] = "SFX_AUDIENCE_SLEEP3";
-const char str_802F9AEC[] = "SFX_AUDIENCE_RUN1";
-const char str_802F9B00[] = "SFX_AUDIENCE_RUN2";
-const char str_802F9B14[] = "SFX_AUDIENCE_THROW_OBJECT1";
-const char str_802F9B30[] = "SFX_AUDIENCE_THROW_OBJECT2";
-const char str_802F9B4C[] = "SFX_AUDIENCE_HANDBEAT1";
-const char str_802F9B64[] = "SFX_AUDIENCE_CALL_ALLY1";
-const char str_802F9B7C[] = "SFX_AUDIENCE_CALL_ALLY2";
-const char str_802F9B94[] = "SFX_AUDIENCE_WHISTLE1";
-const char str_802F9BAC[] = "SFX_AUDIENCE_WHISTLE2";
-const char str_802F9BC4[] = "SFX_AUDIENCE_WHISTLE3";
-const char str_802F9BDC[] = "SFX_AUDIENCE_CHEER_ALLY1";
-const char str_802F9BF8[] = "SFX_AUDIENCE_CHEER_ALLY2";
-const char str_802F9C14[] = "SFX_AUDIENCE_CHEER_ALLY3";
-const char str_802F9C30[] = "SFX_AUDIENCE_CHEER_ALLY4";
-const char str_802F9C4C[] = "SFX_AUDIENCE_NOISY1";
-const char str_802F9C60[] = "SFX_AUDIENCE_NOISY2";
-const char str_802F9C74[] = "SFX_AUDIENCE_NOISY3";
-const char str_802F9C88[] = "SFX_AUDIENCE_NOISY4";
-const char str_802F9C9C[] = "SFX_AUDIENCE_CLAPPING1";
-const char str_802F9CB4[] = "SFX_AUDIENCE_CLAPPING2";
-const char str_802F9CCC[] = "SFX_AUDIENCE_CLAPPING3";
-const char str_802F9CE4[] = "SFX_AUDIENCE_CLAPPING4";
-const char str_802F9CFC[] = "SFX_AUDIENCE_BOO_ALLY1";
-const char str_802F9D14[] = "SFX_AUDIENCE_BOO_ALLY2";
-const char str_802F9D2C[] = "SFX_AUDIENCE_BOO_ALLY3";
-const char str_802F9D44[] = "SFX_AUDIENCE_BOO_ALLY4";
-const char str_802F9D5C[] = "SFX_AUDIENCE_BOO_ENEMY1";
-const char str_802F9D74[] = "SFX_AUDIENCE_BOO_ENEMY2";
-const char str_802F9D8C[] = "SFX_AUDIENCE_BOO_ENEMY3";
-const char str_802F9DA4[] = "SFX_AUDIENCE_BOO_ENEMY4";
-const char str_802F9DBC[] = "SFX_BTL_SYS_AP_STAR1";
-const char str_802F9DD4[] = "battle/audience/%s";
-const char str_802F9DE8[] = "battle/audience/audience_normal.tpl";
-const char str_802F9E0C[] = "audience_luigi.tpl";
 
 __declspec(section ".sdata2") u32 dat_8041e608 = 0xFFFFFF00;
 __declspec(section ".sdata2") u32 dat_8041e60c = 0xFFFFFFCF;
 __declspec(section ".sdata2") u32 dat_8041e610 = 0xFFFFFFFF;
-__declspec(section ".sdata2") f32 float_neg0p05_8041e614 = -0.049999997f;
-// This one is zero, so explicit_zero_data keeps it in .sdata2 instead of .sbss.
-#pragma explicit_zero_data on
-__declspec(section ".sdata2") f32 float_0_8041e618 = 0.0f;
-#pragma explicit_zero_data reset
-__declspec(section ".sdata2") f32 float_0p02_8041e61c = 0.02f;
-__declspec(section ".sdata2") f32 float_1_8041e620 = 1.0f;
-__declspec(section ".sdata2") f32 float_0p05_8041e624 = 0.049999997f;
-__declspec(section ".sdata2") f32 float_0p01_8041e628 = 0.01f;
-__declspec(section ".sdata2") f32 float_5_8041e62c = 5.0f;
-__declspec(section ".sdata2") f32 float_0p15_8041e630 = 0.14999999f;
-__declspec(section ".sdata2") f32 float_neg0p1_8041e634 = -0.099999994f;
-__declspec(section ".sdata2") f32 float_neg0p2_8041e638 = -0.19999999f;
-__declspec(section ".sdata2") f32 float_0p25_8041e63c = 0.25f;
-__declspec(section ".sdata2") f32 float_neg0p25_8041e640 = -0.25f;
-__declspec(section ".sdata2") f32 float_63_8041e644 = 63.0f;
-__declspec(section ".sdata2") f32 float_200_8041e648 = 200.0f;
-__declspec(section ".sdata2") f32 float_100_8041e64c = 100.0f;
-__declspec(section ".sdata2") f32 float_26_8041e650 = 26.0f;
-__declspec(section ".sdata2") f32 float_250_8041e654 = 250.0f;
-__declspec(section ".sdata2") f32 float_75_8041e658 = 75.0f;
-__declspec(section ".sdata2") f32 float_3_8041e65c = 3.0f;
-__declspec(section ".sdata2") f32 float_2_8041e660 = 2.0f;
-__declspec(section ".sdata2") f32 float_neg1_8041e664 = -1.0f;
-__declspec(section ".sdata2") f32 float_neg1000_8041e668 = -1000.0f;
-__declspec(section ".sdata2") f32 float_1000_8041e66c = 1000.0f;
-__declspec(section ".sdata2") f32 float_1p5_8041e670 = 1.5f;
-__declspec(section ".sdata2") f32 float_32767_8041e674 = 32767.0f;
-__declspec(section ".sdata2") f32 float_0p1_8041e678 = 0.1f;
-__declspec(section ".sdata2") f32 float_0p2_8041e67c = 0.2f;
-__declspec(section ".sdata2") f32 float_neg2000_8041e680 = -2000.0f;
-__declspec(section ".sdata2") f32 float_270_8041e684 = 270.0f;
-__declspec(section ".sdata2") f32 float_12p5_8041e688 = 12.5f;
-__declspec(section ".sdata2") f32 float_90_8041e68c = 90.0f;
-__declspec(section ".sdata2") f32 float_40_8041e690 = 40.0f;
-__declspec(section ".sdata2") f32 float_10_8041e694 = 10.0f;
-__declspec(section ".sdata2") f32 float_17_8041e698 = 17.0f;
-__declspec(section ".sdata2") f32 float_0p8_8041e69c = 0.8f;
-__declspec(section ".sdata2") f32 float_neg20_8041e6a0 = -20.0f;
-__declspec(section ".sdata2") f32 float_deg2rad_8041e6a4 = 0.017453292f;
-__declspec(section ".sdata2") f32 float_20_8041e6a8 = 20.0f;
-__declspec(section ".sdata2") f32 float_0p015625_8041e6ac = 0.015625f;
-__declspec(section ".sdata2") f32 float_deg2rad_8041e6b0 = 0.017453289f;
-__declspec(section ".sdata2") f32 float_360_8041e6b4 = 360.0f;
-__declspec(section ".sdata2") f32 float_180_8041e6b8 = 180.0f;
-__declspec(section ".sdata2") f32 float_neg0p1_8041e6bc = -0.1f;
-__declspec(section ".sdata2") f32 float_neg500_8041e6c0 = -500.0f;
-__declspec(section ".sdata2") f32 float_neg280_8041e6c4 = -280.0f;
-__declspec(section ".sdata2") f32 float_neg160_8041e6c8 = -160.0f;
-__declspec(section ".sdata2") f32 float_304_8041e6cc = 304.0f;
-__declspec(section ".sdata2") f32 float_240_8041e6d0 = 240.0f;
-__declspec(section ".sdata2") f32 float_64_8041e6d4 = 64.0f;
-__declspec(section ".sdata2") f32 float_50_8041e6d8 = 50.0f;
-__declspec(section ".sdata2") f32 float_25_8041e6dc = 25.0f;
-__declspec(section ".sdata2") f32 float_0p9_8041e6e0 = 0.9f;
-__declspec(section ".sdata2") f32 float_0p05_8041e6e4 = 0.05f;
-__declspec(section ".sdata2") f32 float_6p2832_8041e6e8 = 6.283184f;
-__declspec(section ".sdata2") f32 float_128_8041e6ec = 128.0f;
-__declspec(section ".sdata2") f32 float_30_8041e6f0 = 30.0f;
-__declspec(section ".sdata2") f32 float_15_8041e6f4 = 15.0f;
-__declspec(section ".sdata2") f32 float_7_8041e6f8 = 7.0f;
-__declspec(section ".sdata2") f32 float_neg10_8041e6fc = -10.0f;
-__declspec(section ".sdata2") f32 float_18_8041e700 = 18.0f;
-__declspec(section ".sdata2") f32 float_neg0p2_8041e704 = -0.2f;
-__declspec(section ".sdata2") f32 float_0p5_8041e708 = 0.5f;
-__declspec(section ".sdata2") f32 float_499_8041e70c = 499.0f;
-__declspec(section ".sdata2") f32 float_neg5_8041e710 = -5.0f;
-__declspec(section ".sdata2") f32 float_neg15_8041e714 = -15.0f;
-__declspec(section ".sdata2") char str_8041E718[] = "%s/%s\000\000";
 
 // Default audience colour scratch word and the section's trailing 4-byte gap. Objects land in
 // reverse declaration order, so the gap is declared before unk_80423080.
@@ -354,10 +225,6 @@ extern BattleWork* _battleWorkPointer;
 #else
 #define INIT_EXIST_ARG(i) (i)
 #endif
-extern f32 float_0p015625_8041e6ac;
-extern f32 float_deg2rad_8041e6b0;
-extern f32 float_360_8041e6b4;
-extern f32 float_180_8041e6b8;
 extern u32 unk_80423080;
 typedef struct BattleAudienceTexCoords {
 	f32 v[32];
@@ -425,8 +292,8 @@ void BattleAudience_Init(void) {
 	pouchGetPtr(); //useless call
 	memset(audience, 0, sizeof(BattleAudience));
 	BattleAudienceSettingAudience();
-	audience->normalTex = tplRead(str_802F9DE8);
-	BattleAudienceGuestTPLRead(0, AUDIENCE_LUIGI, str_802F9E0C);
+	audience->normalTex = tplRead("battle/audience/audience_normal.tpl");
+	BattleAudienceGuestTPLRead(0, AUDIENCE_LUIGI, "audience_luigi.tpl");
 	BattleAudienceSetThrowItemMax();
 
 	audience->mTurnEndPhaseEventChance = 0;
@@ -515,7 +382,7 @@ void BattleAudience_PerAct(void) {
 	BOOL positive;
 
 	pouchGetPtr();
-	delta = float_0_8041e618;
+	delta = 0.0f;
 	value = delta;
 	if (audience->flags & 0x100) {
 		if (!(audience->flags & 0x200)) {
@@ -529,7 +396,7 @@ void BattleAudience_PerAct(void) {
 		return;
 	}
 	if (!(audience->flags & 0x400) && (audience->flags & 0x800)) {
-		delta -= float_5_8041e62c;
+		delta -= 5.0f;
 		BattleAudienceAddPhaseEvtList(5);
 	}
 	if (*(StarPowerInfo**)((u8*)audience + 0x137C8) != NULL && ((flag0 = (flags = audience->flags) & 0x10) || (flags & 0x20))) {
@@ -551,7 +418,7 @@ void BattleAudience_PerAct(void) {
 				if (*(s32*)((u8*)audience + 0x137D0) > 5) {
 					*(s32*)((u8*)audience + 0x137D0) = 5;
 				}
-				value = float_neg5_8041e710;
+				value = -5.0f;
 				delta += value;
 			}
 		}
@@ -573,36 +440,36 @@ void BattleAudience_PerAct(void) {
 		}
 	}
 	if (positive == TRUE) {
-		if (value >= float_25_8041e6dc) {
+		if (value >= 25.0f) {
 			BattleAudienceAddPhaseEvtList(0);
 		}
-		if (value >= float_40_8041e690) {
+		if (value >= 40.0f) {
 			BattleAudienceAddPhaseEvtList(3);
 		}
-		if (value >= float_20_8041e6a8) {
+		if (value >= 20.0f) {
 			BattleAudienceAddPhaseEvtList(8);
 		}
-		if (value >= float_15_8041e6f4) {
+		if (value >= 15.0f) {
 			BattleAudienceAddPhaseEvtList(13);
 		}
 	}
 	else {
-		if (value <= float_neg15_8041e714) {
+		if (value <= -15.0f) {
 			BattleAudienceAddPhaseEvtList(1);
 		}
-		if (value <= float_neg20_8041e6a0) {
+		if (value <= -20.0f) {
 			BattleAudienceAddPhaseEvtList(2);
 		}
-		if (value <= float_neg20_8041e6a0) {
+		if (value <= -20.0f) {
 			BattleAudienceAddPhaseEvtList(5);
 		}
-		if (value <= float_neg15_8041e714) {
+		if (value <= -15.0f) {
 			BattleAudienceAddPhaseEvtList(9);
 		}
-		if (value <= float_neg20_8041e6a0) {
+		if (value <= -20.0f) {
 			BattleAudienceAddPhaseEvtList(11);
 		}
-		if (value <= float_neg10_8041e6fc) {
+		if (value <= -10.0f) {
 			BattleAudienceAddPhaseEvtList(13);
 		}
 	}
@@ -611,29 +478,29 @@ void BattleAudience_PerAct(void) {
 		if (flag2) {
 			value = (f32)(*(u8*)((u8*)info + 8) * (*(s32*)((u8*)audience + 0x137D4) * 2));
 			delta += value;
-			if (value >= float_30_8041e6f0) {
+			if (value >= 30.0f) {
 				BattleAudienceAddPhaseEvtList(0);
 			}
-			if (value >= float_40_8041e690) {
+			if (value >= 40.0f) {
 				BattleAudienceAddPhaseEvtList(3);
 			}
-			if (value >= float_25_8041e6dc) {
+			if (value >= 25.0f) {
 				BattleAudienceAddPhaseEvtList(8);
 			}
-			if (value >= float_20_8041e6a8) {
+			if (value >= 20.0f) {
 				BattleAudienceAddPhaseEvtList(13);
 			}
 			BattleAudienceAddPuni(0xA);
 		}
 		if (audience->flags & 0x200) {
-			delta -= float_5_8041e62c;
+			delta -= 5.0f;
 		}
 	}
 	if (audience->flags & 0x8000) {
 		audience->event = evtEntry(msg_puni_all_escape, 0, 0x20);
 		audience->flags &= ~0x8000;
 	}
-	BattleAudienceAddTargetNum(audience->mAudienceDeltaMultiplier * (float_0p01_8041e628 * delta), float_0_8041e618);
+	BattleAudienceAddTargetNum(audience->mAudienceDeltaMultiplier * (0.01f * delta), 0.0f);
 	BattleAudience_ActInit();
 }
 #pragma opt_common_subs reset
@@ -1287,8 +1154,6 @@ void BattleAudience_End(void) {
 // is inlined into the FMA. The weight sort walks `kind` from `k + 1`, tests
 // `weights[k] == weights[kind]` and swaps `order[k]` first; `diff_shape.py` shows the same calls
 // and branches as the original.
-// NONMATCHING (99.51%): the miss loop's setup only: retail starts it with `li r3, 0; mr r4, r3`
-// (miss a copy of i's zero), this build with two `li`s scheduled after the array addresses.
 void BattleAudienceSettingAudience(void) {
 	s32 kind;
 	s32 deltaIdx;
@@ -1303,7 +1168,6 @@ void BattleAudienceSettingAudience(void) {
 	s32 list[200];
 	f32 oldAudience;
 	s32 mode;
-	s32 miss;
 	s32 maxKinds;
 	s32 sum;
 	s32 total;
@@ -1356,16 +1220,16 @@ void BattleAudienceSettingAudience(void) {
 	else {
 		oldAudience = pouchGetAudienceNum();
 		audience->mTargetAudienceCount =
-		    float_0p01_8041e628 * ((pouchGetAudienceNum() - audience->mAudienceDeltaMultiplier) * (f32)(irand(10) - 13 + irand(10))) + oldAudience;
+		    0.01f * ((pouchGetAudienceNum() - audience->mAudienceDeltaMultiplier) * (f32)(irand(10) - 13 + irand(10))) + oldAudience;
 	}
 
 	switch (*(s32*)setupBase) {
 	case 0:
 	case 1:
-		audience->mAddedAudienceCount = float_0_8041e618;
+		audience->mAddedAudienceCount = 0.0f;
 		break;
 	case 4:
-		audience->mAddedAudienceCount = float_0p5_8041e708 * audience->mTargetAudienceCount;
+		audience->mAddedAudienceCount = 0.5f * audience->mTargetAudienceCount;
 		break;
 	case 2:
 	case 3:
@@ -1552,8 +1416,7 @@ void BattleAudienceSettingAudience(void) {
 		}
 	}
 
-	miss = 0;
-	for (i = 0; total < targetNum; i++, i %= 12) {
+	for (i = 0, j = 0; total < targetNum; i++, i %= 12) {
 		kind = order[i];
 		if (weights[kind] <= 0) {
 			continue;
@@ -1562,9 +1425,9 @@ void BattleAudienceSettingAudience(void) {
 			if (total <= targetNum - 2) {
 				counts[kind]++;
 				total += 2;
-				miss = 0;
+				j = 0;
 			}
-			else if (++miss >= 12) {
+			else if (++j >= 12) {
 				break;
 			}
 		}
@@ -1642,7 +1505,7 @@ void BattleAudienceGuestTPLRead(s32 id, AudienceMemberType member, const char* p
 
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	if (id < 2) {
-		sprintf(full_path, str_802F9DD4, path);
+		sprintf(full_path, "battle/audience/%s", path);
 		audience->guestTex[id] = tplRead(full_path);
 		audience->guestType[id] = member;
 	}
@@ -2321,9 +2184,7 @@ void BattleAudienceItemCtrlProcess(void) {
 #pragma dont_inline reset
 
 // `opt_common_subs off` is load-bearing: with CSE on the active count lands in r29 (retail r28) and
-// the whole first block shifts. Storing rand()'s result in a local `rv` before the case-0 conversion
-// pulls the int->float magic double into retail's f2; writing that conversion through `k25`
-// (`k25 = (f32)rv; start = start * k25;`) keeps the magic live and lands it f4, so float_25 stays f2.
+// the whole first block shifts.
 // Computing the case-10 `dx` before `radius` loads star+0x20 first, matching retail's register order.
 // The vec3_802f9744 copy emits retail's lis+addi only when the object is non-const (see its
 // MUST_MATCH definition).
@@ -2342,8 +2203,6 @@ void BattleAudienceApSrcCtrlProcess(void) {
 	f32 start;
 	f32 end;
 	f32 zero;
-	f32 k25;
-	s32 rv;
 
 	if (!(audience->flags & 2)) {
 		return;
@@ -2356,7 +2215,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 	}
 	if (psndSFXChk(*(s32*)((u8*)audience + 8)) != -1) {
 		psndSFX_vol(*(s32*)((u8*)audience + 8),
-		            (s32)(float_64_8041e6d4 + float_63_8041e644 * (f32)active / float_100_8041e64c));
+		            (s32)(64.0f + 63.0f * (f32)active / 100.0f));
 	}
 	if (*(s32*)((u8*)audience + 0x137C4) > 0) {
 		if (BattleAudienceApSrcEntry() == 1) {
@@ -2364,7 +2223,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 		}
 		if (active == 0) {
 			if (psndSFXChk(*(s32*)((u8*)audience + 8)) == -1) {
-				*(s32*)((u8*)audience + 8) = psndSFXOn(str_802F9DBC);
+				*(s32*)((u8*)audience + 8) = psndSFXOn("SFX_BTL_SYS_AP_STAR1");
 			}
 		}
 	}
@@ -2396,14 +2255,8 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			*(s32*)(star + 4) = 5;
 			*(Vec*)(star + 0x2C) = *(Vec*)(star + 8);
 			*(Vec*)(star + 0x20) = *(Vec*)(star + 0x2C);
-			rv = rand();
-			k25 = (f32)rv;
-			start = float_50_8041e6d8;
-			start = start * k25;
-			k25 = float_25_8041e6dc;
-			start = start / float_32767_8041e674 - k25;
-			*(f32*)(star + 0x2C) += start;
-			*(f32*)(star + 0x30) += k25;
+			*(f32*)(star + 0x2C) += 50.0f * (f32)rand() / 32767.0f - 25.0f;
+			*(f32*)(star + 0x30) += 25.0f;
 			*(s32*)(star + 0x44) = 0;
 			*(s32*)(star + 0x48) = 0x1E;
 			// fall through
@@ -2417,7 +2270,7 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			*(f32*)(star + 0xC) = intplGetValue(5, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
 			if (*(s32*)(star + 0x44) >= *(s32*)(star + 0x48) - 0x14) {
 				*(f32*)(star + 0x3C) = intplGetValue(4, *(s32*)(star + 0x44) - (*(s32*)(star + 0x48) - 0x14), 0xA,
-				                                     float_0p9_8041e6e0, float_0p8_8041e69c);
+				                                     0.9f, 0.8f);
 			}
 			if (*(s32*)(star + 0x44) < *(s32*)(star + 0x48)) {
 				continue;
@@ -2446,19 +2299,19 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			radius = *(f32*)(star + 0x24) - *(f32*)(star + 0x30);
 			*(f32*)(star + 0x4C) = (*(f32*)(star + 0x50) = sqrt(dx * dx + radius * radius));
 			*(f32*)(star + 0x54) = asin(radius / *(f32*)(star + 0x4C));
-			*(f32*)(star + 0x58) = float_0p05_8041e6e4 +
-			                        float_0p2_8041e67c * (f32)rand() / float_32767_8041e674;
+			*(f32*)(star + 0x58) = 0.05f +
+			                        0.2f * (f32)rand() / 32767.0f;
 			break;
 		case 15:
-			end = float_0_8041e618;
+			end = 0.0f;
 			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
 			start = *(f32*)(star + 0x50);
 			*(f32*)(star + 0x4C) = intplGetValue(4, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
-			zero = zero_8041e618;
+			zero = 0.0f;
 			start = *(f32*)(star + 0x54) + *(f32*)(star + 0x58);
 			*(f32*)(star + 0x54) = start;
 			if (*(f32*)(star + 0x54) < zero) {
-				*(f32*)(star + 0x54) += float_6p2832_8041e6e8;
+				*(f32*)(star + 0x54) += 6.283184f;
 			}
 			*(f32*)(star + 8) = *(f32*)(star + 0x4C) * (f32)cos(*(f32*)(star + 0x54)) + *(f32*)(star + 0x2C);
 			*(f32*)(star + 0xC) = *(f32*)(star + 0x4C) * (f32)sin(*(f32*)(star + 0x54)) + *(f32*)(star + 0x30);
@@ -2471,8 +2324,8 @@ void BattleAudienceApSrcCtrlProcess(void) {
 			}
 			break;
 		case 20:
-			start = float_128_8041e6ec;
-			end = zero_8041e618;
+			start = 128.0f;
+			end = 0.0f;
 			*(s32*)(star + 0x44) = *(s32*)(star + 0x44) + 1;
 			*(u8*)(star + 0x5C) = (u8)intplGetValue(4, *(s32*)(star + 0x44), *(s32*)(star + 0x48), start, end);
 			if (*(s32*)(star + 0x44) >= *(s32*)(star + 0x48)) {
@@ -2488,27 +2341,18 @@ void BattleAudienceApSrcCtrlProcess(void) {
 #pragma dont_inline reset
 #pragma opt_common_subs reset
 
-// hoisting `z0 = float_0` before the multiplies (88.93 -> 91.21); writing the position adds with the
-// literal constants instead of `k1`/`k20` temporaries lets the scheduler interleave the constant loads
-// with the stores as the original does (92.21 -> 92.59); making the `star+0x44` store `volatile`
+// The second loop reuses `i` (its second definition becomes a compiler object, so the backend copies the
+// shared zero into it: retail's `li r30,0 ... mr r28,r30`). Making the `star+0x44` store `volatile`
 // serialises it before the constant-Vec copy, and making the `star+0x20` store `volatile` keeps the
-// `star+0x2c` copy's loads out of the two rand blocks (92.59 -> 94.97).
-// NONMATCHING (94.97%): what remains is the anonymous-i2f double's FP register, the zero-init order of
-// `idx`/`count`/`offset`, the position-add constant load scheduling, and the post-matrix and second-rand
-// FP register colouring.
+// `star+0x2c` copy's loads out of the two rand blocks.
 #pragma dont_inline on
 BOOL BattleAudienceApSrcEntry(void) {
 	BattleAudience* audience;
 	BattleAudienceMember* member;
 	CameraEntry* cam;
 	u8* star;
-	f32 sx;
-	f32 sy;
-	f32 z0;
 	s32 ids[200];
-	s32 idx;
 	s32 count;
-	s32 offset;
 	s32 i;
 
 	audience = BattleAudienceBaseGetPtr();
@@ -2522,15 +2366,12 @@ BOOL BattleAudienceApSrcEntry(void) {
 	if (i == 100) {
 		return FALSE;
 	}
-	idx = 0;
 	count = 0;
-	offset = 0;
+	i = 0;
 	member = BattleAudienceGetPtr(0);
-	for (; idx < 200; idx++) {
-		if ((u8)BattleAudience_GetExist(idx) == 1) {
-			ids[count] = idx;
-			count++;
-			offset += 4;
+	for (; i < 200; i++) {
+		if ((u8)BattleAudience_GetExist(i) == 1) {
+			ids[count++] = i;
 		}
 	}
 	if (count == 0) {
@@ -2550,20 +2391,17 @@ BOOL BattleAudienceApSrcEntry(void) {
 	*(u8*)(star + 0x5c) = 0x80;
 	member = BattleAudienceGetPtr(ids[irand(count)]);
 	*(f32*)(star + 8) = member->position.x;
-	*(f32*)(star + 0xc) = float_20_8041e6a8 + member->position.y;
-	*(f32*)(star + 0x10) = float_1_8041e620 + member->position.z;
+	*(f32*)(star + 0xc) = 20.0f + member->position.y;
+	*(f32*)(star + 0x10) = 1.0f + member->position.z;
 	cam = camGetPtr(CAMERA_3D);
 	PSMTXMultVec(cam->view, (Vec*)(star + 8), (Vec*)(star + 8));
 	PSMTX44MultVec(cam->projection, (Vec*)(star + 8), (Vec*)(star + 8));
-	z0 = float_0_8041e618;
-	sx = float_304_8041e6cc;
-	sy = float_240_8041e6d0;
-	*(f32*)(star + 8) *= sx;
-	*(f32*)(star + 0xc) *= sy;
-	*(f32*)(star + 0x10) = z0;
-	*(f32*)(star + 0x14) = float_40_8041e690 * (f32)rand() / float_32767_8041e674 - float_20_8041e6a8;
-	*(f32*)(star + 0x18) = float_10_8041e694 * (f32)rand() / float_32767_8041e674;
-	*(f32*)(star + 0x1c) = float_0_8041e618;
+	*(f32*)(star + 8) *= 304.0f;
+	*(f32*)(star + 0xc) *= 240.0f;
+	*(f32*)(star + 0x10) = 0.0f;
+	*(f32*)(star + 0x14) = 40.0f * (f32)rand() / 32767.0f - 20.0f;
+	*(f32*)(star + 0x18) = 10.0f * (f32)rand() / 32767.0f;
+	*(f32*)(star + 0x1c) = 0.0f;
 #ifdef MUST_MATCH
 	// Match-only: the volatile store stops the scheduler hoisting the constant-Vec copy's loads up
 	// into the two preceding rand blocks; the plain store is the natural form.
@@ -2584,14 +2422,14 @@ BOOL BattleAudienceApSrcEntry(void) {
 // ours f3 instead, shifting the first block and both step clamps up a register, which also turns the positive
 // clamp's bge+b diamond into a plain bge. Loading the subtrahend first (`diff = window->count; diff =
 // (f32)audience->mCurrentAudienceIntCount - diff;`) gets one more instruction to match than the plain one-liner.
-// Writing the zero test constant-first (`float_0 != diff`) makes objdiff's first `fcmpu` operand order match
+// Writing the zero test constant-first (`0.0f != diff`) makes objdiff's first `fcmpu` operand order match
 // (the constant is FRA) and is worth 95.87 -> 95.91.
 #ifdef MUST_MATCH
 // Match-only: a named local for the repeated 0.0f constant hoists its load like the original, which
 // shifts the first cast and both clamp blocks into the original's FP registers.
 #define BA_ZERO zero
 #else
-#define BA_ZERO float_0_8041e618
+#define BA_ZERO 0.0f
 #endif
 // opt_common_subs off keeps the negative clamp's 0.1 constant and step result in the target's
 // f2/f1 order instead of swapping them.
@@ -2612,20 +2450,20 @@ void BattleAudienceWinCtrlProcess(void) {
 	diff = (f32)audience->mCurrentAudienceIntCount - window->count;
 	if (0.0f != diff) {
 		if (diff > 0.0f) {
-			step = float_0p1_8041e678 * diff;
-			step = step < float_0p1_8041e678 ? float_0p1_8041e678 : step;
+			step = 0.1f * diff;
+			step = step < 0.1f ? 0.1f : step;
 			window->count += step;
 			if ((f32)audience->mCurrentAudienceIntCount - window->count < 0.0f) {
 				window->count = (f32)audience->mCurrentAudienceIntCount;
 			}
 		}
 		else {
-			step = float_0p1_8041e678 * diff;
-			if (step > float_neg0p1_8041e6bc) {
-				step = float_0p1_8041e678;
+			step = 0.1f * diff;
+			if (step > -0.1f) {
+				step = 0.1f;
 			}
 			else {
-				step = float_neg0p1_8041e6bc * diff;
+				step = -0.1f * diff;
 			}
 			window->count -= step;
 			if ((f32)audience->mCurrentAudienceIntCount - window->count > 0.0f) {
@@ -2649,20 +2487,20 @@ void BattleAudienceWinCtrlProcess(void) {
 	}
 
 	*(f32*)(win + 0x8) =
-	    intplGetValue(4, *(s32*)(win + 0x14), 0xF, float_neg500_8041e6c0, float_neg280_8041e6c4);
+	    intplGetValue(4, *(s32*)(win + 0x14), 0xF, -500.0f, -280.0f);
 #ifdef MUST_MATCH
 	// Match-only: the volatile read pins the -160 load ahead of the 0.0f one in the scheduled block,
 	// which is the target's order; the #else form is the natural pair of copies.
 	{
 		f32 b;
-		f32 a = (*(volatile f32*)&float_neg160_8041e6c8);
-		b = float_0_8041e618;
+		f32 a = -160.0f;
+		b = 0.0f;
 		*(f32*)(win + 0xC) = a;
 		*(f32*)(win + 0x10) = b;
 	}
 #else
 	{
-		f32 a = float_neg160_8041e6c8;
+		f32 a = -160.0f;
 		f32 b = 0.0f;
 		*(f32*)(win + 0xC) = a;
 		*(f32*)(win + 0x10) = b;
@@ -2791,8 +2629,8 @@ static inline GXColor BattleAudienceDispAudience_color(u8 r, u8 g, u8 b, u8 a) {
 }
 #endif
 
-// NONMATCHING (96.07%): cos(rz) colours to f9 (the original's f6 is taken by a backend temp), so the
-// matrix/trig schedule differs; the quad emission also spills float_20 and orders addresses differently.
+// NONMATCHING (98.51%): only the rotation-matrix block differs. The original converts cos(rz) first and
+// computes the products in another order, so its scratch FPRs (f0-f9) and the store order don't line up.
 #pragma dont_inline on
 void BattleAudienceDispAudience(CameraId camId, void* param) {
 	BattleAudience* audience;
@@ -2808,9 +2646,6 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 	Mtx mtxScale;
 	Mtx mtxDraw;
 	BattleAudienceTexCoords texCoords;
-#ifdef MUST_MATCH
-	// Match-only: this declaration order lands the trig results in the original's FPRs (scaleY is
-	// parked after rz, cy/cz the other way round). Same code, only the allocator's tie-break moves.
 	f32 scaleX;
 	f32 cx;
 	f32 scaleZ;
@@ -2828,25 +2663,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 	f32 ry;
 	f32 offsetZ;
 	f32 sx;
-#else
-	f32 scaleX;
-	f32 cx;
-	f32 scaleZ;
-	f32 sy;
-	f32 scaleY;
-	f32 cy;
-	f32 sz;
-	f32 neg20;
-	f32 rx;
-	f32 rz;
-	f32 cz;
-	f32 offsetX;
-	f32 offsetY;
-	f32 angle;
-	f32 ry;
-	f32 offsetZ;
-	f32 sx;
-#endif
+	f32 w;
 	u8 cr;
 	u8 cg;
 	u8 cb;
@@ -2875,7 +2692,8 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 
 	i = 0;
 	member = BattleAudienceGetPtr(0);
-	neg20 = -float_20_8041e6a8;
+	w = 20.0f;
+	neg20 = -w;
 
 	for (; i < 0xC8; i++, member++) {
 		if (dispGetCurWork()->renderMode != 2) {
@@ -2898,27 +2716,15 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			GXLoadTexObj(&texObj, GX_TEXMAP0);
 			{
 				f32 w = (f32)GXGetTexObjWidth(&texObj);
-#ifdef MUST_MATCH
 				f32 k = audience_kind[member->type].field_0x18;
-				f32 s = k * w;
-				s = float_0p015625_8041e6ac * s;
-				*(f32*)member->field_0x54 = *(f32*)(member->field_0x54 + 0xC) * s;
-#else
-				*(f32*)((u8*)member + 0x54) = *(f32*)((u8*)member + 0x60) *
-					(audience_kind[member->type].field_0x18 * w * float_0p015625_8041e6ac);
-#endif
+				w = k * w / 64.0f;
+				*(f32*)member->field_0x54 = *(f32*)(member->field_0x54 + 0xC) * w;
 			}
 			{
 				f32 h = (f32)GXGetTexObjHeight(&texObj);
-#ifdef MUST_MATCH
 				f32 k = audience_kind[member->type].field_0x1C;
-				f32 s = k * h;
-				s = float_0p015625_8041e6ac * s;
-				*(f32*)(member->field_0x54 + 4) = *(f32*)(member->field_0x54 + 0x10) * s;
-#else
-				*(f32*)((u8*)member + 0x58) = *(f32*)((u8*)member + 0x64) *
-					(audience_kind[member->type].field_0x1C * h * float_0p015625_8041e6ac);
-#endif
+				h = k * h / 64.0f;
+				*(f32*)(member->field_0x54 + 4) = *(f32*)(member->field_0x54 + 0x10) * h;
 			}
 		}
 		else {
@@ -2929,27 +2735,15 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 					GXLoadTexObj(&texObj, GX_TEXMAP0);
 					{
 						f32 w = (f32)GXGetTexObjWidth(&texObj);
-#ifdef MUST_MATCH
 						f32 k = audience_kind[member->type].field_0x18;
-						f32 s = k * w;
-						s = float_0p015625_8041e6ac * s;
-						*(f32*)member->field_0x54 = *(f32*)(member->field_0x54 + 0xC) * s;
-#else
-						*(f32*)((u8*)member + 0x54) = *(f32*)((u8*)member + 0x60) *
-							(audience_kind[member->type].field_0x18 * w * float_0p015625_8041e6ac);
-#endif
+						w = k * w / 64.0f;
+						*(f32*)member->field_0x54 = *(f32*)(member->field_0x54 + 0xC) * w;
 					}
 					{
 						f32 h = (f32)GXGetTexObjHeight(&texObj);
-#ifdef MUST_MATCH
 						f32 k = audience_kind[member->type].field_0x1C;
-						f32 s = k * h;
-						s = float_0p015625_8041e6ac * s;
-						*(f32*)(member->field_0x54 + 4) = *(f32*)(member->field_0x54 + 0x10) * s;
-#else
-						*(f32*)((u8*)member + 0x58) = *(f32*)((u8*)member + 0x64) *
-							(audience_kind[member->type].field_0x1C * h * float_0p015625_8041e6ac);
-#endif
+						h = k * h / 64.0f;
+						*(f32*)(member->field_0x54 + 4) = *(f32*)(member->field_0x54 + 0x10) * h;
 					}
 					break;
 				}
@@ -2964,28 +2758,38 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		offsetZ = *(f32*)((u8*)member + 0xB0) * scaleZ;
 		PSMTXScale(mtxScale, scaleX, scaleY, scaleZ);
 
-		rx = member->mRotation.x * float_deg2rad_8041e6b0;
-		ry = member->mRotation.y * float_deg2rad_8041e6b0;
-		rz = member->mRotation.z * float_deg2rad_8041e6b0;
+		{
+			f32 d2r = 0.017453289f;
+			rx = member->mRotation.x * d2r;
+			ry = member->mRotation.y * d2r;
+			rz = member->mRotation.z * d2r;
+		}
 		sx = (f32)sin(rx);
 		cx = (f32)cos(rx);
 		sy = (f32)sin(ry);
 		cy = (f32)cos(ry);
-		cz = (f32)cos(rz);
 		sz = (f32)sin(rz);
+		cz = (f32)cos(rz);
 
-		mtxRot[1][3] = 0.0f;
-		mtxRot[1][0] = cx * sz;
-		mtxRot[0][3] = 0.0f;
-		mtxRot[2][0] = sy * cz + sx * cy * sz;
-		mtxRot[0][1] = -cy * sz - sx * sy * cz;
-		mtxRot[0][2] = -cx * sy;
-		mtxRot[1][1] = cx * cz;
-		mtxRot[2][1] = -sy * sz + cy * sx * cz;
-		mtxRot[0][0] = cy * cz - sx * sy * sz;
-		mtxRot[2][3] = 0.0f;
-		mtxRot[1][2] = -sx;
-		mtxRot[2][2] = cx * cy;
+		{
+			f32 sxsy;
+			f32 sxcy;
+
+			sxsy = sx * sy;
+			sxcy = sx * cy;
+			mtxRot[1][1] = cx * cz;
+			mtxRot[0][0] = cy * cz - sxsy * sz;
+			mtxRot[0][2] = -cx * sy;
+			mtxRot[0][1] = -cy * sz - sxsy * cz;
+			mtxRot[2][0] = sy * cz + sxcy * sz;
+			mtxRot[2][1] = -sy * sz + sxcy * cz;
+			mtxRot[1][0] = cx * sz;
+			mtxRot[1][2] = -sx;
+			mtxRot[2][2] = cx * cy;
+			mtxRot[0][3] = 0.0f;
+			mtxRot[1][3] = 0.0f;
+			mtxRot[2][3] = 0.0f;
+		}
 
 		*(Vec*)((u8*)member + 0x90) = vec3_802f9768;
 		PSMTXMultVec(mtxRot, (Vec*)((u8*)member + 0x90), (Vec*)((u8*)member + 0x90));
@@ -3020,19 +2824,19 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 			texBase = 8;
 		}
 
-		if (member->field_0xE8 >= f360_8041e6b4) {
+		if (member->field_0xE8 >= 360.0f) {
 			member->field_0xE8 = member->field_0xE8 -
-			                     f360_8041e6b4 * (f32)(s32)(member->field_0xE8 / f360_8041e6b4);
+			                     360.0f * (f32)(s32)(member->field_0xE8 / 360.0f);
 		}
 		if (member->field_0xE8 < 0.0f) {
-			angle = (f32)(1 - (s32)(member->field_0xE8 / f360_8041e6b4));
-			member->field_0xE8 = member->field_0xE8 + f360_8041e6b4 * angle;
+			angle = (f32)(1 - (s32)(member->field_0xE8 / 360.0f));
+			member->field_0xE8 = member->field_0xE8 + 360.0f * angle;
 		}
 		angle = member->field_0xE8;
-		if (angle > 0.0f && angle <= float_180_8041e6b8) {
+		if (angle > 0.0f && angle <= 180.0f) {
 			flip = 1;
 		}
-		if (angle == 0.0f || (angle > float_180_8041e6b8 && angle < f360_8041e6b4)) {
+		if (angle == 0.0f || (angle > 180.0f && angle < 360.0f)) {
 			flip = 0;
 		}
 		if ((u8)front == 1) {
@@ -3058,13 +2862,13 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		GXSetChanMatColor(GX_COLOR0A0, color);
 
 		GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-		GXPosition3f32(neg20 + *(f32*)(member->field_0x54 + 0x18), float_40_8041e690 + *(f32*)(member->field_0x54 + 0x1C),
+		GXPosition3f32(neg20 + *(f32*)(member->field_0x54 + 0x18), 40.0f + *(f32*)(member->field_0x54 + 0x1C),
 		               *(f32*)(member->field_0x54 + 0x20));
 		GXTexCoord2f32(texCoords.v[texBase * 2], texCoords.v[texBase * 2 + 1]);
-		GXPosition3f32(float_20_8041e6a8 + *(f32*)(member->field_0x54 + 0x18), float_40_8041e690 + *(f32*)(member->field_0x54 + 0x1C),
+		GXPosition3f32(w + *(f32*)(member->field_0x54 + 0x18), 40.0f + *(f32*)(member->field_0x54 + 0x1C),
 		               *(f32*)(member->field_0x54 + 0x20));
 		GXTexCoord2f32(texCoords.v[(texBase + 1) * 2], texCoords.v[(texBase + 1) * 2 + 1]);
-		GXPosition3f32(float_20_8041e6a8, 0.0f, 0.0f);
+		GXPosition3f32(w, 0.0f, 0.0f);
 		GXTexCoord2f32(texCoords.v[(texBase + 2) * 2], texCoords.v[(texBase + 2) * 2 + 1]);
 		GXPosition3f32(neg20, 0.0f, 0.0f);
 		GXTexCoord2f32(texCoords.v[(texBase + 3) * 2], texCoords.v[(texBase + 3) * 2 + 1]);
@@ -3092,7 +2896,7 @@ void BattleAudienceDispItem(CameraId camId, void* param) {
 		}
 		iconId = itemDataTable[item->mItemType].icon_id;
 		PSMTXTrans(mtx, 0.0f, -20.0f, 0.0f);
-		PSMTXRotRad(rotMtx, 'z', float_deg2rad_8041e6a4 * *(f32*)((u8*)item + 0x24));
+		PSMTXRotRad(rotMtx, 'z', 0.017453292f * *(f32*)((u8*)item + 0x24));
 		PSMTXConcat(rotMtx, mtx, mtx);
 		PSMTXTransApply(mtx, mtx, 0.0f, 20.0f, 0.0f);
 		PSMTXScaleApply(mtx, mtx, *(f32*)((u8*)item + 0x20), *(f32*)((u8*)item + 0x20), 1.0f);
@@ -3140,8 +2944,8 @@ void BattleAudienceDispApSrc(CameraId camId, void* param) {
 	for (i = 0; i < 100; i++) {
 		if (*(s32*)star & 1) {
 			PSMTXScale(scale, *(f32*)(star + 0x38), *(f32*)(star + 0x3C), *(f32*)(star + 0x40));
-			PSMTXRotRad(rot, 'z', float_0_8041e618);
-			PSMTXTrans(trans, *(f32*)(star + 8), *(f32*)(star + 0xC), float_0_8041e618);
+			PSMTXRotRad(rot, 'z', 0.0f);
+			PSMTXTrans(trans, *(f32*)(star + 8), *(f32*)(star + 0xC), 0.0f);
 			PSMTXConcat(scale, rot, mtx);
 			PSMTXConcat(trans, mtx, mtx);
 #ifdef MUST_MATCH
@@ -3165,25 +2969,22 @@ void BattleAudienceDispWin(CameraId camId, void* param) {
 	Vec pos;
 	Mtx mtx;
 
-	extern f32 float_90_8041e68c;
-	extern f32 float_10_8041e694;
-	extern f32 float_17_8041e698;
 	extern u32 dat_8041e60c;
 	extern u32 dat_8041e610;
 
 	BattleAudienceBaseGetPtr();
 	win = BattleAudienceWinGetPtr();
 	color = *(GXColor*)&dat_8041e60c;
-	windowDispGX_Waku_col(0, color, *(f32*)((u8*)win + 0x8), *(f32*)((u8*)win + 0xc), float_90_8041e68c,
-	                      float_40_8041e690, float_10_8041e694);
+	windowDispGX_Waku_col(0, color, *(f32*)((u8*)win + 0x8), *(f32*)((u8*)win + 0xc), 90.0f,
+	                      40.0f, 10.0f);
 
 	pos = vec3_802f97f4;
-	pos.x = float_17_8041e698 + *(f32*)((u8*)win + 0x8);
-	pos.y = *(f32*)((u8*)win + 0xc) - float_40_8041e690;
-	iconDispGx(float_0p8_8041e69c, &pos, 0x10, 0x209);
+	pos.x = 17.0f + *(f32*)((u8*)win + 0x8);
+	pos.y = *(f32*)((u8*)win + 0xc) - 40.0f;
+	iconDispGx(0.8f, &pos, 0x10, 0x209);
 
-	PSMTXTrans(mtx, float_75_8041e658 + *(f32*)((u8*)win + 0x8),
-	           *(f32*)((u8*)win + 0xc) - float_40_8041e690, float_0_8041e618);
+	PSMTXTrans(mtx, 75.0f + *(f32*)((u8*)win + 0x8),
+	           *(f32*)((u8*)win + 0xc) - 40.0f, 0.0f);
 	numberColor = *(GXColor*)&dat_8041e610;
 	iconNumberDispGx(mtx, (s32)win->count, FALSE, numberColor);
 }
@@ -3228,7 +3029,7 @@ BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 		}
 		member->flags = 0x85;
 		m = index % 20;
-		f = float_12p5_8041e688 + (f32)(m * 0x19 - 0xe6) + (f32)(rand() * 10 / 0x7fff) - float_5_8041e62c;
+		f = 12.5f + (f32)(m * 0x19 - 0xe6) + (f32)(rand() * 10 / 0x7fff) - 5.0f;
 		member->position.x = f;
 		member->mHomePosition.x = f;
 		BattleAudience_Entry_Sub(index, type, status);
@@ -3238,17 +3039,10 @@ BOOL BattleAudience_Entry(s32 index, AudienceMemberType type, u8 status) {
 }
 #pragma dont_inline reset
 
-#pragma opt_dead_assignments off // needed: stops MWCC folding col/row back together so the divide lands in the original's register
-// NONMATCHING (90.35%): the i2f magic pools an @N double instead of double_to_int_802f9a00, so its `lis r3`
-// steals the register the original puts `col = index / 20` in and the early block + seven Vec copies rotate.
-// Writing `row` as `index - col * 20` (== `index % 20`) and this pragma lifted it 88.54 -> 90.22 -> 90.35.
 #pragma dont_inline on
-void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
+void BattleAudience_Entry_Sub(s32 index, s32 type, u8 status) {
 	BattleAudienceMember* member;
 	BattleStage* stage;
-#ifdef MUST_MATCH
-	const Vec* vec = (const Vec*)str_802F9578;
-#endif
 	s32 col;
 	s32 row;
 	f32 y;
@@ -3268,7 +3062,7 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	BattleAudience_SetAnim(index, 1, 1);
 
 	col = index / 20;
-	row = index - col * 20;
+	row = index % 20;
 	*(u8*)((u8*)member + 0x40) = 0;
 	*(u8*)((u8*)member + 0x43) = 0;
 	*(u8*)((u8*)member + 0x42) = 0;
@@ -3276,44 +3070,30 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	*(u8*)((u8*)member + 0x44) = 0xff;
 
 	y = *(f32*)((u8*)stage + 0xB34);
-	z = float_0p1_8041e678 * (f32)row + (f32)(col * 0x1e + 0x73);
+	z = 0.1f * (f32)row + (f32)(col * 0x1e + 0x73);
 	member->position.y = y;
 	member->mHomePosition.y = y;
 	member->position.z = z;
 	member->mHomePosition.z = z;
 
 	if (member->type == AUDIENCE_PIRANHA_PLANT) {
-		f32 off = float_0p2_8041e67c;
+		f32 off = 0.2f;
 		member->mHomePosition.z += off;
 		member->position.z += off;
 	}
 	if (member->status == 0xb) {
-		member->position.y = float_neg2000_8041e680;
+		member->position.y = -2000.0f;
 	}
 
-#ifdef MUST_MATCH
-	// Match-only: addressing the vec3_802f98xx constants through the .rodata section symbol
-	// (like BattleAudience_ChangeStatus) serialises each 12-byte copy; the named globals let MWCC
-	// software-pipeline the loads across the previous copy's stores.
-	*(Vec*)((unsigned char*)member + 0x84) = *(const Vec*)((const u8*)vec + 0x288);
-	*(Vec*)((unsigned char*)member + 0x78) = *(Vec*)((unsigned char*)member + 0x84);
-	*(Vec*)((unsigned char*)member + 0x90) = *(const Vec*)((const u8*)vec + 0x294);
-	member->mRotation = *(const Vec*)((const u8*)vec + 0x2a0);
-	member->mRotationOffset = *(const Vec*)((const u8*)vec + 0x2ac);
-	*(Vec*)((unsigned char*)member + 0x54) = *(const Vec*)((const u8*)vec + 0x2b8);
-	*(Vec*)((unsigned char*)member + 0x60) = *(const Vec*)((const u8*)vec + 0x2c4);
-	*(Vec*)((unsigned char*)member + 0x6c) = *(const Vec*)((const u8*)vec + 0x2d0);
-#else
-	*(Vec*)((u8*)member + 0x84) = vec3_802f9800;
+	*(Vec*)((u8*)member + 0x84) = (Vec){ 0.0f, 0.0f, 0.0f };
 	*(Vec*)((u8*)member + 0x78) = *(Vec*)((u8*)member + 0x84);
-	*(Vec*)((u8*)member + 0x90) = vec3_802f980c;
-	member->mRotation = vec3_802f9818;
-	member->mRotationOffset = vec3_802f9824;
-	*(Vec*)((u8*)member + 0x54) = vec3_802f9830;
-	*(Vec*)((u8*)member + 0x60) = vec3_802f983c;
-	*(Vec*)((u8*)member + 0x6c) = vec3_802f9848;
-#endif
-	member->field_0xE8 = float_270_8041e684;
+	*(Vec*)((u8*)member + 0x90) = (Vec){ 0.0f, 0.0f, -1.0f };
+	member->mRotation = (Vec){ 0.0f, 0.0f, 0.0f };
+	member->mRotationOffset = (Vec){ 0.0f, 0.0f, 0.0f };
+	*(Vec*)((u8*)member + 0x54) = (Vec){ 1.0f, 1.0f, 1.0f };
+	*(Vec*)((u8*)member + 0x60) = (Vec){ 1.0f, 1.0f, 1.0f };
+	*(Vec*)((u8*)member + 0x6c) = (Vec){ 0.0f, 0.0f, 0.0f };
+	member->field_0xE8 = 270.0f;
 
 	if ((index >= 4 && index <= 0xf) ||
 	    (index >= 0x18 && index <= 0x23) ||
@@ -3322,7 +3102,6 @@ void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status) {
 	}
 }
 #pragma dont_inline reset
-#pragma opt_dead_assignments reset
 
 #pragma dont_inline on
 void BattleAudience_Delete(s32 index) {
@@ -3545,7 +3324,7 @@ BOOL BattleAudience_GetFront(s32 index) {
 	return !(dx * *(f32*)((u8*)member + 0x90) +
 	         dy * *(f32*)((u8*)member + 0x94) +
 	         dz * *(f32*)((u8*)member + 0x98) >=
-	         float_0_8041e618);
+	         0.0f);
 }
 #pragma dont_inline reset
 
@@ -3553,14 +3332,6 @@ BOOL BattleAudience_GetFront(s32 index) {
 #pragma dont_inline on
 void BattleAudience_ChangeStatus(s32 index, s32 status) {
 	BattleAudienceMember* member;
-#ifdef MUST_MATCH
-	// Match-only: the named vec3_802f98xx globals make MWCC's scheduler hoist a later copy's loads
-	// across an earlier member store (direct-global form ~70%). The original keeps each 12-byte copy
-	// serialized and bases it off the .rodata section symbol (r30). Addressing the same data through
-	// that symbol -- str_802F9578+0x2DC is vec3_802f9854, +0x2E8 vec3_802f9860, +0x2F4 vec3_802f986c,
-	// +0x300 vec3_802f9878 -- pins the callee-saved base and reproduces the original scheduling.
-	const Vec* vec = (const Vec*)str_802F9578;
-#endif
 	s32 zero = 0;
 	f32 zeroF;
 
@@ -3574,21 +3345,14 @@ void BattleAudience_ChangeStatus(s32 index, s32 status) {
 		} else {
 			*(u8*)((u8*)member + 0x43) = zero;
 			// Match-only statement order: the original loads the zero float between these two stores.
-			zeroF = float_0_8041e618;
+			zeroF = 0.0f;
 			*(u8*)((u8*)member + 0x42) = zero;
 			*(u8*)((u8*)member + 0x41) = zero;
 			*(u8*)((u8*)member + 0x44) = 0xFF;
-#ifdef MUST_MATCH
-			member->mRotation = *(const Vec*)((const u8*)vec + 0x2DC);
-			*(Vec*)((u8*)member + 0x6C) = *(const Vec*)((const u8*)vec + 0x2E8);
-			*(Vec*)((u8*)member + 0x60) = *(const Vec*)((const u8*)vec + 0x2F4);
-			*(Vec*)((u8*)member + 0x78) = *(const Vec*)((const u8*)vec + 0x300);
-#else
-			member->mRotation = vec3_802f9854;
-			*(Vec*)((u8*)member + 0x6C) = vec3_802f9860;
-			*(Vec*)((u8*)member + 0x60) = vec3_802f986c;
-			*(Vec*)((u8*)member + 0x78) = vec3_802f9878;
-#endif
+			member->mRotation = (Vec){ 0.0f, 0.0f, 0.0f };
+			*(Vec*)((u8*)member + 0x6C) = (Vec){ 0.0f, 0.0f, 0.0f };
+			*(Vec*)((u8*)member + 0x60) = (Vec){ 1.0f, 1.0f, 1.0f };
+			*(Vec*)((u8*)member + 0x78) = (Vec){ 0.0f, 0.0f, 0.0f };
 			*(s32*)((u8*)member + 0x30) = zero;
 			member->field_0x4 = zero;
 			*(s32*)((u8*)member + 0x8) = zero;
@@ -3764,6 +3528,9 @@ s32 BattleAudience_NoUsedHaitiRand(void) {
 }
 #pragma dont_inline reset
 
+const s32 dat_802f9884[] = { 10000, 1000, 100, 10, 5, 2, 1, 1, 1, 1 };
+const s32 dat_802f98ac[] = { 1, 1, 2, 2, 4, 4, 8, 8, 16, 16, 16, 16, 8, 8, 4, 4, 2, 2, 1, 1 };
+
 #pragma dont_inline on
 s32 BattleAudience_NoUsedFCHaitiRand(void) {
 	s32 rate[10];
@@ -3830,7 +3597,7 @@ s32 BattleAudience_NoUsedFCHaitiRand(void) {
 		}
 	}
 	{
-		s32 pick = (s32)((f32)total * (f32)rand() / float_32767_8041e674);
+		s32 pick = (s32)((f32)total * (f32)rand() / 32767.0f);
 
 		for (i = 0; i < count; i++) {
 			if (pick < sums[i]) {
@@ -3933,7 +3700,7 @@ BOOL BattleAudience_GetPPAudienceNum_Sub(s32 id) {
 #pragma opt_lifetimes off // needed: keep the loop accumulator in f31 and the i2f double in f30 (see below)
 // Four levers got this from 93.45% to 99.82%: (a) reaching the 0x137C8 store/memcpy through a `u8*` view (audlocal) makes MWCC recompute `audience + 0x10000` with addis and a fresh
 // register instead of CSEing an addis result across BattleAlloc; (b) writing the two `> 0.0f`
-// comparisons and the `crowdKindSum = 0.0f` reset as float literals (not float_0_8041e618) keeps each
+// comparisons and the `crowdKindSum = 0.0f` reset as float literals keeps each
 // a separate load instead of being CSE'd; (c) the declaration order below (crowdKindSum first, then
 // partyMultiplier) puts the multiplier count in f31 to match the original. (d) `opt_lifetimes off`
 // resolves the loop's FPR tie: with lifetimes on MWCC kept the pooled i2f double in f31 and the
@@ -3956,6 +3723,7 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	f32 spAcMultiplier;
 	f32 stylishMultiplier;
 	f32 marioMultiplier;
+	f32 rate = 1.0f;
 
 	{
 		u8* audlocal = (u8*)audience;
@@ -3966,7 +3734,7 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	}
 	mario = BattleGetMarioPtr(wp);
 	party = BattleGetPartyPtr(wp);
-	crowdKindSum = float_0_8041e618;
+	crowdKindSum = 0.0f;
 	for (i = 0; i < 13; i++) {
 		crowdKindSum += audience_kind[i].field_0x14 * (f32)BattleAudience_GetPPAudienceNumKind(i);
 	}
@@ -3975,43 +3743,43 @@ void BattleAudience_ApRecoveryBuild(StarPowerInfo* info) {
 	stylishMultiplier = (f32)(u8)info->mStylishCommandMultiplier;
 	crowdKindSum = 0.0f;
 	if (spAcMultiplier > 0.0f) {
-		crowdKindSum += float_1_8041e620;
+		crowdKindSum += 1.0f;
 	}
 	if (stylishMultiplier > 0.0f) {
-		crowdKindSum += float_1_8041e620;
+		crowdKindSum += 1.0f;
 	}
 	if (mario->mStatusFlags & 0x20000000) {
-		marioMultiplier = float_3_8041e65c;
+		marioMultiplier = 3.0f;
 	}
 	else if (mario->mStatusFlags & 0x10000000) {
-		marioMultiplier = float_2_8041e660;
+		marioMultiplier = 2.0f;
 	}
 	else {
-		marioMultiplier = float_1_8041e620;
+		marioMultiplier = 1.0f;
 	}
 	if (party != NULL) {
 		if (party->mStatusFlags & 0x20000000) {
-			partyMultiplier = float_2_8041e660;
+			partyMultiplier = 2.0f;
 		}
 		else if (party->mStatusFlags & 0x10000000) {
-			partyMultiplier = float_1p5_8041e670;
+			partyMultiplier = 1.5f;
 		}
 		else {
-			partyMultiplier = float_1_8041e620;
+			partyMultiplier = 1.0f;
 		}
 	}
 	else {
-		partyMultiplier = float_1_8041e620;
+		partyMultiplier = 1.0f;
 	}
 	if (BattleBreakSlot_GetBreakTurn() >= 1) {
 		s32 delta = 0;
-		delta += (s32)(float_1_8041e620 * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
+		delta += (s32)(rate * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
 		               crowdKindSum * marioMultiplier * partyMultiplier *
 		               *(f32*)((u8*)BattleBreakSlotGetPtr() + 0x14));
 		*(s32*)((u8*)audience + 0x137C4) += delta;
 	}
 	else {
-		*(s32*)((u8*)audience + 0x137C4) += (s32)(float_1_8041e620 * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
+		*(s32*)((u8*)audience + 0x137C4) += (s32)(rate * sqrtWeight * (spAcMultiplier + stylishMultiplier) *
 		                                            crowdKindSum * marioMultiplier * partyMultiplier);
 	}
 	if (irand(100) < (u8)info->mBingoSlotChance) {
@@ -4217,7 +3985,7 @@ s32 BattleAudienceAddAudienceNum(s32 num) {
 #pragma dont_inline on
 void BattleAudiencePuniAllEscape(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
-	f32 one = float_1_8041e620;
+	f32 one = 1.0f;
 	s32 i;
 	s32 count = 0;
 	for (i = 0; i < 200; i++) {
@@ -4243,7 +4011,7 @@ void BattleAudienceAddPuni(s32 num) {
 	s32 i;
 	if (pouchGetPtr()->mStarPowersObtained != 0 && *(s32*)((u8*)audience + 0x137B0) > 0 &&
 			num > 0 && !(wp->flags & 0x100)) {
-		f32 one = float_1_8041e620;
+		f32 one = 1.0f;
 		for (i = 0; i < num; i++) {
 			s32 idx = BattleAudience_NoUsedFCHaitiRand();
 			if (idx == -1) {
@@ -4383,10 +4151,10 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 			if (member->type == AUDIENCE_PIRANHA_PLANT) {
 				BattleAudience_ChangeStatus(i, 4);
 				if (d == 3) {
-					*(f32*)((u8*)member + 0xc) = float_3_8041e65c;
+					*(f32*)((u8*)member + 0xc) = 3.0f;
 				}
 				else {
-					*(f32*)((u8*)member + 0xc) = float_2_8041e660;
+					*(f32*)((u8*)member + 0xc) = 2.0f;
 				}
 			}
 			else {
@@ -4394,10 +4162,10 @@ void BattleAudienceJoy_Sub(s32 a, s32 b, s32 c, s32 d) {
 				if (r < a) {
 					BattleAudience_ChangeStatus(i, 4);
 					if (d == 3) {
-						*(f32*)((u8*)member + 0xc) = float_3_8041e65c;
+						*(f32*)((u8*)member + 0xc) = 3.0f;
 					}
 					else {
-						*(f32*)((u8*)member + 0xc) = float_2_8041e660;
+						*(f32*)((u8*)member + 0xc) = 2.0f;
 					}
 				}
 				else if (r < a + b) {
@@ -4494,35 +4262,35 @@ void BattleAudienceSoundBooingKind(s32 kind) {
 	l = BattleAudience_GetPPAudienceNum_L();
 	BattleAudienceSoundStop(0);
 	if (kind == 1) {
-		strcpy(name, str_802F9CFC);
+		strcpy(name, "SFX_AUDIENCE_BOO_ALLY1");
 		*(u8*)((u8*)sound + 8) = 1;
 	}
 	if (kind == 2) {
-		strcpy(name, str_802F9D14);
+		strcpy(name, "SFX_AUDIENCE_BOO_ALLY2");
 		*(u8*)((u8*)sound + 8) = 2;
 	}
 	if (kind == 3) {
-		strcpy(name, str_802F9D2C);
+		strcpy(name, "SFX_AUDIENCE_BOO_ALLY3");
 		*(u8*)((u8*)sound + 8) = 3;
 	}
 	if (kind == 4) {
-		strcpy(name, str_802F9D44);
+		strcpy(name, "SFX_AUDIENCE_BOO_ALLY4");
 		*(u8*)((u8*)sound + 8) = 4;
 	}
 	if (kind == 5) {
-		strcpy(name, str_802F9D5C);
+		strcpy(name, "SFX_AUDIENCE_BOO_ENEMY1");
 		*(u8*)((u8*)sound + 8) = 5;
 	}
 	if (kind == 6) {
-		strcpy(name, str_802F9D74);
+		strcpy(name, "SFX_AUDIENCE_BOO_ENEMY2");
 		*(u8*)((u8*)sound + 8) = 6;
 	}
 	if (kind == 7) {
-		strcpy(name, str_802F9D8C);
+		strcpy(name, "SFX_AUDIENCE_BOO_ENEMY3");
 		*(u8*)((u8*)sound + 8) = 7;
 	}
 	if (kind == 8) {
-		strcpy(name, str_802F9DA4);
+		strcpy(name, "SFX_AUDIENCE_BOO_ENEMY4");
 		*(u8*)((u8*)sound + 8) = 8;
 	}
 	AUD_SOUND_ID(sound) = BattleAudienceSound1(name, r, l);
@@ -4549,19 +4317,19 @@ void BattleAudienceSoundClap(s32 a, s32 b) {
 	total = r + l;
 	BattleAudienceSoundStop(1);
 	if (total >= 1 && total <= 0x31) {
-		strcpy(name, str_802F9C9C);
+		strcpy(name, "SFX_AUDIENCE_CLAPPING1");
 		*(u8*)((u8*)sound + 8) = 1;
 	}
 	if (total >= 0x32 && total <= 0x63) {
-		strcpy(name, str_802F9CB4);
+		strcpy(name, "SFX_AUDIENCE_CLAPPING2");
 		*(u8*)((u8*)sound + 8) = 2;
 	}
 	if (total >= 0x64 && total <= 0x95) {
-		strcpy(name, str_802F9CCC);
+		strcpy(name, "SFX_AUDIENCE_CLAPPING3");
 		*(u8*)((u8*)sound + 8) = 3;
 	}
 	if (total >= 0x96) {
-		strcpy(name, str_802F9CE4);
+		strcpy(name, "SFX_AUDIENCE_CLAPPING4");
 		*(u8*)((u8*)sound + 8) = 4;
 	}
 	AUD_SOUND_ID(sound) = BattleAudienceSound1(name, r, l);
@@ -4595,19 +4363,19 @@ void BattleAudienceSoundNoiseAlways(void) {
 			sound->field_0x0[8] = 0;
 		}
 		if (total >= 1 && total <= 0x31) {
-			strcpy(name, str_802F9C4C);
+			strcpy(name, "SFX_AUDIENCE_NOISY1");
 			sound->field_0x0[8] = 1;
 		}
 		if (total >= 0x32 && total <= 0x63) {
-			strcpy(name, str_802F9C60);
+			strcpy(name, "SFX_AUDIENCE_NOISY2");
 			sound->field_0x0[8] = 2;
 		}
 		if (total >= 0x64 && total <= 0x95) {
-			strcpy(name, str_802F9C74);
+			strcpy(name, "SFX_AUDIENCE_NOISY3");
 			sound->field_0x0[8] = 3;
 		}
 		if (total >= 0x96) {
-			strcpy(name, str_802F9C88);
+			strcpy(name, "SFX_AUDIENCE_NOISY4");
 			sound->field_0x0[8] = 4;
 		}
 		*(s32*)(sound->field_0x0 + 4) = BattleAudienceSound1(name, r, l);
@@ -4692,19 +4460,19 @@ void BattleAudienceSoundCheerKind(s32 kind, s32 a, s32 b) {
 		sound = BattleAudienceSoundGetPtr(4);
 	}
 	if (kind == 1) {
-		strcpy(name, str_802F9BDC);
+		strcpy(name, "SFX_AUDIENCE_CHEER_ALLY1");
 		*(u8*)((u8*)sound + 8) = 1;
 	}
 	if (kind == 2) {
-		strcpy(name, str_802F9BF8);
+		strcpy(name, "SFX_AUDIENCE_CHEER_ALLY2");
 		*(u8*)((u8*)sound + 8) = 2;
 	}
 	if (kind == 3) {
-		strcpy(name, str_802F9C14);
+		strcpy(name, "SFX_AUDIENCE_CHEER_ALLY3");
 		*(u8*)((u8*)sound + 8) = 3;
 	}
 	if (kind == 4) {
-		strcpy(name, str_802F9C30);
+		strcpy(name, "SFX_AUDIENCE_CHEER_ALLY4");
 		*(u8*)((u8*)sound + 8) = 4;
 	}
 	if (flag == 1) {
@@ -4751,7 +4519,7 @@ void BattleAudienceSoundWhistleKind(s32 kind) {
 	}
 	member = waiting[irand(count)];
 	BattleAudienceSoundGetInfo2(member, &pos);
-	if (pos.x <= float_0_8041e618) {
+	if (pos.x <= 0.0f) {
 		kindIdx = 6;
 	}
 	else {
@@ -4761,13 +4529,13 @@ void BattleAudienceSoundWhistleKind(s32 kind) {
 	BattleAudienceSoundStop(kindIdx);
 	switch (kind) {
 	case 1:
-		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9B94, member);
+		*(s32*)((u8*)sound + 4) = BattleAudienceSound2("SFX_AUDIENCE_WHISTLE1", member);
 		break;
 	case 2:
-		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9BAC, member);
+		*(s32*)((u8*)sound + 4) = BattleAudienceSound2("SFX_AUDIENCE_WHISTLE2", member);
 		break;
 	case 3:
-		*(s32*)((u8*)sound + 4) = BattleAudienceSound2(str_802F9BC4, member);
+		*(s32*)((u8*)sound + 4) = BattleAudienceSound2("SFX_AUDIENCE_WHISTLE3", member);
 		break;
 	}
 	if (*(s32*)((u8*)sound + 4) != -1) {
@@ -4796,10 +4564,10 @@ void BattleAudienceSoundCallKind(s32 kind) {
 	BattleAudienceSoundStop(8);
 	switch (kind) {
 	case 1:
-		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B64, r, l);
+		AUD_SOUND_ID(sound) = BattleAudienceSound1("SFX_AUDIENCE_CALL_ALLY1", r, l);
 		break;
 	case 2:
-		AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B7C, r, l);
+		AUD_SOUND_ID(sound) = BattleAudienceSound1("SFX_AUDIENCE_CALL_ALLY2", r, l);
 		break;
 	}
 	if (AUD_SOUND_ID(sound) != -1) {
@@ -4823,7 +4591,7 @@ void BattleAudienceSoundHandBeat(void) {
 	l = BattleAudience_GetPPAudienceNum_L();
 	total = r + l;
 	BattleAudienceSoundStop(9);
-	AUD_SOUND_ID(sound) = BattleAudienceSound1(str_802F9B4C, r, l);
+	AUD_SOUND_ID(sound) = BattleAudienceSound1("SFX_AUDIENCE_HANDBEAT1", r, l);
 	if (AUD_SOUND_ID(sound) != -1) {
 		*(s32*)((u8*)sound) |= 1;
 		*(s32*)((u8*)sound + 0xC) = -1;
@@ -4838,11 +4606,11 @@ void BattleAudienceSoundHandBeat(void) {
 			vol = 0;
 		}
 		else {
-			vol = (s32)(float_75_8041e658 + ((f32)total * (float_26_8041e650 + (f32)irand(26))) / float_200_8041e648);
+			vol = (s32)(75.0f + ((f32)total * (26.0f + (f32)irand(26))) / 200.0f);
 		}
 #else
 		if (total != 0) {
-			vol = (s32)(float_75_8041e658 + ((f32)total * (float_26_8041e650 + (f32)irand(26))) / float_200_8041e648);
+			vol = (s32)(75.0f + ((f32)total * (26.0f + (f32)irand(26))) / 200.0f);
 		}
 #endif
 		psndSFX_vol(AUD_SOUND_ID(sound), vol);
@@ -4859,7 +4627,7 @@ void BattleAudienceSoundItemThrow(s32 kind, s32 index) {
 	BattleAudienceSound* sound;
 	s32 idx;
 	BattleAudienceSoundGetInfo2(index, &pos);
-	if (pos.x <= float_0_8041e618) {
+	if (pos.x <= 0.0f) {
 		idx = 0xa;
 	}
 	else {
@@ -4871,10 +4639,10 @@ void BattleAudienceSoundItemThrow(s32 kind, s32 index) {
 		BattleAudienceSoundStop(idx);
 		switch (kind) {
 			case 0:
-				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9B14, index);
+				AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_THROW_OBJECT1", index);
 				break;
 			default:
-				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9B30, index);
+				AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_THROW_OBJECT2", index);
 				break;
 		}
 		if (AUD_SOUND_ID(sound) != -1) {
@@ -4893,10 +4661,10 @@ void BattleAudienceSoundRun(s32 kind) {
 	BattleAudienceSoundStop(0xd);
 	switch (kind) {
 		case 0:
-			AUD_SOUND_ID(sound) = BattleAudienceSound0(str_802F9AEC);
+			AUD_SOUND_ID(sound) = BattleAudienceSound0("SFX_AUDIENCE_RUN1");
 			break;
 		case 1:
-			AUD_SOUND_ID(sound) = BattleAudienceSound0(str_802F9B00);
+			AUD_SOUND_ID(sound) = BattleAudienceSound0("SFX_AUDIENCE_RUN2");
 			break;
 	}
 	if (AUD_SOUND_ID(sound) != -1) {
@@ -4913,7 +4681,7 @@ void BattleAudienceSoundSleep(s32 index) {
 	BattleAudienceSound* sound;
 	s32 idx;
 	BattleAudienceSoundGetInfo2(index, &pos);
-	if (pos.x <= float_0_8041e618) {
+	if (pos.x <= 0.0f) {
 		idx = 0xe;
 	}
 	else {
@@ -4925,13 +4693,13 @@ void BattleAudienceSoundSleep(s32 index) {
 		BattleAudienceSoundStop(idx);
 		switch (irand(3)) {
 			case 0:
-				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9AB0, index);
+				AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_SLEEP1", index);
 				break;
 			case 1:
-				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9AC4, index);
+				AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_SLEEP2", index);
 				break;
 			case 2:
-				AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9AD8, index);
+				AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_SLEEP3", index);
 				break;
 		}
 		if (AUD_SOUND_ID(sound) != -1) {
@@ -4948,7 +4716,7 @@ void BattleAudienceSoundZZZ(s32 index) {
 	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x10);
 	s32 vol;
 	BattleAudienceSoundStop(0x10);
-	BattleAudienceSound2(str_802F9A9C, index);
+	BattleAudienceSound2("SFX_AUDIENCE_ZZZ1", index);
 	if (AUD_SOUND_ID(sound) != -1) {
 		AUD_SOUND_HEAD(sound);
 		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
@@ -4962,7 +4730,7 @@ void BattleAudienceSoundSing(s32 index) {
 	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x11);
 	s32 vol;
 	BattleAudienceSoundStop(0x11);
-	AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A80, index);
+	AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_PANSY_SINGING1", index);
 	if (AUD_SOUND_ID(sound) != -1) {
 		AUD_SOUND_HEAD(sound);
 		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
@@ -4977,7 +4745,7 @@ void BattleAudienceSoundShell(s32 index) {
 	BattleAudienceSound* sound;
 	s32 idx;
 	BattleAudienceSoundGetInfo2(index, &pos);
-	if (pos.x <= float_0_8041e618) {
+	if (pos.x <= 0.0f) {
 		idx = 0x12;
 	}
 	else {
@@ -4987,7 +4755,7 @@ void BattleAudienceSoundShell(s32 index) {
 	{
 		s32 vol;
 		BattleAudienceSoundStop(idx);
-		AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A60, index);
+		AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_SHELL_TRANSFORM1", index);
 		if (AUD_SOUND_ID(sound) != -1) {
 			AUD_SOUND_HEAD(sound);
 			vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
@@ -5002,7 +4770,7 @@ void BattleAudienceSoundBombIgnite(s32 index, s32 a, s32 b) {
 	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x14);
 	s32 vol;
 	BattleAudienceSoundStop(0x14);
-	AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A44, index);
+	AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_BOMB_READY1", index);
 	if (AUD_SOUND_ID(sound) != -1) {
 		*(s32*)((u8*)sound) |= 1;
 		*(s32*)((u8*)sound + 0xC) = a + b;
@@ -5019,7 +4787,7 @@ void BattleAudienceSoundBombFire(s32 index) {
 	BattleAudienceSound* sound;
 	s32 idx;
 	BattleAudienceSoundGetInfo2(index, &pos);
-	if (pos.x <= float_0_8041e618) {
+	if (pos.x <= 0.0f) {
 		idx = 0x15;
 	}
 	else {
@@ -5029,7 +4797,7 @@ void BattleAudienceSoundBombFire(s32 index) {
 	{
 		s32 vol;
 		BattleAudienceSoundStop(idx);
-		AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A28, index);
+		AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_BOMB_BURST1", index);
 		if (AUD_SOUND_ID(sound) != -1) {
 			AUD_SOUND_HEAD(sound);
 			vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
@@ -5044,7 +4812,7 @@ void BattleAudienceSoundPakkunEat(s32 index) {
 	BattleAudienceSound* sound = BattleAudienceSoundGetPtr(0x17);
 	s32 vol;
 	BattleAudienceSoundStop(0x17);
-	AUD_SOUND_ID(sound) = BattleAudienceSound2(str_802F9A10, index);
+	AUD_SOUND_ID(sound) = BattleAudienceSound2("SFX_AUDIENCE_PAKU_EAT1", index);
 	if (AUD_SOUND_ID(sound) != -1) {
 		AUD_SOUND_HEAD(sound);
 		vol = psndSFX_get_vol(AUD_SOUND_ID(sound));
@@ -5115,13 +4883,13 @@ void BattleAudienceSoundGetInfo1(s32 a, s32 b, u8* c, Vec* d) {
 		*c = 0;
 	}
 	else {
-		*c = (u8)(s32)(float_100_8041e64c + float_26_8041e650 * (f32)sum / float_200_8041e648);
+		*c = (u8)(s32)(100.0f + 26.0f * (f32)sum / 200.0f);
 	}
 	if (b == 0 || sum == 0) {
-		d->x = float_250_8041e654;
+		d->x = 250.0f;
 	}
 	else {
-		d->x = (f32)(u8)(s32)((f32)(a - b) * float_250_8041e654 / (f32)sum);
+		d->x = (f32)(u8)(s32)((f32)(a - b) * 250.0f / (f32)sum);
 	}
 	d->y = 0.0f;
 	d->z = 0.0f;
@@ -5227,7 +4995,7 @@ void BattleAudienceNoiseMain(void) {
 		sound->mCurrentBaseSfxVolume = 0;
 	}
 	else {
-		sound->mCurrentBaseSfxVolume = (s32)(float_63_8041e644 + float_63_8041e644 * (f32)pp / float_200_8041e648);
+		sound->mCurrentBaseSfxVolume = (s32)(63.0f + 63.0f * (f32)pp / 200.0f);
 	}
 }
 
@@ -5334,22 +5102,22 @@ void BattleAudience_Case_MarioBigDamage(void) {
 void BattleAudience_Case_MarioPinch(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_0p05_8041e624 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	delta = 0.049999997f * delta;
+	BattleAudienceAddTargetNum(delta, 0.0f);
 }
 
 void BattleAudience_Case_MarioDanger(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_0p15_8041e630 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	delta = 0.14999999f * delta;
+	BattleAudienceAddTargetNum(delta, 0.0f);
 }
 
 void BattleAudience_Case_PartyDown(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_neg0p25_8041e640 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	delta = -0.25f * delta;
+	BattleAudienceAddTargetNum(delta, 0.0f);
 }
 
 void BattleAudience_Case_JumpNewRecord(void) {
@@ -5385,8 +5153,8 @@ void BattleAudience_Case_TurnEnd(void) {
 			expected = 5;
 		}
 		if (wp->turnCount >= expected) {
-			BattleAudienceAddTargetNum(float_neg0p05_8041e614 * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
-			                           float_0_8041e618);
+			BattleAudienceAddTargetNum(-0.049999997f * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+			                           0.0f);
 		}
 		if (wp->turnCount == expected) {
 			BattleAudienceAddPhaseEvtList(6);
@@ -5415,14 +5183,8 @@ void BattleAudience_Case_TurnEnd(void) {
 void BattleAudience_Case_Appeal(BattleUnit* unit) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 
-	if ((f32)BattleAudience_GetPPAudienceNum() > float_0_8041e618) {
-#ifdef MUST_MATCH
-		f32 num = (f32)BattleAudience_GetPPAudienceNum();
-		s32 v = (s32)(num * float_0p25_8041e63c);
-		*(s32*)((u8*)audience + 0x137C4) = (v + 0x19) + *(s32*)((u8*)audience + 0x137C4);
-#else
-		*(s32*)((u8*)audience + 0x137C4) += (s32)(float_0p25_8041e63c * (f32)BattleAudience_GetPPAudienceNum()) + 0x19;
-#endif
+	if ((f32)BattleAudience_GetPPAudienceNum() > 0.0f) {
+		*(s32*)((u8*)audience + 0x137C4) += (s32)((f32)BattleAudience_GetPPAudienceNum() / 4.0f) + 0x19;
 		if (unit->badgesEquipped.SuperAppeal != 0) {
 			*(s32*)((u8*)audience + 0x137C4) += unit->badgesEquipped.SuperAppeal * 0x19;
 		}
@@ -5430,8 +5192,8 @@ void BattleAudience_Case_Appeal(BattleUnit* unit) {
 		BattleAudienceSoundClap(0xB4, 0x3C);
 		BattleAudienceJoy(0);
 	}
-	BattleAudienceAddTargetNum(float_0p05_8041e624 * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
-	                           float_0_8041e618);
+	BattleAudienceAddTargetNum(0.049999997f * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+	                           0.0f);
 }
 
 void BattleAudience_Case_Escape(void) {
@@ -5440,8 +5202,8 @@ void BattleAudience_Case_Escape(void) {
 void BattleAudience_Case_Escape_Good(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_neg0p1_8041e634 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	delta = -0.099999994f * delta;
+	BattleAudienceAddTargetNum(delta, 0.0f);
 	BattleAudienceSoundSetVol(2, 100, 30);
 	BattleAudienceSoundBooing();
 }
@@ -5449,8 +5211,8 @@ void BattleAudience_Case_Escape_Good(void) {
 void BattleAudience_Case_Escape_Bad(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_neg0p2_8041e638 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	delta = -0.19999999f * delta;
+	BattleAudienceAddTargetNum(delta, 0.0f);
 	BattleAudienceSoundBooing();
 }
 
@@ -5465,37 +5227,43 @@ void BattleAudience_Case_EnemyNoDamage(void) {
 void BattleAudience_Case_Countered(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_neg0p1_8041e634 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	delta = -0.099999994f * delta;
+	BattleAudienceAddTargetNum(delta, 0.0f);
 	BattleAudienceAddPhaseEvtList(5);
 }
 
 void BattleAudience_Case_HaikeiSet(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_0p05_8041e624 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	delta = 0.049999997f * delta;
+	BattleAudienceAddTargetNum(delta, 0.0f);
 }
 
 void BattleAudience_Case_GreatVictory(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_0p15_8041e630 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	delta = 0.14999999f * delta;
+	BattleAudienceAddTargetNum(delta, 0.0f);
 }
 
 void BattleAudience_Case_FastVictory(f32 value) {
 	BattleAudienceAddTargetNum(
-	    float_0p01_8041e628 * (float_5_8041e62c * value) * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
-	    float_0_8041e618);
+	    0.01f * (5.0f * value) * BattleAudienceBaseGetPtr()->mAudienceDeltaMultiplier,
+	    0.0f);
 }
 
 void BattleAudience_Case_FallObject_Stage(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_0p05_8041e624 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	delta = 0.049999997f * delta;
+	BattleAudienceAddTargetNum(delta, 0.0f);
 }
+
+const s32 dat_802f98fc[] = { -1, 1, 0, 1, 1, 1, -1, 0, 1, 0, -1, -1, 0, -1, 1, -1 };
+const s32 dat_802f993c[] = {
+	0, 3, -1, 2, 0, 2, 1, 2, -2, 1, -1, 1, 0, 1, 1, 1, 2, 1, -3, 0, -2, 0, -1, 0, 1, 0, 2, 0, 3, 0, -2, -1,
+	-1, -1, 0, -1, 1, -1, 2, -1, -1, -2, 0, -2, 1, -2, 0, -3,
+};
 
 void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
@@ -5503,7 +5271,7 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 	s32 tbl2[48];
 	s32 i;
 	s32 id;
-	f32 one = float_1_8041e620;
+	f32 one = 1.0f;
 
 #ifdef MUST_MATCH
 	// Struct assignment gives the original's lwzu/stwu copy loop; memcpy doesn't.
@@ -5534,7 +5302,7 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 			id = BattleAudience_GetAudienceNoFromOffset(index, tbl1[i * 2], tbl1[i * 2 + 1]);
 			if (id != -1 && (u8)BattleAudience_GetEscapeChangeOK(id)) {
 				BattleAudience_ChangeStatus(id, 0xC);
-				audience->mTargetAudienceCount -= float_1_8041e620;
+				audience->mTargetAudienceCount -= 1.0f;
 			}
 		}
 		break;
@@ -5548,7 +5316,7 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 			id = BattleAudience_GetAudienceNoFromOffset(index, tbl2[i * 2], tbl2[i * 2 + 1]);
 			if (id != -1 && (u8)BattleAudience_GetEscapeChangeOK(id)) {
 				BattleAudience_ChangeStatus(id, 0xC);
-				audience->mTargetAudienceCount -= float_1_8041e620;
+				audience->mTargetAudienceCount -= 1.0f;
 			}
 		}
 		break;
@@ -5558,7 +5326,7 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 				BattleAudience_ChangeStatus(index, 0xA);
 			}
 		}
-		one = float_1_8041e620;
+		one = 1.0f;
 		for (i = 0; i < 200; i++) {
 			if ((u8)BattleAudience_GetEscapeChangeOK(i)) {
 				BattleAudience_ChangeStatus(i, 0xC);
@@ -5572,7 +5340,7 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 				BattleAudience_ChangeStatus(index, 0xA);
 			}
 		}
-		audience->mTargetAudienceCount -= float_1_8041e620;
+		audience->mTargetAudienceCount -= 1.0f;
 		break;
 	}
 	BattleAudiencePuniAllEscape();
@@ -5581,15 +5349,15 @@ void BattleAudience_Case_FallObject_Aud(s32 index, u8 type) {
 void BattleAudience_Case_FirstAttack_Good(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_0p02_8041e61c * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	delta = 0.02f * delta;
+	BattleAudienceAddTargetNum(delta, 0.0f);
 }
 
 void BattleAudience_Case_FirstAttack_Bad(void) {
 	BattleAudience* audience = BattleAudienceBaseGetPtr();
 	f32 delta = audience->mAudienceDeltaMultiplier;
-	delta = float_neg0p05_8041e614 * delta;
-	BattleAudienceAddTargetNum(delta, float_0_8041e618);
+	delta = -0.049999997f * delta;
+	BattleAudienceAddTargetNum(delta, 0.0f);
 }
 
 #pragma dont_inline on
