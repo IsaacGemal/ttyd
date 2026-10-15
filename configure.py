@@ -375,7 +375,7 @@ config.libs = [
             Object(Matching, "battle/battle_message.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_enemy_item.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_break_slot.c", extra_cflags=["-O4,s"]),
-            Object(NonMatching, "battle/battle_seq_end.c", extra_cflags=["-O4,s"]),
+            Object(Matching, "battle/battle_seq_end.c", extra_cflags=["-O4,s"]),
             Object(Matching, "battle/battle_ac_help.c"),
             Object(NonMatching, "battle/battle_audience_kind_data.c"),
             Object(Matching, "battle/battle_status_icon.c"),

@@ -47,13 +47,13 @@
 
 // First object of this unit's .data (the float pair that used to end the previous unit's .data).
 __declspec(section ".data") u32 lbl_803ACB10[2] = { 0xBF800000, 0x3F800000 };
-__declspec(section ".data") u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_374[2] = { 0xBF800000, 0x3F800000 };
 __declspec(section ".data") u32 lbl_803ACB20[2] = { 0x3F800000, 0xBF800000 };
-__declspec(section ".data") u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_373[2] = { 0x3F800000, 0xBF800000 };
 __declspec(section ".data") u32 lbl_803ACB30[2] = { 0xBF800000, 0x3F800000 };
-__declspec(section ".data") u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
+__declspec(section ".data") static u32 negone_one_360[2] = { 0xBF800000, 0x3F800000 };
 __declspec(section ".data") u32 lbl_803ACB40[2] = { 0x3F800000, 0xBF800000 };
-__declspec(section ".data") u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
+__declspec(section ".data") static u32 one_negone_359[2] = { 0x3F800000, 0xBF800000 };
 static s32 _check_guard_koura(EventEntry* event, BOOL isFirstCall);  // local to this file in the original
 
 // Prototypes for functions that are not declared in a shared header.
@@ -1282,14 +1282,9 @@ void _MarioExpDisp(CameraId camId, void* param) {
     }
 }
 
-// NONMATCHING (99.58%): only work (retail r31) and the string/pool base (retail r30) are swapped. The base is a
-// backend temp, numbered above every local, so it colours first; retail's work behaves like a later temp.
-// Every frontend object (named local, inline parameter, scalarised struct field, reused parameter, `@` copy) is
-// numbered below the base, so only a codegen temp holding the load (as a call result or `&global` would be) can
-// outrank it; no plain load spelling, pragma combination or mwsearch run (12.6k compiles) produced one.
 void _LvupParamConfirmDisp(CameraId camId, void* param) {
     BattleWork* wp = param;
-    BattleSeqEndWork* work = wp->seqEndWork;
+    const s32* selection = (const s32*)((u8*)wp->seqEndWork + 0x24);
     Vec pos;
     char buf[0x14];
     u32 len;
@@ -1318,7 +1313,7 @@ void _LvupParamConfirmDisp(CameraId camId, void* param) {
     FontDrawString(msgSearch("btl_msg_lvup_yes"), float_neg20_80420c90, float_neg13_80420d28);
     FontDrawString(msgSearch("btl_msg_lvup_no"), float_neg20_80420c90, float_neg38_80420d2c);
     pos.x = float_neg40_80420d30;
-    pos.y = (f32)(-50 - *(s32*)((u8*)work + 0x24) * 25);
+    pos.y = (f32)(-50 - *selection * 25);
     pos.z = float_0_80420c7c;
     iconDispGx(float_1_80420c64, &pos, 0x10, 0x18C);
 }
