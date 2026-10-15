@@ -115,7 +115,7 @@ USER_FUNC(unk_8014cc24) {
     s32 b = args[1];
     s32 c = evtGetValue(event, args[2]);
     evtGetValue(event, args[3]);
-    psndBGMOn_f_d(a, (const char*)b, c, c, 0);
+    psndBGMOn_f_d(a, b, c, c, 0);
     return EVT_RETURN_DONE;
 }
 
