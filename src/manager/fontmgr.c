@@ -27,9 +27,6 @@ GXColor fontColTbl[3] = {
 };
 s32 charspace[2] = {4, 2};
 const char* fontname[2] = {"papermarioset_JPN", "popjoyB22"};
-const Vec vec3_802c48c0 = {1.0f, 1.0f, 1.0f};
-const Vec vec3_802c48cc = {0.0f, 0.0f, 0.0f};
-const Vec vec3_802c48d8 = {0.0f, 0.0f, 0.0f};
 
 typedef struct {
 	f32 x, y, z;
@@ -46,7 +43,6 @@ GXTexObj fgTexObj;
 BinaryFontHeader* pfh; //pointer to font header
 
 extern GXTexObj* wakuTexObj;
-extern GXColor unk_80422fd8;
 
 void fontmgrInit(void) {
 	; //stubbed in retail
@@ -168,37 +164,17 @@ void fontmgrTexSetup(void) {
 	}
 }
 
-// NONMATCHING (95.06%): storing fontScale/fontAlpha/fontColor before start.a is the order CW schedules to
-// retail's bytes; remaining diffs are register allocation and the start/by-value-arg slots are swapped
-// (retail start@r1+0x8, arg@r1+0xc; FontDrawStart_alpha has the opposite and matches).
 void FontDrawStart(void) {
-	GXColor start;
-
-	start = fontColTbl[0];
-	fontScale = vec3_802c48c0;
-	fontAlpha = 0xFF;
-	*(u32*)&fontColor = *(u32*)&fontColTbl[0];
-	start.a = (start.a * 0xFF) / 255;
-	fontEdge = FALSE;
-	JUTFont_DrawStart(start);
+	FontDrawStart_alpha(0xFF);
 }
 
-// NONMATCHING (60.40%): by-value `JUTFont_DrawStart(GXColor)` call and frame now match retail (0x10);
-// remaining diffs are the fontColTbl/vec3x load schedule and register allocation.
 void FontDrawStart_alpha(u8 alpha) {
 	GXColor start;
 
-	start = fontColTbl[0];
-	start.a = (start.a * alpha) / 255;
-#ifdef MUST_MATCH
-	// MUST_MATCH: the natural `fontColor = fontColTbl[0];` makes CW reserve an extra 0x10 stack slot
-	// (frame 0x20 instead of retail's 0x10); copying the word keeps the frame at 0x10.
-	*(u32*)&fontColor = *(u32*)&fontColTbl[0];
-#else
-	fontColor = fontColTbl[0];
-#endif
+	start = fontColor = fontColTbl[0];
 	fontAlpha = alpha;
-	fontScale = vec3_802c48c0;
+	start.a = (start.a * alpha) / 255;
+	fontScale = (Vec){1.0f, 1.0f, 1.0f};
 	fontEdge = FALSE;
 	JUTFont_DrawStart(start);
 }
@@ -335,7 +311,7 @@ void FontDrawString(const char* s, f32 x, f32 y) {
 	u16 w;
 
 	str = s;
-	pos = vec3_802c48cc;
+	pos = (Vec){0.0f, 0.0f, 0.0f};
 	pos.x = x;
 	pos.y = y;
 	pos2 = pos;
@@ -382,7 +358,7 @@ void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 	u16 w;
 
 	str = s;
-	pos = vec3_802c48d8;
+	pos = (Vec){0.0f, 0.0f, 0.0f};
 	pos.x = x;
 	pos.y = y;
 	pos2 = pos;
@@ -456,12 +432,28 @@ void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
 	}
 }
 
-// The s16 first-pair locals give the two separate conversion pairs (x=r27/y=r28 then y=r27/x=r28);
-// the MUST_MATCH `sy + 0` promotion makes MWCC emit the first pair's y extsh that retail has, and the s32
-// second-pair locals (ty declared before tx) get its fctiwz order and register assignment right.
-// NONMATCHING (99.97%): the edge block's `saved` gets r1+0x1c and the restoring FontDrawColor's parameter copy
-// r1+0x18 (retail has them the other way round). Moving the block into a static inline helper, as the sibling
-// functions do, fixes the slots but swaps the first pair's x/y registers (99.86).
+// The StringMtx edge outline, the FontDrawCodeEdge shape with the glyph position: as an inline, `saved` and the
+// restore's by-value copy take retail's stack slots.
+static inline void FontDrawPosEdge(u16 glyph, f32 x, f32 y) {
+	GXColor saved = fontColor;
+
+	FontDrawColorIDX(0);
+#ifdef MUST_MATCH
+	// MUST_MATCH: retail converts x and y once per pair. The `int` and `s32` conversions are two different
+	// expressions to MWCC's CSE, which keeps the pairs apart and numbers the second pair's temps last.
+	_JUTFont_DrawPos(glyph, (s16)x - 2, (int)(s16)y);
+	_JUTFont_DrawPos(glyph, (s16)x + 2, (int)(s16)y);
+	_JUTFont_DrawPos(glyph, (s32)(s16)x, (s32)(s16)y - 2);
+	_JUTFont_DrawPos(glyph, (s32)(s16)x, (s32)(s16)y + 2);
+#else
+	_JUTFont_DrawPos(glyph, (s16)x - 2, (s16)y);
+	_JUTFont_DrawPos(glyph, (s16)x + 2, (s16)y);
+	_JUTFont_DrawPos(glyph, (s16)x, (s16)y - 2);
+	_JUTFont_DrawPos(glyph, (s16)x, (s16)y + 2);
+#endif
+	FontDrawColor(saved);
+}
+
 void FontDrawStringMtx(Mtx mtx, const char* msg) {
 	CameraEntry* cam;
 	Mtx m;
@@ -512,29 +504,7 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 			continue;
 		}
 		if (fontEdge) {
-			GXColor saved = fontColor;
-			s16 sx;
-			s16 sy;
-			s32 ty;
-			s32 tx;
-			FontDrawColorIDX(0);
-			sx = (s16)x;
-			sy = (s16)y;
-#ifdef MUST_MATCH
-			// MUST_MATCH: `sy + 0` promotes the s16 to int, which makes MWCC emit the extsh on the
-			// first pair's y that retail has. Writing sy as s32 (the natural form) makes MWCC CSE the
-			// second pair's conversions and shrink the frame; `+ 0` is a no-op.
-			_JUTFont_DrawPos(glyph, sx - 2, sy + 0);
-			_JUTFont_DrawPos(glyph, sx + 2, sy + 0);
-#else
-			_JUTFont_DrawPos(glyph, sx - 2, sy);
-			_JUTFont_DrawPos(glyph, sx + 2, sy);
-#endif
-			tx = (s16)x;
-			ty = (s16)y;
-			_JUTFont_DrawPos(glyph, tx, ty - 2);
-			_JUTFont_DrawPos(glyph, tx, ty + 2);
-			FontDrawColor(saved);
+			FontDrawPosEdge(glyph, x, y);
 		}
 		_JUTFont_DrawPos(glyph, (s16)x, (s16)y);
 		x += (f32)(charspace[gp->language] + *(u8*)((u8*)FontGetWidthPtr(glyph) + 1));
@@ -778,7 +748,6 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 // Icon scalars hoisted to function scope (MUST_MATCH). The unit's int->float pool order comes from
 // _JUTFont_DrawPos, the first function emitted, where retail converts blk->cellheight (unsigned) before any signed
 // value: starting it with `fheight = (f32)blk->cellheight;` makes this function 100% but drops _JUTFont_DrawPos to ~61.
-// NONMATCHING (99.99%): only the two .rodata int->float doubles are swapped (0x48/0x50); see above.
 void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 	CameraEntry* cam;
 	Mtx m;
@@ -1209,37 +1178,35 @@ void JUTFont_DrawStart(GXColor color) {
 	GXSetTexCoordGen2(GX_TEXCOORD0, GX_TG_MTX2x4, GX_TG_TEX0, GX_TEXMTX0, GX_FALSE, GX_PTIDENTITY);
 	GXLoadPosMtxImm(camera->view, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
-	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, unk_80422fd8);
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){ 0, 0, 0, 0 });
 }
 
-// NONMATCHING (91.70%): frame (0x140), stack slots, pool order and every callee-saved register match retail.
 // Passing the hue colour by value through fontHSV2RGB gives retail's four per-call copies; `scale` is a local so
 // the `fmuls` by 1.0f survive; xr/ty0 are ints narrowed later into xr2/ty02, which gives retail's raw first use
-// and masked/sign-extended later uses; hueL/hueR are named ints so they take retail's registers.
-// Still different: retail loads the 1.0f constant and does fheight's fsubs later in the prologue, has a
-// `mr r0, r31` before the ty1 conversion, and orders a few loads/stores in the last two vertices differently.
+// and masked/sign-extended later uses; hueL/hueR are named ints so they take retail's registers. ty1 converts
+// `(u16)ty0` again: MWCC's post-allocation CSE finds ty02's mask still in r31 and copies it (retail's `mr r0, r31`).
 static inline u32 fontHSV2RGB(GXColor hsv) {
 	return HSV2RGB(&hsv);
 }
 
 void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	u16 ty1;
+	u16 ty02;
 	s16 xr2;
 	s32 hueR;
 	u8 hueoff;
 	s16 ys;
 	s32 xr;
-	u8* info = (u8*)FontGetWidthPtr(code);
 	s32 hueL;
 	u16 tx0;
-	u8 nx1;
-	u8 ny1;
-	s32 yy;
 	u8 n1;
-	u8 n2;
+	u8* info = (u8*)FontGetWidthPtr(code);
+	u8 ny1;
+	u8 nx1;
 	u16 tx1;
-	u16 ty02;
 	s16 yb;
+	s32 yy;
+	u8 n2;
 	s32 xs;
 	s32 ty0;
 	BinaryFontGlyph* blk = blockGlyph;
@@ -1259,9 +1226,9 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	yy %= blk->sheetcolumns;
 	fheight = blk->cellheight;
 	xoffs = (f32)xx * blk->cellwidth + info[0];
-	fheightS = fheight * scale;
 	fwidth = info[1];
 	fwidthS = width * scale;
+	fheightS = fheight * scale;
 
 	GXBegin(GX_QUADS, GX_VTXFMT0, 4);
 	n1 = irand(64);
@@ -1282,8 +1249,7 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	xr2 = xr;
 	GXColor4u8(rgb.r, rgb.g, rgb.b, rgb.a);
 	tx0 = (s32)xoffs;
-	GXTexCoord2u16(tx0, ty0);
-	ty02 = ty0;
+	GXTexCoord2u16(tx0, ty02 = ty0);
 	GXTexCoord2u8(n1, n2);
 
 	GXPosition3s16(xr, ys, 0);
@@ -1294,16 +1260,16 @@ void _JUTFont_DrawPos(u16 code, s16 x, s16 y) {
 	GXColor4u8(rgb.r, rgb.g, rgb.b, rgb.a);
 	tx1 = (s32)(xoffs + fwidth);
 	nx1 = (s32)(n1 + fwidthS);
-	yb = (s32)(ys - fheightS);
 	GXTexCoord2u16(tx1, ty02);
 	GXTexCoord2u8(nx1, n2);
+	yb = (s32)(ys - fheightS);
 
 	GXPosition3s16(xr2, yb, 0);
 	hsv.r = hueR;
 
 	*(u32*)&rgb = fontHSV2RGB(hsv);
 	GXColor4u8(rgb.r, rgb.g, rgb.b, rgb.a);
-	ty1 = (s32)(ty02 + fheight);
+	ty1 = (s32)((u16)ty0 + fheight);
 	ny1 = (s32)(n2 + fheightS);
 	GXTexCoord2u16(tx1, ty1);
 	GXTexCoord2u8(nx1, ny1);

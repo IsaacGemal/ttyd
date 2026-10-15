@@ -7275,3 +7275,30 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   99.21; function-scope `stream` 99.43-99.87; a `u8` pan copy inside the macro breaks SoundSSSetPanCh (96) and four
   functions that inline it; inline-body candidate plus cast 99.38 (needs pragmas); mwsearch reported the same baseline
   for two different variants (unusable here).
+
+### fontmgr LINKED: _JUTFont_DrawPos 91.70, FontDrawStart_alpha 60.40, FontDrawStart 95.06, FontDrawStringMtx 99.97 -> 100, 37/37 (Claude Opus 5.5, on6-fontmgr)
+- **A `mr` in retail where ours has none can be MWCC's CSE after register allocation.** If a value is recomputed while
+  an earlier computation still sits in a register, the recomputation becomes a copy. In DrawPos,
+  `ty1 = (s32)((u16)ty0 + fheight)` sits next to ty02 assigned inside the first texcoord call
+  (`GXTexCoord2u16(tx0, ty02 = ty0)`, which keeps ty02 from being propagated away), and that gives retail's
+  `mr r0, r31`. Then a rasim declaration search, `fheightS` after `fwidthS` (fixes the 1.0f load and FPRs), and `yb`
+  after the vertex-2 texcoords.
+- **Named vec3 objects to compound literals:** `fontScale = (Vec){1,1,1}` takes Start_alpha from 60.40 to 100, and
+  `.rodata` is identical once all three are literals. Retail has only one {1,1,1} template, so FontDrawStart is
+  `FontDrawStart_alpha(0xFF)`. Its last register rotation needed the 0xFF created before the alpha divide (rasim
+  `--key`). Of 240 statement orders, only `start = fontColor = fontColTbl[0]; fontAlpha = alpha; start.a = ...` (or
+  with fontAlpha first) matches all three contexts. The chained assignment also removes the MUST_MATCH word copy that
+  kept the frame at 0x10.
+- **StringMtx:** the edge block as a `FontDrawPosEdge(glyph, x, y)` inline gives retail's saved/restore slots. The first
+  pair's x/y swap was a numbering question, not an interference edge: the second pair's y has to be a CSE temp
+  created after the first pair's. `(int)(s16)y` in the first pair and `(s32)(s16)` in the second are separate CSE
+  expressions (MUST_MATCH).
+- `unk_80422fd8` (.sbss2) becomes `(GXColor){0,0,0,0}`. Stale NONMATCHING notes removed.
+- **Link test before data work** (on6-baud, battle_audience): objdiff's matched_data counts a section only at 100%, and
+  a section that differs only in the linker's tail alignment pad after the last pooled literal reads as unmatched
+  (battle_audience showed 40.8% while byte-identical at link; 551 of 1217 complete units show the artefact). Flip the
+  unit to Matching, run link_diag and compare the dol before porting data.
+- Negatives: ty02 types/casts 82.7-93.4; running texcoord copies 89-91.7; Start_alpha multiply spellings, int local,
+  alpha inline: no change; natural struct copy 61.7 (frame 0x20); FontDrawStart argument spellings 98.47;
+  opt_propagation off 75.9; StringMtx 4-call bodies 88-94; saved scope/`*&saved` 99.97. sched750 doesn't model blocks
+  containing `bl`.
