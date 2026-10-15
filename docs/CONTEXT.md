@@ -7315,3 +7315,16 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 - Left: probes 2-4 have 18/38 instructions in order. Retail does every z-chain step (template load, copy store, argument
   load) before x's, as if x's chain were one step shorter (passing `x` as the first argument reproduces it). A volatile
   view of the position reads matches probe 1's first 6 (82.52), diagnostic only. mwsearch 40 min: 80.124.
+
+### mri_puni: puniMapFindbuff 90.57 -> 97.29, evt_puni_exit 94.58 -> 98.37, evt_puni_all_save 89.23 -> 96.79 (Claude Opus 5.5, on6-mripuni)
+- Explicit `& 0xFF` low-byte masks in `puniswSetindex` (keeping the s16 two-statement highs): the standalone stays 100;
+  the inlined copies improve (all_save call form 86.63 -> 96.22, exit 94.58 -> 98.37).
+- all_save rewritten as two plain Setindex calls (the shape evt_puni_exit uses); the hand-inlined version and its
+  MUST_MATCH hack are deleted. `s32 i;` declared before `puni`: 96.79.
+- puniMapFindbuff neighbour pointers `&buf[i - w]` (add propagation folds the adds into lhzx/sthx): 90.57 -> 96.72;
+  `id != (cur & 0xFFF)` plus a rasim declaration order: 97.29.
+- Hard negatives: u8 casts on the highs fix the inlined Setindex but break the standalone (~60 spellings); PuniChildHagure:
+  retail numbers inlined child nodes in code order, ours level by level, and the only near-fix (98.36) is
+  `#pragma inline_depth(5)` (not kept); unk_mri_000095f0 is a scheduling gap (mwsearch 1632 compiles, 0 improvements);
+  evt_puni_exit declaration orders have no effect. Next: one puniswSetindex spelling that is 100 standalone and gives
+  retail's inlined register order (rasim what-if on the inlined dump).
