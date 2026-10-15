@@ -6,20 +6,6 @@ typedef struct HitEntry HitEntry;
 
 #include <dolphin/types.h>
 
-extern const f32 float_18p5_8041a7ec;
-extern const f32 float_0p265_8041a7f4;
-extern const f32 float_0p01_8041a854;
-extern const f32 float_neg10000_8041a858;
-extern const f32 float_0p425_8041a864;
-extern const f32 float_0p375_8041a868;
-extern const f32 float_2_8041a7e8;
-extern const f32 float_10_8041a7fc;
-extern const f64 double_0p5_802c5928;
-extern const f64 double_3_802c5930;
-extern const f64 double_0_802c5938;
-extern const Vec vec3_802c57a8;
-extern const Vec vec3_802c57b4;
-
 struct HitEntry;
 
 BOOL marioChkBero(struct HitEntry* hit);
@@ -54,18 +40,7 @@ void marioCheckWall_roll(f32 a, f32 b);
 void marioChkToge(void);
 HitEntry* N_dou10_yoko_yari3(void* unused);
 void marioHitCheckWidth(void);
-extern const f32 float_0p25_8041a7d4;
 #include "driver/hitdrv.h"
-extern const f32 float_0p75_8041a7d8;
-extern const f32 float_3p1416_8041a7e0;
-extern const f32 float_180_8041a7cc;
-extern const f32 float_neg1_8041a7dc;
-extern const f32 float_100_8041a7f8;
-extern const Vec vec3_802c5730;
-extern const Vec vec3_802c5748;
-extern const Vec vec3_802c573c;
-extern const f32 float_8p64_8041a85c;
-extern const f32 float_105_8041a860;
 BOOL chkfilterVecVivian(HitCheckQuery* query, HitEntry* entry);
 BOOL chkfilterVecRoll(HitCheckQuery* query, HitEntry* entry);
 BOOL chkfilterVec(HitCheckQuery* query, HitEntry* entry);
