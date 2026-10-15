@@ -3,6 +3,7 @@
 #include "driver/icondrv.h"
 #include "mario/mario.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "memory.h"
 
 #include <dolphin/gx.h>

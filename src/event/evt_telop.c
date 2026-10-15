@@ -7,6 +7,7 @@
 #include "driver/swdrv.h"
 #include "driver/msgdrv.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "mario/mariost.h"
 #include "system.h"
 #include <string.h>

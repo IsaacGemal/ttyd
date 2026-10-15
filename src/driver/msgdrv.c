@@ -8,6 +8,7 @@
 #include "driver/windowdrv.h"
 #include "manager/dvdmgr.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "mario/mariost.h"
 #include "pmario_sound.h"
 #include "memory.h"
@@ -464,7 +465,7 @@ extern const f32 float_0p3_8041a528;
 #pragma pool_data on // the original addresses its .rodata through one base register
 #ifdef MUST_MATCH
 // MUST_MATCH: retail passes these colours by value (MWCC copies the GXColor to a stack temp and passes
-// its address to FontDrawColor). The header declares a pointer, so the natural call is FontDrawColor(&c)
+// its address to FontDrawColor). This file declares it with a pointer, so the natural call is FontDrawColor(&c)
 // and it does not copy.
 static inline void msgDrawColor(GXColor color) {
 	FontDrawColor(&color);

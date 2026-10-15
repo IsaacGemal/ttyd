@@ -8,6 +8,7 @@
 #include "driver/icondrv.h"
 #include "driver/windowdrv.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "sdk/texPalette.h"
 #include "win/win_main.h"
 #include "window/win_mario.h"
@@ -947,7 +948,7 @@ static inline Vec loadDrawVecY(f32 y, Vec base) {
 }
 
 // Retail passes these colours by value (MWCC copies the GXColor to a stack temp and passes its
-// address to FontDrawColor); the header declares a pointer, so a plain FontDrawColor(&global) does
+// address to FontDrawColor); this file declares it with a pointer, so a plain FontDrawColor(&global) does
 // not copy. Taking the colour by value forces the copy in both builds.
 static inline void loadDrawColor(GXColor color) {
     FontDrawColor(&color);

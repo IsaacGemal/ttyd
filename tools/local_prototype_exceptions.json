@@ -1,6 +1,11 @@
 [
  {
   "path": "*",
+  "name": "FontDrawColor",
+  "reason": "fontmgr.c defines it with the colour by value (its own inlined copies and the out-of-line body need that), but most of the original's callers pass the address of a local without copying; declare it the way your file's asm calls it."
+ },
+ {
+  "path": "*",
   "name": "psndSFXOnEx_3D",
   "reason": "the definition takes s32 arguments, but the original's callers pass u8/u16 widths; declare it with the widths your file's asm passes."
  },

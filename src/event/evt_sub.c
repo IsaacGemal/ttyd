@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include "statuswindow.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "mario/mario_motion.h"
 #include "driver/msgdrv.h"
 #include "mario/mario_cam.h"

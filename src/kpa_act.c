@@ -9,6 +9,7 @@
 #include "manager/evtmgr_cmd.h"
 #include "driver/dispdrv.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "memory.h"
 #include "mario/mario.h"
 #include "mario/mario_pouch.h"

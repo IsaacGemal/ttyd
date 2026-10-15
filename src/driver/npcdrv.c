@@ -23,6 +23,7 @@
 #include "memory.h"
 #include "system.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "driver/windowdrv.h"
 #include <string.h>
 #include "koopa.h"

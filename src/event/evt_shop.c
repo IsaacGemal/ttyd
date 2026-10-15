@@ -1,4 +1,5 @@
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "evt/evt_shop.h"
 #include "evt/evt_case.h"
 #include "mario/mariost.h"

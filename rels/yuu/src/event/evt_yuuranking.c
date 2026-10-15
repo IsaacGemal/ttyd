@@ -7,6 +7,7 @@
 #include "driver/windowdrv.h"
 #include "manager/evtmgr_cmd.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "memory.h"
 #include "pmario_sound.h"
 #include "system.h"

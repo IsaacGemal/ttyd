@@ -19,6 +19,7 @@
 #include "driver/windowdrv.h"
 #include "eff/eff_starstone.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "mario/mario_pouch.h"
 #include "math_trig.h"
 #include "pmario_sound.h"

@@ -8,6 +8,7 @@
 #include "pmario_sound.h"
 #include "driver/icondrv.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "driver/msgdrv.h"
 #include "memory.h"
 #include "system.h"

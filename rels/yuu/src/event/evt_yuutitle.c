@@ -5,6 +5,7 @@
 #include "driver/msgdrv.h"
 #include "manager/evtmgr_cmd.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "memory.h"
 
 #pragma pool_data off

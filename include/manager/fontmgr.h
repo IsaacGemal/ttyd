@@ -90,7 +90,6 @@ void FontDrawStart(void);
 void FontDrawStart_alpha(u8 alpha);
 void FontDrawEdge(void);
 void FontDrawEdgeOff(void);
-void FontDrawColor(GXColor* color);
 void FontDrawString(const char* str, f32 x, f32 y);
 void FontDrawStringShake(const char* str, f32 x, f32 y);
 
