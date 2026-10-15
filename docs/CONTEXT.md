@@ -7188,3 +7188,18 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   variants 90.0-93.1. Adjusted byte/word/array/interior pointers and pointer indexing also reach 100.
 - Comparison note: Sol ran at high effort with the full ledger incl. Overnight 3; the two failed Opus runs predated
   the address-folding and lifetime entries.
+
+### npcdrv data port: .rodata/.data/.sdata/.sdata2/.sbss all match (64/73 unchanged) (Claude Opus 5.5, on5-npcdrv2)
+- .data (776 B identical): the three majinai scripts (evt_majinai_effect_se_fld/_btl, _evt_majinai_coin_up_effect) as
+  EVT_BEGIN scripts with inline strings, replacing 12 named str_802C... constants in the same .rodata places;
+  battle_mario's extern now resolves here; 4-byte `gap_05_8030543C_data` tail via explicit_zero_data + force_active
+  (battle_event_default pattern). .sdata: MarioStayPose "KPA_S_1"/MarioTalkPose "KPA_T_1" defined here. .sbss:
+  reversed declarations plus force_active `gap_08_804186C4_sbss` (windowdrv pattern).
+- .sdata2 (order and values identical; the last 4-byte zero at +0x1cc presumed linker alignment, confirm at link) via
+  #776 statics defined after their caller: `static void npcSpinHammerPos(Vec* pos, f32 angle, f32 radius)` before the
+  dont_inline block around _npcHitCheckSphere places 15.0f (the extra `m = marioGetPtr()` re-fetch there hints at an
+  original helper; fbatHitCheck 99.35 -> 99.37); `static void fbatFirstAttackAnnounceMain(FieldBattleData* fbat)` after
+  fbatSetAttackAnnounceEnable places -600/600 (a FirstStrikeInfo* parameter drops npcMain to 98.52).
+- Left: fbatBattleMode (rasim what-if: all five registers right if `mario` were an uncombined low-ranked local
+  instead of merging with marioGetPtr()'s result; no spelling found), HammerAllMotion decl orders (3 regs wrong at
+  best; pos.x/y/z direct 98.28), npcHammerPos y-before-z (99.35), npcCheckHitMarioSide `offZ`.

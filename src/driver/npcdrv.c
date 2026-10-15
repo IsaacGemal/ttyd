@@ -6,6 +6,10 @@
 #include "driver/animdrv.h"
 #include "driver/swdrv.h"
 #include "evt/evt_cmd.h"
+#include "evt/evt_mario.h"
+#include "evt/evt_msg.h"
+#include "evt/evt_snd.h"
+#include "battle/battle_event_cmd.h"
 #include "driver/effdrv.h"
 #include "driver/itemdrv.h"
 #include "driver/msgdrv.h"
@@ -46,12 +50,10 @@
 // This file's radians-to-degrees factor is 180/3.141592 (0x42652EE4), not the SDK's 57.29577951f.
 #define NPC_RAD2DEG(r) ((r) * (180.0f / 3.141592f))
 
-extern char _evt_majinai_coin_up_effect[];
+extern s32 _evt_majinai_coin_up_effect[];
 
 extern GlobalWork* gp;
 extern NpcTribeInfo npcTribe[];
-extern char MarioStayPose[32];
-extern char MarioTalkPose[32];
 // This unit's float rodata (the names are the original .sdata2 symbols). Naming the constants lets MWCC
 // hoist the inlined sin/cos coefficient loads once per instance as retail does; the natural literals are
 // under the #else.
@@ -97,6 +99,8 @@ int __float_nan[];
 
 // Prototypes for the forward references the original function order needs.
 static inline void npcHammerPos(Vec* pos, f32 frame, f32 angle, f32 radius);
+static void npcSpinHammerPos(Vec* pos, f32 angle, f32 radius);
+static void fbatFirstAttackAnnounceMain(FieldBattleData* fbat);
 
 static inline s32 __fpclassifyf(f32 x) {
     switch (*(s32*)&x & 0x7F800000) {
@@ -151,11 +155,21 @@ char* luigi_pose[14][2] = { { "Z_1", "Z_1R" }, { "S_1", "S_1R" },   { "W_1", "W_
                             { "S_2", "S_2R" }, { "T_2", "T_2R" },   { "L_1", "L_1R" },   { "L_2", "L_2R" },
                             { "L_3", "L_3R" }, { "I_1", "I_1R" } };
 
+char MarioStayPose[32] = "KPA_S_1";
+char MarioTalkPose[32] = "KPA_T_1";
+
 //.sbss
-BOOL dbg_battleskip;
-u32 npcMainCount;
-NpcFieldEntry* release_wp;
+// MUST_MATCH: MWCC emits uninitialised globals in reverse declaration order.
+#ifdef MUST_MATCH
+// Keep the original section tail even though no code references it.
+#pragma force_active on
+static u32 gap_08_804186C4_sbss;
+#pragma force_active reset
+#endif
 static NpcWork2 work;
+NpcFieldEntry* release_wp;
+u32 npcMainCount;
+BOOL dbg_battleskip;
 
 // local prototypes
 
@@ -1063,7 +1077,6 @@ void npcMain(void) {
     NpcWork* npcwork;
     NpcEntry* entry;
     FieldBattleData* fbat;
-    FirstStrikeInfo* strike;
     EventEntry* evt;
     MarioWork* mario;
     s32 total;
@@ -1431,39 +1444,8 @@ void npcMain(void) {
         entry->jumpFlags &= ~0x10;
     }
 
-    // The first strike announcement: slide in, hold, slide out (type 2); or a fixed 60-frame banner (type 1).
     fbat = gp->fbatData;
-    strike = &fbat->firstStrike;
-    if (strike->enabled) {
-        switch (strike->type) {
-            case 2:
-                strike->field_0xC++;
-                if ((s32)strike->field_0xC < 20) {
-                    strike->field_0x10 = intplGetValue(5, strike->field_0xC, 20, (-600.0f), 0.0f);
-                } else if ((s32)strike->field_0xC < 80) {
-                    strike->field_0x10 = 0.0f;
-                } else if ((s32)strike->field_0xC < 100) {
-                    strike->field_0x10 =
-                        intplGetValue(1, strike->field_0xC - 80, 20, 0.0f, 600.0f);
-                } else {
-                    strike->field_0x4 = 0;
-                    break;
-                }
-                strike->field_0x14 = 0.0f;
-                dispEntry(CAMERA_FADE, 0.0f, 2, _fbatFirstAttackAnnouceDisp, strike);
-                break;
-            case 1:
-                strike->field_0xC++;
-                if ((s32)strike->field_0xC > 60) {
-                    strike->field_0x4 = 0;
-                } else {
-                    strike->field_0x10 = 0.0f;
-                    strike->field_0x14 = 0.0f;
-                    dispEntry(CAMERA_FADE, 0.0f, 2, _fbatFirstAttackAnnouceDisp, strike);
-                }
-                break;
-        }
-    }
+    fbatFirstAttackAnnounceMain(fbat);
 
     switch (fbat->mode) {
         case 1: {
@@ -2147,6 +2129,42 @@ void fbatSetAttackAnnounce(s32 a1) {
 
 void fbatSetAttackAnnounceEnable(void) {
     gp->fbatData->firstStrike.enabled = TRUE;
+}
+
+// The first strike announcement: slide in, hold, slide out (type 2); or a fixed 60-frame banner (type 1).
+static void fbatFirstAttackAnnounceMain(FieldBattleData* fbat) {
+    FirstStrikeInfo* strike = &fbat->firstStrike;
+
+    if (strike->enabled) {
+        switch (strike->type) {
+            case 2:
+                strike->field_0xC++;
+                if ((s32)strike->field_0xC < 20) {
+                    strike->field_0x10 = intplGetValue(5, strike->field_0xC, 20, (-600.0f), 0.0f);
+                } else if ((s32)strike->field_0xC < 80) {
+                    strike->field_0x10 = 0.0f;
+                } else if ((s32)strike->field_0xC < 100) {
+                    strike->field_0x10 =
+                        intplGetValue(1, strike->field_0xC - 80, 20, 0.0f, 600.0f);
+                } else {
+                    strike->field_0x4 = 0;
+                    break;
+                }
+                strike->field_0x14 = 0.0f;
+                dispEntry(CAMERA_FADE, 0.0f, 2, _fbatFirstAttackAnnouceDisp, strike);
+                break;
+            case 1:
+                strike->field_0xC++;
+                if ((s32)strike->field_0xC > 60) {
+                    strike->field_0x4 = 0;
+                } else {
+                    strike->field_0x10 = 0.0f;
+                    strike->field_0x14 = 0.0f;
+                    dispEntry(CAMERA_FADE, 0.0f, 2, _fbatFirstAttackAnnouceDisp, strike);
+                }
+                break;
+        }
+    }
 }
 
 // The first-strike banner: a frame jittered by up to 4 units, with the message drawn inside it.
@@ -3135,10 +3153,8 @@ void* fbatHitCheck(s32 flags, s32 out) {
             if (flags & 1) {
                 f32 angle;
                 f32 radius;
-                f32 s, c;
-                f32 x, y, z;
+                Vec pos;
                 u32 flag8;
-                MarioWork* m;
 
                 if (mario->currMotionId != 0x13) {
                     break;
@@ -3148,12 +3164,8 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     break;
                 }
                 radius = 1.5f * mario->wPlayerCollisionBox.x;
-                m = marioGetPtr();
-                sincosf(&s, &c, angle);
+                npcSpinHammerPos(&pos, angle, radius);
                 flag8 = flags & 0x1000;
-                x = s * radius + m->position.x;
-                z = c * radius + m->position.z;
-                y = 15.0f + m->position.y;
                 npc = npcWork->entries;
                 for (i = 0; i < count; i++, npc++) {
                     if (npc == NULL || !(npc->flags & 2)) {
@@ -3173,7 +3185,7 @@ void* fbatHitCheck(s32 flags, s32 out) {
                         || (npc->flags & 0x08000000)) {
                         continue;
                     }
-                    if (_npcHitCheckSphere(npc, &dist, x, y, z, 12.0f) == NULL || dist >= info.dist) {
+                    if (_npcHitCheckSphere(npc, &dist, pos.x, pos.y, pos.z, 12.0f) == NULL || dist >= info.dist) {
                         continue;
                     }
                     info.dist = dist;
@@ -3383,6 +3395,17 @@ void* fbatHitCheck(s32 flags, s32 out) {
 
 #pragma force_active on
 #pragma force_active reset
+
+// The spin hammer's head: `radius` out from Mario at `angle`, 15 units up.
+static void npcSpinHammerPos(Vec* pos, f32 angle, f32 radius) {
+    MarioWork* m = marioGetPtr();
+    f32 s, c;
+
+    sincosf(&s, &c, angle);
+    pos->x = s * radius + m->position.x;
+    pos->z = c * radius + m->position.z;
+    pos->y = 15.0f + m->position.y;
+}
 
 // dont_inline: retail calls _npcHitCheckSphere from fbatHitCheck (4 sites) instead of inlining it.
 #pragma dont_inline on
@@ -3913,18 +3936,63 @@ void npcGetBackItemEntry(NpcEntry* entry) {
     }
 }
 
-const char str_802C2FC8[] = "SFX_EVT_FLD_INCANT_CUBE1";
-const char str_802C2FE4[] = "SFX_EVT_FLD_INCANT_CUBE2";
-const char str_802C3000[] = "SFX_EVT_FLD_INCANT_CUBE3";
-const char str_802C301C[] = "SFX_EVT_FLD_INCANT_CUBE4";
-const char str_802C3038[] = "SFX_EVT_FLD_INCANT_CUBE5";
-const char str_802C3054[] = "SFX_EVT_BTL_INCANT_CUBE1";
-const char str_802C3070[] = "SFX_EVT_BTL_INCANT_CUBE2";
-const char str_802C308C[] = "SFX_EVT_BTL_INCANT_CUBE3";
-const char str_802C30A8[] = "SFX_EVT_BTL_INCANT_CUBE4";
-const char str_802C30C4[] = "SFX_EVT_BTL_INCANT_CUBE5";
-const char str_802C30E0[] = "msg_mj_coin_up";
-const char str_802C30F0[] = "msg_mj_last";
+EVT_BEGIN(evt_majinai_effect_se_fld)
+    CALL(btlevtcmd_ftomsec, 29, LW(10))
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_FLD_INCANT_CUBE1"), LW(0), LW(1), LW(2), 0)
+    CALL(btlevtcmd_ftomsec, 200, LW(10))
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_FLD_INCANT_CUBE2"), LW(0), LW(1), LW(2), 0)
+    CALL(btlevtcmd_ftomsec, 90, LW(10))
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_FLD_INCANT_CUBE3"), LW(0), LW(1), LW(2), 0)
+    CALL(btlevtcmd_ftomsec, 80, LW(10))
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_FLD_INCANT_CUBE4"), LW(0), LW(1), LW(2), 0)
+    CALL(btlevtcmd_ftomsec, 5, LW(10))
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_FLD_INCANT_CUBE5"), LW(0), LW(1), LW(2), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(evt_majinai_effect_se_btl)
+    CALL(btlevtcmd_ftomsec, 29, LW(10))
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_BTL_INCANT_CUBE1"), LW(0), LW(1), LW(2), 0)
+    CALL(btlevtcmd_ftomsec, 200, LW(10))
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_BTL_INCANT_CUBE2"), LW(0), LW(1), LW(2), 0)
+    CALL(btlevtcmd_ftomsec, 90, LW(10))
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_BTL_INCANT_CUBE3"), LW(0), LW(1), LW(2), 0)
+    CALL(btlevtcmd_ftomsec, 80, LW(10))
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_BTL_INCANT_CUBE4"), LW(0), LW(1), LW(2), 0)
+    CALL(btlevtcmd_ftomsec, 5, LW(10))
+    WAIT_MS(LW(10))
+    CALL(evt_snd_sfxon_3d, STRING("SFX_EVT_BTL_INCANT_CUBE5"), LW(0), LW(1), LW(2), 0)
+    RETURN
+EVT_END()
+
+EVT_BEGIN(_evt_majinai_coin_up_effect)
+    CALL(evt_mario_get_pos, 0, LW(0), LW(1), LW(2))
+    SPAWN_EVENT(evt_majinai_effect_se_fld)
+    CALL(_majinai_effect)
+    CALL(evt_msg_print, 0, STRING("msg_mj_coin_up"), 0, 0)
+    CALL(_check, LW(0))
+    IF_INT_NOT_EQUAL(LW(0), 0)
+        CALL(evt_msg_print, 0, STRING("msg_mj_last"), 0, 0)
+    END_IF
+    RETURN
+EVT_END()
+
+// The 4-byte zero word that ends the unit's .data: an all-zero object needs explicit_zero_data to be emitted and
+// force_active to survive the linker.
+#pragma explicit_zero_data on
+#pragma force_active on
+__declspec(section ".data") u32 gap_05_8030543C_data = 0;
+#pragma force_active reset
+#pragma explicit_zero_data reset
 
 void npcClearDeadInfo(void) {
     memset(gp->fbatData->deadInfo, 0, 0x500);
