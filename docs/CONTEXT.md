@@ -7203,3 +7203,19 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 - Left: fbatBattleMode (rasim what-if: all five registers right if `mario` were an uncombined low-ranked local
   instead of merging with marioGetPtr()'s result; no spelling found), HammerAllMotion decl orders (3 regs wrong at
   best; pos.x/y/z direct 98.28), npcHammerPos y-before-z (99.35), npcCheckHitMarioSide `offZ`.
+
+### animdrv partial: animPoseSetPaperAnimGroup 98.95 -> 100 (64/73), renderProc 96.85 (Claude Opus 5.5, on5-animdrv2)
+- **Pointer from an inlined getter numbers late:** `AnimationPose* pose = animPoseGetAnimPosePtr(poseId);` (the file's
+  own getter) makes `pose` a compiler temp numbered after the search helper's temps: retail's r27, not r30 (rasim search
+  on the mwccdbg dump showed pose had to number after the inline temps; kin to #798). `type`/`i`/`j` removed:
+  `pose->paperId = animPaperPoseSearchGroup(pose->type, animName);` then the group-2 fallback.
+- renderProc 96.55 -> 96.85: per-vertex texcoord loop as `static inline renderProc_TexCoords(texCount, texIds, firstId,
+  firstDrawId, texIndex)` with its own counter `l` (#783), address `((u32*)(texEntryPtr + texIndex))[firstDrawId +
+  firstId[index]]`, renderProc_ChangeTexture decls bind, bindCount, texAnim, texEntry, texCount (best of 120).
+- Negatives: the getter at other `&wp->poses[...]` sites (nothing); real animPoseGetBaseData inline (DrawMtx 99.27, needs
+  an unnatural `(animPoseGetBaseData)(p)` spelling); renderProc multi-texture loop helper 95.94, per-draw-call 96.22,
+  single-texture 96.48, own draw-loop counter +0.02, 6 index spellings for `lbz -0x1(base)`; Texture first loop as a
+  helper won't inline (46.94), per-texture load helper 98.75; MakeExtTexture `top` in the helper 99.83; DispSub max
+  helper 98.74; DrawShape differs only in volatile regs. Next: renderProc keeps separate copies of texIds (r26) and
+  texCount (r27) in the multi-texture branch, suggesting an inline helper with those as parameters at a boundary
+  between the per-draw-call body and the whole loop.

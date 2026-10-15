@@ -734,27 +734,18 @@ s32 animPaperPoseGetId(const char* animName, s32 group) {
     return i;
 }
 
-// NONMATCHING (98.95%): instructions and immediates match, only the callee-saved colouring differs
-// (target pose r27/someflag r30/search index r29/offset r26; here r30/r29/r28/r27). Declaring `type`
-// as `int` folds it into the call argument and drops one web; the rest has no source lever.
 void animPoseSetPaperAnimGroup(s32 poseId, const char* animName, BOOL someflag) {
     s32 poseOffset = poseId * 0x170;
-    int type;
-    s32 i;
-    s32 j;
-    AnimationPose* pose = &wp->poses[poseId];
+    AnimationPose* pose = animPoseGetAnimPosePtr(poseId);
 
     if (animName == NULL) {
         pose->paperId = -1;
         ((AnimationPose*)((u8*)wp->poses + poseOffset))->materialLightFlag &= ~1;
         return;
     }
-    type = pose->type;
-    i = animPaperPoseSearchGroup(type, animName);
-    pose->paperId = i;
+    pose->paperId = animPaperPoseSearchGroup(pose->type, animName);
     if (pose->paperId < 0) {
-        j = animPaperPoseSearchGroup(2, animName);
-        pose->paperId = j;
+        pose->paperId = animPaperPoseSearchGroup(2, animName);
     }
     *(s32*)((u8*)pose + 0x94) = -1;
     pose->mLocalTimeInit = animTimeGetTime(pose->type);
@@ -2137,9 +2128,10 @@ void materialProc(s32 shapeId, s32 field_0x28) {
 static inline BOOL renderProc_ChangeTexture(AnimationPoseData* data, AnimPoseShapeDraw* draw, AnimationPose* pose,
                                             GXTexObj* texObj, void** texData, Mtx mtx, s32 texType) {
     AnimTexBind* bind;
-    AnimPoseTexEntry* texEntry;
+    s32 bindCount;
     AnimTexMtx* texAnim;
-    s32 bindCount, texCount;
+    AnimPoseTexEntry* texEntry;
+    s32 texCount;
     s32 dataId, bindId, frameExt, idx;
     GXTexObj* smartObj;
     int i;
@@ -2180,6 +2172,20 @@ static inline BOOL renderProc_ChangeTexture(AnimationPoseData* data, AnimPoseSha
     return FALSE;
 }
 
+static inline void renderProc_TexCoords(s32 texCount, s8* texIds, s32* firstId, s32 firstDrawId, s32 texIndex) {
+    u8* texEntryPtr;
+    s32 index;
+    int l;
+
+    for (l = 0; l < texCount; l++) {
+        index = texIds[texCount - l - 1];
+        // The header types texIndex as u16*, but retail loads a full word (lwzx) and stores its low half; the
+        // pointer is a byte base and texIndex is the byte offset into the entry, stepping 4 per vertex.
+        texEntryPtr = (u8*)wp->mpCurPoseData->texIndex[index];
+        GXTexCoord1x16(((u32*)(texEntryPtr + texIndex))[firstDrawId + firstId[index]]);
+    }
+}
+
 // I'm so sorry, whoever gets tasked with matching this function
 // note: I detect at least 8 inlined functions here.
 // All calls (64), constants and byte offsets match; the inner `l` vertex loop's `<` trip-count spelling makes the
@@ -2192,16 +2198,15 @@ static inline BOOL renderProc_ChangeTexture(AnimationPoseData* data, AnimPoseSha
 // and the draw-call scratch in r20..r27; this build lands them in r23/r22 and r15..r21. The non-register
 // remainder is retail's folded `lbz -0x1(base)` for texIds[texCount-l-1] (this build emits `subi` + a
 // byte-indexed `lbzx`) and one `ble`/`beq` unroll guard (the `k1` loop emits `beq` where retail has `ble`).
-// NONMATCHING (96.55%): all calls, constants and offsets match; only callee-saved register colouring differs.
+// NONMATCHING (96.85%): all calls, constants and offsets match; only callee-saved register colouring differs.
 void renderProc(s32 shapeId, s32 field_0x28) {
     s32 dispMode, drawId;
     s32 texIndex;
     u16 *posIndexPtr, *nrmIndexPtr, *clr0IndexPtr, *texIndexPtr;
-    u8* texEntryPtr;
     s32 texCount;
     GXTexObj* currTexObj;
     AnimPoseShapeDraw *draws, *draw;
-    int i, j, k, k1, l;
+    int i, j, k, k1;
     f32* buffer;
     s32* firstId;
     AnimDrawCallEntry* drawCall;
@@ -2215,7 +2220,6 @@ void renderProc(s32 shapeId, s32 field_0x28) {
     AnimPoseShape *shapes, *shape;
     GXColor* clr0VtxPtr;
     s32 drawCallCount;
-    s32 index;
     AnimationPose* pose;
     GXTexObj* texObj;
     s32 posFirstVtx, nrmFirstVtx, clr0FirstVtx;
@@ -2416,14 +2420,7 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                             GXPosition1x16(*posIndexPtr);
                             GXNormal1x16(*nrmIndexPtr);
                             GXColor1x16(*clr0IndexPtr);
-                            for (l = 0; l < texCount; l++) {
-                                index = texIds[texCount - l - 1];
-                                // The header types texIndex as u16*, but retail loads a full word (lwzx) and
-                                // stores its low half; the pointer is a byte base and texIndex is the byte offset
-                                // into the entry, stepping 4 per vertex.
-                                texEntryPtr = (u8*)wp->mpCurPoseData->texIndex[index];
-                                GXTexCoord1x16(*(u32*)(texEntryPtr + (firstDrawId + firstId[index]) * 4 + texIndex));
-                            }
+                            renderProc_TexCoords(texCount, texIds, firstId, firstDrawId, texIndex);
                             texIndex += 4;
                             posIndexPtr += 2;
                             nrmIndexPtr += 2;
