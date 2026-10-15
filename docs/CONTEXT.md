@@ -7302,3 +7302,16 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   alpha inline: no change; natural struct copy 61.7 (frame 0x20); FontDrawStart argument spellings 98.47;
   opt_propagation off 75.9; StringMtx 4-call bodies 88-94; saved scope/`*&saved` 99.97. sched750 doesn't model blocks
   containing `bl`.
+
+### party_hit partySearchHead 80.32 -> 80.36 (Claude Opus 5.5, on6-phit)
+- Dead zero template: an unused `Vec n = {0.0f, 0.0f, 0.0f};` in the partyHeadHit inline pools once at .rodata 0x84,
+  replacing the named `vec3_802cd3a4` placeholder (a link blocker: unreferenced named consts are stripped); .rodata and
+  .sdata2 stay 100. vec3_802cd35c is likely the same.
+- Nested `if (hit == NULL)` probes 2-4: +0.04.
+- Hard negatives: function-scoped scheduling/opt/peephole pragmas do nothing (deferred codegen uses the end-of-file
+  state); address-taken px/py/pz -> CSE forwards probe 1 (59.1); by-value Vec 79.91; Vec builders and named templates
+  are IR-identical; 30 x/y/z orders, 120 setup orders, 22 declaration orders, offset spellings, assignment inside the
+  literal, inline argument copies: all <= base.
+- Left: probes 2-4 have 18/38 instructions in order. Retail does every z-chain step (template load, copy store, argument
+  load) before x's, as if x's chain were one step shorter (passing `x` as the first argument reproduces it). A volatile
+  view of the position reads matches probe 1's first 6 (82.52), diagnostic only. mwsearch 40 min: 80.124.
