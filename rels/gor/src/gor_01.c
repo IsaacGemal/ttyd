@@ -67,9 +67,6 @@ extern const Vec vec3_gor_0001602c;
 extern const Vec vec3_gor_00016038;
 extern const Vec vec3_gor_000169f8;
 extern const Vec vec3_gor_00016a04;
-extern const GXColor dat_gor_000154cc;
-extern const GXColor dat_gor_000154d0;
-extern const GXColor dat_gor_000154d4;
 extern s32 evt_gor_villager_urouro_check_func[];
 extern s32 gor_villager_urouro[];
 extern s32 keijiban_data_alloc[];
@@ -2447,20 +2444,10 @@ EVT_BEGIN(luigi_f1_fade_check)
     RETURN
 EVT_END()
 
-const GXColor dat_gor_000154cc = {0, 0, 0, 0xFF};
-const GXColor dat_gor_000154d0 = {0, 0, 0, 0xFF};
-const GXColor dat_gor_000154d4 = {0, 0, 0, 0xFF};
 USER_FUNC(house03_f1_fade_func) {
     s32 value = evtGetValue(event, event->args[0]);
-    GXColor c;
-    GXColor color;
 
-    color = dat_gor_000154cc;
-    color.r = value;
-    color.g = value;
-    color.b = value;
-    c = color;
-    mapGrpSetColor("S_i03_f1_naka", &c);
+    mapGrpSetColor("S_i03_f1_naka", (GXColor){value, value, value, 0xFF});
     return EVT_RETURN_DONE;
 }
 
@@ -2500,23 +2487,9 @@ EVT_BEGIN(luigi_f2_fade_check)
 EVT_END()
 USER_FUNC(house03_f2_fade_func) {
     u8 value = evtGetValue(event, event->args[0]);
-    GXColor c;
-    GXColor color;
-    GXColor c2;
-    GXColor color2;
 
-    color = dat_gor_000154d0;
-    color.r = value;
-    color.g = value;
-    color.b = value;
-    c = color;
-    mapGrpSetColor("S_i03_f2_naka", &c);
-    color2 = dat_gor_000154d4;
-    color2.r = value;
-    color2.g = value;
-    color2.b = value;
-    c2 = color2;
-    mapGrpSetColor("S_ie_03_f21_doa", &c2);
+    mapGrpSetColor("S_i03_f2_naka", (GXColor){value, value, value, 0xFF});
+    mapGrpSetColor("S_ie_03_f21_doa", (GXColor){value, value, value, 0xFF});
     return EVT_RETURN_DONE;
 }
 

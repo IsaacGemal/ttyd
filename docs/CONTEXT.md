@@ -7328,3 +7328,21 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   `#pragma inline_depth(5)` (not kept); unk_mri_000095f0 is a scheduling gap (mwsearch 1632 compiles, 0 improvements);
   evt_puni_exit declaration orders have no effect. Next: one puniswSetindex spelling that is 100 standalone and gives
   retail's inlined register order (rasim what-if on the inlined dump).
+
+### mapdrv partial: 89 -> 95/101 (Claude Opus 5.5, on6-mapdrv)
+- By-value GXColor for mapSetFog/mapGrpSetColor (100); callers stay 100 with `(GXColor){...}` at the call
+  (battle_stage_object, tik_00, gor_01; three named gor colours gone), a returning inline (evt_map, MUST_MATCH) and a
+  MUST_MATCH pointer cast (mri hakari_color, the least natural of the caller fixes).
+- bmapLoad 100: `wp = mapGetWork()` after `activeGroup = 0` (the getter's result is numbered early and outranks the loop
+  offsets) plus `&mapGetWork()->entries[i]`; tail `activeGroup = 1; wp = mapGetWork();`. The offset/p stepping hack is gone.
+- mapSetPolygon 100: the final loop reuses `i` (a second live range becomes a compiler copy, colours first, gets r28).
+- spline_getvalue 100: natural Hermite expressions instead of a register transliteration;
+  `h = knots[lo]; t -= h; h = knots[lo + 1] - h;` (`opt_lifetimes off` still needed: 98.78 without).
+- mapCalcAnimMatrix 100: named const floats instead of volatile MATCH_F32; `value0 * h00 + tan0 * (d * h10) + ...` gives
+  retail's fused multiply-adds; `zero = 0.0f; d != zero` keeps the operand order; rasim --fpr declaration order.
+- .sdata2 57.06 -> 61.54 (float_2/3/neg2/1Eneg08 defined const).
+- Hard negatives: bmapUnLoad loop 3 (rasim: mapWork pointer must colour after its counter; 24 declaration orders,
+  getter, inline, propagation off; mwsearch 2,270 compiles, 0); mapObjSetFlushColor (the second inlined search needs
+  inline declaration order j,i,object,wp,entry, which breaks the helper's other users: all 120 orders swept).
+- Next: mapSetMaterial/Tev and _mapLoad wait on a real .rodata port (typed objects in retail order with pool_data; they
+  load from +0x2C8/+0x2D0 of the section), and the 32 bytes of SDK sqrt constants math.h puts at its front must go.

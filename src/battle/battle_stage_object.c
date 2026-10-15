@@ -1626,42 +1626,22 @@ USER_FUNC(_mobj_set_alpha) {
 	switch (which) {
 		case 0:
 			if (mapGetMapObj("A1") != NULL) {
-				GXColor c;
-				GXColor color;
-				color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
-				color.a = alpha;
-				c = color;
-				mapGrpSetColor("A1", &c);
+				mapGrpSetColor("A1", (GXColor){0xFF, 0xFF, 0xFF, alpha});
 			}
 			break;
 		case 1:
 			if (mapGetMapObj("A2") != NULL) {
-				GXColor c;
-				GXColor color;
-				color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
-				color.a = alpha;
-				c = color;
-				mapGrpSetColor("A2", &c);
+				mapGrpSetColor("A2", (GXColor){0xFF, 0xFF, 0xFF, alpha});
 			}
 			break;
 		case 2:
 			if (mapGetMapObj("B") != NULL) {
-				GXColor c;
-				GXColor color;
-				color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
-				color.a = alpha;
-				c = color;
-				mapGrpSetColor("B", &c);
+				mapGrpSetColor("B", (GXColor){0xFF, 0xFF, 0xFF, alpha});
 			}
 			break;
 		case 3:
 			if (mapGetMapObj("C") != NULL) {
-				GXColor c;
-				GXColor color;
-				color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
-				color.a = alpha;
-				c = color;
-				mapGrpSetColor("C", &c);
+				mapGrpSetColor("C", (GXColor){0xFF, 0xFF, 0xFF, alpha});
 			}
 			break;
 	}
@@ -2155,14 +2135,7 @@ USER_FUNC(_fall_frame_delete) {
 		event->userdata[2] = 0xFF;
 	}
 	event->userdata[2] -= 5;
-	{
-		GXColor c;
-		GXColor color;
-		color = (GXColor){0xFF, 0xFF, 0xFF, 0x00};
-		color.a = event->userdata[2];
-		c = color;
-		mapGrpSetColor("if_body", &c);
-	}
+	mapGrpSetColor("if_body", (GXColor){0xFF, 0xFF, 0xFF, event->userdata[2]});
 	if (event->userdata[2] > 0) {
 		return EVT_RETURN_BLOCK;
 	}

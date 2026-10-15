@@ -65,20 +65,20 @@ extern GXColor unk_80422f8c;
 extern GXColor unk_80422f90;
 extern GXColor unk_80422f84;
 extern GXColor unk_80422f88;
+const f32 float_3_8041984c = 3.0f;
 const f32 float_0_80419850 = 0.0f;
 extern f32 float_0p5_80419854;
+const f32 float_2_80419858 = 2.0f;
 extern f32 float_1000_80419874;
 extern f32 float_10_80419864;
 extern f32 float_deg2rad_80419868;
 const f32 float_1_80419860 = 1.0f;
-extern f32 float_2_80419858;
-extern f32 float_3_8041984c;
-extern f32 float_neg2_804198a0;
+const f32 float_neg2_804198a0 = -2.0f;
 extern f32 float_neg1_804198a8;
 extern f32 float_5000_804198ac;
 extern f32 float_10000_804198b0;
 extern f32 float_20000_804198d8;
-extern f32 float_1Eneg08_804198b8;
+const f32 float_1Eneg08_804198b8 = 1e-08f;
 extern Vec vec3_802c18f4[];
 extern Vec vec3_802c1900[];
 extern const char str_8041986C[];
@@ -1397,29 +1397,23 @@ void bmapUnLoad(void) {
 	}
 }
 
-// All registers, calls and immediates match. Only the opening block's scheduling differs: retail
-// keeps `li offset=0` ahead of `lwz wp=mapWork` and the `stw activeGroup` that reuses offset's r28,
-// while MWCC hoists the load above the li; no source spelling reaches the scheduler tie.
-// NONMATCHING (97.80%): opening load hoisted above the offset li.
 void bmapLoad(const char* map1, const char* map2) {
-	s32 offset;
-	u8* p;
 	MapEntry* entry;
+	u8* p;
 	s32 i;
 	MapWork* wp;
 
 	sysWaitDrawSync();
-	activeGroup = offset = 0;
-	wp = mapWork;
-	i = 0;
-	p = (u8*)wp;
-	for (; i < wp->entries[0].count; i++) {
-		entry = (MapEntry*)((u8*)mapWork + activeGroup * 0x2F4 + offset);
+	activeGroup = 0;
+	wp = mapGetWork();
+	for (i = 0; i < wp->entries[0].count; i++) {
+		entry = &mapGetWork()->entries[i];
 		if (*(void**)((u8*)entry + 0x16C)) {
 			_mapFree(*(void**)((u8*)entry + 0x16C));
 		}
 		*(s32*)((u8*)entry + 0x168) = 0;
 		*(s32*)((u8*)entry + 0x16C) = 0;
+		p = (u8*)&wp->entries[i];
 		*(s32*)(p + 0x170) = 0;
 		*(s32*)(p + 0x178) = 0;
 		*(s32*)(p + 0x174) = 0;
@@ -1438,17 +1432,15 @@ void bmapLoad(const char* map1, const char* map2) {
 				*(void**)(p + 0x8C) = NULL;
 			}
 		}
-		offset += 0x178;
-		p += 0x178;
 	}
 	activeGroup = 1;
-	entry = (MapEntry*)((u8*)mapWork + 0x2F4);
-	memset(entry, 0, 0x2F4);
-	_mapLoad((MapWork*)entry, 0, map1);
-	entry->count = 1;
+	wp = mapGetWork();
+	memset(wp, 0, sizeof(MapWork));
+	_mapLoad(wp, 0, map1);
+	wp->entries[0].count = 1;
 	if (map2) {
-		_mapLoad((MapWork*)entry, 1, map2);
-		entry->count = 2;
+		_mapLoad(wp, 1, map2);
+		wp->entries[0].count = 2;
 	}
 }
 
@@ -1457,9 +1449,6 @@ void bmapLoad(const char* map1, const char* map2) {
 
 
 
-// NONMATCHING (99.66%): spline math, constants, the d==0 boolean (cntlzw/srwi) and the inner-loop
-// GPRs (ch=r3, out=r4, chn=r5) match; the function-scope declaration order brings most FPRs in line.
-// What differs is the remaining FPR colouring of the key-select time and the polynomial temps.
 void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* jointPtr) {
 	MapAnimData* joint = (MapAnimData*)jointPtr;
 	MapAnimKey* key;
@@ -1473,9 +1462,8 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 	Mtx rotY;
 	Mtx rotZ;
 	Mtx local;
-	f32 f31, f30, f29, f28, f27, neg2, u3, f26, h00, u2, dt, two, k0;
-	f32 value0, tan0, f23, den, value1, f25, tan1, u, f24, d, a, t;
-	f32 k1, b, c, h10, h01, h11, zero;
+	f32 tx, ty, rz, tz, rx, u3, ry, dt, u, sx, value0, sy, tan0, den, sz, k0, value1, tan1, u2, d, a, t;
+	f32 k1, h00, h10, h01, h11, zero;
 	s32 flag;
 
 	count = joint->count;
@@ -1517,75 +1505,72 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 				tan0 = ch->unk8;
 				value0 = ch->value;
 
-				flag = (d != MATCH_F32(float_0_80419850));
+				zero = float_0_80419850;
+				flag = (d != zero);
 				if (((u32)__cntlzw(flag) >> 5) != 0) {
-					den = MATCH_F32(float_1Eneg08_804198b8);
+					den = float_1Eneg08_804198b8;
 				}
 				else {
 					den = d;
 				}
 				u = dt / den;
-				two = MATCH_F32(float_2_80419858);
 				u2 = u * u;
 				u3 = u2 * u;
-				a = MATCH_F32(float_3_8041984c) * u2;
-				b = u3 - two * u2;
-				c = two * u3 - a;
+				a = float_3_8041984c * u2;
+				h00 = float_1_80419860 + (float_2_80419858 * u3 - a);
+				h10 = u + (u3 - float_2_80419858 * u2);
+				h01 = float_neg2_804198a0 * u3 + a;
 				h11 = u3 - u2;
-				h10 = u + b;
-				h00 = MATCH_F32(float_1_80419860) + c;
-				neg2 = MATCH_F32(float_neg2_804198a0);
-				h01 = neg2 * u3 + a;
 #ifdef MUST_MATCH
-				*outp = tan0 * (d * h10)
+				*outp = value0 * h00
 #else
-				out[k] = tan0 * (d * h10)
+				out[k] = value0 * h00
 #endif
-				       + value0 * h00
+				       + tan0 * (d * h10)
 				       + value1 * h01
 				       + tan1 * (d * h11);
 			}
 		}
 
-		f31 = out[0] - joint->base[0];
-		f30 = out[1] - joint->base[1];
-		f29 = out[2] - joint->base[2];
-		f28 = out[3] - joint->base[3];
-		f27 = out[4] - joint->base[4];
-		f23 = out[5] - joint->base[5];
-		f26 = out[6] / joint->div[0];
-		f25 = out[7] / joint->div[1];
-		f24 = out[8] / joint->div[2];
+		tx = out[0] - joint->base[0];
+		ty = out[1] - joint->base[1];
+		tz = out[2] - joint->base[2];
+		rx = out[3] - joint->base[3];
+		ry = out[4] - joint->base[4];
+		rz = out[5] - joint->base[5];
+		sx = out[6] / joint->div[0];
+		sy = out[7] / joint->div[1];
+		sz = out[8] / joint->div[2];
 
 		zero = float_0_80419850;
-		if (f31 != zero || f30 != zero || f29 != zero) {
-			PSMTXTrans(trans, f31, f30, f29);
+		if (tx != zero || ty != zero || tz != zero) {
+			PSMTXTrans(trans, tx, ty, tz);
 		}
-		if (f28 != zero) {
-			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * f28);
+		if (rx != zero) {
+			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * rx);
 		}
-		if (f27 != zero) {
-			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * f27);
+		if (ry != zero) {
+			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * ry);
 		}
-		if (f23 != zero) {
-			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * f23);
+		if (rz != zero) {
+			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * rz);
 		}
-		PSMTXScale(scale, f26, f25, f24);
+		PSMTXScale(scale, sx, sy, sz);
 		PSMTXIdentity(local);
 		zero = float_0_80419850;
-		if (f31 != zero || f30 != zero || f29 != zero) {
+		if (tx != zero || ty != zero || tz != zero) {
 			PSMTXConcat(local, trans, local);
 		}
-		if (f23 != zero) {
+		if (rz != zero) {
 			PSMTXConcat(local, rotZ, local);
 		}
-		if (f27 != zero) {
+		if (ry != zero) {
 			PSMTXConcat(local, rotY, local);
 		}
-		if (f28 != zero) {
+		if (rx != zero) {
 			PSMTXConcat(local, rotX, local);
 		}
-		if (f26 != zero || f25 != zero || f24 != zero) {
+		if (sx != zero || sy != zero || sz != zero) {
 			PSMTXConcat(local, scale, local);
 		}
 		PSMTXConcat(inMtx, local, outMtx);
@@ -4237,9 +4222,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 // per-mesh vtx-format block (the value at entry->field_0x8C + 0x18)
 
 #pragma opt_common_subs off // MUST_MATCH: stop MWCC CSEing a shared base into the wp/nrm/pos slots
-// NONMATCHING (99.93%): 3 insns differ, all one register: the final GXCallDisplayList loop counter lands in
-// r25 (the freed colour-loop `i`) instead of the target's r28 (the freed `mask`); only the `li`/`addi`/`cmpw`
-// names differ. The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
+// The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
 void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 	MapWork* wp = mapGetWork();
 	u32* vcd = (u32*)mesh->vcdTableOffset;
@@ -4247,7 +4230,6 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 	void* nrm = (void*)(vcd[1] + 4);
 	s32 texCount = vcd[5];
 	s32 i;
-	s32 j;
 	u8* p;
 
 	GXSetCullMode(culling[obj->joints->drawMode->cullMode]);
@@ -4327,13 +4309,8 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 			GXSetArray(GX_VA_TEX0 + i, (void*)(((u32*)mesh->vcdTableOffset)[6 + i] + 4), 4);
 		}
 
-		{
-			u8* dp = (u8*)mesh;
-
-			for (j = 0; j < mesh->displayListCount; j++) {
-				GXCallDisplayList((void*)*(u32*)(dp + 0x10), *(u32*)(dp + 0x14));
-				dp += 8;
-			}
+		for (i = 0; i < mesh->displayListCount; i++) {
+			GXCallDisplayList(*(void**)((u8*)mesh + 0x10 + i * 8), *(u32*)((u8*)mesh + 0x14 + i * 8));
 		}
 	}
 }
@@ -4649,16 +4626,13 @@ void mapObjGetPos(const char* name, Vec* pos) {
 	}
 }
 
-// NONMATCHING (97.00%): register allocation of the inlined mapWork/activeGroup address computation
-void mapSetFog(u32 color, f32 near, f32 far, u32* color2) {
+void mapSetFog(u32 color, f32 near, f32 far, GXColor color2) {
 	MapEntry* entry = &mapWork[activeGroup].entries[0];
-	u32 c2;
 
-	c2 = *color2;
 	*(u32*)((u8*)entry + 0x28) = color;
 	*(f32*)((u8*)entry + 0x2C) = near;
 	*(f32*)((u8*)entry + 0x30) = far;
-	*(u32*)((u8*)entry + 0x34) = c2;
+	*(GXColor*)((u8*)entry + 0x34) = color2;
 }
 
 void mapGetFog(u32* c, f32* near, f32* far, u32* c2) {
@@ -4768,9 +4742,8 @@ static MapObject* mapGetMapObjSub(const char* name) {
 
 // Keep mapGrpSetColor out of line: the original calls it rather than inlining.
 #pragma dont_inline on
-// NONMATCHING (94.47%): *color load is scheduled after the inlined mapGetMapObjSub search
-void mapGrpSetColor(const char* name, GXColor* color) {
-	setColor(mapGetMapObjSub(name), *color, 0);
+void mapGrpSetColor(const char* name, GXColor color) {
+	setColor(mapGetMapObjSub(name), color, 0);
 }
 #pragma dont_inline reset
 
@@ -4935,11 +4908,7 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 	_mapFree(dt);
 }
 
-#pragma opt_lifetimes off // MUST_MATCH: target FP live ranges need lifetime analysis off
-// Arithmetic, control flow and the instruction sequence match; MWCC's FPR colouring differs
-// (target keeps dt in f1, 2.0 in f6, 3.0 in f0; ours dt in f8, 2.0 in f0, 3.0 in f1) and the
-// r9/r0 tangent-base offset. `#pragma opt_lifetimes off` is required (94.57% without).
-// NONMATCHING (97.29%): FP colouring + tangent-base offset only
+#pragma opt_lifetimes off // 98.78% without: t and h keep their own FPRs
 void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 	f32* points = (f32*)a;
 	f32* knots = (f32*)b;
@@ -4947,7 +4916,7 @@ void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 	s32 lo;
 	s32 hi;
 	s32 mid;
-	f32 f2, f3, f4, f0, f6, f5, f8, f7;
+	f32 h;
 
 	if (type == 2) {
 		out[0] = t * (points[3] - points[0]) + points[0];
@@ -4971,59 +4940,12 @@ void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 		lo--;
 	}
 
-	f2 = knots[lo];
-	f6 = float_2_80419858;
-	f7 = tangents[lo * 3 + 0];
-	f4 = tangents[lo * 3 + 3];
-	t = t - f2;
-	f0 = knots[lo + 1];
-	f5 = f4 - f7;
-	f8 = points[lo * 3 + 0];
-	f3 = points[lo * 3 + 3];
-	f2 = f0 - f2;
-	f4 = f6 * f7 + f4;
-	f0 = float_3_8041984c;
-	f5 = t * f5;
-	f3 = f3 - f8;
-	f5 = f5 / f2;
-	f3 = f3 / f2;
-	f5 = f0 * f7 + f5;
-	f3 = f3 - f2 * f4;
-	f3 = t * f5 + f3;
-	f3 = t * f3 + f8;
-	out[0] = f3;
-
-	f7 = tangents[lo * 3 + 1];
-	f4 = tangents[lo * 3 + 4];
-	f5 = f4 - f7;
-	f8 = points[lo * 3 + 1];
-	f3 = points[lo * 3 + 4];
-	f4 = f6 * f7 + f4;
-	f5 = t * f5;
-	f3 = f3 - f8;
-	f5 = f5 / f2;
-	f3 = f3 / f2;
-	f5 = f0 * f7 + f5;
-	f3 = f3 - f2 * f4;
-	f3 = t * f5 + f3;
-	f3 = t * f3 + f8;
-	out[1] = f3;
-
-	f7 = tangents[lo * 3 + 2];
-	f4 = tangents[lo * 3 + 5];
-	f5 = f4 - f7;
-	f8 = points[lo * 3 + 2];
-	f3 = points[lo * 3 + 5];
-	f4 = f6 * f7 + f4;
-	f5 = t * f5;
-	f3 = f3 - f8;
-	f5 = f5 / f2;
-	f3 = f3 / f2;
-	f5 = f0 * f7 + f5;
-	f3 = f3 - f2 * f4;
-	f3 = t * f5 + f3;
-	f3 = t * f3 + f8;
-	out[2] = f3;
+	h = knots[lo];
+	t -= h;
+	h = knots[lo + 1] - h;
+	out[0] = t * (t * (float_3_8041984c * tangents[lo * 3 + 0] + t * (tangents[lo * 3 + 3] - tangents[lo * 3 + 0]) / h) + ((points[lo * 3 + 3] - points[lo * 3 + 0]) / h - h * (float_2_80419858 * tangents[lo * 3 + 0] + tangents[lo * 3 + 3]))) + points[lo * 3 + 0];
+	out[1] = t * (t * (float_3_8041984c * tangents[lo * 3 + 1] + t * (tangents[lo * 3 + 4] - tangents[lo * 3 + 1]) / h) + ((points[lo * 3 + 4] - points[lo * 3 + 1]) / h - h * (float_2_80419858 * tangents[lo * 3 + 1] + tangents[lo * 3 + 4]))) + points[lo * 3 + 1];
+	out[2] = t * (t * (float_3_8041984c * tangents[lo * 3 + 2] + t * (tangents[lo * 3 + 5] - tangents[lo * 3 + 2]) / h) + ((points[lo * 3 + 5] - points[lo * 3 + 2]) / h - h * (float_2_80419858 * tangents[lo * 3 + 2] + tangents[lo * 3 + 5]))) + points[lo * 3 + 2];
 }
 #pragma opt_lifetimes reset
 
@@ -5098,17 +5020,31 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	mapObjFlagOff(name, 0x40);
 }
 
-void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
-	GXColor c;
-	GXColor color;
+#ifdef MUST_MATCH
+// Built in an inline that returns the colour: puts the by-value argument copy above the local, as retail has it.
+static inline GXColor mapFlushColor(u8 r, u8 g, u8 b, u8 a) {
+	GXColor color = *(GXColor*)&unk_80422f90;
 
-	color = *(GXColor*)&unk_80422f90;
 	color.r = r;
 	color.g = g;
 	color.b = b;
 	color.a = a;
-	c = color;
-	mapGrpSetColor(name, &c);
+	return color;
+}
+#endif
+
+void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
+#ifdef MUST_MATCH
+	mapGrpSetColor(name, mapFlushColor(r, g, b, a));
+#else
+	GXColor color = *(GXColor*)&unk_80422f90;
+
+	color.r = r;
+	color.g = g;
+	color.b = b;
+	color.a = a;
+	mapGrpSetColor(name, color);
+#endif
 	mapGrpFlagOff(name, 0x40);
 }
 
