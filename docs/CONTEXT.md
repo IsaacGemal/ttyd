@@ -7252,3 +7252,26 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   `chan = i` 97.73; if/else-if/nested/merged 99.05; counter types u32 98.63, long 97.68, s16/s8 96.87, u16/u8 91.22;
   header `int chan` 99.06 but breaks SoundSSSetSrnd (99.69) and a sibling; decl order / stream in body 98.66; do-while,
   `++i`, `3 > i`, `sound.streams + i`, `u16 flags`, fade-down inline: 99.05; whole loop inline 98.73.
+
+## Overnight 5 (2026-10-15/16)
+
+### sound LINKED: SoundSSMain 99.05 -> 100, 58/58 (Claude Opus 5.5, on6-sound)
+- **Old framing was wrong:** earlier passes treated this as counter creation order or counter types. rasim on mwccdbg
+  dumps showed the outer loop's offset counter must be numbered above every inlined helper's stream pointer. Inline
+  locals are created before loop strength reduction, so no inline-call shape can do that.
+- **Fix, two parts that only work together:**
+  - (1) The channel reaches the helpers as unsigned through the existing MUST_MATCH `SoundDVDChan(i)`, the same lever
+    SoundDVDMain uses. The helpers' counter then becomes a backend counter (retail's `li r26,0; mr r30,r26`). Alone,
+    with a block-scoped `stream`: 99.21.
+  - (2) SoundSSStopCh and SoundSSSetPanCh bodies as macros `SOUND_SS_STOP_CH(stream, chan)` and
+    `SOUND_SS_SET_PAN_CH(stream, chan, pan)`, which the out-of-line functions also use. SoundSSMain expands them over
+    one shared `SoundStream* ch` and a `u8 pan` local. MWCC renames each later live range of `ch` into a new object
+    after strength reduction, so the helper pointers are numbered below the outer counter.
+  - **New signal:** inlined-helper pointers that outrank a loop counter mean the original reused one variable across
+    the sites ("second live range", pokopi2 #713, mario_main_func #661).
+- Negatives: cast without the shared pointer 98.77-99.21; cast on the outer index too 97.68 (counters merge); cast at
+  only StopCh or only SetPanCh sites 98.10; getter for the outer stream plus cast 97.73-98.77; 126-variant counter type
+  x cast x declaration matrix, best 99.21; shared pointer without the cast 98.88; shared pointer for only some sites
+  99.21; function-scope `stream` 99.43-99.87; a `u8` pan copy inside the macro breaks SoundSSSetPanCh (96) and four
+  functions that inline it; inline-body candidate plus cast 99.38 (needs pragmas); mwsearch reported the same baseline
+  for two different variants (unusable here).
