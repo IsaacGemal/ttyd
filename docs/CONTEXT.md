@@ -7057,3 +7057,24 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   leaves a stray `addi`: find whether a post-allocation pass can remove both. Variants:
   ~/scratch-orch/reports/evteff_exp/ (gen2.py) on the Mac; dumps ~/scratch-on4-evteff/dbg_{w4,x1,y4w} on the tower.
 - Rule of thumb: the self-store lever fixes register choice, not instruction count. Check the diff first.
+
+## Overnight 4 (2026-10-15)
+
+### win_log LINKED: 9/16 -> 16/16 (Claude Opus 5.5, on5-winlog2; after #789's .rodata port)
+- .sdata2: every float extern a literal; short strings and `lang[2]` strings literal; `dat_8041d7xx` colours as compound
+  literals or function-local statics; `/ 2.0f`, `/ 8.0f`, `/ 4.0f` over multiplies; `1.0f - 0.04f * x` (1.0 pools
+  before 0.04); parse-time templates in source order (#789).
+- monoshiriGX: GXColor locals declared in one order, initialised in another (decl c8c, c4, c8b; init c4, c8b, c8c);
+  loop-invariant fy/fx/xr inline as expressions; opt_loop_invariants pragmas gone. winLogMain: dead `px`/`kind` locals
+  and the MUST_MATCH MAP_TPL_NAME macro removed, map-target maths as one expression, clamp `w->mapCx < 16.0f`, `u32 j`
+  at function scope. capture: C_MTXLookAt/animPoseVivianMain arguments as compound literals (eye/up/at locals gone).
+  mapGX: **enum constants in a ternary keep retail's `extrwi.` branch** (file-local `WinLogTex` enum for texture ids
+  0xB8-0xBA, the win_badge pattern), icons via a `monoIconV` inline with `(Vec){1,1,1}`, opt_common_subs pragma and
+  MUST_MATCH `bx` block gone, `TubuDt* t` inside the loop. winLogInit: loop test `area == NULL || strcmp(...) == 0`
+  (retail exits when area is NULL; the old `area != NULL &&` was a behaviour error), integer `ox`/`oy` temps.
+  winLogDisp: colours by value through monoIconV, compound-literal shadow/row colours, tab alpha
+  `(GXColor){0xFF,0xFF,0xFF,w->e78}`. monosiri_disp: `monoAlphaColor` inline, `width` local, dead x1/bw gone.
+- **Removing dead named locals lets MWCC make them compiler temps** (a lever on its own). Negatives: rasim on
+  monoshiriGX (no single edge); named `ty` assigned in the argument; winLogInit without pragmas 98.89; a tab helper
+  taking `name` 94.87; non-volatile shadow 97.78. Cleanup left: winLogAddTab0, winLogMain2's `new_var`, capture's
+  mnScratch block, the mapGX fabs block (remove one at a time).
