@@ -254,7 +254,7 @@ void BattleAudienceDispAudience(CameraId camId, void* param);
 void BattleAudienceDispItem(CameraId camId, void* param);
 void BattleAudienceDispApSrc(CameraId camId, void* param);
 void BattleAudienceDispWin(CameraId camId, void* param);
-void BattleAudience_Entry_Sub(s32 index, u8 type, u8 status);
+void BattleAudience_Entry_Sub(s32 index, s32 type, u8 status);
 BOOL BattleAudience_GetAnimEnd(s32 index);
 BOOL BattleAudience_GetFront(s32 index);
 BOOL BattleAudience_GetEscapeChangeOK(s32 index);

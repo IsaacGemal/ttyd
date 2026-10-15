@@ -7093,3 +7093,21 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 - Negatives: forced-inline strip helpers 92-93 (int params give copies but new spill slots); `(s32)(s64)`; local id
   array, block scope, comma forms, a second assignment to `corner`; select as an inline. opt_propagation off gives the
   strip copies (diagnostic only, 91.8 overall). Named copies like `corner = t7d` always propagate away.
+
+### battle_audience partial: 144 -> 147/148 (SettingAudience, ApSrcEntry, Entry_Sub 100) (Claude Opus 5.5, on5-baud2)
+- Data first: every named .sdata2 float, zero/360 externs and "%s/%s" literal; .rodata strings literal, named i2f
+  doubles gone, Vec templates compound literals; the two remaining named tables placed just before their user.
+  .data/.sdata/DOL data identical; .rodata/.sdata2 differ only in trailing padding (unit matched_data 47 -> 41,
+  --allow-regress, as #770/#771/#785).
+- **Shared loop variable gives the copied zero:** SettingAudience's `miss` merged into `j` (`for (i = 0, j = 0; ...)`,
+  `++j >= 12`) yields retail's `li r3,0; mr r4,r3`; ApSrcEntry's second loop reuses `i` (and loses idx/offset/sx/sy/z0).
+  Same rule as win_root #793: the second `li 0` becomes a `mr` only for a compiler copy.
+- Entry_Sub: signature `(s32 index, s32 type, u8 status)` (callee indexes `audience_kind[type]` unmasked, the caller
+  masks: read the caller/callee asm), `row = index % 20`, opt_dead_assignments pragma gone. Recovered after the port:
+  Case_Appeal `/ 4.0f`; ApSrcCtrlProcess `50.0f * (f32)rand() / 32767.0f - 25.0f`; ApRecoveryBuild `f32 rate = 1.0f`.
+- DispAudience 96.07 -> 98.51: `w = 20.0f; neg20 = -w;`, a `d2r` local, `w = k * w / 64.0f`, sin/cos in x, y, z order,
+  `sxsy`/`sxcy` temps; MUST_MATCH decl-order block collapsed; vec3_802f9768 non-const under MUST_MATCH. Left: only the
+  rotation block (retail converts cos(rz) first, different product order). Failed: ~800 random orders, 5 hill-climbs
+  (98.51-98.53), rasim, mwsearch 20 min, CSE off, static sin/cos wrappers, inline products 98.49, retail store order
+  96.6, tables as local arrays (fixes .rodata but NoUsedFCHaitiRand 66.9). Next: use `cz` in the first statement after
+  the call, or compute sxsy/sxcy after a statement that uses `cz`.
