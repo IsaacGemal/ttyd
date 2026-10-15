@@ -7128,3 +7128,27 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   94.16); PuniChildHagure 97.88 (`child` must outrank every inlined temp; a static inline gives the right registers but
   spends an inline level, 75.5); puniMapFindbuff 90.57 (retail precomputes four neighbour offsets, keeps &Punimap in r5;
   calling puniMapPos2Blk 90.54); searchBattleTeki/Mikata calls 96.3-97.97. No further split errors.
+
+### mario_hit partial: 29 -> 30/37 (marioSearchHead 100), .sdata2 back to identical (Claude Opus 5.5, on5-mariohit2)
+- .sdata2 order fixed (32 out of place -> IDENTICAL on the first build) with two uncalled MUST_MATCH functions using
+  only floats live code also uses (#775 pattern): `marioChkFrontStep_old` (the pre-rolling 0.75 x height probe, between
+  ChkFrontStep and ChkWallAround: pools 0.75, -1, pi, 0.1, 2) and `marioChkLandonRoll` (before ChkOverhead: 18.0).
+  fn_order_check reports ORDER DIFFERS only because of these two (linker-stripped).
+- Vec data: every hand-made `const u8* base`, RO/ROS macros, RELOAD_VEC volatile reads, SlitChkWallAround's
+  volatile-u32 copies and 25 stale header externs gone. **Vectors the original reloads from memory are non-const
+  `__declspec(section ".rodata")` under MUST_MATCH (`static const` in #else) via a MEM_VEC macro** (#631, sac_deka):
+  MWCC reloads them inside loops through its own .rodata base (ChkWallAround -3 saved GPRs, SearchHead 96.62 -> 99.53).
+  pool_data on alone: nothing; a compound literal in ChkLandon2 adds a stack temp (94.83).
+- Calling the file's own marioHitCheckVec in ChkFrontStep/SearchGroundRoll/ChkWallAround/searchFrontWall: its inlined
+  dead distance rounding and folded `if (c)`/`if (d)` are what the MUST_MATCH `if (&n != NULL)` hacks imitated (gone).
+  rasim decl orders (targets from objdiff by hand: the summary's ORIG column was wrong here); d0/yy assigned inside the
+  loop (hoisted after the offset negations as retail); cos offset right after sin; 0x220 slope store before the sqrt;
+  block-local sin/cos for the inner sincosf; pHigh/pLow as copies of `p` with `y +=`; SearchHead writes the rounded y
+  back into `hitPos.y` (closed it); `/ 4.0f`. ChkLandon2 99.80, LandonChk_old 99.81, SearchGroundRoll 99.78,
+  ChkFrontStep 99.45, ChkWallAround 97.64.
+- Left/next: ChkLandon2 `h` f31 vs f28 (must stay live across the hoisted negations: try the #778 self-store);
+  LandonChk_old `dist` priority vs hoisted 0.0/-1.0; the `const * -cos` f0/f1-f2 swap in three functions (maybe a small
+  inline offset helper); ChkFrontStep's inlined probe result merged into `hit` (4 instr); stack layouts in
+  ChkWallAround/searchFrontWall (0x18 bytes of locals below `half`); marioChkFront dir.y load scheduling. Failed:
+  ChkFront orders 90.6-98.5 / marioHitCheckVec form 95.13; searchFrontWall `half[]` position, non-const templates
+  (90.84); rasim neighbors (no single edge); `const * -cos` spellings x4; yy in the loop in ChkLandon2 (94.15).
