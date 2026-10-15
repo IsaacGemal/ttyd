@@ -11,6 +11,7 @@
 #include "driver/icondrv_gx.h"
 #include "driver/dispdrv.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "memory.h"
 #include "evt/evt_twoddisp.h"
 #include <stdio.h>

@@ -7219,3 +7219,36 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   helper 98.74; DrawShape differs only in volatile regs. Next: renderProc keeps separate copies of texIds (r26) and
   texCount (r27) in the multi-texture branch, suggesting an inline helper with those as parameters at a boundary
   between the per-draw-call body and the whole loop.
+
+### fontmgr partial: FontDrawColor 83.60 -> 100, FontDrawMessage 99.95 -> 100; FontDrawStringMtx 100 -> 99.97 (33/37) (Claude Opus 5.5, on5-fontmgr2)
+- **FontDrawColor takes `GXColor color` by value:** MWCC passes a struct argument as a pointer to the caller's copy,
+  so the callee knows it can't alias `fontColor` (the out-of-line copy loads `color.a` early, as `__restrict` did) AND
+  the ~12 inlined copies keep their by-value copy at r1+0x8, which `__restrict` couldn't give. Confirmed in a
+  standalone test first.
+- Callers disagree (most pass `&local` with no copy; battle_menu_disp and evt_win cast to by-value), so the prototype
+  left fontmgr.h for a `"*"` entry in tools/local_prototype_exceptions.json (the psnd pattern): fontmgr.c declares it
+  by value (LOCAL_PROTO comment), the other 26 calling files declare `void FontDrawColor(GXColor* color);` after their
+  fontmgr.h include (code unchanged). Cleanup note: those 26 local prototypes are scaffolding.
+- Simplifications: `FontDrawColorIDX` is `FontDrawColor(fontColTbl[idx]);`; every MUST_MATCH `*_ColorA` helper and the
+  duplicated #ifdef call sites gone; one shared `static inline FontDrawCodeEdge(code)` (save fontColor,
+  FontDrawColorIDX(0), four draws, restore) for Code/CodeMtx/String/StringPitch/VecPitch/Shake/MessageMtx (replaces the
+  MUST_MATCH FontDrawMessageMtx_Edge); CenterMtx its own edge helper. +88/-247.
+- **Accepted regression (--allow-regress):** FontDrawStringMtx 100 -> 99.97. In-function: `saved` at r1+0x1c and the
+  restore call's parameter copy at r1+0x18, reversed vs retail (scopes, c/c2 copies, FontGetDrawColor(), wrappers:
+  98.28-99.97). As a helper like its siblings: slots right but the first pair's x/y swap (99.86; 119 decl orders, ~25
+  type spellings, helper param orders, mwsearch 14 min/1,836); rasim: needs an edge between the first pair's y temp
+  and `ty`. FontDrawStart_alpha: all 360 statement orders x 3 colour spellings give retail's registers in a test file
+  but the instruction order differs. Negatives on FontDrawColor: `a` first or a local copy 67.6-83.6; restrict local
+  ignored; fontColor static/never address-taken: no change.
+
+### sound third pass: SoundSSMain stays 99.05 (Claude Opus 5.5, on5-sound2)
+- Same instructions; only register identity differs. MWCC makes two offset counters from `&sound.streams[i]`: an `int`
+  outer (from `int i`) and a `long` inner (from the helpers' `s32 chan`). Ours outer r29/inner r28/helper streams r30/
+  i r26; retail outer r30/inner r26/streams r29/i r28. **The counters are created in the order the compiler first
+  meets them in the loop** (a test SoundSSSetPanCh call before `stream` flipped it); retail's `li r26,0; mr r30,r26`
+  sets the inner first, so retail met the helper's address first, or its outer pointer is a second counter.
+- Negatives: #780 inline body 99.27 (pragmas; getter 97.68, s32 param 98.30; mwsearch 20 min); outer stream via
+  SoundSSGetStream 97.68 (counters merge); byte-offset fold 98.71, helpers via `sound.streams[chan].x` 85.9-92.5;
+  `chan = i` 97.73; if/else-if/nested/merged 99.05; counter types u32 98.63, long 97.68, s16/s8 96.87, u16/u8 91.22;
+  header `int chan` 99.06 but breaks SoundSSSetSrnd (99.69) and a sibling; decl order / stream in body 98.66; do-while,
+  `++i`, `3 > i`, `sound.streams + i`, `u16 flags`, fade-down inline: 99.05; whole loop inline 98.73.

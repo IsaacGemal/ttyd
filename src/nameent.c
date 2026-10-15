@@ -7,6 +7,7 @@
 #include "driver/msgdrv.h"
 #include "win/win_main.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "system.h"
 #include <string.h>
 #include "math_ext.h"

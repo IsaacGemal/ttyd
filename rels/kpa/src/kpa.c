@@ -24,6 +24,7 @@
 #include "kpa_act.h"
 #include "manager/evtmgr_cmd.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "mario/mario.h"
 #include "mario/mario_pouch.h"
 #include "mario/mariost.h"

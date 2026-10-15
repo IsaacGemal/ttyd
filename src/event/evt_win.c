@@ -18,6 +18,7 @@
 #include "mario/mariost.h"
 #include <dolphin/mtx.h>
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "driver/camdrv.h"
 #include "driver/itemdrv.h"
 #include "evt/evt_win.h"

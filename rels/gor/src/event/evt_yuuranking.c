@@ -2,6 +2,7 @@
 #include "evt/evt_cmd.h"
 #include "forcedata.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "driver/msgdrv.h"
 #include "memory.h"
 #include "system.h"

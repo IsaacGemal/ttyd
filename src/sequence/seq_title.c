@@ -15,6 +15,7 @@
 #include "system.h"
 #include "win/win_main.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include <string.h>
 
 extern SoundWork sound;

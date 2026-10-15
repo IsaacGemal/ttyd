@@ -14,6 +14,10 @@
 // the scale before the integer arguments, so it saw the scale first, as in iconDispGx (same ABI registers).
 void iconDispGxAlpha(f32 scale, Vec* position, s16 flags, u16 iconId, u8 alpha);
 
+// LOCAL_PROTO(FontDrawColor): the colour is taken by value (the caller passes a pointer to its own copy, and the
+// alpha is scaled in that copy); callers that pass `&local` without copying declare it with a pointer.
+void FontDrawColor(GXColor color);
+
 
 //.sdata
 GXColor fontColTbl[3] = {
@@ -243,25 +247,19 @@ void FontDrawNoiseOff(void) {
 }
 
 void FontDrawColorIDX(u32 idx) {
-	GXColor color;
-	color = fontColTbl[idx];
-	FontDrawColor(&color);
+	FontDrawColor(fontColTbl[idx]);
 }
 
-// NONMATCHING (83.60%): only the first two loads are ordered differently. Retail loads color->a into r5
-// before the fontColor word load (lwz r7); ours loads the word first (r5), stores it, and reloads the byte into
-// r5. Every other instruction, including the /255 magic sequence and the GXSetTevColor argument setup, matches;
-// the GXSetTevColor argument pointer (addi r4) also sits one slot earlier in ours.
-void FontDrawColor(GXColor* color) {
-	fontColor = *color;
-	color->a = (color->a * fontAlpha) / 255;
-	GXSetTevColor(GX_TEVREG0, *color);
+void FontDrawColor(GXColor color) {
+	fontColor = color;
+	color.a = (color.a * fontAlpha) / 255;
+	GXSetTevColor(GX_TEVREG0, color);
 }
 
 void FontDrawColor_(void) {
 	GXColor color;
 	color = fontColor;
-	FontDrawColor(&color);
+	FontDrawColor(color);
 }
 
 //local prototypes
@@ -281,16 +279,15 @@ void FontDrawScaleVec(Vec scale) {
 	fontScale = scale;
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: the first colour goes through a by-value inline, which is the only shape that puts that
-// call's by-value GXSetTevColor argument copy at r1+0xc and the second call's at r1+0x10; the direct
-// `FontDrawColor(&c)` form allocates the two in the opposite order (0x10 then 0xc). The 0.0f passed to
-// PSMTXTransApply pools as an anonymous @-label (same value as retail's float_0_8041a300), which objdiff
-// scores equal, so the function is 100%.
-static inline void FontDrawCode_ColorA(GXColor color) {
-	FontDrawColor(&color);
+static inline void FontDrawCodeEdge(u16 code) {
+	GXColor saved = fontColor;
+	FontDrawColorIDX(0);
+	_JUTFont_DrawPos(code, -2, 0);
+	_JUTFont_DrawPos(code, 2, 0);
+	_JUTFont_DrawPos(code, 0, -2);
+	_JUTFont_DrawPos(code, 0, 2);
+	FontDrawColor(saved);
 }
-#endif
 
 void FontDrawCode(u16 code, f32 x, f32 y) {
 	Mtx mtx;
@@ -303,32 +300,10 @@ void FontDrawCode(u16 code, f32 x, f32 y) {
 	GXLoadPosMtxImm(mtx, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 	if (fontEdge) {
-		GXColor c2;
-		GXColor saved = fontColor;
-		GXColor c = fontColTbl[0];
-#ifdef MUST_MATCH
-		FontDrawCode_ColorA(c);
-#else
-		FontDrawColor(&c);
-#endif
-		_JUTFont_DrawPos(code, -2, 0);
-		_JUTFont_DrawPos(code, 2, 0);
-		_JUTFont_DrawPos(code, 0, -2);
-		_JUTFont_DrawPos(code, 0, 2);
-		c2 = saved;
-		FontDrawColor(&c2);
+		FontDrawCodeEdge(code);
 	}
 	_JUTFont_DrawPos(code, 0, 0);
 }
-
-#ifdef MUST_MATCH
-// MUST_MATCH: passing the first colour by value through this inline is the only shape that puts the
-// first GXSetTevColor argument copy at r1+0xc and the second at r1+0x10; the direct `FontDrawColor(&c)`
-// form allocates `c` at r1+0x10 and `c2` at r1+0xc (opposite of retail).
-static inline void FontDrawCodeMtx_ColorA(GXColor color) {
-	FontDrawColor(&color);
-}
-#endif
 
 void FontDrawCodeMtx(Mtx mtx, u16 code) {
 	CameraEntry* cam;
@@ -338,20 +313,7 @@ void FontDrawCodeMtx(Mtx mtx, u16 code) {
 	GXLoadPosMtxImm(mtx, GX_PNMTX0);
 	GXSetCurrentMtx(GX_PNMTX0);
 	if (fontEdge) {
-		GXColor c2;
-		GXColor saved = fontColor;
-		GXColor c = fontColTbl[0];
-#ifdef MUST_MATCH
-		FontDrawCodeMtx_ColorA(c);
-#else
-		FontDrawColor(&c);
-#endif
-		_JUTFont_DrawPos(code, -2, 0);
-		_JUTFont_DrawPos(code, 2, 0);
-		_JUTFont_DrawPos(code, 0, -2);
-		_JUTFont_DrawPos(code, 0, 2);
-		c2 = saved;
-		FontDrawColor(&c2);
+		FontDrawCodeEdge(code);
 	}
 	_JUTFont_DrawPos(code, 0, 0);
 }
@@ -395,34 +357,12 @@ void FontDrawString(const char* s, f32 x, f32 y) {
 		PSMTXConcat(cam->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
 		if (fontEdge) {
-			GXColor c2;
-			GXColor saved = fontColor;
-			GXColor c = fontColTbl[0];
-#ifdef MUST_MATCH
-			FontDrawCode_ColorA(c);
-#else
-			FontDrawColor(&c);
-#endif
-			_JUTFont_DrawPos(glyph, -2, 0);
-			_JUTFont_DrawPos(glyph, 2, 0);
-			_JUTFont_DrawPos(glyph, 0, -2);
-			_JUTFont_DrawPos(glyph, 0, 2);
-			c2 = saved;
-			FontDrawColor(&c2);
+			FontDrawCodeEdge(glyph);
 		}
 		_JUTFont_DrawPos(glyph, 0, 0);
 		fx += fontScale.x * (f32)(w + charspace[gp->language]);
 	}
 }
-
-#ifdef MUST_MATCH
-// MUST_MATCH: passing the first colour by value through this inline is the only shape that puts the
-// first GXSetTevColor argument copy at r1+0xc and the second at r1+0x10; the direct `FontDrawColor(&c)`
-// form allocates `c` at r1+0x10 and `c2` at r1+0xc (opposite of retail).
-static inline void FontDrawStringPitch_ColorA(GXColor color) {
-	FontDrawColor(&color);
-}
-#endif
 
 // Matched: a local `str` copied from the param `s` (between glyph and w) gives retail's w=r27/str=r28
 // split; assigning fx before PSMTXScale and fz before fy after it fixes the float-load schedule; the
@@ -465,20 +405,7 @@ void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 		PSMTXConcat(cam->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
 		if (fontEdge) {
-			GXColor c2;
-			GXColor saved = fontColor;
-			GXColor c = fontColTbl[0];
-#ifdef MUST_MATCH
-			FontDrawStringPitch_ColorA(c);
-#else
-			FontDrawColor(&c);
-#endif
-			_JUTFont_DrawPos(glyph, -2, 0);
-			_JUTFont_DrawPos(glyph, 2, 0);
-			_JUTFont_DrawPos(glyph, 0, -2);
-			_JUTFont_DrawPos(glyph, 0, 2);
-			c2 = saved;
-			FontDrawColor(&c2);
+			FontDrawCodeEdge(glyph);
 		}
 		_JUTFont_DrawPos(glyph, 0, 0);
 		if (pitch < 0.0f) {
@@ -489,15 +416,6 @@ void FontDrawStringPitch(const char* s, f32 x, f32 y, f32 pitch) {
 		}
 	}
 }
-
-#ifdef MUST_MATCH
-// MUST_MATCH: passing the first colour by value through this inline is the only shape that puts the
-// first GXSetTevColor argument copy at r1+0xc and the second at r1+0x10; the direct `FontDrawColor(&c)`
-// form allocates `c` at r1+0x10 and `c2` at r1+0xc (opposite of retail).
-static inline void FontDrawStringVecPitch_ColorA(GXColor color) {
-	FontDrawColor(&color);
-}
-#endif
 
 // Matched: sign-extended loop test `*(s8*)text` and `(s8)*text++` fix the extsb/increment order.
 void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
@@ -526,20 +444,7 @@ void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
 		PSMTXConcat(cam->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
 		if (fontEdge) {
-			GXColor c2;
-			GXColor saved = fontColor;
-			GXColor c = fontColTbl[0];
-#ifdef MUST_MATCH
-			FontDrawStringVecPitch_ColorA(c);
-#else
-			FontDrawColor(&c);
-#endif
-			_JUTFont_DrawPos(glyph, -2, 0);
-			_JUTFont_DrawPos(glyph, 2, 0);
-			_JUTFont_DrawPos(glyph, 0, -2);
-			_JUTFont_DrawPos(glyph, 0, 2);
-			c2 = saved;
-			FontDrawColor(&c2);
+			FontDrawCodeEdge(glyph);
 		}
 		_JUTFont_DrawPos(glyph, 0, 0);
 		if (pitch < 0.0f) {
@@ -551,9 +456,12 @@ void FontDrawStringVecPitch(Vec* pos, const char* text, f32 pitch) {
 	}
 }
 
-// Matched: the s16 first-pair locals give the two separate conversion pairs (x=r27/y=r28 then y=r27/x=r28);
+// The s16 first-pair locals give the two separate conversion pairs (x=r27/y=r28 then y=r27/x=r28);
 // the MUST_MATCH `sy + 0` promotion makes MWCC emit the first pair's y extsh that retail has, and the s32
 // second-pair locals (ty declared before tx) get its fctiwz order and register assignment right.
+// NONMATCHING (99.97%): the edge block's `saved` gets r1+0x1c and the restoring FontDrawColor's parameter copy
+// r1+0x18 (retail has them the other way round). Moving the block into a static inline helper, as the sibling
+// functions do, fixes the slots but swaps the first pair's x/y registers (99.86).
 void FontDrawStringMtx(Mtx mtx, const char* msg) {
 	CameraEntry* cam;
 	Mtx m;
@@ -604,18 +512,12 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 			continue;
 		}
 		if (fontEdge) {
-			GXColor c2;
 			GXColor saved = fontColor;
-			GXColor c = fontColTbl[0];
 			s16 sx;
 			s16 sy;
 			s32 ty;
 			s32 tx;
-#ifdef MUST_MATCH
-			FontDrawCode_ColorA(c);
-#else
-			FontDrawColor(&c);
-#endif
+			FontDrawColorIDX(0);
 			sx = (s16)x;
 			sy = (s16)y;
 #ifdef MUST_MATCH
@@ -632,22 +534,24 @@ void FontDrawStringMtx(Mtx mtx, const char* msg) {
 			ty = (s16)y;
 			_JUTFont_DrawPos(glyph, tx, ty - 2);
 			_JUTFont_DrawPos(glyph, tx, ty + 2);
-			c2 = saved;
-			FontDrawColor(&c2);
+			FontDrawColor(saved);
 		}
 		_JUTFont_DrawPos(glyph, (s16)x, (s16)y);
 		x += (f32)(charspace[gp->language] + *(u8*)((u8*)FontGetWidthPtr(glyph) + 1));
 	}
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: passing the first colour by value through this inline is the only shape that puts the
-// first GXSetTevColor argument copy at r1+0xc and the second at r1+0x10; the direct `FontDrawColor(&c)`
-// form allocates `c` at r1+0x10 and `c2` at r1+0xc (opposite of retail).
-static inline void FontDrawStringCenterMtx_ColorA(GXColor color) {
-	FontDrawColor(&color);
+static inline void FontDrawStringCenterMtx_Edge(u16 glyph, f32 offsetX) {
+	GXColor saved = fontColor;
+	s32 sx;
+	FontDrawColorIDX(0);
+	_JUTFont_DrawPos(glyph, (s16)offsetX - 2, 0);
+	_JUTFont_DrawPos(glyph, (s16)offsetX + 2, 0);
+	sx = (s16)offsetX;
+	_JUTFont_DrawPos(glyph, sx, -2);
+	_JUTFont_DrawPos(glyph, sx, 2);
+	FontDrawColor(saved);
 }
-#endif
 
 // The edge block's first pair uses `(s16)offsetX` directly; the second pair caches it in an `s32 sx` (a
 // `s16 sx` omits retail's `extsh`) so the sign-extended value is reused across the two calls.
@@ -670,36 +574,12 @@ void FontDrawStringCenterMtx(Mtx mtx, const char* msg) {
 			glyph = JUTFont_CodeToGlyph((s8)*msg++);
 		}
 		if (fontEdge) {
-			GXColor c2;
-			GXColor saved = fontColor;
-			GXColor c = fontColTbl[0];
-			s32 sx;
-#ifdef MUST_MATCH
-			FontDrawStringCenterMtx_ColorA(c);
-#else
-			FontDrawColor(&c);
-#endif
-			_JUTFont_DrawPos(glyph, (s16)offsetX - 2, 0);
-			_JUTFont_DrawPos(glyph, (s16)offsetX + 2, 0);
-			sx = (s16)offsetX;
-			_JUTFont_DrawPos(glyph, sx, -2);
-			_JUTFont_DrawPos(glyph, sx, 2);
-			c2 = saved;
-			FontDrawColor(&c2);
+			FontDrawStringCenterMtx_Edge(glyph, offsetX);
 		}
 		_JUTFont_DrawPos(glyph, (s16)offsetX, 0);
 		offsetX += (f32)(charspace[gp->language] + *(u8*)((u8*)FontGetWidthPtr(glyph) + 1));
 	}
 }
-
-#ifdef MUST_MATCH
-// MUST_MATCH: passing the first colour by value through this inline is the only shape that puts the
-// first GXSetTevColor argument copy at r1+0xc and the second at r1+0x10; the direct `FontDrawColor(&c)`
-// form allocates `c` at r1+0x10 and `c2` at r1+0xc (opposite of retail).
-static inline void FontDrawStringShake_ColorA(GXColor color) {
-	FontDrawColor(&color);
-}
-#endif
 
 #ifdef MUST_MATCH
 // MUST_MATCH: reading the width byte through this inline numbers its result after the inlined
@@ -739,20 +619,7 @@ void FontDrawStringShake(const char* str, f32 x, f32 y) {
 		PSMTXConcat(cam->view, mtx2, mtx2);
 		GXLoadPosMtxImm(mtx2, GX_PNMTX0);
 		if (fontEdge) {
-			GXColor c2;
-			GXColor saved = fontColor;
-			GXColor c = fontColTbl[0];
-#ifdef MUST_MATCH
-			FontDrawStringShake_ColorA(c);
-#else
-			FontDrawColor(&c);
-#endif
-			_JUTFont_DrawPos(glyph, -2, 0);
-			_JUTFont_DrawPos(glyph, 2, 0);
-			_JUTFont_DrawPos(glyph, 0, -2);
-			_JUTFont_DrawPos(glyph, 0, 2);
-			c2 = saved;
-			FontDrawColor(&c2);
+			FontDrawCodeEdge(glyph);
 		}
 		_JUTFont_DrawPos(glyph, 0, 0);
 		x += fontScale.x * (f32)(w + charspace[gp->language]);
@@ -760,12 +627,6 @@ void FontDrawStringShake(const char* str, f32 x, f32 y) {
 }
 
 #ifdef MUST_MATCH
-// MUST_MATCH: the inlined FontDrawColor has a by-value parameter temp (retail r1+0xc..0x20); passing the
-// colour by value through this inline is the shape that reproduces it. The natural call is under each #else.
-static inline void FontDrawMessage_ColorA(GXColor color) {
-	FontDrawColor(&color);
-}
-
 // MUST_MATCH: routing the edge block through this inline makes the compiler allocate saved/c2 in the
 // inline pass, i.e. after the inlined FontDrawStart_alpha `start`, which is retail's slot order.
 static inline void FontDrawMessage_Edge(u16 glyph, s32 x, s32 yy) {
@@ -785,15 +646,14 @@ static inline void FontDrawMessage_Edge(u16 glyph, s32 x, s32 yy) {
 		_JUTFont_DrawPos(glyph, sx2, sy2 + 2);
 	}
 	c2 = saved;
-	FontDrawColor(&c2);
+	FontDrawColor(c2);
 }
 #endif
 
 // FontDrawMessage_Edge's second pair (the vertical offsets) narrows x and yy into fresh s16 locals in its own block:
 // the original sign-extends x again there and reuses the narrowed y.
-// NONMATCHING (99.94%): the instructions match; the colour branches' GXSetTevColor argument copies are 0x10 low of
-// the edge saved/c2 and the icon colour temps (retail has them above), and the two .rodata int->float doubles are
-// swapped (the unit's pool order comes from _JUTFont_DrawPos, the first function emitted).
+// The two .rodata int->float doubles are swapped (the unit's pool order comes from _JUTFont_DrawPos, the first
+// function emitted).
 void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 	s32 x = x0;
 	s32 yy = y;
@@ -819,36 +679,20 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 				if (strcmp(arg1, "red") == 0) {
 					GXColor c;
 					c = (GXColor){0xE0, 0x00, 0x00, 0xFF};
-					#ifdef MUST_MATCH
-					FontDrawMessage_ColorA(c);
-					#else
-					FontDrawColor(&c);
-					#endif
+					FontDrawColor(c);
 				}
 				else if (strcmp(arg1, "/red") == 0) {
 					GXColor c = fontColTbl[0];
-					#ifdef MUST_MATCH
-					FontDrawMessage_ColorA(c);
-					#else
-					FontDrawColor(&c);
-					#endif
+					FontDrawColor(c);
 				}
 				else if (strcmp(arg1, "col") == 0) {
 					GXColor c;
 					sscanf(arg2, "%x", &c);
-					#ifdef MUST_MATCH
-					FontDrawMessage_ColorA(c);
-					#else
-					FontDrawColor(&c);
-					#endif
+					FontDrawColor(c);
 				}
 				else if (strcmp(arg1, "/col") == 0) {
 					GXColor c = fontColTbl[0];
-					#ifdef MUST_MATCH
-					FontDrawMessage_ColorA(c);
-					#else
-					FontDrawColor(&c);
-					#endif
+					FontDrawColor(c);
 				}
 				else if (strcmp(arg1, "icon") == 0) {
 					s32 id;
@@ -882,11 +726,7 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 					}
 					{
 						GXColor c = fontColor;
-						#ifdef MUST_MATCH
-						FontDrawMessage_ColorA(c);
-						#else
-						FontDrawColor(&c);
-						#endif
+						FontDrawColor(c);
 					}
 					x = (s32)((f32)x + ((f32)iw * scale + (f32)offset));
 				}
@@ -927,7 +767,7 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 			_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy - 2));
 			_JUTFont_DrawPos(glyph, (s16)x, (s16)(yy + 2));
 			c2 = saved;
-			FontDrawColor(&c2);
+			FontDrawColor(c2);
 #endif
 		}
 		_JUTFont_DrawPos(glyph, (s16)x, (s16)yy);
@@ -935,24 +775,7 @@ void FontDrawMessage(s32 x0, s32 y, const char* msg) {
 	}
 }
 
-#ifdef MUST_MATCH
-// MUST_MATCH: routing the edge block through this inline makes the compiler allocate saved/c2 in the
-// inline pass, i.e. after the inlined FontDrawStart_alpha `start`, which is retail's slot order.
-static inline void FontDrawMessageMtx_Edge(u16 glyph) {
-	GXColor saved = fontColor;
-	GXColor c2;
-	FontDrawColorIDX(0);
-	_JUTFont_DrawPos(glyph, -2, 0);
-	_JUTFont_DrawPos(glyph, 2, 0);
-	_JUTFont_DrawPos(glyph, 0, -2);
-	_JUTFont_DrawPos(glyph, 0, 2);
-	c2 = saved;
-	FontDrawColor(&c2);
-}
-#endif
-
-// Icon scalars hoisted to function scope (MUST_MATCH); the edge block is routed through FontDrawMessageMtx_Edge so
-// its saved/c2 land after the inlined FontDrawStart_alpha `start`. The unit's int->float pool order comes from
+// Icon scalars hoisted to function scope (MUST_MATCH). The unit's int->float pool order comes from
 // _JUTFont_DrawPos, the first function emitted, where retail converts blk->cellheight (unsigned) before any signed
 // value: starting it with `fheight = (f32)blk->cellheight;` makes this function 100% but drops _JUTFont_DrawPos to ~61.
 // NONMATCHING (99.99%): only the two .rodata int->float doubles are swapped (0x48/0x50); see above.
@@ -1003,11 +826,11 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 				if (strcmp(arg1, "red") == 0) {
 					GXColor c;
 					c = (GXColor){0xE0, 0x00, 0x00, 0xFF};
-					FontDrawColor(&c);
+					FontDrawColor(c);
 				}
 				else if (strcmp(arg1, "/red") == 0) {
 					GXColor c = fontColTbl[0];
-					FontDrawColor(&c);
+					FontDrawColor(c);
 				}
 				else if (strcmp(arg1, "icon") == 0) {
 #ifndef MUST_MATCH
@@ -1045,7 +868,7 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 					// retail's 0x44 stack slot (natural form is the FontDrawColor_() call under the #else).
 					{
 						GXColor c = fontColor;
-						FontDrawColor(&c);
+						FontDrawColor(c);
 					}
 #else
 					FontDrawColor_();
@@ -1074,19 +897,7 @@ void FontDrawMessageMtx(Mtx mtx, const char* msg) {
 		PSMTXConcat(m, trans, m);
 		GXLoadPosMtxImm(m, GX_PNMTX0);
 		if (fontEdge) {
-#ifdef MUST_MATCH
-			FontDrawMessageMtx_Edge(glyph);
-#else
-			GXColor saved = fontColor;
-			GXColor c2;
-			FontDrawColorIDX(0);
-			_JUTFont_DrawPos(glyph, -2, 0);
-			_JUTFont_DrawPos(glyph, 2, 0);
-			_JUTFont_DrawPos(glyph, 0, -2);
-			_JUTFont_DrawPos(glyph, 0, 2);
-			c2 = saved;
-			FontDrawColor(&c2);
-#endif
+			FontDrawCodeEdge(glyph);
 		}
 		_JUTFont_DrawPos(glyph, 0, 0);
 		x += *(u8*)((u8*)FontGetWidthPtr(glyph) + 1) + charspace[gp->language];

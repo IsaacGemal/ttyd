@@ -7,6 +7,7 @@
 #include "manager/evtmgr_cmd.h"
 #include "manager/winmgr.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "driver/msgdrv.h"
 #include "driver/seqdrv.h"
 #include "party/party_vivian.h"

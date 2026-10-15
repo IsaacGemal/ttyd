@@ -19,6 +19,7 @@
 #include <string.h>
 #include "driver/msgdrv.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "win/win_main.h"
 #include "mario/mario_motion.h"
 #include "mario/mario_party.h"

@@ -7,6 +7,7 @@
 #include "battle/battle_menu_disp.h"
 #include "system.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "battle/battle_disp.h"
 #include "driver/icondrv.h"
 #include "driver/icondrv_gx.h"

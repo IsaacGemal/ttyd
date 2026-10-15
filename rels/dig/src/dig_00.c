@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include "math_ext.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "evt/evt_mario.h"
 #include "evt/evt_party.h"
 #include "rel/dig/dig_00.h"

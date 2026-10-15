@@ -22,6 +22,7 @@
 #include "driver/camdrv.h"
 #include "driver/dispdrv.h"
 #include "manager/fontmgr.h"
+void FontDrawColor(GXColor* color);
 #include "driver/icondrv.h"
 #include "driver/icondrv_gx.h"
 #include "driver/windowdrv.h"
