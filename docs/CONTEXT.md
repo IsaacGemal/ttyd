@@ -7471,3 +7471,20 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   10,947 compiles, 0. disp_sight: `sightArrowId(flag)` gives retail's exact pre-RA code but the 7/6 temp must sort
   after the addic backend temp; MWCC compiles every ternary/if-else id spelling branchless; narrow `u8 tex` gives
   clrlwi, not mr.
+
+### evt_eff LINKED: evt_eff 99.17 -> 100, evt_eff64 99.78 -> 100 (GPT-6.1 Sol, high effort, sol7; after 2 Opus passes)
+- Full build and explicit dtk checksum: 32 files OK; all five siblings keep 100.
+- **Walk ONE header cursor across the two triples of evtGetValue calls and declare decoded locals with call
+  initializers.** evt_eff advances the cursor in the SECOND call of each triple; iargs is initialised before effSet,
+  fargs declared before effSet but assigned just after the call, then a nested C90 declaration block. That keeps the
+  missing `mr` with no extra instructions and fixes allocation.
+- evt_eff64: the same idea with advancement in the THIRD call of each triple; fargs/rargs declared before effSet,
+  fargs assigned after the first call and rargs after the second, nested blocks before later initialised locals. Both
+  pointer copies survive at default -O4: the old `optimization_level 1` pragma and the effIdent helper are deleted.
+  Second-call advancement misses a pointer copy; a later rargs declaration recolours locals.
+- "me" / "" string literals at their actual uses restore the unit's data without changing any score. .rodata/.data
+  identical; the shorter .sdata2 zero tail is the linker's alignment (checksum passes), no gap object.
+- Hard negatives: thousands of pointer type/offset/index/inline/helper/optimizer variants (the old alias families);
+  level-1's named allocations still had a switch target r3 vs r0 and copy scheduling differences; 99.95 signed64
+  event-load and 99.80 offset-changing probes were semantically wrong and discarded. The missing shape was initialised
+  shared header traversal.
