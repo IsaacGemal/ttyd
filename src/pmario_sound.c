@@ -5663,9 +5663,9 @@ static inline s32 psndBGMFindName(s32 name) {
 	return index;
 }
 
-// NONMATCHING (99.78%): `name` (an id or a name pointer, as psndENVOn_f_d/__psndSFXOn take it) is reused
-// for the resolved id, which gives it retail's r24; the early slot pointer `cur` is its own local.
-// Left: `vol` is loaded straight into r26 where retail loads it into r3, stores it and copies it.
+// `name` (an id or a name pointer, as psndENVOn_f_d/__psndSFXOn take it) is reused for the resolved id,
+// which gives it retail's r24; the early slot pointer `cur` is its own local. The u8 `vol` takes the value
+// of the slot's volume store (`vol = bgm->vol = entry->vol`), which gives retail's `lbz r3; stb r3; mr r26,r3`.
 s32 psndBGMOn_f_d(s32 a, s32 name, s32 c, s32 d, s32 e) {
 	PaperSoundBGM* bgm;
 	u8* work;
@@ -5677,7 +5677,7 @@ s32 psndBGMOn_f_d(s32 a, s32 name, s32 c, s32 d, s32 e) {
 	u8* cur;
 	s32 slot;
 	s32 index;
-	s32 vol;
+	u8 vol;
 	s32 pan;
 
 	if (psnd.unk56 & 1) {
@@ -5843,8 +5843,7 @@ s32 psndBGMOn_f_d(s32 a, s32 name, s32 c, s32 d, s32 e) {
 		return 0;
 	}
 
-	vol = *(u8*)((u8*)entry + 0xC);
-	*(u8*)((u8*)bgm + 0xE) = vol;
+	vol = *(u8*)((u8*)bgm + 0xE) = *(u8*)((u8*)entry + 0xC);
 	reverb = *(u8*)((u8*)entry + 0xE);
 	bgm->unk0 = name;
 	pan = *(u8*)((u8*)entry + 0xD);
@@ -6069,7 +6068,8 @@ static inline s32 psndSFXFindSongChannel(void) {
     return -1;
 }
 
-// NONMATCHING (98.66%): both loops index pssfx (`sfx = &pssfx[i]`), which gives the target's direct
+// The reverb guard reads unk18 through a u32 view, so SoundEfxSetAux1's argument is reloaded as in retail.
+// NONMATCHING (98.79%): both loops index pssfx (`sfx = &pssfx[i]`), which gives the target's direct
 // `addi` base and the loop-1 copy. Left: callee-saved colouring of the loop-2 pointer, numSounds, ratio
 // and the hoisted &psnd (target r25/r29/r28/r27; rasim: no declaration order reaches it).
 void psndSFXMain(void) {
@@ -6078,13 +6078,14 @@ void psndSFXMain(void) {
     PaperSoundEffectDetail* sfx;
     s32 vol;
     s32 numSounds;
-    s32 ratio;
     s32 i;
     u32 u;
     u32 ch;
     SoundEffectEntry* entry;
     u32 res;
     u8* pp;
+    s32 ratio;
+
     ratio = 0;
     pp = (u8*)&psnd;
     for (i = 0; i < 40; i++) {
@@ -6197,7 +6198,7 @@ void psndSFXMain(void) {
 #endif
                     }
                 }
-                if ((u32)sfx->unk18 != -1) {
+                if (*(u32*)&sfx->unk18 != -1) {
                     s32 reverb = entry->field_0xF;
 
                     if (reverb > 0) {
@@ -6297,9 +6298,9 @@ void psndSFXMain(void) {
     psnd.unk54 = 0;
 }
 
-// NONMATCHING (99.42%): every callee-saved register matches; left is the volatile colouring of the
-// first scan loop (&psnd r3, sfx r4, i r5 in the target) and the branch offsets that follow. rasim:
-// the loop-1 pointer needs any one more interference neighbour (e.g. a8, j, or a temp of the setup).
+// The first scan loop reads the id through two views of the slot, so the frontend does not merge the two loads
+// into one temp (the backend still does): with the shared temp, &psnd/sfx/i lose retail's r3/r4/r5. The second
+// `slot == 0` check sits inside the fallback search, so the first loop's hit branches past it.
 s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 pitch, Vec* position, s32 a6, s32 flags, s32 a8) {
     s32 sfxid;
     s32 index;
@@ -6333,7 +6334,7 @@ s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 pitch, Vec* position, s32 a6, s32 
     prio = 0;
     for (i = 0; i < 40; i++) {
         sfx = &pssfx[i];
-        if ((u32)sfx->unk0 != -1 && (u32)(sfx->unk0 & 0x1FFF) == (u32)sfxid
+        if ((u32)sfx->unk0 != -1 && (u32)(((PaperSoundEffectU16*)sfx)->unk0 & 0x1FFF) == (u32)sfxid
             && (((u16*)sfx)[3] & 0x100) && prio == 0) {
             *(u16*)((u8*)&psnd + 0x54) += 8;
             prio = *(u16*)((u8*)&psnd + 0x54);
@@ -6359,9 +6360,9 @@ s32 __psndSFXOn(s32 name, u8 vol, u8 pan, s32 pitch, Vec* position, s32 a6, s32 
                 break;
             }
         }
-    }
-    if (slot == 0) {
-        return -1;
+        if (slot == 0) {
+            return -1;
+        }
     }
 
     if (vol == 0xFF) {
@@ -6501,9 +6502,12 @@ void psndSFX_dist(s32 id, u16 dist) {
 	*(u16*)((u8*)sfx + 0x12) = dist;
 }
 
+// The entry's type flags are read once into `flags`: the standalone code is the same either way, but the
+// extra web gives psndSFXOff's inlined copies in psndENV_stop retail's register order.
 void psndSFXOff(s32 id) {
 	PaperSoundEffect* sfx;
 	SoundEffectEntry* entry;
+	u32 flags;
 
 	if ((u32)id == -1) {
 		return;
@@ -6519,10 +6523,11 @@ void psndSFXOff(s32 id) {
 	}
 	entry = &pssfxlist[sfx->unk0 & 0x1FFF];
 	if ((u32)sfx->unk18 != -1) {
-		if (entry->field_0x4 & 0x80000000) {
+		flags = entry->field_0x4;
+		if (flags & 0x80000000) {
 			SoundSSStopCh(sfx->unk18);
 		}
-		else if (entry->field_0x4 & 0x40000000) {
+		else if (flags & 0x40000000) {
 			SoundSongStopCh(sfx->unk18);
 		}
 		else {
@@ -6565,163 +6570,86 @@ u8 psndSFX_get_vol(s32 id) {
 	return sfx->unk8[0];
 }
 
-// the loop pointer is initialised with an extra copy:
-// `addi r0,r4,psenv@l` then `mr r30,r0`, where the original writes
-// `addi r30,r4,psenv@l` directly. env still lands in r30 and the body is byte-for-byte
-// identical otherwise. The index form (`env = &psenv[i]` inside the loop) does give
-// the direct addi, but MWCC then colours the induction variable r31 and sfx r30,
-// swapping the two callee-saved registers (i stays r29). Putting the whole loop in a
-// static inline helper and forcing it with `#pragma always_inline on` also gives the
-// direct `addi r30` AND the right body, but colours i r31 / sfx r29 (i/sfx swapped);
-// the counter always takes r31 there. `always_inline` has to stay on for the rest of
-// the translation unit (an `off`/`reset` after the function suppresses the inlining),
-// so it is not a usable local fix.
-// Verified not to move the swap: every declaration order, `register`, index-in-loop,
-// `do/while`, `for`-init and pointer-increment spelling, and every opt_*/scheduling/
-// peephole/always_inline pragma. The `addi r0` copy survives -O1..-O4, -O4,s and
-// `-opt noschedule`, so it is MWCC's front-end lowering of `env = psenv` (an array
-// decay) rather than the scheduler; `searchPSSFXList`'s `entry = pssfxlist` shows the
-// same copy in its 100% target. Making the address depend on i folds back to psenv
-// again. Compiler versions 1.3.2-2.7 all give the same index-form r31 pointer; only
-// the explicit-pointer form reaches the target r30, and only it emits the extra copy.
-// Lead: each case as `if (sfxid != -1) psndSFXOff(sfxid);` (the inlined psndSFXOff) gives the same
-// instructions with no copy, but colours the induction pointer r31 and sfx r28 (97.88); rasim: one more
-// interference neighbour on any one inlined `sfx` gives every target register.
-// NONMATCHING (99.27%): the extra loop-pointer copy, see above.
+// Each case stops the slot's effect through psndSFXOff, which MWCC inlines (the doubled `!= -1` test is
+// the caller's guard plus psndSFXOff's own). The loop indexes psenv, so the walking pointer is a compiler
+// induction variable and takes the address directly (a named pointer set to psenv keeps `addi r0; mr`).
 void psndENV_stop(u32 id) {
-	PaperSoundEffect* sfx;
-	SoundEffectEntry* entry;
 	PaperSoundEnv* env;
 	int i;
 
-	env = psenv;
-	for (i = 0; i < 16; i++, env++) {
+	for (i = 0; i < 16; i++) {
+		env = &psenv[i];
 		if (*(u16*)&env->unk4 != id) {
 			continue;
 		}
 		switch (env->unk6[2]) {
 		case 0:
 			if ((u32)*(s32*)(env->unk6 + 0xE) != -1) {
-				if ((u32)*(s32*)(env->unk6 + 0xE) != -1) {
-					sfx = &pssfx[*(s32*)(env->unk6 + 0xE) & 0xFF];
-					if ((u32)sfx->unk0 != -1) {
-						if (((u16*)sfx)[3] & 1) {
-							sfx->unk0 = -1;
-							sfx->unk18 = -1;
-						}
-						else {
-							entry = &pssfxlist[sfx->unk0 & 0x1FFF];
-							if ((u32)sfx->unk18 != -1) {
-								if (entry->field_0x4 & 0x80000000) {
-									SoundSSStopCh(sfx->unk18);
-								}
-								else if (entry->field_0x4 & 0x40000000) {
-									SoundSongStopCh(sfx->unk18);
-								}
-								else {
-									SoundEfxStop(sfx->unk18);
-								}
-							}
-							sfx->unk0 = -1;
-							sfx->unk18 = -1;
-						}
-					}
-				}
+				psndSFXOff(*(s32*)(env->unk6 + 0xE));
 			}
 			env->unk4 = 0;
 			break;
 		case 1:
 			if ((u32)*(s32*)(env->unk6 + 0xE) != -1) {
-				if ((u32)*(s32*)(env->unk6 + 0xE) != -1) {
-					sfx = &pssfx[*(s32*)(env->unk6 + 0xE) & 0xFF];
-					if ((u32)sfx->unk0 != -1) {
-						if (((u16*)sfx)[3] & 1) {
-							sfx->unk0 = -1;
-							sfx->unk18 = -1;
-						}
-						else {
-							entry = &pssfxlist[sfx->unk0 & 0x1FFF];
-							if ((u32)sfx->unk18 != -1) {
-								if (entry->field_0x4 & 0x80000000) {
-									SoundSSStopCh(sfx->unk18);
-								}
-								else if (entry->field_0x4 & 0x40000000) {
-									SoundSongStopCh(sfx->unk18);
-								}
-								else {
-									SoundEfxStop(sfx->unk18);
-								}
-							}
-							sfx->unk0 = -1;
-							sfx->unk18 = -1;
-						}
-					}
-				}
+				psndSFXOff(*(s32*)(env->unk6 + 0xE));
 			}
 			env->unk4 = 0;
 			break;
 		case 2:
 			if ((u32)*(s32*)(env->unk6 + 0xE) != -1) {
-				if ((u32)*(s32*)(env->unk6 + 0xE) != -1) {
-					sfx = &pssfx[*(s32*)(env->unk6 + 0xE) & 0xFF];
-					if ((u32)sfx->unk0 != -1) {
-						if (((u16*)sfx)[3] & 1) {
-							sfx->unk0 = -1;
-							sfx->unk18 = -1;
-						}
-						else {
-							entry = &pssfxlist[sfx->unk0 & 0x1FFF];
-							if ((u32)sfx->unk18 != -1) {
-								if (entry->field_0x4 & 0x80000000) {
-									SoundSSStopCh(sfx->unk18);
-								}
-								else if (entry->field_0x4 & 0x40000000) {
-									SoundSongStopCh(sfx->unk18);
-								}
-								else {
-									SoundEfxStop(sfx->unk18);
-								}
-							}
-							sfx->unk0 = -1;
-							sfx->unk18 = -1;
-						}
-					}
-				}
+				psndSFXOff(*(s32*)(env->unk6 + 0xE));
 			}
 			env->unk4 = 0;
 			break;
 		case 3:
 			if ((u32)*(s32*)(env->unk6 + 0xE) != -1) {
-				if ((u32)*(s32*)(env->unk6 + 0xE) != -1) {
-					sfx = &pssfx[*(s32*)(env->unk6 + 0xE) & 0xFF];
-					if ((u32)sfx->unk0 != -1) {
-						if (((u16*)sfx)[3] & 1) {
-							sfx->unk0 = -1;
-							sfx->unk18 = -1;
-						}
-						else {
-							entry = &pssfxlist[sfx->unk0 & 0x1FFF];
-							if ((u32)sfx->unk18 != -1) {
-								if (entry->field_0x4 & 0x80000000) {
-									SoundSSStopCh(sfx->unk18);
-								}
-								else if (entry->field_0x4 & 0x40000000) {
-									SoundSongStopCh(sfx->unk18);
-								}
-								else {
-									SoundEfxStop(sfx->unk18);
-								}
-							}
-							sfx->unk0 = -1;
-							sfx->unk18 = -1;
-						}
-					}
-				}
+				psndSFXOff(*(s32*)(env->unk6 + 0xE));
 			}
 			env->unk4 = 0;
 			break;
 		}
 	}
+}
+
+static inline s32 psndENVMasterVol(PaperSoundWork* ps) {
+	return ps->unk5A;
+}
+
+static inline void psndSFX_lpf(s32 id, u16 lpf) {
+	PaperSoundEffect* sfx;
+	SoundEffectEntry* entry;
+	s32 no;
+
+	if ((u32)id == -1) {
+		return;
+	}
+	sfx = &pssfx[id & 0xFF];
+	no = sfx->unk0;
+	if ((u32)no == -1) {
+		return;
+	}
+	*(u16*)&sfx->unk8[0xE] = lpf;
+	entry = &pssfxlist[no & 0x1FFF];
+	if (!(((u16*)sfx)[3] & 1)) {
+		if (!(entry->field_0x4 & 0x80000000)) {
+			if (!(entry->field_0x4 & 0x80000000)) {
+				SoundEfxSetLPF(sfx->unk18, (s16)lpf);
+			}
+		}
+	}
+}
+
+static inline u16 psndENVGetLPF(PaperSoundEnv* env) {
+	u16 lpf;
+
+	lpf = 0;
+	if (*(u16*)&psnd.unk18 == *(u16*)&env->unk4) {
+		lpf = psnd.unk1C[0];
+	}
+	if (*(u16*)&psnd.unk1A == *(u16*)&env->unk4) {
+		lpf = psnd.unk1C[1];
+	}
+	return lpf;
 }
 
 // volume for one env slot: the matching work item (or NULL) is found from env->unk4
@@ -6753,15 +6681,14 @@ static inline u8 psndENVGetVol(PaperSoundEnv* env, PaperSoundWork* ps) {
 		return (u8)(ps->unk5A * x / 100);
 	}
 	x = env->unk6[0] * t / 127;
-	t = *(s16*)(work + 4) * x / *(s16*)(work + 2);
-	return (u8)(ps->unk5A * t / 100);
+	// one expression: the /100 is lowered before the scaled volume, and the master volume (a call, so
+	// MWCC orders it after the scaled volume) is loaded after the inner divide
+	return (u8)(psndENVMasterVol(ps) * (s16)(*(s16*)(work + 4) * x / *(s16*)(work + 2)) / 100);
 }
 
-// with both env loops indexing psenv the three persistent pointers and the
-// FPRs take the target's registers; __psndSFXOn's u8 volume lets the inlined psndENVGetVol result go
-// straight into r4. Left: in psndENVGetVol's scaled branch the /100 magic takes r3 and the products
-// r5 (target: products r3, magic r8), at every inlined copy.
-// NONMATCHING (99.06%): register colouring only, see above.
+// Both env loops index psenv, and __psndSFXOn's u8 volume lets the inlined psndENVGetVol result go straight
+// into r4. The LPF update is psndENVGetLPF plus psndSFX_lpf (built like psndSFX_pit, with its doubled
+// SS-flag test), and the last loop's `active` check skips only the fade work, not the LPF slew.
 void psndENVMain(void) {
 	s32 target;
 	u16 span;
@@ -6773,7 +6700,6 @@ void psndENVMain(void) {
 	u8 vol;
 	f32 f31;
 	f32 f30;
-	SoundEffectEntry* entry;
 	PaperSoundEnv* env;
 	PaperSoundEffect* sfx;
 
@@ -7023,27 +6949,8 @@ void psndENVMain(void) {
 					sfx->unk8[0] = vol;
 				}
 			}
-			span = 0;
-			if (*(u16*)&psnd.unk18 == *(u16*)&env->unk4) {
-				span = *(u16*)(psnd.unk1C + 0);
-			}
-			if (*(u16*)&psnd.unk1A == *(u16*)&env->unk4) {
-				span = *(u16*)(psnd.unk1C + 2);
-			}
-			sfxId = *(s32*)(env->unk6 + 0xE);
-			if ((u32)sfxId != -1) {
-				sfx = &pssfx[sfxId & 0xFF];
-				rnd = sfx->unk0;
-				if ((u32)rnd != -1) {
-					*(u16*)&sfx->unk8[0xE] = span;
-					entry = &pssfxlist[rnd & 0x1FFF];
-					if (!(*(u16*)&sfx->unk6 & 1)) {
-						if (!(entry->field_0x4 & 0x80000000)) {
-							SoundEfxSetLPF(sfx->unk18, (s16)span);
-						}
-					}
-				}
-			}
+			span = psndENVGetLPF(env);
+			psndSFX_lpf(*(s32*)(env->unk6 + 0xE), span);
 				break;
 			}
 			continue;
@@ -7062,27 +6969,8 @@ void psndENVMain(void) {
 					sfx->unk8[0] = vol;
 				}
 			}
-			span = 0;
-			if (*(u16*)&psnd.unk18 == *(u16*)&env->unk4) {
-				span = *(u16*)(psnd.unk1C + 0);
-			}
-			if (*(u16*)&psnd.unk1A == *(u16*)&env->unk4) {
-				span = *(u16*)(psnd.unk1C + 2);
-			}
-			sfxId = *(s32*)(env->unk6 + 0xE);
-			if ((u32)sfxId != -1) {
-				sfx = &pssfx[sfxId & 0xFF];
-				rnd = sfx->unk0;
-				if ((u32)rnd != -1) {
-					*(u16*)&sfx->unk8[0xE] = span;
-					entry = &pssfxlist[rnd & 0x1FFF];
-					if (!(*(u16*)&sfx->unk6 & 1)) {
-						if (!(entry->field_0x4 & 0x80000000)) {
-							SoundEfxSetLPF(sfx->unk18, (s16)span);
-						}
-					}
-				}
-			}
+			span = psndENVGetLPF(env);
+			psndSFX_lpf(*(s32*)(env->unk6 + 0xE), span);
 				break;
 			}
 			continue;
@@ -7101,27 +6989,8 @@ void psndENVMain(void) {
 					sfx->unk8[0] = vol;
 				}
 			}
-			span = 0;
-			if (*(u16*)&psnd.unk18 == *(u16*)&env->unk4) {
-				span = *(u16*)(psnd.unk1C + 0);
-			}
-			if (*(u16*)&psnd.unk1A == *(u16*)&env->unk4) {
-				span = *(u16*)(psnd.unk1C + 2);
-			}
-			sfxId = *(s32*)(env->unk6 + 0xE);
-			if ((u32)sfxId != -1) {
-				sfx = &pssfx[sfxId & 0xFF];
-				rnd = sfx->unk0;
-				if ((u32)rnd != -1) {
-					*(u16*)&sfx->unk8[0xE] = span;
-					entry = &pssfxlist[rnd & 0x1FFF];
-					if (!(*(u16*)&sfx->unk6 & 1)) {
-						if (!(entry->field_0x4 & 0x80000000)) {
-							SoundEfxSetLPF(sfx->unk18, (s16)span);
-						}
-					}
-				}
-			}
+			span = psndENVGetLPF(env);
+			psndSFX_lpf(*(s32*)(env->unk6 + 0xE), span);
 				break;
 			}
 			continue;
@@ -7140,27 +7009,8 @@ void psndENVMain(void) {
 					sfx->unk8[0] = vol;
 				}
 			}
-			span = 0;
-			if (*(u16*)&psnd.unk18 == *(u16*)&env->unk4) {
-				span = *(u16*)(psnd.unk1C + 0);
-			}
-			if (*(u16*)&psnd.unk1A == *(u16*)&env->unk4) {
-				span = *(u16*)(psnd.unk1C + 2);
-			}
-			sfxId = *(s32*)(env->unk6 + 0xE);
-			if ((u32)sfxId != -1) {
-				sfx = &pssfx[sfxId & 0xFF];
-				rnd = sfx->unk0;
-				if ((u32)rnd != -1) {
-					*(u16*)&sfx->unk8[0xE] = span;
-					entry = &pssfxlist[rnd & 0x1FFF];
-					if (!(*(u16*)&sfx->unk6 & 1)) {
-						if (!(entry->field_0x4 & 0x80000000)) {
-							SoundEfxSetLPF(sfx->unk18, (s16)span);
-						}
-					}
-				}
-			}
+			span = psndENVGetLPF(env);
+			psndSFX_lpf(*(s32*)(env->unk6 + 0xE), span);
 				break;
 			}
 			continue;
@@ -7171,39 +7021,38 @@ void psndENVMain(void) {
 
 	for (i = 0; i < 2; i++) {
 		ramp = (u8*)&psnd + i * 2;
-		if (*(u16*)(ramp + 0x18) == 0) {
-			continue;
-		}
-		work = (u8*)&psnd + i * 0xC;
-		if (*(u8*)(work + 0) == 1) {
-			*(s16*)(work + 4) += 1;
-			if (*(s16*)(work + 4) >= *(s16*)(work + 2)) {
-				*(u8*)(work + 0) = 0;
+		if (*(u16*)(ramp + 0x18) != 0) {
+			work = (u8*)&psnd + i * 0xC;
+			if (*(u8*)(work + 0) == 1) {
+				*(s16*)(work + 4) += 1;
+				if (*(s16*)(work + 4) >= *(s16*)(work + 2)) {
+					*(u8*)(work + 0) = 0;
+				}
 			}
-		}
-		if (*(u8*)(work + 0) == 2) {
-			*(s16*)(work + 4) -= 1;
-			if (*(s16*)(work + 4) <= 0) {
-				psndENV_stop(*(u16*)(ramp + 0x18));
-				*(u8*)(work + 0) = 0;
-			}
-		}
-		if (*(u8*)(work + 0) == 4) {
-			if (*(s16*)(work + 4) > 0) {
+			if (*(u8*)(work + 0) == 2) {
 				*(s16*)(work + 4) -= 1;
+				if (*(s16*)(work + 4) <= 0) {
+					psndENV_stop(*(u16*)(ramp + 0x18));
+					*(u8*)(work + 0) = 0;
+				}
 			}
-		}
-		if (*(u8*)(work + 6) == 8) {
-			if (*(s16*)(work + 0xA) > *(s16*)(work + 8) * *(u8*)(work + 7) / 100) {
-				*(s16*)(work + 0xA) -= 1;
+			if (*(u8*)(work + 0) == 4) {
+				if (*(s16*)(work + 4) > 0) {
+					*(s16*)(work + 4) -= 1;
+				}
 			}
-		}
-		if (*(u8*)(work + 6) == 0x10) {
-			if (*(s16*)(work + 0xA) < *(s16*)(work + 8)) {
-				*(s16*)(work + 0xA) += 1;
+			if (*(u8*)(work + 6) == 8) {
+				if (*(s16*)(work + 0xA) > *(s16*)(work + 8) * *(u8*)(work + 7) / 100) {
+					*(s16*)(work + 0xA) -= 1;
+				}
 			}
-			else {
-				*(u8*)(work + 6) = 0;
+			if (*(u8*)(work + 6) == 0x10) {
+				if (*(s16*)(work + 0xA) < *(s16*)(work + 8)) {
+					*(s16*)(work + 0xA) += 1;
+				}
+				else {
+					*(u8*)(work + 6) = 0;
+				}
 			}
 		}
 		if (*(u16*)(ramp + 0x1C) < *(u16*)(ramp + 0x20)) {
@@ -7258,10 +7107,9 @@ static inline s32 psndENVFindName(s32 name) {
 
 // name lookup and free-env scan are inlined static helpers; with them index lands
 // in r31 and env in r30 as the target, and the u16 slot offset `ofs` declared after `work` puts it in r27 and
-// active in r29. Left: the final 0x7D00 stores reuse `psnd + ofs` from the active computation, so the address
-// takes r4 and the constant r3 (retail recomputes the address: r3, constant r4); the empty `case 1`/`case 3`
-// fix the switch's 2-then-0 tree.
-// NONMATCHING (99.40%): register colouring only, see above.
+// active in r29. The final 0x7D00 stores index the u16 fields the way `active` does (`(u8*)psnd.unk1C + ofs`):
+// the cast keeps the frontend from folding both into one `psnd + ofs` temp, so the address is recomputed as in
+// retail. The empty `case 1`/`case 3` fix the switch's 2-then-0 tree.
 s32 psndENVOn_f_d(s32 id, s32 name, s32 value, s32 flag) {
 	s32 index;
 	PaperSoundEnv* env;
@@ -7359,8 +7207,8 @@ s32 psndENVOn_f_d(s32 id, s32 name, s32 value, s32 flag) {
 
 	active[0] = index;
 	work->unk0 = 0;
-	*(u16*)(psnd.unk1C + ofs) = 0x7D00;
-	*(u16*)(psnd.unk1C + ofs + 4) = 0x7D00;
+	*(u16*)((u8*)psnd.unk1C + ofs) = 0x7D00;
+	*(u16*)((u8*)psnd.unk20 + ofs) = 0x7D00;
 	if (id & 0x100) {
 		work->unk0 = 1;
 		work->unk2 = (s16)((u32)value / 16.666666f);
