@@ -7488,3 +7488,14 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   level-1's named allocations still had a switch target r3 vs r0 and copy scheduling differences; 99.95 signed64
   event-load and 99.80 offset-changing probes were semantically wrong and discarded. The missing shape was initialised
   shared header traversal.
+
+### battle_audience LINKED: BattleAudienceDispAudience 98.51 -> 100, 148/148 (GPT-6.1 Sol, high effort, sol8; after Opus passes)
+- Closing lever: the sol5 `_LvupParamConfirmDisp` lesson (a natural field pointer whose address folds into the final
+  load) plus ordinary row-major matrix writes. Keep sxsy/sxcy as block-local initialised products; write all four entries
+  of row 0, then row 1, then row 2. For the normal assignment and both PSMTXMultVec arguments use
+  `(Vec*)(member->field_0x54 + 0x3C)` (the existing normal at member+0x90): the field-relative expression changes the
+  shared copy/call address graph and the second scheduling pass.
+- Hard negatives: direct `(Vec*)((u8*)member + 0x90)` leaves the row-major version at 96.27; a named normal pointer (any
+  declaration position) or a named member struct view also returns to 96.27; changing only the copy is insufficient.
+  Treating this purely as an FPR/declaration-order problem hid the GPR address dependency.
+- No data work was needed: on6-baud's link test showed the data already byte-exact (the 40.8% was tail padding).
