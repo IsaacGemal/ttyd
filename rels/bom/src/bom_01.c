@@ -273,8 +273,12 @@ void drawNum(s32 num, s32 count, f32 a, f32 b, f32 c) {
     }
 }
 
-// NONMATCHING (99.85%): every call, branch and constant matches; retail copies the flag/id into r26 and
-// r0 before the inlined drawNum calls (`mr r26,r3`, `li r0,7; mr r3,r0`), which this form does not.
+static inline s32 sightBlink(s32 i) {
+    return ((gp->retraceCount % 20) > 6 && i == sight_wp->state) ? 1 : 0;
+}
+
+// NONMATCHING (99.91%): every call, branch and constant matches; retail keeps the arrow id's 7/6 in r0 and
+// copies it into r3 (`li r0,7; mr r3,r0`), and computes the flag in r3; here those two swap and the id copy is gone.
 void disp_sight(CameraId cameraId, void* param) {
     GXColor colorA = {0xFF, 0xFF, 0xFF, 0xFF};
     GXColor colorB = {0x00, 0x00, 0x00, 0xFF};
@@ -368,7 +372,7 @@ void disp_sight(CameraId cameraId, void* param) {
 
     winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
     for (i = 0; i < 4; i++) {
-        s32 flag = ((gp->retraceCount % 20) > 6 && i == sight_wp->state) ? 1 : 0;
+        s32 flag = sightBlink(i);
         s32 id = 7;
 
         if (flag) {
@@ -631,7 +635,7 @@ USER_FUNC(bom_fall) {
 }
 
 static void pose_init(void) {
-    char buf[0x28];
+    char buf[0x20];
     PoseData* pd = ((PoseRoot*)lp[0])->data;
     ExtTableEntry* p = ext_data;
     s32 i = 0;
@@ -717,8 +721,8 @@ static inline void extInitPos(ExtPose* pose, f32 angle, f32 range) {
     (*pose->matrix)[2][3] = range * bomCosApprox(angle);
 }
 
-// NONMATCHING (98.74%): retail keeps `range` in f0 and the second sine scratch in f2; here they are
-// swapped, which shifts the i2f stack slot and two base registers.
+// NONMATCHING (98.76%): retail keeps `range` in f0 and the sine scratch in f1/f2; here range takes f2 and
+// the scratch f0/f1 (FPR colouring only).
 static void ext_init(void) {
     s32 i;
     PoseData* pd;
@@ -786,8 +790,6 @@ void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
 }
 
 // opt_lifetimes/opt_propagation off (as in rsh_05): hoists the sin/cos coefficients as retail does.
-// NONMATCHING (99.97%): in case 2 the inlined bomSinApprox argument temp and dy take f26/f28 swapped
-// against retail (f28/f26); everything else matches.
 #pragma opt_lifetimes off
 #pragma opt_propagation off
 static void ext_main(void) {
@@ -819,7 +821,6 @@ static void ext_main(void) {
             }
             break;
         case 1: {
-            f32 x;
             f32 z;
             f32 p;
             f32 q;
@@ -833,10 +834,8 @@ static void ext_main(void) {
 
             z = bomCosApprox(angle);
             z = radius * -z;
-            x = bomSinApprox(angle);
-            x = radius * x;
 
-            jump(i, 2, x, 150.0f, z, p, q);
+            jump(i, 2, radius * bomSinApprox(angle), 150.0f, z, p, q);
             break;
         }
         case 2: {
@@ -2287,9 +2286,9 @@ void ext_init_minnnanokoe(void) {
 // short animation timer) and occasionally play a 3D SFX.
 void jump_minnnanokoe(s32 index, f32 f) {
     PoseData* pd = ((PoseRoot*)lp[0])->data;
-    ExtPose* pose = extGetPosePtr();
+    ExtPose* pose = &extGetPosePtr()[index];
 
-    pd->states[index].field_4 = (Vec){pose[index].matrix[0][0][3], pose[index].matrix[0][1][3], pose[index].matrix[0][2][3]};
+    pd->states[index].field_4 = (Vec){pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]};
     pd->states[index].field_10 = 0.0f;
     pd->states[index].field_14 = 0.1f;
     pd->states[index].field_18 = 20;
@@ -2301,7 +2300,7 @@ void jump_minnnanokoe(s32 index, f32 f) {
     pd->states[index].field_1 = 5;
     pd->states[index].field_0 = 100;
     if (evtGetValue(0, 0xF5DE0180) != 401 && index % 5 == 0) {
-        Vec pos2 = (Vec){pose[index].matrix[0][0][3], pose[index].matrix[0][1][3], pose[index].matrix[0][2][3]};
+        Vec pos2 = (Vec){pose->matrix[0][0][3], pose->matrix[0][1][3], pose->matrix[0][2][3]};
 
         psndSFXOn_3D("SFX_STG7_BOMB_TOGETHER2", &pos2);
     }
@@ -2338,17 +2337,15 @@ void ext_dispent_minnnanokoe(void) {
     dispEntry(CAMERA_3D, 0.0f, 1, ext_disp_minnnanokoe, NULL);
 }
 
-// NONMATCHING (96.86%): retail keeps event->args in r27 and a materialised args+2 in r31 (seven
-// callee-saved registers); here the compiler folds args+2 into the 0x8/0xc displacements of the single base
-// and saves one register, shifting flag/idx/p by one. The p local fixes the schedule, not the second base.
 USER_FUNC(bom1000_msg) {
-    s32* args = event->args;
-    s32 a = evtGetValue(event, args[0]);
-    s32 b = evtGetValue(event, args[1]);
+    s32* argp = event->args;
+    s32* args = argp;
+    s32 a = evtGetValue(event, *argp++);
+    s32 b = evtGetValue(event, *argp++);
     ExtPose* pose = extGetPosePtr();
-    ExtPose* p;
     s32 base;
     s32 flag;
+    ExtPose* p;
     s32 idx;
     if (a == 0) {
         base = 3;
@@ -2358,18 +2355,17 @@ USER_FUNC(bom1000_msg) {
         flag = 0;
     }
     idx = b + base * 14;
-    b = (b + (rand() % 2 + 1) * 4) % 14;
+    b += (rand() % 2 + 1) * 4;
+    b %= 14;
     p = &pose[idx];
     evtSetValue(event, args[0], flag);
     evtSetValue(event, args[1], b);
-    evtSetFloat(event, args[2], p->matrix[0][0][3]);
-    evtSetFloat(event, args[3], p->matrix[0][2][3]);
+    evtSetFloat(event, *argp++, p->matrix[0][0][3]);
+    evtSetFloat(event, *argp++, p->matrix[0][2][3]);
     return EVT_RETURN_DONE;
 }
 
 // bom1000_jump(): kick a random pose's state and occasionally play a 3D SFX.
-// NONMATCHING (99.69%): register colouring only - the idx*0x30 temp and the extGetPosePtr element
-// land on swapped r30/r31 (r30=idx*0x30 in retail).
 USER_FUNC(bom1000_jump) {
     PoseData* pd = ((PoseRoot*)lp[0])->data;
     s32 idx = rand() % *(s32*)((u8*)pd + 0x4);  // 0x4 of PoseData is the pose count
