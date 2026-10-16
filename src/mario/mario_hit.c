@@ -51,15 +51,8 @@ static const Vec vec3_802c5814;
 static const Vec vec3_802c5820;
 static const Vec vec3_802c582c;
 static const Vec vec3_802c5838;
-static const Vec vec3_802c5844;
-static const Vec vec3_802c5850;
-static const Vec vec3_802c585c;
 static const Vec vec3_802c5874;
 static const Vec vec3_802c5868;
-static const Vec vec3_802c58c8;
-MEM_VEC vec3_802c58d4;
-static const Vec vec3_802c58e0;
-MEM_VEC vec3_802c58ec;
 
 
 //.rodata
@@ -136,21 +129,8 @@ static inline f32 gndAngle(f32 x, f32 y) {
 // locals for symbols with no home header
 
 // floats with no home header
-#ifdef MUST_MATCH
-// Match-only: building the direction in an inline that starts from the named
-// vector and returns by value makes MWCC materialise the original's extra
-// built-then-copied Vec slot (as in searchUnder2's makeVec5760).
-static inline Vec makeDirVec(const Vec* src, f32 x, f32 z) {
-    Vec v = *src;
-    v.x = x;
-    v.z = z;
-    return v;
-}
-#endif
 
-// Filter+round half of the above, with the query built by the caller. marioChkFront needs
-// its query.targetPos written before the dir build (the original schedules the pos->x/y/z
-// loads first), which marioHitCheckVec cannot express because it copies *a itself.
+// Filter+round half of the above, with the query built by the caller (marioCheckWall_roll).
 static inline HitEntry* marioHitCheckVecRound(HitCheckQuery* query, Vec* c, Vec* d, f32* distance) {
     HitEntry* hit;
 
@@ -925,8 +905,8 @@ HitEntry* marioSearchGround(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
 // The probe direction and start point are read from their named vectors (non-const under MUST_MATCH, MEM_VEC), so
 // MWCC addresses them through its own .rodata base as the original does; the loop index takes the start value
 // directly; the probe is the file's marioHitCheckVec (inlined); the 0x220 slope store comes before the sqrt for the
-// third angle. Float declaration order from a rasim search.
-// NONMATCHING (99.78%): in the four `8.64 * -cos` offsets the constant and the negated cosine swap f0/f1-f2.
+// third angle. Float declaration order from a rasim search. The rounded cosine sits in its own local before it is
+// negated (written inline, the constant and the negated cosine swap f0/f1-f2).
 s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     MarioWork* wp2;
@@ -984,6 +964,7 @@ s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
         f32 dx;
         f32 dz;
         f32 rad;
+        f32 c;
 
         switch (i) {
         case 0:
@@ -993,12 +974,14 @@ s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
         case 1:
             rad = 3.1415927f * (90.f + wp->directionView) / 180.f;
             dx = 8.639999f * (f32)sin(rad);
-            dz = 8.639999f * -(f32)cos(rad);
+            c = (f32)cos(rad);
+            dz = 8.639999f * -c;
             break;
         case 2:
             rad = 3.1415927f * (wp->directionView - 90.f) / 180.f;
             dx = 8.639999f * (f32)sin(rad);
-            dz = 8.639999f * -(f32)cos(rad);
+            c = (f32)cos(rad);
+            dz = 8.639999f * -c;
             break;
         case 3:
             dx = 0.0f;
@@ -1012,13 +995,15 @@ s32 marioSearchGroundRoll(f32* outY, f32* outX, f32* outZ, f32 a, f32 b) {
         case 5:
             rad = 3.1415927f * (90.f + wp->directionView) / 180.f;
             dx = 8.639999f * (f32)sin(rad);
-            dz = 8.639999f * -(f32)cos(rad);
+            c = (f32)cos(rad);
+            dz = 8.639999f * -c;
             movePos(&dx, &dz, 3.0f, wp->directionView);
             break;
         case 6:
             rad = 3.1415927f * (wp->directionView - 90.f) / 180.f;
             dx = 8.639999f * (f32)sin(rad);
-            dz = 8.639999f * -(f32)cos(rad);
+            c = (f32)cos(rad);
+            dz = 8.639999f * -c;
             movePos(&dx, &dz, 3.0f, wp->directionView);
             break;
         }
@@ -1134,20 +1119,15 @@ void* marioChkLandon(f32* pos, f32 spd) {
 
 
 // Older landing check (the Koopa-aware ground probe): same five-sample ring as marioChkLandon2 but the ray points
-// down from 0.75 * height and the accepted hit y is returned rounded to 0.01. The hit's y and normal are read into
-// locals straight after the probe; the explicit ny100 local keeps 100 * ny in a saved FPR across both angleABf calls.
-// The original shares one 100.0 load between the first gndCenti's rounding and the second angleABf's 100 * nx
+// down from 0.75 * height and the accepted hit y is returned rounded to 0.01. Each sample probes through the file's
+// marioHitCheck (inlined, as in the original: it reads the hit's y and normal back into locals, and its 0.0/-1.0
+// direction arguments are hoisted). The explicit ny100 local keeps 100 * ny in a saved FPR across both angleABf
+// calls. The original shares one 100.0 load between the first gndCenti's rounding and the second angleABf's 100 * nx
 // argument. d0/yy are assigned in the loop body after the offset chain (MWCC hoists them after the -f19/-f20
 // negations, as the original's preheader has them); float declaration order from a rasim search.
 // Compares: fabs(...) < 0.1 and the rounding tests (cror eq,gt -> >=) checked against the asm.
-// NONMATCHING (99.81%): `dist` takes f28 where the original has f26 (the hoisted 0.0/-1.0 outrank it there; no single
-// interference edge does it), and the 0.25 constant/field temps of the f20/f19 products swap f0/f2.
 void* marioLandonChk_old(f32* pos, f32 spd) {
     MarioWork* wp = marioGetPtr();
-    Vec dir;
-    Vec p;
-    Vec normal;
-    Vec hitPos;
     HitEntry* hit;
     f32 nz;
     f32 ny100;
@@ -1160,11 +1140,15 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
     f32 pz;
     f32 fa;
     f32 hy;
+    f32 hx;
+    f32 hz;
     f32 nx;
     f32 ny;
     f32 ox;
     f32 ang;
     f32 rad;
+    f32 sn;
+    f32 c;
     f32 oz;
     f32 dist;
     f32 d0;
@@ -1195,8 +1179,10 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
         angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
     }
     rad = 3.1415927f * angle / 180.f;
-    f20 = wp->wPlayerCollisionBox.x * (f32)sin(rad) / 4.0f;
-    f19 = wp->wPlayerCollisionBox.x * -(f32)cos(rad) / 4.0f;
+    sn = (f32)sin(rad);
+    f20 = 0.25f * (wp->wPlayerCollisionBox.x * sn);
+    c = (f32)cos(rad);
+    f19 = 0.25f * (wp->wPlayerCollisionBox.x * -c);
     px = wp->position.x;
     py = wp->position.y;
     pz = wp->position.z;
@@ -1224,20 +1210,8 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
         }
         d0 = h + fa;
         yy = py + h;
-        p = vec3_802c5730;
-        dir = vec3_802c573c;
-        p.x = px + ox;
-        p.y = yy;
-        p.z = pz + oz;
-        dir.x = 0.0f;
-        dir.y = -1.0f;
-        dir.z = 0.0f;
         dist = d0;
-        hit = marioHitCheckVec(&p, &dir, &hitPos, &normal, &dist);
-        hy = hitPos.y;
-        nx = normal.x;
-        ny = normal.y;
-        nz = normal.z;
+        hit = marioHitCheck(&hx, &hy, &hz, &dist, &nx, &ny, &nz, px + ox, yy, pz + oz, 0.0f, -1.0f, 0.0f);
         if (hit != NULL) {
             MarioWork* wp2;
 
@@ -1258,12 +1232,10 @@ void* marioLandonChk_old(f32* pos, f32 spd) {
 }
 
 // The hit sample ring of marioChkLandon, with the ground y returned through *out.
-// The cos offset is computed right after the sin one (before the up copy and yy), and d0 is assigned in the loop
-// body (MWCC hoists it after the offset negations, as in marioLandonChk_old); Vec and float declaration orders from
-// the stack slots and a rasim search. fabs() is __fabsf (f32 add, no frsp) as in the original; the compare
-// `fabs(...) < 0.1` is plain.
-// NONMATCHING (99.80%): h takes f31 where the original has f28 (there it is still live across the hoisted
-// negations, so it shares yy's register), and the 0.25 constant/field temps of the f27/f26 products swap f0/f2 (`/ 4.0f` fixes their fmuls operand order).
+// The cos offset is computed right after the sin one (before the up copy), and d0 and yy are assigned in the loop
+// body (MWCC hoists them after the offset negations, d0 first, so h dies into yy's register as in the original); Vec
+// and float declaration orders from the stack slots and a rasim search. fabs() is __fabsf (f32 add, no frsp) as in
+// the original; the compare `fabs(...) < 0.1` is plain.
 void* marioChkLandon2(f32* out, f32 a, f32 b) {
     MarioWork* wp = marioGetPtr();
     Vec up;
@@ -1272,19 +1244,22 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
     Vec p;
     HitEntry* hit;
     f32 d0;
-    f32 fa;
     f32 yy;
+    f32 py;
+    f32 rad;
     f32 f27;
     f32 h;
+    f32 sn;
+    f32 fa;
+    f32 ang;
     f32 f26;
     f32 px;
-    f32 rad;
     f32 pz;
     f32 dist;
     f32 ox;
-    f32 angle;
     f32 oz;
-    f32 ang;
+    f32 angle;
+    f32 c;
     s32 i;
 
     *(f32*)((u8*)wp + 0x218) = 0.0f;
@@ -1307,10 +1282,12 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
         angle = toMovedir(*(f32*)((u8*)wp + 0x1A8));
     }
     rad = 3.1415927f * angle / 180.f;
-    f27 = wp->wPlayerCollisionBox.x * (f32)sin(rad) / 4.0f;
-    f26 = wp->wPlayerCollisionBox.x * -(f32)cos(rad) / 4.0f;
+    sn = (f32)sin(rad);
+    f27 = 0.25f * (wp->wPlayerCollisionBox.x * sn);
+    c = (f32)cos(rad);
+    f26 = 0.25f * (wp->wPlayerCollisionBox.x * -c);
     up = vec3_802c57a8;
-    yy = wp->position.y + b + h;
+    py = wp->position.y + b;
     px = wp->position.x;
     pz = wp->position.z;
     for (i = 0; i < 5; i++) {
@@ -1331,6 +1308,7 @@ void* marioChkLandon2(f32* out, f32 a, f32 b) {
             oz = -f26;
         }
         d0 = h + fa;
+        yy = py + h;
         p = vec3_802c57b4;
         p.x = px + ox;
         p.y = yy;
@@ -1898,24 +1876,6 @@ void* marioSearchHead_jabara(Vec* pos, f32* outY, s32* out, f32 a) {
 
 static const Vec vec3_802c582c = { 0.0f, 1.0f, 0.0f };
 static const Vec vec3_802c5838 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c5844 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c5850 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c585c = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c5868 = { 0.0f, -1.0f, 0.0f };
-static const Vec vec3_802c5874 = { 0.0f, -1.0f, 0.0f };
-static const Vec vec3_802c5880 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c588c = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c5898 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c58a4 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c58b0 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c58bc = { 0.0f, -1.0f, 0.0f };
-static const Vec vec3_802c58c8 = { 0.0f, 0.0f, 0.0f };
-MEM_VEC vec3_802c58d4 = { 0.0f, 0.0f, 0.0f };
-static const Vec vec3_802c58e0 = { 0.0f, 0.0f, 0.0f };
-MEM_VEC vec3_802c58ec = { 0.0f, 0.0f, 0.0f };
-MEM_VEC vec3_802c58f8 = { 0.0f, 0.0f, 0.0f };
-MEM_VEC vec3_802c5904 = { 0.0f, 0.0f, 0.0f };
-MEM_VEC vec3_802c5910 = { 0.0f, 0.0f, 0.0f };
 
 // prototypes for in-file functions
 
@@ -2201,13 +2161,9 @@ void marioCheckWall_roll(f32 a, f32 b) {
 
 
 
-// The caller builds `query` (via marioHitCheckVecRound) so query.targetPos = *pos is written first.
-// The remaining diffs are the schedule of that query/dir build (the original issues the vec3.y and
-// pos.z loads earlier, which also changes the registers those webs get) and one hitPos rounding
-// temporary (the y component) that takes f5 where the original has f4.
-// NONMATCHING (98.57%): same instruction count, calls and immediates; scheduling and allocation only.
-void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist) {
-    HitCheckQuery query;
+// `pos` is passed by value (the callers in mot_jump build it in a local first), so MWCC knows it can't alias the
+// inlined probe's query and loads all of it before the query stores.
+void* marioChkFront(f32* out, Vec pos, f32 angle, f32 dist) {
     Vec hitPos;
     Vec hitNormal;
     Vec dir;
@@ -2217,36 +2173,31 @@ void* marioChkFront(f32* out, Vec* pos, f32 angle, f32 dist) {
     f32 c;
 
     sincosf(&s, &c, angle);
-    query.targetPos = *pos;
     dir = vec3_802c5838;
     dir.x = s;
     dir.z = c;
-    query.targetDir = dir;
-    query.targetDistance = dist;
     distance = dist;
-    hit = marioHitCheckVecRound(&query, &hitPos, &hitNormal, &distance);
+    hit = marioHitCheckVec(&pos, &dir, &hitPos, &hitNormal, &distance);
     if (hit != NULL && distance <= dist) {
-        *out = distABf(pos->x, pos->z, hitPos.x, hitPos.z);
+        *out = distABf(pos.x, pos.z, hitPos.x, hitPos.z);
         return hit;
     }
     *out = -1.0f;
     return NULL;
 }
 
-// NONMATCHING (91.67%): the three passes probe through the file's marioHitCheckVec (inlined), which reproduces the 3 query slots and the distance/hitPos/normal rounding; calls and control flow match. Both directions are built through `makeDirVec` (a by-value inline that starts from the named rodata vec) so MWCC materialises the original's built-then-copied `Vec` slots, and the pass-1 best-hit update is two branches (the original duplicates the copy for `best == NULL` and for a closer hit). The frame matches; what remains is stack slot placement (declaration order does not move it) and register colouring.
+// The three passes probe through the file's marioHitCheckVec (inlined). Directions are compound literals; the
+// later passes re-assign `dir` (pass 3 inside its loop) and pass 2 re-copies `*pos`, so MWCC splits them into the
+// original's stack objects. `reach` holds the pass-1 ray length (the original's f30 under `dist`'s f31), and hit2 is
+// cleared before each sincosf, which keeps it in r26.
 HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     MarioWork* wp = marioGetPtr();
-    Vec dir;
-    Vec dir2;
-    Vec dir3;
-    Vec bestNorm;
     Vec p;
+    Vec dir;
     Vec hitPos;
+    Vec bestNorm;
     Vec norm;
-#ifdef MUST_MATCH
-    Vec dtmp;
-    Vec dtmp2;
-#endif
+    f32 half[4];
     HitEntry* hit;
     HitEntry* best;
     HitEntry* hit2;
@@ -2254,12 +2205,18 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     f32 cos;
     f32 sin2;
     f32 cos2;
-    f32 half[3];
     f32 dist;
-    f32 curDist;
-    f32 bestDist;
+    f32 reach;
     f32 deltaX;
+    f32 dx;
     f32 deltaZ;
+    f32 dz;
+    f32 bestDist;
+    f32 nz;
+    f32 dot;
+    f32 curDist;
+    f32 marioHeight;
+    f32 nx;
     s32 count;
     s32 i;
 
@@ -2288,7 +2245,8 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
         }
     } else if (wp->currMotionId == 0x1A) {
         MarioWork* wp2 = marioGetPtr();
-        f32 marioHeight = wp2->wPlayerCollisionBox.y;
+
+        marioHeight = wp2->wPlayerCollisionBox.y;
 
         if (wp2->currMotionId == 0x1A) {
             PartyEntry* party = partyGetPtr(marioGetPartyId());
@@ -2316,20 +2274,13 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     }
     dist = 0.5f * c;
     p = *pos;
-#ifdef MUST_MATCH
-    dtmp = makeDirVec(&vec3_802c5844, sin, cos);
-    dir = dtmp;
-#else
-    dir = vec3_802c5844;
-    dir.x = sin;
-    dir.z = cos;
-#endif
-    curDist = dist + a;
-    bestDist = curDist;
+    dir = (Vec){sin, 0.0f, cos};
+    reach = dist + a;
+    bestDist = reach;
     best = NULL;
     for (i = 0; i < count; i++) {
         p.y = pos->y + half[i];
-        curDist = dist + a;
+        curDist = reach;
         hit = marioHitCheckVec(&p, &dir, &hitPos, &norm, &curDist);
         if (hit != NULL) {
             if (chkBalloon(hit) != 0) {
@@ -2349,45 +2300,36 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
         }
     }
     if (best != NULL) {
-        f32 nx = bestNorm.x;
-        f32 nz = bestNorm.z;
-        f32 dx = sin * a;
-        f32 dz = cos * a;
-        f32 dot = dx * nx + dz * nz;
+        nx = bestNorm.x;
+        nz = bestNorm.z;
+        dz = cos * a;
+        dx = sin * a;
+        dot = dx * nx + dz * nz;
 
         deltaX = 0.5f * (dx - dot * nx);
         deltaZ = 0.5f * (dz - dot * nz);
     }
-    sincosf(&sin2, &cos2, 45.0f + b);
-#ifdef MUST_MATCH
-    dtmp2 = makeDirVec(&vec3_802c5850, sin2, cos2);
-    dir2 = dtmp2;
-#else
-    dir2 = vec3_802c5850;
-    dir2.x = sin2;
-    dir2.z = cos2;
-#endif
     hit2 = NULL;
+    sincosf(&sin2, &cos2, 45.0f + b);
+    curDist = dist;
+    p = *pos;
+    dir = (Vec){sin2, 0.0f, cos2};
     for (i = 0; i < count; i++) {
         p.y = pos->y + half[i];
         curDist = dist;
-        hit = marioHitCheckVec(&p, &dir2, NULL, NULL, &curDist);
-        hit2 = hit;
+        hit2 = marioHitCheckVec(&p, &dir, NULL, NULL, &curDist);
         if (hit2 != NULL) {
             break;
         }
     }
     if (hit2 != NULL) {
-        sincosf(&sin2, &cos2, b - 45.0f);
-        dir3 = vec3_802c585c;
-        dir3.x = sin2;
-        dir3.z = cos2;
         hit2 = NULL;
+        sincosf(&sin2, &cos2, b - 45.0f);
         for (i = 0; i < count; i++) {
             p.y = pos->y + half[i];
             curDist = dist;
-            hit = marioHitCheckVec(&p, &dir3, NULL, NULL, &curDist);
-            hit2 = hit;
+            dir = (Vec){sin2, 0.0f, cos2};
+            hit2 = marioHitCheckVec(&p, &dir, NULL, NULL, &curDist);
         }
     }
     if (best != NULL) {
@@ -2406,6 +2348,15 @@ HitEntry* searchFrontWall(Vec* pos, f32* out, f32 a, f32 b, f32 c) {
     }
     return NULL;
 }
+
+static const Vec vec3_802c5868 = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c5874 = { 0.0f, -1.0f, 0.0f };
+static const Vec vec3_802c5880 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c588c = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c5898 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c58a4 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c58b0 = { 0.0f, 0.0f, 0.0f };
+static const Vec vec3_802c58bc = { 0.0f, -1.0f, 0.0f };
 
 // MATCHING: `goto out` gives the single shared `mr r3,r28` exit the original has; the
 // rounding is the same MUST_MATCH reload form as dou10_yoko_yari2.
@@ -2596,15 +2547,14 @@ HitEntry* N_dou10_yoko_yari3(void* unused) {
 // The 0.01-rounded angle fields use 100.0 with an unconditional +0.5 (ROUND_CENTI). The probe is the file's own
 // marioHitCheckVec (inlined: its distance rounding is dead and its hitPos/normal tests fold, which is the original's
 // shape and frame); float declaration order from a rasim search; the step-down case falls through to the shared
-// `return NULL`.
-// NONMATCHING (99.45%): the inlined probe's result is coalesced into `hit` (r29) where the original keeps it in r3
-// and copies it after the NULL test (4 instructions).
+// `return NULL`. `hit` is a `void*`: the conversion from the probe's HitEntry* keeps the inlined result in r3 until
+// after the NULL test (as a HitEntry* it is coalesced into r29).
 HitEntry* marioChkFrontStep(f32* outY, f32* outDist, f32* outAngle) {
     MarioWork* wp = marioGetPtr();
     MarioWork* wp2;
     Vec dir;
     f32 dist;
-    HitEntry* hit;
+    void* hit;
     Vec hitPos;
     Vec n;
     Vec v;
@@ -2735,29 +2685,30 @@ HitEntry* marioChkFrontStep_old(f32* outY, f32* outDist, f32* outAngle) {
 }
 #endif
 
-// NONMATCHING (97.42%): each sweep builds `pHigh`/`pLow` copies of `position` (this fixes the original's yTop/yBot GPR-bit handling and was worth +7%) and probes through the file's marioHitCheckVec (NULL hitPos/normal, so only the distance rounds). Both sweeps build `dir` through `makeDirVec` (a by-value inline starting from the named rodata vec) so MWCC emits the original's built-then-copied `Vec` slots (first-sweep copy at 0x6c, second at 0x18); the direction templates are non-const under MUST_MATCH (MEM_VEC), so they reload after each sincosf instead of being hoisted into three saved GPRs (r19-r31 now as the original). pHigh/pLow are copies of `p` with `y +=` applied after the disp copy (the original reads the copies' y back from the stack). Remaining: the frame is 0x250 vs 0x260 (the original has 16 more bytes of locals, below p at 0x30), so every stack slot and the parameter FPRs (f25-f27 vs f24-f26) are shifted. Named args: f1 (`a`) is unused, f24=f2 `b`, f25=f3 `c`, f26=f4 `d`.
+// Each sweep copies `*position` into pHigh/pLow, raises their y, and probes through the file's marioHitCheckVec
+// (NULL hitPos/normal, so only the distance rounds). Directions are compound literals; the second sweep's angle is
+// its own variable. d1 and d2 are both set before the first probe (`d2 = d1 = dist`), and the push distance is
+// written out at each use. The second sweep's push spells out `0.5f * c` instead of reading dist; with dist at every
+// site the entry block schedules the multiply and the y stores in a different order. Float declaration order from a
+// rasim search.
 s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
     HitEntry* hit;
     HitEntry* hit2;
-    Vec dir;
-    Vec p;
     Vec pHigh;
     Vec pLow;
+    Vec dir;
     Vec disp;
     Vec prev;
-#ifdef MUST_MATCH
-    Vec dtmpW;
-    Vec dtmpW2;
-#endif
     f32 sin;
     f32 cos;
     f32 bsin;
     f32 bcos;
-    f32 step;
-    f32 angle;
     f32 dist;
+    f32 angle;
+    f32 angle2;
     f32 d1;
     f32 d2;
+    f32 step;
     f32 limit;
     f32 mag;
     s32 n;
@@ -2772,25 +2723,16 @@ s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
     angle = b;
     step = 360.f / (f32)n;
     dist = 0.5f * c;
-    p = *position;
-    pHigh = p;
-    pLow = p;
-    disp = vec3_802c58c8;
+    pHigh = *position;
+    pLow = *position;
+    disp = (Vec){0.0f, 0.0f, 0.0f};
     pHigh.y += 11.0f;
     pLow.y += d - 1.0f;
     for (i = 0; i < n; i++) {
         sincosf(&sin, &cos, angle);
-#ifdef MUST_MATCH
-        dtmpW2 = makeDirVec(&vec3_802c58d4, sin, cos);
-        dir = dtmpW2;
-#else
-        dir = vec3_802c58d4;
-        dir.x = sin;
-        dir.z = cos;
-#endif
-        d1 = dist;
+        dir = (Vec){sin, 0.0f, cos};
+        d2 = d1 = dist;
         hit = marioHitCheckVec(&pHigh, &dir, NULL, NULL, &d1);
-        d2 = dist;
         hit2 = marioHitCheckVec(&pLow, &dir, NULL, NULL, &d2);
         if (marioChkBero(hit)) {
             hit = NULL;
@@ -2808,12 +2750,9 @@ s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
             d1 = d2;
         }
         if (hit != NULL) {
-            f32 t;
-
             sincosf(&bsin, &bcos, 180.f + angle);
-            t = __fabsf(dist - d1);
-            disp.x += bsin * t;
-            disp.z += bcos * t;
+            disp.x += bsin * __fabsf(dist - d1);
+            disp.z += bcos * __fabsf(dist - d1);
             found = 1;
         }
         angle += step;
@@ -2838,26 +2777,17 @@ s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
         PSVECScale(&disp, &disp, limit / mag);
     }
     PSVECAdd(position, &disp, position);
-    angle = b;
-    p = *position;
-    pHigh = p;
-    pLow = p;
-    disp = vec3_802c58e0;
+    angle2 = b;
+    pHigh = *position;
+    pLow = *position;
+    disp = (Vec){0.0f, 0.0f, 0.0f};
     pHigh.y += 11.0f;
     pLow.y += d - 1.0f;
     for (i = 0; i < n; i++) {
-        sincosf(&sin, &cos, angle);
-#ifdef MUST_MATCH
-        dtmpW = makeDirVec(&vec3_802c58ec, sin, cos);
-        dir = dtmpW;
-#else
-        dir = vec3_802c58ec;
-        dir.x = sin;
-        dir.z = cos;
-#endif
-        d1 = dist;
+        sincosf(&sin, &cos, angle2);
+        dir = (Vec){sin, 0.0f, cos};
+        d2 = d1 = dist;
         hit = marioHitCheckVec(&pHigh, &dir, NULL, NULL, &d1);
-        d2 = dist;
         hit2 = marioHitCheckVec(&pLow, &dir, NULL, NULL, &d2);
         if (marioChkBero(hit)) {
             hit = NULL;
@@ -2875,15 +2805,12 @@ s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
             d1 = d2;
         }
         if (hit != NULL) {
-            f32 t;
-
-            sincosf(&bsin, &bcos, 180.f + angle);
-            t = __fabsf(dist - d1);
-            disp.x += bsin * t;
-            disp.z += bcos * t;
+            sincosf(&bsin, &bcos, 180.f + angle2);
+            disp.x += bsin * __fabsf(0.5f * c - d1);
+            disp.z += bcos * __fabsf(0.5f * c - d1);
             found = 1;
         }
-        angle += step;
+        angle2 += step;
     }
     if (found == 0) {
         return 1;
@@ -2895,6 +2822,10 @@ s32 marioChkWallAround(Vec* position, s32 flag, f32 a, f32 b, f32 c, f32 d) {
     PSVECAdd(position, &disp, position);
     return 1;
 }
+
+MEM_VEC vec3_802c58f8 = { 0.0f, 0.0f, 0.0f };
+MEM_VEC vec3_802c5904 = { 0.0f, 0.0f, 0.0f };
+MEM_VEC vec3_802c5910 = { 0.0f, 0.0f, 0.0f };
 
 // Each dir vector is copied from its named template (MEM_VEC: non-const under MUST_MATCH, so the copy stays inside
 // the loop and is not hoisted as loop-invariant), then x/z are overwritten with sn/cs. The MUST_MATCH
@@ -3138,12 +3069,5 @@ static const Vec vec3_802c576c = { 0.0f, -1.0f, 0.0f };
 static const Vec vec3_802c5814 = { 0.0f, 1.0f, 0.0f };
 static const Vec vec3_802c5820 = { 0.0f, 1.0f, 0.0f };
 #endif
-
-// 4-byte zero word that ends the unit's .data: all-zero objects need explicit_zero_data to be emitted and force_active to survive the linker.
-#pragma explicit_zero_data on
-#pragma force_active on
-__declspec(section ".data") u32 gap_05_8030E5DC_data = 0;
-#pragma force_active reset
-#pragma explicit_zero_data reset
 
 //.sdata2 (defined after the code so the uses stay loads of the named symbols)

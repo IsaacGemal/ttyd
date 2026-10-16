@@ -7363,3 +7363,28 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   an empty `if (dist > 0.0f) {}` in npcMain is dropped.
 - Next: npcCheckHitMarioSide (rasim: `limit`/`scale` before `offX`/`offZ` leaves 1 missing interference for offZ; its
   sqrtf code suggests opt_lifetimes on), fbatBattleMode (mario/marioGetPtr node below `hasStolen`, `fbatData` above `entry`).
+
+### mario_hit LINKED: 30 -> 37/37 (Claude Opus 5.5, on6-mariohit)
+- marioChkFront 98.57 -> 100: `Vec pos` by value. mwccdbg's pre-RA schedule showed the pos.z load pinned behind the
+  query.x/y stores (possible alias through `Vec*`; a `__restrict` probe gave 99.86). The probe is now a plain
+  `marioHitCheckVec(&pos, &dir, ...)`. mot_jump's callers had the by-value copy written out by hand
+  (`pos = tmp; f(&pos)`) and now pass `(Vec){...}` directly; a named local passed by value swaps the stack objects (99.95).
+  **Rule: statement orders can't fix a load pinned behind stores by aliasing; check the pre-RA schedule first.**
+- marioChkWallAround 97.64 -> 100: compound literals, no shared `p`, `d2 = d1 = dist`. Reading `dist` at all four sites
+  schedules the entry block differently (98.90 across 1440 permutations; no variable at all 99.54); spelling out
+  `0.5f * c` at one site gives 100.
+- searchFrontWall 91.67 -> 100: party_hit partySearchWallFront's shape. `marioHitCheckVec` calls, compound-literal
+  directions (the later named templates defined after the function), `reach = dist + a`, pass-2 `p = *pos`, pass-3
+  `dir` re-assigned in its loop, hit2 cleared before each sincosf.
+- marioLandonChk_old -> 100: the file's own `marioHitCheck(...)` instead of a hand-built probe (it failed in on4 only
+  because the templates were const then). marioChkLandon2 -> 100: hoisted `py` with `yy = py + h` after `d0`, plus rasim.
+  marioSearchGroundRoll -> 100: `c = (f32)cos(rad); dz = k * -c;`. marioChkFrontStep -> 100: `void* hit` keeps the
+  inlined result in r3 until after the NULL test.
+- Data: the defined `gap_05_8030E5DC_data` shifted the GroundRoll jump table by 4 bytes in .data; dropped (brief's
+  jump-table rule). Unused MUST_MATCH `makeDirVec` and the replaced named templates removed; no NONMATCHING left.
+- Stack-layout rules from tiny compiles: larger objects sit highest; same-size named objects in declaration order, first
+  declared highest; compound-literal temps after named locals, then inline-local and `*pos` whole-copy temps; a
+  re-assigned Vec is split into a new object.
+- Hard negatives: marioChkFront ~20 hand orders plus 905 of 1344 enumerated orders with `Vec* pos` (98.57 best),
+  `v = *pos` copies 95.1-95.7, marioHitCheckVec with the pointer parameter 95.13; chained copies in WallAround 97.5-98.25;
+  searchFrontWall compound literals with the old named templates kept 90.96-91.65.
