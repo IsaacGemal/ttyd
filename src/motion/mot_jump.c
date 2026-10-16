@@ -228,17 +228,13 @@ void mot_jumpSw(void) {
         if (mario->hitobjJumpFrom != NULL) {
             if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
                 MapObjectEntry* obj = mobjHitObjPtrToPtr(mario->hitobjJumpFrom);
-                Vec pos;
-                Vec tmp;
 
                 MWF32(mario, 0x2B4) = obj->position.x;
                 MWF32(mario, 0x2B8) = obj->position.z;
-                tmp = (Vec){ 0.0f, 0.0f, 0.0f };
-                tmp.x = obj->position.x;
-                tmp.y = obj->position.y + float_0p5_8041abe0 * mario->wPlayerCollisionBox.y;
-                tmp.z = obj->position.z;
-                pos = tmp;
-                if (marioChkFront(&dist, &pos, mario->directionView,
+                if (marioChkFront(&dist,
+                                  (Vec){ obj->position.x, obj->position.y + float_0p5_8041abe0 * mario->wPlayerCollisionBox.y,
+                                         obj->position.z },
+                                  mario->directionView,
                                   float_5_8041abe4 * mario->wPlayerCollisionBox.x)) {
                     if (dist >= float_0_8041abb8
                         && dist <= float_0p5_8041abe0 * mario->wPlayerCollisionBox.x + float_30_8041abe8) {
@@ -355,8 +351,6 @@ void mot_jumpNpc(void) {
         if (mario->hitobjJumpFrom != NULL) {
             if (hitGetAttr(mario->hitobjJumpFrom) & 0x80000000) {
                 MapObjectEntry* obj = mobjHitObjPtrToPtr(mario->hitobjJumpFrom);
-                Vec pos;
-                Vec tmp;
                 f32 sinv;
                 f32 cosv;
                 f32 x;
@@ -365,12 +359,10 @@ void mot_jumpNpc(void) {
 
                 MWF32(mario, 0x2B4) = obj->position.x;
                 MWF32(mario, 0x2B8) = obj->position.z;
-                tmp = (Vec){ 0.0f, 0.0f, 0.0f };
-                tmp.x = obj->position.x;
-                tmp.y = obj->position.y + MATCH_F32(float_0p5_8041abe0) * mario->wPlayerCollisionBox.y;
-                tmp.z = obj->position.z;
-                pos = tmp;
-                if (marioChkFront(&dist, &pos, mario->directionView,
+                if (marioChkFront(&dist,
+                                  (Vec){ obj->position.x, obj->position.y + MATCH_F32(float_0p5_8041abe0) * mario->wPlayerCollisionBox.y,
+                                         obj->position.z },
+                                  mario->directionView,
                                   MATCH_F32(float_5_8041abe4) * mario->wPlayerCollisionBox.x)) {
                     if (dist >= MATCH_F32(float_0_8041abb8)
                         && dist <= MATCH_F32(float_0p5_8041abe0) * mario->wPlayerCollisionBox.x

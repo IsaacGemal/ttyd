@@ -743,7 +743,7 @@ config.libs = [
         "objects": [
             Object(Matching, "mario/mario.c"),
             Object(Matching, "mario/mariost.c"),
-            Object(NonMatching, "mario/mario_hit.c"),
+            Object(Matching, "mario/mario_hit.c"),
             Object(Matching, "mario/mario_motion.c"),
             Object(Matching, "mario/mario_sbr.c"),
             Object(Matching, "mario/mario_pouch.c"),
