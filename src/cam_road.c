@@ -437,13 +437,11 @@ static inline f32 sqrtf(f32 x) {
     return x;
 }
 
-// NONMATCHING (99.23%): retail compares `abs(d)` against `range - 1`/`range - 2` with abs on the left
-// (`cmpw abs, range; blt`) while still evaluating `range` first; the `maxVal` product lands in f5 instead
-// of f3 and the `dist`/sqrtf tail is f3 instead of f6.
 u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     u32 flags = 0;
     s32 d;
     s32 range;
+    s32 lim;
     f32 dot;
     f32 deg;
     f32 maxVal;
@@ -461,10 +459,11 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
                 return 0;
             }
             range = ((CamRoadNode*)cur->unk_24)->unk_44 - ((CamRoadNode*)cur->unk_24)->unk_40;
-            if (range - 1 <= abs(d)) {
+            lim = range;
+            if (abs(d) >= --lim) {
                 return 0;
             }
-            if (range - 2 <= abs(d)) {
+            if (abs(d) >= (range -= 2)) {
                 flags |= 0x20;
             }
         }
@@ -487,44 +486,31 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
         flags |= 0x8;
     }
     dot = cur->unk_34 * prev->unk_34 + cur->unk_3C * prev->unk_3C;
-#ifdef MUST_MATCH
-    // a literal 1.0f keeps this constant out of the shared `1.0f` slot,
-    // which is what lets the dot product land in f1/f0; the named constant does not.
     if (dot > 1.0f) {
         dot = 1.0f;
     }
-#else
-    if (dot > 1.0f) {
-        dot = 1.0f;
-    }
-#endif
     deg = (f32)acos(dot) * 57.29578f;
     deg = __fabsf(deg);
     if (deg > 180.0f) {
         deg = 360.0f - deg;
     }
-    maxVal = 6.2831855f * cur->unk_40;
-    maxVal = maxVal * deg / 360.0f;
-    maxVal = maxVal * wp->unk_1B4;
+    cand = 6.2831855f * cur->unk_40 * deg / 360.0f;
+    maxVal = cand * wp->unk_1B4;
     diff = __fabsf(cur->unk_44 - prev->unk_44);
     if (diff > 180.0f) {
         diff = 360.0f - diff;
     }
-    cand = 6.2831855f * cur->unk_40;
-    cand = cand * diff / 360.0f;
+    cand = 6.2831855f * cur->unk_40 * diff / 360.0f;
     cand = cand * wp->unk_1B8;
     if (cand > maxVal) {
         maxVal = cand;
     }
-    {
-        f32 d2 = __fabsf(cur->unk_48 - prev->unk_48);
-        if (d2 > 180.0f) {
-            d2 = 360.0f - d2;
-        }
-        cand = 6.2831855f * cur->unk_40;
-        cand = cand * d2 / 360.0f;
-        cand = cand * wp->unk_1BC;
+    diff = __fabsf(cur->unk_48 - prev->unk_48);
+    if (diff > 180.0f) {
+        diff = 360.0f - diff;
     }
+    cand = 6.2831855f * cur->unk_40 * diff / 360.0f;
+    cand = cand * wp->unk_1BC;
     if (cand > maxVal) {
         maxVal = cand;
     }
@@ -534,30 +520,19 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
         maxVal = cand;
     }
     {
-        f32 dx = cur->x - prev->x;
-        f32 dy = cur->y - prev->y;
-        f32 dz = cur->z - prev->z;
-#ifdef MUST_MATCH
-        // separate square temps stop the compiler fusing the sum into fmadds; the original keeps the
-        // x == 0 short-circuit path and the accumulator's register (f6) through the sqrtf, which the
-        // natural single expression below does not.
-        f32 dxx = dx * dx;
-        f32 dyy = dy * dy;
-        f32 dzz = dz * dz;
-        f32 d2;
+        f32 dxx = (cur->x - prev->x) * (cur->x - prev->x);
+        f32 dyy = (cur->y - prev->y) * (cur->y - prev->y);
+        f32 dzz = (cur->z - prev->z) * (cur->z - prev->z);
 
-        d2 = dxx;
-        d2 = d2 + dyy;
-        d2 = d2 + dzz;
-        if (d2) {
-            d2 = sqrtf(d2);
+        dot = dxx;
+        dot = dot + dyy;
+        dot = dot + dzz;
+        if (dot) {
+            dot = sqrtf(dot);
         } else {
-            d2 = 0.0f;
+            dot = 0.0f;
         }
-        dist = d2;
-#else
-        dist = sqrtf(dx * dx + dy * dy + dz * dz);
-#endif
+        dist = dot;
     }
     if (maxVal < 0.01f && dist < 0.3f) {
         return 0;
@@ -579,13 +554,25 @@ u32 compareCamRoad(CamRoadState* cur, CamRoadState* prev, f32* out) {
     return flags;
 }
 
+// Splits d into a * u + b * w for the perpendicular xz axes u and w, eliminating through the larger u component.
+static inline void splitOnAxes(Vec* d, Vec* u, Vec* w, f32* a, f32* b) {
+    f32 ka, kb;
+
+    if (__fabsf(u->z) > __fabsf(u->x)) {
+        kb = (d->x - u->x * (d->z / u->z)) / (w->x - u->x * (w->z / u->z));
+        ka = (d->z - kb * w->z) / u->z;
+    } else {
+        kb = (d->z - u->z * (d->x / u->x)) / (w->z - u->z * (w->x / u->x));
+        ka = (d->x - kb * w->x) / u->x;
+    }
+    *a = ka;
+    *b = kb;
+}
 
 // Finds the camera road under the player (ray tests down the road triangles, the curve collision) and eases the
 // look-at point along it. The seventh float arg (f7) is the bank.
 // collisionCurve/collisionTri_simple take their Vec arguments by value (the caller makes the stack copies).
 // t1/t2 start as struct copies of pos (the original copies words, then overwrites y).
-// NONMATCHING (96.61%): every saved register, spill slot and call matches; left are volatile-temp colours and
-// their scheduling in the two bank probes (the 640/480/0.01 chain) and in the u/w solve (pp lands in f1, retail f5).
 void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, f32 ay, f32 az, f32 bank) {
     s32 m;
     s32* idxp;
@@ -780,7 +767,7 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
     }
 
     if (cur != NULL) {
-        rad = 3.141592f * ((*(f32*)wp->map->unk_E8 * 0.5f) / 180.0f);
+        rad = 3.141592f * (*(f32*)wp->map->unk_E8 / 2.0f / 180.0f);
 
         if (bank && hit != NULL && b->unk_00 != 0) {
             f32 scale = 1.0f;
@@ -800,16 +787,15 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
             nzv = -f29;
             t1 = pos;
             bk = b->bank;
-            k1 = f24 * s1 / c1;
-            k1 = 640.0f * k1 / 480.0f;
-            h2.unk_08 = -1000000.0f;
-            h2.unk_18 = h2.unk_1C = h2.unk_20 = 0.0f;
-            t1.y = 1000000.0f;
+            k1 = 640.0f * (f24 * s1 / c1) / 480.0f;
             k2 = 0.01f * (bk * (scale * k1));
             ox = k2 * nzv;
             oz = k2 * f31;
             t1.x = t1.x + ox;
+            t1.y = 1000000.0f;
             t1.z = t1.z + oz;
+            h2.unk_08 = -1000000.0f;
+            h2.unk_18 = h2.unk_1C = h2.unk_20 = 0.0f;
             found1 = 0;
             if (collisionCurve(0, (CollisionCurveData*)cur, t1, &h2)) {
                 found1 = 1;
@@ -837,22 +823,21 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
 
             c1 = (f32)cos(rad);
             s1 = (f32)sin(rad);
-            t2 = pos;
-            found2 = 0;
-            flags = 0;
-            k1 = f24 * s1 / c1;
-            k1 = 640.0f * k1 / 480.0f;
-            h3.unk_08 = -1000000.0f;
-            h3.unk_18 = h3.unk_1C = h3.unk_20 = 0.0f;
-            t2.y = 1000000.0f;
+            k1 = 640.0f * (f24 * s1 / c1) / 480.0f;
             k2 = 0.01f * (bank * (scale * k1));
             ox = k2 * nzv;
-            oz = k2 * f31;
+            t2 = pos;
             t2.x = t2.x + ox;
+            t2.y = 1000000.0f;
+            h3.unk_08 = -1000000.0f;
+            oz = k2 * f31;
             t2.z = t2.z + oz;
+            h3.unk_18 = h3.unk_1C = h3.unk_20 = 0.0f;
+            found2 = 0;
+            flags = 0;
             if (collisionCurve(0, (CollisionCurveData*)cur, t2, &h3)) {
                 found2 = 1;
-                flags = h3.unk_28;
+                flags |= h3.unk_28;
                 t2.x = h3.unk_0C;
                 t2.y = py;
                 t2.z = h3.unk_14;
@@ -903,13 +888,7 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
             w.y = 0.0f;
             w1.y = 0.0f;
             w2.y = 0.0f;
-            if (__fabsf(u.z) > __fabsf(u.x)) {
-                pp = (dB.x - u.x * (dB.z / u.z)) / (w.x - u.x * (w.z / u.z));
-                qq = (dB.z - pp * w.z) / u.z;
-            } else {
-                pp = (dB.z - u.z * (dB.x / u.x)) / (w.z - u.z * (w.x / u.x));
-                qq = (dB.x - pp * w.x) / u.x;
-            }
+            splitOnAxes(&dB, &u, &w, &qq, &pp);
             w1.x = qq * u.x;
             w1.z = qq * u.z;
             w2.x = pp * w.x;
@@ -975,650 +954,439 @@ void calcCamRoad(CamRoadState* a, CamRoadState* b, f32 x, f32 y, f32 z, f32 ax, 
 
 
 // The `if (x != 0.0) x = sqrtf(x);` guards are intentional: removing them drops the pool's
-// `fcmpu 0.0,x; beq` skip that the target has. The callee-saved float locals must be declared in
-// DESCENDING order (f31..f14): MWCC hands the declaration order back to the FPR allocator, and
-// reversing it recovers ~100 FPR operand matches (91.7 -> 92.9).
-// The GPR allocation permutes the parameters/locals: target p/out->r16/r17, i18-i24->r18-r24, pool
-// base->r31; ours shifts the i's down (i23->r17, i24->r16), p/out->r24/r25 and pool base->r23. The
-// scratch FPRs and spill slots (0x18/0x1c vs 0x24/0x28) still differ, and this compiler folds the
-// dead `if (f28 < -1e-7)` compare. Declaration order, statement order and the mode-block order were
-// searched extensively (f0-before-f1 and the mode0/mode1 reorders recovered 95.90 -> 96.52).
-// NONMATCHING (96.74%): register/encoding only; see notes above.
+// `fcmpu 0.0,x; beq` skip that the target has. Register allocation follows declaration order: the
+// second line of floats is declared in the order of their saved registers (rx = f31 .. c1 = f14), the
+// intersection x (`ix`) sits above them so it wins the spill-cost tie against c1..iz yet takes the stack
+// slot after `dir`, and the spilled floats ang0, yLo, yHi, best come first so their slots ascend. The
+// pointer locals are declared pts..pHi (r30..r25) before the counters found..flags (r24..r18), and the
+// loop bound stays `half - 1` (a hoisted temp, not a local).
 BOOL collisionCurve(s32 mode, CollisionCurveData* data, Vec p, CollisionCurveHit* out) {
-    f32 f0, f1, f2, f3, f4, f5, f6, f7, f8, f10, f9;
-    f32 f31, f30, f29, f28, f27, f26, f25, f24, f23, f22, f21, f20, f19, f18, f17, f16, f15, f14;
-    f32 sf18, sf1c, sf20, sf24, sf28, sf2c;
+    f32 ang0, yLo, yHi, best, ix;
+    f32 rx, rz, side, tl, limA, limB, x0, h0, z0, x1, z1, iz, r0, r1, rp, vx0, vz0, c1;
+    f32 dir;
     f32 d0;
     Vec* base;
-    s32 i22, i21, i20, i19, i18, i23, i24, half, i0, i15;
-    Vec *r25, *r30, *r29, *r6, *r28, *r27, *r26, *r7;
+    Vec *pts, *nrm, *nLo, *pLo, *nHi, *pHi;
+    s32 found, i, idxLo, idxHi, clampEnds, openEnds, flags;
+    s32 half;
+    Vec *ptBase, *nBase;
+    f32 ux, y, sx, uz, wx, wz, sz, nx1, nz1, s, t, d, px, offx, qx, pz, qz, dx, cross, offz, nx, dz, fx, fz, c0, ratio, dist, h, xc;
 
-    sf20 = 100000000.0f;
-    i24 = 0;
+    best = 100000000.0f;
+    found = 0;
     d0 = 0.0f;
 
     if (mode == 0) {
-        i20 = data->unk_84;
-        f26 = data->unk_4C;
-        i19 = 0;
+        limA = data->unk_48;
+        limB = data->unk_4C;
+        openEnds = 0;
         half = data->unk_A4 / 2;
         base = (Vec*)wp->map->unk_F8;
-        r6 = &base[data->unk_A0];
-        f27 = data->unk_48;
-        r7 = &base[data->unk_A0 + half];
-        i21 = data->unk_44;
-        i22 = data->unk_40;
+        ptBase = &base[data->unk_A0];
+        nBase = &base[data->unk_A0 + half];
+        idxLo = data->unk_40;
+        idxHi = data->unk_44;
+        clampEnds = data->unk_84;
     } else {
-        i20 = 0;
-        f27 = 0.0f;
+        idxLo = 0;
+        limA = 0.0f;
         base = (Vec*)wp->map->unk_F8;
-        f26 = 0.0f;
-        r6 = &base[data->unk_60];
-        i21 = 1;
-        i22 = 0;
-        i19 = 1;
+        limB = 0.0f;
+        ptBase = &base[data->unk_60];
+        idxHi = 1;
+        clampEnds = 0;
+        openEnds = 1;
         half = data->unk_64 / 2;
-        r7 = &base[data->unk_60 + half];
+        nBase = &base[data->unk_60 + half];
     }
 
-    sf28 = r7[i22].y;
-    sf24 = r7[i21].y;
-    if (__fabsf(sf24 - sf28) < 0.00009999999747378752) {
-        sf28 = sf24;
+    yLo = nBase[idxLo].y;
+    yHi = nBase[idxHi].y;
+    if (__fabsf(yHi - yLo) < 0.00009999999747378752) {
+        yLo = yHi;
     }
-    if (i19 != 0) {
-        i20 = 0;
-    }
-
-    r30 = r6;
-    r29 = r7;
-    r28 = &r7[i22];
-    r27 = &r6[i22];
-    r26 = &r7[i21];
-    r25 = &r6[i21];
-    i15 = half - 1;
-    i23 = 0;
-    goto L_D160;
-
-L_C4BC:
-    f23 = r30[0].z;
-    i18 = 0;
-    f3 = p.z;
-    f0 = f3 - f23;
-    f1 = r29[1].x;
-    f5 = r29[0].z;
-    f25 = r30[0].x;
-    f7 = -f1;
-    f4 = p.x;
-    f0 = f5 * f0;
-    f1 = f4 - f25;
-    f6 = r29[0].x;
-    f2 = r29[1].z;
-    f24 = r30[0].y;
-    f1 = f6 * f1 + f0;
-    f8 = -f2;
-    f22 = r30[1].x;
-    f21 = r30[1].z;
-    if (f1 < d0) goto L_D154;
-    f0 = f3 - f21;
-    f1 = f4 - f22;
-    f0 = f8 * f0;
-    f1 = f7 * f1 + f0;
-    if (f1 < d0) goto L_D154;
-
-    f2 = -f5;
-    f3 = f6;
-    f4 = f8;
-    f0 = f2 - f8;
-    f5 = -f7;
-    f0 = __fabsf(f0);
-    if (!(f0 < 0.009999999776482582)) goto L_C57C;
-    f0 = f6 - f5;
-    f0 = __fabsf(f0);
-    if (!(f0 < 0.009999999776482582)) goto L_C57C;
-    f1 = f2 + f8;
-    f2 = 0.5f;
-    f0 = f6 + f5;
-    f4 = f2 * f1;
-    f5 = f2 * f0;
-    f2 = f4;
-    f3 = f5;
-L_C57C:
-    if (f2 == f4 && f3 == f5) {
-        goto L_CD80;
+    if (openEnds != 0) {
+        clampEnds = 0;
     }
 
-L_C58C:
-    f29 = 1.0f;
-    sf18 = f29;
-    if (0.0 == f4) goto L_C5C0;
-    f1 = f25 - f22;
-    f0 = f2 / f4;
-    f1 = f1 / f4;
-    f1 = f5 * f1 + f21;
-    f0 = f3 - f5 * f0;
-    f1 = f1 - f23;
-    f0 = f1 / f0;
-    goto L_C5EC;
-L_C5C0:
-    if (0.0 == f5) goto L_C5E8;
-    f1 = f23 - f21;
-    f0 = f3 / f5;
-    f1 = f1 / f5;
-    f1 = f4 * f1 + f22;
-    f0 = f2 - f4 * f0;
-    f1 = f1 - f25;
-    f0 = f1 / f0;
-    goto L_C5EC;
-L_C5E8:
-    f0 = 0.0f;
-L_C5EC:
-    f20 = f0 * f3 + f23;
-    f0 = f0 * f2 + f25;
-    f15 = f23 - f20;
-    sf1c = f0;
-    f0 = (f32)f0;
-    f16 = f25 - f0;
-    f0 = f15 * f15;
-    f19 = f16 * f16 + f0;
-    if (f19 != 0.0) f19 = sqrtf(f19);
-L_C6F8:
-    f0 = p.z;
-    f2 = p.x;
-    f30 = f0 - f20;
-    f0 = sf1c;
-    f31 = f2 - f0;
-    f0 = f30 * f30;
-    f17 = f31 * f31 + f0;
-    if (f17 != 0.0) f17 = sqrtf(f17);
-L_C800:
-    f1 = f21 - f20;
-    f0 = sf1c;
-    f0 = f22 - f0;
-    f2 = f1 * f1;
-    f18 = f0 * f0 + f2;
-    if (f18 != 0.0) f18 = sqrtf(f18);
-L_C900:
-    f3 = f15 * f30;
-    f2 = -1.0f;
-    f1 = f1 * f30;
-    f4 = f19 * f17;
-    f5 = f16 * f31 + f3;
-    f3 = f0 * f31 + f1;
-    f0 = f18 * f17;
-    f1 = f5 / f4;
-    f14 = f3 / f0;
-    if (f1 < f2) {
-        f1 = f2;
-    } else if (f1 > 1.0f) {
-        f1 = 1.0f;
-    }
-    if (f14 < f2) {
-        f14 = f2;
-    } else if (f14 > 1.0f) {
-        f14 = 1.0f;
-    }
-    f0 = (f32)acos(f1);
-    f1 = f14;
-    sf2c = f0;
-    f3 = (f32)acos(f14);
-    f0 = sf2c;
-    f4 = f17 - f19;
-    f1 = 0.0f;
-    f2 = f17 - f18;
-    f3 = f0 + f3;
-    f2 = f2 - f4;
-    f5 = f0 / f3;
-    f0 = f5 * f2 + f4;
-    if (f0 < f1) {
-        f29 = -1.0f;
-        f0 = -f0;
-    }
-L_C9B0:
-    if (f0 >= sf20) goto L_D154;
-    f3 = f21 - f23;
-    f4 = r29[0].y;
-    f2 = f22 - f25;
-    f1 = r29[1].y;
-    sf20 = f0;
-    f1 = f1 - f4;
-    f3 = -f3;
-    f2 = f15 * f2;
-    f1 = f5 * f1 + f4;
-    f3 = f16 * f3 + f2;
-    if (i20 == 0) goto L_CC7C;
+    pts = ptBase;
+    nrm = nBase;
+    nLo = &nBase[idxLo];
+    pLo = &ptBase[idxLo];
+    nHi = &nBase[idxHi];
+    pHi = &ptBase[idxHi];
+    for (i = 0; i < half - 1; pts++, nrm++, i++) {
+        z0 = pts[0].z;
+        flags = 0;
+        nx1 = -nrm[1].x;
+        x0 = pts[0].x;
+        nz1 = -nrm[1].z;
+        h0 = pts[0].y;
+        x1 = pts[1].x;
+        z1 = pts[1].z;
+        if (nrm[0].x * (p.x - x0) + nrm[0].z * (p.z - z0) < d0) continue;
+        if (nx1 * (p.x - x1) + nz1 * (p.z - z1) < d0) continue;
 
-    if (f1 < sf28) {
-        if (f3 > 0.0) {
-            f1 = 0.0f;
-            if (f29 < f1) {
-                if (f0 > f27) {
-                    f0 = f27;
-                    i18 |= 2;
+        ux = -nrm[0].z;
+        uz = nrm[0].x;
+        wx = nz1;
+        wz = -nx1;
+        if (__fabs(ux - wx) < 0.01f && __fabs(uz - wz) < 0.01f) {
+            wx = 0.5f * (ux + wx);
+            wz = 0.5f * (uz + wz);
+            ux = wx;
+            uz = wz;
+        }
+        if (!(ux == wx && uz == wz)) {
+            side = 1.0f;
+            dir = side;
+            if (wx != 0.0) {
+                t = (wz * ((x0 - x1) / wx) + z1 - z0) / (uz - wz * (ux / wx));
+            } else if (wz != 0.0) {
+                t = (wx * ((z0 - z1) / wz) + x1 - x0) / (ux - wx * (uz / wz));
+            } else {
+                t = 0.0f;
+            }
+            iz = t * uz + z0;
+            ix = t * ux + x0;
+            vz0 = z0 - iz;
+            vx0 = x0 - ix;
+            r0 = vx0 * vx0 + vz0 * vz0;
+            if (r0 != 0.0) {
+                r0 = sqrtf(r0);
+            }
+            rz = p.z - iz;
+            rx = p.x - ix;
+            rp = rx * rx + rz * rz;
+            if (rp != 0.0) {
+                rp = sqrtf(rp);
+            }
+            fz = z1 - iz;
+            fx = x1 - ix;
+            r1 = fx * fx + fz * fz;
+            if (r1 != 0.0) {
+                r1 = sqrtf(r1);
+            }
+            c0 = (vx0 * rx + vz0 * rz) / (r0 * rp);
+            c1 = (fx * rx + fz * rz) / (r1 * rp);
+            if (c0 < -1.0f) {
+                c0 = -1.0f;
+            } else if (c0 > 1.0f) {
+                c0 = 1.0f;
+            }
+            if (c1 < -1.0f) {
+                c1 = -1.0f;
+            } else if (c1 > 1.0f) {
+                c1 = 1.0f;
+            }
+            ang0 = acos(c0);
+            ratio = ang0 / (ang0 + (f32)acos(c1));
+            dist = ratio * ((rp - r1) - (rp - r0)) + (rp - r0);
+            if (dist < 0.0f) {
+                side = -1.0f;
+                dist = -dist;
+            }
+            if (dist >= best) {
+                continue;
+            }
+            best = dist;
+            xc = vx0 * -(z1 - z0) + vz0 * (x1 - x0);
+            h = ratio * (nrm[1].y - nrm[0].y) + nrm[0].y;
+            if (clampEnds) {
+                if (h < yLo) {
+                    if (xc > 0.0) {
+                        if (side < 0.0f) {
+                            if (dist > limA) {
+                                dist = limA;
+                                flags |= 2;
+                            }
+                        } else {
+                            if (dist > limB) {
+                                dist = limB;
+                                flags |= 2;
+                            }
+                            dist = -dist;
+                        }
+                    } else {
+                        if (side < 0.0f) {
+                            if (dist > limB) {
+                                dist = limB;
+                                flags |= 2;
+                            }
+                            dist = -dist;
+                        } else {
+                            if (dist > limA) {
+                                dist = limA;
+                                flags |= 2;
+                            }
+                        }
+                    }
+                    found = 1;
+                    out->unk_00 = yLo;
+                    out->unk_0C = dist * nLo->z + pLo->x;
+                    out->unk_10 = 0.0f;
+                    out->unk_14 = pLo->z - dist * nLo->x;
+                    out->unk_18 = nLo->x;
+                    out->unk_1C = 0.0f;
+                    out->unk_20 = nLo->z;
+                    out->unk_08 = h0;
+                    out->unk_24 = idxLo;
+                    out->unk_28 = flags | 1;
+                    continue;
+                }
+                if (h > yHi) {
+                    if (xc > 0.0) {
+                        if (side < 0.0f) {
+                            if (dist > limA) {
+                                dist = limA;
+                                flags |= 2;
+                            }
+                        } else {
+                            if (dist > limB) {
+                                dist = limB;
+                                flags |= 2;
+                            }
+                            dist = -dist;
+                        }
+                    } else {
+                        if (side < 0.0f) {
+                            if (dist > limB) {
+                                dist = limB;
+                                flags |= 2;
+                            }
+                            dist = -dist;
+                        } else {
+                            if (dist > limA) {
+                                dist = limA;
+                                flags |= 2;
+                            }
+                        }
+                    }
+                    found = 1;
+                    out->unk_00 = yHi;
+                    out->unk_0C = dist * nHi->z + pHi->x;
+                    out->unk_10 = 0.0f;
+                    out->unk_14 = pHi->z - dist * nHi->x;
+                    out->unk_18 = nHi->x;
+                    out->unk_1C = 0.0f;
+                    out->unk_20 = nHi->z;
+                    out->unk_08 = h0;
+                    out->unk_24 = idxHi;
+                    out->unk_28 = flags | 1;
+                    continue;
+                }
+                if (xc > 0.0) {
+                    if (side < 0.0f) {
+                        if (dist > limA) {
+                            rx /= rp;
+                            flags |= 2;
+                            rz /= rp;
+                            dist -= limA;
+                            rp += dist;
+                            rx *= rp;
+                            rz *= rp;
+                        }
+                    } else {
+                        if (dist > limB) {
+                            rx /= rp;
+                            flags |= 2;
+                            rz /= rp;
+                            dist -= limB;
+                            rp -= dist;
+                            rx *= rp;
+                            rz *= rp;
+                        }
+                    }
+                } else {
+                    if (side < 0.0f) {
+                        if (dist > limB) {
+                            rx /= rp;
+                            flags |= 2;
+                            rz /= rp;
+                            dist -= limB;
+                            rp += dist;
+                            rx *= rp;
+                            rz *= rp;
+                        }
+                    } else {
+                        if (dist > limA) {
+                            rx /= rp;
+                            flags |= 2;
+                            rz /= rp;
+                            dist -= limA;
+                            rp -= dist;
+                            rx *= rp;
+                            rz *= rp;
+                        }
+                    }
+                    dir = -1.0f;
+                }
+            } else if (openEnds) {
+                if (xc > 0.0) {
+                    if (!(side < 0.0f) && dist > 0.0f) {
+                        rx /= rp;
+                        flags = 3;
+                        rz /= rp;
+                        rp -= dist;
+                        rx *= rp;
+                        rz *= rp;
+                    }
+                } else {
+                    if (side < 0.0f && dist > 0.0f) {
+                        rx /= rp;
+                        flags = 3;
+                        rz /= rp;
+                        rp += dist;
+                        rx *= rp;
+                        rz *= rp;
+                    }
+                    dir = -1.0f;
+                }
+            } else if (!(xc > 0.0)) {
+                dir = -1.0f;
+            }
+            out->unk_0C = ix + rx;
+            out->unk_10 = 0.0f;
+            out->unk_14 = iz + rz;
+            if (dir < 0.0f) {
+                out->unk_18 = -rz / rp;
+                out->unk_1C = 0.0f;
+                out->unk_20 = rx / rp;
+            } else {
+                out->unk_18 = rz / rp;
+                out->unk_1C = 0.0f;
+                out->unk_20 = -rx / rp;
+            }
+            out->unk_00 = h;
+            found = 1;
+            out->unk_08 = h0;
+            out->unk_24 = i;
+            out->unk_28 = flags;
+        } else {
+            sz = pts[0].z;
+            dz = pts[1].z - sz;
+            sx = pts[0].x;
+            dx = pts[1].x - sx;
+            px = p.x;
+            pz = p.z;
+            nx = -dz;
+            if (__fabsf(nx) > __fabsf(dx)) {
+                s = (dx * ((sx - px) / nx) + pz - sz) / (dz - dx * (dx / nx));
+            } else if (0.0 != dx) {
+                s = (nx * ((sz - pz) / dx) + px - sx) / (dx - nx * (dz / dx));
+            } else {
+                s = 0.0f;
+            }
+            qx = s * dx + sx;
+            qz = s * dz + sz;
+            if (__fabsf(dx) > __fabsf(dz)) {
+                tl = (qx - sx) / dx;
+                if (tl < -0.0000001) {
+                    goto L_CE48;
+                }
+                // dead like the compare above; it pools the double the original has at +0x70
+                if (tl > 1.0000001) {
+                    goto L_CE48;
                 }
             } else {
-                if (f0 > f26) {
-                    f0 = f26;
-                    i18 |= 2;
-                }
-                f0 = -f0;
-            }
-        } else {
-            f1 = 0.0f;
-            if (f29 < f1) {
-                if (f0 > f26) {
-                    f0 = f26;
-                    i18 |= 2;
-                }
-                f0 = -f0;
-            } else {
-                if (f0 > f27) {
-                    f0 = f27;
-                    i18 |= 2;
+                if (dz != 0.0) {
+                    tl = (qz - sz) / dz;
                 }
             }
-        }
-    } else {
-        goto L_CAD0;
-    }
-L_CA74:
-    f1 = sf28;
-    i0 = i18 | 1;
-    f3 = 0.0f;
-    i24 = 1;
-    out->unk_00 = f1;
-    f2 = r28[0].z;
-    f1 = r27[0].x;
-    out->unk_0C = f0 * f2 + f1;
-    out->unk_10 = f3;
-    f2 = r28[0].x;
-    f1 = r27[0].z;
-    out->unk_14 = f1 - f0 * f2;
-    f0 = r28[0].x;
-    out->unk_18 = f0;
-    out->unk_1C = f3;
-    f0 = r28[0].z;
-    out->unk_20 = f0;
-    out->unk_08 = f24;
-    out->unk_24 = i22;
-    out->unk_28 = i0;
-    goto L_D154;
-
-L_CAD0:
-    if (f1 > sf24) {
-    if (f3 > 0.0) {
-        f1 = 0.0f;
-        if (f29 < f1) {
-            if (f0 > f27) {
-                f0 = f27;
-                i18 |= 2;
+        L_CE48:
+            offz = pz - qz;
+            offx = px - qx;
+            y = tl * (nrm[1].y - nrm[0].y) + nrm[0].y;
+            d = offx * offx + offz * offz;
+            if (d > 0.0) {
+                d = sqrtf(d);
             }
-        } else {
-            if (f0 > f26) {
-                f0 = f26;
-                i18 |= 2;
+            if (d >= best) continue;
+            best = d;
+            if (clampEnds != 0) {
+                if (y < yLo) {
+                    cross = offx * nx + offz * dx;
+                    if (cross < 0.0f) {
+                        if (d > limA) {
+                            d = limA;
+                            flags |= 2;
+                        }
+                    } else {
+                        if (d > limB) {
+                            d = limB;
+                            flags |= 2;
+                        }
+                        d = -d;
+                    }
+                    found = 1;
+                    out->unk_00 = yLo;
+                    out->unk_0C = d * nLo[0].z + pLo[0].x;
+                    out->unk_10 = 0.0f;
+                    out->unk_14 = pLo[0].z - d * nLo[0].x;
+                    out->unk_18 = nLo[0].x;
+                    out->unk_1C = 0.0f;
+                    out->unk_20 = nLo[0].z;
+                    out->unk_08 = h0;
+                    out->unk_24 = idxLo;
+                    out->unk_28 = flags | 1;
+                    continue;
+                }
+                if (y > yHi) {
+                    cross = offx * nx + offz * dx;
+                    if (cross < 0.0f) {
+                        if (d > limA) {
+                            d = limA;
+                            flags |= 2;
+                        }
+                    } else {
+                        if (d > limB) {
+                            d = limB;
+                            flags |= 2;
+                        }
+                        d = -d;
+                    }
+                    found = 1;
+                    out->unk_00 = yHi;
+                    out->unk_0C = d * nHi[0].z + pHi[0].x;
+                    out->unk_10 = 0.0f;
+                    out->unk_14 = pHi[0].z - d * nHi[0].x;
+                    out->unk_18 = nHi[0].x;
+                    out->unk_1C = 0.0f;
+                    out->unk_20 = nHi[0].z;
+                    out->unk_08 = h0;
+                    out->unk_24 = idxHi;
+                    out->unk_28 = flags | 1;
+                    continue;
+                }
+                cross = offx * nx + offz * dx;
+                if (cross < 0.0f) {
+                    if (d > limA) {
+                        flags |= 2;
+                        offx = limA * (offx / d);
+                        offz = limA * (offz / d);
+                    }
+                } else {
+                    if (d > limB) {
+                        flags |= 2;
+                        offx = limB * (offx / d);
+                        offz = limB * (offz / d);
+                    }
+                }
             }
-            f0 = -f0;
-        }
-    } else {
-        f1 = 0.0f;
-        if (f29 < f1) {
-            if (f0 > f26) {
-                f0 = f26;
-                i18 |= 2;
-            }
-            f0 = -f0;
-        } else {
-            if (f0 > f27) {
-                f0 = f27;
-                i18 |= 2;
-            }
+            out->unk_00 = y;
+            out->unk_0C = qx + offx;
+            out->unk_10 = 0.0f;
+            out->unk_14 = qz + offz;
+            found = 1;
+            out->unk_18 = tl * (nrm[1].x - nrm[0].x) + nrm[0].x;
+            out->unk_1C = 0.0f;
+            out->unk_20 = tl * (nrm[1].z - nrm[0].z) + nrm[0].z;
+            out->unk_08 = h0;
+            out->unk_24 = i;
+            out->unk_28 = flags;
         }
     }
-L_CB54:
-    f1 = sf24;
-    i0 = i18 | 1;
-    f3 = 0.0f;
-    i24 = 1;
-    out->unk_00 = f1;
-    f2 = r26[0].z;
-    f1 = r25[0].x;
-    out->unk_0C = f0 * f2 + f1;
-    out->unk_10 = f3;
-    f2 = r26[0].x;
-    f1 = r25[0].z;
-    out->unk_14 = f1 - f0 * f2;
-    f0 = r26[0].x;
-    out->unk_18 = f0;
-    out->unk_1C = f3;
-    f0 = r26[0].z;
-    out->unk_20 = f0;
-    out->unk_08 = f24;
-    out->unk_24 = i21;
-    out->unk_28 = i0;
-    goto L_D154;
-    }
-
-L_CBB0:
-    if (f3 > 0.0) {
-    f2 = 0.0f;
-    if (f29 < 0.0f) {
-    if (f0 > f27) {
-    f31 = f31 / f17;
-    i18 |= 2;
-    f30 = f30 / f17;
-    f0 = f0 - f27;
-    f17 = f17 + f0;
-    f31 = f31 * f17;
-    f30 = f30 * f17;
-    }
-    } else {
-    if (f0 > f26) {
-    f31 = f31 / f17;
-    i18 |= 2;
-    f30 = f30 / f17;
-    f0 = f0 - f26;
-    f17 = f17 - f0;
-    f31 = f31 * f17;
-    f30 = f30 * f17;
-    }
-    goto L_CD0C;
-    }
-    goto L_CD0C;
-    } else {
-    f2 = 0.0f;
-    if (f29 < 0.0f) {
-    if (f0 > f26) {
-    f31 = f31 / f17;
-    i18 |= 2;
-    f30 = f30 / f17;
-    f0 = f0 - f26;
-    f17 = f17 + f0;
-    f31 = f31 * f17;
-    f30 = f30 * f17;
-    }
-    } else {
-    if (f0 > f27) {
-    f31 = f31 / f17;
-    i18 |= 2;
-    f30 = f30 / f17;
-    f0 = f0 - f27;
-    f17 = f17 - f0;
-    f31 = f31 * f17;
-    f30 = f30 * f17;
-    }
-    }
-    f0 = -1.0f;
-    sf18 = f0;
-    }
-    goto L_CD0C;
-
-L_CC7C:
-    if (i19 == 0) goto L_CCF8;
-    if (f3 > 0.0) {
-    f2 = 0.0f;
-    if (f29 < 0.0f) goto L_CD0C;
-    if (f0 > 0.0f) {
-    f31 = f31 / f17;
-    i18 = 3;
-    f30 = f30 / f17;
-    f17 = f17 - f0;
-    f31 = f31 * f17;
-    f30 = f30 * f17;
-    }
-    goto L_CD0C;
-    }
-    f2 = 0.0f;
-    if (f29 < 0.0f) {
-    if (f0 > 0.0f) {
-    f31 = f31 / f17;
-    i18 = 3;
-    f30 = f30 / f17;
-    f17 = f17 + f0;
-    f31 = f31 * f17;
-    f30 = f30 * f17;
-    }
-    }
-L_CCEC:
-    f0 = -1.0f;
-    sf18 = f0;
-    goto L_CD0C;
-L_CCF8:
-    if (f3 > 0.0) goto L_CD0C;
-    f0 = -1.0f;
-    sf18 = f0;
-
-L_CD0C:
-    f0 = sf1c;
-    f2 = f20 + f30;
-    f3 = 0.0f;
-    f4 = f0 + f31;
-    f0 = sf18;
-    out->unk_0C = f4;
-    out->unk_10 = f3;
-    out->unk_14 = f2;
-    if (f0 < f3) {
-        f2 = -f30;
-        f0 = f31 / f17;
-        f2 = f2 / f17;
-        out->unk_18 = f2;
-        out->unk_1C = f3;
-        out->unk_20 = f0;
-    } else {
-        f2 = f30 / f17;
-        f0 = -f31;
-        out->unk_18 = f2;
-        out->unk_1C = f3;
-        f0 = f0 / f17;
-        out->unk_20 = f0;
-    }
-L_CD68:
-    out->unk_00 = f1;
-    i24 = 1;
-    out->unk_08 = f24;
-    out->unk_24 = i23;
-    out->unk_28 = i18;
-    goto L_D154;
-
-L_CD80:
-    f0 = r30[0].z;
-    f1 = r30[1].z;
-    f10 = r30[0].x;
-    f6 = f1 - f0;
-    f2 = r30[1].x;
-    f1 = p.x;
-    f5 = f2 - f10;
-    f2 = p.z;
-    f7 = -f6;
-    f3 = __fabsf(f5);
-    f4 = __fabsf(f7);
-    if (f4 > f3) {
-    f4 = f10 - f1;
-    f3 = f5 / f7;
-    f4 = f4 / f7;
-    f4 = f5 * f4 + f2;
-    f3 = f6 - f5 * f3;
-    f4 = f4 - f0;
-    f4 = f4 / f3;
-    goto L_CE04;
-    }
-L_CDD4:
-    if (0.0 == f5) goto L_CE00;
-    f4 = f0 - f2;
-    f3 = f6 / f5;
-    f4 = f4 / f5;
-    f4 = f7 * f4 + f1;
-    f3 = f5 - f7 * f3;
-    f4 = f4 - f10;
-    f4 = f4 / f3;
-    goto L_CE04;
-L_CE00:
-    f4 = 0.0f;
-L_CE04:
-    f9 = __fabsf(f5);
-    f8 = __fabsf(f6);
-    f3 = f4 * f5 + f10;
-    f4 = f4 * f6 + f0;
-    if (f9 > f8) {
-        f6 = f3 - f10;
-        f28 = f6 / f5;
-        if (f28 < -0.0000001) {
-            goto L_CE48;
-        }
-        // dead like the compare above; it pools the double the original has at +0x70
-        if (f28 > 1.0000001) {
-            goto L_CE48;
-        }
-    } else {
-        if (0.0 == f6) goto L_CE48;
-        f0 = f4 - f0;
-        f28 = f0 / f6;
-    }
-L_CE48:
-    f6 = f2 - f4;
-    f10 = r29[0].y;
-    f8 = r29[1].y;
-    f2 = f1 - f3;
-    f0 = f6 * f6;
-    f8 = f8 - f10;
-    f1 = f2 * f2 + f0;
-    f0 = f28 * f8 + f10;
-    if (f1 > 0.0) f1 = sqrtf(f1);
-L_CF48:
-    f8 = sf20;
-    if (f1 >= f8) goto L_D154;
-    sf20 = f1;
-    if (i20 == 0) goto L_D0FC;
-    if (f0 < sf28) {
-    f3 = f6 * f5;
-    f0 = 0.0f;
-    f2 = f2 * f7 + f3;
-    if (f2 < 0.0f) {
-    if (f1 > f27) {
-    f1 = f27;
-    i18 |= 2;
-    }
-    } else {
-    if (f1 > f26) {
-    f1 = f26;
-    i18 |= 2;
-    }
-    f1 = -f1;
-    }
-    f0 = sf28;
-    i0 = i18 | 1;
-    f3 = 0.0f;
-    i24 = 1;
-    out->unk_00 = f0;
-    f2 = r28[0].z;
-    f0 = r27[0].x;
-    out->unk_0C = f1 * f2 + f0;
-    out->unk_10 = f3;
-    f2 = r28[0].x;
-    f0 = r27[0].z;
-    out->unk_14 = f0 - f1 * f2;
-    f0 = r28[0].x;
-    out->unk_18 = f0;
-    out->unk_1C = f3;
-    f0 = r28[0].z;
-    out->unk_20 = f0;
-    out->unk_08 = f24;
-    out->unk_24 = i22;
-    out->unk_28 = i0;
-    goto L_D154;
-    } else {
-    if (f0 > sf24) {
-    f3 = f6 * f5;
-    f0 = 0.0f;
-    f2 = f2 * f7 + f3;
-    if (f2 < 0.0f) {
-    if (f1 > f27) {
-    f1 = f27;
-    i18 |= 2;
-    }
-    } else {
-    if (f1 > f26) {
-    f1 = f26;
-    i18 |= 2;
-    }
-    f1 = -f1;
-    }
-    f0 = sf24;
-    i0 = i18 | 1;
-    f3 = 0.0f;
-    i24 = 1;
-    out->unk_00 = f0;
-    f2 = r26[0].z;
-    f0 = r25[0].x;
-    out->unk_0C = f1 * f2 + f0;
-    out->unk_10 = f3;
-    f2 = r26[0].x;
-    f0 = r25[0].z;
-    out->unk_14 = f0 - f1 * f2;
-    f0 = r26[0].x;
-    out->unk_18 = f0;
-    out->unk_1C = f3;
-    f0 = r26[0].z;
-    out->unk_20 = f0;
-    out->unk_08 = f24;
-    out->unk_24 = i21;
-    out->unk_28 = i0;
-    goto L_D154;
-    }
-    }
-L_D0AC:
-    f8 = f6 * f5;
-    f5 = 0.0f;
-    f7 = f2 * f7 + f8;
-    if (f7 < 0.0f) {
-    if (f1 > f27) {
-    f2 = f2 / f1;
-    i18 |= 2;
-    f1 = f6 / f1;
-    f2 = f27 * f2;
-    f6 = f27 * f1;
-    }
-    goto L_D0FC;
-    } else {
-    if (f1 > f26) {
-    f2 = f2 / f1;
-    i18 |= 2;
-    f1 = f6 / f1;
-    f2 = f26 * f2;
-    f6 = f26 * f1;
-    }
-    }
-L_D0FC:
-    f2 = f3 + f2;
-    out->unk_00 = f0;
-    f1 = 0.0f;
-    f0 = f4 + f6;
-    i24 = 1;
-    out->unk_0C = f2;
-    out->unk_10 = f1;
-    out->unk_14 = f0;
-    f2 = r29[0].x;
-    f0 = r29[1].x;
-    f0 = f0 - f2;
-    f0 = f28 * f0 + f2;
-    out->unk_18 = f0;
-    out->unk_1C = f1;
-    f1 = r29[0].z;
-    f0 = r29[1].z;
-    f0 = f0 - f1;
-    f0 = f28 * f0 + f1;
-    out->unk_20 = f0;
-    out->unk_08 = f24;
-    out->unk_24 = i23;
-    out->unk_28 = i18;
-
-L_D154:
-    r30++;
-    r29++;
-    i23++;
-L_D160:
-    if (i23 < i15) goto L_C4BC;
-    return i24;
+    return found;
 }
 
 // Match-only helpers: the original materialises sub/cross/dot results as Vec locals and

@@ -873,7 +873,7 @@ config.libs = [
         "cflags": cflags_static,
         "progress_category": "game",
         "objects": [
-            Object(NonMatching, "cam_road.c", cflags=cflags_static_nodefer),
+            Object(Matching, "cam_road.c", cflags=cflags_static_nodefer),
             Object(Matching, "cam_shift.c"),
             Object(Matching, "countdown.c"),
             Object(NonMatching, "database.c"),
