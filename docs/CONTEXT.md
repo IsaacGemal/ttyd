@@ -7388,3 +7388,27 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 - Hard negatives: marioChkFront ~20 hand orders plus 905 of 1344 enumerated orders with `Vec* pos` (98.57 best),
   `v = *pos` copies 95.1-95.7, marioHitCheckVec with the pointer parameter 95.13; chained copies in WallAround 97.5-98.25;
   searchFrontWall compound literals with the old named templates kept 90.96-91.65.
+
+### cam_road LINKED: compareCamRoad, calcCamRoad, collisionCurve 100, 13/13 (Claude Opus 5.5, on6-camroad)
+- **Fast variant harness** (fgen.py, kept outside the repo at ~/scratch-orch/reports/camroad_harness/): append N
+  renamed copies of the function, each with a snippet replaced, to the unit's source; compile once with the unit's real
+  cflags and diff each copy against the retail .o, masking relocations and branch targets. About 200 copies of a 3.5 KB
+  function take 5 s. hc.py hill-climbs statement order (respecting dependencies) times spelling alternatives on top. This
+  closed every remaining calcCamRoad and compareCamRoad region.
+- compareCamRoad: MWCC forward-substitutes a single-use local into a compare and generates compare operands left first.
+  To number `range - 1` below the abs temps, use a compound assignment:
+  `lim = range; if (abs(d) >= --lim) ...; if (abs(d) >= (range -= 2)) ...`. Declared locals never coalesce with temps,
+  but a reused variable's later lifetime does (dist accumulates in `dot`). The arc product needs a second variable:
+  `cand = 2πr * deg / 360; maxVal = cand * k;`. A MUST_MATCH block with identical branches removed.
+- calcCamRoad: **a value that must colour like a temp (here `pp`: rasim `--key f39=80..200`) cannot come from any
+  declared local, block local or reused variable.** The inliner's locals can: a `static inline` helper for the 2x2 solve
+  (`splitOnAxes`, real work: splitting a vector onto two perpendicular axes), its locals declared u-coefficient first,
+  gives exact registers. Probe statement order and a one-expression `k1` came from the hill-climb; `flags |= x` after
+  `flags = 0` moves the load later.
+- collisionCurve: the goto transliteration became a real `for` loop with `continue` (no score change); a GPR declaration
+  order from rasim, a spill-cost tie that goes to the last web in sweep order (rasim spill trace), statement order for
+  temp colours, `lim * (off / d)` for a separate quotient temp. Register-named locals renamed.
+- Hard negatives: maxVal compound-assignment chains, 16 chain shapes x 3 clamp forms x 3 diff forms, all 720 float
+  declaration orders (>= 6 diffs); the u/w solve without the helper: every `pp` declaration position, block locals,
+  ~20 reused variables, 56 `pp`/`qq` spellings x 2 conditions, ternary/default `sgn`, hill-climbs, rasim frontend-temp
+  order search (best 16 diffs).
