@@ -2629,8 +2629,6 @@ static inline GXColor BattleAudienceDispAudience_color(u8 r, u8 g, u8 b, u8 a) {
 }
 #endif
 
-// NONMATCHING (98.51%): only the rotation-matrix block differs. The original converts cos(rz) first and
-// computes the products in another order, so its scratch FPRs (f0-f9) and the store order don't line up.
 #pragma dont_inline on
 void BattleAudienceDispAudience(CameraId camId, void* param) {
 	BattleAudience* audience;
@@ -2772,27 +2770,25 @@ void BattleAudienceDispAudience(CameraId camId, void* param) {
 		cz = (f32)cos(rz);
 
 		{
-			f32 sxsy;
-			f32 sxcy;
-
-			sxsy = sx * sy;
-			sxcy = sx * cy;
-			mtxRot[1][1] = cx * cz;
+			f32 sxsy = sx * sy;
+			f32 sxcy = sx * cy;
 			mtxRot[0][0] = cy * cz - sxsy * sz;
-			mtxRot[0][2] = -cx * sy;
 			mtxRot[0][1] = -cy * sz - sxsy * cz;
+			mtxRot[0][2] = -cx * sy;
+			mtxRot[0][3] = 0.0f;
+			mtxRot[1][0] = cx * sz;
+			mtxRot[1][1] = cx * cz;
+			mtxRot[1][2] = -sx;
+			mtxRot[1][3] = 0.0f;
 			mtxRot[2][0] = sy * cz + sxcy * sz;
 			mtxRot[2][1] = -sy * sz + sxcy * cz;
-			mtxRot[1][0] = cx * sz;
-			mtxRot[1][2] = -sx;
 			mtxRot[2][2] = cx * cy;
-			mtxRot[0][3] = 0.0f;
-			mtxRot[1][3] = 0.0f;
 			mtxRot[2][3] = 0.0f;
 		}
 
-		*(Vec*)((u8*)member + 0x90) = vec3_802f9768;
-		PSMTXMultVec(mtxRot, (Vec*)((u8*)member + 0x90), (Vec*)((u8*)member + 0x90));
+		// The member normal occupies the vector at offset 0x90.
+		*(Vec*)(member->field_0x54 + 0x3C) = vec3_802f9768;
+		PSMTXMultVec(mtxRot, (Vec*)(member->field_0x54 + 0x3C), (Vec*)(member->field_0x54 + 0x3C));
 
 		mtxScale[0][3] += offsetX;
 		mtxScale[1][3] += offsetY;
