@@ -7453,3 +7453,21 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   Large region inlines in renderProc and SetMaterial are not inlined by MWCC.
 - Next: renderProc's draw-call loops are probably small inlined helpers in retail (rasim wants draw/i after the renamed
   temps); animSetMaterial_Texture's texBinds always lands in the last free register (r23).
+
+### bom_01 27 -> 30/32: bom1000_msg, bom1000_jump, ext_main 100; data identical (Claude Opus 5.5, on6-bom01)
+- bom1000_msg 96.86 -> 100: a second args cursor (`s32* argp = event->args; s32* args = argp;`, `*argp++` for the two
+  gets and the two floats, `args[0]/[1]` for the sets) gives retail's materialised args+2 and the 0x30 frame at once
+  (the "unused 12-byte local" was just the 7th saved register's frame); `b += ...; b %= 14;` for the in-place add;
+  declaration order base, flag, p, idx.
+- bom1000_jump 99.69 -> 100: in the inlined jump_minnnanokoe, `ExtPose* pose = &extGetPosePtr()[index];` (jump()'s
+  shape). rasim: the element pointer had to be numbered before the states offset (`--key`), not an edge.
+- ext_main 99.97 -> 100: case 1 passes `radius * bomSinApprox(angle)` to jump() like case 2 (named `x` gone). rasim
+  --fpr `--key` found it: case 1's x must sort after case 2's dy temp, i.e. be an inline temp. **A residual in one case
+  can come from a named local in another case of the same function.**
+- ext_init 98.74 -> 98.76: `char buf[0x20]` in pose_init fixes the i2f slots. disp_sight 99.85 -> 99.91: the flag from a
+  `sightBlink(i)` inline restores retail's flag copy.
+- Hard negatives: ext_init's range f0 needs `range` swept after every scratch temp (rasim `--key f45=90`); no named,
+  argument, pragma or inline-local form does it (extra inline locals stop extInitPos inlining); mwsearch 45 min /
+  10,947 compiles, 0. disp_sight: `sightArrowId(flag)` gives retail's exact pre-RA code but the 7/6 temp must sort
+  after the addic backend temp; MWCC compiles every ternary/if-else id spelling branchless; narrow `u8 tex` gives
+  clrlwi, not mr.
