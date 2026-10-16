@@ -380,7 +380,7 @@ HitEntry* partySearchGround(PartyEntry* party, f32 up, f32 down) {
     return NULL;
 }
 
-static inline HitEntry* partyFrontStepHit(PartyEntry* party, HitCheckQuery* query, f32* hx, f32* hy, f32* hz, Vec* n) {
+static inline HitEntry* partyFrontStepHit(PartyEntry* party, HitCheckQuery* query, Vec* hitPos, Vec* n) {
     HitEntry* h;
 
     if (yoshiGetStatus() != 0) {
@@ -393,25 +393,21 @@ static inline HitEntry* partyFrontStepHit(PartyEntry* party, HitCheckQuery* quer
     if (h == NULL) {
         return h;
     }
-    *hx = ROUND_MILLI(query->hitPos.x);
-    *hy = ROUND_MILLI(query->hitPos.y);
-    *hz = ROUND_MILLI(query->hitPos.z);
+    hitPos->x = ROUND_MILLI(query->hitPos.x);
+    hitPos->y = ROUND_MILLI(query->hitPos.y);
+    hitPos->z = ROUND_MILLI(query->hitPos.z);
     n->x = query->hitNormal.x;
     n->y = query->hitNormal.y;
     n->z = query->hitNormal.z;
     return h;
 }
 
-// NONMATCHING (99.93%): hx and the slope inline's n.y temp swap f30/f27 (rasim: hx, hy, hz would have to be numbered
-// above that temp, i.e. be compiler temps themselves).
 u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3) {
     Vec n;
     HitCheckQuery query;
     HitEntry* hit;
-    f32 hy;
-    f32 hz;
+    Vec hitPos;
     f32 off;
-    f32 hx;
     f32 angle;
     f32 c;
     f32 h;
@@ -433,7 +429,7 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
         angle = toMovedir(party->field_10C);
     }
     angle = revise360((f32)(s32)(0.5f + angle));
-    off = 0.265f * *(f32*)((u8*)party + 0xF4);
+    off = 0.265f * party->field_F4;
     rad = (3.1415927f * angle) / 180.0f;
     s = (f32)sin((f64)rad);
     c = (f32)cos((f64)rad);
@@ -448,14 +444,14 @@ u32 partyChkFrontStep(PartyEntry* party, f32 a, f32* out1, f32* out2, f32* out3)
     query.targetDir = (Vec){0.0f, -1.0f, 0.0f};
     query.targetDistance = h + a;
 
-    hit = partyFrontStepHit(party, &query, &hx, &hy, &hz, &n);
+    hit = partyFrontStepHit(party, &query, &hitPos, &n);
     if (hit != NULL) {
         *(f32*)(party->field_C4 + (0xE0 - 0xC4)) = partyGroundSlope(party, n);
-        if (hy < py && __fabsf(hy - py) >= 2.0f) {
-            *out2 = py - hy;
-            *out3 = angleABf(px, pz, hx, hz);
+        if (hitPos.y < py && __fabsf(hitPos.y - py) >= 2.0f) {
+            *out2 = py - hitPos.y;
+            *out3 = angleABf(px, pz, hitPos.x, hitPos.z);
         } else {
-            *out1 = hy;
+            *out1 = hitPos.y;
             *out2 = 0.0f;
             *out3 = angleABf(px, pz, n.x, n.z);
             return (u32)hit;

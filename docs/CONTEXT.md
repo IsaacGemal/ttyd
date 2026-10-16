@@ -7499,3 +7499,12 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   declaration position) or a named member struct view also returns to 96.27; changing only the copy is insufficient.
   Treating this purely as an FPR/declaration-order problem hid the GPR address dependency.
 - No data work was needed: on6-baud's link test showed the data already byte-exact (the 40.8% was tail padding).
+
+### party_hit partyChkFrontStep 99.93 -> 100, 10/11 (GPT-6.1 Sol, high effort, sol9)
+- **A scalarised Vec outranks an inline's normal temporary:** replace the three named `f32 hx, hy, hz` with
+  `Vec hitPos`, and change the probe inline's output from three `f32*` parameters to one `Vec*`. MWCC creates the member
+  webs as compiler objects numbered by first write (AGENT_BRIEF), so they outrank the slope inline's normal temp, which
+  three named scalars never do. First trial reached 100; .rodata/.sdata2 identical.
+- Framing correction: the earlier declaration-order and mwsearch negatives applied to three named scalar outputs;
+  grouping them as one Vec changes their web class and rank. No address-folding or liveness trick needed.
+- party_hit's last open function is partySearchHead (80.36, on6-phit's notes above).
