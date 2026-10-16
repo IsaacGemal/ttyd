@@ -7412,3 +7412,25 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   declaration orders (>= 6 diffs); the u/w solve without the helper: every `pp` declaration position, block locals,
   ~20 reused variables, 56 `pp`/`qq` spellings x 2 conditions, ternary/default `sgn`, hill-climbs, rasim frontend-temp
   order search (best 16 diffs).
+
+### pmario_sound 44 -> 49/50: psndBGMOn_f_d, psndENVOn_f_d, __psndSFXOn, psndENV_stop, psndENVMain 100; psndSFXMain 98.66 -> 98.79 (Claude Opus 5.5, on6-pmsound)
+- **Value-of-assignment copy:** `u8 vol = *dst = *src;` gives retail's `lbz; stb; mr`; a copy from a temp into a named
+  local is never merged away (psndBGMOn_f_d).
+- **Typed fields plus a pointer cast** stop the frontend turning `(base+const)+var` into `(base+var)+const` and sharing it
+  in one temp (psndENVOn_f_d: `u16 unk1C[2]; u16 unk20[2];`, `*(u16*)((u8*)psnd.unk1C + ofs)`).
+- **Two views of one load:** a value read twice in one condition is shared by the frontend into a temp that takes
+  priority; reading it through a second struct view leaves the merging to the backend (__psndSFXOn, as rasim
+  `--key rN=200` predicted).
+- **Write the callee so it folds when inlined:** an extra `flags` local in psndSFXOff (no change to psndSFXOff itself)
+  gives its inlined copies in psndENV_stop retail's registers.
+- **Matched siblings show missing shapes:** psndSFX_pit's doubled flag test is the source of psndENVMain's duplicate
+  `bne`; LPF helpers built like it give the inline-local registers.
+- **Operand order in a multiply:** MWCC evaluates a bare field first; making it a one-line inline call
+  (`psndENVMasterVol(ps)`) moves its load after the other operand. With one nested expression (so the /100 magic is set
+  up first) this fixed ENVMain's magic register (rasim: magic before vreg 218.5, load after 231.5). Only the scaled branch
+  may use the getter (all three: 99.35).
+- **Branch targets:** a `continue` that should skip only part of the loop body becomes an `if` block (ENVMain's last loop).
+- Hard negatives: psndSFXMain: no declaration order or cost change reaches retail's colouring (rasim: best 6 of 9 wrong;
+  random cost what-ifs >= 5 wrong, so the graph itself differs); clamp/set-volume inlines no effect; 48-variant type
+  grid. The blocker is the compiler-made pssfx base pointer (@6410) that loops 1 and 2 share, which retail gives r25.
+  psndENVMain scaled branch: casts, the global psnd and byte views of the field all 99.20-99.23; mwsearch 60 min: nothing.

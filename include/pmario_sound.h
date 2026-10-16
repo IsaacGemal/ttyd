@@ -93,7 +93,9 @@ typedef struct PaperSoundWork {
     u8 unkD[0x18 - 0xD];   // 0xD
     s16 unk18;             // 0x18
     s16 unk1A;             // 0x1A
-    u8 unk1C[0x30 - 0x1C]; // 0x1C
+    u16 unk1C[2];          // 0x1C
+    u16 unk20[2];          // 0x20
+    u8 unk24[0x30 - 0x24]; // 0x24
     Vec position;          // 0x30
     f32 direction;         // 0x3C
     char unk40[0x10];      // 0x40
