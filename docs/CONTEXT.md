@@ -7434,3 +7434,22 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   random cost what-ifs >= 5 wrong, so the graph itself differs); clamp/set-volume inlines no effect; 48-variant type
   grid. The blocker is the compiler-made pssfx base pointer (@6410) that loops 1 and 2 share, which retail gives r25.
   psndENVMain scaled branch: casts, the global psnd and byte views of the field all 99.20-99.23; mwsearch 60 min: nothing.
+
+### animdrv 64 -> 68/73: materialProc, _animPoseDrawMtx, animPoseDrawShape, animPoseDisp_MakeExtTexture 100 (Claude Opus 5.5, on6-animdrv)
+- One shared `animSetMaterial_ChangeTexture` inline replaces the per-caller copies; it reads `wp->mpCurPoseData`
+  inside, and `texBase` as a named local keeps the `add.` operand order (materialProc 100).
+- Getter called twice instead of a named `data` in the shared scratch helper (_animPoseDrawMtx 100, lever #800); after
+  that, DrawShape's `opt_common_subs off` pragma was unneeded and is removed (DrawShape 100).
+- The inlined SetAnim search wants the late id copy (`i = (s32)name` after the `< 0` test) while standalone SetAnim
+  wants id-first: retail had two spellings of the search (MakeExt 100).
+- animSetMaterial_Texture 98.91 -> 99.48: the duplicated wrap-mode block as an inline with its own locals and enum
+  ternaries, plus a 120-order FPR declaration sweep on the TexMtx floats.
+- renderProc 96.85 -> 97.39: the frontend renames a reused variable's second live range into a late `@` temp that
+  outranks loop variables in colouring; declare per-loop pointers inside the loop. animPoseMain 99.54 -> 99.69: named
+  Hermite basis terms (mwsearch). animPoseDrawMtx 99.24 -> 99.40: block-scoped scratch locals.
+- Hard negatives: a rasim GPR replay can diverge from the dump (animPoseMain: 151 differences); check
+  `changed vs dump: 0` before trusting it. animPaperPoseDispSub needs the pose parameter sorted after animData, which no
+  local copy reaches (inline frame helper 79.3/98.72). DrawMtx tops out at 9 of 12 colours over three-web reorders.
+  Large region inlines in renderProc and SetMaterial are not inlined by MWCC.
+- Next: renderProc's draw-call loops are probably small inlined helpers in retail (rasim wants draw/i after the renamed
+  temps); animSetMaterial_Texture's texBinds always lands in the last free register (r23).

@@ -1193,12 +1193,11 @@ static inline f32 animGetCameraAngle(void) {
 // `clamped` variable; `end` is declared before `start` and loaded first, giving retail's f1/f3
 // split; the range delta helper multiplies `dx * scale` (the size helper's `scale * dx` is what
 // retail's reset loop uses), and the cubic `-2*a3 + 3*a2` term order matches retail's fmadds.
-// What is left: the reset loops take their source in r7 where retail uses r5, the node
-// cubic-Hermite block schedules a2/a3 and the tanfTbl loads in another order and keeps its
-// `angle` in f3 where retail uses f2, and the two `0.0f` clamp stores rematerialise
-// `0.0f` where retail keeps it live in f0. Permuter work: no call, immediate or
-// control-flow difference remains.
-// NONMATCHING (98.53%): register allocation/scheduling only; all calls and immediates match.
+// Naming the three Hermite basis terms (h0/h1/h2) gives retail's schedule for the node blend.
+// What is left: the reset loops take their source in r7 where retail uses r5 (the catch-up
+// loops match) and the node blend keeps a2/a3 in f7/f8 where retail uses f8/f7. No call,
+// immediate or control-flow difference remains.
+// NONMATCHING (99.69%): register allocation/scheduling only; all calls and immediates match.
 void animPoseMain(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* data = animPoseGetBaseData(pose);
@@ -1457,9 +1456,11 @@ void animPoseMain(s32 poseId) {
                         f32 step = 0.0625f * __OSs8tof32((s8*)src + 1);
                         f32 tan0 = tanfTbl[(s8)src[2] + 0x59];
                         f32 tan1 = tanfTbl[t1 + 0x59];
-                        *dst += ((-2.0f) * (alpha * a2) + 3.0f * a2) * step
-                              + ((alpha * a2) - 2.0f * a2 + alpha) * (timedelta * tan0)
-                              + ((alpha * a2) - a2) * (timedelta * tan1);
+                        f32 h0 = (-2.0f) * (alpha * a2) + 3.0f * a2;
+                        f32 h1 = (alpha * a2) - 2.0f * a2 + alpha;
+                        f32 h2 = (alpha * a2) - a2;
+
+                        *dst += h0 * step + h1 * (timedelta * tan0) + h2 * (timedelta * tan1);
                     }
                     src += 4;
                 }
@@ -1726,9 +1727,6 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z) {
     PSMTXConcat(g_modeling_mtx_stack[g_modeling_mtx_lv - 1], result, g_modeling_mtx_stack[g_modeling_mtx_lv]);
 }
 
-// NONMATCHING (98.37%): instructions/constants match; register colouring only. The split wrapS
-// assignment adds a web that promotes `i`/`wrapFlags` above the parameter webs and rotates the
-// callee-saved set by two; the loop2 `texMtxId` init is `mr r19,r21` vs a `li` here.
 // Loads each texture stage's animated texture matrix (rotate about the centre, then
 // translate, then scale) and points its texcoord generator at it.
 static inline void animSetMaterial_TexMtx(s32 texCount, s32* texIdRemap, AnimTexMtx* animEntries) {
@@ -1742,7 +1740,7 @@ static inline void animSetMaterial_TexMtx(s32 texCount, s32* texIdRemap, AnimTex
         s32 texId = texIdRemap[texCount - j - 1];
 #endif
         AnimTexMtx* anim = &animEntries[texId];
-        f32 scaleS, scaleT, transS, transT, rotate;
+        f32 rotate, transT, transS, scaleT, scaleS; // this declaration order gives the target's FPR colouring
         u32 flags = 0;
         f32(*mtx)[4];
 
@@ -1803,6 +1801,24 @@ static inline void animSetMaterial_TexMtx(s32 texCount, s32* texIdRemap, AnimTex
     }
 }
 
+// A texture entry's wrap flags override the descriptor's modes when non-negative: bit 2/3 mirror S/T,
+// otherwise bit 0/1 selects repeat over clamp.
+static inline void animSetMaterial_WrapMode(TEXDescriptor* desc, s32 wrapFlags, GXTexWrapMode* outS, GXTexWrapMode* outT) {
+    GXTexWrapMode wrapS = desc->textureHeader->wrapS;
+    GXTexWrapMode wrapT = desc->textureHeader->wrapT;
+
+    if (wrapFlags >= 0) {
+        wrapS = (wrapFlags & 4) ? GX_MIRROR : ((wrapFlags & 1) ? GX_REPEAT : GX_CLAMP);
+        wrapT = (wrapFlags & 8) ? GX_MIRROR : ((wrapFlags & 2) ? GX_REPEAT : GX_CLAMP);
+    }
+    *outS = wrapS;
+    *outT = wrapT;
+}
+
+// Instructions/constants match; register colouring only. The target colours the parameters r24..r30 and
+// `i` r23; here `i` takes r30, texBinds r23 and texFile r29. In the inlined TexMtx loop j, flags and the
+// j*3 matrix id rotate the same way (target r21/r20/r19, here r20/r19/r21).
+// NONMATCHING (99.48%): callee-saved register rotation only.
 void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pTexEntries, AnimTexMtx* animEntries,
                              s32 texBindsCapacity, AnimTexBind* texBinds, AnimationTextureFile* texFile) {
     GXTexObj texObj;
@@ -1850,21 +1866,7 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
 
             if (desc->CLUTHeader) {
                 desc = TEXGet((TEXPalette*)*texFile->handle->data, palId);
-                wrapS = desc->textureHeader->wrapS;
-                wrapT = desc->textureHeader->wrapT;
-                if (wrapFlags >= 0) {
-                    if (wrapFlags & 4) {
-                        wrapS = 2;
-                    } else {
-                        wrapS = wrapFlags;
-                        wrapS &= 1;
-                    }
-                    if (wrapFlags & 8) {
-                        wrapT = 2;
-                    } else {
-                        wrapT = (wrapFlags >> 1) & 1;
-                    }
-                }
+                animSetMaterial_WrapMode(desc, wrapFlags, &wrapS, &wrapT);
                 mipmap = (desc->textureHeader->minLOD != desc->textureHeader->maxLOD);
                 GXInitTlutObj(&tlutObj, desc->CLUTHeader->data, desc->CLUTHeader->format,
                               desc->CLUTHeader->numEntries);
@@ -1878,21 +1880,7 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
                 GXLoadTexObj(&texObj, i);
             } else {
                 desc = TEXGet((TEXPalette*)*texFile->handle->data, palId);
-                wrapS = desc->textureHeader->wrapS;
-                wrapT = desc->textureHeader->wrapT;
-                if (wrapFlags >= 0) {
-                    if (wrapFlags & 4) {
-                        wrapS = 2;
-                    } else {
-                        wrapS = wrapFlags;
-                        wrapS &= 1;
-                    }
-                    if (wrapFlags & 8) {
-                        wrapT = 2;
-                    } else {
-                        wrapT = (wrapFlags >> 1) & 1;
-                    }
-                }
+                animSetMaterial_WrapMode(desc, wrapFlags, &wrapS, &wrapT);
                 GXInitTexObj(&texObj, desc->textureHeader->data, desc->textureHeader->width,
                              desc->textureHeader->height, desc->textureHeader->format, wrapS, wrapT,
                              (desc->textureHeader->minLOD != desc->textureHeader->maxLOD));
@@ -1908,78 +1896,31 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
     animSetMaterial_TexMtx(texCount, texIdRemap, animEntries);
 }
 
-inline BOOL animSetMaterial_ChangeTexture(AnimationPoseData* data, AnimPoseShapeDraw* draw, AnimationPose* pose,
-                                          Mtx mtx, void** texData, GXTexObj* texObj, s32 texType) {
-    AnimPoseTexEntry* texEntry;
-    AnimTexMtx* texAnim;
-    AnimTexBind* bind;
-    s32 bindCount, texCount;
-    s32 dataId, bindId, frameExt;
-    GXTexObj* smartObj;
-    int i;
-
-    bind = data->texBinds;
-    bindCount = data->texBindCount;
-    texAnim = pose->mpTexAnimEntries;
-    texEntry = data->texData;
-    texCount = draw->texCount;
-
-    for (i = 0; i < texCount; i++) {
-        dataId = draw->texDataIds[texCount - i - 1];
-        frameExt = texAnim[dataId].mTexBindIdx;
-        bindId = texEntry[dataId].bindId + frameExt;
-        if (bindId < 0 || bindId >= bindCount) {
-            bindId = 0;
-            //"Error: animSetMaterial_ChangeTexture: テクスチャがありません frameExt=%d\n"
-            printf("Error: animSetMaterial_ChangeTexture: "
-                   "\x83\x65\x83\x4E\x83\x58\x83\x60\x83\x83\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1 "
-                   "frameExt=%d\n",
-                   frameExt);
-        }
-        if (bind[bindId].texType == texType) {
-            if (texObj) {
-                smartObj = smartTexObj(texObj, texData);
-                GXLoadTexObj(smartObj, i);
-                if (mtx) {
-                    GXLoadTexMtxImm(mtx, GX_TEXMTX0 + (u32)(i * 3), GX_MTX2x4);
-                    GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_TEXMTX0 + (u32)(i * 3));
-                } else {
-                    GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_IDENTITY);
-                }
-            }
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
-// materialProc-local copy of animSetMaterial_ChangeTexture. The texture-argument group is declared
-// (texObj, texData, mtx), retail's argument order for this inlining; the explicit `idx` keeps retail's
-// separate `subi ..., 1` (MWCC folds an inline `count - i - 1` into the array base otherwise); and the
-// interleaved local declaration order below (bind, bindCount, texAnim, texEntry, texCount) is what makes
-// MWCC colour the cached values r23/r24/r25/r26 the way retail does.
-static inline BOOL materialProc_ChangeTexture(AnimationPoseData* data, AnimPoseShapeDraw* draw, AnimationPose* pose,
-                                              GXTexObj* texObj, void** texData, Mtx mtx, s32 texType) {
+// Inlined into materialProc and renderProc (the name is the one in its error string). It reads the current
+// pose data through wp, as its callers do; the texture-argument group is declared (texObj, texData, mtx).
+static inline BOOL animSetMaterial_ChangeTexture(AnimPoseShapeDraw* draw, AnimationPose* pose, GXTexObj* texObj,
+                                                 void** texData, Mtx mtx, s32 texType) {
     AnimTexBind* bind;
     s32 bindCount;
     AnimTexMtx* texAnim;
     AnimPoseTexEntry* texEntry;
     s32 texCount;
-    s32 dataId, bindId, frameExt, idx;
+    s32 dataId, bindId, frameExt, idx, texBase;
     GXTexObj* smartObj;
     int i;
 
-    bind = data->texBinds;
-    bindCount = data->texBindCount;
+    bind = wp->mpCurPoseData->texBinds;
+    bindCount = wp->mpCurPoseData->texBindCount;
     texAnim = pose->mpTexAnimEntries;
-    texEntry = data->texData;
+    texEntry = wp->mpCurPoseData->texData;
     texCount = draw->texCount;
 
     for (i = 0; i < texCount; i++) {
         idx = texCount - i - 1;
         dataId = draw->texDataIds[idx];
         frameExt = texAnim[dataId].mTexBindIdx;
-        bindId = texEntry[dataId].bindId + frameExt;
+        texBase = texEntry[dataId].bindId;
+        bindId = texBase + frameExt;
         if (bindId < 0 || bindId >= bindCount) {
             bindId = 0;
             //"Error: animSetMaterial_ChangeTexture: テクスチャがありません frameExt=%d\n"
@@ -2004,15 +1945,8 @@ static inline BOOL materialProc_ChangeTexture(AnimationPoseData* data, AnimPoseS
     }
     return FALSE;
 }
+
 // materialProc
-// The call/constant/byte-offset structure and the three inline ChangeTexture bodies all match. Caching each
-// call's `wp->mpCurPoseData` in a local (`d1`/`d2`/`d3` below) puts every block's `wp` in retail's register
-// (`r3`/`r4`/`r3`), and the flags&0x10 block tests `wp->mpTexObjs[0]`/`wp->paperMtxPtr[0]` directly (a
-// local there made MWCC give texObj/mtx r26/r27 instead of retail's r27/r26).
-// What still differs is pure register colouring: the typeFlags and flags&0x10 blocks keep pose in r4 and
-// data in r5 (retail pose r5, data r4), and the three `bindId = texEntry[dataId].bindId + frameExt` adds
-// have their operands commuted.
-// NONMATCHING (99.77%): register allocation only; see the two points above.
 void materialProc(s32 shapeId, s32 field_0x28) {
     CameraEntry* camera;
     AnimationPoseData* data;
@@ -2023,8 +1957,6 @@ void materialProc(s32 shapeId, s32 field_0x28) {
     s32 dispMode, drawId;
     s32 texCount;
     GXTexObj* texObj;
-    Mtx* mtx; // unused now that the flags&0x10 block reads wp->paperMtxPtr[0] directly; kept for retail's
-              // declaration shape
     BOOL texChange1, check1;
     GXTexObj* currTexObj;
     Vec lightPos, lightPos2;
@@ -2071,14 +2003,12 @@ void materialProc(s32 shapeId, s32 field_0x28) {
                     mapSetMaterialTev(texCount, draw->drawMode, wp->mpCurPose->materialFlag, *g_modeling_mtx);
                 }
                 if ((u32)wp->mpCurPose->typeFlags != 0) {
-                    AnimationPoseData* d1 = wp->mpCurPoseData;
-                    texChange1 = materialProc_ChangeTexture(d1, draw, wp->mpCurPose, wp->mpTexObjs[0],
-                                                           wp->mpTexDatas[0], *wp->paperMtxPtr[0], 1);
+                    texChange1 = animSetMaterial_ChangeTexture(draw, wp->mpCurPose, wp->mpTexObjs[0], wp->mpTexDatas[0],
+                                                               *wp->paperMtxPtr[0], 1);
                     check1 = texChange1;
                     if (!texChange1) {
-                        AnimationPoseData* d2 = wp->mpCurPoseData;
-                        check1 = materialProc_ChangeTexture(d2, draw, wp->mpCurPose, wp->mpTexObjs[1],
-                                                           wp->mpTexDatas[1], *wp->paperMtxPtr[1], 2);
+                        check1 = animSetMaterial_ChangeTexture(draw, wp->mpCurPose, wp->mpTexObjs[1], wp->mpTexDatas[1],
+                                                               *wp->paperMtxPtr[1], 2);
                     }
                     if (check1 && !draw->drawMode) {
                         currTexObj = wp->mpCurTexObj;
@@ -2110,66 +2040,14 @@ void materialProc(s32 shapeId, s32 field_0x28) {
                 if (wp->mpCurPose->flags & 0x10) {
                     if (wp->mpTexObjs[0]) {
                         if (wp->paperMtxPtr[0]) {
-                            AnimationPoseData* d3 = wp->mpCurPoseData;
-                            materialProc_ChangeTexture(d3, draw, wp->mpCurPose, wp->mpTexObjs[0], wp->mpTexDatas[0],
-                                                       *wp->paperMtxPtr[0], 1);
+                            animSetMaterial_ChangeTexture(draw, wp->mpCurPose, wp->mpTexObjs[0], wp->mpTexDatas[0],
+                                                          *wp->paperMtxPtr[0], 1);
                         }
                     }
                 }
             }
         }
     }
-}
-
-// renderProc-local copy of animSetMaterial_ChangeTexture. The texture-argument group is declared
-// (texObj, texData, mtx) so MWCC's right-to-left argument evaluation loads mtx first, then texData,
-// then texObj, matching retail. The `idx` local keeps retail's separate `subi ..., 1` (MWCC folds
-// an inline `count - i - 1` into the array base otherwise).
-static inline BOOL renderProc_ChangeTexture(AnimationPoseData* data, AnimPoseShapeDraw* draw, AnimationPose* pose,
-                                            GXTexObj* texObj, void** texData, Mtx mtx, s32 texType) {
-    AnimTexBind* bind;
-    s32 bindCount;
-    AnimTexMtx* texAnim;
-    AnimPoseTexEntry* texEntry;
-    s32 texCount;
-    s32 dataId, bindId, frameExt, idx;
-    GXTexObj* smartObj;
-    int i;
-
-    bind = data->texBinds;
-    bindCount = data->texBindCount;
-    texAnim = pose->mpTexAnimEntries;
-    texEntry = data->texData;
-    texCount = draw->texCount;
-
-    for (i = 0; i < texCount; i++) {
-        idx = texCount - i - 1;
-        dataId = draw->texDataIds[idx];
-        frameExt = texAnim[dataId].mTexBindIdx;
-        bindId = texEntry[dataId].bindId + frameExt;
-        if (bindId < 0 || bindId >= bindCount) {
-            bindId = 0;
-            //"Error: animSetMaterial_ChangeTexture: テクスチャがありません frameExt=%d\n"
-            printf("Error: animSetMaterial_ChangeTexture: "
-                   "\x83\x65\x83\x4E\x83\x58\x83\x60\x83\x83\x82\xAA\x82\xA0\x82\xE8\x82\xDC\x82\xB9\x82\xF1 "
-                   "frameExt=%d\n",
-                   frameExt);
-        }
-        if (bind[bindId].texType == texType) {
-            if (texObj) {
-                smartObj = smartTexObj(texObj, texData);
-                GXLoadTexObj(smartObj, i);
-                if (mtx) {
-                    GXLoadTexMtxImm(mtx, GX_TEXMTX0 + (u32)(i * 3), GX_MTX2x4);
-                    GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_TEXMTX0 + (u32)(i * 3));
-                } else {
-                    GXSetTexCoordGen(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_IDENTITY);
-                }
-            }
-            return TRUE;
-        }
-    }
-    return FALSE;
 }
 
 static inline void renderProc_TexCoords(s32 texCount, s8* texIds, s32* firstId, s32 firstDrawId, s32 texIndex) {
@@ -2190,19 +2068,18 @@ static inline void renderProc_TexCoords(s32 texCount, s8* texIds, s32* firstId, 
 // note: I detect at least 8 inlined functions here.
 // All calls (64), constants and byte offsets match; the inner `l` vertex loop's `<` trip-count spelling makes the
 // `.p` unroller emit retail's split `srwi`/`andi` remainder guard and its `ble` entry guard, and the `k1`
-// `!=` loop keeps the split guard too. The ChangeTexture body is inlined through
-// the renderProc_ChangeTexture helper above (group declared (texObj, texData, mtx) so MWCC's right-to-left
-// argument evaluation loads mtx first, and an explicit `idx = texCount - i - 1` keeps retail's `subi ..., 1`
-// instead of folding it into the array base).
+// `!=` loop keeps the split guard too. The ChangeTexture body is the inlined animSetMaterial_ChangeTexture (its
+// group declared (texObj, texData, mtx) so MWCC's right-to-left argument evaluation loads mtx first, and an explicit
+// `idx = texCount - i - 1` keeps retail's `subi ..., 1` instead of folding it into the array base).
+// Declaring the index pointers per draw-call loop keeps them out of the renamed second-live-range temps.
 // The remaining diffs are callee-saved register colouring: retail keeps the outer-loop `draw`/`i` in r28/r29
-// and the draw-call scratch in r20..r27; this build lands them in r23/r22 and r15..r21. The non-register
+// and the draw-call scratch in r20..r27; this build lands them in r26/r25 (the replay wants both numbered
+// after the second-live-range temps of texCount/texObj/pose/j/count). The non-register
 // remainder is retail's folded `lbz -0x1(base)` for texIds[texCount-l-1] (this build emits `subi` + a
 // byte-indexed `lbzx`) and one `ble`/`beq` unroll guard (the `k1` loop emits `beq` where retail has `ble`).
-// NONMATCHING (96.85%): all calls, constants and offsets match; only callee-saved register colouring differs.
+// NONMATCHING (97.39%): all calls, constants and offsets match; only callee-saved register colouring differs.
 void renderProc(s32 shapeId, s32 field_0x28) {
     s32 dispMode, drawId;
-    s32 texIndex;
-    u16 *posIndexPtr, *nrmIndexPtr, *clr0IndexPtr, *texIndexPtr;
     s32 texCount;
     GXTexObj* currTexObj;
     AnimPoseShapeDraw *draws, *draw;
@@ -2289,15 +2166,13 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                     }
                     mapSetMaterialTev(texCount, draw->drawMode, wp->mpCurPose->materialFlag, *g_modeling_mtx);
                 }
-                pose = wp->mpCurPose;
-                if ((u32)pose->typeFlags != 0) {
-                    AnimationPoseData* d1 = wp->mpCurPoseData;
-                    texChange1 = renderProc_ChangeTexture(d1, draw, pose, wp->mpTexObjs[0],
-                                                          wp->mpTexDatas[0], *wp->paperMtxPtr[0], 1);
+                if ((u32)wp->mpCurPose->typeFlags != 0) {
+                    texChange1 = animSetMaterial_ChangeTexture(draw, wp->mpCurPose, wp->mpTexObjs[0],
+                                                               wp->mpTexDatas[0], *wp->paperMtxPtr[0], 1);
                     check1 = texChange1;
                     if (!texChange1) {
-                        texChange2 = renderProc_ChangeTexture(wp->mpCurPoseData, draw, pose, wp->mpTexObjs[1],
-                                                              wp->mpTexDatas[1], *wp->paperMtxPtr[1], 2);
+                        texChange2 = animSetMaterial_ChangeTexture(draw, wp->mpCurPose, wp->mpTexObjs[1],
+                                                                   wp->mpTexDatas[1], *wp->paperMtxPtr[1], 2);
                         check1 = texChange2;
                         check2 = texChange2;
                     } else {
@@ -2340,8 +2215,8 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                     if (texObj) {
                         mtx = wp->paperMtxPtr[0];
                         if (mtx) {
-                            renderProc_ChangeTexture(wp->mpCurPoseData, draw, pose, texObj, wp->mpTexDatas[0],
-                                                     *mtx, 1);
+                            animSetMaterial_ChangeTexture(draw, pose, texObj, wp->mpTexDatas[0],
+                                                          *mtx, 1);
                         }
                     }
                 }
@@ -2381,6 +2256,8 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
                     GXSetArray(GX_VA_TEX0, texVtxIndices[texIds[0]], sizeof(f32) * 2);
                     for (j = 0; j < drawCallCount; j++, drawCall++) {
+                        u16 *posIndexPtr, *nrmIndexPtr, *clr0IndexPtr, *texIndexPtr;
+
                         data = wp->mpCurPoseData; // doubly inlined function here
                         count = drawCall->count;
                         // indices are stored as u32, has to do math to load the lower 2 bytes
@@ -2407,6 +2284,9 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                         GXSetArray(GX_VA_TEX0 + j, texVtxIndices[texIds[texCount - j - 1]], sizeof(f32) * 2);
                     }
                     for (j = 0; j < drawCallCount; j++, drawCall++) {
+                        u16 *posIndexPtr, *nrmIndexPtr, *clr0IndexPtr;
+                        s32 texIndex;
+
                         firstDrawId = drawCall->first;
                         data = wp->mpCurPoseData; // doubly inlined function here
                         count = drawCall->count;
@@ -2548,9 +2428,8 @@ static inline void animPoseMainScratch(AnimationPose* pose) {
         s32 poseId = (s32)((u32)((u8*)pose - (u8*)wp->poses) / sizeof(AnimationPose));
 
         if (pose->typeFlags & 2) {
-            AnimationPoseData* data = animPoseGetBaseData(pose);
-            s32 posNum = data->mBufferPosNum;
-            s32 nrmNum = data->mBufferNrmNum;
+            s32 posNum = animPoseGetBaseData(pose)->mBufferPosNum;
+            s32 nrmNum = animPoseGetBaseData(pose)->mBufferNrmNum;
             s32 total = posNum + nrmNum;
 
             if (total <= (s32)wp->mFloatScratchRP) {
@@ -2571,8 +2450,6 @@ static inline void animPoseMainScratch(AnimationPose* pose) {
     }
 }
 
-// NONMATCHING (99.64%): register colouring in the inlined animPoseMainScratch block only (wp r7 in
-// retail, r4 here).
 void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
     AnimationPoseData* poseData;
     AnimData* animData;
@@ -2718,14 +2595,16 @@ void _animPoseDrawMtx(AnimationPose* pose, Mtx matrix, s32 xluMode, f32 rotY, f3
     dispProc(-1, poseData->groupCount - 1, field_0x28, field_0x2c, field_0x30);
 }
 
-// Searches ANIM_POSE_DATA_ANIMS(data) for `name` when i is negative (i is the string's address used as
-// a sentinel), then clamps the result into [0, top). Used by animPoseDrawMtx below. The `return` inside the loop makes MWCC emit the target's
-// `bne <increment>; b <found>` branch shape, indexing by i makes it emit the target's `offset = i`
-// copy, and the shared `goto zero` tail makes both zero exits one `li`; a plain `goto`/`break`
-// collapses the branch into a single `beq` and drops the copy. animPoseSearchAnim (above) cannot be
-// used here: its `i = 0` fallback adds a redundant re-test.
-static inline s32 animPoseSearchAnimIdx(AnimationPoseData* data, const char* name, s32 i, s32 top) {
-    if (i < 0) {
+// The search inlined into animPoseDrawMtx and animPoseDisp_MakeExtTexture (with the rest of an
+// animPoseSetAnim). It returns from inside the loop and shares one `goto zero` exit, and copies the
+// id into i only after the negative test. animPoseSetAnim's own animPoseSearchAnim copies it first,
+// which is the colouring those two functions have.
+static inline s32 animPoseSearchAnimIdx(AnimationPose* pose, const char* name) {
+    AnimationPoseData* data = animPoseGetBaseData(pose);
+    s32 i;
+    s32 top = data->mAnimCount;
+
+    if ((s32)name < 0) {
         for (i = 0; i < top; i++) {
             if (!strcmp(ANIM_POSE_DATA_ANIMS(data)[i].name, name)) {
                 return i;
@@ -2733,28 +2612,25 @@ static inline s32 animPoseSearchAnimIdx(AnimationPoseData* data, const char* nam
         }
         goto zero;
     }
-    if (i < top) {
-        return i;
+    i = (s32)name;
+    if (i >= top) {
+        goto zero;
     }
+    return i;
 zero:
     return 0;
 }
 // dont_inline keeps animPoseDrawMtx a real bl from animPoseDraw (retail emits one).
 #pragma dont_inline on
-// All logic/constants/offsets match and the animId search now uses the target's branch shape, so every
-// remaining diff is callee-saved register allocation. The target colours the long-lived webs
-// pose/paperPose/pMtx/xluMode/matrix/poseData to r31/r30/r29/r28/r27/r26; this build puts xluMode in r29
-// and drops pMtx/poseData to r23/r24, so the whole function is a permutation of the same registers. The
-// local declaration order below was searched to get the typeFlags block's posNum/nrmNum and the animArg
-// block's top/found right (it moved the score 98.81 -> 99.24%); no order found reaches the target's
-// colouring. No pragma helps. The inner shadow variables (pp/ppd) reproduce the target's non-CSEd
-// rematerialisation of the paper pose inside the animArg block (outer r30, inner r29).
-// NONMATCHING (99.24%): register allocation only (60 instructions, all register renames).
+// All logic/constants/offsets match; every remaining diff is callee-saved register allocation. The
+// target colours the long-lived webs pose/paperPose/pMtx/xluMode/matrix/poseData to r31/r30/r29/r28/
+// r27/r26; this build puts xluMode in r29 and drops pMtx/poseData to r22/r23 (the replay reaches at most
+// 9 of the 12 colours by reordering xluMode/poseData/pMtx). The inner `pp` shadow reproduces the
+// target's non-CSEd re-materialisation of the paper pose inside the animArg block (outer r30, inner r29).
+// NONMATCHING (99.40%): register allocation only (49 instructions, all register renames).
 void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
     static Mtx mtx;
     AnimationPose* pose = &wp->poses[poseId];
-    s32 top;
-    s32 nrmNum;
     s32 animArg;
     Mtx mtxE;
     Mtx mtxD;
@@ -2765,7 +2641,6 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
     s32 found;
     AnimationPoseData* paperPoseData;
     AnimationPoseData* poseData;
-    s32 posNum;
     AnimationPose* paperPose;
 
     if (pose->paperId != -1) {
@@ -2799,10 +2674,11 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
         }
 
         if (paperPose->typeFlags & 2) {
-            posNum = paperPoseData->mBufferPosNum;
-            nrmNum = paperPoseData->mBufferNrmNum;
-            if (posNum + nrmNum <= (s32)wp->mFloatScratchRP) {
-                if ((s32)(wp->mFloatScratchWP + posNum + nrmNum) > (s32)wp->mFloatScratchRP) {
+            s32 posNum = paperPoseData->mBufferPosNum;
+            s32 nrmNum = paperPoseData->mBufferNrmNum;
+            s32 total = posNum + nrmNum;
+            if (total <= (s32)wp->mFloatScratchRP) {
+                if ((s32)(wp->mFloatScratchWP + total) > (s32)wp->mFloatScratchRP) {
                     wp->mFloatScratchWP = 0;
                 }
                 wp->mbUseFloatScratch = 1;
@@ -2815,9 +2691,7 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
             if (animArg != -1) {
                 {
                     AnimationPose* pp = &wp->poses[pose->paperId];
-                    AnimationPoseData* ppd = *wp->files[pp->fileId].handle->data;
-                    top = ppd->mAnimCount;
-                    found = animPoseSearchAnimIdx(ppd, (const char*)animArg, animArg, top);
+                    found = animPoseSearchAnimIdx(pp, (const char*)animArg);
                     if (found != pp->animId) {
                         pp->animId = found;
                         if (pp->paperId != -1 && (pp->flags & 2)) {
@@ -3295,24 +3169,10 @@ u32 anim_ext_tex_size;
 
 extern GXColor dat_80419a3c;
 extern GXColor dat_80419a40;
-// All logic/constants/offsets match (including every compare direction and signedness). What remains is
-// callee-saved register colouring: `data` now lands in r18 as in the target, but the search loop's `top`
-// and the compiler's 0x40-stride induction pointer have swapped registers (target top r26 / pointer r17;
-// here top r17 / pointer r26; the induction pointer wants data-1 = r17, which top took first). The target
-// also sets i=0 before loading gp and emits `offset = i` as `mr r28, r31`, where this build folds the
-// known-zero i to `li r28, 0`. Declaring `BOOL inBattle;` before `s32 offset;`, and `data` before `top`,
-// is what fixes the inBattle r26 / offset r28 split and puts data in r18. The `p` shadow (r28 in the
-// target) reproduces the target's re-materialised pose in the animId-fixup block; the rendering tail
-// matches byte-for-byte. A declaration-order sweep of the eight locals and every structural variant
-// tried leave the ceiling at 98.35%; the top/pointer swap is a pure graph-colouring tie-break.
-// NONMATCHING (98.35%): callee-saved GPR colouring in the two search loops only.
 void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void* texObj, void* base,
                                  f32 f2, s32* out0, s32* out1, s32* out2, s32* out3) {
     s32 i;
-    s32 animId;
     s32 found;
-    AnimationPoseData* data;
-    s32 top;
     AnimationPose* pose;
     AnimationPose savedPose;
 
@@ -3345,10 +3205,7 @@ void animPoseDisp_MakeExtTexture(const char* name, f32 f1, void* field_0x4, void
         // the outer copy (r30) live, i.e. the original did not share one `pose` variable. Using the
         // shadow reproduces the target's non-CSEd pair (see the animPoseDrawMtx note).
         AnimationPose* p = &wp->poses[i];
-        data = animPoseGetBaseData(p);
-        animId = (s32)field_0x4;
-        top = data->mAnimCount;
-        found = animPoseSearchAnimIdx(data, (const char*)field_0x4, animId, top);
+        found = animPoseSearchAnimIdx(p, (const char*)field_0x4);
         if (found != p->animId) {
             p->animId = found;
             if (p->paperId != -1 && (p->flags & 2)) {
@@ -3706,15 +3563,9 @@ void animPoseSetDispCallBack(s32 poseId, void* dispCallback, void* dispUserData)
 }
 
 // animPoseDrawShape
-// Structure matches and the 14 saved wp fields now get the target's exact colours (r21/r20/r19 for
-// mpCurPose/AnimData/PoseData, r30..r22 for the tex/data/mtx fields, r18/r17 for the two tail words).
-// MWCC assigns those registers in declaration order, so the saved fields are declared in that colour
-// order while the loads/restores stay in struct-field order.
-#pragma opt_common_subs off // needed: MWCC CSEs two `wp` loads into a register the target keeps separate
-// Hoisting `mBufferPosNum`/`mBufferNrmNum` into locals keeps them in registers across the two
-// `mFloatScratchWP` updates, which is what the target does (it removed the two duplicated loads).
-// NONMATCHING (98.28%): the remaining differences are register colouring in the poseId division and
-// the base-data block (`wp` r6/data r4 in the target vs r4/r6 here).
+// The 14 saved wp fields are declared in the target's colour order (r21/r20/r19 for
+// mpCurPose/AnimData/PoseData, r30..r22 for the tex/data/mtx fields, r18/r17 for the two tail words);
+// MWCC assigns those registers in declaration order, while the loads/restores stay in struct-field order.
 void animPoseDrawShape(s32 poseId, s32 shapeId) {
     AnimationPose* pose = &wp->poses[poseId];
     GXTexObj* prevTexObj0;
@@ -3781,7 +3632,6 @@ void animPoseDrawShape(s32 poseId, s32 shapeId) {
     wp->field_0xD8 = prevD8;
     wp->field_0xDC = prevDC;
 }
-#pragma opt_common_subs reset
 
 s32 animPoseGetShapeIdx(s32 poseId, const char* name) {
     AnimPoseShape* shape;
