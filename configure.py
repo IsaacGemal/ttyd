@@ -676,7 +676,7 @@ config.libs = [
             Object(Matching, "event/evt_npc.c", extra_cflags=["-O4,s"]),
             Object(Matching, "event/evt_sub.c"),
             Object(Matching, "event/evt_mobj.c"),
-            Object(NonMatching, "event/evt_eff.c"),
+            Object(Matching, "event/evt_eff.c"),
             Object(Matching, "event/evt_paper.c"),
             Object(Matching, "event/evt_case.c"),
             Object(Matching, "event/evt_img.c"),
