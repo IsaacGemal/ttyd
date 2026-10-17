@@ -8070,3 +8070,20 @@ argument web versus its saved live range, without reviving the extra permanent C
 - **Review note (orchestrator):** the one-use `animSetMaterial_TexMtx` inline is folded into the caller (deleted, not
   copied) with all locals at function scope, which rule 7 allows. Cosmetic: a leftover bare `{ }` block around the
   second loop; tidy it in the post-finish review if removing it keeps 99.96.
+
+### mri_puni: unk_mri_000095f0 and PuniChildHagure 100; hitCheckFilter's real prototype (Claude Opus 5.5, on8-puni)
+- hitCheckFilter's original parameter order is `(callback, x, y, z, nx, ny, nz, hitX, hitY, hitZ, distance, hitNX,
+  hitNY, hitNZ)`: all 115 callers in 27 files stay 100 and the checksum passes (floats before the callback, as the
+  wave-90 agent worded it, breaks mobj_switch_float_blk and the DOL). With it and `dist = mag;` after the two NULL
+  stores (sibling unk_mri_0000980c's order), unk_mri_000095f0 96.04 -> 100.
+- MWCC's inlined recursion (mwccdbg + rasim): `opt_lifetimes` gives every lifetime after the first a new temp, numbered
+  last-first per variable; each inlined copy's locals are created level by level in reverse declaration order;
+  field-test CSE temps are numbered in code order (retail's); declared locals and parameters never merge with
+  temporaries. So PuniChildHagure's colouring needs the top-level child to be an inline argument temp: a per-child
+  `static inline puniHagureChild(parent, child)` (the two branches' shared body) plus a scoped `inline_depth(5)` (the
+  helper spends one level per step; 4 and 6 miss) gives 97.88 -> 100.
+- **Review note (orchestrator):** puniHagureChild is a new helper without outside evidence, accepted under rule 7 as a
+  plain de-duplication with mechanistic evidence (an argument temp is the only thing that can take retail's colour);
+  listed for the post-finish review.
+- Hard negatives (no helper): block-scoped locals 97.50, field test then local 96.93, parameter reuse 96.63/95.96,
+  inline_depth 1-8 alone, inline_bottom_up, defer_codegen, compilers 2.0/2.5/2.7; no-local 76.29; loop 2.59.

@@ -132,9 +132,9 @@ static inline BOOL nannpcHitWall(NanNpcEntry* entry, f32 vlen, Vec pos, Vec dir)
     entry->work[4] = 0;
     scale = TRUE;
     hitDist = vlen;
-    entry->work[4] = (s32)hitCheckFilter((HitFilterCallback)0, &hitPos.x, &hitPos.y, &hitPos.z, &hitDist,
-                                        &hitNormal.x, &hitNormal.y, &hitNormal.z, pos.x, pos.y, pos.z, dir.x, dir.y,
-                                        dir.z);
+    entry->work[4] = (s32)hitCheckFilter((HitFilterCallback)0, pos.x, pos.y, pos.z, dir.x,
+                                        dir.y, dir.z, &hitPos.x, &hitPos.y, &hitPos.z, &hitDist, &hitNormal.x, &hitNormal.y,
+                                        &hitNormal.z);
     if ((u32)entry->work[4] == 0) {
         PSVECAdd(&entry->position, &entry->field_0x3C, &entry->position);
     } else {
@@ -160,9 +160,9 @@ static inline BOOL nannpcHitWall(NanNpcEntry* entry, f32 vlen, Vec pos, Vec dir)
             // allocation (the post-allocation peephole then deletes the self-assignment itself).
             pos = savedPos;
 #endif
-            entry->work[5] = (s32)hitCheckFilter((HitFilterCallback)0, &fpx2, &fpy2, &fpz2, &hitDist, &fnx2, &fny2,
-                                                &fnz2, savedPos.x, savedPos.y + 1.0f, savedPos.z, move.x, move.y,
-                                                move.z);
+            entry->work[5] = (s32)hitCheckFilter((HitFilterCallback)0, savedPos.x, savedPos.y + 1.0f, savedPos.z, move.x, move.y, move.z,
+                                                &fpx2, &fpy2, &fpz2, &hitDist, &fnx2, &fny2,
+                                                &fnz2);
             if ((u32)entry->work[5] != 0) {
                 entry->position = savedPos;
             }

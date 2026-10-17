@@ -1422,9 +1422,9 @@ void npcMain(void) {
 
                             feet = entry->position;
                             hdist = 100.0f;
-                            if (hitCheckFilter(NULL, &hx, &hy, &hz, &hdist, &nx, &ny, &nz, feet.x,
-                                               1.0f + feet.y, feet.z, 0.0f,
-                                               (-1.0f), 0.0f) != NULL) {
+                            if (hitCheckFilter(NULL, feet.x, 1.0f + feet.y, feet.z, 0.0f, (-1.0f), 0.0f, &hx, &hy,
+                                               &hz, &hdist, &nx,
+                                               &ny, &nz) != NULL) {
                                 feet.y = hy;
                             }
                             animPoseVivianMain(entry->poseId, &feet);
@@ -1937,8 +1937,8 @@ void npcMoveG(NpcEntry* entry) {
             dabs = __fabs(moveY);
             absY = (f32)dabs;
             distance = yOffset + absY;
-            hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, entry->position.x,
-                                 entry->position.y + yOffset, entry->position.z, 0.0f, -1.0f, 0.0f);
+            hit = hitCheckFilter(NULL, entry->position.x, entry->position.y + yOffset, entry->position.z, 0.0f, -1.0f, 0.0f, &hitX, &hitY,
+                                 &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
             *(HitEntry**)entry->field_300 = hit;
             if (hit == NULL) {
                 entry->jumpFlags |= 1;
@@ -1988,8 +1988,8 @@ HitEntry* npcHitCheckSide(NpcEntry* entry, f32* outX, f32* outZ, f32* outAngle, 
         hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
                            entry->position.z, sinv, 0.0f, cosv);
     } else {
-        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
-                             entry->position.z, sinv, 0.0f, cosv);
+        hit = hitCheckFilter(NULL, entry->position.x, entry->position.y + y, entry->position.z, sinv, 0.0f, cosv, &hx, &hy, &hz,
+                             &d, &nx, &ny, &nz);
     }
     if (hit != NULL) {
         dot = dx * nx + dz * nz;
@@ -2011,8 +2011,8 @@ HitEntry* npcHitCheckSide(NpcEntry* entry, f32* outX, f32* outZ, f32* outAngle, 
         hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
                            entry->position.z, sinv, 0.0f, cosv);
     } else {
-        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
-                             entry->position.z, sinv, 0.0f, cosv);
+        hit = hitCheckFilter(NULL, entry->position.x, entry->position.y + y, entry->position.z, sinv, 0.0f, cosv, &hx, &hy, &hz,
+                             &d, &nx, &ny, &nz);
     }
     if (hit != NULL) {
         ndist = sqrtf(nx * nx + nz * nz);
@@ -2038,8 +2038,8 @@ HitEntry* npcHitCheckSide(NpcEntry* entry, f32* outX, f32* outZ, f32* outAngle, 
         hit = hitCheckAttr(4, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
                            entry->position.z, sinv, 0.0f, cosv);
     } else {
-        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &nx, &ny, &nz, entry->position.x, entry->position.y + y,
-                             entry->position.z, sinv, 0.0f, cosv);
+        hit = hitCheckFilter(NULL, entry->position.x, entry->position.y + y, entry->position.z, sinv, 0.0f, cosv, &hx, &hy, &hz,
+                             &d, &nx, &ny, &nz);
     }
     if (hit != NULL) {
         dot = dx * nx + dz * nz;
@@ -2435,9 +2435,9 @@ void fbatEncountCheck(void) {
                             dz = npc->position.z - mario->position.z;
                             sincosf(&sx, &sz, angleABf(0.0f, 0.0f, dx, dz));
                             d = sqrtf(dx * dx + dz * dz);
-                            if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &d, &hitNX, &hitNY, &hitNZ, mario->position.x,
-                                               0.75f * mario->wPlayerCollisionBox.y + mario->position.y,
-                                               mario->position.z, sx, 0.0f, sz) == NULL) {
+                            if (hitCheckFilter(NULL, mario->position.x, 0.75f * mario->wPlayerCollisionBox.y + mario->position.y, mario->position.z, sx, 0.0f, sz, &hitX, &hitY,
+                                               &hitZ,
+                                               &d, &hitNX, &hitNY, &hitNZ) == NULL) {
                                 found = 1;
                                 if (dist < nearest) {
                                     nearest = dist;

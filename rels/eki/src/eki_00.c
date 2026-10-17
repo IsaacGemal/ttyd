@@ -1343,8 +1343,8 @@ static void ext_moamoa_init(void) {
         hitY = 0.0f;
         hitX = 0.0f;
         distance = 1000000.0f;
-        if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, ep->matrix[0][0][3],
-                           ep->matrix[0][1][3] + 100.0f, ep->matrix[0][2][3], 0.0f, -1.0f, 0.0f)
+        if (hitCheckFilter(NULL, ep->matrix[0][0][3], ep->matrix[0][1][3] + 100.0f, ep->matrix[0][2][3], 0.0f, -1.0f, 0.0f, &hitX, &hitY,
+                           &hitZ, &distance, &hitNX, &hitNY, &hitNZ)
             != NULL) {
             ep->matrix[0][1][3] = hitY;
         }
@@ -1423,8 +1423,8 @@ static void moamoa_jump(ExtPose* ep, MoamoaPose* pose, f32 f1, f32 f2, f32 f3, f
         hitY = 0.0f;
         hitX = 0.0f;
         distance = 1000000.0f;
-        if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, f1, f2 + 100.0f, f3,
-                           0.0f, -1.0f, 0.0f)
+        if (hitCheckFilter(NULL, f1, f2 + 100.0f, f3, 0.0f, -1.0f, 0.0f, &hitX, &hitY, &hitZ, &distance,
+                           &hitNX, &hitNY, &hitNZ)
             != NULL) {
             dy = f2 - hitY;
             if (__fabs(dy) > 30.0) {

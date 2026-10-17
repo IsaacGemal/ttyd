@@ -1669,9 +1669,9 @@ s32 mobj_float_blk(MapObjectEntry* obj) {
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
 
                 distance = 1.0f + (f32)__fabs(obj->unk5C.y);
-                if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                        obj->position.x, 0.5f + obj->position.y, obj->position.z,
-                                        0.0f, (-1.0f), 0.0f) != 0) {
+                if ((s32)hitCheckFilter(NULL, obj->position.x, 0.5f + obj->position.y, obj->position.z, 0.0f, (-1.0f), 0.0f, &hitX,
+                                        &hitY, &hitZ, &distance,
+                                        &hitNX, &hitNY, &hitNZ) != 0) {
                     if (strcmp(animPoseGetCurrentAnim(obj->poseId)->name, "S_1") != 0) {
                         animPoseSetAnim(obj->poseId, "S_1", 1);
                         obj->flags |= 2;
@@ -1768,9 +1768,9 @@ s32 evt_mobj_float_blk(EventEntry* event, BOOL isFirstCall) {
         f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
 
         distance = 1.0f + (f32)__fabs(obj->unk5C.y);
-        if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                obj->position.x, 0.5f + obj->position.y, obj->position.z,
-                                0.0f, (-1.0f), 0.0f) != 0) {
+        if ((s32)hitCheckFilter(NULL, obj->position.x, 0.5f + obj->position.y, obj->position.z, 0.0f, (-1.0f), 0.0f, &hitX,
+                                &hitY, &hitZ, &distance,
+                                &hitNX, &hitNY, &hitNZ) != 0) {
             animPoseSetAnim(obj->poseId, "S_1", 1);
             obj->flags |= 2;
         } else {
@@ -1845,10 +1845,10 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
 
                 distance = 1.0f + (f32)__fabs(child->unk5C.y);
-                if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                        child->position.x, 0.5f + child->position.y,
-                                        child->position.z, 0.0f, (-1.0f),
-                                        0.0f) != 0) {
+                if ((s32)hitCheckFilter(NULL, child->position.x, 0.5f + child->position.y, child->position.z, 0.0f, (-1.0f), 0.0f, &hitX,
+                                        &hitY, &hitZ,
+                                        &distance, &hitNX, &hitNY,
+                                        &hitNZ) != 0) {
                     if (evtCheckID(obj->eventId) != 0) {
                         anim = animPoseGetCurrentAnim(obj->poseId);
                         {
@@ -2017,10 +2017,10 @@ s32 mobj_switch_float_blk(MapObjectEntry* obj) {
                 f32 hitNZ, hitNY, hitNX, distance, hitZ, hitY, hitX;
 
                 distance = 1.0f + (f32)__fabs(child->unk5C.y);
-                if ((s32)hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                        child->position.x, 0.5f + child->position.y,
-                                        child->position.z, 0.0f, (-1.0f),
-                                        0.0f) != 0) {
+                if ((s32)hitCheckFilter(NULL, child->position.x, 0.5f + child->position.y, child->position.z, 0.0f, (-1.0f), 0.0f, &hitX,
+                                        &hitY, &hitZ,
+                                        &distance, &hitNX, &hitNY,
+                                        &hitNZ) != 0) {
                     animPoseSetAnim(obj->poseId, "S_1", 0);
                 } else {
                     animPoseSetAnim(obj->poseId, "A_3", 0);
@@ -2098,10 +2098,10 @@ s32 evt_mobj_switch_float_blk(EventEntry* event, BOOL isFirstCall) {
         HitEntry* hit;
         strcpy((char*)&obj2->unk1A0[0x18], obj->name);
         distance = 1.0f + (f32)__fabs(obj2->unk5C.y);
-        hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                             obj2->position.x, 0.5f + obj2->position.y,
-                             obj2->position.z, 0.0f, (-1.0f),
-                             0.0f);
+        hit = hitCheckFilter(NULL, obj2->position.x, 0.5f + obj2->position.y, obj2->position.z, 0.0f, (-1.0f), 0.0f, &hitX,
+                             &hitY, &hitZ,
+                             &distance, &hitNX, &hitNY,
+                             &hitNZ);
         if ((s32)hit != 0) {
             animPoseSetAnim(obj->poseId, "S_1", 1);
         } else {
@@ -2218,9 +2218,9 @@ s32 mobj_lock(MapObjectEntry* obj) {
             f32 hitX, hitY, hitZ, distance, hitNX, hitNY, hitNZ;
 
             distance = 1.0f + (f32)__fabs(obj->unk5C.y);
-            if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                               obj->position.x, 1.0f + obj->position.y, obj->position.z,
-                               0.0f, obj->unk5C.y, 0.0f) != NULL) {
+            if (hitCheckFilter(NULL, obj->position.x, 1.0f + obj->position.y, obj->position.z, 0.0f, obj->unk5C.y, 0.0f, &hitX,
+                               &hitY, &hitZ, &distance,
+                               &hitNX, &hitNY, &hitNZ) != NULL) {
                 obj->position.y = hitY;
                 obj->unk5C.y *= (-0.8f);
                 obj->unk6C += 1.0f;
@@ -2504,9 +2504,9 @@ s32 evt_mobj_itembox(EventEntry* event, BOOL isFirstCall) {
         f32 hitNY;
         f32 hitNZ;
 
-        if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                           obj->position.x, 1.0f + obj->position.y, obj->position.z,
-                           0.0f, (-1.0f), 0.0f) != NULL) {
+        if (hitCheckFilter(NULL, obj->position.x, 1.0f + obj->position.y, obj->position.z, 0.0f, (-1.0f), 0.0f, &hitX,
+                           &hitY, &hitZ, &distance,
+                           &hitNX, &hitNY, &hitNZ) != NULL) {
             obj->flags |= 2;
             obj->flags &= ~0x40;
         }

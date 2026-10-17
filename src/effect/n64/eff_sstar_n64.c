@@ -301,8 +301,8 @@ void effSstarMain(EffectEntry* effect) {
         prevZ = data->position.z - float_32_8041fd9c * (data->velZ * distance);
         distance = lbl_8041FDA0;
         if (data->field_0x0 != 0 && data->velY < float_0_8041fd8c) {
-            if (hitCheckFilter(NULL, &hitX, &hitX, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                    prevX, prevY, prevZ, float_0_8041fd8c, float_neg1_8041fda4, float_0_8041fd8c) != NULL) {
+            if (hitCheckFilter(NULL, prevX, prevY, prevZ, float_0_8041fd8c, float_neg1_8041fda4, float_0_8041fd8c, &hitX,
+                    &hitX, &hitZ, &distance, &hitNX, &hitNY, &hitNZ) != NULL) {
                 if (distance < float_42_8041fda8) {
                     data->velY = float_0p6_8041fdac * -data->velY;
                     data->velX *= float_0p7_8041fdb0;

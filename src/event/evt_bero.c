@@ -721,8 +721,8 @@ USER_FUNC(bero_get_position_normal) {
 		// MUST_MATCH: the original writes distance twice; the compiler keeps both stores.
 		distance = 1000000.0f;
 #endif
-		if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, ray.x,
-		                   ray.y, ray.z, 0.0f, -1.0f, 0.0f) != NULL) {
+		if (hitCheckFilter(NULL, ray.x, ray.y, ray.z, 0.0f, -1.0f, 0.0f, &hitX, &hitY,
+		                   &hitZ, &distance, &hitNX, &hitNY, &hitNZ) != NULL) {
 			ray.y = hitY;
 		}
 		e = ray;
@@ -773,16 +773,16 @@ void bero_get_position_pipe_sub(s32 a, s32 b, s32 c, s32 d, Vec* start, Vec* end
 			end->x = start->x + (f32)b;
 			end->y = start->y;
 			end->z = start->z;
-			hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, end->x,
-			               end->y, end->z, 0.0f, -1.0f, 0.0f);
+			hitCheckFilter(NULL, end->x, end->y, end->z, 0.0f, -1.0f, 0.0f, &hitX, &hitY,
+			               &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
 		} else {
 			hitObjGetPos((const char*)c, end);
 			end->x -= off;
 			start->x = end->x + (f32)b;
 			start->y = end->y;
 			start->z = end->z;
-			hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-			               start->x, start->y, start->z, 0.0f, -1.0f, 0.0f);
+			hitCheckFilter(NULL, start->x, start->y, start->z, 0.0f, -1.0f, 0.0f, &hitX,
+			               &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
 		}
 #ifdef MUST_MATCH
 		y = hitY;

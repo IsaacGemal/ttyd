@@ -339,8 +339,8 @@ void* kpaSearchGround(f32* a, f32* b, f32* c, f32 d) {
         x = px + dx;
         z = pz + dz;
         distance = dist;
-        hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0_80420e80,
-                             float_neg1_80420e84, float_0_80420e80);
+        hit = hitCheckFilter(NULL, x, y, z, float_0_80420e80, float_neg1_80420e84, float_0_80420e80, &hitX, &hitY, &hitZ, &distance, &hitNX,
+                             &hitNY, &hitNZ);
         if (hit != NULL) {
             Vec n;
             MarioWork* m2;
@@ -486,8 +486,8 @@ void* kpaSearchHead(Vec* pos, f32* outY, f32 a) {
         y = mp->position.y + yo;
         z = mp->position.z + sz;
         distance = dist;
-        hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, y, z, float_0_80420e80, float_1_80420e94,
-                             float_0_80420e80);
+        hit = hitCheckFilter(NULL, x, y, z, float_0_80420e80, float_1_80420e94, float_0_80420e80, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY,
+                             &hitNZ);
         if (hit == NULL) continue;
         hitY = (f32)(s32)(float_100_80420e98 * hitY + float_0p5_80420e70) / float_100_80420e98;
         if (y + dist >= hitY) {

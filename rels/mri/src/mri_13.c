@@ -270,8 +270,8 @@ USER_FUNC(yuka_fall_check) {
             distance = 3.0f;
             pos = *(Vec*)(p + 0x12C);
 
-            if (hitCheckFilter(NULL, &hitPos.x, &hitPos.y, &hitPos.z, &distance, &hitNormal.x, &hitNormal.y,
-                               &hitNormal.z, pos.x, pos.y, pos.z, normal.x, normal.y, normal.z)) {
+            if (hitCheckFilter(NULL, pos.x, pos.y, pos.z, normal.x, normal.y, normal.z,
+                               &hitPos.x, &hitPos.y, &hitPos.z, &distance, &hitNormal.x, &hitNormal.y, &hitNormal.z)) {
                 *(Vec*)(p + 0x12C) = hitPos;
             } else {
                 PSVECAdd((Vec*)(p + 0x12C), &fall, (Vec*)(p + 0x12C));

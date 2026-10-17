@@ -1665,8 +1665,8 @@ void party_motion_homing_fly(PartyEntry* party) {
                 movePos(&move_x, &move_z, party->field_F4, angle);
                 v = f25 + touch_wall_ct;
                 hitDist = 1000.0f;
-                hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &hitDist, &hitNX, &hitNY, &hitNZ,
-                                     move_x, v, move_z, zero, -1.0f, 0.0f);
+                hit = hitCheckFilter(NULL, move_x, v, move_z, zero, -1.0f, 0.0f, &hitX,
+                                     &hitY, &hitZ, &hitDist, &hitNX, &hitNY, &hitNZ);
                 if (hit == NULL) {
                     f25 = -2000.0f;
                 } else {
@@ -1802,10 +1802,10 @@ void party_motion_behind_mario(PartyEntry* party) {
 #ifdef MUST_MATCH
     ytmp = f30 + touch_wall_ct;
     hd = 1000.0f;
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, ytmp, z, 0.0f, -1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, x, ytmp, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
 #else
     hd = 1000.0f;
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
 #endif
     if (hit == NULL) {
         f29 = -2000.0f;
@@ -1838,10 +1838,10 @@ void party_motion_behind_mario(PartyEntry* party) {
 #ifdef MUST_MATCH
             ytmp = f30 + touch_wall_ct;
             bhd = 1000.0f;
-            hit = hitCheckFilter(NULL, &bhx, &bhy, &bhz, &bhd, &bhnx, &bhny, &bhnz, x, ytmp, z, 0.0f, -1.0f, 0.0f);
+            hit = hitCheckFilter(NULL, x, ytmp, z, 0.0f, -1.0f, 0.0f, &bhx, &bhy, &bhz, &bhd, &bhnx, &bhny, &bhnz);
 #else
             bhd = 1000.0f;
-            hit = hitCheckFilter(NULL, &bhx, &bhy, &bhz, &bhd, &bhnx, &bhny, &bhnz, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
+            hit = hitCheckFilter(NULL, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f, &bhx, &bhy, &bhz, &bhd, &bhnx, &bhny, &bhnz);
 #endif
             if (hit == NULL) {
                 fWall = -2000.0f;
@@ -1869,7 +1869,7 @@ void party_motion_behind_mario(PartyEntry* party) {
 #ifdef MUST_MATCH
             ytmp = f30 + touch_wall_ct;
             chd = 1000.0f;
-            hit = hitCheckFilter(NULL, &chx, &chy, &chz, &chd, &chnx, &chny, &chnz, x, ytmp, z, 0.0f, -1.0f, 0.0f);
+            hit = hitCheckFilter(NULL, x, ytmp, z, 0.0f, -1.0f, 0.0f, &chx, &chy, &chz, &chd, &chnx, &chny, &chnz);
             if (hit == NULL) {
                 w = -2000.0f;
             } else {
@@ -1885,7 +1885,7 @@ void party_motion_behind_mario(PartyEntry* party) {
             }
 #else
             chd = 1000.0f;
-            hit = hitCheckFilter(NULL, &chx, &chy, &chz, &chd, &chnx, &chny, &chnz, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
+            hit = hitCheckFilter(NULL, x, f30 + touch_wall_ct, z, 0.0f, -1.0f, 0.0f, &chx, &chy, &chz, &chd, &chnx, &chny, &chnz);
             if (hit == NULL) {
                 f28 = -2000.0f;
             } else {
@@ -2023,10 +2023,10 @@ void party_motion_behind_mario_continue(PartyEntry* party) {
 #ifdef MUST_MATCH
     ytmp = targetY + touch_wall_ct;
     hd = 1000.0f;
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, ytmp, z, 0.0f, -1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, x, ytmp, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
 #else
     hd = 1000.0f;
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, targetY + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, x, targetY + touch_wall_ct, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
 #endif
     if (hit == NULL) {
         ty = -2000.0f;
@@ -2333,10 +2333,10 @@ void party_motion_beside_mario(PartyEntry* party) {
 #ifdef MUST_MATCH
     ytmp = y + touch_wall_ct;
     hd = 1000.0f;
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, ytmp, z, 0.0f, -1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, x, ytmp, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
 #else
     hd = 1000.0f;
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, y + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, x, y + touch_wall_ct, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
 #endif
     if (hit == NULL) {
         dist = -2000.0f;
@@ -3523,7 +3523,7 @@ f32 partyGetFrontFloorY(f32 x, f32 y, f32 z, f32 angle) {
     x += s * 40.0f;
     z += c * 40.0f;
     hd = 1000.0f;
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz, x, y + touch_wall_ct, z, 0.0f, -1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, x, y + touch_wall_ct, z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &hd, &hnx, &hny, &hnz);
     if (hit == NULL) {
         return -2000.0f;
     }

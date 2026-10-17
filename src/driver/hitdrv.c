@@ -1040,8 +1040,8 @@ HitEntry* hitCheckVecFilter(HitCheckQuery* query, HitFilterCallback callback) { 
     return var_r28;
 }
 
-HitEntry* hitCheckFilter(HitFilterCallback callback, f32* hitX, f32* hitY, f32* hitZ, f32* distance, f32* hitNX,
-                         f32* hitNY, f32* hitNZ, f32 x, f32 y, f32 z, f32 nx, f32 ny, f32 nz) { // 1:1
+HitEntry* hitCheckFilter(HitFilterCallback callback, f32 x, f32 y, f32 z, f32 nx, f32 ny, f32 nz, f32* hitX, f32* hitY,
+                         f32* hitZ, f32* distance, f32* hitNX, f32* hitNY, f32* hitNZ) { // 1:1
     HitCheckQuery temp;
     HitCheckQuery* query = &temp;
     HitEntry* entry;

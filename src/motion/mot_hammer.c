@@ -746,10 +746,10 @@ void mot_hammer2(void) {
         m2 = marioGetPtr();
         sincosf(&sa, &ca, f30);
         dist = float_2_8041a9a0 * m2->wPlayerCollisionBox.x;
-        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz,
-                             m2->position.x,
-                             float_0p5_8041a9a4 * m2->wPlayerCollisionBox.y + m2->position.y,
-                             m2->position.z, sa, float_0_8041a9a8, ca);
+        hit = hitCheckFilter(NULL, m2->position.x, float_0p5_8041a9a4 * m2->wPlayerCollisionBox.y + m2->position.y, m2->position.z, sa, float_0_8041a9a8, ca, &hx,
+                             &hy,
+                             &hz,
+                             &dist, &hnx, &hny, &hnz);
 #ifdef MUST_MATCH
         // The original keeps the wall's attribute-mask comparison in the output even though its result
         // is never used (the branch on it was folded away). Written as an empty `if`, this compiler

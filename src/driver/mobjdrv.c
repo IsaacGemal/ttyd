@@ -615,8 +615,8 @@ void mobjMain(void) {
                     entry->unk5C.y -= entry->unk68;
                 } else {
                     dist = float_10_8041a0cc + (float_1_8041a0d0 + (f32)__fabs(entry->unk5C.y));
-                    if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &dist, &nx, &ny, &nz, entry->position.x,
-                                       float_10_8041a0cc + entry->position.y, entry->position.z, float_0_8041a0c8, float_neg1_8041a0d4, float_0_8041a0c8) != NULL) {
+                    if (hitCheckFilter(NULL, entry->position.x, float_10_8041a0cc + entry->position.y, entry->position.z, float_0_8041a0c8, float_neg1_8041a0d4, float_0_8041a0c8, &hitX, &hitY,
+                                       &hitZ, &dist, &nx, &ny, &nz) != NULL) {
                         entry->position.y = hitY;
                         { f32 tmpk = float_neg0p5_8041a0d8 * entry->unk6C; entry->unk5C.y = tmpk * entry->unk5C.y; }
                         if (__fabs(entry->unk5C.y) <= 2.0) {

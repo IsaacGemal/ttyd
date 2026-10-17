@@ -967,8 +967,8 @@ block_121:
                                 f29 = JABARA_F32(float_2_8041ab6c) + (mario2->position.y + MW_F32(mario2, 0x1B8));
                                 sp1C = JABARA_F32(float_0p5_8041ab48) * mario2->wPlayerCollisionBox.x;
                                 sincosf(&sp8, &spC, angle);
-                                hit = hitCheckFilter(NULL, &sp10, &sp14, &sp18, &sp1C, &sp20, &sp24, &sp28,
-                                                     f28, f29, f30, sp8, 0.0f, spC);
+                                hit = hitCheckFilter(NULL, f28, f29, f30, sp8, 0.0f, spC, &sp10,
+                                                     &sp14, &sp18, &sp1C, &sp20, &sp24, &sp28);
                                 if (hit == NULL) {
                                     move = move * (f32)sin((JABARA_F32(float_3p1416_8041ab80) * MW_F32(mario, 0x194)) / 180.0f);
                                     MW_F32(mario, 0x8C) = MW_F32(mario, 0x8C) + move;

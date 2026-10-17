@@ -474,9 +474,9 @@ void itemMain(void) {
                 d = __fabs(-1.0);
                 distance = (f32)(double_20_802cac28 + d);
                 yy = 20.0f + y;
-                hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                                     xx, yy, zz,
-                                     0.0f, -1.0f, 0.0f);
+                hit = hitCheckFilter(NULL, xx, yy, zz, 0.0f, -1.0f, 0.0f, &hitX,
+                                     &hitY, &hitZ, &distance,
+                                     &hitNX, &hitNY, &hitNZ);
                 if (hit != NULL) {
                     newY = hitY;
                 } else {
@@ -1953,9 +1953,9 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
     sincosf(&sin, &cos, angleABf(0.0f, 0.0f, dirX, dirZ));
 
     distance = 10.0f + sqrtf(dirX * dirX + dirZ * dirZ);
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                         item->position.x, item->position.y + height, item->position.z,
-                         sin, 0.0f, cos);
+    hit = hitCheckFilter(NULL, item->position.x, item->position.y + height, item->position.z, sin, 0.0f, cos, &hitX,
+                         &hitY, &hitZ, &distance,
+                         &hitNX, &hitNY, &hitNZ);
     if (hit != NULL) {
         f32 half = 0.5f;
         dot = dirX * hitNX + dirZ * hitNZ;
@@ -1971,9 +1971,9 @@ HitEntry* itemHitCheckSide(ItemEntry* item, f32* outX, f32* outZ, s32* angle, f3
     }
     else {
         distance = 10.0f + sqrtf(dirX * dirX + dirZ * dirZ);
-        hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                             item->position.x, item->position.y + height, item->position.z,
-                             sin, 0.0f, cos);
+        hit = hitCheckFilter(NULL, item->position.x, item->position.y + height, item->position.z, sin, 0.0f, cos, &hitX,
+                             &hitY, &hitZ, &distance,
+                             &hitNX, &hitNY, &hitNZ);
         if (hit != NULL) {
             f32 half = 0.5f;
             dot = dirX * hitNX + dirZ * hitNZ;
@@ -2019,8 +2019,8 @@ HitEntry* itemBoundHitFloor(ItemEntry* item, f32 vy) {
 
         d = __fabs(vy);
         dist = (f32)(double_20_802cac28 + d);
-        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f,
-                             -1.0f, 0.0f);
+        hit = hitCheckFilter(NULL, px, py, pz, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &dist, &hnx,
+                             &hny, &hnz);
         if (hit != NULL) {
             item->position.y = hy;
             return hit;
@@ -2045,8 +2045,8 @@ HitEntry* itemBoundHitCeiling(ItemEntry* item, f32 vy) {
 
         d = __fabs(vy);
         dist = (f32)(double_20_802cac28 + d);
-        hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f,
-                             1.0f, 0.0f);
+        hit = hitCheckFilter(NULL, px, py, pz, 0.0f, 1.0f, 0.0f, &hx, &hy, &hz, &dist, &hnx,
+                             &hny, &hnz);
         if (hit != NULL) {
             item->position.y = (hy - 20.0f) - 4.0f;
         } else {
@@ -2056,8 +2056,8 @@ HitEntry* itemBoundHitCeiling(ItemEntry* item, f32 vy) {
 
             d = __fabs(vy);
             dist = (f32)(double_20_802cac28 + d);
-            hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, px, py, pz, 0.0f, 1.0f,
-                                 0.0f);
+            hit = hitCheckFilter(NULL, px, py, pz, 0.0f, 1.0f, 0.0f, &hx, &hy, &hz, &dist, &hnx, &hny,
+                                 &hnz);
             if (hit != NULL) {
                 item->position.y = hy - 20.0f;
                 return hit;
