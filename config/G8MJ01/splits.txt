@@ -3410,13 +3410,13 @@ dvd/fstload.c:
 
 vi/vi.c:
 	.text       start:0x8029D6FC end:0x8029F53C
-	.data       start:0x803BF3E8 end:0x803BF7D0
+	.data       start:0x803BF3E8 end:0x803BF7E0
 	.bss        start:0x8040DBC8 end:0x8040DD10
 	.sdata      start:0x80418278 end:0x80418288
 	.sbss       start:0x80419008 end:0x80419070
 
 demo/DEMOFont.c:
-	.data       start:0x803BF7E0 end:0x803C03E0
+	.data       start:0x803BF7E0 end:0x803C03E0 align:32
 
 demo/DEMOPuts.c:
 	.text       start:0x8029F53C end:0x8029FB6C
