@@ -7666,3 +7666,17 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   matrix search keeps one name/entry swap (rasim needs `name` above `wp`, which a parameter can't be; block-local
   name, wrappers, BOOL helper, moved getter, casts all fail); mapObjSetFlushColor: all 60 block orders in
   mapGetMapObjSub, only the current one keeps its 17 callers. Untried: width casts on FlushColor's call args.
+
+### bom_01 LINKS: ext_init 98.76 -> 100 (GPT-6.1 Sol, sol11 resume)
+- ext_init now owns the sine/cosine angle-reduction scratch itself: separate polynomial accumulators, named x/z
+  coordinate products, and each quadrant limit reused for its own folded angle or square (real intermediates, same
+  operations, comparisons and coefficients as retail). Shared `BOM_SIN_POLY`/`BOM_COS_POLY` Horner macros serve
+  ext_init and bomSinApprox/bomCosApprox; the unused extInitPos wrapper is gone. The existing propagation/lifetimes
+  pragmas stay (propagation on +29 instructions, lifetimes on +7).
+- The earlier "range must become a late backend value" diagnosis was conditional on the old scratch graph: once every
+  short scratch was caller-owned, an explicit-target rasim declaration search (580 iterations, value-correct targets)
+  reached zero. Final order: range, sone, sb, cb, x, angle, su, stheta, z, cu, ctheta, cone, sv, cv. The mwccdbg
+  summary's ORIG labels for saved constants were wrong here; trusting them stalled at three wrong.
+- Levers: levers.md #31 (mutable quadrant/square scratch, Overnight 5 one-local-per-meaning) + #39 (caller-owned first
+  product). Negatives: shared accumulators (e16), trig scratch in inline helpers (e68, sits above the caller's
+  radius), dynamic aggregate initializers (rejected), compound literals (+11-19 instructions).

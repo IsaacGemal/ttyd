@@ -105,10 +105,18 @@ static inline Vec bomVec3(f32 x, f32 y, f32 z, const Vec* base) {
     return v;
 }
 
-// Sin/cos polynomials live in one inline helper each: keeping each polynomial in a single helper
-// (rather than inlining the branches twice) is what puts the angle^2 scratch in f0 and the
-// wrapped-angle pivot in f1, exactly as retail. The coefficients as helper locals keep the seed
-// in f2 and the coefficient group on f23..f27.
+// Horner steps shared by the general approximations and the pose initializer.
+#define BOM_SIN_POLY(v, square, angle, b, one) \
+    (v) = (v) * (square) - (b); \
+    (v) = (v) * (square) + (one); \
+    (v) = (v) * (angle)
+
+#define BOM_COS_POLY(v, square, b, one) \
+    (v) = (v) * (square) - (b); \
+    (v) = (v) * (square) + (one)
+
+// Keep the coefficients local to each general approximation. The pose initializer uses
+// the same Horner steps with its own angle-reduction scratch.
 static inline f32 bomSinApprox(f32 angle) {
     f32 v = 0.00761f;
     f32 b = 0.16605f;
@@ -118,29 +126,21 @@ static inline f32 bomSinApprox(f32 angle) {
     if (angle <= 3.1415927f) {
         if (angle <= 1.5707964f) {
             u = angle * angle;
-            v = v * u - b;
-            v = v * u + one;
-            v = v * angle;
+            BOM_SIN_POLY(v, u, angle, b, one);
         } else {
             angle = 1.5707964f - (angle - 1.5707964f);
             u = angle * angle;
-            v = v * u - b;
-            v = v * u + one;
-            v = v * angle;
+            BOM_SIN_POLY(v, u, angle, b, one);
         }
     } else if (angle < 4.712389f) {
         angle = angle - 3.1415927f;
         u = angle * angle;
-        v = v * u - b;
-        v = v * u + one;
-        v = v * angle;
+        BOM_SIN_POLY(v, u, angle, b, one);
         v = -v;
     } else {
         angle = 1.5707964f - (angle - 4.712389f);
         u = angle * angle;
-        v = v * u - b;
-        v = v * u + one;
-        v = v * angle;
+        BOM_SIN_POLY(v, u, angle, b, one);
         v = -v;
     }
     return v;
@@ -155,26 +155,22 @@ static inline f32 bomCosApprox(f32 angle) {
     if (angle <= 3.1415927f) {
         if (angle <= 1.5707964f) {
             u = angle * angle;
-            v = v * u - b;
-            v = v * u + one;
+            BOM_COS_POLY(v, u, b, one);
         } else {
             angle = 1.5707964f - (angle - 1.5707964f);
             u = angle * angle;
-            v = v * u - b;
-            v = v * u + one;
+            BOM_COS_POLY(v, u, b, one);
             v = -v;
         }
     } else if (angle < 4.712389f) {
         angle = angle - 3.1415927f;
         u = angle * angle;
-        v = v * u - b;
-        v = v * u + one;
+        BOM_COS_POLY(v, u, b, one);
         v = -v;
     } else {
         angle = 1.5707964f - (angle - 4.712389f);
         u = angle * angle;
-        v = v * u - b;
-        v = v * u + one;
+        BOM_COS_POLY(v, u, b, one);
     }
     return v;
 }
@@ -713,21 +709,26 @@ USER_FUNC(make_ext_table) {
     return EVT_RETURN_DONE;
 }
 
+// Keep the approximation coefficients and accumulators in single lifetimes throughout the pose loop.
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-static inline void extInitPos(ExtPose* pose, f32 angle, f32 range) {
-    (*pose->matrix)[0][3] = range * bomSinApprox(angle);
-    (*pose->matrix)[1][3] = 0.0f;
-    (*pose->matrix)[2][3] = range * bomCosApprox(angle);
-}
-
-// NONMATCHING (98.76%): retail keeps `range` in f0 and the sine scratch in f1/f2; here range takes f2 and
-// the scratch f0/f1 (FPR colouring only).
 static void ext_init(void) {
     s32 i;
     PoseData* pd;
     ExtPose* pose;
+    f32 radius;
+    f32 one;
+    f32 sinCoeff;
+    f32 cosCoeff;
+    f32 x;
     f32 angle;
+    f32 sinTmp;
+    f32 sinAngle;
+    f32 z;
+    f32 cosTmp;
+    f32 cosAngle;
+    f32 sine;
+    f32 cosine;
 
     lp[0] = (u32)smartAlloc(0xBC30, 1);
     pd = ((PoseRoot*)lp[0])->data;
@@ -742,7 +743,73 @@ static void ext_init(void) {
         pose->flags |= 7;
         PSMTXIdentity(*pose->matrix);
         angle = (f32)rand() * 6.2831855f / 32767.0f;
-        extInitPos(pose, angle, (f32)rand() * 400.0f / 32767.0f + 500.0f);
+        radius = (f32)rand() * 400.0f / 32767.0f + 500.0f;
+        sine = 0.00761f;
+        sinCoeff = 0.16605f;
+        one = 1.0f;
+        if (angle <= 3.1415927f) {
+            sinAngle = 1.5707964f;
+            if (angle <= sinAngle) {
+                sinTmp = angle * angle;
+                BOM_SIN_POLY(sine, sinTmp, angle, sinCoeff, one);
+            } else {
+                sinTmp = angle - sinAngle;
+                sinAngle = sinAngle - sinTmp;
+                sinTmp = sinAngle * sinAngle;
+                BOM_SIN_POLY(sine, sinTmp, sinAngle, sinCoeff, one);
+            }
+        } else {
+            sinTmp = 4.712389f;
+            if (angle < sinTmp) {
+                sinTmp = 3.1415927f;
+                sinAngle = angle - sinTmp;
+                sinTmp = sinAngle * sinAngle;
+                BOM_SIN_POLY(sine, sinTmp, sinAngle, sinCoeff, one);
+                sine = -sine;
+            } else {
+                sinTmp = angle - sinTmp;
+                sinAngle = 1.5707964f;
+                sinAngle = sinAngle - sinTmp;
+                sinTmp = sinAngle * sinAngle;
+                BOM_SIN_POLY(sine, sinTmp, sinAngle, sinCoeff, one);
+                sine = -sine;
+            }
+        }
+        x = radius * sine;
+        (*pose->matrix)[0][3] = x;
+        (*pose->matrix)[1][3] = 0.0f;
+        cosine = 0.03705f;
+        cosCoeff = 0.4967f;
+        if (angle <= 3.1415927f) {
+            cosAngle = 1.5707964f;
+            if (angle <= cosAngle) {
+                cosTmp = angle * angle;
+                BOM_COS_POLY(cosine, cosTmp, cosCoeff, one);
+            } else {
+                cosTmp = angle - cosAngle;
+                cosTmp = cosAngle - cosTmp;
+                cosTmp = cosTmp * cosTmp;
+                BOM_COS_POLY(cosine, cosTmp, cosCoeff, one);
+                cosine = -cosine;
+            }
+        } else {
+            cosTmp = 4.712389f;
+            if (angle < cosTmp) {
+                cosTmp = 3.1415927f;
+                cosTmp = angle - cosTmp;
+                cosTmp = cosTmp * cosTmp;
+                BOM_COS_POLY(cosine, cosTmp, cosCoeff, one);
+                cosine = -cosine;
+            } else {
+                cosTmp = angle - cosTmp;
+                cosAngle = 1.5707964f;
+                cosTmp = cosAngle - cosTmp;
+                cosTmp = cosTmp * cosTmp;
+                BOM_COS_POLY(cosine, cosTmp, cosCoeff, one);
+            }
+        }
+        z = radius * cosine;
+        (*pose->matrix)[2][3] = z;
         pose_change(i, "R_1");
     }
 }
