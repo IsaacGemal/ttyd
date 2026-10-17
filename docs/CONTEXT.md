@@ -7701,3 +7701,12 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   (`dist = *out` first, then px/offCos/pz/z/offSin/py/x interleaved as retail computes them; y before x in the second
   probe) and partyHeadHit taking the probe height as a parameter. The rest is FPR temps landing in f4-f6 instead of
   f0-f3. Also from wave 90: animSetMaterial_Texture no change (12 callee-saved GPR name rows; no source lever found).
+- **Wave 90 kept: envDisp_DepthOfField 99.68 -> 99.96, animPaperPoseDispSub 98.96 -> 99.02 (DeepSeek V4.1 Flash 1017).**
+  DoF: `id` declared after `i` in envDofTaps, and under MUST_MATCH the near pass's colour channels and texcoord copy
+  go through named locals (`red`, `alpha`, `tc`) declared after the counters, so three of texCoord/tevStage's
+  interference neighbours leave the graph first. Left: the far pass's `tevStage + 1` is an inline-expansion temp in
+  r25 (retail r26). PoseDispSub: the second block is the outer `else` of `(flags & 2)`, not the inner else of
+  `(flags & 4)` (the original's branch targets: `(flags & 2) && !(flags & 4)` does nothing), plus a MUST_MATCH local
+  for the else block's `bottom - top` scaling. Left: pose is the lowest vreg of the eight long-lived webs and always
+  takes the last callee-saved register (rasim: no order or single edge moves it).
+- No change: evt_puni_all_save 97.24, evt_puni_exit 98.37 (register names only, no source lever found).
