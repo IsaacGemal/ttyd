@@ -7875,3 +7875,34 @@ repeat it. All local checks were `tools/agent_check.py mri/mri_puni FUNC` (the u
   needs it created *after* the blend (so it gets a lower @ number and is coloured before tc). Closing it needs a
   post-regalloc rematerialization of the argument temp, which this compiler does not do. Left at its best natural
   score, NONMATCHING 99.96; source back to the committed baseline (only this ledger chapter changed).
+
+## Review backlog, Oct 10-17 merges (2026-10-17, Isaac + Claude Opus 5.5)
+
+Since the swarm review passes stopped (last: `scratch/codex-audit/review_wave42.md`), merges have been gated only by tower
+CI and an orchestrator skim of the diff: CI proves the bytes, not that the code is natural. Isaac's call: finish the
+last functions first, then review everything below against AGENT_BRIEF's review list and rule 7 (Oct 17), with the
+linked build's checksum as the safety net and a reviewer that did not write the code. Don't call the project 100%
+publicly until this is done. A fake found here that a function depends on is fixed honestly even if the function
+drops below 100.
+
+- **Pool and dead-code placement (check against rule 7's "unused functions that only place pool constants"):**
+  party_hit's uncalled `partyGetRoofY` under MUST_MATCH (on4; party_hit now links on it, #833) and cam_road's
+  uncalled `camRoadPrint` carrying two dead debug strings (#771/#809). Linker-stripped functions are real, and
+  leftover strings/constants are evidence one existed; decide whether each reconstruction is plausible original code.
+- **Helpers that may exist only to steer registers:** mapdrv pass 2's `static inline` loader steps in _mapLoad and
+  mapMain's alpha/colour/light step helpers with rasim-searched local order (#825); animdrv's `animHermite`, range
+  helpers and eval/scratch inlines (#819); npcdrv's `npcRollBattleParams` (#821); bom_01's caller-owned trig scratch
+  and BOM_SIN/COS_POLY macros (#826); battle_disp's inferred `btlDispAnimeSpeedReset` (#762, pool order only);
+  party_nokonoko's once-called `ccfloor` helper with 7 out-pointers (#755).
+- **MUST_MATCH tricks to re-grade under rule 7:** party_motion's two late-deleted self-stores (#778); evt_nannpc's
+  `s64` id; envdrv DoF's `red`/`alpha`/`tc` named temps (#829); animPaperPoseDispSub's `btmp` (#829); partySearchHead's
+  function-scoped `opt_propagation off` (#833); npcDisp_blur's scoped `optimization_level 2` (#823).
+- **Semantics changed to match (verify against the original's control flow, not just bytes):** animPaperPoseDispSub's
+  second block moved from the inner `else` of `(flags & 4)` to the outer `else` of `(flags & 2)` (#829).
+- **Declarations changed for callers:** battle_disp's const params on the SDK's `FUNC_4PARAM` GX inlines (#762);
+  puniMapFindbuff's `Vec* __restrict pos` (#831; justified by its only caller passing a local copy).
+- **CI overrides:** `--allow-regress` for the removed battle_evt_cmd placeholder (#759) and per-symbol data dips after
+  literal ports (win_root #770, cam_road #771); `--allow-pragma` on mapdrv (#820), npcdrv (#823), party_hit (#833).
+- **Unread large merges** (CI plus report only): #792-#833 except the ones above, especially mapdrv #806/#820/#825
+  (+754/-916 in #820 alone), animdrv #800/#811/#819, npcdrv #799/#807/#817/#821/#823, mri_puni #795/#805/#818,
+  pmario_sound #797/#810/#816, battle_audience #794/#814, evt_eff #813, fontmgr #801/#803, mario_hit #796/#808.
