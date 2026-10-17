@@ -7565,3 +7565,23 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   propagation pragmas on the callers found no spelling that does both. set_lsw_index as a Setindex call: 22 diffs (4
   with plain s32 highs plus its pragma). 95f0's pos copy comes from the first scheduling pass (121 diffs floor over
   statement/declaration/parameter forms). mwsearch: Findbuff 4336 and ChildHagure 2616 compiles, 0 improvements.
+
+### animdrv 68 -> 71/73: renderProc, animPoseMain, animPoseDrawMtx 100; animSetMaterial_Texture 99.82 (Claude Opus 5.5, on7-animdrv)
+- **Declaration-order hill climbing, with every candidate compiled and scored, is cheap and strong:** it took renderProc
+  from 129 to 67 differing instructions over several rounds (scratch hc_decl.py, built on cam_road's renamed-copy
+  harness). The final renderProc order is search-found; a tidy hand order is 10 instructions off.
+- **A variable reused for a second meaning becomes an @ temp whose numbering declaration order can't move;** giving each
+  use its own named local fixes that (renderProc's material block reads `draw->texCount` into its own `matTexCount`,
+  placed between texIds and i, as rasim `--key` scans showed).
+- An `int` index local (`int slot = texCount - l - 1; index = texIds[slot];`), not long, gives retail's folded
+  `lbz -0x1(base)`; every pointer-arithmetic spelling compiles to the same code. A count-down `for (k1 = count; k1 > 0;
+  k1--)` gives the `ble` unroll guard. Indexing each texture's entries by the vertex number gives retail's strength-reduced
+  address order (renderProc_TexCoords helper deleted).
+- animPoseMain: `[src, end)` range helpers for the reset path and an `animHermite()` inline for the node blend.
+  animPoseDrawMtx: eval and float-scratch blocks as static inlines; `animArg` gone, `*(s32*)pose->field_0x94` read twice.
+- animSetMaterial_Texture 99.48 -> 99.82: a scoped `opt_strength_reduction off` fixes the TexMtx j/flags/matrix-id
+  registers; `int slot = texCount - i - 1` replaces a `1u` MUST_MATCH with identical code. Left: the i/texBinds/texFile
+  rotation needs an mtx-only coalesced neighbour (rasim edge what-ifs), which liveness rules out so far.
+- Hard negatives: SetMaterial declaration hill climbs, int/cast/slot forms; DispSub (98.96) 150-round declaration hill
+  climb, x/b splits, max spellings, value-taking inline (all worse; rasim needs the `pose` parameter numbered after
+  animData, which source can't do); renderProc material block as an inline helper (65), `k1 < count` forms (321-344).
