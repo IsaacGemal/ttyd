@@ -843,9 +843,106 @@ static inline void* mapLoadFindChunk(MapHeader* header, const char* name) {
 	}
 	return NULL;
 }
-// NONMATCHING (99.17%): register numbering only. `header` and the texture_table store's address temp swap
-// r28/r27 (rasim: the temp needs one interference edge fewer, with `map`), `light` takes r27 for r28, the
-// relocation loop's counter r7 for r5, and the animation block's work pointer r19 for r22.
+
+// The loader's own steps (header parse, relocation, animation table, display flags) inline into _mapLoad;
+// as helpers their locals rank above _mapLoad's, which is what gives the original's registers. `header` is
+// `&wp->entries[group].header`, written out again in the parse call, so the frontend keeps it as a CSE temp.
+static inline void mapLoadRelocate(MapHeader* header) {
+	u32 i;
+
+	for (i = 0; i < (u32)header->file.relCount; i++) {
+		u32 off = ((u32*)header->rel)[i];
+		u8* relData = (u8*)header->data + off;
+		if (*(u32*)relData <= 0x80000000) {
+			*(u32*)relData += (u32)header->data;
+		}
+	}
+}
+
+static inline void mapLoadAnimTable(BOOL group) {
+	MapWork* wp = mapGetWork();
+	MapEntryAnimData* out;
+	void* anim;
+	u32 size;
+	s32 i;
+
+	anim = mapLoadFindChunk(&wp->entries[group].header, "animation_table");
+	if (anim != NULL) {
+		wp->entries[group].animCount = *(s32*)anim;
+		if (wp->entries[group].animCount != 0) {
+			size = (wp->entries[group].animCount * 32 + 0x1F) & ~0x1F;
+			wp->entries[group].animData = _mapAlloc(size);
+			memset(wp->entries[group].animData, 0, size);
+			out = wp->entries[group].animData;
+			for (i = 0; i < wp->entries[group].animCount; i++, out++) {
+				out->flags = 0;
+				out->data = ((void**)anim)[i + 1];
+			}
+		}
+	}
+}
+
+static inline void mapLoadHeader(MapWork* wp, BOOL group, MapHeader* header) {
+	u32 entryDatSize = wp->entries[group].datSize;
+	u8* data = (u8*)wp->entries[group].dat;
+	u32 sizeCheck;
+
+	if (header != NULL) {
+		memset(header, 0, sizeof(MapHeader));
+		wp->entries[group].header.field_0x3C |= 1;
+		memcpy(header, data, sizeof(MapFileHeader));
+		if (header->file.fileSize == entryDatSize) {
+			sizeCheck = sizeof(MapFileHeader);
+			if ((u32)wp->entries[group].header.file.dataSize != 0) {
+				wp->entries[group].header.data = &data[sizeCheck];
+				sizeCheck = wp->entries[group].header.file.dataSize + sizeof(MapFileHeader);
+			}
+			if ((u32)wp->entries[group].header.file.relCount != 0) {
+				wp->entries[group].header.rel = &data[sizeCheck];
+				sizeCheck += 4 * wp->entries[group].header.file.relCount; //TODO: sizeof
+			}
+			if ((u32)wp->entries[group].header.file.chunkCount != 0) {
+				wp->entries[group].header.chunks = (MapFileChunk*)&data[sizeCheck];
+				sizeCheck += sizeof(MapFileChunk) * wp->entries[group].header.file.chunkCount;
+			}
+			if ((u32)wp->entries[group].header.file.unused != 0) {
+				wp->entries[group].header.unused = &data[sizeCheck];
+				sizeCheck += 8 * wp->entries[group].header.file.unused;
+			}
+			if (sizeCheck < wp->entries[group].header.file.fileSize) {
+				wp->entries[group].header.strings = (const char*)&data[sizeCheck];
+			}
+			wp->entries[group].header.buffer = data;
+
+			mapLoadRelocate(&wp->entries[group].header);
+		}
+	}
+}
+
+static inline void mapLoadDispFlags(BOOL group) {
+	MapWork* wp = mapGetWork();
+	MapObject* obj;
+	s32 i;
+
+	obj = wp->entries[group].objects;
+	for (i = 0; i < wp->entries[group].numJoints; i++, obj++) {
+		MapFileJoint* joint = obj->joints;
+
+		if (joint->partCount >= 1 && joint->partCount <= 8) {
+			MapJointDrawMode* dm = joint->drawMode;
+
+			// MapJointDrawMode has no named field at 0x2/0x4; use raw offsets.
+			if (!(*(u8*)((u8*)dm + 2) & 8) && *(u32*)((u8*)dm + 4) == 0) {
+				if (shadowGetCharShadowProjection() == 0 || !(*(u32*)((u8*)obj + 0) & 4)) {
+					if (wp->entries[group].flags & 0x8000) {
+						*(u32*)((u8*)obj + 0) |= 0x100;
+					}
+				}
+			}
+		}
+	}
+}
+
 void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	MapHeader* header;
 	MapEntry* entry;
@@ -860,16 +957,8 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	Vec min;
 	Vec max;
 	Mtx mtx;
-	u32 sizeCheck;
-	u32 size;
-	u8 *data;
-	void* anim;
-	s32 rel_i;
-	s32 disp_i;
-	MapObject* obj;
 	s32 i;
 	MapFileLight* light;
-	MapWork* wp2;
 
 	entry = &wp->entries[group];
 	error_flag = FALSE;
@@ -906,48 +995,8 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	}
 
 	GXInvalidateVtxCache();
-	header = &entry->header;
-	{
-		u32 entryDatSize = wp->entries[group].datSize;
-		data = (u8*)wp->entries[group].dat;
-		if (header != NULL) {
-			memset(header, 0, sizeof(MapHeader));
-			wp->entries[group].header.field_0x3C |= 1;
-			memcpy(header, data, sizeof(MapFileHeader));
-			if (wp->entries[group].header.file.fileSize == entryDatSize) {
-				sizeCheck = sizeof(MapFileHeader);
-				if ((u32)wp->entries[group].header.file.dataSize != 0) {
-					wp->entries[group].header.data = &data[sizeCheck];
-					sizeCheck = wp->entries[group].header.file.dataSize + sizeof(MapFileHeader);
-				}
-				if ((u32)wp->entries[group].header.file.relCount != 0) {
-					wp->entries[group].header.rel = &data[sizeCheck];
-					sizeCheck += 4 * wp->entries[group].header.file.relCount; //TODO: sizeof
-				}
-				if ((u32)wp->entries[group].header.file.chunkCount != 0) {
-					wp->entries[group].header.chunks = (MapFileChunk*)&data[sizeCheck];
-					sizeCheck += sizeof(MapFileChunk) * wp->entries[group].header.file.chunkCount;
-				}
-				if ((u32)wp->entries[group].header.file.unused != 0) {
-					wp->entries[group].header.unused = &data[sizeCheck];
-					sizeCheck += 8 * wp->entries[group].header.file.unused;
-				}
-				if (sizeCheck < wp->entries[group].header.file.fileSize) {
-					wp->entries[group].header.strings = (const char*)&data[sizeCheck];
-				}
-				wp->entries[group].header.buffer = data;
-
-				//iunno about this section
-				for (rel_i = 0; rel_i < (u32)entry->header.file.relCount; rel_i++) {
-					u32 off = ((u32*)entry->header.rel)[rel_i];
-					u8* relData = (u8*)entry->header.data + off;
-					if (*(u32*)relData <= 0x80000000) {
-						*(u32*)relData += (u32)entry->header.data;
-					}
-				}
-			}
-		}
-	}
+	header = &wp->entries[group].header;
+	mapLoadHeader(wp, group, &wp->entries[group].header);
 
 	info = (MapFileInfo*)mapLoadFindChunk(header, "information");
 	wp->entries[group].textureTable = mapLoadFindChunk(header, "texture_table");
@@ -1040,52 +1089,10 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	wp->entries[group].bbox[6] = (Vec){min.x, max.y, min.z};
 	wp->entries[group].bbox[7] = (Vec){min.x, min.y, min.z};
 
-	wp2 = &mapWork[activeGroup];
-	{
-		MapEntry* entry2 = &wp2->entries[group];
-
-		anim = mapLoadFindChunk(&entry2->header, "animation_table");
-		if (anim != NULL) {
-			wp2->entries[group].animCount = *(s32*)anim;
-			if (wp2->entries[group].animCount != 0) {
-				size = (wp2->entries[group].animCount * 32 + 0x1F) & ~0x1F;
-				wp2->entries[group].animData = _mapAlloc(size);
-				memset(wp2->entries[group].animData, 0, size);
-				{
-					MapEntryAnimData* out = wp2->entries[group].animData;
-
-					for (i = 0; i < entry2->animCount; i++) {
-						out->flags = 0;
-						out->data = ((void**)anim)[i + 1];
-						out++;
-					}
-				}
-			}
-		}
-	}
+	mapLoadAnimTable(group);
 
 	makeDisplayList(group);
-	wp2 = &mapWork[activeGroup];
-	{
-
-		obj = wp2->entries[group].objects;
-		for (disp_i = 0; disp_i < wp2->entries[group].numJoints; disp_i++, obj++) {
-			MapFileJoint* joint = obj->joints;
-
-			if (joint->partCount >= 1 && joint->partCount <= 8) {
-				MapJointDrawMode* dm = joint->drawMode;
-
-				// MapJointDrawMode has no named field at 0x2/0x4; use raw offsets.
-				if (!(*(u8*)((u8*)dm + 2) & 8) && *(u32*)((u8*)dm + 4) == 0) {
-					if (shadowGetCharShadowProjection() == 0 || !(*(u32*)((u8*)obj + 0) & 4)) {
-						if (wp2->entries[group].flags & 0x8000) {
-							*(u32*)((u8*)obj + 0) |= 0x100;
-						}
-					}
-				}
-			}
-		}
-	}
+	mapLoadDispFlags(group);
 	unk_80418458 = 0;
 }
 
@@ -1191,12 +1198,9 @@ void mapLoad(const char* map) {
 	wp->entries[0].count = 1;
 }
 
-// NONMATCHING (99.62%): only the third loop's counter/base registers differ (target i=r31,
-// mapWork=r30; ours i=r30, mapWork=r31). The first two loops match after `i = 0;` was hoisted
-// before `wp`/`entry`, and `memset(wp, ...)` reuses wp instead of recomputing &mapWork[1].
 void bmapUnLoad(void) {
-	MapWork* wp;
 	MapEntry* entry;
+	MapWork* wp;
 	s32 i;
 
 	sysWaitDrawSync();
@@ -1250,8 +1254,7 @@ void bmapUnLoad(void) {
 	memset(wp, 0, 0x2F4);
 
 	activeGroup = 0;
-	wp = mapWork;
-	entry = &wp->entries[0];
+	entry = (wp = mapWork)->entries;
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		if (*(void**)((u8*)entry + 0x170)) {
 			entry->dat = _mapAllocTail(entry->datSize);
@@ -1620,11 +1623,12 @@ void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
 
 // Inline copy of mapSearchAnmObj for mapMain. The inner-loop bound assigns the table
 // (`table = *(u8**)((u8*)entry + 0xA0)`) inside the condition so the body reuses the condition's
-// loaded register (retail loads `0xa0(entry)` once per iteration, not twice), and the pair address
-// is built `+4` then `+= j * 8` to match retail's operand order.
+// loaded register (retail loads `0xa0(entry)` once per iteration, not twice); the pair address is
+// the table plus the byte offset `ofs` plus 4.
 static inline u8* mapSearchAnimObj(const char* name) {
 	u8* table;
 	MapEntry* entry;
+	s32 ofs;
 	MapWork* wp;
 	s32 j;
 	s32 i;
@@ -1634,8 +1638,8 @@ static inline u8* mapSearchAnimObj(const char* name) {
 		if (*(u8**)((u8*)entry + 0xA0) == NULL) {
 			return NULL;
 		}
-		for (j = 0; j < *(s32*)(table = *(u8**)((u8*)entry + 0xA0)); j++) {
-			u8* pair = (u8*)((u32)table + j * 8 + 4);
+		for (j = 0, ofs = 0; j < *(s32*)(table = *(u8**)((u8*)entry + 0xA0)); ofs += 8, j++) {
+			u8* pair = (u8*)((u32)table + ofs + 4);
 			if (!strcmp(*(char**)pair, name)) {
 				return *(u8**)(pair + 4);
 			}
@@ -1646,33 +1650,312 @@ static inline u8* mapSearchAnimObj(const char* name) {
 
 // Source shapes that mattered: (1) the animation `item` pointer must be re-loaded from the list
 // inside each `if (obj != NULL)` / `if (light != NULL)` block instead of cached across the block's
-// mapSearchAnimObj / lightNameToPtr calls (and each light block re-loads it after the lookup);
-// (2) the flags word `*(u16*)anim` is read once into `animFlags` at the top of the j-body -- that
-// keeps it in r4 across the branches instead of letting the gp-pointer loads clobber r3 and force
-// a reload; (3) in the mapSearchAnimObj helper the table is read with the expression inside the
-// inner-loop bound (assigned to `table` in the bound), so retail's second `0xa0(entry)` load
-// disappears; (4) the matrix loop walks the function-level `p`/`k` (the other loops keep block
-// locals), and with the top-level declaration order below the callee-saved GPRs match retail
-// (lists in r19..r15, the OSTime in r22/r25; found with tools/rasim.py); (5) each Hermite block
-// declares all its floats in one list at the top of the ki body, in the order that gives retail's
-// FPRs (rasim), and loads the keys `tan1, value1, tan0, value0`, with `zero = 0.0f; d != zero` as in
-// mapCalcAnimMatrix; (6) the colour loop increment order `k++, chn += 0x14, ch += 0x14` and the light-pos
-// order `ch += 0x14, k++, chn += 0x14` each beat the retail-looking left-to-right order; (7) the
-// colour `chn = next; ch = prev;` (reverse of source-reading order) and the function-scope `Mtx`
-// (retail's stack puts it above the light blocks' `out` arrays); (8) the matrix loop's search is
-// the public mapGetMapObj (its declaration order differs from mapGetMapObjSub's), and the helper
-// declaration order `p, table, entry, wp, j, i` is the best of all 120 orders.
-// The Hermite output sum evaluates `value0 * h00` before `tan0 * (d * h10)`. The d==0 boolean uses
-// the __cntlzw intrinsic to reproduce retail's cntlzw/srwi normalisation. The colour/light Hermite
-// loops have no `if (cnt > 1)` wrapper: the bare `for (ki = 1; ...)` guard reproduces retail's
+// mapSearchAnimObj / lightNameToPtr calls; (2) the flags word `*(u16*)anim` is read once into
+// `animFlags` at the top of the j-body -- that keeps it in r4 across the branches instead of letting
+// the gp-pointer loads clobber r3 and force a reload; (3) in mapSearchAnimObj the table is read with
+// the expression inside the inner-loop bound (assigned to `table` in the bound), so retail's second
+// `0xa0(entry)` load disappears; (4) the matrix loop walks the function-level `p`/`k` (the other loops
+// keep block locals), and with the top-level declaration order below the callee-saved GPRs match retail
+// (lists in r19..r15, the OSTime in r22/r25); (5) the alpha, colour and light steps are inline helpers
+// (as blocks of mapMain the clamp diamond keeps an extra `fmr` for t), each declaring its locals in the
+// order that gives retail's registers: inside an inlined helper the first-declared local gets the
+// lowest virtual register (found with tools/rasim.py on a tools/mwccdbg.py dump); (6) the colour step
+// indexes its output with a byte offset `off`, the light steps store through a `dst` pointer, and
+// mapSearchAnimObj steps a byte offset `ofs` beside `j`: as named locals declared between the other
+// pointers they colour like retail's, where `k * 4` / `j * 8` would become loop temps numbered below
+// every local; (7) the function-scope `Mtx` (retail's stack puts it above the light steps' `out`
+// arrays); (8) the matrix loop's search is the public mapGetMapObj (its declaration order differs
+// from mapGetMapObjSub's).
+// The Hermite output sum evaluates `value0 * h00` before `tan0 * (d * h10)`, and the keys load
+// `tan1, value1, tan0, value0` with `zero = 0.0f; d != zero` as in mapCalcAnimMatrix. The d==0
+// boolean uses the __cntlzw intrinsic to reproduce retail's cntlzw/srwi normalisation. The colour/light
+// Hermite loops have no `if (cnt > 1)` wrapper: the bare `for (ki = 1; ...)` guard reproduces retail's
 // `subi cnt-1; mtctr` scheduled before the `cmpwi`.
-// What differs: the inlined searches swap two callee-saved registers each (the matrix search's
-// name/entry, the anim searches' entry and j*8 temp), the Hermite blocks' volatile GPRs
-// (item/prev/next/ch/chn/ki) rotate, the clamp diamond keeps an extra `fmr` for t (retail's empty
-// then-block; an empty `{}` inverts the branch instead), and the alpha blocks colour their polynomial
-// constants' FPRs one register up (rasim: retail's 255.0f load sweeps after the whole sum).
-// NONMATCHING (97.75%): register colouring, plus the clamp `fmr` (see above).
+// The light-colour step converts to the u8 colour fields without a cast (an `(s32)` cast schedules
+// the first byte's load one slot early).
+// What differs: the inlined matrix search (mapGetMapObj) swaps two callee-saved registers (name in
+// r26, entry in r28; retail has them the other way round, which rasim reaches only with `name`
+// numbered between `wp` and `j`, not as the lowest-numbered parameter).
+static inline void mapAnimAlphaObj(u8* obj, u8* anim, u8* item) {
+	s32 cnt = *(s32*)(item + 4);
+	s32 ki;
+	for (ki = 1; ki < cnt; ki++) {
+		u8* prev = item + 8 + (ki - 1) * 0x54;
+		u8* next = item + 8 + ki * 0x54;
+		f32 a, d, u2, k0, tan1, value1, tan0, value0, t, dt, u, u3, den, k1, b, c, h10, h00, h01, h11, val, zero;
+		t = *(f32*)(anim + 0x10);
+		if (t <= *(f32*)next) {
+			t = *(f32*)(anim + 0x10);
+		}
+		else if (ki == cnt - 1) {
+			t = *(f32*)next;
+		}
+		else {
+			continue;
+		}
+		if (*(s32*)(prev + 0x14) != 0) {
+			f32 value = *(f32*)(prev + 4);
+			*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
+			break;
+		}
+		else {
+			s32 flag;
+			k0 = *(f32*)prev;
+			k1 = *(f32*)next;
+			dt = t - k0;
+			d = k1 - k0;
+			tan1 = *(f32*)(next + 8);
+			value1 = *(f32*)(next + 4);
+			tan0 = *(f32*)(prev + 0xC);
+			value0 = *(f32*)(prev + 4);
+			zero = 0.0f;
+			flag = (d != zero);
+			if (((u32)__cntlzw(flag) >> 5) != 0) {
+				den = 0.00000001f;
+			}
+			else {
+				den = d;
+			}
+			u = dt / den;
+			u2 = u * u;
+			u3 = u2 * u;
+			a = 3.0f * u2;
+			b = u3 - 2.0f * u2;
+			c = 2.0f * u3 - a;
+			h11 = u3 - u2;
+			h10 = u + b;
+			h00 = 1.0f + c;
+			h01 = -2.0f * u3 + a;
+			val = value0 * h00 + tan0 * (d * h10) + value1 * h01 + tan1 * (d * h11);
+			val = 255.0f - 255.0f * val;
+			*(u8*)(obj + 0x10C) = (s32)val;
+			break;
+		}
+	}
+}
+
+static inline void mapAnimColorObj(u8* obj, u8* anim, u8* lp) {
+	u8* chn;
+	s32 cnt;
+	s32 off;
+	u8* ch;
+	u8* item;
+	u8* prev;
+	u8* next;
+	s32 ki;
+	s32 flag;
+	f32 a, t, k0, d, tan1, dt, value1, tan0, u2, den, value0, u, u3, k1, h11, h00, h01, c, b, h10, zero;
+
+	item = *(u8**)(lp + 4);
+	cnt = *(s32*)(item + 0x10);
+	for (ki = 1; ki < cnt; ki++) {
+		prev = item + 0x14 + (ki - 1) * 0x68;
+		next = item + 0x14 + ki * 0x68;
+		t = *(f32*)(anim + 0x10);
+		if (t <= *(f32*)next) {
+			t = *(f32*)(anim + 0x10);
+		}
+		else if (ki == cnt - 1) {
+			t = *(f32*)next;
+		}
+		else {
+			continue;
+		}
+		ch = prev;
+		chn = next;
+		for (off = 0; off < 0x14; ch += 0x14, off += 4, chn += 0x14) {
+			if (*(s32*)(ch + 0x14) != 0) {
+				*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + off) = *(f32*)(ch + 4);
+			}
+			else {
+				k0 = *(f32*)prev;
+				k1 = *(f32*)next;
+				dt = t - k0;
+				d = k1 - k0;
+				tan1 = *(f32*)(chn + 8);
+				value1 = *(f32*)(chn + 4);
+				tan0 = *(f32*)(ch + 0xC);
+				value0 = *(f32*)(ch + 4);
+				zero = 0.0f;
+				flag = (d != zero);
+				if (((u32)__cntlzw(flag) >> 5) != 0) {
+					den = 0.00000001f;
+				}
+				else {
+					den = d;
+				}
+				u = dt / den;
+				u2 = u * u;
+				u3 = u2 * u;
+				a = 3.0f * u2;
+				b = u3 - 2.0f * u2;
+				c = 2.0f * u3 - a;
+				h11 = u3 - u2;
+				h10 = u + b;
+				h00 = 1.0f + c;
+				h01 = -2.0f * u3 + a;
+				*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + off) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
+			}
+		}
+		*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
+		*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
+		break;
+	}
+}
+
+static inline void mapAnimLightPos(LightEntry* light, u8* anim, u8* item) {
+	s32 cnt;
+	s32 ki;
+	s32 k;
+	u8* chn;
+	f32* dst;
+	u8* ch;
+	u8* next;
+	u8* prev;
+	s32 flag;
+	f32 out[9];
+	f32 den, u2, a, t, d, tan1, value1, tan0, k0, dt, value0, u, u3, k1, h11, h00, h01, c, b, h10, zero;
+
+	cnt = *(s32*)(item + 4);
+	for (ki = 1; ki < cnt; ki++) {
+		prev = item + 8 + (ki - 1) * 0xB8;
+		next = item + 8 + ki * 0xB8;
+		t = *(f32*)(anim + 0x10);
+		if (t <= *(f32*)next) {
+			t = *(f32*)(anim + 0x10);
+		}
+		else if (ki == cnt - 1) {
+			t = *(f32*)next;
+		}
+		else {
+			continue;
+		}
+		ch = prev;
+		chn = next;
+		dst = out;
+		for (k = 0; k < 9; ch += 0x14, dst++, chn += 0x14, k++) {
+			if (*(s32*)(ch + 0x14) != 0) {
+				*dst = *(f32*)(ch + 4);
+			}
+			else {
+				k0 = *(f32*)prev;
+				k1 = *(f32*)next;
+				dt = t - k0;
+				d = k1 - k0;
+				tan1 = *(f32*)(chn + 8);
+				value1 = *(f32*)(chn + 4);
+				tan0 = *(f32*)(ch + 0xC);
+				value0 = *(f32*)(ch + 4);
+				zero = 0.0f;
+				flag = (d != zero);
+				if (((u32)__cntlzw(flag) >> 5) != 0) {
+					den = 0.00000001f;
+				}
+				else {
+					den = d;
+				}
+				u = dt / den;
+				u2 = u * u;
+				u3 = u2 * u;
+				a = 3.0f * u2;
+				b = u3 - 2.0f * u2;
+				c = 2.0f * u3 - a;
+				h11 = u3 - u2;
+				h10 = u + b;
+				h00 = 1.0f + c;
+				h01 = -2.0f * u3 + a;
+				*dst = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
+			}
+		}
+		{
+			f32 scale = 10.0f;
+			light->position.x = scale * out[0];
+			light->position.y = scale * out[1];
+			light->position.z = scale * out[2];
+		}
+		light->rotation.x = out[3];
+		light->rotation.y = out[4];
+		light->rotation.z = out[5];
+		break;
+	}
+}
+
+static inline void mapAnimLightColor(LightEntry* light, u8* anim, u8* item) {
+	s32 cnt;
+	s32 ki;
+	s32 k;
+	u8* chn;
+	f32* dst;
+	u8* ch;
+	u8* next;
+	u8* prev;
+	s32 flag;
+	f32 out[5];
+	f32 den, u2, a, t, d, tan1, value1, tan0, k0, dt, value0, u, u3, k1, h11, h00, h01, c, b, h10, zero;
+
+	cnt = *(s32*)(item + 4);
+	for (ki = 1; ki < cnt; ki++) {
+		prev = item + 8 + (ki - 1) * 0x68;
+		next = item + 8 + ki * 0x68;
+		t = *(f32*)(anim + 0x10);
+		if (t <= *(f32*)next) {
+			t = *(f32*)(anim + 0x10);
+		}
+		else if (ki == cnt - 1) {
+			t = *(f32*)next;
+		}
+		else {
+			continue;
+		}
+		ch = prev;
+		chn = next;
+		dst = out;
+		for (k = 0; k < 5; ch += 0x14, dst++, chn += 0x14, k++) {
+			if (*(s32*)(ch + 0x14) != 0) {
+				*dst = *(f32*)(ch + 4);
+			}
+			else {
+				k0 = *(f32*)prev;
+				k1 = *(f32*)next;
+				dt = t - k0;
+				d = k1 - k0;
+				tan1 = *(f32*)(chn + 8);
+				value1 = *(f32*)(chn + 4);
+				tan0 = *(f32*)(ch + 0xC);
+				value0 = *(f32*)(ch + 4);
+				zero = 0.0f;
+				flag = (d != zero);
+				if (((u32)__cntlzw(flag) >> 5) != 0) {
+					den = 0.00000001f;
+				}
+				else {
+					den = d;
+				}
+				u = dt / den;
+				u2 = u * u;
+				u3 = u2 * u;
+				a = 3.0f * u2;
+				b = u3 - 2.0f * u2;
+				c = 2.0f * u3 - a;
+				h11 = u3 - u2;
+				h10 = u + b;
+				h00 = 1.0f + c;
+				h01 = -2.0f * u3 + a;
+				*dst = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
+			}
+		}
+		light->color.r = 255.0f * out[0];
+		light->color.g = 255.0f * out[1];
+		light->color.b = 255.0f * out[2];
+		light->color.a = 0xFF;
+		light->spotAngle = out[4];
+		light->attenAngle = out[3];
+		break;
+	}
+}
+
 #pragma opt_common_subs off // required for retail's register colouring here
+// NONMATCHING (99.97%): the matrix search's name/entry registers are swapped (see the notes above mapAnimAlphaObj).
 void mapMain(void) {
 	MapWork* wp0;
 	u8* p;
@@ -1769,10 +2052,10 @@ void mapMain(void) {
 				for (k = 0; k < *(s32*)list19; p += 4, k++) {
 					MapObject* obj = mapGetMapObj(*(char**)*(u8**)(p + 4));
 					if (obj != NULL) {
-					mapCalcAnimMatrix((f32(*)[4])((u8*)obj + 0x7C), (f32(*)[4])((u8*)obj + 0x4C), (MapEntryAnimData*)anim, *(u8**)(p + 4));
-					*(u32*)obj |= 0x2000;
-					*(u32*)obj |= 0x200;
-					updated = TRUE;
+						mapCalcAnimMatrix((f32(*)[4])((u8*)obj + 0x7C), (f32(*)[4])((u8*)obj + 0x4C), (MapEntryAnimData*)anim, *(u8**)(p + 4));
+						*(u32*)obj |= 0x2000;
+						*(u32*)obj |= 0x200;
+						updated = TRUE;
 					}
 				}
 			}
@@ -1785,199 +2068,19 @@ void mapMain(void) {
 					strcpy(namebuf, *(char**)*(u8**)(lp + 4));
 					obj = mapSearchAnimObj(namebuf);
 					if (obj != NULL) {
-						u8* item = *(u8**)(lp + 4);
-						s32 cnt = *(s32*)(item + 0x10);
-						s32 ki;
-						for (ki = 1; ki < cnt; ki++) {
-							u8* prev = item + 0x14 + (ki - 1) * 0x68;
-							u8* next = item + 0x14 + ki * 0x68;
-							f32 den, u3, u, u2, value0, tan0, value1, tan1, d, t, dt, a, k0, k1, h11, h00, h01, c, b, h10, zero;
-							s32 k;
-							u8* chn;
-							u8* ch;
-							t = *(f32*)(anim + 0x10);
-							if (t <= *(f32*)next) {
-								t = *(f32*)(anim + 0x10);
-							}
-							else if (ki == cnt - 1) {
-								t = *(f32*)next;
-							}
-							else {
-								continue;
-							}
-							chn = next;
-							ch = prev;
-							for (k = 0; k < 5; k++, chn += 0x14, ch += 0x14) {
-								if (*(s32*)(ch + 0x14) != 0) {
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)(ch + 4);
-								}
-								else {
-									s32 flag;
-									k0 = *(f32*)prev;
-									k1 = *(f32*)next;
-									dt = t - k0;
-									d = k1 - k0;
-									tan1 = *(f32*)(chn + 8);
-									value1 = *(f32*)(chn + 4);
-									tan0 = *(f32*)(ch + 0xC);
-									value0 = *(f32*)(ch + 4);
-									zero = 0.0f;
-									flag = (d != zero);
-									if (((u32)__cntlzw(flag) >> 5) != 0) {
-										den = 0.00000001f;
-									}
-									else {
-										den = d;
-									}
-									u = dt / den;
-									u2 = u * u;
-									u3 = u2 * u;
-									a = 3.0f * u2;
-									b = u3 - 2.0f * u2;
-									c = 2.0f * u3 - a;
-									h11 = u3 - u2;
-									h10 = u + b;
-									h00 = 1.0f + c;
-									h01 = -2.0f * u3 + a;
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
-								}
-							}
-							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
-							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
-							break;
-						}
+						mapAnimColorObj(obj, anim, lp);
 					}
 					strcpy(namebuf, *(char**)*(u8**)(lp + 4));
 					strcat(namebuf, "_v");
 					obj = mapSearchAnimObj(namebuf);
 					if (obj != NULL) {
-						u8* item = *(u8**)(lp + 4);
-						s32 cnt = *(s32*)(item + 0x10);
-						s32 ki;
-						for (ki = 1; ki < cnt; ki++) {
-							u8* prev = item + 0x14 + (ki - 1) * 0x68;
-							u8* next = item + 0x14 + ki * 0x68;
-							f32 den, u3, u, u2, value0, tan0, value1, tan1, d, t, dt, a, k0, k1, h11, h00, h01, c, b, h10, zero;
-							s32 k;
-							u8* chn;
-							u8* ch;
-							t = *(f32*)(anim + 0x10);
-							if (t <= *(f32*)next) {
-								t = *(f32*)(anim + 0x10);
-							}
-							else if (ki == cnt - 1) {
-								t = *(f32*)next;
-							}
-							else {
-								continue;
-							}
-							chn = next;
-							ch = prev;
-							for (k = 0; k < 5; k++, chn += 0x14, ch += 0x14) {
-								if (*(s32*)(ch + 0x14) != 0) {
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)(ch + 4);
-								}
-								else {
-									s32 flag;
-									k0 = *(f32*)prev;
-									k1 = *(f32*)next;
-									dt = t - k0;
-									d = k1 - k0;
-									tan1 = *(f32*)(chn + 8);
-									value1 = *(f32*)(chn + 4);
-									tan0 = *(f32*)(ch + 0xC);
-									value0 = *(f32*)(ch + 4);
-									zero = 0.0f;
-									flag = (d != zero);
-									if (((u32)__cntlzw(flag) >> 5) != 0) {
-										den = 0.00000001f;
-									}
-									else {
-										den = d;
-									}
-									u = dt / den;
-									u2 = u * u;
-									u3 = u2 * u;
-									a = 3.0f * u2;
-									b = u3 - 2.0f * u2;
-									c = 2.0f * u3 - a;
-									h11 = u3 - u2;
-									h10 = u + b;
-									h00 = 1.0f + c;
-									h01 = -2.0f * u3 + a;
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
-								}
-							}
-							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
-							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
-							break;
-						}
+						mapAnimColorObj(obj, anim, lp);
 					}
 					strcpy(namebuf, *(char**)*(u8**)(lp + 4));
 					strcat(namebuf, "_v_x");
 					obj = mapSearchAnimObj(namebuf);
 					if (obj != NULL) {
-						u8* item = *(u8**)(lp + 4);
-						s32 cnt = *(s32*)(item + 0x10);
-						s32 ki;
-						for (ki = 1; ki < cnt; ki++) {
-							u8* prev = item + 0x14 + (ki - 1) * 0x68;
-							u8* next = item + 0x14 + ki * 0x68;
-							f32 den, u3, u, u2, value0, tan0, value1, tan1, d, t, dt, a, k0, k1, h11, h00, h01, c, b, h10, zero;
-							s32 k;
-							u8* chn;
-							u8* ch;
-							t = *(f32*)(anim + 0x10);
-							if (t <= *(f32*)next) {
-								t = *(f32*)(anim + 0x10);
-							}
-							else if (ki == cnt - 1) {
-								t = *(f32*)next;
-							}
-							else {
-								continue;
-							}
-							chn = next;
-							ch = prev;
-							for (k = 0; k < 5; k++, chn += 0x14, ch += 0x14) {
-								if (*(s32*)(ch + 0x14) != 0) {
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)(ch + 4);
-								}
-								else {
-									s32 flag;
-									k0 = *(f32*)prev;
-									k1 = *(f32*)next;
-									dt = t - k0;
-									d = k1 - k0;
-									tan1 = *(f32*)(chn + 8);
-									value1 = *(f32*)(chn + 4);
-									tan0 = *(f32*)(ch + 0xC);
-									value0 = *(f32*)(ch + 4);
-									zero = 0.0f;
-									flag = (d != zero);
-									if (((u32)__cntlzw(flag) >> 5) != 0) {
-										den = 0.00000001f;
-									}
-									else {
-										den = d;
-									}
-									u = dt / den;
-									u2 = u * u;
-									u3 = u2 * u;
-									a = 3.0f * u2;
-									b = u3 - 2.0f * u2;
-									c = 2.0f * u3 - a;
-									h11 = u3 - u2;
-									h10 = u + b;
-									h00 = 1.0f + c;
-									h01 = -2.0f * u3 + a;
-									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
-								}
-							}
-							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x40) = *(f32*)(item + 8);
-							*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x44) = *(f32*)(item + 0xC);
-							break;
-						}
+						mapAnimColorObj(obj, anim, lp);
 					}
 				}
 			}
@@ -1990,181 +2093,19 @@ void mapMain(void) {
 					strcpy(namebuf2, *(char**)*(u8**)(lp + 4));
 					obj = mapSearchAnimObj(namebuf2);
 					if (obj != NULL) {
-						u8* item = *(u8**)(lp + 4);
-						s32 cnt = *(s32*)(item + 4);
-						s32 ki;
-						for (ki = 1; ki < cnt; ki++) {
-							u8* prev = item + 8 + (ki - 1) * 0x54;
-							u8* next = item + 8 + ki * 0x54;
-							f32 u3, u, value0, tan0, value1, u2, tan1, d, a, den, dt, k0, t, k1, b, c, h10, h00, h01, h11, val, zero;
-							t = *(f32*)(anim + 0x10);
-							if (t <= *(f32*)next) {
-								t = *(f32*)(anim + 0x10);
-							}
-							else if (ki == cnt - 1) {
-								t = *(f32*)next;
-							}
-							else {
-								continue;
-							}
-							if (*(s32*)(prev + 0x14) != 0) {
-								f32 value = *(f32*)(prev + 4);
-								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
-								break;
-							}
-							else {
-								s32 flag;
-								k0 = *(f32*)prev;
-								k1 = *(f32*)next;
-								dt = t - k0;
-								d = k1 - k0;
-								tan1 = *(f32*)(next + 8);
-								value1 = *(f32*)(next + 4);
-								tan0 = *(f32*)(prev + 0xC);
-								value0 = *(f32*)(prev + 4);
-								zero = 0.0f;
-								flag = (d != zero);
-								if (((u32)__cntlzw(flag) >> 5) != 0) {
-									den = 0.00000001f;
-								}
-								else {
-									den = d;
-								}
-								u = dt / den;
-								u2 = u * u;
-								u3 = u2 * u;
-								a = 3.0f * u2;
-								b = u3 - 2.0f * u2;
-								c = 2.0f * u3 - a;
-								h11 = u3 - u2;
-								h10 = u + b;
-								h00 = 1.0f + c;
-								h01 = -2.0f * u3 + a;
-								val = value0 * h00 + tan0 * (d * h10) + value1 * h01 + tan1 * (d * h11);
-								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
-								break;
-							}
-						}
+						mapAnimAlphaObj(obj, anim, *(u8**)(lp + 4));
 					}
 					strcpy(namebuf2, *(char**)*(u8**)(lp + 4));
 					strcat(namebuf2, "_v");
 					obj = mapSearchAnimObj(namebuf2);
 					if (obj != NULL) {
-						u8* item = *(u8**)(lp + 4);
-						s32 cnt = *(s32*)(item + 4);
-						s32 ki;
-						for (ki = 1; ki < cnt; ki++) {
-							u8* prev = item + 8 + (ki - 1) * 0x54;
-							u8* next = item + 8 + ki * 0x54;
-							f32 u3, u, value0, tan0, value1, u2, tan1, d, a, den, dt, k0, t, k1, b, c, h10, h00, h01, h11, val, zero;
-							t = *(f32*)(anim + 0x10);
-							if (t <= *(f32*)next) {
-								t = *(f32*)(anim + 0x10);
-							}
-							else if (ki == cnt - 1) {
-								t = *(f32*)next;
-							}
-							else {
-								continue;
-							}
-							if (*(s32*)(prev + 0x14) != 0) {
-								f32 value = *(f32*)(prev + 4);
-								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
-								break;
-							}
-							else {
-								s32 flag;
-								k0 = *(f32*)prev;
-								k1 = *(f32*)next;
-								dt = t - k0;
-								d = k1 - k0;
-								tan1 = *(f32*)(next + 8);
-								value1 = *(f32*)(next + 4);
-								tan0 = *(f32*)(prev + 0xC);
-								value0 = *(f32*)(prev + 4);
-								zero = 0.0f;
-								flag = (d != zero);
-								if (((u32)__cntlzw(flag) >> 5) != 0) {
-									den = 0.00000001f;
-								}
-								else {
-									den = d;
-								}
-								u = dt / den;
-								u2 = u * u;
-								u3 = u2 * u;
-								a = 3.0f * u2;
-								b = u3 - 2.0f * u2;
-								c = 2.0f * u3 - a;
-								h11 = u3 - u2;
-								h10 = u + b;
-								h00 = 1.0f + c;
-								h01 = -2.0f * u3 + a;
-								val = value0 * h00 + tan0 * (d * h10) + value1 * h01 + tan1 * (d * h11);
-								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
-								break;
-							}
-						}
+						mapAnimAlphaObj(obj, anim, *(u8**)(lp + 4));
 					}
 					strcpy(namebuf2, *(char**)*(u8**)(lp + 4));
 					strcat(namebuf2, "_v_x");
 					obj = mapSearchAnimObj(namebuf2);
 					if (obj != NULL) {
-						u8* item = *(u8**)(lp + 4);
-						s32 cnt = *(s32*)(item + 4);
-						s32 ki;
-						for (ki = 1; ki < cnt; ki++) {
-							u8* prev = item + 8 + (ki - 1) * 0x54;
-							u8* next = item + 8 + ki * 0x54;
-							f32 u3, u, value0, tan0, value1, u2, tan1, d, a, den, dt, k0, t, k1, b, c, h10, h00, h01, h11, val, zero;
-							t = *(f32*)(anim + 0x10);
-							if (t <= *(f32*)next) {
-								t = *(f32*)(anim + 0x10);
-							}
-							else if (ki == cnt - 1) {
-								t = *(f32*)next;
-							}
-							else {
-								continue;
-							}
-							if (*(s32*)(prev + 0x14) != 0) {
-								f32 value = *(f32*)(prev + 4);
-								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * value);
-								break;
-							}
-							else {
-								s32 flag;
-								k0 = *(f32*)prev;
-								k1 = *(f32*)next;
-								dt = t - k0;
-								d = k1 - k0;
-								tan1 = *(f32*)(next + 8);
-								value1 = *(f32*)(next + 4);
-								tan0 = *(f32*)(prev + 0xC);
-								value0 = *(f32*)(prev + 4);
-								zero = 0.0f;
-								flag = (d != zero);
-								if (((u32)__cntlzw(flag) >> 5) != 0) {
-									den = 0.00000001f;
-								}
-								else {
-									den = d;
-								}
-								u = dt / den;
-								u2 = u * u;
-								u3 = u2 * u;
-								a = 3.0f * u2;
-								b = u3 - 2.0f * u2;
-								c = 2.0f * u3 - a;
-								h11 = u3 - u2;
-								h10 = u + b;
-								h00 = 1.0f + c;
-								h01 = -2.0f * u3 + a;
-								val = value0 * h00 + tan0 * (d * h10) + value1 * h01 + tan1 * (d * h11);
-								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
-								break;
-							}
-						}
+						mapAnimAlphaObj(obj, anim, *(u8**)(lp + 4));
 					}
 				}
 			}
@@ -2175,75 +2116,7 @@ void mapMain(void) {
 				for (li = 0; li < *(s32*)list16; lp += 4, li++) {
 					LightEntry* light = lightNameToPtr(*(char**)*(u8**)(lp + 4));
 					if (light != NULL) {
-					s32 ki;
-					u8* item = *(u8**)(lp + 4);
-					s32 cnt = *(s32*)(item + 4);
-					f32 out[9];
-					for (ki = 1; ki < cnt; ki++) {
-						u8* prev = item + 8 + (ki - 1) * 0xB8;
-						u8* next = item + 8 + ki * 0xB8;
-						f32 den, u3, u, u2, value0, tan0, value1, tan1, d, t, dt, a, k0, k1, h11, h00, h01, c, b, h10, zero;
-						s32 k;
-						u8* chn;
-						u8* ch;
-						t = *(f32*)(anim + 0x10);
-						if (t <= *(f32*)next) {
-							t = *(f32*)(anim + 0x10);
-						}
-						else if (ki == cnt - 1) {
-							t = *(f32*)next;
-						}
-						else {
-							continue;
-						}
-						ch = prev;
-						chn = next;
-						for (k = 0; k < 9; ch += 0x14, k++, chn += 0x14) {
-							if (*(s32*)(ch + 0x14) != 0) {
-								out[k] = *(f32*)(ch + 4);
-							}
-							else {
-								s32 flag;
-								k0 = *(f32*)prev;
-								k1 = *(f32*)next;
-								dt = t - k0;
-								d = k1 - k0;
-								tan1 = *(f32*)(chn + 8);
-								value1 = *(f32*)(chn + 4);
-								tan0 = *(f32*)(ch + 0xC);
-								value0 = *(f32*)(ch + 4);
-								zero = 0.0f;
-								flag = (d != zero);
-								if (((u32)__cntlzw(flag) >> 5) != 0) {
-									den = 0.00000001f;
-								}
-								else {
-									den = d;
-								}
-								u = dt / den;
-								u2 = u * u;
-								u3 = u2 * u;
-								a = 3.0f * u2;
-								b = u3 - 2.0f * u2;
-								c = 2.0f * u3 - a;
-								h11 = u3 - u2;
-								h10 = u + b;
-								h00 = 1.0f + c;
-								h01 = -2.0f * u3 + a;
-								out[k] = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
-							}
-						}
-						{
-							f32 scale = 10.0f;
-							light->position.x = scale * out[0];
-							light->position.y = scale * out[1];
-							light->position.z = scale * out[2];
-						}
-						light->rotation.x = out[3];
-						light->rotation.y = out[4];
-						light->rotation.z = out[5];
-						break;
-					}
+						mapAnimLightPos(light, anim, *(u8**)(lp + 4));
 					}
 				}
 			}
@@ -2254,72 +2127,7 @@ void mapMain(void) {
 				for (li = 0; li < *(s32*)list15; lp += 4, li++) {
 					LightEntry* light = lightNameToPtr(*(char**)*(u8**)(lp + 4));
 					if (light != NULL) {
-					s32 ki;
-					u8* item = *(u8**)(lp + 4);
-					s32 cnt = *(s32*)(item + 4);
-					f32 out[5];
-					for (ki = 1; ki < cnt; ki++) {
-						u8* prev = item + 8 + (ki - 1) * 0x68;
-						u8* next = item + 8 + ki * 0x68;
-						f32 den, u3, u, u2, value0, tan0, value1, tan1, d, t, dt, a, k0, k1, h11, h00, h01, c, b, h10, zero;
-						s32 k;
-						u8* chn;
-						u8* ch;
-						t = *(f32*)(anim + 0x10);
-						if (t <= *(f32*)next) {
-							t = *(f32*)(anim + 0x10);
-						}
-						else if (ki == cnt - 1) {
-							t = *(f32*)next;
-						}
-						else {
-							continue;
-						}
-						ch = prev;
-						chn = next;
-						for (k = 0; k < 5; k++, chn += 0x14, ch += 0x14) {
-							if (*(s32*)(ch + 0x14) != 0) {
-								out[k] = *(f32*)(ch + 4);
-							}
-							else {
-								s32 flag;
-								k0 = *(f32*)prev;
-								k1 = *(f32*)next;
-								dt = t - k0;
-								d = k1 - k0;
-								tan1 = *(f32*)(chn + 8);
-								value1 = *(f32*)(chn + 4);
-								tan0 = *(f32*)(ch + 0xC);
-								value0 = *(f32*)(ch + 4);
-								zero = 0.0f;
-								flag = (d != zero);
-								if (((u32)__cntlzw(flag) >> 5) != 0) {
-									den = 0.00000001f;
-								}
-								else {
-									den = d;
-								}
-								u = dt / den;
-								u2 = u * u;
-								u3 = u2 * u;
-								a = 3.0f * u2;
-								b = u3 - 2.0f * u2;
-								c = 2.0f * u3 - a;
-								h11 = u3 - u2;
-								h10 = u + b;
-								h00 = 1.0f + c;
-								h01 = -2.0f * u3 + a;
-								out[k] = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
-							}
-						}
-						light->color.r = (s32)(255.0f * out[0]);
-						light->color.g = (s32)(255.0f * out[1]);
-						light->color.b = (s32)(255.0f * out[2]);
-						light->color.a = 0xFF;
-						light->spotAngle = out[4];
-						light->attenAngle = out[3];
-						break;
-					}
+						mapAnimLightColor(light, anim, *(u8**)(lp + 4));
 					}
 				}
 			}
@@ -2817,12 +2625,10 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 	return count;
 }
 
-// NONMATCHING (99.93%): only the prologue's pool-base `addi` is scheduled two slots early (before the texMap/texCoord
-// copies instead of after them).
 void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	static f32 scrl_uv[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 	GXTexMapID texMap;
-	GXTexCoordID texCoord;
+	u32 texCoord;
 	GXTevStageID tevStage;
 	s32 numIndStages;
 	Mtx queen_mtx;
