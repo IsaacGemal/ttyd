@@ -783,7 +783,7 @@ config.libs = [
             Object(Matching, "party/party_yoshi.c"),
             Object(Matching, "party/party_bomhei.c"),
             Object(Matching, "data/party_data.c"),
-            Object(NonMatching, "party/party_hit.c"),
+            Object(Matching, "party/party_hit.c"),
             Object(Matching, "party/party_kuribo.c"),
             Object(Matching, "party/party_move.c"),
             Object(Matching, "party/party_nokonoko.c"),

@@ -12,9 +12,9 @@ anything worth keeping into a chapter here.
 
 ## Current state (rewrite this section as things change)
 
-- **Fresh build, 2026-10-17:** 9,759 / 9,769 functions matched (99.90%), fuzzy 99.99%, 1,226 / 1,233 units
-  complete. Ten functions are open in five units: `mri/mri_puni` (4), `MarioSt/driver/mapdrv` (2),
-  `MarioSt/driver/animdrv` (2), `MarioSt/driver/envdrv` (1), `MarioSt/party/party_hit` (1). `build/G8MJ01/report.json`
+- **Fresh build, 2026-10-17:** 9,760 / 9,769 functions matched (99.91%), fuzzy 99.99706%, 1,227 / 1,233 units
+  complete. Nine functions are open in four units: `mri/mri_puni` (4), `MarioSt/driver/mapdrv` (2),
+  `MarioSt/driver/animdrv` (2), `MarioSt/driver/envdrv` (1). `party/party_hit` now links, all 11 functions matched. `build/G8MJ01/report.json`
   on the Mac is not kept current; quote the tower's (`scratch/tci.sh`, which ratchets against the baseline accepted
   after each merge). A Mac checkout's own `build/ci/accepted.json` can be days old and then shows false regressions:
   never `--accept` from it.
@@ -7792,3 +7792,86 @@ repeat it. All local checks were `tools/agent_check.py mri/mri_puni FUNC` (the u
   animSetMaterial_Texture `desc` 99.82 -> 98.82, envDisp_DepthOfField `u` 99.96 -> 99.55. Everything else unchanged.
 - Not covered: parameters of the static inline helpers these functions call (partyHeadHit, envDofTaps, the mapMain
   step helpers, puniswSetindex), `const` on pointees, and pairs of restricted pointers.
+
+## envDisp_DepthOfField: argument form gets the last register, not the scheduling (2026-10-17, DeepSeek V4.1 Flash 1017)
+
+- Reconfirmed the 99.96 baseline on the Mac (`tools/agent_check.py driver/envdrv envDisp_DepthOfField`): 7 rows,
+  all the far pass's `(GXTevStageID)(tevStage + 1)` temporary in r25 where retail has r26.
+- **New shape that does produce the missing edge:** give `envDofBlendStageReg` a third parameter and call it as
+  `envDofBlendStageReg(tevStage, texCoord++, (GXTevStageID)(tevStage + 1))`, with the seven extra-stage calls moved
+  into that helper. The argument becomes `@1130`, a neighbour of the blend copy `@1129`; it is coloured after the copy
+  (the copy keeps r25) and so lands in r26, and id stays r26. mwccdbg on the tower confirms the edge and rasim's
+  prediction. The five argument orders that keep the blend copy (`mr r25,r31`) and the `int`/`s32`/enum spellings
+  give the same colours.
+- **Why it is not kept:** MWCC evaluates the call argument in the `GXSetTevColor` block, so `addi r26,r30,1` (and the
+  first hoisted `mr r3,r26`) sit one block early. The seven stage calls then match, but the addi/mr placement leaves
+  the same 7 rows. The post-regalloc scheduler does not move them across the call-split blocks.
+- Named `next` (declare first/last, `register`, assignment before/after the blend) gives r27, not r26: under
+  `opt_lifetimes off` it cannot reuse id's r26, which only a compiler temp can. Carrying the copy into the tail
+  (`tc + 1`, `texCoord - 1`, explicit `tc = texCoord; texCoord = texCoord + 1;`) makes the optimizer defer the
+  increment and delete the blend copy (`mr r4,r31` instead of `mr r4,r25`), so the edge disappears.
+- Also negative: `__restrict` on `envDofFar`'s `u` (41), both parameters (41), `envDofTaps`' pointer parameters
+  (219); `__restrict` on the far `GXColor` alone is 7 (no change). Pragmas, counter types, inline/block scoping and
+  dummy locals remain as recorded above.
+- Conclusion unchanged: the last 7 rows need a post-regalloc rematerialization of the argument temp or a permuter
+  search; no natural source shape found. Function stays NONMATCHING at 99.96.
+
+
+## party_hit LINKS: partySearchHead 82.48 -> 100 (2026-10-17, GPT-6.1 Sol Light, Codex)
+
+- Isaac asked for the next target after puniMapFindbuff, explicitly warned that prior partySearchHead assumptions could be wrong, and authorized a fresh attempt toward 100. Re-read the full retail assembly, the on6 levers/report and wave90 report; independently rebuilt the 82.4845 baseline.
+- Closing source: in the EXISTING `partyHeadHit`, take ordinary `f32 y, z` snapshots (`y = pos->y; z = pos->z;`) before loading `d`, and pass `pos->x, up + y, z` to hitCheckFilter. Around partySearchHead, a MUST_MATCH-only push / `opt_propagation off` / pop preserves these snapshots and the height operand order through inlining. No new helper, parameter, function-pointer cast, prototype change, manual expansion, or additional volatile read remains. The pre-existing guarded volatile px/py/pz copies stay.
+- Caller setup now follows `dist; offCos; offSin; px; py; pz; x; z; y; q` (after h and sincosf), and the second probe assigns x/y/z, rather than y/x/z. This is simpler than the old interleaving.
+- Discovery path: the initial scalar z snapshot read through a volatile view raised the score to 87.73; restoring the second probe's x/y/z order reached 91.67. A setup-order search on this NEW helper shape reached 99.84496. Separately, a y snapshot plus `up + y` with propagation disabled fixed the later probes' operand order. Combining the setup and helper changes reached 100; the diagnostic volatile z read could then be replaced by an ordinary read with the match intact. Unused experimental locals were removed and the remaining y/z renamed; production source still scores 100.
+- **Corrections to the old diagnosis:** “statement ordering is exhausted” was conditional on the old helper's propagation graph, not a proof of no source solution. Explicit snapshots with propagation controlled change that graph. Also, the blanket claim that scoped opt pragmas have no effect in this deferred unit was false: opt_propagation is effective around the caller during frontend optimization/inlining. Backend settings such as peephole have different deferred behavior; test each setting rather than generalizing. The final fix uses the ledger's preserved-named-scratch / operand-order-with-propagation-off mechanisms.
+- Broader negatives are preserved in local reproducible scripts and logs under `/Users/isaac/Documents/ChatGPT/ttyd/scratch/party-head/`: pointer restrict combinations; Vec/scalar parameter and output groupings; shared trig/position storage; pointer casts; self-stores; scalar compound literals; numeric/formal types; helper definition order; scoped optimizer options. None of those initial direct variants beat 82.48. Shared storage did reproduce six saved FPRs without volatile, but its layout/first probe did not match; it is not part of the solution.
+- Verification: production `agent_check.py party/party_hit partySearchHead`: **100.00%, 1,032 bytes / 258 instructions**; `--final party/party_hit`: **11/11, nothing to fix**. A fresh unit-report comparison changes only partySearchHead. .rodata and .sdata2 are byte-identical to the pre-edit object. `tools/autolink.py party/party_hit.c` succeeds, so configure.py now marks it Matching and the actual DOL/REL checksum build passes.
+- Full CI with `--allow-pragma`: tests, lint, prototypes, extend_data uniqueness, hang guard, build/checksums, natural compilation without MUST_MATCH, and data checks pass. The Mac's stale saved baseline still reports the documented nine unrelated old split/name/data differences. Re-ran the exact CI ratchet against an unchanged copy of the tower accepted report at HEAD ab903e59: **no regressions, nine measures improved**. Neither accepted baseline was replaced. Fresh full report: **9,760/9,769**, fuzzy **99.99706%**, **1,227/1,233** complete units; nine functions in four units remain.
+
+## envDisp_DepthOfField: the last 7 are a creation-order/scheduling conflict, not a missing lever (2026-10-17, DeepSeek V4.1 Flash 1017)
+
+- Baseline rebuilt on the Mac: `tools/agent_check.py driver/envdrv envDisp_DepthOfField` -> 7 rows, the far pass's
+  `(GXTevStageID)(tevStage + 1)` temp in r25 where retail has r26. `--final` afterwards: builds, 21/22 at 100%, merge
+  checks clean. No source change kept.
+- **Ledger mined first.** Read in full: Swarm batch 4a "Argument evaluation order ... MWCC evaluates the last argument
+  first" (line 5938) and the Grind 78 / iconDispGx / ext_moamoa / winKageGX "arguments are evaluated in
+  declared-parameter order" entries (3543, 5223, 5302, 6138, 6522); eff_kemuri5's "a single-use local sinks back to
+  the call; reassigning the local blocks the sink" (5699); the "Hoisting and the frontend: where a value is computed"
+  section (5272); npcdrv on7b's `optimization_level 2` backend-pass stop and its note to try it on this function
+  (7644); evt_nannpc's dead `srawi` from an `s64` id, deleted only after scheduling (544); the wave-90 report and the
+  "highest @ number gets the lowest vreg" rule. The sched750 doc's limit (calls/record forms are not modelled) was
+  also checked.
+- **Idea 1, compute +1 inside the helper from a parameter.** Pass `tevStage` twice and derive `next` in the body:
+  - at helper start: 14 rows; add still in the `GXSetTevColor` block; `next` r25, tc r26.
+  - after `GXSetTevColor`, before the blend call: 13 rows; add in the next block (B112) but colours the same way.
+  - after the blend call: 7 rows, add at the target position, but `next` r25 (no edge).
+  - Reason: frontend temps are numbered in reverse creation order (the third argument `next` is evaluated first and
+    gets @1130; tc second @1129; the parameter copy third @1128). A temp created after tc therefore has a *lower*
+    @ number, a higher vreg and is coloured *before* tc. In the body form mwccdbg shows `@1128` (next) at assignment
+    order 178 -> r25 and `@1130` (tc) at 180 -> r26; in the argument form `@1129` (tc) is 1075 -> r25 and `@1130`
+    (next) 1081 -> r26. The colour follows the @ numbering exactly.
+- **Idea 2, make the value depend on something after GXSetTevColor.** The best shape is a blend helper that returns its
+  texCoord parameter, with the tail helper taking that old value as `tc` and using `tc + 1` for `GXSetNumTexGens`.
+  The AST does put the add after the blend and keeps tc live to `GXSetNumTexGens` (target placement), but backend-04
+  add-propagation moves the `texCoord++` increment from the `GXSetTevColor` block to that `tc + 1` use; the copy is
+  then coalesced away and b18-before-regalloc has no edge. Keeping the b03 form would need an extra `addi tc,1` at
+  `GXSetNumTexGens` (not retail). `global_optimizer off`, `opt_dead_assignments off` and `opt_strength_reduction off`
+  (helper-scope or file-scope) do not stop it; `optimization_level 2`/`3` change the function wholesale (323/271
+  rows). Algebraic zero uses of tc (`1 + (tc - tc)`, `(s64)` round trips, `(void)tc`, self-assign, a dead sign word
+  after the tail) are all removed before b18 and leave the same 7; the one shape that kept `add`/`subf` in the final
+  code still coloured next r25.
+- **Idea 3, regroup/reorder the extra-stage calls.** With the seven calls in the blend helper and `next` as an
+  argument, the add is emitted where the argument is evaluated (the `GXSetTevColor` block) regardless of grouping,
+  first/last call order or a bare block. Splitting the calls only moves the expression's block; it never moves the
+  argument evaluation.
+- **Idea 4, sched750/rasim.** `backend-00-initial-code` already has `addi r54,r61,1` (line 1075) before
+  `bl GXSetTevColor` (1084) in the argument form, and every later dump keeps it there; its only operand is
+  `tevStage`, which is live, so no dependency can hold it back. `sched750.py predict B111` aborts with
+  `KeyError: 'bl'`: the block contains a call, which the model does not cover (as documented), and scheduling is
+  per block, so it cannot move a def into a successor block anyway. rasim confirms the only colour fix is the
+  temp-tc edge, which exists only while the temp is created at the call.
+- **Conclusion.** The two requirements conflict in MWCC 2.6: the right colour needs the temp created *before* the
+  txCoord copy (so it is a call argument and its add is emitted in the `GXSetTevColor` block); the right placement
+  needs it created *after* the blend (so it gets a lower @ number and is coloured before tc). Closing it needs a
+  post-regalloc rematerialization of the argument temp, which this compiler does not do. Left at its best natural
+  score, NONMATCHING 99.96; source back to the committed baseline (only this ledger chapter changed).

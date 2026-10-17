@@ -654,10 +654,13 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
 static inline HitEntry* partyHeadHit(Vec* pos, f32* dist, f32 up) {
     HitEntry* hit;
     f32 hx, hy, hz, hnx, hny, hnz, d;
+    f32 y, z;
     Vec n = {0.0f, 0.0f, 0.0f}; // unused: its zero template is the original's unreferenced .rodata Vec
 
+    y = pos->y;
+    z = pos->z;
     d = *dist;
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &hnx, &hny, &hnz, pos->x, pos->y + up, pos->z, 0.0f, 1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &hnx, &hny, &hnz, pos->x, up + y, z, 0.0f, 1.0f, 0.0f);
     if (hit != NULL) {
         if (*dist >= d) {
             *dist = d;
@@ -666,8 +669,11 @@ static inline HitEntry* partyHeadHit(Vec* pos, f32* dist, f32 up) {
     return hit;
 }
 
-// NONMATCHING (82.48%): the instruction stream, call arguments, stack slots and pools match the original; what
-// differs is the order inside the probe-setup blocks, so the compiler temps land in f4-f6 instead of reusing f0-f3.
+#ifdef MUST_MATCH
+// Preserve the y/z snapshots and height operand order through the inlined probe calls.
+#pragma push
+#pragma opt_propagation off
+#endif
 HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle) {
     HitEntry* hit;
     Vec q;
@@ -686,19 +692,19 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
     h = 0.3f * party->field_F4;
     sincosf(&sin, &cos, angle);
     dist = *out;
-    px = position->x;
     offCos = -h * cos;
-    pz = position->z;
-    z = pz + offCos;
     offSin = h * sin;
+    px = position->x;
     py = position->y;
+    pz = position->z;
     x = px + offSin;
+    z = pz + offCos;
     y = py;
     q = (Vec){x, y, z};
     hit = partyHeadHit(&q, &dist, 10.0f);
     if (hit == NULL) {
-        y = py;
         x = px - offSin;
+        y = py;
         z = pz - offCos;
         q = (Vec){x, y, z};
         hit = partyHeadHit(&q, &dist, 10.0f);
@@ -731,6 +737,9 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
     }
     return hit;
 }
+#ifdef MUST_MATCH
+#pragma pop
+#endif
 
 
 #ifdef MUST_MATCH
