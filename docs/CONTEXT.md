@@ -7647,3 +7647,22 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   qualifiers) reached at best 44 positional diffs in the harness without a verified real-unit gain. Shared
   quadrant/scratch helpers regress ext_main and depthDisp. Local static coefficient arrays pool at parse time
   (dead_strings.md), so they can't reproduce this pool.
+
+### mapdrv 96 -> 99/101: mapSetMaterialTev, bmapUnLoad, _mapLoad 100; mapMain 99.97 (Claude Opus 5.5, on7b-mapdrv)
+- **Inline-helper locals DO follow declaration order** (first declared = lowest vreg; pass 1's "can't be steered" was
+  wrong). Map each vreg to its name from the mwccdbg dump, take target registers from the diff, run `rasim search`
+  over the helper's vreg range, write the order it finds; multi-variable moves beat single-move hill climbs. mapMain's
+  alpha/colour/light-position/light-colour steps became `static inline` helpers (removes the clamp `fmr`), then
+  helper-local orders took it 268 -> 130 diffs.
+- **Strength-reduced `k*4`/`j*8` temps sit below every local**, so no order reaches retail. Name the byte offset (or a
+  `dst` pointer) and declare it between the right locals (`rasim replay --key` shows where): colour `off += 4`, light
+  `*dst++` after `chn`, search `ofs += 8` between `entry` and `wp` (130 -> 35). Then `ch += 0x14, chn += 0x14, k++` in
+  all three loops, `ch = prev; chn = next;`, and a cast-free `light->color.r = 255.0f * out[0];` (the `(s32)` cast
+  scheduled a load one slot early).
+- mapSetMaterialTev: `u32 texCoord` instead of `GXTexCoordID` drops the shared texCount conversion temp.
+  bmapUnLoad: `entry = (wp = mapWork)->entries;` (one load, no frontend temp), order `entry, wp, i`. _mapLoad: loader
+  steps as static inlines (header parse, relocation, anim table, display flags) explain locals above named locals.
+- Hard negatives: direct `ch`/`chn` field reads in the Hermite sums (295-309 vs 268); seven clamp shapes; mapMain's
+  matrix search keeps one name/entry swap (rasim needs `name` above `wp`, which a parameter can't be; block-local
+  name, wrappers, BOOL helper, moved getter, casts all fail); mapObjSetFlushColor: all 60 block orders in
+  mapGetMapObjSub, only the current one keeps its 17 callers. Untried: width casts on FlushColor's call args.
