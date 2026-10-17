@@ -7508,3 +7508,23 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 - Framing correction: the earlier declaration-order and mwsearch negatives applied to three named scalar outputs;
   grouping them as one Vec changes their web class and rank. No address-folding or liveness trick needed.
 - party_hit's last open function is partySearchHead (80.36, on6-phit's notes above).
+
+## Overnight 6 (2026-10-16/17)
+
+### pmario_sound LINKED: psndSFXMain 98.79 -> 100, 50/50 (GPT-6.1 Sol, high effort, sol10)
+- The #810 shared-pssfx-base diagnosis described the symptom, but no pointer split was needed. Replace BOTH
+  `SoundEfxPlayEx(entry->field_0x4 & 0xFFFF, ...)` arguments with `(u16)entry->field_0x4` (SND_FXID is u16). Same 741
+  instructions, but the call-argument interference graph changes: the persistent base gets retail's r25 and normalised
+  differences fall 128 -> 26. Then declare `entry` first (entry r30, numSounds r29), and read loop 2's pending bit
+  through the existing PaperSoundEffectU16 view.
+- Close the rest with the existing volume scratch: `vol = GetVolume(...); vol &= 0xFF; vol = (vol * ratio) / 127;` in
+  all three fade branches. No new helper, pragma, padding, self-store or cast trick.
+- **Reusable lead: before trying to split a shared base, look at narrow-parameter argument expressions that add permanent
+  coalesced neighbours; a width cast can keep every instruction while changing those neighbours.**
+- **Link surprise:** all 50 scores were 100 but 19 DOL bytes differed in psndPushGroup/Exit/Main/MainInt/calc3D because
+  .sbss was ordered group,tbl,PAN,init,trg instead of init,trg,group,tbl,PAN. Forward-declare the two existing global
+  flags and put their definitions after the deferred functions (trg, then init): definitions emit first in reverse
+  order. Full build and checksum: 32 files OK.
+- Hard negatives: thousands of indexed/walking/interior/typed cursor, scope, counter, aggregate, getter, helper and
+  optimizer candidates (via a renamed-copy harness adapted from cam_road's fgen.py); mwsearch 14.5 min, nothing; SS-finder
+  scalar output parameters nearly fix the graph but add two moves.

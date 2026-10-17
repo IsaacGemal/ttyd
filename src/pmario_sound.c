@@ -4935,9 +4935,9 @@ PaperSoundEnv psenv[16];
 PaperSoundWork psnd;
 u8 _buf[0x80];
 
-//.sbss
-BOOL _psndPushGroup_trg;
-BOOL init_f;
+//.sbss (definitions follow the deferred functions)
+extern BOOL _psndPushGroup_trg;
+extern BOOL init_f;
 
 //local definitions
 
@@ -6069,11 +6069,12 @@ static inline s32 psndSFXFindSongChannel(void) {
 }
 
 // The reverb guard reads unk18 through a u32 view, so SoundEfxSetAux1's argument is reloaded as in retail.
-// NONMATCHING (98.79%): both loops index pssfx (`sfx = &pssfx[i]`), which gives the target's direct
-// `addi` base and the loop-1 copy. Left: callee-saved colouring of the loop-2 pointer, numSounds, ratio
-// and the hoisted &psnd (target r25/r29/r28/r27; rasim: no declaration order reaches it).
+// The pending-bit read uses the unsigned record view; keeping it separate from the flag update below
+// leaves the two loops' address and counter webs in their original registers. Effect IDs use their native
+// u16 width, and each fade reuses vol for the byte mask before multiplying by ratio.
 void psndSFXMain(void) {
 
+    SoundEffectEntry* entry;
     s32 target;
     PaperSoundEffectDetail* sfx;
     s32 vol;
@@ -6081,7 +6082,6 @@ void psndSFXMain(void) {
     s32 i;
     u32 u;
     u32 ch;
-    SoundEffectEntry* entry;
     u32 res;
     u8* pp;
     s32 ratio;
@@ -6142,7 +6142,7 @@ void psndSFXMain(void) {
         if ((u32)sfx->unk0 == -1) continue;
         entry = &pssfxlist[sfx->unk0 & 0x1FFF];
         numSounds++;
-        if (sfx->unk6 & 1) {
+        if (((PaperSoundEffectU16*)sfx)->unk6 & 1) {
             sfx->unk6 = (sfx->unk6) & ~0x100;
             if (sfx->unkE != 0) {
                 sfx->unkE -= 1;
@@ -6175,7 +6175,7 @@ void psndSFXMain(void) {
                     if (vol < 0) vol = 0;
                     if (vol > 0x7F) vol = 0x7F;
                     res = calc3D(sfx->unk0, (Vec*)((u8*)sfx + 0x1c), (u8)vol, sfx->unk12);
-                    sfx->unk18 = SoundEfxPlayEx(entry->field_0x4 & 0xFFFF, 0, ((u8*)&res)[0], ((u8*)&res)[1]);
+                    sfx->unk18 = SoundEfxPlayEx((u16)entry->field_0x4, 0, ((u8*)&res)[0], ((u8*)&res)[1]);
                     if ((u32)sfx->unk18 != -1) {
                         SoundEfxSetVolume(sfx->unk18, ((u8*)&res)[0]);
                         SoundEfxSetSrndPan(sfx->unk18, ((u8*)&res)[2]);
@@ -6189,7 +6189,7 @@ void psndSFXMain(void) {
                     vol = (sfx->vol * sfx->pan) / 127 - sfx->unk10;
                     if (vol < 0) vol = 0;
                     if (vol > 0x7F) vol = 0x7F;
-                    sfx->unk18 = SoundEfxPlayEx(entry->field_0x4 & 0xFFFF, 0, (u8)vol, sfx->unkA);
+                    sfx->unk18 = SoundEfxPlayEx((u16)entry->field_0x4, 0, (u8)vol, sfx->unkA);
                     if ((u32)sfx->unk18 != -1) {
 #ifdef MUST_MATCH
                         ((void (*)(s32, s16))SoundEfxSetPitch)(sfx->unk18, sfx->unk14);
@@ -6271,15 +6271,21 @@ void psndSFXMain(void) {
         }
         if (sfx->unk6 & 0x40) {
             if (entry->field_0x4 & 0x80000000) {
-                vol = (SoundSSGetVolCh(sfx->unk18) & 0xFF) * ratio / 127;
+                vol = SoundSSGetVolCh(sfx->unk18);
+                vol &= 0xFF;
+                vol = (vol * ratio) / 127;
                 SoundSSSetVolCh(sfx->unk18, (u8)vol);
                 if (vol == 0) psndSFXOff(i);
             } else if (entry->field_0x4 & 0x40000000) {
-                vol = (SoundSongGetVolCh(sfx->unk18) & 0xFF) * ratio / 127;
+                vol = SoundSongGetVolCh(sfx->unk18);
+                vol &= 0xFF;
+                vol = (vol * ratio) / 127;
                 SoundSongSetVolCh(sfx->unk18, (u8)vol);
                 if (vol == 0) psndSFXOff(i);
             } else {
-                vol = (SoundEfxGetVolume(sfx->unk18) & 0xFF) * ratio / 127;
+                vol = SoundEfxGetVolume(sfx->unk18);
+                vol &= 0xFF;
+                vol = (vol * ratio) / 127;
                 SoundEfxSetVolume(sfx->unk18, (u8)vol);
                 if (vol == 0) psndSFXOff(i);
             }
@@ -7312,3 +7318,7 @@ s32 psndENV_vol(s32 id, s32 vol, s32 time) {
 	return 1;
 }
 #endif
+
+// Deferred generation emits these in reverse order before the function-local .sbss objects.
+BOOL _psndPushGroup_trg;
+BOOL init_f;
