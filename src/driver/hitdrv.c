@@ -352,7 +352,7 @@ void hitMain(void) {
     for (i = 0; i < wp->entries->count; map++, i++) {
         anim = (u8*)map->animData;
         anyScale = 0;
-        for (j = 0; j < *(s32*)map->field_0x160; j++, anim += 0x20) {
+        for (j = 0; j < map->animCount; j++, anim += 0x20) {
             u16 animFlags = *(u16*)anim;
             u8* list = *(u8**)(anim + 0x18);
             u8* childList = *(u8**)(list + 0xC);

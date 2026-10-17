@@ -8,7 +8,7 @@
 #include "memory.h"
 #include "system.h"
 #include "texPalette.h"
-#include <math.h>
+#include "math_ext.h"
 #include <string.h>
 #include "driver/hitdrv.h"
 #include "driver/lightdrv.h"
@@ -19,7 +19,7 @@
 #include <dolphin/os.h>
 #include "driver/shadowdrv.h"
 
-extern s32 texmtx_tbl[];
+#pragma pool_data on // the original addresses its .rodata through one base register
 
 // Original reaches queen_uv with absolute @ha/@l addressing, not the .sdata sda21 form.
 __declspec(section ".rodata") extern f32 queen_uv[4]; //gxsub.c
@@ -37,91 +37,52 @@ extern GlobalWork* gp;
 //.bss
 MapError error_data[32];
 
-//.sbss
-MapWork* mapWork; //allocates two entries
-s32 activeGroup;
-BOOL mapClipOffFlag;
-MapObject* current_mp;
-BOOL error_flag;
-s32 error_count;
-u32 unk_80418458;
-BOOL __mapdrv_make_dl;
-//more stuff
-
-//.sbss (unnamed in symbols.txt)
+//.sbss (MWCC lays these out in reverse declaration order)
 GXColor paper_ambient;
+GXColor paperCraft_ambient;
 GXTexObj projTexObj;
 void* projTexImgRef;
 Mtx projMtx;
+BOOL __mapdrv_make_dl;
+u32 unk_80418458;
+s32 error_count;
+BOOL error_flag;
+MapObject* current_mp;
+BOOL mapClipOffFlag;
+s32 activeGroup;
+MapWork* mapWork; //allocates two entries
 
-extern GXColor dat_8041982c;
-extern GXColor dat_80419824;
-extern GXColor dat_80419828;
-extern GXColor dat_80419830;
-extern GXColor dat_80419840;
-extern GXColor dat_80419844;
-extern GXColor dat_80419820;
-extern GXColor unk_80422f8c;
-extern GXColor unk_80422f90;
-extern GXColor unk_80422f84;
-extern GXColor unk_80422f88;
-const f32 float_3_8041984c = 3.0f;
-const f32 float_0_80419850 = 0.0f;
-extern f32 float_0p5_80419854;
-const f32 float_2_80419858 = 2.0f;
-extern f32 float_1000_80419874;
-extern f32 float_10_80419864;
-extern f32 float_deg2rad_80419868;
-const f32 float_1_80419860 = 1.0f;
-const f32 float_neg2_804198a0 = -2.0f;
-extern f32 float_neg1_804198a8;
-extern f32 float_5000_804198ac;
-extern f32 float_10000_804198b0;
-extern f32 float_20000_804198d8;
-const f32 float_1Eneg08_804198b8 = 1e-08f;
-extern Vec vec3_802c18f4[];
-extern Vec vec3_802c1900[];
-extern const char str_8041986C[];
-const char str_8041986C[] = "|";
-
-//.sdata
-f32 scrl_uv[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-s32 fog_type[5] = {2, 4, 5, 6, 7};
 
 //forward decls for functions defined later in this file
 static MapObject* mapGetMapObjSub(const char* name);
 
-extern f32 float_neg1p0486E06_80419870;
-extern f32 float_0p01_804198b4;
 
-// material rodata blob: the original anchors this whole .rodata region at vec3_802c16d8
-// and reaches the other tables below with constant offsets (0xEC texwrap_tbl, 0x100 lightid_tbl,
-// 0x120..0x150 direction vectors, 0x2C8 int->double mask).
-extern u8 vec3_802c16d8[];
 
 // the TEV-stage callback slots at mapWork[activeGroup]+0x110 (16 entries)
 
-// GXColor blobs the shadow TEV sets: the original is not linked while this function is
-extern GXColor dat_80419800;
-extern GXColor dat_80419804;
-extern GXColor dat_80419808;
-extern GXColor dat_8041980c;
-extern GXColor dat_80419810;
-extern GXColor dat_80419814;
-extern GXColor dat_80419818;
-extern u8 texture_0[];
+// The CMPR texture the 0x800000 material pass samples (4x64).
+static u8 texture_0[0x100] ATTRIBUTE_ALIGN(32) = {
+	0xEB, 0x88, 0xE2, 0x28, 0x55, 0xFF, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xF5, 0x28, 0xEC, 0x08, 0x55, 0xFF, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xFE, 0xE8, 0xF5, 0xA8, 0x55, 0xFF, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xFF, 0x47, 0xD6, 0xE8, 0x00, 0xAA, 0xFF, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xBE, 0xA8, 0x86, 0x0A, 0x00, 0xAA, 0xFF, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x7D, 0xEA, 0x0D, 0x8B, 0x00, 0xAA, 0xFF, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x05, 0x6B, 0x05, 0x4A, 0x00, 0xAA, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x05, 0x6B, 0x05, 0x4E, 0x00, 0x00, 0xAA, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x05, 0xBA, 0x05, 0x70, 0x55, 0xFF, 0xAA, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x05, 0xDE, 0x05, 0xBA, 0x55, 0xFF, 0xAA, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x05, 0xBD, 0x05, 0x1B, 0x00, 0x00, 0xAA, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x13, 0x76, 0x04, 0x9A, 0x55, 0xFF, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x33, 0x15, 0x42, 0x53, 0x00, 0xAA, 0x55, 0x55, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x6A, 0x33, 0x3A, 0x53, 0xFF, 0xFF, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xB1, 0xF2, 0x82, 0x12, 0x55, 0xFF, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xE9, 0xF2, 0xC2, 0x12, 0x55, 0xFF, 0xAA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
 
-#ifdef MUST_MATCH
-// The original reaches texmtx_tbl through the shared .rodata base r28 = vec3_802c16d8 + 0x98.
-#define TEXMTX(i) (((s32*)(void*)(base + 0x98))[i])
-#else
-#define TEXMTX(i) texmtx_tbl[i]
-#endif
 
 extern int __float_nan[];
 #define SPLINE_NAN (*(f32*)__float_nan)
-extern const char float_0_804198cc[4];
-extern GXColor dat_8041981c;
 typedef struct MapAnimChannel {
 	f32 value;  // 0x0
 	f32 unk4;   // 0x4
@@ -158,14 +119,6 @@ typedef struct MapMaterial {
 	u8 field_0x2C[0x110 - 0x2C];  // 0x2C
 	u8* field_0x110;              // 0x110
 } MapMaterial;
-#ifdef MUST_MATCH
-#define MAPMAT_DEFAULT_DIR (*(Vec*)(base + 0x144))
-#define MAPMAT_TEXWRAP(i) (wrapTbl[i])
-#else
-extern u32 texwrap_tbl[];
-#define MAPMAT_DEFAULT_DIR ((Vec){ 0.0f, 0.0f, -1.0f })
-#define MAPMAT_TEXWRAP(i) ((s32)texwrap_tbl[i])
-#endif
 typedef struct MapVtx {
 	u32 field_0x0;   // 0x0
 	s16 x;           // 0x4
@@ -248,8 +201,8 @@ void mapGetBoundingBox(Vec* min, Vec* max) {
 	int i;
 
 	wp = &mapWork[activeGroup];
-	*min = *(Vec*)vec3_802c16d8;
-	*max = *(Vec*)vec3_802c16e4;
+	*min = (Vec){0.0f, 0.0f, 0.0f};
+	*max = (Vec){0.0f, 0.0f, 0.0f};
 	obj = wp->entries[0].objects;
 	for (i = 0; i < wp->entries[0].numJoints; i++, obj++) {
 		joint = obj->joints;
@@ -417,9 +370,9 @@ MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index) {
 
 	PSMTXTrans(transMtx, joint->translation.x, joint->translation.y, joint->translation.z);
 	PSMTXScale(scaleMtx, joint->scale.x, joint->scale.y, joint->scale.z);
-	PSMTXRotRad(rotMtxX, 'x', float_deg2rad_80419868 * joint->rotation.x);
-	PSMTXRotRad(rotMtxY, 'y', float_deg2rad_80419868 * joint->rotation.y);
-	PSMTXRotRad(rotMtxZ, 'z', float_deg2rad_80419868 * joint->rotation.z);
+	PSMTXRotRad(rotMtxX, 'x', 0.017453292f * joint->rotation.x);
+	PSMTXRotRad(rotMtxY, 'y', 0.017453292f * joint->rotation.y);
+	PSMTXRotRad(rotMtxZ, 'z', 0.017453292f * joint->rotation.z);
 	PSMTXConcat(transMtx, rotMtxZ, transMtx);
 	PSMTXConcat(transMtx, rotMtxY, transMtx);
 	PSMTXConcat(transMtx, rotMtxX, transMtx);
@@ -518,7 +471,7 @@ MapObject* _mapEnt(MapFileJoint* joint, MapObject* parent, Mtx mtx, s32 index) {
 	if (joint->partCount) {
 		PSMTXMultVec(obj->modelWorldMtx, (Vec*)(obj->field_0xC + 4), &vecA);
 		PSMTXMultVec(obj->modelWorldMtx, &joint->bboxMax, &vecB);
-		if (PSVECSquareDistance(&vecA, &vecB) < float_20000_804198d8) {
+		if (PSVECSquareDistance(&vecA, &vecB) < 20000.0f) {
 			*(u32*)obj->field_0x0 |= 0x2;
 		}
 	}
@@ -554,6 +507,7 @@ MapObject* mapEntry(MapFileJoint* joint, Mtx mtx, s32 index) {
 // `wp = mapGetWork()` (same value as &mapWork[activeGroup]) moves wp into r31 and lets the cached
 // entry pointer be dropped.
 void makeDisplayList(BOOL group) {
+	static const s32 culling[] = {GX_CULL_FRONT, GX_CULL_BACK, GX_CULL_ALL, GX_CULL_NONE};
 	MapWork* wp;
 	void* buf;
 	s32 i;
@@ -646,7 +600,7 @@ MapEntryAnimData* mapSearchAnmObj(const char* animName) {
 
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		MapEntryAnimData* anim = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
+		for (j = 0; j < entry->animCount; j++, anim++) {
 			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
 				return anim;
 			}
@@ -671,7 +625,7 @@ static inline MapEntryAnimData* mapCheckAnimationSearch(const char* animName) {
 	entry = &wp->entries[0];
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		anim = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
+		for (j = 0; j < entry->animCount; j++, anim++) {
 			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
 				return anim;
 			}
@@ -689,7 +643,7 @@ void mapCheckAnimation(const char* animName, BOOL* valid, f32* a3) {
 #endif
 
 	*valid = FALSE;
-	*a3 = float_0_80419850;
+	*a3 = 0.0f;
 	if (found) {
 		if (*(u16*)found & 0x2) {
 			*valid = TRUE;
@@ -720,7 +674,7 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	entry = wp->entries;
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		found = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, found++) {
+		for (j = 0; j < entry->animCount; j++, found++) {
 			if (!strcmp(*(char**)*(void**)((u8*)found + 0x18), name)) {
 				valid = TRUE;
 				break;
@@ -775,14 +729,14 @@ void mapPlayAnimationLv(const char* name, s32 a2, s32 a3) {
 	}
 
 	*(OSTime*)(found8 + 0x8) = OSTicksToMilliseconds(time);
-	*(f32*)(found8 + 0x10) = float_0_80419850;
-	*(f32*)(found8 + 0x14) = float_1_80419860;
+	*(f32*)(found8 + 0x10) = 0.0f;
+	*(f32*)(found8 + 0x14) = 1.0f;
 	*(u16*)found |= 0x1;
 	if (a2 == 1) {
 		*(u16*)found |= 0x4;
 	}
 	if (a2 == 2) {
-		*(OSTime*)(found8 + 0x8) -= (u64)(float_1000_80419874 * *(f32*)(*(u8**)(found8 + 0x18) + 8) / (f32)gp->framerate);
+		*(OSTime*)(found8 + 0x8) -= (u64)(1000.0f * *(f32*)(*(u8**)(found8 + 0x18) + 8) / (f32)gp->framerate);
 	}
 }
 
@@ -800,7 +754,7 @@ static inline MapEntryAnimData* mapFindAnm(const char* animName) {
 	entry = &wp->entries[0];
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		MapEntryAnimData* anim = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
+		for (j = 0; j < entry->animCount; j++, anim++) {
 			if ((*(u16*)anim & 0x1) && !strcmp(*(char**)*(void**)((u8*)anim + 0x18), animName)) {
 				return anim;
 			}
@@ -844,7 +798,7 @@ void mapPauseAnimationAll(void) {
 
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		MapEntryAnimData* anim = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
+		for (j = 0; j < entry->animCount; j++, anim++) {
 			*(u16*)anim |= 0x10;
 		}
 	}
@@ -858,7 +812,7 @@ void mapReStartAnimationAll(void) {
 
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		MapEntryAnimData* anim = entry->animData;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim++) {
+		for (j = 0; j < entry->animCount; j++, anim++) {
 			*(u16*)anim |= 0x20;
 		}
 	}
@@ -878,8 +832,7 @@ void mapSetPlayRate(const char* name, f32 rate) {
 
 //more animation functions
 
-// Shared helpers for _mapLoad: the loader searches the chunk table by name seven times and builds its
-// eight bounding-box corners from a zero vector seed; both shapes inline into the caller.
+// The loader searches the chunk table by name seven times; the search inlines into each caller.
 static inline void* mapLoadFindChunk(MapHeader* header, const char* name) {
 	u32 i;
 
@@ -890,82 +843,15 @@ static inline void* mapLoadFindChunk(MapHeader* header, const char* name) {
 	}
 	return NULL;
 }
-#ifndef MUST_MATCH
-static const Vec ml_zero_seed = { 0.0f, 0.0f, 0.0f };
-#endif
-static inline Vec mapLoadCorner(const Vec* seed, f32 x, f32 y, f32 z) {
-	Vec v = *seed;
-
-	v.x = x;
-	v.y = y;
-	v.z = z;
-	return v;
-}
-// The original reaches _mapLoad's strings as offsets from the unit's .rodata base vec3_802c16d8, keeping
-// that base live in r23. The natural build uses the literals.
-#ifdef MUST_MATCH
-// MUST_MATCH: the code below reads these strings through the vec3_802c16d8 base, so the bytes must still be
-// emitted into .rodata for the unit's data to match. force_active keeps them when nothing references them.
-#pragma force_active on
-__declspec(section ".rodata") static const char ml_str_md_d[] = "./m/%s/d";
-__declspec(section ".rodata") static const char ml_str_mt_d[] = "./m/%s/t";
-__declspec(section ".rodata") static const char ml_str_info[] = "information";
-__declspec(section ".rodata") static const char ml_str_ver[] = "ver1.02";
-__declspec(section ".rodata") static const char ml_str_anim[] = "animation_table";
-__declspec(section ".rodata") static const char ml_str_tex[] = "texture_table";
-__declspec(section ".rodata") static const char ml_str_light[] = "light_table";
-__declspec(section ".rodata") static const char ml_str_fog[] = "fog_table";
-__declspec(section ".rodata") static const char ml_str_mat[] = "material_name_table";
-__declspec(section ".rodata") static const char ml_str_vcd[] = "vcd_table";
-__declspec(section ".rodata") static const char ml_str_amb[] = "ambientLight";
-__declspec(section ".rodata") static const char ml_str_point[] = "pointLight";
-__declspec(section ".rodata") static const char ml_str_dir[] = "directionalLight";
-__declspec(section ".rodata") static const char ml_str_spot[] = "spotLight";
-__declspec(section ".rodata") static const char ml_str_c_d[] = "./m/%s/c";
-#pragma force_active reset
-#define ML_STR_MD ((const char*)(base + 0x2D0))
-#define ML_STR_MT ((const char*)(base + 0x2DC))
-#define ML_STR_INFO ((const char*)(base + 0x240))
-#define ML_STR_VER ((const char*)(base + 0x254))
-#define ML_STR_ANIM ((const char*)(base + 0x28C))
-#define ML_STR_TEX ((const char*)(base + 0x2E8))
-#define ML_STR_LIGHT ((const char*)(base + 0x2F8))
-#define ML_STR_FOG ((const char*)(base + 0x304))
-#define ML_STR_MAT ((const char*)(base + 0x310))
-#define ML_STR_VCD ((const char*)(base + 0x324))
-#define ML_STR_AMB ((const char*)(base + 0x330))
-#define ML_STR_POINT ((const char*)(base + 0x340))
-#define ML_STR_DIR ((const char*)(base + 0x34C))
-#define ML_STR_SPOT ((const char*)(base + 0x360))
-#define ML_STR_C ((const char*)(base + 0x36C))
-#else
-#define ML_STR_MD "./m/%s/d"
-#define ML_STR_MT "./m/%s/t"
-#define ML_STR_INFO "information"
-#define ML_STR_VER "ver1.02"
-#define ML_STR_ANIM "animation_table"
-#define ML_STR_TEX "texture_table"
-#define ML_STR_LIGHT "light_table"
-#define ML_STR_FOG "fog_table"
-#define ML_STR_MAT "material_name_table"
-#define ML_STR_VCD "vcd_table"
-#define ML_STR_AMB "ambientLight"
-#define ML_STR_POINT "pointLight"
-#define ML_STR_DIR "directionalLight"
-#define ML_STR_SPOT "spotLight"
-#define ML_STR_C "./m/%s/c"
-#endif
-// NONMATCHING (95.64%): the base and the lightEntry argument order now match. What is left is register
-// numbering/rematerialisation: the target saves r17-r31 and recomputes wp->entries[group] after the
-// light loop, ours saves r20-r31 and keeps it live, plus one extra `li 0` and the animation store order.
+// NONMATCHING (99.17%): register numbering only. `header` and the texture_table store's address temp swap
+// r28/r27 (rasim: the temp needs one interference edge fewer, with `map`), `light` takes r27 for r28, the
+// relocation loop's counter r7 for r5, and the animation block's work pointer r19 for r22.
 void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	MapHeader* header;
 	MapEntry* entry;
 	MapFileInfo* info;
 	MapFileJoint* mapJoint;
-	MapFileLight* light;
 	MapFileJoint* hitJoint;
-	MapObject* obj;
 	DVDEntry* dvd;
 	char str1[128];
 	char str2[128];
@@ -977,19 +863,20 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	u32 sizeCheck;
 	u32 size;
 	u8 *data;
-	u8* base;
 	void* anim;
 	s32 rel_i;
 	s32 disp_i;
+	MapObject* obj;
 	s32 i;
+	MapFileLight* light;
+	MapWork* wp2;
 
 	entry = &wp->entries[group];
-	base = (u8*)((u32)vec3_802c16d8);
 	error_flag = FALSE;
 	error_count = 0;
 	strncpy(entry->name, map, sizeof(entry->name));
 
-	sprintf(str1, ML_STR_MD, map);
+	sprintf(str1, "./m/%s/d", map);
 	arcOpen(str1, &wp->entries[group].dat, &wp->entries[group].datSize);
 	if (!wp->entries[group].dat) {
 		sprintf(str2, "%s/%s", ".", str1);
@@ -1000,18 +887,18 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 		DVDMgrClose(dvd);
 	}
 
-	sprintf(str1, ML_STR_MT, map);
+	sprintf(str1, "./m/%s/t", map);
 	wp->entries[group].tpl = NULL;
 	arcOpen(str1, &wp->entries[group].tpl, &wp->entries[group].tplSize);
-	if (entry->tpl) {
-		UnpackTexPalette(entry->tpl);
+	if (wp->entries[group].tpl) {
+		UnpackTexPalette(wp->entries[group].tpl);
 	}
 	else {
 		sprintf(str3, "%s/%s", ".", str1);
 		dvd = DVDMgrOpen(str3, 2, 0);
 		if (dvd) {
 			wp->entries[group].tplSize = DVDMgrGetLength(dvd);
-			entry->tpl = _mapAllocTail(OSRoundUp32B(entry->tplSize));
+			wp->entries[group].tpl = _mapAllocTail(OSRoundUp32B(wp->entries[group].tplSize));
 			DVDMgrRead(dvd, wp->entries[group].tpl, OSRoundUp32B(wp->entries[group].tplSize), 0);
 			DVDMgrClose(dvd);
 			UnpackTexPalette(wp->entries[group].tpl);
@@ -1022,7 +909,7 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	header = &entry->header;
 	{
 		u32 entryDatSize = wp->entries[group].datSize;
-		data = (u8*)entry->dat;
+		data = (u8*)wp->entries[group].dat;
 		if (header != NULL) {
 			memset(header, 0, sizeof(MapHeader));
 			wp->entries[group].header.field_0x3C |= 1;
@@ -1030,49 +917,48 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 			if (wp->entries[group].header.file.fileSize == entryDatSize) {
 				sizeCheck = sizeof(MapFileHeader);
 				if ((u32)wp->entries[group].header.file.dataSize != 0) {
-					entry->header.data = &data[sizeCheck];
-					sizeCheck = entry->header.file.dataSize + sizeof(MapFileHeader);
+					wp->entries[group].header.data = &data[sizeCheck];
+					sizeCheck = wp->entries[group].header.file.dataSize + sizeof(MapFileHeader);
 				}
 				if ((u32)wp->entries[group].header.file.relCount != 0) {
-					entry->header.rel = &data[sizeCheck];
-					sizeCheck += 4 * entry->header.file.relCount; //TODO: sizeof
+					wp->entries[group].header.rel = &data[sizeCheck];
+					sizeCheck += 4 * wp->entries[group].header.file.relCount; //TODO: sizeof
 				}
 				if ((u32)wp->entries[group].header.file.chunkCount != 0) {
-					entry->header.chunks = (MapFileChunk*)&data[sizeCheck];
-					sizeCheck += sizeof(MapFileChunk) * entry->header.file.chunkCount;
+					wp->entries[group].header.chunks = (MapFileChunk*)&data[sizeCheck];
+					sizeCheck += sizeof(MapFileChunk) * wp->entries[group].header.file.chunkCount;
 				}
 				if ((u32)wp->entries[group].header.file.unused != 0) {
-					entry->header.unused = &data[sizeCheck];
-					sizeCheck += 8 * entry->header.file.unused;
+					wp->entries[group].header.unused = &data[sizeCheck];
+					sizeCheck += 8 * wp->entries[group].header.file.unused;
 				}
-				if (sizeCheck < entry->header.file.fileSize) {
+				if (sizeCheck < wp->entries[group].header.file.fileSize) {
 					wp->entries[group].header.strings = (const char*)&data[sizeCheck];
 				}
-				*(void**)((u8*)&wp->entries[group] + 0x78) = data;
+				wp->entries[group].header.buffer = data;
 
 				//iunno about this section
 				for (rel_i = 0; rel_i < (u32)entry->header.file.relCount; rel_i++) {
-					u32 off = ((u32*)header->rel)[rel_i];
-					u8* relData = (u8*)header->data + off;
+					u32 off = ((u32*)entry->header.rel)[rel_i];
+					u8* relData = (u8*)entry->header.data + off;
 					if (*(u32*)relData <= 0x80000000) {
-						*(u32*)relData += (u32)header->data;
+						*(u32*)relData += (u32)entry->header.data;
 					}
 				}
 			}
 		}
 	}
 
-	info = (MapFileInfo*)mapLoadFindChunk(&entry->header, ML_STR_INFO);
-	// MapEntry fields the header does not name yet (offsets from MapEntry): chunk pointers and anim count.
-	*(void**)((u8*)&wp->entries[group] + 0x94) = mapLoadFindChunk(&entry->header, ML_STR_TEX);
-	*(void**)((u8*)entry + 0x98) = mapLoadFindChunk(&entry->header, ML_STR_LIGHT);
-	*(void**)((u8*)&wp->entries[group] + 0x9C) = mapLoadFindChunk(&entry->header, ML_STR_FOG);
-	*(void**)((u8*)&wp->entries[group] + 0xA0) = mapLoadFindChunk(&entry->header, ML_STR_MAT);
-	*(void**)((u8*)&wp->entries[group] + 0xA4) = mapLoadFindChunk(&entry->header, ML_STR_VCD);
+	info = (MapFileInfo*)mapLoadFindChunk(header, "information");
+	wp->entries[group].textureTable = mapLoadFindChunk(header, "texture_table");
+	wp->entries[group].lightTable = mapLoadFindChunk(header, "light_table");
+	wp->entries[group].fogTable = mapLoadFindChunk(header, "fog_table");
+	wp->entries[group].materialNameTable = mapLoadFindChunk(header, "material_name_table");
+	wp->entries[group].vcdTable = mapLoadFindChunk(header, "vcd_table");
 
 	mapJoint = mapSearchDmdJoint(info->joint, (s8*)info->mapName);
 	hitJoint = mapSearchDmdJoint(info->joint, (s8*)info->hitName);
-	if (!strcmp(info->version, ML_STR_VER)) {
+	if (!strcmp(info->version, "ver1.02")) {
 		wp->entries[group].flags |= 0x8000;
 	}
 	else {
@@ -1083,24 +969,24 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	wp->entries[group].rootMapObj = mapEntry(mapJoint, mtx, group);
 	wp->entries[group].rootHitObj = hitEntry(hitJoint, mtx, group);
 
-	for (i = 0; i < ((MapFileLightTable*)*(void**)((u8*)entry + 0x98))->count; i++) {
+	for (i = 0; i < entry->lightTable->count; i++) {
 		s32 type;
 		s32 flags;
 
-		light = ((MapFileLightTable*)*(void**)((u8*)entry + 0x98))->lights[i];
+		light = entry->lightTable->lights[i];
 		type = 1;
 		flags = 0;
 		PSVECScale(&light->position, &pos, 10.0f);
-		if (!strcmp(light->type, ML_STR_AMB)) {
+		if (!strcmp(light->type, "ambientLight")) {
 			type = 0;
 		}
-		else if (!strcmp(light->type, ML_STR_POINT)) {
+		else if (!strcmp(light->type, "pointLight")) {
 			type = 1;
 		}
-		else if (!strcmp(light->type, ML_STR_DIR)) {
+		else if (!strcmp(light->type, "directionalLight")) {
 			type = 2;
 		}
-		else if (!strcmp(light->type, ML_STR_SPOT)) {
+		else if (!strcmp(light->type, "spotLight")) {
 			type = 3;
 		}
 		if (light->field_0x40 == 0x12D60D8) {
@@ -1116,73 +1002,62 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 #endif
 	}
 
-	paper_ambient = dat_8041982c;
-	paperCraft_ambient = dat_80419830;
+	mapResetPaperAmbColor();
+	mapResetPaperCraftAmbColor();
 
-	{
-		MapFileFog* fog = (MapFileFog*)*(void**)((u8*)entry + 0x9C);
-		if (fog != NULL) {
-			*(s32*)((u8*)entry + 0x24) = (*(MapFileFog**)((u8*)entry + 0x9C))->field_0x0;
-			*(s32*)((u8*)entry + 0x28) = (*(MapFileFog**)((u8*)entry + 0x9C))->field_0x4;
-			*(f32*)((u8*)entry + 0x2C) = (*(MapFileFog**)((u8*)entry + 0x9C))->field_0x8;
-			*(f32*)((u8*)entry + 0x30) = (*(MapFileFog**)((u8*)entry + 0x9C))->field_0xC;
-			*(s32*)((u8*)entry + 0x34) = (*(MapFileFog**)((u8*)entry + 0x9C))->field_0x10;
-			if (*(s32*)((u8*)entry + 0x24) != 0) {
-				entry->flags |= 1;
-			}
-		}
-		else {
-			*(s32*)((u8*)entry + 0x24) = 0;
-			*(s32*)((u8*)entry + 0x28) = 0;
-			*(f32*)((u8*)entry + 0x2C) = float_0_80419850;
-			*(f32*)((u8*)entry + 0x30) = float_0_80419850;
-			*(u32*)((u8*)entry + 0x34) = *(u32*)&unk_80422f80;
-			entry->flags &= ~1;
+	if (wp->entries[group].fogTable != NULL) {
+		wp->entries[group].fogEnable = wp->entries[group].fogTable->enable;
+		wp->entries[group].fogType = wp->entries[group].fogTable->type;
+		wp->entries[group].fogStart = wp->entries[group].fogTable->start;
+		wp->entries[group].fogEnd = wp->entries[group].fogTable->end;
+		wp->entries[group].fogColor = wp->entries[group].fogTable->color;
+		if (wp->entries[group].fogEnable != 0) {
+			wp->entries[group].flags |= 1;
 		}
 	}
+	else {
+		wp->entries[group].fogEnable = 0;
+		wp->entries[group].fogType = 0;
+		wp->entries[group].fogStart = 0.0f;
+		wp->entries[group].fogEnd = 0.0f;
+		wp->entries[group].fogColor = (GXColor){0, 0, 0, 0};
+		wp->entries[group].flags &= ~1;
+	}
 	if (activeGroup != 1) {
-		sprintf(str1, ML_STR_C, map);
+		sprintf(str1, "./m/%s/c", map);
 		camLoadRoad(CAMERA_3D, str1);
 	}
 	camSetTypePersp(CAMERA_3D);
-	mapBuildTexture(wp->entries[group].rootMapObj, entry->tpl, *(void**)((u8*)entry + 0x94));
+	mapBuildTexture(wp->entries[group].rootMapObj, wp->entries[group].tpl, wp->entries[group].textureTable);
 	mapGetBoundingBox(&min, &max);
 
-#ifdef MUST_MATCH
-	// MUST_MATCH: retail seeds each corner from the unit's .rodata through the vec3_802c16d8 base; every field is
-	// overwritten, so the natural build seeds from zero.
-#define ML_SEED(off) ((const Vec*)(base + (off)))
-#else
-#define ML_SEED(off) (&ml_zero_seed)
-#endif
-	entry->bbox[0] = mapLoadCorner(ML_SEED(0x28), max.x, max.y, max.z);
-	wp->entries[group].bbox[1] = mapLoadCorner(ML_SEED(0x34), min.x, max.y, max.z);
-	wp->entries[group].bbox[2] = mapLoadCorner(ML_SEED(0x40), max.x, min.y, max.z);
-	wp->entries[group].bbox[3] = mapLoadCorner(ML_SEED(0x4C), max.x, max.y, min.z);
-	wp->entries[group].bbox[4] = mapLoadCorner(ML_SEED(0x58), min.x, min.y, max.z);
-	wp->entries[group].bbox[5] = mapLoadCorner(ML_SEED(0x64), max.x, min.y, min.z);
-	wp->entries[group].bbox[6] = mapLoadCorner(ML_SEED(0x70), min.x, max.y, min.z);
-	entry->bbox[7] = mapLoadCorner(ML_SEED(0x7C), min.x, min.y, min.z);
-#undef ML_SEED
+	wp->entries[group].bbox[0] = (Vec){max.x, max.y, max.z};
+	wp->entries[group].bbox[1] = (Vec){min.x, max.y, max.z};
+	wp->entries[group].bbox[2] = (Vec){max.x, min.y, max.z};
+	wp->entries[group].bbox[3] = (Vec){max.x, max.y, min.z};
+	wp->entries[group].bbox[4] = (Vec){min.x, min.y, max.z};
+	wp->entries[group].bbox[5] = (Vec){max.x, min.y, min.z};
+	wp->entries[group].bbox[6] = (Vec){min.x, max.y, min.z};
+	wp->entries[group].bbox[7] = (Vec){min.x, min.y, min.z};
 
+	wp2 = &mapWork[activeGroup];
 	{
-		MapEntry* entry2 = &mapWork[activeGroup].entries[group];
+		MapEntry* entry2 = &wp2->entries[group];
 
-		anim = mapLoadFindChunk(&entry2->header, ML_STR_ANIM);
+		anim = mapLoadFindChunk(&entry2->header, "animation_table");
 		if (anim != NULL) {
-			*(s32*)((u8*)entry2 + 0x160) = *(s32*)anim;
-			if (*(s32*)((u8*)entry2 + 0x160) != 0) {
-				size = (*(s32*)((u8*)entry2 + 0x160) * 32 + 0x1F) & ~0x1F;
-				entry2->animData = _mapAlloc(size);
-				memset(entry2->animData, 0, size);
+			wp2->entries[group].animCount = *(s32*)anim;
+			if (wp2->entries[group].animCount != 0) {
+				size = (wp2->entries[group].animCount * 32 + 0x1F) & ~0x1F;
+				wp2->entries[group].animData = _mapAlloc(size);
+				memset(wp2->entries[group].animData, 0, size);
 				{
-					u16* out = (u16*)entry2->animData;
-					u32* in = (u32*)anim;
+					MapEntryAnimData* out = wp2->entries[group].animData;
 
-					for (i = 0; i < *(s32*)((u8*)entry2 + 0x160); i++) {
-						*out = 0;
-						*(u32*)((u8*)out + 0x18) = *++in;
-						out += 16;
+					for (i = 0; i < entry2->animCount; i++) {
+						out->flags = 0;
+						out->data = ((void**)anim)[i + 1];
+						out++;
 					}
 				}
 			}
@@ -1190,11 +1065,11 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	}
 
 	makeDisplayList(group);
+	wp2 = &mapWork[activeGroup];
 	{
-		MapEntry* entry3 = &mapWork[activeGroup].entries[group];
 
-		obj = entry3->objects;
-		for (disp_i = 0; disp_i < entry3->numJoints; disp_i++, obj++) {
+		obj = wp2->entries[group].objects;
+		for (disp_i = 0; disp_i < wp2->entries[group].numJoints; disp_i++, obj++) {
 			MapFileJoint* joint = obj->joints;
 
 			if (joint->partCount >= 1 && joint->partCount <= 8) {
@@ -1203,7 +1078,7 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 				// MapJointDrawMode has no named field at 0x2/0x4; use raw offsets.
 				if (!(*(u8*)((u8*)dm + 2) & 8) && *(u32*)((u8*)dm + 4) == 0) {
 					if (shadowGetCharShadowProjection() == 0 || !(*(u32*)((u8*)obj + 0) & 4)) {
-						if (entry3->flags & 0x8000) {
+						if (wp2->entries[group].flags & 0x8000) {
 							*(u32*)((u8*)obj + 0) |= 0x100;
 						}
 					}
@@ -1213,27 +1088,28 @@ void _mapLoad(MapWork* wp, BOOL group, const char* map) {
 	}
 	unk_80418458 = 0;
 }
-#undef ML_STR_MD
-#undef ML_STR_MT
-#undef ML_STR_INFO
-#undef ML_STR_VER
-#undef ML_STR_ANIM
-#undef ML_STR_TEX
-#undef ML_STR_LIGHT
-#undef ML_STR_FOG
-#undef ML_STR_MAT
-#undef ML_STR_VCD
-#undef ML_STR_AMB
-#undef ML_STR_POINT
-#undef ML_STR_DIR
-#undef ML_STR_SPOT
-#undef ML_STR_C
 
 // An empty string; symbols.txt names it as a float.
 
 // `i = 0; activeGroup = i;` plus `opt_propagation off` matched this; the pragma keeps the assignment
 // from constant-folding to a fresh r0 so i keeps r30.
 #pragma opt_propagation off // MUST_MATCH: keep activeGroup=i from folding to a fresh r0 so i keeps r30
+
+static const s32 culling[] = {GX_CULL_FRONT, GX_CULL_BACK, GX_CULL_ALL, GX_CULL_NONE};
+static const s32 texmtx_tbl[] = {
+	GX_TEXMTX0, GX_TEXMTX1, GX_TEXMTX2, GX_TEXMTX3, GX_TEXMTX4,
+	GX_TEXMTX5, GX_TEXMTX6, GX_TEXMTX7, GX_TEXMTX8, GX_TEXMTX9,
+};
+static const s32 texfmt_tbl[] = {
+	GX_TF_RGB565, GX_TF_RGB5A3, GX_TF_RGBA8, GX_TF_CMPR, GX_TF_I4, GX_TF_I8,
+	GX_TF_IA4, GX_TF_IA8, GX_TF_C4, GX_TF_C8, GX_TF_C14X2,
+};
+static const s32 texwrap_tbl[] = {GX_CLAMP, GX_REPEAT, GX_MIRROR};
+static const s32 palfmt_tbl[] = {GX_TL_RGB565, GX_TL_RGB5A3};
+static const u32 lightid_tbl[] = {
+	GX_LIGHT0, GX_LIGHT1, GX_LIGHT2, GX_LIGHT3, GX_LIGHT4, GX_LIGHT5, GX_LIGHT6, GX_LIGHT7,
+};
+
 void mapUnLoad(void) {
 	MapEntry* entry;
 	s32 i;
@@ -1256,7 +1132,7 @@ void mapUnLoad(void) {
 		}
 		if (entry->animData) {
 			_mapFree(entry->animData);
-			*(s32*)entry->field_0x160 = 0;
+			entry->animCount = 0;
 			entry->animData = NULL;
 		}
 		if (*(void**)((u8*)entry + 0x16C)) {
@@ -1289,7 +1165,7 @@ void mapUnLoad(void) {
 			_mapFree(*(void**)entry->field_0x8C);
 			*(void**)entry->field_0x8C = NULL;
 		}
-		strncpy(entry->name, float_0_804198cc, 0x10);
+		strncpy(entry->name, "", 0x10);
 	}
 	arcDelete(1);
 	memset(wp, 0, 0x2F4);
@@ -1336,7 +1212,7 @@ void bmapUnLoad(void) {
 		}
 		if (entry->animData) {
 			_mapFree(entry->animData);
-			*(s32*)entry->field_0x160 = 0;
+			entry->animCount = 0;
 			entry->animData = NULL;
 		}
 		if (*(void**)((u8*)entry + 0x16C)) {
@@ -1367,7 +1243,7 @@ void bmapUnLoad(void) {
 			_mapFree(*(void**)entry->field_0x8C);
 			*(void**)entry->field_0x8C = NULL;
 		}
-		strncpy(entry->name, float_0_804198cc, 0x10);
+		strncpy(entry->name, "", 0x10);
 	}
 	arcDelete(1);
 	arcDelete(2);
@@ -1505,10 +1381,10 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 				tan0 = ch->unk8;
 				value0 = ch->value;
 
-				zero = float_0_80419850;
+				zero = 0.0f;
 				flag = (d != zero);
 				if (((u32)__cntlzw(flag) >> 5) != 0) {
-					den = float_1Eneg08_804198b8;
+					den = 0.00000001f;
 				}
 				else {
 					den = d;
@@ -1516,10 +1392,10 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 				u = dt / den;
 				u2 = u * u;
 				u3 = u2 * u;
-				a = float_3_8041984c * u2;
-				h00 = float_1_80419860 + (float_2_80419858 * u3 - a);
-				h10 = u + (u3 - float_2_80419858 * u2);
-				h01 = float_neg2_804198a0 * u3 + a;
+				a = 3.0f * u2;
+				h00 = 1.0f + (2.0f * u3 - a);
+				h10 = u + (u3 - 2.0f * u2);
+				h01 = -2.0f * u3 + a;
 				h11 = u3 - u2;
 #ifdef MUST_MATCH
 				*outp = value0 * h00
@@ -1542,22 +1418,22 @@ void mapCalcAnimMatrix(Mtx outMtx, Mtx inMtx, MapEntryAnimData* anim, void* join
 		sy = out[7] / joint->div[1];
 		sz = out[8] / joint->div[2];
 
-		zero = float_0_80419850;
+		zero = 0.0f;
 		if (tx != zero || ty != zero || tz != zero) {
 			PSMTXTrans(trans, tx, ty, tz);
 		}
 		if (rx != zero) {
-			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * rx);
+			PSMTXRotRad(rotX, 'x', 0.017453292f * rx);
 		}
 		if (ry != zero) {
-			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * ry);
+			PSMTXRotRad(rotY, 'y', 0.017453292f * ry);
 		}
 		if (rz != zero) {
-			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * rz);
+			PSMTXRotRad(rotZ, 'z', 0.017453292f * rz);
 		}
 		PSMTXScale(scale, sx, sy, sz);
 		PSMTXIdentity(local);
-		zero = float_0_80419850;
+		zero = 0.0f;
 		if (tx != zero || ty != zero || tz != zero) {
 			PSMTXConcat(local, trans, local);
 		}
@@ -1747,7 +1623,6 @@ void mapReCalcMatrix(MapObject* obj, Mtx mtx, BOOL force) {
 // loaded register (retail loads `0xa0(entry)` once per iteration, not twice), and the pair address
 // is built `+4` then `+= j * 8` to match retail's operand order.
 static inline u8* mapSearchAnimObj(const char* name) {
-	u8* p;
 	u8* table;
 	MapEntry* entry;
 	MapWork* wp;
@@ -1769,8 +1644,6 @@ static inline u8* mapSearchAnimObj(const char* name) {
 	return NULL;
 }
 
-// Complete and logically correct; the instruction shape matches retail exactly (verified with
-// tools/diff_shape.py: no shape-only diffs). 96.21%.
 // Source shapes that mattered: (1) the animation `item` pointer must be re-loaded from the list
 // inside each `if (obj != NULL)` / `if (light != NULL)` block instead of cached across the block's
 // mapSearchAnimObj / lightNameToPtr calls (and each light block re-loads it after the lookup);
@@ -1778,57 +1651,52 @@ static inline u8* mapSearchAnimObj(const char* name) {
 // keeps it in r4 across the branches instead of letting the gp-pointer loads clobber r3 and force
 // a reload; (3) in the mapSearchAnimObj helper the table is read with the expression inside the
 // inner-loop bound (assigned to `table` in the bound), so retail's second `0xa0(entry)` load
-// disappears; (4) the main-function declaration order moves the callee-saved allocation a lot: a
-// greedy swap/insertion hill-climb over the 15 top-level locals went 96.03 ->
-// 96.20 by itself, so this list is the optimum found, not an arbitrary order; (5) the four
-// orientation-load orders per Hermite block matter for the FPR/score even though the scheduler
-// reorders them (colour `tan0, value0, value1, tan1`, light `tan0, value0, value1, tan1`, alpha
-// `tan1, tan0, value0, value1` at this decl order); (6) the colour loop increment order
-// `k++, chn += 0x14, ch += 0x14` and the light-pos order `ch += 0x14, k++, chn += 0x14` each beat
-// the retail-looking left-to-right order; (7) the per-ki declaration order `f32 t; s32 k;` then
-// `u8* chn; u8* ch;` and the colour `chn = next; ch = prev;` (reverse of source-reading order) move
-// the FPR allocation by ~0.09 together with (4); (8) the helper declaration order
-// `p, table, entry, wp, j, i` is the optimum for the caller's colouring.
-// What still differs (all arg_mismatch): retail keeps i r14, entry r24, anim r21, updated r20,
-// j r23, list19 r19, list18 r18 and list17 r17 (all matched now); ours still has list16 r25,
-// list15 r22 and the OSTime in r15/r16 where retail has list16 r16, list15 r15 and the OSTime in
-// r22/r25. The inlined Hermite blocks colour t in f5 vs retail's f12 (colour/light) or f2
-// (alpha, where only d and the orientation FPRs differ), so the polynomial FPRs rotate; and the
-// `if (!(t <= next))` diamond lays out as `beq after` vs retail's `bne body; b after` (8
-// op_mismatch). The Hermite output sum evaluates `value0 * h00` before `tan0 * (d * h10)` and
-// the light blocks declare `ki` first, which together move the FPR/callee-saved colouring; the
-// remaining FPR rotation is allocator colouring that no further C shape found moves (the
-// remaining levers -- a two-u32 split of `time`, a real inlined Hermite helper -- either do not
-// move the colouring or make MWCC hang).
-// The d==0 boolean uses the __cntlzw intrinsic to reproduce retail's cntlzw/srwi normalisation.
-// The colour/light Hermite loops have no `if (cnt > 1)` wrapper: the bare `for (ki = 1; ...)`
-// guard reproduces retail's `subi cnt-1; mtctr` scheduled before the `cmpwi`.
-#pragma opt_loop_invariants off // pins the colour/light channel loads and fixes allocator colouring
-#pragma opt_common_subs off // same: required for retail's register colouring here
-// NONMATCHING (96.69%): the eight clamp diamonds still emit `beq` where retail has `bne`+`b`;
-// the rest is FPR colouring (t f5 vs f12, d f6 vs f11), plus the list16/list15 GPR swap.
+// disappears; (4) the matrix loop walks the function-level `p`/`k` (the other loops keep block
+// locals), and with the top-level declaration order below the callee-saved GPRs match retail
+// (lists in r19..r15, the OSTime in r22/r25; found with tools/rasim.py); (5) each Hermite block
+// declares all its floats in one list at the top of the ki body, in the order that gives retail's
+// FPRs (rasim), and loads the keys `tan1, value1, tan0, value0`, with `zero = 0.0f; d != zero` as in
+// mapCalcAnimMatrix; (6) the colour loop increment order `k++, chn += 0x14, ch += 0x14` and the light-pos
+// order `ch += 0x14, k++, chn += 0x14` each beat the retail-looking left-to-right order; (7) the
+// colour `chn = next; ch = prev;` (reverse of source-reading order) and the function-scope `Mtx`
+// (retail's stack puts it above the light blocks' `out` arrays); (8) the matrix loop's search is
+// the public mapGetMapObj (its declaration order differs from mapGetMapObjSub's), and the helper
+// declaration order `p, table, entry, wp, j, i` is the best of all 120 orders.
+// The Hermite output sum evaluates `value0 * h00` before `tan0 * (d * h10)`. The d==0 boolean uses
+// the __cntlzw intrinsic to reproduce retail's cntlzw/srwi normalisation. The colour/light Hermite
+// loops have no `if (cnt > 1)` wrapper: the bare `for (ki = 1; ...)` guard reproduces retail's
+// `subi cnt-1; mtctr` scheduled before the `cmpwi`.
+// What differs: the inlined searches swap two callee-saved registers each (the matrix search's
+// name/entry, the anim searches' entry and j*8 temp), the Hermite blocks' volatile GPRs
+// (item/prev/next/ch/chn/ki) rotate, the clamp diamond keeps an extra `fmr` for t (retail's empty
+// then-block; an empty `{}` inverts the branch instead), and the alpha blocks colour their polynomial
+// constants' FPRs one register up (rasim: retail's 255.0f load sweeps after the whole sum).
+// NONMATCHING (97.75%): register colouring, plus the clamp `fmr` (see above).
+#pragma opt_common_subs off // required for retail's register colouring here
 void mapMain(void) {
-	u8* list19;
-	MapEntry* entry;
-	s32 i = 0;
-	s32 j = 0;
-	u8* list18;
-	u8* anim;
-	BOOL updated;
+	MapWork* wp0;
+	u8* p;
 	OSTime time;
 	char namebuf[0x100];
-	u8* list16;
-	u8* p;
-	MapWork* wp0;
-	u8* list15;
+	MapEntry* entry;
+	s32 j = 0;
+	s32 k;
+	u8* anim;
+	BOOL updated;
+	u8* list19;
+	u8* list18;
 	u8* list17;
+	u8* list16;
+	u8* list15;
+	s32 i = 0;
 	char namebuf2[0x100];
+	Mtx mtx;
 
 	wp0 = &mapWork[activeGroup];
 	for (entry = &wp0->entries[0]; i < wp0->entries[0].count; entry++, i++) {
 		anim = (u8*)entry->animData;
 		updated = FALSE;
-		for (j = 0; j < *(s32*)entry->field_0x160; j++, anim += 0x20) {
+		for (j = 0; j < entry->animCount; j++, anim += 0x20) {
 			u16 animFlags = *(u16*)anim;
 			list19 = *(u8**)((*(u8**)(anim + 0x18)) + 0xC);
 			list18 = *(u8**)((*(u8**)(anim + 0x18)) + 0x10);
@@ -1897,12 +1765,11 @@ void mapMain(void) {
 			}
 			/* matrix animation */
 			if (list19 != NULL) {
-				u8* lp = list19;
-				s32 li;
-				for (li = 0; li < *(s32*)list19; lp += 4, li++) {
-					MapObject* obj = mapGetMapObjSub(*(char**)*(u8**)(lp + 4));
+				p = list19;
+				for (k = 0; k < *(s32*)list19; p += 4, k++) {
+					MapObject* obj = mapGetMapObj(*(char**)*(u8**)(p + 4));
 					if (obj != NULL) {
-					mapCalcAnimMatrix((f32(*)[4])((u8*)obj + 0x7C), (f32(*)[4])((u8*)obj + 0x4C), (MapEntryAnimData*)anim, *(u8**)(lp + 4));
+					mapCalcAnimMatrix((f32(*)[4])((u8*)obj + 0x7C), (f32(*)[4])((u8*)obj + 0x4C), (MapEntryAnimData*)anim, *(u8**)(p + 4));
 					*(u32*)obj |= 0x2000;
 					*(u32*)obj |= 0x200;
 					updated = TRUE;
@@ -1924,17 +1791,19 @@ void mapMain(void) {
 						for (ki = 1; ki < cnt; ki++) {
 							u8* prev = item + 0x14 + (ki - 1) * 0x68;
 							u8* next = item + 0x14 + ki * 0x68;
-							f32 t = *(f32*)(anim + 0x10);
+							f32 den, u3, u, u2, value0, tan0, value1, tan1, d, t, dt, a, k0, k1, h11, h00, h01, c, b, h10, zero;
 							s32 k;
 							u8* chn;
 							u8* ch;
-							if (!(t <= *(f32*)next)) {
-								if (ki == cnt - 1) {
-									t = *(f32*)next;
-								}
-								else {
-									continue;
-								}
+							t = *(f32*)(anim + 0x10);
+							if (t <= *(f32*)next) {
+								t = *(f32*)(anim + 0x10);
+							}
+							else if (ki == cnt - 1) {
+								t = *(f32*)next;
+							}
+							else {
+								continue;
 							}
 							chn = next;
 							ch = prev;
@@ -1943,20 +1812,19 @@ void mapMain(void) {
 									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)(ch + 4);
 								}
 								else {
-									f32 k0 = *(f32*)prev;
-									f32 k1 = *(f32*)next;
-									f32 dt = t - k0;
-									f32 d = k1 - k0;
-									f32 value0 = *(f32*)(ch + 4);
-									f32 tan0 = *(f32*)(ch + 0xC);
-									f32 value1 = *(f32*)(chn + 4);
-									f32 tan1 = *(f32*)(chn + 8);
-									f32 den;
-									f32 h11, h00, u2, h01, c, u3, b, u, a, h10;
 									s32 flag;
-									flag = (d != MATCH_F32(float_0_80419850));
+									k0 = *(f32*)prev;
+									k1 = *(f32*)next;
+									dt = t - k0;
+									d = k1 - k0;
+									tan1 = *(f32*)(chn + 8);
+									value1 = *(f32*)(chn + 4);
+									tan0 = *(f32*)(ch + 0xC);
+									value0 = *(f32*)(ch + 4);
+									zero = 0.0f;
+									flag = (d != zero);
 									if (((u32)__cntlzw(flag) >> 5) != 0) {
-										den = float_1Eneg08_804198b8;
+										den = 0.00000001f;
 									}
 									else {
 										den = d;
@@ -1964,13 +1832,13 @@ void mapMain(void) {
 									u = dt / den;
 									u2 = u * u;
 									u3 = u2 * u;
-									a = float_3_8041984c * u2;
-									b = u3 - float_2_80419858 * u2;
-									c = float_2_80419858 * u3 - a;
+									a = 3.0f * u2;
+									b = u3 - 2.0f * u2;
+									c = 2.0f * u3 - a;
 									h11 = u3 - u2;
 									h10 = u + b;
-									h00 = float_1_80419860 + c;
-									h01 = float_neg2_804198a0 * u3 + a;
+									h00 = 1.0f + c;
+									h01 = -2.0f * u3 + a;
 									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 								}
 							}
@@ -1989,17 +1857,19 @@ void mapMain(void) {
 						for (ki = 1; ki < cnt; ki++) {
 							u8* prev = item + 0x14 + (ki - 1) * 0x68;
 							u8* next = item + 0x14 + ki * 0x68;
-							f32 t = *(f32*)(anim + 0x10);
+							f32 den, u3, u, u2, value0, tan0, value1, tan1, d, t, dt, a, k0, k1, h11, h00, h01, c, b, h10, zero;
 							s32 k;
 							u8* chn;
 							u8* ch;
-							if (!(t <= *(f32*)next)) {
-								if (ki == cnt - 1) {
-									t = *(f32*)next;
-								}
-								else {
-									continue;
-								}
+							t = *(f32*)(anim + 0x10);
+							if (t <= *(f32*)next) {
+								t = *(f32*)(anim + 0x10);
+							}
+							else if (ki == cnt - 1) {
+								t = *(f32*)next;
+							}
+							else {
+								continue;
 							}
 							chn = next;
 							ch = prev;
@@ -2008,20 +1878,19 @@ void mapMain(void) {
 									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)(ch + 4);
 								}
 								else {
-									f32 k0 = *(f32*)prev;
-									f32 k1 = *(f32*)next;
-									f32 dt = t - k0;
-									f32 d = k1 - k0;
-									f32 value0 = *(f32*)(ch + 4);
-									f32 tan0 = *(f32*)(ch + 0xC);
-									f32 value1 = *(f32*)(chn + 4);
-									f32 tan1 = *(f32*)(chn + 8);
-									f32 den;
-									f32 h11, h00, u2, h01, c, u3, b, u, a, h10;
 									s32 flag;
-									flag = (d != MATCH_F32(float_0_80419850));
+									k0 = *(f32*)prev;
+									k1 = *(f32*)next;
+									dt = t - k0;
+									d = k1 - k0;
+									tan1 = *(f32*)(chn + 8);
+									value1 = *(f32*)(chn + 4);
+									tan0 = *(f32*)(ch + 0xC);
+									value0 = *(f32*)(ch + 4);
+									zero = 0.0f;
+									flag = (d != zero);
 									if (((u32)__cntlzw(flag) >> 5) != 0) {
-										den = float_1Eneg08_804198b8;
+										den = 0.00000001f;
 									}
 									else {
 										den = d;
@@ -2029,13 +1898,13 @@ void mapMain(void) {
 									u = dt / den;
 									u2 = u * u;
 									u3 = u2 * u;
-									a = float_3_8041984c * u2;
-									b = u3 - float_2_80419858 * u2;
-									c = float_2_80419858 * u3 - a;
+									a = 3.0f * u2;
+									b = u3 - 2.0f * u2;
+									c = 2.0f * u3 - a;
 									h11 = u3 - u2;
 									h10 = u + b;
-									h00 = float_1_80419860 + c;
-									h01 = float_neg2_804198a0 * u3 + a;
+									h00 = 1.0f + c;
+									h01 = -2.0f * u3 + a;
 									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 								}
 							}
@@ -2054,17 +1923,19 @@ void mapMain(void) {
 						for (ki = 1; ki < cnt; ki++) {
 							u8* prev = item + 0x14 + (ki - 1) * 0x68;
 							u8* next = item + 0x14 + ki * 0x68;
-							f32 t = *(f32*)(anim + 0x10);
+							f32 den, u3, u, u2, value0, tan0, value1, tan1, d, t, dt, a, k0, k1, h11, h00, h01, c, b, h10, zero;
 							s32 k;
 							u8* chn;
 							u8* ch;
-							if (!(t <= *(f32*)next)) {
-								if (ki == cnt - 1) {
-									t = *(f32*)next;
-								}
-								else {
-									continue;
-								}
+							t = *(f32*)(anim + 0x10);
+							if (t <= *(f32*)next) {
+								t = *(f32*)(anim + 0x10);
+							}
+							else if (ki == cnt - 1) {
+								t = *(f32*)next;
+							}
+							else {
+								continue;
 							}
 							chn = next;
 							ch = prev;
@@ -2073,20 +1944,19 @@ void mapMain(void) {
 									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = *(f32*)(ch + 4);
 								}
 								else {
-									f32 k0 = *(f32*)prev;
-									f32 k1 = *(f32*)next;
-									f32 dt = t - k0;
-									f32 d = k1 - k0;
-									f32 value0 = *(f32*)(ch + 4);
-									f32 tan0 = *(f32*)(ch + 0xC);
-									f32 value1 = *(f32*)(chn + 4);
-									f32 tan1 = *(f32*)(chn + 8);
-									f32 den;
-									f32 h11, h00, u2, h01, c, u3, b, u, a, h10;
 									s32 flag;
-									flag = (d != MATCH_F32(float_0_80419850));
+									k0 = *(f32*)prev;
+									k1 = *(f32*)next;
+									dt = t - k0;
+									d = k1 - k0;
+									tan1 = *(f32*)(chn + 8);
+									value1 = *(f32*)(chn + 4);
+									tan0 = *(f32*)(ch + 0xC);
+									value0 = *(f32*)(ch + 4);
+									zero = 0.0f;
+									flag = (d != zero);
 									if (((u32)__cntlzw(flag) >> 5) != 0) {
-										den = float_1Eneg08_804198b8;
+										den = 0.00000001f;
 									}
 									else {
 										den = d;
@@ -2094,13 +1964,13 @@ void mapMain(void) {
 									u = dt / den;
 									u2 = u * u;
 									u3 = u2 * u;
-									a = float_3_8041984c * u2;
-									b = u3 - float_2_80419858 * u2;
-									c = float_2_80419858 * u3 - a;
+									a = 3.0f * u2;
+									b = u3 - 2.0f * u2;
+									c = 2.0f * u3 - a;
 									h11 = u3 - u2;
 									h10 = u + b;
-									h00 = float_1_80419860 + c;
-									h01 = float_neg2_804198a0 * u3 + a;
+									h00 = 1.0f + c;
+									h01 = -2.0f * u3 + a;
 									*(f32*)(obj + (*(s32*)(item + 4)) * 0x1C + 0x2C + k * 4) = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 								}
 							}
@@ -2126,14 +1996,16 @@ void mapMain(void) {
 						for (ki = 1; ki < cnt; ki++) {
 							u8* prev = item + 8 + (ki - 1) * 0x54;
 							u8* next = item + 8 + ki * 0x54;
-							f32 t = *(f32*)(anim + 0x10);
-							if (!(t <= *(f32*)next)) {
-								if (ki == cnt - 1) {
-									t = *(f32*)next;
-								}
-								else {
-									continue;
-								}
+							f32 u3, u, value0, tan0, value1, u2, tan1, d, a, den, dt, k0, t, k1, b, c, h10, h00, h01, h11, val, zero;
+							t = *(f32*)(anim + 0x10);
+							if (t <= *(f32*)next) {
+								t = *(f32*)(anim + 0x10);
+							}
+							else if (ki == cnt - 1) {
+								t = *(f32*)next;
+							}
+							else {
+								continue;
 							}
 							if (*(s32*)(prev + 0x14) != 0) {
 								f32 value = *(f32*)(prev + 4);
@@ -2141,20 +2013,19 @@ void mapMain(void) {
 								break;
 							}
 							else {
-								f32 k0 = *(f32*)prev;
-								f32 k1 = *(f32*)next;
-								f32 dt = t - k0;
-								f32 d = k1 - k0;
-								f32 tan1 = *(f32*)(next + 8);
-								f32 tan0 = *(f32*)(prev + 0xC);
-								f32 value0 = *(f32*)(prev + 4);
-								f32 value1 = *(f32*)(next + 4);
-								f32 den;
-								f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
 								s32 flag;
-								flag = (d != MATCH_F32(float_0_80419850));
+								k0 = *(f32*)prev;
+								k1 = *(f32*)next;
+								dt = t - k0;
+								d = k1 - k0;
+								tan1 = *(f32*)(next + 8);
+								value1 = *(f32*)(next + 4);
+								tan0 = *(f32*)(prev + 0xC);
+								value0 = *(f32*)(prev + 4);
+								zero = 0.0f;
+								flag = (d != zero);
 								if (((u32)__cntlzw(flag) >> 5) != 0) {
-									den = float_1Eneg08_804198b8;
+									den = 0.00000001f;
 								}
 								else {
 									den = d;
@@ -2162,14 +2033,14 @@ void mapMain(void) {
 								u = dt / den;
 								u2 = u * u;
 								u3 = u2 * u;
-								a = float_3_8041984c * u2;
-								b = u3 - float_2_80419858 * u2;
-								c = float_2_80419858 * u3 - a;
+								a = 3.0f * u2;
+								b = u3 - 2.0f * u2;
+								c = 2.0f * u3 - a;
 								h11 = u3 - u2;
 								h10 = u + b;
-								h00 = float_1_80419860 + c;
-								h01 = float_neg2_804198a0 * u3 + a;
-								val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								h00 = 1.0f + c;
+								h01 = -2.0f * u3 + a;
+								val = value0 * h00 + tan0 * (d * h10) + value1 * h01 + tan1 * (d * h11);
 								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
 								break;
 							}
@@ -2185,14 +2056,16 @@ void mapMain(void) {
 						for (ki = 1; ki < cnt; ki++) {
 							u8* prev = item + 8 + (ki - 1) * 0x54;
 							u8* next = item + 8 + ki * 0x54;
-							f32 t = *(f32*)(anim + 0x10);
-							if (!(t <= *(f32*)next)) {
-								if (ki == cnt - 1) {
-									t = *(f32*)next;
-								}
-								else {
-									continue;
-								}
+							f32 u3, u, value0, tan0, value1, u2, tan1, d, a, den, dt, k0, t, k1, b, c, h10, h00, h01, h11, val, zero;
+							t = *(f32*)(anim + 0x10);
+							if (t <= *(f32*)next) {
+								t = *(f32*)(anim + 0x10);
+							}
+							else if (ki == cnt - 1) {
+								t = *(f32*)next;
+							}
+							else {
+								continue;
 							}
 							if (*(s32*)(prev + 0x14) != 0) {
 								f32 value = *(f32*)(prev + 4);
@@ -2200,20 +2073,19 @@ void mapMain(void) {
 								break;
 							}
 							else {
-								f32 k0 = *(f32*)prev;
-								f32 k1 = *(f32*)next;
-								f32 dt = t - k0;
-								f32 d = k1 - k0;
-								f32 tan1 = *(f32*)(next + 8);
-								f32 tan0 = *(f32*)(prev + 0xC);
-								f32 value0 = *(f32*)(prev + 4);
-								f32 value1 = *(f32*)(next + 4);
-								f32 den;
-								f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
 								s32 flag;
-								flag = (d != MATCH_F32(float_0_80419850));
+								k0 = *(f32*)prev;
+								k1 = *(f32*)next;
+								dt = t - k0;
+								d = k1 - k0;
+								tan1 = *(f32*)(next + 8);
+								value1 = *(f32*)(next + 4);
+								tan0 = *(f32*)(prev + 0xC);
+								value0 = *(f32*)(prev + 4);
+								zero = 0.0f;
+								flag = (d != zero);
 								if (((u32)__cntlzw(flag) >> 5) != 0) {
-									den = float_1Eneg08_804198b8;
+									den = 0.00000001f;
 								}
 								else {
 									den = d;
@@ -2221,14 +2093,14 @@ void mapMain(void) {
 								u = dt / den;
 								u2 = u * u;
 								u3 = u2 * u;
-								a = float_3_8041984c * u2;
-								b = u3 - float_2_80419858 * u2;
-								c = float_2_80419858 * u3 - a;
+								a = 3.0f * u2;
+								b = u3 - 2.0f * u2;
+								c = 2.0f * u3 - a;
 								h11 = u3 - u2;
 								h10 = u + b;
-								h00 = float_1_80419860 + c;
-								h01 = float_neg2_804198a0 * u3 + a;
-								val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								h00 = 1.0f + c;
+								h01 = -2.0f * u3 + a;
+								val = value0 * h00 + tan0 * (d * h10) + value1 * h01 + tan1 * (d * h11);
 								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
 								break;
 							}
@@ -2244,14 +2116,16 @@ void mapMain(void) {
 						for (ki = 1; ki < cnt; ki++) {
 							u8* prev = item + 8 + (ki - 1) * 0x54;
 							u8* next = item + 8 + ki * 0x54;
-							f32 t = *(f32*)(anim + 0x10);
-							if (!(t <= *(f32*)next)) {
-								if (ki == cnt - 1) {
-									t = *(f32*)next;
-								}
-								else {
-									continue;
-								}
+							f32 u3, u, value0, tan0, value1, u2, tan1, d, a, den, dt, k0, t, k1, b, c, h10, h00, h01, h11, val, zero;
+							t = *(f32*)(anim + 0x10);
+							if (t <= *(f32*)next) {
+								t = *(f32*)(anim + 0x10);
+							}
+							else if (ki == cnt - 1) {
+								t = *(f32*)next;
+							}
+							else {
+								continue;
 							}
 							if (*(s32*)(prev + 0x14) != 0) {
 								f32 value = *(f32*)(prev + 4);
@@ -2259,20 +2133,19 @@ void mapMain(void) {
 								break;
 							}
 							else {
-								f32 k0 = *(f32*)prev;
-								f32 k1 = *(f32*)next;
-								f32 dt = t - k0;
-								f32 d = k1 - k0;
-								f32 tan1 = *(f32*)(next + 8);
-								f32 tan0 = *(f32*)(prev + 0xC);
-								f32 value0 = *(f32*)(prev + 4);
-								f32 value1 = *(f32*)(next + 4);
-								f32 den;
-								f32 u, u2, a, u3, b, c, h10, h00, h01, h11, val;
 								s32 flag;
-								flag = (d != MATCH_F32(float_0_80419850));
+								k0 = *(f32*)prev;
+								k1 = *(f32*)next;
+								dt = t - k0;
+								d = k1 - k0;
+								tan1 = *(f32*)(next + 8);
+								value1 = *(f32*)(next + 4);
+								tan0 = *(f32*)(prev + 0xC);
+								value0 = *(f32*)(prev + 4);
+								zero = 0.0f;
+								flag = (d != zero);
 								if (((u32)__cntlzw(flag) >> 5) != 0) {
-									den = float_1Eneg08_804198b8;
+									den = 0.00000001f;
 								}
 								else {
 									den = d;
@@ -2280,14 +2153,14 @@ void mapMain(void) {
 								u = dt / den;
 								u2 = u * u;
 								u3 = u2 * u;
-								a = float_3_8041984c * u2;
-								b = u3 - float_2_80419858 * u2;
-								c = float_2_80419858 * u3 - a;
+								a = 3.0f * u2;
+								b = u3 - 2.0f * u2;
+								c = 2.0f * u3 - a;
 								h11 = u3 - u2;
 								h10 = u + b;
-								h00 = float_1_80419860 + c;
-								h01 = float_neg2_804198a0 * u3 + a;
-								val = tan0 * (d * h10) + value0 * h00 + value1 * h01 + tan1 * (d * h11);
+								h00 = 1.0f + c;
+								h01 = -2.0f * u3 + a;
+								val = value0 * h00 + tan0 * (d * h10) + value1 * h01 + tan1 * (d * h11);
 								*(u8*)(obj + 0x10C) = (s32)(255.0f - 255.0f * val);
 								break;
 							}
@@ -2309,17 +2182,19 @@ void mapMain(void) {
 					for (ki = 1; ki < cnt; ki++) {
 						u8* prev = item + 8 + (ki - 1) * 0xB8;
 						u8* next = item + 8 + ki * 0xB8;
-						f32 t = *(f32*)(anim + 0x10);
+						f32 den, u3, u, u2, value0, tan0, value1, tan1, d, t, dt, a, k0, k1, h11, h00, h01, c, b, h10, zero;
 						s32 k;
 						u8* chn;
 						u8* ch;
-						if (!(t <= *(f32*)next)) {
-							if (ki == cnt - 1) {
-								t = *(f32*)next;
-							}
-							else {
-								continue;
-							}
+						t = *(f32*)(anim + 0x10);
+						if (t <= *(f32*)next) {
+							t = *(f32*)(anim + 0x10);
+						}
+						else if (ki == cnt - 1) {
+							t = *(f32*)next;
+						}
+						else {
+							continue;
 						}
 						ch = prev;
 						chn = next;
@@ -2328,20 +2203,19 @@ void mapMain(void) {
 								out[k] = *(f32*)(ch + 4);
 							}
 							else {
-								f32 k0 = *(f32*)prev;
-								f32 k1 = *(f32*)next;
-								f32 dt = t - k0;
-								f32 d = k1 - k0;
-								f32 value0 = *(f32*)(ch + 4);
-								f32 tan0 = *(f32*)(ch + 0xC);
-								f32 value1 = *(f32*)(chn + 4);
-								f32 tan1 = *(f32*)(chn + 8);
-								f32 den;
-								f32 h11, h00, u2, h01, c, u3, b, u, a, h10;
 								s32 flag;
-								flag = (d != MATCH_F32(float_0_80419850));
+								k0 = *(f32*)prev;
+								k1 = *(f32*)next;
+								dt = t - k0;
+								d = k1 - k0;
+								tan1 = *(f32*)(chn + 8);
+								value1 = *(f32*)(chn + 4);
+								tan0 = *(f32*)(ch + 0xC);
+								value0 = *(f32*)(ch + 4);
+								zero = 0.0f;
+								flag = (d != zero);
 								if (((u32)__cntlzw(flag) >> 5) != 0) {
-									den = float_1Eneg08_804198b8;
+									den = 0.00000001f;
 								}
 								else {
 									den = d;
@@ -2349,18 +2223,18 @@ void mapMain(void) {
 								u = dt / den;
 								u2 = u * u;
 								u3 = u2 * u;
-								a = float_3_8041984c * u2;
-								b = u3 - float_2_80419858 * u2;
-								c = float_2_80419858 * u3 - a;
+								a = 3.0f * u2;
+								b = u3 - 2.0f * u2;
+								c = 2.0f * u3 - a;
 								h11 = u3 - u2;
 								h10 = u + b;
-								h00 = float_1_80419860 + c;
-								h01 = float_neg2_804198a0 * u3 + a;
+								h00 = 1.0f + c;
+								h01 = -2.0f * u3 + a;
 								out[k] = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 							}
 						}
 						{
-							f32 scale = float_10_80419864;
+							f32 scale = 10.0f;
 							light->position.x = scale * out[0];
 							light->position.y = scale * out[1];
 							light->position.z = scale * out[2];
@@ -2375,8 +2249,8 @@ void mapMain(void) {
 			}
 			/* light animation (color/angle) */
 			if (list15 != NULL) {
-				s32 li;
 				u8* lp = list15;
+				s32 li;
 				for (li = 0; li < *(s32*)list15; lp += 4, li++) {
 					LightEntry* light = lightNameToPtr(*(char**)*(u8**)(lp + 4));
 					if (light != NULL) {
@@ -2387,17 +2261,19 @@ void mapMain(void) {
 					for (ki = 1; ki < cnt; ki++) {
 						u8* prev = item + 8 + (ki - 1) * 0x68;
 						u8* next = item + 8 + ki * 0x68;
-						f32 t = *(f32*)(anim + 0x10);
+						f32 den, u3, u, u2, value0, tan0, value1, tan1, d, t, dt, a, k0, k1, h11, h00, h01, c, b, h10, zero;
 						s32 k;
 						u8* chn;
 						u8* ch;
-						if (!(t <= *(f32*)next)) {
-							if (ki == cnt - 1) {
-								t = *(f32*)next;
-							}
-							else {
-								continue;
-							}
+						t = *(f32*)(anim + 0x10);
+						if (t <= *(f32*)next) {
+							t = *(f32*)(anim + 0x10);
+						}
+						else if (ki == cnt - 1) {
+							t = *(f32*)next;
+						}
+						else {
+							continue;
 						}
 						ch = prev;
 						chn = next;
@@ -2406,20 +2282,19 @@ void mapMain(void) {
 								out[k] = *(f32*)(ch + 4);
 							}
 							else {
-								f32 k0 = *(f32*)prev;
-								f32 k1 = *(f32*)next;
-								f32 dt = t - k0;
-								f32 d = k1 - k0;
-								f32 value0 = *(f32*)(ch + 4);
-								f32 tan0 = *(f32*)(ch + 0xC);
-								f32 value1 = *(f32*)(chn + 4);
-								f32 tan1 = *(f32*)(chn + 8);
-								f32 den;
-								f32 h11, h00, u2, h01, c, u3, b, u, a, h10;
 								s32 flag;
-								flag = (d != MATCH_F32(float_0_80419850));
+								k0 = *(f32*)prev;
+								k1 = *(f32*)next;
+								dt = t - k0;
+								d = k1 - k0;
+								tan1 = *(f32*)(chn + 8);
+								value1 = *(f32*)(chn + 4);
+								tan0 = *(f32*)(ch + 0xC);
+								value0 = *(f32*)(ch + 4);
+								zero = 0.0f;
+								flag = (d != zero);
 								if (((u32)__cntlzw(flag) >> 5) != 0) {
-									den = float_1Eneg08_804198b8;
+									den = 0.00000001f;
 								}
 								else {
 									den = d;
@@ -2427,13 +2302,13 @@ void mapMain(void) {
 								u = dt / den;
 								u2 = u * u;
 								u3 = u2 * u;
-								a = float_3_8041984c * u2;
-								b = u3 - float_2_80419858 * u2;
-								c = float_2_80419858 * u3 - a;
+								a = 3.0f * u2;
+								b = u3 - 2.0f * u2;
+								c = 2.0f * u3 - a;
 								h11 = u3 - u2;
 								h10 = u + b;
-								h00 = float_1_80419860 + c;
-								h01 = float_neg2_804198a0 * u3 + a;
+								h00 = 1.0f + c;
+								h01 = -2.0f * u3 + a;
 								out[k] = (value0 * h00) + (tan0 * (d * h10)) + value1 * h01 + tan1 * (d * h11);
 							}
 						}
@@ -2450,27 +2325,15 @@ void mapMain(void) {
 			}
 		}
 		if (updated) {
-			Mtx mtx;
-			PSMTXScale(mtx, float_10_80419864, float_10_80419864, float_10_80419864);
+			PSMTXScale(mtx, 10.0f, 10.0f, 10.0f);
 			mapReCalcMatrix(entry->rootMapObj, mtx, 0);
 		}
 	}
 }
+
 #pragma opt_common_subs reset
-#pragma opt_loop_invariants reset
+static void mapDrawObjectFog(MapObject* obj);
 
-// Objects with the 0x80000 flag suppress the map fog.
-static inline void mapDrawObjectFog(MapObject* obj) {
-	CameraEntry* cur = camGetCurPtr();
-	MapEntry* entry = &mapWork[activeGroup].entries[0];
-
-	if ((entry->flags & 0x1) && !(*(u32*)obj->field_0x0 & 0x80000)) {
-		GXSetFog(fog_type[*(s32*)((u8*)entry + 0x28)], *(f32*)((u8*)entry + 0x2C), *(f32*)((u8*)entry + 0x30), cur->near, cur->far, *(GXColor*)((u8*)entry + 0x34));
-	}
-	else {
-		GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, dat_80419824);
-	}
-}
 
 #ifdef MUST_MATCH
 // A scalar compound literal keeps the flags web ahead of the inlined map-work pointer
@@ -2520,10 +2383,10 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 					index++;
 				}
 			}
-			t = float_0p01_804198b4 * (f32)index;
+			t = 0.01f * (f32)index;
 			GXGetProjectionv(proj);
-			f0 = float_neg2_804198a0;
-			f3 = float_1_80419860;
+			f0 = -2.0f;
+			f3 = 1.0f;
 			{
 				f32 nn = cam->near;
 				f32 sum = cam->far + nn;
@@ -2719,7 +2582,7 @@ void _mapDispMapObj_NoMaterial(s32 camId, MapObject* obj) {
 	GXSetCurrentMtx(GX_PNMTX0);
 	GXSetCullMode(GX_CULL_ALL);
 	GXSetNumChans(1);
-	color = unk_80422f84;
+	color = (GXColor){0, 0, 0, 0};
 	GXSetChanMatColor(GX_COLOR0A0, color);
 	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
 	GXSetNumTexGens(0);
@@ -2750,48 +2613,13 @@ void _mapDispMapGrp_NoMaterial(MapObject* obj, void* a2) {
 #endif
 }
 
-#pragma optimization_level 2 // -O4 folds the loop's `off = i` init to `li r30,0`; level 2 keeps the retail `mr r30,r31`
-#pragma opt_propagation off  // stops `i`'s value propagating into `off`, so the copy `mr r30,r31` survives
 void mapDispMapObj_bbox(s32 camId, MapObject* obj) {
-	Mtx invMtx;
-	Mtx mtx;
-	s32 i;
-	s32 off;
-
 	sysWaitDrawSync();
 	GXClearBoundingBox();
-	PSMTXConcat(camGetPtr(camId)->view, obj->modelWorldMtx, mtx);
-	GXLoadPosMtxImm(mtx, GX_PNMTX0);
-	PSMTXInvXpose(mtx, invMtx);
-	GXLoadNrmMtxImm(invMtx, GX_PNMTX0);
-	GXSetCurrentMtx(GX_PNMTX0);
-	GXSetCullMode(GX_CULL_ALL);
-	GXSetNumChans(1);
-	GXSetChanMatColor(GX_COLOR0A0, unk_80422f84);
-	GXSetChanCtrl(GX_COLOR0A0, GX_FALSE, GX_SRC_REG, GX_SRC_REG, GX_LIGHT_NULL, GX_DF_NONE, GX_AF_NONE);
-	GXSetNumTexGens(0);
-	GXSetNumTevStages(1);
-	GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR0A0);
-	GXSetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
-#ifdef MUST_MATCH
-	// MUST_MATCH: the explicit byte-offset induction variable with the off-then-i increment order
-	// gives the original's `addi r0,off,0x64; lwzx` addressing and its i=r31/off=r30 registers.
-	i = 0;
-	off = i;
-	for (; i < obj->joints->partCount; off += 8, i++) {
-		mapSetPolygon(obj, *(MapFileMesh**)((u8*)obj->joints + offsetof(MapFileJoint, parts) + offsetof(MapFileJointPart, mesh) + off));
-	}
-#else
-	for (i = 0; i < obj->joints->partCount; i++) {
-		mapSetPolygon(obj, obj->joints->parts[i].mesh);
-	}
-#endif
+	_mapDispMapObj_NoMaterial(camId, obj);
 	sysWaitDrawSync();
 	GXReadBoundingBox((u16*)((u8*)obj + 0xEC), (u16*)((u8*)obj + 0xEE), (u16*)((u8*)obj + 0xF0), (u16*)((u8*)obj + 0xF2));
 }
-
-#pragma opt_propagation reset
-#pragma optimization_level reset
 
 void mapDispMapGrp_bbox(MapObject* obj, MapEntry* entry) {
 	sysWaitDrawSync();
@@ -2834,7 +2662,7 @@ void mapDisp(void) {
 	entry = &wp->entries[0];
 	for (i = 0; i < wp->entries[0].count; entry++, i++) {
 		if (entry->rootMapObj != NULL) {
-			PSMTXScale(scale, float_10_80419864, float_10_80419864, float_10_80419864);
+			PSMTXScale(scale, 10.0f, 10.0f, 10.0f);
 			mapReCalcMatrix(entry->rootMapObj, scale, 0);
 		}
 		obj = entry->objects;
@@ -2871,11 +2699,11 @@ void mapDisp(void) {
 	PSMTXMultVec(mtx, &clipPos, &clipPos); \
 	PSMTX44MultVec(cam->projection, &clipPos, &clipPos); \
 	clipV = clipPos.z; \
-	if (clipV > float_neg1_804198a8 && clipV < float_0_80419850) { \
+	if (clipV > -1.0f && clipV < 0.0f) { \
 		clipV = clipPos.x; \
-		if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) { \
+		if (clipV >= -1.0f && clipV <= 1.0f) { \
 			clipV = clipPos.y; \
-			if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) goto visible; \
+			if (clipV >= -1.0f && clipV <= 1.0f) goto visible; \
 		} \
 	}
 				clip = FALSE;
@@ -2891,11 +2719,11 @@ void mapDisp(void) {
 				PSMTXMultVec(mtx, &clipPos, &clipPos);
 				PSMTX44MultVec(cam->projection, &clipPos, &clipPos);
 				clipV = clipPos.z;
-				if (clipV > float_neg1_804198a8 && clipV < float_0_80419850) {
+				if (clipV > -1.0f && clipV < 0.0f) {
 					clipV = clipPos.x;
-					if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) {
+					if (clipV >= -1.0f && clipV <= 1.0f) {
 						clipV = clipPos.y;
-						if (clipV >= float_neg1_804198a8 && clipV <= float_1_80419860) goto visible;
+						if (clipV >= -1.0f && clipV <= 1.0f) goto visible;
 					}
 				}
 				CLIP_TEST(joint->bboxMin.x, joint->bboxMin.y, joint->bboxMax.z)
@@ -2910,13 +2738,13 @@ void mapDisp(void) {
 			PSMTXMultVec(mtx, (Vec*)(obj->field_0xC + 4), &dispPos);
 			PSMTX44MultVec(cam->projection, &dispPos, &dispPos);
 			order = 5000.0f * dispPos.z + 5000.0f;
-			if (order < float_0_80419850) {
-				order = float_0_80419850;
+			if (order < 0.0f) {
+				order = 0.0f;
 			}
-			else if (order > float_10000_804198b0) {
-				order = float_10000_804198b0;
+			else if (order > 10000.0f) {
+				order = 10000.0f;
 			}
-			order *= float_neg1_804198a8;
+			order *= -1.0f;
 			id = obj->field_0x0[4];
 			if (obj->joints->partCount > 0) {
 				color = *(GXColor*)obj->field_0xC;
@@ -2926,7 +2754,7 @@ void mapDisp(void) {
 				}
 			}
 			if (*(u32*)obj->field_0x0 & 0x20000000) {
-				dispEntry(CAMERA_OFFSCREEN2, float_5000_804198ac, 3, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj_bbox : (DispCallback)mapDispMapGrp_bbox, obj);
+				dispEntry(CAMERA_OFFSCREEN2, 5000.0f, 3, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj_bbox : (DispCallback)mapDispMapGrp_bbox, obj);
 			}
 			if (*(u32*)obj->field_0x0 & 0x80) {
 				dispEntry(CAMERA_OFFSCREEN2, order, id, !(*(u32*)obj->field_0x0 & 0x10) ? (DispCallback)mapDispMapObj_off : (DispCallback)mapDispMapGrp_off, obj);
@@ -2989,39 +2817,17 @@ s32 mapSetLight(MapObject* obj, LightEntry** entries) {
 	return count;
 }
 
-#pragma opt_lifetimes off // needed: default lifetime analysis colours 15 more instructions wrong (243 -> 226 diffs)
-// Register colouring/scheduling only (226 real instruction diffs, 21 symbol-only). The unit's .rodata
-// (vec3_802c16d8, double_to_int_mask_802c19a0, ...) is not defined here yet, so MWCC addresses the pooled
-// i2f double absolutely (lis/lfd) instead of `lfd f2, 0x2c8(r28)`, and TEXMTX uses add+lwzu (16 sites).
-// Dropping opt_lifetimes costs +17; opt_common_subs/opt_propagation off and opt_strength_reduction off
-// are all worse (375/604/245 diffs), so this is the local optimum.
-// NONMATCHING (97.06%): the identity casts on the texMap/texCoord init below removed 14 diffs and the
-// texCoordTmp copy below 2 more; the else-branch constant order in the flags&0x80100000 block was reordered
-// for the same reason. The two structural blockers need the unit's .rodata ported.
+// NONMATCHING (99.93%): only the prologue's pool-base `addi` is scheduled two slots early (before the texMap/texCoord
+// copies instead of after them).
 void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
-	u8* base;
-	s32 texMap;
-	s32 texCoord;
+	static f32 scrl_uv[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+	GXTexMapID texMap;
+	GXTexCoordID texCoord;
 	GXTevStageID tevStage;
 	s32 numIndStages;
 	Mtx queen_mtx;
-#ifdef MUST_MATCH
-	// A separate temporary for texCoord's initial value keeps it a distinct web from texMap, so
-	// MWCC does not coalesce the two (2 fewer instruction diffs).
-	s32 texCoordTmp;
-#endif
-	base = vec3_802c16d8;
-#ifdef MUST_MATCH
-	// Identity casts break MWCC's coalescing of texMap with texCount and texCoord with texMap; without
-	// them the allocator parks texCount in r21, rematerialises texMap from it at every TEXMTX site, and
-	// turns the table loads into add+lwzu (240 -> 228 diffs).
-	texMap = (s32)texCount;
-	texCoordTmp = (s32)texMap;
-	texCoord = texCoordTmp;
-#else
 	texMap = texCount;
 	texCoord = texCount;
-#endif
 	numIndStages = 0;
 	
 	if (texCount > 0) {
@@ -3215,12 +3021,8 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				tevStage = GX_TEVSTAGE3;
 				break;
 
-			case 8: {
-				GXColor color = *(GXColor*)&unk_80422f88;
-
-				color.g = (u8)((127.0f * (f32)sin((TWO_PI * (f32)(2 * gp->retraceCount)) / 360.0f)) + 127.0f);
-				GXSetTevColor(GX_TEVREG0, color);
-			}
+			case 8:
+				GXSetTevColor(GX_TEVREG0, (GXColor){0, (u8)((127.0f * (f32)sin((TWO_PI * (f32)(2 * gp->retraceCount)) / 360.0f)) + 127.0f), 0, 0});
 				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -3311,8 +3113,8 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				GXColor color = shadowGetCharShadowColor();
 
 				PSMTXConcat(shadowGetCharShadowProjTexMtx(), mtx, mtx2);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+				GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
 				GXLoadTexObj(shadowGetCharShadowTexObj(), texMap);
 				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
 				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -3331,14 +3133,13 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 
 	if (flags & 0x400) {
 		Mtx mtx2;
-		GXTevStageID stage;
 		GXColor color;
 
 		GXSetTevColorOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
 		GXSetTevAlphaOp(tevStage - 1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVREG0);
 		PSMTXConcat(projMtx, mtx, mtx2);
-		GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-		GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+		GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+		GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
 		GXLoadTexObj(smartTexObj(&projTexObj, (void**)projTexImgRef), texMap);
 		GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
 		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -3347,18 +3148,18 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_TEXA);
 		GXSetTevSwapMode(tevStage, GX_TEV_SWAP3, GX_TEV_SWAP3);
 		GXSetTevSwapModeTable(GX_TEV_SWAP3, GX_CH_RED, GX_CH_GREEN, GX_CH_BLUE, GX_CH_RED);
-		color = *(GXColor*)&dat_80419800;
+		color = (GXColor){0, 0, 0, 0xFF};
 		GXSetTevColor(GX_TEVREG1, color);
-		stage = tevStage + 1;
+		tevStage++;
 		texMap++;
 		texCoord++;
-		GXSetTevOrder(stage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
-		GXSetTevColorOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-		GXSetTevColorIn(stage, GX_CC_C0, GX_CC_CPREV, GX_CC_APREV, GX_CC_ZERO);
-		GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
-		GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-		tevStage += 2;
+		GXSetTevOrder(tevStage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+		GXSetTevColorIn(tevStage, GX_CC_C0, GX_CC_CPREV, GX_CC_APREV, GX_CC_ZERO);
+		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+		GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+		tevStage++;
 	}
 
 	if (flags & 0x10000) {
@@ -3370,7 +3171,6 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 			void* config = shadowGetDepthShadowConfig();
 			Mtx mtx2;
 			GXTevStageID stage;
-			s32 coord;
 
 			switch (*(s32*)((u8*)config + 0x3C)) {
 			case 0:
@@ -3382,23 +3182,26 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 				GXLoadTexObj(shadowGetRamp8TexObj(), texMap);
 				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
 				stage = tevStage + 1;
-				coord = texCoord + 1;
 				texMap++;
-				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
-				GXSetTevColorOp(stage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(depthTex, texMap);
-				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				{
+					GXTexCoordID coord = texCoord + 1;
+
+					GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
+					GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
+					GXSetTevColorOp(stage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+					GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+					GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+					GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+					GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+					GXLoadTexObj(depthTex, texMap);
+					PSMTXConcat(depthProjMtx, mtx, mtx2);
+					GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
+				}
 				texMap++;
 				texCoord += 2;
 				stage = tevStage + 2;
@@ -3413,33 +3216,33 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				tevStage += 3;
 				break;
 			case 1:
-				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_80419804);
+				GXSetTevColor(GX_TEVREG1, (GXColor){0xFF, 0, 0, 0});
 				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
 				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
 				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 				GXLoadTexObj(shadowGetRamp8TexObj(), texMap);
 				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
 				tevStage++;
 				texMap++;
 				texCoord++;
 				break;
 			case 2:
-				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_80419808);
+				GXSetTevColor(GX_TEVREG1, (GXColor){0xFF, 0, 0, 0});
 				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
 				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
 				GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 				GXLoadTexObj(depthTex, texMap);
 				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
 				tevStage++;
 				texMap++;
 				texCoord++;
@@ -3455,23 +3258,26 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 				GXLoadTexObj(shadowGetRamp16TexObj(), texMap);
 				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
 				stage = tevStage + 1;
-				coord = texCoord + 1;
 				texMap++;
-				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
-				GXSetTevColorOp(stage, GX_TEV_COMP_GR16_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP2);
-				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(depthTex, texMap);
-				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				{
+					GXTexCoordID coord = texCoord + 1;
+
+					GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
+					GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
+					GXSetTevColorOp(stage, GX_TEV_COMP_GR16_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+					GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+					GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+					GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP2);
+					GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+					GXLoadTexObj(depthTex, texMap);
+					PSMTXConcat(depthProjMtx, mtx, mtx2);
+					GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
+				}
 				texMap++;
 				texCoord += 2;
 				stage = tevStage + 2;
@@ -3486,7 +3292,7 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				tevStage += 3;
 				break;
 			case 4:
-				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_8041980c);
+				GXSetTevColor(GX_TEVREG1, (GXColor){0xFF, 0xFF, 0, 0});
 				GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_ALPHA, GX_CH_GREEN, GX_CH_BLUE, GX_CH_ALPHA);
 				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
 				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
@@ -3494,16 +3300,16 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 				GXLoadTexObj(shadowGetRamp16TexObj(), texMap);
 				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
 				tevStage++;
 				texMap++;
 				texCoord++;
 				break;
 			case 5:
-				GXSetTevColor(GX_TEVREG1, *(GXColor*)&dat_80419810);
+				GXSetTevColor(GX_TEVREG1, (GXColor){0xFF, 0xFF, 0, 0});
 				GXSetTevSwapModeTable(GX_TEV_SWAP1, GX_CH_RED, GX_CH_ALPHA, GX_CH_BLUE, GX_CH_ALPHA);
 				GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
 				GXSetTevColorIn(tevStage, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C1, GX_CC_ZERO);
@@ -3511,10 +3317,10 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 				GXLoadTexObj(depthTex, texMap);
 				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
 				tevStage++;
 				texMap++;
 				texCoord++;
@@ -3537,10 +3343,10 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 			GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_KONST, GX_CA_TEXA, GX_CA_APREV);
 			GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 			GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-			GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+			GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 			GXLoadTexObj(projTex, texMap);
 			PSMTXConcat(projShadowMtx, mtx, mtx2);
-			GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+			GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
 			GXSetTevKColor(GX_KCOLOR1, color);
 			GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
 			GXSetTevKAlphaSel(tevStage, GX_TEV_KASEL_K1_A);
@@ -3559,7 +3365,6 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 			void* config = shadowGetDepthShadowConfig();
 			Mtx mtx2;
 			GXTevStageID stage;
-			s32 coord;
 
 			switch (*(s32*)((u8*)config + 0x3C)) {
 			case 0:
@@ -3571,23 +3376,26 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 				GXLoadTexObj(shadowGetRamp8TexObj(), texMap);
 				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
 				stage = tevStage + 1;
-				coord = texCoord + 1;
 				texMap++;
-				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
-				GXSetTevColorOp(stage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(depthTex, texMap);
-				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				{
+					GXTexCoordID coord = texCoord + 1;
+
+					GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
+					GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
+					GXSetTevColorOp(stage, GX_TEV_COMP_R8_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+					GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+					GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+					GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP0);
+					GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+					GXLoadTexObj(depthTex, texMap);
+					PSMTXConcat(depthProjMtx, mtx, mtx2);
+					GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
+				}
 				texMap++;
 				texCoord += 2;
 				stage = tevStage + 2;
@@ -3613,23 +3421,26 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
 				GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP1);
-				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+				GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 				GXLoadTexObj(shadowGetRamp16TexObj(), texMap);
 				PSMTXConcat(depthMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
 				stage = tevStage + 1;
-				coord = texCoord + 1;
 				texMap++;
-				GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
-				GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
-				GXSetTevColorOp(stage, GX_TEV_COMP_GR16_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
-				GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
-				GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
-				GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP2);
-				GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
-				GXLoadTexObj(depthTex, texMap);
-				PSMTXConcat(depthProjMtx, mtx, mtx2);
-				GXLoadTexMtxImm(mtx2, TEXMTX(texMap), GX_MTX3x4);
+				{
+					GXTexCoordID coord = texCoord + 1;
+
+					GXSetTevOrder(stage, coord, texMap, GX_COLOR_NULL);
+					GXSetTevColorIn(stage, GX_CC_CPREV, GX_CC_TEXC, GX_CC_ONE, GX_CC_ZERO);
+					GXSetTevColorOp(stage, GX_TEV_COMP_GR16_GT, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+					GXSetTevAlphaIn(stage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO);
+					GXSetTevAlphaOp(stage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
+					GXSetTevSwapMode(stage, GX_TEV_SWAP0, GX_TEV_SWAP2);
+					GXSetTexCoordGen2(coord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
+					GXLoadTexObj(depthTex, texMap);
+					PSMTXConcat(depthProjMtx, mtx, mtx2);
+					GXLoadTexMtxImm(mtx2, texmtx_tbl[texMap], GX_MTX3x4);
+				}
 				texMap++;
 				texCoord += 2;
 				stage = tevStage + 2;
@@ -3649,22 +3460,24 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	}
 
 	if (flags & 0x80100000) {
-		s32 r19;
-		s32 r21;
-		s32 r22;
-		s32 r20;
+		s32 red;
+		s32 green;
+		s32 blue;
+		s32 alpha;
+		f32 c;
 
 		if (flags & 0x100000) {
-			r19 = current_mp->field_0xC[0];
-			r21 = current_mp->field_0xC[1];
-			r22 = current_mp->field_0xC[2];
-			r20 = current_mp->field_0xC[3];
+			red = current_mp->field_0xC[0];
+			green = current_mp->field_0xC[1];
+			blue = current_mp->field_0xC[2];
+			alpha = current_mp->field_0xC[3];
 		}
 		else {
-			r21 = 0xF0;
-			r22 = 0x64;
-			r19 = 0xF0;
-			r20 = (u8)(64.0f * (1.0f - (f32)cos(1.5707964f * (f32)gp->retraceCount / 20.0f)) * 0.5f + 64.0f);
+			red = 0xF0;
+			green = 0xF0;
+			blue = 0x64;
+			c = (f32)cos(1.5707964f * (f32)gp->retraceCount / 20.0f);
+			alpha = (u8)(64.0f * (1.0f - c) / 2.0f + 64.0f);
 		}
 		GXSetTevOrder(tevStage, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
 		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -3672,13 +3485,7 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 		GXSetTevColorIn(tevStage, GX_CC_CPREV, GX_CC_ZERO, GX_CC_ZERO, GX_CC_KONST);
 		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 		GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-		{
-			GXColor color = *(GXColor*)&dat_80419814;
-			color.r = r19 * r20 / 255;
-			color.g = r21 * r20 / 255;
-			color.b = r22 * r20 / 255;
-			GXSetTevKColor(GX_KCOLOR1, color);
-		}
+		GXSetTevKColor(GX_KCOLOR1, (GXColor){red * alpha / 255, green * alpha / 255, blue * alpha / 255, 0xFF});
 		GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
 		tevStage++;
 	}
@@ -3691,31 +3498,27 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 		Vec up;
 		Vec target;
 		s32 v;
+		f32 c;
 
-		camPos = *(Vec*)(base + 0x120);
-		up = *(Vec*)(base + 0x12c);
-		target = *(Vec*)(base + 0x138);
-		v = (s32)(127.0f * (1.0f - (f32)cos(1.5707964f * (f32)gp->retraceCount / 30.0f)) * 0.5f + 128.0f);
+		camPos = (Vec){0.0f, 0.0f, 1.0f};
+		up = (Vec){0.0f, 1.0f, 0.0f};
+		target = (Vec){0.0f, 0.0f, 0.0f};
+		c = (f32)cos(1.5707964f * (f32)gp->retraceCount / 30.0f);
+		v = (s32)(127.0f * (1.0f - c) / 2.0f + 128.0f);
 		GXInitTexObj(&texObj, texture_0, 4, 0x40, GX_TF_CMPR, GX_CLAMP, GX_REPEAT, GX_FALSE);
 		GXLoadTexObj(&texObj, texMap);
 		C_MTXLightOrtho(orthoMtx, -2.0f, 2.0f, -2.0f, 2.0f, 0.5f, 0.5f, 0.5f, (f32)gp->retraceCount / 50.0f);
 		C_MTXLookAt(lookAtMtx, &camPos, &up, &target);
 		PSMTXConcat(orthoMtx, lookAtMtx, orthoMtx);
-		GXLoadTexMtxImm(orthoMtx, TEXMTX(texMap), GX_MTX3x4);
-		GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, TEXMTX(texMap), GX_FALSE, GX_PTIDENTITY);
+		GXLoadTexMtxImm(orthoMtx, texmtx_tbl[texMap], GX_MTX3x4);
+		GXSetTexCoordGen2(texCoord, GX_TG_MTX3x4, GX_TG_POS, texmtx_tbl[texMap], GX_FALSE, GX_PTIDENTITY);
 		GXSetTevOrder(tevStage, texCoord, texMap, GX_COLOR_NULL);
 		GXSetTevColorOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 		GXSetTevAlphaOp(tevStage, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 		GXSetTevColorIn(tevStage, GX_CC_TEXC, GX_CC_CPREV, GX_CC_KONST, GX_CC_ZERO);
 		GXSetTevAlphaIn(tevStage, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
 		GXSetTevSwapMode(tevStage, GX_TEV_SWAP0, GX_TEV_SWAP0);
-		{
-			GXColor color = *(GXColor*)&dat_80419818;
-			color.r = v;
-			color.g = v;
-			color.b = v;
-			GXSetTevKColor(GX_KCOLOR1, color);
-		}
+		GXSetTevKColor(GX_KCOLOR1, (GXColor){v, v, v, 0xFF});
 		GXSetTevKColorSel(tevStage, GX_TEV_KCSEL_K1);
 		tevStage++;
 		texMap++;
@@ -3751,11 +3554,10 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	GXSetNumTevStages((u8)tevStage);
 	GXSetNumIndStages((u8)numIndStages);
 }
-#pragma opt_lifetimes reset
 
 void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
 	MapWork* wp = &mapWork[activeGroup];
-	GXColor color = dat_8041981c;
+	GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
 
 	if (flags & 0x40) {
 		color.r = color.r * color1.r / 255;
@@ -3787,16 +3589,31 @@ void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
 	GXSetTevKColor(GX_KCOLOR0, color);
 }
 
+s32 fog_type[5] = {2, 4, 5, 6, 7};
+
 void mapSetMaterialFog(void) {
 	CameraEntry* cam = camGetCurPtr();
 	MapEntry* entry = &mapWork[activeGroup].entries[0];
 
 	if (entry->flags & 0x1) {
-		GXColor color = *(GXColor*)((u8*)entry + 0x34);
-		GXSetFog(fog_type[*(s32*)((u8*)entry + 0x28)], *(f32*)((u8*)entry + 0x2C), *(f32*)((u8*)entry + 0x30), *(f32*)((u8*)cam + 0x30), *(f32*)((u8*)cam + 0x34), color);
+		GXColor color = entry->fogColor;
+		GXSetFog(fog_type[entry->fogType], entry->fogStart, entry->fogEnd, cam->near, cam->far, color);
 	}
 	else {
-		GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, dat_80419820);
+		GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
+	}
+}
+
+// Objects with the 0x80000 flag suppress the map fog.
+static inline void mapDrawObjectFog(MapObject* obj) {
+	CameraEntry* cur = camGetCurPtr();
+	MapEntry* entry = &mapWork[activeGroup].entries[0];
+
+	if ((entry->flags & 0x1) && !(*(u32*)obj->field_0x0 & 0x80000)) {
+		GXSetFog(fog_type[entry->fogType], entry->fogStart, entry->fogEnd, cur->near, cur->far, entry->fogColor);
+	}
+	else {
+		GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, (GXColor){0xFF, 0xFF, 0xFF, 0xFF});
 	}
 }
 
@@ -3823,7 +3640,7 @@ void mapSetTextureMatrix(MapMaterialTex* mat) {
 				f32 f25 = 0.5f * mat->entries[i].field_0x14 * mat->entries[i].field_0x8;
 				f32 f24 = (1.0f - 0.5f * mat->entries[i].field_0x18) * mat->entries[i].field_0xC;
 				PSMTXTrans(mtx, f25, f24, 0.0f);
-				PSMTXRotRad(mtx2, 'z', float_deg2rad_80419868 * rots);
+				PSMTXRotRad(mtx2, 'z', 0.017453292f * rots);
 				PSMTXTrans(mtx3, -f25, -f24, 0.0f);
 				PSMTXConcat(mtx, mtx2, mtx2);
 				PSMTXConcat(mtx2, mtx3, mtx2);
@@ -3876,9 +3693,6 @@ void mapSetTextureMatrix(MapMaterialTex* mat) {
 
 // material layout (MapMaterialTex only covers 0xB/0x2C onwards)
 
-// The original reaches texwrap_tbl, lightid_tbl and the default light direction (vec3_802c181c) through the
-// unit's .rodata base vec3_802c16d8.
-
 // The index of the texture called `name` in a map's texture name table (a count, then the names), or -1.
 static inline s32 mapMatSearchTex(s32* table, const char* name) {
 	s32 i;
@@ -3891,63 +3705,38 @@ static inline s32 mapMatSearchTex(s32* table, const char* name) {
 	return -1;
 }
 
-// The calls and branches all match. Three instructions are still added: the light index table is materialised
-// as vec3_802c16d8 + 0x100 with a second copy of the base address (+1 lis, +1 addi) where retail reaches it as
-// r28 + 0x100, and the u8 -> f32 LOD conversion loads the compiler's pooled int->double mask (+1 lis) where
-// retail loads the unit's double_to_int_mask from the .rodata base (+0x2C8). Both need the unit's .rodata
-// objects defined so MWCC can fold the offsets; without them the frontend emits a fresh address. The rest is
-// register colouring: the light-loop counter lands in r25 instead of r22, the texture-loop ref/wp/desc in
-// r23/r24/r23 instead of r22/r29/r28. The final mapSetMaterialTev tail now matches (the argument expression is
-// inlined so the drawMode conditional is evaluated first). A rasim search over the named locals'
-// declaration order cannot reach retail's colouring (the counter and texMap coalesce), so it is allocator-only.
 // Loads the map object's lights into GX light slots (point, spot and directional), sets the colour channel from
 // the material, loads each of the material's textures by name from the map's TPL, then sets up TEV.
-// NONMATCHING (98.13%): base-relative lightId/i2f loads (3 instructions) and register colouring; see above.
 void mapSetMaterial(MapObject* obj, void* materialPtr) {
-	s32 i;
+	LightEntry* light;
 	s32 texMap;
+	MapWork* wp;
+	u32 lightMask;
+	s32 attn;
+	s32 i;
 	MapMaterial* mat;
 	GXLightObj lightObj;
 	Mtx mtxX;
 	Mtx mtxY;
 	Mtx mtxZ;
 	LightEntry* lights[8];
-	LightEntry* light;
 	GXTexObj texObj;
 	Vec pos;
 	Vec defaultDir;
 	GXColor ambient;
 	GXColor defaultAmbient;
-#ifdef MUST_MATCH
-	f32 spotAngle;
-#endif
-	s32* lightId;
-	u32 lightMask;
-#ifdef MUST_MATCH
-	s32* wrapTbl;
-#endif
-	s32 attn;
-#ifdef MUST_MATCH
-	u8* base;
-#endif
 	s32 count;
 
 	mat = materialPtr;
-#ifdef MUST_MATCH
-	base = vec3_802c16d8;
-	lightId = (s32*)(base + 0x100);
-#else
-	lightId = (s32*)lightid_tbl;
-#endif
 	texMap = 0;
 	attn = 2;
-	defaultAmbient = dat_80419828;
-	lightMask = 0;
+	defaultAmbient = (GXColor){0, 0, 0, 0xFF};
 	count = mapSetLight(obj, lights);
+	lightMask = 0;
 
 	for (i = 0; i < count; i++) {
 
-		defaultDir = MAPMAT_DEFAULT_DIR;
+		defaultDir = (Vec){0.0f, 0.0f, -1.0f};
 		light = lights[i];
 		if (light->flags & LIGHT_POINT) {
 			CameraEntry* cam = camGetCurPtr();
@@ -3955,19 +3744,19 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 			PSMTXMultVec(cam->view, &light->position, &pos);
 			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
 			GXInitLightColor(&lightObj, lights[i]->color);
-			GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+			GXInitLightAttn(&lightObj, lights[i]->attenAngle, 0.0f, 0.0f,
 			                lights[i]->attenDistCoef.x, lights[i]->attenDistCoef.y, lights[i]->attenDistCoef.z);
-			GXLoadLightObjImm(&lightObj, lightId[i]);
+			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
 			attn = 1;
 		}
 		else if (light->flags & LIGHT_SPOT) {
-			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * light->rotation.x);
-			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
-			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXRotRad(mtxX, 'x', 0.017453292f * light->rotation.x);
+			PSMTXRotRad(mtxY, 'y', 0.017453292f * lights[i]->rotation.y);
+			PSMTXRotRad(mtxZ, 'z', 0.017453292f * lights[i]->rotation.z);
 			PSMTXConcat(mtxZ, mtxY, mtxY);
 			PSMTXConcat(mtxY, mtxX, mtxX);
 			PSMTXMultVec(mtxX, &defaultDir, &defaultDir);
-			PSVECScale(&defaultDir, &defaultDir, float_neg1p0486E06_80419870);
+			PSVECScale(&defaultDir, &defaultDir, -1048576.0f);
 			PSVECAdd(&lights[i]->position, &defaultDir, &pos);
 			{
 				CameraEntry* cam = camGetCurPtr();
@@ -3976,17 +3765,17 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 			}
 			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
 			GXInitLightColor(&lightObj, lights[i]->color);
-			GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
-			                float_0_80419850, float_0_80419850, float_1_80419860);
-			GXLoadLightObjImm(&lightObj, lightId[i]);
+			GXInitLightAttn(&lightObj, lights[i]->attenAngle, 0.0f, 0.0f,
+			                0.0f, 0.0f, 1.0f);
+			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
 		}
 		else if (light->flags & LIGHT_DIRECTIONAL) {
 			CameraEntry* cam = camGetCurPtr();
 
 			PSMTXMultVec(cam->view, &light->position, &pos);
-			PSMTXRotRad(mtxX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
-			PSMTXRotRad(mtxY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
-			PSMTXRotRad(mtxZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXRotRad(mtxX, 'x', 0.017453292f * lights[i]->rotation.x);
+			PSMTXRotRad(mtxY, 'y', 0.017453292f * lights[i]->rotation.y);
+			PSMTXRotRad(mtxZ, 'z', 0.017453292f * lights[i]->rotation.z);
 			PSMTXConcat(mtxZ, mtxY, mtxY);
 			PSMTXConcat(mtxY, mtxX, mtxX);
 			PSMTXMultVec(mtxX, &defaultDir, &defaultDir);
@@ -3994,18 +3783,13 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 			PSMTXMultVecSR(cam->view, &defaultDir, &defaultDir);
 			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
 			GXInitLightDir(&lightObj, defaultDir.x, defaultDir.y, defaultDir.z);
-#ifdef MUST_MATCH
-			spotAngle = lights[i]->spotAngle;
-			GXInitLightSpot(&lightObj, spotAngle * float_0p5_80419854, GX_SP_SHARP);
-#else
-			GXInitLightSpot(&lightObj, lights[i]->spotAngle * float_0p5_80419854, GX_SP_SHARP);
-#endif
-			GXInitLightDistAttn(&lightObj, float_1000_80419874, float_0p5_80419854, GX_DA_OFF);
+			GXInitLightSpot(&lightObj, lights[i]->spotAngle / 2.0f, GX_SP_SHARP);
+			GXInitLightDistAttn(&lightObj, 1000.0f, 0.5f, GX_DA_OFF);
 			GXInitLightColor(&lightObj, lights[i]->color);
-			GXLoadLightObjImm(&lightObj, lightId[i]);
+			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
 			attn = 1;
 		}
-		lightMask |= lightId[i];
+		lightMask |= lightid_tbl[i];
 	}
 
 	{
@@ -4033,20 +3817,16 @@ void mapSetMaterial(MapObject* obj, void* materialPtr) {
 		break;
 	}
 
-	texMap = 0;
-#ifdef MUST_MATCH
-	wrapTbl = (s32*)(base + 0xEC);
-#endif
 	for (i = mat->texCount - 1; i >= 0; i--) {
 		MapMatTexRef* ref = mat->texRefs[i];
 		TEXDescriptor* desc;
-		MapWork* wp = &mapWork[activeGroup];
 
+		wp = &mapWork[activeGroup];
 		desc = TEXGet(wp->entries[*(s16*)(obj->field_0xDC + 2)].tpl,
 		              mapMatSearchTex(*(s32**)(wp->entries[*(s16*)(obj->field_0xDC + 2)].field_0x8C + 8),
 		                              *(const char**)ref->field_0x0));
 		GXInitTexObj(&texObj, desc->textureHeader->data, desc->textureHeader->width, desc->textureHeader->height,
-		             desc->textureHeader->format, MAPMAT_TEXWRAP(ref->wrapS), MAPMAT_TEXWRAP(ref->wrapT),
+		             desc->textureHeader->format, texwrap_tbl[ref->wrapS], texwrap_tbl[ref->wrapT],
 		             desc->textureHeader->minLOD == desc->textureHeader->maxLOD ? GX_FALSE : GX_TRUE);
 		GXInitTexObjLOD(&texObj, GX_LINEAR, GX_LINEAR, (f32)desc->textureHeader->minLOD,
 		                (f32)desc->textureHeader->maxLOD, desc->textureHeader->LODBias, GX_DISABLE,
@@ -4064,7 +3844,11 @@ void mapSetPaperAmbColor(GXColor* color) {
 }
 
 void mapResetPaperAmbColor(void) {
-	paper_ambient = dat_8041982c;
+	paper_ambient = (GXColor){0x70, 0x70, 0x70, 0xFF};
+}
+
+void mapResetPaperCraftAmbColor(void) {
+	paperCraft_ambient = (GXColor){0x70, 0x70, 0x70, 0xFF};
 }
 
 // material layout (MapMaterialTex only covers 0xB/0x2C onwards)
@@ -4077,22 +3861,17 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 	LightEntry* ambient;
 	CameraEntry* cam;
 	GXLightObj lightObj;
-	GXColor fogColor;
-	GXColor ambColor;
+	GXColor fogColor = {0xFF, 0xFF, 0xFF, 0xFF};
+	GXColor ambColor = {0, 0, 0, 0xFF};
 	GXColor chanAmbColor;
 	Vec pos;
 	Vec dir;
 	Mtx rotX, rotY, rotZ;
-#ifdef MUST_MATCH
-	f32 spotAngle; /* keeps the 0.5f constant in f0 and the field in f1, as the target does */
-#endif
 	s32 count = 0;
 	u32 lightMask;
 	s32 attn = 2;
 	s32 i;
 
-	fogColor = dat_80419834;
-	ambColor = dat_80419838;
 
 	if ((u32)flags & 1) {
 		lights[0] = lightGetPaper();
@@ -4118,7 +3897,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 				ambColor = paperCraft_ambient;
 			}
 			else {
-				ambColor = dat_8041983c;
+				ambColor = (GXColor){0, 0, 0, 0xFF};
 			}
 		}
 		else {
@@ -4132,7 +3911,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 		   position and the first spot rotation, but re-materializes it from the array for the
 		   remaining fields.  The light/lights[i] mix below reproduces that allocation; both
 		   forms are semantically identical. */
-		dir = vec3_802c1828[0];
+		dir = (Vec){0.0f, 0.0f, -1.0f};
 		light = lights[i];
 
 		if (light->flags & LIGHT_POINT) {
@@ -4141,24 +3920,24 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
 			GXInitLightColor(&lightObj, lights[i]->color);
 			if (lights[i]->flags & LIGHT_NO_DIST_ATTEN) {
-				GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
-				                float_1_80419860, float_0_80419850, float_0_80419850);
+				GXInitLightAttn(&lightObj, lights[i]->attenAngle, 0.0f, 0.0f,
+				                1.0f, 0.0f, 0.0f);
 			}
 			else {
-				GXInitLightAttn(&lightObj, lights[i]->attenAngle, float_0_80419850, float_0_80419850,
+				GXInitLightAttn(&lightObj, lights[i]->attenAngle, 0.0f, 0.0f,
 				                lights[i]->attenDistCoef.x, lights[i]->attenDistCoef.y, lights[i]->attenDistCoef.z);
 				attn = 1;
 			}
 			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
 		}
 		else if (light->flags & LIGHT_SPOT) {
-			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * light->rotation.x);
-			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
-			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXRotRad(rotX, 'x', 0.017453292f * light->rotation.x);
+			PSMTXRotRad(rotY, 'y', 0.017453292f * lights[i]->rotation.y);
+			PSMTXRotRad(rotZ, 'z', 0.017453292f * lights[i]->rotation.z);
 			PSMTXConcat(rotZ, rotY, rotY);
 			PSMTXConcat(rotY, rotX, rotX);
 			PSMTXMultVec(rotX, &dir, &dir);
-			PSVECScale(&dir, &dir, float_neg1p0486E06_80419870);
+			PSVECScale(&dir, &dir, -1048576.0f);
 			PSVECAdd(&lights[i]->position, &dir, &pos);
 			cam = camGetCurPtr();
 			PSMTXMultVec(cam->view, &pos, &pos);
@@ -4169,9 +3948,9 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 		else if (lights[i]->flags & LIGHT_DIRECTIONAL) {
 			cam = camGetCurPtr();
 			PSMTXMultVec(cam->view, &light->position, &pos);
-			PSMTXRotRad(rotX, 'x', float_deg2rad_80419868 * lights[i]->rotation.x);
-			PSMTXRotRad(rotY, 'y', float_deg2rad_80419868 * lights[i]->rotation.y);
-			PSMTXRotRad(rotZ, 'z', float_deg2rad_80419868 * lights[i]->rotation.z);
+			PSMTXRotRad(rotX, 'x', 0.017453292f * lights[i]->rotation.x);
+			PSMTXRotRad(rotY, 'y', 0.017453292f * lights[i]->rotation.y);
+			PSMTXRotRad(rotZ, 'z', 0.017453292f * lights[i]->rotation.z);
 			PSMTXConcat(rotZ, rotY, rotY);
 			PSMTXConcat(rotY, rotX, rotX);
 			PSMTXMultVec(rotX, &dir, &dir);
@@ -4179,14 +3958,8 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 			PSMTXMultVecSR(cam->view, &dir, &dir);
 			GXInitLightPos(&lightObj, pos.x, pos.y, pos.z);
 			GXInitLightDir(&lightObj, dir.x, dir.y, dir.z);
-#ifdef MUST_MATCH
-			/* split out so the field lands in f1 and 0.5f in f0, as the target does */
-			spotAngle = lights[i]->spotAngle;
-			GXInitLightSpot(&lightObj, spotAngle * float_0p5_80419854, 4);
-#else
-			GXInitLightSpot(&lightObj, lights[i]->spotAngle * float_0p5_80419854, 4);
-#endif
-			GXInitLightDistAttn(&lightObj, float_1000_80419874, float_0p5_80419854, 0);
+			GXInitLightSpot(&lightObj, lights[i]->spotAngle / 2.0f, 4);
+			GXInitLightDistAttn(&lightObj, 1000.0f, 0.5f, 0);
 			GXInitLightColor(&lightObj, lights[i]->color);
 			GXLoadLightObjImm(&lightObj, lightid_tbl[i]);
 			attn = 1;
@@ -4202,7 +3975,7 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 		chanAmbColor = ambColor;
 	}
 
-	GXSetFog(GX_FOG_NONE, float_0_80419850, float_0_80419850, float_0_80419850, float_0_80419850, fogColor);
+	GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 0.0f, fogColor);
 	GXSetNumChans(1);
 	GXSetChanAmbColor(GX_COLOR0A0, chanAmbColor);
 
@@ -4223,6 +3996,21 @@ void mapSetMaterialLight(s32 flags, Vec position) {
 
 #pragma opt_common_subs off // MUST_MATCH: stop MWCC CSEing a shared base into the wp/nrm/pos slots
 // The vertex-loop `p = &vp->x` scratch is matched by reading z as `p[2]`.
+static const GXVtxAttrFmtList attr_fmt[] = {
+	{GX_VA_POS, GX_POS_XYZ, GX_F32, 0},
+	{GX_VA_NRM, GX_NRM_XYZ, GX_F32, 0},
+	{GX_VA_CLR0, GX_CLR_RGBA, GX_RGBA8, 0},
+	{GX_VA_TEX0, GX_TEX_ST, GX_F32, 0},
+	{GX_VA_TEX1, GX_TEX_ST, GX_F32, 0},
+	{GX_VA_TEX2, GX_TEX_ST, GX_F32, 0},
+	{GX_VA_TEX3, GX_TEX_ST, GX_F32, 0},
+	{GX_VA_TEX4, GX_TEX_ST, GX_F32, 0},
+	{GX_VA_TEX5, GX_TEX_ST, GX_F32, 0},
+	{GX_VA_TEX6, GX_TEX_ST, GX_F32, 0},
+	{GX_VA_TEX7, GX_TEX_ST, GX_F32, 0},
+	{GX_VA_NULL, GX_POS_XY, GX_U8, 0},
+};
+
 void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 	MapWork* wp = mapGetWork();
 	u32* vcd = (u32*)mesh->vcdTableOffset;
@@ -4236,7 +4024,7 @@ void mapSetPolygon(MapObject* obj, MapFileMesh* mesh) {
 
 	if (!(wp->entries[*(s16*)(obj->field_0xDC + 2)].flags & 0x8000)) {
 		GXClearVtxDesc();
-		GXSetVtxAttrFmtv(GX_VTXFMT0, (const GXVtxAttrFmtList*)attr_fmt);
+		GXSetVtxAttrFmtv(GX_VTXFMT0, attr_fmt);
 		GXSetVtxDesc(GX_VA_POS, GX_INDEX16);
 		GXSetArray(GX_VA_POS, pos, 0xc);
 		GXSetVtxDesc(GX_VA_NRM, GX_INDEX16);
@@ -4391,7 +4179,7 @@ void* mapSearchDmdJointSub2(void* a, void* b, const char* c) {
 	if (!strcmp(buf, name)) return a;
 
 	if (((MapFileJoint*)a)->child) {
-		strcat(buf, str_8041986C);
+		strcat(buf, "|");
 		result = mapSearchDmdJointSub2(((MapFileJoint*)a)->child, b, buf);
 		if (result) return result;
 	}
@@ -4547,9 +4335,9 @@ void mapObjRotate(const char* name, f32 x, f32 y, f32 z) {
 		if (!(*flags & 0x200)) {
 			PSMTXIdentity(obj->unkAC);
 		}
-		PSMTXRotRad(mx, 'x', float_deg2rad_80419868 * x);
-		PSMTXRotRad(my, 'y', float_deg2rad_80419868 * y);
-		PSMTXRotRad(mz, 'z', float_deg2rad_80419868 * z);
+		PSMTXRotRad(mx, 'x', 0.017453292f * x);
+		PSMTXRotRad(my, 'y', 0.017453292f * y);
+		PSMTXRotRad(mz, 'z', 0.017453292f * z);
 		PSMTXConcat(obj->unkAC, mz, obj->unkAC);
 		PSMTXConcat(obj->unkAC, my, obj->unkAC);
 		PSMTXConcat(obj->unkAC, mx, obj->unkAC);
@@ -4568,7 +4356,7 @@ void mapObjTranslate(const char* name, f32 x, f32 y, f32 z) {
 		if (!(*flags & 0x200)) {
 			PSMTXIdentity(obj->unkAC);
 		}
-		PSMTXTrans(m, x / float_10_80419864, y / float_10_80419864, z / float_10_80419864);
+		PSMTXTrans(m, x / 10.0f, y / 10.0f, z / 10.0f);
 		PSMTXConcat(obj->unkAC, m, obj->unkAC);
 		*flags |= 0x200000;
 		*flags |= 0x200;
@@ -4614,34 +4402,34 @@ void mapObjGetPos(const char* name, Vec* pos) {
 	MapObject* obj;
 
 	scale = 0;
-	pos2 = vec3_802c18f4[0];
+	pos2 = (Vec){0.0f, 0.0f, 0.0f};
 	obj = mapGetMapObjSub(name);
 
 	if (obj == NULL) {
-		*pos = vec3_802c1900[0];
+		*pos = (Vec){0.0f, 0.0f, 0.0f};
 	}
 	else {
 		mapObjGetPosSub(obj, &pos2, &scale, NULL);
-		PSVECScale(&pos2, pos, float_1_80419860 / (f32)scale);
+		PSVECScale(&pos2, pos, 1.0f / (f32)scale);
 	}
 }
 
 void mapSetFog(u32 color, f32 near, f32 far, GXColor color2) {
 	MapEntry* entry = &mapWork[activeGroup].entries[0];
 
-	*(u32*)((u8*)entry + 0x28) = color;
-	*(f32*)((u8*)entry + 0x2C) = near;
-	*(f32*)((u8*)entry + 0x30) = far;
-	*(GXColor*)((u8*)entry + 0x34) = color2;
+	entry->fogType = color;
+	entry->fogStart = near;
+	entry->fogEnd = far;
+	entry->fogColor = color2;
 }
 
 void mapGetFog(u32* c, f32* near, f32* far, u32* c2) {
 	MapEntry* entry = &mapWork[activeGroup].entries[0];
 
-	*c = *(u32*)((u8*)entry + 0x28);
-	*near = *(f32*)((u8*)entry + 0x2C);
-	*far = *(f32*)((u8*)entry + 0x30);
-	*c2 = *(u32*)((u8*)entry + 0x34);
+	*c = entry->fogType;
+	*near = entry->fogStart;
+	*far = entry->fogEnd;
+	*c2 = *(u32*)&entry->fogColor;
 }
 
 void mapFogOn(void) {
@@ -4673,7 +4461,7 @@ void mapGetBlend(GXColor* out) {
 		*out = *(GXColor*)((u8*)entry + 0x16);
 	}
 	else {
-		*out = dat_80419840;
+		*out = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
 	}
 }
 
@@ -4684,7 +4472,7 @@ void mapGetBlend2(GXColor* out) {
 		*out = *(GXColor*)((u8*)entry + 0x1A);
 	}
 	else {
-		*out = dat_80419844;
+		*out = (GXColor){0xFF, 0xFF, 0xFF, 0xFF};
 	}
 }
 
@@ -4756,6 +4544,12 @@ void mapSetProjMtx(Mtx mtx) {
 	PSMTXCopy(mtx, projMtx);
 }
 
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
 static inline s32 spline_fpclassifyf(f32 x) {
 	switch (*(s32*)&x & 0x7F800000) {
 		case 0x7F800000:
@@ -4777,17 +4571,15 @@ static inline s32 spline_fpclassifyf(f32 x) {
 	}
 }
 
-static inline f32 spline_sqrtf(f32 x, const f64* c) {
-	if (x > float_0_80419850) {
+static inline f32 spline_sqrtf(f32 x) {
+	if (x > 0.0f) {
 		f64 guess = __frsqrte(x);
-		f64 half = c[0];
-		f64 three = c[1];
 
-		guess = half * guess * (three - guess * guess * x);
-		guess = half * guess * (three - guess * guess * x);
-		guess = half * guess * (three - guess * guess * x);
+		guess = 0.5 * guess * (3.0 - guess * guess * x);
+		guess = 0.5 * guess * (3.0 - guess * guess * x);
+		guess = 0.5 * guess * (3.0 - guess * guess * x);
 		return x * guess;
-	} else if (x < c[2]) {
+	} else if (x < 0.0) {
 		return SPLINE_NAN;
 	} else if (spline_fpclassifyf(x) == FP_NAN) {
 		return SPLINE_NAN;
@@ -4825,11 +4617,9 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 	Vec* points = (Vec*)a;
 	f32* knots = (f32*)b;
 	Vec* tangents = (Vec*)c;
-	const f64* cf = (const f64*)(vec3_802c16d8 + 0x2A8);
 	f32* dt = (f32*)_mapAlloc(count * sizeof(f32));
 	Vec* mat = (Vec*)_mapAlloc(count * sizeof(Vec));
 	s32 i;
-	f64 three, half;
 	f32 knprev;
 
 	knots[0] = 0.0f;
@@ -4842,21 +4632,19 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 #ifdef MUST_MATCH
 		// match-only: writing the Newton result back into sq reuses x's FPR (the target overwrites f5);
 		// calling spline_sqrtf forces the f32 return register f1 and leaves an extra `fmr f1,f5`
-		if (sq > float_0_80419850) {
+		if (sq > 0.0f) {
 			f64 guess = __frsqrte(sq);
-			half = cf[0];
-			three = cf[1];
-			guess = half * guess * (three - guess * guess * sq);
-			guess = half * guess * (three - guess * guess * sq);
-			guess = half * guess * (three - guess * guess * sq);
+			guess = 0.5 * guess * (3.0 - guess * guess * sq);
+			guess = 0.5 * guess * (3.0 - guess * guess * sq);
+			guess = 0.5 * guess * (3.0 - guess * guess * sq);
 			sq = sq * guess;
-		} else if (sq < cf[2]) {
+		} else if (sq < 0.0) {
 			sq = SPLINE_NAN;
 		} else if (spline_fpclassifyf(sq) == FP_NAN) {
 			sq = SPLINE_NAN;
 		}
 #else
-		sq = spline_sqrtf(sq, cf);
+		sq = spline_sqrtf(sq);
 #endif
 		knprev = knots[i - 1];
 		knots[i] = knprev + sq;
@@ -4875,7 +4663,7 @@ void spline_maketable(s32 count, s32 a, s32* b, s32* c) {
 	for (i = 0; i < count - 1; i++) {
 		dt[i] = ((f32*)b)[i + 1] - ((f32*)b)[i];
 		if (dt[i] == 0.0f) {
-			dt[i] = float_0p0001_8041985c;
+			dt[i] = 0.0001f;
 		}
 		mat[i + 1].x = (((Vec*)a)[i + 1].x - ((Vec*)a)[i].x) / dt[i];
 		mat[i + 1].y = (((Vec*)a)[i + 1].y - ((Vec*)a)[i].y) / dt[i];
@@ -4943,11 +4731,34 @@ void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 	h = knots[lo];
 	t -= h;
 	h = knots[lo + 1] - h;
-	out[0] = t * (t * (float_3_8041984c * tangents[lo * 3 + 0] + t * (tangents[lo * 3 + 3] - tangents[lo * 3 + 0]) / h) + ((points[lo * 3 + 3] - points[lo * 3 + 0]) / h - h * (float_2_80419858 * tangents[lo * 3 + 0] + tangents[lo * 3 + 3]))) + points[lo * 3 + 0];
-	out[1] = t * (t * (float_3_8041984c * tangents[lo * 3 + 1] + t * (tangents[lo * 3 + 4] - tangents[lo * 3 + 1]) / h) + ((points[lo * 3 + 4] - points[lo * 3 + 1]) / h - h * (float_2_80419858 * tangents[lo * 3 + 1] + tangents[lo * 3 + 4]))) + points[lo * 3 + 1];
-	out[2] = t * (t * (float_3_8041984c * tangents[lo * 3 + 2] + t * (tangents[lo * 3 + 5] - tangents[lo * 3 + 2]) / h) + ((points[lo * 3 + 5] - points[lo * 3 + 2]) / h - h * (float_2_80419858 * tangents[lo * 3 + 2] + tangents[lo * 3 + 5]))) + points[lo * 3 + 2];
+	out[0] = t * (t * (3.0f * tangents[lo * 3 + 0] + t * (tangents[lo * 3 + 3] - tangents[lo * 3 + 0]) / h) + ((points[lo * 3 + 3] - points[lo * 3 + 0]) / h - h * (2.0f * tangents[lo * 3 + 0] + tangents[lo * 3 + 3]))) + points[lo * 3 + 0];
+	out[1] = t * (t * (3.0f * tangents[lo * 3 + 1] + t * (tangents[lo * 3 + 4] - tangents[lo * 3 + 1]) / h) + ((points[lo * 3 + 4] - points[lo * 3 + 1]) / h - h * (2.0f * tangents[lo * 3 + 1] + tangents[lo * 3 + 4]))) + points[lo * 3 + 1];
+	out[2] = t * (t * (3.0f * tangents[lo * 3 + 2] + t * (tangents[lo * 3 + 5] - tangents[lo * 3 + 2]) / h) + ((points[lo * 3 + 5] - points[lo * 3 + 2]) / h - h * (2.0f * tangents[lo * 3 + 2] + tangents[lo * 3 + 5]))) + points[lo * 3 + 2];
 }
 #pragma opt_lifetimes reset
+
+// Checks a loaded map file before use: a supported converter version, a conversion date, and the animation
+// and curve tables. Nothing in the game calls it; the original's .rodata still holds its strings.
+BOOL mapCheckData(MapHeader* header, const char* map, const char* date) {
+	char path[128];
+	MapFileInfo* info;
+
+	sprintf(path, "%s/m/%s/d", getMapDataDvdRoot(), map);
+	info = (MapFileInfo*)mapLoadFindChunk(header, "information");
+	if (strcmp(info->version, "ver1.01") && strcmp(info->version, "ver1.02")) {
+		mapErrorEntry(0, path);
+		return FALSE;
+	}
+	if (!strcmp(date, "--/--/-- --:--:--")) {
+		mapErrorEntry(1, "\203R\203\223\203o\201[\203g\202\263\202\352\202\304\202\242\202\334\202\271\202\361");
+		return FALSE;
+	}
+	if (mapLoadFindChunk(header, "animation_table") == NULL || mapLoadFindChunk(header, "curve_table") == NULL) {
+		mapErrorEntry(2, path);
+		return FALSE;
+	}
+	return TRUE;
+}
 
 BOOL mapTestXLU(u32 flags, GXColor* a, GXColor* b) {
 	if ((flags & 0x40) && a->a != 0xFF) {
@@ -5007,7 +4818,7 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	GXColor color;
 	MapObject* obj;
 
-	color = *(GXColor*)&unk_80422f8c;
+	color = (GXColor){0, 0, 0, 0};
 	color.r = r;
 	color.g = g;
 	color.b = b;
@@ -5023,7 +4834,7 @@ void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 #ifdef MUST_MATCH
 // Built in an inline that returns the colour: puts the by-value argument copy above the local, as retail has it.
 static inline GXColor mapFlushColor(u8 r, u8 g, u8 b, u8 a) {
-	GXColor color = *(GXColor*)&unk_80422f90;
+	GXColor color = (GXColor){0, 0, 0, 0};
 
 	color.r = r;
 	color.g = g;
@@ -5037,7 +4848,7 @@ void mapGrpSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 #ifdef MUST_MATCH
 	mapGrpSetColor(name, mapFlushColor(r, g, b, a));
 #else
-	GXColor color = *(GXColor*)&unk_80422f90;
+	GXColor color = (GXColor){0, 0, 0, 0};
 
 	color.r = r;
 	color.g = g;
