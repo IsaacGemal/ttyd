@@ -1548,7 +1548,7 @@ config.libs = [
             Object(Matching, "data/battle/battle_database_bom.c"),
             Object(Matching, "bom_02.c"),
             Object(Matching, "bom.c"),
-            Object(NonMatching, "bom_01.c"),
+            Object(Matching, "bom_01.c"),
         ],
     ),
     Rel(
