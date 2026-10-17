@@ -12,9 +12,10 @@ anything worth keeping into a chapter here.
 
 ## Current state (rewrite this section as things change)
 
-- **Fresh build, 2026-10-17:** 9,760 / 9,769 functions matched (99.91%), fuzzy 99.99706%, 1,227 / 1,233 units
-  complete. Nine functions are open in four units: `mri/mri_puni` (4), `MarioSt/driver/mapdrv` (2),
-  `MarioSt/driver/animdrv` (2), `MarioSt/driver/envdrv` (1). `party/party_hit` now links, all 11 functions matched. `build/G8MJ01/report.json`
+- **Fresh build, 2026-10-17:** 9,761 / 9,769 functions matched (99.92%), fuzzy 99.99709%, 1,228 / 1,233 units
+  complete. Eight functions are open in three units: `mri/mri_puni` (4), `MarioSt/driver/mapdrv` (2),
+  `MarioSt/driver/animdrv` (2). `driver/envdrv` now links, all 22 functions matched;
+  `party/party_hit` links, all 11 functions matched. `build/G8MJ01/report.json`
   on the Mac is not kept current; quote the tower's (`scratch/tci.sh`, which ratchets against the baseline accepted
   after each merge). A Mac checkout's own `build/ci/accepted.json` can be days old and then shows false regressions:
   never `--accept` from it.
@@ -7906,3 +7907,57 @@ drops below 100.
 - **Unread large merges** (CI plus report only): #792-#833 except the ones above, especially mapdrv #806/#820/#825
   (+754/-916 in #820 alone), animdrv #800/#811/#819, npcdrv #799/#807/#817/#821/#823, mri_puni #795/#805/#818,
   pmario_sound #797/#810/#816, battle_audience #794/#814, evt_eff #813, fontmgr #801/#803, mario_hit #796/#808.
+
+
+## envDisp_DepthOfField LINKS: merge the far tap loop into its pass (2026-10-17, GPT-6.1 Sol)
+
+- Isaac explicitly questioned the two DeepSeek chapters' helper-boundary assumptions and requested natural pass
+  restructuring under AGENT_BRIEF rule 7. Read both chapters first, then the earlier envdrv/GX display notes
+  (envDisp_FF, the long-arm/third-pass/wave-90 entries, and the macro-versus-inline argument-evaluation lesson).
+  Rebuilt the committed 99.95892% baseline: 7 real rows, all the final stage's r25 instead of r26.
+- **Closing source:** the EXISTING `envDofFar` now owns its four-tap loop instead of calling `envDofTaps`.
+  Its ordinary locals include `GXTevStageID next` between `i` and `id`. After `envDofBlendStageReg`, assign
+  `next = tevStage + 1` and use it for the six final compositing GX calls. The near pass retains its existing
+  tap helper; shared sin/cos, blend and quad helpers remain. No new helper, reordered prototype, forced out-of-line
+  call, pragma, volatile access, padding or loop unrolling was added. This is a complete far-pass body with
+  an ordinary named stage index, rather than a second helper copied solely to reorder its locals.
+- **The previous impossibility diagnosis is superseded.** The original helper arrangement prevented a useful
+  declaration order: a `next` local in the outer far helper was allocated before the inner tap locals and took
+  r27; the late common-expression temp was allocated after them and took r25. Owning the loop and `next` in one
+  scope lets the declarations place it between the loop pointer and index in allocation order. There is no need
+  to create it as a blend argument, invent an interference edge, or rematerialize it after register allocation.
+- **Tower debugger evidence:** baseline GPR replay is exact (0/199 differences). In the final dump, id is
+  r61/@1100 -> r26, next is r60/@1101 -> r26, then i is r59/@1102 -> r25. next still has just 14 neighbours:
+  the physical call-clobbered set plus the two pass counters (r56/r57); it has NO edge to the texcoord copy.
+  The priority order allows reuse of id's r26 before i introduces r25. B120, immediately after the blend's
+  GXSetTevSwapMode, contains `addi r60,r56,1` before allocation, exactly the right block. Both final GPR and FPR
+  allocator replays reproduce every assignment. Thus an order change, not an extra lifetime, resolves the conflict.
+- **Useful negatives:** simply writing the far tap body in its existing block stays at 7; flattening the whole
+  far pass into envDisp_DepthOfField gives 39 (or 110 with its tap body also direct), including named-counter
+  zero initialization and near-pass register changes. Flattening the blend wrapper gives 15 with a lost texcoord
+  copy and exchanged colour-copy stack slots. A standalone final-stage helper stays at 7; merging the final
+  stage into the register-blend helper gives 12; returning a blend-stage/count value gives 7-8. Reserving both
+  TEV stages up front gives 23-72, or 9-13 when done after the blend. Plain static helpers are still auto-inlined
+  (7); forcing them out of line adds non-retail calls (68-773). Ten definition orders, scalar/enum parameter
+  spellings and helper-scoped propagation/lifetime/CSE options do not improve the baseline. Caller lifetime
+  optimization changes 174 rows; caller propagation changes 272. Safe macro forms do not close it. None of these
+  variants is retained. With the merged far scope, putting next before i or after id remains 7; between them
+  gives 100 for either int or GXTevStageID (the meaningful enum form is retained).
+- **Verification:** final function is **100.00%, 3,408 bytes / 852 instructions** on Mac and tower;
+  `agent_check.py --final driver/envdrv`: **22/22 functions at 100%, merge checks clean**, including natural
+  compilation without MUST_MATCH. `autolink.py driver/envdrv.c` succeeds; configure.py now marks it Matching.
+  The tower explicitly rebuilt envdrv.o, linked MarioSt successfully, and printed **32 files OK**. This proves
+  linked code, data and pool layout together, not just fuzzy instruction agreement.
+- Full local CI passes tests, lint, prototypes, extend_data uniqueness, hang_guard, build/checksums, natural
+  compilation and data checks. Its saved baseline still reports the nine documented stale differences.
+  The exact CI ratchet against an unchanged copy of the canonical tower accepted report at the SAME HEAD
+  09736133 reports **no regressions, nine measures improved**; neither saved baseline was replaced. Fresh report:
+  **9,761/9,769 functions**, fuzzy **99.99709%**, **1,228/1,233 units**. Eight open functions in three units remain.
+- Reproducible variants, scores, source baseline, assembly, build/CI logs and copied debugger dumps are in
+  `scratch/sol-env/` on the Mac. Tower workspace: `~/ttyd-n4-sol-env`, dumps under
+  `build/mwccdbg/sol_env_{baseline,directfar,namednext,final}`; accessed through scratch/tb.sh.
+  Source is left at the verified match. No commit made.
+- **Review note (orchestrator):** the far pass writes envDofTaps' loop out by hand (identical body and declaration
+  order, plus a `next` local) while the near pass still calls envDofTaps. Writing both passes out and deleting the
+  helper scores 99.03, so only the asymmetric form matches. Accepted as plausible original structure (not a reordered
+  copy); listed for the post-finish review.

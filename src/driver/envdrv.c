@@ -429,40 +429,74 @@ static inline void envDofQuad(void) {
     GXTexCoord2f32(0.0f, 1.0f);
 }
 
-// The far pass: blur the frame by u->unk8 and weight it by the white register colour.
+// The far pass: build its blur taps, blend against white, then composite with the frame.
 static inline void envDofFar(EnvironmentUnk88* u, GXColor* color) {
     GXTevStageID tevStage;
     s32 texCoord;
+    Mtx mtx;
+    s32 first;
+    s32 i;
+    GXTevStageID next;
+    const s32* id = dat_802f9338.tbl;
+    GXTevColorArg colorD;
+    GXTevAlphaArg alphaD;
 
     texCoord = 0;
     tevStage = 0;
-    envDofTaps(&u->unk8, &texCoord, &tevStage);
+    for (i = 0; i < 4; i++) {
+        f32 s, c;
+
+        envDofSinCos(TWO_PI * i / 4, &s, &c);
+
+        MTXTrans(mtx, u->unk8 * s / 100.0f, u->unk8 * c / 100.0f, 0.0f);
+        GXLoadTexMtxImm(mtx, *id, 1);
+        GXSetTexCoordGen2(texCoord, 1, 4, *id, 0, 0x7D);
+        GXSetTevKColorSel(tevStage, 6);
+        GXSetTevKAlphaSel(tevStage, 6);
+        GXSetTevOrder(tevStage, texCoord, 0, 0xFF);
+        GXSetTevColorOp(tevStage, 0, 0, 0, 1, i == 3);
+        GXSetTevAlphaOp(tevStage, 0, 0, 0, 1, i == 3);
+        first = !i;
+        colorD = GX_CC_CPREV;
+        if (first) {
+            colorD = GX_CC_ZERO;
+        }
+        GXSetTevColorIn(tevStage, 0xF, 8, 0xE, colorD);
+        if (first) {
+            alphaD = GX_CA_ZERO;
+        } else {
+            alphaD = GX_CA_APREV;
+        }
+        GXSetTevAlphaIn(tevStage, 7, 4, 6, alphaD);
+        GXSetTevSwapMode(tevStage, 0, 0);
+        texCoord++;
+        id++;
+        tevStage++;
+    }
     color->r = u->unk3;
     color->a = 0xFF;
     GXSetTevKColor(0, *color);
     GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
     envDofBlendStageReg(tevStage, texCoord++);
-    GXSetTevOrder((GXTevStageID)(tevStage + 1), 0xFF, 0xFF, 0xFF);
-    GXSetTevColorOp((GXTevStageID)(tevStage + 1), 0, 0, 0, 1, 0);
-    GXSetTevAlphaOp((GXTevStageID)(tevStage + 1), 0, 0, 0, 1, 0);
-    GXSetTevColorIn((GXTevStageID)(tevStage + 1), 2, 0xF, 1, 0xF);
-    GXSetTevAlphaIn((GXTevStageID)(tevStage + 1), 1, 7, 0, 7);
-    GXSetTevSwapMode((GXTevStageID)(tevStage + 1), 0, 0);
+    next = tevStage + 1;
+    GXSetTevOrder(next, 0xFF, 0xFF, 0xFF);
+    GXSetTevColorOp(next, 0, 0, 0, 1, 0);
+    GXSetTevAlphaOp(next, 0, 0, 0, 1, 0);
+    GXSetTevColorIn(next, 2, 0xF, 1, 0xF);
+    GXSetTevAlphaIn(next, 1, 7, 0, 7);
+    GXSetTevSwapMode(next, 0, 0);
     tevStage += 2;
     GXSetNumTexGens(texCoord);
     GXSetNumTevStages(tevStage);
     envDofQuad();
 }
 
-// Both passes go through envDofTaps; tevStage is a GXTevStageID so its increments stay in place
+// tevStage is a GXTevStageID so its increments stay in place
 // (an int counter gets folded into the GXSetNumTevStages argument by the propagation pass).
 // texCoord and tevStage only take the original's registers when three of their interference
 // neighbours are named locals declared after them: with lower vregs those leave the allocation
 // graph first, which keeps the two counters out of the late priority level that the loop's own
 // counters fall into.
-// NONMATCHING (99.96%): the far pass's tevStage + 1 keeps r25 where the original has r26. The value
-// is an inline-expansion temporary, so it is coloured after the inlined loop's counters, and the
-// original also has r25 in use at that point.
 void envDisp_DepthOfField(void) {
     EnvironmentWork* wp = envGetWork();
     EnvironmentUnk88* u = &wp->unk88;

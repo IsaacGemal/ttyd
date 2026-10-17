@@ -468,7 +468,7 @@ config.libs = [
             Object(Matching, "driver/swdrv.c"),
             Object(Matching, "driver/itemdrv.c"),
             Object(Matching, "driver/extdrv.c"),
-            Object(NonMatching, "driver/envdrv.c"),
+            Object(Matching, "driver/envdrv.c"),
         ],
     },
     {
