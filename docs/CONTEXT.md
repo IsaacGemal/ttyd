@@ -7585,3 +7585,22 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 - Hard negatives: SetMaterial declaration hill climbs, int/cast/slot forms; DispSub (98.96) 150-round declaration hill
   climb, x/b splits, max spellings, value-taking inline (all worse; rasim needs the `pose` parameter numbered after
   animData, which source can't do); renderProc material block as an inline helper (65), `k1 < count` forms (321-344).
+
+### mapdrv 95 -> 96/101: mapDispMapObj_bbox 100; .rodata matched; _mapLoad 99.17, mapMain 97.75 (Claude Opus 5.5, on7-mapdrv)
+- .rodata matches (pooled per function, no math.h sqrt constants); .sdata2 220/224, .data 368/384; .sbss/.sbss2
+  templates fixed (definitions placed where retail puts their data, .sbss declared in reverse, texture_0 an
+  initialised aligned static, floats as literals, GXColor as compound literals).
+- mapDispMapObj_bbox: body equal to an inlined sibling call; its MUST_MATCH loop and pragmas are gone.
+- mapMain 96.69 -> 97.75 (all rasim-guided): top-level declaration order puts the lists in r19..r15 and OSTime in
+  r22/r25; each Hermite block declares its floats in one C89 list in rasim order, keys loaded `tan1, value1, tan0,
+  value0`; `zero = 0.0f; flag = (d != zero)` as in mapCalcAnimMatrix; function-scope Mtx; the matrix loop calls the
+  public `mapGetMapObj`, not `mapGetMapObjSub`.
+- _mapLoad 95.64 -> 99.17: real struct members instead of raw offsets (MWCC CSEs raw offsets and array decay, not
+  scalar member access), a `wp2 = &mapWork[activeGroup]` work pointer, a typed `MapEntryAnimData*` (flags, startTime,
+  frame, rate, data) for the anim init loop.
+- mapSetMaterialTev: `tevStage++` written twice instead of a `stage = tevStage + 1` temp (9 -> 2 instruction diffs).
+- Hard negatives: declaration order inside a `static inline` doesn't steer its FPRs (three rasim orders, all 369);
+  mapMain clamp `fmr` survives every then-block shape; mapObjSetFlushColor reaches 0 only with an invented search inline
+  (mapGetMapObjSub's order is pinned by 17 users); bmapUnLoad loop 1's `i` needs a frontend-temp position; the Tev
+  prologue `addi` doesn't move. Next idea: read `chn`/`ch` fields directly in mapMain's Hermite expressions instead of
+  through value0/tan0 locals.

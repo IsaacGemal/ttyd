@@ -6,16 +6,8 @@ typedef struct TEXPalette TEXPalette;
 #include <dolphin/mtx.h>
 #include "driver/camdrv.h"
 
-extern s32 culling[];
-extern u32 attr_fmt[];
 extern f32 float_0p0001_8041985c;
-extern GXColor dat_80419834;
-extern GXColor dat_80419838;
-extern GXColor dat_8041983c;
 extern GXColor paperCraft_ambient;
-extern u32 lightid_tbl[];
-extern Vec vec3_802c1828[];
-extern u8 vec3_802c16e4[];
 
 typedef struct DisplayList {
     u32 offset;      // 0x00 - Offset to vertex data
@@ -103,7 +95,7 @@ typedef struct MapHeader {
     const char* strings;        // 0x30
     u8 field_0x34[0x3C - 0x34]; // 0x34
     s32 field_0x3C;             // 0x3C, dispFlags something?
-    u8 field_0x40[0x44 - 0x40]; // 0x40
+    void* buffer;               // 0x40, the loaded map file
 } MapHeader;
 
 typedef struct MapObject {
@@ -126,20 +118,36 @@ typedef struct MapError {
 } MapError;
 
 typedef struct MapEntryAnimData {
-    u8 field_0x0[0x20 - 0x0]; // 0x0
+    u16 flags;           // 0x0
+    u8 field_0x2[6];     // 0x2
+    OSTime startTime;    // 0x8, in milliseconds
+    f32 frame;           // 0x10
+    f32 rate;            // 0x14, mapSetPlayRate
+    void* data;          // 0x18, the animation_table entry
+    u8 field_0x1C[4];    // 0x1C
 } MapEntryAnimData;
 
 typedef struct MapEntry {
     s32 count;                     // 0x0
     u16 flags;                     // 0x4
     char name[16];                 // 0x6
-    u8 field_0x16[0x38 - 0x16];    // 0x16
+    u8 field_0x16[0x24 - 0x16];    // 0x16, the blend colours (mapSetBlend, mapSetBlend2)
+    s32 fogEnable;                 // 0x24
+    s32 fogType;                   // 0x28, index into fog_type
+    f32 fogStart;                  // 0x2C
+    f32 fogEnd;                    // 0x30
+    GXColor fogColor;              // 0x34
     MapHeader header;              // 0x38
     void* dat;                     // 0x7C, ./map/%s/map.dat
     u32 datSize;                   // 0x80
     void* tpl;                     // 0x84, ./map/%s/texture.tpl
     u32 tplSize;                   // 0x88
-    u8 field_0x8C[0xA8 - 0x8C];    // 0x8C
+    u8 field_0x8C[0x94 - 0x8C];    // 0x8C
+    void* textureTable;            // 0x94, "texture_table" chunk
+    struct MapFileLightTable* lightTable; // 0x98, "light_table" chunk
+    struct MapFileFog* fogTable;   // 0x9C, "fog_table" chunk
+    void* materialNameTable;       // 0xA0, "material_name_table" chunk
+    void* vcdTable;                // 0xA4, "vcd_table" chunk
     MapObject* rootMapObj;         // 0xA8
     struct HitEntry* rootHitObj;     // 0xAC
     Vec bbox[8];                   // 0xB0
@@ -148,7 +156,7 @@ typedef struct MapEntry {
     MapObject* objects;            // 0x154, TODO: rename? see: hitNumJoints
     s32 hitNumJoints;              // 0x158
     struct HitEntry* hitEntries;     // 0x15C
-    u8 field_0x160[0x164 - 0x160]; // 0x160
+    s32 animCount;                 // 0x160, entries in animData
     MapEntryAnimData* animData;    // 0x164
     u8 field_0x168[0x178 - 0x168]; // 0x168
 } MapEntry;
@@ -220,6 +228,7 @@ void mapFogOff(void);
 void mapGetFog(u32* c, f32* near, f32* far, u32* c2);
 void mapSetFog(u32 color, f32 near, f32 far, GXColor color2);
 void mapResetPaperAmbColor(void);
+void mapResetPaperCraftAmbColor(void);
 void mapGrpSetColor(const char* name, GXColor color);
 void mapFlgOff(MapObject* obj, u32 flag, s32 a3);
 void mapFlgOn(MapObject* obj, u32 flag, s32 a3);
@@ -236,6 +245,7 @@ void* mapSearchDmdJointSub2(void* a, void* b, const char* c);
 void mapGetJointsSub(MapFileJoint* joint, s32* numJoints);
 void mapBuildTexture(MapObject* obj, TEXPalette* texture, void* table);
 void _mapLoad(MapWork* wp, BOOL group, const char* map);
+BOOL mapCheckData(MapHeader* header, const char* map, const char* date);
 void mapSetProjMtx(Mtx mtx);
 void mapSetProjTexObj(GXTexObj* obj, void* imgRef);
 void mapObjSetColor(const char* name, GXColor* color);
@@ -303,11 +313,11 @@ typedef struct MapFileLightTable {
     MapFileLight* lights[]; // 0x4
 } MapFileLightTable;
 typedef struct MapFileFog {
-    s32 field_0x0;  // 0x0
-    s32 field_0x4;  // 0x4
-    f32 field_0x8;  // 0x8
-    f32 field_0xC;  // 0xC
-    s32 field_0x10; // 0x10
+    s32 enable;     // 0x0
+    s32 type;       // 0x4
+    f32 start;      // 0x8
+    f32 end;        // 0xC
+    GXColor color;  // 0x10
 } MapFileFog;
 typedef struct MapFileAnimEntry {
     u16 field_0x0;              // 0x0
@@ -315,8 +325,6 @@ typedef struct MapFileAnimEntry {
     u32 field_0x18;             // 0x18
     u8 field_0x1C[0x20 - 0x1C]; // 0x1C
 } MapFileAnimEntry;
-extern GXColor unk_80422f80;
 extern const char str_80419848[];
 extern const char str_804198D0[];
-extern f32 scrl_uv[4];
 void* mapSearchDmdJoint(void* a, s8* b);
