@@ -12,8 +12,8 @@ anything worth keeping into a chapter here.
 
 ## Current state (rewrite this section as things change)
 
-- **Fresh build, 2026-10-17:** 9,758 / 9,769 functions matched (99.89%), fuzzy 99.99%, 1,226 / 1,233 units
-  complete. Eleven functions are open in five units: `mri/mri_puni` (5), `MarioSt/driver/mapdrv` (2),
+- **Fresh build, 2026-10-17:** 9,759 / 9,769 functions matched (99.90%), fuzzy 99.99%, 1,226 / 1,233 units
+  complete. Ten functions are open in five units: `mri/mri_puni` (4), `MarioSt/driver/mapdrv` (2),
   `MarioSt/driver/animdrv` (2), `MarioSt/driver/envdrv` (1), `MarioSt/party/party_hit` (1). `build/G8MJ01/report.json`
   on the Mac is not kept current; quote the tower's (`scratch/tci.sh`, which ratchets against the baseline accepted
   after each merge). A Mac checkout's own `build/ci/accepted.json` can be days old and then shows false regressions:
@@ -7762,3 +7762,23 @@ repeat it. All local checks were `tools/agent_check.py mri/mri_puni FUNC` (the u
   difference with identical instruction streams, or a scheduler pick. The next useful step is to run
   mwccdbg + rasim on the tower and `search` over the named locals / `neighbors` for each; without replay the
   search space cannot be closed. Leaving them at their best natural scores is consistent with the Oct 17 fake rule.
+
+
+## puniMapFindbuff: scheduler replay and bounded source search, no gain (2026-10-17, GPT-6.1 Sol Light)
+
+- Baseline independently rebuilt on the Mac with `tools/agent_check.py mri/mri_puni puniMapFindbuff`: 98.55%, 732 bytes, four instruction diffs. No game-source changes kept.
+- Captured `tools/mwccdbg.py mri/mri_puni puniMapFindbuff` on the tower in the existing on7-mripuni checkout, output `build/mwccdbg/puniMapFindbuff_codex`. The Mac's main and on7-mripuni source files were identical before the experiments. `sched750.py predict ... B7` reproduces BOTH actual scheduling passes exactly. This upgrades the previous pass's scheduling diagnosis with a validated replay of the affected block.
+- With the existing virtual-to-physical register map held fixed, none of the 13,860 interleavings preserving the five-instruction store setup and four-instruction mode-load chain, plus the two coordinate loads, produces the retail block after both simulated passes. The six store/x/z statement orders also have no hit with one/two eliminated copies or dead sign-word shifts inserted at definitions. Additional single-copy/sign-word insertion positions and one/two dead FPR copies did not produce a hit. These are model searches, not proof that no natural source exists; allocator changes and model limitations remain possible.
+- Actual compiler trials: all six store/x/z orders; all 24 store/x/z/mode orders with a named cached mode; six map-pointer-cache orders; double, const and register coordinate forms. None beats the baseline's four aligned differences. Vec-by-value copies add eight instructions. Some exploratory mixed-declaration forms were rejected by the C compiler and are not counted as tested variants.
+- Experiments compile alternate full-unit source files to scratch objects without replacing the production source/object. Repro scripts, full compiler dump, target block and `results.json` are in `/Users/isaac/Documents/ChatGPT/ttyd/scratch/puni-scheduler/` (local artifacts, outside this repository).
+- Next attempt should examine a different pre-scheduling temporary/dependency structure or independently check the scheduler model against retail constraints. Repeating coordinate/store/mode order permutations alone is not promising.
+
+
+## puniMapFindbuff 98.55 -> 100: aliasing, not missing instructions (2026-10-17, GPT-6.1 Sol Light)
+
+- Closing ledger lead: the on4-fontmgr entry, **FontDrawColor is aliasing**, where `__restrict` changes load/store scheduling. After the initial bounded pass, Isaac explicitly asked to keep going and use the ledger. Address/sign-word casts and volatile views did not close Findbuff; the aliasing lead did.
+- Final source change: `void puniMapFindbuff(Vec* __restrict pos)` and read `z` before `x` in the existing coordinate block. All 183 instructions (732 bytes) now match in objdiff. Restrict alone with x first leaves two differing instructions; z first plus restrict reaches 100. No new helper, pragma, cast, dummy operation or MUST_MATCH block is needed.
+- Restrict's promise is supported by the only source caller, `puni_puni_main`: it copies the position into its stack-local `Vec tmp` and passes `&tmp`, independent of the map/work buffers. Header ABI is unchanged; the parameter's restrict qualifier is compatible with the existing declaration.
+- **Correction to the earlier on7 and bounded-pass diagnosis:** the assertion that retail must have different instruction content was too strong. The missing lever was alias information, which changes legal load/store scheduling. `sched750.py` conservatively orders nonliteral loads against stores and does not model this source-level restrict promise; an exhaustive order search under that fixed model cannot rule out the real source solution. Check qualifiers and alias dependencies before concluding a scheduling block needs extra dead instructions.
+- Verification: rebuilt production source reports Findbuff 100.00%, unit 182/186 (was 181/186); comparison against the pre-edit unit report shows no other function score changes. All ELF relocation and data sections are byte-identical to the saved baseline. Full tools tests, lint, prototypes, build/checksum checks, and the natural compile without MUST_MATCH pass.
+- Mac's standard CI ratchet reports nine stale-baseline differences, as the Current state warning predicts (old split names, renamed battle unit and data scores). Independently reran the exact `ci.ratchet` against a read-only copy of the tower CI accepted report at the same HEAD, ffbca2d1: **no regressions, five measures improved**. Neither saved baseline was replaced or accepted. Fresh full report: **9,759/9,769**, ten functions open; mri_puni has four left.
