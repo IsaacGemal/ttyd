@@ -55,36 +55,6 @@ extern s32 _evt_majinai_coin_up_effect[];
 
 extern GlobalWork* gp;
 extern NpcTribeInfo npcTribe[];
-// This unit's float rodata (the names are the original .sdata2 symbols). Naming the constants lets MWCC
-// hoist the inlined sin/cos coefficient loads once per instance as retail does; the natural literals are
-// under the #else.
-#ifdef MUST_MATCH
-extern const f32 float_0p00761_80419c3c;
-extern const f32 float_0p16605_80419c40;
-extern const f32 float_3p1416_80419c44;
-extern const f32 float_1p5708_80419c48;
-extern const f32 float_4p7124_80419c4c;
-extern const f32 float_1_80419bb4;
-extern const f32 float_0p03705_80419c50;
-extern const f32 float_0p4967_80419c54;
-#define NPC_F_SIN0 float_0p00761_80419c3c
-#define NPC_F_SIN1 float_0p16605_80419c40
-#define NPC_F_COS0 float_0p03705_80419c50
-#define NPC_F_COS1 float_0p4967_80419c54
-#define NPC_F_PI float_3p1416_80419c44
-#define NPC_F_HALFPI float_1p5708_80419c48
-#define NPC_F_THREEHALVES float_4p7124_80419c4c
-#define NPC_F_ONE float_1_80419bb4
-#else
-#define NPC_F_SIN0 0.00761f
-#define NPC_F_SIN1 0.16605f
-#define NPC_F_COS0 0.03705f
-#define NPC_F_COS1 0.4967f
-#define NPC_F_PI 3.1415927f
-#define NPC_F_HALFPI 1.5707964f
-#define NPC_F_THREEHALVES 4.712389f
-#define NPC_F_ONE 1.0f
-#endif
 
 int __float_nan[];
 #define NAN (*(f32*)__float_nan)
@@ -745,12 +715,12 @@ static inline f32 npcSinf(f32 rad) {
     f32 sinv;
     f32 c1, c2, pi;
 
-    sinv = NPC_F_SIN0;
-    c1 = NPC_F_SIN1;
-    c2 = NPC_F_ONE;
-    pi = NPC_F_PI;
+    sinv = 0.00761f;
+    c1 = 0.16605f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
     if (rad <= pi) {
-        pi = NPC_F_HALFPI;
+        pi = 1.5707964f;
         if (rad <= pi) {
             f0 = rad * rad;
             sinv = sinv * f0 - c1;
@@ -764,7 +734,7 @@ static inline f32 npcSinf(f32 rad) {
             sinv = sinv * f0 + c2;
             sinv = sinv * rad;
         }
-    } else if (rad < NPC_F_THREEHALVES) {
+    } else if (rad < 4.712389f) {
         rad = rad - pi;
         f0 = rad * rad;
         sinv = sinv * f0 - c1;
@@ -772,8 +742,8 @@ static inline f32 npcSinf(f32 rad) {
         sinv = sinv * rad;
         sinv = -sinv;
     } else {
-        f1 = rad - NPC_F_THREEHALVES;
-        pi = NPC_F_HALFPI;
+        f1 = rad - 4.712389f;
+        pi = 1.5707964f;
         rad = pi - f1;
         f0 = rad * rad;
         sinv = sinv * f0 - c1;
@@ -789,12 +759,12 @@ static inline f32 npcCosf(f32 rad) {
     f32 cosv;
     f32 c1, c2, pi;
 
-    cosv = NPC_F_COS0;
-    c1 = NPC_F_COS1;
-    c2 = NPC_F_ONE;
-    pi = NPC_F_PI;
+    cosv = 0.03705f;
+    c1 = 0.4967f;
+    c2 = 1.0f;
+    pi = 3.1415927f;
     if (rad <= pi) {
-        pi = NPC_F_HALFPI;
+        pi = 1.5707964f;
         if (rad <= pi) {
             f0 = rad * rad;
             cosv = cosv * f0 - c1;
@@ -807,36 +777,32 @@ static inline f32 npcCosf(f32 rad) {
             cosv = cosv * f0 + c2;
             cosv = -cosv;
         }
+    } else if (rad < 4.712389f) {
+        rad = rad - pi;
+        f0 = rad * rad;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
+        cosv = -cosv;
     } else {
-        f0 = NPC_F_THREEHALVES;
-        if (rad < f0) {
-            rad = rad - pi;
-            f0 = rad * rad;
-            cosv = cosv * f0 - c1;
-            cosv = cosv * f0 + c2;
-            cosv = -cosv;
-        } else {
-            f1 = rad - f0;
-            pi = NPC_F_HALFPI;
-            rad = pi - f1;
-            f0 = rad * rad;
-            cosv = cosv * f0 - c1;
-            cosv = cosv * f0 + c2;
-        }
+        f1 = rad - 4.712389f;
+        pi = 1.5707964f;
+        rad = pi - f1;
+        f0 = rad * rad;
+        cosv = cosv * f0 - c1;
+        cosv = cosv * f0 + c2;
     }
     return cosv;
 }
 
 // Blur recovered (2*sin/-(2*cos) offsets from camGetPtr(camId)->viewYaw, 4 draws
-// with history 4..1, alpha 0x80-100..0x80-25, flag save/restore). The named unit-rodata constants hoist the
-// coefficient loads before the branches, `t1`/`t2` make MWCC put the product in f2 and the angle in f5, each
-// branch reuses `rad` as the folded angle, and declaring `alpha` first (with its init/decrement in the for
-// header) and putting `i` in the leading block give retail's callee-saved map.
-// The colour is a compound literal argument, which also gives retail's stack slots for it and its by-value copy.
-// `opt_lifetimes off` keeps each polynomial accumulator in its seed's register (retail f4) instead of a new
-// register per step; npcCosf has npcSinf's shape (`f1` for the reflected angle), which recovers its scratch pair,
-// and loads the 4.712389 bound into `f0` before comparing, so the bound and `rad` get retail's f0/f5.
-#pragma opt_lifetimes off
+// with history 4..1, alpha 0x80-100..0x80-25, flag save/restore). `t1`/`t2` make MWCC put the product in f2
+// and the angle in f5, each branch reuses `rad` as the folded angle, and declaring `alpha` first and putting
+// `i` in the leading block give retail's callee-saved map. The colour is a compound literal argument, which also
+// gives retail's stack slots for it and its by-value copy. At optimization level 2 the sin/cos coefficient
+// locals stay variables (at -O4 they are copied into every branch) and the colour copy's address is not
+// hoisted out of the loop; the do-while is the loop retail has (no entry test).
+#pragma push
+#pragma optimization_level 2
 void npcDisp_blur(CameraId camId, void* param) {
     s32 alpha;
     NpcEntry* entry = param; // cast to proper type
@@ -854,19 +820,24 @@ void npcDisp_blur(CameraId camId, void* param) {
     t2 = 6.2831855f * camGetPtr(camId)->viewYaw;
     offZ = 2.0f * -npcCosf(t2 / 360.0f);
     animPoseMain(entry->poseId);
-    for (i = 4, alpha = 100; i > 0; i--, alpha -= 25) {
+    i = 4;
+    alpha = 100;
+    do {
         mtx_setup(entry, mtx, i);
         PSMTXTransApply(mtx, mtx, offX, 0.0f, offZ);
         animPoseSetMaterialFlagOn(entry->poseId, 0x40);
-        animPoseSetMaterialEvtColor(entry->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, 0x80 - alpha });        animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
+        animPoseSetMaterialEvtColor(entry->poseId, (GXColor){ 0xFF, 0xFF, 0xFF, 0x80 - alpha });
+        animPoseDrawMtx(entry->poseId, mtx, 1, rotY, 2.0f);
         animPoseDrawMtx(entry->poseId, mtx, 2, rotY, 2.0f);
         animPoseDrawMtx(entry->poseId, mtx, 3, rotY, 2.0f);
-    }
+        i--;
+        alpha -= 25;
+    } while (i > 0);
     animPoseSetMaterialFlagOff(entry->poseId, 0x40);
     animPoseSetMaterialFlagOn(entry->poseId, flag);
 }
+#pragma pop
 
-#pragma opt_lifetimes reset
 
 void npcInit(void) { // 1:1
     FieldBattleData* data;

@@ -7623,3 +7623,16 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 - Hard negatives: `opt_strength_reduction off` fixes the addi but breaks the inlined npcGetBackItemEntry loop; hasStolen
   helpers, logical-or forms, 24 orders of a shared `item` local, rasim annealing (3-4 rows short).
 - A stale DOL can print "32 files OK" after a failed link: check that mwld succeeded.
+
+### npcdrv LINKS (npcDisp_blur with literal coefficients) (Claude Opus 5.5, on7b-npcdrv)
+- npcDisp_blur: the MUST_MATCH named float externs are gone; literals written directly in the sin/cos helpers. Three
+  changes: npcCosf in npcSinf's exact shape (`else if (rad < 4.712389f)` and an `f1` reflected angle; this alone made
+  every FPR exact under `opt_propagation off`, 92.82 -> 94.24); `#pragma push` / `optimization_level 2` / `pop`
+  around the function (no propagation/lifetimes pragmas needed); the loop as `i = 4; alpha = 100; do { ... i--;
+  alpha -= 25; } while (i > 0);`.
+- Why (mwccdbg): at -O4 the frontend copies each literal coefficient local into every branch; level 2 keeps one load
+  each. Under `opt_propagation off` the frontend keeps a temp holding the by-value GXColor copy's address, which the
+  backend's loop code motion hoists into a saved GPR; `opt_loop_invariants off` doesn't stop that pass, level 2 does.
+  At level 2 a `for` keeps its entry test and `addi`/`cmpwi`; a do-while gives retail's `addic.` with no entry test.
+- Hard negatives: levels 1 (90.05) and 3 (79.95); colour helper/local shapes; `while (--i)` forms (1 row); `alpha`
+  before `i` (2 rows). Try level 2 plus a do-while first on envdrv DepthOfField's by-value GXColor hoist.
