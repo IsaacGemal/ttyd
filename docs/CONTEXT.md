@@ -7550,3 +7550,18 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   fbatData r30, entry r29, info0/result r28, mario/mult r27, hasStolen r26, info4 r31; no named-local or call-temp order
   reaches them (info4/hasStolen stay swapped), so it needs a structural change; opt_propagation off, block-scope result,
   getters, case-4 helpers all worse.
+
+### mri_puni: puniMapFindbuff 97.29 -> 98.55, evt_puni_all_save 96.79 -> 97.24, pasted helpers become calls (Claude Opus 5.5, on7-mripuni)
+- rasim `--key` on Findbuff: `hi` had to sit in the backend-temp range before the neighbour offsets. Declaring it `u16`
+  and assigning it before the neighbour pointers does that; then dropping the `u8 low` locals
+  (`(nb & 0xFF) == 0 && (nb & 0xFF) < id && ...`) fixes the blocks. Only the pos->z load order is left; sched750
+  reproduces the block but no ordering of its instructions reaches retail's, so retail's block holds different
+  instructions.
+- `u32 ofs = index * 7;` in puniswSetindex: standalone stays 100, all_save +0.45.
+- evt_puni_get_lsw_index, get_trap_index and set_trap_index are now calls to puniswGetindex/puniswTrapGetindex/
+  puniswTrapSetindex instead of pasted copies (one MUST_MATCH hack gone; all still 100).
+- Hard negatives: inlined Setindex behaves like plain s32 locals the compiler leaves in place (yh before xh, both after
+  ofs and before x,y,z) while the standalone needs the two-statement s16 form; ~400 variants, helpers, macros and
+  propagation pragmas on the callers found no spelling that does both. set_lsw_index as a Setindex call: 22 diffs (4
+  with plain s32 highs plus its pragma). 95f0's pos copy comes from the first scheduling pass (121 diffs floor over
+  statement/declaration/parameter forms). mwsearch: Findbuff 4336 and ChildHagure 2616 compiles, 0 improvements.
