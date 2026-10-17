@@ -660,7 +660,7 @@ static inline HitEntry* partyHeadHit(Vec* pos, f32* dist, f32 up) {
     y = pos->y;
     z = pos->z;
     d = *dist;
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &hnx, &hny, &hnz, pos->x, up + y, z, 0.0f, 1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, pos->x, up + y, z, 0.0f, 1.0f, 0.0f, &hx, &hy, &hz, &d, &hnx, &hny, &hnz);
     if (hit != NULL) {
         if (*dist >= d) {
             *dist = d;
@@ -749,7 +749,7 @@ HitEntry* partyGetRoofY(f32 x, f32 y, f32 z, f32* dist, f32* roofY) {
     HitEntry* hit;
     f32 hx, hy, hz, hnx, hny, hnz;
 
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, dist, &hnx, &hny, &hnz, x, y + 10.0f, z, 0.0f, 1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, x, y + 10.0f, z, 0.0f, 1.0f, 0.0f, &hx, &hy, &hz, dist, &hnx, &hny, &hnz);
     if (hit != NULL) {
         *roofY = (f32)(s32)(100.0f * hy + 0.5f) / 100.0f;
     }

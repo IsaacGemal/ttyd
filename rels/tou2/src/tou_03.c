@@ -2791,8 +2791,8 @@ void ext_kyaku_init(void) {
                     continue;
                 }
                 distance = 100000.0f;
-                hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &nx, &ny, &nz, s, 100.0f, c,
-                                     0.0f, -1.0f, 0.0f);
+                hit = hitCheckFilter(NULL, s, 100.0f, c, 0.0f, -1.0f, 0.0f, &hitX, &hitY, &hitZ, &distance,
+                                     &nx, &ny, &nz);
                 if (hit == NULL) {
                     continue;
                 }
@@ -2805,8 +2805,8 @@ void ext_kyaku_init(void) {
                 break;
             } else {
                 distance = 100000.0f;
-                hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &nx, &ny, &nz, s, 500.0f, c,
-                                     0.0f, -1.0f, 0.0f);
+                hit = hitCheckFilter(NULL, s, 500.0f, c, 0.0f, -1.0f, 0.0f, &hitX, &hitY, &hitZ, &distance,
+                                     &nx, &ny, &nz);
                 if (hit == NULL) {
                     continue;
                 }

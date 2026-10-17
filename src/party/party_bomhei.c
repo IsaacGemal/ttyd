@@ -1105,7 +1105,7 @@ void partyGetReturnPos(Vec* pos) {
     dist = mario->wPlayerCollisionBox.x;
     angle = mario->targetYaw;
     sincosf(&sin, &cos, angle);
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, px, radius0, pz, sin, 0.0f, cos);
+    hit = hitCheckFilter(NULL, px, radius0, pz, sin, 0.0f, cos, &hx, &hy, &hz, &dist, &nx, &ny, &nz);
     if (hit == NULL) {
         v = mario->position;
         marioGetPtr();
@@ -1144,7 +1144,7 @@ void partyGetReturnPos(Vec* pos) {
     {
     ang = revise360(toMovedirSimple(*(f32*)mario->unk1AC) - 180.0f);
     sincosf(&sin, &cos, ang);
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, px, radius, pz, sin, 0.0f, cos);
+    hit = hitCheckFilter(NULL, px, radius, pz, sin, 0.0f, cos, &hx, &hy, &hz, &dist, &nx, &ny, &nz);
     if (hit == NULL) {
         md = mario->wPlayerCollisionBox.x;
         v = mario->position;
@@ -1181,7 +1181,7 @@ void partyGetReturnPos(Vec* pos) {
     { f32 ang;
     ang = toMovedirSimple(*(f32*)mario->unk1AC);
     sincosf(&sin, &cos, ang);
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, px, radius, pz, sin, 0.0f, cos);
+    hit = hitCheckFilter(NULL, px, radius, pz, sin, 0.0f, cos, &hx, &hy, &hz, &dist, &nx, &ny, &nz);
     if (hit == NULL) {
         { f32 md2 = mario->wPlayerCollisionBox.x;
         v = mario->position;

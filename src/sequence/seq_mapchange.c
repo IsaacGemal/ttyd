@@ -516,8 +516,8 @@ void _load(const char* prevMapName, const char* newMapName, const char* beroName
             hz = 0.0f;
             hy = 0.0f;
             hx = 0.0f;
-            if (hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &nx, &ny, &nz, pos.x, pos.y + 10.0f, pos.z, 0.0f,
-                               -1.0f, 0.0f)) {
+            if (hitCheckFilter(NULL, pos.x, pos.y + 10.0f, pos.z, 0.0f, -1.0f, 0.0f, &hx, &hy, &hz, &dist, &nx,
+                               &ny, &nz)) {
                 entryPos = (Vec){ 0.0f, 0.0f, 0.0f };
                 entryPos.x = hx;
                 entryPos.y = hy;

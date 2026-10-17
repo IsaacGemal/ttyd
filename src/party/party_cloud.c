@@ -473,9 +473,9 @@ void N__cloud_use(PartyEntry* party) {
         sincosf(&sin1, &cos1, angle);
         sincosf(&sin2, &cos2, -45.0f);
         dist = cloud->unk8;
-        hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &dist, &hitNX, &hitNY, &hitNZ,
-                             party->position.x, 18.0f + mario->position.y, party->position.z,
-                             sin1, sin2, cos1);
+        hit = hitCheckFilter(NULL, party->position.x, 18.0f + mario->position.y, party->position.z, sin1, sin2, cos1, &hitX,
+                             &hitY, &hitZ, &dist,
+                             &hitNX, &hitNY, &hitNZ);
         if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
             hit = NULL;
         }
@@ -643,9 +643,9 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
     sincosf(&sin2, &cos2, f31);
 
     distance = cloud->unk8;
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                         party->position.x, mario->position.y + f30, party->position.z,
-                         sin2, sin1, cos2);
+    hit = hitCheckFilter(NULL, party->position.x, mario->position.y + f30, party->position.z, sin2, sin1, cos2, &hitX,
+                         &hitY, &hitZ, &distance,
+                         &hitNX, &hitNY, &hitNZ);
     if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
         hit = NULL;
     }
@@ -691,9 +691,9 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
     dir = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x10) * f31);
     sincosf(&sin2, &cos2, dir);
     distance = cloud->unk8;
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                         party->position.x, mario->position.y + f30, party->position.z,
-                         sin2, sin1, cos2);
+    hit = hitCheckFilter(NULL, party->position.x, mario->position.y + f30, party->position.z, sin2, sin1, cos2, &hitX,
+                         &hitY, &hitZ, &distance,
+                         &hitNX, &hitNY, &hitNZ);
     if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
         hit = NULL;
     }
@@ -716,9 +716,9 @@ void getHitBreatheout2(PartyEntry* party, f32 angle) {
     dir = toMovedir(cloud->unk4 + *(f32*)((u8*)cloud + 0x18) * f31);
     sincosf(&sin2, &cos2, dir);
     distance = cloud->unk8;
-    hit = hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-                         party->position.x, mario->position.y + f30, party->position.z,
-                         sin2, sin1, cos2);
+    hit = hitCheckFilter(NULL, party->position.x, mario->position.y + f30, party->position.z, sin2, sin1, cos2, &hitX,
+                         &hitY, &hitZ, &distance,
+                         &hitNX, &hitNY, &hitNZ);
     if (hit != NULL && (hitGetAttr(hit) & 4) != 0) {
         hit = NULL;
     }

@@ -2625,7 +2625,7 @@ USER_FUNC(evt_fbat_trans_floor_position) {
 
     distance = evtGetFloat(event, *args++);
 
-    if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, x, 1.0f + y, z, 0.0f, -1.0f, 0.0f)) {
+    if (hitCheckFilter(0, x, 1.0f + y, z, 0.0f, -1.0f, 0.0f, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ)) {
         y = (hitY + floor);
     }
 

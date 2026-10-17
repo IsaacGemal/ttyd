@@ -198,8 +198,8 @@ static inline BOOL puniHagureCheck(PuniData* punidat, Vec* pos, Vec* target) {
     }
     PSVECNormalize(&delta, &delta);
     dist = PSVECMag(&delta);
-    if (hitCheckFilter(NULL, &out.x, &out.y, &out.z, &dist, &nx, &ny, &nz, pos->x, pos->y, pos->z,
-                       delta.x, delta.y, delta.z) == NULL) {
+    if (hitCheckFilter(NULL, pos->x, pos->y, pos->z, delta.x, delta.y, delta.z, &out.x, &out.y, &out.z, &dist,
+                       &nx, &ny, &nz) == NULL) {
         punidat->field_0x12C = *target;
         return TRUE;
     }
@@ -1836,25 +1836,25 @@ PuniData* PuniSakanobori(PuniData* puni) {
     return puni;
 }
 
-// NONMATCHING (97.88%): the inlined recursion's register colouring is one register lower (we use r27-r31,
-// the target r28-r31); the emitted instructions are otherwise identical.
-void PuniChildHagure(PuniData* puni) {
-    PuniData* child = (PuniData*)puni->field_0x1D4;
+static inline void puniHagureChild(PuniData* parent, PuniData* child) {
+    child->unkC = 0x10;
+    parent->field_0x114 = 0;
+    PuniChildHagure(child);
+    PuniDokuritsu(child);
+}
 
-    if (child != NULL) {
-        child->unkC = 0x10;
-        puni->field_0x114 = 0;
-        PuniChildHagure(child);
-        PuniDokuritsu(child);
+// Each level of the recursion costs two inline levels (helper + PuniChildHagure); depth 5 inlines it as far as retail.
+#pragma push
+#pragma inline_depth(5)
+void PuniChildHagure(PuniData* puni) {
+    if ((PuniData*)puni->field_0x1D4 != NULL) {
+        puniHagureChild(puni, (PuniData*)puni->field_0x1D4);
     }
-    child = (PuniData*)puni->field_0x1D8;
-    if (child != NULL) {
-        child->unkC = 0x10;
-        puni->field_0x114 = 0;
-        PuniChildHagure(child);
-        PuniDokuritsu(child);
+    if ((PuniData*)puni->field_0x1D8 != NULL) {
+        puniHagureChild(puni, (PuniData*)puni->field_0x1D8);
     }
 }
+#pragma pop
 
 s32 searchParent(PuniData* puni) {
     s32 best = 10000;
@@ -1925,8 +1925,8 @@ s32 puniPositionCheck(PuniData* puni) {
     pos.y += 1.0f;
     normal = (Vec){0.0f, -1.0f, 0.0f};
     distance = 3.0f;
-    if (hitCheckFilter(0, &hit.x, &hit.y, &hit.z, &distance, &hitN.x, &hitN.y, &hitN.z, pos.x, pos.y, pos.z, normal.x,
-                       normal.y, normal.z) == NULL) {
+    if (hitCheckFilter(0, pos.x, pos.y, pos.z, normal.x, normal.y, normal.z, &hit.x, &hit.y, &hit.z, &distance, &hitN.x,
+                       &hitN.y, &hitN.z) == NULL) {
         return 2;
     }
     return 0;
@@ -1958,8 +1958,8 @@ s32 puniMoveAtari(PuniData* punidat, Vec pos, Vec vel, s32 arg3, f32 mag) {
 
     if (punidat->unk4 & 0x1000) {
         punidat->field_0x210 =
-            hitCheckFilter(0, &hit.x, &hit.y, &hit.z, &dist, &normal.x, &normal.y, &normal.z, pos.x, pos.y,
-                                pos.z, vel.x, vel.y, vel.z);
+            hitCheckFilter(0, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, &hit.x, &hit.y, &hit.z,
+                                &dist, &normal.x, &normal.y, &normal.z);
     }
     if (punidat->field_0x210 == NULL) {
         PSVECAdd(&punidat->field_0x12C, &punidat->field_0x15C, &punidat->field_0x12C);
@@ -1990,8 +1990,8 @@ s32 puniMoveAtari(PuniData* punidat, Vec pos, Vec vel, s32 arg3, f32 mag) {
         pos = start;
         pos.y += 1.0f;
         punidat->field_0x214 =
-            hitCheckFilter(0, &hit2x, &hit2y, &hit2z, &dist, &normal2x, &normal2y, &normal2z, start.x,
-                                start.y + 1.0f, start.z, dir.x, dir.y, dir.z);
+            hitCheckFilter(0, start.x, start.y + 1.0f, start.z, dir.x, dir.y, dir.z, &hit2x, &hit2y,
+                                &hit2z, &dist, &normal2x, &normal2y, &normal2z);
         if (punidat->field_0x214 != NULL) {
             punidat->field_0x12C = start;
         }
@@ -2000,8 +2000,6 @@ done:
     return result;
 }
 
-// NONMATCHING (96.04%): only the prologue's register scheduling differs (the target loads pos.x/y/z
-// directly from r4 while we copy the pointer to r3 before loading pos.z); the rest matches.
 void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag) {
     Vec hit;
     Vec normal;
@@ -2012,12 +2010,12 @@ void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag) {
     f32 dist;
 
     puni->field_0x214 = NULL;
-    dist = mag;
     puni->field_0x210 = NULL;
+    dist = mag;
 
     puni->field_0x210 =
-        hitCheckFilter(0, &hit.x, &hit.y, &hit.z, &dist, &normal.x, &normal.y, &normal.z, pos.x, pos.y, pos.z,
-                       vel.x, vel.y, vel.z);
+        hitCheckFilter(0, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, &hit.x, &hit.y, &hit.z, &dist,
+                       &normal.x, &normal.y, &normal.z);
     if (puni->field_0x210 == NULL) {
         PSVECAdd(&puni->field_0x12C, &puni->field_0x15C, &puni->field_0x12C);
         return;
@@ -2043,8 +2041,8 @@ void unk_mri_000095f0(PuniData* puni, Vec pos, Vec vel, f32 mag) {
     if (dist > 0.0f) {
         PSVECNormalize(&dir, &dir);
         puni->field_0x214 =
-            hitCheckFilter(0, &hit2x, &hit2y, &hit2z, &dist, &normal2x, &normal2y, &normal2z, start.x,
-                           start.y + 1.0f, start.z, dir.x, dir.y, dir.z);
+            hitCheckFilter(0, start.x, start.y + 1.0f, start.z, dir.x, dir.y, dir.z, &hit2x, &hit2y,
+                           &hit2z, &dist, &normal2x, &normal2y, &normal2z);
         if (puni->field_0x214 != NULL) {
             puni->field_0x12C = start;
         }
@@ -2067,8 +2065,8 @@ void unk_mri_0000980c(PuniData* punidat, Vec pos, Vec vel, f32 mag) {
 
     if (punidat->unk4 & 0x1000) {
         punidat->field_0x210 =
-            hitCheckFilter(0, &hit.x, &hit.y, &hit.z, &dist, &normal.x, &normal.y, &normal.z, pos.x, pos.y,
-                                pos.z, vel.x, vel.y, vel.z);
+            hitCheckFilter(0, pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, &hit.x, &hit.y, &hit.z,
+                                &dist, &normal.x, &normal.y, &normal.z);
     }
     if (punidat->field_0x210 == NULL) {
         PSVECAdd(&punidat->field_0x12C, &punidat->field_0x15C, &punidat->field_0x12C);
@@ -2096,8 +2094,8 @@ void unk_mri_0000980c(PuniData* punidat, Vec pos, Vec vel, f32 mag) {
         pos = start;
         pos.y += 1.0f;
         punidat->field_0x214 =
-            hitCheckFilter(0, &hit2x, &hit2y, &hit2z, &dist, &normal2x, &normal2y, &normal2z, start.x,
-                                start.y + 1.0f, start.z, dir.x, dir.y, dir.z);
+            hitCheckFilter(0, start.x, start.y + 1.0f, start.z, dir.x, dir.y, dir.z, &hit2x, &hit2y,
+                                &hit2z, &dist, &normal2x, &normal2y, &normal2z);
         if (punidat->field_0x214 != NULL) {
             punidat->field_0x12C = start;
         }
@@ -2164,8 +2162,8 @@ void puniMoveDecel(PuniData* puni) {
     dist = mag;
     if (puni->unk4 & 0x1000) {
         puni->field_0x210 =
-            hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up2.x, up2.y,
-                                up2.z, dir.x, dir.y, dir.z);
+            hitCheckFilter(0, up2.x, up2.y, up2.z, dir.x, dir.y, dir.z, &hitP.x, &hitP.y, &hitP.z,
+                                &dist, &hitN.x, &hitN.y, &hitN.z);
     }
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, &puni->field_0x15C, &puni->field_0x12C);
@@ -2188,8 +2186,8 @@ void puniMoveDecel(PuniData* puni) {
         if (dist > 0.0f) {
             PSVECNormalize(&diff, &diff);
             puni->field_0x214 =
-                hitCheckFilter(0, &hitP2x, &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z,
-                                    saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z);
+                hitCheckFilter(0, saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z, &hitP2x,
+                                    &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z);
             if (puni->field_0x214 != 0) {
                 puni->field_0x12C = saved;
             }
@@ -2241,8 +2239,8 @@ void puniMoveLimitedNormal(PuniData* puni) {
     puni->field_0x210 = 0;
     dist = mag;
     puni->field_0x210 =
-        hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up2.x, up2.y,
-                            up2.z, dir.x, dir.y, dir.z);
+        hitCheckFilter(0, up2.x, up2.y, up2.z, dir.x, dir.y, dir.z, &hitP.x, &hitP.y, &hitP.z,
+                            &dist, &hitN.x, &hitN.y, &hitN.z);
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, &puni->field_0x15C, &puni->field_0x12C);
     } else if (Punigp->unk328 != 0x12) {
@@ -2261,8 +2259,8 @@ void puniMoveLimitedNormal(PuniData* puni) {
         if (dist > 0.0f) {
             PSVECNormalize(&diff, &diff);
             puni->field_0x214 =
-                hitCheckFilter(0, &hitP2x, &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z,
-                                    saved.x, 1.0f + saved.y, saved.z, diff.x, diff.y, diff.z);
+                hitCheckFilter(0, saved.x, 1.0f + saved.y, saved.z, diff.x, diff.y, diff.z, &hitP2x,
+                                    &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z);
             if (puni->field_0x214 != 0) {
                 puni->field_0x12C = saved;
             }
@@ -2322,8 +2320,8 @@ void puniMoveNormal(PuniData* puni) {
     dist = mag;
     if (puni->unk4 & 0x1000) {
         puni->field_0x210 =
-            hitCheckFilter(0, &hitP.x, &hitP.y, &hitP.z, &dist, &hitN.x, &hitN.y, &hitN.z, up2.x, up2.y,
-                                up2.z, dir.x, dir.y, dir.z);
+            hitCheckFilter(0, up2.x, up2.y, up2.z, dir.x, dir.y, dir.z, &hitP.x, &hitP.y, &hitP.z,
+                                &dist, &hitN.x, &hitN.y, &hitN.z);
     }
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, (Vec*)&puni->field_0x15C, &puni->field_0x12C);
@@ -2346,8 +2344,8 @@ void puniMoveNormal(PuniData* puni) {
         if (dist > 0.0f) {
             PSVECNormalize(&diff, &diff);
             puni->field_0x214 =
-                hitCheckFilter(0, &hitP2x, &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z,
-                                    saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z);
+                hitCheckFilter(0, saved.x, saved.y + 1.0f, saved.z, diff.x, diff.y, diff.z, &hitP2x,
+                                    &hitP2y, &hitP2z, &dist, &hitN2x, &hitN2y, &hitN2z);
             if (puni->field_0x214 != 0) {
                 puni->field_0x12C = saved;
             }
@@ -2958,8 +2956,8 @@ void puniModeChangeFallCheck(void) {
         pos.y = 1.0f + pos.y;
         normal = (Vec){0.0f, -1.0f, 0.0f};
         distance = 2.0f;
-        if (hitCheckFilter(NULL, &hit.x, &hit.y, &hit.z, &distance, &hitN.x, &hitN.y, &hitN.z, pos.x, pos.y, pos.z,
-                           normal.x, normal.y, normal.z) != NULL) {
+        if (hitCheckFilter(NULL, pos.x, pos.y, pos.z, normal.x, normal.y, normal.z, &hit.x, &hit.y, &hit.z, &distance,
+                           &hitN.x, &hitN.y, &hitN.z) != NULL) {
             continue;
         }
         PuniDokuritsu(puni);
@@ -3678,8 +3676,8 @@ void puniModeAway(PuniData* punidat) {
         distance = 2.0f;
         vec = (Vec){0.0f, -1.0f, 0.0f};
         pos.y += 0.2f;
-        if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, pos.x, pos.y, pos.z,
-                           vec.x, vec.y, vec.z) == NULL) {
+        if (hitCheckFilter(0, pos.x, pos.y, pos.z, vec.x, vec.y, vec.z, &hitX, &hitY, &hitZ, &distance,
+                           &hitNX, &hitNY, &hitNZ) == NULL) {
             punidat->field_0x15C = (Vec){0.0f, 0.0f, 0.0f};
             punidat->unkC = 0x11;
             punidat->field_0x11C = 0;
@@ -4222,8 +4220,8 @@ void puniModeWind(PuniData* punidat) {
         vec = (Vec){0.0f, -1.0f, 0.0f};
         dist = 2.0f;
         pos.y += 0.2f;
-        if (hitCheckFilter(NULL, &hx, &hy, &hz, &dist, &hnx, &hny, &hnz, pos.x, pos.y, pos.z, vec.x, vec.y,
-                           vec.z) == NULL) {
+        if (hitCheckFilter(NULL, pos.x, pos.y, pos.z, vec.x, vec.y, vec.z, &hx, &hy, &hz, &dist, &hnx, &hny,
+                           &hnz) == NULL) {
             *(Vec*)&punidat->field_0x15C = (Vec){0.0f, 0.0f, 0.0f};
             punidat->unkC = 0x11;
             punidat->field_0x11C = 0;
@@ -5686,8 +5684,8 @@ void fn_19_13A90(PuniData* puni) {
     dA = mag;
     if (puni->unk4 & 0x1000) {
         puni->field_0x210 =
-            hitCheckFilter(NULL, &hitPA.x, &hitPA.y, &hitPA.z, &dA, &hitNA.x, &hitNA.y, &hitNA.z, qA.x, qA.y, qA.z,
-                                rA.x, rA.y, rA.z);
+            hitCheckFilter(NULL, qA.x, qA.y, qA.z, rA.x, rA.y, rA.z, &hitPA.x, &hitPA.y, &hitPA.z, &dA,
+                                &hitNA.x, &hitNA.y, &hitNA.z);
     }
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, (Vec*)&puni->field_0x15C, &puni->field_0x12C);
@@ -5708,9 +5706,9 @@ void fn_19_13A90(PuniData* puni) {
         dA = PSVECMag(&sepA);
         if (dA > 0.0f) {
             PSVECNormalize(&sepA, &sepA);
-            puni->field_0x214 = hitCheckFilter(NULL, &hitP2Ax, &hitP2Ay, &hitP2Az, &dA, &hitN2Ax,
-                                                             &hitN2Ay, &hitN2Az, svA.x, svA.y + 1.0f, svA.z, sepA.x,
-                                                             sepA.y, sepA.z);
+            puni->field_0x214 = hitCheckFilter(NULL, svA.x, svA.y + 1.0f, svA.z, sepA.x, sepA.y,
+                                                             sepA.z, &hitP2Ax, &hitP2Ay, &hitP2Az, &dA, &hitN2Ax,
+                                                             &hitN2Ay, &hitN2Az);
             if (puni->field_0x214 != 0) {
                 puni->field_0x12C = svA;
             }
@@ -5747,8 +5745,8 @@ void fn_19_13A90(PuniData* puni) {
     puni->field_0x210 = 0;
     dB = mag;
     puni->field_0x210 =
-        hitCheckFilter(NULL, &hitPB.x, &hitPB.y, &hitPB.z, &dB, &hitNB.x, &hitNB.y, &hitNB.z, qB.x, qB.y, qB.z,
-                            rB.x, rB.y, rB.z);
+        hitCheckFilter(NULL, qB.x, qB.y, qB.z, rB.x, rB.y, rB.z, &hitPB.x, &hitPB.y, &hitPB.z, &dB,
+                            &hitNB.x, &hitNB.y, &hitNB.z);
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, (Vec*)&puni->field_0x15C, &puni->field_0x12C);
     } else if (Punigp->unk328 != 0x12) {
@@ -5766,9 +5764,9 @@ void fn_19_13A90(PuniData* puni) {
         dB = PSVECMag(&sepB);
         if (dB > 0.0f) {
             PSVECNormalize(&sepB, &sepB);
-            puni->field_0x214 = hitCheckFilter(NULL, &hitP2Bx, &hitP2By, &hitP2Bz, &dB, &hitN2Bx,
-                                                             &hitN2By, &hitN2Bz, svB.x, svB.y + 1.0f, svB.z, sepB.x,
-                                                             sepB.y, sepB.z);
+            puni->field_0x214 = hitCheckFilter(NULL, svB.x, svB.y + 1.0f, svB.z, sepB.x, sepB.y,
+                                                             sepB.z, &hitP2Bx, &hitP2By, &hitP2Bz, &dB, &hitN2Bx,
+                                                             &hitN2By, &hitN2Bz);
             if (puni->field_0x214 != 0) {
                 puni->field_0x12C = svB;
             }
@@ -5800,8 +5798,8 @@ void fn_19_13A90(PuniData* puni) {
     dD = mag;
     if (puni->unk4 & 0x1000) {
         puni->field_0x210 =
-            hitCheckFilter(NULL, &hitPD.x, &hitPD.y, &hitPD.z, &dD, &hitND.x, &hitND.y, &hitND.z, qD.x, qD.y, qD.z,
-                                rD.x, rD.y, rD.z);
+            hitCheckFilter(NULL, qD.x, qD.y, qD.z, rD.x, rD.y, rD.z, &hitPD.x, &hitPD.y, &hitPD.z, &dD,
+                                &hitND.x, &hitND.y, &hitND.z);
     }
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, (Vec*)&puni->field_0x15C, &puni->field_0x12C);
@@ -5822,9 +5820,9 @@ void fn_19_13A90(PuniData* puni) {
         dD = PSVECMag(&sepD);
         if (dD > 0.0f) {
             PSVECNormalize(&sepD, &sepD);
-            puni->field_0x214 = hitCheckFilter(NULL, &hitP2Dx, &hitP2Dy, &hitP2Dz, &dD, &hitN2Dx,
-                                                             &hitN2Dy, &hitN2Dz, svD.x, svD.y + 1.0f, svD.z, sepD.x,
-                                                             sepD.y, sepD.z);
+            puni->field_0x214 = hitCheckFilter(NULL, svD.x, svD.y + 1.0f, svD.z, sepD.x, sepD.y,
+                                                             sepD.z, &hitP2Dx, &hitP2Dy, &hitP2Dz, &dD, &hitN2Dx,
+                                                             &hitN2Dy, &hitN2Dz);
             if (puni->field_0x214 != 0) {
                 puni->field_0x12C = svD;
             }
@@ -5879,8 +5877,8 @@ void fn_19_13A90(PuniData* puni) {
     dE = mag;
     if (puni->unk4 & 0x1000) {
         puni->field_0x210 =
-            hitCheckFilter(NULL, &hitPE.x, &hitPE.y, &hitPE.z, &dE, &hitNE.x, &hitNE.y, &hitNE.z, qE.x, qE.y, qE.z,
-                                rE.x, rE.y, rE.z);
+            hitCheckFilter(NULL, qE.x, qE.y, qE.z, rE.x, rE.y, rE.z, &hitPE.x, &hitPE.y, &hitPE.z, &dE,
+                                &hitNE.x, &hitNE.y, &hitNE.z);
     }
     if (puni->field_0x210 == 0) {
         PSVECAdd(&puni->field_0x12C, (Vec*)&puni->field_0x15C, &puni->field_0x12C);
@@ -5901,9 +5899,9 @@ void fn_19_13A90(PuniData* puni) {
         dE = PSVECMag(&sepE);
         if (dE > 0.0f) {
             PSVECNormalize(&sepE, &sepE);
-            puni->field_0x214 = hitCheckFilter(NULL, &hitP2Ex, &hitP2Ey, &hitP2Ez, &dE, &hitN2Ex,
-                                                             &hitN2Ey, &hitN2Ez, svE.x, svE.y + 1.0f, svE.z, sepE.x,
-                                                             sepE.y, sepE.z);
+            puni->field_0x214 = hitCheckFilter(NULL, svE.x, svE.y + 1.0f, svE.z, sepE.x, sepE.y,
+                                                             sepE.z, &hitP2Ex, &hitP2Ey, &hitP2Ez, &dE, &hitN2Ex,
+                                                             &hitN2Ey, &hitN2Ez);
             if (puni->field_0x214 != 0) {
                 puni->field_0x12C = svE;
             }
@@ -7040,8 +7038,8 @@ s32 _puniVAtari(PuniData* punidat, Vec* src, Vec* dest) {
     pos = *src;
     PSVECNormalize(&dir, &dir);
     distance = PSVECMag(&dir);
-    if (hitCheckFilter(NULL, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, pos.x, pos.y, pos.z, dir.x,
-                       dir.y, dir.z) == NULL) {
+    if (hitCheckFilter(NULL, pos.x, pos.y, pos.z, dir.x, dir.y, dir.z, &hitX, &hitY, &hitZ, &distance, &hitNX,
+                       &hitNY, &hitNZ) == NULL) {
         punidat->field_0x12C = *dest;
         return 1;
     }
@@ -7063,8 +7061,8 @@ static inline BOOL puniHagureCheck2(PuniData* punidat, Vec* pos, Vec* target) {
     p = *pos;
     PSVECNormalize(&delta, &delta);
     dist = PSVECMag(&delta);
-    if (hitCheckFilter(NULL, &out.x, &out.y, &out.z, &dist, &n.x, &n.y, &n.z, p.x, p.y, p.z, delta.x, delta.y,
-                       delta.z) == NULL) {
+    if (hitCheckFilter(NULL, p.x, p.y, p.z, delta.x, delta.y, delta.z, &out.x, &out.y, &out.z, &dist, &n.x, &n.y,
+                       &n.z) == NULL) {
         punidat->field_0x12C = *target;
         return TRUE;
     }

@@ -278,8 +278,8 @@ USER_FUNC(pressCheck) {
     }
 
     distance = 5.0f;
-    if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, npc->position.x,
-                       npc->position.y + 1.0f, npc->position.z, 0.0f, -1.0f, 0.0f)) {
+    if (hitCheckFilter(0, npc->position.x, npc->position.y + 1.0f, npc->position.z, 0.0f, -1.0f, 0.0f, &hitX, &hitY,
+                       &hitZ, &distance, &hitNX, &hitNY, &hitNZ)) {
         evtSetValue(event, args[0], 1);
     } else {
         evtSetValue(event, args[0], 0);
@@ -4265,11 +4265,11 @@ USER_FUNC(cliffCheck) {
         xoff = -1.0f;
     }
     distance = 5.0f;
-    hitA = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, npc->position.x,
-                          npc->position.y + 1.0f, npc->position.z, 0.0f, -1.0f, 0.0f);
+    hitA = hitCheckFilter(0, npc->position.x, npc->position.y + 1.0f, npc->position.z, 0.0f, -1.0f, 0.0f, &hitX, &hitY,
+                          &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
     distance = 5.0f;
-    hitB = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, npc->position.x,
-                          npc->position.y + 1.0f, npc->position.z, xoff, -1.0f, 0.0f);
+    hitB = hitCheckFilter(0, npc->position.x, npc->position.y + 1.0f, npc->position.z, xoff, -1.0f, 0.0f, &hitX, &hitY,
+                          &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
     if (hitA != NULL && hitB != NULL) {
         evtSetValue(event, args[0], 0);
     } else if (hitA != NULL && hitB == NULL) {
@@ -4290,10 +4290,10 @@ USER_FUNC(upperCheck) {
     HitEntry* hitB;
 
     distance = 5.0f;
-    hitA = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, npc->position.x - 15.0f,
-                          npc->position.y + 30.0f, npc->position.z, 0.0f, 2.0f, 0.0f);
-    hitB = hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, npc->position.x + 15.0f,
-                          npc->position.y + 30.0f, npc->position.z, 0.0f, 2.0f, 0.0f);
+    hitA = hitCheckFilter(0, npc->position.x - 15.0f, npc->position.y + 30.0f, npc->position.z, 0.0f, 2.0f, 0.0f, &hitX, &hitY,
+                          &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
+    hitB = hitCheckFilter(0, npc->position.x + 15.0f, npc->position.y + 30.0f, npc->position.z, 0.0f, 2.0f, 0.0f, &hitX, &hitY,
+                          &hitZ, &distance, &hitNX, &hitNY, &hitNZ);
     if (hitA != NULL || hitB != NULL) {
         evtSetValue(event, args[0], 1);
     } else {
@@ -5124,8 +5124,8 @@ USER_FUNC(gesso_ground_check) {
     f32 hitNX, hitNY, hitNZ;
 
     distance = 5.0f;
-    if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ, npc->position.x,
-                       npc->position.y + 1.0f, npc->position.z, 0.0f, -1.0f, 0.0f)) {
+    if (hitCheckFilter(0, npc->position.x, npc->position.y + 1.0f, npc->position.z, 0.0f, -1.0f, 0.0f, &hitX, &hitY,
+                       &hitZ, &distance, &hitNX, &hitNY, &hitNZ)) {
         evtSetValue(event, args[0], 1);
     } else {
         evtSetValue(event, args[0], 0);

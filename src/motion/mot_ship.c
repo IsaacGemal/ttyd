@@ -1125,8 +1125,8 @@ s32 checkHarbor(Vec* out) {
     z = mario->position.z + 40.0f * sp24;
     y = mario->position.y + 20.0f;
     sp14 = 40.0f;
-    hit = hitCheckFilter(NULL, &sp20, &sp1C, &sp18, &sp14, &sp10, &sp0C, &sp08, x, y, z, 0.0f, -1.0f,
-                        0.0f);
+    hit = hitCheckFilter(NULL, x, y, z, 0.0f, -1.0f, 0.0f, &sp20, &sp1C, &sp18, &sp14, &sp10, &sp0C,
+                        &sp08);
     if (hit != NULL) {
         type = checkHarborType(hit);
         if (type != 0) {
@@ -1145,8 +1145,8 @@ s32 checkHarbor(Vec* out) {
     z = mario->position.z + 40.0f * sp24;
     y = mario->position.y + 20.0f;
     sp14 = 40.0f;
-    hit = hitCheckFilter(NULL, &sp20, &sp1C, &sp18, &sp14, &sp10, &sp0C, &sp08, x, y, z, 0.0f, -1.0f,
-                        0.0f);
+    hit = hitCheckFilter(NULL, x, y, z, 0.0f, -1.0f, 0.0f, &sp20, &sp1C, &sp18, &sp14, &sp10, &sp0C,
+                        &sp08);
     if (hit != NULL) {
         type = checkHarborType(hit);
         if (type != 0) {
@@ -1165,8 +1165,8 @@ s32 checkHarbor(Vec* out) {
     z = mario->position.z + 40.0f * sp24;
     y = mario->position.y + 20.0f;
     sp14 = 40.0f;
-    hit = hitCheckFilter(NULL, &sp20, &sp1C, &sp18, &sp14, &sp10, &sp0C, &sp08, x, y, z, 0.0f, -1.0f,
-                        0.0f);
+    hit = hitCheckFilter(NULL, x, y, z, 0.0f, -1.0f, 0.0f, &sp20, &sp1C, &sp18, &sp14, &sp10, &sp0C,
+                        &sp08);
     if (hit != NULL) {
         type = checkHarborType(hit);
         if (type != 0) {

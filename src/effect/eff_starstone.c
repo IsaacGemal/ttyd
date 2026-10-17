@@ -381,9 +381,9 @@ void effStarStoneMain(EffectEntry* effect) {
 		flag = 0;
 		if (data->field_0x44 < float_0_80420b54) {
 			distance = float_10_80420b64 + __fabsf(data->field_0x44);
-			if (hitCheckFilter(0, &hitX, &hitY, &hitZ, &distance, &hitNX, &hitNY, &hitNZ,
-			                   data->field_0x8, data->field_0xC, data->field_0x10,
-			                   float_0_80420b54, float_neg1_80420b68, float_0_80420b54) != NULL) {
+			if (hitCheckFilter(0, data->field_0x8, data->field_0xC, data->field_0x10, float_0_80420b54, float_neg1_80420b68, float_0_80420b54, &hitX,
+			                   &hitY, &hitZ, &distance,
+			                   &hitNX, &hitNY, &hitNZ) != NULL) {
 				flag = 1;
 				data->field_0xC = float_10_80420b64 + hitY;
 				data->field_0x44 *= float_neg0p5_80420b6c;
