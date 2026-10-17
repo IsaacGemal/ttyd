@@ -12,6 +12,12 @@ anything worth keeping into a chapter here.
 
 ## Current state (rewrite this section as things change)
 
+- **Fresh build, 2026-10-17:** 9,758 / 9,769 functions matched (99.89%), fuzzy 99.99%, 1,226 / 1,233 units
+  complete. Eleven functions are open in five units: `mri/mri_puni` (5), `MarioSt/driver/mapdrv` (2),
+  `MarioSt/driver/animdrv` (2), `MarioSt/driver/envdrv` (1), `MarioSt/party/party_hit` (1). `build/G8MJ01/report.json`
+  on the Mac is not kept current; quote the tower's (`scratch/tci.sh`, which ratchets against the baseline accepted
+  after each merge). A Mac checkout's own `build/ci/accepted.json` can be days old and then shows false regressions:
+  never `--accept` from it.
 - **tou/tou linked (2026-10-06, Codex GPT-6).** 36/36 functions at 100%; both pools IDENTICAL, original function order, natural compile passes, all 32 build checksums pass. See the dated chapter below and CODEX_ATTEMPTS.md.
 
 - **⚠️ Ledger audit planned (Isaac, Oct 2).** This ledger has drifted: some entries are outdated, and some claims were wrong when written. Later, go through it step by step, check each claim against the repo, the build and the git history, and correct or remove what's wrong. Until then, treat any number or claim here as a lead to verify, not a fact. (This section itself still describes Sep 29.)
@@ -7710,3 +7716,49 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   for the else block's `bottom - top` scaling. Left: pose is the lowest vreg of the eight long-lived webs and always
   takes the last callee-saved register (rasim: no order or single edge moves it).
 - No change: evt_puni_all_save 97.24, evt_puni_exit 98.37 (register names only, no source lever found).
+
+## mri_puni: a natural-code pass on the last five, no gain (2026-10-17, DeepSeek V4.1 Flash 1017)
+
+Took the five open functions at their current natural scores (181/186): `evt_puni_all_save` 97.24,
+`unk_mri_000095f0` 96.04, `PuniChildHagure` 97.88, `puniMapFindbuff` 98.55, `evt_puni_exit` 98.37.
+No source change is kept; the tree is clean. Everything below is a negative result so the next session does not
+repeat it. All local checks were `tools/agent_check.py mri/mri_puni FUNC` (the unit rebuilds in ~0.6 s).
+
+- **Tooling.** This pass ran on the Mac, where `tools/mwccdbg.py` (and so `rasim`/`sched750`) isn't installed;
+  they run on the tower (`scratch/tb.sh`). Everything here is build-and-score hill climbing, not allocator replay,
+  so these negatives are weaker than rasim-checked ones.
+- **`puniMapFindbuff` (4 diffs left).** Target order in the switch setup is `lfs z; stw Punimap->0x1C; lfs x`;
+  ours is `stw; lwz Punigp; lfs x; lwz 0x340; lfs z`. Tried: x/z declaration swap; `f32 x, z` function-scope with
+  separate assignments in both orders; store moved into the block before/between/after the declarations; a `mode`
+  local before/after; direct `pos->x`/`pos->z` call arguments; `if/else` instead of the switch; `default` instead of
+  `case 0`; reversed case order; `#pragma scheduling off` (65 diffs), all worse or identical. The unscheduled
+  frontend order is `store, x, z`, so the target's `z, store, x` is a scheduler pick; without sched750 there is no
+  way to see which dead value would change it.
+- **`evt_puni_all_save` (27 diffs).** Only the inlined `puniswSetindex` copies differ: target maps the four
+  conversion webs low-to-high as `yh, xh, x, y` (z at the top), ours as `x, y, xh, yh` (z top); both branch copies
+  show the same swap. Tested (score kept only if `puniswSetindex` itself stayed 100): all 24 caller declaration
+  permutations (`i`, `puni`, `area`, `pos`) — no change; high-byte types `s16/u16/u32/u8` with one- and
+  two-statement assignment, `u8` casts, inline `(x >> 8) & 0xFF` call arguments, `(s32)`/`(u32)`/no cast on the
+  x/y/z locals; `u32 ofs` removed and inlined in every call, `ofs` moved after x/y/z; declaration orders
+  `xyz-first`, `xy-then-highs`, `x-then-highs`, `xh/yh` swapped, `ofs` first. Nothing beats 97.24 with the helper
+  still at 100. `u8` highs do improve the inlined copies (`all_save` 98.21, `exit` 99.33) but add two `mr`s to the
+  standalone (94.26), so they are not a route.
+- **`evt_puni_exit` (105 diffs).** Same inlined-Setindex rotation plus `mode`/`arg2` two registers low and the
+  first loop's counter/pointer (`r31`/`r30` target, `r27`/`r28` here). All 28 pairwise swaps of the eight GPR
+  locals from the base order are non-improving (hill climb, no first move); explicit target-shaped orders
+  (`k, punidat, name, mode, arg2`, `mode` first, `k` first) score 98.30. Scoped `optimization_level 1/2/3`:
+  70.18/92.27/97.39. `opt_propagation off`, `opt_lifetimes off` and `inline_depth(5)` do not move it.
+- **`PuniChildHagure` (53 diffs, one rotation).** Target saves `r28`-`r31` (puni `r31`, level-0 child `r30`,
+  level-1 `r29`, level-2 `r28`); ours saves `r27`-`r31` with level-0 child `r27` and the inline copies above it.
+  `child`/`child2` split (all declaration positions, block-scoped and function-scoped), separate declaration +
+  assignment, `register`, `(u32)` casts, pointer casts at the calls, and `if (child)` all leave 97.88;
+  `optimization_level 2` is 97.07, `opt_lifetimes off` 97.07, `inline_depth(5)`/`opt_propagation off`/
+  `opt_common_subs off` no change, level 1 89.36. The only shape that reaches target-like numbering is putting the
+  body in a `static inline` helper, which rule 7 forbids without outside evidence.
+- **`unk_mri_000095f0` (prologue copy).** Target loads `pos.x/y/z` straight from `r4`; ours copies `r4` to `r3` and
+  loads `pos.z` from the copy. Component locals (all orders), `Vec p = pos`, `Vec* pp = &pos`, reversed local
+  assignment orders all stay at 96.04; a `Vec*` signature (tried earlier) drops to 91.41 and is wrong.
+- **Conclusion.** These are exactly the "no source lever" class the brief describes: a select-order/coalescing
+  difference with identical instruction streams, or a scheduler pick. The next useful step is to run
+  mwccdbg + rasim on the tower and `search` over the named locals / `neighbors` for each; without replay the
+  search space cannot be closed. Leaving them at their best natural scores is consistent with the Oct 17 fake rule.
