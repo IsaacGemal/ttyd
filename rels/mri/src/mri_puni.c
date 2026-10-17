@@ -1495,9 +1495,8 @@ void puniMapDataSet(s32 w, s32 h, f32 a, f32 b, void* data) {
     }
 }
 
-// NONMATCHING (98.55%): only the scheduling of the pos->z load differs (the target loads it above the
-// field_0x1C store, we load it after pos->x).
-void puniMapFindbuff(Vec* pos) {
+// The caller passes a local position copy, independent of the map and Puni work buffers.
+void puniMapFindbuff(Vec* __restrict pos) {
     s32 index;
     u16 hi;
     u16* buf;
@@ -1523,8 +1522,8 @@ void puniMapFindbuff(Vec* pos) {
     memcpy(Punimap->field_0x20, Punimap->field_0x18, Punimap->field_0x10);
     Punimap->field_0x1C = 1;
     {
-        f32 x = pos->x;
         f32 z = pos->z;
+        f32 x = pos->x;
 
         switch (Punigp->field_0x340) {
         case 0:
