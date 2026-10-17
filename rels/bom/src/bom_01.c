@@ -179,7 +179,8 @@ static inline f32 bomCosApprox(f32 angle) {
     return v;
 }
 
-extern SightWork* sight_wp;
+// The cannon sight state is private to this module.
+static SightWork* sight_wp;
 
 // The SoundWork fields disp_sight reads (sound.h conflicts with this unit's headers): the playing channel, the
 // per-channel s16 sample rings and the write position.
@@ -277,8 +278,11 @@ static inline s32 sightBlink(s32 i) {
     return ((gp->retraceCount % 20) > 6 && i == sight_wp->state) ? 1 : 0;
 }
 
-// NONMATCHING (99.91%): every call, branch and constant matches; retail keeps the arrow id's 7/6 in r0 and
-// copies it into r3 (`li r0,7; mr r3,r0`), and computes the flag in r3; here those two swap and the id copy is gone.
+enum SightArrow {
+    SIGHT_ARROW_ACTIVE = 6,
+    SIGHT_ARROW_INACTIVE = 7
+};
+
 void disp_sight(CameraId cameraId, void* param) {
     GXColor colorA = {0xFF, 0xFF, 0xFF, 0xFF};
     GXColor colorB = {0x00, 0x00, 0x00, 0xFF};
@@ -373,11 +377,7 @@ void disp_sight(CameraId cameraId, void* param) {
     winTexInit(**(TEXPalette***)((u8*)sight_wp->file + 0xA0));
     for (i = 0; i < 4; i++) {
         s32 flag = sightBlink(i);
-        s32 id = 7;
-
-        if (flag) {
-            id = 6;
-        }
+        s32 id = flag ? SIGHT_ARROW_ACTIVE : SIGHT_ARROW_INACTIVE;
 
         if (sight_wp->state == 4) {
             flag = 0;
@@ -2661,7 +2661,6 @@ EVT_END()
 //     0x00000000, 0x00000000, 0x00000000, 0x00000000,
 // };
 
-SightWork* sight_wp;
 
 
 
