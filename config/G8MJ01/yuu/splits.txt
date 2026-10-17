@@ -61,6 +61,6 @@ event/evt_yuuminigame.c:
 
 event/evt_yuunpc.c:
 	.text       start:0x0000A2A8 end:0x00013F30
-	.rodata     start:0x00000E20 end:0x00001184
+	.rodata     start:0x00000E20 end:0x00001199
 	.data       start:0x00004600 end:0x00006094
 	.bss        start:0x000000E0 end:0x000000E8

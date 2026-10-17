@@ -21,17 +21,6 @@
 static YuunpcWp* yuunpc_wp;
 void* yuunpc_yuuminigame4_ptr;
 
-// The original reads the named rodata word `float_neg560_yuu_00015194` (undefined in this object,
-// resolved by the linker), so declare it here rather than a -560.0f literal.
-extern const f32 float_neg560_yuu_00015194;
-// Words the original keeps in the rodata of a later unit of this REL (the linker resolves them),
-// so the source reads them by name instead of pooling a second copy here.
-extern const f32 float_6000_yuu_0001518c;
-extern const f32 float_7000_yuu_00015190;
-extern const f32 float_450_yuu_00015198;
-extern const f32 float_224_yuu_0001519c;
-extern const char zero_yuu_000151a0[];
-
 #pragma pool_data off
 
 #pragma force_active on
@@ -441,13 +430,13 @@ void yuunpc_pose_init(YuunpcPoseArg* arg) {
     s32 idx;
     s32 j;
 
-    strcpy(name, zero_yuu_000151a0);
-    strcpy(anim, zero_yuu_000151a0);
+    strcpy(name, "");
+    strcpy(anim, "");
     yuunpc_wp->field_1C = -1;
     do {
         if (strcmp(arg->name, name) != 0) {
             strcpy(name, arg->name);
-            strcpy(anim, zero_yuu_000151a0);
+            strcpy(anim, "");
         }
         if (strcmp(arg->anim, anim) != 0) {
             strcpy(anim, arg->anim);
@@ -484,7 +473,7 @@ void yuunpc_pose_init(YuunpcPoseArg* arg) {
     for (j = 0; j < yuunpc_wp->field_18; j++) {
         if (strcmp(yuunpc_wp->poseEntries[j].name, "c_tyusan") == 0 && strcmp(yuunpc_wp->poseEntries[j].anim, "CHU_S_1") == 0) {
             yuunpc_wp->field_20 = j;
-            yuunpc_wp->poseEntries[j].field_1C = float_224_yuu_0001519c;
+            yuunpc_wp->poseEntries[j].field_1C = 224.0f;
         }
     }
 }
@@ -654,9 +643,9 @@ f32 yuunpc_pose_sub(ExtPose* pose, YuunpcEntry* entry) {
     if (!(pose->flags & 2)) {
 #ifdef MUST_MATCH
         f32 angle = pose->field_0x4;
-        angle = float_450_yuu_00015198 - angle;
+        angle = 450.0f - angle;
 #else
-        f32 angle = float_450_yuu_00015198 - pose->field_0x4;
+        f32 angle = 450.0f - pose->field_0x4;
 #endif
         if (angle >= 360.0f) {
             angle -= 360.0f;
@@ -700,7 +689,7 @@ f32 yuunpc_pose_sub(ExtPose* pose, YuunpcEntry* entry) {
             if (entry->field_54 != yuunpc_wp->field_20) {
                 pose->field_0x10 = pe->field_24 + (s32)((f32)pe->field_28 * f31);
             } else {
-                s32 j = (s32)(float_224_yuu_0001519c * f31);
+                s32 j = (s32)(224.0f * f31);
                 s32 v = (s32)chusan_mov_tbl[j >> 3] != 0 ? chusan_act_tbl[j & 7] : 0;
                 pose->field_0x10 = pe->field_24 + v;
             }
@@ -738,10 +727,14 @@ void ext_yuunpc_minigame1_init(void) {
         pose->flags |= 7;
         PSMTXIdentity((MtxPtr)pose->matrix);
 
-        t = 60.0f * (f32)(i % 5) + float_neg560_yuu_00015194;
+#ifdef MUST_MATCH
+        t = 60.0f * (f32)(i % 5) + -560.0f;
+#else
+        t = 60.0f * (f32)(i % 5) - 560.0f;
+#endif
         y = 30.0f + t;
         ((MtxPtr)pose->matrix)[0][3] = 16.666666f * (f32)q - 500.0f;
-        ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - float_neg560_yuu_00015194) / 60.0f)];
+        ((MtxPtr)pose->matrix)[1][3] = arr1[(s32)((y - -560.0f) / 60.0f)];
         ((MtxPtr)pose->matrix)[2][3] = y + arr2[q % 8];
 
         pose->field_0x4 = (f32)(irand(2) * 180 + 90);
@@ -826,7 +819,7 @@ void yuunpc_pose_minigame1_main(void) {
             if (f28 < -260.0f) {
                 f1 = mtx[1][3];
                 if ((f29 >= -5000.0f && f29 <= -1500.0f) || (f29 >= 1700.0f && f29 <= 5000.0f) ||
-                    (f29 >= float_6000_yuu_0001518c && f29 <= float_7000_yuu_00015190)) {
+                    (f29 >= 6000.0f && f29 <= 7000.0f)) {
                     if (f1 > -500.0f) {
                         f1 += -1000.0f;
                         mtx[1][3] = f1;

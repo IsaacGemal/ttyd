@@ -8016,3 +8016,14 @@ Targets: the last 8 functions (mapdrv 2, animdrv 2, mri_puni 4) and the two unas
 GPT-6.1 Sol at low effort (sequential: mapdrv, animdrv, mri_puni evt_puni_exit/evt_puni_all_save) and two Claude
 Opus 5.5 agents (mri_puni PuniChildHagure/unk_mri_000095f0 plus the hitCheckFilter prototype lead; the data splits).
 Rule 7 (Oct 17) applies to every result.
+
+### The last two auto_* data units are assigned (Claude Opus 5.5, on8-data)
+- `MarioSt/auto_05_803BF7D0_data` (16 zero bytes) was the linker's padding before `DEMOFontBitmap`, which the SDK declares
+  `ATTRIBUTE_ALIGN(32)`. As with eff_ice/eff_torch (Grind 28): `vi/vi.c`'s `.data` now ends at 0x803BF7E0, DEMOFont's
+  `.data` has `align:32` in splits.txt, and `DEMOFontBitmap` has `ATTRIBUTE_ALIGN(32)`. `align:32` alone isn't enough:
+  dtk then gives vi a gap symbol bigger than its section and report generation fails ("gap_05_803BF7CC_data size out of
+  section bounds").
+- `yuu/auto_03_00001184_rodata` (6000, 7000, -560, 450, 224 and "") is the end of `event/evt_yuunpc.c`'s literal pool:
+  every reference is in its code. The split now ends at 0x1199 (the section end), the six `extern const` names are gone
+  and the uses are plain literals (`+ -560.0f` under MUST_MATCH like its -655/-750 siblings); 30/30 at 100%, `.rodata`
+  equal. CI needs `--allow-protected` (splits.txt) and `--allow-regress` for both auto units, since they no longer exist.
