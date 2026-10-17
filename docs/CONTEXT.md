@@ -7604,3 +7604,22 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   (mapGetMapObjSub's order is pinned by 17 users); bmapUnLoad loop 1's `i` needs a frontend-temp position; the Tev
   prologue `addi` doesn't move. Next idea: read `chn`/`ch` fields directly in mapMain's Hermite expressions instead of
   through value0/tan0 locals.
+
+### npcdrv 71 -> 73/73: npcSetupBattleInfo, fbatBattleMode 100; link blocked by npcDisp_blur externs (Claude Opus 5.5, on7b-npcdrv)
+- npcSetupBattleInfo 99.78 -> 100: the 16-pair roll loop as `static inline npcRollBattleParams(info, setup)` with locals
+  `u8* p; s32 i;` in that order (the reverse gives 9 rows). The inline's locals become frontend @ temps numbered above
+  the induction temps (#819/#809); a rasim what-if predicted it before compiling.
+- fbatBattleMode 99.23 -> 100: rasim showed hasStolen (33 neighbours) can't be coloured under the 8-way else-if graph,
+  so the shape had to change: a `for (i = 0; i < sizeof(stolenItems); i += sizeof(ItemType))` byte-offset scan with
+  `break` (the evt_nannpc idiom). MWCC fully unrolls it into one shared load vreg; `stolenItems[i]` leaves an
+  induction `addi r3,entry,8` in the chain (183 rows). Plus `fbatData` before `entry` and case 4 as `info4, hasStolen,
+  mult`.
+- npcEntry: `NPC_F_ONE`/`NPC_F_ZERO` are plain literals (still 100, .sdata2 unchanged).
+- Link blocker: npcDisp_blur's MUST_MATCH named float externs (`float_0p00761_80419c3c` and 7 more) have no definition.
+  Retail stores the coefficients once at .sdata2 0x164-0x17c, shared with npcCheckHitMarioSide's pool, so the original
+  used literals. Literal forms: 80.64; with `opt_propagation off` 92.82 (sin exact; cos FPRs differ and the by-value
+  GXColor copy address is hoisted into r31, same as envdrv DepthOfField); best `optimization_level 2` 96.39; named
+  consts after use reach 100 but emit ahead of the pool and duplicate the values.
+- Hard negatives: `opt_strength_reduction off` fixes the addi but breaks the inlined npcGetBackItemEntry loop; hasStolen
+  helpers, logical-or forms, 24 orders of a shared `item` local, rasim annealing (3-4 rows short).
+- A stale DOL can print "32 files OK" after a failed link: check that mwld succeeded.
