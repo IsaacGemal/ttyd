@@ -7636,3 +7636,14 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   At level 2 a `for` keeps its entry test and `addi`/`cmpwi`; a do-while gives retail's `addic.` with no entry test.
 - Hard negatives: levels 1 (90.05) and 3 (79.95); colour helper/local shapes; `while (--i)` forms (1 row); `alpha`
   before `i` (2 rows). Try level 2 plus a do-while first on envdrv DepthOfField's by-value GXColor hoist.
+
+### bom_01 30 -> 31/32: disp_sight 100; ext_init 98.76 open (GPT-6.1 Sol, sol11)
+- disp_sight 99.91 -> 100: `s32 id = flag ? SIGHT_ARROW_ACTIVE : SIGHT_ARROW_INACTIVE;` with file-local enum constants
+  (6/7) gives retail's `li r0,7; mr r3,r0` id copy (the enum-constant lever, AGENT_BRIEF #657 / Overnight 4 mapGX).
+  Int literals and enum default-then-override forms fail. `sight_wp` became a file-static.
+- ext_init (98.76, 53 raw diffs) is a late backend web-ranking problem: the range value (f45, 30 neighbours) colours
+  late, and no single rasim edge what-if fixes it. ~35 variant families (Vec/struct polar forms, f64/f32 staging,
+  range helpers, repeated radius expressions, pragma matrices, 225 scratch-sharing partitions, parameter orders and
+  qualifiers) reached at best 44 positional diffs in the harness without a verified real-unit gain. Shared
+  quadrant/scratch helpers regress ext_main and depthDisp. Local static coefficient arrays pool at parse time
+  (dead_strings.md), so they can't reproduce this pool.
