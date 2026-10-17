@@ -366,8 +366,8 @@ static inline void envDofSinCos(f32 angle, f32* s, f32* c) {
 static inline void envDofTaps(const f32* amount, s32* texCoord, GXTevStageID* tevStage) {
     Mtx mtx;
     s32 first;
-    const s32* id = dat_802f9338.tbl;
     s32 i;
+    const s32* id = dat_802f9338.tbl;
     GXTevColorArg colorD;
     GXTevAlphaArg alphaD;
 
@@ -456,13 +456,13 @@ static inline void envDofFar(EnvironmentUnk88* u, GXColor* color) {
 
 // Both passes go through envDofTaps; tevStage is a GXTevStageID so its increments stay in place
 // (an int counter gets folded into the GXSetNumTevStages argument by the propagation pass).
-// NONMATCHING (99.68%): integer register colouring only. Block 1's loop has retail's registers
-// mirrored (retail: i r31, id r30, tevStage r26, texCoord r25, the blend texCoord copy r27; here the
-// counters take r31/r30), and block 2's tevStage + 1 is r25 instead of r26. mwccdbg/rasim: block 1's
-// tevStage/texCoord have 31 interference neighbours (more than 28), three of them coalesced
-// variables that never leave the graph (colorD, alphaD and the GXSetTevKColor argument pointer), so
-// they colour before the loop's i/id. Retail needs them at 28 or fewer and, in block 1 only, id
-// ranked above i; no C spelling of those three values tried so far removes them.
+// texCoord and tevStage only take the original's registers when three of their interference
+// neighbours are named locals declared after them: with lower vregs those leave the allocation
+// graph first, which keeps the two counters out of the late priority level that the loop's own
+// counters fall into.
+// NONMATCHING (99.96%): the far pass's tevStage + 1 keeps r25 where the original has r26. The value
+// is an inline-expansion temporary, so it is coloured after the inlined loop's counters, and the
+// original also has r25 in use at that point.
 void envDisp_DepthOfField(void) {
     EnvironmentWork* wp = envGetWork();
     EnvironmentUnk88* u = &wp->unk88;
@@ -471,6 +471,14 @@ void envDisp_DepthOfField(void) {
     s32 texCoord;
     GXTevStageID tevStage;
     GXColor color;
+#ifdef MUST_MATCH
+    // The original keeps the colour channels and the texcoord copy in named locals here; with the
+    // plain assignments (the #else form) the two counters and the loop's i/id colour the other way
+    // round. Local declaration order is otherwise the same.
+    s32 tc;
+    u8 alpha;
+    u8 red;
+#endif
 
     if (!(wp->flags & 0x80000000)) {
         return;
@@ -501,11 +509,22 @@ void envDisp_DepthOfField(void) {
         texCoord = 0;
         tevStage = 0;
         envDofTaps(&u->unk4, &texCoord, &tevStage);
+#ifdef MUST_MATCH
+        red = u->unk2;
+        color.r = red;
+        alpha = 0xFF;
+        color.a = alpha;
+        GXSetTevKColor(0, color);
+        GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
+        tc = texCoord++;
+        envDofBlendStage(tevStage, tc, 2, 1);
+#else
         color.r = u->unk2;
         color.a = 0xFF;
         GXSetTevKColor(0, color);
         GXSetTexCoordGen2(texCoord, 1, 4, 0x3C, 0, 0x7D);
         envDofBlendStage(tevStage, texCoord++, 2, 1);
+#endif
         tevStage++;
         GXSetNumTexGens(texCoord);
         GXSetNumTevStages(tevStage);
