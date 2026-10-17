@@ -65,7 +65,6 @@ extern const f32 float_3p1416_80419c44;
 extern const f32 float_1p5708_80419c48;
 extern const f32 float_4p7124_80419c4c;
 extern const f32 float_1_80419bb4;
-extern const f32 float_0_80419b9c;
 extern const f32 float_0p03705_80419c50;
 extern const f32 float_0p4967_80419c54;
 #define NPC_F_SIN0 float_0p00761_80419c3c
@@ -76,7 +75,6 @@ extern const f32 float_0p4967_80419c54;
 #define NPC_F_HALFPI float_1p5708_80419c48
 #define NPC_F_THREEHALVES float_4p7124_80419c4c
 #define NPC_F_ONE float_1_80419bb4
-#define NPC_F_ZERO float_0_80419b9c
 #else
 #define NPC_F_SIN0 0.00761f
 #define NPC_F_SIN1 0.16605f
@@ -86,7 +84,6 @@ extern const f32 float_0p4967_80419c54;
 #define NPC_F_HALFPI 1.5707964f
 #define NPC_F_THREEHALVES 4.712389f
 #define NPC_F_ONE 1.0f
-#define NPC_F_ZERO 0.0f
 #endif
 
 int __float_nan[];
@@ -948,14 +945,14 @@ s32 npcEntry(const char* a1, const char* animName) {
     entry->width = animPoseGetHeight(entry->poseId);
     entry->height = animPoseGetRadius(entry->poseId);
     entry->scale = (Vec){ 1.0f, 1.0f, 1.0f };
-    entry->field_154 = NPC_F_ONE;
+    entry->field_154 = 1.0f;
     entry->field_108 = 0;
     entry->field_10C = "M_I_2";
     entry->field_198 = gp->renderTime;
     entry->field_188 = 0;
-    entry->jumpGravity = NPC_F_ONE;
-    entry->field_1D0 = NPC_F_ZERO;
-    entry->jumpYScale = NPC_F_ONE;
+    entry->jumpGravity = 1.0f;
+    entry->field_1D0 = 0.0f;
+    entry->jumpYScale = 1.0f;
     entry->field_110 = -1;
     entry->color = (GXColor){ 0xFF, 0xFF, 0xFF, 0xFF };
     entry->cameraId = CAMERA_3D;
@@ -2601,16 +2598,14 @@ void fbatTalkMode(void) {
 }
 
 // Scoping `info` and each list loop to its own case (ordinary per-block locals) recovered the case-2/3/4
-// temporaries (98.86->99.23). The four function-wide pointers cannot be recoloured by declaration order,
-// initializer form, expression form or opt_lifetimes/opt_common_subs/opt_propagation/optimize_for_size.
-// Confirmed by a re-run this session: all 720 declaration orders of the six live function-wides are either
-// 99.23 or 98.66, and pragma/flag/splitting/aliasing/helper-inline variants keep the same colouring.
-// NONMATCHING (99.23%): every instruction matches; only callee-saved register numbers differ. The original
-// keeps fbatData=r30, entry=r29, pouch=r31, mario=r27; MWCC here picks fbatData=r28, entry=r29, pouch=r30, mario=r31.
+// temporaries. The stolen-item check is a loop that MWCC fully unrolls into retail's eight-test chain; it steps a
+// byte offset, as evt_nannpc's entry loop does, so the frontend does not turn the index into a walking pointer
+// (`stolenItems[i]` leaves an `addi` in the unrolled chain). One load register shared by the unrolled tests is
+// what lets hasStolen/info4/result/mario take retail's registers.
 void fbatBattleMode(void) {
     PouchData* pouch;
-    NpcEntry* entry;
     FieldBattleData* fbatData;
+    NpcEntry* entry;
     s32 i;
     s32 total;
     s32 result;
@@ -2747,29 +2742,18 @@ void fbatBattleMode(void) {
         case 4:
             marioChgMoveMotion();
             if (!gp->inBattle) {
+                FieldBattleInfo* info4;
                 s32 hasStolen;
                 s32 mult;
-                FieldBattleInfo* info4;
 
                 info4 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
                 result = BattleInformationGetResult(info4);
                 hasStolen = FALSE;
-                if (entry->battleInfo.stolenItems[0] != 0) {
-                    hasStolen = TRUE;
-                } else if (entry->battleInfo.stolenItems[1] != 0) {
-                    hasStolen = TRUE;
-                } else if (entry->battleInfo.stolenItems[2] != 0) {
-                    hasStolen = TRUE;
-                } else if (entry->battleInfo.stolenItems[3] != 0) {
-                    hasStolen = TRUE;
-                } else if (entry->battleInfo.stolenItems[4] != 0) {
-                    hasStolen = TRUE;
-                } else if (entry->battleInfo.stolenItems[5] != 0) {
-                    hasStolen = TRUE;
-                } else if (entry->battleInfo.stolenItems[6] != 0) {
-                    hasStolen = TRUE;
-                } else if (entry->battleInfo.stolenItems[7] != 0) {
-                    hasStolen = TRUE;
+                for (i = 0; i < sizeof(entry->battleInfo.stolenItems); i += sizeof(ItemType)) {
+                    if (*(ItemType*)((u8*)entry->battleInfo.stolenItems + i) != 0) {
+                        hasStolen = TRUE;
+                        break;
+                    }
                 }
                 fbatData->mode = 1;
                 if (result == 1 || result == 2) {
@@ -3549,17 +3533,25 @@ BOOL npcCheckInterrupt(NpcEntry* npc) {
     return FALSE;
 }
 
-// Solved by using the declared `field_9C` for the 0xB0 roll store (MWCC then leaves it
-// indexed with `stbx` while the heldItems loop strength-reduces, as retail does) and by declaring `i` before
-// `u8* p`. The first roll loop now matches. Also: declaring `num` before `enemy` puts the heldItems loop's
-// num/enemy/walk in r27/r26/r30 (retail r30/r26/r27, still swapped). The level test is a switch (levels 1 and 2
-// skip the roll; 0 and everything else roll), whose lowering is retail's `beq/blt; cmpwi 3; bge roll; b body`.
-// The held-item pick stores and breaks inside its `for (;;)` (retail's bcc->b shape).
-// The loadout weight sum keeps the weight it tests in `weight` (retail adds the loaded value, no reload).
-// NONMATCHING (99.78%): the heldItems loop's num/walk register pairing.
+// Rolls each of the setup's 16 (min, max) byte pairs into the battle info.
+static inline void npcRollBattleParams(NpcBattleInfo* info, BattleSetupData* setup) {
+    u8* p;
+    s32 i;
+
+    for (i = 0, p = (u8*)setup; i < 0x10; i++) {
+        info->field_9C[0x14 + i] = p[0x20] + irand((s8)p[0x21] - (s8)p[0x20] + 1);
+        p += 2;
+    }
+}
+
+// The 0xB0 roll store uses the declared `field_9C` (MWCC then leaves it indexed with `stbx`). The level test is a
+// switch (levels 1 and 2 skip the roll; 0 and everything else roll), whose lowering is retail's
+// `beq/blt; cmpwi 3; bge roll; b body`. The held-item pick stores and breaks inside its `for (;;)` (retail's
+// bcc->b shape). The loadout weight sum keeps the weight it tests in `weight` (retail adds the loaded value, no
+// reload). The roll loop is its own inline (its i/p are inliner locals, which number above the held-items loop's
+// induction pointer and leave num, i and that pointer in retail's r30/r28/r27).
 void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
     s32 i;
-    u8* p;
     NpcBattleInfo* info = &npc->battleInfo;
     NpcBattleSetupEntry* sel;
     NpcBattleSetupEntry* entry;
@@ -3587,10 +3579,7 @@ void npcSetupBattleInfo(NpcEntry* npc, BattleSetupData* setup) {
         break;
     case 0:
     default:
-        for (i = 0, p = (u8*)setup; i < 0x10; i++) {
-            info->field_9C[0x14 + i] = p[0x20] + irand((s8)p[0x21] - (s8)p[0x20] + 1);
-            p += 2;
-        }
+        npcRollBattleParams(info, setup);
         break;
     }
     info->field_4 = setup->field_0x18;
