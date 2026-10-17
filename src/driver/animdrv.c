@@ -1758,77 +1758,7 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z) {
 
 // Loads each texture stage's animated texture matrix (rotate about the centre, then
 // translate, then scale) and points its texcoord generator at it.
-static inline void animSetMaterial_TexMtx(s32 texCount, s32* texIdRemap, AnimTexMtx* animEntries) {
-    Mtx mTmp, mScale, mTrans, mRot;
-    s32 j;
 
-    for (j = 0; j < texCount; j++) {
-#ifdef MUST_MATCH // `1u` keeps the original's `subf; subi 1; slwi` instead of folding it to `subf; slwi; subi 4`
-        s32 texId = texIdRemap[texCount - j - 1u];
-#else
-        s32 texId = texIdRemap[texCount - j - 1];
-#endif
-        AnimTexMtx* anim = &animEntries[texId];
-        f32 rotate, transT, transS, scaleT, scaleS; // this declaration order gives the target's FPR colouring
-        u32 flags = 0;
-        f32(*mtx)[4];
-
-        rotate = anim->mRotate;
-        scaleS = anim->mScaleS;
-        scaleT = anim->mScaleT;
-        transS = anim->mTransS;
-        transT = anim->mTransT;
-        if (rotate != 0.0f) {
-            flags |= 1;
-            PSMTXTrans(mTmp, 0.5f, 0.5f, 0.0f);
-            PSMTXRotRad(mRot, 'z', MTXDegToRad(-rotate));
-            PSMTXConcat(mTmp, mRot, mTrans);
-            PSMTXTrans(mTmp, -0.5f, -0.5f, 0.0f);
-            PSMTXConcat(mTrans, mTmp, mRot);
-        }
-        if (transS != 0.0f || transT != 0.0f || scaleT != 0.0f) {
-            flags |= 2;
-            PSMTXTrans(mTrans, transS, (1.0f - transT) - scaleT, 0.0f);
-        }
-        if (scaleS != 1.0f || scaleT != 1.0f) {
-            flags |= 4;
-            PSMTXScale(mScale, scaleS, scaleT, 1.0f);
-        }
-        switch (flags) {
-            case 0:
-                GXSetTexCoordGen2(j, GX_TG_MTX2x4, GX_TG_TEX0 + j, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
-                continue;
-            case 1:
-                mtx = mRot;
-                break;
-            case 2:
-                mtx = mTrans;
-                break;
-            case 3:
-                PSMTXConcat(mRot, mTrans, mTmp);
-                mtx = mTmp;
-                break;
-            case 4:
-                mtx = mScale;
-                break;
-            case 5:
-                PSMTXConcat(mRot, mScale, mTmp);
-                mtx = mTmp;
-                break;
-            case 6:
-                PSMTXConcat(mTrans, mScale, mTmp);
-                mtx = mTmp;
-                break;
-            case 7:
-                PSMTXConcat(mRot, mTrans, mTmp);
-                PSMTXConcat(mTmp, mScale, mTrans);
-                mtx = mTrans;
-                break;
-        }
-        GXSetTexCoordGen2(j, GX_TG_MTX2x4, GX_TG_TEX0 + j, GX_TEXMTX0 + (u32)(j * 3), GX_FALSE, GX_PTIDENTITY);
-        GXLoadTexMtxImm(mtx, GX_TEXMTX0 + (u32)(j * 3), GX_MTX2x4);
-    }
-}
 
 // A texture entry's wrap flags override the descriptor's modes when non-negative: bit 2/3 mirror S/T,
 // otherwise bit 0/1 selects repeat over clamp.
@@ -1844,29 +1774,36 @@ static inline void animSetMaterial_WrapMode(TEXDescriptor* desc, s32 wrapFlags, 
     *outT = wrapT;
 }
 
-// Instructions/constants match; register colouring only. The target colours the parameters r24..r30 and
-// `i` r23; here `i` takes r30, texBinds r23 and texFile r29. The replay: the 9 long-lived values (7
-// params, i, the TexMtx `mtx`, live from entry because no switch case is a default) all sit at 29
-// neighbours, so the spill-cost choice takes texBinds first; retail's order needs i to leave by a sweep
-// (one neighbour fewer) while mtx keeps one more.
-// NONMATCHING (99.82%): callee-saved register rotation of i/texBinds/texFile only.
-#pragma opt_strength_reduction off // keeps the TexMtx loop's j/flags/matrix-id colouring (r21/r20/r19)
+// NONMATCHING (99.96%): initial palette ID load/copy uses r19/r4 instead of r4/r19.
+#pragma opt_strength_reduction off // preserves the matrix loop's counter/flags/matrix-ID code generation
 void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pTexEntries, AnimTexMtx* animEntries,
                              s32 texBindsCapacity, AnimTexBind* texBinds, AnimationTextureFile* texFile) {
+    s32 i;
+    AnimationPose* pose;
+    AnimPoseTexEntry* texEntry;
+    AnimTexBind* bind;
+    s32 wrapFlags;
+    u32 palId;
+    f32(*mtx)[4];
+    u32 flags;
+    AnimationPoseData* poseData;
+    AnimTexMtx* anim;
+    s32 mipmap;
+    TEXDescriptor* desc;
+    s32 texId;
+    s32 bindId;
+    s32 frameExt;
+
+    Mtx mRot, mTrans, mScale, mTmp;
+
     GXTexObj texObj;
     GXTlutObj tlutObj;
-    s32 i;
+
     GXTexWrapMode wrapT, wrapS;
-    s32 mipmap;
 
     for (i = 0; i < texCount; i++) {
         int slot = texCount - i - 1;
-        s32 texId = texIdRemap[slot];
-        AnimPoseTexEntry* texEntry;
-        s32 frameExt, bindId;
-        s32 wrapFlags;
-        AnimTexBind* bind;
-        s32 palId;
+        texId = texIdRemap[slot];
 
         texEntry = &pTexEntries[texId];
         bindId = texEntry->bindId;
@@ -1874,8 +1811,8 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
         bindId += frameExt;
 
         if (bindId < 0 || bindId >= texBindsCapacity) {
-            AnimationPose* pose = wp->mpCurPose;
-            AnimationPoseData* poseData = *wp->files[pose->fileId].handle->data;
+            pose = wp->mpCurPose;
+            poseData = *wp->files[pose->fileId].handle->data;
             bindId = 0;
 
             printf("Error: dispSetTevMode: \203x\201[\203X\203\202\203f\203\213%s \203A\203j\203\201 %s "
@@ -1891,7 +1828,7 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
         bind = &texBinds[bindId];
         palId = *(s32*)&bind->field_0x0[4]; // field_0x0[4..7] holds the texture palette id; not named in AnimTexBind
         if (bind->texType == 0) {
-            TEXDescriptor* desc = TEXGet((TEXPalette*)*texFile->handle->data, palId);
+            desc = TEXGet((TEXPalette*)*texFile->handle->data, palId);
 
             if (desc->CLUTHeader) {
                 desc = TEXGet((TEXPalette*)*texFile->handle->data, palId);
@@ -1922,7 +1859,75 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
         }
     }
 
-    animSetMaterial_TexMtx(texCount, texIdRemap, animEntries);
+    {
+
+    for (i = 0; i < texCount; i++) {
+        f32 scaleS, scaleT, transS, transT, rotate; // this declaration order gives the target's FPR colouring
+
+#ifdef MUST_MATCH // `1u` keeps the original's `subf; subi 1; slwi` instead of folding it to `subf; slwi; subi 4`
+        texId = texIdRemap[texCount - i - 1u];
+#else
+        texId = texIdRemap[texCount - i - 1];
+#endif
+        anim = &animEntries[texId];
+        flags = 0;
+
+        rotate = anim->mRotate;
+        scaleS = anim->mScaleS;
+        scaleT = anim->mScaleT;
+        transS = anim->mTransS;
+        transT = anim->mTransT;
+        if (rotate != 0.0f) {
+            flags |= 1;
+            PSMTXTrans(mTmp, 0.5f, 0.5f, 0.0f);
+            PSMTXRotRad(mRot, 'z', MTXDegToRad(-rotate));
+            PSMTXConcat(mTmp, mRot, mTrans);
+            PSMTXTrans(mTmp, -0.5f, -0.5f, 0.0f);
+            PSMTXConcat(mTrans, mTmp, mRot);
+        }
+        if (transS != 0.0f || transT != 0.0f || scaleT != 0.0f) {
+            flags |= 2;
+            PSMTXTrans(mTrans, transS, (1.0f - transT) - scaleT, 0.0f);
+        }
+        if (scaleS != 1.0f || scaleT != 1.0f) {
+            flags |= 4;
+            PSMTXScale(mScale, scaleS, scaleT, 1.0f);
+        }
+        switch (flags) {
+            case 0:
+                GXSetTexCoordGen2(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_IDENTITY, GX_FALSE, GX_PTIDENTITY);
+                continue;
+            case 1:
+                mtx = mRot;
+                break;
+            case 2:
+                mtx = mTrans;
+                break;
+            case 3:
+                PSMTXConcat(mRot, mTrans, mTmp);
+                mtx = mTmp;
+                break;
+            case 4:
+                mtx = mScale;
+                break;
+            case 5:
+                PSMTXConcat(mRot, mScale, mTmp);
+                mtx = mTmp;
+                break;
+            case 6:
+                PSMTXConcat(mTrans, mScale, mTmp);
+                mtx = mTmp;
+                break;
+            case 7:
+                PSMTXConcat(mRot, mTrans, mTmp);
+                PSMTXConcat(mTmp, mScale, mTrans);
+                mtx = mTrans;
+                break;
+        }
+        GXSetTexCoordGen2(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_TEXMTX0 + (u32)(i * 3), GX_FALSE, GX_PTIDENTITY);
+        GXLoadTexMtxImm(mtx, GX_TEXMTX0 + (u32)(i * 3), GX_MTX2x4);
+    }
+    }
 }
 #pragma opt_strength_reduction reset
 
