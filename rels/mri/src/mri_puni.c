@@ -1495,12 +1495,11 @@ void puniMapDataSet(s32 w, s32 h, f32 a, f32 b, void* data) {
     }
 }
 
-// NONMATCHING (97.29%): the target loads pos->z above the field_0x1C store, and the volatile registers for
-// &Punimap, the reloaded Punimap, cur, id and id + 1 are rotated (r5/r4/r4/r7/r6 there, r4/r7/r7/r6/r5 here);
-// those are compiler temps, so no declaration order reaches them.
+// NONMATCHING (98.55%): only the scheduling of the pos->z load differs (the target loads it above the
+// field_0x1C store, we load it after pos->x).
 void puniMapFindbuff(Vec* pos) {
     s32 index;
-    s32 hi;
+    u16 hi;
     u16* buf;
     u16* above;
     u16* left;
@@ -1560,65 +1559,41 @@ void puniMapFindbuff(Vec* pos) {
             if (id != (cur & 0xFFF))
                 continue;
             {
+                hi = cur & 0xF000;
                 above = &buf[i - Punimap->field_0x8];
                 below = &buf[i + Punimap->field_0x8];
                 left = &buf[i - 1];
                 right = &buf[i + 1];
-                hi = cur & 0xF000;
                 {
                     u16 nb = *above;
-                    u8 low = nb & 0xFF;
-
-                    if (low == 0) {
-                        if (low < id) {
-                            if (abs((nb & 0xF000) - hi) <= 0x1000) {
-                                nid = id + 1;
-                                *above = nb | nid;
-                                changed = 1;
-                            }
-                        }
+                    if ((nb & 0xFF) == 0 && (nb & 0xFF) < id && abs((nb & 0xF000) - hi) <= 0x1000) {
+                        nid = id + 1;
+                        *above = nb | nid;
+                        changed = 1;
                     }
                 }
                 {
                     u16 nb = *below;
-                    u8 low = nb & 0xFF;
-
-                    if (low == 0) {
-                        if (low < id) {
-                            if (abs((nb & 0xF000) - hi) <= 0x1000) {
-                                nid = id + 1;
-                                *below = nb | nid;
-                                changed = 1;
-                            }
-                        }
+                    if ((nb & 0xFF) == 0 && (nb & 0xFF) < id && abs((nb & 0xF000) - hi) <= 0x1000) {
+                        nid = id + 1;
+                        *below = nb | nid;
+                        changed = 1;
                     }
                 }
                 {
                     u16 nb = *left;
-                    u8 low = nb & 0xFF;
-
-                    if (low == 0) {
-                        if (low < id) {
-                            if (abs((nb & 0xF000) - hi) <= 0x1000) {
-                                nid = id + 1;
-                                *left = nb | nid;
-                                changed = 1;
-                            }
-                        }
+                    if ((nb & 0xFF) == 0 && (nb & 0xFF) < id && abs((nb & 0xF000) - hi) <= 0x1000) {
+                        nid = id + 1;
+                        *left = nb | nid;
+                        changed = 1;
                     }
                 }
                 {
                     u16 nb = *right;
-                    u8 low = nb & 0xFF;
-
-                    if (low == 0) {
-                        if (low < id) {
-                            if (abs((nb & 0xF000) - hi) <= 0x1000) {
-                                nid = id + 1;
-                                *right = nb | nid;
-                                changed = 1;
-                            }
-                        }
+                    if ((nb & 0xFF) == 0 && (nb & 0xFF) < id && abs((nb & 0xF000) - hi) <= 0x1000) {
+                        nid = id + 1;
+                        *right = nb | nid;
+                        changed = 1;
                     }
                 }
             }
@@ -1699,24 +1674,25 @@ void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
 }
 
 void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
+    s16 xh;
+    s16 yh;
+    u32 ofs = index * 7;
     u32 x = (s32)pos->x;
     u32 y = (s32)pos->y;
     u32 z = (s32)pos->z;
-    s16 xh;
-    s16 yh;
 
     yh = y >> 8;
     yh = yh & 0xFF;
     xh = x >> 8;
     xh = xh & 0xFF;
 
-    _swByteSet(base + index * 7 + 0x8F0D180, *out);
-    _swByteSet(base + index * 7 + 0x8F0D181, x & 0xFF);
-    _swByteSet(base + index * 7 + 0x8F0D182, xh);
-    _swByteSet(base + index * 7 + 0x8F0D183, y & 0xFF);
-    _swByteSet(base + index * 7 + 0x8F0D184, yh);
-    _swByteSet(base + index * 7 + 0x8F0D185, z & 0xFF);
-    _swByteSet(base + index * 7 + 0x8F0D186, (z >> 8) & 0xFF);
+    _swByteSet(base + ofs + 0x8F0D180, *out);
+    _swByteSet(base + ofs + 0x8F0D181, x & 0xFF);
+    _swByteSet(base + ofs + 0x8F0D182, xh);
+    _swByteSet(base + ofs + 0x8F0D183, y & 0xFF);
+    _swByteSet(base + ofs + 0x8F0D184, yh);
+    _swByteSet(base + ofs + 0x8F0D185, z & 0xFF);
+    _swByteSet(base + ofs + 0x8F0D186, (z >> 8) & 0xFF);
 }
 
 void puniswTrapGetindex(s32 index, s32* out) {
@@ -7695,58 +7671,15 @@ USER_FUNC(evt_puni_dokan_onoff) {
 
 USER_FUNC(evt_puni_get_lsw_index) {
     s32* args = event->args;
-    u8 b2;
-    u8 b1;
-    u8 b0;
-    s32 t1;
-    s32 t2;
-    s32 t3;
-    u8 b3;
-    u8 b4;
-    u8 b5;
-    u8 b6;
-#ifdef MUST_MATCH
-    s32 out0;
-#endif
+    s32 out;
+    Vec pos;
     s32 index = args[0];
-    f32 v1;
-    f32 v2;
-    f32 v3;
 
-    index += evtGetValue(event, args[1]) * 7;
-    b0 = _swByteGet(index + EVTDAT_LSW_BASE + 0);
-    b1 = _swByteGet(index + EVTDAT_LSW_BASE + 1);
-    b2 = _swByteGet(index + EVTDAT_LSW_BASE + 2);
-    b3 = _swByteGet(index + EVTDAT_LSW_BASE + 3);
-    b4 = _swByteGet(index + EVTDAT_LSW_BASE + 4);
-    b5 = _swByteGet(index + EVTDAT_LSW_BASE + 5);
-    b6 = _swByteGet(index + EVTDAT_LSW_BASE + 6);
-#ifdef MUST_MATCH
-    out0 = b0;
-#endif
-    t1 = b1 + (b2 << 8);
-    if (t1 & 0x8000) {
-        t1 |= 0xFFFF0000;
-    }
-    t2 = b3 + (b4 << 8);
-    if (t2 & 0x8000) {
-        t2 |= 0xFFFF0000;
-    }
-    t3 = b5 + (b6 << 8);
-    if (t3 & 0x8000) {
-        t3 |= 0xFFFF0000;
-    }
-#ifdef MUST_MATCH
-    evtSetValue(event, args[2], out0);
-#else
-    evtSetValue(event, args[2], b0);
-#endif
-    v1 = (f32)t1;
-    v2 = (f32)t2;
-    v3 = (f32)t3;
-    evtSetValue(event, args[3], (s32)v1);
-    evtSetValue(event, args[4], (s32)v2);
-    evtSetValue(event, args[5], (s32)v3);
+    puniswGetindex(index, evtGetValue(event, args[1]), &out, &pos);
+    evtSetValue(event, args[2], out);
+    evtSetValue(event, args[3], (s32)pos.x);
+    evtSetValue(event, args[4], (s32)pos.y);
+    evtSetValue(event, args[5], (s32)pos.z);
     return EVT_RETURN_DONE;
 }
 
@@ -7799,33 +7732,17 @@ USER_FUNC(evt_puni_get_trap_index) {
     s32 index = evtGetValue(event, args[0]);
     s32 value;
 
-    if (index >= 0x67) {
-        value = 0;
-    } else {
-        value = (swByteGet(0x28C + index / 8) >> (index % 8)) & 1;
-    }
+    puniswTrapGetindex(index, &value);
     evtSetValue(event, args[1], value);
     return EVT_RETURN_DONE;
 }
 
 USER_FUNC(evt_puni_set_trap_index) {
-    s32 value;
-    s32 index;
-    s32 byte;
-    s32 div;
-    s32* args;
+    s32* args = event->args;
+    s32 index = evtGetValue(event, args[0]);
+    s32 value = evtGetValue(event, args[1]);
 
-    args = event->args;
-    index = evtGetValue(event, args[0]);
-    value = evtGetValue(event, args[1]);
-    if (index < 0x67) {
-        div = index / 8;
-        index %= 8;
-        byte = swByteGet(0x28C + div);
-        byte &= (1 << index) ^ 0xFF;
-        byte |= value << index;
-        swByteSet(0x28C + div, (u8)byte);
-    }
+    puniswTrapSetindex(index, &value);
     return EVT_RETURN_DONE;
 }
 
@@ -8036,9 +7953,9 @@ USER_FUNC(evt_puni_force_se_off) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (96.79%): the inlined puniswSetindex colours its temps in another order (retail: the
-// base + index * 7 sum in r31, x/y/z in r24-r26; here the sum is r24) and the x/y loads swap f0/f1,
-// the same inline difference as evt_puni_exit; standalone puniswSetindex matches.
+// NONMATCHING (97.24%): the inlined puniswSetindex colours x/y and their high bytes in another order
+// (first copy: retail x r27, y r28, xh r26, yh r25; here x r25, y r26, xh r27, yh r28) and the x/y loads
+// swap f0/f1, the same inline difference as evt_puni_exit; standalone puniswSetindex matches.
 USER_FUNC(evt_puni_all_save) {
     s32 i;
     PuniData* puni = &Punidat[1];
