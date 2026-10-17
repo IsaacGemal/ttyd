@@ -68,6 +68,18 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    A call through a function-pointer cast (`((void (*)(Vec, Vec, GXColor))winIconSet)(...)`, to pass by value or
    against the header's prototype) is undefined behaviour, so it is always MUST_MATCH-only; `tools/ci.py` fails new
    unguarded ones (`tools/fncast_lint.py`).
+   **MUST_MATCH is for small local tricks only, never for structural fakes.** The standard is code a human
+   decomp (upstream doldecomp/ttyd) would merge. These are refused whether or not they are guarded:
+   - a new function or inline that exists only to steer registers, above all a copy of an existing helper with
+     its locals reordered or its body reshaped (mapdrv's second search, partyEntryMain's `L_partyChgPoseId1`);
+   - a call through a cast that reorders or retypes the prototype's parameters to change scheduling (fix the
+     declaration instead, if other callers and the assembly support the new order);
+   - inlining, recursion or loops expanded by hand to get more named variables than the original wrote;
+   - `defer_codegen off` or unused functions that only place pool constants.
+   A duplicate helper is acceptable only with outside evidence that the original had one (a symbol, another
+   version of the game, or the Super Paper Mario reference), not because it matches. If the only route to 100 is
+   one of these, stop at your best natural score and say so in your report: an honest 99.9% is worth more than a
+   fake 100%.
 8. **Pragmas that aren't needed.** Every `#pragma` needs a one-line reason, and must be needed: if the function
    still matches without it, remove it. Never write `#pragma scheduling <cpu number>` (`601`, `801`, ...): it
    makes this compiler loop forever, and check.py refuses it. `scheduling off` / `reset` are fine.

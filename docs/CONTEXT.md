@@ -7601,7 +7601,7 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 - mapSetMaterialTev: `tevStage++` written twice instead of a `stage = tevStage + 1` temp (9 -> 2 instruction diffs).
 - Hard negatives: declaration order inside a `static inline` doesn't steer its FPRs (three rasim orders, all 369);
   mapMain clamp `fmr` survives every then-block shape; mapObjSetFlushColor reaches 0 only with an invented search inline
-  (mapGetMapObjSub's order is pinned by 17 users); bmapUnLoad loop 1's `i` needs a frontend-temp position; the Tev
+  (FORBIDDEN: a structural fake, AGENT_BRIEF rule 7; mapGetMapObjSub's order is pinned by 17 users); bmapUnLoad loop 1's `i` needs a frontend-temp position; the Tev
   prologue `addi` doesn't move. Next idea: read `chn`/`ch` fields directly in mapMain's Hermite expressions instead of
   through value0/tan0 locals.
 
@@ -7680,3 +7680,20 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 - Levers: levers.md #31 (mutable quadrant/square scratch, Overnight 5 one-local-per-meaning) + #39 (caller-owned first
   product). Negatives: shared accumulators (e16), trig scratch in inline helpers (e68, sits above the caller's
   radius), dynamic aggregate initializers (rejected), compound literals (+11-19 instructions).
+
+## Structural fakes are refused, guarded or not (2026-10-17, Isaac + Claude Opus 5.5)
+
+- Wave 90 (DeepSeek V4.1 Flash 1017, one agent per open function) "reached 100" on four of the last 11 functions,
+  all with structural fakes: mapMain and mapObjSetFlushColor through reordered copies of mapGetMapObjSub (the second
+  one under MUST_MATCH), unk_mri_000095f0 by calling hitCheckFilter through a cast with the floats first, and
+  PuniChildHagure by expanding its recursion three levels by hand. All four refused. The agents cited rule 7's
+  MUST_MATCH allowance and the ledger's "reaches 0 only with an invented inline" notes: on the last functions, where
+  the natural levers are spent, a marked-trick escape hatch is the only route left, and every capable model takes it.
+- Decision: the standard is code a human decomp (upstream doldecomp/ttyd) would merge. MUST_MATCH stays for small
+  local tricks (padding, a temp, expression order, a scoped pragma with a reason); structural fakes are refused even
+  when guarded (AGENT_BRIEF rule 7 lists them). A duplicate helper needs outside evidence (a symbol, another version,
+  the SPM reference). Ledger notes that record a route to 100 through a fake are marked FORBIDDEN.
+- The long tail may take weeks (a Mario Kart 64 debug function took humans three years): leave a function at its best
+  natural score with an honest note rather than force it.
+- Open lead: unk_mri_000095f0's agent claims hitCheckFilter's original prototype takes its floats before its
+  pointers. If its other callers and the assembly support that order, fixing the declaration is a real fix.
