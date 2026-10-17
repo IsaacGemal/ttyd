@@ -1090,6 +1090,7 @@ static inline void animPoseAddVecDelta(Vec* dst, u8* src, s32 size, f32 scale) {
     }
 }
 
+// The same runs given as [src, end): the reset path walks its frames with these.
 static inline void animPoseAddVecDeltaRange(Vec* dst, u8* src, u8* end, f32 scale) {
     while (src < end) {
         dst += *src;
@@ -1097,9 +1098,9 @@ static inline void animPoseAddVecDeltaRange(Vec* dst, u8* src, u8* end, f32 scal
             f32 dx = __OSs8tof32((s8*)src + 1);
             f32 dy = __OSs8tof32((s8*)src + 2);
             f32 dz = __OSs8tof32((s8*)src + 3);
-            dst->x += dx * scale;
-            dst->y += dy * scale;
-            dst->z += dz * scale;
+            dst->x += scale * dx;
+            dst->y += scale * dy;
+            dst->z += scale * dz;
         }
         src += 4;
     }
@@ -1125,6 +1126,14 @@ static inline void animPoseAddNodeDelta(f32* dst, u8* src, s32 size, f32 scale) 
     }
 }
 
+static inline void animPoseAddNodeDeltaRange(f32* dst, u8* src, u8* end, f32 scale) {
+    while (src < end) {
+        dst += src[0];
+        *dst += scale * __OSs8tof32((s8*)src + 1);
+        src += 4;
+    }
+}
+
 // Texture-animation delta run: [u8 index][u8 delta][f32 s][f32 t], index in 0x18-byte entries.
 static inline void animPoseAddTexDelta(AnimTexMtx* dst, u8* src, s32 size) {
     u8* end = src + size;
@@ -1137,8 +1146,9 @@ static inline void animPoseAddTexDelta(AnimTexMtx* dst, u8* src, s32 size) {
     }
 }
 
-// Applies one frame's five delta channels to the pose buffers. Retail inlines this at both
-// update paths (reset and catch-up). It is a macro rather than a helper function because the
+// Applies one frame's five delta channels to the pose buffers (the catch-up path; the reset path
+// spells the position, normal and node runs as [src, end) ranges, which numbers each run's end
+// before its start and gives retail's r5/r7 there). It is a macro rather than a helper function because the
 // combined expansion exceeds the default auto-inline size, and raising #pragma inline_max_size
 // for it leaks into the earlier functions in this file (testAlloc/animPoseRefresh stop matching).
 #define ANIM_POSE_ADD_FRAME(pose, anim, frame, scale)                                               \
@@ -1183,21 +1193,29 @@ static inline f32 animGetCameraAngle(void) {
     return angle;
 }
 
+// Cubic Hermite interpolation at t of a value p with end tangents m0/m1 (start value 0).
+static inline f32 animHermite(f32 t, f32 p, f32 m0, f32 m1) {
+    f32 t2 = t * t;
+    f32 t3 = t * t2;
+    f32 h0 = (-2.0f) * t3 + 3.0f * t2;
+    f32 h1 = t3 - 2.0f * t2 + t;
+    f32 h2 = t3 - t2;
+
+    return h0 * p + h1 * m0 + h2 * m1;
+}
+
 // The four inlined delta loops make each update path large; retail inlines them in both.
 #pragma inline_max_total_size(60000)
-// Reconstruction notes. The whole recursive pose evaluator is reconstructed from the assembly;
-// the bl sequence and immediates match (17 calls), so only register allocation and instruction
-// scheduling remain. Source shapes that reproduce retail's operand order and register split: the
+// Reconstruction notes. The whole recursive pose evaluator is reconstructed from the assembly.
+// Source shapes that reproduce retail's operand order and register split: the
 // two `0.0f == x` compares keep the constant first in `fcmpu`; the clamped value
 // accumulates back into `start` (retail's clamp lives in start's f3) instead of a separate
 // `clamped` variable; `end` is declared before `start` and loaded first, giving retail's f1/f3
-// split; the range delta helper multiplies `dx * scale` (the size helper's `scale * dx` is what
-// retail's reset loop uses), and the cubic `-2*a3 + 3*a2` term order matches retail's fmadds.
-// Naming the three Hermite basis terms (h0/h1/h2) gives retail's schedule for the node blend.
-// What is left: the reset loops take their source in r7 where retail uses r5 (the catch-up
-// loops match) and the node blend keeps a2/a3 in f7/f8 where retail uses f8/f7. No call,
-// immediate or control-flow difference remains.
-// NONMATCHING (99.69%): register allocation/scheduling only; all calls and immediates match.
+// split; the reset loop's position/normal/node runs go through the [src, end) range helpers, each
+// start pointer in its own block (r5 start / r7 end there; the size helpers' local `end` gives the
+// catch-up loops' r7/r5), and the cubic `-2*t3 + 3*t2` term order matches retail's fmadds.
+// The node blend is the animHermite helper: its t2/t3 locals number the squared and cubed terms
+// the way retail colours them (f8/f7), and its named basis terms give retail's schedule.
 void animPoseMain(s32 poseId) {
     AnimationPose* pose = &wp->poses[poseId];
     AnimationPoseData* data = animPoseGetBaseData(pose);
@@ -1363,7 +1381,22 @@ void animPoseMain(s32 poseId) {
                 pose->lastFrameZero = 0;
             }
             for (; f < fend; f += ANIM_FRAME_SIZE) {
-                ANIM_POSE_ADD_FRAME(pose, anim, f, 0.0625f);
+                {
+                    u8* p = ANIM_DATA_POS(anim) + ANIM_FRAME_POS_OFF(f) * 4;
+                    animPoseAddVecDeltaRange(pose->mpBufferVtxPos, p, p + ANIM_FRAME_POS_COUNT(f) * 4, 0.0625f);
+                }
+                {
+                    u8* p = ANIM_DATA_NRM(anim) + ANIM_FRAME_NRM_OFF(f) * 4;
+                    animPoseAddVecDeltaRange(pose->mpBufferVtxNrm, p, p + ANIM_FRAME_NRM_COUNT(f) * 4, 0.0625f);
+                }
+                animPoseAddVisDelta(ANIM_DATA_VIS(anim) + ANIM_FRAME_VIS_OFF(f) * 2, pose->mpBufferGroupVisibility,
+                                    ANIM_FRAME_VIS_COUNT(f) * 2);
+                {
+                    u8* p = ANIM_DATA_NODE(anim) + ANIM_FRAME_NODE_OFF(f) * 4;
+                    animPoseAddNodeDeltaRange((f32*)pose->mpBufferNode, p, p + ANIM_FRAME_NODE_COUNT(f) * 4, 0.0625f);
+                }
+                animPoseAddTexDelta(pose->mpBufferTexAnimEntries, ANIM_DATA_TEX(anim) + ANIM_FRAME_TEX_OFF(f) * 0xC,
+                                    ANIM_FRAME_TEX_COUNT(f) * 0xC);
             }
         } else if (pose->lastFrameZero < frame1) {
             u8* f = ANIM_DATA_FRAMES(anim) + (pose->lastFrameZero + 1) * ANIM_FRAME_SIZE;
@@ -1452,15 +1485,11 @@ void animPoseMain(s32 poseId) {
                     s32 t1 = (s8)src[3];
                     dst += src[0];
                     if (t1 < 0x59 && t1 > -0x59) {
-                        f32 a2 = alpha * alpha;
                         f32 step = 0.0625f * __OSs8tof32((s8*)src + 1);
                         f32 tan0 = tanfTbl[(s8)src[2] + 0x59];
                         f32 tan1 = tanfTbl[t1 + 0x59];
-                        f32 h0 = (-2.0f) * (alpha * a2) + 3.0f * a2;
-                        f32 h1 = (alpha * a2) - 2.0f * a2 + alpha;
-                        f32 h2 = (alpha * a2) - a2;
 
-                        *dst += h0 * step + h1 * (timedelta * tan0) + h2 * (timedelta * tan1);
+                        *dst += animHermite(alpha, step, timedelta * tan0, timedelta * tan1);
                     }
                     src += 4;
                 }
@@ -1816,9 +1845,12 @@ static inline void animSetMaterial_WrapMode(TEXDescriptor* desc, s32 wrapFlags, 
 }
 
 // Instructions/constants match; register colouring only. The target colours the parameters r24..r30 and
-// `i` r23; here `i` takes r30, texBinds r23 and texFile r29. In the inlined TexMtx loop j, flags and the
-// j*3 matrix id rotate the same way (target r21/r20/r19, here r20/r19/r21).
-// NONMATCHING (99.48%): callee-saved register rotation only.
+// `i` r23; here `i` takes r30, texBinds r23 and texFile r29. The replay: the 9 long-lived values (7
+// params, i, the TexMtx `mtx`, live from entry because no switch case is a default) all sit at 29
+// neighbours, so the spill-cost choice takes texBinds first; retail's order needs i to leave by a sweep
+// (one neighbour fewer) while mtx keeps one more.
+// NONMATCHING (99.82%): callee-saved register rotation of i/texBinds/texFile only.
+#pragma opt_strength_reduction off // keeps the TexMtx loop's j/flags/matrix-id colouring (r21/r20/r19)
 void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pTexEntries, AnimTexMtx* animEntries,
                              s32 texBindsCapacity, AnimTexBind* texBinds, AnimationTextureFile* texFile) {
     GXTexObj texObj;
@@ -1828,11 +1860,8 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
     s32 mipmap;
 
     for (i = 0; i < texCount; i++) {
-#ifdef MUST_MATCH // `1u` keeps the original's `subf; subi 1; slwi` instead of folding it to `subf; slwi; subi 4`
-        s32 texId = texIdRemap[texCount - i - 1u];
-#else
-        s32 texId = texIdRemap[texCount - i - 1];
-#endif
+        int slot = texCount - i - 1;
+        s32 texId = texIdRemap[slot];
         AnimPoseTexEntry* texEntry;
         s32 frameExt, bindId;
         s32 wrapFlags;
@@ -1895,6 +1924,7 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
 
     animSetMaterial_TexMtx(texCount, texIdRemap, animEntries);
 }
+#pragma opt_strength_reduction reset
 
 // Inlined into materialProc and renderProc (the name is the one in its error string). It reads the current
 // pose data through wp, as its callers do; the texture-argument group is declared (texObj, texData, mtx).
@@ -2050,58 +2080,51 @@ void materialProc(s32 shapeId, s32 field_0x28) {
     }
 }
 
-static inline void renderProc_TexCoords(s32 texCount, s8* texIds, s32* firstId, s32 firstDrawId, s32 texIndex) {
-    u8* texEntryPtr;
-    s32 index;
-    int l;
-
-    for (l = 0; l < texCount; l++) {
-        index = texIds[texCount - l - 1];
-        // The header types texIndex as u16*, but retail loads a full word (lwzx) and stores its low half; the
-        // pointer is a byte base and texIndex is the byte offset into the entry, stepping 4 per vertex.
-        texEntryPtr = (u8*)wp->mpCurPoseData->texIndex[index];
-        GXTexCoord1x16(((u32*)(texEntryPtr + texIndex))[firstDrawId + firstId[index]]);
-    }
-}
-
 // I'm so sorry, whoever gets tasked with matching this function
 // note: I detect at least 8 inlined functions here.
-// All calls (64), constants and byte offsets match; the inner `l` vertex loop's `<` trip-count spelling makes the
-// `.p` unroller emit retail's split `srwi`/`andi` remainder guard and its `ble` entry guard, and the `k1`
-// `!=` loop keeps the split guard too. The ChangeTexture body is the inlined animSetMaterial_ChangeTexture (its
-// group declared (texObj, texData, mtx) so MWCC's right-to-left argument evaluation loads mtx first, and an explicit
-// `idx = texCount - i - 1` keeps retail's `subi ..., 1` instead of folding it into the array base).
-// Declaring the index pointers per draw-call loop keeps them out of the renamed second-live-range temps.
-// The remaining diffs are callee-saved register colouring: retail keeps the outer-loop `draw`/`i` in r28/r29
-// and the draw-call scratch in r20..r27; this build lands them in r26/r25 (the replay wants both numbered
-// after the second-live-range temps of texCount/texObj/pose/j/count). The non-register
-// remainder is retail's folded `lbz -0x1(base)` for texIds[texCount-l-1] (this build emits `subi` + a
-// byte-indexed `lbzx`) and one `ble`/`beq` unroll guard (the `k1` loop emits `beq` where retail has `ble`).
-// NONMATCHING (97.39%): all calls, constants and offsets match; only callee-saved register colouring differs.
+// Reconstruction notes: the material setup and the vertex-format setup each read draw->texCount into their own
+// local (matTexCount / texCount); one shared local becomes a renamed second-live-range temp and rotates
+// texCount/i/draw/j out of r27..r30. The declaration order of the locals sets the rest of the callee-saved
+// colouring. The ChangeTexture body is the inlined animSetMaterial_ChangeTexture (its group declared
+// (texObj, texData, mtx) so MWCC's right-to-left argument evaluation loads mtx first, and an explicit
+// `idx = texCount - i - 1` keeps retail's `subi ..., 1` instead of folding it into the array base). The
+// index pointers and the u16 `count` are declared per draw-call loop; the `k1` loop counts down (retail's
+// `ble` unroll guard); the multi-texture vertex loop is written inline with an `int slot` index (retail's
+// `lbz -0x1(base)` fold) and indexes each texture's u32 entries by the vertex number `k`, which MWCC
+// strength-reduces to retail's byte offset.
 void renderProc(s32 shapeId, s32 field_0x28) {
-    s32 dispMode, drawId;
+    int i;
+    AnimPoseShapeDraw* draw;
     s32 texCount;
+    s8* texIds;
+    Mtx* mtx;
+    BOOL check1;
+    int k;
+    s32 drawId;
+    AnimPoseShape *shapes, *shape;
+    Vec *posVtxPtr, *nrmVtxPtr;
+    GXTexObj* texObj;
+    BOOL texChange1, check2;
+    AnimationPoseData* data;
+    s32 drawCallCount;
+    AnimPoseShapeDraw* draws;
+    s32 posFirstVtx;
+    int k1;
+    AnimationPose* pose;
+    s32 dispMode, posFirstId, nrmFirstId;
     GXTexObj* currTexObj;
-    AnimPoseShapeDraw *draws, *draw;
-    int i, j, k, k1;
-    f32* buffer;
+    s32 nrmFirstVtx;
+    GXColor* clr0VtxPtr;
+    s32 clr0FirstVtx;
+    BOOL texChange2;
+    s32 clr0FirstId;
     s32* firstId;
     AnimDrawCallEntry* drawCall;
-    Vec *nrmVtxPtr, *posVtxPtr;
-    CameraEntry* camera;
-    u16 count;
-    BOOL texChange1, check1, texChange2, check2;
+    int j;
     s32 firstDrawId;
-    s32 posFirstId, nrmFirstId, clr0FirstId;
-    AnimationPoseData* data;
-    AnimPoseShape *shapes, *shape;
-    GXColor* clr0VtxPtr;
-    s32 drawCallCount;
-    AnimationPose* pose;
-    GXTexObj* texObj;
-    s32 posFirstVtx, nrmFirstVtx, clr0FirstVtx;
-    Mtx* mtx;
-    s8* texIds;
+    f32* buffer;
+    CameraEntry* camera;
+    s32 matTexCount;
 
     // stack variables
     s32 clr0VtxSize, posVtxSize, nrmVtxSize;
@@ -2148,7 +2171,7 @@ void renderProc(s32 shapeId, s32 field_0x28) {
             texVtxIndices[7] = (f32*)((u8*)buffer + (sizeof(f32) * 2) * shape->vtxTex[7].first);
 
             for (i = 0; i < drawCount; i++, draw++) {
-                texCount = draw->texCount;
+                matTexCount = draw->texCount;
                 if ((u32)wp->mpCurPose->disableDraw == 0) {
                     lightPos = vec3_802c2dbc[0];
                     MTXMultVec(*g_modeling_mtx, &lightPos, &lightPos);
@@ -2164,7 +2187,7 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                     if (camGetCurPtr() == camera) {
                         mapSetMaterialFog();
                     }
-                    mapSetMaterialTev(texCount, draw->drawMode, wp->mpCurPose->materialFlag, *g_modeling_mtx);
+                    mapSetMaterialTev(matTexCount, draw->drawMode, wp->mpCurPose->materialFlag, *g_modeling_mtx);
                 }
                 if ((u32)wp->mpCurPose->typeFlags != 0) {
                     texChange1 = animSetMaterial_ChangeTexture(draw, wp->mpCurPose, wp->mpTexObjs[0],
@@ -2216,25 +2239,24 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                         mtx = wp->paperMtxPtr[0];
                         if (mtx) {
                             animSetMaterial_ChangeTexture(draw, pose, texObj, wp->mpTexDatas[0],
-                                                          *mtx, 1);
+                                                          *wp->paperMtxPtr[0], 1);
                         }
                     }
                 }
 
                 texIds = (s8*)draw->texArrayIds;
                 firstId = draw->firstIdTex;
-                data = wp->mpCurPoseData; // inlined function here
-                drawCall = &data->drawCalls[draw->firstDrawCall];
+                drawCall = &wp->mpCurPoseData->drawCalls[draw->firstDrawCall];
                 texCount = draw->texCount;
                 drawCallCount = draw->drawCallCount;
-                clr0VtxPtr = (GXColor*)((u8*)data->clr0VtxBuffer + clr0VtxSize);
+                clr0VtxPtr = (GXColor*)((u8*)wp->mpCurPoseData->clr0VtxBuffer + clr0VtxSize);
                 posFirstId = draw->firstIdPos;
                 nrmFirstId = draw->firstIdNrm;
                 clr0FirstId = draw->firstIdClr0;
 
                 if ((s32)wp->mbUseFloatScratch != 0) {
-                    nrmVtxPtr = (Vec*)((u8*)wp->vtxArrayNrm + nrmVtxSize);
                     posVtxPtr = (Vec*)((u8*)wp->vtxArrayPos + posVtxSize);
+                    nrmVtxPtr = (Vec*)((u8*)wp->vtxArrayNrm + nrmVtxSize);
                 } else {
                     pose = wp->mpCurPose;
                     posVtxPtr = (Vec*)((u8*)pose->mpVtxArrayPos + posVtxSize);
@@ -2256,6 +2278,7 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
                     GXSetArray(GX_VA_TEX0, texVtxIndices[texIds[0]], sizeof(f32) * 2);
                     for (j = 0; j < drawCallCount; j++, drawCall++) {
+                        u16 count;
                         u16 *posIndexPtr, *nrmIndexPtr, *clr0IndexPtr, *texIndexPtr;
 
                         data = wp->mpCurPoseData; // doubly inlined function here
@@ -2266,7 +2289,7 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                         clr0IndexPtr = (u16*)((u8*)data->clr0Index + (drawCall->first + clr0FirstId) * 4 + 2);
                         texIndexPtr = (u16*)((u8*)data->texIndex[texIds[0]] + (drawCall->first + firstId[texIds[0]]) * 4 + 2);
                         GXBegin(GX_TRIANGLEFAN, GX_VTXFMT0, count);
-                        for (k1 = 0; k1 != count; k1++) { // unrolled, warning
+                        for (k1 = count; k1 > 0; k1--) { // unrolled, warning
                             GXPosition1x16(*posIndexPtr);
                             posIndexPtr += 2;
                             GXNormal1x16(*nrmIndexPtr);
@@ -2284,27 +2307,34 @@ void renderProc(s32 shapeId, s32 field_0x28) {
                         GXSetArray(GX_VA_TEX0 + j, texVtxIndices[texIds[texCount - j - 1]], sizeof(f32) * 2);
                     }
                     for (j = 0; j < drawCallCount; j++, drawCall++) {
+                        u16 count;
                         u16 *posIndexPtr, *nrmIndexPtr, *clr0IndexPtr;
-                        s32 texIndex;
+                        u8* texEntryPtr;
+                        s32 index;
+                        int l;
+                        int slot;
 
                         firstDrawId = drawCall->first;
                         data = wp->mpCurPoseData; // doubly inlined function here
                         count = drawCall->count;
                         // indices are stored as u32, has to do math to load the lower 2 bytes
-                        posIndexPtr = (u16*)((u8*)data->posIndex + (drawCall->first + posFirstId) * 4 + 2);
-                        nrmIndexPtr = (u16*)((u8*)data->nrmIndex + (drawCall->first + nrmFirstId) * 4 + 2);
-                        clr0IndexPtr = (u16*)((u8*)data->clr0Index + (drawCall->first + clr0FirstId) * 4 + 2);
+                        posIndexPtr = (u16*)((u8*)data->posIndex + (firstDrawId + posFirstId) * 4 + 2);
+                        nrmIndexPtr = (u16*)((u8*)data->nrmIndex + (firstDrawId + nrmFirstId) * 4 + 2);
+                        clr0IndexPtr = (u16*)((u8*)data->clr0Index + (firstDrawId + clr0FirstId) * 4 + 2);
                         GXBegin(GX_TRIANGLEFAN, GX_VTXFMT0, count);
 
-                        for (k = 0, texIndex = 0; k < count; k++) {
+                        for (k = 0; k < count; k++, posIndexPtr += 2, nrmIndexPtr += 2, clr0IndexPtr += 2) {
                             GXPosition1x16(*posIndexPtr);
                             GXNormal1x16(*nrmIndexPtr);
                             GXColor1x16(*clr0IndexPtr);
-                            renderProc_TexCoords(texCount, texIds, firstId, firstDrawId, texIndex);
-                            texIndex += 4;
-                            posIndexPtr += 2;
-                            nrmIndexPtr += 2;
-                            clr0IndexPtr += 2;
+                            for (l = 0; l < texCount; l++) {
+                                slot = texCount - l - 1;
+                                index = texIds[slot];
+                                // The header types texIndex as u16*, but retail loads a full word (lwzx) and
+                                // stores its low half.
+                                texEntryPtr = (u8*)wp->mpCurPoseData->texIndex[index];
+                                GXTexCoord1x16(((u32*)texEntryPtr + k)[firstDrawId + firstId[index]]);
+                            }
                         }
                     }
                 }
@@ -2620,24 +2650,62 @@ static inline s32 animPoseSearchAnimIdx(AnimationPose* pose, const char* name) {
 zero:
     return 0;
 }
+
+// Takes a paper pose's vertex buffers from the shared float scratch when it has room.
+static inline void animPoseAllocFloatScratch(AnimationPoseData* data) {
+    s32 posNum = data->mBufferPosNum;
+    s32 nrmNum = data->mBufferNrmNum;
+    s32 total = posNum + nrmNum;
+    if (total <= (s32)wp->mFloatScratchRP) {
+        if ((s32)(wp->mFloatScratchWP + total) > (s32)wp->mFloatScratchRP) {
+            wp->mFloatScratchWP = 0;
+        }
+        wp->mbUseFloatScratch = 1;
+        wp->vtxArrayPos = &wp->mpFloatScratch[wp->mFloatScratchWP];
+        wp->mFloatScratchWP += posNum;
+        wp->vtxArrayNrm = &wp->mpFloatScratch[wp->mFloatScratchWP];
+        wp->mFloatScratchWP += nrmNum;
+    }
+}
+
+// animPoseEvalMtx's body for a pose already in hand: animPoseDrawMtx's paper-pose evaluation pass.
+// As a helper its pose data and matrix pointer number after the caller's locals, which gives the
+// target's colouring of them (r26 and r29).
+static inline void animPoseEvalMtxPose(AnimationPose* pose, Mtx matrix, f32 rotY, f32 scale) {
+    AnimationPoseData* poseData = *wp->files[pose->fileId].handle->data;
+    Mtx mtxA;
+    Mtx mtxB;
+    Mtx mtxC;
+
+    if (!(pose->flags & 8) && rotY) {
+        PSMTXRotRad(mtxB, 'y', 0.017453292f * rotY);
+        PSMTXConcat(matrix, mtxB, mtxA);
+        matrix = mtxA;
+    }
+    if (1.0f != scale) {
+        PSMTXScale(mtxC, scale, scale, scale);
+        PSMTXConcat(matrix, mtxC, mtxA);
+        matrix = mtxA;
+    }
+    g_modeling_mtx_lv = 0;
+    g_modeling_mtx = g_modeling_mtx_stack;
+    PSMTXCopy(matrix, g_modeling_mtx_stack[0]);
+    wp->mpCurPose = pose;
+    wp->mpCurPoseData = poseData;
+    evalProc(-1, poseData->groupCount - 1);
+}
 // dont_inline keeps animPoseDrawMtx a real bl from animPoseDraw (retail emits one).
 #pragma dont_inline on
-// All logic/constants/offsets match; every remaining diff is callee-saved register allocation. The
-// target colours the long-lived webs pose/paperPose/pMtx/xluMode/matrix/poseData to r31/r30/r29/r28/
-// r27/r26; this build puts xluMode in r29 and drops pMtx/poseData to r22/r23 (the replay reaches at most
-// 9 of the 12 colours by reordering xluMode/poseData/pMtx). The inner `pp` shadow reproduces the
-// target's non-CSEd re-materialisation of the paper pose inside the animArg block (outer r30, inner r29).
-// NONMATCHING (99.40%): register allocation only (49 instructions, all register renames).
+// The float-scratch allocation as a helper gives that block's volatile temps (wp r3, paperPoseData r5).
+// The paper animation name is read from field_0x94 for the test and again for the search: the
+// CSE'd load's copy into the search's name parameter is coalesced, and that extra permanent
+// neighbour keeps pp in the graph past xluMode (pp r29, xluMode r28). The inner `pp` shadow
+// reproduces the target's non-CSEd re-materialisation of the paper pose inside that block.
 void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
     static Mtx mtx;
     AnimationPose* pose = &wp->poses[poseId];
-    s32 animArg;
     Mtx mtxE;
     Mtx mtxD;
-    Mtx mtxC;
-    Mtx mtxB;
-    Mtx mtxA;
-    f32(*pMtx)[4];
     s32 found;
     AnimationPoseData* paperPoseData;
     AnimationPoseData* poseData;
@@ -2645,24 +2713,7 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
 
     if (pose->paperId != -1) {
         if ((pose->flags & 0xC0) != 0) {
-            poseData = *wp->files[pose->fileId].handle->data;
-            pMtx = matrix;
-            if (!(pose->flags & 8) && rotY) {
-                PSMTXRotRad(mtxB, 'y', 0.017453292f * rotY);
-                PSMTXConcat(matrix, mtxB, mtxA);
-                pMtx = mtxA;
-            }
-            if (1.0f != scale) {
-                PSMTXScale(mtxC, scale, scale, scale);
-                PSMTXConcat(pMtx, mtxC, mtxA);
-                pMtx = mtxA;
-            }
-            g_modeling_mtx_lv = 0;
-            g_modeling_mtx = g_modeling_mtx_stack;
-            PSMTXCopy(pMtx, g_modeling_mtx_stack[0]);
-            wp->mpCurPose = pose;
-            wp->mpCurPoseData = poseData;
-            evalProc(-1, poseData->groupCount - 1);
+            animPoseEvalMtxPose(pose, matrix, rotY, scale);
         }
 
         paperPose = &wp->poses[pose->paperId];
@@ -2674,24 +2725,11 @@ void animPoseDrawMtx(s32 poseId, Mtx matrix, s32 xluMode, f32 rotY, f32 scale) {
         }
 
         if (paperPose->typeFlags & 2) {
-            s32 posNum = paperPoseData->mBufferPosNum;
-            s32 nrmNum = paperPoseData->mBufferNrmNum;
-            s32 total = posNum + nrmNum;
-            if (total <= (s32)wp->mFloatScratchRP) {
-                if ((s32)(wp->mFloatScratchWP + total) > (s32)wp->mFloatScratchRP) {
-                    wp->mFloatScratchWP = 0;
-                }
-                wp->mbUseFloatScratch = 1;
-                wp->vtxArrayPos = &wp->mpFloatScratch[wp->mFloatScratchWP];
-                wp->mFloatScratchWP += posNum;
-                wp->vtxArrayNrm = &wp->mpFloatScratch[wp->mFloatScratchWP];
-                wp->mFloatScratchWP += nrmNum;
-            }
-            animArg = *(s32*)pose->field_0x94;
-            if (animArg != -1) {
+            animPoseAllocFloatScratch(paperPoseData);
+            if (*(s32*)pose->field_0x94 != -1) {
                 {
                     AnimationPose* pp = &wp->poses[pose->paperId];
-                    found = animPoseSearchAnimIdx(pp, (const char*)animArg);
+                    found = animPoseSearchAnimIdx(pp, *(const char**)pose->field_0x94);
                     if (found != pp->animId) {
                         pp->animId = found;
                         if (pp->paperId != -1 && (pp->flags & 2)) {
