@@ -7697,3 +7697,7 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
   natural score with an honest note rather than force it.
 - Open lead: unk_mri_000095f0's agent claims hitCheckFilter's original prototype takes its floats before its
   pointers. If its other callers and the assembly support that order, fixing the declaration is a real fix.
+- **Wave 90 kept: partySearchHead 80.36 -> 82.48 (DeepSeek V4.1 Flash 1017).** Statement order inside the probe setup
+  (`dist = *out` first, then px/offCos/pz/z/offSin/py/x interleaved as retail computes them; y before x in the second
+  probe) and partyHeadHit taking the probe height as a parameter. The rest is FPR temps landing in f4-f6 instead of
+  f0-f3. Also from wave 90: animSetMaterial_Texture no change (12 callee-saved GPR name rows; no source lever found).
