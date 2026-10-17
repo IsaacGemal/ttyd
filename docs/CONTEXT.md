@@ -7961,3 +7961,58 @@ drops below 100.
   order, plus a `next` local) while the near pass still calls envDofTaps. Writing both passes out and deleting the
   helper scores 99.03, so only the asymmetric form matches. Accepted as plausible original structure (not a reordered
   copy); listed for the post-finish review.
+
+
+## animSetMaterial_Texture: boundary and allocator pass, stays 99.82 (2026-10-17, GPT-6.1 Sol)
+
+- Isaac selected this after envdrv linked. Read the earlier on6/on7/wave-90/restrict ledger entries, rule 7,
+  the full 1,452-byte retail function, source and header layouts. Rebuilt the baseline at HEAD 5cf8abb8:
+  **99.82094%, 363 instructions, 12 real rows**. Only i/texBinds/texFile rotate: ours r30/r23/r29,
+  retail r23/r29/r30. No instruction or constant change retained; configure.py is unchanged.
+- Captured fresh tower mwccdbg dumps through scratch/tb.sh in the existing sol-env workspace:
+  `build/mwccdbg/sol_anim_baseline`. **GPR replay: 0 of 108 assignments differ**, same priority order.
+  Main objects: r32..r38 are the seven parameters; r50 is i; r66/@2681 is the matrix pointer. The pointer is
+  live from entry because the flags switch has an unassigned default path. The first texture loop's coalesced
+  copies remain permanent interference neighbours, even after their real values stop being live.
+- **Diagnostic what-ifs, not proposed source fixes:** forcing i's allocation cost to zero reproduces all nine
+  long-lived target colours. Deleting just one i-to-coalesced-temp edge makes i r23, but puts the matrix pointer
+  in r24 and shifts the parameters up one; there is no single existing edge edit giving all nine targets.
+  With that edge deleted, also moving the matrix pointer's sweep position below i (tested keys 39/49, i is 50)
+  gives all nine. Merely adding a permanent matrix-only neighbour does NOT fix this fresh baseline. Thus the
+  earlier missing-edge description should not be treated as a one-step fix, and there is still a meaningful
+  variable-order/lifetime question. These simulations target the nine long-lived values; only a full real build
+  could establish a match, including the remaining registers.
+- **Boundary results:** writing TexMtx directly in the caller gives 63-64 rows, including reversed matrix stack
+  placement, float local colours and zero initialization. Moving its pointer between function/loop/switch scopes
+  while keeping the original helper stays at 12. Writing one or both wrap blocks directly gives 31: i becomes
+  r23 but mtx becomes r24 and parameters shift, plus a wrap-value copy. Reversing the direct matrix declarations
+  and float declaration order repairs those particular direct-expansion differences, but combinations with direct
+  wrap blocks still give 35-38. Sharing the two loops' counter through the existing matrix helper gives 31;
+  direct reuse gives 59. None of these boundary changes is retained.
+- A diagnostic split into texture-object and texture-matrix phases was not competitive: default inlining leaves
+  a call (282 rows), inline_max_size 2000 inlines but gives 47 real rows, and direct wrap/per-loop wrap variants
+  give 37-53. inline_max_size 10000 made the compiler exceed a normal compile by tens of seconds; terminated
+  only that owned compiler PID and restored the source. No new phase helper or inline-size pragma remains.
+- **Other bounded negatives:** ordinary const/flat/void/whole-Mtx pointer types all stay at 12. s32/int/u32/enum
+  forms of i, j, flags and texId generally stay at 12 (u32 j: 13); narrowed forms add masks/extensions. Naming a
+  matrix ID: int stays 12, u32 gives 31; explicit offset induction gives 23-30. Equivalent matrix-ID arithmetic
+  spellings and named texcoord snapshots stay at 12. Normal while/goto/preincrement/explicit-increment spellings
+  stay at 12; added guards/do-while/infinite-loop-break forms give 14-15. Moving GX object storage into the loop
+  or texture branch stays at 12. Parameter aliases and eliminating bind/texEntry/frameExt locals stay at 12;
+  eliminating palId/wrapFlags worsens. A typed tex-map copy gives 33 (plain s32 stays 12). Register hints on i,
+  all parameters, matrix pointer or their combinations stay at 12. Caller lifetime/propagation/dead-assignment
+  options stay at 12; common-subexpression elimination off gives 78.
+- **Final state and verification:** byte-identical to the source baseline, **99.82%**, 12 rows. Rebuilt
+  `agent_check.py --final driver/animdrv`: **71/73 functions at 100%, merge checks clean**, natural compile passes.
+  Relocation-value check with --partial, store/constant sweep and instruction-count delta report no findings.
+  All diagnostic source changes were reverted. This is evidence about the tested shapes, not proof that a natural
+  solution is impossible. No commit made. Reproducible scripts, candidates, score logs, assembly, final checks and
+  copied baseline debugger dumps are under `scratch/sol-anim/` on the Mac. A few generated candidates were invalid
+  C and were rejected; candidate-file count is not a count of successful distinct experiments.
+
+## Overnight 7 (2026-10-17/18)
+
+Targets: the last 8 functions (mapdrv 2, animdrv 2, mri_puni 4) and the two unassigned data splits. Workers:
+GPT-6.1 Sol at low effort (sequential: mapdrv, animdrv, mri_puni evt_puni_exit/evt_puni_all_save) and two Claude
+Opus 5.5 agents (mri_puni PuniChildHagure/unk_mri_000095f0 plus the hitCheckFilter prototype lead; the data splits).
+Rule 7 (Oct 17) applies to every result.
