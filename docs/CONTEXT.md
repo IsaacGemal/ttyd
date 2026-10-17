@@ -7782,3 +7782,13 @@ repeat it. All local checks were `tools/agent_check.py mri/mri_puni FUNC` (the u
 - **Correction to the earlier on7 and bounded-pass diagnosis:** the assertion that retail must have different instruction content was too strong. The missing lever was alias information, which changes legal load/store scheduling. `sched750.py` conservatively orders nonliteral loads against stores and does not model this source-level restrict promise; an exhaustive order search under that fixed model cannot rule out the real source solution. Check qualifiers and alias dependencies before concluding a scheduling block needs extra dead instructions.
 - Verification: rebuilt production source reports Findbuff 100.00%, unit 182/186 (was 181/186); comparison against the pre-edit unit report shows no other function score changes. All ELF relocation and data sections are byte-identical to the saved baseline. Full tools tests, lint, prototypes, build/checksum checks, and the natural compile without MUST_MATCH pass.
 - Mac's standard CI ratchet reports nine stale-baseline differences, as the Current state warning predicts (old split names, renamed battle unit and data scores). Independently reran the exact `ci.ratchet` against a read-only copy of the tower CI accepted report at the same HEAD, ffbca2d1: **no regressions, five measures improved**. Neither saved baseline was replaced or accepted. Fresh full report: **9,759/9,769**, ten functions open; mri_puni has four left.
+
+## Aliasing sweep on the last ten: no gain (2026-10-17, Claude Opus 5.5)
+
+- After puniMapFindbuff closed with `__restrict` (#831), a scripted pass added `__restrict` to each pointer parameter
+  and pointer local of the ten open functions, one at a time and all at once, rebuilt and scored each (75 builds).
+  No function improved. Several got worse: animPaperPoseDispSub `pose` 99.02 -> 62.69, unk_mri_000095f0 `puni`
+  96.04 -> 81.65, PuniChildHagure `puni` 97.88 -> 95.13, partySearchHead `position` 82.48 -> 80.53,
+  animSetMaterial_Texture `desc` 99.82 -> 98.82, envDisp_DepthOfField `u` 99.96 -> 99.55. Everything else unchanged.
+- Not covered: parameters of the static inline helpers these functions call (partyHeadHit, envDofTaps, the mapMain
+  step helpers, puniswSetindex), `const` on pointees, and pairs of restricted pointers.
