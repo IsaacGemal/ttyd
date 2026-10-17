@@ -651,13 +651,13 @@ HitEntry* partySearchFrontWall(PartyEntry* party, Vec* pos, f32 dist, f32 dir) {
     return NULL;
 }
 
-static inline HitEntry* partyHeadHit(Vec* pos, f32* dist) {
+static inline HitEntry* partyHeadHit(Vec* pos, f32* dist, f32 up) {
     HitEntry* hit;
     f32 hx, hy, hz, hnx, hny, hnz, d;
     Vec n = {0.0f, 0.0f, 0.0f}; // unused: its zero template is the original's unreferenced .rodata Vec
 
     d = *dist;
-    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &hnx, &hny, &hnz, pos->x, pos->y + 10.0f, pos->z, 0.0f, 1.0f, 0.0f);
+    hit = hitCheckFilter(NULL, &hx, &hy, &hz, &d, &hnx, &hny, &hnz, pos->x, pos->y + up, pos->z, 0.0f, 1.0f, 0.0f);
     if (hit != NULL) {
         if (*dist >= d) {
             *dist = d;
@@ -666,7 +666,8 @@ static inline HitEntry* partyHeadHit(Vec* pos, f32* dist) {
     return hit;
 }
 
-// NONMATCHING (~80%): instruction scheduling of the probe setup (template copies, constant loads).
+// NONMATCHING (82.48%): the instruction stream, call arguments, stack slots and pools match the original; what
+// differs is the order inside the probe-setup blocks, so the compiler temps land in f4-f6 instead of reusing f0-f3.
 HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle) {
     HitEntry* hit;
     Vec q;
@@ -684,35 +685,35 @@ HitEntry* partySearchHead(PartyEntry* party, Vec* position, f32* out, f32 angle)
 
     h = 0.3f * party->field_F4;
     sincosf(&sin, &cos, angle);
-    px = position->x;
-    py = position->y;
-    pz = position->z;
-    offCos = -h * cos;
-    offSin = h * sin;
-    x = px + offSin;
-    z = pz + offCos;
-    y = py;
     dist = *out;
+    px = position->x;
+    offCos = -h * cos;
+    pz = position->z;
+    z = pz + offCos;
+    offSin = h * sin;
+    py = position->y;
+    x = px + offSin;
+    y = py;
     q = (Vec){x, y, z};
-    hit = partyHeadHit(&q, &dist);
+    hit = partyHeadHit(&q, &dist, 10.0f);
     if (hit == NULL) {
-        x = px - offSin;
         y = py;
+        x = px - offSin;
         z = pz - offCos;
         q = (Vec){x, y, z};
-        hit = partyHeadHit(&q, &dist);
+        hit = partyHeadHit(&q, &dist, 10.0f);
         if (hit == NULL) {
             x = px + offCos;
             y = py;
             z = pz + offSin;
             q = (Vec){x, y, z};
-            hit = partyHeadHit(&q, &dist);
+            hit = partyHeadHit(&q, &dist, 10.0f);
             if (hit == NULL) {
                 x = px - offCos;
                 y = py;
                 z = pz - offSin;
                 q = (Vec){x, y, z};
-                hit = partyHeadHit(&q, &dist);
+                hit = partyHeadHit(&q, &dist, 10.0f);
             }
         }
     }
