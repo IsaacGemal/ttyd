@@ -8027,3 +8027,46 @@ Rule 7 (Oct 17) applies to every result.
   every reference is in its code. The split now ends at 0x1199 (the section end), the six `extern const` names are gone
   and the uses are plain literals (`+ -560.0f` under MUST_MATCH like its -655/-750 siblings); 30/30 at 100%, `.rodata`
   equal. CI needs `--allow-protected` (splits.txt) and `--allow-regress` for both auto units, since they no longer exist.
+## animSetMaterial_Texture: direct matrix pass reaches two rows (2026-10-17, GPT-6.1 Sol)
+
+This supersedes the preceding boundary pass's retained 99.82% state. The current retained source reaches
+**99.96%, 2 instruction rows**, still 1452 bytes. No commit made; animdrv remains NonMatching because this
+function and animPaperPoseDispSub remain open.
+
+The helper boundary was a real source of the register problem. Expanding animSetMaterial_TexMtx into
+animSetMaterial_Texture, declaring its matrix storage as `mRot, mTrans, mScale, mTmp`, and its loop floats as
+`scaleS, scaleT, transS, transT, rotate` preserves retail's stack slots and FPR allocation. Using an unsigned
+palette ID removes an extra signed-to-unsigned CSE web. With the GPR locals at function scope, the declaration
+order in the retained source gets all nine long-lived values into the retail registers. This first gave
+six rows. Reusing `i` for the second pass, rather than a separate `j`, also reproduces the zero initialization
+and leaves only the palette load/copy pair. The now-unused matrix helper was removed, with the same score.
+This is an ordinary two-pass implementation; no new steering helper or permuter-only expression is retained.
+
+Remaining instructions (retail -> ours): `lwz r4,4(r3)` -> `lwz r19,4(r3)` and `mr r19,r4` -> `mr r4,r19`.
+The initial palette load is before the texType branch; its saved copy is in the first TEXGet block. All other
+instruction rows match. A signed palette ID gets that pair right but reintroduces the larger register
+rotation (20 rows in this structure). Moving the signed palette declaration, or moving i or the matrix
+pointer through the existing declarations, gives 12 or 20 rows, never improves the retained two.
+
+Compiler replay: the direct unsigned-palette shape loses one permanent coalesced web relative to the old
+helper shape. `mwccdbg` plus rasim's declaration-order search identified a compatible order for all nine
+long-lived values; the source compile verified it. Dumps/logs and scripts are in `scratch/sol-anim/`;
+tower dumps are in `build/mwccdbg/sol_anim_baseline` and `sol_anim_direct` in the dedicated sol-env checkout.
+The private supervised permuter's best candidate suggested assigning the mipmap boolean through j; manual
+reconstruction produced the same two-row score, explained more naturally by sharing the two loop counters.
+The parser roundtrip changed the permuter baseline, so its raw score is not the source-check score.
+
+Further negatives on the two-row shape: propagation/dead-assignment off stay at 2; lifetime off gives14,
+loop-invariants off8, common-subexpressions off98, optimization level3 and strength reduction on4,
+optimize-for-size65. Removing the unused helper stays2. Narrow casts are not a solution: they change the
+palette ID's range. Main palette loads through int/u32 casts and first/later TEXGet argument casts through
+s32/int/unsigned int/s64/u64 keep the two rows. No such diagnostic casts are retained.
+
+Verification of the retained cleaned source: `agent_check.py driver/animdrv animSetMaterial_Texture`
+reports two differences; `agent_check.py --final driver/animdrv` reports **71/73 functions at 100%, merge
+checks nothing to fix**, including the natural compile. Best source and score are also saved as
+`scratch/sol-anim/retained.c` and `retained-score.txt`. The next problem is the palette value's short initial
+argument web versus its saved live range, without reviving the extra permanent CSE web.
+- **Review note (orchestrator):** the one-use `animSetMaterial_TexMtx` inline is folded into the caller (deleted, not
+  copied) with all locals at function scope, which rule 7 allows. Cosmetic: a leftover bare `{ }` block around the
+  second loop; tidy it in the post-finish review if removing it keeps 99.96.
