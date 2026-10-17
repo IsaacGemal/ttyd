@@ -7528,3 +7528,25 @@ practice. Check the finished decomps (~/melee, ~/tp, ~/SFA-Decomp, ~/ac-decomp) 
 - Hard negatives: thousands of indexed/walking/interior/typed cursor, scope, counter, aggregate, getter, helper and
   optimizer candidates (via a renamed-copy harness adapted from cam_road's fgen.py); mwsearch 14.5 min, nothing; SS-finder
   scalar output parameters nearly fix the graph but add two moves.
+
+### npcdrv 65 -> 71/73: npcMain, fbatHitCheck, npcCheckHitMarioSide, npcDisp_blur, _npcGroupDead, _npcDeleteGroup 100 (Claude Opus 5.5, on7-npcdrv)
+- A float constant reused in two branches can go in an existing scratch local before the compare (npcCosf
+  `f0 = bound; if (rad < f0)`); that changes which of the two is coloured first (npcDisp_blur).
+- A parameter typed like the field it is stored to (u16 `koopaEncounterType` in _npcDead/_npcGroupDead/npcGroupDead)
+  removes a dead truncation; the shorter loop body lets MWCC hoist a loop-invariant `li 1` (_npcGroupDead).
+- Callee locals change caller colouring: npcDelete's block-scope `slave` plus `wp = npcGetWorkPtrInline(); wp->count--;`
+  fixed _npcDeleteGroup (which goes back to plain `entry->slaves[i]`).
+- npcMain: block-scope dx/dy/dz/hit/dist/angle in each state block fix callee-saved maps that function-wide variables
+  can't; an orphan `fcmpo`/`lfs 0` before a call is a dead `sqrtf` whose result is unused (states 1/4 compute the
+  distance twice); after that its `opt_loop_invariants off` / `opt_propagation off` pragmas are unneeded and removed.
+- Retail `li rA,0; mr rB,rA` for two zeroed flags: MWCC's backend merges duplicate `li` only into inline-function
+  temporaries, so the two zero inits live in a static inline helper (Bowser's jump/fire checks); for named locals,
+  constant propagation folds a written copy back to `li`.
+- fbatHitCheck: one shared angle/radius pair per hammer/spin loop (#802). npcCheckHitMarioSide: the last sqrtf step as
+  one expression (tik_05's matched sqrtf, MUST_MATCH), function-scope locals in a rasim order.
+- mwccdbg's summary ORIG column is wrong for split variables; read per-variable targets from the diff.
+- Hard negatives: npcSetupBattleInfo (99.78): the `walk` induction temp always sits above named locals; fresh counters,
+  index/loop shapes 6-71 rows, held-items/roll helpers 24-38 rows. fbatBattleMode (99.23): true targets pouch r31,
+  fbatData r30, entry r29, info0/result r28, mario/mult r27, hasStolen r26, info4 r31; no named-local or call-temp order
+  reaches them (info4/hasStolen stay swapped), so it needs a structural change; opt_propagation off, block-scope result,
+  getters, case-4 helpers all worse.

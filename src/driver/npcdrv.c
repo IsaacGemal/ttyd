@@ -135,8 +135,15 @@ static inline f32 sqrtf(f32 x) {
         f64 guess = __frsqrte(x);
         guess = _half * guess * (_three - guess * guess * x);
         guess = _half * guess * (_three - guess * guess * x);
+#ifdef MUST_MATCH
+        // The last refinement step stays an expression, as tik_05's sqrtf (Matching) has it: under
+        // npcCheckHitMarioSide's opt_lifetimes off, a third `guess =` would keep guess's register.
+        x = x * (_half * guess * (_three - guess * guess * x));
+        return x;
+#else
         guess = _half * guess * (_three - guess * guess * x);
         return x * guess;
+#endif
     } else if (x < 0.0) {
         return NAN;
     } else if (isnan(x)) {
@@ -803,19 +810,22 @@ static inline f32 npcCosf(f32 rad) {
             cosv = cosv * f0 + c2;
             cosv = -cosv;
         }
-    } else if (rad < NPC_F_THREEHALVES) {
-        rad = rad - pi;
-        f0 = rad * rad;
-        cosv = cosv * f0 - c1;
-        cosv = cosv * f0 + c2;
-        cosv = -cosv;
     } else {
-        f1 = rad - NPC_F_THREEHALVES;
-        pi = NPC_F_HALFPI;
-        rad = pi - f1;
-        f0 = rad * rad;
-        cosv = cosv * f0 - c1;
-        cosv = cosv * f0 + c2;
+        f0 = NPC_F_THREEHALVES;
+        if (rad < f0) {
+            rad = rad - pi;
+            f0 = rad * rad;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+            cosv = -cosv;
+        } else {
+            f1 = rad - f0;
+            pi = NPC_F_HALFPI;
+            rad = pi - f1;
+            f0 = rad * rad;
+            cosv = cosv * f0 - c1;
+            cosv = cosv * f0 + c2;
+        }
     }
     return cosv;
 }
@@ -827,9 +837,8 @@ static inline f32 npcCosf(f32 rad) {
 // header) and putting `i` in the leading block give retail's callee-saved map.
 // The colour is a compound literal argument, which also gives retail's stack slots for it and its by-value copy.
 // `opt_lifetimes off` keeps each polynomial accumulator in its seed's register (retail f4) instead of a new
-// register per step; npcCosf has npcSinf's shape (`f1` for the reflected angle), which recovers its scratch pair.
-// NONMATCHING (99.44%): in npcSinf/npcCosf's cosine copy, `rad` takes f0 and the 4.712389 compare constant f5
-// (retail the other way round).
+// register per step; npcCosf has npcSinf's shape (`f1` for the reflected angle), which recovers its scratch pair,
+// and loads the 4.712389 bound into `f0` before comparing, so the bound and `rad` get retail's f0/f5.
 #pragma opt_lifetimes off
 void npcDisp_blur(CameraId camId, void* param) {
     s32 alpha;
@@ -976,10 +985,12 @@ NpcTribeInfo* npcGetTribe(const char* tribeName) { // 1:1
 
 void npcDelete(NpcEntry* entry) {
     int i;
+    NpcWork* wp;
 
     for (i = 0; i < 4; i++) {
-        if (entry->slaves[i]) {
-            entry->slaves[i]->master = NULL;
+        NpcEntry* slave = entry->slaves[i];
+        if (slave) {
+            slave->master = NULL;
         }
         entry->slaves[i] = NULL;
     }
@@ -1002,16 +1013,13 @@ void npcDelete(NpcEntry* entry) {
     }
     entry->poseId = -1;
     entry->flags &= ~1;
-    npcGetWorkPtrInline()->count--;
+    wp = npcGetWorkPtrInline();
+    wp->count--;
 }
 
-// Every instruction matches. A `NpcEntry* slave` local (used for both the condition and the npcDelete
-// argument) recovers the entry/next r27/r31 colouring and the first inlined npcDelete; the second slave
-// loop still has the inlined npcDelete's hoisted work pointer in r30 and the slave in r29 (target r29/r30),
-// and the final npcDelete swaps its r3/r4 scratch.
-// NONMATCHING (98.28%): second slave-loop work/slave colouring and final npcDelete r3/r4 scratch.
+// npcDelete's `slave` and `wp` locals give its inlined copies here retail's temporaries (the slave loads
+// and the hoisted work pointer); with them, the plain `entry->slaves[i]` form matches.
 void _npcDeleteGroup(NpcEntry* entry) { // recursively inlined, warning
-    NpcEntry* slave;
     int i;
 
     if (entry->next) {
@@ -1019,9 +1027,8 @@ void _npcDeleteGroup(NpcEntry* entry) { // recursively inlined, warning
     }
 
     for (i = 0; i < 4; i++) {
-        slave = entry->slaves[i];
-        if (slave) {
-            npcDelete(slave);
+        if (entry->slaves[i]) {
+            npcDelete(entry->slaves[i]);
             entry->slaves[i] = NULL;
         }
     }
@@ -1065,20 +1072,42 @@ static inline BOOL npcMarioNoticeable(void) {
     return TRUE;
 }
 
+// Bowser's field attacks while the field battle mode is idle: score a stomp, and clear the fire flag when he is
+// not breathing fire. `jump` and `fire` start as two separate zeroes, which MWCC merges into retail's `li`+`mr`.
+static inline void npcKoopaAttackCheck(void) {
+    s32 jump;
+    FieldBattleData* data;
+    MarioWork* mario;
+    s32 fire;
+
+    data = gp->fbatData;
+    mario = marioGetPtr();
+    jump = 0;
+    fire = 0;
+    if (mario->characterId == 2) {
+        jump = kpaJumpChk();
+    }
+    if (mario->characterId == 2) {
+        fire = kpaFireAttackCheck();
+    }
+    if (jump) {
+        npcKoopaJumpScore(data, mario);
+    }
+    if (!fire) {
+        data->field_574 = 0;
+    }
+}
+
 // Per frame for each live npc: advance its clocks, apply its movement and walk/run animation, raise its event's
 // reactions (interrupt flags: 1 found Mario, 2 lost him, 4 left its territory, 8 blown by Flurrie), and queue its
 // draw, shadow and offscreen passes; then run the first strike banner and the field battle mode.
-// keep loop-invariant string addresses where they are written, as the original does
-#pragma opt_loop_invariants off
-// keep the constants and addresses at their uses rather than propagated into the hot loop's registers
-#pragma opt_propagation off
-// NONMATCHING (98.71%): retail keeps a redundant `fcmpo f30, 0`/`lfs float_0` before PSVECSubtract that ours
-// folds into the later sqrtf guard; `fire = jump = 0` is two `li`s where retail has `li`+`mr`; the state == 1/4
-// FPR set is one callee-saved register low; fbat and state sit in each other's GPR. All calls and constants match.
+// The Mario-distance blocks (state 2, states 1/4) and the circle territory test declare their own dx/dy/dz,
+// `hit` and (1/4) dist/angle, which gives retail's callee-saved registers. In states 1/4 the distance is taken
+// once before PSVECSubtract and again once Mario is noticeable: the first sqrtf is dead, and its leftover compare
+// is retail's lone `fcmpo f30, 0`.
 void npcMain(void) {
-    s32 fire;
 #ifdef MUST_MATCH
-    const char* fallSfx = "SFX_KUPPA_3RD_WATER_FALL1";
+    const char* fallSfx;
 #endif
     NpcWork* npcwork;
     NpcEntry* entry;
@@ -1090,15 +1119,14 @@ void npcMain(void) {
     s32 state;
     BOOL hit;
     s32 shadowId;
-    f32 dx, dy, dz;
     f32 dist;
     f32 dir;
     f32 runScale;
     f32 angle;
     f32 z;
     Vec v;
-    Vec back;
     Vec moved;
+    Vec back;
     Vec shadow;
     Vec feet;
 
@@ -1106,6 +1134,9 @@ void npcMain(void) {
     marioGetPtr()->field_0x1D8 = 0;
     total = npcwork->total;
     npcMainCount++;
+#ifdef MUST_MATCH
+    fallSfx = "SFX_KUPPA_3RD_WATER_FALL1";
+#endif
 
     for (i = 0, entry = npcwork->entries; i < total; i++, entry++) {
         if (!(entry->flags & 1) || !(entry->flags & 2)) {
@@ -1238,6 +1269,9 @@ void npcMain(void) {
                     if (entry->territoryType != NPC_TERRITORY_TYPE_NOTHING && (state == 1 || state == 2)) {
                         hit = FALSE;
                         if (entry->territoryType == NPC_TERRITORY_TYPE_CIRCLE) {
+                            f32 dx;
+                            f32 dz;
+
                             dx = entry->territoryBase.x - entry->position.x;
                             dz = entry->territoryBase.z - entry->position.z;
                             dist = sqrtf(dx * dx + dz * dz);
@@ -1266,6 +1300,11 @@ void npcMain(void) {
                     }
 
                     if (state == 2) {
+                        f32 dx;
+                        f32 dy;
+                        f32 dz;
+                        BOOL hit;
+
                         mario = marioGetPtr();
                         dx = mario->position.x - entry->position.x;
                         dy = mario->position.y - entry->position.y;
@@ -1300,18 +1339,25 @@ void npcMain(void) {
                     }
 
                     if (state == 1 || state == 4) {
+                        f32 dx;
+                        f32 dist;
+                        f32 dy;
+                        f32 dz;
+                        f32 angle;
+                        BOOL hit;
+
                         mario = marioGetPtr();
-                        dz = mario->position.z - entry->position.z;
                         dx = mario->position.x - entry->position.x;
                         dy = mario->position.y - entry->position.y;
-                        dist = dx * dx + dz * dz;
+                        dz = mario->position.z - entry->position.z;
+                        dist = sqrtf(dx * dx + dz * dz);
                         PSVECSubtract(&entry->prevPosition, &entry->position, &back);
                         dir = reviseAngle(entry->direction) < 180.0f ? 90.0f : 270.0f;
                         hit = TRUE;
                         if (!npcMarioNoticeable()) {
                             hit = FALSE;
                         } else {
-                            dist = sqrtf(dist);
+                            dist = sqrtf(dx * dx + dz * dz);
                             if (dist > 0.25f * entry->searchRange) {
                                 if (dist > entry->searchRange) {
                                     hit = FALSE;
@@ -1454,28 +1500,10 @@ void npcMain(void) {
     fbatFirstAttackAnnounceMain(fbat);
 
     switch (fbat->mode) {
-        case 1: {
-            FieldBattleData* data;
-            s32 jump;
-
+        case 1:
             fbatEncountCheck();
-            data = gp->fbatData;
-            mario = marioGetPtr();
-            fire = jump = 0;
-            if (mario->characterId == 2) {
-                jump = kpaJumpChk();
-            }
-            if (mario->characterId == 2) {
-                fire = kpaFireAttackCheck();
-            }
-            if (jump) {
-                npcKoopaJumpScore(data, mario);
-            }
-            if (!fire) {
-                data->field_574 = 0;
-            }
+            npcKoopaAttackCheck();
             break;
-        }
         case 2:
         case 3:
             fbatTalkMode();
@@ -1490,8 +1518,6 @@ void npcMain(void) {
     }
     fbat->field_54C[1] = 0;
 }
-#pragma opt_loop_invariants reset
-#pragma opt_propagation reset
 
 NpcEntry* npcNameToPtr(const char* name) {
     NpcWork* wp = npcGetWorkPtrInline();
@@ -1816,17 +1842,21 @@ static inline f32 npcHitSideMul(f32 a, f32 b) {
 // `opt_lifetimes off` is what puts the accumulator/pivot/scratch in the target's FPRs.
 #pragma opt_propagation off
 #pragma opt_lifetimes off
-// NONMATCHING (99.59%): the sin/cos blocks and the radius match; only `offZ` (target f4, ours f6) and the
-// inlined sqrtf expression that reads it (target f6, ours f5) still colour into the other scratch FPR.
+// All locals at function scope in the order a rasim search gave for offZ/the sqrt argument/the 0.5 constant.
 s32 npcCheckHitMarioSide(NpcEntry* entry) {
     MarioWork* mario = marioGetPtr();
     Vec pos;
-    f32 d1, d2;
+    f32 viewT;
+    f32 offX;
     f32 radius;
     f32 angle;
-    f32 offX, offZ;
-    f32 rad;
+    f32 scale;
+    f32 d1;
     f32 dist;
+    f32 limit;
+    f32 hitT;
+    f32 offZ;
+    f32 d2;
 
     if (entry->position.y > mario->position.y + mario->wPlayerCollisionBox.y) {
         return 0;
@@ -1855,26 +1885,20 @@ s32 npcCheckHitMarioSide(NpcEntry* entry) {
     mario->field_0x1D8 = (s32)entry;
     angle = angleABf(mario->position.x, mario->position.z, entry->position.x, entry->position.z);
     if (__fabsf(compAngle(angle, mario->directionView)) < 40.0f) {
-        {
-            f32 t = 6.2831855f * mario->directionView;
-            offX = (radius - d2) * -npcHitSideSinf(t / 360.0f);
-            offZ = (radius - d2) * npcHitSideCosf(t / 360.0f);
-        }
+        viewT = 6.2831855f * mario->directionView;
+        offX = (radius - d2) * -npcHitSideSinf(viewT / 360.0f);
+        offZ = (radius - d2) * npcHitSideCosf(viewT / 360.0f);
     } else {
-        {
-            f32 t = 6.2831855f * angle;
-            offX = (entry->position.x - radius * npcHitSideSinf(t / 360.0f)) - mario->position.x;
-            offZ = (entry->position.z + radius * npcHitSideCosf(t / 360.0f)) - mario->position.z;
-        }
+        hitT = 6.2831855f * angle;
+        offX = (entry->position.x - radius * npcHitSideSinf(hitT / 360.0f)) - mario->position.x;
+        offZ = (entry->position.z + radius * npcHitSideCosf(hitT / 360.0f)) - mario->position.z;
     }
     dist = sqrtf(offX * offX + offZ * offZ);
-    {
-        f32 limit = mario->wPlayerCollisionBox.z > 4.0f ? 3.0f : 1.5f;
-        if (dist > limit) {
-            f32 scale = 2.0f / dist;
-            offX *= scale;
-            offZ *= scale;
-        }
+    limit = mario->wPlayerCollisionBox.z > 4.0f ? 3.0f : 1.5f;
+    if (dist > limit) {
+        scale = 2.0f / dist;
+        offX *= scale;
+        offZ *= scale;
     }
     mario->position.x += offX;
     mario->position.z += offZ;
@@ -2800,7 +2824,7 @@ void fbatBattleMode(void) {
     }
 }
 
-void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
+void _npcDead(NpcEntry* entry, u16 koopaEncounterType) {
     *(s32*)entry->field_140 |= 0x10;
     entry->jumpFlags |= 4;
     entry->koopaEncounterType = koopaEncounterType;
@@ -2809,14 +2833,11 @@ void _npcDead(NpcEntry* entry, s32 koopaEncounterType) {
     }
 }
 
-// The walk, the recursive inlining depth and the inlined _npcDead copies all match; the only diffs
-// are the deepest slave loop's callee-saved registers. The original keeps the shift's `1` in r27
-// (loaded slave in r24, array pointer in r25, counter in r26); ours lets the deepest copy
-// rematerialise `1` into a volatile, so slave/pointer/counter land in r25/r26/r27 and the prologue
-// is `stmw r25` instead of `stmw r24`. This requires _npcDead to call fbatGetPointer(), which is
-// what makes the deepest inlined copy emit a real `bl fbatGetPointer`.
-// NONMATCHING (97.46%): deepest slave-loop register allocation (see above).
-void _npcGroupDead(NpcEntry* entry, s32 type) {
+// _npcDead calling fbatGetPointer() is what makes the deepest inlined copy emit a real `bl fbatGetPointer`.
+// `type` is a u16 like the koopaEncounterType it is stored to: with an s32 the inlined copies carry a (dead)
+// truncation, the deepest slave loop gets too long for MWCC to hoist the shift's `1` out of it, and the
+// callee-saved registers move (`stmw r25` instead of retail's `stmw r24`).
+void _npcGroupDead(NpcEntry* entry, u16 type) {
     int i;
 
     if (entry->next) {
@@ -2832,7 +2853,7 @@ void _npcGroupDead(NpcEntry* entry, s32 type) {
 
 // dont_inline keeps npcGroupDead out of line: the original bot callers emit a real `bl npcGroupDead`.
 #pragma dont_inline on
-void npcGroupDead(NpcEntry* entry, s32 type) {
+void npcGroupDead(NpcEntry* entry, u16 type) {
     if (entry->master) {
         entry = entry->master;
     }
@@ -2909,9 +2930,8 @@ static inline BOOL fbatNpcEventDone(NpcEntry* npc) {
 // The attack flags (flag8/jump/stomp) and dryRun/mario are function-wide and declared first, one `flag8`
 // and one `npc` serve every attack kind, the hammer frame number goes straight into npcHammerPos, and both
 // hammer helpers return the head position through x/y/z pointers: together they give retail's callee-saved
-// GPR map.
-// NONMATCHING (99.98%): only callee-saved FPR numbers differ, in the hammer and spin `else` blocks (radius/angle
-// take f29 where retail has f31) and in the shell block (radius/x in f29/f28, retail f28/f29).
+// GPR map. The hammer and spin blocks share one `angle`/`radius` pair between their two branches, and the
+// shell block declares x, y, z before radius: that gives the FPRs.
 #pragma dont_inline on
 void* fbatHitCheck(s32 flags, s32 out) {
     u32 flag8;
@@ -3045,6 +3065,9 @@ void* fbatHitCheck(s32 flags, s32 out) {
 
     // the hammer
     if (flags & 0x40) {
+        f32 angle;
+        f32 radius;
+
         while (hit == NULL) {
             if ((flags & 0x10) && mario->unk4C > 0) {
                 break;
@@ -3053,8 +3076,6 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 break;
             }
             if (flags & 1) {
-                f32 radius;
-                f32 angle;
                 f32 x, y, z;
                 s32 frameNo;
                 MarioWork* pose;
@@ -3106,9 +3127,6 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     break;
                 }
             } else {
-                f32 angle;
-                f32 radius;
-
                 radius = 1.5f * mario->wPlayerCollisionBox.x;
                 angle = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
                 flag8 = flags & 0x1000;
@@ -3150,6 +3168,9 @@ void* fbatHitCheck(s32 flags, s32 out) {
 
     // the spin hammer
     if (flags & 0x80) {
+        f32 angle;
+        f32 radius;
+
         while (hit == NULL) {
             if ((flags & 0x10) && mario->unk4C > 0) {
                 break;
@@ -3158,8 +3179,6 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 break;
             }
             if (flags & 1) {
-                f32 angle;
-                f32 radius;
                 f32 x;
                 f32 y;
                 f32 z;
@@ -3219,8 +3238,8 @@ void* fbatHitCheck(s32 flags, s32 out) {
                     break;
                 }
             } else {
-                f32 radius = 1.5f * mario->wPlayerCollisionBox.x;
-                f32 angle = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
+                radius = 1.5f * mario->wPlayerCollisionBox.x;
+                angle = reviseAngle((mario->unk1A8 - 90.0f) + camGetPtr(CAMERA_3D)->viewYaw);
                 flag8 = flags & 0x1000;
 
                 npc = npcWork->entries;
@@ -3298,10 +3317,13 @@ void* fbatHitCheck(s32 flags, s32 out) {
                 }
             }
             if (attack) {
+                f32 x;
+                f32 y;
+                f32 z;
                 f32 radius = 0.5f * party->field_F4;
-                f32 y = 0.5f * *(f32*)((u8*)party + 0xF0) + party->position.y; // 0xF0: the shell's height
-                f32 z = party->position.z;
-                f32 x = party->position.x;
+                x = party->position.x;
+                y = 0.5f * *(f32*)((u8*)party + 0xF0) + party->position.y; // 0xF0: the shell's height
+                z = party->position.z;
                 flag8 = flags & 0x1000;
 
                 npc = npcWork->entries;
