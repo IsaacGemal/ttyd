@@ -8324,3 +8324,11 @@ callers (PuniChildHagure, unk_95f0, set_lsw_index) stay 100. Unit still NonMatch
   so only numbering order decides; both copies come from one helper and keep the same relative order (best of all 720
   helper declaration orders: 4 wrong); call-site changes, scoped optimizer and inline pragmas, branch reshapes, argument
   temps/casts and 3,240 mwsearch compiles all failed. Retail needs ofs/xh/yh as compiler temps below x/y/z.
+- **SPM's `Locate` checked against the real binary (orchestrator, Claude Opus 5.5): it uses no floats.** From Isaac's
+  own PAL Rev 1 disc (`main.dol` SHA-1 3fd3d981..., identical to EU0; kept outside the repo in `~/spm-refs`),
+  `Locate` (0x80091438, 0x15C) is pure relocation: null check, a 0x44-byte clear, set a flag, copy a 0x20-byte header,
+  check the size, fix up the section pointers at +0x20..+0x30, then add the base to each entry of the relocation table
+  at +0x24. No `lfs`/`lfd` at all. SPM's spline_getvalue pools 2.0 and 3.0, but its `.sdata2` is laid out differently
+  (2.0/3.0 are shared with mapCalcAnimMatrix and others), and no SPM function in the spline/Locate/mapTestXLU range
+  loads 0.0 and 0.5 in TTYD's order. So SPM gives no template for TTYD's 3.0, 0.0, 0.5: the stripped TTYD code that
+  pooled them is either TTYD-only (e.g. debug) or was changed for SPM. mapdrv stays NonMatching until other evidence turns up.
