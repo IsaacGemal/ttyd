@@ -7134,9 +7134,10 @@ void puniHagurePos(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (99.46%): register colouring only. Retail has k r31, punidat r30, name r29, cmp r28 and each
-// inlined puniswSetindex's ofs coloured after its high bytes; here cmp (an ECOND temp) takes r31 and the ofs
-// temps come before the highs.
+// NONMATCHING (99.60%): register colouring only, in the inlined puniswSetindex copies.
+// Lifetime splitting stays off, as in evt_puni_all_save: with it on, the inlined copies' high-byte renames get
+// their own register block ahead of the offset, where the original colours them behind it.
+#pragma opt_lifetimes off
 USER_FUNC(evt_puni_exit) {
     s32 arg2;
     const char* name;
@@ -7261,6 +7262,7 @@ USER_FUNC(evt_puni_exit) {
     }
     return 2;
 }
+#pragma opt_lifetimes reset
 
 USER_FUNC(evt_puni_init_puni) {
     s32* args = event->args;

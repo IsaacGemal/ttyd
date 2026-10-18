@@ -8266,4 +8266,6 @@ callers (PuniChildHagure, unk_95f0, set_lsw_index) stay 100. Unit still NonMatch
 - **mapdrv (no change so far):** the FlushColor agents agree its second inlined `mapGetMapObjSub` search needs locals
   declared j, i, object, wp, entry while the helper's other ~17-19 inlined callers pin entry, wp, j, i, object, so no
   single declaration order serves both. mapMain_e reports no source lever for its last 7 rows.
-
+- **evt_puni_exit 99.46 -> 99.60 (orchestrator, Claude Opus 5.5):** all_save_c's scoped `opt_lifetimes off` carried
+  over to evt_puni_exit unchanged (48 -> 32 instruction diffs). Tried on mapdrv too: mapMain got worse (7 -> 13 diffs),
+  mapObjSetFlushColor unchanged (19), so it is not applied there. Same review note as all_save's pragma.
