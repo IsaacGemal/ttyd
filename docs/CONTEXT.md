@@ -8278,3 +8278,19 @@ callers (PuniChildHagure, unk_95f0, set_lsw_index) stay 100. Unit still NonMatch
   dead end (wave91) was missing: the fix was the loop shape, not the order. Unit stays NonMatching: the link fails on
   data layout (.rodata 946 vs 952, .data 368 vs 384 after two jump tables, .sdata 36 vs 48, .sdata2 order and 220 vs
   224, .sbss 124 vs 128, .sbss2 seven anonymous zero templates vs retail's five plus a gap); function order is right.
+- **mapdrv data layout: six section mismatches down to one (on9-mapdrv, Claude Opus 5.5).** Flipped to Matching, the
+  full build gives 31/32 files OK: every REL matches and the DOL differs only by a 178-byte `.sdata2` order. (1) shadowdrv's
+  GX display lists (`cylinder_dl_*`, `cube_dl_*`) get `ATTRIBUTE_ALIGN(32)` (GX requires it; each already sat on a
+  32-byte offset), which gives mapdrv's 16-byte `.data` and 12-byte `.sdata` tail gaps: the "align the neighbouring
+  unit" lever (sac_deka, eff_ibuki). (2) `.sbss2` seven zero templates -> retail's five: the MUST_MATCH `(s32){...}`
+  compound literal in `MAP_BLEND_FLAGS` made the extra two; the macro is gone and `mapSetMaterialLastStageBlend` takes
+  its work pointer from `mapGetWork()` (the #847 lever), which keeps `_mapDispMapObj` at 100. (3) `.sdata2` Tev constants
+  2pi, 360, 127: MWCC pools in pre-order over the final tree with constants moved left; case 8 computes `wave = sin(...)`
+  as a comma step inside the compound literal, under MUST_MATCH with the natural form in `#else` (same code).
+  **Review note:** that comma step is a pool-order-only trick; small and local, re-grade it in the post-finish review.
+- **What's left for mapdrv to link:** retail pools `3, 0, 0.5, 2` at `.sdata2` +0x4c; we pool `3, 2, 0`. spline_getvalue
+  (first live float user) pools 3 and 2, so 0 and 0.5 come from a linker-stripped function defined between
+  spline_getvalue and mapTestXLU (SPM's mapdrv has `Locate` there; our reconstructed `mapCheckData` also sits there,
+  hence `'.'` at +0x48). A throwaway uncalled function using `3.0f, 0.0f, 0.5f` in that slot gives **32 files OK**, but a
+  pool-placement-only function is refused under rule 7 without evidence of what the original computed. Next: find
+  what TTYD's stripped function at that slot was and reconstruct it plausibly.
