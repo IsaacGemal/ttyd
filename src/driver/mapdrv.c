@@ -2141,15 +2141,6 @@ void mapMain(void) {
 #pragma opt_common_subs reset
 static void mapDrawObjectFog(MapObject* obj);
 
-
-#ifdef MUST_MATCH
-// A scalar compound literal keeps the flags web ahead of the inlined map-work pointer
-// in MWCC's allocation order, without changing the by-value GXColor argument slots.
-#define MAP_BLEND_FLAGS(obj) ((s32){ *(u32*)(obj)->field_0x0 })
-#else
-#define MAP_BLEND_FLAGS(obj) ((s32)*(u32*)(obj)->field_0x0)
-#endif
-
 void _mapDispMapObj(CameraId camId, MapObject* obj) {
 	CameraEntry* cam;
 	Mtx mtx;
@@ -2273,7 +2264,7 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 				MapFileMesh* mesh = obj->joints->parts[i].mesh;
 
 				mapSetTextureMatrix(material);
-				mapSetMaterialLastStageBlend(MAP_BLEND_FLAGS(obj), *(GXColor*)obj->field_0xC, *(GXColor*)((u8*)material + 0x10C));
+				mapSetMaterialLastStageBlend(*(u32*)obj->field_0x0, *(GXColor*)obj->field_0xC, *(GXColor*)((u8*)material + 0x10C));
 				mapSetPolygonVtxDesc(obj, mesh);
 				GXCallDisplayList(*(void**)(obj->field_0xEC + 8 + i * 4), *(u32*)(obj->field_0xEC + 0x28 + i * 4));
 				{
@@ -2291,7 +2282,7 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 				MapFileMesh* mesh = obj->joints->parts[i].mesh;
 
 				mapSetTextureMatrix(material);
-				mapSetMaterialLastStageBlend(MAP_BLEND_FLAGS(obj), *(GXColor*)obj->field_0xC, *(GXColor*)((u8*)material + 0x10C));
+				mapSetMaterialLastStageBlend(*(u32*)obj->field_0x0, *(GXColor*)obj->field_0xC, *(GXColor*)((u8*)material + 0x10C));
 				mapSetMaterial(obj, material);
 				mapSetPolygon(obj, mesh);
 			}
@@ -2310,8 +2301,6 @@ void _mapDispMapObj(CameraId camId, MapObject* obj) {
 		GXSetNumIndStages(0);
 	}
 }
-
-#undef MAP_BLEND_FLAGS
 
 void _mapDispMapGrp(CameraId camId, MapObject* obj) {
 	_mapDispMapObj(camId, obj);
@@ -2631,6 +2620,9 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 	GXTevStageID tevStage;
 	s32 numIndStages;
 	Mtx queen_mtx;
+#ifdef MUST_MATCH
+	f32 wave;
+#endif
 	texMap = texCount;
 	texCoord = texCount;
 	numIndStages = 0;
@@ -2827,7 +2819,12 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 				break;
 
 			case 8:
+#ifdef MUST_MATCH
+				// match-only: the sine in its own comma step pools 2pi and 360 ahead of 127, as retail's .sdata2 has them
+				GXSetTevColor(GX_TEVREG0, (GXColor){0, (wave = sin((TWO_PI * (f32)(2 * gp->retraceCount)) / 360.0f), (u8)((127.0f * wave) + 127.0f)), 0, 0});
+#else
 				GXSetTevColor(GX_TEVREG0, (GXColor){0, (u8)((127.0f * (f32)sin((TWO_PI * (f32)(2 * gp->retraceCount)) / 360.0f)) + 127.0f), 0, 0});
+#endif
 				GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR0A0);
 				GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
 				GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_TRUE, GX_TEVPREV);
@@ -3361,7 +3358,7 @@ void mapSetMaterialTev(s32 texCount, s32 drawMode, s32 flags, Mtx mtx) {
 }
 
 void mapSetMaterialLastStageBlend(s32 flags, GXColor color1, GXColor color2) {
-	MapWork* wp = &mapWork[activeGroup];
+	MapWork* wp = mapGetWork();
 	GXColor color = {0xFF, 0xFF, 0xFF, 0xFF};
 
 	if (flags & 0x40) {
