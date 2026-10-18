@@ -1673,9 +1673,9 @@ static inline u8* mapSearchAnimObj(const char* name) {
 // `subi cnt-1; mtctr` scheduled before the `cmpwi`.
 // The light-colour step converts to the u8 colour fields without a cast (an `(s32)` cast schedules
 // the first byte's load one slot early).
-// What differs: the inlined matrix search (mapGetMapObj) swaps two callee-saved registers (name in
-// r26, entry in r28; retail has them the other way round, which rasim reaches only with `name`
-// numbered between `wp` and `j`, not as the lowest-numbered parameter).
+// The public lookup gets its work pointer through mapGetWork and indexes the outer entry loop;
+// its getter result and strength-reduced entry pointer give retail's registers both here and
+// in the emitted mapGetMapObj body.
 static inline void mapAnimAlphaObj(u8* obj, u8* anim, u8* item) {
 	s32 cnt = *(s32*)(item + 4);
 	s32 ki;
@@ -1955,7 +1955,6 @@ static inline void mapAnimLightColor(LightEntry* light, u8* anim, u8* item) {
 }
 
 #pragma opt_common_subs off // required for retail's register colouring here
-// NONMATCHING (99.97%): the matrix search's name/entry registers are swapped (see the notes above mapAnimAlphaObj).
 void mapMain(void) {
 	MapWork* wp0;
 	u8* p;
@@ -4013,12 +4012,13 @@ MapObject* mapGetMapObj(const char *name) { // 1:1
     int i;
     MapObject *object;
     
-    wp = &mapWork[activeGroup];
+    wp = mapGetWork();
     if (!name) {
         return 0;
     }
-    entry = &wp->entries[0];
-    for (i = 0; i < wp->entries[0].count; entry++, i++) {
+
+    for (i = 0; i < wp->entries[0].count; i++) {
+        entry = &wp->entries[i];
         object = entry->objects;
         for (j = 0; j < entry->numJoints; j++, object++) {
             if (!strcmp(object->joints->name, name)) {
@@ -4318,12 +4318,13 @@ static MapObject* mapGetMapObjSub(const char* name) {
 	int i;
 	MapObject *object;
 
-	wp = &mapWork[activeGroup];
+	wp = mapGetWork();
 	if (!name) {
 		return 0;
 	}
-	entry = &wp->entries[0];
-	for (i = 0; i < wp->entries[0].count; entry++, i++) {
+
+	for (i = 0; i < wp->entries[0].count; i++) {
+		entry = &wp->entries[i];
 		object = entry->objects;
 		for (j = 0; j < entry->numJoints; j++, object++) {
 			if (!strcmp(object->joints->name, name)) {
@@ -4618,8 +4619,6 @@ void mapGrpFlushOff(const char* name) {
 	mapGrpFlagOff(name, 0x100000);
 }
 
-// NONMATCHING (98.89%): only the second inlined mapGetMapObjSub search's registers differ
-// (target wp=r27/entry=r26/object=r28/i=r29/j=r30); the first search and the error body match.
 void mapObjSetFlushColor(const char* name, u8 r, u8 g, u8 b, u8 a) {
 	GXColor color;
 	MapObject* obj;

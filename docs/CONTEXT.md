@@ -8269,3 +8269,12 @@ callers (PuniChildHagure, unk_95f0, set_lsw_index) stay 100. Unit still NonMatch
 - **evt_puni_exit 99.46 -> 99.60 (orchestrator, Claude Opus 5.5):** all_save_c's scoped `opt_lifetimes off` carried
   over to evt_puni_exit unchanged (48 -> 32 instruction diffs). Tried on mapdrv too: mapMain got worse (7 -> 13 diffs),
   mapObjSetFlushColor unchanged (19), so it is not applied there. Same review note as all_save's pragma.
+- **mapdrv: mapMain 99.97 -> 100 and mapObjSetFlushColor 98.89 -> 100 (Sol sol14, GPT-6.1 Sol at low effort).** Both
+  lookup helpers (public `mapGetMapObj` and static `mapGetMapObjSub`) now get their work pointer through the existing
+  `mapGetWork()` getter (same value as `&mapWork[activeGroup]`) and index the outer entry loop
+  (`entry = &wp->entries[i]` inside the loop) instead of walking `entry++`. Existing helpers, original declaration
+  order, no pragma. The getter result and the strength-reduced entry pointer give retail's registers in both the
+  emitted mapGetMapObj body and every inlined copy, which is what the "no single declaration order serves both"
+  dead end (wave91) was missing: the fix was the loop shape, not the order. Unit stays NonMatching: the link fails on
+  data layout (.rodata 946 vs 952, .data 368 vs 384 after two jump tables, .sdata 36 vs 48, .sdata2 order and 220 vs
+  224, .sbss 124 vs 128, .sbss2 seven anonymous zero templates vs retail's five plus a gap); function order is right.
