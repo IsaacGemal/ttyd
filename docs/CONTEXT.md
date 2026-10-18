@@ -8193,6 +8193,38 @@ Tower debugger dumps: `build/mwccdbg/sol_paper_baseline`, `sol_paper_cast`, `sol
   instead of folding into the parameter), separate `max1`/`max2`/`btmp` locals, and one `c + x` addition order. All
   are rule 7's allowed "small local tricks", but there are many in one function; re-grade in the post-finish review.
 
+### animPaperPoseDispSub merged-change self-review (2026-10-17, GPT-6.1 Sol)
+
+Reviewed merged ee101bdd (#841) against its parent, rule 7, the original assembly and both preprocessing modes.
+**No correctness or rule-7 blocker found; no source changes made.** This is the author's second review, not an
+independent review, so the broader post-finish review remains appropriate.
+
+- The explicit same-type object-pointer cast is defined and keeps exactly the same pointer. It does not call
+  through a retyped function pointer or change the function's canonical ABI. Both conditional declarations
+  provide pose; max1/max2/btmp are read only in MUST_MATCH blocks and assigned on every path that reads them.
+- The max expressions compute the same signed maximum. First-branch margin1 separates a vertical padding
+  amount from b's earlier role as the battle bounding-box bottom; that is an ordinary one-variable-per-meaning
+  refactor, also used by the natural path. Moving left's even-pixel rounding after right/bottom padding crosses
+  only independent local assignments, with no intervening external call.
+- The reordered three-term additions are bounded by the 16-bit viewport/bounds inputs and half-max term;
+  reassociation introduces no signed 32-bit overflow. Their natural alternatives remain present. The existing
+  outer flags&2 else, 32-call sequence, float constants and negated numerator forms are unchanged by this merge.
+- No new helper, duplicated function/loop/recursion body, dead pool-placement function or pragma was added.
+  The source is verbose, but all actual matching-only devices are small local forms admitted by current rule 7.
+
+Fresh --final: **73/73**, merge checks clean, natural compile succeeds. Refreshed tower configure/full ninja:
+**32 files OK**, including linked animdrv. A scratch differential harness extracts the actual pre/post function
+bodies in both modes, uses fixed-width scalar types and stubbed GX/matrix/allocator/environment interfaces,
+and compares pose outputs and call traces over **50,000 scenarios** (flags, battle mode, Vivian matrix path,
+invalid/extreme bounds and varying viewports/animation extents). Pre/post outputs are bit-identical within
+each mode; UBSan reports no issue. Natural/matching outputs also agree after normalizing signed zeros and NaN
+signs. That normalization matters: the pre-existing negated float numerator guards can differ in zero/NaN sign,
+so this review does not claim the two builds are bit-identical. The harness checks C-level changes, not GPU
+execution or console struct layout; the target link checksum supplies the separate binary/layout check.
+
+Harness and logs: `scratch/sol-paper/review/differential.py`, generated differential.c and executable, final.txt,
+tower-link.txt. No harness files are tracked. Only this review note is left uncommitted.
+
 ### mri_puni: puniswSetindex inline ordering (on8-setidx, Claude Opus 5.5)
 
 evt_puni_exit **98.37 -> 99.46**, evt_puni_all_save **97.24 -> 98.13**; standalone puniswSetindex and its other
