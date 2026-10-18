@@ -1673,9 +1673,9 @@ void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
 }
 
 void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
-    u8 xh;
-    u8 yh;
     u32 ofs;
+    u8 yh;
+    u8 xh;
     u32 x = (s32)pos->x;
     u32 y = (s32)pos->y;
     u32 z = (s32)pos->z;
@@ -7952,12 +7952,15 @@ USER_FUNC(evt_puni_force_se_off) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (98.13%): register colouring only. Retail colours each inlined puniswSetindex's ofs after its
-// high bytes (first copy ofs r24, here r26) and puni/z swap (retail puni r29, z r31); here the inline's ofs is
-// numbered before the highs' renames.
+// NONMATCHING (99.59%): register colouring only. The hagure copy is byte-exact; in the else copy the four
+// integer conversions and high bytes come out as y r25, xh r27, z r24, yh r28 where the original has
+// y r28, xh r25, z r27, yh r24 (x is r26 in both), i.e. that copy's chain is mirrored.
+// Lifetime splitting has to stay off: without it the inlined copies' high-byte renames move into
+// their own register block ahead of the offset, and the original colours them behind it.
+#pragma opt_lifetimes off
 USER_FUNC(evt_puni_all_save) {
-    PuniData* puni = &Punidat[1];
     s32 i;
+    PuniData* puni = &Punidat[1];
     s32 area;
     Vec pos;
 
@@ -7981,6 +7984,7 @@ USER_FUNC(evt_puni_all_save) {
     }
     return EVT_RETURN_DONE;
 }
+#pragma opt_lifetimes reset
 
 USER_FUNC(evt_target_flag_onoff) {
     s32* args = event->args;
