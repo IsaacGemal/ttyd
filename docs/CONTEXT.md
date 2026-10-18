@@ -8130,3 +8130,65 @@ matching evidence. All diagnostic-only changes were discarded.
 - **Review note (orchestrator):** the wrap-mode logic is written out in the non-CLUT branch while the CLUT branch still
   calls animSetMaterial_WrapMode (helper used once, inlined elsewhere: the envdrv pattern); its MUST_MATCH
   `wrapS = wrapFlags; wrapS &= 1;` equals the `#else` form (GX_CLAMP 0, GX_REPEAT 1). Listed for the post-finish review.
+
+## animPaperPoseDispSub LINKS animdrv (2026-10-17, GPT-6.1 Sol)
+
+**99.02% -> 100.00%, 2336 bytes / 584 instructions. Animdrv: 73/73, now Matching.** Fresh tower configure and
+full ninja link pass **32 files OK**. The refreshed report is **9765/9769 functions**, **1229/1231 linked files**:
+only mapdrv's mapMain/mapObjSetFlushColor and mri_puni's evt_puni_exit/evt_puni_all_save remain. No commit made.
+
+The older "pose is the lowest vreg, no source lever" conclusion was conditional on the old graph, not a proof.
+The ABI and logic were already right. Four source changes close it:
+
+1. Apply the four two-pixel padding adjustments before the four even-pixel rounding adjustments. This is the
+   ordinary pad-then-align order, and fixes the r9/r10/r11 temporary cycle: **99.02 -> 99.10**, 112 -> 103 rows.
+2. Rename the incoming pointer to param and declare a local working pose pointer before animData. The **explicit
+   cast** in `AnimationPose* pose = (AnimationPose*)param` matters: it preserves the local web, while a plain
+   `pose = param` folds back into the parameter web. That moves pose/animData/flags into retail's registers:
+   **99.80%, 23 rows**. The redundant cast is a small local matching device under MUST_MATCH with the plain
+   assignment under #else, as rule 7 requires. The formal parameter's type and argument order stay the same.
+3. Lift the two existing matching-only max temporaries and the second matching-only margin to function scope;
+   give the first branch's margin its own named local rather than reusing b (the battle-bounds bottom). The old
+   reused b produced a high-priority renamed @ temporary. Now all the important webs have declarations we can
+   order. A fresh mwccdbg GPR replay is exact: **0/335 registers differ**, same priority order. Rasim search over
+   the named locals reaches all fifteen explicit value-correct targets. The real compile confirms every register
+   except two additions per branch, **4 rows left**. Existing max/margin matching temporaries remain guarded with
+   working natural forms. No helper, duplicate helper, recursion expansion, padding or new pragma was introduced.
+4. Spell the right edge as `halfWidth + c + x` rather than `halfWidth + x + c`. This produces retail's addition
+   order after common-subexpression elimination in both branches. That expression order is also under
+   MUST_MATCH, with the previous natural expression under #else. Result: **100.00%**.
+
+The declaration search must use **explicit value targets**, not summary.txt's majority-vote ORIG register names:
+physical r31 serves different values in disjoint blocks, so the summary misleadingly labels the wrong first
+margin r31 as ORIG r31. Correct targets were pose30, animData29, flags28, materialFlag31, materialLightFlag27,
+w28, h29, max1/max2=31, both margins28, x27, y3, y2=4 and b5. The saved-register-only search left a three-way
+r3/r4/r5 cycle in the battle-bounds check; including those three short values fixes it.
+
+No control-flow semantics changed. In particular, the second bounds block remains the outer else of flags&2;
+flags&2 with flags&4 clear still skips both blocks, as the retail branch targets require. Existing negated
+float numerators and constants are unchanged. Stale NONMATCHING/"permuter only" comments were removed.
+
+Verification: cleaned source still reports 100.00%; tower `agent_check.py --final driver/animdrv` reports
+**73/73**, merge checks nothing to fix, including the natural compile. Relocated constant/address-value check
+with --partial, store/constant sweep and instruction-count delta report no findings. Full tower link with
+animdrv set to Matching passes all **32 checksums**, covering the unit's pools, data and relocations too.
+
+Useful negatives: scalar int/u32 type grids, zero initializers, plain aliases and ordinary compiler options
+alone do not fix the saved rotation. Wider w/h locals with explicit u16 assignment casts do not improve it.
+Maximum conditional/ternary forms alone are worse. Several diagnostic pointer roundtrip casts also reached
+23 rows, but only the single explicit same-type pointer cast is needed; none of the roundtrips is retained.
+No permuter was run for this function. Some source variants failed compilation and are not evidence of a
+successful compiler trial.
+
+Reproduction/evidence under `scratch/sol-paper/`: baseline.c/txt/original.s; experiments.py, shapes.py,
+options_aliases.py, alias_cast_order.py; named-search.txt/full-search.txt and apply_full.py; last_adds.py found
+lastadd_0 at 100.00%; hit100.c; clean100.c/clean100-score.txt/clean100-tower-final.txt/linked-tower.txt.
+Tower debugger dumps: `build/mwccdbg/sol_paper_baseline`, `sol_paper_cast`, `sol_paper_locals` in sol-env.
+- Final additional verification: Mac --final also completes at **73/73**, merge checks clean. CI diff lint
+  passes with no overrides (three changed files). The exact `ci.ratchet` against the preserved fresh tower
+  before-report and the linked after-report reports **no regressions; 9 measures improved**. Both reports and
+  changes.json are in scratch/sol-paper; neither saved accepted baseline was replaced or accepted.
+- **Review note (orchestrator):** animPaperPoseDispSub's 100 rests on several MUST_MATCH local tricks, each with a natural
+  `#else`: the parameter renamed `param` and copied through a no-op cast into a local `pose` (keeps a working-pointer web
+  instead of folding into the parameter), separate `max1`/`max2`/`btmp` locals, and one `c + x` addition order. All
+  are rule 7's allowed "small local tricks", but there are many in one function; re-grade in the post-finish review.

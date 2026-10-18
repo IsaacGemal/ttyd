@@ -3009,25 +3009,32 @@ void animPaperPoseDisp(CameraId camId, void* param) {
 extern GXColor dat_80419a34;
 extern GXColor dat_80419a38;
 
-// Logic, offsets, constant pool and all 32 calls match; what differs is register colouring.
-// Two shapes matter and are kept: block A runs on (pose->flags & 2) && (pose->flags & 4) and
-// block B is the `else` of (pose->flags & 2) alone, so (flags & 2) && !(flags & 4) does nothing
-// (that is what the original's branch targets say), and in each block the y-flip is written
-// `x = ...; y = ...; c = x; if (x < y) c = y;` with the max in a temp so the else block does not
-// coalesce c into x. The field_0x104/0x108 numerators are retail's negated `-(a - b)` forms and
-// the else block's `bottom - top` scaling has its own named local (both under MUST_MATCH).
-// The original colours pose r30, animData r29, materialFlag r31, flags r28, materialLightFlag r27;
-// this compiler colours pose r28, animData r30, flags r29, materialFlag r31, materialLightFlag r27.
-// mwccdbg/rasim: the allocator's last sweep holds the eight long-lived webs (pose, the two branch
-// maxima, h, w, b and the two per-branch `b` temps). pose is the second parameter, so its vreg is
-// the lowest of them and it is pushed first in that sweep, i.e. it always takes the last free
-// callee-saved register; rasim's search over every order of the named locals finds no order and
-// no single interference-edge edit moves it (a denser graph with more coalesced webs would be
-// needed), so this is the permuter's, not a source lever.
-// NONMATCHING (99.02%): callee-saved GPR rotation (pose r30 vs r28 etc.) and a three-temp cycle
-// (r9/r10/r11) in the `left -= left & 1` tail.
-void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
+void animPaperPoseDispSub(s32 unused, AnimationPose* param) {
+#ifdef MUST_MATCH
+    s32 max1; // Keep each bounds branch's maximum in its own local web.
+    // An explicit cast preserves the local working pointer instead of folding it into the parameter.
+    AnimationPose* pose = (AnimationPose*)param;
+#else
+    AnimationPose* pose = param;
+#endif
+    s32 x;
+#ifdef MUST_MATCH
+    s32 max2;
+#endif
     AnimData* animData;
+    s32 y;
+    s32 margin1;
+#ifdef MUST_MATCH
+    s32 btmp; // Keep the second bounds branch's vertical margin separate from b.
+#endif
+    u16 w;
+    s32 materialLightFlag;
+    s32 flags;
+    s32 y2;
+    u16 h;
+    s32 b;
+    s32 materialFlag;
+
     AnimationPoseData* data;
     GXColor color0;
     GXColor color1;
@@ -3039,16 +3046,7 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
     u16 top;
     u16 right;
     u16 bottom;
-    s32 materialLightFlag;
-    s32 flags;
-    s32 materialFlag;
-    s32 x;
-    s32 y;
-    s32 y2;
-    s32 b;
     s32 c;
-    u16 w;
-    u16 h;
     f32 scale;
 
     f31 = 8.0f;
@@ -3130,33 +3128,37 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
             y = right - (DEMOGetRenderModeObj()->fbWidth / 2);
 #ifdef MUST_MATCH
             // match-only temp: the natural `c = x; if (x < y) c = y;` coalesces c into x in this branch
-            { s32 t = x; if (t < y) t = y; c = t; }
+            max1 = x;
+            if (max1 < y) max1 = y;
+            c = max1;
 #else
             c = x;
             if (x < y) c = y;
 #endif
             x = (s32)(0.5f * (f32)c);
-            b = (s32)(0.14881f * (f32)(bottom - top));
+            margin1 = (s32)(0.14881f * (f32)(bottom - top));
             POSE_S0x114(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) - c - x;
+#ifdef MUST_MATCH // Preserve the original's addition order after common-subexpression elimination.
+            POSE_S0x116(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) + c + x;
+#else
             POSE_S0x116(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) + x + c;
+#endif
             scale = 8.0f / f31;
-            POSE_S0x118(pose) = top - b;
-            POSE_S0x11A(pose) = bottom + b;
+            POSE_S0x118(pose) = top - margin1;
+            POSE_S0x11A(pose) = bottom + margin1;
             pose->field_0xF8 = scale * ((f32)(POSE_S0x116(pose) - POSE_S0x114(pose)) / 150.0f);
             pose->field_0xFC = scale * ((f32)(POSE_S0x11A(pose) - POSE_S0x118(pose)) / 215.0f);
             pose->field_0x100 = ANIMDATA_F48(animData) + (f30 - (f32)bottom) / f31;
             pose->flags &= ~4;
         }
     } else {
-#ifdef MUST_MATCH
-        // match-only local: gives this block's `bottom - top` scaling its own web
-        s32 btmp;
-#endif
         x = (DEMOGetRenderModeObj()->fbWidth / 2) - left;
         y = right - (DEMOGetRenderModeObj()->fbWidth / 2);
 #ifdef MUST_MATCH
         // match-only temp: the natural `c = x; if (x < y) c = y;` coalesces c into x in this branch
-        { s32 t = x; if (t < y) t = y; c = t; }
+        max2 = x;
+        if (max2 < y) max2 = y;
+        c = max2;
 #else
         c = x;
         if (x < y) c = y;
@@ -3168,7 +3170,11 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
         b = (s32)(0.14881f * (f32)(bottom - top));
 #endif
         POSE_S0x114(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) - c - x;
+#ifdef MUST_MATCH // Preserve the original's addition order after common-subexpression elimination.
+        POSE_S0x116(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) + c + x;
+#else
         POSE_S0x116(pose) = (DEMOGetRenderModeObj()->fbWidth / 2) + x + c;
+#endif
         scale = 8.0f / f31;
 #ifdef MUST_MATCH
         POSE_S0x118(pose) = top - btmp;
@@ -3184,9 +3190,9 @@ void animPaperPoseDispSub(s32 unused, AnimationPose* pose) {
 
     left -= 2;
     top -= 2;
-    left -= left & 1;
     right += 2;
     bottom += 2;
+    left -= left & 1;
     top -= top & 1;
     right += right & 1;
     bottom += bottom & 1;
