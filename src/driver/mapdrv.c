@@ -4541,6 +4541,20 @@ void spline_getvalue(f32* out, s32 type, s32 a, s32 b, s32 c, f32 t) {
 }
 #pragma opt_lifetimes reset
 
+#ifdef MUST_MATCH
+// STRIPPED FUNCTION PLACEHOLDER (not original code). Retail had an uncalled function here, between spline_getvalue
+// and mapCheckData (the slot where Super Paper Mario's mapdrv has Locate); the linker removed its code, but the
+// float constants it used stayed in this file's .sdata2 pool, in the order 3.0, 0.0, 0.5. What it computed is
+// unknown (SPM's Locate uses no floats), so this only reproduces those constants, as Melee's sdata2_order and
+// Wind Waker's stripped-function dummies do. See docs/CONTEXT.md, "mapdrv links".
+static void mapdrv_sdata2_order(void) {
+	f32* dummy = NULL;
+	*dummy = 3.0f;
+	*dummy = 0.0f;
+	*dummy = 0.5f;
+}
+#endif
+
 // Checks a loaded map file before use: a supported converter version, a conversion date, and the animation
 // and curve tables. Nothing in the game calls it; the original's .rodata still holds its strings.
 BOOL mapCheckData(MapHeader* header, const char* map, const char* date) {

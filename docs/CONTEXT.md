@@ -8332,3 +8332,25 @@ callers (PuniChildHagure, unk_95f0, set_lsw_index) stay 100. Unit still NonMatch
   (2.0/3.0 are shared with mapCalcAnimMatrix and others), and no SPM function in the spline/Locate/mapTestXLU range
   loads 0.0 and 0.5 in TTYD's order. So SPM gives no template for TTYD's 3.0, 0.0, 0.5: the stripped TTYD code that
   pooled them is either TTYD-only (e.g. debug) or was changed for SPM. mapdrv stays NonMatching until other evidence turns up.
+
+### mapdrv links: a STRIPPED FUNCTION PLACEHOLDER, and the project reaches 100% linked (2026-10-18, Isaac + Claude Opus 5.5)
+
+**Special note: `mapdrv_sdata2_order` in src/driver/mapdrv.c is not original code.** It is a labelled placeholder for
+a function the linker stripped. Retail mapdrv had an uncalled function between `spline_getvalue` and `mapCheckData`
+(the slot where Super Paper Mario's mapdrv has `Locate`). Its code is gone from the game, but the float constants it
+used stayed in the file's shared `.sdata2` pool, in the order 3.0, 0.0, 0.5; without them our pool came out
+3.0, 2.0, 0.0 and the DOL differed by 178 bytes. Nothing shows what the function computed: SPM's `Locate`, read from
+Isaac's own PAL disc, uses no floats (#851), and no other TTYD release was checked. So the placeholder reproduces only
+the constants, in Wind Waker's form (stores through a null `f32*`, which MWCC keeps; Melee's `(void)3.0f` form is
+discarded by this compiler), under `#ifdef MUST_MATCH`, with a comment saying all of this. With it and mapdrv flipped to
+Matching, the full build prints **32 files OK**: every unit links.
+
+Isaac's decision (2026-10-18 01:49), after checking what finished decomps do: Melee has several
+`#ifdef MUST_MATCH static void sdata2_order(void) { (void)45000.0f; ... }` functions (mpcoll.c, gm_1798.c,
+gmregtyfall.c, gm_1832.c), and Wind Waker writes stripped-function dummies with a comment ("There was an unused
+function here that got stripped out, but it still affected literal and weak function ordering", d_a_kokiie.cpp) plus
+`DEAD_STRING` for leftover strings. AGENT_BRIEF rule 7 now allows this one case (data leftovers only, labelled,
+guarded, at the right slot) and keeps refusing dead functions that steer real code.
+
+**Review backlog:** if another TTYD release (US/JP, or a debug/demo build) ever shows the real function, replace the
+placeholder with the reconstruction.

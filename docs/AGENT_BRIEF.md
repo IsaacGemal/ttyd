@@ -80,6 +80,13 @@ Each of these compiled to the right bytes, or looked close enough, and was still
    version of the game, or the Super Paper Mario reference), not because it matches. If the only route to 100 is
    one of these, stop at your best natural score and say so in your report: an honest 99.9% is worth more than a
    fake 100%.
+   **One exception, for data only: a stripped function's leftovers.** When the linker removed an uncalled function
+   but its constants or strings survive in the original's pools, and nothing shows what the function computed, a
+   labelled placeholder that reproduces only those leftovers is allowed (Isaac, 2026-10-18, following Melee's
+   `sdata2_order` and Wind Waker's stripped-function dummies). It must sit at the stripped function's slot, be
+   guarded by `#ifdef MUST_MATCH`, use a `STRIPPED FUNCTION PLACEHOLDER (not original code)` comment saying what is
+   known and what isn't, never steer the registers or code of a real function, and get its own ledger entry.
+   Precedent: mapdrv's `mapdrv_sdata2_order` (#852). It is not a way around the list above.
 8. **Pragmas that aren't needed.** Every `#pragma` needs a one-line reason, and must be needed: if the function
    still matches without it, remove it. Never write `#pragma scheduling <cpu number>` (`601`, `801`, ...): it
    makes this compiler loop forever, and check.py refuses it. `scheduling off` / `reset` are fine.
