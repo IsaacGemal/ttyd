@@ -8294,3 +8294,16 @@ callers (PuniChildHagure, unk_95f0, set_lsw_index) stay 100. Unit still NonMatch
   hence `'.'` at +0x48). A throwaway uncalled function using `3.0f, 0.0f, 0.5f` in that slot gives **32 files OK**, but a
   pool-placement-only function is refused under rule 7 without evidence of what the original computed. Next: find
   what TTYD's stripped function at that slot was and reconstruct it plausibly.
+- **mapdrv's stripped function: evidence search (on9-maplink, Claude Opus 5.5). Not reconstructed; Isaac's call.** SPM's
+  symbols (`~/ttyd-refs/spm-decomp/config/EU0/symbols.txt`) order the slot `spline_maketable`, `spline_getvalue`,
+  `Locate` (0x15C), `mapTestXLU`; SPM's header describes `Locate` as applying relocations to a map.dat and building its
+  context (returns 0/-1). TTYD's leftover `.rodata` strings in order (`"%s/m/%s/d"`, `"information"`, `"ver1.01"`,
+  `"ver1.02"`, `"--/--/-- --:--:--"`, Shift-JIS "not converted", `"animation_table"`, `"curve_table"`) fit our
+  `mapCheckData` reading (~70% confident; all 333 shipped maps are ver1.02 with empty curve tables). The floats are
+  not pinned down: pool order needs dead-code uses of exactly 3.0, 0.0, 0.5 in that pre-order (maybe 2.0), with no
+  int-to-float conversions or doubles. Putting them after `mapCheckData`'s path `sprintf` also gives **32 files OK**
+  (367/367), as does a separate function before `mapCheckData`; layout can't tell these apart. Nothing in TTYD or SPM
+  material says what they computed (~10% for any guess; the .rodata 0.5/3/0 doubles are spline_maketable's sqrt
+  Newton constants, and MWCC doesn't pool constants from code it removes). **What would settle it:** SPM's `Locate`
+  disassembly (EU0 0x80091438, size 0x15C): if it loads 3.0, 0.0, 0.5 from `.sdata2`, it is the template. That needs
+  an SPM disc image, which isn't available here.
