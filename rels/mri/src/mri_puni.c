@@ -1673,25 +1673,26 @@ void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
 }
 
 void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
-    s16 xh;
-    s16 yh;
-    u32 ofs = index * 7;
+    u8 xh;
+    u8 yh;
+    u32 ofs;
     u32 x = (s32)pos->x;
     u32 y = (s32)pos->y;
     u32 z = (s32)pos->z;
-
-    yh = y >> 8;
-    yh = yh & 0xFF;
-    xh = x >> 8;
+    xh = (x >> 8) & 0xFF;
     xh = xh & 0xFF;
+    yh = (y >> 8) & 0xFF;
+    yh = yh & 0xFF;
+    ofs = index * 7;
+    ofs = base + ofs;
 
-    _swByteSet(base + ofs + 0x8F0D180, *out);
-    _swByteSet(base + ofs + 0x8F0D181, x & 0xFF);
-    _swByteSet(base + ofs + 0x8F0D182, xh);
-    _swByteSet(base + ofs + 0x8F0D183, y & 0xFF);
-    _swByteSet(base + ofs + 0x8F0D184, yh);
-    _swByteSet(base + ofs + 0x8F0D185, z & 0xFF);
-    _swByteSet(base + ofs + 0x8F0D186, (z >> 8) & 0xFF);
+    _swByteSet(ofs + 0x8F0D180, *out);
+    _swByteSet(ofs + 0x8F0D181, x & 0xFF);
+    _swByteSet(ofs + 0x8F0D182, xh);
+    _swByteSet(ofs + 0x8F0D183, y & 0xFF);
+    _swByteSet(ofs + 0x8F0D184, yh);
+    _swByteSet(ofs + 0x8F0D185, z & 0xFF);
+    _swByteSet(ofs + 0x8F0D186, (z >> 8) & 0xFF);
 }
 
 void puniswTrapGetindex(s32 index, s32* out) {
@@ -7133,8 +7134,9 @@ void puniHagurePos(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (98.37%): the three puniswSetindex calls inline as retail does; left is register colouring (the inlined
-// Setindex temps rotated with the x/y loads in f1/f0, and mode/arg2/k/punidat two registers off).
+// NONMATCHING (99.46%): register colouring only. Retail has k r31, punidat r30, name r29, cmp r28 and each
+// inlined puniswSetindex's ofs coloured after its high bytes; here cmp (an ECOND temp) takes r31 and the ofs
+// temps come before the highs.
 USER_FUNC(evt_puni_exit) {
     s32 arg2;
     const char* name;
@@ -7950,12 +7952,12 @@ USER_FUNC(evt_puni_force_se_off) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (97.24%): the inlined puniswSetindex colours x/y and their high bytes in another order
-// (first copy: retail x r27, y r28, xh r26, yh r25; here x r25, y r26, xh r27, yh r28) and the x/y loads
-// swap f0/f1, the same inline difference as evt_puni_exit; standalone puniswSetindex matches.
+// NONMATCHING (98.13%): register colouring only. Retail colours each inlined puniswSetindex's ofs after its
+// high bytes (first copy ofs r24, here r26) and puni/z swap (retail puni r29, z r31); here the inline's ofs is
+// numbered before the highs' renames.
 USER_FUNC(evt_puni_all_save) {
-    s32 i;
     PuniData* puni = &Punidat[1];
+    s32 i;
     s32 area;
     Vec pos;
 

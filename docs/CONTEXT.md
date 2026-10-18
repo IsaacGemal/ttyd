@@ -8192,3 +8192,21 @@ Tower debugger dumps: `build/mwccdbg/sol_paper_baseline`, `sol_paper_cast`, `sol
   `#else`: the parameter renamed `param` and copied through a no-op cast into a local `pose` (keeps a working-pointer web
   instead of folding into the parameter), separate `max1`/`max2`/`btmp` locals, and one `c + x` addition order. All
   are rule 7's allowed "small local tricks", but there are many in one function; re-grade in the post-finish review.
+
+### mri_puni: puniswSetindex inline ordering (on8-setidx, Claude Opus 5.5)
+
+evt_puni_exit **98.37 -> 99.46**, evt_puni_all_save **97.24 -> 98.13**; standalone puniswSetindex and its other
+callers (PuniChildHagure, unk_95f0, set_lsw_index) stay 100. Unit still NonMatching (184/186).
+- For an inlined helper's temps, inline locals get the highest numbers, then CSE temps, then the renames of
+  self-assigned variables (lowest). Retail colours each inlined copy's `ofs` after its high bytes.
+- WIN: `u8` two-statement highs (`xh = (x >> 8) & 0xFF; xh = xh & 0xFF;`) fix the inlined copies but cost the
+  standalone 12 diffs; building the offset last in two steps (`ofs = index * 7; ofs = base + ofs;`, calls use
+  `ofs + K`) brings the standalone back to 0 and keeps the inline gain. all_save also declares `puni` before `i`
+  (mwsearch).
+- Hard negatives: a PUNISW_SETINDEX caller macro (best 112, and rule 7 risk); `ofs = index; ofs *= 7` (becomes a CSE
+  temp); `index *= 7`; `ofs = base; ofs += index * 7` and `ofs += base` (constant stops folding, or add operand order
+  flips); highs read from `pos->x` (fctiwz duplicated); `cmp` as ternary/flag/inline condition; Setindex (72) and
+  exit (18) declaration-order sweeps; mwsearch on exit (2218 candidates).
+- Left: rasim what-if gives exit 0 wrong with locals ordered k, punidat, name and each copy's ofs temp numbered just
+  below its two high renames; all_save is fixed by the same ofs condition. That needs a second def of ofs that
+  survives in the inline yet still folds `0xF70F2E80 + 0x8F0D180`; no form found.
