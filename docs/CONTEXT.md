@@ -8251,3 +8251,19 @@ callers (PuniChildHagure, unk_95f0, set_lsw_index) stay 100. Unit still NonMatch
 - Left: rasim what-if gives exit 0 wrong with locals ordered k, punidat, name and each copy's ofs temp numbered just
   below its two high renames; all_save is fixed by the same ofs condition. That needs a second def of ofs that
   survives in the inline yet still folds `0xF70F2E80 + 0x8F0D180`; no form found.
+
+### wave91 (2026-10-17 21:28): 20 DeepSeek V4.1 Flash 1017 agents, 5 per remaining function (Isaac)
+
+- **evt_puni_all_save 98.13 -> 99.59 (all_save_c, merged).** puniswSetindex declares `ofs; yh; xh` (it stays 100, as do
+  its other callers), all_save declares `i` before `puni`, and a scoped `#pragma opt_lifetimes off` / `reset` around
+  evt_puni_all_save: with lifetime splitting on, the inlined copies' high-byte renames get their own register block
+  ahead of the offset, and retail colours them behind it. The hagure copy is now byte-exact; the else copy's four
+  conversions/highs are mirrored (y r25, xh r27, z r24, yh r28 vs retail y r28, xh r25, z r27, yh r24).
+  **Review note:** `opt_lifetimes` is not among the pragmas the original source is known to use; scoped and
+  explained, so allowed under rule 7, but re-grade it in the post-finish review.
+- **Refused (rule 7): all_save_b's 100%.** It added `puniswSetindexOfs`, a reshaped second copy of puniswSetindex
+  taking a precomputed `ofs`, called only from all_save; the unit did not link with it either.
+- **mapdrv (no change so far):** the FlushColor agents agree its second inlined `mapGetMapObjSub` search needs locals
+  declared j, i, object, wp, entry while the helper's other ~17-19 inlined callers pin entry, wp, j, i, object, so no
+  single declaration order serves both. mapMain_e reports no source lever for its last 7 rows.
+
