@@ -1411,7 +1411,7 @@ config.libs = [
     Rel(
         "mri",
         [
-            Object(NonMatching, "mri_puni.c"),
+            Object(Matching, "mri_puni.c"),
             Object(Matching, "mri_06.c"),
             Object(Matching, "mri_07.c"),
             Object(Matching, "mri_09.c"),

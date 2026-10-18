@@ -1672,28 +1672,34 @@ void puniswGetindex(u32 base, s32 index, s32* out, Vec* pos) {
     }
 }
 
+// Writes the record puniswGetindex reads, through the same u8 b[7]. Lifetime splitting is off here and in the two
+// callers that inline it (evt_puni_exit, evt_puni_all_save): with it on, the second stores to b[2]/b[4] become
+// renames numbered after the offset's common subexpression, and the original colours the high bytes ahead of it.
+#pragma opt_lifetimes off
 void puniswSetindex(u32 base, s32 index, s32* out, Vec* pos) {
-    u32 ofs;
-    u8 yh;
-    u8 xh;
+    u8 b[7];
     u32 x = (s32)pos->x;
     u32 y = (s32)pos->y;
     u32 z = (s32)pos->z;
-    xh = (x >> 8) & 0xFF;
-    xh = xh & 0xFF;
-    yh = (y >> 8) & 0xFF;
-    yh = yh & 0xFF;
-    ofs = index * 7;
-    ofs = base + ofs;
 
-    _swByteSet(ofs + 0x8F0D180, *out);
-    _swByteSet(ofs + 0x8F0D181, x & 0xFF);
-    _swByteSet(ofs + 0x8F0D182, xh);
-    _swByteSet(ofs + 0x8F0D183, y & 0xFF);
-    _swByteSet(ofs + 0x8F0D184, yh);
-    _swByteSet(ofs + 0x8F0D185, z & 0xFF);
-    _swByteSet(ofs + 0x8F0D186, (z >> 8) & 0xFF);
+    b[0] = *out;
+    b[1] = x & 0xFF;
+    b[2] = (x >> 8) & 0xFF;
+    b[2] = b[2] & 0xFF;
+    b[3] = y & 0xFF;
+    b[4] = (y >> 8) & 0xFF;
+    b[4] = b[4] & 0xFF;
+    b[5] = z & 0xFF;
+    b[6] = (z >> 8) & 0xFF;
+    _swByteSet(base + index * 7 + 0x8F0D180, b[0]);
+    _swByteSet(base + index * 7 + 0x8F0D181, b[1]);
+    _swByteSet(base + index * 7 + 0x8F0D182, b[2]);
+    _swByteSet(base + index * 7 + 0x8F0D183, b[3]);
+    _swByteSet(base + index * 7 + 0x8F0D184, b[4]);
+    _swByteSet(base + index * 7 + 0x8F0D185, b[5]);
+    _swByteSet(base + index * 7 + 0x8F0D186, b[6]);
 }
+#pragma opt_lifetimes reset
 
 void puniswTrapGetindex(s32 index, s32* out) {
     s32 byte;
@@ -7134,16 +7140,15 @@ void puniHagurePos(PuniData* punidat) {
     }
 }
 
-// NONMATCHING (99.60%): register colouring only, in the inlined puniswSetindex copies.
-// Lifetime splitting stays off, as in evt_puni_all_save: with it on, the inlined copies' high-byte renames get
-// their own register block ahead of the offset, where the original colours them behind it.
+// Lifetime splitting stays off, as in puniswSetindex and evt_puni_all_save: with it on, the inlined copies'
+// high-byte renames get their own register block ahead of the offset, where the original colours them behind it.
 #pragma opt_lifetimes off
 USER_FUNC(evt_puni_exit) {
     s32 arg2;
+    s32 k;
+    PuniData* punidat;
     const char* name;
     s32* args;
-    PuniData* punidat;
-    s32 k;
     s32 i;
     s32 mode;
     s32 cmp;
@@ -7954,11 +7959,8 @@ USER_FUNC(evt_puni_force_se_off) {
     return EVT_RETURN_DONE;
 }
 
-// NONMATCHING (99.59%): register colouring only. The hagure copy is byte-exact; in the else copy the four
-// integer conversions and high bytes come out as y r25, xh r27, z r24, yh r28 where the original has
-// y r28, xh r25, z r27, yh r24 (x is r26 in both), i.e. that copy's chain is mirrored.
-// Lifetime splitting has to stay off: without it the inlined copies' high-byte renames move into
-// their own register block ahead of the offset, and the original colours them behind it.
+// Lifetime splitting has to stay off, as in puniswSetindex: without it the inlined copies' high-byte renames
+// move into their own register block ahead of the offset, and the original colours them behind it.
 #pragma opt_lifetimes off
 USER_FUNC(evt_puni_all_save) {
     s32 i;
@@ -8419,61 +8421,3 @@ EVT_BEGIN(mri_puni_init_none)
     RETURN
 EVT_END()
 
-// The original object names each switch jump table after the text address that owns it. The compiler's own
-// tables are anonymous, so these reproduce the original's names; they are only here for the object match.
-#ifdef MUST_MATCH
-static u32 jumptable_00023FA0[7] = {
-    (u32)((u8*)&puniSetYPosition + 0x280), (u32)((u8*)&puniSetYPosition + 0x50), (u32)((u8*)&puniSetYPosition + 0xcc), (u32)((u8*)&puniSetYPosition + 0x154),
-    (u32)((u8*)&puniSetYPosition + 0x1e4), (u32)((u8*)&puniSetYPosition + 0x1ec), (u32)((u8*)&puniSetYPosition + 0x1f4),
-};
-static u32 jumptable_000241B0[12] = {
-    (u32)((u8*)&puniMapdata_MRI_06_getpos + 0xd0), (u32)((u8*)&puniMapdata_MRI_06_getpos + 0x20), (u32)((u8*)&puniMapdata_MRI_06_getpos + 0x30), (u32)((u8*)&puniMapdata_MRI_06_getpos + 0x40),
-    (u32)((u8*)&puniMapdata_MRI_06_getpos + 0x50), (u32)((u8*)&puniMapdata_MRI_06_getpos + 0x60), (u32)((u8*)&puniMapdata_MRI_06_getpos + 0x70), (u32)((u8*)&puniMapdata_MRI_06_getpos + 0x80),
-    (u32)((u8*)&puniMapdata_MRI_06_getpos + 0x90), (u32)((u8*)&puniMapdata_MRI_06_getpos + 0xa0), (u32)((u8*)&puniMapdata_MRI_06_getpos + 0xb0), (u32)((u8*)&puniMapdata_MRI_06_getpos + 0xc0),
-};
-static u32 jumptable_000241E0[8] = {
-    (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x14c), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0xdc), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0xec), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0xfc),
-    (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x10c), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x11c), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x12c), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x13c),
-};
-static u32 jumptable_00024200[10] = {
-    (u32)((u8*)&puniMapdata_MRI_16_getpos + 0xb0), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x20), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x30), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x40),
-    (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x50), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x60), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x70), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x80),
-    (u32)((u8*)&puniMapdata_MRI_16_getpos + 0x90), (u32)((u8*)&puniMapdata_MRI_16_getpos + 0xa0),
-};
-static u32 jumptable_00024228[11] = {
-    (u32)((u8*)&puniModeWind + 0x40), (u32)((u8*)&puniModeWind + 0x1bc), (u32)((u8*)&puniModeWind + 0x318), (u32)((u8*)&puniModeWind + 0x440),
-    (u32)((u8*)&puniModeWind + 0x470), (u32)((u8*)&puniModeWind + 0x6bc), (u32)((u8*)&puniModeWind + 0x6bc), (u32)((u8*)&puniModeWind + 0x6bc),
-    (u32)((u8*)&puniModeWind + 0x6bc), (u32)((u8*)&puniModeWind + 0x6bc), (u32)((u8*)&puniModeWind + 0x574),
-};
-static u32 jumptable_00024254[35] = {
-    (u32)((u8*)&puniModeHagure + 0x38), (u32)((u8*)&puniModeHagure + 0x88), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218),
-    (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218),
-    (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0xf4), (u32)((u8*)&puniModeHagure + 0x218),
-    (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218),
-    (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218),
-    (u32)((u8*)&puniModeHagure + 0x15c), (u32)((u8*)&puniModeHagure + 0x16c), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218),
-    (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218),
-    (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x218), (u32)((u8*)&puniModeHagure + 0x18c), (u32)((u8*)&puniModeHagure + 0x1fc),
-    0x00000000, 0x00000000, 0x00000000,
-};
-static u32 jumptable_00024390[30] = {
-    (u32)((u8*)&unk_mri_00012d58 + 0x40), (u32)((u8*)&unk_mri_00012d58 + 0xb4), (u32)((u8*)&unk_mri_00012d58 + 0x1b4), (u32)((u8*)&unk_mri_00012d58 + 0x1c8),
-    (u32)((u8*)&unk_mri_00012d58 + 0x1dc), (u32)((u8*)&unk_mri_00012d58 + 0x1f0), (u32)((u8*)&unk_mri_00012d58 + 0x204), (u32)((u8*)&unk_mri_00012d58 + 0x218),
-    (u32)((u8*)&unk_mri_00012d58 + 0x4a8), (u32)((u8*)&unk_mri_00012d58 + 0x480), (u32)((u8*)&unk_mri_00012d58 + 0x494), (u32)((u8*)&unk_mri_00012d58 + 0x4bc),
-    (u32)((u8*)&unk_mri_00012d58 + 0x4d0), (u32)((u8*)&unk_mri_00012d58 + 0x53c), (u32)((u8*)&unk_mri_00012d58 + 0xde0), (u32)((u8*)&unk_mri_00012d58 + 0x550),
-    (u32)((u8*)&unk_mri_00012d58 + 0x804), (u32)((u8*)&unk_mri_00012d58 + 0xa68), (u32)((u8*)&unk_mri_00012d58 + 0x818), (u32)((u8*)&unk_mri_00012d58 + 0x900),
-    (u32)((u8*)&unk_mri_00012d58 + 0x914), (u32)((u8*)&unk_mri_00012d58 + 0xa40), (u32)((u8*)&unk_mri_00012d58 + 0xa54), (u32)((u8*)&unk_mri_00012d58 + 0xa7c),
-    (u32)((u8*)&unk_mri_00012d58 + 0xb44), (u32)((u8*)&unk_mri_00012d58 + 0xb58), (u32)((u8*)&unk_mri_00012d58 + 0xb6c), (u32)((u8*)&unk_mri_00012d58 + 0xbd4),
-    (u32)((u8*)&unk_mri_00012d58 + 0xb80), (u32)((u8*)&unk_mri_00012d58 + 0xdc0),
-};
-static u32 jumptable_00024408[30] = {
-    (u32)((u8*)&fn_19_13A90 + 0x40), (u32)((u8*)&fn_19_13A90 + 0x40), (u32)((u8*)&fn_19_13A90 + 0x40), (u32)((u8*)&fn_19_13A90 + 0x40),
-    (u32)((u8*)&fn_19_13A90 + 0x364), (u32)((u8*)&fn_19_13A90 + 0x900), (u32)((u8*)&fn_19_13A90 + 0x900), (u32)((u8*)&fn_19_13A90 + 0x40),
-    (u32)((u8*)&fn_19_13A90 + 0x40), (u32)((u8*)&fn_19_13A90 + 0x628), (u32)((u8*)&fn_19_13A90 + 0x40), (u32)((u8*)&fn_19_13A90 + 0xc2c),
-    (u32)((u8*)&fn_19_13A90 + 0xc2c), (u32)((u8*)&fn_19_13A90 + 0x900), (u32)((u8*)&fn_19_13A90 + 0x40), (u32)((u8*)&fn_19_13A90 + 0xc2c),
-    (u32)((u8*)&fn_19_13A90 + 0x40), (u32)((u8*)&fn_19_13A90 + 0xc2c), (u32)((u8*)&fn_19_13A90 + 0xc2c), (u32)((u8*)&fn_19_13A90 + 0xc2c),
-    (u32)((u8*)&fn_19_13A90 + 0xc2c), (u32)((u8*)&fn_19_13A90 + 0xc2c), (u32)((u8*)&fn_19_13A90 + 0xc2c), (u32)((u8*)&fn_19_13A90 + 0x40),
-    (u32)((u8*)&fn_19_13A90 + 0x90c), (u32)((u8*)&fn_19_13A90 + 0x40), (u32)((u8*)&fn_19_13A90 + 0x40), (u32)((u8*)&fn_19_13A90 + 0x40),
-    (u32)((u8*)&fn_19_13A90 + 0xc2c), (u32)((u8*)&fn_19_13A90 + 0x8e0),
-};
-#endif

@@ -8307,3 +8307,20 @@ callers (PuniChildHagure, unk_95f0, set_lsw_index) stay 100. Unit still NonMatch
   Newton constants, and MWCC doesn't pool constants from code it removes). **What would settle it:** SPM's `Locate`
   disassembly (EU0 0x80091438, size 0x15C): if it loads 3.0, 0.0, 0.5 from `.sdata2`, it is the template. That needs
   an SPM disc image, which isn't available here.
+- **mri_puni LINKS: evt_puni_all_save 99.59 -> 100, evt_puni_exit 99.60 -> 100 (on9-setshape, Claude Opus 5.5).** Built on
+  on9-allsave's proof (exact mwccdbg+rasim replay) that no call-site change could fix it: the original's ofs and high
+  bytes had to be compiler temps numbered below all six x/y/z. `puniswSetindex` now builds the record in `u8 b[7]` and
+  passes `base + index * 7 + K` straight into each `_swByteSet`, the way the matched `puniswGetindex` reads it back.
+  MWCC turns small local arrays into separate variables after inlining and before CSE, so every copy's `b[2]`/`b[4]` are
+  numbered after all copies' x/y/z and the inlined offset becomes a CSE temp numbered after them: rasim shows 0 wrong
+  registers in both callers. The helper takes a third scoped `opt_lifetimes off` with a reason (the standalone drops to
+  98.89 without it; the callers' two stay). `evt_puni_exit` declares `k`, `punidat` before `name`. The MUST_MATCH block
+  of hand-named `jumptable_*` copies is deleted: with every function at 100 the compiler's own tables land right and
+  `.data` matches (0xef8 vs 0x1134 before). Unit flipped to Matching; "32 files OK".
+  **Review note:** the high bytes keep the two-statement form on the array elements (`b[2] = (x >> 8) & 0xFF; b[2] =
+  b[2] & 0xFF;`), the same no-op self-assignment main already had (`xh = xh & 0xFF`); every other spelling gave wrong
+  code. Re-grade it and the three `opt_lifetimes` pragmas in the post-finish review.
+- **on9-allsave (Claude Opus 5.5), the proof the fix built on:** the else copy's five values sit in one simplify level,
+  so only numbering order decides; both copies come from one helper and keep the same relative order (best of all 720
+  helper declaration orders: 4 wrong); call-site changes, scoped optimizer and inline pragmas, branch reshapes, argument
+  temps/casts and 3,240 mwsearch compiles all failed. Retail needs ofs/xh/yh as compiler temps below x/y/z.
