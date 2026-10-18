@@ -7907,6 +7907,15 @@ drops below 100.
 - **Unread large merges** (CI plus report only): #792-#833 except the ones above, especially mapdrv #806/#820/#825
   (+754/-916 in #820 alone), animdrv #800/#811/#819, npcdrv #799/#807/#817/#821/#823, mri_puni #795/#805/#818,
   pmario_sound #797/#810/#816, battle_audience #794/#814, evt_eff #813, fontmgr #801/#803, mario_hit #796/#808.
+- **Cleanup index as the review's scoreboard (Isaac, Oct 17; start after `v1.0-matching`).** Write our own
+  `tools/cleanup_index.py` with Melee's site categories (see "Code smells to track: Melee's cleanup index"; their repo
+  has no license, so study `~/melee-cleanup`, don't copy). Ratchet the count in `tools/ci.py` so a merge can't raise
+  it, publish the page, and report the review's progress as sites removed. Baseline from Melee's script run unmodified
+  on main b8ab226c: **37,242 sites in 1,338 files** (Melee: ~8,020 at its 100%, 5,718 now). Ours: unnamed offsets
+  9,227 (8,389 `cast+offset`), retypes 21,249, `MUST_MATCH` regions 2,239, `#pragma` 3,700 (1,128 `force_active` and
+  855 `dont_inline`, mostly linker/inlining control rather than tricks; the `opt_propagation`/`opt_common_subs`
+  toggles are what to re-grade), `goto` 767, no stack padding (Melee's largest, 2,075). Naming struct fields is ~80%
+  of the count and is mechanical with an objective check (stays 100% and linked): a good swarm job.
 
 
 ## envDisp_DepthOfField LINKS: merge the far tap loop into its pass (2026-10-17, GPT-6.1 Sol)
