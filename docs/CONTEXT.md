@@ -8087,3 +8087,46 @@ argument web versus its saved live range, without reviving the extra permanent C
   listed for the post-finish review.
 - Hard negatives (no helper): block-scoped locals 97.50, field test then local 96.93, parameter reuse 96.63/95.96,
   inline_depth 1-8 alone, inline_bottom_up, defer_codegen, compilers 2.0/2.5/2.7; no-local 76.29; loop 2.59.
+## animSetMaterial_Texture: 100% by correcting the wrap boundary (2026-10-17, GPT-6.1 Sol)
+
+**100.00%, 1452 bytes / 363 instructions.** This supersedes the preceding two-row chapter. The retained source
+is in `src/driver/animdrv.c`; no commit made. Animdrv is now **72/73**: only animPaperPoseDispSub remains open,
+so configure.py correctly stays NonMatching.
+
+The palette ID really can be signed, as in the earlier source. Expanding only the **non-CLUT pass's** existing
+animSetMaterial_WrapMode call into the caller removes the interfering helper temporary and gives the correct
+palette load/copy and every long-lived register. The CLUT pass keeps its existing helper call. No new helper,
+helper copy, parameter cast or padding was introduced. This shape initially has two *different* differences:
+retail masks wrapFlags bit 0 straight into r8, while ours masks into r0 and then copies into r8.
+
+The last fix is the S-wrap repeat/clamp arm: assign wrapFlags to wrapS, then `wrapS &= 1`. Unlike the ternary's
+intermediate, that explicitly masks the destination, so the compiler writes the result directly into r8.
+The small local form is under MUST_MATCH with a reason, and the natural ternary is under #else, per rule 7.
+The complete S-wrap branch still checks mirror bit 2 first; the T-wrap expression is unchanged. Equivalent
+one-expression masks were hoisted/reordered and did not match; ordinary casts and type changes did not solve
+it. This is another helper-boundary issue, not evidence for changing TEXGet's canonical prototype.
+
+Removed the stale matrix-helper comment and the leftover bare scope around the second loop. Formatting and
+the MUST_MATCH/natural split preserve 100%. The existing opt_strength_reduction pragma remains necessary for
+the matrix pass. No new pragma was added.
+
+Verification:
+- Mac target check: **100.00%**, no instruction differences, 1452 bytes.
+- Mac and tower `agent_check.py --final driver/animdrv`: **72/73**, merge checks nothing to fix, natural compile
+  succeeds. All previously matched functions stay matched.
+- Relocated constant/address-value check with --partial, store/constant sweep and instruction-count delta:
+  zero findings for driver/animdrv.
+- Synced the cleaned source to the dedicated sol-env tower checkout; fresh configure and full `ninja -j2`:
+  **32 files OK**. Report: **9762/9769 functions**, 1228/1231 linked files (the two auto data units were removed
+  by the separate data assignment work). No Matching flag changed for this result.
+- `git diff --check` clean. Only animdrv.c and this ledger chapter changed in this pass.
+
+Reproduction: `scratch/sol-anim/wrap_assign.py` found the match as `wrapassign_0`; raw winner `hit100.c`, cleaned
+winner `clean100.c`, `clean100-score.txt`, `clean100-final.txt` and `clean100-tower.txt` retain the evidence.
+The earlier `wrap_final.py` script's substring detector falsely labeled a 10-row candidate HIT; that diagnostic
+is not the winner. The later detector uses an anchored zero count / actual 100.00% score; the final result was
+independently checked after cleanup. Several exploratory scope/type variants failed compilation and are not
+matching evidence. All diagnostic-only changes were discarded.
+- **Review note (orchestrator):** the wrap-mode logic is written out in the non-CLUT branch while the CLUT branch still
+  calls animSetMaterial_WrapMode (helper used once, inlined elsewhere: the envdrv pattern); its MUST_MATCH
+  `wrapS = wrapFlags; wrapS &= 1;` equals the `#else` form (GX_CLAMP 0, GX_REPEAT 1). Listed for the post-finish review.

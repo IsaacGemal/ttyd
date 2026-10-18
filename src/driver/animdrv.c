@@ -1756,10 +1756,6 @@ void pushGXModelMtx_JointNode__(void* node, f32 x, f32 y, f32 z) {
     PSMTXConcat(g_modeling_mtx_stack[g_modeling_mtx_lv - 1], result, g_modeling_mtx_stack[g_modeling_mtx_lv]);
 }
 
-// Loads each texture stage's animated texture matrix (rotate about the centre, then
-// translate, then scale) and points its texcoord generator at it.
-
-
 // A texture entry's wrap flags override the descriptor's modes when non-negative: bit 2/3 mirror S/T,
 // otherwise bit 0/1 selects repeat over clamp.
 static inline void animSetMaterial_WrapMode(TEXDescriptor* desc, s32 wrapFlags, GXTexWrapMode* outS, GXTexWrapMode* outT) {
@@ -1774,7 +1770,6 @@ static inline void animSetMaterial_WrapMode(TEXDescriptor* desc, s32 wrapFlags, 
     *outT = wrapT;
 }
 
-// NONMATCHING (99.96%): initial palette ID load/copy uses r19/r4 instead of r4/r19.
 #pragma opt_strength_reduction off // preserves the matrix loop's counter/flags/matrix-ID code generation
 void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pTexEntries, AnimTexMtx* animEntries,
                              s32 texBindsCapacity, AnimTexBind* texBinds, AnimationTextureFile* texFile) {
@@ -1783,7 +1778,7 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
     AnimPoseTexEntry* texEntry;
     AnimTexBind* bind;
     s32 wrapFlags;
-    u32 palId;
+    s32 palId;
     f32(*mtx)[4];
     u32 flags;
     AnimationPoseData* poseData;
@@ -1846,7 +1841,22 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
                 GXLoadTexObj(&texObj, i);
             } else {
                 desc = TEXGet((TEXPalette*)*texFile->handle->data, palId);
-                animSetMaterial_WrapMode(desc, wrapFlags, &wrapS, &wrapT);
+                wrapS = desc->textureHeader->wrapS;
+                wrapT = desc->textureHeader->wrapT;
+                if (wrapFlags >= 0) {
+#ifdef MUST_MATCH // Mask in the destination to avoid an extra temporary/copy into GXInitTexObj's r8.
+                    if (wrapFlags & 4) {
+                        wrapS = GX_MIRROR;
+                    } else {
+                        wrapS = wrapFlags;
+                        wrapS &= 1;
+                    }
+#else
+                    wrapS = (wrapFlags & 4) ? GX_MIRROR : ((wrapFlags & 1) ? GX_REPEAT : GX_CLAMP);
+#endif
+                    wrapT = (wrapFlags & 8) ? GX_MIRROR : ((wrapFlags & 2) ? GX_REPEAT : GX_CLAMP);
+                }
+
                 GXInitTexObj(&texObj, desc->textureHeader->data, desc->textureHeader->width,
                              desc->textureHeader->height, desc->textureHeader->format, wrapS, wrapT,
                              (desc->textureHeader->minLOD != desc->textureHeader->maxLOD));
@@ -1859,10 +1869,9 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
         }
     }
 
-    {
-
+    // Load each stage's animated texture matrix: rotate about the centre, translate, then scale.
     for (i = 0; i < texCount; i++) {
-        f32 scaleS, scaleT, transS, transT, rotate; // this declaration order gives the target's FPR colouring
+        f32 scaleS, scaleT, transS, transT, rotate;
 
 #ifdef MUST_MATCH // `1u` keeps the original's `subf; subi 1; slwi` instead of folding it to `subf; slwi; subi 4`
         texId = texIdRemap[texCount - i - 1u];
@@ -1926,7 +1935,6 @@ void animSetMaterial_Texture(s32 texCount, s32* texIdRemap, AnimPoseTexEntry* pT
         }
         GXSetTexCoordGen2(i, GX_TG_MTX2x4, GX_TG_TEX0 + i, GX_TEXMTX0 + (u32)(i * 3), GX_FALSE, GX_PTIDENTITY);
         GXLoadTexMtxImm(mtx, GX_TEXMTX0 + (u32)(i * 3), GX_MTX2x4);
-    }
     }
 }
 #pragma opt_strength_reduction reset
