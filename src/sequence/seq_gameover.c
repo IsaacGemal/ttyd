@@ -174,7 +174,7 @@ void seq_gameOverMain(SequenceWork* work) {
         if (fadeIsFinish()) {
             _relUnLoad();
             _unload(gp->currentMapName, NULL, NULL);
-            strcpy(&gp->currentAreaName[0x10], gp->currentMapName);
+            strcpy(gp->lastMapName, gp->currentMapName);
             statusWinForceOff();
             statusWinDispOff();
             cam = camGetPtr(CAMERA_3D);

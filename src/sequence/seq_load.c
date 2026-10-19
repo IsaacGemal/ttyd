@@ -303,20 +303,20 @@ void seq_loadMain(SequenceWork* workArg) {
                 wp->field_0x0 &= ~0x40;
                 if (OSGetSoundMode() == 0) {
                     SoundSetOutputMode(0);
-                    gp->unk1274 = 0;
+                    gp->soundSurround = 0;
                     wp->field_0x40 = 0;
                 } else {
                     SoundSetOutputMode(1);
-                    if (gp->unk1274 == 0) {
+                    if (gp->soundSurround == 0) {
                         wp->field_0x40 = 1;
                     } else {
                         wp->field_0x40 = 2;
                     }
                 }
-                wp->field_0x44 = (gp->unk1294 == 0);
+                wp->field_0x44 = (gp->rumbleEnabled == 0);
                 wp->field_0x24 = wp->field_0x40;
                 wp->field_0x28 = wp->field_0x44;
-                wp->field_0x20 = gp->unk11B8;
+                wp->field_0x20 = gp->lastFileSlot;
                 wp->field_0x8 = win_dt[wp->field_0x20].x;
                 wp->field_0xC = win_dt[wp->field_0x20].y;
             }
@@ -590,10 +590,10 @@ void loadMain(SequenceWork* workArg) {
                     fadeEntry(0x1c, 0, *(GXColor*)&dat_8041bd80);
                     wp->field_0x18 = 1;
                 } else {
-                    strcpy((char*)gp->field_0x11BC, nameEntGetName());
-                    gp->unk11B8 = wp->field_0x20;
+                    strcpy(gp->playerName, nameEntGetName());
+                    gp->lastFileSlot = wp->field_0x20;
                     stg0_00_init();
-                    *(s32*)(gp->field_0x11BC + 0x14) = wp->field_0x20;
+                    gp->saveSlot = wp->field_0x20;
                     marioPartyKill();
                     mario = marioGetPtr();
                     mario->prevPartyMemberId[0] = 0;
@@ -603,7 +603,7 @@ void loadMain(SequenceWork* workArg) {
                     swInit();
                     swByteSet(0, 0);
                     if (code == 0) {
-                        *(s32*)(gp->field_0x11BC + 0x14) = wp->field_0x20;
+                        gp->saveSlot = wp->field_0x20;
                         wp->field_0x3C = evtEntryType(evt_memcard_save, 0, 0, 0);
                         wp->field_0x3C->lwData[0] = 0x17;
                         wp->field_0x18++;
@@ -798,15 +798,15 @@ void loadMain(SequenceWork* workArg) {
                 switch (off) {
                     case 0:
                         OSSetSoundMode(0);
-                        gp->unk1274 = 0;
+                        gp->soundSurround = 0;
                         break;
                     case 1:
                         OSSetSoundMode(1);
-                        gp->unk1274 = 0;
+                        gp->soundSurround = 0;
                         break;
                     case 2:
                         OSSetSoundMode(1);
-                        gp->unk1274 = 1;
+                        gp->soundSurround = 1;
                         break;
                 }
                 if (OSGetSoundMode() == 0) {
@@ -869,12 +869,12 @@ void loadMain(SequenceWork* workArg) {
                 wp->field_0x28++;
                 psndSFXOn((const char*)5);
             } else if (btn & 0x100) {
-                gp->unk1294 = (wp->field_0x28 == 0);
+                gp->rumbleEnabled = (wp->field_0x28 == 0);
                 psndSFXOn((const char*)0x12);
                 wp->field_0x44 = wp->field_0x28;
                 wp->field_0x0 &= ~1;
                 wp->field_0x18 = 1;
-                if (gp->unk1294) {
+                if (gp->rumbleEnabled) {
                     evtEntryType(evt_shake, 0, 0, 0);
                 }
             } else if (btn & 0x200) {
@@ -1273,8 +1273,8 @@ void continueGame(void) {
     MarioWork* mario;
 
     cardCopy2Main(wp->field_0x20);
-    *(s32*)(gp->field_0x11BC + 0x14) = wp->field_0x20;
-    gp->unk11B8 = wp->field_0x20;
+    gp->saveSlot = wp->field_0x20;
+    gp->lastFileSlot = wp->field_0x20;
     marioPartyKill();
     mario = marioGetPtr();
     mario->prevPartyMemberId[0] = 0;
@@ -1405,7 +1405,7 @@ void continueGame(void) {
             break;
         case 23:
             stg0_00_init();
-            *(s32*)(gp->field_0x11BC + 0x14) = wp->field_0x20;
+            gp->saveSlot = wp->field_0x20;
             marioPartyKill();
             mario = marioGetPtr();
             mario->prevPartyMemberId[0] = 0;

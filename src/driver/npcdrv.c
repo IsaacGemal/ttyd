@@ -1024,7 +1024,7 @@ static inline BOOL npcMarioNoticeable(void) {
     if (mario->flags & 0xA) {
         return FALSE;
     }
-    if ((s32)gp->field_0x164 != 0) {
+    if ((s32)gp->mapInitEvtId != 0) {
         return FALSE;
     }
     if (seqGetSeq() != 2) {
@@ -2846,7 +2846,7 @@ static inline BOOL fbatAttackEnabled(NpcEntry* npc) {
     if (!(npcWork->flags & 1) && (mario->flags & 0xA)) {
         return FALSE;
     }
-    if ((s32)gp->field_0x164 != 0) {
+    if ((s32)gp->mapInitEvtId != 0) {
         return FALSE;
     }
     if (seqGetSeq() != 2) {

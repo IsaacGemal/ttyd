@@ -175,7 +175,7 @@ void seq_mapChangeMain(SequenceWork* work) {
             if (strcmp(_next_map, SMC_STR(0x50, "dmo_00")) != 0 && strcmp(_next_map, "title") != 0) {
                 if (OSGetSoundMode() == 0) {
                     SoundSetOutputMode(0);
-                } else if (gp->unk1274 == 0) {
+                } else if (gp->soundSurround == 0) {
                     SoundSetOutputMode(1);
                 } else {
                     SoundSetOutputMode(2);
@@ -187,7 +187,7 @@ void seq_mapChangeMain(SequenceWork* work) {
         return;
     case 2:
         if (strcmp(_next_map, "title") == 0) {
-            strcpy((char*)gp + 0x14C, gp->currentMapName);
+            strcpy(gp->lastMapName, gp->currentMapName);
             strcpy(gp->currentAreaName, "");
             strcpy(gp->currentMapName, "");
             seqSetSeq(1, 0, 0);
@@ -264,23 +264,23 @@ void seq_mapChangeMain(SequenceWork* work) {
             psndMapChange();
             ev = mapDataPtr(_next_map)->eventAddr;
             if (ev != NULL) {
-                gp->field_0x164 = (u32)evtEntry(ev, 0, 0)->eventId;
+                gp->mapInitEvtId = (u32)evtEntry(ev, 0, 0)->eventId;
             } else {
-                gp->field_0x164 = 0;
+                gp->mapInitEvtId = 0;
             }
             work->state++;
             return;
         }
         break;
     case 4:
-        if ((s32)gp->field_0x164 == 0) {
+        if ((s32)gp->mapInitEvtId == 0) {
             camCtrlOn(4);
             work->state++;
             return;
         }
-        if (evtCheckID(gp->field_0x164) == 0) {
+        if (evtCheckID(gp->mapInitEvtId) == 0) {
             camCtrlOn(4);
-            gp->field_0x164 = 0;
+            gp->mapInitEvtId = 0;
             work->state++;
             return;
         }

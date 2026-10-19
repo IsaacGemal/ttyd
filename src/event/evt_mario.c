@@ -1695,7 +1695,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         } else {
             event->userdata[3] = 1;
         }
-        *(u32*)((u8*)gp + 0x18) |= 0x10;
+        gp->systemLevelFlags |= 0x10;
     }
 
     if (event->userdata[3] & 1) {
@@ -1900,7 +1900,7 @@ USER_FUNC(evt_mario_jump_jumpstand) {
         mario->dispFlags &= ~0x4;
         marioAdjustMoveDir();
         camFollowYOn();
-        *(u32*)((u8*)gp + 0x18) &= ~0x10;
+        gp->systemLevelFlags &= ~0x10;
         return 1;
     }
     return 0;

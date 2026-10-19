@@ -11,8 +11,9 @@
 #include "peach.h"
 #include "mario/mario_pouch.h"
 #include "mot/mot_walk.h"
+#include "mario/mariost.h"
 
-extern s32 gp; // m2c
+extern GlobalWork* gp;
 
 
 void marioWalkDashSe(HitEntry* hitObj, u32 arg1) {
@@ -35,7 +36,7 @@ void marioWalkDashSe(HitEntry* hitObj, u32 arg1) {
             return;
         }
         if (hitAttr & 0x1000) {
-            if (strncmp((char*)(gp + 0x12C), "mri", 3) != 0) {
+            if (strncmp(gp->currentMapName, "mri", 3) != 0) {
                 psndSFXOn_3D((char*)0x149, &mario->position);
                 return;
             }
@@ -63,7 +64,7 @@ void marioWalkDashSe(HitEntry* hitObj, u32 arg1) {
             return;
         }
         if (hitAttr & 0x1000) {
-            if (strncmp((char*)(gp + 0x12C), "mri", 3) != 0) {
+            if (strncmp(gp->currentMapName, "mri", 3) != 0) {
                 psndSFXOn_3D((char*)0x148, &mario->position);
                 return;
             }

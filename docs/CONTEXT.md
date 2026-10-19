@@ -8424,3 +8424,14 @@ Every commit builds to 32 files OK, and every touched file also compiles without
 - **Open (Isaac's call):** unit_barriern.c:1978 and unit_boss_batten_leader.c:3080 carry reshaped, unguarded copies of
   Init helpers taking the same table twice through a volatile parameter, only to steer registers. Rule 7 refuses
   these; their comments say a plain call leaves both functions 80 bytes short.
+
+### Readability: GlobalWork names (2026-10-19, Claude Haiku 5.5, night8-rd-gw; reviewed by Claude Opus 5.5)
+
+Byte-identical renames of `gp` fields: `mapInitEvtId` (0x164, seq_mapchange waits on it), `playerName` (0x11BC),
+`saveSlot` (0x11D0, the memcard write target), `lastFileSlot` (0x11B8), `soundSurround` (0x1274),
+`resetButtonDown`, `restartChecked`, `keyDataReady`, and the rumble state (`rumbleEnabled`, `rumbleSuppressed`,
+`rumbleHeld[Since]`, `rumbleLocked`/`LockStarted`/`LockedSince`: 30 s of continuous rumble locks a pad for 30 s).
+All 11 raw `(u8*)gp + 0x..` casts are gone; mot_walk's `extern s32 gp` is now `GlobalWork*`. In review, Opus split
+`lastMapName` (0x14C) out of what had been a 0x20-byte `currentAreaName`: seq_mapchange and seq_gameover copy the
+current map there before leaving for the title screen or game over. Unnamed `gp->` field uses 75 → 2 (`unk8`, only ever
+written 0). `field_C` (a game-over/debug-battle gate nothing sets) stays unnamed.
