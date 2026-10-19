@@ -7689,49 +7689,22 @@ USER_FUNC(evt_puni_get_lsw_index) {
     return EVT_RETURN_DONE;
 }
 
-// opt_propagation off stops MWCC rematerialising the named high bytes (h1/h2) at each
-// _swByteSet, so they stay in callee-saved registers like the original.
-#pragma opt_propagation off
+#pragma opt_lifetimes off // as in puniswSetindex, which inlines here: with it on, the high bytes colour behind the offset
 USER_FUNC(evt_puni_set_lsw_index) {
-    s32 b0;
-    s32 s3;
-    s32 i;
-    s32 s2;
-    s32 s1;
-    s32 h1;
-    s32 h2;
-    s32 index;
-    s32 base;
-    s32* args;
-    f32 v1;
-    f32 v2;
-    f32 v3;
+    s32* args = event->args;
+    s32 out;
+    Vec pos;
+    s32 index = args[0];
+    s32 i = evtGetValue(event, args[1]);
 
-    args = event->args;
-    index = args[0];
-    i = evtGetValue(event, args[1]);
-    b0 = evtGetValue(event, args[2]);
-    v1 = (f32)evtGetValue(event, args[3]);
-    v2 = (f32)evtGetValue(event, args[4]);
-    v3 = (f32)evtGetValue(event, args[5]);
-    s1 = (s32)v1;
-    s2 = (s32)v2;
-    s3 = (s32)v3;
-
-    h1 = (s1 >> 8) & 0xFF;
-    h2 = (s2 >> 8) & 0xFF;
-
-    base = index + i * 7;
-    _swByteSet(base + EVTDAT_LSW_BASE + 0, b0);
-    _swByteSet(base + EVTDAT_LSW_BASE + 1, s1 & 0xFF);
-    _swByteSet(base + EVTDAT_LSW_BASE + 2, h1);
-    _swByteSet(base + EVTDAT_LSW_BASE + 3, s2 & 0xFF);
-    _swByteSet(base + EVTDAT_LSW_BASE + 4, h2);
-    _swByteSet(base + EVTDAT_LSW_BASE + 5, s3 & 0xFF);
-    _swByteSet(base + EVTDAT_LSW_BASE + 6, (s3 >> 8) & 0xFF);
+    out = evtGetValue(event, args[2]);
+    pos.x = (f32)evtGetValue(event, args[3]);
+    pos.y = (f32)evtGetValue(event, args[4]);
+    pos.z = (f32)evtGetValue(event, args[5]);
+    puniswSetindex(index, i, &out, &pos);
     return EVT_RETURN_DONE;
 }
-#pragma opt_propagation reset
+#pragma opt_lifetimes reset
 
 USER_FUNC(evt_puni_get_trap_index) {
     s32* args = event->args;
