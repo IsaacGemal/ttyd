@@ -492,15 +492,11 @@ s16 _get_icon_id(u8 id) {
 }
 #pragma dont_inline reset
 
-
 // The target keeps the work-area base `work + 0x1F4C` in r5 (`addi r5, r4, 0x1f4c`). The
 // `GET_ICON_ID` function-pointer cast (see the macro above) is what makes MWCC hold that base:
 // with a plain `_get_icon_id(sr->field_0x02)` call it rematerialises the base per case
 // (`lbz r3, 0x1f4e(r4)`) instead of keeping it live in r5. Same workaround as actionCommandDisp2.
-// opt_lifetimes/opt_propagation: same workaround as actionCommandDisp2, needed to keep the
-// StickRotateWork base (work+0x1F4C) in its own register instead of folding it into BattleWork.
-#pragma opt_lifetimes off // needed: the default lifetime pass folds the StickRotateWork base into the BattleWork base
-#pragma opt_propagation off // needed: with propagation on the same fold happens
+#pragma opt_propagation off // needed: with propagation on MWCC folds the StickRotateWork base (work+0x1F4C) into the BattleWork base
 static void actionCommandDisp(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
@@ -562,13 +558,9 @@ static void actionCommandDisp(f32 x, f32 y) {
     }
 }
 #pragma opt_propagation reset
-#pragma opt_lifetimes reset
 
 
-// opt_lifetimes/opt_propagation: without both, MWCC folds the StickRotateWork base (work+0x1F4C) into
-// the BattleWork base instead of materialising it in its own register as the original does.
-#pragma opt_lifetimes off // needed: the default lifetime pass folds the StickRotateWork base into the BattleWork base
-#pragma opt_propagation off // needed: with propagation on the same fold happens
+#pragma opt_propagation off // needed: with propagation on MWCC folds the StickRotateWork base (work+0x1F4C) into the BattleWork base
 void actionCommandDisp2(f32 x, f32 y) {
     BattleWork* work = _battleWorkPointer;
     BattleActions* ac = &work->actionCommands;
@@ -631,7 +623,6 @@ void actionCommandDisp2(f32 x, f32 y) {
     }
 }
 #pragma opt_propagation reset
-#pragma opt_lifetimes reset
 
 
 void battleAcDelete_StickRotate(BattleWork* work) {

@@ -2764,11 +2764,9 @@ void partySetCamId(PartyEntry* party, s32 cameraId) {
 }
 
 // A named `want` cache orders the 0.0 compare first (MUST_MATCH; the plain read form scores 99.38%).
-// Caching field_10C in `old` before the outer compare (nothing writes it in between) plus these two
-// optimizer pragmas gives the original arithmetic and clamp FPR allocation (field_10C in f2, field_110
-// in f3, and the clamp reloads in f1): with defaults the three `else if` clamps load the field and
-// bound into f0/f1, and without `old` the common-subexpression pass raises the arithmetic to f3.
-#pragma opt_common_subs off // the clamp/comparison FPRs land in f0/f1 instead of f1/f0 with CSE on
+// Caching field_10C in `old` before the outer compare (nothing writes it in between) plus
+// opt_lifetimes off gives the original arithmetic and clamp FPR allocation (field_10C in f2, field_110
+// in f3, and the clamp reloads in f1); without `old` the common-subexpression pass raises the arithmetic to f3.
 #pragma opt_lifetimes off // keep the arithmetic's field_10C in f2 and field_110 in f3
 void partyMakeDispDir(PartyEntry* party) {
     f32 angle;
@@ -2886,7 +2884,6 @@ void partyMakeDispDir(PartyEntry* party) {
         }
     }
 }
-#pragma opt_common_subs reset
 #pragma opt_lifetimes reset
 
 // Keep CSE off across this function: with it on the order multiply's FPRs land in f1/f0/f2

@@ -315,7 +315,6 @@ void battleAcDelete_ButtonDown(BattleWork* work) {
 // declared str_802FD618 emits first and pushes the double to +0x50, 99.99%).
 // Using bd->buttons[i] directly in the zero test and the switch (no `button` temp) is what gives the
 // target's r3 = button / r4 = row base split through the switch.
-#pragma optimize_for_size on
 #pragma opt_lifetimes off // needed: the default lifetime pass assigns limit/i/work to different callee-saved GPRs than the target
 #pragma opt_propagation off // needed: with propagation on limit drops to r29 and iconX/iconY swap FPRs
 static void actionCommandDisp(s32 type, f32 x, f32 y) {
@@ -435,7 +434,6 @@ static void actionCommandDisp(s32 type, f32 x, f32 y) {
 }
 #pragma opt_propagation reset
 #pragma opt_lifetimes reset
-#pragma optimize_for_size reset
 
 // The pool constants the code above loads by name, defined after it (defined first, the compiler folds them).
 const f32 float_neg200_804204e8 = -200.0f;

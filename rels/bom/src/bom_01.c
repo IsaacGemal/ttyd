@@ -856,7 +856,7 @@ void jump(s32 index, s32 a, f32 x, f32 y, f32 z, f32 p, f32 q) {
     }
 }
 
-// opt_lifetimes/opt_propagation off (as in rsh_05): hoists the sin/cos coefficients as retail does.
+// opt_lifetimes/opt_propagation off: hoists the sin/cos coefficients as retail does.
 #pragma opt_lifetimes off
 #pragma opt_propagation off
 static void ext_main(void) {

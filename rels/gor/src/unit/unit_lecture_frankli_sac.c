@@ -190,8 +190,6 @@ EVT_END()
 // The opt_* block above also covers this function: with the default
 // optimizations it keeps _battleWorkPointer's address temp in r5 instead of r4.
 #pragma opt_dead_assignments off
-#pragma opt_common_subs off
-#pragma opt_propagation off
 static USER_FUNC(_battle_set_lecture_unit_id) {
     BattleWork* wp = _battleWorkPointer;
     s32* args = event->args;
@@ -228,8 +226,6 @@ static USER_FUNC(lecture_init) {
     return EVT_RETURN_DONE;
 }
 #pragma opt_dead_assignments reset
-#pragma opt_common_subs reset
-#pragma opt_propagation reset
 
 static EVT_BEGIN(init_event)
     CALL(lecture_init)

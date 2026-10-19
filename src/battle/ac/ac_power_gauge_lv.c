@@ -235,7 +235,6 @@ void battleAcDelete_PowerGaugeLv(BattleWork* work) {
 }
 
 // don't_inline: the original keeps actionCommandDisp as its own local function.
-#pragma optimize_for_size on
 #pragma dont_inline on
 // opt_common_subs off: with CSE on MWCC reuses the gauge-percent value it already has in f0 and
 // emits `fdivs f0, f1, f0`; disabling common subexpression elimination gives the original operand
@@ -353,7 +352,6 @@ static void actionCommandDisp(f32 f1, f32 f2) {
 }
 #pragma opt_common_subs reset
 #pragma dont_inline reset
-#pragma optimize_for_size reset
 
 // --- .sdata2 definitions (kept after the code, see note above) ---
 
