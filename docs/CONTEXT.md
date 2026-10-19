@@ -8549,3 +8549,14 @@ evt_puni_setup, mirrored in SW 0x299), `flags`, `levelY[4]`, `yMode`/`mapKind`, 
 `puniModeExit`, `puniModeEnter`, `puniModeMass`, `unk_mri_00012d58`) whose `u8* p` base can't be retyped without
 changing register allocation, and `((PuniData*)p)->` accesses elsewhere for the same reason. `flags` stays s32
 (u32 changes evt_puni_flag_onoff).
+
+### Readability: PartyEntry names (2026-10-19, Claude Haiku 5.5, n9-rd-party; reviewed by Claude Opus 5.5)
+
+The field partner's PartyEntry (0x188 bytes) gets `timer` (0x24), `motionStep` (0x38, the party_motion_* switch
+selector), `moveAngle`, `spinAngle` (p_roll), `targetPos`/`targetDist`, `groundY`, `height` (partyGetHeight),
+`radius`, `playerTargetYaw`, and the hit results `frontHit`/`groundHit`/`headHit` (check_front,
+partySearchGround/Head). party_motion's offset macros use the fields where they exist (412 sites), single-bit
+`PartyFlags` literals use the enum (385 sites, across mobjdrv, npcdrv, evt_*, mario_*, camdrv, mot_dokan), and
+member-id compares use `PartyMember` (54). Raw PartyEntry casts 761 → 371; party_motion.c 206 → 100 per kLOC.
+Open: the tail 0x174-0x187 is a per-partner union (Vivian, Bobbery and Flurrie each use it differently) and needs a
+per-character layout; nokonoko_use's NKF(0x10C) stays a macro (the member form changes its code).
