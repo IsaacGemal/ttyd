@@ -1005,7 +1005,7 @@ USER_FUNC(evt_npc_glide_position) {
 USER_FUNC(evt_npc_return_interrupt) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
-    *(u32*)npc->field_140 |= 0x10000000;
+    npc->interruptFlags |= 0x10000000;
     return EVT_RETURN_YIELD;
 }
 #pragma dont_inline on
@@ -1691,7 +1691,7 @@ USER_FUNC(evt_npc_get_reglid) {
 USER_FUNC(evt_npc_restart_regular_event) {
     const char* name = (const char*)evtGetValue(event, event->args[0]);
     NpcEntry* npc = evtNpcNameToPtr(event, name);
-    *(u32*)npc->field_140 |= 0x10000000;
+    npc->interruptFlags |= 0x10000000;
     npcCheckInterrupt(npc);
     return EVT_RETURN_DONE;
 }

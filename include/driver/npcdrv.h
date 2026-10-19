@@ -127,7 +127,7 @@ typedef struct NpcEntry {
     void* lostEvent;                // 0x134, verified
     void* returnEvent;              // 0x138, verified
     void* blowEvent;                // 0x13C, verified
-    u8 field_140[0x144 - 0x140];    // 0x140
+    u32 interruptFlags;             // 0x140, pending reactions: 1 found Mario, 2 lost, 4 returned, 8 blown, 0x10 dead, 0x10000000 move
     f32 direction;                  // 0x144, angle we're facing at, verified
     u8 field_148[0x14C - 0x148];    // 0x148
     f32 width;                      // 0x14C

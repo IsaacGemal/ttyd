@@ -1230,7 +1230,7 @@ void npcMain(void) {
                 if (evt != NULL && !(evt->flags & 2)) {
                     state = evt->wNpcEventType;
                     if (entry->blowEvent != NULL && state != 5 && state != 8 && npcCheckBlow(entry)) {
-                        *(s32*)entry->field_140 |= 8;
+                        entry->interruptFlags |= 8;
                         goto interrupt;
                     }
 
@@ -1262,7 +1262,7 @@ void npcMain(void) {
                             }
                         }
                         if (hit) {
-                            *(s32*)entry->field_140 |= 4;
+                            entry->interruptFlags |= 4;
                             goto interrupt;
                         }
                     }
@@ -1301,7 +1301,7 @@ void npcMain(void) {
                             }
                         }
                         if (hit) {
-                            *(s32*)entry->field_140 |= 2;
+                            entry->interruptFlags |= 2;
                             goto interrupt;
                         }
                     }
@@ -1358,7 +1358,7 @@ void npcMain(void) {
                         }
                     found:
                         if (hit) {
-                            *(s32*)entry->field_140 |= 1;
+                            entry->interruptFlags |= 1;
                         }
                     }
                 }
@@ -2606,7 +2606,7 @@ void fbatBattleMode(void) {
                 s32 flagB;
                 FieldBattleInfo* info0;
 
-                *(s32*)fbatData->target->field_140 &= 0xF00;
+                fbatData->target->interruptFlags &= 0xF00;
                 evtStopID(fbatData->target->regularEvtId);
                 info0 = (FieldBattleInfo*)((u8*)fbatData + 0x20);
                 if (!(entry->battleInfo.field_4 & 0x10000000)) {
@@ -2756,8 +2756,8 @@ void fbatBattleMode(void) {
                             entry->field_108 = 0;
                         }
                         entry->wFbatHitCheckRelated = 0x5A;
-                        *(s32*)entry->field_140 &= ~0x100;
-                        *(s32*)entry->field_140 |= 0x10000000;
+                        entry->interruptFlags &= ~0x100;
+                        entry->interruptFlags |= 0x10000000;
                         if (entry->flags & 0x200) {
                             animPoseSetAnim(entry->poseId, entry->currentAnim, TRUE);
                         }
@@ -2767,7 +2767,7 @@ void fbatBattleMode(void) {
                     if (entry->flags & 0x400) {
                         entry->field_108 = 0;
                     }
-                    *(s32*)entry->field_140 |= 0x10000000;
+                    entry->interruptFlags |= 0x10000000;
                     marioSetMutekiTime(3000);
                     *(s16*)((u8*)mario + 0x2C0) = sysMsec2Frame(3000);
                     if (entry->flags & 0x200) {
@@ -2780,7 +2780,7 @@ void fbatBattleMode(void) {
 }
 
 void _npcDead(NpcEntry* entry, u16 koopaEncounterType) {
-    *(s32*)entry->field_140 |= 0x10;
+    entry->interruptFlags |= 0x10;
     entry->jumpFlags |= 4;
     entry->koopaEncounterType = koopaEncounterType;
     if (entry->flags & 4) {
@@ -3459,31 +3459,31 @@ BOOL npcCheckInterrupt(NpcEntry* npc) {
     EventEntry* evt;
 
     evtGetPtrID(npc->regularEvtId);
-    if (*(s32*)npc->field_140 & ~0xF00) {
+    if (npc->interruptFlags & ~0xF00) {
         evt = NULL;
-        if ((*(s32*)npc->field_140 & 0x10) && npc->deadEvent) {
+        if ((npc->interruptFlags & 0x10) && npc->deadEvent) {
             evt = evtEntry(npc->deadEvent, 0, 0x20);
             evt->wNpcEventType = 8;
             evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 0x10000000) && npc->moveEvent) {
+        } else if ((npc->interruptFlags & 0x10000000) && npc->moveEvent) {
             evt = evtEntry(npc->moveEvent, 0, 0x20);
             evt->wNpcEventType = 1;
             evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 0x8) && npc->blowEvent) {
+        } else if ((npc->interruptFlags & 0x8) && npc->blowEvent) {
             evt = evtEntry(npc->blowEvent, 0, 0x20);
             evt->wNpcEventType = 5;
             evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 1) && npc->findEvent && !(npc->jumpFlags & 0x1000) &&
-                   !(npc->flags & 0x200000) && !(*(s32*)npc->field_140 & 0x100)) {
+        } else if ((npc->interruptFlags & 1) && npc->findEvent && !(npc->jumpFlags & 0x1000) &&
+                   !(npc->flags & 0x200000) && !(npc->interruptFlags & 0x100)) {
             evt = evtEntry(npc->findEvent, 0, 0x20);
             evt->wNpcEventType = 2;
             evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 2) && npc->lostEvent && !(npc->jumpFlags & 0x1000) &&
+        } else if ((npc->interruptFlags & 2) && npc->lostEvent && !(npc->jumpFlags & 0x1000) &&
                    !(npc->flags & 0x200000)) {
             evt = evtEntry(npc->lostEvent, 0, 0x20);
             evt->wNpcEventType = 3;
             evt->ownerNPC = npc;
-        } else if ((*(s32*)npc->field_140 & 4) && npc->returnEvent && !(npc->jumpFlags & 0x1000) &&
+        } else if ((npc->interruptFlags & 4) && npc->returnEvent && !(npc->jumpFlags & 0x1000) &&
                    !(npc->flags & 0x200000)) {
             evt = evtEntry(npc->returnEvent, 0, 0x20);
             evt->wNpcEventType = 4;
@@ -3492,14 +3492,14 @@ BOOL npcCheckInterrupt(NpcEntry* npc) {
         if (evt != NULL) {
             evtDeleteID(npc->regularEvtId);
             npc->regularEvtId = evt->eventId;
-            *(s32*)npc->field_140 &= 0xF00;
+            npc->interruptFlags &= 0xF00;
             npc->jumpFlags &= ~0x1000;
             npc->field_188 = 0;
             npc->moveSpeed = 0.0f;
             return TRUE;
         }
     }
-    *(s32*)npc->field_140 &= 0xF00;
+    npc->interruptFlags &= 0xF00;
     npc->jumpFlags &= ~0x1000;
     return FALSE;
 }
