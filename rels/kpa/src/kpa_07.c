@@ -149,7 +149,7 @@ void kpa_stg6_012_1_cb(s32 state, smartEntry* smart) {
         animPoseSetAnim(npcNameToPtr("ババ")->poseId, "A_2B", 1);
         break;
     case 5:
-        if (data->field_0x10 == 8) {
+        if (data->entryPos == 8) {
             animPoseSetAnim(npcNameToPtr("ババ")->poseId, "T_1", 1);
         }
         break;
@@ -161,13 +161,13 @@ void kpa_stg6_014_cb(s32 state, smartEntry* smart) {
 
     switch (state) {
     case 3:
-        if (*(u16*)((u8*)data + 0x8) == 1) {
+        if (data->choiceIndex == 1) {
             NpcEntry* npc = npcNameToPtr("ブレッドハート");
 
             strcpy(npc->stayAnim, "S_5");
             strcpy(npc->talkAnim, "T_5");
         }
-        if (*(u16*)((u8*)data + 0x8) == 2) {
+        if (data->choiceIndex == 2) {
             NpcEntry* npc = npcNameToPtr("ブレッドハート");
 
             strcpy(npc->stayAnim, "S_1");
